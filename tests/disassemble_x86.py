@@ -51,7 +51,7 @@ def parse_func(lines, line_index):
     return function, line_index
 
 def print_function(func):
-    print('{} @ {}'.format(func['name'], func['address']))
+    print('{} @ {}'.format(func['name'], hex(func['address'])))
     for instr in func['instructions']:
         print('  {}'.format(instr['instr']))
     print()
