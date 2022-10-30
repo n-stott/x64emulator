@@ -19,6 +19,33 @@
 
 namespace x86 {
 
+    INSTRUCTION_SEQUENCE Save_reg::codegen() const {
+        assert(reg == Register::EBP);
+        BEGIN_INSTRUCTIONS;
+        ADD_INSTRUCTION1(ins::Load_a__nn, (u16)(EBP_ADDRESS+0));
+        ADD_INSTRUCTION1(ins::Load__nn_a, (u16)(SAVE_REGISTER+0));
+        ADD_INSTRUCTION1(ins::Load_a__nn, (u16)(EBP_ADDRESS+1));
+        ADD_INSTRUCTION1(ins::Load__nn_a, (u16)(SAVE_REGISTER+1));
+        ADD_INSTRUCTION1(ins::Load_a__nn, (u16)(EBP_ADDRESS+2));
+        ADD_INSTRUCTION1(ins::Load__nn_a, (u16)(SAVE_REGISTER+2));
+        ADD_INSTRUCTION1(ins::Load_a__nn, (u16)(EBP_ADDRESS+3));
+        ADD_INSTRUCTION1(ins::Load__nn_a, (u16)(SAVE_REGISTER+3));
+        END_INSTRUCTIONS;
+    }
+
+    INSTRUCTION_SEQUENCE Load_reg::codegen() const {
+        assert(reg == Register::EBP);
+        BEGIN_INSTRUCTIONS;
+        ADD_INSTRUCTION1(ins::Load_a__nn, (u16)(SAVE_REGISTER+0));
+        ADD_INSTRUCTION1(ins::Load__nn_a, (u16)(EBP_ADDRESS+0));
+        ADD_INSTRUCTION1(ins::Load_a__nn, (u16)(SAVE_REGISTER+1));
+        ADD_INSTRUCTION1(ins::Load__nn_a, (u16)(EBP_ADDRESS+1));
+        ADD_INSTRUCTION1(ins::Load_a__nn, (u16)(SAVE_REGISTER+2));
+        ADD_INSTRUCTION1(ins::Load__nn_a, (u16)(EBP_ADDRESS+2));
+        ADD_INSTRUCTION1(ins::Load_a__nn, (u16)(SAVE_REGISTER+3));
+        ADD_INSTRUCTION1(ins::Load__nn_a, (u16)(EBP_ADDRESS+3));
+        END_INSTRUCTIONS;
+    }
 
     INSTRUCTION_SEQUENCE Push_reg::codegen() const {
         assert(reg == Register::EBP);

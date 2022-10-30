@@ -7,10 +7,15 @@
 #include <string>
 #include <vector>
 
+#define DEFAULT_CODEGEN std::vector<std::unique_ptr<GBInstructionBase>> codegen() const override
+
 namespace x86 {
 
-    static constexpr u16 EBP_ADDRESS = 0x0000;
-    static constexpr u16 ESP_ADDRESS = 0x0004;
+    static constexpr u16 SAVE_REGISTER = 0x0000;
+
+    static constexpr u16 REGISTER_BASE_ADDRESS = 0x0100;
+    static constexpr u16 EBP_ADDRESS = REGISTER_BASE_ADDRESS + 0x0000;
+    static constexpr u16 ESP_ADDRESS = REGISTER_BASE_ADDRESS + 0x0004;
 
     enum class Register {
         EBP,
@@ -45,17 +50,31 @@ namespace x86 {
         virtual std::vector<std::unique_ptr<GBInstructionBase>> codegen() const = 0;
     };
 
+    // HelperInstructions
+    struct Save_reg final : public InstructionBase {
+        explicit Save_reg(Register reg) : reg(reg) {}
+        Register reg;
+        DEFAULT_CODEGEN;
+    };
+
+    struct Load_reg final : public InstructionBase {
+        explicit Load_reg(Register reg) : reg(reg) {}
+        Register reg;
+        DEFAULT_CODEGEN;
+    };
+
+    // x86 instructions
     struct Push_reg final : public InstructionBase {
         explicit Push_reg(Register reg) : reg(reg) {}
         Register reg;
-        std::vector<std::unique_ptr<GBInstructionBase>> codegen() const override;
+        DEFAULT_CODEGEN;
     };
 
     struct Mov_reg_reg final : public InstructionBase {
         explicit Mov_reg_reg(Register dst, Register src) : dst(dst), src(src) {}
         Register dst;
         Register src;
-        std::vector<std::unique_ptr<GBInstructionBase>> codegen() const override;
+        DEFAULT_CODEGEN;
     };
 
     struct Instruction {
