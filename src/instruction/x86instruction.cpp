@@ -19,34 +19,6 @@
 
 namespace x86 {
 
-    INSTRUCTION_SEQUENCE Save_reg::codegen() const {
-        assert(reg == Register::EBP);
-        BEGIN_INSTRUCTIONS;
-        ADD_INSTRUCTION1(ins::Load_a__nn, (u16)(EBP_ADDRESS+0));
-        ADD_INSTRUCTION1(ins::Load__nn_a, (u16)(SAVE_REGISTER+0));
-        ADD_INSTRUCTION1(ins::Load_a__nn, (u16)(EBP_ADDRESS+1));
-        ADD_INSTRUCTION1(ins::Load__nn_a, (u16)(SAVE_REGISTER+1));
-        ADD_INSTRUCTION1(ins::Load_a__nn, (u16)(EBP_ADDRESS+2));
-        ADD_INSTRUCTION1(ins::Load__nn_a, (u16)(SAVE_REGISTER+2));
-        ADD_INSTRUCTION1(ins::Load_a__nn, (u16)(EBP_ADDRESS+3));
-        ADD_INSTRUCTION1(ins::Load__nn_a, (u16)(SAVE_REGISTER+3));
-        END_INSTRUCTIONS;
-    }
-
-    INSTRUCTION_SEQUENCE Load_reg::codegen() const {
-        assert(reg == Register::EBP);
-        BEGIN_INSTRUCTIONS;
-        ADD_INSTRUCTION1(ins::Load_a__nn, (u16)(SAVE_REGISTER+0));
-        ADD_INSTRUCTION1(ins::Load__nn_a, (u16)(EBP_ADDRESS+0));
-        ADD_INSTRUCTION1(ins::Load_a__nn, (u16)(SAVE_REGISTER+1));
-        ADD_INSTRUCTION1(ins::Load__nn_a, (u16)(EBP_ADDRESS+1));
-        ADD_INSTRUCTION1(ins::Load_a__nn, (u16)(SAVE_REGISTER+2));
-        ADD_INSTRUCTION1(ins::Load__nn_a, (u16)(EBP_ADDRESS+2));
-        ADD_INSTRUCTION1(ins::Load_a__nn, (u16)(SAVE_REGISTER+3));
-        ADD_INSTRUCTION1(ins::Load__nn_a, (u16)(EBP_ADDRESS+3));
-        END_INSTRUCTIONS;
-    }
-
     INSTRUCTION_SEQUENCE Push_reg::codegen() const {
         assert(reg == Register::EBP);
         // Strong assumptions : ESP and ESP are 16 bit
@@ -71,12 +43,13 @@ namespace x86 {
     INSTRUCTION_SEQUENCE Mov_reg_reg::codegen() const {
         assert(dst == Register::EBP);
         assert(src == Register::ESP);
+        u16 dstAddress = EBP_ADDRESS;
+        u16 srcAddress = ESP_ADDRESS;
         BEGIN_INSTRUCTIONS;
-        ADD_INSTRUCTION2(ins::Load_r16_nn, R16::BC, ESP_ADDRESS);
-        ADD_INSTRUCTION2(ins::Load_r8_r8, R8::A, R8::B);
-        ADD_INSTRUCTION1(ins::Load__nn_a, ESP_ADDRESS);
-        ADD_INSTRUCTION2(ins::Load_r8_r8, R8::A, R8::C);
-        ADD_INSTRUCTION1(ins::Load__nn_a, (u16)(ESP_ADDRESS+1));
+        for(u16 i = 0; i < 4; ++i) {
+            ADD_INSTRUCTION1(ins::Load_a__nn, (u16)(srcAddress+i));
+            ADD_INSTRUCTION1(ins::Load__nn_a, (u16)(dstAddress+i));
+        }
         END_INSTRUCTIONS;
     }
 

@@ -50,19 +50,6 @@ namespace x86 {
         virtual std::vector<std::unique_ptr<GBInstructionBase>> codegen() const = 0;
     };
 
-    // HelperInstructions
-    struct Save_reg final : public InstructionBase {
-        explicit Save_reg(Register reg) : reg(reg) {}
-        Register reg;
-        DEFAULT_CODEGEN;
-    };
-
-    struct Load_reg final : public InstructionBase {
-        explicit Load_reg(Register reg) : reg(reg) {}
-        Register reg;
-        DEFAULT_CODEGEN;
-    };
-
     // x86 instructions
     struct Push_reg final : public InstructionBase {
         explicit Push_reg(Register reg) : reg(reg) {}
