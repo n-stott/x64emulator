@@ -1,7 +1,7 @@
 #ifndef X86INSTRUCTION_H
 #define X86INSTRUCTION_H
 
-#include "instructions/instructions.h"
+#include "gbinstructions/instructions.h"
 #include "utils/utils.h"
 #include <memory>
 #include <string>
