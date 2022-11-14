@@ -25,18 +25,18 @@ namespace x86 {
         // Probably less in practice anyway due to memory limitations
         // They are padded with zeroes
         BEGIN_INSTRUCTIONS;
-        ADD_INSTRUCTION2(ins::Load_r16_nn, R16::BC, EBP_ADDRESS);
-        ADD_INSTRUCTION2(ins::Load_r16_nn, R16::HL, ESP_ADDRESS);
+        ADD_INSTRUCTION2(gb::Load_r16_nn, gb::R16::BC, EBP_ADDRESS);
+        ADD_INSTRUCTION2(gb::Load_r16_nn, gb::R16::HL, ESP_ADDRESS);
         for(int i = 0; i < 4; ++i) {
-            ADD_INSTRUCTION1(ins::Load_a__r16, R16::BC);
-            ADD_INSTRUCTION1(ins::Load__r16_a, R16::HL);
-            ADD_INSTRUCTION1(ins::Inc_r16, R16::BC);
-            ADD_INSTRUCTION1(ins::Inc_r16, R16::HL);
+            ADD_INSTRUCTION1(gb::Load_a__r16, gb::R16::BC);
+            ADD_INSTRUCTION1(gb::Load__r16_a, gb::R16::HL);
+            ADD_INSTRUCTION1(gb::Inc_r16, gb::R16::BC);
+            ADD_INSTRUCTION1(gb::Inc_r16, gb::R16::HL);
         }
-        ADD_INSTRUCTION2(ins::Load_r8_r8, R8::A, R8::H);
-        ADD_INSTRUCTION1(ins::Load__nn_a, ESP_ADDRESS);
-        ADD_INSTRUCTION2(ins::Load_r8_r8, R8::A, R8::L);
-        ADD_INSTRUCTION1(ins::Load__nn_a, (u16)(ESP_ADDRESS+1));
+        ADD_INSTRUCTION2(gb::Load_r8_r8, gb::R8::A, gb::R8::H);
+        ADD_INSTRUCTION1(gb::Load__nn_a, ESP_ADDRESS);
+        ADD_INSTRUCTION2(gb::Load_r8_r8, gb::R8::A, gb::R8::L);
+        ADD_INSTRUCTION1(gb::Load__nn_a, (u16)(ESP_ADDRESS+1));
         END_INSTRUCTIONS;
     }
 
@@ -47,8 +47,8 @@ namespace x86 {
         u16 srcAddress = ESP_ADDRESS;
         BEGIN_INSTRUCTIONS;
         for(u16 i = 0; i < 4; ++i) {
-            ADD_INSTRUCTION1(ins::Load_a__nn, (u16)(srcAddress+i));
-            ADD_INSTRUCTION1(ins::Load__nn_a, (u16)(dstAddress+i));
+            ADD_INSTRUCTION1(gb::Load_a__nn, (u16)(srcAddress+i));
+            ADD_INSTRUCTION1(gb::Load__nn_a, (u16)(dstAddress+i));
         }
         END_INSTRUCTIONS;
     }
