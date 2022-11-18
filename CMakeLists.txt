@@ -23,7 +23,8 @@ target_link_options(call1 PUBLIC ${LD_OPTIONS})
 
 
 add_executable(translator 
-    src/instruction/x86instruction.cpp    
+    src/translation/x86instruction.cpp
+    src/main.cpp
 )
 target_compile_options(translator PUBLIC -fpic -Wall -Wextra -Wpedantic -pedantic -Werror -Wno-sign-compare -Wno-braced-scalar-init -Wimplicit-fallthrough)
 target_include_directories(translator PUBLIC include)

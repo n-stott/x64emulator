@@ -1,3 +1,4 @@
+#if 0
 #include "instruction/x86instruction.h"
 #include "fmt/core.h"
 #include <cassert>
@@ -56,8 +57,6 @@ namespace x86 {
 
 }
 
-
-
 int main() {
     x86::Push_reg push_ebp { x86::Register::EBP };
     auto v0 = push_ebp.codegen();
@@ -67,3 +66,5 @@ int main() {
     auto v1 = mov_ebp_esp.codegen();
     fmt::print("Codegen yields {} instructions\n", v1.size());
 }
+
+#endif

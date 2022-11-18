@@ -1,3 +1,4 @@
+#if 0
 #ifndef X86INSTRUCTION_H
 #define X86INSTRUCTION_H
 
@@ -72,4 +73,5 @@ namespace x86 {
 
 }
 
+#endif
 #endif
