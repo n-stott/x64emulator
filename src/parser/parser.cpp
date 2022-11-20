@@ -61,7 +61,7 @@ namespace x86 {
 
         std::string_view instructionString = parts[2];
         auto ptr = parseInstruction(address, instructionString);
-        fmt::print("{}\n", (!!ptr ? "ok" : "fail"));
+        fmt::print("{:40} : {}\n", instructionString, (!!ptr ? "ok" : "fail"));
         return ptr;
     }
 
@@ -71,9 +71,10 @@ namespace x86 {
         std::string_view rest = strip(nameEnd < s.size() ? s.substr(nameEnd) : "");
         std::vector<std::string_view> operandsAndDecorator = split(rest, "<>");
         std::string_view operands = (operandsAndDecorator.size() > 0 ? operandsAndDecorator[0] : "");
-        std::string_view decorator = (operandsAndDecorator.size() > 1 ? operandsAndDecorator[1] : "");
-        fmt::print(" _{}_ _{}_ _{}_\n", name, operands, decorator);
+        // std::string_view decorator = (operandsAndDecorator.size() > 1 ? operandsAndDecorator[1] : "");
+        // fmt::print(" _{}_ _{}_ _{}_\n", name, operands, decorator);
         if(name == "push") return parsePush(address, operands);
+        if(name == "mov") return parseMov(address, operands);
         return {};
     }
 
@@ -87,10 +88,20 @@ namespace x86 {
         return {};
     }
 
-    std::unique_ptr<X86Instruction> InstructionParser::parsePush(u32 address, std::string_view operands) {
-        auto r32 = asRegister(operands);
-        assert(!!r32);
+    std::unique_ptr<X86Instruction> InstructionParser::parsePush(u32 address, std::string_view operandString) {
+        auto r32 = asRegister(operandString);
+        if(!r32) return {};
         return make_wrapper<Push<R32>>(address, Push<R32>{r32.value()});
+    }
+
+    std::unique_ptr<X86Instruction> InstructionParser::parseMov(u32 address, std::string_view operandsString) {
+        std::vector<std::string_view> operands = split(operandsString, ',');
+        assert(operands.size() == 2);
+        auto r32dst = asRegister(operands[0]);
+        auto r32src = asRegister(operands[1]);
+        if(!r32dst) return {};
+        if(!r32src) return {};
+        return make_wrapper<Mov<R32, R32>>(address, Mov<R32, R32>{r32dst.value(), r32src.value()});
     }
 
 }
