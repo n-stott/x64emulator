@@ -1,0 +1,96 @@
+#include "parser/parser.h"
+#include <cassert>
+#include <cstdlib>
+#include <optional>
+#include <vector>
+#include <fmt/core.h>
+
+namespace x86 {
+
+    std::vector<std::string_view> split(std::string_view sv, char separator) {
+        std::vector<std::string_view> result;
+        size_t pos = 0;
+        size_t next = 0;
+        while(next != sv.size()) {
+            next = sv.find(separator, pos);
+            if(next == std::string::npos) next = sv.size();
+            result.push_back(std::string_view(sv.begin()+pos, next-pos));
+            pos = next+1;
+        }
+        return result;
+    }
+
+    std::vector<std::string_view> split(std::string_view sv, std::string_view separators) {
+        std::vector<std::string_view> result;
+        size_t pos = 0;
+        size_t next = 0;
+        while(pos <= next && next != sv.size()) {
+            size_t next = std::string::npos;
+            for(char separator : separators) next = std::min(next, sv.find(separator, pos));
+            if(next == std::string::npos) next = sv.size();
+            result.push_back(std::string_view(sv.begin()+pos, next-pos));
+            pos = next+1;
+        }
+        return result;
+    }
+
+    std::string_view strip(std::string_view sv) {
+        const char* skippedCharacters = " \n\t";
+        size_t first = sv.find_first_not_of(skippedCharacters);
+        size_t last = sv.find_last_not_of(skippedCharacters);
+        if(first != std::string::npos && last != std::string::npos) {
+            return sv.substr(first, last+1-first);
+        } else {
+            return "";
+        }
+    }
+
+    std::unique_ptr<X86Instruction> InstructionParser::parseInstructionLine(std::string_view s) {
+        std::vector<std::string_view> parts = split(s, '\t');
+        assert(parts.size() == 3);
+        // for(auto sv : parts) {
+        //     auto stripped = strip(sv);
+        //     fmt::print("_{}_  ", stripped);
+        // }
+        // fmt::print("\n");
+
+        std::string_view addressString = parts[0];
+        assert(addressString.back() == ':');
+
+        u32 address = std::strtoul(addressString.data(), nullptr, 16);
+
+        std::string_view instructionString = parts[2];
+        auto ptr = parseInstruction(address, instructionString);
+        fmt::print("{}\n", (!!ptr ? "ok" : "fail"));
+        return ptr;
+    }
+
+    std::unique_ptr<X86Instruction> InstructionParser::parseInstruction(u32 address, std::string_view s) {
+        size_t nameEnd = s.find_first_of(' ');
+        std::string_view name = strip(nameEnd < s.size() ? s.substr(0, nameEnd) : s);
+        std::string_view rest = strip(nameEnd < s.size() ? s.substr(nameEnd) : "");
+        std::vector<std::string_view> operandsAndDecorator = split(rest, "<>");
+        std::string_view operands = (operandsAndDecorator.size() > 0 ? operandsAndDecorator[0] : "");
+        std::string_view decorator = (operandsAndDecorator.size() > 1 ? operandsAndDecorator[1] : "");
+        fmt::print(" _{}_ _{}_ _{}_\n", name, operands, decorator);
+        if(name == "push") return parsePush(address, operands);
+        return {};
+    }
+
+    std::optional<R32> asRegister(std::string_view sv) {
+        if(sv == "ebp") return R32::EBP;
+        if(sv == "esp") return R32::ESP;
+        if(sv == "eax") return R32::EAX;
+        if(sv == "ebx") return R32::EBX;
+        if(sv == "ecx") return R32::ECX;
+        if(sv == "edx") return R32::EDX;
+        return {};
+    }
+
+    std::unique_ptr<X86Instruction> InstructionParser::parsePush(u32 address, std::string_view operands) {
+        auto r32 = asRegister(operands);
+        assert(!!r32);
+        return make_wrapper<Push<R32>>(address, Push<R32>{r32.value()});
+    }
+
+}
