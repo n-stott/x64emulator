@@ -74,11 +74,12 @@ namespace x86 {
         std::string_view name = strip(nameEnd < s.size() ? s.substr(0, nameEnd) : s);
         std::string_view rest = strip(nameEnd < s.size() ? s.substr(nameEnd) : "");
         std::vector<std::string_view> operandsAndDecorator = split(rest, "<>");
-        std::string_view operands = (operandsAndDecorator.size() > 0 ? operandsAndDecorator[0] : "");
-        std::string_view decorator = (operandsAndDecorator.size() > 1 ? operandsAndDecorator[1] : "");
+        std::string_view operands = strip(operandsAndDecorator.size() > 0 ? operandsAndDecorator[0] : "");
+        std::string_view decorator = strip(operandsAndDecorator.size() > 1 ? operandsAndDecorator[1] : "");
         // fmt::print(" _{}_ _{}_ _{}_\n", name, operands, decorator);
         if(name == "push") return parsePush(address, operands);
         if(name == "mov") return parseMov(address, operands);
+        if(name == "add") return parseAdd(address, operands);
         if(name == "sub") return parseSub(address, operands);
         if(name == "call") return parseCall(address, operands, decorator);
         return {};
@@ -100,6 +101,7 @@ namespace x86 {
         if(sv.size() > 2) return {};
         u8 immediate = 0;
         auto result = std::from_chars(sv.data(), sv.data()+2, immediate, 16);
+        if(result.ptr != sv.data()+2) return {};
         assert(result.ec == std::errc{});
         return immediate;
     }
@@ -109,7 +111,8 @@ namespace x86 {
         if(sv.size() == 0) return {};
         if(sv.size() > 8) return {};
         u32 immediate = 0;
-        auto result = std::from_chars(sv.data(), sv.data()+2, immediate, 16);
+        auto result = std::from_chars(sv.data(), sv.data()+sv.size(), immediate, 16);
+        if(result.ptr != sv.data()+sv.size()) return {};
         assert(result.ec == std::errc{});
         return immediate;
     }
@@ -128,6 +131,16 @@ namespace x86 {
         if(!r32dst) return {};
         if(!r32src) return {};
         return make_wrapper<Mov<R32, R32>>(address, Mov<R32, R32>{r32dst.value(), r32src.value()});
+    }
+
+    std::unique_ptr<X86Instruction> InstructionParser::parseAdd(u32 address, std::string_view operandsString) {
+        std::vector<std::string_view> operands = split(operandsString, ',');
+        assert(operands.size() == 2);
+        auto r32dst = asRegister(operands[0]);
+        auto imm32src = asImmediate32(operands[1]);
+        if(!r32dst) return {};
+        if(!imm32src) return {};
+        return make_wrapper<Add<R32, u32>>(address, Add<R32, u32>{r32dst.value(), imm32src.value()});
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseSub(u32 address, std::string_view operandsString) {

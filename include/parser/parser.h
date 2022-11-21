@@ -44,6 +44,7 @@ namespace x86 {
 
         static std::unique_ptr<X86Instruction> parsePush(u32 address, std::string_view operands);
         static std::unique_ptr<X86Instruction> parseMov(u32 address, std::string_view operands);
+        static std::unique_ptr<X86Instruction> parseAdd(u32 address, std::string_view operands);
         static std::unique_ptr<X86Instruction> parseSub(u32 address, std::string_view operands);
         static std::unique_ptr<X86Instruction> parseCall(u32 address, std::string_view operands, std::string_view decorator);
 
