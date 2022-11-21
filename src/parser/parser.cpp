@@ -107,7 +107,7 @@ namespace x86 {
     }
 
     std::optional<u32> asImmediate32(std::string_view sv) {
-        if(sv[0] == '0' && sv[1] == 'x') sv = sv.substr(2);
+        if(sv.size() >= 2 && sv[0] == '0' && sv[1] == 'x') sv = sv.substr(2);
         if(sv.size() == 0) return {};
         if(sv.size() > 8) return {};
         u32 immediate = 0;
@@ -115,6 +115,51 @@ namespace x86 {
         if(result.ptr != sv.data()+sv.size()) return {};
         assert(result.ec == std::errc{});
         return immediate;
+    }
+
+    std::optional<i32> asDisplacement(std::string_view sv) {
+        if(sv.size() == 0) return {};
+        i32 sign = +1;
+        if(sv[0] == '+') {
+            // ok
+            sv = sv.substr(1);
+        } else if(sv[0] == '-') {
+            sign = -1;
+            sv = sv.substr(1);
+        } else {
+            return {};
+        }
+        if(sv.size() >= 2 && sv[0] == '0' && sv[1] == 'x') sv = sv.substr(2);
+        if(sv.size() == 0) return {};
+        if(sv.size() > 8) return {};
+        i32 immediate = 0;
+        auto result = std::from_chars(sv.data(), sv.data()+sv.size(), immediate, 16);
+        if(result.ptr != sv.data()+sv.size()) return {};
+        assert(result.ec == std::errc{});
+        return sign*immediate;
+    }
+
+    bool isEncoding(std::string_view sv) {
+        return sv.size() >= 2 && sv.front() == '[' && sv.back() == ']';
+    }
+
+    std::optional<BD> asBaseAndDisplacement(std::string_view sv) {
+        if(!isEncoding(sv)) return {};
+        sv = sv.substr(1, sv.size()-2);
+        auto base = asRegister(sv.substr(0, 3));
+        auto displacement = asDisplacement(sv.substr(3));
+        if(base && displacement) return BD{base.value(), displacement.value()};
+        return {};
+    }
+
+    std::optional<Addr<Size::DWORD, BD>> asDoubleBD(std::string_view sv) {
+        std::vector<std::string_view> parts = split(sv, ' ');
+        if(parts.size() != 3) return {};
+        if(parts[0] != "DWORD") return {};
+        if(parts[1] != "PTR") return {};
+        auto bd = asBaseAndDisplacement(parts[2]);
+        if(!bd) return {};
+        return Addr<Size::DWORD, BD>{bd.value()};
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parsePush(u32 address, std::string_view operandString) {
@@ -128,7 +173,11 @@ namespace x86 {
         assert(operands.size() == 2);
         auto r32dst = asRegister(operands[0]);
         auto r32src = asRegister(operands[1]);
+        auto addrDoubleBDdst = asDoubleBD(operands[0]);
+        auto addrDoubleBDsrc = asDoubleBD(operands[1]);
         if(r32dst && r32src) return make_wrapper<Mov<R32, R32>>(address, Mov<R32, R32>{r32dst.value(), r32src.value()});
+        if(addrDoubleBDdst && r32src) return make_wrapper<Mov<Addr<Size::DWORD, BD>, R32>>(address, Mov<Addr<Size::DWORD, BD>, R32>{addrDoubleBDdst.value(), r32src.value()});
+        if(r32dst && addrDoubleBDsrc) return make_wrapper<Mov<R32, Addr<Size::DWORD, BD>>>(address, Mov<R32, Addr<Size::DWORD, BD>>{r32dst.value(), addrDoubleBDsrc.value()});
         return {};
     }
 
@@ -136,8 +185,10 @@ namespace x86 {
         std::vector<std::string_view> operands = split(operandsString, ',');
         assert(operands.size() == 2);
         auto r32dst = asRegister(operands[0]);
+        auto r32src = asRegister(operands[1]);
         auto imm32src = asImmediate32(operands[1]);
         if(r32dst && imm32src) return make_wrapper<Add<R32, u32>>(address, Add<R32, u32>{r32dst.value(), imm32src.value()});
+        if(r32dst && r32src) return make_wrapper<Add<R32, R32>>(address, Add<R32, R32>{r32dst.value(), r32src.value()});
         return {};
     }
 
