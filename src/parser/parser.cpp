@@ -1,5 +1,6 @@
 #include "parser/parser.h"
 #include <cassert>
+#include <charconv>
 #include <cstdlib>
 #include <optional>
 #include <vector>
@@ -57,7 +58,10 @@ namespace x86 {
         std::string_view addressString = parts[0];
         assert(addressString.back() == ':');
 
-        u32 address = std::strtoul(addressString.data(), nullptr, 16);
+        u32 address = 0;
+        auto result = std::from_chars(addressString.data(), addressString.data()+addressString.size(), address, 16);
+        assert(result.ec == std::errc{});
+        
 
         std::string_view instructionString = parts[2];
         auto ptr = parseInstruction(address, instructionString);
@@ -75,6 +79,7 @@ namespace x86 {
         // fmt::print(" _{}_ _{}_ _{}_\n", name, operands, decorator);
         if(name == "push") return parsePush(address, operands);
         if(name == "mov") return parseMov(address, operands);
+        if(name == "sub") return parseSub(address, operands);
         return {};
     }
 
@@ -86,6 +91,16 @@ namespace x86 {
         if(sv == "ecx") return R32::ECX;
         if(sv == "edx") return R32::EDX;
         return {};
+    }
+
+    std::optional<u8> asImmediate8(std::string_view sv) {
+        if(sv.size() < 3) return {};
+        if(sv.size() >= 5) return {};
+        if(sv[0] != '0' || sv[1] != 'x') return {};
+        u8 immediate = 0;
+        auto result = std::from_chars(sv.data()+2, sv.data()+4, immediate, 16);
+        assert(result.ec == std::errc{});
+        return immediate;
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parsePush(u32 address, std::string_view operandString) {
@@ -102,6 +117,16 @@ namespace x86 {
         if(!r32dst) return {};
         if(!r32src) return {};
         return make_wrapper<Mov<R32, R32>>(address, Mov<R32, R32>{r32dst.value(), r32src.value()});
+    }
+
+    std::unique_ptr<X86Instruction> InstructionParser::parseSub(u32 address, std::string_view operandsString) {
+        std::vector<std::string_view> operands = split(operandsString, ',');
+        assert(operands.size() == 2);
+        auto r32dst = asRegister(operands[0]);
+        auto imm8src = asImmediate8(operands[1]);
+        if(!r32dst) return {};
+        if(!imm8src) return {};
+        return make_wrapper<Sub<R32, SignExtended<u8>>>(address, Sub<R32, SignExtended<u8>>{r32dst.value(), SignExtended<u8>{imm8src.value()}});
     }
 
 }
