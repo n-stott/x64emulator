@@ -75,11 +75,12 @@ namespace x86 {
         std::string_view rest = strip(nameEnd < s.size() ? s.substr(nameEnd) : "");
         std::vector<std::string_view> operandsAndDecorator = split(rest, "<>");
         std::string_view operands = (operandsAndDecorator.size() > 0 ? operandsAndDecorator[0] : "");
-        // std::string_view decorator = (operandsAndDecorator.size() > 1 ? operandsAndDecorator[1] : "");
+        std::string_view decorator = (operandsAndDecorator.size() > 1 ? operandsAndDecorator[1] : "");
         // fmt::print(" _{}_ _{}_ _{}_\n", name, operands, decorator);
         if(name == "push") return parsePush(address, operands);
         if(name == "mov") return parseMov(address, operands);
         if(name == "sub") return parseSub(address, operands);
+        if(name == "call") return parseCall(address, operands, decorator);
         return {};
     }
 
@@ -94,11 +95,21 @@ namespace x86 {
     }
 
     std::optional<u8> asImmediate8(std::string_view sv) {
-        if(sv.size() < 3) return {};
-        if(sv.size() >= 5) return {};
-        if(sv[0] != '0' || sv[1] != 'x') return {};
+        if(sv[0] == '0' && sv[1] == 'x') sv = sv.substr(2);
+        if(sv.size() == 0) return {};
+        if(sv.size() > 2) return {};
         u8 immediate = 0;
-        auto result = std::from_chars(sv.data()+2, sv.data()+4, immediate, 16);
+        auto result = std::from_chars(sv.data(), sv.data()+2, immediate, 16);
+        assert(result.ec == std::errc{});
+        return immediate;
+    }
+
+    std::optional<u32> asImmediate32(std::string_view sv) {
+        if(sv[0] == '0' && sv[1] == 'x') sv = sv.substr(2);
+        if(sv.size() == 0) return {};
+        if(sv.size() > 8) return {};
+        u32 immediate = 0;
+        auto result = std::from_chars(sv.data(), sv.data()+2, immediate, 16);
         assert(result.ec == std::errc{});
         return immediate;
     }
@@ -127,6 +138,12 @@ namespace x86 {
         if(!r32dst) return {};
         if(!imm8src) return {};
         return make_wrapper<Sub<R32, SignExtended<u8>>>(address, Sub<R32, SignExtended<u8>>{r32dst.value(), SignExtended<u8>{imm8src.value()}});
+    }
+
+    std::unique_ptr<X86Instruction> InstructionParser::parseCall(u32 address, std::string_view operandsString, std::string_view decorator) {
+        auto imm32 = asImmediate32(operandsString);
+        if(!imm32) return {};
+        return make_wrapper<CallDirect>(address, CallDirect{imm32.value(), std::string(decorator)});
     }
 
 }
