@@ -103,6 +103,7 @@ namespace x86 {
         if(name == "push") return parsePush(address, operands);
         if(name == "pop") return parsePop(address, operands);
         if(name == "mov") return parseMov(address, operands);
+        if(name == "lea") return parseLea(address, operands);
         if(name == "add") return parseAdd(address, operands);
         if(name == "sub") return parseSub(address, operands);
         if(name == "and") return parseAnd(address, operands);
@@ -260,6 +261,17 @@ namespace x86 {
         if(addrDoubleBdst && r32src) return make_wrapper<Mov<Addr<Size::DWORD, B>, R32>>(address, addrDoubleBdst.value(), r32src.value());
         if(r32dst && addrDoubleBsrc) return make_wrapper<Mov<R32, Addr<Size::DWORD, B>>>(address, r32dst.value(), addrDoubleBsrc.value());
         if(addrDoubleBDdst && imm32src) return make_wrapper<Mov<Addr<Size::DWORD, BD>, u32>>(address, addrDoubleBDdst.value(), imm32src.value());
+        return {};
+    }
+
+    std::unique_ptr<X86Instruction> InstructionParser::parseLea(u32 address, std::string_view operandsString) {
+        std::vector<std::string_view> operands = split(operandsString, ',');
+        assert(operands.size() == 2);
+        auto r32dst = asRegister32(operands[0]);
+        auto BDsrc = asBaseAndDisplacement(operands[1]);
+        auto Bsrc = asBase(operands[1]);
+        if(r32dst && BDsrc) return make_wrapper<Lea<R32, BD>>(address, r32dst.value(), BDsrc.value());
+        if(r32dst && Bsrc) return make_wrapper<Lea<R32, B>>(address, r32dst.value(), Bsrc.value());
         return {};
     }
 

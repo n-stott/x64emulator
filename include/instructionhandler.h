@@ -30,6 +30,9 @@ namespace x86 {
         virtual void exec(Mov<Addr<Size::DWORD, BD>, R32>) = 0;
         virtual void exec(Mov<R32, Addr<Size::DWORD, BD>>) = 0;
 
+        virtual void exec(Lea<R32, B>) = 0;
+        virtual void exec(Lea<R32, BD>) = 0;
+
         virtual void exec(Push<R32>) = 0;
         virtual void exec(Push<Addr<Size::DWORD, BD>>) = 0;
         virtual void exec(Push<SignExtended<u8>>) = 0;

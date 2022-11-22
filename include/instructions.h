@@ -98,6 +98,12 @@ namespace x86 {
         Src src;
     };
 
+    template<typename Dst, typename Src>
+    struct Lea {
+        Dst dst;
+        Src src;
+    };
+
     template<typename Src>
     struct Push {
         Src src;

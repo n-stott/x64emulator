@@ -36,17 +36,24 @@ namespace utils {
         return "";
     }
 
+    inline std::string toString(const B& b) {
+        return fmt::format("[{}]", toString(b.base));
+    }
+
+    inline std::string toString(const BD& bd) {
+        return fmt::format("[{}{:+#x}]", toString(bd.base), bd.displacement);
+    }
+
     inline std::string toString(const Addr<Size::DWORD, B>& addr) {
-        return fmt::format("{} PTR [{}]", 
+        return fmt::format("{} PTR {}", 
                     "DWORD",
-                    toString(addr.encoding.base));
+                    toString(addr.encoding));
     }
 
     inline std::string toString(const Addr<Size::DWORD, BD>& addr) {
-        return fmt::format("{} PTR [{}{:+#x}]", 
+        return fmt::format("{} PTR {}", 
                     "DWORD",
-                    toString(addr.encoding.base),
-                    addr.encoding.displacement);
+                    toString(addr.encoding));
     }
 
     inline std::string toString(const Push<R32>& ins) {
@@ -102,6 +109,20 @@ namespace utils {
                     "mov",
                     toString(ins.dst),
                     ins.src);
+    }
+
+    inline std::string toString(const Lea<R32, B>& ins) {
+        return fmt::format("{:7}{},{}",
+                    "lea",
+                    toString(ins.dst),
+                    toString(ins.src));
+    }
+
+    inline std::string toString(const Lea<R32, BD>& ins) {
+        return fmt::format("{:7}{},{}",
+                    "lea",
+                    toString(ins.dst),
+                    toString(ins.src));
     }
 
     inline std::string toString(const Add<R32, u32>& ins) {
