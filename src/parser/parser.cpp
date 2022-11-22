@@ -2,7 +2,10 @@
 #include <cassert>
 #include <charconv>
 #include <cstdlib>
+#include <fstream>
 #include <optional>
+#include <sstream>
+#include <string>
 #include <vector>
 #include <fmt/core.h>
 
@@ -46,9 +49,17 @@ namespace x86 {
         }
     }
 
+    void InstructionParser::parseFile(std::string filename) {
+        std::ifstream file(filename);
+        std::string line;
+        while (std::getline(file, line)) {
+            parseInstructionLine(strip(line));
+        }
+    }
+
     std::unique_ptr<X86Instruction> InstructionParser::parseInstructionLine(std::string_view s) {
         std::vector<std::string_view> parts = split(s, '\t');
-        assert(parts.size() == 3);
+        if(parts.size() != 3) return {};
         // for(auto sv : parts) {
         //     auto stripped = strip(sv);
         //     fmt::print("_{}_  ", stripped);

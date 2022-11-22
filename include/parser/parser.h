@@ -43,6 +43,7 @@ namespace x86 {
 
     class InstructionParser {
     public:
+        static void parseFile(std::string filename);
         static std::unique_ptr<X86Instruction> parseInstructionLine(std::string_view s);
 
     private:

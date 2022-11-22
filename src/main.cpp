@@ -23,8 +23,7 @@ void test_handler_compilation() {
     handler->exec(Ret{});
 }
 
-int main() {
-
+void test_parse_instruction() {
     x86::InstructionParser::parseInstructionLine("1189:	55                   	push   ebp");
     x86::InstructionParser::parseInstructionLine("118a:	89 e5                	mov    ebp,esp");
     x86::InstructionParser::parseInstructionLine("118c:	83 ec 10             	sub    esp,0x10");
@@ -39,4 +38,8 @@ int main() {
     x86::InstructionParser::parseInstructionLine("11b2:	8b 45 f4             	mov    eax,DWORD PTR [ebp-0xc]");
     x86::InstructionParser::parseInstructionLine("11b5:	c9                   	leave  ");
     x86::InstructionParser::parseInstructionLine("11b6:	c3                   	ret");
+}
+
+int main() {
+    x86::InstructionParser::parseFile("call0.dump");
 }
