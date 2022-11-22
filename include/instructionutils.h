@@ -1,0 +1,69 @@
+#ifndef INSTRUCTIONUTILS_H
+#define INSTRUCTIONUTILS_H
+
+#include "instructions.h"
+#include <string>
+#include <fmt/core.h>
+
+namespace x86 {
+namespace utils {
+
+    inline std::string toString(const R32& reg) {
+        switch(reg) {
+            case R32::EBP: return "ebp";
+            case R32::ESP: return "esp";
+            case R32::EDI: return "edi";
+            case R32::ESI: return "esi";
+            case R32::EAX: return "eax";
+            case R32::EBX: return "ebx";
+            case R32::ECX: return "ecx";
+            case R32::EDX: return "edx";
+        }
+        return "";
+    }
+
+
+    inline std::string toString(const Push<R32>& ins) {
+        return fmt::format("{:7}{}", "push", toString(ins.src));
+    }
+
+    inline std::string toString(const Mov<R32, R32>& ins) {
+        return fmt::format("{:7}{},{}", "mov", toString(ins.dst), toString(ins.src));
+    }
+
+    inline std::string toString(const Mov<Addr<Size::DWORD, BD>, R32>& ins) {
+        return fmt::format("{:7}DWORD PTR [{}{:#x}],{}",
+                    "mov",
+                    toString(ins.dst.encoding.base),
+                    ins.dst.encoding.displacement,
+                    toString(ins.src));
+    }
+
+    inline std::string toString(const Mov<R32, Addr<Size::DWORD, BD>>& ins) {
+        return fmt::format("{:7}{},DWORD PTR [{}{:#x}]",
+                    "mov",
+                    toString(ins.dst),
+                    toString(ins.src.encoding.base),
+                    ins.src.encoding.displacement);
+    }
+
+    inline std::string toString(const Add<R32, u32>& ins) {
+        return fmt::format("{:7}{},{:#x}", "add", toString(ins.dst), ins.src);
+    }
+
+    inline std::string toString(const Add<R32, R32>& ins) {
+        return fmt::format("{:7}{},{}", "add", toString(ins.dst), toString(ins.src));
+    }
+
+    inline std::string toString(const Sub<R32, SignExtended<u8>>& ins) {
+        return fmt::format("{:7}{},{:#x}", "sub", toString(ins.dst), ins.src.extendedValue);
+    }
+
+    inline std::string toString(const CallDirect& ins) {
+        return fmt::format("{:7}{:x} <{}>", "call", ins.symbolAddress, ins.symbolName);
+    }
+}
+}
+
+
+#endif

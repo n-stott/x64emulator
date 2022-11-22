@@ -25,8 +25,8 @@ namespace x86 {
         std::vector<std::string_view> result;
         size_t pos = 0;
         size_t next = 0;
-        while(pos <= next && next != sv.size()) {
-            size_t next = std::string::npos;
+        while(next != std::string::npos && next != sv.size()) {
+            next = std::string::npos;
             for(char separator : separators) next = std::min(next, sv.find(separator, pos));
             if(next == std::string::npos) next = sv.size();
             result.push_back(std::string_view(sv.begin()+pos, next-pos));
@@ -65,7 +65,7 @@ namespace x86 {
 
         std::string_view instructionString = parts[2];
         auto ptr = parseInstruction(address, instructionString);
-        fmt::print("{:40} : {}\n", instructionString, (!!ptr ? "ok" : "fail"));
+        fmt::print("{:40} {:40}: {}\n", instructionString, (!!ptr ? ptr->toString() : "???"), (!!ptr ? "ok" : "fail"));
         return ptr;
     }
 
@@ -76,7 +76,7 @@ namespace x86 {
         std::vector<std::string_view> operandsAndDecorator = split(rest, "<>");
         std::string_view operands = strip(operandsAndDecorator.size() > 0 ? operandsAndDecorator[0] : "");
         std::string_view decorator = strip(operandsAndDecorator.size() > 1 ? operandsAndDecorator[1] : "");
-        // fmt::print(" _{}_ _{}_ _{}_\n", name, operands, decorator);
+        // fmt::print("{} _{}_ _{}_ _{}_\n", operandsAndDecorator.size(), name, operands, decorator);
         if(name == "push") return parsePush(address, operands);
         if(name == "mov") return parseMov(address, operands);
         if(name == "add") return parseAdd(address, operands);
@@ -203,7 +203,7 @@ namespace x86 {
 
     std::unique_ptr<X86Instruction> InstructionParser::parseCall(u32 address, std::string_view operandsString, std::string_view decorator) {
         auto imm32 = asImmediate32(operandsString);
-        if(imm32) return make_wrapper<CallDirect>(address, CallDirect{imm32.value(), std::string(decorator)});
+        if(imm32) return make_wrapper<CallDirect>(address, CallDirect{imm32.value(), std::string(decorator.begin(), decorator.end())});
         return {};
     }
 

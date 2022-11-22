@@ -19,6 +19,8 @@ namespace x86 {
     enum class R32 {
         EBP,
         ESP,
+        EDI,
+        ESI,
         EAX,
         EBX,
         ECX,

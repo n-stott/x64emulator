@@ -4,6 +4,7 @@
 #include "utils/utils.h"
 #include "instructions.h"
 #include "instructionhandler.h"
+#include "instructionutils.h"
 #include <memory>
 #include <string_view>
 
@@ -13,6 +14,7 @@ namespace x86 {
         explicit X86Instruction(u32 address) : address(address) { }
         virtual ~X86Instruction() = default;
         virtual void exec(InstructionHandler* handler) = 0;
+        virtual std::string toString() const = 0;
 
         u32 address;
     };
@@ -25,6 +27,10 @@ namespace x86 {
 
         void exec(InstructionHandler* handler) override {
             return handler->exec(instruction);
+        }
+
+        virtual std::string toString() const override {
+            return x86::utils::toString(instruction);
         }
 
         Instruction instruction;
