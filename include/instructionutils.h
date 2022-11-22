@@ -39,6 +39,14 @@ namespace utils {
                     toString(ins.src));
     }
 
+    inline std::string toString(const Mov<Addr<Size::DWORD, BD>, u32>& ins) {
+        return fmt::format("{:7}DWORD PTR [{}{:#x}],{:#x}",
+                    "mov",
+                    toString(ins.dst.encoding.base),
+                    ins.dst.encoding.displacement,
+                    ins.src);
+    }
+
     inline std::string toString(const Mov<R32, Addr<Size::DWORD, BD>>& ins) {
         return fmt::format("{:7}{},DWORD PTR [{}{:#x}]",
                     "mov",

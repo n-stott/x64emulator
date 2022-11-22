@@ -175,8 +175,10 @@ namespace x86 {
         auto r32src = asRegister(operands[1]);
         auto addrDoubleBDdst = asDoubleBD(operands[0]);
         auto addrDoubleBDsrc = asDoubleBD(operands[1]);
+        auto imm32src = asImmediate32(operands[1]);
         if(r32dst && r32src) return make_wrapper<Mov<R32, R32>>(address, Mov<R32, R32>{r32dst.value(), r32src.value()});
         if(addrDoubleBDdst && r32src) return make_wrapper<Mov<Addr<Size::DWORD, BD>, R32>>(address, addrDoubleBDdst.value(), r32src.value());
+        if(addrDoubleBDdst && imm32src) return make_wrapper<Mov<Addr<Size::DWORD, BD>, u32>>(address, addrDoubleBDdst.value(), imm32src.value());
         if(r32dst && addrDoubleBDsrc) return make_wrapper<Mov<R32, Addr<Size::DWORD, BD>>>(address, r32dst.value(), addrDoubleBDsrc.value());
         return {};
     }
