@@ -49,7 +49,7 @@ namespace utils {
     }
 
     inline std::string toString(const Mov<Addr<Size::DWORD, BD>, u32>& ins) {
-        return fmt::format("{:7}DWORD PTR [{}{:#x}],{:#x}",
+        return fmt::format("{:7}DWORD PTR [{}{:#x}],{:+#x}",
                     "mov",
                     toString(ins.dst.encoding.base),
                     ins.dst.encoding.displacement,
@@ -57,7 +57,7 @@ namespace utils {
     }
 
     inline std::string toString(const Mov<R32, Addr<Size::DWORD, BD>>& ins) {
-        return fmt::format("{:7}{},DWORD PTR [{}{:#x}]",
+        return fmt::format("{:7}{},DWORD PTR [{}{:+#x}]",
                     "mov",
                     toString(ins.dst),
                     toString(ins.src.encoding.base),
@@ -81,7 +81,7 @@ namespace utils {
     }
 
     inline std::string toString(const CallIndirect<R32>& ins) {
-        return fmt::format("{:7}{:x}", "call", toString(ins.src));
+        return fmt::format("{:7}{}", "call", toString(ins.src));
     }
 
     inline std::string toString(const Ret&) {
@@ -97,7 +97,7 @@ namespace utils {
     }
 
     inline std::string toString(const Je& ins) {
-        return fmt::format("{:7}{:x} <{}>", "call", ins.symbolAddress, ins.symbolName);
+        return fmt::format("{:7}{:x} <{}>", "je", ins.symbolAddress, ins.symbolName);
     }
 }
 }

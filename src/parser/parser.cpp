@@ -84,8 +84,10 @@ namespace x86 {
         if(!ptr) {
             fmt::print("{:40} {:40}: {}\n", instructionString, "???", "fail");    
         } else {
-            // std::string parsedString = ptr->toString();
-            // fmt::print("{:40} {:40}: {}\n", instructionString, parsedString, (strip(instructionString) == strip(parsedString) ? "ok" : "fail"));    
+            std::string parsedString = ptr->toString();
+            if(strip(instructionString) != strip(parsedString)) {
+                fmt::print("{:40} {:40}: {}\n", instructionString, parsedString, "fail");
+            }
         }
         return ptr;
     }
