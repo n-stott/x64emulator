@@ -54,6 +54,9 @@ namespace x86 {
         static std::unique_ptr<X86Instruction> parseSub(u32 address, std::string_view operands);
         static std::unique_ptr<X86Instruction> parseCall(u32 address, std::string_view operands, std::string_view decorator);
 
+        static std::unique_ptr<X86Instruction> parseRet(u32 address, std::string_view operands);
+        static std::unique_ptr<X86Instruction> parseLeave(u32 address, std::string_view operands);
+
     };
 
 }

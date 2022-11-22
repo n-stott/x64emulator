@@ -70,6 +70,14 @@ namespace utils {
     inline std::string toString(const CallDirect& ins) {
         return fmt::format("{:7}{:x} <{}>", "call", ins.symbolAddress, ins.symbolName);
     }
+
+    inline std::string toString(const Ret&) {
+        return fmt::format("{:7}", "ret");
+    }
+
+    inline std::string toString(const Leave&) {
+        return fmt::format("{:7}", "leave");
+    }
 }
 }
 

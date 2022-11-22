@@ -82,6 +82,8 @@ namespace x86 {
         if(name == "add") return parseAdd(address, operands);
         if(name == "sub") return parseSub(address, operands);
         if(name == "call") return parseCall(address, operands, decorator);
+        if(name == "ret") return parseRet(address, operands);
+        if(name == "leave") return parseLeave(address, operands);
         return {};
     }
 
@@ -207,6 +209,17 @@ namespace x86 {
         auto imm32 = asImmediate32(operandsString);
         if(imm32) return make_wrapper<CallDirect>(address, imm32.value(), std::string(decorator.begin(), decorator.end()));
         return {};
+    }
+
+
+    std::unique_ptr<X86Instruction> InstructionParser::parseRet(u32 address, std::string_view operands) {
+        if(operands.size() > 0) return {};
+        return make_wrapper<Ret>(address);
+    }
+
+    std::unique_ptr<X86Instruction> InstructionParser::parseLeave(u32 address, std::string_view operands) {
+        if(operands.size() > 0) return {};
+        return make_wrapper<Leave>(address);
     }
 
 }
