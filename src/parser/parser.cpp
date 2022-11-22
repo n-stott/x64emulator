@@ -106,6 +106,7 @@ namespace x86 {
         if(name == "ret") return parseRet(address, operands);
         if(name == "leave") return parseLeave(address, operands);
         if(name == "test") return parseTest(address, operands);
+        if(name == "je") return parseJe(address, operands, decorator);
         return {};
     }
 
@@ -252,6 +253,12 @@ namespace x86 {
         auto r32src1 = asRegister(operands[0]);
         auto r32src2 = asRegister(operands[1]);
         if(r32src1 && r32src2) return make_wrapper<Test<R32, R32>>(address, r32src1.value(), r32src2.value());
+        return {};
+    }
+
+    std::unique_ptr<X86Instruction> InstructionParser::parseJe(u32 address, std::string_view operandsString, std::string_view decorator) {
+        auto imm32 = asImmediate32(operandsString);
+        if(imm32) return make_wrapper<Je>(address, imm32.value(), std::string(decorator.begin(), decorator.end()));
         return {};
     }
 

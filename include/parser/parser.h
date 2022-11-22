@@ -60,6 +60,8 @@ namespace x86 {
 
         static std::unique_ptr<X86Instruction> parseTest(u32 address, std::string_view operands);
 
+        static std::unique_ptr<X86Instruction> parseJe(u32 address, std::string_view operands, std::string_view decorator);
+
     };
 
 }

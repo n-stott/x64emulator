@@ -122,6 +122,11 @@ namespace x86 {
         Src1 src1;
         Src2 src2;
     };
+
+    struct Je {
+        u32 symbolAddress;
+        std::string symbolName;
+    };
 }
 
 #endif

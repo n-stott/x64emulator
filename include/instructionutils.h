@@ -91,6 +91,10 @@ namespace utils {
     inline std::string toString(const Test<R32, R32>& ins) {
         return fmt::format("{:7}{},{}", "test", toString(ins.src1), toString(ins.src2));
     }
+
+    inline std::string toString(const Je& ins) {
+        return fmt::format("{:7}{:x} <{}>", "call", ins.symbolAddress, ins.symbolName);
+    }
 }
 }
 
