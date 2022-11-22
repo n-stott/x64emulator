@@ -51,6 +51,10 @@ namespace x86 {
 
     void InstructionParser::parseFile(std::string filename) {
         std::ifstream file(filename);
+        if(!file.is_open()) {
+            fmt::print("Unable to open {}\n", filename);
+            return;
+        }
         std::string line;
         size_t total = 0;
         size_t success = 0;

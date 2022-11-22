@@ -41,5 +41,7 @@ void test_parse_instruction() {
 }
 
 int main() {
+    x86::InstructionParser::parseFile("add.dump");
     x86::InstructionParser::parseFile("call0.dump");
+    x86::InstructionParser::parseFile("call1.dump");
 }
