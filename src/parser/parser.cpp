@@ -101,6 +101,7 @@ namespace x86 {
         std::string_view decorator = strip(operandsAndDecorator.size() > 1 ? operandsAndDecorator[1] : "");
         // fmt::print("{} _{}_ _{}_ _{}_\n", operandsAndDecorator.size(), name, operands, decorator);
         if(name == "push") return parsePush(address, operands);
+        if(name == "pop") return parsePop(address, operands);
         if(name == "mov") return parseMov(address, operands);
         if(name == "add") return parseAdd(address, operands);
         if(name == "sub") return parseSub(address, operands);
@@ -194,6 +195,14 @@ namespace x86 {
         auto addrDoubleBDsrc = asDoubleBD(operandString);
         if(r32) return make_wrapper<Push<R32>>(address, r32.value());
         if(addrDoubleBDsrc) return make_wrapper<Push<Addr<Size::DWORD, BD>>>(address, addrDoubleBDsrc.value());
+        return {};
+    }
+
+    std::unique_ptr<X86Instruction> InstructionParser::parsePop(u32 address, std::string_view operandsString) {
+        auto r32 = asRegister(operandsString);
+        // auto addrDoubleBDsrc = asDoubleBD(operandString);
+        if(r32) return make_wrapper<Pop<R32>>(address, r32.value());
+        // if(addrDoubleBDsrc) return make_wrapper<Push<Addr<Size::DWORD, BD>>>(address, addrDoubleBDsrc.value());
         return {};
     }
 

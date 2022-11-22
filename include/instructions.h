@@ -92,6 +92,11 @@ namespace x86 {
         Src src;
     };
 
+    template<typename Src>
+    struct Pop {
+        Src dst;
+    };
+
     template<typename Dst, typename Src>
     struct Add {
         Dst dst;

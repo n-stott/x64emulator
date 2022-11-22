@@ -37,6 +37,10 @@ namespace utils {
         return fmt::format("{:7}{}", "push", toString(ins.src));
     }
 
+    inline std::string toString(const Pop<R32>& ins) {
+        return fmt::format("{:7}{}", "pop", toString(ins.dst));
+    }
+
     inline std::string toString(const Mov<R32, R32>& ins) {
         return fmt::format("{:7}{},{}", "mov", toString(ins.dst), toString(ins.src));
     }
