@@ -80,6 +80,14 @@ namespace utils {
         return fmt::format("{:7}{},{:#x}", "sub", toString(ins.dst), ins.src.extendedValue);
     }
 
+    inline std::string toString(const Xor<R32, u32>& ins) {
+        return fmt::format("{:7}{},{:#x}", "xor", toString(ins.dst), ins.src);
+    }
+
+    inline std::string toString(const Xor<R32, R32>& ins) {
+        return fmt::format("{:7}{},{}", "xor", toString(ins.dst), toString(ins.src));
+    }
+
     inline std::string toString(const CallDirect& ins) {
         return fmt::format("{:7}{:x} <{}>", "call", ins.symbolAddress, ins.symbolName);
     }

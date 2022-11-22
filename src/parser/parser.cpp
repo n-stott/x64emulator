@@ -105,6 +105,7 @@ namespace x86 {
         if(name == "mov") return parseMov(address, operands);
         if(name == "add") return parseAdd(address, operands);
         if(name == "sub") return parseSub(address, operands);
+        if(name == "xor") return parseXor(address, operands);
         if(name == "call") return parseCall(address, operands, decorator);
         if(name == "ret") return parseRet(address, operands);
         if(name == "leave") return parseLeave(address, operands);
@@ -116,6 +117,8 @@ namespace x86 {
     std::optional<R32> asRegister(std::string_view sv) {
         if(sv == "ebp") return R32::EBP;
         if(sv == "esp") return R32::ESP;
+        if(sv == "esi") return R32::ESI;
+        if(sv == "edi") return R32::EDI;
         if(sv == "eax") return R32::EAX;
         if(sv == "ebx") return R32::EBX;
         if(sv == "ecx") return R32::ECX;
@@ -238,6 +241,17 @@ namespace x86 {
         auto r32dst = asRegister(operands[0]);
         auto imm8src = asImmediate8(operands[1]);
         if(r32dst && imm8src) return make_wrapper<Sub<R32, SignExtended<u8>>>(address, r32dst.value(), SignExtended<u8>{imm8src.value()});
+        return {};
+    }
+
+    std::unique_ptr<X86Instruction> InstructionParser::parseXor(u32 address, std::string_view operandsString) {
+        std::vector<std::string_view> operands = split(operandsString, ',');
+        assert(operands.size() == 2);
+        auto r32dst = asRegister(operands[0]);
+        auto r32src = asRegister(operands[1]);
+        auto imm32src = asImmediate32(operands[1]);
+        if(r32dst && imm32src) return make_wrapper<Xor<R32, u32>>(address, r32dst.value(), imm32src.value());
+        if(r32dst && r32src) return make_wrapper<Xor<R32, R32>>(address, r32dst.value(), r32src.value());
         return {};
     }
 
