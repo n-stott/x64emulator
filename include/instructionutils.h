@@ -37,6 +37,10 @@ namespace utils {
         return "";
     }
 
+    inline std::string toString(const Count& count) {
+        return fmt::format("{:x}", count.count);
+    }
+
     inline std::string toString(const B& b) {
         return fmt::format("[{}]", toString(b.base));
     }
@@ -199,6 +203,22 @@ namespace utils {
 
     inline std::string toString(const Nop&) {
         return fmt::format("{:7}", "nop");
+    }
+
+    inline std::string toString(const Shr<R32, u32>& ins) {
+        return fmt::format("{:7}{},{:#x}", "shr", toString(ins.dst), ins.src);
+    }
+
+    inline std::string toString(const Shr<R32, Count>& ins) {
+        return fmt::format("{:7}{},{}", "shr", toString(ins.dst), toString(ins.src));
+    }
+
+    inline std::string toString(const Sar<R32, u32>& ins) {
+        return fmt::format("{:7}{},{:#x}", "sar", toString(ins.dst), ins.src);
+    }
+
+    inline std::string toString(const Sar<R32, Count>& ins) {
+        return fmt::format("{:7}{},{}", "sar", toString(ins.dst), toString(ins.src));
     }
 
     inline std::string toString(const Test<R32, R32>& ins) {

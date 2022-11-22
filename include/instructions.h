@@ -7,6 +7,10 @@
 
 namespace x86 {
 
+    struct Count {
+        u8 count;
+    };
+
     template<typename I>
     struct SignExtended;
 
@@ -169,6 +173,18 @@ namespace x86 {
 
     struct Nop {
 
+    };
+
+    template<typename Dst, typename Src>
+    struct Shr {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
+    struct Sar {
+        Dst dst;
+        Src src;
     };
 
     template<typename Src1, typename Src2>

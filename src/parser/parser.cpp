@@ -114,6 +114,8 @@ namespace x86 {
         if(name == "leave") return parseLeave(address, operands);
         if(name == "hlt") return parseHalt(address, operands);
         if(name == "nop") return parseNop(address, operands);
+        if(name == "shr") return parseShr(address, operands);
+        if(name == "sar") return parseSar(address, operands);
         if(name == "test") return parseTest(address, operands);
         if(name == "cmp") return parseCmp(address, operands);
         if(name == "je") return parseJe(address, operands, decorator);
@@ -143,6 +145,16 @@ namespace x86 {
         if(sv == "edx") return R32::EDX;
         if(sv == "eiz") return R32::EIZ;
         return {};
+    }
+
+    std::optional<Count> asCount(std::string_view sv) {
+        if(sv.size() == 0) return {};
+        if(sv.size() > 2) return {};
+        u8 count = 0;
+        auto result = std::from_chars(sv.data(), sv.data()+sv.size(), count, 16);
+        if(result.ptr != sv.data()+sv.size()) return {};
+        assert(result.ec == std::errc{});
+        return Count{count};
     }
 
     std::optional<u8> asImmediate8(std::string_view sv) {
@@ -375,6 +387,28 @@ namespace x86 {
     std::unique_ptr<X86Instruction> InstructionParser::parseNop(u32 address, std::string_view operands) {
         if(operands.size() > 0) return {};
         return make_wrapper<Nop>(address);
+    }
+
+    std::unique_ptr<X86Instruction> InstructionParser::parseShr(u32 address, std::string_view operandsString) {
+        std::vector<std::string_view> operands = split(operandsString, ',');
+        assert(operands.size() == 2);
+        auto r32dst = asRegister32(operands[0]);
+        auto countSrc = asCount(operands[1]);
+        auto imm32src = asImmediate32(operands[1]);
+        if(r32dst && countSrc) return make_wrapper<Shr<R32, Count>>(address, r32dst.value(), countSrc.value());
+        if(r32dst && imm32src) return make_wrapper<Shr<R32, u32>>(address, r32dst.value(), imm32src.value());
+        return {};
+    }
+
+    std::unique_ptr<X86Instruction> InstructionParser::parseSar(u32 address, std::string_view operandsString) {
+        std::vector<std::string_view> operands = split(operandsString, ',');
+        assert(operands.size() == 2);
+        auto r32dst = asRegister32(operands[0]);
+        auto countSrc = asCount(operands[1]);
+        auto imm32src = asImmediate32(operands[1]);
+        if(r32dst && countSrc) return make_wrapper<Sar<R32, Count>>(address, r32dst.value(), countSrc.value());
+        if(r32dst && imm32src) return make_wrapper<Sar<R32, u32>>(address, r32dst.value(), imm32src.value());
+        return {};
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseTest(u32 address, std::string_view operandsString) {
