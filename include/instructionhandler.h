@@ -27,6 +27,8 @@ namespace x86 {
 
         virtual void exec(Leave) = 0;
 
+        virtual void exec(Test<R32, R32>) = 0;
+
     };
 
 }

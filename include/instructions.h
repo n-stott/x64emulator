@@ -109,22 +109,18 @@ namespace x86 {
         std::string symbolName;
     };
 
-    struct Add_R32_imm32 {
-        R32 reg;
-        u32 val;
-    };
-
-    struct Add_R32_R32 {
-        R32 dst;
-        R32 src;
-    };
-
     struct Leave {
 
     };
 
     struct Ret {
 
+    };
+
+    template<typename Src1, typename Src2>
+    struct Test {
+        Src1 src1;
+        Src2 src2;
     };
 }
 
