@@ -52,9 +52,14 @@ namespace x86 {
     void InstructionParser::parseFile(std::string filename) {
         std::ifstream file(filename);
         std::string line;
+        size_t total = 0;
+        size_t success = 0;
         while (std::getline(file, line)) {
-            parseInstructionLine(strip(line));
+            auto ptr = parseInstructionLine(strip(line));
+            total++;
+            success += (!!ptr);
         }
+        fmt::print("Success : {} / {}\n", success, total);
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseInstructionLine(std::string_view s) {
@@ -79,8 +84,8 @@ namespace x86 {
         if(!ptr) {
             fmt::print("{:40} {:40}: {}\n", instructionString, "???", "fail");    
         } else {
-            std::string parsedString = ptr->toString();
-            fmt::print("{:40} {:40}: {}\n", instructionString, parsedString, (strip(instructionString) == strip(parsedString) ? "ok" : "fail"));    
+            // std::string parsedString = ptr->toString();
+            // fmt::print("{:40} {:40}: {}\n", instructionString, parsedString, (strip(instructionString) == strip(parsedString) ? "ok" : "fail"));    
         }
         return ptr;
     }
