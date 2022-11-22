@@ -45,6 +45,10 @@ namespace utils {
         return fmt::format("[{}{:+#x}]", toString(bd.base), bd.displacement);
     }
 
+    inline std::string toString(const BISD& bd) {
+        return fmt::format("[{}+{}*{}{:+#x}]", toString(bd.base), toString(bd.index), bd.scale, bd.displacement);
+    }
+
     inline std::string toString(const Addr<Size::DWORD, B>& addr) {
         return fmt::format("{} PTR {}", 
                     "DWORD",
@@ -120,6 +124,13 @@ namespace utils {
     }
 
     inline std::string toString(const Lea<R32, BD>& ins) {
+        return fmt::format("{:7}{},{}",
+                    "lea",
+                    toString(ins.dst),
+                    toString(ins.src));
+    }
+
+    inline std::string toString(const Lea<R32, BISD>& ins) {
         return fmt::format("{:7}{},{}",
                     "lea",
                     toString(ins.dst),

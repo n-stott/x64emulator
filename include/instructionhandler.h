@@ -32,6 +32,7 @@ namespace x86 {
 
         virtual void exec(Lea<R32, B>) = 0;
         virtual void exec(Lea<R32, BD>) = 0;
+        virtual void exec(Lea<R32, BISD>) = 0;
 
         virtual void exec(Push<R32>) = 0;
         virtual void exec(Push<Addr<Size::DWORD, BD>>) = 0;

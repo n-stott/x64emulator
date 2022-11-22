@@ -144,7 +144,7 @@ namespace x86 {
     }
 
     std::optional<u8> asImmediate8(std::string_view sv) {
-        if(sv[0] == '0' && sv[1] == 'x') sv = sv.substr(2);
+        if(sv.size() >= 2 && sv[0] == '0' && sv[1] == 'x') sv = sv.substr(2);
         if(sv.size() == 0) return {};
         if(sv.size() > 2) return {};
         u8 immediate = 0;
@@ -199,12 +199,25 @@ namespace x86 {
         return {};
     }
 
-    std::optional<BD> asBaseAndDisplacement(std::string_view sv) {
+    std::optional<BD> asBaseDisplacement(std::string_view sv) {
         if(!isEncoding(sv)) return {};
         sv = sv.substr(1, sv.size()-2);
         auto base = asRegister32(sv.substr(0, 3));
         auto displacement = asDisplacement(sv.substr(3));
         if(base && displacement) return BD{base.value(), displacement.value()};
+        return {};
+    }
+
+    std::optional<BISD> asBaseIndexScaleDisplacement(std::string_view sv) {
+        if(!isEncoding(sv)) return {};
+        sv = sv.substr(1, sv.size()-2);
+        if(sv.size() <= 3 || sv[3] != '+') return {};
+        if(sv.size() <= 7 || sv[7] != '*') return {};
+        auto base = asRegister32(sv.substr(0, 3));
+        auto index = asRegister32(sv.substr(4, 3));
+        auto scale = asImmediate8(sv.substr(8,1));
+        auto displacement = asDisplacement(sv.substr(9));
+        if(base && index && scale && displacement) return BISD{base.value(), index.value(), scale.value(), displacement.value()};
         return {};
     }
 
@@ -223,7 +236,7 @@ namespace x86 {
         if(parts.size() != 3) return {};
         if(parts[0] != "DWORD") return {};
         if(parts[1] != "PTR") return {};
-        auto bd = asBaseAndDisplacement(parts[2]);
+        auto bd = asBaseDisplacement(parts[2]);
         if(!bd) return {};
         return Addr<Size::DWORD, BD>{bd.value()};
     }
@@ -251,16 +264,16 @@ namespace x86 {
         assert(operands.size() == 2);
         auto r32dst = asRegister32(operands[0]);
         auto r32src = asRegister32(operands[1]);
-        auto addrDoubleBDdst = asDoubleBD(operands[0]);
-        auto addrDoubleBDsrc = asDoubleBD(operands[1]);
         auto addrDoubleBdst = asDoubleB(operands[0]);
         auto addrDoubleBsrc = asDoubleB(operands[1]);
+        auto addrDoubleBDdst = asDoubleBD(operands[0]);
+        auto addrDoubleBDsrc = asDoubleBD(operands[1]);
         auto imm32src = asImmediate32(operands[1]);
         if(r32dst && r32src) return make_wrapper<Mov<R32, R32>>(address, Mov<R32, R32>{r32dst.value(), r32src.value()});
-        if(addrDoubleBDdst && r32src) return make_wrapper<Mov<Addr<Size::DWORD, BD>, R32>>(address, addrDoubleBDdst.value(), r32src.value());
-        if(r32dst && addrDoubleBDsrc) return make_wrapper<Mov<R32, Addr<Size::DWORD, BD>>>(address, r32dst.value(), addrDoubleBDsrc.value());
         if(addrDoubleBdst && r32src) return make_wrapper<Mov<Addr<Size::DWORD, B>, R32>>(address, addrDoubleBdst.value(), r32src.value());
         if(r32dst && addrDoubleBsrc) return make_wrapper<Mov<R32, Addr<Size::DWORD, B>>>(address, r32dst.value(), addrDoubleBsrc.value());
+        if(addrDoubleBDdst && r32src) return make_wrapper<Mov<Addr<Size::DWORD, BD>, R32>>(address, addrDoubleBDdst.value(), r32src.value());
+        if(r32dst && addrDoubleBDsrc) return make_wrapper<Mov<R32, Addr<Size::DWORD, BD>>>(address, r32dst.value(), addrDoubleBDsrc.value());
         if(addrDoubleBDdst && imm32src) return make_wrapper<Mov<Addr<Size::DWORD, BD>, u32>>(address, addrDoubleBDdst.value(), imm32src.value());
         return {};
     }
@@ -269,10 +282,12 @@ namespace x86 {
         std::vector<std::string_view> operands = split(operandsString, ',');
         assert(operands.size() == 2);
         auto r32dst = asRegister32(operands[0]);
-        auto BDsrc = asBaseAndDisplacement(operands[1]);
         auto Bsrc = asBase(operands[1]);
-        if(r32dst && BDsrc) return make_wrapper<Lea<R32, BD>>(address, r32dst.value(), BDsrc.value());
+        auto BDsrc = asBaseDisplacement(operands[1]);
+        auto BISDsrc = asBaseIndexScaleDisplacement(operands[1]);
         if(r32dst && Bsrc) return make_wrapper<Lea<R32, B>>(address, r32dst.value(), Bsrc.value());
+        if(r32dst && BDsrc) return make_wrapper<Lea<R32, BD>>(address, r32dst.value(), BDsrc.value());
+        if(r32dst && BISDsrc) return make_wrapper<Lea<R32, BISD>>(address, r32dst.value(), BISDsrc.value());
         return {};
     }
 
