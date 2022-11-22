@@ -119,8 +119,22 @@ namespace utils {
                     toString(ins.src));
     }
 
+    inline std::string toString(const Mov<R32, u32>& ins) {
+        return fmt::format("{:7}{},{:#x}",
+                    "mov",
+                    toString(ins.dst),
+                    ins.src);
+    }
+
+    inline std::string toString(const Mov<Addr<Size::BYTE, BD>, u8>& ins) {
+        return fmt::format("{:7}{},{:#x}",
+                    "mov",
+                    toString(ins.dst),
+                    ins.src);
+    }
+
     inline std::string toString(const Mov<Addr<Size::DWORD, BD>, u32>& ins) {
-        return fmt::format("{:7}{},{:+#x}",
+        return fmt::format("{:7}{},{:#x}",
                     "mov",
                     toString(ins.dst),
                     ins.src);
