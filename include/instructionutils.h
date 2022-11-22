@@ -193,6 +193,10 @@ namespace utils {
         return fmt::format("{:7}", "hlt");
     }
 
+    inline std::string toString(const Nop&) {
+        return fmt::format("{:7}", "nop");
+    }
+
     inline std::string toString(const Test<R32, R32>& ins) {
         return fmt::format("{:7}{},{}", "test", toString(ins.src1), toString(ins.src2));
     }

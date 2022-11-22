@@ -68,6 +68,7 @@ namespace x86 {
         static std::unique_ptr<X86Instruction> parseRet(u32 address, std::string_view operands);
         static std::unique_ptr<X86Instruction> parseLeave(u32 address, std::string_view operands);
         static std::unique_ptr<X86Instruction> parseHalt(u32 address, std::string_view operands);
+        static std::unique_ptr<X86Instruction> parseNop(u32 address, std::string_view operands);
 
         static std::unique_ptr<X86Instruction> parseTest(u32 address, std::string_view operands);
         static std::unique_ptr<X86Instruction> parseCmp(u32 address, std::string_view operands);
