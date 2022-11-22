@@ -36,9 +36,9 @@ namespace x86 {
         Instruction instruction;
     };
 
-    template<typename Instruction>
-    inline std::unique_ptr<X86Instruction> make_wrapper(u32 address, Instruction instruction) {
-        return std::make_unique<InstructionWrapper<Instruction>>(address, instruction);
+    template<typename Instruction, typename... Args>
+    inline std::unique_ptr<X86Instruction> make_wrapper(u32 address, Args... args) {
+        return std::make_unique<InstructionWrapper<Instruction>>(address, Instruction{args...});
     }
 
     class InstructionParser {
