@@ -118,8 +118,8 @@ namespace x86 {
         if(sv.size() == 0) return {};
         if(sv.size() > 2) return {};
         u8 immediate = 0;
-        auto result = std::from_chars(sv.data(), sv.data()+2, immediate, 16);
-        if(result.ptr != sv.data()+2) return {};
+        auto result = std::from_chars(sv.data(), sv.data()+sv.size(), immediate, 16);
+        if(result.ptr != sv.data()+sv.size()) return {};
         assert(result.ec == std::errc{});
         return immediate;
     }
