@@ -13,6 +13,7 @@ namespace x86 {
         virtual void exec(Add<R32, R32>) = 0;
 
         virtual void exec(Sub<R32, SignExtended<u8>>) = 0;
+        virtual void exec(Sub<R32, R32>) = 0;
 
         virtual void exec(And<R32, u32>) = 0;
         virtual void exec(And<R32, R32>) = 0;

@@ -308,8 +308,10 @@ namespace x86 {
         std::vector<std::string_view> operands = split(operandsString, ',');
         assert(operands.size() == 2);
         auto r32dst = asRegister32(operands[0]);
+        auto r32src = asRegister32(operands[1]);
         auto imm8src = asImmediate8(operands[1]);
         if(r32dst && imm8src) return make_wrapper<Sub<R32, SignExtended<u8>>>(address, r32dst.value(), SignExtended<u8>{imm8src.value()});
+        if(r32dst && r32src) return make_wrapper<Sub<R32, R32>>(address, r32dst.value(), r32src.value());
         return {};
     }
 
