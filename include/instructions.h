@@ -139,6 +139,10 @@ namespace x86 {
 
     };
 
+    struct Halt {
+
+    };
+
     template<typename Src1, typename Src2>
     struct Test {
         Src1 src1;

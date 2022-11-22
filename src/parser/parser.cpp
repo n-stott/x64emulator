@@ -110,6 +110,7 @@ namespace x86 {
         if(name == "call") return parseCall(address, operands, decorator);
         if(name == "ret") return parseRet(address, operands);
         if(name == "leave") return parseLeave(address, operands);
+        if(name == "hlt") return parseHalt(address, operands);
         if(name == "test") return parseTest(address, operands);
         if(name == "je") return parseJe(address, operands, decorator);
         return {};
@@ -286,6 +287,11 @@ namespace x86 {
     std::unique_ptr<X86Instruction> InstructionParser::parseLeave(u32 address, std::string_view operands) {
         if(operands.size() > 0) return {};
         return make_wrapper<Leave>(address);
+    }
+
+    std::unique_ptr<X86Instruction> InstructionParser::parseHalt(u32 address, std::string_view operands) {
+        if(operands.size() > 0) return {};
+        return make_wrapper<Halt>(address);
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseTest(u32 address, std::string_view operandsString) {
