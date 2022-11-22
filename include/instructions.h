@@ -199,6 +199,16 @@ namespace x86 {
         Src2 src2;
     };
 
+    struct Jmp {
+        u32 symbolAddress;
+        std::string symbolName;
+    };
+
+    struct Jne {
+        u32 symbolAddress;
+        std::string symbolName;
+    };
+
     struct Je {
         u32 symbolAddress;
         std::string symbolName;

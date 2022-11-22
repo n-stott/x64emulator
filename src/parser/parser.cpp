@@ -118,6 +118,8 @@ namespace x86 {
         if(name == "sar") return parseSar(address, operands);
         if(name == "test") return parseTest(address, operands);
         if(name == "cmp") return parseCmp(address, operands);
+        if(name == "jmp") return parseJmp(address, operands, decorator);
+        if(name == "jne") return parseJne(address, operands, decorator);
         if(name == "je") return parseJe(address, operands, decorator);
         return {};
     }
@@ -439,6 +441,18 @@ namespace x86 {
         auto imm8src2 = asImmediate8(operands[1]);
         if(r32src1 && r32src2) return make_wrapper<Cmp<R32, R32>>(address, r32src1.value(), r32src2.value());
         if(ByteBDsrc1 && imm8src2) return make_wrapper<Cmp<Addr<Size::BYTE, BD>, u8>>(address, ByteBDsrc1.value(), imm8src2.value());
+        return {};
+    }
+
+    std::unique_ptr<X86Instruction> InstructionParser::parseJmp(u32 address, std::string_view operandsString, std::string_view decorator) {
+        auto imm32 = asImmediate32(operandsString);
+        if(imm32) return make_wrapper<Jmp>(address, imm32.value(), std::string(decorator.begin(), decorator.end()));
+        return {};
+    }
+
+    std::unique_ptr<X86Instruction> InstructionParser::parseJne(u32 address, std::string_view operandsString, std::string_view decorator) {
+        auto imm32 = asImmediate32(operandsString);
+        if(imm32) return make_wrapper<Jne>(address, imm32.value(), std::string(decorator.begin(), decorator.end()));
         return {};
     }
 
