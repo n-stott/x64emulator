@@ -114,6 +114,7 @@ namespace x86 {
         if(name == "leave") return parseLeave(address, operands);
         if(name == "hlt") return parseHalt(address, operands);
         if(name == "test") return parseTest(address, operands);
+        if(name == "cmp") return parseCmp(address, operands);
         if(name == "je") return parseJe(address, operands, decorator);
         return {};
     }
@@ -374,6 +375,15 @@ namespace x86 {
         auto r32src1 = asRegister32(operands[0]);
         auto r32src2 = asRegister32(operands[1]);
         if(r32src1 && r32src2) return make_wrapper<Test<R32, R32>>(address, r32src1.value(), r32src2.value());
+        return {};
+    }
+
+    std::unique_ptr<X86Instruction> InstructionParser::parseCmp(u32 address, std::string_view operandsString) {
+        std::vector<std::string_view> operands = split(operandsString, ',');
+        if(operands.size() != 2) return {};
+        auto r32src1 = asRegister32(operands[0]);
+        auto r32src2 = asRegister32(operands[1]);
+        if(r32src1 && r32src2) return make_wrapper<Cmp<R32, R32>>(address, r32src1.value(), r32src2.value());
         return {};
     }
 

@@ -173,6 +173,12 @@ namespace x86 {
         Src2 src2;
     };
 
+    template<typename Src1, typename Src2>
+    struct Cmp {
+        Src1 src1;
+        Src2 src2;
+    };
+
     struct Je {
         u32 symbolAddress;
         std::string symbolName;
