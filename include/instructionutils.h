@@ -22,6 +22,12 @@ namespace utils {
         return "";
     }
 
+    inline std::string toString(const Addr<Size::DWORD, B>& addr) {
+        return fmt::format("{} PTR [{}]", 
+                    "DWORD",
+                    toString(addr.encoding.base));
+    }
+
     inline std::string toString(const Addr<Size::DWORD, BD>& addr) {
         return fmt::format("{} PTR [{}{:+#x}]", 
                     "DWORD",
@@ -49,6 +55,20 @@ namespace utils {
         return fmt::format("{:7}{},{}", "mov", toString(ins.dst), toString(ins.src));
     }
 
+    inline std::string toString(const Mov<Addr<Size::DWORD, B>, R32>& ins) {
+        return fmt::format("{:7}{},{}",
+                    "mov",
+                    toString(ins.dst),
+                    toString(ins.src));
+    }
+
+    inline std::string toString(const Mov<R32, Addr<Size::DWORD, B>>& ins) {
+        return fmt::format("{:7}{},{}",
+                    "mov",
+                    toString(ins.dst),
+                    toString(ins.src));
+    }
+
     inline std::string toString(const Mov<Addr<Size::DWORD, BD>, R32>& ins) {
         return fmt::format("{:7}{},{}",
                     "mov",
@@ -56,20 +76,18 @@ namespace utils {
                     toString(ins.src));
     }
 
-    inline std::string toString(const Mov<Addr<Size::DWORD, BD>, u32>& ins) {
-        return fmt::format("{:7}DWORD PTR [{}{:#x}],{:+#x}",
-                    "mov",
-                    toString(ins.dst.encoding.base),
-                    ins.dst.encoding.displacement,
-                    ins.src);
-    }
-
     inline std::string toString(const Mov<R32, Addr<Size::DWORD, BD>>& ins) {
-        return fmt::format("{:7}{},DWORD PTR [{}{:+#x}]",
+        return fmt::format("{:7}{},{}",
                     "mov",
                     toString(ins.dst),
-                    toString(ins.src.encoding.base),
-                    ins.src.encoding.displacement);
+                    toString(ins.src));
+    }
+
+    inline std::string toString(const Mov<Addr<Size::DWORD, BD>, u32>& ins) {
+        return fmt::format("{:7}{},{:+#x}",
+                    "mov",
+                    toString(ins.dst),
+                    ins.src);
     }
 
     inline std::string toString(const Add<R32, u32>& ins) {

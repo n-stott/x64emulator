@@ -22,6 +22,8 @@ namespace x86 {
 
         virtual void exec(Mov<R32, R32>) = 0;
         virtual void exec(Mov<Addr<Size::DWORD, BD>, u32>) = 0;
+        virtual void exec(Mov<Addr<Size::DWORD, B>, R32>) = 0;
+        virtual void exec(Mov<R32, Addr<Size::DWORD, B>>) = 0;
         virtual void exec(Mov<Addr<Size::DWORD, BD>, R32>) = 0;
         virtual void exec(Mov<R32, Addr<Size::DWORD, BD>>) = 0;
 
