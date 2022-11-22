@@ -37,6 +37,10 @@ namespace utils {
         return fmt::format("{:7}{}", "push", toString(ins.src));
     }
 
+    inline std::string toString(const Push<SignExtended<u8>>& ins) {
+        return fmt::format("{:7}{:#x}", "push", ins.src.extendedValue);
+    }
+
     inline std::string toString(const Pop<R32>& ins) {
         return fmt::format("{:7}{}", "pop", toString(ins.dst));
     }

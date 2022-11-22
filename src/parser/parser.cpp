@@ -196,9 +196,11 @@ namespace x86 {
 
     std::unique_ptr<X86Instruction> InstructionParser::parsePush(u32 address, std::string_view operandString) {
         auto r32 = asRegister(operandString);
+        auto imm8 = asImmediate8(operandString);
         auto addrDoubleBDsrc = asDoubleBD(operandString);
         if(r32) return make_wrapper<Push<R32>>(address, r32.value());
         if(addrDoubleBDsrc) return make_wrapper<Push<Addr<Size::DWORD, BD>>>(address, addrDoubleBDsrc.value());
+        if(imm8) return make_wrapper<Push<SignExtended<u8>>>(address, imm8.value());
         return {};
     }
 
