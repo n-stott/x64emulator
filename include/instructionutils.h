@@ -22,8 +22,18 @@ namespace utils {
         return "";
     }
 
+    inline std::string toString(const Addr<Size::DWORD, BD>& addr) {
+        return fmt::format("{} PTR [{}{:+#x}]", 
+                    "DWORD",
+                    toString(addr.encoding.base),
+                    addr.encoding.displacement);
+    }
 
     inline std::string toString(const Push<R32>& ins) {
+        return fmt::format("{:7}{}", "push", toString(ins.src));
+    }
+
+    inline std::string toString(const Push<Addr<Size::DWORD, BD>>& ins) {
         return fmt::format("{:7}{}", "push", toString(ins.src));
     }
 
@@ -32,10 +42,9 @@ namespace utils {
     }
 
     inline std::string toString(const Mov<Addr<Size::DWORD, BD>, R32>& ins) {
-        return fmt::format("{:7}DWORD PTR [{}{:#x}],{}",
+        return fmt::format("{:7}{},{}",
                     "mov",
-                    toString(ins.dst.encoding.base),
-                    ins.dst.encoding.displacement,
+                    toString(ins.dst),
                     toString(ins.src));
     }
 

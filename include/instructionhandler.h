@@ -20,6 +20,7 @@ namespace x86 {
         virtual void exec(Mov<R32, Addr<Size::DWORD, BD>>) = 0;
 
         virtual void exec(Push<R32>) = 0;
+        virtual void exec(Push<Addr<Size::DWORD, BD>>) = 0;
 
         virtual void exec(CallDirect) = 0;
         virtual void exec(Ret) = 0;
