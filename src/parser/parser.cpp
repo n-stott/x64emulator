@@ -65,7 +65,12 @@ namespace x86 {
 
         std::string_view instructionString = parts[2];
         auto ptr = parseInstruction(address, instructionString);
-        fmt::print("{:40} {:40}: {}\n", instructionString, (!!ptr ? ptr->toString() : "???"), (!!ptr ? "ok" : "fail"));
+        if(!ptr) {
+            fmt::print("{:40} {:40}: {}\n", instructionString, "???", "fail");    
+        } else {
+            std::string parsedString = ptr->toString();
+            fmt::print("{:40} {:40}: {}\n", instructionString, parsedString, (strip(instructionString) == strip(parsedString) ? "ok" : "fail"));    
+        }
         return ptr;
     }
 
