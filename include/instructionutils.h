@@ -59,6 +59,12 @@ namespace utils {
                     toString(addr.encoding));
     }
 
+    inline std::string toString(const Addr<Size::BYTE, BD>& addr) {
+        return fmt::format("{} PTR {}", 
+                    "BYTE",
+                    toString(addr.encoding));
+    }
+
     inline std::string toString(const Addr<Size::DWORD, BD>& addr) {
         return fmt::format("{} PTR {}", 
                     "DWORD",
@@ -227,6 +233,10 @@ namespace utils {
 
     inline std::string toString(const Cmp<R32, R32>& ins) {
         return fmt::format("{:7}{},{}", "cmp", toString(ins.src1), toString(ins.src2));
+    }
+
+    inline std::string toString(const Cmp<Addr<Size::BYTE, BD>, u8>& ins) {
+        return fmt::format("{:7}{},{:#x}", "cmp", toString(ins.src1), ins.src2);
     }
 
     inline std::string toString(const Je& ins) {

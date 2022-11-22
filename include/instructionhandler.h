@@ -55,6 +55,7 @@ namespace x86 {
 
         virtual void exec(Test<R32, R32>) = 0;
         virtual void exec(Cmp<R32, R32>) = 0;
+        virtual void exec(Cmp<Addr<Size::BYTE, BD>, u8>) = 0;
 
         virtual void exec(Je) = 0;
 

@@ -245,6 +245,16 @@ namespace x86 {
         return Addr<Size::DWORD, B>{b.value()};
     }
 
+    std::optional<Addr<Size::BYTE, BD>> asByteBD(std::string_view sv) {
+        std::vector<std::string_view> parts = split(sv, ' ');
+        if(parts.size() != 3) return {};
+        if(parts[0] != "BYTE") return {};
+        if(parts[1] != "PTR") return {};
+        auto bd = asBaseDisplacement(parts[2]);
+        if(!bd) return {};
+        return Addr<Size::BYTE, BD>{bd.value()};
+    }
+
     std::optional<Addr<Size::DWORD, BD>> asDoubleBD(std::string_view sv) {
         std::vector<std::string_view> parts = split(sv, ' ');
         if(parts.size() != 3) return {};
@@ -424,8 +434,11 @@ namespace x86 {
         std::vector<std::string_view> operands = split(operandsString, ',');
         if(operands.size() != 2) return {};
         auto r32src1 = asRegister32(operands[0]);
+        auto ByteBDsrc1 = asByteBD(operands[0]);
         auto r32src2 = asRegister32(operands[1]);
+        auto imm8src2 = asImmediate8(operands[1]);
         if(r32src1 && r32src2) return make_wrapper<Cmp<R32, R32>>(address, r32src1.value(), r32src2.value());
+        if(ByteBDsrc1 && imm8src2) return make_wrapper<Cmp<Addr<Size::BYTE, BD>, u8>>(address, ByteBDsrc1.value(), imm8src2.value());
         return {};
     }
 
