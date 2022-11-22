@@ -139,6 +139,7 @@ namespace x86 {
         if(sv == "ebx") return R32::EBX;
         if(sv == "ecx") return R32::ECX;
         if(sv == "edx") return R32::EDX;
+        if(sv == "eiz") return R32::EIZ;
         return {};
     }
 

@@ -32,6 +32,7 @@ namespace utils {
             case R32::EBX: return "ebx";
             case R32::ECX: return "ecx";
             case R32::EDX: return "edx";
+            case R32::EIZ: return "eiz";
         }
         return "";
     }

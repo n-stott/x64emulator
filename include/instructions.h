@@ -35,7 +35,8 @@ namespace x86 {
         EAX,
         EBX,
         ECX,
-        EDX
+        EDX,
+        EIZ
     };
 
     struct D {
