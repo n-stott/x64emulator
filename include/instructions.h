@@ -109,6 +109,11 @@ namespace x86 {
         std::string symbolName;
     };
 
+    template<typename Src>
+    struct CallIndirect {
+        Src src;
+    };
+
     struct Leave {
 
     };

@@ -80,6 +80,10 @@ namespace utils {
         return fmt::format("{:7}{:x} <{}>", "call", ins.symbolAddress, ins.symbolName);
     }
 
+    inline std::string toString(const CallIndirect<R32>& ins) {
+        return fmt::format("{:7}{:x}", "call", toString(ins.src));
+    }
+
     inline std::string toString(const Ret&) {
         return fmt::format("{:7}", "ret");
     }
