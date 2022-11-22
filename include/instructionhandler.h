@@ -20,6 +20,9 @@ namespace x86 {
         virtual void exec(Xor<R32, u32>) = 0;
         virtual void exec(Xor<R32, R32>) = 0;
 
+        virtual void exec(Xchg<R16, R16>) = 0;
+        virtual void exec(Xchg<R32, R32>) = 0;
+
         virtual void exec(Mov<R32, R32>) = 0;
         virtual void exec(Mov<Addr<Size::DWORD, BD>, u32>) = 0;
         virtual void exec(Mov<Addr<Size::DWORD, B>, R32>) = 0;

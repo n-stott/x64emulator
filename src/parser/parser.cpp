@@ -107,6 +107,7 @@ namespace x86 {
         if(name == "sub") return parseSub(address, operands);
         if(name == "and") return parseAnd(address, operands);
         if(name == "xor") return parseXor(address, operands);
+        if(name == "xchg") return parseXchg(address, operands);
         if(name == "call") return parseCall(address, operands, decorator);
         if(name == "ret") return parseRet(address, operands);
         if(name == "leave") return parseLeave(address, operands);
@@ -116,7 +117,19 @@ namespace x86 {
         return {};
     }
 
-    std::optional<R32> asRegister(std::string_view sv) {
+    std::optional<R16> asRegister16(std::string_view sv) {
+        if(sv == "bp") return R16::BP;
+        if(sv == "sp") return R16::SP;
+        if(sv == "si") return R16::SI;
+        if(sv == "di") return R16::DI;
+        if(sv == "ax") return R16::AX;
+        if(sv == "bx") return R16::BX;
+        if(sv == "cx") return R16::CX;
+        if(sv == "dx") return R16::DX;
+        return {};
+    }
+
+    std::optional<R32> asRegister32(std::string_view sv) {
         if(sv == "ebp") return R32::EBP;
         if(sv == "esp") return R32::ESP;
         if(sv == "esi") return R32::ESI;
@@ -179,7 +192,7 @@ namespace x86 {
     std::optional<B> asBase(std::string_view sv) {
         if(!isEncoding(sv)) return {};
         sv = sv.substr(1, sv.size()-2);
-        auto base = asRegister(sv);
+        auto base = asRegister32(sv);
         if(base) return B{base.value()};
         return {};
     }
@@ -187,7 +200,7 @@ namespace x86 {
     std::optional<BD> asBaseAndDisplacement(std::string_view sv) {
         if(!isEncoding(sv)) return {};
         sv = sv.substr(1, sv.size()-2);
-        auto base = asRegister(sv.substr(0, 3));
+        auto base = asRegister32(sv.substr(0, 3));
         auto displacement = asDisplacement(sv.substr(3));
         if(base && displacement) return BD{base.value(), displacement.value()};
         return {};
@@ -214,7 +227,7 @@ namespace x86 {
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parsePush(u32 address, std::string_view operandString) {
-        auto r32 = asRegister(operandString);
+        auto r32 = asRegister32(operandString);
         auto imm8 = asImmediate8(operandString);
         auto addrDoubleBDsrc = asDoubleBD(operandString);
         if(r32) return make_wrapper<Push<R32>>(address, r32.value());
@@ -224,7 +237,7 @@ namespace x86 {
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parsePop(u32 address, std::string_view operandsString) {
-        auto r32 = asRegister(operandsString);
+        auto r32 = asRegister32(operandsString);
         // auto addrDoubleBDsrc = asDoubleBD(operandString);
         if(r32) return make_wrapper<Pop<R32>>(address, r32.value());
         // if(addrDoubleBDsrc) return make_wrapper<Push<Addr<Size::DWORD, BD>>>(address, addrDoubleBDsrc.value());
@@ -234,8 +247,8 @@ namespace x86 {
     std::unique_ptr<X86Instruction> InstructionParser::parseMov(u32 address, std::string_view operandsString) {
         std::vector<std::string_view> operands = split(operandsString, ',');
         assert(operands.size() == 2);
-        auto r32dst = asRegister(operands[0]);
-        auto r32src = asRegister(operands[1]);
+        auto r32dst = asRegister32(operands[0]);
+        auto r32src = asRegister32(operands[1]);
         auto addrDoubleBDdst = asDoubleBD(operands[0]);
         auto addrDoubleBDsrc = asDoubleBD(operands[1]);
         auto addrDoubleBdst = asDoubleB(operands[0]);
@@ -253,8 +266,8 @@ namespace x86 {
     std::unique_ptr<X86Instruction> InstructionParser::parseAdd(u32 address, std::string_view operandsString) {
         std::vector<std::string_view> operands = split(operandsString, ',');
         assert(operands.size() == 2);
-        auto r32dst = asRegister(operands[0]);
-        auto r32src = asRegister(operands[1]);
+        auto r32dst = asRegister32(operands[0]);
+        auto r32src = asRegister32(operands[1]);
         auto imm32src = asImmediate32(operands[1]);
         if(r32dst && imm32src) return make_wrapper<Add<R32, u32>>(address, r32dst.value(), imm32src.value());
         if(r32dst && r32src) return make_wrapper<Add<R32, R32>>(address, r32dst.value(), r32src.value());
@@ -264,7 +277,7 @@ namespace x86 {
     std::unique_ptr<X86Instruction> InstructionParser::parseSub(u32 address, std::string_view operandsString) {
         std::vector<std::string_view> operands = split(operandsString, ',');
         assert(operands.size() == 2);
-        auto r32dst = asRegister(operands[0]);
+        auto r32dst = asRegister32(operands[0]);
         auto imm8src = asImmediate8(operands[1]);
         if(r32dst && imm8src) return make_wrapper<Sub<R32, SignExtended<u8>>>(address, r32dst.value(), SignExtended<u8>{imm8src.value()});
         return {};
@@ -273,8 +286,8 @@ namespace x86 {
     std::unique_ptr<X86Instruction> InstructionParser::parseAnd(u32 address, std::string_view operandsString) {
         std::vector<std::string_view> operands = split(operandsString, ',');
         assert(operands.size() == 2);
-        auto r32dst = asRegister(operands[0]);
-        auto r32src = asRegister(operands[1]);
+        auto r32dst = asRegister32(operands[0]);
+        auto r32src = asRegister32(operands[1]);
         auto imm32src = asImmediate32(operands[1]);
         if(r32dst && imm32src) return make_wrapper<And<R32, u32>>(address, r32dst.value(), imm32src.value());
         if(r32dst && r32src) return make_wrapper<And<R32, R32>>(address, r32dst.value(), r32src.value());
@@ -284,22 +297,33 @@ namespace x86 {
     std::unique_ptr<X86Instruction> InstructionParser::parseXor(u32 address, std::string_view operandsString) {
         std::vector<std::string_view> operands = split(operandsString, ',');
         assert(operands.size() == 2);
-        auto r32dst = asRegister(operands[0]);
-        auto r32src = asRegister(operands[1]);
+        auto r32dst = asRegister32(operands[0]);
+        auto r32src = asRegister32(operands[1]);
         auto imm32src = asImmediate32(operands[1]);
         if(r32dst && imm32src) return make_wrapper<Xor<R32, u32>>(address, r32dst.value(), imm32src.value());
         if(r32dst && r32src) return make_wrapper<Xor<R32, R32>>(address, r32dst.value(), r32src.value());
         return {};
     }
 
+    std::unique_ptr<X86Instruction> InstructionParser::parseXchg(u32 address, std::string_view operandsString) {
+        std::vector<std::string_view> operands = split(operandsString, ',');
+        assert(operands.size() == 2);
+        auto r16dst = asRegister16(operands[0]);
+        auto r16src = asRegister16(operands[1]);
+        auto r32dst = asRegister32(operands[0]);
+        auto r32src = asRegister32(operands[1]);
+        if(r16dst && r16src) return make_wrapper<Xchg<R16, R16>>(address, r16dst.value(), r16src.value());
+        if(r32dst && r32src) return make_wrapper<Xchg<R32, R32>>(address, r32dst.value(), r32src.value());
+        return {};
+    }
+
     std::unique_ptr<X86Instruction> InstructionParser::parseCall(u32 address, std::string_view operandsString, std::string_view decorator) {
         auto imm32 = asImmediate32(operandsString);
-        auto r32src = asRegister(operandsString);
+        auto r32src = asRegister32(operandsString);
         if(imm32) return make_wrapper<CallDirect>(address, imm32.value(), std::string(decorator.begin(), decorator.end()));
         if(r32src) return make_wrapper<CallIndirect<R32>>(address, r32src.value());
         return {};
     }
-
 
     std::unique_ptr<X86Instruction> InstructionParser::parseRet(u32 address, std::string_view operands) {
         if(operands.size() > 0) return {};
@@ -319,8 +343,8 @@ namespace x86 {
     std::unique_ptr<X86Instruction> InstructionParser::parseTest(u32 address, std::string_view operandsString) {
         std::vector<std::string_view> operands = split(operandsString, ',');
         if(operands.size() != 2) return {};
-        auto r32src1 = asRegister(operands[0]);
-        auto r32src2 = asRegister(operands[1]);
+        auto r32src1 = asRegister32(operands[0]);
+        auto r32src2 = asRegister32(operands[1]);
         if(r32src1 && r32src2) return make_wrapper<Test<R32, R32>>(address, r32src1.value(), r32src2.value());
         return {};
     }

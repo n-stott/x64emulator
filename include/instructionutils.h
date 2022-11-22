@@ -8,6 +8,20 @@
 namespace x86 {
 namespace utils {
 
+    inline std::string toString(const R16& reg) {
+        switch(reg) {
+            case R16::BP: return "bp";
+            case R16::SP: return "sp";
+            case R16::DI: return "di";
+            case R16::SI: return "si";
+            case R16::AX: return "ax";
+            case R16::BX: return "bx";
+            case R16::CX: return "cx";
+            case R16::DX: return "dx";
+        }
+        return "";
+    }
+
     inline std::string toString(const R32& reg) {
         switch(reg) {
             case R32::EBP: return "ebp";
@@ -116,6 +130,14 @@ namespace utils {
 
     inline std::string toString(const Xor<R32, R32>& ins) {
         return fmt::format("{:7}{},{}", "xor", toString(ins.dst), toString(ins.src));
+    }
+
+    inline std::string toString(const Xchg<R16, R16>& ins) {
+        return fmt::format("{:7}{},{}", "xchg", toString(ins.dst), toString(ins.src));
+    }
+
+    inline std::string toString(const Xchg<R32, R32>& ins) {
+        return fmt::format("{:7}{},{}", "xchg", toString(ins.dst), toString(ins.src));
     }
 
     inline std::string toString(const CallDirect& ins) {

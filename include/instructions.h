@@ -16,6 +16,17 @@ namespace x86 {
         u32 extendedValue;
     };
 
+    enum class R16 {
+        BP,
+        SP,
+        DI,
+        SI,
+        AX,
+        BX,
+        CX,
+        DX
+    };
+
     enum class R32 {
         EBP,
         ESP,
@@ -117,6 +128,12 @@ namespace x86 {
 
     template<typename Dst, typename Src>
     struct Xor {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
+    struct Xchg {
         Dst dst;
         Src src;
     };
