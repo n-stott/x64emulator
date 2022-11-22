@@ -110,6 +110,12 @@ namespace x86 {
     };
 
     template<typename Dst, typename Src>
+    struct And {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
     struct Xor {
         Dst dst;
         Src src;
