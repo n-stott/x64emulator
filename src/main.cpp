@@ -11,9 +11,9 @@ void test_handler_compilation() {
     handler->exec(Mov<R32, R32>{R32::EBP, R32::ESP});
     handler->exec(Sub<R32, SignExtended<u8>>{R32::ESP, 0x10});
     handler->exec(CallDirect{0x11b7, "__x86.get_pc_thunk.ax"});
-    handler->exec(Add<R32, u32>{R32::EAX, 0x2e6c});
-    handler->exec(Mov<Addr<Size::DWORD, BD>, u32>{{R32::EBP, -0x4}, 0x1});
-    handler->exec(Mov<Addr<Size::DWORD, BD>, u32>{{R32::EBP, -0x8}, 0x2});
+    handler->exec(Add<R32, Imm<u32>>{R32::EAX, 0x2e6c});
+    handler->exec(Mov<Addr<Size::DWORD, BD>, Imm<u32>>{{R32::EBP, -0x4}, 0x1});
+    handler->exec(Mov<Addr<Size::DWORD, BD>, Imm<u32>>{{R32::EBP, -0x8}, 0x2});
     handler->exec(Mov<R32, Addr<Size::DWORD, BD>>{R32::EDX, {R32::EBP, -0x4}});
     handler->exec(Mov<R32, Addr<Size::DWORD, BD>>{R32::EAX, {R32::EBP, -0x8}});
     handler->exec(Add<R32, R32>{R32::EAX, R32::EDX});

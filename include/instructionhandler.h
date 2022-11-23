@@ -9,25 +9,25 @@ namespace x86 {
     public:
         ~InstructionHandler() = default;
 
-        virtual void exec(Add<R32, u32>) = 0;
+        virtual void exec(Add<R32, Imm<u32>>) = 0;
         virtual void exec(Add<R32, R32>) = 0;
 
         virtual void exec(Sub<R32, SignExtended<u8>>) = 0;
         virtual void exec(Sub<R32, R32>) = 0;
 
-        virtual void exec(And<R32, u32>) = 0;
+        virtual void exec(And<R32, Imm<u32>>) = 0;
         virtual void exec(And<R32, R32>) = 0;
 
-        virtual void exec(Xor<R32, u32>) = 0;
+        virtual void exec(Xor<R32, Imm<u32>>) = 0;
         virtual void exec(Xor<R32, R32>) = 0;
 
         virtual void exec(Xchg<R16, R16>) = 0;
         virtual void exec(Xchg<R32, R32>) = 0;
 
         virtual void exec(Mov<R32, R32>) = 0;
-        virtual void exec(Mov<R32, u32>) = 0;
-        virtual void exec(Mov<Addr<Size::BYTE, BD>, u8>) = 0;
-        virtual void exec(Mov<Addr<Size::DWORD, BD>, u32>) = 0;
+        virtual void exec(Mov<R32, Imm<u32>>) = 0;
+        virtual void exec(Mov<Addr<Size::BYTE, BD>, Imm<u8>>) = 0;
+        virtual void exec(Mov<Addr<Size::DWORD, BD>, Imm<u32>>) = 0;
         virtual void exec(Mov<Addr<Size::DWORD, B>, R32>) = 0;
         virtual void exec(Mov<R32, Addr<Size::DWORD, B>>) = 0;
         virtual void exec(Mov<Addr<Size::DWORD, BD>, R32>) = 0;
@@ -50,15 +50,15 @@ namespace x86 {
         virtual void exec(Halt) = 0;
         virtual void exec(Nop) = 0;
 
-        virtual void exec(Shr<R32, u32>) = 0;
+        virtual void exec(Shr<R32, Imm<u32>>) = 0;
         virtual void exec(Shr<R32, Count>) = 0;
-        virtual void exec(Sar<R32, u32>) = 0;
+        virtual void exec(Sar<R32, Imm<u32>>) = 0;
         virtual void exec(Sar<R32, Count>) = 0;
 
         virtual void exec(Test<R32, R32>) = 0;
         virtual void exec(Cmp<R32, R32>) = 0;
-        virtual void exec(Cmp<Addr<Size::BYTE, BD>, u8>) = 0;
-        virtual void exec(Cmp<Addr<Size::DWORD, BD>, u32>) = 0;
+        virtual void exec(Cmp<Addr<Size::BYTE, BD>, Imm<u8>>) = 0;
+        virtual void exec(Cmp<Addr<Size::DWORD, BD>, Imm<u32>>) = 0;
 
         virtual void exec(Jmp) = 0;
         virtual void exec(Jne) = 0;

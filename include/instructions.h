@@ -11,6 +11,11 @@ namespace x86 {
         u8 count;
     };
 
+    template<typename T>
+    struct Imm {
+        T immediate;
+    };
+
     template<typename I>
     struct SignExtended;
 

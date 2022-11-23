@@ -41,6 +41,20 @@ namespace utils {
         return fmt::format("{:x}", count.count);
     }
 
+    template<typename T>
+    inline std::string toString(const Imm<T>& imm) {
+        if constexpr(std::is_signed_v<T>) {
+            return fmt::format("{:+#x}", imm.immediate);
+        } else {
+            return fmt::format("{:#x}", imm.immediate);
+        }
+    }
+
+    template<typename T>
+    inline std::string toString(const SignExtended<T>& se) {
+        return fmt::format("{:#x}", se.extendedValue);
+    }
+
     inline std::string toString(const B& b) {
         return fmt::format("[{}]", toString(b.base));
     }
@@ -71,133 +85,48 @@ namespace utils {
                     toString(addr.encoding));
     }
 
-    inline std::string toString(const Push<R32>& ins) {
+    template<typename Src>
+    inline std::string toString(const Push<Src>& ins) {
         return fmt::format("{:7}{}", "push", toString(ins.src));
     }
 
-    inline std::string toString(const Push<Addr<Size::DWORD, BD>>& ins) {
-        return fmt::format("{:7}{}", "push", toString(ins.src));
-    }
-
-    inline std::string toString(const Push<SignExtended<u8>>& ins) {
-        return fmt::format("{:7}{:#x}", "push", ins.src.extendedValue);
-    }
-
-    inline std::string toString(const Pop<R32>& ins) {
+    template<typename Src>
+    inline std::string toString(const Pop<Src>& ins) {
         return fmt::format("{:7}{}", "pop", toString(ins.dst));
     }
 
-    inline std::string toString(const Mov<R32, R32>& ins) {
+    template<typename Dst, typename Src>
+    inline std::string toString(const Mov<Dst, Src>& ins) {
         return fmt::format("{:7}{},{}", "mov", toString(ins.dst), toString(ins.src));
     }
 
-    inline std::string toString(const Mov<Addr<Size::DWORD, B>, R32>& ins) {
-        return fmt::format("{:7}{},{}",
-                    "mov",
-                    toString(ins.dst),
-                    toString(ins.src));
+    template<typename Dst, typename Src>
+    inline std::string toString(const Lea<Dst, Src>& ins) {
+        return fmt::format("{:7}{},{}", "lea", toString(ins.dst), toString(ins.src));
     }
 
-    inline std::string toString(const Mov<R32, Addr<Size::DWORD, B>>& ins) {
-        return fmt::format("{:7}{},{}",
-                    "mov",
-                    toString(ins.dst),
-                    toString(ins.src));
-    }
-
-    inline std::string toString(const Mov<Addr<Size::DWORD, BD>, R32>& ins) {
-        return fmt::format("{:7}{},{}",
-                    "mov",
-                    toString(ins.dst),
-                    toString(ins.src));
-    }
-
-    inline std::string toString(const Mov<R32, Addr<Size::DWORD, BD>>& ins) {
-        return fmt::format("{:7}{},{}",
-                    "mov",
-                    toString(ins.dst),
-                    toString(ins.src));
-    }
-
-    inline std::string toString(const Mov<R32, u32>& ins) {
-        return fmt::format("{:7}{},{:#x}",
-                    "mov",
-                    toString(ins.dst),
-                    ins.src);
-    }
-
-    inline std::string toString(const Mov<Addr<Size::BYTE, BD>, u8>& ins) {
-        return fmt::format("{:7}{},{:#x}",
-                    "mov",
-                    toString(ins.dst),
-                    ins.src);
-    }
-
-    inline std::string toString(const Mov<Addr<Size::DWORD, BD>, u32>& ins) {
-        return fmt::format("{:7}{},{:#x}",
-                    "mov",
-                    toString(ins.dst),
-                    ins.src);
-    }
-
-    inline std::string toString(const Lea<R32, B>& ins) {
-        return fmt::format("{:7}{},{}",
-                    "lea",
-                    toString(ins.dst),
-                    toString(ins.src));
-    }
-
-    inline std::string toString(const Lea<R32, BD>& ins) {
-        return fmt::format("{:7}{},{}",
-                    "lea",
-                    toString(ins.dst),
-                    toString(ins.src));
-    }
-
-    inline std::string toString(const Lea<R32, BISD>& ins) {
-        return fmt::format("{:7}{},{}",
-                    "lea",
-                    toString(ins.dst),
-                    toString(ins.src));
-    }
-
-    inline std::string toString(const Add<R32, u32>& ins) {
-        return fmt::format("{:7}{},{:#x}", "add", toString(ins.dst), ins.src);
-    }
-
-    inline std::string toString(const Add<R32, R32>& ins) {
+    template<typename Dst, typename Src>
+    inline std::string toString(const Add<Dst, Src>& ins) {
         return fmt::format("{:7}{},{}", "add", toString(ins.dst), toString(ins.src));
     }
 
-    inline std::string toString(const Sub<R32, SignExtended<u8>>& ins) {
-        return fmt::format("{:7}{},{:#x}", "sub", toString(ins.dst), ins.src.extendedValue);
-    }
-
-    inline std::string toString(const Sub<R32, R32>& ins) {
+    template<typename Dst, typename Src>
+    inline std::string toString(const Sub<Dst, Src>& ins) {
         return fmt::format("{:7}{},{}", "sub", toString(ins.dst), toString(ins.src));
     }
 
-    inline std::string toString(const And<R32, u32>& ins) {
-        return fmt::format("{:7}{},{:#x}", "and", toString(ins.dst), ins.src);
-    }
-
-    inline std::string toString(const And<R32, R32>& ins) {
+    template<typename Dst, typename Src>
+    inline std::string toString(const And<Dst, Src>& ins) {
         return fmt::format("{:7}{},{}", "and", toString(ins.dst), toString(ins.src));
     }
 
-    inline std::string toString(const Xor<R32, u32>& ins) {
-        return fmt::format("{:7}{},{:#x}", "xor", toString(ins.dst), ins.src);
-    }
-
-    inline std::string toString(const Xor<R32, R32>& ins) {
+    template<typename Dst, typename Src>
+    inline std::string toString(const Xor<Dst, Src>& ins) {
         return fmt::format("{:7}{},{}", "xor", toString(ins.dst), toString(ins.src));
     }
 
-    inline std::string toString(const Xchg<R16, R16>& ins) {
-        return fmt::format("{:7}{},{}", "xchg", toString(ins.dst), toString(ins.src));
-    }
-
-    inline std::string toString(const Xchg<R32, R32>& ins) {
+    template<typename Dst, typename Src>
+    inline std::string toString(const Xchg<Dst, Src>& ins) {
         return fmt::format("{:7}{},{}", "xchg", toString(ins.dst), toString(ins.src));
     }
 
@@ -225,36 +154,24 @@ namespace utils {
         return fmt::format("{:7}", "nop");
     }
 
-    inline std::string toString(const Shr<R32, u32>& ins) {
-        return fmt::format("{:7}{},{:#x}", "shr", toString(ins.dst), ins.src);
-    }
-
-    inline std::string toString(const Shr<R32, Count>& ins) {
+    template<typename Dst, typename Src>
+    inline std::string toString(const Shr<Dst, Src>& ins) {
         return fmt::format("{:7}{},{}", "shr", toString(ins.dst), toString(ins.src));
     }
 
-    inline std::string toString(const Sar<R32, u32>& ins) {
-        return fmt::format("{:7}{},{:#x}", "sar", toString(ins.dst), ins.src);
-    }
-
-    inline std::string toString(const Sar<R32, Count>& ins) {
+    template<typename Dst, typename Src>
+    inline std::string toString(const Sar<Dst, Src>& ins) {
         return fmt::format("{:7}{},{}", "sar", toString(ins.dst), toString(ins.src));
     }
 
-    inline std::string toString(const Test<R32, R32>& ins) {
+    template<typename Src1, typename Src2>
+    inline std::string toString(const Test<Src1, Src2>& ins) {
         return fmt::format("{:7}{},{}", "test", toString(ins.src1), toString(ins.src2));
     }
 
-    inline std::string toString(const Cmp<R32, R32>& ins) {
+    template<typename Dst, typename Src>
+    inline std::string toString(const Cmp<Dst, Src>& ins) {
         return fmt::format("{:7}{},{}", "cmp", toString(ins.src1), toString(ins.src2));
-    }
-
-    inline std::string toString(const Cmp<Addr<Size::BYTE, BD>, u8>& ins) {
-        return fmt::format("{:7}{},{:#x}", "cmp", toString(ins.src1), ins.src2);
-    }
-
-    inline std::string toString(const Cmp<Addr<Size::DWORD, BD>, u32>& ins) {
-        return fmt::format("{:7}{},{:#x}", "cmp", toString(ins.src1), ins.src2);
     }
 
     inline std::string toString(const Jmp& ins) {
