@@ -40,8 +40,12 @@ void test_parse_instruction() {
     x86::InstructionParser::parseInstructionLine("11b6:	c3                   	ret");
 }
 
-int main() {
-    x86::InstructionParser::parseFile("add.dump");
-    x86::InstructionParser::parseFile("call0.dump");
-    x86::InstructionParser::parseFile("call1.dump");
+int main(int argc, char* argv[]) {
+    if(argc == 1) {
+        x86::InstructionParser::parseFile("add.dump");
+        x86::InstructionParser::parseFile("call0.dump");
+        x86::InstructionParser::parseFile("call1.dump");
+    } else {
+        x86::InstructionParser::parseFile(argv[1]);
+    }
 }
