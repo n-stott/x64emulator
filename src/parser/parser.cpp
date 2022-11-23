@@ -786,26 +786,43 @@ namespace x86 {
     std::unique_ptr<X86Instruction> InstructionParser::parseCmp(u32 address, std::string_view operandsString) {
         std::vector<std::string_view> operands = split(operandsString, ',');
         if(operands.size() != 2) return {};
+        auto r8src1 = asRegister8(operands[0]);
+        auto r16src1 = asRegister16(operands[0]);
         auto r32src1 = asRegister32(operands[0]);
         auto ByteBsrc1 = asByteB(operands[0]);
         auto ByteBDsrc1 = asByteBD(operands[0]);
         auto DoubleBsrc1 = asDoubleB(operands[0]);
         auto DoubleBDsrc1 = asDoubleBD(operands[0]);
+        auto DoubleBISsrc1 = asDoubleBIS(operands[0]);
+        auto DoubleBISDsrc1 = asDoubleBISD(operands[0]);
+        auto r8src2 = asRegister8(operands[1]);
+        auto r16src2 = asRegister16(operands[1]);
         auto r32src2 = asRegister32(operands[1]);
         auto imm8src2 = asImmediate8(operands[1]);
         auto imm32src2 = asImmediate32(operands[1]);
         auto DoubleBsrc2 = asDoubleB(operands[1]);
         auto DoubleBDsrc2 = asDoubleBD(operands[1]);
+        auto DoubleBISsrc2 = asDoubleBIS(operands[1]);
+        auto DoubleBISDsrc2 = asDoubleBISD(operands[1]);
+        if(r8src1 && r8src2) return make_wrapper<Cmp<R8, R8>>(address, r8src1.value(), r8src2.value());
+        if(r8src1 && imm8src2) return make_wrapper<Cmp<R8, Imm<u8>>>(address, r8src1.value(), imm8src2.value());
+        if(r16src1 && r16src2) return make_wrapper<Cmp<R16, R16>>(address, r16src1.value(), r16src2.value());
         if(r32src1 && r32src2) return make_wrapper<Cmp<R32, R32>>(address, r32src1.value(), r32src2.value());
         if(r32src1 && imm32src2) return make_wrapper<Cmp<R32, Imm<u32>>>(address, r32src1.value(), imm32src2.value());
         if(r32src1 && DoubleBsrc2) return make_wrapper<Cmp<R32, Addr<Size::DWORD, B>>>(address, r32src1.value(), DoubleBsrc2.value());
         if(r32src1 && DoubleBDsrc2) return make_wrapper<Cmp<R32, Addr<Size::DWORD, BD>>>(address, r32src1.value(), DoubleBDsrc2.value());
+        if(r32src1 && DoubleBISsrc2) return make_wrapper<Cmp<R32, Addr<Size::DWORD, BIS>>>(address, r32src1.value(), DoubleBISsrc2.value());
+        if(r32src1 && DoubleBISDsrc2) return make_wrapper<Cmp<R32, Addr<Size::DWORD, BISD>>>(address, r32src1.value(), DoubleBISDsrc2.value());
         if(ByteBsrc1 && imm8src2) return make_wrapper<Cmp<Addr<Size::BYTE, B>, Imm<u8>>>(address, ByteBsrc1.value(), imm8src2.value());
         if(ByteBDsrc1 && imm8src2) return make_wrapper<Cmp<Addr<Size::BYTE, BD>, Imm<u8>>>(address, ByteBDsrc1.value(), imm8src2.value());
         if(DoubleBsrc1 && r32src2) return make_wrapper<Cmp<Addr<Size::DWORD, B>, R32>>(address, DoubleBsrc1.value(), r32src2.value());
         if(DoubleBsrc1 && imm32src2) return make_wrapper<Cmp<Addr<Size::DWORD, B>, Imm<u32>>>(address, DoubleBsrc1.value(), imm32src2.value());
         if(DoubleBDsrc1 && r32src2) return make_wrapper<Cmp<Addr<Size::DWORD, BD>, R32>>(address, DoubleBDsrc1.value(), r32src2.value());
         if(DoubleBDsrc1 && imm32src2) return make_wrapper<Cmp<Addr<Size::DWORD, BD>, Imm<u32>>>(address, DoubleBDsrc1.value(), imm32src2.value());
+        if(DoubleBISsrc1 && r32src2) return make_wrapper<Cmp<Addr<Size::DWORD, BIS>, R32>>(address, DoubleBISsrc1.value(), r32src2.value());
+        if(DoubleBISsrc1 && imm32src2) return make_wrapper<Cmp<Addr<Size::DWORD, BIS>, Imm<u32>>>(address, DoubleBISsrc1.value(), imm32src2.value());
+        if(DoubleBISDsrc1 && r32src2) return make_wrapper<Cmp<Addr<Size::DWORD, BISD>, R32>>(address, DoubleBISDsrc1.value(), r32src2.value());
+        if(DoubleBISDsrc1 && imm32src2) return make_wrapper<Cmp<Addr<Size::DWORD, BISD>, Imm<u32>>>(address, DoubleBISDsrc1.value(), imm32src2.value());
         return {};
     }
 
