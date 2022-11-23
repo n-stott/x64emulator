@@ -81,6 +81,14 @@ namespace x86 {
         static std::unique_ptr<X86Instruction> parseJmp(u32 address, std::string_view operands, std::string_view decorator);
         static std::unique_ptr<X86Instruction> parseJne(u32 address, std::string_view operands, std::string_view decorator);
         static std::unique_ptr<X86Instruction> parseJe(u32 address, std::string_view operands, std::string_view decorator);
+        static std::unique_ptr<X86Instruction> parseJae(u32 address, std::string_view operands, std::string_view decorator);
+        static std::unique_ptr<X86Instruction> parseJbe(u32 address, std::string_view operands, std::string_view decorator);
+        static std::unique_ptr<X86Instruction> parseJge(u32 address, std::string_view operands, std::string_view decorator);
+        static std::unique_ptr<X86Instruction> parseJle(u32 address, std::string_view operands, std::string_view decorator);
+        static std::unique_ptr<X86Instruction> parseJa(u32 address, std::string_view operands, std::string_view decorator);
+        static std::unique_ptr<X86Instruction> parseJb(u32 address, std::string_view operands, std::string_view decorator);
+        static std::unique_ptr<X86Instruction> parseJg(u32 address, std::string_view operands, std::string_view decorator);
+        static std::unique_ptr<X86Instruction> parseJl(u32 address, std::string_view operands, std::string_view decorator);
 
     };
 

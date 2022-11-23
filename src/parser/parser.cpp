@@ -124,6 +124,14 @@ namespace x86 {
         if(name == "jmp") return parseJmp(address, operands, decorator);
         if(name == "jne") return parseJne(address, operands, decorator);
         if(name == "je") return parseJe(address, operands, decorator);
+        if(name == "jae") return parseJae(address, operands, decorator);
+        if(name == "jbe") return parseJbe(address, operands, decorator);
+        if(name == "jge") return parseJge(address, operands, decorator);
+        if(name == "jle") return parseJle(address, operands, decorator);
+        if(name == "ja") return parseJa(address, operands, decorator);
+        if(name == "jb") return parseJb(address, operands, decorator);
+        if(name == "jg") return parseJg(address, operands, decorator);
+        if(name == "jl") return parseJl(address, operands, decorator);
         return {};
     }
 
@@ -658,6 +666,54 @@ namespace x86 {
     std::unique_ptr<X86Instruction> InstructionParser::parseJe(u32 address, std::string_view operandsString, std::string_view decorator) {
         auto imm32 = asImmediate32(operandsString);
         if(imm32) return make_wrapper<Je>(address, imm32.value(), std::string(decorator.begin(), decorator.end()));
+        return {};
+    }
+
+    std::unique_ptr<X86Instruction> InstructionParser::parseJae(u32 address, std::string_view operandsString, std::string_view decorator) {
+        auto imm32 = asImmediate32(operandsString);
+        if(imm32) return make_wrapper<Jae>(address, imm32.value(), std::string(decorator.begin(), decorator.end()));
+        return {};
+    }
+
+    std::unique_ptr<X86Instruction> InstructionParser::parseJbe(u32 address, std::string_view operandsString, std::string_view decorator) {
+        auto imm32 = asImmediate32(operandsString);
+        if(imm32) return make_wrapper<Jbe>(address, imm32.value(), std::string(decorator.begin(), decorator.end()));
+        return {};
+    }
+
+    std::unique_ptr<X86Instruction> InstructionParser::parseJge(u32 address, std::string_view operandsString, std::string_view decorator) {
+        auto imm32 = asImmediate32(operandsString);
+        if(imm32) return make_wrapper<Jge>(address, imm32.value(), std::string(decorator.begin(), decorator.end()));
+        return {};
+    }
+
+    std::unique_ptr<X86Instruction> InstructionParser::parseJle(u32 address, std::string_view operandsString, std::string_view decorator) {
+        auto imm32 = asImmediate32(operandsString);
+        if(imm32) return make_wrapper<Jle>(address, imm32.value(), std::string(decorator.begin(), decorator.end()));
+        return {};
+    }
+
+    std::unique_ptr<X86Instruction> InstructionParser::parseJa(u32 address, std::string_view operandsString, std::string_view decorator) {
+        auto imm32 = asImmediate32(operandsString);
+        if(imm32) return make_wrapper<Ja>(address, imm32.value(), std::string(decorator.begin(), decorator.end()));
+        return {};
+    }
+
+    std::unique_ptr<X86Instruction> InstructionParser::parseJb(u32 address, std::string_view operandsString, std::string_view decorator) {
+        auto imm32 = asImmediate32(operandsString);
+        if(imm32) return make_wrapper<Jb>(address, imm32.value(), std::string(decorator.begin(), decorator.end()));
+        return {};
+    }
+
+    std::unique_ptr<X86Instruction> InstructionParser::parseJg(u32 address, std::string_view operandsString, std::string_view decorator) {
+        auto imm32 = asImmediate32(operandsString);
+        if(imm32) return make_wrapper<Jg>(address, imm32.value(), std::string(decorator.begin(), decorator.end()));
+        return {};
+    }
+
+    std::unique_ptr<X86Instruction> InstructionParser::parseJl(u32 address, std::string_view operandsString, std::string_view decorator) {
+        auto imm32 = asImmediate32(operandsString);
+        if(imm32) return make_wrapper<Jl>(address, imm32.value(), std::string(decorator.begin(), decorator.end()));
         return {};
     }
 

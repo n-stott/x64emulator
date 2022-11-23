@@ -247,6 +247,38 @@ namespace utils {
     inline std::string toString(const Je& ins) {
         return fmt::format("{:7}{:x} <{}>", "je", ins.symbolAddress, ins.symbolName);
     }
+
+    inline std::string toString(const Jae& ins) {
+        return fmt::format("{:7}{:x} <{}>", "jae", ins.symbolAddress, ins.symbolName);
+    }
+
+    inline std::string toString(const Jbe& ins) {
+        return fmt::format("{:7}{:x} <{}>", "jbe", ins.symbolAddress, ins.symbolName);
+    }
+
+    inline std::string toString(const Jge& ins) {
+        return fmt::format("{:7}{:x} <{}>", "jge", ins.symbolAddress, ins.symbolName);
+    }
+
+    inline std::string toString(const Jle& ins) {
+        return fmt::format("{:7}{:x} <{}>", "jle", ins.symbolAddress, ins.symbolName);
+    }
+
+    inline std::string toString(const Ja& ins) {
+        return fmt::format("{:7}{:x} <{}>", "ja", ins.symbolAddress, ins.symbolName);
+    }
+
+    inline std::string toString(const Jb& ins) {
+        return fmt::format("{:7}{:x} <{}>", "jb", ins.symbolAddress, ins.symbolName);
+    }
+
+    inline std::string toString(const Jg& ins) {
+        return fmt::format("{:7}{:x} <{}>", "jg", ins.symbolAddress, ins.symbolName);
+    }
+
+    inline std::string toString(const Jl& ins) {
+        return fmt::format("{:7}{:x} <{}>", "jl", ins.symbolAddress, ins.symbolName);
+    }
 }
 }
 

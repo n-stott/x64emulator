@@ -243,6 +243,47 @@ namespace x86 {
         u32 symbolAddress;
         std::string symbolName;
     };
+
+    struct Jae {
+        u32 symbolAddress;
+        std::string symbolName;
+    };
+
+    struct Jbe {
+        u32 symbolAddress;
+        std::string symbolName;
+    };
+
+    struct Jge {
+        u32 symbolAddress;
+        std::string symbolName;
+    };
+
+    struct Jle {
+        u32 symbolAddress;
+        std::string symbolName;
+    };
+
+    struct Ja {
+        u32 symbolAddress;
+        std::string symbolName;
+    };
+
+    struct Jb {
+        u32 symbolAddress;
+        std::string symbolName;
+    };
+
+    struct Jg {
+        u32 symbolAddress;
+        std::string symbolName;
+    };
+
+    struct Jl {
+        u32 symbolAddress;
+        std::string symbolName;
+    };
+
 }
 
 #endif

@@ -118,6 +118,14 @@ namespace x86 {
         virtual void exec(Jmp) = 0;
         virtual void exec(Jne) = 0;
         virtual void exec(Je) = 0;
+        virtual void exec(Jae) = 0;
+        virtual void exec(Jbe) = 0;
+        virtual void exec(Jge) = 0;
+        virtual void exec(Jle) = 0;
+        virtual void exec(Ja) = 0;
+        virtual void exec(Jb) = 0;
+        virtual void exec(Jg) = 0;
+        virtual void exec(Jl) = 0;
 
     };
 
