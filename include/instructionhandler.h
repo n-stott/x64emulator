@@ -80,6 +80,7 @@ namespace x86 {
 
         virtual void exec(Lea<R32, B>) = 0;
         virtual void exec(Lea<R32, BD>) = 0;
+        virtual void exec(Lea<R32, BIS>) = 0;
         virtual void exec(Lea<R32, BISD>) = 0;
 
         virtual void exec(Push<R32>) = 0;
@@ -103,6 +104,7 @@ namespace x86 {
         virtual void exec(Sar<R32, Imm<u32>>) = 0;
         virtual void exec(Sar<R32, Count>) = 0;
 
+        virtual void exec(Test<R8, R8>) = 0;
         virtual void exec(Test<R32, R32>) = 0;
         virtual void exec(Cmp<R32, R32>) = 0;
         virtual void exec(Cmp<R32, Imm<u32>>) = 0;

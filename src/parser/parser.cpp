@@ -437,9 +437,11 @@ namespace x86 {
         auto r32dst = asRegister32(operands[0]);
         auto Bsrc = asBase(operands[1]);
         auto BDsrc = asBaseDisplacement(operands[1]);
+        auto BISsrc = asBaseIndexScale(operands[1]);
         auto BISDsrc = asBaseIndexScaleDisplacement(operands[1]);
         if(r32dst && Bsrc) return make_wrapper<Lea<R32, B>>(address, r32dst.value(), Bsrc.value());
         if(r32dst && BDsrc) return make_wrapper<Lea<R32, BD>>(address, r32dst.value(), BDsrc.value());
+        if(r32dst && BISsrc) return make_wrapper<Lea<R32, BIS>>(address, r32dst.value(), BISsrc.value());
         if(r32dst && BISDsrc) return make_wrapper<Lea<R32, BISD>>(address, r32dst.value(), BISDsrc.value());
         return {};
     }
@@ -619,8 +621,11 @@ namespace x86 {
     std::unique_ptr<X86Instruction> InstructionParser::parseTest(u32 address, std::string_view operandsString) {
         std::vector<std::string_view> operands = split(operandsString, ',');
         if(operands.size() != 2) return {};
+        auto r8src1 = asRegister8(operands[0]);
+        auto r8src2 = asRegister8(operands[1]);
         auto r32src1 = asRegister32(operands[0]);
         auto r32src2 = asRegister32(operands[1]);
+        if(r8src1 && r8src2) return make_wrapper<Test<R8, R8>>(address, r8src1.value(), r8src2.value());
         if(r32src1 && r32src2) return make_wrapper<Test<R32, R32>>(address, r32src1.value(), r32src2.value());
         return {};
     }
