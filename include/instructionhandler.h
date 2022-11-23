@@ -81,6 +81,7 @@ namespace x86 {
         virtual void exec(Lea<R32, B>) = 0;
         virtual void exec(Lea<R32, BD>) = 0;
         virtual void exec(Lea<R32, BIS>) = 0;
+        virtual void exec(Lea<R32, ISD>) = 0;
         virtual void exec(Lea<R32, BISD>) = 0;
 
         virtual void exec(Push<R32>) = 0;

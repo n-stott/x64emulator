@@ -81,12 +81,16 @@ namespace utils {
         return fmt::format("[{}{:+#x}]", toString(bd.base), bd.displacement);
     }
 
-    inline std::string toString(const BIS& bd) {
-        return fmt::format("[{}+{}*{}]", toString(bd.base), toString(bd.index), bd.scale);
+    inline std::string toString(const BIS& bis) {
+        return fmt::format("[{}+{}*{}]", toString(bis.base), toString(bis.index), bis.scale);
     }
 
-    inline std::string toString(const BISD& bd) {
-        return fmt::format("[{}+{}*{}{:+#x}]", toString(bd.base), toString(bd.index), bd.scale, bd.displacement);
+    inline std::string toString(const ISD& isd) {
+        return fmt::format("[{}*{}{:+#x}]", toString(isd.index), isd.scale, isd.displacement);
+    }
+
+    inline std::string toString(const BISD& bisd) {
+        return fmt::format("[{}+{}*{}{:+#x}]", toString(bisd.base), toString(bisd.index), bisd.scale, bisd.displacement);
     }
 
     inline std::string toString(const Addr<Size::BYTE, B>& addr) {

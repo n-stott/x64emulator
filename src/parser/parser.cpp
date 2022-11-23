@@ -264,6 +264,17 @@ namespace x86 {
         return {};
     }
 
+    std::optional<ISD> asIndexScaleDisplacement(std::string_view sv) {
+        if(!isEncoding(sv)) return {};
+        sv = sv.substr(1, sv.size()-2);
+        if(sv.size() <= 3 || sv[3] != '*') return {};
+        auto index = asRegister32(sv.substr(0, 3));
+        auto scale = asImmediate8(sv.substr(4,1));
+        auto displacement = asDisplacement(sv.substr(5));
+        if(index && scale && displacement) return ISD{index.value(), scale.value(), displacement.value()};
+        return {};
+    }
+
     std::optional<BISD> asBaseIndexScaleDisplacement(std::string_view sv) {
         if(!isEncoding(sv)) return {};
         sv = sv.substr(1, sv.size()-2);
@@ -438,10 +449,12 @@ namespace x86 {
         auto Bsrc = asBase(operands[1]);
         auto BDsrc = asBaseDisplacement(operands[1]);
         auto BISsrc = asBaseIndexScale(operands[1]);
+        auto ISDsrc = asIndexScaleDisplacement(operands[1]);
         auto BISDsrc = asBaseIndexScaleDisplacement(operands[1]);
         if(r32dst && Bsrc) return make_wrapper<Lea<R32, B>>(address, r32dst.value(), Bsrc.value());
         if(r32dst && BDsrc) return make_wrapper<Lea<R32, BD>>(address, r32dst.value(), BDsrc.value());
         if(r32dst && BISsrc) return make_wrapper<Lea<R32, BIS>>(address, r32dst.value(), BISsrc.value());
+        if(r32dst && ISDsrc) return make_wrapper<Lea<R32, ISD>>(address, r32dst.value(), ISDsrc.value());
         if(r32dst && BISDsrc) return make_wrapper<Lea<R32, BISD>>(address, r32dst.value(), BISDsrc.value());
         return {};
     }
