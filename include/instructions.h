@@ -195,6 +195,10 @@ namespace x86 {
 
     };
 
+    struct Ud2 {
+
+    };
+
     template<typename Dst, typename Src>
     struct Shr {
         Dst dst;

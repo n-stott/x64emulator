@@ -69,6 +69,7 @@ namespace x86 {
         virtual void exec(Leave) = 0;
         virtual void exec(Halt) = 0;
         virtual void exec(Nop) = 0;
+        virtual void exec(Ud2) = 0;
 
         virtual void exec(Shr<R32, Imm<u32>>) = 0;
         virtual void exec(Shr<R32, Count>) = 0;
