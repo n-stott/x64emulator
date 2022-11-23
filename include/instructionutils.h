@@ -111,6 +111,12 @@ namespace utils {
                     toString(addr.encoding));
     }
 
+    inline std::string toString(const Addr<Size::WORD, BD>& addr) {
+        return fmt::format("{} PTR {}", 
+                    "WORD",
+                    toString(addr.encoding));
+    }
+
     inline std::string toString(const Addr<Size::DWORD, BD>& addr) {
         return fmt::format("{} PTR {}", 
                     "DWORD",
