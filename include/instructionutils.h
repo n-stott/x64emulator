@@ -134,7 +134,8 @@ namespace utils {
         return fmt::format("{:7}{:x} <{}>", "call", ins.symbolAddress, ins.symbolName);
     }
 
-    inline std::string toString(const CallIndirect<R32>& ins) {
+    template<typename Src>
+    inline std::string toString(const CallIndirect<Src>& ins) {
         return fmt::format("{:7}{}", "call", toString(ins.src));
     }
 

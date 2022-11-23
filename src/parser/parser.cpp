@@ -381,8 +381,10 @@ namespace x86 {
     std::unique_ptr<X86Instruction> InstructionParser::parseCall(u32 address, std::string_view operandsString, std::string_view decorator) {
         auto imm32 = asImmediate32(operandsString);
         auto r32src = asRegister32(operandsString);
+        auto doubleBDsrc = asDoubleBD(operandsString);
         if(imm32) return make_wrapper<CallDirect>(address, imm32.value(), std::string(decorator.begin(), decorator.end()));
         if(r32src) return make_wrapper<CallIndirect<R32>>(address, r32src.value());
+        if(doubleBDsrc) return make_wrapper<CallIndirect<Addr<Size::DWORD, BD>>>(address, doubleBDsrc.value());
         return {};
     }
 
