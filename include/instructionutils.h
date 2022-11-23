@@ -173,6 +173,11 @@ namespace utils {
     }
 
     template<typename Dst, typename Src>
+    inline std::string toString(const Or<Dst, Src>& ins) {
+        return fmt::format("{:7}{},{}", "or", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Dst, typename Src>
     inline std::string toString(const Xor<Dst, Src>& ins) {
         return fmt::format("{:7}{},{}", "xor", toString(ins.dst), toString(ins.src));
     }

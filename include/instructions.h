@@ -158,6 +158,12 @@ namespace x86 {
     };
 
     template<typename Dst, typename Src>
+    struct Or {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
     struct Xor {
         Dst dst;
         Src src;

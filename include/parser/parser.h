@@ -59,6 +59,7 @@ namespace x86 {
         static std::unique_ptr<X86Instruction> parseSub(u32 address, std::string_view operandsString);
 
         static std::unique_ptr<X86Instruction> parseAnd(u32 address, std::string_view operandsString);
+        static std::unique_ptr<X86Instruction> parseOr(u32 address, std::string_view operandsString);
         static std::unique_ptr<X86Instruction> parseXor(u32 address, std::string_view operandsString);
 
         static std::unique_ptr<X86Instruction> parseXchg(u32 address, std::string_view operandsString);
