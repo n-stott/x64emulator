@@ -67,6 +67,12 @@ namespace utils {
         return fmt::format("[{}+{}*{}{:+#x}]", toString(bd.base), toString(bd.index), bd.scale, bd.displacement);
     }
 
+    inline std::string toString(const Addr<Size::BYTE, B>& addr) {
+        return fmt::format("{} PTR {}", 
+                    "BYTE",
+                    toString(addr.encoding));
+    }
+
     inline std::string toString(const Addr<Size::DWORD, B>& addr) {
         return fmt::format("{} PTR {}", 
                     "DWORD",
