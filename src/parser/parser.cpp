@@ -200,7 +200,7 @@ namespace x86 {
         if(sv.size() >= 2 && sv[0] == '0' && sv[1] == 'x') sv = sv.substr(2);
         if(sv.size() == 0) return {};
         if(sv.size() > 8) return {};
-        i32 immediate = 0;
+        u32 immediate = 0;
         auto result = std::from_chars(sv.data(), sv.data()+sv.size(), immediate, 16);
         if(result.ptr != sv.data()+sv.size()) return {};
         assert(result.ec == std::errc{});
