@@ -12,8 +12,37 @@ namespace x86 {
         virtual void exec(Add<R32, Imm<u32>>) = 0;
         virtual void exec(Add<R32, R32>) = 0;
 
-        virtual void exec(Sub<R32, SignExtended<u8>>) = 0;
         virtual void exec(Sub<R32, R32>) = 0;
+        virtual void exec(Sub<R32, Imm<u32>>) = 0;
+        virtual void exec(Sub<R32, SignExtended<u8>>) = 0;
+        virtual void exec(Sub<R32, Addr<Size::DWORD, B>>) = 0;
+        virtual void exec(Sub<R32, Addr<Size::DWORD, BD>>) = 0;
+        virtual void exec(Sub<R32, Addr<Size::DWORD, BIS>>) = 0;
+        virtual void exec(Sub<R32, Addr<Size::DWORD, BISD>>) = 0;
+        virtual void exec(Sub<Addr<Size::DWORD, B>, R32>) = 0;
+        virtual void exec(Sub<Addr<Size::DWORD, BD>, R32>) = 0;
+        virtual void exec(Sub<Addr<Size::DWORD, BIS>, R32>) = 0;
+        virtual void exec(Sub<Addr<Size::DWORD, BISD>, R32>) = 0;
+        virtual void exec(Sub<Addr<Size::DWORD, B>, Imm<u32>>) = 0;
+        virtual void exec(Sub<Addr<Size::DWORD, BD>, Imm<u32>>) = 0;
+        virtual void exec(Sub<Addr<Size::DWORD, BIS>, Imm<u32>>) = 0;
+        virtual void exec(Sub<Addr<Size::DWORD, BISD>, Imm<u32>>) = 0;
+
+        virtual void exec(Sbb<R32, R32>) = 0;
+        virtual void exec(Sbb<R32, Imm<u32>>) = 0;
+        virtual void exec(Sbb<R32, SignExtended<u8>>) = 0;
+        virtual void exec(Sbb<R32, Addr<Size::DWORD, B>>) = 0;
+        virtual void exec(Sbb<R32, Addr<Size::DWORD, BD>>) = 0;
+        virtual void exec(Sbb<R32, Addr<Size::DWORD, BIS>>) = 0;
+        virtual void exec(Sbb<R32, Addr<Size::DWORD, BISD>>) = 0;
+        virtual void exec(Sbb<Addr<Size::DWORD, B>, R32>) = 0;
+        virtual void exec(Sbb<Addr<Size::DWORD, BD>, R32>) = 0;
+        virtual void exec(Sbb<Addr<Size::DWORD, BIS>, R32>) = 0;
+        virtual void exec(Sbb<Addr<Size::DWORD, BISD>, R32>) = 0;
+        virtual void exec(Sbb<Addr<Size::DWORD, B>, Imm<u32>>) = 0;
+        virtual void exec(Sbb<Addr<Size::DWORD, BD>, Imm<u32>>) = 0;
+        virtual void exec(Sbb<Addr<Size::DWORD, BIS>, Imm<u32>>) = 0;
+        virtual void exec(Sbb<Addr<Size::DWORD, BISD>, Imm<u32>>) = 0;
 
         virtual void exec(And<R32, Imm<u32>>) = 0;
         virtual void exec(And<R32, R32>) = 0;

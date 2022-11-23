@@ -178,6 +178,11 @@ namespace utils {
     }
 
     template<typename Dst, typename Src>
+    inline std::string toString(const Sbb<Dst, Src>& ins) {
+        return fmt::format("{:7}{},{}", "sbb", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Dst, typename Src>
     inline std::string toString(const And<Dst, Src>& ins) {
         return fmt::format("{:7}{},{}", "and", toString(ins.dst), toString(ins.src));
     }
