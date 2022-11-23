@@ -24,16 +24,13 @@ namespace x86 {
         return result;
     }
 
-    std::vector<std::string_view> split(std::string_view sv, std::string_view separators) {
+    std::vector<std::string_view> splitFirst(std::string_view sv, char separator) {
         std::vector<std::string_view> result;
-        size_t pos = 0;
-        size_t next = 0;
-        while(next != std::string::npos && next != sv.size()) {
-            next = std::string::npos;
-            for(char separator : separators) next = std::min(next, sv.find(separator, pos));
-            if(next == std::string::npos) next = sv.size();
-            result.push_back(std::string_view(sv.begin()+pos, next-pos));
-            pos = next+1;
+        size_t next = sv.find(separator, 0);
+        if(next == std::string::npos) next = sv.size();
+        result.push_back(std::string_view(sv.begin(), next));
+        if(next != sv.size()) {
+            result.push_back(sv.substr(next+1));
         }
         return result;
     }
@@ -100,9 +97,9 @@ namespace x86 {
         size_t nameEnd = s.find_first_of(' ');
         std::string_view name = strip(nameEnd < s.size() ? s.substr(0, nameEnd) : s);
         std::string_view rest = strip(nameEnd < s.size() ? s.substr(nameEnd) : "");
-        std::vector<std::string_view> operandsAndDecorator = split(rest, "<>");
+        std::vector<std::string_view> operandsAndDecorator = splitFirst(rest, '<');
         std::string_view operands = strip(operandsAndDecorator.size() > 0 ? operandsAndDecorator[0] : "");
-        std::string_view decorator = strip(operandsAndDecorator.size() > 1 ? operandsAndDecorator[1] : "");
+        std::string_view decorator = strip(operandsAndDecorator.size() > 1 ? operandsAndDecorator[1].substr(0, operandsAndDecorator[1].size()-1) : "");
         // fmt::print("{} _{}_ _{}_ _{}_\n", operandsAndDecorator.size(), name, operands, decorator);
         if(name == "push") return parsePush(address, operands);
         if(name == "pop") return parsePop(address, operands);
