@@ -253,6 +253,10 @@ namespace utils {
         return fmt::format("{:7}{},{:#x}", "cmp", toString(ins.src1), ins.src2);
     }
 
+    inline std::string toString(const Cmp<Addr<Size::DWORD, BD>, u32>& ins) {
+        return fmt::format("{:7}{},{:#x}", "cmp", toString(ins.src1), ins.src2);
+    }
+
     inline std::string toString(const Jmp& ins) {
         return fmt::format("{:7}{:x} <{}>", "jmp", ins.symbolAddress, ins.symbolName);
     }

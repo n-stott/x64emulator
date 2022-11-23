@@ -442,10 +442,13 @@ namespace x86 {
         if(operands.size() != 2) return {};
         auto r32src1 = asRegister32(operands[0]);
         auto ByteBDsrc1 = asByteBD(operands[0]);
+        auto DoubleBDsrc1 = asDoubleBD(operands[0]);
         auto r32src2 = asRegister32(operands[1]);
         auto imm8src2 = asImmediate8(operands[1]);
+        auto imm32src2 = asImmediate32(operands[1]);
         if(r32src1 && r32src2) return make_wrapper<Cmp<R32, R32>>(address, r32src1.value(), r32src2.value());
         if(ByteBDsrc1 && imm8src2) return make_wrapper<Cmp<Addr<Size::BYTE, BD>, u8>>(address, ByteBDsrc1.value(), imm8src2.value());
+        if(DoubleBDsrc1 && imm32src2) return make_wrapper<Cmp<Addr<Size::DWORD, BD>, u32>>(address, DoubleBDsrc1.value(), imm32src2.value());
         return {};
     }
 
