@@ -25,6 +25,21 @@ namespace x86 {
         u32 extendedValue;
     };
 
+    enum class R8 {
+        AH,
+        AL,
+        BH,
+        BL,
+        CH,
+        CL,
+        DH,
+        DL,
+        SPL,
+        BPL,
+        SIL,
+        DIL,
+    };
+
     enum class R16 {
         BP,
         SP,

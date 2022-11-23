@@ -8,6 +8,24 @@
 namespace x86 {
 namespace utils {
 
+    inline std::string toString(const R8& reg) {
+        switch(reg) {
+            case R8::AH: return "ah";
+            case R8::AL: return "al";
+            case R8::BH: return "bh";
+            case R8::BL: return "bl";
+            case R8::CH: return "ch";
+            case R8::CL: return "cl";
+            case R8::DH: return "dh";
+            case R8::DL: return "dl";
+            case R8::SPL: return "spl";
+            case R8::BPL: return "bpl";
+            case R8::SIL: return "sil";
+            case R8::DIL: return "dil";
+        }
+        return "";
+    }
+
     inline std::string toString(const R16& reg) {
         switch(reg) {
             case R16::BP: return "bp";

@@ -125,6 +125,22 @@ namespace x86 {
         return {};
     }
 
+    std::optional<R8> asRegister8(std::string_view sv) {
+        if(sv == "ah") return R8::AH;
+        if(sv == "al") return R8::AL;
+        if(sv == "bh") return R8::BH;
+        if(sv == "bl") return R8::BL;
+        if(sv == "ch") return R8::CH;
+        if(sv == "cl") return R8::CL;
+        if(sv == "dh") return R8::DH;
+        if(sv == "dl") return R8::DL;
+        if(sv == "spl") return R8::SPL;
+        if(sv == "bpl") return R8::BPL;
+        if(sv == "sil") return R8::SIL;
+        if(sv == "dil") return R8::DIL;
+        return {};
+    }
+
     std::optional<R16> asRegister16(std::string_view sv) {
         if(sv == "bp") return R16::BP;
         if(sv == "sp") return R16::SP;
