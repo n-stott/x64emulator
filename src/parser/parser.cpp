@@ -118,6 +118,8 @@ namespace x86 {
         if(name == "hlt") return parseHalt(address, operands);
         if(name == "nop") return parseNop(address, operands);
         if(name == "ud2") return parseUd2(address, operands);
+        if(name == "inc") return parseInc(address, operands);
+        if(name == "dec") return parseDec(address, operands);
         if(name == "shr") return parseShr(address, operands);
         if(name == "shl") return parseShl(address, operands);
         if(name == "sar") return parseSar(address, operands);
@@ -682,6 +684,38 @@ namespace x86 {
     std::unique_ptr<X86Instruction> InstructionParser::parseUd2(u32 address, std::string_view operands) {
         if(operands.size() > 0) return {};
         return make_wrapper<Ud2>(address);
+    }
+
+    std::unique_ptr<X86Instruction> InstructionParser::parseInc(u32 address, std::string_view operands) {
+        auto r8dst = asRegister8(operands);
+        auto r32dst = asRegister32(operands);
+        auto addrDoubleBdst = asDoubleB(operands);
+        auto addrDoubleBDdst = asDoubleBD(operands);
+        auto addrDoubleBISdst = asDoubleBIS(operands);
+        auto addrDoubleBISDdst = asDoubleBISD(operands);
+        if(r8dst) return make_wrapper<Inc<R8>>(address, r8dst.value());
+        if(r32dst) return make_wrapper<Inc<R32>>(address, r32dst.value());
+        if(addrDoubleBdst) return make_wrapper<Inc<Addr<Size::DWORD, B>>>(address, addrDoubleBdst.value());
+        if(addrDoubleBDdst) return make_wrapper<Inc<Addr<Size::DWORD, BD>>>(address, addrDoubleBDdst.value());
+        if(addrDoubleBISdst) return make_wrapper<Inc<Addr<Size::DWORD, BIS>>>(address, addrDoubleBISdst.value());
+        if(addrDoubleBISDdst) return make_wrapper<Inc<Addr<Size::DWORD, BISD>>>(address, addrDoubleBISDdst.value());
+        return {};
+    }
+
+    std::unique_ptr<X86Instruction> InstructionParser::parseDec(u32 address, std::string_view operands) {
+        auto r8dst = asRegister8(operands);
+        auto r32dst = asRegister32(operands);
+        auto addrDoubleBdst = asDoubleB(operands);
+        auto addrDoubleBDdst = asDoubleBD(operands);
+        auto addrDoubleBISdst = asDoubleBIS(operands);
+        auto addrDoubleBISDdst = asDoubleBISD(operands);
+        if(r8dst) return make_wrapper<Dec<R8>>(address, r8dst.value());
+        if(r32dst) return make_wrapper<Dec<R32>>(address, r32dst.value());
+        if(addrDoubleBdst) return make_wrapper<Dec<Addr<Size::DWORD, B>>>(address, addrDoubleBdst.value());
+        if(addrDoubleBDdst) return make_wrapper<Dec<Addr<Size::DWORD, BD>>>(address, addrDoubleBDdst.value());
+        if(addrDoubleBISdst) return make_wrapper<Dec<Addr<Size::DWORD, BIS>>>(address, addrDoubleBISdst.value());
+        if(addrDoubleBISDdst) return make_wrapper<Dec<Addr<Size::DWORD, BISD>>>(address, addrDoubleBISDdst.value());
+        return {};
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseShr(u32 address, std::string_view operandsString) {
