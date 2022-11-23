@@ -26,13 +26,20 @@ namespace x86 {
 
         virtual void exec(Mov<R32, R32>) = 0;
         virtual void exec(Mov<R32, Imm<u32>>) = 0;
+        virtual void exec(Mov<R32, Addr<Size::DWORD, B>>) = 0;
+        virtual void exec(Mov<R32, Addr<Size::DWORD, BD>>) = 0;
+        virtual void exec(Mov<R32, Addr<Size::DWORD, BIS>>) = 0;
+        virtual void exec(Mov<R32, Addr<Size::DWORD, BISD>>) = 0;
         virtual void exec(Mov<Addr<Size::BYTE, B>, Imm<u8>>) = 0;
         virtual void exec(Mov<Addr<Size::BYTE, BD>, Imm<u8>>) = 0;
-        virtual void exec(Mov<Addr<Size::DWORD, BD>, Imm<u32>>) = 0;
         virtual void exec(Mov<Addr<Size::DWORD, B>, R32>) = 0;
-        virtual void exec(Mov<R32, Addr<Size::DWORD, B>>) = 0;
+        virtual void exec(Mov<Addr<Size::DWORD, B>, Imm<u32>>) = 0;
         virtual void exec(Mov<Addr<Size::DWORD, BD>, R32>) = 0;
-        virtual void exec(Mov<R32, Addr<Size::DWORD, BD>>) = 0;
+        virtual void exec(Mov<Addr<Size::DWORD, BD>, Imm<u32>>) = 0;
+        virtual void exec(Mov<Addr<Size::DWORD, BIS>, R32>) = 0;
+        virtual void exec(Mov<Addr<Size::DWORD, BIS>, Imm<u32>>) = 0;
+        virtual void exec(Mov<Addr<Size::DWORD, BISD>, R32>) = 0;
+        virtual void exec(Mov<Addr<Size::DWORD, BISD>, Imm<u32>>) = 0;
 
         virtual void exec(Lea<R32, B>) = 0;
         virtual void exec(Lea<R32, BD>) = 0;

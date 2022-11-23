@@ -81,6 +81,10 @@ namespace utils {
         return fmt::format("[{}{:+#x}]", toString(bd.base), bd.displacement);
     }
 
+    inline std::string toString(const BIS& bd) {
+        return fmt::format("[{}+{}*{}]", toString(bd.base), toString(bd.index), bd.scale);
+    }
+
     inline std::string toString(const BISD& bd) {
         return fmt::format("[{}+{}*{}{:+#x}]", toString(bd.base), toString(bd.index), bd.scale, bd.displacement);
     }
@@ -104,6 +108,18 @@ namespace utils {
     }
 
     inline std::string toString(const Addr<Size::DWORD, BD>& addr) {
+        return fmt::format("{} PTR {}", 
+                    "DWORD",
+                    toString(addr.encoding));
+    }
+
+    inline std::string toString(const Addr<Size::DWORD, BIS>& addr) {
+        return fmt::format("{} PTR {}", 
+                    "DWORD",
+                    toString(addr.encoding));
+    }
+
+    inline std::string toString(const Addr<Size::DWORD, BISD>& addr) {
         return fmt::format("{} PTR {}", 
                     "DWORD",
                     toString(addr.encoding));
