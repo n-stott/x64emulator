@@ -106,6 +106,8 @@ namespace x86 {
 
         virtual void exec(Shr<R32, Imm<u32>>) = 0;
         virtual void exec(Shr<R32, Count>) = 0;
+        virtual void exec(Shl<R32, Imm<u32>>) = 0;
+        virtual void exec(Shl<R32, Count>) = 0;
         virtual void exec(Sar<R32, Imm<u32>>) = 0;
         virtual void exec(Sar<R32, Count>) = 0;
 

@@ -232,6 +232,11 @@ namespace utils {
     }
 
     template<typename Dst, typename Src>
+    inline std::string toString(const Shl<Dst, Src>& ins) {
+        return fmt::format("{:7}{},{}", "shl", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Dst, typename Src>
     inline std::string toString(const Sar<Dst, Src>& ins) {
         return fmt::format("{:7}{},{}", "sar", toString(ins.dst), toString(ins.src));
     }

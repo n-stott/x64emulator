@@ -118,6 +118,7 @@ namespace x86 {
         if(name == "nop") return parseNop(address, operands);
         if(name == "ud2") return parseUd2(address, operands);
         if(name == "shr") return parseShr(address, operands);
+        if(name == "shl") return parseShl(address, operands);
         if(name == "sar") return parseSar(address, operands);
         if(name == "test") return parseTest(address, operands);
         if(name == "cmp") return parseCmp(address, operands);
@@ -635,6 +636,17 @@ namespace x86 {
         auto imm32src = asImmediate32(operands[1]);
         if(r32dst && countSrc) return make_wrapper<Shr<R32, Count>>(address, r32dst.value(), countSrc.value());
         if(r32dst && imm32src) return make_wrapper<Shr<R32, Imm<u32>>>(address, r32dst.value(), imm32src.value());
+        return {};
+    }
+
+    std::unique_ptr<X86Instruction> InstructionParser::parseShl(u32 address, std::string_view operandsString) {
+        std::vector<std::string_view> operands = split(operandsString, ',');
+        assert(operands.size() == 2);
+        auto r32dst = asRegister32(operands[0]);
+        auto countSrc = asCount(operands[1]);
+        auto imm32src = asImmediate32(operands[1]);
+        if(r32dst && countSrc) return make_wrapper<Shl<R32, Count>>(address, r32dst.value(), countSrc.value());
+        if(r32dst && imm32src) return make_wrapper<Shl<R32, Imm<u32>>>(address, r32dst.value(), imm32src.value());
         return {};
     }
 

@@ -212,6 +212,12 @@ namespace x86 {
     };
 
     template<typename Dst, typename Src>
+    struct Shl {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
     struct Sar {
         Dst dst;
         Src src;
