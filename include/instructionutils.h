@@ -113,9 +113,21 @@ namespace utils {
                     toString(addr.encoding));
     }
 
+    inline std::string toString(const Addr<Size::BYTE, BIS>& addr) {
+        return fmt::format("{} PTR {}", 
+                    "BYTE",
+                    toString(addr.encoding));
+    }
+
     inline std::string toString(const Addr<Size::DWORD, BIS>& addr) {
         return fmt::format("{} PTR {}", 
                     "DWORD",
+                    toString(addr.encoding));
+    }
+
+    inline std::string toString(const Addr<Size::BYTE, BISD>& addr) {
+        return fmt::format("{} PTR {}", 
+                    "BYTE",
                     toString(addr.encoding));
     }
 

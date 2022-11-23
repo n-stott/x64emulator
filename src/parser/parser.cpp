@@ -307,6 +307,16 @@ namespace x86 {
         return Addr<Size::DWORD, BD>{bd.value()};
     }
 
+    std::optional<Addr<Size::BYTE, BIS>> asByteBIS(std::string_view sv) {
+        std::vector<std::string_view> parts = split(sv, ' ');
+        if(parts.size() != 3) return {};
+        if(parts[0] != "BYTE") return {};
+        if(parts[1] != "PTR") return {};
+        auto bis = asBaseIndexScale(parts[2]);
+        if(!bis) return {};
+        return Addr<Size::BYTE, BIS>{bis.value()};
+    }
+
     std::optional<Addr<Size::DWORD, BIS>> asDoubleBIS(std::string_view sv) {
         std::vector<std::string_view> parts = split(sv, ' ');
         if(parts.size() != 3) return {};
@@ -315,6 +325,16 @@ namespace x86 {
         auto bis = asBaseIndexScale(parts[2]);
         if(!bis) return {};
         return Addr<Size::DWORD, BIS>{bis.value()};
+    }
+
+    std::optional<Addr<Size::BYTE, BISD>> asByteBISD(std::string_view sv) {
+        std::vector<std::string_view> parts = split(sv, ' ');
+        if(parts.size() != 3) return {};
+        if(parts[0] != "BYTE") return {};
+        if(parts[1] != "PTR") return {};
+        auto bisd = asBaseIndexScaleDisplacement(parts[2]);
+        if(!bisd) return {};
+        return Addr<Size::BYTE, BISD>{bisd.value()};
     }
 
     std::optional<Addr<Size::DWORD, BISD>> asDoubleBISD(std::string_view sv) {
@@ -350,12 +370,20 @@ namespace x86 {
     std::unique_ptr<X86Instruction> InstructionParser::parseMov(u32 address, std::string_view operandsString) {
         std::vector<std::string_view> operands = split(operandsString, ',');
         assert(operands.size() == 2);
+        auto r8dst = asRegister8(operands[0]);
+        auto r8src = asRegister8(operands[1]);
         auto r32dst = asRegister32(operands[0]);
         auto r32src = asRegister32(operands[1]);
         auto addrDoubleBdst = asDoubleB(operands[0]);
         auto addrDoubleBsrc = asDoubleB(operands[1]);
         auto addrByteBdst = asByteB(operands[0]);
+        auto addrByteBsrc = asByteB(operands[1]);
         auto addrByteBDdst = asByteBD(operands[0]);
+        auto addrByteBDsrc = asByteBD(operands[1]);
+        auto addrByteBISdst = asByteBIS(operands[0]);
+        auto addrByteBISsrc = asByteBIS(operands[1]);
+        auto addrByteBISDdst = asByteBISD(operands[0]);
+        auto addrByteBISDsrc = asByteBISD(operands[1]);
         auto addrDoubleBDdst = asDoubleBD(operands[0]);
         auto addrDoubleBDsrc = asDoubleBD(operands[1]);
         auto addrDoubleBISdst = asDoubleBIS(operands[0]);
@@ -364,14 +392,24 @@ namespace x86 {
         auto addrDoubleBISDsrc = asDoubleBISD(operands[1]);
         auto imm8src = asImmediate8(operands[1]);
         auto imm32src = asImmediate32(operands[1]);
+        if(r8dst && addrByteBsrc) return make_wrapper<Mov<R8, Addr<Size::BYTE, B>>>(address, r8dst.value(), addrByteBsrc.value());
+        if(r8dst && addrByteBDsrc) return make_wrapper<Mov<R8, Addr<Size::BYTE, BD>>>(address, r8dst.value(), addrByteBDsrc.value());
+        if(r8dst && addrByteBISsrc) return make_wrapper<Mov<R8, Addr<Size::BYTE, BIS>>>(address, r8dst.value(), addrByteBISsrc.value());
+        if(r8dst && addrByteBISDsrc) return make_wrapper<Mov<R8, Addr<Size::BYTE, BISD>>>(address, r8dst.value(), addrByteBISDsrc.value());
         if(r32dst && r32src) return make_wrapper<Mov<R32, R32>>(address, r32dst.value(), r32src.value());
         if(r32dst && imm32src) return make_wrapper<Mov<R32, Imm<u32>>>(address, r32dst.value(), imm32src.value());
         if(r32dst && addrDoubleBsrc) return make_wrapper<Mov<R32, Addr<Size::DWORD, B>>>(address, r32dst.value(), addrDoubleBsrc.value());
         if(r32dst && addrDoubleBDsrc) return make_wrapper<Mov<R32, Addr<Size::DWORD, BD>>>(address, r32dst.value(), addrDoubleBDsrc.value());
         if(r32dst && addrDoubleBISsrc) return make_wrapper<Mov<R32, Addr<Size::DWORD, BIS>>>(address, r32dst.value(), addrDoubleBISsrc.value());
         if(r32dst && addrDoubleBISDsrc) return make_wrapper<Mov<R32, Addr<Size::DWORD, BISD>>>(address, r32dst.value(), addrDoubleBISDsrc.value());
+        if(addrByteBdst && r8src) return make_wrapper<Mov<Addr<Size::BYTE, B>, R8>>(address, addrByteBdst.value(), r8src.value());
         if(addrByteBdst && imm8src) return make_wrapper<Mov<Addr<Size::BYTE, B>, Imm<u8>>>(address, addrByteBdst.value(), imm8src.value());
+        if(addrByteBDdst && r8src) return make_wrapper<Mov<Addr<Size::BYTE, BD>, R8>>(address, addrByteBDdst.value(), r8src.value());
         if(addrByteBDdst && imm8src) return make_wrapper<Mov<Addr<Size::BYTE, BD>, Imm<u8>>>(address, addrByteBDdst.value(), imm8src.value());
+        if(addrByteBISdst && r8src) return make_wrapper<Mov<Addr<Size::BYTE, BIS>, R8>>(address, addrByteBISdst.value(), r8src.value());
+        if(addrByteBISdst && imm8src) return make_wrapper<Mov<Addr<Size::BYTE, BIS>, Imm<u8>>>(address, addrByteBISdst.value(), imm8src.value());
+        if(addrByteBISDdst && r8src) return make_wrapper<Mov<Addr<Size::BYTE, BISD>, R8>>(address, addrByteBISDdst.value(), r8src.value());
+        if(addrByteBISDdst && imm8src) return make_wrapper<Mov<Addr<Size::BYTE, BISD>, Imm<u8>>>(address, addrByteBISDdst.value(), imm8src.value());
         if(addrDoubleBdst && r32src) return make_wrapper<Mov<Addr<Size::DWORD, B>, R32>>(address, addrDoubleBdst.value(), r32src.value());
         if(addrDoubleBdst && imm32src) return make_wrapper<Mov<Addr<Size::DWORD, B>, Imm<u32>>>(address, addrDoubleBdst.value(), imm32src.value());
         if(addrDoubleBDdst && r32src) return make_wrapper<Mov<Addr<Size::DWORD, BD>, R32>>(address, addrDoubleBDdst.value(), r32src.value());

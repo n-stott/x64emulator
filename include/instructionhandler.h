@@ -24,14 +24,24 @@ namespace x86 {
         virtual void exec(Xchg<R16, R16>) = 0;
         virtual void exec(Xchg<R32, R32>) = 0;
 
+        virtual void exec(Mov<R8, Addr<Size::BYTE, B>>) = 0;
+        virtual void exec(Mov<R8, Addr<Size::BYTE, BD>>) = 0;
+        virtual void exec(Mov<R8, Addr<Size::BYTE, BIS>>) = 0;
+        virtual void exec(Mov<R8, Addr<Size::BYTE, BISD>>) = 0;
         virtual void exec(Mov<R32, R32>) = 0;
         virtual void exec(Mov<R32, Imm<u32>>) = 0;
         virtual void exec(Mov<R32, Addr<Size::DWORD, B>>) = 0;
         virtual void exec(Mov<R32, Addr<Size::DWORD, BD>>) = 0;
         virtual void exec(Mov<R32, Addr<Size::DWORD, BIS>>) = 0;
         virtual void exec(Mov<R32, Addr<Size::DWORD, BISD>>) = 0;
+        virtual void exec(Mov<Addr<Size::BYTE, B>, R8>) = 0;
         virtual void exec(Mov<Addr<Size::BYTE, B>, Imm<u8>>) = 0;
+        virtual void exec(Mov<Addr<Size::BYTE, BD>, R8>) = 0;
         virtual void exec(Mov<Addr<Size::BYTE, BD>, Imm<u8>>) = 0;
+        virtual void exec(Mov<Addr<Size::BYTE, BIS>, R8>) = 0;
+        virtual void exec(Mov<Addr<Size::BYTE, BIS>, Imm<u8>>) = 0;
+        virtual void exec(Mov<Addr<Size::BYTE, BISD>, R8>) = 0;
+        virtual void exec(Mov<Addr<Size::BYTE, BISD>, Imm<u8>>) = 0;
         virtual void exec(Mov<Addr<Size::DWORD, B>, R32>) = 0;
         virtual void exec(Mov<Addr<Size::DWORD, B>, Imm<u32>>) = 0;
         virtual void exec(Mov<Addr<Size::DWORD, BD>, R32>) = 0;
