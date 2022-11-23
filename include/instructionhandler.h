@@ -86,8 +86,12 @@ namespace x86 {
 
         virtual void exec(Push<R32>) = 0;
         virtual void exec(Push<SignExtended<u8>>) = 0;
+        virtual void exec(Push<Imm<u32>>) = 0;
         virtual void exec(Push<Addr<Size::DWORD, B>>) = 0;
         virtual void exec(Push<Addr<Size::DWORD, BD>>) = 0;
+        virtual void exec(Push<Addr<Size::DWORD, BIS>>) = 0;
+        virtual void exec(Push<Addr<Size::DWORD, ISD>>) = 0;
+        virtual void exec(Push<Addr<Size::DWORD, BISD>>) = 0;
         virtual void exec(Pop<R32>) = 0;
 
         virtual void exec(CallDirect) = 0;

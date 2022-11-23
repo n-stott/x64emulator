@@ -348,6 +348,16 @@ namespace x86 {
         return Addr<Size::DWORD, BIS>{bis.value()};
     }
 
+    std::optional<Addr<Size::DWORD, ISD>> asDoubleISD(std::string_view sv) {
+        std::vector<std::string_view> parts = split(sv, ' ');
+        if(parts.size() != 3) return {};
+        if(parts[0] != "DWORD") return {};
+        if(parts[1] != "PTR") return {};
+        auto isd = asIndexScaleDisplacement(parts[2]);
+        if(!isd) return {};
+        return Addr<Size::DWORD, ISD>{isd.value()};
+    }
+
     std::optional<Addr<Size::BYTE, BISD>> asByteBISD(std::string_view sv) {
         std::vector<std::string_view> parts = split(sv, ' ');
         if(parts.size() != 3) return {};
@@ -371,12 +381,20 @@ namespace x86 {
     std::unique_ptr<X86Instruction> InstructionParser::parsePush(u32 address, std::string_view operandString) {
         auto r32 = asRegister32(operandString);
         auto imm8 = asImmediate8(operandString);
+        auto imm32 = asImmediate32(operandString);
         auto addrDoubleBsrc = asDoubleB(operandString);
         auto addrDoubleBDsrc = asDoubleBD(operandString);
+        auto addrDoubleBISsrc = asDoubleBIS(operandString);
+        auto addrDoubleISDsrc = asDoubleISD(operandString);
+        auto addrDoubleBISDsrc = asDoubleBISD(operandString);
         if(r32) return make_wrapper<Push<R32>>(address, r32.value());
         if(imm8) return make_wrapper<Push<SignExtended<u8>>>(address, imm8.value());
+        if(imm32) return make_wrapper<Push<Imm<u32>>>(address, imm32.value());
         if(addrDoubleBsrc) return make_wrapper<Push<Addr<Size::DWORD, B>>>(address, addrDoubleBsrc.value());
         if(addrDoubleBDsrc) return make_wrapper<Push<Addr<Size::DWORD, BD>>>(address, addrDoubleBDsrc.value());
+        if(addrDoubleBISsrc) return make_wrapper<Push<Addr<Size::DWORD, BIS>>>(address, addrDoubleBISsrc.value());
+        if(addrDoubleISDsrc) return make_wrapper<Push<Addr<Size::DWORD, ISD>>>(address, addrDoubleISDsrc.value());
+        if(addrDoubleBISDsrc) return make_wrapper<Push<Addr<Size::DWORD, BISD>>>(address, addrDoubleBISDsrc.value());
         return {};
     }
 
