@@ -9,8 +9,20 @@ namespace x86 {
     public:
         ~InstructionHandler() = default;
 
-        virtual void exec(Add<R32, Imm<u32>>) = 0;
         virtual void exec(Add<R32, R32>) = 0;
+        virtual void exec(Add<R32, Imm<u32>>) = 0;
+        virtual void exec(Add<R32, Addr<Size::DWORD, B>>) = 0;
+        virtual void exec(Add<R32, Addr<Size::DWORD, BD>>) = 0;
+        virtual void exec(Add<R32, Addr<Size::DWORD, BIS>>) = 0;
+        virtual void exec(Add<R32, Addr<Size::DWORD, BISD>>) = 0;
+        virtual void exec(Add<Addr<Size::DWORD, B>, R32>) = 0;
+        virtual void exec(Add<Addr<Size::DWORD, BD>, R32>) = 0;
+        virtual void exec(Add<Addr<Size::DWORD, BIS>, R32>) = 0;
+        virtual void exec(Add<Addr<Size::DWORD, BISD>, R32>) = 0;
+        virtual void exec(Add<Addr<Size::DWORD, B>, Imm<u32>>) = 0;
+        virtual void exec(Add<Addr<Size::DWORD, BD>, Imm<u32>>) = 0;
+        virtual void exec(Add<Addr<Size::DWORD, BIS>, Imm<u32>>) = 0;
+        virtual void exec(Add<Addr<Size::DWORD, BISD>, Imm<u32>>) = 0;
 
         virtual void exec(Sub<R32, R32>) = 0;
         virtual void exec(Sub<R32, Imm<u32>>) = 0;
