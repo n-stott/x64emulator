@@ -1138,8 +1138,10 @@ namespace x86 {
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseJmp(u32 address, std::string_view operandsString, std::string_view decorator) {
+        auto reg32 = asRegister32(operandsString);
         auto imm32 = asImmediate32(operandsString);
-        if(imm32) return make_wrapper<Jmp>(address, imm32.value(), std::string(decorator.begin(), decorator.end()));
+        if(reg32) return make_wrapper<Jmp<R32>>(address, reg32.value(), std::nullopt);
+        if(imm32) return make_wrapper<Jmp<u32>>(address, imm32.value(), std::string(decorator.begin(), decorator.end()));
         return {};
     }
 

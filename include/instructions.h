@@ -2,6 +2,7 @@
 #define INSTRUCTIONS_H
 
 #include "utils/utils.h"
+#include <optional>
 #include <string>
 
 
@@ -350,9 +351,10 @@ namespace x86 {
         Src2 src2;
     };
 
+    template<typename Dst>
     struct Jmp {
-        u32 symbolAddress;
-        std::string symbolName;
+        Dst symbolAddress;
+        std::optional<std::string> symbolName;
     };
 
     struct Jne {

@@ -59,6 +59,10 @@ namespace utils {
         return fmt::format("{:x}", count.count);
     }
 
+    inline std::string toString(const u32& count) {
+        return fmt::format("{:x}", count);
+    }
+
     template<typename T>
     inline std::string toString(const Imm<T>& imm) {
         if constexpr(std::is_signed_v<T>) {
@@ -319,8 +323,13 @@ namespace utils {
         return fmt::format("{:7}{},{}", "cmp", toString(ins.src1), toString(ins.src2));
     }
 
-    inline std::string toString(const Jmp& ins) {
-        return fmt::format("{:7}{:x} <{}>", "jmp", ins.symbolAddress, ins.symbolName);
+    template<typename Dst>
+    inline std::string toString(const Jmp<Dst>& ins) {
+        if(ins.symbolName) {
+            return fmt::format("{:7}{} <{}>", "jmp", toString(ins.symbolAddress), ins.symbolName.value());
+        } else {
+            return fmt::format("{:7}{}", "jmp", toString(ins.symbolAddress));
+        }
     }
 
     inline std::string toString(const Jne& ins) {

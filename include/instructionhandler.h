@@ -288,7 +288,8 @@ namespace x86 {
         virtual void exec(Setne<R8>) = 0;
         virtual void exec(Setne<Addr<Size::BYTE, BD>>) = 0;
 
-        virtual void exec(Jmp) = 0;
+        virtual void exec(Jmp<R32>) = 0;
+        virtual void exec(Jmp<u32>) = 0;
         virtual void exec(Jne) = 0;
         virtual void exec(Je) = 0;
         virtual void exec(Jae) = 0;
