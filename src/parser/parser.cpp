@@ -150,6 +150,8 @@ namespace x86 {
         if(name == "jb") return parseJb(address, operands, decorator);
         if(name == "jg") return parseJg(address, operands, decorator);
         if(name == "jl") return parseJl(address, operands, decorator);
+        if(name == "js") return parseJs(address, operands, decorator);
+        if(name == "jns") return parseJns(address, operands, decorator);
         return {};
     }
 
@@ -1223,6 +1225,18 @@ namespace x86 {
     std::unique_ptr<X86Instruction> InstructionParser::parseJl(u32 address, std::string_view operandsString, std::string_view decorator) {
         auto imm32 = asImmediate32(operandsString);
         if(imm32) return make_wrapper<Jl>(address, imm32.value(), std::string(decorator.begin(), decorator.end()));
+        return {};
+    }
+
+    std::unique_ptr<X86Instruction> InstructionParser::parseJs(u32 address, std::string_view operandsString, std::string_view decorator) {
+        auto imm32 = asImmediate32(operandsString);
+        if(imm32) return make_wrapper<Js>(address, imm32.value(), std::string(decorator.begin(), decorator.end()));
+        return {};
+    }
+
+    std::unique_ptr<X86Instruction> InstructionParser::parseJns(u32 address, std::string_view operandsString, std::string_view decorator) {
+        auto imm32 = asImmediate32(operandsString);
+        if(imm32) return make_wrapper<Jns>(address, imm32.value(), std::string(decorator.begin(), decorator.end()));
         return {};
     }
 

@@ -412,6 +412,16 @@ namespace x86 {
         std::string symbolName;
     };
 
+    struct Js {
+        u32 symbolAddress;
+        std::string symbolName;
+    };
+
+    struct Jns {
+        u32 symbolAddress;
+        std::string symbolName;
+    };
+
 }
 
 #endif

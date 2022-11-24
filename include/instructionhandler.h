@@ -311,6 +311,8 @@ namespace x86 {
         virtual void exec(Jb) = 0;
         virtual void exec(Jg) = 0;
         virtual void exec(Jl) = 0;
+        virtual void exec(Js) = 0;
+        virtual void exec(Jns) = 0;
 
     };
 

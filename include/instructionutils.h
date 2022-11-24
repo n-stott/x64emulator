@@ -376,6 +376,14 @@ namespace utils {
     inline std::string toString(const Jl& ins) {
         return fmt::format("{:7}{:x} <{}>", "jl", ins.symbolAddress, ins.symbolName);
     }
+
+    inline std::string toString(const Js& ins) {
+        return fmt::format("{:7}{:x} <{}>", "js", ins.symbolAddress, ins.symbolName);
+    }
+
+    inline std::string toString(const Jns& ins) {
+        return fmt::format("{:7}{:x} <{}>", "jns", ins.symbolAddress, ins.symbolName);
+    }
 }
 }
 
