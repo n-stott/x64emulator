@@ -200,6 +200,11 @@ namespace utils {
         return fmt::format("{:7}{},{}", "xor", toString(ins.dst), toString(ins.src));
     }
 
+    template<typename Dst>
+    inline std::string toString(const Not<Dst>& ins) {
+        return fmt::format("{:7}{}", "not", toString(ins.dst));
+    }
+
     template<typename Dst, typename Src>
     inline std::string toString(const Xchg<Dst, Src>& ins) {
         return fmt::format("{:7}{},{}", "xchg", toString(ins.dst), toString(ins.src));

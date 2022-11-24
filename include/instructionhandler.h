@@ -117,6 +117,10 @@ namespace x86 {
         virtual void exec(Xor<Addr<Size::DWORD, BIS>, R32>) = 0;
         virtual void exec(Xor<Addr<Size::DWORD, BISD>, R32>) = 0;
 
+        virtual void exec(Not<R32>) = 0;
+        virtual void exec(Not<Addr<Size::DWORD, BD>>) = 0;
+        virtual void exec(Not<Addr<Size::DWORD, BIS>>) = 0;
+
         virtual void exec(Xchg<R16, R16>) = 0;
         virtual void exec(Xchg<R32, R32>) = 0;
 

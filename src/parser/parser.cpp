@@ -114,6 +114,7 @@ namespace x86 {
         if(name == "and") return parseAnd(address, operands);
         if(name == "or") return parseOr(address, operands);
         if(name == "xor") return parseXor(address, operands);
+        if(name == "not") return parseNot(address, operands);
         if(name == "xchg") return parseXchg(address, operands);
         if(name == "call") return parseCall(address, operands, decorator);
         if(name == "ret") return parseRet(address, operands);
@@ -845,6 +846,16 @@ namespace x86 {
         if(addrDoubleBDdst && r32src) return make_wrapper<Xor<Addr<Size::DWORD, BD>, R32>>(address, addrDoubleBDdst.value(), r32src.value());
         if(addrDoubleBISdst && r32src) return make_wrapper<Xor<Addr<Size::DWORD, BIS>, R32>>(address, addrDoubleBISdst.value(), r32src.value());
         if(addrDoubleBISDdst && r32src) return make_wrapper<Xor<Addr<Size::DWORD, BISD>, R32>>(address, addrDoubleBISDdst.value(), r32src.value());
+        return {};
+    }
+
+    std::unique_ptr<X86Instruction> InstructionParser::parseNot(u32 address, std::string_view operands) {
+        auto r32dst = asRegister32(operands);
+        auto addrDoubleBDdst = asDoubleBD(operands);
+        auto addrDoubleBISdst = asDoubleBIS(operands);
+        if(r32dst) return make_wrapper<Not<R32>>(address, r32dst.value());
+        if(addrDoubleBDdst) return make_wrapper<Not<Addr<Size::DWORD, BD>>>(address, addrDoubleBDdst.value());
+        if(addrDoubleBISdst) return make_wrapper<Not<Addr<Size::DWORD, BIS>>>(address, addrDoubleBISdst.value());
         return {};
     }
 

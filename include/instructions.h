@@ -219,6 +219,11 @@ namespace x86 {
         Src src;
     };
 
+    template<typename Dst>
+    struct Not {
+        Dst dst;
+    };
+
     template<typename Dst, typename Src>
     struct Xchg {
         Dst dst;
