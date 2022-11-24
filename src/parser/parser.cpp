@@ -122,6 +122,7 @@ namespace x86 {
         if(name == "hlt") return parseHalt(address, operands);
         if(name == "nop") return parseNop(address, operands);
         if(name == "ud2") return parseUd2(address, operands);
+        if(name == "cdq") return parseCdq(address, operands);
         if(name == "inc") return parseInc(address, operands);
         if(name == "dec") return parseDec(address, operands);
         if(name == "shr") return parseShr(address, operands);
@@ -908,6 +909,11 @@ namespace x86 {
     std::unique_ptr<X86Instruction> InstructionParser::parseUd2(u32 address, std::string_view operands) {
         if(operands.size() > 0) return {};
         return make_wrapper<Ud2>(address);
+    }
+
+    std::unique_ptr<X86Instruction> InstructionParser::parseCdq(u32 address, std::string_view operands) {
+        if(operands.size() > 0) return {};
+        return make_wrapper<Cdq>(address);
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseInc(u32 address, std::string_view operands) {

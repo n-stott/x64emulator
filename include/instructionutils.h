@@ -243,6 +243,10 @@ namespace utils {
         return fmt::format("{:7}", "ud2");
     }
 
+    inline std::string toString(const Cdq&) {
+        return fmt::format("{:7}", "cdq");
+    }
+
     template<typename Dst>
     inline std::string toString(const Inc<Dst>& ins) {
         return fmt::format("{:7}{}", "inc", toString(ins.dst));

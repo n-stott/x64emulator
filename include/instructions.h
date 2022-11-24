@@ -266,6 +266,10 @@ namespace x86 {
 
     };
 
+    struct Cdq {
+
+    };
+
     template<typename Dst>
     struct Inc {
         Dst dst;
