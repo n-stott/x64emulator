@@ -1050,10 +1050,28 @@ namespace x86 {
         if(operands.size() != 2) return {};
         auto r8src1 = asRegister8(operands[0]);
         auto r8src2 = asRegister8(operands[1]);
+        auto r16src1 = asRegister16(operands[0]);
+        auto r16src2 = asRegister16(operands[1]);
         auto r32src1 = asRegister32(operands[0]);
         auto r32src2 = asRegister32(operands[1]);
+        auto imm8src2 = asImmediate8(operands[1]);
+        auto imm32src2 = asImmediate32(operands[1]);
+        auto ByteBsrc1 = asByteB(operands[0]);
+        auto ByteBDsrc1 = asByteBD(operands[0]);
+        auto ByteBISsrc1 = asByteBIS(operands[0]);
+        auto ByteBISDsrc1 = asByteBISD(operands[0]);
+        auto DoubleBDsrc1 = asDoubleBD(operands[0]);
         if(r8src1 && r8src2) return make_wrapper<Test<R8, R8>>(address, r8src1.value(), r8src2.value());
+        if(r8src1 && imm8src2) return make_wrapper<Test<R8, Imm<u8>>>(address, r8src1.value(), imm8src2.value());
+        if(r16src1 && r16src2) return make_wrapper<Test<R16, R16>>(address, r16src1.value(), r16src2.value());
         if(r32src1 && r32src2) return make_wrapper<Test<R32, R32>>(address, r32src1.value(), r32src2.value());
+        if(r32src1 && imm32src2) return make_wrapper<Test<R32, Imm<u32>>>(address, r32src1.value(), imm32src2.value());
+        if(ByteBsrc1 && imm8src2) return make_wrapper<Test<Addr<Size::BYTE, B>, Imm<u8>>>(address, ByteBsrc1.value(), imm8src2.value());
+        if(ByteBDsrc1 && r8src2) return make_wrapper<Test<Addr<Size::BYTE, BD>, R8>>(address, ByteBDsrc1.value(), r8src2.value());
+        if(ByteBDsrc1 && imm8src2) return make_wrapper<Test<Addr<Size::BYTE, BD>, Imm<u8>>>(address, ByteBDsrc1.value(), imm8src2.value());
+        if(ByteBISsrc1 && imm8src2) return make_wrapper<Test<Addr<Size::BYTE, BIS>, Imm<u8>>>(address, ByteBISsrc1.value(), imm8src2.value());
+        if(ByteBISDsrc1 && imm8src2) return make_wrapper<Test<Addr<Size::BYTE, BISD>, Imm<u8>>>(address, ByteBISDsrc1.value(), imm8src2.value());
+        if(DoubleBDsrc1 && imm32src2) return make_wrapper<Test<Addr<Size::DWORD, BD>, Imm<u32>>>(address, DoubleBDsrc1.value(), imm32src2.value());
         return {};
     }
 

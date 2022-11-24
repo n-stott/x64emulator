@@ -224,7 +224,16 @@ namespace x86 {
         virtual void exec(Sar<R32, Count>) = 0;
 
         virtual void exec(Test<R8, R8>) = 0;
+        virtual void exec(Test<R8, Imm<u8>>) = 0;
+        virtual void exec(Test<R16, R16>) = 0;
         virtual void exec(Test<R32, R32>) = 0;
+        virtual void exec(Test<R32, Imm<u32>>) = 0;
+        virtual void exec(Test<Addr<Size::BYTE, B>, Imm<u8>>) = 0;
+        virtual void exec(Test<Addr<Size::BYTE, BD>, R8>) = 0;
+        virtual void exec(Test<Addr<Size::BYTE, BD>, Imm<u8>>) = 0;
+        virtual void exec(Test<Addr<Size::BYTE, BIS>, Imm<u8>>) = 0;
+        virtual void exec(Test<Addr<Size::BYTE, BISD>, Imm<u8>>) = 0;
+        virtual void exec(Test<Addr<Size::DWORD, BD>, Imm<u32>>) = 0;
 
         virtual void exec(Cmp<R8, R8>) = 0;
         virtual void exec(Cmp<R8, Imm<u8>>) = 0;
