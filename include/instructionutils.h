@@ -194,6 +194,16 @@ namespace utils {
     }
 
     template<typename Dst, typename Src>
+    inline std::string toString(const Imul2<Dst, Src>& ins) {
+        return fmt::format("{:7}{},{}", "imul", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Dst, typename Src1, typename Src2>
+    inline std::string toString(const Imul3<Dst, Src1, Src2>& ins) {
+        return fmt::format("{:7}{},{},{}", "imul", toString(ins.dst), toString(ins.src1), toString(ins.src2));
+    }
+
+    template<typename Dst, typename Src>
     inline std::string toString(const And<Dst, Src>& ins) {
         return fmt::format("{:7}{},{}", "and", toString(ins.dst), toString(ins.src));
     }
