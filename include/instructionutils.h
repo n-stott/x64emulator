@@ -123,6 +123,11 @@ namespace utils {
     }
 
     template<typename Dst, typename Src>
+    inline std::string toString(const Movzx<Dst, Src>& ins) {
+        return fmt::format("{:7}{},{}", "movzx", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Dst, typename Src>
     inline std::string toString(const Lea<Dst, Src>& ins) {
         return fmt::format("{:7}{},{}", "lea", toString(ins.dst), toString(ins.src));
     }

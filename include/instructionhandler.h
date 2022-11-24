@@ -147,6 +147,18 @@ namespace x86 {
         virtual void exec(Mov<Addr<Size::DWORD, BISD>, R32>) = 0;
         virtual void exec(Mov<Addr<Size::DWORD, BISD>, Imm<u32>>) = 0;
 
+        virtual void exec(Movzx<R16, R8>) = 0;
+        virtual void exec(Movzx<R32, R8>) = 0;
+        virtual void exec(Movzx<R32, R16>) = 0;
+        virtual void exec(Movzx<R32, Addr<Size::BYTE, B>>) = 0;
+        virtual void exec(Movzx<R32, Addr<Size::BYTE, BD>>) = 0;
+        virtual void exec(Movzx<R32, Addr<Size::BYTE, BIS>>) = 0;
+        virtual void exec(Movzx<R32, Addr<Size::BYTE, BISD>>) = 0;
+        virtual void exec(Movzx<R32, Addr<Size::WORD, B>>) = 0;
+        virtual void exec(Movzx<R32, Addr<Size::WORD, BD>>) = 0;
+        virtual void exec(Movzx<R32, Addr<Size::WORD, BIS>>) = 0;
+        virtual void exec(Movzx<R32, Addr<Size::WORD, BISD>>) = 0;
+
         virtual void exec(Lea<R32, B>) = 0;
         virtual void exec(Lea<R32, BD>) = 0;
         virtual void exec(Lea<R32, BIS>) = 0;
