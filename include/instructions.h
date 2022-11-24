@@ -152,6 +152,12 @@ namespace x86 {
     };
 
     template<typename Dst, typename Src>
+    struct Adc {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
     struct Sub {
         Dst dst;
         Src src;

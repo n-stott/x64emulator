@@ -138,6 +138,11 @@ namespace utils {
     }
 
     template<typename Dst, typename Src>
+    inline std::string toString(const Adc<Dst, Src>& ins) {
+        return fmt::format("{:7}{},{}", "adc", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Dst, typename Src>
     inline std::string toString(const Sub<Dst, Src>& ins) {
         return fmt::format("{:7}{},{}", "sub", toString(ins.dst), toString(ins.src));
     }
