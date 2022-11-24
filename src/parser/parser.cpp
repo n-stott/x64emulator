@@ -108,6 +108,7 @@ namespace x86 {
         if(name == "add") return parseAdd(address, operands);
         if(name == "sub") return parseSub(address, operands);
         if(name == "sbb") return parseSbb(address, operands);
+        if(name == "imul") return parseImul(address, operands);
         if(name == "and") return parseAnd(address, operands);
         if(name == "or") return parseOr(address, operands);
         if(name == "xor") return parseXor(address, operands);
@@ -596,6 +597,17 @@ namespace x86 {
         if(addrDoubleBDdst && imm32src) return make_wrapper<Sbb<Addr<Size::DWORD, BD>, Imm<u32>>>(address, addrDoubleBDdst.value(), imm32src.value());
         if(addrDoubleBISdst && imm32src) return make_wrapper<Sbb<Addr<Size::DWORD, BIS>, Imm<u32>>>(address, addrDoubleBISdst.value(), imm32src.value());
         if(addrDoubleBISDdst && imm32src) return make_wrapper<Sbb<Addr<Size::DWORD, BISD>, Imm<u32>>>(address, addrDoubleBISDdst.value(), imm32src.value());
+        return {};
+    }
+
+    std::unique_ptr<X86Instruction> InstructionParser::parseImul(u32 address, std::string_view operandsString) {
+        std::vector<std::string_view> operands = split(operandsString, ',');
+        assert(operands.size() == 1 || operands.size() == 2 || operands.size() == 3);
+        if(operands.size() == 1) {
+            auto r32dst = asRegister32(operands[0]);
+            if(r32dst) return make_wrapper<Imul1<R32>>(address, r32dst.value());
+        }
+        
         return {};
     }
 

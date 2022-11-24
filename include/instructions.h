@@ -157,6 +157,24 @@ namespace x86 {
         Src src;
     };
 
+    template<typename Dst>
+    struct Imul1 {
+        Dst dst;
+    };
+
+    template<typename Dst, typename Src>
+    struct Imul2 {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src1, typename Src2>
+    struct Imul3 {
+        Dst dst;
+        Src1 src1;
+        Src2 src2;
+    };
+
     template<typename Dst, typename Src>
     struct And {
         Dst dst;
