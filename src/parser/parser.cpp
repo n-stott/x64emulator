@@ -871,8 +871,10 @@ namespace x86 {
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseRet(u32 address, std::string_view operands) {
-        if(operands.size() > 0) return {};
-        return make_wrapper<Ret>(address);
+        if(operands.size() == 0) return make_wrapper<Ret<>>(address);
+        auto imm16 = asImmediate16(operands);
+        if(imm16) return make_wrapper<Ret<Imm<u16>>>(address, imm16.value());
+        return {};
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseLeave(u32 address, std::string_view operands) {

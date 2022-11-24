@@ -194,7 +194,8 @@ namespace x86 {
         virtual void exec(CallDirect) = 0;
         virtual void exec(CallIndirect<R32>) = 0;
         virtual void exec(CallIndirect<Addr<Size::DWORD, BD>>) = 0;
-        virtual void exec(Ret) = 0;
+        virtual void exec(Ret<>) = 0;
+        virtual void exec(Ret<Imm<u16>>) = 0;
 
         virtual void exec(Leave) = 0;
         virtual void exec(Halt) = 0;

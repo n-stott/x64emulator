@@ -210,8 +210,12 @@ namespace utils {
         return fmt::format("{:7}{}", "call", toString(ins.src));
     }
 
-    inline std::string toString(const Ret&) {
+    inline std::string toString(const Ret<>&) {
         return fmt::format("{:7}", "ret");
+    }
+
+    inline std::string toString(const Ret<Imm<u16>>& ins) {
+        return fmt::format("{:7}{}", "ret", toString(ins.src));
     }
 
     inline std::string toString(const Leave&) {

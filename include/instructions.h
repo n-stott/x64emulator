@@ -238,7 +238,13 @@ namespace x86 {
 
     };
 
+    template<typename Src = void>
     struct Ret {
+        Src src;
+    };
+
+    template<>
+    struct Ret<void> {
 
     };
 
