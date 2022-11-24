@@ -83,6 +83,17 @@ namespace x86 {
         static std::unique_ptr<X86Instruction> parseShl(u32 address, std::string_view operandsString);
         static std::unique_ptr<X86Instruction> parseSar(u32 address, std::string_view operandsString);
 
+        static std::unique_ptr<X86Instruction> parseSeta(u32 address, std::string_view operands);
+        static std::unique_ptr<X86Instruction> parseSetae(u32 address, std::string_view operands);
+        static std::unique_ptr<X86Instruction> parseSetb(u32 address, std::string_view operands);
+        static std::unique_ptr<X86Instruction> parseSetbe(u32 address, std::string_view operands);
+        static std::unique_ptr<X86Instruction> parseSete(u32 address, std::string_view operands);
+        static std::unique_ptr<X86Instruction> parseSetg(u32 address, std::string_view operands);
+        static std::unique_ptr<X86Instruction> parseSetge(u32 address, std::string_view operands);
+        static std::unique_ptr<X86Instruction> parseSetl(u32 address, std::string_view operands);
+        static std::unique_ptr<X86Instruction> parseSetle(u32 address, std::string_view operands);
+        static std::unique_ptr<X86Instruction> parseSetne(u32 address, std::string_view operands);
+
         static std::unique_ptr<X86Instruction> parseTest(u32 address, std::string_view operands);
         static std::unique_ptr<X86Instruction> parseCmp(u32 address, std::string_view operands);
 

@@ -126,6 +126,16 @@ namespace x86 {
         if(name == "shr") return parseShr(address, operands);
         if(name == "shl") return parseShl(address, operands);
         if(name == "sar") return parseSar(address, operands);
+        if(name == "seta") return parseSeta(address, operands);
+        if(name == "setae") return parseSetae(address, operands);
+        if(name == "setb") return parseSetb(address, operands);
+        if(name == "setbe") return parseSetbe(address, operands);
+        if(name == "sete") return parseSete(address, operands);
+        if(name == "setg") return parseSetg(address, operands);
+        if(name == "setge") return parseSetge(address, operands);
+        if(name == "setl") return parseSetl(address, operands);
+        if(name == "setle") return parseSetle(address, operands);
+        if(name == "setne") return parseSetne(address, operands);
         if(name == "test") return parseTest(address, operands);
         if(name == "cmp") return parseCmp(address, operands);
         if(name == "jmp") return parseJmp(address, operands, decorator);
@@ -949,6 +959,89 @@ namespace x86 {
         if(r32dst && imm32src) return make_wrapper<Sar<R32, Imm<u32>>>(address, r32dst.value(), imm32src.value());
         return {};
     }
+
+    std::unique_ptr<X86Instruction> InstructionParser::parseSeta(u32 address, std::string_view operands) {
+        auto r8dst = asRegister8(operands);
+        auto addrByteBD = asByteBD(operands);
+        if(r8dst) return make_wrapper<Seta<R8>>(address, r8dst.value());
+        if(addrByteBD) return make_wrapper<Seta<Addr<Size::BYTE, BD>>>(address, addrByteBD.value());
+        return {};
+    }
+
+    std::unique_ptr<X86Instruction> InstructionParser::parseSetae(u32 address, std::string_view operands) {
+        auto r8dst = asRegister8(operands);
+        auto addrByteBD = asByteBD(operands);
+        if(r8dst) return make_wrapper<Setae<R8>>(address, r8dst.value());
+        if(addrByteBD) return make_wrapper<Setae<Addr<Size::BYTE, BD>>>(address, addrByteBD.value());
+        return {};
+    }
+
+    std::unique_ptr<X86Instruction> InstructionParser::parseSetb(u32 address, std::string_view operands) {
+        auto r8dst = asRegister8(operands);
+        auto addrByteBD = asByteBD(operands);
+        if(r8dst) return make_wrapper<Setb<R8>>(address, r8dst.value());
+        if(addrByteBD) return make_wrapper<Setb<Addr<Size::BYTE, BD>>>(address, addrByteBD.value());
+        return {};
+    }
+
+    std::unique_ptr<X86Instruction> InstructionParser::parseSetbe(u32 address, std::string_view operands) {
+        auto r8dst = asRegister8(operands);
+        auto addrByteBD = asByteBD(operands);
+        if(r8dst) return make_wrapper<Setbe<R8>>(address, r8dst.value());
+        if(addrByteBD) return make_wrapper<Setbe<Addr<Size::BYTE, BD>>>(address, addrByteBD.value());
+        return {};
+    }
+
+    std::unique_ptr<X86Instruction> InstructionParser::parseSete(u32 address, std::string_view operands) {
+        auto r8dst = asRegister8(operands);
+        auto addrByteB = asByteB(operands);
+        auto addrByteBD = asByteBD(operands);
+        if(r8dst) return make_wrapper<Sete<R8>>(address, r8dst.value());
+        if(addrByteB) return make_wrapper<Sete<Addr<Size::BYTE, B>>>(address, addrByteB.value());
+        if(addrByteBD) return make_wrapper<Sete<Addr<Size::BYTE, BD>>>(address, addrByteBD.value());
+        return {};
+    }
+
+    std::unique_ptr<X86Instruction> InstructionParser::parseSetg(u32 address, std::string_view operands) {
+        auto r8dst = asRegister8(operands);
+        auto addrByteBD = asByteBD(operands);
+        if(r8dst) return make_wrapper<Setg<R8>>(address, r8dst.value());
+        if(addrByteBD) return make_wrapper<Setg<Addr<Size::BYTE, BD>>>(address, addrByteBD.value());
+        return {};
+    }
+
+    std::unique_ptr<X86Instruction> InstructionParser::parseSetge(u32 address, std::string_view operands) {
+        auto r8dst = asRegister8(operands);
+        auto addrByteBD = asByteBD(operands);
+        if(r8dst) return make_wrapper<Setge<R8>>(address, r8dst.value());
+        if(addrByteBD) return make_wrapper<Setge<Addr<Size::BYTE, BD>>>(address, addrByteBD.value());
+        return {};
+    }
+
+    std::unique_ptr<X86Instruction> InstructionParser::parseSetl(u32 address, std::string_view operands) {
+        auto r8dst = asRegister8(operands);
+        auto addrByteBD = asByteBD(operands);
+        if(r8dst) return make_wrapper<Setl<R8>>(address, r8dst.value());
+        if(addrByteBD) return make_wrapper<Setl<Addr<Size::BYTE, BD>>>(address, addrByteBD.value());
+        return {};
+    }
+
+    std::unique_ptr<X86Instruction> InstructionParser::parseSetle(u32 address, std::string_view operands) {
+        auto r8dst = asRegister8(operands);
+        auto addrByteBD = asByteBD(operands);
+        if(r8dst) return make_wrapper<Setle<R8>>(address, r8dst.value());
+        if(addrByteBD) return make_wrapper<Setle<Addr<Size::BYTE, BD>>>(address, addrByteBD.value());
+        return {};
+    }
+
+    std::unique_ptr<X86Instruction> InstructionParser::parseSetne(u32 address, std::string_view operands) {
+        auto r8dst = asRegister8(operands);
+        auto addrByteBD = asByteBD(operands);
+        if(r8dst) return make_wrapper<Setne<R8>>(address, r8dst.value());
+        if(addrByteBD) return make_wrapper<Setne<Addr<Size::BYTE, BD>>>(address, addrByteBD.value());
+        return {};
+    }
+
 
     std::unique_ptr<X86Instruction> InstructionParser::parseTest(u32 address, std::string_view operandsString) {
         std::vector<std::string_view> operands = split(operandsString, ',');

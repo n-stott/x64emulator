@@ -80,6 +80,20 @@ namespace utils {
         if constexpr (size == Size::DWORD) return "DWORD";
     }
 
+    template<Cond condition>
+    inline std::string toString() {
+        if constexpr(condition == Cond::A) return "a";
+        if constexpr(condition == Cond::AE) return "ae";
+        if constexpr(condition == Cond::B) return "b";
+        if constexpr(condition == Cond::BE) return "be";
+        if constexpr(condition == Cond::E) return "e";
+        if constexpr(condition == Cond::G) return "g";
+        if constexpr(condition == Cond::GE) return "ge";
+        if constexpr(condition == Cond::L) return "l";
+        if constexpr(condition == Cond::LE) return "le";
+        if constexpr(condition == Cond::NE) return "ne";
+    }
+
     inline std::string toString(const B& b) {
         return fmt::format("[{}]", toString(b.base));
     }
@@ -239,6 +253,56 @@ namespace utils {
     template<typename Dst, typename Src>
     inline std::string toString(const Sar<Dst, Src>& ins) {
         return fmt::format("{:7}{},{}", "sar", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Dst>
+    inline std::string toString(const Seta<Dst>& ins) {
+        return fmt::format("{:7}{}", "seta", toString(ins.dst));
+    }
+
+    template<typename Dst>
+    inline std::string toString(const Setae<Dst>& ins) {
+        return fmt::format("{:7}{}", "setae", toString(ins.dst));
+    }
+
+    template<typename Dst>
+    inline std::string toString(const Setb<Dst>& ins) {
+        return fmt::format("{:7}{}", "setb", toString(ins.dst));
+    }
+
+    template<typename Dst>
+    inline std::string toString(const Setbe<Dst>& ins) {
+        return fmt::format("{:7}{}", "setbe", toString(ins.dst));
+    }
+
+    template<typename Dst>
+    inline std::string toString(const Sete<Dst>& ins) {
+        return fmt::format("{:7}{}", "sete", toString(ins.dst));
+    }
+
+    template<typename Dst>
+    inline std::string toString(const Setg<Dst>& ins) {
+        return fmt::format("{:7}{}", "setg", toString(ins.dst));
+    }
+
+    template<typename Dst>
+    inline std::string toString(const Setge<Dst>& ins) {
+        return fmt::format("{:7}{}", "setge", toString(ins.dst));
+    }
+
+    template<typename Dst>
+    inline std::string toString(const Setl<Dst>& ins) {
+        return fmt::format("{:7}{}", "setl", toString(ins.dst));
+    }
+
+    template<typename Dst>
+    inline std::string toString(const Setle<Dst>& ins) {
+        return fmt::format("{:7}{}", "setle", toString(ins.dst));
+    }
+
+    template<typename Dst>
+    inline std::string toString(const Setne<Dst>& ins) {
+        return fmt::format("{:7}{}", "setne", toString(ins.dst));
     }
 
     template<typename Src1, typename Src2>

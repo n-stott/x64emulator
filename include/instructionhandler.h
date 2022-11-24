@@ -256,6 +256,28 @@ namespace x86 {
         virtual void exec(Cmp<Addr<Size::DWORD, BISD>, R32>) = 0;
         virtual void exec(Cmp<Addr<Size::DWORD, BISD>, Imm<u32>>) = 0;
 
+        virtual void exec(Setae<R8>) = 0;
+        virtual void exec(Setae<Addr<Size::BYTE, BD>>) = 0;
+        virtual void exec(Seta<R8>) = 0;
+        virtual void exec(Seta<Addr<Size::BYTE, BD>>) = 0;
+        virtual void exec(Setb<R8>) = 0;
+        virtual void exec(Setb<Addr<Size::BYTE, BD>>) = 0;
+        virtual void exec(Setbe<R8>) = 0;
+        virtual void exec(Setbe<Addr<Size::BYTE, BD>>) = 0;
+        virtual void exec(Sete<R8>) = 0;
+        virtual void exec(Sete<Addr<Size::BYTE, B>>) = 0;
+        virtual void exec(Sete<Addr<Size::BYTE, BD>>) = 0;
+        virtual void exec(Setg<R8>) = 0;
+        virtual void exec(Setg<Addr<Size::BYTE, BD>>) = 0;
+        virtual void exec(Setge<R8>) = 0;
+        virtual void exec(Setge<Addr<Size::BYTE, BD>>) = 0;
+        virtual void exec(Setl<R8>) = 0;
+        virtual void exec(Setl<Addr<Size::BYTE, BD>>) = 0;
+        virtual void exec(Setle<R8>) = 0;
+        virtual void exec(Setle<Addr<Size::BYTE, BD>>) = 0;
+        virtual void exec(Setne<R8>) = 0;
+        virtual void exec(Setne<Addr<Size::BYTE, BD>>) = 0;
+
         virtual void exec(Jmp) = 0;
         virtual void exec(Jne) = 0;
         virtual void exec(Je) = 0;

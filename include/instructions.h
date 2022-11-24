@@ -48,7 +48,7 @@ namespace x86 {
         AX,
         BX,
         CX,
-        DX
+        DX,
     };
 
     enum class R32 {
@@ -60,7 +60,20 @@ namespace x86 {
         EBX,
         ECX,
         EDX,
-        EIZ
+        EIZ,
+    };
+
+    enum class Cond {
+        A,
+        AE,
+        B,
+        BE,
+        E,
+        G,
+        GE,
+        L,
+        LE,
+        NE,
     };
 
     struct D {
@@ -269,6 +282,56 @@ namespace x86 {
         Src src;
     };
 
+    template<typename Dst>
+    struct Seta {
+        Dst dst;
+    };
+
+    template<typename Dst>
+    struct Setae {
+        Dst dst;
+    };
+
+    template<typename Dst>
+    struct Setb {
+        Dst dst;
+    };
+
+    template<typename Dst>
+    struct Setbe {
+        Dst dst;
+    };
+
+    template<typename Dst>
+    struct Sete {
+        Dst dst;
+    };
+
+    template<typename Dst>
+    struct Setg {
+        Dst dst;
+    };
+
+    template<typename Dst>
+    struct Setge {
+        Dst dst;
+    };
+
+    template<typename Dst>
+    struct Setl {
+        Dst dst;
+    };
+
+    template<typename Dst>
+    struct Setle {
+        Dst dst;
+    };
+
+    template<typename Dst>
+    struct Setne {
+        Dst dst;
+    };
+    
     template<typename Src1, typename Src2>
     struct Test {
         Src1 src1;
