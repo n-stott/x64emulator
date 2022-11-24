@@ -932,10 +932,18 @@ namespace x86 {
     std::unique_ptr<X86Instruction> InstructionParser::parseShr(u32 address, std::string_view operandsString) {
         std::vector<std::string_view> operands = split(operandsString, ',');
         assert(operands.size() == 2);
+        auto r8dst = asRegister8(operands[0]);
+        auto r16dst = asRegister16(operands[0]);
         auto r32dst = asRegister32(operands[0]);
+        auto r8src = asRegister8(operands[1]);
         auto countSrc = asCount(operands[1]);
+        auto imm8src = asImmediate8(operands[1]);
         auto imm32src = asImmediate32(operands[1]);
+        if(r8dst && countSrc) return make_wrapper<Shr<R8, Count>>(address, r8dst.value(), countSrc.value());
+        if(r16dst && countSrc) return make_wrapper<Shr<R16, Count>>(address, r16dst.value(), countSrc.value());
         if(r32dst && countSrc) return make_wrapper<Shr<R32, Count>>(address, r32dst.value(), countSrc.value());
+        if(r8dst && imm8src) return make_wrapper<Shr<R8, Imm<u8>>>(address, r8dst.value(), imm8src.value());
+        if(r32dst && r8src) return make_wrapper<Shr<R32, R8>>(address, r32dst.value(), r8src.value());
         if(r32dst && imm32src) return make_wrapper<Shr<R32, Imm<u32>>>(address, r32dst.value(), imm32src.value());
         return {};
     }
@@ -944,9 +952,11 @@ namespace x86 {
         std::vector<std::string_view> operands = split(operandsString, ',');
         assert(operands.size() == 2);
         auto r32dst = asRegister32(operands[0]);
+        auto r8src = asRegister8(operands[1]);
         auto countSrc = asCount(operands[1]);
         auto imm32src = asImmediate32(operands[1]);
         if(r32dst && countSrc) return make_wrapper<Shl<R32, Count>>(address, r32dst.value(), countSrc.value());
+        if(r32dst && r8src) return make_wrapper<Shl<R32, R8>>(address, r32dst.value(), r8src.value());
         if(r32dst && imm32src) return make_wrapper<Shl<R32, Imm<u32>>>(address, r32dst.value(), imm32src.value());
         return {};
     }
