@@ -73,6 +73,13 @@ namespace utils {
         return fmt::format("{:#x}", se.extendedValue);
     }
 
+    template<Size size>
+    inline std::string toString() {
+        if constexpr (size == Size::BYTE) return "BYTE";
+        if constexpr (size == Size::WORD) return "WORD";
+        if constexpr (size == Size::DWORD) return "DWORD";
+    }
+
     inline std::string toString(const B& b) {
         return fmt::format("[{}]", toString(b.base));
     }
@@ -93,63 +100,10 @@ namespace utils {
         return fmt::format("[{}+{}*{}{:+#x}]", toString(bisd.base), toString(bisd.index), bisd.scale, bisd.displacement);
     }
 
-    inline std::string toString(const Addr<Size::BYTE, B>& addr) {
+    template<Size size, typename Enc>
+    inline std::string toString(const Addr<size, Enc>& addr) {
         return fmt::format("{} PTR {}", 
-                    "BYTE",
-                    toString(addr.encoding));
-    }
-
-    inline std::string toString(const Addr<Size::DWORD, B>& addr) {
-        return fmt::format("{} PTR {}", 
-                    "DWORD",
-                    toString(addr.encoding));
-    }
-
-    inline std::string toString(const Addr<Size::BYTE, BD>& addr) {
-        return fmt::format("{} PTR {}", 
-                    "BYTE",
-                    toString(addr.encoding));
-    }
-
-    inline std::string toString(const Addr<Size::WORD, BD>& addr) {
-        return fmt::format("{} PTR {}", 
-                    "WORD",
-                    toString(addr.encoding));
-    }
-
-    inline std::string toString(const Addr<Size::DWORD, BD>& addr) {
-        return fmt::format("{} PTR {}", 
-                    "DWORD",
-                    toString(addr.encoding));
-    }
-
-    inline std::string toString(const Addr<Size::BYTE, BIS>& addr) {
-        return fmt::format("{} PTR {}", 
-                    "BYTE",
-                    toString(addr.encoding));
-    }
-
-    inline std::string toString(const Addr<Size::DWORD, BIS>& addr) {
-        return fmt::format("{} PTR {}", 
-                    "DWORD",
-                    toString(addr.encoding));
-    }
-
-    inline std::string toString(const Addr<Size::DWORD, ISD>& addr) {
-        return fmt::format("{} PTR {}", 
-                    "DWORD",
-                    toString(addr.encoding));
-    }
-
-    inline std::string toString(const Addr<Size::BYTE, BISD>& addr) {
-        return fmt::format("{} PTR {}", 
-                    "BYTE",
-                    toString(addr.encoding));
-    }
-
-    inline std::string toString(const Addr<Size::DWORD, BISD>& addr) {
-        return fmt::format("{} PTR {}", 
-                    "DWORD",
+                    toString<size>(),
                     toString(addr.encoding));
     }
 
