@@ -150,12 +150,14 @@ namespace x86 {
         virtual void exec(Or<Addr<Size::DWORD, BIS>, R32>) = 0;
         virtual void exec(Or<Addr<Size::DWORD, BISD>, R32>) = 0;
 
+        virtual void exec(Xor<R8, Imm<u8>>) = 0;
         virtual void exec(Xor<R32, Imm<u32>>) = 0;
         virtual void exec(Xor<R32, R32>) = 0;
         virtual void exec(Xor<R32, Addr<Size::DWORD, B>>) = 0;
         virtual void exec(Xor<R32, Addr<Size::DWORD, BD>>) = 0;
         virtual void exec(Xor<R32, Addr<Size::DWORD, BIS>>) = 0;
         virtual void exec(Xor<R32, Addr<Size::DWORD, BISD>>) = 0;
+        virtual void exec(Xor<Addr<Size::BYTE, BD>, Imm<u8>>) = 0;
         virtual void exec(Xor<Addr<Size::DWORD, B>, R32>) = 0;
         virtual void exec(Xor<Addr<Size::DWORD, BD>, R32>) = 0;
         virtual void exec(Xor<Addr<Size::DWORD, BIS>, R32>) = 0;
@@ -241,7 +243,9 @@ namespace x86 {
 
         virtual void exec(CallDirect) = 0;
         virtual void exec(CallIndirect<R32>) = 0;
+        virtual void exec(CallIndirect<Addr<Size::DWORD, B>>) = 0;
         virtual void exec(CallIndirect<Addr<Size::DWORD, BD>>) = 0;
+        virtual void exec(CallIndirect<Addr<Size::DWORD, BIS>>) = 0;
         virtual void exec(Ret<>) = 0;
         virtual void exec(Ret<Imm<u16>>) = 0;
 
@@ -253,6 +257,7 @@ namespace x86 {
 
         virtual void exec(Inc<R8>) = 0;
         virtual void exec(Inc<R32>) = 0;
+        virtual void exec(Inc<Addr<Size::WORD, BD>>) = 0;
         virtual void exec(Inc<Addr<Size::DWORD, B>>) = 0;
         virtual void exec(Inc<Addr<Size::DWORD, BD>>) = 0;
         virtual void exec(Inc<Addr<Size::DWORD, BIS>>) = 0;
@@ -260,6 +265,7 @@ namespace x86 {
 
         virtual void exec(Dec<R8>) = 0;
         virtual void exec(Dec<R32>) = 0;
+        virtual void exec(Dec<Addr<Size::WORD, BD>>) = 0;
         virtual void exec(Dec<Addr<Size::DWORD, B>>) = 0;
         virtual void exec(Dec<Addr<Size::DWORD, BD>>) = 0;
         virtual void exec(Dec<Addr<Size::DWORD, BIS>>) = 0;
@@ -275,7 +281,9 @@ namespace x86 {
         virtual void exec(Shl<R32, R8>) = 0;
         virtual void exec(Shl<R32, Imm<u32>>) = 0;
         virtual void exec(Shl<R32, Count>) = 0;
+        virtual void exec(Shl<Addr<Size::DWORD, BD>, Imm<u32>>) = 0;
 
+        virtual void exec(Sar<R32, R8>) = 0;
         virtual void exec(Sar<R32, Imm<u32>>) = 0;
         virtual void exec(Sar<R32, Count>) = 0;
 
