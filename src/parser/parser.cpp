@@ -135,6 +135,7 @@ namespace x86 {
         if(name == "shrd") return parseShrd(address, operands);
         if(name == "shld") return parseShld(address, operands);
         if(name == "sar") return parseSar(address, operands);
+        if(name == "rol") return parseRol(address, operands);
         if(name == "seta") return parseSeta(address, operands);
         if(name == "setae") return parseSetae(address, operands);
         if(name == "setb") return parseSetb(address, operands);
@@ -1149,6 +1150,17 @@ namespace x86 {
         if(r32dst && r8src) return make_wrapper<Sar<R32, R8>>(address, r32dst.value(), r8src.value());
         if(r32dst && countSrc) return make_wrapper<Sar<R32, Count>>(address, r32dst.value(), countSrc.value());
         if(r32dst && imm32src) return make_wrapper<Sar<R32, Imm<u32>>>(address, r32dst.value(), imm32src.value());
+        return {};
+    }
+
+    std::unique_ptr<X86Instruction> InstructionParser::parseRol(u32 address, std::string_view operandsString) {
+        std::vector<std::string_view> operands = split(operandsString, ',');
+        assert(operands.size() == 2);
+        auto r32dst = asRegister32(operands[0]);
+        auto r8src = asRegister8(operands[1]);
+        auto imm8src = asImmediate8(operands[1]);
+        if(r32dst && r8src) return make_wrapper<Rol<R32, R8>>(address, r32dst.value(), r8src.value());
+        if(r32dst && imm8src) return make_wrapper<Rol<R32, Imm<u8>>>(address, r32dst.value(), imm8src.value());
         return {};
     }
 

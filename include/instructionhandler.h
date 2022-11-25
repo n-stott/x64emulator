@@ -299,6 +299,9 @@ namespace x86 {
         virtual void exec(Sar<R32, Imm<u32>>) = 0;
         virtual void exec(Sar<R32, Count>) = 0;
 
+        virtual void exec(Rol<R32, R8>) = 0;
+        virtual void exec(Rol<R32, Imm<u8>>) = 0;
+
         virtual void exec(Test<R8, R8>) = 0;
         virtual void exec(Test<R8, Imm<u8>>) = 0;
         virtual void exec(Test<R16, R16>) = 0;

@@ -338,6 +338,12 @@ namespace x86 {
         Src src;
     };
 
+    template<typename Dst, typename Src>
+    struct Rol {
+        Dst dst;
+        Src src;
+    };
+
     template<typename Dst>
     struct Seta {
         Dst dst;

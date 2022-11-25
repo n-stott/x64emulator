@@ -307,6 +307,11 @@ namespace utils {
         return fmt::format("{:7}{},{}", "sar", toString(ins.dst), toString(ins.src));
     }
 
+    template<typename Dst, typename Src>
+    inline std::string toString(const Rol<Dst, Src>& ins) {
+        return fmt::format("{:7}{},{}", "rol", toString(ins.dst), toString(ins.src));
+    }
+
     template<typename Dst>
     inline std::string toString(const Seta<Dst>& ins) {
         return fmt::format("{:7}{}", "seta", toString(ins.dst));

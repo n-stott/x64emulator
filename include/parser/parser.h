@@ -91,6 +91,7 @@ namespace x86 {
         static std::unique_ptr<X86Instruction> parseShrd(u32 address, std::string_view operandsString);
         static std::unique_ptr<X86Instruction> parseShld(u32 address, std::string_view operandsString);
         static std::unique_ptr<X86Instruction> parseSar(u32 address, std::string_view operandsString);
+        static std::unique_ptr<X86Instruction> parseRol(u32 address, std::string_view operandsString);
 
         static std::unique_ptr<X86Instruction> parseSeta(u32 address, std::string_view operands);
         static std::unique_ptr<X86Instruction> parseSetae(u32 address, std::string_view operands);
