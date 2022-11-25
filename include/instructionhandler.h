@@ -361,6 +361,9 @@ namespace x86 {
         virtual void exec(Js) = 0;
         virtual void exec(Jns) = 0;
 
+        virtual void exec(Bsr<R32, R32>) = 0;
+        virtual void exec(Bsf<R32, R32>) = 0;
+
     };
 
 }

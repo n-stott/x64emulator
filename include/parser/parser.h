@@ -117,6 +117,9 @@ namespace x86 {
         static std::unique_ptr<X86Instruction> parseJs(u32 address, std::string_view operands, std::string_view decorator);
         static std::unique_ptr<X86Instruction> parseJns(u32 address, std::string_view operands, std::string_view decorator);
 
+        static std::unique_ptr<X86Instruction> parseBsr(u32 address, std::string_view operandsString);
+        static std::unique_ptr<X86Instruction> parseBsf(u32 address, std::string_view operandsString);
+
     };
 
 }

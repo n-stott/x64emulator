@@ -408,6 +408,16 @@ namespace utils {
     inline std::string toString(const Jns& ins) {
         return fmt::format("{:7}{:x} <{}>", "jns", ins.symbolAddress, ins.symbolName);
     }
+
+    template<typename Dst, typename Src>
+    inline std::string toString(const Bsr<Dst, Src>& ins) {
+        return fmt::format("{:7}{},{}", "bsr", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Dst, typename Src>
+    inline std::string toString(const Bsf<Dst, Src>& ins) {
+        return fmt::format("{:7}{},{}", "bsf", toString(ins.dst), toString(ins.src));
+    }
 }
 }
 

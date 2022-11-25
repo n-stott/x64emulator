@@ -157,6 +157,8 @@ namespace x86 {
         if(name == "jl") return parseJl(address, operands, decorator);
         if(name == "js") return parseJs(address, operands, decorator);
         if(name == "jns") return parseJns(address, operands, decorator);
+        if(name == "bsr") return parseBsr(address, operands);
+        if(name == "bsf") return parseBsf(address, operands);
         return {};
     }
 
@@ -1347,5 +1349,25 @@ namespace x86 {
         if(imm32) return make_wrapper<Jns>(address, imm32.value(), std::string(decorator.begin(), decorator.end()));
         return {};
     }
+
+    std::unique_ptr<X86Instruction> InstructionParser::parseBsr(u32 address, std::string_view operandsString) {
+        std::vector<std::string_view> operands = split(operandsString, ',');
+        assert(operands.size() == 2);
+        auto r32dst = asRegister32(operands[0]);
+        auto r32src = asRegister32(operands[1]);
+        if(r32dst && r32src) return make_wrapper<Bsr<R32, R32>>(address, r32dst.value(), r32src.value());
+        return {};
+    }
+
+
+    std::unique_ptr<X86Instruction> InstructionParser::parseBsf(u32 address, std::string_view operandsString) {
+        std::vector<std::string_view> operands = split(operandsString, ',');
+        assert(operands.size() == 2);
+        auto r32dst = asRegister32(operands[0]);
+        auto r32src = asRegister32(operands[1]);
+        if(r32dst && r32src) return make_wrapper<Bsf<R32, R32>>(address, r32dst.value(), r32src.value());
+        return {};
+    }
+
 
 }

@@ -446,6 +446,18 @@ namespace x86 {
         std::string symbolName;
     };
 
+    template<typename Dst, typename Src>
+    struct Bsf {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
+    struct Bsr {
+        Dst dst;
+        Src src;
+    };
+
 }
 
 #endif
