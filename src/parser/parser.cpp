@@ -132,6 +132,8 @@ namespace x86 {
         if(name == "dec") return parseDec(address, operands);
         if(name == "shr") return parseShr(address, operands);
         if(name == "shl") return parseShl(address, operands);
+        if(name == "shrd") return parseShrd(address, operands);
+        if(name == "shld") return parseShld(address, operands);
         if(name == "sar") return parseSar(address, operands);
         if(name == "seta") return parseSeta(address, operands);
         if(name == "setae") return parseSetae(address, operands);
@@ -1110,6 +1112,30 @@ namespace x86 {
         if(r32dst && r8src) return make_wrapper<Shl<R32, R8>>(address, r32dst.value(), r8src.value());
         if(r32dst && imm32src) return make_wrapper<Shl<R32, Imm<u32>>>(address, r32dst.value(), imm32src.value());
         if(addrDoubleBDdst && imm32src) return make_wrapper<Shl<Addr<Size::DWORD, BD>, Imm<u32>>>(address, addrDoubleBDdst.value(), imm32src.value());
+        return {};
+    }
+
+    std::unique_ptr<X86Instruction> InstructionParser::parseShrd(u32 address, std::string_view operandsString) {
+        std::vector<std::string_view> operands = split(operandsString, ',');
+        assert(operands.size() == 3);
+        auto r32dst = asRegister32(operands[0]);
+        auto r32src1 = asRegister32(operands[1]);
+        auto r8src2 = asRegister8(operands[2]);
+        auto imm8src2 = asImmediate8(operands[2]);
+        if(r32dst && r32src1 && r8src2) return make_wrapper<Shrd<R32, R32, R8>>(address, r32dst.value(), r32src1.value(), r8src2.value());
+        if(r32dst && r32src1 && imm8src2) return make_wrapper<Shrd<R32, R32, Imm<u8>>>(address, r32dst.value(), r32src1.value(), imm8src2.value());
+        return {};
+    }
+
+    std::unique_ptr<X86Instruction> InstructionParser::parseShld(u32 address, std::string_view operandsString) {
+        std::vector<std::string_view> operands = split(operandsString, ',');
+        assert(operands.size() == 3);
+        auto r32dst = asRegister32(operands[0]);
+        auto r32src1 = asRegister32(operands[1]);
+        auto r8src2 = asRegister8(operands[2]);
+        auto imm8src2 = asImmediate8(operands[2]);
+        if(r32dst && r32src1 && r8src2) return make_wrapper<Shld<R32, R32, R8>>(address, r32dst.value(), r32src1.value(), r8src2.value());
+        if(r32dst && r32src1 && imm8src2) return make_wrapper<Shld<R32, R32, Imm<u8>>>(address, r32dst.value(), r32src1.value(), imm8src2.value());
         return {};
     }
 

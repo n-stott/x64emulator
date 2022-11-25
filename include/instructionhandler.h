@@ -289,6 +289,12 @@ namespace x86 {
         virtual void exec(Shl<R32, Count>) = 0;
         virtual void exec(Shl<Addr<Size::DWORD, BD>, Imm<u32>>) = 0;
 
+        virtual void exec(Shld<R32, R32, R8>) = 0;
+        virtual void exec(Shld<R32, R32, Imm<u8>>) = 0;
+
+        virtual void exec(Shrd<R32, R32, R8>) = 0;
+        virtual void exec(Shrd<R32, R32, Imm<u8>>) = 0;
+
         virtual void exec(Sar<R32, R8>) = 0;
         virtual void exec(Sar<R32, Imm<u32>>) = 0;
         virtual void exec(Sar<R32, Count>) = 0;

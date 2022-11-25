@@ -318,6 +318,20 @@ namespace x86 {
         Src src;
     };
 
+    template<typename Dst, typename Src1, typename Src2>
+    struct Shrd {
+        Dst dst;
+        Src1 src1;
+        Src2 src2;
+    };
+
+    template<typename Dst, typename Src1, typename Src2>
+    struct Shld {
+        Dst dst;
+        Src1 src1;
+        Src2 src2;
+    };
+
     template<typename Dst, typename Src>
     struct Sar {
         Dst dst;
