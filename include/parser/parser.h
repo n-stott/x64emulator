@@ -53,6 +53,7 @@ namespace x86 {
         static std::unique_ptr<X86Instruction> parsePop(u32 address, std::string_view operands);
 
         static std::unique_ptr<X86Instruction> parseMov(u32 address, std::string_view operandsString);
+        static std::unique_ptr<X86Instruction> parseMovsx(u32 address, std::string_view operandsString);
         static std::unique_ptr<X86Instruction> parseMovzx(u32 address, std::string_view operandsString);
         static std::unique_ptr<X86Instruction> parseLea(u32 address, std::string_view operandsString);
 

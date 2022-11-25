@@ -138,6 +138,12 @@ namespace x86 {
     };
 
     template<typename Dst, typename Src>
+    struct Movsx {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
     struct Movzx {
         Dst dst;
         Src src;

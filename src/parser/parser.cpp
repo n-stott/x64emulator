@@ -104,6 +104,7 @@ namespace x86 {
         if(name == "push") return parsePush(address, operands);
         if(name == "pop") return parsePop(address, operands);
         if(name == "mov") return parseMov(address, operands);
+        if(name == "movsx") return parseMovsx(address, operands);
         if(name == "movzx") return parseMovzx(address, operands);
         if(name == "lea") return parseLea(address, operands);
         if(name == "add") return parseAdd(address, operands);
@@ -562,6 +563,23 @@ namespace x86 {
         if(addrDoubleBISdst && imm32src) return make_wrapper<Mov<Addr<Size::DWORD, BIS>, Imm<u32>>>(address, addrDoubleBISdst.value(), imm32src.value());
         if(addrDoubleBISDdst && r32src) return make_wrapper<Mov<Addr<Size::DWORD, BISD>, R32>>(address, addrDoubleBISDdst.value(), r32src.value());
         if(addrDoubleBISDdst && imm32src) return make_wrapper<Mov<Addr<Size::DWORD, BISD>, Imm<u32>>>(address, addrDoubleBISDdst.value(), imm32src.value());
+        return {};
+    }
+
+    std::unique_ptr<X86Instruction> InstructionParser::parseMovsx(u32 address, std::string_view operandsString) {
+        std::vector<std::string_view> operands = split(operandsString, ',');
+        assert(operands.size() == 2);
+        auto r32dst = asRegister32(operands[0]);
+        auto r8src = asRegister8(operands[1]);
+        auto addrByteBsrc = asByteB(operands[1]);
+        auto addrByteBDsrc = asByteBD(operands[1]);
+        auto addrByteBISsrc = asByteBIS(operands[1]);
+        auto addrByteBISDsrc = asByteBISD(operands[1]);
+        if(r32dst && r8src) return make_wrapper<Movsx<R32, R8>>(address, r32dst.value(), r8src.value());
+        if(r32dst && addrByteBsrc) return make_wrapper<Movsx<R32, Addr<Size::BYTE, B>>>(address, r32dst.value(), addrByteBsrc.value());
+        if(r32dst && addrByteBDsrc) return make_wrapper<Movsx<R32, Addr<Size::BYTE, BD>>>(address, r32dst.value(), addrByteBDsrc.value());
+        if(r32dst && addrByteBISsrc) return make_wrapper<Movsx<R32, Addr<Size::BYTE, BIS>>>(address, r32dst.value(), addrByteBISsrc.value());
+        if(r32dst && addrByteBISDsrc) return make_wrapper<Movsx<R32, Addr<Size::BYTE, BISD>>>(address, r32dst.value(), addrByteBISDsrc.value());
         return {};
     }
 
