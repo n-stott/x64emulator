@@ -206,6 +206,11 @@ namespace x86 {
         Src2 src2;
     };
 
+    template<typename Src>
+    struct Idiv {
+        Src src;
+    };
+
     template<typename Dst, typename Src>
     struct And {
         Dst dst;

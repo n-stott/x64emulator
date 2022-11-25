@@ -90,6 +90,9 @@ namespace x86 {
         virtual void exec(Imul3<R32, Addr<Size::DWORD, BD>, Imm<u32>>) = 0;
         virtual void exec(Imul3<R32, Addr<Size::DWORD, BIS>, Imm<u32>>) = 0;
 
+        virtual void exec(Idiv<R32>) = 0;
+        virtual void exec(Idiv<Addr<Size::DWORD, BD>>) = 0;
+
         virtual void exec(And<R32, Imm<u32>>) = 0;
         virtual void exec(And<R32, R32>) = 0;
         virtual void exec(And<R32, Addr<Size::DWORD, B>>) = 0;

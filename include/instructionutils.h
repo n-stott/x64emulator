@@ -190,6 +190,11 @@ namespace utils {
         return fmt::format("{:7}{},{},{}", "imul", toString(ins.dst), toString(ins.src1), toString(ins.src2));
     }
 
+    template<typename Src>
+    inline std::string toString(const Idiv<Src>& ins) {
+        return fmt::format("{:7}{}", "idiv", toString(ins.src));
+    }
+
     template<typename Dst, typename Src>
     inline std::string toString(const And<Dst, Src>& ins) {
         return fmt::format("{:7}{},{}", "and", toString(ins.dst), toString(ins.src));
