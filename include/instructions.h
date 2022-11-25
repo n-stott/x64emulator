@@ -207,6 +207,11 @@ namespace x86 {
     };
 
     template<typename Src>
+    struct Div {
+        Src src;
+    };
+
+    template<typename Src>
     struct Idiv {
         Src src;
     };

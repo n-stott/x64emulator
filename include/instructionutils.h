@@ -191,6 +191,11 @@ namespace utils {
     }
 
     template<typename Src>
+    inline std::string toString(const Div<Src>& ins) {
+        return fmt::format("{:7}{}", "div", toString(ins.src));
+    }
+
+    template<typename Src>
     inline std::string toString(const Idiv<Src>& ins) {
         return fmt::format("{:7}{}", "idiv", toString(ins.src));
     }

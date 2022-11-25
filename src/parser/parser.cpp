@@ -112,6 +112,7 @@ namespace x86 {
         if(name == "sbb") return parseSbb(address, operands);
         if(name == "mul") return parseMul(address, operands);
         if(name == "imul") return parseImul(address, operands);
+        if(name == "div") return parseDiv(address, operands);
         if(name == "idiv") return parseIdiv(address, operands);
         if(name == "and") return parseAnd(address, operands);
         if(name == "or") return parseOr(address, operands);
@@ -784,6 +785,14 @@ namespace x86 {
             if(r32dst && addrDoubleBISsrc1 && imm32src2) return make_wrapper<Imul3<R32, Addr<Size::DWORD, BIS>, Imm<u32>>>(address, r32dst.value(), addrDoubleBISsrc1.value(), imm32src2.value());
         }
         
+        return {};
+    }
+
+    std::unique_ptr<X86Instruction> InstructionParser::parseDiv(u32 address, std::string_view operands) {
+        auto r32dst = asRegister32(operands);
+        auto addrDoubleBDdst = asDoubleBD(operands);
+        if(r32dst) return make_wrapper<Div<R32>>(address, r32dst.value());
+        if(addrDoubleBDdst) return make_wrapper<Div<Addr<Size::DWORD, BD>>>(address, addrDoubleBDdst.value());
         return {};
     }
 
