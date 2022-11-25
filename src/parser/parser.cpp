@@ -52,15 +52,69 @@ namespace x86 {
             fmt::print("Unable to open {}\n", filename);
             return;
         }
-        std::string line;
+
         size_t total = 0;
         size_t success = 0;
-        while (std::getline(file, line)) {
-            auto ptr = parseInstructionLine(strip(line));
+        while(!file.eof()) {
+            auto ptr = parseFunction(file);
+            if(ptr) fmt::print("{:00000008x} <{}>:\n", ptr->address, ptr->name);
             total++;
             success += (!!ptr);
         }
+
+        // std::string line;
+        // size_t total = 0;
+        // size_t success = 0;
+        // while (std::getline(file, line)) {
+        //     auto ptr = parseInstructionLine(strip(line));
+        //     total++;
+        //     success += (!!ptr);
+        // }
         fmt::print("Success : {} / {}\n", success, total);
+    }
+
+    std::unique_ptr<Function> InstructionParser::parseFunction(std::ifstream& file) {
+        std::string line;
+        bool foundFunctionStart = false;
+        while (!foundFunctionStart && std::getline(file, line)) {
+            std::string_view stripped = strip(line);
+            if(stripped.empty()) continue;
+            if(stripped[0] != '0') continue;
+            if(stripped.find('<') == std::string_view::npos) continue;
+            if(stripped.find('>') == std::string_view::npos) continue;
+            if(stripped.find(':') == std::string_view::npos) continue;
+            foundFunctionStart = true;
+            break;
+        }
+        if(!foundFunctionStart) return {};
+        std::vector<std::string_view> parts = split(line, ' ');
+        if(parts.size() < 2) return {};
+
+        std::string_view addressSv = parts[0];
+        u32 address = 0;
+        auto result = std::from_chars(addressSv.data(), addressSv.data()+addressSv.size(), address, 16);
+        if(result.ptr != addressSv.data()+addressSv.size()) return {};
+        assert(result.ec == std::errc{});
+
+        std::unique_ptr<Function> function = std::make_unique<Function>();
+        function->address = address;
+
+        std::string_view wrappedName = std::string_view(line.data()+addressSv.size(), line.size()-addressSv.size());
+        wrappedName = strip(wrappedName);
+        if(wrappedName.size() < 3) return {};
+        std::string name(wrappedName.substr(1, wrappedName.size()-3));
+        function->name = name;
+
+        std::vector<std::unique_ptr<X86Instruction>> instructions;
+        while(std::getline(file, line)) {
+            std::string_view strippedLine = strip(line);
+            if(strippedLine.empty()) break;
+            auto ins = parseInstructionLine(strippedLine);
+            instructions.push_back(std::move(ins));
+        }
+        function->instructions = std::move(instructions);
+
+        return function;
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseInstructionLine(std::string_view s) {

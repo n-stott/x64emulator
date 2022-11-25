@@ -7,6 +7,7 @@
 #include "instructionutils.h"
 #include <memory>
 #include <string_view>
+#include <vector>
 
 namespace x86 {
 
@@ -41,9 +42,16 @@ namespace x86 {
         return std::make_unique<InstructionWrapper<Instruction>>(address, Instruction{args...});
     }
 
+    struct Function {
+        u32 address;
+        std::string name;
+        std::vector<std::unique_ptr<X86Instruction>> instructions;
+    };
+
     class InstructionParser {
     public:
         static void parseFile(std::string filename);
+        static std::unique_ptr<Function> parseFunction(std::ifstream& file);
         static std::unique_ptr<X86Instruction> parseInstructionLine(std::string_view s);
 
     private:
