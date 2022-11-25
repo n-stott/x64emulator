@@ -93,14 +93,29 @@ namespace x86 {
         virtual void exec(Idiv<R32>) = 0;
         virtual void exec(Idiv<Addr<Size::DWORD, BD>>) = 0;
 
-        virtual void exec(And<R32, Imm<u32>>) = 0;
+        virtual void exec(And<R8, R8>) = 0;
+        virtual void exec(And<R8, Imm<u8>>) = 0;
+        virtual void exec(And<R8, Addr<Size::BYTE, B>>) = 0;
+        virtual void exec(And<R8, Addr<Size::BYTE, BD>>) = 0;
+        virtual void exec(And<R16, Addr<Size::WORD, B>>) = 0;
+        virtual void exec(And<R16, Addr<Size::WORD, BD>>) = 0;
         virtual void exec(And<R32, R32>) = 0;
+        virtual void exec(And<R32, Imm<u32>>) = 0;
         virtual void exec(And<R32, Addr<Size::DWORD, B>>) = 0;
         virtual void exec(And<R32, Addr<Size::DWORD, BD>>) = 0;
         virtual void exec(And<R32, Addr<Size::DWORD, BIS>>) = 0;
         virtual void exec(And<R32, Addr<Size::DWORD, BISD>>) = 0;
+        virtual void exec(And<Addr<Size::BYTE, B>, R8>) = 0;
+        virtual void exec(And<Addr<Size::BYTE, B>, Imm<u8>>) = 0;
+        virtual void exec(And<Addr<Size::BYTE, BD>, R8>) = 0;
+        virtual void exec(And<Addr<Size::BYTE, BD>, Imm<u8>>) = 0;
+        virtual void exec(And<Addr<Size::BYTE, BIS>, Imm<u8>>) = 0;
+        virtual void exec(And<Addr<Size::WORD, B>, R16>) = 0;
+        virtual void exec(And<Addr<Size::WORD, BD>, R16>) = 0;
         virtual void exec(And<Addr<Size::DWORD, B>, R32>) = 0;
+        virtual void exec(And<Addr<Size::DWORD, B>, Imm<u32>>) = 0;
         virtual void exec(And<Addr<Size::DWORD, BD>, R32>) = 0;
+        virtual void exec(And<Addr<Size::DWORD, BD>, Imm<u32>>) = 0;
         virtual void exec(And<Addr<Size::DWORD, BIS>, R32>) = 0;
         virtual void exec(And<Addr<Size::DWORD, BISD>, R32>) = 0;
 
