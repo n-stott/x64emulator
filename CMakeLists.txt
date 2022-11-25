@@ -27,7 +27,7 @@ add_executable(translator
     src/parser/parser.cpp
     src/main.cpp
 )
-target_compile_options(translator PUBLIC -fpic -Wall -Wextra -Wpedantic -pedantic -Werror -Wno-sign-compare -Wno-braced-scalar-init -Wimplicit-fallthrough)
+target_compile_options(translator PUBLIC -fpic -Wall -Wextra -Wpedantic -pedantic -Werror -Wno-sign-compare -Wno-braced-scalar-init -Wimplicit-fallthrough -Wno-missing-braces)
 target_include_directories(translator PUBLIC include)
 target_include_directories(translator PUBLIC include ../common/include)
 target_include_directories(translator PUBLIC ../external)
