@@ -73,6 +73,7 @@ namespace x86 {
         virtual void exec(Sbb<Addr<Size::DWORD, BISD>, Imm<u32>>) = 0;
 
         virtual void exec(Neg<R32>) = 0;
+        virtual void exec(Neg<Addr<Size::DWORD, B>>) = 0;
         virtual void exec(Neg<Addr<Size::DWORD, BD>>) = 0;
 
         virtual void exec(Mul<R32>) = 0;
@@ -94,9 +95,11 @@ namespace x86 {
         virtual void exec(Imul3<R32, Addr<Size::DWORD, BIS>, Imm<u32>>) = 0;
 
         virtual void exec(Div<R32>) = 0;
+        virtual void exec(Div<Addr<Size::DWORD, B>>) = 0;
         virtual void exec(Div<Addr<Size::DWORD, BD>>) = 0;
 
         virtual void exec(Idiv<R32>) = 0;
+        virtual void exec(Idiv<Addr<Size::DWORD, B>>) = 0;
         virtual void exec(Idiv<Addr<Size::DWORD, BD>>) = 0;
 
         virtual void exec(And<R8, R8>) = 0;
@@ -151,6 +154,8 @@ namespace x86 {
         virtual void exec(Or<Addr<Size::DWORD, BISD>, R32>) = 0;
 
         virtual void exec(Xor<R8, Imm<u8>>) = 0;
+        virtual void exec(Xor<R8, Addr<Size::BYTE, BD>>) = 0;
+        virtual void exec(Xor<R16, Imm<u16>>) = 0;
         virtual void exec(Xor<R32, Imm<u32>>) = 0;
         virtual void exec(Xor<R32, R32>) = 0;
         virtual void exec(Xor<R32, Addr<Size::DWORD, B>>) = 0;
@@ -164,6 +169,7 @@ namespace x86 {
         virtual void exec(Xor<Addr<Size::DWORD, BISD>, R32>) = 0;
 
         virtual void exec(Not<R32>) = 0;
+        virtual void exec(Not<Addr<Size::DWORD, B>>) = 0;
         virtual void exec(Not<Addr<Size::DWORD, BD>>) = 0;
         virtual void exec(Not<Addr<Size::DWORD, BIS>>) = 0;
 
@@ -298,9 +304,12 @@ namespace x86 {
         virtual void exec(Sar<R32, R8>) = 0;
         virtual void exec(Sar<R32, Imm<u32>>) = 0;
         virtual void exec(Sar<R32, Count>) = 0;
+        virtual void exec(Sar<Addr<Size::DWORD, B>, Count>) = 0;
+        virtual void exec(Sar<Addr<Size::DWORD, BD>, Count>) = 0;
 
         virtual void exec(Rol<R32, R8>) = 0;
         virtual void exec(Rol<R32, Imm<u8>>) = 0;
+        virtual void exec(Rol<Addr<Size::DWORD, BD>, Imm<u8>>) = 0;
 
         virtual void exec(Test<R8, R8>) = 0;
         virtual void exec(Test<R8, Imm<u8>>) = 0;
@@ -312,6 +321,8 @@ namespace x86 {
         virtual void exec(Test<Addr<Size::BYTE, BD>, Imm<u8>>) = 0;
         virtual void exec(Test<Addr<Size::BYTE, BIS>, Imm<u8>>) = 0;
         virtual void exec(Test<Addr<Size::BYTE, BISD>, Imm<u8>>) = 0;
+        virtual void exec(Test<Addr<Size::DWORD, B>, R32>) = 0;
+        virtual void exec(Test<Addr<Size::DWORD, BD>, R32>) = 0;
         virtual void exec(Test<Addr<Size::DWORD, BD>, Imm<u32>>) = 0;
 
         virtual void exec(Cmp<R8, R8>) = 0;
@@ -363,6 +374,7 @@ namespace x86 {
         virtual void exec(Setge<R8>) = 0;
         virtual void exec(Setge<Addr<Size::BYTE, BD>>) = 0;
         virtual void exec(Setl<R8>) = 0;
+        virtual void exec(Setl<Addr<Size::BYTE, B>>) = 0;
         virtual void exec(Setl<Addr<Size::BYTE, BD>>) = 0;
         virtual void exec(Setle<R8>) = 0;
         virtual void exec(Setle<Addr<Size::BYTE, BD>>) = 0;
@@ -371,6 +383,8 @@ namespace x86 {
 
         virtual void exec(Jmp<R32>) = 0;
         virtual void exec(Jmp<u32>) = 0;
+        virtual void exec(Jmp<Addr<Size::DWORD, B>>) = 0;
+        virtual void exec(Jmp<Addr<Size::DWORD, BD>>) = 0;
         virtual void exec(Jne) = 0;
         virtual void exec(Je) = 0;
         virtual void exec(Jae) = 0;
@@ -386,6 +400,7 @@ namespace x86 {
 
         virtual void exec(Bsr<R32, R32>) = 0;
         virtual void exec(Bsf<R32, R32>) = 0;
+        virtual void exec(Bsf<R32, Addr<Size::DWORD, BD>>) = 0;
 
     };
 
