@@ -183,6 +183,11 @@ namespace x86 {
         Src src;
     };
 
+    template<typename Src>
+    struct Mul {
+        Src src;
+    };
+
     template<typename Dst>
     struct Imul1 {
         Dst dst;

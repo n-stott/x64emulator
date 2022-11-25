@@ -110,6 +110,7 @@ namespace x86 {
         if(name == "adc") return parseAdc(address, operands);
         if(name == "sub") return parseSub(address, operands);
         if(name == "sbb") return parseSbb(address, operands);
+        if(name == "mul") return parseMul(address, operands);
         if(name == "imul") return parseImul(address, operands);
         if(name == "and") return parseAnd(address, operands);
         if(name == "or") return parseOr(address, operands);
@@ -730,6 +731,20 @@ namespace x86 {
         if(addrDoubleBDdst && imm32src) return make_wrapper<Sbb<Addr<Size::DWORD, BD>, Imm<u32>>>(address, addrDoubleBDdst.value(), imm32src.value());
         if(addrDoubleBISdst && imm32src) return make_wrapper<Sbb<Addr<Size::DWORD, BIS>, Imm<u32>>>(address, addrDoubleBISdst.value(), imm32src.value());
         if(addrDoubleBISDdst && imm32src) return make_wrapper<Sbb<Addr<Size::DWORD, BISD>, Imm<u32>>>(address, addrDoubleBISDdst.value(), imm32src.value());
+        return {};
+    }
+
+    std::unique_ptr<X86Instruction> InstructionParser::parseMul(u32 address, std::string_view operands) {
+        auto r32dst = asRegister32(operands);
+        auto addrDoubleBdst = asDoubleB(operands);
+        auto addrDoubleBDdst = asDoubleBD(operands);
+        auto addrDoubleBISdst = asDoubleBIS(operands);
+        auto addrDoubleBISDdst = asDoubleBISD(operands);
+        if(r32dst) return make_wrapper<Mul<R32>>(address, r32dst.value());
+        if(addrDoubleBdst) return make_wrapper<Mul<Addr<Size::DWORD, B>>>(address, addrDoubleBdst.value());
+        if(addrDoubleBDdst) return make_wrapper<Mul<Addr<Size::DWORD, BD>>>(address, addrDoubleBDdst.value());
+        if(addrDoubleBISdst) return make_wrapper<Mul<Addr<Size::DWORD, BIS>>>(address, addrDoubleBISdst.value());
+        if(addrDoubleBISDdst) return make_wrapper<Mul<Addr<Size::DWORD, BISD>>>(address, addrDoubleBISDdst.value());
         return {};
     }
 
