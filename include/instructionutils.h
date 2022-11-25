@@ -171,6 +171,11 @@ namespace utils {
     }
 
     template<typename Src>
+    inline std::string toString(const Neg<Src>& ins) {
+        return fmt::format("{:7}{}", "neg", toString(ins.src));
+    }
+
+    template<typename Src>
     inline std::string toString(const Mul<Src>& ins) {
         return fmt::format("{:7}{}", "mul", toString(ins.src));
     }

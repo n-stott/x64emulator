@@ -110,6 +110,7 @@ namespace x86 {
         if(name == "adc") return parseAdc(address, operands);
         if(name == "sub") return parseSub(address, operands);
         if(name == "sbb") return parseSbb(address, operands);
+        if(name == "neg") return parseNeg(address, operands);
         if(name == "mul") return parseMul(address, operands);
         if(name == "imul") return parseImul(address, operands);
         if(name == "div") return parseDiv(address, operands);
@@ -733,6 +734,14 @@ namespace x86 {
         if(addrDoubleBDdst && imm32src) return make_wrapper<Sbb<Addr<Size::DWORD, BD>, Imm<u32>>>(address, addrDoubleBDdst.value(), imm32src.value());
         if(addrDoubleBISdst && imm32src) return make_wrapper<Sbb<Addr<Size::DWORD, BIS>, Imm<u32>>>(address, addrDoubleBISdst.value(), imm32src.value());
         if(addrDoubleBISDdst && imm32src) return make_wrapper<Sbb<Addr<Size::DWORD, BISD>, Imm<u32>>>(address, addrDoubleBISDdst.value(), imm32src.value());
+        return {};
+    }
+
+    std::unique_ptr<X86Instruction> InstructionParser::parseNeg(u32 address, std::string_view operands) {
+        auto r32dst = asRegister32(operands);
+        auto addrDoubleBDdst = asDoubleBD(operands);
+        if(r32dst) return make_wrapper<Neg<R32>>(address, r32dst.value());
+        if(addrDoubleBDdst) return make_wrapper<Neg<Addr<Size::DWORD, BD>>>(address, addrDoubleBDdst.value());
         return {};
     }
 

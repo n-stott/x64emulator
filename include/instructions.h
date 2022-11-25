@@ -184,6 +184,11 @@ namespace x86 {
     };
 
     template<typename Src>
+    struct Neg {
+        Src src;
+    };
+
+    template<typename Src>
     struct Mul {
         Src src;
     };

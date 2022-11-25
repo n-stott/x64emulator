@@ -72,6 +72,9 @@ namespace x86 {
         virtual void exec(Sbb<Addr<Size::DWORD, BIS>, Imm<u32>>) = 0;
         virtual void exec(Sbb<Addr<Size::DWORD, BISD>, Imm<u32>>) = 0;
 
+        virtual void exec(Neg<R32>) = 0;
+        virtual void exec(Neg<Addr<Size::DWORD, BD>>) = 0;
+
         virtual void exec(Mul<R32>) = 0;
         virtual void exec(Mul<Addr<Size::DWORD, B>>) = 0;
         virtual void exec(Mul<Addr<Size::DWORD, BD>>) = 0;
