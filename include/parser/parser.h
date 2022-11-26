@@ -26,9 +26,13 @@ namespace x86 {
         std::vector<std::unique_ptr<X86Instruction>> instructions;
     };
 
+    struct Program {
+        std::vector<Function> functions;
+    };
+
     class InstructionParser {
     public:
-        static void parseFile(std::string filename);
+        static std::unique_ptr<Program> parseFile(std::string filename);
         static std::unique_ptr<Function> parseFunction(std::ifstream& file);
         static std::unique_ptr<X86Instruction> parseInstructionLine(std::string_view s);
 

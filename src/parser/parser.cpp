@@ -49,20 +49,25 @@ namespace x86 {
         }
     }
 
-    void InstructionParser::parseFile(std::string filename) {
+    std::unique_ptr<Program> InstructionParser::parseFile(std::string filename) {
         std::ifstream file(filename);
         if(!file.is_open()) {
             fmt::print("Unable to open {}\n", filename);
-            return;
+            return {};
         }
+
+        Program program;
 
         size_t total = 0;
         size_t success = 0;
         while(!file.eof()) {
             auto ptr = parseFunction(file);
-            if(ptr) fmt::print("{:00000008x} <{}>:\n", ptr->address, ptr->name);
             total++;
             success += (!!ptr);
+            if(ptr) {
+                fmt::print("{:00000008x} <{}>:\n", ptr->address, ptr->name);
+                program.functions.push_back(std::move(*ptr));
+            }
         }
 
         // std::string line;
@@ -74,6 +79,8 @@ namespace x86 {
         //     success += (!!ptr);
         // }
         fmt::print("Success : {} / {}\n", success, total);
+
+        return std::make_unique<Program>(std::move(program));
     }
 
     std::unique_ptr<Function> InstructionParser::parseFunction(std::ifstream& file) {
