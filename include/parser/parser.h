@@ -2,14 +2,14 @@
 #define PARSER_H
 
 #include "utils/utils.h"
-#include "instructions.h"
-#include "instructionhandler.h"
-#include "instructionutils.h"
 #include <memory>
+#include <string>
 #include <string_view>
 #include <vector>
 
 namespace x86 {
+
+    class InstructionHandler;
 
     struct X86Instruction {
         explicit X86Instruction(u32 address) : address(address) { }
@@ -19,28 +19,6 @@ namespace x86 {
 
         u32 address;
     };
-
-    template<typename Instruction>
-    struct InstructionWrapper : public X86Instruction {
-        InstructionWrapper(u32 address, Instruction instruction) :
-                X86Instruction(address), 
-                instruction(std::move(instruction)) { }
-
-        void exec(InstructionHandler* handler) override {
-            return handler->exec(instruction);
-        }
-
-        virtual std::string toString() const override {
-            return x86::utils::toString(instruction);
-        }
-
-        Instruction instruction;
-    };
-
-    template<typename Instruction, typename... Args>
-    inline std::unique_ptr<X86Instruction> make_wrapper(u32 address, Args... args) {
-        return std::make_unique<InstructionWrapper<Instruction>>(address, Instruction{args...});
-    }
 
     struct Function {
         u32 address;

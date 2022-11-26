@@ -1,4 +1,7 @@
 #include "parser/parser.h"
+#include "instructionhandler.h"
+#include "instructionutils.h"
+#include "instructions.h"
 #include <cassert>
 #include <charconv>
 #include <cstdlib>
@@ -145,6 +148,28 @@ namespace x86 {
             }
         }
         return ptr;
+    }
+
+    template<typename Instruction>
+    struct InstructionWrapper : public X86Instruction {
+        InstructionWrapper(u32 address, Instruction instruction) :
+                X86Instruction(address), 
+                instruction(std::move(instruction)) { }
+
+        void exec(InstructionHandler* handler) override {
+            return handler->exec(instruction);
+        }
+
+        virtual std::string toString() const override {
+            return x86::utils::toString(instruction);
+        }
+
+        Instruction instruction;
+    };
+
+    template<typename Instruction, typename... Args>
+    inline std::unique_ptr<X86Instruction> make_wrapper(u32 address, Args... args) {
+        return std::make_unique<InstructionWrapper<Instruction>>(address, Instruction{args...});
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseInstruction(u32 address, std::string_view s) {
