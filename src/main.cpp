@@ -1,6 +1,7 @@
 #include "instructions.h"
 #include "instructionhandler.h"
 #include "parser/parser.h"
+#include "interpreter/interpreter.h"
 
 
 
@@ -41,11 +42,13 @@ void test_parse_instruction() {
 }
 
 int main(int argc, char* argv[]) {
-    if(argc == 1) {
-        x86::InstructionParser::parseFile("add.dump");
-        x86::InstructionParser::parseFile("call0.dump");
-        x86::InstructionParser::parseFile("call1.dump");
-    } else {
-        x86::InstructionParser::parseFile(argv[1]);
+    if(argc != 2) {
+        return 1;
     }
+    auto program = x86::InstructionParser::parseFile(argv[1]);
+    if(!program) {
+        return 1;
+    }
+    x86::Interpreter interpreter;
+    interpreter.run(*program);
 }

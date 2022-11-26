@@ -163,7 +163,7 @@ namespace x86 {
                 X86Instruction(address), 
                 instruction(std::move(instruction)) { }
 
-        void exec(InstructionHandler* handler) override {
+        void exec(InstructionHandler* handler) const override {
             return handler->exec(instruction);
         }
 

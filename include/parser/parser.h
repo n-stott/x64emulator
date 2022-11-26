@@ -1,6 +1,7 @@
 #ifndef PARSER_H
 #define PARSER_H
 
+#include "program.h"
 #include "utils/utils.h"
 #include <memory>
 #include <string>
@@ -8,27 +9,6 @@
 #include <vector>
 
 namespace x86 {
-
-    class InstructionHandler;
-
-    struct X86Instruction {
-        explicit X86Instruction(u32 address) : address(address) { }
-        virtual ~X86Instruction() = default;
-        virtual void exec(InstructionHandler* handler) = 0;
-        virtual std::string toString() const = 0;
-
-        u32 address;
-    };
-
-    struct Function {
-        u32 address;
-        std::string name;
-        std::vector<std::unique_ptr<X86Instruction>> instructions;
-    };
-
-    struct Program {
-        std::vector<Function> functions;
-    };
 
     class InstructionParser {
     public:
