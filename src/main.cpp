@@ -49,6 +49,6 @@ int main(int argc, char* argv[]) {
     if(!program) {
         return 1;
     }
-    x86::Interpreter interpreter;
-    interpreter.run(*program);
+    x86::Interpreter interpreter(*program);
+    interpreter.run();
 }

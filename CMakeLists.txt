@@ -26,6 +26,7 @@ add_executable(translator
     src/translation/x86instruction.cpp
     src/parser/parser.cpp
     src/interpreter/interpreter.cpp
+    src/interpreter/mmu.cpp
     src/program.cpp
     src/main.cpp
 )

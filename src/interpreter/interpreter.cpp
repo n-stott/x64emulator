@@ -5,14 +5,16 @@
 
 namespace x86 {
 
-    void Interpreter::run(const Program& program) {
-        struct ProgramGuard {
-            explicit ProgramGuard(Interpreter& interpreter, const Program* newProgram) : interpreter(interpreter) { interpreter.program_ = newProgram; }
-            ~ProgramGuard() { interpreter.program_ = nullptr; }
-            Interpreter& interpreter;
-        } guard(*this, &program);
+    Interpreter::Interpreter(const Program& program)
+        : program_(program) {
+        // heap
+        mmu_.addRegion(Mmu::Region{ 0x1000000, 64*1024 });
+        // stack
+        mmu_.addRegion(Mmu::Region{ 0x2000000, 4*1024 });
+    }
 
-        const Function* main = program_->findFunction("main");
+    void Interpreter::run() {
+        const Function* main = program_.findFunction("main");
         if(!main) {
             fmt::print(stderr, "Cannot find \"main\" symbol\n");
             return;

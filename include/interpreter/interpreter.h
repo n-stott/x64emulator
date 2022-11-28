@@ -2,6 +2,7 @@
 #define INTERPRETER_H
 
 #include "instructionhandler.h"
+#include "interpreter/mmu.h"
 #include "program.h"
 #include <cassert>
 
@@ -9,10 +10,12 @@ namespace x86 {
 
     class Interpreter final : public InstructionHandler {
     public:
-        void run(const Program& program);
+        explicit Interpreter(const Program& program);
+        void run();
 
     private:
-        const Program* program_ = nullptr;
+        const Program& program_;
+        Mmu mmu_;
 
         struct Frame {
             const Function* function;

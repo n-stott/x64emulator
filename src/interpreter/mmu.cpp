@@ -1,0 +1,111 @@
+#include "interpreter/mmu.h"
+#include <cassert>
+#include <cstring>
+
+namespace x86 {
+
+    Mmu::Region::Region(u32 base, u32 size) {
+        this->base = base;
+        this->size = size;
+        this->data.resize(size, 0x00);
+    }
+
+    void Mmu::addRegion(Region region) {
+        regions_.push_back(std::move(region));
+    }
+
+    bool Mmu::Region::contains(u32 address) const {
+        return address >= base && address < base + size;
+    }
+
+    u8 Mmu::Region::read8(u32 address) const {
+        assert(contains(address));
+        u8 value = 0;
+        std::memcpy(&value, &data[address-base], sizeof(value));
+        return value;
+    }
+
+    u16 Mmu::Region::read16(u32 address) const {
+        assert(contains(address));
+        assert(contains(address+1));
+        u16 value = 0;
+        std::memcpy(&value, &data[address-base], sizeof(value));
+        return value;
+    }
+
+    u32 Mmu::Region::read32(u32 address) const {
+        assert(contains(address));
+        assert(contains(address+3));
+        u32 value = 0;
+        std::memcpy(&value, &data[address-base], sizeof(value));
+        return value;
+    }
+
+    void Mmu::Region::write8(u32 address, u8 value) {
+        assert(contains(address));
+        std::memcpy(&data[address-base], &value, sizeof(value));
+    }
+
+    void Mmu::Region::write16(u32 address, u16 value) {
+        assert(contains(address));
+        assert(contains(address+1));
+        std::memcpy(&data[address-base], &value, sizeof(value));
+    }
+
+    void Mmu::Region::write32(u32 address, u32 value) {
+        assert(contains(address));
+        assert(contains(address+3));
+        std::memcpy(&data[address-base], &value, sizeof(value));
+    }
+
+    Mmu::Region* Mmu::findAddress(u32 address) {
+        for(Region& r : regions_) {
+            if(r.contains(address)) return &r;
+        }
+        return nullptr;
+    }
+
+    const Mmu::Region* Mmu::findAddress(u32 address) const {
+        for(const Region& r : regions_) {
+            if(r.contains(address)) return &r;
+        }
+        return nullptr;
+    }
+
+    u8 Mmu::read8(u32 address) const {
+        const Region* region = findAddress(address);
+        assert(!!region);
+        return region->read8(address);
+    }
+
+    u16 Mmu::read16(u32 address) const {
+        const Region* region = findAddress(address);
+        assert(!!region);
+        return region->read16(address);
+    }
+
+    u32 Mmu::read32(u32 address) const {
+        const Region* region = findAddress(address);
+        assert(!!region);
+        return region->read32(address);
+    }
+
+    void Mmu::write8(u32 address, u8 value) {
+        Region* region = findAddress(address);
+        assert(!!region);
+        region->write8(address, value);
+    }
+
+    void Mmu::write16(u32 address, u16 value) {
+        Region* region = findAddress(address);
+        assert(!!region);
+        region->write16(address, value);
+    }
+
+    void Mmu::write32(u32 address, u32 value) {
+        Region* region = findAddress(address);
+        assert(!!region);
+        region->write32(address, value);
+    }
+
+}
