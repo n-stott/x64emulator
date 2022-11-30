@@ -35,6 +35,9 @@ namespace x86 {
         u16 get(R16 reg) const;
         u32 get(R32 reg) const;
 
+        u32 resolve(B addr) const;
+        u32 resolve(BD addr) const;
+
         u32 resolve(Addr<Size::DWORD, B> addr) const;
         u32 resolve(Addr<Size::DWORD, BD> addr) const;
 
@@ -42,7 +45,11 @@ namespace x86 {
         void set(R16 reg, u16 value);
         void set(R32 reg, u32 value);
 
+        void push8(u8 value);
+        void push16(u16 value);
         void push32(u32 value);
+        u8 pop8();
+        u16 pop16();
         u32 pop32();
 
         struct Frame {

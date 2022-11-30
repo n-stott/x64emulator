@@ -77,12 +77,20 @@ namespace x86 {
         __builtin_unreachable();
     }
 
-    u32 Interpreter::resolve(Addr<Size::DWORD, B> addr) const {
-        return get(addr.encoding.base);
+    u32 Interpreter::resolve(B addr) const {
+        return get(addr.base);
     }
 
-    u32 Interpreter::resolve(Addr<Size::DWORD, BD> addr) const {
-        return get(addr.encoding.base) + addr.encoding.displacement;
+    u32 Interpreter::resolve(BD addr) const {
+        return get(addr.base) + addr.displacement;
+    }
+
+    u32 Interpreter::resolve(Addr<Size::DWORD, B> addr) const {
+        return resolve(addr.encoding);
+    }
+
+    u32 Interpreter::Interpreter::resolve(Addr<Size::DWORD, BD> addr) const {
+        return resolve(addr.encoding);
     }
     
     void Interpreter::set(R8 reg, u8 value) {
@@ -110,9 +118,33 @@ namespace x86 {
         __builtin_unreachable();
     }
 
+    void Interpreter::push8(u8 value) {
+        esp_ -= 4;
+        mmu_.write32(esp_, (u32)value);
+    }
+
+    void Interpreter::push16(u16 value) {
+        esp_ -= 4;
+        mmu_.write32(esp_, (u32)value);
+    }
+
     void Interpreter::push32(u32 value) {
         esp_ -= 4;
         mmu_.write32(esp_, value);
+    }
+
+    u8 Interpreter::pop8() {
+        u32 value = mmu_.read32(esp_);
+        assert(value == (u8)value);
+        esp_ += 4;
+        return value;
+    }
+
+    u16 Interpreter::pop16() {
+        u32 value = mmu_.read32(esp_);
+        assert(value == (u16)value);
+        esp_ += 4;
+        return value;
     }
 
     u32 Interpreter::pop32() {
@@ -393,7 +425,11 @@ namespace x86 {
     void Interpreter::exec(Movzx<R32, Addr<Size::WORD, BISD>> ins) { TODO(ins); }
 
     void Interpreter::exec(Lea<R32, B> ins) { TODO(ins); }
-    void Interpreter::exec(Lea<R32, BD> ins) { TODO(ins); }
+
+    void Interpreter::exec(Lea<R32, BD> ins) {
+        set(ins.dst, resolve(ins.src));
+    }
+
     void Interpreter::exec(Lea<R32, BIS> ins) { TODO(ins); }
     void Interpreter::exec(Lea<R32, ISD> ins) { TODO(ins); }
     void Interpreter::exec(Lea<R32, BISD> ins) { TODO(ins); }
@@ -402,10 +438,17 @@ namespace x86 {
         push32(get(ins.src));
     }
 
-    void Interpreter::exec(Push<SignExtended<u8>> ins) { TODO(ins); }
+    void Interpreter::exec(Push<SignExtended<u8>> ins) {
+        push8(ins.src.extendedValue);
+    }
+
     void Interpreter::exec(Push<Imm<u32>> ins) { TODO(ins); }
     void Interpreter::exec(Push<Addr<Size::DWORD, B>> ins) { TODO(ins); }
-    void Interpreter::exec(Push<Addr<Size::DWORD, BD>> ins) { TODO(ins); }
+
+    void Interpreter::exec(Push<Addr<Size::DWORD, BD>> ins) {
+        push32(resolve(ins.src));
+    }
+
     void Interpreter::exec(Push<Addr<Size::DWORD, BIS>> ins) { TODO(ins); }
     void Interpreter::exec(Push<Addr<Size::DWORD, ISD>> ins) { TODO(ins); }
     void Interpreter::exec(Push<Addr<Size::DWORD, BISD>> ins) { TODO(ins); }
