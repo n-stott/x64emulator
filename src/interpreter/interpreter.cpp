@@ -26,6 +26,8 @@ namespace x86 {
         u32 stackSize = 4*1024;
         mmu_.addRegion(Mmu::Region{ stackBase, stackSize });
         esp_ = stackBase + stackSize;
+
+        lib_ = Library::make_library();
     }
 
     void Interpreter::run() {
@@ -469,9 +471,15 @@ namespace x86 {
 
     void Interpreter::exec(CallDirect ins) {
         const Function* func = program_.findFunction(ins.symbolName);
-        ASSERT(ins, !!func);
-        state_.frames.push_back(Frame{func, 0});
-        push32(eip_);
+        if(!!func) {
+            state_.frames.push_back(Frame{func, 0});
+            push32(eip_);
+        } else {
+            // call library function
+            const LibraryFunction* libFunc = lib_->findFunction(ins.symbolName);
+            ASSERT(ins, !!libFunc);
+            libFunc->exec();
+        }
     }
 
     void Interpreter::exec(CallIndirect<R32> ins) { TODO(ins); }

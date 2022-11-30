@@ -3,6 +3,7 @@
 
 #include "instructionhandler.h"
 #include "interpreter/mmu.h"
+#include "lib/library.h"
 #include "program.h"
 #include <cassert>
 
@@ -14,6 +15,7 @@ namespace x86 {
         void run();
 
     private:
+        std::unique_ptr<Library> lib_;
         const Program& program_;
         Mmu mmu_;
 

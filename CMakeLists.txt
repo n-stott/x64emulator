@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.13)
 project(x86)
 set(CMAKE_CXX_STANDARD 17)
 
-set(CC_OPTIONS -m32 -g -O0 -DDEBUG)
+set(CC_OPTIONS -m32 -g -O0 -DDEBUG -march=i386)
 set(LD_OPTIONS -m32)
 
 add_executable(trivial tests/src/trivial.cpp)
@@ -26,7 +26,9 @@ target_compile_options(print PUBLIC ${CC_OPTIONS})
 target_link_options(print PUBLIC ${LD_OPTIONS})
 
 
-add_executable(translator 
+add_executable(translator
+    src/lib/library.cpp
+    src/lib/libc.cpp
     src/translation/x86instruction.cpp
     src/parser/parser.cpp
     src/interpreter/interpreter.cpp
