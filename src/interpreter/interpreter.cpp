@@ -164,7 +164,9 @@ namespace x86 {
         fmt::print(stderr, "Fail at : {}\n", x86::utils::toString(ins));\
         assert(!"Not implemented"); 
 
-    void Interpreter::exec(Add<R32, R32> ins) { TODO(ins); }
+    void Interpreter::exec(Add<R32, R32> ins) {
+        set(ins.dst, get(ins.dst) + get(ins.src));
+    }
 
     void Interpreter::exec(Add<R32, Imm<u32>> ins) {
         set(ins.dst, get(ins.dst) + ins.src.immediate);
@@ -397,10 +399,13 @@ namespace x86 {
     void Interpreter::exec(Mov<Addr<Size::DWORD, B>, Imm<u32>> ins) { TODO(ins); }
 
     void Interpreter::exec(Mov<Addr<Size::DWORD, BD>, R32> ins) {
-        mmu_.write32(resolve(ins.dst), get(ins.src));    
+        mmu_.write32(resolve(ins.dst), get(ins.src));
     }
 
-    void Interpreter::exec(Mov<Addr<Size::DWORD, BD>, Imm<u32>> ins) { TODO(ins); }
+    void Interpreter::exec(Mov<Addr<Size::DWORD, BD>, Imm<u32>> ins) {
+        mmu_.write32(resolve(ins.dst), ins.src.immediate);
+    }
+
     void Interpreter::exec(Mov<Addr<Size::DWORD, BIS>, R32> ins) { TODO(ins); }
     void Interpreter::exec(Mov<Addr<Size::DWORD, BIS>, Imm<u32>> ins) { TODO(ins); }
     void Interpreter::exec(Mov<Addr<Size::DWORD, BISD>, R32> ins) { TODO(ins); }
