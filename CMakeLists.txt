@@ -21,6 +21,10 @@ add_executable(call1 tests/src/call1.cpp)
 target_compile_options(call1 PUBLIC ${CC_OPTIONS})
 target_link_options(call1 PUBLIC ${LD_OPTIONS})
 
+add_executable(print tests/src/print.cpp)
+target_compile_options(print PUBLIC ${CC_OPTIONS})
+target_link_options(print PUBLIC ${LD_OPTIONS})
+
 
 add_executable(translator 
     src/translation/x86instruction.cpp

@@ -65,7 +65,7 @@ namespace x86 {
             total++;
             success += (!!ptr);
             if(ptr) {
-                fmt::print("{:00000008x} <{}>:\n", ptr->address, ptr->name);
+                // fmt::print("{:00000008x} <{}>:\n", ptr->address, ptr->name);
                 program.functions.push_back(std::move(*ptr));
             }
         }
