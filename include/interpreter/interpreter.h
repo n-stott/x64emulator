@@ -17,6 +17,34 @@ namespace x86 {
         const Program& program_;
         Mmu mmu_;
 
+        u32 ebp_;
+        u32 esp_;
+        u32 edi_;
+        u32 esi_;
+        u32 eax_;
+        u32 ebx_;
+        u32 ecx_;
+        u32 edx_;
+        u32 eiz_;
+
+        u32 eip_;
+
+        bool stop_;
+
+        u8 get(R8 reg) const;
+        u16 get(R16 reg) const;
+        u32 get(R32 reg) const;
+
+        u32 resolve(Addr<Size::DWORD, B> addr) const;
+        u32 resolve(Addr<Size::DWORD, BD> addr) const;
+
+        void set(R8 reg, u8 value);
+        void set(R16 reg, u16 value);
+        void set(R32 reg, u32 value);
+
+        void push32(u32 value);
+        u32 pop32();
+
         struct Frame {
             const Function* function;
             size_t offset;
@@ -29,16 +57,17 @@ namespace x86 {
                 return !frames.empty();
             }
 
-            const X86Instruction* next() const {
+            const X86Instruction* next() {
                 assert(!frames.empty());
-                const Frame& frame = frames.back();
+                Frame& frame = frames.back();
                 assert(frame.offset < frame.function->instructions.size());
-                return frame.function->instructions[frame.offset].get();
+                const X86Instruction* instruction = frame.function->instructions[frame.offset].get();
+                ++frame.offset;
+                return instruction;
             }
-        } state;
+        } state_;
 
-
-
+        void dump() const;
 
         void exec(Add<R32, R32>) override;
         void exec(Add<R32, Imm<u32>>) override;

@@ -5,12 +5,27 @@
 
 namespace x86 {
 
-    Interpreter::Interpreter(const Program& program)
-        : program_(program) {
+    Interpreter::Interpreter(const Program& program) : program_(program) {
+        ebp_ = 0;
+        esp_ = 0;
+        edi_ = 0;
+        esi_ = 0;
+        eax_ = 0;
+        ebx_ = 0;
+        ecx_ = 0;
+        edx_ = 0;
+        eiz_ = 0;
+        eip_ = 0;
+        stop_ = false;
         // heap
-        mmu_.addRegion(Mmu::Region{ 0x1000000, 64*1024 });
+        u32 heapBase = 0x1000000;
+        u32 heapSize = 64*1024;
+        mmu_.addRegion(Mmu::Region{ heapBase, heapSize });
         // stack
-        mmu_.addRegion(Mmu::Region{ 0x2000000, 4*1024 });
+        u32 stackBase = 0x2000000;
+        u32 stackSize = 4*1024;
+        mmu_.addRegion(Mmu::Region{ stackBase, stackSize });
+        esp_ = stackBase + stackSize;
     }
 
     void Interpreter::run() {
@@ -20,23 +35,109 @@ namespace x86 {
             return;
         }
 
-        state.frames.clear();
-        state.frames.push_back(Frame{main, 0});
+        state_.frames.clear();
+        state_.frames.push_back(Frame{main, 0});
 
-        while(state.hasNext()) {
-            const X86Instruction* instruction = state.next();
+        push32(main->address);
+
+        stop_ = false;
+        while(!stop_ && state_.hasNext()) {
+            dump();
+            const X86Instruction* instruction = state_.next();
+            fmt::print("{}\n", instruction->toString());
+            eip_ = instruction->address;
             instruction->exec(this);
         }
     }
 
+    u8 Interpreter::get(R8 reg) const {
+        assert(!"Not implemented");
+        (void)reg;
+        return 0;
+    }
 
+    u16 Interpreter::get(R16 reg) const {
+        assert(!"Not implemented");
+        (void)reg;
+        return 0;
+    }
+
+    u32 Interpreter::get(R32 reg) const {
+        switch(reg) {
+            case R32::EBP: return ebp_;
+            case R32::ESP: return esp_;
+            case R32::EDI: return edi_;
+            case R32::ESI: return esi_;
+            case R32::EAX: return eax_;
+            case R32::EBX: return ebx_;
+            case R32::ECX: return ecx_;
+            case R32::EDX: return edx_;
+            case R32::EIZ: return eiz_;
+        }
+        __builtin_unreachable();
+    }
+
+    u32 Interpreter::resolve(Addr<Size::DWORD, B> addr) const {
+        return get(addr.encoding.base);
+    }
+
+    u32 Interpreter::resolve(Addr<Size::DWORD, BD> addr) const {
+        return get(addr.encoding.base) + addr.encoding.displacement;
+    }
+    
+    void Interpreter::set(R8 reg, u8 value) {
+        (void)reg;
+        (void)value;
+    }
+    
+    void Interpreter::set(R16 reg, u16 value) {
+        (void)reg;
+        (void)value;
+    }
+    
+    void Interpreter::set(R32 reg, u32 value) {
+        switch(reg) {
+            case R32::EBP: ebp_ = value; return;
+            case R32::ESP: esp_ = value; return;
+            case R32::EDI: edi_ = value; return;
+            case R32::ESI: esi_ = value; return;
+            case R32::EAX: eax_ = value; return;
+            case R32::EBX: ebx_ = value; return;
+            case R32::ECX: ecx_ = value; return;
+            case R32::EDX: edx_ = value; return;
+            case R32::EIZ: assert(false); return;
+        }
+        __builtin_unreachable();
+    }
+
+    void Interpreter::push32(u32 value) {
+        esp_ -= 4;
+        mmu_.write32(esp_, value);
+    }
+
+    u32 Interpreter::pop32() {
+        u32 value = mmu_.read32(esp_);
+        esp_ += 4;
+        return value;
+    }
+
+    void Interpreter::dump() const {
+        fmt::print(
+"eax {:0000008x}  ebx {:0000008x}  ecx {:0000008x}  edx {:0000008x}  "
+"esi {:0000008x}  edi {:0000008x}  ebp {:0000008x}  esp {:0000008x}\n", 
+        eax_, ebx_, ecx_, edx_, esi_, edi_, ebp_, esp_);
+    }
 
     #define TODO(ins) \
-        fmt::print(stderr, "{}\n", x86::utils::toString(ins));\
+        fmt::print(stderr, "Fail at : {}\n", x86::utils::toString(ins));\
         assert(!"Not implemented"); 
 
     void Interpreter::exec(Add<R32, R32> ins) { TODO(ins); }
-    void Interpreter::exec(Add<R32, Imm<u32>> ins) { TODO(ins); }
+
+    void Interpreter::exec(Add<R32, Imm<u32>> ins) {
+        set(ins.dst, get(ins.dst) + ins.src.immediate);
+    }
+
     void Interpreter::exec(Add<R32, Addr<Size::DWORD, B>> ins) { TODO(ins); }
     void Interpreter::exec(Add<R32, Addr<Size::DWORD, BD>> ins) { TODO(ins); }
     void Interpreter::exec(Add<R32, Addr<Size::DWORD, BIS>> ins) { TODO(ins); }
@@ -67,8 +168,15 @@ namespace x86 {
     void Interpreter::exec(Adc<Addr<Size::DWORD, BISD>, Imm<u32>> ins) { TODO(ins); }
 
     void Interpreter::exec(Sub<R32, R32> ins) { TODO(ins); }
-    void Interpreter::exec(Sub<R32, Imm<u32>> ins) { TODO(ins); }
-    void Interpreter::exec(Sub<R32, SignExtended<u8>> ins) { TODO(ins); }
+
+    void Interpreter::exec(Sub<R32, Imm<u32>> ins) {
+        set(ins.dst, get(ins.dst) - ins.src.immediate);
+    }
+
+    void Interpreter::exec(Sub<R32, SignExtended<u8>> ins) {
+        set(ins.dst, get(ins.dst) - ins.src.extendedValue);
+    }
+
     void Interpreter::exec(Sub<R32, Addr<Size::DWORD, B>> ins) { TODO(ins); }
     void Interpreter::exec(Sub<R32, Addr<Size::DWORD, BD>> ins) { TODO(ins); }
     void Interpreter::exec(Sub<R32, Addr<Size::DWORD, BIS>> ins) { TODO(ins); }
@@ -135,7 +243,11 @@ namespace x86 {
     void Interpreter::exec(And<R16, Addr<Size::WORD, B>> ins) { TODO(ins); }
     void Interpreter::exec(And<R16, Addr<Size::WORD, BD>> ins) { TODO(ins); }
     void Interpreter::exec(And<R32, R32> ins) { TODO(ins); }
-    void Interpreter::exec(And<R32, Imm<u32>> ins) { TODO(ins); }
+    
+    void Interpreter::exec(And<R32, Imm<u32>> ins) {
+        set(ins.dst, get(ins.dst) & ins.src.immediate);
+    }
+
     void Interpreter::exec(And<R32, Addr<Size::DWORD, B>> ins) { TODO(ins); }
     void Interpreter::exec(And<R32, Addr<Size::DWORD, BD>> ins) { TODO(ins); }
     void Interpreter::exec(And<R32, Addr<Size::DWORD, BIS>> ins) { TODO(ins); }
@@ -222,10 +334,23 @@ namespace x86 {
     void Interpreter::exec(Mov<R16, Addr<Size::WORD, BISD>> ins) { TODO(ins); }
     void Interpreter::exec(Mov<Addr<Size::WORD, BISD>, R16> ins) { TODO(ins); }
     void Interpreter::exec(Mov<Addr<Size::WORD, BISD>, Imm<u16>> ins) { TODO(ins); }
-    void Interpreter::exec(Mov<R32, R32> ins) { TODO(ins); }
-    void Interpreter::exec(Mov<R32, Imm<u32>> ins) { TODO(ins); }
-    void Interpreter::exec(Mov<R32, Addr<Size::DWORD, B>> ins) { TODO(ins); }
-    void Interpreter::exec(Mov<R32, Addr<Size::DWORD, BD>> ins) { TODO(ins); }
+    
+    void Interpreter::exec(Mov<R32, R32> ins) {
+        set(ins.dst, get(ins.src));
+    }
+
+    void Interpreter::exec(Mov<R32, Imm<u32>> ins) {
+        set(ins.dst, ins.src.immediate);
+    }
+
+    void Interpreter::exec(Mov<R32, Addr<Size::DWORD, B>> ins) {
+        set(ins.dst, mmu_.read32(resolve(ins.src)));
+    }
+
+    void Interpreter::exec(Mov<R32, Addr<Size::DWORD, BD>> ins) {
+        set(ins.dst, mmu_.read32(resolve(ins.src)));
+    }
+
     void Interpreter::exec(Mov<R32, Addr<Size::DWORD, BIS>> ins) { TODO(ins); }
     void Interpreter::exec(Mov<R32, Addr<Size::DWORD, BISD>> ins) { TODO(ins); }
     void Interpreter::exec(Mov<Addr<Size::BYTE, B>, R8> ins) { TODO(ins); }
@@ -238,7 +363,11 @@ namespace x86 {
     void Interpreter::exec(Mov<Addr<Size::BYTE, BISD>, Imm<u8>> ins) { TODO(ins); }
     void Interpreter::exec(Mov<Addr<Size::DWORD, B>, R32> ins) { TODO(ins); }
     void Interpreter::exec(Mov<Addr<Size::DWORD, B>, Imm<u32>> ins) { TODO(ins); }
-    void Interpreter::exec(Mov<Addr<Size::DWORD, BD>, R32> ins) { TODO(ins); }
+
+    void Interpreter::exec(Mov<Addr<Size::DWORD, BD>, R32> ins) {
+        mmu_.write32(resolve(ins.dst), get(ins.src));    
+    }
+
     void Interpreter::exec(Mov<Addr<Size::DWORD, BD>, Imm<u32>> ins) { TODO(ins); }
     void Interpreter::exec(Mov<Addr<Size::DWORD, BIS>, R32> ins) { TODO(ins); }
     void Interpreter::exec(Mov<Addr<Size::DWORD, BIS>, Imm<u32>> ins) { TODO(ins); }
@@ -269,7 +398,10 @@ namespace x86 {
     void Interpreter::exec(Lea<R32, ISD> ins) { TODO(ins); }
     void Interpreter::exec(Lea<R32, BISD> ins) { TODO(ins); }
 
-    void Interpreter::exec(Push<R32> ins) { TODO(ins); }
+    void Interpreter::exec(Push<R32> ins) {
+        push32(get(ins.src));
+    }
+
     void Interpreter::exec(Push<SignExtended<u8>> ins) { TODO(ins); }
     void Interpreter::exec(Push<Imm<u32>> ins) { TODO(ins); }
     void Interpreter::exec(Push<Addr<Size::DWORD, B>> ins) { TODO(ins); }
@@ -277,17 +409,36 @@ namespace x86 {
     void Interpreter::exec(Push<Addr<Size::DWORD, BIS>> ins) { TODO(ins); }
     void Interpreter::exec(Push<Addr<Size::DWORD, ISD>> ins) { TODO(ins); }
     void Interpreter::exec(Push<Addr<Size::DWORD, BISD>> ins) { TODO(ins); }
-    void Interpreter::exec(Pop<R32> ins) { TODO(ins); }
 
-    void Interpreter::exec(CallDirect ins) { TODO(ins); }
+    void Interpreter::exec(Pop<R32> ins) {
+        set(ins.dst, pop32());
+    }
+
+    void Interpreter::exec(CallDirect ins) {
+        const Function* func = program_.findFunction(ins.symbolName);
+        assert(!!func);
+        state_.frames.push_back(Frame{func, 0});
+        push32(eip_);
+    }
+
     void Interpreter::exec(CallIndirect<R32> ins) { TODO(ins); }
     void Interpreter::exec(CallIndirect<Addr<Size::DWORD, B>> ins) { TODO(ins); }
     void Interpreter::exec(CallIndirect<Addr<Size::DWORD, BD>> ins) { TODO(ins); }
     void Interpreter::exec(CallIndirect<Addr<Size::DWORD, BIS>> ins) { TODO(ins); }
-    void Interpreter::exec(Ret<> ins) { TODO(ins); }
+
+    void Interpreter::exec(Ret<>) {
+        assert(state_.frames.size() >= 1);
+        state_.frames.pop_back();
+        eip_ = pop32();
+    }
+
     void Interpreter::exec(Ret<Imm<u16>> ins) { TODO(ins); }
 
-    void Interpreter::exec(Leave ins) { TODO(ins); }
+    void Interpreter::exec(Leave) {
+        esp_ = ebp_;
+        ebp_ = pop32();
+    }
+
     void Interpreter::exec(Halt ins) { TODO(ins); }
     void Interpreter::exec(Nop ins) { TODO(ins); }
     void Interpreter::exec(Ud2 ins) { TODO(ins); }
