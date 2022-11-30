@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.13)
 project(x86)
 set(CMAKE_CXX_STANDARD 17)
 
-set(CC_OPTIONS -m32 -g -O0 -DDEBUG -fpic -Wall -Wextra -Wpedantic -pedantic -Werror -Wno-sign-compare -Wno-braced-scalar-init -Wimplicit-fallthrough)
+set(CC_OPTIONS -m32 -g -O0 -DDEBUG)
 set(LD_OPTIONS -m32)
 
 add_executable(trivial tests/src/trivial.cpp)

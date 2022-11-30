@@ -44,8 +44,8 @@ namespace x86 {
         while(!stop_ && state_.hasNext()) {
             dump();
             const X86Instruction* instruction = state_.next();
-            fmt::print("{}\n", instruction->toString());
             eip_ = instruction->address;
+            fmt::print(stderr, "{}\n", instruction->toString());
             instruction->exec(this);
         }
     }
@@ -163,6 +163,11 @@ namespace x86 {
     #define TODO(ins) \
         fmt::print(stderr, "Fail at : {}\n", x86::utils::toString(ins));\
         assert(!"Not implemented"); 
+
+    #define ASSERT(ins, cond) \
+        bool condition = (cond);\
+        if(!condition) fmt::print(stderr, "Fail at : {}\n", x86::utils::toString(ins));\
+        assert(cond); 
 
     void Interpreter::exec(Add<R32, R32> ins) {
         set(ins.dst, get(ins.dst) + get(ins.src));
@@ -464,7 +469,7 @@ namespace x86 {
 
     void Interpreter::exec(CallDirect ins) {
         const Function* func = program_.findFunction(ins.symbolName);
-        assert(!!func);
+        ASSERT(ins, !!func);
         state_.frames.push_back(Frame{func, 0});
         push32(eip_);
     }
