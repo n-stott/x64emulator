@@ -483,7 +483,7 @@ namespace x86 {
             const LibraryFunction* libFunc = lib_->findFunction(ins.symbolName);
             ASSERT(ins, !!libFunc);
             state_.frames.push_back(Frame{libFunc, 0});
-            libFunc->exec(context());
+            push32(eip_);
         }
     }
 
@@ -507,7 +507,12 @@ namespace x86 {
 
     void Interpreter::exec(Halt ins) { TODO(ins); }
     void Interpreter::exec(Nop ins) { TODO(ins); }
-    void Interpreter::exec(Ud2 ins) { TODO(ins); }
+
+    void Interpreter::exec(Ud2) {
+        fmt::print("Illegal instruction\n");
+        stop_ = true;
+    }
+
     void Interpreter::exec(Cdq ins) { TODO(ins); }
 
     void Interpreter::exec(Inc<R8> ins) { TODO(ins); }

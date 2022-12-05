@@ -13,8 +13,7 @@ namespace x86 {
 
     class LibraryFunction : public Function {
     public:
-        explicit LibraryFunction(const std::string& symbol) : Function{0xFFFFFFFF, symbol, {}} { }
-        virtual void exec(const CallingContext&) const = 0;
+        explicit LibraryFunction(const std::string& symbol) : Function{0xDEADC0DE, symbol, {}} { }
     };
 
     struct Library {
