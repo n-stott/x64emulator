@@ -1,5 +1,6 @@
 #include <cstdio>
 
 int main() {
-    std::puts("abc");
+    std::putchar('a');
+    // std::puts("abc");
 }
