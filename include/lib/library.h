@@ -13,14 +13,8 @@ namespace x86 {
 
     class LibraryFunction : public Function {
     public:
-        explicit LibraryFunction(const std::string& symbol) : symbol_(symbol) { }
-
-        virtual ~LibraryFunction() = default;
+        explicit LibraryFunction(const std::string& symbol) : Function{0xFFFFFFFF, symbol, {}} { }
         virtual void exec(const CallingContext&) const = 0;
-        virtual int nbArguments() const = 0;
-        std::string_view symbol() const { return symbol_; }
-    protected:
-        std::string symbol_;
     };
 
     struct Library {

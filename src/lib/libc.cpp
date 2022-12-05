@@ -9,8 +9,4 @@ namespace x86 {
         assert(!"not implemented");
     }
 
-    int Puts::nbArguments() const {
-        return 1;
-    }
-
 }

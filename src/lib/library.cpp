@@ -11,7 +11,7 @@ namespace x86 {
 
     const LibraryFunction* Library::findFunction(std::string_view name) const {
             for(const auto& func : functions) {
-                if(func->symbol() == name) return func.get();
+                if(func->name == name) return func.get();
             }
             return nullptr;
     }
