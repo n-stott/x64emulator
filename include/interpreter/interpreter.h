@@ -4,6 +4,7 @@
 #include "instructionhandler.h"
 #include "interpreter/mmu.h"
 #include "lib/library.h"
+#include "lib/callingcontext.h"
 #include "program.h"
 #include <cassert>
 
@@ -75,6 +76,9 @@ namespace x86 {
                 return instruction;
             }
         } state_;
+
+        friend struct CallingContext;
+        CallingContext context() const;
 
         void dump() const;
 

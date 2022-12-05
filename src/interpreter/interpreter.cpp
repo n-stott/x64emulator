@@ -155,6 +155,10 @@ namespace x86 {
         return value;
     }
 
+    CallingContext Interpreter::context() const {
+        return CallingContext{};
+    }
+
     void Interpreter::dump() const {
         fmt::print(
 "eax {:0000008x}  ebx {:0000008x}  ecx {:0000008x}  edx {:0000008x}  "
@@ -478,7 +482,8 @@ namespace x86 {
             // call library function
             const LibraryFunction* libFunc = lib_->findFunction(ins.symbolName);
             ASSERT(ins, !!libFunc);
-            libFunc->exec();
+            state_.frames.push_back(Frame{libFunc, 0});
+            libFunc->exec(context());
         }
     }
 

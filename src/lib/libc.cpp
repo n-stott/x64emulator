@@ -1,12 +1,16 @@
 #include "lib/libc.h"
 #include <cassert>
 
-Puts::Puts() : LibraryFunction("puts@plt") { }
+namespace x86 {
 
-void Puts::exec() const {
-    assert(!"not implemented");
-}
+    Puts::Puts() : LibraryFunction("puts@plt") { }
 
-int Puts::nbArguments() const {
-    return 1;
+    void Puts::exec(const CallingContext&) const {
+        assert(!"not implemented");
+    }
+
+    int Puts::nbArguments() const {
+        return 1;
+    }
+
 }
