@@ -14,6 +14,17 @@
 
 namespace x86 {
 
+    std::string_view strip(std::string_view sv) {
+        const char* skippedCharacters = " \n\t";
+        size_t first = sv.find_first_not_of(skippedCharacters);
+        size_t last = sv.find_last_not_of(skippedCharacters);
+        if(first != std::string::npos && last != std::string::npos) {
+            return sv.substr(first, last+1-first);
+        } else {
+            return "";
+        }
+    }
+
     std::vector<std::string_view> split(std::string_view sv, char separator) {
         std::vector<std::string_view> result;
         size_t pos = 0;
@@ -21,7 +32,8 @@ namespace x86 {
         while(next != sv.size()) {
             next = sv.find(separator, pos);
             if(next == std::string::npos) next = sv.size();
-            result.push_back(std::string_view(sv.begin()+pos, next-pos));
+            std::string_view item = std::string_view(sv.begin()+pos, next-pos);
+            result.push_back(strip(item));
             pos = next+1;
         }
         return result;
@@ -36,17 +48,6 @@ namespace x86 {
             result.push_back(sv.substr(next+1));
         }
         return result;
-    }
-
-    std::string_view strip(std::string_view sv) {
-        const char* skippedCharacters = " \n\t";
-        size_t first = sv.find_first_not_of(skippedCharacters);
-        size_t last = sv.find_last_not_of(skippedCharacters);
-        if(first != std::string::npos && last != std::string::npos) {
-            return sv.substr(first, last+1-first);
-        } else {
-            return "";
-        }
     }
 
     std::unique_ptr<Program> InstructionParser::parseFile(std::string filename) {
