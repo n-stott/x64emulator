@@ -88,6 +88,14 @@ namespace x86 {
         return get(addr.base) + addr.displacement;
     }
 
+    u32 Interpreter::resolve(Addr<Size::BYTE, B> addr) const {
+        return resolve(addr.encoding);
+    }
+
+    u32 Interpreter::Interpreter::resolve(Addr<Size::BYTE, BD> addr) const {
+        return resolve(addr.encoding);
+    }
+
     u32 Interpreter::resolve(Addr<Size::DWORD, B> addr) const {
         return resolve(addr.encoding);
     }
@@ -432,7 +440,11 @@ namespace x86 {
     void Interpreter::exec(Movzx<R16, R8> ins) { TODO(ins); }
     void Interpreter::exec(Movzx<R32, R8> ins) { TODO(ins); }
     void Interpreter::exec(Movzx<R32, R16> ins) { TODO(ins); }
-    void Interpreter::exec(Movzx<R32, Addr<Size::BYTE, B>> ins) { TODO(ins); }
+
+    void Interpreter::exec(Movzx<R32, Addr<Size::BYTE, B>> ins) {
+        set(ins.dst, (u32)mmu_.read8(resolve(ins.src)));
+    }
+
     void Interpreter::exec(Movzx<R32, Addr<Size::BYTE, BD>> ins) { TODO(ins); }
     void Interpreter::exec(Movzx<R32, Addr<Size::BYTE, BIS>> ins) { TODO(ins); }
     void Interpreter::exec(Movzx<R32, Addr<Size::BYTE, BISD>> ins) { TODO(ins); }

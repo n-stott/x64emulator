@@ -69,7 +69,7 @@ namespace x86 {
         add(this, make_wrapper<Mov<R32, R32>>(R32::EBP, R32::ESP));
         auto arg = Addr<Size::DWORD, BD>{{R32::ESP, +8}};
         add(this, make_wrapper<Mov<R32, Addr<Size::DWORD, BD>>>(R32::ESI, arg));
-        add(this, make_wrapper<Mov<R32, Addr<Size::DWORD, B>>>(R32::EAX, B{R32::ESI}));
+        add(this, make_wrapper<Movzx<R32, Addr<Size::BYTE, B>>>(R32::EAX, B{R32::ESI}));
 
 
 
