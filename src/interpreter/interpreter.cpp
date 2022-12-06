@@ -47,8 +47,10 @@ namespace x86 {
         while(!stop_ && state_.hasNext()) {
             dump();
             const X86Instruction* instruction = state_.next();
-            eip_ = instruction->address;
-            fmt::print(stderr, "{}\n", instruction->toString());
+            auto nextAfter = state_.peek();
+            if(nextAfter) {
+                eip_ = nextAfter->address;
+            }
             instruction->exec(this);
         }
     }

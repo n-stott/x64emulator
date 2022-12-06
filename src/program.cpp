@@ -1,4 +1,5 @@
 #include "program.h"
+#include <fmt/core.h>
 
 namespace x86 {
 
@@ -7,6 +8,12 @@ namespace x86 {
             if(func.name == name) return &func;
         }
         return nullptr;
+    }
+
+    void Function::print() const {
+        for(const auto& ins : instructions) {
+            fmt::print(stderr, "{:x} {}\n", ins->address, ins->toString());
+        }
     }
 
 

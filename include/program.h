@@ -24,6 +24,8 @@ namespace x86 {
         u32 address;
         std::string name;
         std::vector<std::unique_ptr<X86Instruction>> instructions;
+
+        void print() const;
     };
 
     struct Program {

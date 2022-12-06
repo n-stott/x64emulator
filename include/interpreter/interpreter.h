@@ -77,6 +77,16 @@ namespace x86 {
                 ++frame.offset;
                 return instruction;
             }
+
+            const X86Instruction* peek() const {
+                assert(!frames.empty());
+                const Frame& frame = frames.back();
+                if(frame.offset < frame.function->instructions.size()) {
+                    return frame.function->instructions[frame.offset].get();
+                } else {
+                    return nullptr;
+                }
+            }
         } state_;
 
         friend struct CallingContext;
