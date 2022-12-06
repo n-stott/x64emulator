@@ -80,6 +80,8 @@ namespace x86 {
         friend struct CallingContext;
         CallingContext context() const;
 
+        friend class ExecutionContext;
+
         void dump() const;
 
         void exec(Add<R32, R32>) override;

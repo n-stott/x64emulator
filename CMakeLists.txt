@@ -33,6 +33,7 @@ add_executable(translator
     src/parser/parser.cpp
     src/interpreter/interpreter.cpp
     src/interpreter/mmu.cpp
+    src/interpreter/executioncontext.cpp
     src/program.cpp
     src/main.cpp
 )

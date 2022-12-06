@@ -1,4 +1,5 @@
 #include "interpreter/interpreter.h"
+#include "interpreter/executioncontext.h"
 #include "instructionutils.h"
 #include <fmt/core.h>
 #include <cassert>
@@ -27,7 +28,7 @@ namespace x86 {
         mmu_.addRegion(Mmu::Region{ stackBase, stackSize });
         esp_ = stackBase + stackSize;
 
-        lib_ = Library::make_library();
+        lib_ = Library::make_library(ExecutionContext(this));
     }
 
     void Interpreter::run() {
@@ -160,7 +161,7 @@ namespace x86 {
     }
 
     void Interpreter::dump() const {
-        fmt::print(
+        fmt::print(stderr,
 "eax {:0000008x}  ebx {:0000008x}  ecx {:0000008x}  edx {:0000008x}  "
 "esi {:0000008x}  edi {:0000008x}  ebp {:0000008x}  esp {:0000008x}\n", 
         eax_, ebx_, ecx_, edx_, esi_, edi_, ebp_, esp_);
@@ -481,9 +482,13 @@ namespace x86 {
         } else {
             // call library function
             const LibraryFunction* libFunc = lib_->findFunction(ins.symbolName);
-            ASSERT(ins, !!libFunc);
-            state_.frames.push_back(Frame{libFunc, 0});
-            push32(eip_);
+            if(!!libFunc) {
+                state_.frames.push_back(Frame{libFunc, 0});
+                push32(eip_);
+            } else {
+                fmt::print("Unknown function '{}'\n", ins.symbolName);
+                stop_ = true;
+            }
         }
     }
 

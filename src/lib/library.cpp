@@ -1,11 +1,13 @@
 #include "lib/library.h"
 #include "lib/libc.h"
+#include "interpreter/executioncontext.h"
 
 namespace x86 {
 
-    std::unique_ptr<Library> Library::make_library() {
+    std::unique_ptr<Library> Library::make_library(ExecutionContext context) {
         std::unique_ptr<Library> lib = std::make_unique<Library>();
-        lib->addFunction<Puts>();
+        lib->addFunction<Puts>(context);
+        lib->addFunction<Putchar>(context);
         return lib;
     }
 
