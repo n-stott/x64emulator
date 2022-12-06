@@ -15,9 +15,9 @@ namespace x86 {
         static std::unique_ptr<Program> parseFile(std::string filename);
         static std::unique_ptr<Function> parseFunction(std::ifstream& file);
         static std::unique_ptr<X86Instruction> parseInstructionLine(std::string_view s);
+        static std::unique_ptr<X86Instruction> parseInstruction(u32 address, std::string_view s);
 
     private:
-        static std::unique_ptr<X86Instruction> parseInstruction(u32 address, std::string_view s);
 
         static std::unique_ptr<X86Instruction> parsePush(u32 address, std::string_view operands);
         static std::unique_ptr<X86Instruction> parsePop(u32 address, std::string_view operands);

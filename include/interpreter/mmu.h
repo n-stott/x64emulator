@@ -22,7 +22,6 @@ namespace x86 {
             void write16(u32 address, u16 value);
             void write32(u32 address, u32 value);
 
-        private:
             u32 base;
             u32 size;
             std::vector<u8> data;

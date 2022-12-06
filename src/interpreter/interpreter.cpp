@@ -22,6 +22,18 @@ namespace x86 {
         u32 heapBase = 0x1000000;
         u32 heapSize = 64*1024;
         mmu_.addRegion(Mmu::Region{ heapBase, heapSize });
+
+        // [NS] hack for print
+        // .rodata section
+        u32 rodataBase = 0x2000;
+        u32 rodataSize = 0xc;
+        Mmu::Region rodata{ rodataBase, rodataSize };
+        rodata.data[8] = 0x61;
+        rodata.data[9] = 0x62;
+        rodata.data[10] = 0x63;
+        rodata.data[11] = 0x00;
+        mmu_.addRegion(std::move(rodata));
+        
         // stack
         u32 stackBase = 0x2000000;
         u32 stackSize = 4*1024;
@@ -51,6 +63,7 @@ namespace x86 {
             if(nextAfter) {
                 eip_ = nextAfter->address;
             }
+            fmt::print(stderr, "{}\n", instruction->toString());
             instruction->exec(this);
         }
     }
