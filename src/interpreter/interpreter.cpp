@@ -486,7 +486,7 @@ namespace x86 {
                 state_.frames.push_back(Frame{libFunc, 0});
                 push32(eip_);
             } else {
-                fmt::print("Unknown function '{}'\n", ins.symbolName);
+                fmt::print(stderr, "Unknown function '{}'\n", ins.symbolName);
                 stop_ = true;
             }
         }
@@ -514,7 +514,7 @@ namespace x86 {
     void Interpreter::exec(Nop ins) { TODO(ins); }
 
     void Interpreter::exec(Ud2) {
-        fmt::print("Illegal instruction\n");
+        fmt::print(stderr, "Illegal instruction\n");
         stop_ = true;
     }
 

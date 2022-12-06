@@ -2,5 +2,6 @@
 
 int main() {
     std::putchar('a');
-    // std::puts("abc");
+    std::putchar('\n');
+    std::puts("abc");
 }
