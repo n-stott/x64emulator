@@ -14,36 +14,49 @@ namespace elf {
 
     class Elf {
     public:
+
+        enum class Class : u32 {
+            B32 = 1,
+            B64 = 2,
+        };
+
+        enum class Endianness : u8 {
+            LITTLE = 1,
+            BIG = 2,
+        };
+
+        enum class Version : u8 {
+            CURRENT = 1,
+        };
+
+        enum class OsABI : u8 {
+            SYSV = 0x00,
+            LINUX = 0x03,
+        };
+
+        enum class AbiVersion : u8 {
+            UNKNOWN = 0x00,
+        };
+
+        enum class Type : u16 {
+
+        };
+
+        enum class Machine : u16 {
+
+        };
+
         struct FileHeader {
             struct Identifier {
-                enum class Class : u32 {
-                    B32 = 1,
-                    B64 = 2,
-                } class_;
-                enum class Endianness : u8 {
-                    LITTLE = 1,
-                    BIG = 2,
-                } data;
-                enum class Version : u8 {
-                    CURRENT = 1,
-                } version;
-                enum class OsABI : u8 {
-                    SYSV = 0x00,
-                    LINUX = 0x03,
-                } osabi;
-                enum class AbiVersion : u8 {
-                    UNKNOWN = 0x00,
-                } abiversion;
+                Class class_;
+                Endianness data;
+                Version version;
+                OsABI osabi;
+                AbiVersion abiversion;
             } ident;
-            enum class Type : u16 {
-
-            } type;
-            enum class Machine : u16 {
-
-            } machine;
-            enum class Version : u64 {
-                CURRENT = 1,
-            } version;
+            Type type;
+            Machine machine;
+            Version version;
             u64 entry;
             u64 phoff;
             u64 shoff;
@@ -58,6 +71,24 @@ namespace elf {
             void print() const;
         };
 
+
+
+        struct SectionHeader {
+            u32 sh_name;
+            u32 sh_type;
+            u64 sh_flags;
+            u64 sh_addr;
+            u64 sh_offset;
+            u64 sh_size;
+            u32 sh_link;
+            u32 sh_info;
+            u64 sh_addralign;
+            u64 sh_entsize;
+
+            static void printNames();
+            void print() const;
+        };
+
     private:
     };
 
@@ -66,6 +97,8 @@ namespace elf {
         static std::unique_ptr<Elf> tryCreate(const std::string& filename, const std::vector<char>& bytebuffer);
 
         static std::unique_ptr<Elf::FileHeader> tryCreateFileheader(const std::vector<char>& bytebuffer);
+
+        static std::unique_ptr<Elf::SectionHeader> tryCreateSectionheader(const std::vector<char>& bytebuffer, size_t entryOffset, size_t entrySize, Elf::Class c);
     };
 }
 

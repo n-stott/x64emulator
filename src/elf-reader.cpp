@@ -12,6 +12,23 @@ namespace elf {
             return {};
         }
         fileheader->print();
+
+        size_t sectionHeaderCount = fileheader->shnum;
+        size_t sectionHeaderSize = fileheader->shentsize;
+        u64 sectionHeaderStart = fileheader->shoff;
+        std::vector<std::unique_ptr<Elf::SectionHeader>> sectionHeaders;
+        for(size_t i = 0; i < sectionHeaderCount; ++i) {
+            auto sectionheader = tryCreateSectionheader(bytes, sectionHeaderStart+i*sectionHeaderSize, sectionHeaderSize, fileheader->ident.class_);
+            if(!sectionheader) {
+                fmt::print(stderr, "Invalid section header {}\n", i);
+                continue;
+            }
+            sectionHeaders.push_back(std::move(sectionheader));
+        }
+
+        Elf::SectionHeader::printNames();
+        for(const auto& section : sectionHeaders) section->print();
+
         return {};
     }
 
@@ -19,16 +36,16 @@ namespace elf {
         if(bytes.size() < 16) return {};
         if(bytes[0] != 0x7f || bytes[1] != 0x45 || bytes[2] != 0x4c || bytes[3] != 0x46) return {};
         Elf::FileHeader fileheader;
-        fileheader.ident.class_  = static_cast<Elf::FileHeader::Identifier::Class>(bytes[4]);
-        fileheader.ident.data    = static_cast<Elf::FileHeader::Identifier::Endianness>(bytes[5]);
-        fileheader.ident.version = static_cast<Elf::FileHeader::Identifier::Version>(bytes[6]);
-        fileheader.ident.osabi = static_cast<Elf::FileHeader::Identifier::OsABI>(bytes[7]);
-        fileheader.ident.abiversion = static_cast<Elf::FileHeader::Identifier::AbiVersion>(bytes[8]);
+        fileheader.ident.class_  = static_cast<Elf::Class>(bytes[4]);
+        fileheader.ident.data    = static_cast<Elf::Endianness>(bytes[5]);
+        fileheader.ident.version = static_cast<Elf::Version>(bytes[6]);
+        fileheader.ident.osabi = static_cast<Elf::OsABI>(bytes[7]);
+        fileheader.ident.abiversion = static_cast<Elf::AbiVersion>(bytes[8]);
 
         std::memcpy(&fileheader.type, bytes.data()+0x10, sizeof(fileheader.type));
         std::memcpy(&fileheader.machine, bytes.data()+0x12, sizeof(fileheader.machine));
         std::memcpy(&fileheader.version, bytes.data()+0x14, sizeof(fileheader.version));
-        if(fileheader.ident.class_ == Elf::FileHeader::Identifier::Class::B64) {
+        if(fileheader.ident.class_ == Elf::Class::B64) {
             std::memcpy(&fileheader.entry, bytes.data()+0x18, sizeof(fileheader.entry));
             std::memcpy(&fileheader.phoff, bytes.data()+0x20, sizeof(fileheader.phoff));
             std::memcpy(&fileheader.shoff, bytes.data()+0x28, sizeof(fileheader.shoff));
@@ -39,7 +56,7 @@ namespace elf {
             std::memcpy(&fileheader.shentsize, bytes.data()+0x3A, sizeof(fileheader.shentsize));
             std::memcpy(&fileheader.shnum, bytes.data()+0x3C, sizeof(fileheader.shnum));
             std::memcpy(&fileheader.shstrndx, bytes.data()+0x3E, sizeof(fileheader.shstrndx));
-        } else if(fileheader.ident.class_ == Elf::FileHeader::Identifier::Class::B32) {
+        } else if(fileheader.ident.class_ == Elf::Class::B32) {
             u32 entry, phoff, shoff;
             std::memcpy(&entry, bytes.data()+0x18, sizeof(entry));
             fileheader.entry = entry;
@@ -61,8 +78,8 @@ namespace elf {
     }
 
     void Elf::FileHeader::print() const {
-        fmt::print("Format     : {}\n", ident.class_ == Identifier::Class::B64 ? "64-bit" : "32-bit");
-        fmt::print("Endianness : {}\n", ident.data == Identifier::Endianness::BIG ? "big" : "little");
+        fmt::print("Format     : {}\n", ident.class_ == Class::B64 ? "64-bit" : "32-bit");
+        fmt::print("Endianness : {}\n", ident.data == Endianness::BIG ? "big" : "little");
         fmt::print("Version    : {}\n", (int)ident.version);
         fmt::print("OS abi     : {:x}.{}\n", (int)ident.osabi, (int)ident.abiversion);
         fmt::print("Type       : {:x}\n", (int)type);
@@ -79,6 +96,73 @@ namespace elf {
         fmt::print("Section header entry size : {:#x}\n", (int)shentsize);
         fmt::print("Section header count      : {:}\n", (int)shnum);
         fmt::print("Section header name index : {:#x}\n", (int)shstrndx);
+    }
+
+    std::unique_ptr<Elf::SectionHeader> ElfReader::tryCreateSectionheader(const std::vector<char>& bytebuffer, size_t entryOffset, size_t entrySize, Elf::Class c) {
+        if(bytebuffer.size() < entryOffset + entrySize) return {};
+        const char* buffer = bytebuffer.data() + entryOffset;
+        Elf::SectionHeader sectionheader;
+        if(c == Elf::Class::B64) {
+            std::memcpy(&sectionheader.sh_name, buffer+0x00, sizeof(sectionheader.sh_name));
+            std::memcpy(&sectionheader.sh_type, buffer+0x04, sizeof(sectionheader.sh_type));
+            std::memcpy(&sectionheader.sh_flags, buffer+0x08, sizeof(sectionheader.sh_flags));
+            std::memcpy(&sectionheader.sh_addr, buffer+0x10, sizeof(sectionheader.sh_addr));
+            std::memcpy(&sectionheader.sh_offset, buffer+0x18, sizeof(sectionheader.sh_offset));
+            std::memcpy(&sectionheader.sh_size, buffer+0x20, sizeof(sectionheader.sh_size));
+            std::memcpy(&sectionheader.sh_link, buffer+0x28, sizeof(sectionheader.sh_link));
+            std::memcpy(&sectionheader.sh_info, buffer+0x2C, sizeof(sectionheader.sh_info));
+            std::memcpy(&sectionheader.sh_addralign, buffer+0x30, sizeof(sectionheader.sh_addralign));
+            std::memcpy(&sectionheader.sh_entsize, buffer+0x38, sizeof(sectionheader.sh_entsize));
+        } else if(c == Elf::Class::B32) {
+            u32 flags, addr, offset, size, addralign, entsize;
+            std::memcpy(&sectionheader.sh_name, buffer+0x00, sizeof(sectionheader.sh_name));
+            std::memcpy(&sectionheader.sh_type, buffer+0x04, sizeof(sectionheader.sh_type));
+            std::memcpy(&flags, buffer+0x08, sizeof(flags));
+            sectionheader.sh_flags = flags;
+            std::memcpy(&addr, buffer+0x0C, sizeof(addr));
+            sectionheader.sh_addr = addr;
+            std::memcpy(&offset, buffer+0x10, sizeof(offset));
+            sectionheader.sh_offset = offset;
+            std::memcpy(&size, buffer+0x14, sizeof(size));
+            sectionheader.sh_size = size;
+            std::memcpy(&sectionheader.sh_link, buffer+0x18, sizeof(sectionheader.sh_link));
+            std::memcpy(&sectionheader.sh_info, buffer+0x1C, sizeof(sectionheader.sh_info));
+            std::memcpy(&addralign, buffer+0x20, sizeof(addralign));
+            sectionheader.sh_addralign = addralign;
+            std::memcpy(&entsize, buffer+0x24, sizeof(entsize));
+            sectionheader.sh_entsize = entsize;
+        } else {
+            return {};
+        }
+        return std::make_unique<Elf::SectionHeader>(std::move(sectionheader));
+    }
+
+    void Elf::SectionHeader::printNames() {
+        fmt::print("{:>10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>6} {:>6} {:>10} {:>10}\n",
+            "name",
+            "type",
+            "flags",
+            "addr",
+            "offset",
+            "size",
+            "link",
+            "info",
+            "addralign",
+            "entsize");
+    }
+
+    void Elf::SectionHeader::print() const {
+        fmt::print("{:10x} {:#10x} {:#10x} {:#10x} {:#10x} {:#10x} {:#6x} {:#6x} {:#10x} {:#10x}\n",
+            sh_name,
+            sh_type,
+            sh_flags,
+            sh_addr,
+            sh_offset,
+            sh_size,
+            sh_link,
+            sh_info,
+            sh_addralign,
+            sh_entsize);
     }
 
 }
