@@ -26,14 +26,27 @@ namespace elf {
             sectionHeaders.push_back(std::move(sectionheader));
         }
 
+        if(fileheader->shstrndx >= sectionHeaders.size()) {
+            fmt::print(stderr, "No string table sectionn found\n");
+            return {};
+        }
+        const Elf::SectionHeader* stringTable = sectionHeaders[fileheader->shstrndx].get();
+
         Elf::SectionHeader::printNames();
-        for(const auto& section : sectionHeaders) section->print();
+        for(const auto& section : sectionHeaders) {
+            u64 stringNameOffset = section->sh_name;
+            const char* name = bytes.data() + stringTable->sh_offset + stringNameOffset;
+            size_t len = ::strlen(name);
+            section->print(std::string_view(name, len));
+        }
+
+
 
         return {};
     }
 
     std::unique_ptr<Elf::FileHeader> ElfReader::tryCreateFileheader(const std::vector<char>& bytes) {
-        if(bytes.size() < 16) return {};
+        if(bytes.size() < 0x18) return {};
         if(bytes[0] != 0x7f || bytes[1] != 0x45 || bytes[2] != 0x4c || bytes[3] != 0x46) return {};
         Elf::FileHeader fileheader;
         fileheader.ident.class_  = static_cast<Elf::Class>(bytes[4]);
@@ -46,6 +59,7 @@ namespace elf {
         std::memcpy(&fileheader.machine, bytes.data()+0x12, sizeof(fileheader.machine));
         std::memcpy(&fileheader.version, bytes.data()+0x14, sizeof(fileheader.version));
         if(fileheader.ident.class_ == Elf::Class::B64) {
+            if(bytes.size() < 0x40) return {};
             std::memcpy(&fileheader.entry, bytes.data()+0x18, sizeof(fileheader.entry));
             std::memcpy(&fileheader.phoff, bytes.data()+0x20, sizeof(fileheader.phoff));
             std::memcpy(&fileheader.shoff, bytes.data()+0x28, sizeof(fileheader.shoff));
@@ -57,6 +71,7 @@ namespace elf {
             std::memcpy(&fileheader.shnum, bytes.data()+0x3C, sizeof(fileheader.shnum));
             std::memcpy(&fileheader.shstrndx, bytes.data()+0x3E, sizeof(fileheader.shstrndx));
         } else if(fileheader.ident.class_ == Elf::Class::B32) {
+            if(bytes.size() < 0x34) return {};
             u32 entry, phoff, shoff;
             std::memcpy(&entry, bytes.data()+0x18, sizeof(entry));
             fileheader.entry = entry;
@@ -74,6 +89,8 @@ namespace elf {
         } else {
             return {};
         }
+        if(!fileheader.shnum) return {};
+        if(fileheader.shstrndx > fileheader.shnum) return {};
         return std::make_unique<Elf::FileHeader>(fileheader);
     }
 
@@ -91,11 +108,11 @@ namespace elf {
         fmt::print("\n");
         fmt::print("Flags : {:#x}\n", (int)flags);
         fmt::print("File header size : {:#x}\n", (int)ehsize);
-        fmt::print("Program header entry size : {:#x}\n", (int)phentsize);
+        fmt::print("Program header entry size : {:#x}B\n", (int)phentsize);
         fmt::print("Program header count      : {:}\n", (int)phnum);
-        fmt::print("Section header entry size : {:#x}\n", (int)shentsize);
+        fmt::print("Section header entry size : {:#x}B\n", (int)shentsize);
         fmt::print("Section header count      : {:}\n", (int)shnum);
-        fmt::print("Section header name index : {:#x}\n", (int)shstrndx);
+        fmt::print("Section header name index : {:}\n", (int)shstrndx);
     }
 
     std::unique_ptr<Elf::SectionHeader> ElfReader::tryCreateSectionheader(const std::vector<char>& bytebuffer, size_t entryOffset, size_t entrySize, Elf::Class c) {
@@ -138,7 +155,7 @@ namespace elf {
     }
 
     void Elf::SectionHeader::printNames() {
-        fmt::print("{:>10} {:>10} {:>10} {:>10} {:>10} {:>10} {:>6} {:>6} {:>10} {:>10}\n",
+        fmt::print("{:>20} {:>10} {:>10} {:>10} {:>10} {:>10} {:>6} {:>6} {:>10} {:>10}\n",
             "name",
             "type",
             "flags",
@@ -151,9 +168,9 @@ namespace elf {
             "entsize");
     }
 
-    void Elf::SectionHeader::print() const {
-        fmt::print("{:10x} {:#10x} {:#10x} {:#10x} {:#10x} {:#10x} {:#6x} {:#6x} {:#10x} {:#10x}\n",
-            sh_name,
+    void Elf::SectionHeader::print(std::string_view name) const {
+        fmt::print("{:20} {:#10x} {:#10x} {:#10x} {:#10x} {:#10x} {:#6x} {:#6x} {:#10x} {:#10x}\n",
+            name,
             sh_type,
             sh_flags,
             sh_addr,

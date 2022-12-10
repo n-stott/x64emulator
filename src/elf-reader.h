@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <string>
+#include <string_view>
 #include <vector>
 
 using u8 = unsigned char;
@@ -86,7 +87,7 @@ namespace elf {
             u64 sh_entsize;
 
             static void printNames();
-            void print() const;
+            void print(std::string_view name) const;
         };
 
     private:
