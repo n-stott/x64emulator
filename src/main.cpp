@@ -45,6 +45,7 @@ int main(int argc, char* argv[]) {
     if(argc != 2) {
         return 1;
     }
+
     auto program = x86::InstructionParser::parseFile(argv[1]);
     if(!program) {
         return 1;

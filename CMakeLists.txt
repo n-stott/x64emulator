@@ -30,6 +30,7 @@ add_executable(translator
     src/lib/library.cpp
     src/lib/libc.cpp
     src/translation/x86instruction.cpp
+    src/parser/disassembler.cpp
     src/parser/parser.cpp
     src/interpreter/interpreter.cpp
     src/interpreter/mmu.cpp

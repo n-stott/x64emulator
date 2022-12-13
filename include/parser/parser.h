@@ -13,11 +13,12 @@ namespace x86 {
     class InstructionParser {
     public:
         static std::unique_ptr<Program> parseFile(std::string filename);
-        static std::unique_ptr<Function> parseFunction(std::ifstream& file);
         static std::unique_ptr<X86Instruction> parseInstructionLine(std::string_view s);
         static std::unique_ptr<X86Instruction> parseInstruction(u32 address, std::string_view s);
 
     private:
+        using line_iterator = std::vector<std::string>::const_iterator;
+        static std::unique_ptr<Function> parseFunction(line_iterator& begin, line_iterator end);
 
         static std::unique_ptr<X86Instruction> parsePush(u32 address, std::string_view operands);
         static std::unique_ptr<X86Instruction> parsePop(u32 address, std::string_view operands);

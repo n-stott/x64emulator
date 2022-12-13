@@ -1,4 +1,5 @@
 #include "parser/parser.h"
+#include "parser/disassembler.h"
 #include "instructionhandler.h"
 #include "instructionutils.h"
 #include "instructions.h"
@@ -50,10 +51,12 @@ namespace x86 {
         return result;
     }
 
-    std::unique_ptr<Program> InstructionParser::parseFile(std::string filename) {
-        std::ifstream file(filename);
-        if(!file.is_open()) {
-            fmt::print("Unable to open {}\n", filename);
+    std::unique_ptr<Program> InstructionParser::parseFile(std::string filepath) {
+
+        std::vector<std::string> disassembledText = Disassembler::disassembleTextSection(filepath);
+
+        if(disassembledText.empty()) {
+            fmt::print("Unable to disassemble {}\n", filepath);
             return {};
         }
 
@@ -61,8 +64,10 @@ namespace x86 {
 
         size_t total = 0;
         size_t success = 0;
-        while(!file.eof()) {
-            auto ptr = parseFunction(file);
+        line_iterator begin = disassembledText.begin();
+        line_iterator end = disassembledText.end();
+        while(begin != end) {
+            auto ptr = parseFunction(begin, end);
             total++;
             success += (!!ptr);
             if(ptr) {
@@ -84,10 +89,11 @@ namespace x86 {
         return std::make_unique<Program>(std::move(program));
     }
 
-    std::unique_ptr<Function> InstructionParser::parseFunction(std::ifstream& file) {
+    std::unique_ptr<Function> InstructionParser::parseFunction(line_iterator& begin, line_iterator end) {
         std::string line;
         bool foundFunctionStart = false;
-        while (!foundFunctionStart && std::getline(file, line)) {
+        while (!foundFunctionStart && begin != end) {
+            line = *begin++;
             std::string_view stripped = strip(line);
             if(stripped.empty()) continue;
             if(stripped[0] != '0') continue;
@@ -117,7 +123,8 @@ namespace x86 {
         function->name = name;
 
         std::vector<std::unique_ptr<X86Instruction>> instructions;
-        while(std::getline(file, line)) {
+        while(begin != end) {
+            line = *begin++;
             std::string_view strippedLine = strip(line);
             if(strippedLine.empty()) break;
             auto ins = parseInstructionLine(strippedLine);
