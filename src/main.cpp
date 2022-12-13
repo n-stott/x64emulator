@@ -16,5 +16,11 @@ int main(int argc, const char* argv[]) {
      input.read(&buffer[0], buffer.size());
      input.close();
 
-     auto elf = elf::ElfReader::tryCreate(filename, buffer);
+     auto elf = elf::ElfReader::tryCreate(filename, std::move(buffer));
+     if(!elf) {
+          fmt::print(stderr, "Unable to read elf\n");
+          return 1;
+     }
+
+     elf->print();
 }

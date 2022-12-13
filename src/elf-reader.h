@@ -90,12 +90,20 @@ namespace elf {
             void print(std::string_view name) const;
         };
 
+        void print() const;
+
     private:
+        std::string filename_;
+        std::vector<char> bytes_;
+        FileHeader fileheader_;
+        std::vector<SectionHeader> sectionHeaders_;
+
+        friend class ElfReader;
     };
 
     class ElfReader {
     public:
-        static std::unique_ptr<Elf> tryCreate(const std::string& filename, const std::vector<char>& bytebuffer);
+        static std::unique_ptr<Elf> tryCreate(const std::string& filename, std::vector<char> bytebuffer);
 
         static std::unique_ptr<Elf::FileHeader> tryCreateFileheader(const std::vector<char>& bytebuffer);
 

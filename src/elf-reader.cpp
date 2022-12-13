@@ -4,45 +4,54 @@
 
 namespace elf {
 
-    std::unique_ptr<Elf> ElfReader::tryCreate(const std::string& filename, const std::vector<char>& bytes) {
-        fmt::print("File {} contains {} bytes\n", filename, bytes.size());
+    std::unique_ptr<Elf> ElfReader::tryCreate(const std::string& filename, std::vector<char> bytes) {
         auto fileheader = tryCreateFileheader(bytes);
         if(!fileheader) {
             fmt::print(stderr, "Invalid file header\n");
             return {};
         }
-        fileheader->print();
 
         size_t sectionHeaderCount = fileheader->shnum;
         size_t sectionHeaderSize = fileheader->shentsize;
         u64 sectionHeaderStart = fileheader->shoff;
-        std::vector<std::unique_ptr<Elf::SectionHeader>> sectionHeaders;
+        std::vector<Elf::SectionHeader> sectionHeaders;
         for(size_t i = 0; i < sectionHeaderCount; ++i) {
             auto sectionheader = tryCreateSectionheader(bytes, sectionHeaderStart+i*sectionHeaderSize, sectionHeaderSize, fileheader->ident.class_);
             if(!sectionheader) {
                 fmt::print(stderr, "Invalid section header {}\n", i);
                 continue;
             }
-            sectionHeaders.push_back(std::move(sectionheader));
+            sectionHeaders.push_back(*sectionheader);
         }
 
         if(fileheader->shstrndx >= sectionHeaders.size()) {
             fmt::print(stderr, "No string table sectionn found\n");
             return {};
         }
-        const Elf::SectionHeader* stringTable = sectionHeaders[fileheader->shstrndx].get();
+
+        Elf elf;
+        elf.filename_ = filename;
+        elf.bytes_ = std::move(bytes);
+        elf.fileheader_ = *fileheader;
+        elf.sectionHeaders_ = std::move(sectionHeaders);
+
+
+        return std::make_unique<Elf>(std::move(elf));
+    }
+
+    void Elf::print() const {
+        fmt::print("ELF file {} contains {} bytes\n", filename_, bytes_.size());
+        fileheader_.print();
+
+        const Elf::SectionHeader& stringTable = sectionHeaders_[fileheader_.shstrndx];
 
         Elf::SectionHeader::printNames();
-        for(const auto& section : sectionHeaders) {
-            u64 stringNameOffset = section->sh_name;
-            const char* name = bytes.data() + stringTable->sh_offset + stringNameOffset;
+        for(const auto& section : sectionHeaders_) {
+            u64 stringNameOffset = section.sh_name;
+            const char* name = bytes_.data() + stringTable.sh_offset + stringNameOffset;
             size_t len = ::strlen(name);
-            section->print(std::string_view(name, len));
+            section.print(std::string_view(name, len));
         }
-
-
-
-        return {};
     }
 
     std::unique_ptr<Elf::FileHeader> ElfReader::tryCreateFileheader(const std::vector<char>& bytes) {
