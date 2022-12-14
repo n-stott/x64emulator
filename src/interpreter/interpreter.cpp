@@ -124,11 +124,13 @@ namespace x86 {
     }
     
     void Interpreter::set(R8 reg, u8 value) {
+        assert(!"not implemented");
         (void)reg;
         (void)value;
     }
     
     void Interpreter::set(R16 reg, u16 value) {
+        assert(!"not implemented");
         (void)reg;
         (void)value;
     }
@@ -198,6 +200,9 @@ namespace x86 {
         fmt::print(stderr, "Fail at : {}\n", x86::utils::toString(ins));\
         assert(!"Not implemented"); 
 
+    #define WARN_FLAGS() \
+        fmt::print(stderr, "Warning : flags not updated\n")
+
     #define ASSERT(ins, cond) \
         bool condition = (cond);\
         if(!condition) fmt::print(stderr, "Fail at : {}\n", x86::utils::toString(ins));\
@@ -205,10 +210,12 @@ namespace x86 {
 
     void Interpreter::exec(Add<R32, R32> ins) {
         set(ins.dst, get(ins.dst) + get(ins.src));
+        WARN_FLAGS();
     }
 
     void Interpreter::exec(Add<R32, Imm<u32>> ins) {
         set(ins.dst, get(ins.dst) + ins.src.immediate);
+        WARN_FLAGS();
     }
 
     void Interpreter::exec(Add<R32, Addr<Size::DWORD, B>> ins) { TODO(ins); }
@@ -244,10 +251,12 @@ namespace x86 {
 
     void Interpreter::exec(Sub<R32, Imm<u32>> ins) {
         set(ins.dst, get(ins.dst) - ins.src.immediate);
+        WARN_FLAGS();
     }
 
     void Interpreter::exec(Sub<R32, SignExtended<u8>> ins) {
         set(ins.dst, get(ins.dst) - ins.src.extendedValue);
+        WARN_FLAGS();
     }
 
     void Interpreter::exec(Sub<R32, Addr<Size::DWORD, B>> ins) { TODO(ins); }
@@ -319,6 +328,7 @@ namespace x86 {
     
     void Interpreter::exec(And<R32, Imm<u32>> ins) {
         set(ins.dst, get(ins.dst) & ins.src.immediate);
+        WARN_FLAGS();
     }
 
     void Interpreter::exec(And<R32, Addr<Size::DWORD, B>> ins) { TODO(ins); }
