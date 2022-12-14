@@ -26,6 +26,12 @@ target_compile_options(print PUBLIC ${CC_OPTIONS})
 target_link_options(print PUBLIC ${LD_OPTIONS})
 
 
+add_library(fakelibc SHARED
+    src/lib/fakelibc.cpp
+)
+target_compile_options(fakelibc PUBLIC -m32 -fPIC -O2)
+target_link_options(fakelibc PUBLIC -m32)
+
 add_executable(translator
     external/elf-reader/src/elf-reader.cpp
     src/lib/library.cpp
