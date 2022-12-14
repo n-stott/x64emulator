@@ -62,9 +62,6 @@ namespace elf {
     void Elf::print() const {
         fmt::print("ELF file {} contains {} bytes\n", filename_, bytes_.size());
         fileheader_.print();
-
-        const Elf::SectionHeader& stringTable = sectionHeaders_[fileheader_.shstrndx];
-
         Elf::SectionHeader::printNames();
         for(const auto& section : sectionHeaders_) section.print();
     }
