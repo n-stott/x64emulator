@@ -2,6 +2,7 @@
 #define ELFREADER_H
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -47,6 +48,21 @@ namespace elf {
 
         };
 
+        struct Section {
+            u64 address;
+            const u8* begin;
+            const u8* end;
+
+            size_t size() const { return end-begin; }
+        };
+
+        bool hasSectionNamed(std::string_view sv) const;
+        std::optional<Section> sectionFromName(std::string_view sv) const;
+
+        void print() const;
+
+    private:
+
         struct FileHeader {
             struct Identifier {
                 Class class_;
@@ -72,8 +88,6 @@ namespace elf {
             void print() const;
         };
 
-
-
         struct SectionHeader {
             u32 sh_name;
             u32 sh_type;
@@ -86,13 +100,14 @@ namespace elf {
             u64 sh_addralign;
             u64 sh_entsize;
 
+            std::string_view name;
+
+            Section toSection(const u8* elfData, size_t size) const;
+
             static void printNames();
-            void print(std::string_view name) const;
+            void print() const;
         };
 
-        void print() const;
-
-    private:
         std::string filename_;
         std::vector<char> bytes_;
         FileHeader fileheader_;
@@ -103,7 +118,7 @@ namespace elf {
 
     class ElfReader {
     public:
-        static std::unique_ptr<Elf> tryCreate(const std::string& filename, std::vector<char> bytebuffer);
+        static std::unique_ptr<Elf> tryCreate(const std::string& filename);
 
         static std::unique_ptr<Elf::FileHeader> tryCreateFileheader(const std::vector<char>& bytebuffer);
 
