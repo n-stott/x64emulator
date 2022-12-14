@@ -29,6 +29,7 @@ namespace x86 {
     };
 
     struct Program {
+        std::string filepath;
         std::vector<Function> functions;
 
         const Function* findFunction(std::string_view name) const;

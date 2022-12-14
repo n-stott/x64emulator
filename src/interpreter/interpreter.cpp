@@ -1,5 +1,6 @@
 #include "interpreter/interpreter.h"
 #include "interpreter/executioncontext.h"
+#include "elf-reader.h"
 #include "instructionutils.h"
 #include <fmt/core.h>
 #include <cassert>
@@ -22,23 +23,26 @@ namespace x86 {
         u32 heapBase = 0x1000000;
         u32 heapSize = 64*1024;
         mmu_.addRegion(Mmu::Region{ heapBase, heapSize });
-
-        // [NS] hack for print
-        // .rodata section
-        u32 rodataBase = 0x2000;
-        u32 rodataSize = 0xc;
-        Mmu::Region rodata{ rodataBase, rodataSize };
-        rodata.data[8] = 0x61;
-        rodata.data[9] = 0x62;
-        rodata.data[10] = 0x63;
-        rodata.data[11] = 0x00;
-        mmu_.addRegion(std::move(rodata));
         
         // stack
         u32 stackBase = 0x2000000;
         u32 stackSize = 4*1024;
         mmu_.addRegion(Mmu::Region{ stackBase, stackSize });
         esp_ = stackBase + stackSize;
+
+        auto elf = elf::ElfReader::tryCreate(program.filepath);
+        if(!elf) {
+            fmt::print(stderr, "Failed to load elf file\n");
+            std::abort();
+        }
+
+        if(elf->hasSectionNamed(".rodata")) {
+            auto rodataSection = elf->sectionFromName(".rodata");
+            assert(!!rodataSection);
+            Mmu::Region rodata{ (u32)rodataSection->address, (u32)rodataSection->size() };
+            std::memcpy(rodata.data.data(), rodataSection->begin, rodataSection->size()*sizeof(u8));
+            mmu_.addRegion(std::move(rodata));
+        }
 
         lib_ = Library::make_library(ExecutionContext(this));
     }

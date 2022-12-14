@@ -27,6 +27,7 @@ target_link_options(print PUBLIC ${LD_OPTIONS})
 
 
 add_executable(translator
+    external/elf-reader/src/elf-reader.cpp
     src/lib/library.cpp
     src/lib/libc.cpp
     src/translation/x86instruction.cpp
@@ -40,6 +41,7 @@ add_executable(translator
 )
 target_compile_options(translator PUBLIC -fpic -Wall -Wextra -Wpedantic -pedantic -Werror -Wno-sign-compare -Wno-braced-scalar-init -Wimplicit-fallthrough -Wno-missing-braces)
 target_include_directories(translator PUBLIC include)
-target_include_directories(translator PUBLIC include ../common/include)
+target_include_directories(translator PUBLIC ../common/include)
 target_include_directories(translator PUBLIC ../external)
+target_include_directories(translator PUBLIC external/elf-reader/src)
 target_link_libraries(translator ${CMAKE_SOURCE_DIR}/external/fmt/libfmt.a)

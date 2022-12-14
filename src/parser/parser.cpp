@@ -61,6 +61,7 @@ namespace x86 {
         }
 
         Program program;
+        program.filepath = filepath;
 
         size_t total = 0;
         size_t success = 0;
