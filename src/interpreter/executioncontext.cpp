@@ -4,7 +4,7 @@
 namespace x86 {
 
     u32 ExecutionContext::eax() const {
-        return interpreter->eax_;
+        return interpreter.eax_;
     }
 
 }

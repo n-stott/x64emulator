@@ -9,11 +9,12 @@ namespace x86 {
 
     class ExecutionContext {
     public:
-        explicit ExecutionContext(const Interpreter* interpreter) : interpreter(interpreter) { }
         u32 eax() const;
 
     private:
-        const Interpreter* interpreter;
+        friend class Interpreter;
+        explicit ExecutionContext(const Interpreter& interpreter) : interpreter(interpreter) { }
+        const Interpreter& interpreter;
     };
 
 }

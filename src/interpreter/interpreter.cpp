@@ -44,7 +44,7 @@ namespace x86 {
             mmu_.addRegion(std::move(rodata));
         }
 
-        lib_ = Library::make_library(ExecutionContext(this));
+        lib_ = Library::make_library(ExecutionContext(*this));
     }
 
     void Interpreter::run() {
