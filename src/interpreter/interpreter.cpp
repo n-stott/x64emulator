@@ -105,11 +105,29 @@ namespace x86 {
         return get(addr.base) + addr.displacement;
     }
 
+    u32 Interpreter::resolve(BIS) const {
+        assert(!"Not implemented");
+        return 0;
+    }
+
+    u32 Interpreter::resolve(BISD) const {
+        assert(!"Not implemented");
+        return 0;
+    }
+
     u32 Interpreter::resolve(Addr<Size::BYTE, B> addr) const {
         return resolve(addr.encoding);
     }
 
-    u32 Interpreter::Interpreter::resolve(Addr<Size::BYTE, BD> addr) const {
+    u32 Interpreter::resolve(Addr<Size::BYTE, BD> addr) const {
+        return resolve(addr.encoding);
+    }
+
+    u32 Interpreter::resolve(Addr<Size::BYTE, BIS> addr) const {
+        return resolve(addr.encoding);
+    }
+
+    u32 Interpreter::resolve(Addr<Size::BYTE, BISD> addr) const {
         return resolve(addr.encoding);
     }
 
@@ -181,6 +199,11 @@ namespace x86 {
         u32 value = mmu_.read32(esp_);
         esp_ += 4;
         return value;
+    }
+
+    static u32 signExtended32(u8 value) {
+        fmt::print(stderr, "Warning : fix signExtended\n");
+        return (u32)value;
     }
 
     CallingContext Interpreter::context() const {
@@ -459,10 +482,18 @@ namespace x86 {
     void Interpreter::exec(Mov<Addr<Size::DWORD, BISD>, Imm<u32>> ins) { TODO(ins); }
 
     void Interpreter::exec(Movsx<R32, R8> ins) { TODO(ins); }
-    void Interpreter::exec(Movsx<R32, Addr<Size::BYTE, B>> ins) { TODO(ins); }
-    void Interpreter::exec(Movsx<R32, Addr<Size::BYTE, BD>> ins) { TODO(ins); }
-    void Interpreter::exec(Movsx<R32, Addr<Size::BYTE, BIS>> ins) { TODO(ins); }
-    void Interpreter::exec(Movsx<R32, Addr<Size::BYTE, BISD>> ins) { TODO(ins); }
+    void Interpreter::exec(Movsx<R32, Addr<Size::BYTE, B>> ins) {
+        set(ins.dst, signExtended32(mmu_.read8(resolve(ins.src))));
+    }
+    void Interpreter::exec(Movsx<R32, Addr<Size::BYTE, BD>> ins) {
+        set(ins.dst, signExtended32(mmu_.read8(resolve(ins.src))));
+    }
+    void Interpreter::exec(Movsx<R32, Addr<Size::BYTE, BIS>> ins) {
+        set(ins.dst, signExtended32(mmu_.read8(resolve(ins.src))));
+    }
+    void Interpreter::exec(Movsx<R32, Addr<Size::BYTE, BISD>> ins) {
+        set(ins.dst, signExtended32(mmu_.read8(resolve(ins.src))));
+    }
 
     void Interpreter::exec(Movzx<R16, R8> ins) { TODO(ins); }
     void Interpreter::exec(Movzx<R32, R8> ins) { TODO(ins); }

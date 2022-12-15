@@ -40,9 +40,13 @@ namespace x86 {
 
         u32 resolve(B addr) const;
         u32 resolve(BD addr) const;
+        u32 resolve(BIS addr) const;
+        u32 resolve(BISD addr) const;
 
         u32 resolve(Addr<Size::BYTE, B> addr) const;
         u32 resolve(Addr<Size::BYTE, BD> addr) const;
+        u32 resolve(Addr<Size::BYTE, BIS> addr) const;
+        u32 resolve(Addr<Size::BYTE, BISD> addr) const;
         u32 resolve(Addr<Size::DWORD, B> addr) const;
         u32 resolve(Addr<Size::DWORD, BD> addr) const;
 
