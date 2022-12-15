@@ -30,9 +30,14 @@ namespace x86 {
 
     struct Program {
         std::string filepath;
+        std::string filename;
         std::vector<Function> functions;
 
-        const Function* findFunction(std::string_view name) const;
+        Program() = default;
+        virtual ~Program() = default;
+        Program(Program&&) = default;
+
+        virtual const Function* findFunction(std::string_view name) const;
     };
 
 }

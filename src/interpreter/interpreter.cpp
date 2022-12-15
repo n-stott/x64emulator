@@ -7,7 +7,7 @@
 
 namespace x86 {
 
-    Interpreter::Interpreter(const Program& program) : program_(program) {
+    Interpreter::Interpreter(Program program, Program libc) : program_(std::move(program)), libc_(std::move(libc)) {
         ebp_ = 0;
         esp_ = 0;
         edi_ = 0;
@@ -30,7 +30,7 @@ namespace x86 {
         mmu_.addRegion(Mmu::Region{ stackBase, stackSize });
         esp_ = stackBase + stackSize;
 
-        auto elf = elf::ElfReader::tryCreate(program.filepath);
+        auto elf = elf::ElfReader::tryCreate(program_.filepath);
         if(!elf) {
             fmt::print(stderr, "Failed to load elf file\n");
             std::abort();
@@ -43,8 +43,6 @@ namespace x86 {
             std::memcpy(rodata.data.data(), rodataSection->begin, rodataSection->size()*sizeof(u8));
             mmu_.addRegion(std::move(rodata));
         }
-
-        lib_ = Library::make_library(ExecutionContext(*this));
     }
 
     void Interpreter::run() {
@@ -522,12 +520,16 @@ namespace x86 {
             push32(eip_);
         } else {
             // call library function
-            const LibraryFunction* libFunc = lib_->findFunction(ins.symbolName);
+            const Function* libFunc = libc_.findFunction(ins.symbolName);
             if(!!libFunc) {
                 state_.frames.push_back(Frame{libFunc, 0});
                 push32(eip_);
             } else {
                 fmt::print(stderr, "Unknown function '{}'\n", ins.symbolName);
+                fmt::print(stderr, "Program \"{}\" has functions :\n", program_.filename);
+                for(const auto& f : program_.functions) fmt::print(stderr, "    {}\n", f.name);
+                fmt::print(stderr, "Library \"{}\" has functions :\n", libc_.filename);
+                for(const auto& f : libc_.functions) fmt::print(stderr, "    {}\n", f.name);
                 stop_ = true;
             }
         }

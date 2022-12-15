@@ -3,6 +3,7 @@
 #include "instructionhandler.h"
 #include "instructionutils.h"
 #include "instructions.h"
+#include "stringutils.h"
 #include <cassert>
 #include <charconv>
 #include <cstdlib>
@@ -15,42 +16,6 @@
 
 namespace x86 {
 
-    std::string_view strip(std::string_view sv) {
-        const char* skippedCharacters = " \n\t";
-        size_t first = sv.find_first_not_of(skippedCharacters);
-        size_t last = sv.find_last_not_of(skippedCharacters);
-        if(first != std::string::npos && last != std::string::npos) {
-            return sv.substr(first, last+1-first);
-        } else {
-            return "";
-        }
-    }
-
-    std::vector<std::string_view> split(std::string_view sv, char separator) {
-        std::vector<std::string_view> result;
-        size_t pos = 0;
-        size_t next = 0;
-        while(next != sv.size()) {
-            next = sv.find(separator, pos);
-            if(next == std::string::npos) next = sv.size();
-            std::string_view item = std::string_view(sv.begin()+pos, next-pos);
-            result.push_back(strip(item));
-            pos = next+1;
-        }
-        return result;
-    }
-
-    std::vector<std::string_view> splitFirst(std::string_view sv, char separator) {
-        std::vector<std::string_view> result;
-        size_t next = sv.find(separator, 0);
-        if(next == std::string::npos) next = sv.size();
-        result.push_back(std::string_view(sv.begin(), next));
-        if(next != sv.size()) {
-            result.push_back(sv.substr(next+1));
-        }
-        return result;
-    }
-
     std::unique_ptr<Program> InstructionParser::parseFile(std::string filepath) {
 
         std::vector<std::string> disassembledText = Disassembler::disassembleTextSection(filepath);
@@ -62,6 +27,7 @@ namespace x86 {
 
         Program program;
         program.filepath = filepath;
+        program.filename = filenameFromPath(filepath);
 
         size_t total = 0;
         size_t success = 0;

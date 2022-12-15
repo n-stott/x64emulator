@@ -11,6 +11,7 @@ namespace x86 {
     }
 
     void Function::print() const {
+        fmt::print("{}\n", name);
         for(const auto& ins : instructions) {
             fmt::print(stderr, "{:x} {}\n", ins->address, ins->toString());
         }

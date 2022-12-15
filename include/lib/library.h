@@ -11,23 +11,25 @@ namespace x86 {
 
     struct CallingContext;
     class ExecutionContext;
+    struct Program;
 
     class LibraryFunction : public Function {
     public:
         explicit LibraryFunction(const std::string& symbol) : Function{0xDEADC0DE, symbol, {}} { }
     };
 
-    struct Library {
-        std::vector<std::unique_ptr<LibraryFunction>> functions;
-
-        static std::unique_ptr<Library> make_library(ExecutionContext context);
+    struct Library : public Program {
+        explicit Library(Program program);
 
         template<typename F>
         void addFunction(const ExecutionContext& context) {
-            functions.push_back(std::make_unique<F>(context));
+            functions_.push_back(std::make_unique<F>(context));
         }
 
-        const LibraryFunction* findFunction(std::string_view name) const;
+        const Function* findFunction(std::string_view name) const override;
+
+    private:
+        std::vector<std::unique_ptr<LibraryFunction>> functions_;
     };
 
 }

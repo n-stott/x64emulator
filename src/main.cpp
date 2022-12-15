@@ -42,7 +42,7 @@ void test_parse_instruction() {
 }
 
 int main(int argc, char* argv[]) {
-    if(argc != 2) {
+    if(argc != 3) {
         return 1;
     }
 
@@ -50,6 +50,12 @@ int main(int argc, char* argv[]) {
     if(!program) {
         return 1;
     }
-    x86::Interpreter interpreter(*program);
+
+    auto libc = x86::InstructionParser::parseFile(argv[2]);
+    if(!libc) {
+        return 1;
+    }
+
+    x86::Interpreter interpreter(std::move(*program), std::move(*libc));
     interpreter.run();
 }

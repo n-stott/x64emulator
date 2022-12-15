@@ -12,12 +12,12 @@ namespace x86 {
 
     class Interpreter final : public InstructionHandler {
     public:
-        explicit Interpreter(const Program& program);
+        explicit Interpreter(Program program, Program libc);
         void run();
 
     private:
-        std::unique_ptr<Library> lib_;
-        const Program& program_;
+        Program program_;
+        Library libc_;
         Mmu mmu_;
 
         u32 ebp_;
