@@ -2,6 +2,7 @@
 #include "instructionhandler.h"
 #include "parser/parser.h"
 #include "interpreter/interpreter.h"
+#include "lib/libc.h"
 
 
 
@@ -51,11 +52,12 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    auto libc = x86::InstructionParser::parseFile(argv[2]);
-    if(!libc) {
+    auto libcProg = x86::InstructionParser::parseFile(argv[2]);
+    if(!libcProg) {
         return 1;
     }
+    x86::LibC libc(std::move(*libcProg));
 
-    x86::Interpreter interpreter(std::move(*program), std::move(*libc));
+    x86::Interpreter interpreter(std::move(*program), std::move(libc));
     interpreter.run();
 }

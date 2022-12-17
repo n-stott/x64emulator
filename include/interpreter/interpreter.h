@@ -3,7 +3,7 @@
 
 #include "instructionhandler.h"
 #include "interpreter/mmu.h"
-#include "lib/library.h"
+#include "lib/libc.h"
 #include "lib/callingcontext.h"
 #include "program.h"
 #include <cassert>
@@ -12,12 +12,12 @@ namespace x86 {
 
     class Interpreter final : public InstructionHandler {
     public:
-        explicit Interpreter(Program program, Program libc);
+        explicit Interpreter(Program program, LibC libc);
         void run();
 
     private:
         Program program_;
-        Library libc_;
+        LibC libc_;
         Mmu mmu_;
 
         u32 ebp_;

@@ -14,19 +14,31 @@ namespace x86 {
         filename = filename.substr(3);
     }
 
+    static bool isIntrinsic(std::string_view name) {
+        std::string_view prefix = "intrinsic$";
+        return name.size() >= prefix.size() && name.substr(0, prefix.size()) == prefix;
+    }
 
     const Function* Library::findFunction(std::string_view name) const {
-        auto parts = split(name, '@');
-        if(parts.size() != 2) {
-            fmt::print(stderr, "Cannot search for library function {} : not in plt\n", name);
-            return nullptr;
+        fmt::print(stderr, "Find function : {}\n", name);
+        if(name.size() < 4) return nullptr;
+        if(name.substr(name.size()-4) != "@plt") return nullptr;
+        name.remove_suffix(4);
+        if(!isIntrinsic(name)) {
+            fmt::print(stderr, "Find standard function : {}\n", name);
+            for(const Function& func : functions) {
+                auto funcparts = split(func.name, '$');
+                if(funcparts.size() != 2) continue;
+                if(funcparts[0] != filename) continue;
+                if(name == funcparts[1]) return &func;
+            }
+        } else {
+            for(const auto& funcPtr : instrinsicFunctions_) {
+                if(name == funcPtr->name) return funcPtr.get();
+            }
         }
-        for(const Function& func : functions) {
-            auto funcparts = split(func.name, '$');
-            if(funcparts.size() != 2) continue;
-            if(funcparts[0] != filename) continue;
-            if(parts[0] == funcparts[1]) return &func;
-        }
+
+        fmt::print(stderr, "Function {} not found in library\n", name);
         return nullptr;
     }
 

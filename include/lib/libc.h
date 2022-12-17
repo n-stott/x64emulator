@@ -6,6 +6,13 @@
 
 namespace x86 {
 
+    struct LibC : public Library {
+        explicit LibC(Program p);
+
+        void configureIntrinsics(const ExecutionContext& context);
+        
+    };
+
     struct Puts final : public LibraryFunction {
         explicit Puts(const ExecutionContext& context);
     };

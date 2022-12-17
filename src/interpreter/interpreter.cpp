@@ -7,7 +7,8 @@
 
 namespace x86 {
 
-    Interpreter::Interpreter(Program program, Program libc) : program_(std::move(program)), libc_(std::move(libc)) {
+    Interpreter::Interpreter(Program program, LibC libc) : program_(std::move(program)), libc_(std::move(libc)) {
+        libc_.configureIntrinsics(ExecutionContext(*this));
         ebp_ = 0;
         esp_ = 0;
         edi_ = 0;

@@ -8,6 +8,12 @@
 
 namespace x86 {
 
+    LibC::LibC(Program p) : Library(std::move(p)) { }
+
+    void LibC::configureIntrinsics(const ExecutionContext& context) {
+        addIntrinsicFunction<Putchar>(context);
+    }
+
     namespace {
 
         // A wrapper to create instructions
@@ -80,19 +86,7 @@ namespace x86 {
         ExecutionContext context_;
     };
 
-
-
-    Puts::Puts(const ExecutionContext&) : LibraryFunction("puts@plt") {
-        add(this, make_wrapper<Push<R32>>(R32::EBP));
-        add(this, make_wrapper<Mov<R32, R32>>(R32::EBP, R32::ESP));
-        auto arg = Addr<Size::DWORD, BD>{{R32::ESP, +8}};
-        add(this, make_wrapper<Mov<R32, Addr<Size::DWORD, BD>>>(R32::ESI, arg));
-        add(this, make_wrapper<Movzx<R32, Addr<Size::BYTE, B>>>(R32::EAX, B{R32::ESI}));
-        // add(this, make_wrapper<Cmp<R32, Imm<u32>>>(R32::EAX, Imm<u32>{0x00}));
-        add(this, make_wrapper<Ud2>()); // [NS] TODO finish implementing
-    }
-
-    Putchar::Putchar(const ExecutionContext& context) : LibraryFunction("putchar@plt") {
+    Putchar::Putchar(const ExecutionContext& context) : LibraryFunction("intrinsic$putchar") {
         add(this, make_wrapper<Push<R32>>(R32::EBP));
         add(this, make_wrapper<Mov<R32, R32>>(R32::EBP, R32::ESP));
         auto arg = Addr<Size::DWORD, BD>{{R32::ESP, +8}};

@@ -22,14 +22,14 @@ namespace x86 {
         explicit Library(Program program);
 
         template<typename F>
-        void addFunction(const ExecutionContext& context) {
-            functions_.push_back(std::make_unique<F>(context));
+        void addIntrinsicFunction(const ExecutionContext& context) {
+            instrinsicFunctions_.push_back(std::make_unique<F>(context));
         }
 
         const Function* findFunction(std::string_view name) const override;
 
     private:
-        std::vector<std::unique_ptr<LibraryFunction>> functions_;
+        std::vector<std::unique_ptr<LibraryFunction>> instrinsicFunctions_;
     };
 
 }
