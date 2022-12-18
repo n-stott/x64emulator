@@ -25,6 +25,8 @@ namespace x86 {
             bool zero;
             bool sign;
             bool overflow;
+
+            bool matches(Cond condition) const;
         } flags_;
 
         u32 ebp_;

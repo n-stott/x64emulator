@@ -75,6 +75,24 @@ namespace x86 {
         }
     }
 
+    bool Interpreter::Flags::matches(Cond condition) const {
+        switch(condition) {
+            case Cond::A: return (carry == 0 && zero == 0);
+            case Cond::AE: return (carry == 0);
+            case Cond::B: return (carry == 1);
+            case Cond::BE: return (carry == 1 || zero == 1);
+            case Cond::E: return (zero == 1);
+            case Cond::G: return (zero == 0 && sign == overflow);
+            case Cond::GE: return (sign == overflow);
+            case Cond::L: return (sign != overflow);
+            case Cond::LE: return (zero == 1 || sign != overflow);
+            case Cond::NE: return (zero == 0);
+            case Cond::NS: return (sign == 0);
+            case Cond::S: return (sign == 1);
+        }
+        __builtin_unreachable();
+    }
+
     u8 Interpreter::get(R8 reg) const {
         switch(reg) {
             case R8::AH:  return (eax_ >> 8) & 0xFF;
@@ -742,7 +760,14 @@ namespace x86 {
     void Interpreter::exec(Jmp<Addr<Size::DWORD, B>> ins) { TODO(ins); }
     void Interpreter::exec(Jmp<Addr<Size::DWORD, BD>> ins) { TODO(ins); }
     void Interpreter::exec(Jcc<Cond::NE> ins) { TODO(ins); }
-    void Interpreter::exec(Jcc<Cond::E> ins) { TODO(ins); }
+
+    void Interpreter::exec(Jcc<Cond::E> ins) {
+        if(flags_.matches(Cond::E)) {
+            fmt::print("Jump to {} @ {}\n", ins.symbolName, ins.symbolAddress);
+            TODO(ins);
+        }
+    }
+
     void Interpreter::exec(Jcc<Cond::AE> ins) { TODO(ins); }
     void Interpreter::exec(Jcc<Cond::BE> ins) { TODO(ins); }
     void Interpreter::exec(Jcc<Cond::GE> ins) { TODO(ins); }
