@@ -19,6 +19,10 @@ namespace x86 {
         edx_ = 0;
         eiz_ = 0;
         eip_ = 0;
+        flags_.carry = 0;
+        flags_.overflow = 0;
+        flags_.zero = 0;
+        flags_.sign = 0;
         stop_ = false;
         // heap
         u32 heapBase = 0x1000000;
@@ -72,9 +76,21 @@ namespace x86 {
     }
 
     u8 Interpreter::get(R8 reg) const {
-        assert(!"Not implemented");
-        (void)reg;
-        return 0;
+        switch(reg) {
+            case R8::AH:  return (eax_ >> 8) & 0xFF;
+            case R8::AL:  return eax_ & 0xFF;
+            case R8::BH:  return (ebx_ >> 8) & 0xFF;
+            case R8::BL:  return ebx_ & 0xFF;
+            case R8::CH:  return (ecx_ >> 8) & 0xFF;
+            case R8::CL:  return ecx_ & 0xFF;
+            case R8::DH:  return (edx_ >> 8) & 0xFF;
+            case R8::DL:  return edx_ & 0xFF;
+            case R8::SPL: return esp_ & 0xFF;
+            case R8::BPL: return ebp_ & 0xFF;
+            case R8::SIL: return esi_ & 0xFF;
+            case R8::DIL: return edi_ & 0xFF;
+        }
+        __builtin_unreachable();
     }
 
     u16 Interpreter::get(R16 reg) const {
@@ -644,7 +660,14 @@ namespace x86 {
     void Interpreter::exec(Rol<R32, Imm<u8>> ins) { TODO(ins); }
     void Interpreter::exec(Rol<Addr<Size::DWORD, BD>, Imm<u8>> ins) { TODO(ins); }
 
-    void Interpreter::exec(Test<R8, R8> ins) { TODO(ins); }
+    void Interpreter::exec(Test<R8, R8> ins) {
+        u8 tmp = get(ins.src1) & get(ins.src2);
+        flags_.sign = (tmp & (1 << 7));
+        flags_.zero = (tmp == 0);
+        flags_.overflow = 0;
+        flags_.carry = 0;
+    }
+
     void Interpreter::exec(Test<R8, Imm<u8>> ins) { TODO(ins); }
     void Interpreter::exec(Test<R16, R16> ins) { TODO(ins); }
     void Interpreter::exec(Test<R32, R32> ins) { TODO(ins); }
