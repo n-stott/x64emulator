@@ -20,6 +20,13 @@ namespace x86 {
         LibC libc_;
         Mmu mmu_;
 
+        struct Flags {
+            bool carry;
+            bool zero;
+            bool sign;
+            bool overflow;
+        } flags_;
+
         u32 ebp_;
         u32 esp_;
         u32 edi_;
@@ -476,18 +483,18 @@ namespace x86 {
         void exec(Jmp<u32>) override;
         void exec(Jmp<Addr<Size::DWORD, B>>) override;
         void exec(Jmp<Addr<Size::DWORD, BD>>) override;
-        void exec(Jne) override;
-        void exec(Je) override;
-        void exec(Jae) override;
-        void exec(Jbe) override;
-        void exec(Jge) override;
-        void exec(Jle) override;
-        void exec(Ja) override;
-        void exec(Jb) override;
-        void exec(Jg) override;
-        void exec(Jl) override;
-        void exec(Js) override;
-        void exec(Jns) override;
+        void exec(Jcc<Cond::NE>) override;
+        void exec(Jcc<Cond::E>) override;
+        void exec(Jcc<Cond::AE>) override;
+        void exec(Jcc<Cond::BE>) override;
+        void exec(Jcc<Cond::GE>) override;
+        void exec(Jcc<Cond::LE>) override;
+        void exec(Jcc<Cond::A>) override;
+        void exec(Jcc<Cond::B>) override;
+        void exec(Jcc<Cond::G>) override;
+        void exec(Jcc<Cond::L>) override;
+        void exec(Jcc<Cond::S>) override;
+        void exec(Jcc<Cond::NS>) override;
 
         void exec(Bsr<R32, R32>) override;
         void exec(Bsf<R32, R32>) override;

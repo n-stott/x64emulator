@@ -381,51 +381,51 @@ namespace utils {
         }
     }
 
-    inline std::string toString(const Jne& ins) {
+    inline std::string toString(const Jcc<Cond::NE>& ins) {
         return fmt::format("{:7}{:x} <{}>", "jne", ins.symbolAddress, ins.symbolName);
     }
 
-    inline std::string toString(const Je& ins) {
+    inline std::string toString(const Jcc<Cond::E>& ins) {
         return fmt::format("{:7}{:x} <{}>", "je", ins.symbolAddress, ins.symbolName);
     }
 
-    inline std::string toString(const Jae& ins) {
+    inline std::string toString(const Jcc<Cond::AE>& ins) {
         return fmt::format("{:7}{:x} <{}>", "jae", ins.symbolAddress, ins.symbolName);
     }
 
-    inline std::string toString(const Jbe& ins) {
+    inline std::string toString(const Jcc<Cond::BE>& ins) {
         return fmt::format("{:7}{:x} <{}>", "jbe", ins.symbolAddress, ins.symbolName);
     }
 
-    inline std::string toString(const Jge& ins) {
+    inline std::string toString(const Jcc<Cond::GE>& ins) {
         return fmt::format("{:7}{:x} <{}>", "jge", ins.symbolAddress, ins.symbolName);
     }
 
-    inline std::string toString(const Jle& ins) {
+    inline std::string toString(const Jcc<Cond::LE>& ins) {
         return fmt::format("{:7}{:x} <{}>", "jle", ins.symbolAddress, ins.symbolName);
     }
 
-    inline std::string toString(const Ja& ins) {
+    inline std::string toString(const Jcc<Cond::A>& ins) {
         return fmt::format("{:7}{:x} <{}>", "ja", ins.symbolAddress, ins.symbolName);
     }
 
-    inline std::string toString(const Jb& ins) {
+    inline std::string toString(const Jcc<Cond::B>& ins) {
         return fmt::format("{:7}{:x} <{}>", "jb", ins.symbolAddress, ins.symbolName);
     }
 
-    inline std::string toString(const Jg& ins) {
+    inline std::string toString(const Jcc<Cond::G>& ins) {
         return fmt::format("{:7}{:x} <{}>", "jg", ins.symbolAddress, ins.symbolName);
     }
 
-    inline std::string toString(const Jl& ins) {
+    inline std::string toString(const Jcc<Cond::L>& ins) {
         return fmt::format("{:7}{:x} <{}>", "jl", ins.symbolAddress, ins.symbolName);
     }
 
-    inline std::string toString(const Js& ins) {
+    inline std::string toString(const Jcc<Cond::S>& ins) {
         return fmt::format("{:7}{:x} <{}>", "js", ins.symbolAddress, ins.symbolName);
     }
 
-    inline std::string toString(const Jns& ins) {
+    inline std::string toString(const Jcc<Cond::NS>& ins) {
         return fmt::format("{:7}{:x} <{}>", "jns", ins.symbolAddress, ins.symbolName);
     }
 

@@ -75,6 +75,15 @@ namespace x86 {
         L,
         LE,
         NE,
+        NS,
+        S,
+    };
+
+    enum class Flag {
+        CARRY,
+        ZERO,
+        SIGN,
+        OVERFLOW
     };
 
     struct D {
@@ -412,62 +421,8 @@ namespace x86 {
         std::optional<std::string> symbolName;
     };
 
-    struct Jne {
-        u32 symbolAddress;
-        std::string symbolName;
-    };
-
-    struct Je {
-        u32 symbolAddress;
-        std::string symbolName;
-    };
-
-    struct Jae {
-        u32 symbolAddress;
-        std::string symbolName;
-    };
-
-    struct Jbe {
-        u32 symbolAddress;
-        std::string symbolName;
-    };
-
-    struct Jge {
-        u32 symbolAddress;
-        std::string symbolName;
-    };
-
-    struct Jle {
-        u32 symbolAddress;
-        std::string symbolName;
-    };
-
-    struct Ja {
-        u32 symbolAddress;
-        std::string symbolName;
-    };
-
-    struct Jb {
-        u32 symbolAddress;
-        std::string symbolName;
-    };
-
-    struct Jg {
-        u32 symbolAddress;
-        std::string symbolName;
-    };
-
-    struct Jl {
-        u32 symbolAddress;
-        std::string symbolName;
-    };
-
-    struct Js {
-        u32 symbolAddress;
-        std::string symbolName;
-    };
-
-    struct Jns {
+    template<Cond cond>
+    struct Jcc {
         u32 symbolAddress;
         std::string symbolName;
     };
