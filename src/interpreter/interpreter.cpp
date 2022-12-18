@@ -66,7 +66,7 @@ namespace x86 {
             if(nextAfter) {
                 eip_ = nextAfter->address;
             }
-            fmt::print(stderr, "{}\n", instruction->toString());
+            fmt::print("{}{}\n", fmt::format("{:{}}", "", state_.frames.size()), instruction->toString());
             instruction->exec(this);
         }
     }
@@ -400,7 +400,12 @@ namespace x86 {
     void Interpreter::exec(Xor<R8, Addr<Size::BYTE, BD>> ins) { TODO(ins); }
     void Interpreter::exec(Xor<R16, Imm<u16>> ins) { TODO(ins); }
     void Interpreter::exec(Xor<R32, Imm<u32>> ins) { TODO(ins); }
-    void Interpreter::exec(Xor<R32, R32> ins) { TODO(ins); }
+
+    void Interpreter::exec(Xor<R32, R32> ins) { 
+        WARN_FLAGS();
+        set(ins.dst, get(ins.src) ^ get(ins.dst));
+    }
+    
     void Interpreter::exec(Xor<R32, Addr<Size::DWORD, B>> ins) { TODO(ins); }
     void Interpreter::exec(Xor<R32, Addr<Size::DWORD, BD>> ins) { TODO(ins); }
     void Interpreter::exec(Xor<R32, Addr<Size::DWORD, BIS>> ins) { TODO(ins); }
