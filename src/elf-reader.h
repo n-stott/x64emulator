@@ -56,6 +56,14 @@ namespace elf {
             size_t size() const { return end-begin; }
         };
 
+        Class archClass() const { return fileheader_.ident.class_; }
+        Endianness endianness() const { return fileheader_.ident.data; }
+        Version version() const { return fileheader_.ident.version; }
+        OsABI osabi() const { return fileheader_.ident.osabi; }
+        AbiVersion abiversion() const { return fileheader_.ident.abiversion; }
+        Type type() const { return fileheader_.type; }
+        Machine machine() const { return fileheader_.machine; }
+
         bool hasSectionNamed(std::string_view sv) const;
         std::optional<Section> sectionFromName(std::string_view sv) const;
 
