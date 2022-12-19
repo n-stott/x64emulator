@@ -643,7 +643,16 @@ namespace x86 {
     void Interpreter::exec(Cdq ins) { TODO(ins); }
 
     void Interpreter::exec(Inc<R8> ins) { TODO(ins); }
-    void Interpreter::exec(Inc<R32> ins) { TODO(ins); }
+
+    void Interpreter::exec(Inc<R32> ins) {
+        u32 uval = get(ins.dst);
+        flags_.overflow = (uval == std::numeric_limits<u32>::max());
+        u32 res = uval+1;
+        set(ins.dst, res);
+        flags_.sign = (res & (1 << 31));
+        flags_.zero = (res == 0);
+    }
+
     void Interpreter::exec(Inc<Addr<Size::WORD, BD>> ins) { TODO(ins); }
     void Interpreter::exec(Inc<Addr<Size::DWORD, B>> ins) { TODO(ins); }
     void Interpreter::exec(Inc<Addr<Size::DWORD, BD>> ins) { TODO(ins); }
