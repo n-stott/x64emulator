@@ -3,6 +3,7 @@
 #include "parser/parser.h"
 #include "interpreter/interpreter.h"
 #include "lib/libc.h"
+#include "elf-reader.h"
 
 
 
@@ -46,6 +47,12 @@ int main(int argc, char* argv[]) {
     if(argc != 3) {
         return 1;
     }
+
+    auto programElf = elf::ElfReader::tryCreate(argv[1]);
+    if(!programElf) return 1;
+
+    auto libcElf = elf::ElfReader::tryCreate(argv[2]);
+    if(!libcElf) return 1;
 
     auto program = x86::InstructionParser::parseFile(argv[1]);
     if(!program) {
