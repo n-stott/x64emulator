@@ -633,7 +633,7 @@ namespace x86 {
     }
 
     void Interpreter::exec(Halt ins) { TODO(ins); }
-    void Interpreter::exec(Nop ins) { TODO(ins); }
+    void Interpreter::exec(Nop) { }
 
     void Interpreter::exec(Ud2) {
         fmt::print(stderr, "Illegal instruction\n");
@@ -767,7 +767,12 @@ namespace x86 {
     void Interpreter::exec(Jmp<u32> ins) { TODO(ins); }
     void Interpreter::exec(Jmp<Addr<Size::DWORD, B>> ins) { TODO(ins); }
     void Interpreter::exec(Jmp<Addr<Size::DWORD, BD>> ins) { TODO(ins); }
-    void Interpreter::exec(Jcc<Cond::NE> ins) { TODO(ins); }
+    void Interpreter::exec(Jcc<Cond::NE> ins) {
+        if(flags_.matches(Cond::NE)) {
+            fmt::print("Jump to {} @ {}\n", ins.symbolName, ins.symbolAddress);
+            state_.jumpInFrame(ins.symbolAddress);
+        }
+    }
 
     void Interpreter::exec(Jcc<Cond::E> ins) {
         if(flags_.matches(Cond::E)) {

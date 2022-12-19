@@ -13,6 +13,7 @@ extern "C" {
             intrinsic$putchar(*s);
             ++s;
         }
+        intrinsic$putchar('\n');
         return 0;
     }
 
