@@ -4,6 +4,7 @@
 #include "interpreter/interpreter.h"
 #include "lib/libc.h"
 #include "elf-reader.h"
+#include <fmt/core.h>
 
 
 
@@ -50,9 +51,17 @@ int main(int argc, char* argv[]) {
 
     auto programElf = elf::ElfReader::tryCreate(argv[1]);
     if(!programElf) return 1;
+    if(programElf->archClass() != elf::Elf::Class::B32) {
+        fmt::print(stderr, "Program is not 32-bit\n");
+        return 1;
+    }
 
     auto libcElf = elf::ElfReader::tryCreate(argv[2]);
     if(!libcElf) return 1;
+    if(libcElf->archClass() != elf::Elf::Class::B32) {
+        fmt::print(stderr, "Libc is not 32-bit\n");
+        return 1;
+    }
 
     auto program = x86::InstructionParser::parseFile(argv[1]);
     if(!program) {
