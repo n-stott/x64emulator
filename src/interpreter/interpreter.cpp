@@ -764,7 +764,7 @@ namespace x86 {
     void Interpreter::exec(Jcc<Cond::E> ins) {
         if(flags_.matches(Cond::E)) {
             fmt::print("Jump to {} @ {}\n", ins.symbolName, ins.symbolAddress);
-            TODO(ins);
+            state_.jumpInFrame(ins.symbolAddress);
         }
     }
 
