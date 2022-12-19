@@ -140,14 +140,16 @@ namespace x86 {
         return get(addr.base) + addr.displacement;
     }
 
-    u32 Interpreter::resolve(BIS) const {
-        assert(!"Not implemented");
-        return 0;
+    u32 Interpreter::resolve(ISD addr) const {
+        return get(addr.index)*addr.scale + addr.displacement;
     }
 
-    u32 Interpreter::resolve(BISD) const {
-        assert(!"Not implemented");
-        return 0;
+    u32 Interpreter::resolve(BIS addr) const {
+        return get(addr.base) + get(addr.index)*addr.scale;
+    }
+
+    u32 Interpreter::resolve(BISD addr) const {
+        return get(addr.base) + get(addr.index)*addr.scale + addr.displacement;
     }
 
     u32 Interpreter::resolve(Addr<Size::BYTE, B> addr) const {
@@ -557,9 +559,15 @@ namespace x86 {
         set(ins.dst, resolve(ins.src));
     }
 
-    void Interpreter::exec(Lea<R32, BIS> ins) { TODO(ins); }
-    void Interpreter::exec(Lea<R32, ISD> ins) { TODO(ins); }
-    void Interpreter::exec(Lea<R32, BISD> ins) { TODO(ins); }
+    void Interpreter::exec(Lea<R32, BIS> ins) {
+        set(ins.dst, resolve(ins.src));
+    }
+    void Interpreter::exec(Lea<R32, ISD> ins) {
+        set(ins.dst, resolve(ins.src));
+    }
+    void Interpreter::exec(Lea<R32, BISD> ins) {
+        set(ins.dst, resolve(ins.src));
+    }
 
     void Interpreter::exec(Push<R32> ins) {
         push32(get(ins.src));
