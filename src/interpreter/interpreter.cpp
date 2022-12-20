@@ -698,28 +698,37 @@ namespace x86 {
 
     void Interpreter::exec(Inc<R8> ins) { TODO(ins); }
 
-    void Interpreter::exec(Inc<R32> ins) {
-        u32 uval = get(ins.dst);
-        flags_.overflow = (uval == std::numeric_limits<u32>::max());
-        u32 res = uval+1;
-        set(ins.dst, res);
+    u32 Interpreter::execInc32Impl(u32 src) {
+        flags_.overflow = (src == std::numeric_limits<u32>::max());
+        u32 res = src+1;
         flags_.sign = (res & (1 << 31));
         flags_.zero = (res == 0);
+        return res;
     }
 
     void Interpreter::exec(Inc<Addr<Size::WORD, BD>> ins) { TODO(ins); }
-    void Interpreter::exec(Inc<Addr<Size::DWORD, B>> ins) { TODO(ins); }
-    void Interpreter::exec(Inc<Addr<Size::DWORD, BD>> ins) { TODO(ins); }
-    void Interpreter::exec(Inc<Addr<Size::DWORD, BIS>> ins) { TODO(ins); }
-    void Interpreter::exec(Inc<Addr<Size::DWORD, BISD>> ins) { TODO(ins); }
+    void Interpreter::exec(Inc<R32> ins) { set(ins.dst, execInc32Impl(get(ins.dst))); }
+    void Interpreter::exec(Inc<Addr<Size::DWORD, B>> ins) { u32 addr = resolve(ins.dst); mmu_.write32(addr, execInc32Impl(mmu_.read32(addr))); }
+    void Interpreter::exec(Inc<Addr<Size::DWORD, BD>> ins) { u32 addr = resolve(ins.dst); mmu_.write32(addr, execInc32Impl(mmu_.read32(addr))); }
+    void Interpreter::exec(Inc<Addr<Size::DWORD, BIS>> ins) { u32 addr = resolve(ins.dst); mmu_.write32(addr, execInc32Impl(mmu_.read32(addr))); }
+    void Interpreter::exec(Inc<Addr<Size::DWORD, BISD>> ins) { u32 addr = resolve(ins.dst); mmu_.write32(addr, execInc32Impl(mmu_.read32(addr))); }
+
+
+    u32 Interpreter::execDec32Impl(u32 src) {
+        flags_.overflow = (src == std::numeric_limits<u32>::min());
+        u32 res = src-1;
+        flags_.sign = (res & (1 << 31));
+        flags_.zero = (res == 0);
+        return res;
+    }
 
     void Interpreter::exec(Dec<R8> ins) { TODO(ins); }
-    void Interpreter::exec(Dec<R32> ins) { TODO(ins); }
     void Interpreter::exec(Dec<Addr<Size::WORD, BD>> ins) { TODO(ins); }
-    void Interpreter::exec(Dec<Addr<Size::DWORD, B>> ins) { TODO(ins); }
-    void Interpreter::exec(Dec<Addr<Size::DWORD, BD>> ins) { TODO(ins); }
-    void Interpreter::exec(Dec<Addr<Size::DWORD, BIS>> ins) { TODO(ins); }
-    void Interpreter::exec(Dec<Addr<Size::DWORD, BISD>> ins) { TODO(ins); }
+    void Interpreter::exec(Dec<R32> ins) { set(ins.dst, execDec32Impl(get(ins.dst))); }
+    void Interpreter::exec(Dec<Addr<Size::DWORD, B>> ins) { u32 addr = resolve(ins.dst); mmu_.write32(addr, execDec32Impl(mmu_.read32(addr))); }
+    void Interpreter::exec(Dec<Addr<Size::DWORD, BD>> ins) { u32 addr = resolve(ins.dst); mmu_.write32(addr, execDec32Impl(mmu_.read32(addr))); }
+    void Interpreter::exec(Dec<Addr<Size::DWORD, BIS>> ins) { u32 addr = resolve(ins.dst); mmu_.write32(addr, execDec32Impl(mmu_.read32(addr))); }
+    void Interpreter::exec(Dec<Addr<Size::DWORD, BISD>> ins) { u32 addr = resolve(ins.dst); mmu_.write32(addr, execDec32Impl(mmu_.read32(addr))); }
 
     void Interpreter::exec(Shr<R8, Imm<u8>> ins) { TODO(ins); }
     void Interpreter::exec(Shr<R8, Count> ins) { TODO(ins); }
@@ -749,26 +758,43 @@ namespace x86 {
     void Interpreter::exec(Rol<R32, Imm<u8>> ins) { TODO(ins); }
     void Interpreter::exec(Rol<Addr<Size::DWORD, BD>, Imm<u8>> ins) { TODO(ins); }
 
-    void Interpreter::exec(Test<R8, R8> ins) {
-        u8 tmp = get(ins.src1) & get(ins.src2);
+    void Interpreter::execTest8Impl(u8 src1, u8 src2) {
+        u8 tmp = src1 & src2;
         flags_.sign = (tmp & (1 << 7));
         flags_.zero = (tmp == 0);
         flags_.overflow = 0;
         flags_.carry = 0;
     }
 
-    void Interpreter::exec(Test<R8, Imm<u8>> ins) { TODO(ins); }
-    void Interpreter::exec(Test<R16, R16> ins) { TODO(ins); }
-    void Interpreter::exec(Test<R32, R32> ins) { TODO(ins); }
-    void Interpreter::exec(Test<R32, Imm<u32>> ins) { TODO(ins); }
-    void Interpreter::exec(Test<Addr<Size::BYTE, B>, Imm<u8>> ins) { TODO(ins); }
-    void Interpreter::exec(Test<Addr<Size::BYTE, BD>, R8> ins) { TODO(ins); }
-    void Interpreter::exec(Test<Addr<Size::BYTE, BD>, Imm<u8>> ins) { TODO(ins); }
-    void Interpreter::exec(Test<Addr<Size::BYTE, BIS>, Imm<u8>> ins) { TODO(ins); }
-    void Interpreter::exec(Test<Addr<Size::BYTE, BISD>, Imm<u8>> ins) { TODO(ins); }
-    void Interpreter::exec(Test<Addr<Size::DWORD, B>, R32> ins) { TODO(ins); }
-    void Interpreter::exec(Test<Addr<Size::DWORD, BD>, R32> ins) { TODO(ins); }
-    void Interpreter::exec(Test<Addr<Size::DWORD, BD>, Imm<u32>> ins) { TODO(ins); }
+    void Interpreter::execTest16Impl(u16 src1, u16 src2) {
+        u16 tmp = src1 & src2;
+        flags_.sign = (tmp & (1 << 7));
+        flags_.zero = (tmp == 0);
+        flags_.overflow = 0;
+        flags_.carry = 0;
+    }
+
+    void Interpreter::execTest32Impl(u32 src1, u32 src2) {
+        u32 tmp = src1 & src2;
+        flags_.sign = (tmp & (1 << 31));
+        flags_.zero = (tmp == 0);
+        flags_.overflow = 0;
+        flags_.carry = 0;
+    }
+
+    void Interpreter::exec(Test<R8, R8> ins) { execTest8Impl(get(ins.src1), get(ins.src2)); }
+    void Interpreter::exec(Test<R8, Imm<u8>> ins) { execTest8Impl(get(ins.src1), get(ins.src2)); }
+    void Interpreter::exec(Test<R16, R16> ins) { execTest16Impl(get(ins.src1), get(ins.src2)); }
+    void Interpreter::exec(Test<R32, R32> ins) { execTest32Impl(get(ins.src1), get(ins.src2)); }
+    void Interpreter::exec(Test<R32, Imm<u32>> ins) { execTest32Impl(get(ins.src1), get(ins.src2)); }
+    void Interpreter::exec(Test<Addr<Size::BYTE, B>, Imm<u8>> ins) { execTest8Impl(mmu_.read8(resolve(ins.src1)), get(ins.src2)); }
+    void Interpreter::exec(Test<Addr<Size::BYTE, BD>, R8> ins) { execTest8Impl(mmu_.read8(resolve(ins.src1)), get(ins.src2)); }
+    void Interpreter::exec(Test<Addr<Size::BYTE, BD>, Imm<u8>> ins) { execTest8Impl(mmu_.read8(resolve(ins.src1)), get(ins.src2)); }
+    void Interpreter::exec(Test<Addr<Size::BYTE, BIS>, Imm<u8>> ins) { execTest8Impl(mmu_.read8(resolve(ins.src1)), get(ins.src2)); }
+    void Interpreter::exec(Test<Addr<Size::BYTE, BISD>, Imm<u8>> ins) { execTest8Impl(mmu_.read8(resolve(ins.src1)), get(ins.src2)); }
+    void Interpreter::exec(Test<Addr<Size::DWORD, B>, R32> ins) { execTest32Impl(mmu_.read32(resolve(ins.src1)), get(ins.src2)); }
+    void Interpreter::exec(Test<Addr<Size::DWORD, BD>, R32> ins) { execTest32Impl(mmu_.read32(resolve(ins.src1)), get(ins.src2)); }
+    void Interpreter::exec(Test<Addr<Size::DWORD, BD>, Imm<u32>> ins) { execTest32Impl(mmu_.read32(resolve(ins.src1)), get(ins.src2)); }
 
     void Interpreter::exec(Cmp<R8, R8> ins) { TODO(ins); }
     void Interpreter::exec(Cmp<R8, Imm<u8>> ins) { TODO(ins); }

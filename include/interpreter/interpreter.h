@@ -131,8 +131,17 @@ namespace x86 {
 
         void dump() const;
 
+        u32 execInc32Impl(u32 src);
+
+        u32 execDec32Impl(u32 src);
+        
+        void execTest8Impl(u8 src1, u8 src2);
+        void execTest16Impl(u16 src1, u16 src2);
+        void execTest32Impl(u32 src1, u32 src2);
+
         void execCmp8Impl(u8 src1, u8 src2);
         void execCmp32Impl(u32 src1, u32 src2);
+
 
         void exec(Add<R32, R32>) override;
         void exec(Add<R32, Imm<u32>>) override;
