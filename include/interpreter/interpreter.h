@@ -47,6 +47,7 @@ namespace x86 {
         u8 get(R8 reg) const;
         u16 get(R16 reg) const;
         u32 get(R32 reg) const;
+        u16 get(Imm<u16> immediate) const;
         u32 get(Imm<u32> immediate) const;
 
         u32 resolve(B addr) const;
@@ -59,6 +60,10 @@ namespace x86 {
         u32 resolve(Addr<Size::BYTE, BD> addr) const;
         u32 resolve(Addr<Size::BYTE, BIS> addr) const;
         u32 resolve(Addr<Size::BYTE, BISD> addr) const;
+        u32 resolve(Addr<Size::WORD, B> addr) const;
+        u32 resolve(Addr<Size::WORD, BD> addr) const;
+        u32 resolve(Addr<Size::WORD, BIS> addr) const;
+        u32 resolve(Addr<Size::WORD, BISD> addr) const;
         u32 resolve(Addr<Size::DWORD, B> addr) const;
         u32 resolve(Addr<Size::DWORD, BD> addr) const;
         u32 resolve(Addr<Size::DWORD, BIS> addr) const;
