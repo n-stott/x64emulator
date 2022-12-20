@@ -47,6 +47,7 @@ namespace x86 {
         u8 get(R8 reg) const;
         u16 get(R16 reg) const;
         u32 get(R32 reg) const;
+        u32 get(Imm<u32> immediate) const;
 
         u32 resolve(B addr) const;
         u32 resolve(BD addr) const;

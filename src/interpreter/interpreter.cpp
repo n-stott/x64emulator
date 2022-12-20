@@ -132,6 +132,10 @@ namespace x86 {
         __builtin_unreachable();
     }
 
+    u32 Interpreter::get(Imm<u32> value) const {
+        return value.immediate;
+    }
+
     u32 Interpreter::resolve(B addr) const {
         return get(addr.base);
     }
@@ -749,7 +753,18 @@ namespace x86 {
         flags_.zero = (usrc1 == usrc2);
     }
 
-    void Interpreter::exec(Cmp<R32, Imm<u32>> ins) { TODO(ins); }
+    void Interpreter::exec(Cmp<R32, Imm<u32>> ins) {
+        u32 usrc1 = get(ins.src1);
+        u32 usrc2 = get(ins.src2);
+        i32 isrc1 = get(ins.src1);
+        i32 isrc2 = get(ins.src2);
+        flags_.overflow = false;
+        WARN_SIGNED_OVERFLOW();
+        flags_.carry = (usrc2 > usrc1);
+        flags_.sign = (isrc1 - isrc2 < 0);
+        flags_.zero = (usrc1 == usrc2);
+    }
+
     void Interpreter::exec(Cmp<R32, Addr<Size::DWORD, B>> ins) { TODO(ins); }
     void Interpreter::exec(Cmp<R32, Addr<Size::DWORD, BD>> ins) { TODO(ins); }
     void Interpreter::exec(Cmp<R32, Addr<Size::DWORD, BIS>> ins) { TODO(ins); }
