@@ -140,6 +140,10 @@ namespace x86 {
         __builtin_unreachable();
     }
 
+    u8 Interpreter::get(Imm<u8> value) const {
+        return value.immediate;
+    }
+
     u16 Interpreter::get(Imm<u16> value) const {
         return value.immediate;
     }
@@ -777,50 +781,44 @@ namespace x86 {
     void Interpreter::exec(Cmp<Addr<Size::WORD, BD>, Imm<u16>> ins) { TODO(ins); }
     void Interpreter::exec(Cmp<Addr<Size::WORD, BIS>, R16> ins) { TODO(ins); }
 
-    void Interpreter::exec(Cmp<R32, R32> ins) {
-        u32 usrc1 = get(ins.src1);
-        u32 usrc2 = get(ins.src2);
-        i32 isrc1 = get(ins.src1);
-        i32 isrc2 = get(ins.src2);
+    void Interpreter::execCmp8Impl(u8 src1, u8 src2) {
         flags_.overflow = false;
         WARN_SIGNED_OVERFLOW();
-        flags_.carry = (usrc2 > usrc1);
-        flags_.sign = (isrc1 - isrc2 < 0);
-        flags_.zero = (usrc1 == usrc2);
+        flags_.carry = (src2 > src1);
+        flags_.sign = ((i8)src1 - (i8)src2 < 0);
+        flags_.zero = (src1 == src2);
     }
 
-    void Interpreter::exec(Cmp<R32, Imm<u32>> ins) {
-        u32 usrc1 = get(ins.src1);
-        u32 usrc2 = get(ins.src2);
-        i32 isrc1 = get(ins.src1);
-        i32 isrc2 = get(ins.src2);
+    void Interpreter::execCmp32Impl(u32 src1, u32 src2) {
         flags_.overflow = false;
         WARN_SIGNED_OVERFLOW();
-        flags_.carry = (usrc2 > usrc1);
-        flags_.sign = (isrc1 - isrc2 < 0);
-        flags_.zero = (usrc1 == usrc2);
+        flags_.carry = (src2 > src1);
+        flags_.sign = ((i32)src1 - (i32)src2 < 0);
+        flags_.zero = (src1 == src2);
     }
 
-    void Interpreter::exec(Cmp<R32, Addr<Size::DWORD, B>> ins) { TODO(ins); }
-    void Interpreter::exec(Cmp<R32, Addr<Size::DWORD, BD>> ins) { TODO(ins); }
-    void Interpreter::exec(Cmp<R32, Addr<Size::DWORD, BIS>> ins) { TODO(ins); }
-    void Interpreter::exec(Cmp<R32, Addr<Size::DWORD, BISD>> ins) { TODO(ins); }
-    void Interpreter::exec(Cmp<Addr<Size::BYTE, B>, R8> ins) { TODO(ins); }
-    void Interpreter::exec(Cmp<Addr<Size::BYTE, B>, Imm<u8>> ins) { TODO(ins); }
-    void Interpreter::exec(Cmp<Addr<Size::BYTE, BD>, R8> ins) { TODO(ins); }
-    void Interpreter::exec(Cmp<Addr<Size::BYTE, BD>, Imm<u8>> ins) { TODO(ins); }
-    void Interpreter::exec(Cmp<Addr<Size::BYTE, BIS>, R8> ins) { TODO(ins); }
-    void Interpreter::exec(Cmp<Addr<Size::BYTE, BIS>, Imm<u8>> ins) { TODO(ins); }
-    void Interpreter::exec(Cmp<Addr<Size::BYTE, BISD>, R8> ins) { TODO(ins); }
-    void Interpreter::exec(Cmp<Addr<Size::BYTE, BISD>, Imm<u8>> ins) { TODO(ins); }
-    void Interpreter::exec(Cmp<Addr<Size::DWORD, B>, R32> ins) { TODO(ins); }
-    void Interpreter::exec(Cmp<Addr<Size::DWORD, B>, Imm<u32>> ins) { TODO(ins); }
-    void Interpreter::exec(Cmp<Addr<Size::DWORD, BD>, R32> ins) { TODO(ins); }
-    void Interpreter::exec(Cmp<Addr<Size::DWORD, BD>, Imm<u32>> ins) { TODO(ins); }
-    void Interpreter::exec(Cmp<Addr<Size::DWORD, BIS>, R32> ins) { TODO(ins); }
-    void Interpreter::exec(Cmp<Addr<Size::DWORD, BIS>, Imm<u32>> ins) { TODO(ins); }
-    void Interpreter::exec(Cmp<Addr<Size::DWORD, BISD>, R32> ins) { TODO(ins); }
-    void Interpreter::exec(Cmp<Addr<Size::DWORD, BISD>, Imm<u32>> ins) { TODO(ins); }
+    void Interpreter::exec(Cmp<R32, R32> ins) { execCmp32Impl(get(ins.src1), get(ins.src2)); }
+    void Interpreter::exec(Cmp<R32, Imm<u32>> ins) { execCmp32Impl(get(ins.src1), get(ins.src2)); }
+    void Interpreter::exec(Cmp<R32, Addr<Size::DWORD, B>> ins) { execCmp32Impl(get(ins.src1), mmu_.read32(resolve(ins.src2))); }
+    void Interpreter::exec(Cmp<R32, Addr<Size::DWORD, BD>> ins) { execCmp32Impl(get(ins.src1), mmu_.read32(resolve(ins.src2))); }
+    void Interpreter::exec(Cmp<R32, Addr<Size::DWORD, BIS>> ins) { execCmp32Impl(get(ins.src1), mmu_.read32(resolve(ins.src2))); }
+    void Interpreter::exec(Cmp<R32, Addr<Size::DWORD, BISD>> ins) { execCmp32Impl(get(ins.src1), mmu_.read32(resolve(ins.src2))); }
+    void Interpreter::exec(Cmp<Addr<Size::BYTE, B>, R8> ins) { execCmp8Impl(mmu_.read8(resolve(ins.src1)), get(ins.src2)); }
+    void Interpreter::exec(Cmp<Addr<Size::BYTE, B>, Imm<u8>> ins) { execCmp8Impl(mmu_.read8(resolve(ins.src1)), get(ins.src2)); }
+    void Interpreter::exec(Cmp<Addr<Size::BYTE, BD>, R8> ins) { execCmp8Impl(mmu_.read8(resolve(ins.src1)), get(ins.src2)); }
+    void Interpreter::exec(Cmp<Addr<Size::BYTE, BD>, Imm<u8>> ins) { execCmp8Impl(mmu_.read8(resolve(ins.src1)), get(ins.src2)); }
+    void Interpreter::exec(Cmp<Addr<Size::BYTE, BIS>, R8> ins) { execCmp8Impl(mmu_.read8(resolve(ins.src1)), get(ins.src2)); }
+    void Interpreter::exec(Cmp<Addr<Size::BYTE, BIS>, Imm<u8>> ins) { execCmp8Impl(mmu_.read8(resolve(ins.src1)), get(ins.src2)); }
+    void Interpreter::exec(Cmp<Addr<Size::BYTE, BISD>, R8> ins) { execCmp8Impl(mmu_.read8(resolve(ins.src1)), get(ins.src2)); }
+    void Interpreter::exec(Cmp<Addr<Size::BYTE, BISD>, Imm<u8>> ins) { execCmp8Impl(mmu_.read8(resolve(ins.src1)), get(ins.src2)); }
+    void Interpreter::exec(Cmp<Addr<Size::DWORD, B>, R32> ins) { execCmp32Impl(mmu_.read32(resolve(ins.src1)), get(ins.src2)); }
+    void Interpreter::exec(Cmp<Addr<Size::DWORD, B>, Imm<u32>> ins) { execCmp32Impl(mmu_.read32(resolve(ins.src1)), get(ins.src2)); }
+    void Interpreter::exec(Cmp<Addr<Size::DWORD, BD>, R32> ins) { execCmp32Impl(mmu_.read32(resolve(ins.src1)), get(ins.src2)); }
+    void Interpreter::exec(Cmp<Addr<Size::DWORD, BD>, Imm<u32>> ins) { execCmp32Impl(mmu_.read32(resolve(ins.src1)), get(ins.src2)); }
+    void Interpreter::exec(Cmp<Addr<Size::DWORD, BIS>, R32> ins) { execCmp32Impl(mmu_.read32(resolve(ins.src1)), get(ins.src2)); }
+    void Interpreter::exec(Cmp<Addr<Size::DWORD, BIS>, Imm<u32>> ins) { execCmp32Impl(mmu_.read32(resolve(ins.src1)), get(ins.src2)); }
+    void Interpreter::exec(Cmp<Addr<Size::DWORD, BISD>, R32> ins) { execCmp32Impl(mmu_.read32(resolve(ins.src1)), get(ins.src2)); }
+    void Interpreter::exec(Cmp<Addr<Size::DWORD, BISD>, Imm<u32>> ins) { execCmp32Impl(mmu_.read32(resolve(ins.src1)), get(ins.src2)); }
 
     void Interpreter::exec(Setae<R8> ins) { TODO(ins); }
     void Interpreter::exec(Setae<Addr<Size::BYTE, BD>> ins) { TODO(ins); }

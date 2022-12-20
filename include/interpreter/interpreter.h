@@ -47,6 +47,7 @@ namespace x86 {
         u8 get(R8 reg) const;
         u16 get(R16 reg) const;
         u32 get(R32 reg) const;
+        u8 get(Imm<u8> immediate) const;
         u16 get(Imm<u16> immediate) const;
         u32 get(Imm<u32> immediate) const;
 
@@ -129,6 +130,9 @@ namespace x86 {
         friend class ExecutionContext;
 
         void dump() const;
+
+        void execCmp8Impl(u8 src1, u8 src2);
+        void execCmp32Impl(u32 src1, u32 src2);
 
         void exec(Add<R32, R32>) override;
         void exec(Add<R32, Imm<u32>>) override;
