@@ -325,7 +325,10 @@ namespace x86 {
     void Interpreter::exec(Adc<Addr<Size::DWORD, BIS>, Imm<u32>> ins) { TODO(ins); }
     void Interpreter::exec(Adc<Addr<Size::DWORD, BISD>, Imm<u32>> ins) { TODO(ins); }
 
-    void Interpreter::exec(Sub<R32, R32> ins) { TODO(ins); }
+    void Interpreter::exec(Sub<R32, R32> ins) {
+        set(ins.dst, get(ins.dst) - get(ins.src));
+        WARN_FLAGS();
+    }
 
     void Interpreter::exec(Sub<R32, Imm<u32>> ins) {
         set(ins.dst, get(ins.dst) - ins.src.immediate);
