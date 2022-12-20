@@ -281,6 +281,9 @@ namespace x86 {
     #define WARN_FLAGS() \
         fmt::print(stderr, "Warning : flags not updated\n")
 
+    #define WARN_SIGNED_OVERFLOW() \
+        fmt::print(stderr, "Warning : signed integer overflow not handled\n")
+
     #define ASSERT(ins, cond) \
         bool condition = (cond);\
         if(!condition) fmt::print(stderr, "Fail at : {}\n", x86::utils::toString(ins));\
@@ -733,7 +736,19 @@ namespace x86 {
     void Interpreter::exec(Cmp<Addr<Size::WORD, B>, Imm<u16>> ins) { TODO(ins); }
     void Interpreter::exec(Cmp<Addr<Size::WORD, BD>, Imm<u16>> ins) { TODO(ins); }
     void Interpreter::exec(Cmp<Addr<Size::WORD, BIS>, R16> ins) { TODO(ins); }
-    void Interpreter::exec(Cmp<R32, R32> ins) { TODO(ins); }
+
+    void Interpreter::exec(Cmp<R32, R32> ins) {
+        u32 usrc1 = get(ins.src1);
+        u32 usrc2 = get(ins.src2);
+        i32 isrc1 = get(ins.src1);
+        i32 isrc2 = get(ins.src2);
+        flags_.overflow = false;
+        WARN_SIGNED_OVERFLOW();
+        flags_.carry = (usrc2 > usrc1);
+        flags_.sign = (isrc1 - isrc2 < 0);
+        flags_.zero = (usrc1 == usrc2);
+    }
+
     void Interpreter::exec(Cmp<R32, Imm<u32>> ins) { TODO(ins); }
     void Interpreter::exec(Cmp<R32, Addr<Size::DWORD, B>> ins) { TODO(ins); }
     void Interpreter::exec(Cmp<R32, Addr<Size::DWORD, BD>> ins) { TODO(ins); }
@@ -797,16 +812,76 @@ namespace x86 {
         }
     }
 
-    void Interpreter::exec(Jcc<Cond::AE> ins) { TODO(ins); }
-    void Interpreter::exec(Jcc<Cond::BE> ins) { TODO(ins); }
-    void Interpreter::exec(Jcc<Cond::GE> ins) { TODO(ins); }
-    void Interpreter::exec(Jcc<Cond::LE> ins) { TODO(ins); }
-    void Interpreter::exec(Jcc<Cond::A> ins) { TODO(ins); }
-    void Interpreter::exec(Jcc<Cond::B> ins) { TODO(ins); }
-    void Interpreter::exec(Jcc<Cond::G> ins) { TODO(ins); }
-    void Interpreter::exec(Jcc<Cond::L> ins) { TODO(ins); }
-    void Interpreter::exec(Jcc<Cond::S> ins) { TODO(ins); }
-    void Interpreter::exec(Jcc<Cond::NS> ins) { TODO(ins); }
+    void Interpreter::exec(Jcc<Cond::AE> ins) {
+        if(flags_.matches(Cond::AE)) {
+            fmt::print("Jump to {} @ {}\n", ins.symbolName, ins.symbolAddress);
+            state_.jumpInFrame(ins.symbolAddress);
+        }
+    }
+
+    void Interpreter::exec(Jcc<Cond::BE> ins) {
+        if(flags_.matches(Cond::BE)) {
+            fmt::print("Jump to {} @ {}\n", ins.symbolName, ins.symbolAddress);
+            state_.jumpInFrame(ins.symbolAddress);
+        }
+    }
+
+    void Interpreter::exec(Jcc<Cond::GE> ins) {
+        if(flags_.matches(Cond::GE)) {
+            fmt::print("Jump to {} @ {}\n", ins.symbolName, ins.symbolAddress);
+            state_.jumpInFrame(ins.symbolAddress);
+        }
+    }
+
+    void Interpreter::exec(Jcc<Cond::LE> ins) {
+        if(flags_.matches(Cond::LE)) {
+            fmt::print("Jump to {} @ {}\n", ins.symbolName, ins.symbolAddress);
+            state_.jumpInFrame(ins.symbolAddress);
+        }
+    }
+
+    void Interpreter::exec(Jcc<Cond::A> ins) {
+        if(flags_.matches(Cond::A)) {
+            fmt::print("Jump to {} @ {}\n", ins.symbolName, ins.symbolAddress);
+            state_.jumpInFrame(ins.symbolAddress);
+        }
+    }
+
+    void Interpreter::exec(Jcc<Cond::B> ins) {
+        if(flags_.matches(Cond::B)) {
+            fmt::print("Jump to {} @ {}\n", ins.symbolName, ins.symbolAddress);
+            state_.jumpInFrame(ins.symbolAddress);
+        }
+    }
+
+    void Interpreter::exec(Jcc<Cond::G> ins) {
+        if(flags_.matches(Cond::G)) {
+            fmt::print("Jump to {} @ {}\n", ins.symbolName, ins.symbolAddress);
+            state_.jumpInFrame(ins.symbolAddress);
+        }
+    }
+
+    void Interpreter::exec(Jcc<Cond::L> ins) {
+        if(flags_.matches(Cond::L)) {
+            fmt::print("Jump to {} @ {}\n", ins.symbolName, ins.symbolAddress);
+            state_.jumpInFrame(ins.symbolAddress);
+        }
+    }
+
+    void Interpreter::exec(Jcc<Cond::S> ins) {
+        if(flags_.matches(Cond::S)) {
+            fmt::print("Jump to {} @ {}\n", ins.symbolName, ins.symbolAddress);
+            state_.jumpInFrame(ins.symbolAddress);
+        }
+    }
+
+    void Interpreter::exec(Jcc<Cond::NS> ins) {
+        if(flags_.matches(Cond::NS)) {
+            fmt::print("Jump to {} @ {}\n", ins.symbolName, ins.symbolAddress);
+            state_.jumpInFrame(ins.symbolAddress);
+        }
+    }
+
 
     void Interpreter::exec(Bsr<R32, R32> ins) { TODO(ins); }
     void Interpreter::exec(Bsf<R32, R32> ins) { TODO(ins); }
