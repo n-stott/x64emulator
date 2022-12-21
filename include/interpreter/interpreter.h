@@ -8,6 +8,8 @@
 #include "program.h"
 #include <cassert>
 #include <algorithm>
+#include <exception>
+#include <fmt/core.h>
 
 namespace x86 {
 
@@ -16,7 +18,11 @@ namespace x86 {
         explicit Interpreter(Program program, LibC libc);
         void run();
 
+        void verify(bool condition) const;
+
     private:
+        struct VerificationException : public std::exception { };
+
         Program program_;
         LibC libc_;
         Mmu mmu_;
@@ -122,6 +128,14 @@ namespace x86 {
                 assert(jumpee != func->instructions.end());
                 currentFrame.offset = std::distance(func->instructions.begin(), jumpee);
             }
+
+            void dumpStacktrace() const {
+                size_t height = 0;
+                for(auto it = frames.rbegin(); it != frames.rend(); ++it) {
+                    fmt::print("{} {}:{:#x}\n", height, it->function->name, it->function->instructions[it->offset]->address);
+                    ++height;
+                }
+            }
         } state_;
 
         friend struct CallingContext;
@@ -141,7 +155,6 @@ namespace x86 {
 
         void execCmp8Impl(u8 src1, u8 src2);
         void execCmp32Impl(u32 src1, u32 src2);
-
 
         void exec(Add<R32, R32>) override;
         void exec(Add<R32, Imm<u32>>) override;

@@ -7,7 +7,7 @@
 
 namespace x86 {
 
-    Interpreter::Interpreter(Program program, LibC libc) : program_(std::move(program)), libc_(std::move(libc)) {
+    Interpreter::Interpreter(Program program, LibC libc) : program_(std::move(program)), libc_(std::move(libc)), mmu_(this) {
         libc_.configureIntrinsics(ExecutionContext(*this));
         ebp_ = 0;
         esp_ = 0;
@@ -64,19 +64,23 @@ namespace x86 {
 
         stop_ = false;
         while(!stop_ && state_.hasNext()) {
-            dump();
-            const X86Instruction* instruction = state_.next();
-            auto nextAfter = state_.peek();
-            if(nextAfter) {
-                eip_ = nextAfter->address;
-            }
-            if(!instruction) {
-                fmt::print(stderr, "Undefined instruction near {:#x}\n", eip_);
+            try {
+                dump();
+                const X86Instruction* instruction = state_.next();
+                auto nextAfter = state_.peek();
+                if(nextAfter) {
+                    eip_ = nextAfter->address;
+                }
+                if(!instruction) {
+                    fmt::print(stderr, "Undefined instruction near {:#x}\n", eip_);
+                    stop_ = true;
+                    break;
+                }
+                fmt::print("{}{}\n", fmt::format("{:{}}", "", state_.frames.size()), instruction->toString());
+                instruction->exec(this);
+            } catch(const VerificationException&) {
                 stop_ = true;
-                break;
             }
-            fmt::print("{}{}\n", fmt::format("{:{}}", "", state_.frames.size()), instruction->toString());
-            instruction->exec(this);
         }
     }
 
@@ -323,6 +327,17 @@ namespace x86 {
         eax_, ebx_, ecx_, edx_, esi_, edi_, ebp_, esp_);
     }
 
+
+    void Interpreter::verify(bool condition) const {
+        if(condition) return;
+        fmt::print("\nInterpreter crash\n");
+        fmt::print("Register state:\n");
+        dump();
+        fmt::print("Stacktrace:\n");
+        state_.dumpStacktrace();
+        throw VerificationException{};
+    }
+
     #define TODO(ins) \
         fmt::print(stderr, "Fail at : {}\n", x86::utils::toString(ins));\
         assert(!"Not implemented"); 
@@ -535,16 +550,12 @@ namespace x86 {
     void Interpreter::exec(Xchg<R16, R16> ins) { TODO(ins); }
     void Interpreter::exec(Xchg<R32, R32> ins) { TODO(ins); }
 
-    void Interpreter::exec(Mov<R8, R8> ins) { TODO(ins); }
-    void Interpreter::exec(Mov<R8, Imm<u8>> ins) { TODO(ins); }
-    void Interpreter::exec(Mov<R8, Addr<Size::BYTE, B>> ins) { TODO(ins); }
-
-    void Interpreter::exec(Mov<R8, Addr<Size::BYTE, BD>> ins) {
-        set(ins.dst, mmu_.read8(resolve(ins.src)));
-    }
-
-    void Interpreter::exec(Mov<R8, Addr<Size::BYTE, BIS>> ins) { TODO(ins); }
-    void Interpreter::exec(Mov<R8, Addr<Size::BYTE, BISD>> ins) { TODO(ins); }
+    void Interpreter::exec(Mov<R8, R8> ins) { set(ins.dst, get(ins.src)); }
+    void Interpreter::exec(Mov<R8, Imm<u8>> ins) { set(ins.dst, get(ins.src)); }
+    void Interpreter::exec(Mov<R8, Addr<Size::BYTE, B>> ins) { set(ins.dst, mmu_.read8(resolve(ins.src))); }
+    void Interpreter::exec(Mov<R8, Addr<Size::BYTE, BD>> ins) { set(ins.dst, mmu_.read8(resolve(ins.src))); }
+    void Interpreter::exec(Mov<R8, Addr<Size::BYTE, BIS>> ins) { set(ins.dst, mmu_.read8(resolve(ins.src))); }
+    void Interpreter::exec(Mov<R8, Addr<Size::BYTE, BISD>> ins) { set(ins.dst, mmu_.read8(resolve(ins.src))); }
     void Interpreter::exec(Mov<R16, R16> ins) { TODO(ins); }
     void Interpreter::exec(Mov<R16, Imm<u16>> ins) { TODO(ins); }
     void Interpreter::exec(Mov<R16, Addr<Size::WORD, B>> ins) { set(ins.dst, mmu_.read16(resolve(ins.src))); }

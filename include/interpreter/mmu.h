@@ -6,6 +6,8 @@
 
 namespace x86 {
 
+    class Interpreter;
+
     class Mmu {
     public:
         class Region {
@@ -27,6 +29,9 @@ namespace x86 {
             std::vector<u8> data;
         };
 
+        Mmu() = default;
+        explicit Mmu(const Interpreter* interpreter) : interpreter_(interpreter) { }
+
         void addRegion(Region region);
 
         u8 read8(u32 address) const;
@@ -41,6 +46,7 @@ namespace x86 {
         Region* findAddress(u32 address);
         const Region* findAddress(u32 address) const;
 
+        const Interpreter* interpreter_ = nullptr;
         std::vector<Region> regions_;
     };
 

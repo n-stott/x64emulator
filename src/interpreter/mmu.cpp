@@ -1,4 +1,5 @@
 #include "interpreter/mmu.h"
+#include "interpreter/interpreter.h"
 #include <cassert>
 #include <cstring>
 
@@ -74,37 +75,61 @@ namespace x86 {
 
     u8 Mmu::read8(u32 address) const {
         const Region* region = findAddress(address);
-        assert(!!region);
+        if(!!interpreter_) {
+            interpreter_->verify(!!region);
+        } else {
+            assert(!!region);
+        }
         return region->read8(address);
     }
 
     u16 Mmu::read16(u32 address) const {
         const Region* region = findAddress(address);
-        assert(!!region);
+        if(!!interpreter_) {
+            interpreter_->verify(!!region);
+        } else {
+            assert(!!region);
+        }
         return region->read16(address);
     }
 
     u32 Mmu::read32(u32 address) const {
         const Region* region = findAddress(address);
-        assert(!!region);
+        if(!!interpreter_) {
+            interpreter_->verify(!!region);
+        } else {
+            assert(!!region);
+        }
         return region->read32(address);
     }
 
     void Mmu::write8(u32 address, u8 value) {
         Region* region = findAddress(address);
-        assert(!!region);
+        if(!!interpreter_) {
+            interpreter_->verify(!!region);
+        } else {
+            assert(!!region);
+        }
         region->write8(address, value);
     }
 
     void Mmu::write16(u32 address, u16 value) {
         Region* region = findAddress(address);
-        assert(!!region);
+        if(!!interpreter_) {
+            interpreter_->verify(!!region);
+        } else {
+            assert(!!region);
+        }
         region->write16(address, value);
     }
 
     void Mmu::write32(u32 address, u32 value) {
         Region* region = findAddress(address);
-        assert(!!region);
+        if(!!interpreter_) {
+            interpreter_->verify(!!region);
+        } else {
+            assert(!!region);
+        }
         region->write32(address, value);
     }
 
