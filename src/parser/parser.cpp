@@ -102,36 +102,6 @@ namespace x86 {
         return function;
     }
 
-    std::unique_ptr<X86Instruction> InstructionParser::parseInstructionLine(std::string_view s) {
-        std::vector<std::string_view> parts = split(s, '\t');
-        if(parts.size() != 3) return {};
-        // for(auto sv : parts) {
-        //     auto stripped = strip(sv);
-        //     fmt::print("_{}_  ", stripped);
-        // }
-        // fmt::print("\n");
-
-        std::string_view addressString = parts[0];
-        assert(addressString.back() == ':');
-
-        u32 address = 0;
-        auto result = std::from_chars(addressString.data(), addressString.data()+addressString.size(), address, 16);
-        assert(result.ec == std::errc{});
-        
-
-        std::string_view instructionString = parts[2];
-        auto ptr = parseInstruction(address, instructionString);
-        if(!ptr) {
-            fmt::print("{:40} {:40}: {}\n", instructionString, "???", "fail");    
-        } else {
-            std::string parsedString = ptr->toString();
-            if(strip(instructionString) != strip(parsedString)) {
-                fmt::print("{:40} {:40}: {}\n", instructionString, parsedString, "fail");
-            }
-        }
-        return ptr;
-    }
-
     namespace {
         template<typename Instruction>
         struct InstructionWrapper : public X86Instruction {
@@ -154,6 +124,45 @@ namespace x86 {
         inline std::unique_ptr<X86Instruction> make_wrapper(u32 address, Args... args) {
             return std::make_unique<InstructionWrapper<Instruction>>(address, Instruction{args...});
         }
+    }
+
+    std::unique_ptr<X86Instruction> InstructionParser::parseInstructionLine(std::string_view s) {
+        std::vector<std::string_view> parts = split(s, '\t');
+        // if(parts.size() != 3) {
+        //     fmt::print(stderr, "_{}_ {}\n", s, parts.size());
+        //     assert(false);
+        //     return {};
+        // }
+
+        if(parts.empty()) return {};
+        // for(auto sv : parts) {
+        //     auto stripped = strip(sv);
+        //     fmt::print("_{}_  ", stripped);
+        // }
+        // fmt::print("\n");
+
+        std::string_view addressString = parts[0];
+        assert(addressString.back() == ':');
+
+        u32 address = 0;
+        auto result = std::from_chars(addressString.data(), addressString.data()+addressString.size(), address, 16);
+        assert(result.ec == std::errc{});
+
+        if(parts.size() < 3) {
+            return make_wrapper<NotParsed>(address, std::string(s));
+        }
+        
+        std::string_view instructionString = parts[2];
+        auto ptr = parseInstruction(address, instructionString);
+        if(!ptr) {
+            fmt::print("{:40} {:40}: {}\n", instructionString, "???", "fail");    
+        } else {
+            std::string parsedString = ptr->toString();
+            if(strip(instructionString) != strip(parsedString)) {
+                fmt::print("{:40} {:40}: {}\n", instructionString, parsedString, "fail");
+            }
+        }
+        return ptr;
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseInstruction(u32 address, std::string_view s) {

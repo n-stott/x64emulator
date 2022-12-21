@@ -400,6 +400,7 @@ namespace x86 {
         void exec(Nop) override;
         void exec(Ud2) override;
         void exec(Cdq) override;
+        void exec(NotParsed) override;
 
         void exec(Inc<R8>) override;
         void exec(Inc<R32>) override;

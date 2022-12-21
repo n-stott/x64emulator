@@ -305,6 +305,10 @@ namespace x86 {
 
     };
 
+    struct NotParsed {
+        std::string mnemonic;
+    };
+
     template<typename Dst>
     struct Inc {
         Dst dst;

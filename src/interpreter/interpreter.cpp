@@ -70,6 +70,11 @@ namespace x86 {
             if(nextAfter) {
                 eip_ = nextAfter->address;
             }
+            if(!instruction) {
+                fmt::print(stderr, "Undefined instruction near {:#x}\n", eip_);
+                stop_ = true;
+                break;
+            }
             fmt::print("{}{}\n", fmt::format("{:{}}", "", state_.frames.size()), instruction->toString());
             instruction->exec(this);
         }
@@ -696,6 +701,8 @@ namespace x86 {
 
     void Interpreter::exec(Cdq ins) { TODO(ins); }
 
+    void Interpreter::exec(NotParsed) { }
+
     void Interpreter::exec(Inc<R8> ins) { TODO(ins); }
 
     u32 Interpreter::execInc32Impl(u32 src) {
@@ -870,9 +877,15 @@ namespace x86 {
     void Interpreter::exec(Setne<Addr<Size::BYTE, BD>> ins) { TODO(ins); }
 
     void Interpreter::exec(Jmp<R32> ins) { TODO(ins); }
-    void Interpreter::exec(Jmp<u32> ins) { TODO(ins); }
+
+    void Interpreter::exec(Jmp<u32> ins) {
+        fmt::print("Jump to {} @ {}\n", ins.symbolName.value_or("Unknown symbol"), ins.symbolAddress);
+        state_.jumpInFrame(ins.symbolAddress);
+    }
+
     void Interpreter::exec(Jmp<Addr<Size::DWORD, B>> ins) { TODO(ins); }
     void Interpreter::exec(Jmp<Addr<Size::DWORD, BD>> ins) { TODO(ins); }
+
     void Interpreter::exec(Jcc<Cond::NE> ins) {
         if(flags_.matches(Cond::NE)) {
             fmt::print("Jump to {} @ {}\n", ins.symbolName, ins.symbolAddress);

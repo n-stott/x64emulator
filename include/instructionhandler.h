@@ -266,6 +266,7 @@ namespace x86 {
         virtual void exec(Nop) = 0;
         virtual void exec(Ud2) = 0;
         virtual void exec(Cdq) = 0;
+        virtual void exec(NotParsed) = 0;
 
         virtual void exec(Inc<R8>) = 0;
         virtual void exec(Inc<R32>) = 0;
