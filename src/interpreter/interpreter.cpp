@@ -65,7 +65,6 @@ namespace x86 {
         stop_ = false;
         while(!stop_ && state_.hasNext()) {
             try {
-                dump();
                 const X86Instruction* instruction = state_.next();
                 auto nextAfter = state_.peek();
                 if(nextAfter) {
@@ -76,7 +75,10 @@ namespace x86 {
                     stop_ = true;
                     break;
                 }
-                fmt::print("{}{}\n", fmt::format("{:{}}", "", state_.frames.size()), instruction->toString());
+                std::string registerDump = fmt::format("eax={:0000008x} ebx={:0000008x} ecx={:0000008x} edx={:0000008x} esi={:0000008x} edi={:0000008x} ebp={:0000008x} esp={:0000008x}", eax_, ebx_, ecx_, edx_, esi_, edi_, ebp_, esp_);
+                std::string indent = fmt::format("{:{}}", "", state_.frames.size());
+                std::string menmonic = fmt::format("{}|{}", indent, instruction->toString());
+                fmt::print("{:80}{}\n", menmonic, registerDump);
                 instruction->exec(this);
             } catch(const VerificationException&) {
                 stop_ = true;
@@ -651,7 +653,7 @@ namespace x86 {
     void Interpreter::exec(Push<Addr<Size::DWORD, B>> ins) { TODO(ins); }
 
     void Interpreter::exec(Push<Addr<Size::DWORD, BD>> ins) {
-        push32(resolve(ins.src));
+        push32(mmu_.read32(resolve(ins.src)));
     }
 
     void Interpreter::exec(Push<Addr<Size::DWORD, BIS>> ins) { TODO(ins); }

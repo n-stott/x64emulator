@@ -25,6 +25,9 @@ add_executable(print tests/src/print.cpp)
 target_compile_options(print PUBLIC ${CC_OPTIONS})
 target_link_options(print PUBLIC ${LD_OPTIONS})
 
+add_executable(arrays tests/src/arrays.cpp)
+target_compile_options(arrays PUBLIC ${CC_OPTIONS})
+target_link_options(arrays PUBLIC ${LD_OPTIONS})
 
 add_library(fakelibc SHARED
     src/lib/fakelibc.cpp
