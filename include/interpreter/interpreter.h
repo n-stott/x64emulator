@@ -132,7 +132,11 @@ namespace x86 {
             void dumpStacktrace() const {
                 size_t height = 0;
                 for(auto it = frames.rbegin(); it != frames.rend(); ++it) {
-                    fmt::print("{} {}:{:#x}\n", height, it->function->name, it->function->instructions[it->offset]->address);
+                    if(it->offset < it->function->instructions.size()) {
+                        fmt::print("{} {}:{:#x}\n", height, it->function->name, it->function->instructions[it->offset]->address);
+                    } else {
+                        fmt::print("{} {}:at function exit\n", height, it->function->name);
+                    }
                     ++height;
                 }
             }
