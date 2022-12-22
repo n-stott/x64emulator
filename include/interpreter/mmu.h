@@ -2,6 +2,7 @@
 #define MMU_H
 
 #include "utils/utils.h"
+#include <string>
 #include <vector>
 
 namespace x86 {
@@ -12,7 +13,7 @@ namespace x86 {
     public:
         class Region {
         public:
-            Region(u32 base, u32 size);
+            Region(std::string name, u32 base, u32 size);
 
             bool contains(u32 address) const;
 
@@ -24,6 +25,7 @@ namespace x86 {
             void write16(u32 address, u16 value);
             void write32(u32 address, u32 value);
 
+            std::string name;
             u32 base;
             u32 size;
             std::vector<u8> data;
@@ -45,6 +47,8 @@ namespace x86 {
     private:
         Region* findAddress(u32 address);
         const Region* findAddress(u32 address) const;
+
+        void dumpRegions() const;
 
         const Interpreter* interpreter_ = nullptr;
         std::vector<Region> regions_;

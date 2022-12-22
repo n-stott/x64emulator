@@ -27,12 +27,12 @@ namespace x86 {
         // heap
         u32 heapBase = 0x1000000;
         u32 heapSize = 64*1024;
-        mmu_.addRegion(Mmu::Region{ heapBase, heapSize });
+        mmu_.addRegion(Mmu::Region{ "heap", heapBase, heapSize });
         
         // stack
         u32 stackBase = 0x2000000;
         u32 stackSize = 4*1024;
-        mmu_.addRegion(Mmu::Region{ stackBase, stackSize });
+        mmu_.addRegion(Mmu::Region{ "stack", stackBase, stackSize });
         esp_ = stackBase + stackSize;
 
         auto elf = elf::ElfReader::tryCreate(program_.filepath);
@@ -41,13 +41,18 @@ namespace x86 {
             std::abort();
         }
 
-        if(elf->hasSectionNamed(".rodata")) {
-            auto rodataSection = elf->sectionFromName(".rodata");
-            assert(!!rodataSection);
-            Mmu::Region rodata{ (u32)rodataSection->address, (u32)rodataSection->size() };
-            std::memcpy(rodata.data.data(), rodataSection->begin, rodataSection->size()*sizeof(u8));
-            mmu_.addRegion(std::move(rodata));
-        }
+        auto addSectionIfExists = [&](const std::string& name) {
+            auto section = elf->sectionFromName(name);
+            if(!section) return;
+            assert(!!section);
+            Mmu::Region region{ name, (u32)section->address, (u32)section->size() };
+            std::memcpy(region.data.data(), section->begin, section->size()*sizeof(u8));
+            mmu_.addRegion(std::move(region));
+        };
+
+        addSectionIfExists(".rodata");
+        addSectionIfExists(".bss");
+        addSectionIfExists(".got");
     }
 
     void Interpreter::run() {
@@ -332,7 +337,7 @@ namespace x86 {
 
     void Interpreter::verify(bool condition) const {
         if(condition) return;
-        fmt::print("\nInterpreter crash\n");
+        fmt::print("Interpreter crash\n");
         fmt::print("Register state:\n");
         dump();
         fmt::print("Stacktrace:\n");
@@ -340,9 +345,21 @@ namespace x86 {
         throw VerificationException{};
     }
 
+    void Interpreter::verify(bool condition, const std::string& message) const {
+        if(condition) return;
+        fmt::print("{}\n", message);
+        verify(condition);
+    }
+
+    void Interpreter::verify(bool condition, std::function<void(void)> onFail) const {
+        if(condition) return;
+        onFail();
+        verify(condition);
+    }
+
     #define TODO(ins) \
         fmt::print(stderr, "Fail at : {}\n", x86::utils::toString(ins));\
-        verify(!"Not implemented");\
+        verify(false, "Not implemented : "+x86::utils::toString(ins));\
         assert(!"Not implemented"); 
 
     #define WARN_FLAGS() \

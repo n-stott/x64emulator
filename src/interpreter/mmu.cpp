@@ -5,7 +5,8 @@
 
 namespace x86 {
 
-    Mmu::Region::Region(u32 base, u32 size) {
+    Mmu::Region::Region(std::string name, u32 base, u32 size) {
+        this->name = std::move(name);
         this->base = base;
         this->size = size;
         this->data.resize(size, 0x00);
@@ -76,7 +77,10 @@ namespace x86 {
     u8 Mmu::read8(u32 address) const {
         const Region* region = findAddress(address);
         if(!!interpreter_) {
-            interpreter_->verify(!!region);
+            interpreter_->verify(!!region, [&]() {
+                fmt::print("No region containing {:#x}\n", address);
+                dumpRegions();
+            });
         } else {
             assert(!!region);
         }
@@ -86,7 +90,10 @@ namespace x86 {
     u16 Mmu::read16(u32 address) const {
         const Region* region = findAddress(address);
         if(!!interpreter_) {
-            interpreter_->verify(!!region);
+            interpreter_->verify(!!region, [&]() {
+                fmt::print("No region containing {:#x}\n", address);
+                dumpRegions();
+            });
         } else {
             assert(!!region);
         }
@@ -96,7 +103,10 @@ namespace x86 {
     u32 Mmu::read32(u32 address) const {
         const Region* region = findAddress(address);
         if(!!interpreter_) {
-            interpreter_->verify(!!region);
+            interpreter_->verify(!!region, [&]() {
+                fmt::print("No region containing {:#x}\n", address);
+                dumpRegions();
+            });
         } else {
             assert(!!region);
         }
@@ -106,7 +116,10 @@ namespace x86 {
     void Mmu::write8(u32 address, u8 value) {
         Region* region = findAddress(address);
         if(!!interpreter_) {
-            interpreter_->verify(!!region);
+            interpreter_->verify(!!region, [&]() {
+                fmt::print("No region containing {:#x}\n", address);
+                dumpRegions();
+            });
         } else {
             assert(!!region);
         }
@@ -116,7 +129,10 @@ namespace x86 {
     void Mmu::write16(u32 address, u16 value) {
         Region* region = findAddress(address);
         if(!!interpreter_) {
-            interpreter_->verify(!!region);
+            interpreter_->verify(!!region, [&]() {
+                fmt::print("No region containing {:#x}\n", address);
+                dumpRegions();
+            });
         } else {
             assert(!!region);
         }
@@ -126,11 +142,20 @@ namespace x86 {
     void Mmu::write32(u32 address, u32 value) {
         Region* region = findAddress(address);
         if(!!interpreter_) {
-            interpreter_->verify(!!region);
+            interpreter_->verify(!!region, [&]() {
+                fmt::print("No region containing {:#x}\n", address);
+                dumpRegions();
+            });
         } else {
             assert(!!region);
         }
         region->write32(address, value);
+    }
+
+    void Mmu::dumpRegions() const {
+        for(const auto& region : regions_) {
+            fmt::print("{:15} {:#x} - {:#x}\n", region.name, region.base, region.base+region.size);
+        }
     }
 
 }

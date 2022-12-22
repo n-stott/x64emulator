@@ -9,6 +9,8 @@
 #include <cassert>
 #include <algorithm>
 #include <exception>
+#include <functional>
+#include <string>
 #include <fmt/core.h>
 
 namespace x86 {
@@ -19,6 +21,8 @@ namespace x86 {
         void run();
 
         void verify(bool condition) const;
+        void verify(bool condition, const std::string& message) const;
+        void verify(bool condition, std::function<void(void)> onFail) const;
 
     private:
         struct VerificationException : public std::exception { };
