@@ -528,14 +528,24 @@ namespace x86 {
     void Interpreter::exec(Or<Addr<Size::DWORD, BIS>, R32> ins) { TODO(ins); }
     void Interpreter::exec(Or<Addr<Size::DWORD, BISD>, R32> ins) { TODO(ins); }
 
-    void Interpreter::exec(Xor<R8, Imm<u8>> ins) { TODO(ins); }
-    void Interpreter::exec(Xor<R8, Addr<Size::BYTE, BD>> ins) { TODO(ins); }
-    void Interpreter::exec(Xor<R16, Imm<u16>> ins) { TODO(ins); }
-    void Interpreter::exec(Xor<R32, Imm<u32>> ins) { TODO(ins); }
-
-    void Interpreter::exec(Xor<R32, R32> ins) { 
-        WARN_FLAGS();
+    void Interpreter::exec(Xor<R8, Imm<u8>> ins) {
         set(ins.dst, get(ins.src) ^ get(ins.dst));
+        WARN_FLAGS();
+    }
+    void Interpreter::exec(Xor<R8, Addr<Size::BYTE, BD>> ins) { TODO(ins); }
+    void Interpreter::exec(Xor<R16, Imm<u16>> ins) {
+        set(ins.dst, get(ins.src) ^ get(ins.dst));
+        WARN_FLAGS();
+    }
+
+    void Interpreter::exec(Xor<R32, Imm<u32>> ins) {
+        set(ins.dst, get(ins.src) ^ get(ins.dst));
+        WARN_FLAGS();
+    }
+
+    void Interpreter::exec(Xor<R32, R32> ins) {
+        set(ins.dst, get(ins.src) ^ get(ins.dst));
+        WARN_FLAGS();
     }
     
     void Interpreter::exec(Xor<R32, Addr<Size::DWORD, B>> ins) { TODO(ins); }
