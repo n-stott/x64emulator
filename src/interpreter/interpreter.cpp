@@ -609,21 +609,17 @@ namespace x86 {
         set(ins.dst, signExtended32(mmu_.read8(resolve(ins.src))));
     }
 
-    void Interpreter::exec(Movzx<R16, R8> ins) { TODO(ins); }
-    void Interpreter::exec(Movzx<R32, R8> ins) { TODO(ins); }
-    void Interpreter::exec(Movzx<R32, R16> ins) { TODO(ins); }
-
-    void Interpreter::exec(Movzx<R32, Addr<Size::BYTE, B>> ins) {
-        set(ins.dst, (u32)mmu_.read8(resolve(ins.src)));
-    }
-
-    void Interpreter::exec(Movzx<R32, Addr<Size::BYTE, BD>> ins) { TODO(ins); }
-    void Interpreter::exec(Movzx<R32, Addr<Size::BYTE, BIS>> ins) { TODO(ins); }
-    void Interpreter::exec(Movzx<R32, Addr<Size::BYTE, BISD>> ins) { TODO(ins); }
-    void Interpreter::exec(Movzx<R32, Addr<Size::WORD, B>> ins) { TODO(ins); }
-    void Interpreter::exec(Movzx<R32, Addr<Size::WORD, BD>> ins) { TODO(ins); }
-    void Interpreter::exec(Movzx<R32, Addr<Size::WORD, BIS>> ins) { TODO(ins); }
-    void Interpreter::exec(Movzx<R32, Addr<Size::WORD, BISD>> ins) { TODO(ins); }
+    void Interpreter::exec(Movzx<R16, R8> ins) { set(ins.dst, (u16)get(ins.src)); }
+    void Interpreter::exec(Movzx<R32, R8> ins) { set(ins.dst, (u32)get(ins.src)); }
+    void Interpreter::exec(Movzx<R32, R16> ins) { set(ins.dst, (u32)get(ins.src)); }
+    void Interpreter::exec(Movzx<R32, Addr<Size::BYTE, B>> ins) { set(ins.dst, (u32)mmu_.read8(resolve(ins.src))); }
+    void Interpreter::exec(Movzx<R32, Addr<Size::BYTE, BD>> ins) { set(ins.dst, (u32)mmu_.read8(resolve(ins.src))); }
+    void Interpreter::exec(Movzx<R32, Addr<Size::BYTE, BIS>> ins) { set(ins.dst, (u32)mmu_.read8(resolve(ins.src))); }
+    void Interpreter::exec(Movzx<R32, Addr<Size::BYTE, BISD>> ins) { set(ins.dst, (u32)mmu_.read8(resolve(ins.src))); }
+    void Interpreter::exec(Movzx<R32, Addr<Size::WORD, B>> ins) { set(ins.dst, (u32)mmu_.read8(resolve(ins.src))); }
+    void Interpreter::exec(Movzx<R32, Addr<Size::WORD, BD>> ins) { set(ins.dst, (u32)mmu_.read8(resolve(ins.src))); }
+    void Interpreter::exec(Movzx<R32, Addr<Size::WORD, BIS>> ins) { set(ins.dst, (u32)mmu_.read8(resolve(ins.src))); }
+    void Interpreter::exec(Movzx<R32, Addr<Size::WORD, BISD>> ins) { set(ins.dst, (u32)mmu_.read8(resolve(ins.src))); }
 
     void Interpreter::exec(Lea<R32, B> ins) { TODO(ins); }
 
