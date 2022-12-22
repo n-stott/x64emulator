@@ -271,7 +271,14 @@ namespace x86 {
 
         virtual void exec(Inc<R8>) = 0;
         virtual void exec(Inc<R32>) = 0;
+        virtual void exec(Inc<Addr<Size::BYTE, B>>) = 0;
+        virtual void exec(Inc<Addr<Size::BYTE, BD>>) = 0;
+        virtual void exec(Inc<Addr<Size::BYTE, BIS>>) = 0;
+        virtual void exec(Inc<Addr<Size::BYTE, BISD>>) = 0;
+        virtual void exec(Inc<Addr<Size::WORD, B>>) = 0;
         virtual void exec(Inc<Addr<Size::WORD, BD>>) = 0;
+        virtual void exec(Inc<Addr<Size::WORD, BIS>>) = 0;
+        virtual void exec(Inc<Addr<Size::WORD, BISD>>) = 0;
         virtual void exec(Inc<Addr<Size::DWORD, B>>) = 0;
         virtual void exec(Inc<Addr<Size::DWORD, BD>>) = 0;
         virtual void exec(Inc<Addr<Size::DWORD, BIS>>) = 0;

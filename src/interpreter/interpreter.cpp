@@ -735,7 +735,21 @@ namespace x86 {
         verify(false);
     }
 
-    void Interpreter::exec(Inc<R8> ins) { TODO(ins); }
+    u8 Interpreter::execInc8Impl(u8 src) {
+        flags_.overflow = (src == std::numeric_limits<u8>::max());
+        u8 res = src+1;
+        flags_.sign = (res & (1 << 7));
+        flags_.zero = (res == 0);
+        return res;
+    }
+
+    u16 Interpreter::execInc16Impl(u16 src) {
+        flags_.overflow = (src == std::numeric_limits<u16>::max());
+        u16 res = src+1;
+        flags_.sign = (res & (1 << 15));
+        flags_.zero = (res == 0);
+        return res;
+    }
 
     u32 Interpreter::execInc32Impl(u32 src) {
         flags_.overflow = (src == std::numeric_limits<u32>::max());
@@ -745,8 +759,17 @@ namespace x86 {
         return res;
     }
 
-    void Interpreter::exec(Inc<Addr<Size::WORD, BD>> ins) { TODO(ins); }
+    void Interpreter::exec(Inc<R8> ins) { TODO(ins); }
     void Interpreter::exec(Inc<R32> ins) { set(ins.dst, execInc32Impl(get(ins.dst))); }
+
+    void Interpreter::exec(Inc<Addr<Size::BYTE, B>> ins) { u32 addr = resolve(ins.dst); mmu_.write8(addr, execInc8Impl(mmu_.read8(addr))); }
+    void Interpreter::exec(Inc<Addr<Size::BYTE, BD>> ins) { u32 addr = resolve(ins.dst); mmu_.write8(addr, execInc8Impl(mmu_.read8(addr))); }
+    void Interpreter::exec(Inc<Addr<Size::BYTE, BIS>> ins) { u32 addr = resolve(ins.dst); mmu_.write8(addr, execInc8Impl(mmu_.read8(addr))); }
+    void Interpreter::exec(Inc<Addr<Size::BYTE, BISD>> ins) { u32 addr = resolve(ins.dst); mmu_.write8(addr, execInc8Impl(mmu_.read8(addr))); }
+    void Interpreter::exec(Inc<Addr<Size::WORD, B>> ins) { u32 addr = resolve(ins.dst); mmu_.write16(addr, execInc16Impl(mmu_.read16(addr))); }
+    void Interpreter::exec(Inc<Addr<Size::WORD, BD>> ins) { u32 addr = resolve(ins.dst); mmu_.write16(addr, execInc16Impl(mmu_.read16(addr))); }
+    void Interpreter::exec(Inc<Addr<Size::WORD, BIS>> ins) { u32 addr = resolve(ins.dst); mmu_.write16(addr, execInc16Impl(mmu_.read16(addr))); }
+    void Interpreter::exec(Inc<Addr<Size::WORD, BISD>> ins) { u32 addr = resolve(ins.dst); mmu_.write16(addr, execInc16Impl(mmu_.read16(addr))); }
     void Interpreter::exec(Inc<Addr<Size::DWORD, B>> ins) { u32 addr = resolve(ins.dst); mmu_.write32(addr, execInc32Impl(mmu_.read32(addr))); }
     void Interpreter::exec(Inc<Addr<Size::DWORD, BD>> ins) { u32 addr = resolve(ins.dst); mmu_.write32(addr, execInc32Impl(mmu_.read32(addr))); }
     void Interpreter::exec(Inc<Addr<Size::DWORD, BIS>> ins) { u32 addr = resolve(ins.dst); mmu_.write32(addr, execInc32Impl(mmu_.read32(addr))); }

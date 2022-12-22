@@ -149,6 +149,8 @@ namespace x86 {
 
         void dump() const;
 
+        u8 execInc8Impl(u8 src);
+        u16 execInc16Impl(u16 src);
         u32 execInc32Impl(u32 src);
 
         u32 execDec32Impl(u32 src);
@@ -422,7 +424,14 @@ namespace x86 {
 
         void exec(Inc<R8>) override;
         void exec(Inc<R32>) override;
+        void exec(Inc<Addr<Size::BYTE, B>>) override;
+        void exec(Inc<Addr<Size::BYTE, BD>>) override;
+        void exec(Inc<Addr<Size::BYTE, BIS>>) override;
+        void exec(Inc<Addr<Size::BYTE, BISD>>) override;
+        void exec(Inc<Addr<Size::WORD, B>>) override;
         void exec(Inc<Addr<Size::WORD, BD>>) override;
+        void exec(Inc<Addr<Size::WORD, BIS>>) override;
+        void exec(Inc<Addr<Size::WORD, BISD>>) override;
         void exec(Inc<Addr<Size::DWORD, B>>) override;
         void exec(Inc<Addr<Size::DWORD, BD>>) override;
         void exec(Inc<Addr<Size::DWORD, BIS>>) override;

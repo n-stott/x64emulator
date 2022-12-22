@@ -1138,14 +1138,28 @@ namespace x86 {
     std::unique_ptr<X86Instruction> InstructionParser::parseInc(u32 address, std::string_view operands) {
         auto r8dst = asRegister8(operands);
         auto r32dst = asRegister32(operands);
+        auto addrByteBdst = asByteB(operands);
+        auto addrByteBDdst = asByteBD(operands);
+        auto addrByteBISdst = asByteBIS(operands);
+        auto addrByteBISDdst = asByteBISD(operands);
+        auto addrWordBdst = asWordB(operands);
         auto addrWordBDdst = asWordBD(operands);
+        auto addrWordBISdst = asWordBIS(operands);
+        auto addrWordBISDdst = asWordBISD(operands);
         auto addrDoubleBdst = asDoubleB(operands);
         auto addrDoubleBDdst = asDoubleBD(operands);
         auto addrDoubleBISdst = asDoubleBIS(operands);
         auto addrDoubleBISDdst = asDoubleBISD(operands);
         if(r8dst) return make_wrapper<Inc<R8>>(address, r8dst.value());
         if(r32dst) return make_wrapper<Inc<R32>>(address, r32dst.value());
+        if(addrByteBdst) return make_wrapper<Inc<Addr<Size::BYTE, B>>>(address, addrByteBdst.value());
+        if(addrByteBDdst) return make_wrapper<Inc<Addr<Size::BYTE, BD>>>(address, addrByteBDdst.value());
+        if(addrByteBISdst) return make_wrapper<Inc<Addr<Size::BYTE, BIS>>>(address, addrByteBISdst.value());
+        if(addrByteBISDdst) return make_wrapper<Inc<Addr<Size::BYTE, BISD>>>(address, addrByteBISDdst.value());
+        if(addrWordBdst) return make_wrapper<Inc<Addr<Size::WORD, B>>>(address, addrWordBdst.value());
         if(addrWordBDdst) return make_wrapper<Inc<Addr<Size::WORD, BD>>>(address, addrWordBDdst.value());
+        if(addrWordBISdst) return make_wrapper<Inc<Addr<Size::WORD, BIS>>>(address, addrWordBISdst.value());
+        if(addrWordBISDdst) return make_wrapper<Inc<Addr<Size::WORD, BISD>>>(address, addrWordBISDdst.value());
         if(addrDoubleBdst) return make_wrapper<Inc<Addr<Size::DWORD, B>>>(address, addrDoubleBdst.value());
         if(addrDoubleBDdst) return make_wrapper<Inc<Addr<Size::DWORD, BD>>>(address, addrDoubleBDdst.value());
         if(addrDoubleBISdst) return make_wrapper<Inc<Addr<Size::DWORD, BIS>>>(address, addrDoubleBISdst.value());
