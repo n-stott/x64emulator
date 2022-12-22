@@ -342,6 +342,7 @@ namespace x86 {
 
     #define TODO(ins) \
         fmt::print(stderr, "Fail at : {}\n", x86::utils::toString(ins));\
+        verify(!"Not implemented");\
         assert(!"Not implemented"); 
 
     #define WARN_FLAGS() \
@@ -875,9 +876,9 @@ namespace x86 {
     void Interpreter::exec(Setb<Addr<Size::BYTE, BD>> ins) { TODO(ins); }
     void Interpreter::exec(Setbe<R8> ins) { TODO(ins); }
     void Interpreter::exec(Setbe<Addr<Size::BYTE, BD>> ins) { TODO(ins); }
-    void Interpreter::exec(Sete<R8> ins) { TODO(ins); }
-    void Interpreter::exec(Sete<Addr<Size::BYTE, B>> ins) { TODO(ins); }
-    void Interpreter::exec(Sete<Addr<Size::BYTE, BD>> ins) { TODO(ins); }
+    void Interpreter::exec(Sete<R8> ins) { set(ins.dst, flags_.matches(Cond::E)); }
+    void Interpreter::exec(Sete<Addr<Size::BYTE, B>> ins) { mmu_.write8(resolve(ins.dst), flags_.matches(Cond::E)); }
+    void Interpreter::exec(Sete<Addr<Size::BYTE, BD>> ins) { mmu_.write8(resolve(ins.dst), flags_.matches(Cond::E)); }
     void Interpreter::exec(Setg<R8> ins) { TODO(ins); }
     void Interpreter::exec(Setg<Addr<Size::BYTE, BD>> ins) { TODO(ins); }
     void Interpreter::exec(Setge<R8> ins) { TODO(ins); }
