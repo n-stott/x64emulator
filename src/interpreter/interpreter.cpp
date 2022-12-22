@@ -439,7 +439,10 @@ namespace x86 {
     void Interpreter::exec(Sbb<Addr<Size::DWORD, BIS>, Imm<u32>> ins) { TODO(ins); }
     void Interpreter::exec(Sbb<Addr<Size::DWORD, BISD>, Imm<u32>> ins) { TODO(ins); }
 
-    void Interpreter::exec(Neg<R32> ins) { TODO(ins); }
+    void Interpreter::exec(Neg<R32> ins) {
+        set(ins.src, -get(ins.src));
+        WARN_FLAGS();
+    }
     void Interpreter::exec(Neg<Addr<Size::DWORD, B>> ins) { TODO(ins); }
     void Interpreter::exec(Neg<Addr<Size::DWORD, BD>> ins) { TODO(ins); }
 
@@ -770,7 +773,11 @@ namespace x86 {
     void Interpreter::exec(Shrd<R32, R32, Imm<u8>> ins) { TODO(ins); }
 
     void Interpreter::exec(Sar<R32, R8> ins) { TODO(ins); }
-    void Interpreter::exec(Sar<R32, Imm<u32>> ins) { TODO(ins); }
+    void Interpreter::exec(Sar<R32, Imm<u32>> ins) {
+        assert(ins.src.immediate < 32);
+        set(ins.dst, ((i32)get(ins.dst)) >> get(ins.src));
+        WARN_FLAGS();
+    }
     void Interpreter::exec(Sar<R32, Count> ins) { TODO(ins); }
     void Interpreter::exec(Sar<Addr<Size::DWORD, B>, Count> ins) { TODO(ins); }
     void Interpreter::exec(Sar<Addr<Size::DWORD, BD>, Count> ins) { TODO(ins); }
@@ -874,8 +881,8 @@ namespace x86 {
     void Interpreter::exec(Seta<Addr<Size::BYTE, BD>> ins) { TODO(ins); }
     void Interpreter::exec(Setb<R8> ins) { TODO(ins); }
     void Interpreter::exec(Setb<Addr<Size::BYTE, BD>> ins) { TODO(ins); }
-    void Interpreter::exec(Setbe<R8> ins) { TODO(ins); }
-    void Interpreter::exec(Setbe<Addr<Size::BYTE, BD>> ins) { TODO(ins); }
+    void Interpreter::exec(Setbe<R8> ins) { set(ins.dst, flags_.matches(Cond::BE)); }
+    void Interpreter::exec(Setbe<Addr<Size::BYTE, BD>> ins) { mmu_.write8(resolve(ins.dst), flags_.matches(Cond::BE)); }
     void Interpreter::exec(Sete<R8> ins) { set(ins.dst, flags_.matches(Cond::E)); }
     void Interpreter::exec(Sete<Addr<Size::BYTE, B>> ins) { mmu_.write8(resolve(ins.dst), flags_.matches(Cond::E)); }
     void Interpreter::exec(Sete<Addr<Size::BYTE, BD>> ins) { mmu_.write8(resolve(ins.dst), flags_.matches(Cond::E)); }
@@ -888,8 +895,8 @@ namespace x86 {
     void Interpreter::exec(Setl<Addr<Size::BYTE, BD>> ins) { TODO(ins); }
     void Interpreter::exec(Setle<R8> ins) { TODO(ins); }
     void Interpreter::exec(Setle<Addr<Size::BYTE, BD>> ins) { TODO(ins); }
-    void Interpreter::exec(Setne<R8> ins) { TODO(ins); }
-    void Interpreter::exec(Setne<Addr<Size::BYTE, BD>> ins) { TODO(ins); }
+    void Interpreter::exec(Setne<R8> ins) { set(ins.dst, flags_.matches(Cond::NE)); }
+    void Interpreter::exec(Setne<Addr<Size::BYTE, BD>> ins) { mmu_.write8(resolve(ins.dst), flags_.matches(Cond::NE)); }
 
     void Interpreter::exec(Jmp<R32> ins) { TODO(ins); }
 
