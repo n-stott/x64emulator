@@ -233,18 +233,18 @@ namespace x86 {
     
     void Interpreter::set(R8 reg, u8 value) {
         switch(reg) {
-            case R8::AH:  { eax_ = (eax_ & 0xFF0F) | (value << 8); return; }
-            case R8::AL:  { eax_ = (eax_ & 0xFFF0) | (value); return; }
-            case R8::BH:  { ebx_ = (ebx_ & 0xFF0F) | (value << 8); return; }
-            case R8::BL:  { ebx_ = (ebx_ & 0xFFF0) | (value); return; }
-            case R8::CH:  { ecx_ = (ecx_ & 0xFF0F) | (value << 8); return; }
-            case R8::CL:  { ecx_ = (ecx_ & 0xFFF0) | (value); return; }
-            case R8::DH:  { edx_ = (edx_ & 0xFF0F) | (value << 8); return; }
-            case R8::DL:  { edx_ = (edx_ & 0xFFF0) | (value); return; }
-            case R8::SPL: { esp_ = (esp_ & 0xFF0F) | (value); return; }
-            case R8::BPL: { ebp_ = (ebp_ & 0xFF0F) | (value); return; }
-            case R8::SIL: { esi_ = (esi_ & 0xFF0F) | (value); return; }
-            case R8::DIL: { edi_ = (edi_ & 0xFF0F) | (value); return; }
+            case R8::AH:  { eax_ = (eax_ & 0xFFFF00FF) | (value << 8); return; }
+            case R8::AL:  { eax_ = (eax_ & 0xFFFFFF00) | (value); return; }
+            case R8::BH:  { ebx_ = (ebx_ & 0xFFFF00FF) | (value << 8); return; }
+            case R8::BL:  { ebx_ = (ebx_ & 0xFFFFFF00) | (value); return; }
+            case R8::CH:  { ecx_ = (ecx_ & 0xFFFF00FF) | (value << 8); return; }
+            case R8::CL:  { ecx_ = (ecx_ & 0xFFFFFF00) | (value); return; }
+            case R8::DH:  { edx_ = (edx_ & 0xFFFF00FF) | (value << 8); return; }
+            case R8::DL:  { edx_ = (edx_ & 0xFFFFFF00) | (value); return; }
+            case R8::SPL: { esp_ = (esp_ & 0xFFFFFF00) | (value); return; }
+            case R8::BPL: { ebp_ = (ebp_ & 0xFFFFFF00) | (value); return; }
+            case R8::SIL: { esi_ = (esi_ & 0xFFFFFF00) | (value); return; }
+            case R8::DIL: { edi_ = (edi_ & 0xFFFFFF00) | (value); return; }
         }
         __builtin_unreachable();
     }
@@ -754,7 +754,11 @@ namespace x86 {
     void Interpreter::exec(Shr<R32, Count> ins) { TODO(ins); }
 
     void Interpreter::exec(Shl<R32, R8> ins) { TODO(ins); }
-    void Interpreter::exec(Shl<R32, Imm<u32>> ins) { TODO(ins); }
+    void Interpreter::exec(Shl<R32, Imm<u32>> ins) {
+        assert(get(ins.src) < 32);
+        set(ins.dst, get(ins.dst) << get(ins.src));
+        WARN_FLAGS();
+    }
     void Interpreter::exec(Shl<R32, Count> ins) { TODO(ins); }
     void Interpreter::exec(Shl<Addr<Size::DWORD, BD>, Imm<u32>> ins) { TODO(ins); }
 
