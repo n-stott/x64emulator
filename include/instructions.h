@@ -309,6 +309,10 @@ namespace x86 {
         std::string mnemonic;
     };
 
+    struct Unknown {
+        std::string mnemonic;
+    };
+
     template<typename Dst>
     struct Inc {
         Dst dst;

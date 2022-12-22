@@ -124,6 +124,10 @@ namespace x86 {
         inline std::unique_ptr<X86Instruction> make_wrapper(u32 address, Args... args) {
             return std::make_unique<InstructionWrapper<Instruction>>(address, Instruction{args...});
         }
+
+        inline std::unique_ptr<X86Instruction> make_failed(u32 address, std::string_view sv) {
+            return make_wrapper<Unknown>(address, std::string(sv));
+        }
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseInstructionLine(std::string_view s) {
@@ -235,7 +239,7 @@ namespace x86 {
         if(name == "jns") return parseJns(address, operands, decorator);
         if(name == "bsr") return parseBsr(address, operands);
         if(name == "bsf") return parseBsf(address, operands);
-        return {};
+        return make_failed(address, s);
     }
 
     std::optional<R8> asRegister8(std::string_view sv) {
@@ -549,7 +553,7 @@ namespace x86 {
         if(addrDoubleBISsrc) return make_wrapper<Push<Addr<Size::DWORD, BIS>>>(address, addrDoubleBISsrc.value());
         if(addrDoubleISDsrc) return make_wrapper<Push<Addr<Size::DWORD, ISD>>>(address, addrDoubleISDsrc.value());
         if(addrDoubleBISDsrc) return make_wrapper<Push<Addr<Size::DWORD, BISD>>>(address, addrDoubleBISDsrc.value());
-        return {};
+        return make_failed(address, operandString);
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parsePop(u32 address, std::string_view operandsString) {
@@ -557,7 +561,7 @@ namespace x86 {
         // auto addrDoubleBDsrc = asDoubleBD(operandString);
         if(r32) return make_wrapper<Pop<R32>>(address, r32.value());
         // if(addrDoubleBDsrc) return make_wrapper<Push<Addr<Size::DWORD, BD>>>(address, addrDoubleBDsrc.value());
-        return {};
+        return make_failed(address, operandsString);
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseMov(u32 address, std::string_view operandsString) {
@@ -638,7 +642,7 @@ namespace x86 {
         if(addrDoubleBISdst && imm32src) return make_wrapper<Mov<Addr<Size::DWORD, BIS>, Imm<u32>>>(address, addrDoubleBISdst.value(), imm32src.value());
         if(addrDoubleBISDdst && r32src) return make_wrapper<Mov<Addr<Size::DWORD, BISD>, R32>>(address, addrDoubleBISDdst.value(), r32src.value());
         if(addrDoubleBISDdst && imm32src) return make_wrapper<Mov<Addr<Size::DWORD, BISD>, Imm<u32>>>(address, addrDoubleBISDdst.value(), imm32src.value());
-        return {};
+        return make_failed(address, operandsString);
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseMovsx(u32 address, std::string_view operandsString) {
@@ -655,7 +659,7 @@ namespace x86 {
         if(r32dst && addrByteBDsrc) return make_wrapper<Movsx<R32, Addr<Size::BYTE, BD>>>(address, r32dst.value(), addrByteBDsrc.value());
         if(r32dst && addrByteBISsrc) return make_wrapper<Movsx<R32, Addr<Size::BYTE, BIS>>>(address, r32dst.value(), addrByteBISsrc.value());
         if(r32dst && addrByteBISDsrc) return make_wrapper<Movsx<R32, Addr<Size::BYTE, BISD>>>(address, r32dst.value(), addrByteBISDsrc.value());
-        return {};
+        return make_failed(address, operandsString);
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseMovzx(u32 address, std::string_view operandsString) {
@@ -684,7 +688,7 @@ namespace x86 {
         if(r32dst && addrWordBDsrc) return make_wrapper<Movzx<R32, Addr<Size::WORD, BD>>>(address, r32dst.value(), addrWordBDsrc.value());
         if(r32dst && addrWordBISsrc) return make_wrapper<Movzx<R32, Addr<Size::WORD, BIS>>>(address, r32dst.value(), addrWordBISsrc.value());
         if(r32dst && addrWordBISDsrc) return make_wrapper<Movzx<R32, Addr<Size::WORD, BISD>>>(address, r32dst.value(), addrWordBISDsrc.value());
-        return {};
+        return make_failed(address, operandsString);
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseLea(u32 address, std::string_view operandsString) {
@@ -701,7 +705,7 @@ namespace x86 {
         if(r32dst && BISsrc) return make_wrapper<Lea<R32, BIS>>(address, r32dst.value(), BISsrc.value());
         if(r32dst && ISDsrc) return make_wrapper<Lea<R32, ISD>>(address, r32dst.value(), ISDsrc.value());
         if(r32dst && BISDsrc) return make_wrapper<Lea<R32, BISD>>(address, r32dst.value(), BISDsrc.value());
-        return {};
+        return make_failed(address, operandsString);
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseAdd(u32 address, std::string_view operandsString) {
@@ -732,7 +736,7 @@ namespace x86 {
         if(addrDoubleBDdst && imm32src) return make_wrapper<Add<Addr<Size::DWORD, BD>, Imm<u32>>>(address, addrDoubleBDdst.value(), imm32src.value());
         if(addrDoubleBISdst && imm32src) return make_wrapper<Add<Addr<Size::DWORD, BIS>, Imm<u32>>>(address, addrDoubleBISdst.value(), imm32src.value());
         if(addrDoubleBISDdst && imm32src) return make_wrapper<Add<Addr<Size::DWORD, BISD>, Imm<u32>>>(address, addrDoubleBISDdst.value(), imm32src.value());
-        return {};
+        return make_failed(address, operandsString);
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseAdc(u32 address, std::string_view operandsString) {
@@ -763,7 +767,7 @@ namespace x86 {
         if(addrDoubleBDdst && imm32src) return make_wrapper<Adc<Addr<Size::DWORD, BD>, Imm<u32>>>(address, addrDoubleBDdst.value(), imm32src.value());
         if(addrDoubleBISdst && imm32src) return make_wrapper<Adc<Addr<Size::DWORD, BIS>, Imm<u32>>>(address, addrDoubleBISdst.value(), imm32src.value());
         if(addrDoubleBISDdst && imm32src) return make_wrapper<Adc<Addr<Size::DWORD, BISD>, Imm<u32>>>(address, addrDoubleBISDdst.value(), imm32src.value());
-        return {};
+        return make_failed(address, operandsString);
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseSub(u32 address, std::string_view operandsString) {
@@ -796,7 +800,7 @@ namespace x86 {
         if(addrDoubleBDdst && imm32src) return make_wrapper<Sub<Addr<Size::DWORD, BD>, Imm<u32>>>(address, addrDoubleBDdst.value(), imm32src.value());
         if(addrDoubleBISdst && imm32src) return make_wrapper<Sub<Addr<Size::DWORD, BIS>, Imm<u32>>>(address, addrDoubleBISdst.value(), imm32src.value());
         if(addrDoubleBISDdst && imm32src) return make_wrapper<Sub<Addr<Size::DWORD, BISD>, Imm<u32>>>(address, addrDoubleBISDdst.value(), imm32src.value());
-        return {};
+        return make_failed(address, operandsString);
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseSbb(u32 address, std::string_view operandsString) {
@@ -829,7 +833,7 @@ namespace x86 {
         if(addrDoubleBDdst && imm32src) return make_wrapper<Sbb<Addr<Size::DWORD, BD>, Imm<u32>>>(address, addrDoubleBDdst.value(), imm32src.value());
         if(addrDoubleBISdst && imm32src) return make_wrapper<Sbb<Addr<Size::DWORD, BIS>, Imm<u32>>>(address, addrDoubleBISdst.value(), imm32src.value());
         if(addrDoubleBISDdst && imm32src) return make_wrapper<Sbb<Addr<Size::DWORD, BISD>, Imm<u32>>>(address, addrDoubleBISDdst.value(), imm32src.value());
-        return {};
+        return make_failed(address, operandsString);
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseNeg(u32 address, std::string_view operands) {
@@ -839,7 +843,7 @@ namespace x86 {
         if(r32dst) return make_wrapper<Neg<R32>>(address, r32dst.value());
         if(addrDoubleBdst) return make_wrapper<Neg<Addr<Size::DWORD, B>>>(address, addrDoubleBdst.value());
         if(addrDoubleBDdst) return make_wrapper<Neg<Addr<Size::DWORD, BD>>>(address, addrDoubleBDdst.value());
-        return {};
+        return make_failed(address, operands);
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseMul(u32 address, std::string_view operands) {
@@ -853,7 +857,7 @@ namespace x86 {
         if(addrDoubleBDdst) return make_wrapper<Mul<Addr<Size::DWORD, BD>>>(address, addrDoubleBDdst.value());
         if(addrDoubleBISdst) return make_wrapper<Mul<Addr<Size::DWORD, BIS>>>(address, addrDoubleBISdst.value());
         if(addrDoubleBISDdst) return make_wrapper<Mul<Addr<Size::DWORD, BISD>>>(address, addrDoubleBISDdst.value());
-        return {};
+        return make_failed(address, operands);
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseImul(u32 address, std::string_view operandsString) {
@@ -891,7 +895,7 @@ namespace x86 {
             if(r32dst && addrDoubleBISsrc1 && imm32src2) return make_wrapper<Imul3<R32, Addr<Size::DWORD, BIS>, Imm<u32>>>(address, r32dst.value(), addrDoubleBISsrc1.value(), imm32src2.value());
         }
         
-        return {};
+        return make_failed(address, operandsString);
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseDiv(u32 address, std::string_view operands) {
@@ -901,7 +905,7 @@ namespace x86 {
         if(r32dst) return make_wrapper<Div<R32>>(address, r32dst.value());
         if(addrDoubleBdst) return make_wrapper<Div<Addr<Size::DWORD, B>>>(address, addrDoubleBdst.value());
         if(addrDoubleBDdst) return make_wrapper<Div<Addr<Size::DWORD, BD>>>(address, addrDoubleBDdst.value());
-        return {};
+        return make_failed(address, operands);
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseIdiv(u32 address, std::string_view operands) {
@@ -911,7 +915,7 @@ namespace x86 {
         if(r32dst) return make_wrapper<Idiv<R32>>(address, r32dst.value());
         if(addrDoubleBdst) return make_wrapper<Idiv<Addr<Size::DWORD, B>>>(address, addrDoubleBdst.value());
         if(addrDoubleBDdst) return make_wrapper<Idiv<Addr<Size::DWORD, BD>>>(address, addrDoubleBDdst.value());
-        return {};
+        return make_failed(address, operands);
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseAnd(u32 address, std::string_view operandsString) {
@@ -967,7 +971,7 @@ namespace x86 {
         if(addrDoubleBDdst && imm32src) return make_wrapper<And<Addr<Size::DWORD, BD>, Imm<u32>>>(address, addrDoubleBDdst.value(), imm32src.value());
         if(addrDoubleBISdst && r32src) return make_wrapper<And<Addr<Size::DWORD, BIS>, R32>>(address, addrDoubleBISdst.value(), r32src.value());
         if(addrDoubleBISDdst && r32src) return make_wrapper<And<Addr<Size::DWORD, BISD>, R32>>(address, addrDoubleBISDdst.value(), r32src.value());
-        return {};
+        return make_failed(address, operandsString);
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseOr(u32 address, std::string_view operandsString) {
@@ -1021,7 +1025,7 @@ namespace x86 {
         if(addrDoubleBDdst && imm32src) return make_wrapper<Or<Addr<Size::DWORD, BD>, Imm<u32>>>(address, addrDoubleBDdst.value(), imm32src.value());
         if(addrDoubleBISdst && r32src) return make_wrapper<Or<Addr<Size::DWORD, BIS>, R32>>(address, addrDoubleBISdst.value(), r32src.value());
         if(addrDoubleBISDdst && r32src) return make_wrapper<Or<Addr<Size::DWORD, BISD>, R32>>(address, addrDoubleBISDdst.value(), r32src.value());
-        return {};
+        return make_failed(address, operandsString);
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseXor(u32 address, std::string_view operandsString) {
@@ -1058,7 +1062,7 @@ namespace x86 {
         if(addrDoubleBDdst && r32src) return make_wrapper<Xor<Addr<Size::DWORD, BD>, R32>>(address, addrDoubleBDdst.value(), r32src.value());
         if(addrDoubleBISdst && r32src) return make_wrapper<Xor<Addr<Size::DWORD, BIS>, R32>>(address, addrDoubleBISdst.value(), r32src.value());
         if(addrDoubleBISDdst && r32src) return make_wrapper<Xor<Addr<Size::DWORD, BISD>, R32>>(address, addrDoubleBISDdst.value(), r32src.value());
-        return {};
+        return make_failed(address, operandsString);
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseNot(u32 address, std::string_view operands) {
@@ -1070,7 +1074,7 @@ namespace x86 {
         if(addrDoubleBdst) return make_wrapper<Not<Addr<Size::DWORD, B>>>(address, addrDoubleBdst.value());
         if(addrDoubleBDdst) return make_wrapper<Not<Addr<Size::DWORD, BD>>>(address, addrDoubleBDdst.value());
         if(addrDoubleBISdst) return make_wrapper<Not<Addr<Size::DWORD, BIS>>>(address, addrDoubleBISdst.value());
-        return {};
+        return make_failed(address, operands);
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseXchg(u32 address, std::string_view operandsString) {
@@ -1082,7 +1086,7 @@ namespace x86 {
         auto r32src = asRegister32(operands[1]);
         if(r16dst && r16src) return make_wrapper<Xchg<R16, R16>>(address, r16dst.value(), r16src.value());
         if(r32dst && r32src) return make_wrapper<Xchg<R32, R32>>(address, r32dst.value(), r32src.value());
-        return {};
+        return make_failed(address, operandsString);
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseCall(u32 address, std::string_view operandsString, std::string_view decorator) {
@@ -1096,14 +1100,14 @@ namespace x86 {
         if(doubleBsrc) return make_wrapper<CallIndirect<Addr<Size::DWORD, B>>>(address, doubleBsrc.value());
         if(doubleBDsrc) return make_wrapper<CallIndirect<Addr<Size::DWORD, BD>>>(address, doubleBDsrc.value());
         if(doubleBISsrc) return make_wrapper<CallIndirect<Addr<Size::DWORD, BIS>>>(address, doubleBISsrc.value());
-        return {};
+        return make_failed(address, operandsString);
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseRet(u32 address, std::string_view operands) {
         if(operands.size() == 0) return make_wrapper<Ret<>>(address);
         auto imm16 = asImmediate16(operands);
         if(imm16) return make_wrapper<Ret<Imm<u16>>>(address, imm16.value());
-        return {};
+        return make_failed(address, operands);
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseLeave(u32 address, std::string_view operands) {
@@ -1146,7 +1150,7 @@ namespace x86 {
         if(addrDoubleBDdst) return make_wrapper<Inc<Addr<Size::DWORD, BD>>>(address, addrDoubleBDdst.value());
         if(addrDoubleBISdst) return make_wrapper<Inc<Addr<Size::DWORD, BIS>>>(address, addrDoubleBISdst.value());
         if(addrDoubleBISDdst) return make_wrapper<Inc<Addr<Size::DWORD, BISD>>>(address, addrDoubleBISDdst.value());
-        return {};
+        return make_failed(address, operands);
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseDec(u32 address, std::string_view operands) {
@@ -1164,7 +1168,7 @@ namespace x86 {
         if(addrDoubleBDdst) return make_wrapper<Dec<Addr<Size::DWORD, BD>>>(address, addrDoubleBDdst.value());
         if(addrDoubleBISdst) return make_wrapper<Dec<Addr<Size::DWORD, BIS>>>(address, addrDoubleBISdst.value());
         if(addrDoubleBISDdst) return make_wrapper<Dec<Addr<Size::DWORD, BISD>>>(address, addrDoubleBISDdst.value());
-        return {};
+        return make_failed(address, operands);
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseShr(u32 address, std::string_view operandsString) {
@@ -1183,7 +1187,7 @@ namespace x86 {
         if(r8dst && imm8src) return make_wrapper<Shr<R8, Imm<u8>>>(address, r8dst.value(), imm8src.value());
         if(r32dst && r8src) return make_wrapper<Shr<R32, R8>>(address, r32dst.value(), r8src.value());
         if(r32dst && imm32src) return make_wrapper<Shr<R32, Imm<u32>>>(address, r32dst.value(), imm32src.value());
-        return {};
+        return make_failed(address, operandsString);
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseShl(u32 address, std::string_view operandsString) {
@@ -1198,7 +1202,7 @@ namespace x86 {
         if(r32dst && r8src) return make_wrapper<Shl<R32, R8>>(address, r32dst.value(), r8src.value());
         if(r32dst && imm32src) return make_wrapper<Shl<R32, Imm<u32>>>(address, r32dst.value(), imm32src.value());
         if(addrDoubleBDdst && imm32src) return make_wrapper<Shl<Addr<Size::DWORD, BD>, Imm<u32>>>(address, addrDoubleBDdst.value(), imm32src.value());
-        return {};
+        return make_failed(address, operandsString);
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseShrd(u32 address, std::string_view operandsString) {
@@ -1210,7 +1214,7 @@ namespace x86 {
         auto imm8src2 = asImmediate8(operands[2]);
         if(r32dst && r32src1 && r8src2) return make_wrapper<Shrd<R32, R32, R8>>(address, r32dst.value(), r32src1.value(), r8src2.value());
         if(r32dst && r32src1 && imm8src2) return make_wrapper<Shrd<R32, R32, Imm<u8>>>(address, r32dst.value(), r32src1.value(), imm8src2.value());
-        return {};
+        return make_failed(address, operandsString);
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseShld(u32 address, std::string_view operandsString) {
@@ -1222,7 +1226,7 @@ namespace x86 {
         auto imm8src2 = asImmediate8(operands[2]);
         if(r32dst && r32src1 && r8src2) return make_wrapper<Shld<R32, R32, R8>>(address, r32dst.value(), r32src1.value(), r8src2.value());
         if(r32dst && r32src1 && imm8src2) return make_wrapper<Shld<R32, R32, Imm<u8>>>(address, r32dst.value(), r32src1.value(), imm8src2.value());
-        return {};
+        return make_failed(address, operandsString);
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseSar(u32 address, std::string_view operandsString) {
@@ -1239,7 +1243,7 @@ namespace x86 {
         if(r32dst && imm32src) return make_wrapper<Sar<R32, Imm<u32>>>(address, r32dst.value(), imm32src.value());
         if(addrDoubleB && countSrc) return make_wrapper<Sar<Addr<Size::DWORD, B>, Count>>(address, addrDoubleB.value(), countSrc.value());
         if(addrDoubleBD && countSrc) return make_wrapper<Sar<Addr<Size::DWORD, BD>, Count>>(address, addrDoubleBD.value(), countSrc.value());
-        return {};
+        return make_failed(address, operandsString);
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseRol(u32 address, std::string_view operandsString) {
@@ -1252,7 +1256,7 @@ namespace x86 {
         if(r32dst && r8src) return make_wrapper<Rol<R32, R8>>(address, r32dst.value(), r8src.value());
         if(r32dst && imm8src) return make_wrapper<Rol<R32, Imm<u8>>>(address, r32dst.value(), imm8src.value());
         if(addrDoubleBD && imm8src) return make_wrapper<Rol<Addr<Size::DWORD, BD>, Imm<u8>>>(address, addrDoubleBD.value(), imm8src.value());
-        return {};
+        return make_failed(address, operandsString);
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseSeta(u32 address, std::string_view operands) {
@@ -1260,7 +1264,7 @@ namespace x86 {
         auto addrByteBD = asByteBD(operands);
         if(r8dst) return make_wrapper<Seta<R8>>(address, r8dst.value());
         if(addrByteBD) return make_wrapper<Seta<Addr<Size::BYTE, BD>>>(address, addrByteBD.value());
-        return {};
+        return make_failed(address, operands);
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseSetae(u32 address, std::string_view operands) {
@@ -1268,7 +1272,7 @@ namespace x86 {
         auto addrByteBD = asByteBD(operands);
         if(r8dst) return make_wrapper<Setae<R8>>(address, r8dst.value());
         if(addrByteBD) return make_wrapper<Setae<Addr<Size::BYTE, BD>>>(address, addrByteBD.value());
-        return {};
+        return make_failed(address, operands);
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseSetb(u32 address, std::string_view operands) {
@@ -1276,7 +1280,7 @@ namespace x86 {
         auto addrByteBD = asByteBD(operands);
         if(r8dst) return make_wrapper<Setb<R8>>(address, r8dst.value());
         if(addrByteBD) return make_wrapper<Setb<Addr<Size::BYTE, BD>>>(address, addrByteBD.value());
-        return {};
+        return make_failed(address, operands);
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseSetbe(u32 address, std::string_view operands) {
@@ -1284,7 +1288,7 @@ namespace x86 {
         auto addrByteBD = asByteBD(operands);
         if(r8dst) return make_wrapper<Setbe<R8>>(address, r8dst.value());
         if(addrByteBD) return make_wrapper<Setbe<Addr<Size::BYTE, BD>>>(address, addrByteBD.value());
-        return {};
+        return make_failed(address, operands);
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseSete(u32 address, std::string_view operands) {
@@ -1294,7 +1298,7 @@ namespace x86 {
         if(r8dst) return make_wrapper<Sete<R8>>(address, r8dst.value());
         if(addrByteB) return make_wrapper<Sete<Addr<Size::BYTE, B>>>(address, addrByteB.value());
         if(addrByteBD) return make_wrapper<Sete<Addr<Size::BYTE, BD>>>(address, addrByteBD.value());
-        return {};
+        return make_failed(address, operands);
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseSetg(u32 address, std::string_view operands) {
@@ -1302,7 +1306,7 @@ namespace x86 {
         auto addrByteBD = asByteBD(operands);
         if(r8dst) return make_wrapper<Setg<R8>>(address, r8dst.value());
         if(addrByteBD) return make_wrapper<Setg<Addr<Size::BYTE, BD>>>(address, addrByteBD.value());
-        return {};
+        return make_failed(address, operands);
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseSetge(u32 address, std::string_view operands) {
@@ -1310,7 +1314,7 @@ namespace x86 {
         auto addrByteBD = asByteBD(operands);
         if(r8dst) return make_wrapper<Setge<R8>>(address, r8dst.value());
         if(addrByteBD) return make_wrapper<Setge<Addr<Size::BYTE, BD>>>(address, addrByteBD.value());
-        return {};
+        return make_failed(address, operands);
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseSetl(u32 address, std::string_view operands) {
@@ -1320,7 +1324,7 @@ namespace x86 {
         if(r8dst) return make_wrapper<Setl<R8>>(address, r8dst.value());
         if(addrByteB) return make_wrapper<Setl<Addr<Size::BYTE, B>>>(address, addrByteB.value());
         if(addrByteBD) return make_wrapper<Setl<Addr<Size::BYTE, BD>>>(address, addrByteBD.value());
-        return {};
+        return make_failed(address, operands);
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseSetle(u32 address, std::string_view operands) {
@@ -1328,7 +1332,7 @@ namespace x86 {
         auto addrByteBD = asByteBD(operands);
         if(r8dst) return make_wrapper<Setle<R8>>(address, r8dst.value());
         if(addrByteBD) return make_wrapper<Setle<Addr<Size::BYTE, BD>>>(address, addrByteBD.value());
-        return {};
+        return make_failed(address, operands);
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseSetne(u32 address, std::string_view operands) {
@@ -1336,7 +1340,7 @@ namespace x86 {
         auto addrByteBD = asByteBD(operands);
         if(r8dst) return make_wrapper<Setne<R8>>(address, r8dst.value());
         if(addrByteBD) return make_wrapper<Setne<Addr<Size::BYTE, BD>>>(address, addrByteBD.value());
-        return {};
+        return make_failed(address, operands);
     }
 
 
@@ -1370,7 +1374,7 @@ namespace x86 {
         if(DoubleBsrc1 && r32src2) return make_wrapper<Test<Addr<Size::DWORD, B>, R32>>(address, DoubleBsrc1.value(), r32src2.value());
         if(DoubleBDsrc1 && r32src2) return make_wrapper<Test<Addr<Size::DWORD, BD>, R32>>(address, DoubleBDsrc1.value(), r32src2.value());
         if(DoubleBDsrc1 && imm32src2) return make_wrapper<Test<Addr<Size::DWORD, BD>, Imm<u32>>>(address, DoubleBDsrc1.value(), imm32src2.value());
-        return {};
+        return make_failed(address, operandsString);
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseCmp(u32 address, std::string_view operandsString) {
@@ -1436,7 +1440,7 @@ namespace x86 {
         if(DoubleBISsrc1 && imm32src2) return make_wrapper<Cmp<Addr<Size::DWORD, BIS>, Imm<u32>>>(address, DoubleBISsrc1.value(), imm32src2.value());
         if(DoubleBISDsrc1 && r32src2) return make_wrapper<Cmp<Addr<Size::DWORD, BISD>, R32>>(address, DoubleBISDsrc1.value(), r32src2.value());
         if(DoubleBISDsrc1 && imm32src2) return make_wrapper<Cmp<Addr<Size::DWORD, BISD>, Imm<u32>>>(address, DoubleBISDsrc1.value(), imm32src2.value());
-        return {};
+        return make_failed(address, operandsString);
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseJmp(u32 address, std::string_view operandsString, std::string_view decorator) {
@@ -1448,79 +1452,79 @@ namespace x86 {
         if(imm32) return make_wrapper<Jmp<u32>>(address, imm32.value(), std::string(decorator.begin(), decorator.end()));
         if(DoubleB) return make_wrapper<Jmp<Addr<Size::DWORD, B>>>(address, DoubleB.value(), std::nullopt);
         if(DoubleBD) return make_wrapper<Jmp<Addr<Size::DWORD, BD>>>(address, DoubleBD.value(), std::nullopt);
-        return {};
+        return make_failed(address, operandsString);
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseJne(u32 address, std::string_view operandsString, std::string_view decorator) {
         auto imm32 = asImmediate32(operandsString);
         if(imm32) return make_wrapper<Jcc<Cond::NE>>(address, imm32.value(), std::string(decorator.begin(), decorator.end()));
-        return {};
+        return make_failed(address, operandsString);
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseJe(u32 address, std::string_view operandsString, std::string_view decorator) {
         auto imm32 = asImmediate32(operandsString);
         if(imm32) return make_wrapper<Jcc<Cond::E>>(address, imm32.value(), std::string(decorator.begin(), decorator.end()));
-        return {};
+        return make_failed(address, operandsString);
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseJae(u32 address, std::string_view operandsString, std::string_view decorator) {
         auto imm32 = asImmediate32(operandsString);
         if(imm32) return make_wrapper<Jcc<Cond::AE>>(address, imm32.value(), std::string(decorator.begin(), decorator.end()));
-        return {};
+        return make_failed(address, operandsString);
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseJbe(u32 address, std::string_view operandsString, std::string_view decorator) {
         auto imm32 = asImmediate32(operandsString);
         if(imm32) return make_wrapper<Jcc<Cond::BE>>(address, imm32.value(), std::string(decorator.begin(), decorator.end()));
-        return {};
+        return make_failed(address, operandsString);
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseJge(u32 address, std::string_view operandsString, std::string_view decorator) {
         auto imm32 = asImmediate32(operandsString);
         if(imm32) return make_wrapper<Jcc<Cond::GE>>(address, imm32.value(), std::string(decorator.begin(), decorator.end()));
-        return {};
+        return make_failed(address, operandsString);
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseJle(u32 address, std::string_view operandsString, std::string_view decorator) {
         auto imm32 = asImmediate32(operandsString);
         if(imm32) return make_wrapper<Jcc<Cond::LE>>(address, imm32.value(), std::string(decorator.begin(), decorator.end()));
-        return {};
+        return make_failed(address, operandsString);
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseJa(u32 address, std::string_view operandsString, std::string_view decorator) {
         auto imm32 = asImmediate32(operandsString);
         if(imm32) return make_wrapper<Jcc<Cond::A>>(address, imm32.value(), std::string(decorator.begin(), decorator.end()));
-        return {};
+        return make_failed(address, operandsString);
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseJb(u32 address, std::string_view operandsString, std::string_view decorator) {
         auto imm32 = asImmediate32(operandsString);
         if(imm32) return make_wrapper<Jcc<Cond::B>>(address, imm32.value(), std::string(decorator.begin(), decorator.end()));
-        return {};
+        return make_failed(address, operandsString);
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseJg(u32 address, std::string_view operandsString, std::string_view decorator) {
         auto imm32 = asImmediate32(operandsString);
         if(imm32) return make_wrapper<Jcc<Cond::G>>(address, imm32.value(), std::string(decorator.begin(), decorator.end()));
-        return {};
+        return make_failed(address, operandsString);
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseJl(u32 address, std::string_view operandsString, std::string_view decorator) {
         auto imm32 = asImmediate32(operandsString);
         if(imm32) return make_wrapper<Jcc<Cond::L>>(address, imm32.value(), std::string(decorator.begin(), decorator.end()));
-        return {};
+        return make_failed(address, operandsString);
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseJs(u32 address, std::string_view operandsString, std::string_view decorator) {
         auto imm32 = asImmediate32(operandsString);
         if(imm32) return make_wrapper<Jcc<Cond::S>>(address, imm32.value(), std::string(decorator.begin(), decorator.end()));
-        return {};
+        return make_failed(address, operandsString);
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseJns(u32 address, std::string_view operandsString, std::string_view decorator) {
         auto imm32 = asImmediate32(operandsString);
         if(imm32) return make_wrapper<Jcc<Cond::NS>>(address, imm32.value(), std::string(decorator.begin(), decorator.end()));
-        return {};
+        return make_failed(address, operandsString);
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseBsr(u32 address, std::string_view operandsString) {
@@ -1529,7 +1533,7 @@ namespace x86 {
         auto r32dst = asRegister32(operands[0]);
         auto r32src = asRegister32(operands[1]);
         if(r32dst && r32src) return make_wrapper<Bsr<R32, R32>>(address, r32dst.value(), r32src.value());
-        return {};
+        return make_failed(address, operandsString);
     }
 
 
@@ -1539,7 +1543,7 @@ namespace x86 {
         auto r32dst = asRegister32(operands[0]);
         auto r32src = asRegister32(operands[1]);
         if(r32dst && r32src) return make_wrapper<Bsf<R32, R32>>(address, r32dst.value(), r32src.value());
-        return {};
+        return make_failed(address, operandsString);
     }
 
 

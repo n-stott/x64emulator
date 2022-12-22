@@ -726,6 +726,10 @@ namespace x86 {
 
     void Interpreter::exec(NotParsed) { }
 
+    void Interpreter::exec(Unknown) {
+        verify(false);
+    }
+
     void Interpreter::exec(Inc<R8> ins) { TODO(ins); }
 
     u32 Interpreter::execInc32Impl(u32 src) {

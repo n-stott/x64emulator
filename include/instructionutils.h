@@ -276,6 +276,10 @@ namespace utils {
         return fmt::format("{:7}{}", "undef", ins.mnemonic);
     }
 
+    inline std::string toString(const Unknown& ins) {
+        return fmt::format("{:7}{}", "unkn", ins.mnemonic);
+    }
+
     template<typename Dst>
     inline std::string toString(const Inc<Dst>& ins) {
         return fmt::format("{:7}{}", "inc", toString(ins.dst));

@@ -414,6 +414,7 @@ namespace x86 {
         void exec(Ud2) override;
         void exec(Cdq) override;
         void exec(NotParsed) override;
+        void exec(Unknown) override;
 
         void exec(Inc<R8>) override;
         void exec(Inc<R32>) override;
