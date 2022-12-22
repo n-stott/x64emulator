@@ -707,7 +707,12 @@ namespace x86 {
         eip_ = pop32();
     }
 
-    void Interpreter::exec(Ret<Imm<u16>> ins) { TODO(ins); }
+    void Interpreter::exec(Ret<Imm<u16>> ins) {
+        assert(state_.frames.size() >= 1);
+        state_.frames.pop_back();
+        eip_ = pop32();
+        esp_ += get(ins.src);
+    }
 
     void Interpreter::exec(Leave) {
         esp_ = ebp_;
