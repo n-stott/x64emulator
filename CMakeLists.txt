@@ -29,6 +29,10 @@ add_executable(arrays tests/src/arrays.cpp)
 target_compile_options(arrays PUBLIC ${CC_OPTIONS})
 target_link_options(arrays PUBLIC ${LD_OPTIONS})
 
+add_executable(strings tests/src/strings.cpp)
+target_compile_options(strings PUBLIC ${CC_OPTIONS})
+target_link_options(strings PUBLIC ${LD_OPTIONS} -static-libstdc++ -static-libgcc)
+
 add_library(fakelibc SHARED
     src/lib/fakelibc.cpp
 )
