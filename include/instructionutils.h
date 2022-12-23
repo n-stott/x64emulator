@@ -55,6 +55,24 @@ namespace utils {
         return "";
     }
 
+    inline std::string toString(Cond cond) {
+        switch(cond) {
+            case Cond::A:  return "a";
+            case Cond::AE: return "ae";
+            case Cond::B:  return "b";
+            case Cond::BE: return "be";
+            case Cond::E:  return "e";
+            case Cond::G:  return "g";
+            case Cond::GE: return "ge";
+            case Cond::L:  return "l";
+            case Cond::LE: return "le";
+            case Cond::NE: return "ne";
+            case Cond::NS: return "ns";
+            case Cond::S:  return "s";
+        }
+        __builtin_unreachable();
+    }
+
     inline std::string toString(const Count& count) {
         return fmt::format("{:x}", count.count);
     }
@@ -320,54 +338,9 @@ namespace utils {
         return fmt::format("{:7}{},{}", "rol", toString(ins.dst), toString(ins.src));
     }
 
-    template<typename Dst>
-    inline std::string toString(const Seta<Dst>& ins) {
-        return fmt::format("{:7}{}", "seta", toString(ins.dst));
-    }
-
-    template<typename Dst>
-    inline std::string toString(const Setae<Dst>& ins) {
-        return fmt::format("{:7}{}", "setae", toString(ins.dst));
-    }
-
-    template<typename Dst>
-    inline std::string toString(const Setb<Dst>& ins) {
-        return fmt::format("{:7}{}", "setb", toString(ins.dst));
-    }
-
-    template<typename Dst>
-    inline std::string toString(const Setbe<Dst>& ins) {
-        return fmt::format("{:7}{}", "setbe", toString(ins.dst));
-    }
-
-    template<typename Dst>
-    inline std::string toString(const Sete<Dst>& ins) {
-        return fmt::format("{:7}{}", "sete", toString(ins.dst));
-    }
-
-    template<typename Dst>
-    inline std::string toString(const Setg<Dst>& ins) {
-        return fmt::format("{:7}{}", "setg", toString(ins.dst));
-    }
-
-    template<typename Dst>
-    inline std::string toString(const Setge<Dst>& ins) {
-        return fmt::format("{:7}{}", "setge", toString(ins.dst));
-    }
-
-    template<typename Dst>
-    inline std::string toString(const Setl<Dst>& ins) {
-        return fmt::format("{:7}{}", "setl", toString(ins.dst));
-    }
-
-    template<typename Dst>
-    inline std::string toString(const Setle<Dst>& ins) {
-        return fmt::format("{:7}{}", "setle", toString(ins.dst));
-    }
-
-    template<typename Dst>
-    inline std::string toString(const Setne<Dst>& ins) {
-        return fmt::format("{:7}{}", "setne", toString(ins.dst));
+    template<Cond cond, typename Dst>
+    inline std::string toString(const Set<cond, Dst>& ins) {
+        return fmt::format("{:7}{}", fmt::format("set{}", toString(cond)), toString(ins.dst));
     }
 
     template<typename Src1, typename Src2>

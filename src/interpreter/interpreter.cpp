@@ -934,28 +934,45 @@ namespace x86 {
     void Interpreter::exec(Cmp<Addr<Size::DWORD, BISD>, R32> ins) { execCmp32Impl(mmu_.read32(resolve(ins.src1)), get(ins.src2)); }
     void Interpreter::exec(Cmp<Addr<Size::DWORD, BISD>, Imm<u32>> ins) { execCmp32Impl(mmu_.read32(resolve(ins.src1)), get(ins.src2)); }
 
-    void Interpreter::exec(Setae<R8> ins) { TODO(ins); }
-    void Interpreter::exec(Setae<Addr<Size::BYTE, BD>> ins) { TODO(ins); }
-    void Interpreter::exec(Seta<R8> ins) { TODO(ins); }
-    void Interpreter::exec(Seta<Addr<Size::BYTE, BD>> ins) { TODO(ins); }
-    void Interpreter::exec(Setb<R8> ins) { TODO(ins); }
-    void Interpreter::exec(Setb<Addr<Size::BYTE, BD>> ins) { TODO(ins); }
-    void Interpreter::exec(Setbe<R8> ins) { set(ins.dst, flags_.matches(Cond::BE)); }
-    void Interpreter::exec(Setbe<Addr<Size::BYTE, BD>> ins) { mmu_.write8(resolve(ins.dst), flags_.matches(Cond::BE)); }
-    void Interpreter::exec(Sete<R8> ins) { set(ins.dst, flags_.matches(Cond::E)); }
-    void Interpreter::exec(Sete<Addr<Size::BYTE, B>> ins) { mmu_.write8(resolve(ins.dst), flags_.matches(Cond::E)); }
-    void Interpreter::exec(Sete<Addr<Size::BYTE, BD>> ins) { mmu_.write8(resolve(ins.dst), flags_.matches(Cond::E)); }
-    void Interpreter::exec(Setg<R8> ins) { TODO(ins); }
-    void Interpreter::exec(Setg<Addr<Size::BYTE, BD>> ins) { TODO(ins); }
-    void Interpreter::exec(Setge<R8> ins) { TODO(ins); }
-    void Interpreter::exec(Setge<Addr<Size::BYTE, BD>> ins) { TODO(ins); }
-    void Interpreter::exec(Setl<R8> ins) { TODO(ins); }
-    void Interpreter::exec(Setl<Addr<Size::BYTE, B>> ins) { TODO(ins); }
-    void Interpreter::exec(Setl<Addr<Size::BYTE, BD>> ins) { TODO(ins); }
-    void Interpreter::exec(Setle<R8> ins) { TODO(ins); }
-    void Interpreter::exec(Setle<Addr<Size::BYTE, BD>> ins) { TODO(ins); }
-    void Interpreter::exec(Setne<R8> ins) { set(ins.dst, flags_.matches(Cond::NE)); }
-    void Interpreter::exec(Setne<Addr<Size::BYTE, BD>> ins) { mmu_.write8(resolve(ins.dst), flags_.matches(Cond::NE)); }
+    template<typename Dst>
+    void Interpreter::execSet(Cond cond, Dst dst) {
+        if constexpr(std::is_same_v<Dst, R8>) {
+            set(dst, flags_.matches(cond));
+        } else {
+            mmu_.write8(resolve(dst), flags_.matches(cond));
+        }
+    }
+
+    void Interpreter::exec(Set<Cond::AE, R8> ins) { execSet(Cond::AE, ins.dst); }
+    void Interpreter::exec(Set<Cond::AE, Addr<Size::BYTE, B>> ins) { execSet(Cond::AE, ins.dst); }
+    void Interpreter::exec(Set<Cond::AE, Addr<Size::BYTE, BD>> ins) { execSet(Cond::AE, ins.dst); }
+    void Interpreter::exec(Set<Cond::A, R8> ins) { execSet(Cond::A, ins.dst); }
+    void Interpreter::exec(Set<Cond::A, Addr<Size::BYTE, B>> ins) { execSet(Cond::A, ins.dst); }
+    void Interpreter::exec(Set<Cond::A, Addr<Size::BYTE, BD>> ins) { execSet(Cond::A, ins.dst); }
+    void Interpreter::exec(Set<Cond::B, R8> ins) { execSet(Cond::B, ins.dst); }
+    void Interpreter::exec(Set<Cond::B, Addr<Size::BYTE, B>> ins) { execSet(Cond::B, ins.dst); }
+    void Interpreter::exec(Set<Cond::B, Addr<Size::BYTE, BD>> ins) { execSet(Cond::B, ins.dst); }
+    void Interpreter::exec(Set<Cond::BE, R8> ins) { execSet(Cond::BE, ins.dst); }
+    void Interpreter::exec(Set<Cond::BE, Addr<Size::BYTE, B>> ins) { execSet(Cond::BE, ins.dst); }
+    void Interpreter::exec(Set<Cond::BE, Addr<Size::BYTE, BD>> ins) { execSet(Cond::BE, ins.dst); }
+    void Interpreter::exec(Set<Cond::E, R8> ins) { execSet(Cond::E, ins.dst); }
+    void Interpreter::exec(Set<Cond::E, Addr<Size::BYTE, B>> ins) { execSet(Cond::E, ins.dst); }
+    void Interpreter::exec(Set<Cond::E, Addr<Size::BYTE, BD>> ins) { execSet(Cond::E, ins.dst); }
+    void Interpreter::exec(Set<Cond::G, R8> ins) { execSet(Cond::G, ins.dst); }
+    void Interpreter::exec(Set<Cond::G, Addr<Size::BYTE, B>> ins) { execSet(Cond::G, ins.dst); }
+    void Interpreter::exec(Set<Cond::G, Addr<Size::BYTE, BD>> ins) { execSet(Cond::G, ins.dst); }
+    void Interpreter::exec(Set<Cond::GE, R8> ins) { execSet(Cond::GE, ins.dst); }
+    void Interpreter::exec(Set<Cond::GE, Addr<Size::BYTE, B>> ins) { execSet(Cond::GE, ins.dst); }
+    void Interpreter::exec(Set<Cond::GE, Addr<Size::BYTE, BD>> ins) { execSet(Cond::GE, ins.dst); }
+    void Interpreter::exec(Set<Cond::L, R8> ins) { execSet(Cond::L, ins.dst); }
+    void Interpreter::exec(Set<Cond::L, Addr<Size::BYTE, B>> ins) { execSet(Cond::L, ins.dst); }
+    void Interpreter::exec(Set<Cond::L, Addr<Size::BYTE, BD>> ins) { execSet(Cond::L, ins.dst); }
+    void Interpreter::exec(Set<Cond::LE, R8> ins) { execSet(Cond::LE, ins.dst); }
+    void Interpreter::exec(Set<Cond::LE, Addr<Size::BYTE, B>> ins) { execSet(Cond::LE, ins.dst); }
+    void Interpreter::exec(Set<Cond::LE, Addr<Size::BYTE, BD>> ins) { execSet(Cond::LE, ins.dst); }
+    void Interpreter::exec(Set<Cond::NE, R8> ins) { execSet(Cond::NE, ins.dst); }
+    void Interpreter::exec(Set<Cond::NE, Addr<Size::BYTE, B>> ins) { execSet(Cond::NE, ins.dst); }
+    void Interpreter::exec(Set<Cond::NE, Addr<Size::BYTE, BD>> ins) { execSet(Cond::NE, ins.dst); }
 
     void Interpreter::exec(Jmp<R32> ins) { TODO(ins); }
 

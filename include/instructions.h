@@ -361,53 +361,8 @@ namespace x86 {
         Src src;
     };
 
-    template<typename Dst>
-    struct Seta {
-        Dst dst;
-    };
-
-    template<typename Dst>
-    struct Setae {
-        Dst dst;
-    };
-
-    template<typename Dst>
-    struct Setb {
-        Dst dst;
-    };
-
-    template<typename Dst>
-    struct Setbe {
-        Dst dst;
-    };
-
-    template<typename Dst>
-    struct Sete {
-        Dst dst;
-    };
-
-    template<typename Dst>
-    struct Setg {
-        Dst dst;
-    };
-
-    template<typename Dst>
-    struct Setge {
-        Dst dst;
-    };
-
-    template<typename Dst>
-    struct Setl {
-        Dst dst;
-    };
-
-    template<typename Dst>
-    struct Setle {
-        Dst dst;
-    };
-
-    template<typename Dst>
-    struct Setne {
+    template<Cond cond, typename Dst>
+    struct Set {
         Dst dst;
     };
     

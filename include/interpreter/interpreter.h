@@ -166,6 +166,9 @@ namespace x86 {
         void execCmp8Impl(u8 src1, u8 src2);
         void execCmp32Impl(u32 src1, u32 src2);
 
+        template<typename Dst>
+        void execSet(Cond cond, Dst dst);
+
         void exec(Add<R32, R32>) override;
         void exec(Add<R32, Imm<u32>>) override;
         void exec(Add<R32, Addr<Size::DWORD, B>>) override;
@@ -524,28 +527,36 @@ namespace x86 {
         void exec(Cmp<Addr<Size::DWORD, BISD>, R32>) override;
         void exec(Cmp<Addr<Size::DWORD, BISD>, Imm<u32>>) override;
 
-        void exec(Setae<R8>) override;
-        void exec(Setae<Addr<Size::BYTE, BD>>) override;
-        void exec(Seta<R8>) override;
-        void exec(Seta<Addr<Size::BYTE, BD>>) override;
-        void exec(Setb<R8>) override;
-        void exec(Setb<Addr<Size::BYTE, BD>>) override;
-        void exec(Setbe<R8>) override;
-        void exec(Setbe<Addr<Size::BYTE, BD>>) override;
-        void exec(Sete<R8>) override;
-        void exec(Sete<Addr<Size::BYTE, B>>) override;
-        void exec(Sete<Addr<Size::BYTE, BD>>) override;
-        void exec(Setg<R8>) override;
-        void exec(Setg<Addr<Size::BYTE, BD>>) override;
-        void exec(Setge<R8>) override;
-        void exec(Setge<Addr<Size::BYTE, BD>>) override;
-        void exec(Setl<R8>) override;
-        void exec(Setl<Addr<Size::BYTE, B>>) override;
-        void exec(Setl<Addr<Size::BYTE, BD>>) override;
-        void exec(Setle<R8>) override;
-        void exec(Setle<Addr<Size::BYTE, BD>>) override;
-        void exec(Setne<R8>) override;
-        void exec(Setne<Addr<Size::BYTE, BD>>) override;
+        void exec(Set<Cond::AE, R8>) override;
+        void exec(Set<Cond::AE, Addr<Size::BYTE, B>>) override;
+        void exec(Set<Cond::AE, Addr<Size::BYTE, BD>>) override;
+        void exec(Set<Cond::A, R8>) override;
+        void exec(Set<Cond::A, Addr<Size::BYTE, B>>) override;
+        void exec(Set<Cond::A, Addr<Size::BYTE, BD>>) override;
+        void exec(Set<Cond::B, R8>) override;
+        void exec(Set<Cond::B, Addr<Size::BYTE, B>>) override;
+        void exec(Set<Cond::B, Addr<Size::BYTE, BD>>) override;
+        void exec(Set<Cond::BE, R8>) override;
+        void exec(Set<Cond::BE, Addr<Size::BYTE, B>>) override;
+        void exec(Set<Cond::BE, Addr<Size::BYTE, BD>>) override;
+        void exec(Set<Cond::E, R8>) override;
+        void exec(Set<Cond::E, Addr<Size::BYTE, B>>) override;
+        void exec(Set<Cond::E, Addr<Size::BYTE, BD>>) override;
+        void exec(Set<Cond::G, R8>) override;
+        void exec(Set<Cond::G, Addr<Size::BYTE, B>>) override;
+        void exec(Set<Cond::G, Addr<Size::BYTE, BD>>) override;
+        void exec(Set<Cond::GE, R8>) override;
+        void exec(Set<Cond::GE, Addr<Size::BYTE, B>>) override;
+        void exec(Set<Cond::GE, Addr<Size::BYTE, BD>>) override;
+        void exec(Set<Cond::L, R8>) override;
+        void exec(Set<Cond::L, Addr<Size::BYTE, B>>) override;
+        void exec(Set<Cond::L, Addr<Size::BYTE, BD>>) override;
+        void exec(Set<Cond::LE, R8>) override;
+        void exec(Set<Cond::LE, Addr<Size::BYTE, B>>) override;
+        void exec(Set<Cond::LE, Addr<Size::BYTE, BD>>) override;
+        void exec(Set<Cond::NE, R8>) override;
+        void exec(Set<Cond::NE, Addr<Size::BYTE, B>>) override;
+        void exec(Set<Cond::NE, Addr<Size::BYTE, BD>>) override;
 
         void exec(Jmp<R32>) override;
         void exec(Jmp<u32>) override;
