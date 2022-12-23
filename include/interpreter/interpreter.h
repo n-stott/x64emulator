@@ -579,6 +579,8 @@ namespace x86 {
         void exec(Bsf<R32, R32>) override;
         void exec(Bsf<R32, Addr<Size::DWORD, BD>>) override;
 
+        void exec(RepNZ<Scas<R8, Addr<Size::BYTE, B>>>) override;
+
     };
 
 }

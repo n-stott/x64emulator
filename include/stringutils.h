@@ -49,5 +49,17 @@ inline std::string filenameFromPath(const std::string& filepath) {
     return filenameNoExtension;
 }
 
+inline std::string removeOverride(std::string_view sv) {
+    size_t dsOverride = sv.find("ds:");
+    if(dsOverride != std::string_view::npos) {
+        return std::string(sv.substr(0, dsOverride)) + std::string(sv.substr(dsOverride+3));
+    }
+    size_t esOverride = sv.find("es:");
+    if(esOverride != std::string_view::npos) {
+        return std::string(sv.substr(0, esOverride)) + std::string(sv.substr(esOverride+3));
+    }
+    return std::string(sv);
+}
+
 
 #endif

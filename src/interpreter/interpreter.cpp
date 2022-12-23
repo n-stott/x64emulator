@@ -1073,4 +1073,6 @@ namespace x86 {
     void Interpreter::exec(Bsf<R32, R32> ins) { TODO(ins); }
     void Interpreter::exec(Bsf<R32, Addr<Size::DWORD, BD>> ins) { TODO(ins); }
 
+    void Interpreter::exec(RepNZ<Scas<R8, Addr<Size::BYTE, B>>> ins) { TODO(ins); }
+
 }

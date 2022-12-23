@@ -4,6 +4,7 @@
 #include "instructionutils.h"
 #include "instructions.h"
 #include "stringutils.h"
+#include <algorithm>
 #include <cassert>
 #include <charconv>
 #include <cstdlib>
@@ -239,6 +240,9 @@ namespace x86 {
         if(name == "jns") return parseJns(address, operands, decorator);
         if(name == "bsr") return parseBsr(address, operands);
         if(name == "bsf") return parseBsf(address, operands);
+        if(name == "rep") return parseRepStringop(address, operands);
+        if(name == "repz") return parseRepzStringop(address, operands);
+        if(name == "repnz") return parseRepnzStringop(address, operands);
         return make_failed(address, s);
     }
 
@@ -1486,5 +1490,33 @@ namespace x86 {
         return make_failed(address, operandsString);
     }
 
+    std::unique_ptr<X86Instruction> InstructionParser::parseRepStringop(u32 address, std::string_view stringop) {
+        return make_failed(address, stringop);
+    }
 
+    std::unique_ptr<X86Instruction> InstructionParser::parseRepzStringop(u32 address, std::string_view stringop) {
+        return make_failed(address, stringop);
+    }
+    
+    std::unique_ptr<X86Instruction> InstructionParser::parseRepnzStringop(u32 address, std::string_view stringop) {
+        size_t instructionEnd = stringop.find_first_of(' ');
+        if(instructionEnd >= stringop.size()) return make_failed(address, stringop);
+        std::string_view instruction = stringop.substr(0, instructionEnd);
+        std::vector<std::string_view> operandsWithOverrides = split(strip(stringop.substr(instructionEnd)), ',');
+        std::vector<std::string> operands(operandsWithOverrides.size());
+        std::transform(operandsWithOverrides.begin(), operandsWithOverrides.end(), operands.begin(), [](std::string_view sv) {
+            return removeOverride(sv);
+        });
+        assert(operands.size() == 2);
+        fmt::print("{} {}\n", operands[0], operands[1]);
+        auto r8src1 = asRegister8(operands[0]);
+        // auto r8src2 = asRegister8(operands[1]);
+        // auto ByteBsrc1 = asByteB(operands[0]);
+        auto ByteBsrc2 = asByteB(operands[1]);
+        if(instruction == "scas") {
+            if(r8src1 && ByteBsrc2) return make_wrapper< RepNZ< Scas<R8, Addr<Size::BYTE, B>> >>(address, Scas<R8, Addr<Size::BYTE, B>>{r8src1.value(), ByteBsrc2.value()});
+        }
+
+        return nullptr;
+    }
 }

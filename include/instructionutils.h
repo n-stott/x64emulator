@@ -419,6 +419,16 @@ namespace utils {
     inline std::string toString(const Bsf<Dst, Src>& ins) {
         return fmt::format("{:7}{},{}", "bsf", toString(ins.dst), toString(ins.src));
     }
+
+    template<typename Src1, typename Src2>
+    inline std::string toString(Scas<Src1, Src2> ins) {
+        return fmt::format("{:7}{},{}", "scas", toString(ins.src1), toString(ins.src2));
+    }
+
+    template<typename StringOp>
+    inline std::string toString(RepNZ<StringOp> ins) {
+        return fmt::format("{:7}{}", "rep", toString(ins.op));
+    }
 }
 }
 
