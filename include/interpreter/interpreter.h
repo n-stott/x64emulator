@@ -80,6 +80,7 @@ namespace x86 {
         u32 resolve(Addr<Size::DWORD, B> addr) const;
         u32 resolve(Addr<Size::DWORD, BD> addr) const;
         u32 resolve(Addr<Size::DWORD, BIS> addr) const;
+        u32 resolve(Addr<Size::DWORD, ISD> addr) const;
         u32 resolve(Addr<Size::DWORD, BISD> addr) const;
 
         void set(R8 reg, u8 value);

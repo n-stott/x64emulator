@@ -235,6 +235,10 @@ namespace x86 {
     u32 Interpreter::resolve(Addr<Size::DWORD, BIS> addr) const {
         return resolve(addr.encoding);
     }
+    
+    u32 Interpreter::resolve(Addr<Size::DWORD, ISD> addr) const {
+        return resolve(addr.encoding);
+    }
 
     u32 Interpreter::resolve(Addr<Size::DWORD, BISD> addr) const {
         return resolve(addr.encoding);
@@ -732,15 +736,11 @@ namespace x86 {
         push32(get(ins.src));
     }
 
-    void Interpreter::exec(Push<Addr<Size::DWORD, B>> ins) { TODO(ins); }
-
-    void Interpreter::exec(Push<Addr<Size::DWORD, BD>> ins) {
-        push32(mmu_.read32(resolve(ins.src)));
-    }
-
-    void Interpreter::exec(Push<Addr<Size::DWORD, BIS>> ins) { TODO(ins); }
-    void Interpreter::exec(Push<Addr<Size::DWORD, ISD>> ins) { TODO(ins); }
-    void Interpreter::exec(Push<Addr<Size::DWORD, BISD>> ins) { TODO(ins); }
+    void Interpreter::exec(Push<Addr<Size::DWORD, B>> ins) { push32(mmu_.read32(resolve(ins.src))); }
+    void Interpreter::exec(Push<Addr<Size::DWORD, BD>> ins) { push32(mmu_.read32(resolve(ins.src))); }
+    void Interpreter::exec(Push<Addr<Size::DWORD, BIS>> ins) { push32(mmu_.read32(resolve(ins.src))); }
+    void Interpreter::exec(Push<Addr<Size::DWORD, ISD>> ins) { push32(mmu_.read32(resolve(ins.src))); }
+    void Interpreter::exec(Push<Addr<Size::DWORD, BISD>> ins) { push32(mmu_.read32(resolve(ins.src))); }
 
     void Interpreter::exec(Pop<R32> ins) {
         set(ins.dst, pop32());
@@ -1037,7 +1037,10 @@ namespace x86 {
     void Interpreter::exec(Set<Cond::NE, Addr<Size::BYTE, B>> ins) { execSet(Cond::NE, ins.dst); }
     void Interpreter::exec(Set<Cond::NE, Addr<Size::BYTE, BD>> ins) { execSet(Cond::NE, ins.dst); }
 
-    void Interpreter::exec(Jmp<R32> ins) { TODO(ins); }
+    void Interpreter::exec(Jmp<R32> ins) {
+        fmt::print("Jump to {} @ {}\n", ins.symbolName.value_or("Unknown symbol"), get(ins.symbolAddress));
+        state_.jumpInFrame(get(ins.symbolAddress));
+    }
 
     void Interpreter::exec(Jmp<u32> ins) {
         fmt::print("Jump to {} @ {}\n", ins.symbolName.value_or("Unknown symbol"), ins.symbolAddress);
