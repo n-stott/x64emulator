@@ -1073,6 +1073,20 @@ namespace x86 {
     void Interpreter::exec(Bsf<R32, R32> ins) { TODO(ins); }
     void Interpreter::exec(Bsf<R32, Addr<Size::DWORD, BD>> ins) { TODO(ins); }
 
-    void Interpreter::exec(RepNZ<Scas<R8, Addr<Size::BYTE, B>>> ins) { TODO(ins); }
+    void Interpreter::exec(RepNZ<Scas<R8, Addr<Size::BYTE, B>>> ins) {
+        assert(ins.op.src2.encoding.base == R32::EDI);
+        u32 counter = get(R32::ECX);
+        u8 src1 = get(ins.op.src1);
+        u32 ptr2 = resolve(ins.op.src2);
+        while(counter) {
+            u8 src2 = mmu_.read8(ptr2);
+            execCmp8Impl(src1, src2);
+            ++ptr2;
+            --counter;
+            if(flags_.zero) break;
+        }
+        set(R32::ECX, counter);
+        set(R32::EDI, ptr2);
+    }
 
 }
