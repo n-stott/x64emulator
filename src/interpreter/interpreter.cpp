@@ -1135,7 +1135,15 @@ namespace x86 {
     }
 
 
-    void Interpreter::exec(Bsr<R32, R32> ins) { TODO(ins); }
+    void Interpreter::exec(Bsr<R32, R32> ins) {
+        u32 val = get(ins.src);
+        if(!val) return; // [NS] return value is undefined
+        u32 mssb = 31;
+        while(mssb > 0 && !(val & (1u << mssb))) {
+            --mssb;
+        }
+        set(ins.dst, mssb);
+    }
     void Interpreter::exec(Bsf<R32, R32> ins) { TODO(ins); }
     void Interpreter::exec(Bsf<R32, Addr<Size::DWORD, BD>> ins) { TODO(ins); }
 
