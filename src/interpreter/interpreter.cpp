@@ -670,8 +670,18 @@ namespace x86 {
     void Interpreter::exec(Not<Addr<Size::DWORD, BD>> ins) { mmu_.write32(resolve(ins.dst), ~mmu_.read32(resolve(ins.dst))); }
     void Interpreter::exec(Not<Addr<Size::DWORD, BIS>> ins) { mmu_.write32(resolve(ins.dst), ~mmu_.read32(resolve(ins.dst))); }
 
-    void Interpreter::exec(Xchg<R16, R16> ins) { TODO(ins); }
-    void Interpreter::exec(Xchg<R32, R32> ins) { TODO(ins); }
+    void Interpreter::exec(Xchg<R16, R16> ins) {
+        u16 dst = get(ins.dst);
+        u16 src = get(ins.src);
+        set(ins.dst, src);
+        set(ins.src, dst);
+    }
+    void Interpreter::exec(Xchg<R32, R32> ins) {
+        u32 dst = get(ins.dst);
+        u32 src = get(ins.src);
+        set(ins.dst, src);
+        set(ins.src, dst);
+    }
 
     void Interpreter::exec(Mov<R8, R8> ins) { set(ins.dst, get(ins.src)); }
     void Interpreter::exec(Mov<R8, Imm<u8>> ins) { set(ins.dst, get(ins.src)); }
