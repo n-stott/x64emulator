@@ -575,10 +575,10 @@ namespace x86 {
     void Interpreter::exec(Xor<Addr<Size::DWORD, BIS>, R32> ins) { TODO(ins); }
     void Interpreter::exec(Xor<Addr<Size::DWORD, BISD>, R32> ins) { TODO(ins); }
 
-    void Interpreter::exec(Not<R32> ins) { TODO(ins); }
-    void Interpreter::exec(Not<Addr<Size::DWORD, B>> ins) { TODO(ins); }
-    void Interpreter::exec(Not<Addr<Size::DWORD, BD>> ins) { TODO(ins); }
-    void Interpreter::exec(Not<Addr<Size::DWORD, BIS>> ins) { TODO(ins); }
+    void Interpreter::exec(Not<R32> ins) { set(ins.dst, ~get(ins.dst)); }
+    void Interpreter::exec(Not<Addr<Size::DWORD, B>> ins) { mmu_.write32(resolve(ins.dst), ~mmu_.read32(resolve(ins.dst))); }
+    void Interpreter::exec(Not<Addr<Size::DWORD, BD>> ins) { mmu_.write32(resolve(ins.dst), ~mmu_.read32(resolve(ins.dst))); }
+    void Interpreter::exec(Not<Addr<Size::DWORD, BIS>> ins) { mmu_.write32(resolve(ins.dst), ~mmu_.read32(resolve(ins.dst))); }
 
     void Interpreter::exec(Xchg<R16, R16> ins) { TODO(ins); }
     void Interpreter::exec(Xchg<R32, R32> ins) { TODO(ins); }
