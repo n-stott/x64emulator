@@ -38,6 +38,11 @@ namespace x86 {
             bool overflow;
 
             bool matches(Cond condition) const;
+
+            bool sure_ = true;
+            void setUnsure() { sure_ = false; }
+            void setSure() { sure_ = true; }
+            void require() const { assert(sure_ && "Flags are surely set"); }
         } flags_;
 
         u32 ebp_;

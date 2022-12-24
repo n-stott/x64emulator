@@ -23,6 +23,7 @@ namespace x86 {
         flags_.overflow = 0;
         flags_.zero = 0;
         flags_.sign = 0;
+        flags_.setSure();
         stop_ = false;
         // heap
         u32 heapBase = 0x1000000;
@@ -92,6 +93,7 @@ namespace x86 {
     }
 
     bool Interpreter::Flags::matches(Cond condition) const {
+        require();
         switch(condition) {
             case Cond::A: return (carry == 0 && zero == 0);
             case Cond::AE: return (carry == 0);
@@ -371,7 +373,11 @@ namespace x86 {
         assert(!"Not implemented"); 
 
     #define WARN_FLAGS() \
+        flags_.setUnsure();\
         fmt::print(stderr, "Warning : flags not updated\n")
+
+    #define REQUIRE_FLAGS() \
+        // flags_.require();
 
     #define WARN_SIGNED_OVERFLOW() \
         fmt::print(stderr, "Warning : signed integer overflow not handled\n")
@@ -416,7 +422,11 @@ namespace x86 {
     void Interpreter::exec(Add<Addr<Size::DWORD, BIS>, Imm<u32>> ins) { TODO(ins); }
     void Interpreter::exec(Add<Addr<Size::DWORD, BISD>, Imm<u32>> ins) { TODO(ins); }
 
-    void Interpreter::exec(Adc<R32, R32> ins) { TODO(ins); }
+    void Interpreter::exec(Adc<R32, R32> ins) {
+        REQUIRE_FLAGS();
+        set(ins.dst, get(ins.dst) + get(ins.src) + flags_.carry);
+        WARN_FLAGS();
+    }
     void Interpreter::exec(Adc<R32, Imm<u32>> ins) { TODO(ins); }
     void Interpreter::exec(Adc<R32, SignExtended<u8>> ins) { TODO(ins); }
     void Interpreter::exec(Adc<R32, Addr<Size::DWORD, B>> ins) { TODO(ins); }
@@ -812,6 +822,7 @@ namespace x86 {
         u8 res = src+1;
         flags_.sign = (res & (1 << 7));
         flags_.zero = (res == 0);
+        flags_.setSure();
         return res;
     }
 
@@ -820,6 +831,7 @@ namespace x86 {
         u16 res = src+1;
         flags_.sign = (res & (1 << 15));
         flags_.zero = (res == 0);
+        flags_.setSure();
         return res;
     }
 
@@ -828,6 +840,7 @@ namespace x86 {
         u32 res = src+1;
         flags_.sign = (res & (1 << 31));
         flags_.zero = (res == 0);
+        flags_.setSure();
         return res;
     }
 
@@ -853,6 +866,7 @@ namespace x86 {
         u32 res = src-1;
         flags_.sign = (res & (1 << 31));
         flags_.zero = (res == 0);
+        flags_.setSure();
         return res;
     }
 
@@ -914,6 +928,7 @@ namespace x86 {
         flags_.zero = (tmp == 0);
         flags_.overflow = 0;
         flags_.carry = 0;
+        flags_.setSure();
     }
 
     void Interpreter::execTest16Impl(u16 src1, u16 src2) {
@@ -922,6 +937,7 @@ namespace x86 {
         flags_.zero = (tmp == 0);
         flags_.overflow = 0;
         flags_.carry = 0;
+        flags_.setSure();
     }
 
     void Interpreter::execTest32Impl(u32 src1, u32 src2) {
@@ -930,6 +946,7 @@ namespace x86 {
         flags_.zero = (tmp == 0);
         flags_.overflow = 0;
         flags_.carry = 0;
+        flags_.setSure();
     }
 
     void Interpreter::exec(Test<R8, R8> ins) { execTest8Impl(get(ins.src1), get(ins.src2)); }
@@ -957,6 +974,7 @@ namespace x86 {
         flags_.carry = (src2 > src1);
         flags_.sign = ((i8)src1 - (i8)src2 < 0);
         flags_.zero = (src1 == src2);
+        flags_.setSure();
     }
 
     void Interpreter::execCmp32Impl(u32 src1, u32 src2) {
@@ -965,6 +983,7 @@ namespace x86 {
         flags_.carry = (src2 > src1);
         flags_.sign = ((i32)src1 - (i32)src2 < 0);
         flags_.zero = (src1 == src2);
+        flags_.setSure();
     }
 
     void Interpreter::exec(Cmp<R8, R8> ins) { execCmp8Impl(get(ins.src1), get(ins.src2)); }
@@ -1138,6 +1157,7 @@ namespace x86 {
     void Interpreter::exec(Bsr<R32, R32> ins) {
         u32 val = get(ins.src);
         flags_.zero = (val == 0);
+        flags_.setSure();
         if(!val) return; // [NS] return value is undefined
         u32 mssb = 31;
         while(mssb > 0 && !(val & (1u << mssb))) {
