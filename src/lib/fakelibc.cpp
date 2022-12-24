@@ -17,4 +17,15 @@ extern "C" {
         return 0;
     }
 
+    void* fakelibc$memchr(const void* s, int c, int n) {
+        unsigned char* ptr = (unsigned char*)s;
+        int count = 0;
+        while(count < n) {
+            if(*ptr == c) return ptr;
+            ++ptr;
+        }
+        return nullptr;
+    }
+
+
 }
