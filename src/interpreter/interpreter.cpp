@@ -1109,6 +1109,23 @@ namespace x86 {
     void Interpreter::exec(Bsf<R32, R32> ins) { TODO(ins); }
     void Interpreter::exec(Bsf<R32, Addr<Size::DWORD, BD>> ins) { TODO(ins); }
 
+    void Interpreter::exec(Rep<Movs<Addr<Size::BYTE, B>, Addr<Size::BYTE, B>>> ins) {
+        assert(ins.op.dst.encoding.base == R32::EDI);
+        assert(ins.op.src.encoding.base == R32::ESI);
+        u32 counter = get(R32::ECX);
+        u32 dptr = resolve(ins.op.dst);
+        u32 sptr = resolve(ins.op.src);
+        while(counter) {
+            u8 val = mmu_.read8(sptr);
+            mmu_.write8(dptr, val);
+            ++sptr;
+            ++dptr;
+            --counter;
+        }
+        set(R32::ESI, sptr);
+        set(R32::EDI, dptr);
+    }
+
     void Interpreter::exec(RepNZ<Scas<R8, Addr<Size::BYTE, B>>> ins) {
         assert(ins.op.src2.encoding.base == R32::EDI);
         u32 counter = get(R32::ECX);

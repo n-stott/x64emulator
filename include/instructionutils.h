@@ -425,9 +425,19 @@ namespace utils {
         return fmt::format("{:7}{},{}", "scas", toString(ins.src1), toString(ins.src2));
     }
 
+    template<typename Dst, typename Src>
+    inline std::string toString(Movs<Dst, Src> ins) {
+        return fmt::format("{:7}{},{}", "movs", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename StringOp>
+    inline std::string toString(Rep<StringOp> ins) {
+        return fmt::format("{:7}{}", "rep", toString(ins.op));
+    }
+
     template<typename StringOp>
     inline std::string toString(RepNZ<StringOp> ins) {
-        return fmt::format("{:7}{}", "rep", toString(ins.op));
+        return fmt::format("{:7}{}", "repnz", toString(ins.op));
     }
 }
 }
