@@ -168,6 +168,10 @@ namespace x86 {
         return value.immediate;
     }
 
+    u8 Interpreter::get(Count count) const {
+        return count.count;   
+    }
+
     u32 Interpreter::resolve(B addr) const {
         return get(addr.base);
     }
@@ -849,8 +853,16 @@ namespace x86 {
     void Interpreter::exec(Shr<R8, Count> ins) { TODO(ins); }
     void Interpreter::exec(Shr<R16, Count> ins) { TODO(ins); }
     void Interpreter::exec(Shr<R32, R8> ins) { TODO(ins); }
-    void Interpreter::exec(Shr<R32, Imm<u32>> ins) { TODO(ins); }
-    void Interpreter::exec(Shr<R32, Count> ins) { TODO(ins); }
+    void Interpreter::exec(Shr<R32, Imm<u32>> ins) {
+        assert(get(ins.src) < 32);
+        set(ins.dst, get(ins.dst) >> get(ins.src));
+        WARN_FLAGS();
+    }
+    void Interpreter::exec(Shr<R32, Count> ins) {
+        assert(get(ins.src) < 32);
+        set(ins.dst, get(ins.dst) >> get(ins.src));
+        WARN_FLAGS();
+    }
 
     void Interpreter::exec(Shl<R32, R8> ins) { TODO(ins); }
     void Interpreter::exec(Shl<R32, Imm<u32>> ins) {

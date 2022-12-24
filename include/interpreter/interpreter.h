@@ -61,6 +61,8 @@ namespace x86 {
         u16 get(Imm<u16> immediate) const;
         u32 get(Imm<u32> immediate) const;
 
+        u8 get(Count count) const;
+
         u32 resolve(B addr) const;
         u32 resolve(BD addr) const;
         u32 resolve(BIS addr) const;
