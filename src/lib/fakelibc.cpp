@@ -1,3 +1,5 @@
+#include <cstddef>
+
 extern "C" {
 
     __attribute__((noinline))
@@ -25,6 +27,15 @@ extern "C" {
             ++ptr;
         }
         return nullptr;
+    }
+
+    size_t fakelibc$strlen(const char* s) {
+        size_t len = 0;
+        while(*s) {
+            ++s;
+            ++len;
+        }
+        return len;
     }
 
 

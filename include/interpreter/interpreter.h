@@ -130,15 +130,28 @@ namespace x86 {
                 }
             }
 
-            void jumpInFrame(u32 destinationAddress) {
+            bool jumpOutOfFrame(const Program& program, u32 destinationAddress) {
+                for(const auto& function : program.functions) {
+                    if(function.address != destinationAddress) continue;
+                    frames.pop_back();
+                    frames.push_back(Frame{&function, 0});
+                    return true;
+                }
+                return false;
+            }
+
+            [[nodiscard]] bool jumpInFrame(u32 destinationAddress) {
                 assert(!frames.empty());
                 Frame& currentFrame = frames.back();
                 const Function* func = currentFrame.function;
                 auto jumpee = std::find_if(func->instructions.begin(), func->instructions.end(), [=](const auto& instruction) {
                     return instruction->address == destinationAddress;
                 });
-                assert(jumpee != func->instructions.end());
-                currentFrame.offset = std::distance(func->instructions.begin(), jumpee);
+                if(jumpee != func->instructions.end()) {
+                    currentFrame.offset = std::distance(func->instructions.begin(), jumpee);
+                    return true;
+                }
+                return false;
             }
 
             void dumpStacktrace() const {
