@@ -582,12 +582,12 @@ namespace x86 {
     void Interpreter::exec(Or<R8, Addr<Size::BYTE, BD>> ins) { TODO(ins); }
     void Interpreter::exec(Or<R16, Addr<Size::WORD, B>> ins) { TODO(ins); }
     void Interpreter::exec(Or<R16, Addr<Size::WORD, BD>> ins) { TODO(ins); }
-    void Interpreter::exec(Or<R32, R32> ins) { TODO(ins); }
-    void Interpreter::exec(Or<R32, Imm<u32>> ins) { TODO(ins); }
-    void Interpreter::exec(Or<R32, Addr<Size::DWORD, B>> ins) { TODO(ins); }
-    void Interpreter::exec(Or<R32, Addr<Size::DWORD, BD>> ins) { TODO(ins); }
-    void Interpreter::exec(Or<R32, Addr<Size::DWORD, BIS>> ins) { TODO(ins); }
-    void Interpreter::exec(Or<R32, Addr<Size::DWORD, BISD>> ins) { TODO(ins); }
+    void Interpreter::exec(Or<R32, R32> ins) { set(ins.dst, get(ins.dst) | get(ins.src)); }
+    void Interpreter::exec(Or<R32, Imm<u32>> ins) { set(ins.dst, get(ins.dst) | get(ins.src)); }
+    void Interpreter::exec(Or<R32, Addr<Size::DWORD, B>> ins) { set(ins.dst, get(ins.dst) | mmu_.read32(resolve(ins.src))); }
+    void Interpreter::exec(Or<R32, Addr<Size::DWORD, BD>> ins) { set(ins.dst, get(ins.dst) | mmu_.read32(resolve(ins.src))); }
+    void Interpreter::exec(Or<R32, Addr<Size::DWORD, BIS>> ins) { set(ins.dst, get(ins.dst) | mmu_.read32(resolve(ins.src))); }
+    void Interpreter::exec(Or<R32, Addr<Size::DWORD, BISD>> ins) { set(ins.dst, get(ins.dst) | mmu_.read32(resolve(ins.src))); }
     void Interpreter::exec(Or<Addr<Size::BYTE, B>, R8> ins) { TODO(ins); }
     void Interpreter::exec(Or<Addr<Size::BYTE, B>, Imm<u8>> ins) { TODO(ins); }
     void Interpreter::exec(Or<Addr<Size::BYTE, BD>, R8> ins) { TODO(ins); }
