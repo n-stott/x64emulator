@@ -1137,6 +1137,7 @@ namespace x86 {
 
     void Interpreter::exec(Bsr<R32, R32> ins) {
         u32 val = get(ins.src);
+        flags_.zero = (val == 0);
         if(!val) return; // [NS] return value is undefined
         u32 mssb = 31;
         while(mssb > 0 && !(val & (1u << mssb))) {
