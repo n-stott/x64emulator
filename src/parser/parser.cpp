@@ -40,7 +40,13 @@ namespace x86 {
             success += (!!ptr);
             if(ptr) {
                 // fmt::print("{:00000008x} <{}>:\n", ptr->address, ptr->name);
-                program.functions.push_back(std::move(*ptr));
+                if(startsWith(ptr->name, ".L")) {
+                    assert(!program.functions.empty());
+                    auto& prevFuncInstruction = program.functions.back().instructions;
+                    for(auto&& ins : ptr->instructions) prevFuncInstruction.push_back(std::move(ins));
+                } else {
+                    program.functions.push_back(std::move(*ptr));
+                }
             }
         }
 
@@ -160,7 +166,7 @@ namespace x86 {
         std::string_view instructionString = parts[2];
         auto ptr = parseInstruction(address, instructionString);
         if(!ptr) {
-            fmt::print("{:40} {:40}: {}\n", instructionString, "???", "fail");    
+            fmt::print("{:40} {:40}: {}\n", instructionString, "???", "fail");
         } else {
             std::string parsedString = ptr->toString();
             if(strip(instructionString) != strip(parsedString)) {

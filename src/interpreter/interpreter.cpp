@@ -716,7 +716,10 @@ namespace x86 {
         push8(ins.src.extendedValue);
     }
 
-    void Interpreter::exec(Push<Imm<u32>> ins) { TODO(ins); }
+    void Interpreter::exec(Push<Imm<u32>> ins) {
+        push32(get(ins.src));
+    }
+
     void Interpreter::exec(Push<Addr<Size::DWORD, B>> ins) { TODO(ins); }
 
     void Interpreter::exec(Push<Addr<Size::DWORD, BD>> ins) {

@@ -61,5 +61,10 @@ inline std::string removeOverride(std::string_view sv) {
     return std::string(sv);
 }
 
+inline bool startsWith(std::string_view sv, std::string_view prefix) {
+    if(sv.size() < prefix.size()) return false;
+    return sv.substr(0, prefix.size()) == prefix;
+}
+
 
 #endif
