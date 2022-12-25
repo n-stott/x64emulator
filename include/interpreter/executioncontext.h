@@ -11,10 +11,12 @@ namespace x86 {
     public:
         u32 eax() const;
 
+        void set_eax(u32 val) const;
+
     private:
         friend class Interpreter;
-        explicit ExecutionContext(const Interpreter& interpreter) : interpreter(interpreter) { }
-        const Interpreter& interpreter;
+        explicit ExecutionContext(Interpreter& interpreter) : interpreter(&interpreter) { }
+        Interpreter* interpreter;
     };
 
 }

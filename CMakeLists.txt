@@ -36,7 +36,7 @@ target_link_options(strings PUBLIC ${LD_OPTIONS} -static-libstdc++ -static-libgc
 add_library(fakelibc SHARED
     src/lib/fakelibc.cpp
 )
-target_compile_options(fakelibc PUBLIC -m32 -fPIC -O2)
+target_compile_options(fakelibc PUBLIC -m32 -fPIC -O0)
 target_link_options(fakelibc PUBLIC -m32)
 
 add_executable(translator
@@ -52,9 +52,9 @@ add_executable(translator
     src/program.cpp
     src/main.cpp
 )
-target_compile_options(translator PUBLIC -fpic -Wall -Wextra -Wpedantic -pedantic -Werror -Wno-sign-compare -Wno-braced-scalar-init -Wimplicit-fallthrough -Wno-missing-braces)
+target_compile_options(translator PUBLIC -m32 -fpic -Wall -Wextra -Wpedantic -pedantic -Werror -Wno-sign-compare -Wno-braced-scalar-init -Wimplicit-fallthrough -Wno-missing-braces -DFMT_HEADER_ONLY)
 target_include_directories(translator PUBLIC include)
 target_include_directories(translator PUBLIC ../common/include)
 target_include_directories(translator PUBLIC ../external)
 target_include_directories(translator PUBLIC external/elf-reader/src)
-target_link_libraries(translator ${CMAKE_SOURCE_DIR}/external/fmt/libfmt.a)
+target_link_options(translator PUBLIC -m32)

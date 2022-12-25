@@ -13,12 +13,12 @@ namespace x86 {
         
     };
 
-    struct Puts final : public LibraryFunction {
-        explicit Puts(const ExecutionContext& context);
-    };
-
     struct Putchar final : public LibraryFunction {
         explicit Putchar(const ExecutionContext& context);
+    };
+
+    struct Malloc final : public LibraryFunction {
+        explicit Malloc(const ExecutionContext& context);
     };
 
 }

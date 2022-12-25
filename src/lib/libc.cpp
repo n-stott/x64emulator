@@ -5,6 +5,7 @@
 #include "interpreter/executioncontext.h"
 #include "parser/parser.h"
 #include <cassert>
+#include <stdlib.h>
 
 namespace x86 {
 
@@ -12,6 +13,7 @@ namespace x86 {
 
     void LibC::configureIntrinsics(const ExecutionContext& context) {
         addIntrinsicFunction<Putchar>(context);
+        addIntrinsicFunction<Malloc>(context);
     }
 
     namespace {
@@ -86,12 +88,37 @@ namespace x86 {
         ExecutionContext context_;
     };
 
+    class MallocInstruction : public Intrinsic {
+    public:
+        explicit MallocInstruction(ExecutionContext context) : context_(context) { }
+
+        void exec(InstructionHandler*) const override {
+            void* ptr = ::malloc(context_.eax());
+            context_.set_eax((u32)ptr);
+        }
+        std::string toString() const override {
+            return "__malloc";
+        }
+    private:
+        ExecutionContext context_;
+    };
+
     Putchar::Putchar(const ExecutionContext& context) : LibraryFunction("intrinsic$putchar") {
         add(this, make_wrapper<Push<R32>>(R32::EBP));
         add(this, make_wrapper<Mov<R32, R32>>(R32::EBP, R32::ESP));
         auto arg = Addr<Size::DWORD, BD>{{R32::ESP, +8}};
         add(this, make_wrapper<Mov<R32, Addr<Size::DWORD, BD>>>(R32::EAX, arg));
         add(this, make_intrinsic<PutcharInstruction>(context));
+        add(this, make_wrapper<Pop<R32>>(R32::EBP));
+        add(this, make_wrapper<Ret<void>>());
+    }
+
+    Malloc::Malloc(const ExecutionContext& context) : LibraryFunction("intrinsic$malloc") {
+        add(this, make_wrapper<Push<R32>>(R32::EBP));
+        add(this, make_wrapper<Mov<R32, R32>>(R32::EBP, R32::ESP));
+        auto arg = Addr<Size::DWORD, BD>{{R32::ESP, +8}};
+        add(this, make_wrapper<Mov<R32, Addr<Size::DWORD, BD>>>(R32::EAX, arg));
+        add(this, make_intrinsic<MallocInstruction>(context));
         add(this, make_wrapper<Pop<R32>>(R32::EBP));
         add(this, make_wrapper<Ret<void>>());
     }

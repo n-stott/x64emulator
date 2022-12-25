@@ -5,6 +5,9 @@ extern "C" {
     __attribute__((noinline))
     void intrinsic$putchar(char) { }
 
+    __attribute__((noinline))
+    void* intrinsic$malloc(size_t) { return nullptr; }
+
     int fakelibc$putchar(char c) {
         intrinsic$putchar(c);
         return 0;
@@ -38,5 +41,9 @@ extern "C" {
         return len;
     }
 
+    void* fakelibc$malloc(size_t size) {
+        void* ptr = intrinsic$malloc(size);
+        return ptr;
+    }
 
 }
