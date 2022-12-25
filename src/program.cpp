@@ -10,6 +10,13 @@ namespace x86 {
         return nullptr;
     }
 
+    const Function* Program::findFunctionByAddress(u32 address) const {
+        for(const Function& func : functions) {
+            if(func.address == address) return &func;
+        }
+        return nullptr;
+    }
+
     void Function::print() const {
         fmt::print("{}\n", name);
         for(const auto& ins : instructions) {

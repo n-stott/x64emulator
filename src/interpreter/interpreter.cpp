@@ -55,6 +55,7 @@ namespace x86 {
         };
 
         addSectionIfExists(".rodata");
+        addSectionIfExists(".data.rel.ro");
         addSectionIfExists(".bss");
         addSectionIfExists(".got");
     }
@@ -72,6 +73,7 @@ namespace x86 {
         push32(main->address);
 
         stop_ = false;
+        size_t ticks = 0;
         while(!stop_ && state_.hasNext()) {
             try {
                 const X86Instruction* instruction = state_.next();
@@ -87,7 +89,8 @@ namespace x86 {
                 std::string registerDump = fmt::format("eax={:0000008x} ebx={:0000008x} ecx={:0000008x} edx={:0000008x} esi={:0000008x} edi={:0000008x} ebp={:0000008x} esp={:0000008x}", eax_, ebx_, ecx_, edx_, esi_, edi_, ebp_, esp_);
                 std::string indent = fmt::format("{:{}}", "", state_.frames.size());
                 std::string menmonic = fmt::format("{}|{}", indent, instruction->toString());
-                fmt::print("{:80}{}\n", menmonic, registerDump);
+                fmt::print("{:10} {:80}{}\n", ticks, menmonic, registerDump);
+                ++ticks;
                 instruction->exec(this);
             } catch(const VerificationException&) {
                 stop_ = true;
@@ -839,10 +842,34 @@ namespace x86 {
         }
     }
 
-    void Interpreter::exec(CallIndirect<R32> ins) { TODO(ins); }
-    void Interpreter::exec(CallIndirect<Addr<Size::DWORD, B>> ins) { TODO(ins); }
-    void Interpreter::exec(CallIndirect<Addr<Size::DWORD, BD>> ins) { TODO(ins); }
-    void Interpreter::exec(CallIndirect<Addr<Size::DWORD, BIS>> ins) { TODO(ins); }
+    void Interpreter::exec(CallIndirect<R32> ins) {
+        u32 address = get(ins.src);
+        const Function* func = program_.findFunctionByAddress(address);
+        verify(!!func, [&]() {
+            fmt::print(stderr, "Unable to find function at {:#x}", address);
+        });
+    }
+    void Interpreter::exec(CallIndirect<Addr<Size::DWORD, B>> ins) {
+        u32 address = mmu_.read32(resolve(ins.src));
+        const Function* func = program_.findFunctionByAddress(address);
+        verify(!!func, [&]() {
+            fmt::print(stderr, "Unable to find function at {:#x}", address);
+        });
+    }
+    void Interpreter::exec(CallIndirect<Addr<Size::DWORD, BD>> ins) {
+        u32 address = mmu_.read32(resolve(ins.src));
+        const Function* func = program_.findFunctionByAddress(address);
+        verify(!!func, [&]() {
+            fmt::print(stderr, "Unable to find function at {:#x}", address);
+        });
+    }
+    void Interpreter::exec(CallIndirect<Addr<Size::DWORD, BIS>> ins) {
+        u32 address = mmu_.read32(resolve(ins.src));
+        const Function* func = program_.findFunctionByAddress(address);
+        verify(!!func, [&]() {
+            fmt::print(stderr, "Unable to find function at {:#x}", address);
+        });
+    }
 
     void Interpreter::exec(Ret<>) {
         assert(state_.frames.size() >= 1);

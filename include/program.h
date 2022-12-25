@@ -38,6 +38,7 @@ namespace x86 {
         Program(Program&&) = default;
 
         virtual const Function* findFunction(std::string_view name) const;
+        virtual const Function* findFunctionByAddress(u32 address) const;
     };
 
 }
