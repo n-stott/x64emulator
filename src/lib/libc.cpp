@@ -13,7 +13,13 @@ namespace x86 {
 
     void LibC::configureIntrinsics(const ExecutionContext& context) {
         addIntrinsicFunction<Putchar>(context);
-        addIntrinsicFunction<Malloc>(context);
+        addIntrinsicFunction<Malloc>(context, &heap_);
+    }
+
+    void LibC::setHeapRegion(size_t base, size_t size) {
+        heap_.base = base;
+        heap_.current = base;
+        heap_.size = size;
     }
 
     namespace {
@@ -90,17 +96,21 @@ namespace x86 {
 
     class MallocInstruction : public Intrinsic {
     public:
-        explicit MallocInstruction(ExecutionContext context) : context_(context) { }
+        explicit MallocInstruction(ExecutionContext context, LibC::Heap* heap) : context_(context), heap_(heap) { }
 
         void exec(InstructionHandler*) const override {
-            void* ptr = ::malloc(context_.eax());
-            context_.set_eax((u32)ptr);
+            u32 size = context_.eax();
+            u32 ret = heap_->current;
+            heap_->current += size;
+            assert(heap_->current < heap_->base + heap_->size);
+            context_.set_eax(ret);
         }
         std::string toString() const override {
             return "__malloc";
         }
     private:
         ExecutionContext context_;
+        LibC::Heap* heap_;
     };
 
     Putchar::Putchar(const ExecutionContext& context) : LibraryFunction("intrinsic$putchar") {
@@ -113,12 +123,12 @@ namespace x86 {
         add(this, make_wrapper<Ret<void>>());
     }
 
-    Malloc::Malloc(const ExecutionContext& context) : LibraryFunction("intrinsic$malloc") {
+    Malloc::Malloc(const ExecutionContext& context, LibC::Heap* heap) : LibraryFunction("intrinsic$malloc") {
         add(this, make_wrapper<Push<R32>>(R32::EBP));
         add(this, make_wrapper<Mov<R32, R32>>(R32::EBP, R32::ESP));
         auto arg = Addr<Size::DWORD, BD>{{R32::ESP, +8}};
         add(this, make_wrapper<Mov<R32, Addr<Size::DWORD, BD>>>(R32::EAX, arg));
-        add(this, make_intrinsic<MallocInstruction>(context));
+        add(this, make_intrinsic<MallocInstruction>(context, heap));
         add(this, make_wrapper<Pop<R32>>(R32::EBP));
         add(this, make_wrapper<Ret<void>>());
     }

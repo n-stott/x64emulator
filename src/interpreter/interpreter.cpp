@@ -28,12 +28,15 @@ namespace x86 {
         // heap
         u32 heapBase = 0x1000000;
         u32 heapSize = 64*1024;
-        mmu_.addRegion(Mmu::Region{ "heap", heapBase, heapSize });
+        Mmu::Region heapRegion{ "heap", heapBase, heapSize };
+        mmu_.addRegion(heapRegion);
+        libc_.setHeapRegion(heapRegion.base, heapRegion.size);
         
         // stack
         u32 stackBase = 0x2000000;
         u32 stackSize = 4*1024;
-        mmu_.addRegion(Mmu::Region{ "stack", stackBase, stackSize });
+        Mmu::Region stack{ "stack", stackBase, stackSize };
+        mmu_.addRegion(stack);
         esp_ = stackBase + stackSize;
 
         auto elf = elf::ElfReader::tryCreate(program_.filepath);

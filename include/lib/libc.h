@@ -10,6 +10,17 @@ namespace x86 {
         explicit LibC(Program p);
 
         void configureIntrinsics(const ExecutionContext& context);
+
+        void setHeapRegion(u32 base, u32 size);
+
+    private:
+        struct Heap {
+            u32 base { 0 };
+            u32 size { 0 };
+            u32 current { 0 };
+        } heap_;
+        friend struct Malloc;
+        friend class MallocInstruction;
         
     };
 
@@ -18,7 +29,9 @@ namespace x86 {
     };
 
     struct Malloc final : public LibraryFunction {
-        explicit Malloc(const ExecutionContext& context);
+        explicit Malloc(const ExecutionContext& context, LibC::Heap* heap);
+
+        LibC::Heap* heap;
     };
 
 }

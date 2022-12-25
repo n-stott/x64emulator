@@ -21,9 +21,9 @@ namespace x86 {
     struct Library : public Program {
         explicit Library(Program program);
 
-        template<typename F>
-        void addIntrinsicFunction(const ExecutionContext& context) {
-            instrinsicFunctions_.push_back(std::make_unique<F>(context));
+        template<typename F, typename ...Args>
+        void addIntrinsicFunction(Args ...args) {
+            instrinsicFunctions_.push_back(std::make_unique<F>(args...));
         }
 
         const Function* findFunction(std::string_view name) const override;
