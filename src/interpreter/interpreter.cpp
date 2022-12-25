@@ -798,16 +798,17 @@ namespace x86 {
         } else {
             // call library function
             const Function* libFunc = libc_.findFunction(ins.symbolName);
+            verify(!!libFunc, [&]() {
+                fmt::print(stderr, "Unknown function '{}'\n", ins.symbolName);
+                // fmt::print(stderr, "Program \"{}\" has functions :\n", program_.filename);
+                // for(const auto& f : program_.functions) fmt::print(stderr, "    {}\n", f.name);
+                // fmt::print(stderr, "Library \"{}\" has functions :\n", libc_.filename);
+                // for(const auto& f : libc_.functions) fmt::print(stderr, "    {}\n", f.name);
+                stop_ = true;
+            });
             if(!!libFunc) {
                 state_.frames.push_back(Frame{libFunc, 0});
                 push32(eip_);
-            } else {
-                fmt::print(stderr, "Unknown function '{}'\n", ins.symbolName);
-                fmt::print(stderr, "Program \"{}\" has functions :\n", program_.filename);
-                for(const auto& f : program_.functions) fmt::print(stderr, "    {}\n", f.name);
-                fmt::print(stderr, "Library \"{}\" has functions :\n", libc_.filename);
-                for(const auto& f : libc_.functions) fmt::print(stderr, "    {}\n", f.name);
-                stop_ = true;
             }
         }
     }
