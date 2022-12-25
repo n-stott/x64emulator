@@ -440,6 +440,12 @@ namespace x86 {
     struct RepNZ {
         StringOp op;
     };
+
+    template<Cond cond, typename Dst, typename Src>
+    struct Cmov {
+        Dst dst;
+        Src src;
+    };
 }
 
 #endif

@@ -604,6 +604,27 @@ namespace x86 {
 
         void exec(RepNZ<Scas<R8, Addr<Size::BYTE, B>>>) override;
 
+        void exec(Cmov<Cond::AE, R32, R32>) override;
+        void exec(Cmov<Cond::AE, R32, Addr<Size::DWORD, BD>>) override;
+        void exec(Cmov<Cond::A, R32, R32>) override;
+        void exec(Cmov<Cond::A, R32, Addr<Size::DWORD, BD>>) override;
+        void exec(Cmov<Cond::BE, R32, R32>) override;
+        void exec(Cmov<Cond::BE, R32, Addr<Size::DWORD, BD>>) override;
+        void exec(Cmov<Cond::B, R32, R32>) override;
+        void exec(Cmov<Cond::B, R32, Addr<Size::DWORD, BD>>) override;
+        void exec(Cmov<Cond::E, R32, R32>) override;
+        void exec(Cmov<Cond::E, R32, Addr<Size::DWORD, BD>>) override;
+        void exec(Cmov<Cond::GE, R32, R32>) override;
+        void exec(Cmov<Cond::GE, R32, Addr<Size::DWORD, BD>>) override;
+        void exec(Cmov<Cond::G, R32, R32>) override;
+        void exec(Cmov<Cond::G, R32, Addr<Size::DWORD, BD>>) override;
+        void exec(Cmov<Cond::LE, R32, R32>) override;
+        void exec(Cmov<Cond::LE, R32, Addr<Size::DWORD, BD>>) override;
+        void exec(Cmov<Cond::L, R32, R32>) override;
+        void exec(Cmov<Cond::L, R32, Addr<Size::DWORD, BD>>) override;
+        void exec(Cmov<Cond::NE, R32, R32>) override;
+        void exec(Cmov<Cond::NE, R32, Addr<Size::DWORD, BD>>) override;
+
     };
 
 }

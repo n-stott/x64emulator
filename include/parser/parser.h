@@ -92,6 +92,9 @@ namespace x86 {
         static std::unique_ptr<X86Instruction> parseRepzStringop(u32 address, std::string_view operands);
         static std::unique_ptr<X86Instruction> parseRepnzStringop(u32 address, std::string_view operands);
 
+        template<Cond cond>
+        static std::unique_ptr<X86Instruction> parseCmov(u32 address, std::string_view operands);
+
     };
 
 }

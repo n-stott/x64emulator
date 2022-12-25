@@ -249,6 +249,16 @@ namespace x86 {
         if(name == "rep") return parseRepStringop(address, operands);
         if(name == "repz") return parseRepzStringop(address, operands);
         if(name == "repnz") return parseRepnzStringop(address, operands);
+        if(name == "cmova") return parseCmov<Cond::A>(address, operands);
+        if(name == "cmovae") return parseCmov<Cond::AE>(address, operands);
+        if(name == "cmovb") return parseCmov<Cond::B>(address, operands);
+        if(name == "cmovbe") return parseCmov<Cond::BE>(address, operands);
+        if(name == "cmove") return parseCmov<Cond::E>(address, operands);
+        if(name == "cmovg") return parseCmov<Cond::G>(address, operands);
+        if(name == "cmovge") return parseCmov<Cond::GE>(address, operands);
+        if(name == "cmovl") return parseCmov<Cond::L>(address, operands);
+        if(name == "cmovle") return parseCmov<Cond::LE>(address, operands);
+        if(name == "cmovne") return parseCmov<Cond::NE>(address, operands);
         return make_failed(address, s);
     }
 
@@ -1541,5 +1551,18 @@ namespace x86 {
         }
 
         return make_failed(address, stringop);
+    }
+
+
+    template<Cond cond>
+    std::unique_ptr<X86Instruction> InstructionParser::parseCmov(u32 address, std::string_view operandsString) {
+        std::vector<std::string_view> operands = split(operandsString, ',');
+        assert(operands.size() == 2);
+        auto r32dst = asRegister32(operands[0]);
+        auto r32src = asRegister32(operands[1]);
+        auto DoubleBDsrc = asDoubleBD(operands[1]);
+        if(r32dst && r32src) return make_wrapper<Cmov<cond, R32, R32>>(address, r32dst.value(), r32src.value());
+        if(r32dst && DoubleBDsrc) return make_wrapper<Cmov<cond, R32, Addr<Size::DWORD, BD>>>(address, r32dst.value(), DoubleBDsrc.value());
+        return make_failed(address, operandsString);
     }
 }
