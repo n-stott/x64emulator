@@ -190,6 +190,9 @@ namespace x86 {
         template<typename Dst>
         void execSet(Cond cond, Dst dst);
 
+        template<typename Dst, typename Src>
+        void execCmovImpl(Cond cond, Dst dst, Src src);
+
         void exec(Add<R32, R32>) override;
         void exec(Add<R32, Imm<u32>>) override;
         void exec(Add<R32, Addr<Size::DWORD, B>>) override;

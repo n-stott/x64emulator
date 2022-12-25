@@ -1250,25 +1250,37 @@ namespace x86 {
         set(R32::EDI, ptr2);
     }
 
-    void Interpreter::exec(Cmov<Cond::AE, R32, R32> ins) { TODO(ins); }
-    void Interpreter::exec(Cmov<Cond::AE, R32, Addr<Size::DWORD, BD>> ins) { TODO(ins); }
-    void Interpreter::exec(Cmov<Cond::A, R32, R32> ins) { TODO(ins); }
-    void Interpreter::exec(Cmov<Cond::A, R32, Addr<Size::DWORD, BD>> ins) { TODO(ins); }
-    void Interpreter::exec(Cmov<Cond::BE, R32, R32> ins) { TODO(ins); }
-    void Interpreter::exec(Cmov<Cond::BE, R32, Addr<Size::DWORD, BD>> ins) { TODO(ins); }
-    void Interpreter::exec(Cmov<Cond::B, R32, R32> ins) { TODO(ins); }
-    void Interpreter::exec(Cmov<Cond::B, R32, Addr<Size::DWORD, BD>> ins) { TODO(ins); }
-    void Interpreter::exec(Cmov<Cond::E, R32, R32> ins) { TODO(ins); }
-    void Interpreter::exec(Cmov<Cond::E, R32, Addr<Size::DWORD, BD>> ins) { TODO(ins); }
-    void Interpreter::exec(Cmov<Cond::GE, R32, R32> ins) { TODO(ins); }
-    void Interpreter::exec(Cmov<Cond::GE, R32, Addr<Size::DWORD, BD>> ins) { TODO(ins); }
-    void Interpreter::exec(Cmov<Cond::G, R32, R32> ins) { TODO(ins); }
-    void Interpreter::exec(Cmov<Cond::G, R32, Addr<Size::DWORD, BD>> ins) { TODO(ins); }
-    void Interpreter::exec(Cmov<Cond::LE, R32, R32> ins) { TODO(ins); }
-    void Interpreter::exec(Cmov<Cond::LE, R32, Addr<Size::DWORD, BD>> ins) { TODO(ins); }
-    void Interpreter::exec(Cmov<Cond::L, R32, R32> ins) { TODO(ins); }
-    void Interpreter::exec(Cmov<Cond::L, R32, Addr<Size::DWORD, BD>> ins) { TODO(ins); }
-    void Interpreter::exec(Cmov<Cond::NE, R32, R32> ins) { TODO(ins); }
-    void Interpreter::exec(Cmov<Cond::NE, R32, Addr<Size::DWORD, BD>> ins) { TODO(ins); }
+    template<typename Dst, typename Src>
+    void Interpreter::execCmovImpl(Cond cond, Dst dst, Src src) {
+        if(!flags_.matches(cond)) return;
+        static_assert(std::is_same_v<Dst, R32>, "");
+        if constexpr(std::is_same_v<Src, R32>) {
+            set(dst, get(src));
+        } else {
+            static_assert(std::is_same_v<Src, Addr<Size::DWORD, BD>>, "");
+            set(dst, mmu_.read32(resolve(src)));
+        }
+    }
+
+    void Interpreter::exec(Cmov<Cond::AE, R32, R32> ins) { execCmovImpl(Cond::AE, ins.dst, ins.src); }
+    void Interpreter::exec(Cmov<Cond::AE, R32, Addr<Size::DWORD, BD>> ins) { execCmovImpl(Cond::AE, ins.dst, ins.src); }
+    void Interpreter::exec(Cmov<Cond::A, R32, R32> ins) { execCmovImpl(Cond::A, ins.dst, ins.src); }
+    void Interpreter::exec(Cmov<Cond::A, R32, Addr<Size::DWORD, BD>> ins) { execCmovImpl(Cond::A, ins.dst, ins.src); }
+    void Interpreter::exec(Cmov<Cond::BE, R32, R32> ins) { execCmovImpl(Cond::BE, ins.dst, ins.src); }
+    void Interpreter::exec(Cmov<Cond::BE, R32, Addr<Size::DWORD, BD>> ins) { execCmovImpl(Cond::BE, ins.dst, ins.src); }
+    void Interpreter::exec(Cmov<Cond::B, R32, R32> ins) { execCmovImpl(Cond::B, ins.dst, ins.src); }
+    void Interpreter::exec(Cmov<Cond::B, R32, Addr<Size::DWORD, BD>> ins) { execCmovImpl(Cond::B, ins.dst, ins.src); }
+    void Interpreter::exec(Cmov<Cond::E, R32, R32> ins) { execCmovImpl(Cond::E, ins.dst, ins.src); }
+    void Interpreter::exec(Cmov<Cond::E, R32, Addr<Size::DWORD, BD>> ins) { execCmovImpl(Cond::E, ins.dst, ins.src); }
+    void Interpreter::exec(Cmov<Cond::GE, R32, R32> ins) { execCmovImpl(Cond::GE, ins.dst, ins.src); }
+    void Interpreter::exec(Cmov<Cond::GE, R32, Addr<Size::DWORD, BD>> ins) { execCmovImpl(Cond::GE, ins.dst, ins.src); }
+    void Interpreter::exec(Cmov<Cond::G, R32, R32> ins) { execCmovImpl(Cond::G, ins.dst, ins.src); }
+    void Interpreter::exec(Cmov<Cond::G, R32, Addr<Size::DWORD, BD>> ins) { execCmovImpl(Cond::G, ins.dst, ins.src); }
+    void Interpreter::exec(Cmov<Cond::LE, R32, R32> ins) { execCmovImpl(Cond::LE, ins.dst, ins.src); }
+    void Interpreter::exec(Cmov<Cond::LE, R32, Addr<Size::DWORD, BD>> ins) { execCmovImpl(Cond::LE, ins.dst, ins.src); }
+    void Interpreter::exec(Cmov<Cond::L, R32, R32> ins) { execCmovImpl(Cond::L, ins.dst, ins.src); }
+    void Interpreter::exec(Cmov<Cond::L, R32, Addr<Size::DWORD, BD>> ins) { execCmovImpl(Cond::L, ins.dst, ins.src); }
+    void Interpreter::exec(Cmov<Cond::NE, R32, R32> ins) { execCmovImpl(Cond::NE, ins.dst, ins.src); }
+    void Interpreter::exec(Cmov<Cond::NE, R32, Addr<Size::DWORD, BD>> ins) { execCmovImpl(Cond::NE, ins.dst, ins.src); }
 
 }
