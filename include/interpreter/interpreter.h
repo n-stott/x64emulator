@@ -187,6 +187,10 @@ namespace x86 {
         void execCmp8Impl(u8 src1, u8 src2);
         void execCmp32Impl(u32 src1, u32 src2);
 
+        u8 execAnd8Impl(u8 dst, u8 src);
+        u16 execAnd16Impl(u16 dst, u16 src);
+        u32 execAnd32Impl(u32 dst, u32 src);
+
         template<typename Dst>
         void execSet(Cond cond, Dst dst);
 
