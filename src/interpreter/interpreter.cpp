@@ -1300,7 +1300,41 @@ namespace x86 {
             ++dptr;
             --counter;
         }
+        set(R32::ECX, counter);
         set(R32::ESI, sptr);
+        set(R32::EDI, dptr);
+    }
+
+
+    void Interpreter::exec(Rep<Movs<Addr<Size::DWORD, B>, Addr<Size::DWORD, B>>> ins) {
+        assert(ins.op.dst.encoding.base == R32::EDI);
+        assert(ins.op.src.encoding.base == R32::ESI);
+        u32 counter = get(R32::ECX);
+        u32 dptr = resolve(ins.op.dst);
+        u32 sptr = resolve(ins.op.src);
+        while(counter) {
+            u32 val = mmu_.read32(sptr);
+            mmu_.write32(dptr, val);
+            sptr += 4;
+            dptr += 4;
+            --counter;
+        }
+        set(R32::ECX, counter);
+        set(R32::ESI, sptr);
+        set(R32::EDI, dptr);
+    }
+    
+    void Interpreter::exec(Rep<Stos<Addr<Size::DWORD, B>, R32>> ins) {
+        assert(ins.op.dst.encoding.base == R32::EDI);
+        u32 counter = get(R32::ECX);
+        u32 dptr = resolve(ins.op.dst);
+        u32 val = get(ins.op.src);
+        while(counter) {
+            mmu_.write32(dptr, val);
+            dptr += 4;
+            --counter;
+        }
+        set(R32::ECX, counter);
         set(R32::EDI, dptr);
     }
 

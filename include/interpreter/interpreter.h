@@ -608,6 +608,9 @@ namespace x86 {
         void exec(Bsf<R32, Addr<Size::DWORD, BD>>) override;
 
         void exec(Rep<Movs<Addr<Size::BYTE, B>, Addr<Size::BYTE, B>>>) override;
+        void exec(Rep<Movs<Addr<Size::DWORD, B>, Addr<Size::DWORD, B>>>) override;
+        
+        void exec(Rep<Stos<Addr<Size::DWORD, B>, R32>>) override;
 
         void exec(RepNZ<Scas<R8, Addr<Size::BYTE, B>>>) override;
 

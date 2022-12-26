@@ -1516,13 +1516,20 @@ namespace x86 {
             return removeOverride(sv);
         });
         assert(operands.size() == 2);
-        fmt::print("{} {}\n", operands[0], operands[1]);
+        // fmt::print("{} {}\n", operands[0], operands[1]);
         // auto r8src1 = asRegister8(operands[0]);
         // auto r8src2 = asRegister8(operands[1]);
+        auto r32src2 = asRegister32(operands[1]);
         auto ByteBsrc1 = asByteB(operands[0]);
         auto ByteBsrc2 = asByteB(operands[1]);
+        auto DoubleBsrc1 = asDoubleB(operands[0]);
+        auto DoubleBsrc2 = asDoubleB(operands[1]);
         if(instruction == "movs") {
             if(ByteBsrc1 && ByteBsrc2) return make_wrapper< Rep< Movs<Addr<Size::BYTE, B>, Addr<Size::BYTE, B>> >>(address, Movs<Addr<Size::BYTE, B>, Addr<Size::BYTE, B>>{ByteBsrc1.value(), ByteBsrc2.value()});
+            if(DoubleBsrc1 && DoubleBsrc2) return make_wrapper< Rep< Movs<Addr<Size::DWORD, B>, Addr<Size::DWORD, B>> >>(address, Movs<Addr<Size::DWORD, B>, Addr<Size::DWORD, B>>{DoubleBsrc1.value(), DoubleBsrc2.value()});
+        }
+        if(instruction == "stos") {
+            if(DoubleBsrc1 && r32src2) return make_wrapper< Rep< Stos<Addr<Size::DWORD, B>, R32> >>(address, Stos<Addr<Size::DWORD, B>, R32>{DoubleBsrc1.value(), r32src2.value()});
         }
         return make_failed(address, stringop);
     }

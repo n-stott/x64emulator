@@ -420,6 +420,9 @@ namespace x86 {
         virtual void exec(Bsf<R32, Addr<Size::DWORD, BD>>) = 0;
 
         virtual void exec(Rep<Movs<Addr<Size::BYTE, B>, Addr<Size::BYTE, B>>>) = 0;
+        virtual void exec(Rep<Movs<Addr<Size::DWORD, B>, Addr<Size::DWORD, B>>>) = 0;
+        
+        virtual void exec(Rep<Stos<Addr<Size::DWORD, B>, R32>>) = 0;
 
         virtual void exec(RepNZ<Scas<R8, Addr<Size::BYTE, B>>>) = 0;
 

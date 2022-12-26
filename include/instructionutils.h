@@ -430,6 +430,11 @@ namespace utils {
         return fmt::format("{:7}{},{}", "movs", toString(ins.dst), toString(ins.src));
     }
 
+    template<typename Dst, typename Src>
+    inline std::string toString(Stos<Dst, Src> ins) {
+        return fmt::format("{:7}{},{}", "stos", toString(ins.dst), toString(ins.src));
+    }
+
     template<typename StringOp>
     inline std::string toString(Rep<StringOp> ins) {
         return fmt::format("{:7}{}", "rep", toString(ins.op));
