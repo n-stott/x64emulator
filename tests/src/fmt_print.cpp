@@ -7,17 +7,17 @@ void test0() {
 }
 
 void test1() {
-    std::string s = fmt::format("abc\n");
+    std::string s = fmt::format("abc");
     std::puts(s.c_str());
 }
 
 void test2() {
-    std::string s = fmt::format("{}\n", "abc");
+    std::string s = fmt::format("{}", "abc");
     std::puts(s.c_str());
 }
 
 void test3() {
-    std::string s = fmt::format("{}\n", 1);
+    std::string s = fmt::format("{}", 1);
     std::puts(s.c_str());
 }
 

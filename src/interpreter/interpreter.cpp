@@ -336,7 +336,7 @@ namespace x86 {
 
     static u32 signExtended32(u8 value) {
         fmt::print(stderr, "Warning : fix signExtended\n");
-        return (u32)value;
+        return (i8)value;
     }
 
     CallingContext Interpreter::context() const {
@@ -755,7 +755,9 @@ namespace x86 {
     void Interpreter::exec(Mov<Addr<Size::DWORD, BISD>, R32> ins) { mmu_.write32(resolve(ins.dst), get(ins.src)); }
     void Interpreter::exec(Mov<Addr<Size::DWORD, BISD>, Imm<u32>> ins) { mmu_.write32(resolve(ins.dst), ins.src.immediate); }
 
-    void Interpreter::exec(Movsx<R32, R8> ins) { TODO(ins); }
+    void Interpreter::exec(Movsx<R32, R8> ins) {
+        set(ins.dst, signExtended32(get(ins.src)));
+    }
     void Interpreter::exec(Movsx<R32, Addr<Size::BYTE, B>> ins) {
         set(ins.dst, signExtended32(mmu_.read8(resolve(ins.src))));
     }

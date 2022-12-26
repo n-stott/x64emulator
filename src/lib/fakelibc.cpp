@@ -3,23 +3,26 @@
 extern "C" {
 
     __attribute__((noinline))
-    void intrinsic$putchar(char) { }
+    int intrinsic$putchar(int) { return 1; }
 
     __attribute__((noinline))
     void* intrinsic$malloc(size_t) { return nullptr; }
 
-    int fakelibc$putchar(char c) {
-        intrinsic$putchar(c);
-        return 0;
+    int fakelibc$putchar(int c) {
+        return intrinsic$putchar(c);
     }
 
     int fakelibc$puts(const char* s) {
+        if(!s) {
+            return intrinsic$putchar('$');
+        }
+        int nbytes = 0;
         while(*s) {
-            intrinsic$putchar(*s);
+            nbytes += intrinsic$putchar(*s);
             ++s;
         }
-        intrinsic$putchar('\n');
-        return 0;
+        nbytes += intrinsic$putchar('\n');
+        return nbytes;
     }
 
     void* fakelibc$memchr(const void* s, int c, int n) {
