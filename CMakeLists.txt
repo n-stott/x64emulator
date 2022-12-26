@@ -36,7 +36,7 @@ target_link_options(strings PUBLIC ${LD_OPTIONS} -static-libstdc++ -static-libgc
 add_executable(fmt_print tests/src/fmt_print.cpp)
 target_compile_options(fmt_print PUBLIC ${CC_OPTIONS} -DFMT_HEADER_ONLY)
 target_include_directories(fmt_print PUBLIC ../external)
-target_link_options(fmt_print PUBLIC ${LD_OPTIONS})
+target_link_options(fmt_print PUBLIC ${LD_OPTIONS} -static-libstdc++ -static-libgcc)
 
 add_library(fakelibc SHARED
     src/lib/fakelibc.cpp

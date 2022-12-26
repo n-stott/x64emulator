@@ -86,10 +86,10 @@ namespace x86 {
                     stop_ = true;
                     break;
                 }
-                std::string registerDump = fmt::format("eax={:0000008x} ebx={:0000008x} ecx={:0000008x} edx={:0000008x} esi={:0000008x} edi={:0000008x} ebp={:0000008x} esp={:0000008x}", eax_, ebx_, ecx_, edx_, esi_, edi_, ebp_, esp_);
-                std::string indent = fmt::format("{:{}}", "", state_.frames.size());
-                std::string menmonic = fmt::format("{}|{}", indent, instruction->toString());
-                fmt::print("{:10} {:80}{}\n", ticks, menmonic, registerDump);
+                // std::string registerDump = fmt::format("eax={:0000008x} ebx={:0000008x} ecx={:0000008x} edx={:0000008x} esi={:0000008x} edi={:0000008x} ebp={:0000008x} esp={:0000008x}", eax_, ebx_, ecx_, edx_, esi_, edi_, ebp_, esp_);
+                // std::string indent = fmt::format("{:{}}", "", state_.frames.size());
+                // std::string menmonic = fmt::format("{}|{}", indent, instruction->toString());
+                // fmt::print("{:10} {:80}{}\n", ticks, menmonic, registerDump);
                 ++ticks;
                 instruction->exec(this);
             } catch(const VerificationException&) {
@@ -1161,13 +1161,13 @@ namespace x86 {
     void Interpreter::exec(Set<Cond::NE, Addr<Size::BYTE, BD>> ins) { execSet(Cond::NE, ins.dst); }
 
     void Interpreter::exec(Jmp<R32> ins) {
-        fmt::print("Jump to {} @ {}\n", ins.symbolName.value_or("Unknown symbol"), get(ins.symbolAddress));
+        // fmt::print("Jump to {} @ {}\n", ins.symbolName.value_or("Unknown symbol"), get(ins.symbolAddress));
         bool success = state_.jumpInFrame(get(ins.symbolAddress));
         assert(success);
     }
 
     void Interpreter::exec(Jmp<u32> ins) {
-        fmt::print("Jump to {} @ {}\n", ins.symbolName.value_or("Unknown symbol"), ins.symbolAddress);
+        // fmt::print("Jump to {} @ {}\n", ins.symbolName.value_or("Unknown symbol"), ins.symbolAddress);
         bool success = state_.jumpInFrame(ins.symbolAddress);
         if(!success) success = state_.jumpOutOfFrame(program_, ins.symbolAddress);
         assert(success);
@@ -1178,7 +1178,7 @@ namespace x86 {
 
     void Interpreter::exec(Jcc<Cond::NE> ins) {
         if(flags_.matches(Cond::NE)) {
-            fmt::print("Jump to {} @ {}\n", ins.symbolName, ins.symbolAddress);
+            // fmt::print("Jump to {} @ {}\n", ins.symbolName, ins.symbolAddress);
             bool success = state_.jumpInFrame(ins.symbolAddress);
             assert(success);
         }
@@ -1186,7 +1186,7 @@ namespace x86 {
 
     void Interpreter::exec(Jcc<Cond::E> ins) {
         if(flags_.matches(Cond::E)) {
-            fmt::print("Jump to {} @ {}\n", ins.symbolName, ins.symbolAddress);
+            // fmt::print("Jump to {} @ {}\n", ins.symbolName, ins.symbolAddress);
             bool success = state_.jumpInFrame(ins.symbolAddress);
             assert(success);
         }
@@ -1194,7 +1194,7 @@ namespace x86 {
 
     void Interpreter::exec(Jcc<Cond::AE> ins) {
         if(flags_.matches(Cond::AE)) {
-            fmt::print("Jump to {} @ {}\n", ins.symbolName, ins.symbolAddress);
+            // fmt::print("Jump to {} @ {}\n", ins.symbolName, ins.symbolAddress);
             bool success = state_.jumpInFrame(ins.symbolAddress);
             assert(success);
         }
@@ -1202,7 +1202,7 @@ namespace x86 {
 
     void Interpreter::exec(Jcc<Cond::BE> ins) {
         if(flags_.matches(Cond::BE)) {
-            fmt::print("Jump to {} @ {}\n", ins.symbolName, ins.symbolAddress);
+            // fmt::print("Jump to {} @ {}\n", ins.symbolName, ins.symbolAddress);
             bool success = state_.jumpInFrame(ins.symbolAddress);
             assert(success);
         }
@@ -1210,7 +1210,7 @@ namespace x86 {
 
     void Interpreter::exec(Jcc<Cond::GE> ins) {
         if(flags_.matches(Cond::GE)) {
-            fmt::print("Jump to {} @ {}\n", ins.symbolName, ins.symbolAddress);
+            // fmt::print("Jump to {} @ {}\n", ins.symbolName, ins.symbolAddress);
             bool success = state_.jumpInFrame(ins.symbolAddress);
             assert(success);
         }
@@ -1218,7 +1218,7 @@ namespace x86 {
 
     void Interpreter::exec(Jcc<Cond::LE> ins) {
         if(flags_.matches(Cond::LE)) {
-            fmt::print("Jump to {} @ {}\n", ins.symbolName, ins.symbolAddress);
+            // fmt::print("Jump to {} @ {}\n", ins.symbolName, ins.symbolAddress);
             bool success = state_.jumpInFrame(ins.symbolAddress);
             assert(success);
         }
@@ -1226,7 +1226,7 @@ namespace x86 {
 
     void Interpreter::exec(Jcc<Cond::A> ins) {
         if(flags_.matches(Cond::A)) {
-            fmt::print("Jump to {} @ {}\n", ins.symbolName, ins.symbolAddress);
+            // fmt::print("Jump to {} @ {}\n", ins.symbolName, ins.symbolAddress);
             bool success = state_.jumpInFrame(ins.symbolAddress);
             assert(success);
         }
@@ -1234,7 +1234,7 @@ namespace x86 {
 
     void Interpreter::exec(Jcc<Cond::B> ins) {
         if(flags_.matches(Cond::B)) {
-            fmt::print("Jump to {} @ {}\n", ins.symbolName, ins.symbolAddress);
+            // fmt::print("Jump to {} @ {}\n", ins.symbolName, ins.symbolAddress);
             bool success = state_.jumpInFrame(ins.symbolAddress);
             assert(success);
         }
@@ -1242,7 +1242,7 @@ namespace x86 {
 
     void Interpreter::exec(Jcc<Cond::G> ins) {
         if(flags_.matches(Cond::G)) {
-            fmt::print("Jump to {} @ {}\n", ins.symbolName, ins.symbolAddress);
+            // fmt::print("Jump to {} @ {}\n", ins.symbolName, ins.symbolAddress);
             bool success = state_.jumpInFrame(ins.symbolAddress);
             assert(success);
         }
@@ -1250,7 +1250,7 @@ namespace x86 {
 
     void Interpreter::exec(Jcc<Cond::L> ins) {
         if(flags_.matches(Cond::L)) {
-            fmt::print("Jump to {} @ {}\n", ins.symbolName, ins.symbolAddress);
+            // fmt::print("Jump to {} @ {}\n", ins.symbolName, ins.symbolAddress);
             bool success = state_.jumpInFrame(ins.symbolAddress);
             assert(success);
         }
@@ -1258,7 +1258,7 @@ namespace x86 {
 
     void Interpreter::exec(Jcc<Cond::S> ins) {
         if(flags_.matches(Cond::S)) {
-            fmt::print("Jump to {} @ {}\n", ins.symbolName, ins.symbolAddress);
+            // fmt::print("Jump to {} @ {}\n", ins.symbolName, ins.symbolAddress);
             bool success = state_.jumpInFrame(ins.symbolAddress);
             assert(success);
         }
@@ -1266,7 +1266,7 @@ namespace x86 {
 
     void Interpreter::exec(Jcc<Cond::NS> ins) {
         if(flags_.matches(Cond::NS)) {
-            fmt::print("Jump to {} @ {}\n", ins.symbolName, ins.symbolAddress);
+            // fmt::print("Jump to {} @ {}\n", ins.symbolName, ins.symbolAddress);
             bool success = state_.jumpInFrame(ins.symbolAddress);
             assert(success);
         }

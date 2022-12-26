@@ -165,14 +165,14 @@ namespace x86 {
         
         std::string_view instructionString = parts[2];
         auto ptr = parseInstruction(address, instructionString);
-        if(!ptr) {
-            fmt::print("{:40} {:40}: {}\n", instructionString, "???", "fail");
-        } else {
-            std::string parsedString = ptr->toString();
-            if(strip(instructionString) != strip(parsedString)) {
-                fmt::print("{:40} {:40}: {}\n", instructionString, parsedString, "fail");
-            }
-        }
+        // if(!ptr) {
+        //     fmt::print("{:40} {:40}: {}\n", instructionString, "???", "fail");
+        // } else {
+        //     std::string parsedString = ptr->toString();
+        //     if(strip(instructionString) != strip(parsedString)) {
+        //         fmt::print("{:40} {:40}: {}\n", instructionString, parsedString, "fail");
+        //     }
+        // }
         return ptr;
     }
 
@@ -1548,7 +1548,7 @@ namespace x86 {
             return removeOverride(sv);
         });
         assert(operands.size() == 2);
-        fmt::print("{} {}\n", operands[0], operands[1]);
+        // fmt::print("{} {}\n", operands[0], operands[1]);
         auto r8src1 = asRegister8(operands[0]);
         // auto r8src2 = asRegister8(operands[1]);
         // auto ByteBsrc1 = asByteB(operands[0]);

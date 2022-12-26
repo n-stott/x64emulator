@@ -1,18 +1,28 @@
 #include <fmt/core.h>
+#include <cstdio>
+
+void test0() {
+    std::string s = "abc\n";
+    std::puts(s.c_str());
+}
 
 void test1() {
-    fmt::print("abc\n");
+    std::string s = fmt::format("abc\n");
+    std::puts(s.c_str());
 }
 
 void test2() {
-    fmt::print("{}\n", "abc");
+    std::string s = fmt::format("{}\n", "abc");
+    std::puts(s.c_str());
 }
 
 void test3() {
-    fmt::print("{}\n", 1);
+    std::string s = fmt::format("{}\n", 1);
+    std::puts(s.c_str());
 }
 
 int main() {
+    test0();
     test1();
     test2();
     test3();
