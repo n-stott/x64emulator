@@ -180,6 +180,18 @@ namespace x86 {
         return count.count;   
     }
 
+    u8 Interpreter::get(Ptr<Size::BYTE> ptr) const {
+        return mmu_.read8(ptr.address);
+    }
+
+    u16 Interpreter::get(Ptr<Size::WORD> ptr) const {
+        return mmu_.read16(ptr.address);
+    }
+
+    u32 Interpreter::get(Ptr<Size::DWORD> ptr) const {
+        return mmu_.read32(ptr.address);
+    }
+
     u32 Interpreter::resolve(B addr) const {
         return get(addr.base);
     }
@@ -297,6 +309,18 @@ namespace x86 {
             case R32::EIZ: assert(false); return;
         }
         __builtin_unreachable();
+    }
+
+    void Interpreter::set(Ptr<Size::BYTE> ptr, u8 value) {
+        mmu_.write8(ptr.address, value);
+    }
+
+    void Interpreter::set(Ptr<Size::WORD> ptr, u16 value) {
+        mmu_.write16(ptr.address, value);
+    }
+
+    void Interpreter::set(Ptr<Size::DWORD> ptr, u32 value) {
+        mmu_.write32(ptr.address, value);
     }
 
     void Interpreter::push8(u8 value) {

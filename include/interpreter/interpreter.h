@@ -66,6 +66,10 @@ namespace x86 {
         u16 get(Imm<u16> immediate) const;
         u32 get(Imm<u32> immediate) const;
 
+        u8 get(Ptr<Size::BYTE> ptr) const;
+        u16 get(Ptr<Size::WORD> ptr) const;
+        u32 get(Ptr<Size::DWORD> ptr) const;
+
         u8 get(Count count) const;
 
         u32 resolve(B addr) const;
@@ -91,6 +95,10 @@ namespace x86 {
         void set(R8 reg, u8 value);
         void set(R16 reg, u16 value);
         void set(R32 reg, u32 value);
+
+        void set(Ptr<Size::BYTE> ptr, u8 value);
+        void set(Ptr<Size::WORD> ptr, u16 value);
+        void set(Ptr<Size::DWORD> ptr, u32 value);
 
         void push8(u8 value);
         void push16(u16 value);

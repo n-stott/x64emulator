@@ -140,6 +140,11 @@ namespace x86 {
         Encoding encoding;
     };
 
+    template<Size size>
+    struct Ptr {
+        u32 address;
+    };
+
     template<typename Dst, typename Src>
     struct Mov {
         Dst dst;
