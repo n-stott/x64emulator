@@ -1016,13 +1016,21 @@ namespace x86 {
         WARN_FLAGS();
     }
 
-    void Interpreter::exec(Shl<R32, R8> ins) { TODO(ins); }
+    void Interpreter::exec(Shl<R32, R8> ins) {
+        assert(get(ins.src) < 32);
+        set(ins.dst, get(ins.dst) << get(ins.src));
+        WARN_FLAGS();
+    }
     void Interpreter::exec(Shl<R32, Imm<u32>> ins) {
         assert(get(ins.src) < 32);
         set(ins.dst, get(ins.dst) << get(ins.src));
         WARN_FLAGS();
     }
-    void Interpreter::exec(Shl<R32, Count> ins) { TODO(ins); }
+    void Interpreter::exec(Shl<R32, Count> ins) {
+        assert(get(ins.src) < 32);
+        set(ins.dst, get(ins.dst) << get(ins.src));
+        WARN_FLAGS();
+    }
     void Interpreter::exec(Shl<Addr<Size::DWORD, BD>, Imm<u32>> ins) { TODO(ins); }
 
     void Interpreter::exec(Shld<R32, R32, R8> ins) { TODO(ins); }
@@ -1049,7 +1057,11 @@ namespace x86 {
         set(ins.dst, ((i32)get(ins.dst)) >> get(ins.src));
         WARN_FLAGS();
     }
-    void Interpreter::exec(Sar<R32, Count> ins) { TODO(ins); }
+    void Interpreter::exec(Sar<R32, Count> ins) {
+        assert(ins.src.count < 32);
+        set(ins.dst, ((i32)get(ins.dst)) >> get(ins.src));
+        WARN_FLAGS();
+    }
     void Interpreter::exec(Sar<Addr<Size::DWORD, B>, Count> ins) { TODO(ins); }
     void Interpreter::exec(Sar<Addr<Size::DWORD, BD>, Count> ins) { TODO(ins); }
 
