@@ -417,64 +417,51 @@ namespace x86 {
         if(!condition) fmt::print(stderr, "Fail at : {}\n", x86::utils::toString(ins));\
         assert(cond); 
 
+    u8 Interpreter::execAdd8Impl(u8 dst, u8 src) {
+        (void)dst;
+        (void)src;
+        verify(false, "Not implemented");
+        return 0;
+    }
+
+    u16 Interpreter::execAdd16Impl(u16 dst, u16 src) {
+        (void)dst;
+        (void)src;
+        verify(false, "Not implemented");
+        return 0;
+    }
+
+    u32 Interpreter::execAdd32Impl(u32 dst, u32 src) {
+        u64 tmp = dst + src;
+        flags_.zero = (u32)tmp == 0;
+        flags_.carry = (tmp >> 32) != 0;
+        i64 signedTmp = (i64)dst + (i64)src;
+        flags_.overflow = (i32)signedTmp != signedTmp;
+        flags_.sign = (signedTmp >= 0);
+        flags_.setSure();
+        return (u32)tmp;
+    }
+
     void Interpreter::exec(Add<R32, R32> ins) {
-        set(ins.dst, get(ins.dst) + get(ins.src));
-        WARN_FLAGS();
+        set(ins.dst, execAdd32Impl(get(ins.dst), get(ins.src)));
     }
 
     void Interpreter::exec(Add<R32, Imm<u32>> ins) {
-        set(ins.dst, get(ins.dst) + get(ins.src));
-        WARN_FLAGS();
+        set(ins.dst, execAdd32Impl(get(ins.dst), get(ins.src)));
     }
 
-    void Interpreter::exec(Add<R32, Addr<Size::DWORD, B>> ins) {
-        set(ins.dst, get(ins.dst) + mmu_.read32(resolve(ins.src)));
-        WARN_FLAGS();
-    }
-    void Interpreter::exec(Add<R32, Addr<Size::DWORD, BD>> ins) {
-        set(ins.dst, get(ins.dst) + mmu_.read32(resolve(ins.src)));
-        WARN_FLAGS();
-    }
-    void Interpreter::exec(Add<R32, Addr<Size::DWORD, BIS>> ins) {
-        set(ins.dst, get(ins.dst) + mmu_.read32(resolve(ins.src)));
-        WARN_FLAGS();
-    }
-    void Interpreter::exec(Add<R32, Addr<Size::DWORD, BISD>> ins) {
-        set(ins.dst, get(ins.dst) + mmu_.read32(resolve(ins.src)));
-        WARN_FLAGS();
-    }
-    void Interpreter::exec(Add<Addr<Size::DWORD, B>, R32> ins) {
-        mmu_.write32(resolve(ins.dst), mmu_.read32(resolve(ins.dst)) + get(ins.src));
-        WARN_FLAGS();
-    }
-    void Interpreter::exec(Add<Addr<Size::DWORD, BD>, R32> ins) {
-        mmu_.write32(resolve(ins.dst), mmu_.read32(resolve(ins.dst)) + get(ins.src));
-        WARN_FLAGS();
-    }
-    void Interpreter::exec(Add<Addr<Size::DWORD, BIS>, R32> ins) {
-        mmu_.write32(resolve(ins.dst), mmu_.read32(resolve(ins.dst)) + get(ins.src));
-        WARN_FLAGS();
-    }
-    void Interpreter::exec(Add<Addr<Size::DWORD, BISD>, R32> ins) {
-        mmu_.write32(resolve(ins.dst), mmu_.read32(resolve(ins.dst)) + get(ins.src));
-        WARN_FLAGS();
-    }
-    void Interpreter::exec(Add<Addr<Size::DWORD, B>, Imm<u32>> ins) {
-        mmu_.write32(resolve(ins.dst), mmu_.read32(resolve(ins.dst)) + get(ins.src));
-        WARN_FLAGS();
-    }
-    void Interpreter::exec(Add<Addr<Size::DWORD, BD>, Imm<u32>> ins) {
-        mmu_.write32(resolve(ins.dst), mmu_.read32(resolve(ins.dst)) + get(ins.src));
-        WARN_FLAGS();
-    }
-    void Interpreter::exec(Add<Addr<Size::DWORD, BIS>, Imm<u32>> ins) {
-        mmu_.write32(resolve(ins.dst), mmu_.read32(resolve(ins.dst)) + get(ins.src));
-        WARN_FLAGS();
-    }
-    void Interpreter::exec(Add<Addr<Size::DWORD, BISD>, Imm<u32>> ins) {
-        mmu_.write32(resolve(ins.dst), mmu_.read32(resolve(ins.dst)) + get(ins.src));
-        WARN_FLAGS();
-    }
+    void Interpreter::exec(Add<R32, Addr<Size::DWORD, B>> ins) { set(ins.dst, execAdd32Impl(get(ins.dst), get(resolve(ins.src)))); }
+    void Interpreter::exec(Add<R32, Addr<Size::DWORD, BD>> ins) { set(ins.dst, execAdd32Impl(get(ins.dst), get(resolve(ins.src)))); }
+    void Interpreter::exec(Add<R32, Addr<Size::DWORD, BIS>> ins) { set(ins.dst, execAdd32Impl(get(ins.dst), get(resolve(ins.src)))); }
+    void Interpreter::exec(Add<R32, Addr<Size::DWORD, BISD>> ins) { set(ins.dst, execAdd32Impl(get(ins.dst), get(resolve(ins.src)))); }
+    void Interpreter::exec(Add<Addr<Size::DWORD, B>, R32> ins) { set(resolve(ins.dst), execAdd32Impl(get(resolve(ins.dst)), get(ins.src))); }
+    void Interpreter::exec(Add<Addr<Size::DWORD, BD>, R32> ins) { set(resolve(ins.dst), execAdd32Impl(get(resolve(ins.dst)), get(ins.src))); }
+    void Interpreter::exec(Add<Addr<Size::DWORD, BIS>, R32> ins) { set(resolve(ins.dst), execAdd32Impl(get(resolve(ins.dst)), get(ins.src))); }
+    void Interpreter::exec(Add<Addr<Size::DWORD, BISD>, R32> ins) { set(resolve(ins.dst), execAdd32Impl(get(resolve(ins.dst)), get(ins.src))); }
+    void Interpreter::exec(Add<Addr<Size::DWORD, B>, Imm<u32>> ins) { set(resolve(ins.dst), execAdd32Impl(get(resolve(ins.dst)), get(ins.src))); }
+    void Interpreter::exec(Add<Addr<Size::DWORD, BD>, Imm<u32>> ins) { set(resolve(ins.dst), execAdd32Impl(get(resolve(ins.dst)), get(ins.src))); }
+    void Interpreter::exec(Add<Addr<Size::DWORD, BIS>, Imm<u32>> ins) { set(resolve(ins.dst), execAdd32Impl(get(resolve(ins.dst)), get(ins.src))); }
+    void Interpreter::exec(Add<Addr<Size::DWORD, BISD>, Imm<u32>> ins) { set(resolve(ins.dst), execAdd32Impl(get(resolve(ins.dst)), get(ins.src))); }
 
     void Interpreter::exec(Adc<R32, R32> ins) {
         REQUIRE_FLAGS();

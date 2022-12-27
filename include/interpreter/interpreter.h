@@ -182,6 +182,10 @@ namespace x86 {
 
         void dump() const;
 
+        u8 execAdd8Impl(u8 dst, u8 src);
+        u16 execAdd16Impl(u16 dst, u16 src);
+        u32 execAdd32Impl(u32 dst, u32 src);
+
         u8 execInc8Impl(u8 src);
         u16 execInc16Impl(u16 src);
         u32 execInc32Impl(u32 src);
