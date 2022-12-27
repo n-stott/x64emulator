@@ -73,4 +73,17 @@ extern "C" {
         return dest;
     }
 
+    int fakelibc$memcmp(const void* s1, const void* s2, size_t n) {
+        const unsigned char* src1 = (const unsigned char*)s1;
+        const unsigned char* src2 = (const unsigned char*)s2;
+        while(n > 0) {
+            unsigned char a = *src1++;
+            unsigned char b = *src2++;
+            if(a < b) return -1;
+            if(a > b) return +1;
+            --n;
+        }
+        return 0;
+    }
+
 }

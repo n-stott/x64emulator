@@ -33,6 +33,10 @@ add_executable(strings tests/src/strings.cpp)
 target_compile_options(strings PUBLIC ${CC_OPTIONS})
 target_link_options(strings PUBLIC ${LD_OPTIONS} -static-libstdc++ -static-libgcc)
 
+add_executable(malloc tests/src/malloc.cpp)
+target_compile_options(malloc PUBLIC ${CC_OPTIONS})
+target_link_options(malloc PUBLIC ${LD_OPTIONS})
+
 add_executable(fmt_print tests/src/fmt_print.cpp)
 target_compile_options(fmt_print PUBLIC ${CC_OPTIONS} -DFMT_HEADER_ONLY)
 target_include_directories(fmt_print PUBLIC ../external)

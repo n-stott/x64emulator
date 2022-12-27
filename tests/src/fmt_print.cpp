@@ -1,29 +1,42 @@
 #include <fmt/core.h>
 #include <cstdio>
 
-void test0() {
-    std::string s = "abc\n";
+void testA1() {
+    std::string s = "abc";
     std::puts(s.c_str());
 }
 
-void test1() {
+void testA2() {
+    std::string s = "abc";
+    s += "def";
+    std::puts(s.c_str());
+}
+
+void testA3() {
+    std::string s = "a very long string that cannot be sso'ed";
+    std::puts(s.c_str());
+}
+
+void testB1() {
     std::string s = fmt::format("abc");
     std::puts(s.c_str());
 }
 
-void test2() {
+void testB2() {
     std::string s = fmt::format("{}", "abc");
     std::puts(s.c_str());
 }
 
-void test3() {
+void testB3() {
     std::string s = fmt::format("{}", 1);
     std::puts(s.c_str());
 }
 
 int main() {
-    test0();
-    test1();
-    test2();
-    test3();
+    testA1();
+    testA2();
+    testA3();
+    testB1();
+    testB2();
+    testB3();
 }
