@@ -32,6 +32,16 @@ void testB3() {
     std::puts(s.c_str());
 }
 
+void testC1() {
+    std::string s = fmt::format("azertyuiopqsdfghjklmwxcvbnazert");
+    std::puts(s.c_str());
+}
+
+void testC2() {
+    std::string s = fmt::format("azertyuiopqsdfghjklmwxcvbnazerty");
+    std::puts(s.c_str());
+}
+
 int main() {
     testA1();
     testA2();
@@ -39,4 +49,6 @@ int main() {
     testB1();
     testB2();
     testB3();
+    testC1();
+    testC2();
 }
