@@ -33,8 +33,39 @@ void testB3() {
 }
 
 void testC1() {
-    std::string s = fmt::format("azertyuiopqsdfghjklmwxcvbnazert");
-    std::puts(s.c_str());
+    std::string tmp;
+    tmp = fmt::format("a");
+    tmp = fmt::format("az");
+    tmp = fmt::format("aze");
+    tmp = fmt::format("azer");
+    tmp = fmt::format("azert");
+    tmp = fmt::format("azerty");
+    tmp = fmt::format("azertyu");
+    tmp = fmt::format("azertyui");
+    tmp = fmt::format("azertyuio");
+    tmp = fmt::format("azertyuiop");
+    tmp = fmt::format("azertyuiopq");
+    tmp = fmt::format("azertyuiopqs");
+    tmp = fmt::format("azertyuiopqsd");
+    tmp = fmt::format("azertyuiopqsdf");
+    tmp = fmt::format("azertyuiopqsdfg");
+    tmp = fmt::format("azertyuiopqsdfgh");
+    tmp = fmt::format("azertyuiopqsdfghj");
+    tmp = fmt::format("azertyuiopqsdfghjk");
+    tmp = fmt::format("azertyuiopqsdfghjkl");
+    tmp = fmt::format("azertyuiopqsdfghjklm");
+    tmp = fmt::format("azertyuiopqsdfghjklmw");
+    tmp = fmt::format("azertyuiopqsdfghjklmwx");
+    tmp = fmt::format("azertyuiopqsdfghjklmwxc");
+    tmp = fmt::format("azertyuiopqsdfghjklmwxcv");
+    tmp = fmt::format("azertyuiopqsdfghjklmwxcvb");
+    tmp = fmt::format("azertyuiopqsdfghjklmwxcvbn");
+    tmp = fmt::format("azertyuiopqsdfghjklmwxcvbna");
+    tmp = fmt::format("azertyuiopqsdfghjklmwxcvbnaz");
+    tmp = fmt::format("azertyuiopqsdfghjklmwxcvbnaze");
+    tmp = fmt::format("azertyuiopqsdfghjklmwxcvbnazer");
+    tmp = fmt::format("azertyuiopqsdfghjklmwxcvbnazert");
+    std::puts(tmp.c_str());
 }
 
 void testC2() {

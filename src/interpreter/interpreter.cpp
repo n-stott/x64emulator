@@ -1104,19 +1104,19 @@ namespace x86 {
     void Interpreter::exec(Cmp<Addr<Size::WORD, BIS>, R16> ins) { TODO(ins); }
 
     void Interpreter::execCmp8Impl(u8 src1, u8 src2) {
-        flags_.overflow = false;
-        WARN_SIGNED_OVERFLOW();
-        flags_.carry = (src2 > src1);
-        flags_.sign = ((i8)src1 - (i8)src2 < 0);
+        i16 stmp = (i16)src1 - (i16)src2;
+        flags_.overflow = ((i8)stmp != stmp);
+        flags_.carry = (src1 < src2);
+        flags_.sign = (stmp < 0);
         flags_.zero = (src1 == src2);
         flags_.setSure();
     }
 
     void Interpreter::execCmp32Impl(u32 src1, u32 src2) {
-        flags_.overflow = false;
-        WARN_SIGNED_OVERFLOW();
-        flags_.carry = (src2 > src1);
-        flags_.sign = ((i32)src1 - (i32)src2 < 0);
+        i64 stmp = (i32)src1 - (i32)src2;
+        flags_.overflow = ((i32)stmp != stmp);
+        flags_.carry = (src1 < src2);
+        flags_.sign = (stmp < 0);
         flags_.zero = (src1 == src2);
         flags_.setSure();
     }
