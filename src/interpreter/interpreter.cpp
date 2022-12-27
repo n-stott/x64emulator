@@ -594,17 +594,34 @@ namespace x86 {
     void Interpreter::exec(Mul<Addr<Size::DWORD, BIS>> ins) { TODO(ins); }
     void Interpreter::exec(Mul<Addr<Size::DWORD, BISD>> ins) { TODO(ins); }
 
+    u32 Interpreter::execImul32(u32 src1, u32 src2) {
+        i32 res = (i32)src1 * (i32)src2;
+        i64 tmp = (i64)src1 * (i64)src2;
+        flags_.carry = (res != (i32)tmp);
+        flags_.overflow = (res != (i32)tmp);
+        flags_.setSure();
+        return res;
+    }
+
     void Interpreter::exec(Imul1<R32> ins) { TODO(ins); }
     void Interpreter::exec(Imul1<Addr<Size::DWORD, BD>> ins) { TODO(ins); }
-    void Interpreter::exec(Imul2<R32, R32> ins) { TODO(ins); }
-    void Interpreter::exec(Imul2<R32, Addr<Size::DWORD, B>> ins) { TODO(ins); }
-    void Interpreter::exec(Imul2<R32, Addr<Size::DWORD, BD>> ins) { TODO(ins); }
-    void Interpreter::exec(Imul2<R32, Addr<Size::DWORD, BIS>> ins) { TODO(ins); }
-    void Interpreter::exec(Imul2<R32, Addr<Size::DWORD, BISD>> ins) { TODO(ins); }
-    void Interpreter::exec(Imul3<R32, R32, Imm<u32>> ins) { TODO(ins); }
-    void Interpreter::exec(Imul3<R32, Addr<Size::DWORD, B>, Imm<u32>> ins) { TODO(ins); }
-    void Interpreter::exec(Imul3<R32, Addr<Size::DWORD, BD>, Imm<u32>> ins) { TODO(ins); }
-    void Interpreter::exec(Imul3<R32, Addr<Size::DWORD, BIS>, Imm<u32>> ins) { TODO(ins); }
+    void Interpreter::exec(Imul2<R32, R32> ins) { set(ins.dst, execImul32(get(ins.dst), get(ins.src))); }
+    void Interpreter::exec(Imul2<R32, Addr<Size::DWORD, B>> ins) { set(ins.dst, execImul32(get(ins.dst), get(resolve(ins.src)))); }
+    void Interpreter::exec(Imul2<R32, Addr<Size::DWORD, BD>> ins) { set(ins.dst, execImul32(get(ins.dst), get(resolve(ins.src)))); }
+    void Interpreter::exec(Imul2<R32, Addr<Size::DWORD, BIS>> ins) { set(ins.dst, execImul32(get(ins.dst), get(resolve(ins.src)))); }
+    void Interpreter::exec(Imul2<R32, Addr<Size::DWORD, BISD>> ins) { set(ins.dst, execImul32(get(ins.dst), get(resolve(ins.src)))); }
+    void Interpreter::exec(Imul3<R32, R32, Imm<u32>> ins) {
+        set(ins.dst, execImul32(get(ins.src1), get(ins.src2)));
+    }
+    void Interpreter::exec(Imul3<R32, Addr<Size::DWORD, B>, Imm<u32>> ins) {
+        set(ins.dst, execImul32(get(resolve(ins.src1)), get(ins.src2)));
+    }
+    void Interpreter::exec(Imul3<R32, Addr<Size::DWORD, BD>, Imm<u32>> ins) {
+        set(ins.dst, execImul32(get(resolve(ins.src1)), get(ins.src2)));
+    }
+    void Interpreter::exec(Imul3<R32, Addr<Size::DWORD, BIS>, Imm<u32>> ins) {
+        set(ins.dst, execImul32(get(resolve(ins.src1)), get(ins.src2)));
+    }
 
     void Interpreter::exec(Div<R32> ins) { TODO(ins); }
     void Interpreter::exec(Div<Addr<Size::DWORD, B>> ins) { TODO(ins); }

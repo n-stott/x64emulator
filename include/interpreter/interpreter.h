@@ -186,6 +186,8 @@ namespace x86 {
         u16 execAdd16Impl(u16 dst, u16 src);
         u32 execAdd32Impl(u32 dst, u32 src);
 
+        u32 execImul32(u32 src1, u32 src2);
+
         u8 execInc8Impl(u8 src);
         u16 execInc16Impl(u16 src);
         u32 execInc32Impl(u32 src);
