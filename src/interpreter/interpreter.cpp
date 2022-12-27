@@ -385,8 +385,8 @@ namespace x86 {
         return CallingContext{};
     }
 
-    void Interpreter::dump() const {
-        fmt::print(stderr,
+    void Interpreter::dump(FILE* stream) const {
+        fmt::print(stream,
 "eax {:0000008x}  ebx {:0000008x}  ecx {:0000008x}  edx {:0000008x}  "
 "esi {:0000008x}  edi {:0000008x}  ebp {:0000008x}  esp {:0000008x}\n", 
         eax_, ebx_, ecx_, edx_, esi_, edi_, ebp_, esp_);
@@ -397,7 +397,7 @@ namespace x86 {
         if(condition) return;
         fmt::print("Interpreter crash\n");
         fmt::print("Register state:\n");
-        dump();
+        dump(stdout);
         fmt::print("Stacktrace:\n");
         state_.dumpStacktrace();
         throw VerificationException{};
