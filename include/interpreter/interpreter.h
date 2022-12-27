@@ -495,6 +495,7 @@ namespace x86 {
         void exec(Shr<R8, Imm<u8>>) override;
         void exec(Shr<R8, Count>) override;
         void exec(Shr<R16, Count>) override;
+        void exec(Shr<R16, Imm<u8>>) override;
         void exec(Shr<R32, R8>) override;
         void exec(Shr<R32, Imm<u32>>) override;
         void exec(Shr<R32, Count>) override;

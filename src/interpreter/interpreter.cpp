@@ -997,9 +997,26 @@ namespace x86 {
     void Interpreter::exec(Dec<Addr<Size::DWORD, BIS>> ins) { Ptr<Size::DWORD> ptr = resolve(ins.dst); set(ptr, execDec32Impl(get(ptr))); }
     void Interpreter::exec(Dec<Addr<Size::DWORD, BISD>> ins) { Ptr<Size::DWORD> ptr = resolve(ins.dst); set(ptr, execDec32Impl(get(ptr))); }
 
-    void Interpreter::exec(Shr<R8, Imm<u8>> ins) { TODO(ins); }
-    void Interpreter::exec(Shr<R8, Count> ins) { TODO(ins); }
-    void Interpreter::exec(Shr<R16, Count> ins) { TODO(ins); }
+    void Interpreter::exec(Shr<R8, Imm<u8>> ins) {
+        assert(get(ins.src) < 8);
+        set(ins.dst, get(ins.dst) >> get(ins.src));
+        WARN_FLAGS();
+    }
+    void Interpreter::exec(Shr<R8, Count> ins) {
+        assert(get(ins.src) < 8);
+        set(ins.dst, get(ins.dst) >> get(ins.src));
+        WARN_FLAGS();
+    }
+    void Interpreter::exec(Shr<R16, Count> ins) {
+        assert(get(ins.src) < 16);
+        set(ins.dst, get(ins.dst) >> get(ins.src));
+        WARN_FLAGS();
+    }
+    void Interpreter::exec(Shr<R16, Imm<u8>> ins) {
+        assert(get(ins.src) < 16);
+        set(ins.dst, get(ins.dst) >> get(ins.src));
+        WARN_FLAGS();
+    }
     void Interpreter::exec(Shr<R32, R8> ins) {
         assert(get(ins.src) < 32);
         set(ins.dst, get(ins.dst) >> get(ins.src));

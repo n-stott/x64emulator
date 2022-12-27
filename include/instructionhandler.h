@@ -295,6 +295,7 @@ namespace x86 {
         virtual void exec(Shr<R8, Imm<u8>>) = 0;
         virtual void exec(Shr<R8, Count>) = 0;
         virtual void exec(Shr<R16, Count>) = 0;
+        virtual void exec(Shr<R16, Imm<u8>>) = 0;
         virtual void exec(Shr<R32, R8>) = 0;
         virtual void exec(Shr<R32, Imm<u32>>) = 0;
         virtual void exec(Shr<R32, Count>) = 0;
