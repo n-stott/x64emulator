@@ -31,6 +31,7 @@ extern "C" {
         while(count < n) {
             if(*ptr == c) return ptr;
             ++ptr;
+            ++count;
         }
         return nullptr;
     }
