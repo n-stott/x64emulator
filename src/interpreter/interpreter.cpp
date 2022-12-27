@@ -86,10 +86,10 @@ namespace x86 {
                     stop_ = true;
                     break;
                 }
-                // std::string registerDump = fmt::format("eax={:0000008x} ebx={:0000008x} ecx={:0000008x} edx={:0000008x} esi={:0000008x} edi={:0000008x} ebp={:0000008x} esp={:0000008x}", eax_, ebx_, ecx_, edx_, esi_, edi_, ebp_, esp_);
-                // std::string indent = fmt::format("{:{}}", "", state_.frames.size());
-                // std::string menmonic = fmt::format("{}|{}", indent, instruction->toString());
-                // fmt::print("{:10} {:80}{}\n", ticks, menmonic, registerDump);
+                std::string registerDump = fmt::format("eax={:0000008x} ebx={:0000008x} ecx={:0000008x} edx={:0000008x} esi={:0000008x} edi={:0000008x} ebp={:0000008x} esp={:0000008x}", eax_, ebx_, ecx_, edx_, esi_, edi_, ebp_, esp_);
+                std::string indent = fmt::format("{:{}}", "", state_.frames.size());
+                std::string menmonic = fmt::format("{}|{}", indent, instruction->toString());
+                fmt::print(stderr, "{:10} {:80}{}\n", ticks, menmonic, registerDump);
                 ++ticks;
                 instruction->exec(this);
             } catch(const VerificationException&) {
@@ -99,7 +99,7 @@ namespace x86 {
     }
 
     bool Interpreter::Flags::matches(Cond condition) const {
-        require();
+        assert(sure());
         switch(condition) {
             case Cond::A: return (carry == 0 && zero == 0);
             case Cond::AE: return (carry == 0);
@@ -383,7 +383,7 @@ namespace x86 {
         fmt::print(stderr, "Warning : flags not updated\n")
 
     #define REQUIRE_FLAGS() \
-        // flags_.require();
+        verify(flags_.sure(), "flags are not set correctly");
 
     #define WARN_SIGNED_OVERFLOW() \
         fmt::print(stderr, "Warning : signed integer overflow not handled\n")

@@ -42,7 +42,7 @@ namespace x86 {
             bool sure_ = true;
             void setUnsure() { sure_ = false; }
             void setSure() { sure_ = true; }
-            void require() const { assert(sure_ && "Flags are surely set"); }
+            bool sure() const { return sure_; }
         } flags_;
 
         u32 ebp_;
