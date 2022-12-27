@@ -66,9 +66,9 @@ namespace x86 {
         u16 get(Imm<u16> immediate) const;
         u32 get(Imm<u32> immediate) const;
 
-        u8 get(Ptr<Size::BYTE> ptr) const;
-        u16 get(Ptr<Size::WORD> ptr) const;
-        u32 get(Ptr<Size::DWORD> ptr) const;
+        u8 get(Ptr8 ptr) const;
+        u16 get(Ptr16 ptr) const;
+        u32 get(Ptr32 ptr) const;
 
         u8 get(Count count) const;
 
@@ -78,27 +78,27 @@ namespace x86 {
         u32 resolve(ISD addr) const;
         u32 resolve(BISD addr) const;
 
-        u32 resolve(Addr<Size::BYTE, B> addr) const;
-        u32 resolve(Addr<Size::BYTE, BD> addr) const;
-        u32 resolve(Addr<Size::BYTE, BIS> addr) const;
-        u32 resolve(Addr<Size::BYTE, BISD> addr) const;
-        u32 resolve(Addr<Size::WORD, B> addr) const;
-        u32 resolve(Addr<Size::WORD, BD> addr) const;
-        u32 resolve(Addr<Size::WORD, BIS> addr) const;
-        u32 resolve(Addr<Size::WORD, BISD> addr) const;
-        u32 resolve(Addr<Size::DWORD, B> addr) const;
-        u32 resolve(Addr<Size::DWORD, BD> addr) const;
-        u32 resolve(Addr<Size::DWORD, BIS> addr) const;
-        u32 resolve(Addr<Size::DWORD, ISD> addr) const;
-        u32 resolve(Addr<Size::DWORD, BISD> addr) const;
+        Ptr<Size::BYTE> resolve(Addr<Size::BYTE, B> addr) const;
+        Ptr<Size::BYTE> resolve(Addr<Size::BYTE, BD> addr) const;
+        Ptr<Size::BYTE> resolve(Addr<Size::BYTE, BIS> addr) const;
+        Ptr<Size::BYTE> resolve(Addr<Size::BYTE, BISD> addr) const;
+        Ptr<Size::WORD> resolve(Addr<Size::WORD, B> addr) const;
+        Ptr<Size::WORD> resolve(Addr<Size::WORD, BD> addr) const;
+        Ptr<Size::WORD> resolve(Addr<Size::WORD, BIS> addr) const;
+        Ptr<Size::WORD> resolve(Addr<Size::WORD, BISD> addr) const;
+        Ptr<Size::DWORD> resolve(Addr<Size::DWORD, B> addr) const;
+        Ptr<Size::DWORD> resolve(Addr<Size::DWORD, BD> addr) const;
+        Ptr<Size::DWORD> resolve(Addr<Size::DWORD, BIS> addr) const;
+        Ptr<Size::DWORD> resolve(Addr<Size::DWORD, ISD> addr) const;
+        Ptr<Size::DWORD> resolve(Addr<Size::DWORD, BISD> addr) const;
 
         void set(R8 reg, u8 value);
         void set(R16 reg, u16 value);
         void set(R32 reg, u32 value);
 
-        void set(Ptr<Size::BYTE> ptr, u8 value);
-        void set(Ptr<Size::WORD> ptr, u16 value);
-        void set(Ptr<Size::DWORD> ptr, u32 value);
+        void set(Ptr8 ptr, u8 value);
+        void set(Ptr16 ptr, u16 value);
+        void set(Ptr32 ptr, u32 value);
 
         void push8(u8 value);
         void push16(u16 value);

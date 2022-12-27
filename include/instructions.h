@@ -143,7 +143,20 @@ namespace x86 {
     template<Size size>
     struct Ptr {
         u32 address;
+
+        Ptr& operator++() {
+            switch(size) {
+                case Size::BYTE: address += 1; break;
+                case Size::WORD: address += 2; break;
+                case Size::DWORD: address += 4; break;
+            }
+            return *this;
+        }
     };
+
+    using Ptr8 = Ptr<Size::BYTE>;
+    using Ptr16 = Ptr<Size::WORD>;
+    using Ptr32 = Ptr<Size::DWORD>;
 
     template<typename Dst, typename Src>
     struct Mov {

@@ -2,6 +2,7 @@
 #define MMU_H
 
 #include "utils/utils.h"
+#include "instructions.h"
 #include <string>
 #include <vector>
 
@@ -17,13 +18,13 @@ namespace x86 {
 
             bool contains(u32 address) const;
 
-            u8 read8(u32 address) const;
-            u16 read16(u32 address) const;
-            u32 read32(u32 address) const;
+            u8 read8(Ptr8 ptr) const;
+            u16 read16(Ptr16 ptr) const;
+            u32 read32(Ptr32 ptr) const;
 
-            void write8(u32 address, u8 value);
-            void write16(u32 address, u16 value);
-            void write32(u32 address, u32 value);
+            void write8(Ptr8 ptr, u8 value);
+            void write16(Ptr16 ptr, u16 value);
+            void write32(Ptr32 ptr, u32 value);
 
             std::string name;
             u32 base;
@@ -36,13 +37,13 @@ namespace x86 {
 
         void addRegion(Region region);
 
-        u8 read8(u32 address) const;
-        u16 read16(u32 address) const;
-        u32 read32(u32 address) const;
+        u8 read8(Ptr8 ptr) const;
+        u16 read16(Ptr16 ptr) const;
+        u32 read32(Ptr32 ptr) const;
 
-        void write8(u32 address, u8 value);
-        void write16(u32 address, u16 value);
-        void write32(u32 address, u32 value);
+        void write8(Ptr8 ptr, u8 value);
+        void write16(Ptr16 ptr, u16 value);
+        void write32(Ptr32 ptr, u32 value);
 
     private:
         Region* findAddress(u32 address);

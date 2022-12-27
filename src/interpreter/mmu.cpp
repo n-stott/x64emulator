@@ -20,44 +20,44 @@ namespace x86 {
         return address >= base && address < base + size;
     }
 
-    u8 Mmu::Region::read8(u32 address) const {
-        assert(contains(address));
+    u8 Mmu::Region::read8(Ptr8 ptr) const {
+        assert(contains(ptr.address));
         u8 value = 0;
-        std::memcpy(&value, &data[address-base], sizeof(value));
+        std::memcpy(&value, &data[ptr.address-base], sizeof(value));
         return value;
     }
 
-    u16 Mmu::Region::read16(u32 address) const {
-        assert(contains(address));
-        assert(contains(address+1));
+    u16 Mmu::Region::read16(Ptr16 ptr) const {
+        assert(contains(ptr.address));
+        assert(contains(ptr.address+1));
         u16 value = 0;
-        std::memcpy(&value, &data[address-base], sizeof(value));
+        std::memcpy(&value, &data[ptr.address-base], sizeof(value));
         return value;
     }
 
-    u32 Mmu::Region::read32(u32 address) const {
-        assert(contains(address));
-        assert(contains(address+3));
+    u32 Mmu::Region::read32(Ptr32 ptr) const {
+        assert(contains(ptr.address));
+        assert(contains(ptr.address+3));
         u32 value = 0;
-        std::memcpy(&value, &data[address-base], sizeof(value));
+        std::memcpy(&value, &data[ptr.address-base], sizeof(value));
         return value;
     }
 
-    void Mmu::Region::write8(u32 address, u8 value) {
-        assert(contains(address));
-        std::memcpy(&data[address-base], &value, sizeof(value));
+    void Mmu::Region::write8(Ptr8 ptr, u8 value) {
+        assert(contains(ptr.address));
+        std::memcpy(&data[ptr.address-base], &value, sizeof(value));
     }
 
-    void Mmu::Region::write16(u32 address, u16 value) {
-        assert(contains(address));
-        assert(contains(address+1));
-        std::memcpy(&data[address-base], &value, sizeof(value));
+    void Mmu::Region::write16(Ptr16 ptr, u16 value) {
+        assert(contains(ptr.address));
+        assert(contains(ptr.address+1));
+        std::memcpy(&data[ptr.address-base], &value, sizeof(value));
     }
 
-    void Mmu::Region::write32(u32 address, u32 value) {
-        assert(contains(address));
-        assert(contains(address+3));
-        std::memcpy(&data[address-base], &value, sizeof(value));
+    void Mmu::Region::write32(Ptr32 ptr, u32 value) {
+        assert(contains(ptr.address));
+        assert(contains(ptr.address+3));
+        std::memcpy(&data[ptr.address-base], &value, sizeof(value));
     }
 
     Mmu::Region* Mmu::findAddress(u32 address) {
@@ -74,82 +74,82 @@ namespace x86 {
         return nullptr;
     }
 
-    u8 Mmu::read8(u32 address) const {
-        const Region* region = findAddress(address);
+    u8 Mmu::read8(Ptr8 ptr) const {
+        const Region* region = findAddress(ptr.address);
         if(!!interpreter_) {
             interpreter_->verify(!!region, [&]() {
-                fmt::print("No region containing {:#x}\n", address);
+                fmt::print("No region containing {:#x}\n", ptr.address);
                 dumpRegions();
             });
         } else {
             assert(!!region);
         }
-        return region->read8(address);
+        return region->read8(ptr);
     }
 
-    u16 Mmu::read16(u32 address) const {
-        const Region* region = findAddress(address);
+    u16 Mmu::read16(Ptr16 ptr) const {
+        const Region* region = findAddress(ptr.address);
         if(!!interpreter_) {
             interpreter_->verify(!!region, [&]() {
-                fmt::print("No region containing {:#x}\n", address);
+                fmt::print("No region containing {:#x}\n", ptr.address);
                 dumpRegions();
             });
         } else {
             assert(!!region);
         }
-        return region->read16(address);
+        return region->read16(ptr);
     }
 
-    u32 Mmu::read32(u32 address) const {
-        const Region* region = findAddress(address);
+    u32 Mmu::read32(Ptr32 ptr) const {
+        const Region* region = findAddress(ptr.address);
         if(!!interpreter_) {
             interpreter_->verify(!!region, [&]() {
-                fmt::print("No region containing {:#x}\n", address);
+                fmt::print("No region containing {:#x}\n", ptr.address);
                 dumpRegions();
             });
         } else {
             assert(!!region);
         }
-        return region->read32(address);
+        return region->read32(ptr);
     }
 
-    void Mmu::write8(u32 address, u8 value) {
-        Region* region = findAddress(address);
+    void Mmu::write8(Ptr8 ptr, u8 value) {
+        Region* region = findAddress(ptr.address);
         if(!!interpreter_) {
             interpreter_->verify(!!region, [&]() {
-                fmt::print("No region containing {:#x}\n", address);
+                fmt::print("No region containing {:#x}\n", ptr.address);
                 dumpRegions();
             });
         } else {
             assert(!!region);
         }
-        region->write8(address, value);
+        region->write8(ptr, value);
     }
 
-    void Mmu::write16(u32 address, u16 value) {
-        Region* region = findAddress(address);
+    void Mmu::write16(Ptr16 ptr, u16 value) {
+        Region* region = findAddress(ptr.address);
         if(!!interpreter_) {
             interpreter_->verify(!!region, [&]() {
-                fmt::print("No region containing {:#x}\n", address);
+                fmt::print("No region containing {:#x}\n", ptr.address);
                 dumpRegions();
             });
         } else {
             assert(!!region);
         }
-        region->write16(address, value);
+        region->write16(ptr, value);
     }
 
-    void Mmu::write32(u32 address, u32 value) {
-        Region* region = findAddress(address);
+    void Mmu::write32(Ptr32 ptr, u32 value) {
+        Region* region = findAddress(ptr.address);
         if(!!interpreter_) {
             interpreter_->verify(!!region, [&]() {
-                fmt::print("No region containing {:#x}\n", address);
+                fmt::print("No region containing {:#x}\n", ptr.address);
                 dumpRegions();
             });
         } else {
             assert(!!region);
         }
-        region->write32(address, value);
+        region->write32(ptr, value);
     }
 
     void Mmu::dumpRegions() const {

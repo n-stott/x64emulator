@@ -180,16 +180,16 @@ namespace x86 {
         return count.count;   
     }
 
-    u8 Interpreter::get(Ptr<Size::BYTE> ptr) const {
-        return mmu_.read8(ptr.address);
+    u8 Interpreter::get(Ptr8 ptr) const {
+        return mmu_.read8(ptr);
     }
 
-    u16 Interpreter::get(Ptr<Size::WORD> ptr) const {
-        return mmu_.read16(ptr.address);
+    u16 Interpreter::get(Ptr16 ptr) const {
+        return mmu_.read16(ptr);
     }
 
-    u32 Interpreter::get(Ptr<Size::DWORD> ptr) const {
-        return mmu_.read32(ptr.address);
+    u32 Interpreter::get(Ptr32 ptr) const {
+        return mmu_.read32(ptr);
     }
 
     u32 Interpreter::resolve(B addr) const {
@@ -212,56 +212,56 @@ namespace x86 {
         return get(addr.base) + get(addr.index)*addr.scale + addr.displacement;
     }
 
-    u32 Interpreter::resolve(Addr<Size::BYTE, B> addr) const {
-        return resolve(addr.encoding);
+    Ptr<Size::BYTE> Interpreter::resolve(Addr<Size::BYTE, B> addr) const {
+        return Ptr<Size::BYTE>{resolve(addr.encoding)};
     }
 
-    u32 Interpreter::resolve(Addr<Size::BYTE, BD> addr) const {
-        return resolve(addr.encoding);
+    Ptr<Size::BYTE> Interpreter::resolve(Addr<Size::BYTE, BD> addr) const {
+        return Ptr<Size::BYTE>{resolve(addr.encoding)};
     }
 
-    u32 Interpreter::resolve(Addr<Size::BYTE, BIS> addr) const {
-        return resolve(addr.encoding);
+    Ptr<Size::BYTE> Interpreter::resolve(Addr<Size::BYTE, BIS> addr) const {
+        return Ptr<Size::BYTE>{resolve(addr.encoding)};
     }
 
-    u32 Interpreter::resolve(Addr<Size::BYTE, BISD> addr) const {
-        return resolve(addr.encoding);
+    Ptr<Size::BYTE> Interpreter::resolve(Addr<Size::BYTE, BISD> addr) const {
+        return Ptr<Size::BYTE>{resolve(addr.encoding)};
     }
 
-    u32 Interpreter::resolve(Addr<Size::WORD, B> addr) const {
-        return resolve(addr.encoding);
+    Ptr<Size::WORD> Interpreter::resolve(Addr<Size::WORD, B> addr) const {
+        return Ptr<Size::WORD>{resolve(addr.encoding)};
     }
 
-    u32 Interpreter::resolve(Addr<Size::WORD, BD> addr) const {
-        return resolve(addr.encoding);
+    Ptr<Size::WORD> Interpreter::resolve(Addr<Size::WORD, BD> addr) const {
+        return Ptr<Size::WORD>{resolve(addr.encoding)};
     }
 
-    u32 Interpreter::resolve(Addr<Size::WORD, BIS> addr) const {
-        return resolve(addr.encoding);
+    Ptr<Size::WORD> Interpreter::resolve(Addr<Size::WORD, BIS> addr) const {
+        return Ptr<Size::WORD>{resolve(addr.encoding)};
     }
 
-    u32 Interpreter::resolve(Addr<Size::WORD, BISD> addr) const {
-        return resolve(addr.encoding);
+    Ptr<Size::WORD> Interpreter::resolve(Addr<Size::WORD, BISD> addr) const {
+        return Ptr<Size::WORD>{resolve(addr.encoding)};
     }
 
-    u32 Interpreter::resolve(Addr<Size::DWORD, B> addr) const {
-        return resolve(addr.encoding);
+    Ptr<Size::DWORD> Interpreter::resolve(Addr<Size::DWORD, B> addr) const {
+        return Ptr<Size::DWORD>{resolve(addr.encoding)};
     }
 
-    u32 Interpreter::resolve(Addr<Size::DWORD, BD> addr) const {
-        return resolve(addr.encoding);
+    Ptr<Size::DWORD> Interpreter::resolve(Addr<Size::DWORD, BD> addr) const {
+        return Ptr<Size::DWORD>{resolve(addr.encoding)};
     }
 
-    u32 Interpreter::resolve(Addr<Size::DWORD, BIS> addr) const {
-        return resolve(addr.encoding);
+    Ptr<Size::DWORD> Interpreter::resolve(Addr<Size::DWORD, BIS> addr) const {
+        return Ptr<Size::DWORD>{resolve(addr.encoding)};
     }
     
-    u32 Interpreter::resolve(Addr<Size::DWORD, ISD> addr) const {
-        return resolve(addr.encoding);
+    Ptr<Size::DWORD> Interpreter::resolve(Addr<Size::DWORD, ISD> addr) const {
+        return Ptr<Size::DWORD>{resolve(addr.encoding)};
     }
 
-    u32 Interpreter::resolve(Addr<Size::DWORD, BISD> addr) const {
-        return resolve(addr.encoding);
+    Ptr<Size::DWORD> Interpreter::resolve(Addr<Size::DWORD, BISD> addr) const {
+        return Ptr<Size::DWORD>{resolve(addr.encoding)};
     }
     
     void Interpreter::set(R8 reg, u8 value) {
@@ -311,49 +311,49 @@ namespace x86 {
         __builtin_unreachable();
     }
 
-    void Interpreter::set(Ptr<Size::BYTE> ptr, u8 value) {
-        mmu_.write8(ptr.address, value);
+    void Interpreter::set(Ptr8 ptr, u8 value) {
+        mmu_.write8(ptr, value);
     }
 
-    void Interpreter::set(Ptr<Size::WORD> ptr, u16 value) {
-        mmu_.write16(ptr.address, value);
+    void Interpreter::set(Ptr16 ptr, u16 value) {
+        mmu_.write16(ptr, value);
     }
 
-    void Interpreter::set(Ptr<Size::DWORD> ptr, u32 value) {
-        mmu_.write32(ptr.address, value);
+    void Interpreter::set(Ptr32 ptr, u32 value) {
+        mmu_.write32(ptr, value);
     }
 
     void Interpreter::push8(u8 value) {
         esp_ -= 4;
-        mmu_.write32(esp_, (u32)value);
+        mmu_.write32(Ptr32{esp_}, (u32)value);
     }
 
     void Interpreter::push16(u16 value) {
         esp_ -= 4;
-        mmu_.write32(esp_, (u32)value);
+        mmu_.write32(Ptr32{esp_}, (u32)value);
     }
 
     void Interpreter::push32(u32 value) {
         esp_ -= 4;
-        mmu_.write32(esp_, value);
+        mmu_.write32(Ptr32{esp_}, value);
     }
 
     u8 Interpreter::pop8() {
-        u32 value = mmu_.read32(esp_);
+        u32 value = mmu_.read32(Ptr32{esp_});
         assert(value == (u8)value);
         esp_ += 4;
         return value;
     }
 
     u16 Interpreter::pop16() {
-        u32 value = mmu_.read32(esp_);
+        u32 value = mmu_.read32(Ptr32{esp_});
         assert(value == (u16)value);
         esp_ += 4;
         return value;
     }
 
     u32 Interpreter::pop32() {
-        u32 value = mmu_.read32(esp_);
+        u32 value = mmu_.read32(Ptr32{esp_});
         esp_ += 4;
         return value;
     }
@@ -639,8 +639,8 @@ namespace x86 {
 
     void Interpreter::exec(And<R8, R8> ins) { set(ins.dst, execAnd8Impl(get(ins.dst), get(ins.src))); }
     void Interpreter::exec(And<R8, Imm<u8>> ins) { set(ins.dst, execAnd8Impl(get(ins.dst), get(ins.src))); }
-    void Interpreter::exec(And<R8, Addr<Size::BYTE, B>> ins) { set(ins.dst, execAnd8Impl(get(ins.dst), mmu_.read32(resolve(ins.src)))); }
-    void Interpreter::exec(And<R8, Addr<Size::BYTE, BD>> ins) { set(ins.dst, execAnd8Impl(get(ins.dst), mmu_.read32(resolve(ins.src)))); }
+    void Interpreter::exec(And<R8, Addr<Size::BYTE, B>> ins) { set(ins.dst, execAnd8Impl(get(ins.dst), mmu_.read8(resolve(ins.src)))); }
+    void Interpreter::exec(And<R8, Addr<Size::BYTE, BD>> ins) { set(ins.dst, execAnd8Impl(get(ins.dst), mmu_.read8(resolve(ins.src)))); }
     void Interpreter::exec(And<R16, Addr<Size::WORD, B>> ins) { TODO(ins); }
     void Interpreter::exec(And<R16, Addr<Size::WORD, BD>> ins) { TODO(ins); }
     void Interpreter::exec(And<R32, R32> ins) { set(ins.dst, execAnd32Impl(get(ins.dst), get(ins.src))); }
@@ -649,11 +649,11 @@ namespace x86 {
     void Interpreter::exec(And<R32, Addr<Size::DWORD, BD>> ins) { set(ins.dst, execAnd32Impl(get(ins.dst), mmu_.read32(resolve(ins.src)))); }
     void Interpreter::exec(And<R32, Addr<Size::DWORD, BIS>> ins) { set(ins.dst, execAnd32Impl(get(ins.dst), mmu_.read32(resolve(ins.src)))); }
     void Interpreter::exec(And<R32, Addr<Size::DWORD, BISD>> ins) { set(ins.dst, execAnd32Impl(get(ins.dst), mmu_.read32(resolve(ins.src)))); }
-    void Interpreter::exec(And<Addr<Size::BYTE, B>, R8> ins) { mmu_.write32(resolve(ins.dst), execAnd8Impl(mmu_.read32(resolve(ins.dst)), get(ins.src))); }
-    void Interpreter::exec(And<Addr<Size::BYTE, B>, Imm<u8>> ins) { mmu_.write32(resolve(ins.dst), execAnd8Impl(mmu_.read32(resolve(ins.dst)), get(ins.src))); }
-    void Interpreter::exec(And<Addr<Size::BYTE, BD>, R8> ins) { mmu_.write32(resolve(ins.dst), execAnd8Impl(mmu_.read32(resolve(ins.dst)), get(ins.src))); }
-    void Interpreter::exec(And<Addr<Size::BYTE, BD>, Imm<u8>> ins) { mmu_.write32(resolve(ins.dst), execAnd8Impl(mmu_.read32(resolve(ins.dst)), get(ins.src))); }
-    void Interpreter::exec(And<Addr<Size::BYTE, BIS>, Imm<u8>> ins) { mmu_.write32(resolve(ins.dst), execAnd8Impl(mmu_.read32(resolve(ins.dst)), get(ins.src))); }
+    void Interpreter::exec(And<Addr<Size::BYTE, B>, R8> ins) { mmu_.write8(resolve(ins.dst), execAnd8Impl(mmu_.read8(resolve(ins.dst)), get(ins.src))); }
+    void Interpreter::exec(And<Addr<Size::BYTE, B>, Imm<u8>> ins) { mmu_.write8(resolve(ins.dst), execAnd8Impl(mmu_.read8(resolve(ins.dst)), get(ins.src))); }
+    void Interpreter::exec(And<Addr<Size::BYTE, BD>, R8> ins) { mmu_.write8(resolve(ins.dst), execAnd8Impl(mmu_.read8(resolve(ins.dst)), get(ins.src))); }
+    void Interpreter::exec(And<Addr<Size::BYTE, BD>, Imm<u8>> ins) { mmu_.write8(resolve(ins.dst), execAnd8Impl(mmu_.read8(resolve(ins.dst)), get(ins.src))); }
+    void Interpreter::exec(And<Addr<Size::BYTE, BIS>, Imm<u8>> ins) { mmu_.write8(resolve(ins.dst), execAnd8Impl(mmu_.read8(resolve(ins.dst)), get(ins.src))); }
     void Interpreter::exec(And<Addr<Size::WORD, B>, R16> ins) { TODO(ins); }
     void Interpreter::exec(And<Addr<Size::WORD, BD>, R16> ins) { TODO(ins); }
     void Interpreter::exec(And<Addr<Size::DWORD, B>, R32> ins) { mmu_.write32(resolve(ins.dst), execAnd32Impl(mmu_.read32(resolve(ins.dst)), get(ins.src))); }
@@ -802,10 +802,10 @@ namespace x86 {
     void Interpreter::exec(Movzx<R32, Addr<Size::BYTE, BD>> ins) { set(ins.dst, (u32)mmu_.read8(resolve(ins.src))); }
     void Interpreter::exec(Movzx<R32, Addr<Size::BYTE, BIS>> ins) { set(ins.dst, (u32)mmu_.read8(resolve(ins.src))); }
     void Interpreter::exec(Movzx<R32, Addr<Size::BYTE, BISD>> ins) { set(ins.dst, (u32)mmu_.read8(resolve(ins.src))); }
-    void Interpreter::exec(Movzx<R32, Addr<Size::WORD, B>> ins) { set(ins.dst, (u32)mmu_.read8(resolve(ins.src))); }
-    void Interpreter::exec(Movzx<R32, Addr<Size::WORD, BD>> ins) { set(ins.dst, (u32)mmu_.read8(resolve(ins.src))); }
-    void Interpreter::exec(Movzx<R32, Addr<Size::WORD, BIS>> ins) { set(ins.dst, (u32)mmu_.read8(resolve(ins.src))); }
-    void Interpreter::exec(Movzx<R32, Addr<Size::WORD, BISD>> ins) { set(ins.dst, (u32)mmu_.read8(resolve(ins.src))); }
+    void Interpreter::exec(Movzx<R32, Addr<Size::WORD, B>> ins) { set(ins.dst, (u32)mmu_.read16(resolve(ins.src))); }
+    void Interpreter::exec(Movzx<R32, Addr<Size::WORD, BD>> ins) { set(ins.dst, (u32)mmu_.read16(resolve(ins.src))); }
+    void Interpreter::exec(Movzx<R32, Addr<Size::WORD, BIS>> ins) { set(ins.dst, (u32)mmu_.read16(resolve(ins.src))); }
+    void Interpreter::exec(Movzx<R32, Addr<Size::WORD, BISD>> ins) { set(ins.dst, (u32)mmu_.read16(resolve(ins.src))); }
 
     void Interpreter::exec(Lea<R32, B> ins) { TODO(ins); }
 
@@ -961,18 +961,18 @@ namespace x86 {
     void Interpreter::exec(Inc<R8> ins) { TODO(ins); }
     void Interpreter::exec(Inc<R32> ins) { set(ins.dst, execInc32Impl(get(ins.dst))); }
 
-    void Interpreter::exec(Inc<Addr<Size::BYTE, B>> ins) { u32 addr = resolve(ins.dst); mmu_.write8(addr, execInc8Impl(mmu_.read8(addr))); }
-    void Interpreter::exec(Inc<Addr<Size::BYTE, BD>> ins) { u32 addr = resolve(ins.dst); mmu_.write8(addr, execInc8Impl(mmu_.read8(addr))); }
-    void Interpreter::exec(Inc<Addr<Size::BYTE, BIS>> ins) { u32 addr = resolve(ins.dst); mmu_.write8(addr, execInc8Impl(mmu_.read8(addr))); }
-    void Interpreter::exec(Inc<Addr<Size::BYTE, BISD>> ins) { u32 addr = resolve(ins.dst); mmu_.write8(addr, execInc8Impl(mmu_.read8(addr))); }
-    void Interpreter::exec(Inc<Addr<Size::WORD, B>> ins) { u32 addr = resolve(ins.dst); mmu_.write16(addr, execInc16Impl(mmu_.read16(addr))); }
-    void Interpreter::exec(Inc<Addr<Size::WORD, BD>> ins) { u32 addr = resolve(ins.dst); mmu_.write16(addr, execInc16Impl(mmu_.read16(addr))); }
-    void Interpreter::exec(Inc<Addr<Size::WORD, BIS>> ins) { u32 addr = resolve(ins.dst); mmu_.write16(addr, execInc16Impl(mmu_.read16(addr))); }
-    void Interpreter::exec(Inc<Addr<Size::WORD, BISD>> ins) { u32 addr = resolve(ins.dst); mmu_.write16(addr, execInc16Impl(mmu_.read16(addr))); }
-    void Interpreter::exec(Inc<Addr<Size::DWORD, B>> ins) { u32 addr = resolve(ins.dst); mmu_.write32(addr, execInc32Impl(mmu_.read32(addr))); }
-    void Interpreter::exec(Inc<Addr<Size::DWORD, BD>> ins) { u32 addr = resolve(ins.dst); mmu_.write32(addr, execInc32Impl(mmu_.read32(addr))); }
-    void Interpreter::exec(Inc<Addr<Size::DWORD, BIS>> ins) { u32 addr = resolve(ins.dst); mmu_.write32(addr, execInc32Impl(mmu_.read32(addr))); }
-    void Interpreter::exec(Inc<Addr<Size::DWORD, BISD>> ins) { u32 addr = resolve(ins.dst); mmu_.write32(addr, execInc32Impl(mmu_.read32(addr))); }
+    void Interpreter::exec(Inc<Addr<Size::BYTE, B>> ins) { Ptr<Size::BYTE> ptr = resolve(ins.dst); set(ptr, execInc8Impl(get(ptr))); }
+    void Interpreter::exec(Inc<Addr<Size::BYTE, BD>> ins) { Ptr<Size::BYTE> ptr = resolve(ins.dst); set(ptr, execInc8Impl(get(ptr))); }
+    void Interpreter::exec(Inc<Addr<Size::BYTE, BIS>> ins) { Ptr<Size::BYTE> ptr = resolve(ins.dst); set(ptr, execInc8Impl(get(ptr))); }
+    void Interpreter::exec(Inc<Addr<Size::BYTE, BISD>> ins) { Ptr<Size::BYTE> ptr = resolve(ins.dst); set(ptr, execInc8Impl(get(ptr))); }
+    void Interpreter::exec(Inc<Addr<Size::WORD, B>> ins) { Ptr<Size::WORD> ptr = resolve(ins.dst); set(ptr, execInc16Impl(get(ptr))); }
+    void Interpreter::exec(Inc<Addr<Size::WORD, BD>> ins) { Ptr<Size::WORD> ptr = resolve(ins.dst); set(ptr, execInc16Impl(get(ptr))); }
+    void Interpreter::exec(Inc<Addr<Size::WORD, BIS>> ins) { Ptr<Size::WORD> ptr = resolve(ins.dst); set(ptr, execInc16Impl(get(ptr))); }
+    void Interpreter::exec(Inc<Addr<Size::WORD, BISD>> ins) { Ptr<Size::WORD> ptr = resolve(ins.dst); set(ptr, execInc16Impl(get(ptr))); }
+    void Interpreter::exec(Inc<Addr<Size::DWORD, B>> ins) { Ptr<Size::DWORD> ptr = resolve(ins.dst); set(ptr, execInc32Impl(get(ptr))); }
+    void Interpreter::exec(Inc<Addr<Size::DWORD, BD>> ins) { Ptr<Size::DWORD> ptr = resolve(ins.dst); set(ptr, execInc32Impl(get(ptr))); }
+    void Interpreter::exec(Inc<Addr<Size::DWORD, BIS>> ins) { Ptr<Size::DWORD> ptr = resolve(ins.dst); set(ptr, execInc32Impl(get(ptr))); }
+    void Interpreter::exec(Inc<Addr<Size::DWORD, BISD>> ins) { Ptr<Size::DWORD> ptr = resolve(ins.dst); set(ptr, execInc32Impl(get(ptr))); }
 
 
     u32 Interpreter::execDec32Impl(u32 src) {
@@ -987,10 +987,10 @@ namespace x86 {
     void Interpreter::exec(Dec<R8> ins) { TODO(ins); }
     void Interpreter::exec(Dec<Addr<Size::WORD, BD>> ins) { TODO(ins); }
     void Interpreter::exec(Dec<R32> ins) { set(ins.dst, execDec32Impl(get(ins.dst))); }
-    void Interpreter::exec(Dec<Addr<Size::DWORD, B>> ins) { u32 addr = resolve(ins.dst); mmu_.write32(addr, execDec32Impl(mmu_.read32(addr))); }
-    void Interpreter::exec(Dec<Addr<Size::DWORD, BD>> ins) { u32 addr = resolve(ins.dst); mmu_.write32(addr, execDec32Impl(mmu_.read32(addr))); }
-    void Interpreter::exec(Dec<Addr<Size::DWORD, BIS>> ins) { u32 addr = resolve(ins.dst); mmu_.write32(addr, execDec32Impl(mmu_.read32(addr))); }
-    void Interpreter::exec(Dec<Addr<Size::DWORD, BISD>> ins) { u32 addr = resolve(ins.dst); mmu_.write32(addr, execDec32Impl(mmu_.read32(addr))); }
+    void Interpreter::exec(Dec<Addr<Size::DWORD, B>> ins) { Ptr<Size::DWORD> ptr = resolve(ins.dst); set(ptr, execDec32Impl(get(ptr))); }
+    void Interpreter::exec(Dec<Addr<Size::DWORD, BD>> ins) { Ptr<Size::DWORD> ptr = resolve(ins.dst); set(ptr, execDec32Impl(get(ptr))); }
+    void Interpreter::exec(Dec<Addr<Size::DWORD, BIS>> ins) { Ptr<Size::DWORD> ptr = resolve(ins.dst); set(ptr, execDec32Impl(get(ptr))); }
+    void Interpreter::exec(Dec<Addr<Size::DWORD, BISD>> ins) { Ptr<Size::DWORD> ptr = resolve(ins.dst); set(ptr, execDec32Impl(get(ptr))); }
 
     void Interpreter::exec(Shr<R8, Imm<u8>> ins) { TODO(ins); }
     void Interpreter::exec(Shr<R8, Count> ins) { TODO(ins); }
@@ -1317,8 +1317,8 @@ namespace x86 {
         assert(ins.op.dst.encoding.base == R32::EDI);
         assert(ins.op.src.encoding.base == R32::ESI);
         u32 counter = get(R32::ECX);
-        u32 dptr = resolve(ins.op.dst);
-        u32 sptr = resolve(ins.op.src);
+        Ptr8 dptr = resolve(ins.op.dst);
+        Ptr8 sptr = resolve(ins.op.src);
         while(counter) {
             u8 val = mmu_.read8(sptr);
             mmu_.write8(dptr, val);
@@ -1327,8 +1327,8 @@ namespace x86 {
             --counter;
         }
         set(R32::ECX, counter);
-        set(R32::ESI, sptr);
-        set(R32::EDI, dptr);
+        set(R32::ESI, sptr.address);
+        set(R32::EDI, dptr.address);
     }
 
 
@@ -1336,39 +1336,39 @@ namespace x86 {
         assert(ins.op.dst.encoding.base == R32::EDI);
         assert(ins.op.src.encoding.base == R32::ESI);
         u32 counter = get(R32::ECX);
-        u32 dptr = resolve(ins.op.dst);
-        u32 sptr = resolve(ins.op.src);
+        Ptr32 dptr = resolve(ins.op.dst);
+        Ptr32 sptr = resolve(ins.op.src);
         while(counter) {
             u32 val = mmu_.read32(sptr);
             mmu_.write32(dptr, val);
-            sptr += 4;
-            dptr += 4;
+            ++sptr;
+            ++dptr;
             --counter;
         }
         set(R32::ECX, counter);
-        set(R32::ESI, sptr);
-        set(R32::EDI, dptr);
+        set(R32::ESI, sptr.address);
+        set(R32::EDI, dptr.address);
     }
     
     void Interpreter::exec(Rep<Stos<Addr<Size::DWORD, B>, R32>> ins) {
         assert(ins.op.dst.encoding.base == R32::EDI);
         u32 counter = get(R32::ECX);
-        u32 dptr = resolve(ins.op.dst);
+        Ptr32 dptr = resolve(ins.op.dst);
         u32 val = get(ins.op.src);
         while(counter) {
             mmu_.write32(dptr, val);
-            dptr += 4;
+            ++dptr;
             --counter;
         }
         set(R32::ECX, counter);
-        set(R32::EDI, dptr);
+        set(R32::EDI, dptr.address);
     }
 
     void Interpreter::exec(RepNZ<Scas<R8, Addr<Size::BYTE, B>>> ins) {
         assert(ins.op.src2.encoding.base == R32::EDI);
         u32 counter = get(R32::ECX);
         u8 src1 = get(ins.op.src1);
-        u32 ptr2 = resolve(ins.op.src2);
+        Ptr8 ptr2 = resolve(ins.op.src2);
         while(counter) {
             u8 src2 = mmu_.read8(ptr2);
             execCmp8Impl(src1, src2);
@@ -1377,7 +1377,7 @@ namespace x86 {
             if(flags_.zero) break;
         }
         set(R32::ECX, counter);
-        set(R32::EDI, ptr2);
+        set(R32::EDI, ptr2.address);
     }
 
     template<typename Dst, typename Src>
