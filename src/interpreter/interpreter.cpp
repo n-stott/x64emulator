@@ -588,11 +588,40 @@ namespace x86 {
     void Interpreter::exec(Neg<Addr<Size::DWORD, B>> ins) { TODO(ins); }
     void Interpreter::exec(Neg<Addr<Size::DWORD, BD>> ins) { TODO(ins); }
 
-    void Interpreter::exec(Mul<R32> ins) { TODO(ins); }
-    void Interpreter::exec(Mul<Addr<Size::DWORD, B>> ins) { TODO(ins); }
-    void Interpreter::exec(Mul<Addr<Size::DWORD, BD>> ins) { TODO(ins); }
-    void Interpreter::exec(Mul<Addr<Size::DWORD, BIS>> ins) { TODO(ins); }
-    void Interpreter::exec(Mul<Addr<Size::DWORD, BISD>> ins) { TODO(ins); }
+    std::pair<u32, u32> Interpreter::execMul32(u32 src1, u32 src2) {
+        u64 prod = (u64)src1 * (u64)src2;
+        u32 upper = (prod >> 32);
+        u32 lower = (u32)prod;
+        flags_.overflow = !!upper;
+        flags_.carry = !!upper;
+        return std::make_pair(upper, lower);
+    }
+
+    void Interpreter::exec(Mul<R32> ins) {
+        auto res = execMul32(get(R32::EAX), get(ins.src));
+        set(R32::EDX, res.first);
+        set(R32::EAX, res.second);
+    }
+    void Interpreter::exec(Mul<Addr<Size::DWORD, B>> ins) {
+        auto res = execMul32(get(R32::EAX), get(resolve(ins.src)));
+        set(R32::EDX, res.first);
+        set(R32::EAX, res.second);
+    }
+    void Interpreter::exec(Mul<Addr<Size::DWORD, BD>> ins) {
+        auto res = execMul32(get(R32::EAX), get(resolve(ins.src)));
+        set(R32::EDX, res.first);
+        set(R32::EAX, res.second);
+    }
+    void Interpreter::exec(Mul<Addr<Size::DWORD, BIS>> ins) {
+        auto res = execMul32(get(R32::EAX), get(resolve(ins.src)));
+        set(R32::EDX, res.first);
+        set(R32::EAX, res.second);
+    }
+    void Interpreter::exec(Mul<Addr<Size::DWORD, BISD>> ins) {
+        auto res = execMul32(get(R32::EAX), get(resolve(ins.src)));
+        set(R32::EDX, res.first);
+        set(R32::EAX, res.second);
+    }
 
     u32 Interpreter::execImul32(u32 src1, u32 src2) {
         i32 res = (i32)src1 * (i32)src2;
