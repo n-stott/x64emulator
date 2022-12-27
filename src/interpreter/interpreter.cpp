@@ -5,7 +5,16 @@
 #include <fmt/core.h>
 #include <cassert>
 
+#include <signal.h>
+
 namespace x86 {
+
+    static bool signal_interrupt = false;
+
+    void termination_handler(int signum) {
+        if(signum != SIGINT) return;
+        signal_interrupt = true;
+    }    
 
     Interpreter::Interpreter(Program program, LibC libc) : program_(std::move(program)), libc_(std::move(libc)), mmu_(this) {
         libc_.configureIntrinsics(ExecutionContext(*this));
@@ -61,6 +70,14 @@ namespace x86 {
     }
 
     void Interpreter::run() {
+
+        struct sigaction new_action, old_action;
+        new_action.sa_handler = termination_handler;
+        sigemptyset(&new_action.sa_mask);
+        new_action.sa_flags = 0;
+        sigaction (SIGINT, NULL, &old_action);
+        if (old_action.sa_handler != SIG_IGN) sigaction (SIGINT, &new_action, NULL);
+
         const Function* main = program_.findFunction("main");
         if(!main) {
             fmt::print(stderr, "Cannot find \"main\" symbol\n");
@@ -76,6 +93,7 @@ namespace x86 {
         size_t ticks = 0;
         while(!stop_ && state_.hasNext()) {
             try {
+                verify(!signal_interrupt);
                 const X86Instruction* instruction = state_.next();
                 auto nextAfter = state_.peek();
                 if(nextAfter) {
