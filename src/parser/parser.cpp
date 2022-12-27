@@ -259,6 +259,7 @@ namespace x86 {
         if(name == "cmovl") return parseCmov<Cond::L>(address, operands);
         if(name == "cmovle") return parseCmov<Cond::LE>(address, operands);
         if(name == "cmovne") return parseCmov<Cond::NE>(address, operands);
+        if(name == "cwde") return parseCwde(address, operands);
         return make_failed(address, s);
     }
 
@@ -1561,7 +1562,6 @@ namespace x86 {
         return make_failed(address, stringop);
     }
 
-
     template<Cond cond>
     std::unique_ptr<X86Instruction> InstructionParser::parseCmov(u32 address, std::string_view operandsString) {
         std::vector<std::string_view> operands = split(operandsString, ',');
@@ -1572,5 +1572,10 @@ namespace x86 {
         if(r32dst && r32src) return make_wrapper<Cmov<cond, R32, R32>>(address, r32dst.value(), r32src.value());
         if(r32dst && DoubleBDsrc) return make_wrapper<Cmov<cond, R32, Addr<Size::DWORD, BD>>>(address, r32dst.value(), DoubleBDsrc.value());
         return make_failed(address, operandsString);
+    }
+
+    std::unique_ptr<X86Instruction> InstructionParser::parseCwde(u32 address, std::string_view operands) {
+        assert(operands.find(',') == std::string_view::npos);
+        return make_wrapper<Cwde>(address);
     }
 }

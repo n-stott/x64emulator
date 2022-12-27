@@ -651,6 +651,7 @@ namespace x86 {
         void exec(Cmov<Cond::NE, R32, R32>) override;
         void exec(Cmov<Cond::NE, R32, Addr<Size::DWORD, BD>>) override;
 
+        void exec(Cwde) override;
     };
 
 }

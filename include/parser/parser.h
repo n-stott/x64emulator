@@ -95,6 +95,8 @@ namespace x86 {
         template<Cond cond>
         static std::unique_ptr<X86Instruction> parseCmov(u32 address, std::string_view operands);
 
+        static std::unique_ptr<X86Instruction> parseCwde(u32 address, std::string_view operands);
+
     };
 
 }

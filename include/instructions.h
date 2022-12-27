@@ -464,6 +464,10 @@ namespace x86 {
         Dst dst;
         Src src;
     };
+
+    struct Cwde {
+
+    };
 }
 
 #endif

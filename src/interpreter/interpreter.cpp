@@ -1503,4 +1503,7 @@ namespace x86 {
     void Interpreter::exec(Cmov<Cond::NE, R32, R32> ins) { execCmovImpl(Cond::NE, ins.dst, ins.src); }
     void Interpreter::exec(Cmov<Cond::NE, R32, Addr<Size::DWORD, BD>> ins) { execCmovImpl(Cond::NE, ins.dst, ins.src); }
 
+    void Interpreter::exec(Cwde) {
+        set(R32::EAX, (i32)(i16)get(R16::AX));
+    }
 }

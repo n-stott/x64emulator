@@ -449,6 +449,10 @@ namespace utils {
     inline std::string toString(Cmov<cond, Dst, Src> ins) {
         return fmt::format("{:7}{},{}", fmt::format("cmov{}", toString(cond)), toString(ins.dst), toString(ins.src));
     }
+
+    inline std::string toString(Cwde) {
+        return fmt::format("{:7}", "cwde");
+    }
 }
 }
 
