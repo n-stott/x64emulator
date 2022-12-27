@@ -84,7 +84,6 @@ namespace x86 {
         explicit PutcharInstruction(ExecutionContext context) : context_(context) { }
 
         void exec(InstructionHandler*) const override {
-            fmt::print("_{}_\n", (int)context_.eax());
             std::putchar(context_.eax());
             ::fflush(stdout);
             context_.set_eax(1);
