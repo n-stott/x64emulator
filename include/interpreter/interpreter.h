@@ -188,6 +188,7 @@ namespace x86 {
 
         std::pair<u32, u32> execMul32(u32 src1, u32 src2);
         u32 execImul32(u32 src1, u32 src2);
+        std::pair<u32, u32> execDiv32(u32 dividendUpper, u32 dividendLower, u32 divisor);
 
         u8 execInc8Impl(u8 src);
         u16 execInc16Impl(u16 src);

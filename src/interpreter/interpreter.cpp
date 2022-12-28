@@ -652,9 +652,29 @@ namespace x86 {
         set(ins.dst, execImul32(get(resolve(ins.src1)), get(ins.src2)));
     }
 
-    void Interpreter::exec(Div<R32> ins) { TODO(ins); }
-    void Interpreter::exec(Div<Addr<Size::DWORD, B>> ins) { TODO(ins); }
-    void Interpreter::exec(Div<Addr<Size::DWORD, BD>> ins) { TODO(ins); }
+    std::pair<u32, u32> Interpreter::execDiv32(u32 dividendUpper, u32 dividendLower, u32 divisor) {
+        verify(divisor != 0);
+        u64 dividend = ((u64)dividendUpper) << 32 | (u64)dividendLower;
+        u64 tmp = dividend / divisor;
+        verify(tmp >> 32 == 0);
+        return std::make_pair(tmp, dividend % divisor);
+    }
+
+    void Interpreter::exec(Div<R32> ins) {
+        auto res = execDiv32(get(R32::EDX), get(R32::EAX), get(ins.src));
+        set(R32::EAX, res.first);
+        set(R32::EDX, res.second);
+    }
+    void Interpreter::exec(Div<Addr<Size::DWORD, B>> ins) {
+        auto res = execDiv32(get(R32::EDX), get(R32::EAX), get(resolve(ins.src)));
+        set(R32::EAX, res.first);
+        set(R32::EDX, res.second);
+    }
+    void Interpreter::exec(Div<Addr<Size::DWORD, BD>> ins) {
+        auto res = execDiv32(get(R32::EDX), get(R32::EAX), get(resolve(ins.src)));
+        set(R32::EAX, res.first);
+        set(R32::EDX, res.second);
+    }
 
     void Interpreter::exec(Idiv<R32> ins) { TODO(ins); }
     void Interpreter::exec(Idiv<Addr<Size::DWORD, B>> ins) { TODO(ins); }
