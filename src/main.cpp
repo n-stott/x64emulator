@@ -13,4 +13,8 @@ int main(int argc, const char* argv[]) {
      }
 
      elf->print();
+
+     elf->forAllRelocations([](const elf::Elf::RelocationEntry32& relocation) {
+          fmt::print("Relocation offset={:#x} info={:#x}\n", relocation.r_offset, relocation.r_info);
+     });
 }

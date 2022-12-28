@@ -103,6 +103,26 @@ namespace elf {
 
         void print() const;
 
+        template<typename Callback>
+        void forAllSectionHeaders(Callback callback) const {
+            for(const auto& sectionHeader : sectionHeaders_) {
+                callback(sectionHeader);
+            }
+        }
+
+        template<typename Callback>
+        void forAllRelocations(Callback callback) const {
+            if(archClass() != Class::B32) return;
+            forAllSectionHeaders([&](const SectionHeader& header) {
+                if(header.sh_type != SectionHeaderType::REL) return;
+                Section relocationSection = header.toSection(reinterpret_cast<const u8*>(bytes_.data()), bytes_.size());
+                if(relocationSection.size() % sizeof(RelocationEntry32) != 0) return;
+                const RelocationEntry32* begin = reinterpret_cast<const RelocationEntry32*>(relocationSection.begin);
+                const RelocationEntry32* end = reinterpret_cast<const RelocationEntry32*>(relocationSection.end);
+                for(const RelocationEntry32* it = begin; it != end; ++it) callback(*it);
+            });
+        }
+
     private:
 
         struct FileHeader {

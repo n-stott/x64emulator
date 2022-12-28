@@ -240,10 +240,13 @@ namespace elf {
     }
 
     std::optional<Elf::Section> Elf::sectionFromName(std::string_view sv) const {
-        for(const auto& header : sectionHeaders_) {
-            if(sv == header.name) return header.toSection(reinterpret_cast<const u8*>(bytes_.data()), bytes_.size());
-        }
-        return {};
+        std::optional<Elf::Section> section {};
+        forAllSectionHeaders([&](const SectionHeader& header) {
+            if(sv == header.name) section = header.toSection(reinterpret_cast<const u8*>(bytes_.data()), bytes_.size());
+        });
+        return section;
     }
+
+    
 
 }
