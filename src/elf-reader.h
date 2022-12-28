@@ -48,12 +48,47 @@ namespace elf {
 
         };
 
+        enum class SectionHeaderType : u32 {
+            NULL_ = 0x0,
+            PROGBITS = 0x1,
+            SYMTAB = 0x2,
+            STRTAB = 0x3,
+            RELA = 0x4,
+            HASH = 0x5,
+            DYNAMIC = 0x6,
+            NOTE = 0x7,
+            NOBITS = 0x8,
+            REL = 0x9,
+            SHLIB = 0x0A,
+            DYNSYM = 0x0B,
+            INIT_ARRAY = 0x0E,
+            FINI_ARRAY = 0x0F,
+            PREINIT_ARRAY = 0x10,
+            GROUP = 0x11,
+            SYMTAB_SHNDX = 0x12,
+            NUM = 0x13,
+        };
+
         struct Section {
             u64 address;
             const u8* begin;
             const u8* end;
 
             size_t size() const { return end-begin; }
+        };
+
+        struct RelocationEntry32 {
+	        u32 r_offset;
+	        u32 r_info;
+        };
+
+        struct SymbolTableEntry32 {
+            u32	st_name;
+            u32	st_value;
+            u32	st_size;
+            u8 st_info;
+            u8 st_other;
+            u16 st_shndx;
         };
 
         Class archClass() const { return fileheader_.ident.class_; }
@@ -97,7 +132,7 @@ namespace elf {
 
         struct SectionHeader {
             u32 sh_name;
-            u32 sh_type;
+            SectionHeaderType sh_type;
             u64 sh_flags;
             u64 sh_addr;
             u64 sh_offset;

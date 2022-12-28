@@ -189,10 +189,36 @@ namespace elf {
             "entsize");
     }
 
+    namespace {
+        std::string toString(Elf::SectionHeaderType sht) {
+            switch(sht) {
+                case Elf::SectionHeaderType::NULL_: return "NULL";
+                case Elf::SectionHeaderType::PROGBITS: return "PROGBITS";
+                case Elf::SectionHeaderType::SYMTAB: return "SYMTAB";
+                case Elf::SectionHeaderType::STRTAB: return "STRTAB";
+                case Elf::SectionHeaderType::RELA: return "RELA";
+                case Elf::SectionHeaderType::HASH: return "HASH";
+                case Elf::SectionHeaderType::DYNAMIC: return "DYNAMIC";
+                case Elf::SectionHeaderType::NOTE: return "NOTE";
+                case Elf::SectionHeaderType::NOBITS: return "NOBITS";
+                case Elf::SectionHeaderType::REL: return "REL";
+                case Elf::SectionHeaderType::SHLIB: return "SHLIB";
+                case Elf::SectionHeaderType::DYNSYM: return "DYNSYM";
+                case Elf::SectionHeaderType::INIT_ARRAY: return "INIT_ARRAY";
+                case Elf::SectionHeaderType::FINI_ARRAY: return "FINI_ARRAY";
+                case Elf::SectionHeaderType::PREINIT_ARRAY: return "PREINIT_ARRAY";
+                case Elf::SectionHeaderType::GROUP: return "GROUP";
+                case Elf::SectionHeaderType::SYMTAB_SHNDX: return "SYMTAB_SHNDX";
+                case Elf::SectionHeaderType::NUM: return "NUM";
+            }
+            return fmt::format("{:x}", (u32)sht);
+        }
+    }
+
     void Elf::SectionHeader::print() const {
-        fmt::print("{:20} {:#10x} {:#10x} {:#10x} {:#10x} {:#10x} {:#6x} {:#6x} {:#10x} {:#10x}\n",
+        fmt::print("{:20} {:>10} {:#10x} {:#10x} {:#10x} {:#10x} {:#6x} {:#6x} {:#10x} {:#10x}\n",
             name,
-            sh_type,
+            toString(sh_type),
             sh_flags,
             sh_addr,
             sh_offset,
