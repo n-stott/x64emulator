@@ -213,13 +213,6 @@ namespace elf {
         };
     }
 
-    bool Elf::hasSectionNamed(std::string_view sv) const {
-        for(const auto& header : sectionHeaders_) {
-            if(sv == header.name) return true;
-        }
-        return false;
-    }
-
     std::optional<Elf::Section> Elf::sectionFromName(std::string_view sv) const {
         for(const auto& header : sectionHeaders_) {
             if(sv == header.name) return header.toSection(reinterpret_cast<const u8*>(bytes_.data()), bytes_.size());

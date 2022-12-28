@@ -64,7 +64,6 @@ namespace elf {
         Type type() const { return fileheader_.type; }
         Machine machine() const { return fileheader_.machine; }
 
-        bool hasSectionNamed(std::string_view sv) const;
         std::optional<Section> sectionFromName(std::string_view sv) const;
 
         void print() const;
