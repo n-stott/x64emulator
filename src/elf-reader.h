@@ -6,6 +6,7 @@
 #include <string>
 #include <string_view>
 #include <vector>
+#include <cassert>
 
 using u8 = unsigned char;
 using u16 = unsigned short;
@@ -80,15 +81,37 @@ namespace elf {
         struct RelocationEntry32 {
 	        u32 r_offset;
 	        u32 r_info;
+
+            u32 offset() const { return r_offset; }
+            u8 type() const { return (u8)r_info; }
+            u32 symbol() const { return r_info >> 8; }
         };
 
-        struct SymbolTableEntry32 {
-            u32	st_name;
-            u32	st_value;
-            u32	st_size;
-            u8 st_info;
-            u8 st_other;
-            u16 st_shndx;
+        struct SymbolTable {
+            struct Entry32 {
+                u32	st_name;
+                u32	st_value;
+                u32	st_size;
+                u8 st_info;
+                u8 st_other;
+                u16 st_shndx;
+
+                std::string toString() const;
+            };
+            static_assert(sizeof(Entry32) == 16, "");
+
+            const Entry32* begin_;
+            const Entry32* end_;
+
+            const Entry32* begin() const { return begin_; }
+            const Entry32* end() const { return end_; }
+
+            size_t size() const { return std::distance(begin_, end_); }
+
+            Entry32 operator[](size_t sidx) {
+                assert(sidx < size());
+                return *(begin_+sidx);
+            }
         };
 
         Class archClass() const { return fileheader_.ident.class_; }
@@ -98,6 +121,12 @@ namespace elf {
         AbiVersion abiversion() const { return fileheader_.ident.abiversion; }
         Type type() const { return fileheader_.type; }
         Machine machine() const { return fileheader_.machine; }
+
+        std::optional<SymbolTable> symbolTable() const {
+            auto symtab = sectionFromName(".symtab");
+            if(!symtab) return {};
+            return SymbolTable { (const SymbolTable::Entry32*)symtab->begin, (const SymbolTable::Entry32*)symtab->end };
+        }
 
         std::optional<Section> sectionFromName(std::string_view sv) const;
 

@@ -14,7 +14,13 @@ int main(int argc, const char* argv[]) {
 
      elf->print();
 
-     elf->forAllRelocations([](const elf::Elf::RelocationEntry32& relocation) {
-          fmt::print("Relocation offset={:#x} info={:#x}\n", relocation.r_offset, relocation.r_info);
+     auto symbolTable = elf->symbolTable();
+
+     elf->forAllRelocations([&](const elf::Elf::RelocationEntry32& relocation) {
+          if(!symbolTable) {
+               fmt::print("Relocation offset={:#x} type={:#x} symbol={:#x}\n", relocation.offset(), relocation.type(), relocation.symbol());
+          } else {
+               fmt::print("Relocation offset={:#x} type={:#x} symbol={}\n", relocation.offset(), relocation.type(), (*symbolTable)[relocation.symbol()].toString());
+          }
      });
 }

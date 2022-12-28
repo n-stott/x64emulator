@@ -247,6 +247,9 @@ namespace elf {
         return section;
     }
 
-    
+    std::string Elf::SymbolTable::Entry32::toString() const {
+        return fmt::format("name={:#x} value={:#x} size={:#x} info={:#x} other={:#x} shndx={}", st_name, st_value, st_size, st_info, st_other, st_shndx);
+    }
+
 
 }
