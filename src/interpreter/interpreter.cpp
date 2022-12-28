@@ -37,14 +37,14 @@ namespace x86 {
         // heap
         u32 heapBase = 0x1000000;
         u32 heapSize = 64*1024;
-        Mmu::Region heapRegion{ "heap", heapBase, heapSize };
+        Mmu::Region heapRegion{ "heap", heapBase, heapSize, PROT_READ | PROT_WRITE };
         mmu_.addRegion(heapRegion);
         libc_.setHeapRegion(heapRegion.base, heapRegion.size);
         
         // stack
         u32 stackBase = 0x2000000;
         u32 stackSize = 4*1024;
-        Mmu::Region stack{ "stack", stackBase, stackSize };
+        Mmu::Region stack{ "stack", stackBase, stackSize, PROT_READ | PROT_WRITE };
         mmu_.addRegion(stack);
         esp_ = stackBase + stackSize;
 
@@ -54,19 +54,19 @@ namespace x86 {
             std::abort();
         }
 
-        auto addSectionIfExists = [&](const std::string& name) {
+        auto addSectionIfExists = [&](const std::string& name, Protection protection) {
             auto section = elf->sectionFromName(name);
             if(!section) return;
             assert(!!section);
-            Mmu::Region region{ name, (u32)section->address, (u32)section->size() };
+            Mmu::Region region{ name, (u32)section->address, (u32)section->size(), protection };
             std::memcpy(region.data.data(), section->begin, section->size()*sizeof(u8));
             mmu_.addRegion(std::move(region));
         };
 
-        addSectionIfExists(".rodata");
-        addSectionIfExists(".data.rel.ro");
-        addSectionIfExists(".bss");
-        addSectionIfExists(".got");
+        addSectionIfExists(".rodata", PROT_READ);
+        addSectionIfExists(".data.rel.ro", PROT_READ);
+        addSectionIfExists(".bss", PROT_READ | PROT_WRITE);
+        addSectionIfExists(".got", PROT_NONE);
     }
 
     void Interpreter::run() {

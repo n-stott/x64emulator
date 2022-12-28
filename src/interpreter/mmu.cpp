@@ -5,11 +5,12 @@
 
 namespace x86 {
 
-    Mmu::Region::Region(std::string name, u32 base, u32 size) {
+    Mmu::Region::Region(std::string name, u32 base, u32 size, Protection protection) {
         this->name = std::move(name);
         this->base = base;
         this->size = size;
         this->data.resize(size, 0x00);
+        this->protection = protection;
     }
 
     void Mmu::addRegion(Region region) {
@@ -81,6 +82,10 @@ namespace x86 {
                 fmt::print("No region containing {:#x}\n", ptr.address);
                 dumpRegions();
             });
+            interpreter_->verify(region->protection & PROT_READ, [&]() {
+                fmt::print("Attempt to read {:#x} from non-readable region {}\n", ptr.address, region->name);
+                dumpRegions();
+            });
         } else {
             assert(!!region);
         }
@@ -92,6 +97,10 @@ namespace x86 {
         if(!!interpreter_) {
             interpreter_->verify(!!region, [&]() {
                 fmt::print("No region containing {:#x}\n", ptr.address);
+                dumpRegions();
+            });
+            interpreter_->verify(region->protection & PROT_READ, [&]() {
+                fmt::print("Attempt to read {:#x} from non-readable region {}\n", ptr.address, region->name);
                 dumpRegions();
             });
         } else {
@@ -107,6 +116,10 @@ namespace x86 {
                 fmt::print("No region containing {:#x}\n", ptr.address);
                 dumpRegions();
             });
+            interpreter_->verify(region->protection & PROT_READ, [&]() {
+                fmt::print("Attempt to read {:#x} from non-readable region {}\n", ptr.address, region->name);
+                dumpRegions();
+            });
         } else {
             assert(!!region);
         }
@@ -118,6 +131,10 @@ namespace x86 {
         if(!!interpreter_) {
             interpreter_->verify(!!region, [&]() {
                 fmt::print("No region containing {:#x}\n", ptr.address);
+                dumpRegions();
+            });
+            interpreter_->verify(region->protection & PROT_WRITE, [&]() {
+                fmt::print("Attempt to write to {:#x} in non-writable region {}\n", ptr.address, region->name);
                 dumpRegions();
             });
         } else {
@@ -133,6 +150,10 @@ namespace x86 {
                 fmt::print("No region containing {:#x}\n", ptr.address);
                 dumpRegions();
             });
+            interpreter_->verify(region->protection & PROT_WRITE, [&]() {
+                fmt::print("Attempt to write to {:#x} in non-writable region {}\n", ptr.address, region->name);
+                dumpRegions();
+            });
         } else {
             assert(!!region);
         }
@@ -144,6 +165,10 @@ namespace x86 {
         if(!!interpreter_) {
             interpreter_->verify(!!region, [&]() {
                 fmt::print("No region containing {:#x}\n", ptr.address);
+                dumpRegions();
+            });
+            interpreter_->verify(region->protection & PROT_WRITE, [&]() {
+                fmt::print("Attempt to write to {:#x} in non-writable region {}\n", ptr.address, region->name);
                 dumpRegions();
             });
         } else {

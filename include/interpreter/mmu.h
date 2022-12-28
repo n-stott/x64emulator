@@ -10,11 +10,22 @@ namespace x86 {
 
     class Interpreter;
 
+    enum Protection {
+        PROT_NONE = 0,
+        PROT_READ = 1,
+        PROT_WRITE = 2,
+        PROT_EXEC = 4,
+    };
+
+    inline Protection operator|(Protection a, Protection b) {
+        return static_cast<Protection>((int)a | (int)b);
+    }
+
     class Mmu {
     public:
         class Region {
         public:
-            Region(std::string name, u32 base, u32 size);
+            Region(std::string name, u32 base, u32 size, Protection protection);
 
             bool contains(u32 address) const;
 
@@ -30,6 +41,7 @@ namespace x86 {
             u32 base;
             u32 size;
             std::vector<u8> data;
+            Protection protection;
         };
 
         Mmu() = default;
