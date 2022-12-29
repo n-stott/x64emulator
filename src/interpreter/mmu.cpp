@@ -11,6 +11,7 @@ namespace x86 {
         this->size = size;
         this->data.resize(size, 0x00);
         this->protection = protection;
+        this->handler = [](u32) { };
     }
 
     void Mmu::addRegion(Region region) {
@@ -84,6 +85,7 @@ namespace x86 {
             });
             interpreter_->verify(region->protection & PROT_READ, [&]() {
                 fmt::print("Attempt to read {:#x} from non-readable region {}\n", ptr.address, region->name);
+                if(!!region->handler) region->handler(ptr.address);
                 dumpRegions();
             });
         } else {
@@ -101,6 +103,7 @@ namespace x86 {
             });
             interpreter_->verify(region->protection & PROT_READ, [&]() {
                 fmt::print("Attempt to read {:#x} from non-readable region {}\n", ptr.address, region->name);
+                if(!!region->handler) region->handler(ptr.address);
                 dumpRegions();
             });
         } else {
@@ -118,6 +121,7 @@ namespace x86 {
             });
             interpreter_->verify(region->protection & PROT_READ, [&]() {
                 fmt::print("Attempt to read {:#x} from non-readable region {}\n", ptr.address, region->name);
+                if(!!region->handler) region->handler(ptr.address);
                 dumpRegions();
             });
         } else {

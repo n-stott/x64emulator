@@ -54,19 +54,25 @@ namespace x86 {
             std::abort();
         }
 
-        auto addSectionIfExists = [&](const std::string& name, Protection protection) {
+        auto addSectionIfExists = [&](const std::string& name, Protection protection, auto handler) {
             auto section = elf->sectionFromName(name);
             if(!section) return;
-            assert(!!section);
             Mmu::Region region{ name, (u32)section->address, (u32)section->size(), protection };
             std::memcpy(region.data.data(), section->begin, section->size()*sizeof(u8));
+            region.setHandler(handler);
             mmu_.addRegion(std::move(region));
         };
 
-        addSectionIfExists(".rodata", PROT_READ);
-        addSectionIfExists(".data.rel.ro", PROT_READ);
-        addSectionIfExists(".bss", PROT_READ | PROT_WRITE);
-        addSectionIfExists(".got", PROT_NONE);
+        addSectionIfExists(".rodata", PROT_READ, [](u32){});
+        addSectionIfExists(".data.rel.ro", PROT_READ, [](u32){});
+        addSectionIfExists(".bss", PROT_READ | PROT_WRITE, [](u32){});
+        addSectionIfExists(".got", PROT_NONE, [elf = *elf](u32 address){
+            elf.forAllRelocations([&](const elf::Elf::RelocationEntry32& relocation) {
+                if(relocation.offset() == address) {
+                    fmt::print("Relocation address={:#x} symbol={}\n", address, elf.relocationSymbol(relocation));
+                }
+            });
+        });
     }
 
     void Interpreter::run() {

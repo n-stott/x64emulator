@@ -3,6 +3,7 @@
 
 #include "utils/utils.h"
 #include "instructions.h"
+#include <functional>
 #include <string>
 #include <vector>
 
@@ -29,6 +30,10 @@ namespace x86 {
 
             bool contains(u32 address) const;
 
+            void setHandler(std::function<void(u32)> handler) {
+                this->handler = handler;
+            }
+
             u8 read8(Ptr8 ptr) const;
             u16 read16(Ptr16 ptr) const;
             u32 read32(Ptr32 ptr) const;
@@ -42,6 +47,7 @@ namespace x86 {
             u32 size;
             std::vector<u8> data;
             Protection protection;
+            std::function<void(u32)> handler;
         };
 
         Mmu() = default;
