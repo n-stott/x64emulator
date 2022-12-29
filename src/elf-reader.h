@@ -88,6 +88,18 @@ namespace elf {
             u32 symbol() const { return r_info >> 8; }
         };
 
+        std::string_view relocationSymbol(RelocationEntry32 relocation) const {
+            auto symbolTable = dynamicSymbolTable();
+            if(!symbolTable) return "unknown";
+            auto stringTable = dynamicStringTable();
+            if(!stringTable) return "unknown";
+            if(relocation.symbol() >= symbolTable->size()) return "unknown";
+            SymbolTable::Entry32 symbolTableEntry = (*symbolTable)[relocation.symbol()];
+            if(symbolTableEntry.st_name == 0) return "unknown";
+            if(symbolTableEntry.st_name >= stringTable->size()) return "unknown";
+            return (*stringTable)[symbolTableEntry.st_name];
+        }
+
         class SymbolTable {
         public:
             struct Entry32 {
