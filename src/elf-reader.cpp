@@ -246,9 +246,20 @@ namespace elf {
         });
         return section;
     }
+    
+    Elf::SymbolTable::SymbolTable(Elf::Section symbolSection) {
+        assert(symbolSection.size() % sizeof(Entry32) == 0);
+        begin_ = (const Entry32*)symbolSection.begin;
+        end_ = (const Entry32*)symbolSection.end;
+    }
 
     std::string Elf::SymbolTable::Entry32::toString() const {
-        return fmt::format("name={:#x} value={:#x} size={:#x} info={:#x} other={:#x} shndx={}", st_name, st_value, st_size, st_info, st_other, st_shndx);
+        return fmt::format("name={} value={} size={} info={} other={} shndx={}", st_name, st_value, st_size, st_info, st_other, st_shndx);
+    }
+
+    Elf::StringTable::StringTable(Section stringSection) {
+        begin_ = (const char*)stringSection.begin;
+        end_ = (const char*)stringSection.end;
     }
 
 

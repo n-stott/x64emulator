@@ -14,13 +14,20 @@ int main(int argc, const char* argv[]) {
 
      elf->print();
 
-     auto symbolTable = elf->symbolTable();
+     auto symbolTable = elf->dynamicSymbolTable();
+     auto stringTable = elf->dynamicStringTable();
 
      elf->forAllRelocations([&](const elf::Elf::RelocationEntry32& relocation) {
-          if(!symbolTable) {
-               fmt::print("Relocation offset={:#x} type={:#x} symbol={:#x}\n", relocation.offset(), relocation.type(), relocation.symbol());
+          if(!symbolTable) return;
+          if(!stringTable) return;
+          elf::Elf::SymbolTable::Entry32 symbolTableEntry = (*symbolTable)[relocation.symbol()];
+          std::string_view symbol;
+          if(symbolTableEntry.st_name == 0 || symbolTableEntry.st_name >= stringTable->size()) {
+               return;
+               symbol = "unknown";
           } else {
-               fmt::print("Relocation offset={:#x} type={:#x} symbol={}\n", relocation.offset(), relocation.type(), (*symbolTable)[relocation.symbol()].toString());
+               symbol = (*stringTable)[symbolTableEntry.st_name];
           }
+          fmt::print("Relocation offset={:#x} type={:#x} symbol={}\n", relocation.offset(), relocation.type(), symbol);
      });
 }

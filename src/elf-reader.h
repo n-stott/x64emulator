@@ -7,6 +7,7 @@
 #include <string_view>
 #include <vector>
 #include <cassert>
+#include <string.h>
 
 using u8 = unsigned char;
 using u16 = unsigned short;
@@ -79,39 +80,60 @@ namespace elf {
         };
 
         struct RelocationEntry32 {
-	        u32 r_offset;
-	        u32 r_info;
+	        u32 r_offset {};
+	        u32 r_info {};
 
             u32 offset() const { return r_offset; }
             u8 type() const { return (u8)r_info; }
             u32 symbol() const { return r_info >> 8; }
         };
 
-        struct SymbolTable {
+        class SymbolTable {
+        public:
             struct Entry32 {
-                u32	st_name;
-                u32	st_value;
-                u32	st_size;
-                u8 st_info;
-                u8 st_other;
-                u16 st_shndx;
+                u32	st_name {};
+                u32	st_value {};
+                u32	st_size {};
+                u8 st_info {};
+                u8 st_other {};
+                u16 st_shndx {};
 
                 std::string toString() const;
             };
-            static_assert(sizeof(Entry32) == 16, "");
-
-            const Entry32* begin_;
-            const Entry32* end_;
 
             const Entry32* begin() const { return begin_; }
             const Entry32* end() const { return end_; }
 
             size_t size() const { return std::distance(begin_, end_); }
 
-            Entry32 operator[](size_t sidx) {
+            Entry32 operator[](size_t sidx) const {
                 assert(sidx < size());
                 return *(begin_+sidx);
             }
+        private:
+            static_assert(sizeof(Entry32) == 16, "");
+
+            friend class Elf;
+            explicit SymbolTable(Section symbolSection);
+            const Entry32* begin_;
+            const Entry32* end_;
+        };
+
+        class StringTable {
+        public:
+            size_t size() const { return std::distance(begin_, end_); }
+
+            std::string_view operator[](size_t idx) const {
+                assert(idx < size());
+                size_t len = ::strlen(begin_+idx);
+                std::string_view sv(begin_+idx, len);
+                return sv;
+            }
+        private:
+            friend class Elf;
+            explicit StringTable(Section stringSection);
+            const char* begin_;
+            const char* end_;
         };
 
         Class archClass() const { return fileheader_.ident.class_; }
@@ -122,10 +144,28 @@ namespace elf {
         Type type() const { return fileheader_.type; }
         Machine machine() const { return fileheader_.machine; }
 
+        std::optional<SymbolTable> dynamicSymbolTable() const {
+            auto dynsym = sectionFromName(".dynsym");
+            if(!dynsym) return {};
+            return SymbolTable(dynsym.value());
+        }
+
         std::optional<SymbolTable> symbolTable() const {
             auto symtab = sectionFromName(".symtab");
             if(!symtab) return {};
-            return SymbolTable { (const SymbolTable::Entry32*)symtab->begin, (const SymbolTable::Entry32*)symtab->end };
+            return SymbolTable(symtab.value());
+        }
+
+        std::optional<StringTable> dynamicStringTable() const {
+            auto dynstr = sectionFromName(".dynstr");
+            if(!dynstr) return {};
+            return StringTable(dynstr.value());
+        }
+
+        std::optional<StringTable> stringTable() const {
+            auto strtab = sectionFromName(".strtab");
+            if(!strtab) return {};
+            return StringTable(strtab.value());
         }
 
         std::optional<Section> sectionFromName(std::string_view sv) const;
