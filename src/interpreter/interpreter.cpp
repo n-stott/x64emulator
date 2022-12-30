@@ -54,25 +54,31 @@ namespace x86 {
             std::abort();
         }
 
-        auto addSectionIfExists = [&](const std::string& name, Protection protection, auto handler) {
+        auto addSectionIfExists = [&](const std::string& name, Protection protection) -> Mmu::Region* {
             auto section = elf->sectionFromName(name);
-            if(!section) return;
+            if(!section) return nullptr;
             Mmu::Region region{ name, (u32)section->address, (u32)section->size(), protection };
             std::memcpy(region.data.data(), section->begin, section->size()*sizeof(u8));
-            region.setHandler(handler);
-            mmu_.addRegion(std::move(region));
+            return mmu_.addRegion(std::move(region));
         };
 
-        addSectionIfExists(".rodata", PROT_READ, [](u32){});
-        addSectionIfExists(".data.rel.ro", PROT_READ, [](u32){});
-        addSectionIfExists(".bss", PROT_READ | PROT_WRITE, [](u32){});
-        addSectionIfExists(".got", PROT_NONE, [elf = *elf](u32 address){
-            elf.forAllRelocations([&](const elf::Elf::RelocationEntry32& relocation) {
+        addSectionIfExists(".rodata", PROT_READ);
+        addSectionIfExists(".data.rel.ro", PROT_READ);
+        addSectionIfExists(".bss", PROT_READ | PROT_WRITE);
+        Mmu::Region* got = addSectionIfExists(".got", PROT_NONE); 
+
+        std::shared_ptr<std::unique_ptr<elf::Elf>> trick = std::make_shared<std::unique_ptr<elf::Elf>>(std::move(elf));
+
+        auto gotHandler = [trick](u32 address){
+            elf::Elf* elf = trick->get();
+            elf->forAllRelocations([&](const elf::Elf::RelocationEntry32& relocation) {
                 if(relocation.offset() == address) {
-                    fmt::print("Relocation address={:#x} symbol={}\n", address, elf.relocationSymbol(relocation));
+                    fmt::print("Relocation address={:#x} symbol={}\n", address, elf->relocationSymbol(relocation));
                 }
             });
-        });
+        };
+
+        got->setHandler(std::move(gotHandler));
     }
 
     void Interpreter::run() {

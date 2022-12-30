@@ -14,8 +14,9 @@ namespace x86 {
         this->handler = [](u32) { };
     }
 
-    void Mmu::addRegion(Region region) {
+    Mmu::Region* Mmu::addRegion(Region region) {
         regions_.push_back(std::move(region));
+        return &regions_.back();
     }
 
     bool Mmu::Region::contains(u32 address) const {

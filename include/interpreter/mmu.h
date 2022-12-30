@@ -30,8 +30,8 @@ namespace x86 {
 
             bool contains(u32 address) const;
 
-            void setHandler(std::function<void(u32)> handler) {
-                this->handler = handler;
+            void setHandler(std::function<void(u32)>&& handler) {
+                this->handler = std::move(handler);
             }
 
             u8 read8(Ptr8 ptr) const;
@@ -53,7 +53,7 @@ namespace x86 {
         Mmu() = default;
         explicit Mmu(const Interpreter* interpreter) : interpreter_(interpreter) { }
 
-        void addRegion(Region region);
+        Region* addRegion(Region region);
 
         u8 read8(Ptr8 ptr) const;
         u16 read16(Ptr16 ptr) const;
