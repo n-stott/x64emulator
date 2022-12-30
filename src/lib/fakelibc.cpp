@@ -1,4 +1,6 @@
 #include <cstddef>
+#include <stdarg.h>
+#include <fmt/printf.h>
 
 extern "C" {
 
@@ -85,6 +87,13 @@ extern "C" {
             --n;
         }
         return 0;
+    }
+
+    int fakelibc$vsnprintf(char* str, size_t size, const char* format, va_list ap) {
+        if(!size) return 0;
+        std::memcpy(str, "vsnprintf::error", size-1);
+        str[size-1] = '\0';
+        return size;
     }
 
 }
