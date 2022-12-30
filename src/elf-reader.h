@@ -19,6 +19,10 @@ namespace elf {
     class Elf {
     public:
 
+        Elf() = default;
+        Elf(Elf&&) = default;
+        Elf& operator=(Elf&&) = default;
+
         enum class Class : u32 {
             B32 = 1,
             B64 = 2,
@@ -205,6 +209,11 @@ namespace elf {
         }
 
     private:
+
+        Elf(const Elf&) = delete;
+        Elf(Elf&) = delete;
+        Elf& operator=(const Elf&) = delete;
+        Elf& operator=(Elf&) = delete;
 
         struct FileHeader {
             struct Identifier {
