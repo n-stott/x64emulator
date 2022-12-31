@@ -91,9 +91,23 @@ extern "C" {
 
     int fakelibc$vsnprintf(char* str, size_t size, const char* format, va_list ap) {
         if(!size) return 0;
-        std::memcpy(str, "vsnprintf::error", size-1);
-        str[size-1] = '\0';
-        return size;
+        int retsize = 1;
+        if(size >= 2) {
+            str[0] = 'e';
+            str[1] = '\0';
+            retsize = 1;
+        }
+        if(size >= 3) {
+            str[1] = 'r';
+            str[2] = '\0';
+            retsize = 2;
+        }
+        if(size >= 4) {
+            str[2] = 'r';
+            str[3] = '\0';
+            retsize = 3;
+        }
+        return retsize;
     }
 
 }
