@@ -262,5 +262,15 @@ namespace elf {
         end_ = (const char*)stringSection.end;
     }
 
+    void Elf::doRelocation(u32 offset, u32 address) {
+        if(!address) return;
+        if(offset + sizeof(address) > bytes_.size()) {
+            fmt::print("Error: cannot relocate to offset {:#x}. Size of ELF = {:#x}\n", offset, bytes_.size());
+            return;
+        }
+        fmt::print("At memory location {:#x} : {:#x}\n", offset, *(u32*)(bytes_.data()+offset));
+        std::memcpy(bytes_.data()+offset, &address, sizeof(address));
+        fmt::print("At memory location {:#x} : {:#x}\n", offset, *(u32*)(bytes_.data()+offset));
+    }
 
 }

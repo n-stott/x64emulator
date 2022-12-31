@@ -7,6 +7,7 @@
 #include <string_view>
 #include <vector>
 #include <cassert>
+#include <cstring>
 #include <string.h>
 
 using u8 = unsigned char;
@@ -89,7 +90,11 @@ namespace elf {
 
             u32 offset() const { return r_offset; }
             u8 type() const { return (u8)r_info; }
-            u32 symbol() const { return r_info >> 8; }
+            u32 sym() const { return r_info >> 8; }
+
+            std::string_view symbol(const Elf& elf) const {
+                return elf.relocationSymbol(*this);
+            }
         };
 
         std::string_view relocationSymbol(RelocationEntry32 relocation) const {
@@ -97,8 +102,8 @@ namespace elf {
             if(!symbolTable) return "unknown";
             auto stringTable = dynamicStringTable();
             if(!stringTable) return "unknown";
-            if(relocation.symbol() >= symbolTable->size()) return "unknown";
-            SymbolTable::Entry32 symbolTableEntry = (*symbolTable)[relocation.symbol()];
+            if(relocation.sym() >= symbolTable->size()) return "unknown";
+            SymbolTable::Entry32 symbolTableEntry = (*symbolTable)[relocation.sym()];
             if(symbolTableEntry.st_name == 0) return "unknown";
             if(symbolTableEntry.st_name >= stringTable->size()) return "unknown";
             return (*stringTable)[symbolTableEntry.st_name];
@@ -208,7 +213,24 @@ namespace elf {
             });
         }
 
+        template<typename Callback>
+        void resolveRelocations(Callback callback) {
+            if(archClass() != Class::B32) return;
+            forAllSectionHeaders([&](const SectionHeader& header) {
+                if(header.sh_type != SectionHeaderType::REL) return;
+                Section relocationSection = header.toSection(reinterpret_cast<const u8*>(bytes_.data()), bytes_.size());
+                if(relocationSection.size() % sizeof(RelocationEntry32) != 0) return;
+                const RelocationEntry32* begin = reinterpret_cast<const RelocationEntry32*>(relocationSection.begin);
+                const RelocationEntry32* end = reinterpret_cast<const RelocationEntry32*>(relocationSection.end);
+                for(const RelocationEntry32* it = begin; it != end; ++it) {
+                    callback(it->offset(), it->symbol(*this));
+                }
+            });
+        }
+
     private:
+
+        void doRelocation(u32 offset, u32 address);
 
         Elf(const Elf&) = delete;
         Elf(Elf&) = delete;
