@@ -44,7 +44,7 @@ target_link_options(fmt_print PUBLIC ${LD_OPTIONS} -static-libstdc++ -static-lib
 
 add_executable(tostring tests/src/tostring.cpp)
 target_compile_options(tostring PUBLIC ${CC_OPTIONS})
-target_link_options(tostring PUBLIC ${LD_OPTIONS})
+target_link_options(tostring PUBLIC ${LD_OPTIONS} -static-libstdc++ -static-libgcc)
 
 add_library(fakelibc SHARED
     src/lib/fakelibc.cpp

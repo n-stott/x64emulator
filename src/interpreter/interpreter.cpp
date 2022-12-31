@@ -65,7 +65,15 @@ namespace x86 {
         addSectionIfExists(".rodata", PROT_READ);
         addSectionIfExists(".data.rel.ro", PROT_READ);
         addSectionIfExists(".bss", PROT_READ | PROT_WRITE);
-        Mmu::Region* got = addSectionIfExists(".got", PROT_NONE); 
+        Mmu::Region* got = addSectionIfExists(".got", PROT_READ | PROT_WRITE);
+        Mmu::Region* gotplt = addSectionIfExists(".got.plt", PROT_READ | PROT_WRITE);
+
+        elf->resolveRelocations([&](u32 relocationAddress, std::string_view symbol) {
+            const auto* func = libc_.findFunction(symbol);
+            if(!func) return;
+            fmt::print("Resolve relocation for \"{}\" : {:#x}\n", symbol, func ? func->address : 0);
+            mmu_.write32(Ptr32{relocationAddress}, func->address);
+        });
 
         std::shared_ptr<std::unique_ptr<elf::Elf>> trick = std::make_shared<std::unique_ptr<elf::Elf>>(std::move(elf));
 
@@ -78,7 +86,8 @@ namespace x86 {
             });
         };
 
-        got->setHandler(std::move(gotHandler));
+        got->setHandler(gotHandler);
+        gotplt->setHandler(gotHandler);
     }
 
     void Interpreter::run() {
@@ -119,7 +128,7 @@ namespace x86 {
                 std::string registerDump = fmt::format("eax={:0000008x} ebx={:0000008x} ecx={:0000008x} edx={:0000008x} esi={:0000008x} edi={:0000008x} ebp={:0000008x} esp={:0000008x}", eax_, ebx_, ecx_, edx_, esi_, edi_, ebp_, esp_);
                 std::string indent = fmt::format("{:{}}", "", state_.frames.size());
                 std::string menmonic = fmt::format("{}|{}", indent, instruction->toString());
-                fmt::print(stderr, "{:10} {:80}{}\n", ticks, menmonic, registerDump);
+                fmt::print(stderr, "{:10} {:60}{}\n", ticks, menmonic, registerDump);
                 ++ticks;
                 instruction->exec(this);
             } catch(const VerificationException&) {
@@ -954,30 +963,62 @@ namespace x86 {
     void Interpreter::exec(CallIndirect<R32> ins) {
         u32 address = get(ins.src);
         const Function* func = program_.findFunctionByAddress(address);
-        verify(!!func, [&]() {
-            fmt::print(stderr, "Unable to find function at {:#x}", address);
-        });
+        if(!!func) {
+            state_.frames.push_back(Frame{func, 0});
+            push32(eip_);
+        } else {
+            func = libc_.findFunctionByAddress(address);
+            verify(!!func, [&]() {
+                fmt::print(stderr, "Unable to find function at {:#x}\n", address);
+            });
+            state_.frames.push_back(Frame{func, 0});
+            push32(eip_);
+        }
     }
     void Interpreter::exec(CallIndirect<Addr<Size::DWORD, B>> ins) {
         u32 address = mmu_.read32(resolve(ins.src));
         const Function* func = program_.findFunctionByAddress(address);
-        verify(!!func, [&]() {
-            fmt::print(stderr, "Unable to find function at {:#x}", address);
-        });
+        if(!!func) {
+            state_.frames.push_back(Frame{func, 0});
+            push32(eip_);
+        } else {
+            func = libc_.findFunctionByAddress(address);
+            verify(!!func, [&]() {
+                fmt::print(stderr, "Unable to find function at {:#x}\n", address);
+            });
+            state_.frames.push_back(Frame{func, 0});
+            push32(eip_);
+        }
     }
     void Interpreter::exec(CallIndirect<Addr<Size::DWORD, BD>> ins) {
         u32 address = mmu_.read32(resolve(ins.src));
         const Function* func = program_.findFunctionByAddress(address);
-        verify(!!func, [&]() {
-            fmt::print(stderr, "Unable to find function at {:#x}", address);
-        });
+        if(!!func) {
+            state_.frames.push_back(Frame{func, 0});
+            push32(eip_);
+        } else {
+            func = libc_.findFunctionByAddress(address);
+            verify(!!func, [&]() {
+                fmt::print(stderr, "Unable to find function at {:#x}\n", address);
+            });
+            state_.frames.push_back(Frame{func, 0});
+            push32(eip_);
+        }
     }
     void Interpreter::exec(CallIndirect<Addr<Size::DWORD, BIS>> ins) {
         u32 address = mmu_.read32(resolve(ins.src));
         const Function* func = program_.findFunctionByAddress(address);
-        verify(!!func, [&]() {
-            fmt::print(stderr, "Unable to find function at {:#x}", address);
-        });
+        if(!!func) {
+            state_.frames.push_back(Frame{func, 0});
+            push32(eip_);
+        } else {
+            func = libc_.findFunctionByAddress(address);
+            verify(!!func, [&]() {
+                fmt::print(stderr, "Unable to find function at {:#x}\n", address);
+            });
+            state_.frames.push_back(Frame{func, 0});
+            push32(eip_);
+        }
     }
 
     void Interpreter::exec(Ret<>) {

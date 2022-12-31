@@ -6,6 +6,8 @@
 #include <cassert>
 #include <fmt/core.h>
 
+#define DEBUG_FINDFUNCTION 0
+
 namespace x86 {
 
     Library::Library(Program program) : Program(std::move(program)) {
@@ -20,12 +22,14 @@ namespace x86 {
     }
 
     const Function* Library::findFunction(std::string_view name) const {
+#if DEBUG_FINDFUNCTION
         fmt::print(stderr, "Find function : {}\n", name);
-        if(name.size() < 4) return nullptr;
-        if(name.substr(name.size()-4) != "@plt") return nullptr;
-        name.remove_suffix(4);
+#endif
+        if(name.size() >= 4 && name.substr(name.size()-4) == "@plt") name.remove_suffix(4);
         if(!isIntrinsic(name)) {
+#if DEBUG_FINDFUNCTION
             fmt::print(stderr, "Find standard function : {}\n", name);
+#endif
             for(const Function& func : functions) {
                 auto funcparts = split(func.name, '$');
                 if(funcparts.size() != 2) continue;
@@ -37,8 +41,9 @@ namespace x86 {
                 if(name == funcPtr->name) return funcPtr.get();
             }
         }
-
+#if DEBUG_FINDFUNCTION
         fmt::print(stderr, "Function {} not found in library\n", name);
+#endif
         return nullptr;
     }
 
