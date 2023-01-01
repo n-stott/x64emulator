@@ -48,40 +48,67 @@ namespace x86 {
         mmu_.addRegion(stack);
         esp_ = stackBase + stackSize;
 
-        auto elf = elf::ElfReader::tryCreate(program_.filepath);
-        if(!elf) {
-            fmt::print(stderr, "Failed to load elf file\n");
+        auto programElf = elf::ElfReader::tryCreate(program_.filepath);
+        if(!programElf) {
+            fmt::print(stderr, "Failed to load program elf file\n");
             std::abort();
         }
 
-        auto addSectionIfExists = [&](const std::string& name, Protection protection) -> Mmu::Region* {
-            auto section = elf->sectionFromName(name);
+        auto addSectionIfExists = [&](const elf::Elf& elf, const std::string& name, Protection protection, u32 offset = 0) -> Mmu::Region* {
+            auto section = elf.sectionFromName(name);
             if(!section) return nullptr;
-            Mmu::Region region{ name, (u32)section->address, (u32)section->size(), protection };
+            Mmu::Region region{ name, (u32)(section->address + offset), (u32)section->size(), protection };
             std::memcpy(region.data.data(), section->begin, section->size()*sizeof(u8));
             return mmu_.addRegion(std::move(region));
         };
 
-        addSectionIfExists(".rodata", PROT_READ);
-        addSectionIfExists(".data.rel.ro", PROT_READ);
-        addSectionIfExists(".bss", PROT_READ | PROT_WRITE);
-        Mmu::Region* got = addSectionIfExists(".got", PROT_READ | PROT_WRITE);
-        Mmu::Region* gotplt = addSectionIfExists(".got.plt", PROT_READ | PROT_WRITE);
+        addSectionIfExists(*programElf, ".rodata", PROT_READ);
+        addSectionIfExists(*programElf, ".data.rel.ro", PROT_READ);
+        addSectionIfExists(*programElf, ".bss", PROT_READ | PROT_WRITE);
+        Mmu::Region* got = addSectionIfExists(*programElf, ".got", PROT_READ | PROT_WRITE);
+        Mmu::Region* gotplt = addSectionIfExists(*programElf, ".got.plt", PROT_READ | PROT_WRITE);
 
-        elf->resolveRelocations([&](u32 relocationAddress, std::string_view symbol) {
-            const auto* func = libc_.findFunction(symbol);
-            if(!func) return;
-            fmt::print("Resolve relocation for \"{}\" : {:#x}\n", symbol, func ? func->address : 0);
-            mmu_.write32(Ptr32{relocationAddress}, func->address);
+        std::unique_ptr<elf::Elf> libcElf = elf::ElfReader::tryCreate(libc_.filepath);
+        if(!libcElf) {
+            fmt::print("Failed to load libc elf file\n");
+            std::abort();
+        }
+        addSectionIfExists(*libcElf, ".data", PROT_READ);
+
+        programElf->resolveRelocations([&](const elf::Elf::RelocationEntry32& relocation) {
+            const auto* sym = relocation.symbol(*programElf);
+            if(!sym) return;
+            std::string_view symbol = sym->symbol(*programElf);
+
+            u32 relocationAddress = relocation.offset();
+            if(sym->type() == elf::Elf::SymbolTable::Entry32::Type::FUNC) {
+                const auto* func = libc_.findFunction(symbol);
+                if(!func) return;
+                fmt::print("Resolve relocation for function \"{}\" : {:#x}\n", symbol, func ? func->address : 0);
+                mmu_.write32(Ptr32{relocationAddress}, func->address);
+            }
+            if(sym->type() == elf::Elf::SymbolTable::Entry32::Type::OBJECT) {
+                bool found = false;
+                libcElf->forAllSymbols([&](const elf::Elf::SymbolTable::Entry32& entry) {
+                    if(found) return;
+                    if(entry.symbol(*libcElf).find(symbol) == std::string_view::npos) return;
+                    fmt::print("Found symbol in libc. Value={:#x}\n", entry.st_value);
+                    found = true;
+                    fmt::print("Resolve relocation for object \"{}\" : {:#x}\n", symbol, entry.st_value);
+                    mmu_.write32(Ptr32{relocationAddress}, entry.st_value);
+                });
+            }
         });
 
-        std::shared_ptr<std::unique_ptr<elf::Elf>> trick = std::make_shared<std::unique_ptr<elf::Elf>>(std::move(elf));
+        std::shared_ptr<std::unique_ptr<elf::Elf>> trick = std::make_shared<std::unique_ptr<elf::Elf>>(std::move(programElf));
 
         auto gotHandler = [trick](u32 address){
             elf::Elf* elf = trick->get();
             elf->forAllRelocations([&](const elf::Elf::RelocationEntry32& relocation) {
                 if(relocation.offset() == address) {
-                    fmt::print("Relocation address={:#x} symbol={}\n", address, elf->relocationSymbol(relocation));
+                    const auto* sym = relocation.symbol(*elf);
+                    std::string_view symbol = sym->symbol(*elf);
+                    fmt::print("Relocation address={:#x} symbol={}\n", address, symbol);
                 }
             });
         };
