@@ -43,7 +43,7 @@ namespace x86 {
         
         // stack
         u32 stackBase = 0x2000000;
-        u32 stackSize = 4*1024;
+        u32 stackSize = 16*1024;
         Mmu::Region stack{ "stack", stackBase, stackSize, PROT_READ | PROT_WRITE };
         mmu_.addRegion(stack);
         esp_ = stackBase + stackSize;
