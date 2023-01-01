@@ -214,7 +214,7 @@ namespace elf {
         }
 
         template<typename Callback>
-        void resolveRelocations(Callback callback) {
+        void resolveRelocations(Callback callback) const {
             if(archClass() != Class::B32) return;
             forAllSectionHeaders([&](const SectionHeader& header) {
                 if(header.sh_type != SectionHeaderType::REL) return;
