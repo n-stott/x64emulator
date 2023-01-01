@@ -254,23 +254,30 @@ namespace elf {
     }
 
     std::string Elf::SymbolTable::Entry32::toString() const {
-        return fmt::format("name={} value={} size={} info={} other={} shndx={}", st_name, st_value, st_size, st_info, st_other, st_shndx);
+        auto typeToString = [](Type type) {
+            switch(type) {
+                case Type::NOTYPE: return "NOTYPE";
+                case Type::OBJECT: return "OBJECT";
+                case Type::FUNC: return "FUNC";
+                case Type::SECTION: return "SECTION";
+                case Type::FILE: return "FILE";
+                case Type::COMMON: return "COMMON";
+                case Type::TLS: return "TLS";
+                case Type::LOOS: return "LOOS";
+                case Type::HIOS: return "HIOS";
+                case Type::LOPROC: return "LOPROC";
+                case Type::HIPROC: return "HIPROC";
+            }
+            assert(false);
+            return "";
+        };
+
+        return fmt::format("name={} value={} size={} info={} type={} other={} shndx={}", st_name, st_value, st_size, st_info, typeToString(type()), st_other, st_shndx);
     }
 
     Elf::StringTable::StringTable(Section stringSection) {
         begin_ = (const char*)stringSection.begin;
         end_ = (const char*)stringSection.end;
-    }
-
-    void Elf::doRelocation(u32 offset, u32 address) {
-        if(!address) return;
-        if(offset + sizeof(address) > bytes_.size()) {
-            fmt::print("Error: cannot relocate to offset {:#x}. Size of ELF = {:#x}\n", offset, bytes_.size());
-            return;
-        }
-        fmt::print("At memory location {:#x} : {:#x}\n", offset, *(u32*)(bytes_.data()+offset));
-        std::memcpy(bytes_.data()+offset, &address, sizeof(address));
-        fmt::print("At memory location {:#x} : {:#x}\n", offset, *(u32*)(bytes_.data()+offset));
     }
 
 }
