@@ -14,6 +14,8 @@ extern "C" {
         return intrinsic$putchar(c);
     }
 
+    FILE* fakelibc$stdout = (FILE*)0x57D0117;
+
     int fakelibc$puts(const char* s) {
         if(!s) {
             return intrinsic$putchar('$');
