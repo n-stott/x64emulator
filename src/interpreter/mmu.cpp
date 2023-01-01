@@ -12,6 +12,7 @@ namespace x86 {
         this->data.resize(size, 0x00);
         this->protection = protection;
         this->handler = [](u32) { };
+        this->invalidValues = INV_NONE;
     }
 
     Mmu::Region* Mmu::addRegion(Region region) {
@@ -92,7 +93,14 @@ namespace x86 {
         } else {
             assert(!!region);
         }
-        return region->read8(ptr);
+        u8 value = region->read8(ptr);
+        if(!!interpreter_) {
+            interpreter_->verify((region->invalidValues != INV_NULL) || (value != 0), [&]() {
+                fmt::print("Read 0x0 from region {} which is marked INV_NULL at address {:#x}\n", region->name, ptr.address);
+                if(!!region->handler) region->handler(ptr.address);
+            });
+        }
+        return value;
     }
 
     u16 Mmu::read16(Ptr16 ptr) const {
@@ -110,7 +118,14 @@ namespace x86 {
         } else {
             assert(!!region);
         }
-        return region->read16(ptr);
+        u16 value = region->read16(ptr);
+        if(!!interpreter_) {
+            interpreter_->verify((region->invalidValues != INV_NULL) || (value != 0), [&]() {
+                fmt::print("Read 0x0 from region {} which is marked INV_NULL at address {:#x}\n", region->name, ptr.address);
+                if(!!region->handler) region->handler(ptr.address);
+            });
+        }
+        return value;
     }
 
     u32 Mmu::read32(Ptr32 ptr) const {
@@ -128,7 +143,14 @@ namespace x86 {
         } else {
             assert(!!region);
         }
-        return region->read32(ptr);
+        u32 value = region->read32(ptr);
+        if(!!interpreter_) {
+            interpreter_->verify((region->invalidValues != INV_NULL) || (value != 0), [&]() {
+                fmt::print("Read 0x0 from region {} which is marked INV_NULL at address {:#x}\n", region->name, ptr.address);
+                if(!!region->handler) region->handler(ptr.address);
+            });
+        }
+        return value;
     }
 
     void Mmu::write8(Ptr8 ptr, u8 value) {

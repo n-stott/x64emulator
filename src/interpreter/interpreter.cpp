@@ -86,6 +86,9 @@ namespace x86 {
             });
         };
 
+        got->setInvalidValues(INV_NULL);
+        gotplt->setInvalidValues(INV_NULL);
+
         got->setHandler(gotHandler);
         gotplt->setHandler(gotHandler);
     }

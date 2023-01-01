@@ -22,6 +22,11 @@ namespace x86 {
         return static_cast<Protection>((int)a | (int)b);
     }
 
+    enum InvalidValues {
+        INV_NONE,
+        INV_NULL,
+    };
+
     class Mmu {
     public:
         class Region {
@@ -29,6 +34,10 @@ namespace x86 {
             Region(std::string name, u32 base, u32 size, Protection protection);
 
             bool contains(u32 address) const;
+
+            void setInvalidValues(InvalidValues invalidValues) {
+                this->invalidValues = invalidValues;
+            }
 
             void setHandler(std::function<void(u32)>&& handler) {
                 this->handler = std::move(handler);
@@ -47,6 +56,7 @@ namespace x86 {
             u32 size;
             std::vector<u8> data;
             Protection protection;
+            InvalidValues invalidValues;
             std::function<void(u32)> handler;
         };
 
