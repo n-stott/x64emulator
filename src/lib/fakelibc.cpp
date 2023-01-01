@@ -112,4 +112,13 @@ extern "C" {
         return retsize;
     }
 
+    size_t fakelibc$fwrite(const void* ptr, size_t size, size_t nmemb, FILE* stream) {
+        (void)stream;
+        if(size != 1) return 0;
+        for(size_t i = 0; i < nmemb; ++i) {
+            intrinsic$putchar(((const char*)ptr)[i]);
+        }
+        return nmemb;
+    }
+
 }
