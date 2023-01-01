@@ -155,10 +155,12 @@ namespace x86 {
                     stop_ = true;
                     break;
                 }
+#ifndef NDEBUG
                 std::string registerDump = fmt::format("eax={:0000008x} ebx={:0000008x} ecx={:0000008x} edx={:0000008x} esi={:0000008x} edi={:0000008x} ebp={:0000008x} esp={:0000008x}", eax_, ebx_, ecx_, edx_, esi_, edi_, ebp_, esp_);
                 std::string indent = fmt::format("{:{}}", "", state_.frames.size());
                 std::string menmonic = fmt::format("{}|{}", indent, instruction->toString());
                 fmt::print(stderr, "{:10} {:60}{}\n", ticks, menmonic, registerDump);
+#endif
                 ++ticks;
                 instruction->exec(this);
             } catch(const VerificationException&) {
@@ -427,11 +429,6 @@ namespace x86 {
         return value;
     }
 
-    static u32 signExtended32(u8 value) {
-        fmt::print(stderr, "Warning : fix signExtended\n");
-        return (i8)value;
-    }
-
     CallingContext Interpreter::context() const {
         return CallingContext{};
     }
@@ -469,22 +466,36 @@ namespace x86 {
     #define TODO(ins) \
         fmt::print(stderr, "Fail at : {}\n", x86::utils::toString(ins));\
         verify(false, "Not implemented : "+x86::utils::toString(ins));\
-        assert(!"Not implemented"); 
+        assert(!"Not implemented");
+
+#ifndef NDEBUG
+    #define DEBUG_ONLY(X) X
+#else
+    #define DEBUG_ONLY(X)
+#endif
 
     #define WARN_FLAGS() \
         flags_.setUnsure();\
-        fmt::print(stderr, "Warning : flags not updated\n")
+        DEBUG_ONLY(fmt::print(stderr, "Warning : flags not updated\n"))
 
     #define REQUIRE_FLAGS() \
         verify(flags_.sure(), "flags are not set correctly");
 
     #define WARN_SIGNED_OVERFLOW() \
-        fmt::print(stderr, "Warning : signed integer overflow not handled\n")
+        DEBUG_ONLY(fmt::print(stderr, "Warning : signed integer overflow not handled\n"))
 
     #define ASSERT(ins, cond) \
         bool condition = (cond);\
         if(!condition) fmt::print(stderr, "Fail at : {}\n", x86::utils::toString(ins));\
         assert(cond); 
+
+    #define WARN_SIGN_EXTENDED() \
+        DEBUG_ONLY(fmt::print(stderr, "Warning : fix signExtended\n"))
+
+    static u32 signExtended32(u8 value) {
+        WARN_SIGN_EXTENDED();
+        return (i32)(i8)value;
+    }
 
     u8 Interpreter::execAdd8Impl(u8 dst, u8 src) {
         (void)dst;
@@ -1372,6 +1383,7 @@ namespace x86 {
     void Interpreter::exec(Jmp<R32> ins) {
         // fmt::print("Jump to {} @ {}\n", ins.symbolName.value_or("Unknown symbol"), get(ins.symbolAddress));
         bool success = state_.jumpInFrame(get(ins.symbolAddress));
+        (void)success;
         assert(success);
     }
 
@@ -1389,6 +1401,7 @@ namespace x86 {
         if(flags_.matches(Cond::NE)) {
             // fmt::print("Jump to {} @ {}\n", ins.symbolName, ins.symbolAddress);
             bool success = state_.jumpInFrame(ins.symbolAddress);
+            (void)success;
             assert(success);
         }
     }
@@ -1397,6 +1410,7 @@ namespace x86 {
         if(flags_.matches(Cond::E)) {
             // fmt::print("Jump to {} @ {}\n", ins.symbolName, ins.symbolAddress);
             bool success = state_.jumpInFrame(ins.symbolAddress);
+            (void)success;
             assert(success);
         }
     }
@@ -1405,6 +1419,7 @@ namespace x86 {
         if(flags_.matches(Cond::AE)) {
             // fmt::print("Jump to {} @ {}\n", ins.symbolName, ins.symbolAddress);
             bool success = state_.jumpInFrame(ins.symbolAddress);
+            (void)success;
             assert(success);
         }
     }
@@ -1413,6 +1428,7 @@ namespace x86 {
         if(flags_.matches(Cond::BE)) {
             // fmt::print("Jump to {} @ {}\n", ins.symbolName, ins.symbolAddress);
             bool success = state_.jumpInFrame(ins.symbolAddress);
+            (void)success;
             assert(success);
         }
     }
@@ -1421,6 +1437,7 @@ namespace x86 {
         if(flags_.matches(Cond::GE)) {
             // fmt::print("Jump to {} @ {}\n", ins.symbolName, ins.symbolAddress);
             bool success = state_.jumpInFrame(ins.symbolAddress);
+            (void)success;
             assert(success);
         }
     }
@@ -1429,6 +1446,7 @@ namespace x86 {
         if(flags_.matches(Cond::LE)) {
             // fmt::print("Jump to {} @ {}\n", ins.symbolName, ins.symbolAddress);
             bool success = state_.jumpInFrame(ins.symbolAddress);
+            (void)success;
             assert(success);
         }
     }
@@ -1437,6 +1455,7 @@ namespace x86 {
         if(flags_.matches(Cond::A)) {
             // fmt::print("Jump to {} @ {}\n", ins.symbolName, ins.symbolAddress);
             bool success = state_.jumpInFrame(ins.symbolAddress);
+            (void)success;
             assert(success);
         }
     }
@@ -1445,6 +1464,7 @@ namespace x86 {
         if(flags_.matches(Cond::B)) {
             // fmt::print("Jump to {} @ {}\n", ins.symbolName, ins.symbolAddress);
             bool success = state_.jumpInFrame(ins.symbolAddress);
+            (void)success;
             assert(success);
         }
     }
@@ -1453,6 +1473,7 @@ namespace x86 {
         if(flags_.matches(Cond::G)) {
             // fmt::print("Jump to {} @ {}\n", ins.symbolName, ins.symbolAddress);
             bool success = state_.jumpInFrame(ins.symbolAddress);
+            (void)success;
             assert(success);
         }
     }
@@ -1461,6 +1482,7 @@ namespace x86 {
         if(flags_.matches(Cond::L)) {
             // fmt::print("Jump to {} @ {}\n", ins.symbolName, ins.symbolAddress);
             bool success = state_.jumpInFrame(ins.symbolAddress);
+            (void)success;
             assert(success);
         }
     }
@@ -1469,6 +1491,7 @@ namespace x86 {
         if(flags_.matches(Cond::S)) {
             // fmt::print("Jump to {} @ {}\n", ins.symbolName, ins.symbolAddress);
             bool success = state_.jumpInFrame(ins.symbolAddress);
+            (void)success;
             assert(success);
         }
     }
@@ -1477,6 +1500,7 @@ namespace x86 {
         if(flags_.matches(Cond::NS)) {
             // fmt::print("Jump to {} @ {}\n", ins.symbolName, ins.symbolAddress);
             bool success = state_.jumpInFrame(ins.symbolAddress);
+            (void)success;
             assert(success);
         }
     }

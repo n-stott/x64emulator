@@ -157,6 +157,7 @@ namespace x86 {
 
         u32 address = 0;
         auto result = std::from_chars(addressString.data(), addressString.data()+addressString.size(), address, 16);
+        (void)result;
         assert(result.ec == std::errc{});
 
         if(parts.size() < 3) {
@@ -1575,6 +1576,7 @@ namespace x86 {
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseCwde(u32 address, std::string_view operands) {
+        (void)operands;
         assert(operands.find(',') == std::string_view::npos);
         return make_wrapper<Cwde>(address);
     }
