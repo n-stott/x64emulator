@@ -512,12 +512,12 @@ namespace x86 {
     }
 
     u32 Interpreter::execAdd32Impl(u32 dst, u32 src) {
-        u64 tmp = dst + src;
+        u64 tmp = (u64)dst + (u64)src;
         flags_.zero = (u32)tmp == 0;
         flags_.carry = (tmp >> 32) != 0;
         i64 signedTmp = (i64)dst + (i64)src;
         flags_.overflow = (i32)signedTmp != signedTmp;
-        flags_.sign = (signedTmp >= 0);
+        flags_.sign = (signedTmp < 0);
         flags_.setSure();
         return (u32)tmp;
     }
@@ -1325,19 +1325,19 @@ namespace x86 {
     void Interpreter::exec(Cmp<Addr<Size::WORD, BIS>, R16> ins) { TODO(ins); }
 
     void Interpreter::execCmp8Impl(u8 src1, u8 src2) {
-        i16 stmp = (i16)src1 - (i16)src2;
+        i16 stmp = (i16)(i8)src1 - (i16)(i8)src2;
         flags_.overflow = ((i8)stmp != stmp);
         flags_.carry = (src1 < src2);
-        flags_.sign = (stmp < 0);
+        flags_.sign = ((i8)stmp < 0);
         flags_.zero = (src1 == src2);
         flags_.setSure();
     }
 
     void Interpreter::execCmp32Impl(u32 src1, u32 src2) {
-        i64 stmp = (i32)src1 - (i32)src2;
+        i64 stmp = (i64)(i32)src1 - (i64)(i32)src2;
         flags_.overflow = ((i32)stmp != stmp);
         flags_.carry = (src1 < src2);
-        flags_.sign = (stmp < 0);
+        flags_.sign = ((i32)stmp < 0);
         flags_.zero = (src1 == src2);
         flags_.setSure();
     }
