@@ -1020,26 +1020,22 @@ namespace x86 {
     }
 
     void Interpreter::exec(const CallDirect& ins) {
-        const Function* func = program_.findFunction(ins.symbolName);
-        if(!!func) {
-            state_.frames.push_back(Frame{func, 0});
-            push32(eip_);
-        } else {
-            // call library function
-            const Function* libFunc = libc_.findFunction(ins.symbolName);
-            verify(!!libFunc, [&]() {
-                fmt::print(stderr, "Unknown function '{}'\n", ins.symbolName);
-                // fmt::print(stderr, "Program \"{}\" has functions :\n", program_.filename);
-                // for(const auto& f : program_.functions) fmt::print(stderr, "    {}\n", f.name);
-                // fmt::print(stderr, "Library \"{}\" has functions :\n", libc_.filename);
-                // for(const auto& f : libc_.functions) fmt::print(stderr, "    {}\n", f.name);
-                stop_ = true;
-            });
-            if(!!libFunc) {
-                state_.frames.push_back(Frame{libFunc, 0});
-                push32(eip_);
-            }
+        const Function* func = (const Function*)ins.interpreterFunction;
+        if(!ins.interpreterFunction) {
+            func = program_.findFunction(ins.symbolName);
+            if(!func) func = libc_.findFunction(ins.symbolName);
+            const_cast<CallDirect&>(ins).interpreterFunction = (void*)func;
         }
+        verify(!!func, [&]() {
+            fmt::print(stderr, "Unknown function '{}'\n", ins.symbolName);
+            // fmt::print(stderr, "Program \"{}\" has functions :\n", program_.filename);
+            // for(const auto& f : program_.functions) fmt::print(stderr, "    {}\n", f.name);
+            // fmt::print(stderr, "Library \"{}\" has functions :\n", libc_.filename);
+            // for(const auto& f : libc_.functions) fmt::print(stderr, "    {}\n", f.name);
+            stop_ = true;
+        });
+        state_.frames.push_back(Frame{func, 0});
+        push32(eip_);
     }
 
     void Interpreter::exec(const CallIndirect<R32>& ins) {

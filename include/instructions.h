@@ -286,6 +286,7 @@ namespace x86 {
     struct CallDirect {
         u32 symbolAddress;
         std::string symbolName;
+        void* interpreterFunction = nullptr;
     };
 
     template<typename Src>
