@@ -673,12 +673,28 @@ namespace x86 {
     void Interpreter::exec(Sbb<Addr<Size::DWORD, BIS>, Imm<u32>> ins) { TODO(ins); }
     void Interpreter::exec(Sbb<Addr<Size::DWORD, BISD>, Imm<u32>> ins) { TODO(ins); }
 
+    namespace {
+        static u32 negate(u32 value) {
+            i32 ival;
+            std::memcpy(&ival, &value, sizeof(value));
+            ival = -ival;
+            std::memcpy(&value, &ival, sizeof(value));
+            return value;
+        }
+    }
+
     void Interpreter::exec(Neg<R32> ins) {
-        set(ins.src, -get(ins.src));
+        set(ins.src, negate(get(ins.src)));
         WARN_FLAGS();
     }
-    void Interpreter::exec(Neg<Addr<Size::DWORD, B>> ins) { TODO(ins); }
-    void Interpreter::exec(Neg<Addr<Size::DWORD, BD>> ins) { TODO(ins); }
+    void Interpreter::exec(Neg<Addr<Size::DWORD, B>> ins) {
+        set(resolve(ins.src), negate(get(resolve(ins.src))));
+        WARN_FLAGS();
+    }
+    void Interpreter::exec(Neg<Addr<Size::DWORD, BD>> ins) {
+        set(resolve(ins.src), negate(get(resolve(ins.src))));
+        WARN_FLAGS();
+    }
 
     std::pair<u32, u32> Interpreter::execMul32(u32 src1, u32 src2) {
         u64 prod = (u64)src1 * (u64)src2;
