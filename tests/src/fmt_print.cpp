@@ -73,6 +73,31 @@ void testC2() {
     std::puts(s.c_str());
 }
 
+int testD1() {
+    int x = fmt::v8::detail::count_digits(10u);
+    return x;
+}
+
+void testD2() {
+    auto tmp = fmt::format("{}", 10u);
+    std::puts(tmp.c_str());
+}
+
+void testD3() {
+    auto tmp = fmt::format("abc{}", -1);
+    std::puts(tmp.c_str());
+}
+
+void testD4() {
+    auto tmp = fmt::format("abc{}", -12);
+    std::puts(tmp.c_str());
+}
+
+void testD5() {
+    auto tmp = fmt::format("abc{}", -123);
+    std::puts(tmp.c_str());
+}
+
 int main() {
     testA1();
     testA2();
@@ -82,4 +107,9 @@ int main() {
     testB3();
     testC1();
     testC2();
+    testD1();
+    testD2();
+    testD3();
+    testD4();
+    testD5();
 }
