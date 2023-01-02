@@ -627,13 +627,43 @@ namespace x86 {
         WARN_FLAGS();
     }
 
-    void Interpreter::exec(Sbb<R32, R32> ins) { TODO(ins); }
-    void Interpreter::exec(Sbb<R32, Imm<u32>> ins) { TODO(ins); }
-    void Interpreter::exec(Sbb<R32, SignExtended<u8>> ins) { TODO(ins); }
-    void Interpreter::exec(Sbb<R32, Addr<Size::DWORD, B>> ins) { TODO(ins); }
-    void Interpreter::exec(Sbb<R32, Addr<Size::DWORD, BD>> ins) { TODO(ins); }
-    void Interpreter::exec(Sbb<R32, Addr<Size::DWORD, BIS>> ins) { TODO(ins); }
-    void Interpreter::exec(Sbb<R32, Addr<Size::DWORD, BISD>> ins) { TODO(ins); }
+    u32 Interpreter::execSbb32Impl(u32 dst, u32 src) {
+        i32 ret = (i32)dst - (i32)(src + flags_.carry);
+        flags_.sign = (ret < 0);
+        flags_.zero = (ret == 0);
+        flags_.setSure();
+        WARN_SIGNED_OVERFLOW();
+        return ret;
+    }
+
+    void Interpreter::exec(Sbb<R32, R32> ins) {
+        REQUIRE_FLAGS();
+        set(ins.dst, execSbb32Impl(get(ins.dst), get(ins.src)));
+    }
+    void Interpreter::exec(Sbb<R32, Imm<u32>> ins) {
+        REQUIRE_FLAGS();
+        set(ins.dst, execSbb32Impl(get(ins.dst), get(ins.src)));
+    }
+    void Interpreter::exec(Sbb<R32, SignExtended<u8>> ins) {
+        REQUIRE_FLAGS();
+        set(ins.dst, execSbb32Impl(get(ins.dst), ins.src.extendedValue));
+    }
+    void Interpreter::exec(Sbb<R32, Addr<Size::DWORD, B>> ins) {
+        REQUIRE_FLAGS();
+        set(ins.dst, execSbb32Impl(get(ins.dst), get(resolve(ins.src))));
+    }
+    void Interpreter::exec(Sbb<R32, Addr<Size::DWORD, BD>> ins) {
+        REQUIRE_FLAGS();
+        set(ins.dst, execSbb32Impl(get(ins.dst), get(resolve(ins.src))));
+    }
+    void Interpreter::exec(Sbb<R32, Addr<Size::DWORD, BIS>> ins) {
+        REQUIRE_FLAGS();
+        set(ins.dst, execSbb32Impl(get(ins.dst), get(resolve(ins.src))));
+    }
+    void Interpreter::exec(Sbb<R32, Addr<Size::DWORD, BISD>> ins) {
+        REQUIRE_FLAGS();
+        set(ins.dst, execSbb32Impl(get(ins.dst), get(resolve(ins.src))));
+    }
     void Interpreter::exec(Sbb<Addr<Size::DWORD, B>, R32> ins) { TODO(ins); }
     void Interpreter::exec(Sbb<Addr<Size::DWORD, BD>, R32> ins) { TODO(ins); }
     void Interpreter::exec(Sbb<Addr<Size::DWORD, BIS>, R32> ins) { TODO(ins); }
@@ -1088,7 +1118,9 @@ namespace x86 {
         stop_ = true;
     }
 
-    void Interpreter::exec(Cdq ins) { TODO(ins); }
+    void Interpreter::exec(Cdq) {
+        set(R32::EDX, get(R32::EAX) & 0x8000 ? 0xFFFF : 0x0000);
+    }
 
     void Interpreter::exec(NotParsed) { }
 
