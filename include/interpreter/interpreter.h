@@ -21,8 +21,14 @@ namespace x86 {
         void run();
 
         void verify(bool condition) const;
-        void verify(bool condition, const std::string& message) const;
-        void verify(bool condition, std::function<void(void)> onFail) const;
+        void verify(bool condition, const char* message) const;
+
+        template<typename Callback>
+        void verify(bool condition, Callback onFail) const {
+            if(condition) return;
+            onFail();
+            verify(condition);
+        }
 
     private:
         struct VerificationException : public std::exception { };

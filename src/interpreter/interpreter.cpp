@@ -451,21 +451,16 @@ namespace x86 {
         throw VerificationException{};
     }
 
-    void Interpreter::verify(bool condition, const std::string& message) const {
+    void Interpreter::verify(bool condition, const char* message) const {
         if(condition) return;
         fmt::print("{}\n", message);
         verify(condition);
     }
 
-    void Interpreter::verify(bool condition, std::function<void(void)> onFail) const {
-        if(condition) return;
-        onFail();
-        verify(condition);
-    }
-
     #define TODO(ins) \
         fmt::print(stderr, "Fail at : {}\n", x86::utils::toString(ins));\
-        verify(false, "Not implemented : "+x86::utils::toString(ins));\
+        std::string todoMessage = "Not implemented : "+x86::utils::toString(ins);\
+        verify(false, todoMessage.c_str());\
         assert(!"Not implemented");
 
 #ifndef NDEBUG
