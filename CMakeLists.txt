@@ -50,6 +50,11 @@ add_executable(comparisons tests/src/comparisons.cpp)
 target_compile_options(comparisons PUBLIC ${CC_OPTIONS})
 target_link_options(comparisons PUBLIC ${LD_OPTIONS})
 
+add_executable(staticinitialization tests/src/staticinitialization.cpp)
+target_compile_options(staticinitialization PUBLIC ${CC_OPTIONS})
+target_link_options(staticinitialization PUBLIC ${LD_OPTIONS})
+
+
 add_library(fakelibc SHARED
     src/lib/fakelibc.cpp
 )
