@@ -20,11 +20,11 @@ namespace x86 {
         explicit Interpreter(Program program, LibC libc);
         void run();
 
-        void verify(bool condition) const;
-        void verify(bool condition, const char* message) const;
+        static void verify(bool condition);
+        static void verify(bool condition, const char* message);
 
         template<typename Callback>
-        void verify(bool condition, Callback onFail) const {
+        static void verify(bool condition, Callback onFail) {
             if(condition) return;
             onFail();
             verify(condition);

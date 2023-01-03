@@ -3,6 +3,7 @@
 #include "instructionutils.h"
 #include "instructions.h"
 #include "interpreter/executioncontext.h"
+#include "interpreter/interpreter.h"
 #include "parser/parser.h"
 #include <cassert>
 #include <stdlib.h>
@@ -103,7 +104,7 @@ namespace x86 {
             u32 size = context_.eax();
             u32 ret = heap_->current;
             heap_->current += size;
-            assert(heap_->current < heap_->base + heap_->size);
+            Interpreter::verify(heap_->current < heap_->base + heap_->size);
             context_.set_eax(ret);
         }
         std::string toString() const override {

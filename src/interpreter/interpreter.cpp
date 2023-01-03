@@ -164,6 +164,11 @@ namespace x86 {
                 ++ticks;
                 instruction->exec(this);
             } catch(const VerificationException&) {
+                fmt::print("Interpreter crash\n");
+                fmt::print("Register state:\n");
+                dump(stdout);
+                fmt::print("Stacktrace:\n");
+                state_.dumpStacktrace();
                 stop_ = true;
             }
         }
@@ -441,17 +446,12 @@ namespace x86 {
     }
 
 
-    void Interpreter::verify(bool condition) const {
+    void Interpreter::verify(bool condition) {
         if(condition) return;
-        fmt::print("Interpreter crash\n");
-        fmt::print("Register state:\n");
-        dump(stdout);
-        fmt::print("Stacktrace:\n");
-        state_.dumpStacktrace();
         throw VerificationException{};
     }
 
-    void Interpreter::verify(bool condition, const char* message) const {
+    void Interpreter::verify(bool condition, const char* message) {
         if(condition) return;
         fmt::print("{}\n", message);
         verify(condition);
