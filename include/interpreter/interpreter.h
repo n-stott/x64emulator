@@ -6,6 +6,7 @@
 #include "lib/libc.h"
 #include "lib/callingcontext.h"
 #include "program.h"
+#include "elf-reader.h"
 #include <cassert>
 #include <algorithm>
 #include <exception>
@@ -31,9 +32,13 @@ namespace x86 {
         }
 
     private:
+
+        void execute(const Function* function);
+
         struct VerificationException : public std::exception { };
 
         Program program_;
+        std::unique_ptr<elf::Elf> programElf_;
         LibC libc_;
         Mmu mmu_;
 
