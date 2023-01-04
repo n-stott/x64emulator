@@ -1196,41 +1196,73 @@ namespace x86 {
     void Interpreter::exec(const Dec<Addr<Size::DWORD, BIS>>& ins) { Ptr<Size::DWORD> ptr = resolve(ins.dst); set(ptr, execDec32Impl(get(ptr))); }
     void Interpreter::exec(const Dec<Addr<Size::DWORD, BISD>>& ins) { Ptr<Size::DWORD> ptr = resolve(ins.dst); set(ptr, execDec32Impl(get(ptr))); }
 
-    void Interpreter::exec(const Shr<R8, Imm<u8>>& ins) {
-        assert(get(ins.src) < 8);
-        set(ins.dst, get(ins.dst) >> get(ins.src));
-        WARN_FLAGS();
+    u8 Interpreter::execShr8Impl(u8 dst, u8 src) {
+        assert(src < 8);
+        u8 res = dst >> src;
+        if(src) {
+            flags_.carry = dst & (1 << (src-1));
+        }
+        if(src == 1) {
+            flags_.overflow = (dst & (1 << 7));
+        }
+        flags_.sign = (res & (1 << 7));
+        flags_.zero = (res == 0);
+        flags_.setSure();
+        return res;
     }
-    void Interpreter::exec(const Shr<R8, Count>& ins) {
-        assert(get(ins.src) < 8);
-        set(ins.dst, get(ins.dst) >> get(ins.src));
-        WARN_FLAGS();
+
+    u16 Interpreter::execShr16Impl(u16 dst, u16 src) {
+        assert(src < 16);
+        u16 res = dst >> src;
+        if(src) {
+            flags_.carry = dst & (1 << (src-1));
+        }
+        if(src == 1) {
+            flags_.overflow = (dst & (1 << 15));
+        }
+        flags_.sign = (res & (1 << 15));
+        flags_.zero = (res == 0);
+        flags_.setSure();
+        return res;
     }
-    void Interpreter::exec(const Shr<R16, Count>& ins) {
-        assert(get(ins.src) < 16);
-        set(ins.dst, get(ins.dst) >> get(ins.src));
-        WARN_FLAGS();
+    
+    u32 Interpreter::execShr32Impl(u32 dst, u32 src) {
+        assert(src < 32);
+        u32 res = dst >> src;
+        if(src) {
+            flags_.carry = dst & (1 << (src-1));
+        }
+        if(src == 1) {
+            flags_.overflow = (dst & (1 << 31));
+        }
+        flags_.sign = (res & (1 << 31));
+        flags_.zero = (res == 0);
+        flags_.setSure();
+        return res;
     }
-    void Interpreter::exec(const Shr<R16, Imm<u8>>& ins) {
-        assert(get(ins.src) < 16);
-        set(ins.dst, get(ins.dst) >> get(ins.src));
-        WARN_FLAGS();
+
+    u32 Interpreter::execSar32Impl(i32 dst, u32 src) {
+        assert(src < 32);
+        u32 res = dst >> src;
+        if(src) {
+            flags_.carry = dst & (1 << (src-1));
+        }
+        if(src == 1) {
+            flags_.overflow = 0;
+        }
+        flags_.sign = (res & (1 << 31));
+        flags_.zero = (res == 0);
+        flags_.setSure();
+        return res;
     }
-    void Interpreter::exec(const Shr<R32, R8>& ins) {
-        assert(get(ins.src) < 32);
-        set(ins.dst, get(ins.dst) >> get(ins.src));
-        WARN_FLAGS();
-    }
-    void Interpreter::exec(const Shr<R32, Imm<u32>>& ins) {
-        assert(get(ins.src) < 32);
-        set(ins.dst, get(ins.dst) >> get(ins.src));
-        WARN_FLAGS();
-    }
-    void Interpreter::exec(const Shr<R32, Count>& ins) {
-        assert(get(ins.src) < 32);
-        set(ins.dst, get(ins.dst) >> get(ins.src));
-        WARN_FLAGS();
-    }
+
+    void Interpreter::exec(const Shr<R8, Imm<u8>>& ins) { set(ins.dst, execShr8Impl(get(ins.dst), get(ins.src))); }
+    void Interpreter::exec(const Shr<R8, Count>& ins) { set(ins.dst, execShr8Impl(get(ins.dst), get(ins.src))); }
+    void Interpreter::exec(const Shr<R16, Count>& ins) { set(ins.dst, execShr16Impl(get(ins.dst), get(ins.src))); }
+    void Interpreter::exec(const Shr<R16, Imm<u8>>& ins) { set(ins.dst, execShr16Impl(get(ins.dst), get(ins.src))); }
+    void Interpreter::exec(const Shr<R32, R8>& ins) { set(ins.dst, execShr32Impl(get(ins.dst), get(ins.src))); }
+    void Interpreter::exec(const Shr<R32, Imm<u32>>& ins) { set(ins.dst, execShr32Impl(get(ins.dst), get(ins.src))); }
+    void Interpreter::exec(const Shr<R32, Count>& ins) { set(ins.dst, execShr32Impl(get(ins.dst), get(ins.src))); }
 
     void Interpreter::exec(const Shl<R32, R8>& ins) {
         assert(get(ins.src) < 32);
@@ -1267,17 +1299,10 @@ namespace x86 {
         WARN_FLAGS();
     }
 
-    void Interpreter::exec(const Sar<R32, R8>& ins) { TODO(ins); }
-    void Interpreter::exec(const Sar<R32, Imm<u32>>& ins) {
-        assert(ins.src.immediate < 32);
-        set(ins.dst, ((i32)get(ins.dst)) >> get(ins.src));
-        WARN_FLAGS();
-    }
-    void Interpreter::exec(const Sar<R32, Count>& ins) {
-        assert(ins.src.count < 32);
-        set(ins.dst, ((i32)get(ins.dst)) >> get(ins.src));
-        WARN_FLAGS();
-    }
+    void Interpreter::exec(const Sar<R32, R8>& ins) { set(ins.dst, execSar32Impl(get(ins.dst), get(ins.src))); }
+    void Interpreter::exec(const Sar<R32, Imm<u32>>& ins) { set(ins.dst, execSar32Impl(get(ins.dst), get(ins.src))); }
+    void Interpreter::exec(const Sar<R32, Count>& ins) { set(ins.dst, execSar32Impl(get(ins.dst), get(ins.src))); }
+
     void Interpreter::exec(const Sar<Addr<Size::DWORD, B>, Count>& ins) { TODO(ins); }
     void Interpreter::exec(const Sar<Addr<Size::DWORD, BD>, Count>& ins) { TODO(ins); }
 

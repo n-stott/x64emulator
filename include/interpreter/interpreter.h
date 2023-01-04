@@ -215,6 +215,11 @@ namespace x86 {
         u16 execAnd16Impl(u16 dst, u16 src);
         u32 execAnd32Impl(u32 dst, u32 src);
 
+        u8 execShr8Impl(u8 dst, u8 src);
+        u16 execShr16Impl(u16 dst, u16 src);
+        u32 execShr32Impl(u32 dst, u32 src);
+        u32 execSar32Impl(i32 dst, u32 src);
+
         template<typename Dst>
         void execSet(Cond cond, Dst dst);
 
