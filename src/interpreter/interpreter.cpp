@@ -14,7 +14,24 @@ namespace x86 {
     void termination_handler(int signum) {
         if(signum != SIGINT) return;
         signal_interrupt = true;
-    }    
+    }
+
+    struct SignalHandler {
+        struct sigaction new_action;
+        struct sigaction old_action;
+
+        SignalHandler() {
+            new_action.sa_handler = termination_handler;
+            sigemptyset(&new_action.sa_mask);
+            new_action.sa_flags = 0;
+            sigaction(SIGINT, NULL, &old_action);
+            if (old_action.sa_handler != SIG_IGN) sigaction(SIGINT, &new_action, NULL);
+        }
+
+        ~SignalHandler() {
+            sigaction(SIGINT, &old_action, NULL);
+        }
+    };
 
     Interpreter::Interpreter(Program program, LibC libc) : program_(std::move(program)), libc_(std::move(libc)), mmu_(this) {
         libc_.configureIntrinsics(ExecutionContext(*this));
