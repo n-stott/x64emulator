@@ -1,6 +1,5 @@
 #include "interpreter/interpreter.h"
 #include "interpreter/executioncontext.h"
-#include "elf-reader.h"
 #include "instructionutils.h"
 #include <fmt/core.h>
 #include <cassert>
@@ -65,8 +64,8 @@ namespace x86 {
         mmu_.addRegion(stack);
         esp_ = stackBase + stackSize;
 
-        auto programElf = elf::ElfReader::tryCreate(program_.filepath);
-        if(!programElf) {
+        programElf_ = elf::ElfReader::tryCreate(program_.filepath);
+        if(!programElf_) {
             fmt::print(stderr, "Failed to load program elf file\n");
             std::abort();
         }
@@ -79,11 +78,11 @@ namespace x86 {
             return mmu_.addRegion(std::move(region));
         };
 
-        addSectionIfExists(*programElf, ".rodata", PROT_READ);
-        addSectionIfExists(*programElf, ".data.rel.ro", PROT_READ);
-        addSectionIfExists(*programElf, ".bss", PROT_READ | PROT_WRITE);
-        Mmu::Region* got = addSectionIfExists(*programElf, ".got", PROT_READ | PROT_WRITE);
-        Mmu::Region* gotplt = addSectionIfExists(*programElf, ".got.plt", PROT_READ | PROT_WRITE);
+        addSectionIfExists(*programElf_, ".rodata", PROT_READ);
+        addSectionIfExists(*programElf_, ".data.rel.ro", PROT_READ);
+        addSectionIfExists(*programElf_, ".bss", PROT_READ | PROT_WRITE);
+        Mmu::Region* got = addSectionIfExists(*programElf_, ".got", PROT_READ | PROT_WRITE);
+        Mmu::Region* gotplt = addSectionIfExists(*programElf_, ".got.plt", PROT_READ | PROT_WRITE);
 
         std::unique_ptr<elf::Elf> libcElf = elf::ElfReader::tryCreate(libc_.filepath);
         if(!libcElf) {
@@ -92,10 +91,10 @@ namespace x86 {
         }
         addSectionIfExists(*libcElf, ".data", PROT_READ);
 
-        programElf->resolveRelocations([&](const elf::Elf::RelocationEntry32& relocation) {
-            const auto* sym = relocation.symbol(*programElf);
+        programElf_->resolveRelocations([&](const elf::Elf::RelocationEntry32& relocation) {
+            const auto* sym = relocation.symbol(*programElf_);
             if(!sym) return;
-            std::string_view symbol = sym->symbol(*programElf);
+            std::string_view symbol = sym->symbol(*programElf_);
 
             u32 relocationAddress = relocation.offset();
             if(sym->type() == elf::Elf::SymbolTable::Entry32::Type::FUNC) {
@@ -117,14 +116,11 @@ namespace x86 {
             }
         });
 
-        std::shared_ptr<std::unique_ptr<elf::Elf>> trick = std::make_shared<std::unique_ptr<elf::Elf>>(std::move(programElf));
-
-        auto gotHandler = [trick](u32 address){
-            elf::Elf* elf = trick->get();
-            elf->forAllRelocations([&](const elf::Elf::RelocationEntry32& relocation) {
+        auto gotHandler = [&](u32 address){
+            programElf_->forAllRelocations([&](const elf::Elf::RelocationEntry32& relocation) {
                 if(relocation.offset() == address) {
-                    const auto* sym = relocation.symbol(*elf);
-                    std::string_view symbol = sym->symbol(*elf);
+                    const auto* sym = relocation.symbol(*programElf_);
+                    std::string_view symbol = sym->symbol(*programElf_);
                     fmt::print("Relocation address={:#x} symbol={}\n", address, symbol);
                 }
             });
@@ -138,13 +134,22 @@ namespace x86 {
     }
 
     void Interpreter::run() {
-
-        struct sigaction new_action, old_action;
-        new_action.sa_handler = termination_handler;
-        sigemptyset(&new_action.sa_mask);
-        new_action.sa_flags = 0;
-        sigaction (SIGINT, NULL, &old_action);
-        if (old_action.sa_handler != SIG_IGN) sigaction (SIGINT, &new_action, NULL);
+        auto initArraySection = programElf_->sectionFromName(".init_array");
+        if(initArraySection) {
+            assert(initArraySection->size() % sizeof(u32) == 0);
+            const u32* beginInitArray = reinterpret_cast<const u32*>(initArraySection->begin);
+            const u32* endInitArray = reinterpret_cast<const u32*>(initArraySection->end);
+            fmt::print("Init array section at {:#x}\n", initArraySection->address);
+            for(const u32* it = beginInitArray; it != endInitArray; ++it) {
+                const Function* initFunction = program_.findFunctionByAddress(*it);
+                if(!initFunction) {
+                    fmt::print("Unable to find init function {:#x}\n, *it");
+                    continue;
+                }
+                fmt::print("execute init function {} : {:#x}\n", initFunction->name, *it);
+                execute(initFunction);
+            }
+        }
 
         const Function* main = program_.findFunction("main");
         if(!main) {
@@ -152,10 +157,16 @@ namespace x86 {
             return;
         }
 
-        state_.frames.clear();
-        state_.frames.push_back(Frame{main, 0});
+        fmt::print("execute function main : {:#x}\n", main->address);
+        execute(main);
+    }
 
-        push32(main->address);
+    void Interpreter::execute(const Function* function) {
+        SignalHandler sh;
+        state_.frames.clear();
+        state_.frames.push_back(Frame{function, 0});
+
+        push32(function->address);
 
         stop_ = false;
         size_t ticks = 0;
