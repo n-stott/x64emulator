@@ -139,14 +139,12 @@ namespace x86 {
             assert(initArraySection->size() % sizeof(u32) == 0);
             const u32* beginInitArray = reinterpret_cast<const u32*>(initArraySection->begin);
             const u32* endInitArray = reinterpret_cast<const u32*>(initArraySection->end);
-            fmt::print("Init array section at {:#x}\n", initArraySection->address);
             for(const u32* it = beginInitArray; it != endInitArray; ++it) {
                 const Function* initFunction = program_.findFunctionByAddress(*it);
                 if(!initFunction) {
                     fmt::print("Unable to find init function {:#x}\n, *it");
                     continue;
                 }
-                fmt::print("execute init function {} : {:#x}\n", initFunction->name, *it);
                 execute(initFunction);
                 if(stop_) return;
             }
@@ -158,7 +156,6 @@ namespace x86 {
             return;
         }
 
-        fmt::print("execute function main : {:#x}\n", main->address);
         execute(main);
     }
 
