@@ -148,6 +148,7 @@ namespace x86 {
                 }
                 fmt::print("execute init function {} : {:#x}\n", initFunction->name, *it);
                 execute(initFunction);
+                if(stop_) return;
             }
         }
 
