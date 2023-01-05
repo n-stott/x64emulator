@@ -162,13 +162,13 @@ namespace x86 {
     }
 
     void Interpreter::execute(const Function* function) {
+        if(stop_) return;
         SignalHandler sh;
         state_.frames.clear();
         state_.frames.push_back(Frame{function, 0});
 
         push32(function->address);
 
-        stop_ = false;
         size_t ticks = 0;
         while(!stop_ && state_.hasNext()) {
             try {
