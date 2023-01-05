@@ -58,6 +58,10 @@ add_executable(statics tests/src/statics.cpp)
 target_compile_options(statics PUBLIC ${CC_OPTIONS})
 target_link_options(statics PUBLIC ${LD_OPTIONS} -static-libstdc++ -static-libgcc)
 
+add_executable(exceptions tests/src/exceptions.cpp)
+target_compile_options(exceptions PUBLIC ${CC_OPTIONS})
+target_link_options(exceptions PUBLIC ${LD_OPTIONS} -static-libstdc++ -static-libgcc)
+
 add_library(fakelibc SHARED
     src/lib/fakelibc.cpp
 )
