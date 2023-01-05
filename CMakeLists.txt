@@ -54,6 +54,9 @@ add_executable(staticinitialization tests/src/staticinitialization.cpp)
 target_compile_options(staticinitialization PUBLIC ${CC_OPTIONS})
 target_link_options(staticinitialization PUBLIC ${LD_OPTIONS} -static-libstdc++ -static-libgcc)
 
+add_executable(statics tests/src/statics.cpp)
+target_compile_options(statics PUBLIC ${CC_OPTIONS})
+target_link_options(statics PUBLIC ${LD_OPTIONS} -static-libstdc++ -static-libgcc)
 
 add_library(fakelibc SHARED
     src/lib/fakelibc.cpp
