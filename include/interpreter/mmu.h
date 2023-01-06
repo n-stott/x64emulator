@@ -73,11 +73,11 @@ namespace x86 {
         void write16(Ptr16 ptr, u16 value);
         void write32(Ptr32 ptr, u32 value);
 
+        void dumpRegions() const;
+
     private:
         Region* findAddress(u32 address);
         const Region* findAddress(u32 address) const;
-
-        void dumpRegions() const;
 
         const Interpreter* interpreter_ = nullptr;
         std::vector<Region> regions_;

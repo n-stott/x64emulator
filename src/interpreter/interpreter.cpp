@@ -161,6 +161,7 @@ namespace x86 {
 
     void Interpreter::execute(const Function* function) {
         if(stop_) return;
+        fmt::print("Execute function {}\n", function->name);
         SignalHandler sh;
         state_.frames.clear();
         state_.frames.push_back(Frame{function, 0});
@@ -193,6 +194,7 @@ namespace x86 {
                 fmt::print("Interpreter crash\n");
                 fmt::print("Register state:\n");
                 dump(stdout);
+                mmu_.dumpRegions();
                 fmt::print("Stacktrace:\n");
                 state_.dumpStacktrace();
                 stop_ = true;
@@ -201,7 +203,7 @@ namespace x86 {
     }
 
     bool Interpreter::Flags::matches(Cond condition) const {
-        assert(sure());
+        Interpreter::verify(sure(), "Flags are not set");
         switch(condition) {
             case Cond::A: return (carry == 0 && zero == 0);
             case Cond::AE: return (carry == 0);
