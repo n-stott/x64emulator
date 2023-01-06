@@ -58,6 +58,14 @@ add_executable(statics tests/src/statics.cpp)
 target_compile_options(statics PUBLIC ${CC_OPTIONS})
 target_link_options(statics PUBLIC ${LD_OPTIONS} -static-libstdc++ -static-libgcc)
 
+add_executable(staticcollection tests/src/staticcollection.cpp)
+target_compile_options(staticcollection PUBLIC ${CC_OPTIONS})
+target_link_options(staticcollection PUBLIC ${LD_OPTIONS} -static-libstdc++ -static-libgcc)
+
+add_executable(staticconstructor tests/src/staticconstructor.cpp)
+target_compile_options(staticconstructor PUBLIC ${CC_OPTIONS})
+target_link_options(staticconstructor PUBLIC ${LD_OPTIONS} -static-libstdc++ -static-libgcc)
+
 add_executable(exceptions tests/src/exceptions.cpp)
 target_compile_options(exceptions PUBLIC ${CC_OPTIONS})
 target_link_options(exceptions PUBLIC ${LD_OPTIONS} -static-libstdc++ -static-libgcc)
