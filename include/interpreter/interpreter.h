@@ -197,6 +197,10 @@ namespace x86 {
         u16 execAdd16Impl(u16 dst, u16 src);
         u32 execAdd32Impl(u32 dst, u32 src);
 
+        u8 execSub8Impl(u8 src1, u8 src2);
+        u16 execSub16Impl(u16 src1, u16 src2);
+        u32 execSub32Impl(u32 src1, u32 src2);
+
         u32 execSbb32Impl(u32 dst, u32 src);
 
         std::pair<u32, u32> execMul32(u32 src1, u32 src2);
@@ -212,9 +216,6 @@ namespace x86 {
         void execTest8Impl(u8 src1, u8 src2);
         void execTest16Impl(u16 src1, u16 src2);
         void execTest32Impl(u32 src1, u32 src2);
-
-        void execCmp8Impl(u8 src1, u8 src2);
-        void execCmp32Impl(u32 src1, u32 src2);
 
         u8 execAnd8Impl(u8 dst, u8 src);
         u16 execAnd16Impl(u16 dst, u16 src);

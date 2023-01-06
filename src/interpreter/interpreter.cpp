@@ -588,69 +588,51 @@ namespace x86 {
     void Interpreter::exec(const Adc<Addr<Size::DWORD, BIS>, Imm<u32>>& ins) { TODO(ins); }
     void Interpreter::exec(const Adc<Addr<Size::DWORD, BISD>, Imm<u32>>& ins) { TODO(ins); }
 
-    void Interpreter::exec(const Sub<R32, R32>& ins) {
-        set(ins.dst, get(ins.dst) - get(ins.src));
-        WARN_FLAGS();
+    u8 Interpreter::execSub8Impl(u8 src1, u8 src2) {
+        i16 stmp = (i16)(i8)src1 - (i16)(i8)src2;
+        flags_.overflow = ((i8)stmp != stmp);
+        flags_.carry = (src1 < src2);
+        flags_.sign = ((i8)stmp < 0);
+        flags_.zero = (src1 == src2);
+        flags_.setSure();
+        return src1 - src2;
     }
 
-    void Interpreter::exec(const Sub<R32, Imm<u32>>& ins) {
-        set(ins.dst, get(ins.dst) - ins.src.immediate);
-        WARN_FLAGS();
+    u16 Interpreter::execSub16Impl(u16 src1, u16 src2) {
+        i32 stmp = (i32)(i16)src1 - (i32)(i16)src2;
+        flags_.overflow = ((i16)stmp != stmp);
+        flags_.carry = (src1 < src2);
+        flags_.sign = ((i16)stmp < 0);
+        flags_.zero = (src1 == src2);
+        flags_.setSure();
+        return src1 - src2;
     }
 
-    void Interpreter::exec(const Sub<R32, SignExtended<u8>>& ins) {
-        set(ins.dst, get(ins.dst) - ins.src.extendedValue);
-        WARN_FLAGS();
+    u32 Interpreter::execSub32Impl(u32 src1, u32 src2) {
+        i64 stmp = (i64)(i32)src1 - (i64)(i32)src2;
+        flags_.overflow = ((i32)stmp != stmp);
+        flags_.carry = (src1 < src2);
+        flags_.sign = ((i32)stmp < 0);
+        flags_.zero = (src1 == src2);
+        flags_.setSure();
+        return src1 - src2;
     }
 
-    void Interpreter::exec(const Sub<R32, Addr<Size::DWORD, B>>& ins) {
-        set(ins.dst, get(ins.dst) - mmu_.read32(resolve(ins.src)));
-        WARN_FLAGS();
-    }
-    void Interpreter::exec(const Sub<R32, Addr<Size::DWORD, BD>>& ins) {
-        set(ins.dst, get(ins.dst) - mmu_.read32(resolve(ins.src)));
-        WARN_FLAGS();
-    }
-    void Interpreter::exec(const Sub<R32, Addr<Size::DWORD, BIS>>& ins) {
-        set(ins.dst, get(ins.dst) - mmu_.read32(resolve(ins.src)));
-        WARN_FLAGS();
-    }
-    void Interpreter::exec(const Sub<R32, Addr<Size::DWORD, BISD>>& ins) {
-        set(ins.dst, get(ins.dst) - mmu_.read32(resolve(ins.src)));
-        WARN_FLAGS();
-    }
-    void Interpreter::exec(const Sub<Addr<Size::DWORD, B>, R32>& ins) {
-        mmu_.write32(resolve(ins.dst), mmu_.read32(resolve(ins.dst)) - get(ins.src));
-        WARN_FLAGS();
-    }
-    void Interpreter::exec(const Sub<Addr<Size::DWORD, BD>, R32>& ins) {
-        mmu_.write32(resolve(ins.dst), mmu_.read32(resolve(ins.dst)) - get(ins.src));
-        WARN_FLAGS();
-    }
-    void Interpreter::exec(const Sub<Addr<Size::DWORD, BIS>, R32>& ins) {
-        mmu_.write32(resolve(ins.dst), mmu_.read32(resolve(ins.dst)) - get(ins.src));
-        WARN_FLAGS();
-    }
-    void Interpreter::exec(const Sub<Addr<Size::DWORD, BISD>, R32>& ins) {
-        mmu_.write32(resolve(ins.dst), mmu_.read32(resolve(ins.dst)) - get(ins.src));
-        WARN_FLAGS();
-    }
-    void Interpreter::exec(const Sub<Addr<Size::DWORD, B>, Imm<u32>>& ins) {
-        mmu_.write32(resolve(ins.dst), mmu_.read32(resolve(ins.dst)) - get(ins.src));
-        WARN_FLAGS();
-    }
-    void Interpreter::exec(const Sub<Addr<Size::DWORD, BD>, Imm<u32>>& ins) {
-        mmu_.write32(resolve(ins.dst), mmu_.read32(resolve(ins.dst)) - get(ins.src));
-        WARN_FLAGS();
-    }
-    void Interpreter::exec(const Sub<Addr<Size::DWORD, BIS>, Imm<u32>>& ins) {
-        mmu_.write32(resolve(ins.dst), mmu_.read32(resolve(ins.dst)) - get(ins.src));
-        WARN_FLAGS();
-    }
-    void Interpreter::exec(const Sub<Addr<Size::DWORD, BISD>, Imm<u32>>& ins) {
-        mmu_.write32(resolve(ins.dst), mmu_.read32(resolve(ins.dst)) - get(ins.src));
-        WARN_FLAGS();
-    }
+    void Interpreter::exec(const Sub<R32, R32>& ins) { set(ins.dst, execSub32Impl(get(ins.dst), get(ins.src))); }
+    void Interpreter::exec(const Sub<R32, Imm<u32>>& ins) { set(ins.dst, execSub32Impl(get(ins.dst), get(ins.src))); }
+    void Interpreter::exec(const Sub<R32, SignExtended<u8>>& ins) { set(ins.dst, execSub32Impl(get(ins.dst), signExtended32(ins.src.extendedValue))); }
+    void Interpreter::exec(const Sub<R32, Addr<Size::DWORD, B>>& ins) { set(ins.dst, execSub32Impl(get(ins.dst), get(resolve(ins.src)))); }
+    void Interpreter::exec(const Sub<R32, Addr<Size::DWORD, BD>>& ins) { set(ins.dst, execSub32Impl(get(ins.dst), get(resolve(ins.src)))); }
+    void Interpreter::exec(const Sub<R32, Addr<Size::DWORD, BIS>>& ins) { set(ins.dst, execSub32Impl(get(ins.dst), get(resolve(ins.src)))); }
+    void Interpreter::exec(const Sub<R32, Addr<Size::DWORD, BISD>>& ins) { set(ins.dst, execSub32Impl(get(ins.dst), get(resolve(ins.src)))); }
+    void Interpreter::exec(const Sub<Addr<Size::DWORD, B>, R32>& ins) { set(resolve(ins.dst), execSub32Impl(get(resolve(ins.dst)), get(ins.src))); }
+    void Interpreter::exec(const Sub<Addr<Size::DWORD, BD>, R32>& ins) { set(resolve(ins.dst), execSub32Impl(get(resolve(ins.dst)), get(ins.src))); }
+    void Interpreter::exec(const Sub<Addr<Size::DWORD, BIS>, R32>& ins) { set(resolve(ins.dst), execSub32Impl(get(resolve(ins.dst)), get(ins.src))); }
+    void Interpreter::exec(const Sub<Addr<Size::DWORD, BISD>, R32>& ins) { set(resolve(ins.dst), execSub32Impl(get(resolve(ins.dst)), get(ins.src))); }
+    void Interpreter::exec(const Sub<Addr<Size::DWORD, B>, Imm<u32>>& ins) { set(resolve(ins.dst), execSub32Impl(get(resolve(ins.dst)), get(ins.src))); }
+    void Interpreter::exec(const Sub<Addr<Size::DWORD, BD>, Imm<u32>>& ins) { set(resolve(ins.dst), execSub32Impl(get(resolve(ins.dst)), get(ins.src))); }
+    void Interpreter::exec(const Sub<Addr<Size::DWORD, BIS>, Imm<u32>>& ins) { set(resolve(ins.dst), execSub32Impl(get(resolve(ins.dst)), get(ins.src))); }
+    void Interpreter::exec(const Sub<Addr<Size::DWORD, BISD>, Imm<u32>>& ins) { set(resolve(ins.dst), execSub32Impl(get(resolve(ins.dst)), get(ins.src))); }
 
     u32 Interpreter::execSbb32Impl(u32 dst, u32 src) {
         i32 ret = (i32)dst - (i32)(src + flags_.carry);
@@ -1386,53 +1368,35 @@ namespace x86 {
     void Interpreter::exec(const Cmp<Addr<Size::WORD, BD>, Imm<u16>>& ins) { TODO(ins); }
     void Interpreter::exec(const Cmp<Addr<Size::WORD, BIS>, R16>& ins) { TODO(ins); }
 
-    void Interpreter::execCmp8Impl(u8 src1, u8 src2) {
-        i16 stmp = (i16)(i8)src1 - (i16)(i8)src2;
-        flags_.overflow = ((i8)stmp != stmp);
-        flags_.carry = (src1 < src2);
-        flags_.sign = ((i8)stmp < 0);
-        flags_.zero = (src1 == src2);
-        flags_.setSure();
-    }
+    void Interpreter::exec(const Cmp<R8, R8>& ins) { execSub8Impl(get(ins.src1), get(ins.src2)); }
+    void Interpreter::exec(const Cmp<R8, Imm<u8>>& ins) { execSub8Impl(get(ins.src1), get(ins.src2)); }
+    void Interpreter::exec(const Cmp<R8, Addr<Size::BYTE, B>>& ins) { execSub8Impl(get(ins.src1), mmu_.read8(resolve(ins.src2))); }
+    void Interpreter::exec(const Cmp<R8, Addr<Size::BYTE, BD>>& ins) { execSub8Impl(get(ins.src1), mmu_.read8(resolve(ins.src2))); }
+    void Interpreter::exec(const Cmp<R8, Addr<Size::BYTE, BIS>>& ins) { execSub8Impl(get(ins.src1), mmu_.read8(resolve(ins.src2))); }
+    void Interpreter::exec(const Cmp<R8, Addr<Size::BYTE, BISD>>& ins) { execSub8Impl(get(ins.src1), mmu_.read8(resolve(ins.src2))); }
+    void Interpreter::exec(const Cmp<Addr<Size::BYTE, B>, R8>& ins) { execSub8Impl(mmu_.read8(resolve(ins.src1)), get(ins.src2)); }
+    void Interpreter::exec(const Cmp<Addr<Size::BYTE, B>, Imm<u8>>& ins) { execSub8Impl(mmu_.read8(resolve(ins.src1)), get(ins.src2)); }
+    void Interpreter::exec(const Cmp<Addr<Size::BYTE, BD>, R8>& ins) { execSub8Impl(mmu_.read8(resolve(ins.src1)), get(ins.src2)); }
+    void Interpreter::exec(const Cmp<Addr<Size::BYTE, BD>, Imm<u8>>& ins) { execSub8Impl(mmu_.read8(resolve(ins.src1)), get(ins.src2)); }
+    void Interpreter::exec(const Cmp<Addr<Size::BYTE, BIS>, R8>& ins) { execSub8Impl(mmu_.read8(resolve(ins.src1)), get(ins.src2)); }
+    void Interpreter::exec(const Cmp<Addr<Size::BYTE, BIS>, Imm<u8>>& ins) { execSub8Impl(mmu_.read8(resolve(ins.src1)), get(ins.src2)); }
+    void Interpreter::exec(const Cmp<Addr<Size::BYTE, BISD>, R8>& ins) { execSub8Impl(mmu_.read8(resolve(ins.src1)), get(ins.src2)); }
+    void Interpreter::exec(const Cmp<Addr<Size::BYTE, BISD>, Imm<u8>>& ins) { execSub8Impl(mmu_.read8(resolve(ins.src1)), get(ins.src2)); }
 
-    void Interpreter::execCmp32Impl(u32 src1, u32 src2) {
-        i64 stmp = (i64)(i32)src1 - (i64)(i32)src2;
-        flags_.overflow = ((i32)stmp != stmp);
-        flags_.carry = (src1 < src2);
-        flags_.sign = ((i32)stmp < 0);
-        flags_.zero = (src1 == src2);
-        flags_.setSure();
-    }
-
-    void Interpreter::exec(const Cmp<R8, R8>& ins) { execCmp8Impl(get(ins.src1), get(ins.src2)); }
-    void Interpreter::exec(const Cmp<R8, Imm<u8>>& ins) { execCmp8Impl(get(ins.src1), get(ins.src2)); }
-    void Interpreter::exec(const Cmp<R8, Addr<Size::BYTE, B>>& ins) { execCmp8Impl(get(ins.src1), mmu_.read8(resolve(ins.src2))); }
-    void Interpreter::exec(const Cmp<R8, Addr<Size::BYTE, BD>>& ins) { execCmp8Impl(get(ins.src1), mmu_.read8(resolve(ins.src2))); }
-    void Interpreter::exec(const Cmp<R8, Addr<Size::BYTE, BIS>>& ins) { execCmp8Impl(get(ins.src1), mmu_.read8(resolve(ins.src2))); }
-    void Interpreter::exec(const Cmp<R8, Addr<Size::BYTE, BISD>>& ins) { execCmp8Impl(get(ins.src1), mmu_.read8(resolve(ins.src2))); }
-    void Interpreter::exec(const Cmp<Addr<Size::BYTE, B>, R8>& ins) { execCmp8Impl(mmu_.read8(resolve(ins.src1)), get(ins.src2)); }
-    void Interpreter::exec(const Cmp<Addr<Size::BYTE, B>, Imm<u8>>& ins) { execCmp8Impl(mmu_.read8(resolve(ins.src1)), get(ins.src2)); }
-    void Interpreter::exec(const Cmp<Addr<Size::BYTE, BD>, R8>& ins) { execCmp8Impl(mmu_.read8(resolve(ins.src1)), get(ins.src2)); }
-    void Interpreter::exec(const Cmp<Addr<Size::BYTE, BD>, Imm<u8>>& ins) { execCmp8Impl(mmu_.read8(resolve(ins.src1)), get(ins.src2)); }
-    void Interpreter::exec(const Cmp<Addr<Size::BYTE, BIS>, R8>& ins) { execCmp8Impl(mmu_.read8(resolve(ins.src1)), get(ins.src2)); }
-    void Interpreter::exec(const Cmp<Addr<Size::BYTE, BIS>, Imm<u8>>& ins) { execCmp8Impl(mmu_.read8(resolve(ins.src1)), get(ins.src2)); }
-    void Interpreter::exec(const Cmp<Addr<Size::BYTE, BISD>, R8>& ins) { execCmp8Impl(mmu_.read8(resolve(ins.src1)), get(ins.src2)); }
-    void Interpreter::exec(const Cmp<Addr<Size::BYTE, BISD>, Imm<u8>>& ins) { execCmp8Impl(mmu_.read8(resolve(ins.src1)), get(ins.src2)); }
-
-    void Interpreter::exec(const Cmp<R32, R32>& ins) { execCmp32Impl(get(ins.src1), get(ins.src2)); }
-    void Interpreter::exec(const Cmp<R32, Imm<u32>>& ins) { execCmp32Impl(get(ins.src1), get(ins.src2)); }
-    void Interpreter::exec(const Cmp<R32, Addr<Size::DWORD, B>>& ins) { execCmp32Impl(get(ins.src1), mmu_.read32(resolve(ins.src2))); }
-    void Interpreter::exec(const Cmp<R32, Addr<Size::DWORD, BD>>& ins) { execCmp32Impl(get(ins.src1), mmu_.read32(resolve(ins.src2))); }
-    void Interpreter::exec(const Cmp<R32, Addr<Size::DWORD, BIS>>& ins) { execCmp32Impl(get(ins.src1), mmu_.read32(resolve(ins.src2))); }
-    void Interpreter::exec(const Cmp<R32, Addr<Size::DWORD, BISD>>& ins) { execCmp32Impl(get(ins.src1), mmu_.read32(resolve(ins.src2))); }
-    void Interpreter::exec(const Cmp<Addr<Size::DWORD, B>, R32>& ins) { execCmp32Impl(mmu_.read32(resolve(ins.src1)), get(ins.src2)); }
-    void Interpreter::exec(const Cmp<Addr<Size::DWORD, B>, Imm<u32>>& ins) { execCmp32Impl(mmu_.read32(resolve(ins.src1)), get(ins.src2)); }
-    void Interpreter::exec(const Cmp<Addr<Size::DWORD, BD>, R32>& ins) { execCmp32Impl(mmu_.read32(resolve(ins.src1)), get(ins.src2)); }
-    void Interpreter::exec(const Cmp<Addr<Size::DWORD, BD>, Imm<u32>>& ins) { execCmp32Impl(mmu_.read32(resolve(ins.src1)), get(ins.src2)); }
-    void Interpreter::exec(const Cmp<Addr<Size::DWORD, BIS>, R32>& ins) { execCmp32Impl(mmu_.read32(resolve(ins.src1)), get(ins.src2)); }
-    void Interpreter::exec(const Cmp<Addr<Size::DWORD, BIS>, Imm<u32>>& ins) { execCmp32Impl(mmu_.read32(resolve(ins.src1)), get(ins.src2)); }
-    void Interpreter::exec(const Cmp<Addr<Size::DWORD, BISD>, R32>& ins) { execCmp32Impl(mmu_.read32(resolve(ins.src1)), get(ins.src2)); }
-    void Interpreter::exec(const Cmp<Addr<Size::DWORD, BISD>, Imm<u32>>& ins) { execCmp32Impl(mmu_.read32(resolve(ins.src1)), get(ins.src2)); }
+    void Interpreter::exec(const Cmp<R32, R32>& ins) { execSub32Impl(get(ins.src1), get(ins.src2)); }
+    void Interpreter::exec(const Cmp<R32, Imm<u32>>& ins) { execSub32Impl(get(ins.src1), get(ins.src2)); }
+    void Interpreter::exec(const Cmp<R32, Addr<Size::DWORD, B>>& ins) { execSub32Impl(get(ins.src1), mmu_.read32(resolve(ins.src2))); }
+    void Interpreter::exec(const Cmp<R32, Addr<Size::DWORD, BD>>& ins) { execSub32Impl(get(ins.src1), mmu_.read32(resolve(ins.src2))); }
+    void Interpreter::exec(const Cmp<R32, Addr<Size::DWORD, BIS>>& ins) { execSub32Impl(get(ins.src1), mmu_.read32(resolve(ins.src2))); }
+    void Interpreter::exec(const Cmp<R32, Addr<Size::DWORD, BISD>>& ins) { execSub32Impl(get(ins.src1), mmu_.read32(resolve(ins.src2))); }
+    void Interpreter::exec(const Cmp<Addr<Size::DWORD, B>, R32>& ins) { execSub32Impl(mmu_.read32(resolve(ins.src1)), get(ins.src2)); }
+    void Interpreter::exec(const Cmp<Addr<Size::DWORD, B>, Imm<u32>>& ins) { execSub32Impl(mmu_.read32(resolve(ins.src1)), get(ins.src2)); }
+    void Interpreter::exec(const Cmp<Addr<Size::DWORD, BD>, R32>& ins) { execSub32Impl(mmu_.read32(resolve(ins.src1)), get(ins.src2)); }
+    void Interpreter::exec(const Cmp<Addr<Size::DWORD, BD>, Imm<u32>>& ins) { execSub32Impl(mmu_.read32(resolve(ins.src1)), get(ins.src2)); }
+    void Interpreter::exec(const Cmp<Addr<Size::DWORD, BIS>, R32>& ins) { execSub32Impl(mmu_.read32(resolve(ins.src1)), get(ins.src2)); }
+    void Interpreter::exec(const Cmp<Addr<Size::DWORD, BIS>, Imm<u32>>& ins) { execSub32Impl(mmu_.read32(resolve(ins.src1)), get(ins.src2)); }
+    void Interpreter::exec(const Cmp<Addr<Size::DWORD, BISD>, R32>& ins) { execSub32Impl(mmu_.read32(resolve(ins.src1)), get(ins.src2)); }
+    void Interpreter::exec(const Cmp<Addr<Size::DWORD, BISD>, Imm<u32>>& ins) { execSub32Impl(mmu_.read32(resolve(ins.src1)), get(ins.src2)); }
 
     template<typename Dst>
     void Interpreter::execSet(Cond cond, Dst dst) {
@@ -1682,7 +1646,7 @@ namespace x86 {
         Ptr8 ptr2 = resolve(ins.op.src2);
         while(counter) {
             u8 src2 = mmu_.read8(ptr2);
-            execCmp8Impl(src1, src2);
+            execSub8Impl(src1, src2);
             ++ptr2;
             --counter;
             if(flags_.zero) break;
