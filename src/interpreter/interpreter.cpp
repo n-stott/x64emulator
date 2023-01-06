@@ -1351,7 +1351,7 @@ namespace x86 {
 
     void Interpreter::execTest16Impl(u16 src1, u16 src2) {
         u16 tmp = src1 & src2;
-        flags_.sign = (tmp & (1 << 7));
+        flags_.sign = (tmp & (1 << 15));
         flags_.zero = (tmp == 0);
         flags_.overflow = 0;
         flags_.carry = 0;
