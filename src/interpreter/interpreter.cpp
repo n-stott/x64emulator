@@ -74,12 +74,14 @@ namespace x86 {
             auto section = elf.sectionFromName(name);
             if(!section) return nullptr;
             Mmu::Region region{ name, (u32)(section->address + offset), (u32)section->size(), protection };
-            std::memcpy(region.data.data(), section->begin, section->size()*sizeof(u8));
+            if(section->type() != elf::Elf::SectionHeaderType::NOBITS)
+                std::memcpy(region.data.data(), section->begin, section->size()*sizeof(u8));
             return mmu_.addRegion(std::move(region));
         };
 
         addSectionIfExists(*programElf_, ".rodata", PROT_READ);
         addSectionIfExists(*programElf_, ".data.rel.ro", PROT_READ);
+        addSectionIfExists(*programElf_, ".data", PROT_READ | PROT_WRITE);
         addSectionIfExists(*programElf_, ".bss", PROT_READ | PROT_WRITE);
         Mmu::Region* got = addSectionIfExists(*programElf_, ".got", PROT_READ | PROT_WRITE);
         Mmu::Region* gotplt = addSectionIfExists(*programElf_, ".got.plt", PROT_READ | PROT_WRITE);
