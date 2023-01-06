@@ -2,7 +2,7 @@
 #define MMU_H
 
 #include "utils/utils.h"
-#include "instructions.h"
+#include "types.h"
 #include <functional>
 #include <string>
 #include <vector>

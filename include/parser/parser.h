@@ -2,7 +2,7 @@
 #define PARSER_H
 
 #include "program.h"
-#include "instructions.h"
+#include "types.h"
 #include "utils/utils.h"
 #include <memory>
 #include <string>
