@@ -26,7 +26,8 @@ namespace x86 {
             instrinsicFunctions_.push_back(std::make_unique<F>(args...));
         }
 
-        const Function* findFunction(std::string_view name) const override;
+        const Function* findUniqueFunction(std::string_view name) const override;
+        const Function* findFunction(u32 address, std::string_view name) const override;
 
     private:
         std::vector<std::unique_ptr<LibraryFunction>> instrinsicFunctions_;

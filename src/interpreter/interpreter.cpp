@@ -98,7 +98,7 @@ namespace x86 {
 
             u32 relocationAddress = relocation.offset();
             if(sym->type() == elf::Elf::SymbolTable::Entry32::Type::FUNC) {
-                const auto* func = libc_.findFunction(symbol);
+                const auto* func = libc_.findUniqueFunction(symbol);
                 if(!func) return;
                 fmt::print("Resolve relocation for function \"{}\" : {:#x}\n", symbol, func ? func->address : 0);
                 mmu_.write32(Ptr32{relocationAddress}, func->address);
@@ -150,7 +150,7 @@ namespace x86 {
             }
         }
 
-        const Function* main = program_.findFunction("main");
+        const Function* main = program_.findUniqueFunction("main");
         if(!main) {
             fmt::print(stderr, "Cannot find \"main\" symbol\n");
             return;
@@ -1048,8 +1048,8 @@ namespace x86 {
     void Interpreter::exec(const CallDirect& ins) {
         const Function* func = (const Function*)ins.interpreterFunction;
         if(!ins.interpreterFunction) {
-            func = program_.findFunction(ins.symbolName);
-            if(!func) func = libc_.findFunction(ins.symbolName);
+            func = program_.findFunction(ins.symbolAddress, ins.symbolName);
+            if(!func) func = libc_.findFunction(ins.symbolAddress, ins.symbolName);
             const_cast<CallDirect&>(ins).interpreterFunction = (void*)func;
         }
         verify(!!func, [&]() {
