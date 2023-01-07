@@ -192,6 +192,7 @@ namespace x86 {
         friend class ExecutionContext;
 
         void dump(FILE* stream = stderr) const;
+        void dumpStack(FILE* stream = stderr) const;
 
         u8 execAdd8Impl(u8 dst, u8 src);
         u16 execAdd16Impl(u16 dst, u16 src);

@@ -1031,6 +1031,15 @@ namespace x86 {
         set(ins.dst, pop32());
     }
 
+    void Interpreter::dumpStack(FILE* stream) const {
+        // hack
+        u32 stackEnd = 0x2000000 + 16*1024;
+        u32 arg0 = (esp_+0 < stackEnd ? mmu_.read32(Ptr32{esp_+0}) : 0xffffffff);
+        u32 arg1 = (esp_+4 < stackEnd ? mmu_.read32(Ptr32{esp_+4}) : 0xffffffff);
+        u32 arg2 = (esp_+8 < stackEnd ? mmu_.read32(Ptr32{esp_+8}) : 0xffffffff);
+        fmt::print(stream, "arg0={:#x} arg1={:#x} arg2={:#x}\n", arg0, arg1, arg2);
+    }
+
     void Interpreter::exec(const CallDirect& ins) {
         const Function* func = (const Function*)ins.interpreterFunction;
         if(!ins.interpreterFunction) {
@@ -1046,6 +1055,7 @@ namespace x86 {
             // for(const auto& f : libc_.functions) fmt::print(stderr, "    {}\n", f.name);
             stop_ = true;
         });
+        dumpStack();
         state_.frames.push_back(Frame{func, 0});
         push32(eip_);
     }
