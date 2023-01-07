@@ -16,6 +16,8 @@ namespace x86 {
         struct OpcodeBytes {
             std::vector<u8> bytes;
 
+            size_t size() const { return bytes.size(); }
+
             u8 operator[](u8 i) const {
                 assert(i < bytes.size());
                 return bytes[i];
