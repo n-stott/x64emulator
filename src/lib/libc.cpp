@@ -68,15 +68,6 @@ namespace x86 {
             function->instructions.push_back(std::move(instr));
             return function->instructions.back().get();
         }
-        
-        inline const X86Instruction* add(Function* function, std::string_view sv) {
-            auto instruction = InstructionParser::parseInstruction(0xDEADC0DE, sv);
-            if(!instruction) {
-                fmt::print(stderr, "Failed parsing : {}\n", sv);
-                std::abort();
-            }
-            return add(function, std::move(instruction));
-        }
 
     }
 
