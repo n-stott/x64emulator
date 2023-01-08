@@ -31,6 +31,16 @@ namespace x86 {
             verify(condition);
         }
 
+        static void notify(bool condition);
+        static void notify(bool condition, const char* message);
+
+        template<typename Callback>
+        static void notify(bool condition, Callback onFail) {
+            if(condition) return;
+            std::string message = onFail();
+            notify(condition, message.c_str());
+        }
+
     private:
 
         void execute(const Function* function);

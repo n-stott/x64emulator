@@ -487,6 +487,18 @@ namespace x86 {
         verify(condition);
     }
 
+    void Interpreter::notify(bool condition) {
+        if(condition) return;
+        fmt::print("###\nNOTIFICATION\n###\n");
+    }
+
+    void Interpreter::notify(bool condition, const char* message) {
+        if(condition) return;
+        fmt::print("###\nNOTIFICATION\n");
+        fmt::print("{}\n", message);
+        fmt::print("###\n");
+    }
+
     #define TODO(ins) \
         fmt::print(stderr, "Fail at : {}\n", x86::utils::toString(ins));\
         std::string todoMessage = "Not implemented : "+x86::utils::toString(ins);\
