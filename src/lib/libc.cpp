@@ -94,7 +94,8 @@ namespace x86 {
         void exec(InstructionHandler*) const override {
             u32 size = context_.eax();
             u32 ret = heap_->current;
-            heap_->current += size;
+            ret = ((ret+3)/4)*4; // Align to 4 bytes
+            heap_->current = ret + size;
             Interpreter::verify(heap_->current < heap_->base + heap_->size);
             context_.set_eax(ret);
         }
