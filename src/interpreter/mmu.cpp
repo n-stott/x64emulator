@@ -75,14 +75,16 @@ namespace x86 {
         
     }
     void Mmu::Region::checkAlignment(Ptr16 ptr) {
-        Interpreter::verify((ptr.address & 0x1) == 0, [&]() {
-            fmt::print("Pointer16 {:#x} is not 2 bytes aligned\n", ptr.address);
-        });
+        (void)ptr;
+        // Interpreter::verify((ptr.address & 0x1) == 0, [&]() {
+        //     fmt::print("Pointer16 {:#x} is not 2 bytes aligned\n", ptr.address);
+        // });
     }
     void Mmu::Region::checkAlignment(Ptr32 ptr) {
-        Interpreter::verify((ptr.address & 0x3) == 0, [&]() {
-            fmt::print("Pointer32 {:#x} is not 4 bytes aligned\n", ptr.address);
-        });
+        (void)ptr;
+        // Interpreter::verify((ptr.address & 0x3) == 0, [&]() {
+        //     fmt::print("Pointer32 {:#x} is not 4 bytes aligned\n", ptr.address);
+        // });
     }
 
     Mmu::Region* Mmu::findAddress(u32 address) {
