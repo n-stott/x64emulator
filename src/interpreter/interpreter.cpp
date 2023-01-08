@@ -92,6 +92,7 @@ namespace x86 {
             std::abort();
         }
         addSectionIfExists(*libcElf, ".data", PROT_READ);
+        addSectionIfExists(*libcElf, ".bss", PROT_READ | PROT_WRITE);
 
         programElf_->resolveRelocations([&](const elf::Elf::RelocationEntry32& relocation) {
             const auto* sym = relocation.symbol(*programElf_);
@@ -1065,6 +1066,7 @@ namespace x86 {
             if(!func) func = libc_.findFunction(ins.symbolAddress, ins.symbolName);
             const_cast<CallDirect&>(ins).interpreterFunction = (void*)func;
         }
+        dumpStack();
         verify(!!func, [&]() {
             fmt::print(stderr, "Unknown function '{}'\n", ins.symbolName);
             // fmt::print(stderr, "Program \"{}\" has functions :\n", program_.filename);
@@ -1073,7 +1075,6 @@ namespace x86 {
             // for(const auto& f : libc_.functions) fmt::print(stderr, "    {}\n", f.name);
             stop_ = true;
         });
-        dumpStack();
         state_.frames.push_back(Frame{func, 0});
         push32(eip_);
     }
