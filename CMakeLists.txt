@@ -70,6 +70,10 @@ add_executable(exceptions tests/src/exceptions.cpp)
 target_compile_options(exceptions PUBLIC ${CC_OPTIONS})
 target_link_options(exceptions PUBLIC ${LD_OPTIONS} -static-libstdc++ -static-libgcc)
 
+add_executable(boostmap tests/src/boostmap.cpp)
+target_compile_options(boostmap PUBLIC ${CC_OPTIONS})
+target_link_options(boostmap PUBLIC ${LD_OPTIONS} -static-libstdc++ -static-libgcc)
+
 add_library(fakelibc SHARED
     src/lib/fakelibc.cpp
 )
