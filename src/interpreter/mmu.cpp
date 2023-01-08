@@ -26,6 +26,7 @@ namespace x86 {
 
     u8 Mmu::Region::read8(Ptr8 ptr) const {
         assert(contains(ptr.address));
+        checkAlignment(ptr);
         u8 value = 0;
         std::memcpy(&value, &data[ptr.address-base], sizeof(value));
         return value;
@@ -34,6 +35,7 @@ namespace x86 {
     u16 Mmu::Region::read16(Ptr16 ptr) const {
         assert(contains(ptr.address));
         assert(contains(ptr.address+1));
+        checkAlignment(ptr);
         u16 value = 0;
         std::memcpy(&value, &data[ptr.address-base], sizeof(value));
         return value;
@@ -42,6 +44,7 @@ namespace x86 {
     u32 Mmu::Region::read32(Ptr32 ptr) const {
         assert(contains(ptr.address));
         assert(contains(ptr.address+3));
+        checkAlignment(ptr);
         u32 value = 0;
         std::memcpy(&value, &data[ptr.address-base], sizeof(value));
         return value;
@@ -49,19 +52,37 @@ namespace x86 {
 
     void Mmu::Region::write8(Ptr8 ptr, u8 value) {
         assert(contains(ptr.address));
+        checkAlignment(ptr);
         std::memcpy(&data[ptr.address-base], &value, sizeof(value));
     }
 
     void Mmu::Region::write16(Ptr16 ptr, u16 value) {
         assert(contains(ptr.address));
         assert(contains(ptr.address+1));
+        checkAlignment(ptr);
         std::memcpy(&data[ptr.address-base], &value, sizeof(value));
     }
 
     void Mmu::Region::write32(Ptr32 ptr, u32 value) {
         assert(contains(ptr.address));
         assert(contains(ptr.address+3));
+        checkAlignment(ptr);
         std::memcpy(&data[ptr.address-base], &value, sizeof(value));
+    }
+
+
+    void Mmu::Region::checkAlignment(Ptr8) {
+        
+    }
+    void Mmu::Region::checkAlignment(Ptr16 ptr) {
+        Interpreter::verify((ptr.address & 0x1) == 0, [&]() {
+            fmt::print("Pointer16 {:#x} is not 2 bytes aligned\n", ptr.address);
+        });
+    }
+    void Mmu::Region::checkAlignment(Ptr32 ptr) {
+        Interpreter::verify((ptr.address & 0x3) == 0, [&]() {
+            fmt::print("Pointer32 {:#x} is not 4 bytes aligned\n", ptr.address);
+        });
     }
 
     Mmu::Region* Mmu::findAddress(u32 address) {

@@ -58,6 +58,11 @@ namespace x86 {
             Protection protection;
             InvalidValues invalidValues;
             std::function<void(u32)> handler;
+            
+        private:
+            static void checkAlignment(Ptr8);
+            static void checkAlignment(Ptr16);
+            static void checkAlignment(Ptr32);
         };
 
         Mmu() = default;
