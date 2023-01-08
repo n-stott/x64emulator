@@ -1,5 +1,7 @@
 #include <cstddef>
 #include <stdarg.h>
+#include <locale.h>
+#include <wchar.h>
 #include "fmt/printf.h"
 
 extern "C" {
@@ -132,6 +134,24 @@ extern "C" {
 
     int fakelibc$__cxa_atexit(void (*func)(void*), void* arg, void* dso_handle) {
         return 0;
+    }
+
+    alignas(64) static  __locale_struct c_locale { 0 };
+
+    locale_t fakelibc$__newlocale(int category_mask, const char *locale, locale_t base) {
+        return &c_locale;
+    }
+
+    locale_t fakelibc$__uselocale(locale_t newloc) {
+        return newloc;
+    }
+
+    int fakelibc$wctob(wint_t c) {
+        return (int)c;
+    }
+
+    wint_t fakelibc$btowc(int c) {
+        return (wint_t)c;
     }
 
 }
