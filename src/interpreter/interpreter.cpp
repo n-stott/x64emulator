@@ -1321,8 +1321,21 @@ namespace x86 {
     }
     void Interpreter::exec(const Shl<Addr<Size::DWORD, BD>, Imm<u32>>& ins) { TODO(ins); }
 
-    void Interpreter::exec(const Shld<R32, R32, R8>& ins) { TODO(ins); }
-    void Interpreter::exec(const Shld<R32, R32, Imm<u8>>& ins) { TODO(ins); }
+    void Interpreter::exec(const Shld<R32, R32, R8>& ins) {
+        assert(get(ins.src2) < 32);
+        u64 d = ((u64)get(ins.src1) << 32) | get(ins.dst);
+        d = d << get(ins.src2);
+        set(ins.dst, (u32)d);
+        WARN_FLAGS();
+    }
+    
+    void Interpreter::exec(const Shld<R32, R32, Imm<u8>>& ins) {
+        assert(get(ins.src2) < 32);
+        u64 d = ((u64)get(ins.src1) << 32) | get(ins.dst);
+        d = d << get(ins.src2);
+        set(ins.dst, (u32)d);
+        WARN_FLAGS();
+    }
 
     void Interpreter::exec(const Shrd<R32, R32, R8>& ins) {
         assert(get(ins.src2) < 32);
