@@ -601,6 +601,7 @@ namespace x86 {
     void Interpreter::exec(const Adc<Addr<Size::DWORD, BISD>, Imm<u32>>& ins) { TODO(ins); }
 
     u8 Interpreter::execSub8Impl(u8 src1, u8 src2) {
+        // fmt::print(stderr, "Cmp/Sub : {:#x} {:#x}\n", src1, src2);
         i16 stmp = (i16)(i8)src1 - (i16)(i8)src2;
         flags_.overflow = ((i8)stmp != stmp);
         flags_.carry = (src1 < src2);
@@ -611,6 +612,7 @@ namespace x86 {
     }
 
     u16 Interpreter::execSub16Impl(u16 src1, u16 src2) {
+        // fmt::print(stderr, "Cmp/Sub : {:#x} {:#x}\n", src1, src2);
         i32 stmp = (i32)(i16)src1 - (i32)(i16)src2;
         flags_.overflow = ((i16)stmp != stmp);
         flags_.carry = (src1 < src2);
@@ -621,6 +623,7 @@ namespace x86 {
     }
 
     u32 Interpreter::execSub32Impl(u32 src1, u32 src2) {
+        // fmt::print(stderr, "Cmp/Sub : {:#x} {:#x}\n", src1, src2);
         i64 stmp = (i64)(i32)src1 - (i64)(i32)src2;
         flags_.overflow = ((i32)stmp != stmp);
         flags_.carry = (src1 < src2);
@@ -1045,11 +1048,14 @@ namespace x86 {
 
     void Interpreter::dumpStack(FILE* stream) const {
         // hack
+        (void)stream;
+#ifndef NDEBUG
         u32 stackEnd = 0x2000000 + 16*1024;
         u32 arg0 = (esp_+0 < stackEnd ? mmu_.read32(Ptr32{esp_+0}) : 0xffffffff);
         u32 arg1 = (esp_+4 < stackEnd ? mmu_.read32(Ptr32{esp_+4}) : 0xffffffff);
         u32 arg2 = (esp_+8 < stackEnd ? mmu_.read32(Ptr32{esp_+8}) : 0xffffffff);
         fmt::print(stream, "arg0={:#x} arg1={:#x} arg2={:#x}\n", arg0, arg1, arg2);
+#endif
     }
 
     void Interpreter::exec(const CallDirect& ins) {
