@@ -230,12 +230,14 @@ namespace elf {
     }
 
     Elf::Section Elf::SectionHeader::toSection(const u8* elfData, size_t size) const {
+        (void)size;
         assert(sh_offset < size);
         assert(sh_offset + sh_size < size);
         return Section {
             sh_addr,
             elfData + sh_offset,
-            elfData + sh_offset + sh_size
+            elfData + sh_offset + sh_size,
+            this
         };
     }
 

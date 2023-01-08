@@ -18,6 +18,7 @@ using u64 = unsigned long long;
 namespace elf {
 
     class Elf {
+        struct SectionHeader;
     public:
 
         Elf() = default;
@@ -80,6 +81,9 @@ namespace elf {
             u64 address;
             const u8* begin;
             const u8* end;
+            const SectionHeader* header;
+
+            SectionHeaderType type() const { return header->sh_type; }
 
             size_t size() const { return end-begin; }
         };
