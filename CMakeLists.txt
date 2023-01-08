@@ -74,6 +74,10 @@ add_executable(boostmap tests/src/boostmap.cpp)
 target_compile_options(boostmap PUBLIC ${CC_OPTIONS})
 target_link_options(boostmap PUBLIC ${LD_OPTIONS} -static-libstdc++ -static-libgcc)
 
+add_executable(stringstream tests/src/stringstream.cpp)
+target_compile_options(stringstream PUBLIC ${CC_OPTIONS})
+target_link_options(stringstream PUBLIC ${LD_OPTIONS} -static-libstdc++ -static-libgcc)
+
 add_library(fakelibc SHARED
     src/lib/fakelibc.cpp
 )
