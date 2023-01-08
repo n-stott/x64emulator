@@ -91,6 +91,15 @@ extern "C" {
         return 0;
     }
 
+    void* fakelibc$memset(void* s, int c, size_t n) {
+        unsigned char* dst = (unsigned char*)s;
+        while(n > 0) {
+            *dst = c;
+            --n;
+        }
+        return s;
+    }
+
     int fakelibc$vsnprintf(char* str, size_t size, const char* format, va_list ap) {
         if(!size) return 0;
         int retsize = 1;
