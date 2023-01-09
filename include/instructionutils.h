@@ -203,9 +203,9 @@ namespace utils {
         return fmt::format("{:7}{}", "mul", toString(ins.src));
     }
 
-    template<typename Dst>
-    inline std::string toString(const Imul1<Dst>& ins) {
-        return fmt::format("{:7}{}", "imul", toString(ins.dst));
+    template<typename Src>
+    inline std::string toString(const Imul1<Src>& ins) {
+        return fmt::format("{:7}{}", "imul", toString(ins.src));
     }
 
     template<typename Dst, typename Src>
