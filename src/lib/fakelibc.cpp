@@ -168,4 +168,14 @@ extern "C" {
         return 0;
     }
 
+    int fakelibc$fputs(const char* __restrict__ s, FILE* __restrict__ stream) {
+        int count = 0;
+        while(*s) count += fakelibc$putchar(*s++);
+        return count;
+    }
+
+    int fakelibc$fflush(FILE* stream) {
+        return 0;
+    }
+
 }
