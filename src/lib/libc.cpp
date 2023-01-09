@@ -96,7 +96,9 @@ namespace x86 {
             u32 ret = heap_->current;
             ret = ((ret+3)/4)*4; // Align to 4 bytes
             heap_->current = ret + size;
-            Interpreter::verify(heap_->current < heap_->base + heap_->size);
+            Interpreter::verify(heap_->current < heap_->base + heap_->size, []() {
+                fmt::print("Heap is full");
+            });
             context_.set_eax(ret);
         }
         std::string toString() const override {

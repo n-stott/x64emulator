@@ -52,7 +52,7 @@ namespace x86 {
         stop_ = false;
         // heap
         u32 heapBase = 0x1000000;
-        u32 heapSize = 64*1024;
+        u32 heapSize = 1024*1024;
         Mmu::Region heapRegion{ "heap", heapBase, heapSize, PROT_READ | PROT_WRITE };
         mmu_.addRegion(heapRegion);
         libc_.setHeapRegion(heapRegion.base, heapRegion.size);
