@@ -178,4 +178,12 @@ extern "C" {
         return 0;
     }
 
+    int fakelibc$fputc(int c, FILE* stream) {
+        return fakelibc$putchar(c);
+    }
+
+    time_t time(time_t* tloc) {
+        return 0;
+    }
+
 }
