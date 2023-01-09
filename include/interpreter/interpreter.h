@@ -215,6 +215,7 @@ namespace x86 {
         u32 execSbb32Impl(u32 dst, u32 src);
 
         std::pair<u32, u32> execMul32(u32 src1, u32 src2);
+        void execImul32(u32 src);
         u32 execImul32(u32 src1, u32 src2);
         std::pair<u32, u32> execDiv32(u32 dividendUpper, u32 dividendLower, u32 divisor);
 
@@ -332,6 +333,8 @@ namespace x86 {
         void exec(const Div<Addr<Size::DWORD, B>>&) override;
         void exec(const Div<Addr<Size::DWORD, BD>>&) override;
 
+        std::pair<u32, u32> execIdiv32(u32 dividendUpper, u32 dividendLower, u32 divisor);
+
         void exec(const Idiv<R32>&) override;
         void exec(const Idiv<Addr<Size::DWORD, B>>&) override;
         void exec(const Idiv<Addr<Size::DWORD, BD>>&) override;
@@ -386,6 +389,10 @@ namespace x86 {
         void exec(const Or<Addr<Size::DWORD, BD>, Imm<u32>>&) override;
         void exec(const Or<Addr<Size::DWORD, BIS>, R32>&) override;
         void exec(const Or<Addr<Size::DWORD, BISD>, R32>&) override;
+
+        u8 execXor8Impl(u8 dst, u8 src);
+        u16 execXor16Impl(u16 dst, u16 src);
+        u32 execXor32Impl(u32 dst, u32 src);
 
         void exec(const Xor<R8, Imm<u8>>&) override;
         void exec(const Xor<R8, Addr<Size::BYTE, BD>>&) override;

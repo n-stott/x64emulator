@@ -754,6 +754,21 @@ namespace x86 {
         set(R32::EAX, res.second);
     }
 
+    void Interpreter::execImul32(u32 src) {
+        u32 eax = get(R32::EAX);
+        i32 res = (i32)src * (i32)eax;
+        i64 tmp = (i64)src * (i64)eax;
+        flags_.carry = (res != (i32)tmp);
+        flags_.overflow = (res != (i32)tmp);
+        flags_.setSure();
+        u32 first;
+        u32 second;
+        memcpy(&first, ((const unsigned char*)&tmp), 4);
+        memcpy(&second, ((const unsigned char*)&tmp)+4, 4);
+        set(R32::EDX, first);
+        set(R32::EAX, second);
+    }
+
     u32 Interpreter::execImul32(u32 src1, u32 src2) {
         i32 res = (i32)src1 * (i32)src2;
         i64 tmp = (i64)src1 * (i64)src2;
@@ -763,8 +778,8 @@ namespace x86 {
         return res;
     }
 
-    void Interpreter::exec(const Imul1<R32>& ins) { TODO(ins); }
-    void Interpreter::exec(const Imul1<Addr<Size::DWORD, BD>>& ins) { TODO(ins); }
+    void Interpreter::exec(const Imul1<R32>& ins) { execImul32(get(ins.src)); }
+    void Interpreter::exec(const Imul1<Addr<Size::DWORD, BD>>& ins) { execImul32(get(resolve(ins.src))); }
     void Interpreter::exec(const Imul2<R32, R32>& ins) { set(ins.dst, execImul32(get(ins.dst), get(ins.src))); }
     void Interpreter::exec(const Imul2<R32, Addr<Size::DWORD, B>>& ins) { set(ins.dst, execImul32(get(ins.dst), get(resolve(ins.src)))); }
     void Interpreter::exec(const Imul2<R32, Addr<Size::DWORD, BD>>& ins) { set(ins.dst, execImul32(get(ins.dst), get(resolve(ins.src)))); }
@@ -807,9 +822,29 @@ namespace x86 {
         set(R32::EDX, res.second);
     }
 
-    void Interpreter::exec(const Idiv<R32>& ins) { TODO(ins); }
-    void Interpreter::exec(const Idiv<Addr<Size::DWORD, B>>& ins) { TODO(ins); }
-    void Interpreter::exec(const Idiv<Addr<Size::DWORD, BD>>& ins) { TODO(ins); }
+    std::pair<u32, u32> Interpreter::execIdiv32(u32 dividendUpper, u32 dividendLower, u32 divisor) {
+        verify(divisor != 0);
+        u64 dividend = ((u64)dividendUpper) << 32 | (u64)dividendLower;
+        i64 tmp = ((i64)dividend) / ((i32)divisor);
+        verify(tmp >> 32 == 0);
+        return std::make_pair(tmp, ((i64)dividend) % ((i32)divisor));
+    }
+
+    void Interpreter::exec(const Idiv<R32>& ins) {
+        auto res = execIdiv32(get(R32::EDX), get(R32::EAX), get(ins.src));
+        set(R32::EAX, res.first);
+        set(R32::EDX, res.second);
+    }
+    void Interpreter::exec(const Idiv<Addr<Size::DWORD, B>>& ins) {
+        auto res = execIdiv32(get(R32::EDX), get(R32::EAX), get(resolve(ins.src)));
+        set(R32::EAX, res.first);
+        set(R32::EDX, res.second);
+    }
+    void Interpreter::exec(const Idiv<Addr<Size::DWORD, BD>>& ins) {
+        auto res = execIdiv32(get(R32::EDX), get(R32::EAX), get(resolve(ins.src)));
+        set(R32::EAX, res.first);
+        set(R32::EDX, res.second);
+    }
 
     u8 Interpreter::execAnd8Impl(u8 dst, u8 src) {
         u8 tmp = dst & src;
@@ -890,35 +925,38 @@ namespace x86 {
     void Interpreter::exec(const Or<Addr<Size::DWORD, BIS>, R32>& ins) { TODO(ins); }
     void Interpreter::exec(const Or<Addr<Size::DWORD, BISD>, R32>& ins) { TODO(ins); }
 
-    void Interpreter::exec(const Xor<R8, Imm<u8>>& ins) {
-        set(ins.dst, get(ins.src) ^ get(ins.dst));
+    u8 Interpreter::execXor8Impl(u8 dst, u8 src) {
+        u8 tmp = dst ^ src;
         WARN_FLAGS();
-    }
-    void Interpreter::exec(const Xor<R8, Addr<Size::BYTE, BD>>& ins) { TODO(ins); }
-    void Interpreter::exec(const Xor<R16, Imm<u16>>& ins) {
-        set(ins.dst, get(ins.src) ^ get(ins.dst));
-        WARN_FLAGS();
+        return tmp;
     }
 
-    void Interpreter::exec(const Xor<R32, Imm<u32>>& ins) {
-        set(ins.dst, get(ins.src) ^ get(ins.dst));
+    u16 Interpreter::execXor16Impl(u16 dst, u16 src) {
+        u16 tmp = dst ^ src;
         WARN_FLAGS();
+        return tmp;
     }
 
-    void Interpreter::exec(const Xor<R32, R32>& ins) {
-        set(ins.dst, get(ins.src) ^ get(ins.dst));
+    u32 Interpreter::execXor32Impl(u32 dst, u32 src) {
+        u32 tmp = dst ^ src;
         WARN_FLAGS();
+        return tmp;
     }
-    
-    void Interpreter::exec(const Xor<R32, Addr<Size::DWORD, B>>& ins) { TODO(ins); }
-    void Interpreter::exec(const Xor<R32, Addr<Size::DWORD, BD>>& ins) { TODO(ins); }
-    void Interpreter::exec(const Xor<R32, Addr<Size::DWORD, BIS>>& ins) { TODO(ins); }
-    void Interpreter::exec(const Xor<R32, Addr<Size::DWORD, BISD>>& ins) { TODO(ins); }
-    void Interpreter::exec(const Xor<Addr<Size::BYTE, BD>, Imm<u8>>& ins) { TODO(ins); }
-    void Interpreter::exec(const Xor<Addr<Size::DWORD, B>, R32>& ins) { TODO(ins); }
-    void Interpreter::exec(const Xor<Addr<Size::DWORD, BD>, R32>& ins) { TODO(ins); }
-    void Interpreter::exec(const Xor<Addr<Size::DWORD, BIS>, R32>& ins) { TODO(ins); }
-    void Interpreter::exec(const Xor<Addr<Size::DWORD, BISD>, R32>& ins) { TODO(ins); }
+
+    void Interpreter::exec(const Xor<R8, Imm<u8>>& ins) { set(ins.dst, execXor8Impl(get(ins.dst), get(ins.src))); }
+    void Interpreter::exec(const Xor<R8, Addr<Size::BYTE, BD>>& ins) { set(ins.dst, execXor8Impl(get(ins.dst), get(resolve(ins.src)))); }
+    void Interpreter::exec(const Xor<R16, Imm<u16>>& ins) { set(ins.dst, execXor16Impl(get(ins.dst), get(ins.src))); }
+    void Interpreter::exec(const Xor<R32, Imm<u32>>& ins) { set(ins.dst, execXor32Impl(get(ins.dst), get(ins.src))); }
+    void Interpreter::exec(const Xor<R32, R32>& ins) { set(ins.dst, execXor32Impl(get(ins.dst), get(ins.src))); }
+    void Interpreter::exec(const Xor<R32, Addr<Size::DWORD, B>>& ins) { set(ins.dst, execXor32Impl(get(ins.dst), get(resolve(ins.src)))); }
+    void Interpreter::exec(const Xor<R32, Addr<Size::DWORD, BD>>& ins) { set(ins.dst, execXor32Impl(get(ins.dst), get(resolve(ins.src)))); }
+    void Interpreter::exec(const Xor<R32, Addr<Size::DWORD, BIS>>& ins) { set(ins.dst, execXor32Impl(get(ins.dst), get(resolve(ins.src)))); }
+    void Interpreter::exec(const Xor<R32, Addr<Size::DWORD, BISD>>& ins) { set(ins.dst, execXor32Impl(get(ins.dst), get(resolve(ins.src)))); }
+    void Interpreter::exec(const Xor<Addr<Size::BYTE, BD>, Imm<u8>>& ins) { set(resolve(ins.dst), execXor8Impl(get(resolve(ins.dst)), get(ins.src))); }
+    void Interpreter::exec(const Xor<Addr<Size::DWORD, B>, R32>& ins) { set(resolve(ins.dst), execXor32Impl(get(resolve(ins.dst)), get(ins.src))); }
+    void Interpreter::exec(const Xor<Addr<Size::DWORD, BD>, R32>& ins) { set(resolve(ins.dst), execXor32Impl(get(resolve(ins.dst)), get(ins.src))); }
+    void Interpreter::exec(const Xor<Addr<Size::DWORD, BIS>, R32>& ins) { set(resolve(ins.dst), execXor32Impl(get(resolve(ins.dst)), get(ins.src))); }
+    void Interpreter::exec(const Xor<Addr<Size::DWORD, BISD>, R32>& ins) { set(resolve(ins.dst), execXor32Impl(get(resolve(ins.dst)), get(ins.src))); }
 
     void Interpreter::exec(const Not<R32>& ins) { set(ins.dst, ~get(ins.dst)); }
     void Interpreter::exec(const Not<Addr<Size::DWORD, B>>& ins) { mmu_.write32(resolve(ins.dst), ~mmu_.read32(resolve(ins.dst))); }
