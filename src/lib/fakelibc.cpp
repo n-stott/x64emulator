@@ -154,4 +154,18 @@ extern "C" {
         return (wint_t)c;
     }
 
+    wctype_t fakelibc$__wctype_l(const char* name, locale_t locale) {
+        return 0;
+    }
+
+    int fakelibc$strcmp(const char* s1, const char* s2) {
+        while(*s1 && *s2) {
+            unsigned char a = *s1++;
+            unsigned char b = *s2++;
+            if(a < b) return -1;
+            if(a > b) return +1;
+        }
+        return 0;
+    }
+
 }
