@@ -576,6 +576,7 @@ namespace x86 {
         void exec(const Cmp<R8, Addr<Size::BYTE, BIS>>&) override;
         void exec(const Cmp<R8, Addr<Size::BYTE, BISD>>&) override;
         void exec(const Cmp<R16, R16>&) override;
+        void exec(const Cmp<R16, Imm<u16>>&) override;
         void exec(const Cmp<Addr<Size::WORD, B>, Imm<u16>>&) override;
         void exec(const Cmp<Addr<Size::WORD, BD>, Imm<u16>>&) override;
         void exec(const Cmp<Addr<Size::WORD, BIS>, R16>&) override;

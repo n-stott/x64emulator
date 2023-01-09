@@ -1401,6 +1401,7 @@ namespace x86 {
         if(r8src1 && ByteBISsrc2) return make_wrapper<Cmp<R8, Addr<Size::BYTE, BIS>>>(address, r8src1.value(), ByteBISsrc2.value());
         if(r8src1 && ByteBISDsrc2) return make_wrapper<Cmp<R8, Addr<Size::BYTE, BISD>>>(address, r8src1.value(), ByteBISDsrc2.value());
         if(r16src1 && r16src2) return make_wrapper<Cmp<R16, R16>>(address, r16src1.value(), r16src2.value());
+        if(r16src1 && imm16src2) return make_wrapper<Cmp<R16, Imm<u16>>>(address, r16src1.value(), imm16src2.value());
         if(WordBsrc1 && imm16src2) return make_wrapper<Cmp<Addr<Size::WORD, B>, Imm<u16>>>(address, WordBsrc1.value(), imm16src2.value());
         if(WordBDsrc1 && imm16src2) return make_wrapper<Cmp<Addr<Size::WORD, BD>, Imm<u16>>>(address, WordBDsrc1.value(), imm16src2.value());
         if(WordBISsrc1 && r16src2) return make_wrapper<Cmp<Addr<Size::WORD, BIS>, R16>>(address, WordBISsrc1.value(), r16src2.value());

@@ -1405,10 +1405,11 @@ namespace x86 {
     void Interpreter::exec(const Test<Addr<Size::DWORD, BD>, R32>& ins) { execTest32Impl(mmu_.read32(resolve(ins.src1)), get(ins.src2)); }
     void Interpreter::exec(const Test<Addr<Size::DWORD, BD>, Imm<u32>>& ins) { execTest32Impl(mmu_.read32(resolve(ins.src1)), get(ins.src2)); }
 
-    void Interpreter::exec(const Cmp<R16, R16>& ins) { TODO(ins); }
-    void Interpreter::exec(const Cmp<Addr<Size::WORD, B>, Imm<u16>>& ins) { TODO(ins); }
-    void Interpreter::exec(const Cmp<Addr<Size::WORD, BD>, Imm<u16>>& ins) { TODO(ins); }
-    void Interpreter::exec(const Cmp<Addr<Size::WORD, BIS>, R16>& ins) { TODO(ins); }
+    void Interpreter::exec(const Cmp<R16, R16>& ins) { execSub16Impl(get(ins.src1), get(ins.src2)); }
+    void Interpreter::exec(const Cmp<R16, Imm<u16>>& ins) { execSub16Impl(get(ins.src1), get(ins.src2)); }
+    void Interpreter::exec(const Cmp<Addr<Size::WORD, B>, Imm<u16>>& ins) { execSub16Impl(get(resolve(ins.src1)), get(ins.src2)); }
+    void Interpreter::exec(const Cmp<Addr<Size::WORD, BD>, Imm<u16>>& ins) { execSub16Impl(get(resolve(ins.src1)), get(ins.src2)); }
+    void Interpreter::exec(const Cmp<Addr<Size::WORD, BIS>, R16>& ins) { execSub16Impl(get(resolve(ins.src1)), get(ins.src2)); }
 
     void Interpreter::exec(const Cmp<R8, R8>& ins) { execSub8Impl(get(ins.src1), get(ins.src2)); }
     void Interpreter::exec(const Cmp<R8, Imm<u8>>& ins) { execSub8Impl(get(ins.src1), get(ins.src2)); }

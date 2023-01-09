@@ -342,6 +342,7 @@ namespace x86 {
         virtual void exec(const Cmp<R8, Addr<Size::BYTE, BIS>>&) = 0;
         virtual void exec(const Cmp<R8, Addr<Size::BYTE, BISD>>&) = 0;
         virtual void exec(const Cmp<R16, R16>&) = 0;
+        virtual void exec(const Cmp<R16, Imm<u16>>&) = 0;
         virtual void exec(const Cmp<Addr<Size::WORD, B>, Imm<u16>>&) = 0;
         virtual void exec(const Cmp<Addr<Size::WORD, BD>, Imm<u16>>&) = 0;
         virtual void exec(const Cmp<Addr<Size::WORD, BIS>, R16>&) = 0;
