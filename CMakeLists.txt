@@ -13,6 +13,10 @@ add_executable(add tests/src/add.cpp)
 target_compile_options(add PUBLIC ${CC_OPTIONS})
 target_link_options(add PUBLIC ${LD_OPTIONS})
 
+add_executable(mul tests/src/mul.cpp)
+target_compile_options(mul PUBLIC ${CC_OPTIONS})
+target_link_options(mul PUBLIC ${LD_OPTIONS})
+
 add_executable(call0 tests/src/call0.cpp)
 target_compile_options(call0 PUBLIC ${CC_OPTIONS})
 target_link_options(call0 PUBLIC ${LD_OPTIONS})
@@ -77,6 +81,10 @@ target_link_options(boostmap PUBLIC ${LD_OPTIONS} -static-libstdc++ -static-libg
 add_executable(stringstream tests/src/stringstream.cpp)
 target_compile_options(stringstream PUBLIC ${CC_OPTIONS})
 target_link_options(stringstream PUBLIC ${LD_OPTIONS} -static-libstdc++ -static-libgcc)
+
+add_executable(interval tests/src/interval.cpp)
+target_compile_options(interval PUBLIC ${CC_OPTIONS})
+target_link_options(interval PUBLIC ${LD_OPTIONS} -static-libstdc++ -static-libgcc)
 
 add_library(fakelibc SHARED
     src/lib/fakelibc.cpp
