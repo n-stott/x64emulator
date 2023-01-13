@@ -51,14 +51,14 @@ namespace x86 {
         flags_.setSure();
         stop_ = false;
         // heap
-        u32 heapBase = 0x1000000;
-        u32 heapSize = 1024*1024;
+        u32 heapBase = 0x2000000;
+        u32 heapSize = 64*1024*1024;
         Mmu::Region heapRegion{ "heap", heapBase, heapSize, PROT_READ | PROT_WRITE };
         mmu_.addRegion(heapRegion);
         libc_.setHeapRegion(heapRegion.base, heapRegion.size);
         
         // stack
-        u32 stackBase = 0x2000000;
+        u32 stackBase = 0x1000000;
         u32 stackSize = 16*1024;
         Mmu::Region stack{ "stack", stackBase, stackSize, PROT_READ | PROT_WRITE };
         mmu_.addRegion(stack);
@@ -91,7 +91,7 @@ namespace x86 {
             fmt::print("Failed to load libc elf file\n");
             std::abort();
         }
-        addSectionIfExists(*libcElf, ".data", PROT_READ);
+        addSectionIfExists(*libcElf, ".data", PROT_READ | PROT_WRITE);
         addSectionIfExists(*libcElf, ".bss", PROT_READ | PROT_WRITE);
 
         programElf_->resolveRelocations([&](const elf::Elf::RelocationEntry32& relocation) {
@@ -1114,7 +1114,7 @@ namespace x86 {
         // hack
         (void)stream;
 #ifndef NDEBUG
-        u32 stackEnd = 0x2000000 + 16*1024;
+        u32 stackEnd = 0x1000000 + 16*1024;
         u32 arg0 = (esp_+0 < stackEnd ? mmu_.read32(Ptr32{esp_+0}) : 0xffffffff);
         u32 arg1 = (esp_+4 < stackEnd ? mmu_.read32(Ptr32{esp_+4}) : 0xffffffff);
         u32 arg2 = (esp_+8 < stackEnd ? mmu_.read32(Ptr32{esp_+8}) : 0xffffffff);
