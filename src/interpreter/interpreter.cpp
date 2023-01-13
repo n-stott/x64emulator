@@ -520,6 +520,7 @@ namespace x86 {
         verify(flags_.sure(), "flags are not set correctly");
 
     #define WARN_SIGNED_OVERFLOW() \
+        flags_.setUnsure();\
         DEBUG_ONLY(fmt::print(stderr, "Warning : signed integer overflow not handled\n"))
 
     #define ASSERT(ins, cond) \
@@ -554,6 +555,34 @@ namespace x86 {
         flags_.zero = (u32)tmp == 0;
         flags_.carry = (tmp >> 32) != 0;
         i64 signedTmp = (i64)dst + (i64)src;
+        flags_.overflow = (i32)signedTmp != signedTmp;
+        flags_.sign = (signedTmp < 0);
+        flags_.setSure();
+        return (u32)tmp;
+    }
+
+    u8 Interpreter::execAdc8Impl(u8 dst, u8 src) {
+        REQUIRE_FLAGS();
+        (void)dst;
+        (void)src;
+        verify(false, "Not implemented");
+        return 0;
+    }
+
+    u16 Interpreter::execAdc16Impl(u16 dst, u16 src) {
+        REQUIRE_FLAGS();
+        (void)dst;
+        (void)src;
+        verify(false, "Not implemented");
+        return 0;
+    }
+
+    u32 Interpreter::execAdc32Impl(u32 dst, u32 src) {
+        REQUIRE_FLAGS();
+        u64 tmp = (u64)dst + (u64)src + (u64)flags_.carry;
+        flags_.zero = (u32)tmp == 0;
+        flags_.carry = (tmp >> 32) != 0;
+        i64 signedTmp = (i64)dst + (i64)src + (i64)flags_.carry;
         flags_.overflow = (i32)signedTmp != signedTmp;
         flags_.sign = (signedTmp < 0);
         flags_.setSure();
@@ -646,13 +675,26 @@ namespace x86 {
     void Interpreter::exec(const Sub<Addr<Size::DWORD, BIS>, Imm<u32>>& ins) { set(resolve(ins.dst), execSub32Impl(get(resolve(ins.dst)), get(ins.src))); }
     void Interpreter::exec(const Sub<Addr<Size::DWORD, BISD>, Imm<u32>>& ins) { set(resolve(ins.dst), execSub32Impl(get(resolve(ins.dst)), get(ins.src))); }
 
+    static bool sumOverflows(i32 a, i32 b) {
+        if((a^b) < 0) return false;
+        if(a > 0) {
+            return (b > std::numeric_limits<int>::max() - a);
+        } else {
+            return (b < std::numeric_limits<int>::min() - a);
+        }
+    }
+
     u32 Interpreter::execSbb32Impl(u32 dst, u32 src) {
-        i32 ret = (i32)dst - (i32)(src + flags_.carry);
-        flags_.sign = (ret < 0);
-        flags_.zero = (ret == 0);
+        REQUIRE_FLAGS();
+        u32 src1 = dst;
+        u32 src2 = src + flags_.carry;
+        u64 stmp = (u64)src1 - (u64)src2;
+        flags_.overflow = sumOverflows(src1, src2);
+        flags_.carry = (src1 < src2);
+        flags_.sign = ((i32)stmp < 0);
+        flags_.zero = (src1 == src2);
         flags_.setSure();
-        WARN_SIGNED_OVERFLOW();
-        return ret;
+        return src1 - src2;
     }
 
     void Interpreter::exec(const Sbb<R32, R32>& ins) {
@@ -692,27 +734,18 @@ namespace x86 {
     void Interpreter::exec(const Sbb<Addr<Size::DWORD, BIS>, Imm<u32>>& ins) { TODO(ins); }
     void Interpreter::exec(const Sbb<Addr<Size::DWORD, BISD>, Imm<u32>>& ins) { TODO(ins); }
 
-    namespace {
-        static u32 negate(u32 value) {
-            i32 ival;
-            std::memcpy(&ival, &value, sizeof(value));
-            ival = -ival;
-            std::memcpy(&value, &ival, sizeof(value));
-            return value;
-        }
+    u32 Interpreter::execNeg32Impl(u32 dst) {
+        return execSub32Impl(0u, dst);
     }
 
     void Interpreter::exec(const Neg<R32>& ins) {
-        set(ins.src, negate(get(ins.src)));
-        WARN_FLAGS();
+        set(ins.src, execNeg32Impl(get(ins.src)));
     }
     void Interpreter::exec(const Neg<Addr<Size::DWORD, B>>& ins) {
-        set(resolve(ins.src), negate(get(resolve(ins.src))));
-        WARN_FLAGS();
+        set(resolve(ins.src), execNeg32Impl(get(resolve(ins.src))));
     }
     void Interpreter::exec(const Neg<Addr<Size::DWORD, BD>>& ins) {
-        set(resolve(ins.src), negate(get(resolve(ins.src))));
-        WARN_FLAGS();
+        set(resolve(ins.src), execNeg32Impl(get(resolve(ins.src))));
     }
 
     std::pair<u32, u32> Interpreter::execMul32(u32 src1, u32 src2) {
@@ -757,12 +790,8 @@ namespace x86 {
         flags_.carry = (res != (i32)tmp);
         flags_.overflow = (res != (i32)tmp);
         flags_.setSure();
-        u32 first;
-        u32 second;
-        memcpy(&first, ((const unsigned char*)&tmp), 4);
-        memcpy(&second, ((const unsigned char*)&tmp)+4, 4);
-        set(R32::EDX, first);
-        set(R32::EAX, second);
+        set(R32::EDX, tmp >> 32);
+        set(R32::EAX, tmp);
     }
 
     u32 Interpreter::execImul32(u32 src1, u32 src2) {
