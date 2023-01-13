@@ -689,6 +689,10 @@ namespace x86 {
         void exec(const Cmov<Cond::L, R32, Addr<Size::DWORD, BD>>&) override;
         void exec(const Cmov<Cond::NE, R32, R32>&) override;
         void exec(const Cmov<Cond::NE, R32, Addr<Size::DWORD, BD>>&) override;
+        void exec(const Cmov<Cond::NS, R32, R32>&) override;
+        void exec(const Cmov<Cond::NS, R32, Addr<Size::DWORD, BD>>&) override;
+        void exec(const Cmov<Cond::S, R32, R32>&) override;
+        void exec(const Cmov<Cond::S, R32, Addr<Size::DWORD, BD>>&) override;
 
         void exec(const Cwde&) override;
     };

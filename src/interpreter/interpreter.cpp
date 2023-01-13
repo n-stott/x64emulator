@@ -581,25 +581,21 @@ namespace x86 {
     void Interpreter::exec(const Add<Addr<Size::DWORD, BIS>, Imm<u32>>& ins) { set(resolve(ins.dst), execAdd32Impl(get(resolve(ins.dst)), get(ins.src))); }
     void Interpreter::exec(const Add<Addr<Size::DWORD, BISD>, Imm<u32>>& ins) { set(resolve(ins.dst), execAdd32Impl(get(resolve(ins.dst)), get(ins.src))); }
 
-    void Interpreter::exec(const Adc<R32, R32>& ins) {
-        REQUIRE_FLAGS();
-        set(ins.dst, get(ins.dst) + get(ins.src) + flags_.carry);
-        WARN_FLAGS();
-    }
-    void Interpreter::exec(const Adc<R32, Imm<u32>>& ins) { TODO(ins); }
-    void Interpreter::exec(const Adc<R32, SignExtended<u8>>& ins) { TODO(ins); }
-    void Interpreter::exec(const Adc<R32, Addr<Size::DWORD, B>>& ins) { TODO(ins); }
-    void Interpreter::exec(const Adc<R32, Addr<Size::DWORD, BD>>& ins) { TODO(ins); }
-    void Interpreter::exec(const Adc<R32, Addr<Size::DWORD, BIS>>& ins) { TODO(ins); }
-    void Interpreter::exec(const Adc<R32, Addr<Size::DWORD, BISD>>& ins) { TODO(ins); }
-    void Interpreter::exec(const Adc<Addr<Size::DWORD, B>, R32>& ins) { TODO(ins); }
-    void Interpreter::exec(const Adc<Addr<Size::DWORD, BD>, R32>& ins) { TODO(ins); }
-    void Interpreter::exec(const Adc<Addr<Size::DWORD, BIS>, R32>& ins) { TODO(ins); }
-    void Interpreter::exec(const Adc<Addr<Size::DWORD, BISD>, R32>& ins) { TODO(ins); }
-    void Interpreter::exec(const Adc<Addr<Size::DWORD, B>, Imm<u32>>& ins) { TODO(ins); }
-    void Interpreter::exec(const Adc<Addr<Size::DWORD, BD>, Imm<u32>>& ins) { TODO(ins); }
-    void Interpreter::exec(const Adc<Addr<Size::DWORD, BIS>, Imm<u32>>& ins) { TODO(ins); }
-    void Interpreter::exec(const Adc<Addr<Size::DWORD, BISD>, Imm<u32>>& ins) { TODO(ins); }
+    void Interpreter::exec(const Adc<R32, R32>& ins) { set(ins.dst, execAdc32Impl(get(ins.dst), get(ins.src))); }
+    void Interpreter::exec(const Adc<R32, Imm<u32>>& ins) { set(ins.dst, execAdc32Impl(get(ins.dst), get(ins.src))); }
+    void Interpreter::exec(const Adc<R32, SignExtended<u8>>& ins) { set(ins.dst, execAdc32Impl(get(ins.dst), signExtended32(ins.src.extendedValue))); }
+    void Interpreter::exec(const Adc<R32, Addr<Size::DWORD, B>>& ins) { set(ins.dst, execAdc32Impl(get(ins.dst), get(resolve(ins.src)))); }
+    void Interpreter::exec(const Adc<R32, Addr<Size::DWORD, BD>>& ins) { set(ins.dst, execAdc32Impl(get(ins.dst), get(resolve(ins.src)))); }
+    void Interpreter::exec(const Adc<R32, Addr<Size::DWORD, BIS>>& ins) { set(ins.dst, execAdc32Impl(get(ins.dst), get(resolve(ins.src)))); }
+    void Interpreter::exec(const Adc<R32, Addr<Size::DWORD, BISD>>& ins) { set(ins.dst, execAdc32Impl(get(ins.dst), get(resolve(ins.src)))); }
+    void Interpreter::exec(const Adc<Addr<Size::DWORD, B>, R32>& ins) { set(resolve(ins.dst), execAdc32Impl(get(resolve(ins.dst)), get(ins.src))); }
+    void Interpreter::exec(const Adc<Addr<Size::DWORD, BD>, R32>& ins) { set(resolve(ins.dst), execAdc32Impl(get(resolve(ins.dst)), get(ins.src))); }
+    void Interpreter::exec(const Adc<Addr<Size::DWORD, BIS>, R32>& ins) { set(resolve(ins.dst), execAdc32Impl(get(resolve(ins.dst)), get(ins.src))); }
+    void Interpreter::exec(const Adc<Addr<Size::DWORD, BISD>, R32>& ins) { set(resolve(ins.dst), execAdc32Impl(get(resolve(ins.dst)), get(ins.src))); }
+    void Interpreter::exec(const Adc<Addr<Size::DWORD, B>, Imm<u32>>& ins) { set(resolve(ins.dst), execAdc32Impl(get(resolve(ins.dst)), get(ins.src))); }
+    void Interpreter::exec(const Adc<Addr<Size::DWORD, BD>, Imm<u32>>& ins) { set(resolve(ins.dst), execAdc32Impl(get(resolve(ins.dst)), get(ins.src))); }
+    void Interpreter::exec(const Adc<Addr<Size::DWORD, BIS>, Imm<u32>>& ins) { set(resolve(ins.dst), execAdc32Impl(get(resolve(ins.dst)), get(ins.src))); }
+    void Interpreter::exec(const Adc<Addr<Size::DWORD, BISD>, Imm<u32>>& ins) { set(resolve(ins.dst), execAdc32Impl(get(resolve(ins.dst)), get(ins.src))); }
 
     u8 Interpreter::execSub8Impl(u8 src1, u8 src2) {
         // fmt::print(stderr, "Cmp/Sub : {:#x} {:#x}\n", src1, src2);
@@ -1768,6 +1764,10 @@ namespace x86 {
     void Interpreter::exec(const Cmov<Cond::L, R32, Addr<Size::DWORD, BD>>& ins) { execCmovImpl(Cond::L, ins.dst, ins.src); }
     void Interpreter::exec(const Cmov<Cond::NE, R32, R32>& ins) { execCmovImpl(Cond::NE, ins.dst, ins.src); }
     void Interpreter::exec(const Cmov<Cond::NE, R32, Addr<Size::DWORD, BD>>& ins) { execCmovImpl(Cond::NE, ins.dst, ins.src); }
+    void Interpreter::exec(const Cmov<Cond::NS, R32, R32>& ins) { execCmovImpl(Cond::NS, ins.dst, ins.src); }
+    void Interpreter::exec(const Cmov<Cond::NS, R32, Addr<Size::DWORD, BD>>& ins) { execCmovImpl(Cond::NS, ins.dst, ins.src); }
+    void Interpreter::exec(const Cmov<Cond::S, R32, R32>& ins) { execCmovImpl(Cond::S, ins.dst, ins.src); }
+    void Interpreter::exec(const Cmov<Cond::S, R32, Addr<Size::DWORD, BD>>& ins) { execCmovImpl(Cond::S, ins.dst, ins.src); }
 
     void Interpreter::exec(const Cwde&) {
         set(R32::EAX, (i32)(i16)get(R16::AX));

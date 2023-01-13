@@ -448,6 +448,10 @@ namespace x86 {
         virtual void exec(const Cmov<Cond::L, R32, Addr<Size::DWORD, BD>>&) = 0;
         virtual void exec(const Cmov<Cond::NE, R32, R32>&) = 0;
         virtual void exec(const Cmov<Cond::NE, R32, Addr<Size::DWORD, BD>>&) = 0;
+        virtual void exec(const Cmov<Cond::NS, R32, R32>&) = 0;
+        virtual void exec(const Cmov<Cond::NS, R32, Addr<Size::DWORD, BD>>&) = 0;
+        virtual void exec(const Cmov<Cond::S, R32, R32>&) = 0;
+        virtual void exec(const Cmov<Cond::S, R32, Addr<Size::DWORD, BD>>&) = 0;
 
         virtual void exec(const Cwde&) = 0;
 

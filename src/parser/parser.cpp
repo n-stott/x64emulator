@@ -275,6 +275,8 @@ namespace x86 {
         if(name == "cmovl") return parseCmov<Cond::L>(opbytes, address, operands);
         if(name == "cmovle") return parseCmov<Cond::LE>(opbytes, address, operands);
         if(name == "cmovne") return parseCmov<Cond::NE>(opbytes, address, operands);
+        if(name == "cmovns") return parseCmov<Cond::NS>(opbytes, address, operands);
+        if(name == "cmovs") return parseCmov<Cond::S>(opbytes, address, operands);
         if(name == "cwde") return parseCwde(opbytes, address, operands);
         return make_failed(address, s);
     }
