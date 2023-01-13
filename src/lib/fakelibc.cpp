@@ -73,9 +73,18 @@ extern "C" {
     void* fakelibc$memmove(void* dest, const void* src, size_t n) {
         unsigned char* d = (unsigned char*)dest;
         const unsigned char* s = (const unsigned char*)src;
-        while(n > 0) {
-            *d++ = *s++;
-            --n;
+        if(dest < src) {
+            while(n > 0) {
+                *d++ = *s++;
+                --n;
+            }
+        } else if (src < dest) {
+            d += n-1;
+            s += n-1;
+            while(n > 0) {
+                *d-- = *s--;
+                --n;
+            }
         }
         return dest;
     }
@@ -183,7 +192,9 @@ extern "C" {
     }
 
     time_t time(time_t* tloc) {
-        return 0;
+        static int secondsSinceEpoch = 0eb0c;
+        ++secondsSinceEpoch;
+        return secondsSinceEpoch;
     }
 
 }
