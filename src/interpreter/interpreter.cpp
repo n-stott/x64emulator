@@ -166,17 +166,17 @@ namespace x86 {
         if(stop_) return;
         fmt::print("Execute function {}\n", function->name);
         SignalHandler sh;
-        state_.frames.clear();
-        state_.frames.push_back(Frame{function, 0});
+        callStack_.frames.clear();
+        callStack_.frames.push_back(Frame{function, 0});
 
         push32(function->address);
 
         size_t ticks = 0;
-        while(!stop_ && state_.hasNext()) {
+        while(!stop_ && callStack_.hasNext()) {
             try {
                 verify(!signal_interrupt);
-                const X86Instruction* instruction = state_.next();
-                auto nextAfter = state_.peek();
+                const X86Instruction* instruction = callStack_.next();
+                auto nextAfter = callStack_.peek();
                 if(nextAfter) {
                     eip_ = nextAfter->address;
                 }
@@ -188,7 +188,7 @@ namespace x86 {
 #ifndef NDEBUG
                 std::string eflags = fmt::format("flags = [{}{}{}{}]", (flags_.carry ? 'C' : ' '), (flags_.zero ? 'Z' : ' '), (flags_.overflow ? 'O' : ' '), (flags_.sign ? 'S' : ' '));
                 std::string registerDump = fmt::format("eax={:0000008x} ebx={:0000008x} ecx={:0000008x} edx={:0000008x} esi={:0000008x} edi={:0000008x} ebp={:0000008x} esp={:0000008x}", eax_, ebx_, ecx_, edx_, esi_, edi_, ebp_, esp_);
-                std::string indent = fmt::format("{:{}}", "", state_.frames.size());
+                std::string indent = fmt::format("{:{}}", "", callStack_.frames.size());
                 std::string menmonic = fmt::format("{}|{}", indent, instruction->toString());
                 fmt::print(stderr, "{:10} {:60}{:20} {}\n", ticks, menmonic, eflags, registerDump);
 #endif
@@ -200,7 +200,7 @@ namespace x86 {
                 dump(stdout);
                 mmu_.dumpRegions();
                 fmt::print("Stacktrace:\n");
-                state_.dumpStacktrace();
+                callStack_.dumpStacktrace();
                 stop_ = true;
             }
         }
@@ -1139,7 +1139,7 @@ namespace x86 {
             // for(const auto& f : libc_.functions) fmt::print(stderr, "    {}\n", f.name);
             stop_ = true;
         });
-        state_.frames.push_back(Frame{func, 0});
+        callStack_.frames.push_back(Frame{func, 0});
         push32(eip_);
     }
 
@@ -1147,14 +1147,14 @@ namespace x86 {
         u32 address = get(ins.src);
         const Function* func = program_.findFunctionByAddress(address);
         if(!!func) {
-            state_.frames.push_back(Frame{func, 0});
+            callStack_.frames.push_back(Frame{func, 0});
             push32(eip_);
         } else {
             func = libc_.findFunctionByAddress(address);
             verify(!!func, [&]() {
                 fmt::print(stderr, "Unable to find function at {:#x}\n", address);
             });
-            state_.frames.push_back(Frame{func, 0});
+            callStack_.frames.push_back(Frame{func, 0});
             push32(eip_);
         }
     }
@@ -1162,14 +1162,14 @@ namespace x86 {
         u32 address = mmu_.read32(resolve(ins.src));
         const Function* func = program_.findFunctionByAddress(address);
         if(!!func) {
-            state_.frames.push_back(Frame{func, 0});
+            callStack_.frames.push_back(Frame{func, 0});
             push32(eip_);
         } else {
             func = libc_.findFunctionByAddress(address);
             verify(!!func, [&]() {
                 fmt::print(stderr, "Unable to find function at {:#x}\n", address);
             });
-            state_.frames.push_back(Frame{func, 0});
+            callStack_.frames.push_back(Frame{func, 0});
             push32(eip_);
         }
     }
@@ -1177,14 +1177,14 @@ namespace x86 {
         u32 address = mmu_.read32(resolve(ins.src));
         const Function* func = program_.findFunctionByAddress(address);
         if(!!func) {
-            state_.frames.push_back(Frame{func, 0});
+            callStack_.frames.push_back(Frame{func, 0});
             push32(eip_);
         } else {
             func = libc_.findFunctionByAddress(address);
             verify(!!func, [&]() {
                 fmt::print(stderr, "Unable to find function at {:#x}\n", address);
             });
-            state_.frames.push_back(Frame{func, 0});
+            callStack_.frames.push_back(Frame{func, 0});
             push32(eip_);
         }
     }
@@ -1192,27 +1192,27 @@ namespace x86 {
         u32 address = mmu_.read32(resolve(ins.src));
         const Function* func = program_.findFunctionByAddress(address);
         if(!!func) {
-            state_.frames.push_back(Frame{func, 0});
+            callStack_.frames.push_back(Frame{func, 0});
             push32(eip_);
         } else {
             func = libc_.findFunctionByAddress(address);
             verify(!!func, [&]() {
                 fmt::print(stderr, "Unable to find function at {:#x}\n", address);
             });
-            state_.frames.push_back(Frame{func, 0});
+            callStack_.frames.push_back(Frame{func, 0});
             push32(eip_);
         }
     }
 
     void Interpreter::exec(const Ret<>&) {
-        assert(state_.frames.size() >= 1);
-        state_.frames.pop_back();
+        assert(callStack_.frames.size() >= 1);
+        callStack_.frames.pop_back();
         eip_ = pop32();
     }
 
     void Interpreter::exec(const Ret<Imm<u16>>& ins) {
-        assert(state_.frames.size() >= 1);
-        state_.frames.pop_back();
+        assert(callStack_.frames.size() >= 1);
+        callStack_.frames.pop_back();
         eip_ = pop32();
         esp_ += get(ins.src);
     }
@@ -1546,16 +1546,16 @@ namespace x86 {
     void Interpreter::exec(const Set<Cond::NE, Addr<Size::BYTE, BD>>& ins) { execSet(Cond::NE, ins.dst); }
 
     void Interpreter::exec(const Jmp<R32>& ins) {
-        bool success = state_.jumpInFrame(get(ins.symbolAddress));
-        if(!success) success = state_.jumpOutOfFrame(program_, get(ins.symbolAddress));
+        bool success = callStack_.jumpInFrame(get(ins.symbolAddress));
+        if(!success) success = callStack_.jumpOutOfFrame(program_, get(ins.symbolAddress));
         Interpreter::verify(success, [&]() {
             fmt::print("[Jmp<R32>] Unable to find jmp destination {:#x}\n", get(ins.symbolAddress));
         });
     }
 
     void Interpreter::exec(const Jmp<u32>& ins) {
-        bool success = state_.jumpInFrame(ins.symbolAddress);
-        if(!success) success = state_.jumpOutOfFrame(program_, ins.symbolAddress);
+        bool success = callStack_.jumpInFrame(ins.symbolAddress);
+        if(!success) success = callStack_.jumpOutOfFrame(program_, ins.symbolAddress);
         Interpreter::verify(success, [&]() {
             fmt::print("[Jmp<u32>] Unable to find jmp destination {:#x}\n", ins.symbolAddress);
         });
@@ -1566,7 +1566,7 @@ namespace x86 {
 
     void Interpreter::exec(const Jcc<Cond::NE>& ins) {
         if(flags_.matches(Cond::NE)) {
-            bool success = state_.jumpInFrame(ins.symbolAddress);
+            bool success = callStack_.jumpInFrame(ins.symbolAddress);
             Interpreter::verify(success, [&]() {
                 fmt::print("[Jcc<Cond::NE>] Unable to find jmp destination {:#x}\n", ins.symbolAddress);
             });
@@ -1575,7 +1575,7 @@ namespace x86 {
 
     void Interpreter::exec(const Jcc<Cond::E>& ins) {
         if(flags_.matches(Cond::E)) {
-            bool success = state_.jumpInFrame(ins.symbolAddress);
+            bool success = callStack_.jumpInFrame(ins.symbolAddress);
             Interpreter::verify(success, [&]() {
                 fmt::print("[Jcc<Cond::E>] Unable to find jmp destination {:#x}\n", ins.symbolAddress);
             });
@@ -1584,7 +1584,7 @@ namespace x86 {
 
     void Interpreter::exec(const Jcc<Cond::AE>& ins) {
         if(flags_.matches(Cond::AE)) {
-            bool success = state_.jumpInFrame(ins.symbolAddress);
+            bool success = callStack_.jumpInFrame(ins.symbolAddress);
             Interpreter::verify(success, [&]() {
                 fmt::print("[Jcc<Cond::AE>] Unable to find jmp destination {:#x}\n", ins.symbolAddress);
             });
@@ -1593,7 +1593,7 @@ namespace x86 {
 
     void Interpreter::exec(const Jcc<Cond::BE>& ins) {
         if(flags_.matches(Cond::BE)) {
-            bool success = state_.jumpInFrame(ins.symbolAddress);
+            bool success = callStack_.jumpInFrame(ins.symbolAddress);
             Interpreter::verify(success, [&]() {
                 fmt::print("[Jcc<Cond::BE>] Unable to find jmp destination {:#x}\n", ins.symbolAddress);
             });
@@ -1602,7 +1602,7 @@ namespace x86 {
 
     void Interpreter::exec(const Jcc<Cond::GE>& ins) {
         if(flags_.matches(Cond::GE)) {
-            bool success = state_.jumpInFrame(ins.symbolAddress);
+            bool success = callStack_.jumpInFrame(ins.symbolAddress);
             Interpreter::verify(success, [&]() {
                 fmt::print("[Jcc<Cond::GE>] Unable to find jmp destination {:#x}\n", ins.symbolAddress);
             });
@@ -1611,7 +1611,7 @@ namespace x86 {
 
     void Interpreter::exec(const Jcc<Cond::LE>& ins) {
         if(flags_.matches(Cond::LE)) {
-            bool success = state_.jumpInFrame(ins.symbolAddress);
+            bool success = callStack_.jumpInFrame(ins.symbolAddress);
             Interpreter::verify(success, [&]() {
                 fmt::print("[Jcc<Cond::LE>] Unable to find jmp destination {:#x}\n", ins.symbolAddress);
             });
@@ -1620,7 +1620,7 @@ namespace x86 {
 
     void Interpreter::exec(const Jcc<Cond::A>& ins) {
         if(flags_.matches(Cond::A)) {
-            bool success = state_.jumpInFrame(ins.symbolAddress);
+            bool success = callStack_.jumpInFrame(ins.symbolAddress);
             Interpreter::verify(success, [&]() {
                 fmt::print("[Jcc<Cond::A>] Unable to find jmp destination {:#x}\n", ins.symbolAddress);
             });
@@ -1629,7 +1629,7 @@ namespace x86 {
 
     void Interpreter::exec(const Jcc<Cond::B>& ins) {
         if(flags_.matches(Cond::B)) {
-            bool success = state_.jumpInFrame(ins.symbolAddress);
+            bool success = callStack_.jumpInFrame(ins.symbolAddress);
             Interpreter::verify(success, [&]() {
                 fmt::print("[Jcc<Cond::B>] Unable to find jmp destination {:#x}\n", ins.symbolAddress);
             });
@@ -1640,7 +1640,7 @@ namespace x86 {
 
     void Interpreter::exec(const Jcc<Cond::G>& ins) {
         if(flags_.matches(Cond::G)) {
-            bool success = state_.jumpInFrame(ins.symbolAddress);
+            bool success = callStack_.jumpInFrame(ins.symbolAddress);
             Interpreter::verify(success, [&]() {
                 fmt::print("[Jcc<Cond::G>] Unable to find jmp destination {:#x}\n", ins.symbolAddress);
             });
@@ -1649,7 +1649,7 @@ namespace x86 {
 
     void Interpreter::exec(const Jcc<Cond::L>& ins) {
         if(flags_.matches(Cond::L)) {
-            bool success = state_.jumpInFrame(ins.symbolAddress);
+            bool success = callStack_.jumpInFrame(ins.symbolAddress);
             Interpreter::verify(success, [&]() {
                 fmt::print("[Jcc<Cond::L>] Unable to find jmp destination {:#x}\n", ins.symbolAddress);
             });
@@ -1658,7 +1658,7 @@ namespace x86 {
 
     void Interpreter::exec(const Jcc<Cond::S>& ins) {
         if(flags_.matches(Cond::S)) {
-            bool success = state_.jumpInFrame(ins.symbolAddress);
+            bool success = callStack_.jumpInFrame(ins.symbolAddress);
             Interpreter::verify(success, [&]() {
                 fmt::print("[Jcc<Cond::S>] Unable to find jmp destination {:#x}\n", ins.symbolAddress);
             });
@@ -1667,7 +1667,7 @@ namespace x86 {
 
     void Interpreter::exec(const Jcc<Cond::NS>& ins) {
         if(flags_.matches(Cond::NS)) {
-            bool success = state_.jumpInFrame(ins.symbolAddress);
+            bool success = callStack_.jumpInFrame(ins.symbolAddress);
             Interpreter::verify(success, [&]() {
                 fmt::print("[Jcc<Cond::NS>] Unable to find jmp destination {:#x}\n", ins.symbolAddress);
             });

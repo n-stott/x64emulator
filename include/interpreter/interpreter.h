@@ -133,7 +133,7 @@ namespace x86 {
             size_t offset;
         };
 
-        struct State {
+        struct CallStack {
             std::vector<Frame> frames;
 
             bool hasNext() const {
@@ -194,7 +194,7 @@ namespace x86 {
                     ++height;
                 }
             }
-        } state_;
+        } callStack_;
 
         friend struct CallingContext;
         CallingContext context() const;
