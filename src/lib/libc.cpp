@@ -3,7 +3,7 @@
 #include "instructionutils.h"
 #include "instructions.h"
 #include "interpreter/executioncontext.h"
-#include "interpreter/interpreter.h"
+#include "interpreter/verify.h"
 #include "parser/parser.h"
 #include <cassert>
 #include <stdlib.h>
@@ -96,7 +96,7 @@ namespace x86 {
             u32 ret = heap_->current;
             ret = ((ret+3)/4)*4; // Align to 4 bytes
             heap_->current = ret + size;
-            Interpreter::verify(heap_->current < heap_->base + heap_->size, []() {
+            verify(heap_->current < heap_->base + heap_->size, []() {
                 fmt::print("Heap is full");
             });
             context_.set_eax(ret);

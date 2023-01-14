@@ -1,5 +1,6 @@
 #include "interpreter/interpreter.h"
 #include "interpreter/executioncontext.h"
+#include "interpreter/verify.h"
 #include "instructionutils.h"
 #include <fmt/core.h>
 #include <cassert>
@@ -197,7 +198,7 @@ namespace x86 {
     }
 
     bool Flags::matches(Cond condition) const {
-        Interpreter::verify(sure(), "Flags are not set");
+        verify(sure(), "Flags are not set");
         switch(condition) {
             case Cond::A: return (carry == 0 && zero == 0);
             case Cond::AE: return (carry == 0);
@@ -299,24 +300,6 @@ namespace x86 {
 "eax {:0000008x}  ebx {:0000008x}  ecx {:0000008x}  edx {:0000008x}  "
 "esi {:0000008x}  edi {:0000008x}  ebp {:0000008x}  esp {:0000008x}\n", 
         regs_.eax_, regs_.ebx_, regs_.ecx_, regs_.edx_, regs_.esi_, regs_.edi_, regs_.ebp_, regs_.esp_);
-    }
-
-    void Interpreter::verify(bool condition, const char* message) {
-        if(condition) return;
-        fmt::print("{}\n", message);
-        verify(condition);
-    }
-
-    void Interpreter::notify(bool condition) {
-        if(condition) return;
-        fmt::print("###\nNOTIFICATION\n###\n");
-    }
-
-    void Interpreter::notify(bool condition, const char* message) {
-        if(condition) return;
-        fmt::print("###\nNOTIFICATION\n");
-        fmt::print("{}\n", message);
-        fmt::print("###\n");
     }
 
     #define TODO(ins) \
@@ -1366,7 +1349,7 @@ namespace x86 {
     void Interpreter::exec(const Jmp<R32>& ins) {
         bool success = callStack_.jumpInFrame(get(ins.symbolAddress));
         if(!success) success = callStack_.jumpOutOfFrame(program_, get(ins.symbolAddress));
-        Interpreter::verify(success, [&]() {
+        verify(success, [&]() {
             fmt::print("[Jmp<R32>] Unable to find jmp destination {:#x}\n", get(ins.symbolAddress));
         });
     }
@@ -1374,7 +1357,7 @@ namespace x86 {
     void Interpreter::exec(const Jmp<u32>& ins) {
         bool success = callStack_.jumpInFrame(ins.symbolAddress);
         if(!success) success = callStack_.jumpOutOfFrame(program_, ins.symbolAddress);
-        Interpreter::verify(success, [&]() {
+        verify(success, [&]() {
             fmt::print("[Jmp<u32>] Unable to find jmp destination {:#x}\n", ins.symbolAddress);
         });
     }
@@ -1385,7 +1368,7 @@ namespace x86 {
     void Interpreter::exec(const Jcc<Cond::NE>& ins) {
         if(flags_.matches(Cond::NE)) {
             bool success = callStack_.jumpInFrame(ins.symbolAddress);
-            Interpreter::verify(success, [&]() {
+            verify(success, [&]() {
                 fmt::print("[Jcc<Cond::NE>] Unable to find jmp destination {:#x}\n", ins.symbolAddress);
             });
         }
@@ -1394,7 +1377,7 @@ namespace x86 {
     void Interpreter::exec(const Jcc<Cond::E>& ins) {
         if(flags_.matches(Cond::E)) {
             bool success = callStack_.jumpInFrame(ins.symbolAddress);
-            Interpreter::verify(success, [&]() {
+            verify(success, [&]() {
                 fmt::print("[Jcc<Cond::E>] Unable to find jmp destination {:#x}\n", ins.symbolAddress);
             });
         }
@@ -1403,7 +1386,7 @@ namespace x86 {
     void Interpreter::exec(const Jcc<Cond::AE>& ins) {
         if(flags_.matches(Cond::AE)) {
             bool success = callStack_.jumpInFrame(ins.symbolAddress);
-            Interpreter::verify(success, [&]() {
+            verify(success, [&]() {
                 fmt::print("[Jcc<Cond::AE>] Unable to find jmp destination {:#x}\n", ins.symbolAddress);
             });
         }
@@ -1412,7 +1395,7 @@ namespace x86 {
     void Interpreter::exec(const Jcc<Cond::BE>& ins) {
         if(flags_.matches(Cond::BE)) {
             bool success = callStack_.jumpInFrame(ins.symbolAddress);
-            Interpreter::verify(success, [&]() {
+            verify(success, [&]() {
                 fmt::print("[Jcc<Cond::BE>] Unable to find jmp destination {:#x}\n", ins.symbolAddress);
             });
         }
@@ -1421,7 +1404,7 @@ namespace x86 {
     void Interpreter::exec(const Jcc<Cond::GE>& ins) {
         if(flags_.matches(Cond::GE)) {
             bool success = callStack_.jumpInFrame(ins.symbolAddress);
-            Interpreter::verify(success, [&]() {
+            verify(success, [&]() {
                 fmt::print("[Jcc<Cond::GE>] Unable to find jmp destination {:#x}\n", ins.symbolAddress);
             });
         }
@@ -1430,7 +1413,7 @@ namespace x86 {
     void Interpreter::exec(const Jcc<Cond::LE>& ins) {
         if(flags_.matches(Cond::LE)) {
             bool success = callStack_.jumpInFrame(ins.symbolAddress);
-            Interpreter::verify(success, [&]() {
+            verify(success, [&]() {
                 fmt::print("[Jcc<Cond::LE>] Unable to find jmp destination {:#x}\n", ins.symbolAddress);
             });
         }
@@ -1439,7 +1422,7 @@ namespace x86 {
     void Interpreter::exec(const Jcc<Cond::A>& ins) {
         if(flags_.matches(Cond::A)) {
             bool success = callStack_.jumpInFrame(ins.symbolAddress);
-            Interpreter::verify(success, [&]() {
+            verify(success, [&]() {
                 fmt::print("[Jcc<Cond::A>] Unable to find jmp destination {:#x}\n", ins.symbolAddress);
             });
         }
@@ -1448,7 +1431,7 @@ namespace x86 {
     void Interpreter::exec(const Jcc<Cond::B>& ins) {
         if(flags_.matches(Cond::B)) {
             bool success = callStack_.jumpInFrame(ins.symbolAddress);
-            Interpreter::verify(success, [&]() {
+            verify(success, [&]() {
                 fmt::print("[Jcc<Cond::B>] Unable to find jmp destination {:#x}\n", ins.symbolAddress);
             });
             (void)success;
@@ -1459,7 +1442,7 @@ namespace x86 {
     void Interpreter::exec(const Jcc<Cond::G>& ins) {
         if(flags_.matches(Cond::G)) {
             bool success = callStack_.jumpInFrame(ins.symbolAddress);
-            Interpreter::verify(success, [&]() {
+            verify(success, [&]() {
                 fmt::print("[Jcc<Cond::G>] Unable to find jmp destination {:#x}\n", ins.symbolAddress);
             });
         }
@@ -1468,7 +1451,7 @@ namespace x86 {
     void Interpreter::exec(const Jcc<Cond::L>& ins) {
         if(flags_.matches(Cond::L)) {
             bool success = callStack_.jumpInFrame(ins.symbolAddress);
-            Interpreter::verify(success, [&]() {
+            verify(success, [&]() {
                 fmt::print("[Jcc<Cond::L>] Unable to find jmp destination {:#x}\n", ins.symbolAddress);
             });
         }
@@ -1477,7 +1460,7 @@ namespace x86 {
     void Interpreter::exec(const Jcc<Cond::S>& ins) {
         if(flags_.matches(Cond::S)) {
             bool success = callStack_.jumpInFrame(ins.symbolAddress);
-            Interpreter::verify(success, [&]() {
+            verify(success, [&]() {
                 fmt::print("[Jcc<Cond::S>] Unable to find jmp destination {:#x}\n", ins.symbolAddress);
             });
         }
@@ -1486,7 +1469,7 @@ namespace x86 {
     void Interpreter::exec(const Jcc<Cond::NS>& ins) {
         if(flags_.matches(Cond::NS)) {
             bool success = callStack_.jumpInFrame(ins.symbolAddress);
-            Interpreter::verify(success, [&]() {
+            verify(success, [&]() {
                 fmt::print("[Jcc<Cond::NS>] Unable to find jmp destination {:#x}\n", ins.symbolAddress);
             });
         }

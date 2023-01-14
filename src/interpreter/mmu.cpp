@@ -1,5 +1,5 @@
 #include "interpreter/mmu.h"
-#include "interpreter/interpreter.h"
+#include "interpreter/verify.h"
 #include <cassert>
 #include <cstring>
 
@@ -80,127 +80,97 @@ namespace x86 {
 
     u8 Mmu::read8(Ptr8 ptr) const {
         const Region* region = findAddress(ptr.address);
-        if(!!interpreter_) {
-            interpreter_->verify(!!region, [&]() {
-                fmt::print("No region containing {:#x}\n", ptr.address);
-                dumpRegions();
-            });
-            interpreter_->verify(region->protection & PROT_READ, [&]() {
-                fmt::print("Attempt to read {:#x} from non-readable region {}\n", ptr.address, region->name);
-                if(!!region->handler) region->handler(ptr.address);
-                dumpRegions();
-            });
-        } else {
-            assert(!!region);
-        }
+        verify(!!region, [&]() {
+            fmt::print("No region containing {:#x}\n", ptr.address);
+            dumpRegions();
+        });
+        verify(region->protection & PROT_READ, [&]() {
+            fmt::print("Attempt to read {:#x} from non-readable region {}\n", ptr.address, region->name);
+            if(!!region->handler) region->handler(ptr.address);
+            dumpRegions();
+        });
         u8 value = region->read8(ptr);
-        if(!!interpreter_) {
-            interpreter_->verify((region->invalidValues != INV_NULL) || (value != 0), [&]() {
-                fmt::print("Read 0x0 from region {} which is marked INV_NULL at address {:#x}\n", region->name, ptr.address);
-                if(!!region->handler) region->handler(ptr.address);
-            });
-        }
+        verify((region->invalidValues != INV_NULL) || (value != 0), [&]() {
+            fmt::print("Read 0x0 from region {} which is marked INV_NULL at address {:#x}\n", region->name, ptr.address);
+            if(!!region->handler) region->handler(ptr.address);
+        });
         return value;
     }
 
     u16 Mmu::read16(Ptr16 ptr) const {
         const Region* region = findAddress(ptr.address);
-        if(!!interpreter_) {
-            interpreter_->verify(!!region, [&]() {
-                fmt::print("No region containing {:#x}\n", ptr.address);
-                dumpRegions();
-            });
-            interpreter_->verify(region->protection & PROT_READ, [&]() {
-                fmt::print("Attempt to read {:#x} from non-readable region {}\n", ptr.address, region->name);
-                if(!!region->handler) region->handler(ptr.address);
-                dumpRegions();
-            });
-        } else {
-            assert(!!region);
-        }
+        verify(!!region, [&]() {
+            fmt::print("No region containing {:#x}\n", ptr.address);
+            dumpRegions();
+        });
+        verify(region->protection & PROT_READ, [&]() {
+            fmt::print("Attempt to read {:#x} from non-readable region {}\n", ptr.address, region->name);
+            if(!!region->handler) region->handler(ptr.address);
+            dumpRegions();
+        });
         u16 value = region->read16(ptr);
-        if(!!interpreter_) {
-            interpreter_->verify((region->invalidValues != INV_NULL) || (value != 0), [&]() {
-                fmt::print("Read 0x0 from region {} which is marked INV_NULL at address {:#x}\n", region->name, ptr.address);
-                if(!!region->handler) region->handler(ptr.address);
-            });
-        }
+        verify((region->invalidValues != INV_NULL) || (value != 0), [&]() {
+            fmt::print("Read 0x0 from region {} which is marked INV_NULL at address {:#x}\n", region->name, ptr.address);
+            if(!!region->handler) region->handler(ptr.address);
+        });
         return value;
     }
 
     u32 Mmu::read32(Ptr32 ptr) const {
         const Region* region = findAddress(ptr.address);
-        if(!!interpreter_) {
-            interpreter_->verify(!!region, [&]() {
-                fmt::print("No region containing {:#x}\n", ptr.address);
-                dumpRegions();
-            });
-            interpreter_->verify(region->protection & PROT_READ, [&]() {
-                fmt::print("Attempt to read {:#x} from non-readable region {}\n", ptr.address, region->name);
-                if(!!region->handler) region->handler(ptr.address);
-                dumpRegions();
-            });
-        } else {
-            assert(!!region);
-        }
+        verify(!!region, [&]() {
+            fmt::print("No region containing {:#x}\n", ptr.address);
+            dumpRegions();
+        });
+        verify(region->protection & PROT_READ, [&]() {
+            fmt::print("Attempt to read {:#x} from non-readable region {}\n", ptr.address, region->name);
+            if(!!region->handler) region->handler(ptr.address);
+            dumpRegions();
+        });
         u32 value = region->read32(ptr);
-        if(!!interpreter_) {
-            interpreter_->verify((region->invalidValues != INV_NULL) || (value != 0), [&]() {
-                fmt::print("Read 0x0 from region {} which is marked INV_NULL at address {:#x}\n", region->name, ptr.address);
-                if(!!region->handler) region->handler(ptr.address);
-            });
-        }
+        verify((region->invalidValues != INV_NULL) || (value != 0), [&]() {
+            fmt::print("Read 0x0 from region {} which is marked INV_NULL at address {:#x}\n", region->name, ptr.address);
+            if(!!region->handler) region->handler(ptr.address);
+        });
         return value;
     }
 
     void Mmu::write8(Ptr8 ptr, u8 value) {
         Region* region = findAddress(ptr.address);
-        if(!!interpreter_) {
-            interpreter_->verify(!!region, [&]() {
-                fmt::print("No region containing {:#x}\n", ptr.address);
-                dumpRegions();
-            });
-            interpreter_->verify(region->protection & PROT_WRITE, [&]() {
-                fmt::print("Attempt to write to {:#x} in non-writable region {}\n", ptr.address, region->name);
-                dumpRegions();
-            });
-        } else {
-            assert(!!region);
-        }
+        verify(!!region, [&]() {
+            fmt::print("No region containing {:#x}\n", ptr.address);
+            dumpRegions();
+        });
+        verify(region->protection & PROT_WRITE, [&]() {
+            fmt::print("Attempt to write to {:#x} in non-writable region {}\n", ptr.address, region->name);
+            dumpRegions();
+        });
         region->write8(ptr, value);
     }
 
     void Mmu::write16(Ptr16 ptr, u16 value) {
         Region* region = findAddress(ptr.address);
-        if(!!interpreter_) {
-            interpreter_->verify(!!region, [&]() {
-                fmt::print("No region containing {:#x}\n", ptr.address);
-                dumpRegions();
-            });
-            interpreter_->verify(region->protection & PROT_WRITE, [&]() {
-                fmt::print("Attempt to write to {:#x} in non-writable region {}\n", ptr.address, region->name);
-                dumpRegions();
-            });
-        } else {
-            assert(!!region);
-        }
+        verify(!!region, [&]() {
+            fmt::print("No region containing {:#x}\n", ptr.address);
+            dumpRegions();
+        });
+        verify(region->protection & PROT_WRITE, [&]() {
+            fmt::print("Attempt to write to {:#x} in non-writable region {}\n", ptr.address, region->name);
+            dumpRegions();
+        });
         region->write16(ptr, value);
     }
 
     void Mmu::write32(Ptr32 ptr, u32 value) {
         Region* region = findAddress(ptr.address);
-        if(!!interpreter_) {
-            interpreter_->verify(!!region, [&]() {
-                fmt::print("No region containing {:#x}\n", ptr.address);
-                dumpRegions();
-            });
-            interpreter_->verify(region->protection & PROT_WRITE, [&]() {
-                fmt::print("Attempt to write to {:#x} in non-writable region {}\n", ptr.address, region->name);
-                dumpRegions();
-            });
-        } else {
-            assert(!!region);
-        }
+        verify(!!region, [&]() {
+            fmt::print("No region containing {:#x}\n", ptr.address);
+            dumpRegions();
+        });
+        verify(region->protection & PROT_WRITE, [&]() {
+            fmt::print("Attempt to write to {:#x} in non-writable region {}\n", ptr.address, region->name);
+            dumpRegions();
+        });
         region->write32(ptr, value);
     }
 

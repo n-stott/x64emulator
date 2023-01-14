@@ -1,5 +1,5 @@
 #include "program.h"
-#include "interpreter/interpreter.h"
+#include "interpreter/verify.h"
 #include <fmt/core.h>
 
 namespace x86 {
@@ -9,7 +9,7 @@ namespace x86 {
         const Function* ret = nullptr;
         for(const Function& func : functions) {
             if(func.name == name) {
-                Interpreter::verify(ret == nullptr, [&]() {
+                verify(ret == nullptr, [&]() {
                     fmt::print(stderr, "Function {} is not unique\n", name);
                 });
                 ret = &func;

@@ -23,34 +23,9 @@ namespace x86 {
         explicit Interpreter(Program program, LibC libc);
         void run();
 
-        static void verify(bool condition) {
-            if(condition) return;
-            throw VerificationException{};
-        }
-        static void verify(bool condition, const char* message);
-
-        template<typename Callback>
-        static void verify(bool condition, Callback onFail) {
-            if(condition) return;
-            onFail();
-            verify(condition);
-        }
-
-        static void notify(bool condition);
-        static void notify(bool condition, const char* message);
-
-        template<typename Callback>
-        static void notify(bool condition, Callback onFail) {
-            if(condition) return;
-            std::string message = onFail();
-            notify(condition, message.c_str());
-        }
-
     private:
 
         void execute(const Function* function);
-
-        struct VerificationException : public std::exception { };
 
         Program program_;
         std::unique_ptr<elf::Elf> programElf_;
