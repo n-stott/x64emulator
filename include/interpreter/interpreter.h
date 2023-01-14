@@ -3,6 +3,7 @@
 
 #include "instructionhandler.h"
 #include "interpreter/mmu.h"
+#include "interpreter/registers.h"
 #include "lib/libc.h"
 #include "lib/callingcontext.h"
 #include "program.h"
@@ -66,56 +67,45 @@ namespace x86 {
             bool sure() const { return sure_; }
         } flags_;
 
-        u32 ebp_;
-        u32 esp_;
-        u32 edi_;
-        u32 esi_;
-        u32 eax_;
-        u32 ebx_;
-        u32 ecx_;
-        u32 edx_;
-        u32 eiz_;
-
-        u32 eip_;
+        Registers regs_;
 
         bool stop_;
 
-        u8 get(R8 reg) const;
-        u16 get(R16 reg) const;
-        u32 get(R32 reg) const;
-        u8 get(Imm<u8> immediate) const;
+        u8  get(R8 reg) const  { return regs_.get(reg); }
+        u16 get(R16 reg) const { return regs_.get(reg); }
+        u32 get(R32 reg) const { return regs_.get(reg); }
+        u8  get(Imm<u8> immediate) const;
         u16 get(Imm<u16> immediate) const;
         u32 get(Imm<u32> immediate) const;
-
-        u8 get(Ptr8 ptr) const;
-        u16 get(Ptr16 ptr) const;
-        u32 get(Ptr32 ptr) const;
+        u8  get(Ptr8 reg) const;
+        u16 get(Ptr16 reg) const;
+        u32 get(Ptr32 reg) const;
 
         u8 get(Count count) const;
 
-        u32 resolve(B addr) const;
-        u32 resolve(BD addr) const;
-        u32 resolve(BIS addr) const;
-        u32 resolve(ISD addr) const;
-        u32 resolve(BISD addr) const;
+        u32 resolve(B addr) const { return regs_.resolve(addr); }
+        u32 resolve(BD addr) const { return regs_.resolve(addr); }
+        u32 resolve(BIS addr) const { return regs_.resolve(addr); }
+        u32 resolve(ISD addr) const { return regs_.resolve(addr); }
+        u32 resolve(BISD addr) const { return regs_.resolve(addr); }
 
-        Ptr<Size::BYTE> resolve(Addr<Size::BYTE, B> addr) const;
-        Ptr<Size::BYTE> resolve(Addr<Size::BYTE, BD> addr) const;
-        Ptr<Size::BYTE> resolve(Addr<Size::BYTE, BIS> addr) const;
-        Ptr<Size::BYTE> resolve(Addr<Size::BYTE, BISD> addr) const;
-        Ptr<Size::WORD> resolve(Addr<Size::WORD, B> addr) const;
-        Ptr<Size::WORD> resolve(Addr<Size::WORD, BD> addr) const;
-        Ptr<Size::WORD> resolve(Addr<Size::WORD, BIS> addr) const;
-        Ptr<Size::WORD> resolve(Addr<Size::WORD, BISD> addr) const;
-        Ptr<Size::DWORD> resolve(Addr<Size::DWORD, B> addr) const;
-        Ptr<Size::DWORD> resolve(Addr<Size::DWORD, BD> addr) const;
-        Ptr<Size::DWORD> resolve(Addr<Size::DWORD, BIS> addr) const;
-        Ptr<Size::DWORD> resolve(Addr<Size::DWORD, ISD> addr) const;
-        Ptr<Size::DWORD> resolve(Addr<Size::DWORD, BISD> addr) const;
+        Ptr<Size::BYTE> resolve(Addr<Size::BYTE, B> addr) const { return regs_.resolve(addr); }
+        Ptr<Size::BYTE> resolve(Addr<Size::BYTE, BD> addr) const { return regs_.resolve(addr); }
+        Ptr<Size::BYTE> resolve(Addr<Size::BYTE, BIS> addr) const { return regs_.resolve(addr); }
+        Ptr<Size::BYTE> resolve(Addr<Size::BYTE, BISD> addr) const { return regs_.resolve(addr); }
+        Ptr<Size::WORD> resolve(Addr<Size::WORD, B> addr) const { return regs_.resolve(addr); }
+        Ptr<Size::WORD> resolve(Addr<Size::WORD, BD> addr) const { return regs_.resolve(addr); }
+        Ptr<Size::WORD> resolve(Addr<Size::WORD, BIS> addr) const { return regs_.resolve(addr); }
+        Ptr<Size::WORD> resolve(Addr<Size::WORD, BISD> addr) const { return regs_.resolve(addr); }
+        Ptr<Size::DWORD> resolve(Addr<Size::DWORD, B> addr) const { return regs_.resolve(addr); }
+        Ptr<Size::DWORD> resolve(Addr<Size::DWORD, BD> addr) const { return regs_.resolve(addr); }
+        Ptr<Size::DWORD> resolve(Addr<Size::DWORD, BIS> addr) const { return regs_.resolve(addr); }
+        Ptr<Size::DWORD> resolve(Addr<Size::DWORD, ISD> addr) const { return regs_.resolve(addr); }
+        Ptr<Size::DWORD> resolve(Addr<Size::DWORD, BISD> addr) const { return regs_.resolve(addr); }
 
-        void set(R8 reg, u8 value);
-        void set(R16 reg, u16 value);
-        void set(R32 reg, u32 value);
+        void set(R8 reg, u8 value) { regs_.set(reg, value); }
+        void set(R16 reg, u16 value) { regs_.set(reg, value); }
+        void set(R32 reg, u32 value) { regs_.set(reg, value); }
 
         void set(Ptr8 ptr, u8 value);
         void set(Ptr16 ptr, u16 value);

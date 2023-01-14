@@ -34,16 +34,6 @@ namespace x86 {
 
     Interpreter::Interpreter(Program program, LibC libc) : program_(std::move(program)), libc_(std::move(libc)), mmu_(this) {
         libc_.configureIntrinsics(ExecutionContext(*this));
-        ebp_ = 0;
-        esp_ = 0;
-        edi_ = 0;
-        esi_ = 0;
-        eax_ = 0;
-        ebx_ = 0;
-        ecx_ = 0;
-        edx_ = 0;
-        eiz_ = 0;
-        eip_ = 0;
         flags_.carry = 0;
         flags_.overflow = 0;
         flags_.zero = 0;
@@ -62,7 +52,7 @@ namespace x86 {
         u32 stackSize = 16*1024;
         Mmu::Region stack{ "stack", stackBase, stackSize, PROT_READ | PROT_WRITE };
         mmu_.addRegion(stack);
-        esp_ = stackBase + stackSize;
+        regs_.esp_ = stackBase + stackSize;
 
         programElf_ = elf::ElfReader::tryCreate(program_.filepath);
         if(!programElf_) {
@@ -178,10 +168,10 @@ namespace x86 {
                 const X86Instruction* instruction = callStack_.next();
                 auto nextAfter = callStack_.peek();
                 if(nextAfter) {
-                    eip_ = nextAfter->address;
+                    regs_.eip_ = nextAfter->address;
                 }
                 if(!instruction) {
-                    fmt::print(stderr, "Undefined instruction near {:#x}\n", eip_);
+                    fmt::print(stderr, "Undefined instruction near {:#x}\n", regs_.eip_);
                     stop_ = true;
                     break;
                 }
@@ -225,53 +215,6 @@ namespace x86 {
         __builtin_unreachable();
     }
 
-    u8 Interpreter::get(R8 reg) const {
-        switch(reg) {
-            case R8::AH:  return (eax_ >> 8) & 0xFF;
-            case R8::AL:  return eax_ & 0xFF;
-            case R8::BH:  return (ebx_ >> 8) & 0xFF;
-            case R8::BL:  return ebx_ & 0xFF;
-            case R8::CH:  return (ecx_ >> 8) & 0xFF;
-            case R8::CL:  return ecx_ & 0xFF;
-            case R8::DH:  return (edx_ >> 8) & 0xFF;
-            case R8::DL:  return edx_ & 0xFF;
-            case R8::SPL: return esp_ & 0xFF;
-            case R8::BPL: return ebp_ & 0xFF;
-            case R8::SIL: return esi_ & 0xFF;
-            case R8::DIL: return edi_ & 0xFF;
-        }
-        __builtin_unreachable();
-    }
-
-    u16 Interpreter::get(R16 reg) const {
-        switch(reg) {
-            case R16::BP: return ebp_ & 0xFFFF;
-            case R16::SP: return esp_ & 0xFFFF;
-            case R16::DI: return edi_ & 0xFFFF;
-            case R16::SI: return esi_ & 0xFFFF;
-            case R16::AX: return eax_ & 0xFFFF;
-            case R16::BX: return ebx_ & 0xFFFF;
-            case R16::CX: return ecx_ & 0xFFFF;
-            case R16::DX: return edx_ & 0xFFFF;
-        }
-        __builtin_unreachable();
-    }
-
-    u32 Interpreter::get(R32 reg) const {
-        switch(reg) {
-            case R32::EBP: return ebp_;
-            case R32::ESP: return esp_;
-            case R32::EDI: return edi_;
-            case R32::ESI: return esi_;
-            case R32::EAX: return eax_;
-            case R32::EBX: return ebx_;
-            case R32::ECX: return ecx_;
-            case R32::EDX: return edx_;
-            case R32::EIZ: return eiz_;
-        }
-        __builtin_unreachable();
-    }
-
     u8 Interpreter::get(Imm<u8> value) const {
         return value.immediate;
     }
@@ -300,125 +243,6 @@ namespace x86 {
         return mmu_.read32(ptr);
     }
 
-    u32 Interpreter::resolve(B addr) const {
-        return get(addr.base);
-    }
-
-    u32 Interpreter::resolve(BD addr) const {
-        return get(addr.base) + addr.displacement;
-    }
-
-    u32 Interpreter::resolve(ISD addr) const {
-        return get(addr.index)*addr.scale + addr.displacement;
-    }
-
-    u32 Interpreter::resolve(BIS addr) const {
-        return get(addr.base) + get(addr.index)*addr.scale;
-    }
-
-    u32 Interpreter::resolve(BISD addr) const {
-        return get(addr.base) + get(addr.index)*addr.scale + addr.displacement;
-    }
-
-    Ptr<Size::BYTE> Interpreter::resolve(Addr<Size::BYTE, B> addr) const {
-        return Ptr<Size::BYTE>{resolve(addr.encoding)};
-    }
-
-    Ptr<Size::BYTE> Interpreter::resolve(Addr<Size::BYTE, BD> addr) const {
-        return Ptr<Size::BYTE>{resolve(addr.encoding)};
-    }
-
-    Ptr<Size::BYTE> Interpreter::resolve(Addr<Size::BYTE, BIS> addr) const {
-        return Ptr<Size::BYTE>{resolve(addr.encoding)};
-    }
-
-    Ptr<Size::BYTE> Interpreter::resolve(Addr<Size::BYTE, BISD> addr) const {
-        return Ptr<Size::BYTE>{resolve(addr.encoding)};
-    }
-
-    Ptr<Size::WORD> Interpreter::resolve(Addr<Size::WORD, B> addr) const {
-        return Ptr<Size::WORD>{resolve(addr.encoding)};
-    }
-
-    Ptr<Size::WORD> Interpreter::resolve(Addr<Size::WORD, BD> addr) const {
-        return Ptr<Size::WORD>{resolve(addr.encoding)};
-    }
-
-    Ptr<Size::WORD> Interpreter::resolve(Addr<Size::WORD, BIS> addr) const {
-        return Ptr<Size::WORD>{resolve(addr.encoding)};
-    }
-
-    Ptr<Size::WORD> Interpreter::resolve(Addr<Size::WORD, BISD> addr) const {
-        return Ptr<Size::WORD>{resolve(addr.encoding)};
-    }
-
-    Ptr<Size::DWORD> Interpreter::resolve(Addr<Size::DWORD, B> addr) const {
-        return Ptr<Size::DWORD>{resolve(addr.encoding)};
-    }
-
-    Ptr<Size::DWORD> Interpreter::resolve(Addr<Size::DWORD, BD> addr) const {
-        return Ptr<Size::DWORD>{resolve(addr.encoding)};
-    }
-
-    Ptr<Size::DWORD> Interpreter::resolve(Addr<Size::DWORD, BIS> addr) const {
-        return Ptr<Size::DWORD>{resolve(addr.encoding)};
-    }
-    
-    Ptr<Size::DWORD> Interpreter::resolve(Addr<Size::DWORD, ISD> addr) const {
-        return Ptr<Size::DWORD>{resolve(addr.encoding)};
-    }
-
-    Ptr<Size::DWORD> Interpreter::resolve(Addr<Size::DWORD, BISD> addr) const {
-        return Ptr<Size::DWORD>{resolve(addr.encoding)};
-    }
-    
-    void Interpreter::set(R8 reg, u8 value) {
-        switch(reg) {
-            case R8::AH:  { eax_ = (eax_ & 0xFFFF00FF) | (value << 8); return; }
-            case R8::AL:  { eax_ = (eax_ & 0xFFFFFF00) | (value); return; }
-            case R8::BH:  { ebx_ = (ebx_ & 0xFFFF00FF) | (value << 8); return; }
-            case R8::BL:  { ebx_ = (ebx_ & 0xFFFFFF00) | (value); return; }
-            case R8::CH:  { ecx_ = (ecx_ & 0xFFFF00FF) | (value << 8); return; }
-            case R8::CL:  { ecx_ = (ecx_ & 0xFFFFFF00) | (value); return; }
-            case R8::DH:  { edx_ = (edx_ & 0xFFFF00FF) | (value << 8); return; }
-            case R8::DL:  { edx_ = (edx_ & 0xFFFFFF00) | (value); return; }
-            case R8::SPL: { esp_ = (esp_ & 0xFFFFFF00) | (value); return; }
-            case R8::BPL: { ebp_ = (ebp_ & 0xFFFFFF00) | (value); return; }
-            case R8::SIL: { esi_ = (esi_ & 0xFFFFFF00) | (value); return; }
-            case R8::DIL: { edi_ = (edi_ & 0xFFFFFF00) | (value); return; }
-        }
-        __builtin_unreachable();
-    }
-    
-    void Interpreter::set(R16 reg, u16 value) {
-        switch(reg) {
-            case R16::AX: { eax_ = (eax_ & 0xFFFF0000) | (value); return; }
-            case R16::BX: { ebx_ = (ebx_ & 0xFFFF0000) | (value); return; }
-            case R16::CX: { ecx_ = (ecx_ & 0xFFFF0000) | (value); return; }
-            case R16::DX: { edx_ = (edx_ & 0xFFFF0000) | (value); return; }
-            case R16::SP: { esp_ = (esp_ & 0xFFFF0000) | (value); return; }
-            case R16::BP: { ebp_ = (ebp_ & 0xFFFF0000) | (value); return; }
-            case R16::SI: { esi_ = (esi_ & 0xFFFF0000) | (value); return; }
-            case R16::DI: { edi_ = (edi_ & 0xFFFF0000) | (value); return; }
-        }
-        __builtin_unreachable();
-    }
-    
-    void Interpreter::set(R32 reg, u32 value) {
-        switch(reg) {
-            case R32::EBP: ebp_ = value; return;
-            case R32::ESP: esp_ = value; return;
-            case R32::EDI: edi_ = value; return;
-            case R32::ESI: esi_ = value; return;
-            case R32::EAX: eax_ = value; return;
-            case R32::EBX: ebx_ = value; return;
-            case R32::ECX: ecx_ = value; return;
-            case R32::EDX: edx_ = value; return;
-            case R32::EIZ: assert(false); return;
-        }
-        __builtin_unreachable();
-    }
-
     void Interpreter::set(Ptr8 ptr, u8 value) {
         mmu_.write8(ptr, value);
     }
@@ -432,37 +256,37 @@ namespace x86 {
     }
 
     void Interpreter::push8(u8 value) {
-        esp_ -= 4;
-        mmu_.write32(Ptr32{esp_}, (u32)value);
+        regs_.esp_ -= 4;
+        mmu_.write32(Ptr32{regs_.esp_}, (u32)value);
     }
 
     void Interpreter::push16(u16 value) {
-        esp_ -= 4;
-        mmu_.write32(Ptr32{esp_}, (u32)value);
+        regs_.esp_ -= 4;
+        mmu_.write32(Ptr32{regs_.esp_}, (u32)value);
     }
 
     void Interpreter::push32(u32 value) {
-        esp_ -= 4;
-        mmu_.write32(Ptr32{esp_}, value);
+        regs_.esp_ -= 4;
+        mmu_.write32(Ptr32{regs_.esp_}, value);
     }
 
     u8 Interpreter::pop8() {
-        u32 value = mmu_.read32(Ptr32{esp_});
+        u32 value = mmu_.read32(Ptr32{regs_.esp_});
         assert(value == (u8)value);
-        esp_ += 4;
+        regs_.esp_ += 4;
         return value;
     }
 
     u16 Interpreter::pop16() {
-        u32 value = mmu_.read32(Ptr32{esp_});
+        u32 value = mmu_.read32(Ptr32{regs_.esp_});
         assert(value == (u16)value);
-        esp_ += 4;
+        regs_.esp_ += 4;
         return value;
     }
 
     u32 Interpreter::pop32() {
-        u32 value = mmu_.read32(Ptr32{esp_});
-        esp_ += 4;
+        u32 value = mmu_.read32(Ptr32{regs_.esp_});
+        regs_.esp_ += 4;
         return value;
     }
 
@@ -474,7 +298,7 @@ namespace x86 {
         fmt::print(stream,
 "eax {:0000008x}  ebx {:0000008x}  ecx {:0000008x}  edx {:0000008x}  "
 "esi {:0000008x}  edi {:0000008x}  ebp {:0000008x}  esp {:0000008x}\n", 
-        eax_, ebx_, ecx_, edx_, esi_, edi_, ebp_, esp_);
+        regs_.eax_, regs_.ebx_, regs_.ecx_, regs_.edx_, regs_.esi_, regs_.edi_, regs_.ebp_, regs_.esp_);
     }
 
 
@@ -1140,7 +964,7 @@ namespace x86 {
             stop_ = true;
         });
         callStack_.frames.push_back(Frame{func, 0});
-        push32(eip_);
+        push32(regs_.eip_);
     }
 
     void Interpreter::exec(const CallIndirect<R32>& ins) {
@@ -1148,14 +972,14 @@ namespace x86 {
         const Function* func = program_.findFunctionByAddress(address);
         if(!!func) {
             callStack_.frames.push_back(Frame{func, 0});
-            push32(eip_);
+            push32(regs_.eip_);
         } else {
             func = libc_.findFunctionByAddress(address);
             verify(!!func, [&]() {
                 fmt::print(stderr, "Unable to find function at {:#x}\n", address);
             });
             callStack_.frames.push_back(Frame{func, 0});
-            push32(eip_);
+            push32(regs_.eip_);
         }
     }
     void Interpreter::exec(const CallIndirect<Addr<Size::DWORD, B>>& ins) {
@@ -1163,14 +987,14 @@ namespace x86 {
         const Function* func = program_.findFunctionByAddress(address);
         if(!!func) {
             callStack_.frames.push_back(Frame{func, 0});
-            push32(eip_);
+            push32(regs_.eip_);
         } else {
             func = libc_.findFunctionByAddress(address);
             verify(!!func, [&]() {
                 fmt::print(stderr, "Unable to find function at {:#x}\n", address);
             });
             callStack_.frames.push_back(Frame{func, 0});
-            push32(eip_);
+            push32(regs_.eip_);
         }
     }
     void Interpreter::exec(const CallIndirect<Addr<Size::DWORD, BD>>& ins) {
@@ -1178,14 +1002,14 @@ namespace x86 {
         const Function* func = program_.findFunctionByAddress(address);
         if(!!func) {
             callStack_.frames.push_back(Frame{func, 0});
-            push32(eip_);
+            push32(regs_.eip_);
         } else {
             func = libc_.findFunctionByAddress(address);
             verify(!!func, [&]() {
                 fmt::print(stderr, "Unable to find function at {:#x}\n", address);
             });
             callStack_.frames.push_back(Frame{func, 0});
-            push32(eip_);
+            push32(regs_.eip_);
         }
     }
     void Interpreter::exec(const CallIndirect<Addr<Size::DWORD, BIS>>& ins) {
@@ -1193,33 +1017,33 @@ namespace x86 {
         const Function* func = program_.findFunctionByAddress(address);
         if(!!func) {
             callStack_.frames.push_back(Frame{func, 0});
-            push32(eip_);
+            push32(regs_.eip_);
         } else {
             func = libc_.findFunctionByAddress(address);
             verify(!!func, [&]() {
                 fmt::print(stderr, "Unable to find function at {:#x}\n", address);
             });
             callStack_.frames.push_back(Frame{func, 0});
-            push32(eip_);
+            push32(regs_.eip_);
         }
     }
 
     void Interpreter::exec(const Ret<>&) {
         assert(callStack_.frames.size() >= 1);
         callStack_.frames.pop_back();
-        eip_ = pop32();
+        regs_.eip_ = pop32();
     }
 
     void Interpreter::exec(const Ret<Imm<u16>>& ins) {
         assert(callStack_.frames.size() >= 1);
         callStack_.frames.pop_back();
-        eip_ = pop32();
-        esp_ += get(ins.src);
+        regs_.eip_ = pop32();
+        regs_.esp_ += get(ins.src);
     }
 
     void Interpreter::exec(const Leave&) {
-        esp_ = ebp_;
-        ebp_ = pop32();
+        regs_.esp_ = regs_.ebp_;
+        regs_.ebp_ = pop32();
     }
 
     void Interpreter::exec(const Halt& ins) { TODO(ins); }
