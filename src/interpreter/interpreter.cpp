@@ -196,7 +196,7 @@ namespace x86 {
         }
     }
 
-    bool Interpreter::Flags::matches(Cond condition) const {
+    bool Flags::matches(Cond condition) const {
         Interpreter::verify(sure(), "Flags are not set");
         switch(condition) {
             case Cond::A: return (carry == 0 && zero == 0);
@@ -299,12 +299,6 @@ namespace x86 {
 "eax {:0000008x}  ebx {:0000008x}  ecx {:0000008x}  edx {:0000008x}  "
 "esi {:0000008x}  edi {:0000008x}  ebp {:0000008x}  esp {:0000008x}\n", 
         regs_.eax_, regs_.ebx_, regs_.ecx_, regs_.edx_, regs_.esi_, regs_.edi_, regs_.ebp_, regs_.esp_);
-    }
-
-
-    void Interpreter::verify(bool condition) {
-        if(condition) return;
-        throw VerificationException{};
     }
 
     void Interpreter::verify(bool condition, const char* message) {

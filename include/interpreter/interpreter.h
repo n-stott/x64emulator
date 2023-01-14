@@ -4,6 +4,7 @@
 #include "instructionhandler.h"
 #include "interpreter/mmu.h"
 #include "interpreter/registers.h"
+#include "interpreter/flags.h"
 #include "lib/libc.h"
 #include "lib/callingcontext.h"
 #include "program.h"
@@ -22,7 +23,10 @@ namespace x86 {
         explicit Interpreter(Program program, LibC libc);
         void run();
 
-        static void verify(bool condition);
+        static void verify(bool condition) {
+            if(condition) return;
+            throw VerificationException{};
+        }
         static void verify(bool condition, const char* message);
 
         template<typename Callback>
@@ -53,20 +57,7 @@ namespace x86 {
         LibC libc_;
         Mmu mmu_;
 
-        struct Flags {
-            bool carry;
-            bool zero;
-            bool sign;
-            bool overflow;
-
-            bool matches(Cond condition) const;
-
-            bool sure_ = true;
-            void setUnsure() { sure_ = false; }
-            void setSure() { sure_ = true; }
-            bool sure() const { return sure_; }
-        } flags_;
-
+        Flags flags_;
         Registers regs_;
 
         bool stop_;
