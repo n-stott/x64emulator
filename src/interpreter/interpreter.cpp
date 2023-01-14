@@ -178,7 +178,7 @@ namespace x86 {
                 }
 #ifndef NDEBUG
                 std::string eflags = fmt::format("flags = [{}{}{}{}]", (flags_.carry ? 'C' : ' '), (flags_.zero ? 'Z' : ' '), (flags_.overflow ? 'O' : ' '), (flags_.sign ? 'S' : ' '));
-                std::string registerDump = fmt::format("eax={:0000008x} ebx={:0000008x} ecx={:0000008x} edx={:0000008x} esi={:0000008x} edi={:0000008x} ebp={:0000008x} esp={:0000008x}", eax_, ebx_, ecx_, edx_, esi_, edi_, ebp_, esp_);
+                std::string registerDump = fmt::format("eax={:0000008x} ebx={:0000008x} ecx={:0000008x} edx={:0000008x} esi={:0000008x} edi={:0000008x} ebp={:0000008x} esp={:0000008x}", regs_.eax_, regs_.ebx_, regs_.ecx_, regs_.edx_, regs_.esi_, regs_.edi_, regs_.ebp_, regs_.esp_);
                 std::string indent = fmt::format("{:{}}", "", callStack_.frames.size());
                 std::string menmonic = fmt::format("{}|{}", indent, instruction->toString());
                 fmt::print(stderr, "{:10} {:60}{:20} {}\n", ticks, menmonic, eflags, registerDump);
@@ -917,9 +917,9 @@ namespace x86 {
         (void)stream;
 #ifndef NDEBUG
         u32 stackEnd = 0x1000000 + 16*1024;
-        u32 arg0 = (esp_+0 < stackEnd ? mmu_.read32(Ptr32{esp_+0}) : 0xffffffff);
-        u32 arg1 = (esp_+4 < stackEnd ? mmu_.read32(Ptr32{esp_+4}) : 0xffffffff);
-        u32 arg2 = (esp_+8 < stackEnd ? mmu_.read32(Ptr32{esp_+8}) : 0xffffffff);
+        u32 arg0 = (regs_.esp_+0 < stackEnd ? mmu_.read32(Ptr32{regs_.esp_+0}) : 0xffffffff);
+        u32 arg1 = (regs_.esp_+4 < stackEnd ? mmu_.read32(Ptr32{regs_.esp_+4}) : 0xffffffff);
+        u32 arg2 = (regs_.esp_+8 < stackEnd ? mmu_.read32(Ptr32{regs_.esp_+8}) : 0xffffffff);
         fmt::print(stream, "arg0={:#x} arg1={:#x} arg2={:#x}\n", arg0, arg1, arg2);
 #endif
     }
