@@ -22,7 +22,7 @@ add_executable(translator
     src/program.cpp
     src/main.cpp
 )
-target_compile_options(translator PUBLIC -m32 -fpic -Wall -Wextra -Wpedantic -pedantic -Werror -Wno-sign-compare -Wno-braced-scalar-init -Wimplicit-fallthrough -Wno-missing-braces -DFMT_HEADER_ONLY)
+target_compile_options(translator PUBLIC -m32 -Wall -Wextra -Wpedantic -pedantic -Werror -Wno-sign-compare -Wno-braced-scalar-init -Wimplicit-fallthrough -Wno-missing-braces -DFMT_HEADER_ONLY)
 target_include_directories(translator PUBLIC include)
 target_include_directories(translator PUBLIC ../common/include)
 target_include_directories(translator PUBLIC ../external)

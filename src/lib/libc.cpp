@@ -17,7 +17,7 @@ namespace x86 {
         addIntrinsicFunction<Malloc>(context, &heap_);
     }
 
-    void LibC::setHeapRegion(size_t base, size_t size) {
+    void LibC::setHeapRegion(u32 base, u32 size) {
         heap_.base = base;
         heap_.current = base;
         heap_.size = size;
