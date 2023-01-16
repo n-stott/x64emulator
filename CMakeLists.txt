@@ -16,7 +16,6 @@ add_executable(translator
     src/translation/x86instruction.cpp
     src/parser/disassembler.cpp
     src/parser/parser.cpp
-    src/interpreter/flags.cpp
     src/interpreter/interpreter.cpp
     src/interpreter/mmu.cpp
     src/interpreter/executioncontext.cpp
