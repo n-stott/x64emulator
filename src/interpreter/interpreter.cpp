@@ -35,11 +35,6 @@ namespace x86 {
 
     Interpreter::Interpreter(Program program, LibC libc) : program_(std::move(program)), libc_(std::move(libc)), mmu_(this) {
         libc_.configureIntrinsics(ExecutionContext(*this));
-        flags_.carry = 0;
-        flags_.overflow = 0;
-        flags_.zero = 0;
-        flags_.sign = 0;
-        flags_.setSure();
         stop_ = false;
         // heap
         u32 heapBase = 0x2000000;
@@ -585,6 +580,15 @@ namespace x86 {
         set(R32::EAX, res.second);
     }
 
+    u32 Interpreter::execImul32(u32 src1, u32 src2) {
+        i32 res = (i32)src1 * (i32)src2;
+        i64 tmp = (i64)src1 * (i64)src2;
+        flags_.carry = (res != (i32)tmp);
+        flags_.overflow = (res != (i32)tmp);
+        flags_.setSure();
+        return res;
+    }
+
     void Interpreter::execImul32(u32 src) {
         u32 eax = get(R32::EAX);
         i32 res = (i32)src * (i32)eax;
@@ -594,15 +598,6 @@ namespace x86 {
         flags_.setSure();
         set(R32::EDX, tmp >> 32);
         set(R32::EAX, tmp);
-    }
-
-    u32 Interpreter::execImul32(u32 src1, u32 src2) {
-        i32 res = (i32)src1 * (i32)src2;
-        i64 tmp = (i64)src1 * (i64)src2;
-        flags_.carry = (res != (i32)tmp);
-        flags_.overflow = (res != (i32)tmp);
-        flags_.setSure();
-        return res;
     }
 
     void Interpreter::exec(const Imul1<R32>& ins) { execImul32(get(ins.src)); }
