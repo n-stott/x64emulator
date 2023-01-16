@@ -88,6 +88,8 @@ namespace elf {
             size_t size() const { return end-begin; }
         };
 
+        class StringTable;
+
         class SymbolTable {
         public:
             struct Entry32 {
@@ -116,8 +118,8 @@ namespace elf {
                     return static_cast<Type>(st_info & 0xF);
                 }
 
-                std::string_view symbol(const Elf& elf) const {
-                    return elf.symbolFromEntry(*this);
+                std::string_view symbol(const StringTable* stringTable, const Elf& elf) const {
+                    return elf.symbolFromEntry(stringTable, *this);
                 }
 
                 std::string toString() const;
@@ -218,13 +220,18 @@ namespace elf {
         void forAllSymbols(Callback callback) const {
             if(archClass() != Class::B32) return;
             auto table = symbolTable();
-            auto dyntable = dynamicSymbolTable();
-            if(table) {
-                for(const auto& entry : table.value()) callback(entry);
-            }
-            if(dyntable) {
-                for(const auto& entry : dyntable.value()) callback(entry);
-            }
+            auto strTable = stringTable();
+            if(!table) return;
+            for(const auto& entry : table.value()) callback(&strTable.value(), entry);
+        }
+
+        template<typename Callback>
+        void forAllDynamicSymbols(Callback callback) const {
+            if(archClass() != Class::B32) return;
+            auto dynTable = dynamicSymbolTable();
+            auto dynstrTable = dynamicStringTable();
+            if(!dynTable) return;
+            for(const auto& entry : dynTable.value()) callback(&dynstrTable.value(), entry);
         }
 
         template<typename Callback>
@@ -266,10 +273,10 @@ namespace elf {
             return &(*symbolTable)[relocation.sym()];
         };
 
-        std::string_view symbolFromEntry(SymbolTable::Entry32 symbol) const {
-            auto stringTable = dynamicStringTable();
-            if(symbol.st_name == 0) return "unknown";
-            if(symbol.st_name >= stringTable->size()) return "unknown";
+        std::string_view symbolFromEntry(const StringTable* stringTable, SymbolTable::Entry32 symbol) const {
+            if(!stringTable) return "unknown (no string table)";
+            if(symbol.st_name == 0) return "unknown (no name)";
+            if(symbol.st_name >= stringTable->size()) return "unknown (no string table entry)";
             return (*stringTable)[symbol.st_name];
         }
 
