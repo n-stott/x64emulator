@@ -153,7 +153,7 @@ namespace x86 {
 
     void Interpreter::execute(const Function* function) {
         if(stop_) return;
-        fmt::print("Execute function {}\n", function->name);
+        // fmt::print("Execute function {}\n", function->name);
         SignalHandler sh;
         callStack_.frames.clear();
         callStack_.frames.push_back(Frame{function, 0});
