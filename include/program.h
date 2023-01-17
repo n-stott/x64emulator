@@ -25,6 +25,13 @@ namespace x86 {
         std::string name;
         std::vector<std::unique_ptr<X86Instruction>> instructions;
 
+        Function() : address(0) { }
+        Function(u32 address, std::string name, std::vector<std::unique_ptr<X86Instruction>> instructions) :
+            address(address), name(std::move(name)), instructions(std::move(instructions)) {
+
+        }
+        Function(Function&&) = default;
+        virtual ~Function() = default;
         void print() const;
     };
 

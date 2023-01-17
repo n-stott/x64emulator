@@ -3,6 +3,7 @@
 
 #include "utils/utils.h"
 #include "types.h"
+#include <deque>
 #include <functional>
 #include <string>
 #include <vector>
@@ -80,7 +81,7 @@ namespace x86 {
         const Region* findAddress(u32 address) const;
 
         const Interpreter* interpreter_ = nullptr;
-        std::vector<Region> regions_;
+        std::deque<Region> regions_;
     };
 
 }

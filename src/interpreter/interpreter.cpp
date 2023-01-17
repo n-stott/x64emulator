@@ -80,28 +80,31 @@ namespace x86 {
         addSectionIfExists(*libcElf, ".data", PROT_READ | PROT_WRITE);
         addSectionIfExists(*libcElf, ".bss", PROT_READ | PROT_WRITE);
 
+        auto programStringTable = programElf_->dynamicStringTable();
+
         programElf_->resolveRelocations([&](const elf::Elf::RelocationEntry32& relocation) {
             const auto* sym = relocation.symbol(*programElf_);
             if(!sym) return;
-            std::string_view symbol = sym->symbol(*programElf_);
+            std::string_view symbol = sym->symbol(&programStringTable.value(), *programElf_);
 
             u32 relocationAddress = relocation.offset();
             if(sym->type() == elf::Elf::SymbolTable::Entry32::Type::FUNC) {
                 const auto* func = libc_.findUniqueFunction(symbol);
                 if(!func) return;
-                fmt::print("Resolve relocation for function \"{}\" : {:#x}\n", symbol, func ? func->address : 0);
+                // fmt::print("Resolve relocation for function \"{}\" : {:#x}\n", symbol, func ? func->address : 0);
                 mmu_.write32(Ptr32{relocationAddress}, func->address);
             }
             if(sym->type() == elf::Elf::SymbolTable::Entry32::Type::OBJECT) {
                 bool found = false;
-                libcElf->forAllSymbols([&](const elf::Elf::SymbolTable::Entry32& entry) {
+                auto resolveSymbol = [&](const elf::Elf::StringTable* stringTable, const elf::Elf::SymbolTable::Entry32& entry) {
                     if(found) return;
-                    if(entry.symbol(*libcElf).find(symbol) == std::string_view::npos) return;
-                    fmt::print("Found symbol in libc. Value={:#x}\n", entry.st_value);
+                    if(entry.symbol(stringTable, *libcElf).find(symbol) == std::string_view::npos) return;
                     found = true;
-                    fmt::print("Resolve relocation for object \"{}\" : {:#x}\n", symbol, entry.st_value);
+                    // fmt::print("Resolve relocation for object \"{}\" : {:#x}\n", symbol, entry.st_value);
                     mmu_.write32(Ptr32{relocationAddress}, entry.st_value);
-                });
+                };
+                libcElf->forAllSymbols(resolveSymbol);
+                if(!found) libcElf->forAllDynamicSymbols(resolveSymbol);
             }
         });
 
@@ -109,7 +112,7 @@ namespace x86 {
             programElf_->forAllRelocations([&](const elf::Elf::RelocationEntry32& relocation) {
                 if(relocation.offset() == address) {
                     const auto* sym = relocation.symbol(*programElf_);
-                    std::string_view symbol = sym->symbol(*programElf_);
+                    std::string_view symbol = sym->symbol(&programStringTable.value(), *programElf_);
                     fmt::print("Relocation address={:#x} symbol={}\n", address, symbol);
                 }
             });
