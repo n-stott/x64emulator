@@ -12,6 +12,9 @@ extern "C" {
     __attribute__((noinline))
     void* intrinsic$malloc(size_t) { return nullptr; }
 
+    __attribute__((noinline))
+    void intrinsic$free(void*) { }
+
     int fakelibc$putchar(int c) {
         return intrinsic$putchar(c);
     }
@@ -57,7 +60,7 @@ extern "C" {
     }
 
     void fakelibc$free(void* ptr) {
-        (void)ptr;
+        intrinsic$free(ptr);
     }
 
     void* fakelibc$memcpy(void* dest, const void* src, size_t n) {

@@ -21,6 +21,8 @@ namespace x86 {
         } heap_;
         friend struct Malloc;
         friend class MallocInstruction;
+        friend struct Free;
+        friend struct FreeInstruction;
         
     };
 
@@ -30,6 +32,12 @@ namespace x86 {
 
     struct Malloc final : public LibraryFunction {
         explicit Malloc(const ExecutionContext& context, LibC::Heap* heap);
+
+        LibC::Heap* heap;
+    };
+
+    struct Free final : public LibraryFunction {
+        explicit Free(const ExecutionContext& context, LibC::Heap* heap);
 
         LibC::Heap* heap;
     };

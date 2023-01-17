@@ -8,6 +8,7 @@ void test1() {
     } else {
         puts("malloc(2) == nullptr");
     }
+    free(ptr);
 }
 
 int main() {

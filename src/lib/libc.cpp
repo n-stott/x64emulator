@@ -15,6 +15,7 @@ namespace x86 {
     void LibC::configureIntrinsics(const ExecutionContext& context) {
         addIntrinsicFunction<Putchar>(context);
         addIntrinsicFunction<Malloc>(context, &heap_);
+        addIntrinsicFunction<Free>(context, &heap_);
     }
 
     void LibC::setHeapRegion(u32 base, u32 size) {
@@ -109,6 +110,21 @@ namespace x86 {
         LibC::Heap* heap_;
     };
 
+    class FreeInstruction : public Intrinsic {
+    public:
+        explicit FreeInstruction(ExecutionContext context, LibC::Heap* heap) : context_(context), heap_(heap) { }
+
+        void exec(InstructionHandler*) const override {
+            
+        }
+        std::string toString() const override {
+            return "__free";
+        }
+    private:
+        ExecutionContext context_;
+        LibC::Heap* heap_;
+    };
+
     Putchar::Putchar(const ExecutionContext& context) : LibraryFunction("intrinsic$putchar") {
         add(this, make_wrapper<Push<R32>>(R32::EBP));
         add(this, make_wrapper<Mov<R32, R32>>(R32::EBP, R32::ESP));
@@ -125,6 +141,16 @@ namespace x86 {
         auto arg = Addr<Size::DWORD, BD>{{R32::ESP, +8}};
         add(this, make_wrapper<Mov<R32, Addr<Size::DWORD, BD>>>(R32::EAX, arg));
         add(this, make_intrinsic<MallocInstruction>(context, heap));
+        add(this, make_wrapper<Pop<R32>>(R32::EBP));
+        add(this, make_wrapper<Ret<void>>());
+    }
+
+    Free::Free(const ExecutionContext& context, LibC::Heap* heap) : LibraryFunction("intrinsic$free") {
+        add(this, make_wrapper<Push<R32>>(R32::EBP));
+        add(this, make_wrapper<Mov<R32, R32>>(R32::EBP, R32::ESP));
+        auto arg = Addr<Size::DWORD, BD>{{R32::ESP, +8}};
+        add(this, make_wrapper<Mov<R32, Addr<Size::DWORD, BD>>>(R32::EAX, arg));
+        add(this, make_intrinsic<FreeInstruction>(context, heap));
         add(this, make_wrapper<Pop<R32>>(R32::EBP));
         add(this, make_wrapper<Ret<void>>());
     }
