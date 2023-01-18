@@ -3,11 +3,17 @@
 #include "lib/libc.h"
 #include "elf-reader.h"
 #include <fmt/core.h>
+#include <filesystem>
 
 int main(int argc, char* argv[]) {
-    if(argc != 3) {
+    if(argc < 2) {
+        fmt::print(stderr, "Missing argument: path to program");
         return 1;
     }
+
+    std::filesystem::path p("/proc/self/exe");
+    auto executablePath = std::filesystem::canonical(p);
+    auto libraryPath = executablePath.replace_filename("libfakelibc.so");
 
     auto programElf = elf::ElfReader::tryCreate(argv[1]);
     if(!programElf) return 1;
@@ -16,20 +22,22 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    auto libcElf = elf::ElfReader::tryCreate(argv[2]);
+    auto program = x86::InstructionParser::parseFile(argv[1]);
+    if(!program) {
+        fmt::print(stderr, "Could not parse program\n");
+        return 1;
+    }
+
+    auto libcElf = elf::ElfReader::tryCreate(libraryPath.c_str());
     if(!libcElf) return 1;
     if(libcElf->archClass() != elf::Elf::Class::B32) {
         fmt::print(stderr, "Libc is not 32-bit\n");
         return 1;
     }
 
-    auto program = x86::InstructionParser::parseFile(argv[1]);
-    if(!program) {
-        return 1;
-    }
-
-    auto libcProg = x86::InstructionParser::parseFile(argv[2]);
+    auto libcProg = x86::InstructionParser::parseFile(libraryPath.c_str());
     if(!libcProg) {
+        fmt::print(stderr, "Could not parse libc\n");
         return 1;
     }
     x86::LibC libc(std::move(*libcProg));

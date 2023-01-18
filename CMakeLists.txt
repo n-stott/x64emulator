@@ -28,6 +28,7 @@ target_include_directories(translator PUBLIC ../common/include)
 target_include_directories(translator PUBLIC ../external)
 target_include_directories(translator PUBLIC external/elf-reader/src)
 target_link_options(translator PUBLIC -m32)
+target_link_libraries(translator PUBLIC -lstdc++fs)
 # target_compile_options(translator PUBLIC -fsanitize=address,undefined)
 # target_link_options(translator PUBLIC -fsanitize=address,undefined)
 
