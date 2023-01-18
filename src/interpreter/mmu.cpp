@@ -176,7 +176,7 @@ namespace x86 {
 
     void Mmu::dumpRegions() const {
         for(const auto& region : regions_) {
-            fmt::print("{:15} {:#x} - {:#x}\n", region.name, region.base, region.base+region.size);
+            fmt::print("{:25} {:#x} - {:#x}\n", region.name, region.base, region.base+region.size);
         }
     }
 

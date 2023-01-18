@@ -56,57 +56,62 @@ namespace x86 {
             std::abort();
         }
 
-        auto addSectionIfExists = [&](const elf::Elf& elf, const std::string& name, Protection protection, u32 offset = 0) -> Mmu::Region* {
-            auto section = elf.sectionFromName(name);
+        auto addSectionIfExists = [&](const elf::Elf& elf, const std::string& sectionName, const std::string& regionName, Protection protection, u32 offset = 0) -> Mmu::Region* {
+            auto section = elf.sectionFromName(sectionName);
             if(!section) return nullptr;
-            Mmu::Region region{ name, (u32)(section->address + offset), (u32)section->size(), protection };
+            Mmu::Region region{ regionName, (u32)(section->address + offset), (u32)section->size(), protection };
             if(section->type() != elf::Elf::SectionHeaderType::NOBITS)
                 std::memcpy(region.data.data(), section->begin, section->size()*sizeof(u8));
             return mmu_.addRegion(std::move(region));
         };
 
-        addSectionIfExists(*programElf_, ".rodata", PROT_READ);
-        addSectionIfExists(*programElf_, ".data.rel.ro", PROT_READ);
-        addSectionIfExists(*programElf_, ".data", PROT_READ | PROT_WRITE);
-        addSectionIfExists(*programElf_, ".bss", PROT_READ | PROT_WRITE);
-        Mmu::Region* got = addSectionIfExists(*programElf_, ".got", PROT_READ | PROT_WRITE);
-        Mmu::Region* gotplt = addSectionIfExists(*programElf_, ".got.plt", PROT_READ | PROT_WRITE);
+        addSectionIfExists(*programElf_, ".rodata", "program .rodata", PROT_READ);
+        addSectionIfExists(*programElf_, ".data.rel.ro", "program .data.rel.ro", PROT_READ);
+        addSectionIfExists(*programElf_, ".data", "program .data", PROT_READ | PROT_WRITE);
+        addSectionIfExists(*programElf_, ".bss", "program .bss", PROT_READ | PROT_WRITE);
+        Mmu::Region* got = addSectionIfExists(*programElf_, ".got", "program .got", PROT_READ | PROT_WRITE);
+        Mmu::Region* gotplt = addSectionIfExists(*programElf_, ".got.plt", "program .got.plt", PROT_READ | PROT_WRITE);
 
         std::unique_ptr<elf::Elf> libcElf = elf::ElfReader::tryCreate(libc_.filepath);
         if(!libcElf) {
             fmt::print("Failed to load libc elf file\n");
             std::abort();
         }
-        addSectionIfExists(*libcElf, ".data", PROT_READ | PROT_WRITE);
-        addSectionIfExists(*libcElf, ".bss", PROT_READ | PROT_WRITE);
+        addSectionIfExists(*libcElf, ".data", "libc .data", PROT_READ | PROT_WRITE);
+        addSectionIfExists(*libcElf, ".bss", "libc .bss", PROT_READ | PROT_WRITE);
 
         auto programStringTable = programElf_->dynamicStringTable();
 
-        programElf_->resolveRelocations([&](const elf::Elf::RelocationEntry32& relocation) {
-            const auto* sym = relocation.symbol(*programElf_);
-            if(!sym) return;
-            std::string_view symbol = sym->symbol(&programStringTable.value(), *programElf_);
+        try {
+            programElf_->resolveRelocations([&](const elf::Elf::RelocationEntry32& relocation) {
+                const auto* sym = relocation.symbol(*programElf_);
+                if(!sym) return;
+                std::string_view symbol = sym->symbol(&programStringTable.value(), *programElf_);
 
-            u32 relocationAddress = relocation.offset();
-            if(sym->type() == elf::Elf::SymbolTable::Entry32::Type::FUNC) {
-                const auto* func = libc_.findUniqueFunction(symbol);
-                if(!func) return;
-                // fmt::print("Resolve relocation for function \"{}\" : {:#x}\n", symbol, func ? func->address : 0);
-                mmu_.write32(Ptr32{relocationAddress}, func->address);
-            }
-            if(sym->type() == elf::Elf::SymbolTable::Entry32::Type::OBJECT) {
-                bool found = false;
-                auto resolveSymbol = [&](const elf::Elf::StringTable* stringTable, const elf::Elf::SymbolTable::Entry32& entry) {
-                    if(found) return;
-                    if(entry.symbol(stringTable, *libcElf).find(symbol) == std::string_view::npos) return;
-                    found = true;
-                    // fmt::print("Resolve relocation for object \"{}\" : {:#x}\n", symbol, entry.st_value);
-                    mmu_.write32(Ptr32{relocationAddress}, entry.st_value);
-                };
-                libcElf->forAllSymbols(resolveSymbol);
-                if(!found) libcElf->forAllDynamicSymbols(resolveSymbol);
-            }
-        });
+                u32 relocationAddress = relocation.offset();
+                if(sym->type() == elf::Elf::SymbolTable::Entry32::Type::FUNC) {
+                    const auto* func = libc_.findUniqueFunction(symbol);
+                    if(!func) return;
+                    // fmt::print("Resolve relocation for function \"{}\" : {:#x}\n", symbol, func ? func->address : 0);
+                    mmu_.write32(Ptr32{relocationAddress}, func->address);
+                }
+                if(sym->type() == elf::Elf::SymbolTable::Entry32::Type::OBJECT) {
+                    bool found = false;
+                    auto resolveSymbol = [&](const elf::Elf::StringTable* stringTable, const elf::Elf::SymbolTable::Entry32& entry) {
+                        if(found) return;
+                        if(entry.symbol(stringTable, *libcElf).find(symbol) == std::string_view::npos) return;
+                        found = true;
+                        // fmt::print("Resolve relocation for object \"{}\" : {:#x}\n", symbol, entry.st_value);
+                        mmu_.write32(Ptr32{relocationAddress}, entry.st_value);
+                    };
+                    libcElf->forAllSymbols(resolveSymbol);
+                    if(!found) libcElf->forAllDynamicSymbols(resolveSymbol);
+                }
+            });
+        } catch (const VerificationException&) {
+            fmt::print(stderr, "Error during relocations\n");
+            stop_ = true;
+        }
 
         auto gotHandler = [&](u32 address){
             programElf_->forAllRelocations([&](const elf::Elf::RelocationEntry32& relocation) {
@@ -118,11 +123,14 @@ namespace x86 {
             });
         };
 
-        got->setInvalidValues(INV_NULL);
-        gotplt->setInvalidValues(INV_NULL);
-
-        got->setHandler(gotHandler);
-        gotplt->setHandler(gotHandler);
+        if(!!got) {
+            got->setInvalidValues(INV_NULL);
+            got->setHandler(gotHandler);
+        }
+        if(!!gotplt) {
+            gotplt->setInvalidValues(INV_NULL);
+            gotplt->setHandler(gotHandler);
+        }
     }
 
     void Interpreter::run() {
