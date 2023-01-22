@@ -43,7 +43,7 @@ target_link_options(test_malloc PUBLIC ${LD_OPTIONS})
 
 add_executable(test_fmt_print src/test_fmt_print.cpp)
 target_compile_options(test_fmt_print PUBLIC ${CC_OPTIONS} -DFMT_HEADER_ONLY)
-target_include_directories(test_fmt_print PUBLIC ../external)
+target_include_directories(test_fmt_print PUBLIC ${CMAKE_SOURCE_DIR}/external)
 target_link_options(test_fmt_print PUBLIC ${LD_OPTIONS} -static-libstdc++ -static-libgcc)
 
 add_executable(test_tostring src/test_tostring.cpp)
@@ -88,5 +88,9 @@ target_link_options(test_interval PUBLIC ${LD_OPTIONS} -static-libstdc++ -static
 
 add_executable(test_programargs src/test_programargs.cpp)
 target_compile_options(test_programargs PUBLIC ${CC_OPTIONS} -DFMT_HEADER_ONLY)
-target_include_directories(test_programargs PUBLIC ../external)
+target_include_directories(test_programargs PUBLIC ${CMAKE_SOURCE_DIR}/external)
 target_link_options(test_programargs PUBLIC ${LD_OPTIONS} -static-libstdc++ -static-libgcc)
+
+add_executable(test_nontrivialstatic src/test_nontrivialstatic.cpp)
+target_compile_options(test_nontrivialstatic PUBLIC ${CC_OPTIONS})
+target_link_options(test_nontrivialstatic PUBLIC ${LD_OPTIONS} -static-libstdc++ -static-libgcc)
