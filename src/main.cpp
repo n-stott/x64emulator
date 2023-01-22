@@ -11,18 +11,25 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
+    std::string programPath = argv[1];
+    std::vector<std::string> arguments;
+
+    for(int arg = 2; arg < argc; ++arg) {
+        arguments.push_back(argv[arg]);
+    }
+
     std::filesystem::path p("/proc/self/exe");
     auto executablePath = std::filesystem::canonical(p);
     auto libraryPath = executablePath.replace_filename("libfakelibc.so");
 
-    auto programElf = elf::ElfReader::tryCreate(argv[1]);
+    auto programElf = elf::ElfReader::tryCreate(programPath);
     if(!programElf) return 1;
     if(programElf->archClass() != elf::Elf::Class::B32) {
         fmt::print(stderr, "Program is not 32-bit\n");
         return 1;
     }
 
-    auto program = x86::InstructionParser::parseFile(argv[1]);
+    auto program = x86::InstructionParser::parseFile(programPath);
     if(!program) {
         fmt::print(stderr, "Could not parse program\n");
         return 1;
@@ -43,5 +50,5 @@ int main(int argc, char* argv[]) {
     x86::LibC libc(std::move(*libcProg));
 
     x86::Interpreter interpreter(std::move(*program), std::move(libc));
-    interpreter.run();
+    interpreter.run(arguments);
 }

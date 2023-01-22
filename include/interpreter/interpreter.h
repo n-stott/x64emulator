@@ -14,6 +14,7 @@
 #include <exception>
 #include <functional>
 #include <string>
+#include <vector>
 #include <fmt/core.h>
 
 namespace x86 {
@@ -21,10 +22,11 @@ namespace x86 {
     class Interpreter final : public InstructionHandler {
     public:
         explicit Interpreter(Program program, LibC libc);
-        void run();
+        void run(const std::vector<std::string>& arguments);
 
     private:
 
+        void pushProgramArguments(const std::vector<std::string>& arguments);
         void execute(const Function* function);
 
         Program program_;

@@ -133,7 +133,8 @@ namespace x86 {
         }
     }
 
-    void Interpreter::run() {
+    void Interpreter::run(const std::vector<std::string>& arguments) {
+
         auto initArraySection = programElf_->sectionFromName(".init_array");
         if(initArraySection) {
             assert(initArraySection->size() % sizeof(u32) == 0);
@@ -156,7 +157,47 @@ namespace x86 {
             return;
         }
 
+        pushProgramArguments(arguments);
         execute(main);
+    }
+
+    namespace {
+
+        void alignDown32(u32& address) {
+            address = address & 0xFFFFFFA0;
+        }
+
+    }
+
+    void Interpreter::pushProgramArguments(const std::vector<std::string>& arguments) {
+        try {
+            std::vector<u32> argumentPositions;
+            auto pushString = [&](const std::string& s) {
+                fmt::print(stderr, "Pushing \"{}\" at {:#x}\n", s, regs_.esp_);
+                std::vector<u32> buffer;
+                buffer.resize((s.size()+1+3)/4, 0);
+                std::memcpy(buffer.data(), s.data(), s.size());
+                for(auto cit = buffer.rbegin(); cit != buffer.rend(); ++cit) push32(*cit);
+                argumentPositions.push_back(regs_.esp_);
+            };
+
+            pushString(program_.filepath);
+            for(auto it = arguments.begin(); it != arguments.end(); ++it) {
+                pushString(*it);
+            }
+            
+            alignDown32(regs_.esp_);
+            for(auto it = argumentPositions.rbegin(); it != argumentPositions.rend(); ++it) {
+                push32(*it);
+            }
+            push32(regs_.esp_);
+            push32(arguments.size()+1);
+
+
+        } catch(const VerificationException&) {
+            fmt::print("Interpreter crash durig program argument setup\n");
+            stop_ = true;
+        }
     }
 
     void Interpreter::execute(const Function* function) {
