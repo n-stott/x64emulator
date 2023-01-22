@@ -214,92 +214,51 @@ namespace x86 {
 
         void exec(const Add<R32, R32>&) override;
         void exec(const Add<R32, Imm<u32>>&) override;
-        void exec(const Add<R32, Addr<Size::DWORD, B>>&) override;
-        void exec(const Add<R32, Addr<Size::DWORD, BD>>&) override;
-        void exec(const Add<R32, Addr<Size::DWORD, BIS>>&) override;
-        void exec(const Add<R32, Addr<Size::DWORD, BISD>>&) override;
+        void exec(const Add<R32, M32>&) override;
         void exec(const Add<M32, R32>&) override;
         void exec(const Add<M32, Imm<u32>>&) override;
 
         void exec(const Adc<R32, R32>&) override;
         void exec(const Adc<R32, Imm<u32>>&) override;
         void exec(const Adc<R32, SignExtended<u8>>&) override;
-        void exec(const Adc<R32, Addr<Size::DWORD, B>>&) override;
-        void exec(const Adc<R32, Addr<Size::DWORD, BD>>&) override;
-        void exec(const Adc<R32, Addr<Size::DWORD, BIS>>&) override;
-        void exec(const Adc<R32, Addr<Size::DWORD, BISD>>&) override;
-        void exec(const Adc<Addr<Size::DWORD, B>, R32>&) override;
-        void exec(const Adc<Addr<Size::DWORD, BD>, R32>&) override;
-        void exec(const Adc<Addr<Size::DWORD, BIS>, R32>&) override;
-        void exec(const Adc<Addr<Size::DWORD, BISD>, R32>&) override;
-        void exec(const Adc<Addr<Size::DWORD, B>, Imm<u32>>&) override;
-        void exec(const Adc<Addr<Size::DWORD, BD>, Imm<u32>>&) override;
-        void exec(const Adc<Addr<Size::DWORD, BIS>, Imm<u32>>&) override;
-        void exec(const Adc<Addr<Size::DWORD, BISD>, Imm<u32>>&) override;
+        void exec(const Adc<R32, M32>&) override;
+        void exec(const Adc<M32, R32>&) override;
+        void exec(const Adc<M32, Imm<u32>>&) override;
 
         void exec(const Sub<R32, R32>&) override;
         void exec(const Sub<R32, Imm<u32>>&) override;
         void exec(const Sub<R32, SignExtended<u8>>&) override;
-        void exec(const Sub<R32, Addr<Size::DWORD, B>>&) override;
-        void exec(const Sub<R32, Addr<Size::DWORD, BD>>&) override;
-        void exec(const Sub<R32, Addr<Size::DWORD, BIS>>&) override;
-        void exec(const Sub<R32, Addr<Size::DWORD, BISD>>&) override;
-        void exec(const Sub<Addr<Size::DWORD, B>, R32>&) override;
-        void exec(const Sub<Addr<Size::DWORD, BD>, R32>&) override;
-        void exec(const Sub<Addr<Size::DWORD, BIS>, R32>&) override;
-        void exec(const Sub<Addr<Size::DWORD, BISD>, R32>&) override;
-        void exec(const Sub<Addr<Size::DWORD, B>, Imm<u32>>&) override;
-        void exec(const Sub<Addr<Size::DWORD, BD>, Imm<u32>>&) override;
-        void exec(const Sub<Addr<Size::DWORD, BIS>, Imm<u32>>&) override;
-        void exec(const Sub<Addr<Size::DWORD, BISD>, Imm<u32>>&) override;
+        void exec(const Sub<R32, M32>&) override;
+        void exec(const Sub<M32, R32>&) override;
+        void exec(const Sub<M32, Imm<u32>>&) override;
 
         void exec(const Sbb<R32, R32>&) override;
         void exec(const Sbb<R32, Imm<u32>>&) override;
         void exec(const Sbb<R32, SignExtended<u8>>&) override;
-        void exec(const Sbb<R32, Addr<Size::DWORD, B>>&) override;
-        void exec(const Sbb<R32, Addr<Size::DWORD, BD>>&) override;
-        void exec(const Sbb<R32, Addr<Size::DWORD, BIS>>&) override;
-        void exec(const Sbb<R32, Addr<Size::DWORD, BISD>>&) override;
-        void exec(const Sbb<Addr<Size::DWORD, B>, R32>&) override;
-        void exec(const Sbb<Addr<Size::DWORD, BD>, R32>&) override;
-        void exec(const Sbb<Addr<Size::DWORD, BIS>, R32>&) override;
-        void exec(const Sbb<Addr<Size::DWORD, BISD>, R32>&) override;
-        void exec(const Sbb<Addr<Size::DWORD, B>, Imm<u32>>&) override;
-        void exec(const Sbb<Addr<Size::DWORD, BD>, Imm<u32>>&) override;
-        void exec(const Sbb<Addr<Size::DWORD, BIS>, Imm<u32>>&) override;
-        void exec(const Sbb<Addr<Size::DWORD, BISD>, Imm<u32>>&) override;
+        void exec(const Sbb<R32, M32>&) override;
+        void exec(const Sbb<M32, R32>&) override;
+        void exec(const Sbb<M32, Imm<u32>>&) override;
 
         void exec(const Neg<R32>&) override;
-        void exec(const Neg<Addr<Size::DWORD, B>>&) override;
-        void exec(const Neg<Addr<Size::DWORD, BD>>&) override;
+        void exec(const Neg<M32>&) override;
 
         void exec(const Mul<R32>&) override;
-        void exec(const Mul<Addr<Size::DWORD, B>>&) override;
-        void exec(const Mul<Addr<Size::DWORD, BD>>&) override;
-        void exec(const Mul<Addr<Size::DWORD, BIS>>&) override;
-        void exec(const Mul<Addr<Size::DWORD, BISD>>&) override;
+        void exec(const Mul<M32>&) override;
 
         void exec(const Imul1<R32>&) override;
-        void exec(const Imul1<Addr<Size::DWORD, BD>>&) override;
+        void exec(const Imul1<M32>&) override;
         void exec(const Imul2<R32, R32>&) override;
-        void exec(const Imul2<R32, Addr<Size::DWORD, B>>&) override;
-        void exec(const Imul2<R32, Addr<Size::DWORD, BD>>&) override;
-        void exec(const Imul2<R32, Addr<Size::DWORD, BIS>>&) override;
-        void exec(const Imul2<R32, Addr<Size::DWORD, BISD>>&) override;
+        void exec(const Imul2<R32, M32>&) override;
         void exec(const Imul3<R32, R32, Imm<u32>>&) override;
-        void exec(const Imul3<R32, Addr<Size::DWORD, B>, Imm<u32>>&) override;
-        void exec(const Imul3<R32, Addr<Size::DWORD, BD>, Imm<u32>>&) override;
-        void exec(const Imul3<R32, Addr<Size::DWORD, BIS>, Imm<u32>>&) override;
+        void exec(const Imul3<R32, M32, Imm<u32>>&) override;
 
         void exec(const Div<R32>&) override;
-        void exec(const Div<Addr<Size::DWORD, B>>&) override;
-        void exec(const Div<Addr<Size::DWORD, BD>>&) override;
+        void exec(const Div<M32>&) override;
 
         std::pair<u32, u32> execIdiv32(u32 dividendUpper, u32 dividendLower, u32 divisor);
 
         void exec(const Idiv<R32>&) override;
-        void exec(const Idiv<Addr<Size::DWORD, B>>&) override;
-        void exec(const Idiv<Addr<Size::DWORD, BD>>&) override;
+        void exec(const Idiv<M32>&) override;
 
         void exec(const And<R8, R8>&) override;
         void exec(const And<R8, Imm<u8>>&) override;
@@ -309,10 +268,7 @@ namespace x86 {
         void exec(const And<R16, Addr<Size::WORD, BD>>&) override;
         void exec(const And<R32, R32>&) override;
         void exec(const And<R32, Imm<u32>>&) override;
-        void exec(const And<R32, Addr<Size::DWORD, B>>&) override;
-        void exec(const And<R32, Addr<Size::DWORD, BD>>&) override;
-        void exec(const And<R32, Addr<Size::DWORD, BIS>>&) override;
-        void exec(const And<R32, Addr<Size::DWORD, BISD>>&) override;
+        void exec(const And<R32, M32>&) override;
         void exec(const And<Addr<Size::BYTE, B>, R8>&) override;
         void exec(const And<Addr<Size::BYTE, B>, Imm<u8>>&) override;
         void exec(const And<Addr<Size::BYTE, BD>, R8>&) override;
@@ -320,12 +276,8 @@ namespace x86 {
         void exec(const And<Addr<Size::BYTE, BIS>, Imm<u8>>&) override;
         void exec(const And<Addr<Size::WORD, B>, R16>&) override;
         void exec(const And<Addr<Size::WORD, BD>, R16>&) override;
-        void exec(const And<Addr<Size::DWORD, B>, R32>&) override;
-        void exec(const And<Addr<Size::DWORD, B>, Imm<u32>>&) override;
-        void exec(const And<Addr<Size::DWORD, BD>, R32>&) override;
-        void exec(const And<Addr<Size::DWORD, BD>, Imm<u32>>&) override;
-        void exec(const And<Addr<Size::DWORD, BIS>, R32>&) override;
-        void exec(const And<Addr<Size::DWORD, BISD>, R32>&) override;
+        void exec(const And<M32, R32>&) override;
+        void exec(const And<M32, Imm<u32>>&) override;
 
         void exec(const Or<R8, R8>&) override;
         void exec(const Or<R8, Imm<u8>>&) override;
@@ -335,22 +287,15 @@ namespace x86 {
         void exec(const Or<R16, Addr<Size::WORD, BD>>&) override;
         void exec(const Or<R32, R32>&) override;
         void exec(const Or<R32, Imm<u32>>&) override;
-        void exec(const Or<R32, Addr<Size::DWORD, B>>&) override;
-        void exec(const Or<R32, Addr<Size::DWORD, BD>>&) override;
-        void exec(const Or<R32, Addr<Size::DWORD, BIS>>&) override;
-        void exec(const Or<R32, Addr<Size::DWORD, BISD>>&) override;
+        void exec(const Or<R32, M32>&) override;
         void exec(const Or<Addr<Size::BYTE, B>, R8>&) override;
         void exec(const Or<Addr<Size::BYTE, B>, Imm<u8>>&) override;
         void exec(const Or<Addr<Size::BYTE, BD>, R8>&) override;
         void exec(const Or<Addr<Size::BYTE, BD>, Imm<u8>>&) override;
         void exec(const Or<Addr<Size::WORD, B>, R16>&) override;
         void exec(const Or<Addr<Size::WORD, BD>, R16>&) override;
-        void exec(const Or<Addr<Size::DWORD, B>, R32>&) override;
-        void exec(const Or<Addr<Size::DWORD, B>, Imm<u32>>&) override;
-        void exec(const Or<Addr<Size::DWORD, BD>, R32>&) override;
-        void exec(const Or<Addr<Size::DWORD, BD>, Imm<u32>>&) override;
-        void exec(const Or<Addr<Size::DWORD, BIS>, R32>&) override;
-        void exec(const Or<Addr<Size::DWORD, BISD>, R32>&) override;
+        void exec(const Or<M32, R32>&) override;
+        void exec(const Or<M32, Imm<u32>>&) override;
 
         u8 execXor8Impl(u8 dst, u8 src);
         u16 execXor16Impl(u16 dst, u16 src);
@@ -361,20 +306,12 @@ namespace x86 {
         void exec(const Xor<R16, Imm<u16>>&) override;
         void exec(const Xor<R32, Imm<u32>>&) override;
         void exec(const Xor<R32, R32>&) override;
-        void exec(const Xor<R32, Addr<Size::DWORD, B>>&) override;
-        void exec(const Xor<R32, Addr<Size::DWORD, BD>>&) override;
-        void exec(const Xor<R32, Addr<Size::DWORD, BIS>>&) override;
-        void exec(const Xor<R32, Addr<Size::DWORD, BISD>>&) override;
+        void exec(const Xor<R32, M32>&) override;
         void exec(const Xor<Addr<Size::BYTE, BD>, Imm<u8>>&) override;
-        void exec(const Xor<Addr<Size::DWORD, B>, R32>&) override;
-        void exec(const Xor<Addr<Size::DWORD, BD>, R32>&) override;
-        void exec(const Xor<Addr<Size::DWORD, BIS>, R32>&) override;
-        void exec(const Xor<Addr<Size::DWORD, BISD>, R32>&) override;
+        void exec(const Xor<M32, R32>&) override;
 
         void exec(const Not<R32>&) override;
-        void exec(const Not<Addr<Size::DWORD, B>>&) override;
-        void exec(const Not<Addr<Size::DWORD, BD>>&) override;
-        void exec(const Not<Addr<Size::DWORD, BIS>>&) override;
+        void exec(const Not<M32>&) override;
 
         void exec(const Xchg<R16, R16>&) override;
         void exec(const Xchg<R32, R32>&) override;
@@ -401,10 +338,7 @@ namespace x86 {
         void exec(const Mov<Addr<Size::WORD, BISD>, Imm<u16>>&) override;
         void exec(const Mov<R32, R32>&) override;
         void exec(const Mov<R32, Imm<u32>>&) override;
-        void exec(const Mov<R32, Addr<Size::DWORD, B>>&) override;
-        void exec(const Mov<R32, Addr<Size::DWORD, BD>>&) override;
-        void exec(const Mov<R32, Addr<Size::DWORD, BIS>>&) override;
-        void exec(const Mov<R32, Addr<Size::DWORD, BISD>>&) override;
+        void exec(const Mov<R32, M32>&) override;
         void exec(const Mov<Addr<Size::BYTE, B>, R8>&) override;
         void exec(const Mov<Addr<Size::BYTE, B>, Imm<u8>>&) override;
         void exec(const Mov<Addr<Size::BYTE, BD>, R8>&) override;
@@ -413,14 +347,8 @@ namespace x86 {
         void exec(const Mov<Addr<Size::BYTE, BIS>, Imm<u8>>&) override;
         void exec(const Mov<Addr<Size::BYTE, BISD>, R8>&) override;
         void exec(const Mov<Addr<Size::BYTE, BISD>, Imm<u8>>&) override;
-        void exec(const Mov<Addr<Size::DWORD, B>, R32>&) override;
-        void exec(const Mov<Addr<Size::DWORD, B>, Imm<u32>>&) override;
-        void exec(const Mov<Addr<Size::DWORD, BD>, R32>&) override;
-        void exec(const Mov<Addr<Size::DWORD, BD>, Imm<u32>>&) override;
-        void exec(const Mov<Addr<Size::DWORD, BIS>, R32>&) override;
-        void exec(const Mov<Addr<Size::DWORD, BIS>, Imm<u32>>&) override;
-        void exec(const Mov<Addr<Size::DWORD, BISD>, R32>&) override;
-        void exec(const Mov<Addr<Size::DWORD, BISD>, Imm<u32>>&) override;
+        void exec(const Mov<M32, R32>&) override;
+        void exec(const Mov<M32, Imm<u32>>&) override;
 
         void exec(const Movsx<R32, R8>&) override;
         void exec(const Movsx<R32, Addr<Size::BYTE, B>>&) override;
@@ -449,18 +377,12 @@ namespace x86 {
         void exec(const Push<R32>&) override;
         void exec(const Push<SignExtended<u8>>&) override;
         void exec(const Push<Imm<u32>>&) override;
-        void exec(const Push<Addr<Size::DWORD, B>>&) override;
-        void exec(const Push<Addr<Size::DWORD, BD>>&) override;
-        void exec(const Push<Addr<Size::DWORD, BIS>>&) override;
-        void exec(const Push<Addr<Size::DWORD, ISD>>&) override;
-        void exec(const Push<Addr<Size::DWORD, BISD>>&) override;
+        void exec(const Push<M32>&) override;
         void exec(const Pop<R32>&) override;
 
         void exec(const CallDirect&) override;
         void exec(const CallIndirect<R32>&) override;
-        void exec(const CallIndirect<Addr<Size::DWORD, B>>&) override;
-        void exec(const CallIndirect<Addr<Size::DWORD, BD>>&) override;
-        void exec(const CallIndirect<Addr<Size::DWORD, BIS>>&) override;
+        void exec(const CallIndirect<M32>&) override;
         void exec(const Ret<>&) override;
         void exec(const Ret<Imm<u16>>&) override;
 
@@ -482,18 +404,12 @@ namespace x86 {
         void exec(const Inc<Addr<Size::WORD, BD>>&) override;
         void exec(const Inc<Addr<Size::WORD, BIS>>&) override;
         void exec(const Inc<Addr<Size::WORD, BISD>>&) override;
-        void exec(const Inc<Addr<Size::DWORD, B>>&) override;
-        void exec(const Inc<Addr<Size::DWORD, BD>>&) override;
-        void exec(const Inc<Addr<Size::DWORD, BIS>>&) override;
-        void exec(const Inc<Addr<Size::DWORD, BISD>>&) override;
+        void exec(const Inc<M32>&) override;
 
         void exec(const Dec<R8>&) override;
         void exec(const Dec<R32>&) override;
         void exec(const Dec<Addr<Size::WORD, BD>>&) override;
-        void exec(const Dec<Addr<Size::DWORD, B>>&) override;
-        void exec(const Dec<Addr<Size::DWORD, BD>>&) override;
-        void exec(const Dec<Addr<Size::DWORD, BIS>>&) override;
-        void exec(const Dec<Addr<Size::DWORD, BISD>>&) override;
+        void exec(const Dec<M32>&) override;
 
         void exec(const Shr<R8, Imm<u8>>&) override;
         void exec(const Shr<R8, Count>&) override;
@@ -506,7 +422,7 @@ namespace x86 {
         void exec(const Shl<R32, R8>&) override;
         void exec(const Shl<R32, Imm<u32>>&) override;
         void exec(const Shl<R32, Count>&) override;
-        void exec(const Shl<Addr<Size::DWORD, BD>, Imm<u32>>&) override;
+        void exec(const Shl<M32, Imm<u32>>&) override;
 
         void exec(const Shld<R32, R32, R8>&) override;
         void exec(const Shld<R32, R32, Imm<u8>>&) override;
@@ -517,12 +433,11 @@ namespace x86 {
         void exec(const Sar<R32, R8>&) override;
         void exec(const Sar<R32, Imm<u32>>&) override;
         void exec(const Sar<R32, Count>&) override;
-        void exec(const Sar<Addr<Size::DWORD, B>, Count>&) override;
-        void exec(const Sar<Addr<Size::DWORD, BD>, Count>&) override;
+        void exec(const Sar<M32, Count>&) override;
 
         void exec(const Rol<R32, R8>&) override;
         void exec(const Rol<R32, Imm<u8>>&) override;
-        void exec(const Rol<Addr<Size::DWORD, BD>, Imm<u8>>&) override;
+        void exec(const Rol<M32, Imm<u8>>&) override;
 
         void exec(const Test<R8, R8>&) override;
         void exec(const Test<R8, Imm<u8>>&) override;
@@ -534,9 +449,8 @@ namespace x86 {
         void exec(const Test<Addr<Size::BYTE, BD>, Imm<u8>>&) override;
         void exec(const Test<Addr<Size::BYTE, BIS>, Imm<u8>>&) override;
         void exec(const Test<Addr<Size::BYTE, BISD>, Imm<u8>>&) override;
-        void exec(const Test<Addr<Size::DWORD, B>, R32>&) override;
-        void exec(const Test<Addr<Size::DWORD, BD>, R32>&) override;
-        void exec(const Test<Addr<Size::DWORD, BD>, Imm<u32>>&) override;
+        void exec(const Test<M32, R32>&) override;
+        void exec(const Test<M32, Imm<u32>>&) override;
 
         void exec(const Cmp<R8, R8>&) override;
         void exec(const Cmp<R8, Imm<u8>>&) override;
@@ -551,10 +465,7 @@ namespace x86 {
         void exec(const Cmp<Addr<Size::WORD, BIS>, R16>&) override;
         void exec(const Cmp<R32, R32>&) override;
         void exec(const Cmp<R32, Imm<u32>>&) override;
-        void exec(const Cmp<R32, Addr<Size::DWORD, B>>&) override;
-        void exec(const Cmp<R32, Addr<Size::DWORD, BD>>&) override;
-        void exec(const Cmp<R32, Addr<Size::DWORD, BIS>>&) override;
-        void exec(const Cmp<R32, Addr<Size::DWORD, BISD>>&) override;
+        void exec(const Cmp<R32, M32>&) override;
         void exec(const Cmp<Addr<Size::BYTE, B>, R8>&) override;
         void exec(const Cmp<Addr<Size::BYTE, B>, Imm<u8>>&) override;
         void exec(const Cmp<Addr<Size::BYTE, BD>, R8>&) override;
@@ -563,14 +474,8 @@ namespace x86 {
         void exec(const Cmp<Addr<Size::BYTE, BIS>, Imm<u8>>&) override;
         void exec(const Cmp<Addr<Size::BYTE, BISD>, R8>&) override;
         void exec(const Cmp<Addr<Size::BYTE, BISD>, Imm<u8>>&) override;
-        void exec(const Cmp<Addr<Size::DWORD, B>, R32>&) override;
-        void exec(const Cmp<Addr<Size::DWORD, B>, Imm<u32>>&) override;
-        void exec(const Cmp<Addr<Size::DWORD, BD>, R32>&) override;
-        void exec(const Cmp<Addr<Size::DWORD, BD>, Imm<u32>>&) override;
-        void exec(const Cmp<Addr<Size::DWORD, BIS>, R32>&) override;
-        void exec(const Cmp<Addr<Size::DWORD, BIS>, Imm<u32>>&) override;
-        void exec(const Cmp<Addr<Size::DWORD, BISD>, R32>&) override;
-        void exec(const Cmp<Addr<Size::DWORD, BISD>, Imm<u32>>&) override;
+        void exec(const Cmp<M32, R32>&) override;
+        void exec(const Cmp<M32, Imm<u32>>&) override;
 
         template<typename Dst>
         void execCmpxchg32Impl(Dst dst, u32 src);
@@ -584,10 +489,7 @@ namespace x86 {
         void exec(const Cmpxchg<Addr<Size::BYTE, BD>, R8>&) override;
         void exec(const Cmpxchg<Addr<Size::BYTE, BIS>, R8>&) override;
         void exec(const Cmpxchg<Addr<Size::BYTE, BISD>, R8>&) override;
-        void exec(const Cmpxchg<Addr<Size::DWORD, B>, R32>&) override;
-        void exec(const Cmpxchg<Addr<Size::DWORD, BD>, R32>&) override;
-        void exec(const Cmpxchg<Addr<Size::DWORD, BIS>, R32>&) override;
-        void exec(const Cmpxchg<Addr<Size::DWORD, BISD>, R32>&) override;
+        void exec(const Cmpxchg<M32, R32>&) override;
 
         void exec(const Set<Cond::AE, R8>&) override;
         void exec(const Set<Cond::AE, Addr<Size::BYTE, B>>&) override;
@@ -622,8 +524,7 @@ namespace x86 {
 
         void exec(const Jmp<R32>&) override;
         void exec(const Jmp<u32>&) override;
-        void exec(const Jmp<Addr<Size::DWORD, B>>&) override;
-        void exec(const Jmp<Addr<Size::DWORD, BD>>&) override;
+        void exec(const Jmp<M32>&) override;
         void exec(const Jcc<Cond::NE>&) override;
         void exec(const Jcc<Cond::E>&) override;
         void exec(const Jcc<Cond::AE>&) override;
@@ -639,7 +540,7 @@ namespace x86 {
 
         void exec(const Bsr<R32, R32>&) override;
         void exec(const Bsf<R32, R32>&) override;
-        void exec(const Bsf<R32, Addr<Size::DWORD, BD>>&) override;
+        void exec(const Bsf<R32, M32>&) override;
 
         void exec(const Rep<Movs<Addr<Size::BYTE, B>, Addr<Size::BYTE, B>>>&) override;
         void exec(const Rep<Movs<Addr<Size::DWORD, B>, Addr<Size::DWORD, B>>>&) override;

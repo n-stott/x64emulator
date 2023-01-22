@@ -196,7 +196,7 @@ namespace x86 {
         add(this, make_wrapper<Push<R32>>(R32::EBP));
         add(this, make_wrapper<Mov<R32, R32>>(R32::EBP, R32::ESP));
         auto arg = Addr<Size::DWORD, BD>{{R32::ESP, +8}};
-        add(this, make_wrapper<Mov<R32, Addr<Size::DWORD, BD>>>(R32::EAX, arg));
+        add(this, make_wrapper<Mov<R32, M32>>(R32::EAX, arg));
         add(this, make_intrinsic<PutcharInstruction>(context));
         add(this, make_wrapper<Pop<R32>>(R32::EBP));
         add(this, make_wrapper<Ret<void>>());
@@ -206,7 +206,7 @@ namespace x86 {
         add(this, make_wrapper<Push<R32>>(R32::EBP));
         add(this, make_wrapper<Mov<R32, R32>>(R32::EBP, R32::ESP));
         auto arg = Addr<Size::DWORD, BD>{{R32::ESP, +8}};
-        add(this, make_wrapper<Mov<R32, Addr<Size::DWORD, BD>>>(R32::EAX, arg));
+        add(this, make_wrapper<Mov<R32, M32>>(R32::EAX, arg));
         add(this, make_intrinsic<MallocInstruction>(context, heap));
         add(this, make_wrapper<Pop<R32>>(R32::EBP));
         add(this, make_wrapper<Ret<void>>());
@@ -216,7 +216,7 @@ namespace x86 {
         add(this, make_wrapper<Push<R32>>(R32::EBP));
         add(this, make_wrapper<Mov<R32, R32>>(R32::EBP, R32::ESP));
         auto arg = Addr<Size::DWORD, BD>{{R32::ESP, +8}};
-        add(this, make_wrapper<Mov<R32, Addr<Size::DWORD, BD>>>(R32::EAX, arg));
+        add(this, make_wrapper<Mov<R32, M32>>(R32::EAX, arg));
         add(this, make_intrinsic<FreeInstruction>(context, heap));
         add(this, make_wrapper<Pop<R32>>(R32::EBP));
         add(this, make_wrapper<Ret<void>>());

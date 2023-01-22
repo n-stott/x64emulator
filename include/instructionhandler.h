@@ -11,90 +11,49 @@ namespace x86 {
 
         virtual void exec(const Add<R32, R32>&) = 0;
         virtual void exec(const Add<R32, Imm<u32>>&) = 0;
-        virtual void exec(const Add<R32, Addr<Size::DWORD, B>>&) = 0;
-        virtual void exec(const Add<R32, Addr<Size::DWORD, BD>>&) = 0;
-        virtual void exec(const Add<R32, Addr<Size::DWORD, BIS>>&) = 0;
-        virtual void exec(const Add<R32, Addr<Size::DWORD, BISD>>&) = 0;
+        virtual void exec(const Add<R32, M32>&) = 0;
         virtual void exec(const Add<M32, R32>&) = 0;
         virtual void exec(const Add<M32, Imm<u32>>&) = 0;
 
         virtual void exec(const Adc<R32, R32>&) = 0;
         virtual void exec(const Adc<R32, Imm<u32>>&) = 0;
         virtual void exec(const Adc<R32, SignExtended<u8>>&) = 0;
-        virtual void exec(const Adc<R32, Addr<Size::DWORD, B>>&) = 0;
-        virtual void exec(const Adc<R32, Addr<Size::DWORD, BD>>&) = 0;
-        virtual void exec(const Adc<R32, Addr<Size::DWORD, BIS>>&) = 0;
-        virtual void exec(const Adc<R32, Addr<Size::DWORD, BISD>>&) = 0;
-        virtual void exec(const Adc<Addr<Size::DWORD, B>, R32>&) = 0;
-        virtual void exec(const Adc<Addr<Size::DWORD, BD>, R32>&) = 0;
-        virtual void exec(const Adc<Addr<Size::DWORD, BIS>, R32>&) = 0;
-        virtual void exec(const Adc<Addr<Size::DWORD, BISD>, R32>&) = 0;
-        virtual void exec(const Adc<Addr<Size::DWORD, B>, Imm<u32>>&) = 0;
-        virtual void exec(const Adc<Addr<Size::DWORD, BD>, Imm<u32>>&) = 0;
-        virtual void exec(const Adc<Addr<Size::DWORD, BIS>, Imm<u32>>&) = 0;
-        virtual void exec(const Adc<Addr<Size::DWORD, BISD>, Imm<u32>>&) = 0;
+        virtual void exec(const Adc<R32, M32>&) = 0;
+        virtual void exec(const Adc<M32, R32>&) = 0;
+        virtual void exec(const Adc<M32, Imm<u32>>&) = 0;
 
         virtual void exec(const Sub<R32, R32>&) = 0;
         virtual void exec(const Sub<R32, Imm<u32>>&) = 0;
         virtual void exec(const Sub<R32, SignExtended<u8>>&) = 0;
-        virtual void exec(const Sub<R32, Addr<Size::DWORD, B>>&) = 0;
-        virtual void exec(const Sub<R32, Addr<Size::DWORD, BD>>&) = 0;
-        virtual void exec(const Sub<R32, Addr<Size::DWORD, BIS>>&) = 0;
-        virtual void exec(const Sub<R32, Addr<Size::DWORD, BISD>>&) = 0;
-        virtual void exec(const Sub<Addr<Size::DWORD, B>, R32>&) = 0;
-        virtual void exec(const Sub<Addr<Size::DWORD, BD>, R32>&) = 0;
-        virtual void exec(const Sub<Addr<Size::DWORD, BIS>, R32>&) = 0;
-        virtual void exec(const Sub<Addr<Size::DWORD, BISD>, R32>&) = 0;
-        virtual void exec(const Sub<Addr<Size::DWORD, B>, Imm<u32>>&) = 0;
-        virtual void exec(const Sub<Addr<Size::DWORD, BD>, Imm<u32>>&) = 0;
-        virtual void exec(const Sub<Addr<Size::DWORD, BIS>, Imm<u32>>&) = 0;
-        virtual void exec(const Sub<Addr<Size::DWORD, BISD>, Imm<u32>>&) = 0;
+        virtual void exec(const Sub<R32, M32>&) = 0;
+        virtual void exec(const Sub<M32, R32>&) = 0;
+        virtual void exec(const Sub<M32, Imm<u32>>&) = 0;
 
         virtual void exec(const Sbb<R32, R32>&) = 0;
         virtual void exec(const Sbb<R32, Imm<u32>>&) = 0;
         virtual void exec(const Sbb<R32, SignExtended<u8>>&) = 0;
-        virtual void exec(const Sbb<R32, Addr<Size::DWORD, B>>&) = 0;
-        virtual void exec(const Sbb<R32, Addr<Size::DWORD, BD>>&) = 0;
-        virtual void exec(const Sbb<R32, Addr<Size::DWORD, BIS>>&) = 0;
-        virtual void exec(const Sbb<R32, Addr<Size::DWORD, BISD>>&) = 0;
-        virtual void exec(const Sbb<Addr<Size::DWORD, B>, R32>&) = 0;
-        virtual void exec(const Sbb<Addr<Size::DWORD, BD>, R32>&) = 0;
-        virtual void exec(const Sbb<Addr<Size::DWORD, BIS>, R32>&) = 0;
-        virtual void exec(const Sbb<Addr<Size::DWORD, BISD>, R32>&) = 0;
-        virtual void exec(const Sbb<Addr<Size::DWORD, B>, Imm<u32>>&) = 0;
-        virtual void exec(const Sbb<Addr<Size::DWORD, BD>, Imm<u32>>&) = 0;
-        virtual void exec(const Sbb<Addr<Size::DWORD, BIS>, Imm<u32>>&) = 0;
-        virtual void exec(const Sbb<Addr<Size::DWORD, BISD>, Imm<u32>>&) = 0;
+        virtual void exec(const Sbb<R32, M32>&) = 0;
+        virtual void exec(const Sbb<M32, R32>&) = 0;
+        virtual void exec(const Sbb<M32, Imm<u32>>&) = 0;
 
         virtual void exec(const Neg<R32>&) = 0;
-        virtual void exec(const Neg<Addr<Size::DWORD, B>>&) = 0;
-        virtual void exec(const Neg<Addr<Size::DWORD, BD>>&) = 0;
+        virtual void exec(const Neg<M32>&) = 0;
 
         virtual void exec(const Mul<R32>&) = 0;
-        virtual void exec(const Mul<Addr<Size::DWORD, B>>&) = 0;
-        virtual void exec(const Mul<Addr<Size::DWORD, BD>>&) = 0;
-        virtual void exec(const Mul<Addr<Size::DWORD, BIS>>&) = 0;
-        virtual void exec(const Mul<Addr<Size::DWORD, BISD>>&) = 0;
+        virtual void exec(const Mul<M32>&) = 0;
 
         virtual void exec(const Imul1<R32>&) = 0;
-        virtual void exec(const Imul1<Addr<Size::DWORD, BD>>&) = 0;
+        virtual void exec(const Imul1<M32>&) = 0;
         virtual void exec(const Imul2<R32, R32>&) = 0;
-        virtual void exec(const Imul2<R32, Addr<Size::DWORD, B>>&) = 0;
-        virtual void exec(const Imul2<R32, Addr<Size::DWORD, BD>>&) = 0;
-        virtual void exec(const Imul2<R32, Addr<Size::DWORD, BIS>>&) = 0;
-        virtual void exec(const Imul2<R32, Addr<Size::DWORD, BISD>>&) = 0;
+        virtual void exec(const Imul2<R32, M32>&) = 0;
         virtual void exec(const Imul3<R32, R32, Imm<u32>>&) = 0;
-        virtual void exec(const Imul3<R32, Addr<Size::DWORD, B>, Imm<u32>>&) = 0;
-        virtual void exec(const Imul3<R32, Addr<Size::DWORD, BD>, Imm<u32>>&) = 0;
-        virtual void exec(const Imul3<R32, Addr<Size::DWORD, BIS>, Imm<u32>>&) = 0;
+        virtual void exec(const Imul3<R32, M32, Imm<u32>>&) = 0;
 
         virtual void exec(const Div<R32>&) = 0;
-        virtual void exec(const Div<Addr<Size::DWORD, B>>&) = 0;
-        virtual void exec(const Div<Addr<Size::DWORD, BD>>&) = 0;
+        virtual void exec(const Div<M32>&) = 0;
 
         virtual void exec(const Idiv<R32>&) = 0;
-        virtual void exec(const Idiv<Addr<Size::DWORD, B>>&) = 0;
-        virtual void exec(const Idiv<Addr<Size::DWORD, BD>>&) = 0;
+        virtual void exec(const Idiv<M32>&) = 0;
 
         virtual void exec(const And<R8, R8>&) = 0;
         virtual void exec(const And<R8, Imm<u8>>&) = 0;
@@ -104,10 +63,7 @@ namespace x86 {
         virtual void exec(const And<R16, Addr<Size::WORD, BD>>&) = 0;
         virtual void exec(const And<R32, R32>&) = 0;
         virtual void exec(const And<R32, Imm<u32>>&) = 0;
-        virtual void exec(const And<R32, Addr<Size::DWORD, B>>&) = 0;
-        virtual void exec(const And<R32, Addr<Size::DWORD, BD>>&) = 0;
-        virtual void exec(const And<R32, Addr<Size::DWORD, BIS>>&) = 0;
-        virtual void exec(const And<R32, Addr<Size::DWORD, BISD>>&) = 0;
+        virtual void exec(const And<R32, M32>&) = 0;
         virtual void exec(const And<Addr<Size::BYTE, B>, R8>&) = 0;
         virtual void exec(const And<Addr<Size::BYTE, B>, Imm<u8>>&) = 0;
         virtual void exec(const And<Addr<Size::BYTE, BD>, R8>&) = 0;
@@ -115,12 +71,8 @@ namespace x86 {
         virtual void exec(const And<Addr<Size::BYTE, BIS>, Imm<u8>>&) = 0;
         virtual void exec(const And<Addr<Size::WORD, B>, R16>&) = 0;
         virtual void exec(const And<Addr<Size::WORD, BD>, R16>&) = 0;
-        virtual void exec(const And<Addr<Size::DWORD, B>, R32>&) = 0;
-        virtual void exec(const And<Addr<Size::DWORD, B>, Imm<u32>>&) = 0;
-        virtual void exec(const And<Addr<Size::DWORD, BD>, R32>&) = 0;
-        virtual void exec(const And<Addr<Size::DWORD, BD>, Imm<u32>>&) = 0;
-        virtual void exec(const And<Addr<Size::DWORD, BIS>, R32>&) = 0;
-        virtual void exec(const And<Addr<Size::DWORD, BISD>, R32>&) = 0;
+        virtual void exec(const And<M32, R32>&) = 0;
+        virtual void exec(const And<M32, Imm<u32>>&) = 0;
 
         virtual void exec(const Or<R8, R8>&) = 0;
         virtual void exec(const Or<R8, Imm<u8>>&) = 0;
@@ -130,42 +82,27 @@ namespace x86 {
         virtual void exec(const Or<R16, Addr<Size::WORD, BD>>&) = 0;
         virtual void exec(const Or<R32, R32>&) = 0;
         virtual void exec(const Or<R32, Imm<u32>>&) = 0;
-        virtual void exec(const Or<R32, Addr<Size::DWORD, B>>&) = 0;
-        virtual void exec(const Or<R32, Addr<Size::DWORD, BD>>&) = 0;
-        virtual void exec(const Or<R32, Addr<Size::DWORD, BIS>>&) = 0;
-        virtual void exec(const Or<R32, Addr<Size::DWORD, BISD>>&) = 0;
+        virtual void exec(const Or<R32, M32>&) = 0;
         virtual void exec(const Or<Addr<Size::BYTE, B>, R8>&) = 0;
         virtual void exec(const Or<Addr<Size::BYTE, B>, Imm<u8>>&) = 0;
         virtual void exec(const Or<Addr<Size::BYTE, BD>, R8>&) = 0;
         virtual void exec(const Or<Addr<Size::BYTE, BD>, Imm<u8>>&) = 0;
         virtual void exec(const Or<Addr<Size::WORD, B>, R16>&) = 0;
         virtual void exec(const Or<Addr<Size::WORD, BD>, R16>&) = 0;
-        virtual void exec(const Or<Addr<Size::DWORD, B>, R32>&) = 0;
-        virtual void exec(const Or<Addr<Size::DWORD, B>, Imm<u32>>&) = 0;
-        virtual void exec(const Or<Addr<Size::DWORD, BD>, R32>&) = 0;
-        virtual void exec(const Or<Addr<Size::DWORD, BD>, Imm<u32>>&) = 0;
-        virtual void exec(const Or<Addr<Size::DWORD, BIS>, R32>&) = 0;
-        virtual void exec(const Or<Addr<Size::DWORD, BISD>, R32>&) = 0;
+        virtual void exec(const Or<M32, R32>&) = 0;
+        virtual void exec(const Or<M32, Imm<u32>>&) = 0;
 
         virtual void exec(const Xor<R8, Imm<u8>>&) = 0;
         virtual void exec(const Xor<R8, Addr<Size::BYTE, BD>>&) = 0;
         virtual void exec(const Xor<R16, Imm<u16>>&) = 0;
         virtual void exec(const Xor<R32, Imm<u32>>&) = 0;
         virtual void exec(const Xor<R32, R32>&) = 0;
-        virtual void exec(const Xor<R32, Addr<Size::DWORD, B>>&) = 0;
-        virtual void exec(const Xor<R32, Addr<Size::DWORD, BD>>&) = 0;
-        virtual void exec(const Xor<R32, Addr<Size::DWORD, BIS>>&) = 0;
-        virtual void exec(const Xor<R32, Addr<Size::DWORD, BISD>>&) = 0;
+        virtual void exec(const Xor<R32, M32>&) = 0;
         virtual void exec(const Xor<Addr<Size::BYTE, BD>, Imm<u8>>&) = 0;
-        virtual void exec(const Xor<Addr<Size::DWORD, B>, R32>&) = 0;
-        virtual void exec(const Xor<Addr<Size::DWORD, BD>, R32>&) = 0;
-        virtual void exec(const Xor<Addr<Size::DWORD, BIS>, R32>&) = 0;
-        virtual void exec(const Xor<Addr<Size::DWORD, BISD>, R32>&) = 0;
+        virtual void exec(const Xor<M32, R32>&) = 0;
 
         virtual void exec(const Not<R32>&) = 0;
-        virtual void exec(const Not<Addr<Size::DWORD, B>>&) = 0;
-        virtual void exec(const Not<Addr<Size::DWORD, BD>>&) = 0;
-        virtual void exec(const Not<Addr<Size::DWORD, BIS>>&) = 0;
+        virtual void exec(const Not<M32>&) = 0;
 
         virtual void exec(const Xchg<R16, R16>&) = 0;
         virtual void exec(const Xchg<R32, R32>&) = 0;
@@ -192,10 +129,7 @@ namespace x86 {
         virtual void exec(const Mov<Addr<Size::WORD, BISD>, Imm<u16>>&) = 0;
         virtual void exec(const Mov<R32, R32>&) = 0;
         virtual void exec(const Mov<R32, Imm<u32>>&) = 0;
-        virtual void exec(const Mov<R32, Addr<Size::DWORD, B>>&) = 0;
-        virtual void exec(const Mov<R32, Addr<Size::DWORD, BD>>&) = 0;
-        virtual void exec(const Mov<R32, Addr<Size::DWORD, BIS>>&) = 0;
-        virtual void exec(const Mov<R32, Addr<Size::DWORD, BISD>>&) = 0;
+        virtual void exec(const Mov<R32, M32>&) = 0;
         virtual void exec(const Mov<Addr<Size::BYTE, B>, R8>&) = 0;
         virtual void exec(const Mov<Addr<Size::BYTE, B>, Imm<u8>>&) = 0;
         virtual void exec(const Mov<Addr<Size::BYTE, BD>, R8>&) = 0;
@@ -204,14 +138,8 @@ namespace x86 {
         virtual void exec(const Mov<Addr<Size::BYTE, BIS>, Imm<u8>>&) = 0;
         virtual void exec(const Mov<Addr<Size::BYTE, BISD>, R8>&) = 0;
         virtual void exec(const Mov<Addr<Size::BYTE, BISD>, Imm<u8>>&) = 0;
-        virtual void exec(const Mov<Addr<Size::DWORD, B>, R32>&) = 0;
-        virtual void exec(const Mov<Addr<Size::DWORD, B>, Imm<u32>>&) = 0;
-        virtual void exec(const Mov<Addr<Size::DWORD, BD>, R32>&) = 0;
-        virtual void exec(const Mov<Addr<Size::DWORD, BD>, Imm<u32>>&) = 0;
-        virtual void exec(const Mov<Addr<Size::DWORD, BIS>, R32>&) = 0;
-        virtual void exec(const Mov<Addr<Size::DWORD, BIS>, Imm<u32>>&) = 0;
-        virtual void exec(const Mov<Addr<Size::DWORD, BISD>, R32>&) = 0;
-        virtual void exec(const Mov<Addr<Size::DWORD, BISD>, Imm<u32>>&) = 0;
+        virtual void exec(const Mov<M32, R32>&) = 0;
+        virtual void exec(const Mov<M32, Imm<u32>>&) = 0;
 
         virtual void exec(const Movsx<R32, R8>&) = 0;
         virtual void exec(const Movsx<R32, Addr<Size::BYTE, B>>&) = 0;
@@ -240,18 +168,12 @@ namespace x86 {
         virtual void exec(const Push<R32>&) = 0;
         virtual void exec(const Push<SignExtended<u8>>&) = 0;
         virtual void exec(const Push<Imm<u32>>&) = 0;
-        virtual void exec(const Push<Addr<Size::DWORD, B>>&) = 0;
-        virtual void exec(const Push<Addr<Size::DWORD, BD>>&) = 0;
-        virtual void exec(const Push<Addr<Size::DWORD, BIS>>&) = 0;
-        virtual void exec(const Push<Addr<Size::DWORD, ISD>>&) = 0;
-        virtual void exec(const Push<Addr<Size::DWORD, BISD>>&) = 0;
+        virtual void exec(const Push<M32>&) = 0;
         virtual void exec(const Pop<R32>&) = 0;
 
         virtual void exec(const CallDirect&) = 0;
         virtual void exec(const CallIndirect<R32>&) = 0;
-        virtual void exec(const CallIndirect<Addr<Size::DWORD, B>>&) = 0;
-        virtual void exec(const CallIndirect<Addr<Size::DWORD, BD>>&) = 0;
-        virtual void exec(const CallIndirect<Addr<Size::DWORD, BIS>>&) = 0;
+        virtual void exec(const CallIndirect<M32>&) = 0;
         virtual void exec(const Ret<>&) = 0;
         virtual void exec(const Ret<Imm<u16>>&) = 0;
 
@@ -273,18 +195,12 @@ namespace x86 {
         virtual void exec(const Inc<Addr<Size::WORD, BD>>&) = 0;
         virtual void exec(const Inc<Addr<Size::WORD, BIS>>&) = 0;
         virtual void exec(const Inc<Addr<Size::WORD, BISD>>&) = 0;
-        virtual void exec(const Inc<Addr<Size::DWORD, B>>&) = 0;
-        virtual void exec(const Inc<Addr<Size::DWORD, BD>>&) = 0;
-        virtual void exec(const Inc<Addr<Size::DWORD, BIS>>&) = 0;
-        virtual void exec(const Inc<Addr<Size::DWORD, BISD>>&) = 0;
+        virtual void exec(const Inc<M32>&) = 0;
 
         virtual void exec(const Dec<R8>&) = 0;
         virtual void exec(const Dec<R32>&) = 0;
         virtual void exec(const Dec<Addr<Size::WORD, BD>>&) = 0;
-        virtual void exec(const Dec<Addr<Size::DWORD, B>>&) = 0;
-        virtual void exec(const Dec<Addr<Size::DWORD, BD>>&) = 0;
-        virtual void exec(const Dec<Addr<Size::DWORD, BIS>>&) = 0;
-        virtual void exec(const Dec<Addr<Size::DWORD, BISD>>&) = 0;
+        virtual void exec(const Dec<M32>&) = 0;
 
         virtual void exec(const Shr<R8, Imm<u8>>&) = 0;
         virtual void exec(const Shr<R8, Count>&) = 0;
@@ -297,7 +213,7 @@ namespace x86 {
         virtual void exec(const Shl<R32, R8>&) = 0;
         virtual void exec(const Shl<R32, Imm<u32>>&) = 0;
         virtual void exec(const Shl<R32, Count>&) = 0;
-        virtual void exec(const Shl<Addr<Size::DWORD, BD>, Imm<u32>>&) = 0;
+        virtual void exec(const Shl<M32, Imm<u32>>&) = 0;
 
         virtual void exec(const Shld<R32, R32, R8>&) = 0;
         virtual void exec(const Shld<R32, R32, Imm<u8>>&) = 0;
@@ -308,12 +224,11 @@ namespace x86 {
         virtual void exec(const Sar<R32, R8>&) = 0;
         virtual void exec(const Sar<R32, Imm<u32>>&) = 0;
         virtual void exec(const Sar<R32, Count>&) = 0;
-        virtual void exec(const Sar<Addr<Size::DWORD, B>, Count>&) = 0;
-        virtual void exec(const Sar<Addr<Size::DWORD, BD>, Count>&) = 0;
+        virtual void exec(const Sar<M32, Count>&) = 0;
 
         virtual void exec(const Rol<R32, R8>&) = 0;
         virtual void exec(const Rol<R32, Imm<u8>>&) = 0;
-        virtual void exec(const Rol<Addr<Size::DWORD, BD>, Imm<u8>>&) = 0;
+        virtual void exec(const Rol<M32, Imm<u8>>&) = 0;
 
         virtual void exec(const Test<R8, R8>&) = 0;
         virtual void exec(const Test<R8, Imm<u8>>&) = 0;
@@ -325,9 +240,8 @@ namespace x86 {
         virtual void exec(const Test<Addr<Size::BYTE, BD>, Imm<u8>>&) = 0;
         virtual void exec(const Test<Addr<Size::BYTE, BIS>, Imm<u8>>&) = 0;
         virtual void exec(const Test<Addr<Size::BYTE, BISD>, Imm<u8>>&) = 0;
-        virtual void exec(const Test<Addr<Size::DWORD, B>, R32>&) = 0;
-        virtual void exec(const Test<Addr<Size::DWORD, BD>, R32>&) = 0;
-        virtual void exec(const Test<Addr<Size::DWORD, BD>, Imm<u32>>&) = 0;
+        virtual void exec(const Test<M32, R32>&) = 0;
+        virtual void exec(const Test<M32, Imm<u32>>&) = 0;
 
         virtual void exec(const Cmp<R8, R8>&) = 0;
         virtual void exec(const Cmp<R8, Imm<u8>>&) = 0;
@@ -342,10 +256,7 @@ namespace x86 {
         virtual void exec(const Cmp<Addr<Size::WORD, BIS>, R16>&) = 0;
         virtual void exec(const Cmp<R32, R32>&) = 0;
         virtual void exec(const Cmp<R32, Imm<u32>>&) = 0;
-        virtual void exec(const Cmp<R32, Addr<Size::DWORD, B>>&) = 0;
-        virtual void exec(const Cmp<R32, Addr<Size::DWORD, BD>>&) = 0;
-        virtual void exec(const Cmp<R32, Addr<Size::DWORD, BIS>>&) = 0;
-        virtual void exec(const Cmp<R32, Addr<Size::DWORD, BISD>>&) = 0;
+        virtual void exec(const Cmp<R32, M32>&) = 0;
         virtual void exec(const Cmp<Addr<Size::BYTE, B>, R8>&) = 0;
         virtual void exec(const Cmp<Addr<Size::BYTE, B>, Imm<u8>>&) = 0;
         virtual void exec(const Cmp<Addr<Size::BYTE, BD>, R8>&) = 0;
@@ -354,14 +265,8 @@ namespace x86 {
         virtual void exec(const Cmp<Addr<Size::BYTE, BIS>, Imm<u8>>&) = 0;
         virtual void exec(const Cmp<Addr<Size::BYTE, BISD>, R8>&) = 0;
         virtual void exec(const Cmp<Addr<Size::BYTE, BISD>, Imm<u8>>&) = 0;
-        virtual void exec(const Cmp<Addr<Size::DWORD, B>, R32>&) = 0;
-        virtual void exec(const Cmp<Addr<Size::DWORD, B>, Imm<u32>>&) = 0;
-        virtual void exec(const Cmp<Addr<Size::DWORD, BD>, R32>&) = 0;
-        virtual void exec(const Cmp<Addr<Size::DWORD, BD>, Imm<u32>>&) = 0;
-        virtual void exec(const Cmp<Addr<Size::DWORD, BIS>, R32>&) = 0;
-        virtual void exec(const Cmp<Addr<Size::DWORD, BIS>, Imm<u32>>&) = 0;
-        virtual void exec(const Cmp<Addr<Size::DWORD, BISD>, R32>&) = 0;
-        virtual void exec(const Cmp<Addr<Size::DWORD, BISD>, Imm<u32>>&) = 0;
+        virtual void exec(const Cmp<M32, R32>&) = 0;
+        virtual void exec(const Cmp<M32, Imm<u32>>&) = 0;
 
         virtual void exec(const Cmpxchg<R8, R8>&) = 0;
         virtual void exec(const Cmpxchg<R16, R16>&) = 0;
@@ -372,10 +277,7 @@ namespace x86 {
         virtual void exec(const Cmpxchg<Addr<Size::BYTE, BD>, R8>&) = 0;
         virtual void exec(const Cmpxchg<Addr<Size::BYTE, BIS>, R8>&) = 0;
         virtual void exec(const Cmpxchg<Addr<Size::BYTE, BISD>, R8>&) = 0;
-        virtual void exec(const Cmpxchg<Addr<Size::DWORD, B>, R32>&) = 0;
-        virtual void exec(const Cmpxchg<Addr<Size::DWORD, BD>, R32>&) = 0;
-        virtual void exec(const Cmpxchg<Addr<Size::DWORD, BIS>, R32>&) = 0;
-        virtual void exec(const Cmpxchg<Addr<Size::DWORD, BISD>, R32>&) = 0;
+        virtual void exec(const Cmpxchg<M32, R32>&) = 0;
 
         virtual void exec(const Set<Cond::AE, R8>&) = 0;
         virtual void exec(const Set<Cond::AE, Addr<Size::BYTE, B>>&) = 0;
@@ -410,8 +312,7 @@ namespace x86 {
 
         virtual void exec(const Jmp<R32>&) = 0;
         virtual void exec(const Jmp<u32>&) = 0;
-        virtual void exec(const Jmp<Addr<Size::DWORD, B>>&) = 0;
-        virtual void exec(const Jmp<Addr<Size::DWORD, BD>>&) = 0;
+        virtual void exec(const Jmp<M32>&) = 0;
         virtual void exec(const Jcc<Cond::NE>&) = 0;
         virtual void exec(const Jcc<Cond::E>&) = 0;
         virtual void exec(const Jcc<Cond::AE>&) = 0;
@@ -427,7 +328,7 @@ namespace x86 {
 
         virtual void exec(const Bsr<R32, R32>&) = 0;
         virtual void exec(const Bsf<R32, R32>&) = 0;
-        virtual void exec(const Bsf<R32, Addr<Size::DWORD, BD>>&) = 0;
+        virtual void exec(const Bsf<R32, M32>&) = 0;
 
         virtual void exec(const Rep<Movs<Addr<Size::BYTE, B>, Addr<Size::BYTE, B>>>&) = 0;
         virtual void exec(const Rep<Movs<Addr<Size::DWORD, B>, Addr<Size::DWORD, B>>>&) = 0;
