@@ -9,6 +9,10 @@ struct S {
 
 static S s;
 
-int main() {
+int test1() {
     return s.x.size();
+}
+
+int main() {
+    test1();
 }

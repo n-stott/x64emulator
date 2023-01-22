@@ -51,4 +51,5 @@ int main(int argc, char* argv[]) {
 
     x86::Interpreter interpreter(std::move(*program), std::move(libc));
     interpreter.run(arguments);
+    return interpreter.hasCrashed();
 }

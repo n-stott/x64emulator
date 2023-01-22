@@ -23,6 +23,7 @@ namespace x86 {
     public:
         explicit Interpreter(Program program, LibC libc);
         void run(const std::vector<std::string>& arguments);
+        bool hasCrashed() const { return stop_; }
 
     private:
 

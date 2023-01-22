@@ -38,6 +38,10 @@ struct Collection {
 
 static Collection collection;
 
-int main() {
+int test1() {
     return collection.items.size();
+}
+
+int main() {
+    test1();
 }
