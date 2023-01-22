@@ -173,7 +173,6 @@ namespace x86 {
         try {
             std::vector<u32> argumentPositions;
             auto pushString = [&](const std::string& s) {
-                fmt::print(stderr, "Pushing \"{}\" at {:#x}\n", s, regs_.esp_);
                 std::vector<u32> buffer;
                 buffer.resize((s.size()+1+3)/4, 0);
                 std::memcpy(buffer.data(), s.data(), s.size());
