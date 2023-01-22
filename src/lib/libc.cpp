@@ -96,10 +96,13 @@ namespace x86 {
             u32 size = context_.eax();
             u32 ret = heap_->current;
             ret = ((ret+3)/4)*4; // Align to 4 bytes
-            heap_->current = ret + size;
-            verify(heap_->current < heap_->base + heap_->size, []() {
-                fmt::print("Heap is full");
-            });
+            u32 nextCurrent = ret + size;
+            if(nextCurrent >= heap_->base + heap_->size) {
+                notify(false, "Heap is full");
+                context_.set_eax(0x0);
+                return;
+            }
+            heap_->current = nextCurrent;
             context_.set_eax(ret);
         }
         std::string toString() const override {
