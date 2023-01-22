@@ -2,6 +2,7 @@
 #include <stdarg.h>
 #include <locale.h>
 #include <wchar.h>
+#include <pthread.h>
 #include "fmt/printf.h"
 
 extern "C" {
@@ -198,6 +199,10 @@ extern "C" {
         static int secondsSinceEpoch = 0xeb0c;
         ++secondsSinceEpoch;
         return secondsSinceEpoch;
+    }
+
+    int fakelibc$__pthread_key_create(pthread_key_t* key, void (*destructor)(void*)) {
+        return 0;
     }
 
 }
