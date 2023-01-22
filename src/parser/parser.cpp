@@ -180,6 +180,7 @@ namespace x86 {
         OpcodeBytes opbytes = opcodeBytesFromString(parts[1]);
         
         std::string_view instructionString = parts[2];
+        instructionString = removeLock(instructionString);
         auto ptr = parseInstruction(opbytes, address, instructionString);
         // if(!ptr) {
         //     fmt::print("{:40} {:40}: {}\n", instructionString, "???", "fail");

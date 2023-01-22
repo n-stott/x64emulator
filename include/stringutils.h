@@ -49,6 +49,11 @@ inline std::string filenameFromPath(const std::string& filepath) {
     return filenameNoExtension;
 }
 
+inline std::string_view removeLock(std::string_view sv) {
+    if(sv.substr(0, 5) == "lock ") return sv.substr(5);
+    return sv;
+}
+
 inline std::string removeOverride(std::string_view sv) {
     size_t dsOverride = sv.find("ds:");
     if(dsOverride != std::string_view::npos) {
