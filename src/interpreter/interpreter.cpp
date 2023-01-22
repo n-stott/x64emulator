@@ -1353,19 +1353,48 @@ namespace x86 {
     void Interpreter::exec(const Cmp<Addr<Size::DWORD, BISD>, R32>& ins) { execSub32Impl(mmu_.read32(resolve(ins.src1)), get(ins.src2)); }
     void Interpreter::exec(const Cmp<Addr<Size::DWORD, BISD>, Imm<u32>>& ins) { execSub32Impl(mmu_.read32(resolve(ins.src1)), get(ins.src2)); }
 
+    template<typename Dst>
+    void Interpreter::execCmpxchg32Impl(Dst dst, u32 src) {
+        if constexpr(std::is_same_v<Dst, R32>) {
+            u32 eax = get(R32::EAX);
+            u32 dest = get(dst);
+            if(eax == dest) {
+                execSub32Impl(eax, dest);
+                flags_.zero = 1;
+                set(dst, src);
+            } else {
+                execSub32Impl(eax, dest);
+                flags_.zero = 0;
+                set(R32::EAX, dest);
+            }
+        } else {
+            u32 eax = get(R32::EAX);
+            u32 dest = get(resolve(dst));
+            if(eax == dest) {
+                execSub32Impl(eax, dest);
+                flags_.zero = 1;
+                set(resolve(dst), src);
+            } else {
+                execSub32Impl(eax, dest);
+                flags_.zero = 0;
+                set(R32::EAX, dest);
+            }
+        }
+    }
+
     void Interpreter::exec(const Cmpxchg<R8, R8>& ins) { TODO(ins); }
     void Interpreter::exec(const Cmpxchg<R16, R16>& ins) { TODO(ins); }
     void Interpreter::exec(const Cmpxchg<Addr<Size::WORD, BIS>, R16>& ins) { TODO(ins); }
-    void Interpreter::exec(const Cmpxchg<R32, R32>& ins) { TODO(ins); }
-    void Interpreter::exec(const Cmpxchg<R32, Imm<u32>>& ins) { TODO(ins); }
+    void Interpreter::exec(const Cmpxchg<R32, R32>& ins) { execCmpxchg32Impl(ins.src1, get(ins.src2)); }
+    void Interpreter::exec(const Cmpxchg<R32, Imm<u32>>& ins) { execCmpxchg32Impl(ins.src1, get(ins.src2)); }
     void Interpreter::exec(const Cmpxchg<Addr<Size::BYTE, B>, R8>& ins) { TODO(ins); }
     void Interpreter::exec(const Cmpxchg<Addr<Size::BYTE, BD>, R8>& ins) { TODO(ins); }
     void Interpreter::exec(const Cmpxchg<Addr<Size::BYTE, BIS>, R8>& ins) { TODO(ins); }
     void Interpreter::exec(const Cmpxchg<Addr<Size::BYTE, BISD>, R8>& ins) { TODO(ins); }
-    void Interpreter::exec(const Cmpxchg<Addr<Size::DWORD, B>, R32>& ins) { TODO(ins); }
-    void Interpreter::exec(const Cmpxchg<Addr<Size::DWORD, BD>, R32>& ins) { TODO(ins); }
-    void Interpreter::exec(const Cmpxchg<Addr<Size::DWORD, BIS>, R32>& ins) { TODO(ins); }
-    void Interpreter::exec(const Cmpxchg<Addr<Size::DWORD, BISD>, R32>& ins) { TODO(ins); }
+    void Interpreter::exec(const Cmpxchg<Addr<Size::DWORD, B>, R32>& ins) { execCmpxchg32Impl(ins.src1, get(ins.src2)); }
+    void Interpreter::exec(const Cmpxchg<Addr<Size::DWORD, BD>, R32>& ins) { execCmpxchg32Impl(ins.src1, get(ins.src2)); }
+    void Interpreter::exec(const Cmpxchg<Addr<Size::DWORD, BIS>, R32>& ins) { execCmpxchg32Impl(ins.src1, get(ins.src2)); }
+    void Interpreter::exec(const Cmpxchg<Addr<Size::DWORD, BISD>, R32>& ins) { execCmpxchg32Impl(ins.src1, get(ins.src2)); }
 
     template<typename Dst>
     void Interpreter::execSet(Cond cond, Dst dst) {

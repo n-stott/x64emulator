@@ -574,6 +574,9 @@ namespace x86 {
         void exec(const Cmp<Addr<Size::DWORD, BISD>, R32>&) override;
         void exec(const Cmp<Addr<Size::DWORD, BISD>, Imm<u32>>&) override;
 
+        template<typename Dst>
+        void execCmpxchg32Impl(Dst dst, u32 src);
+
         void exec(const Cmpxchg<R8, R8>&) override;
         void exec(const Cmpxchg<R16, R16>&) override;
         void exec(const Cmpxchg<Addr<Size::WORD, BIS>, R16>&) override;
