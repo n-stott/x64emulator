@@ -43,7 +43,20 @@ void test2() {
     }
 }
 
+void test3() {
+    int success = 0;
+    for(int i = 0; i < 0x100; ++i) {
+        void* ptr = malloc(0x100000);
+        success += !!ptr;
+        free(ptr);
+    }
+    if(success == 0) puts("Failed all allocations");
+    else if(success == 0x100) puts("Success on all allocations");
+    else puts("Only partial allocation success");
+}
+
 int main() {
     test1();
     test2();
+    test3();
 }
