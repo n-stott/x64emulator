@@ -71,6 +71,10 @@ namespace x86 {
         Ptr<Size::DWORD> resolve(Addr<Size::DWORD, ISD> addr) const { return regs_.resolve(addr); }
         Ptr<Size::DWORD> resolve(Addr<Size::DWORD, BISD> addr) const { return regs_.resolve(addr); }
 
+        Ptr<Size::DWORD> resolve(const M32& m32) const {
+            return std::visit([&](auto&& arg) -> Ptr32 { return resolve(arg); }, m32);
+        }
+
         void set(R8 reg, u8 value) { regs_.set(reg, value); }
         void set(R16 reg, u16 value) { regs_.set(reg, value); }
         void set(R32 reg, u32 value) { regs_.set(reg, value); }
@@ -214,14 +218,8 @@ namespace x86 {
         void exec(const Add<R32, Addr<Size::DWORD, BD>>&) override;
         void exec(const Add<R32, Addr<Size::DWORD, BIS>>&) override;
         void exec(const Add<R32, Addr<Size::DWORD, BISD>>&) override;
-        void exec(const Add<Addr<Size::DWORD, B>, R32>&) override;
-        void exec(const Add<Addr<Size::DWORD, BD>, R32>&) override;
-        void exec(const Add<Addr<Size::DWORD, BIS>, R32>&) override;
-        void exec(const Add<Addr<Size::DWORD, BISD>, R32>&) override;
-        void exec(const Add<Addr<Size::DWORD, B>, Imm<u32>>&) override;
-        void exec(const Add<Addr<Size::DWORD, BD>, Imm<u32>>&) override;
-        void exec(const Add<Addr<Size::DWORD, BIS>, Imm<u32>>&) override;
-        void exec(const Add<Addr<Size::DWORD, BISD>, Imm<u32>>&) override;
+        void exec(const Add<M32, R32>&) override;
+        void exec(const Add<M32, Imm<u32>>&) override;
 
         void exec(const Adc<R32, R32>&) override;
         void exec(const Adc<R32, Imm<u32>>&) override;

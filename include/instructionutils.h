@@ -143,6 +143,10 @@ namespace utils {
                     toString(addr.encoding));
     }
 
+    inline std::string toString(const M32& m32) {
+        return std::visit([](auto&& arg) -> std::string { return toString(arg); }, m32);
+    }
+
     template<typename Src>
     inline std::string toString(const Push<Src>& ins) {
         return fmt::format("{:8}{}", "push", toString(ins.src));

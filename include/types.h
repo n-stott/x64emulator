@@ -160,21 +160,21 @@ namespace x86 {
     using M8 = std::variant<Addr<Size::BYTE, B>,
                              Addr<Size::BYTE, BD>,
                              Addr<Size::BYTE, BIS>,
-                             Addr<Size::BYTE, BIS>,
+                             Addr<Size::BYTE, ISD>,
                              Addr<Size::BYTE, BISD>>;
     using RM8 = std::variant<R8, M8>;
 
     using M16 = std::variant<Addr<Size::WORD, B>,
                              Addr<Size::WORD, BD>,
                              Addr<Size::WORD, BIS>,
-                             Addr<Size::WORD, BIS>,
+                             Addr<Size::WORD, ISD>,
                              Addr<Size::WORD, BISD>>;
     using RM16 = std::variant<R16, M16>;
 
     using M32 = std::variant<Addr<Size::DWORD, B>,
                              Addr<Size::DWORD, BD>,
                              Addr<Size::DWORD, BIS>,
-                             Addr<Size::DWORD, BIS>,
+                             Addr<Size::DWORD, ISD>,
                              Addr<Size::DWORD, BISD>>;
     using RM32 = std::variant<R32, M32>;
 

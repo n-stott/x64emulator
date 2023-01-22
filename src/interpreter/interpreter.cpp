@@ -450,14 +450,8 @@ namespace x86 {
     void Interpreter::exec(const Add<R32, Addr<Size::DWORD, BD>>& ins) { set(ins.dst, execAdd32Impl(get(ins.dst), get(resolve(ins.src)))); }
     void Interpreter::exec(const Add<R32, Addr<Size::DWORD, BIS>>& ins) { set(ins.dst, execAdd32Impl(get(ins.dst), get(resolve(ins.src)))); }
     void Interpreter::exec(const Add<R32, Addr<Size::DWORD, BISD>>& ins) { set(ins.dst, execAdd32Impl(get(ins.dst), get(resolve(ins.src)))); }
-    void Interpreter::exec(const Add<Addr<Size::DWORD, B>, R32>& ins) { set(resolve(ins.dst), execAdd32Impl(get(resolve(ins.dst)), get(ins.src))); }
-    void Interpreter::exec(const Add<Addr<Size::DWORD, BD>, R32>& ins) { set(resolve(ins.dst), execAdd32Impl(get(resolve(ins.dst)), get(ins.src))); }
-    void Interpreter::exec(const Add<Addr<Size::DWORD, BIS>, R32>& ins) { set(resolve(ins.dst), execAdd32Impl(get(resolve(ins.dst)), get(ins.src))); }
-    void Interpreter::exec(const Add<Addr<Size::DWORD, BISD>, R32>& ins) { set(resolve(ins.dst), execAdd32Impl(get(resolve(ins.dst)), get(ins.src))); }
-    void Interpreter::exec(const Add<Addr<Size::DWORD, B>, Imm<u32>>& ins) { set(resolve(ins.dst), execAdd32Impl(get(resolve(ins.dst)), get(ins.src))); }
-    void Interpreter::exec(const Add<Addr<Size::DWORD, BD>, Imm<u32>>& ins) { set(resolve(ins.dst), execAdd32Impl(get(resolve(ins.dst)), get(ins.src))); }
-    void Interpreter::exec(const Add<Addr<Size::DWORD, BIS>, Imm<u32>>& ins) { set(resolve(ins.dst), execAdd32Impl(get(resolve(ins.dst)), get(ins.src))); }
-    void Interpreter::exec(const Add<Addr<Size::DWORD, BISD>, Imm<u32>>& ins) { set(resolve(ins.dst), execAdd32Impl(get(resolve(ins.dst)), get(ins.src))); }
+    void Interpreter::exec(const Add<M32, R32>& ins) { set(resolve(ins.dst), execAdd32Impl(get(resolve(ins.dst)), get(ins.src))); }
+    void Interpreter::exec(const Add<M32, Imm<u32>>& ins) { set(resolve(ins.dst), execAdd32Impl(get(resolve(ins.dst)), get(ins.src))); }
 
     void Interpreter::exec(const Adc<R32, R32>& ins) { set(ins.dst, execAdc32Impl(get(ins.dst), get(ins.src))); }
     void Interpreter::exec(const Adc<R32, Imm<u32>>& ins) { set(ins.dst, execAdc32Impl(get(ins.dst), get(ins.src))); }

@@ -15,14 +15,8 @@ namespace x86 {
         virtual void exec(const Add<R32, Addr<Size::DWORD, BD>>&) = 0;
         virtual void exec(const Add<R32, Addr<Size::DWORD, BIS>>&) = 0;
         virtual void exec(const Add<R32, Addr<Size::DWORD, BISD>>&) = 0;
-        virtual void exec(const Add<Addr<Size::DWORD, B>, R32>&) = 0;
-        virtual void exec(const Add<Addr<Size::DWORD, BD>, R32>&) = 0;
-        virtual void exec(const Add<Addr<Size::DWORD, BIS>, R32>&) = 0;
-        virtual void exec(const Add<Addr<Size::DWORD, BISD>, R32>&) = 0;
-        virtual void exec(const Add<Addr<Size::DWORD, B>, Imm<u32>>&) = 0;
-        virtual void exec(const Add<Addr<Size::DWORD, BD>, Imm<u32>>&) = 0;
-        virtual void exec(const Add<Addr<Size::DWORD, BIS>, Imm<u32>>&) = 0;
-        virtual void exec(const Add<Addr<Size::DWORD, BISD>, Imm<u32>>&) = 0;
+        virtual void exec(const Add<M32, R32>&) = 0;
+        virtual void exec(const Add<M32, Imm<u32>>&) = 0;
 
         virtual void exec(const Adc<R32, R32>&) = 0;
         virtual void exec(const Adc<R32, Imm<u32>>&) = 0;
