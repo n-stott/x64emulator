@@ -248,6 +248,7 @@ namespace x86 {
         if(name == "setne") return parseSet<Cond::NE>(opbytes, address, operands);
         if(name == "test") return parseTest(opbytes, address, operands);
         if(name == "cmp") return parseCmp(opbytes, address, operands);
+        if(name == "cmpxchg") return parseCmpxchg(opbytes, address, operands);
         if(name == "jmp") return parseJmp(opbytes, address, operands, decorator);
         if(name == "jne") return parseJne(opbytes, address, operands, decorator);
         if(name == "je") return parseJe(opbytes, address, operands, decorator);
@@ -1430,6 +1431,39 @@ namespace x86 {
         if(DoubleBISsrc1 && imm32src2) return make_wrapper<Cmp<Addr<Size::DWORD, BIS>, Imm<u32>>>(address, DoubleBISsrc1.value(), imm32src2.value());
         if(DoubleBISDsrc1 && r32src2) return make_wrapper<Cmp<Addr<Size::DWORD, BISD>, R32>>(address, DoubleBISDsrc1.value(), r32src2.value());
         if(DoubleBISDsrc1 && imm32src2) return make_wrapper<Cmp<Addr<Size::DWORD, BISD>, Imm<u32>>>(address, DoubleBISDsrc1.value(), imm32src2.value());
+        return make_failed(address, operandsString);
+    }
+
+    std::unique_ptr<X86Instruction> InstructionParser::parseCmpxchg(const OpcodeBytes&, u32 address, std::string_view operandsString) {
+        std::vector<std::string_view> operands = split(operandsString, ',');
+        if(operands.size() != 2) return {};
+        auto r8src1 = asRegister8(operands[0]);
+        auto r16src1 = asRegister16(operands[0]);
+        auto r32src1 = asRegister32(operands[0]);
+        auto ByteBsrc1 = asByteB(operands[0]);
+        auto ByteBDsrc1 = asByteBD(operands[0]);
+        auto ByteBISsrc1 = asByteBIS(operands[0]);
+        auto ByteBISDsrc1 = asByteBISD(operands[0]);
+        auto WordBISsrc1 = asWordBIS(operands[0]);
+        auto DoubleBsrc1 = asDoubleB(operands[0]);
+        auto DoubleBDsrc1 = asDoubleBD(operands[0]);
+        auto DoubleBISsrc1 = asDoubleBIS(operands[0]);
+        auto DoubleBISDsrc1 = asDoubleBISD(operands[0]);
+        auto r8src2 = asRegister8(operands[1]);
+        auto r16src2 = asRegister16(operands[1]);
+        auto r32src2 = asRegister32(operands[1]);
+        if(r8src1 && r8src2) return make_wrapper<Cmpxchg<R8, R8>>(address, r8src1.value(), r8src2.value());
+        if(r16src1 && r16src2) return make_wrapper<Cmpxchg<R16, R16>>(address, r16src1.value(), r16src2.value());
+        if(WordBISsrc1 && r16src2) return make_wrapper<Cmpxchg<Addr<Size::WORD, BIS>, R16>>(address, WordBISsrc1.value(), r16src2.value());
+        if(r32src1 && r32src2) return make_wrapper<Cmpxchg<R32, R32>>(address, r32src1.value(), r32src2.value());
+        if(ByteBsrc1 && r8src2) return make_wrapper<Cmpxchg<Addr<Size::BYTE, B>, R8>>(address, ByteBsrc1.value(), r8src2.value());
+        if(ByteBDsrc1 && r8src2) return make_wrapper<Cmpxchg<Addr<Size::BYTE, BD>, R8>>(address, ByteBDsrc1.value(), r8src2.value());
+        if(ByteBISsrc1 && r8src2) return make_wrapper<Cmpxchg<Addr<Size::BYTE, BIS>, R8>>(address, ByteBISsrc1.value(), r8src2.value());
+        if(ByteBISDsrc1 && r8src2) return make_wrapper<Cmpxchg<Addr<Size::BYTE, BISD>, R8>>(address, ByteBISDsrc1.value(), r8src2.value());
+        if(DoubleBsrc1 && r32src2) return make_wrapper<Cmpxchg<Addr<Size::DWORD, B>, R32>>(address, DoubleBsrc1.value(), r32src2.value());
+        if(DoubleBDsrc1 && r32src2) return make_wrapper<Cmpxchg<Addr<Size::DWORD, BD>, R32>>(address, DoubleBDsrc1.value(), r32src2.value());
+        if(DoubleBISsrc1 && r32src2) return make_wrapper<Cmpxchg<Addr<Size::DWORD, BIS>, R32>>(address, DoubleBISsrc1.value(), r32src2.value());
+        if(DoubleBISDsrc1 && r32src2) return make_wrapper<Cmpxchg<Addr<Size::DWORD, BISD>, R32>>(address, DoubleBISDsrc1.value(), r32src2.value());
         return make_failed(address, operandsString);
     }
 

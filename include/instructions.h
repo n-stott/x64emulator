@@ -246,6 +246,12 @@ namespace x86 {
         Src2 src2;
     };
 
+    template<typename Src1, typename Src2>
+    struct Cmpxchg {
+        Src1 src1;
+        Src2 src2;
+    };
+
     template<typename Dst>
     struct Jmp {
         Dst symbolAddress;

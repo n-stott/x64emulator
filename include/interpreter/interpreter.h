@@ -574,6 +574,20 @@ namespace x86 {
         void exec(const Cmp<Addr<Size::DWORD, BISD>, R32>&) override;
         void exec(const Cmp<Addr<Size::DWORD, BISD>, Imm<u32>>&) override;
 
+        void exec(const Cmpxchg<R8, R8>&) override;
+        void exec(const Cmpxchg<R16, R16>&) override;
+        void exec(const Cmpxchg<Addr<Size::WORD, BIS>, R16>&) override;
+        void exec(const Cmpxchg<R32, R32>&) override;
+        void exec(const Cmpxchg<R32, Imm<u32>>&) override;
+        void exec(const Cmpxchg<Addr<Size::BYTE, B>, R8>&) override;
+        void exec(const Cmpxchg<Addr<Size::BYTE, BD>, R8>&) override;
+        void exec(const Cmpxchg<Addr<Size::BYTE, BIS>, R8>&) override;
+        void exec(const Cmpxchg<Addr<Size::BYTE, BISD>, R8>&) override;
+        void exec(const Cmpxchg<Addr<Size::DWORD, B>, R32>&) override;
+        void exec(const Cmpxchg<Addr<Size::DWORD, BD>, R32>&) override;
+        void exec(const Cmpxchg<Addr<Size::DWORD, BIS>, R32>&) override;
+        void exec(const Cmpxchg<Addr<Size::DWORD, BISD>, R32>&) override;
+
         void exec(const Set<Cond::AE, R8>&) override;
         void exec(const Set<Cond::AE, Addr<Size::BYTE, B>>&) override;
         void exec(const Set<Cond::AE, Addr<Size::BYTE, BD>>&) override;

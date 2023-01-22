@@ -369,6 +369,20 @@ namespace x86 {
         virtual void exec(const Cmp<Addr<Size::DWORD, BISD>, R32>&) = 0;
         virtual void exec(const Cmp<Addr<Size::DWORD, BISD>, Imm<u32>>&) = 0;
 
+        virtual void exec(const Cmpxchg<R8, R8>&) = 0;
+        virtual void exec(const Cmpxchg<R16, R16>&) = 0;
+        virtual void exec(const Cmpxchg<Addr<Size::WORD, BIS>, R16>&) = 0;
+        virtual void exec(const Cmpxchg<R32, R32>&) = 0;
+        virtual void exec(const Cmpxchg<R32, Imm<u32>>&) = 0;
+        virtual void exec(const Cmpxchg<Addr<Size::BYTE, B>, R8>&) = 0;
+        virtual void exec(const Cmpxchg<Addr<Size::BYTE, BD>, R8>&) = 0;
+        virtual void exec(const Cmpxchg<Addr<Size::BYTE, BIS>, R8>&) = 0;
+        virtual void exec(const Cmpxchg<Addr<Size::BYTE, BISD>, R8>&) = 0;
+        virtual void exec(const Cmpxchg<Addr<Size::DWORD, B>, R32>&) = 0;
+        virtual void exec(const Cmpxchg<Addr<Size::DWORD, BD>, R32>&) = 0;
+        virtual void exec(const Cmpxchg<Addr<Size::DWORD, BIS>, R32>&) = 0;
+        virtual void exec(const Cmpxchg<Addr<Size::DWORD, BISD>, R32>&) = 0;
+
         virtual void exec(const Set<Cond::AE, R8>&) = 0;
         virtual void exec(const Set<Cond::AE, Addr<Size::BYTE, B>>&) = 0;
         virtual void exec(const Set<Cond::AE, Addr<Size::BYTE, BD>>&) = 0;

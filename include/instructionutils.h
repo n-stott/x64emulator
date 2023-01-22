@@ -353,6 +353,11 @@ namespace utils {
         return fmt::format("{:7}{},{}", "cmp", toString(ins.src1), toString(ins.src2));
     }
 
+    template<typename Dst, typename Src>
+    inline std::string toString(const Cmpxchg<Dst, Src>& ins) {
+        return fmt::format("{:7}{},{}", "cmpxchg", toString(ins.src1), toString(ins.src2));
+    }
+
     template<typename Dst>
     inline std::string toString(const Jmp<Dst>& ins) {
         if(ins.symbolName) {

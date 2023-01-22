@@ -82,6 +82,7 @@ namespace x86 {
 
         static std::unique_ptr<X86Instruction> parseTest(const OpcodeBytes& opbytes, u32 address, std::string_view operands);
         static std::unique_ptr<X86Instruction> parseCmp(const OpcodeBytes& opbytes, u32 address, std::string_view operands);
+        static std::unique_ptr<X86Instruction> parseCmpxchg(const OpcodeBytes& opbytes, u32 address, std::string_view operands);
 
         static std::unique_ptr<X86Instruction> parseJmp(const OpcodeBytes& opbytes, u32 address, std::string_view operands, std::string_view decorator);
         static std::unique_ptr<X86Instruction> parseJne(const OpcodeBytes& opbytes, u32 address, std::string_view operands, std::string_view decorator);
