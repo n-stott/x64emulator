@@ -577,23 +577,24 @@ namespace x86 {
         return Addr<Size::DWORD, BISD>{bisd.value()};
     }
 
+    std::optional<M32> asMemory32(std::string_view sv) {
+        if(auto addrDoubleB = asDoubleB(sv)) return M32(addrDoubleB.value());
+        if(auto addrDoubleBD = asDoubleBD(sv)) return M32(addrDoubleBD.value());
+        if(auto addrDoubleBIS = asDoubleBIS(sv)) return M32(addrDoubleBIS.value());
+        if(auto addrDoubleISD = asDoubleISD(sv)) return M32(addrDoubleISD.value());
+        if(auto addrDoubleBISD = asDoubleBISD(sv)) return M32(addrDoubleBISD.value());
+        return {};
+    }
+
     std::unique_ptr<X86Instruction> InstructionParser::parsePush(const OpcodeBytes&, u32 address, std::string_view operandString) {
         auto r32 = asRegister32(operandString);
         auto imm8 = asImmediate8(operandString);
         auto imm32 = asImmediate32(operandString);
-        auto addrDoubleBsrc = asDoubleB(operandString);
-        auto addrDoubleBDsrc = asDoubleBD(operandString);
-        auto addrDoubleBISsrc = asDoubleBIS(operandString);
-        auto addrDoubleISDsrc = asDoubleISD(operandString);
-        auto addrDoubleBISDsrc = asDoubleBISD(operandString);
+        auto m32src = asMemory32(operandString);
         if(r32) return make_wrapper<Push<R32>>(address, r32.value());
         if(imm8) return make_wrapper<Push<SignExtended<u8>>>(address, imm8.value());
         if(imm32) return make_wrapper<Push<Imm<u32>>>(address, imm32.value());
-        if(addrDoubleBsrc) return make_wrapper<Push<M32>>(address, addrDoubleBsrc.value());
-        if(addrDoubleBDsrc) return make_wrapper<Push<M32>>(address, addrDoubleBDsrc.value());
-        if(addrDoubleBISsrc) return make_wrapper<Push<M32>>(address, addrDoubleBISsrc.value());
-        if(addrDoubleISDsrc) return make_wrapper<Push<M32>>(address, addrDoubleISDsrc.value());
-        if(addrDoubleBISDsrc) return make_wrapper<Push<M32>>(address, addrDoubleBISDsrc.value());
+        if(m32src) return make_wrapper<Push<M32>>(address, m32src.value());
         return make_failed(address, operandString);
     }
 
@@ -633,14 +634,8 @@ namespace x86 {
         auto addrWordBISsrc = asWordBIS(operands[1]);
         auto addrWordBISDdst = asWordBISD(operands[0]);
         auto addrWordBISDsrc = asWordBISD(operands[1]);
-        auto addrDoubleBdst = asDoubleB(operands[0]);
-        auto addrDoubleBsrc = asDoubleB(operands[1]);
-        auto addrDoubleBDdst = asDoubleBD(operands[0]);
-        auto addrDoubleBDsrc = asDoubleBD(operands[1]);
-        auto addrDoubleBISdst = asDoubleBIS(operands[0]);
-        auto addrDoubleBISsrc = asDoubleBIS(operands[1]);
-        auto addrDoubleBISDdst = asDoubleBISD(operands[0]);
-        auto addrDoubleBISDsrc = asDoubleBISD(operands[1]);
+        auto m32dst = asMemory32(operands[0]);
+        auto m32src = asMemory32(operands[1]);
         if(r8dst && r8src) return make_wrapper<Mov<R8, R8>>(address, r8dst.value(), r8src.value());
         if(r8dst && imm8src) return make_wrapper<Mov<R8, Imm<u8>>>(address, r8dst.value(), imm8src.value());
         if(r8dst && addrByteBsrc) return make_wrapper<Mov<R8, Addr<Size::BYTE, B>>>(address, r8dst.value(), addrByteBsrc.value());
@@ -655,10 +650,7 @@ namespace x86 {
         if(r16dst && addrWordBISDsrc) return make_wrapper<Mov<R16, Addr<Size::WORD, BISD>>>(address, r16dst.value(), addrWordBISDsrc.value());
         if(r32dst && r32src) return make_wrapper<Mov<R32, R32>>(address, r32dst.value(), r32src.value());
         if(r32dst && imm32src) return make_wrapper<Mov<R32, Imm<u32>>>(address, r32dst.value(), imm32src.value());
-        if(r32dst && addrDoubleBsrc) return make_wrapper<Mov<R32, M32>>(address, r32dst.value(), addrDoubleBsrc.value());
-        if(r32dst && addrDoubleBDsrc) return make_wrapper<Mov<R32, M32>>(address, r32dst.value(), addrDoubleBDsrc.value());
-        if(r32dst && addrDoubleBISsrc) return make_wrapper<Mov<R32, M32>>(address, r32dst.value(), addrDoubleBISsrc.value());
-        if(r32dst && addrDoubleBISDsrc) return make_wrapper<Mov<R32, M32>>(address, r32dst.value(), addrDoubleBISDsrc.value());
+        if(r32dst && m32src) return make_wrapper<Mov<R32, M32>>(address, r32dst.value(), m32src.value());
         if(addrByteBdst && r8src) return make_wrapper<Mov<Addr<Size::BYTE, B>, R8>>(address, addrByteBdst.value(), r8src.value());
         if(addrByteBdst && imm8src) return make_wrapper<Mov<Addr<Size::BYTE, B>, Imm<u8>>>(address, addrByteBdst.value(), imm8src.value());
         if(addrByteBDdst && r8src) return make_wrapper<Mov<Addr<Size::BYTE, BD>, R8>>(address, addrByteBDdst.value(), r8src.value());
@@ -675,14 +667,8 @@ namespace x86 {
         if(addrWordBISdst && imm16src) return make_wrapper<Mov<Addr<Size::WORD, BIS>, Imm<u16>>>(address, addrWordBISdst.value(), imm16src.value());
         if(addrWordBISDdst && r16src) return make_wrapper<Mov<Addr<Size::WORD, BISD>, R16>>(address, addrWordBISDdst.value(), r16src.value());
         if(addrWordBISDdst && imm16src) return make_wrapper<Mov<Addr<Size::WORD, BISD>, Imm<u16>>>(address, addrWordBISDdst.value(), imm16src.value());
-        if(addrDoubleBdst && r32src) return make_wrapper<Mov<M32, R32>>(address, addrDoubleBdst.value(), r32src.value());
-        if(addrDoubleBdst && imm32src) return make_wrapper<Mov<M32, Imm<u32>>>(address, addrDoubleBdst.value(), imm32src.value());
-        if(addrDoubleBDdst && r32src) return make_wrapper<Mov<M32, R32>>(address, addrDoubleBDdst.value(), r32src.value());
-        if(addrDoubleBDdst && imm32src) return make_wrapper<Mov<M32, Imm<u32>>>(address, addrDoubleBDdst.value(), imm32src.value());
-        if(addrDoubleBISdst && r32src) return make_wrapper<Mov<M32, R32>>(address, addrDoubleBISdst.value(), r32src.value());
-        if(addrDoubleBISdst && imm32src) return make_wrapper<Mov<M32, Imm<u32>>>(address, addrDoubleBISdst.value(), imm32src.value());
-        if(addrDoubleBISDdst && r32src) return make_wrapper<Mov<M32, R32>>(address, addrDoubleBISDdst.value(), r32src.value());
-        if(addrDoubleBISDdst && imm32src) return make_wrapper<Mov<M32, Imm<u32>>>(address, addrDoubleBISDdst.value(), imm32src.value());
+        if(m32dst && r32src) return make_wrapper<Mov<M32, R32>>(address, m32dst.value(), r32src.value());
+        if(m32dst && imm32src) return make_wrapper<Mov<M32, Imm<u32>>>(address, m32dst.value(), imm32src.value());
         return make_failed(address, operandsString);
     }
 
@@ -755,28 +741,13 @@ namespace x86 {
         auto r32dst = asRegister32(operands[0]);
         auto r32src = asRegister32(operands[1]);
         auto imm32src = asImmediate32(operands[1]);
-        auto addrDoubleBdst = asDoubleB(operands[0]);
-        auto addrDoubleBsrc = asDoubleB(operands[1]);
-        auto addrDoubleBDdst = asDoubleBD(operands[0]);
-        auto addrDoubleBDsrc = asDoubleBD(operands[1]);
-        auto addrDoubleBISdst = asDoubleBIS(operands[0]);
-        auto addrDoubleBISsrc = asDoubleBIS(operands[1]);
-        auto addrDoubleBISDdst = asDoubleBISD(operands[0]);
-        auto addrDoubleBISDsrc = asDoubleBISD(operands[1]);
+        auto m32dst = asMemory32(operands[0]);
+        auto m32src = asMemory32(operands[1]);
         if(r32dst && r32src) return make_wrapper<Add<R32, R32>>(address, r32dst.value(), r32src.value());
         if(r32dst && imm32src) return make_wrapper<Add<R32, Imm<u32>>>(address, r32dst.value(), imm32src.value());
-        if(r32dst && addrDoubleBsrc) return make_wrapper<Add<R32, M32>>(address, r32dst.value(), addrDoubleBsrc.value());
-        if(r32dst && addrDoubleBDsrc) return make_wrapper<Add<R32, M32>>(address, r32dst.value(), addrDoubleBDsrc.value());
-        if(r32dst && addrDoubleBISsrc) return make_wrapper<Add<R32, M32>>(address, r32dst.value(), addrDoubleBISsrc.value());
-        if(r32dst && addrDoubleBISDsrc) return make_wrapper<Add<R32, M32>>(address, r32dst.value(), addrDoubleBISDsrc.value());
-        if(addrDoubleBdst && r32src) return make_wrapper<Add<M32, R32>>(address, addrDoubleBdst.value(), r32src.value());
-        if(addrDoubleBDdst && r32src) return make_wrapper<Add<M32, R32>>(address, addrDoubleBDdst.value(), r32src.value());
-        if(addrDoubleBISdst && r32src) return make_wrapper<Add<M32, R32>>(address, addrDoubleBISdst.value(), r32src.value());
-        if(addrDoubleBISDdst && r32src) return make_wrapper<Add<M32, R32>>(address, addrDoubleBISDdst.value(), r32src.value());
-        if(addrDoubleBdst && imm32src) return make_wrapper<Add<M32, Imm<u32>>>(address, addrDoubleBdst.value(), imm32src.value());
-        if(addrDoubleBDdst && imm32src) return make_wrapper<Add<M32, Imm<u32>>>(address, addrDoubleBDdst.value(), imm32src.value());
-        if(addrDoubleBISdst && imm32src) return make_wrapper<Add<M32, Imm<u32>>>(address, addrDoubleBISdst.value(), imm32src.value());
-        if(addrDoubleBISDdst && imm32src) return make_wrapper<Add<M32, Imm<u32>>>(address, addrDoubleBISDdst.value(), imm32src.value());
+        if(r32dst && m32src) return make_wrapper<Add<R32, M32>>(address, r32dst.value(), m32src.value());
+        if(m32dst && r32src) return make_wrapper<Add<M32, R32>>(address, m32dst.value(), r32src.value());
+        if(m32dst && imm32src) return make_wrapper<Add<M32, Imm<u32>>>(address, m32dst.value(), imm32src.value());
         return make_failed(address, operandsString);
     }
 
@@ -786,28 +757,13 @@ namespace x86 {
         auto r32dst = asRegister32(operands[0]);
         auto r32src = asRegister32(operands[1]);
         auto imm32src = asImmediate32(operands[1]);
-        auto addrDoubleBdst = asDoubleB(operands[0]);
-        auto addrDoubleBsrc = asDoubleB(operands[1]);
-        auto addrDoubleBDdst = asDoubleBD(operands[0]);
-        auto addrDoubleBDsrc = asDoubleBD(operands[1]);
-        auto addrDoubleBISdst = asDoubleBIS(operands[0]);
-        auto addrDoubleBISsrc = asDoubleBIS(operands[1]);
-        auto addrDoubleBISDdst = asDoubleBISD(operands[0]);
-        auto addrDoubleBISDsrc = asDoubleBISD(operands[1]);
+        auto m32dst = asMemory32(operands[0]);
+        auto m32src = asMemory32(operands[1]);
         if(r32dst && r32src) return make_wrapper<Adc<R32, R32>>(address, r32dst.value(), r32src.value());
         if(r32dst && imm32src) return make_wrapper<Adc<R32, Imm<u32>>>(address, r32dst.value(), imm32src.value());
-        if(r32dst && addrDoubleBsrc) return make_wrapper<Adc<R32, M32>>(address, r32dst.value(), addrDoubleBsrc.value());
-        if(r32dst && addrDoubleBDsrc) return make_wrapper<Adc<R32, M32>>(address, r32dst.value(), addrDoubleBDsrc.value());
-        if(r32dst && addrDoubleBISsrc) return make_wrapper<Adc<R32, M32>>(address, r32dst.value(), addrDoubleBISsrc.value());
-        if(r32dst && addrDoubleBISDsrc) return make_wrapper<Adc<R32, M32>>(address, r32dst.value(), addrDoubleBISDsrc.value());
-        if(addrDoubleBdst && r32src) return make_wrapper<Adc<M32, R32>>(address, addrDoubleBdst.value(), r32src.value());
-        if(addrDoubleBDdst && r32src) return make_wrapper<Adc<M32, R32>>(address, addrDoubleBDdst.value(), r32src.value());
-        if(addrDoubleBISdst && r32src) return make_wrapper<Adc<M32, R32>>(address, addrDoubleBISdst.value(), r32src.value());
-        if(addrDoubleBISDdst && r32src) return make_wrapper<Adc<M32, R32>>(address, addrDoubleBISDdst.value(), r32src.value());
-        if(addrDoubleBdst && imm32src) return make_wrapper<Adc<M32, Imm<u32>>>(address, addrDoubleBdst.value(), imm32src.value());
-        if(addrDoubleBDdst && imm32src) return make_wrapper<Adc<M32, Imm<u32>>>(address, addrDoubleBDdst.value(), imm32src.value());
-        if(addrDoubleBISdst && imm32src) return make_wrapper<Adc<M32, Imm<u32>>>(address, addrDoubleBISdst.value(), imm32src.value());
-        if(addrDoubleBISDdst && imm32src) return make_wrapper<Adc<M32, Imm<u32>>>(address, addrDoubleBISDdst.value(), imm32src.value());
+        if(r32dst && m32src) return make_wrapper<Adc<R32, M32>>(address, r32dst.value(), m32src.value());
+        if(m32dst && r32src) return make_wrapper<Adc<M32, R32>>(address, m32dst.value(), r32src.value());
+        if(m32dst && imm32src) return make_wrapper<Adc<M32, Imm<u32>>>(address, m32dst.value(), imm32src.value());
         return make_failed(address, operandsString);
     }
 
@@ -818,14 +774,8 @@ namespace x86 {
         auto r32src = asRegister32(operands[1]);
         auto imm8src = asImmediate8(operands[1]);
         auto imm32src = asImmediate32(operands[1]);
-        auto addrDoubleBdst = asDoubleB(operands[0]);
-        auto addrDoubleBsrc = asDoubleB(operands[1]);
-        auto addrDoubleBDdst = asDoubleBD(operands[0]);
-        auto addrDoubleBDsrc = asDoubleBD(operands[1]);
-        auto addrDoubleBISdst = asDoubleBIS(operands[0]);
-        auto addrDoubleBISsrc = asDoubleBIS(operands[1]);
-        auto addrDoubleBISDdst = asDoubleBISD(operands[0]);
-        auto addrDoubleBISDsrc = asDoubleBISD(operands[1]);
+        auto m32dst = asMemory32(operands[0]);
+        auto m32src = asMemory32(operands[1]);
         if(r32dst && r32src) return make_wrapper<Sub<R32, R32>>(address, r32dst.value(), r32src.value());
         if(r32dst) {
             if(imm8src) {
@@ -837,18 +787,9 @@ namespace x86 {
                 return make_wrapper<Sub<R32, Imm<u32>>>(address, r32dst.value(), imm32src.value());
             }
         }
-        if(r32dst && addrDoubleBsrc) return make_wrapper<Sub<R32, M32>>(address, r32dst.value(), addrDoubleBsrc.value());
-        if(r32dst && addrDoubleBDsrc) return make_wrapper<Sub<R32, M32>>(address, r32dst.value(), addrDoubleBDsrc.value());
-        if(r32dst && addrDoubleBISsrc) return make_wrapper<Sub<R32, M32>>(address, r32dst.value(), addrDoubleBISsrc.value());
-        if(r32dst && addrDoubleBISDsrc) return make_wrapper<Sub<R32, M32>>(address, r32dst.value(), addrDoubleBISDsrc.value());
-        if(addrDoubleBdst && r32src) return make_wrapper<Sub<M32, R32>>(address, addrDoubleBdst.value(), r32src.value());
-        if(addrDoubleBDdst && r32src) return make_wrapper<Sub<M32, R32>>(address, addrDoubleBDdst.value(), r32src.value());
-        if(addrDoubleBISdst && r32src) return make_wrapper<Sub<M32, R32>>(address, addrDoubleBISdst.value(), r32src.value());
-        if(addrDoubleBISDdst && r32src) return make_wrapper<Sub<M32, R32>>(address, addrDoubleBISDdst.value(), r32src.value());
-        if(addrDoubleBdst && imm32src) return make_wrapper<Sub<M32, Imm<u32>>>(address, addrDoubleBdst.value(), imm32src.value());
-        if(addrDoubleBDdst && imm32src) return make_wrapper<Sub<M32, Imm<u32>>>(address, addrDoubleBDdst.value(), imm32src.value());
-        if(addrDoubleBISdst && imm32src) return make_wrapper<Sub<M32, Imm<u32>>>(address, addrDoubleBISdst.value(), imm32src.value());
-        if(addrDoubleBISDdst && imm32src) return make_wrapper<Sub<M32, Imm<u32>>>(address, addrDoubleBISDdst.value(), imm32src.value());
+        if(r32dst && m32src) return make_wrapper<Sub<R32, M32>>(address, r32dst.value(), m32src.value());
+        if(m32dst && r32src) return make_wrapper<Sub<M32, R32>>(address, m32dst.value(), r32src.value());
+        if(m32dst && imm32src) return make_wrapper<Sub<M32, Imm<u32>>>(address, m32dst.value(), imm32src.value());
         return make_failed(address, operandsString);
     }
 
@@ -859,53 +800,30 @@ namespace x86 {
         auto r32src = asRegister32(operands[1]);
         auto imm8src = asImmediate8(operands[1]);
         auto imm32src = asImmediate32(operands[1]);
-        auto addrDoubleBdst = asDoubleB(operands[0]);
-        auto addrDoubleBsrc = asDoubleB(operands[1]);
-        auto addrDoubleBDdst = asDoubleBD(operands[0]);
-        auto addrDoubleBDsrc = asDoubleBD(operands[1]);
-        auto addrDoubleBISdst = asDoubleBIS(operands[0]);
-        auto addrDoubleBISsrc = asDoubleBIS(operands[1]);
-        auto addrDoubleBISDdst = asDoubleBISD(operands[0]);
-        auto addrDoubleBISDsrc = asDoubleBISD(operands[1]);
+        auto m32dst = asMemory32(operands[0]);
+        auto m32src = asMemory32(operands[1]);
         if(r32dst && r32src) return make_wrapper<Sbb<R32, R32>>(address, r32dst.value(), r32src.value());
         if(r32dst && imm8src) return make_wrapper<Sbb<R32, SignExtended<u8>>>(address, r32dst.value(), SignExtended<u8>{imm8src.value()});
         if(r32dst && imm32src) return make_wrapper<Sbb<R32, Imm<u32>>>(address, r32dst.value(), imm32src.value());
-        if(r32dst && addrDoubleBsrc) return make_wrapper<Sbb<R32, M32>>(address, r32dst.value(), addrDoubleBsrc.value());
-        if(r32dst && addrDoubleBDsrc) return make_wrapper<Sbb<R32, M32>>(address, r32dst.value(), addrDoubleBDsrc.value());
-        if(r32dst && addrDoubleBISsrc) return make_wrapper<Sbb<R32, M32>>(address, r32dst.value(), addrDoubleBISsrc.value());
-        if(r32dst && addrDoubleBISDsrc) return make_wrapper<Sbb<R32, M32>>(address, r32dst.value(), addrDoubleBISDsrc.value());
-        if(addrDoubleBdst && r32src) return make_wrapper<Sbb<M32, R32>>(address, addrDoubleBdst.value(), r32src.value());
-        if(addrDoubleBDdst && r32src) return make_wrapper<Sbb<M32, R32>>(address, addrDoubleBDdst.value(), r32src.value());
-        if(addrDoubleBISdst && r32src) return make_wrapper<Sbb<M32, R32>>(address, addrDoubleBISdst.value(), r32src.value());
-        if(addrDoubleBISDdst && r32src) return make_wrapper<Sbb<M32, R32>>(address, addrDoubleBISDdst.value(), r32src.value());
-        if(addrDoubleBdst && imm32src) return make_wrapper<Sbb<M32, Imm<u32>>>(address, addrDoubleBdst.value(), imm32src.value());
-        if(addrDoubleBDdst && imm32src) return make_wrapper<Sbb<M32, Imm<u32>>>(address, addrDoubleBDdst.value(), imm32src.value());
-        if(addrDoubleBISdst && imm32src) return make_wrapper<Sbb<M32, Imm<u32>>>(address, addrDoubleBISdst.value(), imm32src.value());
-        if(addrDoubleBISDdst && imm32src) return make_wrapper<Sbb<M32, Imm<u32>>>(address, addrDoubleBISDdst.value(), imm32src.value());
+        if(r32dst && m32src) return make_wrapper<Sbb<R32, M32>>(address, r32dst.value(), m32src.value());
+        if(m32dst && r32src) return make_wrapper<Sbb<M32, R32>>(address, m32dst.value(), r32src.value());
+        if(m32dst && imm32src) return make_wrapper<Sbb<M32, Imm<u32>>>(address, m32dst.value(), imm32src.value());
         return make_failed(address, operandsString);
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseNeg(const OpcodeBytes&, u32 address, std::string_view operands) {
         auto r32dst = asRegister32(operands);
-        auto addrDoubleBdst = asDoubleB(operands);
-        auto addrDoubleBDdst = asDoubleBD(operands);
+        auto m32dst = asMemory32(operands);
         if(r32dst) return make_wrapper<Neg<R32>>(address, r32dst.value());
-        if(addrDoubleBdst) return make_wrapper<Neg<M32>>(address, addrDoubleBdst.value());
-        if(addrDoubleBDdst) return make_wrapper<Neg<M32>>(address, addrDoubleBDdst.value());
+        if(m32dst) return make_wrapper<Neg<M32>>(address, m32dst.value());
         return make_failed(address, operands);
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseMul(const OpcodeBytes&, u32 address, std::string_view operands) {
         auto r32dst = asRegister32(operands);
-        auto addrDoubleBdst = asDoubleB(operands);
-        auto addrDoubleBDdst = asDoubleBD(operands);
-        auto addrDoubleBISdst = asDoubleBIS(operands);
-        auto addrDoubleBISDdst = asDoubleBISD(operands);
+        auto m32dst = asMemory32(operands);
         if(r32dst) return make_wrapper<Mul<R32>>(address, r32dst.value());
-        if(addrDoubleBdst) return make_wrapper<Mul<M32>>(address, addrDoubleBdst.value());
-        if(addrDoubleBDdst) return make_wrapper<Mul<M32>>(address, addrDoubleBDdst.value());
-        if(addrDoubleBISdst) return make_wrapper<Mul<M32>>(address, addrDoubleBISdst.value());
-        if(addrDoubleBISDdst) return make_wrapper<Mul<M32>>(address, addrDoubleBISDdst.value());
+        if(m32dst) return make_wrapper<Mul<M32>>(address, m32dst.value());
         return make_failed(address, operands);
     }
 
@@ -914,34 +832,24 @@ namespace x86 {
         assert(operands.size() == 1 || operands.size() == 2 || operands.size() == 3);
         if(operands.size() == 1) {
             auto r32dst = asRegister32(operands[0]);
-            auto addrDoubleBDdst = asDoubleBD(operands[0]);
+            auto m32dst = asMemory32(operands[0]);
             if(r32dst) return make_wrapper<Imul1<R32>>(address, r32dst.value());
-            if(addrDoubleBDdst) return make_wrapper<Imul1<M32>>(address, addrDoubleBDdst.value());
+            if(m32dst) return make_wrapper<Imul1<M32>>(address, m32dst.value());
         }
         if(operands.size() == 2) {
             auto r32dst = asRegister32(operands[0]);
             auto r32src = asRegister32(operands[1]);
-            auto addrDoubleBsrc = asDoubleB(operands[1]);
-            auto addrDoubleBDsrc = asDoubleBD(operands[1]);
-            auto addrDoubleBISsrc = asDoubleBIS(operands[1]);
-            auto addrDoubleBISDsrc = asDoubleBISD(operands[1]);
+            auto m32src = asMemory32(operands[1]);
             if(r32dst && r32src) return make_wrapper<Imul2<R32, R32>>(address, r32dst.value(), r32src.value());
-            if(r32dst && addrDoubleBsrc) return make_wrapper<Imul2<R32, M32>>(address, r32dst.value(), addrDoubleBsrc.value());
-            if(r32dst && addrDoubleBDsrc) return make_wrapper<Imul2<R32, M32>>(address, r32dst.value(), addrDoubleBDsrc.value());
-            if(r32dst && addrDoubleBISsrc) return make_wrapper<Imul2<R32, M32>>(address, r32dst.value(), addrDoubleBISsrc.value());
-            if(r32dst && addrDoubleBISDsrc) return make_wrapper<Imul2<R32, M32>>(address, r32dst.value(), addrDoubleBISDsrc.value());
+            if(r32dst && m32src) return make_wrapper<Imul2<R32, M32>>(address, r32dst.value(), m32src.value());
         }
         if(operands.size() == 3) {
             auto r32dst = asRegister32(operands[0]);
             auto r32src1 = asRegister32(operands[1]);
-            auto addrDoubleBsrc1 = asDoubleB(operands[1]);
-            auto addrDoubleBDsrc1 = asDoubleBD(operands[1]);
-            auto addrDoubleBISsrc1 = asDoubleBIS(operands[1]);
+            auto m32src1 = asMemory32(operands[1]);
             auto imm32src2 = asImmediate32(operands[2]);
             if(r32dst && r32src1 && imm32src2) return make_wrapper<Imul3<R32, R32, Imm<u32>>>(address, r32dst.value(), r32src1.value(), imm32src2.value());
-            if(r32dst && addrDoubleBsrc1 && imm32src2) return make_wrapper<Imul3<R32, M32, Imm<u32>>>(address, r32dst.value(), addrDoubleBsrc1.value(), imm32src2.value());
-            if(r32dst && addrDoubleBDsrc1 && imm32src2) return make_wrapper<Imul3<R32, M32, Imm<u32>>>(address, r32dst.value(), addrDoubleBDsrc1.value(), imm32src2.value());
-            if(r32dst && addrDoubleBISsrc1 && imm32src2) return make_wrapper<Imul3<R32, M32, Imm<u32>>>(address, r32dst.value(), addrDoubleBISsrc1.value(), imm32src2.value());
+            if(r32dst && m32src1 && imm32src2) return make_wrapper<Imul3<R32, M32, Imm<u32>>>(address, r32dst.value(), m32src1.value(), imm32src2.value());
         }
         
         return make_failed(address, operandsString);
@@ -949,21 +857,17 @@ namespace x86 {
 
     std::unique_ptr<X86Instruction> InstructionParser::parseDiv(const OpcodeBytes&, u32 address, std::string_view operands) {
         auto r32dst = asRegister32(operands);
-        auto addrDoubleBdst = asDoubleB(operands);
-        auto addrDoubleBDdst = asDoubleBD(operands);
+        auto m32dst = asMemory32(operands);
         if(r32dst) return make_wrapper<Div<R32>>(address, r32dst.value());
-        if(addrDoubleBdst) return make_wrapper<Div<M32>>(address, addrDoubleBdst.value());
-        if(addrDoubleBDdst) return make_wrapper<Div<M32>>(address, addrDoubleBDdst.value());
+        if(m32dst) return make_wrapper<Div<M32>>(address, m32dst.value());
         return make_failed(address, operands);
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseIdiv(const OpcodeBytes&, u32 address, std::string_view operands) {
         auto r32dst = asRegister32(operands);
-        auto addrDoubleBdst = asDoubleB(operands);
-        auto addrDoubleBDdst = asDoubleBD(operands);
+        auto m32dst = asMemory32(operands);
         if(r32dst) return make_wrapper<Idiv<R32>>(address, r32dst.value());
-        if(addrDoubleBdst) return make_wrapper<Idiv<M32>>(address, addrDoubleBdst.value());
-        if(addrDoubleBDdst) return make_wrapper<Idiv<M32>>(address, addrDoubleBDdst.value());
+        if(m32dst) return make_wrapper<Idiv<M32>>(address, m32dst.value());
         return make_failed(address, operands);
     }
 
@@ -987,14 +891,8 @@ namespace x86 {
         auto addrWordBsrc = asWordB(operands[1]);
         auto addrWordBDdst = asWordBD(operands[0]);
         auto addrWordBDsrc = asWordBD(operands[1]);
-        auto addrDoubleBdst = asDoubleB(operands[0]);
-        auto addrDoubleBsrc = asDoubleB(operands[1]);
-        auto addrDoubleBDdst = asDoubleBD(operands[0]);
-        auto addrDoubleBDsrc = asDoubleBD(operands[1]);
-        auto addrDoubleBISdst = asDoubleBIS(operands[0]);
-        auto addrDoubleBISsrc = asDoubleBIS(operands[1]);
-        auto addrDoubleBISDdst = asDoubleBISD(operands[0]);
-        auto addrDoubleBISDsrc = asDoubleBISD(operands[1]);
+        auto m32dst = asMemory32(operands[0]);
+        auto m32src = asMemory32(operands[1]);
         if(r8dst && r8src) return make_wrapper<And<R8, R8>>(address, r8dst.value(), r8src.value());
         if(r8dst && imm8src) return make_wrapper<And<R8, Imm<u8>>>(address, r8dst.value(), imm8src.value());
         if(r8dst && addrByteBsrc) return make_wrapper<And<R8, Addr<Size::BYTE, B>>>(address, r8dst.value(), addrByteBsrc.value());
@@ -1003,10 +901,7 @@ namespace x86 {
         if(r16dst && addrWordBDsrc) return make_wrapper<And<R16, Addr<Size::WORD, BD>>>(address, r16dst.value(), addrWordBDsrc.value());
         if(r32dst && r32src) return make_wrapper<And<R32, R32>>(address, r32dst.value(), r32src.value());
         if(r32dst && imm32src) return make_wrapper<And<R32, Imm<u32>>>(address, r32dst.value(), imm32src.value());
-        if(r32dst && addrDoubleBsrc) return make_wrapper<And<R32, M32>>(address, r32dst.value(), addrDoubleBsrc.value());
-        if(r32dst && addrDoubleBDsrc) return make_wrapper<And<R32, M32>>(address, r32dst.value(), addrDoubleBDsrc.value());
-        if(r32dst && addrDoubleBISsrc) return make_wrapper<And<R32, M32>>(address, r32dst.value(), addrDoubleBISsrc.value());
-        if(r32dst && addrDoubleBISDsrc) return make_wrapper<And<R32, M32>>(address, r32dst.value(), addrDoubleBISDsrc.value());
+        if(r32dst && m32src) return make_wrapper<And<R32, M32>>(address, r32dst.value(), m32src.value());
         if(addrByteBdst && r8src) return make_wrapper<And<Addr<Size::BYTE, B>, R8>>(address, addrByteBdst.value(), r8src.value());
         if(addrByteBdst && imm8src) return make_wrapper<And<Addr<Size::BYTE, B>, Imm<u8>>>(address, addrByteBdst.value(), imm8src.value());
         if(addrByteBDdst && r8src) return make_wrapper<And<Addr<Size::BYTE, BD>, R8>>(address, addrByteBDdst.value(), r8src.value());
@@ -1014,12 +909,8 @@ namespace x86 {
         if(addrByteBISdst && imm8src) return make_wrapper<And<Addr<Size::BYTE, BIS>, Imm<u8>>>(address, addrByteBISdst.value(), imm8src.value());
         if(addrWordBdst && r16src) return make_wrapper<And<Addr<Size::WORD, B>, R16>>(address, addrWordBdst.value(), r16src.value());
         if(addrWordBDdst && r16src) return make_wrapper<And<Addr<Size::WORD, BD>, R16>>(address, addrWordBDdst.value(), r16src.value());
-        if(addrDoubleBdst && r32src) return make_wrapper<And<M32, R32>>(address, addrDoubleBdst.value(), r32src.value());
-        if(addrDoubleBdst && imm32src) return make_wrapper<And<M32, Imm<u32>>>(address, addrDoubleBdst.value(), imm32src.value());
-        if(addrDoubleBDdst && r32src) return make_wrapper<And<M32, R32>>(address, addrDoubleBDdst.value(), r32src.value());
-        if(addrDoubleBDdst && imm32src) return make_wrapper<And<M32, Imm<u32>>>(address, addrDoubleBDdst.value(), imm32src.value());
-        if(addrDoubleBISdst && r32src) return make_wrapper<And<M32, R32>>(address, addrDoubleBISdst.value(), r32src.value());
-        if(addrDoubleBISDdst && r32src) return make_wrapper<And<M32, R32>>(address, addrDoubleBISDdst.value(), r32src.value());
+        if(m32dst && r32src) return make_wrapper<And<M32, R32>>(address, m32dst.value(), r32src.value());
+        if(m32dst && imm32src) return make_wrapper<And<M32, Imm<u32>>>(address, m32dst.value(), imm32src.value());
         return make_failed(address, operandsString);
     }
 
@@ -1042,14 +933,8 @@ namespace x86 {
         auto addrWordBsrc = asWordB(operands[1]);
         auto addrWordBDdst = asWordBD(operands[0]);
         auto addrWordBDsrc = asWordBD(operands[1]);
-        auto addrDoubleBdst = asDoubleB(operands[0]);
-        auto addrDoubleBsrc = asDoubleB(operands[1]);
-        auto addrDoubleBDdst = asDoubleBD(operands[0]);
-        auto addrDoubleBDsrc = asDoubleBD(operands[1]);
-        auto addrDoubleBISdst = asDoubleBIS(operands[0]);
-        auto addrDoubleBISsrc = asDoubleBIS(operands[1]);
-        auto addrDoubleBISDdst = asDoubleBISD(operands[0]);
-        auto addrDoubleBISDsrc = asDoubleBISD(operands[1]);
+        auto m32dst = asMemory32(operands[0]);
+        auto m32src = asMemory32(operands[1]);
         if(r8dst && r8src) return make_wrapper<Or<R8, R8>>(address, r8dst.value(), r8src.value());
         if(r8dst && imm8src) return make_wrapper<Or<R8, Imm<u8>>>(address, r8dst.value(), imm8src.value());
         if(r8dst && addrByteBsrc) return make_wrapper<Or<R8, Addr<Size::BYTE, B>>>(address, r8dst.value(), addrByteBsrc.value());
@@ -1058,22 +943,15 @@ namespace x86 {
         if(r16dst && addrWordBDsrc) return make_wrapper<Or<R16, Addr<Size::WORD, BD>>>(address, r16dst.value(), addrWordBDsrc.value());
         if(r32dst && r32src) return make_wrapper<Or<R32, R32>>(address, r32dst.value(), r32src.value());
         if(r32dst && imm32src) return make_wrapper<Or<R32, Imm<u32>>>(address, r32dst.value(), imm32src.value());
-        if(r32dst && addrDoubleBsrc) return make_wrapper<Or<R32, M32>>(address, r32dst.value(), addrDoubleBsrc.value());
-        if(r32dst && addrDoubleBDsrc) return make_wrapper<Or<R32, M32>>(address, r32dst.value(), addrDoubleBDsrc.value());
-        if(r32dst && addrDoubleBISsrc) return make_wrapper<Or<R32, M32>>(address, r32dst.value(), addrDoubleBISsrc.value());
-        if(r32dst && addrDoubleBISDsrc) return make_wrapper<Or<R32, M32>>(address, r32dst.value(), addrDoubleBISDsrc.value());
+        if(r32dst && m32src) return make_wrapper<Or<R32, M32>>(address, r32dst.value(), m32src.value());
         if(addrByteBdst && r8src) return make_wrapper<Or<Addr<Size::BYTE, B>, R8>>(address, addrByteBdst.value(), r8src.value());
         if(addrByteBdst && imm8src) return make_wrapper<Or<Addr<Size::BYTE, B>, Imm<u8>>>(address, addrByteBdst.value(), imm8src.value());
         if(addrByteBDdst && r8src) return make_wrapper<Or<Addr<Size::BYTE, BD>, R8>>(address, addrByteBDdst.value(), r8src.value());
         if(addrByteBDdst && imm8src) return make_wrapper<Or<Addr<Size::BYTE, BD>, Imm<u8>>>(address, addrByteBDdst.value(), imm8src.value());
         if(addrWordBdst && r16src) return make_wrapper<Or<Addr<Size::WORD, B>, R16>>(address, addrWordBdst.value(), r16src.value());
         if(addrWordBDdst && r16src) return make_wrapper<Or<Addr<Size::WORD, BD>, R16>>(address, addrWordBDdst.value(), r16src.value());
-        if(addrDoubleBdst && r32src) return make_wrapper<Or<M32, R32>>(address, addrDoubleBdst.value(), r32src.value());
-        if(addrDoubleBdst && imm32src) return make_wrapper<Or<M32, Imm<u32>>>(address, addrDoubleBdst.value(), imm32src.value());
-        if(addrDoubleBDdst && r32src) return make_wrapper<Or<M32, R32>>(address, addrDoubleBDdst.value(), r32src.value());
-        if(addrDoubleBDdst && imm32src) return make_wrapper<Or<M32, Imm<u32>>>(address, addrDoubleBDdst.value(), imm32src.value());
-        if(addrDoubleBISdst && r32src) return make_wrapper<Or<M32, R32>>(address, addrDoubleBISdst.value(), r32src.value());
-        if(addrDoubleBISDdst && r32src) return make_wrapper<Or<M32, R32>>(address, addrDoubleBISDdst.value(), r32src.value());
+        if(m32dst && r32src) return make_wrapper<Or<M32, R32>>(address, m32dst.value(), r32src.value());
+        if(m32dst && imm32src) return make_wrapper<Or<M32, Imm<u32>>>(address, m32dst.value(), imm32src.value());
         return make_failed(address, operandsString);
     }
 
@@ -1089,40 +967,24 @@ namespace x86 {
         auto imm32src = asImmediate32(operands[1]);
         auto addrByteBDdst = asByteBD(operands[0]);
         auto addrByteBDsrc = asByteBD(operands[1]);
-        auto addrDoubleBdst = asDoubleB(operands[0]);
-        auto addrDoubleBsrc = asDoubleB(operands[1]);
-        auto addrDoubleBDdst = asDoubleBD(operands[0]);
-        auto addrDoubleBDsrc = asDoubleBD(operands[1]);
-        auto addrDoubleBISdst = asDoubleBIS(operands[0]);
-        auto addrDoubleBISsrc = asDoubleBIS(operands[1]);
-        auto addrDoubleBISDdst = asDoubleBISD(operands[0]);
-        auto addrDoubleBISDsrc = asDoubleBISD(operands[1]);
+        auto m32dst = asMemory32(operands[0]);
+        auto m32src = asMemory32(operands[1]);
         if(r8dst && imm8src) return make_wrapper<Xor<R8, Imm<u8>>>(address, r8dst.value(), imm8src.value());
         if(r8dst && addrByteBDsrc) return make_wrapper<Xor<R8, Addr<Size::BYTE, BD>>>(address, r8dst.value(), addrByteBDsrc.value());
         if(r16dst && imm16src) return make_wrapper<Xor<R16, Imm<u16>>>(address, r16dst.value(), imm16src.value());
         if(r32dst && r32src) return make_wrapper<Xor<R32, R32>>(address, r32dst.value(), r32src.value());
         if(r32dst && imm32src) return make_wrapper<Xor<R32, Imm<u32>>>(address, r32dst.value(), imm32src.value());
-        if(r32dst && addrDoubleBsrc) return make_wrapper<Xor<R32, M32>>(address, r32dst.value(), addrDoubleBsrc.value());
-        if(r32dst && addrDoubleBDsrc) return make_wrapper<Xor<R32, M32>>(address, r32dst.value(), addrDoubleBDsrc.value());
-        if(r32dst && addrDoubleBISsrc) return make_wrapper<Xor<R32, M32>>(address, r32dst.value(), addrDoubleBISsrc.value());
-        if(r32dst && addrDoubleBISDsrc) return make_wrapper<Xor<R32, M32>>(address, r32dst.value(), addrDoubleBISDsrc.value());
+        if(r32dst && m32src) return make_wrapper<Xor<R32, M32>>(address, r32dst.value(), m32src.value());
         if(addrByteBDdst && imm8src) return make_wrapper<Xor<Addr<Size::BYTE, BD>, Imm<u8>>>(address, addrByteBDdst.value(), imm8src.value());
-        if(addrDoubleBdst && r32src) return make_wrapper<Xor<M32, R32>>(address, addrDoubleBdst.value(), r32src.value());
-        if(addrDoubleBDdst && r32src) return make_wrapper<Xor<M32, R32>>(address, addrDoubleBDdst.value(), r32src.value());
-        if(addrDoubleBISdst && r32src) return make_wrapper<Xor<M32, R32>>(address, addrDoubleBISdst.value(), r32src.value());
-        if(addrDoubleBISDdst && r32src) return make_wrapper<Xor<M32, R32>>(address, addrDoubleBISDdst.value(), r32src.value());
+        if(m32dst && r32src) return make_wrapper<Xor<M32, R32>>(address, m32dst.value(), r32src.value());
         return make_failed(address, operandsString);
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseNot(const OpcodeBytes&, u32 address, std::string_view operands) {
         auto r32dst = asRegister32(operands);
-        auto addrDoubleBdst = asDoubleB(operands);
-        auto addrDoubleBDdst = asDoubleBD(operands);
-        auto addrDoubleBISdst = asDoubleBIS(operands);
+        auto m32dst = asMemory32(operands);
         if(r32dst) return make_wrapper<Not<R32>>(address, r32dst.value());
-        if(addrDoubleBdst) return make_wrapper<Not<M32>>(address, addrDoubleBdst.value());
-        if(addrDoubleBDdst) return make_wrapper<Not<M32>>(address, addrDoubleBDdst.value());
-        if(addrDoubleBISdst) return make_wrapper<Not<M32>>(address, addrDoubleBISdst.value());
+        if(m32dst) return make_wrapper<Not<M32>>(address, m32dst.value());
         return make_failed(address, operands);
     }
 
@@ -1141,14 +1003,10 @@ namespace x86 {
     std::unique_ptr<X86Instruction> InstructionParser::parseCall(const OpcodeBytes&, u32 address, std::string_view operandsString, std::string_view decorator) {
         auto imm32 = asImmediate32(operandsString);
         auto r32src = asRegister32(operandsString);
-        auto doubleBsrc = asDoubleB(operandsString);
-        auto doubleBDsrc = asDoubleBD(operandsString);
-        auto doubleBISsrc = asDoubleBIS(operandsString);
+        auto m32src = asMemory32(operandsString);
         if(imm32) return make_wrapper<CallDirect>(address, imm32.value(), std::string(decorator.begin(), decorator.end()));
         if(r32src) return make_wrapper<CallIndirect<R32>>(address, r32src.value());
-        if(doubleBsrc) return make_wrapper<CallIndirect<M32>>(address, doubleBsrc.value());
-        if(doubleBDsrc) return make_wrapper<CallIndirect<M32>>(address, doubleBDsrc.value());
-        if(doubleBISsrc) return make_wrapper<CallIndirect<M32>>(address, doubleBISsrc.value());
+        if(m32src) return make_wrapper<CallIndirect<M32>>(address, m32src.value());
         return make_failed(address, operandsString);
     }
 
@@ -1195,10 +1053,7 @@ namespace x86 {
         auto addrWordBDdst = asWordBD(operands);
         auto addrWordBISdst = asWordBIS(operands);
         auto addrWordBISDdst = asWordBISD(operands);
-        auto addrDoubleBdst = asDoubleB(operands);
-        auto addrDoubleBDdst = asDoubleBD(operands);
-        auto addrDoubleBISdst = asDoubleBIS(operands);
-        auto addrDoubleBISDdst = asDoubleBISD(operands);
+        auto m32dst = asMemory32(operands);
         if(r8dst) return make_wrapper<Inc<R8>>(address, r8dst.value());
         if(r32dst) return make_wrapper<Inc<R32>>(address, r32dst.value());
         if(addrByteBdst) return make_wrapper<Inc<Addr<Size::BYTE, B>>>(address, addrByteBdst.value());
@@ -1209,10 +1064,7 @@ namespace x86 {
         if(addrWordBDdst) return make_wrapper<Inc<Addr<Size::WORD, BD>>>(address, addrWordBDdst.value());
         if(addrWordBISdst) return make_wrapper<Inc<Addr<Size::WORD, BIS>>>(address, addrWordBISdst.value());
         if(addrWordBISDdst) return make_wrapper<Inc<Addr<Size::WORD, BISD>>>(address, addrWordBISDdst.value());
-        if(addrDoubleBdst) return make_wrapper<Inc<M32>>(address, addrDoubleBdst.value());
-        if(addrDoubleBDdst) return make_wrapper<Inc<M32>>(address, addrDoubleBDdst.value());
-        if(addrDoubleBISdst) return make_wrapper<Inc<M32>>(address, addrDoubleBISdst.value());
-        if(addrDoubleBISDdst) return make_wrapper<Inc<M32>>(address, addrDoubleBISDdst.value());
+        if(m32dst) return make_wrapper<Inc<M32>>(address, m32dst.value());
         return make_failed(address, operands);
     }
 
@@ -1220,17 +1072,11 @@ namespace x86 {
         auto r8dst = asRegister8(operands);
         auto r32dst = asRegister32(operands);
         auto addrWordBDdst = asWordBD(operands);
-        auto addrDoubleBdst = asDoubleB(operands);
-        auto addrDoubleBDdst = asDoubleBD(operands);
-        auto addrDoubleBISdst = asDoubleBIS(operands);
-        auto addrDoubleBISDdst = asDoubleBISD(operands);
+        auto m32dst = asMemory32(operands);
         if(r8dst) return make_wrapper<Dec<R8>>(address, r8dst.value());
         if(r32dst) return make_wrapper<Dec<R32>>(address, r32dst.value());
         if(addrWordBDdst) return make_wrapper<Dec<Addr<Size::WORD, BD>>>(address, addrWordBDdst.value());
-        if(addrDoubleBdst) return make_wrapper<Dec<M32>>(address, addrDoubleBdst.value());
-        if(addrDoubleBDdst) return make_wrapper<Dec<M32>>(address, addrDoubleBDdst.value());
-        if(addrDoubleBISdst) return make_wrapper<Dec<M32>>(address, addrDoubleBISdst.value());
-        if(addrDoubleBISDdst) return make_wrapper<Dec<M32>>(address, addrDoubleBISDdst.value());
+        if(m32dst) return make_wrapper<Dec<M32>>(address, m32dst.value());
         return make_failed(address, operands);
     }
 
@@ -1261,11 +1107,11 @@ namespace x86 {
         auto r8src = asRegister8(operands[1]);
         auto countSrc = asCount(operands[1]);
         auto imm32src = asImmediate32(operands[1]);
-        auto addrDoubleBDdst = asDoubleBD(operands[0]);
+        auto m32dst = asMemory32(operands[0]);
         if(r32dst && countSrc) return make_wrapper<Shl<R32, Count>>(address, r32dst.value(), countSrc.value());
         if(r32dst && r8src) return make_wrapper<Shl<R32, R8>>(address, r32dst.value(), r8src.value());
         if(r32dst && imm32src) return make_wrapper<Shl<R32, Imm<u32>>>(address, r32dst.value(), imm32src.value());
-        if(addrDoubleBDdst && imm32src) return make_wrapper<Shl<M32, Imm<u32>>>(address, addrDoubleBDdst.value(), imm32src.value());
+        if(m32dst && imm32src) return make_wrapper<Shl<M32, Imm<u32>>>(address, m32dst.value(), imm32src.value());
         return make_failed(address, operandsString);
     }
 
@@ -1300,13 +1146,11 @@ namespace x86 {
         auto countSrc = asCount(operands[1]);
         auto r32dst = asRegister32(operands[0]);
         auto imm32src = asImmediate32(operands[1]);
-        auto addrDoubleB = asDoubleB(operands[0]);
-        auto addrDoubleBD = asDoubleBD(operands[0]);
+        auto m32dst = asMemory32(operands[0]);
         if(r32dst && r8src) return make_wrapper<Sar<R32, R8>>(address, r32dst.value(), r8src.value());
         if(r32dst && countSrc) return make_wrapper<Sar<R32, Count>>(address, r32dst.value(), countSrc.value());
         if(r32dst && imm32src) return make_wrapper<Sar<R32, Imm<u32>>>(address, r32dst.value(), imm32src.value());
-        if(addrDoubleB && countSrc) return make_wrapper<Sar<M32, Count>>(address, addrDoubleB.value(), countSrc.value());
-        if(addrDoubleBD && countSrc) return make_wrapper<Sar<M32, Count>>(address, addrDoubleBD.value(), countSrc.value());
+        if(m32dst && countSrc) return make_wrapper<Sar<M32, Count>>(address, m32dst.value(), countSrc.value());
         return make_failed(address, operandsString);
     }
 
@@ -1314,12 +1158,12 @@ namespace x86 {
         std::vector<std::string_view> operands = split(operandsString, ',');
         assert(operands.size() == 2);
         auto r32dst = asRegister32(operands[0]);
-        auto addrDoubleBD = asDoubleBD(operands[0]);
+        auto m32dst = asMemory32(operands[0]);
         auto r8src = asRegister8(operands[1]);
         auto imm8src = asImmediate8(operands[1]);
         if(r32dst && r8src) return make_wrapper<Rol<R32, R8>>(address, r32dst.value(), r8src.value());
         if(r32dst && imm8src) return make_wrapper<Rol<R32, Imm<u8>>>(address, r32dst.value(), imm8src.value());
-        if(addrDoubleBD && imm8src) return make_wrapper<Rol<M32, Imm<u8>>>(address, addrDoubleBD.value(), imm8src.value());
+        if(m32dst && imm8src) return make_wrapper<Rol<M32, Imm<u8>>>(address, m32dst.value(), imm8src.value());
         return make_failed(address, operandsString);
     }
 
@@ -1349,8 +1193,7 @@ namespace x86 {
         auto ByteBDsrc1 = asByteBD(operands[0]);
         auto ByteBISsrc1 = asByteBIS(operands[0]);
         auto ByteBISDsrc1 = asByteBISD(operands[0]);
-        auto DoubleBsrc1 = asDoubleB(operands[0]);
-        auto DoubleBDsrc1 = asDoubleBD(operands[0]);
+        auto m32src1 = asMemory32(operands[0]);
         if(r8src1 && r8src2) return make_wrapper<Test<R8, R8>>(address, r8src1.value(), r8src2.value());
         if(r8src1 && imm8src2) return make_wrapper<Test<R8, Imm<u8>>>(address, r8src1.value(), imm8src2.value());
         if(r16src1 && r16src2) return make_wrapper<Test<R16, R16>>(address, r16src1.value(), r16src2.value());
@@ -1361,9 +1204,8 @@ namespace x86 {
         if(ByteBDsrc1 && imm8src2) return make_wrapper<Test<Addr<Size::BYTE, BD>, Imm<u8>>>(address, ByteBDsrc1.value(), imm8src2.value());
         if(ByteBISsrc1 && imm8src2) return make_wrapper<Test<Addr<Size::BYTE, BIS>, Imm<u8>>>(address, ByteBISsrc1.value(), imm8src2.value());
         if(ByteBISDsrc1 && imm8src2) return make_wrapper<Test<Addr<Size::BYTE, BISD>, Imm<u8>>>(address, ByteBISDsrc1.value(), imm8src2.value());
-        if(DoubleBsrc1 && r32src2) return make_wrapper<Test<M32, R32>>(address, DoubleBsrc1.value(), r32src2.value());
-        if(DoubleBDsrc1 && r32src2) return make_wrapper<Test<M32, R32>>(address, DoubleBDsrc1.value(), r32src2.value());
-        if(DoubleBDsrc1 && imm32src2) return make_wrapper<Test<M32, Imm<u32>>>(address, DoubleBDsrc1.value(), imm32src2.value());
+        if(m32src1 && r32src2) return make_wrapper<Test<M32, R32>>(address, m32src1.value(), r32src2.value());
+        if(m32src1 && imm32src2) return make_wrapper<Test<M32, Imm<u32>>>(address, m32src1.value(), imm32src2.value());
         return make_failed(address, operandsString);
     }
 
@@ -1380,10 +1222,7 @@ namespace x86 {
         auto WordBsrc1 = asWordB(operands[0]);
         auto WordBDsrc1 = asWordBD(operands[0]);
         auto WordBISsrc1 = asWordBIS(operands[0]);
-        auto DoubleBsrc1 = asDoubleB(operands[0]);
-        auto DoubleBDsrc1 = asDoubleBD(operands[0]);
-        auto DoubleBISsrc1 = asDoubleBIS(operands[0]);
-        auto DoubleBISDsrc1 = asDoubleBISD(operands[0]);
+        auto m32src1 = asMemory32(operands[0]);
         auto r8src2 = asRegister8(operands[1]);
         auto r16src2 = asRegister16(operands[1]);
         auto r32src2 = asRegister32(operands[1]);
@@ -1394,10 +1233,7 @@ namespace x86 {
         auto ByteBDsrc2 = asByteBD(operands[1]);
         auto ByteBISsrc2 = asByteBIS(operands[1]);
         auto ByteBISDsrc2 = asByteBISD(operands[1]);
-        auto DoubleBsrc2 = asDoubleB(operands[1]);
-        auto DoubleBDsrc2 = asDoubleBD(operands[1]);
-        auto DoubleBISsrc2 = asDoubleBIS(operands[1]);
-        auto DoubleBISDsrc2 = asDoubleBISD(operands[1]);
+        auto m32src2 = asMemory32(operands[1]);
         if(r8src1 && r8src2) return make_wrapper<Cmp<R8, R8>>(address, r8src1.value(), r8src2.value());
         if(r8src1 && imm8src2) return make_wrapper<Cmp<R8, Imm<u8>>>(address, r8src1.value(), imm8src2.value());
         if(r8src1 && ByteBsrc2) return make_wrapper<Cmp<R8, Addr<Size::BYTE, B>>>(address, r8src1.value(), ByteBsrc2.value());
@@ -1411,10 +1247,7 @@ namespace x86 {
         if(WordBISsrc1 && r16src2) return make_wrapper<Cmp<Addr<Size::WORD, BIS>, R16>>(address, WordBISsrc1.value(), r16src2.value());
         if(r32src1 && r32src2) return make_wrapper<Cmp<R32, R32>>(address, r32src1.value(), r32src2.value());
         if(r32src1 && imm32src2) return make_wrapper<Cmp<R32, Imm<u32>>>(address, r32src1.value(), imm32src2.value());
-        if(r32src1 && DoubleBsrc2) return make_wrapper<Cmp<R32, M32>>(address, r32src1.value(), DoubleBsrc2.value());
-        if(r32src1 && DoubleBDsrc2) return make_wrapper<Cmp<R32, M32>>(address, r32src1.value(), DoubleBDsrc2.value());
-        if(r32src1 && DoubleBISsrc2) return make_wrapper<Cmp<R32, M32>>(address, r32src1.value(), DoubleBISsrc2.value());
-        if(r32src1 && DoubleBISDsrc2) return make_wrapper<Cmp<R32, M32>>(address, r32src1.value(), DoubleBISDsrc2.value());
+        if(r32src1 && m32src2) return make_wrapper<Cmp<R32, M32>>(address, r32src1.value(), m32src2.value());
         if(ByteBsrc1 && r8src2) return make_wrapper<Cmp<Addr<Size::BYTE, B>, R8>>(address, ByteBsrc1.value(), r8src2.value());
         if(ByteBsrc1 && imm8src2) return make_wrapper<Cmp<Addr<Size::BYTE, B>, Imm<u8>>>(address, ByteBsrc1.value(), imm8src2.value());
         if(ByteBDsrc1 && r8src2) return make_wrapper<Cmp<Addr<Size::BYTE, BD>, R8>>(address, ByteBDsrc1.value(), r8src2.value());
@@ -1423,14 +1256,8 @@ namespace x86 {
         if(ByteBISsrc1 && imm8src2) return make_wrapper<Cmp<Addr<Size::BYTE, BIS>, Imm<u8>>>(address, ByteBISsrc1.value(), imm8src2.value());
         if(ByteBISDsrc1 && r8src2) return make_wrapper<Cmp<Addr<Size::BYTE, BISD>, R8>>(address, ByteBISDsrc1.value(), r8src2.value());
         if(ByteBISDsrc1 && imm8src2) return make_wrapper<Cmp<Addr<Size::BYTE, BISD>, Imm<u8>>>(address, ByteBISDsrc1.value(), imm8src2.value());
-        if(DoubleBsrc1 && r32src2) return make_wrapper<Cmp<M32, R32>>(address, DoubleBsrc1.value(), r32src2.value());
-        if(DoubleBsrc1 && imm32src2) return make_wrapper<Cmp<M32, Imm<u32>>>(address, DoubleBsrc1.value(), imm32src2.value());
-        if(DoubleBDsrc1 && r32src2) return make_wrapper<Cmp<M32, R32>>(address, DoubleBDsrc1.value(), r32src2.value());
-        if(DoubleBDsrc1 && imm32src2) return make_wrapper<Cmp<M32, Imm<u32>>>(address, DoubleBDsrc1.value(), imm32src2.value());
-        if(DoubleBISsrc1 && r32src2) return make_wrapper<Cmp<M32, R32>>(address, DoubleBISsrc1.value(), r32src2.value());
-        if(DoubleBISsrc1 && imm32src2) return make_wrapper<Cmp<M32, Imm<u32>>>(address, DoubleBISsrc1.value(), imm32src2.value());
-        if(DoubleBISDsrc1 && r32src2) return make_wrapper<Cmp<M32, R32>>(address, DoubleBISDsrc1.value(), r32src2.value());
-        if(DoubleBISDsrc1 && imm32src2) return make_wrapper<Cmp<M32, Imm<u32>>>(address, DoubleBISDsrc1.value(), imm32src2.value());
+        if(m32src1 && r32src2) return make_wrapper<Cmp<M32, R32>>(address, m32src1.value(), r32src2.value());
+        if(m32src1 && imm32src2) return make_wrapper<Cmp<M32, Imm<u32>>>(address, m32src1.value(), imm32src2.value());
         return make_failed(address, operandsString);
     }
 
@@ -1445,10 +1272,7 @@ namespace x86 {
         auto ByteBISsrc1 = asByteBIS(operands[0]);
         auto ByteBISDsrc1 = asByteBISD(operands[0]);
         auto WordBISsrc1 = asWordBIS(operands[0]);
-        auto DoubleBsrc1 = asDoubleB(operands[0]);
-        auto DoubleBDsrc1 = asDoubleBD(operands[0]);
-        auto DoubleBISsrc1 = asDoubleBIS(operands[0]);
-        auto DoubleBISDsrc1 = asDoubleBISD(operands[0]);
+        auto m32src1 = asMemory32(operands[0]);
         auto r8src2 = asRegister8(operands[1]);
         auto r16src2 = asRegister16(operands[1]);
         auto r32src2 = asRegister32(operands[1]);
@@ -1460,22 +1284,17 @@ namespace x86 {
         if(ByteBDsrc1 && r8src2) return make_wrapper<Cmpxchg<Addr<Size::BYTE, BD>, R8>>(address, ByteBDsrc1.value(), r8src2.value());
         if(ByteBISsrc1 && r8src2) return make_wrapper<Cmpxchg<Addr<Size::BYTE, BIS>, R8>>(address, ByteBISsrc1.value(), r8src2.value());
         if(ByteBISDsrc1 && r8src2) return make_wrapper<Cmpxchg<Addr<Size::BYTE, BISD>, R8>>(address, ByteBISDsrc1.value(), r8src2.value());
-        if(DoubleBsrc1 && r32src2) return make_wrapper<Cmpxchg<M32, R32>>(address, DoubleBsrc1.value(), r32src2.value());
-        if(DoubleBDsrc1 && r32src2) return make_wrapper<Cmpxchg<M32, R32>>(address, DoubleBDsrc1.value(), r32src2.value());
-        if(DoubleBISsrc1 && r32src2) return make_wrapper<Cmpxchg<M32, R32>>(address, DoubleBISsrc1.value(), r32src2.value());
-        if(DoubleBISDsrc1 && r32src2) return make_wrapper<Cmpxchg<M32, R32>>(address, DoubleBISDsrc1.value(), r32src2.value());
+        if(m32src1 && r32src2) return make_wrapper<Cmpxchg<M32, R32>>(address, m32src1.value(), r32src2.value());
         return make_failed(address, operandsString);
     }
 
     std::unique_ptr<X86Instruction> InstructionParser::parseJmp(const OpcodeBytes&, u32 address, std::string_view operandsString, std::string_view decorator) {
         auto reg32 = asRegister32(operandsString);
         auto imm32 = asImmediate32(operandsString);
-        auto DoubleB = asDoubleB(operandsString);
-        auto DoubleBD = asDoubleBD(operandsString);
+        auto m32 = asMemory32(operandsString);
         if(reg32) return make_wrapper<Jmp<R32>>(address, reg32.value(), std::nullopt);
         if(imm32) return make_wrapper<Jmp<u32>>(address, imm32.value(), std::string(decorator.begin(), decorator.end()));
-        if(DoubleB) return make_wrapper<Jmp<M32>>(address, DoubleB.value(), std::nullopt);
-        if(DoubleBD) return make_wrapper<Jmp<M32>>(address, DoubleBD.value(), std::nullopt);
+        if(m32) return make_wrapper<Jmp<M32>>(address, m32.value(), std::nullopt);
         return make_failed(address, operandsString);
     }
 
