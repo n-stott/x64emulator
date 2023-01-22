@@ -145,318 +145,318 @@ namespace utils {
 
     template<typename Src>
     inline std::string toString(const Push<Src>& ins) {
-        return fmt::format("{:7}{}", "push", toString(ins.src));
+        return fmt::format("{:8}{}", "push", toString(ins.src));
     }
 
     template<typename Src>
     inline std::string toString(const Pop<Src>& ins) {
-        return fmt::format("{:7}{}", "pop", toString(ins.dst));
+        return fmt::format("{:8}{}", "pop", toString(ins.dst));
     }
 
     template<typename Dst, typename Src>
     inline std::string toString(const Mov<Dst, Src>& ins) {
-        return fmt::format("{:7}{},{}", "mov", toString(ins.dst), toString(ins.src));
+        return fmt::format("{:8}{},{}", "mov", toString(ins.dst), toString(ins.src));
     }
 
     template<typename Dst, typename Src>
     inline std::string toString(const Movsx<Dst, Src>& ins) {
-        return fmt::format("{:7}{},{}", "movsx", toString(ins.dst), toString(ins.src));
+        return fmt::format("{:8}{},{}", "movsx", toString(ins.dst), toString(ins.src));
     }
 
     template<typename Dst, typename Src>
     inline std::string toString(const Movzx<Dst, Src>& ins) {
-        return fmt::format("{:7}{},{}", "movzx", toString(ins.dst), toString(ins.src));
+        return fmt::format("{:8}{},{}", "movzx", toString(ins.dst), toString(ins.src));
     }
 
     template<typename Dst, typename Src>
     inline std::string toString(const Lea<Dst, Src>& ins) {
-        return fmt::format("{:7}{},{}", "lea", toString(ins.dst), toString(ins.src));
+        return fmt::format("{:8}{},{}", "lea", toString(ins.dst), toString(ins.src));
     }
 
     template<typename Dst, typename Src>
     inline std::string toString(const Add<Dst, Src>& ins) {
-        return fmt::format("{:7}{},{}", "add", toString(ins.dst), toString(ins.src));
+        return fmt::format("{:8}{},{}", "add", toString(ins.dst), toString(ins.src));
     }
 
     template<typename Dst, typename Src>
     inline std::string toString(const Adc<Dst, Src>& ins) {
-        return fmt::format("{:7}{},{}", "adc", toString(ins.dst), toString(ins.src));
+        return fmt::format("{:8}{},{}", "adc", toString(ins.dst), toString(ins.src));
     }
 
     template<typename Dst, typename Src>
     inline std::string toString(const Sub<Dst, Src>& ins) {
-        return fmt::format("{:7}{},{}", "sub", toString(ins.dst), toString(ins.src));
+        return fmt::format("{:8}{},{}", "sub", toString(ins.dst), toString(ins.src));
     }
 
     template<typename Dst, typename Src>
     inline std::string toString(const Sbb<Dst, Src>& ins) {
-        return fmt::format("{:7}{},{}", "sbb", toString(ins.dst), toString(ins.src));
+        return fmt::format("{:8}{},{}", "sbb", toString(ins.dst), toString(ins.src));
     }
 
     template<typename Src>
     inline std::string toString(const Neg<Src>& ins) {
-        return fmt::format("{:7}{}", "neg", toString(ins.src));
+        return fmt::format("{:8}{}", "neg", toString(ins.src));
     }
 
     template<typename Src>
     inline std::string toString(const Mul<Src>& ins) {
-        return fmt::format("{:7}{}", "mul", toString(ins.src));
+        return fmt::format("{:8}{}", "mul", toString(ins.src));
     }
 
     template<typename Src>
     inline std::string toString(const Imul1<Src>& ins) {
-        return fmt::format("{:7}{}", "imul", toString(ins.src));
+        return fmt::format("{:8}{}", "imul", toString(ins.src));
     }
 
     template<typename Dst, typename Src>
     inline std::string toString(const Imul2<Dst, Src>& ins) {
-        return fmt::format("{:7}{},{}", "imul", toString(ins.dst), toString(ins.src));
+        return fmt::format("{:8}{},{}", "imul", toString(ins.dst), toString(ins.src));
     }
 
     template<typename Dst, typename Src1, typename Src2>
     inline std::string toString(const Imul3<Dst, Src1, Src2>& ins) {
-        return fmt::format("{:7}{},{},{}", "imul", toString(ins.dst), toString(ins.src1), toString(ins.src2));
+        return fmt::format("{:8}{},{},{}", "imul", toString(ins.dst), toString(ins.src1), toString(ins.src2));
     }
 
     template<typename Src>
     inline std::string toString(const Div<Src>& ins) {
-        return fmt::format("{:7}{}", "div", toString(ins.src));
+        return fmt::format("{:8}{}", "div", toString(ins.src));
     }
 
     template<typename Src>
     inline std::string toString(const Idiv<Src>& ins) {
-        return fmt::format("{:7}{}", "idiv", toString(ins.src));
+        return fmt::format("{:8}{}", "idiv", toString(ins.src));
     }
 
     template<typename Dst, typename Src>
     inline std::string toString(const And<Dst, Src>& ins) {
-        return fmt::format("{:7}{},{}", "and", toString(ins.dst), toString(ins.src));
+        return fmt::format("{:8}{},{}", "and", toString(ins.dst), toString(ins.src));
     }
 
     template<typename Dst, typename Src>
     inline std::string toString(const Or<Dst, Src>& ins) {
-        return fmt::format("{:7}{},{}", "or", toString(ins.dst), toString(ins.src));
+        return fmt::format("{:8}{},{}", "or", toString(ins.dst), toString(ins.src));
     }
 
     template<typename Dst, typename Src>
     inline std::string toString(const Xor<Dst, Src>& ins) {
-        return fmt::format("{:7}{},{}", "xor", toString(ins.dst), toString(ins.src));
+        return fmt::format("{:8}{},{}", "xor", toString(ins.dst), toString(ins.src));
     }
 
     template<typename Dst>
     inline std::string toString(const Not<Dst>& ins) {
-        return fmt::format("{:7}{}", "not", toString(ins.dst));
+        return fmt::format("{:8}{}", "not", toString(ins.dst));
     }
 
     template<typename Dst, typename Src>
     inline std::string toString(const Xchg<Dst, Src>& ins) {
-        return fmt::format("{:7}{},{}", "xchg", toString(ins.dst), toString(ins.src));
+        return fmt::format("{:8}{},{}", "xchg", toString(ins.dst), toString(ins.src));
     }
 
     inline std::string toString(const CallDirect& ins) {
-        return fmt::format("{:7}{:x} <{}>", "call", ins.symbolAddress, ins.symbolName);
+        return fmt::format("{:8}{:x} <{}>", "call", ins.symbolAddress, ins.symbolName);
     }
 
     template<typename Src>
     inline std::string toString(const CallIndirect<Src>& ins) {
-        return fmt::format("{:7}{}", "call", toString(ins.src));
+        return fmt::format("{:8}{}", "call", toString(ins.src));
     }
 
     inline std::string toString(const Ret<>&) {
-        return fmt::format("{:7}", "ret");
+        return fmt::format("{:8}", "ret");
     }
 
     inline std::string toString(const Ret<Imm<u16>>& ins) {
-        return fmt::format("{:7}{}", "ret", toString(ins.src));
+        return fmt::format("{:8}{}", "ret", toString(ins.src));
     }
 
     inline std::string toString(const Leave&) {
-        return fmt::format("{:7}", "leave");
+        return fmt::format("{:8}", "leave");
     }
 
     inline std::string toString(const Halt&) {
-        return fmt::format("{:7}", "hlt");
+        return fmt::format("{:8}", "hlt");
     }
 
     inline std::string toString(const Nop&) {
-        return fmt::format("{:7}", "nop");
+        return fmt::format("{:8}", "nop");
     }
 
     inline std::string toString(const Ud2&) {
-        return fmt::format("{:7}", "ud2");
+        return fmt::format("{:8}", "ud2");
     }
 
     inline std::string toString(const Cdq&) {
-        return fmt::format("{:7}", "cdq");
+        return fmt::format("{:8}", "cdq");
     }
 
     inline std::string toString(const NotParsed& ins) {
-        return fmt::format("{:7}{}", "undef", ins.mnemonic);
+        return fmt::format("{:8}{}", "undef", ins.mnemonic);
     }
 
     inline std::string toString(const Unknown& ins) {
-        return fmt::format("{:7}{}", "unkn", ins.mnemonic);
+        return fmt::format("{:8}{}", "unkn", ins.mnemonic);
     }
 
     template<typename Dst>
     inline std::string toString(const Inc<Dst>& ins) {
-        return fmt::format("{:7}{}", "inc", toString(ins.dst));
+        return fmt::format("{:8}{}", "inc", toString(ins.dst));
     }
 
     template<typename Dst>
     inline std::string toString(const Dec<Dst>& ins) {
-        return fmt::format("{:7}{}", "dec", toString(ins.dst));
+        return fmt::format("{:8}{}", "dec", toString(ins.dst));
     }
 
     template<typename Dst, typename Src>
     inline std::string toString(const Shr<Dst, Src>& ins) {
-        return fmt::format("{:7}{},{}", "shr", toString(ins.dst), toString(ins.src));
+        return fmt::format("{:8}{},{}", "shr", toString(ins.dst), toString(ins.src));
     }
 
     template<typename Dst, typename Src>
     inline std::string toString(const Shl<Dst, Src>& ins) {
-        return fmt::format("{:7}{},{}", "shl", toString(ins.dst), toString(ins.src));
+        return fmt::format("{:8}{},{}", "shl", toString(ins.dst), toString(ins.src));
     }
 
     template<typename Dst, typename Src1, typename Src2>
     inline std::string toString(const Shrd<Dst, Src1, Src2>& ins) {
-        return fmt::format("{:7}{},{},{}", "shrd", toString(ins.dst), toString(ins.src1), toString(ins.src2));
+        return fmt::format("{:8}{},{},{}", "shrd", toString(ins.dst), toString(ins.src1), toString(ins.src2));
     }
 
     template<typename Dst, typename Src1, typename Src2>
     inline std::string toString(const Shld<Dst, Src1, Src2>& ins) {
-        return fmt::format("{:7}{},{},{}", "shld", toString(ins.dst), toString(ins.src1), toString(ins.src2));
+        return fmt::format("{:8}{},{},{}", "shld", toString(ins.dst), toString(ins.src1), toString(ins.src2));
     }
 
     template<typename Dst, typename Src>
     inline std::string toString(const Sar<Dst, Src>& ins) {
-        return fmt::format("{:7}{},{}", "sar", toString(ins.dst), toString(ins.src));
+        return fmt::format("{:8}{},{}", "sar", toString(ins.dst), toString(ins.src));
     }
 
     template<typename Dst, typename Src>
     inline std::string toString(const Rol<Dst, Src>& ins) {
-        return fmt::format("{:7}{},{}", "rol", toString(ins.dst), toString(ins.src));
+        return fmt::format("{:8}{},{}", "rol", toString(ins.dst), toString(ins.src));
     }
 
     template<Cond cond, typename Dst>
     inline std::string toString(const Set<cond, Dst>& ins) {
-        return fmt::format("{:7}{}", fmt::format("set{}", toString(cond)), toString(ins.dst));
+        return fmt::format("{:8}{}", fmt::format("set{}", toString(cond)), toString(ins.dst));
     }
 
     template<typename Src1, typename Src2>
     inline std::string toString(const Test<Src1, Src2>& ins) {
-        return fmt::format("{:7}{},{}", "test", toString(ins.src1), toString(ins.src2));
+        return fmt::format("{:8}{},{}", "test", toString(ins.src1), toString(ins.src2));
     }
 
     template<typename Dst, typename Src>
     inline std::string toString(const Cmp<Dst, Src>& ins) {
-        return fmt::format("{:7}{},{}", "cmp", toString(ins.src1), toString(ins.src2));
+        return fmt::format("{:8}{},{}", "cmp", toString(ins.src1), toString(ins.src2));
     }
 
     template<typename Dst, typename Src>
     inline std::string toString(const Cmpxchg<Dst, Src>& ins) {
-        return fmt::format("{:7}{},{}", "cmpxchg", toString(ins.src1), toString(ins.src2));
+        return fmt::format("{:8}{},{}", "cmpxchg", toString(ins.src1), toString(ins.src2));
     }
 
     template<typename Dst>
     inline std::string toString(const Jmp<Dst>& ins) {
         if(ins.symbolName) {
-            return fmt::format("{:7}{} <{}>", "jmp", toString(ins.symbolAddress), ins.symbolName.value());
+            return fmt::format("{:8}{} <{}>", "jmp", toString(ins.symbolAddress), ins.symbolName.value());
         } else {
-            return fmt::format("{:7}{}", "jmp", toString(ins.symbolAddress));
+            return fmt::format("{:8}{}", "jmp", toString(ins.symbolAddress));
         }
     }
 
     inline std::string toString(const Jcc<Cond::NE>& ins) {
-        return fmt::format("{:7}{:x} <{}>", "jne", ins.symbolAddress, ins.symbolName);
+        return fmt::format("{:8}{:x} <{}>", "jne", ins.symbolAddress, ins.symbolName);
     }
 
     inline std::string toString(const Jcc<Cond::E>& ins) {
-        return fmt::format("{:7}{:x} <{}>", "je", ins.symbolAddress, ins.symbolName);
+        return fmt::format("{:8}{:x} <{}>", "je", ins.symbolAddress, ins.symbolName);
     }
 
     inline std::string toString(const Jcc<Cond::AE>& ins) {
-        return fmt::format("{:7}{:x} <{}>", "jae", ins.symbolAddress, ins.symbolName);
+        return fmt::format("{:8}{:x} <{}>", "jae", ins.symbolAddress, ins.symbolName);
     }
 
     inline std::string toString(const Jcc<Cond::BE>& ins) {
-        return fmt::format("{:7}{:x} <{}>", "jbe", ins.symbolAddress, ins.symbolName);
+        return fmt::format("{:8}{:x} <{}>", "jbe", ins.symbolAddress, ins.symbolName);
     }
 
     inline std::string toString(const Jcc<Cond::GE>& ins) {
-        return fmt::format("{:7}{:x} <{}>", "jge", ins.symbolAddress, ins.symbolName);
+        return fmt::format("{:8}{:x} <{}>", "jge", ins.symbolAddress, ins.symbolName);
     }
 
     inline std::string toString(const Jcc<Cond::LE>& ins) {
-        return fmt::format("{:7}{:x} <{}>", "jle", ins.symbolAddress, ins.symbolName);
+        return fmt::format("{:8}{:x} <{}>", "jle", ins.symbolAddress, ins.symbolName);
     }
 
     inline std::string toString(const Jcc<Cond::A>& ins) {
-        return fmt::format("{:7}{:x} <{}>", "ja", ins.symbolAddress, ins.symbolName);
+        return fmt::format("{:8}{:x} <{}>", "ja", ins.symbolAddress, ins.symbolName);
     }
 
     inline std::string toString(const Jcc<Cond::B>& ins) {
-        return fmt::format("{:7}{:x} <{}>", "jb", ins.symbolAddress, ins.symbolName);
+        return fmt::format("{:8}{:x} <{}>", "jb", ins.symbolAddress, ins.symbolName);
     }
 
     inline std::string toString(const Jcc<Cond::G>& ins) {
-        return fmt::format("{:7}{:x} <{}>", "jg", ins.symbolAddress, ins.symbolName);
+        return fmt::format("{:8}{:x} <{}>", "jg", ins.symbolAddress, ins.symbolName);
     }
 
     inline std::string toString(const Jcc<Cond::L>& ins) {
-        return fmt::format("{:7}{:x} <{}>", "jl", ins.symbolAddress, ins.symbolName);
+        return fmt::format("{:8}{:x} <{}>", "jl", ins.symbolAddress, ins.symbolName);
     }
 
     inline std::string toString(const Jcc<Cond::S>& ins) {
-        return fmt::format("{:7}{:x} <{}>", "js", ins.symbolAddress, ins.symbolName);
+        return fmt::format("{:8}{:x} <{}>", "js", ins.symbolAddress, ins.symbolName);
     }
 
     inline std::string toString(const Jcc<Cond::NS>& ins) {
-        return fmt::format("{:7}{:x} <{}>", "jns", ins.symbolAddress, ins.symbolName);
+        return fmt::format("{:8}{:x} <{}>", "jns", ins.symbolAddress, ins.symbolName);
     }
 
     template<typename Dst, typename Src>
     inline std::string toString(const Bsr<Dst, Src>& ins) {
-        return fmt::format("{:7}{},{}", "bsr", toString(ins.dst), toString(ins.src));
+        return fmt::format("{:8}{},{}", "bsr", toString(ins.dst), toString(ins.src));
     }
 
     template<typename Dst, typename Src>
     inline std::string toString(const Bsf<Dst, Src>& ins) {
-        return fmt::format("{:7}{},{}", "bsf", toString(ins.dst), toString(ins.src));
+        return fmt::format("{:8}{},{}", "bsf", toString(ins.dst), toString(ins.src));
     }
 
     template<typename Src1, typename Src2>
     inline std::string toString(Scas<Src1, Src2> ins) {
-        return fmt::format("{:7}{},{}", "scas", toString(ins.src1), toString(ins.src2));
+        return fmt::format("{:8}{},{}", "scas", toString(ins.src1), toString(ins.src2));
     }
 
     template<typename Dst, typename Src>
     inline std::string toString(Movs<Dst, Src> ins) {
-        return fmt::format("{:7}{},{}", "movs", toString(ins.dst), toString(ins.src));
+        return fmt::format("{:8}{},{}", "movs", toString(ins.dst), toString(ins.src));
     }
 
     template<typename Dst, typename Src>
     inline std::string toString(Stos<Dst, Src> ins) {
-        return fmt::format("{:7}{},{}", "stos", toString(ins.dst), toString(ins.src));
+        return fmt::format("{:8}{},{}", "stos", toString(ins.dst), toString(ins.src));
     }
 
     template<typename StringOp>
     inline std::string toString(Rep<StringOp> ins) {
-        return fmt::format("{:7}{}", "rep", toString(ins.op));
+        return fmt::format("{:8}{}", "rep", toString(ins.op));
     }
 
     template<typename StringOp>
     inline std::string toString(RepNZ<StringOp> ins) {
-        return fmt::format("{:7}{}", "repnz", toString(ins.op));
+        return fmt::format("{:8}{}", "repnz", toString(ins.op));
     }
 
     template<Cond cond, typename Dst, typename Src>
     inline std::string toString(Cmov<cond, Dst, Src> ins) {
-        return fmt::format("{:7}{},{}", fmt::format("cmov{}", toString(cond)), toString(ins.dst), toString(ins.src));
+        return fmt::format("{:8}{},{}", fmt::format("cmov{}", toString(cond)), toString(ins.dst), toString(ins.src));
     }
 
     inline std::string toString(Cwde) {
-        return fmt::format("{:7}", "cwde");
+        return fmt::format("{:8}", "cwde");
     }
 }
 }
