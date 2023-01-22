@@ -34,14 +34,14 @@ namespace x86 {
     };
 
     Interpreter::Interpreter(Program program, LibC libc) : program_(std::move(program)), libc_(std::move(libc)), mmu_(this) {
-        libc_.configureIntrinsics(ExecutionContext(*this));
         stop_ = false;
         // heap
         u32 heapBase = 0x2000000;
-        u32 heapSize = 64*1024*1024;
+        u32 heapSize = 64*1024;
         Mmu::Region heapRegion{ "heap", heapBase, heapSize, PROT_READ | PROT_WRITE };
         mmu_.addRegion(heapRegion);
         libc_.setHeapRegion(heapRegion.base, heapRegion.size);
+        libc_.configureIntrinsics(ExecutionContext(*this));
         
         // stack
         u32 stackBase = 0x1000000;

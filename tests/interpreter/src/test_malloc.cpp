@@ -20,9 +20,9 @@ void test2() {
     VoidPtrList allocations;
     VoidPtrList* current = &allocations;
     for(int i = 0; i < 0x100; ++i) {
-        current->elem = malloc(0x100000);
+        current->elem = malloc(0x1000);
         if(!current->elem) {
-            puts("Failed to allocate 0x10000 bytes");
+            puts("Failed to allocate 0x1000 bytes");
             break;
         }
         current->next = (VoidPtrList*)malloc(sizeof(VoidPtrList));
@@ -46,7 +46,7 @@ void test2() {
 void test3() {
     int success = 0;
     for(int i = 0; i < 0x100; ++i) {
-        void* ptr = malloc(0x100000);
+        void* ptr = malloc(0x1000);
         success += !!ptr;
         free(ptr);
     }
