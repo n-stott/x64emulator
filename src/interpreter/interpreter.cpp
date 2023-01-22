@@ -114,6 +114,7 @@ namespace x86 {
         }
 
         auto gotHandler = [&](u32 address){
+            auto programStringTable = programElf_->dynamicStringTable();
             programElf_->forAllRelocations([&](const elf::Elf::RelocationEntry32& relocation) {
                 if(relocation.offset() == address) {
                     const auto* sym = relocation.symbol(*programElf_);
