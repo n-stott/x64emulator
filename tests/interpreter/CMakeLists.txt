@@ -85,3 +85,8 @@ target_link_options(test_stringstream PUBLIC ${LD_OPTIONS} -static-libstdc++ -st
 add_executable(test_interval src/test_interval.cpp)
 target_compile_options(test_interval PUBLIC ${CC_OPTIONS})
 target_link_options(test_interval PUBLIC ${LD_OPTIONS} -static-libstdc++ -static-libgcc)
+
+add_executable(test_programargs src/test_programargs.cpp)
+target_compile_options(test_programargs PUBLIC ${CC_OPTIONS} -DFMT_HEADER_ONLY)
+target_include_directories(test_programargs PUBLIC ../external)
+target_link_options(test_programargs PUBLIC ${LD_OPTIONS} -static-libstdc++ -static-libgcc)
