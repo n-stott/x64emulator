@@ -194,7 +194,7 @@ extern "C" {
         return fakelibc$putchar(c);
     }
 
-    time_t time(time_t* tloc) {
+    time_t fakelibc$time(time_t* tloc) {
         static int secondsSinceEpoch = 0xeb0c;
         ++secondsSinceEpoch;
         return secondsSinceEpoch;
