@@ -2,6 +2,7 @@
 #define TYPES_H
 
 #include "utils/utils.h"
+#include <variant>
 
 namespace x86 {
 
@@ -154,6 +155,28 @@ namespace x86 {
     using Ptr8 = Ptr<Size::BYTE>;
     using Ptr16 = Ptr<Size::WORD>;
     using Ptr32 = Ptr<Size::DWORD>;
+
+
+    using M8 = std::variant<Addr<Size::BYTE, B>,
+                             Addr<Size::BYTE, BD>,
+                             Addr<Size::BYTE, BIS>,
+                             Addr<Size::BYTE, BIS>,
+                             Addr<Size::BYTE, BISD>>;
+    using RM8 = std::variant<R8, M8>;
+
+    using M16 = std::variant<Addr<Size::WORD, B>,
+                             Addr<Size::WORD, BD>,
+                             Addr<Size::WORD, BIS>,
+                             Addr<Size::WORD, BIS>,
+                             Addr<Size::WORD, BISD>>;
+    using RM16 = std::variant<R16, M16>;
+
+    using M32 = std::variant<Addr<Size::DWORD, B>,
+                             Addr<Size::DWORD, BD>,
+                             Addr<Size::DWORD, BIS>,
+                             Addr<Size::DWORD, BIS>,
+                             Addr<Size::DWORD, BISD>>;
+    using RM32 = std::variant<R32, M32>;
 
 }
 
