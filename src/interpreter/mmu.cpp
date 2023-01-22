@@ -82,12 +82,10 @@ namespace x86 {
         const Region* region = findAddress(ptr.address);
         verify(!!region, [&]() {
             fmt::print("No region containing {:#x}\n", ptr.address);
-            dumpRegions();
         });
         verify(region->protection & PROT_READ, [&]() {
             fmt::print("Attempt to read {:#x} from non-readable region {}\n", ptr.address, region->name);
             if(!!region->handler) region->handler(ptr.address);
-            dumpRegions();
         });
         u8 value = region->read8(ptr);
         verify((region->invalidValues != INV_NULL) || (value != 0), [&]() {
@@ -101,12 +99,10 @@ namespace x86 {
         const Region* region = findAddress(ptr.address);
         verify(!!region, [&]() {
             fmt::print("No region containing {:#x}\n", ptr.address);
-            dumpRegions();
         });
         verify(region->protection & PROT_READ, [&]() {
             fmt::print("Attempt to read {:#x} from non-readable region {}\n", ptr.address, region->name);
             if(!!region->handler) region->handler(ptr.address);
-            dumpRegions();
         });
         u16 value = region->read16(ptr);
         verify((region->invalidValues != INV_NULL) || (value != 0), [&]() {
@@ -120,12 +116,10 @@ namespace x86 {
         const Region* region = findAddress(ptr.address);
         verify(!!region, [&]() {
             fmt::print("No region containing {:#x}\n", ptr.address);
-            dumpRegions();
         });
         verify(region->protection & PROT_READ, [&]() {
             fmt::print("Attempt to read {:#x} from non-readable region {}\n", ptr.address, region->name);
             if(!!region->handler) region->handler(ptr.address);
-            dumpRegions();
         });
         u32 value = region->read32(ptr);
         verify((region->invalidValues != INV_NULL) || (value != 0), [&]() {
@@ -139,11 +133,9 @@ namespace x86 {
         Region* region = findAddress(ptr.address);
         verify(!!region, [&]() {
             fmt::print("No region containing {:#x}\n", ptr.address);
-            dumpRegions();
         });
         verify(region->protection & PROT_WRITE, [&]() {
             fmt::print("Attempt to write to {:#x} in non-writable region {}\n", ptr.address, region->name);
-            dumpRegions();
         });
         region->write8(ptr, value);
     }
@@ -152,11 +144,9 @@ namespace x86 {
         Region* region = findAddress(ptr.address);
         verify(!!region, [&]() {
             fmt::print("No region containing {:#x}\n", ptr.address);
-            dumpRegions();
         });
         verify(region->protection & PROT_WRITE, [&]() {
             fmt::print("Attempt to write to {:#x} in non-writable region {}\n", ptr.address, region->name);
-            dumpRegions();
         });
         region->write16(ptr, value);
     }
@@ -165,11 +155,9 @@ namespace x86 {
         Region* region = findAddress(ptr.address);
         verify(!!region, [&]() {
             fmt::print("No region containing {:#x}\n", ptr.address);
-            dumpRegions();
         });
         verify(region->protection & PROT_WRITE, [&]() {
             fmt::print("Attempt to write to {:#x} in non-writable region {}\n", ptr.address, region->name);
-            dumpRegions();
         });
         region->write32(ptr, value);
     }
