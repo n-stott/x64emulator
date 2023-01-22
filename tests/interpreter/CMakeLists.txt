@@ -116,3 +116,8 @@ add_executable(test_nontrivialstatic src/test_nontrivialstatic.cpp)
 target_compile_options(test_nontrivialstatic PUBLIC ${CC_OPTIONS})
 target_link_options(test_nontrivialstatic PUBLIC ${LD_OPTIONS} -static-libstdc++ -static-libgcc)
 add_test(NAME nontrivialstatic COMMAND ${CMAKE_BINARY_DIR}/x86/interpreter test_nontrivialstatic)
+
+add_executable(test_threadlocal src/test_threadlocal.cpp)
+target_compile_options(test_threadlocal PUBLIC ${CC_OPTIONS})
+target_link_options(test_threadlocal PUBLIC ${LD_OPTIONS} -static-libstdc++ -static-libgcc)
+add_test(NAME threadlocal COMMAND ${CMAKE_BINARY_DIR}/x86/interpreter test_threadlocal)
