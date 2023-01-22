@@ -221,6 +221,7 @@ namespace x86 {
         if(name == "xor") return parseXor(opbytes, address, operands);
         if(name == "not") return parseNot(opbytes, address, operands);
         if(name == "xchg") return parseXchg(opbytes, address, operands);
+        if(name == "xadd") return parseXadd(opbytes, address, operands);
         if(name == "call") return parseCall(opbytes, address, operands, decorator);
         if(name == "ret") return parseRet(opbytes, address, operands);
         if(name == "leave") return parseLeave(opbytes, address, operands);
@@ -995,8 +996,24 @@ namespace x86 {
         auto r16src = asRegister16(operands[1]);
         auto r32dst = asRegister32(operands[0]);
         auto r32src = asRegister32(operands[1]);
+        auto m32dst = asMemory32(operands[0]);
         if(r16dst && r16src) return make_wrapper<Xchg<R16, R16>>(address, r16dst.value(), r16src.value());
         if(r32dst && r32src) return make_wrapper<Xchg<R32, R32>>(address, r32dst.value(), r32src.value());
+        if(m32dst && r32src) return make_wrapper<Xchg<M32, R32>>(address, m32dst.value(), r32src.value());
+        return make_failed(address, operandsString);
+    }
+
+    std::unique_ptr<X86Instruction> InstructionParser::parseXadd(const OpcodeBytes&, u32 address, std::string_view operandsString) {
+        std::vector<std::string_view> operands = split(operandsString, ',');
+        assert(operands.size() == 2);
+        auto r16dst = asRegister16(operands[0]);
+        auto r16src = asRegister16(operands[1]);
+        auto r32dst = asRegister32(operands[0]);
+        auto r32src = asRegister32(operands[1]);
+        auto m32dst = asMemory32(operands[0]);
+        if(r16dst && r16src) return make_wrapper<Xadd<R16, R16>>(address, r16dst.value(), r16src.value());
+        if(r32dst && r32src) return make_wrapper<Xadd<R32, R32>>(address, r32dst.value(), r32src.value());
+        if(m32dst && r32src) return make_wrapper<Xadd<M32, R32>>(address, m32dst.value(), r32src.value());
         return make_failed(address, operandsString);
     }
 

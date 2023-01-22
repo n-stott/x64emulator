@@ -257,6 +257,11 @@ namespace utils {
         return fmt::format("{:8}{},{}", "xchg", toString(ins.dst), toString(ins.src));
     }
 
+    template<typename Dst, typename Src>
+    inline std::string toString(const Xadd<Dst, Src>& ins) {
+        return fmt::format("{:8}{},{}", "xadd", toString(ins.dst), toString(ins.src));
+    }
+
     inline std::string toString(const CallDirect& ins) {
         return fmt::format("{:8}{:x} <{}>", "call", ins.symbolAddress, ins.symbolName);
     }

@@ -745,6 +745,34 @@ namespace x86 {
         set(ins.dst, src);
         set(ins.src, dst);
     }
+    void Interpreter::exec(const Xchg<M32, R32>& ins) {
+        u32 dst = get(resolve(ins.dst));
+        u32 src = get(ins.src);
+        set(resolve(ins.dst), src);
+        set(ins.src, dst);
+    }
+
+    void Interpreter::exec(const Xadd<R16, R16>& ins) {
+        u16 dst = get(ins.dst);
+        u16 src = get(ins.src);
+        u16 tmp = execAdd16Impl(dst, src);
+        set(ins.dst, tmp);
+        set(ins.src, dst);
+    }
+    void Interpreter::exec(const Xadd<R32, R32>& ins) {
+        u32 dst = get(ins.dst);
+        u32 src = get(ins.src);
+        u32 tmp = execAdd32Impl(dst, src);
+        set(ins.dst, tmp);
+        set(ins.src, dst);
+    }
+    void Interpreter::exec(const Xadd<M32, R32>& ins) {
+        u32 dst = get(resolve(ins.dst));
+        u32 src = get(ins.src);
+        u32 tmp = execAdd32Impl(dst, src);
+        set(resolve(ins.dst), tmp);
+        set(ins.src, dst);
+    }
 
     void Interpreter::exec(const Mov<R8, R8>& ins) { set(ins.dst, get(ins.src)); }
     void Interpreter::exec(const Mov<R8, Imm<u8>>& ins) { set(ins.dst, get(ins.src)); }

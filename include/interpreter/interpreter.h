@@ -316,6 +316,11 @@ namespace x86 {
 
         void exec(const Xchg<R16, R16>&) override;
         void exec(const Xchg<R32, R32>&) override;
+        void exec(const Xchg<M32, R32>&) override;
+
+        void exec(const Xadd<R16, R16>&) override;
+        void exec(const Xadd<R32, R32>&) override;
+        void exec(const Xadd<M32, R32>&) override;
 
         void exec(const Mov<R8, R8>&) override;
         void exec(const Mov<R8, Imm<u8>>&) override;

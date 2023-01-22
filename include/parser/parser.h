@@ -57,6 +57,7 @@ namespace x86 {
         static std::unique_ptr<X86Instruction> parseNot(const OpcodeBytes& opbytes, u32 address, std::string_view operandsString);
 
         static std::unique_ptr<X86Instruction> parseXchg(const OpcodeBytes& opbytes, u32 address, std::string_view operandsString);
+        static std::unique_ptr<X86Instruction> parseXadd(const OpcodeBytes& opbytes, u32 address, std::string_view operandsString);
 
         static std::unique_ptr<X86Instruction> parseCall(const OpcodeBytes& opbytes, u32 address, std::string_view operands, std::string_view decorator);
 

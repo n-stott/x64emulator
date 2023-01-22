@@ -132,6 +132,12 @@ namespace x86 {
         Src src;
     };
 
+    template<typename Dst, typename Src>
+    struct Xadd {
+        Dst dst;
+        Src src;
+    };
+
     struct CallDirect {
         u32 symbolAddress;
         std::string symbolName;

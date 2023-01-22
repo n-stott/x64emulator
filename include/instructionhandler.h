@@ -106,6 +106,11 @@ namespace x86 {
 
         virtual void exec(const Xchg<R16, R16>&) = 0;
         virtual void exec(const Xchg<R32, R32>&) = 0;
+        virtual void exec(const Xchg<M32, R32>&) = 0;
+
+        virtual void exec(const Xadd<R16, R16>&) = 0;
+        virtual void exec(const Xadd<R32, R32>&) = 0;
+        virtual void exec(const Xadd<M32, R32>&) = 0;
 
         virtual void exec(const Mov<R8, R8>&) = 0;
         virtual void exec(const Mov<R8, Imm<u8>>&) = 0;
