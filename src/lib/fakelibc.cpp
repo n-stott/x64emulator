@@ -201,6 +201,15 @@ extern "C" {
         return secondsSinceEpoch;
     }
 
+    int fakelibc$pthread_once(pthread_once_t* once_control, void (*init_routine)(void)) {
+        static bool called = false;
+        if(!called) {
+            init_routine();
+            called = true;
+        }
+        return 0;
+    }
+
     int fakelibc$__pthread_key_create(pthread_key_t* key, void (*destructor)(void*)) {
         return 0;
     }
