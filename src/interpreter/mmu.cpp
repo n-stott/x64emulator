@@ -16,6 +16,15 @@ namespace x86 {
     }
 
     Mmu::Region* Mmu::addRegion(Region region) {
+        auto nonEmptyIntersection = [&](const Region& r) {
+            return r.contains(region.base) || r.contains(region.base + region.size - 1);
+        };
+        verify(std::none_of(regions_.begin(), regions_.end(), nonEmptyIntersection), [&]() {
+            auto r = std::find_if(regions_.begin(), regions_.end(), nonEmptyIntersection);
+            assert(r != regions_.end());
+            fmt::print("Unable to add region \"{}\" : memory range [{:#x}, {:#x}] already occupied by region \"{}\"\n", region.name, region.base, region.base + region.size, r->name);
+            dumpRegions();
+        });
         regions_.push_back(std::move(region));
         return &regions_.back();
     }
