@@ -193,7 +193,7 @@ namespace x86 {
     const Function* Interpreter::findFunctionByAddress(u32 address) {
         const Function* func = program_.findFunctionByAddress(address);
         if(!func) {
-            func = libc_.findFunctionByAddress(address);
+            func = libc_.findFunctionByAddress(address - libcOffset_);
             verify(!!func, [&]() {
                 fmt::print(stderr, "Unable to find function at {:#x}\n", address);
             });
