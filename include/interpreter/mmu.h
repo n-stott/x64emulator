@@ -76,6 +76,8 @@ namespace x86 {
 
         void dumpRegions() const;
 
+        u32 topOfMemoryAligned() const;
+
     private:
         Region* findAddress(u32 address);
         const Region* findAddress(u32 address) const;

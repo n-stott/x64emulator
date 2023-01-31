@@ -35,6 +35,7 @@ namespace x86 {
         Cpu cpu_;
 
         bool stop_;
+        u32 libcOffset_ = 0;
 
         struct Frame {
             const Function* function;

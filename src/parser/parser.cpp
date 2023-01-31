@@ -39,7 +39,6 @@ namespace x86 {
             total++;
             success += (!!ptr);
             if(ptr) {
-                // fmt::print("{:00000008x} <{}>:\n", ptr->address, ptr->name);
                 if(startsWith(ptr->name, ".L")) {
                     assert(!program.functions.empty());
                     auto& prevFuncInstruction = program.functions.back().instructions;
@@ -49,16 +48,6 @@ namespace x86 {
                 }
             }
         }
-
-        // std::string line;
-        // size_t total = 0;
-        // size_t success = 0;
-        // while (std::getline(file, line)) {
-        //     auto ptr = parseInstructionLine(strip(line));
-        //     total++;
-        //     success += (!!ptr);
-        // }
-        fmt::print("Success : {} / {}\n", success, total);
 
         return std::make_unique<Program>(std::move(program));
     }

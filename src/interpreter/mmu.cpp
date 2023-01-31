@@ -177,4 +177,11 @@ namespace x86 {
         }
     }
 
+    u32 Mmu::topOfMemoryAligned() const {
+        u32 top = 0;
+        for(const auto& region : regions_) top = std::max(top, region.base+region.size);
+        top = (top + 1023)/1024*1024;
+        return top;
+    }
+
 }

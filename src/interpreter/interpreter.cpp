@@ -40,26 +40,8 @@ namespace x86 {
 
     void Interpreter::run(const std::vector<std::string>& arguments) {
         try {
-            // heap
-            u32 heapBase = 0x2000000;
-            u32 heapSize = 64*1024;
-            Mmu::Region heapRegion{ "heap", heapBase, heapSize, PROT_READ | PROT_WRITE };
-            mmu_.addRegion(heapRegion);
-            libc_.setHeapRegion(heapRegion.base, heapRegion.size);
-            libc_.configureIntrinsics(ExecutionContext(*this));
-            
-            // stack
-            u32 stackBase = 0x1000000;
-            u32 stackSize = 16*1024;
-            Mmu::Region stack{ "stack", stackBase, stackSize, PROT_READ | PROT_WRITE };
-            mmu_.addRegion(stack);
-            cpu_.regs_.esp_ = stackBase + stackSize;
-
             programElf_ = elf::ElfReader::tryCreate(program_.filepath);
-            if(!programElf_) {
-                fmt::print(stderr, "Failed to load program elf file\n");
-                std::abort();
-            }
+            verify(!!programElf_, "Failed to load program elf file");
 
             auto addSectionIfExists = [&](const elf::Elf& elf, const std::string& sectionName, const std::string& regionName, Protection protection, u32 offset = 0) -> Mmu::Region* {
                 auto section = elf.sectionFromName(sectionName);
@@ -77,41 +59,44 @@ namespace x86 {
             Mmu::Region* got = addSectionIfExists(*programElf_, ".got", "program .got", PROT_READ | PROT_WRITE);
             Mmu::Region* gotplt = addSectionIfExists(*programElf_, ".got.plt", "program .got.plt", PROT_READ | PROT_WRITE);
 
+
             std::unique_ptr<elf::Elf> libcElf = elf::ElfReader::tryCreate(libc_.filepath);
-            if(!libcElf) {
-                fmt::print("Failed to load libc elf file\n");
-                std::abort();
+            verify(!!libcElf, "Failed to load libc elf file");
+
+            libcOffset_ = mmu_.topOfMemoryAligned();
+            for(auto& func : libc_.functions) {
+                func.addressOffset = libcOffset_;
             }
-            addSectionIfExists(*libcElf, ".data", "libc .data", PROT_READ | PROT_WRITE);
-            addSectionIfExists(*libcElf, ".bss", "libc .bss", PROT_READ | PROT_WRITE);
+            addSectionIfExists(*libcElf, ".data", "libc .data", PROT_READ | PROT_WRITE, libcOffset_);
+            addSectionIfExists(*libcElf, ".bss", "libc .bss", PROT_READ | PROT_WRITE, libcOffset_);
 
             auto programStringTable = programElf_->dynamicStringTable();
 
-                programElf_->resolveRelocations([&](const elf::Elf::RelocationEntry32& relocation) {
-                    const auto* sym = relocation.symbol(*programElf_);
-                    if(!sym) return;
-                    std::string_view symbol = sym->symbol(&programStringTable.value(), *programElf_);
+            programElf_->resolveRelocations([&](const elf::Elf::RelocationEntry32& relocation) {
+                const auto* sym = relocation.symbol(*programElf_);
+                if(!sym) return;
+                std::string_view symbol = sym->symbol(&programStringTable.value(), *programElf_);
 
-                    u32 relocationAddress = relocation.offset();
-                    if(sym->type() == elf::Elf::SymbolTable::Entry32::Type::FUNC) {
-                        const auto* func = libc_.findUniqueFunction(symbol);
-                        if(!func) return;
-                        // fmt::print("Resolve relocation for function \"{}\" : {:#x}\n", symbol, func ? func->address : 0);
-                        mmu_.write32(Ptr32{relocationAddress}, func->address);
-                    }
-                    if(sym->type() == elf::Elf::SymbolTable::Entry32::Type::OBJECT) {
-                        bool found = false;
-                        auto resolveSymbol = [&](const elf::Elf::StringTable* stringTable, const elf::Elf::SymbolTable::Entry32& entry) {
-                            if(found) return;
-                            if(entry.symbol(stringTable, *libcElf).find(symbol) == std::string_view::npos) return;
-                            found = true;
-                            // fmt::print("Resolve relocation for object \"{}\" : {:#x}\n", symbol, entry.st_value);
-                            mmu_.write32(Ptr32{relocationAddress}, entry.st_value);
-                        };
-                        libcElf->forAllSymbols(resolveSymbol);
-                        if(!found) libcElf->forAllDynamicSymbols(resolveSymbol);
-                    }
-                });
+                u32 relocationAddress = relocation.offset();
+                if(sym->type() == elf::Elf::SymbolTable::Entry32::Type::FUNC) {
+                    const auto* func = libc_.findUniqueFunction(symbol);
+                    if(!func) return;
+                    // fmt::print("Resolve relocation for function \"{}\" : {:#x}\n", symbol, func ? func->address : 0);
+                    mmu_.write32(Ptr32{relocationAddress}, func->address + libcOffset_);
+                }
+                if(sym->type() == elf::Elf::SymbolTable::Entry32::Type::OBJECT) {
+                    bool found = false;
+                    auto resolveSymbol = [&](const elf::Elf::StringTable* stringTable, const elf::Elf::SymbolTable::Entry32& entry) {
+                        if(found) return;
+                        if(entry.symbol(stringTable, *libcElf).find(symbol) == std::string_view::npos) return;
+                        found = true;
+                        // fmt::print("Resolve relocation for object \"{}\" : {:#x}\n", symbol, entry.st_value);
+                        mmu_.write32(Ptr32{relocationAddress}, entry.st_value + libcOffset_);
+                    };
+                    libcElf->forAllSymbols(resolveSymbol);
+                    if(!found) libcElf->forAllDynamicSymbols(resolveSymbol);
+                }
+            });
 
             auto gotHandler = [&](u32 address){
                 auto programStringTable = programElf_->dynamicStringTable();
@@ -132,6 +117,21 @@ namespace x86 {
                 gotplt->setInvalidValues(INV_NULL);
                 gotplt->setHandler(gotHandler);
             }
+
+            // heap
+            u32 heapBase = 0x2000000;
+            u32 heapSize = 64*1024;
+            Mmu::Region heapRegion{ "heap", heapBase, heapSize, PROT_READ | PROT_WRITE };
+            mmu_.addRegion(heapRegion);
+            libc_.setHeapRegion(heapRegion.base, heapRegion.size);
+            libc_.configureIntrinsics(ExecutionContext(*this));
+            
+            // stack
+            u32 stackBase = 0x1000000;
+            u32 stackSize = 16*1024;
+            Mmu::Region stack{ "stack", stackBase, stackSize, PROT_READ | PROT_WRITE };
+            mmu_.addRegion(stack);
+            cpu_.regs_.esp_ = stackBase + stackSize;
         } catch (const VerificationException&) {
             stop_ = true;
         }
@@ -258,7 +258,7 @@ namespace x86 {
                 const X86Instruction* instruction = callStack_.next();
                 auto nextAfter = callStack_.peek();
                 if(nextAfter) {
-                    cpu_.regs_.eip_ = nextAfter->address;
+                    cpu_.regs_.eip_ = nextAfter->address + callStack_.frames.back().function->addressOffset;
                 }
                 if(!instruction) {
                     fmt::print(stderr, "Undefined instruction near {:#x}\n", cpu_.regs_.eip_);
