@@ -107,6 +107,16 @@ namespace elf {
                     HIPROC = 15,
                 };
 
+                enum class Bind {
+                    LOCAL = 0,
+                    GLOBAL = 1,
+                    WEAK = 2,
+                    LOOS = 10,
+                    HIOS = 12,
+                    LOPROC = 13,
+                    HIPROC = 15,
+                };
+
                 u32	st_name {};
                 u32	st_value {};
                 u32	st_size {};
@@ -116,6 +126,10 @@ namespace elf {
 
                 Type type() const {
                     return static_cast<Type>(st_info & 0xF);
+                }
+
+                Bind bind() const {
+                    return static_cast<Bind>(st_info >> 4);
                 }
 
                 std::string_view symbol(const StringTable* stringTable, const Elf& elf) const {
