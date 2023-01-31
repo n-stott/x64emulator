@@ -19,6 +19,7 @@ add_executable(interpreter
     src/parser/disassembler.cpp
     src/parser/parser.cpp
     src/interpreter/interpreter.cpp
+    src/interpreter/cpu.cpp
     src/interpreter/mmu.cpp
     src/interpreter/executioncontext.cpp
     src/program.cpp
