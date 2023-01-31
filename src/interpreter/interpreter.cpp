@@ -83,13 +83,13 @@ namespace x86 {
             std::string_view symbol = sym->symbol(&programStringTable.value(), *programElf_);
 
             u32 relocationAddress = relocation.offset();
-            if(sym->type() == elf::Elf::SymbolTable::Entry32::Type::FUNC) {
+            if(sym->type() == elf::Elf::SymbolTable::Entry32::Type::FUNC
+            || (sym->type() == elf::Elf::SymbolTable::Entry32::Type::NOTYPE && sym->bind() == elf::Elf::SymbolTable::Entry32::Bind::WEAK)) {
                 const auto* func = libc_.findUniqueFunction(symbol);
                 if(!func) return;
                 // fmt::print("Resolve relocation for function \"{}\" : {:#x}\n", symbol, func ? func->address : 0);
                 mmu_.write32(Ptr32{relocationAddress}, func->address + libcOffset_);
-            }
-            if(sym->type() == elf::Elf::SymbolTable::Entry32::Type::OBJECT) {
+            } else if(sym->type() == elf::Elf::SymbolTable::Entry32::Type::OBJECT) {
                 bool found = false;
                 auto resolveSymbol = [&](const elf::Elf::StringTable* stringTable, const elf::Elf::SymbolTable::Entry32& entry) {
                     if(found) return;
@@ -100,6 +100,8 @@ namespace x86 {
                 };
                 libcElf->forAllSymbols(resolveSymbol);
                 if(!found) libcElf->forAllDynamicSymbols(resolveSymbol);
+            } else {
+                fmt::print("Relocation for symbol \"{}\" of type {} ignored\n", symbol, (int)sym->type());
             }
         });
 
