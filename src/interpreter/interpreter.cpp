@@ -39,103 +39,109 @@ namespace x86 {
     }
 
     void Interpreter::run(const std::vector<std::string>& arguments) {
-        try {
-            programElf_ = elf::ElfReader::tryCreate(program_.filepath);
-            verify(!!programElf_, "Failed to load program elf file");
+        VerificationScope::run([&]() {
+            loadProgram();
+            loadLibrary();
+            setupStackAndHeap();
+            runInit();
+            pushProgramArguments(arguments);
+            executeMain();
+        }, [&]() {
+            mmu_.dumpRegions();
+            stop_ = true;
+        });
+    }
 
-            auto addSectionIfExists = [&](const elf::Elf& elf, const std::string& sectionName, const std::string& regionName, Protection protection, u32 offset = 0) -> Mmu::Region* {
-                auto section = elf.sectionFromName(sectionName);
-                if(!section) return nullptr;
-                Mmu::Region region{ regionName, (u32)(section->address + offset), (u32)section->size(), protection };
-                if(section->type() != elf::Elf::SectionHeaderType::NOBITS)
-                    std::memcpy(region.data.data(), section->begin, section->size()*sizeof(u8));
-                return mmu_.addRegion(std::move(region));
-            };
+    void Interpreter::loadProgram() {
+        programElf_ = elf::ElfReader::tryCreate(program_.filepath);
+        verify(!!programElf_, "Failed to load program elf file");
 
-            addSectionIfExists(*programElf_, ".rodata", "program .rodata", PROT_READ);
-            addSectionIfExists(*programElf_, ".data.rel.ro", "program .data.rel.ro", PROT_READ);
-            addSectionIfExists(*programElf_, ".data", "program .data", PROT_READ | PROT_WRITE);
-            addSectionIfExists(*programElf_, ".bss", "program .bss", PROT_READ | PROT_WRITE);
-            Mmu::Region* got = addSectionIfExists(*programElf_, ".got", "program .got", PROT_READ | PROT_WRITE);
-            Mmu::Region* gotplt = addSectionIfExists(*programElf_, ".got.plt", "program .got.plt", PROT_READ | PROT_WRITE);
+        addSectionIfExists(*programElf_, ".rodata", "program .rodata", PROT_READ);
+        addSectionIfExists(*programElf_, ".data.rel.ro", "program .data.rel.ro", PROT_READ);
+        addSectionIfExists(*programElf_, ".data", "program .data", PROT_READ | PROT_WRITE);
+        addSectionIfExists(*programElf_, ".bss", "program .bss", PROT_READ | PROT_WRITE);
+        got_ = addSectionIfExists(*programElf_, ".got", "program .got", PROT_READ | PROT_WRITE);
+        gotplt_ = addSectionIfExists(*programElf_, ".got.plt", "program .got.plt", PROT_READ | PROT_WRITE);
+    }
 
+    void Interpreter::loadLibrary() {
+        std::unique_ptr<elf::Elf> libcElf = elf::ElfReader::tryCreate(libc_.filepath);
+        verify(!!libcElf, "Failed to load libc elf file");
 
-            std::unique_ptr<elf::Elf> libcElf = elf::ElfReader::tryCreate(libc_.filepath);
-            verify(!!libcElf, "Failed to load libc elf file");
+        libcOffset_ = mmu_.topOfMemoryAligned();
+        for(auto& func : libc_.functions) {
+            func.addressOffset = libcOffset_;
+        }
+        addSectionIfExists(*libcElf, ".data", "libc .data", PROT_READ | PROT_WRITE, libcOffset_);
+        addSectionIfExists(*libcElf, ".bss", "libc .bss", PROT_READ | PROT_WRITE, libcOffset_);
 
-            libcOffset_ = mmu_.topOfMemoryAligned();
-            for(auto& func : libc_.functions) {
-                func.addressOffset = libcOffset_;
+        auto programStringTable = programElf_->dynamicStringTable();
+
+        programElf_->resolveRelocations([&](const elf::Elf::RelocationEntry32& relocation) {
+            const auto* sym = relocation.symbol(*programElf_);
+            if(!sym) return;
+            std::string_view symbol = sym->symbol(&programStringTable.value(), *programElf_);
+
+            u32 relocationAddress = relocation.offset();
+            if(sym->type() == elf::Elf::SymbolTable::Entry32::Type::FUNC) {
+                const auto* func = libc_.findUniqueFunction(symbol);
+                if(!func) return;
+                // fmt::print("Resolve relocation for function \"{}\" : {:#x}\n", symbol, func ? func->address : 0);
+                mmu_.write32(Ptr32{relocationAddress}, func->address + libcOffset_);
             }
-            addSectionIfExists(*libcElf, ".data", "libc .data", PROT_READ | PROT_WRITE, libcOffset_);
-            addSectionIfExists(*libcElf, ".bss", "libc .bss", PROT_READ | PROT_WRITE, libcOffset_);
+            if(sym->type() == elf::Elf::SymbolTable::Entry32::Type::OBJECT) {
+                bool found = false;
+                auto resolveSymbol = [&](const elf::Elf::StringTable* stringTable, const elf::Elf::SymbolTable::Entry32& entry) {
+                    if(found) return;
+                    if(entry.symbol(stringTable, *libcElf).find(symbol) == std::string_view::npos) return;
+                    found = true;
+                    // fmt::print("Resolve relocation for object \"{}\" : {:#x}\n", symbol, entry.st_value);
+                    mmu_.write32(Ptr32{relocationAddress}, entry.st_value + libcOffset_);
+                };
+                libcElf->forAllSymbols(resolveSymbol);
+                if(!found) libcElf->forAllDynamicSymbols(resolveSymbol);
+            }
+        });
 
+        auto gotHandler = [&](u32 address){
             auto programStringTable = programElf_->dynamicStringTable();
-
-            programElf_->resolveRelocations([&](const elf::Elf::RelocationEntry32& relocation) {
-                const auto* sym = relocation.symbol(*programElf_);
-                if(!sym) return;
-                std::string_view symbol = sym->symbol(&programStringTable.value(), *programElf_);
-
-                u32 relocationAddress = relocation.offset();
-                if(sym->type() == elf::Elf::SymbolTable::Entry32::Type::FUNC) {
-                    const auto* func = libc_.findUniqueFunction(symbol);
-                    if(!func) return;
-                    // fmt::print("Resolve relocation for function \"{}\" : {:#x}\n", symbol, func ? func->address : 0);
-                    mmu_.write32(Ptr32{relocationAddress}, func->address + libcOffset_);
-                }
-                if(sym->type() == elf::Elf::SymbolTable::Entry32::Type::OBJECT) {
-                    bool found = false;
-                    auto resolveSymbol = [&](const elf::Elf::StringTable* stringTable, const elf::Elf::SymbolTable::Entry32& entry) {
-                        if(found) return;
-                        if(entry.symbol(stringTable, *libcElf).find(symbol) == std::string_view::npos) return;
-                        found = true;
-                        // fmt::print("Resolve relocation for object \"{}\" : {:#x}\n", symbol, entry.st_value);
-                        mmu_.write32(Ptr32{relocationAddress}, entry.st_value + libcOffset_);
-                    };
-                    libcElf->forAllSymbols(resolveSymbol);
-                    if(!found) libcElf->forAllDynamicSymbols(resolveSymbol);
+            programElf_->forAllRelocations([&](const elf::Elf::RelocationEntry32& relocation) {
+                if(relocation.offset() == address) {
+                    const auto* sym = relocation.symbol(*programElf_);
+                    std::string_view symbol = sym->symbol(&programStringTable.value(), *programElf_);
+                    fmt::print("Relocation address={:#x} symbol={}\n", address, symbol);
                 }
             });
+        };
 
-            auto gotHandler = [&](u32 address){
-                auto programStringTable = programElf_->dynamicStringTable();
-                programElf_->forAllRelocations([&](const elf::Elf::RelocationEntry32& relocation) {
-                    if(relocation.offset() == address) {
-                        const auto* sym = relocation.symbol(*programElf_);
-                        std::string_view symbol = sym->symbol(&programStringTable.value(), *programElf_);
-                        fmt::print("Relocation address={:#x} symbol={}\n", address, symbol);
-                    }
-                });
-            };
-
-            if(!!got) {
-                got->setInvalidValues(INV_NULL);
-                got->setHandler(gotHandler);
-            }
-            if(!!gotplt) {
-                gotplt->setInvalidValues(INV_NULL);
-                gotplt->setHandler(gotHandler);
-            }
-
-            // heap
-            u32 heapBase = 0x2000000;
-            u32 heapSize = 64*1024;
-            Mmu::Region heapRegion{ "heap", heapBase, heapSize, PROT_READ | PROT_WRITE };
-            mmu_.addRegion(heapRegion);
-            libc_.setHeapRegion(heapRegion.base, heapRegion.size);
-            libc_.configureIntrinsics(ExecutionContext(*this));
-            
-            // stack
-            u32 stackBase = 0x1000000;
-            u32 stackSize = 16*1024;
-            Mmu::Region stack{ "stack", stackBase, stackSize, PROT_READ | PROT_WRITE };
-            mmu_.addRegion(stack);
-            cpu_.regs_.esp_ = stackBase + stackSize;
-        } catch (const VerificationException&) {
-            stop_ = true;
+        if(!!got_) {
+            got_->setInvalidValues(INV_NULL);
+            got_->setHandler(gotHandler);
         }
+        if(!!gotplt_) {
+            gotplt_->setInvalidValues(INV_NULL);
+            gotplt_->setHandler(gotHandler);
+        }
+    }
 
+    void Interpreter::setupStackAndHeap() {
+        // heap
+        u32 heapBase = 0x2000000;
+        u32 heapSize = 64*1024;
+        Mmu::Region heapRegion{ "heap", heapBase, heapSize, PROT_READ | PROT_WRITE };
+        mmu_.addRegion(heapRegion);
+        libc_.setHeapRegion(heapRegion.base, heapRegion.size);
+        libc_.configureIntrinsics(ExecutionContext(*this));
+        
+        // stack
+        u32 stackBase = 0x1000000;
+        u32 stackSize = 16*1024;
+        Mmu::Region stack{ "stack", stackBase, stackSize, PROT_READ | PROT_WRITE };
+        mmu_.addRegion(stack);
+        cpu_.regs_.esp_ = stackBase + stackSize;
+    }
+
+    void Interpreter::runInit() {
         auto initArraySection = programElf_->sectionFromName(".init_array");
         if(initArraySection) {
             assert(initArraySection->size() % sizeof(u32) == 0);
@@ -143,23 +149,28 @@ namespace x86 {
             const u32* endInitArray = reinterpret_cast<const u32*>(initArraySection->end);
             for(const u32* it = beginInitArray; it != endInitArray; ++it) {
                 const Function* initFunction = program_.findFunctionByAddress(*it);
-                if(!initFunction) {
-                    fmt::print("Unable to find init function {:#x}\n, *it");
-                    continue;
-                }
+                verify(!!initFunction, [&]() {
+                    fmt::print("Unable to find init function {:#x}\n", *it);
+                });
                 execute(initFunction);
                 if(stop_) return;
             }
         }
+    }
 
+    void Interpreter::executeMain() {
         const Function* main = program_.findUniqueFunction("main");
-        if(!main) {
-            fmt::print(stderr, "Cannot find \"main\" symbol\n");
-            return;
-        }
-
-        pushProgramArguments(arguments);
+        verify(!!main, "Cannot find \"main\" symbol");
         execute(main);
+    }
+
+    Mmu::Region* Interpreter::addSectionIfExists(const elf::Elf& elf, const std::string& sectionName, const std::string& regionName, Protection protection, u32 offset) {
+        auto section = elf.sectionFromName(sectionName);
+        if(!section) return nullptr;
+        Mmu::Region region{ regionName, (u32)(section->address + offset), (u32)section->size(), protection };
+        if(section->type() != elf::Elf::SectionHeaderType::NOBITS)
+            std::memcpy(region.data.data(), section->begin, section->size()*sizeof(u8));
+        return mmu_.addRegion(std::move(region));
     }
 
     const Function* Interpreter::findFunction(const CallDirect& ins) {
@@ -213,7 +224,7 @@ namespace x86 {
     }
 
     void Interpreter::pushProgramArguments(const std::vector<std::string>& arguments) {
-        try {
+        VerificationScope::run([&]() {
             std::vector<u32> argumentPositions;
             auto pushString = [&](const std::string& s) {
                 std::vector<u32> buffer;
@@ -234,12 +245,10 @@ namespace x86 {
             }
             push32(cpu_.regs_.esp_);
             push32(arguments.size()+1);
-
-
-        } catch(const VerificationException&) {
+        }, [&]() {
             fmt::print("Interpreter crash durig program argument setup\n");
             stop_ = true;
-        }
+        });
     }
 
     void Interpreter::execute(const Function* function) {

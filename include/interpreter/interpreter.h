@@ -25,14 +25,24 @@ namespace x86 {
 
     private:
 
+        void loadProgram();
+        void loadLibrary();
+        void setupStackAndHeap();
+        void runInit();
         void pushProgramArguments(const std::vector<std::string>& arguments);
+        void executeMain();
         void execute(const Function* function);
+
+        Mmu::Region* addSectionIfExists(const elf::Elf& elf, const std::string& sectionName, const std::string& regionName, Protection protection, u32 offset = 0);
 
         Program program_;
         std::unique_ptr<elf::Elf> programElf_;
         LibC libc_;
         Mmu mmu_;
         Cpu cpu_;
+
+        Mmu::Region* got_ = nullptr;
+        Mmu::Region* gotplt_ = nullptr;
 
         bool stop_;
         u32 libcOffset_ = 0;

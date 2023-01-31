@@ -27,6 +27,17 @@ namespace x86 {
         verify(condition);
     }
 
+    struct VerificationScope {
+        template<typename ExecutionCallback, typename ErrorCallback>
+        static void run(ExecutionCallback&& executionCallback, ErrorCallback&& errorCallback) {
+            try {
+                executionCallback();
+            } catch(const VerificationException&) {
+                errorCallback();
+            }   
+        }
+    };
+
     inline void notify(bool condition) {
         if(condition) return;
         fmt::print("###\nNOTIFICATION\n###\n");
