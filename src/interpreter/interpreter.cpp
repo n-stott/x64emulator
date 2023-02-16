@@ -33,7 +33,7 @@ namespace x86 {
         }
     };
 
-    Interpreter::Interpreter(Program program, LibC libc) : program_(std::move(program)), libc_(std::move(libc)), mmu_(this), cpu_(this) {
+    Interpreter::Interpreter(Program program, LibC libc) : program_(std::move(program)), libc_(std::move(libc)), cpu_(this) {
         cpu_.setMmu(&mmu_);
         stop_ = false;
     }

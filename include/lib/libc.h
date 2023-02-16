@@ -22,7 +22,7 @@ namespace x86 {
         friend struct Malloc;
         friend class MallocInstruction;
         friend struct Free;
-        friend struct FreeInstruction;
+        friend class FreeInstruction;
         
     };
 

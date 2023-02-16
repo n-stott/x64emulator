@@ -31,13 +31,11 @@ namespace x86 {
         program.filename = filenameFromPath(filepath);
 
         size_t total = 0;
-        size_t success = 0;
         line_iterator begin = disassembledText.begin();
         line_iterator end = disassembledText.end();
         while(begin != end) {
             auto ptr = parseFunction(begin, end);
             total++;
-            success += (!!ptr);
             if(ptr) {
                 if(startsWith(ptr->name, ".L")) {
                     assert(!program.functions.empty());
