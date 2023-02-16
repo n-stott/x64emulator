@@ -62,7 +62,6 @@ namespace x86 {
         };
 
         Mmu() = default;
-        explicit Mmu(const Interpreter* interpreter) : interpreter_(interpreter) { }
 
         Region* addRegion(Region region);
 
@@ -82,7 +81,6 @@ namespace x86 {
         Region* findAddress(u32 address);
         const Region* findAddress(u32 address) const;
 
-        const Interpreter* interpreter_ = nullptr;
         std::deque<Region> regions_;
     };
 
