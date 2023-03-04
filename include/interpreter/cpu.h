@@ -125,6 +125,10 @@ namespace x86 {
         template<typename Dst, typename Src>
         void execCmovImpl(Cond cond, Dst dst, Src src);
 
+        u8 execOr8Impl(u8 dst, u8 src);
+        u16 execOr16Impl(u16 dst, u16 src);
+        u32 execOr32Impl(u32 dst, u32 src);
+
         u8 execXor8Impl(u8 dst, u8 src);
         u16 execXor16Impl(u16 dst, u16 src);
         u32 execXor32Impl(u32 dst, u32 src);

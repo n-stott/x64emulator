@@ -4,6 +4,7 @@
 #include <wchar.h>
 #include <pthread.h>
 #include "fmt/printf.h"
+#include "lib/libutils.h"
 
 extern "C" {
 
@@ -16,11 +17,25 @@ extern "C" {
     __attribute__((noinline))
     void intrinsic$free(void*) { }
 
+    __attribute__((noinline))
+    FILE* intrinsic$fopen64(const char*, const char*) { return nullptr; }
+
+    __attribute__((noinline))
+    int intrinsic$fileno(FILE*) { return -1; }
+
+    __attribute__((noinline))
+    ssize_t intrinsic$read(int, void*, size_t) { return -1; }
+
+    __attribute__((noinline))
+    int intrinsic$fclose(FILE*) { return 0; }
+
     int fakelibc$putchar(int c) {
         return intrinsic$putchar(c);
     }
 
+    FILE* fakelibc$stdin  = (FILE*)0x57D111;
     FILE* fakelibc$stdout = (FILE*)0x57D0117;
+    FILE* fakelibc$stderr  = (FILE*)0x57DE44;
 
     int fakelibc$puts(const char* s) {
         if(!s) {
@@ -212,6 +227,22 @@ extern "C" {
 
     int fakelibc$__pthread_key_create(pthread_key_t* key, void (*destructor)(void*)) {
         return 0;
+    }
+
+    FILE* fakelibc$fopen64(const char* pathname, const char* mode) {
+        return intrinsic$fopen64(pathname, mode);
+    }
+
+    int fclose(FILE* file) {
+        return intrinsic$fclose(file);
+    }
+
+    int fakelibc$fileno(FILE* file) {
+        return intrinsic$fileno(file);
+    }
+
+    ssize_t fakelibc$read(int fd, void* buf, size_t count) {
+        return intrinsic$read(fd, buf, count);
     }
 
 }

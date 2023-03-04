@@ -7,7 +7,7 @@
 
 int main(int argc, char* argv[]) {
     if(argc < 2) {
-        fmt::print(stderr, "Missing argument: path to program");
+        fmt::print(stderr, "Missing argument: path to program\n");
         return 1;
     }
 

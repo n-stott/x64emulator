@@ -123,3 +123,17 @@ target_compile_options(test_threadlocal PUBLIC ${CC_OPTIONS})
 target_link_options(test_threadlocal PUBLIC ${LD_OPTIONS} -static-libstdc++ -static-libgcc)
 add_test(NAME threadlocal COMMAND ${CMAKE_BINARY_DIR}/x86/interpreter test_threadlocal)
 set_tests_properties(threadlocal PROPERTIES WILL_FAIL true)
+
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/testfile.txt
+    ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
+
+add_executable(test_openfile src/test_openfile.cpp)
+target_compile_options(test_openfile PUBLIC ${CC_OPTIONS})
+target_link_options(test_openfile PUBLIC ${LD_OPTIONS} -static-libstdc++ -static-libgcc)
+add_test(NAME openfile COMMAND ${CMAKE_BINARY_DIR}/x86/interpreter test_openfile)
+
+add_executable(test_readfile src/test_readfile.cpp)
+target_compile_options(test_readfile PUBLIC ${CC_OPTIONS})
+target_link_options(test_readfile PUBLIC ${LD_OPTIONS} -static-libstdc++ -static-libgcc)
+add_test(NAME readfile COMMAND ${CMAKE_BINARY_DIR}/x86/interpreter test_readfile)
+set_tests_properties(readfile PROPERTIES WILL_FAIL true)

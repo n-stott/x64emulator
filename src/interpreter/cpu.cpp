@@ -420,6 +420,24 @@ namespace x86 {
     void Cpu::exec(const And<M32, R32>& ins) { mmu_->write32(resolve(ins.dst), execAnd32Impl(mmu_->read32(resolve(ins.dst)), get(ins.src))); }
     void Cpu::exec(const And<M32, Imm<u32>>& ins) { mmu_->write32(resolve(ins.dst), execAnd32Impl(mmu_->read32(resolve(ins.dst)), get(ins.src))); }
 
+    u8 Cpu::execOr8Impl(u8 dst, u8 src) {
+        u8 tmp = dst | src;
+        WARN_FLAGS();
+        return tmp;
+    }
+
+    u16 Cpu::execOr16Impl(u16 dst, u16 src) {
+        u16 tmp = dst | src;
+        WARN_FLAGS();
+        return tmp;
+    }
+
+    u32 Cpu::execOr32Impl(u32 dst, u32 src) {
+        u32 tmp = dst | src;
+        WARN_FLAGS();
+        return tmp;
+    }
+
     void Cpu::exec(const Or<R8, R8>& ins) { TODO(ins); }
     void Cpu::exec(const Or<R8, Imm<u8>>& ins) { TODO(ins); }
     void Cpu::exec(const Or<R8, Addr<Size::BYTE, B>>& ins) { TODO(ins); }
@@ -435,8 +453,8 @@ namespace x86 {
     void Cpu::exec(const Or<Addr<Size::BYTE, BD>, Imm<u8>>& ins) { TODO(ins); }
     void Cpu::exec(const Or<Addr<Size::WORD, B>, R16>& ins) { TODO(ins); }
     void Cpu::exec(const Or<Addr<Size::WORD, BD>, R16>& ins) { TODO(ins); }
-    void Cpu::exec(const Or<M32, R32>& ins) { TODO(ins); }
-    void Cpu::exec(const Or<M32, Imm<u32>>& ins) { TODO(ins); }
+    void Cpu::exec(const Or<M32, R32>& ins) { set(resolve(ins.dst), execOr32Impl(get(resolve(ins.dst)), get(ins.src))); }
+    void Cpu::exec(const Or<M32, Imm<u32>>& ins) { set(resolve(ins.dst), execOr32Impl(get(resolve(ins.dst)), get(ins.src))); }
 
     u8 Cpu::execXor8Impl(u8 dst, u8 src) {
         u8 tmp = dst ^ src;

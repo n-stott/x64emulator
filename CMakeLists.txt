@@ -10,6 +10,7 @@ add_library(fakelibc SHARED
 target_compile_options(fakelibc PUBLIC -m32 -fPIC -O0)
 target_link_options(fakelibc PUBLIC -m32)
 target_include_directories(fakelibc PUBLIC ../external)
+target_include_directories(fakelibc PUBLIC include)
 
 add_executable(interpreter
     external/elf-reader/src/elf-reader.cpp
