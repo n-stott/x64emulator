@@ -4,7 +4,6 @@
 #include <wchar.h>
 #include <pthread.h>
 #include "fmt/printf.h"
-#include "lib/libutils.h"
 
 extern "C" {
 
