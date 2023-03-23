@@ -22,8 +22,23 @@ void testC() {
     std::puts(s.c_str());
 }
 
+void testD() {
+    std::stringstream ss;
+    int x;
+    ss >> x;
+}
+
+void testE() {
+    std::stringstream ss;
+    ss << 123;
+    int x;
+    ss >> x;
+}
+
 int main() {
     testA();
     testB();
     testC();
+    testD();
+    testE();
 }

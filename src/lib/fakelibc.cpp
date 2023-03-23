@@ -32,9 +32,11 @@ extern "C" {
         return intrinsic$putchar(c);
     }
 
-    FILE* fakelibc$stdin  = (FILE*)0x57D111;
-    FILE* fakelibc$stdout = (FILE*)0x57D0117;
-    FILE* fakelibc$stderr  = (FILE*)0x57DE44;
+    FILE* const fakelibc$stdin  = (FILE*)0x57D111;
+    FILE* const fakelibc$stdout = (FILE*)0x57D0117;
+    FILE* const fakelibc$stderr  = (FILE*)0x57DE44;
+
+    locale_t const c_locale = (locale_t)0xC10CA1E;
 
     int fakelibc$puts(const char* s) {
         if(!s) {
@@ -163,10 +165,8 @@ extern "C" {
         return 0;
     }
 
-    alignas(64) static  __locale_struct c_locale { 0 };
-
     locale_t fakelibc$__newlocale(int category_mask, const char *locale, locale_t base) {
-        return &c_locale;
+        return c_locale;
     }
 
     locale_t fakelibc$__uselocale(locale_t newloc) {
