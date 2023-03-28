@@ -9,7 +9,7 @@ add_library(fakelibc SHARED
 )
 target_compile_options(fakelibc PUBLIC -m32 -fPIC -O0)
 target_link_options(fakelibc PUBLIC -m32)
-target_include_directories(fakelibc PUBLIC ../external)
+target_include_directories(fakelibc PUBLIC external)
 target_include_directories(fakelibc PUBLIC include)
 
 add_executable(interpreter
@@ -29,7 +29,7 @@ add_executable(interpreter
 target_compile_options(interpreter PUBLIC -m32 -Wall -Wextra -Wpedantic -pedantic -Werror -Wno-sign-compare -Wno-braced-scalar-init -Wimplicit-fallthrough -Wno-missing-braces -DFMT_HEADER_ONLY)
 target_include_directories(interpreter PUBLIC include)
 target_include_directories(interpreter PUBLIC ../common/include)
-target_include_directories(interpreter PUBLIC ../external)
+target_include_directories(interpreter PUBLIC external)
 target_include_directories(interpreter PUBLIC external/elf-reader/src)
 target_link_options(interpreter PUBLIC -m32)
 target_link_libraries(interpreter PUBLIC -lstdc++fs)
