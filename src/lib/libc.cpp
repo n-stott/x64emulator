@@ -11,7 +11,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-namespace x86 {
+namespace x64 {
 
     LibC::LibC(Program p) : Library(std::move(p)) {
         fileRegistry_ = std::make_unique<FileRegistry>();
@@ -20,13 +20,15 @@ namespace x86 {
     LibC::~LibC() = default;
 
     void LibC::configureIntrinsics(const ExecutionContext& context) {
-        addIntrinsicFunction<Putchar>(context);
-        addIntrinsicFunction<Malloc>(context, heap_.get());
-        addIntrinsicFunction<Free>(context, heap_.get());
-        addIntrinsicFunction<Fopen64>(context, fileRegistry_.get());
-        addIntrinsicFunction<Fileno>(context, fileRegistry_.get());
-        addIntrinsicFunction<Fclose>(context, fileRegistry_.get());
-        addIntrinsicFunction<Read>(context, fileRegistry_.get());
+        (void)context;
+        fmt::print("Warning: LibC::configureIntrinsics is deactivated\n");
+        // addIntrinsicFunction<Putchar>(context);
+        // addIntrinsicFunction<Malloc>(context, heap_.get());
+        // addIntrinsicFunction<Free>(context, heap_.get());
+        // addIntrinsicFunction<Fopen64>(context, fileRegistry_.get());
+        // addIntrinsicFunction<Fileno>(context, fileRegistry_.get());
+        // addIntrinsicFunction<Fclose>(context, fileRegistry_.get());
+        // addIntrinsicFunction<Read>(context, fileRegistry_.get());
     }
 
     class LibC::Heap {
@@ -168,7 +170,7 @@ namespace x86 {
             }
 
             virtual std::string toString() const override {
-                return x86::utils::toString(instruction);
+                return x64::utils::toString(instruction);
             }
 
             Instruction instruction;
@@ -207,9 +209,9 @@ namespace x86 {
         explicit PutcharInstruction(ExecutionContext context) : context_(context) { }
 
         void exec(InstructionHandler*) const override {
-            std::putchar(context_.eax());
+            std::putchar(context_.rax());
             ::fflush(stdout);
-            context_.set_eax(1);
+            context_.set_rax(1);
         }
         std::string toString() const override {
             return "__putchar";
@@ -223,9 +225,9 @@ namespace x86 {
         explicit MallocInstruction(ExecutionContext context, LibC::Heap* heap) : context_(context), heap_(heap) { }
 
         void exec(InstructionHandler*) const override {
-            u32 size = context_.eax();
+            u32 size = context_.rax();
             u32 address = heap_->malloc(size);
-            context_.set_eax(address);
+            context_.set_rax(address);
         }
         std::string toString() const override {
             return "__malloc";
@@ -240,7 +242,7 @@ namespace x86 {
         explicit FreeInstruction(ExecutionContext context, LibC::Heap* heap) : context_(context), heap_(heap) { }
 
         void exec(InstructionHandler*) const override {
-            u32 address = context_.eax();
+            u32 address = context_.rax();
             heap_->free(address);
         }
         std::string toString() const override {
@@ -258,8 +260,8 @@ namespace x86 {
             fileRegistry_(fileRegistry) { }
 
         void exec(InstructionHandler*) const override {
-            u32 pathname_address = context_.eax();
-            u32 mode_address = context_.ebx();
+            u32 pathname_address = context_.rax();
+            u32 mode_address = context_.rbx();
 
             Ptr8 pathname_ptr { pathname_address };
             std::string pathname;
@@ -279,7 +281,7 @@ namespace x86 {
 
             u32 filehandler = fileRegistry_->openFile(pathname, mode);
 
-            context_.set_eax(filehandler);
+            context_.set_rax(filehandler);
         }
         std::string toString() const override {
             return "__fopen64";
@@ -296,9 +298,9 @@ namespace x86 {
             fileRegistry_(fileRegistry) { }
 
         void exec(InstructionHandler*) const override {
-            u32 fileHandler = context_.eax();
+            u32 fileHandler = context_.rax();
             int fd = fileRegistry_->fileno(fileHandler);
-            context_.set_eax(fd);
+            context_.set_rax(fd);
         }
 
         std::string toString() const override {
@@ -316,9 +318,9 @@ namespace x86 {
             fileRegistry_(fileRegistry) { }
 
         void exec(InstructionHandler*) const override {
-            u32 fileHandler = context_.eax();
+            u32 fileHandler = context_.rax();
             int ret = fileRegistry_->closeFile(fileHandler);
-            context_.set_eax(ret);
+            context_.set_rax(ret);
         }
 
         std::string toString() const override {
@@ -336,13 +338,13 @@ namespace x86 {
             fileRegistry_(fileRegistry) { }
 
         void exec(InstructionHandler*) const override {
-            int fd = context_.eax();
-            u32 bufAddress = context_.ebx();
-            u32 count = context_.ecx();
+            int fd = context_.rax();
+            u32 bufAddress = context_.rbx();
+            u32 count = context_.rcx();
             fmt::print("Read {} bytes from fd={} into buf={:#x}\n", count, fd, bufAddress);
             FILE* file = fileRegistry_->fileFromFd(fd);
             if(!file) {
-                context_.set_eax(-1);
+                context_.set_rax(-1);
                 return;
             }
             std::vector<u8> buf(count+1);
@@ -350,7 +352,7 @@ namespace x86 {
             ssize_t nbytes = ::read(realFd, buf.data(), count);
             fmt::print("Read {} bytes from file\n", nbytes);
             if(nbytes < 0) {
-                context_.set_eax(-1);
+                context_.set_rax(-1);
                 return;
             }
 
@@ -360,7 +362,7 @@ namespace x86 {
                 context_.mmu()->write8(bufPtr, buf[i]);
                 ++bufPtr;
             }
-            context_.set_eax(nbytes);
+            context_.set_rax(nbytes);
         }
 
         std::string toString() const override {
@@ -372,82 +374,102 @@ namespace x86 {
     };
 
     Putchar::Putchar(const ExecutionContext& context) : LibraryFunction("intrinsic$putchar") {
-        add(this, make_wrapper<Push<R32>>(R32::EBP));
-        add(this, make_wrapper<Mov<R32, R32>>(R32::EBP, R32::ESP));
-        auto arg = Addr<Size::DWORD, BD>{{R32::ESP, +8}};
-        add(this, make_wrapper<Mov<R32, M32>>(R32::EAX, arg));
-        add(this, make_intrinsic<PutcharInstruction>(context));
-        add(this, make_wrapper<Pop<R32>>(R32::EBP));
-        add(this, make_wrapper<Ret<void>>());
+        (void)context;
+        assert(!"This is broken");
+        // add(this, make_wrapper<Push<R32>>(R32::EBP));
+        // add(this, make_wrapper<Mov<R32, R32>>(R32::EBP, R32::ESP));
+        // auto arg = Addr<Size::DWORD, BD>{{R32::ESP, +8}};
+        // add(this, make_wrapper<Mov<R32, M32>>(R32::EAX, arg));
+        // add(this, make_intrinsic<PutcharInstruction>(context));
+        // add(this, make_wrapper<Pop<R32>>(R32::EBP));
+        // add(this, make_wrapper<Ret<void>>());
     }
 
     Malloc::Malloc(const ExecutionContext& context, LibC::Heap* heap) : LibraryFunction("intrinsic$malloc") {
-        add(this, make_wrapper<Push<R32>>(R32::EBP));
-        add(this, make_wrapper<Mov<R32, R32>>(R32::EBP, R32::ESP));
-        auto arg = Addr<Size::DWORD, BD>{{R32::ESP, +8}};
-        add(this, make_wrapper<Mov<R32, M32>>(R32::EAX, arg));
-        add(this, make_intrinsic<MallocInstruction>(context, heap));
-        add(this, make_wrapper<Pop<R32>>(R32::EBP));
-        add(this, make_wrapper<Ret<void>>());
+        (void)context;
+        (void)heap;
+        assert(!"This is broken");
+        // add(this, make_wrapper<Push<R32>>(R32::EBP));
+        // add(this, make_wrapper<Mov<R32, R32>>(R32::EBP, R32::ESP));
+        // auto arg = Addr<Size::DWORD, BD>{{R32::ESP, +8}};
+        // add(this, make_wrapper<Mov<R32, M32>>(R32::EAX, arg));
+        // add(this, make_intrinsic<MallocInstruction>(context, heap));
+        // add(this, make_wrapper<Pop<R32>>(R32::EBP));
+        // add(this, make_wrapper<Ret<void>>());
     }
 
     Free::Free(const ExecutionContext& context, LibC::Heap* heap) : LibraryFunction("intrinsic$free") {
-        add(this, make_wrapper<Push<R32>>(R32::EBP));
-        add(this, make_wrapper<Mov<R32, R32>>(R32::EBP, R32::ESP));
-        auto arg = Addr<Size::DWORD, BD>{{R32::ESP, +8}};
-        add(this, make_wrapper<Mov<R32, M32>>(R32::EAX, arg));
-        add(this, make_intrinsic<FreeInstruction>(context, heap));
-        add(this, make_wrapper<Pop<R32>>(R32::EBP));
-        add(this, make_wrapper<Ret<void>>());
+        (void)context;
+        (void)heap;
+        assert(!"This is broken");
+        // add(this, make_wrapper<Push<R32>>(R32::EBP));
+        // add(this, make_wrapper<Mov<R32, R32>>(R32::EBP, R32::ESP));
+        // auto arg = Addr<Size::DWORD, BD>{{R32::ESP, +8}};
+        // add(this, make_wrapper<Mov<R32, M32>>(R32::EAX, arg));
+        // add(this, make_intrinsic<FreeInstruction>(context, heap));
+        // add(this, make_wrapper<Pop<R32>>(R32::EBP));
+        // add(this, make_wrapper<Ret<void>>());
     }
 
     Fopen64::Fopen64(const ExecutionContext& context, LibC::FileRegistry* fileRegistry) : LibraryFunction("intrinsic$fopen64") {
-        add(this, make_wrapper<Push<R32>>(R32::EBP));
-        add(this, make_wrapper<Push<R32>>(R32::EBX));
-        add(this, make_wrapper<Mov<R32, R32>>(R32::EBP, R32::ESP));
-        auto arg0 = Addr<Size::DWORD, BD>{{R32::ESP, +12}};
-        add(this, make_wrapper<Mov<R32, M32>>(R32::EAX, arg0));
-        auto arg1 = Addr<Size::DWORD, BD>{{R32::ESP, +16}};
-        add(this, make_wrapper<Mov<R32, M32>>(R32::EBX, arg1));
-        add(this, make_intrinsic<Fopen64Instruction>(context, fileRegistry));
-        add(this, make_wrapper<Pop<R32>>(R32::EBX));
-        add(this, make_wrapper<Pop<R32>>(R32::EBP));
-        add(this, make_wrapper<Ret<void>>());
+        (void)context;
+        (void)fileRegistry;
+        assert(!"This is broken");
+        // add(this, make_wrapper<Push<R32>>(R32::EBP));
+        // add(this, make_wrapper<Push<R32>>(R32::EBX));
+        // add(this, make_wrapper<Mov<R32, R32>>(R32::EBP, R32::ESP));
+        // auto arg0 = Addr<Size::DWORD, BD>{{R32::ESP, +12}};
+        // add(this, make_wrapper<Mov<R32, M32>>(R32::EAX, arg0));
+        // auto arg1 = Addr<Size::DWORD, BD>{{R32::ESP, +16}};
+        // add(this, make_wrapper<Mov<R32, M32>>(R32::EBX, arg1));
+        // add(this, make_intrinsic<Fopen64Instruction>(context, fileRegistry));
+        // add(this, make_wrapper<Pop<R32>>(R32::EBX));
+        // add(this, make_wrapper<Pop<R32>>(R32::EBP));
+        // add(this, make_wrapper<Ret<void>>());
     }
 
     Fileno::Fileno(const ExecutionContext& context, LibC::FileRegistry* fileRegistry) : LibraryFunction("intrinsic$fileno") {
-        add(this, make_wrapper<Push<R32>>(R32::EBP));
-        add(this, make_wrapper<Mov<R32, R32>>(R32::EBP, R32::ESP));
-        auto arg = Addr<Size::DWORD, BD>{{R32::ESP, +8}};
-        add(this, make_wrapper<Mov<R32, M32>>(R32::EAX, arg));
-        add(this, make_intrinsic<FilenoInstruction>(context, fileRegistry));
-        add(this, make_wrapper<Pop<R32>>(R32::EBP));
-        add(this, make_wrapper<Ret<void>>());
+        (void)context;
+        (void)fileRegistry;
+        assert(!"This is broken");
+        // add(this, make_wrapper<Push<R32>>(R32::EBP));
+        // add(this, make_wrapper<Mov<R32, R32>>(R32::EBP, R32::ESP));
+        // auto arg = Addr<Size::DWORD, BD>{{R32::ESP, +8}};
+        // add(this, make_wrapper<Mov<R32, M32>>(R32::EAX, arg));
+        // add(this, make_intrinsic<FilenoInstruction>(context, fileRegistry));
+        // add(this, make_wrapper<Pop<R32>>(R32::EBP));
+        // add(this, make_wrapper<Ret<void>>());
     }
 
     Fclose::Fclose(const ExecutionContext& context, LibC::FileRegistry* fileRegistry) : LibraryFunction("intrinsic$fclose") {
-        add(this, make_wrapper<Push<R32>>(R32::EBP));
-        add(this, make_wrapper<Mov<R32, R32>>(R32::EBP, R32::ESP));
-        auto arg = Addr<Size::DWORD, BD>{{R32::ESP, +8}};
-        add(this, make_wrapper<Mov<R32, M32>>(R32::EAX, arg));
-        add(this, make_intrinsic<FcloseInstruction>(context, fileRegistry));
-        add(this, make_wrapper<Pop<R32>>(R32::EBP));
-        add(this, make_wrapper<Ret<void>>());
+        (void)context;
+        (void)fileRegistry;
+        assert(!"This is broken");
+        // add(this, make_wrapper<Push<R32>>(R32::EBP));
+        // add(this, make_wrapper<Mov<R32, R32>>(R32::EBP, R32::ESP));
+        // auto arg = Addr<Size::DWORD, BD>{{R32::ESP, +8}};
+        // add(this, make_wrapper<Mov<R32, M32>>(R32::EAX, arg));
+        // add(this, make_intrinsic<FcloseInstruction>(context, fileRegistry));
+        // add(this, make_wrapper<Pop<R32>>(R32::EBP));
+        // add(this, make_wrapper<Ret<void>>());
     }
     
     Read::Read(const ExecutionContext& context, LibC::FileRegistry* fileRegistry) : LibraryFunction("intrinsic$read") {
-        add(this, make_wrapper<Push<R32>>(R32::EBP));
-        add(this, make_wrapper<Push<R32>>(R32::EBX));
-        add(this, make_wrapper<Mov<R32, R32>>(R32::EBP, R32::ESP));
-        auto arg0 = Addr<Size::DWORD, BD>{{R32::ESP, +12}};
-        add(this, make_wrapper<Mov<R32, M32>>(R32::EAX, arg0));
-        auto arg1 = Addr<Size::DWORD, BD>{{R32::ESP, +16}};
-        add(this, make_wrapper<Mov<R32, M32>>(R32::EBX, arg1));
-        auto arg2 = Addr<Size::DWORD, BD>{{R32::ESP, +20}};
-        add(this, make_wrapper<Mov<R32, M32>>(R32::ECX, arg2));
-        add(this, make_intrinsic<ReadInstruction>(context, fileRegistry));
-        add(this, make_wrapper<Pop<R32>>(R32::EBX));
-        add(this, make_wrapper<Pop<R32>>(R32::EBP));
-        add(this, make_wrapper<Ret<void>>());
+        (void)context;
+        (void)fileRegistry;
+        assert(!"This is broken");
+        // add(this, make_wrapper<Push<R32>>(R32::EBP));
+        // add(this, make_wrapper<Push<R32>>(R32::EBX));
+        // add(this, make_wrapper<Mov<R32, R32>>(R32::EBP, R32::ESP));
+        // auto arg0 = Addr<Size::DWORD, BD>{{R32::ESP, +12}};
+        // add(this, make_wrapper<Mov<R32, M32>>(R32::EAX, arg0));
+        // auto arg1 = Addr<Size::DWORD, BD>{{R32::ESP, +16}};
+        // add(this, make_wrapper<Mov<R32, M32>>(R32::EBX, arg1));
+        // auto arg2 = Addr<Size::DWORD, BD>{{R32::ESP, +20}};
+        // add(this, make_wrapper<Mov<R32, M32>>(R32::ECX, arg2));
+        // add(this, make_intrinsic<ReadInstruction>(context, fileRegistry));
+        // add(this, make_wrapper<Pop<R32>>(R32::EBX));
+        // add(this, make_wrapper<Pop<R32>>(R32::EBP));
+        // add(this, make_wrapper<Ret<void>>());
     }
 }

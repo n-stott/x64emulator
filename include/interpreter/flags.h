@@ -3,7 +3,7 @@
 
 #include "types.h"
 
-namespace x86 {
+namespace x64 {
 
     struct Flags {
         bool carry { false };

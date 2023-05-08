@@ -2,7 +2,7 @@
 #include "interpreter/verify.h"
 #include <fmt/core.h>
 
-namespace x86 {
+namespace x64 {
 
     const Function* Program::findUniqueFunction(std::string_view name) const {
 #ifndef NDEBUG

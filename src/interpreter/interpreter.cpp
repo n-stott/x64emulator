@@ -7,7 +7,7 @@
 
 #include <signal.h>
 
-namespace x86 {
+namespace x64 {
 
     static bool signal_interrupt = false;
 
@@ -128,28 +128,28 @@ namespace x86 {
 
     void Interpreter::setupStackAndHeap() {
         // heap
-        u32 heapBase = 0x2000000;
-        u32 heapSize = 64*1024;
+        u64 heapBase = 0x2000000;
+        u64 heapSize = 64*1024;
         Mmu::Region heapRegion{ "heap", heapBase, heapSize, PROT_READ | PROT_WRITE };
         mmu_.addRegion(heapRegion);
         libc_.setHeapRegion(heapRegion.base, heapRegion.size);
         libc_.configureIntrinsics(ExecutionContext(*this));
         
         // stack
-        u32 stackBase = 0x1000000;
-        u32 stackSize = 16*1024;
+        u64 stackBase = 0x1000000;
+        u64 stackSize = 16*1024;
         Mmu::Region stack{ "stack", stackBase, stackSize, PROT_READ | PROT_WRITE };
         mmu_.addRegion(stack);
-        cpu_.regs_.esp_ = stackBase + stackSize;
+        cpu_.regs_.rsp_ = stackBase + stackSize;
     }
 
     void Interpreter::runInit() {
         auto initArraySection = programElf_->sectionFromName(".init_array");
         if(initArraySection) {
-            assert(initArraySection->size() % sizeof(u32) == 0);
-            const u32* beginInitArray = reinterpret_cast<const u32*>(initArraySection->begin);
-            const u32* endInitArray = reinterpret_cast<const u32*>(initArraySection->end);
-            for(const u32* it = beginInitArray; it != endInitArray; ++it) {
+            assert(initArraySection->size() % sizeof(u64) == 0);
+            const u64* beginInitArray = reinterpret_cast<const u64*>(initArraySection->begin);
+            const u64* endInitArray = reinterpret_cast<const u64*>(initArraySection->end);
+            for(const u64* it = beginInitArray; it != endInitArray; ++it) {
                 const Function* initFunction = program_.findFunctionByAddress(*it);
                 verify(!!initFunction, [&]() {
                     fmt::print("Unable to find init function {:#x}\n", *it);
@@ -203,26 +203,31 @@ namespace x86 {
 
     namespace {
 
-        void alignDown32(u32& address) {
-            address = address & 0xFFFFFFA0;
+        void alignDown64(u64& address) {
+            address = address & 0xFFFFFFFFFFFFFF00;
         }
 
     }
 
 
     void Interpreter::push8(u8 value) {
-        cpu_.regs_.esp_ -= 4;
-        mmu_.write32(Ptr32{cpu_.regs_.esp_}, (u32)value);
+        cpu_.regs_.rsp_ -= 8;
+        mmu_.write64(Ptr64{cpu_.regs_.rsp_}, (u64)value);
     }
 
     void Interpreter::push16(u16 value) {
-        cpu_.regs_.esp_ -= 4;
-        mmu_.write32(Ptr32{cpu_.regs_.esp_}, (u32)value);
+        cpu_.regs_.rsp_ -= 8;
+        mmu_.write64(Ptr64{cpu_.regs_.rsp_}, (u64)value);
     }
 
     void Interpreter::push32(u32 value) {
-        cpu_.regs_.esp_ -= 4;
-        mmu_.write32(Ptr32{cpu_.regs_.esp_}, value);
+        cpu_.regs_.rsp_ -= 8;
+        mmu_.write64(Ptr64{cpu_.regs_.rsp_}, (u64)value);
+    }
+
+    void Interpreter::push64(u64 value) {
+        cpu_.regs_.rsp_ -= 8;
+        mmu_.write64(Ptr64{cpu_.regs_.rsp_}, value);
     }
 
     void Interpreter::pushProgramArguments(const std::vector<std::string>& arguments) {
@@ -233,7 +238,7 @@ namespace x86 {
                 buffer.resize((s.size()+1+3)/4, 0);
                 std::memcpy(buffer.data(), s.data(), s.size());
                 for(auto cit = buffer.rbegin(); cit != buffer.rend(); ++cit) push32(*cit);
-                argumentPositions.push_back(cpu_.regs_.esp_);
+                argumentPositions.push_back(cpu_.regs_.rsp_);
             };
 
             pushString(program_.filepath);
@@ -241,12 +246,12 @@ namespace x86 {
                 pushString(*it);
             }
             
-            alignDown32(cpu_.regs_.esp_);
+            alignDown64(cpu_.regs_.rsp_);
             for(auto it = argumentPositions.rbegin(); it != argumentPositions.rend(); ++it) {
                 push32(*it);
             }
-            push32(cpu_.regs_.esp_);
-            push32(arguments.size()+1);
+            push64(cpu_.regs_.rsp_);
+            push64(arguments.size()+1);
         }, [&]() {
             fmt::print("Interpreter crash durig program argument setup\n");
             stop_ = true;
@@ -269,10 +274,10 @@ namespace x86 {
                 const X86Instruction* instruction = callStack_.next();
                 auto nextAfter = callStack_.peek();
                 if(nextAfter) {
-                    cpu_.regs_.eip_ = nextAfter->address + callStack_.frames.back().function->addressOffset;
+                    cpu_.regs_.rip_ = nextAfter->address + callStack_.frames.back().function->addressOffset;
                 }
                 if(!instruction) {
-                    fmt::print(stderr, "Undefined instruction near {:#x}\n", cpu_.regs_.eip_);
+                    fmt::print(stderr, "Undefined instruction near {:#x}\n", cpu_.regs_.rip_);
                     stop_ = true;
                     break;
                 }
@@ -281,7 +286,9 @@ namespace x86 {
                                                                        (cpu_.flags_.zero ? 'Z' : ' '), 
                                                                        (cpu_.flags_.overflow ? 'O' : ' '), 
                                                                        (cpu_.flags_.sign ? 'S' : ' '));
-                std::string registerDump = fmt::format("eax={:0000008x} ebx={:0000008x} ecx={:0000008x} edx={:0000008x} esi={:0000008x} edi={:0000008x} ebp={:0000008x} esp={:0000008x}", cpu_.regs_.eax_, cpu_.regs_.ebx_, cpu_.regs_.ecx_, cpu_.regs_.edx_, cpu_.regs_.esi_, cpu_.regs_.edi_, cpu_.regs_.ebp_, cpu_.regs_.esp_);
+                std::string registerDump = fmt::format("eax={:0000008x} ebx={:0000008x} ecx={:0000008x} edx={:0000008x} esi={:0000008x} edi={:0000008x} ebp={:0000008x} esp={:0000008x}",
+                                                        cpu_.regs_.rax_, cpu_.regs_.rbx_, cpu_.regs_.rcx_, cpu_.regs_.rdx_,
+                                                        cpu_.regs_.rsi_, cpu_.regs_.rdi_, cpu_.regs_.rbp_, cpu_.regs_.rsp_);
                 std::string indent = fmt::format("{:{}}", "", callStack_.frames.size());
                 std::string menmonic = fmt::format("{}|{}", indent, instruction->toString());
                 fmt::print(stderr, "{:10} {:60}{:20} {}\n", ticks, menmonic, eflags, registerDump);
@@ -305,8 +312,8 @@ namespace x86 {
         fmt::print(stream,
 "eax {:0000008x}  ebx {:0000008x}  ecx {:0000008x}  edx {:0000008x}  "
 "esi {:0000008x}  edi {:0000008x}  ebp {:0000008x}  esp {:0000008x}\n", 
-        cpu_.regs_.eax_, cpu_.regs_.ebx_, cpu_.regs_.ecx_, cpu_.regs_.edx_,
-        cpu_.regs_.esi_, cpu_.regs_.edi_, cpu_.regs_.ebp_, cpu_.regs_.esp_);
+        cpu_.regs_.rax_, cpu_.regs_.rbx_, cpu_.regs_.rcx_, cpu_.regs_.rdx_,
+        cpu_.regs_.rsi_, cpu_.regs_.rdi_, cpu_.regs_.rbp_, cpu_.regs_.rsp_);
     }
 
     void Interpreter::dumpStack(FILE* stream) const {
@@ -314,9 +321,9 @@ namespace x86 {
         (void)stream;
 #ifndef NDEBUG
         u32 stackEnd = 0x1000000 + 16*1024;
-        u32 arg0 = (cpu_.regs_.esp_+0 < stackEnd ? mmu_.read32(Ptr32{cpu_.regs_.esp_+0}) : 0xffffffff);
-        u32 arg1 = (cpu_.regs_.esp_+4 < stackEnd ? mmu_.read32(Ptr32{cpu_.regs_.esp_+4}) : 0xffffffff);
-        u32 arg2 = (cpu_.regs_.esp_+8 < stackEnd ? mmu_.read32(Ptr32{cpu_.regs_.esp_+8}) : 0xffffffff);
+        u32 arg0 = (cpu_.regs_.rsp_+0 < stackEnd ? mmu_.read32(Ptr32{cpu_.regs_.rsp_+0}) : 0xffffffff);
+        u32 arg1 = (cpu_.regs_.rsp_+4 < stackEnd ? mmu_.read32(Ptr32{cpu_.regs_.rsp_+4}) : 0xffffffff);
+        u32 arg2 = (cpu_.regs_.rsp_+8 < stackEnd ? mmu_.read32(Ptr32{cpu_.regs_.rsp_+8}) : 0xffffffff);
         fmt::print(stream, "arg0={:#x} arg1={:#x} arg2={:#x}\n", arg0, arg1, arg2);
 #endif
     }

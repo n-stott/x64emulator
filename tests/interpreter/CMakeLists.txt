@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.13)
-project(x86)
+project(x64)
 set(CMAKE_CXX_STANDARD 17)
 
-set(CC_OPTIONS -m32 -g -O0 -DDEBUG -march=i386)
-set(LD_OPTIONS -m32)
+set(CC_OPTIONS -g -O0 -DDEBUG)
+set(LD_OPTIONS)
 
 add_executable(test_trivial src/test_trivial.cpp)
 target_compile_options(test_trivial PUBLIC ${CC_OPTIONS})

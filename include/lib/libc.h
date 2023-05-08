@@ -5,7 +5,7 @@
 #include "interpreter/executioncontext.h"
 #include <memory>
 
-namespace x86 {
+namespace x64 {
 
     struct LibC : public Library {
         explicit LibC(Program p);

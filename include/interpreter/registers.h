@@ -4,124 +4,188 @@
 #include "types.h"
 #include <cassert>
 
-namespace x86 {
+namespace x64 {
 
     struct Registers {
-        u32 ebp_ { 0 };
-        u32 esp_ { 0 };
-        u32 edi_ { 0 };
-        u32 esi_ { 0 };
-        u32 eax_ { 0 };
-        u32 ebx_ { 0 };
-        u32 ecx_ { 0 };
-        u32 edx_ { 0 };
+        u64 rbp_ { 0 };
+        u64 rsp_ { 0 };
+        u64 rdi_ { 0 };
+        u64 rsi_ { 0 };
+        u64 rax_ { 0 };
+        u64 rbx_ { 0 };
+        u64 rcx_ { 0 };
+        u64 rdx_ { 0 };
+        u64 r8_ { 0 };
+        u64 r9_ { 0 };
+        u64 r10_ { 0 };
+        u64 r11_ { 0 };
+        u64 r12_ { 0 };
+        u64 r13_ { 0 };
+        u64 r14_ { 0 };
+        u64 r15_ { 0 };
+
+
+        u64 rip_ { 0 };
+
         u32 eiz_ { 0 };
-
-        u32 eip_ { 0 };
-
-        u32* lut_[9];
-
-        Registers() {
-            lut_[(int)R32::EBP] = &ebp_;
-            lut_[(int)R32::ESP] = &esp_;
-            lut_[(int)R32::EDI] = &edi_;
-            lut_[(int)R32::ESI] = &esi_;
-            lut_[(int)R32::EAX] = &eax_;
-            lut_[(int)R32::EBX] = &ebx_;
-            lut_[(int)R32::ECX] = &ecx_;
-            lut_[(int)R32::EDX] = &edx_;
-            lut_[(int)R32::EIZ] = &eiz_;
-        }
 
         u8 get(R8 reg) const {
             switch(reg) {
-                case R8::AH:  return (eax_ >> 8) & 0xFF;
-                case R8::AL:  return eax_ & 0xFF;
-                case R8::BH:  return (ebx_ >> 8) & 0xFF;
-                case R8::BL:  return ebx_ & 0xFF;
-                case R8::CH:  return (ecx_ >> 8) & 0xFF;
-                case R8::CL:  return ecx_ & 0xFF;
-                case R8::DH:  return (edx_ >> 8) & 0xFF;
-                case R8::DL:  return edx_ & 0xFF;
-                case R8::SPL: return esp_ & 0xFF;
-                case R8::BPL: return ebp_ & 0xFF;
-                case R8::SIL: return esi_ & 0xFF;
-                case R8::DIL: return edi_ & 0xFF;
+                case R8::AH:  return (rax_ >> 8) & 0xFF;
+                case R8::AL:  return rax_ & 0xFF;
+                case R8::BH:  return (rbx_ >> 8) & 0xFF;
+                case R8::BL:  return rbx_ & 0xFF;
+                case R8::CH:  return (rcx_ >> 8) & 0xFF;
+                case R8::CL:  return rcx_ & 0xFF;
+                case R8::DH:  return (rdx_ >> 8) & 0xFF;
+                case R8::DL:  return rdx_ & 0xFF;
+                case R8::SPL: return rsp_ & 0xFF;
+                case R8::BPL: return rbp_ & 0xFF;
+                case R8::SIL: return rsi_ & 0xFF;
+                case R8::DIL: return rdi_ & 0xFF;
             }
             __builtin_unreachable();
         }
 
         u16 get(R16 reg) const {
             switch(reg) {
-                case R16::BP: return ebp_ & 0xFFFF;
-                case R16::SP: return esp_ & 0xFFFF;
-                case R16::DI: return edi_ & 0xFFFF;
-                case R16::SI: return esi_ & 0xFFFF;
-                case R16::AX: return eax_ & 0xFFFF;
-                case R16::BX: return ebx_ & 0xFFFF;
-                case R16::CX: return ecx_ & 0xFFFF;
-                case R16::DX: return edx_ & 0xFFFF;
+                case R16::BP: return rbp_ & 0xFFFF;
+                case R16::SP: return rsp_ & 0xFFFF;
+                case R16::DI: return rdi_ & 0xFFFF;
+                case R16::SI: return rsi_ & 0xFFFF;
+                case R16::AX: return rax_ & 0xFFFF;
+                case R16::BX: return rbx_ & 0xFFFF;
+                case R16::CX: return rcx_ & 0xFFFF;
+                case R16::DX: return rdx_ & 0xFFFF;
             }
             __builtin_unreachable();
         }
 
         u32 get(R32 reg) const {
-            return *(lut_[(int)reg]);
+            switch(reg) {
+                case R32::EBP: return rbp_ & 0xFFFFFFFF;
+                case R32::ESP: return rsp_ & 0xFFFFFFFF;
+                case R32::EDI: return rdi_ & 0xFFFFFFFF;
+                case R32::ESI: return rsi_ & 0xFFFFFFFF;
+                case R32::EAX: return rax_ & 0xFFFFFFFF;
+                case R32::EBX: return rbx_ & 0xFFFFFFFF;
+                case R32::ECX: return rcx_ & 0xFFFFFFFF;
+                case R32::EDX: return rdx_ & 0xFFFFFFFF;
+                case R32::EIZ: return eiz_;
+            }
+            __builtin_unreachable();
+        }
+
+        u64 get(R64 reg) const {
+            switch(reg) {
+                case R64::RBP: return rbp_;
+                case R64::RSP: return rsp_;
+                case R64::RDI: return rdi_;
+                case R64::RSI: return rsi_;
+                case R64::RAX: return rax_;
+                case R64::RBX: return rbx_;
+                case R64::RCX: return rcx_;
+                case R64::RDX: return rdx_;
+                case R64::R8: return r8_;
+                case R64::R9: return r9_;
+                case R64::R10: return r10_;
+                case R64::R11: return r11_;
+                case R64::R12: return r12_;
+                case R64::R13: return r13_;
+                case R64::R14: return r14_;
+                case R64::R15: return r15_;
+                case R64::RIP: return rip_;
+            }
+            __builtin_unreachable();
         }
     
         void set(R8 reg, u8 value) {
             switch(reg) {
-                case R8::AH:  { eax_ = (eax_ & 0xFFFF00FF) | (value << 8); return; }
-                case R8::AL:  { eax_ = (eax_ & 0xFFFFFF00) | (value); return; }
-                case R8::BH:  { ebx_ = (ebx_ & 0xFFFF00FF) | (value << 8); return; }
-                case R8::BL:  { ebx_ = (ebx_ & 0xFFFFFF00) | (value); return; }
-                case R8::CH:  { ecx_ = (ecx_ & 0xFFFF00FF) | (value << 8); return; }
-                case R8::CL:  { ecx_ = (ecx_ & 0xFFFFFF00) | (value); return; }
-                case R8::DH:  { edx_ = (edx_ & 0xFFFF00FF) | (value << 8); return; }
-                case R8::DL:  { edx_ = (edx_ & 0xFFFFFF00) | (value); return; }
-                case R8::SPL: { esp_ = (esp_ & 0xFFFFFF00) | (value); return; }
-                case R8::BPL: { ebp_ = (ebp_ & 0xFFFFFF00) | (value); return; }
-                case R8::SIL: { esi_ = (esi_ & 0xFFFFFF00) | (value); return; }
-                case R8::DIL: { edi_ = (edi_ & 0xFFFFFF00) | (value); return; }
+                case R8::AH:  { rax_ = (rax_ & 0xFFFFFFFFFFFF00FF) | (value << 8); return; }
+                case R8::AL:  { rax_ = (rax_ & 0xFFFFFFFFFFFFFF00) | (value); return; }
+                case R8::BH:  { rbx_ = (rbx_ & 0xFFFFFFFFFFFF00FF) | (value << 8); return; }
+                case R8::BL:  { rbx_ = (rbx_ & 0xFFFFFFFFFFFFFF00) | (value); return; }
+                case R8::CH:  { rcx_ = (rcx_ & 0xFFFFFFFFFFFF00FF) | (value << 8); return; }
+                case R8::CL:  { rcx_ = (rcx_ & 0xFFFFFFFFFFFFFF00) | (value); return; }
+                case R8::DH:  { rdx_ = (rdx_ & 0xFFFFFFFFFFFF00FF) | (value << 8); return; }
+                case R8::DL:  { rdx_ = (rdx_ & 0xFFFFFFFFFFFFFF00) | (value); return; }
+                case R8::SPL: { rsp_ = (rsp_ & 0xFFFFFFFFFFFFFF00) | (value); return; }
+                case R8::BPL: { rbp_ = (rbp_ & 0xFFFFFFFFFFFFFF00) | (value); return; }
+                case R8::SIL: { rsi_ = (rsi_ & 0xFFFFFFFFFFFFFF00) | (value); return; }
+                case R8::DIL: { rdi_ = (rdi_ & 0xFFFFFFFFFFFFFF00) | (value); return; }
             }
             __builtin_unreachable();
         }
         
         void set(R16 reg, u16 value) {
             switch(reg) {
-                case R16::AX: { eax_ = (eax_ & 0xFFFF0000) | (value); return; }
-                case R16::BX: { ebx_ = (ebx_ & 0xFFFF0000) | (value); return; }
-                case R16::CX: { ecx_ = (ecx_ & 0xFFFF0000) | (value); return; }
-                case R16::DX: { edx_ = (edx_ & 0xFFFF0000) | (value); return; }
-                case R16::SP: { esp_ = (esp_ & 0xFFFF0000) | (value); return; }
-                case R16::BP: { ebp_ = (ebp_ & 0xFFFF0000) | (value); return; }
-                case R16::SI: { esi_ = (esi_ & 0xFFFF0000) | (value); return; }
-                case R16::DI: { edi_ = (edi_ & 0xFFFF0000) | (value); return; }
+                case R16::AX: { rax_ = (rax_ & 0xFFFFFFFFFFFF0000) | (value); return; }
+                case R16::BX: { rbx_ = (rbx_ & 0xFFFFFFFFFFFF0000) | (value); return; }
+                case R16::CX: { rcx_ = (rcx_ & 0xFFFFFFFFFFFF0000) | (value); return; }
+                case R16::DX: { rdx_ = (rdx_ & 0xFFFFFFFFFFFF0000) | (value); return; }
+                case R16::SP: { rsp_ = (rsp_ & 0xFFFFFFFFFFFF0000) | (value); return; }
+                case R16::BP: { rbp_ = (rbp_ & 0xFFFFFFFFFFFF0000) | (value); return; }
+                case R16::SI: { rsi_ = (rsi_ & 0xFFFFFFFFFFFF0000) | (value); return; }
+                case R16::DI: { rdi_ = (rdi_ & 0xFFFFFFFFFFFF0000) | (value); return; }
             }
             __builtin_unreachable();
         }
         
         void set(R32 reg, u32 value) {
-            *(lut_[(int)reg]) = value;
+            switch(reg) {
+                case R32::EBP: { rbp_ = (rbp_ & 0xFFFFFFFF00000000) | (value); return; }
+                case R32::ESP: { rsp_ = (rsp_ & 0xFFFFFFFF00000000) | (value); return; }
+                case R32::EDI: { rdi_ = (rdi_ & 0xFFFFFFFF00000000) | (value); return; }
+                case R32::ESI: { rsi_ = (rsi_ & 0xFFFFFFFF00000000) | (value); return; }
+                case R32::EAX: { rax_ = (rax_ & 0xFFFFFFFF00000000) | (value); return; }
+                case R32::EBX: { rbx_ = (rbx_ & 0xFFFFFFFF00000000) | (value); return; }
+                case R32::ECX: { rcx_ = (rcx_ & 0xFFFFFFFF00000000) | (value); return; }
+                case R32::EDX: { rdx_ = (rdx_ & 0xFFFFFFFF00000000) | (value); return; }
+                case R32::EIZ: { eiz_ = value; return; }
+            }
+            __builtin_unreachable();
         }
 
-        u32 resolve(B addr) const {
+        void set(R64 reg, u64 value) {
+            switch(reg) {
+                case R64::RBP: { rbp_ = value; return; }
+                case R64::RSP: { rsp_ = value; return; }
+                case R64::RDI: { rdi_ = value; return; }
+                case R64::RSI: { rsi_ = value; return; }
+                case R64::RAX: { rax_ = value; return; }
+                case R64::RBX: { rbx_ = value; return; }
+                case R64::RCX: { rcx_ = value; return; }
+                case R64::RDX: { rdx_ = value; return; }
+                case R64::R8: { r8_ = value; return; }
+                case R64::R9: { r9_ = value; return; }
+                case R64::R10: { r10_ = value; return; }
+                case R64::R11: { r11_ = value; return; }
+                case R64::R12: { r12_ = value; return; }
+                case R64::R13: { r13_ = value; return; }
+                case R64::R14: { r14_ = value; return; }
+                case R64::R15: { r15_ = value; return; }
+                case R64::RIP: { rip_ = value; return; }
+            }
+            __builtin_unreachable();
+        }
+
+        u64 resolve(B addr) const {
             return get(addr.base);
         }
 
-        u32 resolve(BD addr) const {
+        u64 resolve(BD addr) const {
             return get(addr.base) + addr.displacement;
         }
 
-        u32 resolve(ISD addr) const {
+        u64 resolve(ISD addr) const {
             return get(addr.index)*addr.scale + addr.displacement;
         }
 
-        u32 resolve(BIS addr) const {
+        u64 resolve(BIS addr) const {
             return get(addr.base) + get(addr.index)*addr.scale;
         }
 
-        u32 resolve(BISD addr) const {
+        u64 resolve(BISD addr) const {
             return get(addr.base) + get(addr.index)*addr.scale + addr.displacement;
         }
 
@@ -175,6 +239,26 @@ namespace x86 {
 
         Ptr<Size::DWORD> resolve(Addr<Size::DWORD, BISD> addr) const {
             return Ptr<Size::DWORD>{resolve(addr.encoding)};
+        }
+
+        Ptr<Size::QWORD> resolve(Addr<Size::QWORD, B> addr) const {
+            return Ptr<Size::QWORD>{resolve(addr.encoding)};
+        }
+
+        Ptr<Size::QWORD> resolve(Addr<Size::QWORD, BD> addr) const {
+            return Ptr<Size::QWORD>{resolve(addr.encoding)};
+        }
+
+        Ptr<Size::QWORD> resolve(Addr<Size::QWORD, BIS> addr) const {
+            return Ptr<Size::QWORD>{resolve(addr.encoding)};
+        }
+        
+        Ptr<Size::QWORD> resolve(Addr<Size::QWORD, ISD> addr) const {
+            return Ptr<Size::QWORD>{resolve(addr.encoding)};
+        }
+
+        Ptr<Size::QWORD> resolve(Addr<Size::QWORD, BISD> addr) const {
+            return Ptr<Size::QWORD>{resolve(addr.encoding)};
         }
     };
 

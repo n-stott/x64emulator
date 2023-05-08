@@ -6,7 +6,7 @@
 #include <cassert>
 #include <fmt/core.h>
 
-namespace x86 {
+namespace x64 {
 
     Library::Library(Program program) : Program(std::move(program)) {
         assert(filename.size() > 3);

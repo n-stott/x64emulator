@@ -5,7 +5,7 @@
 #include <exception>
 #include <string>
 
-namespace x86 {
+namespace x64 {
 
     struct VerificationException : public std::exception { };
 

@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 
-namespace x86 {
+namespace x64 {
 
     class Interpreter;
 
@@ -32,33 +32,35 @@ namespace x86 {
     public:
         class Region {
         public:
-            Region(std::string name, u32 base, u32 size, Protection protection);
+            Region(std::string name, u64 base, u64 size, Protection protection);
 
-            bool contains(u32 address) const;
+            bool contains(u64 address) const;
 
             void setInvalidValues(InvalidValues invalidValues) {
                 this->invalidValues = invalidValues;
             }
 
-            void setHandler(std::function<void(u32)>&& handler) {
+            void setHandler(std::function<void(u64)>&& handler) {
                 this->handler = std::move(handler);
             }
 
             u8 read8(Ptr8 ptr) const;
             u16 read16(Ptr16 ptr) const;
             u32 read32(Ptr32 ptr) const;
+            u64 read64(Ptr64 ptr) const;
 
             void write8(Ptr8 ptr, u8 value);
             void write16(Ptr16 ptr, u16 value);
             void write32(Ptr32 ptr, u32 value);
+            void write64(Ptr64 ptr, u64 value);
 
             std::string name;
-            u32 base;
-            u32 size;
+            u64 base;
+            u64 size;
             std::vector<u8> data;
             Protection protection;
             InvalidValues invalidValues;
-            std::function<void(u32)> handler;
+            std::function<void(u64)> handler;
         };
 
         Mmu() = default;
@@ -68,18 +70,20 @@ namespace x86 {
         u8 read8(Ptr8 ptr) const;
         u16 read16(Ptr16 ptr) const;
         u32 read32(Ptr32 ptr) const;
+        u64 read64(Ptr64 ptr) const;
 
         void write8(Ptr8 ptr, u8 value);
         void write16(Ptr16 ptr, u16 value);
         void write32(Ptr32 ptr, u32 value);
+        void write64(Ptr64 ptr, u64 value);
 
         void dumpRegions() const;
 
-        u32 topOfMemoryAligned() const;
+        u64 topOfMemoryAligned() const;
 
     private:
-        Region* findAddress(u32 address);
-        const Region* findAddress(u32 address) const;
+        Region* findAddress(u64 address);
+        const Region* findAddress(u64 address) const;
 
         std::deque<Region> regions_;
     };

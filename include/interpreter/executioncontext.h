@@ -4,7 +4,7 @@
 #include "interpreter/mmu.h"
 #include "utils/utils.h"
 
-namespace x86 {
+namespace x64 {
 
     class Interpreter;
 
@@ -12,12 +12,12 @@ namespace x86 {
     public:
         Mmu* mmu() const;
 
-        u32 eax() const;
-        u32 ebx() const;
-        u32 ecx() const;
+        u64 rax() const;
+        u64 rbx() const;
+        u64 rcx() const;
 
-        void set_eax(u32 val) const;
-        void set_ebx(u32 val) const;
+        void set_rax(u64 val) const;
+        void set_rbx(u64 val) const;
 
     private:
         friend class Interpreter;

@@ -5,7 +5,7 @@
 #include <optional>
 #include <string>
 
-namespace x86 {
+namespace x64 {
 
     template<typename Dst, typename Src>
     struct Mov {

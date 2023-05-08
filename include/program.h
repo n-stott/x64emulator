@@ -7,7 +7,7 @@
 #include <string_view>
 #include <vector>
 
-namespace x86 {
+namespace x64 {
 
     class InstructionHandler;
 

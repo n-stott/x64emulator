@@ -3,9 +3,9 @@
 #include <cassert>
 #include <cstring>
 
-namespace x86 {
+namespace x64 {
 
-    Mmu::Region::Region(std::string name, u32 base, u32 size, Protection protection) {
+    Mmu::Region::Region(std::string name, u64 base, u64 size, Protection protection) {
         this->name = std::move(name);
         this->base = base;
         this->size = size;
@@ -29,7 +29,7 @@ namespace x86 {
         return &regions_.back();
     }
 
-    bool Mmu::Region::contains(u32 address) const {
+    bool Mmu::Region::contains(u64 address) const {
         return address >= base && address < base + size;
     }
 
@@ -56,6 +56,14 @@ namespace x86 {
         return value;
     }
 
+    u64 Mmu::Region::read64(Ptr64 ptr) const {
+        assert(contains(ptr.address));
+        assert(contains(ptr.address+7));
+        u64 value = 0;
+        std::memcpy(&value, &data[ptr.address-base], sizeof(value));
+        return value;
+    }
+
     void Mmu::Region::write8(Ptr8 ptr, u8 value) {
         assert(contains(ptr.address));
         std::memcpy(&data[ptr.address-base], &value, sizeof(value));
@@ -73,14 +81,20 @@ namespace x86 {
         std::memcpy(&data[ptr.address-base], &value, sizeof(value));
     }
 
-    Mmu::Region* Mmu::findAddress(u32 address) {
+    void Mmu::Region::write64(Ptr64 ptr, u64 value) {
+        assert(contains(ptr.address));
+        assert(contains(ptr.address+7));
+        std::memcpy(&data[ptr.address-base], &value, sizeof(value));
+    }
+
+    Mmu::Region* Mmu::findAddress(u64 address) {
         for(Region& r : regions_) {
             if(r.contains(address)) return &r;
         }
         return nullptr;
     }
 
-    const Mmu::Region* Mmu::findAddress(u32 address) const {
+    const Mmu::Region* Mmu::findAddress(u64 address) const {
         for(const Region& r : regions_) {
             if(r.contains(address)) return &r;
         }
@@ -138,6 +152,23 @@ namespace x86 {
         return value;
     }
 
+    u64 Mmu::read64(Ptr64 ptr) const {
+        const Region* region = findAddress(ptr.address);
+        verify(!!region, [&]() {
+            fmt::print("No region containing {:#x}\n", ptr.address);
+        });
+        verify(region->protection & PROT_READ, [&]() {
+            fmt::print("Attempt to read {:#x} from non-readable region {}\n", ptr.address, region->name);
+            if(!!region->handler) region->handler(ptr.address);
+        });
+        u64 value = region->read64(ptr);
+        verify((region->invalidValues != INV_NULL) || (value != 0), [&]() {
+            fmt::print("Read 0x0 from region {} which is marked INV_NULL at address {:#x}\n", region->name, ptr.address);
+            if(!!region->handler) region->handler(ptr.address);
+        });
+        return value;
+    }
+
     void Mmu::write8(Ptr8 ptr, u8 value) {
         Region* region = findAddress(ptr.address);
         verify(!!region, [&]() {
@@ -171,14 +202,25 @@ namespace x86 {
         region->write32(ptr, value);
     }
 
+    void Mmu::write64(Ptr64 ptr, u64 value) {
+        Region* region = findAddress(ptr.address);
+        verify(!!region, [&]() {
+            fmt::print("No region containing {:#x}\n", ptr.address);
+        });
+        verify(region->protection & PROT_WRITE, [&]() {
+            fmt::print("Attempt to write to {:#x} in non-writable region {}\n", ptr.address, region->name);
+        });
+        region->write64(ptr, value);
+    }
+
     void Mmu::dumpRegions() const {
         for(const auto& region : regions_) {
             fmt::print("{:25} {:#x} - {:#x}\n", region.name, region.base, region.base+region.size);
         }
     }
 
-    u32 Mmu::topOfMemoryAligned() const {
-        u32 top = 0;
+    u64 Mmu::topOfMemoryAligned() const {
+        u64 top = 0;
         for(const auto& region : regions_) top = std::max(top, region.base+region.size);
         top = (top + 1023)/1024*1024;
         return top;

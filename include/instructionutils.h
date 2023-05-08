@@ -5,7 +5,7 @@
 #include <string>
 #include <fmt/core.h>
 
-namespace x86 {
+namespace x64 {
 namespace utils {
 
     inline std::string toString(const R8& reg) {
@@ -55,6 +55,29 @@ namespace utils {
         return "";
     }
 
+    inline std::string toString(const R64& reg) {
+        switch(reg) {
+            case R64::RBP: return "rbp";
+            case R64::RSP: return "rsp";
+            case R64::RDI: return "rdi";
+            case R64::RSI: return "rsi";
+            case R64::RAX: return "rax";
+            case R64::RBX: return "rbx";
+            case R64::RCX: return "rcx";
+            case R64::RDX: return "rdx";
+            case R64::R8: return "r8";
+            case R64::R9: return "r9";
+            case R64::R10: return "r10";
+            case R64::R11: return "r11";
+            case R64::R12: return "r12";
+            case R64::R13: return "r13";
+            case R64::R14: return "r14";
+            case R64::R15: return "r15";
+            case R64::RIP: return "rip";
+        }
+        return "";
+    }
+
     inline std::string toString(Cond cond) {
         switch(cond) {
             case Cond::A:  return "a";
@@ -100,6 +123,7 @@ namespace utils {
         if constexpr (size == Size::BYTE) return "BYTE";
         if constexpr (size == Size::WORD) return "WORD";
         if constexpr (size == Size::DWORD) return "DWORD";
+        if constexpr (size == Size::QWORD) return "QWORD";
     }
 
     template<Cond condition>
@@ -145,6 +169,10 @@ namespace utils {
 
     inline std::string toString(const M32& m32) {
         return std::visit([](auto&& arg) -> std::string { return toString(arg); }, m32);
+    }
+
+    inline std::string toString(const M64& m64) {
+        return std::visit([](auto&& arg) -> std::string { return toString(arg); }, m64);
     }
 
     template<typename Src>

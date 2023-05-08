@@ -18,7 +18,7 @@
 
 #define END_INSTRUCTIONS return instructions
 
-namespace x86 {
+namespace x64 {
 
     INSTRUCTION_SEQUENCE Push_reg::codegen() const {
         assert(reg == Register::EBP);
@@ -58,11 +58,11 @@ namespace x86 {
 }
 
 int main() {
-    x86::Push_reg push_ebp { x86::Register::EBP };
+    x64::Push_reg push_ebp { x64::Register::EBP };
     auto v0 = push_ebp.codegen();
     fmt::print("Codegen yields {} instructions\n", v0.size());
 
-    x86::Mov_reg_reg mov_ebp_esp { x86::Register::EBP, x86::Register::ESP };
+    x64::Mov_reg_reg mov_ebp_esp { x64::Register::EBP, x64::Register::ESP };
     auto v1 = mov_ebp_esp.codegen();
     fmt::print("Codegen yields {} instructions\n", v1.size());
 }

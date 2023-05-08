@@ -24,12 +24,12 @@ int main(int argc, char* argv[]) {
 
     auto programElf = elf::ElfReader::tryCreate(programPath);
     if(!programElf) return 1;
-    if(programElf->archClass() != elf::Elf::Class::B32) {
-        fmt::print(stderr, "Program is not 32-bit\n");
+    if(programElf->archClass() != elf::Elf::Class::B64) {
+        fmt::print(stderr, "Program is not 64-bit\n");
         return 1;
     }
 
-    auto program = x86::InstructionParser::parseFile(programPath);
+    auto program = x64::InstructionParser::parseFile(programPath);
     if(!program) {
         fmt::print(stderr, "Could not parse program\n");
         return 1;
@@ -37,19 +37,19 @@ int main(int argc, char* argv[]) {
 
     auto libcElf = elf::ElfReader::tryCreate(libraryPath.c_str());
     if(!libcElf) return 1;
-    if(libcElf->archClass() != elf::Elf::Class::B32) {
-        fmt::print(stderr, "Libc is not 32-bit\n");
+    if(libcElf->archClass() != elf::Elf::Class::B64) {
+        fmt::print(stderr, "Libc is not 64-bit\n");
         return 1;
     }
 
-    auto libcProg = x86::InstructionParser::parseFile(libraryPath.c_str());
+    auto libcProg = x64::InstructionParser::parseFile(libraryPath.c_str());
     if(!libcProg) {
         fmt::print(stderr, "Could not parse libc\n");
         return 1;
     }
-    x86::LibC libc(std::move(*libcProg));
+    x64::LibC libc(std::move(*libcProg));
 
-    x86::Interpreter interpreter(std::move(*program), std::move(libc));
+    x64::Interpreter interpreter(std::move(*program), std::move(libc));
     interpreter.run(arguments);
     return interpreter.hasCrashed();
 }

@@ -10,7 +10,7 @@
 
 #define DEFAULT_CODEGEN std::vector<std::unique_ptr<GBInstructionBase>> codegen() const override
 
-namespace x86 {
+namespace x64 {
 
     static constexpr u16 SAVE_REGISTER = 0x0000;
 

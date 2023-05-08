@@ -15,7 +15,7 @@
 #include <vector>
 #include <fmt/core.h>
 
-namespace x86 {
+namespace x64 {
 
     class Interpreter {
     public:
@@ -93,6 +93,7 @@ namespace x86 {
                 Frame& currentFrame = frames.back();
                 const Function* func = currentFrame.function;
                 auto jumpee = std::find_if(func->instructions.begin(), func->instructions.end(), [=](const auto& instruction) {
+                    if(!instruction) return false;
                     return instruction->address == destinationAddress;
                 });
                 if(jumpee != func->instructions.end()) {
@@ -130,6 +131,7 @@ namespace x86 {
         void push8(u8 value);
         void push16(u16 value);
         void push32(u32 value);
+        void push64(u64 value);
     };
 
 }

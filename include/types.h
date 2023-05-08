@@ -4,7 +4,7 @@
 #include "utils/utils.h"
 #include <variant>
 
-namespace x86 {
+namespace x64 {
 
     struct Count {
         u8 count;
@@ -62,6 +62,26 @@ namespace x86 {
         EIZ,
     };
 
+    enum class R64 {
+        RBP,
+        RSP,
+        RDI,
+        RSI,
+        RAX,
+        RBX,
+        RCX,
+        RDX,
+        R8,
+        R9,
+        R10,
+        R11,
+        R12,
+        R13,
+        R14,
+        R15,
+        RIP,
+    };
+
     enum class Cond {
         A,
         AE,
@@ -89,40 +109,40 @@ namespace x86 {
     };
 
     struct B {
-        R32 base;
+        R64 base;
     };
 
     struct BI {
-        R32 base;
-        R32 index;
+        R64 base;
+        R64 index;
     };
 
     struct BD {
-        R32 base;
+        R64 base;
         i32 displacement;
     };
 
     struct BID {
-        R32 base;
-        R32 index;
+        R64 base;
+        R64 index;
         i32 displacement;
     };
 
     struct BIS {
-        R32 base;
-        R32 index;
+        R64 base;
+        R64 index;
         u8 scale;
     };
 
     struct ISD {
-        R32 index;
+        R64 index;
         u8 scale;
         i32 displacement;
     };
 
     struct BISD {
-        R32 base;
-        R32 index;
+        R64 base;
+        R64 index;
         u8 scale;
         i32 displacement;
     };
@@ -130,7 +150,8 @@ namespace x86 {
     enum class Size {
         BYTE,
         WORD,
-        DWORD
+        DWORD,
+        QWORD,
     };
 
     template<Size size, typename Encoding>
@@ -140,13 +161,14 @@ namespace x86 {
 
     template<Size size>
     struct Ptr {
-        u32 address;
+        u64 address;
 
         Ptr& operator++() {
             switch(size) {
                 case Size::BYTE: address += 1; break;
                 case Size::WORD: address += 2; break;
                 case Size::DWORD: address += 4; break;
+                case Size::QWORD: address += 8; break;
             }
             return *this;
         }
@@ -155,6 +177,7 @@ namespace x86 {
     using Ptr8 = Ptr<Size::BYTE>;
     using Ptr16 = Ptr<Size::WORD>;
     using Ptr32 = Ptr<Size::DWORD>;
+    using Ptr64 = Ptr<Size::QWORD>;
 
 
     using M8 = std::variant<Addr<Size::BYTE, B>,
@@ -177,6 +200,13 @@ namespace x86 {
                              Addr<Size::DWORD, ISD>,
                              Addr<Size::DWORD, BISD>>;
     using RM32 = std::variant<R32, M32>;
+
+    using M64 = std::variant<Addr<Size::QWORD, B>,
+                             Addr<Size::QWORD, BD>,
+                             Addr<Size::QWORD, BIS>,
+                             Addr<Size::QWORD, ISD>,
+                             Addr<Size::QWORD, BISD>>;
+    using RM64 = std::variant<R64, M64>;
 
 }
 

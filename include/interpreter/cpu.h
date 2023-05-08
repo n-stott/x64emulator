@@ -5,7 +5,7 @@
 #include "interpreter/registers.h"
 #include "interpreter/flags.h"
 
-namespace x86 {
+namespace x64 {
 
     class Interpreter;
     class Mmu;
@@ -29,12 +29,14 @@ namespace x86 {
         u8  get(R8 reg) const  { return regs_.get(reg); }
         u16 get(R16 reg) const { return regs_.get(reg); }
         u32 get(R32 reg) const { return regs_.get(reg); }
+        u64 get(R64 reg) const { return regs_.get(reg); }
         u8  get(Imm<u8> immediate) const;
         u16 get(Imm<u16> immediate) const;
         u32 get(Imm<u32> immediate) const;
         u8  get(Ptr8 reg) const;
         u16 get(Ptr16 reg) const;
         u32 get(Ptr32 reg) const;
+        u64 get(Ptr64 reg) const;
 
         u8 get(Count count) const;
 
@@ -57,29 +59,43 @@ namespace x86 {
         Ptr<Size::DWORD> resolve(Addr<Size::DWORD, BIS> addr) const { return regs_.resolve(addr); }
         Ptr<Size::DWORD> resolve(Addr<Size::DWORD, ISD> addr) const { return regs_.resolve(addr); }
         Ptr<Size::DWORD> resolve(Addr<Size::DWORD, BISD> addr) const { return regs_.resolve(addr); }
+        Ptr<Size::QWORD> resolve(Addr<Size::QWORD, B> addr) const { return regs_.resolve(addr); }
+        Ptr<Size::QWORD> resolve(Addr<Size::QWORD, BD> addr) const { return regs_.resolve(addr); }
+        Ptr<Size::QWORD> resolve(Addr<Size::QWORD, BIS> addr) const { return regs_.resolve(addr); }
+        Ptr<Size::QWORD> resolve(Addr<Size::QWORD, ISD> addr) const { return regs_.resolve(addr); }
+        Ptr<Size::QWORD> resolve(Addr<Size::QWORD, BISD> addr) const { return regs_.resolve(addr); }
 
         Ptr<Size::DWORD> resolve(const M32& m32) const {
             return std::visit([&](auto&& arg) -> Ptr32 { return resolve(arg); }, m32);
         }
 
+        Ptr<Size::QWORD> resolve(const M64& m64) const {
+            return std::visit([&](auto&& arg) -> Ptr64 { return resolve(arg); }, m64);
+        }
+
         void set(R8 reg, u8 value) { regs_.set(reg, value); }
         void set(R16 reg, u16 value) { regs_.set(reg, value); }
         void set(R32 reg, u32 value) { regs_.set(reg, value); }
+        void set(R64 reg, u64 value) { regs_.set(reg, value); }
 
         void set(Ptr8 ptr, u8 value);
         void set(Ptr16 ptr, u16 value);
         void set(Ptr32 ptr, u32 value);
+        void set(Ptr64 ptr, u64 value);
 
         void push8(u8 value);
         void push16(u16 value);
         void push32(u32 value);
+        void push64(u64 value);
         u8 pop8();
         u16 pop16();
         u32 pop32();
+        u64 pop64();
 
         u8 execAdd8Impl(u8 dst, u8 src);
         u16 execAdd16Impl(u16 dst, u16 src);
         u32 execAdd32Impl(u32 dst, u32 src);
+        u64 execAdd64Impl(u64 dst, u64 src);
 
         u8 execAdc8Impl(u8 dst, u8 src);
         u16 execAdc16Impl(u16 dst, u16 src);
@@ -88,6 +104,7 @@ namespace x86 {
         u8 execSub8Impl(u8 src1, u8 src2);
         u16 execSub16Impl(u16 src1, u16 src2);
         u32 execSub32Impl(u32 src1, u32 src2);
+        u64 execSub64Impl(u64 src1, u64 src2);
 
         u32 execSbb32Impl(u32 dst, u32 src);
 
@@ -96,6 +113,8 @@ namespace x86 {
         std::pair<u32, u32> execMul32(u32 src1, u32 src2);
         void execImul32(u32 src);
         u32 execImul32(u32 src1, u32 src2);
+        void execImul64(u64 src);
+        u64 execImul64(u64 src1, u64 src2);
 
         std::pair<u32, u32> execDiv32(u32 dividendUpper, u32 dividendLower, u32 divisor);
         std::pair<u32, u32> execIdiv32(u32 dividendUpper, u32 dividendLower, u32 divisor);
@@ -117,7 +136,10 @@ namespace x86 {
         u8 execShr8Impl(u8 dst, u8 src);
         u16 execShr16Impl(u16 dst, u16 src);
         u32 execShr32Impl(u32 dst, u32 src);
+        u64 execShr64Impl(u64 dst, u64 src);
+
         u32 execSar32Impl(i32 dst, u32 src);
+        u64 execSar64Impl(i64 dst, u64 src);
 
         template<typename Dst>
         void execSet(Cond cond, Dst dst);
@@ -142,6 +164,11 @@ namespace x86 {
         void exec(const Add<R32, M32>&) override;
         void exec(const Add<M32, R32>&) override;
         void exec(const Add<M32, Imm<u32>>&) override;
+        void exec(const Add<R64, R64>&) override;
+        void exec(const Add<R64, Imm<u32>>&) override;
+        void exec(const Add<R64, M64>&) override;
+        void exec(const Add<M64, R64>&) override;
+        void exec(const Add<M64, Imm<u32>>&) override;
 
         void exec(const Adc<R32, R32>&) override;
         void exec(const Adc<R32, Imm<u32>>&) override;
@@ -156,6 +183,12 @@ namespace x86 {
         void exec(const Sub<R32, M32>&) override;
         void exec(const Sub<M32, R32>&) override;
         void exec(const Sub<M32, Imm<u32>>&) override;
+        void exec(const Sub<R64, R64>&) override;
+        void exec(const Sub<R64, Imm<u32>>&) override;
+        void exec(const Sub<R64, SignExtended<u8>>&) override;
+        void exec(const Sub<R64, M64>&) override;
+        void exec(const Sub<M64, R64>&) override;
+        void exec(const Sub<M64, Imm<u32>>&) override;
 
         void exec(const Sbb<R32, R32>&) override;
         void exec(const Sbb<R32, Imm<u32>>&) override;
@@ -176,6 +209,12 @@ namespace x86 {
         void exec(const Imul2<R32, M32>&) override;
         void exec(const Imul3<R32, R32, Imm<u32>>&) override;
         void exec(const Imul3<R32, M32, Imm<u32>>&) override;
+        void exec(const Imul1<R64>&) override;
+        void exec(const Imul1<M64>&) override;
+        void exec(const Imul2<R64, R64>&) override;
+        void exec(const Imul2<R64, M64>&) override;
+        void exec(const Imul3<R64, R64, Imm<u32>>&) override;
+        void exec(const Imul3<R64, M64, Imm<u32>>&) override;
 
         void exec(const Div<R32>&) override;
         void exec(const Div<M32>&) override;
@@ -263,6 +302,9 @@ namespace x86 {
         void exec(const Mov<R32, R32>&) override;
         void exec(const Mov<R32, Imm<u32>>&) override;
         void exec(const Mov<R32, M32>&) override;
+        void exec(const Mov<R64, R64>&) override;
+        void exec(const Mov<R64, Imm<u32>>&) override;
+        void exec(const Mov<R64, M64>&) override;
         void exec(const Mov<Addr<Size::BYTE, B>, R8>&) override;
         void exec(const Mov<Addr<Size::BYTE, B>, Imm<u8>>&) override;
         void exec(const Mov<Addr<Size::BYTE, BD>, R8>&) override;
@@ -273,6 +315,8 @@ namespace x86 {
         void exec(const Mov<Addr<Size::BYTE, BISD>, Imm<u8>>&) override;
         void exec(const Mov<M32, R32>&) override;
         void exec(const Mov<M32, Imm<u32>>&) override;
+        void exec(const Mov<M64, R64>&) override;
+        void exec(const Mov<M64, Imm<u32>>&) override;
 
         void exec(const Movsx<R32, R8>&) override;
         void exec(const Movsx<R32, Addr<Size::BYTE, B>>&) override;
@@ -292,17 +336,20 @@ namespace x86 {
         void exec(const Movzx<R32, Addr<Size::WORD, BIS>>&) override;
         void exec(const Movzx<R32, Addr<Size::WORD, BISD>>&) override;
 
-        void exec(const Lea<R32, B>&) override;
-        void exec(const Lea<R32, BD>&) override;
-        void exec(const Lea<R32, BIS>&) override;
-        void exec(const Lea<R32, ISD>&) override;
-        void exec(const Lea<R32, BISD>&) override;
+        void exec(const Lea<R64, B>&) override;
+        void exec(const Lea<R64, BD>&) override;
+        void exec(const Lea<R64, BIS>&) override;
+        void exec(const Lea<R64, ISD>&) override;
+        void exec(const Lea<R64, BISD>&) override;
 
         void exec(const Push<R32>&) override;
+        void exec(const Push<R64>&) override;
         void exec(const Push<SignExtended<u8>>&) override;
         void exec(const Push<Imm<u32>>&) override;
         void exec(const Push<M32>&) override;
+
         void exec(const Pop<R32>&) override;
+        void exec(const Pop<R64>&) override;
 
         void exec(const CallDirect&) override;
         void exec(const CallIndirect<R32>&) override;
@@ -342,11 +389,18 @@ namespace x86 {
         void exec(const Shr<R32, R8>&) override;
         void exec(const Shr<R32, Imm<u32>>&) override;
         void exec(const Shr<R32, Count>&) override;
+        void exec(const Shr<R64, R8>&) override;
+        void exec(const Shr<R64, Imm<u32>>&) override;
+        void exec(const Shr<R64, Count>&) override;
 
         void exec(const Shl<R32, R8>&) override;
         void exec(const Shl<R32, Imm<u32>>&) override;
         void exec(const Shl<R32, Count>&) override;
         void exec(const Shl<M32, Imm<u32>>&) override;
+        void exec(const Shl<R64, R8>&) override;
+        void exec(const Shl<R64, Imm<u32>>&) override;
+        void exec(const Shl<R64, Count>&) override;
+        void exec(const Shl<M64, Imm<u32>>&) override;
 
         void exec(const Shld<R32, R32, R8>&) override;
         void exec(const Shld<R32, R32, Imm<u8>>&) override;
@@ -358,6 +412,10 @@ namespace x86 {
         void exec(const Sar<R32, Imm<u32>>&) override;
         void exec(const Sar<R32, Count>&) override;
         void exec(const Sar<M32, Count>&) override;
+        void exec(const Sar<R64, R8>&) override;
+        void exec(const Sar<R64, Imm<u32>>&) override;
+        void exec(const Sar<R64, Count>&) override;
+        void exec(const Sar<M64, Count>&) override;
 
         void exec(const Rol<R32, R8>&) override;
         void exec(const Rol<R32, Imm<u8>>&) override;
@@ -382,14 +440,6 @@ namespace x86 {
         void exec(const Cmp<R8, Addr<Size::BYTE, BD>>&) override;
         void exec(const Cmp<R8, Addr<Size::BYTE, BIS>>&) override;
         void exec(const Cmp<R8, Addr<Size::BYTE, BISD>>&) override;
-        void exec(const Cmp<R16, R16>&) override;
-        void exec(const Cmp<R16, Imm<u16>>&) override;
-        void exec(const Cmp<Addr<Size::WORD, B>, Imm<u16>>&) override;
-        void exec(const Cmp<Addr<Size::WORD, BD>, Imm<u16>>&) override;
-        void exec(const Cmp<Addr<Size::WORD, BIS>, R16>&) override;
-        void exec(const Cmp<R32, R32>&) override;
-        void exec(const Cmp<R32, Imm<u32>>&) override;
-        void exec(const Cmp<R32, M32>&) override;
         void exec(const Cmp<Addr<Size::BYTE, B>, R8>&) override;
         void exec(const Cmp<Addr<Size::BYTE, B>, Imm<u8>>&) override;
         void exec(const Cmp<Addr<Size::BYTE, BD>, R8>&) override;
@@ -398,8 +448,21 @@ namespace x86 {
         void exec(const Cmp<Addr<Size::BYTE, BIS>, Imm<u8>>&) override;
         void exec(const Cmp<Addr<Size::BYTE, BISD>, R8>&) override;
         void exec(const Cmp<Addr<Size::BYTE, BISD>, Imm<u8>>&) override;
+        void exec(const Cmp<R16, R16>&) override;
+        void exec(const Cmp<R16, Imm<u16>>&) override;
+        void exec(const Cmp<Addr<Size::WORD, B>, Imm<u16>>&) override;
+        void exec(const Cmp<Addr<Size::WORD, BD>, Imm<u16>>&) override;
+        void exec(const Cmp<Addr<Size::WORD, BIS>, R16>&) override;
+        void exec(const Cmp<R32, R32>&) override;
+        void exec(const Cmp<R32, Imm<u32>>&) override;
+        void exec(const Cmp<R32, M32>&) override;
         void exec(const Cmp<M32, R32>&) override;
         void exec(const Cmp<M32, Imm<u32>>&) override;
+        void exec(const Cmp<R64, R64>&) override;
+        void exec(const Cmp<R64, Imm<u32>>&) override;
+        void exec(const Cmp<R64, M64>&) override;
+        void exec(const Cmp<M64, R64>&) override;
+        void exec(const Cmp<M64, Imm<u32>>&) override;
 
         void exec(const Cmpxchg<R8, R8>&) override;
         void exec(const Cmpxchg<R16, R16>&) override;

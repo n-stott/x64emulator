@@ -10,7 +10,7 @@
 #include <vector>
 #include <cassert>
 
-namespace x86 {
+namespace x64 {
 
     class InstructionParser {
         struct OpcodeBytes {

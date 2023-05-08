@@ -41,6 +41,20 @@ inline std::vector<std::string_view> splitFirst(std::string_view sv, char separa
     return result;
 }
 
+inline std::vector<std::string_view> splitFirst(std::string_view sv, std::string_view separators) {
+    std::vector<std::string_view> result;
+    size_t next = std::string::npos;
+    for(char separator : separators) {
+        next = std::min(next, sv.find(separator, 0));
+    }
+    if(next == std::string::npos) next = sv.size();
+    result.push_back(std::string_view(sv.begin(), next));
+    if(next != sv.size()) {
+        result.push_back(sv.substr(next+1));
+    }
+    return result;
+}
+
 inline std::string filenameFromPath(const std::string& filepath) {
     auto lastSlash = filepath.rfind('/');
     std::string filename = filepath.substr(lastSlash == std::string::npos ? 0 : lastSlash+1);
