@@ -25,10 +25,11 @@ namespace elf {
         Version version;
         OsABI osabi;
         AbiVersion abiversion;
+
+        void print() const;
     };
 
     struct FileHeader {
-        Identifier ident;
         Type type;
         Machine machine;
         Version version;
@@ -134,11 +135,11 @@ namespace elf {
         Elf(Elf&&) = default;
         Elf& operator=(Elf&&) = default;
 
-        Class archClass() const { return fileheader_.ident.class_; }
-        Endianness endianness() const { return fileheader_.ident.data; }
-        Version version() const { return fileheader_.ident.version; }
-        OsABI osabi() const { return fileheader_.ident.osabi; }
-        AbiVersion abiversion() const { return fileheader_.ident.abiversion; }
+        Class archClass() const { return ident_.class_; }
+        Endianness endianness() const { return ident_.data; }
+        Version version() const { return ident_.version; }
+        OsABI osabi() const { return ident_.osabi; }
+        AbiVersion abiversion() const { return ident_.abiversion; }
         Type type() const { return fileheader_.type; }
         Machine machine() const { return fileheader_.machine; }
 
@@ -187,6 +188,7 @@ namespace elf {
 
         std::string filename_;
         std::vector<char> bytes_;
+        Identifier ident_;
         FileHeader fileheader_;
         std::vector<SectionHeader> sectionHeaders_;
 
@@ -199,7 +201,8 @@ namespace elf {
     public:
         static std::unique_ptr<Elf> tryCreate(const std::string& filename);
 
-        static std::unique_ptr<FileHeader> tryCreateFileheader(const std::vector<char>& bytebuffer);
+        static bool tryCreateIdentifier(const std::vector<char>& bytebuffer, Identifier* ident);
+        static bool tryCreateFileheader(const std::vector<char>& bytebuffer, const Identifier& ident, FileHeader* header);
 
         static std::unique_ptr<SectionHeader> tryCreateSectionheader(const std::vector<char>& bytebuffer, size_t entryOffset, size_t entrySize, Class c);
     };
