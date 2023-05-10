@@ -27,7 +27,7 @@ namespace elf {
         size_t sectionHeaderCount = fileheader->shnum;
         size_t sectionHeaderSize = fileheader->shentsize;
         u64 sectionHeaderStart = fileheader->shoff;
-        std::vector<Elf::SectionHeader> sectionHeaders;
+        std::vector<SectionHeader> sectionHeaders;
         for(size_t i = 0; i < sectionHeaderCount; ++i) {
             auto sectionheader = tryCreateSectionheader(bytes, sectionHeaderStart+i*sectionHeaderSize, sectionHeaderSize, fileheader->ident.class_);
             if(!sectionheader) {
@@ -42,7 +42,7 @@ namespace elf {
             return {};
         }
 
-        const Elf::SectionHeader& stringTable = sectionHeaders[fileheader->shstrndx];
+        const SectionHeader& stringTable = sectionHeaders[fileheader->shstrndx];
         for(auto& section : sectionHeaders) {
             u64 stringNameOffset = section.sh_name;
             const char* name = bytes.data() + stringTable.sh_offset + stringNameOffset;
@@ -62,24 +62,24 @@ namespace elf {
     void Elf::print() const {
         fmt::print("ELF file {} contains {} bytes\n", filename_, bytes_.size());
         fileheader_.print();
-        Elf::SectionHeader::printNames();
+        SectionHeader::printNames();
         for(const auto& section : sectionHeaders_) section.print();
     }
 
-    std::unique_ptr<Elf::FileHeader> ElfReader::tryCreateFileheader(const std::vector<char>& bytes) {
+    std::unique_ptr<FileHeader> ElfReader::tryCreateFileheader(const std::vector<char>& bytes) {
         if(bytes.size() < 0x18) return {};
         if(bytes[0] != 0x7f || bytes[1] != 0x45 || bytes[2] != 0x4c || bytes[3] != 0x46) return {};
-        Elf::FileHeader fileheader;
-        fileheader.ident.class_  = static_cast<Elf::Class>(bytes[4]);
-        fileheader.ident.data    = static_cast<Elf::Endianness>(bytes[5]);
-        fileheader.ident.version = static_cast<Elf::Version>(bytes[6]);
-        fileheader.ident.osabi = static_cast<Elf::OsABI>(bytes[7]);
-        fileheader.ident.abiversion = static_cast<Elf::AbiVersion>(bytes[8]);
+        FileHeader fileheader;
+        fileheader.ident.class_  = static_cast<Class>(bytes[4]);
+        fileheader.ident.data    = static_cast<Endianness>(bytes[5]);
+        fileheader.ident.version = static_cast<Version>(bytes[6]);
+        fileheader.ident.osabi = static_cast<OsABI>(bytes[7]);
+        fileheader.ident.abiversion = static_cast<AbiVersion>(bytes[8]);
 
         std::memcpy(&fileheader.type, bytes.data()+0x10, sizeof(fileheader.type));
         std::memcpy(&fileheader.machine, bytes.data()+0x12, sizeof(fileheader.machine));
         std::memcpy(&fileheader.version, bytes.data()+0x14, sizeof(fileheader.version));
-        if(fileheader.ident.class_ == Elf::Class::B64) {
+        if(fileheader.ident.class_ == Class::B64) {
             if(bytes.size() < 0x40) return {};
             std::memcpy(&fileheader.entry, bytes.data()+0x18, sizeof(fileheader.entry));
             std::memcpy(&fileheader.phoff, bytes.data()+0x20, sizeof(fileheader.phoff));
@@ -91,7 +91,7 @@ namespace elf {
             std::memcpy(&fileheader.shentsize, bytes.data()+0x3A, sizeof(fileheader.shentsize));
             std::memcpy(&fileheader.shnum, bytes.data()+0x3C, sizeof(fileheader.shnum));
             std::memcpy(&fileheader.shstrndx, bytes.data()+0x3E, sizeof(fileheader.shstrndx));
-        } else if(fileheader.ident.class_ == Elf::Class::B32) {
+        } else if(fileheader.ident.class_ == Class::B32) {
             if(bytes.size() < 0x34) return {};
             u32 entry, phoff, shoff;
             std::memcpy(&entry, bytes.data()+0x18, sizeof(entry));
@@ -112,10 +112,10 @@ namespace elf {
         }
         if(!fileheader.shnum) return {};
         if(fileheader.shstrndx > fileheader.shnum) return {};
-        return std::make_unique<Elf::FileHeader>(fileheader);
+        return std::make_unique<FileHeader>(fileheader);
     }
 
-    void Elf::FileHeader::print() const {
+    void FileHeader::print() const {
         fmt::print("Format     : {}\n", ident.class_ == Class::B64 ? "64-bit" : "32-bit");
         fmt::print("Endianness : {}\n", ident.data == Endianness::BIG ? "big" : "little");
         fmt::print("Version    : {}\n", (int)ident.version);
@@ -136,11 +136,11 @@ namespace elf {
         fmt::print("Section header name index : {:}\n", (int)shstrndx);
     }
 
-    std::unique_ptr<Elf::SectionHeader> ElfReader::tryCreateSectionheader(const std::vector<char>& bytebuffer, size_t entryOffset, size_t entrySize, Elf::Class c) {
+    std::unique_ptr<SectionHeader> ElfReader::tryCreateSectionheader(const std::vector<char>& bytebuffer, size_t entryOffset, size_t entrySize, Class c) {
         if(bytebuffer.size() < entryOffset + entrySize) return {};
         const char* buffer = bytebuffer.data() + entryOffset;
-        Elf::SectionHeader sectionheader;
-        if(c == Elf::Class::B64) {
+        SectionHeader sectionheader;
+        if(c == Class::B64) {
             std::memcpy(&sectionheader.sh_name, buffer+0x00, sizeof(sectionheader.sh_name));
             std::memcpy(&sectionheader.sh_type, buffer+0x04, sizeof(sectionheader.sh_type));
             std::memcpy(&sectionheader.sh_flags, buffer+0x08, sizeof(sectionheader.sh_flags));
@@ -151,7 +151,7 @@ namespace elf {
             std::memcpy(&sectionheader.sh_info, buffer+0x2C, sizeof(sectionheader.sh_info));
             std::memcpy(&sectionheader.sh_addralign, buffer+0x30, sizeof(sectionheader.sh_addralign));
             std::memcpy(&sectionheader.sh_entsize, buffer+0x38, sizeof(sectionheader.sh_entsize));
-        } else if(c == Elf::Class::B32) {
+        } else if(c == Class::B32) {
             u32 flags, addr, offset, size, addralign, entsize;
             std::memcpy(&sectionheader.sh_name, buffer+0x00, sizeof(sectionheader.sh_name));
             std::memcpy(&sectionheader.sh_type, buffer+0x04, sizeof(sectionheader.sh_type));
@@ -172,10 +172,10 @@ namespace elf {
         } else {
             return {};
         }
-        return std::make_unique<Elf::SectionHeader>(std::move(sectionheader));
+        return std::make_unique<SectionHeader>(std::move(sectionheader));
     }
 
-    void Elf::SectionHeader::printNames() {
+    void SectionHeader::printNames() {
         fmt::print("{:>20} {:>10} {:>10} {:>10} {:>10} {:>10} {:>6} {:>6} {:>10} {:>10}\n",
             "name",
             "type",
@@ -190,32 +190,32 @@ namespace elf {
     }
 
     namespace {
-        std::string toString(Elf::SectionHeaderType sht) {
+        std::string toString(SectionHeaderType sht) {
             switch(sht) {
-                case Elf::SectionHeaderType::NULL_: return "NULL";
-                case Elf::SectionHeaderType::PROGBITS: return "PROGBITS";
-                case Elf::SectionHeaderType::SYMTAB: return "SYMTAB";
-                case Elf::SectionHeaderType::STRTAB: return "STRTAB";
-                case Elf::SectionHeaderType::RELA: return "RELA";
-                case Elf::SectionHeaderType::HASH: return "HASH";
-                case Elf::SectionHeaderType::DYNAMIC: return "DYNAMIC";
-                case Elf::SectionHeaderType::NOTE: return "NOTE";
-                case Elf::SectionHeaderType::NOBITS: return "NOBITS";
-                case Elf::SectionHeaderType::REL: return "REL";
-                case Elf::SectionHeaderType::SHLIB: return "SHLIB";
-                case Elf::SectionHeaderType::DYNSYM: return "DYNSYM";
-                case Elf::SectionHeaderType::INIT_ARRAY: return "INIT_ARRAY";
-                case Elf::SectionHeaderType::FINI_ARRAY: return "FINI_ARRAY";
-                case Elf::SectionHeaderType::PREINIT_ARRAY: return "PREINIT_ARRAY";
-                case Elf::SectionHeaderType::GROUP: return "GROUP";
-                case Elf::SectionHeaderType::SYMTAB_SHNDX: return "SYMTAB_SHNDX";
-                case Elf::SectionHeaderType::NUM: return "NUM";
+                case SectionHeaderType::NULL_: return "NULL";
+                case SectionHeaderType::PROGBITS: return "PROGBITS";
+                case SectionHeaderType::SYMTAB: return "SYMTAB";
+                case SectionHeaderType::STRTAB: return "STRTAB";
+                case SectionHeaderType::RELA: return "RELA";
+                case SectionHeaderType::HASH: return "HASH";
+                case SectionHeaderType::DYNAMIC: return "DYNAMIC";
+                case SectionHeaderType::NOTE: return "NOTE";
+                case SectionHeaderType::NOBITS: return "NOBITS";
+                case SectionHeaderType::REL: return "REL";
+                case SectionHeaderType::SHLIB: return "SHLIB";
+                case SectionHeaderType::DYNSYM: return "DYNSYM";
+                case SectionHeaderType::INIT_ARRAY: return "INIT_ARRAY";
+                case SectionHeaderType::FINI_ARRAY: return "FINI_ARRAY";
+                case SectionHeaderType::PREINIT_ARRAY: return "PREINIT_ARRAY";
+                case SectionHeaderType::GROUP: return "GROUP";
+                case SectionHeaderType::SYMTAB_SHNDX: return "SYMTAB_SHNDX";
+                case SectionHeaderType::NUM: return "NUM";
             }
             return fmt::format("{:x}", (u32)sht);
         }
     }
 
-    void Elf::SectionHeader::print() const {
+    void SectionHeader::print() const {
         fmt::print("{:20} {:>10} {:#10x} {:#10x} {:#10x} {:#10x} {:#6x} {:#6x} {:#10x} {:#10x}\n",
             name,
             toString(sh_type),
@@ -229,7 +229,7 @@ namespace elf {
             sh_entsize);
     }
 
-    Elf::Section Elf::SectionHeader::toSection(const u8* elfData, size_t size) const {
+    Section SectionHeader::toSection(const u8* elfData, size_t size) const {
         (void)size;
         assert(sh_offset < size);
         assert(sh_offset + sh_size < size);
@@ -241,21 +241,21 @@ namespace elf {
         };
     }
 
-    std::optional<Elf::Section> Elf::sectionFromName(std::string_view sv) const {
-        std::optional<Elf::Section> section {};
+    std::optional<Section> Elf::sectionFromName(std::string_view sv) const {
+        std::optional<Section> section {};
         forAllSectionHeaders([&](const SectionHeader& header) {
             if(sv == header.name) section = header.toSection(reinterpret_cast<const u8*>(bytes_.data()), bytes_.size());
         });
         return section;
     }
     
-    Elf::SymbolTable::SymbolTable(Elf::Section symbolSection) {
-        assert(symbolSection.size() % sizeof(Entry32) == 0);
-        begin_ = (const Entry32*)symbolSection.begin;
-        end_ = (const Entry32*)symbolSection.end;
+    SymbolTable::SymbolTable(Section symbolSection) {
+        assert(symbolSection.size() % sizeof(SymbolTableEntry32) == 0);
+        begin_ = (const SymbolTableEntry32*)symbolSection.begin;
+        end_ = (const SymbolTableEntry32*)symbolSection.end;
     }
 
-    std::string Elf::SymbolTable::Entry32::toString() const {
+    std::string SymbolTableEntry32::toString() const {
         auto typeToString = [](Type type) {
             switch(type) {
                 case Type::NOTYPE: return "NOTYPE";
@@ -277,9 +277,25 @@ namespace elf {
         return fmt::format("name={} value={} size={} info={} type={} other={} shndx={}", st_name, st_value, st_size, st_info, typeToString(type()), st_other, st_shndx);
     }
 
-    Elf::StringTable::StringTable(Section stringSection) {
+    StringTable::StringTable(Section stringSection) {
         begin_ = (const char*)stringSection.begin;
         end_ = (const char*)stringSection.end;
     }
 
+
+    const SymbolTableEntry32* RelocationEntry32::symbol(const Elf& elf) const {
+        return elf.relocationSymbolEntry(*this);
+    }
+
+
+    std::string_view SymbolTableEntry32::symbol(const StringTable* stringTable, const Elf& elf) const {
+        return elf.symbolFromEntry(stringTable, *this);
+    }
+
+    SectionHeaderType Section::type() const { return header->sh_type; }
+
+    const SymbolTableEntry32& SymbolTable::operator[](size_t sidx) const {
+        assert(sidx < size());
+        return *(begin_+sidx);
+    }
 }

@@ -17,175 +17,216 @@ using u64 = unsigned long long;
 
 namespace elf {
 
-    class Elf {
-        struct SectionHeader;
+    enum class Class : u32 {
+        B32 = 1,
+        B64 = 2,
+    };
+
+    enum class Endianness : u8 {
+        LITTLE = 1,
+        BIG = 2,
+    };
+
+    enum class Version : u8 {
+        CURRENT = 1,
+    };
+
+    enum class OsABI : u8 {
+        SYSV = 0x00,
+        LINUX = 0x03,
+    };
+
+    enum class AbiVersion : u8 {
+        UNKNOWN = 0x00,
+    };
+
+    enum class Type : u16 {
+
+    };
+
+    enum class Machine : u16 {
+
+    };
+
+    enum class SectionHeaderType : u32 {
+        NULL_ = 0x0,
+        PROGBITS = 0x1,
+        SYMTAB = 0x2,
+        STRTAB = 0x3,
+        RELA = 0x4,
+        HASH = 0x5,
+        DYNAMIC = 0x6,
+        NOTE = 0x7,
+        NOBITS = 0x8,
+        REL = 0x9,
+        SHLIB = 0x0A,
+        DYNSYM = 0x0B,
+        INIT_ARRAY = 0x0E,
+        FINI_ARRAY = 0x0F,
+        PREINIT_ARRAY = 0x10,
+        GROUP = 0x11,
+        SYMTAB_SHNDX = 0x12,
+        NUM = 0x13,
+    };
+
+    struct FileHeader {
+        struct Identifier {
+            Class class_;
+            Endianness data;
+            Version version;
+            OsABI osabi;
+            AbiVersion abiversion;
+        } ident;
+        Type type;
+        Machine machine;
+        Version version;
+        u64 entry;
+        u64 phoff;
+        u64 shoff;
+        u32 flags;
+        u16 ehsize;
+        u16 phentsize;
+        u16 phnum;
+        u16 shentsize;
+        u16 shnum;
+        u16 shstrndx;
+
+        void print() const;
+    };
+
+    struct SectionHeader;
+    class StringTable;
+    class SymbolTableEntry32;
+    class Elf;
+
+    struct Section {
+        u64 address;
+        const u8* begin;
+        const u8* end;
+        const SectionHeader* header;
+
+        SectionHeaderType type() const;
+
+        size_t size() const { return end-begin; }
+    };
+
+    struct SectionHeader {
+        u32 sh_name;
+        SectionHeaderType sh_type;
+        u64 sh_flags;
+        u64 sh_addr;
+        u64 sh_offset;
+        u64 sh_size;
+        u32 sh_link;
+        u32 sh_info;
+        u64 sh_addralign;
+        u64 sh_entsize;
+
+        std::string_view name;
+
+        Section toSection(const u8* elfData, size_t size) const;
+
+        static void printNames();
+        void print() const;
+    };
+
+    class SymbolTable {
     public:
 
+        const SymbolTableEntry32* begin() const { return begin_; }
+        const SymbolTableEntry32* end() const { return end_; }
+
+        size_t size() const { return std::distance(begin_, end_); }
+
+        const SymbolTableEntry32& operator[](size_t sidx) const;
+    private:
+        friend class Elf;
+        explicit SymbolTable(Section symbolSection);
+        const SymbolTableEntry32* begin_;
+        const SymbolTableEntry32* end_;
+    };
+
+    class StringTable {
+    public:
+        size_t size() const { return std::distance(begin_, end_); }
+
+        std::string_view operator[](size_t idx) const {
+            assert(idx < size());
+            size_t len = ::strlen(begin_+idx);
+            std::string_view sv(begin_+idx, len);
+            return sv;
+        }
+    private:
+        friend class Elf;
+        explicit StringTable(Section stringSection);
+        const char* begin_;
+        const char* end_;
+    };
+
+    struct RelocationEntry32 {
+        u32 r_offset {};
+        u32 r_info {};
+
+        u32 offset() const { return r_offset; }
+        u8 type() const { return (u8)r_info; }
+        u32 sym() const { return r_info >> 8; }
+
+        const SymbolTableEntry32* symbol(const Elf& elf) const;
+    };
+
+    struct SymbolTableEntry32 {
+        enum class Type {
+            NOTYPE = 0,
+            OBJECT = 1,
+            FUNC = 2,
+            SECTION = 3,
+            FILE = 4,
+            COMMON = 5,
+            TLS = 6,
+            LOOS = 10,
+            HIOS = 12,
+            LOPROC = 13,
+            HIPROC = 15,
+        };
+
+        enum class Bind {
+            LOCAL = 0,
+            GLOBAL = 1,
+            WEAK = 2,
+            LOOS = 10,
+            HIOS = 12,
+            LOPROC = 13,
+            HIPROC = 15,
+        };
+
+        u32	st_name {};
+        u32	st_value {};
+        u32	st_size {};
+        u8 st_info {};
+        u8 st_other {};
+        u16 st_shndx {};
+
+        Type type() const {
+            return static_cast<Type>(st_info & 0xF);
+        }
+
+        Bind bind() const {
+            return static_cast<Bind>(st_info >> 4);
+        }
+
+        std::string_view symbol(const StringTable* stringTable, const Elf& elf) const;
+
+        std::string toString() const;
+
+    };
+    static_assert(sizeof(SymbolTableEntry32) == 16, "");
+
+
+    class Elf {
+    public:
         Elf() = default;
         Elf(Elf&&) = default;
         Elf& operator=(Elf&&) = default;
-
-        enum class Class : u32 {
-            B32 = 1,
-            B64 = 2,
-        };
-
-        enum class Endianness : u8 {
-            LITTLE = 1,
-            BIG = 2,
-        };
-
-        enum class Version : u8 {
-            CURRENT = 1,
-        };
-
-        enum class OsABI : u8 {
-            SYSV = 0x00,
-            LINUX = 0x03,
-        };
-
-        enum class AbiVersion : u8 {
-            UNKNOWN = 0x00,
-        };
-
-        enum class Type : u16 {
-
-        };
-
-        enum class Machine : u16 {
-
-        };
-
-        enum class SectionHeaderType : u32 {
-            NULL_ = 0x0,
-            PROGBITS = 0x1,
-            SYMTAB = 0x2,
-            STRTAB = 0x3,
-            RELA = 0x4,
-            HASH = 0x5,
-            DYNAMIC = 0x6,
-            NOTE = 0x7,
-            NOBITS = 0x8,
-            REL = 0x9,
-            SHLIB = 0x0A,
-            DYNSYM = 0x0B,
-            INIT_ARRAY = 0x0E,
-            FINI_ARRAY = 0x0F,
-            PREINIT_ARRAY = 0x10,
-            GROUP = 0x11,
-            SYMTAB_SHNDX = 0x12,
-            NUM = 0x13,
-        };
-
-        struct Section {
-            u64 address;
-            const u8* begin;
-            const u8* end;
-            const SectionHeader* header;
-
-            SectionHeaderType type() const { return header->sh_type; }
-
-            size_t size() const { return end-begin; }
-        };
-
-        class StringTable;
-
-        class SymbolTable {
-        public:
-            struct Entry32 {
-                enum class Type {
-                    NOTYPE = 0,
-                    OBJECT = 1,
-                    FUNC = 2,
-                    SECTION = 3,
-                    FILE = 4,
-                    COMMON = 5,
-                    TLS = 6,
-                    LOOS = 10,
-                    HIOS = 12,
-                    LOPROC = 13,
-                    HIPROC = 15,
-                };
-
-                enum class Bind {
-                    LOCAL = 0,
-                    GLOBAL = 1,
-                    WEAK = 2,
-                    LOOS = 10,
-                    HIOS = 12,
-                    LOPROC = 13,
-                    HIPROC = 15,
-                };
-
-                u32	st_name {};
-                u32	st_value {};
-                u32	st_size {};
-                u8 st_info {};
-                u8 st_other {};
-                u16 st_shndx {};
-
-                Type type() const {
-                    return static_cast<Type>(st_info & 0xF);
-                }
-
-                Bind bind() const {
-                    return static_cast<Bind>(st_info >> 4);
-                }
-
-                std::string_view symbol(const StringTable* stringTable, const Elf& elf) const {
-                    return elf.symbolFromEntry(stringTable, *this);
-                }
-
-                std::string toString() const;
-            };
-
-            const Entry32* begin() const { return begin_; }
-            const Entry32* end() const { return end_; }
-
-            size_t size() const { return std::distance(begin_, end_); }
-
-            const Entry32& operator[](size_t sidx) const {
-                assert(sidx < size());
-                return *(begin_+sidx);
-            }
-        private:
-            static_assert(sizeof(Entry32) == 16, "");
-
-            friend class Elf;
-            explicit SymbolTable(Section symbolSection);
-            const Entry32* begin_;
-            const Entry32* end_;
-        };
-
-        class StringTable {
-        public:
-            size_t size() const { return std::distance(begin_, end_); }
-
-            std::string_view operator[](size_t idx) const {
-                assert(idx < size());
-                size_t len = ::strlen(begin_+idx);
-                std::string_view sv(begin_+idx, len);
-                return sv;
-            }
-        private:
-            friend class Elf;
-            explicit StringTable(Section stringSection);
-            const char* begin_;
-            const char* end_;
-        };
-
-        struct RelocationEntry32 {
-	        u32 r_offset {};
-	        u32 r_info {};
-
-            u32 offset() const { return r_offset; }
-            u8 type() const { return (u8)r_info; }
-            u32 sym() const { return r_info >> 8; }
-
-            const SymbolTable::Entry32* symbol(const Elf& elf) const {
-                return elf.relocationSymbolEntry(*this);
-            }
-        };
 
         Class archClass() const { return fileheader_.ident.class_; }
         Endianness endianness() const { return fileheader_.ident.data; }
@@ -278,7 +319,7 @@ namespace elf {
 
     private:
 
-        const SymbolTable::Entry32* relocationSymbolEntry(RelocationEntry32 relocation) const {
+        const SymbolTableEntry32* relocationSymbolEntry(RelocationEntry32 relocation) const {
             auto symbolTable = dynamicSymbolTable();
             if(!symbolTable) return nullptr;
             auto stringTable = dynamicStringTable();
@@ -287,7 +328,7 @@ namespace elf {
             return &(*symbolTable)[relocation.sym()];
         };
 
-        std::string_view symbolFromEntry(const StringTable* stringTable, SymbolTable::Entry32 symbol) const {
+        std::string_view symbolFromEntry(const StringTable* stringTable, SymbolTableEntry32 symbol) const {
             if(!stringTable) return "unknown (no string table)";
             if(symbol.st_name == 0) return "unknown (no name)";
             if(symbol.st_name >= stringTable->size()) return "unknown (no string table entry)";
@@ -299,50 +340,6 @@ namespace elf {
         Elf& operator=(const Elf&) = delete;
         Elf& operator=(Elf&) = delete;
 
-        struct FileHeader {
-            struct Identifier {
-                Class class_;
-                Endianness data;
-                Version version;
-                OsABI osabi;
-                AbiVersion abiversion;
-            } ident;
-            Type type;
-            Machine machine;
-            Version version;
-            u64 entry;
-            u64 phoff;
-            u64 shoff;
-            u32 flags;
-            u16 ehsize;
-            u16 phentsize;
-            u16 phnum;
-            u16 shentsize;
-            u16 shnum;
-            u16 shstrndx;
-
-            void print() const;
-        };
-
-        struct SectionHeader {
-            u32 sh_name;
-            SectionHeaderType sh_type;
-            u64 sh_flags;
-            u64 sh_addr;
-            u64 sh_offset;
-            u64 sh_size;
-            u32 sh_link;
-            u32 sh_info;
-            u64 sh_addralign;
-            u64 sh_entsize;
-
-            std::string_view name;
-
-            Section toSection(const u8* elfData, size_t size) const;
-
-            static void printNames();
-            void print() const;
-        };
 
         std::string filename_;
         std::vector<char> bytes_;
@@ -350,15 +347,17 @@ namespace elf {
         std::vector<SectionHeader> sectionHeaders_;
 
         friend class ElfReader;
+        friend class RelocationEntry32;
+        friend class SymbolTableEntry32;
     };
 
     class ElfReader {
     public:
         static std::unique_ptr<Elf> tryCreate(const std::string& filename);
 
-        static std::unique_ptr<Elf::FileHeader> tryCreateFileheader(const std::vector<char>& bytebuffer);
+        static std::unique_ptr<FileHeader> tryCreateFileheader(const std::vector<char>& bytebuffer);
 
-        static std::unique_ptr<Elf::SectionHeader> tryCreateSectionheader(const std::vector<char>& bytebuffer, size_t entryOffset, size_t entrySize, Elf::Class c);
+        static std::unique_ptr<SectionHeader> tryCreateSectionheader(const std::vector<char>& bytebuffer, size_t entryOffset, size_t entrySize, Class c);
     };
 }
 

@@ -23,11 +23,11 @@ int main(int argc, const char* argv[]) {
      //      fmt::print("Relocation offset={:#x} type={:#x} symbol={}\n", relocation.offset(), relocation.type(), symbol);
      // });
 
-     elf->forAllSymbols([&](const elf::Elf::StringTable* stringTable, const elf::Elf::SymbolTable::Entry32& entry) {
+     elf->forAllSymbols([&](const elf::StringTable* stringTable, const elf::SymbolTableEntry32& entry) {
           fmt::print("Static  symbol={:30} offset={}\n", entry.symbol(stringTable, *elf), entry.st_name);
      });
 
-     elf->forAllDynamicSymbols([&](const elf::Elf::StringTable* dynamicStringTable, const elf::Elf::SymbolTable::Entry32& entry) {
+     elf->forAllDynamicSymbols([&](const elf::StringTable* dynamicStringTable, const elf::SymbolTableEntry32& entry) {
           fmt::print("Dynamic symbol={:30} offset={}\n", entry.symbol(dynamicStringTable, *elf), entry.st_name);
      });
 }
