@@ -1,6 +1,8 @@
-#ifndef ELFREADER_H
-#define ELFREADER_H
+#ifndef ELF_ELFREADER_H
+#define ELF_ELFREADER_H
 
+#include "enums.h"
+#include <functional>
 #include <memory>
 #include <optional>
 #include <string>
@@ -10,73 +12,23 @@
 #include <cstring>
 #include <string.h>
 
-using u8 = unsigned char;
-using u16 = unsigned short;
-using u32 = unsigned int;
-using u64 = unsigned long long;
-
 namespace elf {
+    
+    struct SectionHeader;
+    class StringTable;
+    class SymbolTableEntry32;
+    class Elf;
 
-    enum class Class : u32 {
-        B32 = 1,
-        B64 = 2,
-    };
-
-    enum class Endianness : u8 {
-        LITTLE = 1,
-        BIG = 2,
-    };
-
-    enum class Version : u8 {
-        CURRENT = 1,
-    };
-
-    enum class OsABI : u8 {
-        SYSV = 0x00,
-        LINUX = 0x03,
-    };
-
-    enum class AbiVersion : u8 {
-        UNKNOWN = 0x00,
-    };
-
-    enum class Type : u16 {
-
-    };
-
-    enum class Machine : u16 {
-
-    };
-
-    enum class SectionHeaderType : u32 {
-        NULL_ = 0x0,
-        PROGBITS = 0x1,
-        SYMTAB = 0x2,
-        STRTAB = 0x3,
-        RELA = 0x4,
-        HASH = 0x5,
-        DYNAMIC = 0x6,
-        NOTE = 0x7,
-        NOBITS = 0x8,
-        REL = 0x9,
-        SHLIB = 0x0A,
-        DYNSYM = 0x0B,
-        INIT_ARRAY = 0x0E,
-        FINI_ARRAY = 0x0F,
-        PREINIT_ARRAY = 0x10,
-        GROUP = 0x11,
-        SYMTAB_SHNDX = 0x12,
-        NUM = 0x13,
+    struct Identifier {
+        Class class_;
+        Endianness data;
+        Version version;
+        OsABI osabi;
+        AbiVersion abiversion;
     };
 
     struct FileHeader {
-        struct Identifier {
-            Class class_;
-            Endianness data;
-            Version version;
-            OsABI osabi;
-            AbiVersion abiversion;
-        } ident;
+        Identifier ident;
         Type type;
         Machine machine;
         Version version;
@@ -94,11 +46,6 @@ namespace elf {
         void print() const;
     };
 
-    struct SectionHeader;
-    class StringTable;
-    class SymbolTableEntry32;
-    class Elf;
-
     struct Section {
         u64 address;
         const u8* begin;
@@ -106,8 +53,7 @@ namespace elf {
         const SectionHeader* header;
 
         SectionHeaderType type() const;
-
-        size_t size() const { return end-begin; }
+        size_t size() const;
     };
 
     struct SectionHeader {
@@ -121,24 +67,21 @@ namespace elf {
         u32 sh_info;
         u64 sh_addralign;
         u64 sh_entsize;
-
         std::string_view name;
 
         Section toSection(const u8* elfData, size_t size) const;
-
         static void printNames();
         void print() const;
     };
 
     class SymbolTable {
     public:
-
         const SymbolTableEntry32* begin() const { return begin_; }
         const SymbolTableEntry32* end() const { return end_; }
 
-        size_t size() const { return std::distance(begin_, end_); }
-
+        size_t size() const;
         const SymbolTableEntry32& operator[](size_t sidx) const;
+
     private:
         friend class Elf;
         explicit SymbolTable(Section symbolSection);
@@ -148,14 +91,9 @@ namespace elf {
 
     class StringTable {
     public:
-        size_t size() const { return std::distance(begin_, end_); }
+        size_t size() const;
+        std::string_view operator[](size_t idx) const;
 
-        std::string_view operator[](size_t idx) const {
-            assert(idx < size());
-            size_t len = ::strlen(begin_+idx);
-            std::string_view sv(begin_+idx, len);
-            return sv;
-        }
     private:
         friend class Elf;
         explicit StringTable(Section stringSection);
@@ -167,38 +105,13 @@ namespace elf {
         u32 r_offset {};
         u32 r_info {};
 
-        u32 offset() const { return r_offset; }
-        u8 type() const { return (u8)r_info; }
-        u32 sym() const { return r_info >> 8; }
-
+        u32 offset() const;
+        u8 type() const;
+        u32 sym() const;
         const SymbolTableEntry32* symbol(const Elf& elf) const;
     };
 
     struct SymbolTableEntry32 {
-        enum class Type {
-            NOTYPE = 0,
-            OBJECT = 1,
-            FUNC = 2,
-            SECTION = 3,
-            FILE = 4,
-            COMMON = 5,
-            TLS = 6,
-            LOOS = 10,
-            HIOS = 12,
-            LOPROC = 13,
-            HIPROC = 15,
-        };
-
-        enum class Bind {
-            LOCAL = 0,
-            GLOBAL = 1,
-            WEAK = 2,
-            LOOS = 10,
-            HIOS = 12,
-            LOPROC = 13,
-            HIPROC = 15,
-        };
-
         u32	st_name {};
         u32	st_value {};
         u32	st_size {};
@@ -206,16 +119,9 @@ namespace elf {
         u8 st_other {};
         u16 st_shndx {};
 
-        Type type() const {
-            return static_cast<Type>(st_info & 0xF);
-        }
-
-        Bind bind() const {
-            return static_cast<Bind>(st_info >> 4);
-        }
-
+        SymbolType type() const;
+        SymbolBind bind() const;
         std::string_view symbol(const StringTable* stringTable, const Elf& elf) const;
-
         std::string toString() const;
 
     };
@@ -264,82 +170,20 @@ namespace elf {
 
         void print() const;
 
-        template<typename Callback>
-        void forAllSectionHeaders(Callback callback) const {
-            for(const auto& sectionHeader : sectionHeaders_) {
-                callback(sectionHeader);
-            }
-        }
-
-        template<typename Callback>
-        void forAllSymbols(Callback callback) const {
-            if(archClass() != Class::B32) return;
-            auto table = symbolTable();
-            auto strTable = stringTable();
-            if(!table) return;
-            for(const auto& entry : table.value()) callback(&strTable.value(), entry);
-        }
-
-        template<typename Callback>
-        void forAllDynamicSymbols(Callback callback) const {
-            if(archClass() != Class::B32) return;
-            auto dynTable = dynamicSymbolTable();
-            auto dynstrTable = dynamicStringTable();
-            if(!dynTable) return;
-            for(const auto& entry : dynTable.value()) callback(&dynstrTable.value(), entry);
-        }
-
-        template<typename Callback>
-        void forAllRelocations(Callback callback) const {
-            if(archClass() != Class::B32) return;
-            forAllSectionHeaders([&](const SectionHeader& header) {
-                if(header.sh_type != SectionHeaderType::REL) return;
-                Section relocationSection = header.toSection(reinterpret_cast<const u8*>(bytes_.data()), bytes_.size());
-                if(relocationSection.size() % sizeof(RelocationEntry32) != 0) return;
-                const RelocationEntry32* begin = reinterpret_cast<const RelocationEntry32*>(relocationSection.begin);
-                const RelocationEntry32* end = reinterpret_cast<const RelocationEntry32*>(relocationSection.end);
-                for(const RelocationEntry32* it = begin; it != end; ++it) callback(*it);
-            });
-        }
-
-        template<typename Callback>
-        void resolveRelocations(Callback callback) const {
-            if(archClass() != Class::B32) return;
-            forAllSectionHeaders([&](const SectionHeader& header) {
-                if(header.sh_type != SectionHeaderType::REL) return;
-                Section relocationSection = header.toSection(reinterpret_cast<const u8*>(bytes_.data()), bytes_.size());
-                if(relocationSection.size() % sizeof(RelocationEntry32) != 0) return;
-                const RelocationEntry32* begin = reinterpret_cast<const RelocationEntry32*>(relocationSection.begin);
-                const RelocationEntry32* end = reinterpret_cast<const RelocationEntry32*>(relocationSection.end);
-                for(const RelocationEntry32* it = begin; it != end; ++it) {
-                    callback(*it);
-                }
-            });
-        }
+        void forAllSectionHeaders(std::function<void(const SectionHeader&)>&& callback) const;
+        void forAllSymbols(std::function<void(const StringTable*, const SymbolTableEntry32&)>&& callback) const;
+        void forAllDynamicSymbols(std::function<void(const StringTable*, const SymbolTableEntry32&)>&& callback) const;
+        void forAllRelocations(std::function<void(const RelocationEntry32&)>&& callback) const;
+        void resolveRelocations(std::function<void(const RelocationEntry32&)>&& callback) const;
 
     private:
-
-        const SymbolTableEntry32* relocationSymbolEntry(RelocationEntry32 relocation) const {
-            auto symbolTable = dynamicSymbolTable();
-            if(!symbolTable) return nullptr;
-            auto stringTable = dynamicStringTable();
-            if(!stringTable) return nullptr;
-            if(relocation.sym() >= symbolTable->size()) return nullptr;
-            return &(*symbolTable)[relocation.sym()];
-        };
-
-        std::string_view symbolFromEntry(const StringTable* stringTable, SymbolTableEntry32 symbol) const {
-            if(!stringTable) return "unknown (no string table)";
-            if(symbol.st_name == 0) return "unknown (no name)";
-            if(symbol.st_name >= stringTable->size()) return "unknown (no string table entry)";
-            return (*stringTable)[symbol.st_name];
-        }
+        const SymbolTableEntry32* relocationSymbolEntry(RelocationEntry32 relocation) const;
+        std::string_view symbolFromEntry(const StringTable* stringTable, SymbolTableEntry32 symbol) const;
 
         Elf(const Elf&) = delete;
         Elf(Elf&) = delete;
         Elf& operator=(const Elf&) = delete;
         Elf& operator=(Elf&) = delete;
-
 
         std::string filename_;
         std::vector<char> bytes_;

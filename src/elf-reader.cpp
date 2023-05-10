@@ -255,20 +255,82 @@ namespace elf {
         end_ = (const SymbolTableEntry32*)symbolSection.end;
     }
 
+    StringTable::StringTable(Section stringSection) {
+        begin_ = (const char*)stringSection.begin;
+        end_ = (const char*)stringSection.end;
+    }
+
+    SectionHeaderType Section::type() const {
+        return header->sh_type;
+    }
+
+    size_t Section::size() const {
+        return end-begin;
+    }
+
+    size_t SymbolTable::size() const {
+        return std::distance(begin_, end_);
+    }
+
+    const SymbolTableEntry32& SymbolTable::operator[](size_t sidx) const {
+        assert(sidx < size());
+        return *(begin_+sidx);
+    }
+
+    size_t StringTable::size() const {
+        return std::distance(begin_, end_);
+    }
+
+    std::string_view StringTable::operator[](size_t idx) const {
+        assert(idx < size());
+        size_t len = ::strlen(begin_+idx);
+        std::string_view sv(begin_+idx, len);
+        return sv;
+    }
+
+    u32 RelocationEntry32::offset() const {
+        return r_offset;
+    }
+
+    u8 RelocationEntry32::type() const {
+        return (u8)r_info;
+    }
+
+    u32 RelocationEntry32::sym() const {
+        return r_info >> 8;
+    }
+
+    const SymbolTableEntry32* RelocationEntry32::symbol(const Elf& elf) const {
+        return elf.relocationSymbolEntry(*this);
+    }
+
+
+    SymbolType SymbolTableEntry32::type() const {
+        return static_cast<SymbolType>(st_info & 0xF);
+    }
+
+    SymbolBind SymbolTableEntry32::bind() const {
+        return static_cast<SymbolBind>(st_info >> 4);
+    }
+
+    std::string_view SymbolTableEntry32::symbol(const StringTable* stringTable, const Elf& elf) const {
+        return elf.symbolFromEntry(stringTable, *this);
+    }
+
     std::string SymbolTableEntry32::toString() const {
-        auto typeToString = [](Type type) {
+        auto typeToString = [](SymbolType type) {
             switch(type) {
-                case Type::NOTYPE: return "NOTYPE";
-                case Type::OBJECT: return "OBJECT";
-                case Type::FUNC: return "FUNC";
-                case Type::SECTION: return "SECTION";
-                case Type::FILE: return "FILE";
-                case Type::COMMON: return "COMMON";
-                case Type::TLS: return "TLS";
-                case Type::LOOS: return "LOOS";
-                case Type::HIOS: return "HIOS";
-                case Type::LOPROC: return "LOPROC";
-                case Type::HIPROC: return "HIPROC";
+                case SymbolType::NOTYPE: return "NOTYPE";
+                case SymbolType::OBJECT: return "OBJECT";
+                case SymbolType::FUNC: return "FUNC";
+                case SymbolType::SECTION: return "SECTION";
+                case SymbolType::FILE: return "FILE";
+                case SymbolType::COMMON: return "COMMON";
+                case SymbolType::TLS: return "TLS";
+                case SymbolType::LOOS: return "LOOS";
+                case SymbolType::HIOS: return "HIOS";
+                case SymbolType::LOPROC: return "LOPROC";
+                case SymbolType::HIPROC: return "HIPROC";
             }
             assert(false);
             return "";
@@ -277,25 +339,68 @@ namespace elf {
         return fmt::format("name={} value={} size={} info={} type={} other={} shndx={}", st_name, st_value, st_size, st_info, typeToString(type()), st_other, st_shndx);
     }
 
-    StringTable::StringTable(Section stringSection) {
-        begin_ = (const char*)stringSection.begin;
-        end_ = (const char*)stringSection.end;
+
+    void Elf::forAllSectionHeaders(std::function<void(const SectionHeader&)>&& callback) const {
+        for(const auto& sectionHeader : sectionHeaders_) {
+            callback(sectionHeader);
+        }
     }
 
-
-    const SymbolTableEntry32* RelocationEntry32::symbol(const Elf& elf) const {
-        return elf.relocationSymbolEntry(*this);
+    void Elf::forAllSymbols(std::function<void(const StringTable*, const SymbolTableEntry32&)>&& callback) const {
+        if(archClass() != Class::B32) return;
+        auto table = symbolTable();
+        auto strTable = stringTable();
+        if(!table) return;
+        for(const auto& entry : table.value()) callback(&strTable.value(), entry);
     }
 
-
-    std::string_view SymbolTableEntry32::symbol(const StringTable* stringTable, const Elf& elf) const {
-        return elf.symbolFromEntry(stringTable, *this);
+    void Elf::forAllDynamicSymbols(std::function<void(const StringTable*, const SymbolTableEntry32&)>&& callback) const {
+        if(archClass() != Class::B32) return;
+        auto dynTable = dynamicSymbolTable();
+        auto dynstrTable = dynamicStringTable();
+        if(!dynTable) return;
+        for(const auto& entry : dynTable.value()) callback(&dynstrTable.value(), entry);
     }
 
-    SectionHeaderType Section::type() const { return header->sh_type; }
+    void Elf::forAllRelocations(std::function<void(const RelocationEntry32&)>&& callback) const {
+        if(archClass() != Class::B32) return;
+        forAllSectionHeaders([&](const SectionHeader& header) {
+            if(header.sh_type != SectionHeaderType::REL) return;
+            Section relocationSection = header.toSection(reinterpret_cast<const u8*>(bytes_.data()), bytes_.size());
+            if(relocationSection.size() % sizeof(RelocationEntry32) != 0) return;
+            const RelocationEntry32* begin = reinterpret_cast<const RelocationEntry32*>(relocationSection.begin);
+            const RelocationEntry32* end = reinterpret_cast<const RelocationEntry32*>(relocationSection.end);
+            for(const RelocationEntry32* it = begin; it != end; ++it) callback(*it);
+        });
+    }
 
-    const SymbolTableEntry32& SymbolTable::operator[](size_t sidx) const {
-        assert(sidx < size());
-        return *(begin_+sidx);
+    void Elf::resolveRelocations(std::function<void(const RelocationEntry32&)>&& callback) const {
+        if(archClass() != Class::B32) return;
+        forAllSectionHeaders([&](const SectionHeader& header) {
+            if(header.sh_type != SectionHeaderType::REL) return;
+            Section relocationSection = header.toSection(reinterpret_cast<const u8*>(bytes_.data()), bytes_.size());
+            if(relocationSection.size() % sizeof(RelocationEntry32) != 0) return;
+            const RelocationEntry32* begin = reinterpret_cast<const RelocationEntry32*>(relocationSection.begin);
+            const RelocationEntry32* end = reinterpret_cast<const RelocationEntry32*>(relocationSection.end);
+            for(const RelocationEntry32* it = begin; it != end; ++it) {
+                callback(*it);
+            }
+        });
+    }
+
+    const SymbolTableEntry32* Elf::relocationSymbolEntry(RelocationEntry32 relocation) const {
+        auto symbolTable = dynamicSymbolTable();
+        if(!symbolTable) return nullptr;
+        auto stringTable = dynamicStringTable();
+        if(!stringTable) return nullptr;
+        if(relocation.sym() >= symbolTable->size()) return nullptr;
+        return &(*symbolTable)[relocation.sym()];
+    };
+
+    std::string_view Elf::symbolFromEntry(const StringTable* stringTable, SymbolTableEntry32 symbol) const {
+        if(!stringTable) return "unknown (no string table)";
+        if(symbol.st_name == 0) return "unknown (no name)";
+        if(symbol.st_name >= stringTable->size()) return "unknown (no string table entry)";
+        return (*stringTable)[symbol.st_name];
     }
 }
