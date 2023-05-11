@@ -64,6 +64,14 @@ namespace x64 {
         return value;
     }
 
+    u128 Mmu::Region::read128(Ptr128 ptr) const {
+        assert(contains(ptr.address));
+        assert(contains(ptr.address+15));
+        u128 value { 0, 0 };
+        std::memcpy(&value, &data[ptr.address-base], sizeof(value));
+        return value;
+    }
+
     void Mmu::Region::write8(Ptr8 ptr, u8 value) {
         assert(contains(ptr.address));
         std::memcpy(&data[ptr.address-base], &value, sizeof(value));
@@ -84,6 +92,12 @@ namespace x64 {
     void Mmu::Region::write64(Ptr64 ptr, u64 value) {
         assert(contains(ptr.address));
         assert(contains(ptr.address+7));
+        std::memcpy(&data[ptr.address-base], &value, sizeof(value));
+    }
+
+    void Mmu::Region::write128(Ptr128 ptr, u128 value) {
+        assert(contains(ptr.address));
+        assert(contains(ptr.address+15));
         std::memcpy(&data[ptr.address-base], &value, sizeof(value));
     }
 
@@ -169,6 +183,23 @@ namespace x64 {
         return value;
     }
 
+    u128 Mmu::read128(Ptr128 ptr) const {
+        const Region* region = findAddress(ptr.address);
+        verify(!!region, [&]() {
+            fmt::print("No region containing {:#x}\n", ptr.address);
+        });
+        verify(region->protection & PROT_READ, [&]() {
+            fmt::print("Attempt to read {:#x} from non-readable region {}\n", ptr.address, region->name);
+            if(!!region->handler) region->handler(ptr.address);
+        });
+        u128 value = region->read128(ptr);
+        verify((region->invalidValues != INV_NULL) || (value.lo != 0 || value.hi != 0), [&]() {
+            fmt::print("Read 0x0 from region {} which is marked INV_NULL at address {:#x}\n", region->name, ptr.address);
+            if(!!region->handler) region->handler(ptr.address);
+        });
+        return value;
+    }
+
     void Mmu::write8(Ptr8 ptr, u8 value) {
         Region* region = findAddress(ptr.address);
         verify(!!region, [&]() {
@@ -211,6 +242,17 @@ namespace x64 {
             fmt::print("Attempt to write to {:#x} in non-writable region {}\n", ptr.address, region->name);
         });
         region->write64(ptr, value);
+    }
+
+    void Mmu::write128(Ptr128 ptr, u128 value) {
+        Region* region = findAddress(ptr.address);
+        verify(!!region, [&]() {
+            fmt::print("No region containing {:#x}\n", ptr.address);
+        });
+        verify(region->protection & PROT_WRITE, [&]() {
+            fmt::print("Attempt to write to {:#x} in non-writable region {}\n", ptr.address, region->name);
+        });
+        region->write128(ptr, value);
     }
 
     void Mmu::dumpRegions() const {

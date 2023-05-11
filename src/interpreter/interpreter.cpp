@@ -56,6 +56,10 @@ namespace x64 {
         programElf_ = elf::ElfReader::tryCreate(program_.filepath);
         verify(!!programElf_, "Failed to load program elf file");
 
+        programOffset_ = mmu_.topOfMemoryAligned();
+        for(auto& func : program_.functions) {
+            func.addressOffset = programOffset_;
+        }
         addSectionIfExists(*programElf_, ".rodata", "program .rodata", PROT_READ);
         addSectionIfExists(*programElf_, ".data.rel.ro", "program .data.rel.ro", PROT_READ);
         addSectionIfExists(*programElf_, ".data", "program .data", PROT_READ | PROT_WRITE);
@@ -107,13 +111,20 @@ namespace x64 {
 
         auto gotHandler = [&](u32 address){
             auto programStringTable = programElf_->dynamicStringTable();
+            bool found = false;
             programElf_->forAllRelocations([&](const elf::Elf::RelocationEntry32& relocation) {
+                fmt::print("{:#x}\n", relocation.offset());
                 if(relocation.offset() == address) {
                     const auto* sym = relocation.symbol(*programElf_);
                     std::string_view symbol = sym->symbol(&programStringTable.value(), *programElf_);
                     fmt::print("Relocation address={:#x} symbol={}\n", address, symbol);
+                    found = true;
+                    return;
                 }
             });
+            if(!found) {
+                fmt::print("Relocation for address={:#x} not found\n", address);
+            }
         };
 
         if(!!got_) {
@@ -296,7 +307,7 @@ namespace x64 {
                 ++ticks;
                 instruction->exec(&cpu_);
             } catch(const VerificationException&) {
-                fmt::print("Interpreter crash after {} instrutions\n", ticks);
+                fmt::print("Interpreter crash after {} instructions\n", ticks);
                 fmt::print("Register state:\n");
                 dump(stdout);
                 mmu_.dumpRegions();

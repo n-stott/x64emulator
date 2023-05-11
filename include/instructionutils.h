@@ -78,6 +78,28 @@ namespace utils {
         return "";
     }
 
+    inline std::string toString(const RSSE& reg) {
+        switch(reg) {
+            case RSSE::XMM0: return "xmm0";
+            case RSSE::XMM1: return "xmm1";
+            case RSSE::XMM2: return "xmm2";
+            case RSSE::XMM3: return "xmm3";
+            case RSSE::XMM4: return "xmm4";
+            case RSSE::XMM5: return "xmm5";
+            case RSSE::XMM6: return "xmm6";
+            case RSSE::XMM7: return "xmm7";
+            case RSSE::XMM8: return "xmm8";
+            case RSSE::XMM9: return "xmm9";
+            case RSSE::XMM10: return "xmm10";
+            case RSSE::XMM11: return "xmm11";
+            case RSSE::XMM12: return "xmm12";
+            case RSSE::XMM13: return "xmm13";
+            case RSSE::XMM14: return "xmm14";
+            case RSSE::XMM15: return "xmm15";
+        }
+        return "";
+    }
+
     inline std::string toString(Cond cond) {
         switch(cond) {
             case Cond::A:  return "a";
@@ -124,6 +146,7 @@ namespace utils {
         if constexpr (size == Size::WORD) return "WORD";
         if constexpr (size == Size::DWORD) return "DWORD";
         if constexpr (size == Size::QWORD) return "QWORD";
+        if constexpr (size == Size::XMMWORD) return "XMMWORD";
     }
 
     template<Cond condition>
@@ -173,6 +196,10 @@ namespace utils {
 
     inline std::string toString(const M64& m64) {
         return std::visit([](auto&& arg) -> std::string { return toString(arg); }, m64);
+    }
+
+    inline std::string toString(const MSSE& msse) {
+        return std::visit([](auto&& arg) -> std::string { return toString(arg); }, msse);
     }
 
     template<typename Src>
@@ -494,6 +521,16 @@ namespace utils {
 
     inline std::string toString(Cwde) {
         return fmt::format("{:8}", "cwde");
+    }
+
+    template<typename Dst, typename Src>
+    inline std::string toString(Pxor<Dst, Src> ins) {
+        return fmt::format("{:8}{},{}", "pxor", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Dst, typename Src>
+    inline std::string toString(Movaps<Dst, Src> ins) {
+        return fmt::format("{:8}{},{}", "movaps", toString(ins.dst), toString(ins.src));
     }
 }
 }

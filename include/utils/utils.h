@@ -12,10 +12,17 @@ using i16 = short;
 using i32 = int;
 using i64 = long long;
 
+struct Xmm {
+    u64 hi;
+    u64 lo;
+};
+using u128 = Xmm;
+
 static_assert(sizeof(u8) == 1);
 static_assert(sizeof(u16) == 2);
 static_assert(sizeof(u32) == 4);
 static_assert(sizeof(u64) == 8);
+static_assert(sizeof(u128) == 16);
 static_assert(sizeof(i8) == 1);
 static_assert(sizeof(i16) == 2);
 static_assert(sizeof(i32) == 4);

@@ -111,6 +111,12 @@ namespace x64 {
 
         static std::unique_ptr<X86Instruction> parseCwde(const OpcodeBytes& opbytes, u32 address, std::string_view operands);
 
+        static std::unique_ptr<X86Instruction> parsePxor(const OpcodeBytes& opbytes, u32 address, std::string_view operands);
+        static std::unique_ptr<X86Instruction> parseMovaps(const OpcodeBytes& opbytes, u32 address, std::string_view operands);
+        static std::unique_ptr<X86Instruction> parseMovabs(const OpcodeBytes& opbytes, u32 address, std::string_view operands);
+        static std::unique_ptr<X86Instruction> parseMovdqu(const OpcodeBytes& opbytes, u32 address, std::string_view operands);
+        static std::unique_ptr<X86Instruction> parseMovups(const OpcodeBytes& opbytes, u32 address, std::string_view operands);
+
     };
 
 }

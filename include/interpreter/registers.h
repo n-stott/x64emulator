@@ -24,10 +24,11 @@ namespace x64 {
         u64 r14_ { 0 };
         u64 r15_ { 0 };
 
-
         u64 rip_ { 0 };
 
         u32 eiz_ { 0 };
+
+        Xmm xmm_[16];
 
         u8 get(R8 reg) const {
             switch(reg) {
@@ -98,6 +99,10 @@ namespace x64 {
             }
             __builtin_unreachable();
         }
+
+        Xmm get(RSSE reg) const {
+            return xmm_[(int)reg];
+        }
     
         void set(R8 reg, u8 value) {
             switch(reg) {
@@ -167,6 +172,10 @@ namespace x64 {
                 case R64::RIP: { rip_ = value; return; }
             }
             __builtin_unreachable();
+        }
+
+        void set(RSSE reg, Xmm value) {
+            xmm_[(int)reg] = value;
         }
 
         u64 resolve(B addr) const {
@@ -259,6 +268,26 @@ namespace x64 {
 
         Ptr<Size::QWORD> resolve(Addr<Size::QWORD, BISD> addr) const {
             return Ptr<Size::QWORD>{resolve(addr.encoding)};
+        }
+
+        Ptr<Size::XMMWORD> resolve(Addr<Size::XMMWORD, B> addr) const {
+            return Ptr<Size::XMMWORD>{resolve(addr.encoding)};
+        }
+
+        Ptr<Size::XMMWORD> resolve(Addr<Size::XMMWORD, BD> addr) const {
+            return Ptr<Size::XMMWORD>{resolve(addr.encoding)};
+        }
+
+        Ptr<Size::XMMWORD> resolve(Addr<Size::XMMWORD, BIS> addr) const {
+            return Ptr<Size::XMMWORD>{resolve(addr.encoding)};
+        }
+        
+        Ptr<Size::XMMWORD> resolve(Addr<Size::XMMWORD, ISD> addr) const {
+            return Ptr<Size::XMMWORD>{resolve(addr.encoding)};
+        }
+
+        Ptr<Size::XMMWORD> resolve(Addr<Size::XMMWORD, BISD> addr) const {
+            return Ptr<Size::XMMWORD>{resolve(addr.encoding)};
         }
     };
 

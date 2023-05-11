@@ -82,6 +82,25 @@ namespace x64 {
         RIP,
     };
 
+    enum class RSSE {
+        XMM0,
+        XMM1,
+        XMM2,
+        XMM3,
+        XMM4,
+        XMM5,
+        XMM6,
+        XMM7,
+        XMM8,
+        XMM9,
+        XMM10,
+        XMM11,
+        XMM12,
+        XMM13,
+        XMM14,
+        XMM15,
+    };
+
     enum class Cond {
         A,
         AE,
@@ -152,6 +171,7 @@ namespace x64 {
         WORD,
         DWORD,
         QWORD,
+        XMMWORD,
     };
 
     template<Size size, typename Encoding>
@@ -169,6 +189,7 @@ namespace x64 {
                 case Size::WORD: address += 2; break;
                 case Size::DWORD: address += 4; break;
                 case Size::QWORD: address += 8; break;
+                case Size::XMMWORD: address += 16; break;
             }
             return *this;
         }
@@ -178,6 +199,7 @@ namespace x64 {
     using Ptr16 = Ptr<Size::WORD>;
     using Ptr32 = Ptr<Size::DWORD>;
     using Ptr64 = Ptr<Size::QWORD>;
+    using Ptr128 = Ptr<Size::XMMWORD>;
 
 
     using M8 = std::variant<Addr<Size::BYTE, B>,
@@ -208,6 +230,12 @@ namespace x64 {
                              Addr<Size::QWORD, BISD>>;
     using RM64 = std::variant<R64, M64>;
 
+    using MSSE = std::variant<Addr<Size::XMMWORD, B>,
+                              Addr<Size::XMMWORD, BD>,
+                              Addr<Size::XMMWORD, BIS>,
+                              Addr<Size::XMMWORD, ISD>,
+                              Addr<Size::XMMWORD, BISD>>;
+    using RMSSE = std::variant<RSSE, MSSE>;
 }
 
 #endif
