@@ -1,6 +1,9 @@
 #ifndef ELF_ENUMS_H
 #define ELF_ENUMS_H
 
+#include "fmt/format.h"
+#include <string>
+
 using u8 = unsigned char;
 using u16 = unsigned short;
 using u32 = unsigned int;
@@ -82,6 +85,30 @@ namespace elf {
         LOPROC = 13,
         HIPROC = 15,
     };
+
+    inline std::string toString(SectionHeaderType sht) {
+        switch(sht) {
+            case SectionHeaderType::NULL_: return "NULL";
+            case SectionHeaderType::PROGBITS: return "PROGBITS";
+            case SectionHeaderType::SYMTAB: return "SYMTAB";
+            case SectionHeaderType::STRTAB: return "STRTAB";
+            case SectionHeaderType::RELA: return "RELA";
+            case SectionHeaderType::HASH: return "HASH";
+            case SectionHeaderType::DYNAMIC: return "DYNAMIC";
+            case SectionHeaderType::NOTE: return "NOTE";
+            case SectionHeaderType::NOBITS: return "NOBITS";
+            case SectionHeaderType::REL: return "REL";
+            case SectionHeaderType::SHLIB: return "SHLIB";
+            case SectionHeaderType::DYNSYM: return "DYNSYM";
+            case SectionHeaderType::INIT_ARRAY: return "INIT_ARRAY";
+            case SectionHeaderType::FINI_ARRAY: return "FINI_ARRAY";
+            case SectionHeaderType::PREINIT_ARRAY: return "PREINIT_ARRAY";
+            case SectionHeaderType::GROUP: return "GROUP";
+            case SectionHeaderType::SYMTAB_SHNDX: return "SYMTAB_SHNDX";
+            case SectionHeaderType::NUM: return "NUM";
+        }
+        return fmt::format("{:x}", (u32)sht);
+    }
 }
 
 #endif

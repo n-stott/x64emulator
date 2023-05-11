@@ -1,0 +1,293 @@
+#ifndef ELF_ELF64_H
+#define ELF_ELF64_H
+
+#include "enums.h"
+#include "elf.h"
+#include <functional>
+#include <optional>
+
+namespace elf {
+
+    struct FileHeader64 : public FileHeader {
+        u64 entry;
+        u64 phoff;
+        u64 shoff;
+        u32 flags;
+        u16 ehsize;
+        u16 phentsize;
+        u16 phnum;
+        u16 shentsize;
+        u16 shnum;
+        u16 shstrndx;
+
+        void print() const;
+    };
+    static_assert(4 + sizeof(Identifier) + sizeof(FileHeader64) == 0x40);
+
+    struct SectionHeader64 : public SectionHeader {
+        u64 sh_flags;
+        u64 sh_addr;
+        u64 sh_offset;
+        u64 sh_size;
+        u32 sh_link;
+        u32 sh_info;
+        u64 sh_addralign;
+        u64 sh_entsize;
+        std::string_view name;
+
+        Section toSection(const u8* elfData, size_t size) const;
+        void print() const;
+    };
+    static_assert(sizeof(SectionHeader64) == 0x40 + sizeof(std::string_view));
+
+    struct RelocationEntry64 {
+        u64 r_offset {};
+        u64 r_info {};
+
+        u64 offset() const;
+        u32 type() const;
+        u64 sym() const;
+        const SymbolTableEntry64* symbol(const Elf64& elf) const;
+    };
+
+    struct SymbolTableEntry64 {
+        u32	st_name {};
+        u8 st_info {};
+        u8 st_other {};
+        u16 st_shndx {};
+        u64	st_value {};
+        u64	st_size {};
+
+        SymbolType type() const;
+        SymbolBind bind() const;
+        std::string_view symbol(const StringTable* stringTable, const Elf64& elf) const;
+        std::string toString() const;
+    };
+    static_assert(sizeof(SymbolTableEntry64) == 0x18, "");
+
+    class Elf64 : public Elf {
+    public:
+        Type type() const override { return fileheader_.type; }
+        Machine machine() const override { return fileheader_.machine; }
+
+        std::optional<SymbolTable<SymbolTableEntry64>> dynamicSymbolTable() const;
+        std::optional<SymbolTable<SymbolTableEntry64>> symbolTable() const;
+        std::optional<StringTable> dynamicStringTable() const;
+        std::optional<StringTable> stringTable() const;
+
+        std::optional<Section> sectionFromName(std::string_view sv) const;
+
+        void print() const override;
+
+        void forAllSectionHeaders(std::function<void(const SectionHeader64&)>&& callback) const;
+        void forAllSymbols(std::function<void(const StringTable*, const SymbolTableEntry64&)>&& callback) const;
+        void forAllDynamicSymbols(std::function<void(const StringTable*, const SymbolTableEntry64&)>&& callback) const;
+        void forAllRelocations(std::function<void(const RelocationEntry64&)>&& callback) const;
+        void resolveRelocations(std::function<void(const RelocationEntry64&)>&& callback) const;
+
+    private:
+        const SymbolTableEntry64* relocationSymbolEntry(RelocationEntry64 relocation) const;
+        std::string_view symbolFromEntry(const StringTable* stringTable, SymbolTableEntry64 symbol) const;
+
+        FileHeader64 fileheader_;
+        std::vector<SectionHeader64> sectionHeaders_;
+
+        friend class ElfReader;
+        friend class RelocationEntry64;
+        friend class SymbolTableEntry64;
+    };
+
+
+
+    inline void FileHeader64::print() const {
+        fmt::print("Type       : {:x}\n", (int)type);
+        fmt::print("Machine    : {:x}\n", (int)machine);
+        fmt::print("\n");
+        fmt::print("Entry                 : {:#x}\n", (int)entry);
+        fmt::print("Program header offset : {:#x}\n", (int)phoff);
+        fmt::print("Section header offset : {:#x}\n", (int)shoff);
+        fmt::print("\n");
+        fmt::print("Flags : {:#x}\n", (int)flags);
+        fmt::print("File header size : {:#x}\n", (int)ehsize);
+        fmt::print("Program header entry size : {:#x}B\n", (int)phentsize);
+        fmt::print("Program header count      : {:}\n", (int)phnum);
+        fmt::print("Section header entry size : {:#x}B\n", (int)shentsize);
+        fmt::print("Section header count      : {:}\n", (int)shnum);
+        fmt::print("Section header name index : {:}\n", (int)shstrndx);
+    }
+
+    inline void SectionHeader64::print() const {
+        fmt::print("{:20} {:>10} {:#10x} {:#10x} {:#10x} {:#10x} {:#6x} {:#6x} {:#10x} {:#10x}\n",
+            name,
+            toString(sh_type),
+            sh_flags,
+            sh_addr,
+            sh_offset,
+            sh_size,
+            sh_link,
+            sh_info,
+            sh_addralign,
+            sh_entsize);
+    }
+
+    inline Section SectionHeader64::toSection(const u8* elfData, size_t size) const {
+        (void)size;
+        assert(sh_offset < size);
+        assert(sh_offset + sh_size < size);
+        return Section {
+            sh_addr,
+            elfData + sh_offset,
+            elfData + sh_offset + sh_size,
+            this
+        };
+    }
+
+    inline std::optional<Section> Elf64::sectionFromName(std::string_view sv) const {
+        std::optional<Section> section {};
+        forAllSectionHeaders([&](const SectionHeader64& header) {
+            if(sv == header.name) section = header.toSection(reinterpret_cast<const u8*>(bytes_.data()), bytes_.size());
+        });
+        return section;
+    }
+
+    inline u64 RelocationEntry64::offset() const {
+        return r_offset;
+    }
+
+    inline u32 RelocationEntry64::type() const {
+        return (u32)r_info;
+    }
+
+    inline u64 RelocationEntry64::sym() const {
+        return r_info >> 32;
+    }
+
+    inline const SymbolTableEntry64* RelocationEntry64::symbol(const Elf64& elf) const {
+        return elf.relocationSymbolEntry(*this);
+    }
+
+    inline SymbolType SymbolTableEntry64::type() const {
+        return static_cast<SymbolType>(st_info & 0xF);
+    }
+
+    inline SymbolBind SymbolTableEntry64::bind() const {
+        return static_cast<SymbolBind>(st_info >> 4);
+    }
+
+    inline std::string_view SymbolTableEntry64::symbol(const StringTable* stringTable, const Elf64& elf) const {
+        return elf.symbolFromEntry(stringTable, *this);
+    }
+
+    inline std::string SymbolTableEntry64::toString() const {
+        auto typeToString = [](SymbolType type) {
+            switch(type) {
+                case SymbolType::NOTYPE: return "NOTYPE";
+                case SymbolType::OBJECT: return "OBJECT";
+                case SymbolType::FUNC: return "FUNC";
+                case SymbolType::SECTION: return "SECTION";
+                case SymbolType::FILE: return "FILE";
+                case SymbolType::COMMON: return "COMMON";
+                case SymbolType::TLS: return "TLS";
+                case SymbolType::LOOS: return "LOOS";
+                case SymbolType::HIOS: return "HIOS";
+                case SymbolType::LOPROC: return "LOPROC";
+                case SymbolType::HIPROC: return "HIPROC";
+            }
+            assert(false);
+            return "";
+        };
+
+        return fmt::format("name={} value={} size={} info={} type={} other={} shndx={}", st_name, st_value, st_size, st_info, typeToString(type()), st_other, st_shndx);
+    }
+
+    inline void Elf64::forAllSectionHeaders(std::function<void(const SectionHeader64&)>&& callback) const {
+        for(const auto& sectionHeader : sectionHeaders_) {
+            callback(sectionHeader);
+        }
+    }
+
+    inline void Elf64::forAllSymbols(std::function<void(const StringTable*, const SymbolTableEntry64&)>&& callback) const {
+        assert(archClass() == Class::B64);
+        auto table = symbolTable();
+        auto strTable = stringTable();
+        if(!table) return;
+        for(const auto& entry : table.value()) callback(&strTable.value(), entry);
+    }
+
+    inline void Elf64::forAllDynamicSymbols(std::function<void(const StringTable*, const SymbolTableEntry64&)>&& callback) const {
+        assert(archClass() == Class::B64);
+        auto dynTable = dynamicSymbolTable();
+        auto dynstrTable = dynamicStringTable();
+        if(!dynTable) return;
+        for(const auto& entry : dynTable.value()) callback(&dynstrTable.value(), entry);
+    }
+
+    inline void Elf64::forAllRelocations(std::function<void(const RelocationEntry64&)>&& callback) const {
+        assert(archClass() == Class::B64);
+        forAllSectionHeaders([&](const SectionHeader64& header) {
+            if(header.sh_type != SectionHeaderType::REL) return;
+            Section relocationSection = header.toSection(reinterpret_cast<const u8*>(bytes_.data()), bytes_.size());
+            if(relocationSection.size() % sizeof(RelocationEntry64) != 0) return;
+            const RelocationEntry64* begin = reinterpret_cast<const RelocationEntry64*>(relocationSection.begin);
+            const RelocationEntry64* end = reinterpret_cast<const RelocationEntry64*>(relocationSection.end);
+            for(const RelocationEntry64* it = begin; it != end; ++it) callback(*it);
+        });
+    }
+
+    inline void Elf64::resolveRelocations(std::function<void(const RelocationEntry64&)>&& callback) const {
+        assert(archClass() == Class::B64);
+        forAllSectionHeaders([&](const SectionHeader64& header) {
+            if(header.sh_type != SectionHeaderType::REL) return;
+            Section relocationSection = header.toSection(reinterpret_cast<const u8*>(bytes_.data()), bytes_.size());
+            if(relocationSection.size() % sizeof(RelocationEntry64) != 0) return;
+            const RelocationEntry64* begin = reinterpret_cast<const RelocationEntry64*>(relocationSection.begin);
+            const RelocationEntry64* end = reinterpret_cast<const RelocationEntry64*>(relocationSection.end);
+            for(const RelocationEntry64* it = begin; it != end; ++it) {
+                callback(*it);
+            }
+        });
+    }
+
+    inline const SymbolTableEntry64* Elf64::relocationSymbolEntry(RelocationEntry64 relocation) const {
+        auto symbolTable = dynamicSymbolTable();
+        if(!symbolTable) return nullptr;
+        auto stringTable = dynamicStringTable();
+        if(!stringTable) return nullptr;
+        if(relocation.sym() >= symbolTable->size()) return nullptr;
+        return &(*symbolTable)[relocation.sym()];
+    };
+
+    inline std::string_view Elf64::symbolFromEntry(const StringTable* stringTable, SymbolTableEntry64 symbol) const {
+        if(!stringTable) return "unknown (no string table)";
+        if(symbol.st_name == 0) return "unknown (no name)";
+        if(symbol.st_name >= stringTable->size()) return "unknown (no string table entry)";
+        return (*stringTable)[symbol.st_name];
+    }
+
+    inline std::optional<SymbolTable<SymbolTableEntry64>> Elf64::dynamicSymbolTable() const {
+        auto dynsym = sectionFromName(".dynsym");
+        if(!dynsym) return {};
+        return SymbolTable<SymbolTableEntry64>(dynsym.value());
+    }
+
+    inline std::optional<SymbolTable<SymbolTableEntry64>> Elf64::symbolTable() const {
+        auto symtab = sectionFromName(".symtab");
+        if(!symtab) return {};
+        return SymbolTable<SymbolTableEntry64>(symtab.value());
+    }
+
+    inline std::optional<StringTable> Elf64::dynamicStringTable() const {
+        auto dynstr = sectionFromName(".dynstr");
+        if(!dynstr) return {};
+        return StringTable(dynstr.value());
+    }
+
+    inline std::optional<StringTable> Elf64::stringTable() const {
+        auto strtab = sectionFromName(".strtab");
+        if(!strtab) return {};
+        return StringTable(strtab.value());
+    }
+}
+
+
+#endif
