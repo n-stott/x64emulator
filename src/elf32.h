@@ -255,7 +255,7 @@ namespace elf {
         if(!stringTable) return nullptr;
         if(relocation.sym() >= symbolTable->size()) return nullptr;
         return &(*symbolTable)[relocation.sym()];
-    };
+    }
 
     inline std::string_view Elf32::symbolFromEntry(const StringTable* stringTable, SymbolTableEntry32 symbol) const {
         if(!stringTable) return "unknown (no string table)";

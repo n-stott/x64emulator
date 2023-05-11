@@ -5,24 +5,19 @@
 #include "elf.h"
 #include "elf32.h"
 #include "elf64.h"
-#include <functional>
 #include <memory>
-#include <optional>
 #include <string>
-#include <string_view>
 #include <vector>
-#include <cassert>
-#include <cstring>
-#include <string.h>
 
 namespace elf {
 
     class ElfReader {
     public:
         static std::unique_ptr<Elf> tryCreate(const std::string& filename);
-        static std::unique_ptr<Elf> tryCreate32(const std::string& filename, std::vector<char> bytebuffer, Identifier identifier);
-        static std::unique_ptr<Elf> tryCreate64(const std::string& filename, std::vector<char> bytebuffer, Identifier identifier);
+        static std::unique_ptr<Elf32> tryCreate32(const std::string& filename, std::vector<char> bytebuffer, Identifier identifier);
+        static std::unique_ptr<Elf64> tryCreate64(const std::string& filename, std::vector<char> bytebuffer, Identifier identifier);
 
+    private:
         static bool tryCreateIdentifier(const std::vector<char>& bytebuffer, Identifier* ident);
         static bool tryCreateFileheader32(const std::vector<char>& bytebuffer, const Identifier& ident, FileHeader32* header);
         static bool tryCreateFileheader64(const std::vector<char>& bytebuffer, const Identifier& ident, FileHeader64* header);

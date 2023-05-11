@@ -33,7 +33,7 @@ namespace elf {
         }
     }
 
-    std::unique_ptr<Elf> ElfReader::tryCreate32(const std::string& filename, std::vector<char> bytes, Identifier ident) {
+    std::unique_ptr<Elf32> ElfReader::tryCreate32(const std::string& filename, std::vector<char> bytes, Identifier ident) {
         FileHeader32 header;
         bool success = tryCreateFileheader32(bytes, ident, &header);
         if(!success) {
@@ -77,7 +77,7 @@ namespace elf {
         return std::make_unique<Elf32>(std::move(elf));
     }
 
-    std::unique_ptr<Elf> ElfReader::tryCreate64(const std::string& filename, std::vector<char> bytes, Identifier ident) {
+    std::unique_ptr<Elf64> ElfReader::tryCreate64(const std::string& filename, std::vector<char> bytes, Identifier ident) {
         FileHeader64 header;
         bool success = tryCreateFileheader64(bytes, ident, &header);
         if(!success) {
