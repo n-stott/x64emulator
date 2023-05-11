@@ -53,8 +53,13 @@ namespace x64 {
     }
 
     void Interpreter::loadProgram() {
-        programElf_ = elf::ElfReader::tryCreate(program_.filepath);
-        verify(!!programElf_, "Failed to load program elf file");
+        {
+            auto programElf = elf::ElfReader::tryCreate(program_.filepath);
+            verify(!!programElf, "Failed to load program elf file");
+            verify(programElf->archClass() == elf::Class::B64, "program be 64-bit elf");
+            programElf_.reset(static_cast<elf::Elf64*>(programElf.release()));
+        }
+
 
         programOffset_ = mmu_.topOfMemoryAligned();
         for(auto& func : program_.functions) {
@@ -69,41 +74,45 @@ namespace x64 {
     }
 
     void Interpreter::loadLibrary() {
-        std::unique_ptr<elf::Elf> libcElf = elf::ElfReader::tryCreate(libc_.filepath);
-        verify(!!libcElf, "Failed to load libc elf file");
+        {
+            std::unique_ptr<elf::Elf> libcElf = elf::ElfReader::tryCreate(libc_.filepath);
+            verify(!!libcElf, "Failed to load libc elf file");
+            verify(libcElf->archClass() == elf::Class::B64, "LibC must be 64-bit elf");
+            libcElf_.reset(static_cast<elf::Elf64*>(libcElf.release()));
+        }
 
         libcOffset_ = mmu_.topOfMemoryAligned();
         for(auto& func : libc_.functions) {
             func.addressOffset = libcOffset_;
         }
-        addSectionIfExists(*libcElf, ".data", "libc .data", PROT_READ | PROT_WRITE, libcOffset_);
-        addSectionIfExists(*libcElf, ".bss", "libc .bss", PROT_READ | PROT_WRITE, libcOffset_);
+        addSectionIfExists(*libcElf_, ".data", "libc .data", PROT_READ | PROT_WRITE, libcOffset_);
+        addSectionIfExists(*libcElf_, ".bss", "libc .bss", PROT_READ | PROT_WRITE, libcOffset_);
 
         auto programStringTable = programElf_->dynamicStringTable();
 
-        programElf_->resolveRelocations([&](const elf::Elf::RelocationEntry32& relocation) {
+        programElf_->resolveRelocations([&](const elf::RelocationEntry64& relocation) {
             const auto* sym = relocation.symbol(*programElf_);
             if(!sym) return;
             std::string_view symbol = sym->symbol(&programStringTable.value(), *programElf_);
 
             u32 relocationAddress = relocation.offset();
-            if(sym->type() == elf::Elf::SymbolTable::Entry32::Type::FUNC
-            || (sym->type() == elf::Elf::SymbolTable::Entry32::Type::NOTYPE && sym->bind() == elf::Elf::SymbolTable::Entry32::Bind::WEAK)) {
+            if(sym->type() == elf::SymbolType::FUNC
+            || (sym->type() == elf::SymbolType::NOTYPE && sym->bind() == elf::SymbolBind::WEAK)) {
                 const auto* func = libc_.findUniqueFunction(symbol);
                 if(!func) return;
                 // fmt::print("Resolve relocation for function \"{}\" : {:#x}\n", symbol, func ? func->address : 0);
                 mmu_.write32(Ptr32{relocationAddress}, func->address + libcOffset_);
-            } else if(sym->type() == elf::Elf::SymbolTable::Entry32::Type::OBJECT) {
+            } else if(sym->type() == elf::SymbolType::OBJECT) {
                 bool found = false;
-                auto resolveSymbol = [&](const elf::Elf::StringTable* stringTable, const elf::Elf::SymbolTable::Entry32& entry) {
+                auto resolveSymbol = [&](const elf::StringTable* stringTable, const elf::SymbolTableEntry64& entry) {
                     if(found) return;
-                    if(entry.symbol(stringTable, *libcElf).find(symbol) == std::string_view::npos) return;
+                    if(entry.symbol(stringTable, *libcElf_).find(symbol) == std::string_view::npos) return;
                     found = true;
                     // fmt::print("Resolve relocation for object \"{}\" : {:#x}\n", symbol, entry.st_value);
                     mmu_.write32(Ptr32{relocationAddress}, entry.st_value + libcOffset_);
                 };
-                libcElf->forAllSymbols(resolveSymbol);
-                if(!found) libcElf->forAllDynamicSymbols(resolveSymbol);
+                libcElf_->forAllSymbols(resolveSymbol);
+                if(!found) libcElf_->forAllDynamicSymbols(resolveSymbol);
             } else {
                 fmt::print("Relocation for symbol \"{}\" of type {} ignored\n", symbol, (int)sym->type());
             }
@@ -112,7 +121,7 @@ namespace x64 {
         auto gotHandler = [&](u32 address){
             auto programStringTable = programElf_->dynamicStringTable();
             bool found = false;
-            programElf_->forAllRelocations([&](const elf::Elf::RelocationEntry32& relocation) {
+            programElf_->forAllRelocations([&](const elf::RelocationEntry64& relocation) {
                 fmt::print("{:#x}\n", relocation.offset());
                 if(relocation.offset() == address) {
                     const auto* sym = relocation.symbol(*programElf_);
@@ -177,11 +186,11 @@ namespace x64 {
         execute(main);
     }
 
-    Mmu::Region* Interpreter::addSectionIfExists(const elf::Elf& elf, const std::string& sectionName, const std::string& regionName, Protection protection, u32 offset) {
+    Mmu::Region* Interpreter::addSectionIfExists(const elf::Elf64& elf, const std::string& sectionName, const std::string& regionName, Protection protection, u32 offset) {
         auto section = elf.sectionFromName(sectionName);
         if(!section) return nullptr;
         Mmu::Region region{ regionName, (u32)(section->address + offset), (u32)section->size(), protection };
-        if(section->type() != elf::Elf::SectionHeaderType::NOBITS)
+        if(section->type() != elf::SectionHeaderType::NOBITS)
             std::memcpy(region.data.data(), section->begin, section->size()*sizeof(u8));
         return mmu_.addRegion(std::move(region));
     }

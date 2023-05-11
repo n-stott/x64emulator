@@ -33,10 +33,11 @@ namespace x64 {
         void executeMain();
         void execute(const Function* function);
 
-        Mmu::Region* addSectionIfExists(const elf::Elf& elf, const std::string& sectionName, const std::string& regionName, Protection protection, u32 offset = 0);
+        Mmu::Region* addSectionIfExists(const elf::Elf64& elf, const std::string& sectionName, const std::string& regionName, Protection protection, u32 offset = 0);
 
         Program program_;
-        std::unique_ptr<elf::Elf> programElf_;
+        std::unique_ptr<elf::Elf64> programElf_;
+        std::unique_ptr<elf::Elf64> libcElf_;
         LibC libc_;
         Mmu mmu_;
         Cpu cpu_;

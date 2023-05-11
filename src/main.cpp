@@ -24,7 +24,7 @@ int main(int argc, char* argv[]) {
 
     auto programElf = elf::ElfReader::tryCreate(programPath);
     if(!programElf) return 1;
-    if(programElf->archClass() != elf::Elf::Class::B64) {
+    if(programElf->archClass() != elf::Class::B64) {
         fmt::print(stderr, "Program is not 64-bit\n");
         return 1;
     }
@@ -37,7 +37,7 @@ int main(int argc, char* argv[]) {
 
     auto libcElf = elf::ElfReader::tryCreate(libraryPath.c_str());
     if(!libcElf) return 1;
-    if(libcElf->archClass() != elf::Elf::Class::B64) {
+    if(libcElf->archClass() != elf::Class::B64) {
         fmt::print(stderr, "Libc is not 64-bit\n");
         return 1;
     }
