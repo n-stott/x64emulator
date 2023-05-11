@@ -46,6 +46,7 @@ namespace x64 {
 
         bool stop_;
         u32 libcOffset_ = 0;
+        u32 programOffset_ = 0;
 
         struct Frame {
             const Function* function;
@@ -106,10 +107,13 @@ namespace x64 {
             void dumpStacktrace() const {
                 size_t height = 0;
                 for(auto it = frames.rbegin(); it != frames.rend(); ++it) {
-                    if(it->offset < it->function->instructions.size()) {
-                        fmt::print("{} {}:{:#x}\n", height, it->function->name, it->function->instructions[it->offset]->address);
+                    const auto* function = it->function;
+                    if(it->offset < function->instructions.size()) {
+                        u32 address = (u32)(-1);
+                        if(function->instructions[it->offset]) address = function->instructions[it->offset]->address;
+                        fmt::print("{} {}:{:#x}\n", height, function->name, address);
                     } else {
-                        fmt::print("{} {}:at function exit\n", height, it->function->name);
+                        fmt::print("{} {}:at function exit\n", height, function->name);
                     }
                     ++height;
                 }

@@ -48,11 +48,13 @@ namespace x64 {
             u16 read16(Ptr16 ptr) const;
             u32 read32(Ptr32 ptr) const;
             u64 read64(Ptr64 ptr) const;
+            u128 read128(Ptr128 ptr) const;
 
             void write8(Ptr8 ptr, u8 value);
             void write16(Ptr16 ptr, u16 value);
             void write32(Ptr32 ptr, u32 value);
             void write64(Ptr64 ptr, u64 value);
+            void write128(Ptr128 ptr, u128 value);
 
             std::string name;
             u64 base;
@@ -71,11 +73,13 @@ namespace x64 {
         u16 read16(Ptr16 ptr) const;
         u32 read32(Ptr32 ptr) const;
         u64 read64(Ptr64 ptr) const;
+        u128 read128(Ptr128 ptr) const;
 
         void write8(Ptr8 ptr, u8 value);
         void write16(Ptr16 ptr, u16 value);
         void write32(Ptr32 ptr, u32 value);
         void write64(Ptr64 ptr, u64 value);
+        void write128(Ptr128 ptr, u128 value);
 
         void dumpRegions() const;
 

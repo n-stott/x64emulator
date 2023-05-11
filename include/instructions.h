@@ -330,6 +330,18 @@ namespace x64 {
     struct Cwde {
 
     };
+
+    template<typename Dst, typename Src>
+    struct Pxor {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
+    struct Movaps {
+        Dst dst;
+        Src src;
+    };
 }
 
 #endif

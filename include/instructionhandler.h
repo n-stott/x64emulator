@@ -154,7 +154,10 @@ namespace x64 {
         virtual void exec(const Mov<R32, M32>&) = 0;
         virtual void exec(const Mov<R64, R64>&) = 0;
         virtual void exec(const Mov<R64, Imm<u32>>&) = 0;
+        virtual void exec(const Mov<R64, Imm<u64>>&) = 0;
         virtual void exec(const Mov<R64, M64>&) = 0;
+        virtual void exec(const Mov<RSSE, MSSE>&) = 0;
+        virtual void exec(const Mov<MSSE, RSSE>&) = 0;
         virtual void exec(const Mov<Addr<Size::BYTE, B>, R8>&) = 0;
         virtual void exec(const Mov<Addr<Size::BYTE, B>, Imm<u8>>&) = 0;
         virtual void exec(const Mov<Addr<Size::BYTE, BD>, R8>&) = 0;
@@ -167,6 +170,7 @@ namespace x64 {
         virtual void exec(const Mov<M32, Imm<u32>>&) = 0;
         virtual void exec(const Mov<M64, R64>&) = 0;
         virtual void exec(const Mov<M64, Imm<u32>>&) = 0;
+        virtual void exec(const Mov<M64, Imm<u64>>&) = 0;
 
         virtual void exec(const Movsx<R32, R8>&) = 0;
         virtual void exec(const Movsx<R32, Addr<Size::BYTE, B>>&) = 0;
@@ -276,6 +280,8 @@ namespace x64 {
         virtual void exec(const Test<R16, R16>&) = 0;
         virtual void exec(const Test<R32, R32>&) = 0;
         virtual void exec(const Test<R32, Imm<u32>>&) = 0;
+        virtual void exec(const Test<R64, R64>&) = 0;
+        virtual void exec(const Test<R64, Imm<u32>>&) = 0;
         virtual void exec(const Test<Addr<Size::BYTE, B>, Imm<u8>>&) = 0;
         virtual void exec(const Test<Addr<Size::BYTE, BD>, R8>&) = 0;
         virtual void exec(const Test<Addr<Size::BYTE, BD>, Imm<u8>>&) = 0;
@@ -283,6 +289,8 @@ namespace x64 {
         virtual void exec(const Test<Addr<Size::BYTE, BISD>, Imm<u8>>&) = 0;
         virtual void exec(const Test<M32, R32>&) = 0;
         virtual void exec(const Test<M32, Imm<u32>>&) = 0;
+        virtual void exec(const Test<M64, R64>&) = 0;
+        virtual void exec(const Test<M64, Imm<u32>>&) = 0;
 
         virtual void exec(const Cmp<R8, R8>&) = 0;
         virtual void exec(const Cmp<R8, Imm<u8>>&) = 0;
@@ -409,6 +417,13 @@ namespace x64 {
         virtual void exec(const Cmov<Cond::S, R32, Addr<Size::DWORD, BD>>&) = 0;
 
         virtual void exec(const Cwde&) = 0;
+
+        virtual void exec(const Pxor<RSSE, RSSE>&) = 0;
+
+        virtual void exec(const Movaps<RSSE, RSSE>&) = 0;
+        virtual void exec(const Movaps<MSSE, RSSE>&) = 0;
+        virtual void exec(const Movaps<RSSE, MSSE>&) = 0;
+        virtual void exec(const Movaps<MSSE, MSSE>&) = 0;
 
     };
 

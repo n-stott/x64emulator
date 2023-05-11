@@ -30,6 +30,7 @@ namespace x64 {
         u16 get(R16 reg) const { return regs_.get(reg); }
         u32 get(R32 reg) const { return regs_.get(reg); }
         u64 get(R64 reg) const { return regs_.get(reg); }
+        Xmm get(RSSE reg) const { return regs_.get(reg); }
         u8  get(Imm<u8> immediate) const;
         u16 get(Imm<u16> immediate) const;
         u32 get(Imm<u32> immediate) const;
@@ -37,6 +38,7 @@ namespace x64 {
         u16 get(Ptr16 reg) const;
         u32 get(Ptr32 reg) const;
         u64 get(Ptr64 reg) const;
+        Xmm get(Ptr128 reg) const;
 
         u8 get(Count count) const;
 
@@ -64,6 +66,11 @@ namespace x64 {
         Ptr<Size::QWORD> resolve(Addr<Size::QWORD, BIS> addr) const { return regs_.resolve(addr); }
         Ptr<Size::QWORD> resolve(Addr<Size::QWORD, ISD> addr) const { return regs_.resolve(addr); }
         Ptr<Size::QWORD> resolve(Addr<Size::QWORD, BISD> addr) const { return regs_.resolve(addr); }
+        Ptr<Size::XMMWORD> resolve(Addr<Size::XMMWORD, B> addr) const { return regs_.resolve(addr); }
+        Ptr<Size::XMMWORD> resolve(Addr<Size::XMMWORD, BD> addr) const { return regs_.resolve(addr); }
+        Ptr<Size::XMMWORD> resolve(Addr<Size::XMMWORD, BIS> addr) const { return regs_.resolve(addr); }
+        Ptr<Size::XMMWORD> resolve(Addr<Size::XMMWORD, ISD> addr) const { return regs_.resolve(addr); }
+        Ptr<Size::XMMWORD> resolve(Addr<Size::XMMWORD, BISD> addr) const { return regs_.resolve(addr); }
 
         Ptr<Size::DWORD> resolve(const M32& m32) const {
             return std::visit([&](auto&& arg) -> Ptr32 { return resolve(arg); }, m32);
@@ -73,15 +80,21 @@ namespace x64 {
             return std::visit([&](auto&& arg) -> Ptr64 { return resolve(arg); }, m64);
         }
 
+        Ptr<Size::XMMWORD> resolve(const MSSE& msse) const {
+            return std::visit([&](auto&& arg) -> Ptr128 { return resolve(arg); }, msse);
+        }
+
         void set(R8 reg, u8 value) { regs_.set(reg, value); }
         void set(R16 reg, u16 value) { regs_.set(reg, value); }
         void set(R32 reg, u32 value) { regs_.set(reg, value); }
         void set(R64 reg, u64 value) { regs_.set(reg, value); }
+        void set(RSSE reg, Xmm value) { regs_.set(reg, value); }
 
         void set(Ptr8 ptr, u8 value);
         void set(Ptr16 ptr, u16 value);
         void set(Ptr32 ptr, u32 value);
         void set(Ptr64 ptr, u64 value);
+        void set(Ptr128 ptr, Xmm value);
 
         void push8(u8 value);
         void push16(u16 value);
@@ -128,6 +141,7 @@ namespace x64 {
         void execTest8Impl(u8 src1, u8 src2);
         void execTest16Impl(u16 src1, u16 src2);
         void execTest32Impl(u32 src1, u32 src2);
+        void execTest64Impl(u64 src1, u64 src2);
 
         u8 execAnd8Impl(u8 dst, u8 src);
         u16 execAnd16Impl(u16 dst, u16 src);
@@ -304,7 +318,10 @@ namespace x64 {
         void exec(const Mov<R32, M32>&) override;
         void exec(const Mov<R64, R64>&) override;
         void exec(const Mov<R64, Imm<u32>>&) override;
+        void exec(const Mov<R64, Imm<u64>>&) override;
         void exec(const Mov<R64, M64>&) override;
+        void exec(const Mov<RSSE, MSSE>&) override;
+        void exec(const Mov<MSSE, RSSE>&) override;
         void exec(const Mov<Addr<Size::BYTE, B>, R8>&) override;
         void exec(const Mov<Addr<Size::BYTE, B>, Imm<u8>>&) override;
         void exec(const Mov<Addr<Size::BYTE, BD>, R8>&) override;
@@ -317,6 +334,7 @@ namespace x64 {
         void exec(const Mov<M32, Imm<u32>>&) override;
         void exec(const Mov<M64, R64>&) override;
         void exec(const Mov<M64, Imm<u32>>&) override;
+        void exec(const Mov<M64, Imm<u64>>&) override;
 
         void exec(const Movsx<R32, R8>&) override;
         void exec(const Movsx<R32, Addr<Size::BYTE, B>>&) override;
@@ -426,6 +444,8 @@ namespace x64 {
         void exec(const Test<R16, R16>&) override;
         void exec(const Test<R32, R32>&) override;
         void exec(const Test<R32, Imm<u32>>&) override;
+        void exec(const Test<R64, R64>&) override;
+        void exec(const Test<R64, Imm<u32>>&) override;
         void exec(const Test<Addr<Size::BYTE, B>, Imm<u8>>&) override;
         void exec(const Test<Addr<Size::BYTE, BD>, R8>&) override;
         void exec(const Test<Addr<Size::BYTE, BD>, Imm<u8>>&) override;
@@ -433,6 +453,8 @@ namespace x64 {
         void exec(const Test<Addr<Size::BYTE, BISD>, Imm<u8>>&) override;
         void exec(const Test<M32, R32>&) override;
         void exec(const Test<M32, Imm<u32>>&) override;
+        void exec(const Test<M64, R64>&) override;
+        void exec(const Test<M64, Imm<u32>>&) override;
 
         void exec(const Cmp<R8, R8>&) override;
         void exec(const Cmp<R8, Imm<u8>>&) override;
@@ -559,6 +581,13 @@ namespace x64 {
         void exec(const Cmov<Cond::S, R32, Addr<Size::DWORD, BD>>&) override;
 
         void exec(const Cwde&) override;
+
+        void exec(const Pxor<RSSE, RSSE>&) override;
+
+        void exec(const Movaps<RSSE, RSSE>&) override;
+        void exec(const Movaps<MSSE, RSSE>&) override;
+        void exec(const Movaps<RSSE, MSSE>&) override;
+        void exec(const Movaps<MSSE, MSSE>&) override;
 
     };
 
