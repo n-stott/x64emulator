@@ -145,18 +145,15 @@ namespace elf {
     }
 
     inline bool SectionHeader::isProgBits() const {
-        using type_t = std::underlying_type_t<SectionHeaderType>;
-        return (type_t)sh_type & (type_t)SectionHeaderType::PROGBITS;
+        return sh_type == SectionHeaderType::PROGBITS;
     }
 
     inline bool SectionHeader::isStringTable() const {
-        using type_t = std::underlying_type_t<SectionHeaderType>;
-        return (type_t)sh_type & (type_t)SectionHeaderType::STRTAB;
+        return sh_type == SectionHeaderType::STRTAB;
     }
 
     inline bool SectionHeader::isSymbolTable() const {
-        using type_t = std::underlying_type_t<SectionHeaderType>;
-        return (type_t)sh_type & (type_t)SectionHeaderType::SYMTAB;
+        return sh_type == SectionHeaderType::SYMTAB;
     }
 
     inline SectionHeaderType Section::type() const {
