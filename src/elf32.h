@@ -50,6 +50,17 @@ namespace elf {
         const SymbolTableEntry32* symbol(const Elf32& elf) const;
     };
 
+    struct RelocationEntry32A {
+        u32 r_offset {};
+        u32 r_info {};
+        u32 r_addend {};
+
+        u32 offset() const;
+        u8 type() const;
+        u32 sym() const;
+        const SymbolTableEntry32* symbol(const Elf32& elf) const;
+    };
+
     struct SymbolTableEntry32 {
         u32	st_name {};
         u32	st_value {};
@@ -83,10 +94,11 @@ namespace elf {
         void forAllSymbols(std::function<void(const StringTable*, const SymbolTableEntry32&)>&& callback) const;
         void forAllDynamicSymbols(std::function<void(const StringTable*, const SymbolTableEntry32&)>&& callback) const;
         void forAllRelocations(std::function<void(const RelocationEntry32&)>&& callback) const;
-        void resolveRelocations(std::function<void(const RelocationEntry32&)>&& callback) const;
+        void forAllRelocationsA(std::function<void(const RelocationEntry32A&)>&& callback) const;
 
     private:
         const SymbolTableEntry32* relocationSymbolEntry(RelocationEntry32 relocation) const;
+        const SymbolTableEntry32* relocationSymbolEntry(RelocationEntry32A relocation) const;
         std::string_view symbolFromEntry(const StringTable* stringTable, SymbolTableEntry32 symbol) const;
 
         FileHeader32 fileheader_;
@@ -94,6 +106,7 @@ namespace elf {
 
         friend class ElfReader;
         friend class RelocationEntry32;
+        friend class RelocationEntry32A;
         friend class SymbolTableEntry32;
     };
 
@@ -166,6 +179,22 @@ namespace elf {
         return elf.relocationSymbolEntry(*this);
     }
 
+    inline u32 RelocationEntry32A::offset() const {
+        return r_offset;
+    }
+
+    inline u8 RelocationEntry32A::type() const {
+        return (u8)r_info;
+    }
+
+    inline u32 RelocationEntry32A::sym() const {
+        return r_info >> 8;
+    }
+
+    inline const SymbolTableEntry32* RelocationEntry32A::symbol(const Elf32& elf) const {
+        return elf.relocationSymbolEntry(*this);
+    }
+
     inline SymbolType SymbolTableEntry32::type() const {
         return static_cast<SymbolType>(st_info & 0xF);
     }
@@ -234,21 +263,28 @@ namespace elf {
         });
     }
 
-    inline void Elf32::resolveRelocations(std::function<void(const RelocationEntry32&)>&& callback) const {
+    inline void Elf32::forAllRelocationsA(std::function<void(const RelocationEntry32A&)>&& callback) const {
         assert(archClass() == Class::B32);
         forAllSectionHeaders([&](const SectionHeader32& header) {
-            if(header.sh_type != SectionHeaderType::REL) return;
+            if(header.sh_type != SectionHeaderType::RELA) return;
             Section relocationSection = header.toSection(reinterpret_cast<const u8*>(bytes_.data()), bytes_.size());
-            if(relocationSection.size() % sizeof(RelocationEntry32) != 0) return;
-            const RelocationEntry32* begin = reinterpret_cast<const RelocationEntry32*>(relocationSection.begin);
-            const RelocationEntry32* end = reinterpret_cast<const RelocationEntry32*>(relocationSection.end);
-            for(const RelocationEntry32* it = begin; it != end; ++it) {
-                callback(*it);
-            }
+            if(relocationSection.size() % sizeof(RelocationEntry32A) != 0) return;
+            const RelocationEntry32A* begin = reinterpret_cast<const RelocationEntry32A*>(relocationSection.begin);
+            const RelocationEntry32A* end = reinterpret_cast<const RelocationEntry32A*>(relocationSection.end);
+            for(const RelocationEntry32A* it = begin; it != end; ++it) callback(*it);
         });
     }
 
     inline const SymbolTableEntry32* Elf32::relocationSymbolEntry(RelocationEntry32 relocation) const {
+        auto symbolTable = dynamicSymbolTable();
+        if(!symbolTable) return nullptr;
+        auto stringTable = dynamicStringTable();
+        if(!stringTable) return nullptr;
+        if(relocation.sym() >= symbolTable->size()) return nullptr;
+        return &(*symbolTable)[relocation.sym()];
+    }
+
+    inline const SymbolTableEntry32* Elf32::relocationSymbolEntry(RelocationEntry32A relocation) const {
         auto symbolTable = dynamicSymbolTable();
         if(!symbolTable) return nullptr;
         auto stringTable = dynamicStringTable();

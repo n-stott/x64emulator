@@ -50,6 +50,17 @@ namespace elf {
         const SymbolTableEntry64* symbol(const Elf64& elf) const;
     };
 
+    struct RelocationEntry64A {
+        u64 r_offset {};
+        u64 r_info {};
+        u64 r_addend {};
+
+        u64 offset() const;
+        u32 type() const;
+        u64 sym() const;
+        const SymbolTableEntry64* symbol(const Elf64& elf) const;
+    };
+
     struct SymbolTableEntry64 {
         u32	st_name {};
         u8 st_info {};
@@ -83,10 +94,11 @@ namespace elf {
         void forAllSymbols(std::function<void(const StringTable*, const SymbolTableEntry64&)>&& callback) const;
         void forAllDynamicSymbols(std::function<void(const StringTable*, const SymbolTableEntry64&)>&& callback) const;
         void forAllRelocations(std::function<void(const RelocationEntry64&)>&& callback) const;
-        void resolveRelocations(std::function<void(const RelocationEntry64&)>&& callback) const;
+        void forAllRelocationsA(std::function<void(const RelocationEntry64A&)>&& callback) const;
 
     private:
         const SymbolTableEntry64* relocationSymbolEntry(RelocationEntry64 relocation) const;
+        const SymbolTableEntry64* relocationSymbolEntry(RelocationEntry64A relocation) const;
         std::string_view symbolFromEntry(const StringTable* stringTable, SymbolTableEntry64 symbol) const;
 
         FileHeader64 fileheader_;
@@ -94,6 +106,7 @@ namespace elf {
 
         friend class ElfReader;
         friend class RelocationEntry64;
+        friend class RelocationEntry64A;
         friend class SymbolTableEntry64;
     };
 
@@ -166,6 +179,22 @@ namespace elf {
         return elf.relocationSymbolEntry(*this);
     }
 
+    inline u64 RelocationEntry64A::offset() const {
+        return r_offset;
+    }
+
+    inline u32 RelocationEntry64A::type() const {
+        return (u32)r_info;
+    }
+
+    inline u64 RelocationEntry64A::sym() const {
+        return r_info >> 32;
+    }
+
+    inline const SymbolTableEntry64* RelocationEntry64A::symbol(const Elf64& elf) const {
+        return elf.relocationSymbolEntry(*this);
+    }
+
     inline SymbolType SymbolTableEntry64::type() const {
         return static_cast<SymbolType>(st_info & 0xF);
     }
@@ -233,22 +262,30 @@ namespace elf {
             for(const RelocationEntry64* it = begin; it != end; ++it) callback(*it);
         });
     }
-
-    inline void Elf64::resolveRelocations(std::function<void(const RelocationEntry64&)>&& callback) const {
+    
+    inline void Elf64::forAllRelocationsA(std::function<void(const RelocationEntry64A&)>&& callback) const {
         assert(archClass() == Class::B64);
         forAllSectionHeaders([&](const SectionHeader64& header) {
-            if(header.sh_type != SectionHeaderType::REL) return;
+            if(header.sh_type != SectionHeaderType::RELA) return;
             Section relocationSection = header.toSection(reinterpret_cast<const u8*>(bytes_.data()), bytes_.size());
-            if(relocationSection.size() % sizeof(RelocationEntry64) != 0) return;
-            const RelocationEntry64* begin = reinterpret_cast<const RelocationEntry64*>(relocationSection.begin);
-            const RelocationEntry64* end = reinterpret_cast<const RelocationEntry64*>(relocationSection.end);
-            for(const RelocationEntry64* it = begin; it != end; ++it) {
-                callback(*it);
-            }
+            if(relocationSection.size() % sizeof(RelocationEntry64A) != 0) return;
+            const RelocationEntry64A* begin = reinterpret_cast<const RelocationEntry64A*>(relocationSection.begin);
+            const RelocationEntry64A* end = reinterpret_cast<const RelocationEntry64A*>(relocationSection.end);
+            for(const RelocationEntry64A* it = begin; it != end; ++it) callback(*it);
         });
     }
 
+
     inline const SymbolTableEntry64* Elf64::relocationSymbolEntry(RelocationEntry64 relocation) const {
+        auto symbolTable = dynamicSymbolTable();
+        if(!symbolTable) return nullptr;
+        auto stringTable = dynamicStringTable();
+        if(!stringTable) return nullptr;
+        if(relocation.sym() >= symbolTable->size()) return nullptr;
+        return &(*symbolTable)[relocation.sym()];
+    }
+
+    inline const SymbolTableEntry64* Elf64::relocationSymbolEntry(RelocationEntry64A relocation) const {
         auto symbolTable = dynamicSymbolTable();
         if(!symbolTable) return nullptr;
         auto stringTable = dynamicStringTable();
