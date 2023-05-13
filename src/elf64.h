@@ -37,6 +37,10 @@ namespace elf {
 
         Section toSection(const u8* elfData, size_t size) const;
         void print() const;
+
+        bool isExecutable() const;
+        bool isWritable() const;
+        bool doesAllocate() const;
     };
     static_assert(sizeof(SectionHeader64) == 0x40 + sizeof(std::string_view));
 
@@ -153,6 +157,21 @@ namespace elf {
             elfData + sh_offset + sh_size,
             this
         };
+    }
+
+    inline bool SectionHeader64::isExecutable() const {
+        using type_t = std::underlying_type_t<SectionHeaderFlags>;
+        return (type_t)sh_flags & (type_t)SectionHeaderFlags::EXECINSTR;
+    }
+
+    inline bool SectionHeader64::isWritable() const {
+        using type_t = std::underlying_type_t<SectionHeaderFlags>;
+        return (type_t)sh_flags & (type_t)SectionHeaderFlags::WRITE;
+    }
+
+    inline bool SectionHeader64::doesAllocate() const {
+        using type_t = std::underlying_type_t<SectionHeaderFlags>;
+        return (type_t)sh_flags & (type_t)SectionHeaderFlags::ALLOC;
     }
 
     inline std::optional<Section> Elf64::sectionFromName(std::string_view sv) const {

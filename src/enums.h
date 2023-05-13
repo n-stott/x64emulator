@@ -86,6 +86,23 @@ namespace elf {
         HIPROC = 15,
     };
 
+    enum class SectionHeaderFlags : u32 {
+        WRITE = 0x1,
+        ALLOC = 0x2,
+        EXECINSTR = 0x4,
+        MERGE = 0x10,
+        STRINGS = 0x20,
+        INFO_LINK = 0x40,
+        LINK_ORDER = 0x80,
+        OS_NONCONFORMING = 0x100,
+        GROUP = 0x200,
+        TLS = 0x400,
+        MASKOS = 0x0FF00000,
+        MASKPROC = 0xF0000000,
+        ORDERED = 0x4000000,
+        EXCLUDE = 0x8000000,
+    };
+
     inline std::string toString(SectionHeaderType sht) {
         switch(sht) {
             case SectionHeaderType::NULL_: return "NULL";

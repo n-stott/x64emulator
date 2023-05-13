@@ -52,6 +52,10 @@ namespace elf {
         u32 sh_name;
         SectionHeaderType sh_type;
         static void printNames();
+
+        bool isProgBits() const;
+        bool isStringTable() const;
+        bool isSymbolTable() const;
     };
 
     template<typename SymbolEntryType>
@@ -138,6 +142,21 @@ namespace elf {
             "info",
             "addralign",
             "entsize");
+    }
+
+    inline bool SectionHeader::isProgBits() const {
+        using type_t = std::underlying_type_t<SectionHeaderType>;
+        return (type_t)sh_type & (type_t)SectionHeaderType::PROGBITS;
+    }
+
+    inline bool SectionHeader::isStringTable() const {
+        using type_t = std::underlying_type_t<SectionHeaderType>;
+        return (type_t)sh_type & (type_t)SectionHeaderType::STRTAB;
+    }
+
+    inline bool SectionHeader::isSymbolTable() const {
+        using type_t = std::underlying_type_t<SectionHeaderType>;
+        return (type_t)sh_type & (type_t)SectionHeaderType::SYMTAB;
     }
 
     inline SectionHeaderType Section::type() const {
