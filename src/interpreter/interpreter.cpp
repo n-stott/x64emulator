@@ -90,33 +90,34 @@ namespace x64 {
 
         auto programStringTable = programElf_->dynamicStringTable();
 
-        programElf_->resolveRelocations([&](const elf::RelocationEntry64& relocation) {
+        auto resolveRelocation = [&](const auto& relocation) {
             const auto* sym = relocation.symbol(*programElf_);
             if(!sym) return;
             std::string_view symbol = sym->symbol(&programStringTable.value(), *programElf_);
 
-            u32 relocationAddress = relocation.offset();
+            // fmt::print("resolve relocation for symbol \"{}\" at offset {:#x}\n", symbol, relocation.offset());
+
+            u64 relocationAddress = relocation.offset();
             if(sym->type() == elf::SymbolType::FUNC
             || (sym->type() == elf::SymbolType::NOTYPE && sym->bind() == elf::SymbolBind::WEAK)) {
                 const auto* func = libc_.findUniqueFunction(symbol);
                 if(!func) return;
-                // fmt::print("Resolve relocation for function \"{}\" : {:#x}\n", symbol, func ? func->address : 0);
-                mmu_.write32(Ptr32{relocationAddress}, func->address + libcOffset_);
+                mmu_.write64(Ptr64{relocationAddress}, func->address + libcOffset_);
             } else if(sym->type() == elf::SymbolType::OBJECT) {
                 bool found = false;
                 auto resolveSymbol = [&](const elf::StringTable* stringTable, const elf::SymbolTableEntry64& entry) {
                     if(found) return;
                     if(entry.symbol(stringTable, *libcElf_).find(symbol) == std::string_view::npos) return;
                     found = true;
-                    // fmt::print("Resolve relocation for object \"{}\" : {:#x}\n", symbol, entry.st_value);
-                    mmu_.write32(Ptr32{relocationAddress}, entry.st_value + libcOffset_);
+                    mmu_.write64(Ptr64{relocationAddress}, entry.st_value + libcOffset_);
                 };
                 libcElf_->forAllSymbols(resolveSymbol);
                 if(!found) libcElf_->forAllDynamicSymbols(resolveSymbol);
-            } else {
-                fmt::print("Relocation for symbol \"{}\" of type {} ignored\n", symbol, (int)sym->type());
             }
-        });
+        };
+
+        programElf_->forAllRelocations(resolveRelocation);
+        programElf_->forAllRelocationsA(resolveRelocation);
 
         auto gotHandler = [&](u32 address){
             auto programStringTable = programElf_->dynamicStringTable();
