@@ -41,6 +41,7 @@ namespace elf {
         bool isExecutable() const;
         bool isWritable() const;
         bool doesAllocate() const;
+        bool isThreadLocal() const;
     };
     static_assert(sizeof(SectionHeader64) == 0x40 + sizeof(std::string_view));
 
@@ -172,6 +173,11 @@ namespace elf {
     inline bool SectionHeader64::doesAllocate() const {
         using type_t = std::underlying_type_t<SectionHeaderFlags>;
         return (type_t)sh_flags & (type_t)SectionHeaderFlags::ALLOC;
+    }
+
+    inline bool SectionHeader64::isThreadLocal() const {
+        using type_t = std::underlying_type_t<SectionHeaderFlags>;
+        return (type_t)sh_flags & (type_t)SectionHeaderFlags::TLS;
     }
 
     inline std::optional<Section> Elf64::sectionFromName(std::string_view sv) const {
