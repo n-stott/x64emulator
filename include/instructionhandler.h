@@ -367,6 +367,7 @@ namespace x64 {
         virtual void exec(const Jmp<R32>&) = 0;
         virtual void exec(const Jmp<u32>&) = 0;
         virtual void exec(const Jmp<M32>&) = 0;
+        virtual void exec(const Jmp<M64>&) = 0;
         virtual void exec(const Jcc<Cond::NE>&) = 0;
         virtual void exec(const Jcc<Cond::E>&) = 0;
         virtual void exec(const Jcc<Cond::AE>&) = 0;

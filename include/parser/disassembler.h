@@ -7,7 +7,8 @@
 
 class Disassembler {
 public:
-    static std::vector<std::string> disassembleTextSection(const std::string& filepath);
+    static std::vector<std::string> disassembleSection(const std::string& filepath, const std::string& section);
+    
 
 };
 

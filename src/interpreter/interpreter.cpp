@@ -63,7 +63,7 @@ namespace x64 {
 
         programOffset_ = mmu_.topOfMemoryAligned();
         for(auto& func : program_.functions) {
-            func.addressOffset = programOffset_;
+            func.addressOffset = programOffset_; // add offset based on section (text and plt get different offsets)
         }
         addSectionIfExists(*programElf_, ".rodata", "program .rodata", PROT_READ);
         addSectionIfExists(*programElf_, ".data.rel.ro", "program .data.rel.ro", PROT_READ);

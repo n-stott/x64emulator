@@ -20,7 +20,6 @@ namespace x64 {
     }
 
     const Function* Library::findUniqueFunction(std::string_view name) const {
-        if(name.size() >= 4 && name.substr(name.size()-4) == "@plt") name.remove_suffix(4);
         if(!isIntrinsic(name)) {
             for(const Function& func : functions) {
                 auto funcparts = split(func.name, '$');
@@ -37,7 +36,6 @@ namespace x64 {
     }
 
     const Function* Library::findFunction(u32, std::string_view name) const {
-        if(name.size() >= 4 && name.substr(name.size()-4) == "@plt") name.remove_suffix(4);
         if(!isIntrinsic(name)) {
             for(const Function& func : functions) {
                 auto funcparts = split(func.name, '$');

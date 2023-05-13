@@ -531,6 +531,7 @@ namespace x64 {
         void exec(const Jmp<R32>&) override;
         void exec(const Jmp<u32>&) override;
         void exec(const Jmp<M32>&) override;
+        void exec(const Jmp<M64>&) override;
         void exec(const Jcc<Cond::NE>&) override;
         void exec(const Jcc<Cond::E>&) override;
         void exec(const Jcc<Cond::AE>&) override;

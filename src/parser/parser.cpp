@@ -19,32 +19,40 @@ namespace x64 {
 
     std::unique_ptr<Program> InstructionParser::parseFile(std::string filepath) {
 
-        std::vector<std::string> disassembledText = Disassembler::disassembleTextSection(filepath);
-
-        if(disassembledText.empty()) {
-            fmt::print("Unable to disassemble {}\n", filepath);
-            return {};
-        }
-
         Program program;
         program.filepath = filepath;
         program.filename = filenameFromPath(filepath);
 
-        size_t total = 0;
-        line_iterator begin = disassembledText.begin();
-        line_iterator end = disassembledText.end();
-        while(begin != end) {
-            auto ptr = parseFunction(begin, end);
-            total++;
-            if(ptr) {
-                if(startsWith(ptr->name, ".L")) {
-                    assert(!program.functions.empty());
-                    auto& prevFuncInstruction = program.functions.back().instructions;
-                    for(auto&& ins : ptr->instructions) prevFuncInstruction.push_back(std::move(ins));
-                } else {
-                    program.functions.push_back(std::move(*ptr));
+        auto parseRange = [&](line_iterator begin, line_iterator end) {
+            size_t total = 0;
+            while(begin != end) {
+                auto ptr = parseFunction(begin, end);
+                total++;
+                if(ptr) {
+                    if(startsWith(ptr->name, ".L")) {
+                        assert(!program.functions.empty());
+                        auto& prevFuncInstruction = program.functions.back().instructions;
+                        for(auto&& ins : ptr->instructions) prevFuncInstruction.push_back(std::move(ins));
+                    } else {
+                        program.functions.push_back(std::move(*ptr));
+                    }
                 }
             }
+        };
+
+        std::vector<std::string> disassembledText = Disassembler::disassembleSection(filepath, ".text");
+
+        if(disassembledText.empty()) {
+            fmt::print("Unable to disassemble text section in {}\n", filepath);
+            return {};
+        }
+        parseRange(disassembledText.begin(), disassembledText.end());
+
+        std::vector<std::string> disassembledPlt = Disassembler::disassembleSection(filepath, ".plt");
+        if(!disassembledPlt.empty()) {
+            parseRange(disassembledPlt.begin(), disassembledPlt.end());
+        } else {
+            fmt::print("Warning: unable to disassemble plt section in {}\n", filepath);
         }
 
         return std::make_unique<Program>(std::move(program));
@@ -1591,9 +1599,11 @@ namespace x64 {
         auto reg32 = tryTakeRegister32(operandsString);
         auto imm32 = asImmediate32(operandsString);
         auto m32 = asMemory32(operandsString);
+        auto m64 = asMemory64(operandsString);
         if(reg32) return make_wrapper<Jmp<R32>>(address, reg32.value(), std::nullopt);
         if(imm32) return make_wrapper<Jmp<u32>>(address, imm32.value(), std::string(decorator.begin(), decorator.end()));
         if(m32) return make_wrapper<Jmp<M32>>(address, m32.value(), std::nullopt);
+        if(m64) return make_wrapper<Jmp<M64>>(address, m64.value(), std::nullopt);
         return make_failed(address, operandsString);
     }
 

@@ -1176,6 +1176,15 @@ namespace x64 {
 
     void Cpu::exec(const Jmp<M32>& ins) { TODO(ins); }
 
+    void Cpu::exec(const Jmp<M64>& ins) {
+        Ptr64 address = resolve(ins.symbolAddress);
+        bool success = interpreter_->callStack_.jumpInFrame(address.address);
+        if(!success) success = interpreter_->callStack_.jumpOutOfFrame(interpreter_->program_, address.address);
+        verify(success, [&]() {
+            fmt::print("[Jmp<M64>] Unable to find jmp destination {:#x}\n", address.address);
+        });
+    }
+
     void Cpu::exec(const Jcc<Cond::NE>& ins) {
         if(flags_.matches(Cond::NE)) {
             bool success = interpreter_->callStack_.jumpInFrame(ins.symbolAddress);
