@@ -1,7 +1,6 @@
-#include "parser/parser.h"
 #include "interpreter/interpreter.h"
+#include "interpreter/verify.h"
 #include "lib/libc.h"
-#include "elf-reader.h"
 #include <fmt/core.h>
 #include <filesystem>
 
@@ -22,34 +21,15 @@ int main(int argc, char* argv[]) {
     auto executablePath = std::filesystem::canonical(p);
     auto libraryPath = executablePath.replace_filename("libfakelibc.so");
 
-    auto programElf = elf::ElfReader::tryCreate(programPath);
-    if(!programElf) return 1;
-    if(programElf->archClass() != elf::Class::B64) {
-        fmt::print(stderr, "Program is not 64-bit\n");
-        return 1;
-    }
+    x64::Interpreter interpreter;
 
-    auto program = x64::InstructionParser::parseFile(programPath);
-    if(!program) {
-        fmt::print(stderr, "Could not parse program\n");
-        return 1;
-    }
+    x64::VerificationScope::run([&]() {
+        interpreter.loadElf(programPath);
+        interpreter.loadElf(libraryPath);
+        interpreter.loadLibC();
+        interpreter.resolveAllRelocations();
+        interpreter.run(programPath, arguments);
+    }, [&]() {});
 
-    auto libcElf = elf::ElfReader::tryCreate(libraryPath.c_str());
-    if(!libcElf) return 1;
-    if(libcElf->archClass() != elf::Class::B64) {
-        fmt::print(stderr, "Libc is not 64-bit\n");
-        return 1;
-    }
-
-    auto libcProg = x64::InstructionParser::parseFile(libraryPath.c_str());
-    if(!libcProg) {
-        fmt::print(stderr, "Could not parse libc\n");
-        return 1;
-    }
-    x64::LibC libc(std::move(*libcProg));
-
-    x64::Interpreter interpreter(std::move(*program), std::move(libc));
-    interpreter.run(arguments);
     return interpreter.hasCrashed();
 }

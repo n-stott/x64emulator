@@ -3,17 +3,19 @@
 
 #include "lib/library.h"
 #include "interpreter/executioncontext.h"
+#include <functional>
 #include <memory>
 
 namespace x64 {
 
-    struct LibC : public Library {
-        explicit LibC(Program p);
+    struct LibC : public Program {
+        explicit LibC();
         LibC(LibC&&);
         ~LibC();
 
-        void setHeapRegion(u32 base, u32 size);
-        void configureIntrinsics(const ExecutionContext& context);
+        void forAllFunctions(const ExecutionContext& context, std::function<void(std::unique_ptr<Function>)> callback);
+
+        void setHeapRegion(u64 base, u64 size);
 
     private:
         class Heap;
@@ -42,27 +44,27 @@ namespace x64 {
     };
 
     struct Malloc final : public LibraryFunction {
-        explicit Malloc(const ExecutionContext& context, LibC::Heap* heap);
+        explicit Malloc(const ExecutionContext& context, LibC* libc);
     };
 
     struct Free final : public LibraryFunction {
-        explicit Free(const ExecutionContext& context, LibC::Heap* heap);
+        explicit Free(const ExecutionContext& context, LibC* libc);
     };
 
     struct Fopen64 final : public LibraryFunction {
-        explicit Fopen64(const ExecutionContext& context, LibC::FileRegistry* fileRegistry);
+        explicit Fopen64(const ExecutionContext& context, LibC* libc);
     };
 
     struct Fileno final : public LibraryFunction {
-        explicit Fileno(const ExecutionContext& context, LibC::FileRegistry* fileRegistry);
+        explicit Fileno(const ExecutionContext& context, LibC* libc);
     };
 
     struct Fclose final : public LibraryFunction {
-        explicit Fclose(const ExecutionContext& context, LibC::FileRegistry* fileRegistry);
+        explicit Fclose(const ExecutionContext& context, LibC* libc);
     };
 
     struct Read final : public LibraryFunction {
-        explicit Read(const ExecutionContext& context, LibC::FileRegistry* fileRegistry);
+        explicit Read(const ExecutionContext& context, LibC* libc);
     };
 }
 

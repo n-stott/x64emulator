@@ -83,7 +83,9 @@ namespace x64 {
 
         void dumpRegions() const;
 
-        u64 topOfMemoryAligned() const;
+        u64 topOfMemoryAligned(u64 alignment) const;
+
+        static constexpr u64 PAGE_SIZE = 1024*1024;
 
     private:
         Region* findAddress(u64 address);

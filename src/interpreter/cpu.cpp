@@ -1160,7 +1160,7 @@ namespace x64 {
 
     void Cpu::exec(const Jmp<R32>& ins) {
         bool success = interpreter_->callStack_.jumpInFrame(get(ins.symbolAddress));
-        if(!success) success = interpreter_->callStack_.jumpOutOfFrame(interpreter_->program_, get(ins.symbolAddress));
+        if(!success) success = interpreter_->callStack_.jumpOutOfFrame(interpreter_, get(ins.symbolAddress));
         verify(success, [&]() {
             fmt::print("[Jmp<R32>] Unable to find jmp destination {:#x}\n", get(ins.symbolAddress));
         });
@@ -1168,7 +1168,7 @@ namespace x64 {
 
     void Cpu::exec(const Jmp<u32>& ins) {
         bool success = interpreter_->callStack_.jumpInFrame(ins.symbolAddress);
-        if(!success) success = interpreter_->callStack_.jumpOutOfFrame(interpreter_->program_, ins.symbolAddress);
+        if(!success) success = interpreter_->callStack_.jumpOutOfFrame(interpreter_, ins.symbolAddress);
         verify(success, [&]() {
             fmt::print("[Jmp<u32>] Unable to find jmp destination {:#x}\n", ins.symbolAddress);
         });
@@ -1177,11 +1177,11 @@ namespace x64 {
     void Cpu::exec(const Jmp<M32>& ins) { TODO(ins); }
 
     void Cpu::exec(const Jmp<M64>& ins) {
-        Ptr64 address = resolve(ins.symbolAddress);
-        bool success = interpreter_->callStack_.jumpInFrame(address.address);
-        if(!success) success = interpreter_->callStack_.jumpOutOfFrame(interpreter_->program_, address.address);
+        u64 address = get(resolve(ins.symbolAddress));
+        bool success = interpreter_->callStack_.jumpInFrame(address);
+        if(!success) success = interpreter_->callStack_.jumpOutOfFrame(interpreter_, address);
         verify(success, [&]() {
-            fmt::print("[Jmp<M64>] Unable to find jmp destination {:#x}\n", address.address);
+            fmt::print("[Jmp<M64>] Unable to find jmp destination {:#x}\n", address);
         });
     }
 

@@ -5,7 +5,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
-std::vector<std::string> Disassembler::disassembleSection(const std::string& filepath, const std::string& section) {
+std::vector<std::string> Disassembler::disassembleSection(std::string_view filepath, std::string_view section) {
     int pipefd[2];
     ::pipe(pipefd);
 
@@ -18,7 +18,10 @@ std::vector<std::string> Disassembler::disassembleSection(const std::string& fil
 
         ::close(pipefd[1]);    // this descriptor is no longer needed
 
-        ::execl("/usr/bin/objdump", "objdump", "-d", "-C", "-Mintel", "-j", section.c_str(), filepath.c_str(), (char*)nullptr);
+        std::string sectionString(section);
+        std::string filepathString(filepath);
+
+        ::execl("/usr/bin/objdump", "objdump", "-d", "-C", "-Mintel", "-j", sectionString.c_str(), filepathString.c_str(), (char*)nullptr);
     } else {
         // parent
         ::close(pipefd[1]);  // close the write end of the pipe in the parent

@@ -13,40 +13,38 @@
 
 namespace x64 {
 
-    LibC::LibC(Program p) : Library(std::move(p)) {
+    LibC::LibC() : Program() {
         fileRegistry_ = std::make_unique<FileRegistry>();
     }
     LibC::LibC(LibC&&) = default;
     LibC::~LibC() = default;
 
-    void LibC::configureIntrinsics(const ExecutionContext& context) {
-        (void)context;
-        fmt::print("Warning: LibC::configureIntrinsics is deactivated\n");
-        // addIntrinsicFunction<Putchar>(context);
-        // addIntrinsicFunction<Malloc>(context, heap_.get());
-        // addIntrinsicFunction<Free>(context, heap_.get());
-        // addIntrinsicFunction<Fopen64>(context, fileRegistry_.get());
-        // addIntrinsicFunction<Fileno>(context, fileRegistry_.get());
-        // addIntrinsicFunction<Fclose>(context, fileRegistry_.get());
-        // addIntrinsicFunction<Read>(context, fileRegistry_.get());
+    void LibC::forAllFunctions(const ExecutionContext& context, std::function<void(std::unique_ptr<Function>)> callback) {
+        callback(std::unique_ptr<Function>(new Putchar(context)));
+        callback(std::unique_ptr<Function>(new Malloc(context, this)));
+        callback(std::unique_ptr<Function>(new Free(context, this)));
+        callback(std::unique_ptr<Function>(new Fopen64(context, this)));
+        callback(std::unique_ptr<Function>(new Fileno(context, this)));
+        callback(std::unique_ptr<Function>(new Fclose(context, this)));
+        callback(std::unique_ptr<Function>(new Read(context, this)));
     }
 
     class LibC::Heap {
     public:
-        explicit Heap(u32 base, u32 size) {
+        explicit Heap(u64 base, u64 size) {
             region_.base_ = base;
             region_.current_ = base;
             region_.size_ = size;
         }
 
-        // aligns everything to 4 bytes
-        u32 malloc(u32 size) {
+        // aligns everything to 8 bytes
+        u64 malloc(u64 size) {
             // check if we have a free block of that size
             auto sait = allocations_.find(size);
             if(sait != allocations_.end()) {
                 auto& sa = sait->second;
                 if(!sa.freeBases.empty()) {
-                    u32 base = sa.freeBases.back();
+                    u64 base = sa.freeBases.back();
                     sa.freeBases.pop_back();
                     sa.usedBases.push_back(base);
                     return base;
@@ -55,20 +53,20 @@ namespace x64 {
             if(!region_.canFit(size)) {
                 return 0x0;
             } else {
-                u32 newBase = region_.allocate(size);
+                u64 newBase = region_.allocate(size);
                 allocations_[size].usedBases.push_back(newBase);
                 addressToSize_[newBase] = size;
                 return newBase;
             }
         }
 
-        void free(u32 address) {
+        void free(u64 address) {
             if(!address) return;
             auto ait = addressToSize_.find(address);
             verify(ait != addressToSize_.end(), [&]() {
                 fmt::print(stderr, "Address {:#x} was never malloc'ed\n", address);
             });
-            u32 size = ait->second;
+            u64 size = ait->second;
             auto& sa = allocations_[size];
             sa.usedBases.remove(address);
             sa.freeBases.push_back(address);
@@ -76,31 +74,31 @@ namespace x64 {
 
     private:
         struct Region {
-            u32 base_ { 0 };
-            u32 size_ { 0 };
-            u32 current_ { 0 };
+            u64 base_ { 0 };
+            u64 size_ { 0 };
+            u64 current_ { 0 };
 
-            bool canFit(u32 size) const {
+            bool canFit(u64 size) const {
                 return current_ + size < base_ + size_;
             }
-            u32 allocate(u32 size) {
+            u64 allocate(u64 size) {
                 verify(canFit(size));
-                u32 base = ((current_+3)/4)*4; // Align to 4 bytes
+                u64 base = ((current_+7)/8)*8; // Align to 8 bytes
                 current_ = base + size;
                 return base;
             }
         } region_;
 
         struct SizedAllocation {
-            std::list<u32> usedBases;
-            std::vector<u32> freeBases;
+            std::list<u64> usedBases;
+            std::vector<u64> freeBases;
         };
 
-        std::map<u32, SizedAllocation> allocations_;
-        std::map<u32, u32> addressToSize_;
+        std::map<u64, SizedAllocation> allocations_;
+        std::map<u64, u64> addressToSize_;
     };
 
-    void LibC::setHeapRegion(u32 base, u32 size) {
+    void LibC::setHeapRegion(u64 base, u64 size) {
         heap_ = std::make_unique<Heap>(base, size);
     }
 
@@ -225,8 +223,8 @@ namespace x64 {
         explicit MallocInstruction(ExecutionContext context, LibC::Heap* heap) : context_(context), heap_(heap) { }
 
         void exec(InstructionHandler*) const override {
-            u32 size = context_.rax();
-            u32 address = heap_->malloc(size);
+            u64 size = context_.rax();
+            u64 address = heap_->malloc(size);
             context_.set_rax(address);
         }
         std::string toString() const override {
@@ -242,7 +240,7 @@ namespace x64 {
         explicit FreeInstruction(ExecutionContext context, LibC::Heap* heap) : context_(context), heap_(heap) { }
 
         void exec(InstructionHandler*) const override {
-            u32 address = context_.rax();
+            u64 address = context_.rax();
             heap_->free(address);
         }
         std::string toString() const override {
@@ -260,8 +258,8 @@ namespace x64 {
             fileRegistry_(fileRegistry) { }
 
         void exec(InstructionHandler*) const override {
-            u32 pathname_address = context_.rax();
-            u32 mode_address = context_.rbx();
+            u64 pathname_address = context_.rax();
+            u64 mode_address = context_.rbx();
 
             Ptr8 pathname_ptr { pathname_address };
             std::string pathname;
@@ -298,7 +296,7 @@ namespace x64 {
             fileRegistry_(fileRegistry) { }
 
         void exec(InstructionHandler*) const override {
-            u32 fileHandler = context_.rax();
+            u64 fileHandler = context_.rax();
             int fd = fileRegistry_->fileno(fileHandler);
             context_.set_rax(fd);
         }
@@ -318,7 +316,7 @@ namespace x64 {
             fileRegistry_(fileRegistry) { }
 
         void exec(InstructionHandler*) const override {
-            u32 fileHandler = context_.rax();
+            u64 fileHandler = context_.rax();
             int ret = fileRegistry_->closeFile(fileHandler);
             context_.set_rax(ret);
         }
@@ -375,7 +373,7 @@ namespace x64 {
 
     Putchar::Putchar(const ExecutionContext& context) : LibraryFunction("intrinsic$putchar") {
         (void)context;
-        assert(!"This is broken");
+        // assert(!"This is broken");
         // add(this, make_wrapper<Push<R32>>(R32::EBP));
         // add(this, make_wrapper<Mov<R32, R32>>(R32::EBP, R32::ESP));
         // auto arg = Addr<Size::DWORD, BD>{{R32::ESP, +8}};
@@ -385,10 +383,10 @@ namespace x64 {
         // add(this, make_wrapper<Ret<void>>());
     }
 
-    Malloc::Malloc(const ExecutionContext& context, LibC::Heap* heap) : LibraryFunction("intrinsic$malloc") {
+    Malloc::Malloc(const ExecutionContext& context, LibC* libc) : LibraryFunction("intrinsic$malloc") {
         (void)context;
-        (void)heap;
-        assert(!"This is broken");
+        (void)libc;
+        // assert(!"This is broken");
         // add(this, make_wrapper<Push<R32>>(R32::EBP));
         // add(this, make_wrapper<Mov<R32, R32>>(R32::EBP, R32::ESP));
         // auto arg = Addr<Size::DWORD, BD>{{R32::ESP, +8}};
@@ -398,10 +396,10 @@ namespace x64 {
         // add(this, make_wrapper<Ret<void>>());
     }
 
-    Free::Free(const ExecutionContext& context, LibC::Heap* heap) : LibraryFunction("intrinsic$free") {
+    Free::Free(const ExecutionContext& context, LibC* libc) : LibraryFunction("intrinsic$free") {
         (void)context;
-        (void)heap;
-        assert(!"This is broken");
+        (void)libc;
+        // assert(!"This is broken");
         // add(this, make_wrapper<Push<R32>>(R32::EBP));
         // add(this, make_wrapper<Mov<R32, R32>>(R32::EBP, R32::ESP));
         // auto arg = Addr<Size::DWORD, BD>{{R32::ESP, +8}};
@@ -411,10 +409,10 @@ namespace x64 {
         // add(this, make_wrapper<Ret<void>>());
     }
 
-    Fopen64::Fopen64(const ExecutionContext& context, LibC::FileRegistry* fileRegistry) : LibraryFunction("intrinsic$fopen64") {
+    Fopen64::Fopen64(const ExecutionContext& context, LibC* libc) : LibraryFunction("intrinsic$fopen64") {
         (void)context;
-        (void)fileRegistry;
-        assert(!"This is broken");
+        (void)libc;
+        // assert(!"This is broken");
         // add(this, make_wrapper<Push<R32>>(R32::EBP));
         // add(this, make_wrapper<Push<R32>>(R32::EBX));
         // add(this, make_wrapper<Mov<R32, R32>>(R32::EBP, R32::ESP));
@@ -428,10 +426,10 @@ namespace x64 {
         // add(this, make_wrapper<Ret<void>>());
     }
 
-    Fileno::Fileno(const ExecutionContext& context, LibC::FileRegistry* fileRegistry) : LibraryFunction("intrinsic$fileno") {
+    Fileno::Fileno(const ExecutionContext& context, LibC* libc) : LibraryFunction("intrinsic$fileno") {
         (void)context;
-        (void)fileRegistry;
-        assert(!"This is broken");
+        (void)libc;
+        // assert(!"This is broken");
         // add(this, make_wrapper<Push<R32>>(R32::EBP));
         // add(this, make_wrapper<Mov<R32, R32>>(R32::EBP, R32::ESP));
         // auto arg = Addr<Size::DWORD, BD>{{R32::ESP, +8}};
@@ -441,10 +439,10 @@ namespace x64 {
         // add(this, make_wrapper<Ret<void>>());
     }
 
-    Fclose::Fclose(const ExecutionContext& context, LibC::FileRegistry* fileRegistry) : LibraryFunction("intrinsic$fclose") {
+    Fclose::Fclose(const ExecutionContext& context, LibC* libc) : LibraryFunction("intrinsic$fclose") {
         (void)context;
-        (void)fileRegistry;
-        assert(!"This is broken");
+        (void)libc;
+        // assert(!"This is broken");
         // add(this, make_wrapper<Push<R32>>(R32::EBP));
         // add(this, make_wrapper<Mov<R32, R32>>(R32::EBP, R32::ESP));
         // auto arg = Addr<Size::DWORD, BD>{{R32::ESP, +8}};
@@ -454,10 +452,10 @@ namespace x64 {
         // add(this, make_wrapper<Ret<void>>());
     }
     
-    Read::Read(const ExecutionContext& context, LibC::FileRegistry* fileRegistry) : LibraryFunction("intrinsic$read") {
+    Read::Read(const ExecutionContext& context, LibC* libc) : LibraryFunction("intrinsic$read") {
         (void)context;
-        (void)fileRegistry;
-        assert(!"This is broken");
+        (void)libc;
+        // assert(!"This is broken");
         // add(this, make_wrapper<Push<R32>>(R32::EBP));
         // add(this, make_wrapper<Push<R32>>(R32::EBX));
         // add(this, make_wrapper<Mov<R32, R32>>(R32::EBP, R32::ESP));

@@ -8,25 +8,25 @@
 extern "C" {
 
     __attribute__((noinline))
-    int intrinsic$putchar(int) { return 1; }
+    extern int intrinsic$putchar(int);
 
     __attribute__((noinline))
-    void* intrinsic$malloc(size_t) { return nullptr; }
+    extern void* intrinsic$malloc(size_t);
 
     __attribute__((noinline))
-    void intrinsic$free(void*) { }
+    extern void intrinsic$free(void*);
 
     __attribute__((noinline))
-    FILE* intrinsic$fopen64(const char*, const char*) { return nullptr; }
+    extern FILE* intrinsic$fopen64(const char*, const char*);
 
     __attribute__((noinline))
-    int intrinsic$fileno(FILE*) { return -1; }
+    extern int intrinsic$fileno(FILE*);
 
     __attribute__((noinline))
-    ssize_t intrinsic$read(int, void*, size_t) { return -1; }
+    extern ssize_t intrinsic$read(int, void*, size_t);
 
     __attribute__((noinline))
-    int intrinsic$fclose(FILE*) { return 0; }
+    extern int intrinsic$fclose(FILE*);
 
     int fakelibc$putchar(int c) {
         return intrinsic$putchar(c);

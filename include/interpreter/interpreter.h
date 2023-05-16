@@ -19,35 +19,49 @@ namespace x64 {
 
     class Interpreter {
     public:
-        explicit Interpreter(Program program, LibC libc);
-        void run(const std::vector<std::string>& arguments);
+        explicit Interpreter();
+        void run(const std::string& programFilePath, const std::vector<std::string>& arguments);
         bool hasCrashed() const { return stop_; }
 
-    private:
+        void loadElf(const std::string& filepath);
+        void loadLibC();
+        void resolveAllRelocations();
 
-        void loadProgram();
-        void loadLibrary();
+    private: 
+
+        struct ExecutableSection {
+            std::string filename;
+            std::string sectionname;
+            const elf::Elf64* elf;
+            u64 sectionOffset;
+            std::vector<std::unique_ptr<Function>> functions;
+        };
+
+        struct LoadedElf {
+            std::string filename;
+            u64 offset;
+            std::unique_ptr<elf::Elf64> elf;
+        };
+
         void setupStackAndHeap();
         void runInit();
-        void pushProgramArguments(const std::vector<std::string>& arguments);
+        void pushProgramArguments(const std::string& programFilePath, const std::vector<std::string>& arguments);
         void executeMain();
         void execute(const Function* function);
 
         Mmu::Region* addSectionIfExists(const elf::Elf64& elf, const std::string& sectionName, const std::string& regionName, Protection protection, u32 offset = 0);
 
-        Program program_;
-        std::unique_ptr<elf::Elf64> programElf_;
-        std::unique_ptr<elf::Elf64> libcElf_;
-        LibC libc_;
         Mmu mmu_;
         Cpu cpu_;
 
-        Mmu::Region* got_ = nullptr;
-        Mmu::Region* gotplt_ = nullptr;
+        std::vector<ExecutableSection> executableSections_;
+        std::vector<LoadedElf> elfs_;
+        std::unique_ptr<LibC> libc_;
+
+        const Function* findFunctionByName(std::string_view name) const;
+        const Function* findFunctionByAddress(u64 address) const;
 
         bool stop_;
-        u32 libcOffset_ = 0;
-        u32 programOffset_ = 0;
 
         struct Frame {
             const Function* function;
@@ -80,12 +94,14 @@ namespace x64 {
                 }
             }
 
-            bool jumpOutOfFrame(const Program& program, u32 destinationAddress) {
-                for(const auto& function : program.functions) {
-                    if(function.address != destinationAddress) continue;
-                    frames.pop_back();
-                    frames.push_back(Frame{&function, 0});
-                    return true;
+            bool jumpOutOfFrame(const Interpreter* interpreter, u64 destinationAddress) {
+                for(const auto& executableSection : interpreter->executableSections_) {
+                    for(const auto& function : executableSection.functions) {
+                        if(function->address + function->addressOffset != destinationAddress) continue;
+                        frames.pop_back();
+                        frames.push_back(Frame{function.get(), 0});
+                        return true;
+                    }
                 }
                 return false;
             }
@@ -122,7 +138,6 @@ namespace x64 {
         } callStack_;
 
         const Function* findFunction(const CallDirect& ins);
-        const Function* findFunctionByAddress(u32 ins);
 
         friend struct CallingContext;
         CallingContext context() const;

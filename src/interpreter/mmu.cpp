@@ -261,10 +261,10 @@ namespace x64 {
         }
     }
 
-    u64 Mmu::topOfMemoryAligned() const {
+    u64 Mmu::topOfMemoryAligned(u64 alignment) const {
         u64 top = 0;
         for(const auto& region : regions_) top = std::max(top, region.base+region.size);
-        top = (top + 1023)/1024*1024;
+        top = (top + (alignment-1))/alignment*alignment;
         return top;
     }
 

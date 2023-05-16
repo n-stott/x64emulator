@@ -58,6 +58,27 @@ namespace x64 {
         return std::make_unique<Program>(std::move(program));
     }
 
+    std::vector<std::unique_ptr<Function>> InstructionParser::parseSection(std::string_view filepath, std::string_view section) {
+        std::vector<std::string> disassembledSection = Disassembler::disassembleSection(filepath, section);
+
+        line_iterator begin = disassembledSection.begin();
+        line_iterator end = disassembledSection.end();
+        std::vector<std::unique_ptr<Function>> functions;
+        while(begin != end) {
+            auto ptr = parseFunction(begin, end);
+            if(ptr) {
+                if(startsWith(ptr->name, ".L")) {
+                    assert(!functions.empty());
+                    auto& prevFuncInstruction = functions.back()->instructions;
+                    for(auto&& ins : ptr->instructions) prevFuncInstruction.push_back(std::move(ins));
+                } else {
+                    functions.push_back(std::move(ptr));
+                }
+            }
+        }
+        return functions;
+    }
+
     std::unique_ptr<Function> InstructionParser::parseFunction(line_iterator& begin, line_iterator end) {
         std::string line;
         bool foundFunctionStart = false;

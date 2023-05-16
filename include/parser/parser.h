@@ -29,6 +29,8 @@ namespace x64 {
         static std::unique_ptr<X86Instruction> parseInstructionLine(std::string_view s);
         static std::unique_ptr<X86Instruction> parseInstruction(const OpcodeBytes& opbytes, u32 address, std::string_view s);
 
+        static std::vector<std::unique_ptr<Function>> parseSection(std::string_view filepath, std::string_view section);
+
     private:
         using line_iterator = std::vector<std::string>::const_iterator;
         static std::unique_ptr<Function> parseFunction(line_iterator& begin, line_iterator end);
