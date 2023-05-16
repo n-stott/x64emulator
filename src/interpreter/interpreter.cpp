@@ -70,7 +70,7 @@ namespace x64 {
                 // for(const auto& f : functions) {
                 //     fmt::print("  {:20} : {:4} instructions\n", f->name, f->instructions.size());
                 // }
-                for(auto& f : functions) f->addressOffset = offset;
+                for(auto& f : functions) f->elfOffset = offset;
                 functions.erase(std::remove_if(functions.begin(), functions.end(), [](std::unique_ptr<Function>& function) -> bool {
                     if(function->name.size() >= 10) {
                         if(function->name.substr(0, 10) == "intrinsic$") return true;
@@ -136,7 +136,7 @@ namespace x64 {
         };
         auto& libcFunctions = libcSection.functions;
         libc_->forAllFunctions(ExecutionContext(*this), [&](std::unique_ptr<Function> function) {
-            function->addressOffset = libcOffset;
+            function->elfOffset = libcOffset;
             libcFunctions.push_back(std::move(function));
         });
         executableSections_.push_back(std::move(libcSection));
@@ -160,8 +160,8 @@ namespace x64 {
             || (sym->type() == elf::SymbolType::NOTYPE && sym->bind() == elf::SymbolBind::WEAK)) {
                 const auto* func = findFunctionByName(symbol);
                 if(!func) return;
-                fmt::print("  at {:#x}\n", func->address + func->addressOffset);
-                mmu_.write64(Ptr64{relocationAddress}, func->address + func->addressOffset);
+                fmt::print("  at {:#x}\n", func->address + func->elfOffset);
+                mmu_.write64(Ptr64{relocationAddress}, func->address + func->elfOffset);
             } else if(sym->type() == elf::SymbolType::OBJECT) {
                 fmt::print("  Object symbols not yet handled\n");
                 // bool found = false;
@@ -199,7 +199,6 @@ namespace x64 {
                         origin = execSection.filename + ":" + execSection.sectionname;
                     }
                 } else {
-                    // if(funcname.size() >= 9 && funcname.substr(0, 9) == "intrinsic") continue;
                     if(funcname.size() >= 8 && funcname.substr(0, 8) == "fakelibc") {
                         separator = 8;
                         funcname = funcname.substr(separator+1);
@@ -221,9 +220,11 @@ namespace x64 {
     const Function* Interpreter::findFunctionByAddress(u64 address) const {
         const Function* function = nullptr;
         std::string origin;
+        const Function* current = currentFunction();
         for(const auto& execSection : executableSections_) {
+            if(!!current && execSection.sectionOffset != current->elfOffset) continue;
             for(const auto& func : execSection.functions) {
-                if(address == func->address + func->addressOffset) {
+                if(address == func->address + func->elfOffset) {
                     verify(!function, [&]() {
                         fmt::print("Function with address {:#x} found in {} must be unique, but found copy in section {}:{}\n", address, origin, execSection.filename, execSection.sectionname);
                         fmt::print("Function a: {} insn\n", function->instructions.size());
@@ -288,6 +289,11 @@ namespace x64 {
         if(section->type() != elf::SectionHeaderType::NOBITS)
             std::memcpy(region.data.data(), section->begin, section->size()*sizeof(u8));
         return mmu_.addRegion(std::move(region));
+    }
+
+    const Function* Interpreter::currentFunction() const {
+        if(callStack_.frames.empty()) return nullptr;
+        return callStack_.frames.back().function;
     }
 
     const Function* Interpreter::findFunction(const CallDirect& ins) {
@@ -378,7 +384,7 @@ namespace x64 {
                 const X86Instruction* instruction = callStack_.next();
                 auto nextAfter = callStack_.peek();
                 if(nextAfter) {
-                    cpu_.regs_.rip_ = nextAfter->address + callStack_.frames.back().function->addressOffset;
+                    cpu_.regs_.rip_ = nextAfter->address + callStack_.frames.back().function->elfOffset;
                 }
                 if(!instruction) {
                     fmt::print(stderr, "Undefined instruction near {:#x}\n", cpu_.regs_.rip_);
@@ -407,6 +413,7 @@ namespace x64 {
                 fmt::print("Register state:\n");
                 dump(stdout);
                 mmu_.dumpRegions();
+                dumpFunctions(stdout);
                 fmt::print("Stacktrace:\n");
                 callStack_.dumpStacktrace();
                 stop_ = true;
@@ -452,5 +459,13 @@ namespace x64 {
             case Cond::S: return (sign == 1);
         }
         __builtin_unreachable();
+    }
+
+    void Interpreter::dumpFunctions(FILE* stream) const {
+        for(const auto& section : executableSections_) {
+            for(const auto& func : section.functions) {
+                fmt::print(stream, "{}\n", func->name);
+            }
+        }
     }
 }

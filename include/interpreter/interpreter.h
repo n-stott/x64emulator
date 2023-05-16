@@ -97,7 +97,7 @@ namespace x64 {
             bool jumpOutOfFrame(const Interpreter* interpreter, u64 destinationAddress) {
                 for(const auto& executableSection : interpreter->executableSections_) {
                     for(const auto& function : executableSection.functions) {
-                        if(function->address + function->addressOffset != destinationAddress) continue;
+                        if(function->address + function->elfOffset != destinationAddress) continue;
                         frames.pop_back();
                         frames.push_back(Frame{function.get(), 0});
                         return true;
@@ -137,6 +137,8 @@ namespace x64 {
             }
         } callStack_;
 
+        const Function* currentFunction() const;
+
         const Function* findFunction(const CallDirect& ins);
 
         friend struct CallingContext;
@@ -147,6 +149,7 @@ namespace x64 {
 
         void dump(FILE* stream = stderr) const;
         void dumpStack(FILE* stream = stderr) const;
+        void dumpFunctions(FILE* stream = stderr) const;
 
         void push8(u8 value);
         void push16(u16 value);

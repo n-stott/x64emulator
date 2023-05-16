@@ -704,7 +704,19 @@ namespace x64 {
     }
 
     void Cpu::exec(const CallDirect& ins) {
-        const Function* func = interpreter_->findFunction(ins);
+        const Function* func = interpreter_->findFunctionByAddress(ins.symbolAddress);
+        if(!func) func = interpreter_->findFunctionByName(ins.symbolName);
+        if(!func) {
+            if(ins.symbolName.size() >= 4) {
+                std::string_view suffix = ins.symbolName.substr(ins.symbolName.size()-4);
+                verify(suffix == "@plt", "function does not end with @plt");
+                std::string name = ins.symbolName.substr(0, ins.symbolName.size()-4);
+                func = interpreter_->findFunctionByName(name);
+                verify(!!func, [&]() { fmt::print("unable to find function _{}_@plt\n", name); });
+            } else {
+                verify(false, "unable to find function");
+            }
+        }
         interpreter_->callStack_.frames.push_back(Interpreter::Frame{func, 0});
         push64(regs_.rip_);
     }

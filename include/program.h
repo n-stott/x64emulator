@@ -22,13 +22,13 @@ namespace x64 {
 
     struct Function {
         u32 address;
-        u32 addressOffset;
+        u32 elfOffset;
         std::string name;
         std::vector<std::unique_ptr<X86Instruction>> instructions;
 
-        Function() : address(0), addressOffset(0) { }
+        Function() : address(0), elfOffset(0) { }
         Function(u32 address, std::string name, std::vector<std::unique_ptr<X86Instruction>> instructions) :
-            address(address), addressOffset(0), name(std::move(name)), instructions(std::move(instructions)) {
+            address(address), elfOffset(0), name(std::move(name)), instructions(std::move(instructions)) {
 
         }
         Function(Function&&) = default;

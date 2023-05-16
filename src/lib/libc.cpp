@@ -220,11 +220,11 @@ namespace x64 {
 
     class MallocInstruction : public Intrinsic {
     public:
-        explicit MallocInstruction(ExecutionContext context, LibC::Heap* heap) : context_(context), heap_(heap) { }
+        explicit MallocInstruction(ExecutionContext context, LibC* libc) : context_(context), libc_(libc) { }
 
         void exec(InstructionHandler*) const override {
             u64 size = context_.rax();
-            u64 address = heap_->malloc(size);
+            u64 address = libc_->heap_->malloc(size);
             context_.set_rax(address);
         }
         std::string toString() const override {
@@ -232,23 +232,23 @@ namespace x64 {
         }
     private:
         ExecutionContext context_;
-        LibC::Heap* heap_;
+        LibC* libc_;
     };
 
     class FreeInstruction : public Intrinsic {
     public:
-        explicit FreeInstruction(ExecutionContext context, LibC::Heap* heap) : context_(context), heap_(heap) { }
+        explicit FreeInstruction(ExecutionContext context, LibC* libc) : context_(context), libc_(libc) { }
 
         void exec(InstructionHandler*) const override {
             u64 address = context_.rax();
-            heap_->free(address);
+            libc_->heap_->free(address);
         }
         std::string toString() const override {
             return "__free";
         }
     private:
         ExecutionContext context_;
-        LibC::Heap* heap_;
+        LibC* libc_;
     };
 
     class Fopen64Instruction : public Intrinsic {
@@ -371,42 +371,64 @@ namespace x64 {
         LibC::FileRegistry* fileRegistry_;
     };
 
+    class FunctionBuilder {
+    public:
+        explicit FunctionBuilder(LibraryFunction* func) : func_(func), closed_(false), nbArguments_(0) {
+            assert(func_->instructions.empty());
+            add(func_, make_wrapper<Push<R64>>(R64::RBP));
+            add(func_, make_wrapper<Mov<R64, R64>>(R64::RBP, R64::RSP));
+        }
+
+        ~FunctionBuilder() {
+            assert(closed_ && "FunctionBuilder must be closed");
+        }
+
+        void addIntegerStructOrPointerArgument() {
+            if(nbArguments_ == 0) {
+                add(func_, make_wrapper<Mov<R64, R64>>(R64::RAX, R64::RDI));
+            }
+            if(nbArguments_ == 1) {
+                add(func_, make_wrapper<Mov<R64, R64>>(R64::RBX, R64::RSI));
+            }
+            ++nbArguments_;
+        }
+
+        template<typename Intrinsic, typename... Args>
+        void addIntrinsicCall(const ExecutionContext& context, Args&& ...args) {
+            add(func_, make_intrinsic<Intrinsic>(context, args...));
+        }
+
+        void close() {
+            add(func_, make_wrapper<Pop<R64>>(R64::RBP));
+            add(func_, make_wrapper<Ret<void>>());
+            closed_ = true;
+        }
+
+    private:
+        LibraryFunction* func_;
+        bool closed_;
+        int nbArguments_;
+    };
+
     Putchar::Putchar(const ExecutionContext& context) : LibraryFunction("intrinsic$putchar") {
-        (void)context;
-        // assert(!"This is broken");
-        // add(this, make_wrapper<Push<R32>>(R32::EBP));
-        // add(this, make_wrapper<Mov<R32, R32>>(R32::EBP, R32::ESP));
-        // auto arg = Addr<Size::DWORD, BD>{{R32::ESP, +8}};
-        // add(this, make_wrapper<Mov<R32, M32>>(R32::EAX, arg));
-        // add(this, make_intrinsic<PutcharInstruction>(context));
-        // add(this, make_wrapper<Pop<R32>>(R32::EBP));
-        // add(this, make_wrapper<Ret<void>>());
+        FunctionBuilder builder(this);
+        builder.addIntegerStructOrPointerArgument();
+        builder.addIntrinsicCall<PutcharInstruction>(context);
+        builder.close();
     }
 
     Malloc::Malloc(const ExecutionContext& context, LibC* libc) : LibraryFunction("intrinsic$malloc") {
-        (void)context;
-        (void)libc;
-        // assert(!"This is broken");
-        // add(this, make_wrapper<Push<R32>>(R32::EBP));
-        // add(this, make_wrapper<Mov<R32, R32>>(R32::EBP, R32::ESP));
-        // auto arg = Addr<Size::DWORD, BD>{{R32::ESP, +8}};
-        // add(this, make_wrapper<Mov<R32, M32>>(R32::EAX, arg));
-        // add(this, make_intrinsic<MallocInstruction>(context, heap));
-        // add(this, make_wrapper<Pop<R32>>(R32::EBP));
-        // add(this, make_wrapper<Ret<void>>());
+        FunctionBuilder builder(this);
+        builder.addIntegerStructOrPointerArgument();
+        builder.addIntrinsicCall<MallocInstruction>(context, libc);
+        builder.close();
     }
 
     Free::Free(const ExecutionContext& context, LibC* libc) : LibraryFunction("intrinsic$free") {
-        (void)context;
-        (void)libc;
-        // assert(!"This is broken");
-        // add(this, make_wrapper<Push<R32>>(R32::EBP));
-        // add(this, make_wrapper<Mov<R32, R32>>(R32::EBP, R32::ESP));
-        // auto arg = Addr<Size::DWORD, BD>{{R32::ESP, +8}};
-        // add(this, make_wrapper<Mov<R32, M32>>(R32::EAX, arg));
-        // add(this, make_intrinsic<FreeInstruction>(context, heap));
-        // add(this, make_wrapper<Pop<R32>>(R32::EBP));
-        // add(this, make_wrapper<Ret<void>>());
+        FunctionBuilder builder(this);
+        builder.addIntegerStructOrPointerArgument();
+        builder.addIntrinsicCall<FreeInstruction>(context, libc);
+        builder.close();
     }
 
     Fopen64::Fopen64(const ExecutionContext& context, LibC* libc) : LibraryFunction("intrinsic$fopen64") {
