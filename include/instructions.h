@@ -331,6 +331,10 @@ namespace x64 {
 
     };
 
+    struct Cdqe {
+
+    };
+
     template<typename Dst, typename Src>
     struct Pxor {
         Dst dst;

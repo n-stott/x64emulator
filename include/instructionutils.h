@@ -50,6 +50,14 @@ namespace utils {
             case R32::EBX: return "ebx";
             case R32::ECX: return "ecx";
             case R32::EDX: return "edx";
+            case R32::R8D: return "r8d";
+            case R32::R9D: return "r9d";
+            case R32::R10D: return "r10d";
+            case R32::R11D: return "r11d";
+            case R32::R12D: return "r12d";
+            case R32::R13D: return "r13d";
+            case R32::R14D: return "r14d";
+            case R32::R15D: return "r15d";
             case R32::EIZ: return "eiz";
         }
         return "";
@@ -521,6 +529,10 @@ namespace utils {
 
     inline std::string toString(Cwde) {
         return fmt::format("{:8}", "cwde");
+    }
+
+    inline std::string toString(Cdqe) {
+        return fmt::format("{:8}", "cdqe");
     }
 
     template<typename Dst, typename Src>

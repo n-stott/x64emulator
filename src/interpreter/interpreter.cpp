@@ -344,10 +344,10 @@ namespace x64 {
         VerificationScope::run([&]() {
             std::vector<u32> argumentPositions;
             auto pushString = [&](const std::string& s) {
-                std::vector<u32> buffer;
-                buffer.resize((s.size()+1+3)/4, 0);
+                std::vector<u64> buffer;
+                buffer.resize((s.size()+8)/8, 0);
                 std::memcpy(buffer.data(), s.data(), s.size());
-                for(auto cit = buffer.rbegin(); cit != buffer.rend(); ++cit) push32(*cit);
+                for(auto cit = buffer.rbegin(); cit != buffer.rend(); ++cit) push64(*cit);
                 argumentPositions.push_back(cpu_.regs_.rsp_);
             };
 
@@ -358,10 +358,10 @@ namespace x64 {
             
             alignDown64(cpu_.regs_.rsp_);
             for(auto it = argumentPositions.rbegin(); it != argumentPositions.rend(); ++it) {
-                push32(*it);
+                push64(*it);
             }
-            push64(cpu_.regs_.rsp_);
-            push64(arguments.size()+1);
+            cpu_.set(R64::RSI, cpu_.regs_.rsp_);
+            cpu_.set(R64::RDI, arguments.size()+1);
         }, [&]() {
             fmt::print("Interpreter crash durig program argument setup\n");
             stop_ = true;
@@ -413,7 +413,6 @@ namespace x64 {
                 fmt::print("Register state:\n");
                 dump(stdout);
                 mmu_.dumpRegions();
-                dumpFunctions(stdout);
                 fmt::print("Stacktrace:\n");
                 callStack_.dumpStacktrace();
                 stop_ = true;

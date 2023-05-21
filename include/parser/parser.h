@@ -41,6 +41,7 @@ namespace x64 {
         static std::unique_ptr<X86Instruction> parseMov(const OpcodeBytes& opbytes, u32 address, std::string_view operandsString);
         static std::unique_ptr<X86Instruction> parseMovsx(const OpcodeBytes& opbytes, u32 address, std::string_view operandsString);
         static std::unique_ptr<X86Instruction> parseMovzx(const OpcodeBytes& opbytes, u32 address, std::string_view operandsString);
+        static std::unique_ptr<X86Instruction> parseMovsxd(const OpcodeBytes& opbytes, u32 address, std::string_view operandsString);
         static std::unique_ptr<X86Instruction> parseLea(const OpcodeBytes& opbytes, u32 address, std::string_view operandsString);
 
         static std::unique_ptr<X86Instruction> parseAdd(const OpcodeBytes& opbytes, u32 address, std::string_view operandsString);
@@ -112,10 +113,12 @@ namespace x64 {
         static std::unique_ptr<X86Instruction> parseCmov(const OpcodeBytes& opbytes, u32 address, std::string_view operands);
 
         static std::unique_ptr<X86Instruction> parseCwde(const OpcodeBytes& opbytes, u32 address, std::string_view operands);
+        static std::unique_ptr<X86Instruction> parseCdqe(const OpcodeBytes& opbytes, u32 address, std::string_view operands);
 
         static std::unique_ptr<X86Instruction> parsePxor(const OpcodeBytes& opbytes, u32 address, std::string_view operands);
         static std::unique_ptr<X86Instruction> parseMovaps(const OpcodeBytes& opbytes, u32 address, std::string_view operands);
         static std::unique_ptr<X86Instruction> parseMovabs(const OpcodeBytes& opbytes, u32 address, std::string_view operands);
+        static std::unique_ptr<X86Instruction> parseMovdqa(const OpcodeBytes& opbytes, u32 address, std::string_view operands);
         static std::unique_ptr<X86Instruction> parseMovdqu(const OpcodeBytes& opbytes, u32 address, std::string_view operands);
         static std::unique_ptr<X86Instruction> parseMovups(const OpcodeBytes& opbytes, u32 address, std::string_view operands);
 

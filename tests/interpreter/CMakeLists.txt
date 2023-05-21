@@ -107,6 +107,11 @@ target_compile_options(test_interval PUBLIC ${CC_OPTIONS})
 target_link_options(test_interval PUBLIC ${LD_OPTIONS} -static-libstdc++ -static-libgcc)
 add_test(NAME interval COMMAND ${CMAKE_BINARY_DIR}/interpreter test_interval)
 
+add_executable(test_argc src/test_argc.cpp)
+target_compile_options(test_argc PUBLIC ${CC_OPTIONS})
+target_link_options(test_argc PUBLIC ${LD_OPTIONS})
+add_test(NAME argc COMMAND ${CMAKE_BINARY_DIR}/interpreter test_argc)
+
 add_executable(test_programargs src/test_programargs.cpp)
 target_compile_options(test_programargs PUBLIC ${CC_OPTIONS} -DFMT_HEADER_ONLY)
 target_include_directories(test_programargs PUBLIC ${CMAKE_SOURCE_DIR}/external)

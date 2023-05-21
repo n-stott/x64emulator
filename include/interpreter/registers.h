@@ -72,6 +72,14 @@ namespace x64 {
                 case R32::EBX: return rbx_ & 0xFFFFFFFF;
                 case R32::ECX: return rcx_ & 0xFFFFFFFF;
                 case R32::EDX: return rdx_ & 0xFFFFFFFF;
+                case R32::R8D: return r8_ & 0xFFFFFFFF;
+                case R32::R9D: return r9_ & 0xFFFFFFFF;
+                case R32::R10D: return r10_ & 0xFFFFFFFF;
+                case R32::R11D: return r11_ & 0xFFFFFFFF;
+                case R32::R12D: return r12_ & 0xFFFFFFFF;
+                case R32::R13D: return r13_ & 0xFFFFFFFF;
+                case R32::R14D: return r14_ & 0xFFFFFFFF;
+                case R32::R15D: return r15_ & 0xFFFFFFFF;
                 case R32::EIZ: return eiz_;
             }
             __builtin_unreachable();
@@ -137,15 +145,24 @@ namespace x64 {
         }
         
         void set(R32 reg, u32 value) {
+            // [NS] upper half of r64 registers is zeroed-out
             switch(reg) {
-                case R32::EBP: { rbp_ = (rbp_ & 0xFFFFFFFF00000000) | (value); return; }
-                case R32::ESP: { rsp_ = (rsp_ & 0xFFFFFFFF00000000) | (value); return; }
-                case R32::EDI: { rdi_ = (rdi_ & 0xFFFFFFFF00000000) | (value); return; }
-                case R32::ESI: { rsi_ = (rsi_ & 0xFFFFFFFF00000000) | (value); return; }
-                case R32::EAX: { rax_ = (rax_ & 0xFFFFFFFF00000000) | (value); return; }
-                case R32::EBX: { rbx_ = (rbx_ & 0xFFFFFFFF00000000) | (value); return; }
-                case R32::ECX: { rcx_ = (rcx_ & 0xFFFFFFFF00000000) | (value); return; }
-                case R32::EDX: { rdx_ = (rdx_ & 0xFFFFFFFF00000000) | (value); return; }
+                case R32::EBP: { rbp_ = value; return; }
+                case R32::ESP: { rsp_ = value; return; }
+                case R32::EDI: { rdi_ = value; return; }
+                case R32::ESI: { rsi_ = value; return; }
+                case R32::EAX: { rax_ = value; return; }
+                case R32::EBX: { rbx_ = value; return; }
+                case R32::ECX: { rcx_ = value; return; }
+                case R32::EDX: { rdx_ = value; return; }
+                case R32::R8D: { r8_ = value; return; }
+                case R32::R9D: { r9_ = value; return; }
+                case R32::R10D: { r10_ = value; return; }
+                case R32::R11D: { r11_ = value; return; }
+                case R32::R12D: { r12_ = value; return; }
+                case R32::R13D: { r13_ = value; return; }
+                case R32::R14D: { r14_ = value; return; }
+                case R32::R15D: { r15_ = value; return; }
                 case R32::EIZ: { eiz_ = value; return; }
             }
             __builtin_unreachable();
