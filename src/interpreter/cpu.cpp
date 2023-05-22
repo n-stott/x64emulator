@@ -505,27 +505,21 @@ namespace x64 {
 
     void Cpu::exec(const And<R8, R8>& ins) { set(ins.dst, execAnd8Impl(get(ins.dst), get(ins.src))); }
     void Cpu::exec(const And<R8, Imm<u8>>& ins) { set(ins.dst, execAnd8Impl(get(ins.dst), get(ins.src))); }
-    void Cpu::exec(const And<R8, Addr<Size::BYTE, B>>& ins) { set(ins.dst, execAnd8Impl(get(ins.dst), mmu_->read8(resolve(ins.src)))); }
-    void Cpu::exec(const And<R8, Addr<Size::BYTE, BD>>& ins) { set(ins.dst, execAnd8Impl(get(ins.dst), mmu_->read8(resolve(ins.src)))); }
-    void Cpu::exec(const And<R16, Addr<Size::WORD, B>>& ins) { TODO(ins); }
-    void Cpu::exec(const And<R16, Addr<Size::WORD, BD>>& ins) { TODO(ins); }
+    void Cpu::exec(const And<R8, M8>& ins) { set(ins.dst, execAnd8Impl(get(ins.dst), get(resolve(ins.src)))); }
+    void Cpu::exec(const And<R16, M16>& ins) { TODO(ins); }
     void Cpu::exec(const And<R32, R32>& ins) { set(ins.dst, execAnd32Impl(get(ins.dst), get(ins.src))); }
     void Cpu::exec(const And<R32, Imm<u32>>& ins) { set(ins.dst, execAnd32Impl(get(ins.dst), get(ins.src))); }
-    void Cpu::exec(const And<R32, M32>& ins) { set(ins.dst, execAnd32Impl(get(ins.dst), mmu_->read32(resolve(ins.src)))); }
+    void Cpu::exec(const And<R32, M32>& ins) { set(ins.dst, execAnd32Impl(get(ins.dst), get(resolve(ins.src)))); }
     void Cpu::exec(const And<R64, R64>& ins) { set(ins.dst, execAnd64Impl(get(ins.dst), get(ins.src))); }
     void Cpu::exec(const And<R64, Imm<u64>>& ins) { set(ins.dst, execAnd64Impl(get(ins.dst), get(ins.src))); }
-    void Cpu::exec(const And<R64, M64>& ins) { set(ins.dst, execAnd64Impl(get(ins.dst), mmu_->read64(resolve(ins.src)))); }
-    void Cpu::exec(const And<Addr<Size::BYTE, B>, R8>& ins) { mmu_->write8(resolve(ins.dst), execAnd8Impl(mmu_->read8(resolve(ins.dst)), get(ins.src))); }
-    void Cpu::exec(const And<Addr<Size::BYTE, B>, Imm<u8>>& ins) { mmu_->write8(resolve(ins.dst), execAnd8Impl(mmu_->read8(resolve(ins.dst)), get(ins.src))); }
-    void Cpu::exec(const And<Addr<Size::BYTE, BD>, R8>& ins) { mmu_->write8(resolve(ins.dst), execAnd8Impl(mmu_->read8(resolve(ins.dst)), get(ins.src))); }
-    void Cpu::exec(const And<Addr<Size::BYTE, BD>, Imm<u8>>& ins) { mmu_->write8(resolve(ins.dst), execAnd8Impl(mmu_->read8(resolve(ins.dst)), get(ins.src))); }
-    void Cpu::exec(const And<Addr<Size::BYTE, BIS>, Imm<u8>>& ins) { mmu_->write8(resolve(ins.dst), execAnd8Impl(mmu_->read8(resolve(ins.dst)), get(ins.src))); }
-    void Cpu::exec(const And<Addr<Size::WORD, B>, R16>& ins) { TODO(ins); }
-    void Cpu::exec(const And<Addr<Size::WORD, BD>, R16>& ins) { TODO(ins); }
-    void Cpu::exec(const And<M32, R32>& ins) { mmu_->write32(resolve(ins.dst), execAnd32Impl(mmu_->read32(resolve(ins.dst)), get(ins.src))); }
-    void Cpu::exec(const And<M32, Imm<u32>>& ins) { mmu_->write32(resolve(ins.dst), execAnd32Impl(mmu_->read32(resolve(ins.dst)), get(ins.src))); }
-    void Cpu::exec(const And<M64, R64>& ins) { mmu_->write64(resolve(ins.dst), execAnd64Impl(mmu_->read64(resolve(ins.dst)), get(ins.src))); }
-    void Cpu::exec(const And<M64, Imm<u64>>& ins) { mmu_->write64(resolve(ins.dst), execAnd64Impl(mmu_->read64(resolve(ins.dst)), get(ins.src))); }
+    void Cpu::exec(const And<R64, M64>& ins) { set(ins.dst, execAnd64Impl(get(ins.dst), get(resolve(ins.src)))); }
+    void Cpu::exec(const And<M8, R8>& ins) { set(resolve(ins.dst), execAnd8Impl(get(resolve(ins.dst)), get(ins.src))); }
+    void Cpu::exec(const And<M8, Imm<u8>>& ins) { set(resolve(ins.dst), execAnd8Impl(get(resolve(ins.dst)), get(ins.src))); }
+    void Cpu::exec(const And<M16, R16>& ins) { TODO(ins); }
+    void Cpu::exec(const And<M32, R32>& ins) { set(resolve(ins.dst), execAnd32Impl(get(resolve(ins.dst)), get(ins.src))); }
+    void Cpu::exec(const And<M32, Imm<u32>>& ins) { set(resolve(ins.dst), execAnd32Impl(get(resolve(ins.dst)), get(ins.src))); }
+    void Cpu::exec(const And<M64, R64>& ins) { set(resolve(ins.dst), execAnd64Impl(get(resolve(ins.dst)), get(ins.src))); }
+    void Cpu::exec(const And<M64, Imm<u64>>& ins) { set(resolve(ins.dst), execAnd64Impl(get(resolve(ins.dst)), get(ins.src))); }
 
     u8 Cpu::execOr8Impl(u8 dst, u8 src) {
         u8 tmp = dst | src;
@@ -553,22 +547,17 @@ namespace x64 {
 
     void Cpu::exec(const Or<R8, R8>& ins) { TODO(ins); }
     void Cpu::exec(const Or<R8, Imm<u8>>& ins) { TODO(ins); }
-    void Cpu::exec(const Or<R8, Addr<Size::BYTE, B>>& ins) { TODO(ins); }
-    void Cpu::exec(const Or<R8, Addr<Size::BYTE, BD>>& ins) { TODO(ins); }
-    void Cpu::exec(const Or<R16, Addr<Size::WORD, B>>& ins) { TODO(ins); }
-    void Cpu::exec(const Or<R16, Addr<Size::WORD, BD>>& ins) { TODO(ins); }
-    void Cpu::exec(const Or<R32, R32>& ins) { set(ins.dst, get(ins.dst) | get(ins.src)); }
-    void Cpu::exec(const Or<R32, Imm<u32>>& ins) { set(ins.dst, get(ins.dst) | get(ins.src)); }
-    void Cpu::exec(const Or<R32, M32>& ins) { set(ins.dst, get(ins.dst) | mmu_->read32(resolve(ins.src))); }
-    void Cpu::exec(const Or<R64, R64>& ins) { set(ins.dst, get(ins.dst) | get(ins.src)); }
-    void Cpu::exec(const Or<R64, Imm<u64>>& ins) { set(ins.dst, get(ins.dst) | get(ins.src)); }
-    void Cpu::exec(const Or<R64, M64>& ins) { set(ins.dst, get(ins.dst) | mmu_->read64(resolve(ins.src))); }
-    void Cpu::exec(const Or<Addr<Size::BYTE, B>, R8>& ins) { TODO(ins); }
-    void Cpu::exec(const Or<Addr<Size::BYTE, B>, Imm<u8>>& ins) { TODO(ins); }
-    void Cpu::exec(const Or<Addr<Size::BYTE, BD>, R8>& ins) { TODO(ins); }
-    void Cpu::exec(const Or<Addr<Size::BYTE, BD>, Imm<u8>>& ins) { TODO(ins); }
-    void Cpu::exec(const Or<Addr<Size::WORD, B>, R16>& ins) { TODO(ins); }
-    void Cpu::exec(const Or<Addr<Size::WORD, BD>, R16>& ins) { TODO(ins); }
+    void Cpu::exec(const Or<R8, M8>& ins) { TODO(ins); }
+    void Cpu::exec(const Or<R16, M16>& ins) { TODO(ins); }
+    void Cpu::exec(const Or<R32, R32>& ins) { set(ins.dst, execOr32Impl(get(ins.dst), get(ins.src))); }
+    void Cpu::exec(const Or<R32, Imm<u32>>& ins) { set(ins.dst, execOr32Impl(get(ins.dst), get(ins.src))); }
+    void Cpu::exec(const Or<R32, M32>& ins) { set(ins.dst, execOr32Impl(get(ins.dst), get(resolve(ins.src)))); }
+    void Cpu::exec(const Or<R64, R64>& ins) { set(ins.dst, execOr64Impl(get(ins.dst), get(ins.src))); }
+    void Cpu::exec(const Or<R64, Imm<u64>>& ins) { set(ins.dst, execOr64Impl(get(ins.dst), get(ins.src))); }
+    void Cpu::exec(const Or<R64, M64>& ins) { set(ins.dst, execOr64Impl(get(ins.dst), get(resolve(ins.src)))); }
+    void Cpu::exec(const Or<M8, R8>& ins) { TODO(ins); }
+    void Cpu::exec(const Or<M8, Imm<u8>>& ins) { TODO(ins); }
+    void Cpu::exec(const Or<M16, R16>& ins) { TODO(ins); }
     void Cpu::exec(const Or<M32, R32>& ins) { set(resolve(ins.dst), execOr32Impl(get(resolve(ins.dst)), get(ins.src))); }
     void Cpu::exec(const Or<M32, Imm<u32>>& ins) { set(resolve(ins.dst), execOr32Impl(get(resolve(ins.dst)), get(ins.src))); }
     void Cpu::exec(const Or<M64, R64>& ins) { set(resolve(ins.dst), execOr64Impl(get(resolve(ins.dst)), get(ins.src))); }
@@ -593,18 +582,18 @@ namespace x64 {
     }
 
     void Cpu::exec(const Xor<R8, Imm<u8>>& ins) { set(ins.dst, execXor8Impl(get(ins.dst), get(ins.src))); }
-    void Cpu::exec(const Xor<R8, Addr<Size::BYTE, BD>>& ins) { set(ins.dst, execXor8Impl(get(ins.dst), get(resolve(ins.src)))); }
+    void Cpu::exec(const Xor<R8, M8>& ins) { set(ins.dst, execXor8Impl(get(ins.dst), get(resolve(ins.src)))); }
     void Cpu::exec(const Xor<R16, Imm<u16>>& ins) { set(ins.dst, execXor16Impl(get(ins.dst), get(ins.src))); }
     void Cpu::exec(const Xor<R32, Imm<u32>>& ins) { set(ins.dst, execXor32Impl(get(ins.dst), get(ins.src))); }
     void Cpu::exec(const Xor<R32, R32>& ins) { set(ins.dst, execXor32Impl(get(ins.dst), get(ins.src))); }
     void Cpu::exec(const Xor<R32, M32>& ins) { set(ins.dst, execXor32Impl(get(ins.dst), get(resolve(ins.src)))); }
-    void Cpu::exec(const Xor<Addr<Size::BYTE, BD>, Imm<u8>>& ins) { set(resolve(ins.dst), execXor8Impl(get(resolve(ins.dst)), get(ins.src))); }
+    void Cpu::exec(const Xor<M8, Imm<u8>>& ins) { set(resolve(ins.dst), execXor8Impl(get(resolve(ins.dst)), get(ins.src))); }
     void Cpu::exec(const Xor<M32, R32>& ins) { set(resolve(ins.dst), execXor32Impl(get(resolve(ins.dst)), get(ins.src))); }
 
     void Cpu::exec(const Not<R32>& ins) { set(ins.dst, ~get(ins.dst)); }
-    void Cpu::exec(const Not<M32>& ins) { mmu_->write32(resolve(ins.dst), ~mmu_->read32(resolve(ins.dst))); }
+    void Cpu::exec(const Not<M32>& ins) { set(resolve(ins.dst), ~get(resolve(ins.dst))); }
     void Cpu::exec(const Not<R64>& ins) { set(ins.dst, ~get(ins.dst)); }
-    void Cpu::exec(const Not<M64>& ins) { mmu_->write64(resolve(ins.dst), ~mmu_->read64(resolve(ins.dst))); }
+    void Cpu::exec(const Not<M64>& ins) { set(resolve(ins.dst), ~get(resolve(ins.dst))); }
 
     void Cpu::exec(const Xchg<R16, R16>& ins) {
         u16 dst = get(ins.dst);
@@ -649,52 +638,31 @@ namespace x64 {
 
     void Cpu::exec(const Mov<R8, R8>& ins) { set(ins.dst, get(ins.src)); }
     void Cpu::exec(const Mov<R8, Imm<u8>>& ins) { set(ins.dst, get(ins.src)); }
-    void Cpu::exec(const Mov<R8, Addr<Size::BYTE, B>>& ins) { set(ins.dst, mmu_->read8(resolve(ins.src))); }
-    void Cpu::exec(const Mov<R8, Addr<Size::BYTE, BD>>& ins) { set(ins.dst, mmu_->read8(resolve(ins.src))); }
-    void Cpu::exec(const Mov<R8, Addr<Size::BYTE, BIS>>& ins) { set(ins.dst, mmu_->read8(resolve(ins.src))); }
-    void Cpu::exec(const Mov<R8, Addr<Size::BYTE, BISD>>& ins) { set(ins.dst, mmu_->read8(resolve(ins.src))); }
+    void Cpu::exec(const Mov<R8, M8>& ins) { set(ins.dst, get(resolve(ins.src))); }
+    void Cpu::exec(const Mov<M8, R8>& ins) { set(resolve(ins.dst), get(ins.src)); }
+    void Cpu::exec(const Mov<M8, Imm<u8>>& ins) { set(resolve(ins.dst), ins.src.immediate); }
     void Cpu::exec(const Mov<R16, R16>& ins) { TODO(ins); }
     void Cpu::exec(const Mov<R16, Imm<u16>>& ins) { TODO(ins); }
-    void Cpu::exec(const Mov<R16, Addr<Size::WORD, B>>& ins) { set(ins.dst, mmu_->read16(resolve(ins.src))); }
-    void Cpu::exec(const Mov<Addr<Size::WORD, B>, R16>& ins) { mmu_->write16(resolve(ins.dst), get(ins.src)); }
-    void Cpu::exec(const Mov<Addr<Size::WORD, B>, Imm<u16>>& ins) { mmu_->write16(resolve(ins.dst), get(ins.src)); }
-    void Cpu::exec(const Mov<R16, Addr<Size::WORD, BD>>& ins) { set(ins.dst, mmu_->read16(resolve(ins.src))); }
-    void Cpu::exec(const Mov<Addr<Size::WORD, BD>, R16>& ins) { mmu_->write16(resolve(ins.dst), get(ins.src)); }
-    void Cpu::exec(const Mov<Addr<Size::WORD, BD>, Imm<u16>>& ins) { mmu_->write16(resolve(ins.dst), get(ins.src)); }
-    void Cpu::exec(const Mov<R16, Addr<Size::WORD, BIS>>& ins) { set(ins.dst, mmu_->read16(resolve(ins.src))); }
-    void Cpu::exec(const Mov<Addr<Size::WORD, BIS>, R16>& ins) { mmu_->write16(resolve(ins.dst), get(ins.src)); }
-    void Cpu::exec(const Mov<Addr<Size::WORD, BIS>, Imm<u16>>& ins) { mmu_->write16(resolve(ins.dst), get(ins.src)); }
-    void Cpu::exec(const Mov<R16, Addr<Size::WORD, BISD>>& ins) { set(ins.dst, mmu_->read16(resolve(ins.src))); }
-    void Cpu::exec(const Mov<Addr<Size::WORD, BISD>, R16>& ins) { mmu_->write16(resolve(ins.dst), get(ins.src)); }
-    void Cpu::exec(const Mov<Addr<Size::WORD, BISD>, Imm<u16>>& ins) { mmu_->write16(resolve(ins.dst), get(ins.src)); }
+    void Cpu::exec(const Mov<R16, M16>& ins) { set(ins.dst, get(resolve(ins.src))); }
+    void Cpu::exec(const Mov<M16, R16>& ins) { set(resolve(ins.dst), get(ins.src)); }
+    void Cpu::exec(const Mov<M16, Imm<u16>>& ins) { set(resolve(ins.dst), get(ins.src)); }
     void Cpu::exec(const Mov<R32, R32>& ins) { set(ins.dst, get(ins.src)); }
     void Cpu::exec(const Mov<R32, Imm<u32>>& ins) { set(ins.dst, ins.src.immediate); }
     void Cpu::exec(const Mov<R32, M32>& ins) { set(ins.dst, get(resolve(ins.src))); }
+    void Cpu::exec(const Mov<M32, R32>& ins) { set(resolve(ins.dst), get(ins.src)); }
+    void Cpu::exec(const Mov<M32, Imm<u32>>& ins) { set(resolve(ins.dst), ins.src.immediate); }
     void Cpu::exec(const Mov<R64, R64>& ins) { set(ins.dst, get(ins.src)); }
     void Cpu::exec(const Mov<R64, Imm<u32>>& ins) { set(ins.dst, ins.src.immediate); }
     void Cpu::exec(const Mov<R64, Imm<u64>>& ins) { set(ins.dst, ins.src.immediate); }
     void Cpu::exec(const Mov<R64, M64>& ins) { set(ins.dst, get(resolve(ins.src))); }
+    void Cpu::exec(const Mov<M64, R64>& ins) { set(resolve(ins.dst), get(ins.src)); }
+    void Cpu::exec(const Mov<M64, Imm<u32>>& ins) { set(resolve(ins.dst), ins.src.immediate); }
+    void Cpu::exec(const Mov<M64, Imm<u64>>& ins) { set(resolve(ins.dst), ins.src.immediate); }
     void Cpu::exec(const Mov<RSSE, MSSE>& ins) { set(ins.dst, get(resolve(ins.src))); }
     void Cpu::exec(const Mov<MSSE, RSSE>& ins) { set(resolve(ins.dst), get(ins.src)); }
-    void Cpu::exec(const Mov<Addr<Size::BYTE, B>, R8>& ins) { mmu_->write8(resolve(ins.dst), get(ins.src)); }
-    void Cpu::exec(const Mov<Addr<Size::BYTE, B>, Imm<u8>>& ins) { mmu_->write8(resolve(ins.dst), ins.src.immediate); }
-    void Cpu::exec(const Mov<Addr<Size::BYTE, BD>, R8>& ins) { mmu_->write8(resolve(ins.dst), get(ins.src)); }
-    void Cpu::exec(const Mov<Addr<Size::BYTE, BD>, Imm<u8>>& ins) { mmu_->write8(resolve(ins.dst), ins.src.immediate); }
-    void Cpu::exec(const Mov<Addr<Size::BYTE, BIS>, R8>& ins) { mmu_->write8(resolve(ins.dst), get(ins.src)); }
-    void Cpu::exec(const Mov<Addr<Size::BYTE, BIS>, Imm<u8>>& ins) { mmu_->write8(resolve(ins.dst), ins.src.immediate); }
-    void Cpu::exec(const Mov<Addr<Size::BYTE, BISD>, R8>& ins) { mmu_->write8(resolve(ins.dst), get(ins.src)); }
-    void Cpu::exec(const Mov<Addr<Size::BYTE, BISD>, Imm<u8>>& ins) { mmu_->write8(resolve(ins.dst), ins.src.immediate); }
-    void Cpu::exec(const Mov<M32, R32>& ins) { mmu_->write32(resolve(ins.dst), get(ins.src)); }
-    void Cpu::exec(const Mov<M32, Imm<u32>>& ins) { mmu_->write32(resolve(ins.dst), ins.src.immediate); }
-    void Cpu::exec(const Mov<M64, R64>& ins) { mmu_->write64(resolve(ins.dst), get(ins.src)); }
-    void Cpu::exec(const Mov<M64, Imm<u32>>& ins) { mmu_->write64(resolve(ins.dst), ins.src.immediate); }
-    void Cpu::exec(const Mov<M64, Imm<u64>>& ins) { mmu_->write64(resolve(ins.dst), ins.src.immediate); }
 
     void Cpu::exec(const Movsx<R32, R8>& ins) { set(ins.dst, signExtended32(get(ins.src))); }
-    void Cpu::exec(const Movsx<R32, Addr<Size::BYTE, B>>& ins) { set(ins.dst, signExtended32(mmu_->read8(resolve(ins.src)))); }
-    void Cpu::exec(const Movsx<R32, Addr<Size::BYTE, BD>>& ins) { set(ins.dst, signExtended32(mmu_->read8(resolve(ins.src)))); }
-    void Cpu::exec(const Movsx<R32, Addr<Size::BYTE, BIS>>& ins) { set(ins.dst, signExtended32(mmu_->read8(resolve(ins.src)))); }
-    void Cpu::exec(const Movsx<R32, Addr<Size::BYTE, BISD>>& ins) { set(ins.dst, signExtended32(mmu_->read8(resolve(ins.src)))); }
+    void Cpu::exec(const Movsx<R32, M8>& ins) { set(ins.dst, signExtended32(get(resolve(ins.src)))); }
 
     void Cpu::exec(const Movsx<R32, R32>& ins) { set(ins.dst, signExtended32(get(ins.src))); }
     void Cpu::exec(const Movsx<R32, M32>& ins) { set(ins.dst, signExtended32(get(resolve(ins.src)))); }
@@ -704,14 +672,8 @@ namespace x64 {
     void Cpu::exec(const Movzx<R16, R8>& ins) { set(ins.dst, (u16)get(ins.src)); }
     void Cpu::exec(const Movzx<R32, R8>& ins) { set(ins.dst, (u32)get(ins.src)); }
     void Cpu::exec(const Movzx<R32, R16>& ins) { set(ins.dst, (u32)get(ins.src)); }
-    void Cpu::exec(const Movzx<R32, Addr<Size::BYTE, B>>& ins) { set(ins.dst, (u32)mmu_->read8(resolve(ins.src))); }
-    void Cpu::exec(const Movzx<R32, Addr<Size::BYTE, BD>>& ins) { set(ins.dst, (u32)mmu_->read8(resolve(ins.src))); }
-    void Cpu::exec(const Movzx<R32, Addr<Size::BYTE, BIS>>& ins) { set(ins.dst, (u32)mmu_->read8(resolve(ins.src))); }
-    void Cpu::exec(const Movzx<R32, Addr<Size::BYTE, BISD>>& ins) { set(ins.dst, (u32)mmu_->read8(resolve(ins.src))); }
-    void Cpu::exec(const Movzx<R32, Addr<Size::WORD, B>>& ins) { set(ins.dst, (u32)mmu_->read16(resolve(ins.src))); }
-    void Cpu::exec(const Movzx<R32, Addr<Size::WORD, BD>>& ins) { set(ins.dst, (u32)mmu_->read16(resolve(ins.src))); }
-    void Cpu::exec(const Movzx<R32, Addr<Size::WORD, BIS>>& ins) { set(ins.dst, (u32)mmu_->read16(resolve(ins.src))); }
-    void Cpu::exec(const Movzx<R32, Addr<Size::WORD, BISD>>& ins) { set(ins.dst, (u32)mmu_->read16(resolve(ins.src))); }
+    void Cpu::exec(const Movzx<R32, M8>& ins) { set(ins.dst, (u32)get(resolve(ins.src))); }
+    void Cpu::exec(const Movzx<R32, M16>& ins) { set(ins.dst, (u32)get(resolve(ins.src))); }
 
     void Cpu::exec(const Lea<R32, B>& ins) { TODO(ins); }
     void Cpu::exec(const Lea<R32, BD>& ins) { set(ins.dst, resolve(ins.src)); }
@@ -856,14 +818,8 @@ namespace x64 {
     void Cpu::exec(const Inc<R8>& ins) { TODO(ins); }
     void Cpu::exec(const Inc<R32>& ins) { set(ins.dst, execInc32Impl(get(ins.dst))); }
 
-    void Cpu::exec(const Inc<Addr<Size::BYTE, B>>& ins) { Ptr<Size::BYTE> ptr = resolve(ins.dst); set(ptr, execInc8Impl(get(ptr))); }
-    void Cpu::exec(const Inc<Addr<Size::BYTE, BD>>& ins) { Ptr<Size::BYTE> ptr = resolve(ins.dst); set(ptr, execInc8Impl(get(ptr))); }
-    void Cpu::exec(const Inc<Addr<Size::BYTE, BIS>>& ins) { Ptr<Size::BYTE> ptr = resolve(ins.dst); set(ptr, execInc8Impl(get(ptr))); }
-    void Cpu::exec(const Inc<Addr<Size::BYTE, BISD>>& ins) { Ptr<Size::BYTE> ptr = resolve(ins.dst); set(ptr, execInc8Impl(get(ptr))); }
-    void Cpu::exec(const Inc<Addr<Size::WORD, B>>& ins) { Ptr<Size::WORD> ptr = resolve(ins.dst); set(ptr, execInc16Impl(get(ptr))); }
-    void Cpu::exec(const Inc<Addr<Size::WORD, BD>>& ins) { Ptr<Size::WORD> ptr = resolve(ins.dst); set(ptr, execInc16Impl(get(ptr))); }
-    void Cpu::exec(const Inc<Addr<Size::WORD, BIS>>& ins) { Ptr<Size::WORD> ptr = resolve(ins.dst); set(ptr, execInc16Impl(get(ptr))); }
-    void Cpu::exec(const Inc<Addr<Size::WORD, BISD>>& ins) { Ptr<Size::WORD> ptr = resolve(ins.dst); set(ptr, execInc16Impl(get(ptr))); }
+    void Cpu::exec(const Inc<M8>& ins) { Ptr<Size::BYTE> ptr = resolve(ins.dst); set(ptr, execInc8Impl(get(ptr))); }
+    void Cpu::exec(const Inc<M16>& ins) { Ptr<Size::WORD> ptr = resolve(ins.dst); set(ptr, execInc16Impl(get(ptr))); }
     void Cpu::exec(const Inc<M32>& ins) { Ptr<Size::DWORD> ptr = resolve(ins.dst); set(ptr, execInc32Impl(get(ptr))); }
 
 
@@ -877,7 +833,7 @@ namespace x64 {
     }
 
     void Cpu::exec(const Dec<R8>& ins) { TODO(ins); }
-    void Cpu::exec(const Dec<Addr<Size::WORD, BD>>& ins) { TODO(ins); }
+    void Cpu::exec(const Dec<M16>& ins) { TODO(ins); }
     void Cpu::exec(const Dec<R32>& ins) { set(ins.dst, execDec32Impl(get(ins.dst))); }
     void Cpu::exec(const Dec<M32>& ins) { Ptr<Size::DWORD> ptr = resolve(ins.dst); set(ptr, execDec32Impl(get(ptr))); }
 
@@ -1103,48 +1059,35 @@ namespace x64 {
     void Cpu::exec(const Test<R32, Imm<u32>>& ins) { execTest32Impl(get(ins.src1), get(ins.src2)); }
     void Cpu::exec(const Test<R64, R64>& ins) { execTest64Impl(get(ins.src1), get(ins.src2)); }
     void Cpu::exec(const Test<R64, Imm<u32>>& ins) { execTest64Impl(get(ins.src1), get(ins.src2)); }
-    void Cpu::exec(const Test<Addr<Size::BYTE, B>, Imm<u8>>& ins) { execTest8Impl(mmu_->read8(resolve(ins.src1)), get(ins.src2)); }
-    void Cpu::exec(const Test<Addr<Size::BYTE, BD>, R8>& ins) { execTest8Impl(mmu_->read8(resolve(ins.src1)), get(ins.src2)); }
-    void Cpu::exec(const Test<Addr<Size::BYTE, BD>, Imm<u8>>& ins) { execTest8Impl(mmu_->read8(resolve(ins.src1)), get(ins.src2)); }
-    void Cpu::exec(const Test<Addr<Size::BYTE, BIS>, Imm<u8>>& ins) { execTest8Impl(mmu_->read8(resolve(ins.src1)), get(ins.src2)); }
-    void Cpu::exec(const Test<Addr<Size::BYTE, BISD>, Imm<u8>>& ins) { execTest8Impl(mmu_->read8(resolve(ins.src1)), get(ins.src2)); }
-    void Cpu::exec(const Test<M32, R32>& ins) { execTest32Impl(mmu_->read32(resolve(ins.src1)), get(ins.src2)); }
-    void Cpu::exec(const Test<M32, Imm<u32>>& ins) { execTest32Impl(mmu_->read32(resolve(ins.src1)), get(ins.src2)); }
-    void Cpu::exec(const Test<M64, R64>& ins) { execTest64Impl(mmu_->read64(resolve(ins.src1)), get(ins.src2)); }
-    void Cpu::exec(const Test<M64, Imm<u32>>& ins) { execTest64Impl(mmu_->read64(resolve(ins.src1)), get(ins.src2)); }
+    void Cpu::exec(const Test<M8, R8>& ins) { execTest8Impl(get(resolve(ins.src1)), get(ins.src2)); }
+    void Cpu::exec(const Test<M8, Imm<u8>>& ins) { execTest8Impl(get(resolve(ins.src1)), get(ins.src2)); }
+    void Cpu::exec(const Test<M32, R32>& ins) { execTest32Impl(get(resolve(ins.src1)), get(ins.src2)); }
+    void Cpu::exec(const Test<M32, Imm<u32>>& ins) { execTest32Impl(get(resolve(ins.src1)), get(ins.src2)); }
+    void Cpu::exec(const Test<M64, R64>& ins) { execTest64Impl(get(resolve(ins.src1)), get(ins.src2)); }
+    void Cpu::exec(const Test<M64, Imm<u32>>& ins) { execTest64Impl(get(resolve(ins.src1)), get(ins.src2)); }
 
     void Cpu::exec(const Cmp<R16, R16>& ins) { execSub16Impl(get(ins.src1), get(ins.src2)); }
     void Cpu::exec(const Cmp<R16, Imm<u16>>& ins) { execSub16Impl(get(ins.src1), get(ins.src2)); }
-    void Cpu::exec(const Cmp<Addr<Size::WORD, B>, Imm<u16>>& ins) { execSub16Impl(get(resolve(ins.src1)), get(ins.src2)); }
-    void Cpu::exec(const Cmp<Addr<Size::WORD, BD>, Imm<u16>>& ins) { execSub16Impl(get(resolve(ins.src1)), get(ins.src2)); }
-    void Cpu::exec(const Cmp<Addr<Size::WORD, BIS>, R16>& ins) { execSub16Impl(get(resolve(ins.src1)), get(ins.src2)); }
+    void Cpu::exec(const Cmp<M16, R16>& ins) { execSub16Impl(get(resolve(ins.src1)), get(ins.src2)); }
+    void Cpu::exec(const Cmp<M16, Imm<u16>>& ins) { execSub16Impl(get(resolve(ins.src1)), get(ins.src2)); }
 
     void Cpu::exec(const Cmp<R8, R8>& ins) { execSub8Impl(get(ins.src1), get(ins.src2)); }
     void Cpu::exec(const Cmp<R8, Imm<u8>>& ins) { execSub8Impl(get(ins.src1), get(ins.src2)); }
-    void Cpu::exec(const Cmp<R8, Addr<Size::BYTE, B>>& ins) { execSub8Impl(get(ins.src1), mmu_->read8(resolve(ins.src2))); }
-    void Cpu::exec(const Cmp<R8, Addr<Size::BYTE, BD>>& ins) { execSub8Impl(get(ins.src1), mmu_->read8(resolve(ins.src2))); }
-    void Cpu::exec(const Cmp<R8, Addr<Size::BYTE, BIS>>& ins) { execSub8Impl(get(ins.src1), mmu_->read8(resolve(ins.src2))); }
-    void Cpu::exec(const Cmp<R8, Addr<Size::BYTE, BISD>>& ins) { execSub8Impl(get(ins.src1), mmu_->read8(resolve(ins.src2))); }
-    void Cpu::exec(const Cmp<Addr<Size::BYTE, B>, R8>& ins) { execSub8Impl(mmu_->read8(resolve(ins.src1)), get(ins.src2)); }
-    void Cpu::exec(const Cmp<Addr<Size::BYTE, B>, Imm<u8>>& ins) { execSub8Impl(mmu_->read8(resolve(ins.src1)), get(ins.src2)); }
-    void Cpu::exec(const Cmp<Addr<Size::BYTE, BD>, R8>& ins) { execSub8Impl(mmu_->read8(resolve(ins.src1)), get(ins.src2)); }
-    void Cpu::exec(const Cmp<Addr<Size::BYTE, BD>, Imm<u8>>& ins) { execSub8Impl(mmu_->read8(resolve(ins.src1)), get(ins.src2)); }
-    void Cpu::exec(const Cmp<Addr<Size::BYTE, BIS>, R8>& ins) { execSub8Impl(mmu_->read8(resolve(ins.src1)), get(ins.src2)); }
-    void Cpu::exec(const Cmp<Addr<Size::BYTE, BIS>, Imm<u8>>& ins) { execSub8Impl(mmu_->read8(resolve(ins.src1)), get(ins.src2)); }
-    void Cpu::exec(const Cmp<Addr<Size::BYTE, BISD>, R8>& ins) { execSub8Impl(mmu_->read8(resolve(ins.src1)), get(ins.src2)); }
-    void Cpu::exec(const Cmp<Addr<Size::BYTE, BISD>, Imm<u8>>& ins) { execSub8Impl(mmu_->read8(resolve(ins.src1)), get(ins.src2)); }
+    void Cpu::exec(const Cmp<R8, M8>& ins) { execSub8Impl(get(ins.src1), get(resolve(ins.src2))); }
+    void Cpu::exec(const Cmp<M8, R8>& ins) { execSub8Impl(get(resolve(ins.src1)), get(ins.src2)); }
+    void Cpu::exec(const Cmp<M8, Imm<u8>>& ins) { execSub8Impl(get(resolve(ins.src1)), get(ins.src2)); }
 
     void Cpu::exec(const Cmp<R32, R32>& ins) { execSub32Impl(get(ins.src1), get(ins.src2)); }
     void Cpu::exec(const Cmp<R32, Imm<u32>>& ins) { execSub32Impl(get(ins.src1), get(ins.src2)); }
-    void Cpu::exec(const Cmp<R32, M32>& ins) { execSub32Impl(get(ins.src1), mmu_->read32(resolve(ins.src2))); }
-    void Cpu::exec(const Cmp<M32, R32>& ins) { execSub32Impl(mmu_->read32(resolve(ins.src1)), get(ins.src2)); }
-    void Cpu::exec(const Cmp<M32, Imm<u32>>& ins) { execSub32Impl(mmu_->read32(resolve(ins.src1)), get(ins.src2)); }
+    void Cpu::exec(const Cmp<R32, M32>& ins) { execSub32Impl(get(ins.src1), get(resolve(ins.src2))); }
+    void Cpu::exec(const Cmp<M32, R32>& ins) { execSub32Impl(get(resolve(ins.src1)), get(ins.src2)); }
+    void Cpu::exec(const Cmp<M32, Imm<u32>>& ins) { execSub32Impl(get(resolve(ins.src1)), get(ins.src2)); }
 
     void Cpu::exec(const Cmp<R64, R64>& ins) { execSub64Impl(get(ins.src1), get(ins.src2)); }
     void Cpu::exec(const Cmp<R64, Imm<u32>>& ins) { execSub64Impl(get(ins.src1), get(ins.src2)); }
-    void Cpu::exec(const Cmp<R64, M64>& ins) { execSub64Impl(get(ins.src1), mmu_->read64(resolve(ins.src2))); }
-    void Cpu::exec(const Cmp<M64, R64>& ins) { execSub64Impl(mmu_->read64(resolve(ins.src1)), get(ins.src2)); }
-    void Cpu::exec(const Cmp<M64, Imm<u32>>& ins) { execSub64Impl(mmu_->read64(resolve(ins.src1)), get(ins.src2)); }
+    void Cpu::exec(const Cmp<R64, M64>& ins) { execSub64Impl(get(ins.src1), get(resolve(ins.src2))); }
+    void Cpu::exec(const Cmp<M64, R64>& ins) { execSub64Impl(get(resolve(ins.src1)), get(ins.src2)); }
+    void Cpu::exec(const Cmp<M64, Imm<u32>>& ins) { execSub64Impl(get(resolve(ins.src1)), get(ins.src2)); }
 
     template<typename Dst>
     void Cpu::execCmpxchg32Impl(Dst dst, u32 src) {
@@ -1176,14 +1119,11 @@ namespace x64 {
     }
 
     void Cpu::exec(const Cmpxchg<R8, R8>& ins) { TODO(ins); }
+    void Cpu::exec(const Cmpxchg<M8, R8>& ins) { TODO(ins); }
     void Cpu::exec(const Cmpxchg<R16, R16>& ins) { TODO(ins); }
-    void Cpu::exec(const Cmpxchg<Addr<Size::WORD, BIS>, R16>& ins) { TODO(ins); }
+    void Cpu::exec(const Cmpxchg<M16, R16>& ins) { TODO(ins); }
     void Cpu::exec(const Cmpxchg<R32, R32>& ins) { execCmpxchg32Impl(ins.src1, get(ins.src2)); }
     void Cpu::exec(const Cmpxchg<R32, Imm<u32>>& ins) { execCmpxchg32Impl(ins.src1, get(ins.src2)); }
-    void Cpu::exec(const Cmpxchg<Addr<Size::BYTE, B>, R8>& ins) { TODO(ins); }
-    void Cpu::exec(const Cmpxchg<Addr<Size::BYTE, BD>, R8>& ins) { TODO(ins); }
-    void Cpu::exec(const Cmpxchg<Addr<Size::BYTE, BIS>, R8>& ins) { TODO(ins); }
-    void Cpu::exec(const Cmpxchg<Addr<Size::BYTE, BISD>, R8>& ins) { TODO(ins); }
     void Cpu::exec(const Cmpxchg<M32, R32>& ins) { execCmpxchg32Impl(ins.src1, get(ins.src2)); }
 
     template<typename Dst>
@@ -1191,40 +1131,30 @@ namespace x64 {
         if constexpr(std::is_same_v<Dst, R8>) {
             set(dst, flags_.matches(cond));
         } else {
-            mmu_->write8(resolve(dst), flags_.matches(cond));
+            set(resolve(dst), flags_.matches(cond));
         }
     }
 
     void Cpu::exec(const Set<Cond::AE, R8>& ins) { execSet(Cond::AE, ins.dst); }
-    void Cpu::exec(const Set<Cond::AE, Addr<Size::BYTE, B>>& ins) { execSet(Cond::AE, ins.dst); }
-    void Cpu::exec(const Set<Cond::AE, Addr<Size::BYTE, BD>>& ins) { execSet(Cond::AE, ins.dst); }
+    void Cpu::exec(const Set<Cond::AE, M8>& ins) { execSet(Cond::AE, ins.dst); }
     void Cpu::exec(const Set<Cond::A, R8>& ins) { execSet(Cond::A, ins.dst); }
-    void Cpu::exec(const Set<Cond::A, Addr<Size::BYTE, B>>& ins) { execSet(Cond::A, ins.dst); }
-    void Cpu::exec(const Set<Cond::A, Addr<Size::BYTE, BD>>& ins) { execSet(Cond::A, ins.dst); }
+    void Cpu::exec(const Set<Cond::A, M8>& ins) { execSet(Cond::A, ins.dst); }
     void Cpu::exec(const Set<Cond::B, R8>& ins) { execSet(Cond::B, ins.dst); }
-    void Cpu::exec(const Set<Cond::B, Addr<Size::BYTE, B>>& ins) { execSet(Cond::B, ins.dst); }
-    void Cpu::exec(const Set<Cond::B, Addr<Size::BYTE, BD>>& ins) { execSet(Cond::B, ins.dst); }
+    void Cpu::exec(const Set<Cond::B, M8>& ins) { execSet(Cond::B, ins.dst); }
     void Cpu::exec(const Set<Cond::BE, R8>& ins) { execSet(Cond::BE, ins.dst); }
-    void Cpu::exec(const Set<Cond::BE, Addr<Size::BYTE, B>>& ins) { execSet(Cond::BE, ins.dst); }
-    void Cpu::exec(const Set<Cond::BE, Addr<Size::BYTE, BD>>& ins) { execSet(Cond::BE, ins.dst); }
+    void Cpu::exec(const Set<Cond::BE, M8>& ins) { execSet(Cond::BE, ins.dst); }
     void Cpu::exec(const Set<Cond::E, R8>& ins) { execSet(Cond::E, ins.dst); }
-    void Cpu::exec(const Set<Cond::E, Addr<Size::BYTE, B>>& ins) { execSet(Cond::E, ins.dst); }
-    void Cpu::exec(const Set<Cond::E, Addr<Size::BYTE, BD>>& ins) { execSet(Cond::E, ins.dst); }
+    void Cpu::exec(const Set<Cond::E, M8>& ins) { execSet(Cond::E, ins.dst); }
     void Cpu::exec(const Set<Cond::G, R8>& ins) { execSet(Cond::G, ins.dst); }
-    void Cpu::exec(const Set<Cond::G, Addr<Size::BYTE, B>>& ins) { execSet(Cond::G, ins.dst); }
-    void Cpu::exec(const Set<Cond::G, Addr<Size::BYTE, BD>>& ins) { execSet(Cond::G, ins.dst); }
+    void Cpu::exec(const Set<Cond::G, M8>& ins) { execSet(Cond::G, ins.dst); }
     void Cpu::exec(const Set<Cond::GE, R8>& ins) { execSet(Cond::GE, ins.dst); }
-    void Cpu::exec(const Set<Cond::GE, Addr<Size::BYTE, B>>& ins) { execSet(Cond::GE, ins.dst); }
-    void Cpu::exec(const Set<Cond::GE, Addr<Size::BYTE, BD>>& ins) { execSet(Cond::GE, ins.dst); }
+    void Cpu::exec(const Set<Cond::GE, M8>& ins) { execSet(Cond::GE, ins.dst); }
     void Cpu::exec(const Set<Cond::L, R8>& ins) { execSet(Cond::L, ins.dst); }
-    void Cpu::exec(const Set<Cond::L, Addr<Size::BYTE, B>>& ins) { execSet(Cond::L, ins.dst); }
-    void Cpu::exec(const Set<Cond::L, Addr<Size::BYTE, BD>>& ins) { execSet(Cond::L, ins.dst); }
+    void Cpu::exec(const Set<Cond::L, M8>& ins) { execSet(Cond::L, ins.dst); }
     void Cpu::exec(const Set<Cond::LE, R8>& ins) { execSet(Cond::LE, ins.dst); }
-    void Cpu::exec(const Set<Cond::LE, Addr<Size::BYTE, B>>& ins) { execSet(Cond::LE, ins.dst); }
-    void Cpu::exec(const Set<Cond::LE, Addr<Size::BYTE, BD>>& ins) { execSet(Cond::LE, ins.dst); }
+    void Cpu::exec(const Set<Cond::LE, M8>& ins) { execSet(Cond::LE, ins.dst); }
     void Cpu::exec(const Set<Cond::NE, R8>& ins) { execSet(Cond::NE, ins.dst); }
-    void Cpu::exec(const Set<Cond::NE, Addr<Size::BYTE, B>>& ins) { execSet(Cond::NE, ins.dst); }
-    void Cpu::exec(const Set<Cond::NE, Addr<Size::BYTE, BD>>& ins) { execSet(Cond::NE, ins.dst); }
+    void Cpu::exec(const Set<Cond::NE, M8>& ins) { execSet(Cond::NE, ins.dst); }
 
     void Cpu::exec(const Jmp<R32>& ins) {
         bool success = interpreter_->callStack_.jumpInFrame(get(ins.symbolAddress));
@@ -1471,68 +1401,68 @@ namespace x64 {
             if constexpr(std::is_same_v<Src, R32>) {
                 set(dst, get(src));
             } else {
-                static_assert(std::is_same_v<Src, Addr<Size::DWORD, BD>>, "");
-                set(dst, mmu_->read32(resolve(src)));
+                static_assert(std::is_same_v<Src, M32>, "");
+                set(dst, get(resolve(src)));
             }
         } else {
             if constexpr(std::is_same_v<Src, R64>) {
                 set(dst, get(src));
             } else {
-                static_assert(std::is_same_v<Src, Addr<Size::QWORD, BD>>, "");
-                set(dst, mmu_->read64(resolve(src)));
+                static_assert(std::is_same_v<Src, M64>, "");
+                set(dst, get(resolve(src)));
             }
         }
     }
 
     void Cpu::exec(const Cmov<Cond::AE, R32, R32>& ins) { execCmovImpl(Cond::AE, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::AE, R32, Addr<Size::DWORD, BD>>& ins) { execCmovImpl(Cond::AE, ins.dst, ins.src); }
+    void Cpu::exec(const Cmov<Cond::AE, R32, M32>& ins) { execCmovImpl(Cond::AE, ins.dst, ins.src); }
     void Cpu::exec(const Cmov<Cond::A, R32, R32>& ins) { execCmovImpl(Cond::A, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::A, R32, Addr<Size::DWORD, BD>>& ins) { execCmovImpl(Cond::A, ins.dst, ins.src); }
+    void Cpu::exec(const Cmov<Cond::A, R32, M32>& ins) { execCmovImpl(Cond::A, ins.dst, ins.src); }
     void Cpu::exec(const Cmov<Cond::BE, R32, R32>& ins) { execCmovImpl(Cond::BE, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::BE, R32, Addr<Size::DWORD, BD>>& ins) { execCmovImpl(Cond::BE, ins.dst, ins.src); }
+    void Cpu::exec(const Cmov<Cond::BE, R32, M32>& ins) { execCmovImpl(Cond::BE, ins.dst, ins.src); }
     void Cpu::exec(const Cmov<Cond::B, R32, R32>& ins) { execCmovImpl(Cond::B, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::B, R32, Addr<Size::DWORD, BD>>& ins) { execCmovImpl(Cond::B, ins.dst, ins.src); }
+    void Cpu::exec(const Cmov<Cond::B, R32, M32>& ins) { execCmovImpl(Cond::B, ins.dst, ins.src); }
     void Cpu::exec(const Cmov<Cond::E, R32, R32>& ins) { execCmovImpl(Cond::E, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::E, R32, Addr<Size::DWORD, BD>>& ins) { execCmovImpl(Cond::E, ins.dst, ins.src); }
+    void Cpu::exec(const Cmov<Cond::E, R32, M32>& ins) { execCmovImpl(Cond::E, ins.dst, ins.src); }
     void Cpu::exec(const Cmov<Cond::GE, R32, R32>& ins) { execCmovImpl(Cond::GE, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::GE, R32, Addr<Size::DWORD, BD>>& ins) { execCmovImpl(Cond::GE, ins.dst, ins.src); }
+    void Cpu::exec(const Cmov<Cond::GE, R32, M32>& ins) { execCmovImpl(Cond::GE, ins.dst, ins.src); }
     void Cpu::exec(const Cmov<Cond::G, R32, R32>& ins) { execCmovImpl(Cond::G, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::G, R32, Addr<Size::DWORD, BD>>& ins) { execCmovImpl(Cond::G, ins.dst, ins.src); }
+    void Cpu::exec(const Cmov<Cond::G, R32, M32>& ins) { execCmovImpl(Cond::G, ins.dst, ins.src); }
     void Cpu::exec(const Cmov<Cond::LE, R32, R32>& ins) { execCmovImpl(Cond::LE, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::LE, R32, Addr<Size::DWORD, BD>>& ins) { execCmovImpl(Cond::LE, ins.dst, ins.src); }
+    void Cpu::exec(const Cmov<Cond::LE, R32, M32>& ins) { execCmovImpl(Cond::LE, ins.dst, ins.src); }
     void Cpu::exec(const Cmov<Cond::L, R32, R32>& ins) { execCmovImpl(Cond::L, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::L, R32, Addr<Size::DWORD, BD>>& ins) { execCmovImpl(Cond::L, ins.dst, ins.src); }
+    void Cpu::exec(const Cmov<Cond::L, R32, M32>& ins) { execCmovImpl(Cond::L, ins.dst, ins.src); }
     void Cpu::exec(const Cmov<Cond::NE, R32, R32>& ins) { execCmovImpl(Cond::NE, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::NE, R32, Addr<Size::DWORD, BD>>& ins) { execCmovImpl(Cond::NE, ins.dst, ins.src); }
+    void Cpu::exec(const Cmov<Cond::NE, R32, M32>& ins) { execCmovImpl(Cond::NE, ins.dst, ins.src); }
     void Cpu::exec(const Cmov<Cond::NS, R32, R32>& ins) { execCmovImpl(Cond::NS, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::NS, R32, Addr<Size::DWORD, BD>>& ins) { execCmovImpl(Cond::NS, ins.dst, ins.src); }
+    void Cpu::exec(const Cmov<Cond::NS, R32, M32>& ins) { execCmovImpl(Cond::NS, ins.dst, ins.src); }
     void Cpu::exec(const Cmov<Cond::S, R32, R32>& ins) { execCmovImpl(Cond::S, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::S, R32, Addr<Size::DWORD, BD>>& ins) { execCmovImpl(Cond::S, ins.dst, ins.src); }
+    void Cpu::exec(const Cmov<Cond::S, R32, M32>& ins) { execCmovImpl(Cond::S, ins.dst, ins.src); }
 
     void Cpu::exec(const Cmov<Cond::AE, R64, R64>& ins) { execCmovImpl(Cond::AE, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::AE, R64, Addr<Size::QWORD, BD>>& ins) { execCmovImpl(Cond::AE, ins.dst, ins.src); }
+    void Cpu::exec(const Cmov<Cond::AE, R64, M64>& ins) { execCmovImpl(Cond::AE, ins.dst, ins.src); }
     void Cpu::exec(const Cmov<Cond::A, R64, R64>& ins) { execCmovImpl(Cond::A, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::A, R64, Addr<Size::QWORD, BD>>& ins) { execCmovImpl(Cond::A, ins.dst, ins.src); }
+    void Cpu::exec(const Cmov<Cond::A, R64, M64>& ins) { execCmovImpl(Cond::A, ins.dst, ins.src); }
     void Cpu::exec(const Cmov<Cond::BE, R64, R64>& ins) { execCmovImpl(Cond::BE, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::BE, R64, Addr<Size::QWORD, BD>>& ins) { execCmovImpl(Cond::BE, ins.dst, ins.src); }
+    void Cpu::exec(const Cmov<Cond::BE, R64, M64>& ins) { execCmovImpl(Cond::BE, ins.dst, ins.src); }
     void Cpu::exec(const Cmov<Cond::B, R64, R64>& ins) { execCmovImpl(Cond::B, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::B, R64, Addr<Size::QWORD, BD>>& ins) { execCmovImpl(Cond::B, ins.dst, ins.src); }
+    void Cpu::exec(const Cmov<Cond::B, R64, M64>& ins) { execCmovImpl(Cond::B, ins.dst, ins.src); }
     void Cpu::exec(const Cmov<Cond::E, R64, R64>& ins) { execCmovImpl(Cond::E, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::E, R64, Addr<Size::QWORD, BD>>& ins) { execCmovImpl(Cond::E, ins.dst, ins.src); }
+    void Cpu::exec(const Cmov<Cond::E, R64, M64>& ins) { execCmovImpl(Cond::E, ins.dst, ins.src); }
     void Cpu::exec(const Cmov<Cond::GE, R64, R64>& ins) { execCmovImpl(Cond::GE, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::GE, R64, Addr<Size::QWORD, BD>>& ins) { execCmovImpl(Cond::GE, ins.dst, ins.src); }
+    void Cpu::exec(const Cmov<Cond::GE, R64, M64>& ins) { execCmovImpl(Cond::GE, ins.dst, ins.src); }
     void Cpu::exec(const Cmov<Cond::G, R64, R64>& ins) { execCmovImpl(Cond::G, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::G, R64, Addr<Size::QWORD, BD>>& ins) { execCmovImpl(Cond::G, ins.dst, ins.src); }
+    void Cpu::exec(const Cmov<Cond::G, R64, M64>& ins) { execCmovImpl(Cond::G, ins.dst, ins.src); }
     void Cpu::exec(const Cmov<Cond::LE, R64, R64>& ins) { execCmovImpl(Cond::LE, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::LE, R64, Addr<Size::QWORD, BD>>& ins) { execCmovImpl(Cond::LE, ins.dst, ins.src); }
+    void Cpu::exec(const Cmov<Cond::LE, R64, M64>& ins) { execCmovImpl(Cond::LE, ins.dst, ins.src); }
     void Cpu::exec(const Cmov<Cond::L, R64, R64>& ins) { execCmovImpl(Cond::L, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::L, R64, Addr<Size::QWORD, BD>>& ins) { execCmovImpl(Cond::L, ins.dst, ins.src); }
+    void Cpu::exec(const Cmov<Cond::L, R64, M64>& ins) { execCmovImpl(Cond::L, ins.dst, ins.src); }
     void Cpu::exec(const Cmov<Cond::NE, R64, R64>& ins) { execCmovImpl(Cond::NE, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::NE, R64, Addr<Size::QWORD, BD>>& ins) { execCmovImpl(Cond::NE, ins.dst, ins.src); }
+    void Cpu::exec(const Cmov<Cond::NE, R64, M64>& ins) { execCmovImpl(Cond::NE, ins.dst, ins.src); }
     void Cpu::exec(const Cmov<Cond::NS, R64, R64>& ins) { execCmovImpl(Cond::NS, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::NS, R64, Addr<Size::QWORD, BD>>& ins) { execCmovImpl(Cond::NS, ins.dst, ins.src); }
+    void Cpu::exec(const Cmov<Cond::NS, R64, M64>& ins) { execCmovImpl(Cond::NS, ins.dst, ins.src); }
     void Cpu::exec(const Cmov<Cond::S, R64, R64>& ins) { execCmovImpl(Cond::S, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::S, R64, Addr<Size::QWORD, BD>>& ins) { execCmovImpl(Cond::S, ins.dst, ins.src); }
+    void Cpu::exec(const Cmov<Cond::S, R64, M64>& ins) { execCmovImpl(Cond::S, ins.dst, ins.src); }
 
     void Cpu::exec(const Cwde&) {
         set(R32::EAX, (i32)(i16)get(R16::AX));

@@ -16,6 +16,23 @@ inline std::string_view strip(std::string_view sv) {
     }
 }
 
+template<int ExpectedSize>
+inline std::optional<std::array<std::string_view, ExpectedSize>> trySplit(std::string_view sv, char separator) {
+    std::array<std::string_view, ExpectedSize> result;
+    size_t size = 0;
+    size_t pos = 0;
+    size_t next = 0;
+    while(next != sv.size()) {
+        next = sv.find(separator, pos);
+        if(next == std::string::npos) next = sv.size();
+        std::string_view item = std::string_view(sv.begin()+pos, next-pos);
+        if(size >= ExpectedSize) return {};
+        result[size++] = strip(item);
+        pos = next+1;
+    }
+    return result;
+}
+
 inline std::vector<std::string_view> split(std::string_view sv, char separator) {
     std::vector<std::string_view> result;
     size_t pos = 0;

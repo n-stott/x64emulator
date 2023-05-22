@@ -198,6 +198,14 @@ namespace utils {
                     toString(addr.encoding));
     }
 
+    inline std::string toString(const M8& m8) {
+        return std::visit([](auto&& arg) -> std::string { return toString(arg); }, m8);
+    }
+
+    inline std::string toString(const M16& m16) {
+        return std::visit([](auto&& arg) -> std::string { return toString(arg); }, m16);
+    }
+
     inline std::string toString(const M32& m32) {
         return std::visit([](auto&& arg) -> std::string { return toString(arg); }, m32);
     }
