@@ -120,7 +120,9 @@ namespace x64 {
         L,
         LE,
         NE,
+        NP,
         NS,
+        P,
         S,
     };
 

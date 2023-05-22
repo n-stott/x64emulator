@@ -454,7 +454,9 @@ namespace x64 {
             case Cond::L: return (sign != overflow);
             case Cond::LE: return (zero == 1 || sign != overflow);
             case Cond::NE: return (zero == 0);
+            case Cond::NP: return (parity == 0);
             case Cond::NS: return (sign == 0);
+            case Cond::P: return (parity == 1);
             case Cond::S: return (sign == 1);
         }
         __builtin_unreachable();

@@ -130,6 +130,7 @@ namespace x64 {
 
     #define WARN_FLAGS() \
         flags_.setUnsure();\
+        flags_.setUnsureParity();\
         DEBUG_ONLY(fmt::print(stderr, "Warning : flags not updated\n"))
 
     #define REQUIRE_FLAGS() \
@@ -137,6 +138,7 @@ namespace x64 {
 
     #define WARN_SIGNED_OVERFLOW() \
         flags_.setUnsure();\
+        flags_.setUnsureParity();\
         DEBUG_ONLY(fmt::print(stderr, "Warning : signed integer overflow not handled\n"))
 
     #define ASSERT(ins, cond) \
@@ -182,11 +184,13 @@ namespace x64 {
         flags_.overflow = (i32)signedTmp != signedTmp;
         flags_.sign = (signedTmp < 0);
         flags_.setSure();
+        flags_.setUnsureParity();
         return (u32)tmp;
     }
 
     u64 Cpu::execAdd64Impl(u64 dst, u64 src) {
         flags_.setUnsure();
+        flags_.setUnsureParity();
         return src + dst;
     }
 
@@ -215,6 +219,7 @@ namespace x64 {
         flags_.overflow = (i32)signedTmp != signedTmp;
         flags_.sign = (signedTmp < 0);
         flags_.setSure();
+        flags_.setUnsureParity();
         return (u32)tmp;
     }
 
@@ -246,6 +251,7 @@ namespace x64 {
         flags_.sign = ((i8)stmp < 0);
         flags_.zero = (src1 == src2);
         flags_.setSure();
+        flags_.setUnsureParity();
         return src1 - src2;
     }
 
@@ -257,6 +263,7 @@ namespace x64 {
         flags_.sign = ((i16)stmp < 0);
         flags_.zero = (src1 == src2);
         flags_.setSure();
+        flags_.setUnsureParity();
         return src1 - src2;
     }
 
@@ -268,6 +275,7 @@ namespace x64 {
         flags_.sign = ((i32)stmp < 0);
         flags_.zero = (src1 == src2);
         flags_.setSure();
+        flags_.setUnsureParity();
         return src1 - src2;
     }
 
@@ -279,6 +287,7 @@ namespace x64 {
         flags_.sign = (tmp < 0);
         flags_.zero = (src1 == src2);
         flags_.setSure();
+        flags_.setUnsureParity();
         return src1 - src2;
     }
 
@@ -315,6 +324,7 @@ namespace x64 {
         flags_.sign = ((i32)stmp < 0);
         flags_.zero = (src1 == src2);
         flags_.setSure();
+        flags_.setUnsureParity();
         return src1 - src2;
     }
 
@@ -354,6 +364,7 @@ namespace x64 {
         u32 lower = (u32)prod;
         flags_.overflow = !!upper;
         flags_.carry = !!upper;
+        flags_.setUnsureParity();
         return std::make_pair(upper, lower);
     }
 
@@ -374,6 +385,7 @@ namespace x64 {
         flags_.carry = (res != (i32)tmp);
         flags_.overflow = (res != (i32)tmp);
         flags_.setSure();
+        flags_.setUnsureParity();
         return res;
     }
 
@@ -384,6 +396,7 @@ namespace x64 {
         flags_.carry = (res != (i32)tmp);
         flags_.overflow = (res != (i32)tmp);
         flags_.setSure();
+        flags_.setUnsureParity();
         set(R32::EDX, tmp >> 32);
         set(R32::EAX, tmp);
     }
@@ -391,6 +404,7 @@ namespace x64 {
     u64 Cpu::execImul64(u64 src1, u64 src2) {
         i64 res = (i64)src1 * (i64)src2;
         flags_.setUnsure();
+        flags_.setUnsureParity();
         return res;
     }
 
@@ -476,6 +490,7 @@ namespace x64 {
         flags_.sign = tmp & (1 << 7);
         flags_.zero = (tmp == 0);
         flags_.setSure();
+        flags_.setUnsureParity();
         return tmp;
     }
     u16 Cpu::execAnd16Impl(u16 dst, u16 src) {
@@ -485,6 +500,7 @@ namespace x64 {
         flags_.sign = tmp & (1 << 15);
         flags_.zero = (tmp == 0);
         flags_.setSure();
+        flags_.setUnsureParity();
         return tmp;
     }
     u32 Cpu::execAnd32Impl(u32 dst, u32 src) {
@@ -494,6 +510,7 @@ namespace x64 {
         flags_.sign = tmp & (1 << 31);
         flags_.zero = (tmp == 0);
         flags_.setSure();
+        flags_.setUnsureParity();
         return tmp;
     }
     u64 Cpu::execAnd64Impl(u64 dst, u64 src) {
@@ -503,6 +520,7 @@ namespace x64 {
         flags_.sign = tmp & (1ull << 63);
         flags_.zero = (tmp == 0);
         flags_.setSure();
+        flags_.setUnsureParity();
         return tmp;
     }
 
@@ -797,6 +815,7 @@ namespace x64 {
         flags_.sign = (res & (1 << 7));
         flags_.zero = (res == 0);
         flags_.setSure();
+        flags_.setUnsureParity();
         return res;
     }
 
@@ -806,6 +825,7 @@ namespace x64 {
         flags_.sign = (res & (1 << 15));
         flags_.zero = (res == 0);
         flags_.setSure();
+        flags_.setUnsureParity();
         return res;
     }
 
@@ -815,6 +835,7 @@ namespace x64 {
         flags_.sign = (res & (1 << 31));
         flags_.zero = (res == 0);
         flags_.setSure();
+        flags_.setUnsureParity();
         return res;
     }
 
@@ -832,6 +853,7 @@ namespace x64 {
         flags_.sign = (res & (1 << 31));
         flags_.zero = (res == 0);
         flags_.setSure();
+        flags_.setUnsureParity();
         return res;
     }
 
@@ -852,6 +874,7 @@ namespace x64 {
         flags_.sign = (res & (1 << 7));
         flags_.zero = (res == 0);
         flags_.setSure();
+        flags_.setUnsureParity();
         return res;
     }
 
@@ -867,6 +890,7 @@ namespace x64 {
         flags_.sign = (res & (1 << 15));
         flags_.zero = (res == 0);
         flags_.setSure();
+        flags_.setUnsureParity();
         return res;
     }
     
@@ -882,6 +906,7 @@ namespace x64 {
         flags_.sign = (res & (1 << 31));
         flags_.zero = (res == 0);
         flags_.setSure();
+        flags_.setUnsureParity();
         return res;
     }
     
@@ -897,6 +922,7 @@ namespace x64 {
         flags_.sign = (res & (1ull << 63));
         flags_.zero = (res == 0);
         flags_.setSure();
+        flags_.setUnsureParity();
         return res;
     }
 
@@ -912,6 +938,7 @@ namespace x64 {
         flags_.sign = (res & (1 << 31));
         flags_.zero = (res == 0);
         flags_.setSure();
+        flags_.setUnsureParity();
         return res;
     }
 
@@ -927,6 +954,7 @@ namespace x64 {
         flags_.sign = (res & (1ull << 63));
         flags_.zero = (res == 0);
         flags_.setSure();
+        flags_.setUnsureParity();
         return res;
     }
 
@@ -1026,6 +1054,7 @@ namespace x64 {
         flags_.overflow = 0;
         flags_.carry = 0;
         flags_.setSure();
+        flags_.setUnsureParity();
     }
 
     void Cpu::execTest16Impl(u16 src1, u16 src2) {
@@ -1035,6 +1064,7 @@ namespace x64 {
         flags_.overflow = 0;
         flags_.carry = 0;
         flags_.setSure();
+        flags_.setUnsureParity();
     }
 
     void Cpu::execTest32Impl(u32 src1, u32 src2) {
@@ -1044,6 +1074,7 @@ namespace x64 {
         flags_.overflow = 0;
         flags_.carry = 0;
         flags_.setSure();
+        flags_.setUnsureParity();
     }
 
     void Cpu::execTest64Impl(u64 src1, u64 src2) {
@@ -1053,6 +1084,7 @@ namespace x64 {
         flags_.overflow = 0;
         flags_.carry = 0;
         flags_.setSure();
+        flags_.setUnsureParity();
     }
 
     void Cpu::exec(const Test<R8, R8>& ins) { execTest8Impl(get(ins.src1), get(ins.src2)); }
@@ -1309,6 +1341,7 @@ namespace x64 {
         u32 val = get(ins.src);
         flags_.zero = (val == 0);
         flags_.setSure();
+        flags_.setUnsureParity();
         if(!val) return; // [NS] return value is undefined
         u32 mssb = 31;
         while(mssb > 0 && !(val & (1u << mssb))) {
@@ -1320,6 +1353,7 @@ namespace x64 {
         u32 val = get(ins.src);
         flags_.zero = (val == 0);
         flags_.setSure();
+        flags_.setUnsureParity();
         if(!val) return; // [NS] return value is undefined
         u32 mssb = 0;
         while(mssb < 32 && !(val & (1u << mssb))) {

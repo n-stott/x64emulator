@@ -120,7 +120,9 @@ namespace utils {
             case Cond::L:  return "l";
             case Cond::LE: return "le";
             case Cond::NE: return "ne";
+            case Cond::NP:  return "np";
             case Cond::NS: return "ns";
+            case Cond::P:  return "p";
             case Cond::S:  return "s";
         }
         __builtin_unreachable();
