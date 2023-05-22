@@ -523,6 +523,7 @@ namespace x64 {
         void exec(const Rep<Movs<Addr<Size::DWORD, B>, Addr<Size::DWORD, B>>>&) override;
         
         void exec(const Rep<Stos<Addr<Size::DWORD, B>, R32>>&) override;
+        void exec(const Rep<Stos<Addr<Size::QWORD, B>, R64>>&) override;
 
         void exec(const RepNZ<Scas<R8, Addr<Size::BYTE, B>>>&) override;
 
@@ -584,6 +585,28 @@ namespace x64 {
         void exec(const Movaps<MSSE, RSSE>&) override;
         void exec(const Movaps<RSSE, MSSE>&) override;
         void exec(const Movaps<MSSE, MSSE>&) override;
+
+        void exec(const Movd<RSSE, R32>&) override;
+        void exec(const Movd<R32, RSSE>&) override;
+
+        void exec(const Movq<RSSE, R64>&) override;
+        void exec(const Movq<R64, RSSE>&) override;
+
+        void exec(const Movss<RSSE, M32>&) override;
+        void exec(const Movss<M32, RSSE>&) override;
+
+        void exec(const Movsd<RSSE, M64>&) override;
+        void exec(const Movsd<M64, RSSE>&) override;
+
+        u32 execAddssImpl(u32 dst, u32 src);
+        u64 execAddsdImpl(u64 dst, u64 src);
+        
+        void exec(const Addss<RSSE, RSSE>&) override;
+        void exec(const Addss<RSSE, M32>&) override;
+
+
+        void exec(const Addsd<RSSE, RSSE>&) override;
+        void exec(const Addsd<RSSE, M64>&) override;
 
     };
 

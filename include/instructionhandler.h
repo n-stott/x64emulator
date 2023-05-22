@@ -346,6 +346,7 @@ namespace x64 {
         virtual void exec(const Rep<Movs<Addr<Size::DWORD, B>, Addr<Size::DWORD, B>>>&) = 0;
         
         virtual void exec(const Rep<Stos<Addr<Size::DWORD, B>, R32>>&) = 0;
+        virtual void exec(const Rep<Stos<Addr<Size::QWORD, B>, R64>>&) = 0;
 
         virtual void exec(const RepNZ<Scas<R8, Addr<Size::BYTE, B>>>&) = 0;
 
@@ -407,6 +408,25 @@ namespace x64 {
         virtual void exec(const Movaps<MSSE, RSSE>&) = 0;
         virtual void exec(const Movaps<RSSE, MSSE>&) = 0;
         virtual void exec(const Movaps<MSSE, MSSE>&) = 0;
+
+        virtual void exec(const Movd<RSSE, R32>&) = 0;
+        virtual void exec(const Movd<R32, RSSE>&) = 0;
+
+        virtual void exec(const Movq<RSSE, R64>&) = 0;
+        virtual void exec(const Movq<R64, RSSE>&) = 0;
+
+        virtual void exec(const Movss<RSSE, M32>&) = 0;
+        virtual void exec(const Movss<M32, RSSE>&) = 0;
+
+        virtual void exec(const Movsd<RSSE, M64>&) = 0;
+        virtual void exec(const Movsd<M64, RSSE>&) = 0;
+
+        virtual void exec(const Addss<RSSE, RSSE>&) = 0;
+        virtual void exec(const Addss<RSSE, M32>&) = 0;
+
+        virtual void exec(const Addsd<RSSE, RSSE>&) = 0;
+        virtual void exec(const Addsd<RSSE, M64>&) = 0;
+
 
     };
 

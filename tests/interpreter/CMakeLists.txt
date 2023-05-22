@@ -147,3 +147,8 @@ add_executable(test_virtual src/test_virtual.cpp)
 target_compile_options(test_virtual PUBLIC ${CC_OPTIONS})
 target_link_options(test_virtual PUBLIC ${LD_OPTIONS} -static-libstdc++ -static-libgcc)
 add_test(NAME virtual COMMAND ${CMAKE_BINARY_DIR}/interpreter test_virtual)
+
+add_executable(test_fpu src/test_fpu.cpp)
+target_compile_options(test_fpu PUBLIC ${CC_OPTIONS})
+target_link_options(test_fpu PUBLIC ${LD_OPTIONS})
+add_test(NAME fpu COMMAND ${CMAKE_BINARY_DIR}/interpreter test_fpu)

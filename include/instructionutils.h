@@ -552,6 +552,36 @@ namespace utils {
     inline std::string toString(Movaps<Dst, Src> ins) {
         return fmt::format("{:8}{},{}", "movaps", toString(ins.dst), toString(ins.src));
     }
+
+    template<typename Dst, typename Src>
+    inline std::string toString(Movd<Dst, Src> ins) {
+        return fmt::format("{:8}{},{}", "movd", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Dst, typename Src>
+    inline std::string toString(Movq<Dst, Src> ins) {
+        return fmt::format("{:8}{},{}", "movq", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Dst, typename Src>
+    inline std::string toString(Movss<Dst, Src> ins) {
+        return fmt::format("{:8}{},{}", "movss", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Dst, typename Src>
+    inline std::string toString(Movsd<Dst, Src> ins) {
+        return fmt::format("{:8}{},{}", "movsd", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Dst, typename Src>
+    inline std::string toString(Addss<Dst, Src> ins) {
+        return fmt::format("{:8}{},{}", "addss", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Dst, typename Src>
+    inline std::string toString(Addsd<Dst, Src> ins) {
+        return fmt::format("{:8}{},{}", "addsd", toString(ins.dst), toString(ins.src));
+    }
 }
 }
 

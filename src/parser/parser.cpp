@@ -311,6 +311,12 @@ namespace x64 {
         if(name == "cdqe") return parseCdqe(opbytes, address, operands);
         if(name == "pxor") return parsePxor(opbytes, address, operands);
         if(name == "movaps") return parseMovaps(opbytes, address, operands);
+        if(name == "movd") return parseMovd(opbytes, address, operands);
+        if(name == "movq") return parseMovq(opbytes, address, operands);
+        if(name == "movss") return parseMovss(opbytes, address, operands);
+        if(name == "movsd") return parseMovsd(opbytes, address, operands);
+        if(name == "addss") return parseAddss(opbytes, address, operands);
+        if(name == "addsd") return parseAddsd(opbytes, address, operands);
         return make_failed(address, s);
     }
 
@@ -1518,14 +1524,17 @@ namespace x64 {
         // auto r8src2 = tryTakeRegister8(operands[1]);
         std::string_view op1 = operands[1];
         auto r32src2 = tryTakeRegister32(op1);
+        auto r64src2 = tryTakeRegister64(op1);
         auto m8src1 = asMemory8(operands[0]);
         auto m8src2 = asMemory8(operands[1]);
         auto m32src1 = asMemory32(operands[0]);
         auto m32src2 = asMemory32(operands[1]);
+        auto m64src1 = asMemory64(operands[0]);
         if(m8src1 && !std::holds_alternative<Addr<Size::BYTE, B>>(m8src1.value())) m8src1.reset();
         if(m8src2 && !std::holds_alternative<Addr<Size::BYTE, B>>(m8src2.value())) m8src2.reset();
         if(m32src1 && !std::holds_alternative<Addr<Size::DWORD, B>>(m32src1.value())) m32src1.reset();
         if(m32src2 && !std::holds_alternative<Addr<Size::DWORD, B>>(m32src2.value())) m32src2.reset();
+        if(m64src1 && !std::holds_alternative<Addr<Size::QWORD, B>>(m64src1.value())) m64src1.reset();
         if(instruction == "movs") {
             if(m8src1 && m8src2) {
                 const auto& src1 = std::get<Addr<Size::BYTE, B>>(m8src1.value());
@@ -1542,6 +1551,10 @@ namespace x64 {
             if(m32src1 && r32src2) {
                 const auto& src1 = std::get<Addr<Size::DWORD, B>>(m32src1.value());
                 return make_wrapper< Rep< Stos<Addr<Size::DWORD, B>, R32> >>(address, Stos<Addr<Size::DWORD, B>, R32>{src1, r32src2.value()});
+            }
+            if(m64src1 && r64src2) {
+                const auto& src1 = std::get<Addr<Size::QWORD, B>>(m64src1.value());
+                return make_wrapper< Rep< Stos<Addr<Size::QWORD, B>, R64> >>(address, Stos<Addr<Size::QWORD, B>, R64>{src1, r64src2.value()});
             }
         }
         return make_failed(address, stringop);
@@ -1663,6 +1676,76 @@ namespace x64 {
         auto mssedst = asMemory128(operands[0]);
         auto rssesrc = tryTakeRegister128(operands[1]);
         if(mssedst && rssesrc) return make_wrapper<Mov<MSSE, RSSE>>(address, mssedst.value(), rssesrc.value());
+        return make_failed(address, operandsString);
+    }
+
+    std::unique_ptr<X86Instruction> InstructionParser::parseMovd(const OpcodeBytes&, u32 address, std::string_view operandsString) {
+        std::vector<std::string_view> operands = split(operandsString, ',');
+        assert(operands.size() == 2);
+        auto r32dst = tryTakeRegister32(operands[0]);
+        auto r32src = tryTakeRegister32(operands[1]);
+        auto rssedst = tryTakeRegister128(operands[0]);
+        auto rssesrc = tryTakeRegister128(operands[1]);
+        if(r32dst && rssesrc) return make_wrapper<Movd<R32, RSSE>>(address, r32dst.value(), rssesrc.value());
+        if(rssedst && r32src) return make_wrapper<Movd<RSSE, R32>>(address, rssedst.value(), r32src.value());
+        return make_failed(address, operandsString);
+    }
+
+    std::unique_ptr<X86Instruction> InstructionParser::parseMovq(const OpcodeBytes&, u32 address, std::string_view operandsString) {
+        std::vector<std::string_view> operands = split(operandsString, ',');
+        assert(operands.size() == 2);
+        auto r64dst = tryTakeRegister64(operands[0]);
+        auto r64src = tryTakeRegister64(operands[1]);
+        auto rssedst = tryTakeRegister128(operands[0]);
+        auto rssesrc = tryTakeRegister128(operands[1]);
+        if(r64dst && rssesrc) return make_wrapper<Movq<R64, RSSE>>(address, r64dst.value(), rssesrc.value());
+        if(rssedst && r64src) return make_wrapper<Movq<RSSE, R64>>(address, rssedst.value(), r64src.value());
+        return make_failed(address, operandsString);
+    }
+
+    std::unique_ptr<X86Instruction> InstructionParser::parseMovss(const OpcodeBytes&, u32 address, std::string_view operandsString) {
+        std::vector<std::string_view> operands = split(operandsString, ',');
+        assert(operands.size() == 2);
+        auto rssedst = tryTakeRegister128(operands[0]);
+        auto rssesrc = tryTakeRegister128(operands[1]);
+        auto m32dst = asMemory32(operands[0]);
+        auto m32src = asMemory32(operands[1]);
+        if(m32dst && rssesrc) return make_wrapper<Movss<M32, RSSE>>(address, m32dst.value(), rssesrc.value());
+        if(rssedst && m32src) return make_wrapper<Movss<RSSE, M32>>(address, rssedst.value(), m32src.value());
+        return make_failed(address, operandsString);
+    }
+
+    std::unique_ptr<X86Instruction> InstructionParser::parseMovsd(const OpcodeBytes&, u32 address, std::string_view operandsString) {
+        std::vector<std::string_view> operands = split(operandsString, ',');
+        assert(operands.size() == 2);
+        auto rssedst = tryTakeRegister128(operands[0]);
+        auto rssesrc = tryTakeRegister128(operands[1]);
+        auto m64dst = asMemory64(operands[0]);
+        auto m64src = asMemory64(operands[1]);
+        if(m64dst && rssesrc) return make_wrapper<Movsd<M64, RSSE>>(address, m64dst.value(), rssesrc.value());
+        if(rssedst && m64src) return make_wrapper<Movsd<RSSE, M64>>(address, rssedst.value(), m64src.value());
+        return make_failed(address, operandsString);
+    }
+
+    std::unique_ptr<X86Instruction> InstructionParser::parseAddss(const OpcodeBytes&, u32 address, std::string_view operandsString) {
+        std::vector<std::string_view> operands = split(operandsString, ',');
+        assert(operands.size() == 2);
+        auto rssedst = tryTakeRegister128(operands[0]);
+        auto rssesrc = tryTakeRegister128(operands[1]);
+        auto m32src = asMemory32(operands[1]);
+        if(rssedst && rssesrc) return make_wrapper<Addss<RSSE, RSSE>>(address, rssedst.value(), rssesrc.value());
+        if(rssedst && m32src) return make_wrapper<Addss<RSSE, M32>>(address, rssedst.value(), m32src.value());
+        return make_failed(address, operandsString);
+    }
+
+    std::unique_ptr<X86Instruction> InstructionParser::parseAddsd(const OpcodeBytes&, u32 address, std::string_view operandsString) {
+        std::vector<std::string_view> operands = split(operandsString, ',');
+        assert(operands.size() == 2);
+        auto rssedst = tryTakeRegister128(operands[0]);
+        auto rssesrc = tryTakeRegister128(operands[1]);
+        auto m64src = asMemory64(operands[1]);
+        if(rssedst && rssesrc) return make_wrapper<Addsd<RSSE, RSSE>>(address, rssedst.value(), rssesrc.value());
+        if(rssedst && m64src) return make_wrapper<Addsd<RSSE, M64>>(address, rssedst.value(), m64src.value());
         return make_failed(address, operandsString);
     }
 }

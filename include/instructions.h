@@ -346,6 +346,42 @@ namespace x64 {
         Dst dst;
         Src src;
     };
+
+    template<typename Dst, typename Src>
+    struct Movd {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
+    struct Movq {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
+    struct Movss {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
+    struct Movsd {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
+    struct Addss {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
+    struct Addsd {
+        Dst dst;
+        Src src;
+    };
 }
 
 #endif

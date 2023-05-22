@@ -147,6 +147,9 @@ namespace x64 {
     #define WARN_SIGN_EXTENDED() \
         DEBUG_ONLY(fmt::print(stderr, "Warning : fix signExtended\n"))
 
+    #define WARN_ROUNDING_MODE() \
+        DEBUG_ONLY(fmt::print(stderr, "Warning : rounding mode not set\n"))
+
     static u32 signExtended32(u8 value) {
         WARN_SIGN_EXTENDED();
         return (i32)(i8)value;
@@ -1377,6 +1380,20 @@ namespace x64 {
         set(R32::EDI, dptr.address);
     }
 
+    void Cpu::exec(const Rep<Stos<Addr<Size::QWORD, B>, R64>>& ins) {
+        assert(ins.op.dst.encoding.base == R64::RDI);
+        u64 counter = get(R64::RCX);
+        Ptr64 dptr = resolve(ins.op.dst);
+        u64 val = get(ins.op.src);
+        while(counter) {
+            mmu_->write64(dptr, val);
+            ++dptr;
+            --counter;
+        }
+        set(R64::RCX, counter);
+        set(R64::RDI, dptr.address);
+    }
+
     void Cpu::exec(const RepNZ<Scas<R8, Addr<Size::BYTE, B>>>& ins) {
         assert(ins.op.src2.encoding.base == R64::RDI);
         u32 counter = get(R32::ECX);
@@ -1481,4 +1498,72 @@ namespace x64 {
     void Cpu::exec(const Movaps<RSSE, MSSE>& ins) { set(ins.dst, get(resolve(ins.src))); }
     void Cpu::exec(const Movaps<MSSE, MSSE>& ins) { set(resolve(ins.dst), get(resolve(ins.src))); }
 
+    template<typename T, typename U> T narrow(const U& u);
+    template<> u32 narrow(const Xmm& val) { return (u32)val.lo; }
+    template<> u64 narrow(const Xmm& val) { return val.lo; }
+
+    template<typename T, typename U> T zeroExtend(const U& u);
+    template<> Xmm zeroExtend(const u32& val) { return Xmm{ 0, val }; }
+    template<> Xmm zeroExtend(const u64& val) { return Xmm{ 0, val }; }
+
+    void Cpu::exec(const Movd<RSSE, R32>& ins) { set(ins.dst, zeroExtend<Xmm, u32>(get(ins.src))); }
+    void Cpu::exec(const Movd<R32, RSSE>& ins) { set(ins.dst, narrow<u32, Xmm>(get(ins.src))); }
+
+    void Cpu::exec(const Movq<RSSE, R64>& ins) { set(ins.dst, zeroExtend<Xmm, u64>(get(ins.src))); }
+    void Cpu::exec(const Movq<R64, RSSE>& ins) { set(ins.dst, narrow<u64, Xmm>(get(ins.src))); }
+
+    void Cpu::exec(const Movss<RSSE, M32>& ins) { set(ins.dst, zeroExtend<Xmm, u32>(get(resolve(ins.src)))); }
+    void Cpu::exec(const Movss<M32, RSSE>& ins) { set(resolve(ins.dst), narrow<u32, Xmm>(get(ins.src))); }
+
+    void Cpu::exec(const Movsd<RSSE, M64>& ins) { set(ins.dst, zeroExtend<Xmm, u64>(get(resolve(ins.src)))); }
+    void Cpu::exec(const Movsd<M64, RSSE>& ins) { set(resolve(ins.dst), narrow<u64, Xmm>(get(ins.src))); }
+
+
+    u32 Cpu::execAddssImpl(u32 dst, u32 src) {
+        static_assert(sizeof(u32) == sizeof(float));
+        float d;
+        float s;
+        ::memcpy(&d, &dst, sizeof(d));
+        ::memcpy(&s, &src, sizeof(s));
+        float res = d + s;
+        u32 r;
+        ::memcpy(&r, &res, sizeof(r));
+        return r;
+    }
+
+    u64 Cpu::execAddsdImpl(u64 dst, u64 src) {
+        static_assert(sizeof(u64) == sizeof(double));
+        double d;
+        double s;
+        ::memcpy(&d, &dst, sizeof(d));
+        ::memcpy(&s, &src, sizeof(s));
+        double res = d + s;
+        u64 r;
+        ::memcpy(&r, &res, sizeof(r));
+        return r;
+    }
+
+    void Cpu::exec(const Addss<RSSE, RSSE>& ins) {
+        WARN_ROUNDING_MODE();
+        u32 res = execAddssImpl(narrow<u32, Xmm>(get(ins.dst)), narrow<u32, Xmm>(get(ins.src)));
+        set(ins.dst, zeroExtend<Xmm, u32>(res));
+    }
+
+    void Cpu::exec(const Addss<RSSE, M32>& ins) {
+        WARN_ROUNDING_MODE();
+        u32 res = execAddssImpl(narrow<u32, Xmm>(get(ins.dst)), get(resolve(ins.src)));
+        set(ins.dst, zeroExtend<Xmm, u32>(res));
+    }
+
+    void Cpu::exec(const Addsd<RSSE, RSSE>& ins) {
+        WARN_ROUNDING_MODE();
+        u64 res = execAddssImpl(narrow<u64, Xmm>(get(ins.dst)), narrow<u64, Xmm>(get(ins.src)));
+        set(ins.dst, zeroExtend<Xmm, u64>(res));
+    }
+
+    void Cpu::exec(const Addsd<RSSE, M64>& ins) {
+        WARN_ROUNDING_MODE();
+        u64 res = execAddsdImpl(narrow<u64, Xmm>(get(ins.dst)), get(resolve(ins.src)));
+        set(ins.dst, zeroExtend<Xmm, u64>(res));
+    }
 }
