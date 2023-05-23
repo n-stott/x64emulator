@@ -27,7 +27,9 @@ add_executable(interpreter
     src/program.cpp
     src/main.cpp
 )
-target_compile_options(interpreter PUBLIC -Wall -Wextra -Wpedantic -pedantic -Wno-sign-compare -Wno-braced-scalar-init -Wimplicit-fallthrough -Wno-missing-braces -DFMT_HEADER_ONLY)
+target_compile_options(interpreter PUBLIC -Wall -Wextra -Wpedantic -pedantic -Wconversion -Werror)
+target_compile_options(interpreter PUBLIC -Wno-braced-scalar-init -Wimplicit-fallthrough -Wno-missing-braces)
+target_compile_options(interpreter PUBLIC -DFMT_HEADER_ONLY)
 target_include_directories(interpreter PUBLIC include)
 target_include_directories(interpreter PUBLIC ../common/include)
 target_include_directories(interpreter PUBLIC external)

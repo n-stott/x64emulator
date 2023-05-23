@@ -21,7 +21,7 @@ namespace x64 {
     template<>
     struct SignExtended<u8> {
         SignExtended<u8>(u8 value) : extendedValue(value) { }
-        u32 extendedValue;
+        u8 extendedValue;
     };
 
     enum class R8 {

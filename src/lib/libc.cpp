@@ -207,7 +207,8 @@ namespace x64 {
         explicit PutcharInstruction(ExecutionContext context) : context_(context) { }
 
         void exec(InstructionHandler*) const override {
-            std::putchar(context_.rax());
+            int c = static_cast<int>(context_.rax());
+            std::putchar(c);
             ::fflush(stdout);
             context_.set_rax(1);
         }
@@ -296,7 +297,7 @@ namespace x64 {
             fileRegistry_(fileRegistry) { }
 
         void exec(InstructionHandler*) const override {
-            u64 fileHandler = context_.rax();
+            u32 fileHandler = static_cast<u32>(context_.rax());
             int fd = fileRegistry_->fileno(fileHandler);
             context_.set_rax(fd);
         }
@@ -316,7 +317,7 @@ namespace x64 {
             fileRegistry_(fileRegistry) { }
 
         void exec(InstructionHandler*) const override {
-            u64 fileHandler = context_.rax();
+            u32 fileHandler = static_cast<u32>(context_.rax());
             int ret = fileRegistry_->closeFile(fileHandler);
             context_.set_rax(ret);
         }
@@ -336,9 +337,9 @@ namespace x64 {
             fileRegistry_(fileRegistry) { }
 
         void exec(InstructionHandler*) const override {
-            int fd = context_.rax();
-            u32 bufAddress = context_.rbx();
-            u32 count = context_.rcx();
+            int fd = static_cast<int>(context_.rax());
+            u64 bufAddress = context_.rbx();
+            u64 count = context_.rcx();
             fmt::print("Read {} bytes from fd={} into buf={:#x}\n", count, fd, bufAddress);
             FILE* file = fileRegistry_->fileFromFd(fd);
             if(!file) {

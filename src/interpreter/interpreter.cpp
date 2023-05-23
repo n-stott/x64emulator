@@ -342,7 +342,7 @@ namespace x64 {
 
     void Interpreter::pushProgramArguments(const std::string& programFilePath, const std::vector<std::string>& arguments) {
         VerificationScope::run([&]() {
-            std::vector<u32> argumentPositions;
+            std::vector<u64> argumentPositions;
             auto pushString = [&](const std::string& s) {
                 std::vector<u64> buffer;
                 buffer.resize((s.size()+8)/8, 0);
@@ -375,7 +375,7 @@ namespace x64 {
         callStack_.frames.clear();
         callStack_.frames.push_back(Frame{function, 0});
 
-        push32(function->address);
+        push64(function->address);
 
         size_t ticks = 0;
         while(!stop_ && callStack_.hasNext()) {

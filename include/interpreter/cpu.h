@@ -43,11 +43,11 @@ namespace x64 {
 
         u8 get(Count count) const;
 
-        u32 resolve(B addr) const { return regs_.resolve(addr); }
-        u32 resolve(BD addr) const { return regs_.resolve(addr); }
-        u32 resolve(BIS addr) const { return regs_.resolve(addr); }
-        u32 resolve(ISD addr) const { return regs_.resolve(addr); }
-        u32 resolve(BISD addr) const { return regs_.resolve(addr); }
+        u64 resolve(B addr) const { return regs_.resolve(addr); }
+        u64 resolve(BD addr) const { return regs_.resolve(addr); }
+        u64 resolve(BIS addr) const { return regs_.resolve(addr); }
+        u64 resolve(ISD addr) const { return regs_.resolve(addr); }
+        u64 resolve(BISD addr) const { return regs_.resolve(addr); }
 
         Ptr<Size::BYTE> resolve(Addr<Size::BYTE, B> addr) const { return regs_.resolve(addr); }
         Ptr<Size::BYTE> resolve(Addr<Size::BYTE, BD> addr) const { return regs_.resolve(addr); }

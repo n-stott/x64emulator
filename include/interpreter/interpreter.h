@@ -106,7 +106,7 @@ namespace x64 {
                 return false;
             }
 
-            [[nodiscard]] bool jumpInFrame(u32 destinationAddress) {
+            [[nodiscard]] bool jumpInFrame(u64 destinationAddress) {
                 assert(!frames.empty());
                 Frame& currentFrame = frames.back();
                 const Function* func = currentFrame.function;
@@ -126,7 +126,7 @@ namespace x64 {
                 for(auto it = frames.rbegin(); it != frames.rend(); ++it) {
                     const auto* function = it->function;
                     if(it->offset < function->instructions.size()) {
-                        u32 address = (u32)(-1);
+                        u64 address = (u64)(-1);
                         if(function->instructions[it->offset]) address = function->instructions[it->offset]->address;
                         fmt::print("{} {}:{:#x}\n", height, function->name, address);
                     } else {

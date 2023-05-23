@@ -29,7 +29,7 @@ std::vector<std::string> Disassembler::disassembleSection(std::string_view filep
         std::stringstream ss;
         char buffer[1024];
 
-        int bytesRead = 0;
+        ssize_t bytesRead = 0;
         while (bytesRead = ::read(pipefd[0], buffer, sizeof(buffer)), bytesRead != 0) {
             ss << std::string(buffer, buffer+bytesRead);
         }

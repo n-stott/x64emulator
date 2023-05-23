@@ -94,20 +94,20 @@ namespace x64 {
         u64 value = mmu_->read64(Ptr64{regs_.rsp_});
         assert(value == (u8)value);
         regs_.rsp_ += 8;
-        return value;
+        return static_cast<u8>(value);
     }
 
     u16 Cpu::pop16() {
         u64 value = mmu_->read64(Ptr64{regs_.rsp_});
         assert(value == (u16)value);
         regs_.rsp_ += 8;
-        return value;
+        return static_cast<u16>(value);
     }
 
     u32 Cpu::pop32() {
         u64 value = mmu_->read64(Ptr64{regs_.rsp_});
         regs_.rsp_ += 8;
-        return value;
+        return static_cast<u32>(value);
     }
 
     u64 Cpu::pop64() {
@@ -360,7 +360,7 @@ namespace x64 {
 
     std::pair<u32, u32> Cpu::execMul32(u32 src1, u32 src2) {
         u64 prod = (u64)src1 * (u64)src2;
-        u32 upper = (prod >> 32);
+        u32 upper = static_cast<u32>(prod >> 32);
         u32 lower = (u32)prod;
         flags_.overflow = !!upper;
         flags_.carry = !!upper;
@@ -397,8 +397,8 @@ namespace x64 {
         flags_.overflow = (res != (i32)tmp);
         flags_.setSure();
         flags_.setUnsureParity();
-        set(R32::EDX, tmp >> 32);
-        set(R32::EAX, tmp);
+        set(R32::EDX, (u32)(tmp >> 32));
+        set(R32::EAX, (u32)(tmp));
     }
 
     u64 Cpu::execImul64(u64 src1, u64 src2) {
@@ -657,6 +657,16 @@ namespace x64 {
         set(ins.src, dst);
     }
 
+
+    template<typename T, typename U> T narrow(const U& u);
+    template<> u32 narrow(const u64& val) { return (u32)val; }
+    template<> u32 narrow(const Xmm& val) { return (u32)val.lo; }
+    template<> u64 narrow(const Xmm& val) { return val.lo; }
+
+    template<typename T, typename U> T zeroExtend(const U& u);
+    template<> Xmm zeroExtend(const u32& val) { return Xmm{ 0, val }; }
+    template<> Xmm zeroExtend(const u64& val) { return Xmm{ 0, val }; }
+
     void Cpu::exec(const Mov<R8, R8>& ins) { set(ins.dst, get(ins.src)); }
     void Cpu::exec(const Mov<R8, Imm<u8>>& ins) { set(ins.dst, get(ins.src)); }
     void Cpu::exec(const Mov<R8, M8>& ins) { set(ins.dst, get(resolve(ins.src))); }
@@ -685,8 +695,8 @@ namespace x64 {
     void Cpu::exec(const Movsx<R32, R8>& ins) { set(ins.dst, signExtended32(get(ins.src))); }
     void Cpu::exec(const Movsx<R32, M8>& ins) { set(ins.dst, signExtended32(get(resolve(ins.src)))); }
 
-    void Cpu::exec(const Movsx<R32, R32>& ins) { set(ins.dst, signExtended32(get(ins.src))); }
-    void Cpu::exec(const Movsx<R32, M32>& ins) { set(ins.dst, signExtended32(get(resolve(ins.src)))); }
+    void Cpu::exec(const Movsx<R32, R32>& ins) { set(ins.dst, get(ins.src)); }
+    void Cpu::exec(const Movsx<R32, M32>& ins) { set(ins.dst, get(resolve(ins.src))); }
     void Cpu::exec(const Movsx<R64, R32>& ins) { set(ins.dst, signExtended64(get(ins.src))); }
     void Cpu::exec(const Movsx<R64, M32>& ins) { set(ins.dst, signExtended64(get(resolve(ins.src)))); }
 
@@ -697,10 +707,10 @@ namespace x64 {
     void Cpu::exec(const Movzx<R32, M16>& ins) { set(ins.dst, (u32)get(resolve(ins.src))); }
 
     void Cpu::exec(const Lea<R32, B>& ins) { TODO(ins); }
-    void Cpu::exec(const Lea<R32, BD>& ins) { set(ins.dst, resolve(ins.src)); }
-    void Cpu::exec(const Lea<R32, BIS>& ins) { set(ins.dst, resolve(ins.src)); }
-    void Cpu::exec(const Lea<R32, ISD>& ins) { set(ins.dst, resolve(ins.src)); }
-    void Cpu::exec(const Lea<R32, BISD>& ins) { set(ins.dst, resolve(ins.src)); }
+    void Cpu::exec(const Lea<R32, BD>& ins) { set(ins.dst, narrow<u32, u64>(resolve(ins.src))); }
+    void Cpu::exec(const Lea<R32, BIS>& ins) { set(ins.dst, narrow<u32, u64>(resolve(ins.src))); }
+    void Cpu::exec(const Lea<R32, ISD>& ins) { set(ins.dst, narrow<u32, u64>(resolve(ins.src))); }
+    void Cpu::exec(const Lea<R32, BISD>& ins) { set(ins.dst, narrow<u32, u64>(resolve(ins.src))); }
 
     void Cpu::exec(const Lea<R64, B>& ins) { TODO(ins); }
     void Cpu::exec(const Lea<R64, BD>& ins) { set(ins.dst, resolve(ins.src)); }
@@ -1377,8 +1387,8 @@ namespace x64 {
             --counter;
         }
         set(R32::ECX, counter);
-        set(R32::ESI, sptr.address);
-        set(R32::EDI, dptr.address);
+        set(R64::RSI, sptr.address);
+        set(R64::RDI, dptr.address);
     }
 
 
@@ -1396,8 +1406,8 @@ namespace x64 {
             --counter;
         }
         set(R32::ECX, counter);
-        set(R32::ESI, sptr.address);
-        set(R32::EDI, dptr.address);
+        set(R64::RSI, sptr.address);
+        set(R64::RDI, dptr.address);
     }
     
     void Cpu::exec(const Rep<Stos<Addr<Size::DWORD, B>, R32>>& ins) {
@@ -1410,8 +1420,8 @@ namespace x64 {
             ++dptr;
             --counter;
         }
-        set(R32::ECX, counter);
-        set(R32::EDI, dptr.address);
+        set(R64::RCX, counter);
+        set(R64::RDI, dptr.address);
     }
 
     void Cpu::exec(const Rep<Stos<Addr<Size::QWORD, B>, R64>>& ins) {
@@ -1441,7 +1451,7 @@ namespace x64 {
             if(flags_.zero) break;
         }
         set(R32::ECX, counter);
-        set(R32::EDI, ptr2.address);
+        set(R64::RDI, ptr2.address);
     }
 
     template<typename Dst, typename Src>
@@ -1532,14 +1542,6 @@ namespace x64 {
     void Cpu::exec(const Movaps<RSSE, MSSE>& ins) { set(ins.dst, get(resolve(ins.src))); }
     void Cpu::exec(const Movaps<MSSE, MSSE>& ins) { set(resolve(ins.dst), get(resolve(ins.src))); }
 
-    template<typename T, typename U> T narrow(const U& u);
-    template<> u32 narrow(const Xmm& val) { return (u32)val.lo; }
-    template<> u64 narrow(const Xmm& val) { return val.lo; }
-
-    template<typename T, typename U> T zeroExtend(const U& u);
-    template<> Xmm zeroExtend(const u32& val) { return Xmm{ 0, val }; }
-    template<> Xmm zeroExtend(const u64& val) { return Xmm{ 0, val }; }
-
     void Cpu::exec(const Movd<RSSE, R32>& ins) { set(ins.dst, zeroExtend<Xmm, u32>(get(ins.src))); }
     void Cpu::exec(const Movd<R32, RSSE>& ins) { set(ins.dst, narrow<u32, Xmm>(get(ins.src))); }
 
@@ -1591,7 +1593,7 @@ namespace x64 {
 
     void Cpu::exec(const Addsd<RSSE, RSSE>& ins) {
         WARN_ROUNDING_MODE();
-        u64 res = execAddssImpl(narrow<u64, Xmm>(get(ins.dst)), narrow<u64, Xmm>(get(ins.src)));
+        u64 res = execAddsdImpl(narrow<u64, Xmm>(get(ins.dst)), narrow<u64, Xmm>(get(ins.src)));
         set(ins.dst, zeroExtend<Xmm, u64>(res));
     }
 

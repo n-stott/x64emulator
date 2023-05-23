@@ -12,17 +12,17 @@ namespace x64 {
     class InstructionHandler;
 
     struct X86Instruction {
-        explicit X86Instruction(u32 address) : address(address) { }
+        explicit X86Instruction(u64 address) : address(address) { }
         virtual ~X86Instruction() = default;
         virtual void exec(InstructionHandler* handler) const = 0;
         virtual std::string toString() const = 0;
 
-        u32 address;
+        u64 address;
     };
 
     struct Function {
-        u32 address;
-        u32 elfOffset;
+        u64 address;
+        u64 elfOffset;
         std::string name;
         std::vector<std::unique_ptr<X86Instruction>> instructions;
 
@@ -46,8 +46,8 @@ namespace x64 {
         Program(Program&&) = default;
 
         virtual const Function* findUniqueFunction(std::string_view name) const;
-        virtual const Function* findFunction(u32 address, std::string_view name) const;
-        virtual const Function* findFunctionByAddress(u32 address) const;
+        virtual const Function* findFunction(u64 address, std::string_view name) const;
+        virtual const Function* findFunctionByAddress(u64 address) const;
     };
 
 }

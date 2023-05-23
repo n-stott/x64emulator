@@ -24,14 +24,14 @@ namespace x64 {
 #endif
     }
 
-    const Function* Program::findFunction(u32 address, std::string_view name) const {
+    const Function* Program::findFunction(u64 address, std::string_view name) const {
         for(const Function& func : functions) {
             if(func.address == address && func.name == name) return &func;
         }
         return nullptr;
     }
 
-    const Function* Program::findFunctionByAddress(u32 address) const {
+    const Function* Program::findFunctionByAddress(u64 address) const {
         for(const Function& func : functions) {
             if(func.address == address) return &func;
         }
