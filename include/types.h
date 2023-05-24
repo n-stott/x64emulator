@@ -10,9 +10,8 @@ namespace x64 {
         u8 count;
     };
 
-    template<typename T>
     struct Imm {
-        T immediate;
+        u64 immediate;
     };
 
     template<typename I>

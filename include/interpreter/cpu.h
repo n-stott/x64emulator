@@ -31,10 +31,10 @@ namespace x64 {
         u32 get(R32 reg) const { return regs_.get(reg); }
         u64 get(R64 reg) const { return regs_.get(reg); }
         Xmm get(RSSE reg) const { return regs_.get(reg); }
-        u8  get(Imm<u8> immediate) const;
-        u16 get(Imm<u16> immediate) const;
-        u32 get(Imm<u32> immediate) const;
-        u64 get(Imm<u64> immediate) const;
+
+        template<typename T>
+        T  get(Imm immediate) const;
+
         u8  get(Ptr8 reg) const;
         u16 get(Ptr16 reg) const;
         u32 get(Ptr32 reg) const;
@@ -187,44 +187,42 @@ namespace x64 {
 
     public:
         void exec(const Add<R32, R32>&) override;
-        void exec(const Add<R32, Imm<u32>>&) override;
+        void exec(const Add<R32, Imm>&) override;
         void exec(const Add<R32, M32>&) override;
         void exec(const Add<M32, R32>&) override;
-        void exec(const Add<M32, Imm<u32>>&) override;
+        void exec(const Add<M32, Imm>&) override;
         void exec(const Add<R64, R64>&) override;
-        void exec(const Add<R64, Imm<u32>>&) override;
-        void exec(const Add<R64, Imm<u64>>&) override;
+        void exec(const Add<R64, Imm>&) override;
         void exec(const Add<R64, M64>&) override;
         void exec(const Add<M64, R64>&) override;
-        void exec(const Add<M64, Imm<u32>>&) override;
+        void exec(const Add<M64, Imm>&) override;
 
         void exec(const Adc<R32, R32>&) override;
-        void exec(const Adc<R32, Imm<u32>>&) override;
+        void exec(const Adc<R32, Imm>&) override;
         void exec(const Adc<R32, SignExtended<u8>>&) override;
         void exec(const Adc<R32, M32>&) override;
         void exec(const Adc<M32, R32>&) override;
-        void exec(const Adc<M32, Imm<u32>>&) override;
+        void exec(const Adc<M32, Imm>&) override;
 
         void exec(const Sub<R32, R32>&) override;
-        void exec(const Sub<R32, Imm<u32>>&) override;
+        void exec(const Sub<R32, Imm>&) override;
         void exec(const Sub<R32, SignExtended<u8>>&) override;
         void exec(const Sub<R32, M32>&) override;
         void exec(const Sub<M32, R32>&) override;
-        void exec(const Sub<M32, Imm<u32>>&) override;
+        void exec(const Sub<M32, Imm>&) override;
         void exec(const Sub<R64, R64>&) override;
-        void exec(const Sub<R64, Imm<u32>>&) override;
-        void exec(const Sub<R64, Imm<u64>>&) override;
+        void exec(const Sub<R64, Imm>&) override;
         void exec(const Sub<R64, SignExtended<u8>>&) override;
         void exec(const Sub<R64, M64>&) override;
         void exec(const Sub<M64, R64>&) override;
-        void exec(const Sub<M64, Imm<u32>>&) override;
+        void exec(const Sub<M64, Imm>&) override;
 
         void exec(const Sbb<R32, R32>&) override;
-        void exec(const Sbb<R32, Imm<u32>>&) override;
+        void exec(const Sbb<R32, Imm>&) override;
         void exec(const Sbb<R32, SignExtended<u8>>&) override;
         void exec(const Sbb<R32, M32>&) override;
         void exec(const Sbb<M32, R32>&) override;
-        void exec(const Sbb<M32, Imm<u32>>&) override;
+        void exec(const Sbb<M32, Imm>&) override;
 
         void exec(const Neg<R32>&) override;
         void exec(const Neg<M32>&) override;
@@ -236,14 +234,14 @@ namespace x64 {
         void exec(const Imul1<M32>&) override;
         void exec(const Imul2<R32, R32>&) override;
         void exec(const Imul2<R32, M32>&) override;
-        void exec(const Imul3<R32, R32, Imm<u32>>&) override;
-        void exec(const Imul3<R32, M32, Imm<u32>>&) override;
+        void exec(const Imul3<R32, R32, Imm>&) override;
+        void exec(const Imul3<R32, M32, Imm>&) override;
         void exec(const Imul1<R64>&) override;
         void exec(const Imul1<M64>&) override;
         void exec(const Imul2<R64, R64>&) override;
         void exec(const Imul2<R64, M64>&) override;
-        void exec(const Imul3<R64, R64, Imm<u32>>&) override;
-        void exec(const Imul3<R64, M64, Imm<u32>>&) override;
+        void exec(const Imul3<R64, R64, Imm>&) override;
+        void exec(const Imul3<R64, M64, Imm>&) override;
 
         void exec(const Div<R32>&) override;
         void exec(const Div<M32>&) override;
@@ -254,46 +252,46 @@ namespace x64 {
         void exec(const Idiv<M32>&) override;
 
         void exec(const And<R8, R8>&) override;
-        void exec(const And<R8, Imm<u8>>&) override;
+        void exec(const And<R8, Imm>&) override;
         void exec(const And<R8, M8>&) override;
         void exec(const And<M8, R8>&) override;
-        void exec(const And<M8, Imm<u8>>&) override;
+        void exec(const And<M8, Imm>&) override;
         void exec(const And<R16, M16>&) override;
         void exec(const And<M16, R16>&) override;
         void exec(const And<R32, R32>&) override;
-        void exec(const And<R32, Imm<u32>>&) override;
+        void exec(const And<R32, Imm>&) override;
         void exec(const And<R32, M32>&) override;
         void exec(const And<M32, R32>&) override;
-        void exec(const And<M32, Imm<u32>>&) override;
+        void exec(const And<M32, Imm>&) override;
         void exec(const And<R64, R64>&) override;
-        void exec(const And<R64, Imm<u64>>&) override;
+        void exec(const And<R64, Imm>&) override;
         void exec(const And<R64, M64>&) override;
         void exec(const And<M64, R64>&) override;
-        void exec(const And<M64, Imm<u64>>&) override;
+        void exec(const And<M64, Imm>&) override;
 
         void exec(const Or<R8, R8>&) override;
-        void exec(const Or<R8, Imm<u8>>&) override;
+        void exec(const Or<R8, Imm>&) override;
         void exec(const Or<R8, M8>&) override;
         void exec(const Or<M8, R8>&) override;
-        void exec(const Or<M8, Imm<u8>>&) override;
+        void exec(const Or<M8, Imm>&) override;
         void exec(const Or<R16, M16>&) override;
         void exec(const Or<M16, R16>&) override;
         void exec(const Or<R32, R32>&) override;
-        void exec(const Or<R32, Imm<u32>>&) override;
+        void exec(const Or<R32, Imm>&) override;
         void exec(const Or<R32, M32>&) override;
         void exec(const Or<M32, R32>&) override;
-        void exec(const Or<M32, Imm<u32>>&) override;
+        void exec(const Or<M32, Imm>&) override;
         void exec(const Or<R64, R64>&) override;
-        void exec(const Or<R64, Imm<u64>>&) override;
+        void exec(const Or<R64, Imm>&) override;
         void exec(const Or<R64, M64>&) override;
         void exec(const Or<M64, R64>&) override;
-        void exec(const Or<M64, Imm<u64>>&) override;
+        void exec(const Or<M64, Imm>&) override;
 
-        void exec(const Xor<R8, Imm<u8>>&) override;
+        void exec(const Xor<R8, Imm>&) override;
         void exec(const Xor<R8, M8>&) override;
-        void exec(const Xor<M8, Imm<u8>>&) override;
-        void exec(const Xor<R16, Imm<u16>>&) override;
-        void exec(const Xor<R32, Imm<u32>>&) override;
+        void exec(const Xor<M8, Imm>&) override;
+        void exec(const Xor<R16, Imm>&) override;
+        void exec(const Xor<R32, Imm>&) override;
         void exec(const Xor<R32, R32>&) override;
         void exec(const Xor<R32, M32>&) override;
         void exec(const Xor<M32, R32>&) override;
@@ -312,27 +310,25 @@ namespace x64 {
         void exec(const Xadd<M32, R32>&) override;
 
         void exec(const Mov<R8, R8>&) override;
-        void exec(const Mov<R8, Imm<u8>>&) override;
+        void exec(const Mov<R8, Imm>&) override;
         void exec(const Mov<R8, M8>&) override;
         void exec(const Mov<M8, R8>&) override;
-        void exec(const Mov<M8, Imm<u8>>&) override;
+        void exec(const Mov<M8, Imm>&) override;
         void exec(const Mov<R16, R16>&) override;
-        void exec(const Mov<R16, Imm<u16>>&) override;
+        void exec(const Mov<R16, Imm>&) override;
         void exec(const Mov<R16, M16>&) override;
         void exec(const Mov<M16, R16>&) override;
-        void exec(const Mov<M16, Imm<u16>>&) override;
+        void exec(const Mov<M16, Imm>&) override;
         void exec(const Mov<R32, R32>&) override;
-        void exec(const Mov<R32, Imm<u32>>&) override;
+        void exec(const Mov<R32, Imm>&) override;
         void exec(const Mov<R32, M32>&) override;
         void exec(const Mov<M32, R32>&) override;
-        void exec(const Mov<M32, Imm<u32>>&) override;
+        void exec(const Mov<M32, Imm>&) override;
         void exec(const Mov<R64, R64>&) override;
-        void exec(const Mov<R64, Imm<u32>>&) override;
-        void exec(const Mov<R64, Imm<u64>>&) override;
+        void exec(const Mov<R64, Imm>&) override;
         void exec(const Mov<R64, M64>&) override;
         void exec(const Mov<M64, R64>&) override;
-        void exec(const Mov<M64, Imm<u32>>&) override;
-        void exec(const Mov<M64, Imm<u64>>&) override;
+        void exec(const Mov<M64, Imm>&) override;
         void exec(const Mov<RSSE, MSSE>&) override;
         void exec(const Mov<MSSE, RSSE>&) override;
 
@@ -363,7 +359,7 @@ namespace x64 {
         void exec(const Push<R32>&) override;
         void exec(const Push<R64>&) override;
         void exec(const Push<SignExtended<u8>>&) override;
-        void exec(const Push<Imm<u32>>&) override;
+        void exec(const Push<Imm>&) override;
         void exec(const Push<M32>&) override;
 
         void exec(const Pop<R32>&) override;
@@ -374,7 +370,7 @@ namespace x64 {
         void exec(const CallIndirect<R64>&) override;
         void exec(const CallIndirect<M32>&) override;
         void exec(const Ret<>&) override;
-        void exec(const Ret<Imm<u16>>&) override;
+        void exec(const Ret<Imm>&) override;
 
         void exec(const Leave&) override;
         void exec(const Halt&) override;
@@ -395,85 +391,85 @@ namespace x64 {
         void exec(const Dec<R32>&) override;
         void exec(const Dec<M32>&) override;
 
-        void exec(const Shr<R8, Imm<u8>>&) override;
+        void exec(const Shr<R8, Imm>&) override;
         void exec(const Shr<R8, Count>&) override;
         void exec(const Shr<R16, Count>&) override;
-        void exec(const Shr<R16, Imm<u8>>&) override;
+        void exec(const Shr<R16, Imm>&) override;
         void exec(const Shr<R32, R8>&) override;
-        void exec(const Shr<R32, Imm<u32>>&) override;
+        void exec(const Shr<R32, Imm>&) override;
         void exec(const Shr<R32, Count>&) override;
         void exec(const Shr<R64, R8>&) override;
-        void exec(const Shr<R64, Imm<u32>>&) override;
+        void exec(const Shr<R64, Imm>&) override;
         void exec(const Shr<R64, Count>&) override;
 
         void exec(const Shl<R32, R8>&) override;
-        void exec(const Shl<R32, Imm<u32>>&) override;
+        void exec(const Shl<R32, Imm>&) override;
         void exec(const Shl<R32, Count>&) override;
-        void exec(const Shl<M32, Imm<u32>>&) override;
+        void exec(const Shl<M32, Imm>&) override;
         void exec(const Shl<R64, R8>&) override;
-        void exec(const Shl<R64, Imm<u32>>&) override;
+        void exec(const Shl<R64, Imm>&) override;
         void exec(const Shl<R64, Count>&) override;
-        void exec(const Shl<M64, Imm<u32>>&) override;
+        void exec(const Shl<M64, Imm>&) override;
 
         void exec(const Shld<R32, R32, R8>&) override;
-        void exec(const Shld<R32, R32, Imm<u8>>&) override;
+        void exec(const Shld<R32, R32, Imm>&) override;
 
         void exec(const Shrd<R32, R32, R8>&) override;
-        void exec(const Shrd<R32, R32, Imm<u8>>&) override;
+        void exec(const Shrd<R32, R32, Imm>&) override;
 
         void exec(const Sar<R32, R8>&) override;
-        void exec(const Sar<R32, Imm<u32>>&) override;
+        void exec(const Sar<R32, Imm>&) override;
         void exec(const Sar<R32, Count>&) override;
         void exec(const Sar<M32, Count>&) override;
         void exec(const Sar<R64, R8>&) override;
-        void exec(const Sar<R64, Imm<u32>>&) override;
+        void exec(const Sar<R64, Imm>&) override;
         void exec(const Sar<R64, Count>&) override;
         void exec(const Sar<M64, Count>&) override;
 
         void exec(const Rol<R32, R8>&) override;
-        void exec(const Rol<R32, Imm<u8>>&) override;
-        void exec(const Rol<M32, Imm<u8>>&) override;
+        void exec(const Rol<R32, Imm>&) override;
+        void exec(const Rol<M32, Imm>&) override;
 
         void exec(const Test<R8, R8>&) override;
-        void exec(const Test<R8, Imm<u8>>&) override;
+        void exec(const Test<R8, Imm>&) override;
         void exec(const Test<M8, R8>&) override;
-        void exec(const Test<M8, Imm<u8>>&) override;
+        void exec(const Test<M8, Imm>&) override;
         void exec(const Test<R16, R16>&) override;
         void exec(const Test<R32, R32>&) override;
-        void exec(const Test<R32, Imm<u32>>&) override;
+        void exec(const Test<R32, Imm>&) override;
         void exec(const Test<M32, R32>&) override;
-        void exec(const Test<M32, Imm<u32>>&) override;
+        void exec(const Test<M32, Imm>&) override;
         void exec(const Test<R64, R64>&) override;
-        void exec(const Test<R64, Imm<u32>>&) override;
+        void exec(const Test<R64, Imm>&) override;
         void exec(const Test<M64, R64>&) override;
-        void exec(const Test<M64, Imm<u32>>&) override;
+        void exec(const Test<M64, Imm>&) override;
 
         void exec(const Cmp<R8, R8>&) override;
-        void exec(const Cmp<R8, Imm<u8>>&) override;
+        void exec(const Cmp<R8, Imm>&) override;
         void exec(const Cmp<R8, M8>&) override;
         void exec(const Cmp<M8, R8>&) override;
-        void exec(const Cmp<M8, Imm<u8>>&) override;
+        void exec(const Cmp<M8, Imm>&) override;
         void exec(const Cmp<R16, R16>&) override;
-        void exec(const Cmp<R16, Imm<u16>>&) override;
+        void exec(const Cmp<R16, Imm>&) override;
         void exec(const Cmp<M16, R16>&) override;
-        void exec(const Cmp<M16, Imm<u16>>&) override;
+        void exec(const Cmp<M16, Imm>&) override;
         void exec(const Cmp<R32, R32>&) override;
-        void exec(const Cmp<R32, Imm<u32>>&) override;
+        void exec(const Cmp<R32, Imm>&) override;
         void exec(const Cmp<R32, M32>&) override;
         void exec(const Cmp<M32, R32>&) override;
-        void exec(const Cmp<M32, Imm<u32>>&) override;
+        void exec(const Cmp<M32, Imm>&) override;
         void exec(const Cmp<R64, R64>&) override;
-        void exec(const Cmp<R64, Imm<u32>>&) override;
+        void exec(const Cmp<R64, Imm>&) override;
         void exec(const Cmp<R64, M64>&) override;
         void exec(const Cmp<M64, R64>&) override;
-        void exec(const Cmp<M64, Imm<u32>>&) override;
+        void exec(const Cmp<M64, Imm>&) override;
 
         void exec(const Cmpxchg<R8, R8>&) override;
         void exec(const Cmpxchg<M8, R8>&) override;
         void exec(const Cmpxchg<R16, R16>&) override;
         void exec(const Cmpxchg<M16, R16>&) override;
         void exec(const Cmpxchg<R32, R32>&) override;
-        void exec(const Cmpxchg<R32, Imm<u32>>&) override;
+        void exec(const Cmpxchg<R32, Imm>&) override;
         void exec(const Cmpxchg<M32, R32>&) override;
 
         void exec(const Set<Cond::AE, R8>&) override;

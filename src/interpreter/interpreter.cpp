@@ -66,7 +66,7 @@ namespace x64 {
             verify(!(header.isExecutable() && header.isWritable()));
             if(header.isProgBits() && header.isExecutable()) {
                 auto functions = InstructionParser::parseSection(filepath, header.name);
-                fmt::print("[{:20}] section {:20} is executable. Found {} functions\n", filepath, header.name, functions.size());
+                // fmt::print("[{:20}] section {:20} is executable. Found {} functions\n", filepath, header.name, functions.size());
                 // for(const auto& f : functions) {
                 //     fmt::print("  {:20} : {:4} instructions\n", f->name, f->instructions.size());
                 // }
@@ -95,7 +95,7 @@ namespace x64 {
                 Mmu::Region region{ regionName, section->address + offset, section->size(), PROT_NONE };
                 mmu_.addRegion(std::move(region));
             } else if(!header.isThreadLocal()) {
-                fmt::print("[{:20}] section {:20} has size {}\n", filepath, header.name, header.sh_size);
+                // fmt::print("[{:20}] section {:20} has size {}\n", filepath, header.name, header.sh_size);
 
                 auto section = elf64->sectionFromName(header.name);
                 verify(section.has_value());
@@ -112,7 +112,7 @@ namespace x64 {
                     std::memcpy(region.data.data(), section->begin, section->size()*sizeof(u8));
                 mmu_.addRegion(std::move(region));
             } else {
-                fmt::print("[{:20}] section {:20} ignored\n", filepath, header.name);
+                // fmt::print("[{:20}] section {:20} ignored\n", filepath, header.name);
             }
         });
 
@@ -154,16 +154,16 @@ namespace x64 {
 
             u64 relocationAddress = loadedElf.offset + relocation.offset();
 
-            fmt::print("resolve relocation for symbol \"{}\" at offset {:#x}\n", symbol, relocation.offset());
+            // fmt::print("resolve relocation for symbol \"{}\" at offset {:#x}\n", symbol, relocation.offset());
 
             if(sym->type() == elf::SymbolType::FUNC
             || (sym->type() == elf::SymbolType::NOTYPE && sym->bind() == elf::SymbolBind::WEAK)) {
                 const auto* func = findFunctionByName(symbol);
                 if(!func) return;
-                fmt::print("  at {:#x}\n", func->address + func->elfOffset);
+                // fmt::print("  at {:#x}\n", func->address + func->elfOffset);
                 mmu_.write64(Ptr64{relocationAddress}, func->address + func->elfOffset);
             } else if(sym->type() == elf::SymbolType::OBJECT) {
-                fmt::print("  Object symbols not yet handled\n");
+                // fmt::print("  Object symbols not yet handled\n");
                 // bool found = false;
                 // auto resolveSymbol = [&](const elf::StringTable* stringTable, const elf::SymbolTableEntry64& entry) {
                 //     if(found) return;

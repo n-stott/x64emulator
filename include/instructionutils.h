@@ -136,13 +136,8 @@ namespace utils {
         return fmt::format("{:x}", count);
     }
 
-    template<typename T>
-    inline std::string toString(const Imm<T>& imm) {
-        if constexpr(std::is_signed_v<T>) {
-            return fmt::format("{:+#x}", imm.immediate);
-        } else {
-            return fmt::format("{:#x}", imm.immediate);
-        }
+    inline std::string toString(const Imm& imm) {
+        return fmt::format("{:#x}", imm.immediate);
     }
 
     template<typename T>
@@ -348,7 +343,7 @@ namespace utils {
         return fmt::format("{:8}", "ret");
     }
 
-    inline std::string toString(const Ret<Imm<u16>>& ins) {
+    inline std::string toString(const Ret<Imm>& ins) {
         return fmt::format("{:8}{}", "ret", toString(ins.src));
     }
 
