@@ -420,16 +420,6 @@ namespace x64 {
         return {};
     }
 
-    std::optional<Count> asCount(std::string_view sv) {
-        if(sv.size() == 0) return {};
-        if(sv.size() > 2) return {};
-        u8 count = 0;
-        auto result = std::from_chars(sv.data(), sv.data()+sv.size(), count, 16);
-        if(result.ptr != sv.data()+sv.size()) return {};
-        assert(result.ec == std::errc{});
-        return Count{count};
-    }
-
     std::optional<u8> asImmediate8(std::string_view sv) {
         if(sv.size() >= 2 && sv[0] == '0' && sv[1] == 'x') sv = sv.substr(2);
         if(sv.size() == 0) return {};
@@ -1201,17 +1191,12 @@ namespace x64 {
         auto r32dst = tryTakeRegister32(operands[0]);
         auto r64dst = tryTakeRegister64(operands[0]);
         auto r8src = tryTakeRegister8(operands[1]);
-        auto countSrc = asCount(operands[1]);
         auto imm8src = asImmediate8(operands[1]);
         auto imm32src = asImmediate32(operands[1]);
-        if(r8dst && countSrc) return make_wrapper<Shr<R8, Count>>(address, r8dst.value(), countSrc.value());
         if(r8dst && imm8src) return make_wrapper<Shr<R8, Imm>>(address, r8dst.value(), imm8src.value());
-        if(r16dst && countSrc) return make_wrapper<Shr<R16, Count>>(address, r16dst.value(), countSrc.value());
         if(r16dst && imm8src) return make_wrapper<Shr<R16, Imm>>(address, r16dst.value(), imm8src.value());
-        if(r32dst && countSrc) return make_wrapper<Shr<R32, Count>>(address, r32dst.value(), countSrc.value());
         if(r32dst && r8src) return make_wrapper<Shr<R32, R8>>(address, r32dst.value(), r8src.value());
         if(r32dst && imm32src) return make_wrapper<Shr<R32, Imm>>(address, r32dst.value(), imm32src.value());
-        if(r64dst && countSrc) return make_wrapper<Shr<R64, Count>>(address, r64dst.value(), countSrc.value());
         if(r64dst && r8src) return make_wrapper<Shr<R64, R8>>(address, r64dst.value(), r8src.value());
         if(r64dst && imm32src) return make_wrapper<Shr<R64, Imm>>(address, r64dst.value(), imm32src.value());
         return make_failed(address, operandsString);
@@ -1223,15 +1208,12 @@ namespace x64 {
         auto r32dst = tryTakeRegister32(operands[0]);
         auto r64dst = tryTakeRegister64(operands[0]);
         auto r8src = tryTakeRegister8(operands[1]);
-        auto countSrc = asCount(operands[1]);
         auto imm32src = asImmediate32(operands[1]);
         auto m32dst = asMemory32(operands[0]);
         auto m64dst = asMemory64(operands[0]);
-        if(r32dst && countSrc) return make_wrapper<Shl<R32, Count>>(address, r32dst.value(), countSrc.value());
         if(r32dst && r8src) return make_wrapper<Shl<R32, R8>>(address, r32dst.value(), r8src.value());
         if(r32dst && imm32src) return make_wrapper<Shl<R32, Imm>>(address, r32dst.value(), imm32src.value());
         if(m32dst && imm32src) return make_wrapper<Shl<M32, Imm>>(address, m32dst.value(), imm32src.value());
-        if(r64dst && countSrc) return make_wrapper<Shl<R64, Count>>(address, r64dst.value(), countSrc.value());
         if(r64dst && r8src) return make_wrapper<Shl<R64, R8>>(address, r64dst.value(), r8src.value());
         if(r64dst && imm32src) return make_wrapper<Shl<R64, Imm>>(address, r64dst.value(), imm32src.value());
         if(m64dst && imm32src) return make_wrapper<Shl<M64, Imm>>(address, m64dst.value(), imm32src.value());
@@ -1266,20 +1248,17 @@ namespace x64 {
         std::vector<std::string_view> operands = split(operandsString, ',');
         assert(operands.size() == 2);
         auto r8src = tryTakeRegister8(operands[1]);
-        auto countSrc = asCount(operands[1]);
         auto r32dst = tryTakeRegister32(operands[0]);
         auto r64dst = tryTakeRegister64(operands[0]);
         auto imm32src = asImmediate32(operands[1]);
         auto m32dst = asMemory32(operands[0]);
         auto m64dst = asMemory64(operands[0]);
         if(r32dst && r8src) return make_wrapper<Sar<R32, R8>>(address, r32dst.value(), r8src.value());
-        if(r32dst && countSrc) return make_wrapper<Sar<R32, Count>>(address, r32dst.value(), countSrc.value());
         if(r32dst && imm32src) return make_wrapper<Sar<R32, Imm>>(address, r32dst.value(), imm32src.value());
-        if(m32dst && countSrc) return make_wrapper<Sar<M32, Count>>(address, m32dst.value(), countSrc.value());
+        if(m32dst && imm32src) return make_wrapper<Sar<M32, Imm>>(address, m32dst.value(), imm32src.value());
         if(r64dst && r8src) return make_wrapper<Sar<R64, R8>>(address, r64dst.value(), r8src.value());
-        if(r64dst && countSrc) return make_wrapper<Sar<R64, Count>>(address, r64dst.value(), countSrc.value());
         if(r64dst && imm32src) return make_wrapper<Sar<R64, Imm>>(address, r64dst.value(), imm32src.value());
-        if(m64dst && countSrc) return make_wrapper<Sar<M64, Count>>(address, m64dst.value(), countSrc.value());
+        if(m64dst && imm32src) return make_wrapper<Sar<M64, Imm>>(address, m64dst.value(), imm32src.value());
         return make_failed(address, operandsString);
     }
 

@@ -128,10 +128,6 @@ namespace utils {
         __builtin_unreachable();
     }
 
-    inline std::string toString(const Count& count) {
-        return fmt::format("{:x}", count.count);
-    }
-
     inline std::string toString(const u32& count) {
         return fmt::format("{:x}", count);
     }

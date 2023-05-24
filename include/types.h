@@ -6,10 +6,6 @@
 
 namespace x64 {
 
-    struct Count {
-        u8 count;
-    };
-
     struct Imm {
         u64 immediate;
     };

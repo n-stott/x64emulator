@@ -16,10 +16,6 @@ namespace x64 {
         return (T)value.immediate;
     }
 
-    u8 Cpu::get(Count count) const {
-        return count.count;   
-    }
-
     u8 Cpu::get(Ptr8 ptr) const {
         return mmu_->read8(ptr);
     }
@@ -955,15 +951,11 @@ namespace x64 {
     }
 
     void Cpu::exec(const Shr<R8, Imm>& ins) { set(ins.dst, execShr8Impl(get(ins.dst), get<u8>(ins.src))); }
-    void Cpu::exec(const Shr<R8, Count>& ins) { set(ins.dst, execShr8Impl(get(ins.dst), get(ins.src))); }
-    void Cpu::exec(const Shr<R16, Count>& ins) { set(ins.dst, execShr16Impl(get(ins.dst), get(ins.src))); }
     void Cpu::exec(const Shr<R16, Imm>& ins) { set(ins.dst, execShr16Impl(get(ins.dst), get<u16>(ins.src))); }
     void Cpu::exec(const Shr<R32, R8>& ins) { set(ins.dst, execShr32Impl(get(ins.dst), get(ins.src))); }
     void Cpu::exec(const Shr<R32, Imm>& ins) { set(ins.dst, execShr32Impl(get(ins.dst), get<u32>(ins.src))); }
-    void Cpu::exec(const Shr<R32, Count>& ins) { set(ins.dst, execShr32Impl(get(ins.dst), get(ins.src))); }
     void Cpu::exec(const Shr<R64, R8>& ins) { set(ins.dst, execShr64Impl(get(ins.dst), get(ins.src))); }
     void Cpu::exec(const Shr<R64, Imm>& ins) { set(ins.dst, execShr64Impl(get(ins.dst), get<u64>(ins.src))); }
-    void Cpu::exec(const Shr<R64, Count>& ins) { set(ins.dst, execShr64Impl(get(ins.dst), get(ins.src))); }
 
     void Cpu::exec(const Shl<R32, R8>& ins) {
         assert(get(ins.src) < 32);
@@ -975,12 +967,11 @@ namespace x64 {
         set(ins.dst, get(ins.dst) << get<u32>(ins.src));
         WARN_FLAGS();
     }
-    void Cpu::exec(const Shl<R32, Count>& ins) {
-        assert(get(ins.src) < 32);
-        set(ins.dst, get(ins.dst) << get(ins.src));
+    void Cpu::exec(const Shl<M32, Imm>& ins) {
+        assert(get<u32>(ins.src) < 32);
+        set(resolve(ins.dst), get(resolve(ins.dst)) << get<u32>(ins.src));
         WARN_FLAGS();
     }
-    void Cpu::exec(const Shl<M32, Imm>& ins) { TODO(ins); }
 
     void Cpu::exec(const Shl<R64, R8>& ins) {
         assert(get(ins.src) < 64);
@@ -992,12 +983,11 @@ namespace x64 {
         set(ins.dst, get(ins.dst) << get<u64>(ins.src));
         WARN_FLAGS();
     }
-    void Cpu::exec(const Shl<R64, Count>& ins) {
-        assert(get(ins.src) < 64);
-        set(ins.dst, get(ins.dst) << get(ins.src));
+    void Cpu::exec(const Shl<M64, Imm>& ins) {
+        assert(get<u64>(ins.src) < 64);
+        set(resolve(ins.dst), get(resolve(ins.dst)) << get<u64>(ins.src));
         WARN_FLAGS();
     }
-    void Cpu::exec(const Shl<M64, Imm>& ins) { TODO(ins); }
 
     void Cpu::exec(const Shld<R32, R32, R8>& ins) {
         assert(get(ins.src2) < 32);
@@ -1032,12 +1022,10 @@ namespace x64 {
 
     void Cpu::exec(const Sar<R32, R8>& ins) { set(ins.dst, execSar32Impl(get(ins.dst), get(ins.src))); }
     void Cpu::exec(const Sar<R32, Imm>& ins) { set(ins.dst, execSar32Impl(get(ins.dst), get<u32>(ins.src))); }
-    void Cpu::exec(const Sar<R32, Count>& ins) { set(ins.dst, execSar32Impl(get(ins.dst), get(ins.src))); }
-    void Cpu::exec(const Sar<M32, Count>& ins) { TODO(ins); }
+    void Cpu::exec(const Sar<M32, Imm>& ins) { set(resolve(ins.dst), execSar32Impl(get(resolve(ins.dst)), get<u32>(ins.src))); }
     void Cpu::exec(const Sar<R64, R8>& ins) { set(ins.dst, execSar64Impl(get(ins.dst), get(ins.src))); }
     void Cpu::exec(const Sar<R64, Imm>& ins) { set(ins.dst, execSar64Impl(get(ins.dst), get<u64>(ins.src))); }
-    void Cpu::exec(const Sar<R64, Count>& ins) { set(ins.dst, execSar64Impl(get(ins.dst), get(ins.src))); }
-    void Cpu::exec(const Sar<M64, Count>& ins) { TODO(ins); }
+    void Cpu::exec(const Sar<M64, Imm>& ins) { set(resolve(ins.dst), execSar64Impl(get(resolve(ins.dst)), get<u64>(ins.src))); }
 
     void Cpu::exec(const Rol<R32, R8>& ins) { TODO(ins); }
     void Cpu::exec(const Rol<R32, Imm>& ins) { TODO(ins); }

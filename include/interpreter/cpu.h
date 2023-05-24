@@ -41,8 +41,6 @@ namespace x64 {
         u64 get(Ptr64 reg) const;
         Xmm get(Ptr128 reg) const;
 
-        u8 get(Count count) const;
-
         u64 resolve(B addr) const { return regs_.resolve(addr); }
         u64 resolve(BD addr) const { return regs_.resolve(addr); }
         u64 resolve(BIS addr) const { return regs_.resolve(addr); }
@@ -392,23 +390,17 @@ namespace x64 {
         void exec(const Dec<M32>&) override;
 
         void exec(const Shr<R8, Imm>&) override;
-        void exec(const Shr<R8, Count>&) override;
-        void exec(const Shr<R16, Count>&) override;
         void exec(const Shr<R16, Imm>&) override;
         void exec(const Shr<R32, R8>&) override;
         void exec(const Shr<R32, Imm>&) override;
-        void exec(const Shr<R32, Count>&) override;
         void exec(const Shr<R64, R8>&) override;
         void exec(const Shr<R64, Imm>&) override;
-        void exec(const Shr<R64, Count>&) override;
 
         void exec(const Shl<R32, R8>&) override;
         void exec(const Shl<R32, Imm>&) override;
-        void exec(const Shl<R32, Count>&) override;
         void exec(const Shl<M32, Imm>&) override;
         void exec(const Shl<R64, R8>&) override;
         void exec(const Shl<R64, Imm>&) override;
-        void exec(const Shl<R64, Count>&) override;
         void exec(const Shl<M64, Imm>&) override;
 
         void exec(const Shld<R32, R32, R8>&) override;
@@ -419,12 +411,10 @@ namespace x64 {
 
         void exec(const Sar<R32, R8>&) override;
         void exec(const Sar<R32, Imm>&) override;
-        void exec(const Sar<R32, Count>&) override;
-        void exec(const Sar<M32, Count>&) override;
+        void exec(const Sar<M32, Imm>&) override;
         void exec(const Sar<R64, R8>&) override;
         void exec(const Sar<R64, Imm>&) override;
-        void exec(const Sar<R64, Count>&) override;
-        void exec(const Sar<M64, Count>&) override;
+        void exec(const Sar<M64, Imm>&) override;
 
         void exec(const Rol<R32, R8>&) override;
         void exec(const Rol<R32, Imm>&) override;
