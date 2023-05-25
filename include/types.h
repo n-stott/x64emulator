@@ -179,6 +179,17 @@ namespace x64 {
         XMMWORD,
     };
 
+    inline constexpr u8 pointerSize(Size size) {
+        switch(size) {
+            case Size::BYTE: return 1;
+            case Size::WORD: return 2;
+            case Size::DWORD: return 4;
+            case Size::QWORD: return 8;
+            case Size::XMMWORD: return 16;
+        }
+        return 0;
+    }
+
     template<Size size, typename Encoding>
     struct Addr {
         Encoding encoding;
@@ -189,13 +200,7 @@ namespace x64 {
         u64 address;
 
         Ptr& operator++() {
-            switch(size) {
-                case Size::BYTE: address += 1; break;
-                case Size::WORD: address += 2; break;
-                case Size::DWORD: address += 4; break;
-                case Size::QWORD: address += 8; break;
-                case Size::XMMWORD: address += 16; break;
-            }
+            address += pointerSize(size);
             return *this;
         }
     };
@@ -206,40 +211,26 @@ namespace x64 {
     using Ptr64 = Ptr<Size::QWORD>;
     using Ptr128 = Ptr<Size::XMMWORD>;
 
+    template<Size size>
+    using M = std::variant<Addr<size, B>,
+                           Addr<size, BD>,
+                           Addr<size, BIS>,
+                           Addr<size, ISD>,
+                           Addr<size, BISD>>;
 
-    using M8 = std::variant<Addr<Size::BYTE, B>,
-                             Addr<Size::BYTE, BD>,
-                             Addr<Size::BYTE, BIS>,
-                             Addr<Size::BYTE, ISD>,
-                             Addr<Size::BYTE, BISD>>;
+    using M8 = M<Size::BYTE>;
     using RM8 = std::variant<R8, M8>;
 
-    using M16 = std::variant<Addr<Size::WORD, B>,
-                             Addr<Size::WORD, BD>,
-                             Addr<Size::WORD, BIS>,
-                             Addr<Size::WORD, ISD>,
-                             Addr<Size::WORD, BISD>>;
+    using M16 = M<Size::WORD>;
     using RM16 = std::variant<R16, M16>;
 
-    using M32 = std::variant<Addr<Size::DWORD, B>,
-                             Addr<Size::DWORD, BD>,
-                             Addr<Size::DWORD, BIS>,
-                             Addr<Size::DWORD, ISD>,
-                             Addr<Size::DWORD, BISD>>;
+    using M32 = M<Size::DWORD>;
     using RM32 = std::variant<R32, M32>;
 
-    using M64 = std::variant<Addr<Size::QWORD, B>,
-                             Addr<Size::QWORD, BD>,
-                             Addr<Size::QWORD, BIS>,
-                             Addr<Size::QWORD, ISD>,
-                             Addr<Size::QWORD, BISD>>;
+    using M64 = M<Size::QWORD>;
     using RM64 = std::variant<R64, M64>;
 
-    using MSSE = std::variant<Addr<Size::XMMWORD, B>,
-                              Addr<Size::XMMWORD, BD>,
-                              Addr<Size::XMMWORD, BIS>,
-                              Addr<Size::XMMWORD, ISD>,
-                              Addr<Size::XMMWORD, BISD>>;
+    using MSSE = M<Size::XMMWORD>;
     using RMSSE = std::variant<RSSE, MSSE>;
 }
 

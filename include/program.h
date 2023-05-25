@@ -27,7 +27,7 @@ namespace x64 {
         std::vector<std::unique_ptr<X86Instruction>> instructions;
 
         Function() : address(0), elfOffset(0) { }
-        Function(u32 address, std::string name, std::vector<std::unique_ptr<X86Instruction>> instructions) :
+        Function(u64 address, std::string name, std::vector<std::unique_ptr<X86Instruction>> instructions) :
             address(address), elfOffset(0), name(std::move(name)), instructions(std::move(instructions)) {
 
         }

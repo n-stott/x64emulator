@@ -139,7 +139,7 @@ namespace x64 {
     };
 
     struct CallDirect {
-        u32 symbolAddress;
+        u64 symbolAddress;
         std::string symbolName;
         void* interpreterFunction = nullptr;
     };
@@ -266,7 +266,7 @@ namespace x64 {
 
     template<Cond cond>
     struct Jcc {
-        u32 symbolAddress;
+        u64 symbolAddress;
         std::string symbolName;
     };
 

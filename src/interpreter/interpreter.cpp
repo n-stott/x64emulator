@@ -465,7 +465,10 @@ namespace x64 {
     void Interpreter::dumpFunctions(FILE* stream) const {
         for(const auto& section : executableSections_) {
             for(const auto& func : section.functions) {
-                fmt::print(stream, "{}\n", func->name);
+                fmt::print(stream, "{:#x} : {}\n", func->address, func->name);
+                for(const auto& insn : func->instructions) {
+                    fmt::print(" {:#x} {}\n", insn->address, insn->toString());
+                }
             }
         }
     }
