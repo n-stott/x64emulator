@@ -34,6 +34,7 @@ namespace x64 {
             std::string sectionname;
             const elf::Elf64* elf;
             u64 sectionOffset;
+            std::vector<std::unique_ptr<X86Instruction>> instructions;
             std::vector<std::unique_ptr<Function>> functions;
         };
 
@@ -79,7 +80,7 @@ namespace x64 {
                 assert(!frames.empty());
                 Frame& frame = frames.back();
                 assert(frame.offset < frame.function->instructions.size());
-                const X86Instruction* instruction = frame.function->instructions[frame.offset].get();
+                const X86Instruction* instruction = frame.function->instructions[frame.offset];
                 ++frame.offset;
                 return instruction;
             }
@@ -88,7 +89,7 @@ namespace x64 {
                 assert(!frames.empty());
                 const Frame& frame = frames.back();
                 if(frame.offset < frame.function->instructions.size()) {
-                    return frame.function->instructions[frame.offset].get();
+                    return frame.function->instructions[frame.offset];
                 } else {
                     return nullptr;
                 }

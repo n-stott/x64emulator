@@ -25,15 +25,14 @@ namespace x64 {
         };
         static OpcodeBytes opcodeBytesFromString(std::string_view s);
     public:
-        static std::unique_ptr<Program> parseFile(std::string filename);
         static std::unique_ptr<X86Instruction> parseInstructionLine(std::string_view s);
         static std::unique_ptr<X86Instruction> parseInstruction(const OpcodeBytes& opbytes, u32 address, std::string_view s);
 
-        static std::vector<std::unique_ptr<Function>> parseSection(std::string_view filepath, std::string_view section);
+        static void parseSection(std::string_view filepath, std::string_view section, std::vector<std::unique_ptr<X86Instruction>>* instructions, std::vector<std::unique_ptr<Function>>* functions);
 
     private:
         using line_iterator = std::vector<std::string>::const_iterator;
-        static std::unique_ptr<Function> parseFunction(line_iterator& begin, line_iterator end);
+        static std::unique_ptr<Function> parseFunction(line_iterator& begin, line_iterator end, std::vector<std::unique_ptr<X86Instruction>>* instructions);
 
         static std::unique_ptr<X86Instruction> parsePush(const OpcodeBytes& opbytes, u32 address, std::string_view operands);
         static std::unique_ptr<X86Instruction> parsePop(const OpcodeBytes& opbytes, u32 address, std::string_view operands);

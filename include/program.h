@@ -24,10 +24,10 @@ namespace x64 {
         u64 address;
         u64 elfOffset;
         std::string name;
-        std::vector<std::unique_ptr<X86Instruction>> instructions;
+        std::vector<const X86Instruction*> instructions;
 
         Function() : address(0), elfOffset(0) { }
-        Function(u64 address, std::string name, std::vector<std::unique_ptr<X86Instruction>> instructions) :
+        Function(u64 address, std::string name, std::vector<const X86Instruction*> instructions) :
             address(address), elfOffset(0), name(std::move(name)), instructions(std::move(instructions)) {
 
         }

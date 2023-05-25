@@ -16,6 +16,8 @@ namespace x64 {
     class LibraryFunction : public Function {
     public:
         explicit LibraryFunction(const std::string& symbol) : Function{0xDEADC0DE, symbol, {}} { }
+
+        std::vector<std::unique_ptr<X86Instruction>> internalInstructions;
     };
 
 }

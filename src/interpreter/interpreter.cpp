@@ -66,8 +66,10 @@ namespace x64 {
             if(!header.doesAllocate()) return;
             verify(!(header.isExecutable() && header.isWritable()));
             if(header.isProgBits() && header.isExecutable()) {
-                auto functions = InstructionParser::parseSection(filepath, header.name);
-                // auto functions = CapstoneWrapper::disassembleSection(std::string(filepath), std::string(header.name));
+                std::vector<std::unique_ptr<X86Instruction>> instructions;
+                std::vector<std::unique_ptr<Function>> functions;
+                InstructionParser::parseSection(filepath, header.name, &instructions, &functions);
+                // CapstoneWrapper::disassembleSection(std::string(filepath), std::string(header.name), &instructions, &functions);
 
                 // assert(functions.size() == functions2.size());
                 // for(size_t i = 0; i < functions.size(); ++i) {
@@ -101,6 +103,7 @@ namespace x64 {
                     std::string(header.name),
                     elf64.get(),
                     offset,
+                    std::move(instructions),
                     std::move(functions),
                 };
                 executableSections_.push_back(std::move(esection));
@@ -151,7 +154,8 @@ namespace x64 {
             ".text",
             nullptr,
             libcOffset,
-            {}
+            {},
+            {},
         };
         auto& libcFunctions = libcSection.functions;
         libc_->forAllFunctions(ExecutionContext(*this), [&](std::unique_ptr<Function> function) {

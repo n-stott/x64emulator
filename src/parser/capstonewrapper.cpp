@@ -1550,14 +1550,17 @@ namespace x64 {
         return make_failed(insn);
     }
 
-    std::vector<std::unique_ptr<Function>> CapstoneWrapper::disassembleSection(std::string filepath, std::string section) {
+    void CapstoneWrapper::disassembleSection(std::string filepath, std::string section, std::vector<std::unique_ptr<X86Instruction>>* instructions, std::vector<std::unique_ptr<Function>>* functions) {
+        if(!instructions) return;
+        if(!functions) return;
+
         auto elf = elf::ElfReader::tryCreate(filepath);
-        if(!elf) return {};
-        if(elf->archClass() != elf::Class::B64) return {};
+        if(!elf) return;
+        if(elf->archClass() != elf::Class::B64) return;
         std::unique_ptr<elf::Elf64> elf64(static_cast<elf::Elf64*>(elf.release()));
 
         auto sec = elf64->sectionFromName(section);
-        if(!sec) return {};
+        if(!sec) return;
         fmt::print("Found section {} in {}\n", section, filepath);
 
         std::vector<std::pair<u64, std::string>> symbols;
@@ -1574,8 +1577,8 @@ namespace x64 {
         std::sort(symbols.begin(), symbols.end());
 
         csh handle;
-        if(cs_open(CS_ARCH_X86, CS_MODE_64, &handle) != CS_ERR_OK) return {};
-        if(cs_option(handle, CS_OPT_DETAIL, CS_OPT_ON) != CS_ERR_OK) return {};
+        if(cs_open(CS_ARCH_X86, CS_MODE_64, &handle) != CS_ERR_OK) return;
+        if(cs_option(handle, CS_OPT_DETAIL, CS_OPT_ON) != CS_ERR_OK) return;
 
         cs_insn* insns;
         const u8* codeBegin = sec->begin;
@@ -1587,11 +1590,10 @@ namespace x64 {
         if(!count) {
             fmt::print("Failed to disassemble\n");
             cs_close(&handle);
-            return {};
+            return;
         }
 
-        std::vector<std::unique_ptr<Function>> functions;
-        functions.emplace_back(new Function(symbols[0].first, symbols[0].second, {}));
+        functions->emplace_back(new Function(symbols[0].first, symbols[0].second, {}));
         size_t nextSymbol = 1;
 
         auto insertInstruction = [&](const cs_insn& insn) {
@@ -1601,25 +1603,24 @@ namespace x64 {
             // fmt::print("{}\n", x86insn->toString());
 
             while(nextSymbol < symbols.size() && insn.address >= symbols[nextSymbol].first) {
-                functions.emplace_back(new Function(symbols[nextSymbol].first, symbols[nextSymbol].second, {}));
+                functions->emplace_back(new Function(symbols[nextSymbol].first, symbols[nextSymbol].second, {}));
                 ++nextSymbol;
             }
-            functions.back()->instructions.push_back(std::move(x86insn));
+            functions->back()->instructions.push_back(x86insn.get());
+            instructions->push_back(std::move(x86insn));
         };
 
         for(size_t j = 0; j < count; ++j) {
             insertInstruction(insns[j]);
         }
 
-        functions.erase(std::remove_if(functions.begin(), functions.end(), [](const auto& func) {
+        functions->erase(std::remove_if(functions->begin(), functions->end(), [](const auto& func) {
             return func->instructions.empty() || func->instructions.front()->address != func->address;
-        }), functions.end());
+        }), functions->end());
 
         fmt::print("Disassembled {} instructions\n", count);
         cs_free(insns, count);
         cs_close(&handle);
-
-        return functions;
     }
 
 }

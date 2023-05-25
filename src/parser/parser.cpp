@@ -18,72 +18,34 @@
 
 namespace x64 {
 
-    std::unique_ptr<Program> InstructionParser::parseFile(std::string filepath) {
+    void InstructionParser::parseSection(std::string_view filepath, std::string_view section, std::vector<std::unique_ptr<X86Instruction>>* instructions, std::vector<std::unique_ptr<Function>>* functions) {
+        if(!instructions) return;
+        if(!functions) return;
+        instructions->clear();
+        functions->clear();
 
-        Program program;
-        program.filepath = filepath;
-        program.filename = filenameFromPath(filepath);
-
-        auto parseRange = [&](line_iterator begin, line_iterator end) {
-            size_t total = 0;
-            while(begin != end) {
-                auto ptr = parseFunction(begin, end);
-                total++;
-                if(ptr) {
-                    if(startsWith(ptr->name, ".L")) {
-                        assert(!program.functions.empty());
-                        auto& prevFuncInstruction = program.functions.back().instructions;
-                        for(auto&& ins : ptr->instructions) prevFuncInstruction.push_back(std::move(ins));
-                    } else {
-                        program.functions.push_back(std::move(*ptr));
-                    }
-                }
-            }
-        };
-
-        std::vector<std::string> disassembledText = Disassembler::disassembleSection(filepath, ".text");
-
-        if(disassembledText.empty()) {
-            fmt::print("Unable to disassemble text section in {}\n", filepath);
-            return {};
-        }
-        parseRange(disassembledText.begin(), disassembledText.end());
-
-        std::vector<std::string> disassembledPlt = Disassembler::disassembleSection(filepath, ".plt");
-        if(!disassembledPlt.empty()) {
-            parseRange(disassembledPlt.begin(), disassembledPlt.end());
-        } else {
-            fmt::print("Warning: unable to disassemble plt section in {}\n", filepath);
-        }
-
-        return std::make_unique<Program>(std::move(program));
-    }
-
-    std::vector<std::unique_ptr<Function>> InstructionParser::parseSection(std::string_view filepath, std::string_view section) {
         std::vector<std::string> disassembledSection = Disassembler::disassembleSection(filepath, section);
 
         // std::chrono::steady_clock::time_point beginParse = std::chrono::steady_clock::now();
         line_iterator begin = disassembledSection.begin();
         line_iterator end = disassembledSection.end();
-        std::vector<std::unique_ptr<Function>> functions;
         while(begin != end) {
-            auto ptr = parseFunction(begin, end);
+            auto ptr = parseFunction(begin, end, instructions);
             if(ptr) {
                 if(startsWith(ptr->name, ".L")) {
-                    assert(!functions.empty());
-                    auto& prevFuncInstruction = functions.back()->instructions;
-                    for(auto&& ins : ptr->instructions) prevFuncInstruction.push_back(std::move(ins));
+                    assert(!functions->empty());
+                    auto& prevFuncInstruction = functions->back()->instructions;
+                    for(const auto* ins : ptr->instructions) prevFuncInstruction.push_back(ins);
                 } else {
-                    functions.push_back(std::move(ptr));
+                    functions->push_back(std::move(ptr));
                 }
             }
         }
         // std::chrono::steady_clock::time_point endParse = std::chrono::steady_clock::now();
         // fmt::print("Parsing {}:{} took {} ms\n", filepath, section, (endParse-beginParse).count()/1000000);
-        return functions;
     }
 
-    std::unique_ptr<Function> InstructionParser::parseFunction(line_iterator& begin, line_iterator end) {
+    std::unique_ptr<Function> InstructionParser::parseFunction(line_iterator& begin, line_iterator end, std::vector<std::unique_ptr<X86Instruction>>* instructions) {
         std::string line;
         bool foundFunctionStart = false;
         while (!foundFunctionStart && begin != end) {
@@ -116,16 +78,15 @@ namespace x64 {
         std::string name(wrappedName.substr(1, wrappedName.size()-3));
         function->name = name;
 
-        std::vector<std::unique_ptr<X86Instruction>> instructions;
         while(begin != end) {
             line = *begin++;
             std::string_view strippedLine = strip(line);
             if(strippedLine.empty()) break;
             auto ins = parseInstructionLine(strippedLine);
             if(!ins) continue;
-            instructions.push_back(std::move(ins));
+            function->instructions.push_back(ins.get());
+            instructions->push_back(std::move(ins));
         }
-        function->instructions = std::move(instructions);
 
         return function;
     }

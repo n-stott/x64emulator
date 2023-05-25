@@ -195,9 +195,10 @@ namespace x64 {
         };
 
         
-        inline const X86Instruction* add(Function* function, std::unique_ptr<X86Instruction> instr) {
-            function->instructions.push_back(std::move(instr));
-            return function->instructions.back().get();
+        inline const X86Instruction* add(LibraryFunction* function, std::unique_ptr<X86Instruction> instr) {
+            function->instructions.push_back(instr.get());
+            function->internalInstructions.push_back(std::move(instr));
+            return function->instructions.back();
         }
 
     }
