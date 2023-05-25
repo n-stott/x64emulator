@@ -19,14 +19,34 @@ namespace x64 {
     LibC::LibC(LibC&&) = default;
     LibC::~LibC() = default;
 
-    void LibC::forAllFunctions(const ExecutionContext& context, std::function<void(std::unique_ptr<Function>)> callback) {
-        callback(std::unique_ptr<Function>(new Putchar(context)));
-        callback(std::unique_ptr<Function>(new Malloc(context, this)));
-        callback(std::unique_ptr<Function>(new Free(context, this)));
-        callback(std::unique_ptr<Function>(new Fopen64(context, this)));
-        callback(std::unique_ptr<Function>(new Fileno(context, this)));
-        callback(std::unique_ptr<Function>(new Fclose(context, this)));
-        callback(std::unique_ptr<Function>(new Read(context, this)));
+    template<typename T, typename... Args>
+    std::unique_ptr<Function> createAndFill(std::vector<std::unique_ptr<X86Instruction>>* instructions, Args... args) {
+        if(!instructions) return {};
+        std::unique_ptr<LibraryFunction> f(new T(args...));
+        instructions->clear();
+        for(auto&& insn : f->internalInstructions) instructions->push_back(std::move(insn));
+        f->internalInstructions.clear();
+        std::unique_ptr<Function> func = std::move(f);
+        return func;
+    }
+
+    void LibC::forAllFunctions(const ExecutionContext& context, std::function<void(std::vector<std::unique_ptr<X86Instruction>>, std::unique_ptr<Function>)> callback) {
+        std::vector<std::unique_ptr<X86Instruction>> instructions;
+        std::unique_ptr<Function> func;
+        func = createAndFill<Putchar>(&instructions, context);
+        callback(std::move(instructions), std::move(func));
+        func = createAndFill<Malloc>(&instructions, context, this);
+        callback(std::move(instructions), std::move(func));
+        func = createAndFill<Free>(&instructions, context, this);
+        callback(std::move(instructions), std::move(func));
+        func = createAndFill<Fopen64>(&instructions, context, this);
+        callback(std::move(instructions), std::move(func));
+        func = createAndFill<Fileno>(&instructions, context, this);
+        callback(std::move(instructions), std::move(func));
+        func = createAndFill<Fclose>(&instructions, context, this);
+        callback(std::move(instructions), std::move(func));
+        func = createAndFill<Read>(&instructions, context, this);
+        callback(std::move(instructions), std::move(func));
     }
 
     class LibC::Heap {

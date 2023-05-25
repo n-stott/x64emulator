@@ -607,11 +607,13 @@ namespace x64 {
         auto imm8 = asImmediate8(operandString);
         auto imm32 = asImmediate32(operandString);
         auto m32src = asMemory32(operandString);
+        auto m64src = asMemory64(operandString);
         if(r32) return make_wrapper<Push<R32>>(address, r32.value());
         if(r64) return make_wrapper<Push<R64>>(address, r64.value());
         if(imm8) return make_wrapper<Push<SignExtended<u8>>>(address, imm8.value());
         if(imm32) return make_wrapper<Push<Imm>>(address, imm32.value());
         if(m32src) return make_wrapper<Push<M32>>(address, m32src.value());
+        if(m64src) return make_wrapper<Push<M64>>(address, m64src.value());
         return make_failed(address, operandString);
     }
 

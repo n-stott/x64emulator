@@ -359,6 +359,7 @@ namespace x64 {
         void exec(const Push<SignExtended<u8>>&) override;
         void exec(const Push<Imm>&) override;
         void exec(const Push<M32>&) override;
+        void exec(const Push<M64>&) override;
 
         void exec(const Pop<R32>&) override;
         void exec(const Pop<R64>&) override;

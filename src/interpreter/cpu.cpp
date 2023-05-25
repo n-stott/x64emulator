@@ -716,7 +716,8 @@ namespace x64 {
         push32(get<u32>(ins.src));
     }
 
-    void Cpu::exec(const Push<M32>& ins) { push32(mmu_->read32(resolve(ins.src))); }
+    void Cpu::exec(const Push<M32>& ins) { push32(get(resolve(ins.src))); }
+    void Cpu::exec(const Push<M64>& ins) { push64(get(resolve(ins.src))); }
 
     void Cpu::exec(const Pop<R32>& ins) {
         set(ins.dst, pop32());
@@ -727,55 +728,38 @@ namespace x64 {
     }
 
     void Cpu::exec(const CallDirect& ins) {
-        const Function* func = interpreter_->findFunctionByAddress(ins.symbolAddress);
-        if(!func) func = interpreter_->findFunctionByName(ins.symbolName);
-        if(!func) {
-            if(ins.symbolName.size() >= 4) {
-                std::string_view suffix = ins.symbolName.substr(ins.symbolName.size()-4);
-                verify(suffix == "@plt", "function does not end with @plt");
-                std::string name = ins.symbolName.substr(0, ins.symbolName.size()-4);
-                func = interpreter_->findFunctionByName(name);
-                verify(!!func, [&]() { fmt::print("unable to find function _{}_@plt\n", name); });
-            } else {
-                verify(false, "unable to find function");
-            }
-        }
-        interpreter_->callStack_.frames.push_back(Interpreter::Frame{func, 0});
+        u64 address = interpreter_->currentExecutedSection->sectionOffset + ins.symbolAddress;
         push64(regs_.rip_);
+        interpreter_->call(address);
     }
 
     void Cpu::exec(const CallIndirect<R32>& ins) {
-        u32 address = get(ins.src);
-        const Function* func = interpreter_->findFunctionByAddress(address);
-        interpreter_->callStack_.frames.push_back(Interpreter::Frame{func, 0});
+        u64 address = interpreter_->currentExecutedSection->sectionOffset + get(ins.src);
         push64(regs_.rip_);
+        interpreter_->call(address);
     }
 
     void Cpu::exec(const CallIndirect<R64>& ins) {
-        u64 address = get(ins.src);
-        const Function* func = interpreter_->findFunctionByAddress(address);
-        interpreter_->callStack_.frames.push_back(Interpreter::Frame{func, 0});
+        u64 address = interpreter_->currentExecutedSection->sectionOffset + get(ins.src);
         push64(regs_.rip_);
+        interpreter_->call(address);
     }
 
     void Cpu::exec(const CallIndirect<M32>& ins) {
-        u32 address = mmu_->read32(resolve(ins.src));
-        const Function* func = interpreter_->findFunctionByAddress(address);
-        interpreter_->callStack_.frames.push_back(Interpreter::Frame{func, 0});
+        u64 address = interpreter_->currentExecutedSection->sectionOffset + get(resolve(ins.src));
         push64(regs_.rip_);
+        interpreter_->call(address);
     }
 
     void Cpu::exec(const Ret<>&) {
-        assert(interpreter_->callStack_.frames.size() >= 1);
-        interpreter_->callStack_.frames.pop_back();
         regs_.rip_ = pop64();
+        interpreter_->ret(regs_.rip_);
     }
 
     void Cpu::exec(const Ret<Imm>& ins) {
-        assert(interpreter_->callStack_.frames.size() >= 1);
-        interpreter_->callStack_.frames.pop_back();
         regs_.rip_ = pop64();
         regs_.rsp_ += get<u64>(ins.src);
+        interpreter_->ret(regs_.rip_);
     }
 
     void Cpu::exec(const Leave&) {
@@ -856,7 +840,7 @@ namespace x64 {
 
     u8 Cpu::execShr8Impl(u8 dst, u8 src) {
         assert(src < 8);
-        u8 res = dst >> src;
+        u8 res = static_cast<u8>(dst >> src);
         if(src) {
             flags_.carry = dst & (1 << (src-1));
         }
@@ -872,7 +856,7 @@ namespace x64 {
 
     u16 Cpu::execShr16Impl(u16 dst, u16 src) {
         assert(src < 16);
-        u16 res = dst >> src;
+        u16 res = static_cast<u16>(dst >> src);
         if(src) {
             flags_.carry = dst & (1 << (src-1));
         }
@@ -1176,147 +1160,108 @@ namespace x64 {
     void Cpu::exec(const Set<Cond::NE, M8>& ins) { execSet(Cond::NE, ins.dst); }
 
     void Cpu::exec(const Jmp<R32>& ins) {
-        bool success = interpreter_->callStack_.jumpInFrame(get(ins.symbolAddress));
-        if(!success) success = interpreter_->callStack_.jumpOutOfFrame(interpreter_, get(ins.symbolAddress));
-        verify(success, [&]() {
-            fmt::print("[Jmp<R32>] Unable to find jmp destination {:#x}\n", get(ins.symbolAddress));
-        });
+        u64 dst = (u64)get(ins.symbolAddress);
+        interpreter_->jmp(dst);
     }
 
     void Cpu::exec(const Jmp<R64>& ins) {
-        bool success = interpreter_->callStack_.jumpInFrame(get(ins.symbolAddress));
-        if(!success) success = interpreter_->callStack_.jumpOutOfFrame(interpreter_, get(ins.symbolAddress));
-        verify(success, [&]() {
-            fmt::print("[Jmp<R64>] Unable to find jmp destination {:#x}\n", get(ins.symbolAddress));
-        });
+        u64 dst = get(ins.symbolAddress);
+        interpreter_->jmp(dst);
     }
 
     void Cpu::exec(const Jmp<u32>& ins) {
-        bool success = interpreter_->callStack_.jumpInFrame(ins.symbolAddress);
-        if(!success) success = interpreter_->callStack_.jumpOutOfFrame(interpreter_, ins.symbolAddress);
-        verify(success, [&]() {
-            fmt::print("[Jmp<u32>] Unable to find jmp destination {:#x}\n", ins.symbolAddress);
-        });
+        u64 dst = interpreter_->currentExecutedSection->sectionOffset + ins.symbolAddress;
+        interpreter_->jmp(dst);
     }
 
     void Cpu::exec(const Jmp<M32>& ins) { TODO(ins); }
 
     void Cpu::exec(const Jmp<M64>& ins) {
-        u64 address = get(resolve(ins.symbolAddress));
-        bool success = interpreter_->callStack_.jumpInFrame(address);
-        if(!success) success = interpreter_->callStack_.jumpOutOfFrame(interpreter_, address);
-        verify(success, [&]() {
-            fmt::print("[Jmp<M64>] Unable to find jmp destination {:#x}\n", address);
-        });
+        u64 dst = (u64)get(resolve(ins.symbolAddress));
+        interpreter_->jmp(dst);
     }
 
     void Cpu::exec(const Jcc<Cond::NE>& ins) {
         if(flags_.matches(Cond::NE)) {
-            bool success = interpreter_->callStack_.jumpInFrame(ins.symbolAddress);
-            verify(success, [&]() {
-                fmt::print("[Jcc<Cond::NE>] Unable to find jmp destination {:#x}\n", ins.symbolAddress);
-            });
+            u64 dst = interpreter_->currentExecutedSection->sectionOffset + ins.symbolAddress;
+            interpreter_->jmp(dst);
         }
     }
 
     void Cpu::exec(const Jcc<Cond::E>& ins) {
         if(flags_.matches(Cond::E)) {
-            bool success = interpreter_->callStack_.jumpInFrame(ins.symbolAddress);
-            verify(success, [&]() {
-                fmt::print("[Jcc<Cond::E>] Unable to find jmp destination {:#x}\n", ins.symbolAddress);
-            });
+            u64 dst = interpreter_->currentExecutedSection->sectionOffset + ins.symbolAddress;
+            interpreter_->jmp(dst);
         }
     }
 
     void Cpu::exec(const Jcc<Cond::AE>& ins) {
         if(flags_.matches(Cond::AE)) {
-            bool success = interpreter_->callStack_.jumpInFrame(ins.symbolAddress);
-            verify(success, [&]() {
-                fmt::print("[Jcc<Cond::AE>] Unable to find jmp destination {:#x}\n", ins.symbolAddress);
-            });
+            u64 dst = interpreter_->currentExecutedSection->sectionOffset + ins.symbolAddress;
+            interpreter_->jmp(dst);
         }
     }
 
     void Cpu::exec(const Jcc<Cond::BE>& ins) {
         if(flags_.matches(Cond::BE)) {
-            bool success = interpreter_->callStack_.jumpInFrame(ins.symbolAddress);
-            verify(success, [&]() {
-                fmt::print("[Jcc<Cond::BE>] Unable to find jmp destination {:#x}\n", ins.symbolAddress);
-            });
+            u64 dst = interpreter_->currentExecutedSection->sectionOffset + ins.symbolAddress;
+            interpreter_->jmp(dst);
         }
     }
 
     void Cpu::exec(const Jcc<Cond::GE>& ins) {
         if(flags_.matches(Cond::GE)) {
-            bool success = interpreter_->callStack_.jumpInFrame(ins.symbolAddress);
-            verify(success, [&]() {
-                fmt::print("[Jcc<Cond::GE>] Unable to find jmp destination {:#x}\n", ins.symbolAddress);
-            });
+            u64 dst = interpreter_->currentExecutedSection->sectionOffset + ins.symbolAddress;
+            interpreter_->jmp(dst);
         }
     }
 
     void Cpu::exec(const Jcc<Cond::LE>& ins) {
         if(flags_.matches(Cond::LE)) {
-            bool success = interpreter_->callStack_.jumpInFrame(ins.symbolAddress);
-            verify(success, [&]() {
-                fmt::print("[Jcc<Cond::LE>] Unable to find jmp destination {:#x}\n", ins.symbolAddress);
-            });
+            u64 dst = interpreter_->currentExecutedSection->sectionOffset + ins.symbolAddress;
+            interpreter_->jmp(dst);
         }
     }
 
     void Cpu::exec(const Jcc<Cond::A>& ins) {
         if(flags_.matches(Cond::A)) {
-            bool success = interpreter_->callStack_.jumpInFrame(ins.symbolAddress);
-            verify(success, [&]() {
-                fmt::print("[Jcc<Cond::A>] Unable to find jmp destination {:#x}\n", ins.symbolAddress);
-            });
+            u64 dst = interpreter_->currentExecutedSection->sectionOffset + ins.symbolAddress;
+            interpreter_->jmp(dst);
         }
     }
 
     void Cpu::exec(const Jcc<Cond::B>& ins) {
         if(flags_.matches(Cond::B)) {
-            bool success = interpreter_->callStack_.jumpInFrame(ins.symbolAddress);
-            verify(success, [&]() {
-                fmt::print("[Jcc<Cond::B>] Unable to find jmp destination {:#x}\n", ins.symbolAddress);
-            });
-            (void)success;
-            assert(success);
+            u64 dst = interpreter_->currentExecutedSection->sectionOffset + ins.symbolAddress;
+            interpreter_->jmp(dst);
         }
     }
 
     void Cpu::exec(const Jcc<Cond::G>& ins) {
         if(flags_.matches(Cond::G)) {
-            bool success = interpreter_->callStack_.jumpInFrame(ins.symbolAddress);
-            verify(success, [&]() {
-                fmt::print("[Jcc<Cond::G>] Unable to find jmp destination {:#x}\n", ins.symbolAddress);
-            });
+            u64 dst = interpreter_->currentExecutedSection->sectionOffset + ins.symbolAddress;
+            interpreter_->jmp(dst);
         }
     }
 
     void Cpu::exec(const Jcc<Cond::L>& ins) {
         if(flags_.matches(Cond::L)) {
-            bool success = interpreter_->callStack_.jumpInFrame(ins.symbolAddress);
-            verify(success, [&]() {
-                fmt::print("[Jcc<Cond::L>] Unable to find jmp destination {:#x}\n", ins.symbolAddress);
-            });
+            u64 dst = interpreter_->currentExecutedSection->sectionOffset + ins.symbolAddress;
+            interpreter_->jmp(dst);
         }
     }
 
     void Cpu::exec(const Jcc<Cond::S>& ins) {
         if(flags_.matches(Cond::S)) {
-            bool success = interpreter_->callStack_.jumpInFrame(ins.symbolAddress);
-            verify(success, [&]() {
-                fmt::print("[Jcc<Cond::S>] Unable to find jmp destination {:#x}\n", ins.symbolAddress);
-            });
+            u64 dst = interpreter_->currentExecutedSection->sectionOffset + ins.symbolAddress;
+            interpreter_->jmp(dst);
         }
     }
 
     void Cpu::exec(const Jcc<Cond::NS>& ins) {
         if(flags_.matches(Cond::NS)) {
-            bool success = interpreter_->callStack_.jumpInFrame(ins.symbolAddress);
-            verify(success, [&]() {
-                fmt::print("[Jcc<Cond::NS>] Unable to find jmp destination {:#x}\n", ins.symbolAddress);
-            });
+            u64 dst = interpreter_->currentExecutedSection->sectionOffset + ins.symbolAddress;
+            interpreter_->jmp(dst);
         }
     }
 

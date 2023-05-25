@@ -106,6 +106,10 @@ namespace x64 {
                     std::move(instructions),
                     std::move(functions),
                 };
+                assert(std::is_sorted(esection.instructions.begin(), esection.instructions.end(), [](const auto& a, const auto& b) {
+                    return a->address < b->address;
+                }));
+
                 executableSections_.push_back(std::move(esection));
 
                 std::string shortFilePath = filepath.find_last_of('/') == std::string::npos ? filepath
@@ -157,11 +161,27 @@ namespace x64 {
             {},
             {},
         };
+        auto& libcInstructions = libcSection.instructions;
         auto& libcFunctions = libcSection.functions;
-        libc_->forAllFunctions(ExecutionContext(*this), [&](std::unique_ptr<Function> function) {
+        libc_->forAllFunctions(ExecutionContext(*this), [&](std::vector<std::unique_ptr<X86Instruction>> instructions, std::unique_ptr<Function> function) {
             function->elfOffset = libcOffset;
+            for(auto&& insn : instructions) {
+                libcInstructions.push_back(std::move(insn));
+            }
             libcFunctions.push_back(std::move(function));
         });
+        u64 address = 0;
+        for(auto& insn : libcInstructions) {
+            insn->address = address;
+            ++address;
+        }
+        for(auto& func : libcFunctions) {
+            if(!func) continue;
+            if(func->instructions.empty()) continue;
+            if(!func->instructions[0]) continue;
+            func->address = func->instructions[0]->address;
+        }
+
         executableSections_.push_back(std::move(libcSection));
     }
 
@@ -177,13 +197,16 @@ namespace x64 {
 
             u64 relocationAddress = loadedElf.offset + relocation.offset();
 
-            // fmt::print("resolve relocation for symbol \"{}\" at offset {:#x}\n", symbol, relocation.offset());
+            fmt::print("resolve relocation for symbol \"{}\" at offset {:#x}\n", symbol, relocation.offset());
 
             if(sym->type() == elf::SymbolType::FUNC
-            || (sym->type() == elf::SymbolType::NOTYPE && sym->bind() == elf::SymbolBind::WEAK)) {
+            || (sym->type() == elf::SymbolType::NOTYPE && (sym->bind() == elf::SymbolBind::WEAK || sym->bind() == elf::SymbolBind::GLOBAL))) {
                 const auto* func = findFunctionByName(symbol);
-                if(!func) return;
-                // fmt::print("  at {:#x}\n", func->address + func->elfOffset);
+                if(!func) {
+                    fmt::print("  unable to find\n");
+                    return;
+                }
+                fmt::print("  at {:#x}\n", func->address + func->elfOffset);
                 mmu_.write64(Ptr64{relocationAddress}, func->address + func->elfOffset);
             } else if(sym->type() == elf::SymbolType::OBJECT) {
                 // fmt::print("  Object symbols not yet handled\n");
@@ -243,13 +266,12 @@ namespace x64 {
     const Function* Interpreter::findFunctionByAddress(u64 address) const {
         const Function* function = nullptr;
         std::string origin;
-        const Function* current = currentFunction();
         for(const auto& execSection : executableSections_) {
-            if(!!current && execSection.sectionOffset != current->elfOffset) continue;
             for(const auto& func : execSection.functions) {
                 if(address == func->address + func->elfOffset) {
                     verify(!function, [&]() {
-                        fmt::print("Function with address {:#x} found in {} must be unique, but found copy in section {}:{}\n", address, origin, execSection.filename, execSection.sectionname);
+                        fmt::print("Function with address {:#x} found in {} must be unique, but found copy in section {}:{}\n",
+                                address, origin, execSection.filename, execSection.sectionname);
                         fmt::print("Function a: {} insn\n", function->instructions.size());
                         function->print();
 
@@ -258,6 +280,7 @@ namespace x64 {
                     });
                     function = func.get();
                     origin = execSection.filename + ":" + execSection.sectionname;
+                    return function;
                 }
             }
         }
@@ -312,26 +335,6 @@ namespace x64 {
         if(section->type() != elf::SectionHeaderType::NOBITS)
             std::memcpy(region.data.data(), section->begin, section->size()*sizeof(u8));
         return mmu_.addRegion(std::move(region));
-    }
-
-    const Function* Interpreter::currentFunction() const {
-        if(callStack_.frames.empty()) return nullptr;
-        return callStack_.frames.back().function;
-    }
-
-    const Function* Interpreter::findFunction(const CallDirect& ins) {
-        const Function* func = (const Function*)ins.interpreterFunction;
-        if(!ins.interpreterFunction) {
-            func = findFunctionByName(ins.symbolName);
-            if(!func) func = findFunctionByAddress(ins.symbolAddress);
-            const_cast<CallDirect&>(ins).interpreterFunction = (void*)func;
-        }
-        dumpStack();
-        verify(!!func, [&]() {
-            fmt::print(stderr, "Unknown function '{}'\n", ins.symbolName);
-            stop_ = true;
-        });
-        return func;
     }
 
     namespace {
@@ -395,19 +398,28 @@ namespace x64 {
         if(stop_) return;
         fmt::print("Execute function {}\n", function->name);
         SignalHandler sh;
-        callStack_.frames.clear();
-        callStack_.frames.push_back(Frame{function, 0});
+        // callStack_.frames.clear();
+        // callStack_.frames.push_back(Frame{function, 0});
 
         push64(function->address);
+        // push64(0x0);
+
+        call(function->address);
 
         size_t ticks = 0;
-        while(!stop_ && callStack_.hasNext()) {
+        while(!stop_ && callDepth > 0 && cpu_.regs_.rip_ != 0x0) {
             try {
                 verify(!signal_interrupt);
-                const X86Instruction* instruction = callStack_.next();
-                auto nextAfter = callStack_.peek();
-                if(nextAfter) {
-                    cpu_.regs_.rip_ = nextAfter->address + callStack_.frames.back().function->elfOffset;
+                verify(!!currentExecutedSection);
+                verify(currentInstructionIdx != (size_t)(-1));
+                const X86Instruction* instruction = currentExecutedSection->instructions[currentInstructionIdx].get();
+                if(currentInstructionIdx+1 != currentExecutedSection->instructions.size()) {
+                    const X86Instruction* nextInstruction = currentExecutedSection->instructions[currentInstructionIdx+1].get();
+                    cpu_.regs_.rip_ = currentExecutedSection->sectionOffset + nextInstruction->address;
+                    ++currentInstructionIdx;
+                } else {
+                    currentInstructionIdx = (size_t)(-1);
+                    cpu_.regs_.rip_ = 0x0;
                 }
                 if(!instruction) {
                     fmt::print(stderr, "Undefined instruction near {:#x}\n", cpu_.regs_.rip_);
@@ -425,7 +437,7 @@ namespace x64 {
                                                         cpu_.regs_.rip_,
                                                         cpu_.regs_.rax_, cpu_.regs_.rbx_, cpu_.regs_.rcx_, cpu_.regs_.rdx_,
                                                         cpu_.regs_.rsi_, cpu_.regs_.rdi_, cpu_.regs_.rbp_, cpu_.regs_.rsp_);
-                std::string indent = fmt::format("{:{}}", "", callStack_.frames.size());
+                std::string indent = fmt::format("{:{}}", "", callDepth);
                 std::string menmonic = fmt::format("{}|{}", indent, instruction->toString());
                 fmt::print(stderr, "{:10} {:60}{:20} {}\n", ticks, menmonic, eflags, registerDump);
 #endif
@@ -437,7 +449,7 @@ namespace x64 {
                 dump(stdout);
                 mmu_.dumpRegions();
                 fmt::print("Stacktrace:\n");
-                callStack_.dumpStacktrace();
+                // callStack_.dumpStacktrace();
                 stop_ = true;
             }
         }

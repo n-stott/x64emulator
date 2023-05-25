@@ -184,6 +184,7 @@ namespace x64 {
         virtual void exec(const Push<SignExtended<u8>>&) = 0;
         virtual void exec(const Push<Imm>&) = 0;
         virtual void exec(const Push<M32>&) = 0;
+        virtual void exec(const Push<M64>&) = 0;
 
         virtual void exec(const Pop<R32>&) = 0;
         virtual void exec(const Pop<R64>&) = 0;
