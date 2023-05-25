@@ -32,6 +32,14 @@ namespace x64 {
         BPL,
         SIL,
         DIL,
+        R8B,
+        R9B,
+        R10B,
+        R11B,
+        R12B,
+        R13B,
+        R14B,
+        R15B,
     };
 
     enum class R16 {

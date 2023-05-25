@@ -4,7 +4,6 @@
 #include "instructions.h"
 #include "interpreter/executioncontext.h"
 #include "interpreter/verify.h"
-#include "parser/parser.h"
 #include <cassert>
 #include <map>
 #include <list>

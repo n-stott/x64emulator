@@ -17,9 +17,7 @@ add_executable(interpreter
     src/lib/library.cpp
     src/lib/libc.cpp
     src/translation/x86instruction.cpp
-    src/parser/disassembler.cpp
-    src/parser/capstonewrapper.cpp
-    src/parser/parser.cpp
+    src/disassembler/capstonewrapper.cpp
     src/interpreter/interpreter.cpp
     src/interpreter/cpu.cpp
     src/interpreter/fpu.cpp

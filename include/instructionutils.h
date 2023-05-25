@@ -22,6 +22,14 @@ namespace utils {
             case R8::BPL: return "bpl";
             case R8::SIL: return "sil";
             case R8::DIL: return "dil";
+            case R8::R8B: return "r8b";
+            case R8::R9B: return "r9b";
+            case R8::R10B: return "r10b";
+            case R8::R11B: return "r11b";
+            case R8::R12B: return "r12b";
+            case R8::R13B: return "r13b";
+            case R8::R14B: return "r14b";
+            case R8::R15B: return "r15b";
         }
         return "";
     }

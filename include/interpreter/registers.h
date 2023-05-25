@@ -44,6 +44,14 @@ namespace x64 {
                 case R8::BPL: return rbp_ & 0xFF;
                 case R8::SIL: return rsi_ & 0xFF;
                 case R8::DIL: return rdi_ & 0xFF;
+                case R8::R8B: return r8_ & 0xFF;
+                case R8::R9B: return r9_ & 0xFF;
+                case R8::R10B: return r10_ & 0xFF;
+                case R8::R11B: return r11_ & 0xFF;
+                case R8::R12B: return r12_ & 0xFF;
+                case R8::R13B: return r13_ & 0xFF;
+                case R8::R14B: return r14_ & 0xFF;
+                case R8::R15B: return r15_ & 0xFF;
             }
             __builtin_unreachable();
         }
@@ -126,6 +134,14 @@ namespace x64 {
                 case R8::BPL: { rbp_ = (rbp_ & 0xFFFFFFFFFFFFFF00) | (value); return; }
                 case R8::SIL: { rsi_ = (rsi_ & 0xFFFFFFFFFFFFFF00) | (value); return; }
                 case R8::DIL: { rdi_ = (rdi_ & 0xFFFFFFFFFFFFFF00) | (value); return; }
+                case R8::R8B: { r8_ = (r8_ & 0xFFFFFFFFFFFFFF00) | (value); return; }
+                case R8::R9B: { r9_ = (r9_ & 0xFFFFFFFFFFFFFF00) | (value); return; }
+                case R8::R10B: { r10_ = (r10_ & 0xFFFFFFFFFFFFFF00) | (value); return; }
+                case R8::R11B: { r11_ = (r11_ & 0xFFFFFFFFFFFFFF00) | (value); return; }
+                case R8::R12B: { r12_ = (r12_ & 0xFFFFFFFFFFFFFF00) | (value); return; }
+                case R8::R13B: { r13_ = (r13_ & 0xFFFFFFFFFFFFFF00) | (value); return; }
+                case R8::R14B: { r14_ = (r14_ & 0xFFFFFFFFFFFFFF00) | (value); return; }
+                case R8::R15B: { r15_ = (r15_ & 0xFFFFFFFFFFFFFF00) | (value); return; }
             }
             __builtin_unreachable();
         }

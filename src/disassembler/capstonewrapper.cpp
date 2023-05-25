@@ -1,4 +1,4 @@
-#include "parser/capstonewrapper.h"
+#include "disassembler/capstonewrapper.h"
 #include "instructionhandler.h"
 #include "instructionutils.h"
 #include "instructions.h"
@@ -140,7 +140,7 @@ namespace x64 {
     }
 
     std::optional<Imm> asImmediate(const cs_x86_op& operand) {
-        if(operand.type != X86_OP_IMM) return {};
+        if(operand.type != X86_OP_IMM) return std::nullopt;
         return Imm{(u64)operand.imm};
     }
 
@@ -158,6 +158,14 @@ namespace x64 {
             case X86_REG_BPL: return R8::BPL;
             case X86_REG_SIL: return R8::SIL;
             case X86_REG_DIL: return R8::DIL;
+            case X86_REG_R8B: return R8::R8B;
+            case X86_REG_R9B: return R8::R9B;
+            case X86_REG_R10B: return R8::R10B;
+            case X86_REG_R11B: return R8::R11B;
+            case X86_REG_R12B: return R8::R12B;
+            case X86_REG_R13B: return R8::R13B;
+            case X86_REG_R14B: return R8::R14B;
+            case X86_REG_R15B: return R8::R15B;
             default: return {};
         }
         return {};
@@ -299,7 +307,6 @@ namespace x64 {
         if(!base) return {};
         auto index = asRegister64(operand.mem.index);
         if(!index) return {};
-        if(operand.mem.scale == 1) return {};
         if(operand.mem.disp != 0) return {};
         return BIS { base.value(), index.value(), (u8)operand.mem.scale };
     }
@@ -310,7 +317,6 @@ namespace x64 {
         auto index = asRegister64(operand.mem.index);
         if(!index) return {};
         if(operand.mem.scale == 1) return {};
-        if(operand.mem.disp == 0) return {};
         return ISD { index.value(), (u8)operand.mem.scale, (i32)operand.mem.disp };
     }
 
@@ -319,8 +325,8 @@ namespace x64 {
         if(!base) return {};
         auto index = asRegister64(operand.mem.index);
         if(!index) return {};
-        if(operand.mem.scale != 1) return {};
-        if(operand.mem.disp != 0) return {};
+        if(operand.mem.scale == 1) return {};
+        if(operand.mem.disp == 0) return {};
         return BISD { base.value(), index.value(), (u8)operand.mem.scale, (i32)operand.mem.disp };
     }
 

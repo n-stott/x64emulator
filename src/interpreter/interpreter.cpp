@@ -1,8 +1,7 @@
 #include "interpreter/interpreter.h"
 #include "interpreter/executioncontext.h"
 #include "interpreter/verify.h"
-#include "parser/parser.h"
-#include "parser/capstonewrapper.h"
+#include "disassembler/capstonewrapper.h"
 #include "instructionutils.h"
 #include <fmt/core.h>
 #include <algorithm>
@@ -68,29 +67,8 @@ namespace x64 {
             if(header.isProgBits() && header.isExecutable()) {
                 std::vector<std::unique_ptr<X86Instruction>> instructions;
                 std::vector<std::unique_ptr<Function>> functions;
-                InstructionParser::parseSection(filepath, header.name, &instructions, &functions);
-                // CapstoneWrapper::disassembleSection(std::string(filepath), std::string(header.name), &instructions, &functions);
+                CapstoneWrapper::disassembleSection(std::string(filepath), std::string(header.name), &instructions, &functions);
 
-                // assert(functions.size() == functions2.size());
-                // for(size_t i = 0; i < functions.size(); ++i) {
-                //     const auto& func1 = functions[i];
-                //     fmt::print("{} {:#x}\n", func1->name, func1->address);
-                //     for(const auto& insn : func1->instructions) {
-                //         fmt::print("  {}\n", insn->toString());
-                //     }
-                // }
-                // for(size_t i = 0; i < functions2.size(); ++i) {
-                //     const auto& func2 = functions2[i];
-                //     fmt::print("{} {}\n", func2->name, func2->address);
-                //     for(const auto& insn : func2->instructions) {
-                //         fmt::print("  {}\n", insn->toString());
-                //     }
-                // }
-
-                // fmt::print("[{:20}] section {:20} is executable. Found {} functions\n", filepath, header.name, functions.size());
-                // for(const auto& f : functions) {
-                //     fmt::print("  {:20} : {:4} instructions\n", f->name, f->instructions.size());
-                // }
                 for(auto& f : functions) f->elfOffset = offset;
                 functions.erase(std::remove_if(functions.begin(), functions.end(), [](std::unique_ptr<Function>& function) -> bool {
                     if(function->name.size() >= 10) {
@@ -121,8 +99,6 @@ namespace x64 {
                 Mmu::Region region{ regionName, section->address + offset, section->size(), PROT_NONE };
                 mmu_.addRegion(std::move(region));
             } else if(!header.isThreadLocal()) {
-                // fmt::print("[{:20}] section {:20} has size {}\n", filepath, header.name, header.sh_size);
-
                 auto section = elf64->sectionFromName(header.name);
                 verify(section.has_value());
 
