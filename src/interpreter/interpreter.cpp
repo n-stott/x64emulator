@@ -2,6 +2,7 @@
 #include "interpreter/executioncontext.h"
 #include "interpreter/verify.h"
 #include "parser/parser.h"
+#include "parser/capstonewrapper.h"
 #include "instructionutils.h"
 #include <fmt/core.h>
 #include <algorithm>
@@ -66,6 +67,24 @@ namespace x64 {
             verify(!(header.isExecutable() && header.isWritable()));
             if(header.isProgBits() && header.isExecutable()) {
                 auto functions = InstructionParser::parseSection(filepath, header.name);
+                // auto functions = CapstoneWrapper::disassembleSection(std::string(filepath), std::string(header.name));
+
+                // assert(functions.size() == functions2.size());
+                // for(size_t i = 0; i < functions.size(); ++i) {
+                //     const auto& func1 = functions[i];
+                //     fmt::print("{} {:#x}\n", func1->name, func1->address);
+                //     for(const auto& insn : func1->instructions) {
+                //         fmt::print("  {}\n", insn->toString());
+                //     }
+                // }
+                // for(size_t i = 0; i < functions2.size(); ++i) {
+                //     const auto& func2 = functions2[i];
+                //     fmt::print("{} {}\n", func2->name, func2->address);
+                //     for(const auto& insn : func2->instructions) {
+                //         fmt::print("  {}\n", insn->toString());
+                //     }
+                // }
+
                 // fmt::print("[{:20}] section {:20} is executable. Found {} functions\n", filepath, header.name, functions.size());
                 // for(const auto& f : functions) {
                 //     fmt::print("  {:20} : {:4} instructions\n", f->name, f->instructions.size());

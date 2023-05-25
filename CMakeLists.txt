@@ -18,6 +18,7 @@ add_executable(interpreter
     src/lib/libc.cpp
     src/translation/x86instruction.cpp
     src/parser/disassembler.cpp
+    src/parser/capstonewrapper.cpp
     src/parser/parser.cpp
     src/interpreter/interpreter.cpp
     src/interpreter/cpu.cpp
@@ -34,7 +35,7 @@ target_include_directories(interpreter PUBLIC include)
 target_include_directories(interpreter PUBLIC ../common/include)
 target_include_directories(interpreter PUBLIC external)
 target_include_directories(interpreter PUBLIC external/elf-reader/src)
-target_link_libraries(interpreter PUBLIC -lstdc++fs)
+target_link_libraries(interpreter PUBLIC -lstdc++fs -lcapstone)
 # target_compile_options(interpreter PUBLIC -fsanitize=address,undefined)
 # target_link_options(interpreter PUBLIC -fsanitize=address,undefined)
 
