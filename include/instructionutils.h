@@ -8,6 +8,18 @@
 namespace x64 {
 namespace utils {
 
+    inline std::string toString(const Segment& seg) {
+        switch(seg) {
+            case Segment::CS: return "cs";
+            case Segment::DS: return "ds";
+            case Segment::ES: return "es";
+            case Segment::FS: return "fs";
+            case Segment::GS: return "gs";
+            case Segment::SS: return "ss";
+        }
+        return "";
+    }
+
     inline std::string toString(const R8& reg) {
         switch(reg) {
             case R8::AH: return "ah";
@@ -190,6 +202,10 @@ namespace utils {
 
     inline std::string toString(const BISD& bisd) {
         return fmt::format("[{}+{}*{}{:+#x}]", toString(bisd.base), toString(bisd.index), bisd.scale, bisd.displacement);
+    }
+
+    inline std::string toString(const SO& so) {
+        return fmt::format("{}:{:#x}", toString(so.segment), so.offset);
     }
 
     template<Size size, typename Enc>

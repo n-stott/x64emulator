@@ -46,30 +46,10 @@ namespace x64 {
         u64 resolve(BIS addr) const { return regs_.resolve(addr); }
         u64 resolve(ISD addr) const { return regs_.resolve(addr); }
         u64 resolve(BISD addr) const { return regs_.resolve(addr); }
+        u64 resolve(SO addr) const { return regs_.resolve(addr); }
 
-        Ptr<Size::BYTE> resolve(Addr<Size::BYTE, B> addr) const { return regs_.resolve(addr); }
-        Ptr<Size::BYTE> resolve(Addr<Size::BYTE, BD> addr) const { return regs_.resolve(addr); }
-        Ptr<Size::BYTE> resolve(Addr<Size::BYTE, BIS> addr) const { return regs_.resolve(addr); }
-        Ptr<Size::BYTE> resolve(Addr<Size::BYTE, BISD> addr) const { return regs_.resolve(addr); }
-        Ptr<Size::WORD> resolve(Addr<Size::WORD, B> addr) const { return regs_.resolve(addr); }
-        Ptr<Size::WORD> resolve(Addr<Size::WORD, BD> addr) const { return regs_.resolve(addr); }
-        Ptr<Size::WORD> resolve(Addr<Size::WORD, BIS> addr) const { return regs_.resolve(addr); }
-        Ptr<Size::WORD> resolve(Addr<Size::WORD, BISD> addr) const { return regs_.resolve(addr); }
-        Ptr<Size::DWORD> resolve(Addr<Size::DWORD, B> addr) const { return regs_.resolve(addr); }
-        Ptr<Size::DWORD> resolve(Addr<Size::DWORD, BD> addr) const { return regs_.resolve(addr); }
-        Ptr<Size::DWORD> resolve(Addr<Size::DWORD, BIS> addr) const { return regs_.resolve(addr); }
-        Ptr<Size::DWORD> resolve(Addr<Size::DWORD, ISD> addr) const { return regs_.resolve(addr); }
-        Ptr<Size::DWORD> resolve(Addr<Size::DWORD, BISD> addr) const { return regs_.resolve(addr); }
-        Ptr<Size::QWORD> resolve(Addr<Size::QWORD, B> addr) const { return regs_.resolve(addr); }
-        Ptr<Size::QWORD> resolve(Addr<Size::QWORD, BD> addr) const { return regs_.resolve(addr); }
-        Ptr<Size::QWORD> resolve(Addr<Size::QWORD, BIS> addr) const { return regs_.resolve(addr); }
-        Ptr<Size::QWORD> resolve(Addr<Size::QWORD, ISD> addr) const { return regs_.resolve(addr); }
-        Ptr<Size::QWORD> resolve(Addr<Size::QWORD, BISD> addr) const { return regs_.resolve(addr); }
-        Ptr<Size::XMMWORD> resolve(Addr<Size::XMMWORD, B> addr) const { return regs_.resolve(addr); }
-        Ptr<Size::XMMWORD> resolve(Addr<Size::XMMWORD, BD> addr) const { return regs_.resolve(addr); }
-        Ptr<Size::XMMWORD> resolve(Addr<Size::XMMWORD, BIS> addr) const { return regs_.resolve(addr); }
-        Ptr<Size::XMMWORD> resolve(Addr<Size::XMMWORD, ISD> addr) const { return regs_.resolve(addr); }
-        Ptr<Size::XMMWORD> resolve(Addr<Size::XMMWORD, BISD> addr) const { return regs_.resolve(addr); }
+        template<Size size, typename Enc>
+        Ptr<size> resolve(Addr<size, Enc> addr) const { return regs_.resolve(addr); }
 
         Ptr<Size::BYTE> resolve(const M8& m8) const { return regs_.resolve(m8); }
         Ptr<Size::WORD> resolve(const M16& m16) const { return regs_.resolve(m16); }
@@ -495,8 +475,8 @@ namespace x64 {
         void exec(const Rep<Movs<Addr<Size::BYTE, B>, Addr<Size::BYTE, B>>>&) override;
         void exec(const Rep<Movs<Addr<Size::DWORD, B>, Addr<Size::DWORD, B>>>&) override;
         
-        void exec(const Rep<Stos<Addr<Size::DWORD, B>, R32>>&) override;
-        void exec(const Rep<Stos<Addr<Size::QWORD, B>, R64>>&) override;
+        void exec(const Rep<Stos<M32, R32>>&) override;
+        void exec(const Rep<Stos<M64, R64>>&) override;
 
         void exec(const RepNZ<Scas<R8, Addr<Size::BYTE, B>>>&) override;
 

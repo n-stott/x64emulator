@@ -380,7 +380,6 @@ namespace x64 {
         SignalHandler sh;
 
         push64(function->address);
-
         call(function->address);
 
         size_t ticks = 0;

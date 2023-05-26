@@ -1329,8 +1329,7 @@ namespace x64 {
         set(R64::RDI, dptr.address);
     }
     
-    void Cpu::exec(const Rep<Stos<Addr<Size::DWORD, B>, R32>>& ins) {
-        assert(ins.op.dst.encoding.base == R64::RDI);
+    void Cpu::exec(const Rep<Stos<M32, R32>>& ins) {
         u32 counter = get(R32::ECX);
         Ptr32 dptr = resolve(ins.op.dst);
         u32 val = get(ins.op.src);
@@ -1343,8 +1342,7 @@ namespace x64 {
         set(R64::RDI, dptr.address);
     }
 
-    void Cpu::exec(const Rep<Stos<Addr<Size::QWORD, B>, R64>>& ins) {
-        assert(ins.op.dst.encoding.base == R64::RDI);
+    void Cpu::exec(const Rep<Stos<M64, R64>>& ins) {
         u64 counter = get(R64::RCX);
         Ptr64 dptr = resolve(ins.op.dst);
         u64 val = get(ins.op.src);

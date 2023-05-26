@@ -231,96 +231,15 @@ namespace x64 {
             return get(addr.base) + get(addr.index)*addr.scale + addr.displacement;
         }
 
-        Ptr<Size::BYTE> resolve(Addr<Size::BYTE, B> addr) const {
-            return Ptr<Size::BYTE>{resolve(addr.encoding)};
+        u64 resolve(SO addr) const {
+            (void)addr;
+            assert(!"not handled");
+            return 0x0;
         }
 
-        Ptr<Size::BYTE> resolve(Addr<Size::BYTE, BD> addr) const {
-            return Ptr<Size::BYTE>{resolve(addr.encoding)};
-        }
-
-        Ptr<Size::BYTE> resolve(Addr<Size::BYTE, BIS> addr) const {
-            return Ptr<Size::BYTE>{resolve(addr.encoding)};
-        }
-
-        Ptr<Size::BYTE> resolve(Addr<Size::BYTE, BISD> addr) const {
-            return Ptr<Size::BYTE>{resolve(addr.encoding)};
-        }
-
-        Ptr<Size::WORD> resolve(Addr<Size::WORD, B> addr) const {
-            return Ptr<Size::WORD>{resolve(addr.encoding)};
-        }
-
-        Ptr<Size::WORD> resolve(Addr<Size::WORD, BD> addr) const {
-            return Ptr<Size::WORD>{resolve(addr.encoding)};
-        }
-
-        Ptr<Size::WORD> resolve(Addr<Size::WORD, BIS> addr) const {
-            return Ptr<Size::WORD>{resolve(addr.encoding)};
-        }
-
-        Ptr<Size::WORD> resolve(Addr<Size::WORD, BISD> addr) const {
-            return Ptr<Size::WORD>{resolve(addr.encoding)};
-        }
-
-        Ptr<Size::DWORD> resolve(Addr<Size::DWORD, B> addr) const {
-            return Ptr<Size::DWORD>{resolve(addr.encoding)};
-        }
-
-        Ptr<Size::DWORD> resolve(Addr<Size::DWORD, BD> addr) const {
-            return Ptr<Size::DWORD>{resolve(addr.encoding)};
-        }
-
-        Ptr<Size::DWORD> resolve(Addr<Size::DWORD, BIS> addr) const {
-            return Ptr<Size::DWORD>{resolve(addr.encoding)};
-        }
-        
-        Ptr<Size::DWORD> resolve(Addr<Size::DWORD, ISD> addr) const {
-            return Ptr<Size::DWORD>{resolve(addr.encoding)};
-        }
-
-        Ptr<Size::DWORD> resolve(Addr<Size::DWORD, BISD> addr) const {
-            return Ptr<Size::DWORD>{resolve(addr.encoding)};
-        }
-
-        Ptr<Size::QWORD> resolve(Addr<Size::QWORD, B> addr) const {
-            return Ptr<Size::QWORD>{resolve(addr.encoding)};
-        }
-
-        Ptr<Size::QWORD> resolve(Addr<Size::QWORD, BD> addr) const {
-            return Ptr<Size::QWORD>{resolve(addr.encoding)};
-        }
-
-        Ptr<Size::QWORD> resolve(Addr<Size::QWORD, BIS> addr) const {
-            return Ptr<Size::QWORD>{resolve(addr.encoding)};
-        }
-        
-        Ptr<Size::QWORD> resolve(Addr<Size::QWORD, ISD> addr) const {
-            return Ptr<Size::QWORD>{resolve(addr.encoding)};
-        }
-
-        Ptr<Size::QWORD> resolve(Addr<Size::QWORD, BISD> addr) const {
-            return Ptr<Size::QWORD>{resolve(addr.encoding)};
-        }
-
-        Ptr<Size::XMMWORD> resolve(Addr<Size::XMMWORD, B> addr) const {
-            return Ptr<Size::XMMWORD>{resolve(addr.encoding)};
-        }
-
-        Ptr<Size::XMMWORD> resolve(Addr<Size::XMMWORD, BD> addr) const {
-            return Ptr<Size::XMMWORD>{resolve(addr.encoding)};
-        }
-
-        Ptr<Size::XMMWORD> resolve(Addr<Size::XMMWORD, BIS> addr) const {
-            return Ptr<Size::XMMWORD>{resolve(addr.encoding)};
-        }
-        
-        Ptr<Size::XMMWORD> resolve(Addr<Size::XMMWORD, ISD> addr) const {
-            return Ptr<Size::XMMWORD>{resolve(addr.encoding)};
-        }
-
-        Ptr<Size::XMMWORD> resolve(Addr<Size::XMMWORD, BISD> addr) const {
-            return Ptr<Size::XMMWORD>{resolve(addr.encoding)};
+        template<Size size, typename Enc>
+        Ptr<size> resolve(Addr<size, Enc> addr) const {
+            return Ptr<size>{resolve(addr.encoding)};
         }
         
         Ptr<Size::BYTE> resolve(const M8& m8) const {

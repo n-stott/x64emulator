@@ -19,6 +19,15 @@ namespace x64 {
         u8 extendedValue;
     };
 
+    enum class Segment {
+        CS,
+        DS,
+        ES,
+        FS,
+        GS,
+        SS,
+    };
+
     enum class R8 {
         AH,
         AL,
@@ -136,10 +145,6 @@ namespace x64 {
         OVERFLOW
     };
 
-    struct D {
-        i32 displacement;
-    };
-
     struct B {
         R64 base;
     };
@@ -151,12 +156,6 @@ namespace x64 {
 
     struct BD {
         R64 base;
-        i32 displacement;
-    };
-
-    struct BID {
-        R64 base;
-        R64 index;
         i32 displacement;
     };
 
@@ -177,6 +176,11 @@ namespace x64 {
         R64 index;
         u8 scale;
         i32 displacement;
+    };
+
+    struct SO {
+        Segment segment;
+        u64 offset;
     };
 
     enum class Size {
@@ -224,7 +228,8 @@ namespace x64 {
                            Addr<size, BD>,
                            Addr<size, BIS>,
                            Addr<size, ISD>,
-                           Addr<size, BISD>>;
+                           Addr<size, BISD>,
+                           Addr<size, SO>>;
 
     using M8 = M<Size::BYTE>;
     using RM8 = std::variant<R8, M8>;

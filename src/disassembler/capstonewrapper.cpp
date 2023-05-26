@@ -116,6 +116,10 @@ namespace x64 {
             case X86_INS_MOVSD: return makeMovsd(insn);
             case X86_INS_ADDSS: return makeAddss(insn);
             case X86_INS_ADDSD: return makeAddsd(insn);
+            case X86_INS_STOSB:
+            case X86_INS_STOSW:
+            case X86_INS_STOSD:
+            case X86_INS_STOSQ: return makeStos(insn);
             default: return make_failed(insn);
         }
         // if(name == "rep") return makeRepStringop(opbytes, address, operands);
@@ -150,6 +154,19 @@ namespace x64 {
             case X86_REG_R13B: return R8::R13B;
             case X86_REG_R14B: return R8::R14B;
             case X86_REG_R15B: return R8::R15B;
+            default: return {};
+        }
+        return {};
+    }
+
+    std::optional<Segment> asSegment(const x86_reg& reg) {
+        switch(reg) {
+            case X86_REG_CS: return Segment::CS;
+            case X86_REG_DS: return Segment::DS;
+            case X86_REG_ES: return Segment::ES;
+            case X86_REG_FS: return Segment::FS;
+            case X86_REG_GS: return Segment::GS;
+            case X86_REG_SS: return Segment::SS;
             default: return {};
         }
         return {};
@@ -314,6 +331,17 @@ namespace x64 {
         return BISD { base.value(), index.value(), (u8)operand.mem.scale, (i32)operand.mem.disp };
     }
 
+    std::optional<SO> asSegmentOffset(const cs_x86_op& operand) {
+        auto base = asRegister64(operand.mem.base);
+        if(!!base) return {};
+        auto index = asRegister64(operand.mem.index);
+        if(!!index) return {};
+        if(operand.mem.scale != 1) return {};
+        auto segment = asSegment(operand.mem.segment);
+        if(!segment) return {};
+        return SO { segment.value(), (u64)operand.mem.disp };
+    }
+
 
     template<Size size>
     std::optional<M<size>> asMemory(const cs_x86_op& operand) {
@@ -329,6 +357,8 @@ namespace x64 {
         if(!!isd) return Addr<size, ISD>{isd.value()};
         auto bisd = asBaseIndexScaleDisplacement(operand);
         if(!!bisd) return Addr<size, BISD>{bisd.value()};
+        auto so = asSegmentOffset(operand);
+        if(!!so) return Addr<size, SO>{so.value()};
         return {};
     }
 
@@ -1275,6 +1305,22 @@ namespace x64 {
         auto r32dst = asRegister32(dst);
         auto r32src = asRegister32(src);
         if(r32dst && r32src) return make_wrapper<Bsf<R32, R32>>(insn.address, r32dst.value(), r32src.value());
+        return make_failed(insn);
+    }
+
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makeStos(const cs_insn& insn) {
+        u8 prefixByte = insn.detail->x86.prefix[0];
+        if(prefixByte == 0) return make_failed(insn);
+        x86_prefix prefix = (x86_prefix)prefixByte;
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto r64src = asRegister64(src);
+        auto m64dst = asMemory64(dst);
+        if(prefix == X86_PREFIX_REP) {
+            if(m64dst && r64src) return make_wrapper< Rep< Stos<M64, R64> >>(insn.address, m64dst.value(), r64src.value());
+        }
         return make_failed(insn);
     }
 
