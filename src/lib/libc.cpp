@@ -274,9 +274,9 @@ namespace x64 {
 
     class Fopen64Instruction : public Intrinsic {
     public:
-        explicit Fopen64Instruction(ExecutionContext context, LibC::FileRegistry* fileRegistry) : 
+        explicit Fopen64Instruction(ExecutionContext context, LibC* libc) : 
             context_(context),
-            fileRegistry_(fileRegistry) { }
+            libc_(libc) { }
 
         void exec(InstructionHandler*) const override {
             u64 pathname_address = context_.rax();
@@ -298,7 +298,7 @@ namespace x64 {
 
             fmt::print("pathname={} mode={}\n", pathname, mode);
 
-            u32 filehandler = fileRegistry_->openFile(pathname, mode);
+            u32 filehandler = libc_->fileRegistry_->openFile(pathname, mode);
 
             context_.set_rax(filehandler);
         }
@@ -307,18 +307,18 @@ namespace x64 {
         }
     private:
         ExecutionContext context_;
-        LibC::FileRegistry* fileRegistry_;
+        LibC* libc_;
     };
 
     class FilenoInstruction : public Intrinsic {
     public:
-        explicit FilenoInstruction(ExecutionContext context, LibC::FileRegistry* fileRegistry) : 
+        explicit FilenoInstruction(ExecutionContext context, LibC* libc) : 
             context_(context),
-            fileRegistry_(fileRegistry) { }
+            libc_(libc) { }
 
         void exec(InstructionHandler*) const override {
             u32 fileHandler = static_cast<u32>(context_.rax());
-            int fd = fileRegistry_->fileno(fileHandler);
+            int fd = libc_->fileRegistry_->fileno(fileHandler);
             context_.set_rax(fd);
         }
 
@@ -327,18 +327,18 @@ namespace x64 {
         }
     private:
         ExecutionContext context_;
-        LibC::FileRegistry* fileRegistry_;
+        LibC* libc_;
     };
 
     class FcloseInstruction : public Intrinsic {
     public:
-        explicit FcloseInstruction(ExecutionContext context, LibC::FileRegistry* fileRegistry) : 
+        explicit FcloseInstruction(ExecutionContext context, LibC* libc) : 
             context_(context),
-            fileRegistry_(fileRegistry) { }
+            libc_(libc) { }
 
         void exec(InstructionHandler*) const override {
             u32 fileHandler = static_cast<u32>(context_.rax());
-            int ret = fileRegistry_->closeFile(fileHandler);
+            int ret = libc_->fileRegistry_->closeFile(fileHandler);
             context_.set_rax(ret);
         }
 
@@ -347,21 +347,21 @@ namespace x64 {
         }
     private:
         ExecutionContext context_;
-        LibC::FileRegistry* fileRegistry_;
+        LibC* libc_;
     };
 
     class ReadInstruction : public Intrinsic {
     public:
-        explicit ReadInstruction(ExecutionContext context, LibC::FileRegistry* fileRegistry) : 
+        explicit ReadInstruction(ExecutionContext context, LibC* libc) : 
             context_(context),
-            fileRegistry_(fileRegistry) { }
+            libc_(libc) { }
 
         void exec(InstructionHandler*) const override {
             int fd = static_cast<int>(context_.rax());
             u64 bufAddress = context_.rbx();
             u64 count = context_.rcx();
             fmt::print("Read {} bytes from fd={} into buf={:#x}\n", count, fd, bufAddress);
-            FILE* file = fileRegistry_->fileFromFd(fd);
+            FILE* file = libc_->fileRegistry_->fileFromFd(fd);
             if(!file) {
                 context_.set_rax(-1);
                 return;
@@ -389,7 +389,7 @@ namespace x64 {
         }
     private:
         ExecutionContext context_;
-        LibC::FileRegistry* fileRegistry_;
+        LibC* libc_;
     };
 
     class FunctionBuilder {
@@ -407,9 +407,13 @@ namespace x64 {
         void addIntegerStructOrPointerArgument() {
             if(nbArguments_ == 0) {
                 add(func_, make_wrapper<Mov<R64, R64>>(R64::RAX, R64::RDI));
-            }
-            if(nbArguments_ == 1) {
+            } else if(nbArguments_ == 1) {
+                push(R64::RBX);
                 add(func_, make_wrapper<Mov<R64, R64>>(R64::RBX, R64::RSI));
+            } else if(nbArguments_ == 2) {
+                add(func_, make_wrapper<Mov<R64, R64>>(R64::RCX, R64::RDX));
+            } else {
+                assert(!"Cannot add more than 3 arguments");
             }
             ++nbArguments_;
         }
@@ -420,15 +424,28 @@ namespace x64 {
         }
 
         void close() {
+            for(auto it = savedRegisters_.rbegin(); it != savedRegisters_.rend(); ++it) pop(*it);
             add(func_, make_wrapper<Pop<R64>>(R64::RBP));
             add(func_, make_wrapper<Ret<void>>());
             closed_ = true;
         }
 
     private:
+
+        void push(R64 reg) {
+            add(func_, make_wrapper<Push<R64>>(reg));
+            savedRegisters_.push_back(reg);
+        }
+
+        void pop(R64 reg) {
+            assert(!savedRegisters_.empty() && reg == savedRegisters_.back());
+            add(func_, make_wrapper<Pop<R64>>(reg));
+        }
+
         LibraryFunction* func_;
         bool closed_;
         int nbArguments_;
+        std::vector<R64> savedRegisters_;
     };
 
     Putchar::Putchar(const ExecutionContext& context) : LibraryFunction("intrinsic$putchar") {
@@ -453,64 +470,33 @@ namespace x64 {
     }
 
     Fopen64::Fopen64(const ExecutionContext& context, LibC* libc) : LibraryFunction("intrinsic$fopen64") {
-        (void)context;
-        (void)libc;
-        // assert(!"This is broken");
-        // add(this, make_wrapper<Push<R32>>(R32::EBP));
-        // add(this, make_wrapper<Push<R32>>(R32::EBX));
-        // add(this, make_wrapper<Mov<R32, R32>>(R32::EBP, R32::ESP));
-        // auto arg0 = Addr<Size::DWORD, BD>{{R32::ESP, +12}};
-        // add(this, make_wrapper<Mov<R32, M32>>(R32::EAX, arg0));
-        // auto arg1 = Addr<Size::DWORD, BD>{{R32::ESP, +16}};
-        // add(this, make_wrapper<Mov<R32, M32>>(R32::EBX, arg1));
-        // add(this, make_intrinsic<Fopen64Instruction>(context, fileRegistry));
-        // add(this, make_wrapper<Pop<R32>>(R32::EBX));
-        // add(this, make_wrapper<Pop<R32>>(R32::EBP));
-        // add(this, make_wrapper<Ret<void>>());
+        FunctionBuilder builder(this);
+        builder.addIntegerStructOrPointerArgument();
+        builder.addIntegerStructOrPointerArgument();
+        builder.addIntrinsicCall<Fopen64Instruction>(context, libc);
+        builder.close();
     }
 
     Fileno::Fileno(const ExecutionContext& context, LibC* libc) : LibraryFunction("intrinsic$fileno") {
-        (void)context;
-        (void)libc;
-        // assert(!"This is broken");
-        // add(this, make_wrapper<Push<R32>>(R32::EBP));
-        // add(this, make_wrapper<Mov<R32, R32>>(R32::EBP, R32::ESP));
-        // auto arg = Addr<Size::DWORD, BD>{{R32::ESP, +8}};
-        // add(this, make_wrapper<Mov<R32, M32>>(R32::EAX, arg));
-        // add(this, make_intrinsic<FilenoInstruction>(context, fileRegistry));
-        // add(this, make_wrapper<Pop<R32>>(R32::EBP));
-        // add(this, make_wrapper<Ret<void>>());
+        FunctionBuilder builder(this);
+        builder.addIntegerStructOrPointerArgument();
+        builder.addIntrinsicCall<FilenoInstruction>(context, libc);
+        builder.close();
     }
 
     Fclose::Fclose(const ExecutionContext& context, LibC* libc) : LibraryFunction("intrinsic$fclose") {
-        (void)context;
-        (void)libc;
-        // assert(!"This is broken");
-        // add(this, make_wrapper<Push<R32>>(R32::EBP));
-        // add(this, make_wrapper<Mov<R32, R32>>(R32::EBP, R32::ESP));
-        // auto arg = Addr<Size::DWORD, BD>{{R32::ESP, +8}};
-        // add(this, make_wrapper<Mov<R32, M32>>(R32::EAX, arg));
-        // add(this, make_intrinsic<FcloseInstruction>(context, fileRegistry));
-        // add(this, make_wrapper<Pop<R32>>(R32::EBP));
-        // add(this, make_wrapper<Ret<void>>());
+        FunctionBuilder builder(this);
+        builder.addIntegerStructOrPointerArgument();
+        builder.addIntrinsicCall<FcloseInstruction>(context, libc);
+        builder.close();
     }
     
     Read::Read(const ExecutionContext& context, LibC* libc) : LibraryFunction("intrinsic$read") {
-        (void)context;
-        (void)libc;
-        // assert(!"This is broken");
-        // add(this, make_wrapper<Push<R32>>(R32::EBP));
-        // add(this, make_wrapper<Push<R32>>(R32::EBX));
-        // add(this, make_wrapper<Mov<R32, R32>>(R32::EBP, R32::ESP));
-        // auto arg0 = Addr<Size::DWORD, BD>{{R32::ESP, +12}};
-        // add(this, make_wrapper<Mov<R32, M32>>(R32::EAX, arg0));
-        // auto arg1 = Addr<Size::DWORD, BD>{{R32::ESP, +16}};
-        // add(this, make_wrapper<Mov<R32, M32>>(R32::EBX, arg1));
-        // auto arg2 = Addr<Size::DWORD, BD>{{R32::ESP, +20}};
-        // add(this, make_wrapper<Mov<R32, M32>>(R32::ECX, arg2));
-        // add(this, make_intrinsic<ReadInstruction>(context, fileRegistry));
-        // add(this, make_wrapper<Pop<R32>>(R32::EBX));
-        // add(this, make_wrapper<Pop<R32>>(R32::EBP));
-        // add(this, make_wrapper<Ret<void>>());
+        FunctionBuilder builder(this);
+        builder.addIntegerStructOrPointerArgument();
+        builder.addIntegerStructOrPointerArgument();
+        builder.addIntegerStructOrPointerArgument();
+        builder.addIntrinsicCall<ReadInstruction>(context, libc);
+        builder.close();
     }
 }
