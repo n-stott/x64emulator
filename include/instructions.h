@@ -141,7 +141,6 @@ namespace x64 {
     struct CallDirect {
         u64 symbolAddress;
         std::string symbolName;
-        void* interpreterFunction = nullptr;
     };
 
     template<typename Src>

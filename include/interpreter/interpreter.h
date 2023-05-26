@@ -75,9 +75,9 @@ namespace x64 {
             const ExecutableSection* hint = *section;
             if(!!hint) {
                 auto it = std::lower_bound(hint->instructions.begin(), hint->instructions.end(), address, [&](const auto& a, u64 b) {
-                    return a->address + hint->sectionOffset < b;
+                    return a->address < b;
                 });
-                if(it != hint->instructions.end() && address == hint->sectionOffset + (*it)->address) {
+                if(it != hint->instructions.end() && address == (*it)->address) {
                     *section = hint;
                     *index = std::distance(hint->instructions.begin(), it);
                     return;
@@ -85,9 +85,9 @@ namespace x64 {
             }
             for(const auto& execSection : executableSections_) {
                 auto it = std::lower_bound(execSection.instructions.begin(), execSection.instructions.end(), address, [&](const auto& a, u64 b) {
-                    return a->address + execSection.sectionOffset < b;
+                    return a->address < b;
                 });
-                if(it != execSection.instructions.end() && address == execSection.sectionOffset + (*it)->address) {
+                if(it != execSection.instructions.end() && address == (*it)->address) {
                     *section = &execSection;
                     *index = std::distance(execSection.instructions.begin(), it);
                     return;

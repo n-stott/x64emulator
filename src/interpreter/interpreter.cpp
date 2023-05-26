@@ -69,7 +69,13 @@ namespace x64 {
                 std::vector<std::unique_ptr<Function>> functions;
                 CapstoneWrapper::disassembleSection(std::string(filepath), std::string(header.name), &instructions, &functions);
 
-                for(auto& f : functions) f->elfOffset = offset;
+                assert(std::is_sorted(instructions.begin(), instructions.end(), [](const auto& a, const auto& b) {
+                    return a->address < b->address;
+                }));
+
+                for(auto& insn : instructions) insn->address += offset;
+                for(auto& f : functions) f->address += offset;
+
                 functions.erase(std::remove_if(functions.begin(), functions.end(), [](std::unique_ptr<Function>& function) -> bool {
                     if(function->name.size() >= 10) {
                         if(function->name.substr(0, 10) == "intrinsic$") return true;
@@ -84,9 +90,6 @@ namespace x64 {
                     std::move(instructions),
                     std::move(functions),
                 };
-                assert(std::is_sorted(esection.instructions.begin(), esection.instructions.end(), [](const auto& a, const auto& b) {
-                    return a->address < b->address;
-                }));
 
                 executableSections_.push_back(std::move(esection));
 
@@ -140,7 +143,7 @@ namespace x64 {
         auto& libcInstructions = libcSection.instructions;
         auto& libcFunctions = libcSection.functions;
         libc_->forAllFunctions(ExecutionContext(*this), [&](std::vector<std::unique_ptr<X86Instruction>> instructions, std::unique_ptr<Function> function) {
-            function->elfOffset = libcOffset;
+            function->address += libcOffset;
             for(auto&& insn : instructions) {
                 libcInstructions.push_back(std::move(insn));
             }
@@ -148,7 +151,7 @@ namespace x64 {
         });
         u64 address = 0;
         for(auto& insn : libcInstructions) {
-            insn->address = address;
+            insn->address = libcOffset + address;
             ++address;
         }
         for(auto& func : libcFunctions) {
@@ -173,17 +176,16 @@ namespace x64 {
 
             u64 relocationAddress = loadedElf.offset + relocation.offset();
 
-            fmt::print("resolve relocation for symbol \"{}\" at offset {:#x}\n", symbol, relocation.offset());
+            // fmt::print("resolve relocation for symbol \"{}\" at offset {:#x}\n", symbol, relocation.offset());
 
             if(sym->type() == elf::SymbolType::FUNC
             || (sym->type() == elf::SymbolType::NOTYPE && (sym->bind() == elf::SymbolBind::WEAK || sym->bind() == elf::SymbolBind::GLOBAL))) {
                 const auto* func = findFunctionByName(symbol);
                 if(!func) {
-                    fmt::print("  unable to find\n");
+                    // fmt::print("  unable to find\n");
                     return;
                 }
-                fmt::print("  at {:#x}\n", func->address + func->elfOffset);
-                mmu_.write64(Ptr64{relocationAddress}, func->address + func->elfOffset);
+                mmu_.write64(Ptr64{relocationAddress}, func->address);
             } else if(sym->type() == elf::SymbolType::OBJECT) {
                 // fmt::print("  Object symbols not yet handled\n");
                 // bool found = false;
@@ -244,7 +246,7 @@ namespace x64 {
         std::string origin;
         for(const auto& execSection : executableSections_) {
             for(const auto& func : execSection.functions) {
-                if(address == func->address + func->elfOffset) {
+                if(address == func->address) {
                     verify(!function, [&]() {
                         fmt::print("Function with address {:#x} found in {} must be unique, but found copy in section {}:{}\n",
                                 address, origin, execSection.filename, execSection.sectionname);
@@ -391,7 +393,7 @@ namespace x64 {
                 const X86Instruction* instruction = currentExecutedSection->instructions[currentInstructionIdx].get();
                 if(currentInstructionIdx+1 != currentExecutedSection->instructions.size()) {
                     const X86Instruction* nextInstruction = currentExecutedSection->instructions[currentInstructionIdx+1].get();
-                    cpu_.regs_.rip_ = currentExecutedSection->sectionOffset + nextInstruction->address;
+                    cpu_.regs_.rip_ = nextInstruction->address;
                     ++currentInstructionIdx;
                 } else {
                     currentInstructionIdx = (size_t)(-1);

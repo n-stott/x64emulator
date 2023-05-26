@@ -1567,7 +1567,6 @@ namespace x64 {
 
         auto sec = elf64->sectionFromName(section);
         if(!sec) return;
-        fmt::print("Found section {} in {}\n", section, filepath);
 
         std::vector<std::pair<u64, std::string>> symbols;
 
@@ -1624,7 +1623,6 @@ namespace x64 {
             return func->instructions.empty() || func->instructions.front()->address != func->address;
         }), functions->end());
 
-        fmt::print("Disassembled {} instructions\n", count);
         cs_free(insns, count);
         cs_close(&handle);
     }
