@@ -12,22 +12,6 @@
 namespace x64 {
 
     namespace {
-        template<typename Instruction>
-        struct InstructionWrapper : public X86Instruction {
-            InstructionWrapper(u64 address, Instruction instruction) :
-                    X86Instruction(address), 
-                    instruction(std::move(instruction)) { }
-
-            void exec(InstructionHandler* handler) const override {
-                return handler->exec(instruction);
-            }
-
-            virtual std::string toString() const override {
-                return x64::utils::toString(instruction);
-            }
-
-            Instruction instruction;
-        };
 
         template<typename Instruction, typename... Args>
         inline std::unique_ptr<X86Instruction> make_wrapper(u64 address, Args... args) {

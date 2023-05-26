@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <cassert>
 
+#include <boost/core/demangle.hpp>
 #include <signal.h>
 
 namespace x64 {
@@ -42,6 +43,7 @@ namespace x64 {
 
     void Interpreter::run(const std::string& programFilePath, const std::vector<std::string>& arguments) {
         VerificationScope::run([&]() {
+            addFunctionNameToCall();
             setupStackAndHeap();
             runInit();
             pushProgramArguments(programFilePath, arguments);
@@ -376,11 +378,8 @@ namespace x64 {
         if(stop_) return;
         fmt::print("Execute function {}\n", function->name);
         SignalHandler sh;
-        // callStack_.frames.clear();
-        // callStack_.frames.push_back(Frame{function, 0});
 
         push64(function->address);
-        // push64(0x0);
 
         call(function->address);
 
@@ -427,7 +426,7 @@ namespace x64 {
                 dump(stdout);
                 mmu_.dumpRegions();
                 fmt::print("Stacktrace:\n");
-                // callStack_.dumpStacktrace();
+                dumpStackTrace();
                 stop_ = true;
             }
         }
@@ -479,10 +478,61 @@ namespace x64 {
         for(const auto& section : executableSections_) {
             for(const auto& func : section.functions) {
                 fmt::print(stream, "{:#x} : {}\n", func->address, func->name);
-                for(const auto& insn : func->instructions) {
-                    fmt::print(" {:#x} {}\n", insn->address, insn->toString());
+                // for(const auto& insn : func->instructions) {
+                //     fmt::print(" {:#x} {}\n", insn->address, insn->toString());
+                // }
+            }
+        }
+    }
+
+    void Interpreter::addFunctionNameToCall() {
+        for(auto& execSection : executableSections_) {
+            for(auto& insn : execSection.instructions) {
+                auto* call = dynamic_cast<InstructionWrapper<CallDirect>*>(insn.get());
+                if(!call) continue;
+                u64 address = execSection.sectionOffset + call->instruction.symbolAddress;
+                const ExecutableSection* originSection = nullptr;
+                size_t firstInstructionIndex = 0;
+                findSectionWithAddress(address, &originSection, &firstInstructionIndex);
+                verify(!!originSection, "Could not determine function origin section");
+                verify(firstInstructionIndex != (size_t)(-1), "Could not find call destination instruction");
+                if(originSection->sectionname == ".text") {
+                    const auto* func = functionFromAddress(address);
+                    verify(!!func, "Could not find function in text section");
+                    call->instruction.symbolName = func->name;
+                    functionNameCache[address] = func->name;
+                } else if (originSection->sectionname == ".plt") {
+                    // look at the first instruction to determine the jmp location
+                    const X86Instruction* jmpInsn = originSection->instructions[firstInstructionIndex].get();
+                    const auto* jmp = dynamic_cast<const InstructionWrapper<Jmp<M64>>*>(jmpInsn);
+                    verify(!!jmp, "could not cast instruction to jmp");
+                    Registers regs;
+                    regs.rip_ = jmpInsn->address + 6; // add instruction size offset
+                    auto ptr = regs.resolve(jmp->instruction.symbolAddress);
+                    auto dst = mmu_.read64(ptr);
+                    const auto* func = functionFromAddress(dst);
+                    if(!!func) {
+                        call->instruction.symbolName = func->name;
+                        functionNameCache[address] = func->name;
+                    }
                 }
             }
+        }
+        fmt::print("{}\n",functionNameCache.size());
+        for(auto e : functionNameCache) {
+            fmt::print("{:#x}:{}\n", e.first, e.second);
+        }
+    }
+
+    void Interpreter::dumpStackTrace() const {
+        size_t frameId = 0;
+        for(auto it = callstack_.rbegin(); it != callstack_.rend(); ++it) {
+            auto nameIt = functionNameCache.find(*it);
+            std::string name = nameIt != functionNameCache.end()
+                             ? nameIt->second
+                             : "???";
+            fmt::print(" {}:{:#x} : {}\n", frameId, *it, name);
+            ++frameId;
         }
     }
 }

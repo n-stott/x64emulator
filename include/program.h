@@ -1,6 +1,8 @@
 #ifndef PROGRAM_H
 #define PROGRAM_H
 
+#include "instructionhandler.h"
+#include "instructionutils.h"
 #include "utils/utils.h"
 #include <memory>
 #include <string>
@@ -18,6 +20,23 @@ namespace x64 {
         virtual std::string toString() const = 0;
 
         u64 address;
+    };
+
+    template<typename Instruction>
+    struct InstructionWrapper : public X86Instruction {
+        InstructionWrapper(u64 address, Instruction instruction) :
+                X86Instruction(address), 
+                instruction(std::move(instruction)) { }
+
+        void exec(InstructionHandler* handler) const override {
+            return handler->exec(instruction);
+        }
+
+        virtual std::string toString() const override {
+            return x64::utils::toString(instruction);
+        }
+
+        Instruction instruction;
     };
 
     struct Function {

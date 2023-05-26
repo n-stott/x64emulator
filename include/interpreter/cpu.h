@@ -71,25 +71,11 @@ namespace x64 {
         Ptr<Size::XMMWORD> resolve(Addr<Size::XMMWORD, ISD> addr) const { return regs_.resolve(addr); }
         Ptr<Size::XMMWORD> resolve(Addr<Size::XMMWORD, BISD> addr) const { return regs_.resolve(addr); }
 
-        Ptr<Size::BYTE> resolve(const M8& m8) const {
-            return std::visit([&](auto&& arg) -> Ptr8 { return resolve(arg); }, m8);
-        }
-
-        Ptr<Size::WORD> resolve(const M16& m16) const {
-            return std::visit([&](auto&& arg) -> Ptr16 { return resolve(arg); }, m16);
-        }
-
-        Ptr<Size::DWORD> resolve(const M32& m32) const {
-            return std::visit([&](auto&& arg) -> Ptr32 { return resolve(arg); }, m32);
-        }
-
-        Ptr<Size::QWORD> resolve(const M64& m64) const {
-            return std::visit([&](auto&& arg) -> Ptr64 { return resolve(arg); }, m64);
-        }
-
-        Ptr<Size::XMMWORD> resolve(const MSSE& msse) const {
-            return std::visit([&](auto&& arg) -> Ptr128 { return resolve(arg); }, msse);
-        }
+        Ptr<Size::BYTE> resolve(const M8& m8) const { return regs_.resolve(m8); }
+        Ptr<Size::WORD> resolve(const M16& m16) const { return regs_.resolve(m16); }
+        Ptr<Size::DWORD> resolve(const M32& m32) const { return regs_.resolve(m32); }
+        Ptr<Size::QWORD> resolve(const M64& m64) const { return regs_.resolve(m64); }
+        Ptr<Size::XMMWORD> resolve(const MSSE& msse) const { return regs_.resolve(msse); }
 
         void set(R8 reg, u8 value) { regs_.set(reg, value); }
         void set(R16 reg, u16 value) { regs_.set(reg, value); }

@@ -70,16 +70,15 @@ namespace x64 {
         int callDepth = 0;
 
         void findSectionWithAddress(u64 address, const ExecutableSection** section, size_t* index) const {
-            if(!section) return;
-            if(!index) return;
-            const ExecutableSection* hint = *section;
-            if(!!hint) {
+            if(!section && !index) return;
+            if(!!section && !!(*section)) {
+                const ExecutableSection* hint = *section;
                 auto it = std::lower_bound(hint->instructions.begin(), hint->instructions.end(), address, [&](const auto& a, u64 b) {
                     return a->address < b;
                 });
                 if(it != hint->instructions.end() && address == (*it)->address) {
-                    *section = hint;
-                    *index = std::distance(hint->instructions.begin(), it);
+                    if(!!section) *section = hint;
+                    if(!!index) *index = std::distance(hint->instructions.begin(), it);
                     return;
                 }
             }
@@ -88,12 +87,13 @@ namespace x64 {
                     return a->address < b;
                 });
                 if(it != execSection.instructions.end() && address == (*it)->address) {
-                    *section = &execSection;
-                    *index = std::distance(execSection.instructions.begin(), it);
+                    if(!!section) *section = &execSection;
+                    if(!!index) *index = std::distance(execSection.instructions.begin(), it);
                     return;
                 }
             }
-            return;
+            if(!!section) *section = nullptr;
+            if(!!index) *index = (size_t)(-1);
         }
 
         struct CallPoint {
@@ -104,6 +104,25 @@ namespace x64 {
 
         std::unordered_map<u64, CallPoint> callCache;
         std::unordered_map<u64, CallPoint> jmpCache;
+        mutable std::unordered_map<u64, const Function*> functionCache;
+        mutable std::unordered_map<u64, std::string> functionNameCache;
+
+        std::vector<u64> callstack_;
+
+        void dumpStackTrace() const;
+
+        void addFunctionNameToCall();
+
+        const Function* functionFromAddress(u64 address) const {
+            auto it = functionCache.find(address);
+            if(it != functionCache.end()) {
+                return it->second;
+            } else {
+                const auto* func = findFunctionByAddress(address);
+                functionCache.insert(std::make_pair(address, func));
+                return func;
+            }
+        }
 
         void call(u64 address) {
             CallPoint cp;
@@ -124,11 +143,13 @@ namespace x64 {
             currentExecutedSection = cp.executedSection;
             currentInstructionIdx = cp.instructionIdx;
             cpu_.regs_.rip_ = address;
+            callstack_.push_back(address);
             ++callDepth;
         }
 
         void ret(u64 address) {
             --callDepth;
+            callstack_.pop_back();
             jmp(address);
         }
 
@@ -151,81 +172,6 @@ namespace x64 {
             currentInstructionIdx = cp.instructionIdx;
             cpu_.regs_.rip_ = address;
         }
-
-        // struct Frame {
-        //     const Function* function;
-        //     size_t offset;
-        // };
-
-        // struct CallStack {
-        //     std::vector<Frame> frames;
-
-        //     bool hasNext() const {
-        //         return !frames.empty();
-        //     }
-
-        //     const X86Instruction* next() {
-        //         assert(!frames.empty());
-        //         Frame& frame = frames.back();
-        //         assert(frame.offset < frame.function->instructions.size());
-        //         const X86Instruction* instruction = frame.function->instructions[frame.offset];
-        //         ++frame.offset;
-        //         return instruction;
-        //     }
-
-        //     const X86Instruction* peek() const {
-        //         assert(!frames.empty());
-        //         const Frame& frame = frames.back();
-        //         if(frame.offset < frame.function->instructions.size()) {
-        //             return frame.function->instructions[frame.offset];
-        //         } else {
-        //             return nullptr;
-        //         }
-        //     }
-
-        //     bool jumpOutOfFrame(const Interpreter* interpreter, u64 destinationAddress) {
-        //         for(const auto& executableSection : interpreter->executableSections_) {
-        //             for(const auto& function : executableSection.functions) {
-        //                 if(function->address + function->elfOffset != destinationAddress) continue;
-        //                 frames.pop_back();
-        //                 frames.push_back(Frame{function.get(), 0});
-        //                 return true;
-        //             }
-        //         }
-        //         return false;
-        //     }
-
-        //     [[nodiscard]] bool jumpInFrame(u64 destinationAddress) {
-        //         assert(!frames.empty());
-        //         Frame& currentFrame = frames.back();
-        //         const Function* func = currentFrame.function;
-        //         auto jumpee = std::find_if(func->instructions.begin(), func->instructions.end(), [=](const auto& instruction) {
-        //             if(!instruction) return false;
-        //             return instruction->address == destinationAddress;
-        //         });
-        //         if(jumpee != func->instructions.end()) {
-        //             currentFrame.offset = std::distance(func->instructions.begin(), jumpee);
-        //             return true;
-        //         }
-        //         return false;
-        //     }
-
-        //     void dumpStacktrace() const {
-        //         size_t height = 0;
-        //         for(auto it = frames.rbegin(); it != frames.rend(); ++it) {
-        //             const auto* function = it->function;
-        //             if(it->offset < function->instructions.size()) {
-        //                 u64 address = (u64)(-1);
-        //                 if(function->instructions[it->offset]) address = function->instructions[it->offset]->address;
-        //                 fmt::print("{} {}:{:#x}\n", height, function->name, address);
-        //             } else {
-        //                 fmt::print("{} {}:at function exit\n", height, function->name);
-        //             }
-        //             ++height;
-        //         }
-        //     }
-        // } callStack_;
-
 
         friend struct CallingContext;
         CallingContext context() const;
