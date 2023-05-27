@@ -6,6 +6,7 @@
 #include <fmt/core.h>
 #include <algorithm>
 #include <cassert>
+#include <numeric>
 
 #include <boost/core/demangle.hpp>
 #include <signal.h>
@@ -63,6 +64,11 @@ namespace x64 {
 
         u64 offset = mmu_.topOfMemoryAligned(Mmu::PAGE_SIZE);
 
+        std::vector<elf::SectionHeader64> tlsSections;
+
+        std::string shortFilePath = filepath.find_last_of('/') == std::string::npos ? filepath
+                                                                                    : filepath.substr(filepath.find_last_of('/')+1);
+
         elf64->forAllSectionHeaders([&](const elf::SectionHeader64& header) {
             if(!header.doesAllocate()) return;
             verify(!(header.isExecutable() && header.isWritable()));
@@ -95,8 +101,6 @@ namespace x64 {
 
                 executableSections_.push_back(std::move(esection));
 
-                std::string shortFilePath = filepath.find_last_of('/') == std::string::npos ? filepath
-                                                                                             : filepath.substr(filepath.find_last_of('/')+1);
                 std::string regionName = fmt::format("{:>20}:{:<20}", shortFilePath, header.name);
 
                 auto section = elf64->sectionFromName(header.name);
@@ -110,8 +114,6 @@ namespace x64 {
                 Protection prot = PROT_READ;
                 if(header.isWritable()) prot = PROT_READ | PROT_WRITE;
 
-                std::string shortFilePath = filepath.find_last_of('/') == std::string::npos ? filepath
-                                                                                             : filepath.substr(filepath.find_last_of('/')+1);
                 std::string regionName = fmt::format("{:>20}:{:<20}", shortFilePath, header.name);
 
                 Mmu::Region region{ regionName, section->address + offset, section->size(), prot };
@@ -119,9 +121,43 @@ namespace x64 {
                     std::memcpy(region.data.data(), section->begin, section->size()*sizeof(u8));
                 mmu_.addRegion(std::move(region));
             } else {
-                // fmt::print("[{:20}] section {:20} ignored\n", filepath, header.name);
+                tlsSections.push_back(header);
             }
         });
+
+        if(!tlsSections.empty()) {
+            std::sort(tlsSections.begin(), tlsSections.end(), [](const auto& a, const auto& b) {
+                return a.sh_addr < b.sh_addr;
+            });
+
+            u64 totalTlsRegionSize = std::accumulate(tlsSections.begin(), tlsSections.end(), 0, [](u64 size, const auto& s) {
+                return size + s.sh_size;
+            });
+
+            u64 tlsAddress = -totalTlsRegionSize;
+
+            u64 address = tlsAddress;
+            for(const auto& header : tlsSections) {
+                auto section = elf64->sectionFromName(header.name);
+                verify(section.has_value());
+                
+                Protection prot = PROT_READ;
+                if(header.isWritable()) prot = PROT_READ | PROT_WRITE;
+
+                std::string regionName = fmt::format("{:>20}:{:<20}", shortFilePath, header.name);
+
+                Mmu::Region region{ regionName, address, section->size(), prot };
+
+                if(section->type() != elf::SectionHeaderType::NOBITS)
+                    std::memcpy(region.data.data(), section->begin, section->size()*sizeof(u8));
+
+                mmu_.addTlsRegion(std::move(region));
+
+                address += section->size();
+            }
+            verify(address == 0x0);
+
+        }
 
         LoadedElf loadedElf {
             filepath,
@@ -517,10 +553,10 @@ namespace x64 {
                 }
             }
         }
-        fmt::print("{}\n",functionNameCache.size());
-        for(auto e : functionNameCache) {
-            fmt::print("{:#x}:{}\n", e.first, e.second);
-        }
+        // fmt::print("{}\n",functionNameCache.size());
+        // for(auto e : functionNameCache) {
+        //     fmt::print("{:#x}:{}\n", e.first, e.second);
+        // }
     }
 
     void Interpreter::dumpStackTrace() const {

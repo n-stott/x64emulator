@@ -56,6 +56,12 @@ namespace x64 {
             void write64(Ptr64 ptr, u64 value);
             void write128(Ptr128 ptr, u128 value);
 
+            template<typename T, Size s>
+            T read(Ptr<s> ptr) const;
+
+            template<typename T, Size s>
+            void write(Ptr<s> ptr, T value);
+
             std::string name;
             u64 base;
             u64 size;
@@ -68,6 +74,7 @@ namespace x64 {
         Mmu() = default;
 
         Region* addRegion(Region region);
+        Region* addTlsRegion(Region region);
 
         u8 read8(Ptr8 ptr) const;
         u16 read16(Ptr16 ptr) const;
@@ -81,6 +88,24 @@ namespace x64 {
         void write64(Ptr64 ptr, u64 value);
         void write128(Ptr128 ptr, u128 value);
 
+        template<typename T, Size s>
+        T read(const Region* region, Ptr<s> ptr) const;
+
+        template<typename T, Size s>
+        void write(Region* region, Ptr<s> ptr, T value);
+
+        u8 readTls8(Ptr8 ptr) const;
+        u16 readTls16(Ptr16 ptr) const;
+        u32 readTls32(Ptr32 ptr) const;
+        u64 readTls64(Ptr64 ptr) const;
+        u128 readTls128(Ptr128 ptr) const;
+
+        void writeTls8(Ptr8 ptr, u8 value);
+        void writeTls16(Ptr16 ptr, u16 value);
+        void writeTls32(Ptr32 ptr, u32 value);
+        void writeTls64(Ptr64 ptr, u64 value);
+        void writeTls128(Ptr128 ptr, u128 value);
+
         void dumpRegions() const;
 
         u64 topOfMemoryAligned(u64 alignment) const;
@@ -91,7 +116,11 @@ namespace x64 {
         Region* findAddress(u64 address);
         const Region* findAddress(u64 address) const;
 
+        Region* findTlsAddress(u64 address);
+        const Region* findTlsAddress(u64 address) const;
+
         std::deque<Region> regions_;
+        std::deque<Region> tlsRegions_;
     };
 
 }
