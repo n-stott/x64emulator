@@ -167,6 +167,7 @@ namespace x64 {
             case X86_REG_FS: return Segment::FS;
             case X86_REG_GS: return Segment::GS;
             case X86_REG_SS: return Segment::SS;
+            case X86_REG_INVALID: return Segment::UNK;
             default: return {};
         }
         return {};
@@ -326,7 +327,6 @@ namespace x64 {
         if(!base) return {};
         auto index = asRegister64(operand.mem.index);
         if(!index) return {};
-        if(operand.mem.scale == 1) return {};
         if(operand.mem.disp == 0) return {};
         return BISD { base.value(), index.value(), (u8)operand.mem.scale, (i32)operand.mem.disp };
     }
@@ -348,17 +348,17 @@ namespace x64 {
         if(operand.type != X86_OP_MEM) return {};
         if(operand.size != pointerSize(size)) return {};
         auto b = asBase(operand);
-        if(!!b) return Addr<size, B>{b.value()};
+        if(!!b) return Addr<size, B>{asSegment(operand.mem.segment).value(), b.value()};
         auto bd = asBaseDisplacement(operand);
-        if(!!bd) return Addr<size, BD>{bd.value()};
+        if(!!bd) return Addr<size, BD>{asSegment(operand.mem.segment).value(),bd.value()};
         auto bis = asBaseIndexScale(operand);
-        if(!!bis) return Addr<size, BIS>{bis.value()};
+        if(!!bis) return Addr<size, BIS>{asSegment(operand.mem.segment).value(),bis.value()};
         auto isd = asIndexScaleDisplacement(operand);
-        if(!!isd) return Addr<size, ISD>{isd.value()};
+        if(!!isd) return Addr<size, ISD>{asSegment(operand.mem.segment).value(),isd.value()};
         auto bisd = asBaseIndexScaleDisplacement(operand);
-        if(!!bisd) return Addr<size, BISD>{bisd.value()};
+        if(!!bisd) return Addr<size, BISD>{asSegment(operand.mem.segment).value(), bisd.value()};
         auto so = asSegmentOffset(operand);
-        if(!!so) return Addr<size, SO>{so.value()};
+        if(!!so) return Addr<size, SO>{asSegment(operand.mem.segment).value(), so.value()};
         return {};
     }
 

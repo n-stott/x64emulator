@@ -282,14 +282,14 @@ namespace x64 {
             u64 pathname_address = context_.rax();
             u64 mode_address = context_.rbx();
 
-            Ptr8 pathname_ptr { pathname_address };
+            Ptr8 pathname_ptr { Segment::DS, pathname_address };
             std::string pathname;
             while(u8 character = context_.mmu()->read8(pathname_ptr)) {
                 pathname += character;
                 ++pathname_ptr;
             }
 
-            Ptr8 mode_ptr { mode_address };
+            Ptr8 mode_ptr { Segment::DS, mode_address };
             std::string mode;
             while(u8 character = context_.mmu()->read8(mode_ptr)) {
                 mode += character;
@@ -375,7 +375,7 @@ namespace x64 {
                 return;
             }
 
-            Ptr8 bufPtr { bufAddress };
+            Ptr8 bufPtr { Segment::DS, bufAddress };
             for(int i = 0; i < nbytes; ++i) {
                 fmt::print("Read char='{}'\n", (char)buf[i]);
                 context_.mmu()->write8(bufPtr, buf[i]);

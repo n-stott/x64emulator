@@ -16,6 +16,7 @@ namespace utils {
             case Segment::FS: return "fs";
             case Segment::GS: return "gs";
             case Segment::SS: return "ss";
+            case Segment::UNK: return "unk";
         }
         return "";
     }

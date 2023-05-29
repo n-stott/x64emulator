@@ -129,34 +129,36 @@ namespace x64 {
             std::sort(tlsSections.begin(), tlsSections.end(), [](const auto& a, const auto& b) {
                 return a.sh_addr < b.sh_addr;
             });
+            for(size_t i = 1; i < tlsSections.size(); ++i) {
+                const auto& prev = tlsSections[i-1];
+                const auto& current = tlsSections[i];
+                verify(prev.sh_addr + prev.sh_size == current.sh_addr, "non-consecutive tlsSections...");
+            }
 
             u64 totalTlsRegionSize = std::accumulate(tlsSections.begin(), tlsSections.end(), 0, [](u64 size, const auto& s) {
                 return size + s.sh_size;
-            });
+            }); // address of fs:0x0
 
-            u64 tlsAddress = -totalTlsRegionSize;
+            u64 fsBase = mmu_.topOfMemoryAligned(Mmu::PAGE_SIZE); // TODO reserve some space below
 
-            u64 address = tlsAddress;
+            std::string regionName = fmt::format("{:>20}:{:<20}", shortFilePath, "tls");
+            Mmu::Region tlsRegion { regionName, fsBase - totalTlsRegionSize, totalTlsRegionSize+sizeof(u64), PROT_READ | PROT_WRITE };
+
+            u8* tlsStart = tlsRegion.data.data();
+
             for(const auto& header : tlsSections) {
                 auto section = elf64->sectionFromName(header.name);
                 verify(section.has_value());
-                
-                Protection prot = PROT_READ;
-                if(header.isWritable()) prot = PROT_READ | PROT_WRITE;
-
-                std::string regionName = fmt::format("{:>20}:{:<20}", shortFilePath, header.name);
-
-                Mmu::Region region{ regionName, address, section->size(), prot };
 
                 if(section->type() != elf::SectionHeaderType::NOBITS)
-                    std::memcpy(region.data.data(), section->begin, section->size()*sizeof(u8));
+                    std::memcpy(tlsStart, section->begin, section->size()*sizeof(u8));
 
-                mmu_.addTlsRegion(std::move(region));
-
-                address += section->size();
+                tlsStart += section->size();
             }
-            verify(address == 0x0);
+            verify(std::distance(tlsRegion.data.data(), tlsStart) == static_cast<std::ptrdiff_t>(totalTlsRegionSize));
+            memcpy(tlsStart, &fsBase, sizeof(fsBase));
 
+            mmu_.addTlsRegion(std::move(tlsRegion), fsBase);
         }
 
         LoadedElf loadedElf {
@@ -223,7 +225,7 @@ namespace x64 {
                     // fmt::print("  unable to find\n");
                     return;
                 }
-                mmu_.write64(Ptr64{relocationAddress}, func->address);
+                mmu_.write64(Ptr64{Segment::DS, relocationAddress}, func->address);
             } else if(sym->type() == elf::SymbolType::OBJECT) {
                 // fmt::print("  Object symbols not yet handled\n");
                 // bool found = false;
@@ -364,22 +366,22 @@ namespace x64 {
 
     void Interpreter::push8(u8 value) {
         cpu_.regs_.rsp_ -= 8;
-        mmu_.write64(Ptr64{cpu_.regs_.rsp_}, (u64)value);
+        mmu_.write64(Ptr64{Segment::SS, cpu_.regs_.rsp_}, (u64)value);
     }
 
     void Interpreter::push16(u16 value) {
         cpu_.regs_.rsp_ -= 8;
-        mmu_.write64(Ptr64{cpu_.regs_.rsp_}, (u64)value);
+        mmu_.write64(Ptr64{Segment::SS, cpu_.regs_.rsp_}, (u64)value);
     }
 
     void Interpreter::push32(u32 value) {
         cpu_.regs_.rsp_ -= 8;
-        mmu_.write64(Ptr64{cpu_.regs_.rsp_}, (u64)value);
+        mmu_.write64(Ptr64{Segment::SS, cpu_.regs_.rsp_}, (u64)value);
     }
 
     void Interpreter::push64(u64 value) {
         cpu_.regs_.rsp_ -= 8;
-        mmu_.write64(Ptr64{cpu_.regs_.rsp_}, value);
+        mmu_.write64(Ptr64{Segment::SS, cpu_.regs_.rsp_}, value);
     }
 
     void Interpreter::pushProgramArguments(const std::string& programFilePath, const std::vector<std::string>& arguments) {
@@ -481,9 +483,9 @@ namespace x64 {
         (void)stream;
 #ifndef NDEBUG
         u32 stackEnd = 0x1000000 + 16*1024;
-        u32 arg0 = (cpu_.regs_.rsp_+0 < stackEnd ? mmu_.read32(Ptr32{cpu_.regs_.rsp_+0}) : 0xffffffff);
-        u32 arg1 = (cpu_.regs_.rsp_+4 < stackEnd ? mmu_.read32(Ptr32{cpu_.regs_.rsp_+4}) : 0xffffffff);
-        u32 arg2 = (cpu_.regs_.rsp_+8 < stackEnd ? mmu_.read32(Ptr32{cpu_.regs_.rsp_+8}) : 0xffffffff);
+        u32 arg0 = (cpu_.regs_.rsp_+0 < stackEnd ? mmu_.read32(Ptr32{Segment::SS, cpu_.regs_.rsp_+0}) : 0xffffffff);
+        u32 arg1 = (cpu_.regs_.rsp_+4 < stackEnd ? mmu_.read32(Ptr32{Segment::SS, cpu_.regs_.rsp_+4}) : 0xffffffff);
+        u32 arg2 = (cpu_.regs_.rsp_+8 < stackEnd ? mmu_.read32(Ptr32{Segment::SS, cpu_.regs_.rsp_+8}) : 0xffffffff);
         fmt::print(stream, "arg0={:#x} arg1={:#x} arg2={:#x}\n", arg0, arg1, arg2);
 #endif
     }

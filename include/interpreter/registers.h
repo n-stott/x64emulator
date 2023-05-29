@@ -232,14 +232,12 @@ namespace x64 {
         }
 
         u64 resolve(SO addr) const {
-            (void)addr;
-            assert(!"not handled");
-            return 0x0;
+            return addr.offset;
         }
 
         template<Size size, typename Enc>
         Ptr<size> resolve(Addr<size, Enc> addr) const {
-            return Ptr<size>{resolve(addr.encoding)};
+            return Ptr<size>{addr.segment, resolve(addr.encoding)};
         }
         
         Ptr<Size::BYTE> resolve(const M8& m8) const {

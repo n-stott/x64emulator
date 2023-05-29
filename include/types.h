@@ -26,6 +26,7 @@ namespace x64 {
         FS,
         GS,
         SS,
+        UNK,
     };
 
     enum class R8 {
@@ -204,11 +205,13 @@ namespace x64 {
 
     template<Size size, typename Encoding>
     struct Addr {
+        Segment segment;
         Encoding encoding;
     };
 
     template<Size size>
     struct Ptr {
+        Segment segment;
         u64 address;
 
         Ptr& operator++() {

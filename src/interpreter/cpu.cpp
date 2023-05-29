@@ -58,46 +58,46 @@ namespace x64 {
 
     void Cpu::push8(u8 value) {
         regs_.rsp_ -= 8;
-        mmu_->write64(Ptr64{regs_.rsp_}, (u64)value);
+        mmu_->write64(Ptr64{Segment::SS, regs_.rsp_}, (u64)value);
     }
 
     void Cpu::push16(u16 value) {
         regs_.rsp_ -= 8;
-        mmu_->write64(Ptr64{regs_.rsp_}, (u64)value);
+        mmu_->write64(Ptr64{Segment::SS, regs_.rsp_}, (u64)value);
     }
 
     void Cpu::push32(u32 value) {
         regs_.rsp_ -= 8;
-        mmu_->write64(Ptr64{regs_.rsp_}, (u64)value);
+        mmu_->write64(Ptr64{Segment::SS, regs_.rsp_}, (u64)value);
     }
 
     void Cpu::push64(u64 value) {
         regs_.rsp_ -= 8;
-        mmu_->write64(Ptr64{regs_.rsp_}, value);
+        mmu_->write64(Ptr64{Segment::SS, regs_.rsp_}, value);
     }
 
     u8 Cpu::pop8() {
-        u64 value = mmu_->read64(Ptr64{regs_.rsp_});
+        u64 value = mmu_->read64(Ptr64{Segment::SS, regs_.rsp_});
         assert(value == (u8)value);
         regs_.rsp_ += 8;
         return static_cast<u8>(value);
     }
 
     u16 Cpu::pop16() {
-        u64 value = mmu_->read64(Ptr64{regs_.rsp_});
+        u64 value = mmu_->read64(Ptr64{Segment::SS, regs_.rsp_});
         assert(value == (u16)value);
         regs_.rsp_ += 8;
         return static_cast<u16>(value);
     }
 
     u32 Cpu::pop32() {
-        u64 value = mmu_->read64(Ptr64{regs_.rsp_});
+        u64 value = mmu_->read64(Ptr64{Segment::SS, regs_.rsp_});
         regs_.rsp_ += 8;
         return static_cast<u32>(value);
     }
 
     u64 Cpu::pop64() {
-        u64 value = mmu_->read64(Ptr64{regs_.rsp_});
+        u64 value = mmu_->read64(Ptr64{Segment::SS, regs_.rsp_});
         regs_.rsp_ += 8;
         return value;
     }

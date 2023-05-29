@@ -44,24 +44,6 @@ namespace x64 {
                 this->handler = std::move(handler);
             }
 
-            u8 read8(Ptr8 ptr) const;
-            u16 read16(Ptr16 ptr) const;
-            u32 read32(Ptr32 ptr) const;
-            u64 read64(Ptr64 ptr) const;
-            u128 read128(Ptr128 ptr) const;
-
-            void write8(Ptr8 ptr, u8 value);
-            void write16(Ptr16 ptr, u16 value);
-            void write32(Ptr32 ptr, u32 value);
-            void write64(Ptr64 ptr, u64 value);
-            void write128(Ptr128 ptr, u128 value);
-
-            template<typename T, Size s>
-            T read(Ptr<s> ptr) const;
-
-            template<typename T, Size s>
-            void write(Ptr<s> ptr, T value);
-
             std::string name;
             u64 base;
             u64 size;
@@ -69,12 +51,33 @@ namespace x64 {
             Protection protection;
             InvalidValues invalidValues;
             std::function<void(u64)> handler;
+
+        private:
+            friend class Mmu;
+
+            u8 read8(u64 address) const;
+            u16 read16(u64 address) const;
+            u32 read32(u64 address) const;
+            u64 read64(u64 address) const;
+            u128 read128(u64 address) const;
+
+            void write8(u64 address, u8 value);
+            void write16(u64 address, u16 value);
+            void write32(u64 address, u32 value);
+            void write64(u64 address, u64 value);
+            void write128(u64 address, u128 value);
+
+            template<typename T>
+            T read(u64 address) const;
+
+            template<typename T>
+            void write(u64 address, T value);
         };
 
         Mmu() = default;
 
         Region* addRegion(Region region);
-        Region* addTlsRegion(Region region);
+        Region* addTlsRegion(Region region, u64 fsBase);
 
         u8 read8(Ptr8 ptr) const;
         u16 read16(Ptr16 ptr) const;
@@ -88,24 +91,6 @@ namespace x64 {
         void write64(Ptr64 ptr, u64 value);
         void write128(Ptr128 ptr, u128 value);
 
-        template<typename T, Size s>
-        T read(const Region* region, Ptr<s> ptr) const;
-
-        template<typename T, Size s>
-        void write(Region* region, Ptr<s> ptr, T value);
-
-        u8 readTls8(Ptr8 ptr) const;
-        u16 readTls16(Ptr16 ptr) const;
-        u32 readTls32(Ptr32 ptr) const;
-        u64 readTls64(Ptr64 ptr) const;
-        u128 readTls128(Ptr128 ptr) const;
-
-        void writeTls8(Ptr8 ptr, u8 value);
-        void writeTls16(Ptr16 ptr, u16 value);
-        void writeTls32(Ptr32 ptr, u32 value);
-        void writeTls64(Ptr64 ptr, u64 value);
-        void writeTls128(Ptr128 ptr, u128 value);
-
         void dumpRegions() const;
 
         u64 topOfMemoryAligned(u64 alignment) const;
@@ -113,14 +98,18 @@ namespace x64 {
         static constexpr u64 PAGE_SIZE = 1024*1024;
 
     private:
+        template<typename T, Size s>
+        T read(Ptr<s> ptr) const;
+
+        template<typename T, Size s>
+        void write(Ptr<s> ptr, T value);
+
         Region* findAddress(u64 address);
         const Region* findAddress(u64 address) const;
 
-        Region* findTlsAddress(u64 address);
-        const Region* findTlsAddress(u64 address) const;
-
         std::deque<Region> regions_;
-        std::deque<Region> tlsRegions_;
+        Region* tlsRegion_ { nullptr };
+        u64 fsBase_ { 0 };
     };
 
 }
