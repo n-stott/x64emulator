@@ -137,7 +137,7 @@ namespace x64 {
 
             u64 totalTlsRegionSize = std::accumulate(tlsSections.begin(), tlsSections.end(), 0, [](u64 size, const auto& s) {
                 return size + s.sh_size;
-            }); // address of fs:0x0
+            });
 
             u64 fsBase = mmu_.topOfMemoryAligned(Mmu::PAGE_SIZE); // TODO reserve some space below
 
@@ -363,27 +363,6 @@ namespace x64 {
 
     }
 
-
-    void Interpreter::push8(u8 value) {
-        cpu_.regs_.rsp_ -= 8;
-        mmu_.write64(Ptr64{Segment::SS, cpu_.regs_.rsp_}, (u64)value);
-    }
-
-    void Interpreter::push16(u16 value) {
-        cpu_.regs_.rsp_ -= 8;
-        mmu_.write64(Ptr64{Segment::SS, cpu_.regs_.rsp_}, (u64)value);
-    }
-
-    void Interpreter::push32(u32 value) {
-        cpu_.regs_.rsp_ -= 8;
-        mmu_.write64(Ptr64{Segment::SS, cpu_.regs_.rsp_}, (u64)value);
-    }
-
-    void Interpreter::push64(u64 value) {
-        cpu_.regs_.rsp_ -= 8;
-        mmu_.write64(Ptr64{Segment::SS, cpu_.regs_.rsp_}, value);
-    }
-
     void Interpreter::pushProgramArguments(const std::string& programFilePath, const std::vector<std::string>& arguments) {
         VerificationScope::run([&]() {
             std::vector<u64> argumentPositions;
@@ -391,7 +370,7 @@ namespace x64 {
                 std::vector<u64> buffer;
                 buffer.resize((s.size()+8)/8, 0);
                 std::memcpy(buffer.data(), s.data(), s.size());
-                for(auto cit = buffer.rbegin(); cit != buffer.rend(); ++cit) push64(*cit);
+                for(auto cit = buffer.rbegin(); cit != buffer.rend(); ++cit) cpu_.push64(*cit);
                 argumentPositions.push_back(cpu_.regs_.rsp_);
             };
 
@@ -402,7 +381,7 @@ namespace x64 {
             
             alignDown64(cpu_.regs_.rsp_);
             for(auto it = argumentPositions.rbegin(); it != argumentPositions.rend(); ++it) {
-                push64(*it);
+                cpu_.push64(*it);
             }
             cpu_.set(R64::RSI, cpu_.regs_.rsp_);
             cpu_.set(R64::RDI, arguments.size()+1);
@@ -417,7 +396,7 @@ namespace x64 {
         fmt::print("Execute function {}\n", function->name);
         SignalHandler sh;
 
-        push64(function->address);
+        cpu_.push64(function->address);
         call(function->address);
 
         size_t ticks = 0;

@@ -184,11 +184,6 @@ namespace x64 {
         void dump(FILE* stream = stderr) const;
         void dumpStack(FILE* stream = stderr) const;
         void dumpFunctions(FILE* stream = stderr) const;
-
-        void push8(u8 value);
-        void push16(u16 value);
-        void push32(u32 value);
-        void push64(u64 value);
     };
 
 }
