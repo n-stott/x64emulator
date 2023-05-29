@@ -734,13 +734,13 @@ namespace x64 {
     }
 
     void Cpu::exec(const CallIndirect<R32>& ins) {
-        u64 address = interpreter_->currentExecutedSection->sectionOffset + get(ins.src);
+        u64 address = get(ins.src);
         push64(regs_.rip_);
         interpreter_->call(address);
     }
 
     void Cpu::exec(const CallIndirect<R64>& ins) {
-        u64 address = interpreter_->currentExecutedSection->sectionOffset + get(ins.src);
+        u64 address = get(ins.src);
         push64(regs_.rip_);
         interpreter_->call(address);
     }

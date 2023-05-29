@@ -133,7 +133,9 @@ namespace x64 {
                 const ExecutableSection* section = currentExecutedSection;
                 size_t index = (size_t)(-1);
                 findSectionWithAddress(address, &section, &index);
-                verify(!!section);
+                verify(!!section, [&]() {
+                    fmt::print("Unable to find section containing address {:#x}\n", address);
+                });
                 verify(index != (size_t)(-1));
                 cp.address = address;
                 cp.executedSection = section;
