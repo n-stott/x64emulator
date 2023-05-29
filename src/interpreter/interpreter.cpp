@@ -227,16 +227,21 @@ namespace x64 {
                 }
                 mmu_.write64(Ptr64{Segment::DS, relocationAddress}, func->address);
             } else if(sym->type() == elf::SymbolType::OBJECT) {
-                // fmt::print("  Object symbols not yet handled\n");
-                // bool found = false;
-                // auto resolveSymbol = [&](const elf::StringTable* stringTable, const elf::SymbolTableEntry64& entry) {
-                //     if(found) return;
-                //     if(entry.symbol(stringTable, *libcElf_).find(symbol) == std::string_view::npos) return;
-                //     found = true;
-                //     mmu_.write64(Ptr64{relocationAddress}, entry.st_value);
-                // };
-                // libcElf_->forAllSymbols(resolveSymbol);
-                // if(!found) libcElf_->forAllDynamicSymbols(resolveSymbol);
+                // fmt::print("  Object symbol {}\n", symbol);
+                bool found = false;
+                for(const auto& otherElf : elfs_) {
+                    if(&otherElf == &loadedElf) continue;
+                    auto resolveSymbol = [&](const elf::StringTable* stringTable, const elf::SymbolTableEntry64& entry) {
+                        if(found) return;
+                        if(entry.symbol(stringTable, *otherElf.elf).find(symbol) == std::string_view::npos) return;
+                        found = true;
+                        // fmt::print("    Resolved symbol {} at {:#x} in {}\n", symbol, entry.st_value, otherElf.filename);
+                        mmu_.write64(Ptr64{Segment::DS, relocationAddress}, entry.st_value);
+                    };
+                    otherElf.elf->forAllSymbols(resolveSymbol);
+                    if(!found) otherElf.elf->forAllDynamicSymbols(resolveSymbol);
+                }
+                // if(!found) fmt::print("    Unable to resolve symbol {}\n", symbol);
             }
         };
 
