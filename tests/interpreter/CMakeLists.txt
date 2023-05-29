@@ -149,3 +149,8 @@ add_executable(test_fpu src/test_fpu.cpp)
 target_compile_options(test_fpu PUBLIC ${CC_OPTIONS})
 target_link_options(test_fpu PUBLIC ${LD_OPTIONS})
 add_test(NAME fpu COMMAND ${CMAKE_BINARY_DIR}/interpreter test_fpu)
+
+add_executable(test_fibonacci src/test_fibonacci.cpp)
+target_compile_options(test_fibonacci PUBLIC ${CC_OPTIONS})
+target_link_options(test_fibonacci PUBLIC ${LD_OPTIONS})
+add_test(NAME fibonacci COMMAND ${CMAKE_BINARY_DIR}/interpreter test_fibonacci)
