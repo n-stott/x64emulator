@@ -47,7 +47,7 @@ add_test(NAME strings COMMAND ${CMAKE_BINARY_DIR}/interpreter test_strings)
 
 add_executable(test_malloc src/test_malloc.cpp)
 target_compile_options(test_malloc PUBLIC ${CC_OPTIONS})
-target_link_options(test_malloc PUBLIC ${LD_OPTIONS})
+target_link_options(test_malloc PUBLIC ${LD_OPTIONS} -static-libstdc++ -static-libgcc)
 add_test(NAME malloc COMMAND ${CMAKE_BINARY_DIR}/interpreter test_malloc)
 
 add_executable(test_fmt_print src/test_fmt_print.cpp)

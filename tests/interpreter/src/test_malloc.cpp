@@ -55,8 +55,26 @@ void test3() {
     else puts("Only partial allocation success");
 }
 
+void test4() {
+    void* a = malloc(0x80);
+    void* b = malloc(0x80);
+    void* c = malloc(0x80);
+    void* d = malloc(0x80);
+    free(d);
+    free(c);
+    free(b);
+    free(a);
+}
+
+void test5() {
+    int* a = new int(2);
+    delete a;
+}
+
 int main() {
     test1();
     test2();
     test3();
+    test4();
+    test5();
 }
