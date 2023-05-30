@@ -36,7 +36,24 @@ extern "C" {
     FILE* const fakelibc$stdout = (FILE*)0x57D0117;
     FILE* const fakelibc$stderr  = (FILE*)0x57DE44;
 
-    locale_t const c_locale = (locale_t)0xC10CA1E;
+    // copied from bits/types/__locale_t.h
+    struct locale_struct {
+        void* __locales[13]; // struct __locale_data*
+
+        const unsigned short int* __ctype_b { nullptr };
+        const int* __ctype_tolower { nullptr };
+        const int* __ctype_toupper { nullptr };
+
+        const char* __names[13];
+
+        locale_struct() {
+            ::memset(this, 0, sizeof(this));
+        }
+    };
+
+    const locale_struct c_locale_data;
+
+    const locale_t c_locale = (const locale_t)&c_locale_data;
 
     int fakelibc$puts(const char* s) {
         if(!s) {
