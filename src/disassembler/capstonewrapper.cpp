@@ -4,6 +4,7 @@
 #include "instructions.h"
 #include "elf-reader.h"
 #include "fmt/core.h"
+#include <boost/core/demangle.hpp>
 #include <charconv>
 #include <unordered_map>
 
@@ -1605,7 +1606,9 @@ namespace x64 {
         if(symbolTable && stringTable) {
             for(const auto& symbol : symbolTable.value()) {
                 if(symbol.type() != elf::SymbolType::FUNC) continue;
-                symbols.push_back(std::make_pair(symbol.st_value, std::string(symbol.symbol(&stringTable.value(),*elf64))));
+                std::string rawSymbol = std::string(symbol.symbol(&stringTable.value(),*elf64));
+                std::string demangledSymbol = boost::core::demangle(rawSymbol.c_str());
+                symbols.push_back(std::make_pair(symbol.st_value, demangledSymbol));
             }
         }
 
