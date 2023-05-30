@@ -739,14 +739,20 @@ namespace x64 {
         interpreter_->call(address);
     }
 
+    void Cpu::exec(const CallIndirect<M32>& ins) {
+        u64 address = get(resolve(ins.src));
+        push64(regs_.rip_);
+        interpreter_->call(address);
+    }
+
     void Cpu::exec(const CallIndirect<R64>& ins) {
         u64 address = get(ins.src);
         push64(regs_.rip_);
         interpreter_->call(address);
     }
 
-    void Cpu::exec(const CallIndirect<M32>& ins) {
-        u64 address = interpreter_->currentExecutedSection->sectionOffset + get(resolve(ins.src));
+    void Cpu::exec(const CallIndirect<M64>& ins) {
+        u64 address = get(resolve(ins.src));
         push64(regs_.rip_);
         interpreter_->call(address);
     }
@@ -1093,30 +1099,55 @@ namespace x64 {
     void Cpu::exec(const Cmp<M64, Imm>& ins) { execSub64Impl(get(resolve(ins.src1)), get<u64>(ins.src2)); }
 
     template<typename Dst>
-    void Cpu::execCmpxchg32Impl(Dst dst, u32 src) {
+    void Cpu::execCmpxchg32Impl(Dst dst, R32 src) {
         if constexpr(std::is_same_v<Dst, R32>) {
             u32 eax = get(R32::EAX);
             u32 dest = get(dst);
+            execSub32Impl(eax, dest);
             if(eax == dest) {
-                execSub32Impl(eax, dest);
                 flags_.zero = 1;
-                set(dst, src);
+                set(dst, get(src));
             } else {
-                execSub32Impl(eax, dest);
                 flags_.zero = 0;
                 set(R32::EAX, dest);
             }
         } else {
             u32 eax = get(R32::EAX);
             u32 dest = get(resolve(dst));
+            execSub32Impl(eax, dest);
             if(eax == dest) {
-                execSub32Impl(eax, dest);
                 flags_.zero = 1;
-                set(resolve(dst), src);
+                set(resolve(dst), get(src));
             } else {
-                execSub32Impl(eax, dest);
                 flags_.zero = 0;
                 set(R32::EAX, dest);
+            }
+        }
+    }
+
+    template<typename Dst>
+    void Cpu::execCmpxchg64Impl(Dst dst, R64 src) {
+        if constexpr(std::is_same_v<Dst, R64>) {
+            u64 rax = get(R64::RAX);
+            u64 dest = get(dst);
+            execSub64Impl(rax, dest);
+            if(rax == dest) {
+                flags_.zero = 1;
+                set(dst, get(src));
+            } else {
+                flags_.zero = 0;
+                set(R64::RAX, dest);
+            }
+        } else {
+            u64 rax = get(R64::RAX);
+            u64 dest = get(resolve(dst));
+            execSub64Impl(rax, dest);
+            if(rax == dest) {
+                flags_.zero = 1;
+                set(resolve(dst), get(src));
+            } else {
+                flags_.zero = 0;
+                set(R64::RAX, dest);
             }
         }
     }
@@ -1125,9 +1156,10 @@ namespace x64 {
     void Cpu::exec(const Cmpxchg<M8, R8>& ins) { TODO(ins); }
     void Cpu::exec(const Cmpxchg<R16, R16>& ins) { TODO(ins); }
     void Cpu::exec(const Cmpxchg<M16, R16>& ins) { TODO(ins); }
-    void Cpu::exec(const Cmpxchg<R32, R32>& ins) { execCmpxchg32Impl(ins.src1, get(ins.src2)); }
-    void Cpu::exec(const Cmpxchg<R32, Imm>& ins) { execCmpxchg32Impl(ins.src1, get<u32>(ins.src2)); }
-    void Cpu::exec(const Cmpxchg<M32, R32>& ins) { execCmpxchg32Impl(ins.src1, get(ins.src2)); }
+    void Cpu::exec(const Cmpxchg<R32, R32>& ins) { execCmpxchg32Impl(ins.src1, ins.src2); }
+    void Cpu::exec(const Cmpxchg<M32, R32>& ins) { execCmpxchg32Impl(ins.src1, ins.src2); }
+    void Cpu::exec(const Cmpxchg<R64, R64>& ins) { execCmpxchg64Impl(ins.src1, ins.src2); }
+    void Cpu::exec(const Cmpxchg<M64, R64>& ins) { execCmpxchg64Impl(ins.src1, ins.src2); }
 
     template<typename Dst>
     void Cpu::execSet(Cond cond, Dst dst) {

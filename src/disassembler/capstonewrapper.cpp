@@ -865,10 +865,12 @@ namespace x64 {
         auto r32src = asRegister32(operand);
         auto r64src = asRegister64(operand);
         auto m32src = asMemory32(operand);
+        auto m64src = asMemory64(operand);
         if(imm) return make_wrapper<CallDirect>(insn.address, imm->immediate, "");
         if(r32src) return make_wrapper<CallIndirect<R32>>(insn.address, r32src.value());
         if(r64src) return make_wrapper<CallIndirect<R64>>(insn.address, r64src.value());
         if(m32src) return make_wrapper<CallIndirect<M32>>(insn.address, m32src.value());
+        if(m64src) return make_wrapper<CallIndirect<M64>>(insn.address, m64src.value());
         return make_failed(insn);
     }
 
@@ -1143,21 +1145,26 @@ namespace x64 {
         assert(x86detail.op_count == 2);
         const cs_x86_op& dst = x86detail.operands[0];
         const cs_x86_op& src = x86detail.operands[1];
-        auto r8src1 = asRegister8(dst);
-        auto r16src1 = asRegister16(dst);
-        auto r32src1 = asRegister32(dst);
-        auto m8src1 = asMemory8(dst);
-        auto m16src1 = asMemory16(dst);
-        auto m32src1 = asMemory32(dst);
-        auto r8src2 = asRegister8(src);
-        auto r16src2 = asRegister16(src);
-        auto r32src2 = asRegister32(src);
-        if(r8src1 && r8src2) return make_wrapper<Cmpxchg<R8, R8>>(insn.address, r8src1.value(), r8src2.value());
-        if(r16src1 && r16src2) return make_wrapper<Cmpxchg<R16, R16>>(insn.address, r16src1.value(), r16src2.value());
-        if(m16src1 && r16src2) return make_wrapper<Cmpxchg<M16, R16>>(insn.address, m16src1.value(), r16src2.value());
-        if(r32src1 && r32src2) return make_wrapper<Cmpxchg<R32, R32>>(insn.address, r32src1.value(), r32src2.value());
-        if(m8src1 && r8src2) return make_wrapper<Cmpxchg<M8, R8>>(insn.address, m8src1.value(), r8src2.value());
-        if(m32src1 && r32src2) return make_wrapper<Cmpxchg<M32, R32>>(insn.address, m32src1.value(), r32src2.value());
+        auto r8dst = asRegister8(dst);
+        auto r16dst = asRegister16(dst);
+        auto r32dst = asRegister32(dst);
+        auto r64dst = asRegister64(dst);
+        auto m8dst = asMemory8(dst);
+        auto m16dst = asMemory16(dst);
+        auto m32dst = asMemory32(dst);
+        auto m64dst = asMemory64(dst);
+        auto r8src = asRegister8(src);
+        auto r16src = asRegister16(src);
+        auto r32src = asRegister32(src);
+        auto r64src = asRegister64(src);
+        if(r8dst && r8src) return make_wrapper<Cmpxchg<R8, R8>>(insn.address, r8dst.value(), r8src.value());
+        if(m8dst && r8src) return make_wrapper<Cmpxchg<M8, R8>>(insn.address, m8dst.value(), r8src.value());
+        if(r16dst && r16src) return make_wrapper<Cmpxchg<R16, R16>>(insn.address, r16dst.value(), r16src.value());
+        if(m16dst && r16src) return make_wrapper<Cmpxchg<M16, R16>>(insn.address, m16dst.value(), r16src.value());
+        if(r32dst && r32src) return make_wrapper<Cmpxchg<R32, R32>>(insn.address, r32dst.value(), r32src.value());
+        if(m32dst && r32src) return make_wrapper<Cmpxchg<M32, R32>>(insn.address, m32dst.value(), r32src.value());
+        if(r64dst && r64src) return make_wrapper<Cmpxchg<R64, R64>>(insn.address, r64dst.value(), r64src.value());
+        if(m64dst && r64src) return make_wrapper<Cmpxchg<M64, R64>>(insn.address, m64dst.value(), r64src.value());
         return make_failed(insn);
     }
 

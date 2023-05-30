@@ -147,7 +147,10 @@ namespace x64 {
         u32 execXor32Impl(u32 dst, u32 src);
 
         template<typename Dst>
-        void execCmpxchg32Impl(Dst dst, u32 src);
+        void execCmpxchg32Impl(Dst dst, R32 src);
+
+        template<typename Dst>
+        void execCmpxchg64Impl(Dst dst, R64 src);
 
     public:
         void exec(const Add<R32, R32>&) override;
@@ -332,8 +335,9 @@ namespace x64 {
 
         void exec(const CallDirect&) override;
         void exec(const CallIndirect<R32>&) override;
-        void exec(const CallIndirect<R64>&) override;
         void exec(const CallIndirect<M32>&) override;
+        void exec(const CallIndirect<R64>&) override;
+        void exec(const CallIndirect<M64>&) override;
         void exec(const Ret<>&) override;
         void exec(const Ret<Imm>&) override;
 
@@ -426,8 +430,9 @@ namespace x64 {
         void exec(const Cmpxchg<R16, R16>&) override;
         void exec(const Cmpxchg<M16, R16>&) override;
         void exec(const Cmpxchg<R32, R32>&) override;
-        void exec(const Cmpxchg<R32, Imm>&) override;
         void exec(const Cmpxchg<M32, R32>&) override;
+        void exec(const Cmpxchg<R64, R64>&) override;
+        void exec(const Cmpxchg<M64, R64>&) override;
 
         void exec(const Set<Cond::AE, R8>&) override;
         void exec(const Set<Cond::AE, M8>&) override;

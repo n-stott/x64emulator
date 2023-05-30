@@ -191,8 +191,9 @@ namespace x64 {
 
         virtual void exec(const CallDirect&) = 0;
         virtual void exec(const CallIndirect<R32>&) = 0;
-        virtual void exec(const CallIndirect<R64>&) = 0;
         virtual void exec(const CallIndirect<M32>&) = 0;
+        virtual void exec(const CallIndirect<R64>&) = 0;
+        virtual void exec(const CallIndirect<M64>&) = 0;
         virtual void exec(const Ret<>&) = 0;
         virtual void exec(const Ret<Imm>&) = 0;
 
@@ -285,8 +286,9 @@ namespace x64 {
         virtual void exec(const Cmpxchg<R16, R16>&) = 0;
         virtual void exec(const Cmpxchg<M16, R16>&) = 0;
         virtual void exec(const Cmpxchg<R32, R32>&) = 0;
-        virtual void exec(const Cmpxchg<R32, Imm>&) = 0;
         virtual void exec(const Cmpxchg<M32, R32>&) = 0;
+        virtual void exec(const Cmpxchg<R64, R64>&) = 0;
+        virtual void exec(const Cmpxchg<M64, R64>&) = 0;
 
         virtual void exec(const Set<Cond::AE, R8>&) = 0;
         virtual void exec(const Set<Cond::AE, M8>&) = 0;
