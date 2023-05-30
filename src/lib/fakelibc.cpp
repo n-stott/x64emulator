@@ -223,7 +223,11 @@ extern "C" {
     }
 
     int fakelibc$fputc(int c, FILE* stream) {
-        return fakelibc$putchar(c);
+        return intrinsic$putchar(c);
+    }
+
+    int fakelibc$putc(int c, FILE* stream) {
+        return intrinsic$putchar(c);
     }
 
     time_t fakelibc$time(time_t* tloc) {
