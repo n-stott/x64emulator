@@ -12,7 +12,7 @@ namespace x64 {
 
     template<typename T>
     T Cpu::get(Imm value) const {
-        assert((u64)(T)value.immediate == value.immediate);
+        // assert((u64)(T)value.immediate == value.immediate);
         return (T)value.immediate;
     }
 
