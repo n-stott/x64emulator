@@ -361,6 +361,25 @@ namespace x64 {
         return std::make_pair(upper, lower);
     }
 
+    std::pair<u64, u64> Cpu::execMul64(u64 src1, u64 src2) {
+        u64 a = (u64)(u32)(src1 >> 32);
+        u64 b = (u64)(u32)src1;
+        u64 c = (u64)(u32)(src2 >> 32);
+        u64 d = (u64)(u32)src2;
+
+        u64 ac = a*c;
+        u64 adbc = a*d+b*c;
+        u64 bd = b*d;
+
+        u64 lower = bd + (adbc << 32);
+        u64 upper = ac + (adbc >> 32);
+
+        flags_.overflow = !!upper;
+        flags_.carry = !!upper;
+        flags_.setUnsureParity();
+        return std::make_pair(upper, lower);
+    }
+
     void Cpu::exec(const Mul<R32>& ins) {
         auto res = execMul32(get(R32::EAX), get(ins.src));
         set(R32::EDX, res.first);
@@ -370,6 +389,17 @@ namespace x64 {
         auto res = execMul32(get(R32::EAX), get(resolve(ins.src)));
         set(R32::EDX, res.first);
         set(R32::EAX, res.second);
+    }
+
+    void Cpu::exec(const Mul<R64>& ins) {
+        auto res = execMul64(get(R64::RAX), get(ins.src));
+        set(R64::RDX, res.first);
+        set(R64::RAX, res.second);
+    }
+    void Cpu::exec(const Mul<M64>& ins) {
+        auto res = execMul64(get(R64::RAX), get(resolve(ins.src)));
+        set(R64::RDX, res.first);
+        set(R64::RAX, res.second);
     }
 
     u32 Cpu::execImul32(u32 src1, u32 src2) {

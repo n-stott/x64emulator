@@ -97,6 +97,8 @@ namespace x64 {
         u32 execNeg32Impl(u32 dst);
 
         std::pair<u32, u32> execMul32(u32 src1, u32 src2);
+        std::pair<u64, u64> execMul64(u64 src1, u64 src2);
+
         void execImul32(u32 src);
         u32 execImul32(u32 src1, u32 src2);
         void execImul64(u64 src);
@@ -196,6 +198,8 @@ namespace x64 {
 
         void exec(const Mul<R32>&) override;
         void exec(const Mul<M32>&) override;
+        void exec(const Mul<R64>&) override;
+        void exec(const Mul<M64>&) override;
 
         void exec(const Imul1<R32>&) override;
         void exec(const Imul1<M32>&) override;

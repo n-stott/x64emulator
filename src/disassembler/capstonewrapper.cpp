@@ -622,8 +622,12 @@ namespace x64 {
         const cs_x86_op& operand = x86detail.operands[0];
         auto r32dst = asRegister32(operand);
         auto m32dst = asMemory32(operand);
+        auto r64dst = asRegister64(operand);
+        auto m64dst = asMemory64(operand);
         if(r32dst) return make_wrapper<Mul<R32>>(insn.address, r32dst.value());
         if(m32dst) return make_wrapper<Mul<M32>>(insn.address, m32dst.value());
+        if(r64dst) return make_wrapper<Mul<R64>>(insn.address, r64dst.value());
+        if(m64dst) return make_wrapper<Mul<M64>>(insn.address, m64dst.value());
         return make_failed(insn);
     }
 

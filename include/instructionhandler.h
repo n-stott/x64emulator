@@ -52,6 +52,8 @@ namespace x64 {
 
         virtual void exec(const Mul<R32>&) = 0;
         virtual void exec(const Mul<M32>&) = 0;
+        virtual void exec(const Mul<R64>&) = 0;
+        virtual void exec(const Mul<M64>&) = 0;
 
         virtual void exec(const Imul1<R32>&) = 0;
         virtual void exec(const Imul1<M32>&) = 0;
