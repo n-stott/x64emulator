@@ -119,6 +119,9 @@ namespace x64 {
         flags_.setUnsureParity();\
         DEBUG_ONLY(fmt::print(stderr, "Warning : flags not updated\n"))
 
+    #define WARN_FLAGS_UNSURE() \
+        DEBUG_ONLY(fmt::print(stderr, "Warning : flags may be wrong\n"))
+
     #define REQUIRE_FLAGS() \
         verify(flags_.sure(), "flags are not set correctly");
 
@@ -175,7 +178,13 @@ namespace x64 {
     }
 
     u64 Cpu::execAdd64Impl(u64 dst, u64 src) {
-        flags_.setUnsure();
+        i64 tmp = (i64)dst + (i64)src;
+        flags_.overflow = (dst ^ tmp) & ((src) ^ tmp) & 0x800000000000;
+        flags_.carry = (src > ~dst); // src + dst > uint_max <=> src > uint_max - dst = ~dst maybe ?
+        flags_.sign = (tmp < 0);
+        flags_.zero = (dst == src);
+        WARN_FLAGS_UNSURE();
+        flags_.setSure();
         flags_.setUnsureParity();
         return src + dst;
     }
