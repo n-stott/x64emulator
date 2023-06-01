@@ -42,13 +42,11 @@ namespace x64 {
     struct Function {
         u64 address;
         std::string name;
+        std::string demangledName;
         std::vector<const X86Instruction*> instructions;
 
         Function() : address(0) { }
-        Function(u64 address, std::string name, std::vector<const X86Instruction*> instructions) :
-            address(address), name(std::move(name)), instructions(std::move(instructions)) {
-
-        }
+        Function(u64 address, std::string name, std::vector<const X86Instruction*> instructions);
         Function(Function&&) = default;
         virtual ~Function() = default;
         void print() const;

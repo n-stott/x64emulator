@@ -60,7 +60,7 @@ namespace x64 {
         std::vector<LoadedElf> elfs_;
         std::unique_ptr<LibC> libc_;
 
-        const Function* findFunctionByName(std::string_view name) const;
+        const Function* findFunctionByName(const std::string& name, bool demangled) const;
         const Function* findFunctionByAddress(u64 address) const;
 
         bool stop_;

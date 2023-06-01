@@ -1622,8 +1622,7 @@ namespace x64 {
             for(const auto& symbol : symbolTable.value()) {
                 if(symbol.type() != elf::SymbolType::FUNC) continue;
                 std::string rawSymbol = std::string(symbol.symbol(&stringTable.value(),*elf64));
-                std::string demangledSymbol = boost::core::demangle(rawSymbol.c_str());
-                symbols.push_back(std::make_pair(symbol.st_value, demangledSymbol));
+                symbols.push_back(std::make_pair(symbol.st_value, rawSymbol));
             }
         }
 

@@ -252,12 +252,12 @@ namespace x64 {
         }
     }
 
-    const Function* Interpreter::findFunctionByName(std::string_view name) const {
+    const Function* Interpreter::findFunctionByName(const std::string& name, bool demangled) const {
         const Function* function = nullptr;
         std::string origin;
         for(const auto& execSection : executableSections_) {
             for(const auto& func : execSection.functions) {
-                std::string_view funcname = func->name;
+                std::string_view funcname = demangled ? func->demangledName : func->name;
                 size_t separator = funcname.find('$');
                 if(separator == std::string::npos) {
                     if(name == funcname) {
@@ -346,7 +346,7 @@ namespace x64 {
     }
 
     void Interpreter::executeMain() {
-        const Function* main = findFunctionByName("main");
+        const Function* main = findFunctionByName("main", false);
         verify(!!main, "Cannot find \"main\" symbol");
         execute(main);
     }
@@ -527,8 +527,8 @@ namespace x64 {
                 if(originSection->sectionname == ".text") {
                     const auto* func = functionFromAddress(address);
                     verify(!!func, "Could not find function in text section");
-                    call->instruction.symbolName = func->name;
-                    functionNameCache[address] = func->name;
+                    call->instruction.symbolName = func->demangledName;
+                    functionNameCache[address] = func->demangledName;
                 } else if (originSection->sectionname == ".plt") {
                     // look at the first instruction to determine the jmp location
                     const X86Instruction* jmpInsn = originSection->instructions[firstInstructionIndex].get();
@@ -540,8 +540,8 @@ namespace x64 {
                     auto dst = mmu_.read64(ptr);
                     const auto* func = functionFromAddress(dst);
                     if(!!func) {
-                        call->instruction.symbolName = func->name;
-                        functionNameCache[address] = func->name;
+                        call->instruction.symbolName = func->demangledName;
+                        functionNameCache[address] = func->demangledName;
                     }
                 }
             }
