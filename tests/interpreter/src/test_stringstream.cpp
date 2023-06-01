@@ -28,11 +28,12 @@ void testD() {
     ss >> x;
 }
 
-void testE() {
+int testE() {
     std::stringstream ss;
     ss << 123;
     int x;
     ss >> x;
+    return x;
 }
 
 int main() {

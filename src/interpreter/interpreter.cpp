@@ -240,7 +240,9 @@ namespace x64 {
                 for(const auto& otherElf : elfs_) {
                     auto resolveSymbol = [&](const elf::StringTable* stringTable, const elf::SymbolTableEntry64& entry) {
                         if(found) return;
-                        if(entry.symbol(stringTable, *otherElf.elf).find(symbol) == std::string_view::npos) return;
+                        if(entry.symbol(stringTable, *otherElf.elf).find(symbol) == std::string_view::npos
+                        && entry.symbol(stringTable, *otherElf.elf).find(demangledSymbol) == std::string_view::npos) return;
+                        if(entry.isUndefined()) return;
                         found = true;
 #if DEBUG_RELOCATIONS
                         fmt::print("    Resolved symbol {} at {:#x} in {}\n", symbol, otherElf.offset + entry.st_value, otherElf.filename);
