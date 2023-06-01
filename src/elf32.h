@@ -71,6 +71,7 @@ namespace elf {
 
         SymbolType type() const;
         SymbolBind bind() const;
+        bool isUndefined() const;
         std::string_view symbol(const StringTable* stringTable, const Elf32& elf) const;
         std::string toString() const;
     };
@@ -201,6 +202,10 @@ namespace elf {
 
     inline SymbolBind SymbolTableEntry32::bind() const {
         return static_cast<SymbolBind>(st_info >> 4);
+    }
+
+    inline bool SymbolTableEntry32::isUndefined() const {
+        return st_shndx == 0;
     }
 
     inline std::string_view SymbolTableEntry32::symbol(const StringTable* stringTable, const Elf32& elf) const {
