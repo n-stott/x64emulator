@@ -338,20 +338,20 @@ namespace x64 {
     }
 
     void Interpreter::runInit() {
-        if(elfs_.empty()) return;
-        const auto& programElf = elfs_[0].elf;
-        auto initArraySection = programElf->sectionFromName(".init_array");
-        if(initArraySection) {
-            assert(initArraySection->size() % sizeof(u64) == 0);
-            const u64* beginInitArray = reinterpret_cast<const u64*>(initArraySection->begin);
-            const u64* endInitArray = reinterpret_cast<const u64*>(initArraySection->end);
-            for(const u64* it = beginInitArray; it != endInitArray; ++it) {
-                const Function* initFunction = findFunctionByAddress(*it);
-                verify(!!initFunction, [&]() {
-                    fmt::print("Unable to find init function {:#x}\n", *it);
-                });
-                execute(initFunction);
-                if(stop_) return;
+        for(const auto& elf : elfs_) {
+            auto initArraySection = elf.elf->sectionFromName(".init_array");
+            if(initArraySection) {
+                assert(initArraySection->size() % sizeof(u64) == 0);
+                const u64* beginInitArray = reinterpret_cast<const u64*>(initArraySection->begin);
+                const u64* endInitArray = reinterpret_cast<const u64*>(initArraySection->end);
+                for(const u64* it = beginInitArray; it != endInitArray; ++it) {
+                    const Function* initFunction = findFunctionByAddress(*it + elf.offset);
+                    verify(!!initFunction, [&]() {
+                        fmt::print("Unable to find init function {:#x}\n", *it);
+                    });
+                    execute(initFunction);
+                    if(stop_) return;
+                }
             }
         }
     }
