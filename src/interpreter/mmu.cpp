@@ -3,6 +3,8 @@
 #include <cassert>
 #include <cstring>
 
+#define DEBUG_MMU 0
+
 namespace x64 {
 
     Mmu::Region::Region(std::string name, u64 base, u64 size, Protection protection) {
@@ -99,6 +101,10 @@ namespace x64 {
             if(!!region->handler) region->handler(address);
         });
         T value = region->read<T>(address);
+#if DEBUG_MMU
+        if constexpr(std::is_integral_v<T>)
+            fmt::print(stderr, "Read {:#x} from address {:#x}\n", value, address);
+#endif
         // verify((region->invalidValues != INV_NULL) || (value != 0), [&]() {
         //     fmt::print("Read 0x0 from region {} which is marked INV_NULL at address {:#x}\n", region->name, ptr.address);
         //     if(!!region->handler) region->handler(ptr.address);
@@ -118,6 +124,10 @@ namespace x64 {
         verify(region->protection & PROT_WRITE, [&]() {
             fmt::print("Attempt to write to {:#x} in non-writable region {}\n", address, region->name);
         });
+#if DEBUG_MMU
+        if constexpr(std::is_integral_v<T>)
+            fmt::print(stderr, "Wrote {:#x} to address {:#x}\n", value, address);
+#endif
         region->write(address, value);
     }
 

@@ -11,6 +11,8 @@
 #include <boost/core/demangle.hpp>
 #include <signal.h>
 
+#define DEBUG_RELOCATIONS 0
+
 namespace x64 {
 
     static bool signal_interrupt = false;
@@ -212,36 +214,45 @@ namespace x64 {
             if(!sym) return;
             verify(elf.dynamicStringTable().has_value());
             auto dynamicStringTable = elf.dynamicStringTable().value();
-            std::string_view symbol = sym->symbol(&dynamicStringTable, elf);
+            std::string symbol { sym->symbol(&dynamicStringTable, elf) };
+            std::string demangledSymbol = boost::core::demangle(symbol.c_str());
 
             u64 relocationAddress = loadedElf.offset + relocation.offset();
-
-            // fmt::print("resolve relocation for symbol \"{}\" at offset {:#x}\n", symbol, relocation.offset());
-
+#if DEBUG_RELOCATIONS
+            fmt::print("resolve relocation for symbol \"{}\" at offset {:#x}\n", symbol, relocation.offset());
+#endif
             if(sym->type() == elf::SymbolType::FUNC
             || (sym->type() == elf::SymbolType::NOTYPE && (sym->bind() == elf::SymbolBind::WEAK || sym->bind() == elf::SymbolBind::GLOBAL))) {
-                const auto* func = findFunctionByName(symbol);
+                const auto* func = findFunctionByName(symbol, false);
+                if(!func) func = findFunctionByName(demangledSymbol, true);
                 if(!func) {
-                    // fmt::print("  unable to find\n");
+#if DEBUG_RELOCATIONS
+                    fmt::print("  unable to find\n");
+#endif
                     return;
                 }
+#if DEBUG_RELOCATIONS
+                fmt::print("  at {:#x}\n", func->address);
+#endif
                 mmu_.write64(Ptr64{Segment::DS, relocationAddress}, func->address);
             } else if(sym->type() == elf::SymbolType::OBJECT) {
-                // fmt::print("  Object symbol {}\n", symbol);
                 bool found = false;
                 for(const auto& otherElf : elfs_) {
-                    if(&otherElf == &loadedElf) continue;
                     auto resolveSymbol = [&](const elf::StringTable* stringTable, const elf::SymbolTableEntry64& entry) {
                         if(found) return;
                         if(entry.symbol(stringTable, *otherElf.elf).find(symbol) == std::string_view::npos) return;
                         found = true;
-                        // fmt::print("    Resolved symbol {} at {:#x} in {}\n", symbol, entry.st_value, otherElf.filename);
-                        mmu_.write64(Ptr64{Segment::DS, relocationAddress}, entry.st_value);
+#if DEBUG_RELOCATIONS
+                        fmt::print("    Resolved symbol {} at {:#x} in {}\n", symbol, otherElf.offset + entry.st_value, otherElf.filename);
+#endif
+                        mmu_.write64(Ptr64{Segment::DS, relocationAddress}, otherElf.offset + entry.st_value);
                     };
                     otherElf.elf->forAllSymbols(resolveSymbol);
                     if(!found) otherElf.elf->forAllDynamicSymbols(resolveSymbol);
                 }
-                // if(!found) fmt::print("    Unable to resolve symbol {}\n", symbol);
+#if DEBUG_RELOCATIONS
+                if(!found) fmt::print("    Unable to resolve symbol {}\n", symbol);
+#endif
             }
         };
 
@@ -448,6 +459,7 @@ namespace x64 {
                 mmu_.dumpRegions();
                 fmt::print("Stacktrace:\n");
                 dumpStackTrace();
+                // dumpFunctions();
                 stop_ = true;
             }
         }

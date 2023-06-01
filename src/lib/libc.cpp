@@ -84,6 +84,8 @@ namespace x64 {
             auto ait = addressToSize_.find(address);
             verify(ait != addressToSize_.end(), [&]() {
                 fmt::print(stderr, "Address {:#x} was never malloc'ed\n", address);
+                fmt::print(stderr, "Allocated addresses are:\n");
+                for(const auto& e : addressToSize_) fmt::print("  {:#x}\n", e.first);
             });
             u64 size = ait->second;
             auto& sa = allocations_[size];
