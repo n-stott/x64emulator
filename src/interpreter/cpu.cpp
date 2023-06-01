@@ -343,12 +343,21 @@ namespace x64 {
     u32 Cpu::execNeg32Impl(u32 dst) {
         return execSub32Impl(0u, dst);
     }
+    u64 Cpu::execNeg64Impl(u64 dst) {
+        return execSub64Impl(0ul, dst);
+    }
 
     void Cpu::exec(const Neg<R32>& ins) {
         set(ins.src, execNeg32Impl(get(ins.src)));
     }
     void Cpu::exec(const Neg<M32>& ins) {
         set(resolve(ins.src), execNeg32Impl(get(resolve(ins.src))));
+    }
+    void Cpu::exec(const Neg<R64>& ins) {
+        set(ins.src, execNeg64Impl(get(ins.src)));
+    }
+    void Cpu::exec(const Neg<M64>& ins) {
+        set(resolve(ins.src), execNeg64Impl(get(resolve(ins.src))));
     }
 
     std::pair<u32, u32> Cpu::execMul32(u32 src1, u32 src2) {
@@ -589,21 +598,21 @@ namespace x64 {
         return tmp;
     }
 
-    void Cpu::exec(const Or<R8, R8>& ins) { TODO(ins); }
-    void Cpu::exec(const Or<R8, Imm>& ins) { TODO(ins); }
-    void Cpu::exec(const Or<R8, M8>& ins) { TODO(ins); }
-    void Cpu::exec(const Or<R16, M16>& ins) { TODO(ins); }
+    void Cpu::exec(const Or<R8, R8>& ins) { set(ins.dst, execOr8Impl(get(ins.dst), get(ins.src))); }
+    void Cpu::exec(const Or<R8, Imm>& ins) { set(ins.dst, execOr8Impl(get(ins.dst), get<u8>(ins.src))); }
+    void Cpu::exec(const Or<R8, M8>& ins) { set(ins.dst, execOr8Impl(get(ins.dst), get(resolve(ins.src)))); }
+    void Cpu::exec(const Or<M8, R8>& ins) { set(resolve(ins.dst), execOr8Impl(get(resolve(ins.dst)), get(ins.src))); }
+    void Cpu::exec(const Or<M8, Imm>& ins) { set(resolve(ins.dst), execOr8Impl(get(resolve(ins.dst)), get<u8>(ins.src))); }
+    void Cpu::exec(const Or<M16, R16>& ins) { set(resolve(ins.dst), execOr16Impl(get(resolve(ins.dst)), get(ins.src))); }
+    void Cpu::exec(const Or<R16, M16>& ins) { set(ins.dst, execOr16Impl(get(ins.dst), get(resolve(ins.src)))); }
     void Cpu::exec(const Or<R32, R32>& ins) { set(ins.dst, execOr32Impl(get(ins.dst), get(ins.src))); }
     void Cpu::exec(const Or<R32, Imm>& ins) { set(ins.dst, execOr32Impl(get(ins.dst), get<u32>(ins.src))); }
     void Cpu::exec(const Or<R32, M32>& ins) { set(ins.dst, execOr32Impl(get(ins.dst), get(resolve(ins.src)))); }
+    void Cpu::exec(const Or<M32, R32>& ins) { set(resolve(ins.dst), execOr32Impl(get(resolve(ins.dst)), get(ins.src))); }
+    void Cpu::exec(const Or<M32, Imm>& ins) { set(resolve(ins.dst), execOr32Impl(get(resolve(ins.dst)), get<u32>(ins.src))); }
     void Cpu::exec(const Or<R64, R64>& ins) { set(ins.dst, execOr64Impl(get(ins.dst), get(ins.src))); }
     void Cpu::exec(const Or<R64, Imm>& ins) { set(ins.dst, execOr64Impl(get(ins.dst), get<u64>(ins.src))); }
     void Cpu::exec(const Or<R64, M64>& ins) { set(ins.dst, execOr64Impl(get(ins.dst), get(resolve(ins.src)))); }
-    void Cpu::exec(const Or<M8, R8>& ins) { TODO(ins); }
-    void Cpu::exec(const Or<M8, Imm>& ins) { TODO(ins); }
-    void Cpu::exec(const Or<M16, R16>& ins) { TODO(ins); }
-    void Cpu::exec(const Or<M32, R32>& ins) { set(resolve(ins.dst), execOr32Impl(get(resolve(ins.dst)), get(ins.src))); }
-    void Cpu::exec(const Or<M32, Imm>& ins) { set(resolve(ins.dst), execOr32Impl(get(resolve(ins.dst)), get<u32>(ins.src))); }
     void Cpu::exec(const Or<M64, R64>& ins) { set(resolve(ins.dst), execOr64Impl(get(resolve(ins.dst)), get(ins.src))); }
     void Cpu::exec(const Or<M64, Imm>& ins) { set(resolve(ins.dst), execOr64Impl(get(resolve(ins.dst)), get<u64>(ins.src))); }
 

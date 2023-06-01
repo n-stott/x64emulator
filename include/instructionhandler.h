@@ -49,6 +49,8 @@ namespace x64 {
 
         virtual void exec(const Neg<R32>&) = 0;
         virtual void exec(const Neg<M32>&) = 0;
+        virtual void exec(const Neg<R64>&) = 0;
+        virtual void exec(const Neg<M64>&) = 0;
 
         virtual void exec(const Mul<R32>&) = 0;
         virtual void exec(const Mul<M32>&) = 0;
