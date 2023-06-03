@@ -103,7 +103,7 @@ namespace elf {
         EXCLUDE = 0x8000000,
     };
 
-    enum class DynamicTag {
+    enum class DynamicTag : u64 {
         DT_NULL = 0,
         DT_NEEDED = 1,
         DT_PLTRELSZ = 2,
