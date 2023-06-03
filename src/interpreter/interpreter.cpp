@@ -96,7 +96,6 @@ namespace x64 {
                 ExecutableSection esection {
                     filepath,
                     std::string(header.name),
-                    elf64.get(),
                     offset,
                     std::move(instructions),
                     std::move(functions),
@@ -206,7 +205,6 @@ namespace x64 {
         ExecutableSection libcSection {
             "libc",
             ".text",
-            nullptr,
             libcOffset,
             {},
             {},

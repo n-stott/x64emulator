@@ -34,7 +34,6 @@ namespace x64 {
         struct ExecutableSection {
             std::string filename;
             std::string sectionname;
-            const elf::Elf64* elf;
             u64 sectionOffset;
             std::vector<std::unique_ptr<X86Instruction>> instructions;
             std::vector<std::unique_ptr<Function>> functions;
