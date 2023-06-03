@@ -25,6 +25,7 @@ namespace x64 {
         bool hasCrashed() const { return stop_; }
 
         void loadElf(const std::string& filepath);
+        void loadLibrary(const std::string& filename);
         void loadLibC();
         void resolveAllRelocations();
 
@@ -59,6 +60,7 @@ namespace x64 {
         std::vector<ExecutableSection> executableSections_;
         std::vector<LoadedElf> elfs_;
         std::unique_ptr<LibC> libc_;
+        std::vector<std::string> loadedLibraries_;
 
         const Function* findFunctionByName(const std::string& name, bool demangled) const;
         const Function* findFunctionByAddress(u64 address) const;

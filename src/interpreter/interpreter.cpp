@@ -163,12 +163,40 @@ namespace x64 {
             mmu_.addTlsRegion(std::move(tlsRegion), fsBase);
         }
 
+        // For when executing without functions is working
+        // elf64->forAllDynamicEntries([&](const elf::DynamicEntry64& entry) {
+        //     if(entry.tag() != elf::DynamicTag::DT_NEEDED) return;
+        //     fmt::print("tag={:#x} value={:#x}\n", (u64)entry.tag(), (u64)entry.value());
+        //     auto dynstr = elf64->dynamicStringTable();
+        //     if(!dynstr) return;
+        //     std::string sharedObjectName(dynstr->operator[](entry.value()));
+        //     fmt::print("  name={}\n", sharedObjectName);
+        //     loadLibrary(sharedObjectName);
+        // });
+
         LoadedElf loadedElf {
             filepath,
             offset,
             std::move(elf64),
         };
         elfs_.push_back(std::move(loadedElf));
+    }
+
+    void Interpreter::loadLibrary(const std::string& filename) {
+        if(std::find(loadedLibraries_.begin(), loadedLibraries_.end(), filename) != loadedLibraries_.end()) return;
+        loadedLibraries_.push_back(filename);
+        auto it = filename.find_first_of('.');
+        if(it != std::string::npos) {
+            auto shortName = filename.substr(it);
+            if(shortName == "libc") return;
+        }
+        std::string prefix = "/usr/lib/x86_64-linux-gnu/";
+        auto path = prefix + filename;
+        try {
+            loadElf(path);
+        } catch(const std::exception& e) {
+            fmt::print(stderr, "Unable to load library {} : {}\n", path, e.what());
+        }
     }
 
     void Interpreter::loadLibC() {
