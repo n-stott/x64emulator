@@ -77,6 +77,19 @@ namespace elf {
     };
     static_assert(sizeof(SymbolTableEntry32) == 0x10, "");
 
+    struct DynamicEntry32 {
+        u32 d_tag;
+        union {
+            u32 d_val;
+            u32 d_ptr;
+            u32 d_off;
+        } d_un;
+
+        DynamicTag tag() const;
+        u32 value() const;
+    };
+    static_assert(sizeof(DynamicEntry32) == 0x8, "");
+
     class Elf32 : public Elf {
     public:
         Type type() const override { return fileheader_.type; }
@@ -86,6 +99,7 @@ namespace elf {
         std::optional<SymbolTable<SymbolTableEntry32>> symbolTable() const;
         std::optional<StringTable> dynamicStringTable() const;
         std::optional<StringTable> stringTable() const;
+        std::optional<DynamicTable<DynamicEntry32>> dynamicTable() const;
 
         std::optional<Section> sectionFromName(std::string_view sv) const;
 
@@ -96,6 +110,7 @@ namespace elf {
         void forAllDynamicSymbols(std::function<void(const StringTable*, const SymbolTableEntry32&)>&& callback) const;
         void forAllRelocations(std::function<void(const RelocationEntry32&)>&& callback) const;
         void forAllRelocationsA(std::function<void(const RelocationEntry32A&)>&& callback) const;
+        void forAllDynamicEntries(std::function<void(const DynamicEntry32&)>&& callback) const;
 
     private:
         const SymbolTableEntry32* relocationSymbolEntry(RelocationEntry32 relocation) const;
@@ -234,6 +249,21 @@ namespace elf {
         return fmt::format("name={} value={} size={} info={} type={} other={} shndx={}", st_name, st_value, st_size, st_info, typeToString(type()), st_other, st_shndx);
     }
 
+    inline DynamicTag DynamicEntry32::tag() const {
+        return static_cast<DynamicTag>(d_tag);
+    }
+
+    inline u32 DynamicEntry32::value() const {
+        switch(tag()) {
+            case DynamicTag::DT_NEEDED:
+                return d_un.d_val;
+            default: {
+                assert(!"not implemented");
+                return 0;
+            }
+        }
+    }
+
     inline void Elf32::forAllSectionHeaders(std::function<void(const SectionHeader32&)>&& callback) const {
         for(const auto& sectionHeader : sectionHeaders_) {
             callback(sectionHeader);
@@ -289,6 +319,18 @@ namespace elf {
         return &(*symbolTable)[relocation.sym()];
     }
 
+    inline void Elf32::forAllDynamicEntries(std::function<void(const DynamicEntry32&)>&& callback) const {
+        assert(archClass() == Class::B32);
+        forAllSectionHeaders([&](const SectionHeader32& header) {
+            if(header.sh_type != SectionHeaderType::DYNAMIC) return;
+            Section dynamicSection = header.toSection(reinterpret_cast<const u8*>(bytes_.data()), bytes_.size());
+            if(dynamicSection.size() % sizeof(DynamicEntry32) != 0) return;
+            const DynamicEntry32* begin = reinterpret_cast<const DynamicEntry32*>(dynamicSection.begin);
+            const DynamicEntry32* end = reinterpret_cast<const DynamicEntry32*>(dynamicSection.end);
+            for(const DynamicEntry32* it = begin; it != end; ++it) callback(*it);
+        });
+    }
+
     inline const SymbolTableEntry32* Elf32::relocationSymbolEntry(RelocationEntry32A relocation) const {
         auto symbolTable = dynamicSymbolTable();
         if(!symbolTable) return nullptr;
@@ -327,6 +369,12 @@ namespace elf {
         auto strtab = sectionFromName(".strtab");
         if(!strtab) return {};
         return StringTable(strtab.value());
+    }
+
+    inline std::optional<DynamicTable<DynamicEntry32>> Elf32::dynamicTable() const {
+        auto dynamic = sectionFromName(".dynamic");
+        if(!dynamic) return {};
+        return DynamicTable<DynamicEntry32>(dynamic.value());
     }
 
 }

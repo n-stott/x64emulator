@@ -17,6 +17,8 @@ namespace elf {
     class StringTable;
     class SymbolTableEntry32;
     class SymbolTableEntry64;
+    class DynamicEntry32;
+    class DynamicEntry64;
     class Elf;
     class Elf32;
     class Elf64;
@@ -75,6 +77,25 @@ namespace elf {
         explicit SymbolTable(Section symbolSection);
         const SymbolEntryType* begin_;
         const SymbolEntryType* end_;
+    };
+
+    template<typename DynamicEntryType>
+    class DynamicTable {
+        static_assert(std::is_same_v<DynamicEntryType, DynamicEntry32>
+                   || std::is_same_v<DynamicEntryType, DynamicEntry64>);
+    public:
+        const DynamicEntryType* begin() const { return begin_; }
+        const DynamicEntryType* end() const { return end_; }
+
+        size_t size() const;
+        const DynamicEntryType& operator[](size_t sidx) const;
+
+    private:
+        friend class Elf32;
+        friend class Elf64;
+        explicit DynamicTable(Section symbolSection);
+        const DynamicEntryType* begin_;
+        const DynamicEntryType* end_;
     };
 
     class StringTable {
