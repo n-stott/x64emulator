@@ -56,6 +56,7 @@ namespace elf {
         static void printNames();
 
         bool isProgBits() const;
+        bool isNoBits() const;
         bool isStringTable() const;
         bool isSymbolTable() const;
     };
@@ -167,6 +168,10 @@ namespace elf {
 
     inline bool SectionHeader::isProgBits() const {
         return sh_type == SectionHeaderType::PROGBITS;
+    }
+
+    inline bool SectionHeader::isNoBits() const {
+        return sh_type == SectionHeaderType::NOBITS;
     }
 
     inline bool SectionHeader::isStringTable() const {
