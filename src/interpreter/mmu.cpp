@@ -170,10 +170,14 @@ namespace x64 {
     }
 
     u64 Mmu::topOfMemoryAligned(u64 alignment) const {
-        u64 top = 0;
+        u64 top = topOfReserved_;
         for(const auto& region : regions_) top = std::max(top, region.base+region.size);
         top = (top + (alignment-1))/alignment*alignment;
         return top;
+    }
+
+    void Mmu::reserveUpTo(u64 address) {
+        topOfReserved_ = address;
     }
 
 }

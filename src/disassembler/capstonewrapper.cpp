@@ -1332,9 +1332,12 @@ namespace x64 {
         assert(x86detail.op_count == 2);
         const cs_x86_op& dst = x86detail.operands[0];
         const cs_x86_op& src = x86detail.operands[1];
+        auto r32src = asRegister32(src);
+        auto m32dst = asMemory32(dst);
         auto r64src = asRegister64(src);
         auto m64dst = asMemory64(dst);
         if(prefix == X86_PREFIX_REP) {
+            if(m32dst && r32src) return make_wrapper< Rep< Stos<M32, R32> >>(insn.address, m32dst.value(), r32src.value());
             if(m64dst && r64src) return make_wrapper< Rep< Stos<M64, R64> >>(insn.address, m64dst.value(), r64src.value());
         }
         return make_failed(insn);
@@ -1645,7 +1648,10 @@ namespace x64 {
             return;
         }
 
-        functions->emplace_back(new Function(symbols[0].first, symbols[0].second, {}));
+        bool createFunctions = !symbols.empty();
+
+        if(createFunctions)
+            functions->emplace_back(new Function(symbols[0].first, symbols[0].second, {}));
         size_t nextSymbol = 1;
 
         auto insertInstruction = [&](const cs_insn& insn) {
@@ -1654,11 +1660,13 @@ namespace x64 {
             // printf("  0x%lx:\t%s\t\t%s\n", insn.address, insn.mnemonic, insn.op_str);
             // fmt::print("{}\n", x86insn->toString());
 
-            while(nextSymbol < symbols.size() && insn.address >= symbols[nextSymbol].first) {
-                functions->emplace_back(new Function(symbols[nextSymbol].first, symbols[nextSymbol].second, {}));
-                ++nextSymbol;
+            if(createFunctions) {
+                while(nextSymbol < symbols.size() && insn.address >= symbols[nextSymbol].first) {
+                    functions->emplace_back(new Function(symbols[nextSymbol].first, symbols[nextSymbol].second, {}));
+                    ++nextSymbol;
+                }
+                functions->back()->instructions.push_back(x86insn.get());
             }
-            functions->back()->instructions.push_back(x86insn.get());
             instructions->push_back(std::move(x86insn));
         };
 

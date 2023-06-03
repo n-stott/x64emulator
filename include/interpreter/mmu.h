@@ -95,6 +95,8 @@ namespace x64 {
 
         u64 topOfMemoryAligned(u64 alignment) const;
 
+        void reserveUpTo(u64 address);
+
         static constexpr u64 PAGE_SIZE = 1024*1024;
 
     private:
@@ -106,6 +108,8 @@ namespace x64 {
 
         Region* findAddress(u64 address);
         const Region* findAddress(u64 address) const;
+
+        u64 topOfReserved_ = 0;
 
         std::deque<Region> regions_;
         Region* tlsRegion_ { nullptr };

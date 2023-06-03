@@ -65,6 +65,7 @@ namespace x64 {
         elf64.reset(static_cast<elf::Elf64*>(elf.release()));
 
         u64 offset = mmu_.topOfMemoryAligned(Mmu::PAGE_SIZE);
+        mmu_.reserveUpTo(offset + Mmu::PAGE_SIZE);
 
         std::vector<elf::SectionHeader64> tlsSections;
 
@@ -164,15 +165,15 @@ namespace x64 {
         }
 
         // For when executing without functions is working
-        // elf64->forAllDynamicEntries([&](const elf::DynamicEntry64& entry) {
-        //     if(entry.tag() != elf::DynamicTag::DT_NEEDED) return;
-        //     fmt::print("tag={:#x} value={:#x}\n", (u64)entry.tag(), (u64)entry.value());
-        //     auto dynstr = elf64->dynamicStringTable();
-        //     if(!dynstr) return;
-        //     std::string sharedObjectName(dynstr->operator[](entry.value()));
-        //     fmt::print("  name={}\n", sharedObjectName);
-        //     loadLibrary(sharedObjectName);
-        // });
+        elf64->forAllDynamicEntries([&](const elf::DynamicEntry64& entry) {
+            if(entry.tag() != elf::DynamicTag::DT_NEEDED) return;
+            // fmt::print("tag={:#x} value={:#x}\n", (u64)entry.tag(), (u64)entry.value());
+            auto dynstr = elf64->dynamicStringTable();
+            if(!dynstr) return;
+            std::string sharedObjectName(dynstr->operator[](entry.value()));
+            // fmt::print("  name={}\n", sharedObjectName);
+            loadLibrary(sharedObjectName);
+        });
 
         LoadedElf loadedElf {
             filepath,
@@ -187,7 +188,7 @@ namespace x64 {
         loadedLibraries_.push_back(filename);
         auto it = filename.find_first_of('.');
         if(it != std::string::npos) {
-            auto shortName = filename.substr(it);
+            auto shortName = filename.substr(0, it);
             if(shortName == "libc") return;
         }
         std::string prefix = "/usr/lib/x86_64-linux-gnu/";
@@ -247,22 +248,27 @@ namespace x64 {
 
             u64 relocationAddress = loadedElf.offset + relocation.offset();
 #if DEBUG_RELOCATIONS
-            fmt::print("resolve relocation for symbol \"{}\" at offset {:#x}\n", symbol, relocation.offset());
+            fmt::print("resolve relocation for symbol \"{}\" at offset {:#x}\n", demangledSymbol, relocation.offset());
 #endif
             if(sym->type() == elf::SymbolType::FUNC
             || (sym->type() == elf::SymbolType::NOTYPE && (sym->bind() == elf::SymbolBind::WEAK || sym->bind() == elf::SymbolBind::GLOBAL))) {
+                std::optional<u64> destinationAddress;
                 const auto* func = findFunctionByName(symbol, false);
                 if(!func) func = findFunctionByName(demangledSymbol, true);
                 if(!func) {
-#if DEBUG_RELOCATIONS
-                    fmt::print("  unable to find\n");
-#endif
-                    return;
+                    destinationAddress = findSymbolAddress(symbol);
+                } else {
+                    destinationAddress = func->address;
                 }
 #if DEBUG_RELOCATIONS
-                fmt::print("  at {:#x}\n", func->address);
+                if(!destinationAddress) {
+                    fmt::print("  unable to find\n");
+                } else {
+                    fmt::print("  at {:#x}\n", destinationAddress.value());
+                }
 #endif
-                mmu_.write64(Ptr64{Segment::DS, relocationAddress}, func->address);
+                if(destinationAddress)
+                    mmu_.write64(Ptr64{Segment::DS, relocationAddress}, destinationAddress.value());
             } else if(sym->type() == elf::SymbolType::OBJECT) {
                 bool found = false;
                 for(const auto& otherElf : elfs_) {
@@ -280,9 +286,12 @@ namespace x64 {
                     otherElf.elf->forAllSymbols(resolveSymbol);
                     if(!found) otherElf.elf->forAllDynamicSymbols(resolveSymbol);
                 }
+                if(!found) {
+                    mmu_.write64(Ptr64{Segment::DS, relocationAddress}, 0x0);
 #if DEBUG_RELOCATIONS
-                if(!found) fmt::print("    Unable to resolve symbol {}\n", symbol);
+                    fmt::print("    Unable to resolve symbol {}\n", symbol);
 #endif
+                }
             }
         };
 
@@ -326,6 +335,19 @@ namespace x64 {
         }
         return function;
     }
+
+    std::optional<u64> Interpreter::findSymbolAddress(const std::string& symbol) const {
+        std::optional<u64> address;
+        for(const auto& e : elfs_) {
+            const auto& elf = e.elf;
+            elf->forAllDynamicSymbols([&](const elf::StringTable* stringTable, const elf::SymbolTableEntry64& entry) {
+                if(address.has_value()) return;
+                auto s = entry.symbol(stringTable, *elf);
+                if(symbol == s) address = e.offset + entry.st_value; 
+            }); 
+        }
+        return address;
+    }
     
     const Function* Interpreter::findFunctionByAddress(u64 address) const {
         const Function* function = nullptr;
@@ -368,7 +390,7 @@ namespace x64 {
     }
 
     void Interpreter::runInit() {
-        for(auto eit = elfs_.rbegin(); eit != elfs_.rend(); ++eit) {
+        for(auto eit = elfs_.begin(); eit != elfs_.end(); ++eit) {
             const auto& elf = *eit;
             auto initArraySection = elf.elf->sectionFromName(".init_array");
             if(initArraySection) {
@@ -376,11 +398,17 @@ namespace x64 {
                 const u64* beginInitArray = reinterpret_cast<const u64*>(initArraySection->begin);
                 const u64* endInitArray = reinterpret_cast<const u64*>(initArraySection->end);
                 for(const u64* it = beginInitArray; it != endInitArray; ++it) {
-                    const Function* initFunction = findFunctionByAddress(*it + elf.offset);
-                    verify(!!initFunction, [&]() {
-                        fmt::print("Unable to find init function {:#x}\n", *it);
-                    });
-                    execute(initFunction);
+                    u64 address = elf.offset + *it;
+                    if(*it == 0 || *it == (u64)(-1)) continue;
+                    const Function* initFunction = findFunctionByAddress(address);
+                    if(!!initFunction) {
+                        execute(initFunction);
+                    } else {
+                        execute(address);
+                    }
+                    // verify(!!initFunction, [&]() {
+                    //     fmt::print("Unable to find init function {}:{:#x}\n", elf.filename , *it);
+                    // });
                     if(stop_) return;
                 }
             }
@@ -441,11 +469,16 @@ namespace x64 {
     void Interpreter::execute(const Function* function) {
         if(stop_) return;
         fmt::print(stderr, "Execute function {}\n", function->name);
+        execute(function->address);
+    }
+
+
+    void Interpreter::execute(u64 address) {
+        if(stop_) return;
+        fmt::print(stderr, "Execute function {:#x}\n", address);
         SignalHandler sh;
-
-        cpu_.push64(function->address);
-        call(function->address);
-
+        cpu_.push64(address);
+        call(address);
         size_t ticks = 0;
         while(!stop_ && callDepth > 0 && cpu_.regs_.rip_ != 0x0) {
             try {
@@ -569,9 +602,12 @@ namespace x64 {
                 verify(firstInstructionIndex != (size_t)(-1), "Could not find call destination instruction");
                 if(originSection->sectionname == ".text") {
                     const auto* func = functionFromAddress(address);
-                    verify(!!func, "Could not find function in text section");
-                    call->instruction.symbolName = func->demangledName;
-                    functionNameCache[address] = func->demangledName;
+                    if(!!func) {
+                        call->instruction.symbolName = func->demangledName;
+                        functionNameCache[address] = func->demangledName;
+                    } else {
+                        // verify(!!func, "Could not find function in text section");
+                    }
                 } else if (originSection->sectionname == ".plt") {
                     // look at the first instruction to determine the jmp location
                     const X86Instruction* jmpInsn = originSection->instructions[firstInstructionIndex].get();

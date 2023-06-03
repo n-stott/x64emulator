@@ -51,6 +51,7 @@ namespace x64 {
         void pushProgramArguments(const std::string& programFilePath, const std::vector<std::string>& arguments);
         void executeMain();
         void execute(const Function* function);
+        void execute(u64 address);
 
         Mmu::Region* addSectionIfExists(const elf::Elf64& elf, const std::string& sectionName, const std::string& regionName, Protection protection, u32 offset = 0);
 
@@ -64,6 +65,7 @@ namespace x64 {
 
         const Function* findFunctionByName(const std::string& name, bool demangled) const;
         const Function* findFunctionByAddress(u64 address) const;
+        std::optional<u64> findSymbolAddress(const std::string& symbol) const;
 
         bool stop_;
 
