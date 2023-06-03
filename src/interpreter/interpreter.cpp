@@ -340,7 +340,8 @@ namespace x64 {
     }
 
     void Interpreter::runInit() {
-        for(const auto& elf : elfs_) {
+        for(auto eit = elfs_.rbegin(); eit != elfs_.rend(); ++eit) {
+            const auto& elf = *eit;
             auto initArraySection = elf.elf->sectionFromName(".init_array");
             if(initArraySection) {
                 assert(initArraySection->size() % sizeof(u64) == 0);
@@ -411,7 +412,7 @@ namespace x64 {
 
     void Interpreter::execute(const Function* function) {
         if(stop_) return;
-        fmt::print("Execute function {}\n", function->name);
+        fmt::print(stderr, "Execute function {}\n", function->name);
         SignalHandler sh;
 
         cpu_.push64(function->address);
