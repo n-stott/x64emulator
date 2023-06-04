@@ -164,11 +164,11 @@ namespace elf {
     }
 
     inline Section SectionHeader64::toSection(const u8* elfData, size_t size) const {
-        if(isNoBits())
-            return Section { sh_addr, nullptr, nullptr, this };
         (void)size;
-        assert(sh_offset < size);
-        assert(sh_offset + sh_size < size);
+        if(!isNoBits()) {
+            assert(sh_offset < size);
+            assert(sh_offset + sh_size < size);
+        }
         return Section {
             sh_addr,
             elfData + sh_offset,
