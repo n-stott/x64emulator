@@ -164,15 +164,14 @@ namespace x64 {
             std::string symbol { entry.symbol(stringTable, *elf64) };
             if(!entry.st_name) return;
             if(entry.type() != elf::SymbolType::FUNC) return;
-            if(!entry.st_name) return;
             symbolProvider_->registerSymbol(symbol, offset + entry.st_value, entry.bind() == elf::SymbolBind::WEAK);
         });
-        // elf64->forAllDynamicSymbols([&](const elf::StringTable* stringTable, const elf::SymbolTableEntry64& entry) {
-        //     std::string symbol { entry.symbol(stringTable, *elf64) };
-        //     if(!entry.st_name) return;
-        //     if(entry.type() != elf::SymbolType::FUNC) return;
-        //     symbolProvider_->registerSymbol(symbol, offset + entry.st_value, entry.bind() == elf::SymbolBind::WEAK);
-        // });
+        elf64->forAllDynamicSymbols([&](const elf::StringTable* stringTable, const elf::SymbolTableEntry64& entry) {
+            std::string symbol { entry.symbol(stringTable, *elf64) };
+            if(!entry.st_name) return;
+            if(entry.type() != elf::SymbolType::FUNC) return;
+            symbolProvider_->registerDynamicSymbol(symbol, offset + entry.st_value, entry.bind() == elf::SymbolBind::WEAK);
+        });
 
         // For when executing without functions is working
         elf64->forAllDynamicEntries([&](const elf::DynamicEntry64& entry) {
@@ -199,6 +198,7 @@ namespace x64 {
             const elf::Elf64& elf = *loadedElf.elf;
             const auto* sym = relocation.symbol(elf);
             if(!sym) return;
+            if(!sym->st_name) return;
             verify(elf.dynamicStringTable().has_value());
             auto dynamicStringTable = elf.dynamicStringTable().value();
             std::string symbol { sym->symbol(&dynamicStringTable, elf) };
@@ -211,6 +211,8 @@ namespace x64 {
             || (sym->type() == elf::SymbolType::NOTYPE && (sym->bind() == elf::SymbolBind::WEAK || sym->bind() == elf::SymbolBind::GLOBAL))) {
                 destinationAddress = symbolProvider_->lookupSymbol(symbol);
                 if(!destinationAddress) destinationAddress = symbolProvider_->lookupDemangledSymbol(demangledSymbol);
+                if(!destinationAddress) destinationAddress = symbolProvider_->lookupDynamicSymbol(symbol);
+                if(!destinationAddress) destinationAddress = symbolProvider_->lookupDemangledDynamicSymbol(demangledSymbol);
             } else if(sym->type() == elf::SymbolType::OBJECT) {
                 for(const auto& otherElf : elfs_) {
                     auto resolveSymbol = [&](const elf::StringTable* stringTable, const elf::SymbolTableEntry64& entry) {

@@ -322,6 +322,7 @@ namespace x64 {
                 verify(firstInstructionIndex != (size_t)(-1), "Could not find call destination instruction");
                 if(originSection->sectionname == ".text") {
                     auto demangledName = symbolProvider_->lookupDemangledSymbol(address);
+                    if(!demangledName) demangledName = symbolProvider_->lookupDemangledDynamicSymbol(address);
                     if(!!demangledName) {
                         call->instruction.symbolName = demangledName.value();
                         functionNameCache[address] = demangledName.value();
