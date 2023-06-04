@@ -1,17 +1,14 @@
 #include "interpreter/interpreter.h"
+#include "interpreter/symbolprovider.h"
 #include "interpreter/executioncontext.h"
 #include "interpreter/verify.h"
-#include "disassembler/capstonewrapper.h"
 #include "instructionutils.h"
 #include <fmt/core.h>
 #include <algorithm>
 #include <cassert>
 #include <numeric>
 
-#include <boost/core/demangle.hpp>
 #include <signal.h>
-
-#define DEBUG_RELOCATIONS 0
 
 namespace x64 {
 
@@ -39,9 +36,39 @@ namespace x64 {
         }
     };
 
-    Interpreter::Interpreter() : cpu_(this) {
+    Interpreter::Interpreter(SymbolProvider* symbolProvider) : cpu_(this), symbolProvider_(symbolProvider) {
         cpu_.setMmu(&mmu_);
         stop_ = false;
+    }
+
+    u64 Interpreter::allocateMemoryRange(u64 size) {
+        u64 offset = mmu_.topOfMemoryAligned(Mmu::PAGE_SIZE);
+        mmu_.reserveUpTo(offset + size);
+        return offset;
+    }
+
+    void Interpreter::addExecutableSection(ExecutableSection section) {
+        executableSections_.push_back(std::move(section));
+    }
+
+    void Interpreter::addMmuRegion(Mmu::Region region) {
+        mmu_.addRegion(std::move(region));
+    }
+
+    void Interpreter::addTlsMmuRegion(Mmu::Region region, u64 fsBase) {
+        mmu_.addTlsRegion(std::move(region), fsBase);
+    }
+    
+    void Interpreter::registerInitFunction(u64 address) {
+        initFunctions_.push_back(address);
+    }
+
+    void Interpreter::registerFiniFunction(u64 address) {
+        (void)address;
+    }
+
+    void Interpreter::writeRelocation(u64 relocationSource, u64 relocationDestination) {
+        mmu_.write64(Ptr64{Segment::DS, relocationSource}, relocationDestination);
     }
 
     void Interpreter::run(const std::string& programFilePath, const std::vector<std::string>& arguments) {
@@ -55,148 +82,6 @@ namespace x64 {
             mmu_.dumpRegions();
             stop_ = true;
         });
-    }
-
-    void Interpreter::loadElf(const std::string& filepath) {
-        auto elf = elf::ElfReader::tryCreate(filepath);
-        verify(!!elf, [&]() { fmt::print("Failed to load elf {}\n", filepath); });
-        verify(elf->archClass() == elf::Class::B64, "elf must be 64-bit");
-        std::unique_ptr<elf::Elf64> elf64;
-        elf64.reset(static_cast<elf::Elf64*>(elf.release()));
-
-        u64 offset = mmu_.topOfMemoryAligned(Mmu::PAGE_SIZE);
-        mmu_.reserveUpTo(offset + Mmu::PAGE_SIZE);
-
-        std::vector<elf::SectionHeader64> tlsSections;
-
-        std::string shortFilePath = filepath.find_last_of('/') == std::string::npos ? filepath
-                                                                                    : filepath.substr(filepath.find_last_of('/')+1);
-
-        elf64->forAllSectionHeaders([&](const elf::SectionHeader64& header) {
-            if(!header.doesAllocate()) return;
-            verify(!(header.isExecutable() && header.isWritable()));
-            if(header.isProgBits() && header.isExecutable()) {
-                std::vector<std::unique_ptr<X86Instruction>> instructions;
-                std::vector<std::unique_ptr<Function>> functions;
-                CapstoneWrapper::disassembleSection(std::string(filepath), std::string(header.name), &instructions, &functions);
-
-                assert(std::is_sorted(instructions.begin(), instructions.end(), [](const auto& a, const auto& b) {
-                    return a->address < b->address;
-                }));
-
-                for(auto& insn : instructions) insn->address += offset;
-                for(auto& f : functions) f->address += offset;
-
-                functions.erase(std::remove_if(functions.begin(), functions.end(), [](std::unique_ptr<Function>& function) -> bool {
-                    if(function->name.size() >= 10) {
-                        if(function->name.substr(0, 10) == "intrinsic$") return true;
-                    }
-                    return false;
-                }), functions.end());
-                ExecutableSection esection {
-                    filepath,
-                    std::string(header.name),
-                    offset,
-                    std::move(instructions),
-                    std::move(functions),
-                };
-
-                executableSections_.push_back(std::move(esection));
-
-                std::string regionName = fmt::format("{:>20}:{:<20}", shortFilePath, header.name);
-
-                auto section = elf64->sectionFromName(header.name);
-                verify(section.has_value());
-                Mmu::Region region{ regionName, section->address + offset, section->size(), PROT_NONE };
-                mmu_.addRegion(std::move(region));
-            } else if(!header.isThreadLocal()) {
-                auto section = elf64->sectionFromName(header.name);
-                verify(section.has_value());
-
-                Protection prot = PROT_READ;
-                if(header.isWritable()) prot = PROT_READ | PROT_WRITE;
-
-                std::string regionName = fmt::format("{:>20}:{:<20}", shortFilePath, header.name);
-
-                Mmu::Region region{ regionName, section->address + offset, section->size(), prot };
-                if(section->type() != elf::SectionHeaderType::NOBITS)
-                    std::memcpy(region.data.data(), section->begin, section->size()*sizeof(u8));
-                mmu_.addRegion(std::move(region));
-            } else {
-                tlsSections.push_back(header);
-            }
-        });
-
-        if(!tlsSections.empty()) {
-            std::sort(tlsSections.begin(), tlsSections.end(), [](const auto& a, const auto& b) {
-                return a.sh_addr < b.sh_addr;
-            });
-            for(size_t i = 1; i < tlsSections.size(); ++i) {
-                const auto& prev = tlsSections[i-1];
-                const auto& current = tlsSections[i];
-                verify(prev.sh_addr + prev.sh_size == current.sh_addr, "non-consecutive tlsSections...");
-            }
-
-            u64 totalTlsRegionSize = std::accumulate(tlsSections.begin(), tlsSections.end(), 0, [](u64 size, const auto& s) {
-                return size + s.sh_size;
-            });
-
-            u64 fsBase = mmu_.topOfMemoryAligned(Mmu::PAGE_SIZE); // TODO reserve some space below
-
-            std::string regionName = fmt::format("{:>20}:{:<20}", shortFilePath, "tls");
-            Mmu::Region tlsRegion { regionName, fsBase - totalTlsRegionSize, totalTlsRegionSize+sizeof(u64), PROT_READ | PROT_WRITE };
-
-            u8* tlsStart = tlsRegion.data.data();
-
-            for(const auto& header : tlsSections) {
-                auto section = elf64->sectionFromName(header.name);
-                verify(section.has_value());
-
-                if(section->type() != elf::SectionHeaderType::NOBITS)
-                    std::memcpy(tlsStart, section->begin, section->size()*sizeof(u8));
-
-                tlsStart += section->size();
-            }
-            verify(std::distance(tlsRegion.data.data(), tlsStart) == static_cast<std::ptrdiff_t>(totalTlsRegionSize));
-            memcpy(tlsStart, &fsBase, sizeof(fsBase));
-
-            mmu_.addTlsRegion(std::move(tlsRegion), fsBase);
-        }
-
-        // For when executing without functions is working
-        elf64->forAllDynamicEntries([&](const elf::DynamicEntry64& entry) {
-            if(entry.tag() != elf::DynamicTag::DT_NEEDED) return;
-            // fmt::print("tag={:#x} value={:#x}\n", (u64)entry.tag(), (u64)entry.value());
-            auto dynstr = elf64->dynamicStringTable();
-            if(!dynstr) return;
-            std::string sharedObjectName(dynstr->operator[](entry.value()));
-            // fmt::print("  name={}\n", sharedObjectName);
-            loadLibrary(sharedObjectName);
-        });
-
-        LoadedElf loadedElf {
-            filepath,
-            offset,
-            std::move(elf64),
-        };
-        elfs_.push_back(std::move(loadedElf));
-    }
-
-    void Interpreter::loadLibrary(const std::string& filename) {
-        if(std::find(loadedLibraries_.begin(), loadedLibraries_.end(), filename) != loadedLibraries_.end()) return;
-        loadedLibraries_.push_back(filename);
-        auto it = filename.find_first_of('.');
-        if(it != std::string::npos) {
-            auto shortName = filename.substr(0, it);
-            if(shortName == "libc") return;
-        }
-        std::string prefix = "/usr/lib/x86_64-linux-gnu/";
-        auto path = prefix + filename;
-        try {
-            loadElf(path);
-        } catch(const std::exception& e) {
-            fmt::print(stderr, "Unable to load library {} : {}\n", path, e.what());
-        }
     }
 
     void Interpreter::loadLibC() {
@@ -229,203 +114,40 @@ namespace x64 {
             if(!func->instructions[0]) continue;
             func->address = func->instructions[0]->address;
         }
+        for(const auto& function : libcFunctions) 
+            symbolProvider_->registerSymbol(function->name, function->address, false);
 
         executableSections_.push_back(std::move(libcSection));
-    }
-
-    void Interpreter::resolveAllRelocations() {
-
-        auto resolveSingleRelocation = [&](const LoadedElf& loadedElf, const auto& relocation) {
-            const elf::Elf64& elf = *loadedElf.elf;
-            const auto* sym = relocation.symbol(elf);
-            if(!sym) return;
-            verify(elf.dynamicStringTable().has_value());
-            auto dynamicStringTable = elf.dynamicStringTable().value();
-            std::string symbol { sym->symbol(&dynamicStringTable, elf) };
-            std::string demangledSymbol = boost::core::demangle(symbol.c_str());
-
-            u64 relocationAddress = loadedElf.offset + relocation.offset();
-#if DEBUG_RELOCATIONS
-            fmt::print("resolve relocation for symbol \"{}\" at offset {:#x}\n", demangledSymbol, relocation.offset());
-#endif
-            if(sym->type() == elf::SymbolType::FUNC
-            || (sym->type() == elf::SymbolType::NOTYPE && (sym->bind() == elf::SymbolBind::WEAK || sym->bind() == elf::SymbolBind::GLOBAL))) {
-                std::optional<u64> destinationAddress;
-                const auto* func = findFunctionByName(symbol, false);
-                if(!func) func = findFunctionByName(demangledSymbol, true);
-                if(!func) {
-                    destinationAddress = findSymbolAddress(symbol);
-                } else {
-                    destinationAddress = func->address;
-                }
-#if DEBUG_RELOCATIONS
-                if(!destinationAddress) {
-                    fmt::print("  unable to find\n");
-                } else {
-                    fmt::print("  at {:#x}\n", destinationAddress.value());
-                }
-#endif
-                if(destinationAddress)
-                    mmu_.write64(Ptr64{Segment::DS, relocationAddress}, destinationAddress.value());
-            } else if(sym->type() == elf::SymbolType::OBJECT) {
-                bool found = false;
-                for(const auto& otherElf : elfs_) {
-                    auto resolveSymbol = [&](const elf::StringTable* stringTable, const elf::SymbolTableEntry64& entry) {
-                        if(found) return;
-                        if(entry.symbol(stringTable, *otherElf.elf).find(symbol) == std::string_view::npos
-                        && entry.symbol(stringTable, *otherElf.elf).find(demangledSymbol) == std::string_view::npos) return;
-                        if(entry.isUndefined()) return;
-                        found = true;
-#if DEBUG_RELOCATIONS
-                        fmt::print("    Resolved symbol {} at {:#x} in {}\n", symbol, otherElf.offset + entry.st_value, otherElf.filename);
-#endif
-                        mmu_.write64(Ptr64{Segment::DS, relocationAddress}, otherElf.offset + entry.st_value);
-                    };
-                    otherElf.elf->forAllSymbols(resolveSymbol);
-                    if(!found) otherElf.elf->forAllDynamicSymbols(resolveSymbol);
-                }
-                if(!found) {
-                    mmu_.write64(Ptr64{Segment::DS, relocationAddress}, 0x0);
-#if DEBUG_RELOCATIONS
-                    fmt::print("    Unable to resolve symbol {}\n", symbol);
-#endif
-                }
-            }
-        };
-
-        for(const auto& loadedElf : elfs_) {
-            verify(!!loadedElf.elf);
-            loadedElf.elf->forAllRelocations([&](const elf::RelocationEntry64& reloc) { resolveSingleRelocation(loadedElf, reloc); });
-            loadedElf.elf->forAllRelocationsA([&](const elf::RelocationEntry64A& reloc) { resolveSingleRelocation(loadedElf, reloc); });
-        }
-    }
-
-    const Function* Interpreter::findFunctionByName(const std::string& name, bool demangled) const {
-        const Function* function = nullptr;
-        std::string origin;
-        for(const auto& execSection : executableSections_) {
-            for(const auto& func : execSection.functions) {
-                std::string_view funcname = demangled ? func->demangledName : func->name;
-                size_t separator = funcname.find('$');
-                if(separator == std::string::npos) {
-                    if(name == funcname) {
-                        verify(!function, [&]() {
-                            fmt::print("Function {} found in {} must be unique, but found copy in section {}:{}\n", name, origin, execSection.filename, execSection.sectionname);
-                        });
-                        function = func.get();
-                        origin = execSection.filename + ":" + execSection.sectionname;
-                    }
-                } else {
-                    if(funcname.size() >= 8 && funcname.substr(0, 8) == "fakelibc") {
-                        separator = 8;
-                        funcname = funcname.substr(separator+1);
-                    }
-                    if(name == funcname) {
-                        verify(!function, [&]() {
-                            fmt::print("Function {} found in {} must be unique, but found copy in section {}:{}\n", name, origin, execSection.filename, execSection.sectionname);
-                            fmt::print("_{}_ vs _{}_\n", function->name, funcname);
-                        });
-                        function = func.get();
-                        origin = execSection.filename + ":" + execSection.sectionname;
-                    }
-                }
-            }
-        }
-        return function;
-    }
-
-    std::optional<u64> Interpreter::findSymbolAddress(const std::string& symbol) const {
-        std::optional<u64> address;
-        for(const auto& e : elfs_) {
-            const auto& elf = e.elf;
-            elf->forAllDynamicSymbols([&](const elf::StringTable* stringTable, const elf::SymbolTableEntry64& entry) {
-                if(address.has_value()) return;
-                auto s = entry.symbol(stringTable, *elf);
-                if(symbol == s) address = e.offset + entry.st_value; 
-            }); 
-        }
-        return address;
-    }
-    
-    const Function* Interpreter::findFunctionByAddress(u64 address) const {
-        const Function* function = nullptr;
-        std::string origin;
-        for(const auto& execSection : executableSections_) {
-            for(const auto& func : execSection.functions) {
-                if(address == func->address) {
-                    verify(!function, [&]() {
-                        fmt::print("Function with address {:#x} found in {} must be unique, but found copy in section {}:{}\n",
-                                address, origin, execSection.filename, execSection.sectionname);
-                        fmt::print("Function a: {} insn\n", function->instructions.size());
-                        function->print();
-
-                        fmt::print("Function b: {} insn\n", func->instructions.size());
-                        func->print();
-                    });
-                    function = func.get();
-                    origin = execSection.filename + ":" + execSection.sectionname;
-                    return function;
-                }
-            }
-        }
-        return function;
     }
 
     void Interpreter::setupStackAndHeap() {
         // heap
         u64 heapBase = 0x2000000;
         u64 heapSize = 64*1024;
-        Mmu::Region heapRegion{ "heap", heapBase, heapSize, PROT_READ | PROT_WRITE };
+        Mmu::Region heapRegion{ "program", "heap", heapBase, heapSize, PROT_READ | PROT_WRITE };
         mmu_.addRegion(heapRegion);
         libc_->setHeapRegion(heapRegion.base, heapRegion.size);
         
         // stack
         u64 stackBase = 0x1000000;
         u64 stackSize = 16*1024;
-        Mmu::Region stack{ "stack", stackBase, stackSize, PROT_READ | PROT_WRITE };
+        Mmu::Region stack{ "program", "stack", stackBase, stackSize, PROT_READ | PROT_WRITE };
         mmu_.addRegion(stack);
         cpu_.regs_.rsp_ = stackBase + stackSize;
     }
 
     void Interpreter::runInit() {
-        for(auto eit = elfs_.begin(); eit != elfs_.end(); ++eit) {
-            const auto& elf = *eit;
-            auto initArraySection = elf.elf->sectionFromName(".init_array");
-            if(initArraySection) {
-                assert(initArraySection->size() % sizeof(u64) == 0);
-                const u64* beginInitArray = reinterpret_cast<const u64*>(initArraySection->begin);
-                const u64* endInitArray = reinterpret_cast<const u64*>(initArraySection->end);
-                for(const u64* it = beginInitArray; it != endInitArray; ++it) {
-                    u64 address = elf.offset + *it;
-                    if(*it == 0 || *it == (u64)(-1)) continue;
-                    const Function* initFunction = findFunctionByAddress(address);
-                    if(!!initFunction) {
-                        execute(initFunction);
-                    } else {
-                        execute(address);
-                    }
-                    // verify(!!initFunction, [&]() {
-                    //     fmt::print("Unable to find init function {}:{:#x}\n", elf.filename , *it);
-                    // });
-                    if(stop_) return;
-                }
-            }
+        for(auto it = initFunctions_.rbegin(); it != initFunctions_.rend(); ++it) {
+            u64 address = *it;
+            execute(address);
+            if(stop_) return;
         }
     }
 
     void Interpreter::executeMain() {
-        const Function* main = findFunctionByName("main", false);
-        verify(!!main, "Cannot find \"main\" symbol");
-        execute(main);
-    }
-
-    Mmu::Region* Interpreter::addSectionIfExists(const elf::Elf64& elf, const std::string& sectionName, const std::string& regionName, Protection protection, u32 offset) {
-        auto section = elf.sectionFromName(sectionName);
-        if(!section) return nullptr;
-        Mmu::Region region{ regionName, (u32)(section->address + offset), (u32)section->size(), protection };
-        if(section->type() != elf::SectionHeaderType::NOBITS)
-            std::memcpy(region.data.data(), section->begin, section->size()*sizeof(u8));
-        return mmu_.addRegion(std::move(region));
+        auto mainSymbol = symbolProvider_->lookupSymbol("main");
+        verify(!!mainSymbol, "Cannot find \"main\" symbol");
+        execute(mainSymbol.value());
     }
 
     namespace {
@@ -473,7 +195,7 @@ namespace x64 {
 
     void Interpreter::execute(u64 address) {
         if(stop_) return;
-        fmt::print(stderr, "Execute function {:#x}\n", address);
+        fmt::print(stderr, "Execute function {:#x} : {}\n", address, symbolProvider_->lookupDemangledSymbol(address).value_or("--"));
         SignalHandler sh;
         cpu_.push64(address);
         call(address);
@@ -599,10 +321,10 @@ namespace x64 {
                 verify(!!originSection, "Could not determine function origin section");
                 verify(firstInstructionIndex != (size_t)(-1), "Could not find call destination instruction");
                 if(originSection->sectionname == ".text") {
-                    const auto* func = functionFromAddress(address);
-                    if(!!func) {
-                        call->instruction.symbolName = func->demangledName;
-                        functionNameCache[address] = func->demangledName;
+                    auto demangledName = symbolProvider_->lookupDemangledSymbol(address);
+                    if(!!demangledName) {
+                        call->instruction.symbolName = demangledName.value();
+                        functionNameCache[address] = demangledName.value();
                     } else {
                         // verify(!!func, "Could not find function in text section");
                     }
@@ -615,10 +337,12 @@ namespace x64 {
                     regs.rip_ = jmpInsn->address + 6; // add instruction size offset
                     auto ptr = regs.resolve(jmp->instruction.symbolAddress);
                     auto dst = mmu_.read64(ptr);
-                    const auto* func = functionFromAddress(dst);
-                    if(!!func) {
-                        call->instruction.symbolName = func->demangledName;
-                        functionNameCache[address] = func->demangledName;
+                    if(dst != 0x0) {
+                        auto demangledName = symbolProvider_->lookupDemangledSymbol(dst);
+                        if(!!demangledName) {
+                            call->instruction.symbolName = demangledName.value();
+                            functionNameCache[address] = demangledName.value();
+                        }
                     }
                 }
             }

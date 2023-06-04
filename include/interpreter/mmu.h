@@ -32,7 +32,7 @@ namespace x64 {
     public:
         class Region {
         public:
-            Region(std::string name, u64 base, u64 size, Protection protection);
+            Region(std::string file, std::string name, u64 base, u64 size, Protection protection);
 
             bool contains(u64 address) const;
 
@@ -44,6 +44,7 @@ namespace x64 {
                 this->handler = std::move(handler);
             }
 
+            std::string file;
             std::string name;
             u64 base;
             u64 size;

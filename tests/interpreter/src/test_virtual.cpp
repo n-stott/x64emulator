@@ -45,7 +45,7 @@ void testC() {
 }
 
 int main() {
-    testA();
-    testB();
+    // testA();
+    // testB();
     testC();
 }

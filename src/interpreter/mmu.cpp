@@ -7,7 +7,8 @@
 
 namespace x64 {
 
-    Mmu::Region::Region(std::string name, u64 base, u64 size, Protection protection) {
+    Mmu::Region::Region(std::string file, std::string name, u64 base, u64 size, Protection protection) {
+        this->file = std::move(file);
         this->name = std::move(name);
         this->base = base;
         this->size = size;
@@ -165,7 +166,7 @@ namespace x64 {
 
     void Mmu::dumpRegions() const {
         for(const auto& region : regions_) {
-            fmt::print("    {:25} {:#x} - {:#x}\n", region.name, region.base, region.base+region.size);
+            fmt::print("    {:>20}:{:<20} {:#x} - {:#x}\n", region.file, region.name, region.base, region.base+region.size);
         }
     }
 

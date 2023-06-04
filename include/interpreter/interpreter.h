@@ -3,6 +3,7 @@
 
 #include "interpreter/cpu.h"
 #include "interpreter/mmu.h"
+#include "interpreter/loader.h"
 #include "interpreter/verify.h"
 #include "lib/libc.h"
 #include "lib/callingcontext.h"
@@ -18,32 +19,25 @@
 
 namespace x64 {
 
-    class Interpreter {
+    class SymbolProvider;
+
+    class Interpreter : public Loadable {
     public:
-        explicit Interpreter();
+        explicit Interpreter(SymbolProvider* symbolProvider);
         void run(const std::string& programFilePath, const std::vector<std::string>& arguments);
         bool hasCrashed() const { return stop_; }
 
-        void loadElf(const std::string& filepath);
-        void loadLibrary(const std::string& filename);
+        u64 allocateMemoryRange(u64 size) override;
+        void addExecutableSection(ExecutableSection section) override;
+        void addMmuRegion(Mmu::Region region) override;
+        void addTlsMmuRegion(Mmu::Region region, u64 fsBase) override;
+        void registerInitFunction(u64 address) override;
+        void registerFiniFunction(u64 address) override;
+        void writeRelocation(u64 relocationSource, u64 relocationDestination) override;
+
         void loadLibC();
-        void resolveAllRelocations();
 
-    private: 
-
-        struct ExecutableSection {
-            std::string filename;
-            std::string sectionname;
-            u64 sectionOffset;
-            std::vector<std::unique_ptr<X86Instruction>> instructions;
-            std::vector<std::unique_ptr<Function>> functions;
-        };
-
-        struct LoadedElf {
-            std::string filename;
-            u64 offset;
-            std::unique_ptr<elf::Elf64> elf;
-        };
+    private:
 
         void setupStackAndHeap();
         void runInit();
@@ -52,19 +46,14 @@ namespace x64 {
         void execute(const Function* function);
         void execute(u64 address);
 
-        Mmu::Region* addSectionIfExists(const elf::Elf64& elf, const std::string& sectionName, const std::string& regionName, Protection protection, u32 offset = 0);
-
         Mmu mmu_;
         Cpu cpu_;
 
         std::vector<ExecutableSection> executableSections_;
-        std::vector<LoadedElf> elfs_;
         std::unique_ptr<LibC> libc_;
-        std::vector<std::string> loadedLibraries_;
+        SymbolProvider* symbolProvider_;
 
-        const Function* findFunctionByName(const std::string& name, bool demangled) const;
-        const Function* findFunctionByAddress(u64 address) const;
-        std::optional<u64> findSymbolAddress(const std::string& symbol) const;
+        std::vector<u64> initFunctions_;
 
         bool stop_;
 
@@ -115,17 +104,6 @@ namespace x64 {
         void dumpStackTrace() const;
 
         void addFunctionNameToCall();
-
-        const Function* functionFromAddress(u64 address) const {
-            auto it = functionCache.find(address);
-            if(it != functionCache.end()) {
-                return it->second;
-            } else {
-                const auto* func = findFunctionByAddress(address);
-                functionCache.insert(std::make_pair(address, func));
-                return func;
-            }
-        }
 
         void call(u64 address) {
             CallPoint cp;

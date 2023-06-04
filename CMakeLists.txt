@@ -18,6 +18,8 @@ add_executable(interpreter
     src/lib/libc.cpp
     src/translation/x86instruction.cpp
     src/disassembler/capstonewrapper.cpp
+    src/interpreter/loader.cpp
+    src/interpreter/symbolprovider.cpp
     src/interpreter/interpreter.cpp
     src/interpreter/cpu.cpp
     src/interpreter/fpu.cpp

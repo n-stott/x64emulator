@@ -1,4 +1,6 @@
+#include "interpreter/symbolprovider.h"
 #include "interpreter/interpreter.h"
+#include "interpreter/loader.h"
 #include "interpreter/verify.h"
 #include "lib/libc.h"
 #include <fmt/core.h>
@@ -21,13 +23,17 @@ int main(int argc, char* argv[]) {
     auto executablePath = std::filesystem::canonical(p);
     auto libraryPath = executablePath.replace_filename("libfakelibc.so");
 
-    x64::Interpreter interpreter;
+    x64::SymbolProvider symbolProvider;
+
+    x64::Interpreter interpreter(&symbolProvider);
+
+    x64::Loader loader(&interpreter, &symbolProvider);
 
     x64::VerificationScope::run([&]() {
-        interpreter.loadElf(programPath);
-        interpreter.loadElf(libraryPath);
+        loader.loadElf(programPath);
+        loader.loadElf(libraryPath);
         interpreter.loadLibC();
-        interpreter.resolveAllRelocations();
+        loader.resolveAllRelocations();
         interpreter.run(programPath, arguments);
     }, [&]() {});
 

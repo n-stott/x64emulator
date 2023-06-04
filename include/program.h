@@ -66,6 +66,14 @@ namespace x64 {
         virtual const Function* findFunctionByAddress(u64 address) const;
     };
 
+    struct ExecutableSection {
+        std::string filename;
+        std::string sectionname;
+        u64 sectionOffset;
+        std::vector<std::unique_ptr<X86Instruction>> instructions;
+        std::vector<std::unique_ptr<Function>> functions;
+    };
+
 }
 
 #endif
