@@ -51,7 +51,7 @@ namespace x64 {
 
         u64 offset = loadable_->allocateMemoryRange(Mmu::PAGE_SIZE);
 
-        std::vector<elf::SectionHeader64> tlsSections;
+        std::vector<elf::SectionHeader64> tlsHeaders;
 
         std::string shortFilePath = filepath.find_last_of('/') == std::string::npos ? filepath
                                                                                     : filepath.substr(filepath.find_last_of('/')+1);
@@ -60,129 +60,21 @@ namespace x64 {
             if(!header.doesAllocate()) return;
             verify(!(header.isExecutable() && header.isWritable()));
             if(header.isProgBits() && header.isExecutable()) {
-                std::vector<std::unique_ptr<X86Instruction>> instructions;
-                std::vector<std::unique_ptr<Function>> functions;
-                CapstoneWrapper::disassembleSection(std::string(filepath), std::string(header.name), &instructions, &functions);
-
-                assert(std::is_sorted(instructions.begin(), instructions.end(), [](const auto& a, const auto& b) {
-                    return a->address < b->address;
-                }));
-
-                for(auto& insn : instructions) insn->address += offset;
-                for(auto& f : functions) f->address += offset;
-
-                functions.erase(std::remove_if(functions.begin(), functions.end(), [](std::unique_ptr<Function>& function) -> bool {
-                    if(function->name.size() >= 10) {
-                        if(function->name.substr(0, 10) == "intrinsic$") return true;
-                    }
-                    return false;
-                }), functions.end());
-                ExecutableSection esection {
-                    filepath,
-                    std::string(header.name),
-                    offset,
-                    std::move(instructions),
-                    std::move(functions),
-                };
-
-                loadable_->addExecutableSection(std::move(esection));
-
-                std::string regionName = std::string(header.name);
-
-                auto section = elf64->sectionFromName(header.name);
-                verify(section.has_value());
-                Mmu::Region region{ shortFilePath, regionName, section->address + offset, section->size(), PROT_NONE };
-                loadable_->addMmuRegion(std::move(region));
+                loadExecutableHeader(*elf64, header, filepath, shortFilePath, offset);
             } else if(!header.isThreadLocal()) {
-                auto section = elf64->sectionFromName(header.name);
-                verify(section.has_value());
-
-                Protection prot = PROT_READ;
-                if(header.isWritable()) prot = PROT_READ | PROT_WRITE;
-
-                std::string regionName = std::string(header.name);
-
-                Mmu::Region region{ shortFilePath, regionName, section->address + offset, section->size(), prot };
-                if(section->type() != elf::SectionHeaderType::NOBITS)
-                    std::memcpy(region.data.data(), section->begin, section->size()*sizeof(u8));
-                loadable_->addMmuRegion(std::move(region));
+                loadNonExecutableNonThreadlocalHeader(*elf64, header, shortFilePath, offset);
             } else {
-                tlsSections.push_back(header);
+                tlsHeaders.push_back(header);
             }
         });
 
-        if(!tlsSections.empty()) {
-            std::sort(tlsSections.begin(), tlsSections.end(), [](const auto& a, const auto& b) {
-                return a.sh_addr < b.sh_addr;
-            });
-            for(size_t i = 1; i < tlsSections.size(); ++i) {
-                const auto& prev = tlsSections[i-1];
-                const auto& current = tlsSections[i];
-                verify(prev.sh_addr + prev.sh_size == current.sh_addr, "non-consecutive tlsSections...");
-            }
+        loadTlsHeaders(*elf64, std::move(tlsHeaders), shortFilePath);
 
-            u64 totalTlsRegionSize = std::accumulate(tlsSections.begin(), tlsSections.end(), 0, [](u64 size, const auto& s) {
-                return size + s.sh_size;
-            });
+        registerInitFunctions(*elf64, offset);
 
-            u64 fsBase = loadable_->allocateMemoryRange(totalTlsRegionSize + sizeof(u64)); // TODO reserve some space below
+        registerSymbols(*elf64, offset);
 
-            std::string regionName = fmt::format("{:>20}:{:<20}", shortFilePath, "tls");
-            Mmu::Region tlsRegion { shortFilePath, regionName, fsBase - totalTlsRegionSize, totalTlsRegionSize+sizeof(u64), PROT_READ | PROT_WRITE };
-
-            u8* tlsStart = tlsRegion.data.data();
-
-            for(const auto& header : tlsSections) {
-                auto section = elf64->sectionFromName(header.name);
-                verify(section.has_value());
-
-                if(section->type() != elf::SectionHeaderType::NOBITS)
-                    std::memcpy(tlsStart, section->begin, section->size()*sizeof(u8));
-
-                tlsStart += section->size();
-            }
-            verify(std::distance(tlsRegion.data.data(), tlsStart) == static_cast<std::ptrdiff_t>(totalTlsRegionSize));
-            memcpy(tlsStart, &fsBase, sizeof(fsBase));
-
-            loadable_->addTlsMmuRegion(std::move(tlsRegion), fsBase);
-        }
-
-        // init sections
-        auto initArraySection = elf64->sectionFromName(".init_array");
-        if(initArraySection) {
-            assert(initArraySection->size() % sizeof(u64) == 0);
-            const u64* beginInitArray = reinterpret_cast<const u64*>(initArraySection->begin);
-            const u64* endInitArray = reinterpret_cast<const u64*>(initArraySection->end);
-            for(const u64* it = beginInitArray; it != endInitArray; ++it) {
-                if(*it == 0 || *it == (u64)(-1)) continue;
-                u64 address = offset + *it;
-                loadable_->registerInitFunction(address);
-            }
-        }
-
-        elf64->forAllSymbols([&](const elf::StringTable* stringTable, const elf::SymbolTableEntry64& entry) {
-            std::string symbol { entry.symbol(stringTable, *elf64) };
-            if(!entry.st_name) return;
-            if(entry.type() != elf::SymbolType::FUNC) return;
-            symbolProvider_->registerSymbol(symbol, offset + entry.st_value, entry.bind() == elf::SymbolBind::WEAK);
-        });
-        elf64->forAllDynamicSymbols([&](const elf::StringTable* stringTable, const elf::SymbolTableEntry64& entry) {
-            std::string symbol { entry.symbol(stringTable, *elf64) };
-            if(!entry.st_name) return;
-            if(entry.type() != elf::SymbolType::FUNC) return;
-            symbolProvider_->registerDynamicSymbol(symbol, offset + entry.st_value, entry.bind() == elf::SymbolBind::WEAK);
-        });
-
-        // For when executing without functions is working
-        elf64->forAllDynamicEntries([&](const elf::DynamicEntry64& entry) {
-            if(entry.tag() != elf::DynamicTag::DT_NEEDED) return;
-            // fmt::print("tag={:#x} value={:#x}\n", (u64)entry.tag(), (u64)entry.value());
-            auto dynstr = elf64->dynamicStringTable();
-            if(!dynstr) return;
-            std::string sharedObjectName(dynstr->operator[](entry.value()));
-            // fmt::print("  name={}\n", sharedObjectName);
-            loadLibrary(sharedObjectName);
-        });
+        loadNeededLibraries(*elf64);
 
         LoadedElf loadedElf {
             filepath,
@@ -190,6 +82,134 @@ namespace x64 {
             std::move(elf64),
         };
         elfs_.push_back(std::move(loadedElf));
+    }
+
+    void Loader::loadExecutableHeader(const elf::Elf64& elf, const elf::SectionHeader64& header, const std::string& filePath, const std::string& shortFilePath, u64 elfOffset) {
+        std::vector<std::unique_ptr<X86Instruction>> instructions;
+        std::vector<std::unique_ptr<Function>> functions;
+        CapstoneWrapper::disassembleSection(std::string(filePath), std::string(header.name), &instructions, &functions);
+
+        assert(std::is_sorted(instructions.begin(), instructions.end(), [](const auto& a, const auto& b) {
+            return a->address < b->address;
+        }));
+
+        for(auto& insn : instructions) insn->address += elfOffset;
+        for(auto& f : functions) f->address += elfOffset;
+
+        functions.erase(std::remove_if(functions.begin(), functions.end(), [](std::unique_ptr<Function>& function) -> bool {
+            if(function->name.size() >= 10) {
+                if(function->name.substr(0, 10) == "intrinsic$") return true;
+            }
+            return false;
+        }), functions.end());
+        ExecutableSection esection {
+            filePath,
+            std::string(header.name),
+            elfOffset,
+            std::move(instructions),
+            std::move(functions),
+        };
+
+        loadable_->addExecutableSection(std::move(esection));
+
+        std::string regionName = std::string(header.name);
+
+        auto section = elf.sectionFromName(header.name);
+        verify(section.has_value());
+        Mmu::Region region{ shortFilePath, regionName, section->address + elfOffset, section->size(), PROT_NONE };
+        loadable_->addMmuRegion(std::move(region));
+    }
+
+    void Loader::loadNonExecutableNonThreadlocalHeader(const elf::Elf64& elf, const elf::SectionHeader64& header, const std::string& shortFilePath, u64 elfOffset) {
+        auto section = elf.sectionFromName(header.name);
+        verify(section.has_value());
+
+        Protection prot = PROT_READ;
+        if(header.isWritable()) prot = PROT_READ | PROT_WRITE;
+
+        std::string regionName = std::string(header.name);
+
+        Mmu::Region region{ shortFilePath, regionName, section->address + elfOffset, section->size(), prot };
+        if(section->type() != elf::SectionHeaderType::NOBITS)
+            std::memcpy(region.data.data(), section->begin, section->size()*sizeof(u8));
+        loadable_->addMmuRegion(std::move(region));
+    }
+
+    void Loader::loadTlsHeaders(const elf::Elf64& elf, std::vector<elf::SectionHeader64> tlsHeaders, const std::string& shortFilePath) {
+        if(tlsHeaders.empty()) return;
+        std::sort(tlsHeaders.begin(), tlsHeaders.end(), [](const auto& a, const auto& b) {
+            return a.sh_addr < b.sh_addr;
+        });
+        for(size_t i = 1; i < tlsHeaders.size(); ++i) {
+            const auto& prev = tlsHeaders[i-1];
+            const auto& current = tlsHeaders[i];
+            verify(prev.sh_addr + prev.sh_size == current.sh_addr, "non-consecutive tlsSections...");
+        }
+
+        u64 totalTlsRegionSize = std::accumulate(tlsHeaders.begin(), tlsHeaders.end(), 0, [](u64 size, const auto& s) {
+            return size + s.sh_size;
+        });
+
+        u64 fsBase = loadable_->allocateMemoryRange(totalTlsRegionSize + sizeof(u64)); // TODO reserve some space below
+
+        std::string regionName = fmt::format("{:>20}:{:<20}", shortFilePath, "tls");
+        Mmu::Region tlsRegion { shortFilePath, regionName, fsBase - totalTlsRegionSize, totalTlsRegionSize+sizeof(u64), PROT_READ | PROT_WRITE };
+
+        u8* tlsStart = tlsRegion.data.data();
+
+        for(const auto& header : tlsHeaders) {
+            auto section = elf.sectionFromName(header.name);
+            verify(section.has_value());
+
+            if(section->type() != elf::SectionHeaderType::NOBITS)
+                std::memcpy(tlsStart, section->begin, section->size()*sizeof(u8));
+
+            tlsStart += section->size();
+        }
+        verify(std::distance(tlsRegion.data.data(), tlsStart) == static_cast<std::ptrdiff_t>(totalTlsRegionSize));
+        memcpy(tlsStart, &fsBase, sizeof(fsBase));
+
+        loadable_->addTlsMmuRegion(std::move(tlsRegion), fsBase);
+    }
+
+
+    void Loader::registerInitFunctions(const elf::Elf64& elf, u64 elfOffset) {
+        auto initArraySection = elf.sectionFromName(".init_array");
+        if(initArraySection) {
+            assert(initArraySection->size() % sizeof(u64) == 0);
+            const u64* beginInitArray = reinterpret_cast<const u64*>(initArraySection->begin);
+            const u64* endInitArray = reinterpret_cast<const u64*>(initArraySection->end);
+            for(const u64* it = beginInitArray; it != endInitArray; ++it) {
+                if(*it == 0 || *it == (u64)(-1)) continue;
+                u64 address = elfOffset + *it;
+                loadable_->registerInitFunction(address);
+            }
+        }
+    }
+
+    void Loader::registerSymbols(const elf::Elf64& elf, u64 elfOffset) {
+        elf.forAllSymbols([&](const elf::StringTable* stringTable, const elf::SymbolTableEntry64& entry) {
+            std::string symbol { entry.symbol(stringTable, elf) };
+            if(!entry.st_name) return;
+            if(entry.type() != elf::SymbolType::FUNC) return;
+            symbolProvider_->registerSymbol(symbol, elfOffset + entry.st_value, entry.bind() == elf::SymbolBind::WEAK);
+        });
+        elf.forAllDynamicSymbols([&](const elf::StringTable* stringTable, const elf::SymbolTableEntry64& entry) {
+            std::string symbol { entry.symbol(stringTable, elf) };
+            if(!entry.st_name) return;
+            if(entry.type() != elf::SymbolType::FUNC) return;
+            symbolProvider_->registerDynamicSymbol(symbol, elfOffset + entry.st_value, entry.bind() == elf::SymbolBind::WEAK);
+        });
+    }
+
+    void Loader::loadNeededLibraries(const elf::Elf64& elf) {
+        elf.forAllDynamicEntries([&](const elf::DynamicEntry64& entry) {
+            if(entry.tag() != elf::DynamicTag::DT_NEEDED) return;
+            auto dynstr = elf.dynamicStringTable();
+            if(!dynstr) return;
+            std::string sharedObjectName(dynstr->operator[](entry.value()));
+            loadLibrary(sharedObjectName);
+        });
     }
 
     void Loader::resolveAllRelocations() {

@@ -7,7 +7,10 @@
 #include <string>
 #include <vector>
 
-namespace elf { class Elf64; }
+namespace elf {
+    class Elf64;
+    struct SectionHeader64;
+}
 
 namespace x64 {
 
@@ -36,6 +39,12 @@ namespace x64 {
         void resolveAllRelocations();
 
     private:
+        void loadExecutableHeader(const elf::Elf64& elf, const elf::SectionHeader64& header, const std::string& filePath, const std::string& shortFilePath, u64 elfOffset);
+        void loadNonExecutableNonThreadlocalHeader(const elf::Elf64& elf, const elf::SectionHeader64& header, const std::string& shortFilePath, u64 elfOffset);
+        void loadTlsHeaders(const elf::Elf64& elf, std::vector<elf::SectionHeader64> tlsHeaders, const std::string& shortFilePath);
+        void registerInitFunctions(const elf::Elf64& elf, u64 elfOffset);
+        void registerSymbols(const elf::Elf64& elf, u64 elfOffset);
+        void loadNeededLibraries(const elf::Elf64& elf);
 
         void loadLibrary(const std::string& filename);
 
