@@ -188,17 +188,19 @@ namespace x64 {
     }
 
     void Loader::registerSymbols(const elf::Elf64& elf, u64 elfOffset) {
+        // only register main
         elf.forAllSymbols([&](const elf::StringTable* stringTable, const elf::SymbolTableEntry64& entry) {
             std::string symbol { entry.symbol(stringTable, elf) };
             if(!entry.st_name) return;
             if(entry.type() != elf::SymbolType::FUNC) return;
-            symbolProvider_->registerSymbol(symbol, elfOffset + entry.st_value, entry.bind() == elf::SymbolBind::WEAK);
+            if(symbol != "main") return;
+            symbolProvider_->registerSymbol(symbol, elfOffset + entry.st_value, &elf, entry.type(), entry.bind());
         });
         elf.forAllDynamicSymbols([&](const elf::StringTable* stringTable, const elf::SymbolTableEntry64& entry) {
             std::string symbol { entry.symbol(stringTable, elf) };
             if(!entry.st_name) return;
             if(entry.type() != elf::SymbolType::FUNC) return;
-            symbolProvider_->registerDynamicSymbol(symbol, elfOffset + entry.st_value, entry.bind() == elf::SymbolBind::WEAK);
+            symbolProvider_->registerDynamicSymbol(symbol, elfOffset + entry.st_value, &elf, entry.type(), entry.bind());
         });
     }
 
@@ -229,10 +231,8 @@ namespace x64 {
             
             if(sym->type() == elf::SymbolType::FUNC
             || (sym->type() == elf::SymbolType::NOTYPE && (sym->bind() == elf::SymbolBind::WEAK || sym->bind() == elf::SymbolBind::GLOBAL))) {
-                destinationAddress = symbolProvider_->lookupSymbol(symbol);
+                destinationAddress = symbolProvider_->lookupRawSymbol(symbol);
                 if(!destinationAddress) destinationAddress = symbolProvider_->lookupDemangledSymbol(demangledSymbol);
-                if(!destinationAddress) destinationAddress = symbolProvider_->lookupDynamicSymbol(symbol);
-                if(!destinationAddress) destinationAddress = symbolProvider_->lookupDemangledDynamicSymbol(demangledSymbol);
             } else if(sym->type() == elf::SymbolType::OBJECT) {
                 for(const auto& otherElf : elfs_) {
                     auto resolveSymbol = [&](const elf::StringTable* stringTable, const elf::SymbolTableEntry64& entry) {

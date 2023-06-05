@@ -115,7 +115,7 @@ namespace x64 {
             func->address = func->instructions[0]->address;
         }
         for(const auto& function : libcFunctions) 
-            symbolProvider_->registerSymbol(function->name, function->address, false);
+            symbolProvider_->registerSymbol(function->name, function->address, nullptr, elf::SymbolType::FUNC, elf::SymbolBind::GLOBAL);
 
         executableSections_.push_back(std::move(libcSection));
     }
@@ -145,7 +145,7 @@ namespace x64 {
     }
 
     void Interpreter::executeMain() {
-        auto mainSymbol = symbolProvider_->lookupSymbol("main");
+        auto mainSymbol = symbolProvider_->lookupRawSymbol("main");
         verify(!!mainSymbol, "Cannot find \"main\" symbol");
         execute(mainSymbol.value());
     }
@@ -195,7 +195,7 @@ namespace x64 {
 
     void Interpreter::execute(u64 address) {
         if(stop_) return;
-        fmt::print(stderr, "Execute function {:#x} : {}\n", address, symbolProvider_->lookupDemangledSymbol(address).value_or("--"));
+        fmt::print(stderr, "Execute function {:#x} : {}\n", address, symbolProvider_->lookupSymbol(address, true).value_or("unknown symbol"));
         SignalHandler sh;
         cpu_.push64(address);
         call(address);
@@ -321,8 +321,7 @@ namespace x64 {
                 verify(!!originSection, "Could not determine function origin section");
                 verify(firstInstructionIndex != (size_t)(-1), "Could not find call destination instruction");
                 if(originSection->sectionname == ".text") {
-                    auto demangledName = symbolProvider_->lookupDemangledSymbol(address);
-                    if(!demangledName) demangledName = symbolProvider_->lookupDemangledDynamicSymbol(address);
+                    auto demangledName = symbolProvider_->lookupSymbol(address, true);
                     if(!!demangledName) {
                         call->instruction.symbolName = demangledName.value();
                         functionNameCache[address] = demangledName.value();
@@ -339,7 +338,7 @@ namespace x64 {
                     auto ptr = regs.resolve(jmp->instruction.symbolAddress);
                     auto dst = mmu_.read64(ptr);
                     if(dst != 0x0) {
-                        auto demangledName = symbolProvider_->lookupDemangledSymbol(dst);
+                        auto demangledName = symbolProvider_->lookupSymbol(dst, true);
                         if(!!demangledName) {
                             call->instruction.symbolName = demangledName.value();
                             functionNameCache[address] = demangledName.value();
