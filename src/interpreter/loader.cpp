@@ -238,9 +238,10 @@ namespace x64 {
                 for(const auto& otherElf : elfs_) {
                     auto resolveSymbol = [&](const elf::StringTable* stringTable, const elf::SymbolTableEntry64& entry) {
                         if(destinationAddress.has_value()) return;
+                        if(entry.isUndefined()) return;
+                        if(entry.type() != elf::SymbolType::OBJECT) return;
                         if(entry.symbol(stringTable, *otherElf.elf).find(symbol) == std::string_view::npos
                         && entry.symbol(stringTable, *otherElf.elf).find(demangledSymbol) == std::string_view::npos) return;
-                        if(entry.isUndefined()) return;
                         destinationAddress = otherElf.offset + entry.st_value;
                     };
                     otherElf.elf->forAllSymbols(resolveSymbol);
