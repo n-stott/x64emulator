@@ -214,9 +214,10 @@ namespace x64 {
         });
     }
 
+
     void Loader::resolveAllRelocations() {
 
-        auto resolveSingleRelocation = [&](const LoadedElf& loadedElf, const auto& relocation) {
+        auto resolveSingleRelocation = [&](const LoadedElf& loadedElf, const auto& relocation, u64 addend) {
             const elf::Elf64& elf = *loadedElf.elf;
             const auto* sym = relocation.symbol(elf);
             if(!sym) return;
@@ -252,9 +253,9 @@ namespace x64 {
 #endif
             if(destinationAddress.has_value()) {
 #if DEBUG_RELOCATIONS
-                fmt::print("  at {:#x}\n", destinationAddress.value());
+                fmt::print("  at {:#x}\n", destinationAddress.value() + addend);
 #endif
-                loadable_->writeRelocation(relocationAddress, destinationAddress.value());
+                loadable_->writeRelocation(relocationAddress, destinationAddress.value() + addend);
             } else {
 #if DEBUG_RELOCATIONS
                 fmt::print("  unable to find\n");
@@ -265,8 +266,8 @@ namespace x64 {
 
         for(const auto& loadedElf : elfs_) {
             verify(!!loadedElf.elf);
-            loadedElf.elf->forAllRelocations([&](const elf::RelocationEntry64& reloc) { resolveSingleRelocation(loadedElf, reloc); });
-            loadedElf.elf->forAllRelocationsA([&](const elf::RelocationEntry64A& reloc) { resolveSingleRelocation(loadedElf, reloc); });
+            loadedElf.elf->forAllRelocations([&](const elf::RelocationEntry64& reloc) { resolveSingleRelocation(loadedElf, reloc, 0); });
+            loadedElf.elf->forAllRelocationsA([&](const elf::RelocationEntry64A& reloc) { resolveSingleRelocation(loadedElf, reloc, reloc.r_addend); });
         }
     }
 }
