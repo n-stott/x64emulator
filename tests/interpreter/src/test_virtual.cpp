@@ -42,10 +42,29 @@ void testC() {
     b->f();
     b = &d2;
     b->f();
+    dynamic_cast<Derived2*>(b)->f();
+}
+
+void testD() {
+    struct Base {
+        virtual void f() { std::puts("Base::f()"); }
+    };
+    struct Derived1 : public Base {
+        void f() override { std::puts("Derived1::f();"); }
+    };
+    struct Derived2 : public Base {
+        void f() override { std::puts("Derived2::f();"); }
+    };
+
+    Derived1 d1;
+    Derived2 d2;
+    Base* b = &d1;
+    dynamic_cast<Derived1*>(b)->f();
 }
 
 int main() {
-    // testA();
-    // testB();
+    testA();
+    testB();
     testC();
+    testD();
 }
