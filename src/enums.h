@@ -258,6 +258,34 @@ namespace elf {
         }
         return fmt::format("{:x}", (u32)sht);
     }
+
+
+    inline std::string toString(RelocationType64 type) {
+        switch(type) {
+            case RelocationType64::R_AMD64_NONE: return "R_AMD64_NONE";
+            case RelocationType64::R_AMD64_64: return "R_AMD64_64";
+            case RelocationType64::R_AMD64_PC32: return "R_AMD64_PC32";
+            case RelocationType64::R_AMD64_GOT32: return "R_AMD64_GOT32";
+            case RelocationType64::R_AMD64_PLT32: return "R_AMD64_PLT32";
+            case RelocationType64::R_AMD64_COPY: return "R_AMD64_COPY";
+            case RelocationType64::R_AMD64_GLOB_DAT: return "R_AMD64_GLOB_DAT";
+            case RelocationType64::R_AMD64_JUMP_SLOT: return "R_AMD64_JUMP_SLOT";
+            case RelocationType64::R_AMD64_RELATIVE: return "R_AMD64_RELATIVE";
+            case RelocationType64::R_AMD64_GOTPCREL: return "R_AMD64_GOTPCREL";
+            case RelocationType64::R_AMD64_32: return "R_AMD64_32";
+            case RelocationType64::R_AMD64_32S: return "R_AMD64_32S";
+            case RelocationType64::R_AMD64_16: return "R_AMD64_16";
+            case RelocationType64::R_AMD64_PC16: return "R_AMD64_PC16";
+            case RelocationType64::R_AMD64_8: return "R_AMD64_8";
+            case RelocationType64::R_AMD64_PC8: return "R_AMD64_PC8";
+            case RelocationType64::R_AMD64_PC64: return "R_AMD64_PC64";
+            case RelocationType64::R_AMD64_GOTOFF64: return "R_AMD64_GOTOFF64";
+            case RelocationType64::R_AMD64_GOTPC32: return "R_AMD64_GOTPC32";
+            case RelocationType64::R_AMD64_SIZE32: return "R_AMD64_SIZE32";
+            case RelocationType64::R_AMD64_SIZE64: return "R_AMD64_SIZE64";
+        }
+        return fmt::format("{:x}", (u32)type);
+    }
 }
 
 #endif
