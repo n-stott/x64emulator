@@ -191,6 +191,50 @@ namespace elf {
         DT_HIPROC = 0x7fffffff,
     };
 
+    enum class RelocationType32 : u8 {
+        R_386_NONE = 0,
+        R_386_32 = 1,
+        R_386_PC32 = 2,
+        R_386_GOT32 = 3,
+        R_386_PLT32 = 4,
+        R_386_COPY = 5,
+        R_386_GLOB_DAT = 6,
+        R_386_JMP_SLOT = 7,
+        R_386_RELATIVE = 8,
+        R_386_GOTOFF = 9,
+        R_386_GOTPC = 10,
+        R_386_32PLT = 11,
+        R_386_16 = 20,
+        R_386_PC16 = 21,
+        R_386_8 = 22,
+        R_386_PC8 = 23,
+        R_386_SIZE32 = 38,
+    };
+
+    enum class RelocationType64 : u32 {
+        R_AMD64_NONE = 0,
+        R_AMD64_64 = 1,
+        R_AMD64_PC32 = 2,
+        R_AMD64_GOT32 = 3,
+        R_AMD64_PLT32 = 4,
+        R_AMD64_COPY = 5,
+        R_AMD64_GLOB_DAT = 6,
+        R_AMD64_JUMP_SLOT = 7,
+        R_AMD64_RELATIVE = 8,
+        R_AMD64_GOTPCREL = 9,
+        R_AMD64_32 = 10,
+        R_AMD64_32S = 11,
+        R_AMD64_16 = 12,
+        R_AMD64_PC16 = 13,
+        R_AMD64_8 = 14,
+        R_AMD64_PC8 = 15,
+        R_AMD64_PC64 = 24,
+        R_AMD64_GOTOFF64 = 25,
+        R_AMD64_GOTPC32 = 26,
+        R_AMD64_SIZE32 = 32,
+        R_AMD64_SIZE64 = 33,
+    };
+
     inline std::string toString(SectionHeaderType sht) {
         switch(sht) {
             case SectionHeaderType::NULL_: return "NULL";

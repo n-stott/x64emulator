@@ -23,12 +23,12 @@ int main(int argc, const char* argv[]) {
 
           elf32->forAllRelocations([&](const elf::RelocationEntry32& relocation) {
                std::string_view symbol = relocation.symbol(*elf32)->symbol(&dynamicStringTable.value(), *elf32);
-               fmt::print("Relocation offset={:#x} type={:#x} symbol={}\n", relocation.offset(), relocation.type(), symbol);
+               fmt::print("Relocation offset={:#x} type={:#x} symbol={}\n", relocation.offset(), (u8)relocation.type(), symbol);
           });
 
           elf32->forAllRelocationsA([&](const elf::RelocationEntry32A& relocation) {
                std::string_view symbol = relocation.symbol(*elf32)->symbol(&dynamicStringTable.value(), *elf32);
-               fmt::print("Relocation offset={:#x} type={:#x} symbol={} addend={}\n", relocation.offset(), relocation.type(), symbol, relocation.r_addend);
+               fmt::print("Relocation offset={:#x} type={:#x} symbol={} addend={}\n", relocation.offset(), (u8)relocation.type(), symbol, relocation.r_addend);
           });
 
           elf32->forAllSymbols([&](const elf::StringTable* stringTable, const elf::SymbolTableEntry32& entry) {
@@ -49,12 +49,12 @@ int main(int argc, const char* argv[]) {
 
           elf64->forAllRelocations([&](const elf::RelocationEntry64& relocation) {
                std::string_view symbol = relocation.symbol(*elf64)->symbol(&stringTable.value(), *elf64);
-               fmt::print("Relocation offset={:#x} type={:#x} symbol={}\n", relocation.offset(), relocation.type(), symbol);
+               fmt::print("Relocation offset={:#x} type={:#x} symbol={}\n", relocation.offset(), (u8)relocation.type(), symbol);
           });
 
           elf64->forAllRelocationsA([&](const elf::RelocationEntry64A& relocation) {
                std::string_view symbol = relocation.symbol(*elf64)->symbol(&dynamicStringTable.value(), *elf64);
-               fmt::print("Relocation offset={:#x} type={:#x} symbol={} addend={}\n", relocation.offset(), relocation.type(), symbol, relocation.r_addend);
+               fmt::print("Relocation offset={:#x} type={:#x} symbol={} addend={}\n", relocation.offset(), (u8)relocation.type(), symbol, relocation.r_addend);
           });
 
           elf64->forAllSymbols([&](const elf::StringTable* stringTable, const elf::SymbolTableEntry64& entry) {

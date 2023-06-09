@@ -45,7 +45,7 @@ namespace elf {
         u32 r_info {};
 
         u32 offset() const;
-        u8 type() const;
+        RelocationType32 type() const;
         u32 sym() const;
         const SymbolTableEntry32* symbol(const Elf32& elf) const;
     };
@@ -56,7 +56,7 @@ namespace elf {
         u32 r_addend {};
 
         u32 offset() const;
-        u8 type() const;
+        RelocationType32 type() const;
         u32 sym() const;
         const SymbolTableEntry32* symbol(const Elf32& elf) const;
     };
@@ -185,8 +185,8 @@ namespace elf {
         return r_offset;
     }
 
-    inline u8 RelocationEntry32::type() const {
-        return (u8)r_info;
+    inline RelocationType32 RelocationEntry32::type() const {
+        return (RelocationType32)r_info;
     }
 
     inline u32 RelocationEntry32::sym() const {
@@ -201,8 +201,8 @@ namespace elf {
         return r_offset;
     }
 
-    inline u8 RelocationEntry32A::type() const {
-        return (u8)r_info;
+    inline RelocationType32 RelocationEntry32A::type() const {
+        return (RelocationType32)r_info;
     }
 
     inline u32 RelocationEntry32A::sym() const {

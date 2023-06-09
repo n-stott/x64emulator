@@ -50,7 +50,7 @@ namespace elf {
         u64 r_info {};
 
         u64 offset() const;
-        u32 type() const;
+        RelocationType64 type() const;
         u64 sym() const;
         const SymbolTableEntry64* symbol(const Elf64& elf) const;
     };
@@ -61,7 +61,7 @@ namespace elf {
         u64 r_addend {};
 
         u64 offset() const;
-        u32 type() const;
+        RelocationType64 type() const;
         u64 sym() const;
         const SymbolTableEntry64* symbol(const Elf64& elf) const;
     };
@@ -209,8 +209,8 @@ namespace elf {
         return r_offset;
     }
 
-    inline u32 RelocationEntry64::type() const {
-        return (u32)r_info;
+    inline RelocationType64 RelocationEntry64::type() const {
+        return (RelocationType64)r_info;
     }
 
     inline u64 RelocationEntry64::sym() const {
@@ -225,8 +225,8 @@ namespace elf {
         return r_offset;
     }
 
-    inline u32 RelocationEntry64A::type() const {
-        return (u32)r_info;
+    inline RelocationType64 RelocationEntry64A::type() const {
+        return (RelocationType64)r_info;
     }
 
     inline u64 RelocationEntry64A::sym() const {
