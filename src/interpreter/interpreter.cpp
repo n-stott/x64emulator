@@ -41,6 +41,19 @@ namespace x64 {
         stop_ = false;
     }
 
+    void Interpreter::stop() {
+        stop_ = true;
+    }
+
+    void Interpreter::crash() {
+        stop();
+        fmt::print("Register state:\n");
+        dump(stdout);
+        mmu_.dumpRegions();
+        fmt::print("Stacktrace:\n");
+        dumpStackTrace();
+    }
+
     u64 Interpreter::allocateMemoryRange(u64 size) {
         u64 offset = mmu_.topOfMemoryAligned(Mmu::PAGE_SIZE);
         mmu_.reserveUpTo(offset + size);
@@ -238,13 +251,7 @@ namespace x64 {
                 instruction->exec(&cpu_);
             } catch(const VerificationException&) {
                 fmt::print("Interpreter crash after {} instructions\n", ticks);
-                fmt::print("Register state:\n");
-                dump(stdout);
-                mmu_.dumpRegions();
-                fmt::print("Stacktrace:\n");
-                dumpStackTrace();
-                // dumpFunctions();
-                stop_ = true;
+                crash();
             }
         }
     }

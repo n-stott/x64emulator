@@ -35,7 +35,9 @@ int main(int argc, char* argv[]) {
         interpreter.loadLibC();
         loader.resolveAllRelocations();
         interpreter.run(programPath, arguments);
-    }, [&]() {});
+    }, [&]() {
+        interpreter.crash();
+    });
 
     return interpreter.hasCrashed();
 }

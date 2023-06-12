@@ -25,6 +25,8 @@ namespace x64 {
     public:
         explicit Interpreter(SymbolProvider* symbolProvider);
         void run(const std::string& programFilePath, const std::vector<std::string>& arguments);
+        void stop();
+        void crash();
         bool hasCrashed() const { return stop_; }
 
         u64 allocateMemoryRange(u64 size) override;

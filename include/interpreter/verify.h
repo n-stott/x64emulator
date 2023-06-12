@@ -53,8 +53,7 @@ namespace x64 {
     template<typename Callback>
     static inline void notify(bool condition, Callback onFail) {
         if(condition) return;
-        std::string message = onFail();
-        notify(condition, message.c_str());
+        onFail();
     }
 
 }

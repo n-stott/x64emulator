@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.13)
 project(x64)
 set(CMAKE_CXX_STANDARD 17)
 
-set(CC_OPTIONS -g -O0 -DDEBUG)
+set(CC_OPTIONS -g -O0 -DDEBUG -fpic)
 set(LD_OPTIONS)
 
 add_executable(test_trivial src/test_trivial.cpp)
