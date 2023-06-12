@@ -36,6 +36,8 @@ namespace x64 {
         void registerInitFunction(u64 address) override;
         void registerFiniFunction(u64 address) override;
         void writeRelocation(u64 relocationSource, u64 relocationDestination) override;
+        void writeUnresolvedRelocation(u64 relocationSource) override;
+        void read(u8* dst, u64 address, u64 nbytes) override;
 
         void loadLibC();
 

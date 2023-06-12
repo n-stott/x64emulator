@@ -3,6 +3,7 @@
 
 #include "interpreter/mmu.h"
 #include "utils/utils.h"
+#include "elf-reader/src/elf64.h"
 #include <memory>
 #include <string>
 #include <vector>
@@ -28,6 +29,8 @@ namespace x64 {
         virtual void registerInitFunction(u64 address) = 0;
         virtual void registerFiniFunction(u64 address) = 0;
         virtual void writeRelocation(u64 relocationSource, u64 relocationDestination) = 0;
+        virtual void writeUnresolvedRelocation(u64 relocationSource) = 0;
+        virtual void read(u8* dst, u64 address, u64 nbytes) = 0;
     };
 
     class Loader {
@@ -37,11 +40,12 @@ namespace x64 {
 
         void loadElf(const std::string& filepath);
         void resolveAllRelocations();
+        void resolveTlsSections();
 
     private:
         void loadExecutableHeader(const elf::Elf64& elf, const elf::SectionHeader64& header, const std::string& filePath, const std::string& shortFilePath, u64 elfOffset);
-        void loadNonExecutableNonThreadlocalHeader(const elf::Elf64& elf, const elf::SectionHeader64& header, const std::string& shortFilePath, u64 elfOffset);
-        void loadTlsHeaders(const elf::Elf64& elf, std::vector<elf::SectionHeader64> tlsHeaders, const std::string& shortFilePath);
+        void loadNonExecutableHeader(const elf::Elf64& elf, const elf::SectionHeader64& header, const std::string& shortFilePath, u64 elfOffset);
+        void loadTlsHeaders(const elf::Elf64& elf, std::vector<elf::SectionHeader64> tlsHeaders, const std::string& shortFilePath, u64 offset);
         void registerInitFunctions(const elf::Elf64& elf, u64 elfOffset);
         void registerSymbols(const elf::Elf64& elf, u64 elfOffset);
         void loadNeededLibraries(const elf::Elf64& elf);
@@ -57,9 +61,17 @@ namespace x64 {
             std::unique_ptr<elf::Elf64> elf;
         };
 
+        struct TlsHeader {
+            const elf::Elf64* elf;
+            elf::SectionHeader64 sectionHeader;
+            std::string shortFilePath;
+            u64 elfOffset;
+        };
+
         Loadable* loadable_;
         SymbolProvider* symbolProvider_;
         std::vector<LoadedElf> elfs_;
+        std::vector<TlsHeader> tlsHeaders_;
         std::vector<std::string> loadedLibraries_;
     };
 

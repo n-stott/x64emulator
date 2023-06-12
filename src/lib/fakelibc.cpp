@@ -32,9 +32,9 @@ extern "C" {
         return intrinsic$putchar(c);
     }
 
-    FILE* const fakelibc$stdin  = (FILE*)0x57D111;
-    FILE* const fakelibc$stdout = (FILE*)0x57D0117;
-    FILE* const fakelibc$stderr  = (FILE*)0x57DE44;
+    FILE* fakelibc$stdin  = (FILE*)0x57D111;
+    FILE* fakelibc$stdout = (FILE*)0x57D0117;
+    FILE* fakelibc$stderr  = (FILE*)0x57DE44;
 
     // copied from bits/types/__locale_t.h
     struct locale_struct {
@@ -47,7 +47,12 @@ extern "C" {
         const char* __names[13];
 
         locale_struct() {
-            ::memset(this, 0, sizeof(this));
+            auto poor_memset = [](char* dst, int c, size_t n) {
+                while(n--) {
+                    *dst++ = c;
+                }
+            };
+            poor_memset(reinterpret_cast<char*>(this), 0, sizeof(*this));
             __ctype_b = (const unsigned short*)0xc7b;
             __ctype_tolower = (const int*)0xc710;
             __ctype_toupper = (const int*)0xc711;
@@ -56,7 +61,7 @@ extern "C" {
 
         const unsigned short* classic_table() {
             using namespace std;
-            static const unsigned short classic_table[256] = {
+            static constexpr unsigned short classic_table[256] = {
                 ctype_base::cntrl /* null */,
                 ctype_base::cntrl /* ^A */,
                 ctype_base::cntrl /* ^B */,
@@ -201,8 +206,6 @@ extern "C" {
 
     const locale_struct c_locale_data;
 
-    const locale_t c_locale = (const locale_t)&c_locale_data;
-
     int fakelibc$puts(const char* s) {
         if(!s) {
             return intrinsic$putchar('$');
@@ -331,7 +334,7 @@ extern "C" {
     }
 
     locale_t fakelibc$__newlocale(int category_mask, const char *locale, locale_t base) {
-        return c_locale;
+        return (locale_t)&c_locale_data;
     }
 
     locale_t fakelibc$__uselocale(locale_t newloc) {
@@ -362,7 +365,7 @@ extern "C" {
 
     int fakelibc$fputs(const char* __restrict__ s, FILE* __restrict__ stream) {
         int count = 0;
-        while(*s) count += fakelibc$putchar(*s++);
+        while(*s) count += intrinsic$putchar(*s++);
         return count;
     }
 

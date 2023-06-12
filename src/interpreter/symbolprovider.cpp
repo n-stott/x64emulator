@@ -1,4 +1,5 @@
 #include "interpreter/symbolprovider.h"
+#include "interpreter/verify.h"
 #include <cassert>
 #include <boost/core/demangle.hpp>
 #include <fmt/core.h>
@@ -46,7 +47,9 @@ namespace x64 {
 
     template<SymbolProvider::SymbolRepr repr>
     void SymbolProvider::Table<repr>::registerSymbol(std::string symbol, u64 address, const elf::Elf64* elf, elf::SymbolType type, elf::SymbolBind bind) {
-        fmt::print("Register symbol address={:#x} symbol=\"{}\"\n", address, symbol);
+#if 0
+        fmt::print(stderr, "Register symbol address={:#x} symbol=\"{}\"\n", address, symbol);
+#endif
         if(symbol.size() >= 9 && symbol.substr(0, 9) == "fakelibc$") symbol = symbol.substr(9);
         storage_.push_back(Entry {
             symbol,
@@ -56,6 +59,13 @@ namespace x64 {
             bind,
         });
         const Entry* e = &storage_.back();
+#if 0
+        auto it = byAddress_.find(address);
+        notify(it == byAddress_.end(), [&]() {
+            fmt::print("Symbol \"{:p}:{}\" already registered at address {:#x} but wanted to write \"{:p}:{}\"\n", 
+                       (void*)it->second->elf, it->second->symbol, address, (void*)elf,  symbol);
+        });
+#endif
         byAddress_[address] = e;
         byName_[symbol] = e;
     }
@@ -66,6 +76,12 @@ namespace x64 {
         auto it = byName_.find(symbol);
         if(it != byName_.end()) {
             result = it->second->address;
+        } else if(auto pos = symbol.find_first_of('@'); pos != std::string::npos) {
+            std::string truncatedSymbol = symbol.substr(0, pos);
+            it = byName_.find(symbol);
+            if(it != byName_.end()) {
+                result = it->second->address;
+            }
         }
         return result;
     }

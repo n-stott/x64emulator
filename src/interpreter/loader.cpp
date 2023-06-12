@@ -32,6 +32,7 @@ namespace x64 {
         if(it != std::string::npos) {
             auto shortName = filename.substr(0, it);
             if(shortName == "libc") return;
+            if(shortName == "ld-linux-x86-64") return;
         }
         std::string prefix = "/usr/lib/x86_64-linux-gnu/";
         auto path = prefix + filename;
@@ -51,10 +52,10 @@ namespace x64 {
 
         u64 offset = loadable_->allocateMemoryRange(Mmu::PAGE_SIZE);
 
-        std::vector<elf::SectionHeader64> tlsHeaders;
-
         std::string shortFilePath = filepath.find_last_of('/') == std::string::npos ? filepath
                                                                                     : filepath.substr(filepath.find_last_of('/')+1);
+
+        u64 alreadyLoadedTlsSections = tlsHeaders_.size();
 
         elf64->forAllSectionHeaders([&](const elf::SectionHeader64& header) {
             if(!header.doesAllocate()) return;
@@ -62,19 +63,26 @@ namespace x64 {
             if(header.isProgBits() && header.isExecutable()) {
                 loadExecutableHeader(*elf64, header, filepath, shortFilePath, offset);
             } else if(!header.isThreadLocal()) {
-                loadNonExecutableNonThreadlocalHeader(*elf64, header, shortFilePath, offset);
+                loadNonExecutableHeader(*elf64, header, shortFilePath, offset);
             } else {
-                tlsHeaders.push_back(header);
+                if(!header.isNoBits()) loadNonExecutableHeader(*elf64, header, shortFilePath, offset);
+                tlsHeaders_.push_back(TlsHeader {
+                    elf64.get(),
+                    header,
+                    shortFilePath,
+                    offset
+                });
             }
         });
 
-        loadTlsHeaders(*elf64, std::move(tlsHeaders), shortFilePath);
+
+        verify(!tlsHeaders_.empty() || alreadyLoadedTlsSections == tlsHeaders_.size(), "Several elfs have tls sections. Currently not supported");
+
+        loadNeededLibraries(*elf64);
 
         registerInitFunctions(*elf64, offset);
 
         registerSymbols(*elf64, offset);
-
-        loadNeededLibraries(*elf64);
 
         LoadedElf loadedElf {
             filepath,
@@ -120,7 +128,7 @@ namespace x64 {
         loadable_->addMmuRegion(std::move(region));
     }
 
-    void Loader::loadNonExecutableNonThreadlocalHeader(const elf::Elf64& elf, const elf::SectionHeader64& header, const std::string& shortFilePath, u64 elfOffset) {
+    void Loader::loadNonExecutableHeader(const elf::Elf64& elf, const elf::SectionHeader64& header, const std::string& shortFilePath, u64 elfOffset) {
         auto section = elf.sectionFromName(header.name);
         verify(section.has_value());
 
@@ -135,7 +143,7 @@ namespace x64 {
         loadable_->addMmuRegion(std::move(region));
     }
 
-    void Loader::loadTlsHeaders(const elf::Elf64& elf, std::vector<elf::SectionHeader64> tlsHeaders, const std::string& shortFilePath) {
+    void Loader::loadTlsHeaders(const elf::Elf64& elf, std::vector<elf::SectionHeader64> tlsHeaders, const std::string& shortFilePath, u64 elfOffset) {
         if(tlsHeaders.empty()) return;
         std::sort(tlsHeaders.begin(), tlsHeaders.end(), [](const auto& a, const auto& b) {
             return a.sh_addr < b.sh_addr;
@@ -161,8 +169,12 @@ namespace x64 {
             auto section = elf.sectionFromName(header.name);
             verify(section.has_value());
 
-            if(section->type() != elf::SectionHeaderType::NOBITS)
-                std::memcpy(tlsStart, section->begin, section->size()*sizeof(u8));
+            if(section->type() != elf::SectionHeaderType::NOBITS) {
+                std::vector<u8> buf(section->size(), 0x00);
+                u64 address = elfOffset + section->address;
+                loadable_->read(buf.data(), address, section->size());
+                std::memcpy(tlsStart, buf.data(), section->size()*sizeof(u8));
+            }
 
             tlsStart += section->size();
         }
@@ -191,15 +203,17 @@ namespace x64 {
         // only register main
         elf.forAllSymbols([&](const elf::StringTable* stringTable, const elf::SymbolTableEntry64& entry) {
             std::string symbol { entry.symbol(stringTable, elf) };
+            if(entry.isUndefined()) return;
             if(!entry.st_name) return;
-            if(entry.type() != elf::SymbolType::FUNC) return;
-            if(symbol != "main") return;
+            if(entry.type() != elf::SymbolType::FUNC && entry.type() != elf::SymbolType::OBJECT) return;
+            // if(symbol != "main") return;
             symbolProvider_->registerSymbol(symbol, elfOffset + entry.st_value, &elf, entry.type(), entry.bind());
         });
         elf.forAllDynamicSymbols([&](const elf::StringTable* stringTable, const elf::SymbolTableEntry64& entry) {
             std::string symbol { entry.symbol(stringTable, elf) };
+            if(entry.isUndefined()) return;
             if(!entry.st_name) return;
-            if(entry.type() != elf::SymbolType::FUNC) return;
+            if(entry.type() != elf::SymbolType::FUNC && entry.type() != elf::SymbolType::OBJECT) return;
             symbolProvider_->registerDynamicSymbol(symbol, elfOffset + entry.st_value, &elf, entry.type(), entry.bind());
         });
     }
@@ -220,48 +234,69 @@ namespace x64 {
         auto resolveSingleRelocation = [&](const LoadedElf& loadedElf, const auto& relocation, u64 addend) {
             const elf::Elf64& elf = *loadedElf.elf;
             const auto* sym = relocation.symbol(elf);
-            if(!sym) return;
-            if(!sym->st_name) return;
-            verify(elf.dynamicStringTable().has_value());
-            auto dynamicStringTable = elf.dynamicStringTable().value();
-            std::string symbol { sym->symbol(&dynamicStringTable, elf) };
-            std::string demangledSymbol = boost::core::demangle(symbol.c_str());
+            verify(!!sym, "Relocation has no symbol");
+            std::optional<std::string> symbol = [&]() -> std::optional<std::string> {
+                if(!sym->st_name) return {};
+                verify(elf.dynamicStringTable().has_value());
+                auto dynamicStringTable = elf.dynamicStringTable().value();
+                std::string symbol { sym->symbol(&dynamicStringTable, elf) };
+                return symbol;
+            }();
+            std::optional<std::string> demangledSymbol = symbol ? std::make_optional(boost::core::demangle(symbol->c_str())) : std::nullopt;
+
+            std::optional<u64> symbolValue = sym->st_value ? std::make_optional(sym->st_value) : std::nullopt;
+
+            std::optional<u64> S = [&]() -> std::optional<u64> {
+                if(symbolValue) return symbolValue.value();
+                if(symbol) return symbolProvider_->lookupRawSymbol(symbol.value());
+                if(demangledSymbol) return symbolProvider_->lookupDemangledSymbol(demangledSymbol.value());
+                return {};
+            }();
+
+            u64 B = loadedElf.offset;
+
+            auto computeRelocation = [&](const auto& relocation) -> std::optional<u64> {
+                switch(relocation.type()) {
+                    case elf::RelocationType64::R_AMD64_RELATIVE: return B + addend;
+                    case elf::RelocationType64::R_AMD64_GLOB_DAT: 
+                    case elf::RelocationType64::R_AMD64_JUMP_SLOT: return S;
+                    default: break;
+                }
+                // verify(false, [&]() {
+                //     fmt::print(stderr, "relocation type {} not handled for relocation with offset {:#x} in {}\n", elf::toString(relocation.type()), relocation.offset(), loadedElf.filename);
+                // });
+                return {};
+            };
+
+            auto destinationAddress = computeRelocation(relocation);
 
             u64 relocationAddress = loadedElf.offset + relocation.offset();
-            std::optional<u64> destinationAddress;
-            
-            if(sym->type() == elf::SymbolType::FUNC
-            || (sym->type() == elf::SymbolType::NOTYPE && (sym->bind() == elf::SymbolBind::WEAK || sym->bind() == elf::SymbolBind::GLOBAL))) {
-                destinationAddress = symbolProvider_->lookupRawSymbol(symbol);
-                if(!destinationAddress) destinationAddress = symbolProvider_->lookupDemangledSymbol(demangledSymbol);
-            } else if(sym->type() == elf::SymbolType::OBJECT) {
-                for(const auto& otherElf : elfs_) {
-                    auto resolveSymbol = [&](const elf::StringTable* stringTable, const elf::SymbolTableEntry64& entry) {
-                        if(destinationAddress.has_value()) return;
-                        if(entry.isUndefined()) return;
-                        if(entry.type() != elf::SymbolType::OBJECT) return;
-                        if(entry.symbol(stringTable, *otherElf.elf).find(symbol) == std::string_view::npos
-                        && entry.symbol(stringTable, *otherElf.elf).find(demangledSymbol) == std::string_view::npos) return;
-                        destinationAddress = otherElf.offset + entry.st_value;
-                    };
-                    otherElf.elf->forAllSymbols(resolveSymbol);
-                    if(!destinationAddress.has_value()) otherElf.elf->forAllDynamicSymbols(resolveSymbol);
-                }
-            }
 
+            if(destinationAddress) {
 #if DEBUG_RELOCATIONS
-            fmt::print("resolve relocation for symbol \"{}\" at offset {:#x}\n", demangledSymbol, relocation.offset());
+                notify(false, [&]() {
+                    fmt::print(stderr, "Resolve relocation in elf {} with offset {:#x}, type {}, address {:#x}, name {} with value {:#x}\n", 
+                                       loadedElf.filename,
+                                       relocation.offset(),
+                                       elf::toString(relocation.type()),
+                                       relocationAddress,
+                                       symbol.value_or("???"),
+                                       destinationAddress.value());
+                });
 #endif
-            if(destinationAddress.has_value()) {
-#if DEBUG_RELOCATIONS
-                fmt::print("  at {:#x}\n", destinationAddress.value() + addend);
-#endif
-                loadable_->writeRelocation(relocationAddress, destinationAddress.value() + addend);
+                loadable_->writeRelocation(relocationAddress, destinationAddress.value());
             } else {
 #if DEBUG_RELOCATIONS
-                fmt::print("  unable to find\n");
+                notify(false, [&]() {
+                    fmt::print(stderr, "Unhandled relocation in elf {} with offset {:#x}, type {}, address {:#x}, name {}\n", 
+                                       loadedElf.filename,
+                                       relocation.offset(),
+                                       elf::toString(relocation.type()),
+                                       relocationAddress,
+                                       symbol.value_or("???"));
+                });
 #endif
-                // loadable_->writeRelocation(relocationAddress, 0x0);
+                loadable_->writeUnresolvedRelocation(relocationAddress);
             }
         };
 
@@ -270,5 +305,22 @@ namespace x64 {
             loadedElf.elf->forAllRelocations([&](const elf::RelocationEntry64& reloc) { resolveSingleRelocation(loadedElf, reloc, 0); });
             loadedElf.elf->forAllRelocationsA([&](const elf::RelocationEntry64A& reloc) { resolveSingleRelocation(loadedElf, reloc, reloc.r_addend); });
         }
+    }
+
+
+    void Loader::resolveTlsSections() {
+        if(tlsHeaders_.empty()) return;
+        std::vector<elf::SectionHeader64> headers;
+        const auto& firstHeader = tlsHeaders_[0];
+        verify(std::all_of(tlsHeaders_.begin(), tlsHeaders_.end(), [&](const auto& h) {
+            return h.elf == tlsHeaders_[0].elf
+                && h.shortFilePath == tlsHeaders_[0].shortFilePath
+                && h.elfOffset == firstHeader.elfOffset;
+        }));
+        for(const auto& tls : tlsHeaders_) {
+            verify(!!tls.elf);
+            headers.push_back(tls.sectionHeader);
+        }
+        loadTlsHeaders(*firstHeader.elf, headers, firstHeader.shortFilePath, firstHeader.elfOffset);
     }
 }

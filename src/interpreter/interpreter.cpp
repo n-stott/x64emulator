@@ -84,6 +84,16 @@ namespace x64 {
         mmu_.write64(Ptr64{Segment::DS, relocationSource}, relocationDestination);
     }
 
+    void Interpreter::writeUnresolvedRelocation(u64 relocationSource) {
+        mmu_.write64(Ptr64{Segment::DS, relocationSource}, ((u64)(-1) << 32) | relocationSource );
+    }
+
+    void Interpreter::read(u8* dst, u64 address, u64 nbytes) {
+        while(nbytes--) {
+            *dst++ = mmu_.read8(Ptr8{Segment::DS, address++});
+        }
+    }
+
     void Interpreter::run(const std::string& programFilePath, const std::vector<std::string>& arguments) {
         VerificationScope::run([&]() {
             addFunctionNameToCall();
@@ -150,7 +160,7 @@ namespace x64 {
     }
 
     void Interpreter::runInit() {
-        for(auto it = initFunctions_.rbegin(); it != initFunctions_.rend(); ++it) {
+        for(auto it = initFunctions_.begin(); it != initFunctions_.end(); ++it) {
             u64 address = *it;
             execute(address);
             if(stop_) return;

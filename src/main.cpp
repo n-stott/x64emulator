@@ -30,10 +30,11 @@ int main(int argc, char* argv[]) {
     x64::Loader loader(&interpreter, &symbolProvider);
 
     x64::VerificationScope::run([&]() {
-        loader.loadElf(programPath);
         loader.loadElf(libraryPath);
+        loader.loadElf(programPath);
         interpreter.loadLibC();
         loader.resolveAllRelocations();
+        loader.resolveTlsSections();
         interpreter.run(programPath, arguments);
     }, [&]() {
         interpreter.crash();
