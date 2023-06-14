@@ -362,7 +362,7 @@ extern "C" {
 
     int fakelibc$fputs(const char* __restrict__ s, FILE* __restrict__ stream) {
         int count = 0;
-        while(*s) count += fakelibc$putchar(*s++);
+        while(*s) count += intrinsic$putchar(*s++);
         return count;
     }
 
