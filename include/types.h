@@ -133,8 +133,10 @@ namespace x64 {
         L,
         LE,
         NE,
+        NO,
         NP,
         NS,
+        O,
         P,
         S,
     };
