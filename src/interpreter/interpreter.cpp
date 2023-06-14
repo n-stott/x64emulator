@@ -269,6 +269,9 @@ namespace x64 {
 
     void Interpreter::dump(FILE* stream) const {
         fmt::print(stream,
+            "rip {:#0000008x}\n",
+            cpu_.regs_.rip_);
+        fmt::print(stream,
             "rsi {:#0000008x}  rdi {:#0000008x}  rbp {:#0000008x}  rsp {:#0000008x}\n",
             cpu_.regs_.rsi_, cpu_.regs_.rdi_, cpu_.regs_.rbp_, cpu_.regs_.rsp_);
         fmt::print(stream,
@@ -307,8 +310,10 @@ namespace x64 {
             case Cond::L: return (sign != overflow);
             case Cond::LE: return (zero == 1 || sign != overflow);
             case Cond::NE: return (zero == 0);
+            case Cond::NO: return (overflow == 0);
             case Cond::NP: return (parity == 0);
             case Cond::NS: return (sign == 0);
+            case Cond::O: return (overflow == 1);
             case Cond::P: return (parity == 1);
             case Cond::S: return (sign == 1);
         }

@@ -1,6 +1,8 @@
 #include <sstream>
 #include <locale.h>
 #include <cstdio>
+#include <iomanip>
+#include <iostream>
 
 void testA() {
     std::stringstream ss;
@@ -36,10 +38,17 @@ int testE() {
     return x;
 }
 
+void testF() {
+    int x = 0;
+    std::cout.width(4);
+    std::cout << x;
+}
+
 int main() {
-    testA();
-    testB();
-    testC();
-    testD();
-    testE();
+    // testA();
+    // testB();
+    // testC();
+    // testD();
+    // testE();
+    testF();
 }
