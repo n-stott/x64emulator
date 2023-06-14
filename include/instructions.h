@@ -178,10 +178,6 @@ namespace x64 {
 
     };
 
-    struct Cqo {
-
-    };
-
     struct NotParsed {
         std::string mnemonic;
     };

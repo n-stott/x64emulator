@@ -77,8 +77,6 @@ namespace x64 {
 
         virtual void exec(const Idiv<R32>&) = 0;
         virtual void exec(const Idiv<M32>&) = 0;
-        virtual void exec(const Idiv<R64>&) = 0;
-        virtual void exec(const Idiv<M64>&) = 0;
 
         virtual void exec(const And<R8, R8>&) = 0;
         virtual void exec(const And<R8, Imm>&) = 0;
@@ -124,10 +122,6 @@ namespace x64 {
         virtual void exec(const Xor<R32, R32>&) = 0;
         virtual void exec(const Xor<R32, M32>&) = 0;
         virtual void exec(const Xor<M32, R32>&) = 0;
-        virtual void exec(const Xor<R64, Imm>&) = 0;
-        virtual void exec(const Xor<R64, R64>&) = 0;
-        virtual void exec(const Xor<R64, M64>&) = 0;
-        virtual void exec(const Xor<M64, R64>&) = 0;
 
         virtual void exec(const Not<R32>&) = 0;
         virtual void exec(const Not<M32>&) = 0;
@@ -189,11 +183,11 @@ namespace x64 {
         virtual void exec(const Lea<R64, ISD>&) = 0;
         virtual void exec(const Lea<R64, BISD>&) = 0;
 
+        virtual void exec(const Push<R32>&) = 0;
+        virtual void exec(const Push<R64>&) = 0;
         virtual void exec(const Push<SignExtended<u8>>&) = 0;
         virtual void exec(const Push<Imm>&) = 0;
-        virtual void exec(const Push<R32>&) = 0;
         virtual void exec(const Push<M32>&) = 0;
-        virtual void exec(const Push<R64>&) = 0;
         virtual void exec(const Push<M64>&) = 0;
 
         virtual void exec(const Pop<R32>&) = 0;
@@ -211,11 +205,9 @@ namespace x64 {
         virtual void exec(const Halt&) = 0;
         virtual void exec(const Nop&) = 0;
         virtual void exec(const Ud2&) = 0;
+        virtual void exec(const Cdq&) = 0;
         virtual void exec(const NotParsed&) = 0;
         virtual void exec(const Unknown&) = 0;
-
-        virtual void exec(const Cdq&) = 0;
-        virtual void exec(const Cqo&) = 0;
 
         virtual void exec(const Inc<R8>&) = 0;
         virtual void exec(const Inc<M8>&) = 0;
@@ -340,12 +332,8 @@ namespace x64 {
         virtual void exec(const Jcc<Cond::L>&) = 0;
         virtual void exec(const Jcc<Cond::S>&) = 0;
         virtual void exec(const Jcc<Cond::NS>&) = 0;
-        virtual void exec(const Jcc<Cond::O>&) = 0;
-        virtual void exec(const Jcc<Cond::NO>&) = 0;
 
         virtual void exec(const Bsr<R32, R32>&) = 0;
-        virtual void exec(const Bsr<R64, R64>&) = 0;
-
         virtual void exec(const Bsf<R32, R32>&) = 0;
         virtual void exec(const Bsf<R32, M32>&) = 0;
 

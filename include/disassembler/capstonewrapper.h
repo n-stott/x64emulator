@@ -54,9 +54,7 @@ namespace x64 {
         static std::unique_ptr<X86Instruction> makeHalt(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeNop(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeUd2(const cs_insn& insn);
-
         static std::unique_ptr<X86Instruction> makeCdq(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeCqo(const cs_insn& insn);
 
         static std::unique_ptr<X86Instruction> makeInc(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeDec(const cs_insn& insn);
@@ -88,8 +86,6 @@ namespace x64 {
         static std::unique_ptr<X86Instruction> makeJl(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeJs(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeJns(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeJo(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeJno(const cs_insn& insn);
 
         static std::unique_ptr<X86Instruction> makeBsr(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeBsf(const cs_insn& insn);
