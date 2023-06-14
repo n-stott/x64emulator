@@ -141,8 +141,10 @@ namespace utils {
             case Cond::L:  return "l";
             case Cond::LE: return "le";
             case Cond::NE: return "ne";
+            case Cond::NO: return "no";
             case Cond::NP:  return "np";
             case Cond::NS: return "ns";
+            case Cond::O: return "o";
             case Cond::P:  return "p";
             case Cond::S:  return "s";
         }
@@ -388,6 +390,10 @@ namespace utils {
         return fmt::format("{:8}", "cdq");
     }
 
+    inline std::string toString(const Cqo&) {
+        return fmt::format("{:8}", "cqo");
+    }
+
     inline std::string toString(const NotParsed& ins) {
         return fmt::format("{:8}{}", "undef", ins.mnemonic);
     }
@@ -511,6 +517,14 @@ namespace utils {
 
     inline std::string toString(const Jcc<Cond::NS>& ins) {
         return fmt::format("{:8}{:x} <{}>", "jns", ins.symbolAddress, ins.symbolName);
+    }
+
+    inline std::string toString(const Jcc<Cond::O>& ins) {
+        return fmt::format("{:8}{:x} <{}>", "jo", ins.symbolAddress, ins.symbolName);
+    }
+
+    inline std::string toString(const Jcc<Cond::NO>& ins) {
+        return fmt::format("{:8}{:x} <{}>", "jno", ins.symbolAddress, ins.symbolName);
     }
 
     template<typename Dst, typename Src>

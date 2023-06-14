@@ -148,6 +148,7 @@ namespace x64 {
         u8 execXor8Impl(u8 dst, u8 src);
         u16 execXor16Impl(u16 dst, u16 src);
         u32 execXor32Impl(u32 dst, u32 src);
+        u64 execXor64Impl(u64 dst, u64 src);
 
         template<typename Dst>
         void execCmpxchg32Impl(Dst dst, R32 src);
@@ -224,6 +225,8 @@ namespace x64 {
 
         void exec(const Idiv<R32>&) override;
         void exec(const Idiv<M32>&) override;
+        void exec(const Idiv<R64>&) override;
+        void exec(const Idiv<M64>&) override;
 
         void exec(const And<R8, R8>&) override;
         void exec(const And<R8, Imm>&) override;
@@ -265,10 +268,14 @@ namespace x64 {
         void exec(const Xor<R8, M8>&) override;
         void exec(const Xor<M8, Imm>&) override;
         void exec(const Xor<R16, Imm>&) override;
-        void exec(const Xor<R32, Imm>&) override;
         void exec(const Xor<R32, R32>&) override;
+        void exec(const Xor<R32, Imm>&) override;
         void exec(const Xor<R32, M32>&) override;
         void exec(const Xor<M32, R32>&) override;
+        void exec(const Xor<R64, R64>&) override;
+        void exec(const Xor<R64, Imm>&) override;
+        void exec(const Xor<R64, M64>&) override;
+        void exec(const Xor<M64, R64>&) override;
 
         void exec(const Not<R32>&) override;
         void exec(const Not<M32>&) override;
@@ -330,11 +337,11 @@ namespace x64 {
         void exec(const Lea<R64, ISD>&) override;
         void exec(const Lea<R64, BISD>&) override;
 
-        void exec(const Push<R32>&) override;
-        void exec(const Push<R64>&) override;
         void exec(const Push<SignExtended<u8>>&) override;
         void exec(const Push<Imm>&) override;
+        void exec(const Push<R32>&) override;
         void exec(const Push<M32>&) override;
+        void exec(const Push<R64>&) override;
         void exec(const Push<M64>&) override;
 
         void exec(const Pop<R32>&) override;
@@ -352,9 +359,11 @@ namespace x64 {
         void exec(const Halt&) override;
         void exec(const Nop&) override;
         void exec(const Ud2&) override;
-        void exec(const Cdq&) override;
         void exec(const NotParsed&) override;
         void exec(const Unknown&) override;
+
+        void exec(const Cdq&) override;
+        void exec(const Cqo&) override;
 
         void exec(const Inc<R8>&) override;
         void exec(const Inc<M8>&) override;
@@ -479,8 +488,12 @@ namespace x64 {
         void exec(const Jcc<Cond::L>&) override;
         void exec(const Jcc<Cond::S>&) override;
         void exec(const Jcc<Cond::NS>&) override;
+        void exec(const Jcc<Cond::O>&) override;
+        void exec(const Jcc<Cond::NO>&) override;
 
         void exec(const Bsr<R32, R32>&) override;
+        void exec(const Bsr<R64, R64>&) override;
+
         void exec(const Bsf<R32, R32>&) override;
         void exec(const Bsf<R32, M32>&) override;
 
