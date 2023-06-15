@@ -43,6 +43,10 @@ void testF() {
     std::cout << 1;
 }
 
+void testG() {
+    std::cout << 100;
+}
+
 int main() {
     testA();
     testB();
@@ -50,4 +54,5 @@ int main() {
     testD();
     testE();
     testF();
+    testG();
 }
