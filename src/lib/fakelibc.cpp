@@ -294,6 +294,7 @@ extern "C" {
         unsigned char* dst = (unsigned char*)s;
         while(n > 0) {
             *dst = c;
+            ++dst;
             --n;
         }
         return s;
