@@ -49,5 +49,5 @@ int main() {
     testC();
     testD();
     testE();
-    // testF();
+    testF();
 }
