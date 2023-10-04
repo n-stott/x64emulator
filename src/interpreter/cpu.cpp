@@ -803,7 +803,7 @@ namespace x64 {
     }
 
     void Cpu::exec(const CallDirect& ins) {
-        u64 address = interpreter_->currentExecutedSection->sectionOffset + ins.symbolAddress;
+        u64 address = interpreter_->currentExecutedSection_->sectionOffset + ins.symbolAddress;
         push64(regs_.rip_);
         interpreter_->call(address);
     }
@@ -1284,7 +1284,7 @@ namespace x64 {
     }
 
     void Cpu::exec(const Jmp<u32>& ins) {
-        u64 dst = interpreter_->currentExecutedSection->sectionOffset + ins.symbolAddress;
+        u64 dst = interpreter_->currentExecutedSection_->sectionOffset + ins.symbolAddress;
         interpreter_->jmp(dst);
     }
 
@@ -1297,98 +1297,98 @@ namespace x64 {
 
     void Cpu::exec(const Jcc<Cond::NE>& ins) {
         if(flags_.matches(Cond::NE)) {
-            u64 dst = interpreter_->currentExecutedSection->sectionOffset + ins.symbolAddress;
+            u64 dst = interpreter_->currentExecutedSection_->sectionOffset + ins.symbolAddress;
             interpreter_->jmp(dst);
         }
     }
 
     void Cpu::exec(const Jcc<Cond::E>& ins) {
         if(flags_.matches(Cond::E)) {
-            u64 dst = interpreter_->currentExecutedSection->sectionOffset + ins.symbolAddress;
+            u64 dst = interpreter_->currentExecutedSection_->sectionOffset + ins.symbolAddress;
             interpreter_->jmp(dst);
         }
     }
 
     void Cpu::exec(const Jcc<Cond::AE>& ins) {
         if(flags_.matches(Cond::AE)) {
-            u64 dst = interpreter_->currentExecutedSection->sectionOffset + ins.symbolAddress;
+            u64 dst = interpreter_->currentExecutedSection_->sectionOffset + ins.symbolAddress;
             interpreter_->jmp(dst);
         }
     }
 
     void Cpu::exec(const Jcc<Cond::BE>& ins) {
         if(flags_.matches(Cond::BE)) {
-            u64 dst = interpreter_->currentExecutedSection->sectionOffset + ins.symbolAddress;
+            u64 dst = interpreter_->currentExecutedSection_->sectionOffset + ins.symbolAddress;
             interpreter_->jmp(dst);
         }
     }
 
     void Cpu::exec(const Jcc<Cond::GE>& ins) {
         if(flags_.matches(Cond::GE)) {
-            u64 dst = interpreter_->currentExecutedSection->sectionOffset + ins.symbolAddress;
+            u64 dst = interpreter_->currentExecutedSection_->sectionOffset + ins.symbolAddress;
             interpreter_->jmp(dst);
         }
     }
 
     void Cpu::exec(const Jcc<Cond::LE>& ins) {
         if(flags_.matches(Cond::LE)) {
-            u64 dst = interpreter_->currentExecutedSection->sectionOffset + ins.symbolAddress;
+            u64 dst = interpreter_->currentExecutedSection_->sectionOffset + ins.symbolAddress;
             interpreter_->jmp(dst);
         }
     }
 
     void Cpu::exec(const Jcc<Cond::A>& ins) {
         if(flags_.matches(Cond::A)) {
-            u64 dst = interpreter_->currentExecutedSection->sectionOffset + ins.symbolAddress;
+            u64 dst = interpreter_->currentExecutedSection_->sectionOffset + ins.symbolAddress;
             interpreter_->jmp(dst);
         }
     }
 
     void Cpu::exec(const Jcc<Cond::B>& ins) {
         if(flags_.matches(Cond::B)) {
-            u64 dst = interpreter_->currentExecutedSection->sectionOffset + ins.symbolAddress;
+            u64 dst = interpreter_->currentExecutedSection_->sectionOffset + ins.symbolAddress;
             interpreter_->jmp(dst);
         }
     }
 
     void Cpu::exec(const Jcc<Cond::G>& ins) {
         if(flags_.matches(Cond::G)) {
-            u64 dst = interpreter_->currentExecutedSection->sectionOffset + ins.symbolAddress;
+            u64 dst = interpreter_->currentExecutedSection_->sectionOffset + ins.symbolAddress;
             interpreter_->jmp(dst);
         }
     }
 
     void Cpu::exec(const Jcc<Cond::L>& ins) {
         if(flags_.matches(Cond::L)) {
-            u64 dst = interpreter_->currentExecutedSection->sectionOffset + ins.symbolAddress;
+            u64 dst = interpreter_->currentExecutedSection_->sectionOffset + ins.symbolAddress;
             interpreter_->jmp(dst);
         }
     }
 
     void Cpu::exec(const Jcc<Cond::S>& ins) {
         if(flags_.matches(Cond::S)) {
-            u64 dst = interpreter_->currentExecutedSection->sectionOffset + ins.symbolAddress;
+            u64 dst = interpreter_->currentExecutedSection_->sectionOffset + ins.symbolAddress;
             interpreter_->jmp(dst);
         }
     }
 
     void Cpu::exec(const Jcc<Cond::NS>& ins) {
         if(flags_.matches(Cond::NS)) {
-            u64 dst = interpreter_->currentExecutedSection->sectionOffset + ins.symbolAddress;
+            u64 dst = interpreter_->currentExecutedSection_->sectionOffset + ins.symbolAddress;
             interpreter_->jmp(dst);
         }
     }
 
     void Cpu::exec(const Jcc<Cond::O>& ins) {
         if(flags_.matches(Cond::O)) {
-            u64 dst = interpreter_->currentExecutedSection->sectionOffset + ins.symbolAddress;
+            u64 dst = interpreter_->currentExecutedSection_->sectionOffset + ins.symbolAddress;
             interpreter_->jmp(dst);
         }
     }
 
     void Cpu::exec(const Jcc<Cond::NO>& ins) {
         if(flags_.matches(Cond::NO)) {
-            u64 dst = interpreter_->currentExecutedSection->sectionOffset + ins.symbolAddress;
+            u64 dst = interpreter_->currentExecutedSection_->sectionOffset + ins.symbolAddress;
             interpreter_->jmp(dst);
         }
     }

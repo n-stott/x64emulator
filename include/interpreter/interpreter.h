@@ -61,9 +61,9 @@ namespace x64 {
 
         bool stop_;
 
-        const ExecutableSection* currentExecutedSection = nullptr;
-        size_t currentInstructionIdx = (size_t)(-1);
-        int callDepth = 0;
+        const ExecutableSection* currentExecutedSection_ = nullptr;
+        size_t currentInstructionIdx_ = (size_t)(-1);
+        int callDepth_ = 0;
 
         void findSectionWithAddress(u64 address, const ExecutableSection** section, size_t* index) const {
             if(!section && !index) return;
@@ -98,10 +98,10 @@ namespace x64 {
             size_t instructionIdx = (size_t)(-1);
         };
 
-        std::unordered_map<u64, CallPoint> callCache;
-        std::unordered_map<u64, CallPoint> jmpCache;
-        mutable std::unordered_map<u64, const Function*> functionCache;
-        mutable std::unordered_map<u64, std::string> functionNameCache;
+        std::unordered_map<u64, CallPoint> callCache_;
+        std::unordered_map<u64, CallPoint> jmpCache_;
+        mutable std::unordered_map<u64, const Function*> functionCache_;
+        mutable std::unordered_map<u64, std::string> functionNameCache_;
 
         std::vector<u64> callstack_;
 
@@ -111,11 +111,11 @@ namespace x64 {
 
         void call(u64 address) {
             CallPoint cp;
-            auto cachedValue = callCache.find(address);
-            if(cachedValue != callCache.end()) {
+            auto cachedValue = callCache_.find(address);
+            if(cachedValue != callCache_.end()) {
                 cp = cachedValue->second;
             } else {
-                const ExecutableSection* section = currentExecutedSection;
+                const ExecutableSection* section = currentExecutedSection_;
                 size_t index = (size_t)(-1);
                 findSectionWithAddress(address, &section, &index);
                 verify(!!section, [&]() {
@@ -125,38 +125,38 @@ namespace x64 {
                 cp.address = address;
                 cp.executedSection = section;
                 cp.instructionIdx = index;
-                callCache.insert(std::make_pair(address, cp));
+                callCache_.insert(std::make_pair(address, cp));
             }
-            currentExecutedSection = cp.executedSection;
-            currentInstructionIdx = cp.instructionIdx;
+            currentExecutedSection_ = cp.executedSection;
+            currentInstructionIdx_ = cp.instructionIdx;
             cpu_.regs_.rip_ = address;
             callstack_.push_back(address);
-            ++callDepth;
+            ++callDepth_;
         }
 
         void ret(u64 address) {
-            --callDepth;
+            --callDepth_;
             callstack_.pop_back();
             jmp(address);
         }
 
         void jmp(u64 address) {
             CallPoint cp;
-            auto cachedValue = jmpCache.find(address);
-            if(cachedValue != jmpCache.end()) {
+            auto cachedValue = jmpCache_.find(address);
+            if(cachedValue != jmpCache_.end()) {
                 cp = cachedValue->second;
             } else {
-                const ExecutableSection* section = currentExecutedSection;
+                const ExecutableSection* section = currentExecutedSection_;
                 size_t index = (size_t)(-1);
                 findSectionWithAddress(address, &section, &index);
                 verify(!!section && index != (size_t)(-1), [&]() { fmt::print("Unable to find jmp destination {:#x}\n", address); });
                 cp.address = address;
                 cp.executedSection = section;
                 cp.instructionIdx = index;
-                jmpCache.insert(std::make_pair(address, cp));
+                jmpCache_.insert(std::make_pair(address, cp));
             }
-            currentExecutedSection = cp.executedSection;
-            currentInstructionIdx = cp.instructionIdx;
+            currentExecutedSection_ = cp.executedSection;
+            currentInstructionIdx_ = cp.instructionIdx;
             cpu_.regs_.rip_ = address;
         }
 

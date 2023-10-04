@@ -233,18 +233,18 @@ namespace x64 {
         cpu_.push64(address);
         call(address);
         size_t ticks = 0;
-        while(!stop_ && callDepth > 0 && cpu_.regs_.rip_ != 0x0) {
+        while(!stop_ && callDepth_ > 0 && cpu_.regs_.rip_ != 0x0) {
             try {
                 verify(!signal_interrupt);
-                verify(!!currentExecutedSection);
-                verify(currentInstructionIdx != (size_t)(-1));
-                const X86Instruction* instruction = currentExecutedSection->instructions[currentInstructionIdx].get();
-                if(currentInstructionIdx+1 != currentExecutedSection->instructions.size()) {
-                    const X86Instruction* nextInstruction = currentExecutedSection->instructions[currentInstructionIdx+1].get();
+                verify(!!currentExecutedSection_);
+                verify(currentInstructionIdx_ != (size_t)(-1));
+                const X86Instruction* instruction = currentExecutedSection_->instructions[currentInstructionIdx_].get();
+                if(currentInstructionIdx_+1 != currentExecutedSection_->instructions.size()) {
+                    const X86Instruction* nextInstruction = currentExecutedSection_->instructions[currentInstructionIdx_+1].get();
                     cpu_.regs_.rip_ = nextInstruction->address;
-                    ++currentInstructionIdx;
+                    ++currentInstructionIdx_;
                 } else {
-                    currentInstructionIdx = (size_t)(-1);
+                    currentInstructionIdx_ = (size_t)(-1);
                     cpu_.regs_.rip_ = 0x0;
                 }
                 if(!instruction) {
@@ -263,7 +263,7 @@ namespace x64 {
                                                         cpu_.regs_.rip_,
                                                         cpu_.regs_.rax_, cpu_.regs_.rbx_, cpu_.regs_.rcx_, cpu_.regs_.rdx_,
                                                         cpu_.regs_.rsi_, cpu_.regs_.rdi_, cpu_.regs_.rbp_, cpu_.regs_.rsp_);
-                std::string indent = fmt::format("{:{}}", "", callDepth);
+                std::string indent = fmt::format("{:{}}", "", callDepth_);
                 std::string menmonic = fmt::format("{}|{}", indent, instruction->toString());
                 fmt::print(stderr, "{:10} {:60}{:20} {}\n", ticks, menmonic, eflags, registerDump);
 #endif
@@ -356,7 +356,7 @@ namespace x64 {
                     auto demangledName = symbolProvider_->lookupSymbol(address, true);
                     if(!!demangledName) {
                         call->instruction.symbolName = demangledName.value();
-                        functionNameCache[address] = demangledName.value();
+                        functionNameCache_[address] = demangledName.value();
                     } else {
                         // verify(!!func, "Could not find function in text section");
                     }
@@ -373,7 +373,7 @@ namespace x64 {
                         auto demangledName = symbolProvider_->lookupSymbol(dst, true);
                         if(!!demangledName) {
                             call->instruction.symbolName = demangledName.value();
-                            functionNameCache[address] = demangledName.value();
+                            functionNameCache_[address] = demangledName.value();
                         }
                     }
                 }
@@ -388,8 +388,8 @@ namespace x64 {
     void Interpreter::dumpStackTrace() const {
         size_t frameId = 0;
         for(auto it = callstack_.rbegin(); it != callstack_.rend(); ++it) {
-            auto nameIt = functionNameCache.find(*it);
-            std::string name = nameIt != functionNameCache.end()
+            auto nameIt = functionNameCache_.find(*it);
+            std::string name = nameIt != functionNameCache_.end()
                              ? nameIt->second
                              : "???";
             fmt::print(" {}:{:#x} : {}\n", frameId, *it, name);
