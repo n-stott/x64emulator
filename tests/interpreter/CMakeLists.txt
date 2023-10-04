@@ -93,7 +93,7 @@ add_test(NAME exceptions COMMAND ${CMAKE_BINARY_DIR}/interpreter test_exceptions
 
 add_executable(test_boostmap src/test_boostmap.cpp)
 target_compile_options(test_boostmap PUBLIC ${CC_OPTIONS})
-target_link_options(test_boostmap PUBLIC ${LD_OPTIONS} -static-libstdc++ -static-libgcc)
+target_link_options(test_boostmap PUBLIC ${LD_OPTIONS})
 add_test(NAME boostmap COMMAND ${CMAKE_BINARY_DIR}/interpreter test_boostmap)
 
 add_executable(test_stringstream src/test_stringstream.cpp)
@@ -103,7 +103,7 @@ add_test(NAME stringstream COMMAND ${CMAKE_BINARY_DIR}/interpreter test_stringst
 
 add_executable(test_interval src/test_interval.cpp)
 target_compile_options(test_interval PUBLIC ${CC_OPTIONS})
-target_link_options(test_interval PUBLIC ${LD_OPTIONS} -static-libstdc++ -static-libgcc)
+target_link_options(test_interval PUBLIC ${LD_OPTIONS})
 add_test(NAME interval COMMAND ${CMAKE_BINARY_DIR}/interpreter test_interval)
 
 add_executable(test_argc src/test_argc.cpp)
@@ -114,12 +114,12 @@ add_test(NAME argc COMMAND ${CMAKE_BINARY_DIR}/interpreter test_argc)
 add_executable(test_programargs src/test_programargs.cpp)
 target_compile_options(test_programargs PUBLIC ${CC_OPTIONS} -DFMT_HEADER_ONLY)
 target_include_directories(test_programargs PUBLIC ${CMAKE_SOURCE_DIR}/external)
-target_link_options(test_programargs PUBLIC ${LD_OPTIONS} -static-libstdc++ -static-libgcc)
+target_link_options(test_programargs PUBLIC ${LD_OPTIONS})
 add_test(NAME programargs COMMAND ${CMAKE_BINARY_DIR}/interpreter test_programargs)
 
 add_executable(test_nontrivialstatic src/test_nontrivialstatic.cpp)
 target_compile_options(test_nontrivialstatic PUBLIC ${CC_OPTIONS})
-target_link_options(test_nontrivialstatic PUBLIC ${LD_OPTIONS} -static-libstdc++ -static-libgcc)
+target_link_options(test_nontrivialstatic PUBLIC ${LD_OPTIONS})
 add_test(NAME nontrivialstatic COMMAND ${CMAKE_BINARY_DIR}/interpreter test_nontrivialstatic)
 
 add_executable(test_threadlocal src/test_threadlocal.cpp)
