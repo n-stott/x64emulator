@@ -50,6 +50,8 @@ namespace x64 {
         std::unique_ptr<elf::Elf64> elf64;
         elf64.reset(static_cast<elf::Elf64*>(elf.release()));
 
+        loadNeededLibraries(*elf64);
+
         u64 offset = loadable_->allocateMemoryRange(Mmu::PAGE_SIZE);
 
         std::string shortFilePath = filepath.find_last_of('/') == std::string::npos ? filepath
@@ -77,8 +79,6 @@ namespace x64 {
 
 
         verify(!tlsHeaders_.empty() || alreadyLoadedTlsSections == tlsHeaders_.size(), "Several elfs have tls sections. Currently not supported");
-
-        loadNeededLibraries(*elf64);
 
         registerInitFunctions(*elf64, offset);
 
@@ -244,7 +244,7 @@ namespace x64 {
             }();
             std::optional<std::string> demangledSymbol = symbol ? std::make_optional(boost::core::demangle(symbol->c_str())) : std::nullopt;
 
-            std::optional<u64> symbolValue = sym->st_value ? std::make_optional(sym->st_value) : std::nullopt;
+            std::optional<u64> symbolValue = sym->st_value ? std::make_optional(loadedElf.offset + sym->st_value) : std::nullopt;
 
             std::optional<u64> S = [&]() -> std::optional<u64> {
                 if(symbolValue) return symbolValue.value();

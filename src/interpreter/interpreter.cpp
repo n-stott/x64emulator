@@ -162,6 +162,16 @@ namespace x64 {
     void Interpreter::runInit() {
         for(auto it = initFunctions_.begin(); it != initFunctions_.end(); ++it) {
             u64 address = *it;
+            {
+                const ExecutableSection* section = nullptr;
+                size_t index = (size_t)(-1);
+                findSectionWithAddress(address, &section, &index);
+                fmt::print(stderr, "Run init function {}/{} from {}\n",
+                        std::distance(initFunctions_.begin(), it),
+                        initFunctions_.size(),
+                        section ? (section->filename + ":" + section->sectionname) : "unknown"
+                        );
+            }
             execute(address);
             if(stop_) return;
         }

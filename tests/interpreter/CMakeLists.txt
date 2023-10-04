@@ -42,23 +42,23 @@ add_test(NAME arrays COMMAND ${CMAKE_BINARY_DIR}/interpreter test_arrays)
 
 add_executable(test_strings src/test_strings.cpp)
 target_compile_options(test_strings PUBLIC ${CC_OPTIONS})
-target_link_options(test_strings PUBLIC ${LD_OPTIONS} -static-libstdc++ -static-libgcc)
+target_link_options(test_strings PUBLIC ${LD_OPTIONS})
 add_test(NAME strings COMMAND ${CMAKE_BINARY_DIR}/interpreter test_strings)
 
 add_executable(test_malloc src/test_malloc.cpp)
 target_compile_options(test_malloc PUBLIC ${CC_OPTIONS})
-target_link_options(test_malloc PUBLIC ${LD_OPTIONS} -static-libstdc++ -static-libgcc)
+target_link_options(test_malloc PUBLIC ${LD_OPTIONS})
 add_test(NAME malloc COMMAND ${CMAKE_BINARY_DIR}/interpreter test_malloc)
 
 add_executable(test_fmt_print src/test_fmt_print.cpp)
 target_compile_options(test_fmt_print PUBLIC ${CC_OPTIONS} -DFMT_HEADER_ONLY)
 target_include_directories(test_fmt_print PUBLIC ${CMAKE_SOURCE_DIR}/external)
-target_link_options(test_fmt_print PUBLIC ${LD_OPTIONS} -static-libstdc++ -static-libgcc)
+target_link_options(test_fmt_print PUBLIC ${LD_OPTIONS})
 add_test(NAME fmt_print COMMAND ${CMAKE_BINARY_DIR}/interpreter test_fmt_print)
 
 add_executable(test_tostring src/test_tostring.cpp)
 target_compile_options(test_tostring PUBLIC ${CC_OPTIONS})
-target_link_options(test_tostring PUBLIC ${LD_OPTIONS} -static-libstdc++ -static-libgcc)
+target_link_options(test_tostring PUBLIC ${LD_OPTIONS})
 add_test(NAME tostring COMMAND ${CMAKE_BINARY_DIR}/interpreter test_tostring)
 
 add_executable(test_comparisons src/test_comparisons.cpp)
@@ -68,22 +68,22 @@ add_test(NAME comparisons COMMAND ${CMAKE_BINARY_DIR}/interpreter test_compariso
 
 add_executable(test_staticinitialization src/test_staticinitialization.cpp)
 target_compile_options(test_staticinitialization PUBLIC ${CC_OPTIONS})
-target_link_options(test_staticinitialization PUBLIC ${LD_OPTIONS} -static-libstdc++ -static-libgcc)
+target_link_options(test_staticinitialization PUBLIC ${LD_OPTIONS})
 add_test(NAME staticinitialization COMMAND ${CMAKE_BINARY_DIR}/interpreter test_staticinitialization)
 
 add_executable(test_statics src/test_statics.cpp)
 target_compile_options(test_statics PUBLIC ${CC_OPTIONS})
-target_link_options(test_statics PUBLIC ${LD_OPTIONS} -static-libstdc++ -static-libgcc)
+target_link_options(test_statics PUBLIC ${LD_OPTIONS})
 add_test(NAME statics COMMAND ${CMAKE_BINARY_DIR}/interpreter test_statics)
 
 add_executable(test_staticcollection src/test_staticcollection.cpp)
 target_compile_options(test_staticcollection PUBLIC ${CC_OPTIONS})
-target_link_options(test_staticcollection PUBLIC ${LD_OPTIONS} -static-libstdc++ -static-libgcc)
+target_link_options(test_staticcollection PUBLIC ${LD_OPTIONS})
 add_test(NAME staticcollection COMMAND ${CMAKE_BINARY_DIR}/interpreter test_staticcollection)
 
 add_executable(test_staticconstructor src/test_staticconstructor.cpp)
 target_compile_options(test_staticconstructor PUBLIC ${CC_OPTIONS})
-target_link_options(test_staticconstructor PUBLIC ${LD_OPTIONS} -static-libstdc++ -static-libgcc)
+target_link_options(test_staticconstructor PUBLIC ${LD_OPTIONS})
 add_test(NAME staticconstructor COMMAND ${CMAKE_BINARY_DIR}/interpreter test_staticconstructor)
 
 add_executable(test_exceptions src/test_exceptions.cpp)
