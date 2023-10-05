@@ -26,6 +26,7 @@ int main(int argc, char* argv[]) {
     x64::SymbolProvider symbolProvider;
 
     x64::Interpreter interpreter(&symbolProvider);
+    interpreter.setLogInstructions(false);
 
     x64::Loader loader(&interpreter, &symbolProvider);
 

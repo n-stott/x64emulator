@@ -44,6 +44,14 @@ namespace x64 {
     void Interpreter::stop() {
         stop_ = true;
     }
+    
+    void Interpreter::setLogInstructions(bool logInstructions) {
+        logInstructions_ = logInstructions;
+    }
+
+    bool Interpreter::logInstructions() const {
+        return logInstructions_;
+    }
 
     void Interpreter::crash() {
         stop();
@@ -253,19 +261,21 @@ namespace x64 {
                     break;
                 }
 #ifndef NDEBUG
-                std::string eflags = fmt::format("flags = [{}{}{}{}]", (cpu_.flags_.carry ? 'C' : ' '),
-                                                                       (cpu_.flags_.zero ? 'Z' : ' '), 
-                                                                       (cpu_.flags_.overflow ? 'O' : ' '), 
-                                                                       (cpu_.flags_.sign ? 'S' : ' '));
-                std::string registerDump = fmt::format( "rip={:0000008x} "
-                                                        "rax={:0000008x} rbx={:0000008x} rcx={:0000008x} rdx={:0000008x} "
-                                                        "rsi={:0000008x} rdi={:0000008x} rbp={:0000008x} rsp={:0000008x} ",
-                                                        cpu_.regs_.rip_,
-                                                        cpu_.regs_.rax_, cpu_.regs_.rbx_, cpu_.regs_.rcx_, cpu_.regs_.rdx_,
-                                                        cpu_.regs_.rsi_, cpu_.regs_.rdi_, cpu_.regs_.rbp_, cpu_.regs_.rsp_);
-                std::string indent = fmt::format("{:{}}", "", callDepth_);
-                std::string menmonic = fmt::format("{}|{}", indent, instruction->toString());
-                fmt::print(stderr, "{:10} {:60}{:20} {}\n", ticks, menmonic, eflags, registerDump);
+                if(logInstructions()) {
+                    std::string eflags = fmt::format("flags = [{}{}{}{}]", (cpu_.flags_.carry ? 'C' : ' '),
+                                                                        (cpu_.flags_.zero ? 'Z' : ' '), 
+                                                                        (cpu_.flags_.overflow ? 'O' : ' '), 
+                                                                        (cpu_.flags_.sign ? 'S' : ' '));
+                    std::string registerDump = fmt::format( "rip={:0000008x} "
+                                                            "rax={:0000008x} rbx={:0000008x} rcx={:0000008x} rdx={:0000008x} "
+                                                            "rsi={:0000008x} rdi={:0000008x} rbp={:0000008x} rsp={:0000008x} ",
+                                                            cpu_.regs_.rip_,
+                                                            cpu_.regs_.rax_, cpu_.regs_.rbx_, cpu_.regs_.rcx_, cpu_.regs_.rdx_,
+                                                            cpu_.regs_.rsi_, cpu_.regs_.rdi_, cpu_.regs_.rbp_, cpu_.regs_.rsp_);
+                    std::string indent = fmt::format("{:{}}", "", callDepth_);
+                    std::string menmonic = fmt::format("{}|{}", indent, instruction->toString());
+                    fmt::print(stderr, "{:10} {:60}{:20} {}\n", ticks, menmonic, eflags, registerDump);
+                }
 #endif
                 ++ticks;
                 instruction->exec(&cpu_);

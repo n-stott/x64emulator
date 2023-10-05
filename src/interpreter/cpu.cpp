@@ -118,10 +118,10 @@ namespace x64 {
     #define WARN_FLAGS() \
         flags_.setUnsure();\
         flags_.setUnsureParity();\
-        DEBUG_ONLY(fmt::print(stderr, "Warning : flags not updated\n"))
+        DEBUG_ONLY(if(interpreter_->logInstructions()) fmt::print(stderr, "Warning : flags not updated\n"))
 
     #define WARN_FLAGS_UNSURE() \
-        DEBUG_ONLY(fmt::print(stderr, "Warning : flags may be wrong\n"))
+        DEBUG_ONLY(if(interpreter_->logInstructions()) fmt::print(stderr, "Warning : flags may be wrong\n"))
 
     #define REQUIRE_FLAGS() \
         verify(flags_.sure(), "flags are not set correctly");
@@ -129,7 +129,7 @@ namespace x64 {
     #define WARN_SIGNED_OVERFLOW() \
         flags_.setUnsure();\
         flags_.setUnsureParity();\
-        DEBUG_ONLY(fmt::print(stderr, "Warning : signed integer overflow not handled\n"))
+        DEBUG_ONLY(if(interpreter_->logInstructions()) fmt::print(stderr, "Warning : signed integer overflow not handled\n"))
 
     #define ASSERT(ins, cond) \
         bool condition = (cond);\

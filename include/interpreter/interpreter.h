@@ -29,6 +29,9 @@ namespace x64 {
         void crash();
         bool hasCrashed() const { return stop_; }
 
+        void setLogInstructions(bool);
+        bool logInstructions() const;
+
         u64 allocateMemoryRange(u64 size) override;
         void addExecutableSection(ExecutableSection section) override;
         void addMmuRegion(Mmu::Region region) override;
@@ -59,7 +62,8 @@ namespace x64 {
 
         std::vector<u64> initFunctions_;
 
-        bool stop_;
+        bool stop_ = false;
+        bool logInstructions_ = false;
 
         const ExecutableSection* currentExecutedSection_ = nullptr;
         size_t currentInstructionIdx_ = (size_t)(-1);
