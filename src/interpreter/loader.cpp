@@ -257,6 +257,10 @@ namespace x64 {
 
             auto computeRelocation = [&](const auto& relocation) -> std::optional<u64> {
                 switch(relocation.type()) {
+                    case elf::RelocationType64::R_AMD64_64: {
+                        if(S.has_value()) return S.value() + addend;
+                        return {};
+                    }
                     case elf::RelocationType64::R_AMD64_RELATIVE: return B + addend;
                     case elf::RelocationType64::R_AMD64_GLOB_DAT: 
                     case elf::RelocationType64::R_AMD64_JUMP_SLOT: return S;

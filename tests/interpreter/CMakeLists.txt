@@ -98,7 +98,7 @@ add_test(NAME boostmap COMMAND ${CMAKE_BINARY_DIR}/interpreter test_boostmap)
 
 add_executable(test_stringstream src/test_stringstream.cpp)
 target_compile_options(test_stringstream PUBLIC ${CC_OPTIONS})
-target_link_options(test_stringstream PUBLIC ${LD_OPTIONS} -static-libstdc++ -static-libgcc)
+target_link_options(test_stringstream PUBLIC ${LD_OPTIONS})
 add_test(NAME stringstream COMMAND ${CMAKE_BINARY_DIR}/interpreter test_stringstream)
 
 add_executable(test_interval src/test_interval.cpp)
@@ -132,17 +132,17 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/testfile.txt
 
 add_executable(test_openfile src/test_openfile.cpp)
 target_compile_options(test_openfile PUBLIC ${CC_OPTIONS})
-target_link_options(test_openfile PUBLIC ${LD_OPTIONS} -static-libstdc++ -static-libgcc)
+target_link_options(test_openfile PUBLIC ${LD_OPTIONS})
 add_test(NAME openfile COMMAND ${CMAKE_BINARY_DIR}/interpreter test_openfile)
 
 add_executable(test_readfile src/test_readfile.cpp)
 target_compile_options(test_readfile PUBLIC ${CC_OPTIONS})
-target_link_options(test_readfile PUBLIC ${LD_OPTIONS} -static-libstdc++ -static-libgcc)
+target_link_options(test_readfile PUBLIC ${LD_OPTIONS})
 add_test(NAME readfile COMMAND ${CMAKE_BINARY_DIR}/interpreter test_readfile)
 
 add_executable(test_virtual src/test_virtual.cpp)
 target_compile_options(test_virtual PUBLIC ${CC_OPTIONS})
-target_link_options(test_virtual PUBLIC ${LD_OPTIONS} -static-libstdc++ -static-libgcc)
+target_link_options(test_virtual PUBLIC ${LD_OPTIONS})
 add_test(NAME virtual COMMAND ${CMAKE_BINARY_DIR}/interpreter test_virtual)
 
 add_executable(test_fpu src/test_fpu.cpp)
