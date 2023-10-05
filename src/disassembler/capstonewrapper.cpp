@@ -1647,17 +1647,19 @@ namespace x64 {
         return make_failed(insn);
     }
 
-    void CapstoneWrapper::disassembleSection(std::string filepath, std::string section, std::vector<std::unique_ptr<X86Instruction>>* instructions, std::vector<std::unique_ptr<Function>>* functions) {
+    void CapstoneWrapper::disassembleSection(std::string filepath, std::string sectionName, std::vector<std::unique_ptr<X86Instruction>>* instructions, std::vector<std::unique_ptr<Function>>* functions) {
         if(!instructions) return;
         if(!functions) return;
+        instructions->clear();
+        functions->clear();
 
         auto elf = elf::ElfReader::tryCreate(filepath);
         if(!elf) return;
         if(elf->archClass() != elf::Class::B64) return;
         std::unique_ptr<elf::Elf64> elf64(static_cast<elf::Elf64*>(elf.release()));
 
-        auto sec = elf64->sectionFromName(section);
-        if(!sec) return;
+        auto section = elf64->sectionFromName(sectionName);
+        if(!section) return;
 
         std::vector<std::pair<u64, std::string>> symbols;
 
@@ -1673,23 +1675,6 @@ namespace x64 {
 
         std::sort(symbols.begin(), symbols.end());
 
-        csh handle;
-        if(cs_open(CS_ARCH_X86, CS_MODE_64, &handle) != CS_ERR_OK) return;
-        if(cs_option(handle, CS_OPT_DETAIL, CS_OPT_ON) != CS_ERR_OK) return;
-
-        cs_insn* insns;
-        const u8* codeBegin = sec->begin;
-        size_t codeSize = std::distance(sec->begin, sec->end);
-        u64 address = sec->address;
-
-        size_t count = cs_disasm(handle, codeBegin, codeSize, address, 0, &insns);
-
-        if(!count) {
-            fmt::print("Failed to disassemble\n");
-            cs_close(&handle);
-            return;
-        }
-
         bool createFunctions = !symbols.empty();
 
         if(createFunctions)
@@ -1698,10 +1683,6 @@ namespace x64 {
 
         auto insertInstruction = [&](const cs_insn& insn) {
             auto x86insn = makeInstruction(insn);
-
-            // printf("  0x%lx:\t%s\t\t%s\n", insn.address, insn.mnemonic, insn.op_str);
-            // fmt::print("{}\n", x86insn->toString());
-
             if(createFunctions) {
                 while(nextSymbol < symbols.size() && insn.address >= symbols[nextSymbol].first) {
                     functions->emplace_back(new Function(symbols[nextSymbol].first, symbols[nextSymbol].second, {}));
@@ -1712,16 +1693,27 @@ namespace x64 {
             instructions->push_back(std::move(x86insn));
         };
 
+        csh handle;
+        if(cs_open(CS_ARCH_X86, CS_MODE_64, &handle) != CS_ERR_OK) return;
+        if(cs_option(handle, CS_OPT_DETAIL, CS_OPT_ON) != CS_ERR_OK) return;
+
+        cs_insn* insns;
+        const u8* codeBegin = section->begin;
+        size_t codeSize = std::distance(section->begin, section->end);
+        u64 address = section->address;
+
+        size_t count = cs_disasm(handle, codeBegin, codeSize, address, 0, &insns);
+
         for(size_t j = 0; j < count; ++j) {
             insertInstruction(insns[j]);
         }
 
+        cs_free(insns, count);
+        cs_close(&handle);
+
         functions->erase(std::remove_if(functions->begin(), functions->end(), [](const auto& func) {
             return func->instructions.empty() || func->instructions.front()->address != func->address;
         }), functions->end());
-
-        cs_free(insns, count);
-        cs_close(&handle);
     }
 
 }
