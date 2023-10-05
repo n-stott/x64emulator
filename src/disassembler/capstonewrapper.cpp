@@ -1697,18 +1697,25 @@ namespace x64 {
         if(cs_open(CS_ARCH_X86, CS_MODE_64, &handle) != CS_ERR_OK) return;
         if(cs_option(handle, CS_OPT_DETAIL, CS_OPT_ON) != CS_ERR_OK) return;
 
-        cs_insn* insns;
         const u8* codeBegin = section->begin;
         size_t codeSize = std::distance(section->begin, section->end);
-        u64 address = section->address;
+        uint64_t address = section->address;
+        static_assert(sizeof(uint64_t) == sizeof(u64), "");
 
+#if 0
+        cs_insn* insns;
         size_t count = cs_disasm(handle, codeBegin, codeSize, address, 0, &insns);
-
         for(size_t j = 0; j < count; ++j) {
             insertInstruction(insns[j]);
         }
-
         cs_free(insns, count);
+#else
+        cs_insn* insn = cs_malloc(handle);
+        while(cs_disasm_iter(handle, &codeBegin, &codeSize, &address, insn)) {
+            insertInstruction(*insn);
+        }
+        cs_free(insn, 1);
+#endif
         cs_close(&handle);
 
         functions->erase(std::remove_if(functions->begin(), functions->end(), [](const auto& func) {
