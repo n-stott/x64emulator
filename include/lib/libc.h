@@ -66,6 +66,10 @@ namespace x64 {
     struct Read final : public LibraryFunction {
         explicit Read(const ExecutionContext& context, LibC* libc);
     };
+
+    struct Atoi final : public LibraryFunction {
+        explicit Atoi(const ExecutionContext& context, LibC* libc);
+    };
 }
 
 #endif

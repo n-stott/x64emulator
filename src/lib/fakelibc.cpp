@@ -28,6 +28,9 @@ extern "C" {
     __attribute__((noinline))
     extern int intrinsic$fclose(FILE*);
 
+    __attribute__((noinline))
+    extern int intrinsic$atoi(const char*);
+
     int fakelibc$putchar(int c) {
         return intrinsic$putchar(c);
     }
@@ -415,6 +418,10 @@ extern "C" {
 
     ssize_t fakelibc$read(int fd, void* buf, size_t count) {
         return intrinsic$read(fd, buf, count);
+    }
+
+    int fakelibc$atoi(const char* nptr) {
+        return intrinsic$atoi(nptr);
     }
 
 }

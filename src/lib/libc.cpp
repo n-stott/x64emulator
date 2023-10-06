@@ -46,6 +46,8 @@ namespace x64 {
         callback(std::move(instructions), std::move(func));
         func = createAndFill<Read>(&instructions, context, this);
         callback(std::move(instructions), std::move(func));
+        func = createAndFill<Atoi>(&instructions, context, this);
+        callback(std::move(instructions), std::move(func));
     }
 
     class LibC::Heap {
@@ -376,6 +378,31 @@ namespace x64 {
         LibC* libc_;
     };
 
+    class AtoiInstruction : public Intrinsic {
+    public:
+        explicit AtoiInstruction(ExecutionContext context, LibC* libc) : context_(context), libc_(libc) { }
+
+        void exec(InstructionHandler*) const override {
+            std::string buffer;
+            u64 address = context_.rax();
+            Ptr8 ptr { Segment::DS, address };
+            while(true) {
+                char c = context_.mmu()->read8(ptr);
+                if(c == '\0') break;
+                buffer.push_back(c);
+                ++ptr;
+            }
+            int value = std::atoi(buffer.c_str());
+            context_.set_rax(value);
+        }
+        std::string toString(InstructionHandler*) const override {
+            return "__atoi";
+        }
+    private:
+        ExecutionContext context_;
+        LibC* libc_;
+    };
+
     class FunctionBuilder {
     public:
         explicit FunctionBuilder(LibraryFunction* func) : func_(func), closed_(false), nbArguments_(0) {
@@ -481,6 +508,13 @@ namespace x64 {
         builder.addIntegerStructOrPointerArgument();
         builder.addIntegerStructOrPointerArgument();
         builder.addIntrinsicCall<ReadInstruction>(context, libc);
+        builder.close();
+    }
+    
+    Atoi::Atoi(const ExecutionContext& context, LibC* libc) : LibraryFunction("intrinsic$atoi") {
+        FunctionBuilder builder(this);
+        builder.addIntegerStructOrPointerArgument();
+        builder.addIntrinsicCall<AtoiInstruction>(context, libc);
         builder.close();
     }
 }
