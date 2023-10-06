@@ -153,15 +153,15 @@ namespace x64 {
 
     void Interpreter::setupStackAndHeap() {
         // heap
-        u64 heapBase = 0x2000000;
-        u64 heapSize = 64*1024;
+        u64 heapBase = mmu_.topOfMemoryAligned(Mmu::PAGE_SIZE);
+        u64 heapSize = 64*Mmu::PAGE_SIZE;
         Mmu::Region heapRegion{ "program", "heap", heapBase, heapSize, PROT_READ | PROT_WRITE };
         mmu_.addRegion(heapRegion);
         libc_->setHeapRegion(heapRegion.base, heapRegion.size);
         
         // stack
-        u64 stackBase = 0x1000000;
-        u64 stackSize = 16*1024;
+        u64 stackBase = mmu_.topOfMemoryAligned(Mmu::PAGE_SIZE);
+        u64 stackSize = 16*Mmu::PAGE_SIZE;
         Mmu::Region stack{ "program", "stack", stackBase, stackSize, PROT_READ | PROT_WRITE };
         mmu_.addRegion(stack);
         cpu_.regs_.rsp_ = stackBase + stackSize;
