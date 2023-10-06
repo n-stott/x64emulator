@@ -803,6 +803,10 @@ namespace x64 {
     }
 
     void Cpu::exec(const CallDirect& ins) {
+        if(!ins.symbolNameSet) {
+            ins.symbolName = interpreter_->calledFunctionName(interpreter_->currentExecutedSection_, &ins);
+            ins.symbolNameSet = true;
+        }
         u64 address = interpreter_->currentExecutedSection_->sectionOffset + ins.symbolAddress;
         push64(regs_.rip_);
         interpreter_->call(address);

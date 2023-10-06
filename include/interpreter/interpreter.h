@@ -111,7 +111,7 @@ namespace x64 {
 
         void dumpStackTrace() const;
 
-        void addFunctionNameToCall();
+        std::string calledFunctionName(const ExecutableSection* execSection, const CallDirect* insn);
 
         void call(u64 address) {
             CallPoint cp;

@@ -140,7 +140,8 @@ namespace x64 {
 
     struct CallDirect {
         u64 symbolAddress;
-        std::string symbolName;
+        mutable std::string symbolName;
+        mutable bool symbolNameSet;
     };
 
     template<typename Src>

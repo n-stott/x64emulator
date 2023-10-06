@@ -899,7 +899,7 @@ namespace x64 {
         auto r64src = asRegister64(operand);
         auto m32src = asMemory32(operand);
         auto m64src = asMemory64(operand);
-        if(imm) return make_wrapper<CallDirect>(insn.address, imm->immediate, "");
+        if(imm) return make_wrapper<CallDirect>(insn.address, imm->immediate, "", false);
         if(r32src) return make_wrapper<CallIndirect<R32>>(insn.address, r32src.value());
         if(r64src) return make_wrapper<CallIndirect<R64>>(insn.address, r64src.value());
         if(m32src) return make_wrapper<CallIndirect<M32>>(insn.address, m32src.value());

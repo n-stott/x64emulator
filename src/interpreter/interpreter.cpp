@@ -104,7 +104,6 @@ namespace x64 {
 
     void Interpreter::run(const std::string& programFilePath, const std::vector<std::string>& arguments) {
         VerificationScope::run([&]() {
-            addFunctionNameToCall();
             setupStackAndHeap();
             runInit();
             pushProgramArguments(programFilePath, arguments);
@@ -351,48 +350,42 @@ namespace x64 {
         }
     }
 
-    void Interpreter::addFunctionNameToCall() {
-        for(auto& execSection : executableSections_) {
-            for(auto& insn : execSection.instructions) {
-                auto* call = dynamic_cast<InstructionWrapper<CallDirect>*>(insn.get());
-                if(!call) continue;
-                u64 address = execSection.sectionOffset + call->instruction.symbolAddress;
-                const ExecutableSection* originSection = nullptr;
-                size_t firstInstructionIndex = 0;
-                findSectionWithAddress(address, &originSection, &firstInstructionIndex);
-                verify(!!originSection, "Could not determine function origin section");
-                verify(firstInstructionIndex != (size_t)(-1), "Could not find call destination instruction");
-                if(originSection->sectionname == ".text") {
-                    auto demangledName = symbolProvider_->lookupSymbol(address, true);
-                    if(!!demangledName) {
-                        call->instruction.symbolName = demangledName.value();
-                        functionNameCache_[address] = demangledName.value();
-                    } else {
-                        // verify(!!func, "Could not find function in text section");
-                    }
-                } else if (originSection->sectionname == ".plt") {
-                    // look at the first instruction to determine the jmp location
-                    const X86Instruction* jmpInsn = originSection->instructions[firstInstructionIndex].get();
-                    const auto* jmp = dynamic_cast<const InstructionWrapper<Jmp<M64>>*>(jmpInsn);
-                    verify(!!jmp, "could not cast instruction to jmp");
-                    Registers regs;
-                    regs.rip_ = jmpInsn->address + 6; // add instruction size offset
-                    auto ptr = regs.resolve(jmp->instruction.symbolAddress);
-                    auto dst = mmu_.read64(ptr);
-                    if(dst != 0x0) {
-                        auto demangledName = symbolProvider_->lookupSymbol(dst, true);
-                        if(!!demangledName) {
-                            call->instruction.symbolName = demangledName.value();
-                            functionNameCache_[address] = demangledName.value();
-                        }
-                    }
+    std::string Interpreter::calledFunctionName(const ExecutableSection* execSection, const CallDirect* call) {
+        if(!execSection) return "";
+        if(!call) return "";
+        if(!logInstructions()) return ""; // We don't print the name, so we don't bother doing the lookup
+        u64 address = execSection->sectionOffset + call->symbolAddress;
+        const ExecutableSection* originSection = nullptr;
+        size_t firstInstructionIndex = 0;
+        findSectionWithAddress(address, &originSection, &firstInstructionIndex);
+        verify(!!originSection, "Could not determine function origin section");
+        verify(firstInstructionIndex != (size_t)(-1), "Could not find call destination instruction");
+        if(originSection->sectionname == ".text") {
+            auto demangledName = symbolProvider_->lookupSymbol(address, true);
+            if(!!demangledName) {
+                functionNameCache_[address] = demangledName.value();
+                return demangledName.value();
+            } else {
+                // verify(!!func, "Could not find function in text section");
+            }
+        } else if (originSection->sectionname == ".plt") {
+            // look at the first instruction to determine the jmp location
+            const X86Instruction* jmpInsn = originSection->instructions[firstInstructionIndex].get();
+            const auto* jmp = dynamic_cast<const InstructionWrapper<Jmp<M64>>*>(jmpInsn);
+            verify(!!jmp, "could not cast instruction to jmp");
+            Registers regs;
+            regs.rip_ = jmpInsn->address + 6; // add instruction size offset
+            auto ptr = regs.resolve(jmp->instruction.symbolAddress);
+            auto dst = mmu_.read64(ptr);
+            if(dst != 0x0) {
+                auto demangledName = symbolProvider_->lookupSymbol(dst, true);
+                if(!!demangledName) {
+                    functionNameCache_[address] = demangledName.value();
+                    return demangledName.value();
                 }
             }
         }
-        // fmt::print("{}\n",functionNameCache.size());
-        // for(auto e : functionNameCache) {
-        //     fmt::print("{:#x}:{}\n", e.first, e.second);
-        // }
+        return "";
     }
 
     void Interpreter::dumpStackTrace() const {
