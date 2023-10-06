@@ -434,7 +434,7 @@ namespace x64 {
         virtual void exec(const Addsd<RSSE, RSSE>&) = 0;
         virtual void exec(const Addsd<RSSE, M64>&) = 0;
 
-
+        virtual void resolveFunctionName(const CallDirect&) = 0;
     };
 
 }

@@ -586,6 +586,9 @@ namespace x64 {
         void exec(const Addsd<RSSE, RSSE>&) override;
         void exec(const Addsd<RSSE, M64>&) override;
 
+
+        void resolveFunctionName(const CallDirect& ins) override;
+
     };
 
 }

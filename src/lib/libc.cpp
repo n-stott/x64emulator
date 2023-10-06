@@ -177,24 +177,6 @@ namespace x64 {
 
     namespace {
 
-        // A wrapper to create instructions
-        template<typename Instruction>
-        struct InstructionWrapper : public X86Instruction {
-            explicit InstructionWrapper(Instruction instruction) :
-                    X86Instruction(0xDEADC0DE), 
-                    instruction(std::move(instruction)) { }
-
-            void exec(InstructionHandler* handler) const override {
-                return handler->exec(instruction);
-            }
-
-            virtual std::string toString() const override {
-                return x64::utils::toString(instruction);
-            }
-
-            Instruction instruction;
-        };
-
         template<typename Instruction, typename... Args>
         inline std::unique_ptr<X86Instruction> make_wrapper(Args... args) {
             return std::make_unique<InstructionWrapper<Instruction>>(Instruction{args...});
@@ -234,7 +216,7 @@ namespace x64 {
             ::fflush(stdout);
             context_.set_rax(1);
         }
-        std::string toString() const override {
+        std::string toString(InstructionHandler*) const override {
             return "__putchar";
         }
     private:
@@ -250,7 +232,7 @@ namespace x64 {
             u64 address = libc_->heap_->malloc(size);
             context_.set_rax(address);
         }
-        std::string toString() const override {
+        std::string toString(InstructionHandler*) const override {
             return "__malloc";
         }
     private:
@@ -266,7 +248,7 @@ namespace x64 {
             u64 address = context_.rax();
             libc_->heap_->free(address);
         }
-        std::string toString() const override {
+        std::string toString(InstructionHandler*) const override {
             return "__free";
         }
     private:
@@ -304,7 +286,7 @@ namespace x64 {
 
             context_.set_rax(filehandler);
         }
-        std::string toString() const override {
+        std::string toString(InstructionHandler*) const override {
             return "__fopen64";
         }
     private:
@@ -324,7 +306,7 @@ namespace x64 {
             context_.set_rax(fd);
         }
 
-        std::string toString() const override {
+        std::string toString(InstructionHandler*) const override {
             return "__fileno";
         }
     private:
@@ -344,7 +326,7 @@ namespace x64 {
             context_.set_rax(ret);
         }
 
-        std::string toString() const override {
+        std::string toString(InstructionHandler*) const override {
             return "__fclose";
         }
     private:
@@ -386,7 +368,7 @@ namespace x64 {
             context_.set_rax(nbytes);
         }
 
-        std::string toString() const override {
+        std::string toString(InstructionHandler*) const override {
             return "__read";
         }
     private:

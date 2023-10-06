@@ -272,7 +272,7 @@ namespace x64 {
                                                             cpu_.regs_.rax_, cpu_.regs_.rbx_, cpu_.regs_.rcx_, cpu_.regs_.rdx_,
                                                             cpu_.regs_.rsi_, cpu_.regs_.rdi_, cpu_.regs_.rbp_, cpu_.regs_.rsp_);
                     std::string indent = fmt::format("{:{}}", "", callDepth_);
-                    std::string menmonic = fmt::format("{}|{}", indent, instruction->toString());
+                    std::string menmonic = fmt::format("{}|{}", indent, instruction->toString(&cpu_));
                     fmt::print(stderr, "{:10} {:60}{:20} {}\n", ticks, menmonic, eflags, registerDump);
                 }
 #endif
