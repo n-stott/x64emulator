@@ -66,6 +66,14 @@ namespace x64 {
                 case R16::BX: return rbx_ & 0xFFFF;
                 case R16::CX: return rcx_ & 0xFFFF;
                 case R16::DX: return rdx_ & 0xFFFF;
+                case R16::R8W: return r8_ & 0xFFFF;
+                case R16::R9W: return r9_ & 0xFFFF;
+                case R16::R10W: return r10_ & 0xFFFF;
+                case R16::R11W: return r11_ & 0xFFFF;
+                case R16::R12W: return r12_ & 0xFFFF;
+                case R16::R13W: return r13_ & 0xFFFF;
+                case R16::R14W: return r14_ & 0xFFFF;
+                case R16::R15W: return r15_ & 0xFFFF;
             }
             __builtin_unreachable();
         }
@@ -156,6 +164,14 @@ namespace x64 {
                 case R16::BP: { rbp_ = (rbp_ & 0xFFFFFFFFFFFF0000) | (value); return; }
                 case R16::SI: { rsi_ = (rsi_ & 0xFFFFFFFFFFFF0000) | (value); return; }
                 case R16::DI: { rdi_ = (rdi_ & 0xFFFFFFFFFFFF0000) | (value); return; }
+                case R16::R8W: { r8_ = (r8_ & 0xFFFFFFFFFFFF0000) | (value); return; }
+                case R16::R9W: { r9_ = (r9_ & 0xFFFFFFFFFFFF0000) | (value); return; }
+                case R16::R10W: { r10_ = (r10_ & 0xFFFFFFFFFFFF0000) | (value); return; }
+                case R16::R11W: { r11_ = (r11_ & 0xFFFFFFFFFFFF0000) | (value); return; }
+                case R16::R12W: { r12_ = (r12_ & 0xFFFFFFFFFFFF0000) | (value); return; }
+                case R16::R13W: { r13_ = (r13_ & 0xFFFFFFFFFFFF0000) | (value); return; }
+                case R16::R14W: { r14_ = (r14_ & 0xFFFFFFFFFFFF0000) | (value); return; }
+                case R16::R15W: { r15_ = (r15_ & 0xFFFFFFFFFFFF0000) | (value); return; }
             }
             __builtin_unreachable();
         }

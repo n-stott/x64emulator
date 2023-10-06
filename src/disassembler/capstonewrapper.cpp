@@ -192,6 +192,14 @@ namespace x64 {
             case X86_REG_BX: return R16::BX;
             case X86_REG_CX: return R16::CX;
             case X86_REG_DX: return R16::DX;
+            case X86_REG_R8W: return R16::R8W;
+            case X86_REG_R9W: return R16::R9W;
+            case X86_REG_R10W: return R16::R10W;
+            case X86_REG_R11W: return R16::R11W;
+            case X86_REG_R12W: return R16::R12W;
+            case X86_REG_R13W: return R16::R13W;
+            case X86_REG_R14W: return R16::R14W;
+            case X86_REG_R15W: return R16::R15W;
             default: return {};
         }
         return {};

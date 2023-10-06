@@ -57,6 +57,14 @@ namespace utils {
             case R16::BX: return "bx";
             case R16::CX: return "cx";
             case R16::DX: return "dx";
+            case R16::R8W: return "r8w";
+            case R16::R9W: return "r9w";
+            case R16::R10W: return "r10w";
+            case R16::R11W: return "r11w";
+            case R16::R12W: return "r12w";
+            case R16::R13W: return "r13w";
+            case R16::R14W: return "r14w";
+            case R16::R15W: return "r15w";
         }
         return "";
     }

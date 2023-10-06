@@ -61,6 +61,14 @@ namespace x64 {
         BX,
         CX,
         DX,
+        R8W,
+        R9W,
+        R10W,
+        R11W,
+        R12W,
+        R13W,
+        R14W,
+        R15W,
     };
 
     enum class R32 {
