@@ -67,6 +67,7 @@ namespace x64 {
         static std::unique_ptr<X86Instruction> makeShld(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeSar(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeRol(const cs_insn& insn);
+        static std::unique_ptr<X86Instruction> makeTzcnt(const cs_insn& insn);
 
         template<Cond cond>
         static std::unique_ptr<X86Instruction> makeSet(const cs_insn& insn);
@@ -90,6 +91,8 @@ namespace x64 {
         static std::unique_ptr<X86Instruction> makeJns(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeJo(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeJno(const cs_insn& insn);
+        static std::unique_ptr<X86Instruction> makeJp(const cs_insn& insn);
+        static std::unique_ptr<X86Instruction> makeJnp(const cs_insn& insn);
 
         static std::unique_ptr<X86Instruction> makeBsr(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeBsf(const cs_insn& insn);
@@ -112,6 +115,7 @@ namespace x64 {
         static std::unique_ptr<X86Instruction> makeMovdqa(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeMovdqu(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeMovups(const cs_insn& insn);
+        static std::unique_ptr<X86Instruction> makeMovapd(const cs_insn& insn);
 
         static std::unique_ptr<X86Instruction> makeMovd(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeMovq(const cs_insn& insn);
@@ -121,6 +125,15 @@ namespace x64 {
 
         static std::unique_ptr<X86Instruction> makeAddss(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeAddsd(const cs_insn& insn);
+        static std::unique_ptr<X86Instruction> makeSubsd(const cs_insn& insn);
+        static std::unique_ptr<X86Instruction> makeMulsd(const cs_insn& insn);
+
+        static std::unique_ptr<X86Instruction> makeComisd(const cs_insn& insn);
+        static std::unique_ptr<X86Instruction> makeUcomisd(const cs_insn& insn);
+
+        static std::unique_ptr<X86Instruction> makeCvtsi2sd(const cs_insn& insn);
+
+        static std::unique_ptr<X86Instruction> makeXorpd(const cs_insn& insn);
 
     };
 }

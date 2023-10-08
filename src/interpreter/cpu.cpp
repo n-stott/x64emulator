@@ -153,10 +153,15 @@ namespace x64 {
     }
 
     u8 Cpu::execAdd8Impl(u8 dst, u8 src) {
-        (void)dst;
-        (void)src;
-        verify(false, "Not implemented");
-        return 0;
+        u64 tmp = (u64)dst + (u64)src;
+        flags_.zero = (u8)tmp == 0;
+        flags_.carry = (tmp >> 8) != 0;
+        i64 signedTmp = (i64)dst + (i64)src;
+        flags_.overflow = (i8)signedTmp != signedTmp;
+        flags_.sign = (signedTmp < 0);
+        flags_.setSure();
+        flags_.setUnsureParity();
+        return (u8)tmp;
     }
 
     u16 Cpu::execAdd16Impl(u16 dst, u16 src) {
@@ -218,6 +223,18 @@ namespace x64 {
         flags_.setUnsureParity();
         return (u32)tmp;
     }
+
+    void Cpu::exec(const Add<R8, R8>& ins) { set(ins.dst, execAdd8Impl(get(ins.dst), get(ins.src))); }
+    void Cpu::exec(const Add<R8, Imm>& ins) { set(ins.dst, execAdd8Impl(get(ins.dst), get<u8>(ins.src))); }
+    void Cpu::exec(const Add<R8, M8>& ins) { set(ins.dst, execAdd8Impl(get(ins.dst), get(resolve(ins.src)))); }
+    void Cpu::exec(const Add<M8, R8>& ins) { set(resolve(ins.dst), execAdd8Impl(get(resolve(ins.dst)), get(ins.src))); }
+    void Cpu::exec(const Add<M8, Imm>& ins) { set(resolve(ins.dst), execAdd8Impl(get(resolve(ins.dst)), get<u8>(ins.src))); }
+
+    void Cpu::exec(const Add<R16, R16>& ins) { set(ins.dst, execAdd16Impl(get(ins.dst), get(ins.src))); }
+    void Cpu::exec(const Add<R16, Imm>& ins) { set(ins.dst, execAdd16Impl(get(ins.dst), get<u16>(ins.src))); }
+    void Cpu::exec(const Add<R16, M16>& ins) { set(ins.dst, execAdd16Impl(get(ins.dst), get(resolve(ins.src)))); }
+    void Cpu::exec(const Add<M16, R16>& ins) { set(resolve(ins.dst), execAdd16Impl(get(resolve(ins.dst)), get(ins.src))); }
+    void Cpu::exec(const Add<M16, Imm>& ins) { set(resolve(ins.dst), execAdd16Impl(get(resolve(ins.dst)), get<u16>(ins.src))); }
 
     void Cpu::exec(const Add<R32, R32>& ins) { set(ins.dst, execAdd32Impl(get(ins.dst), get(ins.src))); }
     void Cpu::exec(const Add<R32, Imm>& ins) { set(ins.dst, execAdd32Impl(get(ins.dst), get<u32>(ins.src))); }
@@ -738,6 +755,10 @@ namespace x64 {
     template<> Xmm zeroExtend(const u32& val) { return Xmm{ 0, val }; }
     template<> Xmm zeroExtend(const u64& val) { return Xmm{ 0, val }; }
 
+    template<typename T, typename U> T writeLow(T t, U u);
+    template<> Xmm writeLow(Xmm t, u32 u) { return Xmm{t.hi, (u64)u}; }
+    template<> Xmm writeLow(Xmm t, u64 u) { return Xmm{t.hi, u}; }
+
     void Cpu::exec(const Mov<R8, R8>& ins) { set(ins.dst, get(ins.src)); }
     void Cpu::exec(const Mov<R8, Imm>& ins) { set(ins.dst, get<u8>(ins.src)); }
     void Cpu::exec(const Mov<R8, M8>& ins) { set(ins.dst, get(resolve(ins.src))); }
@@ -758,11 +779,14 @@ namespace x64 {
     void Cpu::exec(const Mov<R64, M64>& ins) { set(ins.dst, get(resolve(ins.src))); }
     void Cpu::exec(const Mov<M64, R64>& ins) { set(resolve(ins.dst), get(ins.src)); }
     void Cpu::exec(const Mov<M64, Imm>& ins) { set(resolve(ins.dst), get<u64>(ins.src)); }
+    void Cpu::exec(const Mov<RSSE, RSSE>& ins) { set(ins.dst, get(ins.src)); }
     void Cpu::exec(const Mov<RSSE, MSSE>& ins) { set(ins.dst, get(resolve(ins.src))); }
     void Cpu::exec(const Mov<MSSE, RSSE>& ins) { set(resolve(ins.dst), get(ins.src)); }
 
     void Cpu::exec(const Movsx<R32, R8>& ins) { set(ins.dst, signExtended32(get(ins.src))); }
     void Cpu::exec(const Movsx<R32, M8>& ins) { set(ins.dst, signExtended32(get(resolve(ins.src)))); }
+    void Cpu::exec(const Movsx<R64, R8>& ins) { set(ins.dst, signExtended64(get(ins.src))); }
+    void Cpu::exec(const Movsx<R64, M8>& ins) { set(ins.dst, signExtended64(get(resolve(ins.src)))); }
 
     void Cpu::exec(const Movsx<R32, R32>& ins) { set(ins.dst, get(ins.src)); }
     void Cpu::exec(const Movsx<R32, M32>& ins) { set(ins.dst, get(resolve(ins.src))); }
@@ -1110,6 +1134,47 @@ namespace x64 {
     void Cpu::exec(const Rol<R32, Imm>& ins) { TODO(ins); }
     void Cpu::exec(const Rol<M32, Imm>& ins) { TODO(ins); }
 
+    u16 Cpu::execTzcnt16Impl(u16 src) {
+        u16 tmp = 0;
+        u16 res = 0;
+        while(tmp < 16 && ((src >> tmp) & 0x1) == 0) {
+            ++tmp;
+            ++res;
+        }
+        flags_.carry = (res == 16);
+        flags_.zero = (res == 0);
+        return res;
+    }
+    u32 Cpu::execTzcnt32Impl(u32 src) {
+        u32 tmp = 0;
+        u32 res = 0;
+        while(tmp < 32 && ((src >> tmp) & 0x1) == 0) {
+            ++tmp;
+            ++res;
+        }
+        flags_.carry = (res == 32);
+        flags_.zero = (res == 0);
+        return res;
+    }
+    u64 Cpu::execTzcnt64Impl(u64 src) {
+        u64 tmp = 0;
+        u64 res = 0;
+        while(tmp < 64 && ((src >> tmp) & 0x1) == 0) {
+            ++tmp;
+            ++res;
+        }
+        flags_.carry = (res == 64);
+        flags_.zero = (res == 0);
+        return res;
+    }
+
+    void Cpu::exec(const Tzcnt<R16, R16>& ins) { set(ins.dst, execTzcnt16Impl(get(ins.src))); }
+    void Cpu::exec(const Tzcnt<R16, M16>& ins) { set(ins.dst, execTzcnt16Impl(get(resolve(ins.src)))); }
+    void Cpu::exec(const Tzcnt<R32, R32>& ins) { set(ins.dst, execTzcnt32Impl(get(ins.src))); }
+    void Cpu::exec(const Tzcnt<R32, M32>& ins) { set(ins.dst, execTzcnt32Impl(get(resolve(ins.src)))); }
+    void Cpu::exec(const Tzcnt<R64, R64>& ins) { set(ins.dst, execTzcnt64Impl(get(ins.src))); }
+    void Cpu::exec(const Tzcnt<R64, M64>& ins) { set(ins.dst, execTzcnt64Impl(get(resolve(ins.src)))); }
+
     void Cpu::execTest8Impl(u8 src1, u8 src2) {
         u8 tmp = src1 & src2;
         flags_.sign = (tmp & (1 << 7));
@@ -1400,6 +1465,20 @@ namespace x64 {
         }
     }
 
+    void Cpu::exec(const Jcc<Cond::P>& ins) {
+        if(flags_.matches(Cond::P)) {
+            u64 dst = interpreter_->currentExecutedSection_->sectionOffset + ins.symbolAddress;
+            interpreter_->jmp(dst);
+        }
+    }
+
+    void Cpu::exec(const Jcc<Cond::NP>& ins) {
+        if(flags_.matches(Cond::NP)) {
+            u64 dst = interpreter_->currentExecutedSection_->sectionOffset + ins.symbolAddress;
+            interpreter_->jmp(dst);
+        }
+    }
+
 
     void Cpu::exec(const Bsr<R32, R32>& ins) {
         u32 val = get(ins.src);
@@ -1613,6 +1692,8 @@ namespace x64 {
 
     void Cpu::exec(const Movq<RSSE, R64>& ins) { set(ins.dst, zeroExtend<Xmm, u64>(get(ins.src))); }
     void Cpu::exec(const Movq<R64, RSSE>& ins) { set(ins.dst, narrow<u64, Xmm>(get(ins.src))); }
+    void Cpu::exec(const Movq<RSSE, M64>& ins) { set(ins.dst, zeroExtend<Xmm, u64>(get(resolve(ins.src)))); }
+    void Cpu::exec(const Movq<M64, RSSE>& ins) { set(resolve(ins.dst), narrow<u64, Xmm>(get(ins.src))); }
 
     void Cpu::exec(const Movss<RSSE, M32>& ins) { set(ins.dst, zeroExtend<Xmm, u32>(get(resolve(ins.src)))); }
     void Cpu::exec(const Movss<M32, RSSE>& ins) { set(resolve(ins.dst), narrow<u32, Xmm>(get(ins.src))); }
@@ -1630,6 +1711,7 @@ namespace x64 {
         float res = d + s;
         u32 r;
         ::memcpy(&r, &res, sizeof(r));
+        flags_.setUnsure();
         return r;
     }
 
@@ -1642,6 +1724,7 @@ namespace x64 {
         double res = d + s;
         u64 r;
         ::memcpy(&r, &res, sizeof(r));
+        flags_.setUnsure();
         return r;
     }
 
@@ -1667,5 +1750,138 @@ namespace x64 {
         WARN_ROUNDING_MODE();
         u64 res = execAddsdImpl(narrow<u64, Xmm>(get(ins.dst)), get(resolve(ins.src)));
         set(ins.dst, zeroExtend<Xmm, u64>(res));
+    }
+
+
+    u64 Cpu::execSubsdImpl(u64 dst, u64 src) {
+        static_assert(sizeof(u64) == sizeof(double));
+        double d;
+        double s;
+        ::memcpy(&d, &dst, sizeof(d));
+        ::memcpy(&s, &src, sizeof(s));
+        double res = d - s;
+        u64 r;
+        ::memcpy(&r, &res, sizeof(r));
+        if(res != res) {
+            flags_.zero = true;
+            flags_.parity = true;
+            flags_.carry = true;
+        } else if(res > 0.0) {
+            flags_.zero = false;
+            flags_.parity = false;
+            flags_.carry = false;
+        } else if(res < 0.0) {
+            flags_.zero = false;
+            flags_.parity = false;
+            flags_.carry = true;
+        } else {
+            verify(res == 0.0);
+            flags_.zero = true;
+            flags_.parity = false;
+            flags_.carry = false;
+        }
+        flags_.overflow = false;
+        flags_.sign = false;
+        flags_.setSure();
+        return r;
+    }
+
+    void Cpu::exec(const Subsd<RSSE, RSSE>& ins) {
+        WARN_ROUNDING_MODE();
+        u64 res = execSubsdImpl(narrow<u64, Xmm>(get(ins.dst)), narrow<u64, Xmm>(get(ins.src)));
+        set(ins.dst, zeroExtend<Xmm, u64>(res));
+    }
+
+    void Cpu::exec(const Subsd<RSSE, M64>& ins) {
+        WARN_ROUNDING_MODE();
+        u64 res = execSubsdImpl(narrow<u64, Xmm>(get(ins.dst)), get(resolve(ins.src)));
+        set(ins.dst, zeroExtend<Xmm, u64>(res));
+    }
+
+
+
+    u64 Cpu::execMulsdImpl(u64 dst, u64 src) {
+        static_assert(sizeof(u64) == sizeof(double));
+        double d;
+        double s;
+        ::memcpy(&d, &dst, sizeof(d));
+        ::memcpy(&s, &src, sizeof(s));
+        double res = d * s;
+        u64 r;
+        ::memcpy(&r, &res, sizeof(r));
+        return r;
+    }
+
+    void Cpu::exec(const Mulsd<RSSE, RSSE>& ins) {
+        WARN_ROUNDING_MODE();
+        u64 res = execMulsdImpl(narrow<u64, Xmm>(get(ins.dst)), narrow<u64, Xmm>(get(ins.src)));
+        set(ins.dst, zeroExtend<Xmm, u64>(res));
+    }
+
+    void Cpu::exec(const Mulsd<RSSE, M64>& ins) {
+        WARN_ROUNDING_MODE();
+        u64 res = execMulsdImpl(narrow<u64, Xmm>(get(ins.dst)), get(resolve(ins.src)));
+        set(ins.dst, zeroExtend<Xmm, u64>(res));
+    }
+
+
+    void Cpu::exec(const Comisd<RSSE, RSSE>& ins) {
+        WARN_ROUNDING_MODE();
+        execSubsdImpl(narrow<u64, Xmm>(get(ins.dst)), narrow<u64, Xmm>(get(ins.src)));
+    }
+
+    void Cpu::exec(const Comisd<RSSE, M64>& ins) {
+        WARN_ROUNDING_MODE();
+        execSubsdImpl(narrow<u64, Xmm>(get(ins.dst)), get(resolve(ins.src)));
+    }
+
+    void Cpu::exec(const Ucomisd<RSSE, RSSE>& ins) {
+        WARN_ROUNDING_MODE();
+        DEBUG_ONLY(fmt::print(stderr, "Ucomisd treated as comisd\n");)
+        execSubsdImpl(narrow<u64, Xmm>(get(ins.dst)), narrow<u64, Xmm>(get(ins.src)));
+    }
+
+    void Cpu::exec(const Ucomisd<RSSE, M64>& ins) {
+        WARN_ROUNDING_MODE();
+        DEBUG_ONLY(fmt::print(stderr, "Ucomisd treated as comisd\n");)
+        execSubsdImpl(narrow<u64, Xmm>(get(ins.dst)), get(resolve(ins.src)));
+    }
+
+    u64 Cpu::execCvtsi2sd32Impl(u32 src) {
+        i32 isrc = (i32)src;
+        double res = (double)isrc;
+        u64 r;
+        ::memcpy(&r, &res, sizeof(r));
+        return r;
+    }
+
+    u64 Cpu::execCvtsi2sd64Impl(u64 src) {
+        i64 isrc = (i64)src;
+        double res = (double)isrc;
+        u64 r;
+        ::memcpy(&r, &res, sizeof(r));
+        return r;
+    }
+
+    void Cpu::exec(const Cvtsi2sd<RSSE, R32>& ins) {
+        u64 res = execCvtsi2sd32Impl(get(ins.src));
+        set(ins.dst, writeLow<Xmm, u64>(get(ins.dst), res));
+    }
+    void Cpu::exec(const Cvtsi2sd<RSSE, M32>& ins) {
+        u64 res = execCvtsi2sd32Impl(get(resolve(ins.src)));
+        set(ins.dst, writeLow<Xmm, u64>(get(ins.dst), res));
+    }
+    void Cpu::exec(const Cvtsi2sd<RSSE, R64>& ins) {
+        u64 res = execCvtsi2sd64Impl(get(ins.src));
+        set(ins.dst, writeLow<Xmm, u64>(get(ins.dst), res));
+    }
+    void Cpu::exec(const Cvtsi2sd<RSSE, M64>& ins) {
+        u64 res = execCvtsi2sd64Impl(get(resolve(ins.src)));
+        set(ins.dst, writeLow<Xmm, u64>(get(ins.dst), res));
+    }
+
+
+    void Cpu::exec(const Xorpd<RSSE, RSSE>& ins) {
+        set(ins.dst, FPU::Xor(get(ins.dst), get(ins.src)));        
     }
 }

@@ -386,6 +386,48 @@ namespace x64 {
         Dst dst;
         Src src;
     };
+
+    template<typename Dst, typename Src>
+    struct Subsd {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
+    struct Mulsd {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
+    struct Comisd {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
+    struct Ucomisd {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
+    struct Cvtsi2sd {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
+    struct Xorpd {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
+    struct Tzcnt {
+        Dst dst;
+        Src src;
+    };
 }
 
 #endif

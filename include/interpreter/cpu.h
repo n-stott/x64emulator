@@ -157,6 +157,16 @@ namespace x64 {
         void execCmpxchg64Impl(Dst dst, R64 src);
 
     public:
+        void exec(const Add<R8, R8>&) override;
+        void exec(const Add<R8, Imm>&) override;
+        void exec(const Add<R8, M8>&) override;
+        void exec(const Add<M8, R8>&) override;
+        void exec(const Add<M8, Imm>&) override;
+        void exec(const Add<R16, R16>&) override;
+        void exec(const Add<R16, Imm>&) override;
+        void exec(const Add<R16, M16>&) override;
+        void exec(const Add<M16, R16>&) override;
+        void exec(const Add<M16, Imm>&) override;
         void exec(const Add<R32, R32>&) override;
         void exec(const Add<R32, Imm>&) override;
         void exec(const Add<R32, M32>&) override;
@@ -310,11 +320,14 @@ namespace x64 {
         void exec(const Mov<R64, M64>&) override;
         void exec(const Mov<M64, R64>&) override;
         void exec(const Mov<M64, Imm>&) override;
+        void exec(const Mov<RSSE, RSSE>&) override;
         void exec(const Mov<RSSE, MSSE>&) override;
         void exec(const Mov<MSSE, RSSE>&) override;
 
         void exec(const Movsx<R32, R8>&) override;
         void exec(const Movsx<R32, M8>&) override;
+        void exec(const Movsx<R64, R8>&) override;
+        void exec(const Movsx<R64, M8>&) override;
         void exec(const Movsx<R32, R32>&) override;
         void exec(const Movsx<R32, M32>&) override;
         void exec(const Movsx<R64, R32>&) override;
@@ -407,6 +420,17 @@ namespace x64 {
         void exec(const Rol<R32, Imm>&) override;
         void exec(const Rol<M32, Imm>&) override;
 
+        u16 execTzcnt16Impl(u16 src);
+        u32 execTzcnt32Impl(u32 src);
+        u64 execTzcnt64Impl(u64 src);
+
+        void exec(const Tzcnt<R16, R16>&) override;
+        void exec(const Tzcnt<R16, M16>&) override;
+        void exec(const Tzcnt<R32, R32>&) override;
+        void exec(const Tzcnt<R32, M32>&) override;
+        void exec(const Tzcnt<R64, R64>&) override;
+        void exec(const Tzcnt<R64, M64>&) override;
+
         void exec(const Test<R8, R8>&) override;
         void exec(const Test<R8, Imm>&) override;
         void exec(const Test<M8, R8>&) override;
@@ -490,6 +514,8 @@ namespace x64 {
         void exec(const Jcc<Cond::NS>&) override;
         void exec(const Jcc<Cond::O>&) override;
         void exec(const Jcc<Cond::NO>&) override;
+        void exec(const Jcc<Cond::P>&) override;
+        void exec(const Jcc<Cond::NP>&) override;
 
         void exec(const Bsr<R32, R32>&) override;
         void exec(const Bsr<R64, R64>&) override;
@@ -569,6 +595,8 @@ namespace x64 {
 
         void exec(const Movq<RSSE, R64>&) override;
         void exec(const Movq<R64, RSSE>&) override;
+        void exec(const Movq<RSSE, M64>&) override;
+        void exec(const Movq<M64, RSSE>&) override;
 
         void exec(const Movss<RSSE, M32>&) override;
         void exec(const Movss<M32, RSSE>&) override;
@@ -582,10 +610,36 @@ namespace x64 {
         void exec(const Addss<RSSE, RSSE>&) override;
         void exec(const Addss<RSSE, M32>&) override;
 
-
         void exec(const Addsd<RSSE, RSSE>&) override;
         void exec(const Addsd<RSSE, M64>&) override;
 
+        u64 execSubsdImpl(u64 dst, u64 src);
+
+        void exec(const Subsd<RSSE, RSSE>&) override;
+        void exec(const Subsd<RSSE, M64>&) override;
+
+        u64 execMulsdImpl(u64 dst, u64 src);
+
+        void exec(const Mulsd<RSSE, RSSE>&) override;
+        void exec(const Mulsd<RSSE, M64>&) override;
+
+        u64 execComisdImpl(u64 dst, u64 src);
+        u64 execUcomisdImpl(u64 dst, u64 src);
+
+        void exec(const Comisd<RSSE, RSSE>&) override;
+        void exec(const Comisd<RSSE, M64>&) override;
+        void exec(const Ucomisd<RSSE, RSSE>&) override;
+        void exec(const Ucomisd<RSSE, M64>&) override;
+
+        u64 execCvtsi2sd32Impl(u32 src);
+        u64 execCvtsi2sd64Impl(u64 src);
+
+        void exec(const Cvtsi2sd<RSSE, R32>&) override;
+        void exec(const Cvtsi2sd<RSSE, M32>&) override;
+        void exec(const Cvtsi2sd<RSSE, R64>&) override;
+        void exec(const Cvtsi2sd<RSSE, M64>&) override;
+
+        void exec(const Xorpd<RSSE, RSSE>&) override;
 
         void resolveFunctionName(const CallDirect& ins) override;
 

@@ -9,6 +9,16 @@ namespace x64 {
     public:
         ~InstructionHandler() = default;
 
+        virtual void exec(const Add<R8, R8>&) = 0;
+        virtual void exec(const Add<R8, Imm>&) = 0;
+        virtual void exec(const Add<R8, M8>&) = 0;
+        virtual void exec(const Add<M8, R8>&) = 0;
+        virtual void exec(const Add<M8, Imm>&) = 0;
+        virtual void exec(const Add<R16, R16>&) = 0;
+        virtual void exec(const Add<R16, Imm>&) = 0;
+        virtual void exec(const Add<R16, M16>&) = 0;
+        virtual void exec(const Add<M16, R16>&) = 0;
+        virtual void exec(const Add<M16, Imm>&) = 0;
         virtual void exec(const Add<R32, R32>&) = 0;
         virtual void exec(const Add<R32, Imm>&) = 0;
         virtual void exec(const Add<R32, M32>&) = 0;
@@ -162,11 +172,14 @@ namespace x64 {
         virtual void exec(const Mov<R64, M64>&) = 0;
         virtual void exec(const Mov<M64, R64>&) = 0;
         virtual void exec(const Mov<M64, Imm>&) = 0;
+        virtual void exec(const Mov<RSSE, RSSE>&) = 0;
         virtual void exec(const Mov<RSSE, MSSE>&) = 0;
         virtual void exec(const Mov<MSSE, RSSE>&) = 0;
 
         virtual void exec(const Movsx<R32, R8>&) = 0;
         virtual void exec(const Movsx<R32, M8>&) = 0;
+        virtual void exec(const Movsx<R64, R8>&) = 0;
+        virtual void exec(const Movsx<R64, M8>&) = 0;
         virtual void exec(const Movsx<R32, R32>&) = 0;
         virtual void exec(const Movsx<R32, M32>&) = 0;
         virtual void exec(const Movsx<R64, R32>&) = 0;
@@ -259,6 +272,13 @@ namespace x64 {
         virtual void exec(const Rol<R32, Imm>&) = 0;
         virtual void exec(const Rol<M32, Imm>&) = 0;
 
+        virtual void exec(const Tzcnt<R16, R16>&) = 0;
+        virtual void exec(const Tzcnt<R16, M16>&) = 0;
+        virtual void exec(const Tzcnt<R32, R32>&) = 0;
+        virtual void exec(const Tzcnt<R32, M32>&) = 0;
+        virtual void exec(const Tzcnt<R64, R64>&) = 0;
+        virtual void exec(const Tzcnt<R64, M64>&) = 0;
+
         virtual void exec(const Test<R8, R8>&) = 0;
         virtual void exec(const Test<M8, R8>&) = 0;
         virtual void exec(const Test<R8, Imm>&) = 0;
@@ -342,6 +362,8 @@ namespace x64 {
         virtual void exec(const Jcc<Cond::NS>&) = 0;
         virtual void exec(const Jcc<Cond::O>&) = 0;
         virtual void exec(const Jcc<Cond::NO>&) = 0;
+        virtual void exec(const Jcc<Cond::P>&) = 0;
+        virtual void exec(const Jcc<Cond::NP>&) = 0;
 
         virtual void exec(const Bsr<R32, R32>&) = 0;
         virtual void exec(const Bsr<R64, R64>&) = 0;
@@ -421,6 +443,8 @@ namespace x64 {
 
         virtual void exec(const Movq<RSSE, R64>&) = 0;
         virtual void exec(const Movq<R64, RSSE>&) = 0;
+        virtual void exec(const Movq<RSSE, M64>&) = 0;
+        virtual void exec(const Movq<M64, RSSE>&) = 0;
 
         virtual void exec(const Movss<RSSE, M32>&) = 0;
         virtual void exec(const Movss<M32, RSSE>&) = 0;
@@ -433,6 +457,24 @@ namespace x64 {
 
         virtual void exec(const Addsd<RSSE, RSSE>&) = 0;
         virtual void exec(const Addsd<RSSE, M64>&) = 0;
+
+        virtual void exec(const Subsd<RSSE, RSSE>&) = 0;
+        virtual void exec(const Subsd<RSSE, M64>&) = 0;
+
+        virtual void exec(const Mulsd<RSSE, RSSE>&) = 0;
+        virtual void exec(const Mulsd<RSSE, M64>&) = 0;
+
+        virtual void exec(const Comisd<RSSE, RSSE>&) = 0;
+        virtual void exec(const Comisd<RSSE, M64>&) = 0;
+        virtual void exec(const Ucomisd<RSSE, RSSE>&) = 0;
+        virtual void exec(const Ucomisd<RSSE, M64>&) = 0;
+
+        virtual void exec(const Cvtsi2sd<RSSE, R32>&) = 0;
+        virtual void exec(const Cvtsi2sd<RSSE, M32>&) = 0;
+        virtual void exec(const Cvtsi2sd<RSSE, R64>&) = 0;
+        virtual void exec(const Cvtsi2sd<RSSE, M64>&) = 0;
+
+        virtual void exec(const Xorpd<RSSE, RSSE>&) = 0;
 
         virtual void resolveFunctionName(const CallDirect&) = 0;
     };
