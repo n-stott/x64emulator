@@ -31,6 +31,9 @@ extern "C" {
     __attribute__((noinline))
     extern int intrinsic$atoi(const char*);
 
+    __attribute__((noinline))
+    extern void intrinsic$__assert_fail(const char*, const char*, unsigned int, const char*);
+
     int fakelibc$putchar(int c) {
         return intrinsic$putchar(c);
     }
@@ -422,6 +425,10 @@ extern "C" {
 
     int fakelibc$atoi(const char* nptr) {
         return intrinsic$atoi(nptr);
+    }
+
+    void fakelibc$__assert_fail(const char* assertion, const char* file, unsigned int line, const char* function) {
+        return intrinsic$__assert_fail(assertion, file, line, function);
     }
 
 }

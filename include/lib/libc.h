@@ -70,6 +70,10 @@ namespace x64 {
     struct Atoi final : public LibraryFunction {
         explicit Atoi(const ExecutionContext& context, LibC* libc);
     };
+
+    struct AssertFail final : public LibraryFunction {
+        explicit AssertFail(const ExecutionContext& context, LibC* libc);
+    };
 }
 
 #endif

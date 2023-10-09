@@ -48,6 +48,8 @@ namespace x64 {
         callback(std::move(instructions), std::move(func));
         func = createAndFill<Atoi>(&instructions, context, this);
         callback(std::move(instructions), std::move(func));
+        func = createAndFill<AssertFail>(&instructions, context, this);
+        callback(std::move(instructions), std::move(func));
     }
 
     class LibC::Heap {
@@ -213,7 +215,7 @@ namespace x64 {
         explicit PutcharInstruction(ExecutionContext context) : context_(context) { }
 
         void exec(InstructionHandler*) const override {
-            int c = static_cast<int>(context_.rax());
+            int c = static_cast<int>(context_.rdi());
             std::putchar(c);
             ::fflush(stdout);
             context_.set_rax(1);
@@ -230,7 +232,7 @@ namespace x64 {
         explicit MallocInstruction(ExecutionContext context, LibC* libc) : context_(context), libc_(libc) { }
 
         void exec(InstructionHandler*) const override {
-            u64 size = context_.rax();
+            u64 size = context_.rdi();
             u64 address = libc_->heap_->malloc(size);
             context_.set_rax(address);
         }
@@ -247,7 +249,7 @@ namespace x64 {
         explicit FreeInstruction(ExecutionContext context, LibC* libc) : context_(context), libc_(libc) { }
 
         void exec(InstructionHandler*) const override {
-            u64 address = context_.rax();
+            u64 address = context_.rdi();
             libc_->heap_->free(address);
         }
         std::string toString(InstructionHandler*) const override {
@@ -265,8 +267,8 @@ namespace x64 {
             libc_(libc) { }
 
         void exec(InstructionHandler*) const override {
-            u64 pathname_address = context_.rax();
-            u64 mode_address = context_.rbx();
+            u64 pathname_address = context_.rdi();
+            u64 mode_address = context_.rsi();
 
             Ptr8 pathname_ptr { Segment::DS, pathname_address };
             std::string pathname;
@@ -303,7 +305,7 @@ namespace x64 {
             libc_(libc) { }
 
         void exec(InstructionHandler*) const override {
-            u32 fileHandler = static_cast<u32>(context_.rax());
+            u32 fileHandler = static_cast<u32>(context_.rdi());
             int fd = libc_->fileRegistry_->fileno(fileHandler);
             context_.set_rax(fd);
         }
@@ -323,7 +325,7 @@ namespace x64 {
             libc_(libc) { }
 
         void exec(InstructionHandler*) const override {
-            u32 fileHandler = static_cast<u32>(context_.rax());
+            u32 fileHandler = static_cast<u32>(context_.rdi());
             int ret = libc_->fileRegistry_->closeFile(fileHandler);
             context_.set_rax(ret);
         }
@@ -343,9 +345,9 @@ namespace x64 {
             libc_(libc) { }
 
         void exec(InstructionHandler*) const override {
-            int fd = static_cast<int>(context_.rax());
-            u64 bufAddress = context_.rbx();
-            u64 count = context_.rcx();
+            int fd = static_cast<int>(context_.rdi());
+            u64 bufAddress = context_.rsi();
+            u64 count = context_.rdx();
             fmt::print("Read {} bytes from fd={} into buf={:#x}\n", count, fd, bufAddress);
             FILE* file = libc_->fileRegistry_->fileFromFd(fd);
             if(!file) {
@@ -383,20 +385,39 @@ namespace x64 {
         explicit AtoiInstruction(ExecutionContext context, LibC* libc) : context_(context), libc_(libc) { }
 
         void exec(InstructionHandler*) const override {
-            std::string buffer;
-            u64 address = context_.rax();
-            Ptr8 ptr { Segment::DS, address };
-            while(true) {
-                char c = context_.mmu()->read8(ptr);
-                if(c == '\0') break;
-                buffer.push_back(c);
-                ++ptr;
-            }
+            u64 address = context_.rdi();
+            std::string buffer = context_.readString(address);
             int value = std::atoi(buffer.c_str());
             context_.set_rax(value);
         }
         std::string toString(InstructionHandler*) const override {
             return "__atoi";
+        }
+    private:
+        ExecutionContext context_;
+        LibC* libc_;
+    };
+
+    class AssertFailInstruction : public Intrinsic {
+    public:
+        explicit AssertFailInstruction(ExecutionContext context, LibC* libc) : context_(context), libc_(libc) { }
+
+        void exec(InstructionHandler*) const override {
+            u64 assertion = context_.rdi(); // const char* assertion
+            std::string assertionString = context_.readString(assertion);
+
+            u64 file = context_.rsi(); // const char* file
+            std::string fileString = context_.readString(file);
+
+            u64 line = context_.rdx(); // unsigned int line
+
+            u64 function = context_.rcx(); // const char* function
+            std::string functionString = context_.readString(function);
+            fmt::print("Assertion failed \"{}\" : {}:{} in function {}\n", assertionString, fileString, line, functionString);
+            context_.stop();
+        }
+        std::string toString(InstructionHandler*) const override {
+            return "__assert_fail";
         }
     private:
         ExecutionContext context_;
@@ -416,16 +437,7 @@ namespace x64 {
         }
 
         void addIntegerStructOrPointerArgument() {
-            if(nbArguments_ == 0) {
-                add(func_, make_wrapper<Mov<R64, R64>>(R64::RAX, R64::RDI));
-            } else if(nbArguments_ == 1) {
-                push(R64::RBX);
-                add(func_, make_wrapper<Mov<R64, R64>>(R64::RBX, R64::RSI));
-            } else if(nbArguments_ == 2) {
-                add(func_, make_wrapper<Mov<R64, R64>>(R64::RCX, R64::RDX));
-            } else {
-                assert(!"Cannot add more than 3 arguments");
-            }
+            verify(nbArguments_ < 4, "Cannot add more than 3 arguments");
             ++nbArguments_;
         }
 
@@ -515,6 +527,16 @@ namespace x64 {
         FunctionBuilder builder(this);
         builder.addIntegerStructOrPointerArgument();
         builder.addIntrinsicCall<AtoiInstruction>(context, libc);
+        builder.close();
+    }
+
+    AssertFail::AssertFail(const ExecutionContext& context, LibC* libc) : LibraryFunction("intrinsic$__assert_fail") {
+        FunctionBuilder builder(this);
+        builder.addIntegerStructOrPointerArgument();
+        builder.addIntegerStructOrPointerArgument();
+        builder.addIntegerStructOrPointerArgument();
+        builder.addIntegerStructOrPointerArgument();
+        builder.addIntrinsicCall<AssertFailInstruction>(context, libc);
         builder.close();
     }
 }
