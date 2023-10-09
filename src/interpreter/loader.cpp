@@ -93,8 +93,12 @@ namespace x64 {
     }
 
     void Loader::loadExecutableHeader(const elf::Elf64& elf, const elf::SectionHeader64& header, const std::string& filePath, const std::string& shortFilePath, u64 elfOffset) {
-        std::vector<std::unique_ptr<X86Instruction>> instructions;
-        CapstoneWrapper::disassembleSection(elf, std::string(header.name), &instructions);
+        auto section = elf.sectionFromName(header.name);
+        verify(section.has_value());
+
+        std::vector<std::unique_ptr<X86Instruction>> instructions = CapstoneWrapper::disassembleSection(section->begin,
+                                                                                                        std::distance(section->begin, section->end),
+                                                                                                        section->address);
 
         assert(std::is_sorted(instructions.begin(), instructions.end(), [](const auto& a, const auto& b) {
             return a->address < b->address;
@@ -111,11 +115,7 @@ namespace x64 {
 
         loadable_->addExecutableSection(std::move(esection));
 
-        std::string regionName = std::string(header.name);
-
-        auto section = elf.sectionFromName(header.name);
-        verify(section.has_value());
-        Mmu::Region region{ shortFilePath, regionName, section->address + elfOffset, section->size(), PROT_NONE };
+        Mmu::Region region{ shortFilePath, std::string(header.name), section->address + elfOffset, section->size(), PROT_NONE };
         loadable_->addMmuRegion(std::move(region));
     }
 

@@ -1,27 +1,20 @@
 #include "disassembler/capstonewrapper.h"
-#include "instructionhandler.h"
 #include "instructionutils.h"
 #include "instructions.h"
-#include "elf-reader.h"
 #include "fmt/core.h"
-#include <boost/core/demangle.hpp>
-#include <charconv>
-#include <unordered_map>
+#include <cassert>
 
 #include <capstone/capstone.h>
 
 namespace x64 {
 
-    namespace {
+    template<typename Instruction, typename... Args>
+    static inline std::unique_ptr<X86Instruction> make_wrapper(u64 address, Args... args) {
+        return std::make_unique<InstructionWrapper<Instruction>>(address, Instruction{args...});
+    }
 
-        template<typename Instruction, typename... Args>
-        inline std::unique_ptr<X86Instruction> make_wrapper(u64 address, Args... args) {
-            return std::make_unique<InstructionWrapper<Instruction>>(address, Instruction{args...});
-        }
-
-        inline std::unique_ptr<X86Instruction> make_failed(const cs_insn& insn) {
-            return make_wrapper<Unknown>(insn.address, insn.mnemonic);
-        }
+    static inline std::unique_ptr<X86Instruction> make_failed(const cs_insn& insn) {
+        return make_wrapper<Unknown>(insn.address, insn.mnemonic);
     }
 
     std::unique_ptr<X86Instruction> CapstoneWrapper::makeInstruction(const cs_insn& insn) {
@@ -1882,42 +1875,37 @@ namespace x64 {
         return make_failed(insn);
     }
 
-    void CapstoneWrapper::disassembleSection(const elf::Elf64& elf, std::string sectionName, std::vector<std::unique_ptr<X86Instruction>>* instructions) {
-        if(!instructions) return;
-        instructions->clear();
-
-        auto section = elf.sectionFromName(sectionName);
-        if(!section) return;
-
-        auto insertInstruction = [&](const cs_insn& insn) {
-            auto x86insn = makeInstruction(insn);
-            instructions->push_back(std::move(x86insn));
-        };
+    std::vector<std::unique_ptr<X86Instruction>> CapstoneWrapper::disassembleSection(const u8* begin, size_t size, u64 address) {
+        std::vector<std::unique_ptr<X86Instruction>> instructions;
 
         csh handle;
-        if(cs_open(CS_ARCH_X86, CS_MODE_64, &handle) != CS_ERR_OK) return;
-        if(cs_option(handle, CS_OPT_DETAIL, CS_OPT_ON) != CS_ERR_OK) return;
+        if(cs_open(CS_ARCH_X86, CS_MODE_64, &handle) != CS_ERR_OK) return {};
+        if(cs_option(handle, CS_OPT_DETAIL, CS_OPT_ON) != CS_ERR_OK) return {};
 
-        const u8* codeBegin = section->begin;
-        size_t codeSize = std::distance(section->begin, section->end);
-        uint64_t address = section->address;
+        const u8* codeBegin = begin;
+        size_t codeSize = size;
+        uint64_t codeAddress = address;
         static_assert(sizeof(uint64_t) == sizeof(u64), "");
 
 #if 0
         cs_insn* insns;
         size_t count = cs_disasm(handle, codeBegin, codeSize, address, 0, &insns);
         for(size_t j = 0; j < count; ++j) {
-            insertInstruction(insns[j]);
+            auto x86insn = makeInstruction(insns[j]);
+            instructions.push_back(std::move(x86insn));
         }
         cs_free(insns, count);
 #else
         cs_insn* insn = cs_malloc(handle);
-        while(cs_disasm_iter(handle, &codeBegin, &codeSize, &address, insn)) {
-            insertInstruction(*insn);
+        while(cs_disasm_iter(handle, &codeBegin, &codeSize, &codeAddress, insn)) {
+            auto x86insn = makeInstruction(*insn);
+            instructions.push_back(std::move(x86insn));
         }
         cs_free(insn, 1);
 #endif
         cs_close(&handle);
+
+        return instructions;
     }
 
 }
