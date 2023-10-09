@@ -1882,18 +1882,13 @@ namespace x64 {
         return make_failed(insn);
     }
 
-    void CapstoneWrapper::disassembleSection(std::string filepath, std::string sectionName, std::vector<std::unique_ptr<X86Instruction>>* instructions, std::vector<std::unique_ptr<Function>>* functions) {
+    void CapstoneWrapper::disassembleSection(const elf::Elf64& elf, std::string sectionName, std::vector<std::unique_ptr<X86Instruction>>* instructions, std::vector<std::unique_ptr<Function>>* functions) {
         if(!instructions) return;
         if(!functions) return;
         instructions->clear();
         functions->clear();
 
-        auto elf = elf::ElfReader::tryCreate(filepath);
-        if(!elf) return;
-        if(elf->archClass() != elf::Class::B64) return;
-        std::unique_ptr<elf::Elf64> elf64(static_cast<elf::Elf64*>(elf.release()));
-
-        auto section = elf64->sectionFromName(sectionName);
+        auto section = elf.sectionFromName(sectionName);
         if(!section) return;
 
         auto insertInstruction = [&](const cs_insn& insn) {
@@ -1929,12 +1924,12 @@ namespace x64 {
         // Try extracting functions
         std::vector<std::pair<u64, std::string>> symbols;
 
-        auto symbolTable = elf64->symbolTable();
-        auto stringTable = elf64->stringTable();
+        auto symbolTable = elf.symbolTable();
+        auto stringTable = elf.stringTable();
         if(symbolTable && stringTable) {
             for(const auto& symbol : symbolTable.value()) {
                 if(symbol.type() != elf::SymbolType::FUNC) continue;
-                std::string rawSymbol = std::string(symbol.symbol(&stringTable.value(),*elf64));
+                std::string rawSymbol = std::string(symbol.symbol(&stringTable.value(), elf));
                 symbols.push_back(std::make_pair(symbol.st_value, rawSymbol));
             }
         }

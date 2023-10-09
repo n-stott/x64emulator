@@ -11,11 +11,13 @@
 
 struct cs_insn;
 
+namespace elf { class Elf64; }
+
 namespace x64 {
 
     class CapstoneWrapper {
     public:
-        static void disassembleSection(std::string filepath, std::string section, std::vector<std::unique_ptr<X86Instruction>>* instructions, std::vector<std::unique_ptr<Function>>* functions);
+        static void disassembleSection(const elf::Elf64& elf, std::string sectionName, std::vector<std::unique_ptr<X86Instruction>>* instructions, std::vector<std::unique_ptr<Function>>* functions);
 
     private:
         static std::unique_ptr<X86Instruction> makeInstruction(const cs_insn& insn);

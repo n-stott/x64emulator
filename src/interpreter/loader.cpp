@@ -95,7 +95,7 @@ namespace x64 {
     void Loader::loadExecutableHeader(const elf::Elf64& elf, const elf::SectionHeader64& header, const std::string& filePath, const std::string& shortFilePath, u64 elfOffset) {
         std::vector<std::unique_ptr<X86Instruction>> instructions;
         std::vector<std::unique_ptr<Function>> functions;
-        CapstoneWrapper::disassembleSection(std::string(filePath), std::string(header.name), &instructions, &functions);
+        CapstoneWrapper::disassembleSection(elf, std::string(header.name), &instructions, &functions);
 
         assert(std::is_sorted(instructions.begin(), instructions.end(), [](const auto& a, const auto& b) {
             return a->address < b->address;
