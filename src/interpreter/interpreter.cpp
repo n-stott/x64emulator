@@ -109,8 +109,7 @@ namespace x64 {
             pushProgramArguments(programFilePath, arguments);
             executeMain();
         }, [&]() {
-            mmu_.dumpRegions();
-            stop_ = true;
+            crash();
         });
     }
 
