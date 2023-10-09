@@ -59,20 +59,6 @@ namespace x64 {
         void print() const;
     };
 
-    struct Program {
-        std::string filepath;
-        std::string filename;
-        std::vector<Function> functions;
-
-        Program() = default;
-        virtual ~Program() = default;
-        Program(Program&&) = default;
-
-        virtual const Function* findUniqueFunction(std::string_view name) const;
-        virtual const Function* findFunction(u64 address, std::string_view name) const;
-        virtual const Function* findFunctionByAddress(u64 address) const;
-    };
-
     struct ExecutableSection {
         std::string filename;
         std::string sectionname;

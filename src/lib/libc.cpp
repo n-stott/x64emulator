@@ -12,7 +12,7 @@
 
 namespace x64 {
 
-    LibC::LibC() : Program() {
+    LibC::LibC() {
         fileRegistry_ = std::make_unique<FileRegistry>();
     }
     LibC::LibC(LibC&&) = default;

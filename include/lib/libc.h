@@ -8,7 +8,7 @@
 
 namespace x64 {
 
-    struct LibC : public Program {
+    struct LibC {
         explicit LibC();
         LibC(LibC&&);
         ~LibC();
