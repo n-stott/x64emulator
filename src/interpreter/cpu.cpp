@@ -1752,6 +1752,38 @@ namespace x64 {
         set(ins.dst, zeroExtend<Xmm, u64>(res));
     }
 
+    u32 Cpu::execSubssImpl(u32 dst, u32 src) {
+        static_assert(sizeof(u32) == sizeof(float));
+        float d;
+        float s;
+        ::memcpy(&d, &dst, sizeof(d));
+        ::memcpy(&s, &src, sizeof(s));
+        float res = d - s;
+        u32 r;
+        ::memcpy(&r, &res, sizeof(r));
+        if(res != res) {
+            flags_.zero = true;
+            flags_.parity = true;
+            flags_.carry = true;
+        } else if(res > 0.0) {
+            flags_.zero = false;
+            flags_.parity = false;
+            flags_.carry = false;
+        } else if(res < 0.0) {
+            flags_.zero = false;
+            flags_.parity = false;
+            flags_.carry = true;
+        } else {
+            verify(res == 0.0);
+            flags_.zero = true;
+            flags_.parity = false;
+            flags_.carry = false;
+        }
+        flags_.overflow = false;
+        flags_.sign = false;
+        flags_.setSure();
+        return r;
+    }
 
     u64 Cpu::execSubsdImpl(u64 dst, u64 src) {
         static_assert(sizeof(u64) == sizeof(double));
@@ -1784,6 +1816,18 @@ namespace x64 {
         flags_.sign = false;
         flags_.setSure();
         return r;
+    }
+
+    void Cpu::exec(const Subss<RSSE, RSSE>& ins) {
+        WARN_ROUNDING_MODE();
+        u32 res = execSubssImpl(narrow<u32, Xmm>(get(ins.dst)), narrow<u32, Xmm>(get(ins.src)));
+        set(ins.dst, zeroExtend<Xmm, u32>(res));
+    }
+
+    void Cpu::exec(const Subss<RSSE, M32>& ins) {
+        WARN_ROUNDING_MODE();
+        u32 res = execSubssImpl(narrow<u32, Xmm>(get(ins.dst)), get(resolve(ins.src)));
+        set(ins.dst, zeroExtend<Xmm, u32>(res));
     }
 
     void Cpu::exec(const Subsd<RSSE, RSSE>& ins) {
@@ -1825,6 +1869,16 @@ namespace x64 {
     }
 
 
+    void Cpu::exec(const Comiss<RSSE, RSSE>& ins) {
+        WARN_ROUNDING_MODE();
+        execSubssImpl(narrow<u32, Xmm>(get(ins.dst)), narrow<u32, Xmm>(get(ins.src)));
+    }
+
+    void Cpu::exec(const Comiss<RSSE, M32>& ins) {
+        WARN_ROUNDING_MODE();
+        execSubssImpl(narrow<u32, Xmm>(get(ins.dst)), get(resolve(ins.src)));
+    }
+
     void Cpu::exec(const Comisd<RSSE, RSSE>& ins) {
         WARN_ROUNDING_MODE();
         execSubsdImpl(narrow<u64, Xmm>(get(ins.dst)), narrow<u64, Xmm>(get(ins.src)));
@@ -1833,6 +1887,18 @@ namespace x64 {
     void Cpu::exec(const Comisd<RSSE, M64>& ins) {
         WARN_ROUNDING_MODE();
         execSubsdImpl(narrow<u64, Xmm>(get(ins.dst)), get(resolve(ins.src)));
+    }
+
+    void Cpu::exec(const Ucomiss<RSSE, RSSE>& ins) {
+        WARN_ROUNDING_MODE();
+        DEBUG_ONLY(fmt::print(stderr, "Ucomiss treated as comiss\n");)
+        execSubsdImpl(narrow<u32, Xmm>(get(ins.dst)), narrow<u32, Xmm>(get(ins.src)));
+    }
+
+    void Cpu::exec(const Ucomiss<RSSE, M32>& ins) {
+        WARN_ROUNDING_MODE();
+        DEBUG_ONLY(fmt::print(stderr, "Ucomiss treated as comiss\n");)
+        execSubsdImpl(narrow<u32, Xmm>(get(ins.dst)), get(resolve(ins.src)));
     }
 
     void Cpu::exec(const Ucomisd<RSSE, RSSE>& ins) {

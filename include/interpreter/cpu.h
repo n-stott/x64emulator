@@ -609,25 +609,28 @@ namespace x64 {
         
         void exec(const Addss<RSSE, RSSE>&) override;
         void exec(const Addss<RSSE, M32>&) override;
-
         void exec(const Addsd<RSSE, RSSE>&) override;
         void exec(const Addsd<RSSE, M64>&) override;
 
+        u32 execSubssImpl(u32 dst, u32 src);
         u64 execSubsdImpl(u64 dst, u64 src);
 
         void exec(const Subsd<RSSE, RSSE>&) override;
         void exec(const Subsd<RSSE, M64>&) override;
+        void exec(const Subss<RSSE, RSSE>&) override;
+        void exec(const Subss<RSSE, M32>&) override;
 
         u64 execMulsdImpl(u64 dst, u64 src);
 
         void exec(const Mulsd<RSSE, RSSE>&) override;
         void exec(const Mulsd<RSSE, M64>&) override;
 
-        u64 execComisdImpl(u64 dst, u64 src);
-        u64 execUcomisdImpl(u64 dst, u64 src);
-
+        void exec(const Comiss<RSSE, RSSE>&) override;
+        void exec(const Comiss<RSSE, M32>&) override;
         void exec(const Comisd<RSSE, RSSE>&) override;
         void exec(const Comisd<RSSE, M64>&) override;
+        void exec(const Ucomiss<RSSE, RSSE>&) override;
+        void exec(const Ucomiss<RSSE, M32>&) override;
         void exec(const Ucomisd<RSSE, RSSE>&) override;
         void exec(const Ucomisd<RSSE, M64>&) override;
 

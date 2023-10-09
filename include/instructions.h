@@ -388,6 +388,12 @@ namespace x64 {
     };
 
     template<typename Dst, typename Src>
+    struct Subss {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
     struct Subsd {
         Dst dst;
         Src src;
@@ -400,7 +406,19 @@ namespace x64 {
     };
 
     template<typename Dst, typename Src>
+    struct Comiss {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
     struct Comisd {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
+    struct Ucomiss {
         Dst dst;
         Src src;
     };

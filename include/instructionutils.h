@@ -637,6 +637,11 @@ namespace utils {
     }
 
     template<typename Dst, typename Src>
+    inline std::string toString(Subss<Dst, Src> ins) {
+        return fmt::format("{:9}{},{}", "subss", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Dst, typename Src>
     inline std::string toString(Subsd<Dst, Src> ins) {
         return fmt::format("{:9}{},{}", "subsd", toString(ins.dst), toString(ins.src));
     }
@@ -647,8 +652,18 @@ namespace utils {
     }
 
     template<typename Dst, typename Src>
+    inline std::string toString(Comiss<Dst, Src> ins) {
+        return fmt::format("{:9}{},{}", "comiss", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Dst, typename Src>
     inline std::string toString(Comisd<Dst, Src> ins) {
         return fmt::format("{:9}{},{}", "comisd", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Dst, typename Src>
+    inline std::string toString(Ucomiss<Dst, Src> ins) {
+        return fmt::format("{:9}{},{}", "ucomiss", toString(ins.dst), toString(ins.src));
     }
 
     template<typename Dst, typename Src>

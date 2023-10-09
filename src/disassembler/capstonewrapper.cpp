@@ -124,9 +124,12 @@ namespace x64 {
             case X86_INS_MOVSD: return makeMovsd(insn);
             case X86_INS_ADDSS: return makeAddss(insn);
             case X86_INS_ADDSD: return makeAddsd(insn);
+            case X86_INS_SUBSS: return makeSubss(insn);
             case X86_INS_SUBSD: return makeSubsd(insn);
             case X86_INS_MULSD: return makeMulsd(insn);
+            case X86_INS_COMISS: return makeComiss(insn);
             case X86_INS_COMISD: return makeComisd(insn);
+            case X86_INS_UCOMISS: return makeUcomiss(insn);
             case X86_INS_UCOMISD: return makeUcomisd(insn);
             case X86_INS_CVTSI2SD: return makeCvtsi2sd(insn);
             case X86_INS_STOSB:
@@ -1746,6 +1749,19 @@ namespace x64 {
         return make_failed(insn);
     }
 
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makeSubss(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto rssesrc = asRegister128(src);
+        auto m32src = asMemory32(src);
+        if(rssedst && rssesrc) return make_wrapper<Subss<RSSE, RSSE>>(insn.address, rssedst.value(), rssesrc.value());
+        if(rssedst && m32src) return make_wrapper<Subss<RSSE, M32>>(insn.address, rssedst.value(), m32src.value());
+        return make_failed(insn);
+    }
+
     std::unique_ptr<X86Instruction> CapstoneWrapper::makeSubsd(const cs_insn& insn) {
         const auto& x86detail = insn.detail->x86;
         assert(x86detail.op_count == 2);
@@ -1772,6 +1788,26 @@ namespace x64 {
         return make_failed(insn);
     }
 
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makeComiss(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto rssesrc = asRegister128(src);
+        auto m32src = asMemory32(src);
+        if(auto m128src = asMemory128(src)) {
+            // Capstone bug #1456
+            // Comiss xmm0, DWORD PTR[] is incorrectly disassembled as Comiss xmm0, XMMWORD PTR[]
+            cs_x86_op hacked_src = src;
+            hacked_src.size = 4;
+            m32src = asMemory32(hacked_src);
+        }
+        if(rssedst && rssesrc) return make_wrapper<Comiss<RSSE, RSSE>>(insn.address, rssedst.value(), rssesrc.value());
+        if(rssedst && m32src) return make_wrapper<Comiss<RSSE, M32>>(insn.address, rssedst.value(), m32src.value());
+        return make_failed(insn);
+    }
+
     std::unique_ptr<X86Instruction> CapstoneWrapper::makeComisd(const cs_insn& insn) {
         const auto& x86detail = insn.detail->x86;
         assert(x86detail.op_count == 2);
@@ -1789,6 +1825,19 @@ namespace x64 {
         }
         if(rssedst && rssesrc) return make_wrapper<Comisd<RSSE, RSSE>>(insn.address, rssedst.value(), rssesrc.value());
         if(rssedst && m64src) return make_wrapper<Comisd<RSSE, M64>>(insn.address, rssedst.value(), m64src.value());
+        return make_failed(insn);
+    }
+
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makeUcomiss(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto rssesrc = asRegister128(src);
+        auto m32src = asMemory32(src);
+        if(rssedst && rssesrc) return make_wrapper<Ucomiss<RSSE, RSSE>>(insn.address, rssedst.value(), rssesrc.value());
+        if(rssedst && m32src) return make_wrapper<Ucomiss<RSSE, M32>>(insn.address, rssedst.value(), m32src.value());
         return make_failed(insn);
     }
 

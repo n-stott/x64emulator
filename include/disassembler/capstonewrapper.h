@@ -125,10 +125,13 @@ namespace x64 {
 
         static std::unique_ptr<X86Instruction> makeAddss(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeAddsd(const cs_insn& insn);
+        static std::unique_ptr<X86Instruction> makeSubss(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeSubsd(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeMulsd(const cs_insn& insn);
 
+        static std::unique_ptr<X86Instruction> makeComiss(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeComisd(const cs_insn& insn);
+        static std::unique_ptr<X86Instruction> makeUcomiss(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeUcomisd(const cs_insn& insn);
 
         static std::unique_ptr<X86Instruction> makeCvtsi2sd(const cs_insn& insn);

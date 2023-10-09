@@ -454,18 +454,23 @@ namespace x64 {
 
         virtual void exec(const Addss<RSSE, RSSE>&) = 0;
         virtual void exec(const Addss<RSSE, M32>&) = 0;
-
         virtual void exec(const Addsd<RSSE, RSSE>&) = 0;
         virtual void exec(const Addsd<RSSE, M64>&) = 0;
 
+        virtual void exec(const Subss<RSSE, RSSE>&) = 0;
+        virtual void exec(const Subss<RSSE, M32>&) = 0;
         virtual void exec(const Subsd<RSSE, RSSE>&) = 0;
         virtual void exec(const Subsd<RSSE, M64>&) = 0;
 
         virtual void exec(const Mulsd<RSSE, RSSE>&) = 0;
         virtual void exec(const Mulsd<RSSE, M64>&) = 0;
 
+        virtual void exec(const Comiss<RSSE, RSSE>&) = 0;
+        virtual void exec(const Comiss<RSSE, M32>&) = 0;
         virtual void exec(const Comisd<RSSE, RSSE>&) = 0;
         virtual void exec(const Comisd<RSSE, M64>&) = 0;
+        virtual void exec(const Ucomiss<RSSE, RSSE>&) = 0;
+        virtual void exec(const Ucomiss<RSSE, M32>&) = 0;
         virtual void exec(const Ucomisd<RSSE, RSSE>&) = 0;
         virtual void exec(const Ucomisd<RSSE, M64>&) = 0;
 
