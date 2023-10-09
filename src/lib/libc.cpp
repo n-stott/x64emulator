@@ -220,7 +220,7 @@ namespace x64 {
             ::fflush(stdout);
             context_.set_rax(1);
         }
-        std::string toString(InstructionHandler*) const override {
+        std::string toString(const InstructionHandler*) const override {
             return "__putchar";
         }
     private:
@@ -236,7 +236,7 @@ namespace x64 {
             u64 address = libc_->heap_->malloc(size);
             context_.set_rax(address);
         }
-        std::string toString(InstructionHandler*) const override {
+        std::string toString(const InstructionHandler*) const override {
             return "__malloc";
         }
     private:
@@ -252,7 +252,7 @@ namespace x64 {
             u64 address = context_.rdi();
             libc_->heap_->free(address);
         }
-        std::string toString(InstructionHandler*) const override {
+        std::string toString(const InstructionHandler*) const override {
             return "__free";
         }
     private:
@@ -290,7 +290,7 @@ namespace x64 {
 
             context_.set_rax(filehandler);
         }
-        std::string toString(InstructionHandler*) const override {
+        std::string toString(const InstructionHandler*) const override {
             return "__fopen64";
         }
     private:
@@ -310,7 +310,7 @@ namespace x64 {
             context_.set_rax(fd);
         }
 
-        std::string toString(InstructionHandler*) const override {
+        std::string toString(const InstructionHandler*) const override {
             return "__fileno";
         }
     private:
@@ -330,7 +330,7 @@ namespace x64 {
             context_.set_rax(ret);
         }
 
-        std::string toString(InstructionHandler*) const override {
+        std::string toString(const InstructionHandler*) const override {
             return "__fclose";
         }
     private:
@@ -372,7 +372,7 @@ namespace x64 {
             context_.set_rax(nbytes);
         }
 
-        std::string toString(InstructionHandler*) const override {
+        std::string toString(const InstructionHandler*) const override {
             return "__read";
         }
     private:
@@ -390,7 +390,7 @@ namespace x64 {
             int value = std::atoi(buffer.c_str());
             context_.set_rax(value);
         }
-        std::string toString(InstructionHandler*) const override {
+        std::string toString(const InstructionHandler*) const override {
             return "__atoi";
         }
     private:
@@ -416,7 +416,7 @@ namespace x64 {
             fmt::print("Assertion failed \"{}\" : {}:{} in function {}\n", assertionString, fileString, line, functionString);
             context_.stop();
         }
-        std::string toString(InstructionHandler*) const override {
+        std::string toString(const InstructionHandler*) const override {
             return "__assert_fail";
         }
     private:

@@ -231,6 +231,21 @@ namespace x64 {
         execute(function->address);
     }
 
+    const X86Instruction* Interpreter::fetchInstruction() {
+        verify(!signal_interrupt);
+        verify(!!currentExecutedSection_);
+        verify(currentInstructionIdx_ != (size_t)(-1));
+        const X86Instruction* instruction = currentExecutedSection_->instructions[currentInstructionIdx_].get();
+        if(currentInstructionIdx_+1 != currentExecutedSection_->instructions.size()) {
+            const X86Instruction* nextInstruction = currentExecutedSection_->instructions[currentInstructionIdx_+1].get();
+            cpu_.regs_.rip_ = nextInstruction->address;
+            ++currentInstructionIdx_;
+        } else {
+            currentInstructionIdx_ = (size_t)(-1);
+            cpu_.regs_.rip_ = 0x0;
+        }
+        return instruction;
+    }
 
     void Interpreter::execute(u64 address) {
         if(stop_) return;
@@ -241,39 +256,14 @@ namespace x64 {
         size_t ticks = 0;
         while(!stop_ && callDepth_ > 0 && cpu_.regs_.rip_ != 0x0) {
             try {
-                verify(!signal_interrupt);
-                verify(!!currentExecutedSection_);
-                verify(currentInstructionIdx_ != (size_t)(-1));
-                const X86Instruction* instruction = currentExecutedSection_->instructions[currentInstructionIdx_].get();
-                if(currentInstructionIdx_+1 != currentExecutedSection_->instructions.size()) {
-                    const X86Instruction* nextInstruction = currentExecutedSection_->instructions[currentInstructionIdx_+1].get();
-                    cpu_.regs_.rip_ = nextInstruction->address;
-                    ++currentInstructionIdx_;
-                } else {
-                    currentInstructionIdx_ = (size_t)(-1);
-                    cpu_.regs_.rip_ = 0x0;
-                }
+                const X86Instruction* instruction = fetchInstruction();
                 if(!instruction) {
                     fmt::print(stderr, "Undefined instruction near {:#x}\n", cpu_.regs_.rip_);
-                    stop_ = true;
+                    stop();
                     break;
                 }
 #ifndef NDEBUG
-                if(logInstructions()) {
-                    std::string eflags = fmt::format("flags = [{}{}{}{}]", (cpu_.flags_.carry ? 'C' : ' '),
-                                                                        (cpu_.flags_.zero ? 'Z' : ' '), 
-                                                                        (cpu_.flags_.overflow ? 'O' : ' '), 
-                                                                        (cpu_.flags_.sign ? 'S' : ' '));
-                    std::string registerDump = fmt::format( "rip={:0000008x} "
-                                                            "rax={:0000008x} rbx={:0000008x} rcx={:0000008x} rdx={:0000008x} "
-                                                            "rsi={:0000008x} rdi={:0000008x} rbp={:0000008x} rsp={:0000008x} ",
-                                                            cpu_.regs_.rip_,
-                                                            cpu_.regs_.rax_, cpu_.regs_.rbx_, cpu_.regs_.rcx_, cpu_.regs_.rdx_,
-                                                            cpu_.regs_.rsi_, cpu_.regs_.rdi_, cpu_.regs_.rbp_, cpu_.regs_.rsp_);
-                    std::string indent = fmt::format("{:{}}", "", callDepth_);
-                    std::string menmonic = fmt::format("{}|{}", indent, instruction->toString(&cpu_));
-                    fmt::print(stderr, "{:10} {:60}{:20} {}\n", ticks, menmonic, eflags, registerDump);
-                }
+                log(ticks, instruction);
 #endif
                 ++ticks;
                 instruction->exec(&cpu_);
@@ -284,6 +274,23 @@ namespace x64 {
         }
     }
 
+    void Interpreter::log(size_t ticks, const X86Instruction* instruction) const {
+        if(!logInstructions()) return;
+        verify(!!instruction, "Unexpected nullptr");
+        std::string eflags = fmt::format("flags = [{}{}{}{}]", (cpu_.flags_.carry ? 'C' : ' '),
+                                                            (cpu_.flags_.zero ? 'Z' : ' '), 
+                                                            (cpu_.flags_.overflow ? 'O' : ' '), 
+                                                            (cpu_.flags_.sign ? 'S' : ' '));
+        std::string registerDump = fmt::format( "rip={:0000008x} "
+                                                "rax={:0000008x} rbx={:0000008x} rcx={:0000008x} rdx={:0000008x} "
+                                                "rsi={:0000008x} rdi={:0000008x} rbp={:0000008x} rsp={:0000008x} ",
+                                                cpu_.regs_.rip_,
+                                                cpu_.regs_.rax_, cpu_.regs_.rbx_, cpu_.regs_.rcx_, cpu_.regs_.rdx_,
+                                                cpu_.regs_.rsi_, cpu_.regs_.rdi_, cpu_.regs_.rbp_, cpu_.regs_.rsp_);
+        std::string indent = fmt::format("{:{}}", "", callDepth_);
+        std::string menmonic = fmt::format("{}|{}", indent, instruction->toString(&cpu_));
+        fmt::print(stderr, "{:10} {:60}{:20} {}\n", ticks, menmonic, eflags, registerDump);
+    }
 
     void Interpreter::dump(FILE* stream) const {
         fmt::print(stream,

@@ -53,6 +53,9 @@ namespace x64 {
         void execute(const Function* function);
         void execute(u64 address);
 
+        const X86Instruction* fetchInstruction();
+        void log(size_t ticks, const X86Instruction* instruction) const;
+
         Mmu mmu_;
         Cpu cpu_;
 

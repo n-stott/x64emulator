@@ -644,7 +644,7 @@ namespace x64 {
 
         void exec(const Xorpd<RSSE, RSSE>&) override;
 
-        void resolveFunctionName(const CallDirect& ins) override;
+        void resolveFunctionName(const CallDirect& ins) const override;
 
     };
 

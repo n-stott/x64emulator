@@ -481,7 +481,7 @@ namespace x64 {
 
         virtual void exec(const Xorpd<RSSE, RSSE>&) = 0;
 
-        virtual void resolveFunctionName(const CallDirect&) = 0;
+        virtual void resolveFunctionName(const CallDirect&) const = 0;
     };
 
 }

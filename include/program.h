@@ -17,7 +17,7 @@ namespace x64 {
         explicit X86Instruction(u64 address) : address(address) { }
         virtual ~X86Instruction() = default;
         virtual void exec(InstructionHandler* handler) const = 0;
-        virtual std::string toString(InstructionHandler* handler) const = 0;
+        virtual std::string toString(const InstructionHandler* handler) const = 0;
 
         u64 address;
     };
@@ -36,7 +36,7 @@ namespace x64 {
             return handler->exec(instruction);
         }
 
-        virtual std::string toString(InstructionHandler* handler) const override {
+        virtual std::string toString(const InstructionHandler* handler) const override {
             if constexpr(std::is_same_v<Instruction, CallDirect>) {
                 if(handler) handler->resolveFunctionName(instruction);
             }

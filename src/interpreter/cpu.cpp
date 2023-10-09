@@ -832,7 +832,7 @@ namespace x64 {
         interpreter_->call(address);
     }
 
-    void Cpu::resolveFunctionName(const CallDirect& ins) {
+    void Cpu::resolveFunctionName(const CallDirect& ins) const {
         if(!ins.symbolNameSet) {
             ins.symbolName = interpreter_->calledFunctionName(interpreter_->currentExecutedSection_, &ins);
             ins.symbolNameSet = true;
