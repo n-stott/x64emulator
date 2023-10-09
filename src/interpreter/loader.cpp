@@ -320,7 +320,7 @@ namespace x64 {
             return h.elf == tlsHeaders_[0].elf
                 && h.shortFilePath == tlsHeaders_[0].shortFilePath
                 && h.elfOffset == firstHeader.elfOffset;
-        }));
+        }), "TLS sections from differents elf objects not handled");
         for(const auto& tls : tlsHeaders_) {
             verify(!!tls.elf);
             headers.push_back(tls.sectionHeader);

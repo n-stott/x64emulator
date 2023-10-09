@@ -55,7 +55,7 @@ extern "C" {
         locale_struct() {
             auto poor_memset = [](char* dst, int c, size_t n) {
                 while(n--) {
-                    *dst++ = c;
+                    *dst++ = (char)c;
                 }
             };
             poor_memset(reinterpret_cast<char*>(this), 0, sizeof(*this));
@@ -299,7 +299,7 @@ extern "C" {
     void* fakelibc$memset(void* s, int c, size_t n) {
         unsigned char* dst = (unsigned char*)s;
         while(n > 0) {
-            *dst = c;
+            *dst = (unsigned char)c;
             ++dst;
             --n;
         }
@@ -307,6 +307,8 @@ extern "C" {
     }
 
     int fakelibc$vsnprintf(char* str, size_t size, const char* format, va_list ap) {
+        (void)format;
+        (void)ap;
         if(!size) return 0;
         int retsize = 1;
         if(size >= 2) {
@@ -337,10 +339,16 @@ extern "C" {
     }
 
     int fakelibc$__cxa_atexit(void (*func)(void*), void* arg, void* dso_handle) {
+        (void)func;
+        (void)arg;
+        (void)dso_handle;
         return 0;
     }
 
-    locale_t fakelibc$__newlocale(int category_mask, const char *locale, locale_t base) {
+    locale_t fakelibc$__newlocale(int category_mask, const char* locale, locale_t base) {
+        (void)category_mask;
+        (void)locale;
+        (void)base;
         return (locale_t)&c_locale_data;
     }
 
@@ -357,6 +365,8 @@ extern "C" {
     }
 
     wctype_t fakelibc$__wctype_l(const char* name, locale_t locale) {
+        (void)name;
+        (void)locale;
         return 0;
     }
 
@@ -371,30 +381,36 @@ extern "C" {
     }
 
     int fakelibc$fputs(const char* __restrict__ s, FILE* __restrict__ stream) {
+        (void)stream;
         int count = 0;
         while(*s) count += intrinsic$putchar(*s++);
         return count;
     }
 
     int fakelibc$fflush(FILE* stream) {
+        (void)stream;
         return 0;
     }
 
     int fakelibc$fputc(int c, FILE* stream) {
+        (void)stream;
         return intrinsic$putchar(c);
     }
 
     int fakelibc$putc(int c, FILE* stream) {
+        (void)stream;
         return intrinsic$putchar(c);
     }
 
     time_t fakelibc$time(time_t* tloc) {
+        (void)tloc;
         static int secondsSinceEpoch = 0xeb0c;
         ++secondsSinceEpoch;
         return secondsSinceEpoch;
     }
 
     int fakelibc$pthread_once(pthread_once_t* once_control, void (*init_routine)(void)) {
+        (void)once_control;
         static bool called = false;
         if(!called) {
             init_routine();
@@ -404,6 +420,8 @@ extern "C" {
     }
 
     int fakelibc$__pthread_key_create(pthread_key_t* key, void (*destructor)(void*)) {
+        (void)key;
+        (void)destructor;
         return 0;
     }
 
