@@ -17,7 +17,7 @@ namespace x64 {
 
     class CapstoneWrapper {
     public:
-        static void disassembleSection(const elf::Elf64& elf, std::string sectionName, std::vector<std::unique_ptr<X86Instruction>>* instructions, std::vector<std::unique_ptr<Function>>* functions);
+        static void disassembleSection(const elf::Elf64& elf, std::string sectionName, std::vector<std::unique_ptr<X86Instruction>>* instructions);
 
     private:
         static std::unique_ptr<X86Instruction> makeInstruction(const cs_insn& insn);

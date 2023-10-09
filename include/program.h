@@ -64,7 +64,6 @@ namespace x64 {
         std::string sectionname;
         u64 sectionOffset;
         std::vector<std::unique_ptr<X86Instruction>> instructions;
-        std::vector<std::unique_ptr<Function>> functions;
     };
 
 }

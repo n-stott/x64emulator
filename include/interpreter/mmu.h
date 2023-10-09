@@ -4,7 +4,6 @@
 #include "utils/utils.h"
 #include "types.h"
 #include <deque>
-#include <functional>
 #include <string>
 #include <vector>
 
@@ -40,10 +39,6 @@ namespace x64 {
                 this->invalidValues = invalidValues;
             }
 
-            void setHandler(std::function<void(u64)>&& handler) {
-                this->handler = std::move(handler);
-            }
-
             std::string file;
             std::string name;
             u64 base;
@@ -51,7 +46,6 @@ namespace x64 {
             std::vector<u8> data;
             Protection protection;
             InvalidValues invalidValues;
-            std::function<void(u64)> handler;
 
         private:
             friend class Mmu;

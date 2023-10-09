@@ -14,7 +14,6 @@ namespace x64 {
         this->size = size;
         this->data.resize(size, 0x00);
         this->protection = protection;
-        this->handler = [](u32) { };
         this->invalidValues = INV_NONE;
     }
 
@@ -99,17 +98,12 @@ namespace x64 {
         });
         verify(region->protection & PROT_READ, [&]() {
             fmt::print("Attempt to read {:#x} from non-readable region {}\n", address, region->name);
-            if(!!region->handler) region->handler(address);
         });
         T value = region->read<T>(address);
 #if DEBUG_MMU
         if constexpr(std::is_integral_v<T>)
             fmt::print(stderr, "Read {:#x} from address {:#x}\n", value, address);
 #endif
-        // verify((region->invalidValues != INV_NULL) || (value != 0), [&]() {
-        //     fmt::print("Read 0x0 from region {} which is marked INV_NULL at address {:#x}\n", region->name, ptr.address);
-        //     if(!!region->handler) region->handler(ptr.address);
-        // });
         return value;
     }
 

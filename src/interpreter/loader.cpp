@@ -94,28 +94,19 @@ namespace x64 {
 
     void Loader::loadExecutableHeader(const elf::Elf64& elf, const elf::SectionHeader64& header, const std::string& filePath, const std::string& shortFilePath, u64 elfOffset) {
         std::vector<std::unique_ptr<X86Instruction>> instructions;
-        std::vector<std::unique_ptr<Function>> functions;
-        CapstoneWrapper::disassembleSection(elf, std::string(header.name), &instructions, &functions);
+        CapstoneWrapper::disassembleSection(elf, std::string(header.name), &instructions);
 
         assert(std::is_sorted(instructions.begin(), instructions.end(), [](const auto& a, const auto& b) {
             return a->address < b->address;
         }));
 
         for(auto& insn : instructions) insn->address += elfOffset;
-        for(auto& f : functions) f->address += elfOffset;
 
-        functions.erase(std::remove_if(functions.begin(), functions.end(), [](std::unique_ptr<Function>& function) -> bool {
-            if(function->name.size() >= 10) {
-                if(function->name.substr(0, 10) == "intrinsic$") return true;
-            }
-            return false;
-        }), functions.end());
         ExecutableSection esection {
             filePath,
             std::string(header.name),
             elfOffset,
-            std::move(instructions),
-            std::move(functions),
+            std::move(instructions)
         };
 
         loadable_->addExecutableSection(std::move(esection));

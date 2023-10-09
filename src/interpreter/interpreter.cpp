@@ -56,7 +56,8 @@ namespace x64 {
     void Interpreter::crash() {
         stop();
         fmt::print("Register state:\n");
-        dump(stdout);
+        dumpRegisters();
+        fmt::print("Memory regions:\n");
         mmu_.dumpRegions();
         fmt::print("Stacktrace:\n");
         dumpStackTrace();
@@ -121,30 +122,30 @@ namespace x64 {
             ".text",
             libcOffset,
             {},
-            {},
         };
         auto& libcInstructions = libcSection.instructions;
-        auto& libcFunctions = libcSection.functions;
+        std::vector<std::unique_ptr<Function>> libcFunctions;
         libc_->forAllFunctions(ExecutionContext(*this), [&](std::vector<std::unique_ptr<X86Instruction>> instructions, std::unique_ptr<Function> function) {
-            function->address += libcOffset;
             for(auto&& insn : instructions) {
                 libcInstructions.push_back(std::move(insn));
             }
+            function->address += libcOffset;
             libcFunctions.push_back(std::move(function));
         });
+        // set instruction address
         u64 address = 0;
         for(auto& insn : libcInstructions) {
             insn->address = libcOffset + address;
             ++address;
         }
+        // set function address and register symbol
         for(auto& func : libcFunctions) {
-            if(!func) continue;
-            if(func->instructions.empty()) continue;
-            if(!func->instructions[0]) continue;
+            verify(!!func, "undefined libc function");
+            verify(!func->instructions.empty(), "empty libc function");
+            verify(!!func->instructions[0], "libc function with invalid instruction");
             func->address = func->instructions[0]->address;
+            symbolProvider_->registerSymbol(func->name, func->address, nullptr, elf::SymbolType::FUNC, elf::SymbolBind::GLOBAL);
         }
-        for(const auto& function : libcFunctions) 
-            symbolProvider_->registerSymbol(function->name, function->address, nullptr, elf::SymbolType::FUNC, elf::SymbolBind::GLOBAL);
 
         executableSections_.push_back(std::move(libcSection));
     }
@@ -165,6 +166,33 @@ namespace x64 {
         cpu_.regs_.rsp_ = stackBase + stackSize;
     }
 
+    void Interpreter::findSectionWithAddress(u64 address, const ExecutableSection** section, size_t* index) const {
+        if(!section && !index) return;
+        if(!!section && !!(*section)) {
+            const ExecutableSection* hint = *section;
+            auto it = std::lower_bound(hint->instructions.begin(), hint->instructions.end(), address, [&](const auto& a, u64 b) {
+                return a->address < b;
+            });
+            if(it != hint->instructions.end() && address == (*it)->address) {
+                if(!!section) *section = hint;
+                if(!!index) *index = std::distance(hint->instructions.begin(), it);
+                return;
+            }
+        }
+        for(const auto& execSection : executableSections_) {
+            auto it = std::lower_bound(execSection.instructions.begin(), execSection.instructions.end(), address, [&](const auto& a, u64 b) {
+                return a->address < b;
+            });
+            if(it != execSection.instructions.end() && address == (*it)->address) {
+                if(!!section) *section = &execSection;
+                if(!!index) *index = std::distance(execSection.instructions.begin(), it);
+                return;
+            }
+        }
+        if(!!section) *section = nullptr;
+        if(!!index) *index = (size_t)(-1);
+    }
+
     void Interpreter::runInit() {
         for(auto it = initFunctions_.begin(); it != initFunctions_.end(); ++it) {
             u64 address = *it;
@@ -183,18 +211,59 @@ namespace x64 {
         }
     }
 
+    void Interpreter::call(u64 address) {
+        CallPoint cp;
+        auto cachedValue = callCache_.find(address);
+        if(cachedValue != callCache_.end()) {
+            cp = cachedValue->second;
+        } else {
+            const ExecutableSection* section = currentExecutedSection_;
+            size_t index = (size_t)(-1);
+            findSectionWithAddress(address, &section, &index);
+            verify(!!section, [=]() {
+                fmt::print("Unable to find section containing address {:#x}\n", address);
+            });
+            verify(index != (size_t)(-1));
+            cp.address = address;
+            cp.executedSection = section;
+            cp.instructionIdx = index;
+            callCache_.insert(std::make_pair(address, cp));
+        }
+        currentExecutedSection_ = cp.executedSection;
+        currentInstructionIdx_ = cp.instructionIdx;
+        cpu_.regs_.rip_ = address;
+        callstack_.push_back(address);
+    }
+
+    void Interpreter::ret(u64 address) {
+        callstack_.pop_back();
+        jmp(address);
+    }
+
+    void Interpreter::jmp(u64 address) {
+        CallPoint cp;
+        auto cachedValue = jmpCache_.find(address);
+        if(cachedValue != jmpCache_.end()) {
+            cp = cachedValue->second;
+        } else {
+            const ExecutableSection* section = currentExecutedSection_;
+            size_t index = (size_t)(-1);
+            findSectionWithAddress(address, &section, &index);
+            verify(!!section && index != (size_t)(-1), [&]() { fmt::print("Unable to find jmp destination {:#x}\n", address); });
+            cp.address = address;
+            cp.executedSection = section;
+            cp.instructionIdx = index;
+            jmpCache_.insert(std::make_pair(address, cp));
+        }
+        currentExecutedSection_ = cp.executedSection;
+        currentInstructionIdx_ = cp.instructionIdx;
+        cpu_.regs_.rip_ = address;
+    }
+
     void Interpreter::executeMain() {
         auto mainSymbol = symbolProvider_->lookupRawSymbol("main");
         verify(!!mainSymbol, "Cannot find \"main\" symbol");
         execute(mainSymbol.value());
-    }
-
-    namespace {
-
-        void alignDown64(u64& address) {
-            address = address & 0xFFFFFFFFFFFFFF00;
-        }
-
     }
 
     void Interpreter::pushProgramArguments(const std::string& programFilePath, const std::vector<std::string>& arguments) {
@@ -213,7 +282,8 @@ namespace x64 {
                 pushString(*it);
             }
             
-            alignDown64(cpu_.regs_.rsp_);
+            // align rsp to 256 bytes (at least 64 bytes)
+            cpu_.regs_.rsp_ = cpu_.regs_.rsp_ & 0xFFFFFFFFFFFFFF00;
             for(auto it = argumentPositions.rbegin(); it != argumentPositions.rend(); ++it) {
                 cpu_.push64(*it);
             }
@@ -223,12 +293,6 @@ namespace x64 {
             fmt::print("Interpreter crash durig program argument setup\n");
             stop_ = true;
         });
-    }
-
-    void Interpreter::execute(const Function* function) {
-        if(stop_) return;
-        fmt::print(stderr, "Execute function {}\n", function->name);
-        execute(function->address);
     }
 
     const X86Instruction* Interpreter::fetchInstruction() {
@@ -254,7 +318,7 @@ namespace x64 {
         cpu_.push64(address);
         call(address);
         size_t ticks = 0;
-        while(!stop_ && callDepth_ > 0 && cpu_.regs_.rip_ != 0x0) {
+        while(!stop_ && !callstack_.empty() && cpu_.regs_.rip_ != 0x0) {
             try {
                 const X86Instruction* instruction = fetchInstruction();
                 if(!instruction) {
@@ -287,39 +351,27 @@ namespace x64 {
                                                 cpu_.regs_.rip_,
                                                 cpu_.regs_.rax_, cpu_.regs_.rbx_, cpu_.regs_.rcx_, cpu_.regs_.rdx_,
                                                 cpu_.regs_.rsi_, cpu_.regs_.rdi_, cpu_.regs_.rbp_, cpu_.regs_.rsp_);
-        std::string indent = fmt::format("{:{}}", "", callDepth_);
+        std::string indent = fmt::format("{:{}}", "", callstack_.size());
         std::string menmonic = fmt::format("{}|{}", indent, instruction->toString(&cpu_));
         fmt::print(stderr, "{:10} {:60}{:20} {}\n", ticks, menmonic, eflags, registerDump);
     }
 
-    void Interpreter::dump(FILE* stream) const {
-        fmt::print(stream,
+    void Interpreter::dumpRegisters() const {
+        fmt::print(stderr,
             "rip {:#0000008x}\n",
             cpu_.regs_.rip_);
-        fmt::print(stream,
+        fmt::print(stderr,
             "rsi {:#0000008x}  rdi {:#0000008x}  rbp {:#0000008x}  rsp {:#0000008x}\n",
             cpu_.regs_.rsi_, cpu_.regs_.rdi_, cpu_.regs_.rbp_, cpu_.regs_.rsp_);
-        fmt::print(stream,
+        fmt::print(stderr,
             "rax {:#0000008x}  rbx {:#0000008x}  rcx {:#0000008x}  rdx {:#0000008x}\n",
             cpu_.regs_.rax_, cpu_.regs_.rbx_, cpu_.regs_.rcx_, cpu_.regs_.rdx_);
-        fmt::print(stream,
+        fmt::print(stderr,
             "r8  {:#0000008x}  r9  {:#0000008x}  r10 {:#0000008x}  r11 {:#0000008x}\n",
             cpu_.regs_.r8_, cpu_.regs_.r9_, cpu_.regs_.r10_, cpu_.regs_.r11_);
-        fmt::print(stream,
+        fmt::print(stderr,
             "r12 {:#0000008x}  r13 {:#0000008x}  r14 {:#0000008x}  r15 {:#0000008x}\n",
             cpu_.regs_.r12_, cpu_.regs_.r13_, cpu_.regs_.r14_, cpu_.regs_.r15_);
-    }
-
-    void Interpreter::dumpStack(FILE* stream) const {
-        // hack
-        (void)stream;
-#ifndef NDEBUG
-        u32 stackEnd = 0x1000000 + 16*1024;
-        u32 arg0 = (cpu_.regs_.rsp_+0 < stackEnd ? mmu_.read32(Ptr32{Segment::SS, cpu_.regs_.rsp_+0}) : 0xffffffff);
-        u32 arg1 = (cpu_.regs_.rsp_+4 < stackEnd ? mmu_.read32(Ptr32{Segment::SS, cpu_.regs_.rsp_+4}) : 0xffffffff);
-        u32 arg2 = (cpu_.regs_.rsp_+8 < stackEnd ? mmu_.read32(Ptr32{Segment::SS, cpu_.regs_.rsp_+8}) : 0xffffffff);
-        fmt::print(stream, "arg0={:#x} arg1={:#x} arg2={:#x}\n", arg0, arg1, arg2);
-#endif
     }
 
     bool Flags::matches(Cond condition) const {
@@ -343,17 +395,6 @@ namespace x64 {
             case Cond::S: return (sign == 1);
         }
         __builtin_unreachable();
-    }
-
-    void Interpreter::dumpFunctions(FILE* stream) const {
-        for(const auto& section : executableSections_) {
-            for(const auto& func : section.functions) {
-                fmt::print(stream, "{:#x} : {}\n", func->address, func->name);
-                // for(const auto& insn : func->instructions) {
-                //     fmt::print(" {:#x} {}\n", insn->address, insn->toString());
-                // }
-            }
-        }
     }
 
     std::string Interpreter::calledFunctionName(const ExecutableSection* execSection, const CallDirect* call) {

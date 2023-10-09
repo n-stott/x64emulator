@@ -1882,11 +1882,9 @@ namespace x64 {
         return make_failed(insn);
     }
 
-    void CapstoneWrapper::disassembleSection(const elf::Elf64& elf, std::string sectionName, std::vector<std::unique_ptr<X86Instruction>>* instructions, std::vector<std::unique_ptr<Function>>* functions) {
+    void CapstoneWrapper::disassembleSection(const elf::Elf64& elf, std::string sectionName, std::vector<std::unique_ptr<X86Instruction>>* instructions) {
         if(!instructions) return;
-        if(!functions) return;
         instructions->clear();
-        functions->clear();
 
         auto section = elf.sectionFromName(sectionName);
         if(!section) return;
@@ -1920,45 +1918,6 @@ namespace x64 {
         cs_free(insn, 1);
 #endif
         cs_close(&handle);
-
-        // Try extracting functions
-        std::vector<std::pair<u64, std::string>> symbols;
-
-        auto symbolTable = elf.symbolTable();
-        auto stringTable = elf.stringTable();
-        if(symbolTable && stringTable) {
-            for(const auto& symbol : symbolTable.value()) {
-                if(symbol.type() != elf::SymbolType::FUNC) continue;
-                std::string rawSymbol = std::string(symbol.symbol(&stringTable.value(), elf));
-                symbols.push_back(std::make_pair(symbol.st_value, rawSymbol));
-            }
-        }
-
-        if(symbols.empty()) return;
-
-        std::sort(symbols.begin(), symbols.end());
-        auto insIt = instructions->begin();
-        auto insEnd = instructions->end();
-        for(const auto& symbol : symbols) {
-            functions->emplace_back(new Function(symbol.first, symbol.second, {}));
-        }
-        auto funIt = functions->begin();
-        auto funEnd = functions->end();
-        auto nextFun = std::next(funIt);
-
-        while(insIt != insEnd && funIt != funEnd) {
-            if(nextFun != funEnd && insIt->get()->address >= nextFun->get()->address) {
-                ++funIt;
-                ++nextFun;
-                if(nextFun != funEnd) nextFun = funEnd;
-            }
-            funIt->get()->instructions.push_back(insIt->get());
-            ++insIt;
-        }
-
-        functions->erase(std::remove_if(functions->begin(), functions->end(), [](const auto& func) {
-            return func->instructions.empty() || func->instructions.front()->address != func->address;
-        }), functions->end());
     }
 
 }
