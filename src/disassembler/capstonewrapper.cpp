@@ -1896,35 +1896,8 @@ namespace x64 {
         auto section = elf64->sectionFromName(sectionName);
         if(!section) return;
 
-        std::vector<std::pair<u64, std::string>> symbols;
-
-        auto symbolTable = elf64->symbolTable();
-        auto stringTable = elf64->stringTable();
-        if(symbolTable && stringTable) {
-            for(const auto& symbol : symbolTable.value()) {
-                if(symbol.type() != elf::SymbolType::FUNC) continue;
-                std::string rawSymbol = std::string(symbol.symbol(&stringTable.value(),*elf64));
-                symbols.push_back(std::make_pair(symbol.st_value, rawSymbol));
-            }
-        }
-
-        std::sort(symbols.begin(), symbols.end());
-
-        bool createFunctions = !symbols.empty();
-
-        if(createFunctions)
-            functions->emplace_back(new Function(symbols[0].first, symbols[0].second, {}));
-        size_t nextSymbol = 1;
-
         auto insertInstruction = [&](const cs_insn& insn) {
             auto x86insn = makeInstruction(insn);
-            if(createFunctions) {
-                while(nextSymbol < symbols.size() && insn.address >= symbols[nextSymbol].first) {
-                    functions->emplace_back(new Function(symbols[nextSymbol].first, symbols[nextSymbol].second, {}));
-                    ++nextSymbol;
-                }
-                functions->back()->instructions.push_back(x86insn.get());
-            }
             instructions->push_back(std::move(x86insn));
         };
 
@@ -1952,6 +1925,41 @@ namespace x64 {
         cs_free(insn, 1);
 #endif
         cs_close(&handle);
+
+        // Try extracting functions
+        std::vector<std::pair<u64, std::string>> symbols;
+
+        auto symbolTable = elf64->symbolTable();
+        auto stringTable = elf64->stringTable();
+        if(symbolTable && stringTable) {
+            for(const auto& symbol : symbolTable.value()) {
+                if(symbol.type() != elf::SymbolType::FUNC) continue;
+                std::string rawSymbol = std::string(symbol.symbol(&stringTable.value(),*elf64));
+                symbols.push_back(std::make_pair(symbol.st_value, rawSymbol));
+            }
+        }
+
+        if(symbols.empty()) return;
+
+        std::sort(symbols.begin(), symbols.end());
+        auto insIt = instructions->begin();
+        auto insEnd = instructions->end();
+        for(const auto& symbol : symbols) {
+            functions->emplace_back(new Function(symbol.first, symbol.second, {}));
+        }
+        auto funIt = functions->begin();
+        auto funEnd = functions->end();
+        auto nextFun = std::next(funIt);
+
+        while(insIt != insEnd && funIt != funEnd) {
+            if(nextFun != funEnd && insIt->get()->address >= nextFun->get()->address) {
+                ++funIt;
+                ++nextFun;
+                if(nextFun != funEnd) nextFun = funEnd;
+            }
+            funIt->get()->instructions.push_back(insIt->get());
+            ++insIt;
+        }
 
         functions->erase(std::remove_if(functions->begin(), functions->end(), [](const auto& func) {
             return func->instructions.empty() || func->instructions.front()->address != func->address;
