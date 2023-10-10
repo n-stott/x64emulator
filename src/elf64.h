@@ -24,6 +24,32 @@ namespace elf {
     };
     static_assert(4 + sizeof(Identifier) + sizeof(FileHeader64) == 0x40);
 
+    struct ProgramHeader64 : public ProgramHeader {
+        ProgramHeaderType p_type;
+        u32 p_flags;
+        u64 p_offset;
+        u64 p_vaddr;
+        u64 p_paddr;
+        u64 p_filesz;
+        u64 p_memsz;
+        u64 p_align;
+
+        ProgramHeaderType type() const;
+        u64 offset() const;
+        u64 virtualAddress() const;
+        u64 physicalAddress() const;
+        u64 sizeInFile() const;
+        u64 sizeInMemory() const;
+        u64 alignment() const;
+
+        bool isReadable() const;
+        bool isWritable() const;
+        bool isExecutable() const;
+
+        void print() const;
+    };
+    static_assert(sizeof(ProgramHeader64) == 0x38);
+
     struct SectionHeader64 : public SectionHeader {
         u64 sh_flags;
         u64 sh_addr;
@@ -109,6 +135,7 @@ namespace elf {
 
         void print() const override;
 
+        void forAllProgramHeaders(std::function<void(const ProgramHeader64&)>&& callback) const;
         void forAllSectionHeaders(std::function<void(const SectionHeader64&)>&& callback) const;
         void forAllSymbols(std::function<void(const StringTable*, const SymbolTableEntry64&)>&& callback) const;
         void forAllDynamicSymbols(std::function<void(const StringTable*, const SymbolTableEntry64&)>&& callback) const;
@@ -122,6 +149,7 @@ namespace elf {
         std::string_view symbolFromEntry(const StringTable* stringTable, SymbolTableEntry64 symbol) const;
 
         FileHeader64 fileheader_;
+        std::vector<ProgramHeader64> programHeaders_;
         std::vector<SectionHeader64> sectionHeaders_;
 
         friend class ElfReader;
@@ -147,6 +175,62 @@ namespace elf {
         fmt::print("Section header entry size : {:#x}B\n", (int)shentsize);
         fmt::print("Section header count      : {:}\n", (int)shnum);
         fmt::print("Section header name index : {:}\n", (int)shstrndx);
+    }
+
+    
+    inline ProgramHeaderType ProgramHeader64::type() const {
+        return p_type;
+    }
+    
+    inline u64 ProgramHeader64::offset() const {
+        return p_offset;
+    }
+    
+    inline u64 ProgramHeader64::virtualAddress() const {
+        return p_vaddr;
+    }
+    
+    inline u64 ProgramHeader64::physicalAddress() const {
+        return p_paddr;
+    }
+    
+    inline u64 ProgramHeader64::sizeInFile() const {
+        return p_filesz;
+    }
+    
+    inline u64 ProgramHeader64::sizeInMemory() const {
+        return p_memsz;
+    }
+    
+    inline u64 ProgramHeader64::alignment() const {
+        return p_align;
+    }
+
+    inline bool ProgramHeader64::isReadable() const {
+        using type_t = std::underlying_type_t<SegmentFlags>;
+        return (type_t)p_flags & (type_t)SegmentFlags::PF_R;
+    }
+    
+    inline bool ProgramHeader64::isWritable() const {
+        using type_t = std::underlying_type_t<SegmentFlags>;
+        return (type_t)p_flags & (type_t)SegmentFlags::PF_W;
+    }
+    
+    inline bool ProgramHeader64::isExecutable() const {
+        using type_t = std::underlying_type_t<SegmentFlags>;
+        return (type_t)p_flags & (type_t)SegmentFlags::PF_X;
+    }
+
+    inline void ProgramHeader64::print() const {
+        fmt::print("{:>10} {:#6x} {:#10x} {:#10x} {:#10x} {:#10x} {:#10x} {:#10x}\n",
+            toString(p_type),
+            p_flags,
+            p_offset,
+            p_vaddr,
+            p_paddr,
+            p_filesz,
+            p_memsz,
+            p_align);
     }
 
     inline void SectionHeader64::print() const {
@@ -287,6 +371,12 @@ namespace elf {
                 assert(!"not implemented");
                 return 0;
             }
+        }
+    }
+
+    inline void Elf64::forAllProgramHeaders(std::function<void(const ProgramHeader64&)>&& callback) const {
+        for(const auto& programHeader : programHeaders_) {
+            callback(programHeader);
         }
     }
 

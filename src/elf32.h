@@ -24,6 +24,32 @@ namespace elf {
     };
     static_assert(4 + sizeof(Identifier) + sizeof(FileHeader32) == 0x34);
 
+    struct ProgramHeader32 : public ProgramHeader {
+        ProgramHeaderType p_type;
+        u32 p_offset;
+        u32 p_vaddr;
+        u32 p_paddr;
+        u32 p_filesz;
+        u32 p_memsz;
+        u32 p_flags;
+        u32 p_align;
+
+        ProgramHeaderType type() const;
+        u32 offset() const;
+        u32 virtualAddress() const;
+        u32 physicalAddress() const;
+        u32 sizeInFile() const;
+        u32 sizeInMemory() const;
+        u32 alignment() const;
+
+        bool isReadable() const;
+        bool isWritable() const;
+        bool isExecutable() const;
+
+        void print() const;
+    };
+    static_assert(sizeof(ProgramHeader32) == 0x20);
+
     struct SectionHeader32 : public SectionHeader {
         u32 sh_flags;
         u32 sh_addr;
@@ -105,6 +131,7 @@ namespace elf {
 
         void print() const override;
 
+        void forAllProgramHeaders(std::function<void(const ProgramHeader32&)>&& callback) const;
         void forAllSectionHeaders(std::function<void(const SectionHeader32&)>&& callback) const;
         void forAllSymbols(std::function<void(const StringTable*, const SymbolTableEntry32&)>&& callback) const;
         void forAllDynamicSymbols(std::function<void(const StringTable*, const SymbolTableEntry32&)>&& callback) const;
@@ -118,6 +145,7 @@ namespace elf {
         std::string_view symbolFromEntry(const StringTable* stringTable, SymbolTableEntry32 symbol) const;
 
         FileHeader32 fileheader_;
+        std::vector<ProgramHeader32> programHeaders_;
         std::vector<SectionHeader32> sectionHeaders_;
 
         friend class ElfReader;
@@ -126,7 +154,61 @@ namespace elf {
         friend class SymbolTableEntry32;
     };
 
+    
+    inline ProgramHeaderType ProgramHeader32::type() const {
+        return p_type;
+    }
+    
+    inline u32 ProgramHeader32::offset() const {
+        return p_offset;
+    }
+    
+    inline u32 ProgramHeader32::virtualAddress() const {
+        return p_vaddr;
+    }
+    
+    inline u32 ProgramHeader32::physicalAddress() const {
+        return p_paddr;
+    }
+    
+    inline u32 ProgramHeader32::sizeInFile() const {
+        return p_filesz;
+    }
+    
+    inline u32 ProgramHeader32::sizeInMemory() const {
+        return p_memsz;
+    }
+    
+    inline u32 ProgramHeader32::alignment() const {
+        return p_align;
+    }
 
+    inline bool ProgramHeader32::isReadable() const {
+        using type_t = std::underlying_type_t<SegmentFlags>;
+        return (type_t)p_flags & (type_t)SegmentFlags::PF_R;
+    }
+    
+    inline bool ProgramHeader32::isWritable() const {
+        using type_t = std::underlying_type_t<SegmentFlags>;
+        return (type_t)p_flags & (type_t)SegmentFlags::PF_W;
+    }
+    
+    inline bool ProgramHeader32::isExecutable() const {
+        using type_t = std::underlying_type_t<SegmentFlags>;
+        return (type_t)p_flags & (type_t)SegmentFlags::PF_X;
+    }
+
+    inline void ProgramHeader32::print() const {
+        fmt::print("{:>10} {:#6x} {:#10x} {:#10x} {:#10x} {:#10x} {:#10x} {:#10x}\n",
+            toString(p_type),
+            p_flags,
+            p_offset,
+            p_vaddr,
+            p_paddr,
+            p_filesz,
+            p_memsz,
+            p_align);
+    }
 
     inline void FileHeader32::print() const {
         fmt::print("Type       : {:x}\n", (int)type);
@@ -263,6 +345,12 @@ namespace elf {
                 assert(!"not implemented");
                 return 0;
             }
+        }
+    }
+
+    inline void Elf32::forAllProgramHeaders(std::function<void(const ProgramHeader32&)>&& callback) const {
+        for(const auto& programHeader : programHeaders_) {
+            callback(programHeader);
         }
     }
 

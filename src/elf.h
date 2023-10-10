@@ -40,6 +40,10 @@ namespace elf {
         u32 version;
     };
 
+    struct ProgramHeader {
+        static void printNames();
+    };
+
     struct Section {
         u64 address;
         const u8* begin;
@@ -150,6 +154,18 @@ namespace elf {
         fmt::print("Endianness : {}\n", data == Endianness::BIG ? "big" : "little");
         fmt::print("Version    : {}\n", (int)version);
         fmt::print("OS abi     : {:x}.{}\n", (int)osabi, (int)abiversion);
+    }
+
+    inline void ProgramHeader::printNames() {
+        fmt::print("{:>10} {:>6} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10}\n",
+            "type",
+            "flags",
+            "offset",
+            "vaddr",
+            "paddr",
+            "filesize",
+            "memsize",
+            "align");
     }
 
     inline void SectionHeader::printNames() {

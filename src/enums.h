@@ -103,6 +103,28 @@ namespace elf {
         EXCLUDE = 0x8000000,
     };
 
+    enum class ProgramHeaderType : u32 {
+        PT_NULL = 0,
+        PT_LOAD = 1,
+        PT_DYNAMIC = 2,
+        PT_INTERP = 3,
+        PT_NOTE = 4,
+        PT_SHLIB = 5,
+        PT_PHDR = 6,
+        PT_LOSUNW = 0x6ffffffa,
+        PT_SUNWBSS = 0x6ffffffb,
+        PT_HISUNW = 0x6fffffff,
+        PT_LOPROC = 0x70000000,
+        PT_HIPROC = 0x7fffffff,
+    };
+
+    enum class SegmentFlags : u32 {
+        PF_X = 0x1, // Execute  
+        PF_W = 0x2, // Write  
+        PF_R = 0x4, // Read  
+        PF_MASKPROC = 0xf0000000, // Unspecified  
+    };
+
     enum class DynamicTag : u64 {
         DT_NULL = 0,
         DT_NEEDED = 1,
@@ -234,6 +256,24 @@ namespace elf {
         R_AMD64_SIZE32 = 32,
         R_AMD64_SIZE64 = 33,
     };
+
+    inline std::string toString(ProgramHeaderType pht) {
+        switch(pht) {
+            case ProgramHeaderType::PT_NULL: return "PT_NULL";
+            case ProgramHeaderType::PT_LOAD: return "PT_LOAD";
+            case ProgramHeaderType::PT_DYNAMIC: return "PT_DYNAMIC";
+            case ProgramHeaderType::PT_INTERP: return "PT_INTERP";
+            case ProgramHeaderType::PT_NOTE: return "PT_NOTE";
+            case ProgramHeaderType::PT_SHLIB: return "PT_SHLIB";
+            case ProgramHeaderType::PT_PHDR: return "PT_PHDR";
+            case ProgramHeaderType::PT_LOSUNW: return "PT_LOSUNW";
+            case ProgramHeaderType::PT_SUNWBSS: return "PT_SUNWBSS";
+            case ProgramHeaderType::PT_HISUNW: return "PT_HISUNW";
+            case ProgramHeaderType::PT_LOPROC: return "PT_LOPROC";
+            case ProgramHeaderType::PT_HIPROC: return "PT_HIPROC";
+        }
+        return fmt::format("{:x}", (u32)pht);
+    }
 
     inline std::string toString(SectionHeaderType sht) {
         switch(sht) {

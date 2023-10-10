@@ -41,6 +41,19 @@ namespace elf {
             return {};
         }
 
+        size_t programHeaderCount = header.phnum;
+        size_t programHeaderSize = header.phentsize;
+        u64 programHeaderStart = header.phoff;
+        std::vector<ProgramHeader32> programHeaders;
+        for(size_t i = 0; i < programHeaderCount; ++i) {
+            auto programheader = tryCreateProgramheader32(bytes, programHeaderStart+i*programHeaderSize, programHeaderSize);
+            if(!programheader) {
+                fmt::print(stderr, "Invalid program header {}\n", i);
+                continue;
+            }
+            programHeaders.push_back(*programheader);
+        }
+
         size_t sectionHeaderCount = header.shnum;
         size_t sectionHeaderSize = header.shentsize;
         u64 sectionHeaderStart = header.shoff;
@@ -72,6 +85,7 @@ namespace elf {
         elf.bytes_ = std::move(bytes);
         elf.ident_ = ident;
         elf.fileheader_ = header;
+        elf.programHeaders_ = std::move(programHeaders);
         elf.sectionHeaders_ = std::move(sectionHeaders);
 
         return std::make_unique<Elf32>(std::move(elf));
@@ -83,6 +97,19 @@ namespace elf {
         if(!success) {
             fmt::print(stderr, "Invalid file header\n");
             return {};
+        }
+
+        size_t programHeaderCount = header.phnum;
+        size_t programHeaderSize = header.phentsize;
+        u64 programHeaderStart = header.phoff;
+        std::vector<ProgramHeader64> programHeaders;
+        for(size_t i = 0; i < programHeaderCount; ++i) {
+            auto programheader = tryCreateProgramheader64(bytes, programHeaderStart+i*programHeaderSize, programHeaderSize);
+            if(!programheader) {
+                fmt::print(stderr, "Invalid program header {}\n", i);
+                continue;
+            }
+            programHeaders.push_back(*programheader);
         }
 
         size_t sectionHeaderCount = header.shnum;
@@ -116,6 +143,7 @@ namespace elf {
         elf.bytes_ = std::move(bytes);
         elf.ident_ = ident;
         elf.fileheader_ = header;
+        elf.programHeaders_ = std::move(programHeaders);
         elf.sectionHeaders_ = std::move(sectionHeaders);
 
         return std::make_unique<Elf64>(std::move(elf));
@@ -124,15 +152,19 @@ namespace elf {
     void Elf32::print() const {
         fmt::print("ELF file {} contains {} bytes\n", filename_, bytes_.size());
         fileheader_.print();
+        ProgramHeader::printNames();
+        forAllProgramHeaders([](const ProgramHeader32& ph) { ph.print(); });
         SectionHeader::printNames();
-        for(const auto& section : sectionHeaders_) section.print();
+        forAllSectionHeaders([](const SectionHeader32& sh) { sh.print(); });
     }
 
     void Elf64::print() const {
         fmt::print("ELF file {} contains {} bytes\n", filename_, bytes_.size());
         fileheader_.print();
+        ProgramHeader::printNames();
+        forAllProgramHeaders([](const ProgramHeader64& ph) { ph.print(); });
         SectionHeader::printNames();
-        for(const auto& section : sectionHeaders_) section.print();
+        forAllSectionHeaders([](const SectionHeader64& sh) { sh.print(); });
     }
 
     bool ElfReader::tryCreateIdentifier(const std::vector<char>& bytes, Identifier* ident) {
@@ -195,6 +227,36 @@ namespace elf {
         if(!header->shnum) return false;
         if(header->shstrndx > header->shnum) return false;
         return true;
+    }
+
+    std::unique_ptr<ProgramHeader32> ElfReader::tryCreateProgramheader32(const std::vector<char>& bytebuffer, size_t entryOffset, size_t entrySize) {
+        if(bytebuffer.size() < entryOffset + entrySize) return {};
+        const char* buffer = bytebuffer.data() + entryOffset;
+        ProgramHeader32 programheader;
+        std::memcpy(&programheader.p_type, buffer+0x00, sizeof(programheader.p_type));
+        std::memcpy(&programheader.p_flags, buffer+0x04, sizeof(programheader.p_flags));
+        std::memcpy(&programheader.p_offset, buffer+0x08, sizeof(programheader.p_offset));
+        std::memcpy(&programheader.p_vaddr, buffer+0x0C, sizeof(programheader.p_vaddr));
+        std::memcpy(&programheader.p_paddr, buffer+0x10, sizeof(programheader.p_paddr));
+        std::memcpy(&programheader.p_filesz, buffer+0x14, sizeof(programheader.p_filesz));
+        std::memcpy(&programheader.p_memsz, buffer+0x18, sizeof(programheader.p_memsz));
+        std::memcpy(&programheader.p_align, buffer+0x1C, sizeof(programheader.p_align));
+        return std::make_unique<ProgramHeader32>(std::move(programheader));
+    }
+
+    std::unique_ptr<ProgramHeader64> ElfReader::tryCreateProgramheader64(const std::vector<char>& bytebuffer, size_t entryOffset, size_t entrySize) {
+        if(bytebuffer.size() < entryOffset + entrySize) return {};
+        const char* buffer = bytebuffer.data() + entryOffset;
+        ProgramHeader64 programheader;
+        std::memcpy(&programheader.p_type, buffer+0x00, sizeof(programheader.p_type));
+        std::memcpy(&programheader.p_flags, buffer+0x04, sizeof(programheader.p_flags));
+        std::memcpy(&programheader.p_offset, buffer+0x08, sizeof(programheader.p_offset));
+        std::memcpy(&programheader.p_vaddr, buffer+0x10, sizeof(programheader.p_vaddr));
+        std::memcpy(&programheader.p_paddr, buffer+0x18, sizeof(programheader.p_paddr));
+        std::memcpy(&programheader.p_filesz, buffer+0x20, sizeof(programheader.p_filesz));
+        std::memcpy(&programheader.p_memsz, buffer+0x28, sizeof(programheader.p_memsz));
+        std::memcpy(&programheader.p_align, buffer+0x30, sizeof(programheader.p_align));
+        return std::make_unique<ProgramHeader64>(std::move(programheader));
     }
 
     std::unique_ptr<SectionHeader32> ElfReader::tryCreateSectionheader32(const std::vector<char>& bytebuffer, size_t entryOffset, size_t entrySize) {

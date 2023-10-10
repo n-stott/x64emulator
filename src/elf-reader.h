@@ -22,6 +22,9 @@ namespace elf {
         static bool tryCreateFileheader32(const std::vector<char>& bytebuffer, const Identifier& ident, FileHeader32* header);
         static bool tryCreateFileheader64(const std::vector<char>& bytebuffer, const Identifier& ident, FileHeader64* header);
 
+        static std::unique_ptr<ProgramHeader32> tryCreateProgramheader32(const std::vector<char>& bytebuffer, size_t entryOffset, size_t entrySize);
+        static std::unique_ptr<ProgramHeader64> tryCreateProgramheader64(const std::vector<char>& bytebuffer, size_t entryOffset, size_t entrySize);
+
         static std::unique_ptr<SectionHeader32> tryCreateSectionheader32(const std::vector<char>& bytebuffer, size_t entryOffset, size_t entrySize);
         static std::unique_ptr<SectionHeader64> tryCreateSectionheader64(const std::vector<char>& bytebuffer, size_t entryOffset, size_t entrySize);
     };
