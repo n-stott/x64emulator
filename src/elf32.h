@@ -129,6 +129,8 @@ namespace elf {
 
         std::optional<Section> sectionFromName(std::string_view sv) const;
 
+        const u8* dataAtOffset(u32 offset, u32 size) const;
+
         void print() const override;
 
         void forAllProgramHeaders(std::function<void(const ProgramHeader32&)>&& callback) const;
@@ -261,6 +263,12 @@ namespace elf {
             if(sv == header.name) section = header.toSection(reinterpret_cast<const u8*>(bytes_.data()), bytes_.size());
         });
         return section;
+    }
+
+    inline const u8* Elf32::dataAtOffset(u32 offset, u32 size) const {
+        assert(offset < bytes_.size());
+        assert(offset + size <= bytes_.size());
+        return reinterpret_cast<const u8*>(bytes_.data()) + offset;
     }
 
     inline u32 RelocationEntry32::offset() const {
