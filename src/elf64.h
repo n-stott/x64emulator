@@ -222,7 +222,7 @@ namespace elf {
     }
 
     inline void ProgramHeader64::print() const {
-        fmt::print("{:>10} {:#6x} {:#10x} {:#10x} {:#10x} {:#10x} {:#10x} {:#10x}\n",
+        fmt::print("{:>16} {:#6x} {:#10x} {:#10x} {:#10x} {:#10x} {:#10x} {:#10x}\n",
             toString(p_type),
             p_flags,
             p_offset,

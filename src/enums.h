@@ -111,6 +111,10 @@ namespace elf {
         PT_NOTE = 4,
         PT_SHLIB = 5,
         PT_PHDR = 6,
+        PT_TLS = 7,
+        PT_GNU_EH_FRAME = 0x6474e550,
+        PT_GNU_STACK = 0x6474e551,
+        PT_GNU_RELRO = 0x6474e552,
         PT_LOSUNW = 0x6ffffffa,
         PT_SUNWBSS = 0x6ffffffb,
         PT_HISUNW = 0x6fffffff,
@@ -266,6 +270,10 @@ namespace elf {
             case ProgramHeaderType::PT_NOTE: return "PT_NOTE";
             case ProgramHeaderType::PT_SHLIB: return "PT_SHLIB";
             case ProgramHeaderType::PT_PHDR: return "PT_PHDR";
+            case ProgramHeaderType::PT_TLS: return "PT_TLS";
+            case ProgramHeaderType::PT_GNU_EH_FRAME: return "PT_GNU_EH_FRAME";
+            case ProgramHeaderType::PT_GNU_STACK: return "PT_GNU_STACK";
+            case ProgramHeaderType::PT_GNU_RELRO: return "PT_GNU_RELRO";
             case ProgramHeaderType::PT_LOSUNW: return "PT_LOSUNW";
             case ProgramHeaderType::PT_SUNWBSS: return "PT_SUNWBSS";
             case ProgramHeaderType::PT_HISUNW: return "PT_HISUNW";

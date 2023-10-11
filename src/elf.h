@@ -157,7 +157,7 @@ namespace elf {
     }
 
     inline void ProgramHeader::printNames() {
-        fmt::print("{:>10} {:>6} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10}\n",
+        fmt::print("{:>16} {:>6} {:>10} {:>10} {:>10} {:>10} {:>10} {:>10}\n",
             "type",
             "flags",
             "offset",
