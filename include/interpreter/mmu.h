@@ -31,7 +31,7 @@ namespace x64 {
     public:
         class Region {
         public:
-            Region(std::string file, std::string name, u64 base, u64 size, Protection protection);
+            Region(std::string file, u64 base, u64 size, Protection protection);
 
             bool contains(u64 address) const;
 
@@ -40,7 +40,6 @@ namespace x64 {
             }
 
             std::string file;
-            std::string name;
             u64 base;
             u64 size;
             std::vector<u8> data;
@@ -69,7 +68,7 @@ namespace x64 {
             void write(u64 address, T value);
         };
 
-        Mmu() = default;
+        Mmu();
 
         Region* addRegion(Region region);
         Region* addTlsRegion(Region region, u64 fsBase);
@@ -89,10 +88,12 @@ namespace x64 {
         void dumpRegions() const;
 
         u64 topOfMemoryAligned(u64 alignment) const;
+        static u64 pageRoundDown(u64 address);
+        static u64 pageRoundUp(u64 address);
 
         void reserveUpTo(u64 address);
 
-        static constexpr u64 PAGE_SIZE = 1024*1024;
+        static constexpr u64 PAGE_SIZE = 0x1000;
 
     private:
         template<typename T, Size s>

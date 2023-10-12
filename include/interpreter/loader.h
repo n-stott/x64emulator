@@ -43,9 +43,9 @@ namespace x64 {
         void resolveTlsSections();
 
     private:
-        void loadExecutableHeader(const elf::Elf64& elf, const elf::SectionHeader64& header, const std::string& filePath, const std::string& shortFilePath, u64 elfOffset);
-        void loadNonExecutableHeader(const elf::Elf64& elf, const elf::SectionHeader64& header, const std::string& shortFilePath, u64 elfOffset);
-        void loadTlsHeaders(const elf::Elf64& elf, std::vector<elf::SectionHeader64> tlsHeaders, const std::string& shortFilePath, u64 offset);
+        void loadExecutableProgramHeader(const elf::Elf64& elf, const elf::ProgramHeader64& header, const std::string& filePath, const std::string& shortFilePath, u64 elfOffset);
+        void loadNonExecutableProgramHeader(const elf::Elf64& elf, const elf::ProgramHeader64& header, const std::string& shortFilePath, u64 elfOffset);
+        void loadTlsProgramHeaders(const elf::Elf64& elf, std::vector<elf::ProgramHeader64> tlsHeaders, const std::string& shortFilePath, u64 offset);
         void registerInitFunctions(const elf::Elf64& elf, u64 elfOffset);
         void registerSymbols(const elf::Elf64& elf, u64 elfOffset);
         void loadNeededLibraries(const elf::Elf64& elf);
@@ -63,7 +63,7 @@ namespace x64 {
 
         struct TlsHeader {
             const elf::Elf64* elf;
-            elf::SectionHeader64 sectionHeader;
+            elf::ProgramHeader64 sectionHeader;
             std::string shortFilePath;
             u64 elfOffset;
         };

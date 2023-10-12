@@ -10,7 +10,6 @@
 
 namespace elf {
     class Elf64;
-    struct SymbolTableEntry64;
 }
 
 namespace x64 {
@@ -24,8 +23,6 @@ namespace x64 {
         std::optional<u64> lookupRawSymbol(const std::string& symbol) const;
         std::optional<u64> lookupDemangledSymbol(const std::string& symbol) const;
         std::optional<std::string> lookupSymbol(u64 address, bool demangled) const;
-
-        std::optional<u64> lookupSymbol(const elf::SymbolTableEntry64& symbolEntry) const;
 
     private:
 

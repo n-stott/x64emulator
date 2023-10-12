@@ -118,8 +118,7 @@ namespace x64 {
         libc_ = std::make_unique<LibC>();
         u64 libcOffset = mmu_.topOfMemoryAligned(Mmu::PAGE_SIZE);
         ExecutableSection libcSection {
-            "libc",
-            ".text",
+            "libc:.text",
             libcOffset,
             {},
         };
@@ -154,14 +153,14 @@ namespace x64 {
         // heap
         u64 heapBase = mmu_.topOfMemoryAligned(Mmu::PAGE_SIZE);
         u64 heapSize = 64*Mmu::PAGE_SIZE;
-        Mmu::Region heapRegion{ "program", "heap", heapBase, heapSize, PROT_READ | PROT_WRITE };
+        Mmu::Region heapRegion{ "heap", heapBase, heapSize, PROT_READ | PROT_WRITE };
         mmu_.addRegion(heapRegion);
         libc_->setHeapRegion(heapRegion.base, heapRegion.size);
         
         // stack
         u64 stackBase = mmu_.topOfMemoryAligned(Mmu::PAGE_SIZE);
         u64 stackSize = 16*Mmu::PAGE_SIZE;
-        Mmu::Region stack{ "program", "stack", stackBase, stackSize, PROT_READ | PROT_WRITE };
+        Mmu::Region stack{ "stack", stackBase, stackSize, PROT_READ | PROT_WRITE };
         mmu_.addRegion(stack);
         cpu_.regs_.rsp_ = stackBase + stackSize;
     }
@@ -203,7 +202,7 @@ namespace x64 {
                 fmt::print(stderr, "Run init function {}/{} from {}\n",
                         std::distance(initFunctions_.begin(), it),
                         initFunctions_.size(),
-                        section ? (section->filename + ":" + section->sectionname) : "unknown"
+                        section ? (section->filename) : "unknown"
                         );
             }
             execute(address);
@@ -407,31 +406,30 @@ namespace x64 {
         findSectionWithAddress(address, &originSection, &firstInstructionIndex);
         verify(!!originSection, "Could not determine function origin section");
         verify(firstInstructionIndex != (size_t)(-1), "Could not find call destination instruction");
-        if(originSection->sectionname == ".text") {
-            auto demangledName = symbolProvider_->lookupSymbol(address, true);
-            if(!!demangledName) {
-                functionNameCache_[address] = demangledName.value();
-                return demangledName.value();
-            } else {
-                // verify(!!func, "Could not find function in text section");
-            }
-        } else if (originSection->sectionname == ".plt") {
-            // look at the first instruction to determine the jmp location
-            const X86Instruction* jmpInsn = originSection->instructions[firstInstructionIndex].get();
-            const auto* jmp = dynamic_cast<const InstructionWrapper<Jmp<M64>>*>(jmpInsn);
-            verify(!!jmp, "could not cast instruction to jmp");
+
+        // If we are in the text section, we can try to lookup the symbol for that address
+        auto demangledName = symbolProvider_->lookupSymbol(address, true);
+        if(!!demangledName) {
+            functionNameCache_[address] = demangledName.value();
+            return demangledName.value();
+        }
+
+        // If we are in the PLT instead, lets' look at the first instruction to determine the jmp location
+        const X86Instruction* jmpInsn = originSection->instructions[firstInstructionIndex].get();
+        const auto* jmp = dynamic_cast<const InstructionWrapper<Jmp<M64>>*>(jmpInsn);
+        if(!!jmp) {
             Registers regs;
             regs.rip_ = jmpInsn->address + 6; // add instruction size offset
             auto ptr = regs.resolve(jmp->instruction.symbolAddress);
             auto dst = mmu_.read64(ptr);
-            if(dst != 0x0) {
-                auto demangledName = symbolProvider_->lookupSymbol(dst, true);
-                if(!!demangledName) {
-                    functionNameCache_[address] = demangledName.value();
-                    return demangledName.value();
-                }
+            auto demangledName = symbolProvider_->lookupSymbol(dst, true);
+            if(!!demangledName) {
+                functionNameCache_[address] = demangledName.value();
+                return demangledName.value();
             }
         }
+        // We are not in the PLT either :'(
+        // Let's just fail
         return "";
     }
 

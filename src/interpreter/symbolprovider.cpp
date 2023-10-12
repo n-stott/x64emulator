@@ -40,11 +40,7 @@ namespace x64 {
             return result;
         }
     }
-
-    std::optional<u64> SymbolProvider::lookupSymbol(const elf::SymbolTableEntry64&) const {
-        return std::nullopt;
-    }
-
+    
     template<SymbolProvider::SymbolRepr repr>
     void SymbolProvider::Table<repr>::registerSymbol(std::string symbol, u64 address, const elf::Elf64* elf, elf::SymbolType type, elf::SymbolBind bind) {
 #if 0

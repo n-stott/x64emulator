@@ -7,9 +7,8 @@
 
 namespace x64 {
 
-    Mmu::Region::Region(std::string file, std::string name, u64 base, u64 size, Protection protection) {
+    Mmu::Region::Region(std::string file, u64 base, u64 size, Protection protection) {
         this->file = std::move(file);
-        this->name = std::move(name);
         this->base = base;
         this->size = size;
         this->data.resize(size, 0x00);
@@ -24,7 +23,7 @@ namespace x64 {
         verify(std::none_of(regions_.begin(), regions_.end(), nonEmptyIntersection), [&]() {
             auto r = std::find_if(regions_.begin(), regions_.end(), nonEmptyIntersection);
             assert(r != regions_.end());
-            fmt::print("Unable to add region \"{}\" : memory range [{:#x}, {:#x}] already occupied by region \"{}\"\n", region.name, region.base, region.base + region.size, r->name);
+            fmt::print("Unable to add region : memory range [{:#x}, {:#x}] already occupied by region [{:#x}, {:#x}]\n", region.base, region.base + region.size, r->base, r->base + r->size);
             dumpRegions();
         });
         regions_.push_back(std::move(region));
@@ -72,6 +71,11 @@ namespace x64 {
     void Mmu::Region::write64(u64 address, u64 value) { write<u64>(address, value); }
     void Mmu::Region::write128(u64 address, u128 value) { write<u128>(address, value); }
 
+    Mmu::Mmu() {
+        // Make first page non-readable and non-writable
+        addRegion(Region { "nullpage", 0, PAGE_SIZE, PROT_NONE });
+    }
+
     Mmu::Region* Mmu::findAddress(u64 address) {
         for(Region& r : regions_) {
             if(r.contains(address)) return &r;
@@ -97,7 +101,7 @@ namespace x64 {
             fmt::print("No region containing {:#x}\n", address);
         });
         verify(region->protection & PROT_READ, [&]() {
-            fmt::print("Attempt to read {:#x} from non-readable region {}\n", address, region->name);
+            fmt::print("Attempt to read {:#x} from non-readable region [{:#x}:{:#x}]\n", address, region->base, region->base + region->size);
         });
         T value = region->read<T>(address);
 #if DEBUG_MMU
@@ -117,7 +121,7 @@ namespace x64 {
             fmt::print("No region containing {:#x}\n", address);
         });
         verify(region->protection & PROT_WRITE, [&]() {
-            fmt::print("Attempt to write to {:#x} in non-writable region {}\n", address, region->name);
+            fmt::print("Attempt to write to {:#x} in non-writable region [{:#x}:{:#x}]\n", address, region->base, region->base + region->size);
         });
 #if DEBUG_MMU
         if constexpr(std::is_integral_v<T>)
@@ -160,7 +164,7 @@ namespace x64 {
 
     void Mmu::dumpRegions() const {
         for(const auto& region : regions_) {
-            fmt::print("    {:>20}:{:<20} {:#x} - {:#x}\n", region.file, region.name, region.base, region.base+region.size);
+            fmt::print("    {:>20} {:#x} - {:#x}\n", region.file, region.base, region.base+region.size);
         }
     }
 
@@ -169,6 +173,14 @@ namespace x64 {
         for(const auto& region : regions_) top = std::max(top, region.base+region.size);
         top = (top + (alignment-1))/alignment*alignment;
         return top;
+    }
+
+    u64 Mmu::pageRoundDown(u64 address) {
+        return (address / PAGE_SIZE) * PAGE_SIZE;
+    }
+
+    u64 Mmu::pageRoundUp(u64 address) {
+        return ((address + PAGE_SIZE - 1) / PAGE_SIZE) * PAGE_SIZE;
     }
 
     void Mmu::reserveUpTo(u64 address) {
