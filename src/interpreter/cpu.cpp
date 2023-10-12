@@ -1761,7 +1761,11 @@ namespace x64 {
         float res = d - s;
         u32 r;
         ::memcpy(&r, &res, sizeof(r));
-        if(res != res) {
+        if(d == s) {
+            flags_.zero = true;
+            flags_.parity = false;
+            flags_.carry = false;
+        } else if(res != res) {
             flags_.zero = true;
             flags_.parity = true;
             flags_.carry = true;
@@ -1773,11 +1777,6 @@ namespace x64 {
             flags_.zero = false;
             flags_.parity = false;
             flags_.carry = true;
-        } else {
-            verify(res == 0.0);
-            flags_.zero = true;
-            flags_.parity = false;
-            flags_.carry = false;
         }
         flags_.overflow = false;
         flags_.sign = false;
@@ -1794,7 +1793,11 @@ namespace x64 {
         double res = d - s;
         u64 r;
         ::memcpy(&r, &res, sizeof(r));
-        if(res != res) {
+        if(d == s) {
+            flags_.zero = true;
+            flags_.parity = false;
+            flags_.carry = false;
+        } else if(res != res) {
             flags_.zero = true;
             flags_.parity = true;
             flags_.carry = true;
@@ -1806,15 +1809,11 @@ namespace x64 {
             flags_.zero = false;
             flags_.parity = false;
             flags_.carry = true;
-        } else {
-            verify(res == 0.0);
-            flags_.zero = true;
-            flags_.parity = false;
-            flags_.carry = false;
         }
         flags_.overflow = false;
         flags_.sign = false;
         flags_.setSure();
+        flags_.setSureParity();
         return r;
     }
 

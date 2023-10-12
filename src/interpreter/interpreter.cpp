@@ -340,10 +340,11 @@ namespace x64 {
     void Interpreter::log(size_t ticks, const X86Instruction* instruction) const {
         if(!logInstructions()) return;
         verify(!!instruction, "Unexpected nullptr");
-        std::string eflags = fmt::format("flags = [{}{}{}{}]", (cpu_.flags_.carry ? 'C' : ' '),
+        std::string eflags = fmt::format("flags = [{}{}{}{}{}]", (cpu_.flags_.carry ? 'C' : ' '),
                                                             (cpu_.flags_.zero ? 'Z' : ' '), 
                                                             (cpu_.flags_.overflow ? 'O' : ' '), 
-                                                            (cpu_.flags_.sign ? 'S' : ' '));
+                                                            (cpu_.flags_.sign ? 'S' : ' '),
+                                                            (cpu_.flags_.parity ? 'P' : ' '));
         std::string registerDump = fmt::format( "rip={:0000008x} "
                                                 "rax={:0000008x} rbx={:0000008x} rcx={:0000008x} rdx={:0000008x} "
                                                 "rsi={:0000008x} rdi={:0000008x} rbp={:0000008x} rsp={:0000008x} ",
