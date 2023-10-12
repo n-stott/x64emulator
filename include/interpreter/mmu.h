@@ -108,6 +108,7 @@ namespace x64 {
         u64 topOfReserved_ = 0;
 
         std::deque<Region> regions_;
+        std::vector<Region*> regionLookup_;
         Region* tlsRegion_ { nullptr };
         u64 fsBase_ { 0 };
     };

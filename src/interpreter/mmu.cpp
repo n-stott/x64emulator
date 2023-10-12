@@ -27,7 +27,21 @@ namespace x64 {
             dumpRegions();
         });
         regions_.push_back(std::move(region));
-        return &regions_.back();
+        Region* r = &regions_.back();
+
+        u64 firstPage = pageRoundDown(r->base) / PAGE_SIZE;
+        u64 lastPage = pageRoundUp(r->base + r->size) / PAGE_SIZE;
+        verify(firstPage < lastPage);
+        if(lastPage >= regionLookup_.size()) {
+            regionLookup_.resize(lastPage, nullptr);
+        }
+        for(u64 pageIndex = firstPage; pageIndex < lastPage; ++pageIndex) {
+            verify(pageIndex < regionLookup_.size());
+            verify(regionLookup_[pageIndex] == nullptr);
+            regionLookup_[pageIndex] = r;
+        }
+
+        return r;
     }
 
     Mmu::Region* Mmu::addTlsRegion(Region region, u64 fsBase) {
@@ -77,17 +91,11 @@ namespace x64 {
     }
 
     Mmu::Region* Mmu::findAddress(u64 address) {
-        for(Region& r : regions_) {
-            if(r.contains(address)) return &r;
-        }
-        return nullptr;
+        return regionLookup_[address / PAGE_SIZE];
     }
 
     const Mmu::Region* Mmu::findAddress(u64 address) const {
-        for(const Region& r : regions_) {
-            if(r.contains(address)) return &r;
-        }
-        return nullptr;
+        return regionLookup_[address / PAGE_SIZE];
     }
 
 

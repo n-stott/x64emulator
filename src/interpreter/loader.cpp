@@ -145,7 +145,7 @@ namespace x64 {
             return size + s.sizeInMemory();
         });
 
-        u64 fsBase = loadable_->allocateMemoryRange(totalTlsRegionSize + sizeof(u64)); // TODO reserve some space below
+        u64 fsBase = loadable_->allocateMemoryRange(Mmu::PAGE_SIZE + totalTlsRegionSize + sizeof(u64)) + Mmu::PAGE_SIZE; // We reserve 1 page below
 
         Mmu::Region tlsRegion { shortFilePath, fsBase - totalTlsRegionSize, totalTlsRegionSize+sizeof(u64), PROT_READ | PROT_WRITE };
 
