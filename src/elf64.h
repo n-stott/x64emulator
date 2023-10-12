@@ -292,6 +292,7 @@ namespace elf {
     }
 
     inline const u8* Elf64::dataAtOffset(u64 offset, u64 size) const {
+        (void)size;
         assert(offset < bytes_.size());
         assert(offset + size <= bytes_.size());
         return reinterpret_cast<const u8*>(bytes_.data()) + offset;
