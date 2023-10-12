@@ -61,7 +61,7 @@ namespace x64 {
 
         elf64->forAllProgramHeaders([&](const elf::ProgramHeader64& header) {
             if(header.type() == elf::ProgramHeaderType::PT_LOAD) {
-                verify(header.alignment() == Mmu::PAGE_SIZE);
+                verify(header.alignment() % Mmu::PAGE_SIZE == 0);
                 if(header.isExecutable()) {
                     loadExecutableProgramHeader(*elf64, header, filepath, shortFilePath, offset);
                 } else {
