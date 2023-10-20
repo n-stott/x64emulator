@@ -8,10 +8,10 @@
 namespace elf {
 
     std::unique_ptr<Elf> ElfReader::tryCreate(const std::string& filename) {
-        
         std::vector<char> bytes;
 
         std::ifstream input(filename, std::ios::in | std::ios::binary);
+        if(input.fail()) return {};
         input.seekg(0, std::ios::end);
         bytes.resize(input.tellg());
         input.seekg(0, std::ios::beg);
