@@ -34,13 +34,13 @@ namespace x64 {
             if(shortName == "libc") return;
             if(shortName == "ld-linux-x86-64") return;
         }
-        std::string prefix = "/usr/lib/x86_64-linux-gnu/";
-        auto path = prefix + filename;
-        try {
-            loadElf(path);
-        } catch(const std::exception& e) {
-            fmt::print(stderr, "Unable to load library {} : {}\n", path, e.what());
+        std::string prefix;
+        it = filename.find_first_of('/');
+        if(it == std::string::npos) {
+            prefix = "/usr/lib/x86_64-linux-gnu/";
         }
+        auto path = prefix + filename;
+        loadElf(path);
     }
     
     void Loader::loadElf(const std::string& filepath) {
