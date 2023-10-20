@@ -57,8 +57,6 @@ namespace x64 {
         std::string shortFilePath = filepath.find_last_of('/') == std::string::npos ? filepath
                                                                                     : filepath.substr(filepath.find_last_of('/')+1);
 
-        u64 alreadyLoadedTlsProgramHeaders = tlsHeaders_.size();
-
         elf64->forAllProgramHeaders([&](const elf::ProgramHeader64& header) {
             if(header.type() == elf::ProgramHeaderType::PT_LOAD) {
                 verify(header.alignment() % Mmu::PAGE_SIZE == 0);
@@ -77,8 +75,6 @@ namespace x64 {
                 });
             }
         });
-
-        verify(!tlsHeaders_.empty() || alreadyLoadedTlsProgramHeaders == tlsHeaders_.size(), "Several elfs have tls sections. Currently not supported");
 
         registerInitFunctions(*elf64, offset);
 
@@ -295,15 +291,18 @@ namespace x64 {
 
     void Loader::resolveTlsSections() {
         if(tlsHeaders_.empty()) return;
-        // verify(false, "Tls section currently not supported");
-        // return;
         std::vector<elf::ProgramHeader64> headers;
         const auto& firstHeader = tlsHeaders_[0];
         verify(std::all_of(tlsHeaders_.begin(), tlsHeaders_.end(), [&](const auto& h) {
             return h.elf == tlsHeaders_[0].elf
                 && h.shortFilePath == tlsHeaders_[0].shortFilePath
                 && h.elfOffset == firstHeader.elfOffset;
-        }), "TLS sections from differents elf objects not handled");
+        }), [&]() {
+            fmt::print(stderr, "TLS sections from differents elf objects not handled\n");
+            for(const auto& tlsHeader : tlsHeaders_) {
+                fmt::print(stderr, "  {}\n", tlsHeader.shortFilePath);
+            }
+        });
         for(const auto& tls : tlsHeaders_) {
             verify(!!tls.elf);
             headers.push_back(tls.sectionHeader);
