@@ -171,8 +171,13 @@ namespace x64 {
     }
 
     void Mmu::dumpRegions() const {
+        auto protectionToString = [](Protection prot) -> std::string {
+            return fmt::format("{}{}{}", (prot & Protection::PROT_READ)  ? "R" : " ",
+                                         (prot & Protection::PROT_WRITE) ? "W" : " ",
+                                         (prot & Protection::PROT_EXEC)  ? "X" : " ");
+        };
         for(const auto& region : regions_) {
-            fmt::print("    {:>20} {:#x} - {:#x}\n", region.file, region.base, region.base+region.size);
+            fmt::print("    {:>20} {:#x} - {:#x} {}\n", region.file, region.base, region.base+region.size, protectionToString(region.protection));
         }
     }
 
