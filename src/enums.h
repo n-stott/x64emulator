@@ -230,10 +230,21 @@ namespace elf {
         R_386_GOTOFF = 9,
         R_386_GOTPC = 10,
         R_386_32PLT = 11,
+        R_386_TLS_GD_PLT = 12,
+        R_386_TLS_LDM_PLT = 13,
+        R_386_TLS_TPOFF = 14,
+        R_386_TLS_IE = 15,
+        R_386_TLS_GOTIE = 16,
+        R_386_TLS_LE = 17,
+        R_386_TLS_GD = 18,
+        R_386_TLS_LDM = 19,
         R_386_16 = 20,
         R_386_PC16 = 21,
         R_386_8 = 22,
         R_386_PC8 = 23,
+        R_386_TLS_LDO_32 = 32,
+        R_386_TLS_DTPMOD32 = 35,
+        R_386_TLS_DTPOFF32 = 36,
         R_386_SIZE32 = 38,
     };
 
@@ -254,6 +265,14 @@ namespace elf {
         R_AMD64_PC16 = 13,
         R_AMD64_8 = 14,
         R_AMD64_PC8 = 15,
+        R_AMD64_DPTMOD64 = 16,
+        R_AMD64_DTPOFF64 = 17,
+        R_AMD64_TPOFF64 = 18,
+        R_AMD64_TLSGD = 19,
+        R_AMD64_TLSLD = 20,
+        R_AMD64_DTPOFF32 = 21,
+        R_AMD64_GOTTPOFF = 22,
+        R_AMD64_TPOFF32 = 23,
         R_AMD64_PC64 = 24,
         R_AMD64_GOTOFF64 = 25,
         R_AMD64_GOTPC32 = 26,
@@ -326,6 +345,14 @@ namespace elf {
             case RelocationType64::R_AMD64_PC16: return "R_AMD64_PC16";
             case RelocationType64::R_AMD64_8: return "R_AMD64_8";
             case RelocationType64::R_AMD64_PC8: return "R_AMD64_PC8";
+            case RelocationType64::R_AMD64_DPTMOD64: return "R_AMD64_DPTMOD64";
+            case RelocationType64::R_AMD64_DTPOFF64: return "R_AMD64_DTPOFF64";
+            case RelocationType64::R_AMD64_TPOFF64: return "R_AMD64_TPOFF64";
+            case RelocationType64::R_AMD64_TLSGD: return "R_AMD64_TLSGD";
+            case RelocationType64::R_AMD64_TLSLD: return "R_AMD64_TLSLD";
+            case RelocationType64::R_AMD64_DTPOFF32: return "R_AMD64_DTPOFF32";
+            case RelocationType64::R_AMD64_GOTTPOFF: return "R_AMD64_GOTTPOFF";
+            case RelocationType64::R_AMD64_TPOFF32: return "R_AMD64_TPOFF32";
             case RelocationType64::R_AMD64_PC64: return "R_AMD64_PC64";
             case RelocationType64::R_AMD64_GOTOFF64: return "R_AMD64_GOTOFF64";
             case RelocationType64::R_AMD64_GOTPC32: return "R_AMD64_GOTPC32";
