@@ -44,6 +44,7 @@ namespace x64 {
         };
 
         void loadElf(const std::string& filepath, ElfType elfType);
+        void prepareTlsTemplate();
         void resolveAllRelocations();
         void loadTlsBlocks();
 
@@ -79,6 +80,10 @@ namespace x64 {
         std::vector<LoadedElf> elfs_;
         std::vector<TlsBlock> tlsBlocks_;
         std::vector<std::string> loadedLibraries_;
+
+        u64 tlsDataSize_ { 0 };
+        u64 tlsRegionBase_ { 0 };
+        u64 fsBase_ { 0 };
     };
 
 }

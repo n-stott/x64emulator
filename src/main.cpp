@@ -34,6 +34,7 @@ int main(int argc, char* argv[]) {
         loader.loadElf(libraryPath, x64::Loader::ElfType::SHARED_OBJECT);
         loader.loadElf(programPath, x64::Loader::ElfType::MAIN_EXECUTABLE);
         interpreter.loadLibC();
+        loader.prepareTlsTemplate();
         loader.resolveAllRelocations();
         loader.loadTlsBlocks();
         interpreter.run(programPath, arguments);

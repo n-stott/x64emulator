@@ -131,7 +131,7 @@ namespace x64 {
         return (address + alignment-1)/alignment*alignment;
     }
 
-    void Loader::loadTlsBlocks() {
+    void Loader::prepareTlsTemplate() {
         if(tlsBlocks_.empty()) return;
 
         auto blocksFromMainExecutable = std::count_if(tlsBlocks_.begin(), tlsBlocks_.end(), [](const TlsBlock& b) { return b.elfType == ElfType::MAIN_EXECUTABLE; });
@@ -147,25 +147,27 @@ namespace x64 {
             block.tlsOffset = totalTlsRegionSize;
         }
 
-        u64 tlsDataSize = Mmu::pageRoundUp(totalTlsRegionSize);
-        u64 tlsRegionBase = loadable_->allocateMemoryRange(tlsDataSize+sizeof(u64));
+        tlsDataSize_ = Mmu::pageRoundUp(totalTlsRegionSize);
+        tlsRegionBase_ = loadable_->allocateMemoryRange(tlsDataSize_+sizeof(u64));
+        fsBase_ = tlsRegionBase_ + tlsDataSize_;
+    }
 
-        u64 fsBase = tlsRegionBase + tlsDataSize;
+    void Loader::loadTlsBlocks() {
+        if(tlsBlocks_.empty()) return;
+        Mmu::Region tlsRegion { "tls", tlsRegionBase_, tlsDataSize_+sizeof(u64), PROT_READ | PROT_WRITE };
 
-        Mmu::Region tlsRegion { "tls", tlsRegionBase, tlsDataSize+sizeof(u64), PROT_READ | PROT_WRITE };
-
-        u8* tlsBase = tlsRegion.data.data() + tlsDataSize;
+        u8* tlsBase = tlsRegion.data.data() + tlsDataSize_;
 
         for(const TlsBlock& block : tlsBlocks_) {
             u64 size = block.programHeader.sizeInMemory();
             std::vector<u8> buf(size, 0x00);
             u64 address = block.elfOffset + block.programHeader.virtualAddress();
             loadable_->read(buf.data(), address, size);
-            verify(block.tlsOffset <= tlsDataSize, "crash incoming");
+            verify(block.tlsOffset <= tlsDataSize_, "crash incoming");
             std::memcpy(tlsBase - block.tlsOffset, buf.data(), size*sizeof(u8));
         }
-        memcpy(tlsBase, &fsBase, sizeof(fsBase));
-        loadable_->addTlsMmuRegion(std::move(tlsRegion), fsBase);
+        memcpy(tlsBase, &fsBase_, sizeof(fsBase_));
+        loadable_->addTlsMmuRegion(std::move(tlsRegion), fsBase_);
     }
 
 
