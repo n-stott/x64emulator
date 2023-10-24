@@ -3,7 +3,6 @@ project(elf-reader)
 set(CMAKE_CXX_STANDARD 17)
 
 set(SOURCE_FILES
-    src/elf-reader.cpp
     src/main.cpp
 )
 
