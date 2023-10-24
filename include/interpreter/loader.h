@@ -38,14 +38,18 @@ namespace x64 {
 
         explicit Loader(Loadable* loadable, SymbolProvider* symbolProvider);
 
-        void loadElf(const std::string& filepath);
+        enum class ElfType {
+            MAIN_EXECUTABLE,
+            SHARED_OBJECT,
+        };
+
+        void loadElf(const std::string& filepath, ElfType elfType);
         void resolveAllRelocations();
-        void resolveTlsSections();
+        void loadTlsBlocks();
 
     private:
         void loadExecutableProgramHeader(const elf::Elf64& elf, const elf::ProgramHeader64& header, const std::string& filePath, const std::string& shortFilePath, u64 elfOffset);
         void loadNonExecutableProgramHeader(const elf::Elf64& elf, const elf::ProgramHeader64& header, const std::string& shortFilePath, u64 elfOffset);
-        void loadTlsProgramHeaders(const elf::Elf64& elf, std::vector<elf::ProgramHeader64> tlsHeaders, const std::string& shortFilePath, u64 offset);
         void registerInitFunctions(const elf::Elf64& elf, u64 elfOffset);
         void registerSymbols(const elf::Elf64& elf, u64 elfOffset);
         void loadNeededLibraries(const elf::Elf64& elf);
@@ -61,17 +65,19 @@ namespace x64 {
             std::unique_ptr<elf::Elf64> elf;
         };
 
-        struct TlsHeader {
+        struct TlsBlock {
             const elf::Elf64* elf;
-            elf::ProgramHeader64 sectionHeader;
+            elf::ProgramHeader64 programHeader;
+            ElfType elfType;
             std::string shortFilePath;
             u64 elfOffset;
+            u64 tlsOffset;
         };
 
         Loadable* loadable_;
         SymbolProvider* symbolProvider_;
         std::vector<LoadedElf> elfs_;
-        std::vector<TlsHeader> tlsHeaders_;
+        std::vector<TlsBlock> tlsBlocks_;
         std::vector<std::string> loadedLibraries_;
     };
 

@@ -40,10 +40,10 @@ namespace x64 {
             prefix = "/usr/lib/x86_64-linux-gnu/";
         }
         auto path = prefix + filename;
-        loadElf(path);
+        loadElf(path, ElfType::SHARED_OBJECT);
     }
     
-    void Loader::loadElf(const std::string& filepath) {
+    void Loader::loadElf(const std::string& filepath, ElfType elfType) {
         auto elf = elf::ElfReader::tryCreate(filepath);
         verify(!!elf, [&]() { fmt::print("Failed to load elf {}\n", filepath); });
         verify(elf->archClass() == elf::Class::B64, "elf must be 64-bit");
@@ -67,11 +67,13 @@ namespace x64 {
                 }
             }
             if(header.type() == elf::ProgramHeaderType::PT_TLS) {
-                tlsHeaders_.push_back(TlsHeader {
+                tlsBlocks_.push_back(TlsBlock {
                     elf64.get(),
                     header,
+                    elfType,
                     shortFilePath,
-                    offset
+                    offset,
+                    0 // computed later
                 });
             }
         });
@@ -125,39 +127,44 @@ namespace x64 {
         loadable_->addMmuRegion(std::move(region));
     }
 
-    void Loader::loadTlsProgramHeaders(const elf::Elf64& elf, std::vector<elf::ProgramHeader64> tlsHeaders, const std::string& shortFilePath, u64 elfOffset) {
-        (void)elf;
-        if(tlsHeaders.empty()) return;
-        std::sort(tlsHeaders.begin(), tlsHeaders.end(), [](const elf::ProgramHeader64& a, const elf::ProgramHeader64& b) {
-            return a.virtualAddress() < b.virtualAddress();
-        });
-        for(size_t i = 1; i < tlsHeaders.size(); ++i) {
-            const auto& prev = tlsHeaders[i-1];
-            const auto& current = tlsHeaders[i];
-            verify(prev.virtualAddress() + prev.sizeInMemory() == current.virtualAddress(), "non-consecutive tlsSections...");
-        }
+    static u64 roundedWithAlignment(u64 address, u64 alignment) {
+        return (address + alignment-1)/alignment*alignment;
+    }
 
-        u64 totalTlsRegionSize = std::accumulate(tlsHeaders.begin(), tlsHeaders.end(), 0, [](u64 size, const auto& s) {
-            return size + s.sizeInMemory();
+    void Loader::loadTlsBlocks() {
+        if(tlsBlocks_.empty()) return;
+
+        auto blocksFromMainExecutable = std::count_if(tlsBlocks_.begin(), tlsBlocks_.end(), [](const TlsBlock& b) { return b.elfType == ElfType::MAIN_EXECUTABLE; });
+        verify(blocksFromMainExecutable <= 1, [&]() { fmt::print("Error loading {} tls blocks from main executable", blocksFromMainExecutable); });
+
+        std::partition(tlsBlocks_.begin(), tlsBlocks_.end(), [](const TlsBlock& a) {
+            return a.elfType == ElfType::MAIN_EXECUTABLE;
         });
 
-        u64 fsBase = loadable_->allocateMemoryRange(Mmu::PAGE_SIZE + totalTlsRegionSize + sizeof(u64)) + Mmu::PAGE_SIZE; // We reserve 1 page below
-
-        Mmu::Region tlsRegion { shortFilePath, fsBase - totalTlsRegionSize, totalTlsRegionSize+sizeof(u64), PROT_READ | PROT_WRITE };
-
-        u8* tlsStart = tlsRegion.data.data();
-
-        for(const auto& header : tlsHeaders) {
-            std::vector<u8> buf(header.sizeInMemory(), 0x00);
-            u64 address = elfOffset + header.virtualAddress();
-            loadable_->read(buf.data(), address, header.sizeInMemory());
-            std::memcpy(tlsStart, buf.data(), header.sizeInMemory()*sizeof(u8));
-
-            tlsStart += header.sizeInMemory();
+        u64 totalTlsRegionSize = 0;
+        for(TlsBlock& block : tlsBlocks_) {
+            totalTlsRegionSize += roundedWithAlignment(block.programHeader.sizeInMemory(), block.programHeader.alignment());
+            block.tlsOffset = totalTlsRegionSize;
         }
-        verify(std::distance(tlsRegion.data.data(), tlsStart) == static_cast<std::ptrdiff_t>(totalTlsRegionSize));
-        memcpy(tlsStart, &fsBase, sizeof(fsBase));
 
+        u64 tlsDataSize = Mmu::pageRoundUp(totalTlsRegionSize);
+        u64 tlsRegionBase = loadable_->allocateMemoryRange(tlsDataSize+sizeof(u64));
+
+        u64 fsBase = tlsRegionBase + tlsDataSize;
+
+        Mmu::Region tlsRegion { "tls", tlsRegionBase, tlsDataSize+sizeof(u64), PROT_READ | PROT_WRITE };
+
+        u8* tlsBase = tlsRegion.data.data() + tlsDataSize;
+
+        for(const TlsBlock& block : tlsBlocks_) {
+            u64 size = block.programHeader.sizeInMemory();
+            std::vector<u8> buf(size, 0x00);
+            u64 address = block.elfOffset + block.programHeader.virtualAddress();
+            loadable_->read(buf.data(), address, size);
+            verify(block.tlsOffset <= tlsDataSize, "crash incoming");
+            std::memcpy(tlsBase - block.tlsOffset, buf.data(), size*sizeof(u8));
+        }
+        memcpy(tlsBase, &fsBase, sizeof(fsBase));
         loadable_->addTlsMmuRegion(std::move(tlsRegion), fsBase);
     }
 
@@ -286,27 +293,5 @@ namespace x64 {
             loadedElf.elf->forAllRelocations([&](const elf::RelocationEntry64& reloc) { resolveSingleRelocation(loadedElf, reloc, 0); });
             loadedElf.elf->forAllRelocationsA([&](const elf::RelocationEntry64A& reloc) { resolveSingleRelocation(loadedElf, reloc, reloc.r_addend); });
         }
-    }
-
-
-    void Loader::resolveTlsSections() {
-        if(tlsHeaders_.empty()) return;
-        std::vector<elf::ProgramHeader64> headers;
-        const auto& firstHeader = tlsHeaders_[0];
-        verify(std::all_of(tlsHeaders_.begin(), tlsHeaders_.end(), [&](const auto& h) {
-            return h.elf == tlsHeaders_[0].elf
-                && h.shortFilePath == tlsHeaders_[0].shortFilePath
-                && h.elfOffset == firstHeader.elfOffset;
-        }), [&]() {
-            fmt::print(stderr, "TLS sections from differents elf objects not handled\n");
-            for(const auto& tlsHeader : tlsHeaders_) {
-                fmt::print(stderr, "  {}\n", tlsHeader.shortFilePath);
-            }
-        });
-        for(const auto& tls : tlsHeaders_) {
-            verify(!!tls.elf);
-            headers.push_back(tls.sectionHeader);
-        }
-        loadTlsProgramHeaders(*firstHeader.elf, headers, firstHeader.shortFilePath, firstHeader.elfOffset);
     }
 }
