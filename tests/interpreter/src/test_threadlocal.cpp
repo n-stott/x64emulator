@@ -7,11 +7,7 @@ struct S {
 thread_local const char* S::message = "this is a thread_local character literal";
 
 int test1() {
-    try {
-        return puts(S::message);
-    } catch(...) {
-        return 0;
-    }
+    return puts(S::message);
 }
 
 int main() {
