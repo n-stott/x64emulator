@@ -251,7 +251,9 @@ namespace x64 {
                 // otherwise try performing lookup
                 auto value = symbolProvider_->lookupRawSymbol(symbolName.value(), &elfContainingSymbol);
 
-                return value.value_or(0);
+                if(!value && sym->bind() == elf::SymbolBind::WEAK) return 0;
+
+                return value;
             }();
 
             u64 B = loadedElf.offset;
