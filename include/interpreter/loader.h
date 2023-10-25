@@ -25,7 +25,7 @@ namespace x64 {
         virtual u64 allocateMemoryRange(u64 size) = 0;
         virtual void addExecutableSection(ExecutableSection section) = 0;
         virtual void addMmuRegion(Mmu::Region region) = 0;
-        virtual void addTlsMmuRegion(Mmu::Region region, u64 fsBase) = 0;
+        virtual void setFsBase(u64 fsBase) = 0;
         virtual void registerInitFunction(u64 address) = 0;
         virtual void registerFiniFunction(u64 address) = 0;
         virtual void writeRelocation(u64 relocationSource, u64 relocationDestination) = 0;
@@ -82,8 +82,6 @@ namespace x64 {
         std::vector<std::string> loadedLibraries_;
 
         u64 tlsDataSize_ { 0 };
-        u64 tlsRegionBase_ { 0 };
-        u64 fsBase_ { 0 };
     };
 
 }

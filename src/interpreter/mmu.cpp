@@ -44,12 +44,9 @@ namespace x64 {
         return r;
     }
 
-    Mmu::Region* Mmu::addTlsRegion(Region region, u64 fsBase) {
-        verify(!tlsRegion_);
-        verify(region.contains(fsBase));
-        tlsRegion_ = addRegion(region);
+    void Mmu::setFsBase(u64 fsBase) {
+        assert(fsBase_ == 0);
         fsBase_ = fsBase;
-        return tlsRegion_;
     }
 
     bool Mmu::Region::contains(u64 address) const {

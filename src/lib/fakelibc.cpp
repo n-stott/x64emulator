@@ -253,6 +253,17 @@ extern "C" {
         return ptr;
     }
 
+    void* fakelibc$calloc(size_t nmemb, size_t size) {
+        if(nmemb != (unsigned int)nmemb) return nullptr;
+        if(size != (unsigned int)size) return nullptr;
+        void* ptr = intrinsic$malloc(nmemb*size);
+        if(!!ptr) {
+            char* cptr = (char*)ptr;
+            for(size_t i = 0; i < nmemb*size; ++i) cptr[i] = 0;
+        }
+        return ptr;
+    }
+
     void fakelibc$free(void* ptr) {
         intrinsic$free(ptr);
     }

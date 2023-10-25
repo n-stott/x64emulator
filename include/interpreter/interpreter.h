@@ -27,7 +27,7 @@ namespace x64 {
         u64 allocateMemoryRange(u64 size) override;
         void addExecutableSection(ExecutableSection section) override;
         void addMmuRegion(Mmu::Region region) override;
-        void addTlsMmuRegion(Mmu::Region region, u64 fsBase) override;
+        void setFsBase(u64 fsBase) override;
         void registerInitFunction(u64 address) override;
         void registerFiniFunction(u64 address) override;
         void writeRelocation(u64 relocationSource, u64 relocationDestination) override;

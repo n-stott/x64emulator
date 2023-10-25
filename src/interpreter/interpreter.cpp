@@ -77,8 +77,8 @@ namespace x64 {
         mmu_.addRegion(std::move(region));
     }
 
-    void Interpreter::addTlsMmuRegion(Mmu::Region region, u64 fsBase) {
-        mmu_.addTlsRegion(std::move(region), fsBase);
+    void Interpreter::setFsBase(u64 fsBase) {
+        mmu_.setFsBase(fsBase);
     }
     
     void Interpreter::registerInitFunction(u64 address) {

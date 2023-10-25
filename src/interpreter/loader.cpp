@@ -2,6 +2,7 @@
 #include "interpreter/symbolprovider.h"
 #include "interpreter/verify.h"
 #include "interpreter/mmu.h"
+#include "interpreter/tcb.h"
 #include "program.h"
 #include "disassembler/capstonewrapper.h"
 #include "elf-reader.h"
@@ -148,26 +149,32 @@ namespace x64 {
         }
 
         tlsDataSize_ = Mmu::pageRoundUp(totalTlsRegionSize);
-        tlsRegionBase_ = loadable_->allocateMemoryRange(tlsDataSize_+sizeof(u64));
-        fsBase_ = tlsRegionBase_ + tlsDataSize_;
     }
 
     void Loader::loadTlsBlocks() {
         if(tlsBlocks_.empty()) return;
-        Mmu::Region tlsRegion { "tls", tlsRegionBase_, tlsDataSize_+sizeof(u64), PROT_READ | PROT_WRITE };
+        verify(tlsDataSize_ % Mmu::PAGE_SIZE == 0, "TLS region size must be PAGE_SIZE-aligned");
+        u64 tlsRegionBase = loadable_->allocateMemoryRange(tlsDataSize_);
+        Mmu::Region tlsRegion { "tls", tlsRegionBase, tlsDataSize_, PROT_READ | PROT_WRITE };
 
-        u8* tlsBase = tlsRegion.data.data() + tlsDataSize_;
+        u8* tlsEnd = tlsRegion.data.data() + tlsDataSize_;
 
         for(const TlsBlock& block : tlsBlocks_) {
             u64 size = block.programHeader.sizeInMemory();
             std::vector<u8> buf(size, 0x00);
             u64 address = block.elfOffset + block.programHeader.virtualAddress();
             loadable_->read(buf.data(), address, size);
-            verify(block.tlsOffset <= tlsDataSize_, "crash incoming");
-            std::memcpy(tlsBase - block.tlsOffset, buf.data(), size*sizeof(u8));
+            std::memcpy(tlsEnd - block.tlsOffset, buf.data(), size*sizeof(u8));
         }
-        memcpy(tlsBase, &fsBase_, sizeof(fsBase_));
-        loadable_->addTlsMmuRegion(std::move(tlsRegion), fsBase_);
+        loadable_->addMmuRegion(std::move(tlsRegion));
+
+        u64 tcbRegionBase = loadable_->allocateMemoryRange(sizeof(TCB));
+        verify(tcbRegionBase == tlsRegionBase + Mmu::PAGE_SIZE, "TLS region and TCB region must be adjacent");
+        Mmu::Region tcbRegion { "TCB", tcbRegionBase, sizeof(TCB), PROT_READ };
+        TCB tcb = TCB::create(tcbRegionBase);
+        std::memcpy(tcbRegion.data.data(), &tcb, sizeof(TCB));
+        loadable_->addMmuRegion(std::move(tcbRegion));
+        loadable_->setFsBase(tcbRegionBase);
     }
 
 

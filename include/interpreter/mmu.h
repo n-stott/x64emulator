@@ -71,7 +71,7 @@ namespace x64 {
         Mmu();
 
         Region* addRegion(Region region);
-        Region* addTlsRegion(Region region, u64 fsBase);
+        void setFsBase(u64 fsBase);
 
         u8 read8(Ptr8 ptr) const;
         u16 read16(Ptr16 ptr) const;
