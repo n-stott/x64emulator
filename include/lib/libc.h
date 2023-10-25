@@ -37,6 +37,8 @@ namespace x64 {
 
         friend struct Read;
         friend struct ReadInstruction;
+        friend struct Lseek64;
+        friend struct Lseek64Instruction;
     };
 
     struct Putchar final : public LibraryFunction {
@@ -65,6 +67,10 @@ namespace x64 {
 
     struct Read final : public LibraryFunction {
         explicit Read(const ExecutionContext& context, LibC* libc);
+    };
+
+    struct Lseek64 final : public LibraryFunction {
+        explicit Lseek64(const ExecutionContext& context, LibC* libc);
     };
 
     struct Atoi final : public LibraryFunction {

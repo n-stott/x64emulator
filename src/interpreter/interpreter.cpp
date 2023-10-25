@@ -223,6 +223,9 @@ namespace x64 {
             findSectionWithAddress(address, &section, &index);
             verify(!!section, [=]() {
                 fmt::print("Unable to find section containing address {:#x}\n", address);
+                if(auto it = bogusRelocations_.find(address); it != bogusRelocations_.end()) {
+                    fmt::print("Was bogus relocation of {}\n", it->second);
+                }
             });
             verify(index != (size_t)(-1));
             cp.address = address;

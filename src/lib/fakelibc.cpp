@@ -26,6 +26,9 @@ extern "C" {
     extern ssize_t intrinsic$read(int, void*, size_t);
 
     __attribute__((noinline))
+    extern off64_t intrinsic$lseek64(int, off64_t, int);
+
+    __attribute__((noinline))
     extern int intrinsic$fclose(FILE*);
 
     __attribute__((noinline))
@@ -439,6 +442,10 @@ extern "C" {
 
     ssize_t fakelibc$read(int fd, void* buf, size_t count) {
         return intrinsic$read(fd, buf, count);
+    }
+
+    off64_t fakelibc$lseek64(int fd, off64_t offset, int whence) {
+        return intrinsic$lseek64(fd, offset, whence);
     }
 
     int fakelibc$atoi(const char* nptr) {

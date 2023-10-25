@@ -46,6 +46,8 @@ namespace x64 {
         callback(std::move(instructions), std::move(func));
         func = createAndFill<Read>(&instructions, context, this);
         callback(std::move(instructions), std::move(func));
+        func = createAndFill<Lseek64>(&instructions, context, this);
+        callback(std::move(instructions), std::move(func));
         func = createAndFill<Atoi>(&instructions, context, this);
         callback(std::move(instructions), std::move(func));
         func = createAndFill<AssertFail>(&instructions, context, this);
@@ -380,6 +382,34 @@ namespace x64 {
         LibC* libc_;
     };
 
+    class Lseek64Instruction : public Intrinsic {
+    public:
+        explicit Lseek64Instruction(ExecutionContext context, LibC* libc) : 
+            context_(context),
+            libc_(libc) { }
+
+        void exec(InstructionHandler*) const override {
+            int fd = static_cast<int>(context_.rdi());
+            off64_t offset = context_.rsi();
+            int whence = static_cast<int>(context_.rdx());
+            FILE* file = libc_->fileRegistry_->fileFromFd(fd);
+            if(!file) {
+                context_.set_rax(-1);
+                return;
+            }
+            int realFd = ::fileno(file);
+            off64_t result = ::lseek64(realFd, offset, whence);
+            context_.set_rax(result);
+        }
+
+        std::string toString(const InstructionHandler*) const override {
+            return "lseek64";
+        }
+    private:
+        ExecutionContext context_;
+        LibC* libc_;
+    };
+
     class AtoiInstruction : public Intrinsic {
     public:
         explicit AtoiInstruction(ExecutionContext context, LibC* libc) : context_(context), libc_(libc) { }
@@ -520,6 +550,15 @@ namespace x64 {
         builder.addIntegerStructOrPointerArgument();
         builder.addIntegerStructOrPointerArgument();
         builder.addIntrinsicCall<ReadInstruction>(context, libc);
+        builder.close();
+    }
+    
+    Lseek64::Lseek64(const ExecutionContext& context, LibC* libc) : LibraryFunction("intrinsic$lseek64") {
+        FunctionBuilder builder(this);
+        builder.addIntegerStructOrPointerArgument();
+        builder.addIntegerStructOrPointerArgument();
+        builder.addIntegerStructOrPointerArgument();
+        builder.addIntrinsicCall<Lseek64Instruction>(context, libc);
         builder.close();
     }
     
