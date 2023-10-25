@@ -31,7 +31,7 @@ namespace x64 {
         void registerInitFunction(u64 address) override;
         void registerFiniFunction(u64 address) override;
         void writeRelocation(u64 relocationSource, u64 relocationDestination) override;
-        void writeUnresolvedRelocation(u64 relocationSource) override;
+        void writeUnresolvedRelocation(u64 relocationSource, const std::string& name) override;
         void read(u8* dst, u64 address, u64 nbytes) override;
 
         void loadLibC();
@@ -82,6 +82,7 @@ namespace x64 {
         std::unordered_map<u64, CallPoint> callCache_;
         std::unordered_map<u64, CallPoint> jmpCache_;
         mutable std::unordered_map<u64, std::string> functionNameCache_;
+        std::unordered_map<u64, std::string> bogusRelocations_;
 
         friend class ExecutionContext;
         friend class Cpu;

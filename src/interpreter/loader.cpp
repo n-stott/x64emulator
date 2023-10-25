@@ -311,7 +311,7 @@ namespace x64 {
                                        symbolName.value_or("???"));
                 });
 #endif
-                loadable_->writeUnresolvedRelocation(relocationAddress);
+                loadable_->writeUnresolvedRelocation(relocationAddress, symbolName.value_or("???"));
             }
         };
 

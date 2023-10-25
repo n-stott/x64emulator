@@ -29,7 +29,7 @@ namespace x64 {
         virtual void registerInitFunction(u64 address) = 0;
         virtual void registerFiniFunction(u64 address) = 0;
         virtual void writeRelocation(u64 relocationSource, u64 relocationDestination) = 0;
-        virtual void writeUnresolvedRelocation(u64 relocationSource) = 0;
+        virtual void writeUnresolvedRelocation(u64 relocationSource, const std::string& name) = 0;
         virtual void read(u8* dst, u64 address, u64 nbytes) = 0;
     };
 

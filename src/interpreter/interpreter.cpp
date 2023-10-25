@@ -93,8 +93,10 @@ namespace x64 {
         mmu_.write64(Ptr64{Segment::DS, relocationSource}, relocationDestination);
     }
 
-    void Interpreter::writeUnresolvedRelocation(u64 relocationSource) {
-        mmu_.write64(Ptr64{Segment::DS, relocationSource}, ((u64)(-1) << 32) | relocationSource );
+    void Interpreter::writeUnresolvedRelocation(u64 relocationSource, const std::string& name) {
+        u64 bogusAddress = ((u64)(-1) << 32) | relocationSource;
+        bogusRelocations_[bogusAddress] = name;
+        mmu_.write64(Ptr64{Segment::DS, relocationSource}, bogusAddress);
     }
 
     void Interpreter::read(u8* dst, u64 address, u64 nbytes) {
@@ -248,7 +250,12 @@ namespace x64 {
             const ExecutableSection* section = currentExecutedSection_;
             size_t index = (size_t)(-1);
             findSectionWithAddress(address, &section, &index);
-            verify(!!section && index != (size_t)(-1), [&]() { fmt::print("Unable to find jmp destination {:#x}\n", address); });
+            verify(!!section && index != (size_t)(-1), [&]() {
+                fmt::print("Unable to find jmp destination {:#x}\n", address);
+                if(auto it = bogusRelocations_.find(address); it != bogusRelocations_.end()) {
+                    fmt::print("Was bogus relocation of {}\n", it->second);
+                }
+            });
             cp.address = address;
             cp.executedSection = section;
             cp.instructionIdx = index;
