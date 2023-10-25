@@ -191,16 +191,20 @@ namespace x64 {
             std::string symbol { entry.symbol(stringTable, elf) };
             if(entry.isUndefined()) return;
             if(!entry.st_name) return;
-            if(entry.type() != elf::SymbolType::FUNC && entry.type() != elf::SymbolType::OBJECT) return;
             // if(symbol != "main") return;
-            symbolProvider_->registerSymbol(symbol, elfOffset + entry.st_value, &elf, entry.type(), entry.bind());
+            if(entry.type() == elf::SymbolType::FUNC || entry.type() == elf::SymbolType::OBJECT)
+                symbolProvider_->registerSymbol(symbol, elfOffset + entry.st_value, &elf, entry.type(), entry.bind());
+            if(entry.type() == elf::SymbolType::TLS)
+                symbolProvider_->registerSymbol(symbol, entry.st_value, &elf, entry.type(), entry.bind());
         });
         elf.forAllDynamicSymbols([&](const elf::StringTable* stringTable, const elf::SymbolTableEntry64& entry) {
             std::string symbol { entry.symbol(stringTable, elf) };
             if(entry.isUndefined()) return;
             if(!entry.st_name) return;
-            if(entry.type() != elf::SymbolType::FUNC && entry.type() != elf::SymbolType::OBJECT) return;
-            symbolProvider_->registerDynamicSymbol(symbol, elfOffset + entry.st_value, &elf, entry.type(), entry.bind());
+            if(entry.type() == elf::SymbolType::FUNC || entry.type() == elf::SymbolType::OBJECT)
+                symbolProvider_->registerDynamicSymbol(symbol, elfOffset + entry.st_value, &elf, entry.type(), entry.bind());
+            if(entry.type() == elf::SymbolType::TLS)
+                symbolProvider_->registerDynamicSymbol(symbol, entry.st_value, &elf, entry.type(), entry.bind());
         });
     }
 
@@ -220,23 +224,34 @@ namespace x64 {
         auto resolveSingleRelocation = [&](const LoadedElf& loadedElf, const auto& relocation, u64 addend) {
             const elf::Elf64& elf = *loadedElf.elf;
             const auto* sym = relocation.symbol(elf);
-            verify(!!sym, "Relocation has no symbol");
-            std::optional<std::string> symbol = [&]() -> std::optional<std::string> {
+
+            std::optional<std::string> symbolName = [&]() -> std::optional<std::string> {
                 if(!sym->st_name) return {};
                 verify(elf.dynamicStringTable().has_value());
                 auto dynamicStringTable = elf.dynamicStringTable().value();
                 std::string symbol { sym->symbol(&dynamicStringTable, elf) };
                 return symbol;
             }();
-            std::optional<std::string> demangledSymbol = symbol ? std::make_optional(boost::core::demangle(symbol->c_str())) : std::nullopt;
 
-            std::optional<u64> symbolValue = sym->st_value ? std::make_optional(loadedElf.offset + sym->st_value) : std::nullopt;
+            const elf::Elf64* elfContainingSymbol = nullptr;
 
             std::optional<u64> S = [&]() -> std::optional<u64> {
-                if(symbolValue) return symbolValue.value();
-                if(symbol) return symbolProvider_->lookupRawSymbol(symbol.value());
-                if(demangledSymbol) return symbolProvider_->lookupDemangledSymbol(demangledSymbol.value());
-                return {};
+                // if the relocation has no associated symbol, give up
+                if(!sym) return {};
+
+                // if the symbol is defined, return its value
+                if(sym->st_shndx != 0) {
+                    elfContainingSymbol = loadedElf.elf.get();
+                    return loadedElf.offset + sym->st_value;
+                }
+
+                // if the symbol is not defined and has no name, give up
+                if(!symbolName) return {};
+
+                // otherwise try performing lookup
+                auto value = symbolProvider_->lookupRawSymbol(symbolName.value(), &elfContainingSymbol);
+
+                return value.value_or(0);
             }();
 
             u64 B = loadedElf.offset;
@@ -244,12 +259,20 @@ namespace x64 {
             auto computeRelocation = [&](const auto& relocation) -> std::optional<u64> {
                 switch(relocation.type()) {
                     case elf::RelocationType64::R_AMD64_64: {
-                        if(S.has_value()) return S.value() + addend;
-                        return {};
+                        if(!S.has_value()) return {};
+                        return S.value() + addend;
                     }
                     case elf::RelocationType64::R_AMD64_RELATIVE: return B + addend;
                     case elf::RelocationType64::R_AMD64_GLOB_DAT: 
                     case elf::RelocationType64::R_AMD64_JUMP_SLOT: return S;
+                    case elf::RelocationType64::R_AMD64_TPOFF64: {
+                        if(!S.has_value()) return {};
+                        auto tlsBlock = std::find_if(tlsBlocks_.begin(), tlsBlocks_.end(), [&](const TlsBlock& block) {
+                            return block.elf == elfContainingSymbol;
+                        });
+                        if(tlsBlock == tlsBlocks_.end()) return {};
+                        return - tlsBlock->tlsOffset + S.value();
+                    }
                     default: break;
                 }
                 // verify(false, [&]() {
@@ -270,7 +293,7 @@ namespace x64 {
                                        relocation.offset(),
                                        elf::toString(relocation.type()),
                                        relocationAddress,
-                                       symbol.value_or("???"),
+                                       symbolName.value_or("???"),
                                        destinationAddress.value());
                 });
 #endif
@@ -283,7 +306,7 @@ namespace x64 {
                                        relocation.offset(),
                                        elf::toString(relocation.type()),
                                        relocationAddress,
-                                       symbol.value_or("???"));
+                                       symbolName.value_or("???"));
                 });
 #endif
                 loadable_->writeUnresolvedRelocation(relocationAddress);

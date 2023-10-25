@@ -17,15 +17,15 @@ namespace x64 {
         demangledDynamicSymbols_.registerSymbol(boost::core::demangle(symbol.c_str()), address, elf, type, bind);
     }
 
-    std::optional<u64> SymbolProvider::lookupRawSymbol(const std::string& symbol) const {
-        auto result = rawStaticSymbols_.lookupSymbol(symbol);
-        if(!result) result = rawDynamicSymbols_.lookupSymbol(symbol);
+    std::optional<u64> SymbolProvider::lookupRawSymbol(const std::string& symbol, const elf::Elf64** elf) const {
+        auto result = rawStaticSymbols_.lookupSymbol(symbol, elf);
+        if(!result) result = rawDynamicSymbols_.lookupSymbol(symbol, elf);
         return result;
     }
 
     std::optional<u64> SymbolProvider::lookupDemangledSymbol(const std::string& symbol) const {
-        auto result = demangledStaticSymbols_.lookupSymbol(symbol);
-        if(!result) result = demangledDynamicSymbols_.lookupSymbol(symbol);
+        auto result = demangledStaticSymbols_.lookupSymbol(symbol, nullptr);
+        if(!result) result = demangledDynamicSymbols_.lookupSymbol(symbol, nullptr);
         return result;
     }
 
@@ -67,16 +67,18 @@ namespace x64 {
     }
 
     template<SymbolProvider::SymbolRepr repr>
-    std::optional<u64> SymbolProvider::Table<repr>::lookupSymbol(const std::string& symbol) const {
+    std::optional<u64> SymbolProvider::Table<repr>::lookupSymbol(const std::string& symbol, const elf::Elf64** elf) const {
         std::optional<u64> result;
         auto it = byName_.find(symbol);
         if(it != byName_.end()) {
             result = it->second->address;
+            if(!!elf) *elf = it->second->elf;
         } else if(auto pos = symbol.find_first_of('@'); pos != std::string::npos) {
             std::string truncatedSymbol = symbol.substr(0, pos);
             it = byName_.find(symbol);
             if(it != byName_.end()) {
                 result = it->second->address;
+                if(!!elf) *elf = it->second->elf;
             }
         }
         return result;
