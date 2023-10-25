@@ -111,7 +111,7 @@ namespace x64 {
 
         loadable_->addExecutableSection(std::move(esection));
 
-        Mmu::Region region{ shortFilePath, header.virtualAddress() + elfOffset, header.sizeInMemory(), PROT_NONE };
+        Mmu::Region region{ shortFilePath, header.virtualAddress() + elfOffset, header.sizeInMemory(), PROT_EXEC };
         loadable_->addMmuRegion(std::move(region));
     }
 
