@@ -303,6 +303,16 @@ namespace x64 {
         return src1 - src2;
     }
 
+    void Cpu::exec(const Sub<R8, R8>& ins) { set(ins.dst, execSub8Impl(get(ins.dst), get(ins.src))); }
+    void Cpu::exec(const Sub<R8, Imm>& ins) { set(ins.dst, execSub8Impl(get(ins.dst), get<u8>(ins.src))); }
+    void Cpu::exec(const Sub<R8, M8>& ins) { set(ins.dst, execSub8Impl(get(ins.dst), get(resolve(ins.src)))); }
+    void Cpu::exec(const Sub<M8, R8>& ins) { set(resolve(ins.dst), execSub8Impl(get(resolve(ins.dst)), get(ins.src))); }
+    void Cpu::exec(const Sub<M8, Imm>& ins) { set(resolve(ins.dst), execSub8Impl(get(resolve(ins.dst)), get<u8>(ins.src))); }
+    void Cpu::exec(const Sub<R16, R16>& ins) { set(ins.dst, execSub16Impl(get(ins.dst), get(ins.src))); }
+    void Cpu::exec(const Sub<R16, Imm>& ins) { set(ins.dst, execSub16Impl(get(ins.dst), get<u16>(ins.src))); }
+    void Cpu::exec(const Sub<R16, M16>& ins) { set(ins.dst, execSub16Impl(get(ins.dst), get(resolve(ins.src)))); }
+    void Cpu::exec(const Sub<M16, R16>& ins) { set(resolve(ins.dst), execSub16Impl(get(resolve(ins.dst)), get(ins.src))); }
+    void Cpu::exec(const Sub<M16, Imm>& ins) { set(resolve(ins.dst), execSub16Impl(get(resolve(ins.dst)), get<u16>(ins.src))); }
     void Cpu::exec(const Sub<R32, R32>& ins) { set(ins.dst, execSub32Impl(get(ins.dst), get(ins.src))); }
     void Cpu::exec(const Sub<R32, Imm>& ins) { set(ins.dst, execSub32Impl(get(ins.dst), get<u32>(ins.src))); }
     void Cpu::exec(const Sub<R32, SignExtended<u8>>& ins) { set(ins.dst, execSub32Impl(get(ins.dst), signExtended32(ins.src.extendedValue))); }

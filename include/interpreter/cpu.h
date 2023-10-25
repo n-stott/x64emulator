@@ -185,6 +185,16 @@ namespace x64 {
         void exec(const Adc<M32, R32>&) override;
         void exec(const Adc<M32, Imm>&) override;
 
+        void exec(const Sub<R8, R8>&) override;
+        void exec(const Sub<R8, Imm>&) override;
+        void exec(const Sub<R8, M8>&) override;
+        void exec(const Sub<M8, R8>&) override;
+        void exec(const Sub<M8, Imm>&) override;
+        void exec(const Sub<R16, R16>&) override;
+        void exec(const Sub<R16, Imm>&) override;
+        void exec(const Sub<R16, M16>&) override;
+        void exec(const Sub<M16, R16>&) override;
+        void exec(const Sub<M16, Imm>&) override;
         void exec(const Sub<R32, R32>&) override;
         void exec(const Sub<R32, Imm>&) override;
         void exec(const Sub<R32, SignExtended<u8>>&) override;
