@@ -467,4 +467,32 @@ extern "C" {
         return intrinsic$__assert_fail(assertion, file, line, function);
     }
 
+    void fakelibc$qsort(void* base, size_t nmemb, size_t size, int (*compar)(const void*, const void*)) {
+        // just do bubble sort for now
+        for (size_t i = 0; i < nmemb; ++i) {
+            bool swapped = false;
+            for (size_t j = 0; j < nmemb-i-1; ++j) {
+                uint8_t* p = (uint8_t*)base + j*size;
+                uint8_t* q = (uint8_t*)base + (j+1)*size;
+                if(compar(q, p) < 0) {
+                    for(size_t k = 0; k < size; ++k) {
+                        std::swap(p[k], q[k]);
+                    }
+                    swapped = true;
+                }
+            }
+            if (swapped == false)
+                break;
+        }
+    }
+
+    char* fakelibc$strncpy(char* dest, const char* src, size_t n) {
+        size_t i;
+        for (i = 0; i < n && src[i] != '\0'; ++i)
+            dest[i] = src[i];
+        for (; i < n; ++i)
+            dest[i] = '\0';
+        return dest;
+    }
+
 }
