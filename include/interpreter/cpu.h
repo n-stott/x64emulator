@@ -443,6 +443,19 @@ namespace x64 {
         void exec(const Tzcnt<R64, R64>&) override;
         void exec(const Tzcnt<R64, M64>&) override;
 
+        void exec(const Bt<R16, R16>&) override;
+        void exec(const Bt<R16, Imm>&) override;
+        void exec(const Bt<R32, R32>&) override;
+        void exec(const Bt<R32, Imm>&) override;
+        void exec(const Bt<R64, R64>&) override;
+        void exec(const Bt<R64, Imm>&) override;
+        void exec(const Bt<M16, R16>&) override;
+        void exec(const Bt<M16, Imm>&) override;
+        void exec(const Bt<M32, R32>&) override;
+        void exec(const Bt<M32, Imm>&) override;
+        void exec(const Bt<M64, R64>&) override;
+        void exec(const Bt<M64, Imm>&) override;
+
         void exec(const Test<R8, R8>&) override;
         void exec(const Test<R8, Imm>&) override;
         void exec(const Test<M8, R8>&) override;

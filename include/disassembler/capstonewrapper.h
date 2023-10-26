@@ -72,6 +72,7 @@ namespace x64 {
         template<Cond cond>
         static std::unique_ptr<X86Instruction> makeSet(const cs_insn& insn);
 
+        static std::unique_ptr<X86Instruction> makeBt(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeTest(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeCmp(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeCmpxchg(const cs_insn& insn);

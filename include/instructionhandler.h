@@ -291,6 +291,19 @@ namespace x64 {
         virtual void exec(const Tzcnt<R64, R64>&) = 0;
         virtual void exec(const Tzcnt<R64, M64>&) = 0;
 
+        virtual void exec(const Bt<R16, R16>&) = 0;
+        virtual void exec(const Bt<R16, Imm>&) = 0;
+        virtual void exec(const Bt<R32, R32>&) = 0;
+        virtual void exec(const Bt<R32, Imm>&) = 0;
+        virtual void exec(const Bt<R64, R64>&) = 0;
+        virtual void exec(const Bt<R64, Imm>&) = 0;
+        virtual void exec(const Bt<M16, R16>&) = 0;
+        virtual void exec(const Bt<M16, Imm>&) = 0;
+        virtual void exec(const Bt<M32, R32>&) = 0;
+        virtual void exec(const Bt<M32, Imm>&) = 0;
+        virtual void exec(const Bt<M64, R64>&) = 0;
+        virtual void exec(const Bt<M64, Imm>&) = 0;
+
         virtual void exec(const Test<R8, R8>&) = 0;
         virtual void exec(const Test<M8, R8>&) = 0;
         virtual void exec(const Test<R8, Imm>&) = 0;

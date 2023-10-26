@@ -244,6 +244,12 @@ namespace x64 {
         Dst dst;
     };
     
+    template<typename Base, typename Offset>
+    struct Bt {
+        Base base;
+        Offset offset;
+    };
+    
     template<typename Src1, typename Src2>
     struct Test {
         Src1 src1;

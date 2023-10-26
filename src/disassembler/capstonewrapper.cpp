@@ -73,6 +73,7 @@ namespace x64 {
             case X86_INS_SETL: return makeSet<Cond::L>(insn);
             case X86_INS_SETLE: return makeSet<Cond::LE>(insn);
             case X86_INS_SETNE: return makeSet<Cond::NE>(insn);
+            case X86_INS_BT: return makeBt(insn);
             case X86_INS_TEST: return makeTest(insn);
             case X86_INS_CMP: return makeCmp(insn);
             case X86_INS_CMPXCHG: return makeCmpxchg(insn);
@@ -1165,6 +1166,36 @@ namespace x64 {
         auto m8dst = asMemory8(src);
         if(r8dst) return make_wrapper<Set<cond, R8>>(insn.address, r8dst.value());
         if(m8dst) return make_wrapper<Set<cond, M8>>(insn.address, m8dst.value());
+        return make_failed(insn);
+    }
+    
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makeBt(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& base = x86detail.operands[0];
+        const cs_x86_op& offset = x86detail.operands[1];
+        auto r16src1 = asRegister16(base);
+        auto r32src1 = asRegister32(base);
+        auto r64src1 = asRegister64(base);
+        auto m16src1 = asMemory16(base);
+        auto m32src1 = asMemory32(base);
+        auto m64src1 = asMemory64(base);
+        auto r16src2 = asRegister16(offset);
+        auto r32src2 = asRegister32(offset);
+        auto r64src2 = asRegister64(offset);
+        auto immsrc2 = asImmediate(offset);
+        if(r16src1 && r16src2) return make_wrapper<Bt<R16, R16>>(insn.address, r16src1.value(), r16src2.value());
+        if(r16src1 && immsrc2) return make_wrapper<Bt<R16, Imm>>(insn.address, r16src1.value(), immsrc2.value());
+        if(r32src1 && r32src2) return make_wrapper<Bt<R32, R32>>(insn.address, r32src1.value(), r32src2.value());
+        if(r32src1 && immsrc2) return make_wrapper<Bt<R32, Imm>>(insn.address, r32src1.value(), immsrc2.value());
+        if(r64src1 && r64src2) return make_wrapper<Bt<R64, R64>>(insn.address, r64src1.value(), r64src2.value());
+        if(r64src1 && immsrc2) return make_wrapper<Bt<R64, Imm>>(insn.address, r64src1.value(), immsrc2.value());
+        if(m16src1 && r16src2) return make_wrapper<Bt<M16, R16>>(insn.address, m16src1.value(), r16src2.value());
+        if(m16src1 && immsrc2) return make_wrapper<Bt<M16, Imm>>(insn.address, m16src1.value(), immsrc2.value());
+        if(m32src1 && r32src2) return make_wrapper<Bt<M32, R32>>(insn.address, m32src1.value(), r32src2.value());
+        if(m32src1 && immsrc2) return make_wrapper<Bt<M32, Imm>>(insn.address, m32src1.value(), immsrc2.value());
+        if(m64src1 && r64src2) return make_wrapper<Bt<M64, R64>>(insn.address, m64src1.value(), r64src2.value());
+        if(m64src1 && immsrc2) return make_wrapper<Bt<M64, Imm>>(insn.address, m64src1.value(), immsrc2.value());
         return make_failed(insn);
     }
     

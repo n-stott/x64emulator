@@ -1194,6 +1194,19 @@ namespace x64 {
     void Cpu::exec(const Tzcnt<R32, M32>& ins) { set(ins.dst, execTzcnt32Impl(get(resolve(ins.src)))); }
     void Cpu::exec(const Tzcnt<R64, R64>& ins) { set(ins.dst, execTzcnt64Impl(get(ins.src))); }
     void Cpu::exec(const Tzcnt<R64, M64>& ins) { set(ins.dst, execTzcnt64Impl(get(resolve(ins.src)))); }
+    
+    void Cpu::exec(const Bt<R16, R16>& ins) { flags_.carry = (get(ins.base) << (get(ins.offset) % 16)) & 0x1; }
+    void Cpu::exec(const Bt<R16, Imm>& ins) { flags_.carry = (get(ins.base) << (get<u16>(ins.offset) % 16)) & 0x1; }
+    void Cpu::exec(const Bt<R32, R32>& ins) { flags_.carry = (get(ins.base) << (get(ins.offset) % 32)) & 0x1; }
+    void Cpu::exec(const Bt<R32, Imm>& ins) { flags_.carry = (get(ins.base) << (get<u32>(ins.offset) % 32)) & 0x1; }
+    void Cpu::exec(const Bt<R64, R64>& ins) { flags_.carry = (get(ins.base) << (get(ins.offset) % 64)) & 0x1; }
+    void Cpu::exec(const Bt<R64, Imm>& ins) { flags_.carry = (get(ins.base) << (get<u64>(ins.offset) % 64)) & 0x1; }
+    void Cpu::exec(const Bt<M16, R16>& ins) { flags_.carry = (get(resolve(ins.base)) << (get(ins.offset) % 16)) & 0x1; }
+    void Cpu::exec(const Bt<M16, Imm>& ins) { flags_.carry = (get(resolve(ins.base)) << (get<u16>(ins.offset) % 16)) & 0x1; }
+    void Cpu::exec(const Bt<M32, R32>& ins) { flags_.carry = (get(resolve(ins.base)) << (get(ins.offset) % 32)) & 0x1; }
+    void Cpu::exec(const Bt<M32, Imm>& ins) { flags_.carry = (get(resolve(ins.base)) << (get<u32>(ins.offset) % 32)) & 0x1; }
+    void Cpu::exec(const Bt<M64, R64>& ins) { flags_.carry = (get(resolve(ins.base)) << (get(ins.offset) % 64)) & 0x1; }
+    void Cpu::exec(const Bt<M64, Imm>& ins) { flags_.carry = (get(resolve(ins.base)) << (get<u64>(ins.offset) % 64)) & 0x1; }
 
     void Cpu::execTest8Impl(u8 src1, u8 src2) {
         u8 tmp = src1 & src2;
