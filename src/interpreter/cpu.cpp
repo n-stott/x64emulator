@@ -632,25 +632,45 @@ namespace x64 {
 
     u8 Cpu::execOr8Impl(u8 dst, u8 src) {
         u8 tmp = dst | src;
-        WARN_FLAGS();
+        flags_.overflow = false;
+        flags_.carry = false;
+        flags_.sign = tmp & (1 << 7);
+        flags_.zero = (tmp == 0);
+        flags_.setSure();
+        flags_.setUnsureParity();
         return tmp;
     }
 
     u16 Cpu::execOr16Impl(u16 dst, u16 src) {
         u16 tmp = dst | src;
-        WARN_FLAGS();
+        flags_.overflow = false;
+        flags_.carry = false;
+        flags_.sign = tmp & (1 << 15);
+        flags_.zero = (tmp == 0);
+        flags_.setSure();
+        flags_.setUnsureParity();
         return tmp;
     }
 
     u32 Cpu::execOr32Impl(u32 dst, u32 src) {
         u32 tmp = dst | src;
-        WARN_FLAGS();
+        flags_.overflow = false;
+        flags_.carry = false;
+        flags_.sign = tmp & (1 << 31);
+        flags_.zero = (tmp == 0);
+        flags_.setSure();
+        flags_.setUnsureParity();
         return tmp;
     }
 
     u64 Cpu::execOr64Impl(u64 dst, u64 src) {
         u64 tmp = dst | src;
-        WARN_FLAGS();
+        flags_.overflow = false;
+        flags_.carry = false;
+        flags_.sign = tmp & (1ull << 63);
+        flags_.zero = (tmp == 0);
+        flags_.setSure();
+        flags_.setUnsureParity();
         return tmp;
     }
 
