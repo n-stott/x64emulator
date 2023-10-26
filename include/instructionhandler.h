@@ -259,9 +259,11 @@ namespace x64 {
         virtual void exec(const Shr<R64, Imm>&) = 0;
 
         virtual void exec(const Shl<R32, R8>&) = 0;
+        virtual void exec(const Shl<M32, R8>&) = 0;
         virtual void exec(const Shl<R32, Imm>&) = 0;
         virtual void exec(const Shl<M32, Imm>&) = 0;
         virtual void exec(const Shl<R64, R8>&) = 0;
+        virtual void exec(const Shl<M64, R8>&) = 0;
         virtual void exec(const Shl<R64, Imm>&) = 0;
         virtual void exec(const Shl<M64, Imm>&) = 0;
 

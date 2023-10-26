@@ -407,9 +407,11 @@ namespace x64 {
         void exec(const Shr<R64, Imm>&) override;
 
         void exec(const Shl<R32, R8>&) override;
+        void exec(const Shl<M32, R8>&) override;
         void exec(const Shl<R32, Imm>&) override;
         void exec(const Shl<M32, Imm>&) override;
         void exec(const Shl<R64, R8>&) override;
+        void exec(const Shl<M64, R8>&) override;
         void exec(const Shl<R64, Imm>&) override;
         void exec(const Shl<M64, Imm>&) override;
 

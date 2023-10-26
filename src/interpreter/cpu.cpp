@@ -1080,6 +1080,11 @@ namespace x64 {
         set(ins.dst, get(ins.dst) << get<u32>(ins.src));
         WARN_FLAGS();
     }
+    void Cpu::exec(const Shl<M32, R8>& ins) {
+        assert(get(ins.src) < 32);
+        set(resolve(ins.dst), get(resolve(ins.dst)) << get(ins.src));
+        WARN_FLAGS();
+    }
     void Cpu::exec(const Shl<M32, Imm>& ins) {
         assert(get<u32>(ins.src) < 32);
         set(resolve(ins.dst), get(resolve(ins.dst)) << get<u32>(ins.src));
@@ -1094,6 +1099,11 @@ namespace x64 {
     void Cpu::exec(const Shl<R64, Imm>& ins) {
         assert(get<u64>(ins.src) < 64);
         set(ins.dst, get(ins.dst) << get<u64>(ins.src));
+        WARN_FLAGS();
+    }
+    void Cpu::exec(const Shl<M64, R8>& ins) {
+        assert(get(ins.src) < 64);
+        set(resolve(ins.dst), get(resolve(ins.dst)) << get(ins.src));
         WARN_FLAGS();
     }
     void Cpu::exec(const Shl<M64, Imm>& ins) {
