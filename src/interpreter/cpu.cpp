@@ -1566,6 +1566,22 @@ namespace x64 {
         set(R64::RSI, sptr.address);
         set(R64::RDI, dptr.address);
     }
+
+    void Cpu::exec(const Rep<Movs<M64, M64>>& ins) {
+        u32 counter = get(R32::ECX);
+        Ptr64 dptr = resolve(ins.op.dst);
+        Ptr64 sptr = resolve(ins.op.src);
+        while(counter) {
+            u64 val = mmu_->read64(sptr);
+            mmu_->write64(dptr, val);
+            ++sptr;
+            ++dptr;
+            --counter;
+        }
+        set(R32::ECX, counter);
+        set(R64::RSI, sptr.address);
+        set(R64::RDI, dptr.address);
+    }
     
     void Cpu::exec(const Rep<Stos<M32, R32>>& ins) {
         u32 counter = get(R32::ECX);

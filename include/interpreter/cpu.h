@@ -535,6 +535,7 @@ namespace x64 {
 
         void exec(const Rep<Movs<Addr<Size::BYTE, B>, Addr<Size::BYTE, B>>>&) override;
         void exec(const Rep<Movs<Addr<Size::DWORD, B>, Addr<Size::DWORD, B>>>&) override;
+        void exec(const Rep<Movs<M64, M64>>&) override;
         
         void exec(const Rep<Stos<M32, R32>>&) override;
         void exec(const Rep<Stos<M64, R64>>&) override;

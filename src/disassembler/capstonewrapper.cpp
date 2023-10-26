@@ -129,6 +129,7 @@ namespace x64 {
             case X86_INS_STOSW:
             case X86_INS_STOSD:
             case X86_INS_STOSQ: return makeStos(insn);
+            case X86_INS_MOVSQ: return makeMovs(insn);
             case X86_INS_XORPD: return makeXorpd(insn);
             default: return make_failed(insn);
         }
@@ -1474,6 +1475,22 @@ namespace x64 {
         if(prefix == X86_PREFIX_REP) {
             if(m32dst && r32src) return make_wrapper< Rep< Stos<M32, R32> >>(insn.address, m32dst.value(), r32src.value());
             if(m64dst && r64src) return make_wrapper< Rep< Stos<M64, R64> >>(insn.address, m64dst.value(), r64src.value());
+        }
+        return make_failed(insn);
+    }
+
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makeMovs(const cs_insn& insn) {
+        u8 prefixByte = insn.detail->x86.prefix[0];
+        if(prefixByte == 0) return make_failed(insn);
+        x86_prefix prefix = (x86_prefix)prefixByte;
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto m64src = asMemory64(src);
+        auto m64dst = asMemory64(dst);
+        if(prefix == X86_PREFIX_REP) {
+            if(m64dst && m64src) return make_wrapper< Rep< Movs<M64, M64> >>(insn.address, m64dst.value(), m64src.value());
         }
         return make_failed(insn);
     }
