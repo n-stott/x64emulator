@@ -471,10 +471,16 @@ namespace x64 {
         auto r64dst = asRegister64(dst);
         auto r8src = asRegister8(src);
         auto m8src = asMemory8(src);
+        auto r16src = asRegister16(src);
+        auto m16src = asMemory16(src);
         if(r32dst && r8src) return make_wrapper<Movsx<R32, R8>>(insn.address, r32dst.value(), r8src.value());
         if(r32dst && m8src) return make_wrapper<Movsx<R32, M8>>(insn.address, r32dst.value(), m8src.value());
         if(r64dst && r8src) return make_wrapper<Movsx<R64, R8>>(insn.address, r64dst.value(), r8src.value());
         if(r64dst && m8src) return make_wrapper<Movsx<R64, M8>>(insn.address, r64dst.value(), m8src.value());
+        if(r32dst && r16src) return make_wrapper<Movsx<R32, R16>>(insn.address, r32dst.value(), r16src.value());
+        if(r32dst && m16src) return make_wrapper<Movsx<R32, M16>>(insn.address, r32dst.value(), m16src.value());
+        if(r64dst && r16src) return make_wrapper<Movsx<R64, R16>>(insn.address, r64dst.value(), r16src.value());
+        if(r64dst && m16src) return make_wrapper<Movsx<R64, M16>>(insn.address, r64dst.value(), m16src.value());
         return make_failed(insn);
     }
 

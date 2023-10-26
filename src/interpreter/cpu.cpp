@@ -147,6 +147,21 @@ namespace x64 {
         return (i32)(i8)value;
     }
 
+    static u32 signExtended32(u16 value) {
+        WARN_SIGN_EXTENDED();
+        return (i32)(i16)value;
+    }
+
+    static u64 signExtended64(u8 value) {
+        WARN_SIGN_EXTENDED();
+        return (i64)(i8)value;
+    }
+
+    static u64 signExtended64(u16 value) {
+        WARN_SIGN_EXTENDED();
+        return (i64)(i16)value;
+    }
+
     static u64 signExtended64(u32 value) {
         WARN_SIGN_EXTENDED();
         return (i64)(i32)value;
@@ -817,6 +832,11 @@ namespace x64 {
     void Cpu::exec(const Movsx<R32, M8>& ins) { set(ins.dst, signExtended32(get(resolve(ins.src)))); }
     void Cpu::exec(const Movsx<R64, R8>& ins) { set(ins.dst, signExtended64(get(ins.src))); }
     void Cpu::exec(const Movsx<R64, M8>& ins) { set(ins.dst, signExtended64(get(resolve(ins.src)))); }
+
+    void Cpu::exec(const Movsx<R32, R16>& ins) { set(ins.dst, signExtended32(get(ins.src))); }
+    void Cpu::exec(const Movsx<R32, M16>& ins) { set(ins.dst, signExtended32(get(resolve(ins.src)))); }
+    void Cpu::exec(const Movsx<R64, R16>& ins) { set(ins.dst, signExtended64(get(ins.src))); }
+    void Cpu::exec(const Movsx<R64, M16>& ins) { set(ins.dst, signExtended64(get(resolve(ins.src)))); }
 
     void Cpu::exec(const Movsx<R32, R32>& ins) { set(ins.dst, get(ins.src)); }
     void Cpu::exec(const Movsx<R32, M32>& ins) { set(ins.dst, get(resolve(ins.src))); }

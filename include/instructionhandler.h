@@ -190,6 +190,10 @@ namespace x64 {
         virtual void exec(const Movsx<R32, M8>&) = 0;
         virtual void exec(const Movsx<R64, R8>&) = 0;
         virtual void exec(const Movsx<R64, M8>&) = 0;
+        virtual void exec(const Movsx<R32, R16>&) = 0;
+        virtual void exec(const Movsx<R32, M16>&) = 0;
+        virtual void exec(const Movsx<R64, R16>&) = 0;
+        virtual void exec(const Movsx<R64, M16>&) = 0;
         virtual void exec(const Movsx<R32, R32>&) = 0;
         virtual void exec(const Movsx<R32, M32>&) = 0;
         virtual void exec(const Movsx<R64, R32>&) = 0;

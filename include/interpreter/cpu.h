@@ -338,6 +338,10 @@ namespace x64 {
         void exec(const Movsx<R32, M8>&) override;
         void exec(const Movsx<R64, R8>&) override;
         void exec(const Movsx<R64, M8>&) override;
+        void exec(const Movsx<R32, R16>&) override;
+        void exec(const Movsx<R32, M16>&) override;
+        void exec(const Movsx<R64, R16>&) override;
+        void exec(const Movsx<R64, M16>&) override;
         void exec(const Movsx<R32, R32>&) override;
         void exec(const Movsx<R32, M32>&) override;
         void exec(const Movsx<R64, R32>&) override;
