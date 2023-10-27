@@ -37,6 +37,9 @@ extern "C" {
     __attribute__((noinline))
     extern void intrinsic$__assert_fail(const char*, const char*, unsigned int, const char*);
 
+    __attribute__((noinline))
+    extern void intrinsic$__tls_get_addr();
+
     int fakelibc$putchar(int c) {
         return intrinsic$putchar(c);
     }
@@ -493,6 +496,10 @@ extern "C" {
         for (; i < n; ++i)
             dest[i] = '\0';
         return dest;
+    }
+
+    void fakelibc$__tls_get_addr() {
+        intrinsic$__tls_get_addr();
     }
 
 }

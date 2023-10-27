@@ -39,10 +39,13 @@ namespace x64 {
         friend struct ReadInstruction;
         friend struct Lseek64;
         friend struct Lseek64Instruction;
+
+        friend struct TlsGetAddr;
+        friend struct TlsGetAddrInstruction;
     };
 
     struct Putchar final : public LibraryFunction {
-        explicit Putchar(const ExecutionContext& context);
+        explicit Putchar(const ExecutionContext& context, LibC*);
     };
 
     struct Malloc final : public LibraryFunction {
@@ -79,6 +82,10 @@ namespace x64 {
 
     struct AssertFail final : public LibraryFunction {
         explicit AssertFail(const ExecutionContext& context, LibC* libc);
+    };
+
+    struct TlsGetAddr final : public LibraryFunction {
+        explicit TlsGetAddr(const ExecutionContext& context, LibC* libc);
     };
 }
 

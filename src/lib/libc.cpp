@@ -29,29 +29,25 @@ namespace x64 {
         return func;
     }
 
-    void LibC::forAllFunctions(const ExecutionContext& context, std::function<void(std::vector<std::unique_ptr<X86Instruction>>, std::unique_ptr<Function>)> callback) {
+    template<typename F, typename Callback>
+    static void addFunction(const ExecutionContext& context, LibC* libc, Callback& callback) {
         std::vector<std::unique_ptr<X86Instruction>> instructions;
-        std::unique_ptr<Function> func;
-        func = createAndFill<Putchar>(&instructions, context);
+        std::unique_ptr<Function> func = createAndFill<F>(&instructions, context, libc);
         callback(std::move(instructions), std::move(func));
-        func = createAndFill<Malloc>(&instructions, context, this);
-        callback(std::move(instructions), std::move(func));
-        func = createAndFill<Free>(&instructions, context, this);
-        callback(std::move(instructions), std::move(func));
-        func = createAndFill<Fopen64>(&instructions, context, this);
-        callback(std::move(instructions), std::move(func));
-        func = createAndFill<Fileno>(&instructions, context, this);
-        callback(std::move(instructions), std::move(func));
-        func = createAndFill<Fclose>(&instructions, context, this);
-        callback(std::move(instructions), std::move(func));
-        func = createAndFill<Read>(&instructions, context, this);
-        callback(std::move(instructions), std::move(func));
-        func = createAndFill<Lseek64>(&instructions, context, this);
-        callback(std::move(instructions), std::move(func));
-        func = createAndFill<Atoi>(&instructions, context, this);
-        callback(std::move(instructions), std::move(func));
-        func = createAndFill<AssertFail>(&instructions, context, this);
-        callback(std::move(instructions), std::move(func));
+    }
+
+    void LibC::forAllFunctions(const ExecutionContext& context, std::function<void(std::vector<std::unique_ptr<X86Instruction>>, std::unique_ptr<Function>)> callback) {
+        addFunction<Putchar>(context, this, callback);
+        addFunction<Malloc>(context, this, callback);
+        addFunction<Free>(context, this, callback);
+        addFunction<Fopen64>(context, this, callback);
+        addFunction<Fileno>(context, this, callback);
+        addFunction<Fclose>(context, this, callback);
+        addFunction<Read>(context, this, callback);
+        addFunction<Lseek64>(context, this, callback);
+        addFunction<Atoi>(context, this, callback);
+        addFunction<AssertFail>(context, this, callback);
+        addFunction<TlsGetAddr>(context, this, callback);
     }
 
     class LibC::Heap {
@@ -454,6 +450,24 @@ namespace x64 {
         LibC* libc_;
     };
 
+    class TlsGetAddrInstruction : public Intrinsic {
+    public:
+        explicit TlsGetAddrInstruction(ExecutionContext context, LibC* libc) : context_(context), libc_(libc) { }
+
+        void exec(InstructionHandler*) const override {
+            u64 templateAddress = context_.rdi();
+            context_.mmu()->onTlsTemplate(templateAddress, [&](u64 blockAddress) {
+                context_.set_rax(blockAddress);
+            });
+        }
+        std::string toString(const InstructionHandler*) const override {
+            return "__tls_get_addr";
+        }
+    private:
+        ExecutionContext context_;
+        LibC* libc_;
+    };
+
     class FunctionBuilder {
     public:
         explicit FunctionBuilder(LibraryFunction* func) : func_(func), closed_(false), nbArguments_(0) {
@@ -501,7 +515,7 @@ namespace x64 {
         std::vector<R64> savedRegisters_;
     };
 
-    Putchar::Putchar(const ExecutionContext& context) : LibraryFunction("intrinsic$putchar") {
+    Putchar::Putchar(const ExecutionContext& context, LibC*) : LibraryFunction("intrinsic$putchar") {
         FunctionBuilder builder(this);
         builder.addIntegerStructOrPointerArgument();
         builder.addIntrinsicCall<PutcharInstruction>(context);
@@ -576,6 +590,12 @@ namespace x64 {
         builder.addIntegerStructOrPointerArgument();
         builder.addIntegerStructOrPointerArgument();
         builder.addIntrinsicCall<AssertFailInstruction>(context, libc);
+        builder.close();
+    }
+
+    TlsGetAddr::TlsGetAddr(const ExecutionContext& context, LibC* libc) : LibraryFunction("intrinsic$__tls_get_addr") {
+        FunctionBuilder builder(this);
+        builder.addIntrinsicCall<TlsGetAddrInstruction>(context, libc);
         builder.close();
     }
 }
