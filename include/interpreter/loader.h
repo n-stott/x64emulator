@@ -25,6 +25,7 @@ namespace x64 {
         virtual u64 allocateMemoryRange(u64 size) = 0;
         virtual void addExecutableSection(ExecutableSection section) = 0;
         virtual void addMmuRegion(Mmu::Region region) = 0;
+        virtual void registerTlsBlock(u64 templateAddress, u64 blockAddress) = 0;
         virtual void setFsBase(u64 fsBase) = 0;
         virtual void registerInitFunction(u64 address) = 0;
         virtual void registerFiniFunction(u64 address) = 0;

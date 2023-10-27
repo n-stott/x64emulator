@@ -72,6 +72,14 @@ namespace x64 {
 
         Region* addRegion(Region region);
         void setFsBase(u64 fsBase);
+        void registerTlsBlock(u64 templateAddress, u64 blockAddress);
+
+        template<typename Callback>
+        void onTlsTemplate(u64 templateAddress, Callback callback) {
+            for(const auto& dtv : dtv_) {
+                if(dtv.templateAddress == templateAddress) callback(dtv.blockAddress);
+            }
+        }
 
         u8 read8(Ptr8 ptr) const;
         u16 read16(Ptr16 ptr) const;
@@ -111,6 +119,12 @@ namespace x64 {
         std::vector<Region*> regionLookup_;
         Region* tlsRegion_ { nullptr };
         u64 fsBase_ { 0 };
+        
+        struct dtv_t {
+            u64 templateAddress;
+            u64 blockAddress;
+        };
+        std::vector<dtv_t> dtv_;
     };
 
 }

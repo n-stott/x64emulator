@@ -162,9 +162,10 @@ namespace x64 {
         for(const TlsBlock& block : tlsBlocks_) {
             u64 size = block.programHeader.sizeInMemory();
             std::vector<u8> buf(size, 0x00);
-            u64 address = block.elfOffset + block.programHeader.virtualAddress();
-            loadable_->read(buf.data(), address, size);
+            u64 templateAddress = block.elfOffset + block.programHeader.virtualAddress();
+            loadable_->read(buf.data(), templateAddress, size);
             std::memcpy(tlsEnd - block.tlsOffset, buf.data(), size*sizeof(u8));
+            loadable_->registerTlsBlock(templateAddress, tlsRegionBase + tlsDataSize_ - block.tlsOffset);
         }
         loadable_->addMmuRegion(std::move(tlsRegion));
 

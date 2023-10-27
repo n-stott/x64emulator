@@ -48,6 +48,10 @@ namespace x64 {
         assert(fsBase_ == 0);
         fsBase_ = fsBase;
     }
+    
+    void Mmu::registerTlsBlock(u64 templateAddress, u64 blockAddress) {
+        dtv_.push_back(dtv_t{templateAddress, blockAddress});
+    }
 
     bool Mmu::Region::contains(u64 address) const {
         return address >= base && address < base + size;
