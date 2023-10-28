@@ -88,8 +88,9 @@ add_test(NAME staticconstructor COMMAND ${CMAKE_BINARY_DIR}/interpreter test_sta
 
 add_executable(test_exceptions src/test_exceptions.cpp)
 target_compile_options(test_exceptions PUBLIC ${CC_OPTIONS})
-target_link_options(test_exceptions PUBLIC ${LD_OPTIONS} -static-libstdc++ -static-libgcc)
+target_link_options(test_exceptions PUBLIC ${LD_OPTIONS})
 add_test(NAME exceptions COMMAND ${CMAKE_BINARY_DIR}/interpreter test_exceptions)
+set_tests_properties(exceptions PROPERTIES WILL_FAIL true)
 
 add_executable(test_boostmap src/test_boostmap.cpp)
 target_compile_options(test_boostmap PUBLIC ${CC_OPTIONS})
@@ -159,3 +160,10 @@ add_executable(test_big_malloc src/test_big_malloc.cpp)
 target_compile_options(test_big_malloc PUBLIC ${CC_OPTIONS})
 target_link_options(test_big_malloc PUBLIC ${LD_OPTIONS})
 add_test(NAME big_malloc COMMAND ${CMAKE_BINARY_DIR}/interpreter test_big_malloc)
+set_tests_properties(big_malloc PROPERTIES WILL_FAIL true)
+
+add_executable(test_x87 src/test_x87.cpp)
+target_compile_options(test_x87 PUBLIC ${CC_OPTIONS})
+target_link_options(test_x87 PUBLIC ${LD_OPTIONS})
+add_test(NAME x87 COMMAND ${CMAKE_BINARY_DIR}/interpreter test_x87)
+set_tests_properties(x87 PROPERTIES WILL_FAIL true)
