@@ -109,8 +109,6 @@ namespace x64 {
         static u64 pageRoundDown(u64 address);
         static u64 pageRoundUp(u64 address);
 
-        void reserveUpTo(u64 address);
-
         static constexpr u64 PAGE_SIZE = 0x1000;
 
     private:

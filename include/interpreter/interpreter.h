@@ -24,7 +24,6 @@ namespace x64 {
         void setLogInstructions(bool);
         bool logInstructions() const;
 
-        u64 allocateMemoryRange(u64 size) override;
         void addExecutableSection(ExecutableSection section) override;
 
         u64 mmap(u64 address, u64 length, int prot, int flags, int fd, int offset) override;

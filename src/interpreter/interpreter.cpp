@@ -63,12 +63,6 @@ namespace x64 {
         dumpStackTrace();
     }
 
-    u64 Interpreter::allocateMemoryRange(u64 size) {
-        u64 offset = mmu_.topOfMemoryAligned(Mmu::PAGE_SIZE);
-        mmu_.reserveUpTo(offset + size);
-        return offset;
-    }
-
     void Interpreter::addExecutableSection(ExecutableSection section) {
         executableSections_.push_back(std::move(section));
     }

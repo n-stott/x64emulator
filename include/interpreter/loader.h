@@ -22,7 +22,6 @@ namespace x64 {
     class Loadable {
     public:
         virtual ~Loadable() = default;
-        virtual u64 allocateMemoryRange(u64 size) = 0;
         virtual void addExecutableSection(ExecutableSection section) = 0;
 
         virtual u64 mmap(u64 address, u64 length, int prot, int flags, int fd, int offset) = 0;

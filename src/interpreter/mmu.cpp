@@ -256,8 +256,4 @@ namespace x64 {
         return ((address + PAGE_SIZE - 1) / PAGE_SIZE) * PAGE_SIZE;
     }
 
-    void Mmu::reserveUpTo(u64 address) {
-        topOfReserved_ = address;
-    }
-
 }
