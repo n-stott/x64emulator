@@ -26,6 +26,12 @@ namespace x64 {
 
         u64 allocateMemoryRange(u64 size) override;
         void addExecutableSection(ExecutableSection section) override;
+
+        u64 mmap(u64 address, u64 length, int prot, int flags, int fd, int offset) override;
+        int munmap(u64 address, u64 length) override;
+        int mprotect(u64 address, u64 length, int prot) override;
+        void setRegionName(u64 address, std::string name) override;
+
         void addMmuRegion(Mmu::Region region) override;
         void registerTlsBlock(u64 templateAddress, u64 blockAddress) override;
         void setFsBase(u64 fsBase) override;
@@ -33,7 +39,9 @@ namespace x64 {
         void registerFiniFunction(u64 address) override;
         void writeRelocation(u64 relocationSource, u64 relocationDestination) override;
         void writeUnresolvedRelocation(u64 relocationSource, const std::string& name) override;
-        void read(u8* dst, u64 address, u64 nbytes) override;
+
+        void read(u8* dst, u64 srcAddress, u64 nbytes) override;
+        void write(u64 dstAddress, const u8* src, u64 nbytes) override;
 
         void loadLibC();
 

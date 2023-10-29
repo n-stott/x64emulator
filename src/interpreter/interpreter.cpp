@@ -73,6 +73,22 @@ namespace x64 {
         executableSections_.push_back(std::move(section));
     }
 
+    u64 Interpreter::mmap(u64 address, u64 length, int prot, int flags, int fd, int offset) {
+        return mmu_.mmap(address, length, prot, flags, fd, offset);
+    }
+
+    int Interpreter::munmap(u64 address, u64 length) {
+        return mmu_.munmap(address, length);
+    }
+
+    int Interpreter::mprotect(u64 address, u64 length, int prot) {
+        return mmu_.mprotect(address, length, prot);
+    }
+
+    void Interpreter::setRegionName(u64 address, std::string name) {
+        mmu_.setRegionName(address, std::move(name));
+    }
+
     void Interpreter::addMmuRegion(Mmu::Region region) {
         mmu_.addRegion(std::move(region));
     }
@@ -103,9 +119,15 @@ namespace x64 {
         mmu_.write64(Ptr64{Segment::DS, relocationSource}, bogusAddress);
     }
 
-    void Interpreter::read(u8* dst, u64 address, u64 nbytes) {
+    void Interpreter::read(u8* dst, u64 srcAddress, u64 nbytes) {
         while(nbytes--) {
-            *dst++ = mmu_.read8(Ptr8{Segment::DS, address++});
+            *dst++ = mmu_.read8(Ptr8{Segment::DS, srcAddress++});
+        }
+    }
+
+    void Interpreter::write(u64 dstAddress, const u8* src, u64 nbytes) {
+        while(nbytes--) {
+            mmu_.write8(Ptr8{Segment::DS, dstAddress++}, *src++);
         }
     }
 

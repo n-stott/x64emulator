@@ -44,14 +44,54 @@ namespace x64 {
         return r;
     }
 
+    void Mmu::removeRegion(const Region& region) {
+        u64 firstPage = pageRoundDown(region.base) / PAGE_SIZE;
+        u64 lastPage = pageRoundUp(region.base + region.size) / PAGE_SIZE;
+        verify(firstPage < lastPage);
+        for(u64 pageIndex = firstPage; pageIndex < lastPage; ++pageIndex) {
+            verify(pageIndex < regionLookup_.size());
+            verify(regionLookup_[pageIndex] != nullptr);
+            regionLookup_[pageIndex] = nullptr;
+        }
+        regions_.erase(std::remove_if(regions_.begin(), regions_.end(), [&](const Region& r) {
+            return r.base == region.base && r.size == region.size;
+        }), regions_.end());
+    }
+
     u64 Mmu::mmap(u64 address, u64 length, int prot, int flags, int fd, int offset) {
-        verify(address == 0, "mmap at fixed address not supported yet");
         verify(flags == 0, "mmap with non-zero flags not supported yet");
         verify(fd == 0, "mmap with non-zero fd not supported yet");
         verify(offset == 0, "mmap with non-zero offset not supported yet");
-        Region region("", topOfMemoryAligned(Mmu::PAGE_SIZE), pageRoundUp(length), (Protection)prot);
-        auto* regionPtr = addRegion(std::move(region));
-        return regionPtr->base;
+        if(address == 0) {
+            Region region("", topOfMemoryAligned(Mmu::PAGE_SIZE), pageRoundUp(length), (Protection)prot);
+            auto* regionPtr = addRegion(std::move(region));
+            return regionPtr->base;
+        } else {
+            verify(address % PAGE_SIZE == 0, fmt::format("mmap with non-page_size aligned address {:#x} not supported", address));
+            Region region("", address, pageRoundUp(length), (Protection)prot);
+            auto* regionPtr = addRegion(std::move(region));
+            return regionPtr->base;
+        }
+    }
+
+    int Mmu::munmap(u64 address, u64 length) {
+        verify(address % PAGE_SIZE == 0, "munmap with non-page_size aligned address not supported");
+        const auto* regionPtr = regionLookup_[address / PAGE_SIZE];
+        verify(!!regionPtr, "munmap: unable to find region");
+        verify(regionPtr->base == address, "partial munmap not supported");
+        verify(regionPtr->size == length, "partial munmap not supported");
+        removeRegion(*regionPtr);
+        return 0;
+    }
+
+    int Mmu::mprotect(u64 address, u64 length, int prot) {
+        verify(address % PAGE_SIZE == 0, "munmap with non-page_size aligned address not supported");
+        auto* regionPtr = regionLookup_[address / PAGE_SIZE];
+        verify(!!regionPtr, "munmap: unable to find region");
+        verify(regionPtr->base == address, "partial munmap not supported");
+        verify(regionPtr->size == length, "partial munmap not supported");
+        regionPtr->protection = (Protection)prot;
+        return 0;
     }
 
     void Mmu::setRegionName(u64 address, std::string name) {

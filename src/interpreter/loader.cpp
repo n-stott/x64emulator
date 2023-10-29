@@ -53,18 +53,29 @@ namespace x64 {
 
         loadNeededLibraries(*elf64);
 
-        u64 offset = loadable_->allocateMemoryRange(Mmu::PAGE_SIZE);
-
         std::string shortFilePath = filepath.find_last_of('/') == std::string::npos ? filepath
                                                                                     : filepath.substr(filepath.find_last_of('/')+1);
+
+        u64 totalLoadSize = 0;
+        elf64->forAllProgramHeaders([&](const elf::ProgramHeader64& header) {
+            if(header.type() != elf::ProgramHeaderType::PT_LOAD) return;
+            u64 start = Mmu::pageRoundDown(header.virtualAddress());
+            u64 end = Mmu::pageRoundUp(header.virtualAddress() + header.sizeInMemory());
+            totalLoadSize += (end-start);
+        });
+
+        u64 elfOffset = loadable_->mmap(0, totalLoadSize, PROT_NONE, 0, 0, 0);
+        loadable_->munmap(elfOffset, totalLoadSize);
+
+        // u64 offset = loadable_->allocateMemoryRange(Mmu::PAGE_SIZE);
 
         elf64->forAllProgramHeaders([&](const elf::ProgramHeader64& header) {
             if(header.type() == elf::ProgramHeaderType::PT_LOAD) {
                 verify(header.alignment() % Mmu::PAGE_SIZE == 0);
                 if(header.isExecutable()) {
-                    loadExecutableProgramHeader(*elf64, header, filepath, shortFilePath, offset);
+                    loadExecutableProgramHeader(*elf64, header, filepath, shortFilePath, elfOffset);
                 } else {
-                    loadNonExecutableProgramHeader(*elf64, header, shortFilePath, offset);
+                    loadNonExecutableProgramHeader(*elf64, header, shortFilePath, elfOffset);
                 }
             }
             if(header.type() == elf::ProgramHeaderType::PT_TLS) {
@@ -73,25 +84,26 @@ namespace x64 {
                     header,
                     elfType,
                     shortFilePath,
-                    offset,
+                    elfOffset,
                     0 // computed later
                 });
             }
         });
 
-        registerInitFunctions(*elf64, offset);
+        registerInitFunctions(*elf64, elfOffset);
 
-        registerSymbols(*elf64, offset);
+        registerSymbols(*elf64, elfOffset);
 
         LoadedElf loadedElf {
             filepath,
-            offset,
+            elfOffset,
             std::move(elf64),
         };
         elfs_.push_back(std::move(loadedElf));
     }
 
     void Loader::loadExecutableProgramHeader(const elf::Elf64& elf, const elf::ProgramHeader64& header, const std::string& filePath, const std::string& shortFilePath, u64 elfOffset) {
+        verify(header.virtualAddress() % Mmu::PAGE_SIZE == 0);
         const u8* data = elf.dataAtOffset(header.offset(), header.sizeInFile());
 
         std::vector<std::unique_ptr<X86Instruction>> instructions = CapstoneWrapper::disassembleSection(data,
@@ -112,20 +124,25 @@ namespace x64 {
 
         loadable_->addExecutableSection(std::move(esection));
 
-        Mmu::Region region{ shortFilePath, header.virtualAddress() + elfOffset, header.sizeInMemory(), PROT_EXEC };
-        loadable_->addMmuRegion(std::move(region));
+        u64 execSectionBase = loadable_->mmap(elfOffset + header.virtualAddress(), Mmu::pageRoundUp(header.sizeInMemory()), PROT_EXEC, 0, 0, 0);
+        loadable_->setRegionName(execSectionBase, shortFilePath);
     }
 
     void Loader::loadNonExecutableProgramHeader(const elf::Elf64& elf, const elf::ProgramHeader64& header, const std::string& shortFilePath, u64 elfOffset) {
+        u64 start = Mmu::pageRoundDown(elfOffset + header.virtualAddress());
+        u64 end = Mmu::pageRoundUp(elfOffset + header.virtualAddress() + header.sizeInMemory());
+        u64 nonExecSectionSize = end-start;
+        u64 nonExecSectionBase = loadable_->mmap(start, nonExecSectionSize, PROT_WRITE, 0, 0, 0);
+
         const u8* data = elf.dataAtOffset(header.offset(), header.sizeInFile());
+        loadable_->write(nonExecSectionBase + header.virtualAddress() % Mmu::PAGE_SIZE, data, header.sizeInFile()); // Mmu regions are 0 initialized
 
         Protection prot = PROT_NONE;
         if(header.isReadable()) prot = prot | PROT_READ;
         if(header.isWritable()) prot = prot | PROT_WRITE;
-
-        Mmu::Region region{ shortFilePath, header.virtualAddress() + elfOffset, header.sizeInMemory(), prot };
-        std::memcpy(region.data.data(), data, header.sizeInFile()*sizeof(u8)); // Mmu::Region is 0 initialized
-        loadable_->addMmuRegion(std::move(region));
+        loadable_->mprotect(nonExecSectionBase, nonExecSectionSize, prot);
+        
+        loadable_->setRegionName(nonExecSectionBase, shortFilePath);
     }
 
     static u64 roundedWithAlignment(u64 address, u64 alignment) {

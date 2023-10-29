@@ -71,10 +71,15 @@ namespace x64 {
         Mmu();
 
         u64 mmap(u64 address, u64 length, int prot, int flags, int fd, int offset);
+        int munmap(u64 address, u64 length);
+        int mprotect(u64 address, u64 length, int prot);
+
 
         void setRegionName(u64 address, std::string name);
 
         Region* addRegion(Region region);
+        void removeRegion(const Region& region);
+        
         void setFsBase(u64 fsBase);
         void registerTlsBlock(u64 templateAddress, u64 blockAddress);
 

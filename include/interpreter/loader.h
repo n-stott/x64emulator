@@ -24,6 +24,12 @@ namespace x64 {
         virtual ~Loadable() = default;
         virtual u64 allocateMemoryRange(u64 size) = 0;
         virtual void addExecutableSection(ExecutableSection section) = 0;
+
+        virtual u64 mmap(u64 address, u64 length, int prot, int flags, int fd, int offset) = 0;
+        virtual int munmap(u64 address, u64 length) = 0;
+        virtual int mprotect(u64 address, u64 length, int prot) = 0;
+        virtual void setRegionName(u64 address, std::string name) = 0;
+
         virtual void addMmuRegion(Mmu::Region region) = 0;
         virtual void registerTlsBlock(u64 templateAddress, u64 blockAddress) = 0;
         virtual void setFsBase(u64 fsBase) = 0;
@@ -31,7 +37,9 @@ namespace x64 {
         virtual void registerFiniFunction(u64 address) = 0;
         virtual void writeRelocation(u64 relocationSource, u64 relocationDestination) = 0;
         virtual void writeUnresolvedRelocation(u64 relocationSource, const std::string& name) = 0;
-        virtual void read(u8* dst, u64 address, u64 nbytes) = 0;
+        
+        virtual void read(u8* dst, u64 srcAddress, u64 nbytes) = 0;
+        virtual void write(u64 dstAddress, const u8* src, u64 nbytes) = 0;
     };
 
     class Loader {
