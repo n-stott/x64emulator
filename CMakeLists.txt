@@ -15,6 +15,7 @@ target_include_directories(fakelibc PUBLIC include)
 add_executable(interpreter
     src/lib/library.cpp
     src/lib/libc.cpp
+    src/lib/heap.cpp
     src/translation/x86instruction.cpp
     src/disassembler/capstonewrapper.cpp
     src/interpreter/loader.cpp

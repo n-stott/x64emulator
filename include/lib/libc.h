@@ -7,8 +7,11 @@
 #include <memory>
 
 namespace x64 {
+    
+    class Heap;
 
-    struct LibC {
+    class LibC {
+    public:
         explicit LibC();
         LibC(LibC&&);
         ~LibC();
@@ -18,7 +21,6 @@ namespace x64 {
         void setHeapRegion(u64 base, u64 size);
 
     private:
-        class Heap;
         std::unique_ptr<Heap> heap_;
         class FileRegistry;
         std::unique_ptr<FileRegistry> fileRegistry_;
