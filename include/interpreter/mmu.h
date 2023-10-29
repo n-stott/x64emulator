@@ -70,6 +70,10 @@ namespace x64 {
 
         Mmu();
 
+        u64 mmap(u64 address, u64 length, int prot, int flags, int fd, int offset);
+
+        void setRegionName(u64 address, std::string name);
+
         Region* addRegion(Region region);
         void setFsBase(u64 fsBase);
         void registerTlsBlock(u64 templateAddress, u64 blockAddress);
@@ -96,6 +100,7 @@ namespace x64 {
         void dumpRegions() const;
 
         u64 topOfMemoryAligned(u64 alignment) const;
+    
         static u64 pageRoundDown(u64 address);
         static u64 pageRoundUp(u64 address);
 

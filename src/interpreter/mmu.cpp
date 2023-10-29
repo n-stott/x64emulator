@@ -44,6 +44,25 @@ namespace x64 {
         return r;
     }
 
+    u64 Mmu::mmap(u64 address, u64 length, int prot, int flags, int fd, int offset) {
+        verify(address == 0, "mmap at fixed address not supported yet");
+        verify(flags == 0, "mmap with non-zero flags not supported yet");
+        verify(fd == 0, "mmap with non-zero fd not supported yet");
+        verify(offset == 0, "mmap with non-zero offset not supported yet");
+        Region region("", topOfMemoryAligned(Mmu::PAGE_SIZE), pageRoundUp(length), (Protection)prot);
+        auto* regionPtr = addRegion(std::move(region));
+        return regionPtr->base;
+    }
+
+    void Mmu::setRegionName(u64 address, std::string name) {
+        verify(address % PAGE_SIZE == 0, "address must be a multiple of the page size");
+        auto it = std::find_if(regions_.begin(), regions_.end(), [&](const Region& region) {
+            return region.base == address;
+        });
+        verify(it != regions_.end(), "Cannot set name of non-existing region");
+        it->file = std::move(name);
+    }
+
     void Mmu::setFsBase(u64 fsBase) {
         assert(fsBase_ == 0);
         fsBase_ = fsBase;

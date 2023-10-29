@@ -13,10 +13,9 @@ namespace x64 {
     u64 Heap::malloc(u64 size) {
         if(region_.size_ == 0) {
             u64 mallocRegionSize = 64*Mmu::PAGE_SIZE;
-            u64 mallocRegionBase = mmu_->topOfMemoryAligned(Mmu::PAGE_SIZE);
-            mmu_->reserveUpTo(mallocRegionSize);
-            Mmu::Region region("malloc", mallocRegionBase, mallocRegionSize, PROT_READ | PROT_WRITE);
-            mmu_->addRegion(std::move(region));
+            u64 mallocRegionBase = mmu_->mmap(0, mallocRegionSize, PROT_READ | PROT_WRITE, 0, 0, 0);
+            verify(mallocRegionBase != 0, "mmap failed");
+            mmu_->setRegionName(mallocRegionBase, "heap");
             region_.base_ = mallocRegionBase;
             region_.current_ = mallocRegionBase;
             region_.size_ = mallocRegionSize;
