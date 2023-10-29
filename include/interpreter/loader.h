@@ -30,7 +30,6 @@ namespace x64 {
         virtual int mprotect(u64 address, u64 length, int prot) = 0;
         virtual void setRegionName(u64 address, std::string name) = 0;
 
-        virtual void addMmuRegion(Mmu::Region region) = 0;
         virtual void registerTlsBlock(u64 templateAddress, u64 blockAddress) = 0;
         virtual void setFsBase(u64 fsBase) = 0;
         virtual void registerInitFunction(u64 address) = 0;

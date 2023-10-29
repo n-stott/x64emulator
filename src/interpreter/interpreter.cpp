@@ -89,10 +89,6 @@ namespace x64 {
         mmu_.setRegionName(address, std::move(name));
     }
 
-    void Interpreter::addMmuRegion(Mmu::Region region) {
-        mmu_.addRegion(std::move(region));
-    }
-
     void Interpreter::registerTlsBlock(u64 templateAddress, u64 blockAddress) {
         mmu_.registerTlsBlock(templateAddress, blockAddress);
     }

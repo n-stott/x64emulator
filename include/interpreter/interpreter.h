@@ -32,7 +32,6 @@ namespace x64 {
         int mprotect(u64 address, u64 length, int prot) override;
         void setRegionName(u64 address, std::string name) override;
 
-        void addMmuRegion(Mmu::Region region) override;
         void registerTlsBlock(u64 templateAddress, u64 blockAddress) override;
         void setFsBase(u64 fsBase) override;
         void registerInitFunction(u64 address) override;

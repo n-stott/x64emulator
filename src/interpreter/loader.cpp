@@ -67,8 +67,6 @@ namespace x64 {
         u64 elfOffset = loadable_->mmap(0, totalLoadSize, PROT_NONE, 0, 0, 0);
         loadable_->munmap(elfOffset, totalLoadSize);
 
-        // u64 offset = loadable_->allocateMemoryRange(Mmu::PAGE_SIZE);
-
         elf64->forAllProgramHeaders([&](const elf::ProgramHeader64& header) {
             if(header.type() == elf::ProgramHeaderType::PT_LOAD) {
                 verify(header.alignment() % Mmu::PAGE_SIZE == 0);
@@ -171,28 +169,35 @@ namespace x64 {
     void Loader::loadTlsBlocks() {
         if(tlsBlocks_.empty()) return;
         verify(tlsDataSize_ % Mmu::PAGE_SIZE == 0, "TLS region size must be PAGE_SIZE-aligned");
-        u64 tlsRegionBase = loadable_->allocateMemoryRange(tlsDataSize_);
-        Mmu::Region tlsRegion { "tls", tlsRegionBase, tlsDataSize_, PROT_READ | PROT_WRITE };
+        verify(Mmu::pageRoundUp(sizeof(TCB)) == Mmu::PAGE_SIZE, "TCB should fit within a single page");
 
-        u8* tlsEnd = tlsRegion.data.data() + tlsDataSize_;
+        u64 tlsRegionAndTcbSize = tlsDataSize_ + Mmu::pageRoundUp(sizeof(TCB));
+        u64 tlsRegionAndTcbBase = loadable_->mmap(0, tlsRegionAndTcbSize, PROT_NONE, 0, 0, 0);
+        loadable_->munmap(tlsRegionAndTcbBase, tlsRegionAndTcbSize);
+
+        u64 tlsRegionBase = loadable_->mmap(tlsRegionAndTcbBase, tlsDataSize_, PROT_READ | PROT_WRITE, 0, 0, 0);
+        loadable_->setRegionName(tlsRegionBase, "tls");
+
+        u64 tlsEnd = tlsRegionBase + tlsDataSize_;
 
         for(const TlsBlock& block : tlsBlocks_) {
             u64 size = block.programHeader.sizeInMemory();
             std::vector<u8> buf(size, 0x00);
             u64 templateAddress = block.elfOffset + block.programHeader.virtualAddress();
             loadable_->read(buf.data(), templateAddress, size);
-            std::memcpy(tlsEnd - block.tlsOffset, buf.data(), size*sizeof(u8));
+            loadable_->write(tlsEnd - block.tlsOffset, buf.data(), size);
             loadable_->registerTlsBlock(templateAddress, tlsRegionBase + tlsDataSize_ - block.tlsOffset);
         }
-        loadable_->addMmuRegion(std::move(tlsRegion));
 
-        u64 tcbRegionBase = loadable_->allocateMemoryRange(sizeof(TCB));
-        verify(tcbRegionBase == tlsRegionBase + Mmu::PAGE_SIZE, "TLS region and TCB region must be adjacent");
-        Mmu::Region tcbRegion { "TCB", tcbRegionBase, sizeof(TCB), PROT_READ };
-        TCB tcb = TCB::create(tcbRegionBase);
-        std::memcpy(tcbRegion.data.data(), &tcb, sizeof(TCB));
-        loadable_->addMmuRegion(std::move(tcbRegion));
-        loadable_->setFsBase(tcbRegionBase);
+        u64 tcbBase = loadable_->mmap(tlsEnd, Mmu::PAGE_SIZE, PROT_READ | PROT_WRITE, 0, 0, 0);
+        verify(tcbBase == tlsEnd, "tcb must be allocated right after the tls section");
+        loadable_->setRegionName(tcbBase, "TCB");
+
+        TCB tcb = TCB::create(tcbBase);
+        loadable_->write(tcbBase, reinterpret_cast<const u8*>(&tcb), sizeof(TCB));
+        loadable_->mprotect(tcbBase, Mmu::PAGE_SIZE, PROT_READ);
+
+        loadable_->setFsBase(tcbBase);
     }
 
 
