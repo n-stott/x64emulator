@@ -28,7 +28,7 @@ namespace x64 {
     };
 
     class Mmu {
-    public:
+    private:
         class Region {
         public:
             Region(std::string file, u64 base, u64 size, Protection protection);
@@ -68,6 +68,10 @@ namespace x64 {
             void write(u64 address, T value);
         };
 
+        Region* addRegion(Region region);
+        void removeRegion(const Region& region);
+
+    public:
         Mmu();
 
         u64 mmap(u64 address, u64 length, int prot, int flags, int fd, int offset);
@@ -76,9 +80,6 @@ namespace x64 {
 
 
         void setRegionName(u64 address, std::string name);
-
-        Region* addRegion(Region region);
-        void removeRegion(const Region& region);
         
         void setFsBase(u64 fsBase);
         void registerTlsBlock(u64 templateAddress, u64 blockAddress);
