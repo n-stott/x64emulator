@@ -452,6 +452,18 @@ namespace x64 {
         Dst dst;
         Src src;
     };
+
+    template<typename Dst, typename Src>
+    struct Movhps {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
+    struct Punpcklqdq {
+        Dst dst;
+        Src src;
+    };
 }
 
 #endif

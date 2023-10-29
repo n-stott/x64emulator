@@ -510,6 +510,9 @@ namespace x64 {
         virtual void exec(const Cvtsi2sd<RSSE, M64>&) = 0;
 
         virtual void exec(const Xorpd<RSSE, RSSE>&) = 0;
+        virtual void exec(const Movhps<RSSE, M64>&) = 0;
+
+        virtual void exec(const Punpcklqdq<RSSE, RSSE>&) = 0;
 
         virtual void resolveFunctionName(const CallDirect&) const = 0;
     };

@@ -673,6 +673,9 @@ namespace x64 {
         void exec(const Cvtsi2sd<RSSE, M64>&) override;
 
         void exec(const Xorpd<RSSE, RSSE>&) override;
+        void exec(const Movhps<RSSE, M64>&) override;
+
+        void exec(const Punpcklqdq<RSSE, RSSE>&) override;
 
         void resolveFunctionName(const CallDirect& ins) const override;
 

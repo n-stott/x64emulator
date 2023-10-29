@@ -2038,4 +2038,18 @@ namespace x64 {
     void Cpu::exec(const Xorpd<RSSE, RSSE>& ins) {
         set(ins.dst, FPU::Xor(get(ins.dst), get(ins.src)));        
     }
+
+    void Cpu::exec(const Movhps<RSSE, M64>& ins) {
+        u128 dst = get(ins.dst);
+        u64 src = get(resolve(ins.src));
+        dst.hi = src;
+        set(ins.dst, dst);
+    }
+
+    void Cpu::exec(const Punpcklqdq<RSSE, RSSE>& ins) {
+        u128 dst = get(ins.dst);
+        u128 src = get(ins.src);
+        dst.hi = src.lo;
+        set(ins.dst, dst);
+    }
 }
