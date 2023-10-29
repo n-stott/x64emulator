@@ -158,7 +158,13 @@ namespace x64 {
 
     void Interpreter::loadLibC() {
         libc_ = std::make_unique<LibC>();
-        u64 libcOffset = mmu_.topOfMemoryAligned(Mmu::PAGE_SIZE);
+        u64 libcSize = 0;
+        libc_->forAllFunctions(ExecutionContext(*this), [&](std::vector<std::unique_ptr<X86Instruction>> instructions, std::unique_ptr<Function>) {
+            libcSize += instructions.size();
+        });
+        libcSize = Mmu::pageRoundUp(libcSize);
+
+        u64 libcOffset = mmu_.mmap(0, libcSize, PROT_EXEC, 0, 0, 0);
         ExecutableSection libcSection {
             "libc:.text",
             libcOffset,
