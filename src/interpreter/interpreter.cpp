@@ -199,10 +199,8 @@ namespace x64 {
 
     void Interpreter::setupStack() {
         // stack
-        u64 stackBase = mmu_.topOfMemoryAligned(Mmu::PAGE_SIZE);
         u64 stackSize = 16*Mmu::PAGE_SIZE;
-        Mmu::Region stack{ "stack", stackBase, stackSize, PROT_READ | PROT_WRITE };
-        mmu_.addRegion(stack);
+        u64 stackBase = mmu_.mmap(0, stackSize, PROT_READ | PROT_WRITE, 0, 0, 0);
         cpu_.regs_.rsp_ = stackBase + stackSize;
     }
 
