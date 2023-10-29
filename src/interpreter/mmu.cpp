@@ -63,7 +63,7 @@ namespace x64 {
         verify(fd == 0, "mmap with non-zero fd not supported yet");
         verify(offset == 0, "mmap with non-zero offset not supported yet");
         if(address == 0) {
-            Region region("", topOfMemoryAligned(Mmu::PAGE_SIZE), pageRoundUp(length), (Protection)prot);
+            Region region("", topOfMemoryPageAligned(), pageRoundUp(length), (Protection)prot);
             auto* regionPtr = addRegion(std::move(region));
             return regionPtr->base;
         } else {
@@ -241,10 +241,10 @@ namespace x64 {
         }
     }
 
-    u64 Mmu::topOfMemoryAligned(u64 alignment) const {
+    u64 Mmu::topOfMemoryPageAligned() const {
         u64 top = topOfReserved_;
         for(const auto& region : regions_) top = std::max(top, region.base+region.size);
-        top = (top + (alignment-1))/alignment*alignment;
+        top = pageRoundUp(top);
         return top;
     }
 

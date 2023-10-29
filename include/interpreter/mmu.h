@@ -78,7 +78,6 @@ namespace x64 {
         int munmap(u64 address, u64 length);
         int mprotect(u64 address, u64 length, int prot);
 
-
         void setRegionName(u64 address, std::string name);
         
         void setFsBase(u64 fsBase);
@@ -104,8 +103,6 @@ namespace x64 {
         void write128(Ptr128 ptr, u128 value);
 
         void dumpRegions() const;
-
-        u64 topOfMemoryAligned(u64 alignment) const;
     
         static u64 pageRoundDown(u64 address);
         static u64 pageRoundUp(u64 address);
@@ -121,6 +118,8 @@ namespace x64 {
 
         Region* findAddress(u64 address);
         const Region* findAddress(u64 address) const;
+
+        u64 topOfMemoryPageAligned() const;
 
         u64 topOfReserved_ = 0;
 
