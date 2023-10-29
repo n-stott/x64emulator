@@ -13,8 +13,8 @@ using i32 = int;
 using i64 = long long;
 
 struct Xmm {
-    u64 hi;
     u64 lo;
+    u64 hi;
 };
 using u128 = Xmm;
 

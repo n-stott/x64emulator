@@ -797,12 +797,12 @@ namespace x64 {
     template<> u64 narrow(const Xmm& val) { return val.lo; }
 
     template<typename T, typename U> T zeroExtend(const U& u);
-    template<> Xmm zeroExtend(const u32& val) { return Xmm{ 0, val }; }
-    template<> Xmm zeroExtend(const u64& val) { return Xmm{ 0, val }; }
+    template<> Xmm zeroExtend(const u32& val) { return Xmm{ val, 0 }; }
+    template<> Xmm zeroExtend(const u64& val) { return Xmm{ val, 0 }; }
 
     template<typename T, typename U> T writeLow(T t, U u);
-    template<> Xmm writeLow(Xmm t, u32 u) { return Xmm{t.hi, (u64)u}; }
-    template<> Xmm writeLow(Xmm t, u64 u) { return Xmm{t.hi, u}; }
+    template<> Xmm writeLow(Xmm t, u32 u) { return Xmm{(u64)u, t.hi}; }
+    template<> Xmm writeLow(Xmm t, u64 u) { return Xmm{u, t.hi}; }
 
     void Cpu::exec(const Mov<R8, R8>& ins) { set(ins.dst, get(ins.src)); }
     void Cpu::exec(const Mov<R8, Imm>& ins) { set(ins.dst, get<u8>(ins.src)); }
