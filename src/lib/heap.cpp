@@ -1,19 +1,27 @@
 #include "lib/heap.h"
 #include "interpreter/verify.h"
+#include "interpreter/interpreter.h"
+#include "interpreter/mmu.h"
 
 namespace x64 {
 
-
-    Heap::Heap(u64 base, u64 size) {
-        region_.base_ = base;
-        region_.current_ = base;
-        region_.size_ = size;
-    }
+    Heap::Heap(Mmu* mmu) : mmu_(mmu) { }
 
     Heap::~Heap() = default;
 
     // aligns everything to 8 bytes
     u64 Heap::malloc(u64 size) {
+        if(region_.size_ == 0) {
+            u64 mallocRegionSize = 64*Mmu::PAGE_SIZE;
+            u64 mallocRegionBase = mmu_->topOfMemoryAligned(Mmu::PAGE_SIZE);
+            mmu_->reserveUpTo(mallocRegionSize);
+            Mmu::Region region("malloc", mallocRegionBase, mallocRegionSize, PROT_READ | PROT_WRITE);
+            mmu_->addRegion(std::move(region));
+            region_.base_ = mallocRegionBase;
+            region_.current_ = mallocRegionBase;
+            region_.size_ = mallocRegionSize;
+        }
+
         // check if we have a free block of that size
         auto sait = allocations_.find(size);
         if(sait != allocations_.end()) {

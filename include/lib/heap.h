@@ -8,9 +8,11 @@
 
 namespace x64 {
 
+    class Mmu;
+
     class Heap {
     public:
-        explicit Heap(u64 base, u64 size);
+        explicit Heap(Mmu* mmu);
         ~Heap();
 
         // aligns everything to 8 bytes
@@ -19,6 +21,8 @@ namespace x64 {
         void free(u64 address);
 
     private:
+        Mmu* mmu_;
+
         struct Region {
             u64 base_ { 0 };
             u64 size_ { 0 };

@@ -18,8 +18,6 @@ namespace x64 {
 
         void forAllFunctions(const ExecutionContext& context, std::function<void(std::vector<std::unique_ptr<X86Instruction>>, std::unique_ptr<Function>)> callback);
 
-        void setHeapRegion(u64 base, u64 size);
-
     private:
         std::unique_ptr<Heap> heap_;
         class FileRegistry;

@@ -51,10 +51,6 @@ namespace x64 {
         addFunction<TlsGetAddr>(context, this, callback);
     }
 
-    void LibC::setHeapRegion(u64 base, u64 size) {
-        heap_ = std::make_unique<Heap>(base, size);
-    }
-
     class LibC::FileRegistry {
     public:
         u32 openFile(const std::string& path, const std::string& mode) {
@@ -161,6 +157,7 @@ namespace x64 {
 
         void exec(InstructionHandler*) const override {
             u64 size = context_.rdi();
+            if(!libc_->heap_) libc_->heap_ = std::make_unique<Heap>(context_.mmu());
             u64 address = libc_->heap_->malloc(size);
             context_.set_rax(address);
         }

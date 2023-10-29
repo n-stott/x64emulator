@@ -39,7 +39,7 @@ namespace x64 {
 
     private:
 
-        void setupStackAndHeap();
+        void setupStack();
         void runInit();
         void pushProgramArguments(const std::string& programFilePath, const std::vector<std::string>& arguments);
         void executeMain();

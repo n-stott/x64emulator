@@ -111,7 +111,7 @@ namespace x64 {
 
     void Interpreter::run(const std::string& programFilePath, const std::vector<std::string>& arguments) {
         VerificationScope::run([&]() {
-            setupStackAndHeap();
+            setupStack();
             runInit();
             pushProgramArguments(programFilePath, arguments);
             executeMain();
@@ -155,14 +155,7 @@ namespace x64 {
         executableSections_.push_back(std::move(libcSection));
     }
 
-    void Interpreter::setupStackAndHeap() {
-        // heap
-        u64 heapBase = mmu_.topOfMemoryAligned(Mmu::PAGE_SIZE);
-        u64 heapSize = 64*Mmu::PAGE_SIZE;
-        Mmu::Region heapRegion{ "heap", heapBase, heapSize, PROT_READ | PROT_WRITE };
-        mmu_.addRegion(heapRegion);
-        libc_->setHeapRegion(heapRegion.base, heapRegion.size);
-        
+    void Interpreter::setupStack() {
         // stack
         u64 stackBase = mmu_.topOfMemoryAligned(Mmu::PAGE_SIZE);
         u64 stackSize = 16*Mmu::PAGE_SIZE;
