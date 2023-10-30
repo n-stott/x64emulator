@@ -10,26 +10,70 @@ namespace x64 {
     Heap::~Heap() = default;
 
     u64 Heap::malloc(u64 size) {
-        if(block_.size_ == 0) {
-            u64 mallocRegionSize = 64*Mmu::PAGE_SIZE;
-            u64 mallocRegionBase = mmu_->mmap(0, mallocRegionSize, PROT_READ | PROT_WRITE, 0, 0, 0);
-            verify(mallocRegionBase != 0, "mmap failed");
-            mmu_->setRegionName(mallocRegionBase, "heap");
-            block_.base_ = mallocRegionBase;
-            block_.current_ = mallocRegionBase;
-            block_.size_ = mallocRegionSize;
+        for(Block& block : blocks_) {
+            u64 ptr = block.malloc(size);
+            if(ptr != 0) return ptr;
         }
-        return block_.malloc(size);
+
+        u64 mallocRegionSize = std::max(Mmu::pageRoundUp(size), Block::SmallBlockSize());
+        u64 mallocRegionBase = mmu_->mmap(0, mallocRegionSize, PROT_READ | PROT_WRITE, 0, 0, 0);
+        verify(mallocRegionBase != 0, "mmap failed");
+        mmu_->setRegionName(mallocRegionBase, "heap");
+
+        Block block(mallocRegionBase, mallocRegionSize);
+        u64 ptr = block.malloc(size);
+        blocks_.push_back(std::move(block));
+        return ptr;
     }
 
     void Heap::free(u64 address) {
-        bool didFree = block_.free(address);
-        verify(didFree, [&]() {
+        if(!address) return;
+
+        Block* containingBlock = nullptr;
+        for(Block& block : blocks_) {
+            bool didFree = block.free(address);
+            if(didFree) {
+                containingBlock = &block;
+                break;
+            }
+        }
+
+        verify(!!containingBlock, [&]() {
             fmt::print(stderr, "Address {:#x} was never malloc'ed\n", address);
             fmt::print(stderr, "Allocated addresses are:\n");
-            block_.dumpAllocations();
+            for(const Block& block : blocks_) block.dumpAllocations();
         });
+
+        // if the block is small, don't bother returning memory to the OS
+        if(containingBlock->size() <= Block::SmallBlockSize()) return;
+
+        // if the block is still used, exit
+        if(!containingBlock->isFree()) return;
+
+        // otherwise, unmap the memory
+        u64 base = containingBlock->base();
+        u64 size = containingBlock->size();
+        blocks_.erase(std::remove_if(blocks_.begin(), blocks_.end(), [&](const Block& block) {
+            return block.base() == base && block.size() == size;
+        }), blocks_.end());
+        mmu_->munmap(base, size);
     }
+
+    u64 Heap::Block::SmallBlockSize() {
+        return 64*Mmu::PAGE_SIZE;
+    }
+
+    u64 Heap::Block::base() const { return base_; }
+    u64 Heap::Block::size() const { return size_; }
+
+    bool Heap::Block::isFree() const {
+        for(const auto& e : allocations_) {
+            if(!e.second.usedBases.empty()) return false;
+        }
+        return true;
+    }
+
+    Heap::Block::Block(u64 base, u64 size) : base_(base), size_(size), current_(base) { }
 
     // aligns everything to 8 bytes
     u64 Heap::Block::malloc(u64 size) {
@@ -70,7 +114,7 @@ namespace x64 {
     }
 
     bool Heap::Block::canFit(u64 size) const {
-        return current_ + size < base_ + size_;
+        return current_ + size <= base_ + size_;
     }
 
     u64 Heap::Block::allocate(u64 size) {

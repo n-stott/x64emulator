@@ -23,18 +23,26 @@ namespace x64 {
     private:
         Mmu* mmu_;
 
-        struct Block {
-            u64 base_ { 0 };
-            u64 size_ { 0 };
-            u64 current_ { 0 };
-
-            bool canFit(u64 size) const;
-            u64 allocate(u64 size);
-
+        class Block {
+        public:
+            explicit Block(u64 base, u64 size);
             u64 malloc(u64 size);
             bool free(u64 address);
 
             void dumpAllocations() const;
+
+            static u64 SmallBlockSize();
+            u64 base() const;
+            u64 size() const;
+            bool isFree() const;
+
+        private:
+            bool canFit(u64 size) const;
+            u64 allocate(u64 size);
+
+            u64 base_ { 0 };
+            u64 size_ { 0 };
+            u64 current_ { 0 };
 
             struct SizedAllocation {
                 std::list<u64> usedBases;
@@ -43,7 +51,9 @@ namespace x64 {
 
             std::map<u64, SizedAllocation> allocations_;
             std::map<u64, u64> addressToSize_;
-        } block_;
+        };
+
+        std::vector<Block> blocks_;
     };
 
 }

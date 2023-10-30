@@ -160,7 +160,6 @@ add_executable(test_big_malloc src/test_big_malloc.cpp)
 target_compile_options(test_big_malloc PUBLIC ${CC_OPTIONS})
 target_link_options(test_big_malloc PUBLIC ${LD_OPTIONS})
 add_test(NAME big_malloc COMMAND ${CMAKE_BINARY_DIR}/interpreter test_big_malloc)
-set_tests_properties(big_malloc PROPERTIES WILL_FAIL true)
 
 add_executable(test_x87 src/test_x87.cpp)
 target_compile_options(test_x87 PUBLIC ${CC_OPTIONS})
