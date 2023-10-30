@@ -23,22 +23,27 @@ namespace x64 {
     private:
         Mmu* mmu_;
 
-        struct Region {
+        struct Block {
             u64 base_ { 0 };
             u64 size_ { 0 };
             u64 current_ { 0 };
 
             bool canFit(u64 size) const;
             u64 allocate(u64 size);
-        } region_;
 
-        struct SizedAllocation {
-            std::list<u64> usedBases;
-            std::vector<u64> freeBases;
-        };
+            u64 malloc(u64 size);
+            bool free(u64 address);
 
-        std::map<u64, SizedAllocation> allocations_;
-        std::map<u64, u64> addressToSize_;
+            void dumpAllocations() const;
+
+            struct SizedAllocation {
+                std::list<u64> usedBases;
+                std::vector<u64> freeBases;
+            };
+
+            std::map<u64, SizedAllocation> allocations_;
+            std::map<u64, u64> addressToSize_;
+        } block_;
     };
 
 }
