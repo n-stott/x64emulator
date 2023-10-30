@@ -41,9 +41,10 @@ namespace elf {
         std::ifstream input(filename, std::ios::in | std::ios::binary);
         if(input.fail()) return {};
         input.seekg(0, std::ios::end);
-        bytes.resize(input.tellg());
+        size_t size = (size_t)input.tellg();
+        bytes.resize(size);
         input.seekg(0, std::ios::beg);
-        input.read(&bytes[0], bytes.size());
+        input.read(&bytes[0], (ssize_t)bytes.size());
         input.close();
 
         Identifier ident;

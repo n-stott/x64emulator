@@ -155,9 +155,9 @@ namespace elf {
         std::vector<SectionHeader64> sectionHeaders_;
 
         friend class ElfReader;
-        friend class RelocationEntry64;
-        friend class RelocationEntry64A;
-        friend class SymbolTableEntry64;
+        friend struct RelocationEntry64;
+        friend struct RelocationEntry64A;
+        friend struct SymbolTableEntry64;
     };
 
 
@@ -377,8 +377,8 @@ namespace elf {
             case DynamicTag::DT_NEEDED:
                 return d_un.d_val;
             default: {
-                assert(!"not implemented");
-                return 0;
+                assert(false && "not implemented");
+                return (u64)(-1);
             }
         }
     }

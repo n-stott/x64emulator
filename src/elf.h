@@ -15,10 +15,10 @@ namespace elf {
     struct SectionHeader32;
     struct SectionHeader64;
     class StringTable;
-    class SymbolTableEntry32;
-    class SymbolTableEntry64;
-    class DynamicEntry32;
-    class DynamicEntry64;
+    struct SymbolTableEntry32;
+    struct SymbolTableEntry64;
+    struct DynamicEntry32;
+    struct DynamicEntry64;
     class Elf;
     class Elf32;
     class Elf64;
@@ -203,7 +203,7 @@ namespace elf {
     }
 
     inline size_t Section::size() const {
-        return end-begin;
+        return (size_t)std::distance(begin, end);
     }
 
     template<typename SymbolEntryType>
@@ -215,7 +215,7 @@ namespace elf {
 
     template<typename SymbolEntryType>
     inline size_t SymbolTable<SymbolEntryType>::size() const {
-        return std::distance(begin_, end_);
+        return (size_t)std::distance(begin_, end_);
     }
 
     template<typename SymbolEntryType>
@@ -230,7 +230,7 @@ namespace elf {
     }
 
     inline size_t StringTable::size() const {
-        return std::distance(begin_, end_);
+        return (size_t)std::distance(begin_, end_);
     }
 
     inline std::string_view StringTable::operator[](size_t idx) const {

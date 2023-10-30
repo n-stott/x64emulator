@@ -9,5 +9,6 @@ set(SOURCE_FILES
 add_executable(elf-reader ${SOURCE_FILES})
 
 target_include_directories(elf-reader PUBLIC external)
+target_compile_options(elf-reader PUBLIC -Wall -Wextra -Wpedantic -pedantic -Wconversion -Werror)
 target_compile_options(elf-reader PUBLIC -g)
 target_link_libraries(elf-reader ${CMAKE_SOURCE_DIR}/external/fmt/libfmt.a)

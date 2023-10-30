@@ -18,7 +18,9 @@ int main(int argc, const char* argv[]) {
           elf::Elf32* elf32 = dynamic_cast<elf::Elf32*>(elf.get());
           assert(!!elf32);
           auto symbolTable = elf32->dynamicSymbolTable();
+          (void)symbolTable;
           auto stringTable = elf32->stringTable();
+          (void)stringTable;
           auto dynamicStringTable = elf32->dynamicStringTable();
 
           elf32->forAllRelocations([&](const elf::RelocationEntry32& relocation) {
@@ -44,25 +46,27 @@ int main(int argc, const char* argv[]) {
           elf::Elf64* elf64 = dynamic_cast<elf::Elf64*>(elf.get());
           assert(!!elf64);
           auto symbolTable = elf64->dynamicSymbolTable();
+          (void)symbolTable;
           auto stringTable = elf64->stringTable();
+          (void)stringTable;
           auto dynamicStringTable = elf64->dynamicStringTable();
 
           elf64->forAllRelocations([&](const elf::RelocationEntry64& relocation) {
-               // std::string_view symbol = relocation.symbol(*elf64)->symbol(&stringTable.value(), *elf64);
-               // fmt::print("Relocation offset={:#x} type={:#x} symbol={}\n", relocation.offset(), (u8)relocation.type(), symbol);
+               std::string_view symbol = relocation.symbol(*elf64)->symbol(&stringTable.value(), *elf64);
+               fmt::print("Relocation offset={:#x} type={:#x} symbol={}\n", relocation.offset(), (u8)relocation.type(), symbol);
           });
 
           elf64->forAllRelocationsA([&](const elf::RelocationEntry64A& relocation) {
-               // std::string_view symbol = relocation.symbol(*elf64)->symbol(&dynamicStringTable.value(), *elf64);
-               // fmt::print("Relocation offset={:#x} type={:#x} symbol={} addend={}\n", relocation.offset(), (u8)relocation.type(), symbol, relocation.r_addend);
+               std::string_view symbol = relocation.symbol(*elf64)->symbol(&dynamicStringTable.value(), *elf64);
+               fmt::print("Relocation offset={:#x} type={:#x} symbol={} addend={}\n", relocation.offset(), (u8)relocation.type(), symbol, relocation.r_addend);
           });
 
           elf64->forAllSymbols([&](const elf::StringTable* stringTable, const elf::SymbolTableEntry64& entry) {
-               // fmt::print("Static  symbol={:30} offset={}\n", entry.symbol(stringTable, *elf64), entry.st_name);
+               fmt::print("Static  symbol={:30} offset={}\n", entry.symbol(stringTable, *elf64), entry.st_name);
           });
 
           elf64->forAllDynamicSymbols([&](const elf::StringTable* dynamicStringTable, const elf::SymbolTableEntry64& entry) {
-               // fmt::print("Dynamic symbol={:30} offset={}\n", entry.symbol(dynamicStringTable, *elf64), entry.st_name);
+               fmt::print("Dynamic symbol={:30} offset={}\n", entry.symbol(dynamicStringTable, *elf64), entry.st_name);
           });
      }
 }
