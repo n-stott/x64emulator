@@ -67,7 +67,9 @@ namespace x64 {
             auto* regionPtr = addRegion(std::move(region));
             return regionPtr->base;
         } else {
-            verify(address % PAGE_SIZE == 0, fmt::format("mmap with non-page_size aligned address {:#x} not supported", address));
+            verify(address % PAGE_SIZE == 0, [&]() {
+                fmt::print("mmap with non-page_size aligned address {:#x} not supported", address);
+            });
             Region region("", address, pageRoundUp(length), (Protection)prot);
             auto* regionPtr = addRegion(std::move(region));
             return regionPtr->base;

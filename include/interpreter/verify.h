@@ -20,12 +20,6 @@ namespace x64 {
         verify(condition);
     }
 
-    static inline void verify(bool condition, std::string message) {
-        if(condition) return;
-        fmt::print("{}\n", message);
-        verify(condition);
-    }
-
     template<typename Callback>
     static inline void verify(bool condition, Callback onFail) {
         if(condition) return;
