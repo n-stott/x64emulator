@@ -106,8 +106,7 @@ namespace x64 {
     #define TODO(ins) \
         fmt::print(stderr, "Fail at : {}\n", x64::utils::toString(ins));\
         std::string todoMessage = "Not implemented : "+x64::utils::toString(ins);\
-        verify(false, todoMessage.c_str());\
-        assert(!"Not implemented");
+        verify(false, todoMessage.c_str());
 
 #ifndef NDEBUG
     #define DEBUG_ONLY(X) X
@@ -144,27 +143,27 @@ namespace x64 {
 
     static u32 signExtended32(u8 value) {
         WARN_SIGN_EXTENDED();
-        return (i32)(i8)value;
+        return (u32)(i32)(i8)value;
     }
 
     static u32 signExtended32(u16 value) {
         WARN_SIGN_EXTENDED();
-        return (i32)(i16)value;
+        return (u32)(i32)(i16)value;
     }
 
     static u64 signExtended64(u8 value) {
         WARN_SIGN_EXTENDED();
-        return (i64)(i8)value;
+        return (u64)(i64)(i8)value;
     }
 
     static u64 signExtended64(u16 value) {
         WARN_SIGN_EXTENDED();
-        return (i64)(i16)value;
+        return (u64)(i64)(i16)value;
     }
 
     static u64 signExtended64(u32 value) {
         WARN_SIGN_EXTENDED();
-        return (i64)(i32)value;
+        return (u64)(i64)(i32)value;
     }
 
     u8 Cpu::execAdd8Impl(u8 dst, u8 src) {
@@ -200,7 +199,7 @@ namespace x64 {
 
     u64 Cpu::execAdd64Impl(u64 dst, u64 src) {
         i64 tmp = (i64)dst + (i64)src;
-        flags_.overflow = (dst ^ tmp) & ((src) ^ tmp) & 0x800000000000;
+        flags_.overflow = (dst ^ (u64)tmp) & ((src) ^ (u64)tmp) & 0x800000000000;
         flags_.carry = (src > ~dst); // src + dst > uint_max <=> src > uint_max - dst = ~dst maybe ?
         flags_.sign = (tmp < 0);
         flags_.zero = (dst == src);
@@ -309,7 +308,7 @@ namespace x64 {
     u64 Cpu::execSub64Impl(u64 src1, u64 src2) {
         // fmt::print(stderr, "Cmp/Sub : {:#x} {:#x}\n", src1, src2);
         i64 tmp = (i64)src1 - (i64)src2;
-        flags_.overflow = (src1 ^ tmp) & ((~src2) ^ tmp) & 0x800000000000;
+        flags_.overflow = (src1 ^ (u64)tmp) & ((~src2) ^ (u64)tmp) & 0x800000000000;
         flags_.carry = (src1 < src2);
         flags_.sign = (tmp < 0);
         flags_.zero = (src1 == src2);
@@ -355,7 +354,7 @@ namespace x64 {
         u32 src1 = dst;
         u32 src2 = src + flags_.carry;
         u64 stmp = (u64)src1 - (u64)src2;
-        flags_.overflow = sumOverflows(src1, src2);
+        flags_.overflow = sumOverflows((i32)src1, (i32)src2);
         flags_.carry = (src1 < src2);
         flags_.sign = ((i32)stmp < 0);
         flags_.zero = (src1 == src2);
@@ -463,7 +462,7 @@ namespace x64 {
         flags_.overflow = (res != (i32)tmp);
         flags_.setSure();
         flags_.setUnsureParity();
-        return res;
+        return (u32)res;
     }
 
     void Cpu::execImul32(u32 src) {
@@ -484,16 +483,16 @@ namespace x64 {
             i64 res = (i64)src1 * (i64)src2;
             flags_.carry = false;
             flags_.overflow = false;
-            return res;
+            return (u64)res;
         }
         i64 res = (i64)src1 * (i64)src2;
         flags_.setUnsure();
         flags_.setUnsureParity();
-        return res;
+        return (u64)res;
     }
 
     void Cpu::execImul64(u64 src) {
-        assert(!"not implemented");
+        verify(false, "imul64 not implemented");
         (void)src;
     }
 
@@ -610,7 +609,7 @@ namespace x64 {
         u32 tmp = dst & src;
         flags_.overflow = false;
         flags_.carry = false;
-        flags_.sign = tmp & (1 << 31);
+        flags_.sign = tmp & (1ul << 31);
         flags_.zero = (tmp == 0);
         flags_.setSure();
         flags_.setUnsureParity();
@@ -671,7 +670,7 @@ namespace x64 {
         u32 tmp = dst | src;
         flags_.overflow = false;
         flags_.carry = false;
-        flags_.sign = tmp & (1 << 31);
+        flags_.sign = tmp & (1ul << 31);
         flags_.zero = (tmp == 0);
         flags_.setSure();
         flags_.setUnsureParity();
@@ -977,7 +976,7 @@ namespace x64 {
     u32 Cpu::execInc32Impl(u32 src) {
         flags_.overflow = (src == std::numeric_limits<u32>::max());
         u32 res = src+1;
-        flags_.sign = (res & (1 << 31));
+        flags_.sign = (res & (1ul << 31));
         flags_.zero = (res == 0);
         flags_.setSure();
         flags_.setUnsureParity();
@@ -995,7 +994,7 @@ namespace x64 {
     u32 Cpu::execDec32Impl(u32 src) {
         flags_.overflow = (src == std::numeric_limits<u32>::min());
         u32 res = src-1;
-        flags_.sign = (res & (1 << 31));
+        flags_.sign = (res & (1ul << 31));
         flags_.zero = (res == 0);
         flags_.setSure();
         flags_.setUnsureParity();
@@ -1046,9 +1045,9 @@ namespace x64 {
             flags_.carry = dst & (1 << (src-1));
         }
         if(src == 1) {
-            flags_.overflow = (dst & (1 << 31));
+            flags_.overflow = (dst & (1ul << 31));
         }
-        flags_.sign = (res & (1 << 31));
+        flags_.sign = (res & (1ul << 31));
         flags_.zero = (res == 0);
         flags_.setSure();
         flags_.setUnsureParity();
@@ -1071,11 +1070,11 @@ namespace x64 {
         return res;
     }
 
-    u32 Cpu::execSar32Impl(i32 dst, u32 src) {
+    u32 Cpu::execSar32Impl(u32 dst, u32 src) {
         assert(src < 32);
-        u32 res = dst >> src;
+        i32 res = ((i32)dst) >> src;
         if(src) {
-            flags_.carry = dst & (1 << (src-1));
+            flags_.carry = ((i32)dst) & (1 << (src-1));
         }
         if(src == 1) {
             flags_.overflow = 0;
@@ -1084,23 +1083,23 @@ namespace x64 {
         flags_.zero = (res == 0);
         flags_.setSure();
         flags_.setUnsureParity();
-        return res;
+        return (u32)res;
     }
 
-    u64 Cpu::execSar64Impl(i64 dst, u64 src) {
+    u64 Cpu::execSar64Impl(u64 dst, u64 src) {
         assert(src < 64);
-        u64 res = dst >> src;
+        i64 res = ((i64)dst) >> src;
         if(src) {
-            flags_.carry = dst & (1ull << (src-1));
+            flags_.carry = ((i64)dst) & (1ll << (src-1));
         }
         if(src == 1) {
             flags_.overflow = 0;
         }
-        flags_.sign = (res & (1ull << 63));
+        flags_.sign = (res & (1ll << 63));
         flags_.zero = (res == 0);
         flags_.setSure();
         flags_.setUnsureParity();
-        return res;
+        return (u64)res;
     }
 
     void Cpu::exec(const Shr<R8, Imm>& ins) { set(ins.dst, execShr8Impl(get(ins.dst), get<u8>(ins.src))); }
@@ -1270,7 +1269,7 @@ namespace x64 {
 
     void Cpu::execTest32Impl(u32 src1, u32 src2) {
         u32 tmp = src1 & src2;
-        flags_.sign = (tmp & (1 << 31));
+        flags_.sign = (tmp & (1ul << 31));
         flags_.zero = (tmp == 0);
         flags_.overflow = 0;
         flags_.carry = 0;
@@ -1760,11 +1759,11 @@ namespace x64 {
     void Cpu::exec(const Cmov<Cond::S, R64, M64>& ins) { execCmovImpl(Cond::S, ins.dst, ins.src); }
 
     void Cpu::exec(const Cwde&) {
-        set(R32::EAX, (i32)(i16)get(R16::AX));
+        set(R32::EAX, (u32)(i32)(i16)get(R16::AX));
     }
 
     void Cpu::exec(const Cdqe&) {
-        set(R64::RAX, (i64)(i32)get(R32::EAX));
+        set(R64::RAX, (u64)(i64)(i32)get(R32::EAX));
     }
 
     void Cpu::exec(const Pxor<RSSE, RSSE>& ins) {

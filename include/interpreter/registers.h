@@ -130,13 +130,13 @@ namespace x64 {
     
         void set(R8 reg, u8 value) {
             switch(reg) {
-                case R8::AH:  { rax_ = (rax_ & 0xFFFFFFFFFFFF00FF) | (value << 8); return; }
+                case R8::AH:  { rax_ = (rax_ & 0xFFFFFFFFFFFF00FF) | (u64)(value << 8); return; }
                 case R8::AL:  { rax_ = (rax_ & 0xFFFFFFFFFFFFFF00) | (value); return; }
-                case R8::BH:  { rbx_ = (rbx_ & 0xFFFFFFFFFFFF00FF) | (value << 8); return; }
+                case R8::BH:  { rbx_ = (rbx_ & 0xFFFFFFFFFFFF00FF) | (u64)(value << 8); return; }
                 case R8::BL:  { rbx_ = (rbx_ & 0xFFFFFFFFFFFFFF00) | (value); return; }
-                case R8::CH:  { rcx_ = (rcx_ & 0xFFFFFFFFFFFF00FF) | (value << 8); return; }
+                case R8::CH:  { rcx_ = (rcx_ & 0xFFFFFFFFFFFF00FF) | (u64)(value << 8); return; }
                 case R8::CL:  { rcx_ = (rcx_ & 0xFFFFFFFFFFFFFF00) | (value); return; }
-                case R8::DH:  { rdx_ = (rdx_ & 0xFFFFFFFFFFFF00FF) | (value << 8); return; }
+                case R8::DH:  { rdx_ = (rdx_ & 0xFFFFFFFFFFFF00FF) | (u64)(value << 8); return; }
                 case R8::DL:  { rdx_ = (rdx_ & 0xFFFFFFFFFFFFFF00) | (value); return; }
                 case R8::SPL: { rsp_ = (rsp_ & 0xFFFFFFFFFFFFFF00) | (value); return; }
                 case R8::BPL: { rbp_ = (rbp_ & 0xFFFFFFFFFFFFFF00) | (value); return; }
@@ -232,11 +232,11 @@ namespace x64 {
         }
 
         u64 resolve(BD addr) const {
-            return get(addr.base) + addr.displacement;
+            return get(addr.base) + (u64)addr.displacement;
         }
 
         u64 resolve(ISD addr) const {
-            return get(addr.index)*addr.scale + addr.displacement;
+            return get(addr.index)*addr.scale + (u64)addr.displacement;
         }
 
         u64 resolve(BIS addr) const {
@@ -244,7 +244,7 @@ namespace x64 {
         }
 
         u64 resolve(BISD addr) const {
-            return get(addr.base) + get(addr.index)*addr.scale + addr.displacement;
+            return get(addr.base) + get(addr.index)*addr.scale + (u64)addr.displacement;
         }
 
         u64 resolve(SO addr) const {

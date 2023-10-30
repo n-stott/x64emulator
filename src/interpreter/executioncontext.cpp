@@ -11,7 +11,7 @@ namespace x64 {
         std::string buffer;
         Ptr8 ptr { Segment::DS, address };
         while(true) {
-            char c = mmu()->read8(ptr);
+            char c = (char)mmu()->read8(ptr);
             if(c == '\0') break;
             buffer.push_back(c);
             ++ptr;

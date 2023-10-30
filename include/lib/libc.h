@@ -29,19 +29,19 @@ namespace x64 {
         friend class FreeInstruction;
 
         friend struct Fopen64;
-        friend struct Fopen64Instruction;
+        friend class Fopen64Instruction;
         friend struct Fileno;
-        friend struct FilenoInstruction;
+        friend class FilenoInstruction;
         friend struct Fclose;
-        friend struct FcloseInstruction;
+        friend class FcloseInstruction;
 
         friend struct Read;
-        friend struct ReadInstruction;
+        friend class ReadInstruction;
         friend struct Lseek64;
-        friend struct Lseek64Instruction;
+        friend class Lseek64Instruction;
 
         friend struct TlsGetAddr;
-        friend struct TlsGetAddrInstruction;
+        friend class TlsGetAddrInstruction;
     };
 
     struct Putchar final : public LibraryFunction {

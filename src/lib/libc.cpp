@@ -58,7 +58,7 @@ namespace x64 {
             if(!f) return 0;
             ++maxFd_;
             u32 handler = handler_mask + maxFd_;
-            File file { std::unique_ptr<FILE, Autoclose>(f), maxFd_, handler };
+            File file { std::unique_ptr<FILE, Autoclose>(f), (int)maxFd_, handler };
             openFiles_.push_back(std::move(file));
             return handler;
         }
@@ -100,7 +100,7 @@ namespace x64 {
         };
 
         std::vector<File> openFiles_;
-        int maxFd_ = 100;
+        u32 maxFd_ = 100;
     };
 
     namespace {
@@ -198,14 +198,14 @@ namespace x64 {
             Ptr8 pathname_ptr { Segment::DS, pathname_address };
             std::string pathname;
             while(u8 character = context_.mmu()->read8(pathname_ptr)) {
-                pathname += character;
+                pathname += (char)character;
                 ++pathname_ptr;
             }
 
             Ptr8 mode_ptr { Segment::DS, mode_address };
             std::string mode;
             while(u8 character = context_.mmu()->read8(mode_ptr)) {
-                mode += character;
+                mode += (char)character;
                 ++mode_ptr;
             }
 
@@ -232,7 +232,7 @@ namespace x64 {
         void exec(InstructionHandler*) const override {
             u32 fileHandler = static_cast<u32>(context_.rdi());
             int fd = libc_->fileRegistry_->fileno(fileHandler);
-            context_.set_rax(fd);
+            context_.set_rax((u64)fd);
         }
 
         std::string toString(const InstructionHandler*) const override {
@@ -252,7 +252,7 @@ namespace x64 {
         void exec(InstructionHandler*) const override {
             u32 fileHandler = static_cast<u32>(context_.rdi());
             int ret = libc_->fileRegistry_->closeFile(fileHandler);
-            context_.set_rax(ret);
+            context_.set_rax((u64)ret);
         }
 
         std::string toString(const InstructionHandler*) const override {
@@ -276,7 +276,7 @@ namespace x64 {
             fmt::print("Read {} bytes from fd={} into buf={:#x}\n", count, fd, bufAddress);
             FILE* file = libc_->fileRegistry_->fileFromFd(fd);
             if(!file) {
-                context_.set_rax(-1);
+                context_.set_rax((u64)(-1));
                 return;
             }
             std::vector<u8> buf(count+1);
@@ -284,17 +284,17 @@ namespace x64 {
             ssize_t nbytes = ::read(realFd, buf.data(), count);
             fmt::print("Read {} bytes from file\n", nbytes);
             if(nbytes < 0) {
-                context_.set_rax(-1);
+                context_.set_rax((u64)(-1));
                 return;
             }
 
             Ptr8 bufPtr { Segment::DS, bufAddress };
-            for(int i = 0; i < nbytes; ++i) {
+            for(u64 i = 0; i < (u64)nbytes; ++i) {
                 fmt::print("Read char='{}'\n", (char)buf[i]);
                 context_.mmu()->write8(bufPtr, buf[i]);
                 ++bufPtr;
             }
-            context_.set_rax(nbytes);
+            context_.set_rax((u64)nbytes);
         }
 
         std::string toString(const InstructionHandler*) const override {
@@ -313,16 +313,16 @@ namespace x64 {
 
         void exec(InstructionHandler*) const override {
             int fd = static_cast<int>(context_.rdi());
-            off64_t offset = context_.rsi();
+            off64_t offset = (off64_t)context_.rsi();
             int whence = static_cast<int>(context_.rdx());
             FILE* file = libc_->fileRegistry_->fileFromFd(fd);
             if(!file) {
-                context_.set_rax(-1);
+                context_.set_rax((u64)(-1));
                 return;
             }
             int realFd = ::fileno(file);
             off64_t result = ::lseek64(realFd, offset, whence);
-            context_.set_rax(result);
+            context_.set_rax((u64)result);
         }
 
         std::string toString(const InstructionHandler*) const override {
@@ -335,25 +335,24 @@ namespace x64 {
 
     class AtoiInstruction : public Intrinsic {
     public:
-        explicit AtoiInstruction(ExecutionContext context, LibC* libc) : context_(context), libc_(libc) { }
+        explicit AtoiInstruction(ExecutionContext context, LibC*) : context_(context) { }
 
         void exec(InstructionHandler*) const override {
             u64 address = context_.rdi();
             std::string buffer = context_.readString(address);
             int value = std::atoi(buffer.c_str());
-            context_.set_rax(value);
+            context_.set_rax((u64)value);
         }
         std::string toString(const InstructionHandler*) const override {
             return "__atoi";
         }
     private:
         ExecutionContext context_;
-        LibC* libc_;
     };
 
     class AssertFailInstruction : public Intrinsic {
     public:
-        explicit AssertFailInstruction(ExecutionContext context, LibC* libc) : context_(context), libc_(libc) { }
+        explicit AssertFailInstruction(ExecutionContext context, LibC*) : context_(context) { }
 
         void exec(InstructionHandler*) const override {
             u64 assertion = context_.rdi(); // const char* assertion
@@ -374,12 +373,11 @@ namespace x64 {
         }
     private:
         ExecutionContext context_;
-        LibC* libc_;
     };
 
     class TlsGetAddrInstruction : public Intrinsic {
     public:
-        explicit TlsGetAddrInstruction(ExecutionContext context, LibC* libc) : context_(context), libc_(libc) { }
+        explicit TlsGetAddrInstruction(ExecutionContext context, LibC*) : context_(context) { }
 
         void exec(InstructionHandler*) const override {
             u64 templateAddress = context_.rdi();
@@ -392,7 +390,6 @@ namespace x64 {
         }
     private:
         ExecutionContext context_;
-        LibC* libc_;
     };
 
     class FunctionBuilder {

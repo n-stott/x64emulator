@@ -16,7 +16,7 @@ namespace elf {
 namespace x64 {
 
     class Interpreter;
-    class ExecutableSection;
+    struct ExecutableSection;
     class SymbolProvider;
 
     class Loadable {

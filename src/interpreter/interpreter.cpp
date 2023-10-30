@@ -213,7 +213,7 @@ namespace x64 {
             });
             if(it != hint->instructions.end() && address == (*it)->address) {
                 if(!!section) *section = hint;
-                if(!!index) *index = std::distance(hint->instructions.begin(), it);
+                if(!!index) *index = (size_t)std::distance(hint->instructions.begin(), it);
                 return;
             }
         }
@@ -223,7 +223,7 @@ namespace x64 {
             });
             if(it != execSection.instructions.end() && address == (*it)->address) {
                 if(!!section) *section = &execSection;
-                if(!!index) *index = std::distance(execSection.instructions.begin(), it);
+                if(!!index) *index = (size_t)std::distance(execSection.instructions.begin(), it);
                 return;
             }
         }

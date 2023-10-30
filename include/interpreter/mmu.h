@@ -125,7 +125,6 @@ namespace x64 {
 
         std::deque<Region> regions_;
         std::vector<Region*> regionLookup_;
-        Region* tlsRegion_ { nullptr };
         u64 fsBase_ { 0 };
         
         struct dtv_t {

@@ -131,8 +131,8 @@ namespace x64 {
         u32 execShr32Impl(u32 dst, u32 src);
         u64 execShr64Impl(u64 dst, u64 src);
 
-        u32 execSar32Impl(i32 dst, u32 src);
-        u64 execSar64Impl(i64 dst, u64 src);
+        u32 execSar32Impl(u32 dst, u32 src);
+        u64 execSar64Impl(u64 dst, u64 src);
 
         template<typename Dst>
         void execSet(Cond cond, Dst dst);
