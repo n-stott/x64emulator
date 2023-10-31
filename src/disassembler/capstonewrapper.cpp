@@ -132,6 +132,7 @@ namespace x64 {
             case X86_INS_STOSD:
             case X86_INS_STOSQ: return makeStos(insn);
             case X86_INS_MOVSQ: return makeMovs(insn);
+            case X86_INS_XORPS:
             case X86_INS_XORPD: return makeXorpd(insn);
             case X86_INS_MOVHPS: return makeMovhps(insn);
             case X86_INS_PUNPCKLQDQ: return makePunpcklqdq(insn);
