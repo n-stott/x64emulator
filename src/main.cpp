@@ -65,10 +65,9 @@ int main(int argc, char* argv[]) {
     x64::Interpreter interpreter(&symbolProvider);
     interpreter.setLogInstructions(true);
 
-    x64::Loader loader(&interpreter, &symbolProvider);
+    x64::Loader loader(&interpreter, &symbolProvider, libraryPath);
 
     x64::VerificationScope::run([&]() {
-        loader.loadElf(libraryPath, x64::Loader::ElfType::SHARED_OBJECT);
         loader.loadElf(programPath, x64::Loader::ElfType::MAIN_EXECUTABLE);
         interpreter.loadLibC();
         loader.prepareTlsTemplate();

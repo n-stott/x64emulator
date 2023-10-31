@@ -43,7 +43,7 @@ namespace x64 {
     class Loader {
     public:
 
-        explicit Loader(Loadable* loadable, SymbolProvider* symbolProvider);
+        explicit Loader(Loadable* loadable, SymbolProvider* symbolProvider, std::string libcPath);
 
         enum class ElfType {
             MAIN_EXECUTABLE,
@@ -84,6 +84,7 @@ namespace x64 {
 
         Loadable* loadable_;
         SymbolProvider* symbolProvider_;
+        std::string libcPath_;
         std::vector<LoadedElf> elfs_;
         std::vector<TlsBlock> tlsBlocks_;
         std::vector<std::string> loadedLibraries_;

@@ -19,11 +19,13 @@ namespace x64 {
 
     Loader::LoadedElf::~LoadedElf() = default;
 
-    Loader::Loader(Loadable* loadable, SymbolProvider* symbolProvider) : 
+    Loader::Loader(Loadable* loadable, SymbolProvider* symbolProvider, std::string libcPath) :
             loadable_(loadable), 
-            symbolProvider_(symbolProvider) {
+            symbolProvider_(symbolProvider),
+            libcPath_(libcPath) {
         assert(!!loadable_);
         assert(!!symbolProvider_);
+        assert(!libcPath_.empty());
     }
 
     void Loader::loadLibrary(const std::string& filename) {
@@ -32,7 +34,7 @@ namespace x64 {
         auto it = filename.find_first_of('.');
         if(it != std::string::npos) {
             auto shortName = filename.substr(0, it);
-            if(shortName == "libc") return;
+            if(shortName == "libc") return loadElf(libcPath_, ElfType::SHARED_OBJECT);
             if(shortName == "ld-linux-x86-64") return;
         }
         std::string prefix;
