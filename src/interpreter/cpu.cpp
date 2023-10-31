@@ -2033,6 +2033,27 @@ namespace x64 {
         set(ins.dst, writeLow<Xmm, u64>(get(ins.dst), res));
     }
 
+    u64 Cpu::execCvtss2sdImpl(u32 src) {
+        float tmp;
+        static_assert(sizeof(src) == sizeof(tmp));
+        ::mempcpy(&tmp, &src, sizeof(tmp));
+        double res = (double)tmp;
+        u64 r;
+        ::memcpy(&r, &res, sizeof(r));
+        return r;
+    }
+
+    void Cpu::exec(const Cvtss2sd<RSSE, RSSE>& ins) {
+        u32 low = (u32)get(ins.src).lo;
+        u64 res = execCvtss2sdImpl(low);
+        set(ins.dst, writeLow<Xmm, u64>(get(ins.dst), res));
+    }
+
+    void Cpu::exec(const Cvtss2sd<RSSE, M32>& ins) {
+        u64 res = execCvtss2sdImpl(get(resolve(ins.src)));
+        set(ins.dst, writeLow<Xmm, u64>(get(ins.dst), res));
+    }
+
 
     void Cpu::exec(const Xorpd<RSSE, RSSE>& ins) {
         set(ins.dst, FPU::Xor(get(ins.dst), get(ins.src)));        

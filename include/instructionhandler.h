@@ -508,6 +508,8 @@ namespace x64 {
         virtual void exec(const Cvtsi2sd<RSSE, M32>&) = 0;
         virtual void exec(const Cvtsi2sd<RSSE, R64>&) = 0;
         virtual void exec(const Cvtsi2sd<RSSE, M64>&) = 0;
+        virtual void exec(const Cvtss2sd<RSSE, RSSE>&) = 0;
+        virtual void exec(const Cvtss2sd<RSSE, M32>&) = 0;
 
         virtual void exec(const Xorpd<RSSE, RSSE>&) = 0;
         virtual void exec(const Movhps<RSSE, M64>&) = 0;

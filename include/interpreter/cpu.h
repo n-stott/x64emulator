@@ -667,10 +667,14 @@ namespace x64 {
         u64 execCvtsi2sd32Impl(u32 src);
         u64 execCvtsi2sd64Impl(u64 src);
 
+        u64 execCvtss2sdImpl(u32 src);
+
         void exec(const Cvtsi2sd<RSSE, R32>&) override;
         void exec(const Cvtsi2sd<RSSE, M32>&) override;
         void exec(const Cvtsi2sd<RSSE, R64>&) override;
         void exec(const Cvtsi2sd<RSSE, M64>&) override;
+        void exec(const Cvtss2sd<RSSE, RSSE>&) override;
+        void exec(const Cvtss2sd<RSSE, M32>&) override;
 
         void exec(const Xorpd<RSSE, RSSE>&) override;
         void exec(const Movhps<RSSE, M64>&) override;
