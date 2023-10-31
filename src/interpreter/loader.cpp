@@ -64,8 +64,16 @@ namespace x64 {
             totalLoadSize += (end-start);
         });
 
-        u64 elfOffset = loadable_->mmap(0, totalLoadSize, PROT_NONE, 0, 0, 0);
-        loadable_->munmap(elfOffset, totalLoadSize);
+        auto getOffsetForPositionIndependentExecutable = [&]() {
+            u64 elfOffset = loadable_->mmap(0, totalLoadSize, PROT_NONE, 0, 0, 0);
+            loadable_->munmap(elfOffset, totalLoadSize);
+            return elfOffset;
+        };
+
+        verify(elf64->type() == elf::Type::ET_DYN || elf64->type() == elf::Type::ET_EXEC, "elf must be ET_DYN or ET_EXEC");
+        u64 elfOffset = elf64->type() == elf::Type::ET_DYN
+                        ? getOffsetForPositionIndependentExecutable()
+                        : 0;
 
         elf64->forAllProgramHeaders([&](const elf::ProgramHeader64& header) {
             if(header.type() == elf::ProgramHeaderType::PT_LOAD) {
