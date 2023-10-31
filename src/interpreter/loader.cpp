@@ -90,16 +90,24 @@ namespace x64 {
             }
         });
 
-        registerInitFunctions(*elf64, elfOffset);
-
-        registerSymbols(*elf64, elfOffset);
-
         LoadedElf loadedElf {
             filepath,
             elfOffset,
             std::move(elf64),
         };
         elfs_.push_back(std::move(loadedElf));
+    }
+
+    void Loader::registerInitFunctions() {
+        for(auto it = elfs_.begin(); it != elfs_.end(); ++it) {
+            registerInitFunctions(*it->elf, it->offset);
+        }
+    }
+
+    void Loader::registerSymbols() {
+        for(auto it = elfs_.begin(); it != elfs_.end(); ++it) {
+            registerSymbols(*it->elf, it->offset);
+        }
     }
 
     void Loader::loadExecutableProgramHeader(const elf::Elf64& elf, const elf::ProgramHeader64& header, const std::string& filePath, const std::string& shortFilePath, u64 elfOffset) {

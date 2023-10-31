@@ -51,6 +51,8 @@ namespace x64 {
         };
 
         void loadElf(const std::string& filepath, ElfType elfType);
+        void registerInitFunctions();
+        void registerSymbols();
         void prepareTlsTemplate();
         void resolveAllRelocations();
         void loadTlsBlocks();
