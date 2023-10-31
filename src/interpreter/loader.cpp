@@ -53,8 +53,6 @@ namespace x64 {
         std::unique_ptr<elf::Elf64> elf64;
         elf64.reset(static_cast<elf::Elf64*>(elf.release()));
 
-        loadNeededLibraries(*elf64);
-
         std::string shortFilePath = filepath.find_last_of('/') == std::string::npos ? filepath
                                                                                     : filepath.substr(filepath.find_last_of('/')+1);
 
@@ -89,6 +87,8 @@ namespace x64 {
                 });
             }
         });
+
+        loadNeededLibraries(*elf64);
 
         LoadedElf loadedElf {
             filepath,
