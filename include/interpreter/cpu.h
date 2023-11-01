@@ -17,6 +17,27 @@ namespace x64 {
             mmu_ = mmu;
         }
 
+        struct Impl {
+            static u8 add8(u8 dst, u8 src, Flags* flags);
+            static u16 add16(u16 dst, u16 src, Flags* flags);
+            static u32 add32(u32 dst, u32 src, Flags* flags);
+            static u64 add64(u64 dst, u64 src, Flags* flags);
+
+            static u8 adc8(u8 dst, u8 src, Flags* flags);
+            static u16 adc16(u16 dst, u16 src, Flags* flags);
+            static u32 adc32(u32 dst, u32 src, Flags* flags);
+
+            static u8 sub8(u8 src1, u8 src2, Flags* flags);
+            static u16 sub16(u16 src1, u16 src2, Flags* flags);
+            static u32 sub32(u32 src1, u32 src2, Flags* flags);
+            static u64 sub64(u64 src1, u64 src2, Flags* flags);
+
+            static u32 sbb32(u32 dst, u32 src, Flags* flags);
+
+            static u32 neg32(u32 dst, Flags* flags);
+            static u64 neg64(u64 dst, Flags* flags);
+        };
+
     private:
         friend class Interpreter;
         friend class ExecutionContext;
@@ -77,25 +98,6 @@ namespace x64 {
         u16 pop16();
         u32 pop32();
         u64 pop64();
-
-        u8 execAdd8Impl(u8 dst, u8 src);
-        u16 execAdd16Impl(u16 dst, u16 src);
-        u32 execAdd32Impl(u32 dst, u32 src);
-        u64 execAdd64Impl(u64 dst, u64 src);
-
-        u8 execAdc8Impl(u8 dst, u8 src);
-        u16 execAdc16Impl(u16 dst, u16 src);
-        u32 execAdc32Impl(u32 dst, u32 src);
-
-        u8 execSub8Impl(u8 src1, u8 src2);
-        u16 execSub16Impl(u16 src1, u16 src2);
-        u32 execSub32Impl(u32 src1, u32 src2);
-        u64 execSub64Impl(u64 src1, u64 src2);
-
-        u32 execSbb32Impl(u32 dst, u32 src);
-
-        u32 execNeg32Impl(u32 dst);
-        u64 execNeg64Impl(u64 dst);
 
         std::pair<u32, u32> execMul32(u32 src1, u32 src2);
         std::pair<u64, u64> execMul64(u64 src1, u64 src2);
