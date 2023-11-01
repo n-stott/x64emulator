@@ -1705,8 +1705,12 @@ namespace x64 {
         const cs_x86_op& dst = x86detail.operands[0];
         const cs_x86_op& src = x86detail.operands[1];
         auto rssedst = asRegister128(dst);
+        auto mssedst = asMemory128(dst);
+        auto rssesrc = asRegister128(src);
         auto mssesrc = asMemory128(src);
+        if(rssedst && rssesrc) return make_wrapper<Mov<RSSE, RSSE>>(insn.address, rssedst.value(), rssesrc.value());
         if(rssedst && mssesrc) return make_wrapper<Mov<RSSE, MSSE>>(insn.address, rssedst.value(), mssesrc.value());
+        if(mssedst && rssesrc) return make_wrapper<Mov<MSSE, RSSE>>(insn.address, mssedst.value(), rssesrc.value());
         return make_failed(insn);
     }
 
