@@ -12,7 +12,7 @@ target_link_options(fakelibc PUBLIC)
 target_include_directories(fakelibc PUBLIC external)
 target_include_directories(fakelibc PUBLIC include)
 
-add_executable(interpreter
+add_library(emulator STATIC
     src/lib/library.cpp
     src/lib/libc.cpp
     src/lib/heap.cpp
@@ -26,17 +26,24 @@ add_executable(interpreter
     src/interpreter/mmu.cpp
     src/interpreter/executioncontext.cpp
     src/program.cpp
+)
+target_compile_options(emulator PUBLIC -Wall -Wextra -Wpedantic -pedantic -Wconversion -Werror)
+target_compile_options(emulator PUBLIC -Wno-braced-scalar-init -Wimplicit-fallthrough -Wno-missing-braces)
+target_compile_options(emulator PUBLIC -DFMT_HEADER_ONLY)
+target_include_directories(emulator PUBLIC include)
+target_include_directories(emulator PUBLIC ../common/include)
+target_include_directories(emulator PUBLIC external)
+target_include_directories(emulator PUBLIC external/elf-reader/src)
+target_link_libraries(emulator PUBLIC -lstdc++fs -lcapstone)
+
+add_executable(interpreter
     src/main.cpp
 )
 target_compile_options(interpreter PUBLIC -Wall -Wextra -Wpedantic -pedantic -Wconversion -Werror)
 target_compile_options(interpreter PUBLIC -Wno-braced-scalar-init -Wimplicit-fallthrough -Wno-missing-braces)
-target_compile_options(interpreter PUBLIC -DFMT_HEADER_ONLY)
 target_include_directories(interpreter PUBLIC include)
 target_include_directories(interpreter PUBLIC ../common/include)
 target_include_directories(interpreter PUBLIC external)
-target_include_directories(interpreter PUBLIC external/elf-reader/src)
-target_link_libraries(interpreter PUBLIC -lstdc++fs -lcapstone)
-# target_compile_options(interpreter PUBLIC -fsanitize=address,undefined)
-# target_link_options(interpreter PUBLIC -fsanitize=address,undefined)
+target_link_libraries(interpreter PUBLIC emulator)
 
 add_subdirectory(tests)
