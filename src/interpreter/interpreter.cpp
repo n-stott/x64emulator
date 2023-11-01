@@ -111,7 +111,7 @@ namespace x64 {
 
     void Interpreter::read(u8* dst, u64 srcAddress, u64 nbytes) {
         // loop until dst is 8-bytes aligned
-        while((reinterpret_cast<u64>(dst) % 8) != 0) {
+        while(nbytes-- > 0 && (reinterpret_cast<u64>(dst) % 8) != 0) {
             *dst++ = mmu_.read8(Ptr8{Segment::DS, srcAddress++});
         }
         // loop 8 bytes at a time
@@ -129,7 +129,7 @@ namespace x64 {
 
     void Interpreter::write(u64 dstAddress, const u8* src, u64 nbytes) {
         // loop until src is 8-bytes aligned
-        while((reinterpret_cast<u64>(src) % 8) != 0) {
+        while(nbytes-- > 0 && (reinterpret_cast<u64>(src) % 8) != 0) {
             mmu_.write8(Ptr8{Segment::DS, dstAddress++}, *src++);
         }
         // loop 8 bytes at a time
