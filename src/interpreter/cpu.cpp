@@ -1,5 +1,4 @@
 #include "interpreter/cpu.h"
-#include "interpreter/fpu.h"
 #include "interpreter/mmu.h"
 #include "interpreter/verify.h"
 #include "interpreter/interpreter.h"
@@ -1764,7 +1763,11 @@ namespace x64 {
     }
 
     void Cpu::exec(const Pxor<RSSE, RSSE>& ins) {
-        set(ins.dst, FPU::Xor(get(ins.dst), get(ins.src)));
+        u128 dst = get(ins.dst);
+        u128 src = get(ins.src);
+        dst.lo = dst.lo ^ src.lo;
+        dst.hi = dst.hi ^ src.hi;
+        set(ins.dst, dst);
     }
 
     void Cpu::exec(const Movaps<RSSE, RSSE>& ins) { set(ins.dst, get(ins.src)); }
@@ -2053,7 +2056,11 @@ namespace x64 {
 
 
     void Cpu::exec(const Xorpd<RSSE, RSSE>& ins) {
-        set(ins.dst, FPU::Xor(get(ins.dst), get(ins.src)));        
+        u128 dst = get(ins.dst);
+        u128 src = get(ins.src);
+        dst.lo = dst.lo ^ src.lo;
+        dst.hi = dst.hi ^ src.hi;
+        set(ins.dst, dst);
     }
 
     void Cpu::exec(const Movhps<RSSE, M64>& ins) {
