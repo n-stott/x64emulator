@@ -685,7 +685,7 @@ namespace x64 {
 
         void exec(const Punpcklqdq<RSSE, RSSE>&) override;
 
-        u128 execPshufd(u128 src, u8 order);
+        static u128 execPshufd(u128 src, u8 order);
 
         void exec(const Pshufd<RSSE, RSSE, Imm>&) override;
         void exec(const Pshufd<RSSE, MSSE, Imm>&) override;

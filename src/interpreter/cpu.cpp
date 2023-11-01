@@ -2084,10 +2084,10 @@ namespace x64 {
 
         std::array<u32, 4> DST;
         static_assert(sizeof(DST) == sizeof(u128));
-        DST[0] = SRC[(order >> 0) & 0xFF];
-        DST[1] = SRC[(order >> 2) & 0xFF];
-        DST[2] = SRC[(order >> 4) & 0xFF];
-        DST[3] = SRC[(order >> 6) & 0xFF];
+        DST[0] = SRC[(order >> 0) & 0x3];
+        DST[1] = SRC[(order >> 2) & 0x3];
+        DST[2] = SRC[(order >> 4) & 0x3];
+        DST[3] = SRC[(order >> 6) & 0x3];
 
         u128 dst;
         ::memcpy(&dst, DST.data(), sizeof(u128));
