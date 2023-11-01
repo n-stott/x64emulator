@@ -29,11 +29,51 @@ int comparePshufd(u128 src) {
     return 1;
 }
 
+template<int hi>
+int loopComparePshufd(u128 src) {
+    int rc = 0;
+    rc = rc | comparePshufd<(hi << 4) | 0x0>(src);
+    rc = rc | comparePshufd<(hi << 4) | 0x1>(src);
+    rc = rc | comparePshufd<(hi << 4) | 0x2>(src);
+    rc = rc | comparePshufd<(hi << 4) | 0x3>(src);
+    rc = rc | comparePshufd<(hi << 4) | 0x4>(src);
+    rc = rc | comparePshufd<(hi << 4) | 0x5>(src);
+    rc = rc | comparePshufd<(hi << 4) | 0x6>(src);
+    rc = rc | comparePshufd<(hi << 4) | 0x7>(src);
+    rc = rc | comparePshufd<(hi << 4) | 0x8>(src);
+    rc = rc | comparePshufd<(hi << 4) | 0x9>(src);
+    rc = rc | comparePshufd<(hi << 4) | 0xa>(src);
+    rc = rc | comparePshufd<(hi << 4) | 0xb>(src);
+    rc = rc | comparePshufd<(hi << 4) | 0xc>(src);
+    rc = rc | comparePshufd<(hi << 4) | 0xd>(src);
+    rc = rc | comparePshufd<(hi << 4) | 0xe>(src);
+    rc = rc | comparePshufd<(hi << 4) | 0xf>(src);
+    return rc;
+}
 
+int loopComparePshufd(u128 src) {
+    int rc = 0;
+    rc = rc | loopComparePshufd<0x0>(src);
+    rc = rc | loopComparePshufd<0x1>(src);
+    rc = rc | loopComparePshufd<0x2>(src);
+    rc = rc | loopComparePshufd<0x3>(src);
+    rc = rc | loopComparePshufd<0x4>(src);
+    rc = rc | loopComparePshufd<0x5>(src);
+    rc = rc | loopComparePshufd<0x6>(src);
+    rc = rc | loopComparePshufd<0x7>(src);
+    rc = rc | loopComparePshufd<0x8>(src);
+    rc = rc | loopComparePshufd<0x9>(src);
+    rc = rc | loopComparePshufd<0xa>(src);
+    rc = rc | loopComparePshufd<0xb>(src);
+    rc = rc | loopComparePshufd<0xc>(src);
+    rc = rc | loopComparePshufd<0xd>(src);
+    rc = rc | loopComparePshufd<0xe>(src);
+    rc = rc | loopComparePshufd<0xf>(src);
+    return rc;
+}
 
 int main() {
-    int rc = 0;
     u128 src { 0x89abcdef, 0x1234567 };
-    rc |= comparePshufd<0x44>(src);
+    int rc = loopComparePshufd(src);
     return rc;
 }
