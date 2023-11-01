@@ -481,6 +481,7 @@ namespace x64 {
         void exec(const Cmp<M8, Imm>&) override;
         void exec(const Cmp<R16, R16>&) override;
         void exec(const Cmp<R16, Imm>&) override;
+        void exec(const Cmp<R16, M16>&) override;
         void exec(const Cmp<M16, R16>&) override;
         void exec(const Cmp<M16, Imm>&) override;
         void exec(const Cmp<R32, R32>&) override;

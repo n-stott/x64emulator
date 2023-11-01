@@ -1303,6 +1303,7 @@ namespace x64 {
 
     void Cpu::exec(const Cmp<R16, R16>& ins) { execSub16Impl(get(ins.src1), get(ins.src2)); }
     void Cpu::exec(const Cmp<R16, Imm>& ins) { execSub16Impl(get(ins.src1), get<u16>(ins.src2)); }
+    void Cpu::exec(const Cmp<R16, M16>& ins) { execSub16Impl(get(ins.src1), get(resolve(ins.src2))); }
     void Cpu::exec(const Cmp<M16, R16>& ins) { execSub16Impl(get(resolve(ins.src1)), get(ins.src2)); }
     void Cpu::exec(const Cmp<M16, Imm>& ins) { execSub16Impl(get(resolve(ins.src1)), get<u16>(ins.src2)); }
 
