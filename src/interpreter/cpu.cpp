@@ -890,32 +890,24 @@ namespace x64 {
 
     void Cpu::exec(const CallIndirect<R32>& ins) {
         u64 address = get(ins.src);
-        auto func = interpreter_->symbolProvider_->lookupSymbol(address, true);
-        if(func) fmt::print(stderr, "Call {:#x}:{}\n", address, func.value());
         push64(regs_.rip_);
         interpreter_->call(address);
     }
 
     void Cpu::exec(const CallIndirect<M32>& ins) {
         u64 address = get(resolve(ins.src));
-        auto func = interpreter_->symbolProvider_->lookupSymbol(address, true);
-        if(func) fmt::print(stderr, "Call {:#x}:{}\n", address, func.value());
         push64(regs_.rip_);
         interpreter_->call(address);
     }
 
     void Cpu::exec(const CallIndirect<R64>& ins) {
         u64 address = get(ins.src);
-        auto func = interpreter_->symbolProvider_->lookupSymbol(address, true);
-        if(func) fmt::print(stderr, "Call {:#x}:{}\n", address, func.value());
         push64(regs_.rip_);
         interpreter_->call(address);
     }
 
     void Cpu::exec(const CallIndirect<M64>& ins) {
         u64 address = get(resolve(ins.src));
-        auto func = interpreter_->symbolProvider_->lookupSymbol(address, true);
-        if(func) fmt::print(stderr, "Call {:#x}:{}\n", address, func.value());
         push64(regs_.rip_);
         interpreter_->call(address);
     }
