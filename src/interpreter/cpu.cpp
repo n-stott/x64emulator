@@ -2076,4 +2076,31 @@ namespace x64 {
         dst.hi = src.lo;
         set(ins.dst, dst);
     }
+
+    u128 Cpu::execPshufd(u128 src, u8 order) {
+        std::array<u32, 4> SRC;
+        static_assert(sizeof(SRC) == sizeof(u128));
+        ::memcpy(SRC.data(), &src, sizeof(u128));
+
+        std::array<u32, 4> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        DST[0] = SRC[(order >> 0) & 0xFF];
+        DST[1] = SRC[(order >> 2) & 0xFF];
+        DST[2] = SRC[(order >> 4) & 0xFF];
+        DST[3] = SRC[(order >> 6) & 0xFF];
+
+        u128 dst;
+        ::memcpy(&dst, DST.data(), sizeof(u128));
+        return dst;
+    }
+
+    void Cpu::exec(const Pshufd<RSSE, RSSE, Imm>& ins) {
+        u128 res = execPshufd(get(ins.src), get<u8>(ins.order));
+        set(ins.dst, res);
+    }
+
+    void Cpu::exec(const Pshufd<RSSE, MSSE, Imm>& ins) {
+        u128 res = execPshufd(get(resolve(ins.src)), get<u8>(ins.order));
+        set(ins.dst, res);
+    }
 }

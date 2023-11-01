@@ -470,6 +470,13 @@ namespace x64 {
         Dst dst;
         Src src;
     };
+
+    template<typename Dst, typename Src, typename Ord>
+    struct Pshufd {
+        Dst dst;
+        Src src;
+        Ord order;
+    };
 }
 
 #endif

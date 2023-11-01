@@ -701,6 +701,11 @@ namespace utils {
         return fmt::format("{:9}{},{}", "punpcklqdq", toString(ins.dst), toString(ins.src));
     }
 
+    template<typename Dst, typename Src, typename Ord>
+    inline std::string toString(Pshufd<Dst, Src, Ord> ins) {
+        return fmt::format("{:9}{},{},{}", "pshufd", toString(ins.dst), toString(ins.src), toString(ins.order));
+    }
+
 }
 }
 
