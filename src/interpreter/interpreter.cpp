@@ -149,6 +149,7 @@ namespace x64 {
         VerificationScope::run([&]() {
             setupStack();
             runInit();
+            if(stop_) return;
             pushProgramArguments(programFilePath, arguments);
             executeMain();
         }, [&]() {
