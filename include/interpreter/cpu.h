@@ -36,6 +36,31 @@ namespace x64 {
 
             static u32 neg32(u32 dst, Flags* flags);
             static u64 neg64(u64 dst, Flags* flags);
+
+            static u8 inc8(u8 src, Flags* flags);
+            static u16 inc16(u16 src, Flags* flags);
+            static u32 inc32(u32 src, Flags* flags);
+
+            static u32 dec32(u32 src, Flags* flags);
+            
+            static void test8(u8 src1, u8 src2, Flags* flags);
+            static void test16(u16 src1, u16 src2, Flags* flags);
+            static void test32(u32 src1, u32 src2, Flags* flags);
+            static void test64(u64 src1, u64 src2, Flags* flags);
+
+            static u8 and8(u8 dst, u8 src, Flags* flags);
+            static u16 and16(u16 dst, u16 src, Flags* flags);
+            static u32 and32(u32 dst, u32 src, Flags* flags);
+            static u64 and64(u64 dst, u64 src, Flags* flags);
+
+            static u8 shr8(u8 dst, u8 src, Flags* flags);
+            static u16 shr16(u16 dst, u16 src, Flags* flags);
+            static u32 shr32(u32 dst, u32 src, Flags* flags);
+            static u64 shr64(u64 dst, u64 src, Flags* flags);
+
+            static u32 sar32(u32 dst, u32 src, Flags* flags);
+            static u64 sar64(u64 dst, u64 src, Flags* flags);
+
         };
 
     private:
@@ -112,29 +137,6 @@ namespace x64 {
         std::pair<u32, u32> execIdiv32(u32 dividendUpper, u32 dividendLower, u32 divisor);
         std::pair<u64, u64> execIdiv64(u64 dividendUpper, u64 dividendLower, u64 divisor);
 
-        u8 execInc8Impl(u8 src);
-        u16 execInc16Impl(u16 src);
-        u32 execInc32Impl(u32 src);
-
-        u32 execDec32Impl(u32 src);
-        
-        void execTest8Impl(u8 src1, u8 src2);
-        void execTest16Impl(u16 src1, u16 src2);
-        void execTest32Impl(u32 src1, u32 src2);
-        void execTest64Impl(u64 src1, u64 src2);
-
-        u8 execAnd8Impl(u8 dst, u8 src);
-        u16 execAnd16Impl(u16 dst, u16 src);
-        u32 execAnd32Impl(u32 dst, u32 src);
-        u64 execAnd64Impl(u64 dst, u64 src);
-
-        u8 execShr8Impl(u8 dst, u8 src);
-        u16 execShr16Impl(u16 dst, u16 src);
-        u32 execShr32Impl(u32 dst, u32 src);
-        u64 execShr64Impl(u64 dst, u64 src);
-
-        u32 execSar32Impl(u32 dst, u32 src);
-        u64 execSar64Impl(u64 dst, u64 src);
 
         template<typename Dst>
         void execSet(Cond cond, Dst dst);
