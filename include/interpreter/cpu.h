@@ -18,83 +18,106 @@ namespace x64 {
         }
 
         struct Impl {
-            static u8 add8(u8 dst, u8 src, Flags* flags);
-            static u16 add16(u16 dst, u16 src, Flags* flags);
-            static u32 add32(u32 dst, u32 src, Flags* flags);
-            static u64 add64(u64 dst, u64 src, Flags* flags);
+            [[nodiscard]] static u8 add8(u8 dst, u8 src, Flags* flags);
+            [[nodiscard]] static u16 add16(u16 dst, u16 src, Flags* flags);
+            [[nodiscard]] static u32 add32(u32 dst, u32 src, Flags* flags);
+            [[nodiscard]] static u64 add64(u64 dst, u64 src, Flags* flags);
 
-            static u8 adc8(u8 dst, u8 src, Flags* flags);
-            static u16 adc16(u16 dst, u16 src, Flags* flags);
-            static u32 adc32(u32 dst, u32 src, Flags* flags);
+            [[nodiscard]] static u8 adc8(u8 dst, u8 src, Flags* flags);
+            [[nodiscard]] static u16 adc16(u16 dst, u16 src, Flags* flags);
+            [[nodiscard]] static u32 adc32(u32 dst, u32 src, Flags* flags);
 
-            static u8 sub8(u8 src1, u8 src2, Flags* flags);
-            static u16 sub16(u16 src1, u16 src2, Flags* flags);
-            static u32 sub32(u32 src1, u32 src2, Flags* flags);
-            static u64 sub64(u64 src1, u64 src2, Flags* flags);
+            [[nodiscard]] static u8 sub8(u8 src1, u8 src2, Flags* flags);
+            [[nodiscard]] static u16 sub16(u16 src1, u16 src2, Flags* flags);
+            [[nodiscard]] static u32 sub32(u32 src1, u32 src2, Flags* flags);
+            [[nodiscard]] static u64 sub64(u64 src1, u64 src2, Flags* flags);
 
-            static std::pair<u32, u32> mul32(u32 src1, u32 src2, Flags* flags);
-            static std::pair<u64, u64> mul64(u64 src1, u64 src2, Flags* flags);
+            [[nodiscard]] static std::pair<u32, u32> mul32(u32 src1, u32 src2, Flags* flags);
+            [[nodiscard]] static std::pair<u64, u64> mul64(u64 src1, u64 src2, Flags* flags);
 
-            static u32 imul32(u32 src1, u32 src2, Flags* flags);
-            static u64 imul64(u64 src1, u64 src2, Flags* flags);
+            [[nodiscard]] static std::pair<u32, u32> imul32(u32 src1, u32 src2, Flags* flags);
+            [[nodiscard]] static std::pair<u64, u64> imul64(u64 src1, u64 src2, Flags* flags);
 
-            static u32 sbb32(u32 dst, u32 src, Flags* flags);
+            [[nodiscard]] static std::pair<u32, u32> div32(u32 dividendUpper, u32 dividendLower, u32 divisor);
+            [[nodiscard]] static std::pair<u64, u64> div64(u64 dividendUpper, u64 dividendLower, u64 divisor);
 
-            static u32 neg32(u32 dst, Flags* flags);
-            static u64 neg64(u64 dst, Flags* flags);
+            [[nodiscard]] static std::pair<u32, u32> idiv32(u32 dividendUpper, u32 dividendLower, u32 divisor);
+            [[nodiscard]] static std::pair<u64, u64> idiv64(u64 dividendUpper, u64 dividendLower, u64 divisor);
 
-            static u8 inc8(u8 src, Flags* flags);
-            static u16 inc16(u16 src, Flags* flags);
-            static u32 inc32(u32 src, Flags* flags);
+            [[nodiscard]] static u32 sbb32(u32 dst, u32 src, Flags* flags);
 
-            static u32 dec32(u32 src, Flags* flags);
+            [[nodiscard]] static u32 neg32(u32 dst, Flags* flags);
+            [[nodiscard]] static u64 neg64(u64 dst, Flags* flags);
+
+            [[nodiscard]] static u8 inc8(u8 src, Flags* flags);
+            [[nodiscard]] static u16 inc16(u16 src, Flags* flags);
+            [[nodiscard]] static u32 inc32(u32 src, Flags* flags);
+
+            [[nodiscard]] static u32 dec32(u32 src, Flags* flags);
+
+            static void cmp8(u8 src1, u8 src2, Flags* flags);
+            static void cmp16(u16 src1, u16 src2, Flags* flags);
+            static void cmp32(u32 src1, u32 src2, Flags* flags);
+            static void cmp64(u64 src1, u64 src2, Flags* flags);
             
             static void test8(u8 src1, u8 src2, Flags* flags);
             static void test16(u16 src1, u16 src2, Flags* flags);
             static void test32(u32 src1, u32 src2, Flags* flags);
             static void test64(u64 src1, u64 src2, Flags* flags);
 
-            static u8 and8(u8 dst, u8 src, Flags* flags);
-            static u16 and16(u16 dst, u16 src, Flags* flags);
-            static u32 and32(u32 dst, u32 src, Flags* flags);
-            static u64 and64(u64 dst, u64 src, Flags* flags);
+            static void bt16(u16 base, u16 index, Flags* flags);
+            static void bt32(u32 base, u32 index, Flags* flags);
+            static void bt64(u64 base, u64 index, Flags* flags);
+            
+            static void cmpxchg32(u32 rax, u32 dest, Flags* flags);
+            static void cmpxchg64(u64 rax, u64 dest, Flags* flags);
 
-            static u8 or8(u8 dst, u8 src, Flags* flags);
-            static u16 or16(u16 dst, u16 src, Flags* flags);
-            static u32 or32(u32 dst, u32 src, Flags* flags);
-            static u64 or64(u64 dst, u64 src, Flags* flags);
+            [[nodiscard]] static u8 and8(u8 dst, u8 src, Flags* flags);
+            [[nodiscard]] static u16 and16(u16 dst, u16 src, Flags* flags);
+            [[nodiscard]] static u32 and32(u32 dst, u32 src, Flags* flags);
+            [[nodiscard]] static u64 and64(u64 dst, u64 src, Flags* flags);
 
-            static u8 xor8(u8 dst, u8 src, Flags* flags);
-            static u16 xor16(u16 dst, u16 src, Flags* flags);
-            static u32 xor32(u32 dst, u32 src, Flags* flags);
-            static u64 xor64(u64 dst, u64 src, Flags* flags);
+            [[nodiscard]] static u8 or8(u8 dst, u8 src, Flags* flags);
+            [[nodiscard]] static u16 or16(u16 dst, u16 src, Flags* flags);
+            [[nodiscard]] static u32 or32(u32 dst, u32 src, Flags* flags);
+            [[nodiscard]] static u64 or64(u64 dst, u64 src, Flags* flags);
 
-            static u8 shr8(u8 dst, u8 src, Flags* flags);
-            static u16 shr16(u16 dst, u16 src, Flags* flags);
-            static u32 shr32(u32 dst, u32 src, Flags* flags);
-            static u64 shr64(u64 dst, u64 src, Flags* flags);
+            [[nodiscard]] static u8 xor8(u8 dst, u8 src, Flags* flags);
+            [[nodiscard]] static u16 xor16(u16 dst, u16 src, Flags* flags);
+            [[nodiscard]] static u32 xor32(u32 dst, u32 src, Flags* flags);
+            [[nodiscard]] static u64 xor64(u64 dst, u64 src, Flags* flags);
 
-            static u32 sar32(u32 dst, u32 src, Flags* flags);
-            static u64 sar64(u64 dst, u64 src, Flags* flags);
+            [[nodiscard]] static u8 shr8(u8 dst, u8 src, Flags* flags);
+            [[nodiscard]] static u16 shr16(u16 dst, u16 src, Flags* flags);
+            [[nodiscard]] static u32 shr32(u32 dst, u32 src, Flags* flags);
+            [[nodiscard]] static u64 shr64(u64 dst, u64 src, Flags* flags);
 
-            static u16 tzcnt16(u16 src, Flags* flags);
-            static u32 tzcnt32(u32 src, Flags* flags);
-            static u64 tzcnt64(u64 src, Flags* flags);
+            [[nodiscard]] static u32 sar32(u32 dst, u32 src, Flags* flags);
+            [[nodiscard]] static u64 sar64(u64 dst, u64 src, Flags* flags);
 
-            static u32 addss(u32 dst, u32 src, Flags* flags);
-            static u64 addsd(u64 dst, u64 src, Flags* flags);
+            [[nodiscard]] static u32 bsr32(u32 val, Flags* flags);
+            [[nodiscard]] static u64 bsr64(u64 val, Flags* flags);
 
-            static u32 subss(u32 dst, u32 src, Flags* flags);
-            static u64 subsd(u64 dst, u64 src, Flags* flags);
+            [[nodiscard]] static u32 bsf32(u32 val, Flags* flags);
 
-            static u64 mulsd(u64 dst, u64 src);
+            [[nodiscard]] static u16 tzcnt16(u16 src, Flags* flags);
+            [[nodiscard]] static u32 tzcnt32(u32 src, Flags* flags);
+            [[nodiscard]] static u64 tzcnt64(u64 src, Flags* flags);
 
-            static u64 cvtsi2sd32(u32 src);
-            static u64 cvtsi2sd64(u64 src);
+            [[nodiscard]] static u32 addss(u32 dst, u32 src, Flags* flags);
+            [[nodiscard]] static u64 addsd(u64 dst, u64 src, Flags* flags);
 
-            static u64 cvtss2sd(u32 src);
+            [[nodiscard]] static u32 subss(u32 dst, u32 src, Flags* flags);
+            [[nodiscard]] static u64 subsd(u64 dst, u64 src, Flags* flags);
 
-            static u128 pshufd(u128 src, u8 order);
+            [[nodiscard]] static u64 mulsd(u64 dst, u64 src);
+
+            [[nodiscard]] static u64 cvtsi2sd32(u32 src);
+            [[nodiscard]] static u64 cvtsi2sd64(u64 src);
+
+            [[nodiscard]] static u64 cvtss2sd(u32 src);
+
+            [[nodiscard]] static u128 pshufd(u128 src, u8 order);
 
         };
 
@@ -159,15 +182,6 @@ namespace x64 {
         u32 pop32();
         u64 pop64();
 
-        void execImul32(u32 src);
-        void execImul64(u64 src);
-
-        std::pair<u32, u32> execDiv32(u32 dividendUpper, u32 dividendLower, u32 divisor);
-        std::pair<u64, u64> execDiv64(u64 dividendUpper, u64 dividendLower, u64 divisor);
-        std::pair<u32, u32> execIdiv32(u32 dividendUpper, u32 dividendLower, u32 divisor);
-        std::pair<u64, u64> execIdiv64(u64 dividendUpper, u64 dividendLower, u64 divisor);
-
-
         template<typename Dst>
         void execSet(Cond cond, Dst dst);
 
@@ -175,10 +189,10 @@ namespace x64 {
         void execCmovImpl(Cond cond, Dst dst, Src src);
 
         template<typename Dst>
-        void execCmpxchg32Impl(Dst dst, R32 src);
+        void execCmpxchg32Impl(Dst dst, u32 src);
 
         template<typename Dst>
-        void execCmpxchg64Impl(Dst dst, R64 src);
+        void execCmpxchg64Impl(Dst dst, u64 src);
 
     public:
         void exec(const Add<R8, R8>&) override;
