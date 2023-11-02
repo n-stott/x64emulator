@@ -61,6 +61,25 @@ namespace x64 {
             static u32 sar32(u32 dst, u32 src, Flags* flags);
             static u64 sar64(u64 dst, u64 src, Flags* flags);
 
+            static u16 tzcnt16(u16 src, Flags* flags);
+            static u32 tzcnt32(u32 src, Flags* flags);
+            static u64 tzcnt64(u64 src, Flags* flags);
+
+            static u32 addss(u32 dst, u32 src, Flags* flags);
+            static u64 addsd(u64 dst, u64 src, Flags* flags);
+
+            static u32 subss(u32 dst, u32 src, Flags* flags);
+            static u64 subsd(u64 dst, u64 src, Flags* flags);
+
+            static u64 mulsd(u64 dst, u64 src);
+
+            static u64 cvtsi2sd32(u32 src);
+            static u64 cvtsi2sd64(u64 src);
+
+            static u64 cvtss2sd(u32 src);
+
+            static u128 pshufd(u128 src, u8 order);
+
         };
 
     private:
@@ -440,10 +459,6 @@ namespace x64 {
         void exec(const Rol<R32, Imm>&) override;
         void exec(const Rol<M32, Imm>&) override;
 
-        u16 execTzcnt16Impl(u16 src);
-        u32 execTzcnt32Impl(u32 src);
-        u64 execTzcnt64Impl(u64 src);
-
         void exec(const Tzcnt<R16, R16>&) override;
         void exec(const Tzcnt<R16, M16>&) override;
         void exec(const Tzcnt<R32, R32>&) override;
@@ -642,24 +657,16 @@ namespace x64 {
 
         void exec(const Movsd<RSSE, M64>&) override;
         void exec(const Movsd<M64, RSSE>&) override;
-
-        u32 execAddssImpl(u32 dst, u32 src);
-        u64 execAddsdImpl(u64 dst, u64 src);
         
         void exec(const Addss<RSSE, RSSE>&) override;
         void exec(const Addss<RSSE, M32>&) override;
         void exec(const Addsd<RSSE, RSSE>&) override;
         void exec(const Addsd<RSSE, M64>&) override;
 
-        u32 execSubssImpl(u32 dst, u32 src);
-        u64 execSubsdImpl(u64 dst, u64 src);
-
         void exec(const Subsd<RSSE, RSSE>&) override;
         void exec(const Subsd<RSSE, M64>&) override;
         void exec(const Subss<RSSE, RSSE>&) override;
         void exec(const Subss<RSSE, M32>&) override;
-
-        u64 execMulsdImpl(u64 dst, u64 src);
 
         void exec(const Mulsd<RSSE, RSSE>&) override;
         void exec(const Mulsd<RSSE, M64>&) override;
@@ -673,11 +680,6 @@ namespace x64 {
         void exec(const Ucomisd<RSSE, RSSE>&) override;
         void exec(const Ucomisd<RSSE, M64>&) override;
 
-        u64 execCvtsi2sd32Impl(u32 src);
-        u64 execCvtsi2sd64Impl(u64 src);
-
-        u64 execCvtss2sdImpl(u32 src);
-
         void exec(const Cvtsi2sd<RSSE, R32>&) override;
         void exec(const Cvtsi2sd<RSSE, M32>&) override;
         void exec(const Cvtsi2sd<RSSE, R64>&) override;
@@ -689,8 +691,6 @@ namespace x64 {
         void exec(const Movhps<RSSE, M64>&) override;
 
         void exec(const Punpcklqdq<RSSE, RSSE>&) override;
-
-        static u128 execPshufd(u128 src, u8 order);
 
         void exec(const Pshufd<RSSE, RSSE, Imm>&) override;
         void exec(const Pshufd<RSSE, MSSE, Imm>&) override;

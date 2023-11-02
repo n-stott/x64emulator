@@ -1183,46 +1183,46 @@ namespace x64 {
     void Cpu::exec(const Rol<R32, Imm>& ins) { TODO(ins); }
     void Cpu::exec(const Rol<M32, Imm>& ins) { TODO(ins); }
 
-    u16 Cpu::execTzcnt16Impl(u16 src) {
+    u16 Cpu::Impl::tzcnt16(u16 src, Flags* flags) {
         u16 tmp = 0;
         u16 res = 0;
         while(tmp < 16 && ((src >> tmp) & 0x1) == 0) {
             ++tmp;
             ++res;
         }
-        flags_.carry = (res == 16);
-        flags_.zero = (res == 0);
+        flags->carry = (res == 16);
+        flags->zero = (res == 0);
         return res;
     }
-    u32 Cpu::execTzcnt32Impl(u32 src) {
+    u32 Cpu::Impl::tzcnt32(u32 src, Flags* flags) {
         u32 tmp = 0;
         u32 res = 0;
         while(tmp < 32 && ((src >> tmp) & 0x1) == 0) {
             ++tmp;
             ++res;
         }
-        flags_.carry = (res == 32);
-        flags_.zero = (res == 0);
+        flags->carry = (res == 32);
+        flags->zero = (res == 0);
         return res;
     }
-    u64 Cpu::execTzcnt64Impl(u64 src) {
+    u64 Cpu::Impl::tzcnt64(u64 src, Flags* flags) {
         u64 tmp = 0;
         u64 res = 0;
         while(tmp < 64 && ((src >> tmp) & 0x1) == 0) {
             ++tmp;
             ++res;
         }
-        flags_.carry = (res == 64);
-        flags_.zero = (res == 0);
+        flags->carry = (res == 64);
+        flags->zero = (res == 0);
         return res;
     }
 
-    void Cpu::exec(const Tzcnt<R16, R16>& ins) { set(ins.dst, execTzcnt16Impl(get(ins.src))); }
-    void Cpu::exec(const Tzcnt<R16, M16>& ins) { set(ins.dst, execTzcnt16Impl(get(resolve(ins.src)))); }
-    void Cpu::exec(const Tzcnt<R32, R32>& ins) { set(ins.dst, execTzcnt32Impl(get(ins.src))); }
-    void Cpu::exec(const Tzcnt<R32, M32>& ins) { set(ins.dst, execTzcnt32Impl(get(resolve(ins.src)))); }
-    void Cpu::exec(const Tzcnt<R64, R64>& ins) { set(ins.dst, execTzcnt64Impl(get(ins.src))); }
-    void Cpu::exec(const Tzcnt<R64, M64>& ins) { set(ins.dst, execTzcnt64Impl(get(resolve(ins.src)))); }
+    void Cpu::exec(const Tzcnt<R16, R16>& ins) { set(ins.dst, Impl::tzcnt16(get(ins.src), &flags_)); }
+    void Cpu::exec(const Tzcnt<R16, M16>& ins) { set(ins.dst, Impl::tzcnt16(get(resolve(ins.src)), &flags_)); }
+    void Cpu::exec(const Tzcnt<R32, R32>& ins) { set(ins.dst, Impl::tzcnt32(get(ins.src), &flags_)); }
+    void Cpu::exec(const Tzcnt<R32, M32>& ins) { set(ins.dst, Impl::tzcnt32(get(resolve(ins.src)), &flags_)); }
+    void Cpu::exec(const Tzcnt<R64, R64>& ins) { set(ins.dst, Impl::tzcnt64(get(ins.src), &flags_)); }
+    void Cpu::exec(const Tzcnt<R64, M64>& ins) { set(ins.dst, Impl::tzcnt64(get(resolve(ins.src)), &flags_)); }
     
     void Cpu::exec(const Bt<R16, R16>& ins) { flags_.carry = (get(ins.base) << (get(ins.offset) % 16)) & 0x1; }
     void Cpu::exec(const Bt<R16, Imm>& ins) { flags_.carry = (get(ins.base) << (get<u16>(ins.offset) % 16)) & 0x1; }
@@ -1789,7 +1789,7 @@ namespace x64 {
     void Cpu::exec(const Movsd<M64, RSSE>& ins) { set(resolve(ins.dst), narrow<u64, Xmm>(get(ins.src))); }
 
 
-    u32 Cpu::execAddssImpl(u32 dst, u32 src) {
+    u32 Cpu::Impl::addss(u32 dst, u32 src, Flags* flags) {
         static_assert(sizeof(u32) == sizeof(float));
         float d;
         float s;
@@ -1798,11 +1798,11 @@ namespace x64 {
         float res = d + s;
         u32 r;
         ::memcpy(&r, &res, sizeof(r));
-        flags_.setUnsure();
+        flags->setUnsure();
         return r;
     }
 
-    u64 Cpu::execAddsdImpl(u64 dst, u64 src) {
+    u64 Cpu::Impl::addsd(u64 dst, u64 src, Flags* flags) {
         static_assert(sizeof(u64) == sizeof(double));
         double d;
         double s;
@@ -1811,35 +1811,35 @@ namespace x64 {
         double res = d + s;
         u64 r;
         ::memcpy(&r, &res, sizeof(r));
-        flags_.setUnsure();
+        flags->setUnsure();
         return r;
     }
 
     void Cpu::exec(const Addss<RSSE, RSSE>& ins) {
         WARN_ROUNDING_MODE();
-        u32 res = execAddssImpl(narrow<u32, Xmm>(get(ins.dst)), narrow<u32, Xmm>(get(ins.src)));
+        u32 res = Impl::addss(narrow<u32, Xmm>(get(ins.dst)), narrow<u32, Xmm>(get(ins.src)), &flags_);
         set(ins.dst, zeroExtend<Xmm, u32>(res));
     }
 
     void Cpu::exec(const Addss<RSSE, M32>& ins) {
         WARN_ROUNDING_MODE();
-        u32 res = execAddssImpl(narrow<u32, Xmm>(get(ins.dst)), get(resolve(ins.src)));
+        u32 res = Impl::addss(narrow<u32, Xmm>(get(ins.dst)), get(resolve(ins.src)), &flags_);
         set(ins.dst, zeroExtend<Xmm, u32>(res));
     }
 
     void Cpu::exec(const Addsd<RSSE, RSSE>& ins) {
         WARN_ROUNDING_MODE();
-        u64 res = execAddsdImpl(narrow<u64, Xmm>(get(ins.dst)), narrow<u64, Xmm>(get(ins.src)));
+        u64 res = Impl::addsd(narrow<u64, Xmm>(get(ins.dst)), narrow<u64, Xmm>(get(ins.src)), &flags_);
         set(ins.dst, zeroExtend<Xmm, u64>(res));
     }
 
     void Cpu::exec(const Addsd<RSSE, M64>& ins) {
         WARN_ROUNDING_MODE();
-        u64 res = execAddsdImpl(narrow<u64, Xmm>(get(ins.dst)), get(resolve(ins.src)));
+        u64 res = Impl::addsd(narrow<u64, Xmm>(get(ins.dst)), get(resolve(ins.src)), &flags_);
         set(ins.dst, zeroExtend<Xmm, u64>(res));
     }
 
-    u32 Cpu::execSubssImpl(u32 dst, u32 src) {
+    u32 Cpu::Impl::subss(u32 dst, u32 src, Flags* flags) {
         static_assert(sizeof(u32) == sizeof(float));
         float d;
         float s;
@@ -1849,29 +1849,29 @@ namespace x64 {
         u32 r;
         ::memcpy(&r, &res, sizeof(r));
         if(d == s) {
-            flags_.zero = true;
-            flags_.parity = false;
-            flags_.carry = false;
+            flags->zero = true;
+            flags->parity = false;
+            flags->carry = false;
         } else if(res != res) {
-            flags_.zero = true;
-            flags_.parity = true;
-            flags_.carry = true;
+            flags->zero = true;
+            flags->parity = true;
+            flags->carry = true;
         } else if(res > 0.0) {
-            flags_.zero = false;
-            flags_.parity = false;
-            flags_.carry = false;
+            flags->zero = false;
+            flags->parity = false;
+            flags->carry = false;
         } else if(res < 0.0) {
-            flags_.zero = false;
-            flags_.parity = false;
-            flags_.carry = true;
+            flags->zero = false;
+            flags->parity = false;
+            flags->carry = true;
         }
-        flags_.overflow = false;
-        flags_.sign = false;
-        flags_.setSure();
+        flags->overflow = false;
+        flags->sign = false;
+        flags->setSure();
         return r;
     }
 
-    u64 Cpu::execSubsdImpl(u64 dst, u64 src) {
+    u64 Cpu::Impl::subsd(u64 dst, u64 src, Flags* flags) {
         static_assert(sizeof(u64) == sizeof(double));
         double d;
         double s;
@@ -1881,56 +1881,56 @@ namespace x64 {
         u64 r;
         ::memcpy(&r, &res, sizeof(r));
         if(d == s) {
-            flags_.zero = true;
-            flags_.parity = false;
-            flags_.carry = false;
+            flags->zero = true;
+            flags->parity = false;
+            flags->carry = false;
         } else if(res != res) {
-            flags_.zero = true;
-            flags_.parity = true;
-            flags_.carry = true;
+            flags->zero = true;
+            flags->parity = true;
+            flags->carry = true;
         } else if(res > 0.0) {
-            flags_.zero = false;
-            flags_.parity = false;
-            flags_.carry = false;
+            flags->zero = false;
+            flags->parity = false;
+            flags->carry = false;
         } else if(res < 0.0) {
-            flags_.zero = false;
-            flags_.parity = false;
-            flags_.carry = true;
+            flags->zero = false;
+            flags->parity = false;
+            flags->carry = true;
         }
-        flags_.overflow = false;
-        flags_.sign = false;
-        flags_.setSure();
-        flags_.setSureParity();
+        flags->overflow = false;
+        flags->sign = false;
+        flags->setSure();
+        flags->setSureParity();
         return r;
     }
 
     void Cpu::exec(const Subss<RSSE, RSSE>& ins) {
         WARN_ROUNDING_MODE();
-        u32 res = execSubssImpl(narrow<u32, Xmm>(get(ins.dst)), narrow<u32, Xmm>(get(ins.src)));
+        u32 res = Impl::subss(narrow<u32, Xmm>(get(ins.dst)), narrow<u32, Xmm>(get(ins.src)), &flags_);
         set(ins.dst, zeroExtend<Xmm, u32>(res));
     }
 
     void Cpu::exec(const Subss<RSSE, M32>& ins) {
         WARN_ROUNDING_MODE();
-        u32 res = execSubssImpl(narrow<u32, Xmm>(get(ins.dst)), get(resolve(ins.src)));
+        u32 res = Impl::subss(narrow<u32, Xmm>(get(ins.dst)), get(resolve(ins.src)), &flags_);
         set(ins.dst, zeroExtend<Xmm, u32>(res));
     }
 
     void Cpu::exec(const Subsd<RSSE, RSSE>& ins) {
         WARN_ROUNDING_MODE();
-        u64 res = execSubsdImpl(narrow<u64, Xmm>(get(ins.dst)), narrow<u64, Xmm>(get(ins.src)));
+        u64 res = Impl::subsd(narrow<u64, Xmm>(get(ins.dst)), narrow<u64, Xmm>(get(ins.src)), &flags_);
         set(ins.dst, zeroExtend<Xmm, u64>(res));
     }
 
     void Cpu::exec(const Subsd<RSSE, M64>& ins) {
         WARN_ROUNDING_MODE();
-        u64 res = execSubsdImpl(narrow<u64, Xmm>(get(ins.dst)), get(resolve(ins.src)));
+        u64 res = Impl::subsd(narrow<u64, Xmm>(get(ins.dst)), get(resolve(ins.src)), &flags_);
         set(ins.dst, zeroExtend<Xmm, u64>(res));
     }
 
 
 
-    u64 Cpu::execMulsdImpl(u64 dst, u64 src) {
+    u64 Cpu::Impl::mulsd(u64 dst, u64 src) {
         static_assert(sizeof(u64) == sizeof(double));
         double d;
         double s;
@@ -1944,62 +1944,62 @@ namespace x64 {
 
     void Cpu::exec(const Mulsd<RSSE, RSSE>& ins) {
         WARN_ROUNDING_MODE();
-        u64 res = execMulsdImpl(narrow<u64, Xmm>(get(ins.dst)), narrow<u64, Xmm>(get(ins.src)));
+        u64 res = Impl::mulsd(narrow<u64, Xmm>(get(ins.dst)), narrow<u64, Xmm>(get(ins.src)));
         set(ins.dst, zeroExtend<Xmm, u64>(res));
     }
 
     void Cpu::exec(const Mulsd<RSSE, M64>& ins) {
         WARN_ROUNDING_MODE();
-        u64 res = execMulsdImpl(narrow<u64, Xmm>(get(ins.dst)), get(resolve(ins.src)));
+        u64 res = Impl::mulsd(narrow<u64, Xmm>(get(ins.dst)), get(resolve(ins.src)));
         set(ins.dst, zeroExtend<Xmm, u64>(res));
     }
 
 
     void Cpu::exec(const Comiss<RSSE, RSSE>& ins) {
         WARN_ROUNDING_MODE();
-        execSubssImpl(narrow<u32, Xmm>(get(ins.dst)), narrow<u32, Xmm>(get(ins.src)));
+        Impl::subss(narrow<u32, Xmm>(get(ins.dst)), narrow<u32, Xmm>(get(ins.src)), &flags_);
     }
 
     void Cpu::exec(const Comiss<RSSE, M32>& ins) {
         WARN_ROUNDING_MODE();
-        execSubssImpl(narrow<u32, Xmm>(get(ins.dst)), get(resolve(ins.src)));
+        Impl::subss(narrow<u32, Xmm>(get(ins.dst)), get(resolve(ins.src)), &flags_);
     }
 
     void Cpu::exec(const Comisd<RSSE, RSSE>& ins) {
         WARN_ROUNDING_MODE();
-        execSubsdImpl(narrow<u64, Xmm>(get(ins.dst)), narrow<u64, Xmm>(get(ins.src)));
+        Impl::subsd(narrow<u64, Xmm>(get(ins.dst)), narrow<u64, Xmm>(get(ins.src)), &flags_);
     }
 
     void Cpu::exec(const Comisd<RSSE, M64>& ins) {
         WARN_ROUNDING_MODE();
-        execSubsdImpl(narrow<u64, Xmm>(get(ins.dst)), get(resolve(ins.src)));
+        Impl::subsd(narrow<u64, Xmm>(get(ins.dst)), get(resolve(ins.src)), &flags_);
     }
 
     void Cpu::exec(const Ucomiss<RSSE, RSSE>& ins) {
         WARN_ROUNDING_MODE();
         DEBUG_ONLY(fmt::print(stderr, "Ucomiss treated as comiss\n");)
-        execSubsdImpl(narrow<u32, Xmm>(get(ins.dst)), narrow<u32, Xmm>(get(ins.src)));
+        Impl::subsd(narrow<u32, Xmm>(get(ins.dst)), narrow<u32, Xmm>(get(ins.src)), &flags_);
     }
 
     void Cpu::exec(const Ucomiss<RSSE, M32>& ins) {
         WARN_ROUNDING_MODE();
         DEBUG_ONLY(fmt::print(stderr, "Ucomiss treated as comiss\n");)
-        execSubsdImpl(narrow<u32, Xmm>(get(ins.dst)), get(resolve(ins.src)));
+        Impl::subsd(narrow<u32, Xmm>(get(ins.dst)), get(resolve(ins.src)), &flags_);
     }
 
     void Cpu::exec(const Ucomisd<RSSE, RSSE>& ins) {
         WARN_ROUNDING_MODE();
         DEBUG_ONLY(fmt::print(stderr, "Ucomisd treated as comisd\n");)
-        execSubsdImpl(narrow<u64, Xmm>(get(ins.dst)), narrow<u64, Xmm>(get(ins.src)));
+        Impl::subsd(narrow<u64, Xmm>(get(ins.dst)), narrow<u64, Xmm>(get(ins.src)), &flags_);
     }
 
     void Cpu::exec(const Ucomisd<RSSE, M64>& ins) {
         WARN_ROUNDING_MODE();
         DEBUG_ONLY(fmt::print(stderr, "Ucomisd treated as comisd\n");)
-        execSubsdImpl(narrow<u64, Xmm>(get(ins.dst)), get(resolve(ins.src)));
+        Impl::subsd(narrow<u64, Xmm>(get(ins.dst)), get(resolve(ins.src)), &flags_);
     }
 
-    u64 Cpu::execCvtsi2sd32Impl(u32 src) {
+    u64 Cpu::Impl::cvtsi2sd32(u32 src) {
         i32 isrc = (i32)src;
         double res = (double)isrc;
         u64 r;
@@ -2007,7 +2007,7 @@ namespace x64 {
         return r;
     }
 
-    u64 Cpu::execCvtsi2sd64Impl(u64 src) {
+    u64 Cpu::Impl::cvtsi2sd64(u64 src) {
         i64 isrc = (i64)src;
         double res = (double)isrc;
         u64 r;
@@ -2016,23 +2016,23 @@ namespace x64 {
     }
 
     void Cpu::exec(const Cvtsi2sd<RSSE, R32>& ins) {
-        u64 res = execCvtsi2sd32Impl(get(ins.src));
+        u64 res = Impl::cvtsi2sd32(get(ins.src));
         set(ins.dst, writeLow<Xmm, u64>(get(ins.dst), res));
     }
     void Cpu::exec(const Cvtsi2sd<RSSE, M32>& ins) {
-        u64 res = execCvtsi2sd32Impl(get(resolve(ins.src)));
+        u64 res = Impl::cvtsi2sd32(get(resolve(ins.src)));
         set(ins.dst, writeLow<Xmm, u64>(get(ins.dst), res));
     }
     void Cpu::exec(const Cvtsi2sd<RSSE, R64>& ins) {
-        u64 res = execCvtsi2sd64Impl(get(ins.src));
+        u64 res = Impl::cvtsi2sd64(get(ins.src));
         set(ins.dst, writeLow<Xmm, u64>(get(ins.dst), res));
     }
     void Cpu::exec(const Cvtsi2sd<RSSE, M64>& ins) {
-        u64 res = execCvtsi2sd64Impl(get(resolve(ins.src)));
+        u64 res = Impl::cvtsi2sd64(get(resolve(ins.src)));
         set(ins.dst, writeLow<Xmm, u64>(get(ins.dst), res));
     }
 
-    u64 Cpu::execCvtss2sdImpl(u32 src) {
+    u64 Cpu::Impl::cvtss2sd(u32 src) {
         float tmp;
         static_assert(sizeof(src) == sizeof(tmp));
         ::mempcpy(&tmp, &src, sizeof(tmp));
@@ -2044,12 +2044,12 @@ namespace x64 {
 
     void Cpu::exec(const Cvtss2sd<RSSE, RSSE>& ins) {
         u32 low = (u32)get(ins.src).lo;
-        u64 res = execCvtss2sdImpl(low);
+        u64 res = Impl::cvtss2sd(low);
         set(ins.dst, writeLow<Xmm, u64>(get(ins.dst), res));
     }
 
     void Cpu::exec(const Cvtss2sd<RSSE, M32>& ins) {
-        u64 res = execCvtss2sdImpl(get(resolve(ins.src)));
+        u64 res = Impl::cvtss2sd(get(resolve(ins.src)));
         set(ins.dst, writeLow<Xmm, u64>(get(ins.dst), res));
     }
 
@@ -2076,7 +2076,7 @@ namespace x64 {
         set(ins.dst, dst);
     }
 
-    u128 Cpu::execPshufd(u128 src, u8 order) {
+    u128 Cpu::Impl::pshufd(u128 src, u8 order) {
         std::array<u32, 4> SRC;
         static_assert(sizeof(SRC) == sizeof(u128));
         ::memcpy(SRC.data(), &src, sizeof(u128));
@@ -2094,12 +2094,12 @@ namespace x64 {
     }
 
     void Cpu::exec(const Pshufd<RSSE, RSSE, Imm>& ins) {
-        u128 res = execPshufd(get(ins.src), get<u8>(ins.order));
+        u128 res = Impl::pshufd(get(ins.src), get<u8>(ins.order));
         set(ins.dst, res);
     }
 
     void Cpu::exec(const Pshufd<RSSE, MSSE, Imm>& ins) {
-        u128 res = execPshufd(get(resolve(ins.src)), get<u8>(ins.order));
+        u128 res = Impl::pshufd(get(resolve(ins.src)), get<u8>(ins.order));
         set(ins.dst, res);
     }
 }
