@@ -116,7 +116,12 @@ namespace x64 {
     #define WARN_FLAGS() \
         flags_.setUnsure();\
         flags_.setUnsureParity();\
-        DEBUG_ONLY(if(interpreter_->logInstructions()) fmt::print(stderr, "Warning : flags not updated\n"))
+        DEBUG_ONLY(fmt::print(stderr, "Warning : flags not updated\n"))
+
+    #define WARN_FLAGS_IMPL() \
+        flags->setUnsure();\
+        flags->setUnsureParity();\
+        DEBUG_ONLY(fmt::print(stderr, "Warning : flags not updated\n"))
 
     #define WARN_FLAGS_UNSURE() \
         DEBUG_ONLY(fmt::print(stderr, "Warning : flags may be wrong\n"))
@@ -400,17 +405,17 @@ namespace x64 {
         set(resolve(ins.src), Impl::neg64(get(resolve(ins.src)), &flags_));
     }
 
-    std::pair<u32, u32> Cpu::execMul32(u32 src1, u32 src2) {
+    std::pair<u32, u32> Cpu::Impl::mul32(u32 src1, u32 src2, Flags* flags) {
         u64 prod = (u64)src1 * (u64)src2;
         u32 upper = static_cast<u32>(prod >> 32);
         u32 lower = (u32)prod;
-        flags_.overflow = !!upper;
-        flags_.carry = !!upper;
-        flags_.setUnsureParity();
+        flags->overflow = !!upper;
+        flags->carry = !!upper;
+        flags->setUnsureParity();
         return std::make_pair(upper, lower);
     }
 
-    std::pair<u64, u64> Cpu::execMul64(u64 src1, u64 src2) {
+    std::pair<u64, u64> Cpu::Impl::mul64(u64 src1, u64 src2, Flags* flags) {
         u64 a = (u64)(u32)(src1 >> 32);
         u64 b = (u64)(u32)src1;
         u64 c = (u64)(u32)(src2 >> 32);
@@ -425,41 +430,41 @@ namespace x64 {
         u64 lower = bd + (adbc << 32);
         u64 upper = ac + (adbc >> 32) + carry;
 
-        flags_.overflow = !!upper;
-        flags_.carry = !!upper;
-        flags_.setUnsureParity();
+        flags->overflow = !!upper;
+        flags->carry = !!upper;
+        flags->setUnsureParity();
         return std::make_pair(upper, lower);
     }
 
     void Cpu::exec(const Mul<R32>& ins) {
-        auto res = execMul32(get(R32::EAX), get(ins.src));
+        auto res = Impl::mul32(get(R32::EAX), get(ins.src), &flags_);
         set(R32::EDX, res.first);
         set(R32::EAX, res.second);
     }
     void Cpu::exec(const Mul<M32>& ins) {
-        auto res = execMul32(get(R32::EAX), get(resolve(ins.src)));
+        auto res = Impl::mul32(get(R32::EAX), get(resolve(ins.src)), &flags_);
         set(R32::EDX, res.first);
         set(R32::EAX, res.second);
     }
 
     void Cpu::exec(const Mul<R64>& ins) {
-        auto res = execMul64(get(R64::RAX), get(ins.src));
+        auto res = Impl::mul64(get(R64::RAX), get(ins.src), &flags_);
         set(R64::RDX, res.first);
         set(R64::RAX, res.second);
     }
     void Cpu::exec(const Mul<M64>& ins) {
-        auto res = execMul64(get(R64::RAX), get(resolve(ins.src)));
+        auto res = Impl::mul64(get(R64::RAX), get(resolve(ins.src)), &flags_);
         set(R64::RDX, res.first);
         set(R64::RAX, res.second);
     }
 
-    u32 Cpu::execImul32(u32 src1, u32 src2) {
+    u32 Cpu::Impl::imul32(u32 src1, u32 src2, Flags* flags) {
         i32 res = (i32)src1 * (i32)src2;
         i64 tmp = (i64)src1 * (i64)src2;
-        flags_.carry = (res != (i32)tmp);
-        flags_.overflow = (res != (i32)tmp);
-        flags_.setSure();
-        flags_.setUnsureParity();
+        flags->carry = (res != (i32)tmp);
+        flags->overflow = (res != (i32)tmp);
+        flags->setSure();
+        flags->setUnsureParity();
         return (u32)res;
     }
 
@@ -475,17 +480,17 @@ namespace x64 {
         set(R32::EAX, (u32)(tmp));
     }
 
-    u64 Cpu::execImul64(u64 src1, u64 src2) {
+    u64 Cpu::Impl::imul64(u64 src1, u64 src2, Flags* flags) {
         // THIS IS FALSE
         if((i32)src1 == (i64)src1 && (i32)src2 == (i64)src2) {
             i64 res = (i64)src1 * (i64)src2;
-            flags_.carry = false;
-            flags_.overflow = false;
+            flags->carry = false;
+            flags->overflow = false;
             return (u64)res;
         }
         i64 res = (i64)src1 * (i64)src2;
-        flags_.setUnsure();
-        flags_.setUnsureParity();
+        flags->setUnsure();
+        flags->setUnsureParity();
         return (u64)res;
     }
 
@@ -496,16 +501,16 @@ namespace x64 {
 
     void Cpu::exec(const Imul1<R32>& ins) { execImul32(get(ins.src)); }
     void Cpu::exec(const Imul1<M32>& ins) { execImul32(get(resolve(ins.src))); }
-    void Cpu::exec(const Imul2<R32, R32>& ins) { set(ins.dst, execImul32(get(ins.dst), get(ins.src))); }
-    void Cpu::exec(const Imul2<R32, M32>& ins) { set(ins.dst, execImul32(get(ins.dst), get(resolve(ins.src)))); }
-    void Cpu::exec(const Imul3<R32, R32, Imm>& ins) { set(ins.dst, execImul32(get(ins.src1), get<u32>(ins.src2))); }
-    void Cpu::exec(const Imul3<R32, M32, Imm>& ins) { set(ins.dst, execImul32(get(resolve(ins.src1)), get<u32>(ins.src2))); }
+    void Cpu::exec(const Imul2<R32, R32>& ins) { set(ins.dst, Impl::imul32(get(ins.dst), get(ins.src), &flags_)); }
+    void Cpu::exec(const Imul2<R32, M32>& ins) { set(ins.dst, Impl::imul32(get(ins.dst), get(resolve(ins.src)), &flags_)); }
+    void Cpu::exec(const Imul3<R32, R32, Imm>& ins) { set(ins.dst, Impl::imul32(get(ins.src1), get<u32>(ins.src2), &flags_)); }
+    void Cpu::exec(const Imul3<R32, M32, Imm>& ins) { set(ins.dst, Impl::imul32(get(resolve(ins.src1)), get<u32>(ins.src2), &flags_)); }
     void Cpu::exec(const Imul1<R64>& ins) { execImul64(get(ins.src)); }
     void Cpu::exec(const Imul1<M64>& ins) { execImul64(get(resolve(ins.src))); }
-    void Cpu::exec(const Imul2<R64, R64>& ins) { set(ins.dst, execImul64(get(ins.dst), get(ins.src))); }
-    void Cpu::exec(const Imul2<R64, M64>& ins) { set(ins.dst, execImul64(get(ins.dst), get(resolve(ins.src)))); }
-    void Cpu::exec(const Imul3<R64, R64, Imm>& ins) { set(ins.dst, execImul64(get(ins.src1), get<u64>(ins.src2))); }
-    void Cpu::exec(const Imul3<R64, M64, Imm>& ins) { set(ins.dst, execImul64(get(resolve(ins.src1)), get<u64>(ins.src2))); }
+    void Cpu::exec(const Imul2<R64, R64>& ins) { set(ins.dst, Impl::imul64(get(ins.dst), get(ins.src), &flags_)); }
+    void Cpu::exec(const Imul2<R64, M64>& ins) { set(ins.dst, Impl::imul64(get(ins.dst), get(resolve(ins.src)), &flags_)); }
+    void Cpu::exec(const Imul3<R64, R64, Imm>& ins) { set(ins.dst, Impl::imul64(get(ins.src1), get<u64>(ins.src2), &flags_)); }
+    void Cpu::exec(const Imul3<R64, M64, Imm>& ins) { set(ins.dst, Impl::imul64(get(resolve(ins.src1)), get<u64>(ins.src2), &flags_)); }
 
     std::pair<u32, u32> Cpu::execDiv32(u32 dividendUpper, u32 dividendLower, u32 divisor) {
         verify(divisor != 0);
@@ -642,104 +647,104 @@ namespace x64 {
     void Cpu::exec(const And<M64, R64>& ins) { set(resolve(ins.dst), Impl::and64(get(resolve(ins.dst)), get(ins.src), &flags_)); }
     void Cpu::exec(const And<M64, Imm>& ins) { set(resolve(ins.dst), Impl::and64(get(resolve(ins.dst)), get<u64>(ins.src), &flags_)); }
 
-    u8 Cpu::execOr8Impl(u8 dst, u8 src) {
+    u8 Cpu::Impl::or8(u8 dst, u8 src, Flags* flags) {
         u8 tmp = dst | src;
-        flags_.overflow = false;
-        flags_.carry = false;
-        flags_.sign = tmp & (1 << 7);
-        flags_.zero = (tmp == 0);
-        flags_.setSure();
-        flags_.setUnsureParity();
+        flags->overflow = false;
+        flags->carry = false;
+        flags->sign = tmp & (1 << 7);
+        flags->zero = (tmp == 0);
+        flags->setSure();
+        flags->setUnsureParity();
         return tmp;
     }
 
-    u16 Cpu::execOr16Impl(u16 dst, u16 src) {
+    u16 Cpu::Impl::or16(u16 dst, u16 src, Flags* flags) {
         u16 tmp = dst | src;
-        flags_.overflow = false;
-        flags_.carry = false;
-        flags_.sign = tmp & (1 << 15);
-        flags_.zero = (tmp == 0);
-        flags_.setSure();
-        flags_.setUnsureParity();
+        flags->overflow = false;
+        flags->carry = false;
+        flags->sign = tmp & (1 << 15);
+        flags->zero = (tmp == 0);
+        flags->setSure();
+        flags->setUnsureParity();
         return tmp;
     }
 
-    u32 Cpu::execOr32Impl(u32 dst, u32 src) {
+    u32 Cpu::Impl::or32(u32 dst, u32 src, Flags* flags) {
         u32 tmp = dst | src;
-        flags_.overflow = false;
-        flags_.carry = false;
-        flags_.sign = tmp & (1ul << 31);
-        flags_.zero = (tmp == 0);
-        flags_.setSure();
-        flags_.setUnsureParity();
+        flags->overflow = false;
+        flags->carry = false;
+        flags->sign = tmp & (1ul << 31);
+        flags->zero = (tmp == 0);
+        flags->setSure();
+        flags->setUnsureParity();
         return tmp;
     }
 
-    u64 Cpu::execOr64Impl(u64 dst, u64 src) {
+    u64 Cpu::Impl::or64(u64 dst, u64 src, Flags* flags) {
         u64 tmp = dst | src;
-        flags_.overflow = false;
-        flags_.carry = false;
-        flags_.sign = tmp & (1ull << 63);
-        flags_.zero = (tmp == 0);
-        flags_.setSure();
-        flags_.setUnsureParity();
+        flags->overflow = false;
+        flags->carry = false;
+        flags->sign = tmp & (1ull << 63);
+        flags->zero = (tmp == 0);
+        flags->setSure();
+        flags->setUnsureParity();
         return tmp;
     }
 
-    void Cpu::exec(const Or<R8, R8>& ins) { set(ins.dst, execOr8Impl(get(ins.dst), get(ins.src))); }
-    void Cpu::exec(const Or<R8, Imm>& ins) { set(ins.dst, execOr8Impl(get(ins.dst), get<u8>(ins.src))); }
-    void Cpu::exec(const Or<R8, M8>& ins) { set(ins.dst, execOr8Impl(get(ins.dst), get(resolve(ins.src)))); }
-    void Cpu::exec(const Or<M8, R8>& ins) { set(resolve(ins.dst), execOr8Impl(get(resolve(ins.dst)), get(ins.src))); }
-    void Cpu::exec(const Or<M8, Imm>& ins) { set(resolve(ins.dst), execOr8Impl(get(resolve(ins.dst)), get<u8>(ins.src))); }
-    void Cpu::exec(const Or<M16, R16>& ins) { set(resolve(ins.dst), execOr16Impl(get(resolve(ins.dst)), get(ins.src))); }
-    void Cpu::exec(const Or<R16, M16>& ins) { set(ins.dst, execOr16Impl(get(ins.dst), get(resolve(ins.src)))); }
-    void Cpu::exec(const Or<R32, R32>& ins) { set(ins.dst, execOr32Impl(get(ins.dst), get(ins.src))); }
-    void Cpu::exec(const Or<R32, Imm>& ins) { set(ins.dst, execOr32Impl(get(ins.dst), get<u32>(ins.src))); }
-    void Cpu::exec(const Or<R32, M32>& ins) { set(ins.dst, execOr32Impl(get(ins.dst), get(resolve(ins.src)))); }
-    void Cpu::exec(const Or<M32, R32>& ins) { set(resolve(ins.dst), execOr32Impl(get(resolve(ins.dst)), get(ins.src))); }
-    void Cpu::exec(const Or<M32, Imm>& ins) { set(resolve(ins.dst), execOr32Impl(get(resolve(ins.dst)), get<u32>(ins.src))); }
-    void Cpu::exec(const Or<R64, R64>& ins) { set(ins.dst, execOr64Impl(get(ins.dst), get(ins.src))); }
-    void Cpu::exec(const Or<R64, Imm>& ins) { set(ins.dst, execOr64Impl(get(ins.dst), get<u64>(ins.src))); }
-    void Cpu::exec(const Or<R64, M64>& ins) { set(ins.dst, execOr64Impl(get(ins.dst), get(resolve(ins.src)))); }
-    void Cpu::exec(const Or<M64, R64>& ins) { set(resolve(ins.dst), execOr64Impl(get(resolve(ins.dst)), get(ins.src))); }
-    void Cpu::exec(const Or<M64, Imm>& ins) { set(resolve(ins.dst), execOr64Impl(get(resolve(ins.dst)), get<u64>(ins.src))); }
+    void Cpu::exec(const Or<R8, R8>& ins) { set(ins.dst, Impl::or8(get(ins.dst), get(ins.src), &flags_)); }
+    void Cpu::exec(const Or<R8, Imm>& ins) { set(ins.dst, Impl::or8(get(ins.dst), get<u8>(ins.src), &flags_)); }
+    void Cpu::exec(const Or<R8, M8>& ins) { set(ins.dst, Impl::or8(get(ins.dst), get(resolve(ins.src)), &flags_)); }
+    void Cpu::exec(const Or<M8, R8>& ins) { set(resolve(ins.dst), Impl::or8(get(resolve(ins.dst)), get(ins.src), &flags_)); }
+    void Cpu::exec(const Or<M8, Imm>& ins) { set(resolve(ins.dst), Impl::or8(get(resolve(ins.dst)), get<u8>(ins.src), &flags_)); }
+    void Cpu::exec(const Or<M16, R16>& ins) { set(resolve(ins.dst), Impl::or16(get(resolve(ins.dst)), get(ins.src), &flags_)); }
+    void Cpu::exec(const Or<R16, M16>& ins) { set(ins.dst, Impl::or16(get(ins.dst), get(resolve(ins.src)), &flags_)); }
+    void Cpu::exec(const Or<R32, R32>& ins) { set(ins.dst, Impl::or32(get(ins.dst), get(ins.src), &flags_)); }
+    void Cpu::exec(const Or<R32, Imm>& ins) { set(ins.dst, Impl::or32(get(ins.dst), get<u32>(ins.src), &flags_)); }
+    void Cpu::exec(const Or<R32, M32>& ins) { set(ins.dst, Impl::or32(get(ins.dst), get(resolve(ins.src)), &flags_)); }
+    void Cpu::exec(const Or<M32, R32>& ins) { set(resolve(ins.dst), Impl::or32(get(resolve(ins.dst)), get(ins.src), &flags_)); }
+    void Cpu::exec(const Or<M32, Imm>& ins) { set(resolve(ins.dst), Impl::or32(get(resolve(ins.dst)), get<u32>(ins.src), &flags_)); }
+    void Cpu::exec(const Or<R64, R64>& ins) { set(ins.dst, Impl::or64(get(ins.dst), get(ins.src), &flags_)); }
+    void Cpu::exec(const Or<R64, Imm>& ins) { set(ins.dst, Impl::or64(get(ins.dst), get<u64>(ins.src), &flags_)); }
+    void Cpu::exec(const Or<R64, M64>& ins) { set(ins.dst, Impl::or64(get(ins.dst), get(resolve(ins.src)), &flags_)); }
+    void Cpu::exec(const Or<M64, R64>& ins) { set(resolve(ins.dst), Impl::or64(get(resolve(ins.dst)), get(ins.src), &flags_)); }
+    void Cpu::exec(const Or<M64, Imm>& ins) { set(resolve(ins.dst), Impl::or64(get(resolve(ins.dst)), get<u64>(ins.src), &flags_)); }
 
-    u8 Cpu::execXor8Impl(u8 dst, u8 src) {
+    u8 Cpu::Impl::xor8(u8 dst, u8 src, Flags* flags) {
         u8 tmp = dst ^ src;
-        WARN_FLAGS();
+        WARN_FLAGS_IMPL();
         return tmp;
     }
 
-    u16 Cpu::execXor16Impl(u16 dst, u16 src) {
+    u16 Cpu::Impl::xor16(u16 dst, u16 src, Flags* flags) {
         u16 tmp = dst ^ src;
-        WARN_FLAGS();
+        WARN_FLAGS_IMPL();
         return tmp;
     }
 
-    u32 Cpu::execXor32Impl(u32 dst, u32 src) {
+    u32 Cpu::Impl::xor32(u32 dst, u32 src, Flags* flags) {
         u32 tmp = dst ^ src;
-        WARN_FLAGS();
+        WARN_FLAGS_IMPL();
         return tmp;
     }
 
-    u64 Cpu::execXor64Impl(u64 dst, u64 src) {
+    u64 Cpu::Impl::xor64(u64 dst, u64 src, Flags* flags) {
         u64 tmp = dst ^ src;
-        WARN_FLAGS();
+        WARN_FLAGS_IMPL();
         return tmp;
     }
 
-    void Cpu::exec(const Xor<R8, Imm>& ins) { set(ins.dst, execXor8Impl(get(ins.dst), get<u8>(ins.src))); }
-    void Cpu::exec(const Xor<R8, M8>& ins) { set(ins.dst, execXor8Impl(get(ins.dst), get(resolve(ins.src)))); }
-    void Cpu::exec(const Xor<M8, Imm>& ins) { set(resolve(ins.dst), execXor8Impl(get(resolve(ins.dst)), get<u8>(ins.src))); }
-    void Cpu::exec(const Xor<R16, Imm>& ins) { set(ins.dst, execXor16Impl(get(ins.dst), get<u16>(ins.src))); }
-    void Cpu::exec(const Xor<R32, R32>& ins) { set(ins.dst, execXor32Impl(get(ins.dst), get(ins.src))); }
-    void Cpu::exec(const Xor<R32, Imm>& ins) { set(ins.dst, execXor32Impl(get(ins.dst), get<u32>(ins.src))); }
-    void Cpu::exec(const Xor<R32, M32>& ins) { set(ins.dst, execXor32Impl(get(ins.dst), get(resolve(ins.src)))); }
-    void Cpu::exec(const Xor<M32, R32>& ins) { set(resolve(ins.dst), execXor32Impl(get(resolve(ins.dst)), get(ins.src))); }
-    void Cpu::exec(const Xor<R64, R64>& ins) { set(ins.dst, execXor64Impl(get(ins.dst), get(ins.src))); }
-    void Cpu::exec(const Xor<R64, Imm>& ins) { set(ins.dst, execXor64Impl(get(ins.dst), get<u64>(ins.src))); }
-    void Cpu::exec(const Xor<R64, M64>& ins) { set(ins.dst, execXor64Impl(get(ins.dst), get(resolve(ins.src)))); }
-    void Cpu::exec(const Xor<M64, R64>& ins) { set(resolve(ins.dst), execXor64Impl(get(resolve(ins.dst)), get(ins.src))); }
+    void Cpu::exec(const Xor<R8, Imm>& ins) { set(ins.dst, Impl::xor8(get(ins.dst), get<u8>(ins.src), &flags_)); }
+    void Cpu::exec(const Xor<R8, M8>& ins) { set(ins.dst, Impl::xor8(get(ins.dst), get(resolve(ins.src)), &flags_)); }
+    void Cpu::exec(const Xor<M8, Imm>& ins) { set(resolve(ins.dst), Impl::xor8(get(resolve(ins.dst)), get<u8>(ins.src), &flags_)); }
+    void Cpu::exec(const Xor<R16, Imm>& ins) { set(ins.dst, Impl::xor16(get(ins.dst), get<u16>(ins.src), &flags_)); }
+    void Cpu::exec(const Xor<R32, R32>& ins) { set(ins.dst, Impl::xor32(get(ins.dst), get(ins.src), &flags_)); }
+    void Cpu::exec(const Xor<R32, Imm>& ins) { set(ins.dst, Impl::xor32(get(ins.dst), get<u32>(ins.src), &flags_)); }
+    void Cpu::exec(const Xor<R32, M32>& ins) { set(ins.dst, Impl::xor32(get(ins.dst), get(resolve(ins.src)), &flags_)); }
+    void Cpu::exec(const Xor<M32, R32>& ins) { set(resolve(ins.dst), Impl::xor32(get(resolve(ins.dst)), get(ins.src), &flags_)); }
+    void Cpu::exec(const Xor<R64, R64>& ins) { set(ins.dst, Impl::xor64(get(ins.dst), get(ins.src), &flags_)); }
+    void Cpu::exec(const Xor<R64, Imm>& ins) { set(ins.dst, Impl::xor64(get(ins.dst), get<u64>(ins.src), &flags_)); }
+    void Cpu::exec(const Xor<R64, M64>& ins) { set(ins.dst, Impl::xor64(get(ins.dst), get(resolve(ins.src)), &flags_)); }
+    void Cpu::exec(const Xor<M64, R64>& ins) { set(resolve(ins.dst), Impl::xor64(get(resolve(ins.dst)), get(ins.src), &flags_)); }
 
     void Cpu::exec(const Not<R32>& ins) { set(ins.dst, ~get(ins.dst)); }
     void Cpu::exec(const Not<M32>& ins) { set(resolve(ins.dst), ~get(resolve(ins.dst))); }

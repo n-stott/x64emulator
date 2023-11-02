@@ -32,6 +32,12 @@ namespace x64 {
             static u32 sub32(u32 src1, u32 src2, Flags* flags);
             static u64 sub64(u64 src1, u64 src2, Flags* flags);
 
+            static std::pair<u32, u32> mul32(u32 src1, u32 src2, Flags* flags);
+            static std::pair<u64, u64> mul64(u64 src1, u64 src2, Flags* flags);
+
+            static u32 imul32(u32 src1, u32 src2, Flags* flags);
+            static u64 imul64(u64 src1, u64 src2, Flags* flags);
+
             static u32 sbb32(u32 dst, u32 src, Flags* flags);
 
             static u32 neg32(u32 dst, Flags* flags);
@@ -52,6 +58,16 @@ namespace x64 {
             static u16 and16(u16 dst, u16 src, Flags* flags);
             static u32 and32(u32 dst, u32 src, Flags* flags);
             static u64 and64(u64 dst, u64 src, Flags* flags);
+
+            static u8 or8(u8 dst, u8 src, Flags* flags);
+            static u16 or16(u16 dst, u16 src, Flags* flags);
+            static u32 or32(u32 dst, u32 src, Flags* flags);
+            static u64 or64(u64 dst, u64 src, Flags* flags);
+
+            static u8 xor8(u8 dst, u8 src, Flags* flags);
+            static u16 xor16(u16 dst, u16 src, Flags* flags);
+            static u32 xor32(u32 dst, u32 src, Flags* flags);
+            static u64 xor64(u64 dst, u64 src, Flags* flags);
 
             static u8 shr8(u8 dst, u8 src, Flags* flags);
             static u16 shr16(u16 dst, u16 src, Flags* flags);
@@ -143,13 +159,8 @@ namespace x64 {
         u32 pop32();
         u64 pop64();
 
-        std::pair<u32, u32> execMul32(u32 src1, u32 src2);
-        std::pair<u64, u64> execMul64(u64 src1, u64 src2);
-
         void execImul32(u32 src);
-        u32 execImul32(u32 src1, u32 src2);
         void execImul64(u64 src);
-        u64 execImul64(u64 src1, u64 src2);
 
         std::pair<u32, u32> execDiv32(u32 dividendUpper, u32 dividendLower, u32 divisor);
         std::pair<u64, u64> execDiv64(u64 dividendUpper, u64 dividendLower, u64 divisor);
@@ -162,16 +173,6 @@ namespace x64 {
 
         template<typename Dst, typename Src>
         void execCmovImpl(Cond cond, Dst dst, Src src);
-
-        u8 execOr8Impl(u8 dst, u8 src);
-        u16 execOr16Impl(u16 dst, u16 src);
-        u32 execOr32Impl(u32 dst, u32 src);
-        u64 execOr64Impl(u64 dst, u64 src);
-
-        u8 execXor8Impl(u8 dst, u8 src);
-        u16 execXor16Impl(u16 dst, u16 src);
-        u32 execXor32Impl(u32 dst, u32 src);
-        u64 execXor64Impl(u64 dst, u64 src);
 
         template<typename Dst>
         void execCmpxchg32Impl(Dst dst, R32 src);
