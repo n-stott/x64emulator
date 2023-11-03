@@ -12,3 +12,12 @@ target_include_directories(test_pshufd PUBLIC include ${CMAKE_SOURCE_DIR}/includ
 target_link_libraries(test_pshufd PUBLIC emulator)
 target_link_options(test_pshufd PUBLIC ${LD_OPTIONS})
 add_test(NAME pshufd COMMAND test_pshufd)
+
+
+add_executable(test_tzcnt src/test_tzcnt.cpp)
+target_compile_options(test_tzcnt PUBLIC ${CC_OPTIONS})
+target_compile_options(test_tzcnt PUBLIC -DFMT_HEADER_ONLY)
+target_include_directories(test_tzcnt PUBLIC include ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/external)
+target_link_libraries(test_tzcnt PUBLIC emulator)
+target_link_options(test_tzcnt PUBLIC ${LD_OPTIONS})
+add_test(NAME tzcnt COMMAND test_tzcnt)
