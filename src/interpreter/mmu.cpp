@@ -153,10 +153,12 @@ namespace x64 {
     }
 
     Mmu::Region* Mmu::findAddress(u64 address) {
+        verify(address / PAGE_SIZE < regionLookup_.size());
         return regionLookup_[address / PAGE_SIZE];
     }
 
     const Mmu::Region* Mmu::findAddress(u64 address) const {
+        verify(address / PAGE_SIZE < regionLookup_.size());
         return regionLookup_[address / PAGE_SIZE];
     }
 
