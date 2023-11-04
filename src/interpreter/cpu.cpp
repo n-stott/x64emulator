@@ -283,8 +283,8 @@ namespace x64 {
         flags->carry = (src1 < src2);
         flags->sign = ((i8)stmp < 0);
         flags->zero = (src1 == src2);
+        flags->parity = Flags::computeParity((u8)stmp);
         flags->setSure();
-        flags->setUnsureParity();
         return src1 - src2;
     }
 
@@ -295,8 +295,8 @@ namespace x64 {
         flags->carry = (src1 < src2);
         flags->sign = ((i16)stmp < 0);
         flags->zero = (src1 == src2);
+        flags->parity = Flags::computeParity((u8)stmp);
         flags->setSure();
-        flags->setUnsureParity();
         return src1 - src2;
     }
 
@@ -307,8 +307,8 @@ namespace x64 {
         flags->carry = (src1 < src2);
         flags->sign = ((i32)stmp < 0);
         flags->zero = (src1 == src2);
+        flags->parity = Flags::computeParity((u8)stmp);
         flags->setSure();
-        flags->setUnsureParity();
         return src1 - src2;
     }
 
@@ -319,8 +319,8 @@ namespace x64 {
         flags->carry = (src1 < src2);
         flags->sign = (tmp < 0);
         flags->zero = (src1 == src2);
+        flags->parity = Flags::computeParity((u8)tmp);
         flags->setSure();
-        flags->setUnsureParity();
         return src1 - src2;
     }
 

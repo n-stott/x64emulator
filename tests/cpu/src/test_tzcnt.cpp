@@ -1,29 +1,9 @@
 #include "utils/utils.h"
 #include "interpreter/cpu.h"
 #include "interpreter/flags.h"
+#include "cputestutils.h"
 #include "fmt/core.h"
 #include <vector>
-
-struct Result {
-    u32 count;
-    x64::Flags flags;
-};
-
-static x64::Flags fromRflags(u64 rflags) {
-    static constexpr u64 CARRY_MASK = 0x1;
-    static constexpr u64 PARITY_MASK = 0x4;
-    static constexpr u64 ZERO_MASK = 0x40;
-    static constexpr u64 SIGN_MASK = 0x80;
-    static constexpr u64 OVERFLOW_MASK = 0x800;
-    x64::Flags flags;
-    flags.carry = rflags & CARRY_MASK;
-    flags.parity = rflags & PARITY_MASK;
-    flags.zero = rflags & ZERO_MASK;
-    flags.sign = rflags & SIGN_MASK;
-    flags.overflow = rflags & OVERFLOW_MASK;
-    flags.setSure();
-    return flags;
-}
 
 u64 runTzcnt64Native(u64 value, x64::Flags* flags) {
     u64 count = 0;

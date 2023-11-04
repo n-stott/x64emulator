@@ -14,6 +14,15 @@ namespace x64 {
 
         bool matches(Cond condition) const;
 
+        static bool computeParity(u8 val) {
+            bool parity = true;  // parity will be the parity of v
+            while (val) {
+                parity = !parity;
+                val = val & (u8)(val - 1);
+            }
+            return parity;
+        }
+
         bool sure_ = true;
         bool sureParity_ = true;
         void setUnsure() { sure_ = false; }
