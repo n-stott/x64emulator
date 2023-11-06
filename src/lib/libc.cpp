@@ -290,7 +290,6 @@ namespace x64 {
 
             Ptr8 bufPtr { Segment::DS, bufAddress };
             for(u64 i = 0; i < (u64)nbytes; ++i) {
-                fmt::print("Read char='{}'\n", (char)buf[i]);
                 context_.mmu()->write8(bufPtr, buf[i]);
                 ++bufPtr;
             }
