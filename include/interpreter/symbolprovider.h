@@ -16,11 +16,19 @@ namespace x64 {
 
     class SymbolProvider {
     public:
+        struct Entry {
+            std::string symbol;
+            u64 address;
+            const elf::Elf64* elf;
+            u64 size;
+            elf::SymbolType type;
+            elf::SymbolBind bind;
+        };
 
         void registerSymbol(std::string symbol, u64 address, const elf::Elf64* elf, u64 size, elf::SymbolType type, elf::SymbolBind bind);
         void registerDynamicSymbol(std::string symbol, u64 address, const elf::Elf64* elf, u64 size, elf::SymbolType type, elf::SymbolBind bind);
 
-        std::optional<u64> lookupRawSymbol(const std::string& symbol, const elf::Elf64** elf = nullptr) const;
+        const Entry* lookupRawSymbol(const std::string& symbol) const;
         std::optional<std::string> lookupSymbol(u64 address, bool demangled) const;
 
     private:
@@ -34,17 +42,8 @@ namespace x64 {
         struct Table {
             void registerSymbol(std::string symbol, u64 address, const elf::Elf64* elf, u64 size, elf::SymbolType type, elf::SymbolBind bind);
 
-            std::optional<u64> lookupSymbol(const std::string& symbol, const elf::Elf64** elf) const;
+            const Entry* lookupSymbol(const std::string& symbol) const;
             std::optional<std::string> lookupSymbol(u64 address) const;
-
-            struct Entry {
-                std::string symbol;
-                u64 address;
-                const elf::Elf64* elf;
-                u64 size;
-                elf::SymbolType type;
-                elf::SymbolBind bind;
-            };
 
             std::deque<Entry> storage_;
 

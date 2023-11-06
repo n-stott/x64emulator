@@ -308,9 +308,9 @@ namespace x64 {
     }
 
     void Interpreter::executeMain() {
-        auto mainSymbol = symbolProvider_->lookupRawSymbol("main");
+        const auto* mainSymbol = symbolProvider_->lookupRawSymbol("main");
         verify(!!mainSymbol, "Cannot find \"main\" symbol");
-        execute(mainSymbol.value());
+        execute(mainSymbol->address);
     }
 
     void Interpreter::pushProgramArguments(const std::string& programFilePath, const std::vector<std::string>& arguments) {

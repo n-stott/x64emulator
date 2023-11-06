@@ -281,7 +281,13 @@ namespace x64 {
                 return symbol;
             }();
 
-            const elf::Elf64* elfContainingSymbol = nullptr;
+            const SymbolProvider::Entry* symbolEntry = [&]() -> const SymbolProvider::Entry* {
+                // if the symbol has no name, give up
+                if(!symbolName) return nullptr;
+
+                // otherwise try performing lookup
+                return symbolProvider_->lookupRawSymbol(symbolName.value());
+            }();
 
             std::optional<u64> S = [&]() -> std::optional<u64> {
                 // if the relocation has no associated symbol, give up
@@ -289,19 +295,15 @@ namespace x64 {
 
                 // if the symbol is defined, return its value
                 if(sym->st_shndx != 0) {
-                    elfContainingSymbol = loadedElf.elf.get();
                     return loadedElf.offset + sym->st_value;
                 }
 
                 // if the symbol is not defined and has no name, give up
                 if(!symbolName) return {};
 
-                // otherwise try performing lookup
-                auto value = symbolProvider_->lookupRawSymbol(symbolName.value(), &elfContainingSymbol);
+                if(!symbolEntry && sym->bind() == elf::SymbolBind::WEAK) return 0;
 
-                if(!value && sym->bind() == elf::SymbolBind::WEAK) return 0;
-
-                return value;
+                return (!!symbolEntry) ? symbolEntry->address : 0x0;
             }();
 
             u64 B = loadedElf.offset;
@@ -318,7 +320,8 @@ namespace x64 {
                     case elf::RelocationType64::R_AMD64_TPOFF64: {
                         if(!S.has_value()) return {};
                         auto tlsBlock = std::find_if(tlsBlocks_.begin(), tlsBlocks_.end(), [&](const TlsBlock& block) {
-                            return block.elf == elfContainingSymbol;
+                            if(!symbolEntry) return false;
+                            return block.elf == symbolEntry->elf;
                         });
                         if(tlsBlock == tlsBlocks_.end()) return {};
                         return - tlsBlock->tlsOffset + S.value();
