@@ -273,7 +273,7 @@ namespace x64 {
             int fd = static_cast<int>(context_.rdi());
             u64 bufAddress = context_.rsi();
             u64 count = context_.rdx();
-            fmt::print("Read {} bytes from fd={} into buf={:#x}\n", count, fd, bufAddress);
+            fmt::print("Try read {} bytes from fd={} into buf={:#x}\n", count, fd, bufAddress);
             FILE* file = libc_->fileRegistry_->fileFromFd(fd);
             if(!file) {
                 context_.set_rax((u64)(-1));
@@ -282,7 +282,7 @@ namespace x64 {
             std::vector<u8> buf(count+1);
             int realFd = ::fileno(file);
             ssize_t nbytes = ::read(realFd, buf.data(), count);
-            fmt::print("Read {} bytes from file\n", nbytes);
+            fmt::print("Did read {} bytes from file\n", nbytes);
             if(nbytes < 0) {
                 context_.set_rax((u64)(-1));
                 return;
