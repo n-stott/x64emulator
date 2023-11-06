@@ -192,7 +192,7 @@ namespace x64 {
             verify(!func->instructions.empty(), "empty libc function");
             verify(!!func->instructions[0], "libc function with invalid instruction");
             func->address = func->instructions[0]->address;
-            symbolProvider_->registerSymbol(func->name, func->address, nullptr, elf::SymbolType::FUNC, elf::SymbolBind::GLOBAL);
+            symbolProvider_->registerSymbol(func->name, func->address, nullptr, 0, elf::SymbolType::FUNC, elf::SymbolBind::GLOBAL);
         }
 
         executableSections_.push_back(std::move(libcSection));

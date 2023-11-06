@@ -7,25 +7,19 @@
 namespace x64 {
 
 
-    void SymbolProvider::registerSymbol(std::string symbol, u64 address, const elf::Elf64* elf, elf::SymbolType type, elf::SymbolBind bind) {
-        rawStaticSymbols_.registerSymbol(symbol, address, elf, type, bind);
-        demangledStaticSymbols_.registerSymbol(boost::core::demangle(symbol.c_str()), address, elf, type, bind);
+    void SymbolProvider::registerSymbol(std::string symbol, u64 address, const elf::Elf64* elf, u64 size, elf::SymbolType type, elf::SymbolBind bind) {
+        rawStaticSymbols_.registerSymbol(symbol, address, elf, size, type, bind);
+        demangledStaticSymbols_.registerSymbol(boost::core::demangle(symbol.c_str()), address, elf, size, type, bind);
     }
 
-    void SymbolProvider::registerDynamicSymbol(std::string symbol, u64 address, const elf::Elf64* elf, elf::SymbolType type, elf::SymbolBind bind) {
-        rawDynamicSymbols_.registerSymbol(symbol, address, elf, type, bind);
-        demangledDynamicSymbols_.registerSymbol(boost::core::demangle(symbol.c_str()), address, elf, type, bind);
+    void SymbolProvider::registerDynamicSymbol(std::string symbol, u64 address, const elf::Elf64* elf, u64 size, elf::SymbolType type, elf::SymbolBind bind) {
+        rawDynamicSymbols_.registerSymbol(symbol, address, elf, size, type, bind);
+        demangledDynamicSymbols_.registerSymbol(boost::core::demangle(symbol.c_str()), address, elf, size, type, bind);
     }
 
     std::optional<u64> SymbolProvider::lookupRawSymbol(const std::string& symbol, const elf::Elf64** elf) const {
         auto result = rawStaticSymbols_.lookupSymbol(symbol, elf);
         if(!result) result = rawDynamicSymbols_.lookupSymbol(symbol, elf);
-        return result;
-    }
-
-    std::optional<u64> SymbolProvider::lookupDemangledSymbol(const std::string& symbol) const {
-        auto result = demangledStaticSymbols_.lookupSymbol(symbol, nullptr);
-        if(!result) result = demangledDynamicSymbols_.lookupSymbol(symbol, nullptr);
         return result;
     }
 
@@ -42,7 +36,7 @@ namespace x64 {
     }
     
     template<SymbolProvider::SymbolRepr repr>
-    void SymbolProvider::Table<repr>::registerSymbol(std::string symbol, u64 address, const elf::Elf64* elf, elf::SymbolType type, elf::SymbolBind bind) {
+    void SymbolProvider::Table<repr>::registerSymbol(std::string symbol, u64 address, const elf::Elf64* elf, u64 size, elf::SymbolType type, elf::SymbolBind bind) {
 #if 0
         fmt::print(stderr, "Register symbol address={:#x} symbol=\"{}\"\n", address, symbol);
 #endif
@@ -51,6 +45,7 @@ namespace x64 {
             symbol,
             address,
             elf,
+            size,
             type,
             bind,
         });

@@ -241,18 +241,18 @@ namespace x64 {
             if(!entry.st_name) return;
             // if(symbol != "main") return;
             if(entry.type() == elf::SymbolType::FUNC || entry.type() == elf::SymbolType::OBJECT)
-                symbolProvider_->registerSymbol(symbol, elfOffset + entry.st_value, &elf, entry.type(), entry.bind());
+                symbolProvider_->registerSymbol(symbol, elfOffset + entry.st_value, &elf, entry.st_size, entry.type(), entry.bind());
             if(entry.type() == elf::SymbolType::TLS)
-                symbolProvider_->registerSymbol(symbol, entry.st_value, &elf, entry.type(), entry.bind());
+                symbolProvider_->registerSymbol(symbol, entry.st_value, &elf, entry.st_size, entry.type(), entry.bind());
         });
         elf.forAllDynamicSymbols([&](const elf::StringTable* stringTable, const elf::SymbolTableEntry64& entry) {
             std::string symbol { entry.symbol(stringTable, elf) };
             if(entry.isUndefined()) return;
             if(!entry.st_name) return;
             if(entry.type() == elf::SymbolType::FUNC || entry.type() == elf::SymbolType::OBJECT)
-                symbolProvider_->registerDynamicSymbol(symbol, elfOffset + entry.st_value, &elf, entry.type(), entry.bind());
+                symbolProvider_->registerDynamicSymbol(symbol, elfOffset + entry.st_value, &elf, entry.st_size, entry.type(), entry.bind());
             if(entry.type() == elf::SymbolType::TLS)
-                symbolProvider_->registerDynamicSymbol(symbol, entry.st_value, &elf, entry.type(), entry.bind());
+                symbolProvider_->registerDynamicSymbol(symbol, entry.st_value, &elf, entry.st_size, entry.type(), entry.bind());
         });
     }
 
