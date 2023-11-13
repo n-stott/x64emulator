@@ -308,9 +308,10 @@ namespace x64 {
     }
 
     void Interpreter::executeMain() {
-        const auto* mainSymbol = symbolProvider_->lookupRawSymbol("main");
-        verify(!!mainSymbol, "Cannot find \"main\" symbol");
-        execute(mainSymbol->address);
+        auto mainSymbol = symbolProvider_->lookupRawSymbol("main", false);
+        verify(!mainSymbol.empty(), "Cannot find \"main\" symbol");
+        verify(mainSymbol.size() <= 1, "Found \"main\" symbol 2 or more times");
+        execute(mainSymbol[0]->address);
     }
 
     void Interpreter::pushProgramArguments(const std::string& programFilePath, const std::vector<std::string>& arguments) {
@@ -360,7 +361,9 @@ namespace x64 {
 
     void Interpreter::execute(u64 address) {
         if(stop_) return;
-        fmt::print(stderr, "Execute function {:#x} : {}\n", address, symbolProvider_->lookupSymbol(address, true).value_or("unknown symbol"));
+        auto symbolLookup = symbolProvider_->lookupSymbol(address);
+        std::string functionName = symbolLookup.empty() ? "unknown" : symbolLookup[0]->demangledSymbol;
+        fmt::print(stderr, "Execute function {:#x} : {}\n", address, functionName);
         SignalHandler sh;
         cpu_.push64(address);
         call(address);
@@ -457,10 +460,10 @@ namespace x64 {
         verify(firstInstructionIndex != (size_t)(-1), "Could not find call destination instruction");
 
         // If we are in the text section, we can try to lookup the symbol for that address
-        auto demangledName = symbolProvider_->lookupSymbol(address, true);
-        if(!!demangledName) {
-            functionNameCache_[address] = demangledName.value();
-            return demangledName.value();
+        auto symbolsAtAddress = symbolProvider_->lookupSymbol(address);
+        if(!symbolsAtAddress.empty()) {
+            functionNameCache_[address] = symbolsAtAddress[0]->demangledSymbol;
+            return symbolsAtAddress[0]->demangledSymbol;
         }
 
         // If we are in the PLT instead, lets' look at the first instruction to determine the jmp location
@@ -471,10 +474,10 @@ namespace x64 {
             regs.rip_ = jmpInsn->address + 6; // add instruction size offset
             auto ptr = regs.resolve(jmp->instruction.symbolAddress);
             auto dst = mmu_.read64(ptr);
-            auto demangledName = symbolProvider_->lookupSymbol(dst, true);
-            if(!!demangledName) {
-                functionNameCache_[address] = demangledName.value();
-                return demangledName.value();
+            auto symbolsAtAddress = symbolProvider_->lookupSymbol(dst);
+            if(!symbolsAtAddress.empty()) {
+                functionNameCache_[address] = symbolsAtAddress[0]->demangledSymbol;
+                return symbolsAtAddress[0]->demangledSymbol;
             }
         }
         // We are not in the PLT either :'(

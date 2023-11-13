@@ -30,22 +30,22 @@ namespace x64 {
         void registerSymbol(std::string symbol, u64 address, const elf::Elf64* elf, u64 elfOffset, u64 size, elf::SymbolType type, elf::SymbolBind bind);
         void registerDynamicSymbol(std::string symbol, u64 address, const elf::Elf64* elf, u64 elfOffset, u64 size, elf::SymbolType type, elf::SymbolBind bind);
 
-        const Entry* lookupRawSymbol(const std::string& symbol) const;
-        std::optional<std::string> lookupSymbol(u64 address, bool demangled) const;
+        std::vector<const SymbolProvider::Entry*> lookupRawSymbol(const std::string& symbol, bool demangled) const;
+        std::vector<const SymbolProvider::Entry*> lookupSymbol(u64 address) const;
 
     private:
 
         struct Table {
             void registerSymbol(std::string symbol, u64 address, const elf::Elf64* elf, u64 elfOffset, u64 size, elf::SymbolType type, elf::SymbolBind bind);
 
-            const Entry* lookupSymbol(const std::string& symbol, bool demangled) const;
-            std::optional<std::string> lookupSymbol(u64 address, bool demangled) const;
+            std::vector<const SymbolProvider::Entry*> lookupSymbol(const std::string& symbol, bool demangled) const;
+            std::vector<const SymbolProvider::Entry*> lookupSymbol(u64 address) const;
 
             std::deque<Entry> storage_;
 
-            std::unordered_map<u64, const Entry*> byAddress_;
-            std::unordered_map<std::string, const Entry*> byName_;
-            std::unordered_map<std::string, const Entry*> byDemangledName_;
+            std::unordered_map<u64, std::vector<const Entry*>> byAddress_;
+            std::unordered_map<std::string, std::vector<const Entry*>> byName_;
+            std::unordered_map<std::string, std::vector<const Entry*>> byDemangledName_;
         };
 
         Table staticSymbols_;

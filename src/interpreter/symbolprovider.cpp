@@ -15,15 +15,15 @@ namespace x64 {
         dynamicSymbols_.registerSymbol(symbol, address, elf, elfOffset, size, type, bind);
     }
 
-    const SymbolProvider::Entry* SymbolProvider::lookupRawSymbol(const std::string& symbol) const {
-        auto result = staticSymbols_.lookupSymbol(symbol, false);
-        if(!result) result = dynamicSymbols_.lookupSymbol(symbol, false);
+    std::vector<const SymbolProvider::Entry*> SymbolProvider::lookupRawSymbol(const std::string& symbol, bool demangled) const {
+        auto result = staticSymbols_.lookupSymbol(symbol, demangled);
+        if(result.empty()) result = dynamicSymbols_.lookupSymbol(symbol, demangled);
         return result;
     }
 
-    std::optional<std::string> SymbolProvider::lookupSymbol(u64 address, bool demangled) const {
-        auto result = staticSymbols_.lookupSymbol(address, demangled);
-        if(!result) result = dynamicSymbols_.lookupSymbol(address, demangled);
+    std::vector<const SymbolProvider::Entry*> SymbolProvider::lookupSymbol(u64 address) const {
+        auto result = staticSymbols_.lookupSymbol(address);
+        if(result.empty()) result = dynamicSymbols_.lookupSymbol(address);
         return result;
     }
     
@@ -50,12 +50,12 @@ namespace x64 {
                        (void*)it->second->elf, it->second->symbol, address, (void*)elf,  symbol);
         });
 #endif
-        byAddress_[address] = e;
-        byName_[e->symbol] = e;
-        byName_[e->demangledSymbol] = e;
+        byAddress_[address].push_back(e);
+        byName_[e->symbol].push_back(e);
+        byDemangledName_[e->demangledSymbol].push_back(e);
     }
 
-    const SymbolProvider::Entry* SymbolProvider::Table::lookupSymbol(const std::string& symbol, bool demangled) const {
+    std::vector<const SymbolProvider::Entry*> SymbolProvider::Table::lookupSymbol(const std::string& symbol, bool demangled) const {
         const auto* lookup = demangled ? &byDemangledName_ : &byName_;
         auto it = lookup->find(symbol);
         if(it != lookup->end()) {
@@ -67,16 +67,15 @@ namespace x64 {
                 return it->second;
             }
         }
-        return nullptr;
+        return {};
     }
 
-    std::optional<std::string> SymbolProvider::Table::lookupSymbol(u64 address, bool demangled) const {
-        std::optional<std::string> result;
+    std::vector<const SymbolProvider::Entry*> SymbolProvider::Table::lookupSymbol(u64 address) const {
         auto it = byAddress_.find(address);
         if(it != byAddress_.end()) {
-            result = demangled ? it->second->symbol : it->second->demangledSymbol;
+            return it->second;
         }
-        return result;
+        return {};
     }
 
 }

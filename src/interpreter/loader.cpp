@@ -239,7 +239,7 @@ namespace x64 {
             std::string symbol { entry.symbol(stringTable, elf) };
             if(entry.isUndefined()) return;
             if(!entry.st_name) return;
-            // if(symbol != "main") return;
+            if(symbol != "main") return;
             if(entry.type() == elf::SymbolType::FUNC || entry.type() == elf::SymbolType::OBJECT)
                 symbolProvider_->registerSymbol(symbol, elfOffset + entry.st_value, &elf, elfOffset, entry.st_size, entry.type(), entry.bind());
             if(entry.type() == elf::SymbolType::TLS)
@@ -281,12 +281,12 @@ namespace x64 {
                 return symbol;
             }();
 
-            const SymbolProvider::Entry* symbolEntry = [&]() -> const SymbolProvider::Entry* {
+            std::vector<const SymbolProvider::Entry*> symbolEntries = [&]() -> std::vector<const SymbolProvider::Entry*> {
                 // if the symbol has no name, give up
-                if(!symbolName) return nullptr;
+                if(!symbolName) return {};
 
                 // otherwise try performing lookup
-                return symbolProvider_->lookupRawSymbol(symbolName.value());
+                return symbolProvider_->lookupRawSymbol(symbolName.value(), false);
             }();
 
             std::optional<u64> S = [&]() -> std::optional<u64> {
@@ -301,9 +301,17 @@ namespace x64 {
                 // if the symbol is not defined and has no name, give up
                 if(!symbolName) return {};
 
-                if(!symbolEntry && sym->bind() == elf::SymbolBind::WEAK) return 0;
+                if(symbolEntries.empty() && sym->bind() == elf::SymbolBind::WEAK) return 0;
 
-                return (!!symbolEntry) ? symbolEntry->address : 0x0;
+                verify(symbolEntries.size() <= 1, [&]() {
+                    fmt::print("Unhandled case with 2 or more matching symbols\n");
+                    fmt::print("lookup for {} found {} entries\n", symbolName.value(), symbolEntries.size());
+                    for(const auto* e: symbolEntries) {
+                        fmt::print("  elfOffset={:#x} elf={} address={:#x} size={} bind={}\n", e->elfOffset, (void*)e->elf, e->address, e->size, (int)e->bind);
+                    }
+                });
+
+                return (symbolEntries.empty()) ? 0x0 : symbolEntries[0]->address;
             }();
 
             u64 B = loadedElf.offset;
@@ -320,8 +328,9 @@ namespace x64 {
                     case elf::RelocationType64::R_AMD64_TPOFF64: {
                         if(!S.has_value()) return {};
                         auto tlsBlock = std::find_if(tlsBlocks_.begin(), tlsBlocks_.end(), [&](const TlsBlock& block) {
-                            if(!symbolEntry) return false;
-                            return block.elf == symbolEntry->elf;
+                            if(symbolEntries.empty()) return false;
+                            verify(symbolEntries.size() == 1, "unhandled case with 2 or more matching symbols");
+                            return block.elf == symbolEntries[0]->elf;
                         });
                         if(tlsBlock == tlsBlocks_.end()) return {};
                         return - tlsBlock->tlsOffset + S.value();
