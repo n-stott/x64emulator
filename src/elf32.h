@@ -120,6 +120,7 @@ namespace elf {
     public:
         Type type() const override { return fileheader_.type; }
         Machine machine() const override { return fileheader_.machine; }
+        u32 entrypoint() const { return fileheader_.entry; }
 
         std::optional<SymbolTable<SymbolTableEntry32>> dynamicSymbolTable() const;
         std::optional<SymbolTable<SymbolTableEntry32>> symbolTable() const;
