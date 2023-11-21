@@ -68,5 +68,29 @@ int main(int argc, const char* argv[]) {
           elf64->forAllDynamicSymbols([&](const elf::StringTable* dynamicStringTable, const elf::SymbolTableEntry64& entry) {
                fmt::print("Dynamic symbol={:30} offset={}\n", entry.symbol(dynamicStringTable, *elf64), entry.st_name);
           });
+
+          auto versions = elf64->symbolVersions();
+          if(!!versions) {
+               int v = 0;
+               versions->forAll([&](u16 version) {
+                    fmt::print("{} : {:#x}\n", v, version);
+                    ++v;
+               });
+          }
+
+          auto versionDefinitions = elf64->symbolVersionDefinitions();
+          if(!!versionDefinitions && !!dynamicStringTable) {
+               versionDefinitions->forAllDefinitions([&](const elf::Elf64Verneed& need, u32 count, const elf::Elf64Vernaux* aux) {
+                    auto file = dynamicStringTable->operator[](need.vn_file);
+                    fmt::print("Symbol version={}, count={}, file={}, aux entry={}, aux count={}\n", need.vn_version, need.vn_cnt, file, need.vn_aux / sizeof(elf::Elf64Vernaux), count);
+                    for(u32 i = 0; i < count; ++i) {
+                         const elf::Elf64Vernaux& entry = aux[i];
+                         assert(entry.vna_next == sizeof(elf::Elf64Vernaux) || entry.vna_next == 0);
+                         std::string_view name = dynamicStringTable->operator[](entry.vna_name);
+                         fmt::print("  hash={:#x} flags={:#x} other={:#x} name={}\n", entry.vna_hash, entry.vna_flags, entry.vna_other, name);
+                    }
+                    (void)aux;
+               });
+          }
      }
 }

@@ -120,6 +120,82 @@ namespace elf {
     };
     static_assert(sizeof(DynamicEntry64) == 0x10, "");
 
+
+    struct Elf64Verdef {
+        u16 vd_version;
+        u16 vd_flags;
+        u16 vd_ndx;
+        u16 vd_cnt;
+        u32 vd_hash;
+        u32 vd_aux;
+        u32 vd_next;
+    };
+    static_assert(sizeof(Elf64Verdef) == 20, "");
+
+    struct Elf64Verneed {
+        u16 vn_version;
+        u16 vn_cnt;
+        u32 vn_file;
+        u32 vn_aux;
+        u32 vn_next;
+    };
+    static_assert(sizeof(Elf64Verneed) == 16, "");
+
+    struct Elf64Vernaux {
+        u32 vna_hash;
+        u16 vna_flags;
+        u16 vna_other;
+        u32 vna_name;
+        u32 vna_next;
+    };
+    static_assert(sizeof(Elf64Vernaux) == 16, "");
+
+    class Elf64SymbolVersions {
+    public:
+        template<typename Callback>
+        void forAll(Callback callback) const {
+            const u16* begin16 = reinterpret_cast<const u16*>(begin_);
+            const u16* end16 = reinterpret_cast<const u16*>(end_);
+            for(const u16* ptr = begin16; ptr != end16; ++ptr) callback(*ptr);
+        }
+
+    private:
+        friend class Elf64;
+        explicit Elf64SymbolVersions(Section section);
+        const u8* begin_;
+        const u8* end_;
+    };
+
+    class Elf64SymbolVersionDefinitions {
+    public:
+        template<typename Callback>
+        void forAllDefinitions(Callback callback) const {
+            const u8* ptr = begin_;
+            Elf64Verneed need;
+            memcpy(&need, ptr, sizeof(need));
+            const u8* next = need.vn_next ? ptr + need.vn_next : end_;
+            assert((u32)std::distance(ptr + need.vn_aux, next) % sizeof(Elf64Vernaux) == 0);
+            u32 auxCount = (u32)std::distance(ptr + need.vn_aux, next) / sizeof(Elf64Vernaux);
+            callback(need, auxCount, reinterpret_cast<const Elf64Vernaux*>(ptr + need.vn_aux));
+            while(need.vn_next) {
+                ptr = ptr + need.vn_next;
+                assert(ptr < end_);
+                memcpy(&need, ptr, sizeof(need));
+                next = need.vn_next ? ptr + need.vn_next : end_;
+                assert((u32)std::distance(ptr + need.vn_aux, next) % sizeof(Elf64Vernaux) == 0);
+                auxCount = (u32)std::distance(ptr + need.vn_aux, next) / sizeof(Elf64Vernaux);
+                callback(need, auxCount, reinterpret_cast<const Elf64Vernaux*>(ptr + need.vn_aux));
+            }
+        }
+
+    private:
+        friend class Elf64;
+        explicit Elf64SymbolVersionDefinitions(Section section);
+        const u8* begin_;
+        const u8* end_;
+    };
+
+
     class Elf64 : public Elf {
     public:
         Type type() const override { return fileheader_.type; }
@@ -130,6 +206,8 @@ namespace elf {
         std::optional<StringTable> dynamicStringTable() const;
         std::optional<StringTable> stringTable() const;
         std::optional<DynamicTable<DynamicEntry64>> dynamicTable() const;
+        std::optional<Elf64SymbolVersions> symbolVersions() const;
+        std::optional<Elf64SymbolVersionDefinitions> symbolVersionDefinitions() const;
 
         std::optional<Section> sectionFromName(std::string_view sv) const;
 
@@ -159,7 +237,6 @@ namespace elf {
         friend struct RelocationEntry64A;
         friend struct SymbolTableEntry64;
     };
-
 
 
     inline void FileHeader64::print() const {
@@ -500,6 +577,26 @@ namespace elf {
         auto dynamic = sectionFromName(".dynamic");
         if(!dynamic) return {};
         return DynamicTable<DynamicEntry64>(dynamic.value());
+    }
+
+    inline Elf64SymbolVersionDefinitions::Elf64SymbolVersionDefinitions(Section section) :
+            begin_(section.begin),
+            end_(section.end) { }
+
+    inline std::optional<Elf64SymbolVersionDefinitions> Elf64::symbolVersionDefinitions() const {
+        auto versionDefinitions = sectionFromName(".gnu.version_r");
+        if(!versionDefinitions) return {};
+        return Elf64SymbolVersionDefinitions(versionDefinitions.value());
+    }
+
+    inline Elf64SymbolVersions::Elf64SymbolVersions(Section section) :
+            begin_(section.begin),
+            end_(section.end) { }
+
+    inline std::optional<Elf64SymbolVersions> Elf64::symbolVersions() const {
+        auto versions = sectionFromName(".gnu.version");
+        if(!versions) return {};
+        return Elf64SymbolVersions(versions.value());
     }
 }
 
