@@ -130,7 +130,13 @@ namespace elf {
         u32 vd_aux;
         u32 vd_next;
     };
-    static_assert(sizeof(Elf64Verdef) == 20, "");
+    static_assert(sizeof(Elf64Verdef) == 0x14, "");
+
+    struct Elf64Verdaux {
+        u32 vda_name;
+        u32 vda_next;
+    };
+    static_assert(sizeof(Elf64Verdaux) == 0x8, "");
 
     struct Elf64Verneed {
         u16 vn_version;
@@ -139,7 +145,7 @@ namespace elf {
         u32 vn_aux;
         u32 vn_next;
     };
-    static_assert(sizeof(Elf64Verneed) == 16, "");
+    static_assert(sizeof(Elf64Verneed) == 0x10, "");
 
     struct Elf64Vernaux {
         u32 vna_hash;
@@ -148,7 +154,7 @@ namespace elf {
         u32 vna_name;
         u32 vna_next;
     };
-    static_assert(sizeof(Elf64Vernaux) == 16, "");
+    static_assert(sizeof(Elf64Vernaux) == 0x10, "");
 
     class Elf64SymbolVersions {
     public:
@@ -171,6 +177,35 @@ namespace elf {
         template<typename Callback>
         void forAllDefinitions(Callback callback) const {
             const u8* ptr = begin_;
+            Elf64Verdef def;
+            memcpy(&def, ptr, sizeof(def));
+            const u8* next = def.vd_next ? ptr + def.vd_next : end_;
+            assert((u32)std::distance(ptr + def.vd_aux, next) % sizeof(Elf64Verdaux) == 0);
+            u32 auxCount = (u32)std::distance(ptr + def.vd_aux, next) / sizeof(Elf64Verdaux);
+            callback(def, auxCount, reinterpret_cast<const Elf64Verdaux*>(ptr + def.vd_aux));
+            while(def.vd_next) {
+                ptr = ptr + def.vd_next;
+                assert(ptr < end_);
+                memcpy(&def, ptr, sizeof(def));
+                next = def.vd_next ? ptr + def.vd_next : end_;
+                assert((u32)std::distance(ptr + def.vd_aux, next) % sizeof(Elf64Verdaux) == 0);
+                auxCount = (u32)std::distance(ptr + def.vd_aux, next) / sizeof(Elf64Verdaux);
+                callback(def, auxCount, reinterpret_cast<const Elf64Verdaux*>(ptr + def.vd_aux));
+            }
+        }
+
+    private:
+        friend class Elf64;
+        explicit Elf64SymbolVersionDefinitions(Section section);
+        const u8* begin_;
+        const u8* end_;
+    };
+
+    class Elf64SymbolVersionRequirements {
+    public:
+        template<typename Callback>
+        void forAllRequirements(Callback callback) const {
+            const u8* ptr = begin_;
             Elf64Verneed need;
             memcpy(&need, ptr, sizeof(need));
             const u8* next = need.vn_next ? ptr + need.vn_next : end_;
@@ -190,7 +225,7 @@ namespace elf {
 
     private:
         friend class Elf64;
-        explicit Elf64SymbolVersionDefinitions(Section section);
+        explicit Elf64SymbolVersionRequirements(Section section);
         const u8* begin_;
         const u8* end_;
     };
@@ -208,6 +243,7 @@ namespace elf {
         std::optional<DynamicTable<DynamicEntry64>> dynamicTable() const;
         std::optional<Elf64SymbolVersions> symbolVersions() const;
         std::optional<Elf64SymbolVersionDefinitions> symbolVersionDefinitions() const;
+        std::optional<Elf64SymbolVersionRequirements> symbolVersionRequirements() const;
 
         std::optional<Section> sectionFromName(std::string_view sv) const;
 
@@ -584,9 +620,19 @@ namespace elf {
             end_(section.end) { }
 
     inline std::optional<Elf64SymbolVersionDefinitions> Elf64::symbolVersionDefinitions() const {
-        auto versionDefinitions = sectionFromName(".gnu.version_r");
+        auto versionDefinitions = sectionFromName(".gnu.version_d");
         if(!versionDefinitions) return {};
         return Elf64SymbolVersionDefinitions(versionDefinitions.value());
+    }
+
+    inline Elf64SymbolVersionRequirements::Elf64SymbolVersionRequirements(Section section) :
+            begin_(section.begin),
+            end_(section.end) { }
+
+    inline std::optional<Elf64SymbolVersionRequirements> Elf64::symbolVersionRequirements() const {
+        auto versionDefinitions = sectionFromName(".gnu.version_r");
+        if(!versionDefinitions) return {};
+        return Elf64SymbolVersionRequirements(versionDefinitions.value());
     }
 
     inline Elf64SymbolVersions::Elf64SymbolVersions(Section section) :

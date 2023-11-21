@@ -80,7 +80,21 @@ int main(int argc, const char* argv[]) {
 
           auto versionDefinitions = elf64->symbolVersionDefinitions();
           if(!!versionDefinitions && !!dynamicStringTable) {
-               versionDefinitions->forAllDefinitions([&](const elf::Elf64Verneed& need, u32 count, const elf::Elf64Vernaux* aux) {
+               versionDefinitions->forAllDefinitions([&](const elf::Elf64Verdef& def, u32 count, const elf::Elf64Verdaux* aux) {
+                    fmt::print("Symbol version={}, count={}, aux entry={}, aux count={}\n", def.vd_version, def.vd_cnt, def.vd_aux / sizeof(elf::Elf64Verdaux), count);
+                    for(u32 i = 0; i < count; ++i) {
+                         const elf::Elf64Verdaux& entry = aux[i];
+                         assert(entry.vda_next == sizeof(elf::Elf64Verdaux) || entry.vda_next == 0);
+                         std::string_view name = dynamicStringTable->operator[](entry.vda_name);
+                         fmt::print("  name={}\n", name);
+                    }
+                    (void)aux;
+               });
+          }
+
+          auto versionRequirements = elf64->symbolVersionRequirements();
+          if(!!versionRequirements && !!dynamicStringTable) {
+               versionRequirements->forAllRequirements([&](const elf::Elf64Verneed& need, u32 count, const elf::Elf64Vernaux* aux) {
                     auto file = dynamicStringTable->operator[](need.vn_file);
                     fmt::print("Symbol version={}, count={}, file={}, aux entry={}, aux count={}\n", need.vn_version, need.vn_cnt, file, need.vn_aux / sizeof(elf::Elf64Vernaux), count);
                     for(u32 i = 0; i < count; ++i) {
