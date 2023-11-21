@@ -241,18 +241,47 @@ namespace x64 {
             if(!entry.st_name) return;
             if(symbol != "main") return;
             if(entry.type() == elf::SymbolType::FUNC || entry.type() == elf::SymbolType::OBJECT)
-                symbolProvider_->registerSymbol(symbol, elfOffset + entry.st_value, &elf, elfOffset, entry.st_size, entry.type(), entry.bind());
+                symbolProvider_->registerSymbol(symbol, "", elfOffset + entry.st_value, &elf, elfOffset, entry.st_size, entry.type(), entry.bind());
             if(entry.type() == elf::SymbolType::TLS)
-                symbolProvider_->registerSymbol(symbol, entry.st_value, &elf, elfOffset, entry.st_size, entry.type(), entry.bind());
+                symbolProvider_->registerSymbol(symbol, "", entry.st_value, &elf, elfOffset, entry.st_size, entry.type(), entry.bind());
         });
+        std::vector<u32> versionIds;
+        if(auto versions = elf.symbolVersions()) {
+            versions->forAll([&](u32 value) { versionIds.push_back(value); });
+        }
+        std::unordered_map<u32, std::string> versionIdToName;
+        if(auto dynamicStringTable = elf.dynamicStringTable()) {
+            if(auto versionDefinitions = elf.symbolVersionDefinitions()) {
+                versionDefinitions->forAllDefinitions([&, idx = 0u](const elf::Elf64Verdef&, u32 count, const elf::Elf64Verdaux* aux) mutable {
+                    for(u32 i = 0; i < count; ++i) {
+                        const elf::Elf64Verdaux& entry = aux[i];
+                        assert(entry.vda_next == sizeof(elf::Elf64Verdaux) || entry.vda_next == 0);
+                        std::string_view name = dynamicStringTable->operator[](entry.vda_name);
+                        fmt::print("Add version {} at {:#x}\n", name, idx);
+                        versionIdToName[idx] = std::string(name);
+                    }
+                    ++idx;
+                });
+            }
+        }
+        u64 index = 0;
         elf.forAllDynamicSymbols([&](const elf::StringTable* stringTable, const elf::SymbolTableEntry64& entry) {
             std::string symbol { entry.symbol(stringTable, elf) };
-            if(entry.isUndefined()) return;
-            if(!entry.st_name) return;
+            if(entry.isUndefined()) { ++index; return; }
+            if(!entry.st_name) { ++index; return; }
+            // private symbol
+            if(versionIds[index] & (1 << 15)) { ++index; return; }
+            std::string version = [&]() -> std::string {
+                if(index >= versionIds.size()) return {};
+                auto it = versionIdToName.find(versionIds[index]);
+                if(it == versionIdToName.end()) return {};
+                return it->second;
+            }();
             if(entry.type() == elf::SymbolType::FUNC || entry.type() == elf::SymbolType::OBJECT)
-                symbolProvider_->registerDynamicSymbol(symbol, elfOffset + entry.st_value, &elf, elfOffset, entry.st_size, entry.type(), entry.bind());
+                symbolProvider_->registerDynamicSymbol(symbol, version, elfOffset + entry.st_value, &elf, elfOffset, entry.st_size, entry.type(), entry.bind());
             if(entry.type() == elf::SymbolType::TLS)
-                symbolProvider_->registerDynamicSymbol(symbol, entry.st_value, &elf, elfOffset, entry.st_size, entry.type(), entry.bind());
+                symbolProvider_->registerDynamicSymbol(symbol, version, entry.st_value, &elf, elfOffset, entry.st_size, entry.type(), entry.bind());
+            ++index;
         });
     }
 
@@ -281,12 +310,53 @@ namespace x64 {
                 return symbol;
             }();
 
+            std::optional<std::string> symbolVersion = [&]() -> std::optional<std::string> {
+                u64 index = relocation.sym();
+                auto dynamicStringTable = elf.dynamicStringTable();
+                if(!dynamicStringTable) return {};
+                if(index >= dynamicStringTable->size()) return {};
+                auto versions = elf.symbolVersions();
+                if(!versions) return {};
+                std::optional<u32> version;
+                versions->forAll([&, idx = 0u](u32 v) mutable {
+                    if(idx == index) version = v;
+                    ++idx;
+                });
+                if(!version) return {};
+                auto versionDefinitions = elf.symbolVersionDefinitions();
+                if(!versionDefinitions) return {};
+                std::optional<std::string> versionString;
+                versionDefinitions->forAllDefinitions([&, idx = 0u](const elf::Elf64Verdef&, u32 count, const elf::Elf64Verdaux* aux) mutable {
+                    if(idx == index) {
+                        for(u32 i = 0; i < count; ++i) {
+                            versionString = std::string(dynamicStringTable->operator[](aux[i].vda_name));
+                        }
+                    }
+                    ++idx;
+                });
+
+                // versionDefinitions->forAllDefinitions([&](const elf::Elf64Verdef&, u32 count, const elf::Elf64Verdaux* aux) {
+                //     for(u32 i = 0; i < count; ++i) {
+                //         if(aux[i].vna_other != index) continue;
+                //         versionString = std::string(dynamicStringTable->operator[](aux[i].vna_name));
+                //     }
+                // });
+                return versionString;
+            }();
+
             std::vector<const SymbolProvider::Entry*> symbolEntries = [&]() -> std::vector<const SymbolProvider::Entry*> {
                 // if the symbol has no name, give up
                 if(!symbolName) return {};
 
+                // if the symbol has a version, use it if it is non-empty (FIXME: remove this hack)
+                if(!!symbolVersion) {
+                    auto res = symbolProvider_->lookupSymbolWithVersion(symbolName.value(), symbolVersion.value(), false);
+                    if(!res.empty()) return res;
+                    return res;
+                }
+
                 // otherwise try performing lookup
-                return symbolProvider_->lookupRawSymbol(symbolName.value(), false);
+                return symbolProvider_->lookupSymbolWithoutVersion(symbolName.value(), false);
             }();
 
             std::optional<u64> S = [&]() -> std::optional<u64> {
@@ -303,15 +373,26 @@ namespace x64 {
 
                 if(symbolEntries.empty() && sym->bind() == elf::SymbolBind::WEAK) return 0;
 
-                verify(symbolEntries.size() <= 1, [&]() {
-                    fmt::print("Unhandled case with 2 or more matching symbols\n");
-                    fmt::print("lookup for {} found {} entries\n", symbolName.value(), symbolEntries.size());
-                    for(const auto* e: symbolEntries) {
-                        fmt::print("  elfOffset={:#x} elf={} address={:#x} size={} bind={}\n", e->elfOffset, (void*)e->elf, e->address, e->size, (int)e->bind);
-                    }
-                });
+                if(symbolEntries.empty()) return 0x0;
+                if(symbolEntries.size() == 1) return symbolEntries[0]->address;
 
-                return (symbolEntries.empty()) ? 0x0 : symbolEntries[0]->address;
+                std::sort(symbolEntries.begin(), symbolEntries.end(), [](const SymbolProvider::Entry* a, const SymbolProvider::Entry* b) {
+                    if(a->bind == elf::SymbolBind::GLOBAL && b->bind != elf::SymbolBind::GLOBAL) return true;
+                    if(a->bind != elf::SymbolBind::GLOBAL && b->bind == elf::SymbolBind::GLOBAL) return false;
+                    return true;
+                });
+                return symbolEntries[0]->address;
+
+                // verify(symbolEntries.size() <= 1, [&]() {
+                //     fmt::print("Unhandled case with 2 or more matching symbols\n");
+                //     fmt::print("lookup for {} found {} entries\n", symbolName.value(), symbolEntries.size());
+                //     for(const auto* e: symbolEntries) {
+                //         fmt::print("  elfOffset={:#x} elf={} address={:#x} version=\"{}\" size={} bind={}\n",
+                //                     e->elfOffset, (void*)e->elf, e->address, e->version, e->size, (int)e->bind);
+                //     }
+                // });
+
+                // return (symbolEntries.empty()) ? 0x0 : symbolEntries[0]->address;
             }();
 
             u64 B = loadedElf.offset;

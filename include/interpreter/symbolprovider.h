@@ -19,6 +19,7 @@ namespace x64 {
         struct Entry {
             std::string symbol;
             std::string demangledSymbol;
+            std::string version;
             u64 address;
             const elf::Elf64* elf;
             u64 elfOffset;
@@ -27,17 +28,19 @@ namespace x64 {
             elf::SymbolBind bind;
         };
 
-        void registerSymbol(std::string symbol, u64 address, const elf::Elf64* elf, u64 elfOffset, u64 size, elf::SymbolType type, elf::SymbolBind bind);
-        void registerDynamicSymbol(std::string symbol, u64 address, const elf::Elf64* elf, u64 elfOffset, u64 size, elf::SymbolType type, elf::SymbolBind bind);
+        void registerSymbol(std::string symbol, std::string version, u64 address, const elf::Elf64* elf, u64 elfOffset, u64 size, elf::SymbolType type, elf::SymbolBind bind);
+        void registerDynamicSymbol(std::string symbol, std::string version, u64 address, const elf::Elf64* elf, u64 elfOffset, u64 size, elf::SymbolType type, elf::SymbolBind bind);
 
-        std::vector<const SymbolProvider::Entry*> lookupRawSymbol(const std::string& symbol, bool demangled) const;
+        std::vector<const SymbolProvider::Entry*> lookupSymbolWithVersion(const std::string& symbol, const std::string& version, bool demangled) const;
+        std::vector<const SymbolProvider::Entry*> lookupSymbolWithoutVersion(const std::string& symbol, bool demangled) const;
         std::vector<const SymbolProvider::Entry*> lookupSymbol(u64 address) const;
 
     private:
 
         struct Table {
-            void registerSymbol(std::string symbol, u64 address, const elf::Elf64* elf, u64 elfOffset, u64 size, elf::SymbolType type, elf::SymbolBind bind);
+            void registerSymbol(std::string symbol, std::string version, u64 address, const elf::Elf64* elf, u64 elfOffset, u64 size, elf::SymbolType type, elf::SymbolBind bind);
 
+            std::vector<const SymbolProvider::Entry*> lookupSymbol(const std::string& symbol, const std::string& version, bool demangled) const;
             std::vector<const SymbolProvider::Entry*> lookupSymbol(const std::string& symbol, bool demangled) const;
             std::vector<const SymbolProvider::Entry*> lookupSymbol(u64 address) const;
 

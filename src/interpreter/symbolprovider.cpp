@@ -7,15 +7,21 @@
 namespace x64 {
 
 
-    void SymbolProvider::registerSymbol(std::string symbol, u64 address, const elf::Elf64* elf, u64 elfOffset, u64 size, elf::SymbolType type, elf::SymbolBind bind) {
-        staticSymbols_.registerSymbol(symbol, address, elf, elfOffset, size, type, bind);
+    void SymbolProvider::registerSymbol(std::string symbol, std::string version, u64 address, const elf::Elf64* elf, u64 elfOffset, u64 size, elf::SymbolType type, elf::SymbolBind bind) {
+        staticSymbols_.registerSymbol(symbol, version, address, elf, elfOffset, size, type, bind);
     }
 
-    void SymbolProvider::registerDynamicSymbol(std::string symbol, u64 address, const elf::Elf64* elf, u64 elfOffset, u64 size, elf::SymbolType type, elf::SymbolBind bind) {
-        dynamicSymbols_.registerSymbol(symbol, address, elf, elfOffset, size, type, bind);
+    void SymbolProvider::registerDynamicSymbol(std::string symbol, std::string version, u64 address, const elf::Elf64* elf, u64 elfOffset, u64 size, elf::SymbolType type, elf::SymbolBind bind) {
+        dynamicSymbols_.registerSymbol(symbol, version, address, elf, elfOffset, size, type, bind);
     }
 
-    std::vector<const SymbolProvider::Entry*> SymbolProvider::lookupRawSymbol(const std::string& symbol, bool demangled) const {
+    std::vector<const SymbolProvider::Entry*> SymbolProvider::lookupSymbolWithVersion(const std::string& symbol, const std::string& version, bool demangled) const {
+        auto result = staticSymbols_.lookupSymbol(symbol, version, demangled);
+        if(result.empty()) result = dynamicSymbols_.lookupSymbol(symbol, version, demangled);
+        return result;
+    }
+
+    std::vector<const SymbolProvider::Entry*> SymbolProvider::lookupSymbolWithoutVersion(const std::string& symbol, bool demangled) const {
         auto result = staticSymbols_.lookupSymbol(symbol, demangled);
         if(result.empty()) result = dynamicSymbols_.lookupSymbol(symbol, demangled);
         return result;
@@ -27,7 +33,7 @@ namespace x64 {
         return result;
     }
     
-    void SymbolProvider::Table::registerSymbol(std::string symbol, u64 address, const elf::Elf64* elf, u64 elfOffset, u64 size, elf::SymbolType type, elf::SymbolBind bind) {
+    void SymbolProvider::Table::registerSymbol(std::string symbol, std::string version, u64 address, const elf::Elf64* elf, u64 elfOffset, u64 size, elf::SymbolType type, elf::SymbolBind bind) {
 #if 0
         fmt::print(stderr, "Register symbol address={:#x} symbol=\"{}\"\n", address, symbol);
 #endif
@@ -35,6 +41,7 @@ namespace x64 {
         storage_.push_back(Entry {
             symbol,
             boost::core::demangle(symbol.c_str()),
+            version,
             address,
             elf,
             elfOffset,
@@ -53,6 +60,25 @@ namespace x64 {
         byAddress_[address].push_back(e);
         byName_[e->symbol].push_back(e);
         byDemangledName_[e->demangledSymbol].push_back(e);
+    }
+
+    std::vector<const SymbolProvider::Entry*> SymbolProvider::Table::lookupSymbol(const std::string& symbol, const std::string& version, bool demangled) const {
+        const auto* lookup = demangled ? &byDemangledName_ : &byName_;
+        auto it = lookup->find(symbol);
+        if(it != lookup->end()) {
+            auto res = it->second;
+            res.erase(std::remove_if(res.begin(), res.end(), [&](const SymbolProvider::Entry* entry) {
+                return entry->version != version;
+            }), res.end());
+            return res;
+        } else if(auto pos = symbol.find_first_of('@'); pos != std::string::npos) {
+            std::string truncatedSymbol = symbol.substr(0, pos);
+            it = lookup->find(symbol);
+            if(it != lookup->end()) {
+                return it->second;
+            }
+        }
+        return {};
     }
 
     std::vector<const SymbolProvider::Entry*> SymbolProvider::Table::lookupSymbol(const std::string& symbol, bool demangled) const {

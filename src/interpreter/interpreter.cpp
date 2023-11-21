@@ -192,7 +192,7 @@ namespace x64 {
             verify(!func->instructions.empty(), "empty libc function");
             verify(!!func->instructions[0], "libc function with invalid instruction");
             func->address = func->instructions[0]->address;
-            symbolProvider_->registerSymbol(func->name, func->address, nullptr, libcOffset, 0, elf::SymbolType::FUNC, elf::SymbolBind::GLOBAL);
+            symbolProvider_->registerSymbol(func->name, "", func->address, nullptr, libcOffset, 0, elf::SymbolType::FUNC, elf::SymbolBind::GLOBAL);
         }
 
         executableSections_.push_back(std::move(libcSection));
@@ -308,7 +308,7 @@ namespace x64 {
     }
 
     void Interpreter::executeMain() {
-        auto mainSymbol = symbolProvider_->lookupRawSymbol("main", false);
+        auto mainSymbol = symbolProvider_->lookupSymbolWithoutVersion("main", false);
         verify(!mainSymbol.empty(), "Cannot find \"main\" symbol");
         verify(mainSymbol.size() <= 1, "Found \"main\" symbol 2 or more times");
         execute(mainSymbol[0]->address);
