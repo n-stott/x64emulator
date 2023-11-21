@@ -53,10 +53,11 @@ namespace x64 {
         elf64->forAllProgramHeaders([&](const elf::ProgramHeader64& header) {
             if(header.type() != elf::ProgramHeaderType::PT_INTERP) return;
             const u8* data = elf64->dataAtOffset(header.offset(), header.sizeInFile());
-            std::string interpreterPath;
-            interpreterPath.resize(header.sizeInFile());
-            memcpy(interpreterPath.data(), data, header.sizeInFile());
-            loadElf(interpreterPath, ElfType::SHARED_OBJECT);
+            std::vector<char> interpreterPathData;
+            interpreterPathData.resize(header.sizeInFile(), 0x0);
+            memcpy(interpreterPathData.data(), data, header.sizeInFile());
+            std::string interpreterPath(interpreterPathData.data());
+            loadLibrary(interpreterPath);
         });                                                               
 
         u64 totalLoadSize = 0;
