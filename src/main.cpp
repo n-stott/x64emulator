@@ -71,7 +71,6 @@ int main(int argc, char* argv[]) {
         loader.loadElf(programPath, x64::Loader::ElfType::MAIN_EXECUTABLE);
         loader.registerInitFunctions();
         loader.registerSymbols();
-        interpreter.loadLibC();
         loader.prepareTlsTemplate();
         loader.resolveAllRelocations();
         loader.loadTlsBlocks();

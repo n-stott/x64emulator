@@ -31,14 +31,8 @@ namespace x64 {
     void Loader::loadLibrary(const std::string& filename) {
         if(std::find(loadedLibraries_.begin(), loadedLibraries_.end(), filename) != loadedLibraries_.end()) return;
         loadedLibraries_.push_back(filename);
-        auto it = filename.find_first_of('.');
-        if(it != std::string::npos) {
-            auto shortName = filename.substr(0, it);
-            if(shortName == "libc") return loadElf(libcPath_, ElfType::SHARED_OBJECT);
-            if(shortName == "ld-linux-x86-64") return;
-        }
         std::string prefix;
-        it = filename.find_first_of('/');
+        auto it = filename.find_first_of('/');
         if(it == std::string::npos) {
             prefix = "/usr/lib/x86_64-linux-gnu/";
         }
@@ -55,6 +49,15 @@ namespace x64 {
 
         std::string shortFilePath = filepath.find_last_of('/') == std::string::npos ? filepath
                                                                                     : filepath.substr(filepath.find_last_of('/')+1);
+          
+        elf64->forAllProgramHeaders([&](const elf::ProgramHeader64& header) {
+            if(header.type() != elf::ProgramHeaderType::PT_INTERP) return;
+            const u8* data = elf64->dataAtOffset(header.offset(), header.sizeInFile());
+            std::string interpreterPath;
+            interpreterPath.resize(header.sizeInFile());
+            memcpy(interpreterPath.data(), data, header.sizeInFile());
+            loadElf(interpreterPath, ElfType::SHARED_OBJECT);
+        });                                                               
 
         u64 totalLoadSize = 0;
         elf64->forAllProgramHeaders([&](const elf::ProgramHeader64& header) {
