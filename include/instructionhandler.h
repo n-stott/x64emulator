@@ -287,6 +287,9 @@ namespace x64 {
         virtual void exec(const Rol<R32, R8>&) = 0;
         virtual void exec(const Rol<R32, Imm>&) = 0;
         virtual void exec(const Rol<M32, Imm>&) = 0;
+        virtual void exec(const Rol<R64, R8>&) = 0;
+        virtual void exec(const Rol<R64, Imm>&) = 0;
+        virtual void exec(const Rol<M64, Imm>&) = 0;
 
         virtual void exec(const Tzcnt<R16, R16>&) = 0;
         virtual void exec(const Tzcnt<R16, M16>&) = 0;

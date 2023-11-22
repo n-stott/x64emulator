@@ -95,6 +95,9 @@ namespace x64 {
             [[nodiscard]] static u32 sar32(u32 dst, u32 src, Flags* flags);
             [[nodiscard]] static u64 sar64(u64 dst, u64 src, Flags* flags);
 
+            [[nodiscard]] static u32 rol32(u32 val, u8 count, Flags* flags);
+            [[nodiscard]] static u64 rol64(u64 val, u8 count, Flags* flags);
+
             [[nodiscard]] static u32 bsr32(u32 val, Flags* flags);
             [[nodiscard]] static u64 bsr64(u64 val, Flags* flags);
 
@@ -473,6 +476,9 @@ namespace x64 {
         void exec(const Rol<R32, R8>&) override;
         void exec(const Rol<R32, Imm>&) override;
         void exec(const Rol<M32, Imm>&) override;
+        void exec(const Rol<R64, R8>&) override;
+        void exec(const Rol<R64, Imm>&) override;
+        void exec(const Rol<M64, Imm>&) override;
 
         void exec(const Tzcnt<R16, R16>&) override;
         void exec(const Tzcnt<R16, M16>&) override;
