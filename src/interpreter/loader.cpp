@@ -238,8 +238,6 @@ namespace x64 {
 
         TCB tcb = TCB::create(tcbBase);
         loadable_->write(tcbBase, reinterpret_cast<const u8*>(&tcb), sizeof(TCB));
-        loadable_->mprotect(tcbBase, Mmu::PAGE_SIZE, PROT_READ);
-
         loadable_->setFsBase(tcbBase);
     }
 
