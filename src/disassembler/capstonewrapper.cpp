@@ -1139,11 +1139,16 @@ namespace x64 {
         const cs_x86_op& src = x86detail.operands[1];
         auto r32dst = asRegister32(dst);
         auto m32dst = asMemory32(dst);
+        auto r64dst = asRegister64(dst);
+        auto m64dst = asMemory64(dst);
         auto r8src = asRegister8(src);
         auto immsrc = asImmediate(src);
         if(r32dst && r8src) return make_wrapper<Rol<R32, R8>>(insn.address, r32dst.value(), r8src.value());
         if(r32dst && immsrc) return make_wrapper<Rol<R32, Imm>>(insn.address, r32dst.value(), immsrc.value());
         if(m32dst && immsrc) return make_wrapper<Rol<M32, Imm>>(insn.address, m32dst.value(), immsrc.value());
+        if(r64dst && r8src) return make_wrapper<Rol<R64, R8>>(insn.address, r64dst.value(), r8src.value());
+        if(r64dst && immsrc) return make_wrapper<Rol<R64, Imm>>(insn.address, r64dst.value(), immsrc.value());
+        if(m64dst && immsrc) return make_wrapper<Rol<M64, Imm>>(insn.address, m64dst.value(), immsrc.value());
         return make_failed(insn);
     }
 

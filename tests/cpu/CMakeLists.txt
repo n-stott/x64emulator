@@ -28,3 +28,11 @@ target_include_directories(test_sub PUBLIC include ${CMAKE_SOURCE_DIR}/include $
 target_link_libraries(test_sub PUBLIC emulator)
 target_link_options(test_sub PUBLIC ${LD_OPTIONS})
 add_test(NAME sub COMMAND test_sub)
+
+add_executable(test_rol src/test_rol.cpp)
+target_compile_options(test_rol PUBLIC ${CC_OPTIONS})
+target_compile_options(test_rol PUBLIC -DFMT_HEADER_ONLY)
+target_include_directories(test_rol PUBLIC include ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/external)
+target_link_libraries(test_rol PUBLIC emulator)
+target_link_options(test_rol PUBLIC ${LD_OPTIONS})
+add_test(NAME rol COMMAND test_rol)
