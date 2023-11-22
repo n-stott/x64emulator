@@ -28,19 +28,35 @@ namespace x64 {
         assert(!libcPath_.empty());
     }
 
-    void Loader::loadLibrary(const std::string& filename) {
+    void Loader::loadLibrary(const std::string& filepath) {
+        std::string filename = filepath;
+        auto filenameBegin = filepath.find_last_of('/');
+        if(filenameBegin != std::string::npos) filename = filename.substr(filenameBegin+1);
+        fmt::print("Try load \"{}\" with already loaded:\n", filename);
+        for(auto s : loadedLibraries_) {
+            fmt::print("         \"{}\"\n", s);
+        }
         if(std::find(loadedLibraries_.begin(), loadedLibraries_.end(), filename) != loadedLibraries_.end()) return;
+        fmt::print("Proceed\n");
+        if(loadedLibraries_.size() == 2) {
+            fmt::print("\"{}\" \"{}\" {}\n", loadedLibraries_[0], filename, loadedLibraries_[0].compare(filename));
+            auto s1 = loadedLibraries_[0];
+            auto s2 = filename;
+            int r = ::memcmp(s1.data(), s2.data(), s1.size()+1);
+            fmt::print("{} {} {} {}\n", s1.size(), s2.size(), r, s1.compare(s2));
+        }
         loadedLibraries_.push_back(filename);
         std::string prefix;
-        auto it = filename.find_first_of('/');
+        auto it = filepath.find_first_of('/');
         if(it == std::string::npos) {
             prefix = "/usr/lib/x86_64-linux-gnu/";
         }
-        auto path = prefix + filename;
+        auto path = prefix + filepath;
         loadElf(path, ElfType::SHARED_OBJECT);
     }
     
     void Loader::loadElf(const std::string& filepath, ElfType elfType) {
+        fmt::print("Load {}\n", filepath);
         auto elf = elf::ElfReader::tryCreate(filepath);
         verify(!!elf, [&]() { fmt::print("Failed to load elf {}\n", filepath); });
         verify(elf->archClass() == elf::Class::B64, "elf must be 64-bit");
@@ -49,7 +65,7 @@ namespace x64 {
 
         std::string shortFilePath = filepath.find_last_of('/') == std::string::npos ? filepath
                                                                                     : filepath.substr(filepath.find_last_of('/')+1);
-          
+
         elf64->forAllProgramHeaders([&](const elf::ProgramHeader64& header) {
             if(header.type() != elf::ProgramHeaderType::PT_INTERP) return;
             const u8* data = elf64->dataAtOffset(header.offset(), header.sizeInFile());
@@ -78,6 +94,10 @@ namespace x64 {
         u64 elfOffset = elf64->type() == elf::Type::ET_DYN
                         ? getOffsetForPositionIndependentExecutable()
                         : 0;
+
+        if(elfType == ElfType::MAIN_EXECUTABLE) {
+            loadable_->setEntrypoint(elfOffset + elf64->entrypoint());
+        }
 
         elf64->forAllProgramHeaders([&](const elf::ProgramHeader64& header) {
             if(header.type() == elf::ProgramHeaderType::PT_LOAD) {
@@ -116,9 +136,10 @@ namespace x64 {
         }
     }
 
-    void Loader::registerSymbols() {
+    void Loader::registerDynamicSymbols() {
         for(auto it = elfs_.begin(); it != elfs_.end(); ++it) {
-            registerSymbols(*it->elf, it->offset);
+            fmt::print("Elf {}\n", it->filename);
+            registerDynamicSymbols(*it->elf, it->offset);
         }
     }
 
@@ -237,18 +258,7 @@ namespace x64 {
         }
     }
 
-    void Loader::registerSymbols(const elf::Elf64& elf, u64 elfOffset) {
-        // only register main
-        elf.forAllSymbols([&](const elf::StringTable* stringTable, const elf::SymbolTableEntry64& entry) {
-            std::string symbol { entry.symbol(stringTable, elf) };
-            if(entry.isUndefined()) return;
-            if(!entry.st_name) return;
-            if(symbol != "main") return;
-            if(entry.type() == elf::SymbolType::FUNC || entry.type() == elf::SymbolType::OBJECT)
-                symbolProvider_->registerSymbol(symbol, "", elfOffset + entry.st_value, &elf, elfOffset, entry.st_size, entry.type(), entry.bind());
-            if(entry.type() == elf::SymbolType::TLS)
-                symbolProvider_->registerSymbol(symbol, "", entry.st_value, &elf, elfOffset, entry.st_size, entry.type(), entry.bind());
-        });
+    void Loader::registerDynamicSymbols(const elf::Elf64& elf, u64 elfOffset) {
         std::vector<u32> versionIds;
         if(auto versions = elf.symbolVersions()) {
             versions->forAll([&](u32 value) { versionIds.push_back(value); });
@@ -256,13 +266,14 @@ namespace x64 {
         std::unordered_map<u32, std::string> versionIdToName;
         if(auto dynamicStringTable = elf.dynamicStringTable()) {
             if(auto versionDefinitions = elf.symbolVersionDefinitions()) {
-                versionDefinitions->forAllDefinitions([&, idx = 0u](const elf::Elf64Verdef&, u32 count, const elf::Elf64Verdaux* aux) mutable {
+                versionDefinitions->forAllDefinitions([&, idx = 0u](const elf::Elf64Verdef& def, u32 count, const elf::Elf64Verdaux* aux) mutable {
                     for(u32 i = 0; i < count; ++i) {
                         const elf::Elf64Verdaux& entry = aux[i];
                         assert(entry.vda_next == sizeof(elf::Elf64Verdaux) || entry.vda_next == 0);
                         std::string_view name = dynamicStringTable->operator[](entry.vda_name);
-                        fmt::print("Add version {} at {:#x}\n", name, idx);
-                        versionIdToName[idx] = std::string(name);
+                        fmt::print("Add version {} at {:#x}\n", name, def.vd_ndx);
+                        if(versionIdToName.count(def.vd_ndx) == 0)
+                            versionIdToName[def.vd_ndx] = std::string(name);
                     }
                     ++idx;
                 });
@@ -281,6 +292,9 @@ namespace x64 {
                 if(it == versionIdToName.end()) return {};
                 return it->second;
             }();
+            if(version.empty()) {
+                fmt::print("Unable to find version for {} at index {} id {}\n", symbol, index, versionIds[index]);
+            }
             if(entry.type() == elf::SymbolType::FUNC || entry.type() == elf::SymbolType::OBJECT)
                 symbolProvider_->registerDynamicSymbol(symbol, version, elfOffset + entry.st_value, &elf, elfOffset, entry.st_size, entry.type(), entry.bind());
             if(entry.type() == elf::SymbolType::TLS)
@@ -331,8 +345,9 @@ namespace x64 {
                 if(!versionDefinitions) return {};
                 std::optional<std::string> versionString;
                 versionDefinitions->forAllDefinitions([&, idx = 0u](const elf::Elf64Verdef&, u32 count, const elf::Elf64Verdaux* aux) mutable {
-                    if(idx == index) {
+                    if(idx == version.value()) {
                         for(u32 i = 0; i < count; ++i) {
+                            if(!!versionString) continue;
                             versionString = std::string(dynamicStringTable->operator[](aux[i].vda_name));
                         }
                     }
@@ -355,6 +370,13 @@ namespace x64 {
                 // if the symbol has a version, use it if it is non-empty (FIXME: remove this hack)
                 if(!!symbolVersion) {
                     auto res = symbolProvider_->lookupSymbolWithVersion(symbolName.value(), symbolVersion.value(), false);
+                    if(res.empty()) {
+                        fmt::print("Could not find version symbol {} with version {}\n", symbolName.value(), symbolVersion.value()); 
+                        auto res2 = symbolProvider_->lookupSymbolWithoutVersion(symbolName.value(), false);
+                        for(const auto* r : res2) {
+                            fmt::print("  but found with version \"{}\"\n", r->version);
+                        }
+                    }
                     if(!res.empty()) return res;
                     return res;
                 }
@@ -376,6 +398,10 @@ namespace x64 {
                 if(!symbolName) return {};
 
                 if(symbolEntries.empty() && sym->bind() == elf::SymbolBind::WEAK) return 0;
+
+                verify(!symbolEntries.empty(), [&]() {
+                    fmt::print("No symbol entry found for {} for relocation in {}\n", symbolName.value(), loadedElf.filename);
+                });
 
                 if(symbolEntries.empty()) return 0x0;
                 if(symbolEntries.size() == 1) return symbolEntries[0]->address;

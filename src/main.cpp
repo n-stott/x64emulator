@@ -70,7 +70,7 @@ int main(int argc, char* argv[]) {
     x64::VerificationScope::run([&]() {
         loader.loadElf(programPath, x64::Loader::ElfType::MAIN_EXECUTABLE);
         loader.registerInitFunctions();
-        loader.registerSymbols();
+        loader.registerDynamicSymbols();
         loader.prepareTlsTemplate();
         loader.resolveAllRelocations();
         loader.loadTlsBlocks();

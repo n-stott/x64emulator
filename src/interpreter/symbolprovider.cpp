@@ -6,36 +6,28 @@
 
 namespace x64 {
 
-
-    void SymbolProvider::registerSymbol(std::string symbol, std::string version, u64 address, const elf::Elf64* elf, u64 elfOffset, u64 size, elf::SymbolType type, elf::SymbolBind bind) {
-        staticSymbols_.registerSymbol(symbol, version, address, elf, elfOffset, size, type, bind);
-    }
-
     void SymbolProvider::registerDynamicSymbol(std::string symbol, std::string version, u64 address, const elf::Elf64* elf, u64 elfOffset, u64 size, elf::SymbolType type, elf::SymbolBind bind) {
         dynamicSymbols_.registerSymbol(symbol, version, address, elf, elfOffset, size, type, bind);
     }
 
     std::vector<const SymbolProvider::Entry*> SymbolProvider::lookupSymbolWithVersion(const std::string& symbol, const std::string& version, bool demangled) const {
-        auto result = staticSymbols_.lookupSymbol(symbol, version, demangled);
-        if(result.empty()) result = dynamicSymbols_.lookupSymbol(symbol, version, demangled);
+        auto result = dynamicSymbols_.lookupSymbol(symbol, version, demangled);
         return result;
     }
 
     std::vector<const SymbolProvider::Entry*> SymbolProvider::lookupSymbolWithoutVersion(const std::string& symbol, bool demangled) const {
-        auto result = staticSymbols_.lookupSymbol(symbol, demangled);
-        if(result.empty()) result = dynamicSymbols_.lookupSymbol(symbol, demangled);
+        auto result = dynamicSymbols_.lookupSymbol(symbol, demangled);
         return result;
     }
 
     std::vector<const SymbolProvider::Entry*> SymbolProvider::lookupSymbol(u64 address) const {
-        auto result = staticSymbols_.lookupSymbol(address);
-        if(result.empty()) result = dynamicSymbols_.lookupSymbol(address);
+        auto result = dynamicSymbols_.lookupSymbol(address);
         return result;
     }
     
     void SymbolProvider::Table::registerSymbol(std::string symbol, std::string version, u64 address, const elf::Elf64* elf, u64 elfOffset, u64 size, elf::SymbolType type, elf::SymbolBind bind) {
-#if 0
-        fmt::print(stderr, "Register symbol address={:#x} symbol=\"{}\"\n", address, symbol);
+#if 1
+        fmt::print(stderr, "Register symbol address={:#x} symbol=\"{}\" version=\"{}\"\n", address, symbol, version);
 #endif
         if(symbol.size() >= 9 && symbol.substr(0, 9) == "fakelibc$") symbol = symbol.substr(9);
         storage_.push_back(Entry {

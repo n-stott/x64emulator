@@ -67,6 +67,10 @@ namespace x64 {
         executableSections_.push_back(std::move(section));
     }
 
+    void Interpreter::setEntrypoint(u64 entrypoint) {
+        entrypoint_ = entrypoint;
+    }
+
     u64 Interpreter::mmap(u64 address, u64 length, int prot, int flags, int fd, int offset) {
         return mmu_.mmap(address, length, prot, flags, fd, offset);
     }
@@ -151,51 +155,11 @@ namespace x64 {
             runInit();
             if(stop_) return;
             pushProgramArguments(programFilePath, arguments);
-            executeMain();
+            verify(entrypoint_.has_value(), "No entrypoint");
+            execute(entrypoint_.value());
         }, [&]() {
             crash();
         });
-    }
-
-    void Interpreter::loadLibC() {
-        libc_ = std::make_unique<LibC>();
-        u64 libcSize = 0;
-        libc_->forAllFunctions(ExecutionContext(*this), [&](std::vector<std::unique_ptr<X86Instruction>> instructions, std::unique_ptr<Function>) {
-            libcSize += instructions.size();
-        });
-        libcSize = Mmu::pageRoundUp(libcSize);
-
-        u64 libcOffset = mmu_.mmap(0, libcSize, PROT_EXEC, 0, 0, 0);
-        ExecutableSection libcSection {
-            "libc:.text",
-            libcOffset,
-            {},
-        };
-        auto& libcInstructions = libcSection.instructions;
-        std::vector<std::unique_ptr<Function>> libcFunctions;
-        libc_->forAllFunctions(ExecutionContext(*this), [&](std::vector<std::unique_ptr<X86Instruction>> instructions, std::unique_ptr<Function> function) {
-            for(auto&& insn : instructions) {
-                libcInstructions.push_back(std::move(insn));
-            }
-            function->address += libcOffset;
-            libcFunctions.push_back(std::move(function));
-        });
-        // set instruction address
-        u64 address = 0;
-        for(auto& insn : libcInstructions) {
-            insn->address = libcOffset + address;
-            ++address;
-        }
-        // set function address and register symbol
-        for(auto& func : libcFunctions) {
-            verify(!!func, "undefined libc function");
-            verify(!func->instructions.empty(), "empty libc function");
-            verify(!!func->instructions[0], "libc function with invalid instruction");
-            func->address = func->instructions[0]->address;
-            symbolProvider_->registerSymbol(func->name, "", func->address, nullptr, libcOffset, 0, elf::SymbolType::FUNC, elf::SymbolBind::GLOBAL);
-        }
-
-        executableSections_.push_back(std::move(libcSection));
     }
 
     void Interpreter::setupStack() {

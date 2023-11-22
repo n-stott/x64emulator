@@ -24,6 +24,8 @@ namespace x64 {
         virtual ~Loadable() = default;
         virtual void addExecutableSection(ExecutableSection section) = 0;
 
+        virtual void setEntrypoint(u64 entrypoint) = 0;
+
         virtual u64 mmap(u64 address, u64 length, int prot, int flags, int fd, int offset) = 0;
         virtual int munmap(u64 address, u64 length) = 0;
         virtual int mprotect(u64 address, u64 length, int prot) = 0;
@@ -52,7 +54,7 @@ namespace x64 {
 
         void loadElf(const std::string& filepath, ElfType elfType);
         void registerInitFunctions();
-        void registerSymbols();
+        void registerDynamicSymbols();
         void prepareTlsTemplate();
         void resolveAllRelocations();
         void loadTlsBlocks();
@@ -61,10 +63,10 @@ namespace x64 {
         void loadExecutableProgramHeader(const elf::Elf64& elf, const elf::ProgramHeader64& header, const std::string& filePath, const std::string& shortFilePath, u64 elfOffset);
         void loadNonExecutableProgramHeader(const elf::Elf64& elf, const elf::ProgramHeader64& header, const std::string& shortFilePath, u64 elfOffset);
         void registerInitFunctions(const elf::Elf64& elf, u64 elfOffset);
-        void registerSymbols(const elf::Elf64& elf, u64 elfOffset);
+        void registerDynamicSymbols(const elf::Elf64& elf, u64 elfOffset);
         void loadNeededLibraries(const elf::Elf64& elf);
 
-        void loadLibrary(const std::string& filename);
+        void loadLibrary(const std::string& filepath);
 
         struct LoadedElf {
             ~LoadedElf();

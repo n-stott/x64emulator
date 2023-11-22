@@ -25,6 +25,7 @@ namespace x64 {
         bool logInstructions() const;
 
         void addExecutableSection(ExecutableSection section) override;
+        void setEntrypoint(u64 entrypoint) override;
 
         u64 mmap(u64 address, u64 length, int prot, int flags, int fd, int offset) override;
         int munmap(u64 address, u64 length) override;
@@ -40,8 +41,6 @@ namespace x64 {
 
         void read(u8* dst, u64 srcAddress, u64 nbytes) override;
         void write(u64 dstAddress, const u8* src, u64 nbytes) override;
-
-        void loadLibC();
 
     private:
 
@@ -72,6 +71,7 @@ namespace x64 {
         SymbolProvider* symbolProvider_;
 
         std::vector<u64> initFunctions_;
+        std::optional<u64> entrypoint_;
 
         bool stop_ = false;
         bool logInstructions_ = false;

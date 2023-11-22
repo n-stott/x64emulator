@@ -51,7 +51,6 @@ namespace x64 {
             std::unordered_map<std::string, std::vector<const Entry*>> byDemangledName_;
         };
 
-        Table staticSymbols_;
         Table dynamicSymbols_;
     };
 
