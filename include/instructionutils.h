@@ -221,9 +221,16 @@ namespace utils {
 
     template<Size size, typename Enc>
     inline std::string toString(const Addr<size, Enc>& addr) {
-        return fmt::format("{} PTR {}", 
-                    toString<size>(),
-                    toString(addr.encoding));
+        if(addr.segment == Segment::CS || addr.segment == Segment::DS || addr.segment == Segment::UNK) {
+            return fmt::format("{} PTR {}",
+                        toString<size>(),
+                        toString(addr.encoding));
+        } else {
+            return fmt::format("{} PTR {}:{}",
+                        toString<size>(),
+                        toString(addr.segment),
+                        toString(addr.encoding));
+        }
     }
 
     inline std::string toString(const M8& m8) {

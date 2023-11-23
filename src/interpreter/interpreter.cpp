@@ -420,7 +420,9 @@ namespace x64 {
         const ExecutableSection* originSection = nullptr;
         size_t firstInstructionIndex = 0;
         findSectionWithAddress(address, &originSection, &firstInstructionIndex);
-        verify(!!originSection, "Could not determine function origin section");
+        verify(!!originSection, [&]() {
+            fmt::print("Could not determine function origin section for address {:#x}\n", address);
+        });
         verify(firstInstructionIndex != (size_t)(-1), "Could not find call destination instruction");
 
         // If we are in the text section, we can try to lookup the symbol for that address

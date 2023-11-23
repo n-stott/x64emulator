@@ -165,7 +165,7 @@ namespace x64 {
 
         loadable_->addExecutableSection(std::move(esection));
 
-        u64 execSectionBase = loadable_->mmap(elfOffset + header.virtualAddress(), Mmu::pageRoundUp(header.sizeInMemory()), PROT_EXEC, 0, 0, 0);
+        u64 execSectionBase = loadable_->mmap(elfOffset + header.virtualAddress(), Mmu::pageRoundUp(header.sizeInMemory()), PROT_EXEC | PROT_READ, 0, 0, 0);
         loadable_->setRegionName(execSectionBase, shortFilePath);
     }
 
@@ -293,10 +293,9 @@ namespace x64 {
             if(version.empty()) {
                 fmt::print("Unable to find version for {} at index {} id {}\n", symbol, index, versionIds[index]);
             }
-            if(entry.type() == elf::SymbolType::FUNC || entry.type() == elf::SymbolType::OBJECT)
-                symbolProvider_->registerDynamicSymbol(symbol, version, elfOffset + entry.st_value, &elf, elfOffset, entry.st_size, entry.type(), entry.bind());
-            if(entry.type() == elf::SymbolType::TLS)
-                symbolProvider_->registerDynamicSymbol(symbol, version, entry.st_value, &elf, elfOffset, entry.st_size, entry.type(), entry.bind());
+            u64 address = entry.st_value;
+            if(entry.type() != elf::SymbolType::TLS) address += elfOffset;
+            symbolProvider_->registerDynamicSymbol(symbol, version, address, &elf, elfOffset, entry.st_size, entry.type(), entry.bind());
             ++index;
         });
     }
@@ -431,14 +430,21 @@ namespace x64 {
                         if(!S.has_value()) return {};
                         return S.value() + addend;
                     }
-                    case elf::RelocationType64::R_AMD64_RELATIVE: return B + addend;
+                    case elf::RelocationType64::R_AMD64_RELATIVE:
+                    case elf::RelocationType64::R_AMD64_IRELATIVE: return B + addend;
                     case elf::RelocationType64::R_AMD64_GLOB_DAT: 
                     case elf::RelocationType64::R_AMD64_JUMP_SLOT: return S;
                     case elf::RelocationType64::R_AMD64_TPOFF64: {
-                        if(!S.has_value()) return {};
+                        if(!S.has_value()) {
+                            auto tlsBlock = std::find_if(tlsBlocks_.begin(), tlsBlocks_.end(), [&](const TlsBlock& block) {
+                                return block.elf == loadedElf.elf.get();
+                            });
+                            if(tlsBlock == tlsBlocks_.end()) return {};
+                            return - tlsBlock->tlsOffset + addend;
+                        }
+                        if(symbolEntries.empty()) return {};
+                        verify(symbolEntries.size() == 1, "unhandled case with 2 or more matching symbols");
                         auto tlsBlock = std::find_if(tlsBlocks_.begin(), tlsBlocks_.end(), [&](const TlsBlock& block) {
-                            if(symbolEntries.empty()) return false;
-                            verify(symbolEntries.size() == 1, "unhandled case with 2 or more matching symbols");
                             return block.elf == symbolEntries[0]->elf;
                         });
                         if(tlsBlock == tlsBlocks_.end()) return {};
