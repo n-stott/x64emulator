@@ -286,6 +286,7 @@ namespace elf {
         R_AMD64_GOTPC32 = 26,
         R_AMD64_SIZE32 = 32,
         R_AMD64_SIZE64 = 33,
+        R_AMD64_IRELATIVE = 37,
     };
 
     inline std::string toString(ProgramHeaderType pht) {
@@ -366,6 +367,7 @@ namespace elf {
             case RelocationType64::R_AMD64_GOTPC32: return "R_AMD64_GOTPC32";
             case RelocationType64::R_AMD64_SIZE32: return "R_AMD64_SIZE32";
             case RelocationType64::R_AMD64_SIZE64: return "R_AMD64_SIZE64";
+            case RelocationType64::R_AMD64_IRELATIVE: return "R_AMD64_IRELATIVE";
         }
         return fmt::format("{:x}", (u32)type);
     }
