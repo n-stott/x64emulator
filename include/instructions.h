@@ -239,6 +239,12 @@ namespace x64 {
         Src src;
     };
 
+    template<typename Dst, typename Src>
+    struct Ror {
+        Dst dst;
+        Src src;
+    };
+
     template<Cond cond, typename Dst>
     struct Set {
         Dst dst;

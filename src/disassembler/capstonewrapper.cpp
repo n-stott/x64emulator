@@ -62,6 +62,7 @@ namespace x64 {
             case X86_INS_SHLD: return makeShld(insn);
             case X86_INS_SAR: return makeSar(insn);
             case X86_INS_ROL: return makeRol(insn);
+            case X86_INS_ROR: return makeRor(insn);
             case X86_INS_TZCNT: return makeTzcnt(insn);
             case X86_INS_SETA: return makeSet<Cond::A>(insn);
             case X86_INS_SETAE: return makeSet<Cond::AE>(insn);
@@ -1149,6 +1150,26 @@ namespace x64 {
         if(r64dst && r8src) return make_wrapper<Rol<R64, R8>>(insn.address, r64dst.value(), r8src.value());
         if(r64dst && immsrc) return make_wrapper<Rol<R64, Imm>>(insn.address, r64dst.value(), immsrc.value());
         if(m64dst && immsrc) return make_wrapper<Rol<M64, Imm>>(insn.address, m64dst.value(), immsrc.value());
+        return make_failed(insn);
+    }
+
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makeRor(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto r32dst = asRegister32(dst);
+        auto m32dst = asMemory32(dst);
+        auto r64dst = asRegister64(dst);
+        auto m64dst = asMemory64(dst);
+        auto r8src = asRegister8(src);
+        auto immsrc = asImmediate(src);
+        if(r32dst && r8src) return make_wrapper<Ror<R32, R8>>(insn.address, r32dst.value(), r8src.value());
+        if(r32dst && immsrc) return make_wrapper<Ror<R32, Imm>>(insn.address, r32dst.value(), immsrc.value());
+        if(m32dst && immsrc) return make_wrapper<Ror<M32, Imm>>(insn.address, m32dst.value(), immsrc.value());
+        if(r64dst && r8src) return make_wrapper<Ror<R64, R8>>(insn.address, r64dst.value(), r8src.value());
+        if(r64dst && immsrc) return make_wrapper<Ror<R64, Imm>>(insn.address, r64dst.value(), immsrc.value());
+        if(m64dst && immsrc) return make_wrapper<Ror<M64, Imm>>(insn.address, m64dst.value(), immsrc.value());
         return make_failed(insn);
     }
 

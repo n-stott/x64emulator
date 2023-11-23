@@ -1253,6 +1253,37 @@ namespace x64 {
     void Cpu::exec(const Rol<R64, Imm>& ins) { set(ins.dst, Impl::rol64(get(ins.dst), get<u8>(ins.src), &flags_)); }
     void Cpu::exec(const Rol<M64, Imm>& ins) { set(resolve(ins.dst), Impl::rol64(get(resolve(ins.dst)), get<u8>(ins.src), &flags_)); }
 
+    u32 Cpu::Impl::ror32(u32 val, u8 count, Flags* flags) {
+        count = count & (0x1F);
+        u32 res = (val >> count) | (val << (32-count));
+        if(count) {
+            flags->carry = res & (1u << 31);
+        }
+        if(count == 1) {
+            flags->overflow = (res >> 31) ^ ((res >> 30) & 0x1);;
+        }
+        return res;
+    }
+
+    u64 Cpu::Impl::ror64(u64 val, u8 count, Flags* flags) {
+        count = count & (0x3F);
+        u64 res = (val >> count) | (val << (64-count));
+        if(count) {
+            flags->carry = res & (1ull << 63);
+        }
+        if(count == 1) {
+            flags->overflow = (res >> 63) ^ ((res >> 62) & 0x1);
+        }
+        return res;
+    }
+
+    void Cpu::exec(const Ror<R32, R8>& ins) { set(ins.dst, Impl::ror32(get(ins.dst), get(ins.src), &flags_)); }
+    void Cpu::exec(const Ror<R32, Imm>& ins) { set(ins.dst, Impl::ror32(get(ins.dst), get<u8>(ins.src), &flags_)); }
+    void Cpu::exec(const Ror<M32, Imm>& ins) { set(resolve(ins.dst), Impl::ror32(get(resolve(ins.dst)), get<u8>(ins.src), &flags_)); }
+    void Cpu::exec(const Ror<R64, R8>& ins) { set(ins.dst, Impl::ror64(get(ins.dst), get(ins.src), &flags_)); }
+    void Cpu::exec(const Ror<R64, Imm>& ins) { set(ins.dst, Impl::ror64(get(ins.dst), get<u8>(ins.src), &flags_)); }
+    void Cpu::exec(const Ror<M64, Imm>& ins) { set(resolve(ins.dst), Impl::ror64(get(resolve(ins.dst)), get<u8>(ins.src), &flags_)); }
+
     u16 Cpu::Impl::tzcnt16(u16 src, Flags* flags) {
         u16 tmp = 0;
         u16 res = 0;

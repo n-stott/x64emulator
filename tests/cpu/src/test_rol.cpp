@@ -39,43 +39,6 @@ int compareRol32(u32 val) {
     return 1;
 }
 
-
-u64 runSub64Native(u64 lhs, u64 rhs, x64::Flags* flags) {
-    u64 rflags = 0;
-    asm volatile("sub %1, %0" : "+r" (lhs) : "r"(rhs));
-    asm volatile("pushf");
-    asm volatile("pop %0" : "=r" (rflags));
-    *flags = fromRflags(rflags);
-    return lhs;
-}
-
-u64 runSub64Virtual(u64 lhs, u64 rhs, x64::Flags* flags) {
-    return x64::Cpu::Impl::sub64(lhs, rhs, flags);
-}
-
-int compareSub64(u64 lhs, u64 rhs) {
-    x64::Flags nativeFlags;
-    u64 nativeDiff = runSub64Native(lhs, rhs, &nativeFlags);
-
-    x64::Flags virtFlags;
-    u64 virtDiff = runSub64Virtual(lhs, rhs, &virtFlags);
-
-    if(virtDiff == nativeDiff
-    && virtFlags.carry == nativeFlags.carry
-    && virtFlags.zero == nativeFlags.zero
-    && virtFlags.overflow == nativeFlags.overflow
-    && virtFlags.sign == nativeFlags.sign
-    && virtFlags.parity == nativeFlags.parity) return 0;
-
-    fmt::print(stderr, "sub8 {:#x} {:#x} failed\n", lhs, rhs);
-    fmt::print(stderr, "native : diff={:#x} carry={} zero={} overflow={} sign={} parity={}\n",
-                        nativeDiff, nativeFlags.carry, nativeFlags.zero, nativeFlags.overflow, nativeFlags.sign, nativeFlags.parity);
-    fmt::print(stderr, "virtual: diff={:#x} carry={} zero={} overflow={} sign={} parity={}\n",
-                        virtDiff, virtFlags.carry, virtFlags.zero, virtFlags.overflow, virtFlags.sign, virtFlags.parity);
-    return 1;
-}
-
-
 template<int hi>
 int loopCompareRol32(u32 val) {
     int rc = 0;
@@ -124,11 +87,5 @@ int main() {
     for(u32 val = 0; val <= 0xFFFF; ++val) {
         rc = rc | loopCompareRol32(val);
     }
-    // rc |= compareSub64(0, 0);
-    // rc |= compareSub64((u64)(-1), 0);
-    // rc |= compareSub64(0, (u64)(-1));
-    // rc |= compareSub64(10, 10);
-    // rc |= compareSub64(10, 11);
-    // rc |= compareSub64(11, 10);
     return rc;
 }
