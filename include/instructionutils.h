@@ -458,6 +458,11 @@ namespace utils {
     }
 
     template<typename Dst, typename Src>
+    inline std::string toString(const Ror<Dst, Src>& ins) {
+        return fmt::format("{:9}{},{}", "ror", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Dst, typename Src>
     inline std::string toString(const Tzcnt<Dst, Src>& ins) {
         return fmt::format("{:9}{},{}", "tzcnt", toString(ins.dst), toString(ins.src));
     }

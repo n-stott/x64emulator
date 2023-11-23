@@ -67,6 +67,7 @@ namespace x64 {
         static std::unique_ptr<X86Instruction> makeShld(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeSar(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeRol(const cs_insn& insn);
+        static std::unique_ptr<X86Instruction> makeRor(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeTzcnt(const cs_insn& insn);
 
         template<Cond cond>
