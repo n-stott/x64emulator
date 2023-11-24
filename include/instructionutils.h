@@ -216,7 +216,7 @@ namespace utils {
     }
 
     inline std::string toString(const SO& so) {
-        return fmt::format("{}:{:#x}", toString(so.segment), so.offset);
+        return fmt::format("{:#x}", so.offset);
     }
 
     template<Size size, typename Enc>
