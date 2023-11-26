@@ -22,32 +22,21 @@ namespace x64 {
         return static_cast<Protection>((int)a | (int)b);
     }
 
-    enum InvalidValues {
-        INV_NONE,
-        INV_NULL,
-    };
-
     class Mmu {
     private:
         class Region {
         public:
-            Region(std::string file, u64 base, u64 size, Protection protection);
+            Region(std::string name, u64 base, u64 size, Protection protection);
 
             bool contains(u64 address) const;
+            const std::string& name() const { return name_; }
+            Protection protection() const { return protection_; }
+            u64 size() const { return size_; }
+            u64 begin() const { return base_; }
+            u64 end() const { return base_ + size_; }
 
-            void setInvalidValues(InvalidValues invalidValues) {
-                this->invalidValues = invalidValues;
-            }
-
-            std::string file;
-            u64 base;
-            u64 size;
-            std::vector<u8> data;
-            Protection protection;
-            InvalidValues invalidValues;
-
-        private:
-            friend class Mmu;
+            void setRegionName(std::string name) { name_ = std::move(name); }
+            void setProtection(Protection protection) { protection_ = protection; }
 
             u8 read8(u64 address) const;
             u16 read16(u64 address) const;
@@ -69,6 +58,13 @@ namespace x64 {
 
             void copyToRegion(u64 dst, u8* src, size_t n);
             void copyFromRegion(u8* dst, u64 src, size_t n) const;
+
+        private:
+            std::string name_;
+            u64 base_;
+            u64 size_;
+            std::vector<u8> data_;
+            Protection protection_;
         };
 
         Region* addRegion(Region region);

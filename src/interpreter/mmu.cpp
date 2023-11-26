@@ -7,30 +7,30 @@
 
 namespace x64 {
 
-    Mmu::Region::Region(std::string file, u64 base, u64 size, Protection protection) {
-        this->file = std::move(file);
-        this->base = base;
-        this->size = size;
-        this->data.resize(size, 0x00);
-        this->protection = protection;
-        this->invalidValues = INV_NONE;
+    Mmu::Region::Region(std::string name, u64 base, u64 size, Protection protection) {
+        this->name_ = std::move(name);
+        this->base_ = base;
+        this->size_ = size;
+        this->data_.resize(size, 0x00);
+        this->protection_ = protection;
     }
 
     Mmu::Region* Mmu::addRegion(Region region) {
         auto nonEmptyIntersection = [&](const Region& r) {
-            return r.contains(region.base) || r.contains(region.base + region.size - 1);
+            if(r.size() == 0) return true;
+            return r.contains(region.begin()) || r.contains(region.end()-1);
         };
         verify(std::none_of(regions_.begin(), regions_.end(), nonEmptyIntersection), [&]() {
             auto r = std::find_if(regions_.begin(), regions_.end(), nonEmptyIntersection);
             assert(r != regions_.end());
-            fmt::print("Unable to add region : memory range [{:#x}, {:#x}] already occupied by region [{:#x}, {:#x}]\n", region.base, region.base + region.size, r->base, r->base + r->size);
+            fmt::print("Unable to add region : memory range [{:#x}, {:#x}] already occupied by region [{:#x}, {:#x}]\n", region.begin(), region.end(), r->begin(), r->end());
             dumpRegions();
         });
         regions_.push_back(std::move(region));
         Region* r = &regions_.back();
 
-        u64 firstPage = pageRoundDown(r->base) / PAGE_SIZE;
-        u64 lastPage = pageRoundUp(r->base + r->size) / PAGE_SIZE;
+        u64 firstPage = pageRoundDown(r->begin()) / PAGE_SIZE;
+        u64 lastPage = pageRoundUp(r->end()) / PAGE_SIZE;
         verify(firstPage < lastPage);
         if(lastPage >= regionLookup_.size()) {
             regionLookup_.resize(lastPage, nullptr);
@@ -45,8 +45,8 @@ namespace x64 {
     }
 
     void Mmu::removeRegion(const Region& region) {
-        u64 firstPage = pageRoundDown(region.base) / PAGE_SIZE;
-        u64 lastPage = pageRoundUp(region.base + region.size) / PAGE_SIZE;
+        u64 firstPage = pageRoundDown(region.begin()) / PAGE_SIZE;
+        u64 lastPage = pageRoundUp(region.end()) / PAGE_SIZE;
         verify(firstPage < lastPage);
         for(u64 pageIndex = firstPage; pageIndex < lastPage; ++pageIndex) {
             verify(pageIndex < regionLookup_.size());
@@ -54,7 +54,7 @@ namespace x64 {
             regionLookup_[pageIndex] = nullptr;
         }
         regions_.erase(std::remove_if(regions_.begin(), regions_.end(), [&](const Region& r) {
-            return r.base == region.base && r.size == region.size;
+            return r.begin() == region.begin() && r.size() == region.size();
         }), regions_.end());
     }
 
@@ -65,14 +65,14 @@ namespace x64 {
         if(address == 0) {
             Region region("", topOfMemoryPageAligned(), pageRoundUp(length), (Protection)prot);
             auto* regionPtr = addRegion(std::move(region));
-            return regionPtr->base;
+            return regionPtr->begin();
         } else {
             verify(address % PAGE_SIZE == 0, [&]() {
                 fmt::print("mmap with non-page_size aligned address {:#x} not supported", address);
             });
             Region region("", address, pageRoundUp(length), (Protection)prot);
             auto* regionPtr = addRegion(std::move(region));
-            return regionPtr->base;
+            return regionPtr->begin();
         }
     }
 
@@ -80,8 +80,8 @@ namespace x64 {
         verify(address % PAGE_SIZE == 0, "munmap with non-page_size aligned address not supported");
         const auto* regionPtr = regionLookup_[address / PAGE_SIZE];
         verify(!!regionPtr, "munmap: unable to find region");
-        verify(regionPtr->base == address, "partial munmap not supported");
-        verify(regionPtr->size == length, "partial munmap not supported");
+        verify(regionPtr->begin() == address, "partial munmap not supported");
+        verify(regionPtr->size() == length, "partial munmap not supported");
         removeRegion(*regionPtr);
         return 0;
     }
@@ -90,19 +90,19 @@ namespace x64 {
         verify(address % PAGE_SIZE == 0, "munmap with non-page_size aligned address not supported");
         auto* regionPtr = regionLookup_[address / PAGE_SIZE];
         verify(!!regionPtr, "munmap: unable to find region");
-        verify(regionPtr->base == address, "partial munmap not supported");
-        verify(regionPtr->size == length, "partial munmap not supported");
-        regionPtr->protection = (Protection)prot;
+        verify(regionPtr->begin() == address, "partial munmap not supported");
+        verify(regionPtr->size() == length, "partial munmap not supported");
+        regionPtr->setProtection((Protection)prot);
         return 0;
     }
 
     void Mmu::setRegionName(u64 address, std::string name) {
         verify(address % PAGE_SIZE == 0, "address must be a multiple of the page size");
         auto it = std::find_if(regions_.begin(), regions_.end(), [&](const Region& region) {
-            return region.base == address;
+            return region.begin() == address;
         });
         verify(it != regions_.end(), "Cannot set name of non-existing region");
-        it->file = std::move(name);
+        it->setRegionName(std::move(name));
     }
 
     void Mmu::setFsBase(u64 fsBase) {
@@ -115,7 +115,7 @@ namespace x64 {
     }
 
     bool Mmu::Region::contains(u64 address) const {
-        return address >= base && address < base + size;
+        return address >= begin() && address < end();
     }
 
 
@@ -123,8 +123,11 @@ namespace x64 {
     T Mmu::Region::read(u64 address) const {
         assert(contains(address));
         assert(contains(address+sizeof(T)-1));
+        verify(protection() & PROT_READ, [&]() {
+            fmt::print("Attempt to read {:#x} from non-readable region [{:#x}:{:#x}]\n", address, begin(), end());
+        });
         T value;
-        std::memcpy(&value, &data[address-base], sizeof(value));
+        std::memcpy(&value, &data_[address-base_], sizeof(value));
         return value;
     }
 
@@ -132,7 +135,10 @@ namespace x64 {
     void Mmu::Region::write(u64 address, T value) {
         assert(contains(address));
         assert(contains(address+sizeof(T)-1));
-        std::memcpy(&data[address-base], &value, sizeof(value));
+        verify(protection() & PROT_WRITE, [&]() {
+            fmt::print("Attempt to write to {:#x} in non-writable region [{:#x}:{:#x}]\n", address, begin(), end());
+        });
+        std::memcpy(&data_[address-base_], &value, sizeof(value));
     }
 
     u8 Mmu::Region::read8(u64 address) const { return read<u8>(address); }
@@ -178,9 +184,6 @@ namespace x64 {
         verify(!!region, [&]() {
             fmt::print("No region containing {:#x}\n", address);
         });
-        verify(region->protection & PROT_READ, [&]() {
-            fmt::print("Attempt to read {:#x} from non-readable region [{:#x}:{:#x}]\n", address, region->base, region->base + region->size);
-        });
         T value = region->read<T>(address);
 #if DEBUG_MMU
         if constexpr(std::is_integral_v<T>)
@@ -196,9 +199,6 @@ namespace x64 {
         Region* region = findAddress(address);
         verify(!!region, [&]() {
             fmt::print("No region containing {:#x}\n", address);
-        });
-        verify(region->protection & PROT_WRITE, [&]() {
-            fmt::print("Attempt to write to {:#x} in non-writable region [{:#x}:{:#x}]\n", address, region->base, region->base + region->size);
         });
 #if DEBUG_MMU
         if constexpr(std::is_integral_v<T>)
@@ -246,13 +246,13 @@ namespace x64 {
                                          (prot & Protection::PROT_EXEC)  ? "X" : " ");
         };
         for(const auto& region : regions_) {
-            fmt::print("    {:>20} {:#x} - {:#x} {}\n", region.file, region.base, region.base+region.size, protectionToString(region.protection));
+            fmt::print("    {:>20} {:#x} - {:#x} {}\n", region.name(), region.begin(), region.end(), protectionToString(region.protection()));
         }
     }
 
     u64 Mmu::topOfMemoryPageAligned() const {
         u64 top = topOfReserved_;
-        for(const auto& region : regions_) top = std::max(top, region.base+region.size);
+        for(const auto& region : regions_) top = std::max(top, region.end());
         top = pageRoundUp(top);
         return top;
     }
@@ -286,13 +286,13 @@ namespace x64 {
     void Mmu::Region::copyToRegion(u64 dst, u8* src, size_t n) {
         verify(contains(dst));
         verify(contains(dst + n -1));
-        std::memcpy(&data[dst-base], src, n);
+        std::memcpy(&data_[dst-base_], src, n);
     }
 
     void Mmu::Region::copyFromRegion(u8* dst, u64 src, size_t n) const {
         verify(contains(src));
         verify(contains(src + n -1));
-        std::memcpy(dst, &data[src-base], n);
+        std::memcpy(dst, &data_[src-base_], n);
     }
 
 }
