@@ -266,7 +266,7 @@ namespace x64 {
     }
 
 
-    Ptr8 Mmu::copyToMmu(Ptr8 dst, u8* src, size_t n) {
+    Ptr8 Mmu::copyToMmu(Ptr8 dst, const u8* src, size_t n) {
         verify(n > 0);
         u64 address = resolve(dst);
         Region* region = findAddress(address);
@@ -283,7 +283,7 @@ namespace x64 {
     }
 
 
-    void Mmu::Region::copyToRegion(u64 dst, u8* src, size_t n) {
+    void Mmu::Region::copyToRegion(u64 dst, const u8* src, size_t n) {
         verify(contains(dst));
         verify(contains(dst + n -1));
         std::memcpy(&data_[dst-base_], src, n);

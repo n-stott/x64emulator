@@ -56,7 +56,7 @@ namespace x64 {
             template<typename T>
             void write(u64 address, T value);
 
-            void copyToRegion(u64 dst, u8* src, size_t n);
+            void copyToRegion(u64 dst, const u8* src, size_t n);
             void copyFromRegion(u8* dst, u64 src, size_t n) const;
 
         private:
@@ -89,7 +89,7 @@ namespace x64 {
             }
         }
 
-        Ptr8 copyToMmu(Ptr8 dst, u8* src, size_t n);
+        Ptr8 copyToMmu(Ptr8 dst, const u8* src, size_t n);
         u8* copyFromMmu(u8* dst, Ptr8 src, size_t n) const;
 
         u8 read8(Ptr8 ptr) const;
