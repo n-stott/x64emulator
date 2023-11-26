@@ -152,6 +152,13 @@ namespace x64 {
         addRegion(Region { "nullpage", 0, PAGE_SIZE, PROT_NONE });
     }
 
+    template<Size s>
+    u64 Mmu::resolve(Ptr<s> ptr) const {
+        u64 segmentBase = (ptr.segment != Segment::FS) ? 0x0 : fsBase_;
+        u64 address = segmentBase + ptr.address;
+        return address;
+    }
+
     Mmu::Region* Mmu::findAddress(u64 address) {
         verify(address / PAGE_SIZE < regionLookup_.size());
         return regionLookup_[address / PAGE_SIZE];
@@ -166,9 +173,8 @@ namespace x64 {
     template<typename T, Size s>
     T Mmu::read(Ptr<s> ptr) const {
         static_assert(sizeof(T) == pointerSize(s));
-        u64 segmentBase = (ptr.segment != Segment::FS) ? 0x0 : fsBase_;
-        u64 address = segmentBase + ptr.address;
-        const Region* region = findAddress(segmentBase + ptr.address);
+        u64 address = resolve(ptr);
+        const Region* region = findAddress(address);
         verify(!!region, [&]() {
             fmt::print("No region containing {:#x}\n", address);
         });
@@ -186,8 +192,7 @@ namespace x64 {
     template<typename T, Size s>
     void Mmu::write(Ptr<s> ptr, T value) {
         static_assert(sizeof(T) == pointerSize(s));
-        u64 segmentBase = (ptr.segment != Segment::FS) ? 0x0 : fsBase_;
-        u64 address = segmentBase + ptr.address;
+        u64 address = resolve(ptr);
         Region* region = findAddress(address);
         verify(!!region, [&]() {
             fmt::print("No region containing {:#x}\n", address);
@@ -258,6 +263,36 @@ namespace x64 {
 
     u64 Mmu::pageRoundUp(u64 address) {
         return ((address + PAGE_SIZE - 1) / PAGE_SIZE) * PAGE_SIZE;
+    }
+
+
+    Ptr8 Mmu::copyToMmu(Ptr8 dst, u8* src, size_t n) {
+        verify(n > 0);
+        u64 address = resolve(dst);
+        Region* region = findAddress(address);
+        region->copyToRegion(address, src, n);
+        return dst;
+    }
+
+    u8* Mmu::copyFromMmu(u8* dst, Ptr8 src, size_t n) const {
+        verify(n > 0);
+        u64 address = resolve(src);
+        const Region* region = findAddress(address);
+        region->copyFromRegion(dst, address, n);
+        return dst;
+    }
+
+
+    void Mmu::Region::copyToRegion(u64 dst, u8* src, size_t n) {
+        verify(contains(dst));
+        verify(contains(dst + n -1));
+        std::memcpy(&data[dst-base], src, n);
+    }
+
+    void Mmu::Region::copyFromRegion(u8* dst, u64 src, size_t n) const {
+        verify(contains(src));
+        verify(contains(src + n -1));
+        std::memcpy(dst, &data[src-base], n);
     }
 
 }

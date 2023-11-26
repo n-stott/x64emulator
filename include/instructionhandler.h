@@ -238,6 +238,7 @@ namespace x64 {
         virtual void exec(const Halt&) = 0;
         virtual void exec(const Nop&) = 0;
         virtual void exec(const Ud2&) = 0;
+        virtual void exec(const Syscall&) = 0;
         virtual void exec(const NotParsed&) = 0;
         virtual void exec(const Unknown&) = 0;
 
@@ -533,6 +534,10 @@ namespace x64 {
 
         virtual void exec(const Pshufd<RSSE, RSSE, Imm>&) = 0;
         virtual void exec(const Pshufd<RSSE, MSSE, Imm>&) = 0;
+
+
+        virtual void exec(const Rdpkru&) = 0;
+        virtual void exec(const Wrpkru&) = 0;
 
         virtual void resolveFunctionName(const CallDirect&) const = 0;
     };

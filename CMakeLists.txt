@@ -23,6 +23,7 @@ add_library(emulator STATIC
     src/interpreter/interpreter.cpp
     src/interpreter/cpu.cpp
     src/interpreter/mmu.cpp
+    src/interpreter/syscalls.cpp
     src/interpreter/executioncontext.cpp
     src/program.cpp
 )

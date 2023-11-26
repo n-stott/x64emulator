@@ -66,6 +66,9 @@ namespace x64 {
 
             template<typename T>
             void write(u64 address, T value);
+
+            void copyToRegion(u64 dst, u8* src, size_t n);
+            void copyFromRegion(u8* dst, u64 src, size_t n) const;
         };
 
         Region* addRegion(Region region);
@@ -90,6 +93,9 @@ namespace x64 {
             }
         }
 
+        Ptr8 copyToMmu(Ptr8 dst, u8* src, size_t n);
+        u8* copyFromMmu(u8* dst, Ptr8 src, size_t n) const;
+
         u8 read8(Ptr8 ptr) const;
         u16 read16(Ptr16 ptr) const;
         u32 read32(Ptr32 ptr) const;
@@ -110,6 +116,9 @@ namespace x64 {
         static constexpr u64 PAGE_SIZE = 0x1000;
 
     private:
+        template<Size s>
+        u64 resolve(Ptr<s> ptr) const;
+
         template<typename T, Size s>
         T read(Ptr<s> ptr) const;
 

@@ -1,5 +1,6 @@
 #include "interpreter/cpu.h"
 #include "interpreter/mmu.h"
+#include "interpreter/syscalls.h"
 #include "interpreter/verify.h"
 #include "interpreter/interpreter.h"
 #include "interpreter/symbolprovider.h"
@@ -2236,5 +2237,33 @@ namespace x64 {
     void Cpu::exec(const Pshufd<RSSE, MSSE, Imm>& ins) {
         u128 res = Impl::pshufd(get(resolve(ins.src)), get<u8>(ins.order));
         set(ins.dst, res);
+    }
+
+    void Cpu::exec(const Syscall&) {
+        u64 rax = get(R64::RAX);
+        u64 rdi = get(R64::RDI);
+        u64 rsi = get(R64::RSI);
+        switch(rax) {
+            case 0x5: {
+                u32 fd = (u32)rdi;
+                Ptr8 statbufptr{Segment::DS, rsi};
+                u64 ret = interpreter_->syscalls().fstat(fd, statbufptr);
+                set(R64::RAX, ret);
+                return;
+            }
+
+            default: break;
+        }
+        verify(false, [&]() {
+            fmt::print("Syscall {:#x} not handled\n", rax);
+        });
+    }
+
+    void Cpu::exec(const Rdpkru& ins) {
+        TODO(ins);
+    }
+
+    void Cpu::exec(const Wrpkru& ins) {
+        TODO(ins);
     }
 }

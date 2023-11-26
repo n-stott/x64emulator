@@ -36,7 +36,10 @@ namespace x64 {
         }
     };
 
-    Interpreter::Interpreter(SymbolProvider* symbolProvider) : cpu_(this), symbolProvider_(symbolProvider) {
+    Interpreter::Interpreter(SymbolProvider* symbolProvider)
+        : cpu_(this)
+        , syscalls_(this, &mmu_)
+        , symbolProvider_(symbolProvider) {
         cpu_.setMmu(&mmu_);
         stop_ = false;
     }
