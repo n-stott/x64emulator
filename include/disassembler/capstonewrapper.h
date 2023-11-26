@@ -54,6 +54,7 @@ namespace x64 {
         static std::unique_ptr<X86Instruction> makeHalt(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeNop(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeUd2(const cs_insn& insn);
+        static std::unique_ptr<X86Instruction> makeSyscall(const cs_insn& insn);
 
         static std::unique_ptr<X86Instruction> makeCdq(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeCqo(const cs_insn& insn);
@@ -146,6 +147,10 @@ namespace x64 {
 
         static std::unique_ptr<X86Instruction> makePunpcklqdq(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makePshufd(const cs_insn& insn);
+
+        // Instructions not supported by capstone
+        static std::unique_ptr<X86Instruction> makeRdpkru(u64 address);
+        static std::unique_ptr<X86Instruction> makeWrpkru(u64 address);
 
     };
 }

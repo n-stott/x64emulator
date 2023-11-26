@@ -718,6 +718,18 @@ namespace utils {
         return fmt::format("{:9}{},{},{}", "pshufd", toString(ins.dst), toString(ins.src), toString(ins.order));
     }
 
+    inline std::string toString(Syscall) {
+        return fmt::format("{:9}", "syscall");
+    }
+
+    inline std::string toString(Rdpkru) {
+        return fmt::format("{:9}", "rdpkru");
+    }
+
+    inline std::string toString(Wrpkru) {
+        return fmt::format("{:9}", "wrpkru");
+    }
+
 }
 }
 

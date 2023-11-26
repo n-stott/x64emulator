@@ -52,6 +52,7 @@ namespace x64 {
             case X86_INS_HLT: return makeHalt(insn);
             case X86_INS_NOP: return makeNop(insn);
             case X86_INS_UD2: return makeUd2(insn);
+            case X86_INS_SYSCALL: return makeSyscall(insn);
             case X86_INS_CDQ: return makeCdq(insn);
             case X86_INS_CQO: return makeCqo(insn);
             case X86_INS_INC: return makeInc(insn);
@@ -2041,6 +2042,21 @@ namespace x64 {
         return make_failed(insn);
     }
 
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makeSyscall(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 0);
+        return make_wrapper<Syscall>(insn.address);
+    }
+
+
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makeRdpkru(u64 address) {
+        return make_wrapper<Rdpkru>(address);
+    }
+
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makeWrpkru(u64 address) {
+        return make_wrapper<Wrpkru>(address);
+    }
+
     std::vector<std::unique_ptr<X86Instruction>> CapstoneWrapper::disassembleSection(const u8* begin, size_t size, u64 address) {
         std::vector<std::unique_ptr<X86Instruction>> instructions;
 
@@ -2063,9 +2079,30 @@ namespace x64 {
         cs_free(insns, count);
 #else
         cs_insn* insn = cs_malloc(handle);
-        while(cs_disasm_iter(handle, &codeBegin, &codeSize, &codeAddress, insn)) {
-            auto x86insn = makeInstruction(*insn);
-            instructions.push_back(std::move(x86insn));
+        while(codeSize != 0) {
+            while(cs_disasm_iter(handle, &codeBegin, &codeSize, &codeAddress, insn)) {
+                auto x86insn = makeInstruction(*insn);
+                instructions.push_back(std::move(x86insn));
+            }
+            if(codeSize != 0) {
+                if(codeSize >= 3) {
+                    if(codeBegin[0] == 0xf && codeBegin[1] == 0x1 && codeBegin[2] == 0xee) {
+                        instructions.push_back(makeRdpkru(codeAddress));
+                        codeAddress += 3;
+                        codeBegin += 3;
+                        codeSize -= 3;
+                        continue;
+                    }
+                    if(codeBegin[0] == 0xf && codeBegin[1] == 0x1 && codeBegin[2] == 0xef) {
+                        instructions.push_back(makeWrpkru(codeAddress));
+                        codeAddress += 3;
+                        codeBegin += 3;
+                        codeSize -= 3;
+                        continue;
+                    }
+                }
+                break;
+            }
         }
         cs_free(insn, 1);
 #endif

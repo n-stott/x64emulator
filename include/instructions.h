@@ -483,6 +483,18 @@ namespace x64 {
         Src src;
         Ord order;
     };
+
+    struct Syscall {
+
+    };
+
+    struct Rdpkru {
+
+    };
+
+    struct Wrpkru {
+
+    };
 }
 
 #endif

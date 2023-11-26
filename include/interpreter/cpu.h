@@ -430,6 +430,7 @@ namespace x64 {
         void exec(const Halt&) override;
         void exec(const Nop&) override;
         void exec(const Ud2&) override;
+        void exec(const Syscall&) override;
         void exec(const NotParsed&) override;
         void exec(const Unknown&) override;
 
@@ -725,6 +726,10 @@ namespace x64 {
 
         void exec(const Pshufd<RSSE, RSSE, Imm>&) override;
         void exec(const Pshufd<RSSE, MSSE, Imm>&) override;
+
+
+        void exec(const Rdpkru&) override;
+        void exec(const Wrpkru&) override;
 
         void resolveFunctionName(const CallDirect& ins) const override;
 

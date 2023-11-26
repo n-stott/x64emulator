@@ -3,6 +3,7 @@
 
 #include "interpreter/cpu.h"
 #include "interpreter/mmu.h"
+#include "interpreter/syscalls.h"
 #include "interpreter/loader.h"
 #include "lib/libc.h"
 #include "program.h"
@@ -57,6 +58,8 @@ namespace x64 {
         void ret(u64 address);
         void jmp(u64 address);
 
+        Sys& syscalls() { return syscalls_; }
+
         void findSectionWithAddress(u64 address, const ExecutableSection** section, size_t* index) const;
         std::string calledFunctionName(const ExecutableSection* execSection, const CallDirect* insn);
 
@@ -65,6 +68,7 @@ namespace x64 {
 
         Mmu mmu_;
         Cpu cpu_;
+        Sys syscalls_;
 
         std::vector<ExecutableSection> executableSections_;
         std::unique_ptr<LibC> libc_;
