@@ -174,9 +174,9 @@ namespace x64 {
     }
 
     void Interpreter::setupStack() {
-        // stack
         u64 stackSize = 16*Mmu::PAGE_SIZE;
         u64 stackBase = mmu_.mmap(0, stackSize, PROT_READ | PROT_WRITE, 0, 0, 0);
+        mmu_.setRegionName(stackBase, "stack");
         cpu_.regs_.rsp_ = stackBase + stackSize;
     }
 

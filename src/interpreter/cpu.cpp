@@ -2245,7 +2245,7 @@ namespace x64 {
         u64 rsi = get(R64::RSI);
         switch(rax) {
             case 0x5: {
-                u32 fd = (u32)rdi;
+                int fd = (int)rdi;
                 Ptr8 statbufptr{Segment::DS, rsi};
                 u64 ret = interpreter_->syscalls().fstat(fd, statbufptr);
                 set(R64::RAX, ret);

@@ -289,7 +289,7 @@ namespace x64 {
             }
 
             Ptr8 bufPtr { Segment::DS, bufAddress };
-            context_.mmu()->copyToMmu(bufPtr, buf.data(), nbytes);
+            context_.mmu()->copyToMmu(bufPtr, buf.data(), (u64)nbytes);
             context_.set_rax((u64)nbytes);
         }
 

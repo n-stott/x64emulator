@@ -5,13 +5,15 @@
 
 namespace x64 {
 
-    u64 Sys::fstat(unsigned int fd, Ptr8 statbuf) {
+    u64 Sys::fstat(int fd, Ptr8 statbuf) {
+        (void)interpreter_;
         struct stat st;
         int rc = ::fstat(fd, &st);
+        if(rc < 0) return (u64)rc;
         u8 buf[sizeof(st)];
         memcpy(&buf, &st, sizeof(st));
         mmu_->copyToMmu(statbuf, buf, sizeof(buf));
-        return rc;
+        return (u64)rc;
     }
 
 }

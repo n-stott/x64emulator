@@ -2043,11 +2043,8 @@ namespace x64 {
     }
 
     std::unique_ptr<X86Instruction> CapstoneWrapper::makeSyscall(const cs_insn& insn) {
-        const auto& x86detail = insn.detail->x86;
-        assert(x86detail.op_count == 0);
         return make_wrapper<Syscall>(insn.address);
     }
-
 
     std::unique_ptr<X86Instruction> CapstoneWrapper::makeRdpkru(u64 address) {
         return make_wrapper<Rdpkru>(address);
