@@ -7,11 +7,11 @@ namespace x64 {
 
     u64 Sys::fstat(unsigned int fd, Ptr8 statbuf) {
         struct stat st;
-        int rc = ::fstat(fd, &st);
+        int rc = ::fstat((int)fd, &st);
         u8 buf[sizeof(st)];
         memcpy(&buf, &st, sizeof(st));
         mmu_->copyToMmu(statbuf, buf, sizeof(buf));
-        return rc;
+        return (u64)rc;
     }
 
 }

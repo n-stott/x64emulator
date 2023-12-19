@@ -16,7 +16,7 @@ namespace x64 {
         u64 fstat(unsigned int fd, Ptr8 statbuf);
 
     private:
-        Interpreter* interpreter_;
+        [[maybe_unused]] Interpreter* interpreter_;
         Mmu* mmu_;
     };
 

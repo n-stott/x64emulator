@@ -117,39 +117,13 @@ namespace x64 {
     }
 
     void Interpreter::read(u8* dst, u64 srcAddress, u64 nbytes) {
-        // loop until dst is 8-bytes aligned
-        while(nbytes-- > 0 && (reinterpret_cast<u64>(dst) % 8) != 0) {
-            *dst++ = mmu_.read8(Ptr8{Segment::DS, srcAddress++});
-        }
-        // loop 8 bytes at a time
-        while(nbytes >= 8) {
-            *reinterpret_cast<u64*>(dst) = mmu_.read64(Ptr64{Segment::DS, srcAddress});
-            srcAddress += 8;
-            dst += 8;
-            nbytes -= 8;
-        }
-        // deal with remaining bytes
-        while(nbytes--) {
-            *dst++ = mmu_.read8(Ptr8{Segment::DS, srcAddress++});
-        }
+        Ptr8 src{Segment::DS, srcAddress};
+        mmu_.copyFromMmu(dst, src, nbytes);
     }
 
     void Interpreter::write(u64 dstAddress, const u8* src, u64 nbytes) {
-        // loop until src is 8-bytes aligned
-        while(nbytes-- > 0 && (reinterpret_cast<u64>(src) % 8) != 0) {
-            mmu_.write8(Ptr8{Segment::DS, dstAddress++}, *src++);
-        }
-        // loop 8 bytes at a time
-        while(nbytes >= 8) {
-            mmu_.write64(Ptr64{Segment::DS, dstAddress}, *reinterpret_cast<const u64*>(src));
-            dstAddress += 8;
-            src += 8;
-            nbytes -= 8;
-        }
-        // deal with remaining bytes
-        while(nbytes--) {
-            mmu_.write8(Ptr8{Segment::DS, dstAddress++}, *src++);
-        }
+        Ptr8 dst{Segment::DS, dstAddress};
+        mmu_.copyToMmu(dst, src, nbytes);
     }
 
     void Interpreter::run(const std::string& programFilePath, const std::vector<std::string>& arguments) {
