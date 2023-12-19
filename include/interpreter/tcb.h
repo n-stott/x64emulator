@@ -10,10 +10,10 @@ namespace x64 {
         static TCB create(u64 fsBase) {
             TCB tcb;
             tcb.fsBase_ = fsBase;
-            tcb.padding_[0] = 0;
-            tcb.padding_[1] = 0;
-            tcb.padding_[2] = 0;
-            tcb.padding_[3] = 0;
+            tcb.padding_[0] = 0xf00df00df00df00d;
+            tcb.padding_[1] = 0xbabebabebabebabe;
+            tcb.padding_[2] = 0xbeefbeefbeefbeef;
+            tcb.padding_[3] = 0xd00dd00dd00dd00d;
             tcb.stackCanary_ = 0x1234567887654321;
             tcb.pointerGuard_ = 0;
             return tcb;
