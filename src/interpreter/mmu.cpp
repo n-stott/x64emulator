@@ -267,7 +267,7 @@ namespace x64 {
 
 
     Ptr8 Mmu::copyToMmu(Ptr8 dst, const u8* src, size_t n) {
-        verify(n > 0);
+        if(n == 0) return dst;
         u64 address = resolve(dst);
         Region* region = findAddress(address);
         region->copyToRegion(address, src, n);
@@ -275,7 +275,7 @@ namespace x64 {
     }
 
     u8* Mmu::copyFromMmu(u8* dst, Ptr8 src, size_t n) const {
-        verify(n > 0);
+        if(n == 0) return dst;
         u64 address = resolve(src);
         const Region* region = findAddress(address);
         region->copyFromRegion(dst, address, n);
