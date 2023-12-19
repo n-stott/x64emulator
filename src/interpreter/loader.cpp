@@ -224,11 +224,12 @@ namespace x64 {
         u64 tlsEnd = tlsRegionBase + tlsDataSize_;
 
         for(const TlsBlock& block : tlsBlocks_) {
-            u64 size = block.programHeader.sizeInMemory();
-            std::vector<u8> buf(size, 0x00);
+            u64 sizeInFile = block.programHeader.sizeInFile();
+            u64 sizeInMemory = block.programHeader.sizeInMemory();
+            std::vector<u8> buf(sizeInMemory, 0x00);
             u64 templateAddress = block.elfOffset + block.programHeader.virtualAddress();
-            loadable_->read(buf.data(), templateAddress, size);
-            loadable_->write(tlsEnd - block.tlsOffset, buf.data(), size);
+            loadable_->read(buf.data(), templateAddress, sizeInFile);
+            loadable_->write(tlsEnd - block.tlsOffset, buf.data(), sizeInMemory);
             loadable_->registerTlsBlock(templateAddress, tlsRegionBase + tlsDataSize_ - block.tlsOffset);
         }
 

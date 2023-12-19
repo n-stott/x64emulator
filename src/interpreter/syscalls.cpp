@@ -6,6 +6,7 @@
 namespace x64 {
 
     u64 Sys::fstat(unsigned int fd, Ptr8 statbuf) {
+        (void)interpreter_; // to silence clang
         struct stat st;
         int rc = ::fstat((int)fd, &st);
         u8 buf[sizeof(st)];
