@@ -17,7 +17,7 @@ namespace x64 {
 
     u64 Sys::mmap(u64 addr, size_t length, int prot, int flags, int fd, off_t offset) {
         fmt::print("mmap(addr={:#x}, length={:#x}, prot={:#x}, flags={:#x}, fd={}, offset={:#x})\n", addr, length, prot, flags, fd, offset);
-        return mmu_->mmap(addr, length, prot, flags, fd, (int)offset);
+        return mmu_->mmap(addr, length, (PROT)prot, flags, fd, (int)offset);
     }
 
     int Sys::munmap(u64 addr, size_t length) {

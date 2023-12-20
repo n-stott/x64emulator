@@ -16,7 +16,7 @@ namespace x64 {
         }
 
         u64 mallocRegionSize = std::max(Mmu::pageRoundUp(size), Block::SmallBlockSize());
-        u64 mallocRegionBase = mmu_->mmap(0, mallocRegionSize, PROT_READ | PROT_WRITE, 0, 0, 0);
+        u64 mallocRegionBase = mmu_->mmap(0, mallocRegionSize, PROT::READ | PROT::WRITE, 0, 0, 0);
         verify(mallocRegionBase != 0, "mmap failed");
         mmu_->setRegionName(mallocRegionBase, "heap");
 

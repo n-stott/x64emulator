@@ -11,15 +11,19 @@ namespace x64 {
 
     class Interpreter;
 
-    enum Protection {
-        PROT_NONE = 0,
-        PROT_READ = 1,
-        PROT_WRITE = 2,
-        PROT_EXEC = 4,
+    enum class PROT {
+        NONE = 0,
+        READ = 1,
+        WRITE = 2,
+        EXEC = 4,
     };
 
-    inline Protection operator|(Protection a, Protection b) {
-        return static_cast<Protection>((int)a | (int)b);
+    inline PROT operator|(PROT a, PROT b) {
+        return (PROT)((int)a | (int)b);
+    }
+    
+    inline PROT operator&(PROT a, PROT b) {
+        return (PROT)((int)a & (int)b);
     }
 
     enum InvalidValues {
@@ -31,7 +35,7 @@ namespace x64 {
     private:
         class Region {
         public:
-            Region(std::string file, u64 base, u64 size, Protection protection);
+            Region(std::string file, u64 base, u64 size, PROT prot);
 
             bool contains(u64 address) const;
 
@@ -39,11 +43,13 @@ namespace x64 {
                 this->invalidValues = invalidValues;
             }
 
+            std::vector<Region> split(u64 left, u64 right) const;
+
             std::string file;
             u64 base;
             u64 size;
             std::vector<u8> data;
-            Protection protection;
+            PROT prot;
             InvalidValues invalidValues;
 
         private:
@@ -77,9 +83,9 @@ namespace x64 {
     public:
         Mmu();
 
-        u64 mmap(u64 address, u64 length, int prot, int flags, int fd, int offset);
+        u64 mmap(u64 address, u64 length, PROT prot, int flags, int fd, int offset);
         int munmap(u64 address, u64 length);
-        int mprotect(u64 address, u64 length, int prot);
+        int mprotect(u64 address, u64 length, PROT prot);
 
         void setRegionName(u64 address, std::string name);
         

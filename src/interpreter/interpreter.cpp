@@ -75,7 +75,7 @@ namespace x64 {
         entrypoint_ = entrypoint;
     }
 
-    u64 Interpreter::mmap(u64 address, u64 length, int prot, int flags, int fd, int offset) {
+    u64 Interpreter::mmap(u64 address, u64 length, PROT prot, int flags, int fd, int offset) {
         return mmu_.mmap(address, length, prot, flags, fd, offset);
     }
 
@@ -83,7 +83,7 @@ namespace x64 {
         return mmu_.munmap(address, length);
     }
 
-    int Interpreter::mprotect(u64 address, u64 length, int prot) {
+    int Interpreter::mprotect(u64 address, u64 length, PROT prot) {
         return mmu_.mprotect(address, length, prot);
     }
 
@@ -143,7 +143,7 @@ namespace x64 {
     void Interpreter::setupStack() {
         // stack
         u64 stackSize = 16*Mmu::PAGE_SIZE;
-        u64 stackBase = mmu_.mmap(0, stackSize, PROT_READ | PROT_WRITE, 0, 0, 0);
+        u64 stackBase = mmu_.mmap(0, stackSize, PROT::READ | PROT::WRITE, 0, 0, 0);
         cpu_.regs_.rsp_ = stackBase + stackSize;
     }
 

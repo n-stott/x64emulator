@@ -28,9 +28,9 @@ namespace x64 {
         void addExecutableSection(ExecutableSection section) override;
         void setEntrypoint(u64 entrypoint) override;
 
-        u64 mmap(u64 address, u64 length, int prot, int flags, int fd, int offset) override;
+        u64 mmap(u64 address, u64 length, PROT prot, int flags, int fd, int offset) override;
         int munmap(u64 address, u64 length) override;
-        int mprotect(u64 address, u64 length, int prot) override;
+        int mprotect(u64 address, u64 length, PROT prot) override;
         void setRegionName(u64 address, std::string name) override;
 
         void registerTlsBlock(u64 templateAddress, u64 blockAddress) override;
