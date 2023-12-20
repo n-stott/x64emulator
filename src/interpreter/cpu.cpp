@@ -2243,15 +2243,37 @@ namespace x64 {
         u64 rax = get(R64::RAX);
         u64 rdi = get(R64::RDI);
         u64 rsi = get(R64::RSI);
+        u64 rdx = get(R64::RDX);
+        u64 r10 = get(R64::R10);
+        u64 r9 = get(R64::R9);
+        u64 r8 = get(R64::R8);
         switch(rax) {
-            case 0x5: {
+            case 0x5: { // fstat
                 i32 fd = (i32)rdi;
                 Ptr8 statbufptr{Segment::DS, rsi};
-                u64 ret = interpreter_->syscalls().fstat(fd, statbufptr);
-                set(R64::RAX, ret);
+                int ret = interpreter_->syscalls().fstat(fd, statbufptr);
+                set(R32::EAX, (u32)ret);
                 return;
             }
-            case 0xe7: {
+            case 0x9: { // mmap
+                u64 addr = rdi;
+                size_t length = (size_t)rsi;
+                int prot = (int)rdx;
+                int flags = (int)r10;
+                int fd = (int)r9;
+                off_t offset = (off_t)r8;
+                u64 ptr = interpreter_->syscalls().mmap(addr, length, prot, flags, fd, offset);
+                set(R64::RAX, ptr);
+                return;
+            }
+            case 0xb: { // munmap
+                u64 addr = rdi;
+                size_t length = (size_t)rsi;
+                int ret = interpreter_->syscalls().munmap(addr, length);
+                set(R32::EAX, (u32)ret);
+                return;
+            }
+            case 0xe7: { // exit_group
                 i32 errorCode = (i32)rdi;
                 interpreter_->syscalls().exit_group(errorCode);
                 return;

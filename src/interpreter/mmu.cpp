@@ -80,8 +80,8 @@ namespace x64 {
         verify(address % PAGE_SIZE == 0, "munmap with non-page_size aligned address not supported");
         const auto* regionPtr = regionLookup_[address / PAGE_SIZE];
         verify(!!regionPtr, "munmap: unable to find region");
-        verify(regionPtr->base == address, "partial munmap not supported");
-        verify(regionPtr->size == length, "partial munmap not supported");
+        verify(regionPtr->base == address, [&]() { fmt::print("partial munmap not supported: expected base={:#x}, got base={:#x}\n", regionPtr->base, address); });
+        verify(regionPtr->size == length, [&]() { fmt::print("partial munmap not supported: expected size={:#x}, got size={:#x}\n", regionPtr->size, length); });
         removeRegion(*regionPtr);
         return 0;
     }

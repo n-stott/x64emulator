@@ -13,8 +13,11 @@ namespace x64 {
     public:
         Sys(Interpreter* interpreter, Mmu* mmu) : interpreter_(interpreter), mmu_(mmu) { }
 
+        int fstat(int fd, Ptr8 statbuf);
+        u64 mmap(u64 addr, size_t length, int prot, int flags, int fd, off_t offset);
+        int munmap(u64 addr, size_t length);
         void exit_group(int status);
-        u64 fstat(int fd, Ptr8 statbuf);
+
 
     private:
         Interpreter* interpreter_;
