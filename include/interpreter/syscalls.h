@@ -13,7 +13,8 @@ namespace x64 {
     public:
         Sys(Interpreter* interpreter, Mmu* mmu) : interpreter_(interpreter), mmu_(mmu) { }
 
-        u64 fstat(unsigned int fd, Ptr8 statbuf);
+        void exit_group(int status);
+        u64 fstat(int fd, Ptr8 statbuf);
 
     private:
         Interpreter* interpreter_;

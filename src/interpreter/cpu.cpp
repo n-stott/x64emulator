@@ -2245,10 +2245,15 @@ namespace x64 {
         u64 rsi = get(R64::RSI);
         switch(rax) {
             case 0x5: {
-                u32 fd = (u32)rdi;
+                i32 fd = (i32)rdi;
                 Ptr8 statbufptr{Segment::DS, rsi};
                 u64 ret = interpreter_->syscalls().fstat(fd, statbufptr);
                 set(R64::RAX, ret);
+                return;
+            }
+            case 0xe7: {
+                i32 errorCode = (i32)rdi;
+                interpreter_->syscalls().exit_group(errorCode);
                 return;
             }
 

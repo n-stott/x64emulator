@@ -58,6 +58,7 @@ namespace x64 {
 
     void Interpreter::crash() {
         stop();
+        hasCrashed_ = true;
         fmt::print("Register state:\n");
         dumpRegisters();
         fmt::print("Memory regions:\n");

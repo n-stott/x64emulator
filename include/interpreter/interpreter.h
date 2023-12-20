@@ -20,7 +20,7 @@ namespace x64 {
         void run(const std::string& programFilePath, const std::vector<std::string>& arguments);
         void stop();
         void crash();
-        bool hasCrashed() const { return stop_; }
+        bool hasCrashed() const { return hasCrashed_; }
 
         void setLogInstructions(bool);
         bool logInstructions() const;
@@ -78,6 +78,7 @@ namespace x64 {
         std::optional<u64> entrypoint_;
 
         bool stop_ = false;
+        bool hasCrashed_ = false;
         bool logInstructions_ = false;
 
         const ExecutableSection* currentExecutedSection_ = nullptr;
