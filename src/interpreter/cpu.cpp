@@ -1039,6 +1039,70 @@ namespace x64 {
     void Cpu::exec(const Dec<R32>& ins) { set(ins.dst, Impl::dec32(get(ins.dst), &flags_)); }
     void Cpu::exec(const Dec<M32>& ins) { Ptr<Size::DWORD> ptr = resolve(ins.dst); set(ptr, Impl::dec32(get(ptr), &flags_)); }
 
+    u8 Cpu::Impl::shl8(u8 dst, u8 src, Flags* flags) {
+        src = src % 8;
+        u8 res = static_cast<u8>(dst << src);
+        if(src) {
+            flags->carry = dst & (1 << (8-src));
+        }
+        if(src == 1) {
+            flags->overflow = (dst & (1 << 7)) != flags->carry;
+        }
+        flags->sign = (res & (1 << 7));
+        flags->zero = (res == 0);
+        flags->setSure();
+        flags->setUnsureParity();
+        return res;
+    }
+
+    u16 Cpu::Impl::shl16(u16 dst, u16 src, Flags* flags) {
+        src = src % 16;
+        u16 res = static_cast<u16>(dst << src);
+        if(src) {
+            flags->carry = dst & (1 << (16-src));
+        }
+        if(src == 1) {
+            flags->overflow = (dst & (1 << 15)) != flags->carry;
+        }
+        flags->sign = (res & (1 << 15));
+        flags->zero = (res == 0);
+        flags->setSure();
+        flags->setUnsureParity();
+        return res;
+    }
+    
+    u32 Cpu::Impl::shl32(u32 dst, u32 src, Flags* flags) {
+        src = src % 32;
+        u32 res = dst << src;
+        if(src) {
+            flags->carry = dst & (1 << (32-src));
+        }
+        if(src == 1) {
+            flags->overflow = (res & (1ul << 31)) != flags->carry;
+        }
+        flags->sign = (res & (1ul << 31));
+        flags->zero = (res == 0);
+        flags->setSure();
+        flags->setUnsureParity();
+        return res;
+    }
+    
+    u64 Cpu::Impl::shl64(u64 dst, u64 src, Flags* flags) {
+        src = src % 64;
+        u64 res = dst << src;
+        if(src) {
+            flags->carry = dst & (1ull << (64-src));
+        }
+        if(src == 1) {
+            flags->overflow = (dst & (1ull << 63)) != flags->carry;
+        }
+        flags->sign = (res & (1ull << 63));
+        flags->zero = (res == 0);
+        flags->setSure();
+        flags->setUnsureParity();
+        return res;
+    }
+
     u8 Cpu::Impl::shr8(u8 dst, u8 src, Flags* flags) {
         assert(src < 8);
         u8 res = static_cast<u8>(dst >> src);
@@ -1142,47 +1206,15 @@ namespace x64 {
     void Cpu::exec(const Shr<R64, R8>& ins) { set(ins.dst, Impl::shr64(get(ins.dst), get(ins.src), &flags_)); }
     void Cpu::exec(const Shr<R64, Imm>& ins) { set(ins.dst, Impl::shr64(get(ins.dst), get<u64>(ins.src), &flags_)); }
 
-    void Cpu::exec(const Shl<R32, R8>& ins) {
-        assert(get(ins.src) < 32);
-        set(ins.dst, get(ins.dst) << get(ins.src));
-        WARN_FLAGS();
-    }
-    void Cpu::exec(const Shl<R32, Imm>& ins) {
-        assert(get<u32>(ins.src) < 32);
-        set(ins.dst, get(ins.dst) << get<u32>(ins.src));
-        WARN_FLAGS();
-    }
-    void Cpu::exec(const Shl<M32, R8>& ins) {
-        assert(get(ins.src) < 32);
-        set(resolve(ins.dst), get(resolve(ins.dst)) << get(ins.src));
-        WARN_FLAGS();
-    }
-    void Cpu::exec(const Shl<M32, Imm>& ins) {
-        assert(get<u32>(ins.src) < 32);
-        set(resolve(ins.dst), get(resolve(ins.dst)) << get<u32>(ins.src));
-        WARN_FLAGS();
-    }
+    void Cpu::exec(const Shl<R32, R8>& ins) { set(ins.dst, Impl::shl32(get(ins.dst), get(ins.src), &flags_)); }
+    void Cpu::exec(const Shl<R32, Imm>& ins) { set(ins.dst, Impl::shl32(get(ins.dst), get<u32>(ins.src), &flags_)); }
+    void Cpu::exec(const Shl<M32, R8>& ins) { set(resolve(ins.dst), Impl::shl32(get(resolve(ins.dst)), get(ins.src), &flags_)); }
+    void Cpu::exec(const Shl<M32, Imm>& ins) { set(resolve(ins.dst), Impl::shl32(get(resolve(ins.dst)), get<u32>(ins.src), &flags_)); }
 
-    void Cpu::exec(const Shl<R64, R8>& ins) {
-        assert(get(ins.src) < 64);
-        set(ins.dst, get(ins.dst) << get(ins.src));
-        WARN_FLAGS();
-    }
-    void Cpu::exec(const Shl<R64, Imm>& ins) {
-        assert(get<u64>(ins.src) < 64);
-        set(ins.dst, get(ins.dst) << get<u64>(ins.src));
-        WARN_FLAGS();
-    }
-    void Cpu::exec(const Shl<M64, R8>& ins) {
-        assert(get(ins.src) < 64);
-        set(resolve(ins.dst), get(resolve(ins.dst)) << get(ins.src));
-        WARN_FLAGS();
-    }
-    void Cpu::exec(const Shl<M64, Imm>& ins) {
-        assert(get<u64>(ins.src) < 64);
-        set(resolve(ins.dst), get(resolve(ins.dst)) << get<u64>(ins.src));
-        WARN_FLAGS();
-    }
+    void Cpu::exec(const Shl<R64, R8>& ins) { set(ins.dst, Impl::shl64(get(ins.dst), get(ins.src), &flags_)); }
+    void Cpu::exec(const Shl<R64, Imm>& ins) { set(ins.dst, Impl::shl64(get(ins.dst), get<u64>(ins.src), &flags_)); }
+    void Cpu::exec(const Shl<M64, R8>& ins) { set(resolve(ins.dst), Impl::shl64(get(resolve(ins.dst)), get(ins.src), &flags_)); }
+    void Cpu::exec(const Shl<M64, Imm>& ins) { set(resolve(ins.dst), Impl::shl64(get(resolve(ins.dst)), get<u64>(ins.src), &flags_)); }
 
     void Cpu::exec(const Shld<R32, R32, R8>& ins) {
         assert(get(ins.src2) < 32);
