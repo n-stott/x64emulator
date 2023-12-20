@@ -87,11 +87,11 @@ namespace x64 {
     }
 
     int Mmu::mprotect(u64 address, u64 length, int prot) {
-        verify(address % PAGE_SIZE == 0, "munmap with non-page_size aligned address not supported");
+        verify(address % PAGE_SIZE == 0, "mprotect with non-page_size aligned address not supported");
         auto* regionPtr = regionLookup_[address / PAGE_SIZE];
-        verify(!!regionPtr, "munmap: unable to find region");
-        verify(regionPtr->base == address, "partial munmap not supported");
-        verify(regionPtr->size == length, "partial munmap not supported");
+        verify(!!regionPtr, "mprotect: unable to find region");
+        verify(regionPtr->base == address, "partial mprotect not supported");
+        verify(regionPtr->size == length, "partial mprotect not supported");
         regionPtr->protection = (Protection)prot;
         return 0;
     }
