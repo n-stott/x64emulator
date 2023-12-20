@@ -107,9 +107,19 @@ namespace x64 {
         verify(address % PAGE_SIZE == 0, "mprotect with non-page_size aligned address not supported");
         auto* regionPtr = regionLookup_[address / PAGE_SIZE];
         verify(!!regionPtr, "mprotect: unable to find region");
-        verify(regionPtr->base == address, "partial mprotect not supported");
-        verify(regionPtr->size == length, "partial mprotect not supported");
-        regionPtr->prot = prot;
+        if(regionPtr->base == address && regionPtr->size == length) {
+            regionPtr->prot = prot;
+            return 0;
+        }
+        std::vector<Region> splitRegions = regionPtr->split(address, address+length);
+        removeRegion(*regionPtr);
+        for(size_t i = 0; i < splitRegions.size(); ++i) {
+            Region r("", 0, 0, PROT::NONE);
+            std::swap(r, splitRegions[i]);
+            if(r.size == 0) continue;
+            if(i == 1) r.prot = prot;
+            addRegion(std::move(r));
+        }
         return 0;
     }
 

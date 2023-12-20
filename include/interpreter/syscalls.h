@@ -15,6 +15,7 @@ namespace x64 {
 
         int fstat(int fd, Ptr8 statbuf);
         u64 mmap(u64 addr, size_t length, int prot, int flags, int fd, off_t offset);
+        int mprotect(u64 addr, size_t length, int prot);
         int munmap(u64 addr, size_t length);
         void exit_group(int status);
 

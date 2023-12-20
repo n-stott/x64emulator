@@ -2266,6 +2266,14 @@ namespace x64 {
                 set(R64::RAX, ptr);
                 return;
             }
+            case 0xa: { // mprotect
+                u64 addr = rdi;
+                size_t length = (size_t)rsi;
+                int prot = (int)rdx;
+                int ret = interpreter_->syscalls().mprotect(addr, length, prot);
+                set(R32::EAX, (u32)ret);
+                return;
+            }
             case 0xb: { // munmap
                 u64 addr = rdi;
                 size_t length = (size_t)rsi;

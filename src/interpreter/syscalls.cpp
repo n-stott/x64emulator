@@ -20,6 +20,11 @@ namespace x64 {
         return mmu_->mmap(addr, length, (PROT)prot, flags, fd, (int)offset);
     }
 
+    int Sys::mprotect(u64 addr, size_t length, int prot) {
+        fmt::print("mprotect(addr={:#x}, length={:#x}, prot={:#x})\n", addr, length, prot);
+        return mmu_->mprotect(addr, length, (PROT)prot);
+    }
+
     int Sys::munmap(u64 addr, size_t length) {
         fmt::print("munmap(addr={:#x}, length={:#x})\n", addr, length);
         return mmu_->munmap(addr, length);
