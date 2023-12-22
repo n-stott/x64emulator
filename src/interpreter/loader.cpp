@@ -319,6 +319,7 @@ namespace x64 {
             const auto* sym = relocation.symbol(elf);
 
             std::optional<std::string> symbolName = [&]() -> std::optional<std::string> {
+                if(!sym) return {};
                 if(!sym->st_name) return {};
                 verify(elf.dynamicStringTable().has_value());
                 auto dynamicStringTable = elf.dynamicStringTable().value();
