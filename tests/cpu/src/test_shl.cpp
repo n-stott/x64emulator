@@ -8,7 +8,7 @@
 template<u8 count>
 u32 runShl32Native(u32 val, u8, x64::Flags* flags) {
     u64 rflags = 0;
-    asm volatile("shl %1, %0" : "+r" (val) : "r"(count));
+    asm volatile("shl %1, %0" : "+r" (val) : "c"(count));
     asm volatile("pushf");
     asm volatile("pop %0" : "=r" (rflags));
     *flags = fromRflags(rflags);
@@ -22,7 +22,7 @@ u32 runShl32Virtual(u32 val, u8 count, x64::Flags* flags) {
 template<u8 count>
 int compareShl32(u32 val) {
     x64::Flags nativeFlags;
-    u32 nativeShl = runShl32Native<count>(val, count%32, &nativeFlags);
+    u32 nativeShl = runShl32Native<count>(val, count, &nativeFlags);
 
     x64::Flags virtFlags;
     u32 virtShl = runShl32Virtual(val, count%32, &virtFlags);

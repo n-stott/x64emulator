@@ -8,7 +8,7 @@
 template<u8 count>
 u32 runShr32Native(u32 val, u8, x64::Flags* flags) {
     u64 rflags = 0;
-    asm volatile("shr %1, %0" : "+r" (val) : "r"(count));
+    asm volatile("shr %1, %0" : "+r" (val) : "c"(count));
     asm volatile("pushf");
     asm volatile("pop %0" : "=r" (rflags));
     *flags = fromRflags(rflags);
