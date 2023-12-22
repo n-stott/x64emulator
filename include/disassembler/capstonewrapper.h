@@ -15,7 +15,13 @@ namespace x64 {
 
     class CapstoneWrapper {
     public:
-        static std::vector<std::unique_ptr<X86Instruction>> disassembleSection(const u8* begin, size_t size, u64 address);
+        struct DisassemblyResult {
+            std::vector<std::unique_ptr<X86Instruction>> instructions;
+            const u8* next;
+            size_t remainingSize;
+            u64 nextAddress;
+        };
+        static DisassemblyResult disassembleRange(const u8* begin, size_t size, u64 address);
 
     private:
         static std::unique_ptr<X86Instruction> makeInstruction(const cs_insn& insn);

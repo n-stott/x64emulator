@@ -147,20 +147,17 @@ namespace x64 {
         verify(header.virtualAddress() % Mmu::PAGE_SIZE == 0);
         const u8* data = elf.dataAtOffset(header.offset(), header.sizeInFile());
 
-        std::vector<std::unique_ptr<X86Instruction>> instructions = CapstoneWrapper::disassembleSection(data,
-                                                                                                        header.sizeInFile(),
-                                                                                                        header.virtualAddress());
-
-        assert(std::is_sorted(instructions.begin(), instructions.end(), [](const auto& a, const auto& b) {
+        auto disassemblyResult = CapstoneWrapper::disassembleRange(data, header.sizeInFile(), header.virtualAddress());
+        assert(std::is_sorted(disassemblyResult.instructions.begin(), disassemblyResult.instructions.end(), [](const auto& a, const auto& b) {
             return a->address < b->address;
         }));
 
-        for(auto& insn : instructions) insn->address += elfOffset;
+        for(auto& insn : disassemblyResult.instructions) insn->address += elfOffset;
 
         ExecutableSection esection {
             filePath,
             elfOffset,
-            std::move(instructions)
+            std::move(disassemblyResult.instructions)
         };
 
         loadable_->addExecutableSection(std::move(esection));

@@ -2062,7 +2062,7 @@ namespace x64 {
         return make_wrapper<Wrpkru>(address);
     }
 
-    std::vector<std::unique_ptr<X86Instruction>> CapstoneWrapper::disassembleSection(const u8* begin, size_t size, u64 address) {
+    CapstoneWrapper::DisassemblyResult CapstoneWrapper::disassembleRange(const u8* begin, size_t size, u64 address) {
         std::vector<std::unique_ptr<X86Instruction>> instructions;
 
         csh handle;
@@ -2106,6 +2106,7 @@ namespace x64 {
                         continue;
                     }
                 }
+                fmt::print("Unable to disassemble whole section. Stuck at {:#x}. {:#x} bytes remaining\n", codeAddress, codeSize);
                 break;
             }
         }
@@ -2113,7 +2114,12 @@ namespace x64 {
 #endif
         cs_close(&handle);
 
-        return instructions;
+        DisassemblyResult result;
+        result.instructions = std::move(instructions);
+        result.next = codeBegin;
+        result.nextAddress = codeAddress;
+        result.remainingSize = codeSize;
+        return result;
     }
 
 }
