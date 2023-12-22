@@ -722,6 +722,10 @@ namespace utils {
         return fmt::format("{:9}", "syscall");
     }
 
+    inline std::string toString(Rdtsc) {
+        return fmt::format("{:9}", "rdtsc");
+    }
+
     inline std::string toString(Rdpkru) {
         return fmt::format("{:9}", "rdpkru");
     }

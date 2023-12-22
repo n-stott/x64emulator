@@ -731,7 +731,8 @@ namespace x64 {
 
         void exec(const Pshufd<RSSE, RSSE, Imm>&) override;
         void exec(const Pshufd<RSSE, MSSE, Imm>&) override;
-
+        
+        void exec(const Rdtsc&) override;
 
         void exec(const Rdpkru&) override;
         void exec(const Wrpkru&) override;

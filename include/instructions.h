@@ -488,6 +488,10 @@ namespace x64 {
 
     };
 
+    struct Rdtsc {
+
+    };
+
     struct Rdpkru {
 
     };

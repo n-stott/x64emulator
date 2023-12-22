@@ -148,6 +148,8 @@ namespace x64 {
         static std::unique_ptr<X86Instruction> makePunpcklqdq(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makePshufd(const cs_insn& insn);
 
+        static std::unique_ptr<X86Instruction> makeRdtsc(const cs_insn& insn);
+
         // Instructions not supported by capstone
         static std::unique_ptr<X86Instruction> makeRdpkru(u64 address);
         static std::unique_ptr<X86Instruction> makeWrpkru(u64 address);

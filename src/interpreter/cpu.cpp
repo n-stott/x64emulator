@@ -2326,6 +2326,11 @@ namespace x64 {
         });
     }
 
+    void Cpu::exec(const Rdtsc&) {
+        set(R32::EDX, 0);
+        set(R32::EAX, 0);
+    }
+
     void Cpu::exec(const Rdpkru& ins) {
         TODO(ins);
     }

@@ -141,6 +141,7 @@ namespace x64 {
             case X86_INS_MOVHPS: return makeMovhps(insn);
             case X86_INS_PUNPCKLQDQ: return makePunpcklqdq(insn);
             case X86_INS_PSHUFD: return makePshufd(insn);
+            case X86_INS_RDTSC: return makeRdtsc(insn);
             default: return make_failed(insn);
         }
         // if(name == "rep") return makeRepStringop(opbytes, address, operands);
@@ -2046,6 +2047,10 @@ namespace x64 {
         const auto& x86detail = insn.detail->x86;
         assert(x86detail.op_count == 0);
         return make_wrapper<Syscall>(insn.address);
+    }
+
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makeRdtsc(const cs_insn& insn) {
+        return make_wrapper<Rdtsc>(insn.address);
     }
 
 
