@@ -32,7 +32,7 @@ namespace x64 {
     };
 
     class Mmu {
-    private:
+    public:
         class Region {
         public:
             Region(std::string file, u64 base, u64 size, PROT prot);
@@ -77,6 +77,7 @@ namespace x64 {
             void copyFromRegion(u8* dst, u64 src, size_t n) const;
         };
 
+    private:
         Region* addRegion(Region region);
         void removeRegion(const Region& region);
 
@@ -119,6 +120,8 @@ namespace x64 {
         static u64 pageRoundDown(u64 address);
         static u64 pageRoundUp(u64 address);
 
+        const Region* findAddress(u64 address) const;
+
         static constexpr u64 PAGE_SIZE = 0x1000;
 
     private:
@@ -132,7 +135,6 @@ namespace x64 {
         void write(Ptr<s> ptr, T value);
 
         Region* findAddress(u64 address);
-        const Region* findAddress(u64 address) const;
 
         u64 topOfMemoryPageAligned() const;
 

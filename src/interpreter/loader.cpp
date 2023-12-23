@@ -4,7 +4,6 @@
 #include "interpreter/mmu.h"
 #include "interpreter/tcb.h"
 #include "program.h"
-#include "disassembler/capstonewrapper.h"
 #include "elf-reader.h"
 #include <algorithm>
 #include <cassert>
@@ -143,26 +142,13 @@ namespace x64 {
         }
     }
 
-    void Loader::loadExecutableProgramHeader(const elf::Elf64& elf, const elf::ProgramHeader64& header, const std::string& filePath, const std::string& shortFilePath, u64 elfOffset) {
+    void Loader::loadExecutableProgramHeader(const elf::Elf64& elf, const elf::ProgramHeader64& header, const std::string&, const std::string& shortFilePath, u64 elfOffset) {
+        u64 execSectionBase = loadable_->mmap(elfOffset + header.virtualAddress(), Mmu::pageRoundUp(header.sizeInMemory()), PROT::EXEC | PROT::READ, 0, 0, 0);
+        
         verify(header.virtualAddress() % Mmu::PAGE_SIZE == 0);
         const u8* data = elf.dataAtOffset(header.offset(), header.sizeInFile());
+        loadable_->write(execSectionBase, data, header.sizeInFile());
 
-        auto disassemblyResult = CapstoneWrapper::disassembleRange(data, header.sizeInFile(), header.virtualAddress());
-        assert(std::is_sorted(disassemblyResult.instructions.begin(), disassemblyResult.instructions.end(), [](const auto& a, const auto& b) {
-            return a->address < b->address;
-        }));
-
-        for(auto& insn : disassemblyResult.instructions) insn->address += elfOffset;
-
-        ExecutableSection esection {
-            filePath,
-            elfOffset,
-            std::move(disassemblyResult.instructions)
-        };
-
-        loadable_->addExecutableSection(std::move(esection));
-
-        u64 execSectionBase = loadable_->mmap(elfOffset + header.virtualAddress(), Mmu::pageRoundUp(header.sizeInMemory()), PROT::EXEC | PROT::READ, 0, 0, 0);
         loadable_->setRegionName(execSectionBase, shortFilePath);
     }
 

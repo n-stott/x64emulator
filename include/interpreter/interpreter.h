@@ -25,7 +25,6 @@ namespace x64 {
         void setLogInstructions(bool);
         bool logInstructions() const;
 
-        void addExecutableSection(ExecutableSection section) override;
         void setEntrypoint(u64 entrypoint) override;
 
         u64 mmap(u64 address, u64 length, PROT prot, int flags, int fd, int offset) override;
@@ -60,7 +59,12 @@ namespace x64 {
 
         Sys& syscalls() { return syscalls_; }
 
-        void findSectionWithAddress(u64 address, const ExecutableSection** section, size_t* index) const;
+        struct InstructionPosition {
+            const ExecutableSection* section;
+            size_t index;
+        };
+
+        InstructionPosition findSectionWithAddress(u64 address, const ExecutableSection* sectionHint = nullptr) const;
         std::string calledFunctionName(const ExecutableSection* execSection, const CallDirect* insn);
 
         void dumpStackTrace() const;
@@ -70,7 +74,7 @@ namespace x64 {
         Cpu cpu_;
         Sys syscalls_;
 
-        std::vector<ExecutableSection> executableSections_;
+        mutable std::deque<ExecutableSection> executableSections_;
         std::unique_ptr<LibC> libc_;
         SymbolProvider* symbolProvider_;
 

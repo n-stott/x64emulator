@@ -16,13 +16,11 @@ namespace elf {
 namespace x64 {
 
     class Interpreter;
-    struct ExecutableSection;
     class SymbolProvider;
 
     class Loadable {
     public:
         virtual ~Loadable() = default;
-        virtual void addExecutableSection(ExecutableSection section) = 0;
 
         virtual void setEntrypoint(u64 entrypoint) = 0;
 

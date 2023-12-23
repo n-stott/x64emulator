@@ -2,6 +2,7 @@
 #include "interpreter/symbolprovider.h"
 #include "interpreter/executioncontext.h"
 #include "interpreter/verify.h"
+#include "disassembler/capstonewrapper.h"
 #include "instructionutils.h"
 #include <fmt/core.h>
 #include <algorithm>
@@ -65,10 +66,6 @@ namespace x64 {
         mmu_.dumpRegions();
         fmt::print("Stacktrace:\n");
         dumpStackTrace();
-    }
-
-    void Interpreter::addExecutableSection(ExecutableSection section) {
-        executableSections_.push_back(std::move(section));
     }
 
     void Interpreter::setEntrypoint(u64 entrypoint) {
@@ -147,17 +144,14 @@ namespace x64 {
         cpu_.regs_.rsp_ = stackBase + stackSize;
     }
 
-    void Interpreter::findSectionWithAddress(u64 address, const ExecutableSection** section, size_t* index) const {
-        if(!section && !index) return;
-        if(!!section && !!(*section)) {
-            const ExecutableSection* hint = *section;
-            auto it = std::lower_bound(hint->instructions.begin(), hint->instructions.end(), address, [&](const auto& a, u64 b) {
+    Interpreter::InstructionPosition Interpreter::findSectionWithAddress(u64 address, const ExecutableSection* sectionHint) const {
+        if(!!sectionHint) {
+            auto it = std::lower_bound(sectionHint->instructions.begin(), sectionHint->instructions.end(), address, [&](const auto& a, u64 b) {
                 return a->address < b;
             });
-            if(it != hint->instructions.end() && address == (*it)->address) {
-                if(!!section) *section = hint;
-                if(!!index) *index = (size_t)std::distance(hint->instructions.begin(), it);
-                return;
+            if(it != sectionHint->instructions.end() && address == (*it)->address) {
+                size_t index = (size_t)std::distance(sectionHint->instructions.begin(), it);
+                return InstructionPosition { sectionHint, index };
             }
         }
         for(const auto& execSection : executableSections_) {
@@ -165,26 +159,52 @@ namespace x64 {
                 return a->address < b;
             });
             if(it != execSection.instructions.end() && address == (*it)->address) {
-                if(!!section) *section = &execSection;
-                if(!!index) *index = (size_t)std::distance(execSection.instructions.begin(), it);
-                return;
+                size_t index = (size_t)std::distance(execSection.instructions.begin(), it);
+                return InstructionPosition { &execSection, index };
             }
         }
-        if(!!section) *section = nullptr;
-        if(!!index) *index = (size_t)(-1);
+        // If we land here, we probably have not disassembled the section yet...
+        const Mmu::Region* mmuRegion = mmu_.findAddress(address);
+        if(!mmuRegion) return InstructionPosition { nullptr, (size_t)(-1) };
+        verify((bool)(mmuRegion->prot & PROT::EXEC), [&]() {
+            fmt::print(stderr, "Attempting to execute non-executable region [{:#x}-{:#x}]\n", mmuRegion->base, mmuRegion->base+mmuRegion->size);
+        });
+
+        // limit the size of disassembly range
+        u64 end = mmuRegion->base + mmuRegion->size;
+        for(const auto& execSection : executableSections_) {
+            if(address < execSection.end && execSection.end <= end) end = execSection.begin;
+        }
+        verify(address < end, [&]() {
+            fmt::print(stderr, "Disassembly region [{:#x}-{:#x}] is empty\n", address, end);
+        });
+
+        // Now, do the disassembly
+        std::vector<u8> disassemblyData;
+        disassemblyData.resize(end-address, 0x0);
+        std::memcpy(disassemblyData.data(), mmuRegion->data.data()+address-mmuRegion->base, end-address);
+        CapstoneWrapper::DisassemblyResult result = CapstoneWrapper::disassembleRange(disassemblyData.data(), disassemblyData.size(), address);
+
+        // Finally, create the new executable region
+        ExecutableSection section;
+        section.begin = address;
+        section.end = result.nextAddress;
+        section.filename = mmuRegion->file;
+        section.instructions = std::move(result.instructions);
+        executableSections_.push_back(std::move(section));
+
+        return InstructionPosition { &executableSections_.back(), 0 };
     }
 
     void Interpreter::runInit() {
         for(auto it = initFunctions_.begin(); it != initFunctions_.end(); ++it) {
             u64 address = *it;
             {
-                const ExecutableSection* section = nullptr;
-                size_t index = (size_t)(-1);
-                findSectionWithAddress(address, &section, &index);
+                InstructionPosition pos = findSectionWithAddress(address);
                 fmt::print(stderr, "Run init function {}/{} from {}\n",
                         std::distance(initFunctions_.begin(), it),
                         initFunctions_.size(),
-                        section ? (section->filename) : "unknown"
+                        pos.section ? (pos.section->filename) : "unknown"
                         );
             }
             execute(address);
@@ -198,19 +218,17 @@ namespace x64 {
         if(cachedValue != callCache_.end()) {
             cp = cachedValue->second;
         } else {
-            const ExecutableSection* section = currentExecutedSection_;
-            size_t index = (size_t)(-1);
-            findSectionWithAddress(address, &section, &index);
-            verify(!!section, [=]() {
+            InstructionPosition pos = findSectionWithAddress(address, currentExecutedSection_);
+            verify(!!pos.section, [=]() {
                 fmt::print("Unable to find section containing address {:#x}\n", address);
                 if(auto it = bogusRelocations_.find(address); it != bogusRelocations_.end()) {
                     fmt::print("Was bogus relocation of {}\n", it->second);
                 }
             });
-            verify(index != (size_t)(-1));
+            verify(pos.index != (size_t)(-1));
             cp.address = address;
-            cp.executedSection = section;
-            cp.instructionIdx = index;
+            cp.executedSection = pos.section;
+            cp.instructionIdx = pos.index;
             callCache_.insert(std::make_pair(address, cp));
         }
         currentExecutedSection_ = cp.executedSection;
@@ -230,18 +248,16 @@ namespace x64 {
         if(cachedValue != jmpCache_.end()) {
             cp = cachedValue->second;
         } else {
-            const ExecutableSection* section = currentExecutedSection_;
-            size_t index = (size_t)(-1);
-            findSectionWithAddress(address, &section, &index);
-            verify(!!section && index != (size_t)(-1), [&]() {
+            InstructionPosition pos = findSectionWithAddress(address, currentExecutedSection_);
+            verify(!!pos.section && pos.index != (size_t)(-1), [&]() {
                 fmt::print("Unable to find jmp destination {:#x}\n", address);
                 if(auto it = bogusRelocations_.find(address); it != bogusRelocations_.end()) {
                     fmt::print("Was bogus relocation of {}\n", it->second);
                 }
             });
             cp.address = address;
-            cp.executedSection = section;
-            cp.instructionIdx = index;
+            cp.executedSection = pos.section;
+            cp.instructionIdx = pos.index;
             jmpCache_.insert(std::make_pair(address, cp));
         }
         currentExecutedSection_ = cp.executedSection;
@@ -289,6 +305,7 @@ namespace x64 {
         verify(!signal_interrupt);
         verify(!!currentExecutedSection_);
         verify(currentInstructionIdx_ != (size_t)(-1));
+        verify(currentInstructionIdx_ < currentExecutedSection_->instructions.size());
         const X86Instruction* instruction = currentExecutedSection_->instructions[currentInstructionIdx_].get();
         if(currentInstructionIdx_+1 != currentExecutedSection_->instructions.size()) {
             const X86Instruction* nextInstruction = currentExecutedSection_->instructions[currentInstructionIdx_+1].get();
@@ -394,14 +411,12 @@ namespace x64 {
         if(!execSection) return "";
         if(!call) return "";
         if(!logInstructions()) return ""; // We don't print the name, so we don't bother doing the lookup
-        u64 address = execSection->sectionOffset + call->symbolAddress;
-        const ExecutableSection* originSection = nullptr;
-        size_t firstInstructionIndex = 0;
-        findSectionWithAddress(address, &originSection, &firstInstructionIndex);
-        verify(!!originSection, [&]() {
+        u64 address = call->symbolAddress;
+        InstructionPosition pos = findSectionWithAddress(address);
+        verify(!!pos.section, [&]() {
             fmt::print("Could not determine function origin section for address {:#x}\n", address);
         });
-        verify(firstInstructionIndex != (size_t)(-1), "Could not find call destination instruction");
+        verify(pos.index != (size_t)(-1), "Could not find call destination instruction");
 
         // If we are in the text section, we can try to lookup the symbol for that address
         auto symbolsAtAddress = symbolProvider_->lookupSymbol(address);
@@ -411,7 +426,7 @@ namespace x64 {
         }
 
         // If we are in the PLT instead, lets' look at the first instruction to determine the jmp location
-        const X86Instruction* jmpInsn = originSection->instructions[firstInstructionIndex].get();
+        const X86Instruction* jmpInsn = pos.section->instructions[pos.index].get();
         const auto* jmp = dynamic_cast<const InstructionWrapper<Jmp<M64>>*>(jmpInsn);
         if(!!jmp) {
             Registers regs;

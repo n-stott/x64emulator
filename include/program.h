@@ -60,9 +60,10 @@ namespace x64 {
     };
 
     struct ExecutableSection {
-        std::string filename;
-        u64 sectionOffset;
+        u64 begin;
+        u64 end;
         std::vector<std::unique_ptr<X86Instruction>> instructions;
+        std::string filename;
     };
 
 }
