@@ -32,18 +32,15 @@ namespace x64 {
         public:
             Region(std::string file, u64 base, u64 size, PROT prot);
 
+            u64 base() const { return base_; }
+            u64 size() const { return size_; }
+            u64 end() const { return base_+size_; }
+            PROT prot() const { return prot_; }
+            const std::string& file() const { return file_; }
+
             bool contains(u64 address) const;
 
             std::vector<Region> split(u64 left, u64 right) const;
-
-            std::string file;
-            u64 base;
-            u64 size;
-            std::vector<u8> data;
-            PROT prot;
-
-        private:
-            friend class Mmu;
 
             u8 read8(u64 address) const;
             u16 read16(u64 address) const;
@@ -57,14 +54,23 @@ namespace x64 {
             void write64(u64 address, u64 value);
             void write128(u64 address, u128 value);
 
+            void copyToRegion(u64 dst, const u8* src, size_t n);
+            void copyFromRegion(u8* dst, u64 src, size_t n) const;
+
+        private:
+            friend class Mmu;
+
             template<typename T>
             T read(u64 address) const;
 
             template<typename T>
             void write(u64 address, T value);
 
-            void copyToRegion(u64 dst, const u8* src, size_t n);
-            void copyFromRegion(u8* dst, u64 src, size_t n) const;
+            std::string file_;
+            u64 base_;
+            u64 size_;
+            std::vector<u8> data_;
+            PROT prot_;
         };
 
     private:

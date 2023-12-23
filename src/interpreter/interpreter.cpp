@@ -166,12 +166,12 @@ namespace x64 {
         // If we land here, we probably have not disassembled the section yet...
         const Mmu::Region* mmuRegion = mmu_.findAddress(address);
         if(!mmuRegion) return InstructionPosition { nullptr, (size_t)(-1) };
-        verify((bool)(mmuRegion->prot & PROT::EXEC), [&]() {
-            fmt::print(stderr, "Attempting to execute non-executable region [{:#x}-{:#x}]\n", mmuRegion->base, mmuRegion->base+mmuRegion->size);
+        verify((bool)(mmuRegion->prot() & PROT::EXEC), [&]() {
+            fmt::print(stderr, "Attempting to execute non-executable region [{:#x}-{:#x}]\n", mmuRegion->base(), mmuRegion->end());
         });
 
         // limit the size of disassembly range
-        u64 end = mmuRegion->base + mmuRegion->size;
+        u64 end = mmuRegion->end();
         for(const auto& execSection : executableSections_) {
             if(address < execSection.end && execSection.end <= end) end = execSection.begin;
         }
@@ -182,14 +182,14 @@ namespace x64 {
         // Now, do the disassembly
         std::vector<u8> disassemblyData;
         disassemblyData.resize(end-address, 0x0);
-        std::memcpy(disassemblyData.data(), mmuRegion->data.data()+address-mmuRegion->base, end-address);
+        mmuRegion->copyFromRegion(disassemblyData.data(), address, end-address);
         CapstoneWrapper::DisassemblyResult result = CapstoneWrapper::disassembleRange(disassemblyData.data(), disassemblyData.size(), address);
 
         // Finally, create the new executable region
         ExecutableSection section;
         section.begin = address;
         section.end = result.nextAddress;
-        section.filename = mmuRegion->file;
+        section.filename = mmuRegion->file();
         section.instructions = std::move(result.instructions);
         executableSections_.push_back(std::move(section));
 

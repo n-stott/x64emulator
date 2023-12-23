@@ -8,28 +8,28 @@
 namespace x64 {
 
     Mmu::Region::Region(std::string file, u64 base, u64 size, PROT prot) {
-        this->file = std::move(file);
-        this->base = base;
-        this->size = size;
-        this->data.resize(size, 0x00);
-        this->prot = prot;
+        this->file_ = std::move(file);
+        this->base_ = base;
+        this->size_ = size;
+        this->data_.resize(size, 0x00);
+        this->prot_ = prot;
     }
 
     Mmu::Region* Mmu::addRegion(Region region) {
         auto nonEmptyIntersection = [&](const Region& r) {
-            return r.contains(region.base) || r.contains(region.base + region.size - 1);
+            return r.contains(region.base()) || r.contains(region.end() - 1);
         };
         verify(std::none_of(regions_.begin(), regions_.end(), nonEmptyIntersection), [&]() {
             auto r = std::find_if(regions_.begin(), regions_.end(), nonEmptyIntersection);
             assert(r != regions_.end());
-            fmt::print("Unable to add region : memory range [{:#x}, {:#x}] already occupied by region [{:#x}, {:#x}]\n", region.base, region.base + region.size, r->base, r->base + r->size);
+            fmt::print("Unable to add region : memory range [{:#x}, {:#x}] already occupied by region [{:#x}, {:#x}]\n", region.base(), region.end(), r->base(), r->end());
             dumpRegions();
         });
         regions_.push_back(std::move(region));
         Region* r = &regions_.back();
 
-        u64 firstPage = pageRoundDown(r->base) / PAGE_SIZE;
-        u64 lastPage = pageRoundUp(r->base + r->size) / PAGE_SIZE;
+        u64 firstPage = pageRoundDown(r->base()) / PAGE_SIZE;
+        u64 lastPage = pageRoundUp(r->end()) / PAGE_SIZE;
         verify(firstPage < lastPage);
         if(lastPage >= regionLookup_.size()) {
             regionLookup_.resize(lastPage, nullptr);
@@ -44,8 +44,8 @@ namespace x64 {
     }
 
     void Mmu::removeRegion(const Region& region) {
-        u64 firstPage = pageRoundDown(region.base) / PAGE_SIZE;
-        u64 lastPage = pageRoundUp(region.base + region.size) / PAGE_SIZE;
+        u64 firstPage = pageRoundDown(region.base()) / PAGE_SIZE;
+        u64 lastPage = pageRoundUp(region.end()) / PAGE_SIZE;
         verify(firstPage < lastPage);
         for(u64 pageIndex = firstPage; pageIndex < lastPage; ++pageIndex) {
             verify(pageIndex < regionLookup_.size());
@@ -53,7 +53,7 @@ namespace x64 {
             regionLookup_[pageIndex] = nullptr;
         }
         regions_.erase(std::remove_if(regions_.begin(), regions_.end(), [&](const Region& r) {
-            return r.base == region.base && r.size == region.size;
+            return r.base() == region.base() && r.size() == region.size();
         }), regions_.end());
     }
 
@@ -70,14 +70,14 @@ namespace x64 {
         if(address == 0) {
             Region region("", topOfMemoryPageAligned(), pageRoundUp(length), (PROT)prot);
             auto* regionPtr = addRegion(std::move(region));
-            return regionPtr->base;
+            return regionPtr->base();
         } else {
             verify(address % PAGE_SIZE == 0, [&]() {
                 fmt::print("mmap with non-page_size aligned address {:#x} not supported", address);
             });
             Region region("", address, pageRoundUp(length), (PROT)prot);
             auto* regionPtr = addRegion(std::move(region));
-            return regionPtr->base;
+            return regionPtr->base();
         }
     }
 
@@ -86,7 +86,7 @@ namespace x64 {
         const auto* regionPtr = regionLookup_[address / PAGE_SIZE];
         verify(!!regionPtr, "munmap: unable to find region");
         length = pageRoundUp(length);
-        if(regionPtr->base == address && regionPtr->size == length) {
+        if(regionPtr->base() == address && regionPtr->size() == length) {
             removeRegion(*regionPtr);
             return 0;
         }
@@ -96,7 +96,7 @@ namespace x64 {
             if(i == 1) continue;
             Region r("", 0, 0, PROT::NONE);
             std::swap(r, splitRegions[i]);
-            if(r.size == 0) continue;
+            if(r.size() == 0) continue;
             addRegion(std::move(r));
         }
         return 0;
@@ -106,8 +106,8 @@ namespace x64 {
         verify(address % PAGE_SIZE == 0, "mprotect with non-page_size aligned address not supported");
         auto* regionPtr = regionLookup_[address / PAGE_SIZE];
         verify(!!regionPtr, "mprotect: unable to find region");
-        if(regionPtr->base == address && regionPtr->size == length) {
-            regionPtr->prot = prot;
+        if(regionPtr->base() == address && regionPtr->size() == length) {
+            regionPtr->prot_ = prot;
             return 0;
         }
         std::vector<Region> splitRegions = regionPtr->split(address, address+length);
@@ -115,8 +115,8 @@ namespace x64 {
         for(size_t i = 0; i < splitRegions.size(); ++i) {
             Region r("", 0, 0, PROT::NONE);
             std::swap(r, splitRegions[i]);
-            if(r.size == 0) continue;
-            if(i == 1) r.prot = prot;
+            if(r.size() == 0) continue;
+            if(i == 1) r.prot_ = prot;
             addRegion(std::move(r));
         }
         return 0;
@@ -125,10 +125,10 @@ namespace x64 {
     void Mmu::setRegionName(u64 address, std::string name) {
         verify(address % PAGE_SIZE == 0, "address must be a multiple of the page size");
         auto it = std::find_if(regions_.begin(), regions_.end(), [&](const Region& region) {
-            return region.base == address;
+            return region.base() == address;
         });
         verify(it != regions_.end(), "Cannot set name of non-existing region");
-        it->file = std::move(name);
+        it->file_ = std::move(name);
     }
 
     void Mmu::setFsBase(u64 fsBase) {
@@ -141,7 +141,7 @@ namespace x64 {
     }
 
     bool Mmu::Region::contains(u64 address) const {
-        return address >= base && address < base + size;
+        return address >= base() && address < end();
     }
 
 
@@ -150,7 +150,7 @@ namespace x64 {
         assert(contains(address));
         assert(contains(address+sizeof(T)-1));
         T value;
-        std::memcpy(&value, &data[address-base], sizeof(value));
+        std::memcpy(&value, &data_[address-base()], sizeof(value));
         return value;
     }
 
@@ -158,7 +158,7 @@ namespace x64 {
     void Mmu::Region::write(u64 address, T value) {
         assert(contains(address));
         assert(contains(address+sizeof(T)-1));
-        std::memcpy(&data[address-base], &value, sizeof(value));
+        std::memcpy(&data_[address-base()], &value, sizeof(value));
     }
 
     u8 Mmu::Region::read8(u64 address) const { return read<u8>(address); }
@@ -204,8 +204,8 @@ namespace x64 {
         verify(!!region, [&]() {
             fmt::print("No region containing {:#x}\n", address);
         });
-        verify((bool)(region->prot & PROT::READ), [&]() {
-            fmt::print("Attempt to read {:#x} from non-readable region [{:#x}:{:#x}]\n", address, region->base, region->base + region->size);
+        verify((bool)(region->prot() & PROT::READ), [&]() {
+            fmt::print("Attempt to read {:#x} from non-readable region [{:#x}:{:#x}]\n", address, region->base(), region->end());
         });
         T value = region->read<T>(address);
 #if DEBUG_MMU
@@ -223,8 +223,8 @@ namespace x64 {
         verify(!!region, [&]() {
             fmt::print("No region containing {:#x}\n", address);
         });
-        verify((bool)(region->prot & PROT::WRITE), [&]() {
-            fmt::print("Attempt to write to {:#x} in non-writable region [{:#x}:{:#x}]\n", address, region->base, region->base + region->size);
+        verify((bool)(region->prot() & PROT::WRITE), [&]() {
+            fmt::print("Attempt to write to {:#x} in non-writable region [{:#x}:{:#x}]\n", address, region->base(), region->end());
         });
 #if DEBUG_MMU
         if constexpr(std::is_integral_v<T>)
@@ -272,13 +272,13 @@ namespace x64 {
                                          (int)(prot & PROT::EXEC)  ? "X" : " ");
         };
         for(const auto& region : regions_) {
-            fmt::print("    {:>20} {:#x} - {:#x} {}\n", region.file, region.base, region.base+region.size, protectionToString(region.prot));
+            fmt::print("    {:>20} {:#x} - {:#x} {}\n", region.file_, region.base(), region.end(), protectionToString(region.prot()));
         }
     }
 
     u64 Mmu::topOfMemoryPageAligned() const {
         u64 top = topOfReserved_;
-        for(const auto& region : regions_) top = std::max(top, region.base+region.size);
+        for(const auto& region : regions_) top = std::max(top, region.end());
         top = pageRoundUp(top);
         return top;
     }
@@ -312,34 +312,34 @@ namespace x64 {
     void Mmu::Region::copyToRegion(u64 dst, const u8* src, size_t n) {
         verify(contains(dst));
         verify(contains(dst + n -1));
-        std::memcpy(&data[dst-base], src, n);
+        std::memcpy(&data_[dst-base_], src, n);
     }
 
     void Mmu::Region::copyFromRegion(u8* dst, u64 src, size_t n) const {
         verify(contains(src));
         verify(contains(src + n -1));
-        std::memcpy(dst, &data[src-base], n);
+        std::memcpy(dst, &data_[src-base_], n);
     }
 
     std::vector<Mmu::Region> Mmu::Region::split(u64 left, u64 right) const {
         verify(left <= right);
         verify(contains(left));
-        verify(contains(right) || right == base+size);
+        verify(contains(right) || right == end());
         std::vector<Region> res;
         res.reserve(3);
         {
-            Region l(file, base, left-base, prot);
-            std::memcpy(l.data.data(), data.data(), left-base);
+            Region l(file_, base_, left-base_, prot_);
+            std::memcpy(l.data_.data(), data_.data(), left-base_);
             res.push_back(std::move(l));
         }
         {
-            Region m(file, left, right-left, prot);
-            std::memcpy(m.data.data(), data.data()+left-base, right-left);
+            Region m(file_, left, right-left, prot_);
+            std::memcpy(m.data_.data(), data_.data()+left-base_, right-left);
             res.push_back(std::move(m));
         }
         {
-            Region r(file, right, base+size-right, prot);
-            std::memcpy(r.data.data(), data.data()+right-base, base+size-right);
+            Region r(file_, right, end()-right, prot_);
+            std::memcpy(r.data_.data(), data_.data()+right-base_, end()-right);
             res.push_back(std::move(r));
         }
         return res;
