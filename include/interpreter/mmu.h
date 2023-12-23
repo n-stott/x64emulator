@@ -26,11 +26,6 @@ namespace x64 {
         return (PROT)((int)a & (int)b);
     }
 
-    enum InvalidValues {
-        INV_NONE,
-        INV_NULL,
-    };
-
     class Mmu {
     public:
         class Region {
@@ -39,10 +34,6 @@ namespace x64 {
 
             bool contains(u64 address) const;
 
-            void setInvalidValues(InvalidValues invalidValues) {
-                this->invalidValues = invalidValues;
-            }
-
             std::vector<Region> split(u64 left, u64 right) const;
 
             std::string file;
@@ -50,7 +41,6 @@ namespace x64 {
             u64 size;
             std::vector<u8> data;
             PROT prot;
-            InvalidValues invalidValues;
 
         private:
             friend class Mmu;

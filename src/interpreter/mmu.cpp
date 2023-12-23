@@ -13,7 +13,6 @@ namespace x64 {
         this->size = size;
         this->data.resize(size, 0x00);
         this->prot = prot;
-        this->invalidValues = INV_NONE;
     }
 
     Mmu::Region* Mmu::addRegion(Region region) {
