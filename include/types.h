@@ -228,6 +228,11 @@ namespace x64 {
             address += pointerSize(size);
             return *this;
         }
+
+        Ptr& operator+=(size_t count) {
+            address += count*pointerSize(size);
+            return *this;
+        }
     };
 
     using Ptr8 = Ptr<Size::BYTE>;
