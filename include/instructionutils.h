@@ -726,6 +726,14 @@ namespace utils {
         return fmt::format("{:9}", "rdtsc");
     }
 
+    inline std::string toString(Cpuid) {
+        return fmt::format("{:9}", "cpuid");
+    }
+
+    inline std::string toString(Xgetbv) {
+        return fmt::format("{:9}", "xgetbv");
+    }
+
     inline std::string toString(Rdpkru) {
         return fmt::format("{:9}", "rdpkru");
     }

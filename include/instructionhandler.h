@@ -537,6 +537,9 @@ namespace x64 {
 
         virtual void exec(const Rdtsc&) = 0;
 
+        virtual void exec(const Cpuid&) = 0;
+        virtual void exec(const Xgetbv&) = 0;
+
         virtual void exec(const Rdpkru&) = 0;
         virtual void exec(const Wrpkru&) = 0;
 

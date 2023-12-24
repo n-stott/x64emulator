@@ -2331,6 +2331,27 @@ namespace x64 {
         set(R32::EAX, 0);
     }
 
+    void Cpu::exec(const Cpuid&) {
+        // get CPUID from host
+        u32 a, b, c, d;
+        a = get(R32::EAX);
+        asm("cpuid" : "=a" (a), "=b" (b), "=c" (c), "=d" (d) : "0" (a));
+        set(R32::EAX, a);
+        set(R32::EBX, b);
+        set(R32::ECX, c);
+        set(R32::EDX, d);
+    }
+
+    void Cpu::exec(const Xgetbv&) {
+        // get XCR0 from host
+        u32 a, c, d;
+        c = get(R32::ECX);
+        asm("mov %0, %%ecx" :: "r"(c));
+        asm("xgetbv" : "=a" (a), "=d" (d));
+        set(R32::EAX, a);
+        set(R32::EDX, d);
+    }
+
     void Cpu::exec(const Rdpkru& ins) {
         TODO(ins);
     }

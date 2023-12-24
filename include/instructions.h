@@ -492,6 +492,14 @@ namespace x64 {
 
     };
 
+    struct Cpuid {
+
+    };
+
+    struct Xgetbv {
+
+    };
+
     struct Rdpkru {
 
     };
