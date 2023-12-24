@@ -48,7 +48,13 @@ namespace x64 {
         void runInit();
         void pushProgramArguments(const std::string& programFilePath, const std::vector<std::string>& arguments);
         void executeMain();
-        void execute(u64 address);
+
+        enum class ExecuteType {
+            CALL,
+            JUMP,
+        };
+
+        void execute(u64 address, ExecuteType type);
 
         const X86Instruction* fetchInstruction();
         void log(size_t ticks, const X86Instruction* instruction) const;

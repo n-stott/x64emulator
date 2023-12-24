@@ -131,7 +131,7 @@ namespace x64 {
             if(stop_) return;
             pushProgramArguments(programFilePath, arguments);
             verify(entrypoint_.has_value(), "No entrypoint");
-            execute(entrypoint_.value());
+            execute(entrypoint_.value(), ExecuteType::JUMP);
         }, [&]() {
             crash();
         });
@@ -207,7 +207,7 @@ namespace x64 {
                         pos.section ? (pos.section->filename) : "unknown"
                         );
             }
-            execute(address);
+            execute(address, ExecuteType::CALL);
             if(stop_) return;
         }
     }
@@ -269,7 +269,7 @@ namespace x64 {
         auto mainSymbol = symbolProvider_->lookupSymbolWithoutVersion("main", false);
         verify(!mainSymbol.empty(), "Cannot find \"main\" symbol");
         verify(mainSymbol.size() <= 1, "Found \"main\" symbol 2 or more times");
-        execute(mainSymbol[0]->address);
+        execute(mainSymbol[0]->address, ExecuteType::CALL);
     }
 
     void Interpreter::pushProgramArguments(const std::string& programFilePath, const std::vector<std::string>& arguments) {
@@ -318,14 +318,18 @@ namespace x64 {
         return instruction;
     }
 
-    void Interpreter::execute(u64 address) {
+    void Interpreter::execute(u64 address, ExecuteType type) {
         if(stop_) return;
         auto symbolLookup = symbolProvider_->lookupSymbol(address);
         std::string functionName = symbolLookup.empty() ? "unknown" : symbolLookup[0]->demangledSymbol;
         fmt::print(stderr, "Execute function {:#x} : {}\n", address, functionName);
         SignalHandler sh;
-        cpu_.push64(address);
-        call(address);
+        if(type == ExecuteType::CALL) {
+            cpu_.push64(address);
+            call(address);
+        } else {
+            call(address);
+        }
         size_t ticks = 0;
         while(!stop_ && !callstack_.empty() && cpu_.regs_.rip_ != 0x0) {
             try {
