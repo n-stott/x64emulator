@@ -6,7 +6,7 @@
 #include <fmt/core.h>
 #include <filesystem>
 
-int main(int argc, char* argv[]) {
+int main(int argc, char* argv[], char* envp[]) {
     if(argc < 2) {
         fmt::print(stderr, "Missing argument: path to program\n");
         return 1;
@@ -24,6 +24,7 @@ int main(int argc, char* argv[]) {
     std::string programPath;
     std::string libraryPath;
     std::vector<std::string> arguments;
+    std::vector<std::string> environmentVariables;
 
     if(advancedLoading) {
         int arg = 1;
@@ -52,6 +53,9 @@ int main(int argc, char* argv[]) {
         for(int arg = 2; arg < argc; ++arg) {
             arguments.push_back(argv[arg]);
         }
+        for(char** env = envp; *env != 0; ++env) {
+            environmentVariables.push_back(*env);
+        }
     }
 
     if(libraryPath.empty()) {
@@ -74,7 +78,7 @@ int main(int argc, char* argv[]) {
         loader.prepareTlsTemplate();
         loader.resolveAllRelocations();
         loader.loadTlsBlocks();
-        interpreter.run(programPath, arguments);
+        interpreter.run(programPath, arguments, environmentVariables);
     }, [&]() {
         interpreter.crash();
     });

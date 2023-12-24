@@ -17,7 +17,7 @@ namespace x64 {
     class Interpreter : public Loadable {
     public:
         explicit Interpreter(SymbolProvider* symbolProvider);
-        void run(const std::string& programFilePath, const std::vector<std::string>& arguments);
+        void run(const std::string& programFilePath, const std::vector<std::string>& arguments, const std::vector<std::string>& environmentVariables);
         void stop();
         void crash();
         bool hasCrashed() const { return hasCrashed_; }
@@ -46,7 +46,7 @@ namespace x64 {
 
         void setupStack();
         void runInit();
-        void pushProgramArguments(const std::string& programFilePath, const std::vector<std::string>& arguments);
+        void pushProgramArguments(const std::string& programFilePath, const std::vector<std::string>& arguments, const std::vector<std::string>& environmentVariables);
         void executeMain();
 
         enum class ExecuteType {

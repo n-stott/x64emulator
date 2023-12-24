@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <cassert>
 #include <numeric>
+#include <sys/auxv.h>
 
 #include <signal.h>
 
@@ -124,12 +125,12 @@ namespace x64 {
         mmu_.copyToMmu(dst, src, nbytes);
     }
 
-    void Interpreter::run(const std::string& programFilePath, const std::vector<std::string>& arguments) {
+    void Interpreter::run(const std::string& programFilePath, const std::vector<std::string>& arguments, const std::vector<std::string>& environmentVariables) {
         VerificationScope::run([&]() {
             setupStack();
             runInit();
             if(stop_) return;
-            pushProgramArguments(programFilePath, arguments);
+            pushProgramArguments(programFilePath, arguments, environmentVariables);
             verify(entrypoint_.has_value(), "No entrypoint");
             execute(entrypoint_.value(), ExecuteType::JUMP);
         }, [&]() {
@@ -273,29 +274,107 @@ namespace x64 {
         execute(mainSymbol[0]->address, ExecuteType::CALL);
     }
 
-    void Interpreter::pushProgramArguments(const std::string& programFilePath, const std::vector<std::string>& arguments) {
+    void Interpreter::pushProgramArguments(const std::string& programFilePath, const std::vector<std::string>& arguments, const std::vector<std::string>& environmentVariables) {
         VerificationScope::run([&]() {
+            mmap(0, Mmu::PAGE_SIZE, PROT::NONE, 0, 0, 0); // throwaway page
+            u64 argumentPage = mmap(0, Mmu::PAGE_SIZE, PROT::READ | PROT::WRITE, 0, 0, 0);
+            mmu_.setRegionName(argumentPage, "program arguments");
+            Ptr8 argumentPtr { Segment::DS, argumentPage };
+
             std::vector<u64> argumentPositions;
-            auto pushString = [&](const std::string& s) {
-                std::vector<u64> buffer;
-                buffer.resize((s.size()+8)/8, 0);
-                std::memcpy(buffer.data(), s.data(), s.size());
-                for(auto cit = buffer.rbegin(); cit != buffer.rend(); ++cit) cpu_.push64(*cit);
-                argumentPositions.push_back(cpu_.regs_.rsp_);
+
+            auto writeArgument = [&](const std::string& s) {
+                std::vector<u8> buffer;
+                buffer.resize(s.size()+1, 0x0);
+                std::memcpy(buffer.data(), s.c_str(), s.size());
+                verify(buffer.back() == 0x0, "string is not null-terminated");
+                mmu_.copyToMmu(argumentPtr, buffer.data(), buffer.size());
+                argumentPtr += buffer.size();
+                argumentPositions.push_back(argumentPtr.address);
             };
 
-            pushString(programFilePath);
-            for(auto it = arguments.begin(); it != arguments.end(); ++it) {
-                pushString(*it);
-            }
-            
+            // write argv
+            writeArgument(programFilePath);
+            for(const std::string& arg : arguments) writeArgument(arg);
+
+            // write null to mark argv[argc]
+            argumentPositions.push_back(0x0);
+
+            // write env
+            for(const std::string& env : environmentVariables) writeArgument(env);
+
+            // write null to mark end of env
+            argumentPositions.push_back(0x0);
+
             // align rsp to 256 bytes (at least 64 bytes)
             cpu_.regs_.rsp_ = cpu_.regs_.rsp_ & 0xFFFFFFFFFFFFFF00;
+
+            // get and write aux vector entries
+            cpu_.push64(0x0);
+            cpu_.push64(AT_NULL);
+            for(unsigned long type = 1; type < 256; ++type) {
+                errno = 0;
+                unsigned long val = getauxval(type);
+                if(val == 0 && errno == ENOENT) continue;
+                auto at_to_string = [](unsigned long type) -> std::string {
+                    switch(type) {
+                        case AT_NULL: return "AT_NULL";
+                        case AT_IGNORE: return "AT_IGNORE";
+                        case AT_EXECFD: return "AT_EXECFD";
+                        case AT_PHDR: return "AT_PHDR";
+                        case AT_PHENT: return "AT_PHENT";
+                        case AT_PHNUM: return "AT_PHNUM";
+                        case AT_PAGESZ: return "AT_PAGESZ";
+                        case AT_BASE: return "AT_BASE";
+                        case AT_FLAGS: return "AT_FLAGS";
+                        case AT_ENTRY: return "AT_ENTRY";
+                        case AT_NOTELF: return "AT_NOTELF";
+                        case AT_UID: return "AT_UID";
+                        case AT_EUID: return "AT_EUID";
+                        case AT_GID: return "AT_GID";
+                        case AT_EGID: return "AT_EGID";
+                        case AT_CLKTCK: return "AT_CLKTCK";
+                        case AT_PLATFORM: return "AT_PLATFORM";
+                        case AT_HWCAP: return "AT_HWCAP";
+                        case AT_FPUCW: return "AT_FPUCW";
+                        case AT_DCACHEBSIZE: return "AT_DCACHEBSIZE";
+                        case AT_ICACHEBSIZE: return "AT_ICACHEBSIZE";
+                        case AT_UCACHEBSIZE: return "AT_UCACHEBSIZE";
+                        case AT_IGNOREPPC: return "AT_IGNOREPPC";
+                        case AT_SECURE: return "AT_SECURE";
+                        case AT_BASE_PLATFORM: return "AT_BASE_PLATFORM";
+                        case AT_RANDOM: return "AT_RANDOM";
+                        case AT_HWCAP2: return "AT_HWCAP2";
+                        case AT_EXECFN: return "AT_EXECFN";
+                        case AT_SYSINFO: return "AT_SYSINFO";
+                        case AT_SYSINFO_EHDR: return "AT_SYSINFO_EHDR";
+                        case AT_L1I_CACHESHAPE: return "AT_L1I_CACHESHAPE";
+                        case AT_L1D_CACHESHAPE: return "AT_L1D_CACHESHAPE";
+                        case AT_L2_CACHESHAPE: return "AT_L2_CACHESHAPE";
+                        case AT_L3_CACHESHAPE: return "AT_L3_CACHESHAPE";
+                        case AT_L1I_CACHESIZE: return "AT_L1I_CACHESIZE";
+                        case AT_L1I_CACHEGEOMETRY: return "AT_L1I_CACHEGEOMETRY";
+                        case AT_L1D_CACHESIZE: return "AT_L1D_CACHESIZE";
+                        case AT_L1D_CACHEGEOMETRY: return "AT_L1D_CACHEGEOMETRY";
+                        case AT_L2_CACHESIZE: return "AT_L2_CACHESIZE";
+                        case AT_L2_CACHEGEOMETRY: return "AT_L2_CACHEGEOMETRY";
+                        case AT_L3_CACHESIZE: return "AT_L3_CACHESIZE";
+                        case AT_L3_CACHEGEOMETRY: return "AT_L3_CACHEGEOMETRY";
+                        case AT_MINSIGSTKSZ: return "AT_MINSIGSTKSZ";
+                    }
+                    return "";
+                };
+                fmt::print("  auxvec: type={} value={:#x}\n", at_to_string(type), val);
+                cpu_.push64(val);
+                cpu_.push64(type);
+            }
+            
             for(auto it = argumentPositions.rbegin(); it != argumentPositions.rend(); ++it) {
                 cpu_.push64(*it);
             }
-            cpu_.set(R64::RSI, cpu_.regs_.rsp_);
-            cpu_.set(R64::RDI, arguments.size()+1);
+            cpu_.push64(arguments.size()+1);
+            // cpu_.set(R64::RSI, cpu_.regs_.rsp_);
+            // cpu_.set(R64::RDI, arguments.size()+1);
         }, [&]() {
             fmt::print("Interpreter crash durig program argument setup\n");
             stop_ = true;
