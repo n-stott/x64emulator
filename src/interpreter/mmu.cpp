@@ -16,17 +16,17 @@ namespace x64 {
     }
 
     Mmu::Region* Mmu::addRegion(Region region) {
-        auto nonEmptyIntersection = [&](const Region& r) {
-            return r.contains(region.base()) || r.contains(region.end() - 1);
+        auto nonEmptyIntersection = [&](const std::unique_ptr<Region>& ptr) {
+            return ptr->contains(region.base()) || ptr->contains(region.end() - 1);
         };
         verify(std::none_of(regions_.begin(), regions_.end(), nonEmptyIntersection), [&]() {
             auto r = std::find_if(regions_.begin(), regions_.end(), nonEmptyIntersection);
             assert(r != regions_.end());
-            fmt::print("Unable to add region : memory range [{:#x}, {:#x}] already occupied by region [{:#x}, {:#x}]\n", region.base(), region.end(), r->base(), r->end());
+            fmt::print("Unable to add region : memory range [{:#x}, {:#x}] already occupied by region [{:#x}, {:#x}]\n", region.base(), region.end(), (*r)->base(), (*r)->end());
             dumpRegions();
         });
-        regions_.push_back(std::move(region));
-        Region* r = &regions_.back();
+        regions_.push_back(std::make_unique<Region>(std::move(region)));
+        Region* r = regions_.back().get();
 
         u64 firstPage = pageRoundDown(r->base()) / PAGE_SIZE;
         u64 lastPage = pageRoundUp(r->end()) / PAGE_SIZE;
@@ -52,8 +52,8 @@ namespace x64 {
             verify(regionLookup_[pageIndex] != nullptr);
             regionLookup_[pageIndex] = nullptr;
         }
-        regions_.erase(std::remove_if(regions_.begin(), regions_.end(), [&](const Region& r) {
-            return r.base() == region.base() && r.size() == region.size();
+        regions_.erase(std::remove_if(regions_.begin(), regions_.end(), [&](const std::unique_ptr<Region>& ptr) {
+            return ptr->base() == region.base() && ptr->size() == region.size();
         }), regions_.end());
     }
 
@@ -124,11 +124,11 @@ namespace x64 {
 
     void Mmu::setRegionName(u64 address, std::string name) {
         verify(address % PAGE_SIZE == 0, "address must be a multiple of the page size");
-        auto it = std::find_if(regions_.begin(), regions_.end(), [&](const Region& region) {
-            return region.base() == address;
+        auto it = std::find_if(regions_.begin(), regions_.end(), [&](const std::unique_ptr<Region>& ptr) {
+            return ptr->base() == address;
         });
         verify(it != regions_.end(), "Cannot set name of non-existing region");
-        it->file_ = std::move(name);
+        (*it)->file_ = std::move(name);
     }
 
     void Mmu::setFsBase(u64 fsBase) {
@@ -195,6 +195,12 @@ namespace x64 {
         return regionLookup_[address / PAGE_SIZE];
     }
 
+    Mmu::Region* Mmu::findRegion(const char* name) {
+        for(const auto& ptr : regions_) {
+            if(ptr->file() == name) return ptr.get();
+        }
+        return nullptr;
+    }
 
     template<typename T, Size s>
     T Mmu::read(Ptr<s> ptr) const {
@@ -205,7 +211,7 @@ namespace x64 {
             fmt::print("No region containing {:#x}\n", address);
         });
         verify((bool)(region->prot() & PROT::READ), [&]() {
-            fmt::print("Attempt to read {:#x} from non-readable region [{:#x}:{:#x}]\n", address, region->base(), region->end());
+            fmt::print("Attempt to read from {:#x} in non-readable region [{:#x}:{:#x}]\n", address, region->base(), region->end());
         });
         T value = region->read<T>(address);
 #if DEBUG_MMU
@@ -271,14 +277,14 @@ namespace x64 {
                                          (int)(prot & PROT::WRITE) ? "W" : " ",
                                          (int)(prot & PROT::EXEC)  ? "X" : " ");
         };
-        for(const auto& region : regions_) {
-            fmt::print("    {:>20} {:#x} - {:#x} {}\n", region.file_, region.base(), region.end(), protectionToString(region.prot()));
+        for(const auto& ptr : regions_) {
+            fmt::print("    {:>20} {:#x} - {:#x} {}\n", ptr->file_, ptr->base(), ptr->end(), protectionToString(ptr->prot()));
         }
     }
 
     u64 Mmu::topOfMemoryPageAligned() const {
         u64 top = topOfReserved_;
-        for(const auto& region : regions_) top = std::max(top, region.end());
+        for(const auto& ptr : regions_) top = std::max(top, ptr->end());
         top = pageRoundUp(top);
         return top;
     }
@@ -343,6 +349,31 @@ namespace x64 {
             res.push_back(std::move(r));
         }
         return res;
+    }
+
+    void Mmu::Region::setEnd(u64 newEnd) {
+        size_ = pageRoundUp(size() + newEnd - end());
+        data_.resize(size_, 0x0);
+    }
+
+    u64 Mmu::brk(u64 address) {
+        Region* region = findRegion("heap");
+        verify(!!region, "brk: program has no heap");
+        if(region->contains(address)) return address;
+        u64 oldBrk = region->end();
+        if(address < oldBrk) return oldBrk;
+        const Region* containingRegion = findAddress(address);
+        if(!!containingRegion) return oldBrk;
+        for(const auto& ptr : regions_) {
+            if(oldBrk <= ptr->base() && ptr->end() <= address && ptr.get() != region) return oldBrk;
+        }
+        // we should be fine now
+        Region copy = *region;
+        removeRegion(*region);
+        copy.setEnd(address);
+        u64 newBrk = copy.end();
+        addRegion(copy);
+        return newBrk;
     }
 
 }

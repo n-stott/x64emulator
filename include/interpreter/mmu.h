@@ -4,6 +4,7 @@
 #include "utils/utils.h"
 #include "types.h"
 #include <deque>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -57,6 +58,8 @@ namespace x64 {
             void copyToRegion(u64 dst, const u8* src, size_t n);
             void copyFromRegion(u8* dst, u64 src, size_t n) const;
 
+            void setEnd(u64 newEnd);
+
         private:
             friend class Mmu;
 
@@ -83,6 +86,7 @@ namespace x64 {
         u64 mmap(u64 address, u64 length, PROT prot, int flags, int fd, int offset);
         int munmap(u64 address, u64 length);
         int mprotect(u64 address, u64 length, PROT prot);
+        u64 brk(u64 address);
 
         void setRegionName(u64 address, std::string name);
         
@@ -131,12 +135,13 @@ namespace x64 {
         void write(Ptr<s> ptr, T value);
 
         Region* findAddress(u64 address);
+        Region* findRegion(const char* name);
 
         u64 topOfMemoryPageAligned() const;
 
         u64 topOfReserved_ = 0;
 
-        std::deque<Region> regions_;
+        std::vector<std::unique_ptr<Region>> regions_;
         std::vector<Region*> regionLookup_;
         u64 fsBase_ { 0 };
         
