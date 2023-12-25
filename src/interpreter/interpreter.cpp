@@ -135,7 +135,7 @@ namespace x64 {
             setupStack();
             pushProgramArguments(programFilePath, arguments, environmentVariables);
             verify(auxiliary_.has_value(), "No entrypoint");
-            execute(auxiliary_->entrypoint, ExecuteType::JUMP);
+            execute(auxiliary_->entrypoint);
         }, [&]() {
             crash();
         });
@@ -442,29 +442,21 @@ namespace x64 {
         return instruction;
     }
 
-    void Interpreter::execute(u64 address, ExecuteType type) {
+    void Interpreter::execute(u64 address) {
         if(stop_) return;
         auto symbolLookup = symbolProvider_->lookupSymbol(address);
         std::string functionName = symbolLookup.empty() ? "unknown" : symbolLookup[0]->demangledSymbol;
         fmt::print(stderr, "Execute function {:#x} : {}\n", address, functionName);
         SignalHandler sh;
-        if(type == ExecuteType::CALL) {
-            cpu_.push64(address);
-            cpu_.regs_.rip_ = address;
-            notifyCall(address);
-        } else {
-            cpu_.regs_.rip_ = address;
-            notifyCall(address);
-        }
+        cpu_.regs_.rip_ = address;
+        notifyCall(address);
         size_t ticks = 0;
-        while(!stop_ && !callstack_.empty() && cpu_.regs_.rip_ != 0x0) {
+        while(!stop_ && cpu_.regs_.rip_ != 0x0) {
             try {
                 const X86Instruction* instruction = fetchInstruction();
-                if(!instruction) {
-                    fmt::print(stderr, "Undefined instruction near {:#x}\n", cpu_.regs_.rip_);
-                    stop();
-                    break;
-                }
+                verify(!!instruction, [&]() {
+                    fmt::print("Undefined instruction near {:#x}\n", cpu_.regs_.rip_);
+                });
 #ifndef NDEBUG
                 log(ticks, instruction);
 #endif
