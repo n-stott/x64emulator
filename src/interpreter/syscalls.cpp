@@ -30,6 +30,10 @@ namespace x64 {
         return mmu_->munmap(addr, length);
     }
 
+    u64 Sys::brk(u64 addr) {
+        return mmu_->brk(addr);
+    }
+
     void Sys::exit_group(int status) {
         (void)status;
         interpreter_->stop();

@@ -2313,6 +2313,12 @@ namespace x64 {
                 set(R32::EAX, (u32)ret);
                 return;
             }
+            case 0xc: { // brk
+                u64 addr = rdi;
+                u64 newBreak = interpreter_->syscalls().brk(addr);
+                set(R64::RAX, newBreak);
+                return;
+            }
             case 0xe7: { // exit_group
                 i32 errorCode = (i32)rdi;
                 interpreter_->syscalls().exit_group(errorCode);
