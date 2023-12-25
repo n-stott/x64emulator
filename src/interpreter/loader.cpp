@@ -104,7 +104,8 @@ namespace x64 {
             elfOffset + elf64->entrypoint(),
             firstSegmentAddress + 0x40, // TODO: get offset from elf
             programHeaderCount,
-            sizeof(elf::ProgramHeader64)
+            sizeof(elf::ProgramHeader64),
+            0x0,
         };
 
         if(elfType == ElfType::MAIN_EXECUTABLE) {

@@ -142,6 +142,14 @@ namespace x64 {
     }
 
     void Interpreter::setupStack() {
+        // page with random 16-bit value for AT_RANDOM
+        verify(auxiliary_.has_value(), "no auxiliary...");
+        u64 random = mmu_.mmap(0x0, Mmu::PAGE_SIZE, PROT::READ | PROT::WRITE, 0, 0, 0);
+        mmu_.setRegionName(random, "random");
+        mmu_.write16(Ptr16{Segment::DS, random}, 0xabcd);
+        mmu_.mprotect(random, Mmu::PAGE_SIZE, PROT::READ);
+        auxiliary_->randomDataAddress = random;
+
         // heap
         u64 heapSize = 64*Mmu::PAGE_SIZE;
         u64 heapBase = mmu_.mmap(0, heapSize, PROT::READ | PROT::WRITE, 0, 0, 0);
@@ -318,29 +326,32 @@ namespace x64 {
             cpu_.regs_.rsp_ = cpu_.regs_.rsp_ & 0xFFFFFFFFFFFFFF00;
 
             // get and write aux vector entries
+            verify(auxiliary_.has_value(), "No auxiliary");
             cpu_.push64(0x0);
             cpu_.push64(AT_NULL);
             for(unsigned long type = 1; type < 256; ++type) {
                 unsigned long val = 0;
                 switch(type) {
                     case AT_ENTRY: {
-                        verify(auxiliary_.has_value(), "no entrypoint");
                         val = auxiliary_->entrypoint;
                         break;
                     }
                     case AT_PHDR: {
-                        verify(auxiliary_.has_value(), "no program headers");
                         val = auxiliary_->programHeaderTable;
                         break;
                     }
                     case AT_PHENT: {
-                        verify(auxiliary_.has_value(), "no program headers");
                         val = auxiliary_->programHeaderEntrySize;
                         break;
                     }
                     case AT_PHNUM: {
-                        verify(auxiliary_.has_value(), "no program headers");
                         val = auxiliary_->programHeaderCount;
+                        break;
+                    }
+                    case AT_RANDOM: {
+                        // just point at the first readable page.
+                        // TODO: maybe setup a special page for this ?
+                        val = auxiliary_->randomDataAddress;
                         break;
                     }
                     default: {

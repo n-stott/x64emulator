@@ -28,6 +28,7 @@ namespace x64 {
             u64 programHeaderTable;
             u32 programHeaderCount;
             u32 programHeaderEntrySize;
+            u64 randomDataAddress;
         };
 
         virtual void setAuxiliary(Auxiliary auxiliary) = 0;
