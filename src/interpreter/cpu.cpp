@@ -2243,10 +2243,56 @@ namespace x64 {
         set(ins.dst, dst);
     }
 
-    void Cpu::exec(const Punpcklqdq<RSSE, RSSE>& ins) {
-        u128 dst = get(ins.dst);
-        u128 src = get(ins.src);
+
+    u128 Cpu::Impl::punpcklbw(u128 dst, u128 src) {
+        std::array<u8, 16> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        ::memcpy(DST.data(), &dst, sizeof(u128));
+
+        std::array<u8, 16> SRC;
+        static_assert(sizeof(SRC) == sizeof(u128));
+        ::memcpy(SRC.data(), &src, sizeof(u128));
+
+        for(int i = 0; i < 8; ++i) {
+            DST[2*i+1] = SRC[i];
+        }
+        ::memcpy(&dst, DST.data(), sizeof(u128));
+        return dst;
+    }
+
+    u128 Cpu::Impl::punpcklwd(u128 dst, u128 src) {
+        std::array<u16, 8> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        ::memcpy(DST.data(), &dst, sizeof(u128));
+
+        std::array<u16, 8> SRC;
+        static_assert(sizeof(SRC) == sizeof(u128));
+        ::memcpy(SRC.data(), &src, sizeof(u128));
+
+        for(int i = 0; i < 4; ++i) {
+            DST[2*i+1] = SRC[i];
+        }
+        ::memcpy(&dst, DST.data(), sizeof(u128));
+        return dst;
+    }
+
+    u128 Cpu::Impl::punpcklqdq(u128 dst, u128 src) {
         dst.hi = src.lo;
+        return dst;
+    }
+
+    void Cpu::exec(const Punpcklbw<RSSE, RSSE>& ins) {
+        u128 dst = Impl::punpcklbw(get(ins.dst), get(ins.src));
+        set(ins.dst, dst);
+    }
+
+    void Cpu::exec(const Punpcklwd<RSSE, RSSE>& ins) {
+        u128 dst = Impl::punpcklwd(get(ins.dst), get(ins.src));
+        set(ins.dst, dst);
+    }
+
+    void Cpu::exec(const Punpcklqdq<RSSE, RSSE>& ins) {
+        u128 dst = Impl::punpcklqdq(get(ins.dst), get(ins.src));
         set(ins.dst, dst);
     }
 

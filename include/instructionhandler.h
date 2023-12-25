@@ -535,6 +535,8 @@ namespace x64 {
         virtual void exec(const Xorpd<RSSE, RSSE>&) = 0;
         virtual void exec(const Movhps<RSSE, M64>&) = 0;
 
+        virtual void exec(const Punpcklbw<RSSE, RSSE>&) = 0;
+        virtual void exec(const Punpcklwd<RSSE, RSSE>&) = 0;
         virtual void exec(const Punpcklqdq<RSSE, RSSE>&) = 0;
 
         virtual void exec(const Pshufd<RSSE, RSSE, Imm>&) = 0;

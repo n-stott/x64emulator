@@ -709,6 +709,16 @@ namespace utils {
     }
 
     template<typename Dst, typename Src>
+    inline std::string toString(Punpcklbw<Dst, Src> ins) {
+        return fmt::format("{:9}{},{}", "punpcklbw", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Dst, typename Src>
+    inline std::string toString(Punpcklwd<Dst, Src> ins) {
+        return fmt::format("{:9}{},{}", "punpcklwd", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Dst, typename Src>
     inline std::string toString(Punpcklqdq<Dst, Src> ins) {
         return fmt::format("{:9}{},{}", "punpcklqdq", toString(ins.dst), toString(ins.src));
     }

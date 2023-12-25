@@ -141,6 +141,8 @@ namespace x64 {
             case X86_INS_XORPS:
             case X86_INS_XORPD: return makeXorpd(insn);
             case X86_INS_MOVHPS: return makeMovhps(insn);
+            case X86_INS_PUNPCKLBW: return makePunpcklbw(insn);
+            case X86_INS_PUNPCKLWD: return makePunpcklwd(insn);
             case X86_INS_PUNPCKLQDQ: return makePunpcklqdq(insn);
             case X86_INS_PSHUFD: return makePshufd(insn);
             case X86_INS_PCMPEQB: return makePcmpeqb(insn);
@@ -2022,6 +2024,28 @@ namespace x64 {
         auto rssedst = asRegister128(dst);
         auto m64src = asMemory64(src);
         if(rssedst && m64src) return make_wrapper<Movhps<RSSE, M64>>(insn.address, rssedst.value(), m64src.value());
+        return make_failed(insn);
+    }
+
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makePunpcklbw(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto rssesrc = asRegister128(src);
+        if(rssedst && rssesrc) return make_wrapper<Punpcklbw<RSSE, RSSE>>(insn.address, rssedst.value(), rssesrc.value());
+        return make_failed(insn);
+    }
+
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makePunpcklwd(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto rssesrc = asRegister128(src);
+        if(rssedst && rssesrc) return make_wrapper<Punpcklwd<RSSE, RSSE>>(insn.address, rssedst.value(), rssesrc.value());
         return make_failed(insn);
     }
 

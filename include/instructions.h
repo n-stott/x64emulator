@@ -472,6 +472,18 @@ namespace x64 {
     };
 
     template<typename Dst, typename Src>
+    struct Punpcklbw {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
+    struct Punpcklwd {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
     struct Punpcklqdq {
         Dst dst;
         Src src;

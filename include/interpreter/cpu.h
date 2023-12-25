@@ -128,6 +128,10 @@ namespace x64 {
 
             [[nodiscard]] static u64 cvtss2sd(u32 src);
 
+            [[nodiscard]] static u128 punpcklbw(u128 dst, u128 src);
+            [[nodiscard]] static u128 punpcklwd(u128 dst, u128 src);
+            [[nodiscard]] static u128 punpcklqdq(u128 dst, u128 src);
+
             [[nodiscard]] static u128 pshufd(u128 src, u8 order);
 
             [[nodiscard]] static u128 pcmpeqb(u128 dst, u128 src);
@@ -735,6 +739,8 @@ namespace x64 {
         void exec(const Xorpd<RSSE, RSSE>&) override;
         void exec(const Movhps<RSSE, M64>&) override;
 
+        void exec(const Punpcklbw<RSSE, RSSE>&) override;
+        void exec(const Punpcklwd<RSSE, RSSE>&) override;
         void exec(const Punpcklqdq<RSSE, RSSE>&) override;
 
         void exec(const Pshufd<RSSE, RSSE, Imm>&) override;
