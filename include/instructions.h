@@ -484,6 +484,12 @@ namespace x64 {
         Ord order;
     };
 
+    template<typename Dst, typename Src>
+    struct Pcmpeqb {
+        Dst dst;
+        Src src;
+    };
+    
     struct Syscall {
 
     };

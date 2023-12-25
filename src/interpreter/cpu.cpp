@@ -2272,6 +2272,32 @@ namespace x64 {
         set(ins.dst, res);
     }
 
+    u128 Cpu::Impl::pcmpeqb(u128 dst, u128 src) {
+        std::array<u8, 16> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        ::memcpy(DST.data(), &dst, sizeof(u128));
+
+        std::array<u8, 16> SRC;
+        static_assert(sizeof(SRC) == sizeof(u128));
+        ::memcpy(SRC.data(), &src, sizeof(u128));
+
+        for(int i = 0; i < 16; ++i) {
+            DST[i] = (DST[i] == SRC[i] ? 0x0 : 0xFF);
+        }
+        ::memcpy(&dst, DST.data(), sizeof(u128));
+        return dst;
+    }
+
+    void Cpu::exec(const Pcmpeqb<RSSE, RSSE>& ins) {
+        u128 res = Impl::pcmpeqb(get(ins.dst), get(ins.src));
+        set(ins.dst, res);
+    }
+
+    void Cpu::exec(const Pcmpeqb<RSSE, MSSE>& ins) {
+        u128 res = Impl::pcmpeqb(get(ins.dst), get(resolve(ins.src)));
+        set(ins.dst, res);
+    }
+
     void Cpu::exec(const Syscall&) {
         u64 rax = get(R64::RAX);
         u64 rdi = get(R64::RDI);

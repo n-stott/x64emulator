@@ -141,6 +141,7 @@ namespace x64 {
             case X86_INS_MOVHPS: return makeMovhps(insn);
             case X86_INS_PUNPCKLQDQ: return makePunpcklqdq(insn);
             case X86_INS_PSHUFD: return makePshufd(insn);
+            case X86_INS_PCMPEQB: return makePcmpeqb(insn);
             case X86_INS_RDTSC: return makeRdtsc(insn);
             case X86_INS_CPUID: return makeCpuid(insn);
             case X86_INS_XGETBV: return makeXgetbv(insn);
@@ -2044,6 +2045,19 @@ namespace x64 {
         auto imm = asImmediate(order);
         if(rssedst && rssesrc && imm) return make_wrapper<Pshufd<RSSE, RSSE, Imm>>(insn.address, rssedst.value(), rssesrc.value(), imm.value());
         if(rssedst && mssesrc && imm) return make_wrapper<Pshufd<RSSE, MSSE, Imm>>(insn.address, rssedst.value(), mssesrc.value(), imm.value());
+        return make_failed(insn);
+    }
+
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makePcmpeqb(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto rssesrc = asRegister128(src);
+        auto mssesrc = asMemory128(src);
+        if(rssedst && rssesrc) return make_wrapper<Pcmpeqb<RSSE, RSSE>>(insn.address, rssedst.value(), rssesrc.value());
+        if(rssedst && mssesrc) return make_wrapper<Pcmpeqb<RSSE, MSSE>>(insn.address, rssedst.value(), mssesrc.value());
         return make_failed(insn);
     }
 

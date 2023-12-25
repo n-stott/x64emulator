@@ -718,6 +718,11 @@ namespace utils {
         return fmt::format("{:9}{},{},{}", "pshufd", toString(ins.dst), toString(ins.src), toString(ins.order));
     }
 
+    template<typename Dst, typename Src>
+    inline std::string toString(Pcmpeqb<Dst, Src> ins) {
+        return fmt::format("{:9}{},{}", "pcmpeqb", toString(ins.dst), toString(ins.src));
+    }
+
     inline std::string toString(Syscall) {
         return fmt::format("{:9}", "syscall");
     }
