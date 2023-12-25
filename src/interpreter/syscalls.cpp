@@ -10,6 +10,17 @@
 
 namespace x64 {
 
+    ssize_t Sys::write(int fd, Ptr8 buf, size_t count) {
+        std::vector<u8> buffer;
+        buffer.resize(count, 0x0);
+        mmu_->copyFromMmu(buffer.data(), buf, count);
+        ssize_t nbytes = ::write(fd, buffer.data(), count);
+        for(u8 c : buffer)
+            fmt::print("{:02x} ", (int)c);
+        fmt::print("\n{} bytes printed\n", nbytes);
+        return nbytes;
+    }
+
     int Sys::fstat(int fd, Ptr8 statbuf) {
         struct stat st;
         int rc = ::fstat(fd, &st);

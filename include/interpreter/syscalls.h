@@ -13,6 +13,7 @@ namespace x64 {
     public:
         Sys(Interpreter* interpreter, Mmu* mmu) : interpreter_(interpreter), mmu_(mmu) { }
 
+        ssize_t write(int fd, Ptr8 buf, size_t count);
         int fstat(int fd, Ptr8 statbuf);
         u64 mmap(u64 addr, size_t length, int prot, int flags, int fd, off_t offset);
         int mprotect(u64 addr, size_t length, int prot);

@@ -2418,6 +2418,14 @@ namespace x64 {
         u64 r9 = get(R64::R9);
         u64 r8 = get(R64::R8);
         switch(rax) {
+            case 0x1: { // write
+                i32 fd = (i32)rdi;
+                Ptr8 buf{Segment::DS, rsi};
+                size_t count = (size_t)rdx;
+                ssize_t nbytes = interpreter_->syscalls().write(fd, buf, count);
+                set(R64::RAX, (u64)nbytes);
+                return;
+            }
             case 0x5: { // fstat
                 i32 fd = (i32)rdi;
                 Ptr8 statbufptr{Segment::DS, rsi};
