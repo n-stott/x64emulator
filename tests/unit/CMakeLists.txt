@@ -1,0 +1,14 @@
+cmake_minimum_required(VERSION 3.13)
+project(x64)
+set(CMAKE_CXX_STANDARD 17)
+
+set(CC_OPTIONS -g -O0 -DDEBUG -fpic)
+set(LD_OPTIONS)
+
+add_executable(test_strlen_sse2 src/test_strlen_sse2.cpp)
+target_compile_options(test_strlen_sse2 PUBLIC ${CC_OPTIONS})
+target_compile_options(test_strlen_sse2 PUBLIC -DFMT_HEADER_ONLY)
+target_link_options(test_strlen_sse2 PUBLIC ${LD_OPTIONS})
+target_include_directories(test_strlen_sse2 PUBLIC include ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/external)
+target_link_libraries(test_strlen_sse2 PUBLIC emulator)
+add_test(NAME strlen_sse2 COMMAND test_strlen_sse2)
