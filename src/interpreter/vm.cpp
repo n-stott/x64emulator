@@ -33,15 +33,6 @@ namespace x64 {
         dumpStackTrace();
     }
 
-    void VM::setStackPointer(u64 address) {
-        // align rsp to 256 bytes (at least 64 bytes)
-        cpu_.regs_.rsp_ = address & 0xFFFFFFFFFFFFFF00;
-    }
-
-    void VM::push64(u64 value) {
-        cpu_.push64(value);
-    }
-
     void VM::execute(u64 address) {
         if(stop_) return;
         cpu_.regs_.rip_ = address;
@@ -129,7 +120,6 @@ namespace x64 {
             "r12 {:#0000008x}  r13 {:#0000008x}  r14 {:#0000008x}  r15 {:#0000008x}\n",
             cpu_.regs_.r12_, cpu_.regs_.r13_, cpu_.regs_.r14_, cpu_.regs_.r15_);
     }
-
 
     void VM::notifyCall(u64 address) {
         CallPoint cp;
@@ -226,5 +216,22 @@ namespace x64 {
         executableSections_.push_back(std::move(section));
 
         return InstructionPosition { &executableSections_.back(), 0 };
+    }
+
+    void VM::setStackPointer(u64 address) {
+        // align rsp to 256 bytes (at least 64 bytes)
+        cpu_.set(R64::RSP, address & 0xFFFFFFFFFFFFFF00);
+    }
+
+    void VM::push64(u64 value) {
+        cpu_.push64(value);
+    }
+
+    void VM::set(R64 reg, u64 value) {
+        cpu_.set(reg, value);
+    }
+
+    u64 VM::get(R64 reg) {
+        return cpu_.get(reg);
     }
 }

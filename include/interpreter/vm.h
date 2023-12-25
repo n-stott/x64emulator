@@ -22,8 +22,6 @@ namespace x64 {
         void setLogInstructions(bool);
         bool logInstructions() const;
 
-        void setStackPointer(u64 address);
-        void push64(u64 value);
         void execute(u64 address);
 
         const X86Instruction* fetchInstruction();
@@ -35,6 +33,12 @@ namespace x64 {
 
         Mmu& mmu() { return mmu_; }
         Sys& syscalls() { return syscalls_; }
+
+        void setStackPointer(u64 address);
+        void push64(u64 value);
+        
+        void set(R64 reg, u64 value);
+        u64 get(R64 reg);
 
     private:
         void dumpStackTrace() const;
