@@ -2421,7 +2421,7 @@ namespace x64 {
         ::memcpy(SRC.data(), &src, sizeof(u128));
 
         for(int i = 0; i < 16; ++i) {
-            DST[i] = (DST[i] == SRC[i] ? 0x0 : 0xFF);
+            DST[i] = (DST[i] == SRC[i] ? 0xFF : 0x0);
         }
         ::memcpy(&dst, DST.data(), sizeof(u128));
         return dst;
