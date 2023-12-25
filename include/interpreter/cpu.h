@@ -131,6 +131,8 @@ namespace x64 {
             [[nodiscard]] static u128 pshufd(u128 src, u8 order);
 
             [[nodiscard]] static u128 pcmpeqb(u128 dst, u128 src);
+
+            [[nodiscard]] static u16 pmovmskb(u128 src);
         };
 
     private:
@@ -736,6 +738,8 @@ namespace x64 {
 
         void exec(const Pcmpeqb<RSSE, RSSE>&) override;
         void exec(const Pcmpeqb<RSSE, MSSE>&) override;
+
+        void exec(const Pmovmskb<R32, RSSE>&) override;
         
         void exec(const Rdtsc&) override;
 

@@ -838,6 +838,7 @@ namespace x64 {
     template<> u64 narrow(const Xmm& val) { return val.lo; }
 
     template<typename T, typename U> T zeroExtend(const U& u);
+    template<> u32 zeroExtend(const u16& val) { return (u32)val; }
     template<> Xmm zeroExtend(const u32& val) { return Xmm{ val, 0 }; }
     template<> Xmm zeroExtend(const u64& val) { return Xmm{ val, 0 }; }
 
@@ -2296,6 +2297,24 @@ namespace x64 {
     void Cpu::exec(const Pcmpeqb<RSSE, MSSE>& ins) {
         u128 res = Impl::pcmpeqb(get(ins.dst), get(resolve(ins.src)));
         set(ins.dst, res);
+    }
+
+
+    u16 Cpu::Impl::pmovmskb(u128 src) {
+        std::array<u8, 16> SRC;
+        static_assert(sizeof(SRC) == sizeof(u128));
+        ::memcpy(SRC.data(), &src, sizeof(u128));
+        u16 dst = 0;
+        for(u16 i = 0; i < 16; ++i) {
+            u16 msbi = ((SRC[i] >> 7) & 0x1);
+            dst = (u16)(dst | (msbi << i));
+        }
+        return dst;
+    }
+
+    void Cpu::exec(const Pmovmskb<R32, RSSE>& ins) {
+        u16 dst = Impl::pmovmskb(get(ins.src));
+        set(ins.dst, zeroExtend<u32, u16>(dst));
     }
 
     void Cpu::exec(const Syscall&) {

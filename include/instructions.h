@@ -489,6 +489,12 @@ namespace x64 {
         Dst dst;
         Src src;
     };
+
+    template<typename Dst, typename Src>
+    struct Pmovmskb {
+        Dst dst;
+        Src src;
+    };
     
     struct Syscall {
 

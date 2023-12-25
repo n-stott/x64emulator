@@ -539,6 +539,8 @@ namespace x64 {
         virtual void exec(const Pcmpeqb<RSSE, RSSE>&) = 0;
         virtual void exec(const Pcmpeqb<RSSE, MSSE>&) = 0;
 
+        virtual void exec(const Pmovmskb<R32, RSSE>&) = 0;
+
         virtual void exec(const Rdtsc&) = 0;
 
         virtual void exec(const Cpuid&) = 0;
