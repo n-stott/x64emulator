@@ -384,8 +384,12 @@ namespace x64 {
         virtual void exec(const Set<Cond::LE, M8>&) = 0;
         virtual void exec(const Set<Cond::NE, R8>&) = 0;
         virtual void exec(const Set<Cond::NE, M8>&) = 0;
+        virtual void exec(const Set<Cond::NO, R8>&) = 0;
+        virtual void exec(const Set<Cond::NO, M8>&) = 0;
         virtual void exec(const Set<Cond::NS, R8>&) = 0;
         virtual void exec(const Set<Cond::NS, M8>&) = 0;
+        virtual void exec(const Set<Cond::O, R8>&) = 0;
+        virtual void exec(const Set<Cond::O, M8>&) = 0;
         virtual void exec(const Set<Cond::S, R8>&) = 0;
         virtual void exec(const Set<Cond::S, M8>&) = 0;
 

@@ -1563,8 +1563,12 @@ namespace x64 {
     void Cpu::exec(const Set<Cond::LE, M8>& ins) { execSet(Cond::LE, ins.dst); }
     void Cpu::exec(const Set<Cond::NE, R8>& ins) { execSet(Cond::NE, ins.dst); }
     void Cpu::exec(const Set<Cond::NE, M8>& ins) { execSet(Cond::NE, ins.dst); }
+    void Cpu::exec(const Set<Cond::NO, R8>& ins) { execSet(Cond::NO, ins.dst); }
+    void Cpu::exec(const Set<Cond::NO, M8>& ins) { execSet(Cond::NO, ins.dst); }
     void Cpu::exec(const Set<Cond::NS, R8>& ins) { execSet(Cond::NS, ins.dst); }
     void Cpu::exec(const Set<Cond::NS, M8>& ins) { execSet(Cond::NS, ins.dst); }
+    void Cpu::exec(const Set<Cond::O, R8>& ins) { execSet(Cond::O, ins.dst); }
+    void Cpu::exec(const Set<Cond::O, M8>& ins) { execSet(Cond::O, ins.dst); }
     void Cpu::exec(const Set<Cond::S, R8>& ins) { execSet(Cond::S, ins.dst); }
     void Cpu::exec(const Set<Cond::S, M8>& ins) { execSet(Cond::S, ins.dst); }
 
