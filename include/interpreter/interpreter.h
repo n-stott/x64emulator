@@ -45,9 +45,7 @@ namespace x64 {
     private:
 
         void setupStack();
-        void runInit();
         void pushProgramArguments(const std::string& programFilePath, const std::vector<std::string>& arguments, const std::vector<std::string>& environmentVariables);
-        void executeMain();
 
         enum class ExecuteType {
             CALL,

@@ -233,22 +233,6 @@ namespace x64 {
         return InstructionPosition { &executableSections_.back(), 0 };
     }
 
-    void Interpreter::runInit() {
-        for(auto it = initFunctions_.begin(); it != initFunctions_.end(); ++it) {
-            u64 address = *it;
-            {
-                InstructionPosition pos = findSectionWithAddress(address);
-                fmt::print(stderr, "Run init function {}/{} from {}\n",
-                        std::distance(initFunctions_.begin(), it),
-                        initFunctions_.size(),
-                        pos.section ? (pos.section->filename) : "unknown"
-                        );
-            }
-            execute(address, ExecuteType::CALL);
-            if(stop_) return;
-        }
-    }
-
     void Interpreter::call(u64 address) {
         CallPoint cp;
         auto cachedValue = callCache_.find(address);
@@ -300,13 +284,6 @@ namespace x64 {
         currentExecutedSection_ = cp.executedSection;
         currentInstructionIdx_ = cp.instructionIdx;
         cpu_.regs_.rip_ = address;
-    }
-
-    void Interpreter::executeMain() {
-        auto mainSymbol = symbolProvider_->lookupSymbolWithoutVersion("main", false);
-        verify(!mainSymbol.empty(), "Cannot find \"main\" symbol");
-        verify(mainSymbol.size() <= 1, "Found \"main\" symbol 2 or more times");
-        execute(mainSymbol[0]->address, ExecuteType::CALL);
     }
 
     void Interpreter::pushProgramArguments(const std::string& programFilePath, const std::vector<std::string>& arguments, const std::vector<std::string>& environmentVariables) {
