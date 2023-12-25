@@ -5,6 +5,7 @@
 #include <asm/prctl.h>
 #include <sys/prctl.h>
 #include <sys/stat.h>
+#include <sys/utsname.h>
 
 namespace x64 {
 
@@ -30,6 +31,13 @@ namespace x64 {
     int Sys::munmap(u64 addr, size_t length) {
         fmt::print("munmap(addr={:#x}, length={:#x})\n", addr, length);
         return mmu_->munmap(addr, length);
+    }
+
+    int Sys::uname(u64 buf) {
+        struct utsname buffer;
+        int ret = ::uname(&buffer);
+        mmu_->copyToMmu(Ptr8{Segment::DS, buf}, (const u8*)&buffer, sizeof(buffer));
+        return ret;
     }
 
     u64 Sys::brk(u64 addr) {

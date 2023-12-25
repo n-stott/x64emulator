@@ -2320,6 +2320,12 @@ namespace x64 {
                 set(R64::RAX, newBreak);
                 return;
             }
+            case 0x3f: { // uname
+                u64 buf = rdi;
+                int ret = interpreter_->syscalls().uname(buf);
+                set(R32::EAX, (u32)ret);
+                return;
+            }
             case 0x9e: { // arch_prctl
                 i32 code = (i32)rdi;
                 u64 addr = rsi;
