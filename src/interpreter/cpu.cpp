@@ -749,25 +749,41 @@ namespace x64 {
 
     u8 Cpu::Impl::xor8(u8 dst, u8 src, Flags* flags) {
         u8 tmp = dst ^ src;
-        WARN_FLAGS_IMPL();
+        flags->overflow = false;
+        flags->carry = false;
+        flags->sign = tmp & (1u << 7);
+        flags->zero = (tmp == 0);
+        flags->parity = Flags::computeParity((u8)tmp);
         return tmp;
     }
 
     u16 Cpu::Impl::xor16(u16 dst, u16 src, Flags* flags) {
         u16 tmp = dst ^ src;
-        WARN_FLAGS_IMPL();
+        flags->overflow = false;
+        flags->carry = false;
+        flags->sign = tmp & (1u << 15);
+        flags->zero = (tmp == 0);
+        flags->parity = Flags::computeParity((u8)tmp);
         return tmp;
     }
 
     u32 Cpu::Impl::xor32(u32 dst, u32 src, Flags* flags) {
         u32 tmp = dst ^ src;
-        WARN_FLAGS_IMPL();
+        flags->overflow = false;
+        flags->carry = false;
+        flags->sign = tmp & (1ul << 31);
+        flags->zero = (tmp == 0);
+        flags->parity = Flags::computeParity((u8)tmp);
         return tmp;
     }
 
     u64 Cpu::Impl::xor64(u64 dst, u64 src, Flags* flags) {
         u64 tmp = dst ^ src;
-        WARN_FLAGS_IMPL();
+        flags->overflow = false;
+        flags->carry = false;
+        flags->sign = tmp & (1ull << 63);
+        flags->zero = (tmp == 0);
+        flags->parity = Flags::computeParity((u8)tmp);
         return tmp;
     }
 
