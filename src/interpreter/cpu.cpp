@@ -2,8 +2,7 @@
 #include "interpreter/mmu.h"
 #include "interpreter/syscalls.h"
 #include "interpreter/verify.h"
-#include "interpreter/interpreter.h"
-#include "interpreter/symbolprovider.h"
+#include "interpreter/vm.h"
 #include "program.h"
 #include "instructionutils.h"
 #include <fmt/core.h>
@@ -133,7 +132,7 @@ namespace x64 {
     #define WARN_SIGNED_OVERFLOW() \
         flags_.setUnsure();\
         flags_.setUnsureParity();\
-        DEBUG_ONLY(if(interpreter_->logInstructions()) fmt::print(stderr, "Warning : signed integer overflow not handled\n"))
+        DEBUG_ONLY(if(vm_->logInstructions()) fmt::print(stderr, "Warning : signed integer overflow not handled\n"))
 
     #define ASSERT(ins, cond) \
         bool condition = (cond);\
@@ -952,54 +951,56 @@ namespace x64 {
     void Cpu::exec(const CallDirect& ins) {
         u64 address = ins.symbolAddress;
         push64(regs_.rip_);
-        interpreter_->notifyCall(address);
+        vm_->notifyCall(address);
         regs_.rip_ = address;
     }
 
     void Cpu::resolveFunctionName(const CallDirect& ins) const {
-        if(!ins.symbolNameSet) {
-            ins.symbolName = interpreter_->calledFunctionName(interpreter_->currentExecutedSection_, &ins);
-            ins.symbolNameSet = true;
-        }
+        (void)ins;
+        // TODO: reactivate this
+        // if(!ins.symbolNameSet) {
+        //     ins.symbolName = interpreter_->calledFunctionName(interpreter_->currentExecutedSection_, &ins);
+        //     ins.symbolNameSet = true;
+        // }
     }
 
     void Cpu::exec(const CallIndirect<R32>& ins) {
         u64 address = get(ins.src);
         push64(regs_.rip_);
-        interpreter_->notifyCall(address);
+        vm_->notifyCall(address);
         regs_.rip_ = address;
     }
 
     void Cpu::exec(const CallIndirect<M32>& ins) {
         u64 address = get(resolve(ins.src));
         push64(regs_.rip_);
-        interpreter_->notifyCall(address);
+        vm_->notifyCall(address);
         regs_.rip_ = address;
     }
 
     void Cpu::exec(const CallIndirect<R64>& ins) {
         u64 address = get(ins.src);
         push64(regs_.rip_);
-        interpreter_->notifyCall(address);
+        vm_->notifyCall(address);
         regs_.rip_ = address;
     }
 
     void Cpu::exec(const CallIndirect<M64>& ins) {
         u64 address = get(resolve(ins.src));
         push64(regs_.rip_);
-        interpreter_->notifyCall(address);
+        vm_->notifyCall(address);
         regs_.rip_ = address;
     }
 
     void Cpu::exec(const Ret<>&) {
         regs_.rip_ = pop64();
-        interpreter_->notifyRet(regs_.rip_);
+        vm_->notifyRet(regs_.rip_);
     }
 
     void Cpu::exec(const Ret<Imm>& ins) {
         regs_.rip_ = pop64();
         regs_.rsp_ += get<u64>(ins.src);
-        interpreter_->notifyRet(regs_.rip_);
+        vm_->notifyRet(regs_.rip_);
     }
 
     void Cpu::exec(const Leave&) {
@@ -1610,19 +1611,19 @@ namespace x64 {
 
     void Cpu::exec(const Jmp<R32>& ins) {
         u64 dst = (u64)get(ins.symbolAddress);
-        interpreter_->notifyJmp(dst);
+        vm_->notifyJmp(dst);
         regs_.rip_ = dst;
     }
 
     void Cpu::exec(const Jmp<R64>& ins) {
         u64 dst = get(ins.symbolAddress);
-        interpreter_->notifyJmp(dst);
+        vm_->notifyJmp(dst);
         regs_.rip_ = dst;
     }
 
     void Cpu::exec(const Jmp<u32>& ins) {
         u64 dst = ins.symbolAddress;
-        interpreter_->notifyJmp(dst);
+        vm_->notifyJmp(dst);
         regs_.rip_ = dst;
     }
 
@@ -1630,14 +1631,14 @@ namespace x64 {
 
     void Cpu::exec(const Jmp<M64>& ins) {
         u64 dst = (u64)get(resolve(ins.symbolAddress));
-        interpreter_->notifyJmp(dst);
+        vm_->notifyJmp(dst);
         regs_.rip_ = dst;
     }
 
     void Cpu::exec(const Jcc<Cond::NE>& ins) {
         if(flags_.matches(Cond::NE)) {
             u64 dst = ins.symbolAddress;
-            interpreter_->notifyJmp(dst);
+            vm_->notifyJmp(dst);
             regs_.rip_ = dst;
         }
     }
@@ -1645,7 +1646,7 @@ namespace x64 {
     void Cpu::exec(const Jcc<Cond::E>& ins) {
         if(flags_.matches(Cond::E)) {
             u64 dst = ins.symbolAddress;
-            interpreter_->notifyJmp(dst);
+            vm_->notifyJmp(dst);
             regs_.rip_ = dst;
         }
     }
@@ -1653,7 +1654,7 @@ namespace x64 {
     void Cpu::exec(const Jcc<Cond::AE>& ins) {
         if(flags_.matches(Cond::AE)) {
             u64 dst = ins.symbolAddress;
-            interpreter_->notifyJmp(dst);
+            vm_->notifyJmp(dst);
             regs_.rip_ = dst;
         }
     }
@@ -1661,7 +1662,7 @@ namespace x64 {
     void Cpu::exec(const Jcc<Cond::BE>& ins) {
         if(flags_.matches(Cond::BE)) {
             u64 dst = ins.symbolAddress;
-            interpreter_->notifyJmp(dst);
+            vm_->notifyJmp(dst);
             regs_.rip_ = dst;
         }
     }
@@ -1669,7 +1670,7 @@ namespace x64 {
     void Cpu::exec(const Jcc<Cond::GE>& ins) {
         if(flags_.matches(Cond::GE)) {
             u64 dst = ins.symbolAddress;
-            interpreter_->notifyJmp(dst);
+            vm_->notifyJmp(dst);
             regs_.rip_ = dst;
         }
     }
@@ -1677,7 +1678,7 @@ namespace x64 {
     void Cpu::exec(const Jcc<Cond::LE>& ins) {
         if(flags_.matches(Cond::LE)) {
             u64 dst = ins.symbolAddress;
-            interpreter_->notifyJmp(dst);
+            vm_->notifyJmp(dst);
             regs_.rip_ = dst;
         }
     }
@@ -1685,7 +1686,7 @@ namespace x64 {
     void Cpu::exec(const Jcc<Cond::A>& ins) {
         if(flags_.matches(Cond::A)) {
             u64 dst = ins.symbolAddress;
-            interpreter_->notifyJmp(dst);
+            vm_->notifyJmp(dst);
             regs_.rip_ = dst;
         }
     }
@@ -1693,7 +1694,7 @@ namespace x64 {
     void Cpu::exec(const Jcc<Cond::B>& ins) {
         if(flags_.matches(Cond::B)) {
             u64 dst = ins.symbolAddress;
-            interpreter_->notifyJmp(dst);
+            vm_->notifyJmp(dst);
             regs_.rip_ = dst;
         }
     }
@@ -1701,7 +1702,7 @@ namespace x64 {
     void Cpu::exec(const Jcc<Cond::G>& ins) {
         if(flags_.matches(Cond::G)) {
             u64 dst = ins.symbolAddress;
-            interpreter_->notifyJmp(dst);
+            vm_->notifyJmp(dst);
             regs_.rip_ = dst;
         }
     }
@@ -1709,7 +1710,7 @@ namespace x64 {
     void Cpu::exec(const Jcc<Cond::L>& ins) {
         if(flags_.matches(Cond::L)) {
             u64 dst = ins.symbolAddress;
-            interpreter_->notifyJmp(dst);
+            vm_->notifyJmp(dst);
             regs_.rip_ = dst;
         }
     }
@@ -1717,7 +1718,7 @@ namespace x64 {
     void Cpu::exec(const Jcc<Cond::S>& ins) {
         if(flags_.matches(Cond::S)) {
             u64 dst = ins.symbolAddress;
-            interpreter_->notifyJmp(dst);
+            vm_->notifyJmp(dst);
             regs_.rip_ = dst;
         }
     }
@@ -1725,7 +1726,7 @@ namespace x64 {
     void Cpu::exec(const Jcc<Cond::NS>& ins) {
         if(flags_.matches(Cond::NS)) {
             u64 dst = ins.symbolAddress;
-            interpreter_->notifyJmp(dst);
+            vm_->notifyJmp(dst);
             regs_.rip_ = dst;
         }
     }
@@ -1733,7 +1734,7 @@ namespace x64 {
     void Cpu::exec(const Jcc<Cond::O>& ins) {
         if(flags_.matches(Cond::O)) {
             u64 dst = ins.symbolAddress;
-            interpreter_->notifyJmp(dst);
+            vm_->notifyJmp(dst);
             regs_.rip_ = dst;
         }
     }
@@ -1741,7 +1742,7 @@ namespace x64 {
     void Cpu::exec(const Jcc<Cond::NO>& ins) {
         if(flags_.matches(Cond::NO)) {
             u64 dst = ins.symbolAddress;
-            interpreter_->notifyJmp(dst);
+            vm_->notifyJmp(dst);
             regs_.rip_ = dst;
         }
     }
@@ -1749,7 +1750,7 @@ namespace x64 {
     void Cpu::exec(const Jcc<Cond::P>& ins) {
         if(flags_.matches(Cond::P)) {
             u64 dst = ins.symbolAddress;
-            interpreter_->notifyJmp(dst);
+            vm_->notifyJmp(dst);
             regs_.rip_ = dst;
         }
     }
@@ -1757,7 +1758,7 @@ namespace x64 {
     void Cpu::exec(const Jcc<Cond::NP>& ins) {
         if(flags_.matches(Cond::NP)) {
             u64 dst = ins.symbolAddress;
-            interpreter_->notifyJmp(dst);
+            vm_->notifyJmp(dst);
             regs_.rip_ = dst;
         }
     }
@@ -2506,14 +2507,14 @@ namespace x64 {
                 i32 fd = (i32)rdi;
                 Ptr8 buf{Segment::DS, rsi};
                 size_t count = (size_t)rdx;
-                ssize_t nbytes = interpreter_->syscalls().write(fd, buf, count);
+                ssize_t nbytes = vm_->syscalls().write(fd, buf, count);
                 set(R64::RAX, (u64)nbytes);
                 return;
             }
             case 0x5: { // fstat
                 i32 fd = (i32)rdi;
                 Ptr8 statbufptr{Segment::DS, rsi};
-                int ret = interpreter_->syscalls().fstat(fd, statbufptr);
+                int ret = vm_->syscalls().fstat(fd, statbufptr);
                 set(R32::EAX, (u32)ret);
                 return;
             }
@@ -2524,7 +2525,7 @@ namespace x64 {
                 int flags = (int)r10;
                 int fd = (int)r9;
                 off_t offset = (off_t)r8;
-                u64 ptr = interpreter_->syscalls().mmap(addr, length, prot, flags, fd, offset);
+                u64 ptr = vm_->syscalls().mmap(addr, length, prot, flags, fd, offset);
                 set(R64::RAX, ptr);
                 return;
             }
@@ -2532,26 +2533,26 @@ namespace x64 {
                 u64 addr = rdi;
                 size_t length = (size_t)rsi;
                 int prot = (int)rdx;
-                int ret = interpreter_->syscalls().mprotect(addr, length, prot);
+                int ret = vm_->syscalls().mprotect(addr, length, prot);
                 set(R32::EAX, (u32)ret);
                 return;
             }
             case 0xb: { // munmap
                 u64 addr = rdi;
                 size_t length = (size_t)rsi;
-                int ret = interpreter_->syscalls().munmap(addr, length);
+                int ret = vm_->syscalls().munmap(addr, length);
                 set(R32::EAX, (u32)ret);
                 return;
             }
             case 0xc: { // brk
                 u64 addr = rdi;
-                u64 newBreak = interpreter_->syscalls().brk(addr);
+                u64 newBreak = vm_->syscalls().brk(addr);
                 set(R64::RAX, newBreak);
                 return;
             }
             case 0x3f: { // uname
                 u64 buf = rdi;
-                int ret = interpreter_->syscalls().uname(buf);
+                int ret = vm_->syscalls().uname(buf);
                 set(R32::EAX, (u32)ret);
                 return;
             }
@@ -2559,20 +2560,20 @@ namespace x64 {
                 u64 path = rdi;
                 u64 buf = rsi;
                 size_t bufsize = (size_t)rdx;
-                ssize_t nchars = interpreter_->syscalls().readlink(path, buf, bufsize);
+                ssize_t nchars = vm_->syscalls().readlink(path, buf, bufsize);
                 set(R64::RAX, (u64)nchars);
                 return;
             }
             case 0x9e: { // arch_prctl
                 i32 code = (i32)rdi;
                 u64 addr = rsi;
-                int ret = interpreter_->syscalls().arch_prctl(code, addr);
+                int ret = vm_->syscalls().arch_prctl(code, addr);
                 set(R32::EAX, (u32)ret);
                 return;
             }
             case 0xe7: { // exit_group
                 i32 errorCode = (i32)rdi;
-                interpreter_->syscalls().exit_group(errorCode);
+                vm_->syscalls().exit_group(errorCode);
                 return;
             }
 

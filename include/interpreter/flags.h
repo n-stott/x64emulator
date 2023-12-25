@@ -1,6 +1,7 @@
 #ifndef FLAGS_H
 #define FLAGS_H
 
+#include "interpreter/verify.h"
 #include "types.h"
 
 namespace x64 {
@@ -31,6 +32,31 @@ namespace x64 {
         void setSureParity() { sureParity_ = true; }
         bool sure() const { return sure_; }
     };
+
+
+
+    inline bool Flags::matches(Cond condition) const {
+        verify(sure(), "Flags are not set");
+        switch(condition) {
+            case Cond::A: return (carry == 0 && zero == 0);
+            case Cond::AE: return (carry == 0);
+            case Cond::B: return (carry == 1);
+            case Cond::BE: return (carry == 1 || zero == 1);
+            case Cond::E: return (zero == 1);
+            case Cond::G: return (zero == 0 && sign == overflow);
+            case Cond::GE: return (sign == overflow);
+            case Cond::L: return (sign != overflow);
+            case Cond::LE: return (zero == 1 || sign != overflow);
+            case Cond::NE: return (zero == 0);
+            case Cond::NO: return (overflow == 0);
+            case Cond::NP: return (parity == 0);
+            case Cond::NS: return (sign == 0);
+            case Cond::O: return (overflow == 1);
+            case Cond::P: return (parity == 1);
+            case Cond::S: return (sign == 1);
+        }
+        __builtin_unreachable();
+    }
 
 }
 

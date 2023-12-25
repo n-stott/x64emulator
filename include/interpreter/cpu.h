@@ -7,15 +7,12 @@
 
 namespace x64 {
 
-    class Interpreter;
+    class VM;
     class Mmu;
 
     class Cpu final : public InstructionHandler {
     public:
-        explicit Cpu(Interpreter* interpreter) : interpreter_(interpreter), mmu_(nullptr) { }
-        void setMmu(Mmu* mmu) {
-            mmu_ = mmu;
-        }
+        Cpu(VM* vm, Mmu* mmu) : vm_(vm), mmu_(mmu) { }
 
         struct Impl {
             [[nodiscard]] static u8 add8(u8 dst, u8 src, Flags* flags);
@@ -145,10 +142,9 @@ namespace x64 {
         };
 
     private:
-        friend class Interpreter;
-        friend class ExecutionContext;
+        friend class VM;
         
-        Interpreter* interpreter_;
+        VM* vm_;
         Mmu* mmu_;
         Flags flags_;
         Registers regs_;

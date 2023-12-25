@@ -6,12 +6,12 @@
 
 namespace x64 {
 
-    class Interpreter;
+    class VM;
     class Mmu;
 
     class Sys {
     public:
-        Sys(Interpreter* interpreter, Mmu* mmu) : interpreter_(interpreter), mmu_(mmu) { }
+        Sys(VM* vm, Mmu* mmu) : vm_(vm), mmu_(mmu) { }
 
         ssize_t write(int fd, Ptr8 buf, size_t count);
         int fstat(int fd, Ptr8 statbuf);
@@ -26,7 +26,7 @@ namespace x64 {
 
 
     private:
-        Interpreter* interpreter_;
+        VM* vm_;
         Mmu* mmu_;
     };
 

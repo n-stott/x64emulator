@@ -13,9 +13,6 @@ target_include_directories(fakelibc PUBLIC external)
 target_include_directories(fakelibc PUBLIC include)
 
 add_library(emulator STATIC
-    src/lib/library.cpp
-    src/lib/libc.cpp
-    src/lib/heap.cpp
     src/translation/x86instruction.cpp
     src/disassembler/capstonewrapper.cpp
     src/interpreter/loader.cpp
@@ -24,7 +21,7 @@ add_library(emulator STATIC
     src/interpreter/cpu.cpp
     src/interpreter/mmu.cpp
     src/interpreter/syscalls.cpp
-    src/interpreter/executioncontext.cpp
+    src/interpreter/vm.cpp
     src/program.cpp
 )
 target_compile_options(emulator PUBLIC -Wall -Wextra -Wpedantic -pedantic -Wconversion -Werror)

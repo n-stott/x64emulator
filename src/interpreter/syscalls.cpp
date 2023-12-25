@@ -1,5 +1,5 @@
 #include "interpreter/syscalls.h"
-#include "interpreter/interpreter.h"
+#include "interpreter/vm.h"
 #include "interpreter/mmu.h"
 #include "interpreter/verify.h"
 #include <asm/prctl.h>
@@ -75,7 +75,7 @@ namespace x64 {
 
     void Sys::exit_group(int status) {
         (void)status;
-        interpreter_->stop();
+        vm_->stop();
     }
 
     int Sys::arch_prctl(int code, u64 addr) {

@@ -1,11 +1,8 @@
 #ifndef INTERPRETER_H
 #define INTERPRETER_H
 
-#include "interpreter/cpu.h"
-#include "interpreter/mmu.h"
-#include "interpreter/syscalls.h"
+#include "interpreter/vm.h"
 #include "interpreter/loader.h"
-#include "lib/libc.h"
 #include "program.h"
 #include <string>
 #include <vector>
@@ -18,9 +15,9 @@ namespace x64 {
     public:
         explicit Interpreter(SymbolProvider* symbolProvider);
         void run(const std::string& programFilePath, const std::vector<std::string>& arguments, const std::vector<std::string>& environmentVariables);
-        void stop();
-        void crash();
-        bool hasCrashed() const { return hasCrashed_; }
+
+        void crash() { vm_.crash(); }
+        bool hasCrashed() const { return vm_.hasCrashed(); }
 
         void setLogInstructions(bool);
         bool logInstructions() const;
@@ -43,64 +40,21 @@ namespace x64 {
         void write(u64 dstAddress, const u8* src, u64 nbytes) override;
 
     private:
-
         void setupStack();
         void pushProgramArguments(const std::string& programFilePath, const std::vector<std::string>& arguments, const std::vector<std::string>& environmentVariables);
 
-        void execute(u64 address);
-
-        const X86Instruction* fetchInstruction();
-        void log(size_t ticks, const X86Instruction* instruction) const;
-
-        void notifyCall(u64 address);
-        void notifyRet(u64 address);
-        void notifyJmp(u64 address);
-
-        Sys& syscalls() { return syscalls_; }
-
-        struct InstructionPosition {
-            const ExecutableSection* section;
-            size_t index;
-        };
-
-        InstructionPosition findSectionWithAddress(u64 address, const ExecutableSection* sectionHint = nullptr) const;
         std::string calledFunctionName(const ExecutableSection* execSection, const CallDirect* insn);
 
-        void dumpStackTrace() const;
-        void dumpRegisters() const;
-
-        Mmu mmu_;
-        Cpu cpu_;
-        Sys syscalls_;
-
-        mutable std::deque<ExecutableSection> executableSections_;
-        std::unique_ptr<LibC> libc_;
+        VM vm_;
         SymbolProvider* symbolProvider_;
 
         std::vector<u64> initFunctions_;
         std::optional<Loadable::Auxiliary> auxiliary_;
 
-        bool stop_ = false;
-        bool hasCrashed_ = false;
-        bool logInstructions_ = false;
-
-        const ExecutableSection* currentExecutedSection_ = nullptr;
-        size_t currentInstructionIdx_ = (size_t)(-1);
-        std::vector<u64> callstack_;
-
-        struct CallPoint {
-            u64 address;
-            const ExecutableSection* executedSection;
-            size_t instructionIdx;
-        };
-
-        std::unordered_map<u64, CallPoint> callCache_;
-        std::unordered_map<u64, CallPoint> jmpCache_;
         mutable std::unordered_map<u64, std::string> functionNameCache_;
         std::unordered_map<u64, std::string> bogusRelocations_;
 
         friend class ExecutionContext;
-        friend class Cpu;
 
     };
 
