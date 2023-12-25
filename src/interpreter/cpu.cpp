@@ -1377,15 +1377,15 @@ namespace x64 {
     void Cpu::exec(const Tzcnt<R64, M64>& ins) { set(ins.dst, Impl::tzcnt64(get(resolve(ins.src)), &flags_)); }
 
     void Cpu::Impl::bt16(u16 base, u16 index, Flags* flags) {
-        flags->carry = (base << (index % 16)) & 0x1;
+        flags->carry = (base >> (index % 16)) & 0x1;
     }
     
     void Cpu::Impl::bt32(u32 base, u32 index, Flags* flags) {
-        flags->carry = (base << (index % 32)) & 0x1;
+        flags->carry = (base >> (index % 32)) & 0x1;
     }
 
     void Cpu::Impl::bt64(u64 base, u64 index, Flags* flags) {
-        flags->carry = (base << (index % 64)) & 0x1;
+        flags->carry = (base >> (index % 64)) & 0x1;
     }
 
     void Cpu::exec(const Bt<R16, R16>& ins) { Impl::bt16(get(ins.base), get(ins.offset), &flags_); }
