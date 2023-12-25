@@ -454,6 +454,12 @@ namespace x64 {
     };
 
     template<typename Dst, typename Src>
+    struct Por {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
     struct Xorpd {
         Dst dst;
         Src src;

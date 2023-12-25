@@ -103,6 +103,8 @@ namespace x64 {
         virtual void exec(const And<R8, R8>&) = 0;
         virtual void exec(const And<R8, Imm>&) = 0;
         virtual void exec(const And<R8, M8>&) = 0;
+        virtual void exec(const And<R16, Imm>&) = 0;
+        virtual void exec(const And<R16, R16>&) = 0;
         virtual void exec(const And<R16, M16>&) = 0;
         virtual void exec(const And<R32, R32>&) = 0;
         virtual void exec(const And<R32, Imm>&) = 0;
@@ -112,6 +114,7 @@ namespace x64 {
         virtual void exec(const And<R64, M64>&) = 0;
         virtual void exec(const And<M8, R8>&) = 0;
         virtual void exec(const And<M8, Imm>&) = 0;
+        virtual void exec(const And<M16, Imm>&) = 0;
         virtual void exec(const And<M16, R16>&) = 0;
         virtual void exec(const And<M32, R32>&) = 0;
         virtual void exec(const And<M32, Imm>&) = 0;
@@ -419,7 +422,7 @@ namespace x64 {
         virtual void exec(const Bsr<R64, R64>&) = 0;
 
         virtual void exec(const Bsf<R32, R32>&) = 0;
-        virtual void exec(const Bsf<R32, M32>&) = 0;
+        virtual void exec(const Bsf<R64, R64>&) = 0;
 
         virtual void exec(const Rep<Movs<Addr<Size::BYTE, B>, Addr<Size::BYTE, B>>>&) = 0;
         virtual void exec(const Rep<Movs<Addr<Size::DWORD, B>, Addr<Size::DWORD, B>>>&) = 0;
@@ -532,6 +535,7 @@ namespace x64 {
         virtual void exec(const Cvtss2sd<RSSE, RSSE>&) = 0;
         virtual void exec(const Cvtss2sd<RSSE, M32>&) = 0;
 
+        virtual void exec(const Por<RSSE, RSSE>&) = 0;
         virtual void exec(const Xorpd<RSSE, RSSE>&) = 0;
         virtual void exec(const Movhps<RSSE, M64>&) = 0;
 

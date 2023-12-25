@@ -670,7 +670,9 @@ namespace x64 {
     void Cpu::exec(const And<R8, R8>& ins) { set(ins.dst, Impl::and8(get(ins.dst), get(ins.src), &flags_)); }
     void Cpu::exec(const And<R8, Imm>& ins) { set(ins.dst, Impl::and8(get(ins.dst), get<u8>(ins.src), &flags_)); }
     void Cpu::exec(const And<R8, M8>& ins) { set(ins.dst, Impl::and8(get(ins.dst), get(resolve(ins.src)), &flags_)); }
-    void Cpu::exec(const And<R16, M16>& ins) { TODO(ins); }
+    void Cpu::exec(const And<R16, Imm>& ins) { set(ins.dst, Impl::and16(get(ins.dst), get<u16>(ins.src), &flags_)); }
+    void Cpu::exec(const And<R16, R16>& ins) { set(ins.dst, Impl::and16(get(ins.dst), get(ins.src), &flags_)); }
+    void Cpu::exec(const And<R16, M16>& ins) { set(ins.dst, Impl::and16(get(ins.dst), get(resolve(ins.src)), &flags_)); }
     void Cpu::exec(const And<R32, R32>& ins) { set(ins.dst, Impl::and32(get(ins.dst), get(ins.src), &flags_)); }
     void Cpu::exec(const And<R32, Imm>& ins) { set(ins.dst, Impl::and32(get(ins.dst), get<u32>(ins.src), &flags_)); }
     void Cpu::exec(const And<R32, M32>& ins) { set(ins.dst, Impl::and32(get(ins.dst), get(resolve(ins.src)), &flags_)); }
@@ -679,7 +681,8 @@ namespace x64 {
     void Cpu::exec(const And<R64, M64>& ins) { set(ins.dst, Impl::and64(get(ins.dst), get(resolve(ins.src)), &flags_)); }
     void Cpu::exec(const And<M8, R8>& ins) { set(resolve(ins.dst), Impl::and8(get(resolve(ins.dst)), get(ins.src), &flags_)); }
     void Cpu::exec(const And<M8, Imm>& ins) { set(resolve(ins.dst), Impl::and8(get(resolve(ins.dst)), get<u8>(ins.src), &flags_)); }
-    void Cpu::exec(const And<M16, R16>& ins) { TODO(ins); }
+    void Cpu::exec(const And<M16, Imm>& ins) { set(resolve(ins.dst), Impl::and16(get(resolve(ins.dst)), get<u16>(ins.src), &flags_)); }
+    void Cpu::exec(const And<M16, R16>& ins) { set(resolve(ins.dst), Impl::and16(get(resolve(ins.dst)), get(ins.src), &flags_)); }
     void Cpu::exec(const And<M32, R32>& ins) { set(resolve(ins.dst), Impl::and32(get(resolve(ins.dst)), get(ins.src), &flags_)); }
     void Cpu::exec(const And<M32, Imm>& ins) { set(resolve(ins.dst), Impl::and32(get(resolve(ins.dst)), get<u32>(ins.src), &flags_)); }
     void Cpu::exec(const And<M64, R64>& ins) { set(resolve(ins.dst), Impl::and64(get(resolve(ins.dst)), get(ins.src), &flags_)); }
@@ -913,7 +916,7 @@ namespace x64 {
     void Cpu::exec(const Lea<R32, ISD>& ins) { set(ins.dst, narrow<u32, u64>(resolve(ins.src))); }
     void Cpu::exec(const Lea<R32, BISD>& ins) { set(ins.dst, narrow<u32, u64>(resolve(ins.src))); }
 
-    void Cpu::exec(const Lea<R64, B>& ins) { TODO(ins); }
+    void Cpu::exec(const Lea<R64, B>& ins) { set(ins.dst, resolve(ins.src)); }
     void Cpu::exec(const Lea<R64, BD>& ins) { set(ins.dst, resolve(ins.src)); }
     void Cpu::exec(const Lea<R64, BIS>& ins) { set(ins.dst, resolve(ins.src)); }
     void Cpu::exec(const Lea<R64, ISD>& ins) { set(ins.dst, resolve(ins.src)); }
@@ -1770,12 +1773,28 @@ namespace x64 {
         return mssb;
     }
 
+    u64 Cpu::Impl::bsf64(u64 val, Flags* flags) {
+        flags->zero = (val == 0);
+        flags->setSure();
+        flags->setUnsureParity();
+        if(!val) return (u64)(-1); // [NS] return value is undefined
+        u64 mssb = 0;
+        while(mssb < 64 && !(val & (1ull << mssb))) {
+            ++mssb;
+        }
+        return mssb;
+    }
+
     void Cpu::exec(const Bsf<R32, R32>& ins) {
         u32 val = get(ins.src);
         u32 mssb = Cpu::Impl::bsf32(val, &flags_);
         if(mssb < 32) set(ins.dst, mssb);
     }
-    void Cpu::exec(const Bsf<R32, M32>& ins) { TODO(ins); }
+    void Cpu::exec(const Bsf<R64, R64>& ins) {
+        u64 val = get(ins.src);
+        u64 mssb = Cpu::Impl::bsf64(val, &flags_);
+        if(mssb < 64) set(ins.dst, mssb);
+    }
 
     void Cpu::exec(const Rep<Movs<Addr<Size::BYTE, B>, Addr<Size::BYTE, B>>>& ins) {
         assert(ins.op.dst.encoding.base == R64::RDI);
@@ -2243,6 +2262,13 @@ namespace x64 {
         set(ins.dst, writeLow<Xmm, u64>(get(ins.dst), res));
     }
 
+    void Cpu::exec(const Por<RSSE, RSSE>& ins) {
+        u128 dst = get(ins.dst);
+        u128 src = get(ins.src);
+        dst.lo = dst.lo | src.lo;
+        dst.hi = dst.hi | src.hi;
+        set(ins.dst, dst);
+    }
 
     void Cpu::exec(const Xorpd<RSSE, RSSE>& ins) {
         u128 dst = get(ins.dst);

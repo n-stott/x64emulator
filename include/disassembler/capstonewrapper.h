@@ -147,6 +147,7 @@ namespace x64 {
         static std::unique_ptr<X86Instruction> makeCvtsi2sd(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeCvtss2sd(const cs_insn& insn);
 
+        static std::unique_ptr<X86Instruction> makePor(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeXorpd(const cs_insn& insn);
 
         static std::unique_ptr<X86Instruction> makeMovhps(const cs_insn& insn);

@@ -138,6 +138,7 @@ namespace x64 {
             case X86_INS_STOSD:
             case X86_INS_STOSQ: return makeStos(insn);
             case X86_INS_MOVSQ: return makeMovs(insn);
+            case X86_INS_POR: return makePor(insn);
             case X86_INS_XORPS:
             case X86_INS_XORPD: return makeXorpd(insn);
             case X86_INS_MOVHPS: return makeMovhps(insn);
@@ -821,6 +822,8 @@ namespace x64 {
         if(r8dst && r8src) return make_wrapper<And<R8, R8>>(insn.address, r8dst.value(), r8src.value());
         if(r8dst && immsrc) return make_wrapper<And<R8, Imm>>(insn.address, r8dst.value(), immsrc.value());
         if(r8dst && m8src) return make_wrapper<And<R8, M8>>(insn.address, r8dst.value(), m8src.value());
+        if(r16dst && immsrc) return make_wrapper<And<R16, Imm>>(insn.address, r16dst.value(), immsrc.value());
+        if(r16dst && r16src) return make_wrapper<And<R16, R16>>(insn.address, r16dst.value(), r16src.value());
         if(r16dst && m16src) return make_wrapper<And<R16, M16>>(insn.address, r16dst.value(), m16src.value());
         if(r32dst && r32src) return make_wrapper<And<R32, R32>>(insn.address, r32dst.value(), r32src.value());
         if(r32dst && immsrc) return make_wrapper<And<R32, Imm>>(insn.address, r32dst.value(), immsrc.value());
@@ -830,6 +833,7 @@ namespace x64 {
         if(r64dst && m64src) return make_wrapper<And<R64, M64>>(insn.address, r64dst.value(), m64src.value());
         if(m8dst && r8src) return make_wrapper<And<M8, R8>>(insn.address, m8dst.value(), r8src.value());
         if(m8dst && immsrc) return make_wrapper<And<M8, Imm>>(insn.address, m8dst.value(), immsrc.value());
+        if(m16dst && immsrc) return make_wrapper<And<M16, Imm>>(insn.address, m16dst.value(), immsrc.value());
         if(m16dst && r16src) return make_wrapper<And<M16, R16>>(insn.address, m16dst.value(), r16src.value());
         if(m32dst && r32src) return make_wrapper<And<M32, R32>>(insn.address, m32dst.value(), r32src.value());
         if(m32dst && immsrc) return make_wrapper<And<M32, Imm>>(insn.address, m32dst.value(), immsrc.value());
@@ -1542,7 +1546,10 @@ namespace x64 {
         const cs_x86_op& src = x86detail.operands[1];
         auto r32dst = asRegister32(dst);
         auto r32src = asRegister32(src);
+        auto r64dst = asRegister64(dst);
+        auto r64src = asRegister64(src);
         if(r32dst && r32src) return make_wrapper<Bsf<R32, R32>>(insn.address, r32dst.value(), r32src.value());
+        if(r64dst && r64src) return make_wrapper<Bsf<R64, R64>>(insn.address, r64dst.value(), r64src.value());
         return make_failed(insn);
     }
 
@@ -2006,6 +2013,17 @@ namespace x64 {
         auto m32src = asMemory32(src);
         if(rssedst && rssesrc) return make_wrapper<Cvtss2sd<RSSE, RSSE>>(insn.address, rssedst.value(), rssesrc.value());
         if(rssedst && m32src) return make_wrapper<Cvtss2sd<RSSE, M32>>(insn.address, rssedst.value(), m32src.value());
+        return make_failed(insn);
+    }
+
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makePor(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto rssesrc = asRegister128(src);
+        if(rssedst && rssesrc) return make_wrapper<Por<RSSE, RSSE>>(insn.address, rssedst.value(), rssesrc.value());
         return make_failed(insn);
     }
 

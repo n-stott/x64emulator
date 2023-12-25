@@ -699,6 +699,11 @@ namespace utils {
     }
 
     template<typename Dst, typename Src>
+    inline std::string toString(Por<Dst, Src> ins) {
+        return fmt::format("{:9}{},{}", "por", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Dst, typename Src>
     inline std::string toString(Xorpd<Dst, Src> ins) {
         return fmt::format("{:9}{},{}", "xorpd", toString(ins.dst), toString(ins.src));
     }

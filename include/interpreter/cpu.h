@@ -110,6 +110,7 @@ namespace x64 {
             [[nodiscard]] static u64 bsr64(u64 val, Flags* flags);
 
             [[nodiscard]] static u32 bsf32(u32 val, Flags* flags);
+            [[nodiscard]] static u64 bsf64(u64 val, Flags* flags);
 
             [[nodiscard]] static u16 tzcnt16(u16 src, Flags* flags);
             [[nodiscard]] static u32 tzcnt32(u32 src, Flags* flags);
@@ -309,7 +310,10 @@ namespace x64 {
         void exec(const And<R8, M8>&) override;
         void exec(const And<M8, R8>&) override;
         void exec(const And<M8, Imm>&) override;
+        void exec(const And<R16, Imm>&) override;
+        void exec(const And<R16, R16>&) override;
         void exec(const And<R16, M16>&) override;
+        void exec(const And<M16, Imm>&) override;
         void exec(const And<M16, R16>&) override;
         void exec(const And<R32, R32>&) override;
         void exec(const And<R32, Imm>&) override;
@@ -623,7 +627,7 @@ namespace x64 {
         void exec(const Bsr<R64, R64>&) override;
 
         void exec(const Bsf<R32, R32>&) override;
-        void exec(const Bsf<R32, M32>&) override;
+        void exec(const Bsf<R64, R64>&) override;
 
         void exec(const Rep<Movs<Addr<Size::BYTE, B>, Addr<Size::BYTE, B>>>&) override;
         void exec(const Rep<Movs<Addr<Size::DWORD, B>, Addr<Size::DWORD, B>>>&) override;
@@ -736,6 +740,7 @@ namespace x64 {
         void exec(const Cvtss2sd<RSSE, RSSE>&) override;
         void exec(const Cvtss2sd<RSSE, M32>&) override;
 
+        void exec(const Por<RSSE, RSSE>&) override;
         void exec(const Xorpd<RSSE, RSSE>&) override;
         void exec(const Movhps<RSSE, M64>&) override;
 
