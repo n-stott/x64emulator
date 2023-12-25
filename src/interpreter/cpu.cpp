@@ -2326,6 +2326,14 @@ namespace x64 {
                 set(R32::EAX, (u32)ret);
                 return;
             }
+            case 0x59: { // readlink
+                u64 path = rdi;
+                u64 buf = rsi;
+                size_t bufsize = (size_t)rdx;
+                ssize_t nchars = interpreter_->syscalls().readlink(path, buf, bufsize);
+                set(R64::RAX, (u64)nchars);
+                return;
+            }
             case 0x9e: { // arch_prctl
                 i32 code = (i32)rdi;
                 u64 addr = rsi;

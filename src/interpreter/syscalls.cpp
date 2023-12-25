@@ -6,6 +6,7 @@
 #include <sys/prctl.h>
 #include <sys/stat.h>
 #include <sys/utsname.h>
+#include <unistd.h>
 
 namespace x64 {
 
@@ -37,6 +38,23 @@ namespace x64 {
         struct utsname buffer;
         int ret = ::uname(&buffer);
         mmu_->copyToMmu(Ptr8{Segment::DS, buf}, (const u8*)&buffer, sizeof(buffer));
+        return ret;
+    }
+
+    ssize_t Sys::readlink(u64 pathname, u64 buf, size_t bufsiz) {
+        Ptr8 ptr{Segment::DS, pathname};
+        while(mmu_->read8(ptr) != 0) ++ptr;
+
+        std::vector<char> path;
+        path.resize(ptr.address-pathname, 0x0);
+        mmu_->copyFromMmu((u8*)path.data(), Ptr8{Segment::DS, pathname}, path.size());
+
+        std::vector<char> buffer;
+        buffer.resize(bufsiz, 0x0);
+        ssize_t ret = ::readlink(path.data(), buffer.data(), buffer.size());
+        if(ret < 0) return ret;
+
+        mmu_->copyToMmu(Ptr8{Segment::DS, buf}, (const u8*)buffer.data(), ret);
         return ret;
     }
 

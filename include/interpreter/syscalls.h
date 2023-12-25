@@ -18,6 +18,7 @@ namespace x64 {
         int mprotect(u64 addr, size_t length, int prot);
         int munmap(u64 addr, size_t length);
         int uname(u64 buf);
+        ssize_t readlink(u64 pathname, u64 buf, size_t bufsiz);
         u64 brk(u64 addr);
         void exit_group(int status);
         int arch_prctl(int code, u64 addr);
