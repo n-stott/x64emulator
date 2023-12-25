@@ -233,7 +233,7 @@ namespace x64 {
         return InstructionPosition { &executableSections_.back(), 0 };
     }
 
-    void Interpreter::call(u64 address) {
+    void Interpreter::notifyCall(u64 address) {
         CallPoint cp;
         auto cachedValue = callCache_.find(address);
         if(cachedValue != callCache_.end()) {
@@ -254,16 +254,15 @@ namespace x64 {
         }
         currentExecutedSection_ = cp.executedSection;
         currentInstructionIdx_ = cp.instructionIdx;
-        cpu_.regs_.rip_ = address;
         callstack_.push_back(address);
     }
 
-    void Interpreter::ret(u64 address) {
+    void Interpreter::notifyRet(u64 address) {
         callstack_.pop_back();
-        jmp(address);
+        notifyJmp(address);
     }
 
-    void Interpreter::jmp(u64 address) {
+    void Interpreter::notifyJmp(u64 address) {
         CallPoint cp;
         auto cachedValue = jmpCache_.find(address);
         if(cachedValue != jmpCache_.end()) {
@@ -283,7 +282,6 @@ namespace x64 {
         }
         currentExecutedSection_ = cp.executedSection;
         currentInstructionIdx_ = cp.instructionIdx;
-        cpu_.regs_.rip_ = address;
     }
 
     void Interpreter::pushProgramArguments(const std::string& programFilePath, const std::vector<std::string>& arguments, const std::vector<std::string>& environmentVariables) {
@@ -452,9 +450,11 @@ namespace x64 {
         SignalHandler sh;
         if(type == ExecuteType::CALL) {
             cpu_.push64(address);
-            call(address);
+            cpu_.regs_.rip_ = address;
+            notifyCall(address);
         } else {
-            call(address);
+            cpu_.regs_.rip_ = address;
+            notifyCall(address);
         }
         size_t ticks = 0;
         while(!stop_ && !callstack_.empty() && cpu_.regs_.rip_ != 0x0) {

@@ -57,9 +57,9 @@ namespace x64 {
         const X86Instruction* fetchInstruction();
         void log(size_t ticks, const X86Instruction* instruction) const;
 
-        void call(u64 address);
-        void ret(u64 address);
-        void jmp(u64 address);
+        void notifyCall(u64 address);
+        void notifyRet(u64 address);
+        void notifyJmp(u64 address);
 
         Sys& syscalls() { return syscalls_; }
 
