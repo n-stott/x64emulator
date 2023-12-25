@@ -513,6 +513,18 @@ namespace x64 {
         Dst dst;
         Src src;
     };
+
+    template<typename Dst, typename Src>
+    struct Pminub {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
+    struct Ptest {
+        Dst dst;
+        Src src;
+    };
     
     struct Syscall {
 

@@ -148,6 +148,8 @@ namespace x64 {
             case X86_INS_PSHUFD: return makePshufd(insn);
             case X86_INS_PCMPEQB: return makePcmpeqb(insn);
             case X86_INS_PMOVMSKB: return makePmovmskb(insn);
+            case X86_INS_PMINUB: return makePminub(insn);
+            case X86_INS_PTEST: return makePtest(insn);
             case X86_INS_RDTSC: return makeRdtsc(insn);
             case X86_INS_CPUID: return makeCpuid(insn);
             case X86_INS_XGETBV: return makeXgetbv(insn);
@@ -944,9 +946,14 @@ namespace x64 {
         auto r32dst = asRegister32(dst);
         auto r32src = asRegister32(src);
         auto m32dst = asMemory32(dst);
+        auto r64dst = asRegister64(dst);
+        auto r64src = asRegister64(src);
+        auto m64dst = asMemory64(dst);
         if(r16dst && r16src) return make_wrapper<Xchg<R16, R16>>(insn.address, r16dst.value(), r16src.value());
         if(r32dst && r32src) return make_wrapper<Xchg<R32, R32>>(insn.address, r32dst.value(), r32src.value());
         if(m32dst && r32src) return make_wrapper<Xchg<M32, R32>>(insn.address, m32dst.value(), r32src.value());
+        if(r64dst && r64src) return make_wrapper<Xchg<R64, R64>>(insn.address, r64dst.value(), r64src.value());
+        if(m64dst && r64src) return make_wrapper<Xchg<M64, R64>>(insn.address, m64dst.value(), r64src.value());
         return make_failed(insn);
     }
 
@@ -1704,7 +1711,9 @@ namespace x64 {
         const cs_x86_op& src = x86detail.operands[1];
         auto ssedst = asRegister128(dst);
         auto ssesrc = asRegister128(src);
+        auto msesrc = asMemory128(src);
         if(ssedst && ssesrc) return make_wrapper<Pxor<RSSE, RSSE>>(insn.address, ssedst.value(), ssesrc.value());
+        if(ssedst && msesrc) return make_wrapper<Pxor<RSSE, MSSE>>(insn.address, ssedst.value(), msesrc.value());
         return make_failed(insn);
     }
 
@@ -2118,6 +2127,32 @@ namespace x64 {
         auto r32dst = asRegister32(dst);
         auto rssesrc = asRegister128(src);
         if(r32dst && rssesrc) return make_wrapper<Pmovmskb<R32, RSSE>>(insn.address, r32dst.value(), rssesrc.value());
+        return make_failed(insn);
+    }
+
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makePminub(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto rssesrc = asRegister128(src);
+        auto mssesrc = asMemory128(src);
+        if(rssedst && rssesrc) return make_wrapper<Pminub<RSSE, RSSE>>(insn.address, rssedst.value(), rssesrc.value());
+        if(rssedst && mssesrc) return make_wrapper<Pminub<RSSE, MSSE>>(insn.address, rssedst.value(), mssesrc.value());
+        return make_failed(insn);
+    }
+
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makePtest(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto rssesrc = asRegister128(src);
+        auto mssesrc = asMemory128(src);
+        if(rssedst && rssesrc) return make_wrapper<Ptest<RSSE, RSSE>>(insn.address, rssedst.value(), rssesrc.value());
+        if(rssedst && mssesrc) return make_wrapper<Ptest<RSSE, MSSE>>(insn.address, rssedst.value(), mssesrc.value());
         return make_failed(insn);
     }
 

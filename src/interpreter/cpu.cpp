@@ -827,6 +827,18 @@ namespace x64 {
         set(resolve(ins.dst), src);
         set(ins.src, dst);
     }
+    void Cpu::exec(const Xchg<R64, R64>& ins) {
+        u64 dst = get(ins.dst);
+        u64 src = get(ins.src);
+        set(ins.dst, src);
+        set(ins.src, dst);
+    }
+    void Cpu::exec(const Xchg<M64, R64>& ins) {
+        u64 dst = get(resolve(ins.dst));
+        u64 src = get(ins.src);
+        set(resolve(ins.dst), src);
+        set(ins.src, dst);
+    }
 
     void Cpu::exec(const Xadd<R16, R16>& ins) {
         u16 dst = get(ins.dst);
@@ -1978,6 +1990,14 @@ namespace x64 {
         set(ins.dst, dst);
     }
 
+    void Cpu::exec(const Pxor<RSSE, MSSE>& ins) {
+        u128 dst = get(ins.dst);
+        u128 src = get(resolve(ins.src));
+        dst.lo = dst.lo ^ src.lo;
+        dst.hi = dst.hi ^ src.hi;
+        set(ins.dst, dst);
+    }
+
     void Cpu::exec(const Movaps<RSSE, RSSE>& ins) { set(ins.dst, get(ins.src)); }
     void Cpu::exec(const Movaps<MSSE, RSSE>& ins) { set(resolve(ins.dst), get(ins.src)); }
     void Cpu::exec(const Movaps<RSSE, MSSE>& ins) { set(ins.dst, get(resolve(ins.src))); }
@@ -2407,6 +2427,45 @@ namespace x64 {
     void Cpu::exec(const Pmovmskb<R32, RSSE>& ins) {
         u16 dst = Impl::pmovmskb(get(ins.src));
         set(ins.dst, zeroExtend<u32, u16>(dst));
+    }
+
+    u128 Cpu::Impl::pminub(u128 dst, u128 src) {
+        std::array<u8, 16> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        ::memcpy(DST.data(), &dst, sizeof(u128));
+
+        std::array<u8, 16> SRC;
+        static_assert(sizeof(SRC) == sizeof(u128));
+        ::memcpy(SRC.data(), &src, sizeof(u128));
+
+        for(int i = 0; i < 16; ++i) {
+            DST[i] = std::min(DST[i], SRC[i]);
+        }
+        ::memcpy(&dst, DST.data(), sizeof(u128));
+        return dst;
+    }
+
+    void Cpu::exec(const Pminub<RSSE, RSSE>& ins) {
+        u128 res = Impl::pminub(get(ins.dst), get(ins.src));
+        set(ins.dst, res);
+    }
+
+    void Cpu::exec(const Pminub<RSSE, MSSE>& ins) {
+        u128 res = Impl::pminub(get(ins.dst), get(resolve(ins.src)));
+        set(ins.dst, res);
+    }
+
+    void Cpu::Impl::ptest(u128 dst, u128 src, Flags* flags) {
+        flags->zero = (dst.lo & src.lo) == 0 && (dst.hi & src.hi) == 0;
+        flags->carry = (~dst.lo & src.lo) == 0 && (~dst.hi & src.hi) == 0;
+    }
+
+    void Cpu::exec(const Ptest<RSSE, RSSE>& ins) {
+        Impl::ptest(get(ins.dst), get(ins.src), &flags_);
+    }
+
+    void Cpu::exec(const Ptest<RSSE, MSSE>& ins) {
+        Impl::ptest(get(ins.dst), get(resolve(ins.src)), &flags_);
     }
 
     void Cpu::exec(const Syscall&) {

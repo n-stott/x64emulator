@@ -161,6 +161,8 @@ namespace x64 {
         virtual void exec(const Xchg<R16, R16>&) = 0;
         virtual void exec(const Xchg<R32, R32>&) = 0;
         virtual void exec(const Xchg<M32, R32>&) = 0;
+        virtual void exec(const Xchg<R64, R64>&) = 0;
+        virtual void exec(const Xchg<M64, R64>&) = 0;
 
         virtual void exec(const Xadd<R16, R16>&) = 0;
         virtual void exec(const Xadd<R32, R32>&) = 0;
@@ -486,6 +488,7 @@ namespace x64 {
         virtual void exec(const Cdqe&) = 0;
 
         virtual void exec(const Pxor<RSSE, RSSE>&) = 0;
+        virtual void exec(const Pxor<RSSE, MSSE>&) = 0;
 
         virtual void exec(const Movaps<RSSE, RSSE>&) = 0;
         virtual void exec(const Movaps<MSSE, RSSE>&) = 0;
@@ -550,6 +553,12 @@ namespace x64 {
         virtual void exec(const Pcmpeqb<RSSE, MSSE>&) = 0;
 
         virtual void exec(const Pmovmskb<R32, RSSE>&) = 0;
+
+        virtual void exec(const Pminub<RSSE, RSSE>&) = 0;
+        virtual void exec(const Pminub<RSSE, MSSE>&) = 0;
+
+        virtual void exec(const Ptest<RSSE, RSSE>&) = 0;
+        virtual void exec(const Ptest<RSSE, MSSE>&) = 0;
 
         virtual void exec(const Rdtsc&) = 0;
 

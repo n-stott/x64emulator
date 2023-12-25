@@ -158,6 +158,8 @@ namespace x64 {
         static std::unique_ptr<X86Instruction> makePshufd(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makePcmpeqb(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makePmovmskb(const cs_insn& insn);
+        static std::unique_ptr<X86Instruction> makePminub(const cs_insn& insn);
+        static std::unique_ptr<X86Instruction> makePtest(const cs_insn& insn);
 
         static std::unique_ptr<X86Instruction> makeRdtsc(const cs_insn& insn);
 

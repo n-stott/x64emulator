@@ -138,6 +138,10 @@ namespace x64 {
             [[nodiscard]] static u128 pcmpeqb(u128 dst, u128 src);
 
             [[nodiscard]] static u16 pmovmskb(u128 src);
+
+            [[nodiscard]] static u128 pminub(u128 dst, u128 src);
+
+            static void ptest(u128 dst, u128 src, Flags* flags);
         };
 
     private:
@@ -366,6 +370,8 @@ namespace x64 {
         void exec(const Xchg<R16, R16>&) override;
         void exec(const Xchg<R32, R32>&) override;
         void exec(const Xchg<M32, R32>&) override;
+        void exec(const Xchg<R64, R64>&) override;
+        void exec(const Xchg<M64, R64>&) override;
 
         void exec(const Xadd<R16, R16>&) override;
         void exec(const Xadd<R32, R32>&) override;
@@ -691,6 +697,7 @@ namespace x64 {
         void exec(const Cdqe&) override;
 
         void exec(const Pxor<RSSE, RSSE>&) override;
+        void exec(const Pxor<RSSE, MSSE>&) override;
 
         void exec(const Movaps<RSSE, RSSE>&) override;
         void exec(const Movaps<MSSE, RSSE>&) override;
@@ -755,6 +762,12 @@ namespace x64 {
         void exec(const Pcmpeqb<RSSE, MSSE>&) override;
 
         void exec(const Pmovmskb<R32, RSSE>&) override;
+
+        void exec(const Pminub<RSSE, RSSE>&) override;
+        void exec(const Pminub<RSSE, MSSE>&) override;
+
+        void exec(const Ptest<RSSE, RSSE>&) override;
+        void exec(const Ptest<RSSE, MSSE>&) override;
         
         void exec(const Rdtsc&) override;
 
