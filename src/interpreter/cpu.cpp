@@ -2319,6 +2319,13 @@ namespace x64 {
                 set(R64::RAX, newBreak);
                 return;
             }
+            case 0x9e: { // arch_prctl
+                i32 code = (i32)rdi;
+                u64 addr = rsi;
+                int ret = interpreter_->syscalls().arch_prctl(code, addr);
+                set(R32::EAX, (u32)ret);
+                return;
+            }
             case 0xe7: { // exit_group
                 i32 errorCode = (i32)rdi;
                 interpreter_->syscalls().exit_group(errorCode);

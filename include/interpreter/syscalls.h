@@ -19,6 +19,7 @@ namespace x64 {
         int munmap(u64 addr, size_t length);
         u64 brk(u64 addr);
         void exit_group(int status);
+        int arch_prctl(int code, u64 addr);
 
 
     private:

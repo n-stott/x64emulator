@@ -2,6 +2,8 @@
 #include "interpreter/interpreter.h"
 #include "interpreter/mmu.h"
 #include "interpreter/verify.h"
+#include <asm/prctl.h>
+#include <sys/prctl.h>
 #include <sys/stat.h>
 
 namespace x64 {
@@ -37,6 +39,12 @@ namespace x64 {
     void Sys::exit_group(int status) {
         (void)status;
         interpreter_->stop();
+    }
+
+    int Sys::arch_prctl(int code, u64 addr) {
+        if(code != ARCH_SET_FS) return -1;
+        mmu_->setFsBase(addr);
+        return 0;
     }
 
 }
