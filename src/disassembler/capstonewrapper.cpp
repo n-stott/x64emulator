@@ -1737,6 +1737,7 @@ namespace x64 {
         auto mssedst = asMemory128(dst);
         auto rssesrc = asRegister128(src);
         auto mssesrc = asMemory128(src);
+        if(rssedst && rssesrc) return make_wrapper<Mov<RSSE, RSSE>>(insn.address, rssedst.value(), rssesrc.value());
         if(rssedst && mssesrc) return make_wrapper<Mov<RSSE, MSSE>>(insn.address, rssedst.value(), mssesrc.value());
         if(mssedst && rssesrc) return make_wrapper<Mov<MSSE, RSSE>>(insn.address, mssedst.value(), rssesrc.value());
         return make_failed(insn);
