@@ -333,6 +333,7 @@ namespace x64 {
         void exec(const Or<M64, R64>&) override;
         void exec(const Or<M64, Imm>&) override;
 
+        void exec(const Xor<R8, R8>&) override;
         void exec(const Xor<R8, Imm>&) override;
         void exec(const Xor<R8, M8>&) override;
         void exec(const Xor<M8, Imm>&) override;

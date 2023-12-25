@@ -880,6 +880,7 @@ namespace x64 {
         const cs_x86_op& dst = x86detail.operands[0];
         const cs_x86_op& src = x86detail.operands[1];
         auto r8dst = asRegister8(dst);
+        auto r8src = asRegister8(src);
         auto r16dst = asRegister16(dst);
         auto r32dst = asRegister32(dst);
         auto r32src = asRegister32(src);
@@ -892,6 +893,7 @@ namespace x64 {
         auto m32src = asMemory32(src);
         auto m64dst = asMemory64(dst);
         auto m64src = asMemory64(src);
+        if(r8dst && r8src) return make_wrapper<Xor<R8, R8>>(insn.address, r8dst.value(), r8src.value());
         if(r8dst && immsrc) return make_wrapper<Xor<R8, Imm>>(insn.address, r8dst.value(), immsrc.value());
         if(r8dst && m8src) return make_wrapper<Xor<R8, M8>>(insn.address, r8dst.value(), m8src.value());
         if(m8dst && immsrc) return make_wrapper<Xor<M8, Imm>>(insn.address, m8dst.value(), immsrc.value());

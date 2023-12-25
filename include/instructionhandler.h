@@ -136,6 +136,7 @@ namespace x64 {
         virtual void exec(const Or<M64, R64>&) = 0;
         virtual void exec(const Or<M64, Imm>&) = 0;
 
+        virtual void exec(const Xor<R8, R8>&) = 0;
         virtual void exec(const Xor<R8, Imm>&) = 0;
         virtual void exec(const Xor<R8, M8>&) = 0;
         virtual void exec(const Xor<M8, Imm>&) = 0;

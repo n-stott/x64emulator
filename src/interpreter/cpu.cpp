@@ -771,6 +771,7 @@ namespace x64 {
         return tmp;
     }
 
+    void Cpu::exec(const Xor<R8, R8>& ins) { set(ins.dst, Impl::xor8(get(ins.dst), get(ins.src), &flags_)); }
     void Cpu::exec(const Xor<R8, Imm>& ins) { set(ins.dst, Impl::xor8(get(ins.dst), get<u8>(ins.src), &flags_)); }
     void Cpu::exec(const Xor<R8, M8>& ins) { set(ins.dst, Impl::xor8(get(ins.dst), get(resolve(ins.src)), &flags_)); }
     void Cpu::exec(const Xor<M8, Imm>& ins) { set(resolve(ins.dst), Impl::xor8(get(resolve(ins.dst)), get<u8>(ins.src), &flags_)); }
