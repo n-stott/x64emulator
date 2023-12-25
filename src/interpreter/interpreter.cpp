@@ -142,24 +142,43 @@ namespace x64 {
     }
 
     void Interpreter::setupStack() {
-        // page with random 16-bit value for AT_RANDOM
-        verify(auxiliary_.has_value(), "no auxiliary...");
-        u64 random = mmu_.mmap(0x0, Mmu::PAGE_SIZE, PROT::READ | PROT::WRITE, 0, 0, 0);
-        mmu_.setRegionName(random, "random");
-        mmu_.write16(Ptr16{Segment::DS, random}, 0xabcd);
-        mmu_.mprotect(random, Mmu::PAGE_SIZE, PROT::READ);
-        auxiliary_->randomDataAddress = random;
+        {
+            // page with random 16-bit value for AT_RANDOM
+            verify(auxiliary_.has_value(), "no auxiliary...");
+            u64 random = mmu_.mmap(0x0, Mmu::PAGE_SIZE, PROT::READ | PROT::WRITE, 0, 0, 0);
+            mmu_.setRegionName(random, "random");
+            mmu_.write16(Ptr16{Segment::DS, random}, 0xabcd);
+            mmu_.mprotect(random, Mmu::PAGE_SIZE, PROT::READ);
+            auxiliary_->randomDataAddress = random;
+        }
 
-        // heap
-        u64 heapSize = 64*Mmu::PAGE_SIZE;
-        u64 heapBase = mmu_.mmap(0, heapSize, PROT::READ | PROT::WRITE, 0, 0, 0);
-        mmu_.setRegionName(heapBase, "heap");
+        {
+            // page with platform string
+            u64 platformstring = mmu_.mmap(0x0, Mmu::PAGE_SIZE, PROT::READ | PROT::WRITE, 0, 0, 0);
+            mmu_.setRegionName(platformstring, "platform string");
+            std::string platform = "x86_64";
+            std::vector<u8> buffer;
+            buffer.resize(platform.size()+1, 0x0);
+            std::memcpy(buffer.data(), platform.data(), platform.size());
+            mmu_.copyToMmu(Ptr8{Segment::DS, platformstring}, buffer.data(), buffer.size());
+            mmu_.mprotect(platformstring, Mmu::PAGE_SIZE, PROT::READ);
+            auxiliary_->platformStringAddress = platformstring;
+        }
 
-        // stack
-        u64 stackSize = 16*Mmu::PAGE_SIZE;
-        u64 stackBase = mmu_.mmap(0x10000000, stackSize, PROT::READ | PROT::WRITE, 0, 0, 0);
-        mmu_.setRegionName(stackBase, "stack");
-        cpu_.regs_.rsp_ = stackBase + stackSize;
+        {
+            // heap
+            u64 heapSize = 64*Mmu::PAGE_SIZE;
+            u64 heapBase = mmu_.mmap(0, heapSize, PROT::READ | PROT::WRITE, 0, 0, 0);
+            mmu_.setRegionName(heapBase, "heap");
+        }
+
+        {
+            // stack
+            u64 stackSize = 16*Mmu::PAGE_SIZE;
+            u64 stackBase = mmu_.mmap(0x10000000, stackSize, PROT::READ | PROT::WRITE, 0, 0, 0);
+            mmu_.setRegionName(stackBase, "stack");
+            cpu_.regs_.rsp_ = stackBase + stackSize;
+        }
     }
 
     Interpreter::InstructionPosition Interpreter::findSectionWithAddress(u64 address, const ExecutableSection* sectionHint) const {
@@ -349,9 +368,15 @@ namespace x64 {
                         break;
                     }
                     case AT_RANDOM: {
-                        // just point at the first readable page.
-                        // TODO: maybe setup a special page for this ?
                         val = auxiliary_->randomDataAddress;
+                        break;
+                    }
+                    case AT_PLATFORM: {
+                        val = auxiliary_->platformStringAddress;
+                        break;
+                    }
+                    case AT_SYSINFO_EHDR: {
+                        val = 0;
                         break;
                     }
                     default: {

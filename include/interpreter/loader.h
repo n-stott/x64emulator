@@ -29,6 +29,7 @@ namespace x64 {
             u32 programHeaderCount;
             u32 programHeaderEntrySize;
             u64 randomDataAddress;
+            u64 platformStringAddress;
         };
 
         virtual void setAuxiliary(Auxiliary auxiliary) = 0;
