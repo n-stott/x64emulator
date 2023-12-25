@@ -4,25 +4,15 @@ set(CMAKE_CXX_STANDARD 17)
 
 enable_testing()
 
-add_library(fakelibc SHARED
-    src/lib/fakelibc.cpp
-)
-target_compile_options(fakelibc PUBLIC -fPIC -O0)
-target_link_options(fakelibc PUBLIC)
-target_include_directories(fakelibc PUBLIC external)
-target_include_directories(fakelibc PUBLIC include)
-
 add_library(emulator STATIC
-    src/translation/x86instruction.cpp
     src/disassembler/capstonewrapper.cpp
     src/interpreter/loader.cpp
     src/interpreter/symbolprovider.cpp
     src/interpreter/interpreter.cpp
+    src/interpreter/vm.cpp
     src/interpreter/cpu.cpp
     src/interpreter/mmu.cpp
     src/interpreter/syscalls.cpp
-    src/interpreter/vm.cpp
-    src/program.cpp
 )
 target_compile_options(emulator PUBLIC -Wall -Wextra -Wpedantic -pedantic -Wconversion -Werror)
 target_compile_options(emulator PUBLIC -Wno-braced-scalar-init -Wimplicit-fallthrough -Wno-missing-braces)

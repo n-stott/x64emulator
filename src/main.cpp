@@ -2,7 +2,6 @@
 #include "interpreter/interpreter.h"
 #include "interpreter/loader.h"
 #include "interpreter/verify.h"
-#include "lib/libc.h"
 #include <fmt/core.h>
 #include <filesystem>
 

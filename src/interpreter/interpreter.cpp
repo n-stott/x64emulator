@@ -1,7 +1,6 @@
 #include "interpreter/interpreter.h"
 #include "interpreter/loader.h"
 #include "interpreter/symbolprovider.h"
-#include "interpreter/executioncontext.h"
 #include "interpreter/verify.h"
 #include "disassembler/capstonewrapper.h"
 #include "instructionutils.h"

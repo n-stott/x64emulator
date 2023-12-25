@@ -46,19 +46,6 @@ namespace x64 {
         Instruction instruction;
     };
 
-    struct Function {
-        u64 address;
-        std::string name;
-        std::string demangledName;
-        std::vector<const X86Instruction*> instructions;
-
-        Function() : address(0) { }
-        Function(u64 address, std::string name, std::vector<const X86Instruction*> instructions);
-        Function(Function&&) = default;
-        virtual ~Function() = default;
-        void print() const;
-    };
-
     struct ExecutableSection {
         u64 begin;
         u64 end;
