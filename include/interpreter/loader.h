@@ -22,7 +22,15 @@ namespace x64 {
     public:
         virtual ~Loadable() = default;
 
-        virtual void setEntrypoint(u64 entrypoint) = 0;
+        struct Auxiliary {
+            u64 elfOffset;
+            u64 entrypoint;
+            u64 programHeaderTable;
+            u32 programHeaderCount;
+            u32 programHeaderEntrySize;
+        };
+
+        virtual void setAuxiliary(Auxiliary auxiliary) = 0;
 
         virtual u64 mmap(u64 address, u64 length, PROT prot, int flags, int fd, int offset) = 0;
         virtual int munmap(u64 address, u64 length) = 0;
@@ -43,7 +51,7 @@ namespace x64 {
     class Loader {
     public:
 
-        explicit Loader(Loadable* loadable, SymbolProvider* symbolProvider, std::string libcPath);
+        explicit Loader(Loadable* loadable, SymbolProvider* symbolProvider);
 
         enum class ElfType {
             MAIN_EXECUTABLE,
@@ -86,7 +94,6 @@ namespace x64 {
 
         Loadable* loadable_;
         SymbolProvider* symbolProvider_;
-        std::string libcPath_;
         std::vector<LoadedElf> elfs_;
         std::vector<TlsBlock> tlsBlocks_;
         std::vector<std::string> loadedLibraries_;

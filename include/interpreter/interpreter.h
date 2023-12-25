@@ -25,7 +25,7 @@ namespace x64 {
         void setLogInstructions(bool);
         bool logInstructions() const;
 
-        void setEntrypoint(u64 entrypoint) override;
+        void setAuxiliary(Auxiliary auxiliary) override;
 
         u64 mmap(u64 address, u64 length, PROT prot, int flags, int fd, int offset) override;
         int munmap(u64 address, u64 length) override;
@@ -85,7 +85,7 @@ namespace x64 {
         SymbolProvider* symbolProvider_;
 
         std::vector<u64> initFunctions_;
-        std::optional<u64> entrypoint_;
+        std::optional<Loadable::Auxiliary> auxiliary_;
 
         bool stop_ = false;
         bool hasCrashed_ = false;

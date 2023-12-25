@@ -1,4 +1,5 @@
 #include "interpreter/interpreter.h"
+#include "interpreter/loader.h"
 #include "interpreter/symbolprovider.h"
 #include "interpreter/executioncontext.h"
 #include "interpreter/verify.h"
@@ -69,8 +70,8 @@ namespace x64 {
         dumpStackTrace();
     }
 
-    void Interpreter::setEntrypoint(u64 entrypoint) {
-        entrypoint_ = entrypoint;
+    void Interpreter::setAuxiliary(Auxiliary auxiliary) {
+        auxiliary_ = auxiliary;
     }
 
     u64 Interpreter::mmap(u64 address, u64 length, PROT prot, int flags, int fd, int offset) {
@@ -126,22 +127,29 @@ namespace x64 {
     }
 
     void Interpreter::run(const std::string& programFilePath, const std::vector<std::string>& arguments, const std::vector<std::string>& environmentVariables) {
+
+        Loader loader(this, symbolProvider_);
+        loader.loadElf(programFilePath, x64::Loader::ElfType::MAIN_EXECUTABLE);
+        
         VerificationScope::run([&]() {
             setupStack();
-            runInit();
-            if(stop_) return;
             pushProgramArguments(programFilePath, arguments, environmentVariables);
-            verify(entrypoint_.has_value(), "No entrypoint");
-            execute(entrypoint_.value(), ExecuteType::JUMP);
+            verify(auxiliary_.has_value(), "No entrypoint");
+            execute(auxiliary_->entrypoint, ExecuteType::JUMP);
         }, [&]() {
             crash();
         });
     }
 
     void Interpreter::setupStack() {
+        // heap
+        u64 heapSize = 64*Mmu::PAGE_SIZE;
+        u64 heapBase = mmu_.mmap(0, heapSize, PROT::READ | PROT::WRITE, 0, 0, 0);
+        mmu_.setRegionName(heapBase, "heap");
+
         // stack
         u64 stackSize = 16*Mmu::PAGE_SIZE;
-        u64 stackBase = mmu_.mmap(0, stackSize, PROT::READ | PROT::WRITE, 0, 0, 0);
+        u64 stackBase = mmu_.mmap(0x10000000, stackSize, PROT::READ | PROT::WRITE, 0, 0, 0);
         mmu_.setRegionName(stackBase, "stack");
         cpu_.regs_.rsp_ = stackBase + stackSize;
     }
@@ -313,8 +321,33 @@ namespace x64 {
             cpu_.push64(0x0);
             cpu_.push64(AT_NULL);
             for(unsigned long type = 1; type < 256; ++type) {
-                errno = 0;
-                unsigned long val = getauxval(type);
+                unsigned long val = 0;
+                switch(type) {
+                    case AT_ENTRY: {
+                        verify(auxiliary_.has_value(), "no entrypoint");
+                        val = auxiliary_->entrypoint;
+                        break;
+                    }
+                    case AT_PHDR: {
+                        verify(auxiliary_.has_value(), "no program headers");
+                        val = auxiliary_->programHeaderTable;
+                        break;
+                    }
+                    case AT_PHENT: {
+                        verify(auxiliary_.has_value(), "no program headers");
+                        val = auxiliary_->programHeaderEntrySize;
+                        break;
+                    }
+                    case AT_PHNUM: {
+                        verify(auxiliary_.has_value(), "no program headers");
+                        val = auxiliary_->programHeaderCount;
+                        break;
+                    }
+                    default: {
+                        errno = 0;
+                        val = getauxval(type);
+                    }
+                }
                 if(val == 0 && errno == ENOENT) continue;
                 auto at_to_string = [](unsigned long type) -> std::string {
                     switch(type) {

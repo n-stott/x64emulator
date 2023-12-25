@@ -67,17 +67,9 @@ int main(int argc, char* argv[], char* envp[]) {
     x64::SymbolProvider symbolProvider;
 
     x64::Interpreter interpreter(&symbolProvider);
-    interpreter.setLogInstructions(true);
-
-    x64::Loader loader(&interpreter, &symbolProvider, libraryPath);
 
     x64::VerificationScope::run([&]() {
-        loader.loadElf(programPath, x64::Loader::ElfType::MAIN_EXECUTABLE);
-        loader.registerInitFunctions();
-        loader.registerDynamicSymbols();
-        loader.prepareTlsTemplate();
-        loader.resolveAllRelocations();
-        loader.loadTlsBlocks();
+        interpreter.setLogInstructions(true);
         interpreter.run(programPath, arguments, environmentVariables);
     }, [&]() {
         interpreter.crash();

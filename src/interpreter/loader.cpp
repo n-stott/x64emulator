@@ -18,13 +18,11 @@ namespace x64 {
 
     Loader::LoadedElf::~LoadedElf() = default;
 
-    Loader::Loader(Loadable* loadable, SymbolProvider* symbolProvider, std::string libcPath) :
+    Loader::Loader(Loadable* loadable, SymbolProvider* symbolProvider) :
             loadable_(loadable), 
-            symbolProvider_(symbolProvider),
-            libcPath_(libcPath) {
+            symbolProvider_(symbolProvider) {
         assert(!!loadable_);
         assert(!!symbolProvider_);
-        assert(!libcPath_.empty());
     }
 
     void Loader::loadLibrary(const std::string& filepath) {
@@ -94,8 +92,23 @@ namespace x64 {
                         ? getOffsetForPositionIndependentExecutable()
                         : 0;
 
+        u32 programHeaderCount = 0;
+        u64 firstSegmentAddress = 0;
+        elf64->forAllProgramHeaders([&](const elf::ProgramHeader64& header) {
+            ++programHeaderCount;
+            if(header.type() == elf::ProgramHeaderType::PT_LOAD && header.offset() == 0) firstSegmentAddress = elfOffset + header.virtualAddress();
+        });
+
+        Loadable::Auxiliary auxiliary {
+            elfOffset,
+            elfOffset + elf64->entrypoint(),
+            firstSegmentAddress + 0x40, // TODO: get offset from elf
+            programHeaderCount,
+            sizeof(elf::ProgramHeader64)
+        };
+
         if(elfType == ElfType::MAIN_EXECUTABLE) {
-            loadable_->setEntrypoint(elfOffset + elf64->entrypoint());
+            loadable_->setAuxiliary(auxiliary);
         }
 
         elf64->forAllProgramHeaders([&](const elf::ProgramHeader64& header) {
