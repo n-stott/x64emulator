@@ -167,6 +167,8 @@ namespace x64 {
         virtual void exec(const Xadd<R16, R16>&) = 0;
         virtual void exec(const Xadd<R32, R32>&) = 0;
         virtual void exec(const Xadd<M32, R32>&) = 0;
+        virtual void exec(const Xadd<R64, R64>&) = 0;
+        virtual void exec(const Xadd<M64, R64>&) = 0;
 
         virtual void exec(const Mov<R8, R8>&) = 0;
         virtual void exec(const Mov<R8, Imm>&) = 0;

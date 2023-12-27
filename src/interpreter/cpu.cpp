@@ -860,6 +860,20 @@ namespace x64 {
         set(resolve(ins.dst), tmp);
         set(ins.src, dst);
     }
+    void Cpu::exec(const Xadd<R64, R64>& ins) {
+        u64 dst = get(ins.dst);
+        u64 src = get(ins.src);
+        u64 tmp = Impl::add64(dst, src, &flags_);
+        set(ins.dst, tmp);
+        set(ins.src, dst);
+    }
+    void Cpu::exec(const Xadd<M64, R64>& ins) {
+        u64 dst = get(resolve(ins.dst));
+        u64 src = get(ins.src);
+        u64 tmp = Impl::add64(dst, src, &flags_);
+        set(resolve(ins.dst), tmp);
+        set(ins.src, dst);
+    }
 
 
     template<typename T, typename U> T narrow(const U& u);

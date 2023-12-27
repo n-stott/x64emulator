@@ -372,6 +372,8 @@ namespace x64 {
         void exec(const Xadd<R16, R16>&) override;
         void exec(const Xadd<R32, R32>&) override;
         void exec(const Xadd<M32, R32>&) override;
+        void exec(const Xadd<R64, R64>&) override;
+        void exec(const Xadd<M64, R64>&) override;
 
         void exec(const Mov<R8, R8>&) override;
         void exec(const Mov<R8, Imm>&) override;

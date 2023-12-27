@@ -967,9 +967,14 @@ namespace x64 {
         auto r32dst = asRegister32(dst);
         auto r32src = asRegister32(src);
         auto m32dst = asMemory32(dst);
+        auto r64dst = asRegister64(dst);
+        auto r64src = asRegister64(src);
+        auto m64dst = asMemory64(dst);
         if(r16dst && r16src) return make_wrapper<Xadd<R16, R16>>(insn.address, r16dst.value(), r16src.value());
         if(r32dst && r32src) return make_wrapper<Xadd<R32, R32>>(insn.address, r32dst.value(), r32src.value());
         if(m32dst && r32src) return make_wrapper<Xadd<M32, R32>>(insn.address, m32dst.value(), r32src.value());
+        if(r64dst && r64src) return make_wrapper<Xadd<R64, R64>>(insn.address, r64dst.value(), r64src.value());
+        if(m64dst && r64src) return make_wrapper<Xadd<M64, R64>>(insn.address, m64dst.value(), r64src.value());
         return make_failed(insn);
     }
 
