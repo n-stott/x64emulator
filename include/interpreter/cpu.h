@@ -65,6 +65,10 @@ namespace x64 {
             static void bt16(u16 base, u16 index, Flags* flags);
             static void bt32(u32 base, u32 index, Flags* flags);
             static void bt64(u64 base, u64 index, Flags* flags);
+
+            [[nodiscard]] static u16 btr16(u16 base, u16 index, Flags* flags);
+            [[nodiscard]] static u32 btr32(u32 base, u32 index, Flags* flags);
+            [[nodiscard]] static u64 btr64(u64 base, u64 index, Flags* flags);
             
             static void cmpxchg32(u32 rax, u32 dest, Flags* flags);
             static void cmpxchg64(u64 rax, u64 dest, Flags* flags);
@@ -531,6 +535,19 @@ namespace x64 {
         void exec(const Bt<M32, Imm>&) override;
         void exec(const Bt<M64, R64>&) override;
         void exec(const Bt<M64, Imm>&) override;
+
+        void exec(const Btr<R16, R16>&) override;
+        void exec(const Btr<R16, Imm>&) override;
+        void exec(const Btr<R32, R32>&) override;
+        void exec(const Btr<R32, Imm>&) override;
+        void exec(const Btr<R64, R64>&) override;
+        void exec(const Btr<R64, Imm>&) override;
+        void exec(const Btr<M16, R16>&) override;
+        void exec(const Btr<M16, Imm>&) override;
+        void exec(const Btr<M32, R32>&) override;
+        void exec(const Btr<M32, Imm>&) override;
+        void exec(const Btr<M64, R64>&) override;
+        void exec(const Btr<M64, Imm>&) override;
 
         void exec(const Test<R8, R8>&) override;
         void exec(const Test<R8, Imm>&) override;

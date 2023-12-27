@@ -477,6 +477,11 @@ namespace utils {
         return fmt::format("{:9}{},{}", "bt", toString(ins.base), toString(ins.offset));
     }
 
+    template<typename Base, typename Offset>
+    inline std::string toString(const Btr<Base, Offset>& ins) {
+        return fmt::format("{:9}{},{}", "btr", toString(ins.base), toString(ins.offset));
+    }
+
     template<typename Src1, typename Src2>
     inline std::string toString(const Test<Src1, Src2>& ins) {
         return fmt::format("{:9}{},{}", "test", toString(ins.src1), toString(ins.src2));

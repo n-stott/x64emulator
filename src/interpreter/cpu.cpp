@@ -1436,6 +1436,34 @@ namespace x64 {
     void Cpu::exec(const Bt<M64, R64>& ins) { Impl::bt64(get(resolve(ins.base)), get(ins.offset), &flags_); }
     void Cpu::exec(const Bt<M64, Imm>& ins) { Impl::bt64(get(resolve(ins.base)), get<u64>(ins.offset), &flags_); }
 
+    u16 Cpu::Impl::btr16(u16 base, u16 index, Flags* flags) {
+        flags->carry = (base >> (index % 16)) & 0x1;
+        return (u16)(base & ~((u16)1 << (index % 16)));
+    }
+    
+    u32 Cpu::Impl::btr32(u32 base, u32 index, Flags* flags) {
+        flags->carry = (base >> (index % 32)) & 0x1;
+        return (u32)(base & ~((u32)1 << (index % 32)));
+    }
+
+    u64 Cpu::Impl::btr64(u64 base, u64 index, Flags* flags) {
+        flags->carry = (base >> (index % 64)) & 0x1;
+        return (u64)(base & ~((u64)1 << (index % 64)));
+    }
+
+    void Cpu::exec(const Btr<R16, R16>& ins) { set(ins.base, Impl::btr16(get(ins.base), get(ins.offset), &flags_)); }
+    void Cpu::exec(const Btr<R16, Imm>& ins) { set(ins.base, Impl::btr16(get(ins.base), get<u16>(ins.offset), &flags_)); }
+    void Cpu::exec(const Btr<R32, R32>& ins) { set(ins.base, Impl::btr32(get(ins.base), get(ins.offset), &flags_)); }
+    void Cpu::exec(const Btr<R32, Imm>& ins) { set(ins.base, Impl::btr32(get(ins.base), get<u32>(ins.offset), &flags_)); }
+    void Cpu::exec(const Btr<R64, R64>& ins) { set(ins.base, Impl::btr64(get(ins.base), get(ins.offset), &flags_)); }
+    void Cpu::exec(const Btr<R64, Imm>& ins) { set(ins.base, Impl::btr64(get(ins.base), get<u64>(ins.offset), &flags_)); }
+    void Cpu::exec(const Btr<M16, R16>& ins) { set(resolve(ins.base), Impl::btr16(get(resolve(ins.base)), get(ins.offset), &flags_)); }
+    void Cpu::exec(const Btr<M16, Imm>& ins) { set(resolve(ins.base), Impl::btr16(get(resolve(ins.base)), get<u16>(ins.offset), &flags_)); }
+    void Cpu::exec(const Btr<M32, R32>& ins) { set(resolve(ins.base), Impl::btr32(get(resolve(ins.base)), get(ins.offset), &flags_)); }
+    void Cpu::exec(const Btr<M32, Imm>& ins) { set(resolve(ins.base), Impl::btr32(get(resolve(ins.base)), get<u32>(ins.offset), &flags_)); }
+    void Cpu::exec(const Btr<M64, R64>& ins) { set(resolve(ins.base), Impl::btr64(get(resolve(ins.base)), get(ins.offset), &flags_)); }
+    void Cpu::exec(const Btr<M64, Imm>& ins) { set(resolve(ins.base), Impl::btr64(get(resolve(ins.base)), get<u64>(ins.offset), &flags_)); }
+
     void Cpu::Impl::test8(u8 src1, u8 src2, Flags* flags) {
         u8 tmp = src1 & src2;
         flags->sign = (tmp & (1 << 7));
