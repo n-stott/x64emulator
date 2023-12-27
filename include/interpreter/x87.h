@@ -23,8 +23,12 @@ namespace x64 {
             return val;
         }
 
-        f80 st(u8 index) {
-            return stack_[(top_+index) & 0x7];
+        f80 st(ST st) const {
+            return stack_[(top_+(u8)st) & 0x7];
+        }
+
+        void set(ST st, f80 val) {
+            stack_[(top_+(u8)st) & 0x7] = val;
         }
 
     private:

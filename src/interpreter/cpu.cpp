@@ -4,7 +4,6 @@
 #include "interpreter/verify.h"
 #include "interpreter/vm.h"
 #include "program.h"
-#include "instructionutils.h"
 #include <fmt/core.h>
 #include <cassert>
 
@@ -130,6 +129,9 @@ namespace x64 {
         flags->setUnsure();\
         flags->setUnsureParity();\
         DEBUG_ONLY(fmt::print(stderr, "Warning : flags not updated\n"))
+
+    #define WARN_FPU_FLAGS() \
+        DEBUG_ONLY(fmt::print(stderr, "Warning : fpu flags not updated\n"))
 
     #define WARN_FLAGS_UNSURE() \
         DEBUG_ONLY(fmt::print(stderr, "Warning : flags may be wrong\n"))
@@ -2095,7 +2097,23 @@ namespace x64 {
 
     void Cpu::exec(const Fldz&) { x87fpu_.push(f80::fromLongDouble(0.0)); }
     void Cpu::exec(const Fld1&) { x87fpu_.push(f80::fromLongDouble(1.0)); }
+    void Cpu::exec(const Fld<M80>& ins) { x87fpu_.push(get(resolve(ins.src))); }
     void Cpu::exec(const Fstp<M80>& ins) { set(resolve(ins.dst), x87fpu_.pop()); }
+
+    f80 Cpu::Impl::fadd(f80 dst, f80 src, X87Fpu*) {
+        long double d = f80::toLongDouble(dst);
+        long double s = f80::toLongDouble(src);
+        long double r = d+s;
+        WARN_FPU_FLAGS();
+        return f80::fromLongDouble(r);
+    }
+
+    void Cpu::exec(const Faddp<ST>& ins) {
+        f80 top = x87fpu_.st(ST::ST0);
+        f80 dst = x87fpu_.st(ins.dst);
+        x87fpu_.set(ins.dst, Impl::fadd(top, dst, &x87fpu_));
+        x87fpu_.pop();
+    }
 
     void Cpu::exec(const Movss<RSSE, M32>& ins) { set(ins.dst, zeroExtend<Xmm, u32>(get(resolve(ins.src)))); }
     void Cpu::exec(const Movss<M32, RSSE>& ins) { set(resolve(ins.dst), narrow<u32, Xmm>(get(ins.src))); }

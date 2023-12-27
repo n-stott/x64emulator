@@ -389,8 +389,18 @@ namespace x64 {
 
     };
 
+    template<typename Src>
+    struct Fld {
+        Src src;
+    };
+
     template<typename Dst>
     struct Fstp {
+        Dst dst;
+    };
+
+    template<typename Dst>
+    struct Faddp {
         Dst dst;
     };
 

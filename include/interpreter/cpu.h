@@ -145,6 +145,8 @@ namespace x64 {
             [[nodiscard]] static u128 pminub(u128 dst, u128 src);
 
             static void ptest(u128 dst, u128 src, Flags* flags);
+
+            [[nodiscard]] static f80 fadd(f80 dst, f80 src, X87Fpu* fpu);
         };
 
     private:
@@ -744,7 +746,9 @@ namespace x64 {
 
         void exec(const Fldz&) override;
         void exec(const Fld1&) override;
+        void exec(const Fld<M80>&) override;
         void exec(const Fstp<M80>&) override;
+        void exec(const Faddp<ST>&) override;
 
         void exec(const Movss<RSSE, M32>&) override;
         void exec(const Movss<M32, RSSE>&) override;

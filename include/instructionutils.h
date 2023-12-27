@@ -137,6 +137,20 @@ namespace utils {
         return "";
     }
 
+    inline std::string toString(const ST& reg) {
+        switch(reg) {
+            case ST::ST0: return "st(0)";
+            case ST::ST1: return "st(1)";
+            case ST::ST2: return "st(2)";
+            case ST::ST3: return "st(3)";
+            case ST::ST4: return "st(4)";
+            case ST::ST5: return "st(5)";
+            case ST::ST6: return "st(6)";
+            case ST::ST7: return "st(7)";
+        }
+        return "";
+    }
+
     inline std::string toString(Cond cond) {
         switch(cond) {
             case Cond::A:  return "a";
@@ -651,9 +665,19 @@ namespace utils {
         return fmt::format("{:9}", "fld1");
     }
 
+    template<typename Src>
+    inline std::string toString(Fld<Src> ins) {
+        return fmt::format("{:9}{}", "fld1", toString(ins.src));
+    }
+
     template<typename Dst>
     inline std::string toString(Fstp<Dst> ins) {
         return fmt::format("{:9}{}", "fstp", toString(ins.dst));
+    }
+
+    template<typename Dst>
+    inline std::string toString(Faddp<Dst> ins) {
+        return fmt::format("{:9}{}", "faddp", toString(ins.dst));
     }
 
     template<typename Dst, typename Src>

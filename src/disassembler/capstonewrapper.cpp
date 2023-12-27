@@ -1,5 +1,4 @@
 #include "disassembler/capstonewrapper.h"
-#include "instructionutils.h"
 #include "instructions.h"
 #include "fmt/core.h"
 #include <cassert>
@@ -123,7 +122,9 @@ namespace x64 {
             case X86_INS_MOVQ: return makeMovq(insn);
             case X86_INS_FLDZ: return makeFldz(insn);
             case X86_INS_FLD1: return makeFld1(insn);
+            case X86_INS_FLD: return makeFld(insn);
             case X86_INS_FSTP: return makeFstp(insn);
+            case X86_INS_FADDP: return makeFaddp(insn);
             case X86_INS_MOVSS: return makeMovss(insn);
             case X86_INS_MOVSD: return makeMovsd(insn);
             case X86_INS_ADDSS: return makeAddss(insn);
@@ -327,6 +328,26 @@ namespace x64 {
     std::optional<RSSE> asRegister128(const cs_x86_op& operand) {
         if(operand.type != X86_OP_REG) return {};
         return asRegister128(operand.reg);
+    }
+
+    std::optional<ST> asST(x86_reg reg) {
+        switch(reg) {
+            case X86_REG_ST0: return ST::ST0;
+            case X86_REG_ST1: return ST::ST1;
+            case X86_REG_ST2: return ST::ST2;
+            case X86_REG_ST3: return ST::ST3;
+            case X86_REG_ST4: return ST::ST4;
+            case X86_REG_ST5: return ST::ST5;
+            case X86_REG_ST6: return ST::ST6;
+            case X86_REG_ST7: return ST::ST7;
+            default: return {};
+        }
+        return {};
+    }
+
+    std::optional<ST> asST(const cs_x86_op& operand) {
+        if(operand.type != X86_OP_REG) return {};
+        return asST(operand.reg);
     }
 
     std::optional<B> asBase(const cs_x86_op& operand) {
@@ -1905,12 +1926,30 @@ namespace x64 {
         return make_wrapper<Fld1>(insn.address);
     }
 
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makeFld(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 1);
+        const cs_x86_op& src = x86detail.operands[0];
+        auto m80src = asMemory80(src);
+        if(m80src) return make_wrapper<Fld<M80>>(insn.address, m80src.value());
+        return make_failed(insn);
+    }
+
     std::unique_ptr<X86Instruction> CapstoneWrapper::makeFstp(const cs_insn& insn) {
         const auto& x86detail = insn.detail->x86;
         assert(x86detail.op_count == 1);
         const cs_x86_op& src = x86detail.operands[0];
         auto m80src = asMemory80(src);
         if(m80src) return make_wrapper<Fstp<M80>>(insn.address, m80src.value());
+        return make_failed(insn);
+    }
+
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makeFaddp(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 1);
+        const cs_x86_op& src = x86detail.operands[0];
+        auto stsrc = asST(src);
+        if(stsrc) return make_wrapper<Faddp<ST>>(insn.address, stsrc.value());
         return make_failed(insn);
     }
 

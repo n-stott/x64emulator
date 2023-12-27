@@ -130,6 +130,17 @@ namespace x64 {
         XMM15,
     };
 
+    enum class ST {
+        ST0,
+        ST1,
+        ST2,
+        ST3,
+        ST4,
+        ST5,
+        ST6,
+        ST7,
+    };
+
     enum class Cond {
         A,
         AE,

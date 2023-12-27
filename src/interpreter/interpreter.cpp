@@ -3,7 +3,6 @@
 #include "interpreter/symbolprovider.h"
 #include "interpreter/verify.h"
 #include "disassembler/capstonewrapper.h"
-#include "instructionutils.h"
 #include <fmt/core.h>
 #include <algorithm>
 #include <cassert>
