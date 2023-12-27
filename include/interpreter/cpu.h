@@ -537,6 +537,9 @@ namespace x64 {
         void exec(const Test<M8, R8>&) override;
         void exec(const Test<M8, Imm>&) override;
         void exec(const Test<R16, R16>&) override;
+        void exec(const Test<R16, Imm>&) override;
+        void exec(const Test<M16, R16>&) override;
+        void exec(const Test<M16, Imm>&) override;
         void exec(const Test<R32, R32>&) override;
         void exec(const Test<R32, Imm>&) override;
         void exec(const Test<M32, R32>&) override;

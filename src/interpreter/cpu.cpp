@@ -1479,12 +1479,15 @@ namespace x64 {
     void Cpu::exec(const Test<R8, R8>& ins) { Impl::test8(get(ins.src1), get(ins.src2), &flags_); }
     void Cpu::exec(const Test<R8, Imm>& ins) { Impl::test8(get(ins.src1), get<u8>(ins.src2), &flags_); }
     void Cpu::exec(const Test<R16, R16>& ins) { Impl::test16(get(ins.src1), get(ins.src2), &flags_); }
+    void Cpu::exec(const Test<R16, Imm>& ins) { Impl::test16(get(ins.src1), get<u16>(ins.src2), &flags_); }
     void Cpu::exec(const Test<R32, R32>& ins) { Impl::test32(get(ins.src1), get(ins.src2), &flags_); }
     void Cpu::exec(const Test<R32, Imm>& ins) { Impl::test32(get(ins.src1), get<u32>(ins.src2), &flags_); }
     void Cpu::exec(const Test<R64, R64>& ins) { Impl::test64(get(ins.src1), get(ins.src2), &flags_); }
     void Cpu::exec(const Test<R64, Imm>& ins) { Impl::test64(get(ins.src1), get<u64>(ins.src2), &flags_); }
     void Cpu::exec(const Test<M8, R8>& ins) { Impl::test8(get(resolve(ins.src1)), get(ins.src2), &flags_); }
     void Cpu::exec(const Test<M8, Imm>& ins) { Impl::test8(get(resolve(ins.src1)), get<u8>(ins.src2), &flags_); }
+    void Cpu::exec(const Test<M16, R16>& ins) { Impl::test16(get(resolve(ins.src1)), get(ins.src2), &flags_); }
+    void Cpu::exec(const Test<M16, Imm>& ins) { Impl::test16(get(resolve(ins.src1)), get<u16>(ins.src2), &flags_); }
     void Cpu::exec(const Test<M32, R32>& ins) { Impl::test32(get(resolve(ins.src1)), get(ins.src2), &flags_); }
     void Cpu::exec(const Test<M32, Imm>& ins) { Impl::test32(get(resolve(ins.src1)), get<u32>(ins.src2), &flags_); }
     void Cpu::exec(const Test<M64, R64>& ins) { Impl::test64(get(resolve(ins.src1)), get(ins.src2), &flags_); }

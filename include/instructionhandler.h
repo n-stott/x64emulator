@@ -332,6 +332,9 @@ namespace x64 {
         virtual void exec(const Test<R8, Imm>&) = 0;
         virtual void exec(const Test<M8, Imm>&) = 0;
         virtual void exec(const Test<R16, R16>&) = 0;
+        virtual void exec(const Test<R16, Imm>&) = 0;
+        virtual void exec(const Test<M16, R16>&) = 0;
+        virtual void exec(const Test<M16, Imm>&) = 0;
         virtual void exec(const Test<R32, R32>&) = 0;
         virtual void exec(const Test<R32, Imm>&) = 0;
         virtual void exec(const Test<M32, R32>&) = 0;

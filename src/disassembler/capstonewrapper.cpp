@@ -1281,13 +1281,17 @@ namespace x64 {
         auto r64src2 = asRegister64(src);
         auto immsrc2 = asImmediate(src);
         auto m8src1 = asMemory8(dst);
+        auto m16src1 = asMemory16(dst);
         auto m32src1 = asMemory32(dst);
         auto m64src1 = asMemory64(dst);
         if(r8src1 && r8src2) return make_wrapper<Test<R8, R8>>(insn.address, r8src1.value(), r8src2.value());
         if(m8src1 && r8src2) return make_wrapper<Test<M8, R8>>(insn.address, m8src1.value(), r8src2.value());
         if(r8src1 && immsrc2) return make_wrapper<Test<R8, Imm>>(insn.address, r8src1.value(), immsrc2.value());
         if(m8src1 && immsrc2) return make_wrapper<Test<M8, Imm>>(insn.address, m8src1.value(), immsrc2.value());
+        if(r16src1 && immsrc2) return make_wrapper<Test<R16, Imm>>(insn.address, r16src1.value(), immsrc2.value());
         if(r16src1 && r16src2) return make_wrapper<Test<R16, R16>>(insn.address, r16src1.value(), r16src2.value());
+        if(m16src1 && immsrc2) return make_wrapper<Test<M16, Imm>>(insn.address, m16src1.value(), immsrc2.value());
+        if(m16src1 && r16src2) return make_wrapper<Test<M16, R16>>(insn.address, m16src1.value(), r16src2.value());
         if(r32src1 && r32src2) return make_wrapper<Test<R32, R32>>(insn.address, r32src1.value(), r32src2.value());
         if(r32src1 && immsrc2) return make_wrapper<Test<R32, Imm>>(insn.address, r32src1.value(), immsrc2.value());
         if(m32src1 && r32src2) return make_wrapper<Test<M32, R32>>(insn.address, m32src1.value(), r32src2.value());
