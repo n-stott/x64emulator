@@ -32,6 +32,10 @@ namespace x64 {
         return mmu_->read64(ptr);
     }
 
+    f80 Cpu::get(Ptr80 ptr) const {
+        return mmu_->read80(ptr);
+    }
+
     Xmm Cpu::get(Ptr128 ptr) const {
         return mmu_->read128(ptr);
     }
@@ -50,6 +54,10 @@ namespace x64 {
 
     void Cpu::set(Ptr64 ptr, u64 value) {
         mmu_->write64(ptr, value);
+    }
+
+    void Cpu::set(Ptr80 ptr, f80 value) {
+        mmu_->write80(ptr, value);
     }
 
     void Cpu::set(Ptr128 ptr, Xmm value) {
@@ -2084,6 +2092,10 @@ namespace x64 {
     void Cpu::exec(const Movq<R64, RSSE>& ins) { set(ins.dst, narrow<u64, Xmm>(get(ins.src))); }
     void Cpu::exec(const Movq<RSSE, M64>& ins) { set(ins.dst, zeroExtend<Xmm, u64>(get(resolve(ins.src)))); }
     void Cpu::exec(const Movq<M64, RSSE>& ins) { set(resolve(ins.dst), narrow<u64, Xmm>(get(ins.src))); }
+
+    void Cpu::exec(const Fldz&) { x87fpu_.push(f80::fromLongDouble(0.0)); }
+    void Cpu::exec(const Fld1&) { x87fpu_.push(f80::fromLongDouble(1.0)); }
+    void Cpu::exec(const Fstp<M80>& ins) { set(resolve(ins.dst), x87fpu_.pop()); }
 
     void Cpu::exec(const Movss<RSSE, M32>& ins) { set(ins.dst, zeroExtend<Xmm, u32>(get(resolve(ins.src)))); }
     void Cpu::exec(const Movss<M32, RSSE>& ins) { set(resolve(ins.dst), narrow<u32, Xmm>(get(ins.src))); }

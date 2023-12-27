@@ -121,6 +121,9 @@ namespace x64 {
             case X86_INS_MOVAPS: return makeMovaps(insn);
             case X86_INS_MOVD: return makeMovd(insn);
             case X86_INS_MOVQ: return makeMovq(insn);
+            case X86_INS_FLDZ: return makeFldz(insn);
+            case X86_INS_FLD1: return makeFld1(insn);
+            case X86_INS_FSTP: return makeFstp(insn);
             case X86_INS_MOVSS: return makeMovss(insn);
             case X86_INS_MOVSD: return makeMovsd(insn);
             case X86_INS_ADDSS: return makeAddss(insn);
@@ -408,6 +411,7 @@ namespace x64 {
     std::optional<M16> asMemory16(const cs_x86_op& operand) { return asMemory<Size::WORD>(operand); }
     std::optional<M32> asMemory32(const cs_x86_op& operand) { return asMemory<Size::DWORD>(operand); }
     std::optional<M64> asMemory64(const cs_x86_op& operand) { return asMemory<Size::QWORD>(operand); }
+    std::optional<M80> asMemory80(const cs_x86_op& operand) { return asMemory<Size::TWORD>(operand); }
     std::optional<MSSE> asMemory128(const cs_x86_op& operand) { return asMemory<Size::XMMWORD>(operand); }
 
     std::unique_ptr<X86Instruction> CapstoneWrapper::makePush(const cs_insn& insn) {
@@ -1882,6 +1886,31 @@ namespace x64 {
         if(rssedst && r64src) return make_wrapper<Movq<RSSE, R64>>(insn.address, rssedst.value(), r64src.value());
         if(m64dst && rssesrc) return make_wrapper<Movq<M64, RSSE>>(insn.address, m64dst.value(), rssesrc.value());
         if(rssedst && m64src) return make_wrapper<Movq<RSSE, M64>>(insn.address, rssedst.value(), m64src.value());
+        return make_failed(insn);
+    }
+
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makeFldz(const cs_insn& insn) {
+#ifndef NDEBUG
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 0);
+#endif
+        return make_wrapper<Fldz>(insn.address);
+    }
+
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makeFld1(const cs_insn& insn) {
+#ifndef NDEBUG
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 0);
+#endif
+        return make_wrapper<Fld1>(insn.address);
+    }
+
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makeFstp(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 1);
+        const cs_x86_op& src = x86detail.operands[0];
+        auto m80src = asMemory80(src);
+        if(m80src) return make_wrapper<Fstp<M80>>(insn.address, m80src.value());
         return make_failed(insn);
     }
 

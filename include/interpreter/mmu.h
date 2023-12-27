@@ -47,12 +47,14 @@ namespace x64 {
             u16 read16(u64 address) const;
             u32 read32(u64 address) const;
             u64 read64(u64 address) const;
+            f80 read80(u64 address) const;
             u128 read128(u64 address) const;
 
             void write8(u64 address, u8 value);
             void write16(u64 address, u16 value);
             void write32(u64 address, u32 value);
             void write64(u64 address, u64 value);
+            void write80(u64 address, f80 value);
             void write128(u64 address, u128 value);
 
             void copyToRegion(u64 dst, const u8* src, size_t n);
@@ -107,12 +109,14 @@ namespace x64 {
         u16 read16(Ptr16 ptr) const;
         u32 read32(Ptr32 ptr) const;
         u64 read64(Ptr64 ptr) const;
+        f80 read80(Ptr80 ptr) const;
         u128 read128(Ptr128 ptr) const;
 
         void write8(Ptr8 ptr, u8 value);
         void write16(Ptr16 ptr, u16 value);
         void write32(Ptr32 ptr, u32 value);
         void write64(Ptr64 ptr, u64 value);
+        void write80(Ptr80 ptr, f80 value);
         void write128(Ptr128 ptr, u128 value);
 
         void dumpRegions() const;

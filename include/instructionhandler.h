@@ -527,6 +527,10 @@ namespace x64 {
         virtual void exec(const Movq<RSSE, M64>&) = 0;
         virtual void exec(const Movq<M64, RSSE>&) = 0;
 
+        virtual void exec(const Fldz&) = 0;
+        virtual void exec(const Fld1&) = 0;
+        virtual void exec(const Fstp<M80>&) = 0;
+
         virtual void exec(const Movss<RSSE, M32>&) = 0;
         virtual void exec(const Movss<M32, RSSE>&) = 0;
 

@@ -168,12 +168,14 @@ namespace x64 {
     u16 Mmu::Region::read16(u64 address) const { return read<u16>(address); }
     u32 Mmu::Region::read32(u64 address) const { return read<u32>(address); }
     u64 Mmu::Region::read64(u64 address) const { return read<u64>(address); }
+    f80 Mmu::Region::read80(u64 address) const { return read<f80>(address); }
     u128 Mmu::Region::read128(u64 address) const { return read<u128>(address); }
     
     void Mmu::Region::write8(u64 address, u8 value) { write<u8>(address, value); }
     void Mmu::Region::write16(u64 address, u16 value) { write<u16>(address, value); }
     void Mmu::Region::write32(u64 address, u32 value) { write<u32>(address, value); }
     void Mmu::Region::write64(u64 address, u64 value) { write<u64>(address, value); }
+    void Mmu::Region::write80(u64 address, f80 value) { write<f80>(address, value); }
     void Mmu::Region::write128(u64 address, u128 value) { write<u128>(address, value); }
 
     Mmu::Mmu() {
@@ -254,6 +256,9 @@ namespace x64 {
     u64 Mmu::read64(Ptr64 ptr) const {
         return read<u64>(ptr);
     }
+    f80 Mmu::read80(Ptr80 ptr) const {
+        return read<f80>(ptr);
+    }
     u128 Mmu::read128(Ptr128 ptr) const {
         return read<u128>(ptr);
     }
@@ -268,6 +273,9 @@ namespace x64 {
         write(ptr, value);
     }
     void Mmu::write64(Ptr64 ptr, u64 value) {
+        write(ptr, value);
+    }
+    void Mmu::write80(Ptr80 ptr, f80 value) {
         write(ptr, value);
     }
     void Mmu::write128(Ptr128 ptr, u128 value) {

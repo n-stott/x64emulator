@@ -4,6 +4,7 @@
 #include "instructionhandler.h"
 #include "interpreter/registers.h"
 #include "interpreter/flags.h"
+#include "interpreter/x87.h"
 
 namespace x64 {
 
@@ -153,6 +154,7 @@ namespace x64 {
         Mmu* mmu_;
         Flags flags_;
         Registers regs_;
+        X87Fpu x87fpu_;
 
         u8  get(R8 reg) const  { return regs_.get(reg); }
         u16 get(R16 reg) const { return regs_.get(reg); }
@@ -163,11 +165,12 @@ namespace x64 {
         template<typename T>
         T  get(Imm immediate) const;
 
-        u8  get(Ptr8 reg) const;
-        u16 get(Ptr16 reg) const;
-        u32 get(Ptr32 reg) const;
-        u64 get(Ptr64 reg) const;
-        Xmm get(Ptr128 reg) const;
+        u8  get(Ptr8 ptr) const;
+        u16 get(Ptr16 ptr) const;
+        u32 get(Ptr32 ptr) const;
+        u64 get(Ptr64 ptr) const;
+        f80 get(Ptr80 ptr) const;
+        Xmm get(Ptr128 ptr) const;
 
         u64 resolve(B addr) const { return regs_.resolve(addr); }
         u64 resolve(BD addr) const { return regs_.resolve(addr); }
@@ -183,6 +186,7 @@ namespace x64 {
         Ptr<Size::WORD> resolve(const M16& m16) const { return regs_.resolve(m16); }
         Ptr<Size::DWORD> resolve(const M32& m32) const { return regs_.resolve(m32); }
         Ptr<Size::QWORD> resolve(const M64& m64) const { return regs_.resolve(m64); }
+        Ptr<Size::TWORD> resolve(const M80& m80) const { return regs_.resolve(m80); }
         Ptr<Size::XMMWORD> resolve(const MSSE& msse) const { return regs_.resolve(msse); }
 
         void set(R8 reg, u8 value) { regs_.set(reg, value); }
@@ -195,6 +199,7 @@ namespace x64 {
         void set(Ptr16 ptr, u16 value);
         void set(Ptr32 ptr, u32 value);
         void set(Ptr64 ptr, u64 value);
+        void set(Ptr80 ptr, f80 value);
         void set(Ptr128 ptr, Xmm value);
 
         void push8(u8 value);
@@ -736,6 +741,10 @@ namespace x64 {
         void exec(const Movq<R64, RSSE>&) override;
         void exec(const Movq<RSSE, M64>&) override;
         void exec(const Movq<M64, RSSE>&) override;
+
+        void exec(const Fldz&) override;
+        void exec(const Fld1&) override;
+        void exec(const Fstp<M80>&) override;
 
         void exec(const Movss<RSSE, M32>&) override;
         void exec(const Movss<M32, RSSE>&) override;

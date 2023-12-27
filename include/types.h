@@ -199,6 +199,7 @@ namespace x64 {
         WORD,
         DWORD,
         QWORD,
+        TWORD,
         XMMWORD,
     };
 
@@ -208,6 +209,7 @@ namespace x64 {
             case Size::WORD: return 2;
             case Size::DWORD: return 4;
             case Size::QWORD: return 8;
+            case Size::TWORD: return 10;
             case Size::XMMWORD: return 16;
         }
         return 0;
@@ -239,6 +241,7 @@ namespace x64 {
     using Ptr16 = Ptr<Size::WORD>;
     using Ptr32 = Ptr<Size::DWORD>;
     using Ptr64 = Ptr<Size::QWORD>;
+    using Ptr80 = Ptr<Size::TWORD>;
     using Ptr128 = Ptr<Size::XMMWORD>;
 
     template<Size size>
@@ -260,6 +263,8 @@ namespace x64 {
 
     using M64 = M<Size::QWORD>;
     using RM64 = std::variant<R64, M64>;
+
+    using M80 = M<Size::TWORD>;
 
     using MSSE = M<Size::XMMWORD>;
     using RMSSE = std::variant<RSSE, MSSE>;

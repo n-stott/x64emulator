@@ -178,6 +178,7 @@ namespace utils {
         if constexpr (size == Size::WORD) return "WORD";
         if constexpr (size == Size::DWORD) return "DWORD";
         if constexpr (size == Size::QWORD) return "QWORD";
+        if constexpr (size == Size::TWORD) return "TWORD";
         if constexpr (size == Size::XMMWORD) return "XMMWORD";
     }
 
@@ -247,6 +248,10 @@ namespace utils {
 
     inline std::string toString(const M64& m64) {
         return std::visit([](auto&& arg) -> std::string { return toString(arg); }, m64);
+    }
+
+    inline std::string toString(const M80& m80) {
+        return std::visit([](auto&& arg) -> std::string { return toString(arg); }, m80);
     }
 
     inline std::string toString(const MSSE& msse) {
@@ -636,6 +641,19 @@ namespace utils {
     template<typename Dst, typename Src>
     inline std::string toString(Movq<Dst, Src> ins) {
         return fmt::format("{:9}{},{}", "movq", toString(ins.dst), toString(ins.src));
+    }
+
+    inline std::string toString(Fldz) {
+        return fmt::format("{:9}", "fldz");
+    }
+
+    inline std::string toString(Fld1) {
+        return fmt::format("{:9}", "fld1");
+    }
+
+    template<typename Dst>
+    inline std::string toString(Fstp<Dst> ins) {
+        return fmt::format("{:9}{}", "fstp", toString(ins.dst));
     }
 
     template<typename Dst, typename Src>

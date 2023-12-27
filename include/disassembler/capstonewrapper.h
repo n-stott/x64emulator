@@ -131,6 +131,10 @@ namespace x64 {
         static std::unique_ptr<X86Instruction> makeMovd(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeMovq(const cs_insn& insn);
 
+        static std::unique_ptr<X86Instruction> makeFldz(const cs_insn& insn);
+        static std::unique_ptr<X86Instruction> makeFld1(const cs_insn& insn);
+        static std::unique_ptr<X86Instruction> makeFstp(const cs_insn& insn);
+
         static std::unique_ptr<X86Instruction> makeMovss(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeMovsd(const cs_insn& insn);
 

@@ -272,6 +272,10 @@ namespace x64 {
             return std::visit([&](auto&& arg) -> Ptr64 { return resolve(arg); }, m64);
         }
 
+        Ptr<Size::TWORD> resolve(const M80& m80) const {
+            return std::visit([&](auto&& arg) -> Ptr80 { return resolve(arg); }, m80);
+        }
+
         Ptr<Size::XMMWORD> resolve(const MSSE& msse) const {
             return std::visit([&](auto&& arg) -> Ptr128 { return resolve(arg); }, msse);
         }

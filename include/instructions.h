@@ -381,6 +381,19 @@ namespace x64 {
         Src src;
     };
 
+    struct Fldz {
+
+    };
+
+    struct Fld1 {
+
+    };
+
+    template<typename Dst>
+    struct Fstp {
+        Dst dst;
+    };
+
     template<typename Dst, typename Src>
     struct Movss {
         Dst dst;
