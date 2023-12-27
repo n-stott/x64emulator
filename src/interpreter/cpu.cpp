@@ -386,20 +386,23 @@ namespace x64 {
         return src1 - src2;
     }
 
-    void Cpu::exec(const Sbb<R32, R32>& ins) {
-        set(ins.dst, Impl::sbb32(get(ins.dst), get(ins.src), &flags_));
+    u64 Cpu::Impl::sbb64(u64 dst, u64 src, Flags* flags) {
+        return sub64(dst, src+flags->carry, flags);
     }
-    void Cpu::exec(const Sbb<R32, Imm>& ins) {
-        set(ins.dst, Impl::sbb32(get(ins.dst), get<u32>(ins.src), &flags_));
-    }
-    void Cpu::exec(const Sbb<R32, SignExtended<u8>>& ins) {
-        set(ins.dst, Impl::sbb32(get(ins.dst), ins.src.extendedValue, &flags_));
-    }
-    void Cpu::exec(const Sbb<R32, M32>& ins) {
-        set(ins.dst, Impl::sbb32(get(ins.dst), get(resolve(ins.src)), &flags_));
-    }
+
+    void Cpu::exec(const Sbb<R32, R32>& ins) { set(ins.dst, Impl::sbb32(get(ins.dst), get(ins.src), &flags_)); }
+    void Cpu::exec(const Sbb<R32, Imm>& ins) { set(ins.dst, Impl::sbb32(get(ins.dst), get<u32>(ins.src), &flags_)); }
+    void Cpu::exec(const Sbb<R32, SignExtended<u8>>& ins) { set(ins.dst, Impl::sbb32(get(ins.dst), ins.src.extendedValue, &flags_)); }
+    void Cpu::exec(const Sbb<R32, M32>& ins) { set(ins.dst, Impl::sbb32(get(ins.dst), get(resolve(ins.src)), &flags_)); }
     void Cpu::exec(const Sbb<M32, R32>& ins) { TODO(ins); }
     void Cpu::exec(const Sbb<M32, Imm>& ins) { TODO(ins); }
+
+    void Cpu::exec(const Sbb<R64, R64>& ins) { set(ins.dst, Impl::sbb64(get(ins.dst), get(ins.src), &flags_)); }
+    void Cpu::exec(const Sbb<R64, Imm>& ins) { set(ins.dst, Impl::sbb64(get(ins.dst), get<u64>(ins.src), &flags_)); }
+    void Cpu::exec(const Sbb<R64, SignExtended<u8>>& ins) { set(ins.dst, Impl::sbb64(get(ins.dst), ins.src.extendedValue, &flags_)); }
+    void Cpu::exec(const Sbb<R64, M64>& ins) { set(ins.dst, Impl::sbb64(get(ins.dst), get(resolve(ins.src)), &flags_)); }
+    void Cpu::exec(const Sbb<M64, R64>& ins) { TODO(ins); }
+    void Cpu::exec(const Sbb<M64, Imm>& ins) { TODO(ins); }
 
     u32 Cpu::Impl::neg32(u32 dst, Flags* flags) {
         return sub32(0u, dst, flags);

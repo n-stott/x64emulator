@@ -66,6 +66,12 @@ namespace x64 {
         virtual void exec(const Sbb<R32, M32>&) = 0;
         virtual void exec(const Sbb<M32, R32>&) = 0;
         virtual void exec(const Sbb<M32, Imm>&) = 0;
+        virtual void exec(const Sbb<R64, R64>&) = 0;
+        virtual void exec(const Sbb<R64, Imm>&) = 0;
+        virtual void exec(const Sbb<R64, SignExtended<u8>>&) = 0;
+        virtual void exec(const Sbb<R64, M64>&) = 0;
+        virtual void exec(const Sbb<M64, R64>&) = 0;
+        virtual void exec(const Sbb<M64, Imm>&) = 0;
 
         virtual void exec(const Neg<R32>&) = 0;
         virtual void exec(const Neg<M32>&) = 0;

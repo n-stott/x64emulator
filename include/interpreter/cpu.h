@@ -42,6 +42,7 @@ namespace x64 {
             [[nodiscard]] static std::pair<u64, u64> idiv64(u64 dividendUpper, u64 dividendLower, u64 divisor);
 
             [[nodiscard]] static u32 sbb32(u32 dst, u32 src, Flags* flags);
+            [[nodiscard]] static u64 sbb64(u64 dst, u64 src, Flags* flags);
 
             [[nodiscard]] static u32 neg32(u32 dst, Flags* flags);
             [[nodiscard]] static u64 neg64(u64 dst, Flags* flags);
@@ -275,6 +276,12 @@ namespace x64 {
         void exec(const Sbb<R32, M32>&) override;
         void exec(const Sbb<M32, R32>&) override;
         void exec(const Sbb<M32, Imm>&) override;
+        void exec(const Sbb<R64, R64>&) override;
+        void exec(const Sbb<R64, Imm>&) override;
+        void exec(const Sbb<R64, SignExtended<u8>>&) override;
+        void exec(const Sbb<R64, M64>&) override;
+        void exec(const Sbb<M64, R64>&) override;
+        void exec(const Sbb<M64, Imm>&) override;
 
         void exec(const Neg<R32>&) override;
         void exec(const Neg<M32>&) override;

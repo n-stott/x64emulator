@@ -95,7 +95,6 @@ add_executable(test_exceptions src/test_exceptions.cpp)
 target_compile_options(test_exceptions PUBLIC ${CC_OPTIONS})
 target_link_options(test_exceptions PUBLIC ${LD_OPTIONS} -static)
 add_test(NAME exceptions COMMAND ${CMAKE_BINARY_DIR}/interpreter test_exceptions)
-set_tests_properties(exceptions PROPERTIES WILL_FAIL true)
 
 add_executable(test_boostmap src/test_boostmap.cpp)
 target_compile_options(test_boostmap PUBLIC ${CC_OPTIONS})
