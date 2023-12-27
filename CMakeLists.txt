@@ -21,7 +21,7 @@ target_include_directories(emulator PUBLIC include)
 target_include_directories(emulator PUBLIC ../common/include)
 target_include_directories(emulator PUBLIC external)
 target_include_directories(emulator PUBLIC external/elf-reader/src)
-target_link_libraries(emulator PUBLIC -lstdc++fs -lcapstone)
+target_link_libraries(emulator PUBLIC -lcapstone)
 
 add_executable(interpreter
     src/main.cpp
