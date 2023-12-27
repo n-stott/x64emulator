@@ -6,19 +6,31 @@
 #include <sys/prctl.h>
 #include <sys/stat.h>
 #include <sys/utsname.h>
+#include <fcntl.h>
 #include <unistd.h>
 
 namespace x64 {
+
+    ssize_t Sys::read(int fd, Ptr8 buf, size_t count) {
+        std::vector<u8> buffer;
+        buffer.resize(count, 0x0);
+        ssize_t nbytes = ::read(fd, buffer.data(), count);
+        if(nbytes > 0) {
+            mmu_->copyToMmu(buf, buffer.data(), nbytes);
+        }
+        return nbytes;
+    }
 
     ssize_t Sys::write(int fd, Ptr8 buf, size_t count) {
         std::vector<u8> buffer;
         buffer.resize(count, 0x0);
         mmu_->copyFromMmu(buffer.data(), buf, count);
         ssize_t nbytes = ::write(fd, buffer.data(), count);
-        for(u8 c : buffer)
-            fmt::print("{:02x} ", (int)c);
-        fmt::print("\n{} bytes printed\n", nbytes);
         return nbytes;
+    }
+
+    int Sys::close(int fd) {
+        return ::close(fd);
     }
 
     int Sys::fstat(int fd, Ptr8 statbuf) {
@@ -31,17 +43,14 @@ namespace x64 {
     }
 
     u64 Sys::mmap(u64 addr, size_t length, int prot, int flags, int fd, off_t offset) {
-        fmt::print("mmap(addr={:#x}, length={:#x}, prot={:#x}, flags={:#x}, fd={}, offset={:#x})\n", addr, length, prot, flags, fd, offset);
         return mmu_->mmap(addr, length, (PROT)prot, flags, fd, (int)offset);
     }
 
     int Sys::mprotect(u64 addr, size_t length, int prot) {
-        fmt::print("mprotect(addr={:#x}, length={:#x}, prot={:#x})\n", addr, length, prot);
         return mmu_->mprotect(addr, length, (PROT)prot);
     }
 
     int Sys::munmap(u64 addr, size_t length) {
-        fmt::print("munmap(addr={:#x}, length={:#x})\n", addr, length);
         return mmu_->munmap(addr, length);
     }
 
@@ -82,6 +91,18 @@ namespace x64 {
         if(code != ARCH_SET_FS) return -1;
         mmu_->setFsBase(addr);
         return 0;
+    }
+
+    int Sys::openat(int dirfd, u64 pathname, int flags, mode_t mode) {
+        std::vector<char> pathnamestring;
+        Ptr8 ptr { Segment::DS, pathname };
+        while(true) {
+            u8 c = mmu_->read8(ptr);
+            pathnamestring.push_back((char)c);
+            if(c == 0) break;
+            ++ptr;
+        }
+        return ::openat(dirfd, pathnamestring.data(), flags, mode);
     }
 
 }

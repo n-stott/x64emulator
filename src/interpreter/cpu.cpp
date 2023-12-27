@@ -2503,12 +2503,26 @@ namespace x64 {
         u64 r9 = get(R64::R9);
         u64 r8 = get(R64::R8);
         switch(rax) {
+            case 0x0: { // read
+                i32 fd = (i32)rdi;
+                Ptr8 buf{Segment::DS, rsi};
+                size_t count = (size_t)rdx;
+                ssize_t nbytes = vm_->syscalls().read(fd, buf, count);
+                set(R64::RAX, (u64)nbytes);
+                return;
+            }
             case 0x1: { // write
                 i32 fd = (i32)rdi;
                 Ptr8 buf{Segment::DS, rsi};
                 size_t count = (size_t)rdx;
                 ssize_t nbytes = vm_->syscalls().write(fd, buf, count);
                 set(R64::RAX, (u64)nbytes);
+                return;
+            }
+            case 0x3: { // close
+                i32 fd = (i32)rdi;
+                int ret = vm_->syscalls().close(fd);
+                set(R32::EAX, (u32)ret);
                 return;
             }
             case 0x5: { // fstat
@@ -2574,6 +2588,15 @@ namespace x64 {
             case 0xe7: { // exit_group
                 i32 errorCode = (i32)rdi;
                 vm_->syscalls().exit_group(errorCode);
+                return;
+            }
+            case 0x101: { // openat
+                int dirfd = (int)rdi;
+                u64 pathname = rsi;
+                int flags = (int)rdx;
+                mode_t mode = (mode_t)r10;
+                int ret = vm_->syscalls().openat(dirfd, pathname, flags, mode);
+                set(R32::EAX, (u32)ret);
                 return;
             }
 

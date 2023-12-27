@@ -13,7 +13,9 @@ namespace x64 {
     public:
         Sys(VM* vm, Mmu* mmu) : vm_(vm), mmu_(mmu) { }
 
+        ssize_t read(int fd, Ptr8 buf, size_t count);
         ssize_t write(int fd, Ptr8 buf, size_t count);
+        int close(int fd);
         int fstat(int fd, Ptr8 statbuf);
         u64 mmap(u64 addr, size_t length, int prot, int flags, int fd, off_t offset);
         int mprotect(u64 addr, size_t length, int prot);
@@ -23,6 +25,7 @@ namespace x64 {
         u64 brk(u64 addr);
         void exit_group(int status);
         int arch_prctl(int code, u64 addr);
+        int openat(int dirfd, u64 pathname, int flags, mode_t mode);
 
 
     private:
