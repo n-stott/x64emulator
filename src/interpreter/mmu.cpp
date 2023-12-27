@@ -302,6 +302,9 @@ namespace x64 {
         if(n == 0) return dst;
         u64 address = resolve(dst);
         Region* region = findAddress(address);
+        verify(!!region, [&]() {
+            fmt::print("No region containing {:#x}\n", address);
+        });
         region->copyToRegion(address, src, n);
         return dst;
     }
@@ -310,6 +313,9 @@ namespace x64 {
         if(n == 0) return dst;
         u64 address = resolve(src);
         const Region* region = findAddress(address);
+        verify(!!region, [&]() {
+            fmt::print("No region containing {:#x}\n", address);
+        });
         region->copyFromRegion(dst, address, n);
         return dst;
     }
@@ -318,12 +324,18 @@ namespace x64 {
     void Mmu::Region::copyToRegion(u64 dst, const u8* src, size_t n) {
         verify(contains(dst));
         verify(contains(dst + n -1));
+        verify((bool)(prot() & PROT::WRITE), [&]() {
+            fmt::print("Attempt to write to {:#x} in non-writable region [{:#x}:{:#x}]\n", dst, base(), end());
+        });
         std::memcpy(&data_[dst-base_], src, n);
     }
 
     void Mmu::Region::copyFromRegion(u8* dst, u64 src, size_t n) const {
         verify(contains(src));
         verify(contains(src + n -1));
+        verify((bool)(prot() & PROT::READ), [&]() {
+            fmt::print("Attempt to read from {:#x} in non-readable region [{:#x}:{:#x}]\n", src, base(), end());
+        });
         std::memcpy(dst, &data_[src-base_], n);
     }
 

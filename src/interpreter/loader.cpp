@@ -158,11 +158,12 @@ namespace x64 {
     }
 
     void Loader::loadExecutableProgramHeader(const elf::Elf64& elf, const elf::ProgramHeader64& header, const std::string&, const std::string& shortFilePath, u64 elfOffset) {
-        u64 execSectionBase = loadable_->mmap(elfOffset + header.virtualAddress(), Mmu::pageRoundUp(header.sizeInMemory()), PROT::EXEC | PROT::READ, 0, 0, 0);
+        u64 execSectionBase = loadable_->mmap(elfOffset + header.virtualAddress(), Mmu::pageRoundUp(header.sizeInMemory()), PROT::EXEC | PROT::READ | PROT::WRITE, 0, 0, 0);
         
         verify(header.virtualAddress() % Mmu::PAGE_SIZE == 0);
         const u8* data = elf.dataAtOffset(header.offset(), header.sizeInFile());
         loadable_->write(execSectionBase, data, header.sizeInFile());
+        loadable_->mprotect(execSectionBase, Mmu::pageRoundUp(header.sizeInMemory()), PROT::EXEC | PROT::READ);
 
         loadable_->setRegionName(execSectionBase, shortFilePath);
     }

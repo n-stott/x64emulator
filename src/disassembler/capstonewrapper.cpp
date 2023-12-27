@@ -2157,8 +2157,10 @@ namespace x64 {
     }
 
     std::unique_ptr<X86Instruction> CapstoneWrapper::makeSyscall(const cs_insn& insn) {
+#ifndef NDEBUG
         const auto& x86detail = insn.detail->x86;
         assert(x86detail.op_count == 0);
+#endif
         return make_wrapper<Syscall>(insn.address);
     }
 
