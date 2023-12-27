@@ -149,6 +149,9 @@ namespace x64 {
     T Mmu::Region::read(u64 address) const {
         assert(contains(address));
         assert(contains(address+sizeof(T)-1));
+        verify((bool)(prot() & PROT::READ), [&]() {
+            fmt::print("Attempt to read {:#x} from non-readable region [{:#x}:{:#x}]\n", address, base(), end());
+        });
         T value;
         std::memcpy(&value, &data_[address-base()], sizeof(value));
         return value;

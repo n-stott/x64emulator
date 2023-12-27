@@ -36,10 +36,11 @@ namespace x64 {
     int Sys::fstat(int fd, Ptr8 statbuf) {
         struct stat st;
         int rc = ::fstat(fd, &st);
+        if(rc < 0) return (u64)rc;
         u8 buf[sizeof(st)];
         memcpy(&buf, &st, sizeof(st));
         mmu_->copyToMmu(statbuf, buf, sizeof(buf));
-        return rc;
+        return (u64)rc;
     }
 
     u64 Sys::mmap(u64 addr, size_t length, int prot, int flags, int fd, off_t offset) {
