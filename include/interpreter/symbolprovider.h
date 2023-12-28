@@ -43,6 +43,8 @@ namespace x64 {
             std::vector<const SymbolProvider::Entry*> lookupSymbol(const std::string& symbol, bool demangled) const;
             std::vector<const SymbolProvider::Entry*> lookupSymbol(u64 address) const;
 
+            static std::string foldTemplateArguments(std::string symbol);
+
             std::deque<Entry> storage_;
 
             std::unordered_map<u64, std::vector<const Entry*>> byAddress_;

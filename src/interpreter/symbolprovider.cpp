@@ -29,9 +29,11 @@ namespace x64 {
 #if 0
         fmt::print(stderr, "Register symbol address={:#x} symbol=\"{}\" version=\"{}\"\n", address, symbol, version);
 #endif
+        std::string demangledSymbol = boost::core::demangle(symbol.c_str());
+        demangledSymbol = foldTemplateArguments(demangledSymbol);
         storage_.push_back(Entry {
             symbol,
-            boost::core::demangle(symbol.c_str()),
+            demangledSymbol,
             version,
             address,
             elf,
@@ -93,6 +95,21 @@ namespace x64 {
             return it->second;
         }
         return {};
+    }
+
+    std::string SymbolProvider::Table::foldTemplateArguments(std::string symbol) {
+        std::string s;
+        unsigned int nestingLevel = 0;
+        for(char c : symbol) {
+            if(c == '>') --nestingLevel;
+            if(nestingLevel == 0) s += c;
+            if(c == '<') ++nestingLevel;
+        }
+        if(nestingLevel != 0) {
+            // this symbol is weird, give up
+            return symbol;
+        }
+        return s;
     }
 
 }
