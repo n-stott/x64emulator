@@ -667,7 +667,12 @@ namespace utils {
 
     template<typename Src>
     inline std::string toString(Fld<Src> ins) {
-        return fmt::format("{:9}{}", "fld1", toString(ins.src));
+        return fmt::format("{:9}{}", "fld", toString(ins.src));
+    }
+
+    template<typename Src>
+    inline std::string toString(Fild<Src> ins) {
+        return fmt::format("{:9}{}", "fild", toString(ins.src));
     }
 
     template<typename Dst>
@@ -676,8 +681,47 @@ namespace utils {
     }
 
     template<typename Dst>
+    inline std::string toString(Fistp<Dst> ins) {
+        return fmt::format("{:9}{}", "fistp", toString(ins.dst));
+    }
+
+    template<typename Src>
+    inline std::string toString(Fxch<Src> ins) {
+        return fmt::format("{:9}{}", "fxch", toString(ins.src));
+    }
+
+    template<typename Dst>
     inline std::string toString(Faddp<Dst> ins) {
         return fmt::format("{:9}{}", "faddp", toString(ins.dst));
+    }
+
+    template<typename Dst, typename Src>
+    inline std::string toString(Fdiv<Dst, Src> ins) {
+        return fmt::format("{:9}{},{}", "fdiv", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Dst, typename Src>
+    inline std::string toString(Fdivp<Dst, Src> ins) {
+        return fmt::format("{:9}{},{}", "fdivp", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Src>
+    inline std::string toString(Fcomi<Src> ins) {
+        return fmt::format("{:9}{}", "fcomi", toString(ins.src));
+    }
+
+    inline std::string toString(Frndint) {
+        return fmt::format("{:9}", "frndint");
+    }
+
+    template<typename Dst>
+    inline std::string toString(Fnstcw<Dst> ins) {
+        return fmt::format("{:9}{}", "fnstcw", toString(ins.dst));
+    }
+
+    template<typename Src>
+    inline std::string toString(Fldcw<Src> ins) {
+        return fmt::format("{:9}{}", "fldcw", toString(ins.src));
     }
 
     template<typename Dst, typename Src>

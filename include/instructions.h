@@ -394,14 +394,60 @@ namespace x64 {
         Src src;
     };
 
+    template<typename Src>
+    struct Fild {
+        Src src;
+    };
+
     template<typename Dst>
     struct Fstp {
         Dst dst;
     };
 
     template<typename Dst>
+    struct Fistp {
+        Dst dst;
+    };
+
+    template<typename Src>
+    struct Fxch {
+        Src src;
+    };
+
+    template<typename Dst>
     struct Faddp {
         Dst dst;
+    };
+
+    template<typename Dst, typename Src>
+    struct Fdiv {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
+    struct Fdivp {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Src>
+    struct Fcomi {
+        Src src;
+    };
+
+    struct Frndint {
+
+    };
+
+    template<typename Dst>
+    struct Fnstcw {
+        Dst dst;
+    };
+
+    template<typename Src>
+    struct Fldcw {
+        Src src;
     };
 
     template<typename Dst, typename Src>

@@ -123,8 +123,17 @@ namespace x64 {
             case X86_INS_FLDZ: return makeFldz(insn);
             case X86_INS_FLD1: return makeFld1(insn);
             case X86_INS_FLD: return makeFld(insn);
+            case X86_INS_FILD: return makeFild(insn);
             case X86_INS_FSTP: return makeFstp(insn);
+            case X86_INS_FISTP: return makeFistp(insn);
+            case X86_INS_FXCH: return makeFxch(insn);
             case X86_INS_FADDP: return makeFaddp(insn);
+            case X86_INS_FDIV: return makeFdiv(insn);
+            case X86_INS_FDIVP: return makeFdivp(insn);
+            case X86_INS_FCOMI: return makeFcomi(insn);
+            case X86_INS_FRNDINT: return makeFrndint(insn);
+            case X86_INS_FNSTCW: return makeFnstcw(insn);
+            case X86_INS_FLDCW: return makeFldcw(insn);
             case X86_INS_MOVSS: return makeMovss(insn);
             case X86_INS_MOVSD: return makeMovsd(insn);
             case X86_INS_ADDSS: return makeAddss(insn);
@@ -1930,8 +1939,25 @@ namespace x64 {
         const auto& x86detail = insn.detail->x86;
         assert(x86detail.op_count == 1);
         const cs_x86_op& src = x86detail.operands[0];
+        auto m32src = asMemory32(src);
+        auto m64src = asMemory64(src);
         auto m80src = asMemory80(src);
+        if(m32src) return make_wrapper<Fld<M32>>(insn.address, m32src.value());
+        if(m64src) return make_wrapper<Fld<M64>>(insn.address, m64src.value());
         if(m80src) return make_wrapper<Fld<M80>>(insn.address, m80src.value());
+        return make_failed(insn);
+    }
+
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makeFild(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 1);
+        const cs_x86_op& src = x86detail.operands[0];
+        auto m16src = asMemory16(src);
+        auto m32src = asMemory32(src);
+        auto m64src = asMemory64(src);
+        if(m16src) return make_wrapper<Fild<M16>>(insn.address, m16src.value());
+        if(m32src) return make_wrapper<Fild<M32>>(insn.address, m32src.value());
+        if(m64src) return make_wrapper<Fild<M64>>(insn.address, m64src.value());
         return make_failed(insn);
     }
 
@@ -1939,8 +1965,32 @@ namespace x64 {
         const auto& x86detail = insn.detail->x86;
         assert(x86detail.op_count == 1);
         const cs_x86_op& src = x86detail.operands[0];
+        auto stsrc = asST(src);
         auto m80src = asMemory80(src);
+        if(stsrc) return make_wrapper<Fstp<ST>>(insn.address, stsrc.value());
         if(m80src) return make_wrapper<Fstp<M80>>(insn.address, m80src.value());
+        return make_failed(insn);
+    }
+
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makeFistp(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 1);
+        const cs_x86_op& dst = x86detail.operands[0];
+        auto m16dst = asMemory16(dst);
+        auto m32dst = asMemory32(dst);
+        auto m64dst = asMemory64(dst);
+        if(m16dst) return make_wrapper<Fistp<M16>>(insn.address, m16dst.value());
+        if(m32dst) return make_wrapper<Fistp<M32>>(insn.address, m32dst.value());
+        if(m64dst) return make_wrapper<Fistp<M64>>(insn.address, m64dst.value());
+        return make_failed(insn);
+    }
+
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makeFxch(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 1);
+        const cs_x86_op& src = x86detail.operands[0];
+        auto stsrc = asST(src);
+        if(stsrc) return make_wrapper<Fxch<ST>>(insn.address, stsrc.value());
         return make_failed(insn);
     }
 
@@ -1950,6 +2000,60 @@ namespace x64 {
         const cs_x86_op& src = x86detail.operands[0];
         auto stsrc = asST(src);
         if(stsrc) return make_wrapper<Faddp<ST>>(insn.address, stsrc.value());
+        return make_failed(insn);
+    }
+
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makeFdiv(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.opcode[0] == 0xd8); // FDIV ST(0), ST(i)
+        assert(x86detail.op_count == 1);
+        const cs_x86_op& src = x86detail.operands[0];
+        auto stsrc = asST(src);
+        if(stsrc) return make_wrapper<Fdiv<ST, ST>>(insn.address, ST::ST0, stsrc.value());
+        return make_failed(insn);
+    }
+
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makeFdivp(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 1);
+        const cs_x86_op& dst = x86detail.operands[0];
+        auto stdst = asST(dst);
+        if(stdst) return make_wrapper<Fdivp<ST, ST>>(insn.address, stdst.value(), ST::ST0);
+        return make_failed(insn);
+    }
+
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makeFcomi(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 1);
+        const cs_x86_op& src = x86detail.operands[0];
+        auto stsrc = asST(src);
+        if(stsrc) return make_wrapper<Fcomi<ST>>(insn.address, stsrc.value());
+        return make_failed(insn);
+    }
+
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makeFrndint(const cs_insn& insn) {
+#ifndef NDEBUG
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 0);
+#endif
+        return make_wrapper<Frndint>(insn.address);
+    }
+
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makeFnstcw(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 1);
+        const cs_x86_op& dst = x86detail.operands[0];
+        auto m16dst = asMemory16(dst);
+        if(m16dst) return make_wrapper<Fnstcw<M16>>(insn.address, m16dst.value());
+        return make_failed(insn);
+    }
+
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makeFldcw(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 1);
+        const cs_x86_op& src = x86detail.operands[0];
+        auto m16src = asMemory16(src);
+        if(m16src) return make_wrapper<Fldcw<M16>>(insn.address, m16src.value());
         return make_failed(insn);
     }
 

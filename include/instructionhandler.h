@@ -529,9 +529,28 @@ namespace x64 {
 
         virtual void exec(const Fldz&) = 0;
         virtual void exec(const Fld1&) = 0;
+        virtual void exec(const Fld<M32>&) = 0;
+        virtual void exec(const Fld<M64>&) = 0;
         virtual void exec(const Fld<M80>&) = 0;
+        virtual void exec(const Fild<M16>&) = 0;
+        virtual void exec(const Fild<M32>&) = 0;
+        virtual void exec(const Fild<M64>&) = 0;
+        virtual void exec(const Fstp<ST>&) = 0;
         virtual void exec(const Fstp<M80>&) = 0;
+        virtual void exec(const Fistp<M16>&) = 0;
+        virtual void exec(const Fistp<M32>&) = 0;
+        virtual void exec(const Fistp<M64>&) = 0;
+        virtual void exec(const Fxch<ST>&) = 0;
+
         virtual void exec(const Faddp<ST>&) = 0;
+        virtual void exec(const Fdiv<ST, ST>&) = 0;
+        virtual void exec(const Fdivp<ST, ST>&) = 0;
+
+        virtual void exec(const Fcomi<ST>&) = 0;
+        virtual void exec(const Frndint&) = 0;
+
+        virtual void exec(const Fnstcw<M16>&) = 0;
+        virtual void exec(const Fldcw<M16>&) = 0;
 
         virtual void exec(const Movss<RSSE, M32>&) = 0;
         virtual void exec(const Movss<M32, RSSE>&) = 0;

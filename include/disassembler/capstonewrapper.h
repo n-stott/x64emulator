@@ -134,8 +134,20 @@ namespace x64 {
         static std::unique_ptr<X86Instruction> makeFldz(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeFld1(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeFld(const cs_insn& insn);
+        static std::unique_ptr<X86Instruction> makeFild(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeFstp(const cs_insn& insn);
+        static std::unique_ptr<X86Instruction> makeFistp(const cs_insn& insn);
+        static std::unique_ptr<X86Instruction> makeFxch(const cs_insn& insn);
+        
         static std::unique_ptr<X86Instruction> makeFaddp(const cs_insn& insn);
+        static std::unique_ptr<X86Instruction> makeFdiv(const cs_insn& insn);
+        static std::unique_ptr<X86Instruction> makeFdivp(const cs_insn& insn);
+
+        static std::unique_ptr<X86Instruction> makeFcomi(const cs_insn& insn);
+        static std::unique_ptr<X86Instruction> makeFrndint(const cs_insn& insn);
+
+        static std::unique_ptr<X86Instruction> makeFnstcw(const cs_insn& insn);
+        static std::unique_ptr<X86Instruction> makeFldcw(const cs_insn& insn);
 
         static std::unique_ptr<X86Instruction> makeMovss(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeMovsd(const cs_insn& insn);

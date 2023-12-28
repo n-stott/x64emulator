@@ -2097,8 +2097,27 @@ namespace x64 {
 
     void Cpu::exec(const Fldz&) { x87fpu_.push(f80::fromLongDouble(0.0)); }
     void Cpu::exec(const Fld1&) { x87fpu_.push(f80::fromLongDouble(1.0)); }
+    void Cpu::exec(const Fld<M32>& ins) { x87fpu_.push(f80::bitcastFromU32(get(resolve(ins.src)))); }
+    void Cpu::exec(const Fld<M64>& ins) { x87fpu_.push(f80::bitcastFromU64(get(resolve(ins.src)))); }
     void Cpu::exec(const Fld<M80>& ins) { x87fpu_.push(get(resolve(ins.src))); }
+
+    void Cpu::exec(const Fild<M16>& ins) { x87fpu_.push(f80::castFromI16((i16)get(resolve(ins.src)))); }
+    void Cpu::exec(const Fild<M32>& ins) { x87fpu_.push(f80::castFromI32((i32)get(resolve(ins.src)))); }
+    void Cpu::exec(const Fild<M64>& ins) { x87fpu_.push(f80::castFromI64((i64)get(resolve(ins.src)))); }
+
+    void Cpu::exec(const Fstp<ST>& ins) { x87fpu_.set(ins.dst, x87fpu_.pop()); }
     void Cpu::exec(const Fstp<M80>& ins) { set(resolve(ins.dst), x87fpu_.pop()); }
+
+    void Cpu::exec(const Fistp<M16>& ins) { set(resolve(ins.dst), f80::castToI16(x87fpu_.pop()));}
+    void Cpu::exec(const Fistp<M32>& ins) { set(resolve(ins.dst), f80::castToI32(x87fpu_.pop()));}
+    void Cpu::exec(const Fistp<M64>& ins) { set(resolve(ins.dst), f80::castToI64(x87fpu_.pop()));}
+
+    void Cpu::exec(const Fxch<ST>& ins) {
+        f80 src = x87fpu_.st(ins.src);
+        f80 dst = x87fpu_.st(ST::ST0);
+        x87fpu_.set(ins.src, dst);
+        x87fpu_.set(ST::ST0, src);
+    }
 
     f80 Cpu::Impl::fadd(f80 dst, f80 src, X87Fpu*) {
         long double d = f80::toLongDouble(dst);
@@ -2113,6 +2132,85 @@ namespace x64 {
         f80 dst = x87fpu_.st(ins.dst);
         x87fpu_.set(ins.dst, Impl::fadd(top, dst, &x87fpu_));
         x87fpu_.pop();
+    }
+
+    f80 Cpu::Impl::fdiv(f80 dst, f80 src, X87Fpu*) {
+        long double d = f80::toLongDouble(dst);
+        long double s = f80::toLongDouble(src);
+        long double r = d/s;
+        WARN_FPU_FLAGS();
+        return f80::fromLongDouble(r);
+    }
+
+    void Cpu::exec(const Fdiv<ST, ST>& ins) {
+        f80 dst = x87fpu_.st(ins.dst);
+        f80 src = x87fpu_.st(ins.src);
+        x87fpu_.set(ins.dst, Impl::fdiv(dst, src, &x87fpu_));
+    }
+
+    void Cpu::exec(const Fdivp<ST, ST>& ins) {
+        f80 dst = x87fpu_.st(ins.dst);
+        f80 src = x87fpu_.st(ins.src);
+        f80 res = Impl::fdiv(dst, src, &x87fpu_);
+        x87fpu_.set(ins.dst, res);
+        x87fpu_.pop();
+    }
+
+    void Cpu::Impl::fcomi(f80 dst, f80 src, X87Fpu* x87fpu, Flags* flags) {
+        long double d = f80::toLongDouble(dst);
+        long double s = f80::toLongDouble(src);
+        if(d > s) {
+            flags->zero = 0;
+            flags->parity = 0;
+            flags->carry = 0;
+        }
+        if(d < s) {
+            flags->zero = 0;
+            flags->parity = 0;
+            flags->carry = 1;
+        }
+        if(d == s) {
+            flags->zero = 1;
+            flags->parity = 0;
+            flags->carry = 0;
+        }
+        if(d != d || s != s) {
+            if(x87fpu->control().im) {
+                flags->zero = 1;
+                flags->parity = 1;
+                flags->carry = 1;
+            }
+        }
+    }
+
+    void Cpu::exec(const Fcomi<ST>& ins) {
+        f80 dst = x87fpu_.st(ST::ST0);
+        f80 src = x87fpu_.st(ins.src);
+        Impl::fcomi(dst, src, &x87fpu_, &flags_);
+    }
+
+    f80 Cpu::Impl::frndint(f80 dst, X87Fpu* x87fpu) {
+        using RoundingFunction = f80(*)(f80);
+        std::array<RoundingFunction, 4> rounding {{
+            &f80::roundNearest,
+            &f80::roundDown,
+            &f80::roundUp,
+            &f80::roundZero
+        }};
+        return rounding[(int)x87fpu->control().rc](dst);
+    }
+
+    void Cpu::exec(const Frndint&) {
+        f80 dst = x87fpu_.st(ST::ST0);
+        x87fpu_.set(ST::ST0, Impl::frndint(dst, &x87fpu_));
+    }
+
+    void Cpu::exec(const Fnstcw<M16>& ins) {
+        set(resolve(ins.dst), x87fpu_.control().asWord());
+    }
+
+    void Cpu::exec(const Fldcw<M16>& ins) {
+        x87fpu_.control() = X87Control::fromWord(get(resolve(ins.src)));
     }
 
     void Cpu::exec(const Movss<RSSE, M32>& ins) { set(ins.dst, zeroExtend<Xmm, u32>(get(resolve(ins.src)))); }

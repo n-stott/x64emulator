@@ -60,3 +60,11 @@ target_include_directories(test_shr PUBLIC include ${CMAKE_SOURCE_DIR}/include $
 target_link_libraries(test_shr PUBLIC emulator)
 target_link_options(test_shr PUBLIC ${LD_OPTIONS})
 add_test(NAME shr COMMAND test_shr)
+
+add_executable(test_frndint src/test_frndint.cpp)
+target_compile_options(test_frndint PUBLIC ${CC_OPTIONS})
+target_compile_options(test_frndint PUBLIC -DFMT_HEADER_ONLY)
+target_include_directories(test_frndint PUBLIC include ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/external)
+target_link_libraries(test_frndint PUBLIC emulator)
+target_link_options(test_frndint PUBLIC ${LD_OPTIONS})
+add_test(NAME frndint COMMAND test_frndint)

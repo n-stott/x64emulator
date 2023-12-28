@@ -147,6 +147,11 @@ namespace x64 {
             static void ptest(u128 dst, u128 src, Flags* flags);
 
             [[nodiscard]] static f80 fadd(f80 dst, f80 src, X87Fpu* fpu);
+            [[nodiscard]] static f80 fdiv(f80 dst, f80 src, X87Fpu* fpu);
+
+            [[nodiscard]] static f80 frndint(f80 dst, X87Fpu* fpu);
+
+            static void fcomi(f80 dst, f80 src, X87Fpu* fpu, Flags* flags);
         };
 
     private:
@@ -746,9 +751,28 @@ namespace x64 {
 
         void exec(const Fldz&) override;
         void exec(const Fld1&) override;
+        void exec(const Fld<M32>&) override;
+        void exec(const Fld<M64>&) override;
         void exec(const Fld<M80>&) override;
+        void exec(const Fild<M16>&) override;
+        void exec(const Fild<M32>&) override;
+        void exec(const Fild<M64>&) override;
+        void exec(const Fstp<ST>&) override;
         void exec(const Fstp<M80>&) override;
+        void exec(const Fistp<M16>&) override;
+        void exec(const Fistp<M32>&) override;
+        void exec(const Fistp<M64>&) override;
+        void exec(const Fxch<ST>&) override;
+
         void exec(const Faddp<ST>&) override;
+        void exec(const Fdiv<ST, ST>&) override;
+        void exec(const Fdivp<ST, ST>&) override;
+
+        void exec(const Fcomi<ST>&) override;
+        void exec(const Frndint&) override;
+
+        void exec(const Fnstcw<M16>&) override;
+        void exec(const Fldcw<M16>&) override;
 
         void exec(const Movss<RSSE, M32>&) override;
         void exec(const Movss<M32, RSSE>&) override;

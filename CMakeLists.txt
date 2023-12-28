@@ -12,7 +12,9 @@ add_library(emulator STATIC
     src/interpreter/vm.cpp
     src/interpreter/cpu.cpp
     src/interpreter/mmu.cpp
+    src/interpreter/x87.cpp
     src/interpreter/syscalls.cpp
+    src/utils/utils.cpp
 )
 target_compile_options(emulator PUBLIC -Wall -Wextra -Wpedantic -pedantic -Wconversion -Werror)
 target_compile_options(emulator PUBLIC -Wno-braced-scalar-init -Wimplicit-fallthrough -Wno-missing-braces)

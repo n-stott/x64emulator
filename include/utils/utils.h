@@ -2,7 +2,6 @@
 #define UTILS_H
 
 #include <cstdlib>
-#include <cstring>
 
 using u8 = unsigned char;
 using u16 = unsigned short;
@@ -25,18 +24,21 @@ using f64 = double;
 struct F80 {
     u8 val[10];
 
-    static F80 fromLongDouble(long double d) {
-        F80 f;
-        ::memcpy(&f, &d, sizeof(f));
-        return f;
-    }
+    static F80 fromLongDouble(long double d);
+    static long double toLongDouble(F80 f);
+    static F80 bitcastFromU32(u32 val);
+    static F80 bitcastFromU64(u64 val);
+    static F80 castFromI16(i16 val);
+    static F80 castFromI32(i32 val);
+    static F80 castFromI64(i64 val);
+    static i16 castToI16(F80 val);
+    static i32 castToI32(F80 val);
+    static i64 castToI64(F80 val);
 
-    static long double toLongDouble(F80 f) {
-        long double d;
-        ::memset(&d, 0, sizeof(d));
-        ::memcpy(&d, &f, sizeof(f));
-        return d;
-    }
+    static F80 roundNearest(F80 val);
+    static F80 roundDown(F80 val);
+    static F80 roundUp(F80 val);
+    static F80 roundZero(F80 val);
 };
 using f80 = F80;
 
