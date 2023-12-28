@@ -417,6 +417,17 @@ namespace x64 {
         Dst dst;
     };
 
+    template<typename Src>
+    struct Fmul1 {
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
+    struct Fmul2 {
+        Dst dst;
+        Src src;
+    };
+
     template<typename Dst, typename Src>
     struct Fdiv {
         Dst dst;

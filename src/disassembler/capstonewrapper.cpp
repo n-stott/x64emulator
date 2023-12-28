@@ -128,6 +128,7 @@ namespace x64 {
             case X86_INS_FISTP: return makeFistp(insn);
             case X86_INS_FXCH: return makeFxch(insn);
             case X86_INS_FADDP: return makeFaddp(insn);
+            case X86_INS_FMUL: return makeFmul(insn);
             case X86_INS_FDIV: return makeFdiv(insn);
             case X86_INS_FDIVP: return makeFdivp(insn);
             case X86_INS_FCOMI: return makeFcomi(insn);
@@ -2000,6 +2001,19 @@ namespace x64 {
         const cs_x86_op& src = x86detail.operands[0];
         auto stsrc = asST(src);
         if(stsrc) return make_wrapper<Faddp<ST>>(insn.address, stsrc.value());
+        return make_failed(insn);
+    }
+
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makeFmul(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 1 || x86detail.op_count == 2);
+        if(x86detail.op_count == 1) {
+            const cs_x86_op& src = x86detail.operands[0];
+            auto m32src = asMemory32(src);
+            auto m64src = asMemory64(src);
+            if(m32src) return make_wrapper<Fmul1<M32>>(insn.address, m32src.value());
+            if(m64src) return make_wrapper<Fmul1<M64>>(insn.address, m64src.value());
+        }
         return make_failed(insn);
     }
 

@@ -140,6 +140,7 @@ namespace x64 {
         static std::unique_ptr<X86Instruction> makeFxch(const cs_insn& insn);
         
         static std::unique_ptr<X86Instruction> makeFaddp(const cs_insn& insn);
+        static std::unique_ptr<X86Instruction> makeFmul(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeFdiv(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeFdivp(const cs_insn& insn);
 

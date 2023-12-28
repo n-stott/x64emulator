@@ -2125,6 +2125,26 @@ namespace x64 {
         x87fpu_.pop();
     }
 
+    f80 Cpu::Impl::fmul(f80 dst, f80 src, X87Fpu*) {
+        long double d = f80::toLongDouble(dst);
+        long double s = f80::toLongDouble(src);
+        long double r = d*s;
+        WARN_FPU_FLAGS();
+        return f80::fromLongDouble(r);
+    }
+
+    void Cpu::exec(const Fmul1<M32>& ins) {
+        f80 top = x87fpu_.st(ST::ST0);
+        f80 src = f80::bitcastFromU32(get(resolve(ins.src)));
+        x87fpu_.set(ST::ST0, Impl::fmul(top, src, &x87fpu_));
+    }
+
+    void Cpu::exec(const Fmul1<M64>& ins) {
+        f80 top = x87fpu_.st(ST::ST0);
+        f80 src = f80::bitcastFromU64(get(resolve(ins.src)));
+        x87fpu_.set(ST::ST0, Impl::fmul(top, src, &x87fpu_));
+    }
+
     f80 Cpu::Impl::fdiv(f80 dst, f80 src, X87Fpu*) {
         long double d = f80::toLongDouble(dst);
         long double s = f80::toLongDouble(src);

@@ -695,6 +695,16 @@ namespace utils {
         return fmt::format("{:9}{}", "faddp", toString(ins.dst));
     }
 
+    template<typename Src>
+    inline std::string toString(Fmul1<Src> ins) {
+        return fmt::format("{:9}{}", "fmul", toString(ins.src));
+    }
+
+    template<typename Dst, typename Src>
+    inline std::string toString(Fmul2<Dst, Src> ins) {
+        return fmt::format("{:9}{},{}", "fmul", toString(ins.dst), toString(ins.src));
+    }
+
     template<typename Dst, typename Src>
     inline std::string toString(Fdiv<Dst, Src> ins) {
         return fmt::format("{:9}{},{}", "fdiv", toString(ins.dst), toString(ins.src));

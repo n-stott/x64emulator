@@ -148,6 +148,7 @@ namespace x64 {
             static void ptest(u128 dst, u128 src, Flags* flags);
 
             [[nodiscard]] static f80 fadd(f80 dst, f80 src, X87Fpu* fpu);
+            [[nodiscard]] static f80 fmul(f80 dst, f80 src, X87Fpu* fpu);
             [[nodiscard]] static f80 fdiv(f80 dst, f80 src, X87Fpu* fpu);
 
             [[nodiscard]] static f80 frndint(f80 dst, X87Fpu* fpu);
@@ -766,6 +767,8 @@ namespace x64 {
         void exec(const Fxch<ST>&) override;
 
         void exec(const Faddp<ST>&) override;
+        void exec(const Fmul1<M32>&) override;
+        void exec(const Fmul1<M64>&) override;
         void exec(const Fdiv<ST, ST>&) override;
         void exec(const Fdivp<ST, ST>&) override;
 

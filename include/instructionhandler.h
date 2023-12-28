@@ -543,6 +543,8 @@ namespace x64 {
         virtual void exec(const Fxch<ST>&) = 0;
 
         virtual void exec(const Faddp<ST>&) = 0;
+        virtual void exec(const Fmul1<M32>&) = 0;
+        virtual void exec(const Fmul1<M64>&) = 0;
         virtual void exec(const Fdiv<ST, ST>&) = 0;
         virtual void exec(const Fdivp<ST, ST>&) = 0;
 
