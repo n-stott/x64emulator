@@ -109,6 +109,8 @@ namespace x64 {
         Loader loader(this, &staticSymbolProvider, &dynamicSymbolProvider);
         loader.loadElf(programFilePath, x64::Loader::ElfType::MAIN_EXECUTABLE);
         loader.registerStaticSymbols();
+
+        SignalHandler handler;
         
         VerificationScope::run([&]() {
             setupStack();
