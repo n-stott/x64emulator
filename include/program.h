@@ -6,7 +6,6 @@
 #include "utils/utils.h"
 #include <memory>
 #include <string>
-#include <string_view>
 #include <vector>
 
 namespace x64 {
@@ -17,13 +16,14 @@ namespace x64 {
         explicit X86Instruction(u64 address) : address(address) { }
         virtual ~X86Instruction() = default;
         virtual void exec(InstructionHandler* handler) const = 0;
-        virtual std::string toString(const InstructionHandler* handler) const = 0;
+        virtual std::string toString() const = 0;
+        virtual bool hasResolvableName() const = 0;
 
         u64 address;
     };
 
     template<typename Instruction>
-    struct InstructionWrapper : public X86Instruction {
+    struct InstructionWrapper final : public X86Instruction {
         explicit InstructionWrapper(Instruction instruction) :
                 X86Instruction(0xDEADC0DE),
                 instruction(std::move(instruction)) { }
@@ -36,11 +36,18 @@ namespace x64 {
             return handler->exec(instruction);
         }
 
-        virtual std::string toString(const InstructionHandler* handler) const override {
-            if constexpr(std::is_same_v<Instruction, CallDirect>) {
-                if(handler) handler->resolveFunctionName(instruction);
-            }
-            return x64::utils::toString(instruction);
+        std::string toString() const override {
+            return utils::toString(instruction);
+        }
+
+        bool hasResolvableName() const override {
+            if constexpr(std::is_same_v<Instruction, CallDirect>
+                       | std::is_same_v<Instruction, CallIndirect<R32>>
+                       | std::is_same_v<Instruction, CallIndirect<M32>>
+                       | std::is_same_v<Instruction, CallIndirect<R64>>
+                       | std::is_same_v<Instruction, CallIndirect<M64>>)
+                return true;
+            return false;
         }
 
         Instruction instruction;

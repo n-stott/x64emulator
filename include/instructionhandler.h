@@ -616,8 +616,6 @@ namespace x64 {
 
         virtual void exec(const Rdpkru&) = 0;
         virtual void exec(const Wrpkru&) = 0;
-
-        virtual void resolveFunctionName(const CallDirect&) const = 0;
     };
 
 }

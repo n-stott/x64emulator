@@ -95,8 +95,12 @@ namespace x64 {
                                                 cpu_.regs_.rax_, cpu_.regs_.rbx_, cpu_.regs_.rcx_, cpu_.regs_.rdx_,
                                                 cpu_.regs_.rsi_, cpu_.regs_.rdi_, cpu_.regs_.rbp_, cpu_.regs_.rsp_);
         std::string indent = fmt::format("{:{}}", "", callstack_.size());
-        std::string menmonic = fmt::format("{}|{}", indent, instruction->toString(&cpu_));
-        fmt::print(stderr, "{:10} {:60}{:20} {}\n", ticks, menmonic, eflags, registerDump);
+
+        std::string mnemonic = fmt::format("{}|{}", indent, instruction->toString());
+        if(instruction->hasResolvableName()) {
+            fmt::print(stderr, "{:10} {}[call {}]\n", ticks, indent, cpu_.functionName(*instruction));
+        }
+        fmt::print(stderr, "{:10} {:55}{:20} {}\n", ticks, mnemonic, eflags, registerDump);
     }
 
     void VM::dumpStackTrace() const {

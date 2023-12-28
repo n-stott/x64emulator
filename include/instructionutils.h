@@ -388,7 +388,7 @@ namespace utils {
     }
 
     inline std::string toString(const CallDirect& ins) {
-        return fmt::format("{:8}{:x} <{}>", "call", ins.symbolAddress, ins.symbolName);
+        return fmt::format("{:8}{:x}", "call", ins.symbolAddress);
     }
 
     template<typename Src>

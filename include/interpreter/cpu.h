@@ -10,6 +10,7 @@ namespace x64 {
 
     class VM;
     class Mmu;
+    class X86Instruction;
 
     class Cpu final : public InstructionHandler {
     public:
@@ -839,7 +840,7 @@ namespace x64 {
         void exec(const Rdpkru&) override;
         void exec(const Wrpkru&) override;
 
-        void resolveFunctionName(const CallDirect& ins) const override;
+        std::string functionName(const X86Instruction& instruction) const;
 
     };
 

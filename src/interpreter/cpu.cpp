@@ -982,13 +982,6 @@ namespace x64 {
         regs_.rip_ = address;
     }
 
-    void Cpu::resolveFunctionName(const CallDirect& ins) const {
-        if(!ins.symbolNameSet) {
-            ins.symbolName = vm_->calledFunctionName(ins.symbolAddress);
-            ins.symbolNameSet = true;
-        }
-    }
-
     void Cpu::exec(const CallIndirect<R32>& ins) {
         u64 address = get(ins.src);
         push64(regs_.rip_);
@@ -2813,5 +2806,24 @@ namespace x64 {
 
     void Cpu::exec(const Wrpkru& ins) {
         TODO(ins);
+    }
+
+    std::string Cpu::functionName(const X86Instruction& instruction) const {
+        if(const auto* call = dynamic_cast<const InstructionWrapper<CallDirect>*>(&instruction)) {
+            return vm_->calledFunctionName(call->instruction.symbolAddress);
+        }
+        if(const auto* call = dynamic_cast<const InstructionWrapper<CallIndirect<R32>>*>(&instruction)) {
+            return vm_->calledFunctionName(get(call->instruction.src));
+        }
+        if(const auto* call = dynamic_cast<const InstructionWrapper<CallIndirect<M32>>*>(&instruction)) {
+            return vm_->calledFunctionName(get(resolve(call->instruction.src)));
+        }
+        if(const auto* call = dynamic_cast<const InstructionWrapper<CallIndirect<R64>>*>(&instruction)) {
+            return vm_->calledFunctionName(get(call->instruction.src));
+        }
+        if(const auto* call = dynamic_cast<const InstructionWrapper<CallIndirect<M64>>*>(&instruction)) {
+            return vm_->calledFunctionName(get(resolve(call->instruction.src)));
+        }
+        return "";
     }
 }
