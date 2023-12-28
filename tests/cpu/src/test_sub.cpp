@@ -87,6 +87,8 @@ int main() {
     rc |= compareSub64(0, 0);
     rc |= compareSub64((u64)(-1), 0);
     rc |= compareSub64(0, (u64)(-1));
+    rc |= compareSub64(2, (u64)(-1));
+    rc |= compareSub64((u64)(-1), 2);
     rc |= compareSub64(10, 10);
     rc |= compareSub64(10, 11);
     rc |= compareSub64(11, 10);
