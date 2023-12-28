@@ -18,11 +18,13 @@ namespace x64 {
 
     Loader::LoadedElf::~LoadedElf() = default;
 
-    Loader::Loader(Loadable* loadable, SymbolProvider* symbolProvider) :
-            loadable_(loadable), 
-            symbolProvider_(symbolProvider) {
+    Loader::Loader(Loadable* loadable, SymbolProvider* staticSymbolProvider, SymbolProvider* dynamicSymbolProvider) :
+            loadable_(loadable),
+            staticSymbolProvider_(staticSymbolProvider),
+            dynamicSymbolProvider_(dynamicSymbolProvider) {
         assert(!!loadable_);
-        assert(!!symbolProvider_);
+        assert(!!staticSymbolProvider_);
+        assert(!!dynamicSymbolProvider_);
     }
 
     void Loader::loadLibrary(const std::string& filepath) {
@@ -150,6 +152,13 @@ namespace x64 {
         }
     }
 
+    void Loader::registerStaticSymbols() {
+        for(auto it = elfs_.begin(); it != elfs_.end(); ++it) {
+            fmt::print("Elf {}\n", it->filename);
+            registerStaticSymbols(*it->elf, it->offset);
+        }
+    }
+
     void Loader::registerDynamicSymbols() {
         for(auto it = elfs_.begin(); it != elfs_.end(); ++it) {
             fmt::print("Elf {}\n", it->filename);
@@ -256,6 +265,18 @@ namespace x64 {
         }
     }
 
+    void Loader::registerStaticSymbols(const elf::Elf64& elf, u64 elfOffset) {
+        elf.forAllSymbols([&](const elf::StringTable* stringTable, const elf::SymbolTableEntry64& entry) {
+            std::string symbol { entry.symbol(stringTable, elf) };
+            if(entry.isUndefined()) return;
+            if(!entry.st_name) return;
+            u64 address = entry.st_value;
+            if(entry.type() != elf::SymbolType::TLS) address += elfOffset;
+            std::string version = "no version";
+            staticSymbolProvider_->registerSymbol(symbol, version, address, &elf, elfOffset, entry.st_size, entry.type(), entry.bind());
+        });
+    }
+
     void Loader::registerDynamicSymbols(const elf::Elf64& elf, u64 elfOffset) {
         std::vector<u32> versionIds;
         if(auto versions = elf.symbolVersions()) {
@@ -295,7 +316,7 @@ namespace x64 {
             }
             u64 address = entry.st_value;
             if(entry.type() != elf::SymbolType::TLS) address += elfOffset;
-            symbolProvider_->registerDynamicSymbol(symbol, version, address, &elf, elfOffset, entry.st_size, entry.type(), entry.bind());
+            dynamicSymbolProvider_->registerSymbol(symbol, version, address, &elf, elfOffset, entry.st_size, entry.type(), entry.bind());
             ++index;
         });
     }
@@ -367,10 +388,10 @@ namespace x64 {
 
                 // if the symbol has a version, use it if it is non-empty (FIXME: remove this hack)
                 if(!!symbolVersion) {
-                    auto res = symbolProvider_->lookupSymbolWithVersion(symbolName.value(), symbolVersion.value(), false);
+                    auto res = dynamicSymbolProvider_->lookupSymbolWithVersion(symbolName.value(), symbolVersion.value(), false);
                     if(res.empty()) {
                         fmt::print("Could not find version symbol {} with version {}\n", symbolName.value(), symbolVersion.value()); 
-                        auto res2 = symbolProvider_->lookupSymbolWithoutVersion(symbolName.value(), false);
+                        auto res2 = dynamicSymbolProvider_->lookupSymbolWithoutVersion(symbolName.value(), false);
                         for(const auto* r : res2) {
                             fmt::print("  but found with version \"{}\"\n", r->version);
                         }
@@ -380,7 +401,7 @@ namespace x64 {
                 }
 
                 // otherwise try performing lookup
-                return symbolProvider_->lookupSymbolWithoutVersion(symbolName.value(), false);
+                return dynamicSymbolProvider_->lookupSymbolWithoutVersion(symbolName.value(), false);
             }();
 
             std::optional<u64> S = [&]() -> std::optional<u64> {

@@ -29,7 +29,6 @@ namespace x64 {
         };
 
         void registerSymbol(std::string symbol, std::string version, u64 address, const elf::Elf64* elf, u64 elfOffset, u64 size, elf::SymbolType type, elf::SymbolBind bind);
-        void registerDynamicSymbol(std::string symbol, std::string version, u64 address, const elf::Elf64* elf, u64 elfOffset, u64 size, elf::SymbolType type, elf::SymbolBind bind);
 
         std::vector<const SymbolProvider::Entry*> lookupSymbolWithVersion(const std::string& symbol, const std::string& version, bool demangled) const;
         std::vector<const SymbolProvider::Entry*> lookupSymbolWithoutVersion(const std::string& symbol, bool demangled) const;
@@ -51,7 +50,7 @@ namespace x64 {
             std::unordered_map<std::string, std::vector<const Entry*>> byDemangledName_;
         };
 
-        Table dynamicSymbols_;
+        Table symbolTable_;
     };
 
 }

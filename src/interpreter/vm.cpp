@@ -1,6 +1,7 @@
 #include "interpreter/vm.h"
 #include "interpreter/registers.h"
 #include "interpreter/verify.h"
+#include "interpreter/symbolprovider.h"
 #include "disassembler/capstonewrapper.h"
 
 namespace x64 {
@@ -20,6 +21,10 @@ namespace x64 {
 
     bool VM::logInstructions() const {
         return logInstructions_;
+    }
+
+    void VM::setSymbolProvider(const SymbolProvider* symbolProvider) {
+        symbolProvider_ = symbolProvider;
     }
 
     void VM::crash() {
@@ -216,6 +221,41 @@ namespace x64 {
         executableSections_.push_back(std::move(section));
 
         return InstructionPosition { &executableSections_.back(), 0 };
+    }
+
+    std::string VM::calledFunctionName(u64 address) const {
+        if(!symbolProvider_) return "";
+        if(!logInstructions()) return ""; // We don't print the name, so we don't bother doing the lookup
+        InstructionPosition pos = findSectionWithAddress(address);
+        verify(!!pos.section, [&]() {
+            fmt::print("Could not determine function origin section for address {:#x}\n", address);
+        });
+        verify(pos.index != (size_t)(-1), "Could not find call destination instruction");
+
+        // If we are in the text section, we can try to lookup the symbol for that address
+        auto symbolsAtAddress = symbolProvider_->lookupSymbol(address);
+        if(!symbolsAtAddress.empty()) {
+            functionNameCache_[address] = symbolsAtAddress[0]->demangledSymbol;
+            return symbolsAtAddress[0]->demangledSymbol;
+        }
+
+        // If we are in the PLT instead, lets' look at the first instruction to determine the jmp location
+        const X86Instruction* jmpInsn = pos.section->instructions[pos.index].get();
+        const auto* jmp = dynamic_cast<const InstructionWrapper<Jmp<M64>>*>(jmpInsn);
+        if(!!jmp) {
+            Registers regs;
+            regs.rip_ = jmpInsn->address + 6; // add instruction size offset
+            auto ptr = regs.resolve(jmp->instruction.symbolAddress);
+            auto dst = mmu_.read64(ptr);
+            auto symbolsAtAddress = symbolProvider_->lookupSymbol(dst);
+            if(!symbolsAtAddress.empty()) {
+                functionNameCache_[address] = symbolsAtAddress[0]->demangledSymbol;
+                return symbolsAtAddress[0]->demangledSymbol;
+            }
+        }
+        // We are not in the PLT either :'(
+        // Let's just fail
+        return "";
     }
 
     void VM::setStackPointer(u64 address) {

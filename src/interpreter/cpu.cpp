@@ -983,12 +983,10 @@ namespace x64 {
     }
 
     void Cpu::resolveFunctionName(const CallDirect& ins) const {
-        (void)ins;
-        // TODO: reactivate this
-        // if(!ins.symbolNameSet) {
-        //     ins.symbolName = interpreter_->calledFunctionName(interpreter_->currentExecutedSection_, &ins);
-        //     ins.symbolNameSet = true;
-        // }
+        if(!ins.symbolNameSet) {
+            ins.symbolName = vm_->calledFunctionName(ins.symbolAddress);
+            ins.symbolNameSet = true;
+        }
     }
 
     void Cpu::exec(const CallIndirect<R32>& ins) {

@@ -6,22 +6,22 @@
 
 namespace x64 {
 
-    void SymbolProvider::registerDynamicSymbol(std::string symbol, std::string version, u64 address, const elf::Elf64* elf, u64 elfOffset, u64 size, elf::SymbolType type, elf::SymbolBind bind) {
-        dynamicSymbols_.registerSymbol(symbol, version, address, elf, elfOffset, size, type, bind);
+    void SymbolProvider::registerSymbol(std::string symbol, std::string version, u64 address, const elf::Elf64* elf, u64 elfOffset, u64 size, elf::SymbolType type, elf::SymbolBind bind) {
+        symbolTable_.registerSymbol(symbol, version, address, elf, elfOffset, size, type, bind);
     }
 
     std::vector<const SymbolProvider::Entry*> SymbolProvider::lookupSymbolWithVersion(const std::string& symbol, const std::string& version, bool demangled) const {
-        auto result = dynamicSymbols_.lookupSymbol(symbol, version, demangled);
+        auto result = symbolTable_.lookupSymbol(symbol, version, demangled);
         return result;
     }
 
     std::vector<const SymbolProvider::Entry*> SymbolProvider::lookupSymbolWithoutVersion(const std::string& symbol, bool demangled) const {
-        auto result = dynamicSymbols_.lookupSymbol(symbol, demangled);
+        auto result = symbolTable_.lookupSymbol(symbol, demangled);
         return result;
     }
 
     std::vector<const SymbolProvider::Entry*> SymbolProvider::lookupSymbol(u64 address) const {
-        auto result = dynamicSymbols_.lookupSymbol(address);
+        auto result = symbolTable_.lookupSymbol(address);
         return result;
     }
     

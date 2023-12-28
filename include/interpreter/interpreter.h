@@ -13,7 +13,7 @@ namespace x64 {
 
     class Interpreter : public Loadable {
     public:
-        explicit Interpreter(SymbolProvider* symbolProvider);
+        Interpreter();
         void run(const std::string& programFilePath, const std::vector<std::string>& arguments, const std::vector<std::string>& environmentVariables);
 
         void crash() { vm_.crash(); }

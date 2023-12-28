@@ -22,16 +22,9 @@ int main(int argc, char* argv[], char* envp[]) {
         environmentVariables.push_back(*env);
     }
 
-    x64::SymbolProvider symbolProvider;
-
-    x64::Interpreter interpreter(&symbolProvider);
-
-    x64::VerificationScope::run([&]() {
-        interpreter.setLogInstructions(true);
-        interpreter.run(programPath, arguments, environmentVariables);
-    }, [&]() {
-        interpreter.crash();
-    });
+    x64::Interpreter interpreter;
+    interpreter.setLogInstructions(true);
+    interpreter.run(programPath, arguments, environmentVariables);
 
     return interpreter.hasCrashed();
 }

@@ -53,7 +53,7 @@ namespace x64 {
     class Loader {
     public:
 
-        explicit Loader(Loadable* loadable, SymbolProvider* symbolProvider);
+        explicit Loader(Loadable* loadable, SymbolProvider* staticSymbolProvider, SymbolProvider* dynamicSymbolProvider);
 
         enum class ElfType {
             MAIN_EXECUTABLE,
@@ -62,6 +62,7 @@ namespace x64 {
 
         void loadElf(const std::string& filepath, ElfType elfType);
         void registerInitFunctions();
+        void registerStaticSymbols();
         void registerDynamicSymbols();
         void prepareTlsTemplate();
         void resolveAllRelocations();
@@ -71,6 +72,7 @@ namespace x64 {
         void loadExecutableProgramHeader(const elf::Elf64& elf, const elf::ProgramHeader64& header, const std::string& filePath, const std::string& shortFilePath, u64 elfOffset);
         void loadNonExecutableProgramHeader(const elf::Elf64& elf, const elf::ProgramHeader64& header, const std::string& shortFilePath, u64 elfOffset);
         void registerInitFunctions(const elf::Elf64& elf, u64 elfOffset);
+        void registerStaticSymbols(const elf::Elf64& elf, u64 elfOffset);
         void registerDynamicSymbols(const elf::Elf64& elf, u64 elfOffset);
         void loadNeededLibraries(const elf::Elf64& elf);
 
@@ -95,7 +97,8 @@ namespace x64 {
         };
 
         Loadable* loadable_;
-        SymbolProvider* symbolProvider_;
+        SymbolProvider* staticSymbolProvider_;
+        SymbolProvider* dynamicSymbolProvider_;
         std::vector<LoadedElf> elfs_;
         std::vector<TlsBlock> tlsBlocks_;
         std::vector<std::string> loadedLibraries_;
