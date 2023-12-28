@@ -2096,12 +2096,12 @@ namespace x64 {
     void Cpu::exec(const Fild<M32>& ins) { x87fpu_.push(f80::castFromI32((i32)get(resolve(ins.src)))); }
     void Cpu::exec(const Fild<M64>& ins) { x87fpu_.push(f80::castFromI64((i64)get(resolve(ins.src)))); }
 
-    void Cpu::exec(const Fstp<ST>& ins) { x87fpu_.set(ins.dst, x87fpu_.pop()); }
-    void Cpu::exec(const Fstp<M80>& ins) { set(resolve(ins.dst), x87fpu_.pop()); }
+    void Cpu::exec(const Fstp<ST>& ins) { x87fpu_.set(ins.dst, x87fpu_.st(ST::ST0)); x87fpu_.pop(); }
+    void Cpu::exec(const Fstp<M80>& ins) { set(resolve(ins.dst), x87fpu_.st(ST::ST0)); x87fpu_.pop(); }
 
-    void Cpu::exec(const Fistp<M16>& ins) { set(resolve(ins.dst), f80::castToI16(x87fpu_.pop()));}
-    void Cpu::exec(const Fistp<M32>& ins) { set(resolve(ins.dst), f80::castToI32(x87fpu_.pop()));}
-    void Cpu::exec(const Fistp<M64>& ins) { set(resolve(ins.dst), f80::castToI64(x87fpu_.pop()));}
+    void Cpu::exec(const Fistp<M16>& ins) { set(resolve(ins.dst), f80::castToI16(x87fpu_.st(ST::ST0))); x87fpu_.pop(); }
+    void Cpu::exec(const Fistp<M32>& ins) { set(resolve(ins.dst), f80::castToI32(x87fpu_.st(ST::ST0))); x87fpu_.pop(); }
+    void Cpu::exec(const Fistp<M64>& ins) { set(resolve(ins.dst), f80::castToI64(x87fpu_.st(ST::ST0))); x87fpu_.pop(); }
 
     void Cpu::exec(const Fxch<ST>& ins) {
         f80 src = x87fpu_.st(ins.src);
