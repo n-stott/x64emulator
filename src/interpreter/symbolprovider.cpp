@@ -26,10 +26,9 @@ namespace x64 {
     }
     
     void SymbolProvider::Table::registerSymbol(std::string symbol, std::string version, u64 address, const elf::Elf64* elf, u64 elfOffset, u64 size, elf::SymbolType type, elf::SymbolBind bind) {
-#if 1
+#if 0
         fmt::print(stderr, "Register symbol address={:#x} symbol=\"{}\" version=\"{}\"\n", address, symbol, version);
 #endif
-        if(symbol.size() >= 9 && symbol.substr(0, 9) == "fakelibc$") symbol = symbol.substr(9);
         storage_.push_back(Entry {
             symbol,
             boost::core::demangle(symbol.c_str()),
