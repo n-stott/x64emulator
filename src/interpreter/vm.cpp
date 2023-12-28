@@ -101,6 +101,21 @@ namespace x64 {
             fmt::print(stderr, "{:10} {}[call {}]\n", ticks, indent, cpu_.functionName(*instruction));
         }
         fmt::print(stderr, "{:10} {:55}{:20} {}\n", ticks, mnemonic, eflags, registerDump);
+        if(instruction->isX87()) {
+            std::string x87dump = fmt::format( "st0={} st1={} st2={} st3={} "
+                                                    "st4={} st5={} st6={} st7={} top={}",
+                                                    f80::toLongDouble(cpu_.x87fpu_.st(ST::ST0)),
+                                                    f80::toLongDouble(cpu_.x87fpu_.st(ST::ST1)),
+                                                    f80::toLongDouble(cpu_.x87fpu_.st(ST::ST2)),
+                                                    f80::toLongDouble(cpu_.x87fpu_.st(ST::ST3)),
+                                                    f80::toLongDouble(cpu_.x87fpu_.st(ST::ST4)),
+                                                    f80::toLongDouble(cpu_.x87fpu_.st(ST::ST5)),
+                                                    f80::toLongDouble(cpu_.x87fpu_.st(ST::ST6)),
+                                                    f80::toLongDouble(cpu_.x87fpu_.st(ST::ST7)),
+                                                    (int)cpu_.x87fpu_.top()
+                                                    );
+            fmt::print(stderr, "{:86} {}\n", "", x87dump);
+        }
     }
 
     void VM::dumpStackTrace() const {

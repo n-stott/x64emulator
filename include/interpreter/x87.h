@@ -39,6 +39,7 @@ namespace x64 {
         f80 pop();
         f80 st(ST st) const;
         void set(ST st, f80 val);
+        u8 top() const { return top_; }
 
 
         X87Control& control() { return control_; }

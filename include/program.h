@@ -18,6 +18,7 @@ namespace x64 {
         virtual void exec(InstructionHandler* handler) const = 0;
         virtual std::string toString() const = 0;
         virtual bool hasResolvableName() const = 0;
+        virtual bool isX87() const = 0;
 
         u64 address;
     };
@@ -46,6 +47,33 @@ namespace x64 {
                        | std::is_same_v<Instruction, CallIndirect<M32>>
                        | std::is_same_v<Instruction, CallIndirect<R64>>
                        | std::is_same_v<Instruction, CallIndirect<M64>>)
+                return true;
+            return false;
+        }
+
+        bool isX87() const override {
+            if constexpr(std::is_same_v<Instruction, Fldz>
+                      || std::is_same_v<Instruction, Fld1>
+                      || std::is_same_v<Instruction, Fld<M32>>
+                      || std::is_same_v<Instruction, Fld<M64>>
+                      || std::is_same_v<Instruction, Fld<M80>>
+                      || std::is_same_v<Instruction, Fild<M16>>
+                      || std::is_same_v<Instruction, Fild<M32>>
+                      || std::is_same_v<Instruction, Fild<M64>>
+                      || std::is_same_v<Instruction, Fstp<ST>>
+                      || std::is_same_v<Instruction, Fstp<M80>>
+                      || std::is_same_v<Instruction, Fistp<M16>>
+                      || std::is_same_v<Instruction, Fistp<M32>>
+                      || std::is_same_v<Instruction, Fistp<M64>>
+                      || std::is_same_v<Instruction, Fxch<ST>>
+                      || std::is_same_v<Instruction, Faddp<ST>>
+                      || std::is_same_v<Instruction, Fdiv<ST, ST>>
+                      || std::is_same_v<Instruction, Fdivp<ST, ST>>
+                      || std::is_same_v<Instruction, Fcomi<ST>>
+                      || std::is_same_v<Instruction, Frndint>
+                      || std::is_same_v<Instruction, Fnstcw<M16>>
+                      || std::is_same_v<Instruction, Fldcw<M16>>
+                      )
                 return true;
             return false;
         }
