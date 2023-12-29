@@ -184,11 +184,11 @@ namespace x64 {
         u64 tmp = (u64)dst + (u64)src;
         flags->zero = (u8)tmp == 0;
         flags->carry = (tmp >> 8) != 0;
-        i64 signedTmp = (i64)dst + (i64)src;
+        i64 signedTmp = (i64)(i8)dst + (i64)(i8)src;
         flags->overflow = (i8)signedTmp != signedTmp;
-        flags->sign = (signedTmp < 0);
+        flags->sign = ((i8)signedTmp < 0);
+        flags->parity = Flags::computeParity((u8)tmp);
         flags->setSure();
-        flags->setUnsureParity();
         return (u8)tmp;
     }
 
