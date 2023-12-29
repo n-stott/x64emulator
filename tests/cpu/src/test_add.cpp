@@ -5,25 +5,25 @@
 #include "fmt/core.h"
 #include <vector>
 
-u8 runSub8Native(u8 lhs, u8 rhs, x64::Flags* flags) {
+u8 runAdd8Native(u8 lhs, u8 rhs, x64::Flags* flags) {
     u64 rflags = 0;
-    asm volatile("sub %1, %0" : "+r" (lhs) : "r"(rhs));
+    asm volatile("add %1, %0" : "+r" (lhs) : "r"(rhs));
     asm volatile("pushf");
     asm volatile("pop %0" : "=r" (rflags));
     *flags = fromRflags(rflags);
     return lhs;
 }
 
-u8 runSub8Virtual(u8 lhs, u8 rhs, x64::Flags* flags) {
-    return x64::Cpu::Impl::sub8(lhs, rhs, flags);
+u8 runAdd8Virtual(u8 lhs, u8 rhs, x64::Flags* flags) {
+    return x64::Cpu::Impl::add8(lhs, rhs, flags);
 }
 
-int compareSub8(u8 lhs, u8 rhs) {
+int compareAdd8(u8 lhs, u8 rhs) {
     x64::Flags nativeFlags;
-    u8 nativeDiff = runSub8Native(lhs, rhs, &nativeFlags);
+    u8 nativeDiff = runAdd8Native(lhs, rhs, &nativeFlags);
 
     x64::Flags virtFlags;
-    u8 virtDiff = runSub8Virtual(lhs, rhs, &virtFlags);
+    u8 virtDiff = runAdd8Virtual(lhs, rhs, &virtFlags);
 
     if(virtDiff == nativeDiff
     && virtFlags.carry == nativeFlags.carry
@@ -32,7 +32,7 @@ int compareSub8(u8 lhs, u8 rhs) {
     && virtFlags.sign == nativeFlags.sign
     && virtFlags.parity == nativeFlags.parity) return 0;
 
-    fmt::print(stderr, "sub8 {:#x} {:#x} failed\n", lhs, rhs);
+    fmt::print(stderr, "Add8 {:#x} {:#x} failed\n", lhs, rhs);
     fmt::print(stderr, "native : diff={:#x} carry={} zero={} overflow={} sign={} parity={}\n",
                         nativeDiff, nativeFlags.carry, nativeFlags.zero, nativeFlags.overflow, nativeFlags.sign, nativeFlags.parity);
     fmt::print(stderr, "virtual: diff={:#x} carry={} zero={} overflow={} sign={} parity={}\n",
@@ -41,25 +41,25 @@ int compareSub8(u8 lhs, u8 rhs) {
 }
 
 
-u64 runSub64Native(u64 lhs, u64 rhs, x64::Flags* flags) {
+u64 runAdd64Native(u64 lhs, u64 rhs, x64::Flags* flags) {
     u64 rflags = 0;
-    asm volatile("sub %1, %0" : "+r" (lhs) : "r"(rhs));
+    asm volatile("add %1, %0" : "+r" (lhs) : "r"(rhs));
     asm volatile("pushf");
     asm volatile("pop %0" : "=r" (rflags));
     *flags = fromRflags(rflags);
     return lhs;
 }
 
-u64 runSub64Virtual(u64 lhs, u64 rhs, x64::Flags* flags) {
-    return x64::Cpu::Impl::sub64(lhs, rhs, flags);
+u64 runAdd64Virtual(u64 lhs, u64 rhs, x64::Flags* flags) {
+    return x64::Cpu::Impl::add64(lhs, rhs, flags);
 }
 
-int compareSub64(u64 lhs, u64 rhs) {
+int compareAdd64(u64 lhs, u64 rhs) {
     x64::Flags nativeFlags;
-    u64 nativeDiff = runSub64Native(lhs, rhs, &nativeFlags);
+    u64 nativeDiff = runAdd64Native(lhs, rhs, &nativeFlags);
 
     x64::Flags virtFlags;
-    u64 virtDiff = runSub64Virtual(lhs, rhs, &virtFlags);
+    u64 virtDiff = runAdd64Virtual(lhs, rhs, &virtFlags);
 
     if(virtDiff == nativeDiff
     && virtFlags.carry == nativeFlags.carry
@@ -68,7 +68,7 @@ int compareSub64(u64 lhs, u64 rhs) {
     && virtFlags.sign == nativeFlags.sign
     && virtFlags.parity == nativeFlags.parity) return 0;
 
-    fmt::print(stderr, "sub64 {:#x} {:#x} failed\n", lhs, rhs);
+    fmt::print(stderr, "Add64 {:#x} {:#x} failed\n", lhs, rhs);
     fmt::print(stderr, "native : diff={:#x} carry={} zero={} overflow={} sign={} parity={}\n",
                         nativeDiff, nativeFlags.carry, nativeFlags.zero, nativeFlags.overflow, nativeFlags.sign, nativeFlags.parity);
     fmt::print(stderr, "virtual: diff={:#x} carry={} zero={} overflow={} sign={} parity={}\n",
@@ -81,16 +81,16 @@ int main() {
     int rc = 0;
     for(u16 lhs = 0; lhs < 256; ++lhs) {
         for(u16 rhs = 0; rhs < 256; ++rhs) {
-            rc = rc | compareSub8((u8)lhs, (u8)rhs);
+            rc = rc | compareAdd8((u8)lhs, (u8)rhs);
         }
     }
-    rc |= compareSub64(0, 0);
-    rc |= compareSub64((u64)(-1), 0);
-    rc |= compareSub64(0, (u64)(-1));
-    rc |= compareSub64(2, (u64)(-1));
-    rc |= compareSub64((u64)(-1), 2);
-    rc |= compareSub64(10, 10);
-    rc |= compareSub64(10, 11);
-    rc |= compareSub64(11, 10);
+    rc |= compareAdd64(0, 0);
+    rc |= compareAdd64((u64)(-1), 0);
+    rc |= compareAdd64(0, (u64)(-1));
+    rc |= compareAdd64(2, (u64)(-1));
+    rc |= compareAdd64((u64)(-1), 2);
+    rc |= compareAdd64(10, 10);
+    rc |= compareAdd64(10, 11);
+    rc |= compareAdd64(11, 10);
     return rc;
 }

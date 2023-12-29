@@ -25,11 +25,17 @@ namespace x64 {
             [[nodiscard]] static u8 adc8(u8 dst, u8 src, Flags* flags);
             [[nodiscard]] static u16 adc16(u16 dst, u16 src, Flags* flags);
             [[nodiscard]] static u32 adc32(u32 dst, u32 src, Flags* flags);
+            [[nodiscard]] static u64 adc64(u64 dst, u64 src, Flags* flags);
 
             [[nodiscard]] static u8 sub8(u8 src1, u8 src2, Flags* flags);
             [[nodiscard]] static u16 sub16(u16 src1, u16 src2, Flags* flags);
             [[nodiscard]] static u32 sub32(u32 src1, u32 src2, Flags* flags);
             [[nodiscard]] static u64 sub64(u64 src1, u64 src2, Flags* flags);
+
+            [[nodiscard]] static u8 sbb8(u8 dst, u8 src, Flags* flags);
+            [[nodiscard]] static u16 sbb16(u16 dst, u16 src, Flags* flags);
+            [[nodiscard]] static u32 sbb32(u32 dst, u32 src, Flags* flags);
+            [[nodiscard]] static u64 sbb64(u64 dst, u64 src, Flags* flags);
 
             [[nodiscard]] static std::pair<u32, u32> mul32(u32 src1, u32 src2, Flags* flags);
             [[nodiscard]] static std::pair<u64, u64> mul64(u64 src1, u64 src2, Flags* flags);
@@ -42,9 +48,6 @@ namespace x64 {
 
             [[nodiscard]] static std::pair<u32, u32> idiv32(u32 dividendUpper, u32 dividendLower, u32 divisor);
             [[nodiscard]] static std::pair<u64, u64> idiv64(u64 dividendUpper, u64 dividendLower, u64 divisor);
-
-            [[nodiscard]] static u32 sbb32(u32 dst, u32 src, Flags* flags);
-            [[nodiscard]] static u64 sbb64(u64 dst, u64 src, Flags* flags);
 
             [[nodiscard]] static u32 neg32(u32 dst, Flags* flags);
             [[nodiscard]] static u64 neg64(u64 dst, Flags* flags);
@@ -284,6 +287,18 @@ namespace x64 {
         void exec(const Sub<M64, R64>&) override;
         void exec(const Sub<M64, Imm>&) override;
 
+        void exec(const Sbb<R8, R8>&) override;
+        void exec(const Sbb<R8, Imm>&) override;
+        void exec(const Sbb<R8, SignExtended<u8>>&) override;
+        void exec(const Sbb<R8, M8>&) override;
+        void exec(const Sbb<M8, R8>&) override;
+        void exec(const Sbb<M8, Imm>&) override;
+        void exec(const Sbb<R16, R16>&) override;
+        void exec(const Sbb<R16, Imm>&) override;
+        void exec(const Sbb<R16, SignExtended<u8>>&) override;
+        void exec(const Sbb<R16, M16>&) override;
+        void exec(const Sbb<M16, R16>&) override;
+        void exec(const Sbb<M16, Imm>&) override;
         void exec(const Sbb<R32, R32>&) override;
         void exec(const Sbb<R32, Imm>&) override;
         void exec(const Sbb<R32, SignExtended<u8>>&) override;
