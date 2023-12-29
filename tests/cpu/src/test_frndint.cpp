@@ -2,6 +2,8 @@
 #include "utils/utils.h"
 #include "fmt/core.h"
 
+#pragma GCC push_options
+#pragma GCC optimize "O0"
 long double runFrndint(long double x, x64::ROUNDING rounding) {
     {
         unsigned short cw = 0xfedc;
@@ -22,6 +24,7 @@ long double runFrndint(long double x, x64::ROUNDING rounding) {
     }
     return x;
 }
+#pragma GCC pop_options
 
 long double runFrndintVirtual(long double x, x64::ROUNDING rounding) {
     x64::X87Fpu fpu;

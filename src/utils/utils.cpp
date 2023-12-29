@@ -51,10 +51,13 @@ i64 F80::castToI64(F80 val) {
     return (i64)toLongDouble(val);
 }
 
+// LOL, std::round does not take rounding mode into account.
+// It rounds away from 0 for midpoints, instead of towards even.
+// We let the host do this work instead.
+// And we disable optimizations, because GCC is weird
+#pragma GCC push_options
+#pragma GCC optimize "O0"
 F80 F80::roundNearest(F80 val) {
-    // LOL, std::round does not take rounding mode into account.
-    // It rounds away from 0 for midpoints, instead of towards even.
-    // We let the host do this work instead.
 
     // save control word
     long double x = toLongDouble(val);
@@ -75,6 +78,7 @@ F80 F80::roundNearest(F80 val) {
 
     return fromLongDouble(x);
 }
+#pragma GCC pop_options
 
 F80 F80::roundDown(F80 val) {
     return fromLongDouble(std::floor(toLongDouble(val)));
