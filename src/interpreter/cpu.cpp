@@ -1101,7 +1101,7 @@ namespace x64 {
     }
 
     u8 Cpu::Impl::shr8(u8 dst, u8 src, Flags* flags) {
-        assert(src < 8);
+        src = src % 8;
         u8 res = static_cast<u8>(dst >> src);
         if(src) {
             flags->carry = dst & (1 << (src-1));
@@ -1117,7 +1117,7 @@ namespace x64 {
     }
 
     u16 Cpu::Impl::shr16(u16 dst, u16 src, Flags* flags) {
-        assert(src < 16);
+        src = src % 16;
         u16 res = static_cast<u16>(dst >> src);
         if(src) {
             flags->carry = dst & (1 << (src-1));
@@ -1133,7 +1133,7 @@ namespace x64 {
     }
     
     u32 Cpu::Impl::shr32(u32 dst, u32 src, Flags* flags) {
-        assert(src < 32);
+        src = src % 32;
         u32 res = dst >> src;
         if(src) {
             flags->carry = dst & (1 << (src-1));
@@ -1149,7 +1149,7 @@ namespace x64 {
     }
     
     u64 Cpu::Impl::shr64(u64 dst, u64 src, Flags* flags) {
-        assert(src < 64);
+        src = src % 64;
         u64 res = dst >> src;
         if(src) {
             flags->carry = dst & (1ull << (src-1));
