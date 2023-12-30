@@ -18,7 +18,7 @@ namespace x64 {
         buffer.resize(count, 0x0);
         ssize_t nbytes = ::read(fd, buffer.data(), count);
         if(nbytes > 0) {
-            mmu_->copyToMmu(buf, buffer.data(), nbytes);
+            mmu_->copyToMmu(buf, buffer.data(), (size_t)nbytes);
         }
         return nbytes;
     }
@@ -38,11 +38,11 @@ namespace x64 {
     int Sys::fstat(int fd, Ptr8 statbuf) {
         struct stat st;
         int rc = ::fstat(fd, &st);
-        if(rc < 0) return (u64)rc;
+        if(rc < 0) return rc;
         u8 buf[sizeof(st)];
         memcpy(&buf, &st, sizeof(st));
         mmu_->copyToMmu(statbuf, buf, sizeof(buf));
-        return (u64)rc;
+        return rc;
     }
 
     u64 Sys::mmap(u64 addr, size_t length, int prot, int flags, int fd, off_t offset) {
@@ -66,12 +66,12 @@ namespace x64 {
 
     ssize_t Sys::writev(int fd, u64 iov, int iovcnt) {
         std::vector<struct iovec> iovs;
-        iovs.resize(iovcnt);
-        mmu_->copyFromMmu((u8*)iovs.data(), Ptr8{Segment::DS, iov}, iovcnt*sizeof(struct iovec));
+        iovs.resize((size_t)iovcnt);
+        mmu_->copyFromMmu((u8*)iovs.data(), Ptr8{Segment::DS, iov}, (size_t)iovcnt*sizeof(struct iovec));
 
         std::vector<u8> buffer;
         ssize_t nbytes = 0;
-        for(int i = 0; i < iovcnt; ++i) {
+        for(size_t i = 0; i < (size_t)iovcnt; ++i) {
             void* base = iovs[i].iov_base;
             size_t len = iovs[i].iov_len;
             buffer.resize(len);
@@ -123,7 +123,7 @@ namespace x64 {
         ssize_t ret = ::readlink(path.data(), buffer.data(), buffer.size());
         if(ret < 0) return ret;
 
-        mmu_->copyToMmu(Ptr8{Segment::DS, buf}, (const u8*)buffer.data(), ret);
+        mmu_->copyToMmu(Ptr8{Segment::DS, buf}, (const u8*)buffer.data(), (size_t)ret);
         return ret;
     }
 

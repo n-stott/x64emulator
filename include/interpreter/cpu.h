@@ -10,7 +10,7 @@ namespace x64 {
 
     class VM;
     class Mmu;
-    class X86Instruction;
+    struct X86Instruction;
 
     class Cpu final : public InstructionHandler {
     public:

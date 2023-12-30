@@ -51,10 +51,10 @@ namespace x64 {
         std::array<f80, 8> stack_;
         X87Control control_;
         u8 top_ { 0 };
-        bool C0_ { false };
+        // bool C0_ { false }; // unused
         bool C1_ { false };
-        bool C2_ { false };
-        bool C3_ { false };
+        // bool C2_ { false }; // unused
+        // bool C3_ { false }; // unused
     };
 
 }
