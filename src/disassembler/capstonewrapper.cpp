@@ -178,6 +178,8 @@ namespace x64 {
             case X86_INS_RDTSC: return makeRdtsc(insn);
             case X86_INS_CPUID: return makeCpuid(insn);
             case X86_INS_XGETBV: return makeXgetbv(insn);
+            case X86_INS_FXSAVE: return makeFxsave(insn);
+            case X86_INS_FXRSTOR: return makeFxrstor(insn);
             default: return make_failed(insn);
         }
         // if(name == "rep") return makeRepStringop(opbytes, address, operands);
@@ -2499,6 +2501,24 @@ namespace x64 {
 
     std::unique_ptr<X86Instruction> CapstoneWrapper::makeXgetbv(const cs_insn& insn) {
         return make_wrapper<Xgetbv>(insn.address);
+    }
+
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makeFxsave(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 1);
+        const cs_x86_op& dst = x86detail.operands[0];
+        auto m64dst = asMemory64(dst);
+        if(m64dst) return make_wrapper<Fxsave<M64>>(insn.address, m64dst.value());
+        return make_failed(insn);
+    }
+
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makeFxrstor(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 1);
+        const cs_x86_op& src = x86detail.operands[0];
+        auto m64src = asMemory64(src);
+        if(m64src) return make_wrapper<Fxrstor<M64>>(insn.address, m64src.value());
+        return make_failed(insn);
     }
 
     std::unique_ptr<X86Instruction> CapstoneWrapper::makeRdpkru(u64 address) {

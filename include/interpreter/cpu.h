@@ -870,6 +870,9 @@ namespace x64 {
         void exec(const Cpuid&) override;
         void exec(const Xgetbv&) override;
 
+        void exec(const Fxsave<M64>&) override;
+        void exec(const Fxrstor<M64>&) override;
+
         void exec(const Rdpkru&) override;
         void exec(const Wrpkru&) override;
 

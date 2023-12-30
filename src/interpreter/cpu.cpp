@@ -2857,6 +2857,14 @@ namespace x64 {
         set(R32::EDX, d);
     }
 
+    void Cpu::exec(const Fxsave<M64>& ins) {
+        TODO(ins);
+    }
+
+    void Cpu::exec(const Fxrstor<M64>& ins) {
+        TODO(ins);
+    }
+
     void Cpu::exec(const Rdpkru& ins) {
         TODO(ins);
     }

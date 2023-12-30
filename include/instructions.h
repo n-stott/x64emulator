@@ -657,6 +657,16 @@ namespace x64 {
     struct Wrpkru {
 
     };
+
+    template<typename Dst>
+    struct Fxsave {
+        Dst dst;
+    };
+
+    template<typename Src>
+    struct Fxrstor {
+        Src src;
+    };
 }
 
 #endif

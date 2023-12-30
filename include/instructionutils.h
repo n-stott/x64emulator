@@ -903,6 +903,16 @@ namespace utils {
         return fmt::format("{:9}", "wrpkru");
     }
 
+    template<typename Dst>
+    inline std::string toString(Fxsave<Dst> ins) {
+        return fmt::format("{:9}{}", "fxsave", toString(ins.dst));
+    }
+
+    template<typename Src>
+    inline std::string toString(Fxrstor<Src> ins) {
+        return fmt::format("{:9}{}", "fxrstor", toString(ins.src));
+    }
+
 }
 }
 

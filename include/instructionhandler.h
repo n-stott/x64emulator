@@ -638,6 +638,9 @@ namespace x64 {
         virtual void exec(const Cpuid&) = 0;
         virtual void exec(const Xgetbv&) = 0;
 
+        virtual void exec(const Fxsave<M64>&) = 0;
+        virtual void exec(const Fxrstor<M64>&) = 0;
+
         virtual void exec(const Rdpkru&) = 0;
         virtual void exec(const Wrpkru&) = 0;
     };
