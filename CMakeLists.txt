@@ -18,6 +18,7 @@ add_library(emulator STATIC
 )
 target_compile_options(emulator PUBLIC -Wall -Wextra -Wpedantic -pedantic -Wconversion -Werror)
 target_compile_options(emulator PUBLIC -Wno-braced-scalar-init -Wimplicit-fallthrough -Wno-missing-braces)
+target_compile_options(emulator PUBLIC -frounding-math)
 target_compile_options(emulator PUBLIC -DFMT_HEADER_ONLY)
 target_include_directories(emulator PUBLIC include)
 target_include_directories(emulator PUBLIC ../common/include)

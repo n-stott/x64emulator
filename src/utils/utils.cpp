@@ -54,19 +54,15 @@ i64 F80::castToI64(F80 val) {
 // LOL, std::round does not take rounding mode into account.
 // It rounds away from 0 for midpoints, instead of towards even.
 // We let the host do this work instead.
-// And we disable optimizations, because GCC is weird
-#pragma GCC push_options
-#pragma GCC optimize "O0"
 F80 F80::roundNearest(F80 val) {
-
     // save control word
     long double x = toLongDouble(val);
     unsigned short cw { 0 };
-    asm volatile("fstcw %0" :: "m" (cw));
+    asm volatile("fnstcw %0" : "=m" (cw));
 
     // set rounding mode to nearest
     unsigned short nearest = (unsigned short)(cw & ~(0x3 << 10));
-    asm volatile("fldcw %0" : "=m" (nearest));
+    asm volatile("fldcw %0" :: "m" (nearest));
 
     // do the rounding
     asm volatile("fldt %0" :: "m"(x));
@@ -74,11 +70,10 @@ F80 F80::roundNearest(F80 val) {
     asm volatile("fstpt %0" : "=m"(x));
 
     // load initial control word
-    asm volatile("fldcw %0" : "=m" (cw));
+    asm volatile("fldcw %0" :: "m" (cw));
 
     return fromLongDouble(x);
 }
-#pragma GCC pop_options
 
 F80 F80::roundDown(F80 val) {
     return fromLongDouble(std::floor(toLongDouble(val)));

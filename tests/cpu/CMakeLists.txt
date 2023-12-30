@@ -87,6 +87,7 @@ add_test(NAME shr COMMAND test_cpu_shr)
 
 add_executable(test_cpu_frndint src/test_frndint.cpp)
 target_compile_options(test_cpu_frndint PUBLIC ${CC_OPTIONS})
+target_compile_options(test_cpu_frndint PUBLIC -frounding-math)
 target_compile_options(test_cpu_frndint PUBLIC -DFMT_HEADER_ONLY)
 target_include_directories(test_cpu_frndint PUBLIC include ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/external)
 target_link_libraries(test_cpu_frndint PUBLIC emulator)
