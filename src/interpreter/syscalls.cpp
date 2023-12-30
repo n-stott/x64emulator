@@ -62,6 +62,16 @@ namespace x64 {
         return ret;
     }
 
+    u64 Sys::getcwd(u64 buf, size_t size) {
+        std::vector<char> path;
+        path.resize(size, 0x0);
+        char* cwd = ::getcwd(path.data(), size);
+        verify(cwd == path.data());
+
+        mmu_->copyToMmu(Ptr8{Segment::DS, buf}, (const u8*)path.data(), size);
+        return buf;
+    }
+
     ssize_t Sys::readlink(u64 pathname, u64 buf, size_t bufsiz) {
         Ptr8 ptr{Segment::DS, pathname};
         while(mmu_->read8(ptr) != 0) ++ptr;

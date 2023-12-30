@@ -2719,6 +2719,13 @@ namespace x64 {
                 set(R32::EAX, (u32)ret);
                 return;
             }
+            case 0x4f: { // getcwd
+                u64 buf = rdi;
+                size_t size = (size_t)rsi;
+                u64 ret = vm_->syscalls().getcwd(buf, size);
+                set(R64::RAX, ret);
+                return;
+            }
             case 0x59: { // readlink
                 u64 path = rdi;
                 u64 buf = rsi;
