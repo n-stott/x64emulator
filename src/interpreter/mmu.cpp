@@ -1,5 +1,6 @@
 #include "interpreter/mmu.h"
 #include "interpreter/verify.h"
+#include <sys/mman.h>
 #include <cassert>
 #include <cstring>
 
@@ -16,11 +17,11 @@ namespace x64 {
     }
 
     Mmu::Region* Mmu::addRegion(Region region) {
-        auto nonEmptyIntersection = [&](const std::unique_ptr<Region>& ptr) {
-            return ptr->contains(region.base()) || ptr->contains(region.end() - 1);
+        auto emptyIntersection = [&](const std::unique_ptr<Region>& ptr) {
+            return !ptr->contains(region.base()) && !ptr->contains(region.end() - 1);
         };
-        verify(std::none_of(regions_.begin(), regions_.end(), nonEmptyIntersection), [&]() {
-            auto r = std::find_if(regions_.begin(), regions_.end(), nonEmptyIntersection);
+        verify(std::all_of(regions_.begin(), regions_.end(), emptyIntersection), [&]() {
+            auto r = std::find_if_not(regions_.begin(), regions_.end(), emptyIntersection);
             assert(r != regions_.end());
             fmt::print("Unable to add region : memory range [{:#x}, {:#x}] already occupied by region [{:#x}, {:#x}]\n", region.base(), region.end(), (*r)->base(), (*r)->end());
             dumpRegions();
@@ -42,6 +43,27 @@ namespace x64 {
 
         return r;
     }
+    
+    Mmu::Region* Mmu::addRegionAndEraseExisting(Region region) {
+        auto emptyIntersection = [&](const std::unique_ptr<Region>& ptr) {
+            return !ptr->contains(region.base()) && !ptr->contains(region.end() - 1);
+        };
+        for(auto it = regions_.begin(); it != regions_.end(); ++it) {
+            auto& ptr = *it;
+            if(emptyIntersection(ptr)) continue;
+            
+            std::vector<Region> splitRegions = ptr->split(region.base(), region.end());
+            removeRegion(*ptr);
+            for(size_t i = 0; i < splitRegions.size(); ++i) {
+                if(i == 1) continue;
+                Region r("", 0, 0, PROT::NONE);
+                std::swap(r, splitRegions[i]);
+                if(r.size() == 0) continue;
+                addRegion(std::move(r));
+            }
+        }
+        return addRegion(std::move(region));
+    }
 
     void Mmu::removeRegion(const Region& region) {
         u64 firstPage = pageRoundDown(region.base()) / PAGE_SIZE;
@@ -62,21 +84,46 @@ namespace x64 {
             fmt::print("mmap with non-zero flags not supported yet\n");
             fmt::print("ignored flags={:#x}\n", flags);
         }
-        verify(fd == 0, "mmap with non-zero fd not supported yet");
-        if(offset != 0) {
-            fmt::print("mmap with non-zero offset not supported yet");
-            fmt::print("ignored offset={:#x}\n", offset);
-        }
+
+        auto copyFromFd = [](Region* region, int fd, int offset, u64 length) {
+            verify(fd != 0);
+
+            // mmap the file
+            fmt::print("mmap({}, {}, {}, {}, {}, {})\n", nullptr, length, PROT_READ, MAP_PRIVATE, fd, offset);
+            void* src = ::mmap(nullptr, length, PROT_READ, MAP_PRIVATE, fd, offset);
+            verify(src != (void*)MAP_FAILED, [&]() {
+                perror("mmap");
+            });
+            
+            // copy data out
+            std::vector<u8> data;
+            data.resize(length, 0x0);
+            ::memcpy(data.data(), src, length);
+            
+            // immediatly unmap the file
+            if(::munmap(src, length) < 0) {
+                verify(false, "munmap failed");
+            }
+
+            // copy data to Region
+            PROT saved = region->prot();
+            region->prot_ = PROT::WRITE;
+            region->copyToRegion(region->base(), data.data(), length);
+            region->prot_ = saved;
+        };
+
         if(address == 0) {
             Region region("", topOfMemoryPageAligned(), pageRoundUp(length), (PROT)prot);
-            auto* regionPtr = addRegion(std::move(region));
+            auto* regionPtr = (flags & MAP_FIXED) ? addRegionAndEraseExisting(std::move(region)) : addRegion(std::move(region));
+            if(fd != 0) copyFromFd(regionPtr, fd, offset, length);
             return regionPtr->base();
         } else {
             verify(address % PAGE_SIZE == 0, [&]() {
                 fmt::print("mmap with non-page_size aligned address {:#x} not supported", address);
             });
             Region region("", address, pageRoundUp(length), (PROT)prot);
-            auto* regionPtr = addRegion(std::move(region));
+            auto* regionPtr = (flags & MAP_FIXED) ? addRegionAndEraseExisting(std::move(region)) : addRegion(std::move(region));
+            if(fd != 0) copyFromFd(regionPtr, fd, offset, length);
             return regionPtr->base();
         }
     }

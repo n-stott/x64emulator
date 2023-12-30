@@ -80,6 +80,7 @@ namespace x64 {
 
     private:
         Region* addRegion(Region region);
+        Region* addRegionAndEraseExisting(Region region);
         void removeRegion(const Region& region);
 
     public:
