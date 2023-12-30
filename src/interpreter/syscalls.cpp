@@ -55,6 +55,22 @@ namespace x64 {
         return mmu_->munmap(addr, length);
     }
 
+    u64 Sys::brk(u64 addr) {
+        return mmu_->brk(addr);
+    }
+
+    int Sys::access(u64 pathname, int mode) {
+        Ptr8 ptr{Segment::DS, pathname};
+        while(mmu_->read8(ptr) != 0) ++ptr;
+
+        std::vector<char> path;
+        path.resize(ptr.address-pathname, 0x0);
+        mmu_->copyFromMmu((u8*)path.data(), Ptr8{Segment::DS, pathname}, path.size());
+
+        int ret = ::access(path.data(), mode);
+        return ret;
+    }
+
     int Sys::uname(u64 buf) {
         struct utsname buffer;
         int ret = ::uname(&buffer);
@@ -87,10 +103,6 @@ namespace x64 {
 
         mmu_->copyToMmu(Ptr8{Segment::DS, buf}, (const u8*)buffer.data(), ret);
         return ret;
-    }
-
-    u64 Sys::brk(u64 addr) {
-        return mmu_->brk(addr);
     }
 
     void Sys::exit_group(int status) {

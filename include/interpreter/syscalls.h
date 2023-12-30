@@ -29,6 +29,8 @@ namespace x64 {
         int munmap(u64 addr, size_t length);
         // 0xc
         u64 brk(u64 addr);
+        // 0x15
+        int access(u64 pathname, int mode);
         // 0x3f
         int uname(u64 buf);
         // 04f

@@ -2746,6 +2746,13 @@ namespace x64 {
                 set(R64::RAX, newBreak);
                 return;
             }
+            case 0x15: { // access
+                u64 pathname = rdi;
+                int mode = (int)rsi;
+                int ret = vm_->syscalls().access(pathname, mode);
+                set(R32::EAX, (u32)ret);
+                return;
+            }
             case 0x3f: { // uname
                 u64 buf = rdi;
                 int ret = vm_->syscalls().uname(buf);
