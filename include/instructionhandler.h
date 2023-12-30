@@ -465,6 +465,8 @@ namespace x64 {
         virtual void exec(const Rep<Movs<Addr<Size::BYTE, B>, Addr<Size::BYTE, B>>>&) = 0;
         virtual void exec(const Rep<Movs<Addr<Size::DWORD, B>, Addr<Size::DWORD, B>>>&) = 0;
         virtual void exec(const Rep<Movs<M64, M64>>&) = 0;
+
+        virtual void exec(const Rep<Cmps<M8, M8>>&) = 0;
         
         virtual void exec(const Rep<Stos<M32, R32>>&) = 0;
         virtual void exec(const Rep<Stos<M64, R64>>&) = 0;

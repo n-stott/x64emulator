@@ -614,6 +614,11 @@ namespace utils {
         return fmt::format("{:9}{},{}", "stos", toString(ins.dst), toString(ins.src));
     }
 
+    template<typename Src1, typename Src2>
+    inline std::string toString(Cmps<Src1, Src2> ins) {
+        return fmt::format("{:9}{},{}", "cmps", toString(ins.src1), toString(ins.src2));
+    }
+
     template<typename StringOp>
     inline std::string toString(Rep<StringOp> ins) {
         return fmt::format("{:9}{}", "rep", toString(ins.op));

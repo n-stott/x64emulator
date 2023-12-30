@@ -1876,6 +1876,28 @@ namespace x64 {
         set(R64::RDI, dptr.address);
     }
     
+    void Cpu::exec(const Rep<Cmps<M8, M8>>& ins) {
+        u32 counter = get(R32::ECX);
+        Ptr8 s1ptr = resolve(ins.op.src1);
+        Ptr8 s2ptr = resolve(ins.op.src2);
+        while(counter) {
+            u8 s1 = mmu_->read8(s1ptr);
+            u8 s2 = mmu_->read8(s2ptr);
+            ++s1ptr;
+            ++s2ptr;
+            --counter;
+            Impl::cmp8(s1, s2, &flags_);
+            if(flags_.zero == 0) break;
+        }
+        set(R64::RCX, counter);
+        verify(std::holds_alternative<Addr<Size::BYTE, B>>(ins.op.src1));
+        verify(std::get<Addr<Size::BYTE, B>>(ins.op.src1).encoding.base == R64::RSI);
+        set(R64::RSI, s1ptr.address);
+        verify(std::holds_alternative<Addr<Size::BYTE, B>>(ins.op.src2));
+        verify(std::get<Addr<Size::BYTE, B>>(ins.op.src2).encoding.base == R64::RDI);
+        set(R64::RDI, s2ptr.address);
+    }
+    
     void Cpu::exec(const Rep<Stos<M32, R32>>& ins) {
         u32 counter = get(R32::ECX);
         Ptr32 dptr = resolve(ins.op.dst);
