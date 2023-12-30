@@ -2686,8 +2686,8 @@ namespace x64 {
                 size_t length = (size_t)rsi;
                 int prot = (int)rdx;
                 int flags = (int)r10;
-                int fd = (int)r9;
-                off_t offset = (off_t)r8;
+                int fd = (int)r8;
+                off_t offset = (off_t)r9;
                 u64 ptr = vm_->syscalls().mmap(addr, length, prot, flags, fd, offset);
                 set(R64::RAX, ptr);
                 return;
