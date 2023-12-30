@@ -221,6 +221,12 @@ namespace x64 {
         for(const auto& execSection : executableSections_) {
             if(address < execSection.end && execSection.end <= end) end = execSection.begin;
         }
+
+        if(address >= end) {
+            // This may happen if disassembly produces nonsense.
+            // Juste re-disassemble the whole region in this case.
+            end = mmuRegion->end();
+        }
         verify(address < end, [&]() {
             fmt::print(stderr, "Disassembly region [{:#x}-{:#x}] is empty\n", address, end);
         });
