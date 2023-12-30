@@ -161,7 +161,7 @@ namespace x64 {
 
         u64 topOfReserved_ = 0;
 
-        std::vector<std::unique_ptr<Region>> regions_;
+        std::deque<std::unique_ptr<Region>> regions_;
         std::vector<Region*> regionLookup_;
         u64 fsBase_ { 0 };
         
