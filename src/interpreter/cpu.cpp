@@ -2676,6 +2676,26 @@ namespace x64 {
         Impl::ptest(get(ins.dst), get(resolve(ins.src)), &flags_);
     }
 
+    u128 Cpu::Impl::pslldq(u128 dst, u8 src) {
+        dst.hi = (dst.hi << src) | (dst.lo >> (64-src));
+        dst.lo = (dst.lo << src);
+        return dst;
+    }
+
+    u128 Cpu::Impl::psrldq(u128 dst, u8 src) {
+        dst.lo = (dst.lo >> src) | (dst.hi << (64-src));
+        dst.hi = (dst.hi >> src);
+        return dst;
+    }
+
+    void Cpu::exec(const Pslldq<RSSE, Imm>& ins) {
+        set(ins.dst, Impl::pslldq(get(ins.dst), get<u8>(ins.src)));
+    }
+
+    void Cpu::exec(const Psrldq<RSSE, Imm>& ins) {
+        set(ins.dst, Impl::psrldq(get(ins.dst), get<u8>(ins.src)));
+    }
+
     void Cpu::exec(const Syscall&) {
         u64 rax = get(R64::RAX);
         u64 rdi = get(R64::RDI);

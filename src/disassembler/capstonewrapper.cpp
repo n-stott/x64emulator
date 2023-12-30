@@ -173,6 +173,8 @@ namespace x64 {
             case X86_INS_PSUBB: return makePsubb(insn);
             case X86_INS_PMINUB: return makePminub(insn);
             case X86_INS_PTEST: return makePtest(insn);
+            case X86_INS_PSLLDQ: return makePslldq(insn);
+            case X86_INS_PSRLDQ: return makePsrldq(insn);
             case X86_INS_RDTSC: return makeRdtsc(insn);
             case X86_INS_CPUID: return makeCpuid(insn);
             case X86_INS_XGETBV: return makeXgetbv(insn);
@@ -2454,6 +2456,28 @@ namespace x64 {
         auto mssesrc = asMemory128(src);
         if(rssedst && rssesrc) return make_wrapper<Ptest<RSSE, RSSE>>(insn.address, rssedst.value(), rssesrc.value());
         if(rssedst && mssesrc) return make_wrapper<Ptest<RSSE, MSSE>>(insn.address, rssedst.value(), mssesrc.value());
+        return make_failed(insn);
+    }
+
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makePslldq(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto immsrc = asImmediate(src);
+        if(rssedst && immsrc) return make_wrapper<Pslldq<RSSE, Imm>>(insn.address, rssedst.value(), immsrc.value());
+        return make_failed(insn);
+    }
+
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makePsrldq(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto immsrc = asImmediate(src);
+        if(rssedst && immsrc) return make_wrapper<Psrldq<RSSE, Imm>>(insn.address, rssedst.value(), immsrc.value());
         return make_failed(insn);
     }
 

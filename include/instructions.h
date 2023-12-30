@@ -621,6 +621,18 @@ namespace x64 {
         Dst dst;
         Src src;
     };
+
+    template<typename Dst, typename Src>
+    struct Pslldq {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
+    struct Psrldq {
+        Dst dst;
+        Src src;
+    };
     
     struct Syscall {
 

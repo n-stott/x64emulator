@@ -152,6 +152,9 @@ namespace x64 {
 
             static void ptest(u128 dst, u128 src, Flags* flags);
 
+            [[nodiscard]] static u128 pslldq(u128 dst, u8 src);
+            [[nodiscard]] static u128 psrldq(u128 dst, u8 src);
+
             [[nodiscard]] static f80 fadd(f80 dst, f80 src, X87Fpu* fpu);
             [[nodiscard]] static f80 fmul(f80 dst, f80 src, X87Fpu* fpu);
             [[nodiscard]] static f80 fdiv(f80 dst, f80 src, X87Fpu* fpu);
@@ -858,6 +861,9 @@ namespace x64 {
 
         void exec(const Ptest<RSSE, RSSE>&) override;
         void exec(const Ptest<RSSE, MSSE>&) override;
+
+        void exec(const Pslldq<RSSE, Imm>&) override;
+        void exec(const Psrldq<RSSE, Imm>&) override;
         
         void exec(const Rdtsc&) override;
 

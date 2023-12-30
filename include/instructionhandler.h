@@ -630,6 +630,9 @@ namespace x64 {
         virtual void exec(const Ptest<RSSE, RSSE>&) = 0;
         virtual void exec(const Ptest<RSSE, MSSE>&) = 0;
 
+        virtual void exec(const Pslldq<RSSE, Imm>&) = 0;
+        virtual void exec(const Psrldq<RSSE, Imm>&) = 0;
+
         virtual void exec(const Rdtsc&) = 0;
 
         virtual void exec(const Cpuid&) = 0;
