@@ -34,7 +34,7 @@ namespace x64 {
 
         virtual void setAuxiliary(Auxiliary auxiliary) = 0;
 
-        virtual u64 mmap(u64 address, u64 length, PROT prot, int flags, int fd, int offset) = 0;
+        virtual u64 mmap(u64 address, u64 length, PROT prot, MAP flags, int fd, int offset) = 0;
         virtual int munmap(u64 address, u64 length) = 0;
         virtual int mprotect(u64 address, u64 length, PROT prot) = 0;
         virtual void setRegionName(u64 address, std::string name) = 0;

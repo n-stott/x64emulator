@@ -27,6 +27,20 @@ namespace x64 {
         return (PROT)((int)a & (int)b);
     }
 
+    enum class MAP {
+        PRIVATE,
+        FIXED,
+        ANONYMOUS,
+    };
+
+    inline MAP operator|(MAP a, MAP b) {
+        return (MAP)((int)a | (int)b);
+    }
+    
+    inline MAP operator&(MAP a, MAP b) {
+        return (MAP)((int)a & (int)b);
+    }
+
     class Mmu {
     public:
         class Region {
@@ -86,7 +100,7 @@ namespace x64 {
     public:
         Mmu();
 
-        u64 mmap(u64 address, u64 length, PROT prot, int flags, int fd, int offset);
+        u64 mmap(u64 address, u64 length, PROT prot, MAP flags, int fd, int offset);
         int munmap(u64 address, u64 length);
         int mprotect(u64 address, u64 length, PROT prot);
         u64 brk(u64 address);

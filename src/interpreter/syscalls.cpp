@@ -3,6 +3,7 @@
 #include "interpreter/mmu.h"
 #include "interpreter/verify.h"
 #include <asm/prctl.h>
+#include <sys/mman.h>
 #include <sys/prctl.h>
 #include <sys/stat.h>
 #include <sys/utsname.h>
@@ -44,7 +45,10 @@ namespace x64 {
     }
 
     u64 Sys::mmap(u64 addr, size_t length, int prot, int flags, int fd, off_t offset) {
-        return mmu_->mmap(addr, length, (PROT)prot, flags, fd, (int)offset);
+        MAP f = MAP::PRIVATE;
+        if(flags & MAP_ANONYMOUS) f = f | MAP::ANONYMOUS;
+        if(flags & MAP_FIXED) f = f | MAP::FIXED;
+        return mmu_->mmap(addr, length, (PROT)prot, f, fd, (int)offset);
     }
 
     int Sys::mprotect(u64 addr, size_t length, int prot) {

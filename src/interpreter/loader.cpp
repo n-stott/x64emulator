@@ -84,7 +84,7 @@ namespace x64 {
         });
 
         auto getOffsetForPositionIndependentExecutable = [&]() {
-            u64 elfOffset = loadable_->mmap(0, totalLoadSize, PROT::NONE, 0, 0, 0);
+            u64 elfOffset = loadable_->mmap(0, totalLoadSize, PROT::NONE, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0);
             loadable_->munmap(elfOffset, totalLoadSize);
             return elfOffset;
         };
@@ -167,7 +167,7 @@ namespace x64 {
     }
 
     void Loader::loadExecutableProgramHeader(const elf::Elf64& elf, const elf::ProgramHeader64& header, const std::string&, const std::string& shortFilePath, u64 elfOffset) {
-        u64 execSectionBase = loadable_->mmap(elfOffset + header.virtualAddress(), Mmu::pageRoundUp(header.sizeInMemory()), PROT::EXEC | PROT::READ | PROT::WRITE, 0, 0, 0);
+        u64 execSectionBase = loadable_->mmap(elfOffset + header.virtualAddress(), Mmu::pageRoundUp(header.sizeInMemory()), PROT::EXEC | PROT::READ | PROT::WRITE, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0);
         
         verify(header.virtualAddress() % Mmu::PAGE_SIZE == 0);
         const u8* data = elf.dataAtOffset(header.offset(), header.sizeInFile());
@@ -181,7 +181,7 @@ namespace x64 {
         u64 start = Mmu::pageRoundDown(elfOffset + header.virtualAddress());
         u64 end = Mmu::pageRoundUp(elfOffset + header.virtualAddress() + header.sizeInMemory());
         u64 nonExecSectionSize = end-start;
-        u64 nonExecSectionBase = loadable_->mmap(start, nonExecSectionSize, PROT::WRITE, 0, 0, 0);
+        u64 nonExecSectionBase = loadable_->mmap(start, nonExecSectionSize, PROT::WRITE, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0);
 
         const u8* data = elf.dataAtOffset(header.offset(), header.sizeInFile());
         loadable_->write(nonExecSectionBase + header.virtualAddress() % Mmu::PAGE_SIZE, data, header.sizeInFile()); // Mmu regions are 0 initialized
@@ -223,10 +223,10 @@ namespace x64 {
         verify(Mmu::pageRoundUp(sizeof(TCB)) == Mmu::PAGE_SIZE, "TCB should fit within a single page");
 
         u64 tlsRegionAndTcbSize = tlsDataSize_ + Mmu::pageRoundUp(sizeof(TCB));
-        u64 tlsRegionAndTcbBase = loadable_->mmap(0, tlsRegionAndTcbSize, PROT::NONE, 0, 0, 0);
+        u64 tlsRegionAndTcbBase = loadable_->mmap(0, tlsRegionAndTcbSize, PROT::NONE, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0);
         loadable_->munmap(tlsRegionAndTcbBase, tlsRegionAndTcbSize);
 
-        u64 tlsRegionBase = loadable_->mmap(tlsRegionAndTcbBase, tlsDataSize_, PROT::READ | PROT::WRITE, 0, 0, 0);
+        u64 tlsRegionBase = loadable_->mmap(tlsRegionAndTcbBase, tlsDataSize_, PROT::READ | PROT::WRITE, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0);
         loadable_->setRegionName(tlsRegionBase, "tls");
 
         u64 tlsEnd = tlsRegionBase + tlsDataSize_;
@@ -241,7 +241,7 @@ namespace x64 {
             loadable_->registerTlsBlock(templateAddress, tlsRegionBase + tlsDataSize_ - block.tlsOffset);
         }
 
-        u64 tcbBase = loadable_->mmap(tlsEnd, Mmu::PAGE_SIZE, PROT::READ | PROT::WRITE, 0, 0, 0);
+        u64 tcbBase = loadable_->mmap(tlsEnd, Mmu::PAGE_SIZE, PROT::READ | PROT::WRITE, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0);
         verify(tcbBase == tlsEnd, "tcb must be allocated right after the tls section");
         loadable_->setRegionName(tcbBase, "TCB");
 

@@ -3,6 +3,9 @@
 #include <sys/mman.h>
 #include <cassert>
 #include <cstring>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #define DEBUG_MMU 0
 
@@ -79,14 +82,9 @@ namespace x64 {
         }), regions_.end());
     }
 
-    u64 Mmu::mmap(u64 address, u64 length, PROT prot, int flags, int fd, int offset) {
-        if(flags != 0) {
-            fmt::print("mmap with non-zero flags not supported yet\n");
-            fmt::print("ignored flags={:#x}\n", flags);
-        }
-
+    u64 Mmu::mmap(u64 address, u64 length, PROT prot, MAP flags, int fd, int offset) {
         auto copyFromFd = [](Region* region, int fd, int offset, u64 length) {
-            verify(fd != 0);
+            verify(fd >= 0);
 
             // mmap the file
             fmt::print("mmap({}, {}, {}, {}, {}, {})\n", nullptr, length, PROT_READ, MAP_PRIVATE, fd, offset);
@@ -94,11 +92,17 @@ namespace x64 {
             verify(src != (void*)MAP_FAILED, [&]() {
                 perror("mmap");
             });
+
+            // figure out size
+            struct stat buf;
+            if(::fstat(fd, &buf) < 0) {
+                perror("fstat");
+                verify(false, "fstat failed");
+            }
+            size_t size = std::min((size_t)buf.st_size, (size_t)length);
             
             // copy data out
-            std::vector<u8> data;
-            data.resize(length, 0x0);
-            ::memcpy(data.data(), src, length);
+            std::vector<u8> data((const u8*)src, (const u8*)(src)+size);
             
             // immediatly unmap the file
             if(::munmap(src, length) < 0) {
@@ -108,22 +112,32 @@ namespace x64 {
             // copy data to Region
             PROT saved = region->prot();
             region->prot_ = PROT::WRITE;
-            region->copyToRegion(region->base(), data.data(), length);
+            region->copyToRegion(region->base(), data.data(), size);
             region->prot_ = saved;
         };
 
         if(address == 0) {
             Region region("", topOfMemoryPageAligned(), pageRoundUp(length), (PROT)prot);
-            auto* regionPtr = (flags & MAP_FIXED) ? addRegionAndEraseExisting(std::move(region)) : addRegion(std::move(region));
-            if(fd != 0) copyFromFd(regionPtr, fd, offset, length);
+            Region* regionPtr = nullptr;
+            if((bool)(flags & MAP::FIXED)) {
+                regionPtr = addRegionAndEraseExisting(std::move(region));
+            } else {
+                regionPtr = addRegion(std::move(region));
+            }
+            if(!(bool)(flags & MAP::ANONYMOUS)) copyFromFd(regionPtr, fd, offset, length);
             return regionPtr->base();
         } else {
             verify(address % PAGE_SIZE == 0, [&]() {
                 fmt::print("mmap with non-page_size aligned address {:#x} not supported", address);
             });
             Region region("", address, pageRoundUp(length), (PROT)prot);
-            auto* regionPtr = (flags & MAP_FIXED) ? addRegionAndEraseExisting(std::move(region)) : addRegion(std::move(region));
-            if(fd != 0) copyFromFd(regionPtr, fd, offset, length);
+            Region* regionPtr = nullptr;
+            if((bool)(flags & MAP::FIXED)) {
+                regionPtr = addRegionAndEraseExisting(std::move(region));
+            } else {
+                regionPtr = addRegion(std::move(region));
+            }
+            if(!(bool)(flags & MAP::ANONYMOUS)) copyFromFd(regionPtr, fd, offset, length);
             return regionPtr->base();
         }
     }

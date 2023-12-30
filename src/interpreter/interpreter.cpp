@@ -51,7 +51,7 @@ namespace x64 {
         auxiliary_ = auxiliary;
     }
 
-    u64 Interpreter::mmap(u64 address, u64 length, PROT prot, int flags, int fd, int offset) {
+    u64 Interpreter::mmap(u64 address, u64 length, PROT prot, MAP flags, int fd, int offset) {
         return vm_.mmu().mmap(address, length, prot, flags, fd, offset);
     }
 
@@ -127,7 +127,7 @@ namespace x64 {
         {
             // page with random 16-bit value for AT_RANDOM
             verify(auxiliary_.has_value(), "no auxiliary...");
-            u64 random = vm_.mmu().mmap(0x0, Mmu::PAGE_SIZE, PROT::READ | PROT::WRITE, 0, 0, 0);
+            u64 random = vm_.mmu().mmap(0x0, Mmu::PAGE_SIZE, PROT::READ | PROT::WRITE, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0);
             vm_.mmu().setRegionName(random, "random");
             vm_.mmu().write16(Ptr16{Segment::DS, random}, 0xabcd);
             vm_.mmu().mprotect(random, Mmu::PAGE_SIZE, PROT::READ);
@@ -136,7 +136,7 @@ namespace x64 {
 
         {
             // page with platform string
-            u64 platformstring = vm_.mmu().mmap(0x0, Mmu::PAGE_SIZE, PROT::READ | PROT::WRITE, 0, 0, 0);
+            u64 platformstring = vm_.mmu().mmap(0x0, Mmu::PAGE_SIZE, PROT::READ | PROT::WRITE, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0);
             vm_.mmu().setRegionName(platformstring, "platform string");
             std::string platform = "x86_64";
             std::vector<u8> buffer;
@@ -150,14 +150,14 @@ namespace x64 {
         {
             // heap
             u64 heapSize = 64*Mmu::PAGE_SIZE;
-            u64 heapBase = vm_.mmu().mmap(0, heapSize, PROT::READ | PROT::WRITE, 0, 0, 0);
+            u64 heapBase = vm_.mmu().mmap(0, heapSize, PROT::READ | PROT::WRITE, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0);
             vm_.mmu().setRegionName(heapBase, "heap");
         }
 
         {
             // stack
             u64 stackSize = 16*Mmu::PAGE_SIZE;
-            u64 stackBase = vm_.mmu().mmap(0x10000000, stackSize, PROT::READ | PROT::WRITE, 0, 0, 0);
+            u64 stackBase = vm_.mmu().mmap(0x10000000, stackSize, PROT::READ | PROT::WRITE, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0);
             vm_.mmu().setRegionName(stackBase, "stack");
             vm_.setStackPointer(stackBase + stackSize);
         }
@@ -165,8 +165,8 @@ namespace x64 {
 
     void Interpreter::pushProgramArguments(const std::string& programFilePath, const std::vector<std::string>& arguments, const std::vector<std::string>& environmentVariables) {
         VerificationScope::run([&]() {
-            mmap(0, Mmu::PAGE_SIZE, PROT::NONE, 0, 0, 0); // throwaway page
-            u64 argumentPage = mmap(0, Mmu::PAGE_SIZE, PROT::READ | PROT::WRITE, 0, 0, 0);
+            mmap(0, Mmu::PAGE_SIZE, PROT::NONE, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0); // throwaway page
+            u64 argumentPage = mmap(0, Mmu::PAGE_SIZE, PROT::READ | PROT::WRITE, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0);
             vm_.mmu().setRegionName(argumentPage, "program arguments");
             Ptr8 argumentPtr { Segment::DS, argumentPage };
 

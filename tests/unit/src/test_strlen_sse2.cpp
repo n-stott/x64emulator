@@ -43,11 +43,11 @@ int main() {
     u64 length = 0;
 
     VerificationScope::run([&]() {
-        u64 execPage = vm.mmu().mmap(0, Mmu::PAGE_SIZE, PROT::READ | PROT::WRITE | PROT::EXEC, 0, 0, 0);
+        u64 execPage = vm.mmu().mmap(0, Mmu::PAGE_SIZE, PROT::READ | PROT::WRITE | PROT::EXEC, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0);
         vm.mmu().copyToMmu(Ptr8{Segment::CS, execPage}, strlen_sse2.data(), strlen_sse2.size());
         vm.mmu().mprotect(execPage, Mmu::PAGE_SIZE, PROT::READ | PROT::EXEC);
 
-        u64 dataPage = vm.mmu().mmap(0, Mmu::PAGE_SIZE, PROT::READ | PROT::WRITE, 0, 0, 0);
+        u64 dataPage = vm.mmu().mmap(0, Mmu::PAGE_SIZE, PROT::READ | PROT::WRITE, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0);
         vm.mmu().copyToMmu(Ptr8{Segment::DS, dataPage}, (const u8*)string.data(), string.size());
 
         vm.set(R64::RDI, dataPage);

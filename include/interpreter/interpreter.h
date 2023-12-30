@@ -24,7 +24,7 @@ namespace x64 {
 
         void setAuxiliary(Auxiliary auxiliary) override;
 
-        u64 mmap(u64 address, u64 length, PROT prot, int flags, int fd, int offset) override;
+        u64 mmap(u64 address, u64 length, PROT prot, MAP flags, int fd, int offset) override;
         int munmap(u64 address, u64 length) override;
         int mprotect(u64 address, u64 length, PROT prot) override;
         void setRegionName(u64 address, std::string name) override;
