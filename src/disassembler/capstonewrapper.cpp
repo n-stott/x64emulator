@@ -160,13 +160,17 @@ namespace x64 {
             case X86_INS_POR: return makePor(insn);
             case X86_INS_XORPS:
             case X86_INS_XORPD: return makeXorpd(insn);
-            case X86_INS_MOVHPS: return makeMovhps(insn);
+            case X86_INS_MOVLPS:
+            case X86_INS_MOVLPD: return makeMovlps(insn);
+            case X86_INS_MOVHPS: 
+            case X86_INS_MOVHPD: return makeMovhps(insn);
             case X86_INS_PUNPCKLBW: return makePunpcklbw(insn);
             case X86_INS_PUNPCKLWD: return makePunpcklwd(insn);
             case X86_INS_PUNPCKLQDQ: return makePunpcklqdq(insn);
             case X86_INS_PSHUFD: return makePshufd(insn);
             case X86_INS_PCMPEQB: return makePcmpeqb(insn);
             case X86_INS_PMOVMSKB: return makePmovmskb(insn);
+            case X86_INS_PSUBB: return makePsubb(insn);
             case X86_INS_PMINUB: return makePminub(insn);
             case X86_INS_PTEST: return makePtest(insn);
             case X86_INS_RDTSC: return makeRdtsc(insn);
@@ -2320,6 +2324,17 @@ namespace x64 {
         return make_failed(insn);
     }
 
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makeMovlps(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto m64src = asMemory64(src);
+        if(rssedst && m64src) return make_wrapper<Movlps<RSSE, M64>>(insn.address, rssedst.value(), m64src.value());
+        return make_failed(insn);
+    }
+
     std::unique_ptr<X86Instruction> CapstoneWrapper::makeMovhps(const cs_insn& insn) {
         const auto& x86detail = insn.detail->x86;
         assert(x86detail.op_count == 2);
@@ -2400,6 +2415,19 @@ namespace x64 {
         auto r32dst = asRegister32(dst);
         auto rssesrc = asRegister128(src);
         if(r32dst && rssesrc) return make_wrapper<Pmovmskb<R32, RSSE>>(insn.address, r32dst.value(), rssesrc.value());
+        return make_failed(insn);
+    }
+
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makePsubb(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto rssesrc = asRegister128(src);
+        auto mssesrc = asMemory128(src);
+        if(rssedst && rssesrc) return make_wrapper<Psubb<RSSE, RSSE>>(insn.address, rssedst.value(), rssesrc.value());
+        if(rssedst && mssesrc) return make_wrapper<Psubb<RSSE, MSSE>>(insn.address, rssedst.value(), mssesrc.value());
         return make_failed(insn);
     }
 

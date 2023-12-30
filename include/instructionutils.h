@@ -810,6 +810,11 @@ namespace utils {
     }
 
     template<typename Dst, typename Src>
+    inline std::string toString(Movlps<Dst, Src> ins) {
+        return fmt::format("{:9}{},{}", "movlps", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Dst, typename Src>
     inline std::string toString(Xorpd<Dst, Src> ins) {
         return fmt::format("{:9}{},{}", "xorpd", toString(ins.dst), toString(ins.src));
     }
@@ -847,6 +852,11 @@ namespace utils {
     template<typename Dst, typename Src>
     inline std::string toString(Pmovmskb<Dst, Src> ins) {
         return fmt::format("{:9}{},{}", "pmovmskb", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Dst, typename Src>
+    inline std::string toString(Psubb<Dst, Src> ins) {
+        return fmt::format("{:9}{},{}", "psubb", toString(ins.dst), toString(ins.src));
     }
 
     template<typename Dst, typename Src>

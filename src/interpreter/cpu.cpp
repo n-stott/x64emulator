@@ -2473,6 +2473,13 @@ namespace x64 {
         set(ins.dst, dst);
     }
 
+    void Cpu::exec(const Movlps<RSSE, M64>& ins) {
+        u128 dst = get(ins.dst);
+        u64 src = get(resolve(ins.src));
+        dst.lo = src;
+        set(ins.dst, dst);
+    }
+
     void Cpu::exec(const Movhps<RSSE, M64>& ins) {
         u128 dst = get(ins.dst);
         u64 src = get(resolve(ins.src));
@@ -2602,6 +2609,32 @@ namespace x64 {
     void Cpu::exec(const Pmovmskb<R32, RSSE>& ins) {
         u16 dst = Impl::pmovmskb(get(ins.src));
         set(ins.dst, zeroExtend<u32, u16>(dst));
+    }
+
+    u128 Cpu::Impl::psubb(u128 dst, u128 src) {
+        std::array<u8, 16> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        ::memcpy(DST.data(), &dst, sizeof(u128));
+
+        std::array<u8, 16> SRC;
+        static_assert(sizeof(SRC) == sizeof(u128));
+        ::memcpy(SRC.data(), &src, sizeof(u128));
+
+        for(int i = 0; i < 16; ++i) {
+            DST[i] -= SRC[i];
+        }
+        ::memcpy(&dst, DST.data(), sizeof(u128));
+        return dst;
+    }
+
+    void Cpu::exec(const Psubb<RSSE, RSSE>& ins) {
+        u128 res = Impl::psubb(get(ins.dst), get(ins.src));
+        set(ins.dst, res);
+    }
+
+    void Cpu::exec(const Psubb<RSSE, MSSE>& ins) {
+        u128 res = Impl::psubb(get(ins.dst), get(resolve(ins.src)));
+        set(ins.dst, res);
     }
 
     u128 Cpu::Impl::pminub(u128 dst, u128 src) {

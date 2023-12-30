@@ -146,6 +146,8 @@ namespace x64 {
 
             [[nodiscard]] static u16 pmovmskb(u128 src);
 
+            [[nodiscard]] static u128 psubb(u128 dst, u128 src);
+
             [[nodiscard]] static u128 pminub(u128 dst, u128 src);
 
             static void ptest(u128 dst, u128 src, Flags* flags);
@@ -832,6 +834,8 @@ namespace x64 {
 
         void exec(const Por<RSSE, RSSE>&) override;
         void exec(const Xorpd<RSSE, RSSE>&) override;
+
+        void exec(const Movlps<RSSE, M64>&) override;
         void exec(const Movhps<RSSE, M64>&) override;
 
         void exec(const Punpcklbw<RSSE, RSSE>&) override;
@@ -845,6 +849,9 @@ namespace x64 {
         void exec(const Pcmpeqb<RSSE, MSSE>&) override;
 
         void exec(const Pmovmskb<R32, RSSE>&) override;
+
+        void exec(const Psubb<RSSE, RSSE>&) override;
+        void exec(const Psubb<RSSE, MSSE>&) override;
 
         void exec(const Pminub<RSSE, RSSE>&) override;
         void exec(const Pminub<RSSE, MSSE>&) override;

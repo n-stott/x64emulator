@@ -171,6 +171,7 @@ namespace x64 {
         static std::unique_ptr<X86Instruction> makePor(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeXorpd(const cs_insn& insn);
 
+        static std::unique_ptr<X86Instruction> makeMovlps(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeMovhps(const cs_insn& insn);
 
         static std::unique_ptr<X86Instruction> makePunpcklbw(const cs_insn& insn);
@@ -179,6 +180,7 @@ namespace x64 {
         static std::unique_ptr<X86Instruction> makePshufd(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makePcmpeqb(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makePmovmskb(const cs_insn& insn);
+        static std::unique_ptr<X86Instruction> makePsubb(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makePminub(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makePtest(const cs_insn& insn);
 

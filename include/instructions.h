@@ -556,6 +556,12 @@ namespace x64 {
     };
 
     template<typename Dst, typename Src>
+    struct Movlps {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
     struct Movhps {
         Dst dst;
         Src src;
@@ -594,6 +600,12 @@ namespace x64 {
 
     template<typename Dst, typename Src>
     struct Pmovmskb {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
+    struct Psubb {
         Dst dst;
         Src src;
     };
