@@ -129,12 +129,12 @@ add_test(NAME nontrivialstatic COMMAND ${CMAKE_BINARY_DIR}/interpreter test_nont
 
 add_executable(test_threadlocal src/test_threadlocal.cpp)
 target_compile_options(test_threadlocal PUBLIC ${CC_OPTIONS})
-target_link_options(test_threadlocal PUBLIC ${LD_OPTIONS} -static-libstdc++ -static-libgcc -static)
+target_link_options(test_threadlocal PUBLIC ${LD_OPTIONS} -static)
 add_test(NAME threadlocal COMMAND ${CMAKE_BINARY_DIR}/interpreter test_threadlocal)
 
 add_executable(test_threadlocal_ctor_dtor src/test_threadlocal_ctor_dtor.cpp)
 target_compile_options(test_threadlocal_ctor_dtor PUBLIC ${CC_OPTIONS})
-target_link_options(test_threadlocal_ctor_dtor PUBLIC ${LD_OPTIONS} -static-libstdc++ -static-libgcc -static)
+target_link_options(test_threadlocal_ctor_dtor PUBLIC ${LD_OPTIONS} -static)
 add_test(NAME threadlocal_ctor_dtor COMMAND ${CMAKE_BINARY_DIR}/interpreter test_threadlocal_ctor_dtor)
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/testfile.txt
