@@ -113,6 +113,7 @@ namespace x64 {
             if(c == 0) break;
             ++ptr;
         }
+        verify((flags & O_ACCMODE) == O_RDONLY, "Writing to files is not supported");
         return ::openat(dirfd, pathnamestring.data(), flags, mode);
     }
 
