@@ -178,8 +178,8 @@ namespace x64 {
                 std::memcpy(buffer.data(), s.c_str(), s.size());
                 verify(buffer.back() == 0x0, "string is not null-terminated");
                 vm_.mmu().copyToMmu(argumentPtr, buffer.data(), buffer.size());
-                argumentPtr += buffer.size();
                 argumentPositions.push_back(argumentPtr.address);
+                argumentPtr += buffer.size();
             };
 
             // write argv
