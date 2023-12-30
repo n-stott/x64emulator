@@ -55,7 +55,7 @@ namespace x64 {
             auto& ptr = *it;
             if(emptyIntersection(ptr)) continue;
             
-            std::vector<Region> splitRegions = ptr->split(region.base(), region.end());
+            std::array<Region, 3> splitRegions = ptr->split(region.base(), region.end());
             removeRegion(*ptr);
             for(size_t i = 0; i < splitRegions.size(); ++i) {
                 if(i == 1) continue;
@@ -116,30 +116,20 @@ namespace x64 {
             region->prot_ = saved;
         };
 
-        if(address == 0) {
-            Region region("", topOfMemoryPageAligned(), pageRoundUp(length), (PROT)prot);
-            Region* regionPtr = nullptr;
-            if((bool)(flags & MAP::FIXED)) {
-                regionPtr = addRegionAndEraseExisting(std::move(region));
-            } else {
-                regionPtr = addRegion(std::move(region));
-            }
-            if(!(bool)(flags & MAP::ANONYMOUS)) copyFromFd(regionPtr, fd, offset, length);
-            return regionPtr->base();
+        verify(address % PAGE_SIZE == 0, [&]() {
+            fmt::print("mmap with non-page_size aligned address {:#x} not supported", address);
+        });
+
+        u64 baseAddress = (address != 0) ? address : topOfMemoryPageAligned();
+        Region region("", baseAddress, pageRoundUp(length), (PROT)prot);
+        Region* regionPtr = nullptr;
+        if((bool)(flags & MAP::FIXED)) {
+            regionPtr = addRegionAndEraseExisting(std::move(region));
         } else {
-            verify(address % PAGE_SIZE == 0, [&]() {
-                fmt::print("mmap with non-page_size aligned address {:#x} not supported", address);
-            });
-            Region region("", address, pageRoundUp(length), (PROT)prot);
-            Region* regionPtr = nullptr;
-            if((bool)(flags & MAP::FIXED)) {
-                regionPtr = addRegionAndEraseExisting(std::move(region));
-            } else {
-                regionPtr = addRegion(std::move(region));
-            }
-            if(!(bool)(flags & MAP::ANONYMOUS)) copyFromFd(regionPtr, fd, offset, length);
-            return regionPtr->base();
+            regionPtr = addRegion(std::move(region));
         }
+        if(!(bool)(flags & MAP::ANONYMOUS)) copyFromFd(regionPtr, fd, offset, length);
+        return regionPtr->base();
     }
 
     int Mmu::munmap(u64 address, u64 length) {
@@ -151,7 +141,7 @@ namespace x64 {
             removeRegion(*regionPtr);
             return 0;
         }
-        std::vector<Region> splitRegions = regionPtr->split(address, address+length);
+        std::array<Region, 3> splitRegions = regionPtr->split(address, address+length);
         removeRegion(*regionPtr);
         for(size_t i = 0; i < splitRegions.size(); ++i) {
             if(i == 1) continue;
@@ -171,7 +161,7 @@ namespace x64 {
             regionPtr->prot_ = prot;
             return 0;
         }
-        std::vector<Region> splitRegions = regionPtr->split(address, address+length);
+        std::array<Region, 3> splitRegions = regionPtr->split(address, address+length);
         removeRegion(*regionPtr);
         for(size_t i = 0; i < splitRegions.size(); ++i) {
             Region r("", 0, 0, PROT::NONE);
@@ -411,27 +401,21 @@ namespace x64 {
         std::memcpy(dst, &data_[src-base_], n);
     }
 
-    std::vector<Mmu::Region> Mmu::Region::split(u64 left, u64 right) const {
+    std::array<Mmu::Region, 3> Mmu::Region::split(u64 left, u64 right) const {
         verify(left <= right);
         verify(contains(left));
         verify(contains(right) || right == end());
-        std::vector<Region> res;
-        res.reserve(3);
-        {
-            Region l(file_, base_, left-base_, prot_);
-            std::memcpy(l.data_.data(), data_.data(), left-base_);
-            res.push_back(std::move(l));
-        }
-        {
-            Region m(file_, left, right-left, prot_);
-            std::memcpy(m.data_.data(), data_.data()+left-base_, right-left);
-            res.push_back(std::move(m));
-        }
-        {
-            Region r(file_, right, end()-right, prot_);
-            std::memcpy(r.data_.data(), data_.data()+right-base_, end()-right);
-            res.push_back(std::move(r));
-        }
+
+        Region l(file_, base_, left-base_, prot_);
+        std::memcpy(l.data_.data(), data_.data(), left-base_);
+        
+        Region m(file_, left, right-left, prot_);
+        std::memcpy(m.data_.data(), data_.data()+left-base_, right-left);
+        
+        Region r(file_, right, end()-right, prot_);
+        std::memcpy(r.data_.data(), data_.data()+right-base_, end()-right);
+
+        std::array<Region, 3> res {{ std::move(l), std::move(m), std::move(r) }};
         return res;
     }
 

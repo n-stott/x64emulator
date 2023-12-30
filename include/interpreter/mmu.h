@@ -3,6 +3,7 @@
 
 #include "utils/utils.h"
 #include "types.h"
+#include <array>
 #include <deque>
 #include <memory>
 #include <string>
@@ -55,7 +56,7 @@ namespace x64 {
 
             bool contains(u64 address) const;
 
-            std::vector<Region> split(u64 left, u64 right) const;
+            std::array<Region, 3> split(u64 left, u64 right) const;
 
             u8 read8(u64 address) const;
             u16 read16(u64 address) const;
