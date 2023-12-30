@@ -2766,6 +2766,14 @@ namespace x64 {
                 set(R64::RAX, newBreak);
                 return;
             }
+            case 0x14: { // writev
+                int fd = (int)rdi;
+                u64 iov = rsi;
+                int iovcnt = (int)rdx;
+                ssize_t nbytes = vm_->syscalls().writev(fd, iov, iovcnt);
+                set(R64::RAX, (u64)nbytes);
+                return;
+            }
             case 0x15: { // access
                 u64 pathname = rdi;
                 int mode = (int)rsi;

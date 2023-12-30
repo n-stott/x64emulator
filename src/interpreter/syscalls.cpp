@@ -6,6 +6,7 @@
 #include <sys/mman.h>
 #include <sys/prctl.h>
 #include <sys/stat.h>
+#include <sys/uio.h>
 #include <sys/utsname.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -61,6 +62,23 @@ namespace x64 {
 
     u64 Sys::brk(u64 addr) {
         return mmu_->brk(addr);
+    }
+
+    ssize_t Sys::writev(int fd, u64 iov, int iovcnt) {
+        std::vector<struct iovec> iovs;
+        iovs.resize(iovcnt);
+        mmu_->copyFromMmu((u8*)iovs.data(), Ptr8{Segment::DS, iov}, iovcnt*sizeof(struct iovec));
+
+        std::vector<u8> buffer;
+        ssize_t nbytes = 0;
+        for(int i = 0; i < iovcnt; ++i) {
+            void* base = iovs[i].iov_base;
+            size_t len = iovs[i].iov_len;
+            buffer.resize(len);
+            mmu_->copyFromMmu(buffer.data(), Ptr8{Segment::DS, (u64)base}, len);
+            nbytes += ::write(fd, buffer.data(), len);
+        }
+        return nbytes;
     }
 
     int Sys::access(u64 pathname, int mode) {
