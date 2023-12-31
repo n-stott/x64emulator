@@ -1,11 +1,8 @@
 #include "interpreter/mmu.h"
 #include "interpreter/verify.h"
-#include <sys/mman.h>
+#include "utils/host.h"
 #include <cassert>
 #include <cstring>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
 
 #define DEBUG_MMU 0
 
@@ -85,34 +82,10 @@ namespace x64 {
     u64 Mmu::mmap(u64 address, u64 length, PROT prot, MAP flags, int fd, int offset) {
         auto copyFromFd = [](Region* region, int fd, int offset, u64 length) {
             verify(fd >= 0);
-
-            // mmap the file
-            fmt::print("mmap({}, {}, {}, {}, {}, {})\n", nullptr, length, PROT_READ, MAP_PRIVATE, fd, offset);
-            void* src = ::mmap(nullptr, length, PROT_READ, MAP_PRIVATE, fd, offset);
-            verify(src != (void*)MAP_FAILED, [&]() {
-                perror("mmap");
-            });
-
-            // figure out size
-            struct stat buf;
-            if(::fstat(fd, &buf) < 0) {
-                perror("fstat");
-                verify(false, "fstat failed");
-            }
-            size_t size = std::min((size_t)buf.st_size, (size_t)length);
-            
-            // copy data out
-            std::vector<u8> data((const u8*)src, (const u8*)(src)+size);
-            
-            // immediatly unmap the file
-            if(::munmap(src, length) < 0) {
-                verify(false, "munmap failed");
-            }
-
-            // copy data to Region
+            std::vector<u8> data = Host::readFromFile(Host::FD{fd}, length, offset);
             PROT saved = region->prot();
             region->prot_ = PROT::WRITE;
-            region->copyToRegion(region->base(), data.data(), size);
+            region->copyToRegion(region->base(), data.data(), data.size());
             region->prot_ = saved;
         };
 
@@ -196,11 +169,12 @@ namespace x64 {
     }
 
 
-    std::vector<char> Mmu::readString(Ptr8 src) const {
+    std::string Mmu::readString(Ptr8 src) const {
         Ptr8 end = src;
         while(read8(end++) != 0) {}
-        std::vector<char> s = readFromMmu<char>(src, end.address()-src.address());
-        verify(s.size() > 0 && s.back() == 0x0);
+        std::vector<char> v = readFromMmu<char>(src, end.address()-src.address());
+        verify(v.size() > 0 && v.back() == 0x0);
+        std::string s(v.data());
         return s;
     }
 

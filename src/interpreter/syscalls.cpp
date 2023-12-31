@@ -2,6 +2,7 @@
 #include "interpreter/vm.h"
 #include "interpreter/mmu.h"
 #include "interpreter/verify.h"
+#include "utils/host.h"
 #include <asm/prctl.h>
 #include <sys/mman.h>
 #include <sys/prctl.h>
@@ -141,7 +142,6 @@ namespace x64 {
                 vm_->set(R64::RAX, (u64)ret);
                 return;
             }
-
             default: break;
         }
         verify(false, [&]() {
@@ -150,33 +150,26 @@ namespace x64 {
     }
 
     ssize_t Sys::read(int fd, Ptr8 buf, size_t count) {
-        std::vector<u8> buffer;
-        buffer.resize(count, 0x0);
-        ssize_t nbytes = ::read(fd, buffer.data(), count);
-        if(nbytes > 0) {
-            mmu_->copyToMmu(buf, buffer.data(), (size_t)nbytes);
-        }
-        return nbytes;
+        auto data = Host::read(Host::FD{fd}, count);
+        if(!data) return (ssize_t)(-1);
+        mmu_->copyToMmu(buf, data->data(), data->size());
+        return (ssize_t)data->size();
     }
 
     ssize_t Sys::write(int fd, Ptr8 buf, size_t count) {
         std::vector<u8> buffer = mmu_->readFromMmu<u8>(buf, count);
-        ssize_t nbytes = ::write(fd, buffer.data(), count);
-        return nbytes;
+        return Host::write(Host::FD{fd}, buffer.data(), buffer.size());
     }
 
     int Sys::close(int fd) {
-        return ::close(fd);
+        return Host::close(Host::FD{fd});
     }
 
     int Sys::fstat(int fd, Ptr8 statbuf) {
-        struct stat st;
-        int rc = ::fstat(fd, &st);
-        if(rc < 0) return rc;
-        u8 buf[sizeof(st)];
-        memcpy(&buf, &st, sizeof(st));
-        mmu_->copyToMmu(statbuf, buf, sizeof(buf));
-        return rc;
+        std::optional<std::vector<u8>> buf = Host::fstat(Host::FD{fd});
+        if(!buf) return -1;
+        mmu_->copyToMmu(statbuf, buf->data(), buf->size());
+        return 0;
     }
 
     Ptr Sys::mmap(Ptr addr, size_t length, int prot, int flags, int fd, off_t offset) {
@@ -211,44 +204,37 @@ namespace x64 {
             void* base = iovs[i].iov_base;
             size_t len = iovs[i].iov_len;
             std::vector<u8> buffer = mmu_->readFromMmu<u8>(Ptr8{(u64)base}, len);
-            nbytes += ::write(fd, buffer.data(), len);
+            nbytes += Host::write(Host::FD{fd}, buffer.data(), len);
         }
         return nbytes;
     }
 
     int Sys::access(Ptr pathname, int mode) {
-        std::vector<char> path = mmu_->readString(pathname);
-        int ret = ::access(path.data(), mode);
+        std::string path = mmu_->readString(pathname);
+        int ret = Host::access(path, mode);
         return ret;
     }
 
     int Sys::uname(Ptr buf) {
-        struct utsname buffer;
-        int ret = ::uname(&buffer);
-        mmu_->copyToMmu(buf, (const u8*)&buffer, sizeof(buffer));
-        return ret;
+        std::optional<std::vector<u8>> buffer = Host::uname();
+        if(!buffer) return -1;
+        mmu_->copyToMmu(buf, buffer->data(), buffer->size());
+        return 0;
     }
 
     Ptr Sys::getcwd(Ptr buf, size_t size) {
-        std::vector<char> path;
-        path.resize(size, 0x0);
-        char* cwd = ::getcwd(path.data(), size);
-        verify(cwd == path.data());
-
-        mmu_->copyToMmu(buf, (const u8*)path.data(), size);
+        std::optional<std::vector<u8>> buffer = Host::getcwd(size);
+        if(!buffer) return Ptr{0x0};
+        mmu_->copyToMmu(buf, buffer->data(), buffer->size());
         return buf;
     }
 
     ssize_t Sys::readlink(Ptr pathname, Ptr buf, size_t bufsiz) {
-        std::vector<char> path = mmu_->readString(pathname);
-
-        std::vector<char> buffer;
-        buffer.resize(bufsiz, 0x0);
-        ssize_t ret = ::readlink(path.data(), buffer.data(), buffer.size());
-        if(ret < 0) return ret;
-
-        mmu_->copyToMmu(buf, (const u8*)buffer.data(), (size_t)ret);
-        return ret;
+        std::string path = mmu_->readString(pathname);
+        auto buffer = Host::readlink(path, bufsiz);
+        if(!buffer) return -1;
+        mmu_->copyToMmu(buf, buffer->data(), buffer->size());
+        return 0;
     }
 
     void Sys::exit_group(int status) {
@@ -263,9 +249,9 @@ namespace x64 {
     }
 
     int Sys::openat(int dirfd, Ptr pathname, int flags, mode_t mode) {
-        verify((flags & O_ACCMODE) == O_RDONLY, "Writing to files is not supported");
-        std::vector<char> pathnamestring = mmu_->readString(pathname);
-        return ::openat(dirfd, pathnamestring.data(), flags, mode);
+        std::string path = mmu_->readString(pathname);
+        Host::FD fd = Host::openat(Host::FD{dirfd}, path, flags, mode);
+        return fd.fd;
     }
 
 }

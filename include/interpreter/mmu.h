@@ -130,7 +130,7 @@ namespace x64 {
             return buf;
         }
 
-        std::vector<char> readString(Ptr8 src) const;
+        std::string readString(Ptr8 src) const;
 
         u8 read8(Ptr8 ptr) const;
         u16 read16(Ptr16 ptr) const;

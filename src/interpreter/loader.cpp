@@ -41,7 +41,7 @@ namespace x64 {
             fmt::print("\"{}\" \"{}\" {}\n", loadedLibraries_[0], filename, loadedLibraries_[0].compare(filename));
             auto s1 = loadedLibraries_[0];
             auto s2 = filename;
-            int r = ::memcmp(s1.data(), s2.data(), s1.size()+1);
+            int r = std::memcmp(s1.data(), s2.data(), s1.size()+1);
             fmt::print("{} {} {} {}\n", s1.size(), s2.size(), r, s1.compare(s2));
         }
         loadedLibraries_.push_back(filename);

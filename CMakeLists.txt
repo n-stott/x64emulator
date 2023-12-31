@@ -14,6 +14,7 @@ add_library(emulator STATIC
     src/interpreter/mmu.cpp
     src/interpreter/x87.cpp
     src/interpreter/syscalls.cpp
+    src/utils/host.cpp
     src/utils/utils.cpp
 )
 target_compile_options(emulator PUBLIC -Wall -Wextra -Wpedantic -pedantic -Wconversion -Werror)
