@@ -25,7 +25,7 @@ namespace x64 {
         switch(sysNumber) {
             case 0x0: { // read
                 i32 fd = (i32)arg0;
-                Ptr8 buf{Segment::DS, arg1};
+                Ptr8 buf{arg1};
                 size_t count = (size_t)arg2;
                 ssize_t nbytes = read(fd, buf, count);
                 vm_->set(R64::RAX, (u64)nbytes);
@@ -33,7 +33,7 @@ namespace x64 {
             }
             case 0x1: { // write
                 i32 fd = (i32)arg0;
-                Ptr8 buf{Segment::DS, arg1};
+                Ptr8 buf{arg1};
                 size_t count = (size_t)arg2;
                 ssize_t nbytes = write(fd, buf, count);
                 vm_->set(R64::RAX, (u64)nbytes);
@@ -47,7 +47,7 @@ namespace x64 {
             }
             case 0x5: { // fstat
                 i32 fd = (i32)arg0;
-                Ptr8 statbufptr{Segment::DS, arg1};
+                Ptr8 statbufptr{arg1};
                 int ret = fstat(fd, statbufptr);
                 vm_->set(R64::RAX, (u64)ret);
                 return;
@@ -160,9 +160,7 @@ namespace x64 {
     }
 
     ssize_t Sys::write(int fd, Ptr8 buf, size_t count) {
-        std::vector<u8> buffer;
-        buffer.resize(count, 0x0);
-        mmu_->copyFromMmu(buffer.data(), buf, count);
+        std::vector<u8> buffer = mmu_->readFromMmu<u8>(buf, count);
         ssize_t nbytes = ::write(fd, buffer.data(), count);
         return nbytes;
     }
@@ -201,30 +199,22 @@ namespace x64 {
     }
 
     ssize_t Sys::writev(int fd, u64 iov, int iovcnt) {
-        std::vector<struct iovec> iovs;
-        iovs.resize((size_t)iovcnt);
-        mmu_->copyFromMmu((u8*)iovs.data(), Ptr8{Segment::DS, iov}, (size_t)iovcnt*sizeof(struct iovec));
+        std::vector<iovec> iovs = mmu_->readFromMmu<iovec>(Ptr8{iov}, (size_t)iovcnt);
 
         std::vector<u8> buffer;
         ssize_t nbytes = 0;
         for(size_t i = 0; i < (size_t)iovcnt; ++i) {
             void* base = iovs[i].iov_base;
             size_t len = iovs[i].iov_len;
-            buffer.resize(len);
-            mmu_->copyFromMmu(buffer.data(), Ptr8{Segment::DS, (u64)base}, len);
+            std::vector<u8> buffer = mmu_->readFromMmu<u8>(Ptr8{(u64)base}, len);
             nbytes += ::write(fd, buffer.data(), len);
         }
         return nbytes;
     }
 
     int Sys::access(u64 pathname, int mode) {
-        Ptr8 ptr{Segment::DS, pathname};
-        while(mmu_->read8(ptr) != 0) ++ptr;
-
-        std::vector<char> path;
-        path.resize(ptr.address-pathname, 0x0);
-        mmu_->copyFromMmu((u8*)path.data(), Ptr8{Segment::DS, pathname}, path.size());
-
+        Ptr8 ptr{pathname};
+        std::vector<char> path = mmu_->readString(ptr);
         int ret = ::access(path.data(), mode);
         return ret;
     }
@@ -232,7 +222,7 @@ namespace x64 {
     int Sys::uname(u64 buf) {
         struct utsname buffer;
         int ret = ::uname(&buffer);
-        mmu_->copyToMmu(Ptr8{Segment::DS, buf}, (const u8*)&buffer, sizeof(buffer));
+        mmu_->copyToMmu(Ptr8{buf}, (const u8*)&buffer, sizeof(buffer));
         return ret;
     }
 
@@ -242,24 +232,20 @@ namespace x64 {
         char* cwd = ::getcwd(path.data(), size);
         verify(cwd == path.data());
 
-        mmu_->copyToMmu(Ptr8{Segment::DS, buf}, (const u8*)path.data(), size);
+        mmu_->copyToMmu(Ptr8{buf}, (const u8*)path.data(), size);
         return buf;
     }
 
     ssize_t Sys::readlink(u64 pathname, u64 buf, size_t bufsiz) {
-        Ptr8 ptr{Segment::DS, pathname};
-        while(mmu_->read8(ptr) != 0) ++ptr;
-
-        std::vector<char> path;
-        path.resize(ptr.address-pathname, 0x0);
-        mmu_->copyFromMmu((u8*)path.data(), Ptr8{Segment::DS, pathname}, path.size());
+        Ptr8 ptr{pathname};
+        std::vector<char> path = mmu_->readString(ptr);
 
         std::vector<char> buffer;
         buffer.resize(bufsiz, 0x0);
         ssize_t ret = ::readlink(path.data(), buffer.data(), buffer.size());
         if(ret < 0) return ret;
 
-        mmu_->copyToMmu(Ptr8{Segment::DS, buf}, (const u8*)buffer.data(), (size_t)ret);
+        mmu_->copyToMmu(Ptr8{buf}, (const u8*)buffer.data(), (size_t)ret);
         return ret;
     }
 
@@ -276,7 +262,7 @@ namespace x64 {
 
     int Sys::openat(int dirfd, u64 pathname, int flags, mode_t mode) {
         std::vector<char> pathnamestring;
-        Ptr8 ptr { Segment::DS, pathname };
+        Ptr8 ptr { pathname };
         while(true) {
             u8 c = mmu_->read8(ptr);
             pathnamestring.push_back((char)c);

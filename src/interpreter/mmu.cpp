@@ -382,7 +382,6 @@ namespace x64 {
         return dst;
     }
 
-
     void Mmu::Region::copyToRegion(u64 dst, const u8* src, size_t n) {
         verify(contains(dst));
         verify(contains(dst + n -1));

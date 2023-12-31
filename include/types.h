@@ -237,6 +237,9 @@ namespace x64 {
         Segment segment;
         u64 address;
 
+        explicit Ptr(u64 address) : segment(Segment::DS), address(address) { }
+        Ptr(Segment segment, u64 address) : segment(segment), address(address) { }
+
         Ptr& operator++() {
             address += pointerSize(size);
             return *this;

@@ -84,22 +84,22 @@ namespace x64 {
     }
 
     void Interpreter::writeRelocation(u64 relocationSource, u64 relocationDestination) {
-        vm_.mmu().write64(Ptr64{Segment::DS, relocationSource}, relocationDestination);
+        vm_.mmu().write64(Ptr64{relocationSource}, relocationDestination);
     }
 
     void Interpreter::writeUnresolvedRelocation(u64 relocationSource, const std::string& name) {
         u64 bogusAddress = ((u64)(-1) << 32) | relocationSource;
         bogusRelocations_[bogusAddress] = name;
-        vm_.mmu().write64(Ptr64{Segment::DS, relocationSource}, bogusAddress);
+        vm_.mmu().write64(Ptr64{relocationSource}, bogusAddress);
     }
 
     void Interpreter::read(u8* dst, u64 srcAddress, u64 nbytes) {
-        Ptr8 src{Segment::DS, srcAddress};
+        Ptr8 src{srcAddress};
         vm_.mmu().copyFromMmu(dst, src, nbytes);
     }
 
     void Interpreter::write(u64 dstAddress, const u8* src, u64 nbytes) {
-        Ptr8 dst{Segment::DS, dstAddress};
+        Ptr8 dst{dstAddress};
         vm_.mmu().copyToMmu(dst, src, nbytes);
     }
 
@@ -129,7 +129,7 @@ namespace x64 {
             verify(auxiliary_.has_value(), "no auxiliary...");
             u64 random = vm_.mmu().mmap(0x0, Mmu::PAGE_SIZE, PROT::READ | PROT::WRITE, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0);
             vm_.mmu().setRegionName(random, "random");
-            vm_.mmu().write16(Ptr16{Segment::DS, random}, 0xabcd);
+            vm_.mmu().write16(Ptr16{random}, 0xabcd);
             vm_.mmu().mprotect(random, Mmu::PAGE_SIZE, PROT::READ);
             auxiliary_->randomDataAddress = random;
         }
@@ -142,7 +142,7 @@ namespace x64 {
             std::vector<u8> buffer;
             buffer.resize(platform.size()+1, 0x0);
             std::memcpy(buffer.data(), platform.data(), platform.size());
-            vm_.mmu().copyToMmu(Ptr8{Segment::DS, platformstring}, buffer.data(), buffer.size());
+            vm_.mmu().copyToMmu(Ptr8{platformstring}, buffer.data(), buffer.size());
             vm_.mmu().mprotect(platformstring, Mmu::PAGE_SIZE, PROT::READ);
             auxiliary_->platformStringAddress = platformstring;
         }
@@ -168,7 +168,7 @@ namespace x64 {
             mmap(0, Mmu::PAGE_SIZE, PROT::NONE, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0); // throwaway page
             u64 argumentPage = mmap(0, Mmu::PAGE_SIZE, PROT::READ | PROT::WRITE, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0);
             vm_.mmu().setRegionName(argumentPage, "program arguments");
-            Ptr8 argumentPtr { Segment::DS, argumentPage };
+            Ptr8 argumentPtr { argumentPage };
 
             std::vector<u64> argumentPositions;
 

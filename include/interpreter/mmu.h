@@ -121,6 +121,21 @@ namespace x64 {
         Ptr8 copyToMmu(Ptr8 dst, const u8* src, size_t n);
         u8* copyFromMmu(u8* dst, Ptr8 src, size_t n) const;
 
+        template<typename T>
+        std::vector<T> readFromMmu(Ptr8 src, size_t n) const {
+            static_assert(std::is_trivially_constructible_v<T>);
+            std::vector<T> buf;
+            buf.resize(n);
+            copyFromMmu((u8*)buf.data(), src, n*sizeof(T));
+            return buf;
+        }
+
+        std::vector<char> readString(Ptr8 src) const {
+            Ptr8 end = src;
+            while(read8(end) != 0) ++end;
+            return readFromMmu<char>(src, end.address-src.address);
+        }
+
         u8 read8(Ptr8 ptr) const;
         u16 read16(Ptr16 ptr) const;
         u32 read32(Ptr32 ptr) const;
