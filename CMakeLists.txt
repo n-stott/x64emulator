@@ -4,6 +4,18 @@ set(CMAKE_CXX_STANDARD 17)
 
 enable_testing()
 
+add_library(x64 STATIC
+    src/interpreter/cpuimpl.cpp
+    src/interpreter/x87.cpp
+    src/utils/host.cpp
+    src/utils/utils.cpp
+)
+target_compile_options(x64 PUBLIC -Wall -Wextra -Wpedantic -pedantic -Wconversion -Werror)
+target_compile_options(x64 PUBLIC -Wno-braced-scalar-init -Wimplicit-fallthrough -Wno-missing-braces)
+target_compile_options(x64 PUBLIC -frounding-math)
+target_include_directories(x64 PUBLIC include)
+
+
 add_library(emulator STATIC
     src/disassembler/capstonewrapper.cpp
     src/interpreter/loader.cpp
@@ -11,6 +23,7 @@ add_library(emulator STATIC
     src/interpreter/interpreter.cpp
     src/interpreter/vm.cpp
     src/interpreter/cpu.cpp
+    src/interpreter/cpuimpl.cpp
     src/interpreter/mmu.cpp
     src/interpreter/x87.cpp
     src/interpreter/syscalls.cpp
@@ -22,7 +35,6 @@ target_compile_options(emulator PUBLIC -Wno-braced-scalar-init -Wimplicit-fallth
 target_compile_options(emulator PUBLIC -frounding-math)
 target_compile_options(emulator PUBLIC -DFMT_HEADER_ONLY)
 target_include_directories(emulator PUBLIC include)
-target_include_directories(emulator PUBLIC ../common/include)
 target_include_directories(emulator PUBLIC external)
 target_include_directories(emulator PUBLIC external/elf-reader/src)
 target_link_libraries(emulator PUBLIC -lcapstone)

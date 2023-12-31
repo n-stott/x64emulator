@@ -1,5 +1,5 @@
 #include "utils/utils.h"
-#include "interpreter/cpu.h"
+#include "interpreter/cpuimpl.h"
 #include "interpreter/flags.h"
 #include "cputestutils.h"
 #include "fmt/core.h"
@@ -16,7 +16,7 @@ u32 runShr32Native(u32 val, u8, x64::Flags* flags) {
 }
 
 u32 runShr32Virtual(u32 val, u8 count, x64::Flags* flags) {
-    return x64::Cpu::Impl::shr32(val, count, flags);
+    return x64::Impl::shr32(val, count, flags);
 }
 
 template<u8 count>

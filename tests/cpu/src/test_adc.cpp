@@ -1,5 +1,5 @@
 #include "utils/utils.h"
-#include "interpreter/cpu.h"
+#include "interpreter/cpuimpl.h"
 #include "interpreter/flags.h"
 #include "cputestutils.h"
 #include "fmt/core.h"
@@ -26,7 +26,7 @@ u8 runAdc8Native(u8 lhs, u8 rhs, x64::Flags* flags, bool carry) {
 
 u8 runAdc8Virtual(u8 lhs, u8 rhs, x64::Flags* flags, bool carry) {
     flags->carry = carry;
-    return x64::Cpu::Impl::adc8(lhs, rhs, flags);
+    return x64::Impl::adc8(lhs, rhs, flags);
 }
 
 int compareAdc8(u8 lhs, u8 rhs, bool carry) {
@@ -73,7 +73,7 @@ u64 runAdc64Native(u64 lhs, u64 rhs, x64::Flags* flags, bool carry) {
 
 u64 runAdc64Virtual(u64 lhs, u64 rhs, x64::Flags* flags, bool carry) {
     flags->carry = carry;
-    return x64::Cpu::Impl::adc64(lhs, rhs, flags);
+    return x64::Impl::adc64(lhs, rhs, flags);
 }
 
 int compareAdc64(u64 lhs, u64 rhs, bool carry) {

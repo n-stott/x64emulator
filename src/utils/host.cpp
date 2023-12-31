@@ -1,5 +1,6 @@
 #include "utils/host.h"
-#include "fmt/core.h"
+#include <cassert>
+#include <cstring>
 #include <sys/mman.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -50,9 +51,7 @@ std::optional<std::vector<u8>> Host::read(FD fd, size_t count) {
     return std::optional(std::move(buffer));
 }
 
-ssize_t Host::write(FD fd, const u8* data, size_t count) {
-    fmt::print("Write {} bytes to host on fd={}\n", count, fd.fd);
-    (void)data;
+ssize_t Host::write([[maybe_unused]] FD fd, [[maybe_unused]] const u8* data, size_t count) {
     return (ssize_t)count;
 }
 
@@ -65,14 +64,13 @@ std::optional<std::vector<u8>> Host::fstat(FD fd) {
     int rc = ::fstat(fd.fd, &st);
     if(rc < 0) return {};
     std::vector<u8> buf(sizeof(st), 0x0);
-    memcpy(buf.data(), &st, sizeof(st));
+    std::memcpy(buf.data(), &st, sizeof(st));
     return std::optional(std::move(buf));
 }
 
 Host::FD Host::openat(FD dirfd, const std::string& pathname, int flags, [[maybe_unused]] int mode) {
-    if(flags != O_RDONLY) {
-        fmt::print(stderr, "Host::openat: flag is not O_RDONLY but {}\n", flags);
-    }
+    assert(flags == O_RDONLY);
+    if(flags != O_RDONLY) return FD{-1};
     int fd = ::openat(dirfd.fd, pathname.c_str(), O_RDONLY);
     return FD{fd};
 }

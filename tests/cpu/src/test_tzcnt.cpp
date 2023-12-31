@@ -1,5 +1,5 @@
 #include "utils/utils.h"
-#include "interpreter/cpu.h"
+#include "interpreter/cpuimpl.h"
 #include "interpreter/flags.h"
 #include "cputestutils.h"
 #include "fmt/core.h"
@@ -16,7 +16,7 @@ u64 runTzcnt64Native(u64 value, x64::Flags* flags) {
 }
 
 u64 runTzcnt64Virtual(u64 value, x64::Flags* flags) {
-    return x64::Cpu::Impl::tzcnt64(value, flags);
+    return x64::Impl::tzcnt64(value, flags);
 }
 
 int compareTzcnt64(u64 value) {

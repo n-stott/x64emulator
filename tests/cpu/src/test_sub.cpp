@@ -1,5 +1,5 @@
 #include "utils/utils.h"
-#include "interpreter/cpu.h"
+#include "interpreter/cpuimpl.h"
 #include "interpreter/flags.h"
 #include "cputestutils.h"
 #include "fmt/core.h"
@@ -15,7 +15,7 @@ u8 runSub8Native(u8 lhs, u8 rhs, x64::Flags* flags) {
 }
 
 u8 runSub8Virtual(u8 lhs, u8 rhs, x64::Flags* flags) {
-    return x64::Cpu::Impl::sub8(lhs, rhs, flags);
+    return x64::Impl::sub8(lhs, rhs, flags);
 }
 
 int compareSub8(u8 lhs, u8 rhs) {
@@ -51,7 +51,7 @@ u64 runSub64Native(u64 lhs, u64 rhs, x64::Flags* flags) {
 }
 
 u64 runSub64Virtual(u64 lhs, u64 rhs, x64::Flags* flags) {
-    return x64::Cpu::Impl::sub64(lhs, rhs, flags);
+    return x64::Impl::sub64(lhs, rhs, flags);
 }
 
 int compareSub64(u64 lhs, u64 rhs) {

@@ -1,4 +1,5 @@
 #include "interpreter/vm.h"
+#include "interpreter/verify.h"
 #include "fmt/core.h"
 #include <vector>
 

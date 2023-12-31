@@ -1,7 +1,6 @@
 #ifndef FLAGS_H
 #define FLAGS_H
 
-#include "interpreter/verify.h"
 #include "types.h"
 
 namespace x64 {
@@ -36,7 +35,6 @@ namespace x64 {
 
 
     inline bool Flags::matches(Cond condition) const {
-        verify(sure(), "Flags are not set");
         switch(condition) {
             case Cond::A: return (carry == 0 && zero == 0);
             case Cond::AE: return (carry == 0);
