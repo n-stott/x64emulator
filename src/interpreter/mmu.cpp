@@ -196,6 +196,15 @@ namespace x64 {
     }
 
 
+    std::vector<char> Mmu::readString(Ptr8 src) const {
+        Ptr8 end = src;
+        while(read8(end++) != 0) {}
+        std::vector<char> s = readFromMmu<char>(src, end.address()-src.address());
+        verify(s.size() > 0 && s.back() == 0x0);
+        return s;
+    }
+
+
     template<typename T>
     T Mmu::Region::read(u64 address) const {
         assert(contains(address));

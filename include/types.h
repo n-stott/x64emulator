@@ -243,6 +243,12 @@ namespace x64 {
             return *this;
         }
 
+        SPtr operator++(int) {
+            SPtr current = *this;
+            address_ += pointerSize(size);
+            return current;
+        }
+
         SPtr& operator+=(size_t count) {
             address_ += count*pointerSize(size);
             return *this;

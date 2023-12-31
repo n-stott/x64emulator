@@ -130,11 +130,7 @@ namespace x64 {
             return buf;
         }
 
-        std::vector<char> readString(Ptr8 src) const {
-            Ptr8 end = src;
-            while(read8(end) != 0) ++end;
-            return readFromMmu<char>(src, end.address()-src.address());
-        }
+        std::vector<char> readString(Ptr8 src) const;
 
         u8 read8(Ptr8 ptr) const;
         u16 read16(Ptr16 ptr) const;
