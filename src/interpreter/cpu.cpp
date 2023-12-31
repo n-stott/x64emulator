@@ -1016,9 +1016,9 @@ namespace x64 {
     void Cpu::exec(const Inc<R8>& ins) { TODO(ins); }
     void Cpu::exec(const Inc<R32>& ins) { set(ins.dst, Impl::inc32(get(ins.dst), &flags_)); }
 
-    void Cpu::exec(const Inc<M8>& ins) { Ptr<Size::BYTE> ptr = resolve(ins.dst); set(ptr, Impl::inc8(get(ptr), &flags_)); }
-    void Cpu::exec(const Inc<M16>& ins) { Ptr<Size::WORD> ptr = resolve(ins.dst); set(ptr, Impl::inc16(get(ptr), &flags_)); }
-    void Cpu::exec(const Inc<M32>& ins) { Ptr<Size::DWORD> ptr = resolve(ins.dst); set(ptr, Impl::inc32(get(ptr), &flags_)); }
+    void Cpu::exec(const Inc<M8>& ins) { set(resolve(ins.dst), Impl::inc8(get(resolve(ins.dst)), &flags_)); }
+    void Cpu::exec(const Inc<M16>& ins) { set(resolve(ins.dst), Impl::inc16(get(resolve(ins.dst)), &flags_)); }
+    void Cpu::exec(const Inc<M32>& ins) { set(resolve(ins.dst), Impl::inc32(get(resolve(ins.dst)), &flags_)); }
 
 
     u32 Cpu::Impl::dec32(u32 src, Flags* flags) {
@@ -1034,7 +1034,7 @@ namespace x64 {
     void Cpu::exec(const Dec<R8>& ins) { TODO(ins); }
     void Cpu::exec(const Dec<M16>& ins) { TODO(ins); }
     void Cpu::exec(const Dec<R32>& ins) { set(ins.dst, Impl::dec32(get(ins.dst), &flags_)); }
-    void Cpu::exec(const Dec<M32>& ins) { Ptr<Size::DWORD> ptr = resolve(ins.dst); set(ptr, Impl::dec32(get(ptr), &flags_)); }
+    void Cpu::exec(const Dec<M32>& ins) { set(resolve(ins.dst), Impl::dec32(get(resolve(ins.dst)), &flags_)); }
 
     u8 Cpu::Impl::shl8(u8 dst, u8 src, Flags* flags) {
         src = src % 8;
@@ -1837,8 +1837,8 @@ namespace x64 {
             --counter;
         }
         set(R32::ECX, counter);
-        set(R64::RSI, sptr.address);
-        set(R64::RDI, dptr.address);
+        set(R64::RSI, sptr.address());
+        set(R64::RDI, dptr.address());
     }
 
 
@@ -1856,8 +1856,8 @@ namespace x64 {
             --counter;
         }
         set(R32::ECX, counter);
-        set(R64::RSI, sptr.address);
-        set(R64::RDI, dptr.address);
+        set(R64::RSI, sptr.address());
+        set(R64::RDI, dptr.address());
     }
 
     void Cpu::exec(const Rep<Movs<M64, M64>>& ins) {
@@ -1872,8 +1872,8 @@ namespace x64 {
             --counter;
         }
         set(R32::ECX, counter);
-        set(R64::RSI, sptr.address);
-        set(R64::RDI, dptr.address);
+        set(R64::RSI, sptr.address());
+        set(R64::RDI, dptr.address());
     }
     
     void Cpu::exec(const Rep<Cmps<M8, M8>>& ins) {
@@ -1892,10 +1892,10 @@ namespace x64 {
         set(R64::RCX, counter);
         verify(std::holds_alternative<Addr<Size::BYTE, B>>(ins.op.src1));
         verify(std::get<Addr<Size::BYTE, B>>(ins.op.src1).encoding.base == R64::RSI);
-        set(R64::RSI, s1ptr.address);
+        set(R64::RSI, s1ptr.address());
         verify(std::holds_alternative<Addr<Size::BYTE, B>>(ins.op.src2));
         verify(std::get<Addr<Size::BYTE, B>>(ins.op.src2).encoding.base == R64::RDI);
-        set(R64::RDI, s2ptr.address);
+        set(R64::RDI, s2ptr.address());
     }
     
     void Cpu::exec(const Rep<Stos<M32, R32>>& ins) {
@@ -1908,7 +1908,7 @@ namespace x64 {
             --counter;
         }
         set(R64::RCX, counter);
-        set(R64::RDI, dptr.address);
+        set(R64::RDI, dptr.address());
     }
 
     void Cpu::exec(const Rep<Stos<M64, R64>>& ins) {
@@ -1921,7 +1921,7 @@ namespace x64 {
             --counter;
         }
         set(R64::RCX, counter);
-        set(R64::RDI, dptr.address);
+        set(R64::RDI, dptr.address());
     }
 
     void Cpu::exec(const RepNZ<Scas<R8, Addr<Size::BYTE, B>>>& ins) {
@@ -1937,7 +1937,7 @@ namespace x64 {
             if(flags_.zero) break;
         }
         set(R32::ECX, counter);
-        set(R64::RDI, ptr2.address);
+        set(R64::RDI, ptr2.address());
     }
 
     template<typename Dst, typename Src>

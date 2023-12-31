@@ -252,31 +252,31 @@ namespace x64 {
         }
 
         template<Size size, typename Enc>
-        Ptr<size> resolve(Addr<size, Enc> addr) const {
-            return Ptr<size>{addr.segment, resolve(addr.encoding)};
+        SPtr<size> resolve(Addr<size, Enc> addr) const {
+            return SPtr<size>{addr.segment, resolve(addr.encoding)};
         }
         
-        Ptr<Size::BYTE> resolve(const M8& m8) const {
+        Ptr8 resolve(const M8& m8) const {
             return std::visit([&](auto&& arg) -> Ptr8 { return resolve(arg); }, m8);
         }
 
-        Ptr<Size::WORD> resolve(const M16& m16) const {
+        Ptr16 resolve(const M16& m16) const {
             return std::visit([&](auto&& arg) -> Ptr16 { return resolve(arg); }, m16);
         }
 
-        Ptr<Size::DWORD> resolve(const M32& m32) const {
+        Ptr32 resolve(const M32& m32) const {
             return std::visit([&](auto&& arg) -> Ptr32 { return resolve(arg); }, m32);
         }
 
-        Ptr<Size::QWORD> resolve(const M64& m64) const {
+        Ptr64 resolve(const M64& m64) const {
             return std::visit([&](auto&& arg) -> Ptr64 { return resolve(arg); }, m64);
         }
 
-        Ptr<Size::TWORD> resolve(const M80& m80) const {
+        Ptr80 resolve(const M80& m80) const {
             return std::visit([&](auto&& arg) -> Ptr80 { return resolve(arg); }, m80);
         }
 
-        Ptr<Size::XMMWORD> resolve(const MSSE& msse) const {
+        Ptr128 resolve(const MSSE& msse) const {
             return std::visit([&](auto&& arg) -> Ptr128 { return resolve(arg); }, msse);
         }
     };

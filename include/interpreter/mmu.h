@@ -133,7 +133,7 @@ namespace x64 {
         std::vector<char> readString(Ptr8 src) const {
             Ptr8 end = src;
             while(read8(end) != 0) ++end;
-            return readFromMmu<char>(src, end.address-src.address);
+            return readFromMmu<char>(src, end.address()-src.address());
         }
 
         u8 read8(Ptr8 ptr) const;
@@ -161,13 +161,13 @@ namespace x64 {
 
     private:
         template<Size s>
-        u64 resolve(Ptr<s> ptr) const;
+        u64 resolve(SPtr<s> ptr) const;
 
         template<typename T, Size s>
-        T read(Ptr<s> ptr) const;
+        T read(SPtr<s> ptr) const;
 
         template<typename T, Size s>
-        void write(Ptr<s> ptr, T value);
+        void write(SPtr<s> ptr, T value);
 
         Region* findAddress(u64 address);
         Region* findRegion(const char* name);

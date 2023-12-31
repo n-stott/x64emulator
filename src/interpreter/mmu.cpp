@@ -235,9 +235,9 @@ namespace x64 {
     }
 
     template<Size s>
-    u64 Mmu::resolve(Ptr<s> ptr) const {
-        u64 segmentBase = (ptr.segment != Segment::FS) ? 0x0 : fsBase_;
-        u64 address = segmentBase + ptr.address;
+    u64 Mmu::resolve(SPtr<s> ptr) const {
+        u64 segmentBase = (ptr.segment() != Segment::FS) ? 0x0 : fsBase_;
+        u64 address = segmentBase + ptr.address();
         return address;
     }
 
@@ -259,7 +259,7 @@ namespace x64 {
     }
 
     template<typename T, Size s>
-    T Mmu::read(Ptr<s> ptr) const {
+    T Mmu::read(SPtr<s> ptr) const {
         static_assert(sizeof(T) == pointerSize(s));
         u64 address = resolve(ptr);
         const Region* region = findAddress(address);
@@ -278,7 +278,7 @@ namespace x64 {
     }
 
     template<typename T, Size s>
-    void Mmu::write(Ptr<s> ptr, T value) {
+    void Mmu::write(SPtr<s> ptr, T value) {
         static_assert(sizeof(T) == pointerSize(s));
         u64 address = resolve(ptr);
         Region* region = findAddress(address);

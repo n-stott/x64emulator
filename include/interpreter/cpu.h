@@ -197,14 +197,14 @@ namespace x64 {
         u64 resolve(SO addr) const { return regs_.resolve(addr); }
 
         template<Size size, typename Enc>
-        Ptr<size> resolve(Addr<size, Enc> addr) const { return regs_.resolve(addr); }
+        SPtr<size> resolve(Addr<size, Enc> addr) const { return regs_.resolve(addr); }
 
-        Ptr<Size::BYTE> resolve(const M8& m8) const { return regs_.resolve(m8); }
-        Ptr<Size::WORD> resolve(const M16& m16) const { return regs_.resolve(m16); }
-        Ptr<Size::DWORD> resolve(const M32& m32) const { return regs_.resolve(m32); }
-        Ptr<Size::QWORD> resolve(const M64& m64) const { return regs_.resolve(m64); }
-        Ptr<Size::TWORD> resolve(const M80& m80) const { return regs_.resolve(m80); }
-        Ptr<Size::XMMWORD> resolve(const MSSE& msse) const { return regs_.resolve(msse); }
+        Ptr8 resolve(const M8& m8) const { return regs_.resolve(m8); }
+        Ptr16 resolve(const M16& m16) const { return regs_.resolve(m16); }
+        Ptr32 resolve(const M32& m32) const { return regs_.resolve(m32); }
+        Ptr64 resolve(const M64& m64) const { return regs_.resolve(m64); }
+        Ptr80 resolve(const M80& m80) const { return regs_.resolve(m80); }
+        Ptr128 resolve(const MSSE& msse) const { return regs_.resolve(msse); }
 
         void set(R8 reg, u8 value) { regs_.set(reg, value); }
         void set(R16 reg, u16 value) { regs_.set(reg, value); }

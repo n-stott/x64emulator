@@ -178,7 +178,7 @@ namespace x64 {
                 std::memcpy(buffer.data(), s.c_str(), s.size());
                 verify(buffer.back() == 0x0, "string is not null-terminated");
                 vm_.mmu().copyToMmu(argumentPtr, buffer.data(), buffer.size());
-                argumentPositions.push_back(argumentPtr.address);
+                argumentPositions.push_back(argumentPtr.address());
                 argumentPtr += buffer.size();
             };
 

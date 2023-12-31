@@ -233,30 +233,36 @@ namespace x64 {
     };
 
     template<Size size>
-    struct Ptr {
-        Segment segment;
-        u64 address;
+    class SPtr {
+    public:
+        explicit SPtr(u64 address) : segment_(Segment::DS), address_(address) { }
+        SPtr(Segment segment, u64 address) : segment_(segment), address_(address) { }
 
-        explicit Ptr(u64 address) : segment(Segment::DS), address(address) { }
-        Ptr(Segment segment, u64 address) : segment(segment), address(address) { }
-
-        Ptr& operator++() {
-            address += pointerSize(size);
+        SPtr& operator++() {
+            address_ += pointerSize(size);
             return *this;
         }
 
-        Ptr& operator+=(size_t count) {
-            address += count*pointerSize(size);
+        SPtr& operator+=(size_t count) {
+            address_ += count*pointerSize(size);
             return *this;
         }
+
+        Segment segment() const { return segment_; }
+        u64 address() const { return address_; }
+
+    private:
+        Segment segment_;
+        u64 address_;
     };
 
-    using Ptr8 = Ptr<Size::BYTE>;
-    using Ptr16 = Ptr<Size::WORD>;
-    using Ptr32 = Ptr<Size::DWORD>;
-    using Ptr64 = Ptr<Size::QWORD>;
-    using Ptr80 = Ptr<Size::TWORD>;
-    using Ptr128 = Ptr<Size::XMMWORD>;
+    using Ptr = SPtr<Size::BYTE>;
+    using Ptr8 = SPtr<Size::BYTE>;
+    using Ptr16 = SPtr<Size::WORD>;
+    using Ptr32 = SPtr<Size::DWORD>;
+    using Ptr64 = SPtr<Size::QWORD>;
+    using Ptr80 = SPtr<Size::TWORD>;
+    using Ptr128 = SPtr<Size::XMMWORD>;
 
     template<Size size>
     using M = std::variant<Addr<size, B>,
