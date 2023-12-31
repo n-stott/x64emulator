@@ -13,6 +13,9 @@ namespace x64 {
     public:
         Sys(VM* vm, Mmu* mmu) : vm_(vm), mmu_(mmu) { }
 
+        void syscall();
+
+    private:
         // 0x0
         ssize_t read(int fd, Ptr8 buf, size_t count);
         // 0x1

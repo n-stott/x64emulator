@@ -13,6 +13,142 @@
 
 namespace x64 {
 
+    void Sys::syscall() {
+        u64 sysNumber = vm_->get(R64::RAX);
+        u64 arg0 = vm_->get(R64::RDI);
+        u64 arg1 = vm_->get(R64::RSI);
+        u64 arg2 = vm_->get(R64::RDX);
+        u64 arg3 = vm_->get(R64::R10);
+        u64 arg4 = vm_->get(R64::R8);
+        u64 arg5 = vm_->get(R64::R9);
+
+        switch(sysNumber) {
+            case 0x0: { // read
+                i32 fd = (i32)arg0;
+                Ptr8 buf{Segment::DS, arg1};
+                size_t count = (size_t)arg2;
+                ssize_t nbytes = read(fd, buf, count);
+                vm_->set(R64::RAX, (u64)nbytes);
+                return;
+            }
+            case 0x1: { // write
+                i32 fd = (i32)arg0;
+                Ptr8 buf{Segment::DS, arg1};
+                size_t count = (size_t)arg2;
+                ssize_t nbytes = write(fd, buf, count);
+                vm_->set(R64::RAX, (u64)nbytes);
+                return;
+            }
+            case 0x3: { // close
+                i32 fd = (i32)arg0;
+                int ret = close(fd);
+                vm_->set(R64::RAX, (u64)ret);
+                return;
+            }
+            case 0x5: { // fstat
+                i32 fd = (i32)arg0;
+                Ptr8 statbufptr{Segment::DS, arg1};
+                int ret = fstat(fd, statbufptr);
+                vm_->set(R64::RAX, (u64)ret);
+                return;
+            }
+            case 0x9: { // mmap
+                u64 addr = arg0;
+                size_t length = (size_t)arg1;
+                int prot = (int)arg2;
+                int flags = (int)arg3;
+                int fd = (int)arg4;
+                off_t offset = (off_t)arg5;
+                u64 ptr = mmap(addr, length, prot, flags, fd, offset);
+                vm_->set(R64::RAX, ptr);
+                return;
+            }
+            case 0xa: { // mprotect
+                u64 addr = arg0;
+                size_t length = (size_t)arg1;
+                int prot = (int)arg2;
+                int ret = mprotect(addr, length, prot);
+                vm_->set(R64::RAX, (u64)ret);
+                return;
+            }
+            case 0xb: { // munmap
+                u64 addr = arg0;
+                size_t length = (size_t)arg1;
+                int ret = munmap(addr, length);
+                vm_->set(R64::RAX, (u64)ret);
+                return;
+            }
+            case 0xc: { // brk
+                u64 addr = arg0;
+                u64 newBreak = brk(addr);
+                vm_->set(R64::RAX, newBreak);
+                return;
+            }
+            case 0x14: { // writev
+                int fd = (int)arg0;
+                u64 iov = arg1;
+                int iovcnt = (int)arg2;
+                ssize_t nbytes = writev(fd, iov, iovcnt);
+                vm_->set(R64::RAX, (u64)nbytes);
+                return;
+            }
+            case 0x15: { // access
+                u64 pathname = arg0;
+                int mode = (int)arg1;
+                int ret = access(pathname, mode);
+                vm_->set(R64::RAX, (u64)ret);
+                return;
+            }
+            case 0x3f: { // uname
+                u64 buf = arg0;
+                int ret = uname(buf);
+                vm_->set(R64::RAX, (u64)ret);
+                return;
+            }
+            case 0x4f: { // getcwd
+                u64 buf = arg0;
+                size_t size = (size_t)arg1;
+                u64 ret = getcwd(buf, size);
+                vm_->set(R64::RAX, ret);
+                return;
+            }
+            case 0x59: { // readlink
+                u64 path = arg0;
+                u64 buf = arg1;
+                size_t bufsize = (size_t)arg2;
+                ssize_t nchars = readlink(path, buf, bufsize);
+                vm_->set(R64::RAX, (u64)nchars);
+                return;
+            }
+            case 0x9e: { // arch_prctl
+                i32 code = (i32)arg0;
+                u64 addr = arg1;
+                int ret = arch_prctl(code, addr);
+                vm_->set(R64::RAX, (u64)ret);
+                return;
+            }
+            case 0xe7: { // exit_group
+                i32 errorCode = (i32)arg0;
+                exit_group(errorCode);
+                return;
+            }
+            case 0x101: { // openat
+                int dirfd = (int)arg0;
+                u64 pathname = arg1;
+                int flags = (int)arg2;
+                mode_t mode = (mode_t)arg3;
+                int ret = openat(dirfd, pathname, flags, mode);
+                vm_->set(R64::RAX, (u64)ret);
+                return;
+            }
+
+            default: break;
+        }
+        verify(false, [&]() {
+            fmt::print("Syscall {:#x} not handled\n", sysNumber);
+        });
+    }
+
     ssize_t Sys::read(int fd, Ptr8 buf, size_t count) {
         std::vector<u8> buffer;
         buffer.resize(count, 0x0);
