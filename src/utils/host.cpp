@@ -92,7 +92,9 @@ Host::FD Host::openat(FD dirfd, const std::string& pathname, int flags, [[maybe_
 }
 
 int Host::access(const std::string& path, int mode) {
-    return ::access(path.c_str(), mode);
+    int ret = ::access(path.c_str(), mode);
+    if(ret < 0) return -errno;
+    return ret;
 }
 
 std::optional<std::vector<u8>> Host::readlink(const std::string& path, size_t count) {

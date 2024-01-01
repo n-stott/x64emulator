@@ -4,6 +4,7 @@
 #include "interpreter/verify.h"
 #include "utils/host.h"
 #include <asm/prctl.h>
+#include <string.h>
 #include <sys/mman.h>
 #include <sys/prctl.h>
 #include <sys/stat.h>
@@ -226,7 +227,11 @@ namespace x64 {
     int Sys::access(Ptr pathname, int mode) {
         std::string path = mmu_->readString(pathname);
         int ret = Host::access(path, mode);
-        if(vm_->logInstructions()) fmt::print("Sys::access(path={}, mode={}) = {}\n", path, mode, ret);
+        std::string info;
+        if(ret < 0) {
+            info = strerror(-ret);
+        }
+        if(vm_->logInstructions()) fmt::print("Sys::access(path={}, mode={}) = {} {}\n", path, mode, ret, info);
         return ret;
     }
 
