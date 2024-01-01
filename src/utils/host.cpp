@@ -1,6 +1,7 @@
 #include "utils/host.h"
 #include <cassert>
 #include <cstring>
+#include <iostream>
 #include <sys/mman.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -52,6 +53,21 @@ std::optional<std::vector<u8>> Host::read(FD fd, size_t count) {
 }
 
 ssize_t Host::write([[maybe_unused]] FD fd, [[maybe_unused]] const u8* data, size_t count) {
+    const std::string red("\033[0;31m");
+    const std::string reset("\033[0m");
+    if(fd.fd == 1) {
+        std::string s;
+        s.resize(count+1, '\0');
+        std::memcpy(s.data(), (const char*)data, count);
+        std::cout << s << std::flush;
+    } else if(fd.fd == 2) {
+        std::string s;
+        s.resize(count+1, '\0');
+        std::memcpy(s.data(), (const char*)data, count);
+        std::cout << red << s << reset << std::flush;
+    } else {
+        assert(false);
+    }
     return (ssize_t)count;
 }
 
@@ -69,8 +85,8 @@ std::optional<std::vector<u8>> Host::fstat(FD fd) {
 }
 
 Host::FD Host::openat(FD dirfd, const std::string& pathname, int flags, [[maybe_unused]] int mode) {
-    assert(flags == O_RDONLY);
-    if(flags != O_RDONLY) return FD{-1};
+    assert((flags & O_ACCMODE) == O_RDONLY);
+    if((flags & O_ACCMODE) != O_RDONLY) return FD{-1};
     int fd = ::openat(dirfd.fd, pathname.c_str(), O_RDONLY);
     return FD{fd};
 }

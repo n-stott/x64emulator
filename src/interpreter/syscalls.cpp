@@ -151,6 +151,7 @@ namespace x64 {
 
     ssize_t Sys::read(int fd, Ptr8 buf, size_t count) {
         auto data = Host::read(Host::FD{fd}, count);
+        if(vm_->logInstructions()) fmt::print("Sys::read(fd={}, buf={:#x}, count={}) = {}\n", fd, buf.address(), count, data ? data->size() : -1);
         if(!data) return (ssize_t)(-1);
         mmu_->copyToMmu(buf, data->data(), data->size());
         return (ssize_t)data->size();
@@ -158,15 +159,20 @@ namespace x64 {
 
     ssize_t Sys::write(int fd, Ptr8 buf, size_t count) {
         std::vector<u8> buffer = mmu_->readFromMmu<u8>(buf, count);
-        return Host::write(Host::FD{fd}, buffer.data(), buffer.size());
+        ssize_t ret = Host::write(Host::FD{fd}, buffer.data(), buffer.size());
+        if(vm_->logInstructions()) fmt::print("Sys::write(fd={}, buf={:#x}, count={}) = {}\n", fd, buf.address(), count, ret);
+        return ret;
     }
 
     int Sys::close(int fd) {
-        return Host::close(Host::FD{fd});
+        int ret = Host::close(Host::FD{fd});
+        if(vm_->logInstructions()) fmt::print("Sys::close(fd={}) = {}\n", fd, ret);
+        return ret;
     }
 
     int Sys::fstat(int fd, Ptr8 statbuf) {
         std::optional<std::vector<u8>> buf = Host::fstat(Host::FD{fd});
+        if(vm_->logInstructions()) fmt::print("Sys::fstat(fd={}, statbuf={:#x}) = {}\n", fd, statbuf.address(), buf ? 0 : -1);
         if(!buf) return -1;
         mmu_->copyToMmu(statbuf, buf->data(), buf->size());
         return 0;
@@ -178,20 +184,27 @@ namespace x64 {
         if(flags & MAP_FIXED) f = f | MAP::FIXED;
         verify(addr.segment() != Segment::FS);
         u64 base = mmu_->mmap(addr.address(), length, (PROT)prot, f, fd, (int)offset);
+        if(vm_->logInstructions()) fmt::print("Sys::mmap(addr={:#x}, length={}, prot={}, flags={}, fd={}, offset={}) = {:#x}\n",
+                                              addr.address(), length, prot, flags, fd, offset, base);
         return Ptr{addr.segment(), base};
     }
 
     int Sys::mprotect(Ptr addr, size_t length, int prot) {
-        return mmu_->mprotect(addr.address(), length, (PROT)prot);
+        int ret = mmu_->mprotect(addr.address(), length, (PROT)prot);
+        if(vm_->logInstructions()) fmt::print("Sys::mprotect(addr={:#x}, length={}, prot={}) = {}\n", addr.address(), length, prot, ret);
+        return ret;
     }
 
     int Sys::munmap(Ptr addr, size_t length) {
-        return mmu_->munmap(addr.address(), length);
+        int ret = mmu_->munmap(addr.address(), length);
+        if(vm_->logInstructions()) fmt::print("Sys::munmap(addr={:#x}, length={}) = {}\n", addr.address(), length, ret);
+        return ret;
     }
 
     Ptr Sys::brk(Ptr addr) {
         verify(addr.segment() != Segment::FS);
         u64 newBrk = mmu_->brk(addr.address());
+        if(vm_->logInstructions()) fmt::print("Sys::brk(addr={:#x}) = {:#x}\n", addr.address(), newBrk);
         return Ptr{addr.segment(), newBrk};
     }
 
@@ -206,17 +219,20 @@ namespace x64 {
             std::vector<u8> buffer = mmu_->readFromMmu<u8>(Ptr8{(u64)base}, len);
             nbytes += Host::write(Host::FD{fd}, buffer.data(), len);
         }
+        if(vm_->logInstructions()) fmt::print("Sys::writev(fd={}, iov={:#x}, iovcnt={}) = {}\n", fd, iov.address(), iovcnt, nbytes);
         return nbytes;
     }
 
     int Sys::access(Ptr pathname, int mode) {
         std::string path = mmu_->readString(pathname);
         int ret = Host::access(path, mode);
+        if(vm_->logInstructions()) fmt::print("Sys::access(path={}, mode={}) = {}\n", path, mode, ret);
         return ret;
     }
 
     int Sys::uname(Ptr buf) {
         std::optional<std::vector<u8>> buffer = Host::uname();
+        if(vm_->logInstructions()) fmt::print("Sys::uname(buf={:#x}) = {}\n", buf.address(), buffer ? 0 : -1);
         if(!buffer) return -1;
         mmu_->copyToMmu(buf, buffer->data(), buffer->size());
         return 0;
@@ -224,6 +240,7 @@ namespace x64 {
 
     Ptr Sys::getcwd(Ptr buf, size_t size) {
         std::optional<std::vector<u8>> buffer = Host::getcwd(size);
+        if(vm_->logInstructions()) fmt::print("Sys::getcwd(buf={:#x}, size={}) = {:#x}\n", buf.address(), size, buffer ? 0 : buf.address());
         if(!buffer) return Ptr{0x0};
         mmu_->copyToMmu(buf, buffer->data(), buffer->size());
         return buf;
@@ -232,6 +249,7 @@ namespace x64 {
     ssize_t Sys::readlink(Ptr pathname, Ptr buf, size_t bufsiz) {
         std::string path = mmu_->readString(pathname);
         auto buffer = Host::readlink(path, bufsiz);
+        if(vm_->logInstructions()) fmt::print("Sys::readlink(path={}, buf={:#x}; size={}) = {:#x}\n", path, buf.address(), bufsiz, buffer ? 0 : -1);
         if(!buffer) return -1;
         mmu_->copyToMmu(buf, buffer->data(), buffer->size());
         return 0;
@@ -239,10 +257,12 @@ namespace x64 {
 
     void Sys::exit_group(int status) {
         (void)status;
+        if(vm_->logInstructions()) fmt::print("Sys::exit_group(status={})\n", status);
         vm_->stop();
     }
 
     int Sys::arch_prctl(int code, Ptr addr) {
+        if(vm_->logInstructions()) fmt::print("Sys::arch_prctl(code={}, addr={:#x}) = {}\n", code, addr.address(), code == ARCH_SET_FS ? 0 : -1);
         if(code != ARCH_SET_FS) return -1;
         mmu_->setFsBase(addr.address());
         return 0;
@@ -251,6 +271,7 @@ namespace x64 {
     int Sys::openat(int dirfd, Ptr pathname, int flags, mode_t mode) {
         std::string path = mmu_->readString(pathname);
         Host::FD fd = Host::openat(Host::FD{dirfd}, path, flags, mode);
+        if(vm_->logInstructions()) fmt::print("Sys::openat(dirfd={}, path={}, flags={}, mode={}) = {}\n", dirfd, path, flags, mode, fd.fd);
         return fd.fd;
     }
 
