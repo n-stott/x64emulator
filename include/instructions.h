@@ -260,6 +260,12 @@ namespace x64 {
         Offset offset;
     };
     
+    template<typename Base, typename Offset>
+    struct Btc {
+        Base base;
+        Offset offset;
+    };
+    
     template<typename Src1, typename Src2>
     struct Test {
         Src1 src1;
@@ -585,6 +591,12 @@ namespace x64 {
         Src src;
     };
 
+    template<typename Dst, typename Src>
+    struct Pshufb {
+        Dst dst;
+        Src src;
+    };
+
     template<typename Dst, typename Src, typename Ord>
     struct Pshufd {
         Dst dst;
@@ -632,6 +644,13 @@ namespace x64 {
     struct Psrldq {
         Dst dst;
         Src src;
+    };
+
+    template<typename Dst, typename Src, typename Cntl>
+    struct Pcmpistri {
+        Dst dst;
+        Src src;
+        Cntl control;
     };
     
     struct Syscall {

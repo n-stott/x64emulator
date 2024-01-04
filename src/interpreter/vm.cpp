@@ -116,6 +116,14 @@ namespace x64 {
                                                     );
             fmt::print(stderr, "{:86} {}\n", "", x87dump);
         }
+        if(instruction->isSSE()) {
+            std::string sseDump = fmt::format( "xmm0={:16x} {:16x} xmm1={:16x} {:16x} xmm2={:16x} {:16x} xmm3={:16x} {:16x}",
+                                                cpu_.get(RSSE::XMM0).hi, cpu_.get(RSSE::XMM0).lo,
+                                                cpu_.get(RSSE::XMM1).hi, cpu_.get(RSSE::XMM1).lo,
+                                                cpu_.get(RSSE::XMM2).hi, cpu_.get(RSSE::XMM2).lo,
+                                                cpu_.get(RSSE::XMM3).hi, cpu_.get(RSSE::XMM3).lo);
+            fmt::print(stderr, "{:86} {}\n", "", sseDump);
+        }
     }
 
     void VM::dumpStackTrace() const {
@@ -296,7 +304,7 @@ namespace x64 {
         cpu_.set(reg, value);
     }
 
-    u64 VM::get(R64 reg) {
+    u64 VM::get(R64 reg) const {
         return cpu_.get(reg);
     }
 }

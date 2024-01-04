@@ -19,6 +19,7 @@ namespace x64 {
         virtual std::string toString() const = 0;
         virtual bool hasResolvableName() const = 0;
         virtual bool isX87() const = 0;
+        virtual bool isSSE() const = 0;
 
         u64 address;
     };
@@ -73,6 +74,24 @@ namespace x64 {
                       || std::is_same_v<Instruction, Frndint>
                       || std::is_same_v<Instruction, Fnstcw<M16>>
                       || std::is_same_v<Instruction, Fldcw<M16>>
+                      )
+                return true;
+            return false;
+        }
+
+        bool isSSE() const override {
+            if constexpr(std::is_same_v<Instruction, Pxor<RSSE, RSSE>>
+                      || std::is_same_v<Instruction, Pxor<RSSE, MSSE>>
+                      || std::is_same_v<Instruction, Mov<RSSE, RSSE>>
+                      || std::is_same_v<Instruction, Mov<RSSE, MSSE>>
+                      || std::is_same_v<Instruction, Mov<MSSE, RSSE>>
+                      || std::is_same_v<Instruction, Pcmpeqb<RSSE, RSSE>>
+                      || std::is_same_v<Instruction, Pcmpeqb<RSSE, MSSE>>
+                      || std::is_same_v<Instruction, Pslldq<RSSE, Imm>>
+                      || std::is_same_v<Instruction, Psrldq<RSSE, Imm>>
+                      || std::is_same_v<Instruction, Psubb<RSSE, RSSE>>
+                      || std::is_same_v<Instruction, Psubb<RSSE, MSSE>>
+                      || std::is_same_v<Instruction, Pmovmskb<R32, RSSE>>
                       )
                 return true;
             return false;

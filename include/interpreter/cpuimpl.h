@@ -66,6 +66,10 @@ namespace x64 {
         [[nodiscard]] static u16 btr16(u16 base, u16 index, Flags* flags);
         [[nodiscard]] static u32 btr32(u32 base, u32 index, Flags* flags);
         [[nodiscard]] static u64 btr64(u64 base, u64 index, Flags* flags);
+
+        [[nodiscard]] static u16 btc16(u16 base, u16 index, Flags* flags);
+        [[nodiscard]] static u32 btc32(u32 base, u32 index, Flags* flags);
+        [[nodiscard]] static u64 btc64(u64 base, u64 index, Flags* flags);
         
         static void cmpxchg32(u32 rax, u32 dest, Flags* flags);
         static void cmpxchg64(u64 rax, u64 dest, Flags* flags);
@@ -131,6 +135,7 @@ namespace x64 {
         [[nodiscard]] static u128 punpcklwd(u128 dst, u128 src);
         [[nodiscard]] static u128 punpcklqdq(u128 dst, u128 src);
 
+        [[nodiscard]] static u128 pshufb(u128 dst, u128 src);
         [[nodiscard]] static u128 pshufd(u128 src, u8 order);
 
         [[nodiscard]] static u128 pcmpeqb(u128 dst, u128 src);
@@ -145,6 +150,8 @@ namespace x64 {
 
         [[nodiscard]] static u128 pslldq(u128 dst, u8 src);
         [[nodiscard]] static u128 psrldq(u128 dst, u8 src);
+        
+        [[nodiscard]] static u32 pcmpistri(u128 dst, u128 src, u8 control, Flags* flags);
 
         [[nodiscard]] static f80 fadd(f80 dst, f80 src, X87Fpu* fpu);
         [[nodiscard]] static f80 fmul(f80 dst, f80 src, X87Fpu* fpu);

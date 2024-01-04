@@ -42,7 +42,7 @@ namespace x64 {
         void push64(u64 value);
         
         void set(R64 reg, u64 value);
-        u64 get(R64 reg);
+        u64 get(R64 reg) const;
 
     private:
         friend class Cpu;
@@ -80,7 +80,7 @@ namespace x64 {
         std::unordered_map<u64, CallPoint> callCache_;
         std::unordered_map<u64, CallPoint> jmpCache_;
 
-        const SymbolProvider* symbolProvider_;
+        const SymbolProvider* symbolProvider_ { nullptr };
         mutable std::unordered_map<u64, std::string> functionNameCache_;
 
     };

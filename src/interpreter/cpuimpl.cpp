@@ -610,6 +610,24 @@ namespace x64 {
         return (u64)(base & ~((u64)1 << (index % 64)));
     }
 
+    u16 Impl::btc16(u16 base, u16 index, Flags* flags) {
+        flags->carry = (base >> (index % 16)) & 0x1;
+        u16 mask = ((u16)1 << (index % 16));
+        return (base & ~mask) | (~base & mask);
+    }
+    
+    u32 Impl::btc32(u32 base, u32 index, Flags* flags) {
+        flags->carry = (base >> (index % 32)) & 0x1;
+        u32 mask = ((u32)1 << (index % 32));
+        return (base & ~mask) | (~base & mask);
+    }
+
+    u64 Impl::btc64(u64 base, u64 index, Flags* flags) {
+        flags->carry = (base >> (index % 64)) & 0x1;
+        u64 mask = ((u64)1 << (index % 64));
+        return (base & ~mask) | (~base & mask);
+    }
+
     void Impl::test8(u8 src1, u8 src2, Flags* flags) {
         u8 tmp = src1 & src2;
         flags->sign = (tmp & (1 << 7));
@@ -941,6 +959,28 @@ namespace x64 {
         return dst;
     }
 
+    u128 Impl::pshufb(u128 dst, u128 src) {
+        std::array<u8, 16> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        std::memcpy(DST.data(), &dst, sizeof(u128));
+        std::array<u8, 16> TMP = DST;
+
+        std::array<u8, 16> SRC;
+        static_assert(sizeof(SRC) == sizeof(u128));
+        std::memcpy(SRC.data(), &src, sizeof(u128));
+
+        for(unsigned int i = 0; i < 15; ++i) {
+            if((SRC[i] & 0x80) == 0) {
+                DST[i] = 0x0;
+            } else {
+                DST[i] = TMP[SRC[i] & 0x0F];
+            }
+        }
+
+        std::memcpy(&dst, DST.data(), sizeof(u128));
+        return dst;
+    }
+
     u128 Impl::pshufd(u128 src, u8 order) {
         std::array<u32, 4> SRC;
         static_assert(sizeof(SRC) == sizeof(u128));
@@ -1033,6 +1073,50 @@ namespace x64 {
         dst.lo = (dst.lo >> src) | (dst.hi << (64-src));
         dst.hi = (dst.hi >> src);
         return dst;
+    }
+
+    u32 Impl::pcmpistri(u128 dst, u128 src, u8 control, Flags* flags) {
+        enum DATA_FORMAT {
+            UNSIGNED_BYTE,
+            UNSIGNED_WORD,
+            SIGNED_BYTE,
+            SIGNED_WORD,
+        };
+
+        enum AGGREGATION_OPERATION {
+            EQUAL_ANY,
+            RANGES,
+            EQUAL_EACH,
+            EQUAL_ORDERED,
+        };
+
+        enum POLARITY {
+            POSITIVE_POLARITY,
+            NEGATIVE_POLARITY,
+            MASKED_POSITIVE,
+            MASKED_NEGATIVE,
+        };
+
+        enum OUTPUT_SELECTION {
+            LEAST_SIGNIFICANT_INDEX,
+            MOST_SIGNIFICANT_INDEX,
+        };
+
+        DATA_FORMAT format = (DATA_FORMAT)(control & 0x3);
+        AGGREGATION_OPERATION operation = (AGGREGATION_OPERATION)((control >> 2) & 0x3);
+        POLARITY polarity = (POLARITY)((control >> 4) & 0x3);
+        OUTPUT_SELECTION output = (OUTPUT_SELECTION)((control >> 6) & 0x1);
+
+        assert(format == DATA_FORMAT::SIGNED_BYTE);
+        assert(operation == AGGREGATION_OPERATION::EQUAL_EACH);
+        assert(polarity == POLARITY::MASKED_NEGATIVE);
+        assert(output == OUTPUT_SELECTION::LEAST_SIGNIFICANT_INDEX);
+
+        (void)dst;
+        (void)src;
+        (void)control;
+        (void)flags;
+        return 0;
     }
 
 }

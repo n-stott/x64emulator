@@ -501,6 +501,11 @@ namespace utils {
         return fmt::format("{:9}{},{}", "btr", toString(ins.base), toString(ins.offset));
     }
 
+    template<typename Base, typename Offset>
+    inline std::string toString(const Btc<Base, Offset>& ins) {
+        return fmt::format("{:9}{},{}", "btc", toString(ins.base), toString(ins.offset));
+    }
+
     template<typename Src1, typename Src2>
     inline std::string toString(const Test<Src1, Src2>& ins) {
         return fmt::format("{:9}{},{}", "test", toString(ins.src1), toString(ins.src2));
@@ -839,6 +844,11 @@ namespace utils {
         return fmt::format("{:9}{},{}", "punpcklqdq", toString(ins.dst), toString(ins.src));
     }
 
+    template<typename Dst, typename Src>
+    inline std::string toString(Pshufb<Dst, Src> ins) {
+        return fmt::format("{:9}{},{}", "pshufd", toString(ins.dst), toString(ins.src));
+    }
+
     template<typename Dst, typename Src, typename Ord>
     inline std::string toString(Pshufd<Dst, Src, Ord> ins) {
         return fmt::format("{:9}{},{},{}", "pshufd", toString(ins.dst), toString(ins.src), toString(ins.order));
@@ -877,6 +887,11 @@ namespace utils {
     template<typename Dst, typename Src>
     inline std::string toString(Psrldq<Dst, Src> ins) {
         return fmt::format("{:9}{},{}", "psrldq", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Dst, typename Src, typename Cntl>
+    inline std::string toString(Pcmpistri<Dst, Src, Cntl> ins) {
+        return fmt::format("{:9}{},{},{}", "pcmpistri", toString(ins.dst), toString(ins.src), toString(ins.control));
     }
 
     inline std::string toString(Syscall) {

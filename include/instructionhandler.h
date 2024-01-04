@@ -32,10 +32,14 @@ namespace x64 {
 
         virtual void exec(const Adc<R32, R32>&) = 0;
         virtual void exec(const Adc<R32, Imm>&) = 0;
-        virtual void exec(const Adc<R32, SignExtended<u8>>&) = 0;
         virtual void exec(const Adc<R32, M32>&) = 0;
         virtual void exec(const Adc<M32, R32>&) = 0;
         virtual void exec(const Adc<M32, Imm>&) = 0;
+        virtual void exec(const Adc<R64, R64>&) = 0;
+        virtual void exec(const Adc<R64, Imm>&) = 0;
+        virtual void exec(const Adc<R64, M64>&) = 0;
+        virtual void exec(const Adc<M64, R64>&) = 0;
+        virtual void exec(const Adc<M64, Imm>&) = 0;
 
         virtual void exec(const Sub<R8, R8>&) = 0;
         virtual void exec(const Sub<R8, Imm>&) = 0;
@@ -62,25 +66,21 @@ namespace x64 {
 
         virtual void exec(const Sbb<R8, R8>&) = 0;
         virtual void exec(const Sbb<R8, Imm>&) = 0;
-        virtual void exec(const Sbb<R8, SignExtended<u8>>&) = 0;
         virtual void exec(const Sbb<R8, M8>&) = 0;
         virtual void exec(const Sbb<M8, R8>&) = 0;
         virtual void exec(const Sbb<M8, Imm>&) = 0;
         virtual void exec(const Sbb<R16, R16>&) = 0;
         virtual void exec(const Sbb<R16, Imm>&) = 0;
-        virtual void exec(const Sbb<R16, SignExtended<u8>>&) = 0;
         virtual void exec(const Sbb<R16, M16>&) = 0;
         virtual void exec(const Sbb<M16, R16>&) = 0;
         virtual void exec(const Sbb<M16, Imm>&) = 0;
         virtual void exec(const Sbb<R32, R32>&) = 0;
         virtual void exec(const Sbb<R32, Imm>&) = 0;
-        virtual void exec(const Sbb<R32, SignExtended<u8>>&) = 0;
         virtual void exec(const Sbb<R32, M32>&) = 0;
         virtual void exec(const Sbb<M32, R32>&) = 0;
         virtual void exec(const Sbb<M32, Imm>&) = 0;
         virtual void exec(const Sbb<R64, R64>&) = 0;
         virtual void exec(const Sbb<R64, Imm>&) = 0;
-        virtual void exec(const Sbb<R64, SignExtended<u8>>&) = 0;
         virtual void exec(const Sbb<R64, M64>&) = 0;
         virtual void exec(const Sbb<M64, R64>&) = 0;
         virtual void exec(const Sbb<M64, Imm>&) = 0;
@@ -358,6 +358,19 @@ namespace x64 {
         virtual void exec(const Btr<M64, R64>&) = 0;
         virtual void exec(const Btr<M64, Imm>&) = 0;
 
+        virtual void exec(const Btc<R16, R16>&) = 0;
+        virtual void exec(const Btc<R16, Imm>&) = 0;
+        virtual void exec(const Btc<R32, R32>&) = 0;
+        virtual void exec(const Btc<R32, Imm>&) = 0;
+        virtual void exec(const Btc<R64, R64>&) = 0;
+        virtual void exec(const Btc<R64, Imm>&) = 0;
+        virtual void exec(const Btc<M16, R16>&) = 0;
+        virtual void exec(const Btc<M16, Imm>&) = 0;
+        virtual void exec(const Btc<M32, R32>&) = 0;
+        virtual void exec(const Btc<M32, Imm>&) = 0;
+        virtual void exec(const Btc<M64, R64>&) = 0;
+        virtual void exec(const Btc<M64, Imm>&) = 0;
+
         virtual void exec(const Test<R8, R8>&) = 0;
         virtual void exec(const Test<M8, R8>&) = 0;
         virtual void exec(const Test<R8, Imm>&) = 0;
@@ -613,6 +626,8 @@ namespace x64 {
         virtual void exec(const Punpcklwd<RSSE, RSSE>&) = 0;
         virtual void exec(const Punpcklqdq<RSSE, RSSE>&) = 0;
 
+        virtual void exec(const Pshufb<RSSE, RSSE>&) = 0;
+        virtual void exec(const Pshufb<RSSE, MSSE>&) = 0;
         virtual void exec(const Pshufd<RSSE, RSSE, Imm>&) = 0;
         virtual void exec(const Pshufd<RSSE, MSSE, Imm>&) = 0;
 
@@ -632,6 +647,9 @@ namespace x64 {
 
         virtual void exec(const Pslldq<RSSE, Imm>&) = 0;
         virtual void exec(const Psrldq<RSSE, Imm>&) = 0;
+
+        virtual void exec(const Pcmpistri<RSSE, RSSE, Imm>&) = 0;
+        virtual void exec(const Pcmpistri<RSSE, MSSE, Imm>&) = 0;
 
         virtual void exec(const Rdtsc&) = 0;
 

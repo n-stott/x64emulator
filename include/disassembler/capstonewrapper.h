@@ -82,6 +82,7 @@ namespace x64 {
 
         static std::unique_ptr<X86Instruction> makeBt(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeBtr(const cs_insn& insn);
+        static std::unique_ptr<X86Instruction> makeBtc(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeTest(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeCmp(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeCmpxchg(const cs_insn& insn);
@@ -177,6 +178,7 @@ namespace x64 {
         static std::unique_ptr<X86Instruction> makePunpcklbw(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makePunpcklwd(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makePunpcklqdq(const cs_insn& insn);
+        static std::unique_ptr<X86Instruction> makePshufb(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makePshufd(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makePcmpeqb(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makePmovmskb(const cs_insn& insn);
@@ -186,6 +188,8 @@ namespace x64 {
 
         static std::unique_ptr<X86Instruction> makePslldq(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makePsrldq(const cs_insn& insn);
+
+        static std::unique_ptr<X86Instruction> makePcmpistri(const cs_insn& insn);
 
         static std::unique_ptr<X86Instruction> makeRdtsc(const cs_insn& insn);
 
