@@ -47,6 +47,13 @@ namespace x64 {
                 vm_->set(R64::RAX, (u64)ret);
                 return;
             }
+            case 0x4: { // stat
+                Ptr8 pathname{arg0};
+                Ptr8 statbufptr{arg1};
+                int ret = stat(pathname, statbufptr);
+                vm_->set(R64::RAX, (u64)ret);
+                return;
+            }
             case 0x5: { // fstat
                 i32 fd = (i32)arg0;
                 Ptr8 statbufptr{arg1};
@@ -99,6 +106,10 @@ namespace x64 {
                 int mode = (int)arg1;
                 int ret = access(pathname, mode);
                 vm_->set(R64::RAX, (u64)ret);
+                return;
+            }
+            case 0x27: { // getpid
+                vm_->set(R64::RAX, (u64)0xface);
                 return;
             }
             case 0x3f: { // uname
@@ -169,6 +180,15 @@ namespace x64 {
         int ret = Host::close(Host::FD{fd});
         if(vm_->logInstructions()) fmt::print("Sys::close(fd={}) = {}\n", fd, ret);
         return ret;
+    }
+
+    int Sys::stat(Ptr pathname, Ptr statbuf) {
+        std::string path = mmu_->readString(pathname);
+        std::optional<std::vector<u8>> buf = Host::stat(path);
+        if(vm_->logInstructions()) fmt::print("Sys::stat(path={}, statbuf={:#x}) = {}\n", path, statbuf.address(), buf ? 0 : -1);
+        if(!buf) return -1;
+        mmu_->copyToMmu(statbuf, buf->data(), buf->size());
+        return 0;
     }
 
     int Sys::fstat(int fd, Ptr8 statbuf) {

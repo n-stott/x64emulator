@@ -9,6 +9,18 @@
 #include <fcntl.h>
 #include <unistd.h>
 
+Host& Host::the() {
+    static Host instance;
+    return instance;
+}
+
+std::optional<std::string> Host::filename(FD fd) const {
+    if(auto it = openFiles_.find(fd.fd); it != openFiles_.end()) {
+        return it->second;
+    }
+    return {};
+}
+
 f80 Host::round(f80 val) {
     // save control word
     long double x = f80::toLongDouble(val);
@@ -72,7 +84,18 @@ ssize_t Host::write([[maybe_unused]] FD fd, [[maybe_unused]] const u8* data, siz
 }
 
 int Host::close(FD fd) {
-    return ::close(fd.fd);
+    int ret = ::close(fd.fd);
+    if(ret >= 0) the().openFiles_.erase(fd.fd);
+    return ret;
+}
+
+std::optional<std::vector<u8>> Host::stat(const std::string& path) {
+    struct stat st;
+    int rc = ::stat(path.c_str(), &st);
+    if(rc < 0) return {};
+    std::vector<u8> buf(sizeof(st), 0x0);
+    std::memcpy(buf.data(), &st, sizeof(st));
+    return std::optional(std::move(buf));
 }
 
 std::optional<std::vector<u8>> Host::fstat(FD fd) {
@@ -88,6 +111,7 @@ Host::FD Host::openat(FD dirfd, const std::string& pathname, int flags, [[maybe_
     assert((flags & O_ACCMODE) == O_RDONLY);
     if((flags & O_ACCMODE) != O_RDONLY) return FD{-1};
     int fd = ::openat(dirfd.fd, pathname.c_str(), O_RDONLY);
+    if(fd >= 0) the().openFiles_[fd] = pathname;
     return FD{fd};
 }
 

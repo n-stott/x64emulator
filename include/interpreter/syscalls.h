@@ -22,6 +22,8 @@ namespace x64 {
         ssize_t write(int fd, Ptr buf, size_t count);
         // 0x3
         int close(int fd);
+        // 0x3
+        int stat(Ptr pathname, Ptr statbuf);
         // 0x5
         int fstat(int fd, Ptr statbuf);
         // 0x9
@@ -36,6 +38,8 @@ namespace x64 {
         ssize_t writev(int fd, Ptr iov, int iovcnt);
         // 0x15
         int access(Ptr pathname, int mode);
+        // 0x27
+        int getpid();
         // 0x3f
         int uname(Ptr buf);
         // 04f

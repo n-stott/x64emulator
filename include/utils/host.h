@@ -4,6 +4,7 @@
 #include "utils/utils.h"
 #include <optional>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 class Host {
@@ -31,6 +32,7 @@ public:
     static ssize_t write(FD, const u8* data, size_t count);
     static int close(FD);
 
+    static std::optional<std::vector<u8>> stat(const std::string& path);
     static std::optional<std::vector<u8>> fstat(FD fd);
     static FD openat(FD dirfd, const std::string& pathname, int flags, int mode);
     static int access(const std::string& path, int mode);
@@ -41,6 +43,15 @@ public:
     static std::optional<std::vector<u8>> getcwd(size_t size);
 
     static std::vector<u8> readFromFile(FD fd, size_t length, off_t offset);
+
+
+    // singleton
+    static Host& the();
+    
+    std::optional<std::string> filename(FD fd) const;
+
+private:
+    std::unordered_map<int, std::string> openFiles_;
 };
 
 #endif
