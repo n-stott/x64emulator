@@ -80,8 +80,11 @@ namespace x64 {
     }
 
     u64 Mmu::mmap(u64 address, u64 length, PROT prot, MAP flags, int fd, int offset) {
-        auto copyFromFd = [](Region* region, int fd, int offset, u64 length) {
+        std::string regionName;
+        auto copyFromFd = [&](Region* region) {
             verify(fd >= 0);
+            auto filename = Host::the().filename(Host::FD{fd});
+            regionName = filename.value_or("");
             std::vector<u8> data = Host::readFromFile(Host::FD{fd}, length, offset);
             PROT saved = region->prot();
             region->prot_ = PROT::WRITE;
@@ -101,7 +104,8 @@ namespace x64 {
         } else {
             regionPtr = addRegion(std::move(region));
         }
-        if(!(bool)(flags & MAP::ANONYMOUS)) copyFromFd(regionPtr, fd, offset, length);
+        if(!(bool)(flags & MAP::ANONYMOUS)) copyFromFd(regionPtr);
+        regionPtr->file_ = regionName;
         return regionPtr->base();
     }
 

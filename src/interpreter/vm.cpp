@@ -129,7 +129,7 @@ namespace x64 {
     void VM::dumpStackTrace() const {
         size_t frameId = 0;
         for(auto it = callstack_.rbegin(); it != callstack_.rend(); ++it) {
-            std::string name = "???";
+            std::string name = calledFunctionName(*it);
             fmt::print(" {}:{:#x} : {}\n", frameId, *it, name);
             ++frameId;
         }
