@@ -93,3 +93,12 @@ target_include_directories(test_cpu_frndint PUBLIC include ${CMAKE_SOURCE_DIR}/i
 target_link_libraries(test_cpu_frndint PUBLIC x64)
 target_link_options(test_cpu_frndint PUBLIC ${LD_OPTIONS})
 add_test(NAME frndint COMMAND test_cpu_frndint)
+
+add_executable(test_cpu_sse_strcmp src/test_sse_strcmp.cpp)
+target_compile_options(test_cpu_sse_strcmp PUBLIC ${CC_OPTIONS})
+target_compile_options(test_cpu_sse_strcmp PUBLIC -frounding-math)
+target_compile_options(test_cpu_sse_strcmp PUBLIC -DFMT_HEADER_ONLY)
+target_include_directories(test_cpu_sse_strcmp PUBLIC include ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/external)
+target_link_libraries(test_cpu_sse_strcmp PUBLIC x64)
+target_link_options(test_cpu_sse_strcmp PUBLIC ${LD_OPTIONS})
+add_test(NAME sse_strcmp COMMAND test_cpu_sse_strcmp)
