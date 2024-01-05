@@ -45,6 +45,14 @@ f80 Host::round(f80 val) {
 Host::CPUID Host::cpuid(u32 a) {
     CPUID s;
     asm volatile("cpuid" : "=a" (s.a), "=b" (s.b), "=c" (s.c), "=d" (s.d) : "0" (a));
+    if(a == 1) {
+        // Pretend that the cpu does not know
+        s.c &= ~(1 << 0  // SSE3
+               | 1 << 9  // SSE3 extension
+               | 1 << 19 // SSE4.1
+               | 1 << 20 // SSE4.2
+        );
+    }
     return s;
 }
 
