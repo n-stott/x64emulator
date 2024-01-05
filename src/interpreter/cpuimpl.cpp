@@ -1074,14 +1074,28 @@ namespace x64 {
     }
 
     u128 Impl::pslldq(u128 dst, u8 src) {
-        dst.hi = (dst.hi << src) | (dst.lo >> (64-src));
-        dst.lo = (dst.lo << src);
+        if(src >= 16) {
+            return u128{0, 0};
+        } else if(src >= 8) {
+            dst.hi = (dst.lo << 8*(src-8));
+            dst.lo = 0;
+        } else {
+            dst.hi = (dst.hi << 8*src) | (dst.lo >> (64-8*src));
+            dst.lo = (dst.lo << 8*src);
+        }
         return dst;
     }
 
     u128 Impl::psrldq(u128 dst, u8 src) {
-        dst.lo = (dst.lo >> src) | (dst.hi << (64-src));
-        dst.hi = (dst.hi >> src);
+        if(src >= 16) {
+            return u128{0, 0};
+        } else if(src >= 8) {
+            dst.lo = (dst.hi >> 8*(src-8));
+            dst.hi = 0;
+        } else {
+            dst.lo = (dst.lo >> 8*src) | (dst.hi << (64-8*src));
+            dst.hi = (dst.hi >> 8*src);
+        }
         return dst;
     }
 
