@@ -2126,7 +2126,8 @@ namespace x64 {
 
     std::unique_ptr<X86Instruction> CapstoneWrapper::makeFdiv(const cs_insn& insn) {
         const auto& x86detail = insn.detail->x86;
-        assert(x86detail.opcode[0] == 0xd8); // FDIV ST(0), ST(i)
+        if(x86detail.opcode[0] != 0xd8) return make_failed(insn);
+        // FDIV ST(0), ST(i)
         assert(x86detail.op_count == 1);
         const cs_x86_op& src = x86detail.operands[0];
         auto stsrc = asST(src);
