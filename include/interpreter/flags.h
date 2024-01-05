@@ -11,6 +11,7 @@ namespace x64 {
         bool sign { false };
         bool overflow { false };
         bool parity { false };
+        bool direction { false };
 
         bool matches(Cond condition) const;
 

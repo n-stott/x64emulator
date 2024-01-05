@@ -604,6 +604,14 @@ namespace utils {
         return fmt::format("{:9}{},{}", "bsf", toString(ins.dst), toString(ins.src));
     }
 
+    inline std::string toString(const Cld&) {
+        return fmt::format("{:9}", "cld");
+    }
+
+    inline std::string toString(const Std&) {
+        return fmt::format("{:9}", "std");
+    }
+
     template<typename Src1, typename Src2>
     inline std::string toString(Scas<Src1, Src2> ins) {
         return fmt::format("{:9}{},{}", "scas", toString(ins.src1), toString(ins.src2));

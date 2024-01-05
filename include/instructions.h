@@ -332,6 +332,14 @@ namespace x64 {
         Src2 src2;
     };
 
+    struct Cld {
+
+    };
+
+    struct Std {
+
+    };
+
     template<typename StringOp>
     struct Rep {
         StringOp op;

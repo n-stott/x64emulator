@@ -276,6 +276,8 @@ namespace x64 {
         virtual void exec(const Inc<M16>&) = 0;
         virtual void exec(const Inc<R32>&) = 0;
         virtual void exec(const Inc<M32>&) = 0;
+        virtual void exec(const Inc<R64>&) = 0;
+        virtual void exec(const Inc<M64>&) = 0;
 
         virtual void exec(const Dec<R8>&) = 0;
         virtual void exec(const Dec<M16>&) = 0;
@@ -474,6 +476,9 @@ namespace x64 {
 
         virtual void exec(const Bsf<R32, R32>&) = 0;
         virtual void exec(const Bsf<R64, R64>&) = 0;
+
+        virtual void exec(const Cld&) = 0;
+        virtual void exec(const Std&) = 0;
 
         virtual void exec(const Rep<Movs<Addr<Size::BYTE, B>, Addr<Size::BYTE, B>>>&) = 0;
         virtual void exec(const Rep<Movs<Addr<Size::DWORD, B>, Addr<Size::DWORD, B>>>&) = 0;

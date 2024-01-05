@@ -693,10 +693,12 @@ namespace x64 {
 
     void Cpu::exec(const Inc<R8>& ins) { TODO(ins); }
     void Cpu::exec(const Inc<R32>& ins) { set(ins.dst, Impl::inc32(get(ins.dst), &flags_)); }
+    void Cpu::exec(const Inc<R64>& ins) { set(ins.dst, Impl::inc64(get(ins.dst), &flags_)); }
 
     void Cpu::exec(const Inc<M8>& ins) { set(resolve(ins.dst), Impl::inc8(get(resolve(ins.dst)), &flags_)); }
     void Cpu::exec(const Inc<M16>& ins) { set(resolve(ins.dst), Impl::inc16(get(resolve(ins.dst)), &flags_)); }
     void Cpu::exec(const Inc<M32>& ins) { set(resolve(ins.dst), Impl::inc32(get(resolve(ins.dst)), &flags_)); }
+    void Cpu::exec(const Inc<M64>& ins) { set(resolve(ins.dst), Impl::inc64(get(resolve(ins.dst)), &flags_)); }
 
 
     void Cpu::exec(const Dec<R8>& ins) { TODO(ins); }
@@ -1147,12 +1149,21 @@ namespace x64 {
         if(mssb < 64) set(ins.dst, mssb);
     }
 
+    void Cpu::exec(const Cld&) {
+        flags_.direction = 0;
+    }
+
+    void Cpu::exec(const Std&) {
+        flags_.direction = 1;
+    }
+
     void Cpu::exec(const Rep<Movs<Addr<Size::BYTE, B>, Addr<Size::BYTE, B>>>& ins) {
         assert(ins.op.dst.encoding.base == R64::RDI);
         assert(ins.op.src.encoding.base == R64::RSI);
         u32 counter = get(R32::ECX);
         Ptr8 dptr = resolve(ins.op.dst);
         Ptr8 sptr = resolve(ins.op.src);
+        verify(flags_.direction == 0);
         while(counter) {
             u8 val = mmu_->read8(sptr);
             mmu_->write8(dptr, val);
@@ -1172,6 +1183,7 @@ namespace x64 {
         u32 counter = get(R32::ECX);
         Ptr32 dptr = resolve(ins.op.dst);
         Ptr32 sptr = resolve(ins.op.src);
+        verify(flags_.direction == 0);
         while(counter) {
             u32 val = mmu_->read32(sptr);
             mmu_->write32(dptr, val);
@@ -1188,6 +1200,7 @@ namespace x64 {
         u32 counter = get(R32::ECX);
         Ptr64 dptr = resolve(ins.op.dst);
         Ptr64 sptr = resolve(ins.op.src);
+        verify(flags_.direction == 0);
         while(counter) {
             u64 val = mmu_->read64(sptr);
             mmu_->write64(dptr, val);
@@ -1204,6 +1217,7 @@ namespace x64 {
         u32 counter = get(R32::ECX);
         Ptr8 s1ptr = resolve(ins.op.src1);
         Ptr8 s2ptr = resolve(ins.op.src2);
+        verify(flags_.direction == 0);
         while(counter) {
             u8 s1 = mmu_->read8(s1ptr);
             u8 s2 = mmu_->read8(s2ptr);
@@ -1226,6 +1240,7 @@ namespace x64 {
         u32 counter = get(R32::ECX);
         Ptr32 dptr = resolve(ins.op.dst);
         u32 val = get(ins.op.src);
+        verify(flags_.direction == 0);
         while(counter) {
             mmu_->write32(dptr, val);
             ++dptr;
@@ -1239,6 +1254,7 @@ namespace x64 {
         u64 counter = get(R64::RCX);
         Ptr64 dptr = resolve(ins.op.dst);
         u64 val = get(ins.op.src);
+        verify(flags_.direction == 0);
         while(counter) {
             mmu_->write64(dptr, val);
             ++dptr;
@@ -1253,6 +1269,7 @@ namespace x64 {
         u32 counter = get(R32::ECX);
         u8 src1 = get(ins.op.src1);
         Ptr8 ptr2 = resolve(ins.op.src2);
+        verify(flags_.direction == 0);
         while(counter) {
             u8 src2 = mmu_->read8(ptr2);
             Impl::cmp8(src1, src2, &flags_);
@@ -1710,11 +1727,13 @@ namespace x64 {
     }
 
     void Cpu::exec(const Pcmpistri<RSSE, RSSE, Imm>& ins) {
+        TODO(ins);
         u32 res = Impl::pcmpistri(get(ins.dst), get(ins.src), get<u8>(ins.control), &flags_);
         set(R32::ECX, res);
     }
 
     void Cpu::exec(const Pcmpistri<RSSE, MSSE, Imm>& ins) {
+        TODO(ins);
         u32 res = Impl::pcmpistri(get(ins.dst), get(resolve(ins.src)), get<u8>(ins.control), &flags_);
         set(R32::ECX, res);
     }

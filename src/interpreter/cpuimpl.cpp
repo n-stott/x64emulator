@@ -331,6 +331,16 @@ namespace x64 {
         return res;
     }
 
+    u64 Impl::inc64(u64 src, Flags* flags) {
+        flags->overflow = (src == std::numeric_limits<u64>::max());
+        u64 res = src+1;
+        flags->sign = (res & (1ul << 63));
+        flags->zero = (res == 0);
+        flags->setSure();
+        flags->setUnsureParity();
+        return res;
+    }
+
     u32 Impl::dec32(u32 src, Flags* flags) {
         flags->overflow = (src == std::numeric_limits<u32>::min());
         u32 res = src-1;

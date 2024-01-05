@@ -149,6 +149,8 @@ namespace x64 {
             case X86_INS_UCOMISD: return makeUcomisd(insn);
             case X86_INS_CVTSI2SD: return makeCvtsi2sd(insn);
             case X86_INS_CVTSS2SD: return makeCvtss2sd(insn);
+            case X86_INS_CLD: return makeCld(insn);
+            case X86_INS_STD: return makeStd(insn);
             case X86_INS_STOSB:
             case X86_INS_STOSW:
             case X86_INS_STOSD:
@@ -1135,14 +1137,18 @@ namespace x64 {
         const cs_x86_op& operand = x86detail.operands[0];
         auto r8dst = asRegister8(operand);
         auto r32dst = asRegister32(operand);
+        auto r64dst = asRegister64(operand);
         auto m8dst = asMemory8(operand);
         auto m16dst = asMemory16(operand);
         auto m32dst = asMemory32(operand);
+        auto m64dst = asMemory64(operand);
         if(r8dst) return make_wrapper<Inc<R8>>(insn.address, r8dst.value());
         if(r32dst) return make_wrapper<Inc<R32>>(insn.address, r32dst.value());
+        if(r64dst) return make_wrapper<Inc<R64>>(insn.address, r64dst.value());
         if(m8dst) return make_wrapper<Inc<M8>>(insn.address, m8dst.value());
         if(m16dst) return make_wrapper<Inc<M16>>(insn.address, m16dst.value());
         if(m32dst) return make_wrapper<Inc<M32>>(insn.address, m32dst.value());
+        if(m64dst) return make_wrapper<Inc<M64>>(insn.address, m64dst.value());
         return make_failed(insn);
     }
 
@@ -1719,6 +1725,14 @@ namespace x64 {
         if(r32dst && r32src) return make_wrapper<Bsf<R32, R32>>(insn.address, r32dst.value(), r32src.value());
         if(r64dst && r64src) return make_wrapper<Bsf<R64, R64>>(insn.address, r64dst.value(), r64src.value());
         return make_failed(insn);
+    }
+
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makeCld(const cs_insn& insn) {
+        return make_wrapper<Cld>(insn.address);
+    }
+
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makeStd(const cs_insn& insn) {
+        return make_wrapper<Std>(insn.address);
     }
 
     std::unique_ptr<X86Instruction> CapstoneWrapper::makeStos(const cs_insn& insn) {

@@ -46,6 +46,7 @@ namespace x64 {
         [[nodiscard]] static u8 inc8(u8 src, Flags* flags);
         [[nodiscard]] static u16 inc16(u16 src, Flags* flags);
         [[nodiscard]] static u32 inc32(u32 src, Flags* flags);
+        [[nodiscard]] static u64 inc64(u64 src, Flags* flags);
 
         [[nodiscard]] static u32 dec32(u32 src, Flags* flags);
 

@@ -360,6 +360,8 @@ namespace x64 {
         void exec(const Inc<M16>&) override;
         void exec(const Inc<R32>&) override;
         void exec(const Inc<M32>&) override;
+        void exec(const Inc<R64>&) override;
+        void exec(const Inc<M64>&) override;
 
         void exec(const Dec<R8>&) override;
         void exec(const Dec<M16>&) override;
@@ -558,6 +560,9 @@ namespace x64 {
 
         void exec(const Bsf<R32, R32>&) override;
         void exec(const Bsf<R64, R64>&) override;
+
+        void exec(const Cld&) override;
+        void exec(const Std&) override;
 
         void exec(const Rep<Movs<Addr<Size::BYTE, B>, Addr<Size::BYTE, B>>>&) override;
         void exec(const Rep<Movs<Addr<Size::DWORD, B>, Addr<Size::DWORD, B>>>&) override;
