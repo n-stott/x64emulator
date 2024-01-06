@@ -327,12 +327,14 @@ namespace x64 {
         set(ins.dst, res.second);
     }
     void Cpu::exec(const Imul1<R64>& ins) {
-        (void)ins;
-        verify(false, "imul64 not implemented");
+        auto res = Impl::imul64(get(R64::RAX), get(ins.src), &flags_);
+        set(R64::RDX, res.first);
+        set(R64::RAX, res.second);
     }
     void Cpu::exec(const Imul1<M64>& ins) {
-        (void)ins;
-        verify(false, "imul64 not implemented");
+        auto res = Impl::imul64(get(R64::RAX), get(resolve(ins.src)), &flags_);
+        set(R64::RDX, res.first);
+        set(R64::RAX, res.second);
     }
     void Cpu::exec(const Imul2<R64, R64>& ins) {
         auto res = Impl::imul64(get(ins.dst), get(ins.src), &flags_);
