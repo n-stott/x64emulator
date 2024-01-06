@@ -8,33 +8,33 @@ namespace x64 {
 
     void X87Fpu::push(f80 val) {
         decrTop();
-        stack_[top_] = val;
+        stack_[status_.top] = val;
     }
 
     f80 X87Fpu::pop() {
-        f80 val = stack_[top_];
+        f80 val = stack_[status_.top];
         incrTop();
         return val;
     }
 
     f80 X87Fpu::st(ST st) const {
-        return stack_[(top_+(u8)st) & 0x7];
+        return stack_[(status_.top+(u8)st) & 0x7];
     }
 
     void X87Fpu::set(ST st, f80 val) {
-        stack_[(top_+(u8)st) & 0x7] = val;
+        stack_[(status_.top+(u8)st) & 0x7] = val;
     }
 
     void X87Fpu::incrTop() {
-        u8 nextTop = (top_+1);
+        u8 nextTop = (status_.top+1);
         C1_ = (nextTop & 0x8);
-        top_ = nextTop & 0x7;
+        status_.top = nextTop & 0x7;
     }
 
     void X87Fpu::decrTop() {
-        u8 nextTop = (top_-1);
+        u8 nextTop = (status_.top-1);
         C1_ = (nextTop & 0x8);
-        top_ = nextTop & 0x7;
+        status_.top = nextTop & 0x7;
     }
 
     u16 X87Control::asWord() const {
@@ -62,6 +62,16 @@ namespace x64 {
         c.rc = (ROUNDING)((cw >> 10) & 0x3);
         c.x  = (cw >> 11) & 0x1;
         return c;
+    }
+
+    u16 X87Status::asWord() const {
+        return top << 11;
+    }
+
+    X87Status X87Status::fromWord(u16 sw) {
+        X87Status s;
+        s.top = (sw >> 11) & 0x7;
+        return s;
     }
 
 }

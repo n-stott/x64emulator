@@ -1761,12 +1761,94 @@ namespace x64 {
         set(R32::EDX, xgetbv.d);
     }
 
+
+    Cpu::FPUState Cpu::getFpuState() const {
+        FPUState s;
+        std::memset(&s, 0x0, sizeof(s));
+        s.fcw = x87fpu_.control().asWord();
+        s.fsw = x87fpu_.status().asWord();
+
+        auto copyST = [&](u128* dst, ST st) {
+            f80 val = x87fpu_.st(st);
+            std::memcpy(dst, &val, sizeof(val));
+        };
+        copyST(&s.st0, ST::ST0);
+        copyST(&s.st1, ST::ST1);
+        copyST(&s.st2, ST::ST2);
+        copyST(&s.st3, ST::ST3);
+        copyST(&s.st4, ST::ST4);
+        copyST(&s.st5, ST::ST5);
+        copyST(&s.st6, ST::ST6);
+        copyST(&s.st7, ST::ST7);
+
+        s.xmm0 = get(RSSE::XMM0);
+        s.xmm1 = get(RSSE::XMM1);
+        s.xmm2 = get(RSSE::XMM2);
+        s.xmm3 = get(RSSE::XMM3);
+        s.xmm4 = get(RSSE::XMM4);
+        s.xmm5 = get(RSSE::XMM5);
+        s.xmm6 = get(RSSE::XMM6);
+        s.xmm7 = get(RSSE::XMM7);
+        s.xmm8 = get(RSSE::XMM8);
+        s.xmm9 = get(RSSE::XMM9);
+        s.xmm10 = get(RSSE::XMM10);
+        s.xmm11 = get(RSSE::XMM11);
+        s.xmm12 = get(RSSE::XMM12);
+        s.xmm13 = get(RSSE::XMM13);
+        s.xmm14 = get(RSSE::XMM14);
+        s.xmm15 = get(RSSE::XMM15);
+        return s;
+    }
+
+    void Cpu::setFpuState(const FPUState& s) {
+        x87fpu_.control() = X87Control::fromWord(s.fcw);
+        x87fpu_.status() = X87Status::fromWord(s.fsw);
+
+        auto setST = [&](u128 src, ST st) {
+            f80 val;
+            std::memcpy(&val, &src, sizeof(val));
+            x87fpu_.set(st, val);
+        };
+        setST(s.st0, ST::ST0);
+        setST(s.st1, ST::ST1);
+        setST(s.st2, ST::ST2);
+        setST(s.st3, ST::ST3);
+        setST(s.st4, ST::ST4);
+        setST(s.st5, ST::ST5);
+        setST(s.st6, ST::ST6);
+        setST(s.st7, ST::ST7);
+
+        set(RSSE::XMM0, s.xmm0);
+        set(RSSE::XMM1, s.xmm1);
+        set(RSSE::XMM2, s.xmm2);
+        set(RSSE::XMM3, s.xmm3);
+        set(RSSE::XMM4, s.xmm4);
+        set(RSSE::XMM5, s.xmm5);
+        set(RSSE::XMM6, s.xmm6);
+        set(RSSE::XMM7, s.xmm7);
+        set(RSSE::XMM8, s.xmm8);
+        set(RSSE::XMM9, s.xmm9);
+        set(RSSE::XMM10, s.xmm10);
+        set(RSSE::XMM11, s.xmm11);
+        set(RSSE::XMM12, s.xmm12);
+        set(RSSE::XMM13, s.xmm13);
+        set(RSSE::XMM14, s.xmm14);
+        set(RSSE::XMM15, s.xmm15);
+    }
+
     void Cpu::exec(const Fxsave<M64>& ins) {
-        TODO(ins);
+        Ptr64 dst = resolve(ins.dst);
+        verify(dst.address() % 16 == 0, "fxsave destination address must be 16-byte aligned");
+        FPUState fpuState = getFpuState();
+        mmu_->copyToMmu(Ptr8{dst.segment(), dst.address()}, (const u8*)&fpuState, sizeof(fpuState));
     }
 
     void Cpu::exec(const Fxrstor<M64>& ins) {
-        TODO(ins);
+        Ptr64 src = resolve(ins.src);
+        verify(src.address() % 16 == 0, "fxrstor source address must be 16-byte aligned");
+        FPUState fpuState;
+        mmu_->copyFromMmu((u8*)&fpuState, Ptr8{src.segment(), src.address()}, sizeof(fpuState));
+        setFpuState(fpuState);
     }
 
     void Cpu::exec(const Rdpkru& ins) {

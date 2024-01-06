@@ -30,6 +30,13 @@ namespace x64 {
         static X87Control fromWord(u16 cw);
     };
 
+    struct X87Status {
+        u8 top;
+
+        u16 asWord() const;
+        static X87Status fromWord(u16 sw);
+    };
+
 
     class X87Fpu {
     public:
@@ -39,10 +46,13 @@ namespace x64 {
         f80 pop();
         f80 st(ST st) const;
         void set(ST st, f80 val);
-        u8 top() const { return top_; }
+        u8 top() const { return status_.top; }
 
 
         X87Control& control() { return control_; }
+        const X87Control& control() const { return control_; }
+        X87Status& status() { return status_; }
+        const X87Status& status() const { return status_; }
 
     private:
         void incrTop();
@@ -50,7 +60,7 @@ namespace x64 {
 
         std::array<f80, 8> stack_;
         X87Control control_;
-        u8 top_ { 0 };
+        X87Status status_;
         // bool C0_ { false }; // unused
         bool C1_ { false };
         // bool C2_ { false }; // unused

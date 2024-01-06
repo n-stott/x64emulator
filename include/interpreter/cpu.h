@@ -25,6 +25,49 @@ namespace x64 {
         Registers regs_;
         X87Fpu x87fpu_;
 
+        struct FPUState {
+            u16 fcw;
+            u16 fsw;
+            u32 unused0;
+            u64 unused1;
+            u128 fpu1;
+            u128 st0;
+            u128 st1;
+            u128 st2;
+            u128 st3;
+            u128 st4;
+            u128 st5;
+            u128 st6;
+            u128 st7;
+            u128 xmm0;
+            u128 xmm1;
+            u128 xmm2;
+            u128 xmm3;
+            u128 xmm4;
+            u128 xmm5;
+            u128 xmm6;
+            u128 xmm7;
+            u128 xmm8;
+            u128 xmm9;
+            u128 xmm10;
+            u128 xmm11;
+            u128 xmm12;
+            u128 xmm13;
+            u128 xmm14;
+            u128 xmm15;
+            u128 reserved0;
+            u128 reserved1;
+            u128 reserved2;
+            u128 available0;
+            u128 available1;
+            u128 available2;
+        };
+
+        static_assert(sizeof(FPUState) == 512, "FPUState must be 512 bytes");
+
+        FPUState getFpuState() const;
+        void setFpuState(const FPUState&);
+
         u8  get(R8 reg) const  { return regs_.get(reg); }
         u16 get(R16 reg) const { return regs_.get(reg); }
         u32 get(R32 reg) const { return regs_.get(reg); }
