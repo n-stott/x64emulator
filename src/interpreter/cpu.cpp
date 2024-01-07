@@ -127,58 +127,32 @@ namespace x64 {
         flags_.setUnsureParity();\
         DEBUG_ONLY(fmt::print(stderr, "Warning : flags not updated\n"))
 
-    #define WARN_FLAGS_IMPL() \
-        flags->setUnsure();\
-        flags->setUnsureParity();\
-        DEBUG_ONLY(fmt::print(stderr, "Warning : flags not updated\n"))
-
     #define WARN_FPU_FLAGS() \
         DEBUG_ONLY(fmt::print(stderr, "Warning : fpu flags not updated\n"))
 
     #define WARN_FLAGS_UNSURE() \
         DEBUG_ONLY(fmt::print(stderr, "Warning : flags may be wrong\n"))
 
-    #define REQUIRE_FLAGS() \
-        verify(!!flags && flags->sure(), "flags are not set correctly");
-
-    #define WARN_SIGNED_OVERFLOW() \
-        flags_.setUnsure();\
-        flags_.setUnsureParity();\
-        DEBUG_ONLY(if(vm_->logInstructions()) fmt::print(stderr, "Warning : signed integer overflow not handled\n"))
-
-    #define ASSERT(ins, cond) \
-        bool condition = (cond);\
-        if(!condition) fmt::print(stderr, "Fail at : {}\n", x64::utils::toString(ins));\
-        assert(cond); 
-
-    #define WARN_SIGN_EXTENDED() \
-        DEBUG_ONLY(fmt::print(stderr, "Warning : fix signExtended\n"))
-
     #define WARN_ROUNDING_MODE() \
         DEBUG_ONLY(fmt::print(stderr, "Warning : rounding mode not set\n"))
 
     static u32 signExtended32(u8 value) {
-        WARN_SIGN_EXTENDED();
         return (u32)(i32)(i8)value;
     }
 
     static u32 signExtended32(u16 value) {
-        WARN_SIGN_EXTENDED();
         return (u32)(i32)(i16)value;
     }
 
     static u64 signExtended64(u8 value) {
-        WARN_SIGN_EXTENDED();
         return (u64)(i64)(i8)value;
     }
 
     static u64 signExtended64(u16 value) {
-        WARN_SIGN_EXTENDED();
         return (u64)(i64)(i16)value;
     }
 
     static u64 signExtended64(u32 value) {
-        WARN_SIGN_EXTENDED();
         return (u64)(i64)(i32)value;
     }
 
