@@ -49,7 +49,10 @@ namespace x64 {
             case X86_INS_RET: return makeRet(insn);
             case X86_INS_LEAVE: return makeLeave(insn);
             case X86_INS_HLT: return makeHalt(insn);
-            case X86_INS_NOP: return makeNop(insn);
+            case X86_INS_NOP: 
+            case X86_INS_PREFETCHT0: 
+            case X86_INS_LFENCE:
+            case X86_INS_SFENCE: return makeNop(insn);
             case X86_INS_UD2: return makeUd2(insn);
             case X86_INS_SYSCALL: return makeSyscall(insn);
             case X86_INS_CDQ: return makeCdq(insn);
@@ -118,7 +121,8 @@ namespace x64 {
             case X86_INS_CWDE: return makeCwde(insn);
             case X86_INS_CDQE: return makeCdqe(insn);
             case X86_INS_PXOR: return makePxor(insn);
-            case X86_INS_MOVAPS: return makeMovaps(insn);
+            case X86_INS_MOVAPS: 
+            case X86_INS_MOVNTDQ: return makeMovaps(insn);
             case X86_INS_MOVD: return makeMovd(insn);
             case X86_INS_MOVQ: return makeMovq(insn);
             case X86_INS_FLDZ: return makeFldz(insn);
