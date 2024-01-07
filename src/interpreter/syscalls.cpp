@@ -61,6 +61,14 @@ namespace x64 {
                 vm_->set(R64::RAX, (u64)ret);
                 return;
             }
+            case 0x8: { // lseek
+                int fd = (i32)arg0;
+                off_t offset = (off_t)arg1;
+                int whence = (int)arg2;
+                off_t ret = lseek(fd, offset, whence);
+                vm_->set(R64::RAX, (u64)ret);
+                return;
+            }
             case 0x9: { // mmap
                 Ptr addr{arg0};
                 size_t length = (size_t)arg1;
@@ -197,6 +205,11 @@ namespace x64 {
         if(!buf) return -1;
         mmu_->copyToMmu(statbuf, buf->data(), buf->size());
         return 0;
+    }
+
+    off_t Sys::lseek(int fd, off_t offset, int whence) {
+        if(vm_->logInstructions()) fmt::print("Sys::lseek(fd={}, offset={:#x}, whence={}) = {}\n", fd, offset, whence);
+        return Host::lseek(Host::FD{fd}, offset, whence);
     }
 
     Ptr Sys::mmap(Ptr addr, size_t length, int prot, int flags, int fd, off_t offset) {

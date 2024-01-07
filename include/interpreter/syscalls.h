@@ -26,6 +26,8 @@ namespace x64 {
         int stat(Ptr pathname, Ptr statbuf);
         // 0x5
         int fstat(int fd, Ptr statbuf);
+        // 0x8
+        off_t lseek(int fd, off_t offset, int whence);
         // 0x9
         Ptr mmap(Ptr addr, size_t length, int prot, int flags, int fd, off_t offset);
         // 0xa

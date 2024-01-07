@@ -115,6 +115,12 @@ std::optional<std::vector<u8>> Host::fstat(FD fd) {
     return std::optional(std::move(buf));
 }
 
+off_t Host::lseek(FD fd, off_t offset, int whence) {
+    off_t ret = ::lseek(fd.fd, offset, whence);
+    if(ret < 0) return -errno;
+    return ret;
+}
+
 Host::FD Host::openat(FD dirfd, const std::string& pathname, int flags, [[maybe_unused]] int mode) {
     assert((flags & O_ACCMODE) == O_RDONLY);
     if((flags & O_ACCMODE) != O_RDONLY) return FD{-1};
