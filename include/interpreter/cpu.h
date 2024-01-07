@@ -180,13 +180,11 @@ namespace x64 {
         void exec(const Sub<M16, Imm>&) override;
         void exec(const Sub<R32, R32>&) override;
         void exec(const Sub<R32, Imm>&) override;
-        void exec(const Sub<R32, SignExtended<u8>>&) override;
         void exec(const Sub<R32, M32>&) override;
         void exec(const Sub<M32, R32>&) override;
         void exec(const Sub<M32, Imm>&) override;
         void exec(const Sub<R64, R64>&) override;
         void exec(const Sub<R64, Imm>&) override;
-        void exec(const Sub<R64, SignExtended<u8>>&) override;
         void exec(const Sub<R64, M64>&) override;
         void exec(const Sub<M64, R64>&) override;
         void exec(const Sub<M64, Imm>&) override;
@@ -369,7 +367,6 @@ namespace x64 {
         void exec(const Lea<R64, ISD>&) override;
         void exec(const Lea<R64, BISD>&) override;
 
-        void exec(const Push<SignExtended<u8>>&) override;
         void exec(const Push<Imm>&) override;
         void exec(const Push<R32>&) override;
         void exec(const Push<M32>&) override;

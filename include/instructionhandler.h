@@ -53,13 +53,11 @@ namespace x64 {
         virtual void exec(const Sub<M16, Imm>&) = 0;
         virtual void exec(const Sub<R32, R32>&) = 0;
         virtual void exec(const Sub<R32, Imm>&) = 0;
-        virtual void exec(const Sub<R32, SignExtended<u8>>&) = 0;
         virtual void exec(const Sub<R32, M32>&) = 0;
         virtual void exec(const Sub<M32, R32>&) = 0;
         virtual void exec(const Sub<M32, Imm>&) = 0;
         virtual void exec(const Sub<R64, R64>&) = 0;
         virtual void exec(const Sub<R64, Imm>&) = 0;
-        virtual void exec(const Sub<R64, SignExtended<u8>>&) = 0;
         virtual void exec(const Sub<R64, M64>&) = 0;
         virtual void exec(const Sub<M64, R64>&) = 0;
         virtual void exec(const Sub<M64, Imm>&) = 0;
@@ -242,7 +240,6 @@ namespace x64 {
         virtual void exec(const Lea<R64, ISD>&) = 0;
         virtual void exec(const Lea<R64, BISD>&) = 0;
 
-        virtual void exec(const Push<SignExtended<u8>>&) = 0;
         virtual void exec(const Push<Imm>&) = 0;
         virtual void exec(const Push<R32>&) = 0;
         virtual void exec(const Push<M32>&) = 0;
