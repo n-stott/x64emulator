@@ -171,7 +171,7 @@ namespace x64 {
 
     ssize_t Sys::read(int fd, Ptr8 buf, size_t count) {
         auto data = Host::read(Host::FD{fd}, count);
-        if(vm_->logInstructions()) fmt::print("Sys::read(fd={}, buf={:#x}, count={}) = {}\n", fd, buf.address(), count, data ? data->size() : -1);
+        if(vm_->logInstructions()) fmt::print("Sys::read(fd={}, buf={:#x}, count={}) = {}\n", fd, buf.address(), count, data ? (int)data->size() : -1);
         if(!data) return (ssize_t)(-1);
         mmu_->copyToMmu(buf, data->data(), data->size());
         return (ssize_t)data->size();

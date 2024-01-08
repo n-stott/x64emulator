@@ -1,3 +1,14 @@
+#if defined(__GNUC__) && defined(__clang__)
+// clang
+
+int main() {
+    // ignored
+    return 0;
+}
+
+#elif defined(__GNUC__) && !defined(__clang__)
+// gcc
+
 #include "types.h"
 #include "interpreter/cpuimpl.h"
 #include "fmt/core.h"
@@ -37,3 +48,7 @@ int main() {
     }
     return 0;
 }
+
+
+
+#endif

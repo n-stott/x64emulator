@@ -47,11 +47,12 @@ Host::CPUID Host::cpuid(u32 a) {
     asm volatile("cpuid" : "=a" (s.a), "=b" (s.b), "=c" (s.c), "=d" (s.d) : "0" (a));
     if(a == 1) {
         // Pretend that the cpu does not know
-        s.c &= ~(1 << 0  // SSE3
-               | 1 << 9  // SSE3 extension
-               | 1 << 19 // SSE4.1
-               | 1 << 20 // SSE4.2
-        );
+        u32 sseMask = (u32)(1 << 0  // SSE3
+                          | 1 << 9  // SSE3 extension
+                          | 1 << 19 // SSE4.1
+                          | 1 << 20 // SSE4.2
+                          );
+        s.c = s.c & (~sseMask);
     }
     return s;
 }
@@ -68,7 +69,7 @@ std::optional<std::vector<u8>> Host::read(FD fd, size_t count) {
     buffer.resize(count, 0x0);
     ssize_t nbytes = ::read(fd.fd, buffer.data(), count);
     if(nbytes < 0) return {};
-    buffer.resize(nbytes);
+    buffer.resize((size_t)nbytes);
     return std::optional(std::move(buffer));
 }
 
@@ -121,7 +122,7 @@ off_t Host::lseek(FD fd, off_t offset, int whence) {
     return ret;
 }
 
-Host::FD Host::openat(FD dirfd, const std::string& pathname, int flags, [[maybe_unused]] int mode) {
+Host::FD Host::openat(FD dirfd, const std::string& pathname, int flags, [[maybe_unused]] mode_t mode) {
     assert((flags & O_ACCMODE) == O_RDONLY);
     if((flags & O_ACCMODE) != O_RDONLY) return FD{-1};
     int fd = ::openat(dirfd.fd, pathname.c_str(), O_RDONLY);

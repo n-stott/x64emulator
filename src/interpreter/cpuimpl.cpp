@@ -623,7 +623,7 @@ namespace x64 {
 
     u16 Impl::btc16(u16 base, u16 index, Flags* flags) {
         flags->carry = (base >> (index % 16)) & 0x1;
-        u16 mask = ((u16)1 << (index % 16));
+        u16 mask = (u16)(1 << (index % 16));
         return (base & ~mask) | (~base & mask);
     }
     
@@ -801,7 +801,7 @@ namespace x64 {
             &f80::roundUp,
             &f80::roundZero
         }};
-        return rounding[(int)x87fpu->control().rc](dst);
+        return rounding[(u16)x87fpu->control().rc](dst);
     }
 
     u32 Impl::addss(u32 dst, u32 src, Flags* flags) {
@@ -942,7 +942,7 @@ namespace x64 {
         static_assert(sizeof(SRC) == sizeof(u128));
         std::memcpy(SRC.data(), &src, sizeof(u128));
 
-        for(int i = 0; i < 8; ++i) {
+        for(size_t i = 0; i < 8; ++i) {
             DST[2*i+1] = SRC[i];
         }
         std::memcpy(&dst, DST.data(), sizeof(u128));
@@ -958,7 +958,7 @@ namespace x64 {
         static_assert(sizeof(SRC) == sizeof(u128));
         std::memcpy(SRC.data(), &src, sizeof(u128));
 
-        for(int i = 0; i < 4; ++i) {
+        for(size_t i = 0; i < 4; ++i) {
             DST[2*i+1] = SRC[i];
         }
         std::memcpy(&dst, DST.data(), sizeof(u128));
@@ -1018,7 +1018,7 @@ namespace x64 {
         static_assert(sizeof(SRC) == sizeof(u128));
         std::memcpy(SRC.data(), &src, sizeof(u128));
 
-        for(int i = 0; i < 16; ++i) {
+        for(size_t i = 0; i < 16; ++i) {
             DST[i] = (DST[i] == SRC[i] ? 0xFF : 0x0);
         }
         std::memcpy(&dst, DST.data(), sizeof(u128));
@@ -1046,7 +1046,7 @@ namespace x64 {
         static_assert(sizeof(SRC) == sizeof(u128));
         std::memcpy(SRC.data(), &src, sizeof(u128));
 
-        for(int i = 0; i < 16; ++i) {
+        for(size_t i = 0; i < 16; ++i) {
             DST[i] -= SRC[i];
         }
         std::memcpy(&dst, DST.data(), sizeof(u128));
@@ -1062,7 +1062,7 @@ namespace x64 {
         static_assert(sizeof(SRC) == sizeof(u128));
         std::memcpy(SRC.data(), &src, sizeof(u128));
 
-        for(int i = 0; i < 16; ++i) {
+        for(size_t i = 0; i < 16; ++i) {
             DST[i] = std::min(DST[i], SRC[i]);
         }
         std::memcpy(&dst, DST.data(), sizeof(u128));

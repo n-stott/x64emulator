@@ -65,7 +65,7 @@ namespace x64 {
     }
 
     u16 X87Status::asWord() const {
-        return top << 11;
+        return (u16)(top << 11);
     }
 
     X87Status X87Status::fromWord(u16 sw) {
