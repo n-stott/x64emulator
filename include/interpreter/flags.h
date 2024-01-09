@@ -46,13 +46,17 @@ namespace x64 {
             case Cond::GE: return (sign == overflow);
             case Cond::L: return (sign != overflow);
             case Cond::LE: return (zero == 1 || sign != overflow);
+            case Cond::NB: return (carry == 0);
+            case Cond::NBE: return (carry == 0 && zero == 0);
             case Cond::NE: return (zero == 0);
             case Cond::NO: return (overflow == 0);
             case Cond::NP: return (parity == 0);
             case Cond::NS: return (sign == 0);
+            case Cond::NU: return (parity == 0);
             case Cond::O: return (overflow == 1);
             case Cond::P: return (parity == 1);
             case Cond::S: return (sign == 1);
+            case Cond::U: return (parity == 1);
         }
         __builtin_unreachable();
     }

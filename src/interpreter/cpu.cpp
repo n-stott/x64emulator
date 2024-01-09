@@ -1351,6 +1351,7 @@ namespace x64 {
 
     void Cpu::exec(const Fldz&) { x87fpu_.push(f80::fromLongDouble(0.0)); }
     void Cpu::exec(const Fld1&) { x87fpu_.push(f80::fromLongDouble(1.0)); }
+    void Cpu::exec(const Fld<ST>& ins) { x87fpu_.push(x87fpu_.st(ins.src)); }
     void Cpu::exec(const Fld<M32>& ins) { x87fpu_.push(f80::bitcastFromU32(get(resolve(ins.src)))); }
     void Cpu::exec(const Fld<M64>& ins) { x87fpu_.push(f80::bitcastFromU64(get(resolve(ins.src)))); }
     void Cpu::exec(const Fld<M80>& ins) { x87fpu_.push(get(resolve(ins.src))); }
@@ -1377,6 +1378,13 @@ namespace x64 {
         f80 top = x87fpu_.st(ST::ST0);
         f80 dst = x87fpu_.st(ins.dst);
         x87fpu_.set(ins.dst, Impl::fadd(top, dst, &x87fpu_));
+        x87fpu_.pop();
+    }
+
+    void Cpu::exec(const Fsubrp<ST>& ins) {
+        f80 top = x87fpu_.st(ST::ST0);
+        f80 dst = x87fpu_.st(ins.dst);
+        x87fpu_.set(ins.dst, Impl::fsub(top, dst, &x87fpu_));
         x87fpu_.pop();
     }
 
@@ -1412,10 +1420,31 @@ namespace x64 {
         Impl::fcomi(dst, src, &x87fpu_, &flags_);
     }
 
+    void Cpu::exec(const Fucomi<ST>& ins) {
+        f80 dst = x87fpu_.st(ST::ST0);
+        f80 src = x87fpu_.st(ins.src);
+        Impl::fucomi(dst, src, &x87fpu_, &flags_);
+    }
+
     void Cpu::exec(const Frndint&) {
         f80 dst = x87fpu_.st(ST::ST0);
         x87fpu_.set(ST::ST0, Impl::frndint(dst, &x87fpu_));
     }
+
+    void Cpu::execFcmovImpl(Cond cond, ST dst, ST src) {
+        if(flags_.matches(cond)) {
+            x87fpu_.set(dst, x87fpu_.st(src));
+        }
+    }
+
+    void Cpu::exec(const Fcmov<Cond::B, ST>& ins) { execFcmovImpl(Cond::B, ST::ST0, ins.src); }
+    void Cpu::exec(const Fcmov<Cond::BE, ST>& ins) { execFcmovImpl(Cond::BE, ST::ST0, ins.src); }
+    void Cpu::exec(const Fcmov<Cond::E, ST>& ins) { execFcmovImpl(Cond::E, ST::ST0, ins.src); }
+    void Cpu::exec(const Fcmov<Cond::NB, ST>& ins) { execFcmovImpl(Cond::NB, ST::ST0, ins.src); }
+    void Cpu::exec(const Fcmov<Cond::NBE, ST>& ins) { execFcmovImpl(Cond::NBE, ST::ST0, ins.src); }
+    void Cpu::exec(const Fcmov<Cond::NE, ST>& ins) { execFcmovImpl(Cond::NE, ST::ST0, ins.src); }
+    void Cpu::exec(const Fcmov<Cond::NU, ST>& ins) { execFcmovImpl(Cond::NU, ST::ST0, ins.src); }
+    void Cpu::exec(const Fcmov<Cond::U, ST>& ins) { execFcmovImpl(Cond::U, ST::ST0, ins.src); }
 
     void Cpu::exec(const Fnstcw<M16>& ins) {
         set(resolve(ins.dst), x87fpu_.control().asWord());
@@ -1423,6 +1452,28 @@ namespace x64 {
 
     void Cpu::exec(const Fldcw<M16>& ins) {
         x87fpu_.control() = X87Control::fromWord(get(resolve(ins.src)));
+    }
+
+    void Cpu::exec(const Fnstsw<R16>& ins) {
+        set(ins.dst, x87fpu_.status().asWord());
+    }
+
+    void Cpu::exec(const Fnstsw<M16>& ins) {
+        set(resolve(ins.dst), x87fpu_.status().asWord());
+    }
+
+    void Cpu::exec(const Fnstenv<M224>& ins) {
+        Ptr224 dst224 = resolve(ins.dst);
+        Ptr32 dst { dst224.segment(), dst224.address() };
+        set(dst++, (u32)x87fpu_.control().asWord());
+        set(dst++, (u32)x87fpu_.status().asWord());
+    }
+
+    void Cpu::exec(const Fldenv<M224>& ins) {
+        Ptr224 src224 = resolve(ins.src);
+        Ptr32 src { src224.segment(), src224.address() };
+        x87fpu_.control() = X87Control::fromWord((u16)get(src++));
+        x87fpu_.status() = X87Status::fromWord((u16)get(src++));
     }
 
     void Cpu::exec(const Movss<RSSE, M32>& ins) { set(ins.dst, zeroExtend<Xmm, u32>(get(resolve(ins.src)))); }

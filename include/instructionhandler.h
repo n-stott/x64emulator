@@ -558,6 +558,7 @@ namespace x64 {
 
         virtual void exec(const Fldz&) = 0;
         virtual void exec(const Fld1&) = 0;
+        virtual void exec(const Fld<ST>&) = 0;
         virtual void exec(const Fld<M32>&) = 0;
         virtual void exec(const Fld<M64>&) = 0;
         virtual void exec(const Fld<M80>&) = 0;
@@ -572,16 +573,33 @@ namespace x64 {
         virtual void exec(const Fxch<ST>&) = 0;
 
         virtual void exec(const Faddp<ST>&) = 0;
+        virtual void exec(const Fsubrp<ST>&) = 0;
         virtual void exec(const Fmul1<M32>&) = 0;
         virtual void exec(const Fmul1<M64>&) = 0;
         virtual void exec(const Fdiv<ST, ST>&) = 0;
         virtual void exec(const Fdivp<ST, ST>&) = 0;
 
         virtual void exec(const Fcomi<ST>&) = 0;
+        virtual void exec(const Fucomi<ST>&) = 0;
         virtual void exec(const Frndint&) = 0;
+
+        virtual void exec(const Fcmov<Cond::B, ST>&) = 0;
+        virtual void exec(const Fcmov<Cond::BE, ST>&) = 0;
+        virtual void exec(const Fcmov<Cond::E, ST>&) = 0;
+        virtual void exec(const Fcmov<Cond::NB, ST>&) = 0;
+        virtual void exec(const Fcmov<Cond::NBE, ST>&) = 0;
+        virtual void exec(const Fcmov<Cond::NE, ST>&) = 0;
+        virtual void exec(const Fcmov<Cond::NU, ST>&) = 0;
+        virtual void exec(const Fcmov<Cond::U, ST>&) = 0;
 
         virtual void exec(const Fnstcw<M16>&) = 0;
         virtual void exec(const Fldcw<M16>&) = 0;
+
+        virtual void exec(const Fnstsw<R16>&) = 0;
+        virtual void exec(const Fnstsw<M16>&) = 0;
+
+        virtual void exec(const Fnstenv<M224>&) = 0;
+        virtual void exec(const Fldenv<M224>&) = 0;
 
         virtual void exec(const Movss<RSSE, M32>&) = 0;
         virtual void exec(const Movss<M32, RSSE>&) = 0;

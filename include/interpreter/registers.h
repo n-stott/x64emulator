@@ -279,6 +279,10 @@ namespace x64 {
         Ptr128 resolve(const MSSE& msse) const {
             return std::visit([&](auto&& arg) -> Ptr128 { return resolve(arg); }, msse);
         }
+
+        Ptr224 resolve(const M224& msse) const {
+            return std::visit([&](auto&& arg) -> Ptr224 { return resolve(arg); }, msse);
+        }
     };
 
 }

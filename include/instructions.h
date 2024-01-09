@@ -431,6 +431,11 @@ namespace x64 {
         Dst dst;
     };
 
+    template<typename Dst>
+    struct Fsubrp {
+        Dst dst;
+    };
+
     template<typename Src>
     struct Fmul1 {
         Src src;
@@ -459,8 +464,18 @@ namespace x64 {
         Src src;
     };
 
+    template<typename Src>
+    struct Fucomi {
+        Src src;
+    };
+
     struct Frndint {
 
+    };
+
+    template<Cond cond, typename Src>
+    struct Fcmov {
+        Src src;
     };
 
     template<typename Dst>
@@ -470,6 +485,21 @@ namespace x64 {
 
     template<typename Src>
     struct Fldcw {
+        Src src;
+    };
+
+    template<typename Dst>
+    struct Fnstsw {
+        Dst dst;
+    };
+
+    template<typename Dst>
+    struct Fnstenv {
+        Dst dst;
+    };
+
+    template<typename Src>
+    struct Fldenv {
         Src src;
     };
 

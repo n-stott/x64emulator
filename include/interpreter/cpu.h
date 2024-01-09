@@ -100,6 +100,7 @@ namespace x64 {
         Ptr64 resolve(const M64& m64) const { return regs_.resolve(m64); }
         Ptr80 resolve(const M80& m80) const { return regs_.resolve(m80); }
         Ptr128 resolve(const MSSE& msse) const { return regs_.resolve(msse); }
+        Ptr224 resolve(const M224& m224) const { return regs_.resolve(m224); }
 
         void set(R8 reg, u8 value) { regs_.set(reg, value); }
         void set(R16 reg, u16 value) { regs_.set(reg, value); }
@@ -128,6 +129,8 @@ namespace x64 {
 
         template<typename Dst, typename Src>
         void execCmovImpl(Cond cond, Dst dst, Src src);
+
+        void execFcmovImpl(Cond cond, ST dst, ST src);
 
         template<typename Dst>
         void execCmpxchg32Impl(Dst dst, u32 src);
@@ -685,6 +688,7 @@ namespace x64 {
 
         void exec(const Fldz&) override;
         void exec(const Fld1&) override;
+        void exec(const Fld<ST>&) override;
         void exec(const Fld<M32>&) override;
         void exec(const Fld<M64>&) override;
         void exec(const Fld<M80>&) override;
@@ -699,16 +703,33 @@ namespace x64 {
         void exec(const Fxch<ST>&) override;
 
         void exec(const Faddp<ST>&) override;
+        void exec(const Fsubrp<ST>&) override;
         void exec(const Fmul1<M32>&) override;
         void exec(const Fmul1<M64>&) override;
         void exec(const Fdiv<ST, ST>&) override;
         void exec(const Fdivp<ST, ST>&) override;
 
         void exec(const Fcomi<ST>&) override;
+        void exec(const Fucomi<ST>&) override;
         void exec(const Frndint&) override;
+
+        void exec(const Fcmov<Cond::B, ST>&) override;
+        void exec(const Fcmov<Cond::BE, ST>&) override;
+        void exec(const Fcmov<Cond::E, ST>&) override;
+        void exec(const Fcmov<Cond::NB, ST>&) override;
+        void exec(const Fcmov<Cond::NBE, ST>&) override;
+        void exec(const Fcmov<Cond::NE, ST>&) override;
+        void exec(const Fcmov<Cond::NU, ST>&) override;
+        void exec(const Fcmov<Cond::U, ST>&) override;
 
         void exec(const Fnstcw<M16>&) override;
         void exec(const Fldcw<M16>&) override;
+
+        void exec(const Fnstsw<R16>&) override;
+        void exec(const Fnstsw<M16>&) override;
+
+        void exec(const Fnstenv<M224>&) override;
+        void exec(const Fldenv<M224>&) override;
 
         void exec(const Movss<RSSE, M32>&) override;
         void exec(const Movss<M32, RSSE>&) override;

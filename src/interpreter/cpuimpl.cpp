@@ -752,6 +752,13 @@ namespace x64 {
         return f80::fromLongDouble(r);
     }
 
+    f80 Impl::fsub(f80 dst, f80 src, X87Fpu*) {
+        long double d = f80::toLongDouble(dst);
+        long double s = f80::toLongDouble(src);
+        long double r = d-s;
+        return f80::fromLongDouble(r);
+    }
+
     f80 Impl::fmul(f80 dst, f80 src, X87Fpu*) {
         long double d = f80::toLongDouble(dst);
         long double s = f80::toLongDouble(src);
@@ -791,6 +798,10 @@ namespace x64 {
                 flags->carry = 1;
             }
         }
+    }
+
+    void Impl::fucomi(f80 dst, f80 src, X87Fpu* x87fpu, Flags* flags) {
+        return fcomi(dst, src, x87fpu, flags);
     }
 
     f80 Impl::frndint(f80 dst, X87Fpu* x87fpu) {

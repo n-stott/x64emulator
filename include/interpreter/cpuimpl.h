@@ -155,12 +155,14 @@ namespace x64 {
         [[nodiscard]] static u32 pcmpistri(u128 dst, u128 src, u8 control, Flags* flags);
 
         [[nodiscard]] static f80 fadd(f80 dst, f80 src, X87Fpu* fpu);
+        [[nodiscard]] static f80 fsub(f80 dst, f80 src, X87Fpu* fpu);
         [[nodiscard]] static f80 fmul(f80 dst, f80 src, X87Fpu* fpu);
         [[nodiscard]] static f80 fdiv(f80 dst, f80 src, X87Fpu* fpu);
 
         [[nodiscard]] static f80 frndint(f80 dst, X87Fpu* fpu);
 
         static void fcomi(f80 dst, f80 src, X87Fpu* fpu, Flags* flags);
+        static void fucomi(f80 dst, f80 src, X87Fpu* fpu, Flags* flags);
     };
 }
 

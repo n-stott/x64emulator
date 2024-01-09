@@ -144,15 +144,25 @@ namespace x64 {
         static std::unique_ptr<X86Instruction> makeFxch(const cs_insn& insn);
         
         static std::unique_ptr<X86Instruction> makeFaddp(const cs_insn& insn);
+        static std::unique_ptr<X86Instruction> makeFsubrp(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeFmul(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeFdiv(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeFdivp(const cs_insn& insn);
 
         static std::unique_ptr<X86Instruction> makeFcomi(const cs_insn& insn);
+        static std::unique_ptr<X86Instruction> makeFucomi(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeFrndint(const cs_insn& insn);
+
+        template<Cond cond>
+        static std::unique_ptr<X86Instruction> makeFcmov(const cs_insn& insn);
 
         static std::unique_ptr<X86Instruction> makeFnstcw(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeFldcw(const cs_insn& insn);
+
+        static std::unique_ptr<X86Instruction> makeFnstsw(const cs_insn& insn);
+
+        static std::unique_ptr<X86Instruction> makeFnstenv(const cs_insn& insn);
+        static std::unique_ptr<X86Instruction> makeFldenv(const cs_insn& insn);
 
         static std::unique_ptr<X86Instruction> makeMovss(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeMovsd(const cs_insn& insn);

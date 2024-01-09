@@ -162,13 +162,17 @@ namespace utils {
             case Cond::GE: return "ge";
             case Cond::L:  return "l";
             case Cond::LE: return "le";
+            case Cond::NB: return "nb";
+            case Cond::NBE: return "nbe";
             case Cond::NE: return "ne";
             case Cond::NO: return "no";
             case Cond::NP:  return "np";
             case Cond::NS: return "ns";
+            case Cond::NU: return "nu";
             case Cond::O: return "o";
             case Cond::P:  return "p";
             case Cond::S:  return "s";
+            case Cond::U: return "nu";
         }
         __builtin_unreachable();
     }
@@ -194,6 +198,7 @@ namespace utils {
         if constexpr (size == Size::QWORD) return "QWORD";
         if constexpr (size == Size::TWORD) return "TWORD";
         if constexpr (size == Size::XMMWORD) return "XMMWORD";
+        if constexpr (size == Size::FPUENV) return "FPUENV";
     }
 
     template<Cond condition>
@@ -270,6 +275,10 @@ namespace utils {
 
     inline std::string toString(const MSSE& msse) {
         return std::visit([](auto&& arg) -> std::string { return toString(arg); }, msse);
+    }
+
+    inline std::string toString(const M224& m224) {
+        return std::visit([](auto&& arg) -> std::string { return toString(arg); }, m224);
     }
 
     template<typename Src>
@@ -713,6 +722,11 @@ namespace utils {
         return fmt::format("{:9}{}", "faddp", toString(ins.dst));
     }
 
+    template<typename Dst>
+    inline std::string toString(Fsubrp<Dst> ins) {
+        return fmt::format("{:9}{}", "fsubrp", toString(ins.dst));
+    }
+
     template<typename Src>
     inline std::string toString(Fmul1<Src> ins) {
         return fmt::format("{:9}{}", "fmul", toString(ins.src));
@@ -738,8 +752,18 @@ namespace utils {
         return fmt::format("{:9}{}", "fcomi", toString(ins.src));
     }
 
+    template<typename Src>
+    inline std::string toString(Fucomi<Src> ins) {
+        return fmt::format("{:9}{}", "fucomi", toString(ins.src));
+    }
+
     inline std::string toString(Frndint) {
         return fmt::format("{:9}", "frndint");
+    }
+
+    template<Cond cond, typename Src>
+    inline std::string toString(Fcmov<cond, Src> ins) {
+        return fmt::format("{:9}{},{}", fmt::format("fcmov{}", toString(cond)), toString(ST::ST0), toString(ins.src));
     }
 
     template<typename Dst>
@@ -750,6 +774,21 @@ namespace utils {
     template<typename Src>
     inline std::string toString(Fldcw<Src> ins) {
         return fmt::format("{:9}{}", "fldcw", toString(ins.src));
+    }
+
+    template<typename Dst>
+    inline std::string toString(Fnstsw<Dst> ins) {
+        return fmt::format("{:9}{}", "fnstsw", toString(ins.dst));
+    }
+
+    template<typename Dst>
+    inline std::string toString(Fnstenv<Dst> ins) {
+        return fmt::format("{:9}{}", "fnstenv", toString(ins.dst));
+    }
+
+    template<typename Src>
+    inline std::string toString(Fldenv<Src> ins) {
+        return fmt::format("{:9}{}", "fldenv", toString(ins.src));
     }
 
     template<typename Dst, typename Src>

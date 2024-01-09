@@ -151,13 +151,17 @@ namespace x64 {
         GE,
         L,
         LE,
+        NB,
+        NBE,
         NE,
         NO,
         NP,
         NS,
+        NU,
         O,
         P,
         S,
+        U,
     };
 
     enum class Flag {
@@ -212,6 +216,7 @@ namespace x64 {
         QWORD,
         TWORD,
         XMMWORD,
+        FPUENV,
     };
 
     inline constexpr u8 pointerSize(Size size) {
@@ -222,6 +227,7 @@ namespace x64 {
             case Size::QWORD: return 8;
             case Size::TWORD: return 10;
             case Size::XMMWORD: return 16;
+            case Size::FPUENV: return 28;
         }
         return 0;
     }
@@ -269,6 +275,7 @@ namespace x64 {
     using Ptr64 = SPtr<Size::QWORD>;
     using Ptr80 = SPtr<Size::TWORD>;
     using Ptr128 = SPtr<Size::XMMWORD>;
+    using Ptr224 = SPtr<Size::FPUENV>;
 
     template<Size size>
     using M = std::variant<Addr<size, B>,
@@ -294,6 +301,8 @@ namespace x64 {
 
     using MSSE = M<Size::XMMWORD>;
     using RMSSE = std::variant<RSSE, MSSE>;
+
+    using M224 = M<Size::FPUENV>;
 }
 
 #endif
