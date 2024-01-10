@@ -55,6 +55,7 @@ namespace x64 {
             const std::string& file() const { return file_; }
 
             bool contains(u64 address) const;
+            bool intersectsRange(u64 base, u64 end) const;
 
             std::array<Region, 3> split(u64 left, u64 right) const;
 
@@ -169,6 +170,7 @@ namespace x64 {
         Region* findRegion(const char* name);
 
         u64 topOfMemoryPageAligned() const;
+        u64 firstFitPageAligned(u64 length) const;
 
         u64 topOfReserved_ = 0;
 

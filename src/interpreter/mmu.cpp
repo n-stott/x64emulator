@@ -99,7 +99,7 @@ namespace x64 {
             fmt::print("mmap with non-page_size aligned address {:#x} not supported", address);
         });
 
-        u64 baseAddress = (address != 0) ? address : topOfMemoryPageAligned();
+        u64 baseAddress = (address != 0) ? address : firstFitPageAligned(length);
         Region region("", baseAddress, pageRoundUp(length), (PROT)prot);
         Region* regionPtr = nullptr;
         if((bool)(flags & MAP::FIXED)) {
@@ -174,6 +174,9 @@ namespace x64 {
         return address >= base() && address < end();
     }
 
+    bool Mmu::Region::intersectsRange(u64 base, u64 end) const {
+        return std::max(this->base(), base) < std::min(this->end(), end);
+    }
 
     std::string Mmu::readString(Ptr8 src) const {
         Ptr8 end = src;
@@ -338,6 +341,26 @@ namespace x64 {
         for(const auto& ptr : regions_) top = std::max(top, ptr->end());
         top = pageRoundUp(top);
         return top;
+    }
+
+    u64 Mmu::firstFitPageAligned(u64 length) const {
+        verify(length > 0, "zero sized region is not allowed");
+        length = pageRoundUp(length);
+        std::optional<u64> chosenAddress;
+        for(const auto& ptr : regions_) {
+            if(ptr->base() < length) continue;
+            u64 candidate = pageRoundDown(ptr->base() - length);
+            if(std::none_of(regions_.begin(), regions_.end(), [&](const auto& regionPtr) {
+                return regionPtr->intersectsRange(candidate, candidate+length);
+            })) {
+                if(chosenAddress) {
+                    chosenAddress = std::max(*chosenAddress, candidate);
+                } else {
+                    chosenAddress = candidate;
+                }
+            }
+        }
+        return chosenAddress.value_or(topOfMemoryPageAligned());
     }
 
     u64 Mmu::pageRoundDown(u64 address) {
