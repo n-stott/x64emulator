@@ -48,12 +48,16 @@ namespace x64 {
         auto emptyIntersection = [&](const std::unique_ptr<Region>& ptr) {
             return !ptr->contains(region.base()) && !ptr->contains(region.end() - 1);
         };
-        for(auto it = regions_.begin(); it != regions_.end(); ++it) {
-            auto& ptr = *it;
-            if(emptyIntersection(ptr)) continue;
-            
-            std::array<Region, 3> splitRegions = ptr->split(region.base(), region.end());
-            removeRegion(*ptr);
+        std::ptrdiff_t nbImpactedRegions = std::count_if(regions_.begin(), regions_.end(), [&](const auto& ptr) {
+            return !emptyIntersection(ptr);
+        });
+        verify(nbImpactedRegions <= 1, "More than one region is impacted in Mmu::addRegionAndEraseExisting");
+        auto it = std::partition(regions_.begin(), regions_.end(), emptyIntersection);
+        if(it != regions_.end()) {
+            assert(std::distance(it, regions_.end()) == 1);
+            std::unique_ptr<Region>& oldRegion = regions_.back();
+            std::array<Region, 3> splitRegions = oldRegion->split(region.base(), region.end());
+            removeRegion(*oldRegion);
             for(size_t i = 0; i < splitRegions.size(); ++i) {
                 if(i == 1) continue;
                 Region r("", 0, 0, PROT::NONE);
