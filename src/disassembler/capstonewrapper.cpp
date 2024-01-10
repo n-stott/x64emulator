@@ -2743,7 +2743,6 @@ namespace x64 {
                         continue;
                     }
                 }
-                fmt::print("Unable to disassemble whole section. Stuck at {:#x}. {:#x} bytes remaining\n", codeAddress, codeSize);
                 break;
             }
         }

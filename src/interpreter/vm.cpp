@@ -240,6 +240,7 @@ namespace x64 {
         });
 
         // Now, do the disassembly
+        // fmt::print(stderr, "Requesting disassembly for [{:#x}-{:#x}] (size={:#x}) {}\n", address, end, end-address, mmuRegion->file());
         std::vector<u8> disassemblyData;
         disassemblyData.resize(end-address, 0x0);
         mmuRegion->copyFromRegion(disassemblyData.data(), address, end-address);
