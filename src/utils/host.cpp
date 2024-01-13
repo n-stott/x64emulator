@@ -3,6 +3,7 @@
 #include <cstring>
 #include <iostream>
 #include <sys/mman.h>
+#include <sys/resource.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/utsname.h>
@@ -182,4 +183,24 @@ std::vector<u8> Host::readFromFile(Host::FD fd, size_t length, off_t offset) {
         return {};
     }
     return data;
+}
+
+int Host::prlimit64(pid_t pid, int resource, const std::vector<u8>* new_limit, std::vector<u8>* old_limit) {
+    (void)pid;
+    (void)new_limit;
+    if(!old_limit) return 0;
+    if(old_limit->size() != sizeof(struct rlimit)) return -1;
+    switch(resource) {
+        case RLIMIT_STACK: {
+            struct rlimit stackLimit {
+                16*0x1000,
+                RLIM64_INFINITY,
+            };
+            std::memcpy(old_limit->data(), &stackLimit, sizeof(stackLimit));
+            return 0;
+        }
+        default: {
+            return -1;
+        }
+    }
 }

@@ -7,6 +7,7 @@
 #include <string.h>
 #include <sys/mman.h>
 #include <sys/prctl.h>
+#include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/uio.h>
 #include <sys/utsname.h>
@@ -101,6 +102,24 @@ namespace x64 {
                 vm_->set(R64::RAX, newBreak.address());
                 return;
             }
+            case 0xd: { // rt_sigaction
+                int sig = (int)arg0;
+                Ptr act(arg1);
+                Ptr oact(arg2);
+                size_t sigsetsize = (size_t)arg3;
+                int ret = rt_sigaction(sig, act, oact, sigsetsize);
+                vm_->set(R64::RAX, (u64)ret);
+                return;
+            }
+            case 0xe: { // rt_sigprocmask
+                int how = (int)arg0;
+                Ptr nset(arg1);
+                Ptr oset(arg2);
+                size_t sigsetsize = (size_t)arg3;
+                int ret = rt_sigprocmask(how, nset, oset, sigsetsize);
+                vm_->set(R64::RAX, (u64)ret);
+                return;
+            }
             case 0x14: { // writev
                 int fd = (int)arg0;
                 Ptr iov{arg1};
@@ -148,6 +167,12 @@ namespace x64 {
                 vm_->set(R64::RAX, (u64)ret);
                 return;
             }
+            case 0xda: { // set_tid_address
+                Ptr32 tidptr{arg0};
+                pid_t ret = set_tid_address(tidptr);
+                vm_->set(R64::RAX, (u64)ret);
+                return;
+            }
             case 0xe7: { // exit_group
                 i32 errorCode = (i32)arg0;
                 exit_group(errorCode);
@@ -159,6 +184,30 @@ namespace x64 {
                 int flags = (int)arg2;
                 mode_t mode = (mode_t)arg3;
                 int ret = openat(dirfd, pathname, flags, mode);
+                vm_->set(R64::RAX, (u64)ret);
+                return;
+            }
+            case 0x111: { // set_robust_list
+                Ptr head(arg0);
+                size_t len = (size_t)arg1;
+                long ret = set_robust_list(head, len);
+                vm_->set(R64::RAX, (u64)ret);
+                return;
+            }
+            case 0x112: { // get_robust_list
+                pid_t pid = (pid_t)arg0;
+                Ptr64 head_ptr(arg1);
+                Ptr64 len_ptr(arg2);
+                long ret = get_robust_list(pid, head_ptr, len_ptr);
+                vm_->set(R64::RAX, (u64)ret);
+                return;
+            }
+            case 0x12e: { // prlimit64
+                pid_t pid = (pid_t)arg0;
+                int resource = (int)arg1;
+                Ptr new_limit(arg2);
+                Ptr old_limit(arg3);
+                int ret = prlimit64(pid, resource, new_limit, old_limit);
                 vm_->set(R64::RAX, (u64)ret);
                 return;
             }
@@ -242,6 +291,22 @@ namespace x64 {
         return Ptr{addr.segment(), newBrk};
     }
 
+    int Sys::rt_sigaction(int sig, Ptr act, Ptr oact, size_t sigsetsize) {
+        (void)sig;
+        (void)act;
+        (void)oact;
+        (void)sigsetsize;
+        return 0;
+    }
+
+    int Sys::rt_sigprocmask(int how, Ptr nset, Ptr oset, size_t sigsetsize) {
+        (void)how;
+        (void)nset;
+        (void)oset;
+        (void)sigsetsize;
+        return 0;
+    }
+
     ssize_t Sys::writev(int fd, Ptr iov, int iovcnt) {
         std::vector<iovec> iovs = mmu_->readFromMmu<iovec>(iov, (size_t)iovcnt);
 
@@ -299,6 +364,10 @@ namespace x64 {
         vm_->stop();
     }
 
+    pid_t Sys::set_tid_address(Ptr32) {
+        return 1;
+    }
+
     int Sys::arch_prctl(int code, Ptr addr) {
         if(vm_->logInstructions()) fmt::print("Sys::arch_prctl(code={}, addr={:#x}) = {}\n", code, addr.address(), code == ARCH_SET_FS ? 0 : -1);
         if(code != ARCH_SET_FS) return -1;
@@ -311,6 +380,41 @@ namespace x64 {
         Host::FD fd = Host::openat(Host::FD{dirfd}, path, flags, mode);
         if(vm_->logInstructions()) fmt::print("Sys::openat(dirfd={}, path={}, flags={}, mode={}) = {}\n", dirfd, path, flags, mode, fd.fd);
         return fd.fd;
+    }
+
+    long Sys::set_robust_list(Ptr head, size_t len) {
+        // maybe we can do nothing ?
+        (void)head;
+        (void)len;
+        return 0;
+    }
+
+    long Sys::get_robust_list(int pid, Ptr64 head_ptr, Ptr64 len_ptr) {
+        (void)pid;
+        (void)head_ptr;
+        (void)len_ptr;
+        verify(false, "implement {get,set}_robust_list");
+        return 0;
+    }
+
+    int Sys::prlimit64(pid_t pid, int resource, Ptr new_limit, Ptr old_limit) {
+        (void)new_limit;
+        if(!old_limit.address()) return 0;
+        // if(vm_->logInstructions()) 
+        fmt::print("Sys::prlimit64(pid={}, resource={}, new_limit={:#x}, old_limit={:#x})", pid, resource, new_limit.address(), old_limit.address());
+        std::vector<u8> oldLimitBuffer;
+        oldLimitBuffer.resize(sizeof(struct rlimit), 0x0);
+        int ret = Host::prlimit64(pid, resource, nullptr, &oldLimitBuffer);
+        if(ret < 0) {
+            fmt::print(" = {}\n", ret);
+            return ret;
+        } else {
+            struct rlimit oldLimit;
+            std::memcpy(&oldLimit, oldLimitBuffer.data(), oldLimitBuffer.size());
+            fmt::print(" = {} (oldLimit={}/{})\n", ret, oldLimit.rlim_cur, oldLimit.rlim_max);
+            mmu_->copyToMmu(old_limit, oldLimitBuffer.data(), oldLimitBuffer.size());
+            return 0;
+        }
     }
 
 }

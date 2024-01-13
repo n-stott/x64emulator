@@ -36,6 +36,10 @@ namespace x64 {
         int munmap(Ptr addr, size_t length);
         // 0xc
         Ptr brk(Ptr addr);
+        // 0xd
+        int rt_sigaction(int sig, Ptr act, Ptr oact, size_t sigsetsize);
+        // 0xe
+        int rt_sigprocmask(int how, Ptr nset, Ptr oset, size_t sigsetsize);
         // 0x14
         ssize_t writev(int fd, Ptr iov, int iovcnt);
         // 0x15
@@ -50,10 +54,18 @@ namespace x64 {
         ssize_t readlink(Ptr pathname, Ptr buf, size_t bufsiz);
         // 0x9e
         void exit_group(int status);
+        // 0xda
+        pid_t set_tid_address(Ptr32 tidptr);
         // 0xe7
         int arch_prctl(int code, Ptr addr);
         // 0x101
         int openat(int dirfd, Ptr pathname, int flags, mode_t mode);
+        // 0x111
+        long set_robust_list(Ptr head, size_t len);
+        // 0x112
+        long get_robust_list(int pid, Ptr64 head_ptr, Ptr64 len_ptr);
+        // 0x12e
+        int prlimit64(pid_t pid, int resource, Ptr new_limit, Ptr old_limit);
 
 
     private:
