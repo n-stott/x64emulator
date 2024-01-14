@@ -24,7 +24,7 @@ namespace x64 {
         void setLogInstructions(bool);
         bool logInstructions() const;
 
-        void setSymbolProvider(const SymbolProvider* symbolProvider);
+        void setSymbolProvider(SymbolProvider* symbolProvider);
 
         void execute(u64 address);
 
@@ -56,6 +56,7 @@ namespace x64 {
         };
 
         InstructionPosition findSectionWithAddress(u64 address, const ExecutableSection* sectionHint = nullptr) const;
+        void tryRetrieveSymbolsFromExecutable(const Mmu::Region& region) const;
         std::string calledFunctionName(u64 address) const;
 
         Mmu mmu_;
@@ -80,7 +81,7 @@ namespace x64 {
         std::unordered_map<u64, CallPoint> callCache_;
         std::unordered_map<u64, CallPoint> jmpCache_;
 
-        const SymbolProvider* symbolProvider_ { nullptr };
+        SymbolProvider* symbolProvider_ { nullptr };
         mutable std::unordered_map<u64, std::string> functionNameCache_;
 
     };
