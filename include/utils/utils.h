@@ -28,6 +28,8 @@ struct F80 {
     static long double toLongDouble(F80 f);
     static F80 bitcastFromU32(u32 val);
     static F80 bitcastFromU64(u64 val);
+    static u32 bitcastToU32(F80 val);
+    static u64 bitcastToU64(F80 val);
     static F80 castFromI16(i16 val);
     static F80 castFromI32(i32 val);
     static F80 castFromI64(i64 val);

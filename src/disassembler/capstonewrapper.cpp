@@ -166,6 +166,7 @@ namespace x64 {
             case X86_INS_UCOMISD: return makeUcomisd(insn);
             case X86_INS_CVTSI2SD: return makeCvtsi2sd(insn);
             case X86_INS_CVTSS2SD: return makeCvtss2sd(insn);
+            case X86_INS_CVTTSD2SI: return makeCvttsd2si(insn);
             case X86_INS_CLD: return makeCld(insn);
             case X86_INS_STD: return makeStd(insn);
             case X86_INS_STOSB:
@@ -2092,11 +2093,15 @@ namespace x64 {
     std::unique_ptr<X86Instruction> CapstoneWrapper::makeFstp(const cs_insn& insn) {
         const auto& x86detail = insn.detail->x86;
         assert(x86detail.op_count == 1);
-        const cs_x86_op& src = x86detail.operands[0];
-        auto stsrc = asST(src);
-        auto m80src = asMemory80(src);
-        if(stsrc) return make_wrapper<Fstp<ST>>(insn.address, stsrc.value());
-        if(m80src) return make_wrapper<Fstp<M80>>(insn.address, m80src.value());
+        const cs_x86_op& dst = x86detail.operands[0];
+        auto stdst = asST(dst);
+        auto m32dst = asMemory32(dst);
+        auto m64dst = asMemory64(dst);
+        auto m80dst = asMemory80(dst);
+        if(stdst) return make_wrapper<Fstp<ST>>(insn.address, stdst.value());
+        if(m32dst) return make_wrapper<Fstp<M32>>(insn.address, m32dst.value());
+        if(m64dst) return make_wrapper<Fstp<M64>>(insn.address, m64dst.value());
+        if(m80dst) return make_wrapper<Fstp<M80>>(insn.address, m80dst.value());
         return make_failed(insn);
     }
 
@@ -2445,6 +2450,22 @@ namespace x64 {
         auto m32src = asMemory32(src);
         if(rssedst && rssesrc) return make_wrapper<Cvtss2sd<RSSE, RSSE>>(insn.address, rssedst.value(), rssesrc.value());
         if(rssedst && m32src) return make_wrapper<Cvtss2sd<RSSE, M32>>(insn.address, rssedst.value(), m32src.value());
+        return make_failed(insn);
+    }
+    
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makeCvttsd2si(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto r32dst = asRegister32(dst);
+        auto r64dst = asRegister64(dst);
+        auto rssesrc = asRegister128(src);
+        auto m64src = asMemory64(src);
+        if(r32dst && rssesrc) return make_wrapper<Cvttsd2si<R32, RSSE>>(insn.address, r32dst.value(), rssesrc.value());
+        if(r32dst && m64src) return make_wrapper<Cvttsd2si<R32, M64>>(insn.address, r32dst.value(), m64src.value());
+        if(r64dst && rssesrc) return make_wrapper<Cvttsd2si<R64, RSSE>>(insn.address, r64dst.value(), rssesrc.value());
+        if(r64dst && m64src) return make_wrapper<Cvttsd2si<R64, M64>>(insn.address, r64dst.value(), m64src.value());
         return make_failed(insn);
     }
 

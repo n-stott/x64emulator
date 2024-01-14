@@ -264,6 +264,7 @@ namespace x64 {
 
     void VM::tryRetrieveSymbolsFromExecutable(const Mmu::Region& region) const {
         if(!symbolProvider_) return;
+        if(!logInstructions()) return;
         if(region.file().empty()) return;
 
         std::unique_ptr<elf::Elf> elf = elf::ElfReader::tryCreate(region.file());

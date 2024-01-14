@@ -566,6 +566,8 @@ namespace x64 {
         virtual void exec(const Fild<M32>&) = 0;
         virtual void exec(const Fild<M64>&) = 0;
         virtual void exec(const Fstp<ST>&) = 0;
+        virtual void exec(const Fstp<M32>&) = 0;
+        virtual void exec(const Fstp<M64>&) = 0;
         virtual void exec(const Fstp<M80>&) = 0;
         virtual void exec(const Fistp<M16>&) = 0;
         virtual void exec(const Fistp<M32>&) = 0;
@@ -635,6 +637,11 @@ namespace x64 {
         virtual void exec(const Cvtsi2sd<RSSE, M64>&) = 0;
         virtual void exec(const Cvtss2sd<RSSE, RSSE>&) = 0;
         virtual void exec(const Cvtss2sd<RSSE, M32>&) = 0;
+
+        virtual void exec(const Cvttsd2si<R32, RSSE>&) = 0;
+        virtual void exec(const Cvttsd2si<R32, M64>&) = 0;
+        virtual void exec(const Cvttsd2si<R64, RSSE>&) = 0;
+        virtual void exec(const Cvttsd2si<R64, M64>&) = 0;
 
         virtual void exec(const Por<RSSE, RSSE>&) = 0;
         virtual void exec(const Xorpd<RSSE, RSSE>&) = 0;

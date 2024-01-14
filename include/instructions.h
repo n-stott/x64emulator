@@ -582,6 +582,12 @@ namespace x64 {
     };
 
     template<typename Dst, typename Src>
+    struct Cvttsd2si {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
     struct Por {
         Dst dst;
         Src src;

@@ -696,6 +696,8 @@ namespace x64 {
         void exec(const Fild<M32>&) override;
         void exec(const Fild<M64>&) override;
         void exec(const Fstp<ST>&) override;
+        void exec(const Fstp<M32>&) override;
+        void exec(const Fstp<M64>&) override;
         void exec(const Fstp<M80>&) override;
         void exec(const Fistp<M16>&) override;
         void exec(const Fistp<M32>&) override;
@@ -765,6 +767,11 @@ namespace x64 {
         void exec(const Cvtsi2sd<RSSE, M64>&) override;
         void exec(const Cvtss2sd<RSSE, RSSE>&) override;
         void exec(const Cvtss2sd<RSSE, M32>&) override;
+
+        void exec(const Cvttsd2si<R32, RSSE>&) override;
+        void exec(const Cvttsd2si<R32, M64>&) override;
+        void exec(const Cvttsd2si<R64, RSSE>&) override;
+        void exec(const Cvttsd2si<R64, M64>&) override;
 
         void exec(const Por<RSSE, RSSE>&) override;
         void exec(const Xorpd<RSSE, RSSE>&) override;

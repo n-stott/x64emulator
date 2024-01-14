@@ -132,6 +132,9 @@ namespace x64 {
 
         [[nodiscard]] static u64 cvtss2sd(u32 src);
 
+        [[nodiscard]] static u32 cvttsd2si32(u64 src);
+        [[nodiscard]] static u64 cvttsd2si64(u64 src);
+
         [[nodiscard]] static u128 punpcklbw(u128 dst, u128 src);
         [[nodiscard]] static u128 punpcklwd(u128 dst, u128 src);
         [[nodiscard]] static u128 punpcklqdq(u128 dst, u128 src);

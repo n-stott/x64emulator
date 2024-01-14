@@ -944,6 +944,18 @@ namespace x64 {
         return r;
     }
 
+    u32 Impl::cvttsd2si32(u64 src) {
+        double f;
+        std::memcpy(&f, &src, sizeof(src));
+        return (u32)(i32)f;
+    }
+
+    u64 Impl::cvttsd2si64(u64 src) {
+        double f;
+        std::memcpy(&f, &src, sizeof(src));
+        return (u64)(i64)f;
+    }
+
     u128 Impl::punpcklbw(u128 dst, u128 src) {
         std::array<u8, 16> DST;
         static_assert(sizeof(DST) == sizeof(u128));

@@ -28,6 +28,20 @@ F80 F80::bitcastFromU64(u64 val) {
     return fromLongDouble((long double)d);
 }
 
+u32 F80::bitcastToU32(f80 val) {
+    f32 f = (f32)toLongDouble(val);
+    u32 u;
+    std::memcpy(&u, &f, sizeof(f));
+    return u;
+}
+
+u64 F80::bitcastToU64(f80 val) {
+    f64 f = (f64)toLongDouble(val);
+    u64 u;
+    std::memcpy(&u, &f, sizeof(f));
+    return u;
+}
+
 F80 F80::castFromI16(i16 val) {
     return fromLongDouble((long double)val);
 }

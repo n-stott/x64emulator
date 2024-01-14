@@ -857,6 +857,11 @@ namespace utils {
     }
 
     template<typename Dst, typename Src>
+    inline std::string toString(Cvttsd2si<Dst, Src> ins) {
+        return fmt::format("{:9}{},{}", "cvttsd2si", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Dst, typename Src>
     inline std::string toString(Por<Dst, Src> ins) {
         return fmt::format("{:9}{},{}", "por", toString(ins.dst), toString(ins.src));
     }
