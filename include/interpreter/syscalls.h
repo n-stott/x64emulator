@@ -3,6 +3,7 @@
 
 #include "types.h"
 #include "utils/utils.h"
+#include <cstdint>
 
 namespace x64 {
 
@@ -54,8 +55,12 @@ namespace x64 {
         ssize_t readlink(Ptr pathname, Ptr buf, size_t bufsiz);
         // 0x9e
         void exit_group(int status);
+        // 0xca
+        long futex(Ptr32 uaddr, int futex_op, uint32_t val, Ptr timeout, Ptr32 uaddr2, uint32_t val3);
         // 0xda
         pid_t set_tid_address(Ptr32 tidptr);
+        // 0xe4
+        int clock_gettime(clockid_t clockid, Ptr tp);
         // 0xe7
         int arch_prctl(int code, Ptr addr);
         // 0x101

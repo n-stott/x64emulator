@@ -167,9 +167,27 @@ namespace x64 {
                 vm_->set(R64::RAX, (u64)ret);
                 return;
             }
+            case 0xca: { // futex
+                Ptr32 uaddr(arg0);
+                int futex_op = (int)arg1;
+                uint32_t val = (uint32_t)arg2;
+                Ptr timeout(arg3);
+                Ptr32 uaddr2(arg4);
+                uint32_t val3 = (uint32_t)arg5;
+                long ret = futex(uaddr, futex_op, val, timeout, uaddr2, val3);
+                vm_->set(R64::RAX, (u64)ret);
+                return;
+            }
             case 0xda: { // set_tid_address
                 Ptr32 tidptr{arg0};
                 pid_t ret = set_tid_address(tidptr);
+                vm_->set(R64::RAX, (u64)ret);
+                return;
+            }
+            case 0xe4: { // clock_gettime
+                clockid_t clockid = (clockid_t)arg0;
+                Ptr tp(arg1);
+                int ret = clock_gettime(clockid, tp);
                 vm_->set(R64::RAX, (u64)ret);
                 return;
             }
@@ -292,6 +310,7 @@ namespace x64 {
     }
 
     int Sys::rt_sigaction(int sig, Ptr act, Ptr oact, size_t sigsetsize) {
+        if(vm_->logInstructions()) fmt::print("Sys::rt_sigaction({}, {:#x}, {:#x}, {}) = 0\n", sig, act.address(), oact.address(), sigsetsize);
         (void)sig;
         (void)act;
         (void)oact;
@@ -300,6 +319,7 @@ namespace x64 {
     }
 
     int Sys::rt_sigprocmask(int how, Ptr nset, Ptr oset, size_t sigsetsize) {
+        if(vm_->logInstructions()) fmt::print("Sys::rt_sigprocmask({}, {:#x}, {:#x}, {}) = 0\n", how, nset.address(), oset.address(), sigsetsize);
         (void)how;
         (void)nset;
         (void)oset;
@@ -364,8 +384,19 @@ namespace x64 {
         vm_->stop();
     }
 
-    pid_t Sys::set_tid_address(Ptr32) {
+    long Sys::futex(Ptr32 uaddr, int futex_op, uint32_t val, Ptr timeout, Ptr32 uaddr2, uint32_t val3) {
+        if(vm_->logInstructions()) fmt::print("Sys::futex({:#x}, {}, {}, {:#x}, {:#x}, {})\n", uaddr.address(), futex_op, val, timeout.address(), uaddr2.address(), val3);
         return 1;
+    }
+
+    pid_t Sys::set_tid_address(Ptr32 ptr) {
+        if(vm_->logInstructions()) fmt::print("Sys::set_tid_address({:#x}) = {}\n", ptr.address(), 1);
+        return 1;
+    }
+
+    int Sys::clock_gettime(clockid_t clockid, Ptr tp) {
+        if(vm_->logInstructions()) fmt::print("Sys::clock_gettime({}, {:#x})\n", clockid, tp.address());
+        return 0;
     }
 
     int Sys::arch_prctl(int code, Ptr addr) {
@@ -383,6 +414,7 @@ namespace x64 {
     }
 
     long Sys::set_robust_list(Ptr head, size_t len) {
+        if(vm_->logInstructions()) fmt::print("Sys::set_robust_list({:#x}, {}) = 0\n", head.address(), len);
         // maybe we can do nothing ?
         (void)head;
         (void)len;
@@ -390,6 +422,7 @@ namespace x64 {
     }
 
     long Sys::get_robust_list(int pid, Ptr64 head_ptr, Ptr64 len_ptr) {
+        if(vm_->logInstructions()) fmt::print("Sys::get_robust_list({}, {:#x}, {:#x}) = 0\n", pid, head_ptr.address(), len_ptr.address());
         (void)pid;
         (void)head_ptr;
         (void)len_ptr;
@@ -398,20 +431,23 @@ namespace x64 {
     }
 
     int Sys::prlimit64(pid_t pid, int resource, Ptr new_limit, Ptr old_limit) {
+        if(vm_->logInstructions()) 
+            fmt::print("Sys::prlimit64(pid={}, resource={}, new_limit={:#x}, old_limit={:#x})", pid, resource, new_limit.address(), old_limit.address());
         (void)new_limit;
-        if(!old_limit.address()) return 0;
-        // if(vm_->logInstructions()) 
-        fmt::print("Sys::prlimit64(pid={}, resource={}, new_limit={:#x}, old_limit={:#x})", pid, resource, new_limit.address(), old_limit.address());
+        if(!old_limit.address()) {
+            if(vm_->logInstructions()) fmt::print(" = 0\n");
+            return 0;
+        }
         std::vector<u8> oldLimitBuffer;
         oldLimitBuffer.resize(sizeof(struct rlimit), 0x0);
         int ret = Host::prlimit64(pid, resource, nullptr, &oldLimitBuffer);
         if(ret < 0) {
-            fmt::print(" = {}\n", ret);
+            if(vm_->logInstructions()) fmt::print(" = {}\n", ret);
             return ret;
         } else {
             struct rlimit oldLimit;
             std::memcpy(&oldLimit, oldLimitBuffer.data(), oldLimitBuffer.size());
-            fmt::print(" = {} (oldLimit={}/{})\n", ret, oldLimit.rlim_cur, oldLimit.rlim_max);
+            if(vm_->logInstructions()) fmt::print(" = {} (oldLimit={}/{})\n", ret, oldLimit.rlim_cur, oldLimit.rlim_max);
             mmu_->copyToMmu(old_limit, oldLimitBuffer.data(), oldLimitBuffer.size());
             return 0;
         }
