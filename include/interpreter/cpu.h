@@ -752,6 +752,9 @@ namespace x64 {
         void exec(const Mulsd<RSSE, RSSE>&) override;
         void exec(const Mulsd<RSSE, M64>&) override;
 
+        void exec(const Divsd<RSSE, RSSE>&) override;
+        void exec(const Divsd<RSSE, M64>&) override;
+
         void exec(const Comiss<RSSE, RSSE>&) override;
         void exec(const Comiss<RSSE, M32>&) override;
         void exec(const Comisd<RSSE, RSSE>&) override;
@@ -760,6 +763,9 @@ namespace x64 {
         void exec(const Ucomiss<RSSE, M32>&) override;
         void exec(const Ucomisd<RSSE, RSSE>&) override;
         void exec(const Ucomisd<RSSE, M64>&) override;
+
+        void exec(const Cmpsd<RSSE, RSSE>&) override;
+        void exec(const Cmpsd<RSSE, M64>&) override;
 
         void exec(const Cvtsi2sd<RSSE, R32>&) override;
         void exec(const Cvtsi2sd<RSSE, M32>&) override;
@@ -774,6 +780,9 @@ namespace x64 {
         void exec(const Cvttsd2si<R64, M64>&) override;
 
         void exec(const Por<RSSE, RSSE>&) override;
+        void exec(const Andpd<RSSE, RSSE>&) override;
+        void exec(const Andnpd<RSSE, RSSE>&) override;
+        void exec(const Orpd<RSSE, RSSE>&) override;
         void exec(const Xorpd<RSSE, RSSE>&) override;
 
         void exec(const Movlps<RSSE, M64>&) override;
@@ -815,6 +824,8 @@ namespace x64 {
 
         void exec(const Fxsave<M64>&) override;
         void exec(const Fxrstor<M64>&) override;
+
+        void exec(const Fwait&) override;
 
         void exec(const Rdpkru&) override;
         void exec(const Wrpkru&) override;

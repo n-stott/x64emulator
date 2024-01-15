@@ -160,10 +160,19 @@ namespace x64 {
             case X86_INS_SUBSS: return makeSubss(insn);
             case X86_INS_SUBSD: return makeSubsd(insn);
             case X86_INS_MULSD: return makeMulsd(insn);
+            case X86_INS_DIVSD: return makeDivsd(insn);
             case X86_INS_COMISS: return makeComiss(insn);
             case X86_INS_COMISD: return makeComisd(insn);
             case X86_INS_UCOMISS: return makeUcomiss(insn);
             case X86_INS_UCOMISD: return makeUcomisd(insn);
+            case X86_INS_CMPEQSD: return makeCmpsd<FCond::EQ>(insn);
+            case X86_INS_CMPLTSD: return makeCmpsd<FCond::LT>(insn);
+            case X86_INS_CMPLESD: return makeCmpsd<FCond::LE>(insn);
+            case X86_INS_CMPUNORDSD: return makeCmpsd<FCond::UNORD>(insn);
+            case X86_INS_CMPNEQSD: return makeCmpsd<FCond::NEQ>(insn);
+            case X86_INS_CMPNLTSD: return makeCmpsd<FCond::NLT>(insn);
+            case X86_INS_CMPNLESD: return makeCmpsd<FCond::NLE>(insn);
+            case X86_INS_CMPORDSD: return makeCmpsd<FCond::ORD>(insn);
             case X86_INS_CVTSI2SD: return makeCvtsi2sd(insn);
             case X86_INS_CVTSS2SD: return makeCvtss2sd(insn);
             case X86_INS_CVTTSD2SI: return makeCvttsd2si(insn);
@@ -179,6 +188,12 @@ namespace x64 {
             case X86_INS_CMPSQ: return makeCmps(insn);
             case X86_INS_MOVSQ: return makeMovs(insn);
             case X86_INS_POR: return makePor(insn);
+            case X86_INS_ANDPS:
+            case X86_INS_ANDPD: return makeAndpd(insn);
+            case X86_INS_ANDNPS:
+            case X86_INS_ANDNPD: return makeAndnpd(insn);
+            case X86_INS_ORPS:
+            case X86_INS_ORPD: return makeOrpd(insn);
             case X86_INS_XORPS:
             case X86_INS_XORPD: return makeXorpd(insn);
             case X86_INS_MOVLPS:
@@ -203,6 +218,7 @@ namespace x64 {
             case X86_INS_XGETBV: return makeXgetbv(insn);
             case X86_INS_FXSAVE: return makeFxsave(insn);
             case X86_INS_FXRSTOR: return makeFxrstor(insn);
+            case X86_INS_WAIT: return makeFwait(insn);
             default: return make_failed(insn);
         }
         // if(name == "rep") return makeRepStringop(opbytes, address, operands);
@@ -2357,6 +2373,19 @@ namespace x64 {
         return make_failed(insn);
     }
 
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makeDivsd(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto rssesrc = asRegister128(src);
+        auto m64src = asMemory64(src);
+        if(rssedst && rssesrc) return make_wrapper<Divsd<RSSE, RSSE>>(insn.address, rssedst.value(), rssesrc.value());
+        if(rssedst && m64src) return make_wrapper<Divsd<RSSE, M64>>(insn.address, rssedst.value(), m64src.value());
+        return make_failed(insn);
+    }
+
     std::unique_ptr<X86Instruction> CapstoneWrapper::makeComiss(const cs_insn& insn) {
         const auto& x86detail = insn.detail->x86;
         assert(x86detail.op_count == 2);
@@ -2423,6 +2452,20 @@ namespace x64 {
         return make_failed(insn);
     }
 
+    template<FCond cond>
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makeCmpsd(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto rssesrc = asRegister128(src);
+        auto m64src = asMemory64(src);
+        if(rssedst && rssesrc) return make_wrapper<Cmpsd<RSSE, RSSE>>(insn.address, rssedst.value(), rssesrc.value(), cond);
+        if(rssedst && m64src) return make_wrapper<Cmpsd<RSSE, M64>>(insn.address, rssedst.value(), m64src.value(), cond);
+        return make_failed(insn);
+    }
+
     std::unique_ptr<X86Instruction> CapstoneWrapper::makeCvtsi2sd(const cs_insn& insn) {
         const auto& x86detail = insn.detail->x86;
         assert(x86detail.op_count == 2);
@@ -2477,6 +2520,39 @@ namespace x64 {
         auto rssedst = asRegister128(dst);
         auto rssesrc = asRegister128(src);
         if(rssedst && rssesrc) return make_wrapper<Por<RSSE, RSSE>>(insn.address, rssedst.value(), rssesrc.value());
+        return make_failed(insn);
+    }
+
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makeAndpd(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto rssesrc = asRegister128(src);
+        if(rssedst && rssesrc) return make_wrapper<Andpd<RSSE, RSSE>>(insn.address, rssedst.value(), rssesrc.value());
+        return make_failed(insn);
+    }
+
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makeAndnpd(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto rssesrc = asRegister128(src);
+        if(rssedst && rssesrc) return make_wrapper<Andnpd<RSSE, RSSE>>(insn.address, rssedst.value(), rssesrc.value());
+        return make_failed(insn);
+    }
+
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makeOrpd(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto rssesrc = asRegister128(src);
+        if(rssedst && rssesrc) return make_wrapper<Orpd<RSSE, RSSE>>(insn.address, rssedst.value(), rssesrc.value());
         return make_failed(insn);
     }
 
@@ -2710,6 +2786,10 @@ namespace x64 {
         auto m64src = asMemory64(src);
         if(m64src) return make_wrapper<Fxrstor<M64>>(insn.address, m64src.value());
         return make_failed(insn);
+    }
+
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makeFwait(const cs_insn& insn) {
+        return make_wrapper<Fwait>(insn.address);
     }
 
     std::unique_ptr<X86Instruction> CapstoneWrapper::makeRdpkru(u64 address) {

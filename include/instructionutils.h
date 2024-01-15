@@ -2,6 +2,7 @@
 #define INSTRUCTIONUTILS_H
 
 #include "instructions.h"
+#include <cassert>
 #include <string>
 #include <fmt/core.h>
 
@@ -213,6 +214,19 @@ namespace utils {
         if constexpr(condition == Cond::L) return "l";
         if constexpr(condition == Cond::LE) return "le";
         if constexpr(condition == Cond::NE) return "ne";
+    }
+
+    inline std::string toString(FCond condition) {
+        if (condition == FCond::EQ) return "eq";
+        if (condition == FCond::LT) return "lt";
+        if (condition == FCond::LE) return "le";
+        if (condition == FCond::UNORD) return "unord";
+        if (condition == FCond::NEQ) return "neq";
+        if (condition == FCond::NLT) return "nlt";
+        if (condition == FCond::NLE) return "nle";
+        if (condition == FCond::ORD) return "ord";
+        assert(false && "not reachable");
+        __builtin_unreachable();
     }
 
     inline std::string toString(const B& b) {
@@ -827,6 +841,11 @@ namespace utils {
     }
 
     template<typename Dst, typename Src>
+    inline std::string toString(Divsd<Dst, Src> ins) {
+        return fmt::format("{:9}{},{}", "divsd", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Dst, typename Src>
     inline std::string toString(Comiss<Dst, Src> ins) {
         return fmt::format("{:9}{},{}", "comiss", toString(ins.dst), toString(ins.src));
     }
@@ -844,6 +863,11 @@ namespace utils {
     template<typename Dst, typename Src>
     inline std::string toString(Ucomisd<Dst, Src> ins) {
         return fmt::format("{:9}{},{}", "ucomisd", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Dst, typename Src>
+    inline std::string toString(Cmpsd<Dst, Src> ins) {
+        return fmt::format("{:9}{},{}", fmt::format("cmp{}sd", toString(ins.cond)), toString(ins.dst), toString(ins.src));
     }
 
     template<typename Dst, typename Src>
@@ -869,6 +893,21 @@ namespace utils {
     template<typename Dst, typename Src>
     inline std::string toString(Movlps<Dst, Src> ins) {
         return fmt::format("{:9}{},{}", "movlps", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Dst, typename Src>
+    inline std::string toString(Andpd<Dst, Src> ins) {
+        return fmt::format("{:9}{},{}", "andpd", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Dst, typename Src>
+    inline std::string toString(Andnpd<Dst, Src> ins) {
+        return fmt::format("{:9}{},{}", "andpd", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Dst, typename Src>
+    inline std::string toString(Orpd<Dst, Src> ins) {
+        return fmt::format("{:9}{},{}", "Orpd", toString(ins.dst), toString(ins.src));
     }
 
     template<typename Dst, typename Src>
@@ -978,6 +1017,10 @@ namespace utils {
     template<typename Src>
     inline std::string toString(Fxrstor<Src> ins) {
         return fmt::format("{:9}{}", "fxrstor", toString(ins.src));
+    }
+
+    inline std::string toString(Fwait) {
+        return fmt::format("{:9}", "fwait");
     }
 
 }

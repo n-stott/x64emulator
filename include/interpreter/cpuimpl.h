@@ -127,6 +127,10 @@ namespace x64 {
 
         [[nodiscard]] static u64 mulsd(u64 dst, u64 src);
 
+        [[nodiscard]] static u64 divsd(u64 dst, u64 src);
+
+        [[nodiscard]] static u64 cmpsd(u64 dst, u64 src, FCond cond);
+
         [[nodiscard]] static u64 cvtsi2sd32(u32 src);
         [[nodiscard]] static u64 cvtsi2sd64(u64 src);
 

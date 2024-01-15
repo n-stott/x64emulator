@@ -546,6 +546,12 @@ namespace x64 {
     };
 
     template<typename Dst, typename Src>
+    struct Divsd {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
     struct Comiss {
         Dst dst;
         Src src;
@@ -570,6 +576,13 @@ namespace x64 {
     };
 
     template<typename Dst, typename Src>
+    struct Cmpsd {
+        Dst dst;
+        Src src;
+        FCond cond;
+    };
+
+    template<typename Dst, typename Src>
     struct Cvtsi2sd {
         Dst dst;
         Src src;
@@ -589,6 +602,24 @@ namespace x64 {
 
     template<typename Dst, typename Src>
     struct Por {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
+    struct Andpd {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
+    struct Andnpd {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
+    struct Orpd {
         Dst dst;
         Src src;
     };
@@ -729,6 +760,10 @@ namespace x64 {
     template<typename Src>
     struct Fxrstor {
         Src src;
+    };
+
+    struct Fwait {
+
     };
 }
 

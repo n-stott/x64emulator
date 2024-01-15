@@ -918,6 +918,40 @@ namespace x64 {
         return r;
     }
 
+    u64 Impl::divsd(u64 dst, u64 src) {
+        static_assert(sizeof(u64) == sizeof(double));
+        double d;
+        double s;
+        std::memcpy(&d, &dst, sizeof(d));
+        std::memcpy(&s, &src, sizeof(s));
+        double res = d / s;
+        u64 r;
+        std::memcpy(&r, &res, sizeof(r));
+        return r;
+    }
+
+    u64 Impl::cmpsd(u64 dst, u64 src, FCond cond) {
+        static_assert(sizeof(u64) == sizeof(double));
+        double d;
+        double s;
+        std::memcpy(&d, &dst, sizeof(d));
+        std::memcpy(&s, &src, sizeof(s));
+        auto mask = [](bool res) -> u64 {
+            return res ? (u64)(-1) : 0x0;
+        };
+        switch(cond) {
+            case FCond::EQ:    return mask(d == s);
+            case FCond::LT:    return mask(d < s);
+            case FCond::LE:    return mask(d <= s);
+            case FCond::UNORD: return mask((d != d) || (s != s));
+            case FCond::NEQ:   return mask(!(d == s));
+            case FCond::NLT:   return mask(!(d < s));
+            case FCond::NLE:   return mask(!(d <= s));
+            case FCond::ORD:   return mask(d == d && s == s);
+        }
+        __builtin_unreachable();
+    }
+
     u64 Impl::cvtsi2sd32(u32 src) {
         i32 isrc = (i32)src;
         double res = (double)isrc;

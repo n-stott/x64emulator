@@ -163,6 +163,17 @@ namespace x64 {
         S,
         U,
     };
+    
+    enum class FCond {
+        EQ,
+        LT,
+        LE,
+        UNORD,
+        NEQ,
+        NLT,
+        NLE,
+        ORD,
+    };
 
     enum class Flag {
         CARRY,

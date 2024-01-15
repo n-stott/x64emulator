@@ -622,6 +622,9 @@ namespace x64 {
         virtual void exec(const Mulsd<RSSE, RSSE>&) = 0;
         virtual void exec(const Mulsd<RSSE, M64>&) = 0;
 
+        virtual void exec(const Divsd<RSSE, RSSE>&) = 0;
+        virtual void exec(const Divsd<RSSE, M64>&) = 0;
+
         virtual void exec(const Comiss<RSSE, RSSE>&) = 0;
         virtual void exec(const Comiss<RSSE, M32>&) = 0;
         virtual void exec(const Comisd<RSSE, RSSE>&) = 0;
@@ -630,6 +633,9 @@ namespace x64 {
         virtual void exec(const Ucomiss<RSSE, M32>&) = 0;
         virtual void exec(const Ucomisd<RSSE, RSSE>&) = 0;
         virtual void exec(const Ucomisd<RSSE, M64>&) = 0;
+
+        virtual void exec(const Cmpsd<RSSE, RSSE>&) = 0;
+        virtual void exec(const Cmpsd<RSSE, M64>&) = 0;
 
         virtual void exec(const Cvtsi2sd<RSSE, R32>&) = 0;
         virtual void exec(const Cvtsi2sd<RSSE, M32>&) = 0;
@@ -644,6 +650,9 @@ namespace x64 {
         virtual void exec(const Cvttsd2si<R64, M64>&) = 0;
 
         virtual void exec(const Por<RSSE, RSSE>&) = 0;
+        virtual void exec(const Andpd<RSSE, RSSE>&) = 0;
+        virtual void exec(const Andnpd<RSSE, RSSE>&) = 0;
+        virtual void exec(const Orpd<RSSE, RSSE>&) = 0;
         virtual void exec(const Xorpd<RSSE, RSSE>&) = 0;
 
         virtual void exec(const Movlps<RSSE, M64>&) = 0;
@@ -685,6 +694,8 @@ namespace x64 {
 
         virtual void exec(const Fxsave<M64>&) = 0;
         virtual void exec(const Fxrstor<M64>&) = 0;
+
+        virtual void exec(const Fwait&) = 0;
 
         virtual void exec(const Rdpkru&) = 0;
         virtual void exec(const Wrpkru&) = 0;

@@ -643,7 +643,8 @@ namespace x64 {
 
     void Cpu::exec(const NotParsed&) { }
 
-    void Cpu::exec(const Unknown&) {
+    void Cpu::exec(const Unknown& ins) {
+        fmt::print("{}\n", utils::toString(ins));
         verify(false);
     }
 
@@ -1547,6 +1548,17 @@ namespace x64 {
         set(ins.dst, zeroExtend<Xmm, u64>(res));
     }
 
+    void Cpu::exec(const Divsd<RSSE, RSSE>& ins) {
+        WARN_ROUNDING_MODE();
+        u64 res = Impl::divsd(narrow<u64, Xmm>(get(ins.dst)), narrow<u64, Xmm>(get(ins.src)));
+        set(ins.dst, zeroExtend<Xmm, u64>(res));
+    }
+
+    void Cpu::exec(const Divsd<RSSE, M64>& ins) {
+        WARN_ROUNDING_MODE();
+        u64 res = Impl::divsd(narrow<u64, Xmm>(get(ins.dst)), get(resolve(ins.src)));
+        set(ins.dst, zeroExtend<Xmm, u64>(res));
+    }
 
     void Cpu::exec(const Comiss<RSSE, RSSE>& ins) {
         WARN_ROUNDING_MODE();
@@ -1592,6 +1604,16 @@ namespace x64 {
         [[maybe_unused]] u64 res = Impl::subsd(narrow<u64, Xmm>(get(ins.dst)), get(resolve(ins.src)), &flags_);
     }
 
+    void Cpu::exec(const Cmpsd<RSSE, RSSE>& ins) {
+        u64 res = Impl::cmpsd(get(ins.dst).lo, get(ins.src).lo, ins.cond);
+        set(ins.dst, writeLow<Xmm, u64>(get(ins.dst), res));
+    }
+
+    void Cpu::exec(const Cmpsd<RSSE, M64>& ins) {
+        u64 res = Impl::cmpsd(get(ins.dst).lo, get(resolve(ins.src)), ins.cond);
+        set(ins.dst, writeLow<Xmm, u64>(get(ins.dst), res));
+    }
+
     void Cpu::exec(const Cvtsi2sd<RSSE, R32>& ins) {
         u64 res = Impl::cvtsi2sd32(get(ins.src));
         set(ins.dst, writeLow<Xmm, u64>(get(ins.dst), res));
@@ -1626,6 +1648,31 @@ namespace x64 {
     void Cpu::exec(const Cvttsd2si<R64, M64>& ins) { set(ins.dst, Impl::cvttsd2si64(get(resolve(ins.src)))); }
 
     void Cpu::exec(const Por<RSSE, RSSE>& ins) {
+        u128 dst = get(ins.dst);
+        u128 src = get(ins.src);
+        dst.lo = dst.lo | src.lo;
+        dst.hi = dst.hi | src.hi;
+        set(ins.dst, dst);
+    }
+
+    void Cpu::exec(const Andpd<RSSE, RSSE>& ins) {
+        u128 dst = get(ins.dst);
+        u128 src = get(ins.src);
+        dst.lo = dst.lo & src.lo;
+        dst.hi = dst.hi & src.hi;
+        set(ins.dst, dst);
+    }
+
+    void Cpu::exec(const Andnpd<RSSE, RSSE>& ins) {
+        u128 dst = get(ins.dst);
+        u128 src = get(ins.src);
+        dst.lo = (~dst.lo) & src.lo;
+        dst.hi = (~dst.hi) & src.hi;
+        set(ins.dst, dst);
+    }
+
+
+    void Cpu::exec(const Orpd<RSSE, RSSE>& ins) {
         u128 dst = get(ins.dst);
         u128 src = get(ins.src);
         dst.lo = dst.lo | src.lo;
@@ -1874,6 +1921,10 @@ namespace x64 {
 
     void Cpu::exec(const Wrpkru& ins) {
         TODO(ins);
+    }
+
+    void Cpu::exec(const Fwait&) {
+        
     }
 
     std::string Cpu::functionName(const X86Instruction& instruction) const {

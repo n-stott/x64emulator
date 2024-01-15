@@ -172,17 +172,24 @@ namespace x64 {
         static std::unique_ptr<X86Instruction> makeSubss(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeSubsd(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeMulsd(const cs_insn& insn);
+        static std::unique_ptr<X86Instruction> makeDivsd(const cs_insn& insn);
 
         static std::unique_ptr<X86Instruction> makeComiss(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeComisd(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeUcomiss(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeUcomisd(const cs_insn& insn);
 
+        template<FCond cond>
+        static std::unique_ptr<X86Instruction> makeCmpsd(const cs_insn& insn);
+
         static std::unique_ptr<X86Instruction> makeCvtsi2sd(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeCvtss2sd(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeCvttsd2si(const cs_insn& insn);
 
         static std::unique_ptr<X86Instruction> makePor(const cs_insn& insn);
+        static std::unique_ptr<X86Instruction> makeAndpd(const cs_insn& insn);
+        static std::unique_ptr<X86Instruction> makeAndnpd(const cs_insn& insn);
+        static std::unique_ptr<X86Instruction> makeOrpd(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeXorpd(const cs_insn& insn);
 
         static std::unique_ptr<X86Instruction> makeMovlps(const cs_insn& insn);
@@ -211,6 +218,8 @@ namespace x64 {
 
         static std::unique_ptr<X86Instruction> makeFxsave(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeFxrstor(const cs_insn& insn);
+
+        static std::unique_ptr<X86Instruction> makeFwait(const cs_insn& insn);
 
         // Instructions not supported by capstone
         static std::unique_ptr<X86Instruction> makeRdpkru(u64 address);
