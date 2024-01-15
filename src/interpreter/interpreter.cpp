@@ -146,21 +146,19 @@ namespace x64 {
             vm_.mmu().mprotect(platformstring, Mmu::PAGE_SIZE, PROT::READ);
             auxiliary_->platformStringAddress = platformstring;
         }
+        
+        // stack
+        const u64 desiredStackBase = 0x10000000;
+        const u64 stackSize = 16*Mmu::PAGE_SIZE;
+        u64 stackBase = vm_.mmu().mmap(desiredStackBase, stackSize, PROT::READ | PROT::WRITE, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0);
+        vm_.mmu().setRegionName(stackBase, "stack");
+        vm_.setStackPointer(stackBase + stackSize);
 
-        {
-            // heap
-            u64 heapSize = 64*Mmu::PAGE_SIZE;
-            u64 heapBase = vm_.mmu().mmap(0, heapSize, PROT::READ | PROT::WRITE, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0);
-            vm_.mmu().setRegionName(heapBase, "heap");
-        }
-
-        {
-            // stack
-            u64 stackSize = 16*Mmu::PAGE_SIZE;
-            u64 stackBase = vm_.mmu().mmap(0x10000000, stackSize, PROT::READ | PROT::WRITE, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0);
-            vm_.mmu().setRegionName(stackBase, "stack");
-            vm_.setStackPointer(stackBase + stackSize);
-        }
+        // heap
+        const u64 desiredHeapBase = stackBase + stackSize + Mmu::PAGE_SIZE;
+        const u64 heapSize = 64*Mmu::PAGE_SIZE;
+        u64 heapBase = vm_.mmu().mmap(desiredHeapBase, heapSize, PROT::READ | PROT::WRITE, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0);
+        vm_.mmu().setRegionName(heapBase, "heap");
     }
 
     void Interpreter::pushProgramArguments(const std::string& programFilePath, const std::vector<std::string>& arguments, const std::vector<std::string>& environmentVariables) {
