@@ -516,8 +516,8 @@ namespace x64 {
     void Cpu::exec(const Mov<R8, M8>& ins) { set(ins.dst, get(resolve(ins.src))); }
     void Cpu::exec(const Mov<M8, R8>& ins) { set(resolve(ins.dst), get(ins.src)); }
     void Cpu::exec(const Mov<M8, Imm>& ins) { set(resolve(ins.dst), get<u8>(ins.src)); }
-    void Cpu::exec(const Mov<R16, R16>& ins) { TODO(ins); }
-    void Cpu::exec(const Mov<R16, Imm>& ins) { TODO(ins); }
+    void Cpu::exec(const Mov<R16, R16>& ins) { set(ins.dst, get(ins.src)); }
+    void Cpu::exec(const Mov<R16, Imm>& ins) { set(ins.dst, get<u16>(ins.src)); }
     void Cpu::exec(const Mov<R16, M16>& ins) { set(ins.dst, get(resolve(ins.src))); }
     void Cpu::exec(const Mov<M16, R16>& ins) { set(resolve(ins.dst), get(ins.src)); }
     void Cpu::exec(const Mov<M16, Imm>& ins) { set(resolve(ins.dst), get<u16>(ins.src)); }
