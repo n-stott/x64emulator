@@ -2,13 +2,14 @@
 #include "interpreter/loader.h"
 #include "interpreter/symbolprovider.h"
 #include "interpreter/verify.h"
+#include "interpreter/auxiliaryvector.h"
+#include "utils/host.h"
 #include "disassembler/capstonewrapper.h"
 #include <fmt/core.h>
 #include <algorithm>
 #include <cassert>
 #include <numeric>
 #include <sys/auxv.h>
-
 #include <signal.h>
 
 namespace x64 {
@@ -136,6 +137,7 @@ namespace x64 {
 
         {
             // page with platform string
+            verify(auxiliary_.has_value(), "no auxiliary...");
             u64 platformstring = vm_.mmu().mmap(0x0, Mmu::PAGE_SIZE, PROT::READ | PROT::WRITE, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0);
             vm_.mmu().setRegionName(platformstring, "platform string");
             std::string platform = "x86_64";
@@ -170,18 +172,20 @@ namespace x64 {
 
             std::vector<u64> argumentPositions;
 
-            auto writeArgument = [&](const std::string& s) {
+            auto writeArgument = [&](const std::string& s) -> Ptr8 {
                 std::vector<u8> buffer;
                 buffer.resize(s.size()+1, 0x0);
                 std::memcpy(buffer.data(), s.c_str(), s.size());
                 verify(buffer.back() == 0x0, "string is not null-terminated");
                 vm_.mmu().copyToMmu(argumentPtr, buffer.data(), buffer.size());
                 argumentPositions.push_back(argumentPtr.address());
+                Ptr8 oldArgumentPtr = argumentPtr;
                 argumentPtr += buffer.size();
+                return oldArgumentPtr;
             };
 
             // write argv
-            writeArgument(programFilePath);
+            Ptr8 filepath = writeArgument(programFilePath);
             for(const std::string& arg : arguments) writeArgument(arg);
 
             // write null to mark argv[argc]
@@ -195,96 +199,22 @@ namespace x64 {
 
             // get and write aux vector entries
             verify(auxiliary_.has_value(), "No auxiliary");
-            vm_.push64(0x0);
-            vm_.push64(AT_NULL);
-            for(unsigned long type = 1; type < 256; ++type) {
-                unsigned long val = 0;
-                switch(type) {
-                    case AT_ENTRY: {
-                        val = auxiliary_->entrypoint;
-                        break;
-                    }
-                    case AT_PHDR: {
-                        val = auxiliary_->programHeaderTable;
-                        break;
-                    }
-                    case AT_PHENT: {
-                        val = auxiliary_->programHeaderEntrySize;
-                        break;
-                    }
-                    case AT_PHNUM: {
-                        val = auxiliary_->programHeaderCount;
-                        break;
-                    }
-                    case AT_RANDOM: {
-                        val = auxiliary_->randomDataAddress;
-                        break;
-                    }
-                    case AT_PLATFORM: {
-                        val = auxiliary_->platformStringAddress;
-                        break;
-                    }
-                    case AT_SYSINFO_EHDR: {
-                        val = 0;
-                        break;
-                    }
-                    default: {
-                        errno = 0;
-                        val = getauxval(type);
-                    }
-                }
-                if(val == 0 && errno == ENOENT) continue;
-                auto at_to_string = [](unsigned long type) -> std::string {
-                    switch(type) {
-                        case AT_NULL: return "AT_NULL";
-                        case AT_IGNORE: return "AT_IGNORE";
-                        case AT_EXECFD: return "AT_EXECFD";
-                        case AT_PHDR: return "AT_PHDR";
-                        case AT_PHENT: return "AT_PHENT";
-                        case AT_PHNUM: return "AT_PHNUM";
-                        case AT_PAGESZ: return "AT_PAGESZ";
-                        case AT_BASE: return "AT_BASE";
-                        case AT_FLAGS: return "AT_FLAGS";
-                        case AT_ENTRY: return "AT_ENTRY";
-                        case AT_NOTELF: return "AT_NOTELF";
-                        case AT_UID: return "AT_UID";
-                        case AT_EUID: return "AT_EUID";
-                        case AT_GID: return "AT_GID";
-                        case AT_EGID: return "AT_EGID";
-                        case AT_CLKTCK: return "AT_CLKTCK";
-                        case AT_PLATFORM: return "AT_PLATFORM";
-                        case AT_HWCAP: return "AT_HWCAP";
-                        case AT_FPUCW: return "AT_FPUCW";
-                        case AT_DCACHEBSIZE: return "AT_DCACHEBSIZE";
-                        case AT_ICACHEBSIZE: return "AT_ICACHEBSIZE";
-                        case AT_UCACHEBSIZE: return "AT_UCACHEBSIZE";
-                        case AT_IGNOREPPC: return "AT_IGNOREPPC";
-                        case AT_SECURE: return "AT_SECURE";
-                        case AT_BASE_PLATFORM: return "AT_BASE_PLATFORM";
-                        case AT_RANDOM: return "AT_RANDOM";
-                        case AT_HWCAP2: return "AT_HWCAP2";
-                        case AT_EXECFN: return "AT_EXECFN";
-                        case AT_SYSINFO: return "AT_SYSINFO";
-                        case AT_SYSINFO_EHDR: return "AT_SYSINFO_EHDR";
-                        case AT_L1I_CACHESHAPE: return "AT_L1I_CACHESHAPE";
-                        case AT_L1D_CACHESHAPE: return "AT_L1D_CACHESHAPE";
-                        case AT_L2_CACHESHAPE: return "AT_L2_CACHESHAPE";
-                        case AT_L3_CACHESHAPE: return "AT_L3_CACHESHAPE";
-                        case AT_L1I_CACHESIZE: return "AT_L1I_CACHESIZE";
-                        case AT_L1I_CACHEGEOMETRY: return "AT_L1I_CACHEGEOMETRY";
-                        case AT_L1D_CACHESIZE: return "AT_L1D_CACHESIZE";
-                        case AT_L1D_CACHEGEOMETRY: return "AT_L1D_CACHEGEOMETRY";
-                        case AT_L2_CACHESIZE: return "AT_L2_CACHESIZE";
-                        case AT_L2_CACHEGEOMETRY: return "AT_L2_CACHEGEOMETRY";
-                        case AT_L3_CACHESIZE: return "AT_L3_CACHESIZE";
-                        case AT_L3_CACHEGEOMETRY: return "AT_L3_CACHEGEOMETRY";
-                        case AT_MINSIGSTKSZ: return "AT_MINSIGSTKSZ";
-                    }
-                    return "";
-                };
-                fmt::print("  auxvec: type={} value={:#x}\n", at_to_string(type), val);
-                vm_.push64(val);
-                vm_.push64(type);
+            AuxiliaryVector auxvec;
+            auxvec.add((u64)Host::AUX_TYPE::ENTRYPOINT, auxiliary_->entrypoint)
+                  .add((u64)Host::AUX_TYPE::PROGRAM_HEADERS, auxiliary_->programHeaderTable)
+                  .add((u64)Host::AUX_TYPE::PROGRAM_HEADER_ENTRY_SIZE, auxiliary_->programHeaderEntrySize)
+                  .add((u64)Host::AUX_TYPE::PROGRAM_HEADER_COUNT, auxiliary_->programHeaderCount)
+                  .add((u64)Host::AUX_TYPE::RANDOM_VALUE_ADDRESS, auxiliary_->randomDataAddress)
+                  .add((u64)Host::AUX_TYPE::PLATFORM_STRING_ADDRESS, auxiliary_->platformStringAddress)
+                  .add((u64)Host::AUX_TYPE::VDSO_ADDRESS, 0x0)
+                  .add((u64)Host::AUX_TYPE::EXEC_PATH_NAME, filepath.address())
+                  .add((u64)Host::AUX_TYPE::UID)
+                  .add((u64)Host::AUX_TYPE::GID)
+                  .add((u64)Host::AUX_TYPE::EUID)
+                  .add((u64)Host::AUX_TYPE::EGID);
+            std::vector<u64> data = auxvec.create();
+            for(auto rit = data.rbegin(); rit != data.rend(); ++rit) {
+                vm_.push64(*rit);
             }
             
             for(auto it = argumentPositions.rbegin(); it != argumentPositions.rend(); ++it) {

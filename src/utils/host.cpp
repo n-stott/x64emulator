@@ -2,6 +2,7 @@
 #include <cassert>
 #include <cstring>
 #include <iostream>
+#include <sys/auxv.h>
 #include <sys/mman.h>
 #include <sys/resource.h>
 #include <sys/types.h>
@@ -203,4 +204,32 @@ int Host::prlimit64(pid_t pid, int resource, const std::vector<u8>* new_limit, s
             return -1;
         }
     }
+}
+
+std::optional<Host::AuxVal> Host::getauxval(AUX_TYPE type) {
+    auto getDummy = [](u64 type) -> std::optional<AuxVal> {
+        return AuxVal{type, 0};
+    };
+    auto get = [](u64 type) -> std::optional<AuxVal> {
+        u64 res = ::getauxval(type);
+        if(res == 0 && errno == ENOENT) return {};
+        return AuxVal{type, res};
+    };
+    switch(type) {
+        case AUX_TYPE::UID: return get(AT_UID);
+        case AUX_TYPE::GID: return get(AT_GID);
+        case AUX_TYPE::EUID: return get(AT_EUID);
+        case AUX_TYPE::EGID: return get(AT_EGID);
+        case AUX_TYPE::NIL: return getDummy(AT_NULL);
+        case AUX_TYPE::ENTRYPOINT: return getDummy(AT_ENTRY);
+        case AUX_TYPE::PROGRAM_HEADERS: return getDummy(AT_PHDR);
+        case AUX_TYPE::PROGRAM_HEADER_ENTRY_SIZE: return getDummy(AT_PHENT);
+        case AUX_TYPE::PROGRAM_HEADER_COUNT: return getDummy(AT_PHNUM);
+        case AUX_TYPE::RANDOM_VALUE_ADDRESS: return getDummy(AT_RANDOM);
+        case AUX_TYPE::PLATFORM_STRING_ADDRESS: return getDummy(AT_PLATFORM);
+        case AUX_TYPE::VDSO_ADDRESS: return getDummy(AT_SYSINFO_EHDR);
+        case AUX_TYPE::EXEC_FILE_DESCRIPTOR: return getDummy(AT_EXECFD);
+        case AUX_TYPE::EXEC_PATH_NAME: return getDummy(AT_EXECFN);
+    }
+    return {};
 }

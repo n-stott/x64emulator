@@ -47,6 +47,30 @@ public:
 
     static int prlimit64(pid_t pid, int resource, const std::vector<u8>* new_limit, std::vector<u8>* old_limit);
 
+    enum class AUX_TYPE {
+        NIL,
+        ENTRYPOINT,
+        PROGRAM_HEADERS,
+        PROGRAM_HEADER_ENTRY_SIZE,
+        PROGRAM_HEADER_COUNT,
+        RANDOM_VALUE_ADDRESS,
+        PLATFORM_STRING_ADDRESS,
+        VDSO_ADDRESS,
+        EXEC_FILE_DESCRIPTOR,
+        EXEC_PATH_NAME,
+        UID,
+        GID,
+        EUID,
+        EGID,
+    };
+
+    struct AuxVal {
+        u64 type;
+        u64 value;
+    };
+
+    static std::optional<AuxVal> getauxval(AUX_TYPE type);
+
     // singleton
     static Host& the();
     

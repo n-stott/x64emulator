@@ -109,6 +109,7 @@ namespace x64 {
             sizeof(elf::ProgramHeader64),
             0x0,
             0x0,
+            0x0,
         };
 
         if(elfType == ElfType::MAIN_EXECUTABLE) {
