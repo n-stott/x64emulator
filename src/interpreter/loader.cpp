@@ -55,7 +55,6 @@ namespace x64 {
     }
     
     void Loader::loadElf(const std::string& filepath, ElfType elfType) {
-        fmt::print("Load {}\n", filepath);
         auto elf = elf::ElfReader::tryCreate(filepath);
         verify(!!elf, [&]() { fmt::print("Failed to load elf {}\n", filepath); });
         verify(elf->archClass() == elf::Class::B64, "elf must be 64-bit");
@@ -155,14 +154,12 @@ namespace x64 {
 
     void Loader::registerStaticSymbols() {
         for(auto it = elfs_.begin(); it != elfs_.end(); ++it) {
-            fmt::print("Elf {}\n", it->filename);
             registerStaticSymbols(*it->elf, it->offset);
         }
     }
 
     void Loader::registerDynamicSymbols() {
         for(auto it = elfs_.begin(); it != elfs_.end(); ++it) {
-            fmt::print("Elf {}\n", it->filename);
             registerDynamicSymbols(*it->elf, it->offset);
         }
     }
