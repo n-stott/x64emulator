@@ -98,12 +98,10 @@ namespace x64 {
         [[maybe_unused]] u64 res = sub64(src1, src2, flags);
     }
 
-    u32 Impl::neg32(u32 dst, Flags* flags) {
-        return sub32(0u, dst, flags);
-    }
-    u64 Impl::neg64(u64 dst, Flags* flags) {
-        return sub64(0ul, dst, flags);
-    }
+    u8 Impl::neg8(u8 dst, Flags* flags) { return sub8(0u, dst, flags); }
+    u16 Impl::neg16(u16 dst, Flags* flags) { return sub16(0u, dst, flags); }
+    u32 Impl::neg32(u32 dst, Flags* flags) { return sub32(0u, dst, flags); }
+    u64 Impl::neg64(u64 dst, Flags* flags) { return sub64(0ul, dst, flags); }
 
     std::pair<u32, u32> Impl::mul32(u32 src1, u32 src2, Flags* flags) {
         u64 prod = (u64)src1 * (u64)src2;
@@ -1022,6 +1020,22 @@ namespace x64 {
         return dst;
     }
 
+    u128 Impl::punpckldq(u128 dst, u128 src) {
+        std::array<u32, 4> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        std::memcpy(DST.data(), &dst, sizeof(u128));
+
+        std::array<u32, 4> SRC;
+        static_assert(sizeof(SRC) == sizeof(u128));
+        std::memcpy(SRC.data(), &src, sizeof(u128));
+
+        for(size_t i = 0; i < 2; ++i) {
+            DST[2*i+1] = SRC[i];
+        }
+        std::memcpy(&dst, DST.data(), sizeof(u128));
+        return dst;
+    }
+
     u128 Impl::punpcklqdq(u128 dst, u128 src) {
         dst.hi = src.lo;
         return dst;
@@ -1130,6 +1144,50 @@ namespace x64 {
         flags->zero = (dst.lo & src.lo) == 0 && (dst.hi & src.hi) == 0;
         flags->carry = (~dst.lo & src.lo) == 0 && (~dst.hi & src.hi) == 0;
     }
+
+    template<typename U>
+    static u128 psll(u128 dst, u8 src) {
+        constexpr u32 N = sizeof(u128)/sizeof(U);
+        std::array<U, N> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        std::memcpy(DST.data(), &dst, sizeof(u128));
+
+        std::array<U, N> SRC;
+        static_assert(sizeof(SRC) == sizeof(u128));
+        std::memcpy(SRC.data(), &src, sizeof(u128));
+
+        for(size_t i = 0; i < N; ++i) {
+            DST[i] = (U)(DST[i] << (U)src);
+        }
+        std::memcpy(&dst, DST.data(), sizeof(u128));
+        return dst;
+    }
+
+    u128 Impl::psllw(u128 dst, u8 src) { return psll<u16>(dst, src); }
+    u128 Impl::pslld(u128 dst, u8 src) { return psll<u32>(dst, src); }
+    u128 Impl::psllq(u128 dst, u8 src) { return psll<u64>(dst, src); }
+
+    template<typename U>
+    static u128 psrl(u128 dst, u8 src) {
+        constexpr u32 N = sizeof(u128)/sizeof(U);
+        std::array<U, N> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        std::memcpy(DST.data(), &dst, sizeof(u128));
+
+        std::array<U, N> SRC;
+        static_assert(sizeof(SRC) == sizeof(u128));
+        std::memcpy(SRC.data(), &src, sizeof(u128));
+
+        for(size_t i = 0; i < N; ++i) {
+            DST[i] = (U)(DST[i] >> (U)src);
+        }
+        std::memcpy(&dst, DST.data(), sizeof(u128));
+        return dst;
+    }
+
+    u128 Impl::psrlw(u128 dst, u8 src) { return psrl<u16>(dst, src); }
+    u128 Impl::psrld(u128 dst, u8 src) { return psrl<u32>(dst, src); }
+    u128 Impl::psrlq(u128 dst, u8 src) { return psrl<u64>(dst, src); }
 
     u128 Impl::pslldq(u128 dst, u8 src) {
         if(src >= 16) {

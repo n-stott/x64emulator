@@ -886,6 +886,11 @@ namespace utils {
     }
 
     template<typename Dst, typename Src>
+    inline std::string toString(Pand<Dst, Src> ins) {
+        return fmt::format("{:9}{},{}", "pand", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Dst, typename Src>
     inline std::string toString(Por<Dst, Src> ins) {
         return fmt::format("{:9}{},{}", "por", toString(ins.dst), toString(ins.src));
     }
@@ -931,6 +936,11 @@ namespace utils {
     }
 
     template<typename Dst, typename Src>
+    inline std::string toString(Punpckldq<Dst, Src> ins) {
+        return fmt::format("{:9}{},{}", "punpckldq", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Dst, typename Src>
     inline std::string toString(Punpcklqdq<Dst, Src> ins) {
         return fmt::format("{:9}{},{}", "punpcklqdq", toString(ins.dst), toString(ins.src));
     }
@@ -973,6 +983,36 @@ namespace utils {
     template<typename Dst, typename Src>
     inline std::string toString(Pslldq<Dst, Src> ins) {
         return fmt::format("{:9}{},{}", "pslldq", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Dst, typename Src>
+    inline std::string toString(Psllw<Dst, Src> ins) {
+        return fmt::format("{:9}{},{}", "psrldq", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Dst, typename Src>
+    inline std::string toString(Pslld<Dst, Src> ins) {
+        return fmt::format("{:9}{},{}", "psrldq", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Dst, typename Src>
+    inline std::string toString(Psllq<Dst, Src> ins) {
+        return fmt::format("{:9}{},{}", "psrldq", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Dst, typename Src>
+    inline std::string toString(Psrlw<Dst, Src> ins) {
+        return fmt::format("{:9}{},{}", "psrldq", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Dst, typename Src>
+    inline std::string toString(Psrld<Dst, Src> ins) {
+        return fmt::format("{:9}{},{}", "psrldq", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Dst, typename Src>
+    inline std::string toString(Psrlq<Dst, Src> ins) {
+        return fmt::format("{:9}{},{}", "psrldq", toString(ins.dst), toString(ins.src));
     }
 
     template<typename Dst, typename Src>

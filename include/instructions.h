@@ -601,6 +601,12 @@ namespace x64 {
     };
 
     template<typename Dst, typename Src>
+    struct Pand {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
     struct Por {
         Dst dst;
         Src src;
@@ -661,6 +667,12 @@ namespace x64 {
     };
 
     template<typename Dst, typename Src>
+    struct Punpckldq {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
     struct Punpcklqdq {
         Dst dst;
         Src src;
@@ -705,6 +717,42 @@ namespace x64 {
 
     template<typename Dst, typename Src>
     struct Ptest {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
+    struct Psllw {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
+    struct Pslld {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
+    struct Psllq {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
+    struct Psrlw {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
+    struct Psrld {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
+    struct Psrlq {
         Dst dst;
         Src src;
     };

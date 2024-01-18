@@ -40,6 +40,8 @@ namespace x64 {
         [[nodiscard]] static std::pair<u32, u32> idiv32(u32 dividendUpper, u32 dividendLower, u32 divisor);
         [[nodiscard]] static std::pair<u64, u64> idiv64(u64 dividendUpper, u64 dividendLower, u64 divisor);
 
+        [[nodiscard]] static u8 neg8(u8 dst, Flags* flags);
+        [[nodiscard]] static u16 neg16(u16 dst, Flags* flags);
         [[nodiscard]] static u32 neg32(u32 dst, Flags* flags);
         [[nodiscard]] static u64 neg64(u64 dst, Flags* flags);
 
@@ -141,6 +143,7 @@ namespace x64 {
 
         [[nodiscard]] static u128 punpcklbw(u128 dst, u128 src);
         [[nodiscard]] static u128 punpcklwd(u128 dst, u128 src);
+        [[nodiscard]] static u128 punpckldq(u128 dst, u128 src);
         [[nodiscard]] static u128 punpcklqdq(u128 dst, u128 src);
 
         [[nodiscard]] static u128 pshufb(u128 dst, u128 src);
@@ -155,6 +158,13 @@ namespace x64 {
         [[nodiscard]] static u128 pminub(u128 dst, u128 src);
 
         static void ptest(u128 dst, u128 src, Flags* flags);
+
+        [[nodiscard]] static u128 psllw(u128 dst, u8 src);
+        [[nodiscard]] static u128 pslld(u128 dst, u8 src);
+        [[nodiscard]] static u128 psllq(u128 dst, u8 src);
+        [[nodiscard]] static u128 psrlw(u128 dst, u8 src);
+        [[nodiscard]] static u128 psrld(u128 dst, u8 src);
+        [[nodiscard]] static u128 psrlq(u128 dst, u8 src);
 
         [[nodiscard]] static u128 pslldq(u128 dst, u8 src);
         [[nodiscard]] static u128 psrldq(u128 dst, u8 src);

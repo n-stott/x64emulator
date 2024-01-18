@@ -213,6 +213,10 @@ namespace x64 {
         void exec(const Sbb<M64, R64>&) override;
         void exec(const Sbb<M64, Imm>&) override;
 
+        void exec(const Neg<R8>&) override;
+        void exec(const Neg<M8>&) override;
+        void exec(const Neg<R16>&) override;
+        void exec(const Neg<M16>&) override;
         void exec(const Neg<R32>&) override;
         void exec(const Neg<M32>&) override;
         void exec(const Neg<R64>&) override;
@@ -272,6 +276,8 @@ namespace x64 {
         void exec(const Or<R8, M8>&) override;
         void exec(const Or<M8, R8>&) override;
         void exec(const Or<M8, Imm>&) override;
+        void exec(const Or<R16, R16>&) override;
+        void exec(const Or<R16, Imm>&) override;
         void exec(const Or<R16, M16>&) override;
         void exec(const Or<M16, R16>&) override;
         void exec(const Or<R32, R32>&) override;
@@ -299,6 +305,10 @@ namespace x64 {
         void exec(const Xor<R64, M64>&) override;
         void exec(const Xor<M64, R64>&) override;
 
+        void exec(const Not<R8>&) override;
+        void exec(const Not<M8>&) override;
+        void exec(const Not<R16>&) override;
+        void exec(const Not<M16>&) override;
         void exec(const Not<R32>&) override;
         void exec(const Not<M32>&) override;
         void exec(const Not<R64>&) override;
@@ -414,9 +424,13 @@ namespace x64 {
         void exec(const Shr<R8, Imm>&) override;
         void exec(const Shr<R16, Imm>&) override;
         void exec(const Shr<R32, R8>&) override;
+        void exec(const Shr<M32, R8>&) override;
         void exec(const Shr<R32, Imm>&) override;
+        void exec(const Shr<M32, Imm>&) override;
         void exec(const Shr<R64, R8>&) override;
+        void exec(const Shr<M64, R8>&) override;
         void exec(const Shr<R64, Imm>&) override;
+        void exec(const Shr<M64, Imm>&) override;
 
         void exec(const Shl<R32, R8>&) override;
         void exec(const Shl<M32, R8>&) override;
@@ -779,7 +793,11 @@ namespace x64 {
         void exec(const Cvttsd2si<R64, RSSE>&) override;
         void exec(const Cvttsd2si<R64, M64>&) override;
 
+        void exec(const Pand<RSSE, RSSE>&) override;
+        void exec(const Pand<RSSE, MSSE>&) override;
         void exec(const Por<RSSE, RSSE>&) override;
+        void exec(const Por<RSSE, MSSE>&) override;
+
         void exec(const Andpd<RSSE, RSSE>&) override;
         void exec(const Andnpd<RSSE, RSSE>&) override;
         void exec(const Orpd<RSSE, RSSE>&) override;
@@ -790,6 +808,7 @@ namespace x64 {
 
         void exec(const Punpcklbw<RSSE, RSSE>&) override;
         void exec(const Punpcklwd<RSSE, RSSE>&) override;
+        void exec(const Punpckldq<RSSE, RSSE>&) override;
         void exec(const Punpcklqdq<RSSE, RSSE>&) override;
 
         void exec(const Pshufb<RSSE, RSSE>&) override;
@@ -810,6 +829,13 @@ namespace x64 {
 
         void exec(const Ptest<RSSE, RSSE>&) override;
         void exec(const Ptest<RSSE, MSSE>&) override;
+
+        void exec(const Psllw<RSSE, Imm>&) override;
+        void exec(const Pslld<RSSE, Imm>&) override;
+        void exec(const Psllq<RSSE, Imm>&) override;
+        void exec(const Psrlw<RSSE, Imm>&) override;
+        void exec(const Psrld<RSSE, Imm>&) override;
+        void exec(const Psrlq<RSSE, Imm>&) override;
 
         void exec(const Pslldq<RSSE, Imm>&) override;
         void exec(const Psrldq<RSSE, Imm>&) override;
