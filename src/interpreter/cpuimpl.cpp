@@ -997,10 +997,12 @@ namespace x64 {
         static_assert(sizeof(SRC) == sizeof(u128));
         std::memcpy(SRC.data(), &src, sizeof(u128));
 
+        std::array<u32, 4> RES;
         for(size_t i = 0; i < 8; ++i) {
-            DST[2*i+1] = SRC[i];
+            RES[2*i] = DST[i];
+            RES[2*i+1] = SRC[i];
         }
-        std::memcpy(&dst, DST.data(), sizeof(u128));
+        std::memcpy(&dst, RES.data(), sizeof(u128));
         return dst;
     }
 
@@ -1013,10 +1015,12 @@ namespace x64 {
         static_assert(sizeof(SRC) == sizeof(u128));
         std::memcpy(SRC.data(), &src, sizeof(u128));
 
+        std::array<u32, 4> RES;
         for(size_t i = 0; i < 4; ++i) {
-            DST[2*i+1] = SRC[i];
+            RES[2*i] = DST[i];
+            RES[2*i+1] = SRC[i];
         }
-        std::memcpy(&dst, DST.data(), sizeof(u128));
+        std::memcpy(&dst, RES.data(), sizeof(u128));
         return dst;
     }
 
@@ -1029,15 +1033,76 @@ namespace x64 {
         static_assert(sizeof(SRC) == sizeof(u128));
         std::memcpy(SRC.data(), &src, sizeof(u128));
 
+        std::array<u32, 4> RES;
         for(size_t i = 0; i < 2; ++i) {
-            DST[2*i+1] = SRC[i];
+            RES[2*i] = DST[i];
+            RES[2*i+1] = SRC[i];
         }
-        std::memcpy(&dst, DST.data(), sizeof(u128));
+        std::memcpy(&dst, RES.data(), sizeof(u128));
         return dst;
     }
 
     u128 Impl::punpcklqdq(u128 dst, u128 src) {
         dst.hi = src.lo;
+        return dst;
+    }
+
+    u128 Impl::punpckhbw(u128 dst, u128 src) {
+        std::array<u8, 16> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        std::memcpy(DST.data(), &dst, sizeof(u128));
+
+        std::array<u8, 16> SRC;
+        static_assert(sizeof(SRC) == sizeof(u128));
+        std::memcpy(SRC.data(), &src, sizeof(u128));
+
+        std::array<u32, 4> RES;
+        for(size_t i = 0; i < 8; ++i) {
+            RES[2*i] = DST[8+i];
+            RES[2*i+1] = SRC[8+i];
+        }
+        std::memcpy(&dst, RES.data(), sizeof(u128));
+        return dst;
+    }
+
+    u128 Impl::punpckhwd(u128 dst, u128 src) {
+        std::array<u16, 8> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        std::memcpy(DST.data(), &dst, sizeof(u128));
+
+        std::array<u16, 8> SRC;
+        static_assert(sizeof(SRC) == sizeof(u128));
+        std::memcpy(SRC.data(), &src, sizeof(u128));
+
+        std::array<u32, 4> RES;
+        for(size_t i = 0; i < 4; ++i) {
+            RES[2*i] = DST[4+i];
+            RES[2*i+1] = SRC[4+i];
+        }
+        std::memcpy(&dst, RES.data(), sizeof(u128));
+        return dst;
+    }
+
+    u128 Impl::punpckhdq(u128 dst, u128 src) {
+        std::array<u32, 4> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        std::memcpy(DST.data(), &dst, sizeof(u128));
+
+        std::array<u32, 4> SRC;
+        static_assert(sizeof(SRC) == sizeof(u128));
+        std::memcpy(SRC.data(), &src, sizeof(u128));
+
+        std::array<u32, 4> RES;
+        for(size_t i = 0; i < 2; ++i) {
+            RES[2*i] = DST[2+i];
+            RES[2*i+1] = SRC[2+i];
+        }
+        std::memcpy(&dst, RES.data(), sizeof(u128));
+        return dst;
+    }
+
+    u128 Impl::punpckhqdq(u128 dst, u128 src) {
+        dst.hi = src.hi;
         return dst;
     }
 
@@ -1080,21 +1145,52 @@ namespace x64 {
         return dst;
     }
 
-    u128 Impl::pcmpeqb(u128 dst, u128 src) {
-        std::array<u8, 16> DST;
+
+    template<typename I>
+    static u128 pcmpeq(u128 dst, u128 src) {
+        constexpr u32 N = sizeof(u128)/sizeof(I);
+        std::array<I, N> DST;
         static_assert(sizeof(DST) == sizeof(u128));
         std::memcpy(DST.data(), &dst, sizeof(u128));
 
-        std::array<u8, 16> SRC;
+        std::array<I, N> SRC;
         static_assert(sizeof(SRC) == sizeof(u128));
         std::memcpy(SRC.data(), &src, sizeof(u128));
 
-        for(size_t i = 0; i < 16; ++i) {
-            DST[i] = (DST[i] == SRC[i] ? 0xFF : 0x0);
+        for(size_t i = 0; i < N; ++i) {
+            DST[i] = (DST[i] == SRC[i] ? -1 : 0);
         }
         std::memcpy(&dst, DST.data(), sizeof(u128));
         return dst;
     }
+
+    u128 Impl::pcmpeqb(u128 dst, u128 src) { return pcmpeq<i8>(dst, src); }
+    u128 Impl::pcmpeqw(u128 dst, u128 src) { return pcmpeq<i16>(dst, src); }
+    u128 Impl::pcmpeqd(u128 dst, u128 src) { return pcmpeq<i32>(dst, src); }
+    u128 Impl::pcmpeqq(u128 dst, u128 src) { return pcmpeq<i64>(dst, src); }
+
+    template<typename I>
+    static u128 pcmpgt(u128 dst, u128 src) {
+        constexpr u32 N = sizeof(u128)/sizeof(I);
+        std::array<I, N> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        std::memcpy(DST.data(), &dst, sizeof(u128));
+
+        std::array<I, N> SRC;
+        static_assert(sizeof(SRC) == sizeof(u128));
+        std::memcpy(SRC.data(), &src, sizeof(u128));
+
+        for(size_t i = 0; i < N; ++i) {
+            DST[i] = (DST[i] > SRC[i] ? -1 : 0);
+        }
+        std::memcpy(&dst, DST.data(), sizeof(u128));
+        return dst;
+    }
+
+    u128 Impl::pcmpgtb(u128 dst, u128 src) { return pcmpgt<i8>(dst, src); }
+    u128 Impl::pcmpgtw(u128 dst, u128 src) { return pcmpgt<i16>(dst, src); }
+    u128 Impl::pcmpgtd(u128 dst, u128 src) { return pcmpgt<i32>(dst, src); }
+    u128 Impl::pcmpgtq(u128 dst, u128 src) { return pcmpgt<i64>(dst, src); }
 
     u16 Impl::pmovmskb(u128 src) {
         std::array<u8, 16> SRC;
@@ -1107,6 +1203,29 @@ namespace x64 {
         }
         return dst;
     }
+
+    template<typename U>
+    u128 padd(u128 dst, u128 src) {
+        constexpr int N = sizeof(u128)/sizeof(U);
+        std::array<U, N> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        std::memcpy(DST.data(), &dst, sizeof(u128));
+
+        std::array<U, N> SRC;
+        static_assert(sizeof(SRC) == sizeof(u128));
+        std::memcpy(SRC.data(), &src, sizeof(u128));
+
+        for(size_t i = 0; i < N; ++i) {
+            DST[i] += SRC[i];
+        }
+        std::memcpy(&dst, DST.data(), sizeof(u128));
+        return dst;
+    }
+
+    u128 Impl::paddb(u128 dst, u128 src) { return padd<u8>(dst, src); }
+    u128 Impl::paddw(u128 dst, u128 src) { return padd<u16>(dst, src); }
+    u128 Impl::paddd(u128 dst, u128 src) { return padd<u32>(dst, src); }
+    u128 Impl::paddq(u128 dst, u128 src) { return padd<u64>(dst, src); }
 
     u128 Impl::psubb(u128 dst, u128 src) {
         std::array<u8, 16> DST;

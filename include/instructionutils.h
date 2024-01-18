@@ -891,6 +891,11 @@ namespace utils {
     }
 
     template<typename Dst, typename Src>
+    inline std::string toString(Pandn<Dst, Src> ins) {
+        return fmt::format("{:9}{},{}", "pandn", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Dst, typename Src>
     inline std::string toString(Por<Dst, Src> ins) {
         return fmt::format("{:9}{},{}", "por", toString(ins.dst), toString(ins.src));
     }
@@ -946,6 +951,26 @@ namespace utils {
     }
 
     template<typename Dst, typename Src>
+    inline std::string toString(Punpckhbw<Dst, Src> ins) {
+        return fmt::format("{:9}{},{}", "punpckhbw", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Dst, typename Src>
+    inline std::string toString(Punpckhwd<Dst, Src> ins) {
+        return fmt::format("{:9}{},{}", "punpckhwd", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Dst, typename Src>
+    inline std::string toString(Punpckhdq<Dst, Src> ins) {
+        return fmt::format("{:9}{},{}", "punpckhdq", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Dst, typename Src>
+    inline std::string toString(Punpckhqdq<Dst, Src> ins) {
+        return fmt::format("{:9}{},{}", "punpckhqdq", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Dst, typename Src>
     inline std::string toString(Pshufb<Dst, Src> ins) {
         return fmt::format("{:9}{},{}", "pshufd", toString(ins.dst), toString(ins.src));
     }
@@ -961,8 +986,63 @@ namespace utils {
     }
 
     template<typename Dst, typename Src>
+    inline std::string toString(Pcmpeqw<Dst, Src> ins) {
+        return fmt::format("{:9}{},{}", "pcmpeqw", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Dst, typename Src>
+    inline std::string toString(Pcmpeqd<Dst, Src> ins) {
+        return fmt::format("{:9}{},{}", "pcmpeqd", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Dst, typename Src>
+    inline std::string toString(Pcmpeqq<Dst, Src> ins) {
+        return fmt::format("{:9}{},{}", "pcmpeqq", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Dst, typename Src>
+    inline std::string toString(Pcmpgtb<Dst, Src> ins) {
+        return fmt::format("{:9}{},{}", "pcmpgtb", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Dst, typename Src>
+    inline std::string toString(Pcmpgtw<Dst, Src> ins) {
+        return fmt::format("{:9}{},{}", "pcmpgtw", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Dst, typename Src>
+    inline std::string toString(Pcmpgtd<Dst, Src> ins) {
+        return fmt::format("{:9}{},{}", "pcmpgtd", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Dst, typename Src>
+    inline std::string toString(Pcmpgtq<Dst, Src> ins) {
+        return fmt::format("{:9}{},{}", "pcmpgtq", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Dst, typename Src>
     inline std::string toString(Pmovmskb<Dst, Src> ins) {
         return fmt::format("{:9}{},{}", "pmovmskb", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Dst, typename Src>
+    inline std::string toString(Paddb<Dst, Src> ins) {
+        return fmt::format("{:9}{},{}", "paddb", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Dst, typename Src>
+    inline std::string toString(Paddw<Dst, Src> ins) {
+        return fmt::format("{:9}{},{}", "paddw", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Dst, typename Src>
+    inline std::string toString(Paddd<Dst, Src> ins) {
+        return fmt::format("{:9}{},{}", "paddd", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Dst, typename Src>
+    inline std::string toString(Paddq<Dst, Src> ins) {
+        return fmt::format("{:9}{},{}", "paddq", toString(ins.dst), toString(ins.src));
     }
 
     template<typename Dst, typename Src>

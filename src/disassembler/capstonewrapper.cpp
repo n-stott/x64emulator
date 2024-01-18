@@ -188,6 +188,7 @@ namespace x64 {
             case X86_INS_CMPSQ: return makeCmps(insn);
             case X86_INS_MOVSQ: return makeMovs(insn);
             case X86_INS_PAND: return makePand(insn);
+            case X86_INS_PANDN: return makePandn(insn);
             case X86_INS_POR: return makePor(insn);
             case X86_INS_ANDPS:
             case X86_INS_ANDPD: return makeAndpd(insn);
@@ -205,10 +206,25 @@ namespace x64 {
             case X86_INS_PUNPCKLWD: return makePunpcklwd(insn);
             case X86_INS_PUNPCKLDQ: return makePunpckldq(insn);
             case X86_INS_PUNPCKLQDQ: return makePunpcklqdq(insn);
+            case X86_INS_PUNPCKHBW: return makePunpckhbw(insn);
+            case X86_INS_PUNPCKHWD: return makePunpckhwd(insn);
+            case X86_INS_PUNPCKHDQ: return makePunpckhdq(insn);
+            case X86_INS_PUNPCKHQDQ: return makePunpckhqdq(insn);
             case X86_INS_PSHUFB: return makePshufb(insn);
             case X86_INS_PSHUFD: return makePshufd(insn);
             case X86_INS_PCMPEQB: return makePcmpeqb(insn);
+            case X86_INS_PCMPEQW: return makePcmpeqw(insn);
+            case X86_INS_PCMPEQD: return makePcmpeqd(insn);
+            case X86_INS_PCMPEQQ: return makePcmpeqq(insn);
+            case X86_INS_PCMPGTB: return makePcmpgtb(insn);
+            case X86_INS_PCMPGTW: return makePcmpgtw(insn);
+            case X86_INS_PCMPGTD: return makePcmpgtd(insn);
+            case X86_INS_PCMPGTQ: return makePcmpgtq(insn);
             case X86_INS_PMOVMSKB: return makePmovmskb(insn);
+            case X86_INS_PADDB: return makePaddb(insn);
+            case X86_INS_PADDW: return makePaddw(insn);
+            case X86_INS_PADDD: return makePaddd(insn);
+            case X86_INS_PADDQ: return makePaddq(insn);
             case X86_INS_PSUBB: return makePsubb(insn);
             case X86_INS_PMINUB: return makePminub(insn);
             case X86_INS_PTEST: return makePtest(insn);
@@ -2557,6 +2573,19 @@ namespace x64 {
         return make_failed(insn);
     }
 
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makePandn(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto rssesrc = asRegister128(src);
+        auto mssesrc = asMemory128(src);
+        if(rssedst && rssesrc) return make_wrapper<Pandn<RSSE, RSSE>>(insn.address, rssedst.value(), rssesrc.value());
+        if(rssedst && mssesrc) return make_wrapper<Pandn<RSSE, MSSE>>(insn.address, rssedst.value(), mssesrc.value());
+        return make_failed(insn);
+    }
+
     std::unique_ptr<X86Instruction> CapstoneWrapper::makePor(const cs_insn& insn) {
         const auto& x86detail = insn.detail->x86;
         assert(x86detail.op_count == 2);
@@ -2680,6 +2709,50 @@ namespace x64 {
         return make_failed(insn);
     }
 
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makePunpckhbw(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto rssesrc = asRegister128(src);
+        if(rssedst && rssesrc) return make_wrapper<Punpckhbw<RSSE, RSSE>>(insn.address, rssedst.value(), rssesrc.value());
+        return make_failed(insn);
+    }
+
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makePunpckhwd(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto rssesrc = asRegister128(src);
+        if(rssedst && rssesrc) return make_wrapper<Punpckhwd<RSSE, RSSE>>(insn.address, rssedst.value(), rssesrc.value());
+        return make_failed(insn);
+    }
+
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makePunpckhdq(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto rssesrc = asRegister128(src);
+        if(rssedst && rssesrc) return make_wrapper<Punpckhdq<RSSE, RSSE>>(insn.address, rssedst.value(), rssesrc.value());
+        return make_failed(insn);
+    }
+
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makePunpckhqdq(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto rssesrc = asRegister128(src);
+        if(rssedst && rssesrc) return make_wrapper<Punpckhqdq<RSSE, RSSE>>(insn.address, rssedst.value(), rssesrc.value());
+        return make_failed(insn);
+    }
+
     std::unique_ptr<X86Instruction> CapstoneWrapper::makePshufb(const cs_insn& insn) {
         const auto& x86detail = insn.detail->x86;
         assert(x86detail.op_count == 2);
@@ -2721,6 +2794,97 @@ namespace x64 {
         return make_failed(insn);
     }
 
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makePcmpeqw(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto rssesrc = asRegister128(src);
+        auto mssesrc = asMemory128(src);
+        if(rssedst && rssesrc) return make_wrapper<Pcmpeqw<RSSE, RSSE>>(insn.address, rssedst.value(), rssesrc.value());
+        if(rssedst && mssesrc) return make_wrapper<Pcmpeqw<RSSE, MSSE>>(insn.address, rssedst.value(), mssesrc.value());
+        return make_failed(insn);
+    }
+
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makePcmpeqd(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto rssesrc = asRegister128(src);
+        auto mssesrc = asMemory128(src);
+        if(rssedst && rssesrc) return make_wrapper<Pcmpeqd<RSSE, RSSE>>(insn.address, rssedst.value(), rssesrc.value());
+        if(rssedst && mssesrc) return make_wrapper<Pcmpeqd<RSSE, MSSE>>(insn.address, rssedst.value(), mssesrc.value());
+        return make_failed(insn);
+    }
+
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makePcmpeqq(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto rssesrc = asRegister128(src);
+        auto mssesrc = asMemory128(src);
+        if(rssedst && rssesrc) return make_wrapper<Pcmpeqq<RSSE, RSSE>>(insn.address, rssedst.value(), rssesrc.value());
+        if(rssedst && mssesrc) return make_wrapper<Pcmpeqq<RSSE, MSSE>>(insn.address, rssedst.value(), mssesrc.value());
+        return make_failed(insn);
+    }
+
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makePcmpgtb(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto rssesrc = asRegister128(src);
+        auto mssesrc = asMemory128(src);
+        if(rssedst && rssesrc) return make_wrapper<Pcmpgtb<RSSE, RSSE>>(insn.address, rssedst.value(), rssesrc.value());
+        if(rssedst && mssesrc) return make_wrapper<Pcmpgtb<RSSE, MSSE>>(insn.address, rssedst.value(), mssesrc.value());
+        return make_failed(insn);
+    }
+
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makePcmpgtw(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto rssesrc = asRegister128(src);
+        auto mssesrc = asMemory128(src);
+        if(rssedst && rssesrc) return make_wrapper<Pcmpgtw<RSSE, RSSE>>(insn.address, rssedst.value(), rssesrc.value());
+        if(rssedst && mssesrc) return make_wrapper<Pcmpgtw<RSSE, MSSE>>(insn.address, rssedst.value(), mssesrc.value());
+        return make_failed(insn);
+    }
+
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makePcmpgtd(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto rssesrc = asRegister128(src);
+        auto mssesrc = asMemory128(src);
+        if(rssedst && rssesrc) return make_wrapper<Pcmpgtd<RSSE, RSSE>>(insn.address, rssedst.value(), rssesrc.value());
+        if(rssedst && mssesrc) return make_wrapper<Pcmpgtd<RSSE, MSSE>>(insn.address, rssedst.value(), mssesrc.value());
+        return make_failed(insn);
+    }
+
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makePcmpgtq(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto rssesrc = asRegister128(src);
+        auto mssesrc = asMemory128(src);
+        if(rssedst && rssesrc) return make_wrapper<Pcmpgtq<RSSE, RSSE>>(insn.address, rssedst.value(), rssesrc.value());
+        if(rssedst && mssesrc) return make_wrapper<Pcmpgtq<RSSE, MSSE>>(insn.address, rssedst.value(), mssesrc.value());
+        return make_failed(insn);
+    }
+
     std::unique_ptr<X86Instruction> CapstoneWrapper::makePmovmskb(const cs_insn& insn) {
         const auto& x86detail = insn.detail->x86;
         assert(x86detail.op_count == 2);
@@ -2729,6 +2893,58 @@ namespace x64 {
         auto r32dst = asRegister32(dst);
         auto rssesrc = asRegister128(src);
         if(r32dst && rssesrc) return make_wrapper<Pmovmskb<R32, RSSE>>(insn.address, r32dst.value(), rssesrc.value());
+        return make_failed(insn);
+    }
+
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makePaddb(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto rssesrc = asRegister128(src);
+        auto mssesrc = asMemory128(src);
+        if(rssedst && rssesrc) return make_wrapper<Paddb<RSSE, RSSE>>(insn.address, rssedst.value(), rssesrc.value());
+        if(rssedst && mssesrc) return make_wrapper<Paddb<RSSE, MSSE>>(insn.address, rssedst.value(), mssesrc.value());
+        return make_failed(insn);
+    }
+
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makePaddw(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto rssesrc = asRegister128(src);
+        auto mssesrc = asMemory128(src);
+        if(rssedst && rssesrc) return make_wrapper<Paddw<RSSE, RSSE>>(insn.address, rssedst.value(), rssesrc.value());
+        if(rssedst && mssesrc) return make_wrapper<Paddw<RSSE, MSSE>>(insn.address, rssedst.value(), mssesrc.value());
+        return make_failed(insn);
+    }
+
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makePaddd(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto rssesrc = asRegister128(src);
+        auto mssesrc = asMemory128(src);
+        if(rssedst && rssesrc) return make_wrapper<Paddd<RSSE, RSSE>>(insn.address, rssedst.value(), rssesrc.value());
+        if(rssedst && mssesrc) return make_wrapper<Paddd<RSSE, MSSE>>(insn.address, rssedst.value(), mssesrc.value());
+        return make_failed(insn);
+    }
+
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makePaddq(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto rssesrc = asRegister128(src);
+        auto mssesrc = asMemory128(src);
+        if(rssedst && rssesrc) return make_wrapper<Paddq<RSSE, RSSE>>(insn.address, rssedst.value(), rssesrc.value());
+        if(rssedst && mssesrc) return make_wrapper<Paddq<RSSE, MSSE>>(insn.address, rssedst.value(), mssesrc.value());
         return make_failed(insn);
     }
 

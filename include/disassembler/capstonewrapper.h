@@ -187,6 +187,7 @@ namespace x64 {
         static std::unique_ptr<X86Instruction> makeCvttsd2si(const cs_insn& insn);
 
         static std::unique_ptr<X86Instruction> makePand(const cs_insn& insn);
+        static std::unique_ptr<X86Instruction> makePandn(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makePor(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeAndpd(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeAndnpd(const cs_insn& insn);
@@ -200,10 +201,25 @@ namespace x64 {
         static std::unique_ptr<X86Instruction> makePunpcklwd(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makePunpckldq(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makePunpcklqdq(const cs_insn& insn);
+        static std::unique_ptr<X86Instruction> makePunpckhbw(const cs_insn& insn);
+        static std::unique_ptr<X86Instruction> makePunpckhwd(const cs_insn& insn);
+        static std::unique_ptr<X86Instruction> makePunpckhdq(const cs_insn& insn);
+        static std::unique_ptr<X86Instruction> makePunpckhqdq(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makePshufb(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makePshufd(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makePcmpeqb(const cs_insn& insn);
+        static std::unique_ptr<X86Instruction> makePcmpeqw(const cs_insn& insn);
+        static std::unique_ptr<X86Instruction> makePcmpeqd(const cs_insn& insn);
+        static std::unique_ptr<X86Instruction> makePcmpeqq(const cs_insn& insn);
+        static std::unique_ptr<X86Instruction> makePcmpgtb(const cs_insn& insn);
+        static std::unique_ptr<X86Instruction> makePcmpgtw(const cs_insn& insn);
+        static std::unique_ptr<X86Instruction> makePcmpgtd(const cs_insn& insn);
+        static std::unique_ptr<X86Instruction> makePcmpgtq(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makePmovmskb(const cs_insn& insn);
+        static std::unique_ptr<X86Instruction> makePaddb(const cs_insn& insn);
+        static std::unique_ptr<X86Instruction> makePaddw(const cs_insn& insn);
+        static std::unique_ptr<X86Instruction> makePaddd(const cs_insn& insn);
+        static std::unique_ptr<X86Instruction> makePaddq(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makePsubb(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makePminub(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makePtest(const cs_insn& insn);

@@ -1669,6 +1669,22 @@ namespace x64 {
         set(ins.dst, dst);
     }
 
+    void Cpu::exec(const Pandn<RSSE, RSSE>& ins) {
+        u128 dst = get(ins.dst);
+        u128 src = get(ins.src);
+        dst.lo = (~dst.lo) & src.lo;
+        dst.hi = (~dst.hi) & src.hi;
+        set(ins.dst, dst);
+    }
+
+    void Cpu::exec(const Pandn<RSSE, MSSE>& ins) {
+        u128 dst = get(ins.dst);
+        u128 src = get(resolve(ins.src));
+        dst.lo = (~dst.lo) & src.lo;
+        dst.hi = (~dst.hi) & src.hi;
+        set(ins.dst, dst);
+    }
+
     void Cpu::exec(const Por<RSSE, RSSE>& ins) {
         u128 dst = get(ins.dst);
         u128 src = get(ins.src);
@@ -1753,6 +1769,26 @@ namespace x64 {
         set(ins.dst, dst);
     }
 
+    void Cpu::exec(const Punpckhbw<RSSE, RSSE>& ins) {
+        u128 dst = Impl::punpckhbw(get(ins.dst), get(ins.src));
+        set(ins.dst, dst);
+    }
+
+    void Cpu::exec(const Punpckhwd<RSSE, RSSE>& ins) {
+        u128 dst = Impl::punpckhwd(get(ins.dst), get(ins.src));
+        set(ins.dst, dst);
+    }
+
+    void Cpu::exec(const Punpckhdq<RSSE, RSSE>& ins) {
+        u128 dst = Impl::punpckhdq(get(ins.dst), get(ins.src));
+        set(ins.dst, dst);
+    }
+
+    void Cpu::exec(const Punpckhqdq<RSSE, RSSE>& ins) {
+        u128 dst = Impl::punpckhqdq(get(ins.dst), get(ins.src));
+        set(ins.dst, dst);
+    }
+
     void Cpu::exec(const Pshufb<RSSE, RSSE>& ins) {
         u128 res = Impl::pshufb(get(ins.dst), get(ins.src));
         set(ins.dst, res);
@@ -1783,10 +1819,120 @@ namespace x64 {
         set(ins.dst, res);
     }
 
+    void Cpu::exec(const Pcmpeqw<RSSE, RSSE>& ins) {
+        u128 res = Impl::pcmpeqw(get(ins.dst), get(ins.src));
+        set(ins.dst, res);
+    }
+
+    void Cpu::exec(const Pcmpeqw<RSSE, MSSE>& ins) {
+        u128 res = Impl::pcmpeqw(get(ins.dst), get(resolve(ins.src)));
+        set(ins.dst, res);
+    }
+
+    void Cpu::exec(const Pcmpeqd<RSSE, RSSE>& ins) {
+        u128 res = Impl::pcmpeqd(get(ins.dst), get(ins.src));
+        set(ins.dst, res);
+    }
+
+    void Cpu::exec(const Pcmpeqd<RSSE, MSSE>& ins) {
+        u128 res = Impl::pcmpeqd(get(ins.dst), get(resolve(ins.src)));
+        set(ins.dst, res);
+    }
+
+    void Cpu::exec(const Pcmpeqq<RSSE, RSSE>& ins) {
+        u128 res = Impl::pcmpeqq(get(ins.dst), get(ins.src));
+        set(ins.dst, res);
+    }
+
+    void Cpu::exec(const Pcmpeqq<RSSE, MSSE>& ins) {
+        u128 res = Impl::pcmpeqq(get(ins.dst), get(resolve(ins.src)));
+        set(ins.dst, res);
+    }
+
+    void Cpu::exec(const Pcmpgtb<RSSE, RSSE>& ins) {
+        u128 res = Impl::pcmpgtb(get(ins.dst), get(ins.src));
+        set(ins.dst, res);
+    }
+
+    void Cpu::exec(const Pcmpgtb<RSSE, MSSE>& ins) {
+        u128 res = Impl::pcmpgtb(get(ins.dst), get(resolve(ins.src)));
+        set(ins.dst, res);
+    }
+
+    void Cpu::exec(const Pcmpgtw<RSSE, RSSE>& ins) {
+        u128 res = Impl::pcmpgtw(get(ins.dst), get(ins.src));
+        set(ins.dst, res);
+    }
+
+    void Cpu::exec(const Pcmpgtw<RSSE, MSSE>& ins) {
+        u128 res = Impl::pcmpgtw(get(ins.dst), get(resolve(ins.src)));
+        set(ins.dst, res);
+    }
+
+    void Cpu::exec(const Pcmpgtd<RSSE, RSSE>& ins) {
+        u128 res = Impl::pcmpgtd(get(ins.dst), get(ins.src));
+        set(ins.dst, res);
+    }
+
+    void Cpu::exec(const Pcmpgtd<RSSE, MSSE>& ins) {
+        u128 res = Impl::pcmpgtd(get(ins.dst), get(resolve(ins.src)));
+        set(ins.dst, res);
+    }
+
+    void Cpu::exec(const Pcmpgtq<RSSE, RSSE>& ins) {
+        u128 res = Impl::pcmpgtq(get(ins.dst), get(ins.src));
+        set(ins.dst, res);
+    }
+
+    void Cpu::exec(const Pcmpgtq<RSSE, MSSE>& ins) {
+        u128 res = Impl::pcmpgtq(get(ins.dst), get(resolve(ins.src)));
+        set(ins.dst, res);
+    }
+
 
     void Cpu::exec(const Pmovmskb<R32, RSSE>& ins) {
         u16 dst = Impl::pmovmskb(get(ins.src));
         set(ins.dst, zeroExtend<u32, u16>(dst));
+    }
+
+    void Cpu::exec(const Paddb<RSSE, RSSE>& ins) {
+        u128 res = Impl::paddb(get(ins.dst), get(ins.src));
+        set(ins.dst, res);
+    }
+
+    void Cpu::exec(const Paddb<RSSE, MSSE>& ins) {
+        u128 res = Impl::paddb(get(ins.dst), get(resolve(ins.src)));
+        set(ins.dst, res);
+    }
+
+    void Cpu::exec(const Paddw<RSSE, RSSE>& ins) {
+        u128 res = Impl::paddw(get(ins.dst), get(ins.src));
+        set(ins.dst, res);
+    }
+
+    void Cpu::exec(const Paddw<RSSE, MSSE>& ins) {
+        u128 res = Impl::paddw(get(ins.dst), get(resolve(ins.src)));
+        set(ins.dst, res);
+    }
+
+    void Cpu::exec(const Paddd<RSSE, RSSE>& ins) {
+        u128 res = Impl::paddd(get(ins.dst), get(ins.src));
+        set(ins.dst, res);
+    }
+
+    void Cpu::exec(const Paddd<RSSE, MSSE>& ins) {
+        u128 res = Impl::paddd(get(ins.dst), get(resolve(ins.src)));
+        set(ins.dst, res);
+    }
+
+    void Cpu::exec(const Paddq<RSSE, RSSE>& ins) {
+        u128 res = Impl::paddq(get(ins.dst), get(ins.src));
+        set(ins.dst, res);
+    }
+
+    void Cpu::exec(const Paddq<RSSE, MSSE>& ins) {
+        u128 res = Impl::paddq(get(ins.dst), get(resolve(ins.src)));
+        set(ins.dst, res);
     }
 
     void Cpu::exec(const Psubb<RSSE, RSSE>& ins) {

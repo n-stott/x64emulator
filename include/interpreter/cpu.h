@@ -795,6 +795,8 @@ namespace x64 {
 
         void exec(const Pand<RSSE, RSSE>&) override;
         void exec(const Pand<RSSE, MSSE>&) override;
+        void exec(const Pandn<RSSE, RSSE>&) override;
+        void exec(const Pandn<RSSE, MSSE>&) override;
         void exec(const Por<RSSE, RSSE>&) override;
         void exec(const Por<RSSE, MSSE>&) override;
 
@@ -811,6 +813,11 @@ namespace x64 {
         void exec(const Punpckldq<RSSE, RSSE>&) override;
         void exec(const Punpcklqdq<RSSE, RSSE>&) override;
 
+        void exec(const Punpckhbw<RSSE, RSSE>&) override;
+        void exec(const Punpckhwd<RSSE, RSSE>&) override;
+        void exec(const Punpckhdq<RSSE, RSSE>&) override;
+        void exec(const Punpckhqdq<RSSE, RSSE>&) override;
+
         void exec(const Pshufb<RSSE, RSSE>&) override;
         void exec(const Pshufb<RSSE, MSSE>&) override;
         void exec(const Pshufd<RSSE, RSSE, Imm>&) override;
@@ -818,8 +825,32 @@ namespace x64 {
 
         void exec(const Pcmpeqb<RSSE, RSSE>&) override;
         void exec(const Pcmpeqb<RSSE, MSSE>&) override;
+        void exec(const Pcmpeqw<RSSE, RSSE>&) override;
+        void exec(const Pcmpeqw<RSSE, MSSE>&) override;
+        void exec(const Pcmpeqd<RSSE, RSSE>&) override;
+        void exec(const Pcmpeqd<RSSE, MSSE>&) override;
+        void exec(const Pcmpeqq<RSSE, RSSE>&) override;
+        void exec(const Pcmpeqq<RSSE, MSSE>&) override;
+
+        void exec(const Pcmpgtb<RSSE, RSSE>&) override;
+        void exec(const Pcmpgtb<RSSE, MSSE>&) override;
+        void exec(const Pcmpgtw<RSSE, RSSE>&) override;
+        void exec(const Pcmpgtw<RSSE, MSSE>&) override;
+        void exec(const Pcmpgtd<RSSE, RSSE>&) override;
+        void exec(const Pcmpgtd<RSSE, MSSE>&) override;
+        void exec(const Pcmpgtq<RSSE, RSSE>&) override;
+        void exec(const Pcmpgtq<RSSE, MSSE>&) override;
 
         void exec(const Pmovmskb<R32, RSSE>&) override;
+
+        void exec(const Paddb<RSSE, RSSE>&) override;
+        void exec(const Paddb<RSSE, MSSE>&) override;
+        void exec(const Paddw<RSSE, RSSE>&) override;
+        void exec(const Paddw<RSSE, MSSE>&) override;
+        void exec(const Paddd<RSSE, RSSE>&) override;
+        void exec(const Paddd<RSSE, MSSE>&) override;
+        void exec(const Paddq<RSSE, RSSE>&) override;
+        void exec(const Paddq<RSSE, MSSE>&) override;
 
         void exec(const Psubb<RSSE, RSSE>&) override;
         void exec(const Psubb<RSSE, MSSE>&) override;

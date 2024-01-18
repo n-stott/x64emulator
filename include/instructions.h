@@ -607,6 +607,12 @@ namespace x64 {
     };
 
     template<typename Dst, typename Src>
+    struct Pandn {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
     struct Por {
         Dst dst;
         Src src;
@@ -679,6 +685,30 @@ namespace x64 {
     };
 
     template<typename Dst, typename Src>
+    struct Punpckhbw {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
+    struct Punpckhwd {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
+    struct Punpckhdq {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
+    struct Punpckhqdq {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
     struct Pshufb {
         Dst dst;
         Src src;
@@ -698,7 +728,73 @@ namespace x64 {
     };
 
     template<typename Dst, typename Src>
+    struct Pcmpeqw {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
+    struct Pcmpeqd {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
+    struct Pcmpeqq {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
+    struct Pcmpgtb {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
+    struct Pcmpgtw {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
+    struct Pcmpgtd {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
+    struct Pcmpgtq {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
     struct Pmovmskb {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
+    struct Paddb {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
+    struct Paddw {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
+    struct Paddd {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
+    struct Paddq {
         Dst dst;
         Src src;
     };

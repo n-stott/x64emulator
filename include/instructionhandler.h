@@ -665,6 +665,8 @@ namespace x64 {
 
         virtual void exec(const Pand<RSSE, RSSE>&) = 0;
         virtual void exec(const Pand<RSSE, MSSE>&) = 0;
+        virtual void exec(const Pandn<RSSE, RSSE>&) = 0;
+        virtual void exec(const Pandn<RSSE, MSSE>&) = 0;
         virtual void exec(const Por<RSSE, RSSE>&) = 0;
         virtual void exec(const Por<RSSE, MSSE>&) = 0;
 
@@ -681,6 +683,11 @@ namespace x64 {
         virtual void exec(const Punpckldq<RSSE, RSSE>&) = 0;
         virtual void exec(const Punpcklqdq<RSSE, RSSE>&) = 0;
 
+        virtual void exec(const Punpckhbw<RSSE, RSSE>&) = 0;
+        virtual void exec(const Punpckhwd<RSSE, RSSE>&) = 0;
+        virtual void exec(const Punpckhdq<RSSE, RSSE>&) = 0;
+        virtual void exec(const Punpckhqdq<RSSE, RSSE>&) = 0;
+
         virtual void exec(const Pshufb<RSSE, RSSE>&) = 0;
         virtual void exec(const Pshufb<RSSE, MSSE>&) = 0;
         virtual void exec(const Pshufd<RSSE, RSSE, Imm>&) = 0;
@@ -688,8 +695,32 @@ namespace x64 {
 
         virtual void exec(const Pcmpeqb<RSSE, RSSE>&) = 0;
         virtual void exec(const Pcmpeqb<RSSE, MSSE>&) = 0;
+        virtual void exec(const Pcmpeqw<RSSE, RSSE>&) = 0;
+        virtual void exec(const Pcmpeqw<RSSE, MSSE>&) = 0;
+        virtual void exec(const Pcmpeqd<RSSE, RSSE>&) = 0;
+        virtual void exec(const Pcmpeqd<RSSE, MSSE>&) = 0;
+        virtual void exec(const Pcmpeqq<RSSE, RSSE>&) = 0;
+        virtual void exec(const Pcmpeqq<RSSE, MSSE>&) = 0;
+
+        virtual void exec(const Pcmpgtb<RSSE, RSSE>&) = 0;
+        virtual void exec(const Pcmpgtb<RSSE, MSSE>&) = 0;
+        virtual void exec(const Pcmpgtw<RSSE, RSSE>&) = 0;
+        virtual void exec(const Pcmpgtw<RSSE, MSSE>&) = 0;
+        virtual void exec(const Pcmpgtd<RSSE, RSSE>&) = 0;
+        virtual void exec(const Pcmpgtd<RSSE, MSSE>&) = 0;
+        virtual void exec(const Pcmpgtq<RSSE, RSSE>&) = 0;
+        virtual void exec(const Pcmpgtq<RSSE, MSSE>&) = 0;
 
         virtual void exec(const Pmovmskb<R32, RSSE>&) = 0;
+
+        virtual void exec(const Paddb<RSSE, RSSE>&) = 0;
+        virtual void exec(const Paddb<RSSE, MSSE>&) = 0;
+        virtual void exec(const Paddw<RSSE, RSSE>&) = 0;
+        virtual void exec(const Paddw<RSSE, MSSE>&) = 0;
+        virtual void exec(const Paddd<RSSE, RSSE>&) = 0;
+        virtual void exec(const Paddd<RSSE, MSSE>&) = 0;
+        virtual void exec(const Paddq<RSSE, RSSE>&) = 0;
+        virtual void exec(const Paddq<RSSE, MSSE>&) = 0;
 
         virtual void exec(const Psubb<RSSE, RSSE>&) = 0;
         virtual void exec(const Psubb<RSSE, MSSE>&) = 0;
