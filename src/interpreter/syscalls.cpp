@@ -160,6 +160,12 @@ namespace x64 {
                 vm_->set(R64::RAX, (u64)nchars);
                 return;
             }
+            case 0x63: { //sysinfo
+                Ptr info {arg0};
+                int ret = sysinfo(info);
+                vm_->set(R64::RAX, (u64)ret);
+                return;
+            }
             case 0x9e: { // arch_prctl
                 i32 code = (i32)arg0;
                 Ptr addr{arg1};
@@ -375,6 +381,13 @@ namespace x64 {
         if(vm_->logInstructions()) fmt::print("Sys::readlink(path={}, buf={:#x}; size={}) = {:#x}\n", path, buf.address(), bufsiz, buffer ? 0 : -1);
         if(!buffer) return -1;
         mmu_->copyToMmu(buf, buffer->data(), buffer->size());
+        return 0;
+    }
+
+    int Sys::sysinfo(Ptr info) {
+        auto buffer = Host::sysinfo();
+        if(!buffer) return -1;
+        mmu_->copyToMmu(info, buffer->data(), buffer->size());
         return 0;
     }
 

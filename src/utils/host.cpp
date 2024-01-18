@@ -7,6 +7,7 @@
 #include <sys/resource.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/sysinfo.h>
 #include <sys/utsname.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -136,6 +137,16 @@ int Host::access(const std::string& path, int mode) {
     int ret = ::access(path.c_str(), mode);
     if(ret < 0) return -errno;
     return ret;
+}
+
+std::optional<std::vector<u8>> Host::sysinfo() {
+    struct sysinfo buf;
+    int ret = ::sysinfo(&buf);
+    if(ret < 0) return {};
+    std::vector<u8> buffer;
+    buffer.resize(sizeof(struct sysinfo), 0x0);
+    std::memcpy(buffer.data(), &buf, sizeof(buf));
+    return std::optional(std::move(buffer));
 }
 
 std::optional<std::vector<u8>> Host::readlink(const std::string& path, size_t count) {

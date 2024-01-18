@@ -53,6 +53,8 @@ namespace x64 {
         Ptr getcwd(Ptr buf, size_t size);
         // 0x59
         ssize_t readlink(Ptr pathname, Ptr buf, size_t bufsiz);
+        // 0x63
+        int sysinfo(Ptr info);
         // 0x9e
         void exit_group(int status);
         // 0xca
