@@ -2,7 +2,9 @@
 #include <cassert>
 #include <cstring>
 #include <iostream>
+#include <asm/termbits.h>
 #include <sys/auxv.h>
+#include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <sys/resource.h>
 #include <sys/types.h>
@@ -137,6 +139,16 @@ int Host::access(const std::string& path, int mode) {
     int ret = ::access(path.c_str(), mode);
     if(ret < 0) return -errno;
     return ret;
+}
+
+std::optional<std::vector<u8>> Host::tcgetattr(FD fd) {
+    struct termios buf;
+    int ret = ::ioctl(fd.fd, TCGETS, &buf);
+    if(ret < 0) return {};
+    std::vector<u8> buffer;
+    buffer.resize(sizeof(struct termios), 0x0);
+    std::memcpy(buffer.data(), &buf, sizeof(buf));
+    return std::optional(std::move(buffer));
 }
 
 std::optional<std::vector<u8>> Host::sysinfo() {

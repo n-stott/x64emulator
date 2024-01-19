@@ -41,6 +41,8 @@ public:
     static std::optional<std::vector<u8>> readlink(const std::string& path, size_t count);
     static std::optional<std::vector<u8>> uname();
 
+    static std::optional<std::vector<u8>> tcgetattr(FD fd);
+
     static std::optional<std::vector<u8>> sysinfo();
     
     static std::optional<std::vector<u8>> getcwd(size_t size);

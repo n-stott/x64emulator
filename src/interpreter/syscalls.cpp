@@ -5,6 +5,7 @@
 #include "utils/host.h"
 #include <asm/prctl.h>
 #include <string.h>
+#include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <sys/prctl.h>
 #include <sys/resource.h>
@@ -117,6 +118,14 @@ namespace x64 {
                 Ptr oset(arg2);
                 size_t sigsetsize = (size_t)arg3;
                 int ret = rt_sigprocmask(how, nset, oset, sigsetsize);
+                vm_->set(R64::RAX, (u64)ret);
+                return;
+            }
+            case 0x10: { // ioctl
+                int fd = (int)arg0;
+                unsigned long request = (unsigned long)arg1;
+                Ptr argp{arg2};
+                int ret = ioctl(fd, request, argp);
                 vm_->set(R64::RAX, (u64)ret);
                 return;
             }
@@ -331,6 +340,19 @@ namespace x64 {
         (void)oset;
         (void)sigsetsize;
         return 0;
+    }
+
+    int Sys::ioctl(int fd, unsigned long request, Ptr argp) {
+        if(request == TCGETS) {
+            if(vm_->logInstructions()) fmt::print("Sys::ioctl({}, TCGETS, {:#x})\n", fd, request, argp.address());
+            std::optional<std::vector<u8>> buffer = Host::tcgetattr(Host::FD{fd});
+            mmu_->copyToMmu(argp, buffer->data(), buffer->size());
+            return 0;
+        }
+        verify(false, [&]() {
+            fmt::print("Unsupported ioctl {}\n", request);
+        });
+        return -1;
     }
 
     ssize_t Sys::writev(int fd, Ptr iov, int iovcnt) {
