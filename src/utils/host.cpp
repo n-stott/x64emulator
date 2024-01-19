@@ -79,22 +79,20 @@ std::optional<std::vector<u8>> Host::read(FD fd, size_t count) {
 }
 
 ssize_t Host::write([[maybe_unused]] FD fd, [[maybe_unused]] const u8* data, size_t count) {
-    const std::string red("\033[0;31m");
-    const std::string reset("\033[0m");
-    if(fd.fd == 1) {
+    if(fd.fd == 1 || fd.fd == 2) {
         std::string s;
         s.resize(count+1, '\0');
         std::memcpy(s.data(), (const char*)data, count);
-        std::cout << s << std::flush;
-    } else if(fd.fd == 2) {
-        std::string s;
-        s.resize(count+1, '\0');
-        std::memcpy(s.data(), (const char*)data, count);
-        std::cout << red << s << reset << std::flush;
+        if(fd.fd == 1) {
+            std::cout << s << std::flush;
+        } else {
+            std::cerr << s << std::flush;
+        }
+        return (ssize_t)count;
     } else {
         assert(false);
+        return 0;
     }
-    return (ssize_t)count;
 }
 
 int Host::close(FD fd) {
