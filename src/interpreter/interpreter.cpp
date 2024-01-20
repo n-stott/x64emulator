@@ -1,10 +1,10 @@
 #include "interpreter/interpreter.h"
-#include "interpreter/loader.h"
 #include "interpreter/symbolprovider.h"
 #include "interpreter/verify.h"
 #include "interpreter/auxiliaryvector.h"
 #include "utils/host.h"
 #include "disassembler/capstonewrapper.h"
+#include "elf-reader.h"
 #include <fmt/core.h>
 #include <algorithm>
 #include <cassert>
@@ -48,80 +48,112 @@ namespace x64 {
         return vm_.logInstructions();
     }
 
-    void Interpreter::setAuxiliary(Auxiliary auxiliary) {
-        auxiliary_ = auxiliary;
-    }
-
-    u64 Interpreter::mmap(u64 address, u64 length, PROT prot, MAP flags, int fd, int offset) {
-        return vm_.mmu().mmap(address, length, prot, flags, fd, offset);
-    }
-
-    int Interpreter::munmap(u64 address, u64 length) {
-        return vm_.mmu().munmap(address, length);
-    }
-
-    int Interpreter::mprotect(u64 address, u64 length, PROT prot) {
-        return vm_.mmu().mprotect(address, length, prot);
-    }
-
-    void Interpreter::setRegionName(u64 address, std::string name) {
-        vm_.mmu().setRegionName(address, std::move(name));
-    }
-
-    void Interpreter::registerTlsBlock(u64 templateAddress, u64 blockAddress) {
-        vm_.mmu().registerTlsBlock(templateAddress, blockAddress);
-    }
-
-    void Interpreter::setFsBase(u64 fsBase) {
-        vm_.mmu().setFsBase(fsBase);
-    }
-    
-    void Interpreter::registerInitFunction(u64 address) {
-        initFunctions_.push_back(address);
-    }
-
-    void Interpreter::registerFiniFunction(u64 address) {
-        (void)address;
-    }
-
-    void Interpreter::writeRelocation(u64 relocationSource, u64 relocationDestination) {
-        vm_.mmu().write64(Ptr64{relocationSource}, relocationDestination);
-    }
-
-    void Interpreter::writeUnresolvedRelocation(u64 relocationSource, const std::string& name) {
-        u64 bogusAddress = ((u64)(-1) << 32) | relocationSource;
-        bogusRelocations_[bogusAddress] = name;
-        vm_.mmu().write64(Ptr64{relocationSource}, bogusAddress);
-    }
-
-    void Interpreter::read(u8* dst, u64 srcAddress, u64 nbytes) {
-        Ptr8 src{srcAddress};
-        vm_.mmu().copyFromMmu(dst, src, nbytes);
-    }
-
-    void Interpreter::write(u64 dstAddress, const u8* src, u64 nbytes) {
-        Ptr8 dst{dstAddress};
-        vm_.mmu().copyToMmu(dst, src, nbytes);
-    }
-
     void Interpreter::run(const std::string& programFilePath, const std::vector<std::string>& arguments, const std::vector<std::string>& environmentVariables) {
-        SymbolProvider dynamicSymbolProvider;
-        SymbolProvider staticSymbolProvider;
-        Loader loader(this, &staticSymbolProvider, &dynamicSymbolProvider);
-        loader.loadElf(programFilePath, x64::Loader::ElfType::MAIN_EXECUTABLE);
-        loader.registerStaticSymbols();
-
         SignalHandler handler;
-        
         VerificationScope::run([&]() {
+            u64 entrypoint = loadElf(programFilePath, true);
             setupStack();
             pushProgramArguments(programFilePath, arguments, environmentVariables);
-            verify(auxiliary_.has_value(), "No entrypoint");
+            SymbolProvider staticSymbolProvider;
             vm_.setSymbolProvider(&staticSymbolProvider);
-            vm_.execute(auxiliary_->entrypoint);
+            vm_.execute(entrypoint);
         }, [&]() {
             vm_.crash();
         });
+    }
+
+    u64 Interpreter::loadElf(const std::string& filepath, bool mainProgram) {
+        auto elf = elf::ElfReader::tryCreate(filepath);
+        verify(!!elf, [&]() { fmt::print("Failed to load elf {}\n", filepath); });
+        verify(elf->archClass() == elf::Class::B64, "elf must be 64-bit");
+        std::unique_ptr<elf::Elf64> elf64;
+        elf64.reset(static_cast<elf::Elf64*>(elf.release()));
+
+        u64 elfOffset = [&]() -> u64 {
+            verify(elf64->type() == elf::Type::ET_DYN || elf64->type() == elf::Type::ET_EXEC, "elf must be ET_DYN or ET_EXEC");
+
+            // If the elf is of type EXEC, it is mapped at its required virtual address.
+            if(elf64->type() == elf::Type::ET_EXEC) return 0;
+            
+            // Otherwise, we can map it anywhere.
+            // First, figure out how much contiguous space is needed.
+            u64 minStart = (u64)(-1);
+            u64 maxEnd = 0;
+            elf64->forAllProgramHeaders([&](const elf::ProgramHeader64& header) {
+                if(header.type() != elf::ProgramHeaderType::PT_LOAD) return;
+                minStart = std::min(minStart, Mmu::pageRoundDown(header.virtualAddress()));
+                maxEnd = std::max(maxEnd, Mmu::pageRoundUp(header.virtualAddress() + header.sizeInMemory()));
+            });
+            u64 totalLoadSize = (minStart > maxEnd) ? 0 : (maxEnd - minStart);
+
+            // Then, reserve enough space and return the base address of that memory region as the elf offset.
+            u64 address = vm_.mmu().mmap(0, totalLoadSize, PROT::NONE, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0);
+            vm_.mmu().munmap(address, totalLoadSize);
+            return address;
+        }();
+
+        if(mainProgram) {
+            u32 programHeaderCount = 0;
+            u64 firstSegmentAddress = 0;
+            elf64->forAllProgramHeaders([&](const elf::ProgramHeader64& header) {
+                ++programHeaderCount;
+                if(header.type() == elf::ProgramHeaderType::PT_LOAD && header.offset() == 0) firstSegmentAddress = elfOffset + header.virtualAddress();
+            });
+
+            auxiliary_ = Auxiliary {
+                elfOffset,
+                elfOffset + elf64->entrypoint(),
+                firstSegmentAddress + 0x40, // TODO: get offset from elf
+                programHeaderCount,
+                sizeof(elf::ProgramHeader64),
+                0x0,
+                0x0,
+                0x0,
+            };
+        }
+
+        std::string shortFilePath = filepath.find_last_of('/') == std::string::npos 
+                                    ? filepath
+                                    : filepath.substr(filepath.find_last_of('/')+1);
+
+        auto loadProgramHeader = [&](const elf::ProgramHeader64& header) {
+            u64 start = Mmu::pageRoundDown(elfOffset + header.virtualAddress());
+            u64 end = Mmu::pageRoundUp(elfOffset + header.virtualAddress() + header.sizeInMemory());
+            u64 nonExecSectionSize = end-start;
+            u64 nonExecSectionBase = vm_.mmu().mmap(start, nonExecSectionSize, PROT::WRITE, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0);
+
+            const u8* data = elf64->dataAtOffset(header.offset(), header.sizeInFile());
+            vm_.mmu().copyToMmu(Ptr8{nonExecSectionBase + header.virtualAddress() % Mmu::PAGE_SIZE}, data, header.sizeInFile()); // Mmu regions are 0 initialized
+
+            PROT prot = PROT::NONE;
+            if(header.isReadable()) prot = prot | PROT::READ;
+            if(header.isWritable()) prot = prot | PROT::WRITE;
+            if(header.isExecutable()) prot = prot | PROT::EXEC;
+            vm_.mmu().mprotect(nonExecSectionBase, nonExecSectionSize, prot);
+            vm_.mmu().setRegionName(nonExecSectionBase, shortFilePath);
+        };
+
+        elf64->forAllProgramHeaders([&](const elf::ProgramHeader64& header) {
+            if(header.type() != elf::ProgramHeaderType::PT_LOAD) return;
+            verify(header.alignment() % Mmu::PAGE_SIZE == 0);
+            loadProgramHeader(header);
+        });
+
+        std::optional<std::string> interpreterPath;
+        elf64->forAllProgramHeaders([&](const elf::ProgramHeader64& header) {
+            if(header.type() != elf::ProgramHeaderType::PT_INTERP) return;
+            const u8* data = elf64->dataAtOffset(header.offset(), header.sizeInFile());
+            std::vector<char> interpreterPathData;
+            interpreterPathData.resize(header.sizeInFile()+1, 0x0);
+            memcpy(interpreterPathData.data(), data, header.sizeInFile());
+            interpreterPath = std::string(interpreterPathData.data());
+        });
+
+        if(interpreterPath) {
+            return loadElf(interpreterPath.value(), false);
+        } else {
+            return elfOffset + elf64->entrypoint();
+        }
     }
 
     void Interpreter::setupStack() {
@@ -165,8 +197,8 @@ namespace x64 {
 
     void Interpreter::pushProgramArguments(const std::string& programFilePath, const std::vector<std::string>& arguments, const std::vector<std::string>& environmentVariables) {
         VerificationScope::run([&]() {
-            mmap(0, Mmu::PAGE_SIZE, PROT::NONE, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0); // throwaway page
-            u64 argumentPage = mmap(0, Mmu::PAGE_SIZE, PROT::READ | PROT::WRITE, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0);
+            vm_.mmu().mmap(0, Mmu::PAGE_SIZE, PROT::NONE, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0); // throwaway page
+            u64 argumentPage = vm_.mmu().mmap(0, Mmu::PAGE_SIZE, PROT::READ | PROT::WRITE, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0);
             vm_.mmu().setRegionName(argumentPage, "program arguments");
             Ptr8 argumentPtr { argumentPage };
 
