@@ -866,6 +866,12 @@ namespace x64 {
 
         void exec(const Psubb<RSSE, RSSE>&) override;
         void exec(const Psubb<RSSE, MSSE>&) override;
+        void exec(const Psubw<RSSE, RSSE>&) override;
+        void exec(const Psubw<RSSE, MSSE>&) override;
+        void exec(const Psubd<RSSE, RSSE>&) override;
+        void exec(const Psubd<RSSE, MSSE>&) override;
+        void exec(const Psubq<RSSE, RSSE>&) override;
+        void exec(const Psubq<RSSE, MSSE>&) override;
 
         void exec(const Pminub<RSSE, RSSE>&) override;
         void exec(const Pminub<RSSE, MSSE>&) override;

@@ -1957,6 +1957,36 @@ namespace x64 {
         set(ins.dst, res);
     }
 
+    void Cpu::exec(const Psubw<RSSE, RSSE>& ins) {
+        u128 res = Impl::psubw(get(ins.dst), get(ins.src));
+        set(ins.dst, res);
+    }
+
+    void Cpu::exec(const Psubw<RSSE, MSSE>& ins) {
+        u128 res = Impl::psubw(get(ins.dst), get(resolve(ins.src)));
+        set(ins.dst, res);
+    }
+
+    void Cpu::exec(const Psubd<RSSE, RSSE>& ins) {
+        u128 res = Impl::psubd(get(ins.dst), get(ins.src));
+        set(ins.dst, res);
+    }
+
+    void Cpu::exec(const Psubd<RSSE, MSSE>& ins) {
+        u128 res = Impl::psubd(get(ins.dst), get(resolve(ins.src)));
+        set(ins.dst, res);
+    }
+
+    void Cpu::exec(const Psubq<RSSE, RSSE>& ins) {
+        u128 res = Impl::psubq(get(ins.dst), get(ins.src));
+        set(ins.dst, res);
+    }
+
+    void Cpu::exec(const Psubq<RSSE, MSSE>& ins) {
+        u128 res = Impl::psubq(get(ins.dst), get(resolve(ins.src)));
+        set(ins.dst, res);
+    }
+
     void Cpu::exec(const Pminub<RSSE, RSSE>& ins) {
         u128 res = Impl::pminub(get(ins.dst), get(ins.src));
         set(ins.dst, res);

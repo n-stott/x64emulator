@@ -1051,6 +1051,21 @@ namespace utils {
     }
 
     template<typename Dst, typename Src>
+    inline std::string toString(Psubw<Dst, Src> ins) {
+        return fmt::format("{:9}{},{}", "psubb", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Dst, typename Src>
+    inline std::string toString(Psubd<Dst, Src> ins) {
+        return fmt::format("{:9}{},{}", "psubb", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Dst, typename Src>
+    inline std::string toString(Psubq<Dst, Src> ins) {
+        return fmt::format("{:9}{},{}", "psubb", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Dst, typename Src>
     inline std::string toString(Pminub<Dst, Src> ins) {
         return fmt::format("{:9}{},{}", "pminub", toString(ins.dst), toString(ins.src));
     }

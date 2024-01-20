@@ -175,6 +175,9 @@ namespace x64 {
         [[nodiscard]] static u128 paddq(u128 dst, u128 src);
         
         [[nodiscard]] static u128 psubb(u128 dst, u128 src);
+        [[nodiscard]] static u128 psubw(u128 dst, u128 src);
+        [[nodiscard]] static u128 psubd(u128 dst, u128 src);
+        [[nodiscard]] static u128 psubq(u128 dst, u128 src);
 
         [[nodiscard]] static u128 pminub(u128 dst, u128 src);
 

@@ -736,6 +736,12 @@ namespace x64 {
 
         virtual void exec(const Psubb<RSSE, RSSE>&) = 0;
         virtual void exec(const Psubb<RSSE, MSSE>&) = 0;
+        virtual void exec(const Psubw<RSSE, RSSE>&) = 0;
+        virtual void exec(const Psubw<RSSE, MSSE>&) = 0;
+        virtual void exec(const Psubd<RSSE, RSSE>&) = 0;
+        virtual void exec(const Psubd<RSSE, MSSE>&) = 0;
+        virtual void exec(const Psubq<RSSE, RSSE>&) = 0;
+        virtual void exec(const Psubq<RSSE, MSSE>&) = 0;
 
         virtual void exec(const Pminub<RSSE, RSSE>&) = 0;
         virtual void exec(const Pminub<RSSE, MSSE>&) = 0;

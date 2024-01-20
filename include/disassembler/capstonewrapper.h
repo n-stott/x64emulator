@@ -221,6 +221,9 @@ namespace x64 {
         static std::unique_ptr<X86Instruction> makePaddd(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makePaddq(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makePsubb(const cs_insn& insn);
+        static std::unique_ptr<X86Instruction> makePsubw(const cs_insn& insn);
+        static std::unique_ptr<X86Instruction> makePsubd(const cs_insn& insn);
+        static std::unique_ptr<X86Instruction> makePsubq(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makePminub(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makePtest(const cs_insn& insn);
 

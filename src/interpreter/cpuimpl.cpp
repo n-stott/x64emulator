@@ -1217,21 +1217,28 @@ namespace x64 {
     u128 Impl::paddd(u128 dst, u128 src) { return padd<u32>(dst, src); }
     u128 Impl::paddq(u128 dst, u128 src) { return padd<u64>(dst, src); }
 
-    u128 Impl::psubb(u128 dst, u128 src) {
-        std::array<u8, 16> DST;
+    template<typename U>
+    u128 psub(u128 dst, u128 src) {
+        constexpr int N = sizeof(u128)/sizeof(U);
+        std::array<U, N> DST;
         static_assert(sizeof(DST) == sizeof(u128));
         std::memcpy(DST.data(), &dst, sizeof(u128));
 
-        std::array<u8, 16> SRC;
+        std::array<U, N> SRC;
         static_assert(sizeof(SRC) == sizeof(u128));
         std::memcpy(SRC.data(), &src, sizeof(u128));
 
-        for(size_t i = 0; i < 16; ++i) {
+        for(size_t i = 0; i < N; ++i) {
             DST[i] -= SRC[i];
         }
         std::memcpy(&dst, DST.data(), sizeof(u128));
         return dst;
     }
+
+    u128 Impl::psubb(u128 dst, u128 src) { return psub<u8>(dst, src); }
+    u128 Impl::psubw(u128 dst, u128 src) { return psub<u16>(dst, src); }
+    u128 Impl::psubd(u128 dst, u128 src) { return psub<u32>(dst, src); }
+    u128 Impl::psubq(u128 dst, u128 src) { return psub<u64>(dst, src); }
 
     u128 Impl::pminub(u128 dst, u128 src) {
         std::array<u8, 16> DST;

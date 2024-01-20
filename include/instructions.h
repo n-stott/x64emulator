@@ -806,6 +806,24 @@ namespace x64 {
     };
 
     template<typename Dst, typename Src>
+    struct Psubw {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
+    struct Psubd {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
+    struct Psubq {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
     struct Pminub {
         Dst dst;
         Src src;
