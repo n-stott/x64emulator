@@ -454,6 +454,12 @@ namespace x64 {
         void exec(const Sar<R64, Imm>&) override;
         void exec(const Sar<M64, Imm>&) override;
 
+        void exec(const Rol<R8, R8>&) override;
+        void exec(const Rol<R8, Imm>&) override;
+        void exec(const Rol<M8, Imm>&) override;
+        void exec(const Rol<R16, R8>&) override;
+        void exec(const Rol<R16, Imm>&) override;
+        void exec(const Rol<M16, Imm>&) override;
         void exec(const Rol<R32, R8>&) override;
         void exec(const Rol<R32, Imm>&) override;
         void exec(const Rol<M32, Imm>&) override;
@@ -461,6 +467,12 @@ namespace x64 {
         void exec(const Rol<R64, Imm>&) override;
         void exec(const Rol<M64, Imm>&) override;
 
+        void exec(const Ror<R8, R8>&) override;
+        void exec(const Ror<R8, Imm>&) override;
+        void exec(const Ror<M8, Imm>&) override;
+        void exec(const Ror<R16, R8>&) override;
+        void exec(const Ror<R16, Imm>&) override;
+        void exec(const Ror<M16, Imm>&) override;
         void exec(const Ror<R32, R8>&) override;
         void exec(const Ror<R32, Imm>&) override;
         void exec(const Ror<M32, Imm>&) override;

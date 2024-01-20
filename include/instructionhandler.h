@@ -324,6 +324,12 @@ namespace x64 {
         virtual void exec(const Sar<R64, Imm>&) = 0;
         virtual void exec(const Sar<M64, Imm>&) = 0;
 
+        virtual void exec(const Rol<R8, R8>&) = 0;
+        virtual void exec(const Rol<R8, Imm>&) = 0;
+        virtual void exec(const Rol<M8, Imm>&) = 0;
+        virtual void exec(const Rol<R16, R8>&) = 0;
+        virtual void exec(const Rol<R16, Imm>&) = 0;
+        virtual void exec(const Rol<M16, Imm>&) = 0;
         virtual void exec(const Rol<R32, R8>&) = 0;
         virtual void exec(const Rol<R32, Imm>&) = 0;
         virtual void exec(const Rol<M32, Imm>&) = 0;
@@ -331,6 +337,12 @@ namespace x64 {
         virtual void exec(const Rol<R64, Imm>&) = 0;
         virtual void exec(const Rol<M64, Imm>&) = 0;
 
+        virtual void exec(const Ror<R8, R8>&) = 0;
+        virtual void exec(const Ror<R8, Imm>&) = 0;
+        virtual void exec(const Ror<M8, Imm>&) = 0;
+        virtual void exec(const Ror<R16, R8>&) = 0;
+        virtual void exec(const Ror<R16, Imm>&) = 0;
+        virtual void exec(const Ror<M16, Imm>&) = 0;
         virtual void exec(const Ror<R32, R8>&) = 0;
         virtual void exec(const Ror<R32, Imm>&) = 0;
         virtual void exec(const Ror<M32, Imm>&) = 0;

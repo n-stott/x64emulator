@@ -105,9 +105,13 @@ namespace x64 {
         [[nodiscard]] static u32 sar32(u32 dst, u32 src, Flags* flags);
         [[nodiscard]] static u64 sar64(u64 dst, u64 src, Flags* flags);
 
+        [[nodiscard]] static u8 rol8(u8 val, u8 count, Flags* flags);
+        [[nodiscard]] static u16 rol16(u16 val, u8 count, Flags* flags);
         [[nodiscard]] static u32 rol32(u32 val, u8 count, Flags* flags);
         [[nodiscard]] static u64 rol64(u64 val, u8 count, Flags* flags);
 
+        [[nodiscard]] static u8 ror8(u8 val, u8 count, Flags* flags);
+        [[nodiscard]] static u16 ror16(u16 val, u8 count, Flags* flags);
         [[nodiscard]] static u32 ror32(u32 val, u8 count, Flags* flags);
         [[nodiscard]] static u64 ror64(u64 val, u8 count, Flags* flags);
 

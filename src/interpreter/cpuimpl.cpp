@@ -510,53 +510,43 @@ namespace x64 {
         return (u64)res;
     }
 
-    u32 Impl::rol32(u32 val, u8 count, Flags* flags) {
-        count = count & (0x1F);
-        u32 res = (val << count) | (val >> (32-count));
+    template<typename U>
+    U rol(U val, u8 count, Flags* flags) {
+        constexpr u8 size = sizeof(U)*8;
+        count = (count & (size == 64 ? 0x3F : 0x1F)) % size;
+        U res = (U)(val << count) | (U)(val >> (size-count));
         if(count) {
             flags->carry = res & 0x1;
         }
         if(count == 1) {
-            flags->overflow = (res >> 31) ^ flags->carry;
+            flags->overflow = (res >> (size-1)) ^ flags->carry;
         }
         return res;
     }
-
-    u64 Impl::rol64(u64 val, u8 count, Flags* flags) {
-        count = count & (0x3F);
-        u64 res = (val << count) | (val >> (64-count));
+ 
+    u8 Impl::rol8(u8 val, u8 count, Flags* flags) { return rol<u8>(val, count, flags); }
+    u16 Impl::rol16(u16 val, u8 count, Flags* flags) { return rol<u16>(val, count, flags); }
+    u32 Impl::rol32(u32 val, u8 count, Flags* flags) { return rol<u32>(val, count, flags); }
+    u64 Impl::rol64(u64 val, u8 count, Flags* flags) { return rol<u64>(val, count, flags); }
+ 
+    template<typename U>
+    U ror(U val, u8 count, Flags* flags) {
+        constexpr u8 size = sizeof(U)*8;
+        count = (count & (size == 64 ? 0x3F : 0x1F)) % size;
+        U res = (U)(val >> count) | (U)(val << (size-count));
         if(count) {
-            flags->carry = res & 0x1;
+            flags->carry = res & ((U)1 << (size-1));
         }
         if(count == 1) {
-            flags->overflow = (res >> 63) ^ flags->carry;
+            flags->overflow = (res >> (size-1)) ^ ((res >> (size-2)) & 0x1);;
         }
         return res;
     }
-
-    u32 Impl::ror32(u32 val, u8 count, Flags* flags) {
-        count = count & (0x1F);
-        u32 res = (val >> count) | (val << (32-count));
-        if(count) {
-            flags->carry = res & (1u << 31);
-        }
-        if(count == 1) {
-            flags->overflow = (res >> 31) ^ ((res >> 30) & 0x1);;
-        }
-        return res;
-    }
-
-    u64 Impl::ror64(u64 val, u8 count, Flags* flags) {
-        count = count & (0x3F);
-        u64 res = (val >> count) | (val << (64-count));
-        if(count) {
-            flags->carry = res & (1ull << 63);
-        }
-        if(count == 1) {
-            flags->overflow = (res >> 63) ^ ((res >> 62) & 0x1);
-        }
-        return res;
-    }
+ 
+    u8 Impl::ror8(u8 val, u8 count, Flags* flags) { return ror<u8>(val, count, flags); }
+    u16 Impl::ror16(u16 val, u8 count, Flags* flags) { return ror<u16>(val, count, flags); }
+    u32 Impl::ror32(u32 val, u8 count, Flags* flags) { return ror<u32>(val, count, flags); }
+    u64 Impl::ror64(u64 val, u8 count, Flags* flags) { return ror<u64>(val, count, flags); }
 
     u16 Impl::tzcnt16(u16 src, Flags* flags) {
         u16 tmp = 0;
