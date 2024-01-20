@@ -997,7 +997,7 @@ namespace x64 {
         static_assert(sizeof(SRC) == sizeof(u128));
         std::memcpy(SRC.data(), &src, sizeof(u128));
 
-        std::array<u32, 4> RES;
+        std::array<u8, 16> RES;
         for(size_t i = 0; i < 8; ++i) {
             RES[2*i] = DST[i];
             RES[2*i+1] = SRC[i];
@@ -1015,7 +1015,7 @@ namespace x64 {
         static_assert(sizeof(SRC) == sizeof(u128));
         std::memcpy(SRC.data(), &src, sizeof(u128));
 
-        std::array<u32, 4> RES;
+        std::array<u16, 8> RES;
         for(size_t i = 0; i < 4; ++i) {
             RES[2*i] = DST[i];
             RES[2*i+1] = SRC[i];
@@ -1056,7 +1056,7 @@ namespace x64 {
         static_assert(sizeof(SRC) == sizeof(u128));
         std::memcpy(SRC.data(), &src, sizeof(u128));
 
-        std::array<u32, 4> RES;
+        std::array<u8, 16> RES;
         for(size_t i = 0; i < 8; ++i) {
             RES[2*i] = DST[8+i];
             RES[2*i+1] = SRC[8+i];
@@ -1074,7 +1074,7 @@ namespace x64 {
         static_assert(sizeof(SRC) == sizeof(u128));
         std::memcpy(SRC.data(), &src, sizeof(u128));
 
-        std::array<u32, 4> RES;
+        std::array<u16, 8> RES;
         for(size_t i = 0; i < 4; ++i) {
             RES[2*i] = DST[4+i];
             RES[2*i+1] = SRC[4+i];
