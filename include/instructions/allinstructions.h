@@ -14,12 +14,16 @@ namespace x64 {
         virtual ~X86Instruction() = default;
         virtual void exec(Cpu* cpu) const = 0;
         virtual std::string toString() const = 0;
-        virtual bool hasResolvableName() const = 0;
+        virtual bool isCall() const = 0;
         virtual bool isX87() const = 0;
         virtual bool isSSE() const = 0;
 
         u64 address;
     };
+
+    #define TAG_CALL static constexpr bool tag_call = true
+    #define TAG_X87 static constexpr bool tag_x87 = true
+    #define TAG_SSE static constexpr bool tag_sse = true
 
     template<typename Dst, typename Src>
     struct Mov {
@@ -154,11 +158,13 @@ namespace x64 {
 
     struct CallDirect {
         u64 symbolAddress;
+        TAG_CALL;
     };
 
     template<typename Src>
     struct CallIndirect {
         Src src;
+        TAG_CALL;
     };
 
     struct Leave {
@@ -387,207 +393,242 @@ namespace x64 {
     struct Pxor {
         Dst dst;
         Src src;
+        TAG_SSE;
     };
 
     template<typename Dst, typename Src>
     struct Movaps {
         Dst dst;
         Src src;
+        TAG_SSE;
     };
 
     template<typename Dst, typename Src>
     struct Movd {
         Dst dst;
         Src src;
+        TAG_SSE;
     };
 
     template<typename Dst, typename Src>
     struct Movq {
         Dst dst;
         Src src;
+        TAG_SSE;
     };
 
     struct Fldz {
-
+        TAG_X87;
     };
 
     struct Fld1 {
-
+        TAG_X87;
     };
 
     template<typename Src>
     struct Fld {
         Src src;
+        TAG_X87;
     };
 
     template<typename Src>
     struct Fild {
         Src src;
+        TAG_X87;
     };
 
     template<typename Dst>
     struct Fstp {
         Dst dst;
+        TAG_X87;
     };
 
     template<typename Dst>
     struct Fistp {
         Dst dst;
+        TAG_X87;
     };
 
     template<typename Src>
     struct Fxch {
         Src src;
+        TAG_X87;
     };
 
     template<typename Dst>
     struct Faddp {
         Dst dst;
+        TAG_X87;
     };
 
     template<typename Dst>
     struct Fsubrp {
         Dst dst;
+        TAG_X87;
     };
 
     template<typename Src>
     struct Fmul1 {
         Src src;
+        TAG_X87;
     };
 
     template<typename Dst, typename Src>
     struct Fmul2 {
         Dst dst;
         Src src;
+        TAG_X87;
     };
 
     template<typename Dst, typename Src>
     struct Fdiv {
         Dst dst;
         Src src;
+        TAG_X87;
     };
 
     template<typename Dst, typename Src>
     struct Fdivp {
         Dst dst;
         Src src;
+        TAG_X87;
     };
 
     template<typename Src>
     struct Fcomi {
         Src src;
+        TAG_X87;
     };
 
     template<typename Src>
     struct Fucomi {
         Src src;
+        TAG_X87;
     };
 
     struct Frndint {
-
+        TAG_X87;
     };
 
     template<typename Src>
     struct Fcmov {
         Cond cond;
         Src src;
+        TAG_X87;
     };
 
     template<typename Dst>
     struct Fnstcw {
         Dst dst;
+        TAG_X87;
     };
 
     template<typename Src>
     struct Fldcw {
         Src src;
+        TAG_X87;
     };
 
     template<typename Dst>
     struct Fnstsw {
         Dst dst;
+        TAG_X87;
     };
 
     template<typename Dst>
     struct Fnstenv {
         Dst dst;
+        TAG_X87;
     };
 
     template<typename Src>
     struct Fldenv {
         Src src;
+        TAG_X87;
     };
 
     template<typename Dst, typename Src>
     struct Movss {
         Dst dst;
         Src src;
+        TAG_SSE;
     };
 
     template<typename Dst, typename Src>
     struct Movsd {
         Dst dst;
         Src src;
+        TAG_SSE;
     };
 
     template<typename Dst, typename Src>
     struct Addss {
         Dst dst;
         Src src;
+        TAG_SSE;
     };
 
     template<typename Dst, typename Src>
     struct Addsd {
         Dst dst;
         Src src;
+        TAG_SSE;
     };
 
     template<typename Dst, typename Src>
     struct Subss {
         Dst dst;
         Src src;
+        TAG_SSE;
     };
 
     template<typename Dst, typename Src>
     struct Subsd {
         Dst dst;
         Src src;
+        TAG_SSE;
     };
 
     template<typename Dst, typename Src>
     struct Mulsd {
         Dst dst;
         Src src;
+        TAG_SSE;
     };
 
     template<typename Dst, typename Src>
     struct Divsd {
         Dst dst;
         Src src;
+        TAG_SSE;
     };
 
     template<typename Dst, typename Src>
     struct Comiss {
         Dst dst;
         Src src;
+        TAG_SSE;
     };
 
     template<typename Dst, typename Src>
     struct Comisd {
         Dst dst;
         Src src;
+        TAG_SSE;
     };
 
     template<typename Dst, typename Src>
     struct Ucomiss {
         Dst dst;
         Src src;
+        TAG_SSE;
     };
 
     template<typename Dst, typename Src>
     struct Ucomisd {
         Dst dst;
         Src src;
+        TAG_SSE;
     };
 
     template<typename Dst, typename Src>
@@ -595,66 +636,77 @@ namespace x64 {
         Dst dst;
         Src src;
         FCond cond;
+        TAG_SSE;
     };
 
     template<typename Dst, typename Src>
     struct Cvtsi2sd {
         Dst dst;
         Src src;
+        TAG_SSE;
     };
 
     template<typename Dst, typename Src>
     struct Cvtss2sd {
         Dst dst;
         Src src;
+        TAG_SSE;
     };
 
     template<typename Dst, typename Src>
     struct Cvttsd2si {
         Dst dst;
         Src src;
+        TAG_SSE;
     };
 
     template<typename Dst, typename Src>
     struct Pand {
         Dst dst;
         Src src;
+        TAG_SSE;
     };
 
     template<typename Dst, typename Src>
     struct Pandn {
         Dst dst;
         Src src;
+        TAG_SSE;
     };
 
     template<typename Dst, typename Src>
     struct Por {
         Dst dst;
         Src src;
+        TAG_SSE;
     };
 
     template<typename Dst, typename Src>
     struct Andpd {
         Dst dst;
         Src src;
+        TAG_SSE;
     };
 
     template<typename Dst, typename Src>
     struct Andnpd {
         Dst dst;
         Src src;
+        TAG_SSE;
     };
 
     template<typename Dst, typename Src>
     struct Orpd {
         Dst dst;
         Src src;
+        TAG_SSE;
     };
 
     template<typename Dst, typename Src>
     struct Xorpd {
         Dst dst;
         Src src;
+        TAG_SSE;
     };
 
     template<typename Dst, typename Src>
@@ -667,66 +719,77 @@ namespace x64 {
     struct Movlps {
         Dst dst;
         Src src;
+        TAG_SSE;
     };
 
     template<typename Dst, typename Src>
     struct Movhps {
         Dst dst;
         Src src;
+        TAG_SSE;
     };
 
     template<typename Dst, typename Src>
     struct Punpcklbw {
         Dst dst;
         Src src;
+        TAG_SSE;
     };
 
     template<typename Dst, typename Src>
     struct Punpcklwd {
         Dst dst;
         Src src;
+        TAG_SSE;
     };
 
     template<typename Dst, typename Src>
     struct Punpckldq {
         Dst dst;
         Src src;
+        TAG_SSE;
     };
 
     template<typename Dst, typename Src>
     struct Punpcklqdq {
         Dst dst;
         Src src;
+        TAG_SSE;
     };
 
     template<typename Dst, typename Src>
     struct Punpckhbw {
         Dst dst;
         Src src;
+        TAG_SSE;
     };
 
     template<typename Dst, typename Src>
     struct Punpckhwd {
         Dst dst;
         Src src;
+        TAG_SSE;
     };
 
     template<typename Dst, typename Src>
     struct Punpckhdq {
         Dst dst;
         Src src;
+        TAG_SSE;
     };
 
     template<typename Dst, typename Src>
     struct Punpckhqdq {
         Dst dst;
         Src src;
+        TAG_SSE;
     };
 
     template<typename Dst, typename Src>
     struct Pshufb {
         Dst dst;
         Src src;
+        TAG_SSE;
     };
 
     template<typename Dst, typename Src, typename Ord>
@@ -734,168 +797,196 @@ namespace x64 {
         Dst dst;
         Src src;
         Ord order;
+        TAG_SSE;
     };
 
     template<typename Dst, typename Src>
     struct Pcmpeqb {
         Dst dst;
         Src src;
+        TAG_SSE;
     };
 
     template<typename Dst, typename Src>
     struct Pcmpeqw {
         Dst dst;
         Src src;
+        TAG_SSE;
     };
 
     template<typename Dst, typename Src>
     struct Pcmpeqd {
         Dst dst;
         Src src;
+        TAG_SSE;
     };
 
     template<typename Dst, typename Src>
     struct Pcmpeqq {
         Dst dst;
         Src src;
+        TAG_SSE;
     };
 
     template<typename Dst, typename Src>
     struct Pcmpgtb {
         Dst dst;
         Src src;
+        TAG_SSE;
     };
 
     template<typename Dst, typename Src>
     struct Pcmpgtw {
         Dst dst;
         Src src;
+        TAG_SSE;
     };
 
     template<typename Dst, typename Src>
     struct Pcmpgtd {
         Dst dst;
         Src src;
+        TAG_SSE;
     };
 
     template<typename Dst, typename Src>
     struct Pcmpgtq {
         Dst dst;
         Src src;
+        TAG_SSE;
     };
 
     template<typename Dst, typename Src>
     struct Pmovmskb {
         Dst dst;
         Src src;
+        TAG_SSE;
     };
 
     template<typename Dst, typename Src>
     struct Paddb {
         Dst dst;
         Src src;
+        TAG_SSE;
     };
 
     template<typename Dst, typename Src>
     struct Paddw {
         Dst dst;
         Src src;
+        TAG_SSE;
     };
 
     template<typename Dst, typename Src>
     struct Paddd {
         Dst dst;
         Src src;
+        TAG_SSE;
     };
 
     template<typename Dst, typename Src>
     struct Paddq {
         Dst dst;
         Src src;
+        TAG_SSE;
     };
 
     template<typename Dst, typename Src>
     struct Psubb {
         Dst dst;
         Src src;
+        TAG_SSE;
     };
 
     template<typename Dst, typename Src>
     struct Psubw {
         Dst dst;
         Src src;
+        TAG_SSE;
     };
 
     template<typename Dst, typename Src>
     struct Psubd {
         Dst dst;
         Src src;
+        TAG_SSE;
     };
 
     template<typename Dst, typename Src>
     struct Psubq {
         Dst dst;
         Src src;
+        TAG_SSE;
     };
 
     template<typename Dst, typename Src>
     struct Pminub {
         Dst dst;
         Src src;
+        TAG_SSE;
     };
 
     template<typename Dst, typename Src>
     struct Ptest {
         Dst dst;
         Src src;
+        TAG_SSE;
     };
 
     template<typename Dst, typename Src>
     struct Psllw {
         Dst dst;
         Src src;
+        TAG_SSE;
     };
 
     template<typename Dst, typename Src>
     struct Pslld {
         Dst dst;
         Src src;
+        TAG_SSE;
     };
 
     template<typename Dst, typename Src>
     struct Psllq {
         Dst dst;
         Src src;
+        TAG_SSE;
     };
 
     template<typename Dst, typename Src>
     struct Psrlw {
         Dst dst;
         Src src;
+        TAG_SSE;
     };
 
     template<typename Dst, typename Src>
     struct Psrld {
         Dst dst;
         Src src;
+        TAG_SSE;
     };
 
     template<typename Dst, typename Src>
     struct Psrlq {
         Dst dst;
         Src src;
+        TAG_SSE;
     };
 
     template<typename Dst, typename Src>
     struct Pslldq {
         Dst dst;
         Src src;
+        TAG_SSE;
     };
 
     template<typename Dst, typename Src>
     struct Psrldq {
         Dst dst;
         Src src;
+        TAG_SSE;
     };
 
     template<typename Dst, typename Src, typename Cntl>
@@ -903,6 +994,7 @@ namespace x64 {
         Dst dst;
         Src src;
         Cntl control;
+        TAG_SSE;
     };
     
     struct Syscall {

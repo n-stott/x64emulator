@@ -2,8 +2,8 @@
 #include "interpreter/registers.h"
 #include "interpreter/verify.h"
 #include "interpreter/symbolprovider.h"
-#include "instructions/instruction.h"
-#include "instructionutils.h"
+#include "instructions/instructionwrapper.h"
+#include "instructions/instructionutils.h"
 #include "disassembler/capstonewrapper.h"
 #include "elf-reader.h"
 
@@ -100,8 +100,8 @@ namespace x64 {
         std::string indent = fmt::format("{:{}}", "", callstack_.size());
 
         std::string mnemonic = fmt::format("{}|{}", indent, instruction->toString());
-        if(instruction->hasResolvableName()) {
-            fmt::print(stderr, "{:10} {}[call {}]\n", ticks, indent, cpu_.functionName(*instruction));
+        if(instruction->isCall()) {
+            fmt::print(stderr, "{:10} {}[call {}]\n", ticks, indent, callName(*instruction));
         }
         fmt::print(stderr, "{:10} {:55}{:20} {}\n", ticks, mnemonic, eflags, registerDump);
         if(instruction->isX87()) {
@@ -305,6 +305,19 @@ namespace x64 {
 
         elf64->forAllSymbols(loadSymbol);
         elf64->forAllDynamicSymbols(loadSymbol);
+    }
+
+    std::string VM::callName(const X86Instruction& instruction) const {
+        if(const auto* call = dynamic_cast<const InstructionWrapper<CallDirect>*>(&instruction)) {
+            return calledFunctionName(call->instruction.symbolAddress);
+        }
+        if(const auto* call = dynamic_cast<const InstructionWrapper<CallIndirect<RM32>>*>(&instruction)) {
+            return calledFunctionName(cpu_.get(call->instruction.src));
+        }
+        if(const auto* call = dynamic_cast<const InstructionWrapper<CallIndirect<RM64>>*>(&instruction)) {
+            return calledFunctionName(cpu_.get(call->instruction.src));
+        }
+        return "";
     }
 
     std::string VM::calledFunctionName(u64 address) const {

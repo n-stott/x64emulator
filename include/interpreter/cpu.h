@@ -615,8 +615,6 @@ namespace x64 {
         void exec(const Rdpkru&);
         void exec(const Wrpkru&);
 
-        std::string functionName(const X86Instruction& instruction) const;
-
     };
 
 }

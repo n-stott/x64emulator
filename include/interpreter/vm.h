@@ -63,6 +63,7 @@ namespace x64 {
 
         InstructionPosition findSectionWithAddress(u64 address, const ExecutableSection* sectionHint = nullptr) const;
         void tryRetrieveSymbolsFromExecutable(const Mmu::Region& region) const;
+        std::string callName(const X86Instruction& instruction) const;
         std::string calledFunctionName(u64 address) const;
 
         Mmu mmu_;
