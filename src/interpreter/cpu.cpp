@@ -404,70 +404,44 @@ namespace x64 {
     void Cpu::exec(const Not<RM32>& ins) { set(ins.dst, ~get(ins.dst)); }
     void Cpu::exec(const Not<RM64>& ins) { set(ins.dst, ~get(ins.dst)); }
 
-    void Cpu::exec(const Xchg<R16, R16>& ins) {
+    void Cpu::exec(const Xchg<RM16, R16>& ins) {
         u16 dst = get(ins.dst);
         u16 src = get(ins.src);
         set(ins.dst, src);
         set(ins.src, dst);
     }
-    void Cpu::exec(const Xchg<R32, R32>& ins) {
+    void Cpu::exec(const Xchg<RM32, R32>& ins) {
         u32 dst = get(ins.dst);
         u32 src = get(ins.src);
         set(ins.dst, src);
         set(ins.src, dst);
     }
-    void Cpu::exec(const Xchg<M32, R32>& ins) {
-        u32 dst = get(resolve(ins.dst));
-        u32 src = get(ins.src);
-        set(resolve(ins.dst), src);
-        set(ins.src, dst);
-    }
-    void Cpu::exec(const Xchg<R64, R64>& ins) {
+    void Cpu::exec(const Xchg<RM64, R64>& ins) {
         u64 dst = get(ins.dst);
         u64 src = get(ins.src);
         set(ins.dst, src);
         set(ins.src, dst);
     }
-    void Cpu::exec(const Xchg<M64, R64>& ins) {
-        u64 dst = get(resolve(ins.dst));
-        u64 src = get(ins.src);
-        set(resolve(ins.dst), src);
-        set(ins.src, dst);
-    }
 
-    void Cpu::exec(const Xadd<R16, R16>& ins) {
+    void Cpu::exec(const Xadd<RM16, R16>& ins) {
         u16 dst = get(ins.dst);
         u16 src = get(ins.src);
         u16 tmp = Impl::add16(dst, src, &flags_);
         set(ins.dst, tmp);
         set(ins.src, dst);
     }
-    void Cpu::exec(const Xadd<R32, R32>& ins) {
+    void Cpu::exec(const Xadd<RM32, R32>& ins) {
         u32 dst = get(ins.dst);
         u32 src = get(ins.src);
         u32 tmp = Impl::add32(dst, src, &flags_);
         set(ins.dst, tmp);
         set(ins.src, dst);
     }
-    void Cpu::exec(const Xadd<M32, R32>& ins) {
-        u32 dst = get(resolve(ins.dst));
-        u32 src = get(ins.src);
-        u32 tmp = Impl::add32(dst, src, &flags_);
-        set(resolve(ins.dst), tmp);
-        set(ins.src, dst);
-    }
-    void Cpu::exec(const Xadd<R64, R64>& ins) {
+    void Cpu::exec(const Xadd<RM64, R64>& ins) {
         u64 dst = get(ins.dst);
         u64 src = get(ins.src);
         u64 tmp = Impl::add64(dst, src, &flags_);
         set(ins.dst, tmp);
-        set(ins.src, dst);
-    }
-    void Cpu::exec(const Xadd<M64, R64>& ins) {
-        u64 dst = get(resolve(ins.dst));
-        u64 src = get(ins.src);
-        u64 tmp = Impl::add64(dst, src, &flags_);
-        set(resolve(ins.dst), tmp);
         set(ins.src, dst);
     }
 

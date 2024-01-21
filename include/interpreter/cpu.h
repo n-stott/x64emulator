@@ -240,17 +240,13 @@ namespace x64 {
         void exec(const Not<RM32>&);
         void exec(const Not<RM64>&);
 
-        void exec(const Xchg<R16, R16>&);
-        void exec(const Xchg<R32, R32>&);
-        void exec(const Xchg<M32, R32>&);
-        void exec(const Xchg<R64, R64>&);
-        void exec(const Xchg<M64, R64>&);
+        void exec(const Xchg<RM16, R16>&);
+        void exec(const Xchg<RM32, R32>&);
+        void exec(const Xchg<RM64, R64>&);
 
-        void exec(const Xadd<R16, R16>&);
-        void exec(const Xadd<R32, R32>&);
-        void exec(const Xadd<M32, R32>&);
-        void exec(const Xadd<R64, R64>&);
-        void exec(const Xadd<M64, R64>&);
+        void exec(const Xadd<RM16, R16>&);
+        void exec(const Xadd<RM32, R32>&);
+        void exec(const Xadd<RM64, R64>&);
 
         void exec(const Mov<R8, R8>&);
         void exec(const Mov<R8, Imm>&);
