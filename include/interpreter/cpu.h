@@ -151,26 +151,14 @@ namespace x64 {
         void execCmpxchg64Impl(Dst dst, u64 src);
 
     public:
-        void exec(const Add<R8, R8>&);
-        void exec(const Add<R8, Imm>&);
-        void exec(const Add<R8, M8>&);
-        void exec(const Add<M8, R8>&);
-        void exec(const Add<M8, Imm>&);
-        void exec(const Add<R16, R16>&);
-        void exec(const Add<R16, Imm>&);
-        void exec(const Add<R16, M16>&);
-        void exec(const Add<M16, R16>&);
-        void exec(const Add<M16, Imm>&);
-        void exec(const Add<R32, R32>&);
-        void exec(const Add<R32, Imm>&);
-        void exec(const Add<R32, M32>&);
-        void exec(const Add<M32, R32>&);
-        void exec(const Add<M32, Imm>&);
-        void exec(const Add<R64, R64>&);
-        void exec(const Add<R64, Imm>&);
-        void exec(const Add<R64, M64>&);
-        void exec(const Add<M64, R64>&);
-        void exec(const Add<M64, Imm>&);
+        void exec(const Add<RM8, RM8>&);
+        void exec(const Add<RM8, Imm>&);
+        void exec(const Add<RM16, RM16>&);
+        void exec(const Add<RM16, Imm>&);
+        void exec(const Add<RM32, RM32>&);
+        void exec(const Add<RM32, Imm>&);
+        void exec(const Add<RM64, RM64>&);
+        void exec(const Add<RM64, Imm>&);
 
         void exec(const Adc<R32, R32>&);
         void exec(const Adc<R32, Imm>&);
@@ -183,84 +171,44 @@ namespace x64 {
         void exec(const Adc<M64, R64>&);
         void exec(const Adc<M64, Imm>&);
 
-        void exec(const Sub<R8, R8>&);
-        void exec(const Sub<R8, Imm>&);
-        void exec(const Sub<R8, M8>&);
-        void exec(const Sub<M8, R8>&);
-        void exec(const Sub<M8, Imm>&);
-        void exec(const Sub<R16, R16>&);
-        void exec(const Sub<R16, Imm>&);
-        void exec(const Sub<R16, M16>&);
-        void exec(const Sub<M16, R16>&);
-        void exec(const Sub<M16, Imm>&);
-        void exec(const Sub<R32, R32>&);
-        void exec(const Sub<R32, Imm>&);
-        void exec(const Sub<R32, M32>&);
-        void exec(const Sub<M32, R32>&);
-        void exec(const Sub<M32, Imm>&);
-        void exec(const Sub<R64, R64>&);
-        void exec(const Sub<R64, Imm>&);
-        void exec(const Sub<R64, M64>&);
-        void exec(const Sub<M64, R64>&);
-        void exec(const Sub<M64, Imm>&);
+        void exec(const Sub<RM8, RM8>&);
+        void exec(const Sub<RM8, Imm>&);
+        void exec(const Sub<RM16, RM16>&);
+        void exec(const Sub<RM16, Imm>&);
+        void exec(const Sub<RM32, RM32>&);
+        void exec(const Sub<RM32, Imm>&);
+        void exec(const Sub<RM64, RM64>&);
+        void exec(const Sub<RM64, Imm>&);
 
-        void exec(const Sbb<R8, R8>&);
-        void exec(const Sbb<R8, Imm>&);
-        void exec(const Sbb<R8, M8>&);
-        void exec(const Sbb<M8, R8>&);
-        void exec(const Sbb<M8, Imm>&);
-        void exec(const Sbb<R16, R16>&);
-        void exec(const Sbb<R16, Imm>&);
-        void exec(const Sbb<R16, M16>&);
-        void exec(const Sbb<M16, R16>&);
-        void exec(const Sbb<M16, Imm>&);
-        void exec(const Sbb<R32, R32>&);
-        void exec(const Sbb<R32, Imm>&);
-        void exec(const Sbb<R32, M32>&);
-        void exec(const Sbb<M32, R32>&);
-        void exec(const Sbb<M32, Imm>&);
-        void exec(const Sbb<R64, R64>&);
-        void exec(const Sbb<R64, Imm>&);
-        void exec(const Sbb<R64, M64>&);
-        void exec(const Sbb<M64, R64>&);
-        void exec(const Sbb<M64, Imm>&);
+        void exec(const Sbb<RM8, RM8>&);
+        void exec(const Sbb<RM8, Imm>&);
+        void exec(const Sbb<RM16, RM16>&);
+        void exec(const Sbb<RM16, Imm>&);
+        void exec(const Sbb<RM32, RM32>&);
+        void exec(const Sbb<RM32, Imm>&);
+        void exec(const Sbb<RM64, RM64>&);
+        void exec(const Sbb<RM64, Imm>&);
 
-        void exec(const Neg<R8>&);
-        void exec(const Neg<M8>&);
-        void exec(const Neg<R16>&);
-        void exec(const Neg<M16>&);
-        void exec(const Neg<R32>&);
-        void exec(const Neg<M32>&);
-        void exec(const Neg<R64>&);
-        void exec(const Neg<M64>&);
+        void exec(const Neg<RM8>&);
+        void exec(const Neg<RM16>&);
+        void exec(const Neg<RM32>&);
+        void exec(const Neg<RM64>&);
 
-        void exec(const Mul<R32>&);
-        void exec(const Mul<M32>&);
-        void exec(const Mul<R64>&);
-        void exec(const Mul<M64>&);
+        void exec(const Mul<RM32>&);
+        void exec(const Mul<RM64>&);
 
-        void exec(const Imul1<R32>&);
-        void exec(const Imul1<M32>&);
-        void exec(const Imul2<R32, R32>&);
-        void exec(const Imul2<R32, M32>&);
-        void exec(const Imul3<R32, R32, Imm>&);
-        void exec(const Imul3<R32, M32, Imm>&);
-        void exec(const Imul1<R64>&);
-        void exec(const Imul1<M64>&);
-        void exec(const Imul2<R64, R64>&);
-        void exec(const Imul2<R64, M64>&);
-        void exec(const Imul3<R64, R64, Imm>&);
-        void exec(const Imul3<R64, M64, Imm>&);
+        void exec(const Imul1<RM32>&);
+        void exec(const Imul2<R32, RM32>&);
+        void exec(const Imul3<R32, RM32, Imm>&);
+        void exec(const Imul1<RM64>&);
+        void exec(const Imul2<R64, RM64>&);
+        void exec(const Imul3<R64, RM64, Imm>&);
 
-        void exec(const Div<R32>&);
-        void exec(const Div<M32>&);
-        void exec(const Div<R64>&);
-        void exec(const Div<M64>&);
+        void exec(const Div<RM32>&);
+        void exec(const Div<RM64>&);
 
-        void exec(const Idiv<R32>&);
-        void exec(const Idiv<M32>&);
-        void exec(const Idiv<R64>&);
-        void exec(const Idiv<M64>&);
+        void exec(const Idiv<RM32>&);
+        void exec(const Idiv<RM64>&);
 
         void exec(const And<R8, R8>&);
         void exec(const And<R8, Imm>&);
@@ -420,18 +368,15 @@ namespace x64 {
         void exec(const Cdq&);
         void exec(const Cqo&);
 
-        void exec(const Inc<R8>&);
-        void exec(const Inc<M8>&);
-        void exec(const Inc<M16>&);
-        void exec(const Inc<R32>&);
-        void exec(const Inc<M32>&);
-        void exec(const Inc<R64>&);
-        void exec(const Inc<M64>&);
+        void exec(const Inc<RM8>&);
+        void exec(const Inc<RM16>&);
+        void exec(const Inc<RM32>&);
+        void exec(const Inc<RM64>&);
 
-        void exec(const Dec<R8>&);
-        void exec(const Dec<M16>&);
-        void exec(const Dec<R32>&);
-        void exec(const Dec<M32>&);
+        void exec(const Dec<RM8>&);
+        void exec(const Dec<RM16>&);
+        void exec(const Dec<RM32>&);
+        void exec(const Dec<RM64>&);
 
         void exec(const Shr<R8, R8>&);
         void exec(const Shr<R8, Imm>&);
