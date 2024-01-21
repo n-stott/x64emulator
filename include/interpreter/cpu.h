@@ -284,19 +284,15 @@ namespace x64 {
         void exec(const Lea<R64, BISD>&);
 
         void exec(const Push<Imm>&);
-        void exec(const Push<R32>&);
-        void exec(const Push<M32>&);
-        void exec(const Push<R64>&);
-        void exec(const Push<M64>&);
+        void exec(const Push<RM32>&);
+        void exec(const Push<RM64>&);
 
         void exec(const Pop<R32>&);
         void exec(const Pop<R64>&);
 
         void exec(const CallDirect&);
-        void exec(const CallIndirect<R32>&);
-        void exec(const CallIndirect<M32>&);
-        void exec(const CallIndirect<R64>&);
-        void exec(const CallIndirect<M64>&);
+        void exec(const CallIndirect<RM32>&);
+        void exec(const CallIndirect<RM64>&);
         void exec(const Ret<>&);
         void exec(const Ret<Imm>&);
 

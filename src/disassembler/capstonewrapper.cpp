@@ -574,15 +574,11 @@ namespace x64 {
         assert(x86detail.op_count == 1);
         const cs_x86_op& src = x86detail.operands[0];
         auto imm = asImmediate(src);
-        auto r32 = asRegister32(src);
-        auto r64 = asRegister64(src);
-        auto m32 = asMemory32(src);
-        auto m64 = asMemory64(src);
+        auto rm32 = asRM32(src);
+        auto rm64 = asRM64(src);
         if(imm) return make_wrapper<Push<Imm>>(insn.address, imm.value());
-        if(r32) return make_wrapper<Push<R32>>(insn.address, r32.value());
-        if(m32) return make_wrapper<Push<M32>>(insn.address, m32.value());
-        if(r64) return make_wrapper<Push<R64>>(insn.address, r64.value());
-        if(m64) return make_wrapper<Push<M64>>(insn.address, m64.value());
+        if(rm32) return make_wrapper<Push<RM32>>(insn.address, rm32.value());
+        if(rm64) return make_wrapper<Push<RM64>>(insn.address, rm64.value());
         return make_failed(insn);
     }
 
@@ -916,15 +912,11 @@ namespace x64 {
         assert(x86detail.op_count == 1);
         const cs_x86_op& operand = x86detail.operands[0];
         auto imm = asImmediate(operand);
-        auto r32src = asRegister32(operand);
-        auto r64src = asRegister64(operand);
-        auto m32src = asMemory32(operand);
-        auto m64src = asMemory64(operand);
+        auto rm32src = asRM32(operand);
+        auto rm64src = asRM64(operand);
         if(imm) return make_wrapper<CallDirect>(insn.address, imm->immediate);
-        if(r32src) return make_wrapper<CallIndirect<R32>>(insn.address, r32src.value());
-        if(r64src) return make_wrapper<CallIndirect<R64>>(insn.address, r64src.value());
-        if(m32src) return make_wrapper<CallIndirect<M32>>(insn.address, m32src.value());
-        if(m64src) return make_wrapper<CallIndirect<M64>>(insn.address, m64src.value());
+        if(rm32src) return make_wrapper<CallIndirect<RM32>>(insn.address, rm32src.value());
+        if(rm64src) return make_wrapper<CallIndirect<RM64>>(insn.address, rm64src.value());
         return make_failed(insn);
     }
 

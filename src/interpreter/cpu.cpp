@@ -497,10 +497,8 @@ namespace x64 {
     void Cpu::exec(const Lea<R64, BISD>& ins) { set(ins.dst, resolve(ins.src)); }
 
     void Cpu::exec(const Push<Imm>& ins) { push32(get<u32>(ins.src)); }
-    void Cpu::exec(const Push<R32>& ins) { push32(get(ins.src)); }
-    void Cpu::exec(const Push<M32>& ins) { push32(get(resolve(ins.src))); }
-    void Cpu::exec(const Push<R64>& ins) { push64(get(ins.src)); }
-    void Cpu::exec(const Push<M64>& ins) { push64(get(resolve(ins.src))); }
+    void Cpu::exec(const Push<RM32>& ins) { push32(get(ins.src)); }
+    void Cpu::exec(const Push<RM64>& ins) { push64(get(ins.src)); }
 
     void Cpu::exec(const Pop<R32>& ins) {
         set(ins.dst, pop32());
@@ -517,29 +515,15 @@ namespace x64 {
         regs_.rip_ = address;
     }
 
-    void Cpu::exec(const CallIndirect<R32>& ins) {
+    void Cpu::exec(const CallIndirect<RM32>& ins) {
         u64 address = get(ins.src);
         push64(regs_.rip_);
         vm_->notifyCall(address);
         regs_.rip_ = address;
     }
 
-    void Cpu::exec(const CallIndirect<M32>& ins) {
-        u64 address = get(resolve(ins.src));
-        push64(regs_.rip_);
-        vm_->notifyCall(address);
-        regs_.rip_ = address;
-    }
-
-    void Cpu::exec(const CallIndirect<R64>& ins) {
+    void Cpu::exec(const CallIndirect<RM64>& ins) {
         u64 address = get(ins.src);
-        push64(regs_.rip_);
-        vm_->notifyCall(address);
-        regs_.rip_ = address;
-    }
-
-    void Cpu::exec(const CallIndirect<M64>& ins) {
-        u64 address = get(resolve(ins.src));
         push64(regs_.rip_);
         vm_->notifyCall(address);
         regs_.rip_ = address;
