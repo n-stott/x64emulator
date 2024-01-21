@@ -1639,15 +1639,11 @@ namespace x64 {
         const cs_x86_op& dst = x86detail.operands[0];
         const cs_x86_op& src = x86detail.operands[1];
         auto r32dst = asRegister32(dst);
-        auto r32src = asRegister32(src);
         auto r64dst = asRegister64(dst);
-        auto r64src = asRegister64(src);
-        auto m32src = asMemory32(src);
-        auto m64src = asMemory64(src);
-        if(r32dst && r32src) return make_wrapper<Cmov<cond, R32, R32>>(insn.address, r32dst.value(), r32src.value());
-        if(r32dst && m32src) return make_wrapper<Cmov<cond, R32, M32>>(insn.address, r32dst.value(), m32src.value());
-        if(r64dst && r64src) return make_wrapper<Cmov<cond, R64, R64>>(insn.address, r64dst.value(), r64src.value());
-        if(r64dst && m64src) return make_wrapper<Cmov<cond, R64, M64>>(insn.address, r64dst.value(), m64src.value());
+        auto rm32src = asRM32(src);
+        auto rm64src = asRM64(src);
+        if(r32dst && rm32src) return make_wrapper<Cmov<R32, RM32>>(insn.address, cond, r32dst.value(), rm32src.value());
+        if(r64dst && rm64src) return make_wrapper<Cmov<R64, RM64>>(insn.address, cond, r64dst.value(), rm64src.value());
         return make_failed(insn);
     }
 

@@ -354,8 +354,9 @@ namespace x64 {
         StringOp op;
     };
 
-    template<Cond cond, typename Dst, typename Src>
+    template<typename Dst, typename Src>
     struct Cmov {
+        Cond cond;
         Dst dst;
         Src src;
     };

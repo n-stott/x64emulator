@@ -903,77 +903,17 @@ namespace x64 {
         set(R64::RDI, ptr2.address());
     }
 
-    template<typename Dst, typename Src>
-    void Cpu::execCmovImpl(Cond cond, Dst dst, Src src) {
+    void Cpu::exec(const Cmov<R32, RM32>& ins) {
         verify(flags_.sure(), "Flags are not set");
-        if(!flags_.matches(cond)) return;
-        static_assert(std::is_same_v<Dst, R32> || std::is_same_v<Dst, R64>, "");
-        if constexpr(std::is_same_v<Dst, R32>) {
-            if constexpr(std::is_same_v<Src, R32>) {
-                set(dst, get(src));
-            } else {
-                static_assert(std::is_same_v<Src, M32>, "");
-                set(dst, get(resolve(src)));
-            }
-        } else {
-            if constexpr(std::is_same_v<Src, R64>) {
-                set(dst, get(src));
-            } else {
-                static_assert(std::is_same_v<Src, M64>, "");
-                set(dst, get(resolve(src)));
-            }
-        }
+        if(!flags_.matches(ins.cond)) return;
+        set(ins.dst, get(ins.src));
     }
 
-    void Cpu::exec(const Cmov<Cond::AE, R32, R32>& ins) { execCmovImpl(Cond::AE, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::AE, R32, M32>& ins) { execCmovImpl(Cond::AE, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::A, R32, R32>& ins) { execCmovImpl(Cond::A, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::A, R32, M32>& ins) { execCmovImpl(Cond::A, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::BE, R32, R32>& ins) { execCmovImpl(Cond::BE, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::BE, R32, M32>& ins) { execCmovImpl(Cond::BE, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::B, R32, R32>& ins) { execCmovImpl(Cond::B, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::B, R32, M32>& ins) { execCmovImpl(Cond::B, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::E, R32, R32>& ins) { execCmovImpl(Cond::E, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::E, R32, M32>& ins) { execCmovImpl(Cond::E, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::GE, R32, R32>& ins) { execCmovImpl(Cond::GE, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::GE, R32, M32>& ins) { execCmovImpl(Cond::GE, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::G, R32, R32>& ins) { execCmovImpl(Cond::G, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::G, R32, M32>& ins) { execCmovImpl(Cond::G, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::LE, R32, R32>& ins) { execCmovImpl(Cond::LE, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::LE, R32, M32>& ins) { execCmovImpl(Cond::LE, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::L, R32, R32>& ins) { execCmovImpl(Cond::L, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::L, R32, M32>& ins) { execCmovImpl(Cond::L, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::NE, R32, R32>& ins) { execCmovImpl(Cond::NE, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::NE, R32, M32>& ins) { execCmovImpl(Cond::NE, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::NS, R32, R32>& ins) { execCmovImpl(Cond::NS, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::NS, R32, M32>& ins) { execCmovImpl(Cond::NS, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::S, R32, R32>& ins) { execCmovImpl(Cond::S, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::S, R32, M32>& ins) { execCmovImpl(Cond::S, ins.dst, ins.src); }
-
-    void Cpu::exec(const Cmov<Cond::AE, R64, R64>& ins) { execCmovImpl(Cond::AE, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::AE, R64, M64>& ins) { execCmovImpl(Cond::AE, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::A, R64, R64>& ins) { execCmovImpl(Cond::A, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::A, R64, M64>& ins) { execCmovImpl(Cond::A, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::BE, R64, R64>& ins) { execCmovImpl(Cond::BE, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::BE, R64, M64>& ins) { execCmovImpl(Cond::BE, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::B, R64, R64>& ins) { execCmovImpl(Cond::B, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::B, R64, M64>& ins) { execCmovImpl(Cond::B, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::E, R64, R64>& ins) { execCmovImpl(Cond::E, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::E, R64, M64>& ins) { execCmovImpl(Cond::E, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::GE, R64, R64>& ins) { execCmovImpl(Cond::GE, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::GE, R64, M64>& ins) { execCmovImpl(Cond::GE, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::G, R64, R64>& ins) { execCmovImpl(Cond::G, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::G, R64, M64>& ins) { execCmovImpl(Cond::G, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::LE, R64, R64>& ins) { execCmovImpl(Cond::LE, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::LE, R64, M64>& ins) { execCmovImpl(Cond::LE, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::L, R64, R64>& ins) { execCmovImpl(Cond::L, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::L, R64, M64>& ins) { execCmovImpl(Cond::L, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::NE, R64, R64>& ins) { execCmovImpl(Cond::NE, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::NE, R64, M64>& ins) { execCmovImpl(Cond::NE, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::NS, R64, R64>& ins) { execCmovImpl(Cond::NS, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::NS, R64, M64>& ins) { execCmovImpl(Cond::NS, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::S, R64, R64>& ins) { execCmovImpl(Cond::S, ins.dst, ins.src); }
-    void Cpu::exec(const Cmov<Cond::S, R64, M64>& ins) { execCmovImpl(Cond::S, ins.dst, ins.src); }
+    void Cpu::exec(const Cmov<R64, RM64>& ins) {
+        verify(flags_.sure(), "Flags are not set");
+        if(!flags_.matches(ins.cond)) return;
+        set(ins.dst, get(ins.src));
+    }
 
     void Cpu::exec(const Cwde&) {
         set(R32::EAX, (u32)(i32)(i16)get(R16::AX));

@@ -621,9 +621,9 @@ namespace utils {
         return fmt::format("{:9}{}", "repnz", toString(ins.op));
     }
 
-    template<Cond cond, typename Dst, typename Src>
-    inline std::string toString(Cmov<cond, Dst, Src> ins) {
-        return fmt::format("{:9}{},{}", fmt::format("cmov{}", toString(cond)), toString(ins.dst), toString(ins.src));
+    template<typename Dst, typename Src>
+    inline std::string toString(Cmov<Dst, Src> ins) {
+        return fmt::format("{:9}{},{}", fmt::format("cmov{}", toString(ins.cond)), toString(ins.dst), toString(ins.src));
     }
 
     inline std::string toString(Cwde) {
