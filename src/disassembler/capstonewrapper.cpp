@@ -1260,7 +1260,9 @@ namespace x64 {
         auto m64dst = asMemory64(dst);
         auto r8src = asRegister8(src);
         auto immsrc = asImmediate(src);
+        if(r8dst && r8src) return make_wrapper<Shr<R8, R8>>(insn.address, r8dst.value(), r8src.value());
         if(r8dst && immsrc) return make_wrapper<Shr<R8, Imm>>(insn.address, r8dst.value(), immsrc.value());
+        if(r16dst && r8src) return make_wrapper<Shr<R16, R8>>(insn.address, r16dst.value(), r8src.value());
         if(r16dst && immsrc) return make_wrapper<Shr<R16, Imm>>(insn.address, r16dst.value(), immsrc.value());
         if(r32dst && r8src) return make_wrapper<Shr<R32, R8>>(insn.address, r32dst.value(), r8src.value());
         if(m32dst && r8src) return make_wrapper<Shr<M32, R8>>(insn.address, m32dst.value(), r8src.value());
@@ -1278,12 +1280,18 @@ namespace x64 {
         assert(x86detail.op_count == 2);
         const cs_x86_op& dst = x86detail.operands[0];
         const cs_x86_op& src = x86detail.operands[1];
+        auto r8dst = asRegister8(dst);
+        auto r16dst = asRegister16(dst);
         auto r32dst = asRegister32(dst);
         auto r64dst = asRegister64(dst);
         auto r8src = asRegister8(src);
         auto immsrc = asImmediate(src);
         auto m32dst = asMemory32(dst);
         auto m64dst = asMemory64(dst);
+        if(r8dst && r8src) return make_wrapper<Shl<R8, R8>>(insn.address, r8dst.value(), r8src.value());
+        if(r8dst && immsrc) return make_wrapper<Shl<R8, Imm>>(insn.address, r8dst.value(), immsrc.value());
+        if(r16dst && r8src) return make_wrapper<Shl<R16, R8>>(insn.address, r16dst.value(), r8src.value());
+        if(r16dst && immsrc) return make_wrapper<Shl<R16, Imm>>(insn.address, r16dst.value(), immsrc.value());
         if(r32dst && immsrc) return make_wrapper<Shl<R32, Imm>>(insn.address, r32dst.value(), immsrc.value());
         if(m32dst && immsrc) return make_wrapper<Shl<M32, Imm>>(insn.address, m32dst.value(), immsrc.value());
         if(r64dst && immsrc) return make_wrapper<Shl<R64, Imm>>(insn.address, r64dst.value(), immsrc.value());
@@ -1303,10 +1311,14 @@ namespace x64 {
         const cs_x86_op& src2 = x86detail.operands[2];
         auto r32dst = asRegister32(dst);
         auto r32src1 = asRegister32(src1);
+        auto r64dst = asRegister64(dst);
+        auto r64src1 = asRegister64(src1);
         auto r8src2 = asRegister8(src2);
         auto immsrc2 = asImmediate(src2);
         if(r32dst && r32src1 && r8src2) return make_wrapper<Shrd<R32, R32, R8>>(insn.address, r32dst.value(), r32src1.value(), r8src2.value());
         if(r32dst && r32src1 && immsrc2) return make_wrapper<Shrd<R32, R32, Imm>>(insn.address, r32dst.value(), r32src1.value(), immsrc2.value());
+        if(r64dst && r64src1 && r8src2) return make_wrapper<Shrd<R64, R64, R8>>(insn.address, r64dst.value(), r64src1.value(), r8src2.value());
+        if(r64dst && r64src1 && immsrc2) return make_wrapper<Shrd<R64, R64, Imm>>(insn.address, r64dst.value(), r64src1.value(), immsrc2.value());
         return make_failed(insn);
     }
 
@@ -1318,10 +1330,14 @@ namespace x64 {
         const cs_x86_op& src2 = x86detail.operands[2];
         auto r32dst = asRegister32(dst);
         auto r32src1 = asRegister32(src1);
+        auto r64dst = asRegister64(dst);
+        auto r64src1 = asRegister64(src1);
         auto r8src2 = asRegister8(src2);
         auto immsrc2 = asImmediate(src2);
         if(r32dst && r32src1 && r8src2) return make_wrapper<Shld<R32, R32, R8>>(insn.address, r32dst.value(), r32src1.value(), r8src2.value());
         if(r32dst && r32src1 && immsrc2) return make_wrapper<Shld<R32, R32, Imm>>(insn.address, r32dst.value(), r32src1.value(), immsrc2.value());
+        if(r64dst && r64src1 && r8src2) return make_wrapper<Shld<R64, R64, R8>>(insn.address, r64dst.value(), r64src1.value(), r8src2.value());
+        if(r64dst && r64src1 && immsrc2) return make_wrapper<Shld<R64, R64, Imm>>(insn.address, r64dst.value(), r64src1.value(), immsrc2.value());
         return make_failed(insn);
     }
 

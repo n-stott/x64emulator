@@ -478,6 +478,49 @@ namespace x64 {
         return res;
     }
 
+    template<typename U>
+    static U shld(U dst, U src, u8 count, Flags* flags) {
+        u8 size = 8*sizeof(U);
+        count = count % size;
+        if(count == 0) return dst;
+        U res = (U)(dst << count) | (U)(src >> (size-count));
+        flags->carry = dst & (size-count);
+        flags->sign = (res & ((U)1 << (size-1)));
+        flags->zero = (res == 0);
+        flags->parity = Flags::computeParity((u8)res);
+        if(count == 1) {
+            U signMask = (U)1 << (size-1);
+            flags->overflow = (dst & signMask) ^ (res & signMask);
+        }
+        flags->setSure();
+        return res;
+    }
+
+    u32 Impl::shld32(u32 dst, u32 src, u8 count, Flags* flags) { return shld<u32>(dst, src, count, flags); }
+    u64 Impl::shld64(u64 dst, u64 src, u8 count, Flags* flags) { return shld<u64>(dst, src, count, flags); }
+
+    template<typename U>
+    static U shrd(U dst, U src, u8 count, Flags* flags) {
+        u8 size = 8*sizeof(U);
+        count = count % size;
+        if(count == 0) return dst;
+        U res = (U)(dst >> count) | (U)(src << (size-count));
+        flags->carry = dst & (count-1);
+        flags->sign = (res & ((U)1 << (size-1)));
+        flags->zero = (res == 0);
+        flags->parity = Flags::computeParity((u8)res);
+        if(count == 1) {
+            U signMask = (U)1 << (size-1);
+            flags->overflow = (dst & signMask) ^ (res & signMask);
+        }
+        flags->setSure();
+        return res;
+    }
+
+    u32 Impl::shrd32(u32 dst, u32 src, u8 count, Flags* flags) { return shrd<u32>(dst, src, count, flags); }
+    u64 Impl::shrd64(u64 dst, u64 src, u8 count, Flags* flags) { return shrd<u64>(dst, src, count, flags); }
+
+
     u32 Impl::sar32(u32 dst, u32 src, Flags* flags) {
         assert(src < 32);
         i32 res = ((i32)dst) >> src;

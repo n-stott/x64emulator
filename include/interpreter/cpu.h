@@ -421,7 +421,9 @@ namespace x64 {
         void exec(const Dec<R32>&) override;
         void exec(const Dec<M32>&) override;
 
+        void exec(const Shr<R8, R8>&) override;
         void exec(const Shr<R8, Imm>&) override;
+        void exec(const Shr<R16, R8>&) override;
         void exec(const Shr<R16, Imm>&) override;
         void exec(const Shr<R32, R8>&) override;
         void exec(const Shr<M32, R8>&) override;
@@ -432,6 +434,10 @@ namespace x64 {
         void exec(const Shr<R64, Imm>&) override;
         void exec(const Shr<M64, Imm>&) override;
 
+        void exec(const Shl<R8, R8>&) override;
+        void exec(const Shl<R8, Imm>&) override;
+        void exec(const Shl<R16, R8>&) override;
+        void exec(const Shl<R16, Imm>&) override;
         void exec(const Shl<R32, R8>&) override;
         void exec(const Shl<M32, R8>&) override;
         void exec(const Shl<R32, Imm>&) override;
@@ -443,9 +449,13 @@ namespace x64 {
 
         void exec(const Shld<R32, R32, R8>&) override;
         void exec(const Shld<R32, R32, Imm>&) override;
+        void exec(const Shld<R64, R64, R8>&) override;
+        void exec(const Shld<R64, R64, Imm>&) override;
 
         void exec(const Shrd<R32, R32, R8>&) override;
         void exec(const Shrd<R32, R32, Imm>&) override;
+        void exec(const Shrd<R64, R64, R8>&) override;
+        void exec(const Shrd<R64, R64, Imm>&) override;
 
         void exec(const Sar<R32, R8>&) override;
         void exec(const Sar<R32, Imm>&) override;
