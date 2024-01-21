@@ -1,7 +1,7 @@
 #ifndef PROGRAM_H
 #define PROGRAM_H
 
-#include "instructionhandler.h"
+#include "interpreter/cpu.h"
 #include "instructionutils.h"
 #include "utils/utils.h"
 #include <memory>
@@ -10,12 +10,10 @@
 
 namespace x64 {
 
-    class InstructionHandler;
-
     struct X86Instruction {
         explicit X86Instruction(u64 address) : address(address) { }
         virtual ~X86Instruction() = default;
-        virtual void exec(InstructionHandler* handler) const = 0;
+        virtual void exec(Cpu* cpu) const = 0;
         virtual std::string toString() const = 0;
         virtual bool hasResolvableName() const = 0;
         virtual bool isX87() const = 0;
@@ -34,8 +32,8 @@ namespace x64 {
                 X86Instruction(address),
                 instruction(std::move(instruction)) { }
 
-        void exec(InstructionHandler* handler) const override {
-            return handler->exec(instruction);
+        void exec(Cpu* cpu) const override {
+            return cpu->exec(instruction);
         }
 
         std::string toString() const override {
