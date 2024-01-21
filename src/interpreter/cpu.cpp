@@ -641,145 +641,77 @@ namespace x64 {
     void Cpu::exec(const Ror<RM64, R8>& ins) { set(ins.dst, Impl::ror64(get(ins.dst), get(ins.src), &flags_)); }
     void Cpu::exec(const Ror<RM64, Imm>& ins) { set(ins.dst, Impl::ror64(get(ins.dst), get<u8>(ins.src), &flags_)); }
 
-    void Cpu::exec(const Tzcnt<R16, R16>& ins) { set(ins.dst, Impl::tzcnt16(get(ins.src), &flags_)); }
-    void Cpu::exec(const Tzcnt<R16, M16>& ins) { set(ins.dst, Impl::tzcnt16(get(resolve(ins.src)), &flags_)); }
-    void Cpu::exec(const Tzcnt<R32, R32>& ins) { set(ins.dst, Impl::tzcnt32(get(ins.src), &flags_)); }
-    void Cpu::exec(const Tzcnt<R32, M32>& ins) { set(ins.dst, Impl::tzcnt32(get(resolve(ins.src)), &flags_)); }
-    void Cpu::exec(const Tzcnt<R64, R64>& ins) { set(ins.dst, Impl::tzcnt64(get(ins.src), &flags_)); }
-    void Cpu::exec(const Tzcnt<R64, M64>& ins) { set(ins.dst, Impl::tzcnt64(get(resolve(ins.src)), &flags_)); }
+    void Cpu::exec(const Tzcnt<R16, RM16>& ins) { set(ins.dst, Impl::tzcnt16(get(ins.src), &flags_)); }
+    void Cpu::exec(const Tzcnt<R32, RM32>& ins) { set(ins.dst, Impl::tzcnt32(get(ins.src), &flags_)); }
+    void Cpu::exec(const Tzcnt<R64, RM64>& ins) { set(ins.dst, Impl::tzcnt64(get(ins.src), &flags_)); }
 
-    void Cpu::exec(const Bt<R16, R16>& ins) { Impl::bt16(get(ins.base), get(ins.offset), &flags_); }
-    void Cpu::exec(const Bt<R16, Imm>& ins) { Impl::bt16(get(ins.base), get<u16>(ins.offset), &flags_); }
-    void Cpu::exec(const Bt<R32, R32>& ins) { Impl::bt32(get(ins.base), get(ins.offset), &flags_); }
-    void Cpu::exec(const Bt<R32, Imm>& ins) { Impl::bt32(get(ins.base), get<u32>(ins.offset), &flags_); }
-    void Cpu::exec(const Bt<R64, R64>& ins) { Impl::bt64(get(ins.base), get(ins.offset), &flags_); }
-    void Cpu::exec(const Bt<R64, Imm>& ins) { Impl::bt64(get(ins.base), get<u64>(ins.offset), &flags_); }
-    void Cpu::exec(const Bt<M16, R16>& ins) { Impl::bt16(get(resolve(ins.base)), get(ins.offset), &flags_); }
-    void Cpu::exec(const Bt<M16, Imm>& ins) { Impl::bt16(get(resolve(ins.base)), get<u16>(ins.offset), &flags_); }
-    void Cpu::exec(const Bt<M32, R32>& ins) { Impl::bt32(get(resolve(ins.base)), get(ins.offset), &flags_); }
-    void Cpu::exec(const Bt<M32, Imm>& ins) { Impl::bt32(get(resolve(ins.base)), get<u32>(ins.offset), &flags_); }
-    void Cpu::exec(const Bt<M64, R64>& ins) { Impl::bt64(get(resolve(ins.base)), get(ins.offset), &flags_); }
-    void Cpu::exec(const Bt<M64, Imm>& ins) { Impl::bt64(get(resolve(ins.base)), get<u64>(ins.offset), &flags_); }
+    void Cpu::exec(const Bt<RM16, R16>& ins) { Impl::bt16(get(ins.base), get(ins.offset), &flags_); }
+    void Cpu::exec(const Bt<RM16, Imm>& ins) { Impl::bt16(get(ins.base), get<u16>(ins.offset), &flags_); }
+    void Cpu::exec(const Bt<RM32, R32>& ins) { Impl::bt32(get(ins.base), get(ins.offset), &flags_); }
+    void Cpu::exec(const Bt<RM32, Imm>& ins) { Impl::bt32(get(ins.base), get<u32>(ins.offset), &flags_); }
+    void Cpu::exec(const Bt<RM64, R64>& ins) { Impl::bt64(get(ins.base), get(ins.offset), &flags_); }
+    void Cpu::exec(const Bt<RM64, Imm>& ins) { Impl::bt64(get(ins.base), get<u64>(ins.offset), &flags_); }
 
-    void Cpu::exec(const Btr<R16, R16>& ins) { set(ins.base, Impl::btr16(get(ins.base), get(ins.offset), &flags_)); }
-    void Cpu::exec(const Btr<R16, Imm>& ins) { set(ins.base, Impl::btr16(get(ins.base), get<u16>(ins.offset), &flags_)); }
-    void Cpu::exec(const Btr<R32, R32>& ins) { set(ins.base, Impl::btr32(get(ins.base), get(ins.offset), &flags_)); }
-    void Cpu::exec(const Btr<R32, Imm>& ins) { set(ins.base, Impl::btr32(get(ins.base), get<u32>(ins.offset), &flags_)); }
-    void Cpu::exec(const Btr<R64, R64>& ins) { set(ins.base, Impl::btr64(get(ins.base), get(ins.offset), &flags_)); }
-    void Cpu::exec(const Btr<R64, Imm>& ins) { set(ins.base, Impl::btr64(get(ins.base), get<u64>(ins.offset), &flags_)); }
-    void Cpu::exec(const Btr<M16, R16>& ins) { set(resolve(ins.base), Impl::btr16(get(resolve(ins.base)), get(ins.offset), &flags_)); }
-    void Cpu::exec(const Btr<M16, Imm>& ins) { set(resolve(ins.base), Impl::btr16(get(resolve(ins.base)), get<u16>(ins.offset), &flags_)); }
-    void Cpu::exec(const Btr<M32, R32>& ins) { set(resolve(ins.base), Impl::btr32(get(resolve(ins.base)), get(ins.offset), &flags_)); }
-    void Cpu::exec(const Btr<M32, Imm>& ins) { set(resolve(ins.base), Impl::btr32(get(resolve(ins.base)), get<u32>(ins.offset), &flags_)); }
-    void Cpu::exec(const Btr<M64, R64>& ins) { set(resolve(ins.base), Impl::btr64(get(resolve(ins.base)), get(ins.offset), &flags_)); }
-    void Cpu::exec(const Btr<M64, Imm>& ins) { set(resolve(ins.base), Impl::btr64(get(resolve(ins.base)), get<u64>(ins.offset), &flags_)); }
+    void Cpu::exec(const Btr<RM16, R16>& ins) { set(ins.base, Impl::btr16(get(ins.base), get(ins.offset), &flags_)); }
+    void Cpu::exec(const Btr<RM16, Imm>& ins) { set(ins.base, Impl::btr16(get(ins.base), get<u16>(ins.offset), &flags_)); }
+    void Cpu::exec(const Btr<RM32, R32>& ins) { set(ins.base, Impl::btr32(get(ins.base), get(ins.offset), &flags_)); }
+    void Cpu::exec(const Btr<RM32, Imm>& ins) { set(ins.base, Impl::btr32(get(ins.base), get<u32>(ins.offset), &flags_)); }
+    void Cpu::exec(const Btr<RM64, R64>& ins) { set(ins.base, Impl::btr64(get(ins.base), get(ins.offset), &flags_)); }
+    void Cpu::exec(const Btr<RM64, Imm>& ins) { set(ins.base, Impl::btr64(get(ins.base), get<u64>(ins.offset), &flags_)); }
 
-    void Cpu::exec(const Btc<R16, R16>& ins) { set(ins.base, Impl::btc16(get(ins.base), get(ins.offset), &flags_)); }
-    void Cpu::exec(const Btc<R16, Imm>& ins) { set(ins.base, Impl::btc16(get(ins.base), get<u16>(ins.offset), &flags_)); }
-    void Cpu::exec(const Btc<R32, R32>& ins) { set(ins.base, Impl::btc32(get(ins.base), get(ins.offset), &flags_)); }
-    void Cpu::exec(const Btc<R32, Imm>& ins) { set(ins.base, Impl::btc32(get(ins.base), get<u32>(ins.offset), &flags_)); }
-    void Cpu::exec(const Btc<R64, R64>& ins) { set(ins.base, Impl::btc64(get(ins.base), get(ins.offset), &flags_)); }
-    void Cpu::exec(const Btc<R64, Imm>& ins) { set(ins.base, Impl::btc64(get(ins.base), get<u64>(ins.offset), &flags_)); }
-    void Cpu::exec(const Btc<M16, R16>& ins) { set(resolve(ins.base), Impl::btc16(get(resolve(ins.base)), get(ins.offset), &flags_)); }
-    void Cpu::exec(const Btc<M16, Imm>& ins) { set(resolve(ins.base), Impl::btc16(get(resolve(ins.base)), get<u16>(ins.offset), &flags_)); }
-    void Cpu::exec(const Btc<M32, R32>& ins) { set(resolve(ins.base), Impl::btc32(get(resolve(ins.base)), get(ins.offset), &flags_)); }
-    void Cpu::exec(const Btc<M32, Imm>& ins) { set(resolve(ins.base), Impl::btc32(get(resolve(ins.base)), get<u32>(ins.offset), &flags_)); }
-    void Cpu::exec(const Btc<M64, R64>& ins) { set(resolve(ins.base), Impl::btc64(get(resolve(ins.base)), get(ins.offset), &flags_)); }
-    void Cpu::exec(const Btc<M64, Imm>& ins) { set(resolve(ins.base), Impl::btc64(get(resolve(ins.base)), get<u64>(ins.offset), &flags_)); }
+    void Cpu::exec(const Btc<RM16, R16>& ins) { set(ins.base, Impl::btc16(get(ins.base), get(ins.offset), &flags_)); }
+    void Cpu::exec(const Btc<RM16, Imm>& ins) { set(ins.base, Impl::btc16(get(ins.base), get<u16>(ins.offset), &flags_)); }
+    void Cpu::exec(const Btc<RM32, R32>& ins) { set(ins.base, Impl::btc32(get(ins.base), get(ins.offset), &flags_)); }
+    void Cpu::exec(const Btc<RM32, Imm>& ins) { set(ins.base, Impl::btc32(get(ins.base), get<u32>(ins.offset), &flags_)); }
+    void Cpu::exec(const Btc<RM64, R64>& ins) { set(ins.base, Impl::btc64(get(ins.base), get(ins.offset), &flags_)); }
+    void Cpu::exec(const Btc<RM64, Imm>& ins) { set(ins.base, Impl::btc64(get(ins.base), get<u64>(ins.offset), &flags_)); }
 
-    void Cpu::exec(const Test<R8, R8>& ins) { Impl::test8(get(ins.src1), get(ins.src2), &flags_); }
-    void Cpu::exec(const Test<R8, Imm>& ins) { Impl::test8(get(ins.src1), get<u8>(ins.src2), &flags_); }
-    void Cpu::exec(const Test<R16, R16>& ins) { Impl::test16(get(ins.src1), get(ins.src2), &flags_); }
-    void Cpu::exec(const Test<R16, Imm>& ins) { Impl::test16(get(ins.src1), get<u16>(ins.src2), &flags_); }
-    void Cpu::exec(const Test<R32, R32>& ins) { Impl::test32(get(ins.src1), get(ins.src2), &flags_); }
-    void Cpu::exec(const Test<R32, Imm>& ins) { Impl::test32(get(ins.src1), get<u32>(ins.src2), &flags_); }
-    void Cpu::exec(const Test<R64, R64>& ins) { Impl::test64(get(ins.src1), get(ins.src2), &flags_); }
-    void Cpu::exec(const Test<R64, Imm>& ins) { Impl::test64(get(ins.src1), get<u64>(ins.src2), &flags_); }
-    void Cpu::exec(const Test<M8, R8>& ins) { Impl::test8(get(resolve(ins.src1)), get(ins.src2), &flags_); }
-    void Cpu::exec(const Test<M8, Imm>& ins) { Impl::test8(get(resolve(ins.src1)), get<u8>(ins.src2), &flags_); }
-    void Cpu::exec(const Test<M16, R16>& ins) { Impl::test16(get(resolve(ins.src1)), get(ins.src2), &flags_); }
-    void Cpu::exec(const Test<M16, Imm>& ins) { Impl::test16(get(resolve(ins.src1)), get<u16>(ins.src2), &flags_); }
-    void Cpu::exec(const Test<M32, R32>& ins) { Impl::test32(get(resolve(ins.src1)), get(ins.src2), &flags_); }
-    void Cpu::exec(const Test<M32, Imm>& ins) { Impl::test32(get(resolve(ins.src1)), get<u32>(ins.src2), &flags_); }
-    void Cpu::exec(const Test<M64, R64>& ins) { Impl::test64(get(resolve(ins.src1)), get(ins.src2), &flags_); }
-    void Cpu::exec(const Test<M64, Imm>& ins) { Impl::test64(get(resolve(ins.src1)), get<u64>(ins.src2), &flags_); }
+    void Cpu::exec(const Test<RM8, R8>& ins) { Impl::test8(get(ins.src1), get(ins.src2), &flags_); }
+    void Cpu::exec(const Test<RM8, Imm>& ins) { Impl::test8(get(ins.src1), get<u8>(ins.src2), &flags_); }
+    void Cpu::exec(const Test<RM16, R16>& ins) { Impl::test16(get(ins.src1), get(ins.src2), &flags_); }
+    void Cpu::exec(const Test<RM16, Imm>& ins) { Impl::test16(get(ins.src1), get<u16>(ins.src2), &flags_); }
+    void Cpu::exec(const Test<RM32, R32>& ins) { Impl::test32(get(ins.src1), get(ins.src2), &flags_); }
+    void Cpu::exec(const Test<RM32, Imm>& ins) { Impl::test32(get(ins.src1), get<u32>(ins.src2), &flags_); }
+    void Cpu::exec(const Test<RM64, R64>& ins) { Impl::test64(get(ins.src1), get(ins.src2), &flags_); }
+    void Cpu::exec(const Test<RM64, Imm>& ins) { Impl::test64(get(ins.src1), get<u64>(ins.src2), &flags_); }
 
-    void Cpu::exec(const Cmp<R16, R16>& ins) { Impl::cmp16(get(ins.src1), get(ins.src2), &flags_); }
-    void Cpu::exec(const Cmp<R16, Imm>& ins) { Impl::cmp16(get(ins.src1), get<u16>(ins.src2), &flags_); }
-    void Cpu::exec(const Cmp<R16, M16>& ins) { Impl::cmp16(get(ins.src1), get(resolve(ins.src2)), &flags_); }
-    void Cpu::exec(const Cmp<M16, R16>& ins) { Impl::cmp16(get(resolve(ins.src1)), get(ins.src2), &flags_); }
-    void Cpu::exec(const Cmp<M16, Imm>& ins) { Impl::cmp16(get(resolve(ins.src1)), get<u16>(ins.src2), &flags_); }
-
-    void Cpu::exec(const Cmp<R8, R8>& ins) { Impl::cmp8(get(ins.src1), get(ins.src2), &flags_); }
-    void Cpu::exec(const Cmp<R8, Imm>& ins) { Impl::cmp8(get(ins.src1), get<u8>(ins.src2), &flags_); }
-    void Cpu::exec(const Cmp<R8, M8>& ins) { Impl::cmp8(get(ins.src1), get(resolve(ins.src2)), &flags_); }
-    void Cpu::exec(const Cmp<M8, R8>& ins) { Impl::cmp8(get(resolve(ins.src1)), get(ins.src2), &flags_); }
-    void Cpu::exec(const Cmp<M8, Imm>& ins) { Impl::cmp8(get(resolve(ins.src1)), get<u8>(ins.src2), &flags_); }
-
-    void Cpu::exec(const Cmp<R32, R32>& ins) { Impl::cmp32(get(ins.src1), get(ins.src2), &flags_); }
-    void Cpu::exec(const Cmp<R32, Imm>& ins) { Impl::cmp32(get(ins.src1), get<u32>(ins.src2), &flags_); }
-    void Cpu::exec(const Cmp<R32, M32>& ins) { Impl::cmp32(get(ins.src1), get(resolve(ins.src2)), &flags_); }
-    void Cpu::exec(const Cmp<M32, R32>& ins) { Impl::cmp32(get(resolve(ins.src1)), get(ins.src2), &flags_); }
-    void Cpu::exec(const Cmp<M32, Imm>& ins) { Impl::cmp32(get(resolve(ins.src1)), get<u32>(ins.src2), &flags_); }
-
-    void Cpu::exec(const Cmp<R64, R64>& ins) { Impl::cmp64(get(ins.src1), get(ins.src2), &flags_); }
-    void Cpu::exec(const Cmp<R64, Imm>& ins) { Impl::cmp64(get(ins.src1), get<u64>(ins.src2), &flags_); }
-    void Cpu::exec(const Cmp<R64, M64>& ins) { Impl::cmp64(get(ins.src1), get(resolve(ins.src2)), &flags_); }
-    void Cpu::exec(const Cmp<M64, R64>& ins) { Impl::cmp64(get(resolve(ins.src1)), get(ins.src2), &flags_); }
-    void Cpu::exec(const Cmp<M64, Imm>& ins) { Impl::cmp64(get(resolve(ins.src1)), get<u64>(ins.src2), &flags_); }
+    void Cpu::exec(const Cmp<RM8, RM8>& ins) { Impl::cmp8(get(ins.src1), get(ins.src2), &flags_); }
+    void Cpu::exec(const Cmp<RM8, Imm>& ins) { Impl::cmp8(get(ins.src1), get<u8>(ins.src2), &flags_); }
+    void Cpu::exec(const Cmp<RM16, RM16>& ins) { Impl::cmp16(get(ins.src1), get(ins.src2), &flags_); }
+    void Cpu::exec(const Cmp<RM16, Imm>& ins) { Impl::cmp16(get(ins.src1), get<u16>(ins.src2), &flags_); }
+    void Cpu::exec(const Cmp<RM32, RM32>& ins) { Impl::cmp32(get(ins.src1), get(ins.src2), &flags_); }
+    void Cpu::exec(const Cmp<RM32, Imm>& ins) { Impl::cmp32(get(ins.src1), get<u32>(ins.src2), &flags_); }
+    void Cpu::exec(const Cmp<RM64, RM64>& ins) { Impl::cmp64(get(ins.src1), get(ins.src2), &flags_); }
+    void Cpu::exec(const Cmp<RM64, Imm>& ins) { Impl::cmp64(get(ins.src1), get<u64>(ins.src2), &flags_); }
 
     template<typename Dst>
     void Cpu::execCmpxchg32Impl(Dst dst, u32 src) {
         u32 eax = get(R32::EAX);
-        if constexpr(std::is_same_v<Dst, R32>) {
-            u32 dest = get(dst);
-            Impl::cmpxchg32(eax, dest, &flags_);
-            if(flags_.zero == 1) {
-                set(dst, src);
-            } else {
-                set(R32::EAX, dest);
-            }
+        u32 dest = get(dst);
+        Impl::cmpxchg32(eax, dest, &flags_);
+        if(flags_.zero == 1) {
+            set(dst, src);
         } else {
-            u32 dest = get(resolve(dst));
-            Impl::cmpxchg32(eax, dest, &flags_);
-            if(flags_.zero == 1) {
-                set(resolve(dst), src);
-            } else {
-                set(R32::EAX, dest);
-            }
+            set(R32::EAX, dest);
         }
     }
 
     template<typename Dst>
     void Cpu::execCmpxchg64Impl(Dst dst, u64 src) {
         u64 rax = get(R64::RAX);
-        if constexpr(std::is_same_v<Dst, R64>) {
-            u64 dest = get(dst);
-            Impl::cmpxchg64(rax, dest, &flags_);
-            if(flags_.zero == 1) {
-                set(dst, src);
-            } else {
-                set(R64::RAX, dest);
-            }
+        u64 dest = get(dst);
+        Impl::cmpxchg64(rax, dest, &flags_);
+        if(flags_.zero == 1) {
+            set(dst, src);
         } else {
-            u64 dest = get(resolve(dst));
-            Impl::cmpxchg64(rax, dest, &flags_);
-            if(flags_.zero == 1) {
-                set(resolve(dst), src);
-            } else {
-                set(R64::RAX, dest);
-            }
+            set(R64::RAX, dest);
         }
     }
 
-    void Cpu::exec(const Cmpxchg<R8, R8>& ins) { TODO(ins); }
-    void Cpu::exec(const Cmpxchg<M8, R8>& ins) { TODO(ins); }
-    void Cpu::exec(const Cmpxchg<R16, R16>& ins) { TODO(ins); }
-    void Cpu::exec(const Cmpxchg<M16, R16>& ins) { TODO(ins); }
-    void Cpu::exec(const Cmpxchg<R32, R32>& ins) { execCmpxchg32Impl(ins.src1, get(ins.src2)); }
-    void Cpu::exec(const Cmpxchg<M32, R32>& ins) { execCmpxchg32Impl(ins.src1, get(ins.src2)); }
-    void Cpu::exec(const Cmpxchg<R64, R64>& ins) { execCmpxchg64Impl(ins.src1, get(ins.src2)); }
-    void Cpu::exec(const Cmpxchg<M64, R64>& ins) { execCmpxchg64Impl(ins.src1, get(ins.src2)); }
+    void Cpu::exec(const Cmpxchg<RM8, R8>& ins) { TODO(ins); }
+    void Cpu::exec(const Cmpxchg<RM16, R16>& ins) { TODO(ins); }
+    void Cpu::exec(const Cmpxchg<RM32, R32>& ins) { execCmpxchg32Impl(ins.src1, get(ins.src2)); }
+    void Cpu::exec(const Cmpxchg<RM64, R64>& ins) { execCmpxchg64Impl(ins.src1, get(ins.src2)); }
 
     template<typename Dst>
     void Cpu::execSet(Cond cond, Dst dst) {
