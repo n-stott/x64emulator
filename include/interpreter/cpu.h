@@ -115,6 +115,18 @@ namespace x64 {
         void set(Ptr80 ptr, f80 value);
         void set(Ptr128 ptr, Xmm value);
 
+        u8 get(RM8 reg) const;
+        u16 get(RM16 reg) const;
+        u32 get(RM32 reg) const;
+        u64 get(RM64 reg) const;
+        Xmm get(RMSSE reg) const;
+
+        void set(RM8 reg, u8 value);
+        void set(RM16 reg, u16 value);
+        void set(RM32 reg, u32 value);
+        void set(RM64 reg, u64 value);
+        void set(RMSSE reg, Xmm value);
+
         void push8(u8 value);
         void push16(u16 value);
         void push32(u32 value);

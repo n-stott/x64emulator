@@ -295,6 +295,26 @@ namespace utils {
         return std::visit([](auto&& arg) -> std::string { return toString(arg); }, m224);
     }
 
+    inline std::string toString(const RM8& m8) {
+        return std::visit([](auto&& arg) -> std::string { return toString(arg); }, m8);
+    }
+
+    inline std::string toString(const RM16& m16) {
+        return std::visit([](auto&& arg) -> std::string { return toString(arg); }, m16);
+    }
+
+    inline std::string toString(const RM32& m32) {
+        return std::visit([](auto&& arg) -> std::string { return toString(arg); }, m32);
+    }
+
+    inline std::string toString(const RM64& m64) {
+        return std::visit([](auto&& arg) -> std::string { return toString(arg); }, m64);
+    }
+
+    inline std::string toString(const RMSSE& msse) {
+        return std::visit([](auto&& arg) -> std::string { return toString(arg); }, msse);
+    }
+
     template<typename Src>
     inline std::string toString(const Push<Src>& ins) {
         return fmt::format("{:9}{}", "push", toString(ins.src));

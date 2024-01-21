@@ -65,6 +65,116 @@ namespace x64 {
         mmu_->write128(ptr, value);
     }
 
+    u8 Cpu::get(RM8 src) const {
+        return std::visit([&](auto&& arg) {
+            using T = std::decay_t<decltype(arg)>;
+            if constexpr(std::is_same_v<T, R8>) {
+                return get(arg);
+            } else {
+                return get(resolve(arg));
+            }
+        }, src);
+    }
+
+    u16 Cpu::get(RM16 src) const {
+        return std::visit([&](auto&& arg) {
+            using T = std::decay_t<decltype(arg)>;
+            if constexpr(std::is_same_v<T, R16>) {
+                return get(arg);
+            } else {
+                return get(resolve(arg));
+            }
+        }, src);
+    }
+
+    u32 Cpu::get(RM32 src) const {
+        return std::visit([&](auto&& arg) {
+            using T = std::decay_t<decltype(arg)>;
+            if constexpr(std::is_same_v<T, R32>) {
+                return get(arg);
+            } else {
+                return get(resolve(arg));
+            }
+        }, src);
+    }
+
+    u64 Cpu::get(RM64 src) const {
+        return std::visit([&](auto&& arg) {
+            using T = std::decay_t<decltype(arg)>;
+            if constexpr(std::is_same_v<T, R64>) {
+                return get(arg);
+            } else {
+                return get(resolve(arg));
+            }
+        }, src);
+    }
+
+    Xmm Cpu::get(RMSSE src) const {
+        return std::visit([&](auto&& arg) {
+            using T = std::decay_t<decltype(arg)>;
+            if constexpr(std::is_same_v<T, RSSE>) {
+                return get(arg);
+            } else {
+                return get(resolve(arg));
+            }
+        }, src);
+    }
+
+    void Cpu::set(RM8 dst, u8 value) {
+        std::visit([&](auto&& arg) {
+            using T = std::decay_t<decltype(arg)>;
+            if constexpr(std::is_same_v<T, R8>) {
+                set(arg, value);
+            } else {
+                set(resolve(arg), value);
+            }
+        }, dst);
+    }
+
+    void Cpu::set(RM16 dst, u16 value) {
+        std::visit([&](auto&& arg) {
+            using T = std::decay_t<decltype(arg)>;
+            if constexpr(std::is_same_v<T, R16>) {
+                set(arg, value);
+            } else {
+                set(resolve(arg), value);
+            }
+        }, dst);
+    }
+
+    void Cpu::set(RM32 dst, u32 value) {
+        std::visit([&](auto&& arg) {
+            using T = std::decay_t<decltype(arg)>;
+            if constexpr(std::is_same_v<T, R32>) {
+                set(arg, value);
+            } else {
+                set(resolve(arg), value);
+            }
+        }, dst);
+    }
+
+    void Cpu::set(RM64 dst, u64 value) {
+        std::visit([&](auto&& arg) {
+            using T = std::decay_t<decltype(arg)>;
+            if constexpr(std::is_same_v<T, R64>) {
+                set(arg, value);
+            } else {
+                set(resolve(arg), value);
+            }
+        }, dst);
+    }
+
+    void Cpu::set(RMSSE dst, Xmm value) {
+        std::visit([&](auto&& arg) {
+            using T = std::decay_t<decltype(arg)>;
+            if constexpr(std::is_same_v<T, RSSE>) {
+                set(arg, value);
+            } else {
+                set(resolve(arg), value);
+            }
+        }, dst);
+    }
+
     void Cpu::push8(u8 value) {
         regs_.rsp_ -= 8;
         mmu_->write64(Ptr64{regs_.rsp_}, (u64)value);
