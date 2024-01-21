@@ -139,11 +139,6 @@ namespace x64 {
         template<typename Dst>
         void execSet(Cond cond, Dst dst);
 
-        template<typename Dst, typename Src>
-        void execCmovImpl(Cond cond, Dst dst, Src src);
-
-        void execFcmovImpl(Cond cond, ST dst, ST src);
-
         template<typename Dst>
         void execCmpxchg32Impl(Dst dst, u32 src);
 
@@ -449,13 +444,9 @@ namespace x64 {
         void exec(const Cwde&);
         void exec(const Cdqe&);
 
-        void exec(const Pxor<RSSE, RSSE>&);
-        void exec(const Pxor<RSSE, MSSE>&);
+        void exec(const Pxor<RSSE, RMSSE>&);
 
-        void exec(const Movaps<RSSE, RSSE>&);
-        void exec(const Movaps<MSSE, RSSE>&);
-        void exec(const Movaps<RSSE, MSSE>&);
-        void exec(const Movaps<MSSE, MSSE>&);
+        void exec(const Movaps<RMSSE, RMSSE>&);
 
         void exec(const Movd<RSSE, R32>&);
         void exec(const Movd<R32, RSSE>&);
@@ -494,14 +485,7 @@ namespace x64 {
         void exec(const Fucomi<ST>&);
         void exec(const Frndint&);
 
-        void exec(const Fcmov<Cond::B, ST>&);
-        void exec(const Fcmov<Cond::BE, ST>&);
-        void exec(const Fcmov<Cond::E, ST>&);
-        void exec(const Fcmov<Cond::NB, ST>&);
-        void exec(const Fcmov<Cond::NBE, ST>&);
-        void exec(const Fcmov<Cond::NE, ST>&);
-        void exec(const Fcmov<Cond::NU, ST>&);
-        void exec(const Fcmov<Cond::U, ST>&);
+        void exec(const Fcmov<ST>&);
 
         void exec(const Fnstcw<M16>&);
         void exec(const Fldcw<M16>&);
@@ -546,10 +530,9 @@ namespace x64 {
         void exec(const Cmpsd<RSSE, RSSE>&);
         void exec(const Cmpsd<RSSE, M64>&);
 
-        void exec(const Cvtsi2sd<RSSE, R32>&);
-        void exec(const Cvtsi2sd<RSSE, M32>&);
-        void exec(const Cvtsi2sd<RSSE, R64>&);
-        void exec(const Cvtsi2sd<RSSE, M64>&);
+        void exec(const Cvtsi2sd<RSSE, RM32>&);
+        void exec(const Cvtsi2sd<RSSE, RM64>&);
+
         void exec(const Cvtss2sd<RSSE, RSSE>&);
         void exec(const Cvtss2sd<RSSE, M32>&);
 
@@ -558,12 +541,9 @@ namespace x64 {
         void exec(const Cvttsd2si<R64, RSSE>&);
         void exec(const Cvttsd2si<R64, M64>&);
 
-        void exec(const Pand<RSSE, RSSE>&);
-        void exec(const Pand<RSSE, MSSE>&);
-        void exec(const Pandn<RSSE, RSSE>&);
-        void exec(const Pandn<RSSE, MSSE>&);
-        void exec(const Por<RSSE, RSSE>&);
-        void exec(const Por<RSSE, MSSE>&);
+        void exec(const Pand<RSSE, RMSSE>&);
+        void exec(const Pandn<RSSE, RMSSE>&);
+        void exec(const Por<RSSE, RMSSE>&);
 
         void exec(const Andpd<RSSE, RSSE>&);
         void exec(const Andnpd<RSSE, RSSE>&);
@@ -583,54 +563,34 @@ namespace x64 {
         void exec(const Punpckhdq<RSSE, RSSE>&);
         void exec(const Punpckhqdq<RSSE, RSSE>&);
 
-        void exec(const Pshufb<RSSE, RSSE>&);
-        void exec(const Pshufb<RSSE, MSSE>&);
-        void exec(const Pshufd<RSSE, RSSE, Imm>&);
-        void exec(const Pshufd<RSSE, MSSE, Imm>&);
+        void exec(const Pshufb<RSSE, RMSSE>&);
+        void exec(const Pshufd<RSSE, RMSSE, Imm>&);
 
-        void exec(const Pcmpeqb<RSSE, RSSE>&);
-        void exec(const Pcmpeqb<RSSE, MSSE>&);
-        void exec(const Pcmpeqw<RSSE, RSSE>&);
-        void exec(const Pcmpeqw<RSSE, MSSE>&);
-        void exec(const Pcmpeqd<RSSE, RSSE>&);
-        void exec(const Pcmpeqd<RSSE, MSSE>&);
-        void exec(const Pcmpeqq<RSSE, RSSE>&);
-        void exec(const Pcmpeqq<RSSE, MSSE>&);
+        void exec(const Pcmpeqb<RSSE, RMSSE>&);
+        void exec(const Pcmpeqw<RSSE, RMSSE>&);
+        void exec(const Pcmpeqd<RSSE, RMSSE>&);
+        void exec(const Pcmpeqq<RSSE, RMSSE>&);
 
-        void exec(const Pcmpgtb<RSSE, RSSE>&);
-        void exec(const Pcmpgtb<RSSE, MSSE>&);
-        void exec(const Pcmpgtw<RSSE, RSSE>&);
-        void exec(const Pcmpgtw<RSSE, MSSE>&);
-        void exec(const Pcmpgtd<RSSE, RSSE>&);
-        void exec(const Pcmpgtd<RSSE, MSSE>&);
-        void exec(const Pcmpgtq<RSSE, RSSE>&);
-        void exec(const Pcmpgtq<RSSE, MSSE>&);
+        void exec(const Pcmpgtb<RSSE, RMSSE>&);
+        void exec(const Pcmpgtw<RSSE, RMSSE>&);
+        void exec(const Pcmpgtd<RSSE, RMSSE>&);
+        void exec(const Pcmpgtq<RSSE, RMSSE>&);
 
         void exec(const Pmovmskb<R32, RSSE>&);
 
-        void exec(const Paddb<RSSE, RSSE>&);
-        void exec(const Paddb<RSSE, MSSE>&);
-        void exec(const Paddw<RSSE, RSSE>&);
-        void exec(const Paddw<RSSE, MSSE>&);
-        void exec(const Paddd<RSSE, RSSE>&);
-        void exec(const Paddd<RSSE, MSSE>&);
-        void exec(const Paddq<RSSE, RSSE>&);
-        void exec(const Paddq<RSSE, MSSE>&);
+        void exec(const Paddb<RSSE, RMSSE>&);
+        void exec(const Paddw<RSSE, RMSSE>&);
+        void exec(const Paddd<RSSE, RMSSE>&);
+        void exec(const Paddq<RSSE, RMSSE>&);
 
-        void exec(const Psubb<RSSE, RSSE>&);
-        void exec(const Psubb<RSSE, MSSE>&);
-        void exec(const Psubw<RSSE, RSSE>&);
-        void exec(const Psubw<RSSE, MSSE>&);
-        void exec(const Psubd<RSSE, RSSE>&);
-        void exec(const Psubd<RSSE, MSSE>&);
-        void exec(const Psubq<RSSE, RSSE>&);
-        void exec(const Psubq<RSSE, MSSE>&);
+        void exec(const Psubb<RSSE, RMSSE>&);
+        void exec(const Psubw<RSSE, RMSSE>&);
+        void exec(const Psubd<RSSE, RMSSE>&);
+        void exec(const Psubq<RSSE, RMSSE>&);
 
-        void exec(const Pminub<RSSE, RSSE>&);
-        void exec(const Pminub<RSSE, MSSE>&);
+        void exec(const Pminub<RSSE, RMSSE>&);
 
-        void exec(const Ptest<RSSE, RSSE>&);
-        void exec(const Ptest<RSSE, MSSE>&);
+        void exec(const Ptest<RSSE, RMSSE>&);
 
         void exec(const Psllw<RSSE, Imm>&);
         void exec(const Pslld<RSSE, Imm>&);
@@ -642,8 +602,7 @@ namespace x64 {
         void exec(const Pslldq<RSSE, Imm>&);
         void exec(const Psrldq<RSSE, Imm>&);
         
-        void exec(const Pcmpistri<RSSE, RSSE, Imm>&);
-        void exec(const Pcmpistri<RSSE, MSSE, Imm>&);
+        void exec(const Pcmpistri<RSSE, RMSSE, Imm>&);
         
         void exec(const Rdtsc&);
 

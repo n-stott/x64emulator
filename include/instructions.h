@@ -473,8 +473,9 @@ namespace x64 {
 
     };
 
-    template<Cond cond, typename Src>
+    template<typename Src>
     struct Fcmov {
+        Cond cond;
         Src src;
     };
 

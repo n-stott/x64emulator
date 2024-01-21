@@ -731,9 +731,9 @@ namespace utils {
         return fmt::format("{:9}", "frndint");
     }
 
-    template<Cond cond, typename Src>
-    inline std::string toString(Fcmov<cond, Src> ins) {
-        return fmt::format("{:9}{},{}", fmt::format("fcmov{}", toString(cond)), toString(ST::ST0), toString(ins.src));
+    template<typename Src>
+    inline std::string toString(Fcmov<Src> ins) {
+        return fmt::format("{:9}{},{}", fmt::format("fcmov{}", toString(ins.cond)), toString(ST::ST0), toString(ins.src));
     }
 
     template<typename Dst>

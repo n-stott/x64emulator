@@ -1653,10 +1653,8 @@ namespace x64 {
         const cs_x86_op& dst = x86detail.operands[0];
         const cs_x86_op& src = x86detail.operands[1];
         auto ssedst = asRegister128(dst);
-        auto ssesrc = asRegister128(src);
-        auto msesrc = asMemory128(src);
-        if(ssedst && ssesrc) return make_wrapper<Pxor<RSSE, RSSE>>(insn.address, ssedst.value(), ssesrc.value());
-        if(ssedst && msesrc) return make_wrapper<Pxor<RSSE, MSSE>>(insn.address, ssedst.value(), msesrc.value());
+        auto rmssesrc = asRM128(src);
+        if(ssedst && rmssesrc) return make_wrapper<Pxor<RSSE, RMSSE>>(insn.address, ssedst.value(), rmssesrc.value());
         return make_failed(insn);
     }
 
@@ -1665,14 +1663,9 @@ namespace x64 {
         assert(x86detail.op_count == 2);
         const cs_x86_op& dst = x86detail.operands[0];
         const cs_x86_op& src = x86detail.operands[1];
-        auto ssedst = asRegister128(dst);
-        auto ssesrc = asRegister128(src);
-        auto mssedst = asMemory128(dst);
-        auto mssesrc = asMemory128(src);
-        if(ssedst && ssesrc) return make_wrapper<Movaps<RSSE, RSSE>>(insn.address, ssedst.value(), ssesrc.value());
-        if(mssedst && ssesrc) return make_wrapper<Movaps<MSSE, RSSE>>(insn.address, mssedst.value(), ssesrc.value());
-        if(ssedst && mssesrc) return make_wrapper<Movaps<RSSE, MSSE>>(insn.address, ssedst.value(), mssesrc.value());
-        if(mssedst && mssesrc) return make_wrapper<Movaps<MSSE, MSSE>>(insn.address, mssedst.value(), mssesrc.value());
+        auto rmssedst = asRM128(dst);
+        auto rmssesrc = asRM128(src);
+        if(rmssedst && rmssesrc) return make_wrapper<Movaps<RMSSE, RMSSE>>(insn.address, rmssedst.value(), rmssesrc.value());
         return make_failed(insn);
     }
 
@@ -1930,7 +1923,7 @@ namespace x64 {
         if(!stdst || *stdst != ST::ST0) return make_failed(insn);
         const cs_x86_op& src = x86detail.operands[1];
         auto stsrc = asST(src);
-        if(stsrc) return make_wrapper<Fcmov<cond, ST>>(insn.address, stsrc.value());
+        if(stsrc) return make_wrapper<Fcmov<ST>>(insn.address, cond, stsrc.value());
         return make_failed(insn);
     }
 
@@ -2173,14 +2166,10 @@ namespace x64 {
         const cs_x86_op& dst = x86detail.operands[0];
         const cs_x86_op& src = x86detail.operands[1];
         auto rssedst = asRegister128(dst);
-        auto r32src = asRegister32(src);
-        auto m32src = asMemory32(src);
-        auto r64src = asRegister64(src);
-        auto m64src = asMemory64(src);
-        if(rssedst && r32src) return make_wrapper<Cvtsi2sd<RSSE, R32>>(insn.address, rssedst.value(), r32src.value());
-        if(rssedst && m32src) return make_wrapper<Cvtsi2sd<RSSE, M32>>(insn.address, rssedst.value(), m32src.value());
-        if(rssedst && r64src) return make_wrapper<Cvtsi2sd<RSSE, R64>>(insn.address, rssedst.value(), r64src.value());
-        if(rssedst && m64src) return make_wrapper<Cvtsi2sd<RSSE, M64>>(insn.address, rssedst.value(), m64src.value());
+        auto rm32src = asRM32(src);
+        auto rm64src = asRM64(src);
+        if(rssedst && rm32src) return make_wrapper<Cvtsi2sd<RSSE, RM32>>(insn.address, rssedst.value(), rm32src.value());
+        if(rssedst && rm64src) return make_wrapper<Cvtsi2sd<RSSE, RM64>>(insn.address, rssedst.value(), rm64src.value());
         return make_failed(insn);
     }
     
@@ -2219,10 +2208,8 @@ namespace x64 {
         const cs_x86_op& dst = x86detail.operands[0];
         const cs_x86_op& src = x86detail.operands[1];
         auto rssedst = asRegister128(dst);
-        auto rssesrc = asRegister128(src);
-        auto mssesrc = asMemory128(src);
-        if(rssedst && rssesrc) return make_wrapper<Pand<RSSE, RSSE>>(insn.address, rssedst.value(), rssesrc.value());
-        if(rssedst && mssesrc) return make_wrapper<Pand<RSSE, MSSE>>(insn.address, rssedst.value(), mssesrc.value());
+        auto rmssesrc = asRM128(src);
+        if(rssedst && rmssesrc) return make_wrapper<Pand<RSSE, RMSSE>>(insn.address, rssedst.value(), rmssesrc.value());
         return make_failed(insn);
     }
 
@@ -2232,10 +2219,8 @@ namespace x64 {
         const cs_x86_op& dst = x86detail.operands[0];
         const cs_x86_op& src = x86detail.operands[1];
         auto rssedst = asRegister128(dst);
-        auto rssesrc = asRegister128(src);
-        auto mssesrc = asMemory128(src);
-        if(rssedst && rssesrc) return make_wrapper<Pandn<RSSE, RSSE>>(insn.address, rssedst.value(), rssesrc.value());
-        if(rssedst && mssesrc) return make_wrapper<Pandn<RSSE, MSSE>>(insn.address, rssedst.value(), mssesrc.value());
+        auto rmssesrc = asRM128(src);
+        if(rssedst && rmssesrc) return make_wrapper<Pandn<RSSE, RMSSE>>(insn.address, rssedst.value(), rmssesrc.value());
         return make_failed(insn);
     }
 
@@ -2245,10 +2230,8 @@ namespace x64 {
         const cs_x86_op& dst = x86detail.operands[0];
         const cs_x86_op& src = x86detail.operands[1];
         auto rssedst = asRegister128(dst);
-        auto rssesrc = asRegister128(src);
-        auto mssesrc = asMemory128(src);
-        if(rssedst && rssesrc) return make_wrapper<Por<RSSE, RSSE>>(insn.address, rssedst.value(), rssesrc.value());
-        if(rssedst && mssesrc) return make_wrapper<Por<RSSE, MSSE>>(insn.address, rssedst.value(), mssesrc.value());
+        auto rmssesrc = asRM128(src);
+        if(rssedst && rmssesrc) return make_wrapper<Por<RSSE, RMSSE>>(insn.address, rssedst.value(), rmssesrc.value());
         return make_failed(insn);
     }
 
@@ -2412,10 +2395,8 @@ namespace x64 {
         const cs_x86_op& dst = x86detail.operands[0];
         const cs_x86_op& src = x86detail.operands[1];
         auto rssedst = asRegister128(dst);
-        auto rssesrc = asRegister128(src);
-        auto mssesrc = asMemory128(src);
-        if(rssedst && rssesrc) return make_wrapper<Pshufb<RSSE, RSSE>>(insn.address, rssedst.value(), rssesrc.value());
-        if(rssedst && mssesrc) return make_wrapper<Pshufb<RSSE, MSSE>>(insn.address, rssedst.value(), mssesrc.value());
+        auto rmssesrc = asRM128(src);
+        if(rssedst && rmssesrc) return make_wrapper<Pshufb<RSSE, RMSSE>>(insn.address, rssedst.value(), rmssesrc.value());
         return make_failed(insn);
     }
 
@@ -2426,11 +2407,9 @@ namespace x64 {
         const cs_x86_op& src = x86detail.operands[1];
         const cs_x86_op& order = x86detail.operands[2];
         auto rssedst = asRegister128(dst);
-        auto rssesrc = asRegister128(src);
-        auto mssesrc = asMemory128(src);
+        auto rmssesrc = asRM128(src);
         auto imm = asImmediate(order);
-        if(rssedst && rssesrc && imm) return make_wrapper<Pshufd<RSSE, RSSE, Imm>>(insn.address, rssedst.value(), rssesrc.value(), imm.value());
-        if(rssedst && mssesrc && imm) return make_wrapper<Pshufd<RSSE, MSSE, Imm>>(insn.address, rssedst.value(), mssesrc.value(), imm.value());
+        if(rssedst && rmssesrc && imm) return make_wrapper<Pshufd<RSSE, RMSSE, Imm>>(insn.address, rssedst.value(), rmssesrc.value(), imm.value());
         return make_failed(insn);
     }
 
@@ -2440,10 +2419,8 @@ namespace x64 {
         const cs_x86_op& dst = x86detail.operands[0];
         const cs_x86_op& src = x86detail.operands[1];
         auto rssedst = asRegister128(dst);
-        auto rssesrc = asRegister128(src);
-        auto mssesrc = asMemory128(src);
-        if(rssedst && rssesrc) return make_wrapper<Pcmpeqb<RSSE, RSSE>>(insn.address, rssedst.value(), rssesrc.value());
-        if(rssedst && mssesrc) return make_wrapper<Pcmpeqb<RSSE, MSSE>>(insn.address, rssedst.value(), mssesrc.value());
+        auto rmssesrc = asRM128(src);
+        if(rssedst && rmssesrc) return make_wrapper<Pcmpeqb<RSSE, RMSSE>>(insn.address, rssedst.value(), rmssesrc.value());
         return make_failed(insn);
     }
 
@@ -2453,10 +2430,8 @@ namespace x64 {
         const cs_x86_op& dst = x86detail.operands[0];
         const cs_x86_op& src = x86detail.operands[1];
         auto rssedst = asRegister128(dst);
-        auto rssesrc = asRegister128(src);
-        auto mssesrc = asMemory128(src);
-        if(rssedst && rssesrc) return make_wrapper<Pcmpeqw<RSSE, RSSE>>(insn.address, rssedst.value(), rssesrc.value());
-        if(rssedst && mssesrc) return make_wrapper<Pcmpeqw<RSSE, MSSE>>(insn.address, rssedst.value(), mssesrc.value());
+        auto rmssesrc = asRM128(src);
+        if(rssedst && rmssesrc) return make_wrapper<Pcmpeqw<RSSE, RMSSE>>(insn.address, rssedst.value(), rmssesrc.value());
         return make_failed(insn);
     }
 
@@ -2466,10 +2441,8 @@ namespace x64 {
         const cs_x86_op& dst = x86detail.operands[0];
         const cs_x86_op& src = x86detail.operands[1];
         auto rssedst = asRegister128(dst);
-        auto rssesrc = asRegister128(src);
-        auto mssesrc = asMemory128(src);
-        if(rssedst && rssesrc) return make_wrapper<Pcmpeqd<RSSE, RSSE>>(insn.address, rssedst.value(), rssesrc.value());
-        if(rssedst && mssesrc) return make_wrapper<Pcmpeqd<RSSE, MSSE>>(insn.address, rssedst.value(), mssesrc.value());
+        auto rmssesrc = asRM128(src);
+        if(rssedst && rmssesrc) return make_wrapper<Pcmpeqd<RSSE, RMSSE>>(insn.address, rssedst.value(), rmssesrc.value());
         return make_failed(insn);
     }
 
@@ -2479,10 +2452,8 @@ namespace x64 {
         const cs_x86_op& dst = x86detail.operands[0];
         const cs_x86_op& src = x86detail.operands[1];
         auto rssedst = asRegister128(dst);
-        auto rssesrc = asRegister128(src);
-        auto mssesrc = asMemory128(src);
-        if(rssedst && rssesrc) return make_wrapper<Pcmpeqq<RSSE, RSSE>>(insn.address, rssedst.value(), rssesrc.value());
-        if(rssedst && mssesrc) return make_wrapper<Pcmpeqq<RSSE, MSSE>>(insn.address, rssedst.value(), mssesrc.value());
+        auto rmssesrc = asRM128(src);
+        if(rssedst && rmssesrc) return make_wrapper<Pcmpeqq<RSSE, RMSSE>>(insn.address, rssedst.value(), rmssesrc.value());
         return make_failed(insn);
     }
 
@@ -2492,10 +2463,8 @@ namespace x64 {
         const cs_x86_op& dst = x86detail.operands[0];
         const cs_x86_op& src = x86detail.operands[1];
         auto rssedst = asRegister128(dst);
-        auto rssesrc = asRegister128(src);
-        auto mssesrc = asMemory128(src);
-        if(rssedst && rssesrc) return make_wrapper<Pcmpgtb<RSSE, RSSE>>(insn.address, rssedst.value(), rssesrc.value());
-        if(rssedst && mssesrc) return make_wrapper<Pcmpgtb<RSSE, MSSE>>(insn.address, rssedst.value(), mssesrc.value());
+        auto rmssesrc = asRM128(src);
+        if(rssedst && rmssesrc) return make_wrapper<Pcmpgtb<RSSE, RMSSE>>(insn.address, rssedst.value(), rmssesrc.value());
         return make_failed(insn);
     }
 
@@ -2505,10 +2474,8 @@ namespace x64 {
         const cs_x86_op& dst = x86detail.operands[0];
         const cs_x86_op& src = x86detail.operands[1];
         auto rssedst = asRegister128(dst);
-        auto rssesrc = asRegister128(src);
-        auto mssesrc = asMemory128(src);
-        if(rssedst && rssesrc) return make_wrapper<Pcmpgtw<RSSE, RSSE>>(insn.address, rssedst.value(), rssesrc.value());
-        if(rssedst && mssesrc) return make_wrapper<Pcmpgtw<RSSE, MSSE>>(insn.address, rssedst.value(), mssesrc.value());
+        auto rmssesrc = asRM128(src);
+        if(rssedst && rmssesrc) return make_wrapper<Pcmpgtw<RSSE, RMSSE>>(insn.address, rssedst.value(), rmssesrc.value());
         return make_failed(insn);
     }
 
@@ -2518,10 +2485,8 @@ namespace x64 {
         const cs_x86_op& dst = x86detail.operands[0];
         const cs_x86_op& src = x86detail.operands[1];
         auto rssedst = asRegister128(dst);
-        auto rssesrc = asRegister128(src);
-        auto mssesrc = asMemory128(src);
-        if(rssedst && rssesrc) return make_wrapper<Pcmpgtd<RSSE, RSSE>>(insn.address, rssedst.value(), rssesrc.value());
-        if(rssedst && mssesrc) return make_wrapper<Pcmpgtd<RSSE, MSSE>>(insn.address, rssedst.value(), mssesrc.value());
+        auto rmssesrc = asRM128(src);
+        if(rssedst && rmssesrc) return make_wrapper<Pcmpgtd<RSSE, RMSSE>>(insn.address, rssedst.value(), rmssesrc.value());
         return make_failed(insn);
     }
 
@@ -2531,10 +2496,8 @@ namespace x64 {
         const cs_x86_op& dst = x86detail.operands[0];
         const cs_x86_op& src = x86detail.operands[1];
         auto rssedst = asRegister128(dst);
-        auto rssesrc = asRegister128(src);
-        auto mssesrc = asMemory128(src);
-        if(rssedst && rssesrc) return make_wrapper<Pcmpgtq<RSSE, RSSE>>(insn.address, rssedst.value(), rssesrc.value());
-        if(rssedst && mssesrc) return make_wrapper<Pcmpgtq<RSSE, MSSE>>(insn.address, rssedst.value(), mssesrc.value());
+        auto rmssesrc = asRM128(src);
+        if(rssedst && rmssesrc) return make_wrapper<Pcmpgtq<RSSE, RMSSE>>(insn.address, rssedst.value(), rmssesrc.value());
         return make_failed(insn);
     }
 
@@ -2555,10 +2518,8 @@ namespace x64 {
         const cs_x86_op& dst = x86detail.operands[0];
         const cs_x86_op& src = x86detail.operands[1];
         auto rssedst = asRegister128(dst);
-        auto rssesrc = asRegister128(src);
-        auto mssesrc = asMemory128(src);
-        if(rssedst && rssesrc) return make_wrapper<Paddb<RSSE, RSSE>>(insn.address, rssedst.value(), rssesrc.value());
-        if(rssedst && mssesrc) return make_wrapper<Paddb<RSSE, MSSE>>(insn.address, rssedst.value(), mssesrc.value());
+        auto rmssesrc = asRM128(src);
+        if(rssedst && rmssesrc) return make_wrapper<Paddb<RSSE, RMSSE>>(insn.address, rssedst.value(), rmssesrc.value());
         return make_failed(insn);
     }
 
@@ -2568,10 +2529,8 @@ namespace x64 {
         const cs_x86_op& dst = x86detail.operands[0];
         const cs_x86_op& src = x86detail.operands[1];
         auto rssedst = asRegister128(dst);
-        auto rssesrc = asRegister128(src);
-        auto mssesrc = asMemory128(src);
-        if(rssedst && rssesrc) return make_wrapper<Paddw<RSSE, RSSE>>(insn.address, rssedst.value(), rssesrc.value());
-        if(rssedst && mssesrc) return make_wrapper<Paddw<RSSE, MSSE>>(insn.address, rssedst.value(), mssesrc.value());
+        auto rmssesrc = asRM128(src);
+        if(rssedst && rmssesrc) return make_wrapper<Paddw<RSSE, RMSSE>>(insn.address, rssedst.value(), rmssesrc.value());
         return make_failed(insn);
     }
 
@@ -2581,10 +2540,8 @@ namespace x64 {
         const cs_x86_op& dst = x86detail.operands[0];
         const cs_x86_op& src = x86detail.operands[1];
         auto rssedst = asRegister128(dst);
-        auto rssesrc = asRegister128(src);
-        auto mssesrc = asMemory128(src);
-        if(rssedst && rssesrc) return make_wrapper<Paddd<RSSE, RSSE>>(insn.address, rssedst.value(), rssesrc.value());
-        if(rssedst && mssesrc) return make_wrapper<Paddd<RSSE, MSSE>>(insn.address, rssedst.value(), mssesrc.value());
+        auto rmssesrc = asRM128(src);
+        if(rssedst && rmssesrc) return make_wrapper<Paddd<RSSE, RMSSE>>(insn.address, rssedst.value(), rmssesrc.value());
         return make_failed(insn);
     }
 
@@ -2594,10 +2551,8 @@ namespace x64 {
         const cs_x86_op& dst = x86detail.operands[0];
         const cs_x86_op& src = x86detail.operands[1];
         auto rssedst = asRegister128(dst);
-        auto rssesrc = asRegister128(src);
-        auto mssesrc = asMemory128(src);
-        if(rssedst && rssesrc) return make_wrapper<Paddq<RSSE, RSSE>>(insn.address, rssedst.value(), rssesrc.value());
-        if(rssedst && mssesrc) return make_wrapper<Paddq<RSSE, MSSE>>(insn.address, rssedst.value(), mssesrc.value());
+        auto rmssesrc = asRM128(src);
+        if(rssedst && rmssesrc) return make_wrapper<Paddq<RSSE, RMSSE>>(insn.address, rssedst.value(), rmssesrc.value());
         return make_failed(insn);
     }
 
@@ -2607,10 +2562,8 @@ namespace x64 {
         const cs_x86_op& dst = x86detail.operands[0];
         const cs_x86_op& src = x86detail.operands[1];
         auto rssedst = asRegister128(dst);
-        auto rssesrc = asRegister128(src);
-        auto mssesrc = asMemory128(src);
-        if(rssedst && rssesrc) return make_wrapper<Psubb<RSSE, RSSE>>(insn.address, rssedst.value(), rssesrc.value());
-        if(rssedst && mssesrc) return make_wrapper<Psubb<RSSE, MSSE>>(insn.address, rssedst.value(), mssesrc.value());
+        auto rmssesrc = asRM128(src);
+        if(rssedst && rmssesrc) return make_wrapper<Psubb<RSSE, RMSSE>>(insn.address, rssedst.value(), rmssesrc.value());
         return make_failed(insn);
     }
 
@@ -2620,10 +2573,8 @@ namespace x64 {
         const cs_x86_op& dst = x86detail.operands[0];
         const cs_x86_op& src = x86detail.operands[1];
         auto rssedst = asRegister128(dst);
-        auto rssesrc = asRegister128(src);
-        auto mssesrc = asMemory128(src);
-        if(rssedst && rssesrc) return make_wrapper<Psubw<RSSE, RSSE>>(insn.address, rssedst.value(), rssesrc.value());
-        if(rssedst && mssesrc) return make_wrapper<Psubw<RSSE, MSSE>>(insn.address, rssedst.value(), mssesrc.value());
+        auto rmssesrc = asRM128(src);
+        if(rssedst && rmssesrc) return make_wrapper<Psubw<RSSE, RMSSE>>(insn.address, rssedst.value(), rmssesrc.value());
         return make_failed(insn);
     }
 
@@ -2633,10 +2584,8 @@ namespace x64 {
         const cs_x86_op& dst = x86detail.operands[0];
         const cs_x86_op& src = x86detail.operands[1];
         auto rssedst = asRegister128(dst);
-        auto rssesrc = asRegister128(src);
-        auto mssesrc = asMemory128(src);
-        if(rssedst && rssesrc) return make_wrapper<Psubd<RSSE, RSSE>>(insn.address, rssedst.value(), rssesrc.value());
-        if(rssedst && mssesrc) return make_wrapper<Psubd<RSSE, MSSE>>(insn.address, rssedst.value(), mssesrc.value());
+        auto rmssesrc = asRM128(src);
+        if(rssedst && rmssesrc) return make_wrapper<Psubd<RSSE, RMSSE>>(insn.address, rssedst.value(), rmssesrc.value());
         return make_failed(insn);
     }
 
@@ -2646,10 +2595,8 @@ namespace x64 {
         const cs_x86_op& dst = x86detail.operands[0];
         const cs_x86_op& src = x86detail.operands[1];
         auto rssedst = asRegister128(dst);
-        auto rssesrc = asRegister128(src);
-        auto mssesrc = asMemory128(src);
-        if(rssedst && rssesrc) return make_wrapper<Psubq<RSSE, RSSE>>(insn.address, rssedst.value(), rssesrc.value());
-        if(rssedst && mssesrc) return make_wrapper<Psubq<RSSE, MSSE>>(insn.address, rssedst.value(), mssesrc.value());
+        auto rmssesrc = asRM128(src);
+        if(rssedst && rmssesrc) return make_wrapper<Psubq<RSSE, RMSSE>>(insn.address, rssedst.value(), rmssesrc.value());
         return make_failed(insn);
     }
 
@@ -2659,10 +2606,8 @@ namespace x64 {
         const cs_x86_op& dst = x86detail.operands[0];
         const cs_x86_op& src = x86detail.operands[1];
         auto rssedst = asRegister128(dst);
-        auto rssesrc = asRegister128(src);
-        auto mssesrc = asMemory128(src);
-        if(rssedst && rssesrc) return make_wrapper<Pminub<RSSE, RSSE>>(insn.address, rssedst.value(), rssesrc.value());
-        if(rssedst && mssesrc) return make_wrapper<Pminub<RSSE, MSSE>>(insn.address, rssedst.value(), mssesrc.value());
+        auto rmssesrc = asRM128(src);
+        if(rssedst && rmssesrc) return make_wrapper<Pminub<RSSE, RMSSE>>(insn.address, rssedst.value(), rmssesrc.value());
         return make_failed(insn);
     }
 
@@ -2672,10 +2617,8 @@ namespace x64 {
         const cs_x86_op& dst = x86detail.operands[0];
         const cs_x86_op& src = x86detail.operands[1];
         auto rssedst = asRegister128(dst);
-        auto rssesrc = asRegister128(src);
-        auto mssesrc = asMemory128(src);
-        if(rssedst && rssesrc) return make_wrapper<Ptest<RSSE, RSSE>>(insn.address, rssedst.value(), rssesrc.value());
-        if(rssedst && mssesrc) return make_wrapper<Ptest<RSSE, MSSE>>(insn.address, rssedst.value(), mssesrc.value());
+        auto rmssesrc = asRM128(src);
+        if(rssedst && rmssesrc) return make_wrapper<Ptest<RSSE, RMSSE>>(insn.address, rssedst.value(), rmssesrc.value());
         return make_failed(insn);
     }
 
@@ -2771,11 +2714,9 @@ namespace x64 {
         const cs_x86_op& src = x86detail.operands[1];
         const cs_x86_op& order = x86detail.operands[2];
         auto rssedst = asRegister128(dst);
-        auto rssesrc = asRegister128(src);
-        auto mssesrc = asMemory128(src);
+        auto rmssesrc = asRM128(src);
         auto imm = asImmediate(order);
-        if(rssedst && rssesrc && imm) return make_wrapper<Pcmpistri<RSSE, RSSE, Imm>>(insn.address, rssedst.value(), rssesrc.value(), imm.value());
-        if(rssedst && mssesrc && imm) return make_wrapper<Pcmpistri<RSSE, MSSE, Imm>>(insn.address, rssedst.value(), mssesrc.value(), imm.value());
+        if(rssedst && rmssesrc && imm) return make_wrapper<Pcmpistri<RSSE, RMSSE, Imm>>(insn.address, rssedst.value(), rmssesrc.value(), imm.value());
         return make_failed(insn);
     }
 
