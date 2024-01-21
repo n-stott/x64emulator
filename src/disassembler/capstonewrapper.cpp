@@ -1164,10 +1164,8 @@ namespace x64 {
         const auto& x86detail = insn.detail->x86;
         assert(x86detail.op_count == 1);
         const cs_x86_op& src = x86detail.operands[0];
-        auto r8dst = asRegister8(src);
-        auto m8dst = asMemory8(src);
-        if(r8dst) return make_wrapper<Set<cond, R8>>(insn.address, r8dst.value());
-        if(m8dst) return make_wrapper<Set<cond, M8>>(insn.address, m8dst.value());
+        auto rm8dst = asRM8(src);
+        if(rm8dst) return make_wrapper<Set<RM8>>(insn.address, cond, rm8dst.value());
         return make_failed(insn);
     }
     
@@ -1311,16 +1309,12 @@ namespace x64 {
         const auto& x86detail = insn.detail->x86;
         assert(x86detail.op_count == 1);
         const cs_x86_op& dst = x86detail.operands[0];
-        auto reg32 = asRegister32(dst);
-        auto reg64 = asRegister64(dst);
+        auto rm32 = asRM32(dst);
+        auto rm64 = asRM64(dst);
         auto imm = asImmediate(dst);
-        auto m32 = asMemory32(dst);
-        auto m64 = asMemory64(dst);
-        if(reg32) return make_wrapper<Jmp<R32>>(insn.address, reg32.value(), std::nullopt);
-        if(reg64) return make_wrapper<Jmp<R64>>(insn.address, reg64.value(), std::nullopt);
-        if(imm) return make_wrapper<Jmp<u32>>(insn.address, (u32)imm->immediate, std::nullopt);
-        if(m32) return make_wrapper<Jmp<M32>>(insn.address, m32.value(), std::nullopt);
-        if(m64) return make_wrapper<Jmp<M64>>(insn.address, m64.value(), std::nullopt);
+        if(rm32) return make_wrapper<Jmp<RM32>>(insn.address, rm32.value());
+        if(rm64) return make_wrapper<Jmp<RM64>>(insn.address, rm64.value());
+        if(imm) return make_wrapper<Jmp<u32>>(insn.address, (u32)imm->immediate);
         return make_failed(insn);
     }
 
@@ -1329,7 +1323,7 @@ namespace x64 {
         assert(x86detail.op_count == 1);
         const cs_x86_op& dst = x86detail.operands[0];
         auto imm = asImmediate(dst);
-        if(imm) return make_wrapper<Jcc<Cond::NE>>(insn.address, imm->immediate, "");
+        if(imm) return make_wrapper<Jcc>(insn.address, Cond::NE, imm->immediate);
         return make_failed(insn);
     }
 
@@ -1338,7 +1332,7 @@ namespace x64 {
         assert(x86detail.op_count == 1);
         const cs_x86_op& dst = x86detail.operands[0];
         auto imm = asImmediate(dst);
-        if(imm) return make_wrapper<Jcc<Cond::E>>(insn.address, imm->immediate, "");
+        if(imm) return make_wrapper<Jcc>(insn.address, Cond::E, imm->immediate);
         return make_failed(insn);
     }
 
@@ -1347,7 +1341,7 @@ namespace x64 {
         assert(x86detail.op_count == 1);
         const cs_x86_op& dst = x86detail.operands[0];
         auto imm = asImmediate(dst);
-        if(imm) return make_wrapper<Jcc<Cond::AE>>(insn.address, imm->immediate, "");
+        if(imm) return make_wrapper<Jcc>(insn.address, Cond::AE, imm->immediate);
         return make_failed(insn);
     }
 
@@ -1356,7 +1350,7 @@ namespace x64 {
         assert(x86detail.op_count == 1);
         const cs_x86_op& dst = x86detail.operands[0];
         auto imm = asImmediate(dst);
-        if(imm) return make_wrapper<Jcc<Cond::BE>>(insn.address, imm->immediate, "");
+        if(imm) return make_wrapper<Jcc>(insn.address, Cond::BE, imm->immediate);
         return make_failed(insn);
     }
 
@@ -1365,7 +1359,7 @@ namespace x64 {
         assert(x86detail.op_count == 1);
         const cs_x86_op& dst = x86detail.operands[0];
         auto imm = asImmediate(dst);
-        if(imm) return make_wrapper<Jcc<Cond::GE>>(insn.address, imm->immediate, "");
+        if(imm) return make_wrapper<Jcc>(insn.address, Cond::GE, imm->immediate);
         return make_failed(insn);
     }
 
@@ -1374,7 +1368,7 @@ namespace x64 {
         assert(x86detail.op_count == 1);
         const cs_x86_op& dst = x86detail.operands[0];
         auto imm = asImmediate(dst);
-        if(imm) return make_wrapper<Jcc<Cond::LE>>(insn.address, imm->immediate, "");
+        if(imm) return make_wrapper<Jcc>(insn.address, Cond::LE, imm->immediate);
         return make_failed(insn);
     }
 
@@ -1383,7 +1377,7 @@ namespace x64 {
         assert(x86detail.op_count == 1);
         const cs_x86_op& dst = x86detail.operands[0];
         auto imm = asImmediate(dst);
-        if(imm) return make_wrapper<Jcc<Cond::A>>(insn.address, imm->immediate, "");
+        if(imm) return make_wrapper<Jcc>(insn.address, Cond::A, imm->immediate);
         return make_failed(insn);
     }
 
@@ -1392,7 +1386,7 @@ namespace x64 {
         assert(x86detail.op_count == 1);
         const cs_x86_op& dst = x86detail.operands[0];
         auto imm = asImmediate(dst);
-        if(imm) return make_wrapper<Jcc<Cond::B>>(insn.address, imm->immediate, "");
+        if(imm) return make_wrapper<Jcc>(insn.address, Cond::B, imm->immediate);
         return make_failed(insn);
     }
 
@@ -1401,7 +1395,7 @@ namespace x64 {
         assert(x86detail.op_count == 1);
         const cs_x86_op& dst = x86detail.operands[0];
         auto imm = asImmediate(dst);
-        if(imm) return make_wrapper<Jcc<Cond::G>>(insn.address, imm->immediate, "");
+        if(imm) return make_wrapper<Jcc>(insn.address, Cond::G, imm->immediate);
         return make_failed(insn);
     }
 
@@ -1410,7 +1404,7 @@ namespace x64 {
         assert(x86detail.op_count == 1);
         const cs_x86_op& dst = x86detail.operands[0];
         auto imm = asImmediate(dst);
-        if(imm) return make_wrapper<Jcc<Cond::L>>(insn.address, imm->immediate, "");
+        if(imm) return make_wrapper<Jcc>(insn.address, Cond::L, imm->immediate);
         return make_failed(insn);
     }
 
@@ -1419,7 +1413,7 @@ namespace x64 {
         assert(x86detail.op_count == 1);
         const cs_x86_op& dst = x86detail.operands[0];
         auto imm = asImmediate(dst);
-        if(imm) return make_wrapper<Jcc<Cond::S>>(insn.address, imm->immediate, "");
+        if(imm) return make_wrapper<Jcc>(insn.address, Cond::S, imm->immediate);
         return make_failed(insn);
     }
 
@@ -1428,7 +1422,7 @@ namespace x64 {
         assert(x86detail.op_count == 1);
         const cs_x86_op& dst = x86detail.operands[0];
         auto imm = asImmediate(dst);
-        if(imm) return make_wrapper<Jcc<Cond::NS>>(insn.address, imm->immediate, "");
+        if(imm) return make_wrapper<Jcc>(insn.address, Cond::NS, imm->immediate);
         return make_failed(insn);
     }
 
@@ -1437,7 +1431,7 @@ namespace x64 {
         assert(x86detail.op_count == 1);
         const cs_x86_op& dst = x86detail.operands[0];
         auto imm = asImmediate(dst);
-        if(imm) return make_wrapper<Jcc<Cond::O>>(insn.address, imm->immediate, "");
+        if(imm) return make_wrapper<Jcc>(insn.address, Cond::O, imm->immediate);
         return make_failed(insn);
     }
 
@@ -1446,7 +1440,7 @@ namespace x64 {
         assert(x86detail.op_count == 1);
         const cs_x86_op& dst = x86detail.operands[0];
         auto imm = asImmediate(dst);
-        if(imm) return make_wrapper<Jcc<Cond::NO>>(insn.address, imm->immediate, "");
+        if(imm) return make_wrapper<Jcc>(insn.address, Cond::NO, imm->immediate);
         return make_failed(insn);
     }
 
@@ -1455,7 +1449,7 @@ namespace x64 {
         assert(x86detail.op_count == 1);
         const cs_x86_op& dst = x86detail.operands[0];
         auto imm = asImmediate(dst);
-        if(imm) return make_wrapper<Jcc<Cond::P>>(insn.address, imm->immediate, "");
+        if(imm) return make_wrapper<Jcc>(insn.address, Cond::P, imm->immediate);
         return make_failed(insn);
     }
 
@@ -1464,7 +1458,7 @@ namespace x64 {
         assert(x86detail.op_count == 1);
         const cs_x86_op& dst = x86detail.operands[0];
         auto imm = asImmediate(dst);
-        if(imm) return make_wrapper<Jcc<Cond::NP>>(insn.address, imm->immediate, "");
+        if(imm) return make_wrapper<Jcc>(insn.address, Cond::NP, imm->immediate);
         return make_failed(insn);
     }
 

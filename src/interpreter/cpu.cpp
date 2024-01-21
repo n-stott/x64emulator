@@ -715,51 +715,19 @@ namespace x64 {
 
     template<typename Dst>
     void Cpu::execSet(Cond cond, Dst dst) {
-        if constexpr(std::is_same_v<Dst, R8>) {
         verify(flags_.sure(), "Flags are not set");
-            set(dst, flags_.matches(cond));
-        } else {
-        verify(flags_.sure(), "Flags are not set");
-            set(resolve(dst), flags_.matches(cond));
-        }
+        set(dst, flags_.matches(cond));
     }
 
-    void Cpu::exec(const Set<Cond::AE, R8>& ins) { execSet(Cond::AE, ins.dst); }
-    void Cpu::exec(const Set<Cond::AE, M8>& ins) { execSet(Cond::AE, ins.dst); }
-    void Cpu::exec(const Set<Cond::A, R8>& ins) { execSet(Cond::A, ins.dst); }
-    void Cpu::exec(const Set<Cond::A, M8>& ins) { execSet(Cond::A, ins.dst); }
-    void Cpu::exec(const Set<Cond::B, R8>& ins) { execSet(Cond::B, ins.dst); }
-    void Cpu::exec(const Set<Cond::B, M8>& ins) { execSet(Cond::B, ins.dst); }
-    void Cpu::exec(const Set<Cond::BE, R8>& ins) { execSet(Cond::BE, ins.dst); }
-    void Cpu::exec(const Set<Cond::BE, M8>& ins) { execSet(Cond::BE, ins.dst); }
-    void Cpu::exec(const Set<Cond::E, R8>& ins) { execSet(Cond::E, ins.dst); }
-    void Cpu::exec(const Set<Cond::E, M8>& ins) { execSet(Cond::E, ins.dst); }
-    void Cpu::exec(const Set<Cond::G, R8>& ins) { execSet(Cond::G, ins.dst); }
-    void Cpu::exec(const Set<Cond::G, M8>& ins) { execSet(Cond::G, ins.dst); }
-    void Cpu::exec(const Set<Cond::GE, R8>& ins) { execSet(Cond::GE, ins.dst); }
-    void Cpu::exec(const Set<Cond::GE, M8>& ins) { execSet(Cond::GE, ins.dst); }
-    void Cpu::exec(const Set<Cond::L, R8>& ins) { execSet(Cond::L, ins.dst); }
-    void Cpu::exec(const Set<Cond::L, M8>& ins) { execSet(Cond::L, ins.dst); }
-    void Cpu::exec(const Set<Cond::LE, R8>& ins) { execSet(Cond::LE, ins.dst); }
-    void Cpu::exec(const Set<Cond::LE, M8>& ins) { execSet(Cond::LE, ins.dst); }
-    void Cpu::exec(const Set<Cond::NE, R8>& ins) { execSet(Cond::NE, ins.dst); }
-    void Cpu::exec(const Set<Cond::NE, M8>& ins) { execSet(Cond::NE, ins.dst); }
-    void Cpu::exec(const Set<Cond::NO, R8>& ins) { execSet(Cond::NO, ins.dst); }
-    void Cpu::exec(const Set<Cond::NO, M8>& ins) { execSet(Cond::NO, ins.dst); }
-    void Cpu::exec(const Set<Cond::NS, R8>& ins) { execSet(Cond::NS, ins.dst); }
-    void Cpu::exec(const Set<Cond::NS, M8>& ins) { execSet(Cond::NS, ins.dst); }
-    void Cpu::exec(const Set<Cond::O, R8>& ins) { execSet(Cond::O, ins.dst); }
-    void Cpu::exec(const Set<Cond::O, M8>& ins) { execSet(Cond::O, ins.dst); }
-    void Cpu::exec(const Set<Cond::S, R8>& ins) { execSet(Cond::S, ins.dst); }
-    void Cpu::exec(const Set<Cond::S, M8>& ins) { execSet(Cond::S, ins.dst); }
+    void Cpu::exec(const Set<RM8>& ins) { execSet(ins.cond, ins.dst); }
 
-    void Cpu::exec(const Jmp<R32>& ins) {
+    void Cpu::exec(const Jmp<RM32>& ins) {
         u64 dst = (u64)get(ins.symbolAddress);
         vm_->notifyJmp(dst);
         regs_.rip_ = dst;
     }
 
-    void Cpu::exec(const Jmp<R64>& ins) {
+    void Cpu::exec(const Jmp<RM64>& ins) {
         u64 dst = get(ins.symbolAddress);
         vm_->notifyJmp(dst);
         regs_.rip_ = dst;
@@ -771,152 +739,9 @@ namespace x64 {
         regs_.rip_ = dst;
     }
 
-    void Cpu::exec(const Jmp<M32>& ins) { TODO(ins); }
-
-    void Cpu::exec(const Jmp<M64>& ins) {
-        u64 dst = (u64)get(resolve(ins.symbolAddress));
-        vm_->notifyJmp(dst);
-        regs_.rip_ = dst;
-    }
-
-    void Cpu::exec(const Jcc<Cond::NE>& ins) {
+    void Cpu::exec(const Jcc& ins) {
         verify(flags_.sure(), "Flags are not set");
-        if(flags_.matches(Cond::NE)) {
-            u64 dst = ins.symbolAddress;
-            vm_->notifyJmp(dst);
-            regs_.rip_ = dst;
-        }
-    }
-
-    void Cpu::exec(const Jcc<Cond::E>& ins) {
-        verify(flags_.sure(), "Flags are not set");
-        if(flags_.matches(Cond::E)) {
-            u64 dst = ins.symbolAddress;
-            vm_->notifyJmp(dst);
-            regs_.rip_ = dst;
-        }
-    }
-
-    void Cpu::exec(const Jcc<Cond::AE>& ins) {
-        verify(flags_.sure(), "Flags are not set");
-        if(flags_.matches(Cond::AE)) {
-            u64 dst = ins.symbolAddress;
-            vm_->notifyJmp(dst);
-            regs_.rip_ = dst;
-        }
-    }
-
-    void Cpu::exec(const Jcc<Cond::BE>& ins) {
-        verify(flags_.sure(), "Flags are not set");
-        if(flags_.matches(Cond::BE)) {
-            u64 dst = ins.symbolAddress;
-            vm_->notifyJmp(dst);
-            regs_.rip_ = dst;
-        }
-    }
-
-    void Cpu::exec(const Jcc<Cond::GE>& ins) {
-        verify(flags_.sure(), "Flags are not set");
-        if(flags_.matches(Cond::GE)) {
-            u64 dst = ins.symbolAddress;
-            vm_->notifyJmp(dst);
-            regs_.rip_ = dst;
-        }
-    }
-
-    void Cpu::exec(const Jcc<Cond::LE>& ins) {
-        verify(flags_.sure(), "Flags are not set");
-        if(flags_.matches(Cond::LE)) {
-            u64 dst = ins.symbolAddress;
-            vm_->notifyJmp(dst);
-            regs_.rip_ = dst;
-        }
-    }
-
-    void Cpu::exec(const Jcc<Cond::A>& ins) {
-        verify(flags_.sure(), "Flags are not set");
-        if(flags_.matches(Cond::A)) {
-            u64 dst = ins.symbolAddress;
-            vm_->notifyJmp(dst);
-            regs_.rip_ = dst;
-        }
-    }
-
-    void Cpu::exec(const Jcc<Cond::B>& ins) {
-        verify(flags_.sure(), "Flags are not set");
-        if(flags_.matches(Cond::B)) {
-            u64 dst = ins.symbolAddress;
-            vm_->notifyJmp(dst);
-            regs_.rip_ = dst;
-        }
-    }
-
-    void Cpu::exec(const Jcc<Cond::G>& ins) {
-        verify(flags_.sure(), "Flags are not set");
-        if(flags_.matches(Cond::G)) {
-            u64 dst = ins.symbolAddress;
-            vm_->notifyJmp(dst);
-            regs_.rip_ = dst;
-        }
-    }
-
-    void Cpu::exec(const Jcc<Cond::L>& ins) {
-        verify(flags_.sure(), "Flags are not set");
-        if(flags_.matches(Cond::L)) {
-            u64 dst = ins.symbolAddress;
-            vm_->notifyJmp(dst);
-            regs_.rip_ = dst;
-        }
-    }
-
-    void Cpu::exec(const Jcc<Cond::S>& ins) {
-        verify(flags_.sure(), "Flags are not set");
-        if(flags_.matches(Cond::S)) {
-            u64 dst = ins.symbolAddress;
-            vm_->notifyJmp(dst);
-            regs_.rip_ = dst;
-        }
-    }
-
-    void Cpu::exec(const Jcc<Cond::NS>& ins) {
-        verify(flags_.sure(), "Flags are not set");
-        if(flags_.matches(Cond::NS)) {
-            u64 dst = ins.symbolAddress;
-            vm_->notifyJmp(dst);
-            regs_.rip_ = dst;
-        }
-    }
-
-    void Cpu::exec(const Jcc<Cond::O>& ins) {
-        verify(flags_.sure(), "Flags are not set");
-        if(flags_.matches(Cond::O)) {
-            u64 dst = ins.symbolAddress;
-            vm_->notifyJmp(dst);
-            regs_.rip_ = dst;
-        }
-    }
-
-    void Cpu::exec(const Jcc<Cond::NO>& ins) {
-        verify(flags_.sure(), "Flags are not set");
-        if(flags_.matches(Cond::NO)) {
-            u64 dst = ins.symbolAddress;
-            vm_->notifyJmp(dst);
-            regs_.rip_ = dst;
-        }
-    }
-
-    void Cpu::exec(const Jcc<Cond::P>& ins) {
-        verify(flags_.sure(), "Flags are not set");
-        if(flags_.matches(Cond::P)) {
-            u64 dst = ins.symbolAddress;
-            vm_->notifyJmp(dst);
-            regs_.rip_ = dst;
-        }
-    }
-
-    void Cpu::exec(const Jcc<Cond::NP>& ins) {
-        verify(flags_.sure(), "Flags are not set");
-        if(flags_.matches(Cond::NP)) {
+        if(flags_.matches(ins.cond)) {
             u64 dst = ins.symbolAddress;
             vm_->notifyJmp(dst);
             regs_.rip_ = dst;

@@ -529,9 +529,9 @@ namespace utils {
         return fmt::format("{:9}{},{}", "tzcnt", toString(ins.dst), toString(ins.src));
     }
 
-    template<Cond cond, typename Dst>
-    inline std::string toString(const Set<cond, Dst>& ins) {
-        return fmt::format("{:9}{}", fmt::format("set{}", toString(cond)), toString(ins.dst));
+    template<typename Dst>
+    inline std::string toString(const Set<Dst>& ins) {
+        return fmt::format("{:9}{}", fmt::format("set{}", toString(ins.cond)), toString(ins.dst));
     }
 
     template<typename Base, typename Offset>
@@ -566,75 +566,11 @@ namespace utils {
 
     template<typename Dst>
     inline std::string toString(const Jmp<Dst>& ins) {
-        if(ins.symbolName) {
-            return fmt::format("{:9}{} <{}>", "jmp", toString(ins.symbolAddress), ins.symbolName.value());
-        } else {
-            return fmt::format("{:9}{}", "jmp", toString(ins.symbolAddress));
-        }
+        return fmt::format("{:9}{}", "jmp", toString(ins.symbolAddress));
     }
 
-    inline std::string toString(const Jcc<Cond::NE>& ins) {
-        return fmt::format("{:8}{:x} <{}>", "jne", ins.symbolAddress, ins.symbolName);
-    }
-
-    inline std::string toString(const Jcc<Cond::E>& ins) {
-        return fmt::format("{:8}{:x} <{}>", "je", ins.symbolAddress, ins.symbolName);
-    }
-
-    inline std::string toString(const Jcc<Cond::AE>& ins) {
-        return fmt::format("{:8}{:x} <{}>", "jae", ins.symbolAddress, ins.symbolName);
-    }
-
-    inline std::string toString(const Jcc<Cond::BE>& ins) {
-        return fmt::format("{:8}{:x} <{}>", "jbe", ins.symbolAddress, ins.symbolName);
-    }
-
-    inline std::string toString(const Jcc<Cond::GE>& ins) {
-        return fmt::format("{:8}{:x} <{}>", "jge", ins.symbolAddress, ins.symbolName);
-    }
-
-    inline std::string toString(const Jcc<Cond::LE>& ins) {
-        return fmt::format("{:8}{:x} <{}>", "jle", ins.symbolAddress, ins.symbolName);
-    }
-
-    inline std::string toString(const Jcc<Cond::A>& ins) {
-        return fmt::format("{:8}{:x} <{}>", "ja", ins.symbolAddress, ins.symbolName);
-    }
-
-    inline std::string toString(const Jcc<Cond::B>& ins) {
-        return fmt::format("{:8}{:x} <{}>", "jb", ins.symbolAddress, ins.symbolName);
-    }
-
-    inline std::string toString(const Jcc<Cond::G>& ins) {
-        return fmt::format("{:8}{:x} <{}>", "jg", ins.symbolAddress, ins.symbolName);
-    }
-
-    inline std::string toString(const Jcc<Cond::L>& ins) {
-        return fmt::format("{:8}{:x} <{}>", "jl", ins.symbolAddress, ins.symbolName);
-    }
-
-    inline std::string toString(const Jcc<Cond::S>& ins) {
-        return fmt::format("{:8}{:x} <{}>", "js", ins.symbolAddress, ins.symbolName);
-    }
-
-    inline std::string toString(const Jcc<Cond::NS>& ins) {
-        return fmt::format("{:8}{:x} <{}>", "jns", ins.symbolAddress, ins.symbolName);
-    }
-
-    inline std::string toString(const Jcc<Cond::O>& ins) {
-        return fmt::format("{:8}{:x} <{}>", "jo", ins.symbolAddress, ins.symbolName);
-    }
-
-    inline std::string toString(const Jcc<Cond::NO>& ins) {
-        return fmt::format("{:8}{:x} <{}>", "jno", ins.symbolAddress, ins.symbolName);
-    }
-
-    inline std::string toString(const Jcc<Cond::P>& ins) {
-        return fmt::format("{:8}{:x} <{}>", "jp", ins.symbolAddress, ins.symbolName);
-    }
-
-    inline std::string toString(const Jcc<Cond::NP>& ins) {
-        return fmt::format("{:8}{:x} <{}>", "jnp", ins.symbolAddress, ins.symbolName);
+    inline std::string toString(const Jcc& ins) {
+        return fmt::format("{:8}{:x}", fmt::format("j{}", toString(ins.cond)), ins.symbolAddress);
     }
 
     template<typename Dst, typename Src>

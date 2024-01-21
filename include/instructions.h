@@ -243,8 +243,9 @@ namespace x64 {
         Src src;
     };
 
-    template<Cond cond, typename Dst>
+    template<typename Dst>
     struct Set {
+        Cond cond;
         Dst dst;
     };
     
@@ -287,13 +288,11 @@ namespace x64 {
     template<typename Dst>
     struct Jmp {
         Dst symbolAddress;
-        std::optional<std::string> symbolName;
     };
 
-    template<Cond cond>
     struct Jcc {
+        Cond cond;
         u64 symbolAddress;
-        std::string symbolName;
     };
 
     template<typename Dst, typename Src>
