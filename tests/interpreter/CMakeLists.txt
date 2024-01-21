@@ -16,7 +16,7 @@ macro(create_simple_dynamic_test)
     add_executable(test_dynamic_${ARGV0} src/test_${ARGV0}.cpp)
     target_compile_options(test_dynamic_${ARGV0} PUBLIC ${CC_OPTIONS})
     target_link_options(test_dynamic_${ARGV0} PUBLIC ${LD_OPTIONS})
-    add_test(NAME dynamic_${ARGV0} COMMAND ${CMAKE_BINARY_DIR}/interpreter /lib64/ld-linux-x86-64.so.2 ${CMAKE_BINARY_DIR}/tests/interpreter/test_dynamic_${ARGV0})
+    add_test(NAME dynamic_${ARGV0} COMMAND ${CMAKE_BINARY_DIR}/interpreter ${CMAKE_BINARY_DIR}/tests/interpreter/test_dynamic_${ARGV0})
 endmacro()
 
 macro(create_simple_test)
