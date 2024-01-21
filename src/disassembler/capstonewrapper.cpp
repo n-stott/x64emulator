@@ -1743,16 +1743,12 @@ namespace x64 {
         assert(x86detail.op_count == 2);
         const cs_x86_op& dst = x86detail.operands[0];
         const cs_x86_op& src = x86detail.operands[1];
-        auto r64dst = asRegister64(dst);
-        auto r64src = asRegister64(src);
-        auto m64dst = asMemory64(dst);
-        auto m64src = asMemory64(src);
+        auto rm64dst = asRM64(dst);
+        auto rm64src = asRM64(src);
         auto rssedst = asRegister128(dst);
         auto rssesrc = asRegister128(src);
-        if(r64dst && rssesrc) return make_wrapper<Movq<R64, RSSE>>(insn.address, r64dst.value(), rssesrc.value());
-        if(rssedst && r64src) return make_wrapper<Movq<RSSE, R64>>(insn.address, rssedst.value(), r64src.value());
-        if(m64dst && rssesrc) return make_wrapper<Movq<M64, RSSE>>(insn.address, m64dst.value(), rssesrc.value());
-        if(rssedst && m64src) return make_wrapper<Movq<RSSE, M64>>(insn.address, rssedst.value(), m64src.value());
+        if(rm64dst && rssesrc) return make_wrapper<Movq<RM64, RSSE>>(insn.address, rm64dst.value(), rssesrc.value());
+        if(rssedst && rm64src) return make_wrapper<Movq<RSSE, RM64>>(insn.address, rssedst.value(), rm64src.value());
         return make_failed(insn);
     }
 

@@ -451,10 +451,8 @@ namespace x64 {
         void exec(const Movd<RSSE, R32>&);
         void exec(const Movd<R32, RSSE>&);
 
-        void exec(const Movq<RSSE, R64>&);
-        void exec(const Movq<R64, RSSE>&);
-        void exec(const Movq<RSSE, M64>&);
-        void exec(const Movq<M64, RSSE>&);
+        void exec(const Movq<RSSE, RM64>&);
+        void exec(const Movq<RM64, RSSE>&);
 
         void exec(const Fldz&);
         void exec(const Fld1&);
