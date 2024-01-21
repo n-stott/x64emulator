@@ -2,7 +2,6 @@
 #define INSTRUCTIONS_H
 
 #include "types.h"
-#include <optional>
 #include <string>
 
 namespace x64 {

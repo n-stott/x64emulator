@@ -50,6 +50,13 @@ namespace x64 {
         void dumpStackTrace() const;
         void dumpRegisters() const;
 
+        struct ExecutableSection {
+            u64 begin;
+            u64 end;
+            std::vector<std::unique_ptr<X86Instruction>> instructions;
+            std::string filename;
+        };
+
         struct InstructionPosition {
             const ExecutableSection* section;
             size_t index;

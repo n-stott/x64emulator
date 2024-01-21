@@ -98,13 +98,6 @@ namespace x64 {
         Instruction instruction;
     };
 
-    struct ExecutableSection {
-        u64 begin;
-        u64 end;
-        std::vector<std::unique_ptr<X86Instruction>> instructions;
-        std::string filename;
-    };
-
 }
 
 #endif
