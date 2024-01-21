@@ -88,22 +88,22 @@ namespace x64 {
             case X86_INS_CMP: return makeCmp(insn);
             case X86_INS_CMPXCHG: return makeCmpxchg(insn);
             case X86_INS_JMP: return makeJmp(insn);
-            case X86_INS_JNE: return makeJne(insn);
-            case X86_INS_JE: return makeJe(insn);
-            case X86_INS_JAE: return makeJae(insn);
-            case X86_INS_JBE: return makeJbe(insn);
-            case X86_INS_JGE: return makeJge(insn);
-            case X86_INS_JLE: return makeJle(insn);
-            case X86_INS_JA: return makeJa(insn);
-            case X86_INS_JB: return makeJb(insn);
-            case X86_INS_JG: return makeJg(insn);
-            case X86_INS_JL: return makeJl(insn);
-            case X86_INS_JS: return makeJs(insn);
-            case X86_INS_JNS: return makeJns(insn);
-            case X86_INS_JO: return makeJo(insn);
-            case X86_INS_JNO: return makeJno(insn);
-            case X86_INS_JP: return makeJp(insn);
-            case X86_INS_JNP: return makeJnp(insn);
+            case X86_INS_JNE: return makeJcc(Cond::NE, insn);
+            case X86_INS_JE: return makeJcc(Cond::E, insn);
+            case X86_INS_JAE: return makeJcc(Cond::AE, insn);
+            case X86_INS_JBE: return makeJcc(Cond::BE, insn);
+            case X86_INS_JGE: return makeJcc(Cond::GE, insn);
+            case X86_INS_JLE: return makeJcc(Cond::LE, insn);
+            case X86_INS_JA: return makeJcc(Cond::A, insn);
+            case X86_INS_JB: return makeJcc(Cond::B, insn);
+            case X86_INS_JG: return makeJcc(Cond::G, insn);
+            case X86_INS_JL: return makeJcc(Cond::L, insn);
+            case X86_INS_JS: return makeJcc(Cond::S, insn);
+            case X86_INS_JNS: return makeJcc(Cond::NS, insn);
+            case X86_INS_JO: return makeJcc(Cond::O, insn);
+            case X86_INS_JNO: return makeJcc(Cond::NO, insn);
+            case X86_INS_JP: return makeJcc(Cond::P, insn);
+            case X86_INS_JNP: return makeJcc(Cond::NP, insn);
             case X86_INS_BSR: return makeBsr(insn);
             case X86_INS_BSF: return makeBsf(insn);
             case X86_INS_CMOVA: return makeCmov<Cond::A>(insn);
@@ -1310,147 +1310,12 @@ namespace x64 {
         return make_failed(insn);
     }
 
-    std::unique_ptr<X86Instruction> CapstoneWrapper::makeJne(const cs_insn& insn) {
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makeJcc(Cond cond, const cs_insn& insn) {
         const auto& x86detail = insn.detail->x86;
         assert(x86detail.op_count == 1);
         const cs_x86_op& dst = x86detail.operands[0];
         auto imm = asImmediate(dst);
-        if(imm) return make_wrapper<Jcc>(insn.address, Cond::NE, imm->immediate);
-        return make_failed(insn);
-    }
-
-    std::unique_ptr<X86Instruction> CapstoneWrapper::makeJe(const cs_insn& insn) {
-        const auto& x86detail = insn.detail->x86;
-        assert(x86detail.op_count == 1);
-        const cs_x86_op& dst = x86detail.operands[0];
-        auto imm = asImmediate(dst);
-        if(imm) return make_wrapper<Jcc>(insn.address, Cond::E, imm->immediate);
-        return make_failed(insn);
-    }
-
-    std::unique_ptr<X86Instruction> CapstoneWrapper::makeJae(const cs_insn& insn) {
-        const auto& x86detail = insn.detail->x86;
-        assert(x86detail.op_count == 1);
-        const cs_x86_op& dst = x86detail.operands[0];
-        auto imm = asImmediate(dst);
-        if(imm) return make_wrapper<Jcc>(insn.address, Cond::AE, imm->immediate);
-        return make_failed(insn);
-    }
-
-    std::unique_ptr<X86Instruction> CapstoneWrapper::makeJbe(const cs_insn& insn) {
-        const auto& x86detail = insn.detail->x86;
-        assert(x86detail.op_count == 1);
-        const cs_x86_op& dst = x86detail.operands[0];
-        auto imm = asImmediate(dst);
-        if(imm) return make_wrapper<Jcc>(insn.address, Cond::BE, imm->immediate);
-        return make_failed(insn);
-    }
-
-    std::unique_ptr<X86Instruction> CapstoneWrapper::makeJge(const cs_insn& insn) {
-        const auto& x86detail = insn.detail->x86;
-        assert(x86detail.op_count == 1);
-        const cs_x86_op& dst = x86detail.operands[0];
-        auto imm = asImmediate(dst);
-        if(imm) return make_wrapper<Jcc>(insn.address, Cond::GE, imm->immediate);
-        return make_failed(insn);
-    }
-
-    std::unique_ptr<X86Instruction> CapstoneWrapper::makeJle(const cs_insn& insn) {
-        const auto& x86detail = insn.detail->x86;
-        assert(x86detail.op_count == 1);
-        const cs_x86_op& dst = x86detail.operands[0];
-        auto imm = asImmediate(dst);
-        if(imm) return make_wrapper<Jcc>(insn.address, Cond::LE, imm->immediate);
-        return make_failed(insn);
-    }
-
-    std::unique_ptr<X86Instruction> CapstoneWrapper::makeJa(const cs_insn& insn) {
-        const auto& x86detail = insn.detail->x86;
-        assert(x86detail.op_count == 1);
-        const cs_x86_op& dst = x86detail.operands[0];
-        auto imm = asImmediate(dst);
-        if(imm) return make_wrapper<Jcc>(insn.address, Cond::A, imm->immediate);
-        return make_failed(insn);
-    }
-
-    std::unique_ptr<X86Instruction> CapstoneWrapper::makeJb(const cs_insn& insn) {
-        const auto& x86detail = insn.detail->x86;
-        assert(x86detail.op_count == 1);
-        const cs_x86_op& dst = x86detail.operands[0];
-        auto imm = asImmediate(dst);
-        if(imm) return make_wrapper<Jcc>(insn.address, Cond::B, imm->immediate);
-        return make_failed(insn);
-    }
-
-    std::unique_ptr<X86Instruction> CapstoneWrapper::makeJg(const cs_insn& insn) {
-        const auto& x86detail = insn.detail->x86;
-        assert(x86detail.op_count == 1);
-        const cs_x86_op& dst = x86detail.operands[0];
-        auto imm = asImmediate(dst);
-        if(imm) return make_wrapper<Jcc>(insn.address, Cond::G, imm->immediate);
-        return make_failed(insn);
-    }
-
-    std::unique_ptr<X86Instruction> CapstoneWrapper::makeJl(const cs_insn& insn) {
-        const auto& x86detail = insn.detail->x86;
-        assert(x86detail.op_count == 1);
-        const cs_x86_op& dst = x86detail.operands[0];
-        auto imm = asImmediate(dst);
-        if(imm) return make_wrapper<Jcc>(insn.address, Cond::L, imm->immediate);
-        return make_failed(insn);
-    }
-
-    std::unique_ptr<X86Instruction> CapstoneWrapper::makeJs(const cs_insn& insn) {
-        const auto& x86detail = insn.detail->x86;
-        assert(x86detail.op_count == 1);
-        const cs_x86_op& dst = x86detail.operands[0];
-        auto imm = asImmediate(dst);
-        if(imm) return make_wrapper<Jcc>(insn.address, Cond::S, imm->immediate);
-        return make_failed(insn);
-    }
-
-    std::unique_ptr<X86Instruction> CapstoneWrapper::makeJns(const cs_insn& insn) {
-        const auto& x86detail = insn.detail->x86;
-        assert(x86detail.op_count == 1);
-        const cs_x86_op& dst = x86detail.operands[0];
-        auto imm = asImmediate(dst);
-        if(imm) return make_wrapper<Jcc>(insn.address, Cond::NS, imm->immediate);
-        return make_failed(insn);
-    }
-
-    std::unique_ptr<X86Instruction> CapstoneWrapper::makeJo(const cs_insn& insn) {
-        const auto& x86detail = insn.detail->x86;
-        assert(x86detail.op_count == 1);
-        const cs_x86_op& dst = x86detail.operands[0];
-        auto imm = asImmediate(dst);
-        if(imm) return make_wrapper<Jcc>(insn.address, Cond::O, imm->immediate);
-        return make_failed(insn);
-    }
-
-    std::unique_ptr<X86Instruction> CapstoneWrapper::makeJno(const cs_insn& insn) {
-        const auto& x86detail = insn.detail->x86;
-        assert(x86detail.op_count == 1);
-        const cs_x86_op& dst = x86detail.operands[0];
-        auto imm = asImmediate(dst);
-        if(imm) return make_wrapper<Jcc>(insn.address, Cond::NO, imm->immediate);
-        return make_failed(insn);
-    }
-
-    std::unique_ptr<X86Instruction> CapstoneWrapper::makeJp(const cs_insn& insn) {
-        const auto& x86detail = insn.detail->x86;
-        assert(x86detail.op_count == 1);
-        const cs_x86_op& dst = x86detail.operands[0];
-        auto imm = asImmediate(dst);
-        if(imm) return make_wrapper<Jcc>(insn.address, Cond::P, imm->immediate);
-        return make_failed(insn);
-    }
-
-    std::unique_ptr<X86Instruction> CapstoneWrapper::makeJnp(const cs_insn& insn) {
-        const auto& x86detail = insn.detail->x86;
-        assert(x86detail.op_count == 1);
-        const cs_x86_op& dst = x86detail.operands[0];
-        auto imm = asImmediate(dst);
-        if(imm) return make_wrapper<Jcc>(insn.address, Cond::NP, imm->immediate);
+        if(imm) return make_wrapper<Jcc>(insn.address, cond, imm->immediate);
         return make_failed(insn);
     }
 

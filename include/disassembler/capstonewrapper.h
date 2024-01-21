@@ -88,22 +88,7 @@ namespace x64 {
         static std::unique_ptr<X86Instruction> makeCmpxchg(const cs_insn& insn);
 
         static std::unique_ptr<X86Instruction> makeJmp(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeJne(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeJe(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeJae(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeJbe(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeJge(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeJle(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeJa(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeJb(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeJg(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeJl(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeJs(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeJns(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeJo(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeJno(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeJp(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeJnp(const cs_insn& insn);
+        static std::unique_ptr<X86Instruction> makeJcc(Cond cond, const cs_insn& insn);
 
         static std::unique_ptr<X86Instruction> makeBsr(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeBsf(const cs_insn& insn);
