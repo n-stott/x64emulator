@@ -23,7 +23,7 @@ int main(int argc, char* argv[], char* envp[]) {
     }
 
     x64::Interpreter interpreter;
-    interpreter.setLogInstructions(true);
+    interpreter.setLogInstructions(false);
     interpreter.run(programPath, arguments, environmentVariables);
 
     return interpreter.hasCrashed();
