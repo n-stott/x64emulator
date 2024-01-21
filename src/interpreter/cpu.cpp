@@ -460,50 +460,29 @@ namespace x64 {
     template<> Xmm writeLow(Xmm t, u32 u) { return Xmm{(u64)u, t.hi}; }
     template<> Xmm writeLow(Xmm t, u64 u) { return Xmm{u, t.hi}; }
 
-    void Cpu::exec(const Mov<R8, R8>& ins) { set(ins.dst, get(ins.src)); }
-    void Cpu::exec(const Mov<R8, Imm>& ins) { set(ins.dst, get<u8>(ins.src)); }
-    void Cpu::exec(const Mov<R8, M8>& ins) { set(ins.dst, get(resolve(ins.src))); }
-    void Cpu::exec(const Mov<M8, R8>& ins) { set(resolve(ins.dst), get(ins.src)); }
-    void Cpu::exec(const Mov<M8, Imm>& ins) { set(resolve(ins.dst), get<u8>(ins.src)); }
-    void Cpu::exec(const Mov<R16, R16>& ins) { set(ins.dst, get(ins.src)); }
-    void Cpu::exec(const Mov<R16, Imm>& ins) { set(ins.dst, get<u16>(ins.src)); }
-    void Cpu::exec(const Mov<R16, M16>& ins) { set(ins.dst, get(resolve(ins.src))); }
-    void Cpu::exec(const Mov<M16, R16>& ins) { set(resolve(ins.dst), get(ins.src)); }
-    void Cpu::exec(const Mov<M16, Imm>& ins) { set(resolve(ins.dst), get<u16>(ins.src)); }
-    void Cpu::exec(const Mov<R32, R32>& ins) { set(ins.dst, get(ins.src)); }
-    void Cpu::exec(const Mov<R32, Imm>& ins) { set(ins.dst, get<u32>(ins.src)); }
-    void Cpu::exec(const Mov<R32, M32>& ins) { set(ins.dst, get(resolve(ins.src))); }
-    void Cpu::exec(const Mov<M32, R32>& ins) { set(resolve(ins.dst), get(ins.src)); }
-    void Cpu::exec(const Mov<M32, Imm>& ins) { set(resolve(ins.dst), get<u32>(ins.src)); }
-    void Cpu::exec(const Mov<R64, R64>& ins) { set(ins.dst, get(ins.src)); }
-    void Cpu::exec(const Mov<R64, Imm>& ins) { set(ins.dst, get<u64>(ins.src)); }
-    void Cpu::exec(const Mov<R64, M64>& ins) { set(ins.dst, get(resolve(ins.src))); }
-    void Cpu::exec(const Mov<M64, R64>& ins) { set(resolve(ins.dst), get(ins.src)); }
-    void Cpu::exec(const Mov<M64, Imm>& ins) { set(resolve(ins.dst), get<u64>(ins.src)); }
-    void Cpu::exec(const Mov<RSSE, RSSE>& ins) { set(ins.dst, get(ins.src)); }
-    void Cpu::exec(const Mov<RSSE, MSSE>& ins) { set(ins.dst, get(resolve(ins.src))); }
-    void Cpu::exec(const Mov<MSSE, RSSE>& ins) { set(resolve(ins.dst), get(ins.src)); }
+    void Cpu::exec(const Mov<RM8, RM8>& ins) { set(ins.dst, get(ins.src)); }
+    void Cpu::exec(const Mov<RM8, Imm>& ins) { set(ins.dst, get<u8>(ins.src)); }
+    void Cpu::exec(const Mov<RM16, RM16>& ins) { set(ins.dst, get(ins.src)); }
+    void Cpu::exec(const Mov<RM16, Imm>& ins) { set(ins.dst, get<u16>(ins.src)); }
+    void Cpu::exec(const Mov<RM32, RM32>& ins) { set(ins.dst, get(ins.src)); }
+    void Cpu::exec(const Mov<RM32, Imm>& ins) { set(ins.dst, get<u32>(ins.src)); }
+    void Cpu::exec(const Mov<RM64, RM64>& ins) { set(ins.dst, get(ins.src)); }
+    void Cpu::exec(const Mov<RM64, Imm>& ins) { set(ins.dst, get<u64>(ins.src)); }
+    void Cpu::exec(const Mov<RMSSE, RMSSE>& ins) { set(ins.dst, get(ins.src)); }
 
-    void Cpu::exec(const Movsx<R32, R8>& ins) { set(ins.dst, signExtend<u32>(get(ins.src))); }
-    void Cpu::exec(const Movsx<R32, M8>& ins) { set(ins.dst, signExtend<u32>(get(resolve(ins.src)))); }
-    void Cpu::exec(const Movsx<R64, R8>& ins) { set(ins.dst, signExtend<u64>(get(ins.src))); }
-    void Cpu::exec(const Movsx<R64, M8>& ins) { set(ins.dst, signExtend<u64>(get(resolve(ins.src)))); }
+    void Cpu::exec(const Movsx<R16, RM8>& ins) { set(ins.dst, signExtend<u16>(get(ins.src))); }
+    void Cpu::exec(const Movsx<R32, RM8>& ins) { set(ins.dst, signExtend<u32>(get(ins.src))); }
+    void Cpu::exec(const Movsx<R32, RM16>& ins) { set(ins.dst, signExtend<u32>(get(ins.src))); }
+    void Cpu::exec(const Movsx<R64, RM8>& ins) { set(ins.dst, signExtend<u64>(get(ins.src))); }
+    void Cpu::exec(const Movsx<R64, RM16>& ins) { set(ins.dst, signExtend<u64>(get(ins.src))); }
+    void Cpu::exec(const Movsx<R64, RM32>& ins) { set(ins.dst, signExtend<u64>(get(ins.src))); }
 
-    void Cpu::exec(const Movsx<R32, R16>& ins) { set(ins.dst, signExtend<u32>(get(ins.src))); }
-    void Cpu::exec(const Movsx<R32, M16>& ins) { set(ins.dst, signExtend<u32>(get(resolve(ins.src)))); }
-    void Cpu::exec(const Movsx<R64, R16>& ins) { set(ins.dst, signExtend<u64>(get(ins.src))); }
-    void Cpu::exec(const Movsx<R64, M16>& ins) { set(ins.dst, signExtend<u64>(get(resolve(ins.src)))); }
-
-    void Cpu::exec(const Movsx<R32, R32>& ins) { set(ins.dst, get(ins.src)); }
-    void Cpu::exec(const Movsx<R32, M32>& ins) { set(ins.dst, get(resolve(ins.src))); }
-    void Cpu::exec(const Movsx<R64, R32>& ins) { set(ins.dst, signExtend<u64>(get(ins.src))); }
-    void Cpu::exec(const Movsx<R64, M32>& ins) { set(ins.dst, signExtend<u64>(get(resolve(ins.src)))); }
-
-    void Cpu::exec(const Movzx<R16, R8>& ins) { set(ins.dst, (u16)get(ins.src)); }
-    void Cpu::exec(const Movzx<R32, R8>& ins) { set(ins.dst, (u32)get(ins.src)); }
-    void Cpu::exec(const Movzx<R32, R16>& ins) { set(ins.dst, (u32)get(ins.src)); }
-    void Cpu::exec(const Movzx<R32, M8>& ins) { set(ins.dst, (u32)get(resolve(ins.src))); }
-    void Cpu::exec(const Movzx<R32, M16>& ins) { set(ins.dst, (u32)get(resolve(ins.src))); }
+    void Cpu::exec(const Movzx<R16, RM8>& ins) { set(ins.dst, (u16)get(ins.src)); }
+    void Cpu::exec(const Movzx<R32, RM8>& ins) { set(ins.dst, (u32)get(ins.src)); }
+    void Cpu::exec(const Movzx<R32, RM16>& ins) { set(ins.dst, (u32)get(ins.src)); }
+    void Cpu::exec(const Movzx<R64, RM8>& ins) { set(ins.dst, (u64)get(ins.src)); }
+    void Cpu::exec(const Movzx<R64, RM16>& ins) { set(ins.dst, (u64)get(ins.src)); }
+    void Cpu::exec(const Movzx<R64, RM32>& ins) { set(ins.dst, (u64)get(ins.src)); }
 
     void Cpu::exec(const Lea<R32, B>& ins) { TODO(ins); }
     void Cpu::exec(const Lea<R32, BD>& ins) { set(ins.dst, narrow<u32, u64>(resolve(ins.src))); }
