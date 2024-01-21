@@ -2,6 +2,8 @@
 #include "interpreter/registers.h"
 #include "interpreter/verify.h"
 #include "interpreter/symbolprovider.h"
+#include "instructions/instruction.h"
+#include "instructionutils.h"
 #include "disassembler/capstonewrapper.h"
 #include "elf-reader.h"
 

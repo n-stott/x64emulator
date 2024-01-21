@@ -3,7 +3,6 @@
 #include "interpreter/verify.h"
 #include "interpreter/mmu.h"
 #include "interpreter/tcb.h"
-#include "program.h"
 #include "elf-reader.h"
 #include <algorithm>
 #include <cassert>

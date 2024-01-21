@@ -2,9 +2,24 @@
 #define INSTRUCTIONS_H
 
 #include "types.h"
+#include "utils/utils.h"
 #include <string>
 
 namespace x64 {
+
+    class Cpu;
+
+    struct X86Instruction {
+        explicit X86Instruction(u64 address) : address(address) { }
+        virtual ~X86Instruction() = default;
+        virtual void exec(Cpu* cpu) const = 0;
+        virtual std::string toString() const = 0;
+        virtual bool hasResolvableName() const = 0;
+        virtual bool isX87() const = 0;
+        virtual bool isSSE() const = 0;
+
+        u64 address;
+    };
 
     template<typename Dst, typename Src>
     struct Mov {

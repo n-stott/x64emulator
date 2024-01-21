@@ -4,7 +4,7 @@
 #include "interpreter/registers.h"
 #include "interpreter/flags.h"
 #include "interpreter/x87.h"
-#include "instructions.h"
+#include "instructions/allinstructions.h"
 
 namespace x64 {
 

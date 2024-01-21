@@ -1,26 +1,14 @@
-#ifndef PROGRAM_H
-#define PROGRAM_H
+#ifndef INSTRUCTION_H
+#define INSTRUCTION_H
 
 #include "interpreter/cpu.h"
 #include "instructionutils.h"
+#include "types.h"
 #include "utils/utils.h"
-#include <memory>
 #include <string>
-#include <vector>
+#include <type_traits>
 
 namespace x64 {
-
-    struct X86Instruction {
-        explicit X86Instruction(u64 address) : address(address) { }
-        virtual ~X86Instruction() = default;
-        virtual void exec(Cpu* cpu) const = 0;
-        virtual std::string toString() const = 0;
-        virtual bool hasResolvableName() const = 0;
-        virtual bool isX87() const = 0;
-        virtual bool isSSE() const = 0;
-
-        u64 address;
-    };
 
     template<typename Instruction>
     struct InstructionWrapper final : public X86Instruction {
@@ -97,7 +85,6 @@ namespace x64 {
 
         Instruction instruction;
     };
-
 }
 
 #endif

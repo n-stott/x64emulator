@@ -1,7 +1,8 @@
 #ifndef INSTRUCTIONUTILS_H
 #define INSTRUCTIONUTILS_H
 
-#include "instructions.h"
+#include "instructions/allinstructions.h"
+#include "types.h"
 #include <cassert>
 #include <string>
 #include <fmt/core.h>

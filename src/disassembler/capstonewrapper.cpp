@@ -1,5 +1,6 @@
 #include "disassembler/capstonewrapper.h"
-#include "instructions.h"
+#include "instructions/allinstructions.h"
+#include "instructions/instruction.h"
 #include "fmt/core.h"
 #include <cassert>
 

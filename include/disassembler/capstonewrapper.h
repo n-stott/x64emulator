@@ -1,8 +1,6 @@
 #ifndef CAPSTONEWRAPPER_H
 #define CAPSTONEWRAPPER_H
 
-
-#include "program.h"
 #include "types.h"
 #include <memory>
 #include <string>
@@ -12,6 +10,8 @@
 struct cs_insn;
 
 namespace x64 {
+
+    struct X86Instruction;
 
     class CapstoneWrapper {
     public:
