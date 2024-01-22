@@ -1,6 +1,5 @@
 #include "interpreter/symbolprovider.h"
 #include "interpreter/interpreter.h"
-#include "interpreter/loader.h"
 #include "interpreter/verify.h"
 #include <fmt/core.h>
 
