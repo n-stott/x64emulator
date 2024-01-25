@@ -296,22 +296,32 @@ namespace x64 {
                            Addr<size, BISD>,
                            Addr<size, SO>>;
 
+
+    template<typename Reg, Size size>
+    using RM = std::variant<Reg,
+                           Addr<size, B>,
+                           Addr<size, BD>,
+                           Addr<size, BIS>,
+                           Addr<size, ISD>,
+                           Addr<size, BISD>,
+                           Addr<size, SO>>;
+
     using M8 = M<Size::BYTE>;
-    using RM8 = std::variant<R8, M8>;
+    using RM8 = RM<R8, Size::BYTE>;
 
     using M16 = M<Size::WORD>;
-    using RM16 = std::variant<R16, M16>;
+    using RM16 = RM<R16, Size::WORD>;
 
     using M32 = M<Size::DWORD>;
-    using RM32 = std::variant<R32, M32>;
+    using RM32 = RM<R32, Size::DWORD>;
 
     using M64 = M<Size::QWORD>;
-    using RM64 = std::variant<R64, M64>;
+    using RM64 = RM<R64, Size::QWORD>;
 
     using M80 = M<Size::TWORD>;
 
     using MSSE = M<Size::XMMWORD>;
-    using RMSSE = std::variant<RSSE, MSSE>;
+    using RMSSE = RM<RSSE, Size::XMMWORD>;
 
     using M224 = M<Size::FPUENV>;
 }

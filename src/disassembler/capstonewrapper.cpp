@@ -522,6 +522,25 @@ namespace x64 {
         return {};
     }
 
+    template<typename Reg, Size size>
+    std::optional<RM<Reg, size>> asRM(const cs_x86_op& operand) {
+        if(operand.type != X86_OP_MEM) return {};
+        if(operand.size != pointerSize(size)) return {};
+        auto b = asBase(operand);
+        if(!!b) return Addr<size, B>{asSegment(operand.mem.segment).value(), b.value()};
+        auto bd = asBaseDisplacement(operand);
+        if(!!bd) return Addr<size, BD>{asSegment(operand.mem.segment).value(),bd.value()};
+        auto bis = asBaseIndexScale(operand);
+        if(!!bis) return Addr<size, BIS>{asSegment(operand.mem.segment).value(),bis.value()};
+        auto isd = asIndexScaleDisplacement(operand);
+        if(!!isd) return Addr<size, ISD>{asSegment(operand.mem.segment).value(),isd.value()};
+        auto bisd = asBaseIndexScaleDisplacement(operand);
+        if(!!bisd) return Addr<size, BISD>{asSegment(operand.mem.segment).value(), bisd.value()};
+        auto so = asSegmentOffset(operand);
+        if(!!so) return Addr<size, SO>{asSegment(operand.mem.segment).value(), so.value()};
+        return {};
+    }
+
     std::optional<M8> asMemory8(const cs_x86_op& operand) { return asMemory<Size::BYTE>(operand); }
     std::optional<M16> asMemory16(const cs_x86_op& operand) { return asMemory<Size::WORD>(operand); }
     std::optional<M32> asMemory32(const cs_x86_op& operand) { return asMemory<Size::DWORD>(operand); }
@@ -533,7 +552,7 @@ namespace x64 {
     std::optional<RM8> asRM8(const cs_x86_op& operand) {
         auto asreg = asRegister8(operand);
         if(asreg) return asreg.value();
-        auto asmem = asMemory8(operand);
+        auto asmem = asRM<R8, Size::BYTE>(operand);
         if(asmem) return asmem.value();
         return {};
     }
@@ -541,7 +560,7 @@ namespace x64 {
     std::optional<RM16> asRM16(const cs_x86_op& operand) {
         auto asreg = asRegister16(operand);
         if(asreg) return asreg.value();
-        auto asmem = asMemory16(operand);
+        auto asmem = asRM<R16, Size::WORD>(operand);
         if(asmem) return asmem.value();
         return {};
     }
@@ -549,7 +568,7 @@ namespace x64 {
     std::optional<RM32> asRM32(const cs_x86_op& operand) {
         auto asreg = asRegister32(operand);
         if(asreg) return asreg.value();
-        auto asmem = asMemory32(operand);
+        auto asmem = asRM<R32, Size::DWORD>(operand);
         if(asmem) return asmem.value();
         return {};
     }
@@ -557,7 +576,7 @@ namespace x64 {
     std::optional<RM64> asRM64(const cs_x86_op& operand) {
         auto asreg = asRegister64(operand);
         if(asreg) return asreg.value();
-        auto asmem = asMemory64(operand);
+        auto asmem = asRM<R64, Size::QWORD>(operand);
         if(asmem) return asmem.value();
         return {};
     }
@@ -565,7 +584,7 @@ namespace x64 {
     std::optional<RMSSE> asRM128(const cs_x86_op& operand) {
         auto asreg = asRegister128(operand);
         if(asreg) return asreg.value();
-        auto asmem = asMemory128(operand);
+        auto asmem = asRM<RSSE, Size::XMMWORD>(operand);
         if(asmem) return asmem.value();
         return {};
     }
