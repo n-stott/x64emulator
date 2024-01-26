@@ -1874,12 +1874,25 @@ namespace x64 {
         assert(x86detail.op_count == 2);
         const cs_x86_op& dst = x86detail.operands[0];
         const cs_x86_op& src = x86detail.operands[1];
-        auto rssedst = asRegister128(dst);
-        auto rssesrc = asRegister128(src);
-        auto m64dst = asMemory64(dst);
-        auto m64src = asMemory64(src);
-        if(m64dst && rssesrc) return make_wrapper<Movsd<M64, RSSE>>(insn.address, m64dst.value(), rssesrc.value());
-        if(rssedst && m64src) return make_wrapper<Movsd<RSSE, M64>>(insn.address, rssedst.value(), m64src.value());
+        u8 prefixByte = insn.detail->x86.prefix[0];
+        if(prefixByte == 0) {
+            auto rssedst = asRegister128(dst);
+            auto rssesrc = asRegister128(src);
+            auto m64dst = asMemory64(dst);
+            auto m64src = asMemory64(src);
+            if(m64dst && rssesrc) return make_wrapper<Movsd<M64, RSSE>>(insn.address, m64dst.value(), rssesrc.value());
+            if(rssedst && m64src) return make_wrapper<Movsd<RSSE, M64>>(insn.address, rssedst.value(), m64src.value());
+        } else {
+            x86_prefix prefix = (x86_prefix)prefixByte;
+            auto m32dst = asMemory32(dst);
+            auto m32src = asMemory32(src);
+            auto m64dst = asMemory64(dst);
+            auto m64src = asMemory64(src);
+            if(prefix == X86_PREFIX_REP) {
+                if(m32dst && m32src) return make_wrapper< Rep< Movs<M32, M32> >>(insn.address, m32dst.value(), m32src.value());
+                if(m64dst && m64src) return make_wrapper< Rep< Movs<M64, M64> >>(insn.address, m64dst.value(), m64src.value());
+            }
+        }
         return make_failed(insn);
     }
 

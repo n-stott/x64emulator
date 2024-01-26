@@ -803,6 +803,23 @@ namespace x64 {
         set(R64::RDI, dptr.address());
     }
 
+    void Cpu::exec(const Rep<Movs<M32, M32>>& ins) {
+        u32 counter = get(R32::ECX);
+        Ptr32 dptr = resolve(ins.op.dst);
+        Ptr32 sptr = resolve(ins.op.src);
+        verify(flags_.direction == 0);
+        while(counter) {
+            u32 val = mmu_->read32(sptr);
+            mmu_->write32(dptr, val);
+            ++sptr;
+            ++dptr;
+            --counter;
+        }
+        set(R32::ECX, counter);
+        set(R64::RSI, sptr.address());
+        set(R64::RDI, dptr.address());
+    }
+
     void Cpu::exec(const Rep<Movs<M64, M64>>& ins) {
         u32 counter = get(R32::ECX);
         Ptr64 dptr = resolve(ins.op.dst);
