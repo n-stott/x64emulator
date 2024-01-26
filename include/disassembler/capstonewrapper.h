@@ -179,6 +179,7 @@ namespace x64 {
         static std::unique_ptr<X86Instruction> makeAndnpd(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeOrpd(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeXorpd(const cs_insn& insn);
+        static std::unique_ptr<X86Instruction> makeShufpd(const cs_insn& insn);
 
         static std::unique_ptr<X86Instruction> makeMovlps(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeMovhps(const cs_insn& insn);

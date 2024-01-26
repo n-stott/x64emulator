@@ -1039,6 +1039,13 @@ namespace x64 {
         return (u64)(i64)f;
     }
 
+    u128 Impl::shufpd(u128 dst, u128 src, u8 order) {
+        u128 res;
+        res.lo = (order & 0x1) ? dst.hi : dst.lo;
+        res.hi = (order & 0x1) ? src.hi : src.lo;
+        return res;
+    }
+
     u128 Impl::punpcklbw(u128 dst, u128 src) {
         std::array<u8, 16> DST;
         static_assert(sizeof(DST) == sizeof(u128));

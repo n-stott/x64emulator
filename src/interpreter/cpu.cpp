@@ -1284,6 +1284,11 @@ namespace x64 {
         set(ins.dst, dst);
     }
 
+    void Cpu::exec(const Shufpd<RSSE, RMSSE, Imm>& ins) {
+        u128 res = Impl::shufpd(get(ins.dst), get(ins.src), get<u8>(ins.order));
+        set(ins.dst, res);
+    }
+
     void Cpu::exec(const Movlps<RSSE, M64>& ins) {
         u128 dst = get(ins.dst);
         u64 src = get(resolve(ins.src));

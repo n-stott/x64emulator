@@ -887,6 +887,11 @@ namespace utils {
         return fmt::format("{:9}{},{}", "xorpd", toString(ins.dst), toString(ins.src));
     }
 
+    template<typename Dst, typename Src, typename Ord>
+    inline std::string toString(Shufpd<Dst, Src, Ord> ins) {
+        return fmt::format("{:9}{},{},{}", "shufpd", toString(ins.dst), toString(ins.src), toString(ins.order));
+    }
+
     template<typename Dst, typename Src>
     inline std::string toString(Movhps<Dst, Src> ins) {
         return fmt::format("{:9}{},{}", "movhps", toString(ins.dst), toString(ins.src));

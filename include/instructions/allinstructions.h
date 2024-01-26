@@ -728,6 +728,14 @@ namespace x64 {
         TAG_SSE;
     };
 
+    template<typename Dst, typename Src, typename Ord>
+    struct Shufpd {
+        Dst dst;
+        Src src;
+        Ord order;
+        TAG_SSE;
+    };
+
     template<typename Dst, typename Src>
     struct Movhps {
         Dst dst;
