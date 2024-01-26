@@ -188,6 +188,7 @@ namespace x64 {
         [[nodiscard]] static u128 psubd(u128 dst, u128 src);
         [[nodiscard]] static u128 psubq(u128 dst, u128 src);
 
+        [[nodiscard]] static u128 pmaxub(u128 dst, u128 src);
         [[nodiscard]] static u128 pminub(u128 dst, u128 src);
 
         static void ptest(u128 dst, u128 src, Flags* flags);

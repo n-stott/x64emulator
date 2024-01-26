@@ -594,6 +594,7 @@ namespace x64 {
         void exec(const Psubd<RSSE, RMSSE>&);
         void exec(const Psubq<RSSE, RMSSE>&);
 
+        void exec(const Pmaxub<RSSE, RMSSE>&);
         void exec(const Pminub<RSSE, RMSSE>&);
 
         void exec(const Ptest<RSSE, RMSSE>&);

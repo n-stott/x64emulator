@@ -1434,6 +1434,11 @@ namespace x64 {
         set(ins.dst, res);
     }
 
+    void Cpu::exec(const Pmaxub<RSSE, RMSSE>& ins) {
+        u128 res = Impl::pmaxub(get(ins.dst), get(ins.src));
+        set(ins.dst, res);
+    }
+
     void Cpu::exec(const Pminub<RSSE, RMSSE>& ins) {
         u128 res = Impl::pminub(get(ins.dst), get(ins.src));
         set(ins.dst, res);

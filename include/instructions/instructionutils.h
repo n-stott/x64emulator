@@ -1028,6 +1028,11 @@ namespace utils {
     }
 
     template<typename Dst, typename Src>
+    inline std::string toString(Pmaxub<Dst, Src> ins) {
+        return fmt::format("{:9}{},{}", "pmaxub", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Dst, typename Src>
     inline std::string toString(Pminub<Dst, Src> ins) {
         return fmt::format("{:9}{},{}", "pminub", toString(ins.dst), toString(ins.src));
     }

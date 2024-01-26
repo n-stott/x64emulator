@@ -926,6 +926,13 @@ namespace x64 {
     };
 
     template<typename Dst, typename Src>
+    struct Pmaxub {
+        Dst dst;
+        Src src;
+        TAG_SSE;
+    };
+
+    template<typename Dst, typename Src>
     struct Pminub {
         Dst dst;
         Src src;
