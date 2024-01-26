@@ -670,6 +670,24 @@ namespace x64 {
         return (base & ~mask) | (~base & mask);
     }
 
+    u16 Impl::bts16(u16 base, u16 index, Flags* flags) {
+        flags->carry = (base >> (index % 16)) & 0x1;
+        u16 mask = (u16)(1 << (index % 16));
+        return (base & ~mask) | mask;
+    }
+    
+    u32 Impl::bts32(u32 base, u32 index, Flags* flags) {
+        flags->carry = (base >> (index % 32)) & 0x1;
+        u32 mask = ((u32)1 << (index % 32));
+        return (base & ~mask) | mask;
+    }
+
+    u64 Impl::bts64(u64 base, u64 index, Flags* flags) {
+        flags->carry = (base >> (index % 64)) & 0x1;
+        u64 mask = ((u64)1 << (index % 64));
+        return (base & ~mask) | mask;
+    }
+
     void Impl::test8(u8 src1, u8 src2, Flags* flags) {
         u8 tmp = src1 & src2;
         flags->sign = (tmp & (1 << 7));

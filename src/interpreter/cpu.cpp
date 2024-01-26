@@ -651,6 +651,13 @@ namespace x64 {
     void Cpu::exec(const Btc<RM64, R64>& ins) { set(ins.base, Impl::btc64(get(ins.base), get(ins.offset), &flags_)); }
     void Cpu::exec(const Btc<RM64, Imm>& ins) { set(ins.base, Impl::btc64(get(ins.base), get<u64>(ins.offset), &flags_)); }
 
+    void Cpu::exec(const Bts<RM16, R16>& ins) { set(ins.base, Impl::bts16(get(ins.base), get(ins.offset), &flags_)); }
+    void Cpu::exec(const Bts<RM16, Imm>& ins) { set(ins.base, Impl::bts16(get(ins.base), get<u16>(ins.offset), &flags_)); }
+    void Cpu::exec(const Bts<RM32, R32>& ins) { set(ins.base, Impl::bts32(get(ins.base), get(ins.offset), &flags_)); }
+    void Cpu::exec(const Bts<RM32, Imm>& ins) { set(ins.base, Impl::bts32(get(ins.base), get<u32>(ins.offset), &flags_)); }
+    void Cpu::exec(const Bts<RM64, R64>& ins) { set(ins.base, Impl::bts64(get(ins.base), get(ins.offset), &flags_)); }
+    void Cpu::exec(const Bts<RM64, Imm>& ins) { set(ins.base, Impl::bts64(get(ins.base), get<u64>(ins.offset), &flags_)); }
+
     void Cpu::exec(const Test<RM8, R8>& ins) { Impl::test8(get(ins.src1), get(ins.src2), &flags_); }
     void Cpu::exec(const Test<RM8, Imm>& ins) { Impl::test8(get(ins.src1), get<u8>(ins.src2), &flags_); }
     void Cpu::exec(const Test<RM16, R16>& ins) { Impl::test16(get(ins.src1), get(ins.src2), &flags_); }

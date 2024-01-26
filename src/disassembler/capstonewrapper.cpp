@@ -85,6 +85,7 @@ namespace x64 {
             case X86_INS_BT: return makeBt(insn);
             case X86_INS_BTR: return makeBtr(insn);
             case X86_INS_BTC: return makeBtc(insn);
+            case X86_INS_BTS: return makeBts(insn);
             case X86_INS_TEST: return makeTest(insn);
             case X86_INS_CMP: return makeCmp(insn);
             case X86_INS_CMPXCHG: return makeCmpxchg(insn);
@@ -1241,6 +1242,27 @@ namespace x64 {
         if(rm32src1 && immsrc2) return make_wrapper<Btc<RM32, Imm>>(insn.address, rm32src1.value(), immsrc2.value());
         if(rm64src1 && r64src2) return make_wrapper<Btc<RM64, R64>>(insn.address, rm64src1.value(), r64src2.value());
         if(rm64src1 && immsrc2) return make_wrapper<Btc<RM64, Imm>>(insn.address, rm64src1.value(), immsrc2.value());
+        return make_failed(insn);
+    }
+    
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makeBts(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& base = x86detail.operands[0];
+        const cs_x86_op& offset = x86detail.operands[1];
+        auto rm16src1 = asRM16(base);
+        auto rm32src1 = asRM32(base);
+        auto rm64src1 = asRM64(base);
+        auto r16src2 = asRegister16(offset);
+        auto r32src2 = asRegister32(offset);
+        auto r64src2 = asRegister64(offset);
+        auto immsrc2 = asImmediate(offset);
+        if(rm16src1 && r16src2) return make_wrapper<Bts<RM16, R16>>(insn.address, rm16src1.value(), r16src2.value());
+        if(rm16src1 && immsrc2) return make_wrapper<Bts<RM16, Imm>>(insn.address, rm16src1.value(), immsrc2.value());
+        if(rm32src1 && r32src2) return make_wrapper<Bts<RM32, R32>>(insn.address, rm32src1.value(), r32src2.value());
+        if(rm32src1 && immsrc2) return make_wrapper<Bts<RM32, Imm>>(insn.address, rm32src1.value(), immsrc2.value());
+        if(rm64src1 && r64src2) return make_wrapper<Bts<RM64, R64>>(insn.address, rm64src1.value(), r64src2.value());
+        if(rm64src1 && immsrc2) return make_wrapper<Bts<RM64, Imm>>(insn.address, rm64src1.value(), immsrc2.value());
         return make_failed(insn);
     }
     

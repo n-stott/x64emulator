@@ -388,6 +388,13 @@ namespace x64 {
         void exec(const Btc<RM64, R64>&);
         void exec(const Btc<RM64, Imm>&);
 
+        void exec(const Bts<RM16, R16>&);
+        void exec(const Bts<RM16, Imm>&);
+        void exec(const Bts<RM32, R32>&);
+        void exec(const Bts<RM32, Imm>&);
+        void exec(const Bts<RM64, R64>&);
+        void exec(const Bts<RM64, Imm>&);
+
         void exec(const Test<RM8, R8>&);
         void exec(const Test<RM8, Imm>&);
         void exec(const Test<RM16, R16>&);

@@ -83,6 +83,7 @@ namespace x64 {
         static std::unique_ptr<X86Instruction> makeBt(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeBtr(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeBtc(const cs_insn& insn);
+        static std::unique_ptr<X86Instruction> makeBts(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeTest(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeCmp(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeCmpxchg(const cs_insn& insn);

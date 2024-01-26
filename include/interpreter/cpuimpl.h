@@ -73,6 +73,10 @@ namespace x64 {
         [[nodiscard]] static u16 btc16(u16 base, u16 index, Flags* flags);
         [[nodiscard]] static u32 btc32(u32 base, u32 index, Flags* flags);
         [[nodiscard]] static u64 btc64(u64 base, u64 index, Flags* flags);
+
+        [[nodiscard]] static u16 bts16(u16 base, u16 index, Flags* flags);
+        [[nodiscard]] static u32 bts32(u32 base, u32 index, Flags* flags);
+        [[nodiscard]] static u64 bts64(u64 base, u64 index, Flags* flags);
         
         static void cmpxchg32(u32 rax, u32 dest, Flags* flags);
         static void cmpxchg64(u64 rax, u64 dest, Flags* flags);
