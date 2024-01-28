@@ -26,6 +26,7 @@ namespace x64 {
             case X86_INS_MOVDQA: return makeMovdqa(insn);
             case X86_INS_MOVDQU: return makeMovdqu(insn);
             case X86_INS_MOVUPS: return makeMovups(insn);
+            case X86_INS_MOVUPD:
             case X86_INS_MOVAPD: return makeMovapd(insn);
             case X86_INS_MOVSX: return makeMovsx(insn);
             case X86_INS_MOVZX: return makeMovzx(insn);
