@@ -183,7 +183,7 @@ namespace x64 {
         
         // stack
         const u64 desiredStackBase = 0x10000000;
-        const u64 stackSize = 16*Mmu::PAGE_SIZE;
+        const u64 stackSize = 256*Mmu::PAGE_SIZE;
         u64 stackBase = vm_.mmu().mmap(desiredStackBase, stackSize, PROT::READ | PROT::WRITE, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0);
         vm_.mmu().setRegionName(stackBase, "stack");
         vm_.setStackPointer(stackBase + stackSize);
