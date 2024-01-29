@@ -967,16 +967,26 @@ namespace x64 {
         return r;
     }
 
-    u64 Impl::divsd(u64 dst, u64 src) {
+    u128 Impl::divss(u128 dst, u32 src) {
+        static_assert(sizeof(u32) == sizeof(float));
+        float d;
+        float s;
+        std::memcpy(&d, &dst, sizeof(d));
+        std::memcpy(&s, &src, sizeof(s));
+        float res = d / s;
+        std::memcpy(&dst, &res, sizeof(res));
+        return dst;
+    }
+
+    u128 Impl::divsd(u128 dst, u64 src) {
         static_assert(sizeof(u64) == sizeof(double));
         double d;
         double s;
         std::memcpy(&d, &dst, sizeof(d));
         std::memcpy(&s, &src, sizeof(s));
         double res = d / s;
-        u64 r;
-        std::memcpy(&r, &res, sizeof(r));
-        return r;
+        std::memcpy(&dst, &res, sizeof(res));
+        return dst;
     }
 
     u64 Impl::cmpsd(u64 dst, u64 src, FCond cond) {
@@ -1001,20 +1011,40 @@ namespace x64 {
         __builtin_unreachable();
     }
 
-    u64 Impl::cvtsi2sd32(u32 src) {
+    u128 Impl::cvtsi2ss32(u128 dst, u32 src) {
+        i32 isrc = (i32)src;
+        float res = (float)isrc;
+        u32 r;
+        std::memcpy(&r, &res, sizeof(r));
+        dst.lo = (dst.lo & 0xFFFFFFFFFFFF0000) | r;
+        return dst;
+    }
+
+    u128 Impl::cvtsi2ss64(u128 dst, u64 src) {
+        i64 isrc = (i64)src;
+        float res = (float)isrc;
+        u32 r;
+        std::memcpy(&r, &res, sizeof(r));
+        dst.lo = (dst.lo & 0xFFFFFFFFFFFF0000) | r;
+        return dst;
+    }
+
+    u128 Impl::cvtsi2sd32(u128 dst, u32 src) {
         i32 isrc = (i32)src;
         double res = (double)isrc;
         u64 r;
         std::memcpy(&r, &res, sizeof(r));
-        return r;
+        dst.lo = (dst.lo & 0xFFFFFFFF00000000) | r;
+        return dst;
     }
 
-    u64 Impl::cvtsi2sd64(u64 src) {
+    u128 Impl::cvtsi2sd64(u128 dst, u64 src) {
         i64 isrc = (i64)src;
         double res = (double)isrc;
         u64 r;
         std::memcpy(&r, &res, sizeof(r));
-        return r;
+        dst.lo = (dst.lo & 0xFFFFFFFF00000000) | r;
+        return dst;
     }
 
     u64 Impl::cvtss2sd(u32 src) {

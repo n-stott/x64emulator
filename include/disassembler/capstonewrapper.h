@@ -158,6 +158,7 @@ namespace x64 {
         static std::unique_ptr<X86Instruction> makeSubss(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeSubsd(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeMulsd(const cs_insn& insn);
+        static std::unique_ptr<X86Instruction> makeDivss(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeDivsd(const cs_insn& insn);
 
         static std::unique_ptr<X86Instruction> makeComiss(const cs_insn& insn);
@@ -168,6 +169,7 @@ namespace x64 {
         template<FCond cond>
         static std::unique_ptr<X86Instruction> makeCmpsd(const cs_insn& insn);
 
+        static std::unique_ptr<X86Instruction> makeCvtsi2ss(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeCvtsi2sd(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeCvtss2sd(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeCvttsd2si(const cs_insn& insn);

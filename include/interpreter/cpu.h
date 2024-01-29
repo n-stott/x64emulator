@@ -456,8 +456,10 @@ namespace x64 {
 
         void exec(const Movaps<RMSSE, RMSSE>&);
 
-        void exec(const Movd<RSSE, R32>&);
+        void exec(const Movd<RSSE, RM32>&);
         void exec(const Movd<R32, RSSE>&);
+        void exec(const Movd<RSSE, RM64>&);
+        void exec(const Movd<R64, RSSE>&);
 
         void exec(const Movq<RSSE, RM64>&);
         void exec(const Movq<RM64, RSSE>&);
@@ -513,14 +515,16 @@ namespace x64 {
         void exec(const Addsd<RSSE, RSSE>&);
         void exec(const Addsd<RSSE, M64>&);
 
-        void exec(const Subsd<RSSE, RSSE>&);
-        void exec(const Subsd<RSSE, M64>&);
         void exec(const Subss<RSSE, RSSE>&);
         void exec(const Subss<RSSE, M32>&);
+        void exec(const Subsd<RSSE, RSSE>&);
+        void exec(const Subsd<RSSE, M64>&);
 
         void exec(const Mulsd<RSSE, RSSE>&);
         void exec(const Mulsd<RSSE, M64>&);
 
+        void exec(const Divss<RSSE, RSSE>&);
+        void exec(const Divss<RSSE, M32>&);
         void exec(const Divsd<RSSE, RSSE>&);
         void exec(const Divsd<RSSE, M64>&);
 
@@ -536,6 +540,8 @@ namespace x64 {
         void exec(const Cmpsd<RSSE, RSSE>&);
         void exec(const Cmpsd<RSSE, M64>&);
 
+        void exec(const Cvtsi2ss<RSSE, RM32>&);
+        void exec(const Cvtsi2ss<RSSE, RM64>&);
         void exec(const Cvtsi2sd<RSSE, RM32>&);
         void exec(const Cvtsi2sd<RSSE, RM64>&);
 

@@ -942,8 +942,10 @@ namespace x64 {
 
     void Cpu::exec(const Movaps<RMSSE, RMSSE>& ins) { set(ins.dst, get(ins.src)); }
 
-    void Cpu::exec(const Movd<RSSE, R32>& ins) { set(ins.dst, zeroExtend<Xmm, u32>(get(ins.src))); }
+    void Cpu::exec(const Movd<RSSE, RM32>& ins) { set(ins.dst, zeroExtend<Xmm, u32>(get(ins.src))); }
     void Cpu::exec(const Movd<R32, RSSE>& ins) { set(ins.dst, narrow<u32, Xmm>(get(ins.src))); }
+    void Cpu::exec(const Movd<RSSE, RM64>& ins) { set(ins.dst, zeroExtend<Xmm, u64>(get(ins.src))); }
+    void Cpu::exec(const Movd<R64, RSSE>& ins) { set(ins.dst, narrow<u64, Xmm>(get(ins.src))); }
 
     void Cpu::exec(const Movq<RSSE, RM64>& ins) { set(ins.dst, zeroExtend<Xmm, u64>(get(ins.src))); }
     void Cpu::exec(const Movq<RM64, RSSE>& ins) { set(ins.dst, narrow<u64, Xmm>(get(ins.src))); }
@@ -1137,16 +1139,28 @@ namespace x64 {
         set(ins.dst, zeroExtend<Xmm, u64>(res));
     }
 
+    void Cpu::exec(const Divss<RSSE, RSSE>& ins) {
+        WARN_ROUNDING_MODE();
+        u128 res = Impl::divss(get(ins.dst), (u32)get(ins.src).lo);
+        set(ins.dst, res);
+    }
+
+    void Cpu::exec(const Divss<RSSE, M32>& ins) {
+        WARN_ROUNDING_MODE();
+        u128 res = Impl::divss(get(ins.dst), get(resolve(ins.src)));
+        set(ins.dst, res);
+    }
+
     void Cpu::exec(const Divsd<RSSE, RSSE>& ins) {
         WARN_ROUNDING_MODE();
-        u64 res = Impl::divsd(narrow<u64, Xmm>(get(ins.dst)), narrow<u64, Xmm>(get(ins.src)));
-        set(ins.dst, zeroExtend<Xmm, u64>(res));
+        u128 res = Impl::divsd(get(ins.dst), get(ins.src).lo);
+        set(ins.dst, res);
     }
 
     void Cpu::exec(const Divsd<RSSE, M64>& ins) {
         WARN_ROUNDING_MODE();
-        u64 res = Impl::divsd(narrow<u64, Xmm>(get(ins.dst)), get(resolve(ins.src)));
-        set(ins.dst, zeroExtend<Xmm, u64>(res));
+        u128 res = Impl::divsd(get(ins.dst), get(resolve(ins.src)));
+        set(ins.dst, res);
     }
 
     void Cpu::exec(const Comiss<RSSE, RSSE>& ins) {
@@ -1203,13 +1217,22 @@ namespace x64 {
         set(ins.dst, writeLow<Xmm, u64>(get(ins.dst), res));
     }
 
+    void Cpu::exec(const Cvtsi2ss<RSSE, RM32>& ins) {
+        u128 res = Impl::cvtsi2ss32(get(ins.dst), get(ins.src));
+        set(ins.dst, res);
+    }
+    void Cpu::exec(const Cvtsi2ss<RSSE, RM64>& ins) {
+        u128 res = Impl::cvtsi2ss64(get(ins.dst), get(ins.src));
+        set(ins.dst, res);
+    }
+
     void Cpu::exec(const Cvtsi2sd<RSSE, RM32>& ins) {
-        u64 res = Impl::cvtsi2sd32(get(ins.src));
-        set(ins.dst, writeLow<Xmm, u64>(get(ins.dst), res));
+        u128 res = Impl::cvtsi2sd32(get(ins.dst), get(ins.src));
+        set(ins.dst, res);
     }
     void Cpu::exec(const Cvtsi2sd<RSSE, RM64>& ins) {
-        u64 res = Impl::cvtsi2sd64(get(ins.src));
-        set(ins.dst, writeLow<Xmm, u64>(get(ins.dst), res));
+        u128 res = Impl::cvtsi2sd64(get(ins.dst), get(ins.src));
+        set(ins.dst, res);
     }
 
     void Cpu::exec(const Cvtss2sd<RSSE, RSSE>& ins) {

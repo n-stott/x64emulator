@@ -803,6 +803,11 @@ namespace utils {
     }
 
     template<typename Dst, typename Src>
+    inline std::string toString(Divss<Dst, Src> ins) {
+        return fmt::format("{:9}{},{}", "divss", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Dst, typename Src>
     inline std::string toString(Divsd<Dst, Src> ins) {
         return fmt::format("{:9}{},{}", "divsd", toString(ins.dst), toString(ins.src));
     }
@@ -830,6 +835,11 @@ namespace utils {
     template<typename Dst, typename Src>
     inline std::string toString(Cmpsd<Dst, Src> ins) {
         return fmt::format("{:9}{},{}", fmt::format("cmp{}sd", toString(ins.cond)), toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Dst, typename Src>
+    inline std::string toString(Cvtsi2ss<Dst, Src> ins) {
+        return fmt::format("{:9}{},{}", "cvtsi2ss", toString(ins.dst), toString(ins.src));
     }
 
     template<typename Dst, typename Src>

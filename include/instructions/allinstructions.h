@@ -603,6 +603,13 @@ namespace x64 {
     };
 
     template<typename Dst, typename Src>
+    struct Divss {
+        Dst dst;
+        Src src;
+        TAG_SSE;
+    };
+
+    template<typename Dst, typename Src>
     struct Divsd {
         Dst dst;
         Src src;
@@ -642,6 +649,13 @@ namespace x64 {
         Dst dst;
         Src src;
         FCond cond;
+        TAG_SSE;
+    };
+
+    template<typename Dst, typename Src>
+    struct Cvtsi2ss {
+        Dst dst;
+        Src src;
         TAG_SSE;
     };
 
