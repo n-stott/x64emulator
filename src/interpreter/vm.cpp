@@ -266,7 +266,6 @@ namespace x64 {
 
     void VM::tryRetrieveSymbolsFromExecutable(const Mmu::Region& region) const {
         if(!symbolProvider_) return;
-        if(!logInstructions()) return;
         if(region.file().empty()) return;
 
         std::unique_ptr<elf::Elf> elf = elf::ElfReader::tryCreate(region.file());
@@ -322,7 +321,6 @@ namespace x64 {
 
     std::string VM::calledFunctionName(u64 address) const {
         if(!symbolProvider_) return "";
-        if(!logInstructions()) return ""; // We don't print the name, so we don't bother doing the lookup
         InstructionPosition pos = findSectionWithAddress(address);
         verify(!!pos.section, [&]() {
             fmt::print("Could not determine function origin section for address {:#x}\n", address);
