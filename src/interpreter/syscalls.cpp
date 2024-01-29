@@ -3,6 +3,7 @@
 #include "interpreter/mmu.h"
 #include "interpreter/verify.h"
 #include "utils/host.h"
+#include <numeric>
 #include <asm/prctl.h>
 #include <string.h>
 #include <sys/ioctl.h>
@@ -182,6 +183,10 @@ namespace x64 {
                 vm_->set(R64::RAX, (u64)ret);
                 return;
             }
+            case 0xba: { // gettid
+                vm_->set(R64::RAX, (u64)0xfeed);
+                return;
+            }
             case 0xca: { // futex
                 Ptr32 uaddr(arg0);
                 int futex_op = (int)arg1;
@@ -241,6 +246,14 @@ namespace x64 {
                 Ptr new_limit(arg2);
                 Ptr old_limit(arg3);
                 int ret = prlimit64(pid, resource, new_limit, old_limit);
+                vm_->set(R64::RAX, (u64)ret);
+                return;
+            }
+            case 0x13e: { // getrandom
+                Ptr buf{arg0};
+                size_t len = (size_t)arg1;
+                int flags = (int)arg2;
+                ssize_t ret = getrandom(buf, len, flags);
                 vm_->set(R64::RAX, (u64)ret);
                 return;
             }
@@ -486,6 +499,15 @@ namespace x64 {
             mmu_->copyToMmu(old_limit, oldLimitBuffer.data(), oldLimitBuffer.size());
             return 0;
         }
+    }
+
+    ssize_t Sys::getrandom(Ptr buf, size_t len, int flags) {
+        if(vm_->logInstructions()) 
+            fmt::print("Sys::getrandom(buf={:#x}, len={}, flags={})", buf.address(), len, flags);
+        std::vector<u8> buffer(len);
+        std::iota(buffer.begin(), buffer.end(), 0);
+        mmu_->copyToMmu(buf, buffer.data(), buffer.size());
+        return (ssize_t)len;
     }
 
 }

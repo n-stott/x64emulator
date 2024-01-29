@@ -75,6 +75,8 @@ namespace x64 {
         long get_robust_list(int pid, Ptr64 head_ptr, Ptr64 len_ptr);
         // 0x12e
         int prlimit64(pid_t pid, int resource, Ptr new_limit, Ptr old_limit);
+        // 0x13e
+        ssize_t getrandom(Ptr buf, size_t len, int flags);
 
 
     private:
