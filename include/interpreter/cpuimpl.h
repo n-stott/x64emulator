@@ -7,7 +7,7 @@
 
 namespace x64 {
 
-    struct Impl {
+    struct CpuImpl {
         [[nodiscard]] static u8 add8(u8 dst, u8 src, Flags* flags);
         [[nodiscard]] static u16 add16(u16 dst, u16 src, Flags* flags);
         [[nodiscard]] static u32 add32(u32 dst, u32 src, Flags* flags);

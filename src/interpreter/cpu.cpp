@@ -12,6 +12,8 @@
 
 namespace x64 {
 
+    using Impl = CpuImpl;
+
     template<typename T>
     T Cpu::get(Imm value) const {
         // assert((u64)(T)value.immediate == value.immediate);

@@ -26,7 +26,7 @@ long double runFrndint(long double x, x64::ROUNDING rounding) {
 long double runFrndintVirtual(long double x, x64::ROUNDING rounding) {
     x64::X87Fpu fpu;
     fpu.control().rc = rounding;
-    f80 r = x64::Impl::frndint(f80::fromLongDouble(x), &fpu);
+    f80 r = x64::CpuImpl::frndint(f80::fromLongDouble(x), &fpu);
     return f80::toLongDouble(r);
 }
 

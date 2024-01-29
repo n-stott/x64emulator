@@ -26,7 +26,7 @@ u8 runSbb8Native(u8 lhs, u8 rhs, x64::Flags* flags, bool carry) {
 
 u8 runSbb8Virtual(u8 lhs, u8 rhs, x64::Flags* flags, bool carry) {
     flags->carry = carry;
-    return x64::Impl::sbb8(lhs, rhs, flags);
+    return x64::CpuImpl::sbb8(lhs, rhs, flags);
 }
 
 int compareSbb8(u8 lhs, u8 rhs, bool carry) {
@@ -73,7 +73,7 @@ u64 runSbb64Native(u64 lhs, u64 rhs, x64::Flags* flags, bool carry) {
 
 u64 runSbb64Virtual(u64 lhs, u64 rhs, x64::Flags* flags, bool carry) {
     flags->carry = carry;
-    return x64::Impl::sbb64(lhs, rhs, flags);
+    return x64::CpuImpl::sbb64(lhs, rhs, flags);
 }
 
 int compareSbb64(u64 lhs, u64 rhs, bool carry) {

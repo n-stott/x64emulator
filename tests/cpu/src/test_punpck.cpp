@@ -17,7 +17,7 @@ static u128 punpcklbwNative(u128 dst, u128 src) {
 }
 
 static u128 punpcklbwVirtual(u128 dst, u128 src) {
-    return x64::Impl::punpcklbw(dst, src);
+    return x64::CpuImpl::punpcklbw(dst, src);
 }
 
 int compare(std::string name, punpck native, punpck virt, u128 a, u128 b) {

@@ -16,7 +16,7 @@ u64 runTzcnt64Native(u64 value, x64::Flags* flags) {
 }
 
 u64 runTzcnt64Virtual(u64 value, x64::Flags* flags) {
-    return x64::Impl::tzcnt64(value, flags);
+    return x64::CpuImpl::tzcnt64(value, flags);
 }
 
 int compareTzcnt64(u64 value) {

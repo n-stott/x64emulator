@@ -16,7 +16,7 @@ u32 runRor32Native(u32 val, u8, x64::Flags* flags) {
 }
 
 u32 runRor32Virtual(u32 val, u8 count, x64::Flags* flags) {
-    return x64::Impl::ror32(val, count, flags);
+    return x64::CpuImpl::ror32(val, count, flags);
 }
 
 template<u8 count>

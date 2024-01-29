@@ -15,7 +15,7 @@ u128 runPshufdNative(u128 src) {
 }
 
 u128 runPshufdVirtual(u128 src, u8 order) {
-    return x64::Impl::pshufd(src, order);
+    return x64::CpuImpl::pshufd(src, order);
 }
 
 template<u8 order>

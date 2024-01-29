@@ -16,7 +16,7 @@ u32 runRol32Native(u32 val, u8, x64::Flags* flags) {
 }
 
 u32 runRol32Virtual(u32 val, u8 count, x64::Flags* flags) {
-    return x64::Impl::rol32(val, count, flags);
+    return x64::CpuImpl::rol32(val, count, flags);
 }
 
 template<u8 count>

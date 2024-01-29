@@ -15,7 +15,7 @@ u8 runAdd8Native(u8 lhs, u8 rhs, x64::Flags* flags) {
 }
 
 u8 runAdd8Virtual(u8 lhs, u8 rhs, x64::Flags* flags) {
-    return x64::Impl::add8(lhs, rhs, flags);
+    return x64::CpuImpl::add8(lhs, rhs, flags);
 }
 
 int compareAdd8(u8 lhs, u8 rhs) {
@@ -51,7 +51,7 @@ u64 runAdd64Native(u64 lhs, u64 rhs, x64::Flags* flags) {
 }
 
 u64 runAdd64Virtual(u64 lhs, u64 rhs, x64::Flags* flags) {
-    return x64::Impl::add64(lhs, rhs, flags);
+    return x64::CpuImpl::add64(lhs, rhs, flags);
 }
 
 int compareAdd64(u64 lhs, u64 rhs) {

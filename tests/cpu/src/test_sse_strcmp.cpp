@@ -28,11 +28,11 @@ u32 strlen_core_native(u128 a, u128 b) {
 u32 strlen_core_virtual(u128 xmm1, u128 xmm2) {
     using namespace x64;
     u128 xmm0 { 0, 0 };
-    xmm0 = Impl::pcmpeqb(xmm0, xmm1);
-    xmm2 = Impl::pslldq(xmm2, 0xb);
-    xmm2 = Impl::pcmpeqb(xmm2, xmm1);
-    xmm2 = Impl::psubb(xmm2, xmm0);
-    u32 res = Impl::pmovmskb(xmm2);
+    xmm0 = CpuImpl::pcmpeqb(xmm0, xmm1);
+    xmm2 = CpuImpl::pslldq(xmm2, 0xb);
+    xmm2 = CpuImpl::pcmpeqb(xmm2, xmm1);
+    xmm2 = CpuImpl::psubb(xmm2, xmm0);
+    u32 res = CpuImpl::pmovmskb(xmm2);
     return res;
 }
 
