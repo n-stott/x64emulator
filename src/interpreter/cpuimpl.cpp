@@ -145,17 +145,25 @@ namespace x64 {
     }
 
     std::pair<u64, u64> CpuImpl::imul64(u64 src1, u64 src2, Flags* flags) {
-        if((i32)src1 == (i64)src1 && (i32)src2 == (i64)src2) {
-            i64 res = (i64)src1 * (i64)src2;
-            flags->carry = false;
-            flags->overflow = false;
-            return std::make_pair((u64)0, (u64)res);
+        // cheat with mul64
+        constexpr u64 SIGNMASK = (1ull << 63);
+        bool s1 = (src1 & SIGNMASK);
+        bool s2 = (src2 & SIGNMASK);
+        u64 usrc1 = (s1 ? -src1 : src1);
+        u64 usrc2 = (s2 ? -src2 : src2);
+        if(s1 == s2) {
+            auto ures = mul64(usrc1, usrc2, flags);
+            return ures;
+        } else {
+            auto ures = mul64(usrc1, usrc2, flags);
+            if(ures.first == 0 && ures.second != 0) {
+                // sign extend the result
+                return std::make_pair(-1, -ures.second);
+            } else {
+                // this works, but it's fishy
+                return std::make_pair(-ures.first, -ures.second);
+            }
         }
-        // This is false : we should compute the upper bytes.
-        i64 res = (i64)src1 * (i64)src2;
-        flags->setUnsure();
-        flags->setUnsureParity();
-        return std::make_pair((u64)0, (u64)res); // THIS
     }
 
     std::pair<u32, u32> CpuImpl::div32(u32 dividendUpper, u32 dividendLower, u32 divisor) {
@@ -175,308 +183,137 @@ namespace x64 {
         return std::make_pair(tmp, dividend % divisor);
     }
 
-    u8 CpuImpl::and8(u8 dst, u8 src, Flags* flags) {
-        u8 tmp = dst & src;
-        flags->overflow = false;
-        flags->carry = false;
-        flags->sign = tmp & (1 << 7);
-        flags->zero = (tmp == 0);
-        flags->setSure();
-        flags->setUnsureParity();
-        return tmp;
-    }
-    u16 CpuImpl::and16(u16 dst, u16 src, Flags* flags) {
-        u16 tmp = dst & src;
-        flags->overflow = false;
-        flags->carry = false;
-        flags->sign = tmp & (1 << 15);
-        flags->zero = (tmp == 0);
-        flags->setSure();
-        flags->setUnsureParity();
-        return tmp;
-    }
-    u32 CpuImpl::and32(u32 dst, u32 src, Flags* flags) {
-        u32 tmp = dst & src;
-        flags->overflow = false;
-        flags->carry = false;
-        flags->sign = tmp & (1ul << 31);
-        flags->zero = (tmp == 0);
-        flags->setSure();
-        flags->setUnsureParity();
-        return tmp;
-    }
-    u64 CpuImpl::and64(u64 dst, u64 src, Flags* flags) {
-        u64 tmp = dst & src;
-        flags->overflow = false;
-        flags->carry = false;
-        flags->sign = tmp & (1ull << 63);
-        flags->zero = (tmp == 0);
-        flags->setSure();
-        flags->setUnsureParity();
-        return tmp;
+    template<typename U>
+    static inline bool signBit(U val) {
+        return val & ((U)1 << (8*sizeof(U)-1));
     }
 
-    u8 CpuImpl::or8(u8 dst, u8 src, Flags* flags) {
-        u8 tmp = dst | src;
+    template<typename U>
+    static U and_(U dst, U src, Flags* flags) {
+        U tmp = dst & src;
         flags->overflow = false;
         flags->carry = false;
-        flags->sign = tmp & (1 << 7);
-        flags->zero = (tmp == 0);
-        flags->setSure();
-        flags->setUnsureParity();
-        return tmp;
-    }
-
-    u16 CpuImpl::or16(u16 dst, u16 src, Flags* flags) {
-        u16 tmp = dst | src;
-        flags->overflow = false;
-        flags->carry = false;
-        flags->sign = tmp & (1 << 15);
-        flags->zero = (tmp == 0);
-        flags->setSure();
-        flags->setUnsureParity();
-        return tmp;
-    }
-
-    u32 CpuImpl::or32(u32 dst, u32 src, Flags* flags) {
-        u32 tmp = dst | src;
-        flags->overflow = false;
-        flags->carry = false;
-        flags->sign = tmp & (1ul << 31);
-        flags->zero = (tmp == 0);
-        flags->setSure();
-        flags->setUnsureParity();
-        return tmp;
-    }
-
-    u64 CpuImpl::or64(u64 dst, u64 src, Flags* flags) {
-        u64 tmp = dst | src;
-        flags->overflow = false;
-        flags->carry = false;
-        flags->sign = tmp & (1ull << 63);
-        flags->zero = (tmp == 0);
-        flags->setSure();
-        flags->setUnsureParity();
-        return tmp;
-    }
-
-    u8 CpuImpl::xor8(u8 dst, u8 src, Flags* flags) {
-        u8 tmp = dst ^ src;
-        flags->overflow = false;
-        flags->carry = false;
-        flags->sign = tmp & (1u << 7);
+        flags->sign = signBit<U>(tmp);
         flags->zero = (tmp == 0);
         flags->parity = Flags::computeParity((u8)tmp);
+        flags->setSure();
         return tmp;
     }
 
-    u16 CpuImpl::xor16(u16 dst, u16 src, Flags* flags) {
-        u16 tmp = dst ^ src;
+    u8 CpuImpl::and8(u8 dst, u8 src, Flags* flags) { return and_<u8>(dst, src, flags); }
+    u16 CpuImpl::and16(u16 dst, u16 src, Flags* flags) { return and_<u16>(dst, src, flags); }
+    u32 CpuImpl::and32(u32 dst, u32 src, Flags* flags) { return and_<u32>(dst, src, flags); }
+    u64 CpuImpl::and64(u64 dst, u64 src, Flags* flags) { return and_<u64>(dst, src, flags); }
+
+    template<typename U>
+    static U or_(U dst, U src, Flags* flags) {
+        U tmp = dst | src;
         flags->overflow = false;
         flags->carry = false;
-        flags->sign = tmp & (1u << 15);
+        flags->sign = signBit<U>(tmp);
         flags->zero = (tmp == 0);
         flags->parity = Flags::computeParity((u8)tmp);
+        flags->setSure();
         return tmp;
     }
 
-    u32 CpuImpl::xor32(u32 dst, u32 src, Flags* flags) {
-        u32 tmp = dst ^ src;
+    u8 CpuImpl::or8(u8 dst, u8 src, Flags* flags) { return or_<u8>(dst, src, flags); }
+    u16 CpuImpl::or16(u16 dst, u16 src, Flags* flags) { return or_<u16>(dst, src, flags); }
+    u32 CpuImpl::or32(u32 dst, u32 src, Flags* flags) { return or_<u32>(dst, src, flags); }
+    u64 CpuImpl::or64(u64 dst, u64 src, Flags* flags) { return or_<u64>(dst, src, flags); }
+
+    template<typename U>
+    static U xor_(U dst, U src, Flags* flags) {
+        U tmp = dst ^ src;
         flags->overflow = false;
         flags->carry = false;
-        flags->sign = tmp & (1ul << 31);
+        flags->sign = signBit<U>(tmp);
         flags->zero = (tmp == 0);
         flags->parity = Flags::computeParity((u8)tmp);
+        flags->setSure();
         return tmp;
     }
 
-    u64 CpuImpl::xor64(u64 dst, u64 src, Flags* flags) {
-        u64 tmp = dst ^ src;
-        flags->overflow = false;
-        flags->carry = false;
-        flags->sign = tmp & (1ull << 63);
-        flags->zero = (tmp == 0);
-        flags->parity = Flags::computeParity((u8)tmp);
-        return tmp;
-    }
+    u8 CpuImpl::xor8(u8 dst, u8 src, Flags* flags) { return xor_<u8>(dst, src, flags); }
+    u16 CpuImpl::xor16(u16 dst, u16 src, Flags* flags) { return xor_<u16>(dst, src, flags); }
+    u32 CpuImpl::xor32(u32 dst, u32 src, Flags* flags) { return xor_<u32>(dst, src, flags); }
+    u64 CpuImpl::xor64(u64 dst, u64 src, Flags* flags) { return xor_<u64>(dst, src, flags); }
 
-    u8 CpuImpl::inc8(u8 src, Flags* flags) {
-        flags->overflow = (src == std::numeric_limits<u8>::max());
-        u8 res = src+1;
-        flags->sign = (res & (1 << 7));
+    template<typename U>
+    static U inc(U src, Flags* flags) {
+        flags->overflow = (src == std::numeric_limits<U>::max());
+        U res = src+1;
+        flags->sign = signBit<U>(res);
         flags->zero = (res == 0);
+        flags->parity = Flags::computeParity((u8)res);
         flags->setSure();
-        flags->setUnsureParity();
         return res;
     }
 
-    u16 CpuImpl::inc16(u16 src, Flags* flags) {
-        flags->overflow = (src == std::numeric_limits<u16>::max());
-        u16 res = src+1;
-        flags->sign = (res & (1 << 15));
+    u8 CpuImpl::inc8(u8 src, Flags* flags) { return inc<u8>(src, flags); }
+    u16 CpuImpl::inc16(u16 src, Flags* flags) { return inc<u16>(src, flags); }
+    u32 CpuImpl::inc32(u32 src, Flags* flags) { return inc<u32>(src, flags); }
+    u64 CpuImpl::inc64(u64 src, Flags* flags) { return inc<u64>(src, flags); }
+
+    template<typename U>
+    static U dec(U src, Flags* flags) {
+        flags->overflow = (src == std::numeric_limits<U>::min());
+        U res = src-1;
+        flags->sign = signBit<U>(res);
         flags->zero = (res == 0);
+        flags->parity = Flags::computeParity((u8)res);
         flags->setSure();
-        flags->setUnsureParity();
         return res;
     }
 
-    u32 CpuImpl::inc32(u32 src, Flags* flags) {
-        flags->overflow = (src == std::numeric_limits<u32>::max());
-        u32 res = src+1;
-        flags->sign = (res & (1ul << 31));
-        flags->zero = (res == 0);
-        flags->setSure();
-        flags->setUnsureParity();
+    u8 CpuImpl::dec8(u8 src, Flags* flags) { return dec<u8>(src, flags); }
+    u16 CpuImpl::dec16(u16 src, Flags* flags) { return dec<u16>(src, flags); }
+    u32 CpuImpl::dec32(u32 src, Flags* flags) { return dec<u32>(src, flags); }
+    u64 CpuImpl::dec64(u64 src, Flags* flags) { return dec<u64>(src, flags); }
+
+    template<typename U>
+    static U shl(U dst, U src, Flags* flags) {
+        U maskedSrc = src % (8*sizeof(U));
+        U res = static_cast<U>(dst << maskedSrc);
+        if(maskedSrc) {
+            flags->carry = dst & ((U)1 << (8*sizeof(U) - maskedSrc));
+            if(src == 1) {
+                flags->overflow = signBit<U>(dst) != flags->carry;
+            }
+            flags->sign = signBit<U>(res);
+            flags->zero = (res == 0);
+            flags->parity = Flags::computeParity((u8)res);
+            flags->setSure();
+        }
         return res;
     }
 
-    u64 CpuImpl::inc64(u64 src, Flags* flags) {
-        flags->overflow = (src == std::numeric_limits<u64>::max());
-        u64 res = src+1;
-        flags->sign = (res & (1ul << 63));
-        flags->zero = (res == 0);
-        flags->setSure();
-        flags->setUnsureParity();
+    u8 CpuImpl::shl8(u8 dst, u8 src, Flags* flags) { return shl<u8>(dst, src, flags); }
+    u16 CpuImpl::shl16(u16 dst, u16 src, Flags* flags) { return shl<u16>(dst, src, flags); }
+    u32 CpuImpl::shl32(u32 dst, u32 src, Flags* flags) { return shl<u32>(dst, src, flags); }
+    u64 CpuImpl::shl64(u64 dst, u64 src, Flags* flags) { return shl<u64>(dst, src, flags); }
+
+    template<typename U>
+    static U shr(U dst, U src, Flags* flags) {
+        U maskedSrc = src % (8*sizeof(U));
+        U res = static_cast<U>(dst >> maskedSrc);
+        if(maskedSrc) {
+            flags->carry = dst & ((U)1 << (maskedSrc-1));
+            if(src == 1) {
+                flags->overflow = signBit<U>(dst);
+            }
+            flags->sign = signBit<U>(res);
+            flags->zero = (res == 0);
+            flags->parity = Flags::computeParity((u8)res);
+            flags->setSure();
+        }
         return res;
     }
 
-    u32 CpuImpl::dec32(u32 src, Flags* flags) {
-        flags->overflow = (src == std::numeric_limits<u32>::min());
-        u32 res = src-1;
-        flags->sign = (res & (1ul << 31));
-        flags->zero = (res == 0);
-        flags->setSure();
-        flags->setUnsureParity();
-        return res;
-    }
-
-    u8 CpuImpl::shl8(u8 dst, u8 src, Flags* flags) {
-        src = src % 8;
-        u8 res = static_cast<u8>(dst << src);
-        if(src) {
-            flags->carry = dst & (1 << (8-src));
-        }
-        if(src == 1) {
-            flags->overflow = (dst & (1 << 7)) != flags->carry;
-        }
-        flags->sign = (res & (1 << 7));
-        flags->zero = (res == 0);
-        flags->setSure();
-        flags->setUnsureParity();
-        return res;
-    }
-
-    u16 CpuImpl::shl16(u16 dst, u16 src, Flags* flags) {
-        src = src % 16;
-        u16 res = static_cast<u16>(dst << src);
-        if(src) {
-            flags->carry = dst & (1 << (16-src));
-        }
-        if(src == 1) {
-            flags->overflow = (dst & (1 << 15)) != flags->carry;
-        }
-        flags->sign = (res & (1 << 15));
-        flags->zero = (res == 0);
-        flags->setSure();
-        flags->setUnsureParity();
-        return res;
-    }
-    
-    u32 CpuImpl::shl32(u32 dst, u32 src, Flags* flags) {
-        src = src % 32;
-        u32 res = dst << src;
-        if(src) {
-            flags->carry = dst & (1 << (32-src));
-        }
-        if(src == 1) {
-            flags->overflow = (res & (1ul << 31)) != flags->carry;
-        }
-        flags->sign = (res & (1ul << 31));
-        flags->zero = (res == 0);
-        flags->setSure();
-        flags->setUnsureParity();
-        return res;
-    }
-    
-    u64 CpuImpl::shl64(u64 dst, u64 src, Flags* flags) {
-        src = src % 64;
-        u64 res = dst << src;
-        if(src) {
-            flags->carry = dst & (1ull << (64-src));
-        }
-        if(src == 1) {
-            flags->overflow = (dst & (1ull << 63)) != flags->carry;
-        }
-        flags->sign = (res & (1ull << 63));
-        flags->zero = (res == 0);
-        flags->setSure();
-        flags->setUnsureParity();
-        return res;
-    }
-
-    u8 CpuImpl::shr8(u8 dst, u8 src, Flags* flags) {
-        src = src % 8;
-        u8 res = static_cast<u8>(dst >> src);
-        if(src) {
-            flags->carry = dst & (1 << (src-1));
-        }
-        if(src == 1) {
-            flags->overflow = (dst & (1 << 7));
-        }
-        flags->sign = (res & (1 << 7));
-        flags->zero = (res == 0);
-        flags->setSure();
-        flags->setUnsureParity();
-        return res;
-    }
-
-    u16 CpuImpl::shr16(u16 dst, u16 src, Flags* flags) {
-        src = src % 16;
-        u16 res = static_cast<u16>(dst >> src);
-        if(src) {
-            flags->carry = dst & (1 << (src-1));
-        }
-        if(src == 1) {
-            flags->overflow = (dst & (1 << 15));
-        }
-        flags->sign = (res & (1 << 15));
-        flags->zero = (res == 0);
-        flags->setSure();
-        flags->setUnsureParity();
-        return res;
-    }
-    
-    u32 CpuImpl::shr32(u32 dst, u32 src, Flags* flags) {
-        src = src % 32;
-        u32 res = dst >> src;
-        if(src) {
-            flags->carry = dst & (1 << (src-1));
-        }
-        if(src == 1) {
-            flags->overflow = (dst & (1ul << 31));
-        }
-        flags->sign = (res & (1ul << 31));
-        flags->zero = (res == 0);
-        flags->setSure();
-        flags->setUnsureParity();
-        return res;
-    }
-    
-    u64 CpuImpl::shr64(u64 dst, u64 src, Flags* flags) {
-        src = src % 64;
-        u64 res = dst >> src;
-        if(src) {
-            flags->carry = dst & (1ull << (src-1));
-        }
-        if(src == 1) {
-            flags->overflow = (dst & (1ull << 63));
-        }
-        flags->sign = (res & (1ull << 63));
-        flags->zero = (res == 0);
-        flags->setSure();
-        flags->setUnsureParity();
-        return res;
-    }
+    u8 CpuImpl::shr8(u8 dst, u8 src, Flags* flags) { return shr<u8>(dst, src, flags); }
+    u16 CpuImpl::shr16(u16 dst, u16 src, Flags* flags) { return shr<u16>(dst, src, flags); }
+    u32 CpuImpl::shr32(u32 dst, u32 src, Flags* flags) { return shr<u32>(dst, src, flags); }
+    u64 CpuImpl::shr64(u64 dst, u64 src, Flags* flags) { return shr<u64>(dst, src, flags); }
 
     template<typename U>
     static U shld(U dst, U src, u8 count, Flags* flags) {

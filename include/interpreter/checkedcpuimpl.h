@@ -1,5 +1,5 @@
-#ifndef CPU_IMPL_H
-#define CPU_IMPL_H
+#ifndef CHECKED_CPU_IMPL_H
+#define CHECKED_CPU_IMPL_H
 
 #include "interpreter/flags.h"
 #include "interpreter/x87.h"
@@ -7,7 +7,7 @@
 
 namespace x64 {
 
-    struct CpuImpl {
+    struct CheckedCpuImpl {
         [[nodiscard]] static u8 add8(u8 dst, u8 src, Flags* flags);
         [[nodiscard]] static u16 add16(u16 dst, u16 src, Flags* flags);
         [[nodiscard]] static u32 add32(u32 dst, u32 src, Flags* flags);
@@ -222,7 +222,9 @@ namespace x64 {
 
         static void fcomi(f80 dst, f80 src, X87Fpu* fpu, Flags* flags);
         static void fucomi(f80 dst, f80 src, X87Fpu* fpu, Flags* flags);
+
     };
+
 }
 
 #endif

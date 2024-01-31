@@ -1,0 +1,1524 @@
+#include "interpreter/checkedcpuimpl.h"
+#include "interpreter/cpuimpl.h"
+#include <fmt/core.h>
+#include <cassert>
+#include <cstring>
+#include <limits>
+
+namespace x64 {
+
+    static Flags fromRflags(u64 rflags) {
+        static constexpr u64 CARRY_MASK = 0x1;
+        static constexpr u64 PARITY_MASK = 0x4;
+        static constexpr u64 ZERO_MASK = 0x40;
+        static constexpr u64 SIGN_MASK = 0x80;
+        static constexpr u64 OVERFLOW_MASK = 0x800;
+        Flags flags;
+        flags.carry = rflags & CARRY_MASK;
+        flags.parity = rflags & PARITY_MASK;
+        flags.zero = rflags & ZERO_MASK;
+        flags.sign = rflags & SIGN_MASK;
+        flags.overflow = rflags & OVERFLOW_MASK;
+        flags.setSure();
+        return flags;
+    }
+
+    static u64 toRflags(const Flags& flags) {
+        static constexpr u64 CARRY_MASK = 0x1;
+        static constexpr u64 PARITY_MASK = 0x4;
+        static constexpr u64 ZERO_MASK = 0x40;
+        static constexpr u64 SIGN_MASK = 0x80;
+        static constexpr u64 OVERFLOW_MASK = 0x800;
+        u64 rflags;
+        asm volatile("pushf");
+        asm volatile("pop %0" : "=r" (rflags));
+        rflags = (rflags & ~CARRY_MASK) | (flags.carry ? CARRY_MASK : 0);
+        rflags = (rflags & ~PARITY_MASK) | (flags.parity ? PARITY_MASK : 0);
+        rflags = (rflags & ~ZERO_MASK) | (flags.zero ? ZERO_MASK : 0);
+        rflags = (rflags & ~SIGN_MASK) | (flags.sign ? SIGN_MASK : 0);
+        rflags = (rflags & ~OVERFLOW_MASK) | (flags.overflow ? OVERFLOW_MASK : 0);
+        return rflags;
+    }
+
+    template<typename U, typename Add>
+    static U add(U dst, U src, Flags* flags, Add addFunc) {
+        Flags virtualFlags = *flags;
+        U virtualRes = addFunc(dst, src, &virtualFlags);
+        (void)virtualRes;
+
+        U nativeRes = dst;
+        u64 rflags = 0;
+        asm volatile("add %1, %0" : "+r" (nativeRes) : "r"(src));
+        asm volatile("pushf");
+        asm volatile("pop %0" : "=r" (rflags));
+        *flags = fromRflags(rflags);
+
+        assert(virtualRes == nativeRes);
+        assert(virtualFlags.carry == flags->carry);
+        assert(virtualFlags.overflow == flags->overflow);
+        assert(virtualFlags.parity == flags->parity);
+        assert(virtualFlags.sign == flags->sign);
+        assert(virtualFlags.zero == flags->zero);
+        
+        return nativeRes;
+    }
+
+    u8 CheckedCpuImpl::add8(u8 dst, u8 src, Flags* flags) { return add<u8>(dst, src, flags, &CpuImpl::add8); }
+    u16 CheckedCpuImpl::add16(u16 dst, u16 src, Flags* flags) { return add<u16>(dst, src, flags, &CpuImpl::add16); }
+    u32 CheckedCpuImpl::add32(u32 dst, u32 src, Flags* flags) { return add<u32>(dst, src, flags, &CpuImpl::add32); }
+    u64 CheckedCpuImpl::add64(u64 dst, u64 src, Flags* flags) { return add<u64>(dst, src, flags, &CpuImpl::add64); }
+
+    template<typename U, typename Adc>
+    static U adc(U dst, U src, Flags* flags, Adc adcFunc) {
+        Flags virtualFlags = *flags;
+        U virtualRes = adcFunc(dst, src, &virtualFlags);
+        (void)virtualRes;
+
+        U nativeRes = dst;
+        u64 rflags = toRflags(*flags);
+        asm volatile("push %0" : "=r"(rflags));
+        asm volatile("popf");
+        asm volatile("adc %1, %0" : "+r" (nativeRes) : "r"(src));
+        asm volatile("pushf");
+        asm volatile("pop %0" : "=r" (rflags));
+        *flags = fromRflags(rflags);
+
+        assert(virtualRes == nativeRes);
+        assert(virtualFlags.carry == flags->carry);
+        assert(virtualFlags.overflow == flags->overflow);
+        assert(virtualFlags.parity == flags->parity);
+        assert(virtualFlags.sign == flags->sign);
+        assert(virtualFlags.zero == flags->zero);
+        
+        return nativeRes;
+    }
+
+    u8 CheckedCpuImpl::adc8(u8 dst, u8 src, Flags* flags) { return adc<u8>(dst, src, flags, &CpuImpl::adc8); }
+    u16 CheckedCpuImpl::adc16(u16 dst, u16 src, Flags* flags) { return adc<u16>(dst, src, flags, &CpuImpl::adc16); }
+    u32 CheckedCpuImpl::adc32(u32 dst, u32 src, Flags* flags) { return adc<u32>(dst, src, flags, &CpuImpl::adc32); }
+    u64 CheckedCpuImpl::adc64(u64 dst, u64 src, Flags* flags) { return adc<u64>(dst, src, flags, &CpuImpl::adc64); }
+
+    template<typename U, typename Sub>
+    static U sub(U dst, U src, Flags* flags, Sub subFunc) {
+        Flags virtualFlags = *flags;
+        U virtualRes = subFunc(dst, src, &virtualFlags);
+        (void)virtualRes;
+
+        U nativeRes = dst;
+        u64 rflags = 0;
+        asm volatile("sub %1, %0" : "+r" (nativeRes) : "r"(src));
+        asm volatile("pushf");
+        asm volatile("pop %0" : "=r" (rflags));
+        *flags = fromRflags(rflags);
+
+        assert(virtualRes == nativeRes);
+        assert(virtualFlags.carry == flags->carry);
+        assert(virtualFlags.overflow == flags->overflow);
+        assert(virtualFlags.parity == flags->parity);
+        assert(virtualFlags.sign == flags->sign);
+        assert(virtualFlags.zero == flags->zero);
+        
+        return nativeRes;
+    }
+
+    u8 CheckedCpuImpl::sub8(u8 dst, u8 src, Flags* flags) { return sub<u8>(dst, src, flags, &CpuImpl::sub8); }
+    u16 CheckedCpuImpl::sub16(u16 dst, u16 src, Flags* flags) { return sub<u16>(dst, src, flags, &CpuImpl::sub16); }
+    u32 CheckedCpuImpl::sub32(u32 dst, u32 src, Flags* flags) { return sub<u32>(dst, src, flags, &CpuImpl::sub32); }
+    u64 CheckedCpuImpl::sub64(u64 dst, u64 src, Flags* flags) { return sub<u64>(dst, src, flags, &CpuImpl::sub64); }
+
+    template<typename U, typename Sbb>
+    static U sbb(U dst, U src, Flags* flags, Sbb sbbFunc) {
+        Flags virtualFlags = *flags;
+        U virtualRes = sbbFunc(dst, src, &virtualFlags);
+        (void)virtualRes;
+
+        U nativeRes = dst;
+        u64 rflags = toRflags(*flags);
+        asm volatile("push %0" : "=r"(rflags));
+        asm volatile("popf");
+        asm volatile("sbb %1, %0" : "+r" (nativeRes) : "r"(src));
+        asm volatile("pushf");
+        asm volatile("pop %0" : "=r" (rflags));
+        *flags = fromRflags(rflags);
+
+        assert(virtualRes == nativeRes);
+        assert(virtualFlags.carry == flags->carry);
+        assert(virtualFlags.overflow == flags->overflow);
+        assert(virtualFlags.parity == flags->parity);
+        assert(virtualFlags.sign == flags->sign);
+        assert(virtualFlags.zero == flags->zero);
+        
+        return nativeRes;
+    }
+
+    u8 CheckedCpuImpl::sbb8(u8 dst, u8 src, Flags* flags) { return sbb<u8>(dst, src, flags, &CpuImpl::sbb8); }
+    u16 CheckedCpuImpl::sbb16(u16 dst, u16 src, Flags* flags) { return sbb<u16>(dst, src, flags, &CpuImpl::sbb16); }
+    u32 CheckedCpuImpl::sbb32(u32 dst, u32 src, Flags* flags) { return sbb<u32>(dst, src, flags, &CpuImpl::sbb32); }
+    u64 CheckedCpuImpl::sbb64(u64 dst, u64 src, Flags* flags) { return sbb<u64>(dst, src, flags, &CpuImpl::sbb64); }
+
+
+    void CheckedCpuImpl::cmp8(u8 src1, u8 src2, Flags* flags) {
+        [[maybe_unused]] u8 res = sub8(src1, src2, flags);
+    }
+
+    void CheckedCpuImpl::cmp16(u16 src1, u16 src2, Flags* flags) {
+        [[maybe_unused]] u16 res = sub16(src1, src2, flags);
+    }
+
+    void CheckedCpuImpl::cmp32(u32 src1, u32 src2, Flags* flags) {
+        [[maybe_unused]] u32 res = sub32(src1, src2, flags);
+    }
+
+    void CheckedCpuImpl::cmp64(u64 src1, u64 src2, Flags* flags) {
+        [[maybe_unused]] u64 res = sub64(src1, src2, flags);
+    }
+
+    u8 CheckedCpuImpl::neg8(u8 dst, Flags* flags) { return sub8(0u, dst, flags); }
+    u16 CheckedCpuImpl::neg16(u16 dst, Flags* flags) { return sub16(0u, dst, flags); }
+    u32 CheckedCpuImpl::neg32(u32 dst, Flags* flags) { return sub32(0u, dst, flags); }
+    u64 CheckedCpuImpl::neg64(u64 dst, Flags* flags) { return sub64(0ul, dst, flags); }
+
+    std::pair<u32, u32> CheckedCpuImpl::mul32(u32 src1, u32 src2, Flags* flags) {
+        Flags virtualFlags = *flags;
+        auto virtualRes = CpuImpl::mul32(src1, src2, &virtualFlags);
+        (void)virtualRes;
+
+        u32 lower = 0;
+        u32 upper = 0;
+        u64 rflags;
+        asm volatile("mov %0, %%eax" :: "m"(src1));
+        asm volatile("mul %0" :: "r"(src2) : "eax", "edx");
+        asm volatile("mov %%eax, %0" : "=m"(lower));
+        asm volatile("mov %%edx, %0" : "=m"(upper));
+        asm volatile("pushf");
+        asm volatile("pop %0" : "=m" (rflags));
+        *flags = fromRflags(rflags);
+
+        assert(virtualRes.first == upper);
+        assert(virtualRes.second == lower);
+        assert(virtualFlags.carry == flags->carry);
+        assert(virtualFlags.overflow == flags->overflow);
+        // assert(virtualFlags.parity == flags->parity);
+
+        return std::make_pair(upper, lower);
+    }
+    
+    std::pair<u64, u64> CheckedCpuImpl::mul64(u64 src1, u64 src2, Flags* flags) {
+        Flags virtualFlags = *flags;
+        auto virtualRes = CpuImpl::mul64(src1, src2, &virtualFlags);
+        (void)virtualRes;
+
+        u64 lower = 0;
+        u64 upper = 0;
+        u64 rflags;
+        asm volatile("mov %0, %%rax" :: "m"(src1));
+        asm volatile("mulq %0" :: "m"(src2) : "rax", "rdx");
+        asm volatile("mov %%rax, %0" : "=m"(lower));
+        asm volatile("mov %%rdx, %0" : "=m"(upper));
+        asm volatile("pushf");
+        asm volatile("pop %0" : "=m" (rflags));
+        *flags = fromRflags(rflags);
+
+        assert(virtualRes.first == upper);
+        assert(virtualRes.second == lower);
+        assert(virtualFlags.carry == flags->carry);
+        assert(virtualFlags.overflow == flags->overflow);
+        // assert(virtualFlags.parity == flags->parity);
+
+        return std::make_pair(upper, lower);
+    }
+
+    std::pair<u32, u32> CheckedCpuImpl::imul32(u32 src1, u32 src2, Flags* flags) {
+        Flags virtualFlags = *flags;
+        auto virtualRes = CpuImpl::imul32(src1, src2, &virtualFlags);
+        (void)virtualRes;
+
+        u32 lower = 0;
+        u32 upper = 0;
+        u64 rflags;
+        asm volatile("mov %0, %%eax" :: "m"(src1));
+        asm volatile("imul %0" :: "r"(src2) : "eax", "edx");
+        asm volatile("mov %%eax, %0" : "=m"(lower));
+        asm volatile("mov %%edx, %0" : "=m"(upper));
+        asm volatile("pushf");
+        asm volatile("pop %0" : "=m" (rflags));
+        *flags = fromRflags(rflags);
+
+        assert(virtualRes.first == upper);
+        assert(virtualRes.second == lower);
+        assert(virtualFlags.carry == flags->carry);
+        assert(virtualFlags.overflow == flags->overflow);
+        // assert(virtualFlags.parity == flags->parity);
+
+        return std::make_pair(upper, lower);
+    }
+
+    std::pair<u64, u64> CheckedCpuImpl::imul64(u64 src1, u64 src2, Flags* flags) {
+        Flags virtualFlags = *flags;
+        auto virtualRes = CpuImpl::imul64(src1, src2, &virtualFlags);
+        (void)virtualRes;
+
+        u64 lower = 0;
+        u64 upper = 0;
+        u64 rflags;
+        asm volatile("mov %0, %%rax" :: "m"(src1));
+        asm volatile("imulq %0" :: "m"(src2) : "rax", "rdx");
+        asm volatile("mov %%rax, %0" : "=m"(lower));
+        asm volatile("mov %%rdx, %0" : "=m"(upper));
+        asm volatile("pushf");
+        asm volatile("pop %0" : "=m" (rflags));
+        *flags = fromRflags(rflags);
+
+        if(virtualRes.first != upper
+        || virtualRes.second != lower) {
+            fmt::print(stderr, "virtual {:#x} x {:#x} = {:#x} {:x}\n", src1, src2, virtualRes.first, virtualRes.second);
+            fmt::print(stderr, "native  {:#x} x {:#x} = {:#x} {:x}\n", src1, src2, upper, lower);
+        }
+
+        assert(virtualRes.first == upper);
+        assert(virtualRes.second == lower);
+        // assert(virtualFlags.carry == flags->carry);
+        // assert(virtualFlags.overflow == flags->overflow);
+
+        return std::make_pair(upper, lower);
+    }
+
+    std::pair<u32, u32> CheckedCpuImpl::div32(u32 dividendUpper, u32 dividendLower, u32 divisor) {
+        assert(divisor != 0);
+        u64 dividend = ((u64)dividendUpper) << 32 | (u64)dividendLower;
+        u64 tmp = dividend / divisor;
+        assert(tmp >> 32 == 0);
+        return std::make_pair(tmp, dividend % divisor);
+    }
+
+    std::pair<u64, u64> CheckedCpuImpl::div64(u64 dividendUpper, u64 dividendLower, u64 divisor) {
+        assert(divisor != 0);
+        assert(dividendUpper == 0); // [NS] not handled yet
+        (void)dividendUpper;
+        u64 dividend = dividendLower;
+        u64 tmp = dividend / divisor;
+        return std::make_pair(tmp, dividend % divisor);
+    }
+
+    template<typename U, typename And>
+    static U and_(U dst, U src, Flags* flags, And andFunc) {
+        Flags virtualFlags = *flags;
+        U virtualRes = andFunc(dst, src, &virtualFlags);
+        (void)virtualRes;
+
+        U nativeRes = dst;
+        u64 rflags = 0;
+        asm volatile("and %1, %0" : "+r" (nativeRes) : "r"(src));
+        asm volatile("pushf");
+        asm volatile("pop %0" : "=r" (rflags));
+        *flags = fromRflags(rflags);
+
+        assert(virtualRes == nativeRes);
+        assert(virtualFlags.carry == flags->carry);
+        assert(virtualFlags.overflow == flags->overflow);
+        assert(virtualFlags.parity == flags->parity);
+        assert(virtualFlags.sign == flags->sign);
+        assert(virtualFlags.zero == flags->zero);
+        
+        return nativeRes;
+    }
+
+    u8 CheckedCpuImpl::and8(u8 dst, u8 src, Flags* flags) { return and_<u8>(dst, src, flags, &CpuImpl::and8); }
+    u16 CheckedCpuImpl::and16(u16 dst, u16 src, Flags* flags) { return and_<u16>(dst, src, flags, &CpuImpl::and16); }
+    u32 CheckedCpuImpl::and32(u32 dst, u32 src, Flags* flags) { return and_<u32>(dst, src, flags, &CpuImpl::and32); }
+    u64 CheckedCpuImpl::and64(u64 dst, u64 src, Flags* flags) { return and_<u64>(dst, src, flags, &CpuImpl::and64); }
+
+    template<typename U, typename Or>
+    static U or_(U dst, U src, Flags* flags, Or orFunc) {
+        Flags virtualFlags = *flags;
+        U virtualRes = orFunc(dst, src, &virtualFlags);
+        (void)virtualRes;
+
+        U nativeRes = dst;
+        u64 rflags = 0;
+        asm volatile("or %1, %0" : "+r" (nativeRes) : "r"(src));
+        asm volatile("pushf");
+        asm volatile("pop %0" : "=r" (rflags));
+        *flags = fromRflags(rflags);
+
+        assert(virtualRes == nativeRes);
+        assert(virtualFlags.carry == flags->carry);
+        assert(virtualFlags.overflow == flags->overflow);
+        assert(virtualFlags.parity == flags->parity);
+        assert(virtualFlags.sign == flags->sign);
+        assert(virtualFlags.zero == flags->zero);
+        
+        return nativeRes;
+    }
+
+    u8 CheckedCpuImpl::or8(u8 dst, u8 src, Flags* flags) { return or_<u8>(dst, src, flags, &CpuImpl::or8); }
+    u16 CheckedCpuImpl::or16(u16 dst, u16 src, Flags* flags) { return or_<u16>(dst, src, flags, &CpuImpl::or16); }
+    u32 CheckedCpuImpl::or32(u32 dst, u32 src, Flags* flags) { return or_<u32>(dst, src, flags, &CpuImpl::or32); }
+    u64 CheckedCpuImpl::or64(u64 dst, u64 src, Flags* flags) { return or_<u64>(dst, src, flags, &CpuImpl::or64); }
+
+    template<typename U, typename Xor>
+    static U xor_(U dst, U src, Flags* flags, Xor xorFunc) {
+        Flags virtualFlags = *flags;
+        U virtualRes = xorFunc(dst, src, &virtualFlags);
+        (void)virtualRes;
+
+        U nativeRes = dst;
+        u64 rflags = 0;
+        asm volatile("xor %1, %0" : "+r" (nativeRes) : "r"(src));
+        asm volatile("pushf");
+        asm volatile("pop %0" : "=r" (rflags));
+        *flags = fromRflags(rflags);
+
+        assert(virtualRes == nativeRes);
+        assert(virtualFlags.carry == flags->carry);
+        assert(virtualFlags.overflow == flags->overflow);
+        assert(virtualFlags.parity == flags->parity);
+        assert(virtualFlags.sign == flags->sign);
+        assert(virtualFlags.zero == flags->zero);
+        
+        return nativeRes;
+    }
+
+    u8 CheckedCpuImpl::xor8(u8 dst, u8 src, Flags* flags) { return xor_<u8>(dst, src, flags, &CpuImpl::xor8); }
+    u16 CheckedCpuImpl::xor16(u16 dst, u16 src, Flags* flags) { return xor_<u16>(dst, src, flags, &CpuImpl::xor16); }
+    u32 CheckedCpuImpl::xor32(u32 dst, u32 src, Flags* flags) { return xor_<u32>(dst, src, flags, &CpuImpl::xor32); }
+    u64 CheckedCpuImpl::xor64(u64 dst, u64 src, Flags* flags) { return xor_<u64>(dst, src, flags, &CpuImpl::xor64); }
+
+    template<typename U, typename Inc>
+    static U inc(U src, Flags* flags, Inc incFunc) {
+        Flags virtualFlags = *flags;
+        U virtualRes = incFunc(src, &virtualFlags);
+        (void)virtualRes;
+
+        U nativeRes = src;
+        u64 rflags = 0;
+        asm volatile("inc %0" : "+r" (nativeRes));
+        asm volatile("pushf");
+        asm volatile("pop %0" : "=r" (rflags));
+        *flags = fromRflags(rflags);
+
+        assert(virtualRes == nativeRes);
+        assert(virtualFlags.overflow == flags->overflow);
+        assert(virtualFlags.parity == flags->parity);
+        assert(virtualFlags.sign == flags->sign);
+        assert(virtualFlags.zero == flags->zero);
+        
+        return nativeRes;
+    }
+
+    u8 CheckedCpuImpl::inc8(u8 src, Flags* flags) { return inc<u8>(src, flags, &CpuImpl::inc8); }
+    u16 CheckedCpuImpl::inc16(u16 src, Flags* flags) { return inc<u16>(src, flags, &CpuImpl::inc16); }
+    u32 CheckedCpuImpl::inc32(u32 src, Flags* flags) { return inc<u32>(src, flags, &CpuImpl::inc32); }
+    u64 CheckedCpuImpl::inc64(u64 src, Flags* flags) { return inc<u64>(src, flags, &CpuImpl::inc64); }
+
+    template<typename U, typename Dec>
+    static U dec(U src, Flags* flags, Dec decFunc) {
+        Flags virtualFlags = *flags;
+        U virtualRes = decFunc(src, &virtualFlags);
+        (void)virtualRes;
+
+        U nativeRes = src;
+        u64 rflags = 0;
+        asm volatile("dec %0" : "+r" (nativeRes));
+        asm volatile("pushf");
+        asm volatile("pop %0" : "=r" (rflags));
+        *flags = fromRflags(rflags);
+
+        assert(virtualRes == nativeRes);
+        assert(virtualFlags.overflow == flags->overflow);
+        assert(virtualFlags.parity == flags->parity);
+        assert(virtualFlags.sign == flags->sign);
+        assert(virtualFlags.zero == flags->zero);
+        
+        return nativeRes;
+    }
+
+    u8 CheckedCpuImpl::dec8(u8 src, Flags* flags) { return dec<u8>(src, flags, &CpuImpl::dec8); }
+    u16 CheckedCpuImpl::dec16(u16 src, Flags* flags) { return dec<u16>(src, flags, &CpuImpl::dec16); }
+    u32 CheckedCpuImpl::dec32(u32 src, Flags* flags) { return dec<u32>(src, flags, &CpuImpl::dec32); }
+    u64 CheckedCpuImpl::dec64(u64 src, Flags* flags) { return dec<u64>(src, flags, &CpuImpl::dec64); }
+
+    template<typename U, typename Shl>
+    static U shl(U dst, U src, Flags* flags, Shl shlFunc) {
+        Flags virtualFlags = *flags;
+        U virtualRes = shlFunc(dst, src, &virtualFlags);
+        (void)virtualRes;
+
+        U nativeRes = dst;
+        u64 rflags = toRflags(*flags);
+        asm volatile("push %0" : "=r"(rflags));
+        asm volatile("popf");
+        asm volatile("mov %0, %%cl" :: "r"((u8)src));
+        asm volatile("shl %%cl, %0" : "+r" (nativeRes));
+        asm volatile("pushf");
+        asm volatile("pop %0" : "=r" (rflags));
+        *flags = fromRflags(rflags);
+
+        assert(virtualRes == nativeRes);
+        if(src) {
+            assert(virtualFlags.carry == flags->carry);
+            if(src == 1)
+                assert(virtualFlags.overflow == flags->overflow);
+            assert(virtualFlags.parity == flags->parity);
+            assert(virtualFlags.sign == flags->sign);
+            assert(virtualFlags.zero == flags->zero);
+        }
+        
+        return nativeRes;
+    }
+
+    u8 CheckedCpuImpl::shl8(u8 dst, u8 src, Flags* flags) { return shl<u8>(dst, src, flags, &CpuImpl::shl8); }
+    u16 CheckedCpuImpl::shl16(u16 dst, u16 src, Flags* flags) { return shl<u16>(dst, src, flags, &CpuImpl::shl16); }
+    u32 CheckedCpuImpl::shl32(u32 dst, u32 src, Flags* flags) { return shl<u32>(dst, src, flags, &CpuImpl::shl32); }
+    u64 CheckedCpuImpl::shl64(u64 dst, u64 src, Flags* flags) { return shl<u64>(dst, src, flags, &CpuImpl::shl64); }
+
+    template<typename U, typename Shr>
+    static U shr(U dst, U src, Flags* flags, Shr shrFunc) {
+        Flags virtualFlags = *flags;
+        U virtualRes = shrFunc(dst, src, &virtualFlags);
+        (void)virtualRes;
+
+        U nativeRes = dst;
+        u64 rflags = toRflags(*flags);
+        asm volatile("push %0" : "=r"(rflags));
+        asm volatile("popf");
+        asm volatile("mov %0, %%cl" :: "r"((u8)src));
+        asm volatile("shr %%cl, %0" : "+r" (nativeRes));
+        asm volatile("pushf");
+        asm volatile("pop %0" : "=r" (rflags));
+        *flags = fromRflags(rflags);
+
+        assert(virtualRes == nativeRes);
+        if(src) {
+            assert(virtualFlags.carry == flags->carry);
+            if(src == 1)
+                assert(virtualFlags.overflow == flags->overflow);
+            assert(virtualFlags.parity == flags->parity);
+            assert(virtualFlags.sign == flags->sign);
+            assert(virtualFlags.zero == flags->zero);
+        }
+        
+        return nativeRes;
+    }
+
+    u8 CheckedCpuImpl::shr8(u8 dst, u8 src, Flags* flags) { return shr<u8>(dst, src, flags, &CpuImpl::shr8); }
+    u16 CheckedCpuImpl::shr16(u16 dst, u16 src, Flags* flags) { return shr<u16>(dst, src, flags, &CpuImpl::shr16); }
+    u32 CheckedCpuImpl::shr32(u32 dst, u32 src, Flags* flags) { return shr<u32>(dst, src, flags, &CpuImpl::shr32); }
+    u64 CheckedCpuImpl::shr64(u64 dst, u64 src, Flags* flags) { return shr<u64>(dst, src, flags, &CpuImpl::shr64); }
+
+    template<typename U>
+    static U shld(U dst, U src, u8 count, Flags* flags) {
+        u8 size = 8*sizeof(U);
+        count = count % size;
+        if(count == 0) return dst;
+        U res = (U)(dst << count) | (U)(src >> (size-count));
+        flags->carry = dst & (size-count);
+        flags->sign = (res & ((U)1 << (size-1)));
+        flags->zero = (res == 0);
+        flags->parity = Flags::computeParity((u8)res);
+        if(count == 1) {
+            U signMask = (U)1 << (size-1);
+            flags->overflow = (dst & signMask) ^ (res & signMask);
+        }
+        flags->setSure();
+        return res;
+    }
+
+    u32 CheckedCpuImpl::shld32(u32 dst, u32 src, u8 count, Flags* flags) { return shld<u32>(dst, src, count, flags); }
+    u64 CheckedCpuImpl::shld64(u64 dst, u64 src, u8 count, Flags* flags) { return shld<u64>(dst, src, count, flags); }
+
+    template<typename U>
+    static U shrd(U dst, U src, u8 count, Flags* flags) {
+        u8 size = 8*sizeof(U);
+        count = count % size;
+        if(count == 0) return dst;
+        U res = (U)(dst >> count) | (U)(src << (size-count));
+        flags->carry = dst & (count-1);
+        flags->sign = (res & ((U)1 << (size-1)));
+        flags->zero = (res == 0);
+        flags->parity = Flags::computeParity((u8)res);
+        if(count == 1) {
+            U signMask = (U)1 << (size-1);
+            flags->overflow = (dst & signMask) ^ (res & signMask);
+        }
+        flags->setSure();
+        return res;
+    }
+
+    u32 CheckedCpuImpl::shrd32(u32 dst, u32 src, u8 count, Flags* flags) { return shrd<u32>(dst, src, count, flags); }
+    u64 CheckedCpuImpl::shrd64(u64 dst, u64 src, u8 count, Flags* flags) { return shrd<u64>(dst, src, count, flags); }
+
+
+    u32 CheckedCpuImpl::sar32(u32 dst, u32 src, Flags* flags) {
+        assert(src < 32);
+        i32 res = ((i32)dst) >> src;
+        if(src) {
+            flags->carry = ((i32)dst) & (1 << (src-1));
+        }
+        if(src == 1) {
+            flags->overflow = 0;
+        }
+        flags->sign = (res & (1 << 31));
+        flags->zero = (res == 0);
+        flags->setSure();
+        flags->setUnsureParity();
+        return (u32)res;
+    }
+
+    u64 CheckedCpuImpl::sar64(u64 dst, u64 src, Flags* flags) {
+        assert(src < 64);
+        i64 res = ((i64)dst) >> src;
+        if(src) {
+            flags->carry = ((i64)dst) & (1ll << (src-1));
+        }
+        if(src == 1) {
+            flags->overflow = 0;
+        }
+        flags->sign = (res & (1ll << 63));
+        flags->zero = (res == 0);
+        flags->setSure();
+        flags->setUnsureParity();
+        return (u64)res;
+    }
+
+    template<typename U>
+    U rol(U val, u8 count, Flags* flags) {
+        constexpr u8 size = sizeof(U)*8;
+        count = (count & (size == 64 ? 0x3F : 0x1F)) % size;
+        U res = (U)(val << count) | (U)(val >> (size-count));
+        if(count) {
+            flags->carry = res & 0x1;
+        }
+        if(count == 1) {
+            flags->overflow = (res >> (size-1)) ^ flags->carry;
+        }
+        return res;
+    }
+ 
+    u8 CheckedCpuImpl::rol8(u8 val, u8 count, Flags* flags) { return rol<u8>(val, count, flags); }
+    u16 CheckedCpuImpl::rol16(u16 val, u8 count, Flags* flags) { return rol<u16>(val, count, flags); }
+    u32 CheckedCpuImpl::rol32(u32 val, u8 count, Flags* flags) { return rol<u32>(val, count, flags); }
+    u64 CheckedCpuImpl::rol64(u64 val, u8 count, Flags* flags) { return rol<u64>(val, count, flags); }
+ 
+    template<typename U>
+    U ror(U val, u8 count, Flags* flags) {
+        constexpr u8 size = sizeof(U)*8;
+        count = (count & (size == 64 ? 0x3F : 0x1F)) % size;
+        U res = (U)(val >> count) | (U)(val << (size-count));
+        if(count) {
+            flags->carry = res & ((U)1 << (size-1));
+        }
+        if(count == 1) {
+            flags->overflow = (res >> (size-1)) ^ ((res >> (size-2)) & 0x1);;
+        }
+        return res;
+    }
+ 
+    u8 CheckedCpuImpl::ror8(u8 val, u8 count, Flags* flags) { return ror<u8>(val, count, flags); }
+    u16 CheckedCpuImpl::ror16(u16 val, u8 count, Flags* flags) { return ror<u16>(val, count, flags); }
+    u32 CheckedCpuImpl::ror32(u32 val, u8 count, Flags* flags) { return ror<u32>(val, count, flags); }
+    u64 CheckedCpuImpl::ror64(u64 val, u8 count, Flags* flags) { return ror<u64>(val, count, flags); }
+
+    u16 CheckedCpuImpl::tzcnt16(u16 src, Flags* flags) {
+        u16 tmp = 0;
+        u16 res = 0;
+        while(tmp < 16 && ((src >> tmp) & 0x1) == 0) {
+            ++tmp;
+            ++res;
+        }
+        flags->carry = (res == 16);
+        flags->zero = (res == 0);
+        return res;
+    }
+    u32 CheckedCpuImpl::tzcnt32(u32 src, Flags* flags) {
+        u32 tmp = 0;
+        u32 res = 0;
+        while(tmp < 32 && ((src >> tmp) & 0x1) == 0) {
+            ++tmp;
+            ++res;
+        }
+        flags->carry = (res == 32);
+        flags->zero = (res == 0);
+        return res;
+    }
+    u64 CheckedCpuImpl::tzcnt64(u64 src, Flags* flags) {
+        u64 tmp = 0;
+        u64 res = 0;
+        while(tmp < 64 && ((src >> tmp) & 0x1) == 0) {
+            ++tmp;
+            ++res;
+        }
+        flags->carry = (res == 64);
+        flags->zero = (res == 0);
+        return res;
+    }
+
+    void CheckedCpuImpl::bt16(u16 base, u16 index, Flags* flags) {
+        flags->carry = (base >> (index % 16)) & 0x1;
+    }
+    
+    void CheckedCpuImpl::bt32(u32 base, u32 index, Flags* flags) {
+        flags->carry = (base >> (index % 32)) & 0x1;
+    }
+
+    void CheckedCpuImpl::bt64(u64 base, u64 index, Flags* flags) {
+        flags->carry = (base >> (index % 64)) & 0x1;
+    }
+
+    u16 CheckedCpuImpl::btr16(u16 base, u16 index, Flags* flags) {
+        flags->carry = (base >> (index % 16)) & 0x1;
+        return (u16)(base & ~((u16)1 << (index % 16)));
+    }
+    
+    u32 CheckedCpuImpl::btr32(u32 base, u32 index, Flags* flags) {
+        flags->carry = (base >> (index % 32)) & 0x1;
+        return (u32)(base & ~((u32)1 << (index % 32)));
+    }
+
+    u64 CheckedCpuImpl::btr64(u64 base, u64 index, Flags* flags) {
+        flags->carry = (base >> (index % 64)) & 0x1;
+        return (u64)(base & ~((u64)1 << (index % 64)));
+    }
+
+    u16 CheckedCpuImpl::btc16(u16 base, u16 index, Flags* flags) {
+        flags->carry = (base >> (index % 16)) & 0x1;
+        u16 mask = (u16)(1 << (index % 16));
+        return (base & ~mask) | (~base & mask);
+    }
+    
+    u32 CheckedCpuImpl::btc32(u32 base, u32 index, Flags* flags) {
+        flags->carry = (base >> (index % 32)) & 0x1;
+        u32 mask = ((u32)1 << (index % 32));
+        return (base & ~mask) | (~base & mask);
+    }
+
+    u64 CheckedCpuImpl::btc64(u64 base, u64 index, Flags* flags) {
+        flags->carry = (base >> (index % 64)) & 0x1;
+        u64 mask = ((u64)1 << (index % 64));
+        return (base & ~mask) | (~base & mask);
+    }
+
+    u16 CheckedCpuImpl::bts16(u16 base, u16 index, Flags* flags) {
+        flags->carry = (base >> (index % 16)) & 0x1;
+        u16 mask = (u16)(1 << (index % 16));
+        return (base & ~mask) | mask;
+    }
+    
+    u32 CheckedCpuImpl::bts32(u32 base, u32 index, Flags* flags) {
+        flags->carry = (base >> (index % 32)) & 0x1;
+        u32 mask = ((u32)1 << (index % 32));
+        return (base & ~mask) | mask;
+    }
+
+    u64 CheckedCpuImpl::bts64(u64 base, u64 index, Flags* flags) {
+        flags->carry = (base >> (index % 64)) & 0x1;
+        u64 mask = ((u64)1 << (index % 64));
+        return (base & ~mask) | mask;
+    }
+
+    void CheckedCpuImpl::test8(u8 src1, u8 src2, Flags* flags) {
+        u8 tmp = src1 & src2;
+        flags->sign = (tmp & (1 << 7));
+        flags->zero = (tmp == 0);
+        flags->overflow = 0;
+        flags->carry = 0;
+        flags->setSure();
+        flags->setUnsureParity();
+    }
+
+    void CheckedCpuImpl::test16(u16 src1, u16 src2, Flags* flags) {
+        u16 tmp = src1 & src2;
+        flags->sign = (tmp & (1 << 15));
+        flags->zero = (tmp == 0);
+        flags->overflow = 0;
+        flags->carry = 0;
+        flags->setSure();
+        flags->setUnsureParity();
+    }
+
+    void CheckedCpuImpl::test32(u32 src1, u32 src2, Flags* flags) {
+        u32 tmp = src1 & src2;
+        flags->sign = (tmp & (1ul << 31));
+        flags->zero = (tmp == 0);
+        flags->overflow = 0;
+        flags->carry = 0;
+        flags->setSure();
+        flags->setUnsureParity();
+    }
+
+    void CheckedCpuImpl::test64(u64 src1, u64 src2, Flags* flags) {
+        u64 tmp = src1 & src2;
+        flags->sign = (tmp & (1ull << 63));
+        flags->zero = (tmp == 0);
+        flags->overflow = 0;
+        flags->carry = 0;
+        flags->setSure();
+        flags->setUnsureParity();
+    }
+
+    void CheckedCpuImpl::cmpxchg32(u32 eax, u32 dest, Flags* flags) {
+        CheckedCpuImpl::cmp32(eax, dest, flags);
+        if(eax == dest) {
+            flags->zero = 1;
+        } else {
+            flags->zero = 0;
+        }
+    }
+
+    void CheckedCpuImpl::cmpxchg64(u64 rax, u64 dest, Flags* flags) {
+        CheckedCpuImpl::cmp64(rax, dest, flags);
+        if(rax == dest) {
+            flags->zero = 1;
+        } else {
+            flags->zero = 0;
+        }
+    }
+
+    u32 CheckedCpuImpl::bsr32(u32 val, Flags* flags) {
+        flags->zero = (val == 0);
+        flags->setSure();
+        flags->setUnsureParity();
+        if(!val) return (u32)(-1); // [NS] return value is undefined
+        u32 mssb = 31;
+        while(mssb > 0 && !(val & (1u << mssb))) {
+            --mssb;
+        }
+        return mssb;
+    }
+
+    u64 CheckedCpuImpl::bsr64(u64 val, Flags* flags) {
+        flags->zero = (val == 0);
+        flags->setSure();
+        flags->setUnsureParity();
+        if(!val) return (u64)(-1); // [NS] return value is undefined
+        u64 mssb = 63;
+        while(mssb > 0 && !(val & (1ull << mssb))) {
+            --mssb;
+        }
+        return mssb;
+    }
+
+    u32 CheckedCpuImpl::bsf32(u32 val, Flags* flags) {
+        flags->zero = (val == 0);
+        flags->setSure();
+        flags->setUnsureParity();
+        if(!val) return (u32)(-1); // [NS] return value is undefined
+        u32 mssb = 0;
+        while(mssb < 32 && !(val & (1u << mssb))) {
+            ++mssb;
+        }
+        return mssb;
+    }
+
+    u64 CheckedCpuImpl::bsf64(u64 val, Flags* flags) {
+        flags->zero = (val == 0);
+        flags->setSure();
+        flags->setUnsureParity();
+        if(!val) return (u64)(-1); // [NS] return value is undefined
+        u64 mssb = 0;
+        while(mssb < 64 && !(val & (1ull << mssb))) {
+            ++mssb;
+        }
+        return mssb;
+    }
+
+    f80 CheckedCpuImpl::fadd(f80 dst, f80 src, X87Fpu*) {
+        long double d = f80::toLongDouble(dst);
+        long double s = f80::toLongDouble(src);
+        long double r = d+s;
+        return f80::fromLongDouble(r);
+    }
+
+    f80 CheckedCpuImpl::fsub(f80 dst, f80 src, X87Fpu*) {
+        long double d = f80::toLongDouble(dst);
+        long double s = f80::toLongDouble(src);
+        long double r = d-s;
+        return f80::fromLongDouble(r);
+    }
+
+    f80 CheckedCpuImpl::fmul(f80 dst, f80 src, X87Fpu*) {
+        long double d = f80::toLongDouble(dst);
+        long double s = f80::toLongDouble(src);
+        long double r = d*s;
+        return f80::fromLongDouble(r);
+    }
+
+    f80 CheckedCpuImpl::fdiv(f80 dst, f80 src, X87Fpu*) {
+        long double d = f80::toLongDouble(dst);
+        long double s = f80::toLongDouble(src);
+        long double r = d/s;
+        return f80::fromLongDouble(r);
+    }
+
+    void CheckedCpuImpl::fcomi(f80 dst, f80 src, X87Fpu* x87fpu, Flags* flags) {
+        long double d = f80::toLongDouble(dst);
+        long double s = f80::toLongDouble(src);
+        if(d > s) {
+            flags->zero = 0;
+            flags->parity = 0;
+            flags->carry = 0;
+        }
+        if(d < s) {
+            flags->zero = 0;
+            flags->parity = 0;
+            flags->carry = 1;
+        }
+        if(d == s) {
+            flags->zero = 1;
+            flags->parity = 0;
+            flags->carry = 0;
+        }
+        if(d != d || s != s) {
+            if(x87fpu->control().im) {
+                flags->zero = 1;
+                flags->parity = 1;
+                flags->carry = 1;
+            }
+        }
+    }
+
+    void CheckedCpuImpl::fucomi(f80 dst, f80 src, X87Fpu* x87fpu, Flags* flags) {
+        return fcomi(dst, src, x87fpu, flags);
+    }
+
+    f80 CheckedCpuImpl::frndint(f80 dst, X87Fpu* x87fpu) {
+        using RoundingFunction = f80(*)(f80);
+        std::array<RoundingFunction, 4> rounding {{
+            &f80::roundNearest,
+            &f80::roundDown,
+            &f80::roundUp,
+            &f80::roundZero
+        }};
+        return rounding[(u16)x87fpu->control().rc](dst);
+    }
+
+    u32 CheckedCpuImpl::addss(u32 dst, u32 src, Flags* flags) {
+        static_assert(sizeof(u32) == sizeof(float));
+        float d;
+        float s;
+        std::memcpy(&d, &dst, sizeof(d));
+        std::memcpy(&s, &src, sizeof(s));
+        float res = d + s;
+        u32 r;
+        std::memcpy(&r, &res, sizeof(r));
+        flags->setUnsure();
+        return r;
+    }
+
+    u64 CheckedCpuImpl::addsd(u64 dst, u64 src, Flags* flags) {
+        static_assert(sizeof(u64) == sizeof(double));
+        double d;
+        double s;
+        std::memcpy(&d, &dst, sizeof(d));
+        std::memcpy(&s, &src, sizeof(s));
+        double res = d + s;
+        u64 r;
+        std::memcpy(&r, &res, sizeof(r));
+        flags->setUnsure();
+        return r;
+    }
+
+    u32 CheckedCpuImpl::subss(u32 dst, u32 src, Flags* flags) {
+        static_assert(sizeof(u32) == sizeof(float));
+        float d;
+        float s;
+        std::memcpy(&d, &dst, sizeof(d));
+        std::memcpy(&s, &src, sizeof(s));
+        float res = d - s;
+        u32 r;
+        std::memcpy(&r, &res, sizeof(r));
+        if(d == s) {
+            flags->zero = true;
+            flags->parity = false;
+            flags->carry = false;
+        } else if(res != res) {
+            flags->zero = true;
+            flags->parity = true;
+            flags->carry = true;
+        } else if(res > 0.0) {
+            flags->zero = false;
+            flags->parity = false;
+            flags->carry = false;
+        } else if(res < 0.0) {
+            flags->zero = false;
+            flags->parity = false;
+            flags->carry = true;
+        }
+        flags->overflow = false;
+        flags->sign = false;
+        flags->setSure();
+        return r;
+    }
+
+    u64 CheckedCpuImpl::subsd(u64 dst, u64 src, Flags* flags) {
+        static_assert(sizeof(u64) == sizeof(double));
+        double d;
+        double s;
+        std::memcpy(&d, &dst, sizeof(d));
+        std::memcpy(&s, &src, sizeof(s));
+        double res = d - s;
+        u64 r;
+        std::memcpy(&r, &res, sizeof(r));
+        if(d == s) {
+            flags->zero = true;
+            flags->parity = false;
+            flags->carry = false;
+        } else if(res != res) {
+            flags->zero = true;
+            flags->parity = true;
+            flags->carry = true;
+        } else if(res > 0.0) {
+            flags->zero = false;
+            flags->parity = false;
+            flags->carry = false;
+        } else if(res < 0.0) {
+            flags->zero = false;
+            flags->parity = false;
+            flags->carry = true;
+        }
+        flags->overflow = false;
+        flags->sign = false;
+        flags->setSure();
+        flags->setSureParity();
+        return r;
+    }
+
+    u64 CheckedCpuImpl::mulsd(u64 dst, u64 src) {
+        static_assert(sizeof(u64) == sizeof(double));
+        double d;
+        double s;
+        std::memcpy(&d, &dst, sizeof(d));
+        std::memcpy(&s, &src, sizeof(s));
+        double res = d * s;
+        u64 r;
+        std::memcpy(&r, &res, sizeof(r));
+        return r;
+    }
+
+    u128 CheckedCpuImpl::divss(u128 dst, u32 src) {
+        static_assert(sizeof(u32) == sizeof(float));
+        float d;
+        float s;
+        std::memcpy(&d, &dst, sizeof(d));
+        std::memcpy(&s, &src, sizeof(s));
+        float res = d / s;
+        std::memcpy(&dst, &res, sizeof(res));
+        return dst;
+    }
+
+    u128 CheckedCpuImpl::divsd(u128 dst, u64 src) {
+        static_assert(sizeof(u64) == sizeof(double));
+        double d;
+        double s;
+        std::memcpy(&d, &dst, sizeof(d));
+        std::memcpy(&s, &src, sizeof(s));
+        double res = d / s;
+        std::memcpy(&dst, &res, sizeof(res));
+        return dst;
+    }
+
+    u64 CheckedCpuImpl::cmpsd(u64 dst, u64 src, FCond cond) {
+        static_assert(sizeof(u64) == sizeof(double));
+        double d;
+        double s;
+        std::memcpy(&d, &dst, sizeof(d));
+        std::memcpy(&s, &src, sizeof(s));
+        auto mask = [](bool res) -> u64 {
+            return res ? (u64)(-1) : 0x0;
+        };
+        switch(cond) {
+            case FCond::EQ:    return mask(d == s);
+            case FCond::LT:    return mask(d < s);
+            case FCond::LE:    return mask(d <= s);
+            case FCond::UNORD: return mask((d != d) || (s != s));
+            case FCond::NEQ:   return mask(!(d == s));
+            case FCond::NLT:   return mask(!(d < s));
+            case FCond::NLE:   return mask(!(d <= s));
+            case FCond::ORD:   return mask(d == d && s == s);
+        }
+        __builtin_unreachable();
+    }
+
+    u128 CheckedCpuImpl::cvtsi2ss32(u128 dst, u32 src) {
+        i32 isrc = (i32)src;
+        float res = (float)isrc;
+        u32 r;
+        std::memcpy(&r, &res, sizeof(r));
+        dst.lo = (dst.lo & 0xFFFFFFFFFFFF0000) | r;
+        return dst;
+    }
+
+    u128 CheckedCpuImpl::cvtsi2ss64(u128 dst, u64 src) {
+        i64 isrc = (i64)src;
+        float res = (float)isrc;
+        u32 r;
+        std::memcpy(&r, &res, sizeof(r));
+        dst.lo = (dst.lo & 0xFFFFFFFFFFFF0000) | r;
+        return dst;
+    }
+
+    u128 CheckedCpuImpl::cvtsi2sd32(u128 dst, u32 src) {
+        i32 isrc = (i32)src;
+        double res = (double)isrc;
+        u64 r;
+        std::memcpy(&r, &res, sizeof(r));
+        dst.lo = (dst.lo & 0xFFFFFFFF00000000) | r;
+        return dst;
+    }
+
+    u128 CheckedCpuImpl::cvtsi2sd64(u128 dst, u64 src) {
+        i64 isrc = (i64)src;
+        double res = (double)isrc;
+        u64 r;
+        std::memcpy(&r, &res, sizeof(r));
+        dst.lo = (dst.lo & 0xFFFFFFFF00000000) | r;
+        return dst;
+    }
+
+    u64 CheckedCpuImpl::cvtss2sd(u32 src) {
+        float tmp;
+        static_assert(sizeof(src) == sizeof(tmp));
+        std::memcpy(&tmp, &src, sizeof(tmp));
+        double res = (double)tmp;
+        u64 r;
+        std::memcpy(&r, &res, sizeof(r));
+        return r;
+    }
+
+    u32 CheckedCpuImpl::cvttsd2si32(u64 src) {
+        double f;
+        std::memcpy(&f, &src, sizeof(src));
+        return (u32)(i32)f;
+    }
+
+    u64 CheckedCpuImpl::cvttsd2si64(u64 src) {
+        double f;
+        std::memcpy(&f, &src, sizeof(src));
+        return (u64)(i64)f;
+    }
+
+    u128 CheckedCpuImpl::shufpd(u128 dst, u128 src, u8 order) {
+        u128 res;
+        res.lo = (order & 0x1) ? dst.hi : dst.lo;
+        res.hi = (order & 0x1) ? src.hi : src.lo;
+        return res;
+    }
+
+    u128 CheckedCpuImpl::punpcklbw(u128 dst, u128 src) {
+        std::array<u8, 16> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        std::memcpy(DST.data(), &dst, sizeof(u128));
+
+        std::array<u8, 16> SRC;
+        static_assert(sizeof(SRC) == sizeof(u128));
+        std::memcpy(SRC.data(), &src, sizeof(u128));
+
+        std::array<u8, 16> RES;
+        for(size_t i = 0; i < 8; ++i) {
+            RES[2*i] = DST[i];
+            RES[2*i+1] = SRC[i];
+        }
+        std::memcpy(&dst, RES.data(), sizeof(u128));
+        return dst;
+    }
+
+    u128 CheckedCpuImpl::punpcklwd(u128 dst, u128 src) {
+        std::array<u16, 8> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        std::memcpy(DST.data(), &dst, sizeof(u128));
+
+        std::array<u16, 8> SRC;
+        static_assert(sizeof(SRC) == sizeof(u128));
+        std::memcpy(SRC.data(), &src, sizeof(u128));
+
+        std::array<u16, 8> RES;
+        for(size_t i = 0; i < 4; ++i) {
+            RES[2*i] = DST[i];
+            RES[2*i+1] = SRC[i];
+        }
+        std::memcpy(&dst, RES.data(), sizeof(u128));
+        return dst;
+    }
+
+    u128 CheckedCpuImpl::punpckldq(u128 dst, u128 src) {
+        std::array<u32, 4> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        std::memcpy(DST.data(), &dst, sizeof(u128));
+
+        std::array<u32, 4> SRC;
+        static_assert(sizeof(SRC) == sizeof(u128));
+        std::memcpy(SRC.data(), &src, sizeof(u128));
+
+        std::array<u32, 4> RES;
+        for(size_t i = 0; i < 2; ++i) {
+            RES[2*i] = DST[i];
+            RES[2*i+1] = SRC[i];
+        }
+        std::memcpy(&dst, RES.data(), sizeof(u128));
+        return dst;
+    }
+
+    u128 CheckedCpuImpl::punpcklqdq(u128 dst, u128 src) {
+        dst.hi = src.lo;
+        return dst;
+    }
+
+    u128 CheckedCpuImpl::punpckhbw(u128 dst, u128 src) {
+        std::array<u8, 16> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        std::memcpy(DST.data(), &dst, sizeof(u128));
+
+        std::array<u8, 16> SRC;
+        static_assert(sizeof(SRC) == sizeof(u128));
+        std::memcpy(SRC.data(), &src, sizeof(u128));
+
+        std::array<u8, 16> RES;
+        for(size_t i = 0; i < 8; ++i) {
+            RES[2*i] = DST[8+i];
+            RES[2*i+1] = SRC[8+i];
+        }
+        std::memcpy(&dst, RES.data(), sizeof(u128));
+        return dst;
+    }
+
+    u128 CheckedCpuImpl::punpckhwd(u128 dst, u128 src) {
+        std::array<u16, 8> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        std::memcpy(DST.data(), &dst, sizeof(u128));
+
+        std::array<u16, 8> SRC;
+        static_assert(sizeof(SRC) == sizeof(u128));
+        std::memcpy(SRC.data(), &src, sizeof(u128));
+
+        std::array<u16, 8> RES;
+        for(size_t i = 0; i < 4; ++i) {
+            RES[2*i] = DST[4+i];
+            RES[2*i+1] = SRC[4+i];
+        }
+        std::memcpy(&dst, RES.data(), sizeof(u128));
+        return dst;
+    }
+
+    u128 CheckedCpuImpl::punpckhdq(u128 dst, u128 src) {
+        std::array<u32, 4> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        std::memcpy(DST.data(), &dst, sizeof(u128));
+
+        std::array<u32, 4> SRC;
+        static_assert(sizeof(SRC) == sizeof(u128));
+        std::memcpy(SRC.data(), &src, sizeof(u128));
+
+        std::array<u32, 4> RES;
+        for(size_t i = 0; i < 2; ++i) {
+            RES[2*i] = DST[2+i];
+            RES[2*i+1] = SRC[2+i];
+        }
+        std::memcpy(&dst, RES.data(), sizeof(u128));
+        return dst;
+    }
+
+    u128 CheckedCpuImpl::punpckhqdq(u128 dst, u128 src) {
+        dst.hi = src.hi;
+        return dst;
+    }
+
+    u128 CheckedCpuImpl::pshufb(u128 dst, u128 src) {
+        std::array<u8, 16> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        std::memcpy(DST.data(), &dst, sizeof(u128));
+        std::array<u8, 16> TMP = DST;
+
+        std::array<u8, 16> SRC;
+        static_assert(sizeof(SRC) == sizeof(u128));
+        std::memcpy(SRC.data(), &src, sizeof(u128));
+
+        for(unsigned int i = 0; i < 15; ++i) {
+            if((SRC[i] & 0x80) == 0) {
+                DST[i] = 0x0;
+            } else {
+                DST[i] = TMP[SRC[i] & 0x0F];
+            }
+        }
+
+        std::memcpy(&dst, DST.data(), sizeof(u128));
+        return dst;
+    }
+
+    u128 CheckedCpuImpl::pshufd(u128 src, u8 order) {
+        std::array<u32, 4> SRC;
+        static_assert(sizeof(SRC) == sizeof(u128));
+        std::memcpy(SRC.data(), &src, sizeof(u128));
+
+        std::array<u32, 4> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        DST[0] = SRC[(order >> 0) & 0x3];
+        DST[1] = SRC[(order >> 2) & 0x3];
+        DST[2] = SRC[(order >> 4) & 0x3];
+        DST[3] = SRC[(order >> 6) & 0x3];
+
+        u128 dst;
+        std::memcpy(&dst, DST.data(), sizeof(u128));
+        return dst;
+    }
+
+
+    template<typename I>
+    static u128 pcmpeq(u128 dst, u128 src) {
+        constexpr u32 N = sizeof(u128)/sizeof(I);
+        std::array<I, N> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        std::memcpy(DST.data(), &dst, sizeof(u128));
+
+        std::array<I, N> SRC;
+        static_assert(sizeof(SRC) == sizeof(u128));
+        std::memcpy(SRC.data(), &src, sizeof(u128));
+
+        for(size_t i = 0; i < N; ++i) {
+            DST[i] = (DST[i] == SRC[i] ? -1 : 0);
+        }
+        std::memcpy(&dst, DST.data(), sizeof(u128));
+        return dst;
+    }
+
+    u128 CheckedCpuImpl::pcmpeqb(u128 dst, u128 src) { return pcmpeq<i8>(dst, src); }
+    u128 CheckedCpuImpl::pcmpeqw(u128 dst, u128 src) { return pcmpeq<i16>(dst, src); }
+    u128 CheckedCpuImpl::pcmpeqd(u128 dst, u128 src) { return pcmpeq<i32>(dst, src); }
+    u128 CheckedCpuImpl::pcmpeqq(u128 dst, u128 src) { return pcmpeq<i64>(dst, src); }
+
+    template<typename I>
+    static u128 pcmpgt(u128 dst, u128 src) {
+        constexpr u32 N = sizeof(u128)/sizeof(I);
+        std::array<I, N> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        std::memcpy(DST.data(), &dst, sizeof(u128));
+
+        std::array<I, N> SRC;
+        static_assert(sizeof(SRC) == sizeof(u128));
+        std::memcpy(SRC.data(), &src, sizeof(u128));
+
+        for(size_t i = 0; i < N; ++i) {
+            DST[i] = (DST[i] > SRC[i] ? -1 : 0);
+        }
+        std::memcpy(&dst, DST.data(), sizeof(u128));
+        return dst;
+    }
+
+    u128 CheckedCpuImpl::pcmpgtb(u128 dst, u128 src) { return pcmpgt<i8>(dst, src); }
+    u128 CheckedCpuImpl::pcmpgtw(u128 dst, u128 src) { return pcmpgt<i16>(dst, src); }
+    u128 CheckedCpuImpl::pcmpgtd(u128 dst, u128 src) { return pcmpgt<i32>(dst, src); }
+    u128 CheckedCpuImpl::pcmpgtq(u128 dst, u128 src) { return pcmpgt<i64>(dst, src); }
+
+    u16 CheckedCpuImpl::pmovmskb(u128 src) {
+        std::array<u8, 16> SRC;
+        static_assert(sizeof(SRC) == sizeof(u128));
+        std::memcpy(SRC.data(), &src, sizeof(u128));
+        u16 dst = 0;
+        for(u16 i = 0; i < 16; ++i) {
+            u16 msbi = ((SRC[i] >> 7) & 0x1);
+            dst = (u16)(dst | (msbi << i));
+        }
+        return dst;
+    }
+
+    template<typename U>
+    u128 padd(u128 dst, u128 src) {
+        constexpr int N = sizeof(u128)/sizeof(U);
+        std::array<U, N> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        std::memcpy(DST.data(), &dst, sizeof(u128));
+
+        std::array<U, N> SRC;
+        static_assert(sizeof(SRC) == sizeof(u128));
+        std::memcpy(SRC.data(), &src, sizeof(u128));
+
+        for(size_t i = 0; i < N; ++i) {
+            DST[i] += SRC[i];
+        }
+        std::memcpy(&dst, DST.data(), sizeof(u128));
+        return dst;
+    }
+
+    u128 CheckedCpuImpl::paddb(u128 dst, u128 src) { return padd<u8>(dst, src); }
+    u128 CheckedCpuImpl::paddw(u128 dst, u128 src) { return padd<u16>(dst, src); }
+    u128 CheckedCpuImpl::paddd(u128 dst, u128 src) { return padd<u32>(dst, src); }
+    u128 CheckedCpuImpl::paddq(u128 dst, u128 src) { return padd<u64>(dst, src); }
+
+    template<typename U>
+    u128 psub(u128 dst, u128 src) {
+        constexpr int N = sizeof(u128)/sizeof(U);
+        std::array<U, N> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        std::memcpy(DST.data(), &dst, sizeof(u128));
+
+        std::array<U, N> SRC;
+        static_assert(sizeof(SRC) == sizeof(u128));
+        std::memcpy(SRC.data(), &src, sizeof(u128));
+
+        for(size_t i = 0; i < N; ++i) {
+            DST[i] -= SRC[i];
+        }
+        std::memcpy(&dst, DST.data(), sizeof(u128));
+        return dst;
+    }
+
+    u128 CheckedCpuImpl::psubb(u128 dst, u128 src) { return psub<u8>(dst, src); }
+    u128 CheckedCpuImpl::psubw(u128 dst, u128 src) { return psub<u16>(dst, src); }
+    u128 CheckedCpuImpl::psubd(u128 dst, u128 src) { return psub<u32>(dst, src); }
+    u128 CheckedCpuImpl::psubq(u128 dst, u128 src) { return psub<u64>(dst, src); }
+
+    u128 CheckedCpuImpl::pmaxub(u128 dst, u128 src) {
+        std::array<u8, 16> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        std::memcpy(DST.data(), &dst, sizeof(u128));
+
+        std::array<u8, 16> SRC;
+        static_assert(sizeof(SRC) == sizeof(u128));
+        std::memcpy(SRC.data(), &src, sizeof(u128));
+
+        for(size_t i = 0; i < 16; ++i) {
+            DST[i] = std::max(DST[i], SRC[i]);
+        }
+        std::memcpy(&dst, DST.data(), sizeof(u128));
+        return dst;
+    }
+
+    u128 CheckedCpuImpl::pminub(u128 dst, u128 src) {
+        std::array<u8, 16> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        std::memcpy(DST.data(), &dst, sizeof(u128));
+
+        std::array<u8, 16> SRC;
+        static_assert(sizeof(SRC) == sizeof(u128));
+        std::memcpy(SRC.data(), &src, sizeof(u128));
+
+        for(size_t i = 0; i < 16; ++i) {
+            DST[i] = std::min(DST[i], SRC[i]);
+        }
+        std::memcpy(&dst, DST.data(), sizeof(u128));
+        return dst;
+    }
+
+    void CheckedCpuImpl::ptest(u128 dst, u128 src, Flags* flags) {
+        flags->zero = (dst.lo & src.lo) == 0 && (dst.hi & src.hi) == 0;
+        flags->carry = (~dst.lo & src.lo) == 0 && (~dst.hi & src.hi) == 0;
+    }
+
+    template<typename U>
+    static u128 psll(u128 dst, u8 src) {
+        constexpr u32 N = sizeof(u128)/sizeof(U);
+        std::array<U, N> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        std::memcpy(DST.data(), &dst, sizeof(u128));
+
+        std::array<U, N> SRC;
+        static_assert(sizeof(SRC) == sizeof(u128));
+        std::memcpy(SRC.data(), &src, sizeof(u128));
+
+        for(size_t i = 0; i < N; ++i) {
+            DST[i] = (U)(DST[i] << (U)src);
+        }
+        std::memcpy(&dst, DST.data(), sizeof(u128));
+        return dst;
+    }
+
+    u128 CheckedCpuImpl::psllw(u128 dst, u8 src) { return psll<u16>(dst, src); }
+    u128 CheckedCpuImpl::pslld(u128 dst, u8 src) { return psll<u32>(dst, src); }
+    u128 CheckedCpuImpl::psllq(u128 dst, u8 src) { return psll<u64>(dst, src); }
+
+    template<typename U>
+    static u128 psrl(u128 dst, u8 src) {
+        constexpr u32 N = sizeof(u128)/sizeof(U);
+        std::array<U, N> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        std::memcpy(DST.data(), &dst, sizeof(u128));
+
+        std::array<U, N> SRC;
+        static_assert(sizeof(SRC) == sizeof(u128));
+        std::memcpy(SRC.data(), &src, sizeof(u128));
+
+        for(size_t i = 0; i < N; ++i) {
+            DST[i] = (U)(DST[i] >> (U)src);
+        }
+        std::memcpy(&dst, DST.data(), sizeof(u128));
+        return dst;
+    }
+
+    u128 CheckedCpuImpl::psrlw(u128 dst, u8 src) { return psrl<u16>(dst, src); }
+    u128 CheckedCpuImpl::psrld(u128 dst, u8 src) { return psrl<u32>(dst, src); }
+    u128 CheckedCpuImpl::psrlq(u128 dst, u8 src) { return psrl<u64>(dst, src); }
+
+    u128 CheckedCpuImpl::pslldq(u128 dst, u8 src) {
+        if(src >= 16) {
+            return u128{0, 0};
+        } else if(src >= 8) {
+            dst.hi = (dst.lo << 8*(src-8));
+            dst.lo = 0;
+        } else {
+            dst.hi = (dst.hi << 8*src) | (dst.lo >> (64-8*src));
+            dst.lo = (dst.lo << 8*src);
+        }
+        return dst;
+    }
+
+    u128 CheckedCpuImpl::psrldq(u128 dst, u8 src) {
+        if(src >= 16) {
+            return u128{0, 0};
+        } else if(src >= 8) {
+            dst.lo = (dst.hi >> 8*(src-8));
+            dst.hi = 0;
+        } else {
+            dst.lo = (dst.lo >> 8*src) | (dst.hi << (64-8*src));
+            dst.hi = (dst.hi >> 8*src);
+        }
+        return dst;
+    }
+
+    u32 CheckedCpuImpl::pcmpistri(u128 dst, u128 src, u8 control, Flags* flags) {
+        enum DATA_FORMAT {
+            UNSIGNED_BYTE,
+            UNSIGNED_WORD,
+            SIGNED_BYTE,
+            SIGNED_WORD,
+        };
+
+        enum AGGREGATION_OPERATION {
+            EQUAL_ANY,
+            RANGES,
+            EQUAL_EACH,
+            EQUAL_ORDERED,
+        };
+
+        enum POLARITY {
+            POSITIVE_POLARITY,
+            NEGATIVE_POLARITY,
+            MASKED_POSITIVE,
+            MASKED_NEGATIVE,
+        };
+
+        enum OUTPUT_SELECTION {
+            LEAST_SIGNIFICANT_INDEX,
+            MOST_SIGNIFICANT_INDEX,
+        };
+
+        DATA_FORMAT format = (DATA_FORMAT)(control & 0x3);
+        AGGREGATION_OPERATION operation = (AGGREGATION_OPERATION)((control >> 2) & 0x3);
+        POLARITY polarity = (POLARITY)((control >> 4) & 0x3);
+        OUTPUT_SELECTION output = (OUTPUT_SELECTION)((control >> 6) & 0x1);
+
+        assert(format == DATA_FORMAT::SIGNED_BYTE);
+        assert(operation == AGGREGATION_OPERATION::EQUAL_EACH);
+        assert(polarity == POLARITY::MASKED_NEGATIVE);
+        assert(output == OUTPUT_SELECTION::LEAST_SIGNIFICANT_INDEX);
+
+        (void)dst;
+        (void)src;
+        (void)control;
+        (void)flags;
+        (void)format;
+        (void)operation;
+        (void)polarity;
+        (void)output;
+        return 0;
+    }
+
+}

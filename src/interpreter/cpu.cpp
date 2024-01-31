@@ -1,5 +1,6 @@
 #include "interpreter/cpu.h"
 #include "interpreter/cpuimpl.h"
+#include "interpreter/checkedcpuimpl.h"
 #include "interpreter/mmu.h"
 #include "interpreter/syscalls.h"
 #include "interpreter/verify.h"
