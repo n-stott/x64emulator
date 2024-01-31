@@ -548,173 +548,211 @@ namespace x64 {
     u32 CheckedCpuImpl::shrd32(u32 dst, u32 src, u8 count, Flags* flags) { return shrd<u32>(dst, src, count, flags); }
     u64 CheckedCpuImpl::shrd64(u64 dst, u64 src, u8 count, Flags* flags) { return shrd<u64>(dst, src, count, flags); }
 
+    template<typename U, typename Sar>
+    static U sar(U dst, U src, Flags* flags, Sar sarFunc) {
+        Flags virtualFlags = *flags;
+        U virtualRes = sarFunc(dst, src, &virtualFlags);
+        (void)virtualRes;
 
-    u32 CheckedCpuImpl::sar32(u32 dst, u32 src, Flags* flags) {
-        assert(src < 32);
-        i32 res = ((i32)dst) >> src;
+        U nativeRes = dst;
+        u64 rflags = toRflags(*flags);
+        asm volatile("push %0" : "=r"(rflags));
+        asm volatile("popf");
+        asm volatile("mov %0, %%cl" :: "r"((u8)src));
+        asm volatile("sar %%cl, %0" : "+r" (nativeRes));
+        asm volatile("pushf");
+        asm volatile("pop %0" : "=r" (rflags));
+        *flags = fromRflags(rflags);
+
+        assert(virtualRes == nativeRes);
         if(src) {
-            flags->carry = ((i32)dst) & (1 << (src-1));
+            assert(virtualFlags.carry == flags->carry);
+            if(src == 1)
+                assert(virtualFlags.overflow == flags->overflow);
+            assert(virtualFlags.parity == flags->parity);
+            assert(virtualFlags.sign == flags->sign);
+            assert(virtualFlags.zero == flags->zero);
         }
-        if(src == 1) {
-            flags->overflow = 0;
-        }
-        flags->sign = (res & (1 << 31));
-        flags->zero = (res == 0);
-        flags->setSure();
-        flags->setUnsureParity();
-        return (u32)res;
+        
+        return nativeRes;
     }
 
-    u64 CheckedCpuImpl::sar64(u64 dst, u64 src, Flags* flags) {
-        assert(src < 64);
-        i64 res = ((i64)dst) >> src;
-        if(src) {
-            flags->carry = ((i64)dst) & (1ll << (src-1));
-        }
-        if(src == 1) {
-            flags->overflow = 0;
-        }
-        flags->sign = (res & (1ll << 63));
-        flags->zero = (res == 0);
-        flags->setSure();
-        flags->setUnsureParity();
-        return (u64)res;
-    }
+    u32 CheckedCpuImpl::sar32(u32 dst, u32 src, Flags* flags) { return sar<u32>(dst, src, flags, &CpuImpl::sar32); }
+    u64 CheckedCpuImpl::sar64(u64 dst, u64 src, Flags* flags) { return sar<u64>(dst, src, flags, &CpuImpl::sar64); }
 
-    template<typename U>
-    U rol(U val, u8 count, Flags* flags) {
-        constexpr u8 size = sizeof(U)*8;
-        count = (count & (size == 64 ? 0x3F : 0x1F)) % size;
-        U res = (U)(val << count) | (U)(val >> (size-count));
+    template<typename U, typename Rol>
+    U rol(U val, u8 count, Flags* flags, Rol rolFunc) {
+        Flags virtualFlags = *flags;
+        U virtualRes = rolFunc(val, count, &virtualFlags);
+        (void)virtualRes;
+
+        U nativeRes = val;
+        u64 rflags = toRflags(*flags);
+        asm volatile("push %0" : "=r"(rflags));
+        asm volatile("popf");
+        asm volatile("mov %0, %%cl" :: "r"((u8)count));
+        asm volatile("rol %%cl, %0" : "+r" (nativeRes));
+        asm volatile("pushf");
+        asm volatile("pop %0" : "=r" (rflags));
+        *flags = fromRflags(rflags);
+
+        assert(virtualRes == nativeRes);
         if(count) {
-            flags->carry = res & 0x1;
+            assert(virtualFlags.carry == flags->carry);
+            if(count % 64 == 1)
+                assert(virtualFlags.overflow == flags->overflow);
         }
-        if(count == 1) {
-            flags->overflow = (res >> (size-1)) ^ flags->carry;
-        }
-        return res;
+        
+        return nativeRes;
     }
+    
  
-    u8 CheckedCpuImpl::rol8(u8 val, u8 count, Flags* flags) { return rol<u8>(val, count, flags); }
-    u16 CheckedCpuImpl::rol16(u16 val, u8 count, Flags* flags) { return rol<u16>(val, count, flags); }
-    u32 CheckedCpuImpl::rol32(u32 val, u8 count, Flags* flags) { return rol<u32>(val, count, flags); }
-    u64 CheckedCpuImpl::rol64(u64 val, u8 count, Flags* flags) { return rol<u64>(val, count, flags); }
+    u8 CheckedCpuImpl::rol8(u8 val, u8 count, Flags* flags) { return rol<u8>(val, count, flags, &CpuImpl::rol8); }
+    u16 CheckedCpuImpl::rol16(u16 val, u8 count, Flags* flags) { return rol<u16>(val, count, flags, &CpuImpl::rol16); }
+    u32 CheckedCpuImpl::rol32(u32 val, u8 count, Flags* flags) { return rol<u32>(val, count, flags, &CpuImpl::rol32); }
+    u64 CheckedCpuImpl::rol64(u64 val, u8 count, Flags* flags) { return rol<u64>(val, count, flags, &CpuImpl::rol64); }
  
-    template<typename U>
-    U ror(U val, u8 count, Flags* flags) {
-        constexpr u8 size = sizeof(U)*8;
-        count = (count & (size == 64 ? 0x3F : 0x1F)) % size;
-        U res = (U)(val >> count) | (U)(val << (size-count));
+    template<typename U, typename Ror>
+    U ror(U val, u8 count, Flags* flags, Ror rorFunc) {
+        Flags virtualFlags = *flags;
+        U virtualRes = rorFunc(val, count, &virtualFlags);
+        (void)virtualRes;
+
+        U nativeRes = val;
+        u64 rflags = toRflags(*flags);
+        asm volatile("push %0" : "=r"(rflags));
+        asm volatile("popf");
+        asm volatile("mov %0, %%cl" :: "r"((u8)count));
+        asm volatile("ror %%cl, %0" : "+r" (nativeRes));
+        asm volatile("pushf");
+        asm volatile("pop %0" : "=r" (rflags));
+        *flags = fromRflags(rflags);
+
+        assert(virtualRes == nativeRes);
         if(count) {
-            flags->carry = res & ((U)1 << (size-1));
+            assert(virtualFlags.carry == flags->carry);
+            if(count % 64 == 1)
+                assert(virtualFlags.overflow == flags->overflow);
         }
-        if(count == 1) {
-            flags->overflow = (res >> (size-1)) ^ ((res >> (size-2)) & 0x1);;
-        }
-        return res;
+        
+        return nativeRes;
     }
  
-    u8 CheckedCpuImpl::ror8(u8 val, u8 count, Flags* flags) { return ror<u8>(val, count, flags); }
-    u16 CheckedCpuImpl::ror16(u16 val, u8 count, Flags* flags) { return ror<u16>(val, count, flags); }
-    u32 CheckedCpuImpl::ror32(u32 val, u8 count, Flags* flags) { return ror<u32>(val, count, flags); }
-    u64 CheckedCpuImpl::ror64(u64 val, u8 count, Flags* flags) { return ror<u64>(val, count, flags); }
+    u8 CheckedCpuImpl::ror8(u8 val, u8 count, Flags* flags) { return ror<u8>(val, count, flags, &CpuImpl::ror8); }
+    u16 CheckedCpuImpl::ror16(u16 val, u8 count, Flags* flags) { return ror<u16>(val, count, flags, &CpuImpl::ror16); }
+    u32 CheckedCpuImpl::ror32(u32 val, u8 count, Flags* flags) { return ror<u32>(val, count, flags, &CpuImpl::ror32); }
+    u64 CheckedCpuImpl::ror64(u64 val, u8 count, Flags* flags) { return ror<u64>(val, count, flags, &CpuImpl::ror64); }
 
-    u16 CheckedCpuImpl::tzcnt16(u16 src, Flags* flags) {
-        u16 tmp = 0;
-        u16 res = 0;
-        while(tmp < 16 && ((src >> tmp) & 0x1) == 0) {
-            ++tmp;
-            ++res;
-        }
-        flags->carry = (res == 16);
-        flags->zero = (res == 0);
-        return res;
-    }
-    u32 CheckedCpuImpl::tzcnt32(u32 src, Flags* flags) {
-        u32 tmp = 0;
-        u32 res = 0;
-        while(tmp < 32 && ((src >> tmp) & 0x1) == 0) {
-            ++tmp;
-            ++res;
-        }
-        flags->carry = (res == 32);
-        flags->zero = (res == 0);
-        return res;
-    }
-    u64 CheckedCpuImpl::tzcnt64(u64 src, Flags* flags) {
-        u64 tmp = 0;
-        u64 res = 0;
-        while(tmp < 64 && ((src >> tmp) & 0x1) == 0) {
-            ++tmp;
-            ++res;
-        }
-        flags->carry = (res == 64);
-        flags->zero = (res == 0);
-        return res;
+    template<typename U, typename Tzcnt>
+    static U tzcnt(U src, Flags* flags, Tzcnt tzcntFunc) {
+        Flags virtualFlags = *flags;
+        U virtualRes = tzcntFunc(src, &virtualFlags);
+        (void)virtualRes;
+
+        U nativeRes = 0;
+        u64 rflags = toRflags(*flags);
+        asm volatile("tzcnt %1, %0" : "=r" (nativeRes) : "r"(src));
+        asm volatile("pushf");
+        asm volatile("pop %0" : "=r" (rflags));
+        *flags = fromRflags(rflags);
+
+        assert(virtualRes == nativeRes);
+        assert(virtualFlags.carry == flags->carry);
+        assert(virtualFlags.zero == flags->zero);
+        
+        return nativeRes;
     }
 
-    void CheckedCpuImpl::bt16(u16 base, u16 index, Flags* flags) {
-        flags->carry = (base >> (index % 16)) & 0x1;
+    u16 CheckedCpuImpl::tzcnt16(u16 src, Flags* flags) { return tzcnt<u16>(src, flags, &CpuImpl::tzcnt16); }
+    u32 CheckedCpuImpl::tzcnt32(u32 src, Flags* flags) { return tzcnt<u32>(src, flags, &CpuImpl::tzcnt32); }
+    u64 CheckedCpuImpl::tzcnt64(u64 src, Flags* flags) { return tzcnt<u64>(src, flags, &CpuImpl::tzcnt64); }
+
+    template<typename U, typename Bt>
+    void bt(U base, U index, Flags* flags, Bt btFunc) {
+        Flags virtualFlags = *flags;
+        btFunc(base, index, &virtualFlags);
+
+        u64 rflags = toRflags(*flags);
+        asm volatile("bt %1, %0" :: "r"(base), "r"(index));
+        asm volatile("pushf");
+        asm volatile("pop %0" : "=r" (rflags));
+        *flags = fromRflags(rflags);
+
+        assert(virtualFlags.carry == flags->carry);
     }
+
+    void CheckedCpuImpl::bt16(u16 base, u16 index, Flags* flags) { return bt<u16>(base, index, flags, &CpuImpl::bt16); }
+    void CheckedCpuImpl::bt32(u32 base, u32 index, Flags* flags) { return bt<u32>(base, index, flags, &CpuImpl::bt32); }
+    void CheckedCpuImpl::bt64(u64 base, u64 index, Flags* flags) { return bt<u64>(base, index, flags, &CpuImpl::bt64); }
     
-    void CheckedCpuImpl::bt32(u32 base, u32 index, Flags* flags) {
-        flags->carry = (base >> (index % 32)) & 0x1;
+    template<typename U, typename Btr>
+    U btr(U base, U index, Flags* flags,Btr btrFunc) {
+        Flags virtualFlags = *flags;
+        U virtualRes = btrFunc(base, index, &virtualFlags);
+        (void)virtualRes;
+
+        U nativeRes = base;
+        u64 rflags = toRflags(*flags);
+        asm volatile("btr %1, %0" : "+r"(nativeRes) : "r"(index));
+        asm volatile("pushf");
+        asm volatile("pop %0" : "=r" (rflags));
+        *flags = fromRflags(rflags);
+
+        assert(virtualRes == nativeRes);
+        assert(virtualFlags.carry == flags->carry);
+
+        return nativeRes;
     }
 
-    void CheckedCpuImpl::bt64(u64 base, u64 index, Flags* flags) {
-        flags->carry = (base >> (index % 64)) & 0x1;
-    }
-
-    u16 CheckedCpuImpl::btr16(u16 base, u16 index, Flags* flags) {
-        flags->carry = (base >> (index % 16)) & 0x1;
-        return (u16)(base & ~((u16)1 << (index % 16)));
-    }
+    u16 CheckedCpuImpl::btr16(u16 base, u16 index, Flags* flags) { return btr<u16>(base, index, flags, &CpuImpl::btr16); }
+    u32 CheckedCpuImpl::btr32(u32 base, u32 index, Flags* flags) { return btr<u32>(base, index, flags, &CpuImpl::btr32); }
+    u64 CheckedCpuImpl::btr64(u64 base, u64 index, Flags* flags) { return btr<u64>(base, index, flags, &CpuImpl::btr64); }
     
-    u32 CheckedCpuImpl::btr32(u32 base, u32 index, Flags* flags) {
-        flags->carry = (base >> (index % 32)) & 0x1;
-        return (u32)(base & ~((u32)1 << (index % 32)));
+    template<typename U, typename Btc>
+    U btc(U base, U index, Flags* flags, Btc btcFunc) {
+        Flags virtualFlags = *flags;
+        U virtualRes = btcFunc(base, index, &virtualFlags);
+        (void)virtualRes;
+
+        U nativeRes = 0;
+        u64 rflags = toRflags(*flags);
+        asm volatile("btc %1, %0" : "+r"(nativeRes) : "r"(index));
+        asm volatile("pushf");
+        asm volatile("pop %0" : "=r" (rflags));
+        *flags = fromRflags(rflags);
+
+        assert(virtualRes == nativeRes);
+        assert(virtualFlags.carry == flags->carry);
+        
+        return nativeRes;
     }
 
-    u64 CheckedCpuImpl::btr64(u64 base, u64 index, Flags* flags) {
-        flags->carry = (base >> (index % 64)) & 0x1;
-        return (u64)(base & ~((u64)1 << (index % 64)));
-    }
-
-    u16 CheckedCpuImpl::btc16(u16 base, u16 index, Flags* flags) {
-        flags->carry = (base >> (index % 16)) & 0x1;
-        u16 mask = (u16)(1 << (index % 16));
-        return (base & ~mask) | (~base & mask);
-    }
+    u16 CheckedCpuImpl::btc16(u16 base, u16 index, Flags* flags) { return btc<u16>(base, index, flags, &CpuImpl::btc16); }
+    u32 CheckedCpuImpl::btc32(u32 base, u32 index, Flags* flags) { return btc<u32>(base, index, flags, &CpuImpl::btc32); }
+    u64 CheckedCpuImpl::btc64(u64 base, u64 index, Flags* flags) { return btc<u64>(base, index, flags, &CpuImpl::btc64); }
     
-    u32 CheckedCpuImpl::btc32(u32 base, u32 index, Flags* flags) {
-        flags->carry = (base >> (index % 32)) & 0x1;
-        u32 mask = ((u32)1 << (index % 32));
-        return (base & ~mask) | (~base & mask);
+    template<typename U, typename Bts>
+    U bts(U base, U index, Flags* flags, Bts btsFunc) {
+        Flags virtualFlags = *flags;
+        U virtualRes = btsFunc(base, index, &virtualFlags);
+        (void)virtualRes;
+
+        U nativeRes = 0;
+        u64 rflags = toRflags(*flags);
+        asm volatile("bts %1, %0" : "+r"(nativeRes) : "r"(index));
+        asm volatile("pushf");
+        asm volatile("pop %0" : "=r" (rflags));
+        *flags = fromRflags(rflags);
+
+        assert(virtualRes == nativeRes);
+        assert(virtualFlags.carry == flags->carry);
+        
+        return nativeRes;
     }
 
-    u64 CheckedCpuImpl::btc64(u64 base, u64 index, Flags* flags) {
-        flags->carry = (base >> (index % 64)) & 0x1;
-        u64 mask = ((u64)1 << (index % 64));
-        return (base & ~mask) | (~base & mask);
-    }
-
-    u16 CheckedCpuImpl::bts16(u16 base, u16 index, Flags* flags) {
-        flags->carry = (base >> (index % 16)) & 0x1;
-        u16 mask = (u16)(1 << (index % 16));
-        return (base & ~mask) | mask;
-    }
-    
-    u32 CheckedCpuImpl::bts32(u32 base, u32 index, Flags* flags) {
-        flags->carry = (base >> (index % 32)) & 0x1;
-        u32 mask = ((u32)1 << (index % 32));
-        return (base & ~mask) | mask;
-    }
-
-    u64 CheckedCpuImpl::bts64(u64 base, u64 index, Flags* flags) {
-        flags->carry = (base >> (index % 64)) & 0x1;
-        u64 mask = ((u64)1 << (index % 64));
-        return (base & ~mask) | mask;
-    }
+    u16 CheckedCpuImpl::bts16(u16 base, u16 index, Flags* flags) { return bts<u16>(base, index, flags, &CpuImpl::bts16); }
+    u32 CheckedCpuImpl::bts32(u32 base, u32 index, Flags* flags) { return bts<u32>(base, index, flags, &CpuImpl::bts32); }
+    u64 CheckedCpuImpl::bts64(u64 base, u64 index, Flags* flags) { return bts<u64>(base, index, flags, &CpuImpl::bts64); }
 
     void CheckedCpuImpl::test8(u8 src1, u8 src2, Flags* flags) {
         u8 tmp = src1 & src2;

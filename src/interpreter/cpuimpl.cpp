@@ -357,38 +357,26 @@ namespace x64 {
     u32 CpuImpl::shrd32(u32 dst, u32 src, u8 count, Flags* flags) { return shrd<u32>(dst, src, count, flags); }
     u64 CpuImpl::shrd64(u64 dst, u64 src, u8 count, Flags* flags) { return shrd<u64>(dst, src, count, flags); }
 
-
-    u32 CpuImpl::sar32(u32 dst, u32 src, Flags* flags) {
-        assert(src < 32);
-        i32 res = ((i32)dst) >> src;
+    template<typename U>
+    static U sar(U dst, U src, Flags* flags) {
+        assert(src < 8*sizeof(U));
+        using I = std::make_signed_t<U>;
+        I res = ((I)dst) >> src;
         if(src) {
-            flags->carry = ((i32)dst) & (1 << (src-1));
+            flags->carry = ((I)dst) & ((I)1 << (src-1));
         }
         if(src == 1) {
             flags->overflow = 0;
         }
-        flags->sign = (res & (1 << 31));
+        flags->sign = signBit<U>(res);
         flags->zero = (res == 0);
+        flags->parity = Flags::computeParity((u8)res);
         flags->setSure();
-        flags->setUnsureParity();
-        return (u32)res;
+        return (U)res;
     }
 
-    u64 CpuImpl::sar64(u64 dst, u64 src, Flags* flags) {
-        assert(src < 64);
-        i64 res = ((i64)dst) >> src;
-        if(src) {
-            flags->carry = ((i64)dst) & (1ll << (src-1));
-        }
-        if(src == 1) {
-            flags->overflow = 0;
-        }
-        flags->sign = (res & (1ll << 63));
-        flags->zero = (res == 0);
-        flags->setSure();
-        flags->setUnsureParity();
-        return (u64)res;
-    }
+    u32 CpuImpl::sar32(u32 dst, u32 src, Flags* flags) { return sar<u32>(dst, src, flags); }
+    u64 CpuImpl::sar64(u64 dst, u64 src, Flags* flags) { return sar<u64>(dst, src, flags); }
 
     template<typename U>
     U rol(U val, u8 count, Flags* flags) {
@@ -428,102 +416,71 @@ namespace x64 {
     u32 CpuImpl::ror32(u32 val, u8 count, Flags* flags) { return ror<u32>(val, count, flags); }
     u64 CpuImpl::ror64(u64 val, u8 count, Flags* flags) { return ror<u64>(val, count, flags); }
 
-    u16 CpuImpl::tzcnt16(u16 src, Flags* flags) {
-        u16 tmp = 0;
-        u16 res = 0;
-        while(tmp < 16 && ((src >> tmp) & 0x1) == 0) {
+    template<typename U>
+    U tzcnt(U src, Flags* flags) {
+        U tmp = 0;
+        U res = 0;
+        while(tmp < 8*sizeof(U) && ((src >> tmp) & 0x1) == 0) {
             ++tmp;
             ++res;
         }
-        flags->carry = (res == 16);
-        flags->zero = (res == 0);
-        return res;
-    }
-    u32 CpuImpl::tzcnt32(u32 src, Flags* flags) {
-        u32 tmp = 0;
-        u32 res = 0;
-        while(tmp < 32 && ((src >> tmp) & 0x1) == 0) {
-            ++tmp;
-            ++res;
-        }
-        flags->carry = (res == 32);
-        flags->zero = (res == 0);
-        return res;
-    }
-    u64 CpuImpl::tzcnt64(u64 src, Flags* flags) {
-        u64 tmp = 0;
-        u64 res = 0;
-        while(tmp < 64 && ((src >> tmp) & 0x1) == 0) {
-            ++tmp;
-            ++res;
-        }
-        flags->carry = (res == 64);
+        flags->carry = (res == 8*sizeof(U));
         flags->zero = (res == 0);
         return res;
     }
 
-    void CpuImpl::bt16(u16 base, u16 index, Flags* flags) {
-        flags->carry = (base >> (index % 16)) & 0x1;
+    u16 CpuImpl::tzcnt16(u16 src, Flags* flags) { return tzcnt<u16>(src, flags); }
+    u32 CpuImpl::tzcnt32(u32 src, Flags* flags) { return tzcnt<u32>(src, flags); }
+    u64 CpuImpl::tzcnt64(u64 src, Flags* flags) { return tzcnt<u64>(src, flags); }
+
+    template<typename U>
+    void bt(U base, U index, Flags* flags) {
+        U size = 8*sizeof(U);
+        index = index % size;
+        flags->carry = (base >> index) & 0x1;
     }
+
+    void CpuImpl::bt16(u16 base, u16 index, Flags* flags) { return bt<u16>(base, index, flags); }
+    void CpuImpl::bt32(u32 base, u32 index, Flags* flags) { return bt<u32>(base, index, flags); }
+    void CpuImpl::bt64(u64 base, u64 index, Flags* flags) { return bt<u64>(base, index, flags); }
     
-    void CpuImpl::bt32(u32 base, u32 index, Flags* flags) {
-        flags->carry = (base >> (index % 32)) & 0x1;
+    template<typename U>
+    U btr(U base, U index, Flags* flags) {
+        U size = 8*sizeof(U);
+        index = index % size;
+        flags->carry = (base >> index) & 0x1;
+        return (U)(base & ~((U)1 << index));
     }
 
-    void CpuImpl::bt64(u64 base, u64 index, Flags* flags) {
-        flags->carry = (base >> (index % 64)) & 0x1;
-    }
-
-    u16 CpuImpl::btr16(u16 base, u16 index, Flags* flags) {
-        flags->carry = (base >> (index % 16)) & 0x1;
-        return (u16)(base & ~((u16)1 << (index % 16)));
-    }
+    u16 CpuImpl::btr16(u16 base, u16 index, Flags* flags) { return btr<u16>(base, index, flags); }
+    u32 CpuImpl::btr32(u32 base, u32 index, Flags* flags) { return btr<u32>(base, index, flags); }
+    u64 CpuImpl::btr64(u64 base, u64 index, Flags* flags) { return btr<u64>(base, index, flags); }
     
-    u32 CpuImpl::btr32(u32 base, u32 index, Flags* flags) {
-        flags->carry = (base >> (index % 32)) & 0x1;
-        return (u32)(base & ~((u32)1 << (index % 32)));
-    }
-
-    u64 CpuImpl::btr64(u64 base, u64 index, Flags* flags) {
-        flags->carry = (base >> (index % 64)) & 0x1;
-        return (u64)(base & ~((u64)1 << (index % 64)));
-    }
-
-    u16 CpuImpl::btc16(u16 base, u16 index, Flags* flags) {
-        flags->carry = (base >> (index % 16)) & 0x1;
-        u16 mask = (u16)(1 << (index % 16));
-        return (base & ~mask) | (~base & mask);
-    }
-    
-    u32 CpuImpl::btc32(u32 base, u32 index, Flags* flags) {
-        flags->carry = (base >> (index % 32)) & 0x1;
-        u32 mask = ((u32)1 << (index % 32));
+    template<typename U>
+    U btc(U base, U index, Flags* flags) {
+        U size = 8*sizeof(U);
+        index = index % size;
+        flags->carry = (base >> index) & 0x1;
+        U mask = (U)(1) << index;
         return (base & ~mask) | (~base & mask);
     }
 
-    u64 CpuImpl::btc64(u64 base, u64 index, Flags* flags) {
-        flags->carry = (base >> (index % 64)) & 0x1;
-        u64 mask = ((u64)1 << (index % 64));
-        return (base & ~mask) | (~base & mask);
-    }
-
-    u16 CpuImpl::bts16(u16 base, u16 index, Flags* flags) {
-        flags->carry = (base >> (index % 16)) & 0x1;
-        u16 mask = (u16)(1 << (index % 16));
-        return (base & ~mask) | mask;
-    }
+    u16 CpuImpl::btc16(u16 base, u16 index, Flags* flags) { return btc<u16>(base, index, flags); }
+    u32 CpuImpl::btc32(u32 base, u32 index, Flags* flags) { return btc<u32>(base, index, flags); }
+    u64 CpuImpl::btc64(u64 base, u64 index, Flags* flags) { return btc<u64>(base, index, flags); }
     
-    u32 CpuImpl::bts32(u32 base, u32 index, Flags* flags) {
-        flags->carry = (base >> (index % 32)) & 0x1;
-        u32 mask = ((u32)1 << (index % 32));
+    template<typename U>
+    U bts(U base, U index, Flags* flags) {
+        U size = 8*sizeof(U);
+        index = index % size;
+        flags->carry = (base >> index) & 0x1;
+        U mask = (U)(1) << index;
         return (base & ~mask) | mask;
     }
 
-    u64 CpuImpl::bts64(u64 base, u64 index, Flags* flags) {
-        flags->carry = (base >> (index % 64)) & 0x1;
-        u64 mask = ((u64)1 << (index % 64));
-        return (base & ~mask) | mask;
-    }
+    u16 CpuImpl::bts16(u16 base, u16 index, Flags* flags) { return bts<u16>(base, index, flags); }
+    u32 CpuImpl::bts32(u32 base, u32 index, Flags* flags) { return bts<u32>(base, index, flags); }
+    u64 CpuImpl::bts64(u64 base, u64 index, Flags* flags) { return bts<u64>(base, index, flags); }
 
     void CpuImpl::test8(u8 src1, u8 src2, Flags* flags) {
         u8 tmp = src1 & src2;
