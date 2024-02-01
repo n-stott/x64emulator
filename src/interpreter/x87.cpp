@@ -46,7 +46,7 @@ namespace x64 {
                 | (u16)pm << 5
                 | (u16)pc << 8
                 | (u16)rc << 10
-                | (u16)x << 11;
+                | (u16)x << 12;
         return (u16)res;
     }
 
@@ -60,7 +60,7 @@ namespace x64 {
         c.pm = (cw >> 5) & 0x1;
         c.pc = (cw >> 8) & 0x3;
         c.rc = (ROUNDING)((cw >> 10) & 0x3);
-        c.x  = (cw >> 11) & 0x1;
+        c.x  = (cw >> 12) & 0x1;
         return c;
     }
 
