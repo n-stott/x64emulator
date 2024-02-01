@@ -853,7 +853,7 @@ namespace x64 {
         asm volatile("fldt %0" :: "m"(dst));
         asm volatile("fldt %0" :: "m"(src));
         asm volatile("faddp");
-        asm volatile("fstpt %0" : "+m"(nativeRes));
+        asm volatile("fstpt %0" : "=m"(nativeRes));
         
         assert(std::memcmp(&nativeRes, &virtualRes, sizeof(nativeRes)) == 0);
         return nativeRes;
@@ -867,7 +867,7 @@ namespace x64 {
         asm volatile("fldt %0" :: "m"(dst));
         asm volatile("fldt %0" :: "m"(src));
         asm volatile("fsubp");
-        asm volatile("fstpt %0" : "+m"(nativeRes));
+        asm volatile("fstpt %0" : "=m"(nativeRes));
         
         assert(std::memcmp(&nativeRes, &virtualRes, sizeof(nativeRes)) == 0);
         return nativeRes;
@@ -881,7 +881,7 @@ namespace x64 {
         asm volatile("fldt %0" :: "m"(dst));
         asm volatile("fldt %0" :: "m"(src));
         asm volatile("fmulp");
-        asm volatile("fstpt %0" : "+m"(nativeRes));
+        asm volatile("fstpt %0" : "=m"(nativeRes));
         
         assert(std::memcmp(&nativeRes, &virtualRes, sizeof(nativeRes)) == 0);
         return nativeRes;
@@ -895,52 +895,88 @@ namespace x64 {
         asm volatile("fldt %0" :: "m"(dst));
         asm volatile("fldt %0" :: "m"(src));
         asm volatile("fdivp");
-        asm volatile("fstpt %0" : "+m"(nativeRes));
+        asm volatile("fstpt %0" : "=m"(nativeRes));
         
         assert(std::memcmp(&nativeRes, &virtualRes, sizeof(nativeRes)) == 0);
         return nativeRes;
     }
 
     void CheckedCpuImpl::fcomi(f80 dst, f80 src, X87Fpu* x87fpu, Flags* flags) {
-        long double d = f80::toLongDouble(dst);
-        long double s = f80::toLongDouble(src);
-        if(d > s) {
-            flags->zero = 0;
-            flags->parity = 0;
-            flags->carry = 0;
-        }
-        if(d < s) {
-            flags->zero = 0;
-            flags->parity = 0;
-            flags->carry = 1;
-        }
-        if(d == s) {
-            flags->zero = 1;
-            flags->parity = 0;
-            flags->carry = 0;
-        }
-        if(d != d || s != s) {
-            if(x87fpu->control().im) {
-                flags->zero = 1;
-                flags->parity = 1;
-                flags->carry = 1;
-            }
-        }
+        X87Fpu virtualX87fpu = *x87fpu;
+        Flags virtualFlags = *flags;
+        CpuImpl::fcomi(dst, src, &virtualX87fpu, &virtualFlags);
+
+        u16 x87cw;
+        asm volatile("fstcw %0" : "+m"(x87cw));
+        X87Control cw = X87Control::fromWord(x87cw);
+        // TODO: change host fpu state if it does not match the emulated state
+        assert(cw.im == x87fpu->control().im);
+
+        u64 rflags = toRflags(*flags);
+        f80 dummy;
+        asm volatile("push %0" : "=r"(rflags));
+        asm volatile("popf");
+        asm volatile("fldt %0" :: "m"(src));
+        asm volatile("fldt %0" :: "m"(dst));
+        asm volatile("fcomip");
+        asm volatile("fstpt %0" : "=m"(dummy));
+        asm volatile("pushf");
+        asm volatile("pop %0" : "=r" (rflags));
+        *flags = fromRflags(rflags);
+
+        assert(virtualFlags.zero == flags->zero);
+        assert(virtualFlags.parity == flags->parity);
+        assert(virtualFlags.carry == flags->carry);
     }
 
     void CheckedCpuImpl::fucomi(f80 dst, f80 src, X87Fpu* x87fpu, Flags* flags) {
-        return fcomi(dst, src, x87fpu, flags);
+        X87Fpu virtualX87fpu = *x87fpu;
+        Flags virtualFlags = *flags;
+        CpuImpl::fucomi(dst, src, &virtualX87fpu, &virtualFlags);
+
+        u16 x87cw;
+        asm volatile("fstcw %0" : "+m"(x87cw));
+        X87Control cw = X87Control::fromWord(x87cw);
+        // TODO: change host fpu state if it does not match the emulated state
+        assert(cw.im == x87fpu->control().im);
+
+        u64 rflags = toRflags(*flags);
+        f80 dummy;
+        asm volatile("push %0" : "=r"(rflags));
+        asm volatile("popf");
+        asm volatile("fldt %0" :: "m"(src));
+        asm volatile("fldt %0" :: "m"(dst));
+        asm volatile("fucomip");
+        asm volatile("fstpt %0" : "=m"(dummy));
+        asm volatile("pushf");
+        asm volatile("pop %0" : "=r" (rflags));
+        *flags = fromRflags(rflags);
+
+        assert(virtualFlags.zero == flags->zero);
+        assert(virtualFlags.parity == flags->parity);
+        assert(virtualFlags.carry == flags->carry);
     }
 
     f80 CheckedCpuImpl::frndint(f80 dst, X87Fpu* x87fpu) {
-        using RoundingFunction = f80(*)(f80);
-        std::array<RoundingFunction, 4> rounding {{
-            &f80::roundNearest,
-            &f80::roundDown,
-            &f80::roundUp,
-            &f80::roundZero
-        }};
-        return rounding[(u16)x87fpu->control().rc](dst);
+        X87Fpu virtualX87fpu = *x87fpu;
+        f80 virtualRes = CpuImpl::frndint(dst, &virtualX87fpu);
+
+        u16 hostCW;
+        asm volatile("fstcw %0" : "+m"(hostCW));
+        X87Control cw = X87Control::fromWord(hostCW);
+        cw.rc = x87fpu->control().rc;
+        u16 tmpCW = cw.asWord();
+
+        f80 nativeRes = dst;
+        asm volatile("fldcw %0" : "+m"(tmpCW));
+        asm volatile("fldt %0" :: "m"(nativeRes));
+        asm volatile("frndint");
+        asm volatile("fstpt %0" : "=m"(nativeRes));
+        asm volatile("fldcw %0" : "+m"(hostCW));
+
+        assert(std::memcmp(&nativeRes, &virtualRes, sizeof(nativeRes)) == 0);
+
+        return nativeRes;
     }
 
     u32 CheckedCpuImpl::addss(u32 dst, u32 src, Flags* flags) {
