@@ -146,10 +146,10 @@ namespace x64 {
         static void comiss(u128 dst, u128 src, Flags* flags);
         static void comisd(u128 dst, u128 src, Flags* flags);
 
-        [[nodiscard]] static u64 mulsd(u64 dst, u64 src);
+        [[nodiscard]] static u128 mulsd(u128 dst, u128 src);
 
-        [[nodiscard]] static u128 divss(u128 dst, u32 src);
-        [[nodiscard]] static u128 divsd(u128 dst, u64 src);
+        [[nodiscard]] static u128 divss(u128 dst, u128 src);
+        [[nodiscard]] static u128 divsd(u128 dst, u128 src);
 
         [[nodiscard]] static u64 cmpsd(u64 dst, u64 src, FCond cond);
 

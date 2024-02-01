@@ -1122,37 +1122,37 @@ namespace x64 {
 
     void Cpu::exec(const Mulsd<RSSE, RSSE>& ins) {
         verify(roundingMode() == ROUNDING::NEAREST);
-        u64 res = Impl::mulsd(narrow<u64, Xmm>(get(ins.dst)), narrow<u64, Xmm>(get(ins.src)));
-        set(ins.dst, zeroExtend<Xmm, u64>(res));
+        u128 res = Impl::mulsd(get(ins.dst), get(ins.src));
+        set(ins.dst, res);
     }
 
     void Cpu::exec(const Mulsd<RSSE, M64>& ins) {
         verify(roundingMode() == ROUNDING::NEAREST);
-        u64 res = Impl::mulsd(narrow<u64, Xmm>(get(ins.dst)), get(resolve(ins.src)));
-        set(ins.dst, zeroExtend<Xmm, u64>(res));
+        u128 res = Impl::mulsd(get(ins.dst), zeroExtend<Xmm, u64>(get(resolve(ins.src))));
+        set(ins.dst, res);
     }
 
     void Cpu::exec(const Divss<RSSE, RSSE>& ins) {
         verify(roundingMode() == ROUNDING::NEAREST);
-        u128 res = Impl::divss(get(ins.dst), (u32)get(ins.src).lo);
+        u128 res = Impl::divss(get(ins.dst), get(ins.src));
         set(ins.dst, res);
     }
 
     void Cpu::exec(const Divss<RSSE, M32>& ins) {
         verify(roundingMode() == ROUNDING::NEAREST);
-        u128 res = Impl::divss(get(ins.dst), get(resolve(ins.src)));
+        u128 res = Impl::divss(get(ins.dst), zeroExtend<Xmm, u32>(get(resolve(ins.src))));
         set(ins.dst, res);
     }
 
     void Cpu::exec(const Divsd<RSSE, RSSE>& ins) {
         verify(roundingMode() == ROUNDING::NEAREST);
-        u128 res = Impl::divsd(get(ins.dst), get(ins.src).lo);
+        u128 res = Impl::divsd(get(ins.dst), get(ins.src));
         set(ins.dst, res);
     }
 
     void Cpu::exec(const Divsd<RSSE, M64>& ins) {
         verify(roundingMode() == ROUNDING::NEAREST);
-        u128 res = Impl::divsd(get(ins.dst), get(resolve(ins.src)));
+        u128 res = Impl::divsd(get(ins.dst), zeroExtend<Xmm, u64>(get(resolve(ins.src))));
         set(ins.dst, res);
     }
 

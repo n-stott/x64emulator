@@ -1053,38 +1053,37 @@ namespace x64 {
         assert(virtualFlags.carry == flags->carry);
     }
 
-    u64 CheckedCpuImpl::mulsd(u64 dst, u64 src) {
-        static_assert(sizeof(u64) == sizeof(double));
-        double d;
-        double s;
-        std::memcpy(&d, &dst, sizeof(d));
-        std::memcpy(&s, &src, sizeof(s));
-        double res = d * s;
-        u64 r;
-        std::memcpy(&r, &res, sizeof(r));
-        return r;
+    u128 CheckedCpuImpl::mulsd(u128 dst, u128 src) {
+        u128 virtualRes = CpuImpl::mulsd(dst, src);
+
+        u128 nativeRes = dst;
+        asm volatile("mulsd %1, %0" : "+x"(nativeRes) : "x"(src));
+
+        assert(virtualRes.lo == nativeRes.lo);
+        assert(virtualRes.hi == nativeRes.hi);
+        return nativeRes;
     }
 
-    u128 CheckedCpuImpl::divss(u128 dst, u32 src) {
-        static_assert(sizeof(u32) == sizeof(float));
-        float d;
-        float s;
-        std::memcpy(&d, &dst, sizeof(d));
-        std::memcpy(&s, &src, sizeof(s));
-        float res = d / s;
-        std::memcpy(&dst, &res, sizeof(res));
-        return dst;
+    u128 CheckedCpuImpl::divss(u128 dst, u128 src) {
+        u128 virtualRes = CpuImpl::divss(dst, src);
+
+        u128 nativeRes = dst;
+        asm volatile("divss %1, %0" : "+x"(nativeRes) : "x"(src));
+
+        assert(virtualRes.lo == nativeRes.lo);
+        assert(virtualRes.hi == nativeRes.hi);
+        return nativeRes;
     }
 
-    u128 CheckedCpuImpl::divsd(u128 dst, u64 src) {
-        static_assert(sizeof(u64) == sizeof(double));
-        double d;
-        double s;
-        std::memcpy(&d, &dst, sizeof(d));
-        std::memcpy(&s, &src, sizeof(s));
-        double res = d / s;
-        std::memcpy(&dst, &res, sizeof(res));
-        return dst;
+    u128 CheckedCpuImpl::divsd(u128 dst, u128 src) {
+        u128 virtualRes = CpuImpl::divsd(dst, src);
+
+        u128 nativeRes = dst;
+        asm volatile("divsd %1, %0" : "+x"(nativeRes) : "x"(src));
+
+        assert(virtualRes.lo == nativeRes.lo);
+        assert(virtualRes.hi == nativeRes.hi);
+        return nativeRes;
     }
 
     u64 CheckedCpuImpl::cmpsd(u64 dst, u64 src, FCond cond) {
