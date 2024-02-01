@@ -714,7 +714,7 @@ namespace x64 {
         U virtualRes = btcFunc(base, index, &virtualFlags);
         (void)virtualRes;
 
-        U nativeRes = 0;
+        U nativeRes = base;
         u64 rflags = toRflags(*flags);
         asm volatile("btc %1, %0" : "+r"(nativeRes) : "r"(index));
         asm volatile("pushf");
@@ -737,7 +737,7 @@ namespace x64 {
         U virtualRes = btsFunc(base, index, &virtualFlags);
         (void)virtualRes;
 
-        U nativeRes = 0;
+        U nativeRes = base;
         u64 rflags = toRflags(*flags);
         asm volatile("bts %1, %0" : "+r"(nativeRes) : "r"(index));
         asm volatile("pushf");
