@@ -236,24 +236,14 @@ namespace x64 {
     #define DEBUG_ONLY(X)
 #endif
 
-    #define WARN_FLAGS() \
-        flags_.setUnsure();\
-        flags_.setUnsureParity();\
-        DEBUG_ONLY(fmt::print(stderr, "Warning : flags not updated\n"))
-
-    #define WARN_FPU_FLAGS() \
-        DEBUG_ONLY(fmt::print(stderr, "Warning : fpu flags not updated\n"))
-
-    #define WARN_FLAGS_UNSURE() \
-        DEBUG_ONLY(fmt::print(stderr, "Warning : flags may be wrong\n"))
-
-    #define WARN_ROUNDING_MODE() \
-        DEBUG_ONLY(fmt::print(stderr, "Warning : rounding mode not set\n"))
-
     template<typename DU, typename SU>
     static DU signExtend(SU u) {
         static_assert(sizeof(DU) > sizeof(SU));
         return (DU)(std::make_signed_t<DU>)(std::make_signed_t<SU>)u;
+    }
+
+    ROUNDING Cpu::roundingMode() const {
+        return x87fpu_.control().rc;
     }
 
     void Cpu::exec(const Add<RM8, RM8>& ins) { set(ins.dst, Impl::add8(get(ins.dst), get(ins.src), &flags_)); }
@@ -1081,49 +1071,49 @@ namespace x64 {
 
 
     void Cpu::exec(const Addss<RSSE, RSSE>& ins) {
-        WARN_ROUNDING_MODE();
+        verify(roundingMode() == ROUNDING::NEAREST);
         u32 res = Impl::addss(narrow<u32, Xmm>(get(ins.dst)), narrow<u32, Xmm>(get(ins.src)), &flags_);
         set(ins.dst, zeroExtend<Xmm, u32>(res));
     }
 
     void Cpu::exec(const Addss<RSSE, M32>& ins) {
-        WARN_ROUNDING_MODE();
+        verify(roundingMode() == ROUNDING::NEAREST);
         u32 res = Impl::addss(narrow<u32, Xmm>(get(ins.dst)), get(resolve(ins.src)), &flags_);
         set(ins.dst, zeroExtend<Xmm, u32>(res));
     }
 
     void Cpu::exec(const Addsd<RSSE, RSSE>& ins) {
-        WARN_ROUNDING_MODE();
+        verify(roundingMode() == ROUNDING::NEAREST);
         u64 res = Impl::addsd(narrow<u64, Xmm>(get(ins.dst)), narrow<u64, Xmm>(get(ins.src)), &flags_);
         set(ins.dst, zeroExtend<Xmm, u64>(res));
     }
 
     void Cpu::exec(const Addsd<RSSE, M64>& ins) {
-        WARN_ROUNDING_MODE();
+        verify(roundingMode() == ROUNDING::NEAREST);
         u64 res = Impl::addsd(narrow<u64, Xmm>(get(ins.dst)), get(resolve(ins.src)), &flags_);
         set(ins.dst, zeroExtend<Xmm, u64>(res));
     }
 
     void Cpu::exec(const Subss<RSSE, RSSE>& ins) {
-        WARN_ROUNDING_MODE();
+        verify(roundingMode() == ROUNDING::NEAREST);
         u32 res = Impl::subss(narrow<u32, Xmm>(get(ins.dst)), narrow<u32, Xmm>(get(ins.src)), &flags_);
         set(ins.dst, zeroExtend<Xmm, u32>(res));
     }
 
     void Cpu::exec(const Subss<RSSE, M32>& ins) {
-        WARN_ROUNDING_MODE();
+        verify(roundingMode() == ROUNDING::NEAREST);
         u32 res = Impl::subss(narrow<u32, Xmm>(get(ins.dst)), get(resolve(ins.src)), &flags_);
         set(ins.dst, zeroExtend<Xmm, u32>(res));
     }
 
     void Cpu::exec(const Subsd<RSSE, RSSE>& ins) {
-        WARN_ROUNDING_MODE();
+        verify(roundingMode() == ROUNDING::NEAREST);
         u64 res = Impl::subsd(narrow<u64, Xmm>(get(ins.dst)), narrow<u64, Xmm>(get(ins.src)), &flags_);
         set(ins.dst, zeroExtend<Xmm, u64>(res));
     }
 
     void Cpu::exec(const Subsd<RSSE, M64>& ins) {
-        WARN_ROUNDING_MODE();
+        verify(roundingMode() == ROUNDING::NEAREST);
         u64 res = Impl::subsd(narrow<u64, Xmm>(get(ins.dst)), get(resolve(ins.src)), &flags_);
         set(ins.dst, zeroExtend<Xmm, u64>(res));
     }
@@ -1131,81 +1121,81 @@ namespace x64 {
 
 
     void Cpu::exec(const Mulsd<RSSE, RSSE>& ins) {
-        WARN_ROUNDING_MODE();
+        verify(roundingMode() == ROUNDING::NEAREST);
         u64 res = Impl::mulsd(narrow<u64, Xmm>(get(ins.dst)), narrow<u64, Xmm>(get(ins.src)));
         set(ins.dst, zeroExtend<Xmm, u64>(res));
     }
 
     void Cpu::exec(const Mulsd<RSSE, M64>& ins) {
-        WARN_ROUNDING_MODE();
+        verify(roundingMode() == ROUNDING::NEAREST);
         u64 res = Impl::mulsd(narrow<u64, Xmm>(get(ins.dst)), get(resolve(ins.src)));
         set(ins.dst, zeroExtend<Xmm, u64>(res));
     }
 
     void Cpu::exec(const Divss<RSSE, RSSE>& ins) {
-        WARN_ROUNDING_MODE();
+        verify(roundingMode() == ROUNDING::NEAREST);
         u128 res = Impl::divss(get(ins.dst), (u32)get(ins.src).lo);
         set(ins.dst, res);
     }
 
     void Cpu::exec(const Divss<RSSE, M32>& ins) {
-        WARN_ROUNDING_MODE();
+        verify(roundingMode() == ROUNDING::NEAREST);
         u128 res = Impl::divss(get(ins.dst), get(resolve(ins.src)));
         set(ins.dst, res);
     }
 
     void Cpu::exec(const Divsd<RSSE, RSSE>& ins) {
-        WARN_ROUNDING_MODE();
+        verify(roundingMode() == ROUNDING::NEAREST);
         u128 res = Impl::divsd(get(ins.dst), get(ins.src).lo);
         set(ins.dst, res);
     }
 
     void Cpu::exec(const Divsd<RSSE, M64>& ins) {
-        WARN_ROUNDING_MODE();
+        verify(roundingMode() == ROUNDING::NEAREST);
         u128 res = Impl::divsd(get(ins.dst), get(resolve(ins.src)));
         set(ins.dst, res);
     }
 
     void Cpu::exec(const Comiss<RSSE, RSSE>& ins) {
-        WARN_ROUNDING_MODE();
+        verify(roundingMode() == ROUNDING::NEAREST);
         [[maybe_unused]] u32 res = Impl::subss(narrow<u32, Xmm>(get(ins.dst)), narrow<u32, Xmm>(get(ins.src)), &flags_);
     }
 
     void Cpu::exec(const Comiss<RSSE, M32>& ins) {
-        WARN_ROUNDING_MODE();
+        verify(roundingMode() == ROUNDING::NEAREST);
         [[maybe_unused]] u32 res = Impl::subss(narrow<u32, Xmm>(get(ins.dst)), get(resolve(ins.src)), &flags_);
     }
 
     void Cpu::exec(const Comisd<RSSE, RSSE>& ins) {
-        WARN_ROUNDING_MODE();
+        verify(roundingMode() == ROUNDING::NEAREST);
         [[maybe_unused]] u64 res = Impl::subsd(narrow<u64, Xmm>(get(ins.dst)), narrow<u64, Xmm>(get(ins.src)), &flags_);
     }
 
     void Cpu::exec(const Comisd<RSSE, M64>& ins) {
-        WARN_ROUNDING_MODE();
+        verify(roundingMode() == ROUNDING::NEAREST);
         [[maybe_unused]] u64 res = Impl::subsd(narrow<u64, Xmm>(get(ins.dst)), get(resolve(ins.src)), &flags_);
     }
 
     void Cpu::exec(const Ucomiss<RSSE, RSSE>& ins) {
-        WARN_ROUNDING_MODE();
+        verify(roundingMode() == ROUNDING::NEAREST);
         DEBUG_ONLY(fmt::print(stderr, "Ucomiss treated as comiss\n");)
         [[maybe_unused]] u32 res = Impl::subss(narrow<u32, Xmm>(get(ins.dst)), narrow<u32, Xmm>(get(ins.src)), &flags_);
     }
 
     void Cpu::exec(const Ucomiss<RSSE, M32>& ins) {
-        WARN_ROUNDING_MODE();
+        verify(roundingMode() == ROUNDING::NEAREST);
         DEBUG_ONLY(fmt::print(stderr, "Ucomiss treated as comiss\n");)
         [[maybe_unused]] u32 res = Impl::subss(narrow<u32, Xmm>(get(ins.dst)), get(resolve(ins.src)), &flags_);
     }
 
     void Cpu::exec(const Ucomisd<RSSE, RSSE>& ins) {
-        WARN_ROUNDING_MODE();
+        verify(roundingMode() == ROUNDING::NEAREST);
         DEBUG_ONLY(fmt::print(stderr, "Ucomisd treated as comisd\n");)
         [[maybe_unused]] u64 res = Impl::subsd(narrow<u64, Xmm>(get(ins.dst)), narrow<u64, Xmm>(get(ins.src)), &flags_);
     }
 
     void Cpu::exec(const Ucomisd<RSSE, M64>& ins) {
-        WARN_ROUNDING_MODE();
+        verify(roundingMode() == ROUNDING::NEAREST);
         DEBUG_ONLY(fmt::print(stderr, "Ucomisd treated as comisd\n");)
         [[maybe_unused]] u64 res = Impl::subsd(narrow<u64, Xmm>(get(ins.dst)), get(resolve(ins.src)), &flags_);
     }

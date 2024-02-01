@@ -68,6 +68,8 @@ namespace x64 {
         FPUState getFpuState() const;
         void setFpuState(const FPUState&);
 
+        ROUNDING roundingMode() const;
+
         u8  get(R8 reg) const  { return regs_.get(reg); }
         u16 get(R16 reg) const { return regs_.get(reg); }
         u32 get(R32 reg) const { return regs_.get(reg); }
