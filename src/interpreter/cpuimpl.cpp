@@ -616,41 +616,41 @@ namespace x64 {
         return rounding[(u16)x87fpu->control().rc](dst);
     }
 
-    u32 CpuImpl::addss(u32 dst, u32 src, Flags* flags) {
+    u128 CpuImpl::addss(u128 dst, u128 src, Flags* flags) {
         static_assert(sizeof(u32) == sizeof(float));
         float d;
         float s;
         std::memcpy(&d, &dst, sizeof(d));
         std::memcpy(&s, &src, sizeof(s));
         float res = d + s;
-        u32 r;
-        std::memcpy(&r, &res, sizeof(r));
+        u128 r;
+        std::memcpy(&r, &res, sizeof(res));
         flags->setUnsure();
         return r;
     }
 
-    u64 CpuImpl::addsd(u64 dst, u64 src, Flags* flags) {
+    u128 CpuImpl::addsd(u128 dst, u128 src, Flags* flags) {
         static_assert(sizeof(u64) == sizeof(double));
         double d;
         double s;
         std::memcpy(&d, &dst, sizeof(d));
         std::memcpy(&s, &src, sizeof(s));
         double res = d + s;
-        u64 r;
-        std::memcpy(&r, &res, sizeof(r));
+        u128 r;
+        std::memcpy(&r, &res, sizeof(res));
         flags->setUnsure();
         return r;
     }
 
-    u32 CpuImpl::subss(u32 dst, u32 src, Flags* flags) {
+    u128 CpuImpl::subss(u128 dst, u128 src, Flags* flags) {
         static_assert(sizeof(u32) == sizeof(float));
         float d;
         float s;
         std::memcpy(&d, &dst, sizeof(d));
         std::memcpy(&s, &src, sizeof(s));
         float res = d - s;
-        u32 r;
-        std::memcpy(&r, &res, sizeof(r));
+        u128 r;
+        std::memcpy(&r, &res, sizeof(res));
         if(d == s) {
             flags->zero = true;
             flags->parity = false;
@@ -674,15 +674,15 @@ namespace x64 {
         return r;
     }
 
-    u64 CpuImpl::subsd(u64 dst, u64 src, Flags* flags) {
+    u128 CpuImpl::subsd(u128 dst, u128 src, Flags* flags) {
         static_assert(sizeof(u64) == sizeof(double));
         double d;
         double s;
         std::memcpy(&d, &dst, sizeof(d));
         std::memcpy(&s, &src, sizeof(s));
         double res = d - s;
-        u64 r;
-        std::memcpy(&r, &res, sizeof(r));
+        u128 r;
+        std::memcpy(&r, &res, sizeof(res));
         if(d == s) {
             flags->zero = true;
             flags->parity = false;

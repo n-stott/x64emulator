@@ -979,41 +979,41 @@ namespace x64 {
         return nativeRes;
     }
 
-    u32 CheckedCpuImpl::addss(u32 dst, u32 src, Flags* flags) {
+    u128 CheckedCpuImpl::addss(u128 dst, u128 src, Flags* flags) {
         static_assert(sizeof(u32) == sizeof(float));
         float d;
         float s;
         std::memcpy(&d, &dst, sizeof(d));
         std::memcpy(&s, &src, sizeof(s));
         float res = d + s;
-        u32 r;
-        std::memcpy(&r, &res, sizeof(r));
+        u128 r;
+        std::memcpy(&r, &res, sizeof(res));
         flags->setUnsure();
         return r;
     }
 
-    u64 CheckedCpuImpl::addsd(u64 dst, u64 src, Flags* flags) {
+    u128 CheckedCpuImpl::addsd(u128 dst, u128 src, Flags* flags) {
         static_assert(sizeof(u64) == sizeof(double));
         double d;
         double s;
         std::memcpy(&d, &dst, sizeof(d));
         std::memcpy(&s, &src, sizeof(s));
         double res = d + s;
-        u64 r;
-        std::memcpy(&r, &res, sizeof(r));
+        u128 r;
+        std::memcpy(&r, &res, sizeof(res));
         flags->setUnsure();
         return r;
     }
 
-    u32 CheckedCpuImpl::subss(u32 dst, u32 src, Flags* flags) {
+    u128 CheckedCpuImpl::subss(u128 dst, u128 src, Flags* flags) {
         static_assert(sizeof(u32) == sizeof(float));
         float d;
         float s;
         std::memcpy(&d, &dst, sizeof(d));
         std::memcpy(&s, &src, sizeof(s));
         float res = d - s;
-        u32 r;
-        std::memcpy(&r, &res, sizeof(r));
+        u128 r;
+        std::memcpy(&r, &res, sizeof(res));
         if(d == s) {
             flags->zero = true;
             flags->parity = false;
@@ -1037,15 +1037,15 @@ namespace x64 {
         return r;
     }
 
-    u64 CheckedCpuImpl::subsd(u64 dst, u64 src, Flags* flags) {
+    u128 CheckedCpuImpl::subsd(u128 dst, u128 src, Flags* flags) {
         static_assert(sizeof(u64) == sizeof(double));
         double d;
         double s;
         std::memcpy(&d, &dst, sizeof(d));
         std::memcpy(&s, &src, sizeof(s));
         double res = d - s;
-        u64 r;
-        std::memcpy(&r, &res, sizeof(r));
+        u128 r;
+        std::memcpy(&r, &res, sizeof(res));
         if(d == s) {
             flags->zero = true;
             flags->parity = false;
