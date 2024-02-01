@@ -845,32 +845,60 @@ namespace x64 {
     u32 CheckedCpuImpl::bsf32(u32 val, Flags* flags) { return bsf<u32>(val, flags, &CpuImpl::bsf32); }
     u64 CheckedCpuImpl::bsf64(u64 val, Flags* flags) { return bsf<u64>(val, flags, &CpuImpl::bsf64); }
 
-    f80 CheckedCpuImpl::fadd(f80 dst, f80 src, X87Fpu*) {
-        long double d = f80::toLongDouble(dst);
-        long double s = f80::toLongDouble(src);
-        long double r = d+s;
-        return f80::fromLongDouble(r);
+    f80 CheckedCpuImpl::fadd(f80 dst, f80 src, X87Fpu* fpu) {
+        f80 virtualRes = CpuImpl::fadd(dst, src, fpu);
+        (void)virtualRes;
+
+        f80 nativeRes;
+        asm volatile("fldt %0" :: "m"(dst));
+        asm volatile("fldt %0" :: "m"(src));
+        asm volatile("faddp");
+        asm volatile("fstpt %0" : "+m"(nativeRes));
+        
+        assert(std::memcmp(&nativeRes, &virtualRes, sizeof(nativeRes)) == 0);
+        return nativeRes;
     }
 
-    f80 CheckedCpuImpl::fsub(f80 dst, f80 src, X87Fpu*) {
-        long double d = f80::toLongDouble(dst);
-        long double s = f80::toLongDouble(src);
-        long double r = d-s;
-        return f80::fromLongDouble(r);
+    f80 CheckedCpuImpl::fsub(f80 dst, f80 src, X87Fpu* fpu) {
+        f80 virtualRes = CpuImpl::fsub(dst, src, fpu);
+        (void)virtualRes;
+
+        f80 nativeRes;
+        asm volatile("fldt %0" :: "m"(dst));
+        asm volatile("fldt %0" :: "m"(src));
+        asm volatile("fsubp");
+        asm volatile("fstpt %0" : "+m"(nativeRes));
+        
+        assert(std::memcmp(&nativeRes, &virtualRes, sizeof(nativeRes)) == 0);
+        return nativeRes;
     }
 
-    f80 CheckedCpuImpl::fmul(f80 dst, f80 src, X87Fpu*) {
-        long double d = f80::toLongDouble(dst);
-        long double s = f80::toLongDouble(src);
-        long double r = d*s;
-        return f80::fromLongDouble(r);
+    f80 CheckedCpuImpl::fmul(f80 dst, f80 src, X87Fpu* fpu) {
+        f80 virtualRes = CpuImpl::fmul(dst, src, fpu);
+        (void)virtualRes;
+
+        f80 nativeRes;
+        asm volatile("fldt %0" :: "m"(dst));
+        asm volatile("fldt %0" :: "m"(src));
+        asm volatile("fmulp");
+        asm volatile("fstpt %0" : "+m"(nativeRes));
+        
+        assert(std::memcmp(&nativeRes, &virtualRes, sizeof(nativeRes)) == 0);
+        return nativeRes;
     }
 
-    f80 CheckedCpuImpl::fdiv(f80 dst, f80 src, X87Fpu*) {
-        long double d = f80::toLongDouble(dst);
-        long double s = f80::toLongDouble(src);
-        long double r = d/s;
-        return f80::fromLongDouble(r);
+    f80 CheckedCpuImpl::fdiv(f80 dst, f80 src, X87Fpu* fpu) {
+        f80 virtualRes = CpuImpl::fdiv(dst, src, fpu);
+        (void)virtualRes;
+
+        f80 nativeRes;
+        asm volatile("fldt %0" :: "m"(dst));
+        asm volatile("fldt %0" :: "m"(src));
+        asm volatile("fdivp");
+        asm volatile("fstpt %0" : "+m"(nativeRes));
+        
+        assert(std::memcmp(&nativeRes, &virtualRes, sizeof(nativeRes)) == 0);
+        return nativeRes;
     }
 
     void CheckedCpuImpl::fcomi(f80 dst, f80 src, X87Fpu* x87fpu, Flags* flags) {
