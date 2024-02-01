@@ -1072,49 +1072,49 @@ namespace x64 {
 
     void Cpu::exec(const Addss<RSSE, RSSE>& ins) {
         verify(roundingMode() == ROUNDING::NEAREST);
-        u128 res = Impl::addss(get(ins.dst), get(ins.src), &flags_);
+        u128 res = Impl::addss(get(ins.dst), get(ins.src));
         set(ins.dst, res);
     }
 
     void Cpu::exec(const Addss<RSSE, M32>& ins) {
         verify(roundingMode() == ROUNDING::NEAREST);
-        u128 res = Impl::addss(get(ins.dst), zeroExtend<Xmm, u32>(get(resolve(ins.src))), &flags_);
+        u128 res = Impl::addss(get(ins.dst), zeroExtend<Xmm, u32>(get(resolve(ins.src))));
         set(ins.dst, res);
     }
 
     void Cpu::exec(const Addsd<RSSE, RSSE>& ins) {
         verify(roundingMode() == ROUNDING::NEAREST);
-        u128 res = Impl::addsd(get(ins.dst), get(ins.src), &flags_);
+        u128 res = Impl::addsd(get(ins.dst), get(ins.src));
         set(ins.dst, res);
     }
 
     void Cpu::exec(const Addsd<RSSE, M64>& ins) {
         verify(roundingMode() == ROUNDING::NEAREST);
-        u128 res = Impl::addsd(get(ins.dst), zeroExtend<Xmm, u64>(get(resolve(ins.src))), &flags_);
+        u128 res = Impl::addsd(get(ins.dst), zeroExtend<Xmm, u64>(get(resolve(ins.src))));
         set(ins.dst, res);
     }
 
     void Cpu::exec(const Subss<RSSE, RSSE>& ins) {
         verify(roundingMode() == ROUNDING::NEAREST);
-        u128 res = Impl::subss(get(ins.dst), get(ins.src), &flags_);
+        u128 res = Impl::subss(get(ins.dst), get(ins.src));
         set(ins.dst, res);
     }
 
     void Cpu::exec(const Subss<RSSE, M32>& ins) {
         verify(roundingMode() == ROUNDING::NEAREST);
-        u128 res = Impl::subss(get(ins.dst), zeroExtend<Xmm, u32>(get(resolve(ins.src))), &flags_);
+        u128 res = Impl::subss(get(ins.dst), zeroExtend<Xmm, u32>(get(resolve(ins.src))));
         set(ins.dst, res);
     }
 
     void Cpu::exec(const Subsd<RSSE, RSSE>& ins) {
         verify(roundingMode() == ROUNDING::NEAREST);
-        u128 res = Impl::subsd(get(ins.dst), get(ins.src), &flags_);
+        u128 res = Impl::subsd(get(ins.dst), get(ins.src));
         set(ins.dst, res);
     }
 
     void Cpu::exec(const Subsd<RSSE, M64>& ins) {
         verify(roundingMode() == ROUNDING::NEAREST);
-        u128 res = Impl::subsd(get(ins.dst), zeroExtend<Xmm, u64>(get(resolve(ins.src))), &flags_);
+        u128 res = Impl::subsd(get(ins.dst), zeroExtend<Xmm, u64>(get(resolve(ins.src))));
         set(ins.dst, res);
     }
 
@@ -1158,46 +1158,46 @@ namespace x64 {
 
     void Cpu::exec(const Comiss<RSSE, RSSE>& ins) {
         verify(roundingMode() == ROUNDING::NEAREST);
-        [[maybe_unused]] u128 res = Impl::subss(get(ins.dst), get(ins.src), &flags_);
+        Impl::comiss(get(ins.dst), get(ins.src), &flags_);
     }
 
     void Cpu::exec(const Comiss<RSSE, M32>& ins) {
         verify(roundingMode() == ROUNDING::NEAREST);
-        [[maybe_unused]] u128 res = Impl::subss(get(ins.dst), zeroExtend<Xmm, u32>(get(resolve(ins.src))), &flags_);
+        Impl::comiss(get(ins.dst), zeroExtend<Xmm, u32>(get(resolve(ins.src))), &flags_);
     }
 
     void Cpu::exec(const Comisd<RSSE, RSSE>& ins) {
         verify(roundingMode() == ROUNDING::NEAREST);
-        [[maybe_unused]] u128 res = Impl::subsd(get(ins.dst), get(ins.src), &flags_);
+        Impl::comisd(get(ins.dst), get(ins.src), &flags_);
     }
 
     void Cpu::exec(const Comisd<RSSE, M64>& ins) {
         verify(roundingMode() == ROUNDING::NEAREST);
-        [[maybe_unused]] u128 res = Impl::subsd(get(ins.dst), zeroExtend<Xmm, u64>(get(resolve(ins.src))), &flags_);
+        Impl::comisd(get(ins.dst), zeroExtend<Xmm, u64>(get(resolve(ins.src))), &flags_);
     }
 
     void Cpu::exec(const Ucomiss<RSSE, RSSE>& ins) {
         verify(roundingMode() == ROUNDING::NEAREST);
         DEBUG_ONLY(fmt::print(stderr, "Ucomiss treated as comiss\n");)
-        [[maybe_unused]] u128 res = Impl::subss(get(ins.dst), get(ins.src), &flags_);
+        Impl::comiss(get(ins.dst), get(ins.src), &flags_);
     }
 
     void Cpu::exec(const Ucomiss<RSSE, M32>& ins) {
         verify(roundingMode() == ROUNDING::NEAREST);
         DEBUG_ONLY(fmt::print(stderr, "Ucomiss treated as comiss\n");)
-        [[maybe_unused]] u128 res = Impl::subss(get(ins.dst), zeroExtend<Xmm, u32>(get(resolve(ins.src))), &flags_);
+        Impl::comiss(get(ins.dst), zeroExtend<Xmm, u32>(get(resolve(ins.src))), &flags_);
     }
 
     void Cpu::exec(const Ucomisd<RSSE, RSSE>& ins) {
         verify(roundingMode() == ROUNDING::NEAREST);
         DEBUG_ONLY(fmt::print(stderr, "Ucomisd treated as comisd\n");)
-        [[maybe_unused]] u128 res = Impl::subsd(get(ins.dst), get(ins.src), &flags_);
+        Impl::comisd(get(ins.dst), get(ins.src), &flags_);
     }
 
     void Cpu::exec(const Ucomisd<RSSE, M64>& ins) {
         verify(roundingMode() == ROUNDING::NEAREST);
         DEBUG_ONLY(fmt::print(stderr, "Ucomisd treated as comisd\n");)
-        [[maybe_unused]] u128 res = Impl::subsd(get(ins.dst), zeroExtend<Xmm, u64>(get(resolve(ins.src))), &flags_);
+        Impl::comisd(get(ins.dst), zeroExtend<Xmm, u64>(get(resolve(ins.src))), &flags_);
     }
 
     void Cpu::exec(const Cmpsd<RSSE, RSSE>& ins) {

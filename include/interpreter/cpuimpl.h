@@ -137,11 +137,14 @@ namespace x64 {
         [[nodiscard]] static u32 tzcnt32(u32 src, Flags* flags);
         [[nodiscard]] static u64 tzcnt64(u64 src, Flags* flags);
 
-        [[nodiscard]] static u128 addss(u128 dst, u128 src, Flags* flags);
-        [[nodiscard]] static u128 addsd(u128 dst, u128 src, Flags* flags);
+        [[nodiscard]] static u128 addss(u128 dst, u128 src);
+        [[nodiscard]] static u128 addsd(u128 dst, u128 src);
 
-        [[nodiscard]] static u128 subss(u128 dst, u128 src, Flags* flags);
-        [[nodiscard]] static u128 subsd(u128 dst, u128 src, Flags* flags);
+        [[nodiscard]] static u128 subss(u128 dst, u128 src);
+        [[nodiscard]] static u128 subsd(u128 dst, u128 src);
+
+        static void comiss(u128 dst, u128 src, Flags* flags);
+        static void comisd(u128 dst, u128 src, Flags* flags);
 
         [[nodiscard]] static u64 mulsd(u64 dst, u64 src);
 

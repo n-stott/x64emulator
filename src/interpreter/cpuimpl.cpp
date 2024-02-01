@@ -616,41 +616,61 @@ namespace x64 {
         return rounding[(u16)x87fpu->control().rc](dst);
     }
 
-    u128 CpuImpl::addss(u128 dst, u128 src, Flags* flags) {
+    u128 CpuImpl::addss(u128 dst, u128 src) {
         static_assert(sizeof(u32) == sizeof(float));
         float d;
         float s;
         std::memcpy(&d, &dst, sizeof(d));
         std::memcpy(&s, &src, sizeof(s));
         float res = d + s;
-        u128 r;
+        u128 r = dst;
         std::memcpy(&r, &res, sizeof(res));
-        flags->setUnsure();
         return r;
     }
 
-    u128 CpuImpl::addsd(u128 dst, u128 src, Flags* flags) {
+    u128 CpuImpl::addsd(u128 dst, u128 src) {
         static_assert(sizeof(u64) == sizeof(double));
         double d;
         double s;
         std::memcpy(&d, &dst, sizeof(d));
         std::memcpy(&s, &src, sizeof(s));
         double res = d + s;
-        u128 r;
+        u128 r = dst;
         std::memcpy(&r, &res, sizeof(res));
-        flags->setUnsure();
         return r;
     }
 
-    u128 CpuImpl::subss(u128 dst, u128 src, Flags* flags) {
+    u128 CpuImpl::subss(u128 dst, u128 src) {
         static_assert(sizeof(u32) == sizeof(float));
         float d;
         float s;
         std::memcpy(&d, &dst, sizeof(d));
         std::memcpy(&s, &src, sizeof(s));
         float res = d - s;
-        u128 r;
+        u128 r = dst;
         std::memcpy(&r, &res, sizeof(res));
+        return r;
+    }
+
+    u128 CpuImpl::subsd(u128 dst, u128 src) {
+        static_assert(sizeof(u64) == sizeof(double));
+        double d;
+        double s;
+        std::memcpy(&d, &dst, sizeof(d));
+        std::memcpy(&s, &src, sizeof(s));
+        double res = d - s;
+        u128 r = dst;
+        std::memcpy(&r, &res, sizeof(res));
+        return r;
+    }
+
+    void CpuImpl::comiss(u128 dst, u128 src, Flags* flags) {
+        static_assert(sizeof(u32) == sizeof(float));
+        float d;
+        float s;
+        std::memcpy(&d, &dst, sizeof(d));
+        std::memcpy(&s, &src, sizeof(s));
+        float res = d - s;
         if(d == s) {
             flags->zero = true;
             flags->parity = false;
@@ -671,18 +691,15 @@ namespace x64 {
         flags->overflow = false;
         flags->sign = false;
         flags->setSure();
-        return r;
     }
 
-    u128 CpuImpl::subsd(u128 dst, u128 src, Flags* flags) {
+    void CpuImpl::comisd(u128 dst, u128 src, Flags* flags) {
         static_assert(sizeof(u64) == sizeof(double));
         double d;
         double s;
         std::memcpy(&d, &dst, sizeof(d));
         std::memcpy(&s, &src, sizeof(s));
         double res = d - s;
-        u128 r;
-        std::memcpy(&r, &res, sizeof(res));
         if(d == s) {
             flags->zero = true;
             flags->parity = false;
@@ -704,7 +721,6 @@ namespace x64 {
         flags->sign = false;
         flags->setSure();
         flags->setSureParity();
-        return r;
     }
 
     u64 CpuImpl::mulsd(u64 dst, u64 src) {

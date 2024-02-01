@@ -6,7 +6,6 @@
 #include <limits>
 
 namespace x64 {
-
     static Flags fromRflags(u64 rflags) {
         static constexpr u64 CARRY_MASK = 0x1;
         static constexpr u64 PARITY_MASK = 0x4;
@@ -31,7 +30,7 @@ namespace x64 {
         static constexpr u64 OVERFLOW_MASK = 0x800;
         u64 rflags;
         asm volatile("pushf");
-        asm volatile("pop %0" : "=r" (rflags));
+        asm volatile("pop %0" : "=r"(rflags));
         rflags = (rflags & ~CARRY_MASK) | (flags.carry ? CARRY_MASK : 0);
         rflags = (rflags & ~PARITY_MASK) | (flags.parity ? PARITY_MASK : 0);
         rflags = (rflags & ~ZERO_MASK) | (flags.zero ? ZERO_MASK : 0);
@@ -39,6 +38,27 @@ namespace x64 {
         rflags = (rflags & ~OVERFLOW_MASK) | (flags.overflow ? OVERFLOW_MASK : 0);
         return rflags;
     }
+}
+
+#define GET_RFLAGS(flags_ptr)                               \
+            u64 TMP_GET_RFLAGS;                             \
+            asm volatile("pushf");                          \
+            asm volatile("pop %0" : "=m"(TMP_GET_RFLAGS));  \
+            *flags_ptr = fromRflags(TMP_GET_RFLAGS);
+
+#define SET_RFLAGS(flags)                                    \
+            u64 TMP_SET_RFLAGS = toRflags(flags);           \
+            asm volatile("push %0" :: "m"(TMP_SET_RFLAGS)); \
+            asm volatile("popf");
+
+#define BEGIN_RFLAGS_SCOPE            \
+            Flags SavedRFlags;        \
+            GET_RFLAGS(&SavedRFlags); {
+
+#define END_RFLAGS_SCOPE              \
+            } SET_RFLAGS(SavedRFlags);
+
+namespace x64 {
 
     template<typename U, typename Add>
     static U add(U dst, U src, Flags* flags, Add addFunc) {
@@ -47,11 +67,11 @@ namespace x64 {
         (void)virtualRes;
 
         U nativeRes = dst;
-        u64 rflags = 0;
-        asm volatile("add %1, %0" : "+r" (nativeRes) : "r"(src));
-        asm volatile("pushf");
-        asm volatile("pop %0" : "=r" (rflags));
-        *flags = fromRflags(rflags);
+        BEGIN_RFLAGS_SCOPE
+            SET_RFLAGS(*flags);
+            asm volatile("add %1, %0" : "+r" (nativeRes) : "r"(src));
+            GET_RFLAGS(flags);
+        END_RFLAGS_SCOPE
 
         assert(virtualRes == nativeRes);
         assert(virtualFlags.carry == flags->carry);
@@ -75,13 +95,11 @@ namespace x64 {
         (void)virtualRes;
 
         U nativeRes = dst;
-        u64 rflags = toRflags(*flags);
-        asm volatile("push %0" : "=r"(rflags));
-        asm volatile("popf");
-        asm volatile("adc %1, %0" : "+r" (nativeRes) : "r"(src));
-        asm volatile("pushf");
-        asm volatile("pop %0" : "=r" (rflags));
-        *flags = fromRflags(rflags);
+        BEGIN_RFLAGS_SCOPE
+            SET_RFLAGS(*flags);
+            asm volatile("adc %1, %0" : "+r" (nativeRes) : "r"(src));
+            GET_RFLAGS(flags);
+        END_RFLAGS_SCOPE
 
         assert(virtualRes == nativeRes);
         assert(virtualFlags.carry == flags->carry);
@@ -105,11 +123,11 @@ namespace x64 {
         (void)virtualRes;
 
         U nativeRes = dst;
-        u64 rflags = 0;
-        asm volatile("sub %1, %0" : "+r" (nativeRes) : "r"(src));
-        asm volatile("pushf");
-        asm volatile("pop %0" : "=r" (rflags));
-        *flags = fromRflags(rflags);
+        BEGIN_RFLAGS_SCOPE
+            SET_RFLAGS(*flags);
+            asm volatile("sub %1, %0" : "+r" (nativeRes) : "r"(src));
+            GET_RFLAGS(flags);
+        END_RFLAGS_SCOPE
 
         assert(virtualRes == nativeRes);
         assert(virtualFlags.carry == flags->carry);
@@ -133,13 +151,11 @@ namespace x64 {
         (void)virtualRes;
 
         U nativeRes = dst;
-        u64 rflags = toRflags(*flags);
-        asm volatile("push %0" : "=r"(rflags));
-        asm volatile("popf");
-        asm volatile("sbb %1, %0" : "+r" (nativeRes) : "r"(src));
-        asm volatile("pushf");
-        asm volatile("pop %0" : "=r" (rflags));
-        *flags = fromRflags(rflags);
+        BEGIN_RFLAGS_SCOPE
+            SET_RFLAGS(*flags);
+            asm volatile("sbb %1, %0" : "+r" (nativeRes) : "r"(src));
+            GET_RFLAGS(flags);
+        END_RFLAGS_SCOPE
 
         assert(virtualRes == nativeRes);
         assert(virtualFlags.carry == flags->carry);
@@ -185,14 +201,14 @@ namespace x64 {
 
         u32 lower = 0;
         u32 upper = 0;
-        u64 rflags;
-        asm volatile("mov %0, %%eax" :: "m"(src1));
-        asm volatile("mul %0" :: "r"(src2) : "eax", "edx");
-        asm volatile("mov %%eax, %0" : "=m"(lower));
-        asm volatile("mov %%edx, %0" : "=m"(upper));
-        asm volatile("pushf");
-        asm volatile("pop %0" : "=m" (rflags));
-        *flags = fromRflags(rflags);
+        BEGIN_RFLAGS_SCOPE
+            SET_RFLAGS(*flags);
+            asm volatile("mov %0, %%eax" :: "m"(src1));
+            asm volatile("mul %0" :: "r"(src2) : "eax", "edx");
+            asm volatile("mov %%eax, %0" : "=m"(lower));
+            asm volatile("mov %%edx, %0" : "=m"(upper));
+            GET_RFLAGS(flags);
+        END_RFLAGS_SCOPE
 
         assert(virtualRes.first == upper);
         assert(virtualRes.second == lower);
@@ -210,14 +226,14 @@ namespace x64 {
 
         u64 lower = 0;
         u64 upper = 0;
-        u64 rflags;
-        asm volatile("mov %0, %%rax" :: "m"(src1));
-        asm volatile("mulq %0" :: "m"(src2) : "rax", "rdx");
-        asm volatile("mov %%rax, %0" : "=m"(lower));
-        asm volatile("mov %%rdx, %0" : "=m"(upper));
-        asm volatile("pushf");
-        asm volatile("pop %0" : "=m" (rflags));
-        *flags = fromRflags(rflags);
+        BEGIN_RFLAGS_SCOPE
+            SET_RFLAGS(*flags);
+            asm volatile("mov %0, %%rax" :: "m"(src1));
+            asm volatile("mulq %0" :: "m"(src2) : "rax", "rdx");
+            asm volatile("mov %%rax, %0" : "=m"(lower));
+            asm volatile("mov %%rdx, %0" : "=m"(upper));
+            GET_RFLAGS(flags);
+        END_RFLAGS_SCOPE
 
         assert(virtualRes.first == upper);
         assert(virtualRes.second == lower);
@@ -235,14 +251,14 @@ namespace x64 {
 
         u32 lower = 0;
         u32 upper = 0;
-        u64 rflags;
-        asm volatile("mov %0, %%eax" :: "m"(src1));
-        asm volatile("imul %0" :: "r"(src2) : "eax", "edx");
-        asm volatile("mov %%eax, %0" : "=m"(lower));
-        asm volatile("mov %%edx, %0" : "=m"(upper));
-        asm volatile("pushf");
-        asm volatile("pop %0" : "=m" (rflags));
-        *flags = fromRflags(rflags);
+        BEGIN_RFLAGS_SCOPE
+            SET_RFLAGS(*flags);
+            asm volatile("mov %0, %%eax" :: "m"(src1));
+            asm volatile("imul %0" :: "r"(src2) : "eax", "edx");
+            asm volatile("mov %%eax, %0" : "=m"(lower));
+            asm volatile("mov %%edx, %0" : "=m"(upper));
+            GET_RFLAGS(flags);
+        END_RFLAGS_SCOPE
 
         assert(virtualRes.first == upper);
         assert(virtualRes.second == lower);
@@ -260,14 +276,14 @@ namespace x64 {
 
         u64 lower = 0;
         u64 upper = 0;
-        u64 rflags;
-        asm volatile("mov %0, %%rax" :: "m"(src1));
-        asm volatile("imulq %0" :: "m"(src2) : "rax", "rdx");
-        asm volatile("mov %%rax, %0" : "=m"(lower));
-        asm volatile("mov %%rdx, %0" : "=m"(upper));
-        asm volatile("pushf");
-        asm volatile("pop %0" : "=m" (rflags));
-        *flags = fromRflags(rflags);
+        BEGIN_RFLAGS_SCOPE
+            SET_RFLAGS(*flags);
+            asm volatile("mov %0, %%rax" :: "m"(src1));
+            asm volatile("imulq %0" :: "m"(src2) : "rax", "rdx");
+            asm volatile("mov %%rax, %0" : "=m"(lower));
+            asm volatile("mov %%rdx, %0" : "=m"(upper));
+            GET_RFLAGS(flags);
+        END_RFLAGS_SCOPE
 
         if(virtualRes.first != upper
         || virtualRes.second != lower) {
@@ -307,11 +323,11 @@ namespace x64 {
         (void)virtualRes;
 
         U nativeRes = dst;
-        u64 rflags = 0;
-        asm volatile("and %1, %0" : "+r" (nativeRes) : "r"(src));
-        asm volatile("pushf");
-        asm volatile("pop %0" : "=r" (rflags));
-        *flags = fromRflags(rflags);
+        BEGIN_RFLAGS_SCOPE
+            SET_RFLAGS(*flags);
+            asm volatile("and %1, %0" : "+r" (nativeRes) : "r"(src));
+            GET_RFLAGS(flags);
+        END_RFLAGS_SCOPE
 
         assert(virtualRes == nativeRes);
         assert(virtualFlags.carry == flags->carry);
@@ -335,11 +351,11 @@ namespace x64 {
         (void)virtualRes;
 
         U nativeRes = dst;
-        u64 rflags = 0;
-        asm volatile("or %1, %0" : "+r" (nativeRes) : "r"(src));
-        asm volatile("pushf");
-        asm volatile("pop %0" : "=r" (rflags));
-        *flags = fromRflags(rflags);
+        BEGIN_RFLAGS_SCOPE
+            SET_RFLAGS(*flags);
+            asm volatile("or %1, %0" : "+r" (nativeRes) : "r"(src));
+            GET_RFLAGS(flags);
+        END_RFLAGS_SCOPE
 
         assert(virtualRes == nativeRes);
         assert(virtualFlags.carry == flags->carry);
@@ -363,11 +379,11 @@ namespace x64 {
         (void)virtualRes;
 
         U nativeRes = dst;
-        u64 rflags = 0;
-        asm volatile("xor %1, %0" : "+r" (nativeRes) : "r"(src));
-        asm volatile("pushf");
-        asm volatile("pop %0" : "=r" (rflags));
-        *flags = fromRflags(rflags);
+        BEGIN_RFLAGS_SCOPE
+            SET_RFLAGS(*flags);
+            asm volatile("xor %1, %0" : "+r" (nativeRes) : "r"(src));
+            GET_RFLAGS(flags);
+        END_RFLAGS_SCOPE
 
         assert(virtualRes == nativeRes);
         assert(virtualFlags.carry == flags->carry);
@@ -391,11 +407,11 @@ namespace x64 {
         (void)virtualRes;
 
         U nativeRes = src;
-        u64 rflags = 0;
-        asm volatile("inc %0" : "+r" (nativeRes));
-        asm volatile("pushf");
-        asm volatile("pop %0" : "=r" (rflags));
-        *flags = fromRflags(rflags);
+        BEGIN_RFLAGS_SCOPE
+            SET_RFLAGS(*flags);
+            asm volatile("inc %0" : "+r" (nativeRes));
+            GET_RFLAGS(flags);
+        END_RFLAGS_SCOPE
 
         assert(virtualRes == nativeRes);
         assert(virtualFlags.overflow == flags->overflow);
@@ -418,11 +434,11 @@ namespace x64 {
         (void)virtualRes;
 
         U nativeRes = src;
-        u64 rflags = 0;
-        asm volatile("dec %0" : "+r" (nativeRes));
-        asm volatile("pushf");
-        asm volatile("pop %0" : "=r" (rflags));
-        *flags = fromRflags(rflags);
+        BEGIN_RFLAGS_SCOPE
+            SET_RFLAGS(*flags);
+            asm volatile("dec %0" : "+r" (nativeRes));
+            GET_RFLAGS(flags);
+        END_RFLAGS_SCOPE
 
         assert(virtualRes == nativeRes);
         assert(virtualFlags.overflow == flags->overflow);
@@ -445,14 +461,12 @@ namespace x64 {
         (void)virtualRes;
 
         U nativeRes = dst;
-        u64 rflags = toRflags(*flags);
-        asm volatile("push %0" : "=r"(rflags));
-        asm volatile("popf");
-        asm volatile("mov %0, %%cl" :: "r"((u8)src));
-        asm volatile("shl %%cl, %0" : "+r" (nativeRes));
-        asm volatile("pushf");
-        asm volatile("pop %0" : "=r" (rflags));
-        *flags = fromRflags(rflags);
+        BEGIN_RFLAGS_SCOPE
+            SET_RFLAGS(*flags);
+            asm volatile("mov %0, %%cl" :: "r"((u8)src));
+            asm volatile("shl %%cl, %0" : "+r" (nativeRes));
+            GET_RFLAGS(flags);
+        END_RFLAGS_SCOPE
 
         assert(virtualRes == nativeRes);
         if(src) {
@@ -479,14 +493,12 @@ namespace x64 {
         (void)virtualRes;
 
         U nativeRes = dst;
-        u64 rflags = toRflags(*flags);
-        asm volatile("push %0" : "=r"(rflags));
-        asm volatile("popf");
-        asm volatile("mov %0, %%cl" :: "r"((u8)src));
-        asm volatile("shr %%cl, %0" : "+r" (nativeRes));
-        asm volatile("pushf");
-        asm volatile("pop %0" : "=r" (rflags));
-        *flags = fromRflags(rflags);
+        BEGIN_RFLAGS_SCOPE
+            SET_RFLAGS(*flags);
+            asm volatile("mov %0, %%cl" :: "r"((u8)src));
+            asm volatile("shr %%cl, %0" : "+r" (nativeRes));
+            GET_RFLAGS(flags);
+        END_RFLAGS_SCOPE
 
         assert(virtualRes == nativeRes);
         if(src) {
@@ -555,14 +567,12 @@ namespace x64 {
         (void)virtualRes;
 
         U nativeRes = dst;
-        u64 rflags = toRflags(*flags);
-        asm volatile("push %0" : "=r"(rflags));
-        asm volatile("popf");
-        asm volatile("mov %0, %%cl" :: "r"((u8)src));
-        asm volatile("sar %%cl, %0" : "+r" (nativeRes));
-        asm volatile("pushf");
-        asm volatile("pop %0" : "=r" (rflags));
-        *flags = fromRflags(rflags);
+        BEGIN_RFLAGS_SCOPE
+            SET_RFLAGS(*flags);
+            asm volatile("mov %0, %%cl" :: "r"((u8)src));
+            asm volatile("sar %%cl, %0" : "+r" (nativeRes));
+            GET_RFLAGS(flags);
+        END_RFLAGS_SCOPE
 
         assert(virtualRes == nativeRes);
         if(src) {
@@ -587,14 +597,12 @@ namespace x64 {
         (void)virtualRes;
 
         U nativeRes = val;
-        u64 rflags = toRflags(*flags);
-        asm volatile("push %0" : "=r"(rflags));
-        asm volatile("popf");
-        asm volatile("mov %0, %%cl" :: "r"((u8)count));
-        asm volatile("rol %%cl, %0" : "+r" (nativeRes));
-        asm volatile("pushf");
-        asm volatile("pop %0" : "=r" (rflags));
-        *flags = fromRflags(rflags);
+        BEGIN_RFLAGS_SCOPE
+            SET_RFLAGS(*flags);
+            asm volatile("mov %0, %%cl" :: "r"((u8)count));
+            asm volatile("rol %%cl, %0" : "+r" (nativeRes));
+            GET_RFLAGS(flags);
+        END_RFLAGS_SCOPE
 
         assert(virtualRes == nativeRes);
         if(count) {
@@ -619,14 +627,12 @@ namespace x64 {
         (void)virtualRes;
 
         U nativeRes = val;
-        u64 rflags = toRflags(*flags);
-        asm volatile("push %0" : "=r"(rflags));
-        asm volatile("popf");
-        asm volatile("mov %0, %%cl" :: "r"((u8)count));
-        asm volatile("ror %%cl, %0" : "+r" (nativeRes));
-        asm volatile("pushf");
-        asm volatile("pop %0" : "=r" (rflags));
-        *flags = fromRflags(rflags);
+        BEGIN_RFLAGS_SCOPE
+            SET_RFLAGS(*flags);
+            asm volatile("mov %0, %%cl" :: "r"((u8)count));
+            asm volatile("ror %%cl, %0" : "+r" (nativeRes));
+            GET_RFLAGS(flags);
+        END_RFLAGS_SCOPE
 
         assert(virtualRes == nativeRes);
         if(count) {
@@ -650,11 +656,11 @@ namespace x64 {
         (void)virtualRes;
 
         U nativeRes = 0;
-        u64 rflags = toRflags(*flags);
-        asm volatile("tzcnt %1, %0" : "=r" (nativeRes) : "r"(src));
-        asm volatile("pushf");
-        asm volatile("pop %0" : "=r" (rflags));
-        *flags = fromRflags(rflags);
+        BEGIN_RFLAGS_SCOPE
+            SET_RFLAGS(*flags);
+            asm volatile("tzcnt %1, %0" : "=r" (nativeRes) : "r"(src));
+            GET_RFLAGS(flags);
+        END_RFLAGS_SCOPE
 
         assert(virtualRes == nativeRes);
         assert(virtualFlags.carry == flags->carry);
@@ -672,11 +678,11 @@ namespace x64 {
         Flags virtualFlags = *flags;
         btFunc(base, index, &virtualFlags);
 
-        u64 rflags = toRflags(*flags);
-        asm volatile("bt %1, %0" :: "r"(base), "r"(index));
-        asm volatile("pushf");
-        asm volatile("pop %0" : "=r" (rflags));
-        *flags = fromRflags(rflags);
+        BEGIN_RFLAGS_SCOPE
+            SET_RFLAGS(*flags);
+            asm volatile("bt %1, %0" :: "r"(base), "r"(index));
+            GET_RFLAGS(flags);
+        END_RFLAGS_SCOPE
 
         assert(virtualFlags.carry == flags->carry);
     }
@@ -692,11 +698,11 @@ namespace x64 {
         (void)virtualRes;
 
         U nativeRes = base;
-        u64 rflags = toRflags(*flags);
-        asm volatile("btr %1, %0" : "+r"(nativeRes) : "r"(index));
-        asm volatile("pushf");
-        asm volatile("pop %0" : "=r" (rflags));
-        *flags = fromRflags(rflags);
+        BEGIN_RFLAGS_SCOPE
+            SET_RFLAGS(*flags);
+            asm volatile("btr %1, %0" : "+r"(nativeRes) : "r"(index));
+            GET_RFLAGS(flags);
+        END_RFLAGS_SCOPE
 
         assert(virtualRes == nativeRes);
         assert(virtualFlags.carry == flags->carry);
@@ -715,11 +721,11 @@ namespace x64 {
         (void)virtualRes;
 
         U nativeRes = base;
-        u64 rflags = toRflags(*flags);
-        asm volatile("btc %1, %0" : "+r"(nativeRes) : "r"(index));
-        asm volatile("pushf");
-        asm volatile("pop %0" : "=r" (rflags));
-        *flags = fromRflags(rflags);
+        BEGIN_RFLAGS_SCOPE
+            SET_RFLAGS(*flags);
+            asm volatile("btc %1, %0" : "+r"(nativeRes) : "r"(index));
+            GET_RFLAGS(flags);
+        END_RFLAGS_SCOPE
 
         assert(virtualRes == nativeRes);
         assert(virtualFlags.carry == flags->carry);
@@ -738,11 +744,11 @@ namespace x64 {
         (void)virtualRes;
 
         U nativeRes = base;
-        u64 rflags = toRflags(*flags);
-        asm volatile("bts %1, %0" : "+r"(nativeRes) : "r"(index));
-        asm volatile("pushf");
-        asm volatile("pop %0" : "=r" (rflags));
-        *flags = fromRflags(rflags);
+        BEGIN_RFLAGS_SCOPE
+            SET_RFLAGS(*flags);
+            asm volatile("bts %1, %0" : "+r"(nativeRes) : "r"(index));
+            GET_RFLAGS(flags);
+        END_RFLAGS_SCOPE
 
         assert(virtualRes == nativeRes);
         assert(virtualFlags.carry == flags->carry);
@@ -759,13 +765,11 @@ namespace x64 {
         Flags virtualFlags = *flags;
         testFunc(src1, src2, &virtualFlags);
 
-        u64 rflags = toRflags(*flags);
-        asm volatile("push %0" : "=r"(rflags));
-        asm volatile("popf");
-        asm volatile("test %0, %1" :: "r"(src1), "r"(src2));
-        asm volatile("pushf");
-        asm volatile("pop %0" : "=r" (rflags));
-        *flags = fromRflags(rflags);
+        BEGIN_RFLAGS_SCOPE
+            SET_RFLAGS(*flags);
+            asm volatile("test %0, %1" :: "r"(src1), "r"(src2));
+            GET_RFLAGS(flags);
+        END_RFLAGS_SCOPE
 
         assert(virtualFlags.sign == flags->sign);
         assert(virtualFlags.zero == flags->zero);
@@ -804,11 +808,11 @@ namespace x64 {
         (void)virtualRes;
 
         U nativeRes = 0;
-        u64 rflags = toRflags(*flags);
-        asm volatile("bsr %1, %0" : "+r"(nativeRes) : "r"(val));
-        asm volatile("pushf");
-        asm volatile("pop %0" : "=r" (rflags));
-        *flags = fromRflags(rflags);
+        BEGIN_RFLAGS_SCOPE
+            SET_RFLAGS(*flags);
+            asm volatile("bsr %1, %0" : "+r"(nativeRes) : "r"(val));
+            GET_RFLAGS(flags);
+        END_RFLAGS_SCOPE
 
         assert(virtualFlags.zero == flags->zero);
         if(!!val) {
@@ -828,11 +832,11 @@ namespace x64 {
         (void)virtualRes;
 
         U nativeRes = 0;
-        u64 rflags = toRflags(*flags);
-        asm volatile("bsf %1, %0" : "+r"(nativeRes) : "r"(val));
-        asm volatile("pushf");
-        asm volatile("pop %0" : "=r" (rflags));
-        *flags = fromRflags(rflags);
+        BEGIN_RFLAGS_SCOPE
+            SET_RFLAGS(*flags);
+            asm volatile("bsf %1, %0" : "+r"(nativeRes) : "r"(val));
+            GET_RFLAGS(flags);
+        END_RFLAGS_SCOPE
 
         assert(virtualFlags.zero == flags->zero);
         if(!!val) {
@@ -912,17 +916,15 @@ namespace x64 {
         // TODO: change host fpu state if it does not match the emulated state
         assert(cw.im == x87fpu->control().im);
 
-        u64 rflags = toRflags(*flags);
         f80 dummy;
-        asm volatile("push %0" : "=r"(rflags));
-        asm volatile("popf");
-        asm volatile("fldt %0" :: "m"(src));
-        asm volatile("fldt %0" :: "m"(dst));
-        asm volatile("fcomip");
-        asm volatile("fstpt %0" : "=m"(dummy));
-        asm volatile("pushf");
-        asm volatile("pop %0" : "=r" (rflags));
-        *flags = fromRflags(rflags);
+        BEGIN_RFLAGS_SCOPE
+            SET_RFLAGS(*flags);
+            asm volatile("fldt %0" :: "m"(src));
+            asm volatile("fldt %0" :: "m"(dst));
+            asm volatile("fcomip");
+            asm volatile("fstpt %0" : "=m"(dummy));
+            GET_RFLAGS(flags);
+        END_RFLAGS_SCOPE
 
         assert(virtualFlags.zero == flags->zero);
         assert(virtualFlags.parity == flags->parity);
@@ -940,17 +942,15 @@ namespace x64 {
         // TODO: change host fpu state if it does not match the emulated state
         assert(cw.im == x87fpu->control().im);
 
-        u64 rflags = toRflags(*flags);
         f80 dummy;
-        asm volatile("push %0" : "=r"(rflags));
-        asm volatile("popf");
-        asm volatile("fldt %0" :: "m"(src));
-        asm volatile("fldt %0" :: "m"(dst));
-        asm volatile("fucomip");
-        asm volatile("fstpt %0" : "=m"(dummy));
-        asm volatile("pushf");
-        asm volatile("pop %0" : "=r" (rflags));
-        *flags = fromRflags(rflags);
+        BEGIN_RFLAGS_SCOPE
+            SET_RFLAGS(*flags);
+            asm volatile("fldt %0" :: "m"(src));
+            asm volatile("fldt %0" :: "m"(dst));
+            asm volatile("fucomip");
+            asm volatile("fstpt %0" : "=m"(dummy));
+            GET_RFLAGS(flags);
+        END_RFLAGS_SCOPE
 
         assert(virtualFlags.zero == flags->zero);
         assert(virtualFlags.parity == flags->parity);
@@ -979,95 +979,78 @@ namespace x64 {
         return nativeRes;
     }
 
-    u128 CheckedCpuImpl::addss(u128 dst, u128 src, Flags* flags) {
-        static_assert(sizeof(u32) == sizeof(float));
-        float d;
-        float s;
-        std::memcpy(&d, &dst, sizeof(d));
-        std::memcpy(&s, &src, sizeof(s));
-        float res = d + s;
-        u128 r;
-        std::memcpy(&r, &res, sizeof(res));
-        flags->setUnsure();
-        return r;
+    u128 CheckedCpuImpl::addss(u128 dst, u128 src) {
+        u128 virtualRes = CpuImpl::addss(dst, src);
+
+        u128 nativeRes = dst;
+        asm volatile("addss %1, %0" : "+x"(nativeRes) : "x"(src));
+
+        assert(virtualRes.lo == nativeRes.lo);
+        assert(virtualRes.hi == nativeRes.hi);
+        return nativeRes;
     }
 
-    u128 CheckedCpuImpl::addsd(u128 dst, u128 src, Flags* flags) {
-        static_assert(sizeof(u64) == sizeof(double));
-        double d;
-        double s;
-        std::memcpy(&d, &dst, sizeof(d));
-        std::memcpy(&s, &src, sizeof(s));
-        double res = d + s;
-        u128 r;
-        std::memcpy(&r, &res, sizeof(res));
-        flags->setUnsure();
-        return r;
+    u128 CheckedCpuImpl::addsd(u128 dst, u128 src) {
+        u128 virtualRes = CpuImpl::addsd(dst, src);
+
+        u128 nativeRes = dst;
+        asm volatile("addsd %1, %0" : "+x"(nativeRes) : "x"(src));
+
+        assert(virtualRes.lo == nativeRes.lo);
+        assert(virtualRes.hi == nativeRes.hi);
+        return nativeRes;
     }
 
-    u128 CheckedCpuImpl::subss(u128 dst, u128 src, Flags* flags) {
-        static_assert(sizeof(u32) == sizeof(float));
-        float d;
-        float s;
-        std::memcpy(&d, &dst, sizeof(d));
-        std::memcpy(&s, &src, sizeof(s));
-        float res = d - s;
-        u128 r;
-        std::memcpy(&r, &res, sizeof(res));
-        if(d == s) {
-            flags->zero = true;
-            flags->parity = false;
-            flags->carry = false;
-        } else if(res != res) {
-            flags->zero = true;
-            flags->parity = true;
-            flags->carry = true;
-        } else if(res > 0.0) {
-            flags->zero = false;
-            flags->parity = false;
-            flags->carry = false;
-        } else if(res < 0.0) {
-            flags->zero = false;
-            flags->parity = false;
-            flags->carry = true;
-        }
-        flags->overflow = false;
-        flags->sign = false;
-        flags->setSure();
-        return r;
+    u128 CheckedCpuImpl::subss(u128 dst, u128 src) {
+        u128 virtualRes = CpuImpl::subss(dst, src);
+
+        u128 nativeRes = dst;
+        asm volatile("subss %1, %0" : "+x"(nativeRes) : "x"(src));
+
+        assert(virtualRes.lo == nativeRes.lo);
+        assert(virtualRes.hi == nativeRes.hi);
+        return nativeRes;
     }
 
-    u128 CheckedCpuImpl::subsd(u128 dst, u128 src, Flags* flags) {
-        static_assert(sizeof(u64) == sizeof(double));
-        double d;
-        double s;
-        std::memcpy(&d, &dst, sizeof(d));
-        std::memcpy(&s, &src, sizeof(s));
-        double res = d - s;
-        u128 r;
-        std::memcpy(&r, &res, sizeof(res));
-        if(d == s) {
-            flags->zero = true;
-            flags->parity = false;
-            flags->carry = false;
-        } else if(res != res) {
-            flags->zero = true;
-            flags->parity = true;
-            flags->carry = true;
-        } else if(res > 0.0) {
-            flags->zero = false;
-            flags->parity = false;
-            flags->carry = false;
-        } else if(res < 0.0) {
-            flags->zero = false;
-            flags->parity = false;
-            flags->carry = true;
-        }
-        flags->overflow = false;
-        flags->sign = false;
-        flags->setSure();
-        flags->setSureParity();
-        return r;
+    u128 CheckedCpuImpl::subsd(u128 dst, u128 src) {
+        u128 virtualRes = CpuImpl::subsd(dst, src);
+
+        u128 nativeRes = dst;
+        asm volatile("subsd %1, %0" : "+x"(nativeRes) : "x"(src));
+
+        assert(virtualRes.lo == nativeRes.lo);
+        assert(virtualRes.hi == nativeRes.hi);
+        return nativeRes;
+    }
+
+    void CheckedCpuImpl::comiss(u128 dst, u128 src, Flags* flags) {
+        Flags virtualFlags = *flags;
+        CpuImpl::comiss(dst, src, &virtualFlags);
+
+        BEGIN_RFLAGS_SCOPE
+            SET_RFLAGS(*flags);
+            asm volatile("comiss %1, %0" :: "x"(dst), "x"(src));
+            GET_RFLAGS(flags);
+        END_RFLAGS_SCOPE
+
+        assert(virtualFlags.zero == flags->zero);
+        assert(virtualFlags.parity == flags->parity);
+        assert(virtualFlags.carry == flags->carry);
+    }
+
+    void CheckedCpuImpl::comisd(u128 dst, u128 src, Flags* flags) {
+        Flags virtualFlags = *flags;
+        CpuImpl::comisd(dst, src, &virtualFlags);
+
+        BEGIN_RFLAGS_SCOPE
+            SET_RFLAGS(*flags);
+            asm volatile("comisd %1, %0" :: "x"(dst), "x"(src));
+            GET_RFLAGS(flags);
+        END_RFLAGS_SCOPE
+
+        assert(virtualFlags.zero == flags->zero);
+        assert(virtualFlags.parity == flags->parity);
+        assert(virtualFlags.carry == flags->carry);
     }
 
     u64 CheckedCpuImpl::mulsd(u64 dst, u64 src) {
