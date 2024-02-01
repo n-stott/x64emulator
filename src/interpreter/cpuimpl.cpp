@@ -482,45 +482,21 @@ namespace x64 {
     u32 CpuImpl::bts32(u32 base, u32 index, Flags* flags) { return bts<u32>(base, index, flags); }
     u64 CpuImpl::bts64(u64 base, u64 index, Flags* flags) { return bts<u64>(base, index, flags); }
 
-    void CpuImpl::test8(u8 src1, u8 src2, Flags* flags) {
-        u8 tmp = src1 & src2;
-        flags->sign = (tmp & (1 << 7));
+    template<typename U>
+    void test(U src1, U src2, Flags* flags) {
+        U tmp = src1 & src2;
+        flags->sign = signBit<U>(tmp);
         flags->zero = (tmp == 0);
         flags->overflow = 0;
         flags->carry = 0;
+        flags->parity = Flags::computeParity((u8)tmp);
         flags->setSure();
-        flags->setUnsureParity();
     }
 
-    void CpuImpl::test16(u16 src1, u16 src2, Flags* flags) {
-        u16 tmp = src1 & src2;
-        flags->sign = (tmp & (1 << 15));
-        flags->zero = (tmp == 0);
-        flags->overflow = 0;
-        flags->carry = 0;
-        flags->setSure();
-        flags->setUnsureParity();
-    }
-
-    void CpuImpl::test32(u32 src1, u32 src2, Flags* flags) {
-        u32 tmp = src1 & src2;
-        flags->sign = (tmp & (1ul << 31));
-        flags->zero = (tmp == 0);
-        flags->overflow = 0;
-        flags->carry = 0;
-        flags->setSure();
-        flags->setUnsureParity();
-    }
-
-    void CpuImpl::test64(u64 src1, u64 src2, Flags* flags) {
-        u64 tmp = src1 & src2;
-        flags->sign = (tmp & (1ull << 63));
-        flags->zero = (tmp == 0);
-        flags->overflow = 0;
-        flags->carry = 0;
-        flags->setSure();
-        flags->setUnsureParity();
-    }
+    void CpuImpl::test8(u8 src1, u8 src2, Flags* flags) { return test<u8>(src1, src2, flags); }
+    void CpuImpl::test16(u16 src1, u16 src2, Flags* flags) { return test<u16>(src1, src2, flags); }
+    void CpuImpl::test32(u32 src1, u32 src2, Flags* flags) { return test<u32>(src1, src2, flags); }
+    void CpuImpl::test64(u64 src1, u64 src2, Flags* flags) { return test<u64>(src1, src2, flags); }
 
     void CpuImpl::cmpxchg32(u32 eax, u32 dest, Flags* flags) {
         CpuImpl::cmp32(eax, dest, flags);
@@ -540,53 +516,35 @@ namespace x64 {
         }
     }
 
-    u32 CpuImpl::bsr32(u32 val, Flags* flags) {
+    template<typename U>
+    U bsr(U val, Flags* flags) {
         flags->zero = (val == 0);
         flags->setSure();
-        flags->setUnsureParity();
-        if(!val) return (u32)(-1); // [NS] return value is undefined
-        u32 mssb = 31;
-        while(mssb > 0 && !(val & (1u << mssb))) {
+        if(!val) return (U)(-1); // [NS] return value is undefined
+        U mssb = 8*sizeof(U)-1;
+        while(mssb > 0 && !(val & ((U)1 << mssb))) {
             --mssb;
         }
         return mssb;
     }
 
-    u64 CpuImpl::bsr64(u64 val, Flags* flags) {
-        flags->zero = (val == 0);
-        flags->setSure();
-        flags->setUnsureParity();
-        if(!val) return (u64)(-1); // [NS] return value is undefined
-        u64 mssb = 63;
-        while(mssb > 0 && !(val & (1ull << mssb))) {
-            --mssb;
-        }
-        return mssb;
-    }
+    u32 CpuImpl::bsr32(u32 val, Flags* flags) { return bsr<u32>(val, flags); }
+    u64 CpuImpl::bsr64(u64 val, Flags* flags) { return bsr<u64>(val, flags); }
 
-    u32 CpuImpl::bsf32(u32 val, Flags* flags) {
+    template<typename U>
+    U bsf(U val, Flags* flags) {
         flags->zero = (val == 0);
         flags->setSure();
-        flags->setUnsureParity();
-        if(!val) return (u32)(-1); // [NS] return value is undefined
-        u32 mssb = 0;
-        while(mssb < 32 && !(val & (1u << mssb))) {
+        if(!val) return (U)(-1); // [NS] return value is undefined
+        U mssb = 0;
+        while(mssb < 8*sizeof(U) && !(val & ((U)1 << mssb))) {
             ++mssb;
         }
         return mssb;
     }
 
-    u64 CpuImpl::bsf64(u64 val, Flags* flags) {
-        flags->zero = (val == 0);
-        flags->setSure();
-        flags->setUnsureParity();
-        if(!val) return (u64)(-1); // [NS] return value is undefined
-        u64 mssb = 0;
-        while(mssb < 64 && !(val & (1ull << mssb))) {
-            ++mssb;
-        }
-        return mssb;
-    }
+    u32 CpuImpl::bsf32(u32 val, Flags* flags) { return bsf<u32>(val, flags); }
+    u64 CpuImpl::bsf64(u64 val, Flags* flags) { return bsf<u64>(val, flags); }
 
     f80 CpuImpl::fadd(f80 dst, f80 src, X87Fpu*) {
         long double d = f80::toLongDouble(dst);

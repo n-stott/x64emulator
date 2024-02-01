@@ -754,45 +754,30 @@ namespace x64 {
     u32 CheckedCpuImpl::bts32(u32 base, u32 index, Flags* flags) { return bts<u32>(base, index, flags, &CpuImpl::bts32); }
     u64 CheckedCpuImpl::bts64(u64 base, u64 index, Flags* flags) { return bts<u64>(base, index, flags, &CpuImpl::bts64); }
 
-    void CheckedCpuImpl::test8(u8 src1, u8 src2, Flags* flags) {
-        u8 tmp = src1 & src2;
-        flags->sign = (tmp & (1 << 7));
-        flags->zero = (tmp == 0);
-        flags->overflow = 0;
-        flags->carry = 0;
-        flags->setSure();
-        flags->setUnsureParity();
+    template<typename U, typename Test>
+    void test(U src1, U src2, Flags* flags, Test testFunc) {
+        Flags virtualFlags = *flags;
+        testFunc(src1, src2, &virtualFlags);
+
+        u64 rflags = toRflags(*flags);
+        asm volatile("push %0" : "=r"(rflags));
+        asm volatile("popf");
+        asm volatile("test %0, %1" :: "r"(src1), "r"(src2));
+        asm volatile("pushf");
+        asm volatile("pop %0" : "=r" (rflags));
+        *flags = fromRflags(rflags);
+
+        assert(virtualFlags.sign == flags->sign);
+        assert(virtualFlags.zero == flags->zero);
+        assert(virtualFlags.overflow == flags->overflow);
+        assert(virtualFlags.carry == flags->carry);
+        assert(virtualFlags.parity == flags->parity);
     }
 
-    void CheckedCpuImpl::test16(u16 src1, u16 src2, Flags* flags) {
-        u16 tmp = src1 & src2;
-        flags->sign = (tmp & (1 << 15));
-        flags->zero = (tmp == 0);
-        flags->overflow = 0;
-        flags->carry = 0;
-        flags->setSure();
-        flags->setUnsureParity();
-    }
-
-    void CheckedCpuImpl::test32(u32 src1, u32 src2, Flags* flags) {
-        u32 tmp = src1 & src2;
-        flags->sign = (tmp & (1ul << 31));
-        flags->zero = (tmp == 0);
-        flags->overflow = 0;
-        flags->carry = 0;
-        flags->setSure();
-        flags->setUnsureParity();
-    }
-
-    void CheckedCpuImpl::test64(u64 src1, u64 src2, Flags* flags) {
-        u64 tmp = src1 & src2;
-        flags->sign = (tmp & (1ull << 63));
-        flags->zero = (tmp == 0);
-        flags->overflow = 0;
-        flags->carry = 0;
-        flags->setSure();
-        flags->setUnsureParity();
-    }
+    void CheckedCpuImpl::test8(u8 src1, u8 src2, Flags* flags) { return test<u8>(src1, src2, flags, &CpuImpl::test8); }
+    void CheckedCpuImpl::test16(u16 src1, u16 src2, Flags* flags) { return test<u16>(src1, src2, flags, &CpuImpl::test16); }
+    void CheckedCpuImpl::test32(u32 src1, u32 src2, Flags* flags) { return test<u32>(src1, src2, flags, &CpuImpl::test32); }
+    void CheckedCpuImpl::test64(u64 src1, u64 src2, Flags* flags) { return test<u64>(src1, src2, flags, &CpuImpl::test64); }
 
     void CheckedCpuImpl::cmpxchg32(u32 eax, u32 dest, Flags* flags) {
         CheckedCpuImpl::cmp32(eax, dest, flags);
@@ -812,53 +797,53 @@ namespace x64 {
         }
     }
 
-    u32 CheckedCpuImpl::bsr32(u32 val, Flags* flags) {
-        flags->zero = (val == 0);
-        flags->setSure();
-        flags->setUnsureParity();
-        if(!val) return (u32)(-1); // [NS] return value is undefined
-        u32 mssb = 31;
-        while(mssb > 0 && !(val & (1u << mssb))) {
-            --mssb;
+    template<typename U, typename Bsr>
+    static U bsr(U val, Flags* flags, Bsr bsrFunc) {
+        Flags virtualFlags = *flags;
+        U virtualRes = bsrFunc(val, &virtualFlags);
+        (void)virtualRes;
+
+        U nativeRes = 0;
+        u64 rflags = toRflags(*flags);
+        asm volatile("bsr %1, %0" : "+r"(nativeRes) : "r"(val));
+        asm volatile("pushf");
+        asm volatile("pop %0" : "=r" (rflags));
+        *flags = fromRflags(rflags);
+
+        assert(virtualFlags.zero == flags->zero);
+        if(!!val) {
+            assert(virtualRes == nativeRes);
         }
-        return mssb;
+        
+        return nativeRes;
     }
 
-    u64 CheckedCpuImpl::bsr64(u64 val, Flags* flags) {
-        flags->zero = (val == 0);
-        flags->setSure();
-        flags->setUnsureParity();
-        if(!val) return (u64)(-1); // [NS] return value is undefined
-        u64 mssb = 63;
-        while(mssb > 0 && !(val & (1ull << mssb))) {
-            --mssb;
+    u32 CheckedCpuImpl::bsr32(u32 val, Flags* flags) { return bsr<u32>(val, flags, &CpuImpl::bsr32); }
+    u64 CheckedCpuImpl::bsr64(u64 val, Flags* flags) { return bsr<u64>(val, flags, &CpuImpl::bsr64); }
+
+    template<typename U, typename Bsf>
+    static U bsf(U val, Flags* flags, Bsf bsfFunc) {
+        Flags virtualFlags = *flags;
+        U virtualRes = bsfFunc(val, &virtualFlags);
+        (void)virtualRes;
+
+        U nativeRes = 0;
+        u64 rflags = toRflags(*flags);
+        asm volatile("bsf %1, %0" : "+r"(nativeRes) : "r"(val));
+        asm volatile("pushf");
+        asm volatile("pop %0" : "=r" (rflags));
+        *flags = fromRflags(rflags);
+
+        assert(virtualFlags.zero == flags->zero);
+        if(!!val) {
+            assert(virtualRes == nativeRes);
         }
-        return mssb;
+        
+        return nativeRes;
     }
 
-    u32 CheckedCpuImpl::bsf32(u32 val, Flags* flags) {
-        flags->zero = (val == 0);
-        flags->setSure();
-        flags->setUnsureParity();
-        if(!val) return (u32)(-1); // [NS] return value is undefined
-        u32 mssb = 0;
-        while(mssb < 32 && !(val & (1u << mssb))) {
-            ++mssb;
-        }
-        return mssb;
-    }
-
-    u64 CheckedCpuImpl::bsf64(u64 val, Flags* flags) {
-        flags->zero = (val == 0);
-        flags->setSure();
-        flags->setUnsureParity();
-        if(!val) return (u64)(-1); // [NS] return value is undefined
-        u64 mssb = 0;
-        while(mssb < 64 && !(val & (1ull << mssb))) {
-            ++mssb;
-        }
-        return mssb;
-    }
+    u32 CheckedCpuImpl::bsf32(u32 val, Flags* flags) { return bsf<u32>(val, flags, &CpuImpl::bsf32); }
+    u64 CheckedCpuImpl::bsf64(u64 val, Flags* flags) { return bsf<u64>(val, flags, &CpuImpl::bsf64); }
 
     f80 CheckedCpuImpl::fadd(f80 dst, f80 src, X87Fpu*) {
         long double d = f80::toLongDouble(dst);
