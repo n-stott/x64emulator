@@ -1191,121 +1191,91 @@ namespace x64 {
     }
 
     u128 CheckedCpuImpl::punpcklbw(u128 dst, u128 src) {
-        std::array<u8, 16> DST;
-        static_assert(sizeof(DST) == sizeof(u128));
-        std::memcpy(DST.data(), &dst, sizeof(u128));
+        u128 virtualRes = CpuImpl::punpcklbw(dst, src);
 
-        std::array<u8, 16> SRC;
-        static_assert(sizeof(SRC) == sizeof(u128));
-        std::memcpy(SRC.data(), &src, sizeof(u128));
-
-        std::array<u8, 16> RES;
-        for(size_t i = 0; i < 8; ++i) {
-            RES[2*i] = DST[i];
-            RES[2*i+1] = SRC[i];
-        }
-        std::memcpy(&dst, RES.data(), sizeof(u128));
-        return dst;
+        u128 nativeRes = dst;
+        asm volatile("punpcklbw %1, %0" : "+x"(nativeRes) : "x"(src));
+        assert(nativeRes.lo == virtualRes.lo);
+        assert(nativeRes.hi == virtualRes.hi);
+        
+        return nativeRes;
     }
 
     u128 CheckedCpuImpl::punpcklwd(u128 dst, u128 src) {
-        std::array<u16, 8> DST;
-        static_assert(sizeof(DST) == sizeof(u128));
-        std::memcpy(DST.data(), &dst, sizeof(u128));
+        u128 virtualRes = CpuImpl::punpcklwd(dst, src);
 
-        std::array<u16, 8> SRC;
-        static_assert(sizeof(SRC) == sizeof(u128));
-        std::memcpy(SRC.data(), &src, sizeof(u128));
-
-        std::array<u16, 8> RES;
-        for(size_t i = 0; i < 4; ++i) {
-            RES[2*i] = DST[i];
-            RES[2*i+1] = SRC[i];
-        }
-        std::memcpy(&dst, RES.data(), sizeof(u128));
-        return dst;
+        u128 nativeRes = dst;
+        asm volatile("punpcklwd %1, %0" : "+x"(nativeRes) : "x"(src));
+        assert(nativeRes.lo == virtualRes.lo);
+        assert(nativeRes.hi == virtualRes.hi);
+        
+        return nativeRes;
     }
 
     u128 CheckedCpuImpl::punpckldq(u128 dst, u128 src) {
-        std::array<u32, 4> DST;
-        static_assert(sizeof(DST) == sizeof(u128));
-        std::memcpy(DST.data(), &dst, sizeof(u128));
+        u128 virtualRes = CpuImpl::punpckldq(dst, src);
 
-        std::array<u32, 4> SRC;
-        static_assert(sizeof(SRC) == sizeof(u128));
-        std::memcpy(SRC.data(), &src, sizeof(u128));
-
-        std::array<u32, 4> RES;
-        for(size_t i = 0; i < 2; ++i) {
-            RES[2*i] = DST[i];
-            RES[2*i+1] = SRC[i];
-        }
-        std::memcpy(&dst, RES.data(), sizeof(u128));
-        return dst;
+        u128 nativeRes = dst;
+        asm volatile("punpckldq %1, %0" : "+x"(nativeRes) : "x"(src));
+        assert(nativeRes.lo == virtualRes.lo);
+        assert(nativeRes.hi == virtualRes.hi);
+        
+        return nativeRes;
     }
 
     u128 CheckedCpuImpl::punpcklqdq(u128 dst, u128 src) {
-        dst.hi = src.lo;
-        return dst;
+        u128 virtualRes = CpuImpl::punpcklqdq(dst, src);
+
+        u128 nativeRes = dst;
+        asm volatile("punpcklqdq %1, %0" : "+x"(nativeRes) : "x"(src));
+        assert(nativeRes.lo == virtualRes.lo);
+        assert(nativeRes.hi == virtualRes.hi);
+        
+        return nativeRes;
     }
 
     u128 CheckedCpuImpl::punpckhbw(u128 dst, u128 src) {
-        std::array<u8, 16> DST;
-        static_assert(sizeof(DST) == sizeof(u128));
-        std::memcpy(DST.data(), &dst, sizeof(u128));
+        u128 virtualRes = CpuImpl::punpckhbw(dst, src);
 
-        std::array<u8, 16> SRC;
-        static_assert(sizeof(SRC) == sizeof(u128));
-        std::memcpy(SRC.data(), &src, sizeof(u128));
-
-        std::array<u8, 16> RES;
-        for(size_t i = 0; i < 8; ++i) {
-            RES[2*i] = DST[8+i];
-            RES[2*i+1] = SRC[8+i];
-        }
-        std::memcpy(&dst, RES.data(), sizeof(u128));
-        return dst;
+        u128 nativeRes = dst;
+        asm volatile("punpckhbw %1, %0" : "+x"(nativeRes) : "x"(src));
+        assert(nativeRes.lo == virtualRes.lo);
+        assert(nativeRes.hi == virtualRes.hi);
+        
+        return nativeRes;
     }
 
     u128 CheckedCpuImpl::punpckhwd(u128 dst, u128 src) {
-        std::array<u16, 8> DST;
-        static_assert(sizeof(DST) == sizeof(u128));
-        std::memcpy(DST.data(), &dst, sizeof(u128));
+        u128 virtualRes = CpuImpl::punpckhwd(dst, src);
 
-        std::array<u16, 8> SRC;
-        static_assert(sizeof(SRC) == sizeof(u128));
-        std::memcpy(SRC.data(), &src, sizeof(u128));
-
-        std::array<u16, 8> RES;
-        for(size_t i = 0; i < 4; ++i) {
-            RES[2*i] = DST[4+i];
-            RES[2*i+1] = SRC[4+i];
-        }
-        std::memcpy(&dst, RES.data(), sizeof(u128));
-        return dst;
+        u128 nativeRes = dst;
+        asm volatile("punpckhwd %1, %0" : "+x"(nativeRes) : "x"(src));
+        assert(nativeRes.lo == virtualRes.lo);
+        assert(nativeRes.hi == virtualRes.hi);
+        
+        return nativeRes;
     }
 
     u128 CheckedCpuImpl::punpckhdq(u128 dst, u128 src) {
-        std::array<u32, 4> DST;
-        static_assert(sizeof(DST) == sizeof(u128));
-        std::memcpy(DST.data(), &dst, sizeof(u128));
+        u128 virtualRes = CpuImpl::punpckhdq(dst, src);
 
-        std::array<u32, 4> SRC;
-        static_assert(sizeof(SRC) == sizeof(u128));
-        std::memcpy(SRC.data(), &src, sizeof(u128));
-
-        std::array<u32, 4> RES;
-        for(size_t i = 0; i < 2; ++i) {
-            RES[2*i] = DST[2+i];
-            RES[2*i+1] = SRC[2+i];
-        }
-        std::memcpy(&dst, RES.data(), sizeof(u128));
-        return dst;
+        u128 nativeRes = dst;
+        asm volatile("punpckhdq %1, %0" : "+x"(nativeRes) : "x"(src));
+        assert(nativeRes.lo == virtualRes.lo);
+        assert(nativeRes.hi == virtualRes.hi);
+        
+        return nativeRes;
     }
 
     u128 CheckedCpuImpl::punpckhqdq(u128 dst, u128 src) {
-        dst.hi = src.hi;
-        return dst;
+        u128 virtualRes = CpuImpl::punpckhqdq(dst, src);
+
+        u128 nativeRes = dst;
+        asm volatile("punpckhqdq %1, %0" : "+x"(nativeRes) : "x"(src));
+        assert(nativeRes.lo == virtualRes.lo);
+        assert(nativeRes.hi == virtualRes.hi);
+        
+        return nativeRes;
     }
 
     u128 CheckedCpuImpl::pshufb(u128 dst, u128 src) {
