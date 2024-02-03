@@ -1418,40 +1418,39 @@ namespace x64 {
     u128 CheckedCpuImpl::psubq(u128 dst, u128 src) { return psub<u64>(dst, src, &CpuImpl::psubq); }
 
     u128 CheckedCpuImpl::pmaxub(u128 dst, u128 src) {
-        std::array<u8, 16> DST;
-        static_assert(sizeof(DST) == sizeof(u128));
-        std::memcpy(DST.data(), &dst, sizeof(u128));
+        u128 virtualRes = CpuImpl::pmaxub(dst, src);
 
-        std::array<u8, 16> SRC;
-        static_assert(sizeof(SRC) == sizeof(u128));
-        std::memcpy(SRC.data(), &src, sizeof(u128));
-
-        for(size_t i = 0; i < 16; ++i) {
-            DST[i] = std::max(DST[i], SRC[i]);
-        }
-        std::memcpy(&dst, DST.data(), sizeof(u128));
-        return dst;
+        u128 nativeRes = dst;
+        asm volatile("pmaxub %1, %0" : "+x"(nativeRes) : "x"(src));
+        assert(nativeRes.lo == virtualRes.lo);
+        assert(nativeRes.hi == virtualRes.hi);
+        
+        return nativeRes;
     }
 
     u128 CheckedCpuImpl::pminub(u128 dst, u128 src) {
-        std::array<u8, 16> DST;
-        static_assert(sizeof(DST) == sizeof(u128));
-        std::memcpy(DST.data(), &dst, sizeof(u128));
+        u128 virtualRes = CpuImpl::pminub(dst, src);
 
-        std::array<u8, 16> SRC;
-        static_assert(sizeof(SRC) == sizeof(u128));
-        std::memcpy(SRC.data(), &src, sizeof(u128));
-
-        for(size_t i = 0; i < 16; ++i) {
-            DST[i] = std::min(DST[i], SRC[i]);
-        }
-        std::memcpy(&dst, DST.data(), sizeof(u128));
-        return dst;
+        u128 nativeRes = dst;
+        asm volatile("pminub %1, %0" : "+x"(nativeRes) : "x"(src));
+        assert(nativeRes.lo == virtualRes.lo);
+        assert(nativeRes.hi == virtualRes.hi);
+        
+        return nativeRes;
     }
 
     void CheckedCpuImpl::ptest(u128 dst, u128 src, Flags* flags) {
-        flags->zero = (dst.lo & src.lo) == 0 && (dst.hi & src.hi) == 0;
-        flags->carry = (~dst.lo & src.lo) == 0 && (~dst.hi & src.hi) == 0;
+        Flags virtualFlags = *flags;
+        CpuImpl::ptest(dst, src, &virtualFlags);
+
+        BEGIN_RFLAGS_SCOPE
+            SET_RFLAGS(*flags);
+            asm volatile("ptest %0, %1" :: "x"(dst), "x"(src));
+            GET_RFLAGS(flags);
+        END_RFLAGS_SCOPE
+
+        assert(virtualFlags.zero == flags->zero);
+        assert(virtualFlags.carry == flags->carry);
     }
 
     template<typename U>
