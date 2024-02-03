@@ -1307,51 +1307,55 @@ namespace x64 {
     }
 
 
-    template<typename I>
-    static u128 pcmpeq(u128 dst, u128 src) {
-        constexpr u32 N = sizeof(u128)/sizeof(I);
-        std::array<I, N> DST;
-        static_assert(sizeof(DST) == sizeof(u128));
-        std::memcpy(DST.data(), &dst, sizeof(u128));
+    template<typename I, typename Pcmpeq>
+    static u128 pcmpeq(u128 dst, u128 src, Pcmpeq pcmpeqFunc) {
+        u128 virtualRes = pcmpeqFunc(dst, src);
 
-        std::array<I, N> SRC;
-        static_assert(sizeof(SRC) == sizeof(u128));
-        std::memcpy(SRC.data(), &src, sizeof(u128));
-
-        for(size_t i = 0; i < N; ++i) {
-            DST[i] = (DST[i] == SRC[i] ? -1 : 0);
+        u128 nativeRes = dst;
+        if constexpr(std::is_same_v<I, i8>) {
+            asm volatile("pcmpeqb %1, %0" : "+x"(nativeRes) : "x"(src));
+        } else if constexpr(std::is_same_v<I, i16>) {
+            asm volatile("pcmpeqw %1, %0" : "+x"(nativeRes) : "x"(src));
+        } else if constexpr(std::is_same_v<I, i32>) {
+            asm volatile("pcmpeqd %1, %0" : "+x"(nativeRes) : "x"(src));
+        } else {
+            asm volatile("pcmpeqq %1, %0" : "+x"(nativeRes) : "x"(src));
         }
-        std::memcpy(&dst, DST.data(), sizeof(u128));
-        return dst;
+        assert(nativeRes.lo == virtualRes.lo);
+        assert(nativeRes.hi == virtualRes.hi);
+        
+        return nativeRes;
     }
 
-    u128 CheckedCpuImpl::pcmpeqb(u128 dst, u128 src) { return pcmpeq<i8>(dst, src); }
-    u128 CheckedCpuImpl::pcmpeqw(u128 dst, u128 src) { return pcmpeq<i16>(dst, src); }
-    u128 CheckedCpuImpl::pcmpeqd(u128 dst, u128 src) { return pcmpeq<i32>(dst, src); }
-    u128 CheckedCpuImpl::pcmpeqq(u128 dst, u128 src) { return pcmpeq<i64>(dst, src); }
+    u128 CheckedCpuImpl::pcmpeqb(u128 dst, u128 src) { return pcmpeq<i8>(dst, src, &CpuImpl::pcmpeqb); }
+    u128 CheckedCpuImpl::pcmpeqw(u128 dst, u128 src) { return pcmpeq<i16>(dst, src, &CpuImpl::pcmpeqw); }
+    u128 CheckedCpuImpl::pcmpeqd(u128 dst, u128 src) { return pcmpeq<i32>(dst, src, &CpuImpl::pcmpeqd); }
+    u128 CheckedCpuImpl::pcmpeqq(u128 dst, u128 src) { return pcmpeq<i64>(dst, src, &CpuImpl::pcmpeqq); }
 
-    template<typename I>
-    static u128 pcmpgt(u128 dst, u128 src) {
-        constexpr u32 N = sizeof(u128)/sizeof(I);
-        std::array<I, N> DST;
-        static_assert(sizeof(DST) == sizeof(u128));
-        std::memcpy(DST.data(), &dst, sizeof(u128));
+    template<typename I, typename Pcmpgt>
+    static u128 pcmpgt(u128 dst, u128 src, Pcmpgt pcmpgtFunc) {
+        u128 virtualRes = pcmpgtFunc(dst, src);
 
-        std::array<I, N> SRC;
-        static_assert(sizeof(SRC) == sizeof(u128));
-        std::memcpy(SRC.data(), &src, sizeof(u128));
-
-        for(size_t i = 0; i < N; ++i) {
-            DST[i] = (DST[i] > SRC[i] ? -1 : 0);
+        u128 nativeRes = dst;
+        if constexpr(std::is_same_v<I, i8>) {
+            asm volatile("pcmpgtb %1, %0" : "+x"(nativeRes) : "x"(src));
+        } else if constexpr(std::is_same_v<I, i16>) {
+            asm volatile("pcmpgtw %1, %0" : "+x"(nativeRes) : "x"(src));
+        } else if constexpr(std::is_same_v<I, i32>) {
+            asm volatile("pcmpgtd %1, %0" : "+x"(nativeRes) : "x"(src));
+        } else {
+            asm volatile("pcmpgtq %1, %0" : "+x"(nativeRes) : "x"(src));
         }
-        std::memcpy(&dst, DST.data(), sizeof(u128));
-        return dst;
+        assert(nativeRes.lo == virtualRes.lo);
+        assert(nativeRes.hi == virtualRes.hi);
+        
+        return nativeRes;
     }
 
-    u128 CheckedCpuImpl::pcmpgtb(u128 dst, u128 src) { return pcmpgt<i8>(dst, src); }
-    u128 CheckedCpuImpl::pcmpgtw(u128 dst, u128 src) { return pcmpgt<i16>(dst, src); }
-    u128 CheckedCpuImpl::pcmpgtd(u128 dst, u128 src) { return pcmpgt<i32>(dst, src); }
-    u128 CheckedCpuImpl::pcmpgtq(u128 dst, u128 src) { return pcmpgt<i64>(dst, src); }
+    u128 CheckedCpuImpl::pcmpgtb(u128 dst, u128 src) { return pcmpgt<i8>(dst, src, &CpuImpl::pcmpgtb); }
+    u128 CheckedCpuImpl::pcmpgtw(u128 dst, u128 src) { return pcmpgt<i16>(dst, src, &CpuImpl::pcmpgtw); }
+    u128 CheckedCpuImpl::pcmpgtd(u128 dst, u128 src) { return pcmpgt<i32>(dst, src, &CpuImpl::pcmpgtd); }
+    u128 CheckedCpuImpl::pcmpgtq(u128 dst, u128 src) { return pcmpgt<i64>(dst, src, &CpuImpl::pcmpgtq); }
 
     u16 CheckedCpuImpl::pmovmskb(u128 src) {
         std::array<u8, 16> SRC;
