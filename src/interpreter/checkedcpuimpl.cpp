@@ -1279,25 +1279,14 @@ namespace x64 {
     }
 
     u128 CheckedCpuImpl::pshufb(u128 dst, u128 src) {
-        std::array<u8, 16> DST;
-        static_assert(sizeof(DST) == sizeof(u128));
-        std::memcpy(DST.data(), &dst, sizeof(u128));
-        std::array<u8, 16> TMP = DST;
+        u128 virtualRes = CpuImpl::pshufb(dst, src);
 
-        std::array<u8, 16> SRC;
-        static_assert(sizeof(SRC) == sizeof(u128));
-        std::memcpy(SRC.data(), &src, sizeof(u128));
-
-        for(unsigned int i = 0; i < 15; ++i) {
-            if((SRC[i] & 0x80) == 0) {
-                DST[i] = 0x0;
-            } else {
-                DST[i] = TMP[SRC[i] & 0x0F];
-            }
-        }
-
-        std::memcpy(&dst, DST.data(), sizeof(u128));
-        return dst;
+        u128 nativeRes = dst;
+        asm volatile("pshufb %1, %0" : "+x"(nativeRes) : "x"(src));
+        assert(nativeRes.lo == virtualRes.lo);
+        assert(nativeRes.hi == virtualRes.hi);
+        
+        return nativeRes;
     }
 
     u128 CheckedCpuImpl::pshufd(u128 src, u8 order) {
