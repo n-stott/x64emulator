@@ -793,7 +793,7 @@ namespace x64 {
         float res = (float)isrc;
         u32 r;
         std::memcpy(&r, &res, sizeof(r));
-        dst.lo = (dst.lo & 0xFFFFFFFFFFFF0000) | r;
+        dst.lo = (dst.lo & 0xFFFFFFFF00000000) | r;
         return dst;
     }
 
@@ -811,29 +811,28 @@ namespace x64 {
         double res = (double)isrc;
         u64 r;
         std::memcpy(&r, &res, sizeof(r));
-        dst.lo = (dst.lo & 0xFFFFFFFF00000000) | r;
+        dst.lo = r;
         return dst;
     }
 
-    u64 CpuImpl::cvtss2sd(u32 src) {
+    u128 CpuImpl::cvtss2sd(u128 dst, u128 src) {
         float tmp;
-        static_assert(sizeof(src) == sizeof(tmp));
         std::memcpy(&tmp, &src, sizeof(tmp));
         double res = (double)tmp;
-        u64 r;
-        std::memcpy(&r, &res, sizeof(r));
+        u128 r = dst;
+        std::memcpy(&r, &res, sizeof(res));
         return r;
     }
 
-    u32 CpuImpl::cvttsd2si32(u64 src) {
+    u32 CpuImpl::cvttsd2si32(u128 src) {
         double f;
-        std::memcpy(&f, &src, sizeof(src));
+        std::memcpy(&f, &src, sizeof(f));
         return (u32)(i32)f;
     }
 
-    u64 CpuImpl::cvttsd2si64(u64 src) {
+    u64 CpuImpl::cvttsd2si64(u128 src) {
         double f;
-        std::memcpy(&f, &src, sizeof(src));
+        std::memcpy(&f, &src, sizeof(f));
         return (u64)(i64)f;
     }
 

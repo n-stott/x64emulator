@@ -1109,61 +1109,78 @@ namespace x64 {
     }
 
     u128 CheckedCpuImpl::cvtsi2ss32(u128 dst, u32 src) {
-        i32 isrc = (i32)src;
-        float res = (float)isrc;
-        u32 r;
-        std::memcpy(&r, &res, sizeof(r));
-        dst.lo = (dst.lo & 0xFFFFFFFFFFFF0000) | r;
-        return dst;
+        u128 virtualRes = CpuImpl::cvtsi2ss32(dst, src);
+
+        u128 nativeRes = dst;
+        asm volatile("cvtsi2ss %1, %0" : "=x"(nativeRes) : "m"(src));
+        assert(nativeRes.hi == virtualRes.hi);
+        assert(nativeRes.lo == virtualRes.lo);
+        
+        return nativeRes;
     }
 
     u128 CheckedCpuImpl::cvtsi2ss64(u128 dst, u64 src) {
-        i64 isrc = (i64)src;
-        float res = (float)isrc;
-        u32 r;
-        std::memcpy(&r, &res, sizeof(r));
-        dst.lo = (dst.lo & 0xFFFFFFFFFFFF0000) | r;
-        return dst;
+        u128 virtualRes = CpuImpl::cvtsi2ss64(dst, src);
+
+        u128 nativeRes = dst;
+        asm volatile("cvtsi2ss %1, %0" : "=x"(nativeRes) : "m"(src));
+        assert(nativeRes.hi == virtualRes.hi);
+        assert(nativeRes.lo == virtualRes.lo);
+        
+        return nativeRes;
     }
 
     u128 CheckedCpuImpl::cvtsi2sd32(u128 dst, u32 src) {
-        i32 isrc = (i32)src;
-        double res = (double)isrc;
-        u64 r;
-        std::memcpy(&r, &res, sizeof(r));
-        dst.lo = (dst.lo & 0xFFFFFFFF00000000) | r;
-        return dst;
+        u128 virtualRes = CpuImpl::cvtsi2sd32(dst, src);
+
+        u128 nativeRes = dst;
+        asm volatile("cvtsi2sd %1, %0" : "=x"(nativeRes) : "m"(src));
+        assert(nativeRes.hi == virtualRes.hi);
+        assert(nativeRes.lo == virtualRes.lo);
+        
+        return nativeRes;
     }
 
     u128 CheckedCpuImpl::cvtsi2sd64(u128 dst, u64 src) {
-        i64 isrc = (i64)src;
-        double res = (double)isrc;
-        u64 r;
-        std::memcpy(&r, &res, sizeof(r));
-        dst.lo = (dst.lo & 0xFFFFFFFF00000000) | r;
-        return dst;
+        u128 virtualRes = CpuImpl::cvtsi2sd64(dst, src);
+
+        u128 nativeRes = dst;
+        asm volatile("cvtsi2sd %1, %0" : "=x"(nativeRes) : "m"(src));
+        assert(nativeRes.hi == virtualRes.hi);
+        assert(nativeRes.lo == virtualRes.lo);
+        
+        return nativeRes;
     }
 
-    u64 CheckedCpuImpl::cvtss2sd(u32 src) {
-        float tmp;
-        static_assert(sizeof(src) == sizeof(tmp));
-        std::memcpy(&tmp, &src, sizeof(tmp));
-        double res = (double)tmp;
-        u64 r;
-        std::memcpy(&r, &res, sizeof(r));
-        return r;
+    u128 CheckedCpuImpl::cvtss2sd(u128 dst, u128 src) {
+        u128 virtualRes = CpuImpl::cvtss2sd(dst, src);
+
+        u128 nativeRes = dst;
+        asm volatile("cvtss2sd %1, %0" : "=x"(nativeRes) : "x"(src));
+        assert(nativeRes.hi == virtualRes.hi);
+        assert(nativeRes.lo == virtualRes.lo);
+        
+        return nativeRes;
     }
 
-    u32 CheckedCpuImpl::cvttsd2si32(u64 src) {
-        double f;
-        std::memcpy(&f, &src, sizeof(src));
-        return (u32)(i32)f;
+    u32 CheckedCpuImpl::cvttsd2si32(u128 src) {
+        u32 virtualRes = CpuImpl::cvttsd2si32(src);
+
+        u32 nativeRes = 0;
+        asm volatile("cvttsd2si %1, %0" : "=r"(nativeRes) : "x"(src));
+        assert(nativeRes == virtualRes);
+        
+        return nativeRes;
     }
 
-    u64 CheckedCpuImpl::cvttsd2si64(u64 src) {
-        double f;
-        std::memcpy(&f, &src, sizeof(src));
-        return (u64)(i64)f;
+    u64 CheckedCpuImpl::cvttsd2si64(u128 src) {
+        u64 virtualRes = CpuImpl::cvttsd2si64(src);
+
+        u64 nativeRes = 0;
+        asm volatile("cvttsd2si %1, %0" : "=r"(nativeRes) : "x"(src));
+        assert(nativeRes == virtualRes);
+        
+        return nativeRes;
     }
 
     u128 CheckedCpuImpl::shufpd(u128 dst, u128 src, u8 order) {

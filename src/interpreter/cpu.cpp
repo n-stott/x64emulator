@@ -1229,20 +1229,19 @@ namespace x64 {
     }
 
     void Cpu::exec(const Cvtss2sd<RSSE, RSSE>& ins) {
-        u32 low = (u32)get(ins.src).lo;
-        u64 res = Impl::cvtss2sd(low);
-        set(ins.dst, writeLow<Xmm, u64>(get(ins.dst), res));
+        u128 res = Impl::cvtss2sd(get(ins.dst), get(ins.src));
+        set(ins.dst, res);
     }
 
     void Cpu::exec(const Cvtss2sd<RSSE, M32>& ins) {
-        u64 res = Impl::cvtss2sd(get(resolve(ins.src)));
-        set(ins.dst, writeLow<Xmm, u64>(get(ins.dst), res));
+        u128 res = Impl::cvtss2sd(get(ins.dst), zeroExtend<u128, u32>(get(resolve(ins.src))));
+        set(ins.dst, res);
     }
 
-    void Cpu::exec(const Cvttsd2si<R32, RSSE>& ins) { set(ins.dst, Impl::cvttsd2si32(get(ins.src).lo)); }
-    void Cpu::exec(const Cvttsd2si<R32, M64>& ins) { set(ins.dst, Impl::cvttsd2si32(get(resolve(ins.src)))); }
-    void Cpu::exec(const Cvttsd2si<R64, RSSE>& ins) { set(ins.dst, Impl::cvttsd2si64(get(ins.src).lo)); }
-    void Cpu::exec(const Cvttsd2si<R64, M64>& ins) { set(ins.dst, Impl::cvttsd2si64(get(resolve(ins.src)))); }
+    void Cpu::exec(const Cvttsd2si<R32, RSSE>& ins) { set(ins.dst, Impl::cvttsd2si32(get(ins.src))); }
+    void Cpu::exec(const Cvttsd2si<R32, M64>& ins) { set(ins.dst, Impl::cvttsd2si32(zeroExtend<u128, u64>(get(resolve(ins.src))))); }
+    void Cpu::exec(const Cvttsd2si<R64, RSSE>& ins) { set(ins.dst, Impl::cvttsd2si64(get(ins.src))); }
+    void Cpu::exec(const Cvttsd2si<R64, M64>& ins) { set(ins.dst, Impl::cvttsd2si64(zeroExtend<u128, u64>(get(resolve(ins.src))))); }
 
     void Cpu::exec(const Pand<RSSE, RMSSE>& ins) {
         u128 dst = get(ins.dst);
