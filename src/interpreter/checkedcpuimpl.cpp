@@ -913,6 +913,7 @@ namespace x64 {
         u16 x87cw;
         asm volatile("fstcw %0" : "+m"(x87cw));
         X87Control cw = X87Control::fromWord(x87cw);
+        (void)cw;
         // TODO: change host fpu state if it does not match the emulated state
         assert(cw.im == x87fpu->control().im);
 
@@ -939,6 +940,7 @@ namespace x64 {
         u16 x87cw;
         asm volatile("fstcw %0" : "+m"(x87cw));
         X87Control cw = X87Control::fromWord(x87cw);
+        (void)cw;
         // TODO: change host fpu state if it does not match the emulated state
         assert(cw.im == x87fpu->control().im);
 
@@ -960,6 +962,7 @@ namespace x64 {
     f80 CheckedCpuImpl::frndint(f80 dst, X87Fpu* x87fpu) {
         X87Fpu virtualX87fpu = *x87fpu;
         f80 virtualRes = CpuImpl::frndint(dst, &virtualX87fpu);
+        (void)virtualRes;
 
         u16 hostCW;
         asm volatile("fstcw %0" : "+m"(hostCW));
@@ -981,6 +984,7 @@ namespace x64 {
 
     u128 CheckedCpuImpl::addss(u128 dst, u128 src) {
         u128 virtualRes = CpuImpl::addss(dst, src);
+        (void)virtualRes;
 
         u128 nativeRes = dst;
         asm volatile("addss %1, %0" : "+x"(nativeRes) : "x"(src));
@@ -992,6 +996,7 @@ namespace x64 {
 
     u128 CheckedCpuImpl::addsd(u128 dst, u128 src) {
         u128 virtualRes = CpuImpl::addsd(dst, src);
+        (void)virtualRes;
 
         u128 nativeRes = dst;
         asm volatile("addsd %1, %0" : "+x"(nativeRes) : "x"(src));
@@ -1003,6 +1008,7 @@ namespace x64 {
 
     u128 CheckedCpuImpl::subss(u128 dst, u128 src) {
         u128 virtualRes = CpuImpl::subss(dst, src);
+        (void)virtualRes;
 
         u128 nativeRes = dst;
         asm volatile("subss %1, %0" : "+x"(nativeRes) : "x"(src));
@@ -1014,6 +1020,7 @@ namespace x64 {
 
     u128 CheckedCpuImpl::subsd(u128 dst, u128 src) {
         u128 virtualRes = CpuImpl::subsd(dst, src);
+        (void)virtualRes;
 
         u128 nativeRes = dst;
         asm volatile("subsd %1, %0" : "+x"(nativeRes) : "x"(src));
@@ -1055,6 +1062,7 @@ namespace x64 {
 
     u128 CheckedCpuImpl::mulsd(u128 dst, u128 src) {
         u128 virtualRes = CpuImpl::mulsd(dst, src);
+        (void)virtualRes;
 
         u128 nativeRes = dst;
         asm volatile("mulsd %1, %0" : "+x"(nativeRes) : "x"(src));
@@ -1066,6 +1074,7 @@ namespace x64 {
 
     u128 CheckedCpuImpl::divss(u128 dst, u128 src) {
         u128 virtualRes = CpuImpl::divss(dst, src);
+        (void)virtualRes;
 
         u128 nativeRes = dst;
         asm volatile("divss %1, %0" : "+x"(nativeRes) : "x"(src));
@@ -1077,6 +1086,7 @@ namespace x64 {
 
     u128 CheckedCpuImpl::divsd(u128 dst, u128 src) {
         u128 virtualRes = CpuImpl::divsd(dst, src);
+        (void)virtualRes;
 
         u128 nativeRes = dst;
         asm volatile("divsd %1, %0" : "+x"(nativeRes) : "x"(src));
@@ -1110,6 +1120,7 @@ namespace x64 {
 
     u128 CheckedCpuImpl::cvtsi2ss32(u128 dst, u32 src) {
         u128 virtualRes = CpuImpl::cvtsi2ss32(dst, src);
+        (void)virtualRes;
 
         u128 nativeRes = dst;
         asm volatile("cvtsi2ss %1, %0" : "=x"(nativeRes) : "m"(src));
@@ -1121,6 +1132,7 @@ namespace x64 {
 
     u128 CheckedCpuImpl::cvtsi2ss64(u128 dst, u64 src) {
         u128 virtualRes = CpuImpl::cvtsi2ss64(dst, src);
+        (void)virtualRes;
 
         u128 nativeRes = dst;
         asm volatile("cvtsi2ss %1, %0" : "=x"(nativeRes) : "m"(src));
@@ -1132,6 +1144,7 @@ namespace x64 {
 
     u128 CheckedCpuImpl::cvtsi2sd32(u128 dst, u32 src) {
         u128 virtualRes = CpuImpl::cvtsi2sd32(dst, src);
+        (void)virtualRes;
 
         u128 nativeRes = dst;
         asm volatile("cvtsi2sd %1, %0" : "=x"(nativeRes) : "m"(src));
@@ -1143,6 +1156,7 @@ namespace x64 {
 
     u128 CheckedCpuImpl::cvtsi2sd64(u128 dst, u64 src) {
         u128 virtualRes = CpuImpl::cvtsi2sd64(dst, src);
+        (void)virtualRes;
 
         u128 nativeRes = dst;
         asm volatile("cvtsi2sd %1, %0" : "=x"(nativeRes) : "m"(src));
@@ -1154,6 +1168,7 @@ namespace x64 {
 
     u128 CheckedCpuImpl::cvtss2sd(u128 dst, u128 src) {
         u128 virtualRes = CpuImpl::cvtss2sd(dst, src);
+        (void)virtualRes;
 
         u128 nativeRes = dst;
         asm volatile("cvtss2sd %1, %0" : "=x"(nativeRes) : "x"(src));
@@ -1165,6 +1180,7 @@ namespace x64 {
 
     u32 CheckedCpuImpl::cvttsd2si32(u128 src) {
         u32 virtualRes = CpuImpl::cvttsd2si32(src);
+        (void)virtualRes;
 
         u32 nativeRes = 0;
         asm volatile("cvttsd2si %1, %0" : "=r"(nativeRes) : "x"(src));
@@ -1175,6 +1191,7 @@ namespace x64 {
 
     u64 CheckedCpuImpl::cvttsd2si64(u128 src) {
         u64 virtualRes = CpuImpl::cvttsd2si64(src);
+        (void)virtualRes;
 
         u64 nativeRes = 0;
         asm volatile("cvttsd2si %1, %0" : "=r"(nativeRes) : "x"(src));
@@ -1192,6 +1209,7 @@ namespace x64 {
 
     u128 CheckedCpuImpl::punpcklbw(u128 dst, u128 src) {
         u128 virtualRes = CpuImpl::punpcklbw(dst, src);
+        (void)virtualRes;
 
         u128 nativeRes = dst;
         asm volatile("punpcklbw %1, %0" : "+x"(nativeRes) : "x"(src));
@@ -1203,6 +1221,7 @@ namespace x64 {
 
     u128 CheckedCpuImpl::punpcklwd(u128 dst, u128 src) {
         u128 virtualRes = CpuImpl::punpcklwd(dst, src);
+        (void)virtualRes;
 
         u128 nativeRes = dst;
         asm volatile("punpcklwd %1, %0" : "+x"(nativeRes) : "x"(src));
@@ -1214,6 +1233,7 @@ namespace x64 {
 
     u128 CheckedCpuImpl::punpckldq(u128 dst, u128 src) {
         u128 virtualRes = CpuImpl::punpckldq(dst, src);
+        (void)virtualRes;
 
         u128 nativeRes = dst;
         asm volatile("punpckldq %1, %0" : "+x"(nativeRes) : "x"(src));
@@ -1225,6 +1245,7 @@ namespace x64 {
 
     u128 CheckedCpuImpl::punpcklqdq(u128 dst, u128 src) {
         u128 virtualRes = CpuImpl::punpcklqdq(dst, src);
+        (void)virtualRes;
 
         u128 nativeRes = dst;
         asm volatile("punpcklqdq %1, %0" : "+x"(nativeRes) : "x"(src));
@@ -1236,6 +1257,7 @@ namespace x64 {
 
     u128 CheckedCpuImpl::punpckhbw(u128 dst, u128 src) {
         u128 virtualRes = CpuImpl::punpckhbw(dst, src);
+        (void)virtualRes;
 
         u128 nativeRes = dst;
         asm volatile("punpckhbw %1, %0" : "+x"(nativeRes) : "x"(src));
@@ -1247,6 +1269,7 @@ namespace x64 {
 
     u128 CheckedCpuImpl::punpckhwd(u128 dst, u128 src) {
         u128 virtualRes = CpuImpl::punpckhwd(dst, src);
+        (void)virtualRes;
 
         u128 nativeRes = dst;
         asm volatile("punpckhwd %1, %0" : "+x"(nativeRes) : "x"(src));
@@ -1258,6 +1281,7 @@ namespace x64 {
 
     u128 CheckedCpuImpl::punpckhdq(u128 dst, u128 src) {
         u128 virtualRes = CpuImpl::punpckhdq(dst, src);
+        (void)virtualRes;
 
         u128 nativeRes = dst;
         asm volatile("punpckhdq %1, %0" : "+x"(nativeRes) : "x"(src));
@@ -1269,6 +1293,7 @@ namespace x64 {
 
     u128 CheckedCpuImpl::punpckhqdq(u128 dst, u128 src) {
         u128 virtualRes = CpuImpl::punpckhqdq(dst, src);
+        (void)virtualRes;
 
         u128 nativeRes = dst;
         asm volatile("punpckhqdq %1, %0" : "+x"(nativeRes) : "x"(src));
@@ -1280,6 +1305,7 @@ namespace x64 {
 
     u128 CheckedCpuImpl::pshufb(u128 dst, u128 src) {
         u128 virtualRes = CpuImpl::pshufb(dst, src);
+        (void)virtualRes;
 
         u128 nativeRes = dst;
         asm volatile("pshufb %1, %0" : "+x"(nativeRes) : "x"(src));
@@ -1310,6 +1336,7 @@ namespace x64 {
     template<typename I, typename Pcmpeq>
     static u128 pcmpeq(u128 dst, u128 src, Pcmpeq pcmpeqFunc) {
         u128 virtualRes = pcmpeqFunc(dst, src);
+        (void)virtualRes;
 
         u128 nativeRes = dst;
         if constexpr(std::is_same_v<I, i8>) {
@@ -1335,6 +1362,7 @@ namespace x64 {
     template<typename I, typename Pcmpgt>
     static u128 pcmpgt(u128 dst, u128 src, Pcmpgt pcmpgtFunc) {
         u128 virtualRes = pcmpgtFunc(dst, src);
+        (void)virtualRes;
 
         u128 nativeRes = dst;
         if constexpr(std::is_same_v<I, i8>) {
@@ -1359,6 +1387,7 @@ namespace x64 {
 
     u16 CheckedCpuImpl::pmovmskb(u128 src) {
         u16 virtualRes = CpuImpl::pmovmskb(src);
+        (void)virtualRes;
 
         u64 nativeRes = 0;
         asm volatile("pmovmskb %1, %0" : "+r"(nativeRes) : "x"(src));
@@ -1370,6 +1399,7 @@ namespace x64 {
     template<typename U, typename Padd>
     u128 padd(u128 dst, u128 src, Padd paddFunc) {
         u128 virtualRes = paddFunc(dst, src);
+        (void)virtualRes;
 
         u128 nativeRes = dst;
         if constexpr(std::is_same_v<U, u8>) {
@@ -1395,6 +1425,7 @@ namespace x64 {
     template<typename U, typename Psub>
     u128 psub(u128 dst, u128 src, Psub psubFunc) {
         u128 virtualRes = psubFunc(dst, src);
+        (void)virtualRes;
 
         u128 nativeRes = dst;
         if constexpr(std::is_same_v<U, u8>) {
@@ -1419,6 +1450,7 @@ namespace x64 {
 
     u128 CheckedCpuImpl::pmaxub(u128 dst, u128 src) {
         u128 virtualRes = CpuImpl::pmaxub(dst, src);
+        (void)virtualRes;
 
         u128 nativeRes = dst;
         asm volatile("pmaxub %1, %0" : "+x"(nativeRes) : "x"(src));
@@ -1430,6 +1462,7 @@ namespace x64 {
 
     u128 CheckedCpuImpl::pminub(u128 dst, u128 src) {
         u128 virtualRes = CpuImpl::pminub(dst, src);
+        (void)virtualRes;
 
         u128 nativeRes = dst;
         asm volatile("pminub %1, %0" : "+x"(nativeRes) : "x"(src));

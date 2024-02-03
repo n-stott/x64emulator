@@ -368,7 +368,7 @@ namespace x64 {
         if(src == 1) {
             flags->overflow = 0;
         }
-        flags->sign = signBit<U>(res);
+        flags->sign = signBit<U>((U)res);
         flags->zero = (res == 0);
         flags->parity = Flags::computeParity((u8)res);
         flags->setSure();
@@ -461,7 +461,7 @@ namespace x64 {
         U size = 8*sizeof(U);
         index = index % size;
         flags->carry = (base >> index) & 0x1;
-        U mask = (U)(1) << index;
+        U mask = (U)((U)1 << index);
         return (base & ~mask) | (~base & mask);
     }
 
@@ -474,7 +474,7 @@ namespace x64 {
         U size = 8*sizeof(U);
         index = index % size;
         flags->carry = (base >> index) & 0x1;
-        U mask = (U)(1) << index;
+        U mask = (U)((U)1 << index);
         return (base & ~mask) | mask;
     }
 
