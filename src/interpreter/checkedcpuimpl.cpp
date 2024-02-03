@@ -1358,62 +1358,64 @@ namespace x64 {
     u128 CheckedCpuImpl::pcmpgtq(u128 dst, u128 src) { return pcmpgt<i64>(dst, src, &CpuImpl::pcmpgtq); }
 
     u16 CheckedCpuImpl::pmovmskb(u128 src) {
-        std::array<u8, 16> SRC;
-        static_assert(sizeof(SRC) == sizeof(u128));
-        std::memcpy(SRC.data(), &src, sizeof(u128));
-        u16 dst = 0;
-        for(u16 i = 0; i < 16; ++i) {
-            u16 msbi = ((SRC[i] >> 7) & 0x1);
-            dst = (u16)(dst | (msbi << i));
-        }
-        return dst;
+        u16 virtualRes = CpuImpl::pmovmskb(src);
+
+        u64 nativeRes = 0;
+        asm volatile("pmovmskb %1, %0" : "+r"(nativeRes) : "x"(src));
+        assert(virtualRes == nativeRes);
+
+        return (u16)nativeRes;
     }
 
-    template<typename U>
-    u128 padd(u128 dst, u128 src) {
-        constexpr int N = sizeof(u128)/sizeof(U);
-        std::array<U, N> DST;
-        static_assert(sizeof(DST) == sizeof(u128));
-        std::memcpy(DST.data(), &dst, sizeof(u128));
+    template<typename U, typename Padd>
+    u128 padd(u128 dst, u128 src, Padd paddFunc) {
+        u128 virtualRes = paddFunc(dst, src);
 
-        std::array<U, N> SRC;
-        static_assert(sizeof(SRC) == sizeof(u128));
-        std::memcpy(SRC.data(), &src, sizeof(u128));
-
-        for(size_t i = 0; i < N; ++i) {
-            DST[i] += SRC[i];
+        u128 nativeRes = dst;
+        if constexpr(std::is_same_v<U, u8>) {
+            asm volatile("paddb %1, %0" : "+x"(nativeRes) : "x"(src));
+        } else if constexpr(std::is_same_v<U, u16>) {
+            asm volatile("paddw %1, %0" : "+x"(nativeRes) : "x"(src));
+        } else if constexpr(std::is_same_v<U, u32>) {
+            asm volatile("paddd %1, %0" : "+x"(nativeRes) : "x"(src));
+        } else {
+            asm volatile("paddq %1, %0" : "+x"(nativeRes) : "x"(src));
         }
-        std::memcpy(&dst, DST.data(), sizeof(u128));
-        return dst;
+        assert(nativeRes.lo == virtualRes.lo);
+        assert(nativeRes.hi == virtualRes.hi);
+        
+        return nativeRes;
     }
 
-    u128 CheckedCpuImpl::paddb(u128 dst, u128 src) { return padd<u8>(dst, src); }
-    u128 CheckedCpuImpl::paddw(u128 dst, u128 src) { return padd<u16>(dst, src); }
-    u128 CheckedCpuImpl::paddd(u128 dst, u128 src) { return padd<u32>(dst, src); }
-    u128 CheckedCpuImpl::paddq(u128 dst, u128 src) { return padd<u64>(dst, src); }
+    u128 CheckedCpuImpl::paddb(u128 dst, u128 src) { return padd<u8>(dst, src, &CpuImpl::paddb); }
+    u128 CheckedCpuImpl::paddw(u128 dst, u128 src) { return padd<u16>(dst, src, &CpuImpl::paddw); }
+    u128 CheckedCpuImpl::paddd(u128 dst, u128 src) { return padd<u32>(dst, src, &CpuImpl::paddd); }
+    u128 CheckedCpuImpl::paddq(u128 dst, u128 src) { return padd<u64>(dst, src, &CpuImpl::paddq); }
 
-    template<typename U>
-    u128 psub(u128 dst, u128 src) {
-        constexpr int N = sizeof(u128)/sizeof(U);
-        std::array<U, N> DST;
-        static_assert(sizeof(DST) == sizeof(u128));
-        std::memcpy(DST.data(), &dst, sizeof(u128));
+    template<typename U, typename Psub>
+    u128 psub(u128 dst, u128 src, Psub psubFunc) {
+        u128 virtualRes = psubFunc(dst, src);
 
-        std::array<U, N> SRC;
-        static_assert(sizeof(SRC) == sizeof(u128));
-        std::memcpy(SRC.data(), &src, sizeof(u128));
-
-        for(size_t i = 0; i < N; ++i) {
-            DST[i] -= SRC[i];
+        u128 nativeRes = dst;
+        if constexpr(std::is_same_v<U, u8>) {
+            asm volatile("psubb %1, %0" : "+x"(nativeRes) : "x"(src));
+        } else if constexpr(std::is_same_v<U, u16>) {
+            asm volatile("psubw %1, %0" : "+x"(nativeRes) : "x"(src));
+        } else if constexpr(std::is_same_v<U, u32>) {
+            asm volatile("psubd %1, %0" : "+x"(nativeRes) : "x"(src));
+        } else {
+            asm volatile("psubq %1, %0" : "+x"(nativeRes) : "x"(src));
         }
-        std::memcpy(&dst, DST.data(), sizeof(u128));
-        return dst;
+        assert(nativeRes.lo == virtualRes.lo);
+        assert(nativeRes.hi == virtualRes.hi);
+        
+        return nativeRes;
     }
 
-    u128 CheckedCpuImpl::psubb(u128 dst, u128 src) { return psub<u8>(dst, src); }
-    u128 CheckedCpuImpl::psubw(u128 dst, u128 src) { return psub<u16>(dst, src); }
-    u128 CheckedCpuImpl::psubd(u128 dst, u128 src) { return psub<u32>(dst, src); }
-    u128 CheckedCpuImpl::psubq(u128 dst, u128 src) { return psub<u64>(dst, src); }
+    u128 CheckedCpuImpl::psubb(u128 dst, u128 src) { return psub<u8>(dst, src, &CpuImpl::psubb); }
+    u128 CheckedCpuImpl::psubw(u128 dst, u128 src) { return psub<u16>(dst, src, &CpuImpl::psubw); }
+    u128 CheckedCpuImpl::psubd(u128 dst, u128 src) { return psub<u32>(dst, src, &CpuImpl::psubd); }
+    u128 CheckedCpuImpl::psubq(u128 dst, u128 src) { return psub<u64>(dst, src, &CpuImpl::psubq); }
 
     u128 CheckedCpuImpl::pmaxub(u128 dst, u128 src) {
         std::array<u8, 16> DST;
