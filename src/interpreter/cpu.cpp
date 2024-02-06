@@ -554,8 +554,8 @@ namespace x64 {
         verify(false);
     }
 
-    void Cpu::exec(const Cdq&) { set(R32::EDX, get(R32::EAX) & 0x8000 ? 0xFFFF : 0x0000); }
-    void Cpu::exec(const Cqo&) { set(R64::RDX, get(R64::RAX) & 0x80000000 ? 0xFFFFFFFF : 0x00000000); }
+    void Cpu::exec(const Cdq&) { set(R32::EDX, (get(R32::EAX) & 0x80000000) ? 0xFFFFFFFF : 0x0); }
+    void Cpu::exec(const Cqo&) { set(R64::RDX, (get(R64::RAX) & 0x8000000000000000) ? 0xFFFFFFFFFFFFFFFF : 0x0); }
 
     void Cpu::exec(const Inc<RM8>& ins) { set(ins.dst, Impl::inc8(get(ins.dst), &flags_)); }
     void Cpu::exec(const Inc<RM16>& ins) { set(ins.dst, Impl::inc16(get(ins.dst), &flags_)); }
