@@ -1444,15 +1444,15 @@ namespace x64 {
 
     std::unique_ptr<X86Instruction> CapstoneWrapper::makeMovs(const cs_insn& insn) {
         u8 prefixByte = insn.detail->x86.prefix[0];
-        if(prefixByte == 0) return make_failed(insn);
-        x86_prefix prefix = (x86_prefix)prefixByte;
         const auto& x86detail = insn.detail->x86;
         assert(x86detail.op_count == 2);
         const cs_x86_op& dst = x86detail.operands[0];
         const cs_x86_op& src = x86detail.operands[1];
         auto m64src = asMemory64(src);
         auto m64dst = asMemory64(dst);
-        if(prefix == X86_PREFIX_REP) {
+        if(prefixByte == 0) {
+            if(m64dst && m64src) return make_wrapper< Movs<M64, M64> >(insn.address, m64dst.value(), m64src.value());
+        } else if((x86_prefix)prefixByte == X86_PREFIX_REP) {
             if(m64dst && m64src) return make_wrapper< Rep< Movs<M64, M64> >>(insn.address, m64dst.value(), m64src.value());
         }
         return make_failed(insn);

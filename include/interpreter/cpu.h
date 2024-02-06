@@ -436,6 +436,7 @@ namespace x64 {
         void exec(const Cld&);
         void exec(const Std&);
 
+        void exec(const Movs<M64, M64>&);
         void exec(const Rep<Movs<Addr<Size::BYTE, B>, Addr<Size::BYTE, B>>>&);
         void exec(const Rep<Movs<Addr<Size::DWORD, B>, Addr<Size::DWORD, B>>>&);
         void exec(const Rep<Movs<M32, M32>>&);

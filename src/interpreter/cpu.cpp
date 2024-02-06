@@ -820,6 +820,18 @@ namespace x64 {
         set(R64::RDI, dptr.address());
     }
 
+    void Cpu::exec(const Movs<M64, M64>& ins) {
+        Ptr64 dptr = resolve(ins.dst);
+        Ptr64 sptr = resolve(ins.src);
+        verify(flags_.direction == 0);
+        u64 val = mmu_->read64(sptr);
+        mmu_->write64(dptr, val);
+        ++sptr;
+        ++dptr;
+        set(R64::RSI, sptr.address());
+        set(R64::RDI, dptr.address());
+    }
+
     void Cpu::exec(const Rep<Movs<M64, M64>>& ins) {
         u32 counter = get(R32::ECX);
         Ptr64 dptr = resolve(ins.op.dst);
