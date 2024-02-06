@@ -350,7 +350,7 @@ namespace x64 {
         }
         // We are not in the PLT either :'(
         // Let's just fail
-        return "";
+        return fmt::format("Somewhere in {}", pos.section->filename);
     }
 
     void VM::setStackPointer(u64 address) {
