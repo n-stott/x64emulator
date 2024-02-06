@@ -317,8 +317,9 @@ namespace x64 {
     }
 
     off_t Sys::lseek(int fd, off_t offset, int whence) {
-        if(vm_->logSyscalls()) fmt::print("Sys::lseek(fd={}, offset={:#x}, whence={}) = {}\n", fd, offset, whence);
-        return Host::lseek(Host::FD{fd}, offset, whence);
+        off_t ret = Host::lseek(Host::FD{fd}, offset, whence);
+        if(vm_->logSyscalls()) fmt::print("Sys::lseek(fd={}, offset={:#x}, whence={}) = {}\n", fd, offset, whence, ret);
+        return ret;
     }
 
     Ptr Sys::mmap(Ptr addr, size_t length, int prot, int flags, int fd, off_t offset) {
