@@ -26,6 +26,18 @@ namespace x64 {
         return logInstructions_;
     }
 
+    void VM::setLogInstructionsAfter(unsigned long long nbTicks) {
+        nbTicksBeforeLoggingInstructions_ = nbTicks;
+    }
+    
+    void VM::setLogSyscalls(bool logSyscalls) {
+        logSyscalls_ = logSyscalls;
+    }
+
+    bool VM::logSyscalls() const {
+        return logSyscalls_;
+    }
+
     void VM::setSymbolProvider(SymbolProvider* symbolProvider) {
         symbolProvider_ = symbolProvider;
     }
@@ -52,9 +64,7 @@ namespace x64 {
                 verify(!!instruction, [&]() {
                     fmt::print("Undefined instruction near {:#x}\n", cpu_.regs_.rip_);
                 });
-#ifndef NDEBUG
                 log(ticks, instruction);
-#endif
                 ++ticks;
                 instruction->exec(&cpu_);
             } catch(const VerificationException&) {
@@ -85,6 +95,7 @@ namespace x64 {
 
     void VM::log(size_t ticks, const X86Instruction* instruction) const {
         if(!logInstructions()) return;
+        if(ticks < nbTicksBeforeLoggingInstructions_) return;
         verify(!!instruction, "Unexpected nullptr");
         std::string eflags = fmt::format("flags = [{}{}{}{}{}]", (cpu_.flags_.carry ? 'C' : ' '),
                                                             (cpu_.flags_.zero ? 'Z' : ' '), 

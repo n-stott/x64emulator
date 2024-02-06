@@ -48,6 +48,18 @@ namespace x64 {
         return vm_.logInstructions();
     }
 
+    void Interpreter::setLogInstructionsAfter(unsigned long long nbTicks) {
+        vm_.setLogInstructionsAfter(nbTicks);
+    }
+
+    void Interpreter::setLogSyscalls(bool logSyscalls) {
+        vm_.setLogSyscalls(logSyscalls);
+    }
+
+    bool Interpreter::logSyscalls() const {
+        return vm_.logSyscalls();
+    }
+
     void Interpreter::run(const std::string& programFilePath, const std::vector<std::string>& arguments, const std::vector<std::string>& environmentVariables) {
         SignalHandler handler;
         VerificationScope::run([&]() {

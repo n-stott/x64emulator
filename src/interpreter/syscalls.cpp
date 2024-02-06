@@ -274,7 +274,7 @@ namespace x64 {
 
     ssize_t Sys::read(int fd, Ptr8 buf, size_t count) {
         auto data = Host::read(Host::FD{fd}, count);
-        if(vm_->logInstructions()) fmt::print("Sys::read(fd={}, buf={:#x}, count={}) = {}\n", fd, buf.address(), count, data ? (int)data->size() : -1);
+        if(vm_->logSyscalls()) fmt::print("Sys::read(fd={}, buf={:#x}, count={}) = {}\n", fd, buf.address(), count, data ? (int)data->size() : -1);
         if(!data) return (ssize_t)(-1);
         mmu_->copyToMmu(buf, data->data(), data->size());
         return (ssize_t)data->size();
@@ -283,20 +283,20 @@ namespace x64 {
     ssize_t Sys::write(int fd, Ptr8 buf, size_t count) {
         std::vector<u8> buffer = mmu_->readFromMmu<u8>(buf, count);
         ssize_t ret = Host::write(Host::FD{fd}, buffer.data(), buffer.size());
-        if(vm_->logInstructions()) fmt::print("Sys::write(fd={}, buf={:#x}, count={}) = {}\n", fd, buf.address(), count, ret);
+        if(vm_->logSyscalls()) fmt::print("Sys::write(fd={}, buf={:#x}, count={}) = {}\n", fd, buf.address(), count, ret);
         return ret;
     }
 
     int Sys::close(int fd) {
         int ret = Host::close(Host::FD{fd});
-        if(vm_->logInstructions()) fmt::print("Sys::close(fd={}) = {}\n", fd, ret);
+        if(vm_->logSyscalls()) fmt::print("Sys::close(fd={}) = {}\n", fd, ret);
         return ret;
     }
 
     int Sys::stat(Ptr pathname, Ptr statbuf) {
         std::string path = mmu_->readString(pathname);
         std::optional<std::vector<u8>> buf = Host::stat(path);
-        if(vm_->logInstructions()) fmt::print("Sys::stat(path={}, statbuf={:#x}) = {}\n", path, statbuf.address(), buf ? 0 : -1);
+        if(vm_->logSyscalls()) fmt::print("Sys::stat(path={}, statbuf={:#x}) = {}\n", path, statbuf.address(), buf ? 0 : -1);
         if(!buf) return -1;
         mmu_->copyToMmu(statbuf, buf->data(), buf->size());
         return 0;
@@ -304,14 +304,14 @@ namespace x64 {
 
     int Sys::fstat(int fd, Ptr8 statbuf) {
         std::optional<std::vector<u8>> buf = Host::fstat(Host::FD{fd});
-        if(vm_->logInstructions()) fmt::print("Sys::fstat(fd={}, statbuf={:#x}) = {}\n", fd, statbuf.address(), buf ? 0 : -1);
+        if(vm_->logSyscalls()) fmt::print("Sys::fstat(fd={}, statbuf={:#x}) = {}\n", fd, statbuf.address(), buf ? 0 : -1);
         if(!buf) return -1;
         mmu_->copyToMmu(statbuf, buf->data(), buf->size());
         return 0;
     }
 
     off_t Sys::lseek(int fd, off_t offset, int whence) {
-        if(vm_->logInstructions()) fmt::print("Sys::lseek(fd={}, offset={:#x}, whence={}) = {}\n", fd, offset, whence);
+        if(vm_->logSyscalls()) fmt::print("Sys::lseek(fd={}, offset={:#x}, whence={}) = {}\n", fd, offset, whence);
         return Host::lseek(Host::FD{fd}, offset, whence);
     }
 
@@ -321,32 +321,32 @@ namespace x64 {
         if(flags & MAP_FIXED) f = f | MAP::FIXED;
         verify(addr.segment() != Segment::FS);
         u64 base = mmu_->mmap(addr.address(), length, (PROT)prot, f, fd, (int)offset);
-        if(vm_->logInstructions()) fmt::print("Sys::mmap(addr={:#x}, length={}, prot={}, flags={}, fd={}, offset={}) = {:#x}\n",
+        if(vm_->logSyscalls()) fmt::print("Sys::mmap(addr={:#x}, length={}, prot={}, flags={}, fd={}, offset={}) = {:#x}\n",
                                               addr.address(), length, prot, flags, fd, offset, base);
         return Ptr{addr.segment(), base};
     }
 
     int Sys::mprotect(Ptr addr, size_t length, int prot) {
         int ret = mmu_->mprotect(addr.address(), length, (PROT)prot);
-        if(vm_->logInstructions()) fmt::print("Sys::mprotect(addr={:#x}, length={}, prot={}) = {}\n", addr.address(), length, prot, ret);
+        if(vm_->logSyscalls()) fmt::print("Sys::mprotect(addr={:#x}, length={}, prot={}) = {}\n", addr.address(), length, prot, ret);
         return ret;
     }
 
     int Sys::munmap(Ptr addr, size_t length) {
         int ret = mmu_->munmap(addr.address(), length);
-        if(vm_->logInstructions()) fmt::print("Sys::munmap(addr={:#x}, length={}) = {}\n", addr.address(), length, ret);
+        if(vm_->logSyscalls()) fmt::print("Sys::munmap(addr={:#x}, length={}) = {}\n", addr.address(), length, ret);
         return ret;
     }
 
     Ptr Sys::brk(Ptr addr) {
         verify(addr.segment() != Segment::FS);
         u64 newBrk = mmu_->brk(addr.address());
-        if(vm_->logInstructions()) fmt::print("Sys::brk(addr={:#x}) = {:#x}\n", addr.address(), newBrk);
+        if(vm_->logSyscalls()) fmt::print("Sys::brk(addr={:#x}) = {:#x}\n", addr.address(), newBrk);
         return Ptr{addr.segment(), newBrk};
     }
 
     int Sys::rt_sigaction(int sig, Ptr act, Ptr oact, size_t sigsetsize) {
-        if(vm_->logInstructions()) fmt::print("Sys::rt_sigaction({}, {:#x}, {:#x}, {}) = 0\n", sig, act.address(), oact.address(), sigsetsize);
+        if(vm_->logSyscalls()) fmt::print("Sys::rt_sigaction({}, {:#x}, {:#x}, {}) = 0\n", sig, act.address(), oact.address(), sigsetsize);
         (void)sig;
         (void)act;
         (void)oact;
@@ -355,7 +355,7 @@ namespace x64 {
     }
 
     int Sys::rt_sigprocmask(int how, Ptr nset, Ptr oset, size_t sigsetsize) {
-        if(vm_->logInstructions()) fmt::print("Sys::rt_sigprocmask({}, {:#x}, {:#x}, {}) = 0\n", how, nset.address(), oset.address(), sigsetsize);
+        if(vm_->logSyscalls()) fmt::print("Sys::rt_sigprocmask({}, {:#x}, {:#x}, {}) = 0\n", how, nset.address(), oset.address(), sigsetsize);
         (void)how;
         (void)nset;
         (void)oset;
@@ -365,7 +365,7 @@ namespace x64 {
 
     int Sys::ioctl(int fd, unsigned long request, Ptr argp) {
         if(request == TCGETS) {
-            if(vm_->logInstructions()) fmt::print("Sys::ioctl({}, TCGETS, {:#x})\n", fd, request, argp.address());
+            if(vm_->logSyscalls()) fmt::print("Sys::ioctl({}, TCGETS, {:#x})\n", fd, request, argp.address());
             std::optional<std::vector<u8>> buffer = Host::tcgetattr(Host::FD{fd});
             mmu_->copyToMmu(argp, buffer->data(), buffer->size());
             return 0;
@@ -387,7 +387,7 @@ namespace x64 {
             std::vector<u8> buffer = mmu_->readFromMmu<u8>(Ptr8{(u64)base}, len);
             nbytes += Host::write(Host::FD{fd}, buffer.data(), len);
         }
-        if(vm_->logInstructions()) fmt::print("Sys::writev(fd={}, iov={:#x}, iovcnt={}) = {}\n", fd, iov.address(), iovcnt, nbytes);
+        if(vm_->logSyscalls()) fmt::print("Sys::writev(fd={}, iov={:#x}, iovcnt={}) = {}\n", fd, iov.address(), iovcnt, nbytes);
         return nbytes;
     }
 
@@ -398,13 +398,13 @@ namespace x64 {
         if(ret < 0) {
             info = strerror(-ret);
         }
-        if(vm_->logInstructions()) fmt::print("Sys::access(path={}, mode={}) = {} {}\n", path, mode, ret, info);
+        if(vm_->logSyscalls()) fmt::print("Sys::access(path={}, mode={}) = {} {}\n", path, mode, ret, info);
         return ret;
     }
 
     int Sys::uname(Ptr buf) {
         std::optional<std::vector<u8>> buffer = Host::uname();
-        if(vm_->logInstructions()) fmt::print("Sys::uname(buf={:#x}) = {}\n", buf.address(), buffer ? 0 : -1);
+        if(vm_->logSyscalls()) fmt::print("Sys::uname(buf={:#x}) = {}\n", buf.address(), buffer ? 0 : -1);
         if(!buffer) return -1;
         mmu_->copyToMmu(buf, buffer->data(), buffer->size());
         return 0;
@@ -413,12 +413,12 @@ namespace x64 {
     int Sys::fcntl(int fd, int cmd, int arg) {
         if(cmd == F_GETFD) {
             int ret = Host::getfd(Host::FD{fd});
-            if(vm_->logInstructions()) fmt::print("Sys::fcntl(fd={}, cmd={}) = {:#x}\n", fd, "GETFD", ret);
+            if(vm_->logSyscalls()) fmt::print("Sys::fcntl(fd={}, cmd={}) = {:#x}\n", fd, "GETFD", ret);
             return ret;
         }
         if(cmd == F_SETFD) {
             int ret = Host::setfd(Host::FD{fd}, arg);
-            if(vm_->logInstructions()) fmt::print("Sys::fcntl(fd={}, cmd={}, arg={}) = {:#x}\n", fd, "SETFD", arg, ret);
+            if(vm_->logSyscalls()) fmt::print("Sys::fcntl(fd={}, cmd={}, arg={}) = {:#x}\n", fd, "SETFD", arg, ret);
             return ret;
         }
         verify(false, [&]() {
@@ -429,7 +429,7 @@ namespace x64 {
 
     Ptr Sys::getcwd(Ptr buf, size_t size) {
         std::optional<std::vector<u8>> buffer = Host::getcwd(size);
-        if(vm_->logInstructions()) fmt::print("Sys::getcwd(buf={:#x}, size={}) = {:#x}\n", buf.address(), size, buffer ? 0 : buf.address());
+        if(vm_->logSyscalls()) fmt::print("Sys::getcwd(buf={:#x}, size={}) = {:#x}\n", buf.address(), size, buffer ? 0 : buf.address());
         if(!buffer) return Ptr{0x0};
         mmu_->copyToMmu(buf, buffer->data(), buffer->size());
         return buf;
@@ -438,7 +438,7 @@ namespace x64 {
     ssize_t Sys::readlink(Ptr pathname, Ptr buf, size_t bufsiz) {
         std::string path = mmu_->readString(pathname);
         auto buffer = Host::readlink(path, bufsiz);
-        if(vm_->logInstructions()) fmt::print("Sys::readlink(path={}, buf={:#x}; size={}) = {:#x}\n", path, buf.address(), bufsiz, buffer ? 0 : -1);
+        if(vm_->logSyscalls()) fmt::print("Sys::readlink(path={}, buf={:#x}; size={}) = {:#x}\n", path, buf.address(), bufsiz, buffer ? 0 : -1);
         if(!buffer) return -1;
         mmu_->copyToMmu(buf, buffer->data(), buffer->size());
         return 0;
@@ -453,27 +453,27 @@ namespace x64 {
 
     void Sys::exit_group(int status) {
         (void)status;
-        if(vm_->logInstructions()) fmt::print("Sys::exit_group(status={})\n", status);
+        if(vm_->logSyscalls()) fmt::print("Sys::exit_group(status={})\n", status);
         vm_->stop();
     }
 
     long Sys::futex(Ptr32 uaddr, int futex_op, uint32_t val, Ptr timeout, Ptr32 uaddr2, uint32_t val3) {
-        if(vm_->logInstructions()) fmt::print("Sys::futex({:#x}, {}, {}, {:#x}, {:#x}, {})\n", uaddr.address(), futex_op, val, timeout.address(), uaddr2.address(), val3);
+        if(vm_->logSyscalls()) fmt::print("Sys::futex({:#x}, {}, {}, {:#x}, {:#x}, {})\n", uaddr.address(), futex_op, val, timeout.address(), uaddr2.address(), val3);
         return 1;
     }
 
     pid_t Sys::set_tid_address(Ptr32 ptr) {
-        if(vm_->logInstructions()) fmt::print("Sys::set_tid_address({:#x}) = {}\n", ptr.address(), 1);
+        if(vm_->logSyscalls()) fmt::print("Sys::set_tid_address({:#x}) = {}\n", ptr.address(), 1);
         return 1;
     }
 
     int Sys::clock_gettime(clockid_t clockid, Ptr tp) {
-        if(vm_->logInstructions()) fmt::print("Sys::clock_gettime({}, {:#x})\n", clockid, tp.address());
+        if(vm_->logSyscalls()) fmt::print("Sys::clock_gettime({}, {:#x})\n", clockid, tp.address());
         return 0;
     }
 
     int Sys::arch_prctl(int code, Ptr addr) {
-        if(vm_->logInstructions()) fmt::print("Sys::arch_prctl(code={}, addr={:#x}) = {}\n", code, addr.address(), code == ARCH_SET_FS ? 0 : -1);
+        if(vm_->logSyscalls()) fmt::print("Sys::arch_prctl(code={}, addr={:#x}) = {}\n", code, addr.address(), code == ARCH_SET_FS ? 0 : -1);
         if(code != ARCH_SET_FS) return -1;
         mmu_->setFsBase(addr.address());
         return 0;
@@ -482,12 +482,12 @@ namespace x64 {
     int Sys::openat(int dirfd, Ptr pathname, int flags, mode_t mode) {
         std::string path = mmu_->readString(pathname);
         Host::FD fd = Host::openat(Host::FD{dirfd}, path, flags, mode);
-        if(vm_->logInstructions()) fmt::print("Sys::openat(dirfd={}, path={}, flags={}, mode={}) = {}\n", dirfd, path, flags, mode, fd.fd);
+        if(vm_->logSyscalls()) fmt::print("Sys::openat(dirfd={}, path={}, flags={}, mode={}) = {}\n", dirfd, path, flags, mode, fd.fd);
         return fd.fd;
     }
 
     long Sys::set_robust_list(Ptr head, size_t len) {
-        if(vm_->logInstructions()) fmt::print("Sys::set_robust_list({:#x}, {}) = 0\n", head.address(), len);
+        if(vm_->logSyscalls()) fmt::print("Sys::set_robust_list({:#x}, {}) = 0\n", head.address(), len);
         // maybe we can do nothing ?
         (void)head;
         (void)len;
@@ -495,7 +495,7 @@ namespace x64 {
     }
 
     long Sys::get_robust_list(int pid, Ptr64 head_ptr, Ptr64 len_ptr) {
-        if(vm_->logInstructions()) fmt::print("Sys::get_robust_list({}, {:#x}, {:#x}) = 0\n", pid, head_ptr.address(), len_ptr.address());
+        if(vm_->logSyscalls()) fmt::print("Sys::get_robust_list({}, {:#x}, {:#x}) = 0\n", pid, head_ptr.address(), len_ptr.address());
         (void)pid;
         (void)head_ptr;
         (void)len_ptr;
@@ -504,30 +504,30 @@ namespace x64 {
     }
 
     int Sys::prlimit64(pid_t pid, int resource, Ptr new_limit, Ptr old_limit) {
-        if(vm_->logInstructions()) 
+        if(vm_->logSyscalls()) 
             fmt::print("Sys::prlimit64(pid={}, resource={}, new_limit={:#x}, old_limit={:#x})", pid, resource, new_limit.address(), old_limit.address());
         (void)new_limit;
         if(!old_limit.address()) {
-            if(vm_->logInstructions()) fmt::print(" = 0\n");
+            if(vm_->logSyscalls()) fmt::print(" = 0\n");
             return 0;
         }
         std::vector<u8> oldLimitBuffer;
         oldLimitBuffer.resize(sizeof(struct rlimit), 0x0);
         int ret = Host::prlimit64(pid, resource, nullptr, &oldLimitBuffer);
         if(ret < 0) {
-            if(vm_->logInstructions()) fmt::print(" = {}\n", ret);
+            if(vm_->logSyscalls()) fmt::print(" = {}\n", ret);
             return ret;
         } else {
             struct rlimit oldLimit;
             std::memcpy(&oldLimit, oldLimitBuffer.data(), oldLimitBuffer.size());
-            if(vm_->logInstructions()) fmt::print(" = {} (oldLimit={}/{})\n", ret, oldLimit.rlim_cur, oldLimit.rlim_max);
+            if(vm_->logSyscalls()) fmt::print(" = {} (oldLimit={}/{})\n", ret, oldLimit.rlim_cur, oldLimit.rlim_max);
             mmu_->copyToMmu(old_limit, oldLimitBuffer.data(), oldLimitBuffer.size());
             return 0;
         }
     }
 
     ssize_t Sys::getrandom(Ptr buf, size_t len, int flags) {
-        if(vm_->logInstructions()) 
+        if(vm_->logSyscalls()) 
             fmt::print("Sys::getrandom(buf={:#x}, len={}, flags={})", buf.address(), len, flags);
         std::vector<u8> buffer(len);
         std::iota(buffer.begin(), buffer.end(), 0);

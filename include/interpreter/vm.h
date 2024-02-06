@@ -22,6 +22,10 @@ namespace x64 {
         
         void setLogInstructions(bool);
         bool logInstructions() const;
+        void setLogInstructionsAfter(unsigned long long);
+        
+        void setLogSyscalls(bool);
+        bool logSyscalls() const;
 
         void setSymbolProvider(SymbolProvider* symbolProvider);
 
@@ -74,6 +78,8 @@ namespace x64 {
         bool stop_ = false;
         bool hasCrashed_ = false;
         bool logInstructions_ = false;
+        unsigned long long nbTicksBeforeLoggingInstructions_;
+        bool logSyscalls_ = false;
 
         const ExecutableSection* currentExecutedSection_ = nullptr;
         size_t currentInstructionIdx_ = (size_t)(-1);
