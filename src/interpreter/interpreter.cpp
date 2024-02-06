@@ -145,7 +145,8 @@ namespace x64 {
             const u8* data = elf64->dataAtOffset(header.offset(), header.sizeInFile());
             std::vector<char> interpreterPathData;
             interpreterPathData.resize(header.sizeInFile()+1, 0x0);
-            memcpy(interpreterPathData.data(), data, header.sizeInFile());
+            if(header.sizeInFile() > 0)
+                memcpy(interpreterPathData.data(), data, header.sizeInFile());
             interpreterPath = std::string(interpreterPathData.data());
         });
 
