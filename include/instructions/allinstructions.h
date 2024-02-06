@@ -395,6 +395,11 @@ namespace x64 {
 
     };
 
+    template<typename Dst>
+    struct Bswap {
+        Dst dst;
+    };
+
     template<typename Dst, typename Src>
     struct Pxor {
         Dst dst;

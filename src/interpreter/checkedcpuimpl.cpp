@@ -673,6 +673,21 @@ namespace x64 {
     u32 CheckedCpuImpl::tzcnt32(u32 src, Flags* flags) { return tzcnt<u32>(src, flags, &CpuImpl::tzcnt32); }
     u64 CheckedCpuImpl::tzcnt64(u64 src, Flags* flags) { return tzcnt<u64>(src, flags, &CpuImpl::tzcnt64); }
 
+    template<typename U, typename Bswap>
+    U bswap(U val, Bswap bswapFunc) {
+        U virtualRes = bswapFunc(val);
+        (void)virtualRes;
+
+        U nativeRes = val;
+        asm volatile("bswap %0" : "+r"(nativeRes));
+        assert(virtualRes == nativeRes);
+
+        return nativeRes;
+    }
+
+    u32 CheckedCpuImpl::bswap32(u32 dst) { return bswap<u32>(dst, &CpuImpl::bswap32); }
+    u64 CheckedCpuImpl::bswap64(u64 dst) { return bswap<u64>(dst, &CpuImpl::bswap64); }
+
     template<typename U, typename Bt>
     void bt(U base, U index, Flags* flags, Bt btFunc) {
         Flags virtualFlags = *flags;

@@ -437,6 +437,19 @@ namespace x64 {
     u64 CpuImpl::tzcnt64(u64 src, Flags* flags) { return tzcnt<u64>(src, flags); }
 
     template<typename U>
+    U bswap(U val) {
+        U res = 0;
+        for(u32 i = 0; i < sizeof(U); ++i) {
+            U byte = (val >> (8*i)) & 0xff;
+            res |= byte << (32 - 8*(i+1));
+        }
+        return res;
+    }
+
+    u32 CpuImpl::bswap32(u32 dst) { return bswap<u32>(dst); }
+    u64 CpuImpl::bswap64(u64 dst) { return bswap<u64>(dst); }
+
+    template<typename U>
     void bt(U base, U index, Flags* flags) {
         U size = 8*sizeof(U);
         index = index % size;

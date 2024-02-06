@@ -937,6 +937,14 @@ namespace x64 {
         set(R64::RAX, (u64)(i64)(i32)get(R32::EAX));
     }
 
+    void Cpu::exec(const Bswap<R32>& ins) {
+        set(ins.dst, Impl::bswap32(get(ins.dst)));
+    }
+
+    void Cpu::exec(const Bswap<R64>& ins) {
+        set(ins.dst, Impl::bswap64(get(ins.dst)));
+    }
+
     void Cpu::exec(const Pxor<RSSE, RMSSE>& ins) {
         u128 dst = get(ins.dst);
         u128 src = get(ins.src);

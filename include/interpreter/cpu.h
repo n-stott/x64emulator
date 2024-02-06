@@ -455,6 +455,9 @@ namespace x64 {
         void exec(const Cwde&);
         void exec(const Cdqe&);
 
+        void exec(const Bswap<R32>&);
+        void exec(const Bswap<R64>&);
+
         void exec(const Pxor<RSSE, RMSSE>&);
 
         void exec(const Movaps<RMSSE, RMSSE>&);

@@ -123,6 +123,7 @@ namespace x64 {
             case X86_INS_CMOVS: return makeCmov<Cond::S>(insn);
             case X86_INS_CWDE: return makeCwde(insn);
             case X86_INS_CDQE: return makeCdqe(insn);
+            case X86_INS_BSWAP: return makeBswap(insn);
             case X86_INS_PXOR: return makePxor(insn);
             case X86_INS_MOVAPS: 
             case X86_INS_MOVNTDQ: return makeMovaps(insn);
@@ -1561,6 +1562,17 @@ namespace x64 {
     
     std::unique_ptr<X86Instruction> CapstoneWrapper::makeCdqe(const cs_insn& insn) {
         return make_wrapper<Cdqe>(insn.address);
+    }
+
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makeBswap(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 1);
+        const cs_x86_op& dst = x86detail.operands[0];
+        auto r32dst = asRegister32(dst);
+        auto r64dst = asRegister64(dst);
+        if(r32dst) return make_wrapper<Bswap<R32>>(insn.address, r32dst.value());
+        if(r64dst) return make_wrapper<Bswap<R64>>(insn.address, r64dst.value());
+        return make_failed(insn);
     }
 
     std::unique_ptr<X86Instruction> CapstoneWrapper::makePxor(const cs_insn& insn) {

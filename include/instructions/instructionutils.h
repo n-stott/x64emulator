@@ -640,6 +640,11 @@ namespace utils {
         return fmt::format("{:8}", "cdqe");
     }
 
+    template<typename Dst>
+    inline std::string toString(Bswap<Dst> ins) {
+        return fmt::format("{:9}{}", "bswap", toString(ins.dst));
+    }
+
     template<typename Dst, typename Src>
     inline std::string toString(Pxor<Dst, Src> ins) {
         return fmt::format("{:9}{},{}", "pxor", toString(ins.dst), toString(ins.src));

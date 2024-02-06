@@ -110,6 +110,8 @@ namespace x64 {
         static std::unique_ptr<X86Instruction> makeCwde(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeCdqe(const cs_insn& insn);
 
+        static std::unique_ptr<X86Instruction> makeBswap(const cs_insn& insn);
+
         static std::unique_ptr<X86Instruction> makePxor(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeMovaps(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeMovabs(const cs_insn& insn);
