@@ -155,6 +155,14 @@ namespace x64 {
                 vm_->set(R64::RAX, (u64)ret);
                 return;
             }
+            case 0x48: { // fcntl
+                int fd = (int)arg0;
+                int cmd = (int)arg1;
+                int arg = (int)arg2;
+                int ret = fcntl(fd, cmd, arg);
+                vm_->set(R64::RAX, (u64)ret);
+                return;
+            }
             case 0x4f: { // getcwd
                 Ptr buf{arg0};
                 size_t size = (size_t)arg1;
@@ -400,6 +408,23 @@ namespace x64 {
         if(!buffer) return -1;
         mmu_->copyToMmu(buf, buffer->data(), buffer->size());
         return 0;
+    }
+
+    int Sys::fcntl(int fd, int cmd, int arg) {
+        if(cmd == F_GETFD) {
+            int ret = Host::getfd(Host::FD{fd});
+            if(vm_->logInstructions()) fmt::print("Sys::fcntl(fd={}, cmd={}) = {:#x}\n", fd, "GETFD", ret);
+            return ret;
+        }
+        if(cmd == F_SETFD) {
+            int ret = Host::setfd(Host::FD{fd}, arg);
+            if(vm_->logInstructions()) fmt::print("Sys::fcntl(fd={}, cmd={}, arg={}) = {:#x}\n", fd, "SETFD", arg, ret);
+            return ret;
+        }
+        verify(false, [&]() {
+            fmt::print("Unsupported fcntl {}\n", cmd);
+        });
+        return -1;
     }
 
     Ptr Sys::getcwd(Ptr buf, size_t size) {

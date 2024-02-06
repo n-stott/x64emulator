@@ -128,7 +128,7 @@ off_t Host::lseek(FD fd, off_t offset, int whence) {
 Host::FD Host::openat(FD dirfd, const std::string& pathname, int flags, [[maybe_unused]] mode_t mode) {
     assert((flags & O_ACCMODE) == O_RDONLY);
     if((flags & O_ACCMODE) != O_RDONLY) return FD{-1};
-    int fd = ::openat(dirfd.fd, pathname.c_str(), O_RDONLY);
+    int fd = ::openat(dirfd.fd, pathname.c_str(), O_RDONLY | O_CLOEXEC);
     if(fd >= 0) the().openFiles_[fd] = pathname;
     return FD{fd};
 }
@@ -137,6 +137,14 @@ int Host::access(const std::string& path, int mode) {
     int ret = ::access(path.c_str(), mode);
     if(ret < 0) return -errno;
     return ret;
+}
+
+int Host::getfd(FD fd) {
+    return ::fcntl(fd.fd, F_GETFD);
+}
+
+int Host::setfd(FD fd, int flag) {
+    return ::fcntl(fd.fd, F_SETFD, flag);
 }
 
 std::optional<std::vector<u8>> Host::tcgetattr(FD fd) {

@@ -51,7 +51,9 @@ namespace x64 {
         int getpid();
         // 0x3f
         int uname(Ptr buf);
-        // 04f
+        // 0x48
+        int fcntl(int fd, int cmd, int arg);
+        // 0x4f
         Ptr getcwd(Ptr buf, size_t size);
         // 0x59
         ssize_t readlink(Ptr pathname, Ptr buf, size_t bufsiz);

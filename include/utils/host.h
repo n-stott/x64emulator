@@ -38,6 +38,9 @@ public:
     static FD openat(FD dirfd, const std::string& pathname, int flags, mode_t mode);
     static int access(const std::string& path, int mode);
 
+    static int getfd(FD fd);
+    static int setfd(FD fd, int flag);
+
     static std::optional<std::vector<u8>> readlink(const std::string& path, size_t count);
     static std::optional<std::vector<u8>> uname();
 
