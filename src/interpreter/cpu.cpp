@@ -1287,7 +1287,7 @@ namespace x64 {
         set(ins.dst, dst);
     }
 
-    void Cpu::exec(const Andpd<RSSE, RSSE>& ins) {
+    void Cpu::exec(const Andpd<RSSE, RMSSE>& ins) {
         u128 dst = get(ins.dst);
         u128 src = get(ins.src);
         dst.lo = dst.lo & src.lo;
@@ -1295,7 +1295,7 @@ namespace x64 {
         set(ins.dst, dst);
     }
 
-    void Cpu::exec(const Andnpd<RSSE, RSSE>& ins) {
+    void Cpu::exec(const Andnpd<RSSE, RMSSE>& ins) {
         u128 dst = get(ins.dst);
         u128 src = get(ins.src);
         dst.lo = (~dst.lo) & src.lo;
@@ -1303,7 +1303,7 @@ namespace x64 {
         set(ins.dst, dst);
     }
 
-    void Cpu::exec(const Orpd<RSSE, RSSE>& ins) {
+    void Cpu::exec(const Orpd<RSSE, RMSSE>& ins) {
         u128 dst = get(ins.dst);
         u128 src = get(ins.src);
         dst.lo = dst.lo | src.lo;
@@ -1311,7 +1311,7 @@ namespace x64 {
         set(ins.dst, dst);
     }
 
-    void Cpu::exec(const Xorpd<RSSE, RSSE>& ins) {
+    void Cpu::exec(const Xorpd<RSSE, RMSSE>& ins) {
         u128 dst = get(ins.dst);
         u128 src = get(ins.src);
         dst.lo = dst.lo ^ src.lo;

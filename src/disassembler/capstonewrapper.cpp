@@ -2208,8 +2208,8 @@ namespace x64 {
         const cs_x86_op& dst = x86detail.operands[0];
         const cs_x86_op& src = x86detail.operands[1];
         auto rssedst = asRegister128(dst);
-        auto rssesrc = asRegister128(src);
-        if(rssedst && rssesrc) return make_wrapper<Andpd<RSSE, RSSE>>(insn.address, rssedst.value(), rssesrc.value());
+        auto rmssesrc = asRM128(src);
+        if(rssedst && rmssesrc) return make_wrapper<Andpd<RSSE, RMSSE>>(insn.address, rssedst.value(), rmssesrc.value());
         return make_failed(insn);
     }
 
@@ -2219,8 +2219,8 @@ namespace x64 {
         const cs_x86_op& dst = x86detail.operands[0];
         const cs_x86_op& src = x86detail.operands[1];
         auto rssedst = asRegister128(dst);
-        auto rssesrc = asRegister128(src);
-        if(rssedst && rssesrc) return make_wrapper<Andnpd<RSSE, RSSE>>(insn.address, rssedst.value(), rssesrc.value());
+        auto rmssesrc = asRM128(src);
+        if(rssedst && rmssesrc) return make_wrapper<Andnpd<RSSE, RMSSE>>(insn.address, rssedst.value(), rmssesrc.value());
         return make_failed(insn);
     }
 
@@ -2230,8 +2230,8 @@ namespace x64 {
         const cs_x86_op& dst = x86detail.operands[0];
         const cs_x86_op& src = x86detail.operands[1];
         auto rssedst = asRegister128(dst);
-        auto rssesrc = asRegister128(src);
-        if(rssedst && rssesrc) return make_wrapper<Orpd<RSSE, RSSE>>(insn.address, rssedst.value(), rssesrc.value());
+        auto rmssesrc = asRM128(src);
+        if(rssedst && rmssesrc) return make_wrapper<Orpd<RSSE, RMSSE>>(insn.address, rssedst.value(), rmssesrc.value());
         return make_failed(insn);
     }
 
@@ -2241,8 +2241,8 @@ namespace x64 {
         const cs_x86_op& dst = x86detail.operands[0];
         const cs_x86_op& src = x86detail.operands[1];
         auto rssedst = asRegister128(dst);
-        auto rssesrc = asRegister128(src);
-        if(rssedst && rssesrc) return make_wrapper<Xorpd<RSSE, RSSE>>(insn.address, rssedst.value(), rssesrc.value());
+        auto rmssesrc = asRM128(src);
+        if(rssedst && rmssesrc) return make_wrapper<Xorpd<RSSE, RMSSE>>(insn.address, rssedst.value(), rmssesrc.value());
         return make_failed(insn);
     }
 
