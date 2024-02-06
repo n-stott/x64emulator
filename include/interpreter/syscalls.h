@@ -61,6 +61,8 @@ namespace x64 {
         int sysinfo(Ptr info);
         // 0x9e
         void exit_group(int status);
+        // 0xc9
+        time_t time(Ptr tloc);
         // 0xca
         long futex(Ptr32 uaddr, int futex_op, uint32_t val, Ptr timeout, Ptr32 uaddr2, uint32_t val3);
         // 0xda

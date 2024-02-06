@@ -193,6 +193,20 @@ std::optional<std::vector<u8>> Host::getcwd(size_t size) {
     return std::optional(std::move(path));
 }
 
+std::optional<std::vector<u8>> Host::clock_gettime(clockid_t clockid) {
+    timespec ts;
+    int ret = ::clock_gettime(clockid, &ts);
+    if(ret < 0) return {};
+    std::vector<u8> buffer;
+    buffer.resize(sizeof(ts), 0x0);
+    std::memcpy(buffer.data(), &ts, sizeof(ts));
+    return std::optional(std::move(buffer));
+}
+
+time_t Host::time() {
+    return ::time(nullptr);
+}
+
 std::vector<u8> Host::readFromFile(Host::FD fd, size_t length, off_t offset) {
     // mmap the file
     const u8* src = (const u8*)::mmap(nullptr, length, PROT_READ, MAP_PRIVATE, fd.fd, offset);

@@ -50,6 +50,9 @@ public:
     
     static std::optional<std::vector<u8>> getcwd(size_t size);
 
+    static std::optional<std::vector<u8>> clock_gettime(clockid_t clockid);
+    static time_t time();
+
     static std::vector<u8> readFromFile(FD fd, size_t length, off_t offset);
 
     static int prlimit64(pid_t pid, int resource, const std::vector<u8>* new_limit, std::vector<u8>* old_limit);

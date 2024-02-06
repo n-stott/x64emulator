@@ -195,6 +195,12 @@ namespace x64 {
                 vm_->set(R64::RAX, (u64)0xfeed);
                 return;
             }
+            case 0xc9: { // time
+                Ptr tloc{arg0};
+                time_t ret = time(tloc);
+                vm_->set(R64::RAX, (u64)ret);
+                return;
+            }
             case 0xca: { // futex
                 Ptr32 uaddr(arg0);
                 int futex_op = (int)arg1;
@@ -457,6 +463,13 @@ namespace x64 {
         vm_->stop();
     }
 
+    time_t Sys::time(Ptr tloc) {
+        time_t t = Host::time();
+        if(vm_->logSyscalls()) fmt::print("Sys::time({:#x}) = {}\n", tloc.address(), t);
+        if(tloc.address()) mmu_->copyToMmu(tloc, (const u8*)&t, sizeof(t));
+        return t;
+    }
+
     long Sys::futex(Ptr32 uaddr, int futex_op, uint32_t val, Ptr timeout, Ptr32 uaddr2, uint32_t val3) {
         if(vm_->logSyscalls()) fmt::print("Sys::futex({:#x}, {}, {}, {:#x}, {:#x}, {})\n", uaddr.address(), futex_op, val, timeout.address(), uaddr2.address(), val3);
         return 1;
@@ -468,7 +481,10 @@ namespace x64 {
     }
 
     int Sys::clock_gettime(clockid_t clockid, Ptr tp) {
-        if(vm_->logSyscalls()) fmt::print("Sys::clock_gettime({}, {:#x})\n", clockid, tp.address());
+        std::optional<std::vector<u8>> timespec = Host::clock_gettime(clockid);
+        if(vm_->logSyscalls()) fmt::print("Sys::clock_gettime({}, {:#x}) = {}\n", clockid, tp.address(), timespec ? 0 : -1);
+        if(!timespec) return -1;
+        mmu_->copyToMmu(tp, timespec->data(), timespec->size());
         return 0;
     }
 
