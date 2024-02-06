@@ -1604,4 +1604,51 @@ namespace x64 {
         return 0;
     }
 
+    u128 CheckedCpuImpl::packuswb(u128 dst, u128 src) {
+        u128 virtualRes = CpuImpl::packuswb(dst, src);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("packuswb %1, %0" : "+x"(nativeRes) : "x"(src));
+        assert(nativeRes.lo == virtualRes.lo);
+        assert(nativeRes.hi == virtualRes.hi);
+        
+        return nativeRes;
+    }
+
+    u128 CheckedCpuImpl::packusdw(u128 dst, u128 src) {
+        u128 virtualRes = CpuImpl::packusdw(dst, src);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("packusdw %1, %0" : "+x"(nativeRes) : "x"(src));
+        assert(nativeRes.lo == virtualRes.lo);
+        assert(nativeRes.hi == virtualRes.hi);
+        
+        return nativeRes;
+    }
+
+    u128 CheckedCpuImpl::packsswb(u128 dst, u128 src) {
+        u128 virtualRes = CpuImpl::packsswb(dst, src);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("packsswb %1, %0" : "+x"(nativeRes) : "x"(src));
+        assert(nativeRes.lo == virtualRes.lo);
+        assert(nativeRes.hi == virtualRes.hi);
+        
+        return nativeRes;
+    }
+
+    u128 CheckedCpuImpl::packssdw(u128 dst, u128 src) {
+        u128 virtualRes = CpuImpl::packssdw(dst, src);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("packssdw %1, %0" : "+x"(nativeRes) : "x"(src));
+        assert(nativeRes.lo == virtualRes.lo);
+        assert(nativeRes.hi == virtualRes.hi);
+        
+        return nativeRes;
+    }
 }

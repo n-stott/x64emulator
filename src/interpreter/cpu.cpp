@@ -1506,6 +1506,23 @@ namespace x64 {
         set(R32::ECX, res);
     }
 
+    void Cpu::exec(const Packuswb<RSSE, RMSSE>& ins) {
+        set(ins.dst, Impl::packuswb(get(ins.dst), get(ins.src)));
+    }
+
+    void Cpu::exec(const Packusdw<RSSE, RMSSE>& ins) {
+        set(ins.dst, Impl::packusdw(get(ins.dst), get(ins.src)));
+    }
+
+    void Cpu::exec(const Packsswb<RSSE, RMSSE>& ins) {
+        set(ins.dst, Impl::packsswb(get(ins.dst), get(ins.src)));
+    }
+
+    void Cpu::exec(const Packssdw<RSSE, RMSSE>& ins) {
+        set(ins.dst, Impl::packssdw(get(ins.dst), get(ins.src)));
+    }
+
+
     void Cpu::exec(const Syscall&) {
         vm_->syscalls().syscall();
     }

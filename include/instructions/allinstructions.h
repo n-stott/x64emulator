@@ -1031,7 +1031,31 @@ namespace x64 {
         Cntl control;
         TAG_SSE;
     };
-    
+
+    template<typename Dst, typename Src>
+    struct Packuswb {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
+    struct Packusdw {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
+    struct Packsswb {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
+    struct Packssdw {
+        Dst dst;
+        Src src;
+    };
+
     struct Syscall {
 
     };

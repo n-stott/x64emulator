@@ -247,6 +247,10 @@ namespace x64 {
             case X86_INS_PSLLDQ: return makePslldq(insn);
             case X86_INS_PSRLDQ: return makePsrldq(insn);
             case X86_INS_PCMPISTRI: return makePcmpistri(insn);
+            case X86_INS_PACKUSWB: return makePackuswb(insn);
+            case X86_INS_PACKUSDW: return makePackusdw(insn);
+            case X86_INS_PACKSSWB: return makePacksswb(insn);
+            case X86_INS_PACKSSDW: return makePackssdw(insn);
             case X86_INS_RDTSC: return makeRdtsc(insn);
             case X86_INS_CPUID: return makeCpuid(insn);
             case X86_INS_XGETBV: return makeXgetbv(insn);
@@ -2692,6 +2696,50 @@ namespace x64 {
         auto rmssesrc = asRM128(src);
         auto imm = asImmediate(order);
         if(rssedst && rmssesrc && imm) return make_wrapper<Pcmpistri<RSSE, RMSSE, Imm>>(insn.address, rssedst.value(), rmssesrc.value(), imm.value());
+        return make_failed(insn);
+    }
+
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makePackuswb(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto rmssesrc = asRM128(src);
+        if(rssedst && rmssesrc) return make_wrapper<Packuswb<RSSE, RMSSE>>(insn.address, rssedst.value(), rmssesrc.value());
+        return make_failed(insn);
+    }
+
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makePackusdw(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto rmssesrc = asRM128(src);
+        if(rssedst && rmssesrc) return make_wrapper<Packusdw<RSSE, RMSSE>>(insn.address, rssedst.value(), rmssesrc.value());
+        return make_failed(insn);
+    }
+
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makePacksswb(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto rmssesrc = asRM128(src);
+        if(rssedst && rmssesrc) return make_wrapper<Packsswb<RSSE, RMSSE>>(insn.address, rssedst.value(), rmssesrc.value());
+        return make_failed(insn);
+    }
+
+    std::unique_ptr<X86Instruction> CapstoneWrapper::makePackssdw(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto rmssesrc = asRM128(src);
+        if(rssedst && rmssesrc) return make_wrapper<Packssdw<RSSE, RMSSE>>(insn.address, rssedst.value(), rmssesrc.value());
         return make_failed(insn);
     }
 

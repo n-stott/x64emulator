@@ -619,6 +619,11 @@ namespace x64 {
         void exec(const Psrldq<RSSE, Imm>&);
         
         void exec(const Pcmpistri<RSSE, RMSSE, Imm>&);
+
+        void exec(const Packuswb<RSSE, RMSSE>&);
+        void exec(const Packusdw<RSSE, RMSSE>&);
+        void exec(const Packsswb<RSSE, RMSSE>&);
+        void exec(const Packssdw<RSSE, RMSSE>&);
         
         void exec(const Rdtsc&);
 

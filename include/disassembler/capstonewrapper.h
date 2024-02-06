@@ -227,6 +227,11 @@ namespace x64 {
         static std::unique_ptr<X86Instruction> makePslldq(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makePsrldq(const cs_insn& insn);
 
+        static std::unique_ptr<X86Instruction> makePackuswb(const cs_insn& insn);
+        static std::unique_ptr<X86Instruction> makePackusdw(const cs_insn& insn);
+        static std::unique_ptr<X86Instruction> makePacksswb(const cs_insn& insn);
+        static std::unique_ptr<X86Instruction> makePackssdw(const cs_insn& insn);
+
         static std::unique_ptr<X86Instruction> makePcmpistri(const cs_insn& insn);
 
         static std::unique_ptr<X86Instruction> makeRdtsc(const cs_insn& insn);

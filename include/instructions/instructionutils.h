@@ -1102,6 +1102,26 @@ namespace utils {
         return fmt::format("{:9}{},{},{}", "pcmpistri", toString(ins.dst), toString(ins.src), toString(ins.control));
     }
 
+    template<typename Dst, typename Src>
+    inline std::string toString(Packuswb<Dst, Src> ins) {
+        return fmt::format("{:9}{},{}", "packuswb", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Dst, typename Src>
+    inline std::string toString(Packusdw<Dst, Src> ins) {
+        return fmt::format("{:9}{},{}", "packusdw", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Dst, typename Src>
+    inline std::string toString(Packsswb<Dst, Src> ins) {
+        return fmt::format("{:9}{},{}", "packsswb", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Dst, typename Src>
+    inline std::string toString(Packssdw<Dst, Src> ins) {
+        return fmt::format("{:9}{},{}", "packssdw", toString(ins.dst), toString(ins.src));
+    }
+
     inline std::string toString(Syscall) {
         return fmt::format("{:9}", "syscall");
     }

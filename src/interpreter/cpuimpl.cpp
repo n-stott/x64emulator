@@ -1263,4 +1263,51 @@ namespace x64 {
         return 0;
     }
 
+
+    template<typename DST_T, typename SRC_T>
+    static u128 pack(u128 dst, u128 src) {
+        static_assert(sizeof(SRC_T) == 2*sizeof(DST_T));
+        auto saturate = [](SRC_T val) -> DST_T {
+            static constexpr SRC_T l = (SRC_T)std::numeric_limits<DST_T>::min();
+            static constexpr SRC_T u = (SRC_T)std::numeric_limits<DST_T>::max();
+            return (DST_T)std::max(std::min(val, u), l);
+        };
+
+        constexpr u32 N = sizeof(u128)/sizeof(SRC_T);
+        std::array<SRC_T, N> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        std::memcpy(DST.data(), &dst, sizeof(u128));
+
+        std::array<SRC_T, N> SRC;
+        static_assert(sizeof(SRC) == sizeof(u128));
+        std::memcpy(SRC.data(), &src, sizeof(u128));
+
+        std::array<DST_T, 2*N> RES;
+        static_assert(sizeof(RES) == sizeof(u128));
+
+        for(size_t i = 0; i < N; ++i) {
+            RES[0+i] = saturate(DST[i]);
+            RES[N+i] = saturate(SRC[i]);
+        }
+        u128 res;
+        std::memcpy(&res, RES.data(), sizeof(u128));
+        return res;
+    }
+    
+    u128 CpuImpl::packuswb(u128 dst, u128 src) {
+        return pack<u8, i16>(dst, src);
+    }
+
+    u128 CpuImpl::packusdw(u128 dst, u128 src) {
+        return pack<u16, i32>(dst, src);
+    }
+
+    u128 CpuImpl::packsswb(u128 dst, u128 src) {
+        return pack<i8, i16>(dst, src);
+    }
+
+    u128 CpuImpl::packssdw(u128 dst, u128 src) {
+        return pack<i16, i32>(dst, src);
+    }
+
 }
