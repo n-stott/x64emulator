@@ -854,8 +854,8 @@ namespace x64 {
         (void)virtualRes;
 
         f80 nativeRes;
-        asm volatile("fldt %0" :: "m"(dst));
         asm volatile("fldt %0" :: "m"(src));
+        asm volatile("fldt %0" :: "m"(dst));
         asm volatile("faddp");
         asm volatile("fstpt %0" : "=m"(nativeRes));
         
@@ -868,8 +868,8 @@ namespace x64 {
         (void)virtualRes;
 
         f80 nativeRes;
-        asm volatile("fldt %0" :: "m"(dst));
         asm volatile("fldt %0" :: "m"(src));
+        asm volatile("fldt %0" :: "m"(dst));
         asm volatile("fsubp");
         asm volatile("fstpt %0" : "=m"(nativeRes));
         
@@ -882,8 +882,8 @@ namespace x64 {
         (void)virtualRes;
 
         f80 nativeRes;
-        asm volatile("fldt %0" :: "m"(dst));
         asm volatile("fldt %0" :: "m"(src));
+        asm volatile("fldt %0" :: "m"(dst));
         asm volatile("fmulp");
         asm volatile("fstpt %0" : "=m"(nativeRes));
         
@@ -896,8 +896,8 @@ namespace x64 {
         (void)virtualRes;
 
         f80 nativeRes;
-        asm volatile("fldt %0" :: "m"(dst));
         asm volatile("fldt %0" :: "m"(src));
+        asm volatile("fldt %0" :: "m"(dst));
         asm volatile("fdivp");
         asm volatile("fstpt %0" : "=m"(nativeRes));
         
