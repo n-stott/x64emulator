@@ -1123,7 +1123,7 @@ namespace x64 {
         (void)virtualRes;
 
         u128 nativeRes = dst;
-        asm volatile("cvtsi2ss %1, %0" : "=x"(nativeRes) : "m"(src));
+        asm volatile("cvtsi2ss %1, %0" : "=x"(nativeRes) : "r"(src));
         assert(nativeRes.hi == virtualRes.hi);
         assert(nativeRes.lo == virtualRes.lo);
         
@@ -1135,7 +1135,7 @@ namespace x64 {
         (void)virtualRes;
 
         u128 nativeRes = dst;
-        asm volatile("cvtsi2ss %1, %0" : "=x"(nativeRes) : "m"(src));
+        asm volatile("cvtsi2ss %1, %0" : "=x"(nativeRes) : "r"(src));
         assert(nativeRes.hi == virtualRes.hi);
         assert(nativeRes.lo == virtualRes.lo);
         
@@ -1147,7 +1147,7 @@ namespace x64 {
         (void)virtualRes;
 
         u128 nativeRes = dst;
-        asm volatile("cvtsi2sd %1, %0" : "=x"(nativeRes) : "m"(src));
+        asm volatile("cvtsi2sd %1, %0" : "=x"(nativeRes) : "r"(src));
         assert(nativeRes.hi == virtualRes.hi);
         assert(nativeRes.lo == virtualRes.lo);
         
@@ -1159,7 +1159,7 @@ namespace x64 {
         (void)virtualRes;
 
         u128 nativeRes = dst;
-        asm volatile("cvtsi2sd %1, %0" : "=x"(nativeRes) : "m"(src));
+        asm volatile("cvtsi2sd %1, %0" : "=x"(nativeRes) : "r"(src));
         assert(nativeRes.hi == virtualRes.hi);
         assert(nativeRes.lo == virtualRes.lo);
         
