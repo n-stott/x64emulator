@@ -151,6 +151,9 @@ namespace x64 {
         bool s2 = (src2 & SIGNMASK);
         u64 usrc1 = (s1 ? -src1 : src1);
         u64 usrc2 = (s2 ? -src2 : src2);
+        if(src1 == 0 || src2 == 0) {
+            return std::make_pair(0, 0);
+        }
         if(s1 == s2) {
             auto ures = mul64(usrc1, usrc2, flags);
             return ures;
@@ -161,7 +164,7 @@ namespace x64 {
                 return std::make_pair(-1, -ures.second);
             } else {
                 // this works, but it's fishy
-                return std::make_pair(-ures.first, -ures.second);
+                return std::make_pair(~ures.first, -ures.second);
             }
         }
     }
