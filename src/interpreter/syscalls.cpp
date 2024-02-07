@@ -314,17 +314,25 @@ namespace x64 {
     }
 
     ssize_t Sys::read(int fd, Ptr8 buf, size_t count) {
-        auto data = Host::read(Host::FD{fd}, count);
-        if(vm_->logSyscalls()) fmt::print("Sys::read(fd={}, buf={:#x}, count={}) = {}\n", fd, buf.address(), count, data ? (int)data->size() : -1);
-        if(!data) return (ssize_t)(-1);
-        mmu_->copyToMmu(buf, data->data(), data->size());
-        return (ssize_t)data->size();
+        auto bufferOrErrno = Host::read(Host::FD{fd}, count);
+        if(vm_->logSyscalls()) {
+            fmt::print("Sys::read(fd={}, buf={:#x}, count={}) = {}\n",
+                        fd, buf.address(), count,
+                        bufferOrErrno.errorOrWith<ssize_t>([](const auto& buf) { return (ssize_t)buf.size(); }));
+        }
+        return bufferOrErrno.errorOrWith<ssize_t>([&](const auto& buffer) {
+            mmu_->copyToMmu(buf, buffer.data(), buffer.size());
+            return (ssize_t)buffer.size();
+        });
     }
 
     ssize_t Sys::write(int fd, Ptr8 buf, size_t count) {
         std::vector<u8> buffer = mmu_->readFromMmu<u8>(buf, count);
         ssize_t ret = Host::write(Host::FD{fd}, buffer.data(), buffer.size());
-        if(vm_->logSyscalls()) fmt::print("Sys::write(fd={}, buf={:#x}, count={}) = {}\n", fd, buf.address(), count, ret);
+        if(vm_->logSyscalls()) {
+            fmt::print("Sys::write(fd={}, buf={:#x}, count={}) = {}\n",
+                        fd, buf.address(), count, ret);
+        }
         return ret;
     }
 
@@ -336,28 +344,40 @@ namespace x64 {
 
     int Sys::stat(Ptr pathname, Ptr statbuf) {
         std::string path = mmu_->readString(pathname);
-        std::optional<std::vector<u8>> buf = Host::stat(path);
-        if(vm_->logSyscalls()) fmt::print("Sys::stat(path={}, statbuf={:#x}) = {}\n", path, statbuf.address(), buf ? 0 : -1);
-        if(!buf) return -1;
-        mmu_->copyToMmu(statbuf, buf->data(), buf->size());
-        return 0;
+        auto bufferOrErrno = Host::stat(path);
+        if(vm_->logSyscalls()) {
+            fmt::print("Sys::stat(path={}, statbuf={:#x}) = {}\n",
+                        path, statbuf.address(), bufferOrErrno.errorOr(0));
+        }
+        return bufferOrErrno.errorOrWith<int>([&](const auto& buffer) {
+            mmu_->copyToMmu(statbuf, buffer.data(), buffer.size());
+            return 0;
+        });
     }
 
     int Sys::fstat(int fd, Ptr8 statbuf) {
-        std::optional<std::vector<u8>> buf = Host::fstat(Host::FD{fd});
-        if(vm_->logSyscalls()) fmt::print("Sys::fstat(fd={}, statbuf={:#x}) = {}\n", fd, statbuf.address(), buf ? 0 : -1);
-        if(!buf) return -1;
-        mmu_->copyToMmu(statbuf, buf->data(), buf->size());
-        return 0;
+        BufferOrErrno bufferOrErrno = Host::fstat(Host::FD{fd});
+        if(vm_->logSyscalls()) {
+            fmt::print("Sys::fstat(fd={}, statbuf={:#x}) = {}\n",
+                        fd, statbuf.address(), bufferOrErrno.errorOr(0));
+        }
+        return bufferOrErrno.errorOrWith<int>([&](const auto& buffer) {
+            mmu_->copyToMmu(statbuf, buffer.data(), buffer.size());
+            return 0;
+        });
     }
 
     int Sys::lstat(Ptr pathname, Ptr statbuf) {
         std::string path = mmu_->readString(pathname);
-        std::optional<std::vector<u8>> buf = Host::lstat(path);
-        if(vm_->logSyscalls()) fmt::print("Sys::lstat(path={}, statbuf={:#x}) = {}\n", path, statbuf.address(), buf ? 0 : -1);
-        if(!buf) return -1;
-        mmu_->copyToMmu(statbuf, buf->data(), buf->size());
-        return 0;
+        BufferOrErrno bufferOrErrno = Host::lstat(path);
+        if(vm_->logSyscalls()) {
+            fmt::print("Sys::lstat(path={}, statbuf={:#x}) = {}\n",
+                        path, statbuf.address(), bufferOrErrno.errorOr(0));
+        }
+        return bufferOrErrno.errorOrWith<int>([&](const auto& buffer) {
+            mmu_->copyToMmu(statbuf, buffer.data(), buffer.size());
+            return 0;
+        });
     }
 
     off_t Sys::lseek(int fd, off_t offset, int whence) {
@@ -417,9 +437,11 @@ namespace x64 {
     int Sys::ioctl(int fd, unsigned long request, Ptr argp) {
         if(request == TCGETS) {
             if(vm_->logSyscalls()) fmt::print("Sys::ioctl({}, TCGETS, {:#x})\n", fd, request, argp.address());
-            std::optional<std::vector<u8>> buffer = Host::tcgetattr(Host::FD{fd});
-            mmu_->copyToMmu(argp, buffer->data(), buffer->size());
-            return 0;
+            BufferOrErrno bufferOrErrno = Host::tcgetattr(Host::FD{fd});
+            return bufferOrErrno.errorOrWith<int>([&](const auto& buffer) {
+                mmu_->copyToMmu(argp, buffer.data(), buffer.size());
+                return 0;
+            });
         }
         if(request == FIOCLEX) {
             return fcntl(fd, F_SETFD, FD_CLOEXEC);
@@ -430,7 +452,7 @@ namespace x64 {
         verify(false, [&]() {
             fmt::print("Unsupported ioctl {}\n", request);
         });
-        return -1;
+        return -ENOTSUP;
     }
 
     ssize_t Sys::writev(int fd, Ptr iov, int iovcnt) {
@@ -460,11 +482,15 @@ namespace x64 {
     }
 
     int Sys::uname(Ptr buf) {
-        std::optional<std::vector<u8>> buffer = Host::uname();
-        if(vm_->logSyscalls()) fmt::print("Sys::uname(buf={:#x}) = {}\n", buf.address(), buffer ? 0 : -1);
-        if(!buffer) return -1;
-        mmu_->copyToMmu(buf, buffer->data(), buffer->size());
-        return 0;
+        BufferOrErrno bufferOrErrno = Host::uname();
+        if(vm_->logSyscalls()) {
+            fmt::print("Sys::uname(buf={:#x}) = {}\n",
+                        buf.address(), bufferOrErrno.errorOr(0));
+        }
+        return bufferOrErrno.errorOrWith<int>([&](const auto& buffer) {
+            mmu_->copyToMmu(buf, buffer.data(), buffer.size());
+            return 0;
+        });
     }
 
     int Sys::fcntl(int fd, int cmd, int arg) {
@@ -485,27 +511,41 @@ namespace x64 {
     }
 
     Ptr Sys::getcwd(Ptr buf, size_t size) {
-        std::optional<std::vector<u8>> buffer = Host::getcwd(size);
-        if(vm_->logSyscalls()) fmt::print("Sys::getcwd(buf={:#x}, size={}) = {:#x}\n", buf.address(), size, buffer ? 0 : buf.address());
-        if(!buffer) return Ptr{0x0};
-        mmu_->copyToMmu(buf, buffer->data(), buffer->size());
-        return buf;
+        BufferOrErrno bufferOrErrno = Host::getcwd(size);
+        if(vm_->logSyscalls()) {
+            fmt::print("Sys::getcwd(buf={:#x}, size={}) = {:#x}\n",
+                        buf.address(), size, bufferOrErrno.isError() ? 0 : buf.address());
+        }
+        bufferOrErrno.errorOrWith<int>([&](const auto& buffer) {
+            mmu_->copyToMmu(buf, buffer.data(), buffer.size());
+            return 0;
+        });
+        return bufferOrErrno.isError() ? Ptr{0x0} : buf;
     }
 
     ssize_t Sys::readlink(Ptr pathname, Ptr buf, size_t bufsiz) {
         std::string path = mmu_->readString(pathname);
-        auto buffer = Host::readlink(path, bufsiz);
-        if(vm_->logSyscalls()) fmt::print("Sys::readlink(path={}, buf={:#x}; size={}) = {:#x}\n", path, buf.address(), bufsiz, buffer ? 0 : -1);
-        if(!buffer) return -1;
-        mmu_->copyToMmu(buf, buffer->data(), buffer->size());
-        return 0;
+        auto bufferOrErrno = Host::readlink(path, bufsiz);
+        if(vm_->logSyscalls()) {
+            fmt::print("Sys::readlink(path={}, buf={:#x}, size={}) = {:#x}\n",
+                        path, buf.address(), bufsiz, bufferOrErrno.errorOr(0));
+        }
+        return bufferOrErrno.errorOrWith<ssize_t>([&](const auto& buffer) {
+            mmu_->copyToMmu(buf, buffer.data(), buffer.size());
+            return 0;
+        });
     }
 
     int Sys::sysinfo(Ptr info) {
-        auto buffer = Host::sysinfo();
-        if(!buffer) return -1;
-        mmu_->copyToMmu(info, buffer->data(), buffer->size());
-        return 0;
+        auto bufferOrErrno = Host::sysinfo();
+        if(vm_->logSyscalls()) {
+            fmt::print("Sys::sysinfo(info={:#x}) = {}\n",
+                        info.address(), bufferOrErrno.errorOr(0));
+        }
+        return bufferOrErrno.errorOrWith<int>([&](const auto& buffer) {
+            mmu_->copyToMmu(info, buffer.data(), buffer.size());
+            return 0;
+        });
     }
 
     int Sys::getuid() {
@@ -543,11 +583,15 @@ namespace x64 {
     }
 
     ssize_t Sys::getdents64(int fd, Ptr dirp, size_t count) {
-        auto buffer = Host::getdents64(Host::FD{fd}, count);
-        if(vm_->logSyscalls()) fmt::print("Sys::getdents64(fd={}, dirp={:#x}, count={}) = {}\n", fd, dirp.address(), count, buffer ? buffer->size() : -1);
-        if(!buffer) return -1;
-        mmu_->copyToMmu(dirp, buffer->data(), buffer->size());
-        return buffer->size();
+        auto bufferOrErrno = Host::getdents64(Host::FD{fd}, count);
+        if(vm_->logSyscalls()) {
+            fmt::print("Sys::getdents64(fd={}, dirp={:#x}, count={}) = {}\n",
+                        fd, dirp.address(), count, bufferOrErrno.errorOrWith<ssize_t>([&](const auto& buffer) { return (ssize_t)buffer.size(); }));
+        }
+        return bufferOrErrno.errorOrWith<ssize_t>([&](const auto& buffer) {
+            mmu_->copyToMmu(dirp, buffer.data(), buffer.size());
+            return (ssize_t)buffer.size();
+        });
     }
 
     pid_t Sys::set_tid_address(Ptr32 ptr) {
@@ -556,11 +600,15 @@ namespace x64 {
     }
 
     int Sys::clock_gettime(clockid_t clockid, Ptr tp) {
-        std::optional<std::vector<u8>> timespec = Host::clock_gettime(clockid);
-        if(vm_->logSyscalls()) fmt::print("Sys::clock_gettime({}, {:#x}) = {}\n", clockid, tp.address(), timespec ? 0 : -1);
-        if(!timespec) return -1;
-        mmu_->copyToMmu(tp, timespec->data(), timespec->size());
-        return 0;
+        auto bufferOrErrno = Host::clock_gettime(clockid);
+        if(vm_->logSyscalls()) {
+            fmt::print("Sys::clock_gettime({}, {:#x}) = {}\n",
+                        clockid, tp.address(), bufferOrErrno.errorOr(0));
+        }
+        return bufferOrErrno.errorOrWith<int>([&](const auto& buffer) {
+            mmu_->copyToMmu(tp, buffer.data(), buffer.size());
+            return 0;
+        });
     }
 
     int Sys::arch_prctl(int code, Ptr addr) {

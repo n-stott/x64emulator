@@ -1,11 +1,32 @@
-#ifndef HOST
-#define HOST
+#ifndef HOST_H
+#define HOST_H
 
 #include "utils/utils.h"
-#include <optional>
 #include <string>
 #include <unordered_map>
+#include <variant>
 #include <vector>
+
+class BufferOrErrno {
+public:
+    explicit BufferOrErrno(int err);
+    explicit BufferOrErrno(std::vector<u8> buf);
+
+    bool isError() const;
+    bool isBuffer() const;
+
+    int errorOr(int value) const;
+
+    template<typename T, typename Func>
+    T errorOrWith(Func func) {
+        if(isError()) return (T)std::get<int>(data_);
+        const auto& buffer = std::get<std::vector<u8>>(data_);
+        return func(buffer);
+    }
+
+private:
+    std::variant<int, std::vector<u8>> data_;
+};
 
 class Host {
 public:
@@ -28,13 +49,13 @@ public:
         int fd;
     };
 
-    static std::optional<std::vector<u8>> read(FD, size_t count);
+    static BufferOrErrno read(FD, size_t count);
     static ssize_t write(FD, const u8* data, size_t count);
     static int close(FD);
 
-    static std::optional<std::vector<u8>> stat(const std::string& path);
-    static std::optional<std::vector<u8>> fstat(FD fd);
-    static std::optional<std::vector<u8>> lstat(const std::string& path);
+    static BufferOrErrno stat(const std::string& path);
+    static BufferOrErrno fstat(FD fd);
+    static BufferOrErrno lstat(const std::string& path);
     static off_t lseek(FD fd, off_t offset, int whence);
     static FD openat(FD dirfd, const std::string& pathname, int flags, mode_t mode);
     static int access(const std::string& path, int mode);
@@ -42,21 +63,21 @@ public:
     static int getfd(FD fd);
     static int setfd(FD fd, int flag);
 
-    static std::optional<std::vector<u8>> readlink(const std::string& path, size_t count);
-    static std::optional<std::vector<u8>> uname();
+    static BufferOrErrno readlink(const std::string& path, size_t count);
+    static BufferOrErrno uname();
 
-    static std::optional<std::vector<u8>> tcgetattr(FD fd);
+    static BufferOrErrno tcgetattr(FD fd);
 
-    static std::optional<std::vector<u8>> sysinfo();
+    static BufferOrErrno sysinfo();
     static int getuid();
     static int getgid();
     static int geteuid();
     static int getegid();
     
-    static std::optional<std::vector<u8>> getcwd(size_t size);
-    static std::optional<std::vector<u8>> getdents64(FD fd, size_t count);
+    static BufferOrErrno getcwd(size_t size);
+    static BufferOrErrno getdents64(FD fd, size_t count);
 
-    static std::optional<std::vector<u8>> clock_gettime(clockid_t clockid);
+    static BufferOrErrno clock_gettime(clockid_t clockid);
     static time_t time();
 
     static std::vector<u8> readFromFile(FD fd, size_t length, off_t offset);

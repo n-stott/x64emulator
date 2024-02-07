@@ -15,6 +15,23 @@
 #include <fcntl.h>
 #include <unistd.h>
 
+BufferOrErrno::BufferOrErrno(int err) : data_(err) { }
+
+BufferOrErrno::BufferOrErrno(std::vector<u8> buf) : data_(std::move(buf)) { }
+
+bool BufferOrErrno::isError() const {
+    return std::holds_alternative<int>(data_);
+}
+
+bool BufferOrErrno::isBuffer() const {
+    return !isError();
+}
+
+int BufferOrErrno::errorOr(int value) const {
+    if(isError()) return std::get<int>(data_);
+    return value;
+}
+
 Host& Host::the() {
     static Host instance;
     return instance;
@@ -70,13 +87,13 @@ Host::XGETBV Host::xgetbv(u32 c) {
     return s;
 }
 
-std::optional<std::vector<u8>> Host::read(FD fd, size_t count) {
+BufferOrErrno Host::read(FD fd, size_t count) {
     std::vector<u8> buffer;
     buffer.resize(count, 0x0);
     ssize_t nbytes = ::read(fd.fd, buffer.data(), count);
-    if(nbytes < 0) return {};
+    if(nbytes < 0) return BufferOrErrno(-errno);
     buffer.resize((size_t)nbytes);
-    return std::optional(std::move(buffer));
+    return BufferOrErrno(std::move(buffer));
 }
 
 ssize_t Host::write([[maybe_unused]] FD fd, [[maybe_unused]] const u8* data, size_t count) {
@@ -92,7 +109,7 @@ ssize_t Host::write([[maybe_unused]] FD fd, [[maybe_unused]] const u8* data, siz
         return (ssize_t)count;
     } else {
         assert(false);
-        return 0;
+        return -EINVAL;
     }
 }
 
@@ -102,31 +119,31 @@ int Host::close(FD fd) {
     return ret;
 }
 
-std::optional<std::vector<u8>> Host::stat(const std::string& path) {
+BufferOrErrno Host::stat(const std::string& path) {
     struct stat st;
     int rc = ::stat(path.c_str(), &st);
-    if(rc < 0) return {};
+    if(rc < 0) return BufferOrErrno(-errno);
     std::vector<u8> buf(sizeof(st), 0x0);
     std::memcpy(buf.data(), &st, sizeof(st));
-    return std::optional(std::move(buf));
+    return BufferOrErrno(std::move(buf));
 }
 
-std::optional<std::vector<u8>> Host::fstat(FD fd) {
+BufferOrErrno Host::fstat(FD fd) {
     struct stat st;
     int rc = ::fstat(fd.fd, &st);
-    if(rc < 0) return {};
+    if(rc < 0) return BufferOrErrno(-errno);
     std::vector<u8> buf(sizeof(st), 0x0);
     std::memcpy(buf.data(), &st, sizeof(st));
-    return std::optional(std::move(buf));
+    return BufferOrErrno(std::move(buf));
 }
 
-std::optional<std::vector<u8>> Host::lstat(const std::string& path) {
+BufferOrErrno Host::lstat(const std::string& path) {
     struct stat st;
     int rc = ::lstat(path.c_str(), &st);
-    if(rc < 0) return {};
+    if(rc < 0) return BufferOrErrno(-errno);
     std::vector<u8> buf(sizeof(st), 0x0);
     std::memcpy(buf.data(), &st, sizeof(st));
-    return std::optional(std::move(buf));
+    return BufferOrErrno(std::move(buf));
 }
 
 off_t Host::lseek(FD fd, off_t offset, int whence) {
@@ -137,9 +154,10 @@ off_t Host::lseek(FD fd, off_t offset, int whence) {
 
 Host::FD Host::openat(FD dirfd, const std::string& pathname, int flags, [[maybe_unused]] mode_t mode) {
     assert((flags & O_ACCMODE) == O_RDONLY);
-    if((flags & O_ACCMODE) != O_RDONLY) return FD{-1};
+    if((flags & O_ACCMODE) != O_RDONLY) return FD{-ENOTSUP};
     int fd = ::openat(dirfd.fd, pathname.c_str(), O_RDONLY | O_CLOEXEC);
-    if(fd >= 0) the().openFiles_[fd] = pathname;
+    if(fd < 0) return FD{-errno};
+    the().openFiles_[fd] = pathname;
     return FD{fd};
 }
 
@@ -157,24 +175,24 @@ int Host::setfd(FD fd, int flag) {
     return ::fcntl(fd.fd, F_SETFD, flag);
 }
 
-std::optional<std::vector<u8>> Host::tcgetattr(FD fd) {
+BufferOrErrno Host::tcgetattr(FD fd) {
     struct termios buf;
     int ret = ::ioctl(fd.fd, TCGETS, &buf);
-    if(ret < 0) return {};
+    if(ret < 0) return BufferOrErrno(-errno);
     std::vector<u8> buffer;
     buffer.resize(sizeof(struct termios), 0x0);
     std::memcpy(buffer.data(), &buf, sizeof(buf));
-    return std::optional(std::move(buffer));
+    return BufferOrErrno(std::move(buffer));
 }
 
-std::optional<std::vector<u8>> Host::sysinfo() {
+BufferOrErrno Host::sysinfo() {
     struct sysinfo buf;
     int ret = ::sysinfo(&buf);
-    if(ret < 0) return {};
+    if(ret < 0) return BufferOrErrno(-errno);
     std::vector<u8> buffer;
     buffer.resize(sizeof(struct sysinfo), 0x0);
     std::memcpy(buffer.data(), &buf, sizeof(buf));
-    return std::optional(std::move(buffer));
+    return BufferOrErrno(std::move(buffer));
 }
 
 int Host::getuid() {
@@ -193,49 +211,49 @@ int Host::getegid() {
     return ::getegid();
 }
 
-std::optional<std::vector<u8>> Host::readlink(const std::string& path, size_t count) {
+BufferOrErrno Host::readlink(const std::string& path, size_t count) {
     std::vector<u8> buffer;
     buffer.resize(count, 0x0);
     ssize_t ret = ::readlink(path.c_str(), (char*)buffer.data(), buffer.size());
-    if(ret < 0) return {};
-    return std::optional(std::move(buffer));
+    if(ret < 0) return BufferOrErrno(-errno);
+    return BufferOrErrno(std::move(buffer));
 }
 
-std::optional<std::vector<u8>> Host::uname() {
+BufferOrErrno Host::uname() {
     struct utsname buf;
     int ret = ::uname(&buf);
-    if(ret < 0) return {};
+    if(ret < 0) return BufferOrErrno(-errno);
     std::vector<u8> buffer;
     buffer.resize(sizeof(buf), 0x0);
     std::memcpy(buffer.data(), &buf, sizeof(buf));
-    return std::optional(std::move(buffer));
+    return BufferOrErrno(std::move(buffer));
 }
 
-std::optional<std::vector<u8>> Host::getcwd(size_t size) {
+BufferOrErrno Host::getcwd(size_t size) {
     std::vector<u8> path;
     path.resize(size, 0x0);
     char* cwd = ::getcwd((char*)path.data(), path.size());
-    if(!cwd) return {};
-    return std::optional(std::move(path));
+    if(!cwd) return BufferOrErrno(-errno);
+    return BufferOrErrno(std::move(path));
 }
 
-std::optional<std::vector<u8>> Host::getdents64(FD fd, size_t count) {
+BufferOrErrno Host::getdents64(FD fd, size_t count) {
     std::vector<u8> buf;
     buf.resize(count, 0x0);
     ssize_t nbytes = ::getdents64(fd.fd, buf.data(), buf.size());
-    if(nbytes < 0) return {};
+    if(nbytes < 0) return BufferOrErrno(-errno);
     buf.resize(nbytes);
-    return std::optional(std::move(buf));
+    return BufferOrErrno(std::move(buf));
 }
 
-std::optional<std::vector<u8>> Host::clock_gettime(clockid_t clockid) {
+BufferOrErrno Host::clock_gettime(clockid_t clockid) {
     timespec ts;
     int ret = ::clock_gettime(clockid, &ts);
-    if(ret < 0) return {};
+    if(ret < 0) return BufferOrErrno(-errno);
     std::vector<u8> buffer;
     buffer.resize(sizeof(ts), 0x0);
     std::memcpy(buffer.data(), &ts, sizeof(ts));
-    return std::optional(std::move(buffer));
+    return BufferOrErrno(std::move(buffer));
 }
 
 time_t Host::time() {
