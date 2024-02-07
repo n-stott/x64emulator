@@ -59,6 +59,14 @@ namespace x64 {
         ssize_t readlink(Ptr pathname, Ptr buf, size_t bufsiz);
         // 0x63
         int sysinfo(Ptr info);
+        // 0x66
+        int getuid();
+        // 0x68
+        int getgid();
+        // 0x6b
+        int geteuid();
+        // 0x6c
+        int getegid();
         // 0x9e
         void exit_group(int status);
         // 0xc9

@@ -168,6 +168,22 @@ std::optional<std::vector<u8>> Host::sysinfo() {
     return std::optional(std::move(buffer));
 }
 
+int Host::getuid() {
+    return ::getuid();
+}
+
+int Host::getgid() {
+    return ::getgid();
+}
+
+int Host::geteuid() {
+    return ::geteuid();
+}
+
+int Host::getegid() {
+    return ::getegid();
+}
+
 std::optional<std::vector<u8>> Host::readlink(const std::string& path, size_t count) {
     std::vector<u8> buffer;
     buffer.resize(count, 0x0);

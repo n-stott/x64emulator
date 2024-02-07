@@ -47,6 +47,10 @@ public:
     static std::optional<std::vector<u8>> tcgetattr(FD fd);
 
     static std::optional<std::vector<u8>> sysinfo();
+    static int getuid();
+    static int getgid();
+    static int geteuid();
+    static int getegid();
     
     static std::optional<std::vector<u8>> getcwd(size_t size);
     static std::optional<std::vector<u8>> getdents64(FD fd, size_t count);

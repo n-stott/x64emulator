@@ -184,6 +184,26 @@ namespace x64 {
                 vm_->set(R64::RAX, (u64)ret);
                 return;
             }
+            case 0x66: { //getuid
+                int ret = getuid();
+                vm_->set(R64::RAX, (u64)ret);
+                return;
+            }
+            case 0x68: { //getgid
+                int ret = getgid();
+                vm_->set(R64::RAX, (u64)ret);
+                return;
+            }
+            case 0x6b: { //geteuid
+                int ret = geteuid();
+                vm_->set(R64::RAX, (u64)ret);
+                return;
+            }
+            case 0x6c: { //getegid
+                int ret = getegid();
+                vm_->set(R64::RAX, (u64)ret);
+                return;
+            }
             case 0x9e: { // arch_prctl
                 i32 code = (i32)arg0;
                 Ptr addr{arg1};
@@ -464,6 +484,22 @@ namespace x64 {
         if(!buffer) return -1;
         mmu_->copyToMmu(info, buffer->data(), buffer->size());
         return 0;
+    }
+
+    int Sys::getuid() {
+        return Host::getuid();
+    }
+
+    int Sys::getgid() {
+        return Host::getgid();
+    }
+
+    int Sys::geteuid() {
+        return Host::geteuid();
+    }
+
+    int Sys::getegid() {
+        return Host::getegid();
     }
 
     void Sys::exit_group(int status) {
