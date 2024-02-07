@@ -64,6 +64,13 @@ namespace x64 {
                 vm_->set(R64::RAX, (u64)ret);
                 return;
             }
+            case 0x6: { // lstat
+                Ptr8 pathname{arg0};
+                Ptr8 statbufptr{arg1};
+                int ret = lstat(pathname, statbufptr);
+                vm_->set(R64::RAX, (u64)ret);
+                return;
+            }
             case 0x8: { // lseek
                 int fd = (i32)arg0;
                 off_t offset = (off_t)arg1;
@@ -339,6 +346,15 @@ namespace x64 {
     int Sys::fstat(int fd, Ptr8 statbuf) {
         std::optional<std::vector<u8>> buf = Host::fstat(Host::FD{fd});
         if(vm_->logSyscalls()) fmt::print("Sys::fstat(fd={}, statbuf={:#x}) = {}\n", fd, statbuf.address(), buf ? 0 : -1);
+        if(!buf) return -1;
+        mmu_->copyToMmu(statbuf, buf->data(), buf->size());
+        return 0;
+    }
+
+    int Sys::lstat(Ptr pathname, Ptr statbuf) {
+        std::string path = mmu_->readString(pathname);
+        std::optional<std::vector<u8>> buf = Host::lstat(path);
+        if(vm_->logSyscalls()) fmt::print("Sys::lstat(path={}, statbuf={:#x}) = {}\n", path, statbuf.address(), buf ? 0 : -1);
         if(!buf) return -1;
         mmu_->copyToMmu(statbuf, buf->data(), buf->size());
         return 0;

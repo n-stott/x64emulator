@@ -120,6 +120,15 @@ std::optional<std::vector<u8>> Host::fstat(FD fd) {
     return std::optional(std::move(buf));
 }
 
+std::optional<std::vector<u8>> Host::lstat(const std::string& path) {
+    struct stat st;
+    int rc = ::lstat(path.c_str(), &st);
+    if(rc < 0) return {};
+    std::vector<u8> buf(sizeof(st), 0x0);
+    std::memcpy(buf.data(), &st, sizeof(st));
+    return std::optional(std::move(buf));
+}
+
 off_t Host::lseek(FD fd, off_t offset, int whence) {
     off_t ret = ::lseek(fd.fd, offset, whence);
     if(ret < 0) return -errno;
