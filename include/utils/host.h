@@ -49,6 +49,7 @@ public:
     static std::optional<std::vector<u8>> sysinfo();
     
     static std::optional<std::vector<u8>> getcwd(size_t size);
+    static std::optional<std::vector<u8>> getdents64(FD fd, size_t count);
 
     static std::optional<std::vector<u8>> clock_gettime(clockid_t clockid);
     static time_t time();

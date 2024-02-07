@@ -65,6 +65,8 @@ namespace x64 {
         time_t time(Ptr tloc);
         // 0xca
         long futex(Ptr32 uaddr, int futex_op, uint32_t val, Ptr timeout, Ptr32 uaddr2, uint32_t val3);
+        // 0xd9
+        ssize_t getdents64(int fd, Ptr dirp, size_t count);
         // 0xda
         pid_t set_tid_address(Ptr32 tidptr);
         // 0xe4

@@ -212,6 +212,14 @@ namespace x64 {
                 vm_->set(R64::RAX, (u64)ret);
                 return;
             }
+            case 0xd9: { // getdents64
+                int fd = (int)arg0;
+                Ptr dirp{arg1};
+                size_t count = (size_t)arg2;
+                ssize_t ret = getdents64(fd, dirp, count);
+                vm_->set(R64::RAX, (u64)ret);
+                return;
+            }
             case 0xda: { // set_tid_address
                 Ptr32 tidptr{arg0};
                 pid_t ret = set_tid_address(tidptr);
@@ -474,6 +482,14 @@ namespace x64 {
     long Sys::futex(Ptr32 uaddr, int futex_op, uint32_t val, Ptr timeout, Ptr32 uaddr2, uint32_t val3) {
         if(vm_->logSyscalls()) fmt::print("Sys::futex({:#x}, {}, {}, {:#x}, {:#x}, {})\n", uaddr.address(), futex_op, val, timeout.address(), uaddr2.address(), val3);
         return 1;
+    }
+
+    ssize_t Sys::getdents64(int fd, Ptr dirp, size_t count) {
+        auto buffer = Host::getdents64(Host::FD{fd}, count);
+        if(vm_->logSyscalls()) fmt::print("Sys::getdents64(fd={}, dirp={:#x}, count={}) = {}\n", fd, dirp.address(), count, buffer ? buffer->size() : -1);
+        if(!buffer) return -1;
+        mmu_->copyToMmu(dirp, buffer->data(), buffer->size());
+        return buffer->size();
     }
 
     pid_t Sys::set_tid_address(Ptr32 ptr) {

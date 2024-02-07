@@ -1,6 +1,7 @@
 #include "utils/host.h"
 #include <cassert>
 #include <cstring>
+#include <dirent.h>
 #include <iostream>
 #include <asm/termbits.h>
 #include <sys/auxv.h>
@@ -191,6 +192,15 @@ std::optional<std::vector<u8>> Host::getcwd(size_t size) {
     char* cwd = ::getcwd((char*)path.data(), path.size());
     if(!cwd) return {};
     return std::optional(std::move(path));
+}
+
+std::optional<std::vector<u8>> Host::getdents64(FD fd, size_t count) {
+    std::vector<u8> buf;
+    buf.resize(count, 0x0);
+    ssize_t nbytes = ::getdents64(fd.fd, buf.data(), buf.size());
+    if(nbytes < 0) return {};
+    buf.resize(nbytes);
+    return std::optional(std::move(buf));
 }
 
 std::optional<std::vector<u8>> Host::clock_gettime(clockid_t clockid) {
