@@ -421,6 +421,12 @@ namespace x64 {
             mmu_->copyToMmu(argp, buffer->data(), buffer->size());
             return 0;
         }
+        if(request == FIOCLEX) {
+            return fcntl(fd, F_SETFD, FD_CLOEXEC);
+        }
+        if(request == FIONCLEX) {
+            return fcntl(fd, F_SETFD, 0);
+        }
         verify(false, [&]() {
             fmt::print("Unsupported ioctl {}\n", request);
         });
