@@ -441,7 +441,7 @@ namespace x64 {
         U res = 0;
         for(u32 i = 0; i < sizeof(U); ++i) {
             U byte = (val >> (8*i)) & 0xff;
-            res |= byte << (32 - 8*(i+1));
+            res |= byte << (8*sizeof(U) - 8*(i+1));
         }
         return res;
     }
