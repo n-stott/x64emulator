@@ -114,6 +114,8 @@ namespace x64 {
         [[nodiscard]] static u32 shrd32(u32 dst, u32 src, u8 count, Flags* flags);
         [[nodiscard]] static u64 shrd64(u64 dst, u64 src, u8 count, Flags* flags);
 
+        [[nodiscard]] static u8 sar8(u8 dst, u8 src, Flags* flags);
+        [[nodiscard]] static u16 sar16(u16 dst, u16 src, Flags* flags);
         [[nodiscard]] static u32 sar32(u32 dst, u32 src, Flags* flags);
         [[nodiscard]] static u64 sar64(u64 dst, u64 src, Flags* flags);
 

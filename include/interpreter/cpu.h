@@ -342,6 +342,10 @@ namespace x64 {
         void exec(const Shrd<RM64, R64, R8>&);
         void exec(const Shrd<RM64, R64, Imm>&);
 
+        void exec(const Sar<RM8, R8>&);
+        void exec(const Sar<RM8, Imm>&);
+        void exec(const Sar<RM16, R8>&);
+        void exec(const Sar<RM16, Imm>&);
         void exec(const Sar<RM32, R8>&);
         void exec(const Sar<RM32, Imm>&);
         void exec(const Sar<RM64, R8>&);

@@ -595,6 +595,10 @@ namespace x64 {
     void Cpu::exec(const Shrd<RM64, R64, R8>& ins) { set(ins.dst, Impl::shrd64(get(ins.dst), get(ins.src1), get(ins.src2), &flags_)); }
     void Cpu::exec(const Shrd<RM64, R64, Imm>& ins) { set(ins.dst, Impl::shrd64(get(ins.dst), get(ins.src1), get<u8>(ins.src2), &flags_)); }
 
+    void Cpu::exec(const Sar<RM8, R8>& ins) { set(ins.dst, Impl::sar8(get(ins.dst), get(ins.src), &flags_)); }
+    void Cpu::exec(const Sar<RM8, Imm>& ins) { set(ins.dst, Impl::sar8(get(ins.dst), get<u8>(ins.src), &flags_)); }
+    void Cpu::exec(const Sar<RM16, R8>& ins) { set(ins.dst, Impl::sar16(get(ins.dst), get(ins.src), &flags_)); }
+    void Cpu::exec(const Sar<RM16, Imm>& ins) { set(ins.dst, Impl::sar16(get(ins.dst), get<u16>(ins.src), &flags_)); }
     void Cpu::exec(const Sar<RM32, R8>& ins) { set(ins.dst, Impl::sar32(get(ins.dst), get(ins.src), &flags_)); }
     void Cpu::exec(const Sar<RM32, Imm>& ins) { set(ins.dst, Impl::sar32(get(ins.dst), get<u32>(ins.src), &flags_)); }
     void Cpu::exec(const Sar<RM64, R8>& ins) { set(ins.dst, Impl::sar64(get(ins.dst), get(ins.src), &flags_)); }

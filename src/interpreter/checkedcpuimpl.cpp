@@ -587,6 +587,8 @@ namespace x64 {
         return nativeRes;
     }
 
+    u8 CheckedCpuImpl::sar8(u8 dst, u8 src, Flags* flags) { return sar<u8>(dst, src, flags, &CpuImpl::sar8); }
+    u16 CheckedCpuImpl::sar16(u16 dst, u16 src, Flags* flags) { return sar<u16>(dst, src, flags, &CpuImpl::sar16); }
     u32 CheckedCpuImpl::sar32(u32 dst, u32 src, Flags* flags) { return sar<u32>(dst, src, flags, &CpuImpl::sar32); }
     u64 CheckedCpuImpl::sar64(u64 dst, u64 src, Flags* flags) { return sar<u64>(dst, src, flags, &CpuImpl::sar64); }
 

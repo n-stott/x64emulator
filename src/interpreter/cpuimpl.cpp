@@ -378,6 +378,8 @@ namespace x64 {
         return (U)res;
     }
 
+    u8 CpuImpl::sar8(u8 dst, u8 src, Flags* flags) { return sar<u8>(dst, src, flags); }
+    u16 CpuImpl::sar16(u16 dst, u16 src, Flags* flags) { return sar<u16>(dst, src, flags); }
     u32 CpuImpl::sar32(u32 dst, u32 src, Flags* flags) { return sar<u32>(dst, src, flags); }
     u64 CpuImpl::sar64(u64 dst, u64 src, Flags* flags) { return sar<u64>(dst, src, flags); }
 
