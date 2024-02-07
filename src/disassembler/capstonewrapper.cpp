@@ -80,7 +80,9 @@ namespace x64 {
             case X86_INS_SETLE: return makeSet<Cond::LE>(insn);
             case X86_INS_SETNE: return makeSet<Cond::NE>(insn);
             case X86_INS_SETNO: return makeSet<Cond::NO>(insn);
+            case X86_INS_SETNP: return makeSet<Cond::NP>(insn);
             case X86_INS_SETO: return makeSet<Cond::O>(insn);
+            case X86_INS_SETP: return makeSet<Cond::P>(insn);
             case X86_INS_SETS: return makeSet<Cond::S>(insn);
             case X86_INS_SETNS: return makeSet<Cond::NS>(insn);
             case X86_INS_BT: return makeBt(insn);
