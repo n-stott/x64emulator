@@ -478,17 +478,8 @@ namespace x64 {
     void Cpu::exec(const Movzx<R64, RM16>& ins) { set(ins.dst, (u64)get(ins.src)); }
     void Cpu::exec(const Movzx<R64, RM32>& ins) { set(ins.dst, (u64)get(ins.src)); }
 
-    void Cpu::exec(const Lea<R32, B>& ins) { TODO(ins); }
-    void Cpu::exec(const Lea<R32, BD>& ins) { set(ins.dst, narrow<u32, u64>(resolve(ins.src))); }
-    void Cpu::exec(const Lea<R32, BIS>& ins) { set(ins.dst, narrow<u32, u64>(resolve(ins.src))); }
-    void Cpu::exec(const Lea<R32, ISD>& ins) { set(ins.dst, narrow<u32, u64>(resolve(ins.src))); }
-    void Cpu::exec(const Lea<R32, BISD>& ins) { set(ins.dst, narrow<u32, u64>(resolve(ins.src))); }
-
-    void Cpu::exec(const Lea<R64, B>& ins) { set(ins.dst, resolve(ins.src)); }
-    void Cpu::exec(const Lea<R64, BD>& ins) { set(ins.dst, resolve(ins.src)); }
-    void Cpu::exec(const Lea<R64, BIS>& ins) { set(ins.dst, resolve(ins.src)); }
-    void Cpu::exec(const Lea<R64, ISD>& ins) { set(ins.dst, resolve(ins.src)); }
-    void Cpu::exec(const Lea<R64, BISD>& ins) { set(ins.dst, resolve(ins.src)); }
+    void Cpu::exec(const Lea<R32, Encoding>& ins) { set(ins.dst, narrow<u32, u64>(resolve(ins.src))); }
+    void Cpu::exec(const Lea<R64, Encoding>& ins) { set(ins.dst, resolve(ins.src)); }
 
     void Cpu::exec(const Push<Imm>& ins) { push32(get<u32>(ins.src)); }
     void Cpu::exec(const Push<RM32>& ins) { push32(get(ins.src)); }
@@ -768,7 +759,7 @@ namespace x64 {
         flags_.direction = 1;
     }
 
-    void Cpu::exec(const Rep<Movs<Addr<Size::BYTE, B>, Addr<Size::BYTE, B>>>& ins) {
+    void Cpu::exec(const Rep<Movs<Addr<Size::BYTE>, Addr<Size::BYTE>>>& ins) {
         assert(ins.op.dst.encoding.base == R64::RDI);
         assert(ins.op.src.encoding.base == R64::RSI);
         u32 counter = get(R32::ECX);
@@ -778,26 +769,6 @@ namespace x64 {
         while(counter) {
             u8 val = mmu_->read8(sptr);
             mmu_->write8(dptr, val);
-            ++sptr;
-            ++dptr;
-            --counter;
-        }
-        set(R32::ECX, counter);
-        set(R64::RSI, sptr.address());
-        set(R64::RDI, dptr.address());
-    }
-
-
-    void Cpu::exec(const Rep<Movs<Addr<Size::DWORD, B>, Addr<Size::DWORD, B>>>& ins) {
-        assert(ins.op.dst.encoding.base == R64::RDI);
-        assert(ins.op.src.encoding.base == R64::RSI);
-        u32 counter = get(R32::ECX);
-        Ptr32 dptr = resolve(ins.op.dst);
-        Ptr32 sptr = resolve(ins.op.src);
-        verify(flags_.direction == 0);
-        while(counter) {
-            u32 val = mmu_->read32(sptr);
-            mmu_->write32(dptr, val);
             ++sptr;
             ++dptr;
             --counter;
@@ -868,11 +839,9 @@ namespace x64 {
             if(flags_.zero == 0) break;
         }
         set(R64::RCX, counter);
-        verify(std::holds_alternative<Addr<Size::BYTE, B>>(ins.op.src1));
-        verify(std::get<Addr<Size::BYTE, B>>(ins.op.src1).encoding.base == R64::RSI);
+        verify(ins.op.src1.encoding.base == R64::RSI);
         set(R64::RSI, s1ptr.address());
-        verify(std::holds_alternative<Addr<Size::BYTE, B>>(ins.op.src2));
-        verify(std::get<Addr<Size::BYTE, B>>(ins.op.src2).encoding.base == R64::RDI);
+        verify(ins.op.src2.encoding.base == R64::RDI);
         set(R64::RDI, s2ptr.address());
     }
     
@@ -904,7 +873,7 @@ namespace x64 {
         set(R64::RDI, dptr.address());
     }
 
-    void Cpu::exec(const RepNZ<Scas<R8, Addr<Size::BYTE, B>>>& ins) {
+    void Cpu::exec(const RepNZ<Scas<R8, Addr<Size::BYTE>>>& ins) {
         assert(ins.op.src2.encoding.base == R64::RDI);
         u32 counter = get(R32::ECX);
         u8 src1 = get(ins.op.src1);

@@ -230,32 +230,32 @@ namespace utils {
         __builtin_unreachable();
     }
 
-    inline std::string toString(const B& b) {
-        return fmt::format("[{}]", toString(b.base));
+    inline std::string toString(const Encoding& enc) {
+        if(enc.base.has_value()) {
+            if(enc.index.has_value()) {
+                if(enc.displacement != 0) {
+                    return fmt::format("[{}+{}*{}{:+#x}]", toString(enc.base.value()), toString(enc.index.value()), enc.scale, enc.displacement);
+                } else {
+                    return fmt::format("[{}+{}*{}]", toString(enc.base.value()), toString(enc.index.value()), enc.scale);
+                }
+            } else {
+                if(enc.displacement != 0) {
+                    return fmt::format("[{}{:+#x}]", toString(enc.base.value()), enc.displacement);
+                } else {
+                    return fmt::format("[{}]", toString(enc.base.value()));
+                }
+            }
+        } else {
+            if(enc.index.has_value()) {
+                return fmt::format("[{}*{}{:+#x}]", toString(enc.index.value()), enc.scale, enc.displacement);
+            } else {
+                return fmt::format("{:#x}", enc.displacement);
+            }
+        }
     }
 
-    inline std::string toString(const BD& bd) {
-        return fmt::format("[{}{:+#x}]", toString(bd.base), bd.displacement);
-    }
-
-    inline std::string toString(const BIS& bis) {
-        return fmt::format("[{}+{}*{}]", toString(bis.base), toString(bis.index), bis.scale);
-    }
-
-    inline std::string toString(const ISD& isd) {
-        return fmt::format("[{}*{}{:+#x}]", toString(isd.index), isd.scale, isd.displacement);
-    }
-
-    inline std::string toString(const BISD& bisd) {
-        return fmt::format("[{}+{}*{}{:+#x}]", toString(bisd.base), toString(bisd.index), bisd.scale, bisd.displacement);
-    }
-
-    inline std::string toString(const SO& so) {
-        return fmt::format("{:#x}", so.offset);
-    }
-
-    template<Size size, typename Enc>
-    inline std::string toString(const Addr<size, Enc>& addr) {
+    template<Size size>
+    inline std::string toString(const Addr<size>& addr) {
         if(addr.segment == Segment::CS || addr.segment == Segment::DS || addr.segment == Segment::UNK) {
             return fmt::format("{} PTR {}",
                         toString<size>(),
@@ -266,34 +266,6 @@ namespace utils {
                         toString(addr.segment),
                         toString(addr.encoding));
         }
-    }
-
-    inline std::string toString(const M8& m8) {
-        return std::visit([](auto&& arg) -> std::string { return toString(arg); }, m8);
-    }
-
-    inline std::string toString(const M16& m16) {
-        return std::visit([](auto&& arg) -> std::string { return toString(arg); }, m16);
-    }
-
-    inline std::string toString(const M32& m32) {
-        return std::visit([](auto&& arg) -> std::string { return toString(arg); }, m32);
-    }
-
-    inline std::string toString(const M64& m64) {
-        return std::visit([](auto&& arg) -> std::string { return toString(arg); }, m64);
-    }
-
-    inline std::string toString(const M80& m80) {
-        return std::visit([](auto&& arg) -> std::string { return toString(arg); }, m80);
-    }
-
-    inline std::string toString(const MSSE& msse) {
-        return std::visit([](auto&& arg) -> std::string { return toString(arg); }, msse);
-    }
-
-    inline std::string toString(const M224& m224) {
-        return std::visit([](auto&& arg) -> std::string { return toString(arg); }, m224);
     }
 
     inline std::string toString(const RM8& m8) {

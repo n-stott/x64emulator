@@ -2,6 +2,7 @@
 #define TYPES_H
 
 #include "utils/utils.h"
+#include <optional>
 #include <variant>
 
 namespace x64 {
@@ -182,42 +183,11 @@ namespace x64 {
         OVERFLOW
     };
 
-    struct B {
-        R64 base;
-    };
-
-    struct BI {
-        R64 base;
-        R64 index;
-    };
-
-    struct BD {
-        R64 base;
-        i32 displacement;
-    };
-
-    struct BIS {
-        R64 base;
-        R64 index;
-        u8 scale;
-    };
-
-    struct ISD {
-        R64 index;
+    struct Encoding {
+        std::optional<R64> base;
+        std::optional<R64> index;
         u8 scale;
         i32 displacement;
-    };
-
-    struct BISD {
-        R64 base;
-        R64 index;
-        u8 scale;
-        i32 displacement;
-    };
-
-    struct SO {
-        Segment segment;
-        u64 offset;
     };
 
     enum class Size {
@@ -243,7 +213,7 @@ namespace x64 {
         return 0;
     }
 
-    template<Size size, typename Encoding>
+    template<Size size>
     struct Addr {
         Segment segment;
         Encoding encoding;
@@ -289,22 +259,11 @@ namespace x64 {
     using Ptr224 = SPtr<Size::FPUENV>;
 
     template<Size size>
-    using M = std::variant<Addr<size, B>,
-                           Addr<size, BD>,
-                           Addr<size, BIS>,
-                           Addr<size, ISD>,
-                           Addr<size, BISD>,
-                           Addr<size, SO>>;
+    using M = Addr<size>;
 
 
     template<typename Reg, Size size>
-    using RM = std::variant<Reg,
-                           Addr<size, B>,
-                           Addr<size, BD>,
-                           Addr<size, BIS>,
-                           Addr<size, ISD>,
-                           Addr<size, BISD>,
-                           Addr<size, SO>>;
+    using RM = std::variant<Reg, Addr<size>>;
 
     using M8 = M<Size::BYTE>;
     using RM8 = RM<R8, Size::BYTE>;

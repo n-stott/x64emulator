@@ -86,15 +86,10 @@ namespace x64 {
         f80 get(Ptr80 ptr) const;
         Xmm get(Ptr128 ptr) const;
 
-        u64 resolve(B addr) const { return regs_.resolve(addr); }
-        u64 resolve(BD addr) const { return regs_.resolve(addr); }
-        u64 resolve(BIS addr) const { return regs_.resolve(addr); }
-        u64 resolve(ISD addr) const { return regs_.resolve(addr); }
-        u64 resolve(BISD addr) const { return regs_.resolve(addr); }
-        u64 resolve(SO addr) const { return regs_.resolve(addr); }
+        u64 resolve(Encoding addr) const { return regs_.resolve(addr); }
 
-        template<Size size, typename Enc>
-        SPtr<size> resolve(Addr<size, Enc> addr) const { return regs_.resolve(addr); }
+        template<Size size>
+        SPtr<size> resolve(Addr<size> addr) const { return regs_.resolve(addr); }
 
         Ptr8 resolve(const M8& m8) const { return regs_.resolve(m8); }
         Ptr16 resolve(const M16& m16) const { return regs_.resolve(m16); }
@@ -269,16 +264,8 @@ namespace x64 {
         void exec(const Movzx<R64, RM16>&);
         void exec(const Movzx<R64, RM32>&);
 
-        void exec(const Lea<R32, B>&);
-        void exec(const Lea<R32, BD>&);
-        void exec(const Lea<R32, BIS>&);
-        void exec(const Lea<R32, ISD>&);
-        void exec(const Lea<R32, BISD>&);
-        void exec(const Lea<R64, B>&);
-        void exec(const Lea<R64, BD>&);
-        void exec(const Lea<R64, BIS>&);
-        void exec(const Lea<R64, ISD>&);
-        void exec(const Lea<R64, BISD>&);
+        void exec(const Lea<R32, Encoding>&);
+        void exec(const Lea<R64, Encoding>&);
 
         void exec(const Push<Imm>&);
         void exec(const Push<RM32>&);
@@ -441,8 +428,7 @@ namespace x64 {
         void exec(const Std&);
 
         void exec(const Movs<M64, M64>&);
-        void exec(const Rep<Movs<Addr<Size::BYTE, B>, Addr<Size::BYTE, B>>>&);
-        void exec(const Rep<Movs<Addr<Size::DWORD, B>, Addr<Size::DWORD, B>>>&);
+        void exec(const Rep<Movs<M8, M8>>&);
         void exec(const Rep<Movs<M32, M32>>&);
         void exec(const Rep<Movs<M64, M64>>&);
         
@@ -451,7 +437,7 @@ namespace x64 {
         void exec(const Rep<Stos<M32, R32>>&);
         void exec(const Rep<Stos<M64, R64>>&);
 
-        void exec(const RepNZ<Scas<R8, Addr<Size::BYTE, B>>>&);
+        void exec(const RepNZ<Scas<R8, Addr<Size::BYTE>>>&);
 
         void exec(const Cmov<R32, RM32>&);
         void exec(const Cmov<R64, RM64>&);

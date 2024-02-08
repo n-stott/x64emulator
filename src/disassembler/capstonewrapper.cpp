@@ -457,101 +457,33 @@ namespace x64 {
         return asST(operand.reg);
     }
 
-    std::optional<B> asBase(const cs_x86_op& operand) {
+    std::optional<Encoding> asEncoding(const cs_x86_op& operand) {
+        if(operand.type != X86_OP_MEM) return {};
         auto base = asRegister64(operand.mem.base);
-        if(!base) return {};
         auto index = asRegister64(operand.mem.index);
-        if(!!index) return {};
-        if(operand.mem.scale != 1) return {};
-        if(operand.mem.disp != 0) return {};
-        return B { base.value() };
+        return std::make_optional(Encoding{base, index, (u8)operand.mem.scale, (i32)operand.mem.disp});
     }
-
-    std::optional<BD> asBaseDisplacement(const cs_x86_op& operand) {
-        auto base = asRegister64(operand.mem.base);
-        if(!base) return {};
-        auto index = asRegister64(operand.mem.index);
-        if(!!index) return {};
-        if(operand.mem.scale != 1) return {};
-        if(operand.mem.disp == 0) return {};
-        return BD { base.value(), (i32)operand.mem.disp };
-    }
-
-    std::optional<BIS> asBaseIndexScale(const cs_x86_op& operand) {
-        auto base = asRegister64(operand.mem.base);
-        if(!base) return {};
-        auto index = asRegister64(operand.mem.index);
-        if(!index) return {};
-        if(operand.mem.disp != 0) return {};
-        return BIS { base.value(), index.value(), (u8)operand.mem.scale };
-    }
-
-    std::optional<ISD> asIndexScaleDisplacement(const cs_x86_op& operand) {
-        auto base = asRegister64(operand.mem.base);
-        if(!!base) return {};
-        auto index = asRegister64(operand.mem.index);
-        if(!index) return {};
-        if(operand.mem.scale == 1) return {};
-        return ISD { index.value(), (u8)operand.mem.scale, (i32)operand.mem.disp };
-    }
-
-    std::optional<BISD> asBaseIndexScaleDisplacement(const cs_x86_op& operand) {
-        auto base = asRegister64(operand.mem.base);
-        if(!base) return {};
-        auto index = asRegister64(operand.mem.index);
-        if(!index) return {};
-        if(operand.mem.disp == 0) return {};
-        return BISD { base.value(), index.value(), (u8)operand.mem.scale, (i32)operand.mem.disp };
-    }
-
-    std::optional<SO> asSegmentOffset(const cs_x86_op& operand) {
-        auto base = asRegister64(operand.mem.base);
-        if(!!base) return {};
-        auto index = asRegister64(operand.mem.index);
-        if(!!index) return {};
-        if(operand.mem.scale != 1) return {};
-        auto segment = asSegment(operand.mem.segment);
-        if(!segment) return {};
-        return SO { segment.value(), (u64)operand.mem.disp };
-    }
-
 
     template<Size size>
     std::optional<M<size>> asMemory(const cs_x86_op& operand) {
         if(operand.type != X86_OP_MEM) return {};
         if(operand.size != pointerSize(size)) return {};
-        auto b = asBase(operand);
-        if(!!b) return Addr<size, B>{asSegment(operand.mem.segment).value(), b.value()};
-        auto bd = asBaseDisplacement(operand);
-        if(!!bd) return Addr<size, BD>{asSegment(operand.mem.segment).value(),bd.value()};
-        auto bis = asBaseIndexScale(operand);
-        if(!!bis) return Addr<size, BIS>{asSegment(operand.mem.segment).value(),bis.value()};
-        auto isd = asIndexScaleDisplacement(operand);
-        if(!!isd) return Addr<size, ISD>{asSegment(operand.mem.segment).value(),isd.value()};
-        auto bisd = asBaseIndexScaleDisplacement(operand);
-        if(!!bisd) return Addr<size, BISD>{asSegment(operand.mem.segment).value(), bisd.value()};
-        auto so = asSegmentOffset(operand);
-        if(!!so) return Addr<size, SO>{asSegment(operand.mem.segment).value(), so.value()};
-        return {};
+        auto segment = asSegment(operand.mem.segment);
+        if(!segment) return {};
+        auto enc = asEncoding(operand);
+        if(!enc) return {};
+        return M<size>{segment.value(), enc.value()};
     }
 
     template<typename Reg, Size size>
     std::optional<RM<Reg, size>> asRM(const cs_x86_op& operand) {
         if(operand.type != X86_OP_MEM) return {};
         if(operand.size != pointerSize(size)) return {};
-        auto b = asBase(operand);
-        if(!!b) return Addr<size, B>{asSegment(operand.mem.segment).value(), b.value()};
-        auto bd = asBaseDisplacement(operand);
-        if(!!bd) return Addr<size, BD>{asSegment(operand.mem.segment).value(),bd.value()};
-        auto bis = asBaseIndexScale(operand);
-        if(!!bis) return Addr<size, BIS>{asSegment(operand.mem.segment).value(),bis.value()};
-        auto isd = asIndexScaleDisplacement(operand);
-        if(!!isd) return Addr<size, ISD>{asSegment(operand.mem.segment).value(),isd.value()};
-        auto bisd = asBaseIndexScaleDisplacement(operand);
-        if(!!bisd) return Addr<size, BISD>{asSegment(operand.mem.segment).value(), bisd.value()};
-        auto so = asSegmentOffset(operand);
-        if(!!so) return Addr<size, SO>{asSegment(operand.mem.segment).value(), so.value()};
-        return {};
+        auto segment = asSegment(operand.mem.segment);
+        if(!segment) return {};
+        auto enc = asEncoding(operand);
+        if(!enc) return {};
+        return Addr<size>{segment.value(), enc.value()};
     }
 
     std::optional<M8> asMemory8(const cs_x86_op& operand) { return asMemory<Size::BYTE>(operand); }
@@ -709,21 +641,9 @@ namespace x64 {
         const cs_x86_op& src = x86detail.operands[1];
         auto r32dst = asRegister32(dst);
         auto r64dst = asRegister64(dst);
-        auto Bsrc = asBase(src);
-        auto BDsrc = asBaseDisplacement(src);
-        auto BISsrc = asBaseIndexScale(src);
-        auto ISDsrc = asIndexScaleDisplacement(src);
-        auto BISDsrc = asBaseIndexScaleDisplacement(src);
-        if(r32dst && Bsrc) return make_wrapper<Lea<R32, B>>(insn.address, r32dst.value(), Bsrc.value());
-        if(r32dst && BDsrc) return make_wrapper<Lea<R32, BD>>(insn.address, r32dst.value(), BDsrc.value());
-        if(r32dst && BISsrc) return make_wrapper<Lea<R32, BIS>>(insn.address, r32dst.value(), BISsrc.value());
-        if(r32dst && ISDsrc) return make_wrapper<Lea<R32, ISD>>(insn.address, r32dst.value(), ISDsrc.value());
-        if(r32dst && BISDsrc) return make_wrapper<Lea<R32, BISD>>(insn.address, r32dst.value(), BISDsrc.value());
-        if(r64dst && Bsrc) return make_wrapper<Lea<R64, B>>(insn.address, r64dst.value(), Bsrc.value());
-        if(r64dst && BDsrc) return make_wrapper<Lea<R64, BD>>(insn.address, r64dst.value(), BDsrc.value());
-        if(r64dst && BISsrc) return make_wrapper<Lea<R64, BIS>>(insn.address, r64dst.value(), BISsrc.value());
-        if(r64dst && ISDsrc) return make_wrapper<Lea<R64, ISD>>(insn.address, r64dst.value(), ISDsrc.value());
-        if(r64dst && BISDsrc) return make_wrapper<Lea<R64, BISD>>(insn.address, r64dst.value(), BISDsrc.value());
+        auto encSrc = asEncoding(src);
+        if(r32dst && encSrc) return make_wrapper<Lea<R32, Encoding>>(insn.address, r32dst.value(), encSrc.value());
+        if(r64dst && encSrc) return make_wrapper<Lea<R64, Encoding>>(insn.address, r64dst.value(), encSrc.value());
         return make_failed(insn);
     }
 
