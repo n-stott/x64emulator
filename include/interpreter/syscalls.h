@@ -57,6 +57,8 @@ namespace x64 {
         int fcntl(int fd, int cmd, int arg);
         // 0x4f
         Ptr getcwd(Ptr buf, size_t size);
+        // 0x53
+        int mkdir(Ptr pathname, mode_t mode);
         // 0x59
         ssize_t readlink(Ptr pathname, Ptr buf, size_t bufsiz);
         // 0x63

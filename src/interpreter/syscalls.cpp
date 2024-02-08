@@ -177,6 +177,13 @@ namespace x64 {
                 vm_->set(R64::RAX, ret.address());
                 return;
             }
+            case 0x53: { // mkdir
+                Ptr pathname {arg0};
+                mode_t mode = (mode_t)arg1;
+                int ret = mkdir(pathname, mode);
+                vm_->set(R64::RAX, (u64)ret);
+                return;
+            }
             case 0x59: { // readlink
                 Ptr path {arg0};
                 Ptr buf {arg1};
@@ -521,6 +528,10 @@ namespace x64 {
             return 0;
         });
         return bufferOrErrno.isError() ? Ptr{0x0} : buf;
+    }
+
+    int Sys::mkdir([[maybe_unused]] Ptr pathname, [[maybe_unused]] mode_t mode) {
+        return -ENOTSUP;
     }
 
     ssize_t Sys::readlink(Ptr pathname, Ptr buf, size_t bufsiz) {
