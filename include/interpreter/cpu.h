@@ -439,6 +439,7 @@ namespace x64 {
 
         void exec(const RepNZ<Scas<R8, Addr<Size::BYTE>>>&);
 
+        void exec(const Cmov<R16, RM16>&);
         void exec(const Cmov<R32, RM32>&);
         void exec(const Cmov<R64, RM64>&);
 

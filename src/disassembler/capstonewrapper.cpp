@@ -1479,10 +1479,13 @@ namespace x64 {
         assert(x86detail.op_count == 2);
         const cs_x86_op& dst = x86detail.operands[0];
         const cs_x86_op& src = x86detail.operands[1];
+        auto r16dst = asRegister16(dst);
         auto r32dst = asRegister32(dst);
         auto r64dst = asRegister64(dst);
+        auto rm16src = asRM16(src);
         auto rm32src = asRM32(src);
         auto rm64src = asRM64(src);
+        if(r16dst && rm16src) return make_wrapper<Cmov<R16, RM16>>(insn.address, cond, r16dst.value(), rm16src.value());
         if(r32dst && rm32src) return make_wrapper<Cmov<R32, RM32>>(insn.address, cond, r32dst.value(), rm32src.value());
         if(r64dst && rm64src) return make_wrapper<Cmov<R64, RM64>>(insn.address, cond, r64dst.value(), rm64src.value());
         return make_failed(insn);

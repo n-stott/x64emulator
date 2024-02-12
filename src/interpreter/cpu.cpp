@@ -890,6 +890,12 @@ namespace x64 {
         set(R64::RDI, ptr2.address());
     }
 
+    void Cpu::exec(const Cmov<R16, RM16>& ins) {
+        verify(flags_.sure(), "Flags are not set");
+        if(!flags_.matches(ins.cond)) return;
+        set(ins.dst, get(ins.src));
+    }
+
     void Cpu::exec(const Cmov<R32, RM32>& ins) {
         verify(flags_.sure(), "Flags are not set");
         if(!flags_.matches(ins.cond)) return;
