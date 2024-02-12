@@ -678,7 +678,7 @@ namespace x64 {
 
     ssize_t Sys::getrandom(Ptr buf, size_t len, int flags) {
         if(vm_->logSyscalls()) 
-            fmt::print("Sys::getrandom(buf={:#x}, len={}, flags={})", buf.address(), len, flags);
+            fmt::print("Sys::getrandom(buf={:#x}, len={}, flags={})\n", buf.address(), len, flags);
         std::vector<u8> buffer(len);
         std::iota(buffer.begin(), buffer.end(), 0);
         mmu_->copyToMmu(buf, buffer.data(), buffer.size());
