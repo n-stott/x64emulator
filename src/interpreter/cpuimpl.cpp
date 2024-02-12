@@ -244,7 +244,7 @@ namespace x64 {
 
     template<typename U>
     static U inc(U src, Flags* flags) {
-        flags->overflow = (src == std::numeric_limits<U>::max());
+        flags->overflow = (src == (U)std::numeric_limits<std::make_signed_t<U>>::max());
         U res = src+1;
         flags->sign = signBit<U>(res);
         flags->zero = (res == 0);
@@ -260,7 +260,7 @@ namespace x64 {
 
     template<typename U>
     static U dec(U src, Flags* flags) {
-        flags->overflow = (src == std::numeric_limits<U>::min());
+        flags->overflow = (src == (U)std::numeric_limits<std::make_signed_t<U>>::min());
         U res = src-1;
         flags->sign = signBit<U>(res);
         flags->zero = (res == 0);
