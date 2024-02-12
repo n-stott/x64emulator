@@ -1077,6 +1077,50 @@ namespace x64 {
         assert(virtualFlags.carry == flags->carry);
     }
 
+    u128 CheckedCpuImpl::maxss(u128 dst, u128 src) {
+        u128 virtualRes = CpuImpl::maxss(dst, src);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("maxss %1, %0" : "+x"(nativeRes) : "x"(src));
+        assert(virtualRes.lo == nativeRes.lo);
+        assert(virtualRes.hi == nativeRes.hi);
+        return nativeRes;
+    }
+
+    u128 CheckedCpuImpl::maxsd(u128 dst, u128 src) {
+        u128 virtualRes = CpuImpl::maxsd(dst, src);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("maxsd %1, %0" : "+x"(nativeRes) : "x"(src));
+        assert(virtualRes.lo == nativeRes.lo);
+        assert(virtualRes.hi == nativeRes.hi);
+        return nativeRes;
+    }
+
+    u128 CheckedCpuImpl::minss(u128 dst, u128 src) {
+        u128 virtualRes = CpuImpl::minss(dst, src);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("minss %1, %0" : "+x"(nativeRes) : "x"(src));
+        assert(virtualRes.lo == nativeRes.lo);
+        assert(virtualRes.hi == nativeRes.hi);
+        return nativeRes;
+    }
+
+    u128 CheckedCpuImpl::minsd(u128 dst, u128 src) {
+        u128 virtualRes = CpuImpl::minsd(dst, src);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("minsd %1, %0" : "+x"(nativeRes) : "x"(src));
+        assert(virtualRes.lo == nativeRes.lo);
+        assert(virtualRes.hi == nativeRes.hi);
+        return nativeRes;
+    }
+
     u128 CheckedCpuImpl::mulsd(u128 dst, u128 src) {
         u128 virtualRes = CpuImpl::mulsd(dst, src);
         (void)virtualRes;

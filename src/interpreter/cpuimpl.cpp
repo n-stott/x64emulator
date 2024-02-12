@@ -775,6 +775,60 @@ namespace x64 {
         return dst;
     }
 
+    template<typename F>
+    F max(F dst, F src) {
+        if(dst == (F)0.0 && src == (F)0.0) return src;
+        else if(dst != dst) return src;
+        else if(src != src) return dst;
+        else if(dst > src) return dst;
+        else return src;
+    }
+
+    u128 CpuImpl::maxss(u128 dst, u128 src) {
+        float d, s;
+        std::memcpy(&d, &dst, sizeof(d));
+        std::memcpy(&s, &src, sizeof(s));
+        float res = max(d, s);
+        std::memcpy(&dst, &res, sizeof(res));
+        return dst;
+    }
+
+    u128 CpuImpl::maxsd(u128 dst, u128 src) {
+        double d, s;
+        std::memcpy(&d, &dst, sizeof(d));
+        std::memcpy(&s, &src, sizeof(s));
+        double res = max(d, s);
+        std::memcpy(&dst, &res, sizeof(res));
+        return dst;
+    }
+
+    template<typename F>
+    F min(F dst, F src) {
+        if(dst == (F)0.0 && src == (F)0.0) return src;
+        else if(dst != dst) return src;
+        else if(src != src) return dst;
+        else if(dst < src) return dst;
+        else return src;
+    }
+
+    u128 CpuImpl::minss(u128 dst, u128 src) {
+        float d, s;
+        std::memcpy(&d, &dst, sizeof(d));
+        std::memcpy(&s, &src, sizeof(s));
+        float res = min(d, s);
+        std::memcpy(&dst, &res, sizeof(res));
+        return dst;
+    }
+
+    u128 CpuImpl::minsd(u128 dst, u128 src) {
+        double d, s;
+        std::memcpy(&d, &dst, sizeof(d));
+        std::memcpy(&s, &src, sizeof(s));
+        double res = min(d, s);
+        std::memcpy(&dst, &res, sizeof(res));
+        return dst;
+    }
+
     u64 CpuImpl::cmpsd(u64 dst, u64 src, FCond cond) {
         static_assert(sizeof(u64) == sizeof(double));
         double d;

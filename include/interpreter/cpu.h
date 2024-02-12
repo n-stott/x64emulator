@@ -533,6 +533,16 @@ namespace x64 {
         void exec(const Ucomisd<RSSE, RSSE>&);
         void exec(const Ucomisd<RSSE, M64>&);
 
+        void exec(const Maxss<RSSE, RSSE>&);
+        void exec(const Maxss<RSSE, M32>&);
+        void exec(const Maxsd<RSSE, RSSE>&);
+        void exec(const Maxsd<RSSE, M64>&);
+
+        void exec(const Minss<RSSE, RSSE>&);
+        void exec(const Minss<RSSE, M32>&);
+        void exec(const Minsd<RSSE, RSSE>&);
+        void exec(const Minsd<RSSE, M64>&);
+
         void exec(const Cmpsd<RSSE, RSSE>&);
         void exec(const Cmpsd<RSSE, M64>&);
 

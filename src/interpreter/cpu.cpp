@@ -1193,6 +1193,16 @@ namespace x64 {
         Impl::comisd(get(ins.dst), zeroExtend<Xmm, u64>(get(resolve(ins.src))), &flags_);
     }
 
+    void Cpu::exec(const Maxss<RSSE, RSSE>& ins) { set(ins.dst, Impl::maxss(get(ins.dst), get(ins.src))); }
+    void Cpu::exec(const Maxss<RSSE, M32>& ins) { set(ins.dst, Impl::maxss(get(ins.dst), zeroExtend<Xmm, u32>(get(ins.src)))); }
+    void Cpu::exec(const Maxsd<RSSE, RSSE>& ins) { set(ins.dst, Impl::maxsd(get(ins.dst), get(ins.src))); }
+    void Cpu::exec(const Maxsd<RSSE, M64>& ins) { set(ins.dst, Impl::maxsd(get(ins.dst), zeroExtend<Xmm, u64>(get(ins.src)))); }
+
+    void Cpu::exec(const Minss<RSSE, RSSE>& ins) { set(ins.dst, Impl::minss(get(ins.dst), get(ins.src))); }
+    void Cpu::exec(const Minss<RSSE, M32>& ins) { set(ins.dst, Impl::minss(get(ins.dst), zeroExtend<Xmm, u32>(get(ins.src)))); }
+    void Cpu::exec(const Minsd<RSSE, RSSE>& ins) { set(ins.dst, Impl::minsd(get(ins.dst), get(ins.src))); }
+    void Cpu::exec(const Minsd<RSSE, M64>& ins) { set(ins.dst, Impl::minsd(get(ins.dst), zeroExtend<Xmm, u64>(get(ins.src)))); }
+
     void Cpu::exec(const Cmpsd<RSSE, RSSE>& ins) {
         u64 res = Impl::cmpsd(get(ins.dst).lo, get(ins.src).lo, ins.cond);
         set(ins.dst, writeLow<Xmm, u64>(get(ins.dst), res));

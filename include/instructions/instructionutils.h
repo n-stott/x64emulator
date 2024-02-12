@@ -810,6 +810,26 @@ namespace utils {
     }
 
     template<typename Dst, typename Src>
+    inline std::string toString(Maxss<Dst, Src> ins) {
+        return fmt::format("{:9}{},{}", "maxss", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Dst, typename Src>
+    inline std::string toString(Maxsd<Dst, Src> ins) {
+        return fmt::format("{:9}{},{}", "maxsd", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Dst, typename Src>
+    inline std::string toString(Minss<Dst, Src> ins) {
+        return fmt::format("{:9}{},{}", "minss", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Dst, typename Src>
+    inline std::string toString(Minsd<Dst, Src> ins) {
+        return fmt::format("{:9}{},{}", "minsd", toString(ins.dst), toString(ins.src));
+    }
+
+    template<typename Dst, typename Src>
     inline std::string toString(Cmpsd<Dst, Src> ins) {
         return fmt::format("{:9}{},{}", fmt::format("cmp{}sd", toString(ins.cond)), toString(ins.dst), toString(ins.src));
     }

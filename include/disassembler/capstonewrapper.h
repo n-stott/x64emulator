@@ -168,6 +168,11 @@ namespace x64 {
         static std::unique_ptr<X86Instruction> makeUcomiss(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeUcomisd(const cs_insn& insn);
 
+        static std::unique_ptr<X86Instruction> makeMaxss(const cs_insn& insn);
+        static std::unique_ptr<X86Instruction> makeMaxsd(const cs_insn& insn);
+        static std::unique_ptr<X86Instruction> makeMinss(const cs_insn& insn);
+        static std::unique_ptr<X86Instruction> makeMinsd(const cs_insn& insn);
+
         template<FCond cond>
         static std::unique_ptr<X86Instruction> makeCmpsd(const cs_insn& insn);
 

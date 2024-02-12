@@ -650,6 +650,34 @@ namespace x64 {
     };
 
     template<typename Dst, typename Src>
+    struct Maxss {
+        Dst dst;
+        Src src;
+        TAG_SSE;
+    };
+
+    template<typename Dst, typename Src>
+    struct Maxsd {
+        Dst dst;
+        Src src;
+        TAG_SSE;
+    };
+
+    template<typename Dst, typename Src>
+    struct Minss {
+        Dst dst;
+        Src src;
+        TAG_SSE;
+    };
+
+    template<typename Dst, typename Src>
+    struct Minsd {
+        Dst dst;
+        Src src;
+        TAG_SSE;
+    };
+
+    template<typename Dst, typename Src>
     struct Cmpsd {
         Dst dst;
         Src src;

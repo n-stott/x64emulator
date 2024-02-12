@@ -156,6 +156,11 @@ namespace x64 {
         [[nodiscard]] static u128 divss(u128 dst, u128 src);
         [[nodiscard]] static u128 divsd(u128 dst, u128 src);
 
+        [[nodiscard]] static u128 maxss(u128 dst, u128 src);
+        [[nodiscard]] static u128 maxsd(u128 dst, u128 src);
+        [[nodiscard]] static u128 minss(u128 dst, u128 src);
+        [[nodiscard]] static u128 minsd(u128 dst, u128 src);
+
         [[nodiscard]] static u64 cmpsd(u64 dst, u64 src, FCond cond);
 
         [[nodiscard]] static u128 cvtsi2ss32(u128 dst, u32 src);
