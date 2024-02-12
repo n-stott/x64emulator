@@ -95,6 +95,8 @@ namespace x64 {
         ssize_t getdents64(int fd, Ptr dirp, size_t count);
         // 0xda
         pid_t set_tid_address(Ptr32 tidptr);
+        // 0xdd
+        int posix_fadvise(int fd, off_t offset, off_t len, int advice);
         // 0xe4
         int clock_gettime(clockid_t clockid, Ptr tp);
         // 0xe7

@@ -318,6 +318,15 @@ namespace x64 {
                 vm_->set(R64::RAX, (u64)ret);
                 return;
             }
+            case 0xdd: { // posix_fadvise
+                int fd = (int)arg0;
+                off_t offset = (off_t)arg1;
+                off_t len = (off_t)arg2;
+                int advice = (int)arg3;
+                int ret = posix_fadvise(fd, offset, len, advice);
+                vm_->set(R64::RAX, (u64)ret);
+                return;
+            }
             case 0xe4: { // clock_gettime
                 clockid_t clockid = (clockid_t)arg0;
                 Ptr tp(arg1);
@@ -796,6 +805,10 @@ namespace x64 {
     pid_t Sys::set_tid_address(Ptr32 ptr) {
         if(vm_->logSyscalls()) fmt::print("Sys::set_tid_address({:#x}) = {}\n", ptr.address(), 1);
         return 1;
+    }
+
+    int Sys::posix_fadvise([[maybe_unused]] int fd, [[maybe_unused]] off_t offset, [[maybe_unused]] off_t len, [[maybe_unused]] int advice) {
+        return 0;
     }
 
     int Sys::clock_gettime(clockid_t clockid, Ptr tp) {
