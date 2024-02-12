@@ -110,18 +110,17 @@ ErrnoOrBuffer Host::pread64(FD fd, size_t count, off_t offset) {
 }
 
 ssize_t Host::write([[maybe_unused]] FD fd, [[maybe_unused]] const u8* data, size_t count) {
-    if(fd.fd == 1 || fd.fd == 2) {
+    if(isStdout(fd) || isStderr(fd)) {
         std::string s;
         s.resize(count+1, '\0');
         std::memcpy(s.data(), (const char*)data, count);
-        if(fd.fd == 1) {
+        if(isStdout(fd)) {
             std::cout << s << std::flush;
         } else {
             std::cerr << s << std::flush;
         }
         return (ssize_t)count;
     } else {
-        assert(false);
         return -EINVAL;
     }
 }
@@ -173,9 +172,8 @@ off_t Host::lseek(FD fd, off_t offset, int whence) {
 }
 
 Host::FD Host::openat(FD dirfd, const std::string& pathname, int flags, [[maybe_unused]] mode_t mode) {
-    assert((flags & O_ACCMODE) == O_RDONLY);
-    if((flags & O_ACCMODE) != O_RDONLY) return FD{-ENOTSUP};
-    int fd = ::openat(dirfd.fd, pathname.c_str(), O_RDONLY | O_CLOEXEC);
+    flags = (flags & ~O_ACCMODE) | O_RDONLY | O_CLOEXEC;
+    int fd = ::openat(dirfd.fd, pathname.c_str(), flags);
     if(fd < 0) return FD{-errno};
     the().openFiles_[fd] = pathname;
     return FD{fd};
