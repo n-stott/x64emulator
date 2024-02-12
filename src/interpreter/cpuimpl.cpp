@@ -136,7 +136,7 @@ namespace x64 {
 
     std::pair<u32, u32> CpuImpl::imul32(u32 src1, u32 src2, Flags* flags) {
         i32 res = (i32)src1 * (i32)src2;
-        i64 tmp = (i64)src1 * (i64)src2;
+        i64 tmp = (i64)(i32)src1 * (i64)(i32)src2;
         flags->carry = (res != (i32)tmp);
         flags->overflow = (res != (i32)tmp);
         flags->setSure();
