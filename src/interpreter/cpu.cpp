@@ -553,10 +553,10 @@ namespace x64 {
     void Cpu::exec(const Inc<RM32>& ins) { set(ins.dst, Impl::inc32(get(ins.dst), &flags_)); }
     void Cpu::exec(const Inc<RM64>& ins) { set(ins.dst, Impl::inc64(get(ins.dst), &flags_)); }
 
-    void Cpu::exec(const Dec<RM8>& ins) { TODO(ins); }
-    void Cpu::exec(const Dec<RM16>& ins) { TODO(ins); }
+    void Cpu::exec(const Dec<RM8>& ins) { set(ins.dst, Impl::dec8(get(ins.dst), &flags_)); }
+    void Cpu::exec(const Dec<RM16>& ins) { set(ins.dst, Impl::dec16(get(ins.dst), &flags_)); }
     void Cpu::exec(const Dec<RM32>& ins) { set(ins.dst, Impl::dec32(get(ins.dst), &flags_)); }
-    void Cpu::exec(const Dec<RM64>& ins) { TODO(ins); }
+    void Cpu::exec(const Dec<RM64>& ins) { set(ins.dst, Impl::dec64(get(ins.dst), &flags_)); }
 
     void Cpu::exec(const Shl<RM8, R8>& ins) { set(ins.dst, Impl::shl8(get(ins.dst), get(ins.src), &flags_)); }
     void Cpu::exec(const Shl<RM8, Imm>& ins) { set(ins.dst, Impl::shl8(get(ins.dst), get<u8>(ins.src), &flags_)); }
