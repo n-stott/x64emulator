@@ -50,6 +50,7 @@ public:
     };
 
     static BufferOrErrno read(FD, size_t count);
+    static BufferOrErrno pread64(FD, size_t count, off_t offset);
     static ssize_t write(FD, const u8* data, size_t count);
     static int close(FD);
     static FD dup(FD);

@@ -43,8 +43,10 @@ namespace x64 {
         int rt_sigaction(int sig, Ptr act, Ptr oact, size_t sigsetsize);
         // 0xe
         int rt_sigprocmask(int how, Ptr nset, Ptr oset, size_t sigsetsize);
-        //0x10
+        // 0x10
         int ioctl(int fd, unsigned long request, Ptr argp);
+        // 0x11
+        ssize_t pread64(int fd, Ptr buf, size_t count, off_t offset);
         // 0x14
         ssize_t writev(int fd, Ptr iov, int iovcnt);
         // 0x15

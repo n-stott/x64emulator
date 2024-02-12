@@ -97,6 +97,15 @@ BufferOrErrno Host::read(FD fd, size_t count) {
     return BufferOrErrno(std::move(buffer));
 }
 
+BufferOrErrno Host::pread64(FD fd, size_t count, off_t offset) {
+    std::vector<u8> buffer;
+    buffer.resize(count, 0x0);
+    ssize_t nbytes = ::pread(fd.fd, buffer.data(), count, offset);
+    if(nbytes < 0) return BufferOrErrno(-errno);
+    buffer.resize((size_t)nbytes);
+    return BufferOrErrno(std::move(buffer));
+}
+
 ssize_t Host::write([[maybe_unused]] FD fd, [[maybe_unused]] const u8* data, size_t count) {
     if(fd.fd == 1 || fd.fd == 2) {
         std::string s;

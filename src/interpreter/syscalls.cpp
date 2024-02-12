@@ -137,6 +137,15 @@ namespace x64 {
                 vm_->set(R64::RAX, (u64)ret);
                 return;
             }
+            case 0x11: { // pread64
+                i32 fd = (i32)arg0;
+                Ptr8 buf{arg1};
+                size_t count = (size_t)arg2;
+                off_t offset = (off_t)arg3;
+                ssize_t nbytes = pread64(fd, buf, count, offset);
+                vm_->set(R64::RAX, (u64)nbytes);
+                return;
+            }
             case 0x14: { // writev
                 int fd = (int)arg0;
                 Ptr iov{arg1};
@@ -503,6 +512,19 @@ namespace x64 {
             fmt::print("Unsupported ioctl {:x}\n", request);
         });
         return -ENOTSUP;
+    }
+
+    ssize_t Sys::pread64(int fd, Ptr buf, size_t count, off_t offset) {
+        auto bufferOrErrno = Host::pread64(Host::FD{fd}, count, offset);
+        if(vm_->logSyscalls()) {
+            fmt::print("Sys::read(fd={}, buf={:#x}, count={}, offset={}) = {}\n",
+                        fd, buf.address(), count, offset,
+                        bufferOrErrno.errorOrWith<ssize_t>([](const auto& buf) { return (ssize_t)buf.size(); }));
+        }
+        return bufferOrErrno.errorOrWith<ssize_t>([&](const auto& buffer) {
+            mmu_->copyToMmu(buf, buffer.data(), buffer.size());
+            return (ssize_t)buffer.size();
+        });
     }
 
     ssize_t Sys::writev(int fd, Ptr iov, int iovcnt) {
