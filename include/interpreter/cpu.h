@@ -453,9 +453,9 @@ namespace x64 {
         void exec(const Movaps<RMSSE, RMSSE>&);
 
         void exec(const Movd<RSSE, RM32>&);
-        void exec(const Movd<R32, RSSE>&);
+        void exec(const Movd<RM32, RSSE>&);
         void exec(const Movd<RSSE, RM64>&);
-        void exec(const Movd<R64, RSSE>&);
+        void exec(const Movd<RM64, RSSE>&);
 
         void exec(const Movq<RSSE, RM64>&);
         void exec(const Movq<RM64, RSSE>&);

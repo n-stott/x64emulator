@@ -1589,15 +1589,15 @@ namespace x64 {
         assert(x86detail.op_count == 2);
         const cs_x86_op& dst = x86detail.operands[0];
         const cs_x86_op& src = x86detail.operands[1];
-        auto r32dst = asRegister32(dst);
+        auto rm32dst = asRM32(dst);
         auto rm32src = asRM32(src);
-        auto r64dst = asRegister64(dst);
+        auto rm64dst = asRM64(dst);
         auto rm64src = asRM64(src);
         auto rssedst = asRegister128(dst);
         auto rssesrc = asRegister128(src);
-        if(r32dst && rssesrc) return make_wrapper<Movd<R32, RSSE>>(insn.address, r32dst.value(), rssesrc.value());
+        if(rm32dst && rssesrc) return make_wrapper<Movd<RM32, RSSE>>(insn.address, rm32dst.value(), rssesrc.value());
         if(rssedst && rm32src) return make_wrapper<Movd<RSSE, RM32>>(insn.address, rssedst.value(), rm32src.value());
-        if(r64dst && rssesrc) return make_wrapper<Movd<R64, RSSE>>(insn.address, r64dst.value(), rssesrc.value());
+        if(rm64dst && rssesrc) return make_wrapper<Movd<RM64, RSSE>>(insn.address, rm64dst.value(), rssesrc.value());
         if(rssedst && rm64src) return make_wrapper<Movd<RSSE, RM64>>(insn.address, rssedst.value(), rm64src.value());
         return make_failed(insn);
     }

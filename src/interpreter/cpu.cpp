@@ -929,9 +929,9 @@ namespace x64 {
     void Cpu::exec(const Movaps<RMSSE, RMSSE>& ins) { set(ins.dst, get(ins.src)); }
 
     void Cpu::exec(const Movd<RSSE, RM32>& ins) { set(ins.dst, zeroExtend<Xmm, u32>(get(ins.src))); }
-    void Cpu::exec(const Movd<R32, RSSE>& ins) { set(ins.dst, narrow<u32, Xmm>(get(ins.src))); }
+    void Cpu::exec(const Movd<RM32, RSSE>& ins) { set(ins.dst, narrow<u32, Xmm>(get(ins.src))); }
     void Cpu::exec(const Movd<RSSE, RM64>& ins) { set(ins.dst, zeroExtend<Xmm, u64>(get(ins.src))); }
-    void Cpu::exec(const Movd<R64, RSSE>& ins) { set(ins.dst, narrow<u64, Xmm>(get(ins.src))); }
+    void Cpu::exec(const Movd<RM64, RSSE>& ins) { set(ins.dst, narrow<u64, Xmm>(get(ins.src))); }
 
     void Cpu::exec(const Movq<RSSE, RM64>& ins) { set(ins.dst, zeroExtend<Xmm, u64>(get(ins.src))); }
     void Cpu::exec(const Movq<RM64, RSSE>& ins) { set(ins.dst, narrow<u64, Xmm>(get(ins.src))); }
