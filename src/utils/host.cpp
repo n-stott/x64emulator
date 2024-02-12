@@ -74,6 +74,7 @@ Host::CPUID Host::cpuid(u32 a) {
                           | 1 << 9  // SSE3 extension
                           | 1 << 19 // SSE4.1
                           | 1 << 20 // SSE4.2
+                          | 1 << 28 // AVX
                           );
         s.c = s.c & (~sseMask);
     }
