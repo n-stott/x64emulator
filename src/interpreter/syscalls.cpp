@@ -449,7 +449,7 @@ namespace x64 {
 
     int Sys::ioctl(int fd, unsigned long request, Ptr argp) {
         if(request == TCGETS) {
-            if(vm_->logSyscalls()) fmt::print("Sys::ioctl({}, TCGETS, {:#x})\n", fd, request, argp.address());
+            if(vm_->logSyscalls()) fmt::print("Sys::ioctl({}, TCGETS, {:#x})\n", fd, argp.address());
             BufferOrErrno bufferOrErrno = Host::tcgetattr(Host::FD{fd});
             return bufferOrErrno.errorOrWith<int>([&](const auto& buffer) {
                 mmu_->copyToMmu(argp, buffer.data(), buffer.size());
@@ -463,7 +463,7 @@ namespace x64 {
             return fcntl(fd, F_SETFD, 0);
         }
         if(request == TIOCGWINSZ) {
-            if(vm_->logSyscalls()) fmt::print("Sys::ioctl({}, TIOCGWINSZ, {:#x})\n", fd, request, argp.address());
+            if(vm_->logSyscalls()) fmt::print("Sys::ioctl({}, TIOCGWINSZ, {:#x})\n", fd, argp.address());
             BufferOrErrno bufferOrErrno = Host::tiocgwinsz(Host::FD{fd});
             return bufferOrErrno.errorOrWith<int>([&](const auto& buffer) {
                 mmu_->copyToMmu(argp, buffer.data(), buffer.size());
@@ -471,7 +471,11 @@ namespace x64 {
             });
         }
         if(request == TIOCSWINSZ) {
-            if(vm_->logSyscalls()) fmt::print("Sys::ioctl({}, TIOCGWINSZ, {:#x})\n", fd, request, argp.address());
+            if(vm_->logSyscalls()) fmt::print("Sys::ioctl({}, TIOCSWINSZ, {:#x})\n", fd, argp.address());
+            return 0;
+        }
+        if(request == TCSETSW) {
+            if(vm_->logSyscalls()) fmt::print("Sys::ioctl({}, TCSETSW, {:#x})\n", fd, argp.address());
             return 0;
         }
         verify(false, [&]() {
