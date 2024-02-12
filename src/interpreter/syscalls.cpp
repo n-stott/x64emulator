@@ -297,6 +297,17 @@ namespace x64 {
                 vm_->set(R64::RAX, (u64)ret);
                 return;
             }
+            case 0x10e: { // pselect6
+                int nfds = (int)arg0;
+                Ptr readfds{arg1};
+                Ptr writefds{arg2};
+                Ptr exceptfds{arg3};
+                Ptr timeout{arg4};
+                Ptr sigmask{arg4};
+                int ret = pselect6(nfds, readfds, writefds, exceptfds, timeout, sigmask);
+                vm_->set(R64::RAX, (u64)ret);
+                return;
+            }
             case 0x111: { // set_robust_list
                 Ptr head(arg0);
                 size_t len = (size_t)arg1;
@@ -535,7 +546,11 @@ namespace x64 {
         if(exceptfds.address() != 0) mmu_->copyFromMmu((u8*)&efds, exceptfds, sizeof(fd_set));
         timeval to;
         if(timeout.address() != 0) mmu_->copyFromMmu((u8*)&to, timeout, sizeof(timeval));
-        int ret = Host::select(nfds, &rfds, &wfds, &efds, &to);
+        int ret = Host::select(nfds,
+                               readfds.address() != 0 ?   &rfds : nullptr,
+                               writefds.address() != 0 ?  &wfds : nullptr,
+                               exceptfds.address() != 0 ? &efds : nullptr,
+                               timeout.address() != 0 ?   &to : nullptr);
         if(vm_->logSyscalls()) {
             fmt::print("Sys::select(nfds={}, readfds={:#x}, writefds={:#x}, exceptfds={:#x}, timeout={:#x}) = {}\n",
                         nfds, readfds.address(), writefds.address(), exceptfds.address(), timeout.address(), ret);
@@ -693,6 +708,34 @@ namespace x64 {
         Host::FD fd = Host::openat(Host::FD{dirfd}, path, flags, mode);
         if(vm_->logSyscalls()) fmt::print("Sys::openat(dirfd={}, path={}, flags={}, mode={}) = {}\n", dirfd, path, flags, mode, fd.fd);
         return fd.fd;
+    }
+
+    int Sys::pselect6(int nfds, Ptr readfds, Ptr writefds, Ptr exceptfds, Ptr timeout, Ptr sigmask) {
+        fd_set rfds;
+        if(readfds.address() != 0) mmu_->copyFromMmu((u8*)&rfds, readfds, sizeof(fd_set));
+        fd_set wfds;
+        if(writefds.address() != 0) mmu_->copyFromMmu((u8*)&wfds, writefds, sizeof(fd_set));
+        fd_set efds;
+        if(exceptfds.address() != 0) mmu_->copyFromMmu((u8*)&efds, exceptfds, sizeof(fd_set));
+        timespec ts;
+        if(timeout.address() != 0) mmu_->copyFromMmu((u8*)&ts, timeout, sizeof(timespec));
+        sigset_t smask;
+        if(sigmask.address() != 0) mmu_->copyFromMmu((u8*)&smask, sigmask, sizeof(sigset_t));
+        int ret = Host::pselect6(nfds,
+                               readfds.address() != 0 ?   &rfds : nullptr,
+                               writefds.address() != 0 ?  &wfds : nullptr,
+                               exceptfds.address() != 0 ? &efds : nullptr,
+                               timeout.address() != 0 ?   &ts : nullptr,
+                               sigmask.address() != 0 ?   &smask : nullptr);
+        if(vm_->logSyscalls()) {
+            fmt::print("Sys::pselect6(nfds={}, readfds={:#x}, writefds={:#x}, exceptfds={:#x}, timeout={:#x},sigmask={:#x}) = {}\n",
+                        nfds, readfds.address(), writefds.address(), exceptfds.address(), timeout.address(), sigmask.address(), ret);
+        }
+        if(readfds.address() != 0) mmu_->copyToMmu(readfds, (const u8*)&rfds, sizeof(fd_set));
+        if(writefds.address() != 0) mmu_->copyToMmu(writefds, (const u8*)&wfds, sizeof(fd_set));
+        if(exceptfds.address() != 0) mmu_->copyToMmu(exceptfds, (const u8*)&efds, sizeof(fd_set));
+        if(timeout.address() != 0) mmu_->copyToMmu(timeout, (const u8*)&ts, sizeof(timespec));
+        return ret;
     }
 
     long Sys::set_robust_list(Ptr head, size_t len) {

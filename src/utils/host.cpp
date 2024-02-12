@@ -327,6 +327,12 @@ int Host::select(int nfds, fd_set* readfds, fd_set* writefds, fd_set* exceptfds,
     return ret;
 }
 
+int Host::pselect6(int nfds, fd_set* readfds, fd_set* writefds, fd_set* exceptfds, timespec* timeout, const sigset_t* sigmask) {
+    int ret = ::pselect(nfds, readfds, writefds, exceptfds, timeout, sigmask);
+    if(ret < 0) return -errno;
+    return ret;
+}
+
 std::optional<Host::AuxVal> Host::getauxval(AUX_TYPE type) {
     auto getDummy = [](u64 type) -> std::optional<AuxVal> {
         return AuxVal{type, 0};

@@ -91,6 +91,8 @@ namespace x64 {
         int arch_prctl(int code, Ptr addr);
         // 0x101
         int openat(int dirfd, Ptr pathname, int flags, mode_t mode);
+        // 0x10e
+        int pselect6(int nfds, Ptr readfds, Ptr writefds, Ptr exceptfds, Ptr timeout, Ptr sigmask);
         // 0x111
         long set_robust_list(Ptr head, size_t len);
         // 0x112
