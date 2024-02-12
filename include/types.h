@@ -225,6 +225,10 @@ namespace x64 {
         explicit SPtr(u64 address) : segment_(Segment::DS), address_(address) { }
         SPtr(Segment segment, u64 address) : segment_(segment), address_(address) { }
 
+        operator bool() const {
+            return !!address();
+        }
+
         SPtr& operator++() {
             address_ += pointerSize(size);
             return *this;
