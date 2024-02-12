@@ -1327,6 +1327,13 @@ namespace x64 {
         set(ins.dst, dst);
     }
 
+    void Cpu::exec(const Movhlps<RSSE, RSSE>& ins) {
+        u128 dst = get(ins.dst);
+        u128 src = get(ins.src);
+        dst.lo = src.hi;
+        set(ins.dst, dst);
+    }
+
 
     void Cpu::exec(const Punpcklbw<RSSE, RSSE>& ins) {
         u128 dst = Impl::punpcklbw(get(ins.dst), get(ins.src));

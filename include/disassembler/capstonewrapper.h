@@ -192,6 +192,7 @@ namespace x64 {
 
         static std::unique_ptr<X86Instruction> makeMovlps(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makeMovhps(const cs_insn& insn);
+        static std::unique_ptr<X86Instruction> makeMovhlps(const cs_insn& insn);
 
         static std::unique_ptr<X86Instruction> makePunpcklbw(const cs_insn& insn);
         static std::unique_ptr<X86Instruction> makePunpcklwd(const cs_insn& insn);

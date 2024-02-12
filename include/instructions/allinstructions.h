@@ -791,6 +791,13 @@ namespace x64 {
     };
 
     template<typename Dst, typename Src>
+    struct Movhlps {
+        Dst dst;
+        Src src;
+        TAG_SSE;
+    };
+
+    template<typename Dst, typename Src>
     struct Punpcklbw {
         Dst dst;
         Src src;
