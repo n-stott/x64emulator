@@ -49,6 +49,8 @@ namespace x64 {
         ssize_t writev(int fd, Ptr iov, int iovcnt);
         // 0x15
         int access(Ptr pathname, int mode);
+        // 0x20
+        int dup(int oldfd);
         // 0x27
         int getpid();
         // 0x3f

@@ -52,6 +52,7 @@ public:
     static BufferOrErrno read(FD, size_t count);
     static ssize_t write(FD, const u8* data, size_t count);
     static int close(FD);
+    static FD dup(FD);
 
     static BufferOrErrno stat(const std::string& path);
     static BufferOrErrno fstat(FD fd);

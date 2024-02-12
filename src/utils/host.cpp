@@ -119,6 +119,13 @@ int Host::close(FD fd) {
     return ret;
 }
 
+Host::FD Host::dup(FD oldfd) {
+    int newfd = ::dup(oldfd.fd);
+    if(newfd < 0) return FD{-errno};
+    the().openFiles_[newfd] = the().openFiles_[oldfd.fd];
+    return FD{newfd};
+}
+
 BufferOrErrno Host::stat(const std::string& path) {
     struct stat st;
     int rc = ::stat(path.c_str(), &st);

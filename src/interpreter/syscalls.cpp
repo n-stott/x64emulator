@@ -152,6 +152,12 @@ namespace x64 {
                 vm_->set(R64::RAX, (u64)ret);
                 return;
             }
+            case 0x20: { // dup
+                int oldfd = (int)arg0;
+                int ret = dup(oldfd);
+                vm_->set(R64::RAX, (u64)ret);
+                return;
+            }
             case 0x27: { // getpid
                 vm_->set(R64::RAX, (u64)0xface);
                 return;
@@ -486,6 +492,12 @@ namespace x64 {
         }
         if(vm_->logSyscalls()) fmt::print("Sys::access(path={}, mode={}) = {} {}\n", path, mode, ret, info);
         return ret;
+    }
+
+    int Sys::dup(int oldfd) {
+        Host::FD newfd = Host::dup(Host::FD{oldfd});
+        if(vm_->logSyscalls()) fmt::print("Sys::dup(oldfd={}) = {}\n", oldfd, newfd.fd);
+        return newfd.fd;
     }
 
     int Sys::uname(Ptr buf) {
