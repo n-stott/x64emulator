@@ -57,6 +57,8 @@ namespace x64 {
         int dup(int oldfd);
         // 0x27
         int getpid();
+        // 0x29
+        int socket(int domain, int type, int protocol);
         // 0x3f
         int uname(Ptr buf);
         // 0x48
@@ -77,8 +79,14 @@ namespace x64 {
         int geteuid();
         // 0x6c
         int getegid();
+        // 0x89
+        int statfs(Ptr path, Ptr buf);
         // 0x9e
         void exit_group(int status);
+        // 0xbf
+        ssize_t getxattr(Ptr path, Ptr name, Ptr value, size_t size);
+        // 0xc0
+        ssize_t lgetxattr(Ptr path, Ptr name, Ptr value, size_t size);
         // 0xc9
         time_t time(Ptr tloc);
         // 0xca
@@ -103,6 +111,8 @@ namespace x64 {
         int prlimit64(pid_t pid, int resource, Ptr new_limit, Ptr old_limit);
         // 0x13e
         ssize_t getrandom(Ptr buf, size_t len, int flags);
+        // 0x14c
+        int statx(int dirfd, Ptr pathname, int flags, unsigned int mask, Ptr statxbuf);
 
 
     private:

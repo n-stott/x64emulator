@@ -181,6 +181,14 @@ namespace x64 {
                 vm_->set(R64::RAX, (u64)0xface);
                 return;
             }
+            case 0x29: { // socket
+                int domain = (int)arg0;
+                int type = (int)arg1;
+                int protocol = (int)arg2;
+                int ret = socket(domain, type, protocol);
+                vm_->set(R64::RAX, (u64)ret);
+                return;
+            }
             case 0x3f: { // uname
                 Ptr buf{arg0};
                 int ret = uname(buf);
@@ -243,6 +251,13 @@ namespace x64 {
                 vm_->set(R64::RAX, (u64)ret);
                 return;
             }
+            case 0x89: { // statfs
+                Ptr path{arg0};
+                Ptr buf{arg1};
+                int ret = statfs(path, buf);
+                vm_->set(R64::RAX, (u64)ret);
+                return;
+            }
             case 0x9e: { // arch_prctl
                 i32 code = (i32)arg0;
                 Ptr addr{arg1};
@@ -252,6 +267,24 @@ namespace x64 {
             }
             case 0xba: { // gettid
                 vm_->set(R64::RAX, (u64)0xfeed);
+                return;
+            }
+            case 0xbf: { // getxattr
+                Ptr path{arg0};
+                Ptr name{arg1};
+                Ptr value{arg2};
+                size_t size = (size_t)arg3;
+                ssize_t ret = getxattr(path, name, value, size);
+                vm_->set(R64::RAX, (u64)ret);
+                return;
+            }
+            case 0xc0: { // lgetxattr
+                Ptr path{arg0};
+                Ptr name{arg1};
+                Ptr value{arg2};
+                size_t size = (size_t)arg3;
+                ssize_t ret = lgetxattr(path, name, value, size);
+                vm_->set(R64::RAX, (u64)ret);
                 return;
             }
             case 0xc9: { // time
@@ -346,6 +379,16 @@ namespace x64 {
                 size_t len = (size_t)arg1;
                 int flags = (int)arg2;
                 ssize_t ret = getrandom(buf, len, flags);
+                vm_->set(R64::RAX, (u64)ret);
+                return;
+            }
+            case 0x14c: { // statx
+                int dirfd = (int)arg0;
+                Ptr8 pathname{arg1};
+                int flags = (int)arg2;
+                unsigned int mask = (unsigned int)arg3;
+                Ptr statxbuf{arg4};
+                int ret = statx(dirfd, pathname, flags, mask, statxbuf);
                 vm_->set(R64::RAX, (u64)ret);
                 return;
             }
@@ -584,6 +627,14 @@ namespace x64 {
         return ret;
     }
 
+    int Sys::socket([[maybe_unused]] int domain, [[maybe_unused]] int type, [[maybe_unused]] int protocol) {
+        if(vm_->logSyscalls()) {
+            fmt::print("Sys::socket(domain={}, type={}, protocol={}) = {}\n",
+                                    domain, type, protocol, -ENOTSUP);
+        }
+        return -ENOTSUP;
+    }
+
     int Sys::uname(Ptr buf) {
         BufferOrErrno bufferOrErrno = Host::uname();
         if(vm_->logSyscalls()) {
@@ -671,10 +722,51 @@ namespace x64 {
         return Host::getegid();
     }
 
+    int Sys::statfs(Ptr pathname, Ptr buf) {
+        std::string path = mmu_->readString(pathname);
+        auto bufferOrErrno = Host::statfs(path);
+        return bufferOrErrno.errorOrWith<int>([&](const auto& buffer) {
+            mmu_->copyToMmu(buf, buffer.data(), buffer.size());
+            return 0;
+        });
+    }
+
     void Sys::exit_group(int status) {
         (void)status;
         if(vm_->logSyscalls()) fmt::print("Sys::exit_group(status={})\n", status);
         vm_->stop();
+    }
+
+    ssize_t Sys::getxattr(Ptr path, Ptr name, Ptr value, size_t size) {
+        auto spath = mmu_->readString(path);
+        auto sname = mmu_->readString(name);
+        auto bufferOrErrno = Host::getxattr(spath, sname, size);
+        if(vm_->logSyscalls()) {
+            fmt::print("Sys::getxaddr(path={}, name={}, value={:#x}, size={}) = {}\n",
+                                      spath, sname, value.address(), size, bufferOrErrno.errorOrWith<ssize_t>([](const auto& buffer) {
+                                        return (ssize_t)buffer.size();
+                                      }));
+        }
+        return bufferOrErrno.errorOrWith<ssize_t>([&](const auto& buffer) {
+            mmu_->copyToMmu(value, buffer.data(), buffer.size());
+            return (ssize_t)buffer.size();
+        });
+    }
+
+    ssize_t Sys::lgetxattr(Ptr path, Ptr name, Ptr value, size_t size) {
+        auto spath = mmu_->readString(path);
+        auto sname = mmu_->readString(name);
+        auto bufferOrErrno = Host::lgetxattr(spath, sname, size);
+        if(vm_->logSyscalls()) {
+            fmt::print("Sys::getxaddr(path={}, name={}, value={:#x}, size={}) = {}\n",
+                                      spath, sname, value.address(), size, bufferOrErrno.errorOrWith<ssize_t>([](const auto& buffer) {
+                                        return (ssize_t)buffer.size();
+                                      }));
+        }
+        return bufferOrErrno.errorOrWith<ssize_t>([&](const auto& buffer) {
+            mmu_->copyToMmu(value, buffer.data(), buffer.size());
+            return (ssize_t)buffer.size();
+        });
     }
 
     time_t Sys::time(Ptr tloc) {
@@ -807,6 +899,19 @@ namespace x64 {
         std::iota(buffer.begin(), buffer.end(), 0);
         mmu_->copyToMmu(buf, buffer.data(), buffer.size());
         return (ssize_t)len;
+    }
+
+    int Sys::statx(int dirfd, Ptr pathname, int flags, unsigned int mask, Ptr statxbuf) {
+        std::string path = mmu_->readString(pathname);
+        auto bufferOrErrno = Host::statx(Host::FD{dirfd}, path, flags, mask);
+        if(vm_->logSyscalls()) {
+            fmt::print("Sys::statx(dirfd={}, path={}, flags={}, mask={}, statxbuf={:#x}) = {}\n",
+                        dirfd, path, flags, mask, statxbuf.address(), bufferOrErrno.errorOr(0));
+        }
+        return bufferOrErrno.errorOrWith<int>([&](const auto& buffer) {
+            mmu_->copyToMmu(statxbuf, buffer.data(), buffer.size());
+            return 0;
+        });
     }
 
 }

@@ -12,6 +12,8 @@
 #include <sys/stat.h>
 #include <sys/sysinfo.h>
 #include <sys/utsname.h>
+#include <sys/vfs.h>
+#include <sys/xattr.h>
 #include <fcntl.h>
 #include <unistd.h>
 
@@ -182,6 +184,40 @@ int Host::access(const std::string& path, int mode) {
     int ret = ::access(path.c_str(), mode);
     if(ret < 0) return -errno;
     return ret;
+}
+
+BufferOrErrno Host::statfs(const std::string& path) {
+    struct statfs stfs;
+    int rc = ::statfs(path.c_str(), &stfs);
+    if(rc < 0) return BufferOrErrno(-errno);
+    std::vector<u8> buf(sizeof(stfs), 0x0);
+    std::memcpy(buf.data(), &stfs, sizeof(stfs));
+    return BufferOrErrno(std::move(buf));
+}
+
+BufferOrErrno Host::statx(FD dirfd, const std::string& path, int flags, unsigned int mask) {
+    struct statx sx;
+    int rc = ::statx(dirfd.fd, path.c_str(), flags, mask, &sx);
+    if(rc < 0) return BufferOrErrno(-errno);
+    std::vector<u8> buf(sizeof(sx), 0x0);
+    std::memcpy(buf.data(), &sx, sizeof(sx));
+    return BufferOrErrno(std::move(buf));
+}
+
+BufferOrErrno Host::getxattr(const std::string& path, const std::string& name, size_t size) {
+    std::vector<u8> buf(size, 0x0);
+    ssize_t ret = ::getxattr(path.c_str(), name.c_str(), buf.data(), size);
+    if(ret < 0) return BufferOrErrno(-errno);
+    buf.resize((size_t)ret);
+    return BufferOrErrno(std::move(buf));
+}
+
+BufferOrErrno Host::lgetxattr(const std::string& path, const std::string& name, size_t size) {
+    std::vector<u8> buf(size, 0x0);
+    ssize_t ret = ::lgetxattr(path.c_str(), name.c_str(), buf.data(), size);
+    if(ret < 0) return BufferOrErrno(-errno);
+    buf.resize((size_t)ret);
+    return BufferOrErrno(std::move(buf));
 }
 
 int Host::getfd(FD fd) {

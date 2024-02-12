@@ -62,6 +62,12 @@ public:
     static FD openat(FD dirfd, const std::string& pathname, int flags, mode_t mode);
     static int access(const std::string& path, int mode);
 
+    static BufferOrErrno statfs(const std::string& path);
+    static BufferOrErrno statx(FD dirfd, const std::string& path, int flags, unsigned int mask);
+
+    static BufferOrErrno getxattr(const std::string& path, const std::string& name, size_t size);
+    static BufferOrErrno lgetxattr(const std::string& path, const std::string& name, size_t size);
+
     static int getfd(FD fd);
     static int setfd(FD fd, int flag);
 
