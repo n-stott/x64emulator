@@ -462,8 +462,20 @@ namespace x64 {
         if(request == FIONCLEX) {
             return fcntl(fd, F_SETFD, 0);
         }
+        if(request == TIOCGWINSZ) {
+            if(vm_->logSyscalls()) fmt::print("Sys::ioctl({}, TIOCGWINSZ, {:#x})\n", fd, request, argp.address());
+            BufferOrErrno bufferOrErrno = Host::tiocgwinsz(Host::FD{fd});
+            return bufferOrErrno.errorOrWith<int>([&](const auto& buffer) {
+                mmu_->copyToMmu(argp, buffer.data(), buffer.size());
+                return 0;
+            });
+        }
+        if(request == TIOCSWINSZ) {
+            if(vm_->logSyscalls()) fmt::print("Sys::ioctl({}, TIOCGWINSZ, {:#x})\n", fd, request, argp.address());
+            return 0;
+        }
         verify(false, [&]() {
-            fmt::print("Unsupported ioctl {}\n", request);
+            fmt::print("Unsupported ioctl {:x}\n", request);
         });
         return -ENOTSUP;
     }

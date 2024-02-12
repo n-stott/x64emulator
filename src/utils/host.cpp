@@ -183,12 +183,22 @@ int Host::setfd(FD fd, int flag) {
 }
 
 BufferOrErrno Host::tcgetattr(FD fd) {
-    struct termios buf;
-    int ret = ::ioctl(fd.fd, TCGETS, &buf);
+    struct termios ts;
+    int ret = ::ioctl(fd.fd, TCGETS, &ts);
     if(ret < 0) return BufferOrErrno(-errno);
     std::vector<u8> buffer;
-    buffer.resize(sizeof(struct termios), 0x0);
-    std::memcpy(buffer.data(), &buf, sizeof(buf));
+    buffer.resize(sizeof(ts), 0x0);
+    std::memcpy(buffer.data(), &ts, sizeof(ts));
+    return BufferOrErrno(std::move(buffer));
+}
+
+BufferOrErrno Host::tiocgwinsz(FD fd) {
+    struct winsize ws;
+    int ret = ::ioctl(fd.fd, TIOCGWINSZ, &ws);
+    if(ret < 0) return BufferOrErrno(-errno);
+    std::vector<u8> buffer;
+    buffer.resize(sizeof(ws), 0x0);
+    std::memcpy(buffer.data(), &ws, sizeof(ws));
     return BufferOrErrno(std::move(buffer));
 }
 

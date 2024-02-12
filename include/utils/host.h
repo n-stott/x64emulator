@@ -68,6 +68,7 @@ public:
     static BufferOrErrno uname();
 
     static BufferOrErrno tcgetattr(FD fd);
+    static BufferOrErrno tiocgwinsz(FD fd);
 
     static BufferOrErrno sysinfo();
     static int getuid();
