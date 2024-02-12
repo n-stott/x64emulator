@@ -216,6 +216,7 @@ BufferOrErrno Host::readlink(const std::string& path, size_t count) {
     buffer.resize(count, 0x0);
     ssize_t ret = ::readlink(path.c_str(), (char*)buffer.data(), buffer.size());
     if(ret < 0) return BufferOrErrno(-errno);
+    buffer.resize(ret);
     return BufferOrErrno(std::move(buffer));
 }
 

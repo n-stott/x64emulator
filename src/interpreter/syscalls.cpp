@@ -539,11 +539,11 @@ namespace x64 {
         auto bufferOrErrno = Host::readlink(path, bufsiz);
         if(vm_->logSyscalls()) {
             fmt::print("Sys::readlink(path={}, buf={:#x}, size={}) = {:#x}\n",
-                        path, buf.address(), bufsiz, bufferOrErrno.errorOr(0));
+                        path, buf.address(), bufsiz, bufferOrErrno.errorOrWith<ssize_t>([](const auto& buffer) { return (ssize_t)buffer.size(); }));
         }
         return bufferOrErrno.errorOrWith<ssize_t>([&](const auto& buffer) {
             mmu_->copyToMmu(buf, buffer.data(), buffer.size());
-            return 0;
+            return (ssize_t)buffer.size();
         });
     }
 
