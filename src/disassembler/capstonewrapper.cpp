@@ -198,6 +198,7 @@ namespace x64 {
             case X86_INS_CMPSW:
             case X86_INS_CMPSD:
             case X86_INS_CMPSQ: return makeCmps(insn);
+            case X86_INS_MOVSB:
             case X86_INS_MOVSQ: return makeMovs(insn);
             case X86_INS_PAND: return makePand(insn);
             case X86_INS_PANDN: return makePandn(insn);
@@ -1382,11 +1383,14 @@ namespace x64 {
         assert(x86detail.op_count == 2);
         const cs_x86_op& dst = x86detail.operands[0];
         const cs_x86_op& src = x86detail.operands[1];
+        auto m8src = asMemory8(src);
+        auto m8dst = asMemory8(dst);
         auto m64src = asMemory64(src);
         auto m64dst = asMemory64(dst);
         if(prefixByte == 0) {
             if(m64dst && m64src) return make_wrapper< Movs<M64, M64> >(insn.address, m64dst.value(), m64src.value());
         } else if((x86_prefix)prefixByte == X86_PREFIX_REP) {
+            if(m8dst && m8src) return make_wrapper< Rep< Movs<M8, M8> >>(insn.address, m8dst.value(), m8src.value());
             if(m64dst && m64src) return make_wrapper< Rep< Movs<M64, M64> >>(insn.address, m64dst.value(), m64src.value());
         }
         return make_failed(insn);
