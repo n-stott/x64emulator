@@ -910,8 +910,8 @@ namespace x64 {
 
     u128 CpuImpl::shufpd(u128 dst, u128 src, u8 order) {
         u128 res;
-        res.lo = (order) ? dst.hi : dst.lo;
-        res.hi = (order) ? src.hi : src.lo;
+        res.lo = (order & 0x1) ? dst.hi : dst.lo;
+        res.hi = (order & 0x2) ? src.hi : src.lo;
         return res;
     }
 

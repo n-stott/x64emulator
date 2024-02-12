@@ -3,6 +3,7 @@
 #include <fmt/core.h>
 #include <cassert>
 #include <cstring>
+#include <emmintrin.h>
 #include <limits>
 
 namespace x64 {
@@ -1262,10 +1263,27 @@ namespace x64 {
     }
 
     u128 CheckedCpuImpl::shufpd(u128 dst, u128 src, u8 order) {
-        u128 res;
-        res.lo = (order) ? dst.hi : dst.lo;
-        res.hi = (order) ? src.hi : src.lo;
-        return res;
+        u128 virtualRes = CpuImpl::shufpd(dst, src, order);
+        (void)virtualRes;
+
+        __m128d a;
+        __m128d b;
+        std::memcpy(&a, &dst, sizeof(dst));
+        std::memcpy(&b, &src, sizeof(src));
+        __m128d res = [&]() {
+            assert(order <= 3);
+            if(order == 0) return _mm_shuffle_pd(a, b, 0);
+            if(order == 1) return _mm_shuffle_pd(a, b, 1);
+            if(order == 2) return _mm_shuffle_pd(a, b, 2);
+            if(order == 3) return _mm_shuffle_pd(a, b, 3);
+            return a;
+        }();
+        u128 nativeRes;
+        std::memcpy(&nativeRes, &res, sizeof(nativeRes));
+
+        assert(nativeRes.lo == virtualRes.lo);
+        assert(nativeRes.hi == virtualRes.hi);
+        return nativeRes;
     }
 
     u128 CheckedCpuImpl::punpcklbw(u128 dst, u128 src) {
