@@ -152,6 +152,16 @@ namespace x64 {
                 vm_->set(R64::RAX, (u64)ret);
                 return;
             }
+            case 0x17: { // select
+                int nfds = (int)arg0;
+                Ptr readfds{arg1};
+                Ptr writefds{arg2};
+                Ptr exceptfds{arg3};
+                Ptr timeout{arg4};
+                int ret = select(nfds, readfds, writefds, exceptfds, timeout);
+                vm_->set(R64::RAX, (u64)ret);
+                return;
+            }
             case 0x20: { // dup
                 int oldfd = (int)arg0;
                 int ret = dup(oldfd);
@@ -514,6 +524,27 @@ namespace x64 {
         Host::FD newfd = Host::dup(Host::FD{oldfd});
         if(vm_->logSyscalls()) fmt::print("Sys::dup(oldfd={}) = {}\n", oldfd, newfd.fd);
         return newfd.fd;
+    }
+
+    int Sys::select(int nfds, Ptr readfds, Ptr writefds, Ptr exceptfds, Ptr timeout) {
+        fd_set rfds;
+        if(readfds.address() != 0) mmu_->copyFromMmu((u8*)&rfds, readfds, sizeof(fd_set));
+        fd_set wfds;
+        if(writefds.address() != 0) mmu_->copyFromMmu((u8*)&wfds, writefds, sizeof(fd_set));
+        fd_set efds;
+        if(exceptfds.address() != 0) mmu_->copyFromMmu((u8*)&efds, exceptfds, sizeof(fd_set));
+        timeval to;
+        if(timeout.address() != 0) mmu_->copyFromMmu((u8*)&to, timeout, sizeof(timeval));
+        int ret = Host::select(nfds, &rfds, &wfds, &efds, &to);
+        if(vm_->logSyscalls()) {
+            fmt::print("Sys::select(nfds={}, readfds={:#x}, writefds={:#x}, exceptfds={:#x}, timeout={:#x}) = {}\n",
+                        nfds, readfds.address(), writefds.address(), exceptfds.address(), timeout.address(), ret);
+        }
+        if(readfds.address() != 0) mmu_->copyToMmu(readfds, (const u8*)&rfds, sizeof(fd_set));
+        if(writefds.address() != 0) mmu_->copyToMmu(writefds, (const u8*)&wfds, sizeof(fd_set));
+        if(exceptfds.address() != 0) mmu_->copyToMmu(exceptfds, (const u8*)&efds, sizeof(fd_set));
+        if(timeout.address() != 0) mmu_->copyToMmu(timeout, (const u8*)&to, sizeof(timeval));
+        return ret;
     }
 
     int Sys::uname(Ptr buf) {

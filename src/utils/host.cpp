@@ -321,6 +321,12 @@ int Host::prlimit64(pid_t pid, int resource, const std::vector<u8>* new_limit, s
     }
 }
 
+int Host::select(int nfds, fd_set* readfds, fd_set* writefds, fd_set* exceptfds, timeval* timeout) {
+    int ret = ::select(nfds, readfds, writefds, exceptfds, timeout);
+    if(ret < 0) return -errno;
+    return ret;
+}
+
 std::optional<Host::AuxVal> Host::getauxval(AUX_TYPE type) {
     auto getDummy = [](u64 type) -> std::optional<AuxVal> {
         return AuxVal{type, 0};

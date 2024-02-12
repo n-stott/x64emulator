@@ -86,6 +86,8 @@ public:
 
     static int prlimit64(pid_t pid, int resource, const std::vector<u8>* new_limit, std::vector<u8>* old_limit);
 
+    static int select(int nfds, fd_set* readfds, fd_set* writefds, fd_set* exceptfds, timeval* timeout);
+
     enum class AUX_TYPE {
         NIL,
         ENTRYPOINT,
