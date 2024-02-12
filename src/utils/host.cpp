@@ -8,6 +8,7 @@
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <sys/resource.h>
+#include <sys/time.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/sysinfo.h>
@@ -322,6 +323,17 @@ ErrnoOrBuffer Host::clock_gettime(clockid_t clockid) {
 
 time_t Host::time() {
     return ::time(nullptr);
+}
+
+ErrnoOr<std::pair<Buffer, Buffer>> Host::gettimeofday() {
+    using ReturnType = ErrnoOr<std::pair<Buffer, Buffer>>;
+    struct timeval tv;
+    struct timezone tz;
+    int rc = ::gettimeofday(&tv, &tz);
+    if(rc < 0) return ReturnType(-errno);
+    Buffer v(tv);
+    Buffer z(tz);
+    return ReturnType(std::make_pair(std::move(v), std::move(z)));
 }
 
 std::vector<u8> Host::readFromFile(Host::FD fd, size_t length, off_t offset) {

@@ -69,6 +69,8 @@ namespace x64 {
         int mkdir(Ptr pathname, mode_t mode);
         // 0x59
         ssize_t readlink(Ptr pathname, Ptr buf, size_t bufsiz);
+        // 0x60
+        int gettimeofday(Ptr tv, Ptr tz);
         // 0x63
         int sysinfo(Ptr info);
         // 0x66

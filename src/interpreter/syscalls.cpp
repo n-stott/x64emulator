@@ -225,6 +225,13 @@ namespace x64 {
                 vm_->set(R64::RAX, (u64)nchars);
                 return;
             }
+            case 0x60: { // gettimeofday
+                Ptr tv{arg0};
+                Ptr tz{arg1};
+                int ret = gettimeofday(tv, tz);
+                vm_->set(R64::RAX, (u64)ret);
+                return;
+            }
             case 0x63: { //sysinfo
                 Ptr info {arg0};
                 int ret = sysinfo(info);
@@ -700,6 +707,19 @@ namespace x64 {
         return errnoOrBuffer.errorOrWith<ssize_t>([&](const auto& buffer) {
             mmu_->copyToMmu(buf, buffer.data(), buffer.size());
             return (ssize_t)buffer.size();
+        });
+    }
+
+    int Sys::gettimeofday(Ptr tv, Ptr tz) {
+        auto errnoOrBuffers = Host::gettimeofday();
+        if(vm_->logSyscalls()) {
+            fmt::print("Sys::gettimeofday(tv={:#x}, tz={:#x}) = {:#x}\n",
+                        tv.address(), tz.address(), errnoOrBuffers.errorOr(0));
+        }
+        return errnoOrBuffers.errorOrWith<int>([&](const auto& buffers) {
+            if(!!tv) mmu_->copyToMmu(tv, buffers.first.data(), buffers.first.size());
+            if(!!tz) mmu_->copyToMmu(tz, buffers.second.data(), buffers.second.size());
+            return 0;
         });
     }
 

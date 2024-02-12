@@ -116,6 +116,7 @@ public:
 
     static ErrnoOrBuffer clock_gettime(clockid_t clockid);
     static time_t time();
+    static ErrnoOr<std::pair<Buffer, Buffer>> gettimeofday();
 
     static std::vector<u8> readFromFile(FD fd, size_t length, off_t offset);
 
