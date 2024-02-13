@@ -214,7 +214,7 @@ namespace x64 {
     }
 
     template<Size size>
-    struct Addr {
+    struct M {
         Segment segment;
         Encoding encoding;
     };
@@ -262,12 +262,8 @@ namespace x64 {
     using Ptr128 = SPtr<Size::XMMWORD>;
     using Ptr224 = SPtr<Size::FPUENV>;
 
-    template<Size size>
-    using M = Addr<size>;
-
-
     template<typename Reg, Size size>
-    using RM = std::variant<Reg, Addr<size>>;
+    using RM = std::variant<Reg, M<size>>;
 
     using M8 = M<Size::BYTE>;
     using RM8 = RM<R8, Size::BYTE>;

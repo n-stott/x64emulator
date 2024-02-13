@@ -89,7 +89,7 @@ namespace x64 {
         u64 resolve(Encoding addr) const { return regs_.resolve(addr); }
 
         template<Size size>
-        SPtr<size> resolve(Addr<size> addr) const { return regs_.resolve(addr); }
+        SPtr<size> resolve(M<size> addr) const { return regs_.resolve(addr); }
 
         Ptr8 resolve(const M8& m8) const { return regs_.resolve(m8); }
         Ptr16 resolve(const M16& m16) const { return regs_.resolve(m16); }
@@ -439,7 +439,7 @@ namespace x64 {
         void exec(const Rep<Stos<M32, R32>>&);
         void exec(const Rep<Stos<M64, R64>>&);
 
-        void exec(const RepNZ<Scas<R8, Addr<Size::BYTE>>>&);
+        void exec(const RepNZ<Scas<R8, M8>>&);
 
         void exec(const Cmov<R16, RM16>&);
         void exec(const Cmov<R32, RM32>&);

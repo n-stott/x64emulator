@@ -759,7 +759,7 @@ namespace x64 {
         flags_.direction = 1;
     }
 
-    void Cpu::exec(const Rep<Movs<Addr<Size::BYTE>, Addr<Size::BYTE>>>& ins) {
+    void Cpu::exec(const Rep<Movs<M8, M8>>& ins) {
         assert(ins.op.dst.encoding.base == R64::RDI);
         assert(ins.op.src.encoding.base == R64::RSI);
         u32 counter = get(R32::ECX);
@@ -901,7 +901,7 @@ namespace x64 {
         set(R64::RDI, dptr.address());
     }
 
-    void Cpu::exec(const RepNZ<Scas<R8, Addr<Size::BYTE>>>& ins) {
+    void Cpu::exec(const RepNZ<Scas<R8, M8>>& ins) {
         assert(ins.op.src2.encoding.base == R64::RDI);
         u32 counter = get(R32::ECX);
         u8 src1 = get(ins.op.src1);

@@ -255,7 +255,7 @@ namespace utils {
     }
 
     template<Size size>
-    inline std::string toString(const Addr<size>& addr) {
+    inline std::string toString(const M<size>& addr) {
         if(addr.segment == Segment::CS || addr.segment == Segment::DS || addr.segment == Segment::UNK) {
             return fmt::format("{} PTR {}",
                         toString<size>(),

@@ -489,7 +489,7 @@ namespace x64 {
         if(!segment) return {};
         auto enc = asEncoding(operand);
         if(!enc) return {};
-        return Addr<size>{segment.value(), enc.value()};
+        return M<size>{segment.value(), enc.value()};
     }
 
     std::optional<M8> asMemory8(const cs_x86_op& operand) { return asMemory<Size::BYTE>(operand); }

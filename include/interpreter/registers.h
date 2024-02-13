@@ -234,7 +234,7 @@ namespace x64 {
         }
 
         template<Size size>
-        SPtr<size> resolve(Addr<size> addr) const {
+        SPtr<size> resolve(M<size> addr) const {
             return SPtr<size>{addr.segment, resolve(addr.encoding)};
         }
 
