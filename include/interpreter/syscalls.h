@@ -55,6 +55,8 @@ namespace x64 {
         int select(int nfds, Ptr readfds, Ptr writefds, Ptr exceptfds, Ptr timeout);
         // 0x20
         int dup(int oldfd);
+        // 0x26
+        int setitimer(int which, const Ptr new_value, Ptr old_value);
         // 0x27
         int getpid();
         // 0x29
@@ -65,6 +67,8 @@ namespace x64 {
         int fcntl(int fd, int cmd, int arg);
         // 0x4f
         Ptr getcwd(Ptr buf, size_t size);
+        // 0x50
+        int chdir(Ptr path);
         // 0x53
         int mkdir(Ptr pathname, mode_t mode);
         // 0x59

@@ -309,6 +309,10 @@ ErrnoOrBuffer Host::getdents64(FD fd, size_t count) {
     return ErrnoOrBuffer(Buffer{std::move(buf)});
 }
 
+int Host::chdir(const std::string& path) {
+    return ::chdir(path.c_str());
+}
+
 ErrnoOrBuffer Host::clock_gettime(clockid_t clockid) {
     timespec ts;
     int ret = ::clock_gettime(clockid, &ts);

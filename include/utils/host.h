@@ -113,6 +113,7 @@ public:
     
     static ErrnoOrBuffer getcwd(size_t size);
     static ErrnoOrBuffer getdents64(FD fd, size_t count);
+    static int chdir(const std::string& path);
 
     static ErrnoOrBuffer clock_gettime(clockid_t clockid);
     static time_t time();

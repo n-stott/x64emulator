@@ -177,6 +177,14 @@ namespace x64 {
                 vm_->set(R64::RAX, (u64)ret);
                 return;
             }
+            case 0x26: {
+                int which = (int)arg0;
+                Ptr new_value{arg1};
+                Ptr old_value{arg2};
+                int ret = setitimer(which, new_value, old_value);
+                vm_->set(R64::RAX, (u64)ret);
+                return;
+            }
             case 0x27: { // getpid
                 vm_->set(R64::RAX, (u64)0xface);
                 return;
@@ -208,6 +216,12 @@ namespace x64 {
                 size_t size = (size_t)arg1;
                 Ptr ret = getcwd(buf, size);
                 vm_->set(R64::RAX, ret.address());
+                return;
+            }
+            case 0x50: { // chdir
+                Ptr path{arg0};
+                int ret = chdir(path);
+                vm_->set(R64::RAX, ret);
                 return;
             }
             case 0x53: { // mkdir
@@ -618,6 +632,10 @@ namespace x64 {
         return newfd.fd;
     }
 
+    int Sys::setitimer([[maybe_unused]] int which, [[maybe_unused]]const Ptr new_value, [[maybe_unused]]Ptr old_value) {
+        return 0;
+    }
+
     int Sys::select(int nfds, Ptr readfds, Ptr writefds, Ptr exceptfds, Ptr timeout) {
         fd_set rfds;
         fd_set wfds;
@@ -691,6 +709,15 @@ namespace x64 {
             return 0;
         });
         return errnoOrBuffer.isError() ? Ptr{0x0} : buf;
+    }
+
+    int Sys::chdir(Ptr pathname) {
+        auto path = mmu_->readString(pathname);
+        int ret = Host::chdir(path);
+        if(vm_->logSyscalls()) {
+            fmt::print("Sys::chdir(path={}) = {}\n", path, ret);
+        }
+        return ret;
     }
 
     int Sys::mkdir([[maybe_unused]] Ptr pathname, [[maybe_unused]] mode_t mode) {
