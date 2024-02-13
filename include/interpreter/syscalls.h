@@ -3,7 +3,9 @@
 
 #include "types.h"
 #include "utils/utils.h"
+#include <array>
 #include <cstdint>
+#include <tuple>
 
 namespace x64 {
 
@@ -17,6 +19,95 @@ namespace x64 {
         void syscall();
 
     private:
+        struct RegisterDump {
+            std::array<u64, 6> args;
+        };
+
+        template <typename ReturnType, typename... Args>
+        struct function_traits_defs {
+            static constexpr size_t arity = sizeof...(Args);
+
+            using result_type = ReturnType;
+
+            template <size_t i>
+            struct arg {
+                using type = typename std::tuple_element<i, std::tuple<Args...>>::type;
+            };
+        };
+
+        template <typename T>
+        struct function_traits_impl;
+
+        template <typename ClassType, typename ReturnType, typename... Args>
+        struct function_traits_impl<ReturnType(ClassType::*)(Args...)> : function_traits_defs<ReturnType, Args...> {};
+
+        template<typename T>
+        u64 get_value_or_address(T&& t) {
+            if constexpr(std::is_same_v<T, Ptr>) {
+                return t.address();
+            } else {
+                static_assert(std::is_integral_v<T>);
+                return (u64)t;
+            }
+        }
+
+        template<typename Func>
+        u64 invoke_syscall_0(Func&& func, const RegisterDump&) {
+            return get_value_or_address((this->*func)());
+        }
+
+        template<typename Func>
+        u64 invoke_syscall_1(Func&& func, const RegisterDump& regs) {
+            using arg0_t = typename function_traits_impl<Func>::arg<0>::type;
+            return get_value_or_address((this->*func)((arg0_t)regs.args[0]));
+        }
+
+        template<typename Func>
+        u64 invoke_syscall_2(Func&& func, const RegisterDump& regs) {
+            using arg0_t = typename function_traits_impl<Func>::arg<0>::type;
+            using arg1_t = typename function_traits_impl<Func>::arg<1>::type;
+            return get_value_or_address((this->*func)((arg0_t)regs.args[0], (arg1_t)regs.args[1]));
+        }
+
+        template<typename Func>
+        u64 invoke_syscall_3(Func&& func, const RegisterDump& regs) {
+            using arg0_t = typename function_traits_impl<Func>::arg<0>::type;
+            using arg1_t = typename function_traits_impl<Func>::arg<1>::type;
+            using arg2_t = typename function_traits_impl<Func>::arg<2>::type;
+            return get_value_or_address((this->*func)((arg0_t)regs.args[0], (arg1_t)regs.args[1], (arg2_t)regs.args[2]));
+        }
+
+        template<typename Func>
+        u64 invoke_syscall_4(Func&& func, const RegisterDump& regs) {
+            using arg0_t = typename function_traits_impl<Func>::arg<0>::type;
+            using arg1_t = typename function_traits_impl<Func>::arg<1>::type;
+            using arg2_t = typename function_traits_impl<Func>::arg<2>::type;
+            using arg3_t = typename function_traits_impl<Func>::arg<3>::type;
+            return get_value_or_address((this->*func)((arg0_t)regs.args[0], (arg1_t)regs.args[1], (arg2_t)regs.args[2], (arg3_t)regs.args[3]));
+        }
+
+        template<typename Func>
+        u64 invoke_syscall_5(Func&& func, const RegisterDump& regs) {
+            using arg0_t = typename function_traits_impl<Func>::arg<0>::type;
+            using arg1_t = typename function_traits_impl<Func>::arg<1>::type;
+            using arg2_t = typename function_traits_impl<Func>::arg<2>::type;
+            using arg3_t = typename function_traits_impl<Func>::arg<3>::type;
+            using arg4_t = typename function_traits_impl<Func>::arg<4>::type;
+            return get_value_or_address((this->*func)((arg0_t)regs.args[0], (arg1_t)regs.args[1], (arg2_t)regs.args[2], (arg3_t)regs.args[3], (arg4_t)regs.args[4]));
+        }
+
+        template<typename Func>
+        u64 invoke_syscall_6(Func&& func, const RegisterDump& regs) {
+            using arg0_t = typename function_traits_impl<Func>::arg<0>::type;
+            using arg1_t = typename function_traits_impl<Func>::arg<1>::type;
+            using arg2_t = typename function_traits_impl<Func>::arg<2>::type;
+            using arg3_t = typename function_traits_impl<Func>::arg<3>::type;
+            using arg4_t = typename function_traits_impl<Func>::arg<4>::type;
+            using arg5_t = typename function_traits_impl<Func>::arg<5>::type;
+            return get_value_or_address((this->*func)((arg0_t)regs.args[0], (arg1_t)regs.args[1], (arg2_t)regs.args[2], (arg3_t)regs.args[3], (arg4_t)regs.args[4], (arg5_t)regs.args[5]));
+        }
+
+
         // 0x0
         ssize_t read(int fd, Ptr buf, size_t count);
         // 0x1
@@ -88,7 +179,7 @@ namespace x64 {
         // 0x89
         int statfs(Ptr path, Ptr buf);
         // 0x9e
-        void exit_group(int status);
+        int arch_prctl(int code, Ptr addr);
         // 0xbf
         ssize_t getxattr(Ptr path, Ptr name, Ptr value, size_t size);
         // 0xc0
@@ -106,7 +197,7 @@ namespace x64 {
         // 0xe4
         int clock_gettime(clockid_t clockid, Ptr tp);
         // 0xe7
-        int arch_prctl(int code, Ptr addr);
+        u64 exit_group(int status);
         // 0x101
         int openat(int dirfd, Ptr pathname, int flags, mode_t mode);
         // 0x10e

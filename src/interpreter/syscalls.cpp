@@ -20,408 +20,76 @@ namespace x64 {
 
     void Sys::syscall() {
         u64 sysNumber = vm_->get(R64::RAX);
-        u64 arg0 = vm_->get(R64::RDI);
-        u64 arg1 = vm_->get(R64::RSI);
-        u64 arg2 = vm_->get(R64::RDX);
-        u64 arg3 = vm_->get(R64::R10);
-        u64 arg4 = vm_->get(R64::R8);
-        u64 arg5 = vm_->get(R64::R9);
+
+        RegisterDump regs {{
+            vm_->get(R64::RDI),
+            vm_->get(R64::RSI),
+            vm_->get(R64::RDX),
+            vm_->get(R64::R10),
+            vm_->get(R64::R8),
+            vm_->get(R64::R9),
+        }};
 
         switch(sysNumber) {
-            case 0x0: { // read
-                i32 fd = (i32)arg0;
-                Ptr8 buf{arg1};
-                size_t count = (size_t)arg2;
-                ssize_t nbytes = read(fd, buf, count);
-                vm_->set(R64::RAX, (u64)nbytes);
-                return;
-            }
-            case 0x1: { // write
-                i32 fd = (i32)arg0;
-                Ptr8 buf{arg1};
-                size_t count = (size_t)arg2;
-                ssize_t nbytes = write(fd, buf, count);
-                vm_->set(R64::RAX, (u64)nbytes);
-                return;
-            }
-            case 0x3: { // close
-                i32 fd = (i32)arg0;
-                int ret = close(fd);
-                vm_->set(R64::RAX, (u64)ret);
-                return;
-            }
-            case 0x4: { // stat
-                Ptr8 pathname{arg0};
-                Ptr8 statbufptr{arg1};
-                int ret = stat(pathname, statbufptr);
-                vm_->set(R64::RAX, (u64)ret);
-                return;
-            }
-            case 0x5: { // fstat
-                i32 fd = (i32)arg0;
-                Ptr8 statbufptr{arg1};
-                int ret = fstat(fd, statbufptr);
-                vm_->set(R64::RAX, (u64)ret);
-                return;
-            }
-            case 0x6: { // lstat
-                Ptr8 pathname{arg0};
-                Ptr8 statbufptr{arg1};
-                int ret = lstat(pathname, statbufptr);
-                vm_->set(R64::RAX, (u64)ret);
-                return;
-            }
-            case 0x8: { // lseek
-                int fd = (i32)arg0;
-                off_t offset = (off_t)arg1;
-                int whence = (int)arg2;
-                off_t ret = lseek(fd, offset, whence);
-                vm_->set(R64::RAX, (u64)ret);
-                return;
-            }
-            case 0x9: { // mmap
-                Ptr addr{arg0};
-                size_t length = (size_t)arg1;
-                int prot = (int)arg2;
-                int flags = (int)arg3;
-                int fd = (int)arg4;
-                off_t offset = (off_t)arg5;
-                Ptr ptr = mmap(addr, length, prot, flags, fd, offset);
-                vm_->set(R64::RAX, ptr.address());
-                return;
-            }
-            case 0xa: { // mprotect
-                Ptr addr{arg0};
-                size_t length = (size_t)arg1;
-                int prot = (int)arg2;
-                int ret = mprotect(addr, length, prot);
-                vm_->set(R64::RAX, (u64)ret);
-                return;
-            }
-            case 0xb: { // munmap
-                Ptr addr{arg0};
-                size_t length = (size_t)arg1;
-                int ret = munmap(addr, length);
-                vm_->set(R64::RAX, (u64)ret);
-                return;
-            }
-            case 0xc: { // brk
-                Ptr addr{arg0};
-                Ptr newBreak = brk(addr);
-                vm_->set(R64::RAX, newBreak.address());
-                return;
-            }
-            case 0xd: { // rt_sigaction
-                int sig = (int)arg0;
-                Ptr act(arg1);
-                Ptr oact(arg2);
-                size_t sigsetsize = (size_t)arg3;
-                int ret = rt_sigaction(sig, act, oact, sigsetsize);
-                vm_->set(R64::RAX, (u64)ret);
-                return;
-            }
-            case 0xe: { // rt_sigprocmask
-                int how = (int)arg0;
-                Ptr nset(arg1);
-                Ptr oset(arg2);
-                size_t sigsetsize = (size_t)arg3;
-                int ret = rt_sigprocmask(how, nset, oset, sigsetsize);
-                vm_->set(R64::RAX, (u64)ret);
-                return;
-            }
-            case 0x10: { // ioctl
-                int fd = (int)arg0;
-                unsigned long request = (unsigned long)arg1;
-                Ptr argp{arg2};
-                int ret = ioctl(fd, request, argp);
-                vm_->set(R64::RAX, (u64)ret);
-                return;
-            }
-            case 0x11: { // pread64
-                i32 fd = (i32)arg0;
-                Ptr8 buf{arg1};
-                size_t count = (size_t)arg2;
-                off_t offset = (off_t)arg3;
-                ssize_t nbytes = pread64(fd, buf, count, offset);
-                vm_->set(R64::RAX, (u64)nbytes);
-                return;
-            }
-            case 0x14: { // writev
-                int fd = (int)arg0;
-                Ptr iov{arg1};
-                int iovcnt = (int)arg2;
-                ssize_t nbytes = writev(fd, iov, iovcnt);
-                vm_->set(R64::RAX, (u64)nbytes);
-                return;
-            }
-            case 0x15: { // access
-                Ptr pathname{arg0};
-                int mode = (int)arg1;
-                int ret = access(pathname, mode);
-                vm_->set(R64::RAX, (u64)ret);
-                return;
-            }
-            case 0x17: { // select
-                int nfds = (int)arg0;
-                Ptr readfds{arg1};
-                Ptr writefds{arg2};
-                Ptr exceptfds{arg3};
-                Ptr timeout{arg4};
-                int ret = select(nfds, readfds, writefds, exceptfds, timeout);
-                vm_->set(R64::RAX, (u64)ret);
-                return;
-            }
-            case 0x20: { // dup
-                int oldfd = (int)arg0;
-                int ret = dup(oldfd);
-                vm_->set(R64::RAX, (u64)ret);
-                return;
-            }
-            case 0x26: {
-                int which = (int)arg0;
-                Ptr new_value{arg1};
-                Ptr old_value{arg2};
-                int ret = setitimer(which, new_value, old_value);
-                vm_->set(R64::RAX, (u64)ret);
-                return;
-            }
+            case 0x0: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::read, regs));
+            case 0x1: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::write, regs));
+            case 0x3: return vm_->set(R64::RAX, invoke_syscall_1(&Sys::close, regs));
+            case 0x4: return vm_->set(R64::RAX, invoke_syscall_2(&Sys::stat, regs));
+            case 0x5: return vm_->set(R64::RAX, invoke_syscall_2(&Sys::fstat, regs));
+            case 0x6: return vm_->set(R64::RAX, invoke_syscall_2(&Sys::lstat, regs));
+            case 0x8: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::lseek, regs));
+            case 0x9: return vm_->set(R64::RAX, invoke_syscall_6(&Sys::mmap, regs));
+            case 0xa: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::mprotect, regs));
+            case 0xb: return vm_->set(R64::RAX, invoke_syscall_2(&Sys::munmap, regs));
+            case 0xc: return vm_->set(R64::RAX, invoke_syscall_1(&Sys::brk, regs));
+            case 0xd: return vm_->set(R64::RAX, invoke_syscall_4(&Sys::rt_sigaction, regs));
+            case 0xe: return vm_->set(R64::RAX, invoke_syscall_4(&Sys::rt_sigprocmask, regs));
+            case 0x10: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::ioctl, regs));
+            case 0x11: return vm_->set(R64::RAX, invoke_syscall_4(&Sys::pread64, regs));
+            case 0x14: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::writev, regs));
+            case 0x15: return vm_->set(R64::RAX, invoke_syscall_2(&Sys::access, regs));
+            case 0x17: return vm_->set(R64::RAX, invoke_syscall_5(&Sys::select, regs));
+            case 0x20: return vm_->set(R64::RAX, invoke_syscall_1(&Sys::dup, regs));
+            case 0x26: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::setitimer, regs));
             case 0x27: { // getpid
                 vm_->set(R64::RAX, (u64)0xface);
                 return;
             }
-            case 0x29: { // socket
-                int domain = (int)arg0;
-                int type = (int)arg1;
-                int protocol = (int)arg2;
-                int ret = socket(domain, type, protocol);
-                vm_->set(R64::RAX, (u64)ret);
-                return;
-            }
-            case 0x3f: { // uname
-                Ptr buf{arg0};
-                int ret = uname(buf);
-                vm_->set(R64::RAX, (u64)ret);
-                return;
-            }
-            case 0x48: { // fcntl
-                int fd = (int)arg0;
-                int cmd = (int)arg1;
-                int arg = (int)arg2;
-                int ret = fcntl(fd, cmd, arg);
-                vm_->set(R64::RAX, (u64)ret);
-                return;
-            }
-            case 0x4f: { // getcwd
-                Ptr buf{arg0};
-                size_t size = (size_t)arg1;
-                Ptr ret = getcwd(buf, size);
-                vm_->set(R64::RAX, ret.address());
-                return;
-            }
-            case 0x50: { // chdir
-                Ptr path{arg0};
-                int ret = chdir(path);
-                vm_->set(R64::RAX, ret);
-                return;
-            }
-            case 0x53: { // mkdir
-                Ptr pathname {arg0};
-                mode_t mode = (mode_t)arg1;
-                int ret = mkdir(pathname, mode);
-                vm_->set(R64::RAX, (u64)ret);
-                return;
-            }
-            case 0x59: { // readlink
-                Ptr path {arg0};
-                Ptr buf {arg1};
-                size_t bufsize = (size_t)arg2;
-                ssize_t nchars = readlink(path, buf, bufsize);
-                vm_->set(R64::RAX, (u64)nchars);
-                return;
-            }
-            case 0x60: { // gettimeofday
-                Ptr tv{arg0};
-                Ptr tz{arg1};
-                int ret = gettimeofday(tv, tz);
-                vm_->set(R64::RAX, (u64)ret);
-                return;
-            }
-            case 0x63: { //sysinfo
-                Ptr info {arg0};
-                int ret = sysinfo(info);
-                vm_->set(R64::RAX, (u64)ret);
-                return;
-            }
-            case 0x66: { //getuid
-                int ret = getuid();
-                vm_->set(R64::RAX, (u64)ret);
-                return;
-            }
-            case 0x68: { //getgid
-                int ret = getgid();
-                vm_->set(R64::RAX, (u64)ret);
-                return;
-            }
-            case 0x6b: { //geteuid
-                int ret = geteuid();
-                vm_->set(R64::RAX, (u64)ret);
-                return;
-            }
-            case 0x6c: { //getegid
-                int ret = getegid();
-                vm_->set(R64::RAX, (u64)ret);
-                return;
-            }
-            case 0x89: { // statfs
-                Ptr path{arg0};
-                Ptr buf{arg1};
-                int ret = statfs(path, buf);
-                vm_->set(R64::RAX, (u64)ret);
-                return;
-            }
-            case 0x9e: { // arch_prctl
-                i32 code = (i32)arg0;
-                Ptr addr{arg1};
-                int ret = arch_prctl(code, addr);
-                vm_->set(R64::RAX, (u64)ret);
-                return;
-            }
+            case 0x29: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::socket, regs));
+            case 0x3f: return vm_->set(R64::RAX, invoke_syscall_1(&Sys::uname, regs));
+            case 0x48: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::fcntl, regs));
+            case 0x4f: return vm_->set(R64::RAX, invoke_syscall_2(&Sys::getcwd, regs));
+            case 0x50: return vm_->set(R64::RAX, invoke_syscall_1(&Sys::chdir, regs));
+            case 0x53: return vm_->set(R64::RAX, invoke_syscall_2(&Sys::mkdir, regs));
+            case 0x59: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::readlink, regs));
+            case 0x60: return vm_->set(R64::RAX, invoke_syscall_2(&Sys::gettimeofday, regs));
+            case 0x63: return vm_->set(R64::RAX, invoke_syscall_1(&Sys::sysinfo, regs));
+            case 0x66: return vm_->set(R64::RAX, invoke_syscall_0(&Sys::getuid, regs));
+            case 0x68: return vm_->set(R64::RAX, invoke_syscall_0(&Sys::getgid, regs));
+            case 0x6b: return vm_->set(R64::RAX, invoke_syscall_0(&Sys::geteuid, regs));
+            case 0x6c: return vm_->set(R64::RAX, invoke_syscall_0(&Sys::getegid, regs));
+            case 0x89: return vm_->set(R64::RAX, invoke_syscall_2(&Sys::statfs, regs));
+            case 0x9e: return vm_->set(R64::RAX, invoke_syscall_2(&Sys::arch_prctl, regs));
             case 0xba: { // gettid
                 vm_->set(R64::RAX, (u64)0xfeed);
                 return;
             }
-            case 0xbf: { // getxattr
-                Ptr path{arg0};
-                Ptr name{arg1};
-                Ptr value{arg2};
-                size_t size = (size_t)arg3;
-                ssize_t ret = getxattr(path, name, value, size);
-                vm_->set(R64::RAX, (u64)ret);
-                return;
-            }
-            case 0xc0: { // lgetxattr
-                Ptr path{arg0};
-                Ptr name{arg1};
-                Ptr value{arg2};
-                size_t size = (size_t)arg3;
-                ssize_t ret = lgetxattr(path, name, value, size);
-                vm_->set(R64::RAX, (u64)ret);
-                return;
-            }
-            case 0xc9: { // time
-                Ptr tloc{arg0};
-                time_t ret = time(tloc);
-                vm_->set(R64::RAX, (u64)ret);
-                return;
-            }
-            case 0xca: { // futex
-                Ptr32 uaddr(arg0);
-                int futex_op = (int)arg1;
-                uint32_t val = (uint32_t)arg2;
-                Ptr timeout(arg3);
-                Ptr32 uaddr2(arg4);
-                uint32_t val3 = (uint32_t)arg5;
-                long ret = futex(uaddr, futex_op, val, timeout, uaddr2, val3);
-                vm_->set(R64::RAX, (u64)ret);
-                return;
-            }
-            case 0xd9: { // getdents64
-                int fd = (int)arg0;
-                Ptr dirp{arg1};
-                size_t count = (size_t)arg2;
-                ssize_t ret = getdents64(fd, dirp, count);
-                vm_->set(R64::RAX, (u64)ret);
-                return;
-            }
-            case 0xda: { // set_tid_address
-                Ptr32 tidptr{arg0};
-                pid_t ret = set_tid_address(tidptr);
-                vm_->set(R64::RAX, (u64)ret);
-                return;
-            }
-            case 0xdd: { // posix_fadvise
-                int fd = (int)arg0;
-                off_t offset = (off_t)arg1;
-                off_t len = (off_t)arg2;
-                int advice = (int)arg3;
-                int ret = posix_fadvise(fd, offset, len, advice);
-                vm_->set(R64::RAX, (u64)ret);
-                return;
-            }
-            case 0xe4: { // clock_gettime
-                clockid_t clockid = (clockid_t)arg0;
-                Ptr tp(arg1);
-                int ret = clock_gettime(clockid, tp);
-                vm_->set(R64::RAX, (u64)ret);
-                return;
-            }
-            case 0xe7: { // exit_group
-                i32 errorCode = (i32)arg0;
-                exit_group(errorCode);
-                return;
-            }
-            case 0x101: { // openat
-                int dirfd = (int)arg0;
-                Ptr pathname{arg1};
-                int flags = (int)arg2;
-                mode_t mode = (mode_t)arg3;
-                int ret = openat(dirfd, pathname, flags, mode);
-                vm_->set(R64::RAX, (u64)ret);
-                return;
-            }
-            case 0x10e: { // pselect6
-                int nfds = (int)arg0;
-                Ptr readfds{arg1};
-                Ptr writefds{arg2};
-                Ptr exceptfds{arg3};
-                Ptr timeout{arg4};
-                Ptr sigmask{arg4};
-                int ret = pselect6(nfds, readfds, writefds, exceptfds, timeout, sigmask);
-                vm_->set(R64::RAX, (u64)ret);
-                return;
-            }
-            case 0x111: { // set_robust_list
-                Ptr head(arg0);
-                size_t len = (size_t)arg1;
-                long ret = set_robust_list(head, len);
-                vm_->set(R64::RAX, (u64)ret);
-                return;
-            }
-            case 0x112: { // get_robust_list
-                pid_t pid = (pid_t)arg0;
-                Ptr64 head_ptr(arg1);
-                Ptr64 len_ptr(arg2);
-                long ret = get_robust_list(pid, head_ptr, len_ptr);
-                vm_->set(R64::RAX, (u64)ret);
-                return;
-            }
-            case 0x12e: { // prlimit64
-                pid_t pid = (pid_t)arg0;
-                int resource = (int)arg1;
-                Ptr new_limit(arg2);
-                Ptr old_limit(arg3);
-                int ret = prlimit64(pid, resource, new_limit, old_limit);
-                vm_->set(R64::RAX, (u64)ret);
-                return;
-            }
-            case 0x13e: { // getrandom
-                Ptr buf{arg0};
-                size_t len = (size_t)arg1;
-                int flags = (int)arg2;
-                ssize_t ret = getrandom(buf, len, flags);
-                vm_->set(R64::RAX, (u64)ret);
-                return;
-            }
-            case 0x14c: { // statx
-                int dirfd = (int)arg0;
-                Ptr8 pathname{arg1};
-                int flags = (int)arg2;
-                unsigned int mask = (unsigned int)arg3;
-                Ptr statxbuf{arg4};
-                int ret = statx(dirfd, pathname, flags, mask, statxbuf);
-                vm_->set(R64::RAX, (u64)ret);
-                return;
-            }
+            case 0xbf: return vm_->set(R64::RAX, invoke_syscall_4(&Sys::getxattr, regs));
+            case 0xc0: return vm_->set(R64::RAX, invoke_syscall_4(&Sys::lgetxattr, regs));
+            case 0xc9: return vm_->set(R64::RAX, invoke_syscall_1(&Sys::time, regs));
+            case 0xca: return vm_->set(R64::RAX, invoke_syscall_6(&Sys::futex, regs));
+            case 0xd9: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::getdents64, regs));
+            case 0xda: return vm_->set(R64::RAX, invoke_syscall_1(&Sys::set_tid_address, regs));
+            case 0xdd: return vm_->set(R64::RAX, invoke_syscall_4(&Sys::posix_fadvise, regs));
+            case 0xe4: return vm_->set(R64::RAX, invoke_syscall_2(&Sys::clock_gettime, regs));
+            case 0xe7: return vm_->set(R64::RAX, invoke_syscall_1(&Sys::exit_group, regs));
+            case 0x101: return vm_->set(R64::RAX, invoke_syscall_4(&Sys::openat, regs));
+            case 0x10e: return vm_->set(R64::RAX, invoke_syscall_6(&Sys::pselect6, regs));
+            case 0x111: return vm_->set(R64::RAX, invoke_syscall_2(&Sys::set_robust_list, regs));
+            case 0x112: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::get_robust_list, regs));
+            case 0x12e: return vm_->set(R64::RAX, invoke_syscall_4(&Sys::prlimit64, regs));
+            case 0x13e: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::getrandom, regs));
+            case 0x14c: return vm_->set(R64::RAX, invoke_syscall_5(&Sys::statx, regs));
             default: break;
         }
         verify(false, [&]() {
@@ -787,10 +455,11 @@ namespace x64 {
         });
     }
 
-    void Sys::exit_group(int status) {
+    u64 Sys::exit_group(int status) {
         (void)status;
         if(vm_->logSyscalls()) fmt::print("Sys::exit_group(status={})\n", status);
         vm_->stop();
+        return 0;
     }
 
     ssize_t Sys::getxattr(Ptr path, Ptr name, Ptr value, size_t size) {
