@@ -434,6 +434,8 @@ namespace x64 {
         
         void exec(const Rep<Cmps<M8, M8>>&);
         
+        void exec(const Rep<Stos<M8, R8>>&);
+        void exec(const Rep<Stos<M16, R16>>&);
         void exec(const Rep<Stos<M32, R32>>&);
         void exec(const Rep<Stos<M64, R64>>&);
 

@@ -1350,11 +1350,17 @@ namespace x64 {
         assert(x86detail.op_count == 2);
         const cs_x86_op& dst = x86detail.operands[0];
         const cs_x86_op& src = x86detail.operands[1];
+        auto r8src = asRegister8(src);
+        auto m8dst = asMemory8(dst);
+        auto r16src = asRegister16(src);
+        auto m16dst = asMemory16(dst);
         auto r32src = asRegister32(src);
         auto m32dst = asMemory32(dst);
         auto r64src = asRegister64(src);
         auto m64dst = asMemory64(dst);
         if(prefix == X86_PREFIX_REP) {
+            if(m8dst && r8src) return make_wrapper< Rep< Stos<M8, R8> >>(insn.address, m8dst.value(), r8src.value());
+            if(m16dst && r16src) return make_wrapper< Rep< Stos<M16, R16> >>(insn.address, m16dst.value(), r16src.value());
             if(m32dst && r32src) return make_wrapper< Rep< Stos<M32, R32> >>(insn.address, m32dst.value(), r32src.value());
             if(m64dst && r64src) return make_wrapper< Rep< Stos<M64, R64> >>(insn.address, m64dst.value(), r64src.value());
         }

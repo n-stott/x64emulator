@@ -845,6 +845,34 @@ namespace x64 {
         set(R64::RDI, s2ptr.address());
     }
     
+    void Cpu::exec(const Rep<Stos<M8, R8>>& ins) {
+        u32 counter = get(R32::ECX);
+        Ptr8 dptr = resolve(ins.op.dst);
+        u8 val = get(ins.op.src);
+        verify(flags_.direction == 0);
+        while(counter) {
+            mmu_->write8(dptr, val);
+            ++dptr;
+            --counter;
+        }
+        set(R64::RCX, counter);
+        set(R64::RDI, dptr.address());
+    }
+    
+    void Cpu::exec(const Rep<Stos<M16, R16>>& ins) {
+        u32 counter = get(R32::ECX);
+        Ptr16 dptr = resolve(ins.op.dst);
+        u16 val = get(ins.op.src);
+        verify(flags_.direction == 0);
+        while(counter) {
+            mmu_->write16(dptr, val);
+            ++dptr;
+            --counter;
+        }
+        set(R64::RCX, counter);
+        set(R64::RDI, dptr.address());
+    }
+    
     void Cpu::exec(const Rep<Stos<M32, R32>>& ins) {
         u32 counter = get(R32::ECX);
         Ptr32 dptr = resolve(ins.op.dst);
