@@ -72,6 +72,7 @@ namespace x64 {
                 crash();
             }
         }
+        fmt::print("VM completed execution of {} instructions\n", ticks);
     }
 
     extern bool signal_interrupt;
