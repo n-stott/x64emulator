@@ -60,13 +60,14 @@ namespace x64 {
         size_t ticks = 0;
         while(!stop_ && cpu_.regs_.rip_ != 0x0) {
             try {
-                const X86Instruction* instruction = fetchInstruction();
+                const X64Instruction* instruction = fetchInstruction();
                 verify(!!instruction, [&]() {
                     fmt::print("Undefined instruction near {:#x}\n", cpu_.regs_.rip_);
                 });
                 log(ticks, instruction);
                 ++ticks;
-                instruction->exec(&cpu_);
+                cpu_.exec(*instruction);
+                // instruction->exec(&cpu_);
             } catch(const VerificationException&) {
                 fmt::print("Interpreter crash after {} instructions\n", ticks);
                 crash();
@@ -77,24 +78,24 @@ namespace x64 {
 
     extern bool signal_interrupt;
 
-    const X86Instruction* VM::fetchInstruction() {
+    const X64Instruction* VM::fetchInstruction() {
         verify(!signal_interrupt);
         verify(!!currentExecutedSection_);
         verify(currentInstructionIdx_ != (size_t)(-1));
         verify(currentInstructionIdx_ < currentExecutedSection_->instructions.size());
-        const X86Instruction* instruction = currentExecutedSection_->instructions[currentInstructionIdx_].get();
+        const X64Instruction& instruction = currentExecutedSection_->instructions[currentInstructionIdx_];
         if(currentInstructionIdx_+1 != currentExecutedSection_->instructions.size()) {
-            const X86Instruction* nextInstruction = currentExecutedSection_->instructions[currentInstructionIdx_+1].get();
-            cpu_.regs_.rip_ = nextInstruction->address;
+            const X64Instruction& nextInstruction = currentExecutedSection_->instructions[currentInstructionIdx_+1];
+            cpu_.regs_.rip_ = nextInstruction.address();
             ++currentInstructionIdx_;
         } else {
             currentInstructionIdx_ = (size_t)(-1);
             cpu_.regs_.rip_ = 0x0;
         }
-        return instruction;
+        return &instruction;
     }
 
-    void VM::log(size_t ticks, const X86Instruction* instruction) const {
+    void VM::log(size_t ticks, const X64Instruction* instruction) const {
         if(!logInstructions()) return;
         if(ticks < nbTicksBeforeLoggingInstructions_) return;
         verify(!!instruction, "Unexpected nullptr");
@@ -216,18 +217,18 @@ namespace x64 {
     VM::InstructionPosition VM::findSectionWithAddress(u64 address, const ExecutableSection* sectionHint) const {
         if(!!sectionHint) {
             auto it = std::lower_bound(sectionHint->instructions.begin(), sectionHint->instructions.end(), address, [&](const auto& a, u64 b) {
-                return a->address < b;
+                return a.address() < b;
             });
-            if(it != sectionHint->instructions.end() && address == (*it)->address) {
+            if(it != sectionHint->instructions.end() && address == it->address()) {
                 size_t index = (size_t)std::distance(sectionHint->instructions.begin(), it);
                 return InstructionPosition { sectionHint, index };
             }
         }
         for(const auto& execSection : executableSections_) {
             auto it = std::lower_bound(execSection.instructions.begin(), execSection.instructions.end(), address, [&](const auto& a, u64 b) {
-                return a->address < b;
+                return a.address() < b;
             });
-            if(it != execSection.instructions.end() && address == (*it)->address) {
+            if(it != execSection.instructions.end() && address == it->address()) {
                 size_t index = (size_t)std::distance(execSection.instructions.begin(), it);
                 return InstructionPosition { &execSection, index };
             }
@@ -318,15 +319,15 @@ namespace x64 {
         elf64->forAllDynamicSymbols(loadSymbol);
     }
 
-    std::string VM::callName(const X86Instruction& instruction) const {
-        if(const auto* call = dynamic_cast<const InstructionWrapper<CallDirect>*>(&instruction)) {
-            return calledFunctionName(call->instruction.symbolAddress);
+    std::string VM::callName(const X64Instruction& instruction) const {
+        if(instruction.insn() == Insn::CALLDIRECT) {
+            return calledFunctionName(instruction.op0<Imm>().immediate);
         }
-        if(const auto* call = dynamic_cast<const InstructionWrapper<CallIndirect<RM32>>*>(&instruction)) {
-            return calledFunctionName(cpu_.get(call->instruction.src));
+        if(instruction.insn() == Insn::CALLINDIRECT_RM32) {
+            return calledFunctionName(cpu_.get(instruction.op0<RM32>()));
         }
-        if(const auto* call = dynamic_cast<const InstructionWrapper<CallIndirect<RM64>>*>(&instruction)) {
-            return calledFunctionName(cpu_.get(call->instruction.src));
+        if(instruction.insn() == Insn::CALLINDIRECT_RM64) {
+            return calledFunctionName(cpu_.get(instruction.op0<RM64>()));
         }
         return "";
     }
@@ -347,13 +348,11 @@ namespace x64 {
         }
 
         // If we are in the PLT instead, lets' look at the first instruction to determine the jmp location
-        const X86Instruction* jmpInsn = pos.section->instructions[pos.index].get();
-        const auto* jmp = dynamic_cast<const InstructionWrapper<Jmp<M64>>*>(jmpInsn);
-        if(!!jmp) {
+        const X64Instruction& jmpInsn = pos.section->instructions[pos.index];
+        if(jmpInsn.insn() == Insn::JMP_RM64) {
             Registers regs;
-            regs.rip_ = jmpInsn->address + 6; // add instruction size offset
-            auto ptr = regs.resolve(jmp->instruction.symbolAddress);
-            auto dst = mmu_.read64(ptr);
+            regs.rip_ = jmpInsn.address() + 6; // add instruction size offset
+            auto dst = cpu_.get(jmpInsn.op0<RM64>());
             auto symbolsAtAddress = symbolProvider_->lookupSymbol(dst);
             if(!symbolsAtAddress.empty()) {
                 functionNameCache_[address] = symbolsAtAddress[0]->demangledSymbol;

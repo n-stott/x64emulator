@@ -2,7 +2,11 @@
 #define TYPES_H
 
 #include "utils/utils.h"
+#include <array>
+#include <cassert>
+#include <cstring>
 #include <optional>
+#include <string>
 #include <variant>
 
 namespace x64 {
@@ -20,7 +24,7 @@ namespace x64 {
         u8 extendedValue;
     };
 
-    enum class Segment {
+    enum class Segment : u8 {
         CS,
         DS,
         ES,
@@ -30,7 +34,7 @@ namespace x64 {
         UNK,
     };
 
-    enum class R8 {
+    enum class R8 : u8 {
         AH,
         AL,
         BH,
@@ -53,7 +57,7 @@ namespace x64 {
         R15B,
     };
 
-    enum class R16 {
+    enum class R16 : u8 {
         BP,
         SP,
         DI,
@@ -72,7 +76,7 @@ namespace x64 {
         R15W,
     };
 
-    enum class R32 {
+    enum class R32 : u8 {
         EBP,
         ESP,
         EDI,
@@ -92,7 +96,7 @@ namespace x64 {
         EIZ,
     };
 
-    enum class R64 {
+    enum class R64 : u8 {
         RBP,
         RSP,
         RDI,
@@ -112,7 +116,7 @@ namespace x64 {
         RIP,
     };
 
-    enum class RSSE {
+    enum class RSSE : u8 {
         XMM0,
         XMM1,
         XMM2,
@@ -184,8 +188,10 @@ namespace x64 {
     };
 
     struct Encoding {
-        std::optional<R64> base;
-        std::optional<R64> index;
+        R64 base;
+        R64 index;
+        bool hasBase;
+        bool hasIndex;
         u8 scale;
         i32 displacement;
     };
@@ -263,7 +269,11 @@ namespace x64 {
     using Ptr224 = SPtr<Size::FPUENV>;
 
     template<typename Reg, Size size>
-    using RM = std::variant<Reg, M<size>>;
+    struct RM {
+        bool isReg;
+        Reg reg;
+        M<size> mem;
+    };
 
     using M8 = M<Size::BYTE>;
     using RM8 = RM<R8, Size::BYTE>;

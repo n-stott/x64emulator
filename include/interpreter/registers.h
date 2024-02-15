@@ -228,8 +228,8 @@ namespace x64 {
         }
 
         u64 resolve(Encoding enc) const {
-            return (enc.base.has_value() ? get(enc.base.value()) : 0)
-                    + enc.scale * (enc.index.has_value() ? get(enc.index.value()) : 0)
+            return (enc.hasBase ? get(enc.base) : 0)
+                    + enc.scale * (enc.hasIndex ? get(enc.index) : 0)
                     + (u64)enc.displacement;
         }
 

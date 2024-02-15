@@ -2,6 +2,7 @@
 #define CAPSTONEWRAPPER_H
 
 #include "types.h"
+#include "instructions/x64instruction.h"
 #include <memory>
 #include <string>
 #include <string_view>
@@ -16,7 +17,7 @@ namespace x64 {
     class CapstoneWrapper {
     public:
         struct DisassemblyResult {
-            std::vector<std::unique_ptr<X86Instruction>> instructions;
+            std::vector<X64Instruction> instructions;
             const u8* next;
             size_t remainingSize;
             u64 nextAddress;
@@ -24,237 +25,237 @@ namespace x64 {
         static DisassemblyResult disassembleRange(const u8* begin, size_t size, u64 address);
 
     private:
-        static std::unique_ptr<X86Instruction> makeInstruction(const cs_insn& insn);
+        static X64Instruction makeInstruction(const cs_insn& insn);
 
-        static std::unique_ptr<X86Instruction> makePush(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makePop(const cs_insn& insn);
+        static X64Instruction makePush(const cs_insn& insn);
+        static X64Instruction makePop(const cs_insn& insn);
 
-        static std::unique_ptr<X86Instruction> makeMov(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeMovsx(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeMovzx(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeMovsxd(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeLea(const cs_insn& insn);
+        static X64Instruction makeMov(const cs_insn& insn);
+        static X64Instruction makeMovsx(const cs_insn& insn);
+        static X64Instruction makeMovzx(const cs_insn& insn);
+        static X64Instruction makeMovsxd(const cs_insn& insn);
+        static X64Instruction makeLea(const cs_insn& insn);
 
-        static std::unique_ptr<X86Instruction> makeAdd(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeAdc(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeSub(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeSbb(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeNeg(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeMul(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeImul(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeDiv(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeIdiv(const cs_insn& insn);
+        static X64Instruction makeAdd(const cs_insn& insn);
+        static X64Instruction makeAdc(const cs_insn& insn);
+        static X64Instruction makeSub(const cs_insn& insn);
+        static X64Instruction makeSbb(const cs_insn& insn);
+        static X64Instruction makeNeg(const cs_insn& insn);
+        static X64Instruction makeMul(const cs_insn& insn);
+        static X64Instruction makeImul(const cs_insn& insn);
+        static X64Instruction makeDiv(const cs_insn& insn);
+        static X64Instruction makeIdiv(const cs_insn& insn);
 
-        static std::unique_ptr<X86Instruction> makeAnd(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeOr(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeXor(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeNot(const cs_insn& insn);
+        static X64Instruction makeAnd(const cs_insn& insn);
+        static X64Instruction makeOr(const cs_insn& insn);
+        static X64Instruction makeXor(const cs_insn& insn);
+        static X64Instruction makeNot(const cs_insn& insn);
 
-        static std::unique_ptr<X86Instruction> makeXchg(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeXadd(const cs_insn& insn);
+        static X64Instruction makeXchg(const cs_insn& insn);
+        static X64Instruction makeXadd(const cs_insn& insn);
 
-        static std::unique_ptr<X86Instruction> makeCall(const cs_insn& insn);
+        static X64Instruction makeCall(const cs_insn& insn);
 
-        static std::unique_ptr<X86Instruction> makeRet(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeLeave(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeHalt(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeNop(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeUd2(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeSyscall(const cs_insn& insn);
+        static X64Instruction makeRet(const cs_insn& insn);
+        static X64Instruction makeLeave(const cs_insn& insn);
+        static X64Instruction makeHalt(const cs_insn& insn);
+        static X64Instruction makeNop(const cs_insn& insn);
+        static X64Instruction makeUd2(const cs_insn& insn);
+        static X64Instruction makeSyscall(const cs_insn& insn);
 
-        static std::unique_ptr<X86Instruction> makeCdq(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeCqo(const cs_insn& insn);
+        static X64Instruction makeCdq(const cs_insn& insn);
+        static X64Instruction makeCqo(const cs_insn& insn);
 
-        static std::unique_ptr<X86Instruction> makeInc(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeDec(const cs_insn& insn);
+        static X64Instruction makeInc(const cs_insn& insn);
+        static X64Instruction makeDec(const cs_insn& insn);
 
-        static std::unique_ptr<X86Instruction> makeShr(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeShl(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeShrd(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeShld(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeSar(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeRol(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeRor(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeTzcnt(const cs_insn& insn);
-
-        template<Cond cond>
-        static std::unique_ptr<X86Instruction> makeSet(const cs_insn& insn);
-
-        static std::unique_ptr<X86Instruction> makeBt(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeBtr(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeBtc(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeBts(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeTest(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeCmp(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeCmpxchg(const cs_insn& insn);
-
-        static std::unique_ptr<X86Instruction> makeJmp(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeJcc(Cond cond, const cs_insn& insn);
-
-        static std::unique_ptr<X86Instruction> makeBsr(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeBsf(const cs_insn& insn);
-
-        static std::unique_ptr<X86Instruction> makeRepStringop(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeRepzStringop(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeRepnzStringop(const cs_insn& insn);
-
-        static std::unique_ptr<X86Instruction> makeCld(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeStd(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeStos(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeCmps(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeMovs(const cs_insn& insn);
+        static X64Instruction makeShr(const cs_insn& insn);
+        static X64Instruction makeShl(const cs_insn& insn);
+        static X64Instruction makeShrd(const cs_insn& insn);
+        static X64Instruction makeShld(const cs_insn& insn);
+        static X64Instruction makeSar(const cs_insn& insn);
+        static X64Instruction makeRol(const cs_insn& insn);
+        static X64Instruction makeRor(const cs_insn& insn);
+        static X64Instruction makeTzcnt(const cs_insn& insn);
 
         template<Cond cond>
-        static std::unique_ptr<X86Instruction> makeCmov(const cs_insn& insn);
+        static X64Instruction makeSet(const cs_insn& insn);
 
-        static std::unique_ptr<X86Instruction> makeCwde(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeCdqe(const cs_insn& insn);
+        static X64Instruction makeBt(const cs_insn& insn);
+        static X64Instruction makeBtr(const cs_insn& insn);
+        static X64Instruction makeBtc(const cs_insn& insn);
+        static X64Instruction makeBts(const cs_insn& insn);
+        static X64Instruction makeTest(const cs_insn& insn);
+        static X64Instruction makeCmp(const cs_insn& insn);
+        static X64Instruction makeCmpxchg(const cs_insn& insn);
 
-        static std::unique_ptr<X86Instruction> makeBswap(const cs_insn& insn);
+        static X64Instruction makeJmp(const cs_insn& insn);
+        static X64Instruction makeJcc(Cond cond, const cs_insn& insn);
 
-        static std::unique_ptr<X86Instruction> makePxor(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeMovaps(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeMovabs(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeMovdqa(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeMovdqu(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeMovups(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeMovapd(const cs_insn& insn);
+        static X64Instruction makeBsr(const cs_insn& insn);
+        static X64Instruction makeBsf(const cs_insn& insn);
 
-        static std::unique_ptr<X86Instruction> makeMovd(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeMovq(const cs_insn& insn);
+        static X64Instruction makeRepStringop(const cs_insn& insn);
+        static X64Instruction makeRepzStringop(const cs_insn& insn);
+        static X64Instruction makeRepnzStringop(const cs_insn& insn);
 
-        static std::unique_ptr<X86Instruction> makeFldz(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeFld1(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeFld(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeFild(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeFstp(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeFistp(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeFxch(const cs_insn& insn);
+        static X64Instruction makeCld(const cs_insn& insn);
+        static X64Instruction makeStd(const cs_insn& insn);
+        static X64Instruction makeStos(const cs_insn& insn);
+        static X64Instruction makeCmps(const cs_insn& insn);
+        static X64Instruction makeMovs(const cs_insn& insn);
+
+        template<Cond cond>
+        static X64Instruction makeCmov(const cs_insn& insn);
+
+        static X64Instruction makeCwde(const cs_insn& insn);
+        static X64Instruction makeCdqe(const cs_insn& insn);
+
+        static X64Instruction makeBswap(const cs_insn& insn);
+
+        static X64Instruction makePxor(const cs_insn& insn);
+        static X64Instruction makeMovaps(const cs_insn& insn);
+        static X64Instruction makeMovabs(const cs_insn& insn);
+        static X64Instruction makeMovdqa(const cs_insn& insn);
+        static X64Instruction makeMovdqu(const cs_insn& insn);
+        static X64Instruction makeMovups(const cs_insn& insn);
+        static X64Instruction makeMovapd(const cs_insn& insn);
+
+        static X64Instruction makeMovd(const cs_insn& insn);
+        static X64Instruction makeMovq(const cs_insn& insn);
+
+        static X64Instruction makeFldz(const cs_insn& insn);
+        static X64Instruction makeFld1(const cs_insn& insn);
+        static X64Instruction makeFld(const cs_insn& insn);
+        static X64Instruction makeFild(const cs_insn& insn);
+        static X64Instruction makeFstp(const cs_insn& insn);
+        static X64Instruction makeFistp(const cs_insn& insn);
+        static X64Instruction makeFxch(const cs_insn& insn);
         
-        static std::unique_ptr<X86Instruction> makeFaddp(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeFsubrp(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeFmul(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeFdiv(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeFdivp(const cs_insn& insn);
+        static X64Instruction makeFaddp(const cs_insn& insn);
+        static X64Instruction makeFsubrp(const cs_insn& insn);
+        static X64Instruction makeFmul(const cs_insn& insn);
+        static X64Instruction makeFdiv(const cs_insn& insn);
+        static X64Instruction makeFdivp(const cs_insn& insn);
 
-        static std::unique_ptr<X86Instruction> makeFcomi(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeFucomi(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeFrndint(const cs_insn& insn);
+        static X64Instruction makeFcomi(const cs_insn& insn);
+        static X64Instruction makeFucomi(const cs_insn& insn);
+        static X64Instruction makeFrndint(const cs_insn& insn);
 
         template<Cond cond>
-        static std::unique_ptr<X86Instruction> makeFcmov(const cs_insn& insn);
+        static X64Instruction makeFcmov(const cs_insn& insn);
 
-        static std::unique_ptr<X86Instruction> makeFnstcw(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeFldcw(const cs_insn& insn);
+        static X64Instruction makeFnstcw(const cs_insn& insn);
+        static X64Instruction makeFldcw(const cs_insn& insn);
 
-        static std::unique_ptr<X86Instruction> makeFnstsw(const cs_insn& insn);
+        static X64Instruction makeFnstsw(const cs_insn& insn);
 
-        static std::unique_ptr<X86Instruction> makeFnstenv(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeFldenv(const cs_insn& insn);
+        static X64Instruction makeFnstenv(const cs_insn& insn);
+        static X64Instruction makeFldenv(const cs_insn& insn);
 
-        static std::unique_ptr<X86Instruction> makeMovss(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeMovsd(const cs_insn& insn);
+        static X64Instruction makeMovss(const cs_insn& insn);
+        static X64Instruction makeMovsd(const cs_insn& insn);
 
-        static std::unique_ptr<X86Instruction> makeAddss(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeAddsd(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeSubss(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeSubsd(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeMulsd(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeDivss(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeDivsd(const cs_insn& insn);
+        static X64Instruction makeAddss(const cs_insn& insn);
+        static X64Instruction makeAddsd(const cs_insn& insn);
+        static X64Instruction makeSubss(const cs_insn& insn);
+        static X64Instruction makeSubsd(const cs_insn& insn);
+        static X64Instruction makeMulsd(const cs_insn& insn);
+        static X64Instruction makeDivss(const cs_insn& insn);
+        static X64Instruction makeDivsd(const cs_insn& insn);
 
-        static std::unique_ptr<X86Instruction> makeComiss(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeComisd(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeUcomiss(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeUcomisd(const cs_insn& insn);
+        static X64Instruction makeComiss(const cs_insn& insn);
+        static X64Instruction makeComisd(const cs_insn& insn);
+        static X64Instruction makeUcomiss(const cs_insn& insn);
+        static X64Instruction makeUcomisd(const cs_insn& insn);
 
-        static std::unique_ptr<X86Instruction> makeMaxss(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeMaxsd(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeMinss(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeMinsd(const cs_insn& insn);
+        static X64Instruction makeMaxss(const cs_insn& insn);
+        static X64Instruction makeMaxsd(const cs_insn& insn);
+        static X64Instruction makeMinss(const cs_insn& insn);
+        static X64Instruction makeMinsd(const cs_insn& insn);
 
         template<FCond cond>
-        static std::unique_ptr<X86Instruction> makeCmpsd(const cs_insn& insn);
+        static X64Instruction makeCmpsd(const cs_insn& insn);
 
-        static std::unique_ptr<X86Instruction> makeCvtsi2ss(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeCvtsi2sd(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeCvtss2sd(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeCvttsd2si(const cs_insn& insn);
+        static X64Instruction makeCvtsi2ss(const cs_insn& insn);
+        static X64Instruction makeCvtsi2sd(const cs_insn& insn);
+        static X64Instruction makeCvtss2sd(const cs_insn& insn);
+        static X64Instruction makeCvttsd2si(const cs_insn& insn);
 
-        static std::unique_ptr<X86Instruction> makePand(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makePandn(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makePor(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeAndpd(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeAndnpd(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeOrpd(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeXorpd(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeShufpd(const cs_insn& insn);
+        static X64Instruction makePand(const cs_insn& insn);
+        static X64Instruction makePandn(const cs_insn& insn);
+        static X64Instruction makePor(const cs_insn& insn);
+        static X64Instruction makeAndpd(const cs_insn& insn);
+        static X64Instruction makeAndnpd(const cs_insn& insn);
+        static X64Instruction makeOrpd(const cs_insn& insn);
+        static X64Instruction makeXorpd(const cs_insn& insn);
+        static X64Instruction makeShufpd(const cs_insn& insn);
 
-        static std::unique_ptr<X86Instruction> makeMovlps(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeMovhps(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeMovhlps(const cs_insn& insn);
+        static X64Instruction makeMovlps(const cs_insn& insn);
+        static X64Instruction makeMovhps(const cs_insn& insn);
+        static X64Instruction makeMovhlps(const cs_insn& insn);
 
-        static std::unique_ptr<X86Instruction> makePunpcklbw(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makePunpcklwd(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makePunpckldq(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makePunpcklqdq(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makePunpckhbw(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makePunpckhwd(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makePunpckhdq(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makePunpckhqdq(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makePshufb(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makePshufd(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makePcmpeqb(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makePcmpeqw(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makePcmpeqd(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makePcmpeqq(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makePcmpgtb(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makePcmpgtw(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makePcmpgtd(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makePcmpgtq(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makePmovmskb(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makePaddb(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makePaddw(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makePaddd(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makePaddq(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makePsubb(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makePsubw(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makePsubd(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makePsubq(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makePmaxub(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makePminub(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makePtest(const cs_insn& insn);
+        static X64Instruction makePunpcklbw(const cs_insn& insn);
+        static X64Instruction makePunpcklwd(const cs_insn& insn);
+        static X64Instruction makePunpckldq(const cs_insn& insn);
+        static X64Instruction makePunpcklqdq(const cs_insn& insn);
+        static X64Instruction makePunpckhbw(const cs_insn& insn);
+        static X64Instruction makePunpckhwd(const cs_insn& insn);
+        static X64Instruction makePunpckhdq(const cs_insn& insn);
+        static X64Instruction makePunpckhqdq(const cs_insn& insn);
+        static X64Instruction makePshufb(const cs_insn& insn);
+        static X64Instruction makePshufd(const cs_insn& insn);
+        static X64Instruction makePcmpeqb(const cs_insn& insn);
+        static X64Instruction makePcmpeqw(const cs_insn& insn);
+        static X64Instruction makePcmpeqd(const cs_insn& insn);
+        static X64Instruction makePcmpeqq(const cs_insn& insn);
+        static X64Instruction makePcmpgtb(const cs_insn& insn);
+        static X64Instruction makePcmpgtw(const cs_insn& insn);
+        static X64Instruction makePcmpgtd(const cs_insn& insn);
+        static X64Instruction makePcmpgtq(const cs_insn& insn);
+        static X64Instruction makePmovmskb(const cs_insn& insn);
+        static X64Instruction makePaddb(const cs_insn& insn);
+        static X64Instruction makePaddw(const cs_insn& insn);
+        static X64Instruction makePaddd(const cs_insn& insn);
+        static X64Instruction makePaddq(const cs_insn& insn);
+        static X64Instruction makePsubb(const cs_insn& insn);
+        static X64Instruction makePsubw(const cs_insn& insn);
+        static X64Instruction makePsubd(const cs_insn& insn);
+        static X64Instruction makePsubq(const cs_insn& insn);
+        static X64Instruction makePmaxub(const cs_insn& insn);
+        static X64Instruction makePminub(const cs_insn& insn);
+        static X64Instruction makePtest(const cs_insn& insn);
 
-        static std::unique_ptr<X86Instruction> makePsllw(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makePslld(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makePsllq(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makePsrlw(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makePsrld(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makePsrlq(const cs_insn& insn);
+        static X64Instruction makePsllw(const cs_insn& insn);
+        static X64Instruction makePslld(const cs_insn& insn);
+        static X64Instruction makePsllq(const cs_insn& insn);
+        static X64Instruction makePsrlw(const cs_insn& insn);
+        static X64Instruction makePsrld(const cs_insn& insn);
+        static X64Instruction makePsrlq(const cs_insn& insn);
 
-        static std::unique_ptr<X86Instruction> makePslldq(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makePsrldq(const cs_insn& insn);
+        static X64Instruction makePslldq(const cs_insn& insn);
+        static X64Instruction makePsrldq(const cs_insn& insn);
 
-        static std::unique_ptr<X86Instruction> makePackuswb(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makePackusdw(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makePacksswb(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makePackssdw(const cs_insn& insn);
+        static X64Instruction makePackuswb(const cs_insn& insn);
+        static X64Instruction makePackusdw(const cs_insn& insn);
+        static X64Instruction makePacksswb(const cs_insn& insn);
+        static X64Instruction makePackssdw(const cs_insn& insn);
 
-        static std::unique_ptr<X86Instruction> makePcmpistri(const cs_insn& insn);
+        static X64Instruction makePcmpistri(const cs_insn& insn);
 
-        static std::unique_ptr<X86Instruction> makeRdtsc(const cs_insn& insn);
+        static X64Instruction makeRdtsc(const cs_insn& insn);
 
-        static std::unique_ptr<X86Instruction> makeCpuid(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeXgetbv(const cs_insn& insn);
+        static X64Instruction makeCpuid(const cs_insn& insn);
+        static X64Instruction makeXgetbv(const cs_insn& insn);
 
-        static std::unique_ptr<X86Instruction> makeFxsave(const cs_insn& insn);
-        static std::unique_ptr<X86Instruction> makeFxrstor(const cs_insn& insn);
+        static X64Instruction makeFxsave(const cs_insn& insn);
+        static X64Instruction makeFxrstor(const cs_insn& insn);
 
-        static std::unique_ptr<X86Instruction> makeFwait(const cs_insn& insn);
+        static X64Instruction makeFwait(const cs_insn& insn);
 
         // Instructions not supported by capstone
-        static std::unique_ptr<X86Instruction> makeRdpkru(u64 address);
-        static std::unique_ptr<X86Instruction> makeWrpkru(u64 address);
+        static X64Instruction makeRdpkru(u64 address);
+        static X64Instruction makeWrpkru(u64 address);
 
     };
 }

@@ -28,6 +28,7 @@ add_library(emulator STATIC
     src/interpreter/mmu.cpp
     src/interpreter/x87.cpp
     src/interpreter/syscalls.cpp
+    src/instructions/x64instruction.cpp
     src/utils/host.cpp
     src/utils/utils.cpp
 )

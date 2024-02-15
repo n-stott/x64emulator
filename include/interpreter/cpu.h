@@ -5,6 +5,7 @@
 #include "interpreter/flags.h"
 #include "interpreter/x87.h"
 #include "instructions/allinstructions.h"
+#include "instructions/x64instruction.h"
 
 namespace x64 {
 
@@ -143,6 +144,8 @@ namespace x64 {
         void execCmpxchg64Impl(Dst dst, u64 src);
 
     public:
+        void exec(const X64Instruction&);
+
         void exec(const Add<RM8, RM8>&);
         void exec(const Add<RM8, Imm>&);
         void exec(const Add<RM16, RM16>&);

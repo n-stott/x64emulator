@@ -70,113 +70,63 @@ namespace x64 {
     }
 
     u8 Cpu::get(RM8 src) const {
-        return std::visit([&](auto&& arg) {
-            using T = std::decay_t<decltype(arg)>;
-            if constexpr(std::is_same_v<T, R8>) {
-                return get(arg);
-            } else {
-                return get(resolve(arg));
-            }
-        }, src);
+        return src.isReg ? get(src.reg) : get(resolve(src.mem));
     }
 
     u16 Cpu::get(RM16 src) const {
-        return std::visit([&](auto&& arg) {
-            using T = std::decay_t<decltype(arg)>;
-            if constexpr(std::is_same_v<T, R16>) {
-                return get(arg);
-            } else {
-                return get(resolve(arg));
-            }
-        }, src);
+        return src.isReg ? get(src.reg) : get(resolve(src.mem));
     }
 
     u32 Cpu::get(RM32 src) const {
-        return std::visit([&](auto&& arg) {
-            using T = std::decay_t<decltype(arg)>;
-            if constexpr(std::is_same_v<T, R32>) {
-                return get(arg);
-            } else {
-                return get(resolve(arg));
-            }
-        }, src);
+        return src.isReg ? get(src.reg) : get(resolve(src.mem));
     }
 
     u64 Cpu::get(RM64 src) const {
-        return std::visit([&](auto&& arg) {
-            using T = std::decay_t<decltype(arg)>;
-            if constexpr(std::is_same_v<T, R64>) {
-                return get(arg);
-            } else {
-                return get(resolve(arg));
-            }
-        }, src);
+        return src.isReg ? get(src.reg) : get(resolve(src.mem));
     }
 
     Xmm Cpu::get(RMSSE src) const {
-        return std::visit([&](auto&& arg) {
-            using T = std::decay_t<decltype(arg)>;
-            if constexpr(std::is_same_v<T, RSSE>) {
-                return get(arg);
-            } else {
-                return get(resolve(arg));
-            }
-        }, src);
+        return src.isReg ? get(src.reg) : get(resolve(src.mem));
     }
 
     void Cpu::set(RM8 dst, u8 value) {
-        std::visit([&](auto&& arg) {
-            using T = std::decay_t<decltype(arg)>;
-            if constexpr(std::is_same_v<T, R8>) {
-                set(arg, value);
-            } else {
-                set(resolve(arg), value);
-            }
-        }, dst);
+        if(dst.isReg) {
+            set(dst.reg, value);
+        } else {
+            set(resolve(dst.mem), value);
+        }
     }
 
     void Cpu::set(RM16 dst, u16 value) {
-        std::visit([&](auto&& arg) {
-            using T = std::decay_t<decltype(arg)>;
-            if constexpr(std::is_same_v<T, R16>) {
-                set(arg, value);
-            } else {
-                set(resolve(arg), value);
-            }
-        }, dst);
+        if(dst.isReg) {
+            set(dst.reg, value);
+        } else {
+            set(resolve(dst.mem), value);
+        }
     }
 
     void Cpu::set(RM32 dst, u32 value) {
-        std::visit([&](auto&& arg) {
-            using T = std::decay_t<decltype(arg)>;
-            if constexpr(std::is_same_v<T, R32>) {
-                set(arg, value);
-            } else {
-                set(resolve(arg), value);
-            }
-        }, dst);
+        if(dst.isReg) {
+            set(dst.reg, value);
+        } else {
+            set(resolve(dst.mem), value);
+        }
     }
 
     void Cpu::set(RM64 dst, u64 value) {
-        std::visit([&](auto&& arg) {
-            using T = std::decay_t<decltype(arg)>;
-            if constexpr(std::is_same_v<T, R64>) {
-                set(arg, value);
-            } else {
-                set(resolve(arg), value);
-            }
-        }, dst);
+        if(dst.isReg) {
+            set(dst.reg, value);
+        } else {
+            set(resolve(dst.mem), value);
+        }
     }
 
     void Cpu::set(RMSSE dst, Xmm value) {
-        std::visit([&](auto&& arg) {
-            using T = std::decay_t<decltype(arg)>;
-            if constexpr(std::is_same_v<T, RSSE>) {
-                set(arg, value);
-            } else {
-                set(resolve(arg), value);
-            }
-        }, dst);
+        if(dst.isReg) {
+            set(dst.reg, value);
+        } else {
+            set(resolve(dst.mem), value);
+        }
     }
 
     void Cpu::push8(u8 value) {
@@ -244,6 +194,416 @@ namespace x64 {
 
     ROUNDING Cpu::roundingMode() const {
         return x87fpu_.control().rc;
+    }
+
+
+    void Cpu::exec(const X64Instruction& insn) {
+        switch(insn.insn()) {
+            case Insn::ADD_RM8_RM8: return exec(Add<RM8, RM8>{insn.op0<RM8>(), insn.op1<RM8>()});
+            case Insn::ADD_RM8_IMM: return exec(Add<RM8, Imm>{insn.op0<RM8>(), insn.op1<Imm>()});
+            case Insn::ADD_RM16_RM16: return exec(Add<RM16, RM16>{insn.op0<RM16>(), insn.op1<RM16>()});
+            case Insn::ADD_RM16_IMM: return exec(Add<RM16, Imm>{insn.op0<RM16>(), insn.op1<Imm>()});
+            case Insn::ADD_RM32_RM32: return exec(Add<RM32, RM32>{insn.op0<RM32>(), insn.op1<RM32>()});
+            case Insn::ADD_RM32_IMM: return exec(Add<RM32, Imm>{insn.op0<RM32>(), insn.op1<Imm>()});
+            case Insn::ADD_RM64_RM64: return exec(Add<RM64, RM64>{insn.op0<RM64>(), insn.op1<RM64>()});
+            case Insn::ADD_RM64_IMM: return exec(Add<RM64, Imm>{insn.op0<RM64>(), insn.op1<Imm>()});
+            case Insn::ADC_RM8_RM8: return exec(Adc<RM8, RM8>{insn.op0<RM8>(), insn.op1<RM8>()});
+            case Insn::ADC_RM8_IMM: return exec(Adc<RM8, Imm>{insn.op0<RM8>(), insn.op1<Imm>()});
+            case Insn::ADC_RM16_RM16: return exec(Adc<RM16, RM16>{insn.op0<RM16>(), insn.op1<RM16>()});
+            case Insn::ADC_RM16_IMM: return exec(Adc<RM16, Imm>{insn.op0<RM16>(), insn.op1<Imm>()});
+            case Insn::ADC_RM32_RM32: return exec(Adc<RM32, RM32>{insn.op0<RM32>(), insn.op1<RM32>()});
+            case Insn::ADC_RM32_IMM: return exec(Adc<RM32, Imm>{insn.op0<RM32>(), insn.op1<Imm>()});
+            case Insn::ADC_RM64_RM64: return exec(Adc<RM64, RM64>{insn.op0<RM64>(), insn.op1<RM64>()});
+            case Insn::ADC_RM64_IMM: return exec(Adc<RM64, Imm>{insn.op0<RM64>(), insn.op1<Imm>()});
+            case Insn::SUB_RM8_RM8: return exec(Sub<RM8, RM8>{insn.op0<RM8>(), insn.op1<RM8>()});
+            case Insn::SUB_RM8_IMM: return exec(Sub<RM8, Imm>{insn.op0<RM8>(), insn.op1<Imm>()});
+            case Insn::SUB_RM16_RM16: return exec(Sub<RM16, RM16>{insn.op0<RM16>(), insn.op1<RM16>()});
+            case Insn::SUB_RM16_IMM: return exec(Sub<RM16, Imm>{insn.op0<RM16>(), insn.op1<Imm>()});
+            case Insn::SUB_RM32_RM32: return exec(Sub<RM32, RM32>{insn.op0<RM32>(), insn.op1<RM32>()});
+            case Insn::SUB_RM32_IMM: return exec(Sub<RM32, Imm>{insn.op0<RM32>(), insn.op1<Imm>()});
+            case Insn::SUB_RM64_RM64: return exec(Sub<RM64, RM64>{insn.op0<RM64>(), insn.op1<RM64>()});
+            case Insn::SUB_RM64_IMM: return exec(Sub<RM64, Imm>{insn.op0<RM64>(), insn.op1<Imm>()});
+            case Insn::SBB_RM8_RM8: return exec(Sbb<RM8, RM8>{insn.op0<RM8>(), insn.op1<RM8>()});
+            case Insn::SBB_RM8_IMM: return exec(Sbb<RM8, Imm>{insn.op0<RM8>(), insn.op1<Imm>()});
+            case Insn::SBB_RM16_RM16: return exec(Sbb<RM16, RM16>{insn.op0<RM16>(), insn.op1<RM16>()});
+            case Insn::SBB_RM16_IMM: return exec(Sbb<RM16, Imm>{insn.op0<RM16>(), insn.op1<Imm>()});
+            case Insn::SBB_RM32_RM32: return exec(Sbb<RM32, RM32>{insn.op0<RM32>(), insn.op1<RM32>()});
+            case Insn::SBB_RM32_IMM: return exec(Sbb<RM32, Imm>{insn.op0<RM32>(), insn.op1<Imm>()});
+            case Insn::SBB_RM64_RM64: return exec(Sbb<RM64, RM64>{insn.op0<RM64>(), insn.op1<RM64>()});
+            case Insn::SBB_RM64_IMM: return exec(Sbb<RM64, Imm>{insn.op0<RM64>(), insn.op1<Imm>()});
+            case Insn::NEG_RM8: return exec(Neg<RM8>{insn.op0<RM8>()});
+            case Insn::NEG_RM16: return exec(Neg<RM16>{insn.op0<RM16>()});
+            case Insn::NEG_RM32: return exec(Neg<RM32>{insn.op0<RM32>()});
+            case Insn::NEG_RM64: return exec(Neg<RM64>{insn.op0<RM64>()});
+            case Insn::MUL_RM32: return exec(Mul<RM32>{insn.op0<RM32>()});
+            case Insn::MUL_RM64: return exec(Mul<RM64>{insn.op0<RM64>()});
+            case Insn::IMUL1_RM32: return exec(Imul1<RM32>{insn.op0<RM32>()});
+            case Insn::IMUL2_R32_RM32: return exec(Imul2<R32, RM32>{insn.op0<R32>(), insn.op1<RM32>()});
+            case Insn::IMUL3_R32_RM32_IMM: return exec(Imul3<R32, RM32, Imm>{insn.op0<R32>(), insn.op1<RM32>(), insn.op2<Imm>()});
+            case Insn::IMUL1_RM64: return exec(Imul1<RM64>{insn.op0<RM64>()});
+            case Insn::IMUL2_R64_RM64: return exec(Imul2<R64, RM64>{insn.op0<R64>(), insn.op1<RM64>()});
+            case Insn::IMUL3_R64_RM64_IMM: return exec(Imul3<R64, RM64, Imm>{insn.op0<R64>(), insn.op1<RM64>(), insn.op2<Imm>()});
+            case Insn::DIV_RM32: return exec(Div<RM32>{insn.op0<RM32>()});
+            case Insn::DIV_RM64: return exec(Div<RM64>{insn.op0<RM64>()});
+            case Insn::IDIV_RM32: return exec(Idiv<RM32>{insn.op0<RM32>()});
+            case Insn::IDIV_RM64: return exec(Idiv<RM64>{insn.op0<RM64>()});
+            case Insn::AND_RM8_RM8: return exec(And<RM8, RM8>{insn.op0<RM8>(), insn.op1<RM8>()});
+            case Insn::AND_RM8_IMM: return exec(And<RM8, Imm>{insn.op0<RM8>(), insn.op1<Imm>()});
+            case Insn::AND_RM16_RM16: return exec(And<RM16, RM16>{insn.op0<RM16>(), insn.op1<RM16>()});
+            case Insn::AND_RM16_IMM: return exec(And<RM16, Imm>{insn.op0<RM16>(), insn.op1<Imm>()});
+            case Insn::AND_RM32_RM32: return exec(And<RM32, RM32>{insn.op0<RM32>(), insn.op1<RM32>()});
+            case Insn::AND_RM32_IMM: return exec(And<RM32, Imm>{insn.op0<RM32>(), insn.op1<Imm>()});
+            case Insn::AND_RM64_RM64: return exec(And<RM64, RM64>{insn.op0<RM64>(), insn.op1<RM64>()});
+            case Insn::AND_RM64_IMM: return exec(And<RM64, Imm>{insn.op0<RM64>(), insn.op1<Imm>()});
+            case Insn::OR_RM8_RM8: return exec(Or<RM8, RM8>{insn.op0<RM8>(), insn.op1<RM8>()});
+            case Insn::OR_RM8_IMM: return exec(Or<RM8, Imm>{insn.op0<RM8>(), insn.op1<Imm>()});
+            case Insn::OR_RM16_RM16: return exec(Or<RM16, RM16>{insn.op0<RM16>(), insn.op1<RM16>()});
+            case Insn::OR_RM16_IMM: return exec(Or<RM16, Imm>{insn.op0<RM16>(), insn.op1<Imm>()});
+            case Insn::OR_RM32_RM32: return exec(Or<RM32, RM32>{insn.op0<RM32>(), insn.op1<RM32>()});
+            case Insn::OR_RM32_IMM: return exec(Or<RM32, Imm>{insn.op0<RM32>(), insn.op1<Imm>()});
+            case Insn::OR_RM64_RM64: return exec(Or<RM64, RM64>{insn.op0<RM64>(), insn.op1<RM64>()});
+            case Insn::OR_RM64_IMM: return exec(Or<RM64, Imm>{insn.op0<RM64>(), insn.op1<Imm>()});
+            case Insn::XOR_RM8_RM8: return exec(Xor<RM8, RM8>{insn.op0<RM8>(), insn.op1<RM8>()});
+            case Insn::XOR_RM8_IMM: return exec(Xor<RM8, Imm>{insn.op0<RM8>(), insn.op1<Imm>()});
+            case Insn::XOR_RM16_RM16: return exec(Xor<RM16, RM16>{insn.op0<RM16>(), insn.op1<RM16>()});
+            case Insn::XOR_RM16_IMM: return exec(Xor<RM16, Imm>{insn.op0<RM16>(), insn.op1<Imm>()});
+            case Insn::XOR_RM32_RM32: return exec(Xor<RM32, RM32>{insn.op0<RM32>(), insn.op1<RM32>()});
+            case Insn::XOR_RM32_IMM: return exec(Xor<RM32, Imm>{insn.op0<RM32>(), insn.op1<Imm>()});
+            case Insn::XOR_RM64_RM64: return exec(Xor<RM64, RM64>{insn.op0<RM64>(), insn.op1<RM64>()});
+            case Insn::XOR_RM64_IMM: return exec(Xor<RM64, Imm>{insn.op0<RM64>(), insn.op1<Imm>()});
+            case Insn::NOT_RM8: return exec(Not<RM8>{insn.op0<RM8>()});
+            case Insn::NOT_RM16: return exec(Not<RM16>{insn.op0<RM16>()});
+            case Insn::NOT_RM32: return exec(Not<RM32>{insn.op0<RM32>()});
+            case Insn::NOT_RM64: return exec(Not<RM64>{insn.op0<RM64>()});
+            case Insn::XCHG_RM16_R16: return exec(Xchg<RM16, R16>{insn.op0<RM16>(), insn.op1<R16>()});
+            case Insn::XCHG_RM32_R32: return exec(Xchg<RM32, R32>{insn.op0<RM32>(), insn.op1<R32>()});
+            case Insn::XCHG_RM64_R64: return exec(Xchg<RM64, R64>{insn.op0<RM64>(), insn.op1<R64>()});
+            case Insn::XADD_RM16_R16: return exec(Xadd<RM16, R16>{insn.op0<RM16>(), insn.op1<R16>()});
+            case Insn::XADD_RM32_R32: return exec(Xadd<RM32, R32>{insn.op0<RM32>(), insn.op1<R32>()});
+            case Insn::XADD_RM64_R64: return exec(Xadd<RM64, R64>{insn.op0<RM64>(), insn.op1<R64>()});
+            case Insn::MOV_RM8_RM8: return exec(Mov<RM8, RM8>{insn.op0<RM8>(), insn.op1<RM8>()});
+            case Insn::MOV_RM8_IMM: return exec(Mov<RM8, Imm>{insn.op0<RM8>(), insn.op1<Imm>()});
+            case Insn::MOV_RM16_RM16: return exec(Mov<RM16, RM16>{insn.op0<RM16>(), insn.op1<RM16>()});
+            case Insn::MOV_RM16_IMM: return exec(Mov<RM16, Imm>{insn.op0<RM16>(), insn.op1<Imm>()});
+            case Insn::MOV_RM32_RM32: return exec(Mov<RM32, RM32>{insn.op0<RM32>(), insn.op1<RM32>()});
+            case Insn::MOV_RM32_IMM: return exec(Mov<RM32, Imm>{insn.op0<RM32>(), insn.op1<Imm>()});
+            case Insn::MOV_RM64_RM64: return exec(Mov<RM64, RM64>{insn.op0<RM64>(), insn.op1<RM64>()});
+            case Insn::MOV_RM64_IMM: return exec(Mov<RM64, Imm>{insn.op0<RM64>(), insn.op1<Imm>()});
+            case Insn::MOV_RMSSE_RMSSE: return exec(Mov<RMSSE, RMSSE>{insn.op0<RMSSE>(), insn.op1<RMSSE>()});
+            case Insn::MOVSX_R16_RM8: return exec(Movsx<R16, RM8>{insn.op0<R16>(), insn.op1<RM8>()});
+            case Insn::MOVSX_R32_RM8: return exec(Movsx<R32, RM8>{insn.op0<R32>(), insn.op1<RM8>()});
+            case Insn::MOVSX_R32_RM16: return exec(Movsx<R32, RM16>{insn.op0<R32>(), insn.op1<RM16>()});
+            case Insn::MOVSX_R64_RM8: return exec(Movsx<R64, RM8>{insn.op0<R64>(), insn.op1<RM8>()});
+            case Insn::MOVSX_R64_RM16: return exec(Movsx<R64, RM16>{insn.op0<R64>(), insn.op1<RM16>()});
+            case Insn::MOVSX_R64_RM32: return exec(Movsx<R64, RM32>{insn.op0<R64>(), insn.op1<RM32>()});
+            case Insn::MOVZX_R16_RM8: return exec(Movzx<R16, RM8>{insn.op0<R16>(), insn.op1<RM8>()});
+            case Insn::MOVZX_R32_RM8: return exec(Movzx<R32, RM8>{insn.op0<R32>(), insn.op1<RM8>()});
+            case Insn::MOVZX_R32_RM16: return exec(Movzx<R32, RM16>{insn.op0<R32>(), insn.op1<RM16>()});
+            case Insn::MOVZX_R64_RM8: return exec(Movzx<R64, RM8>{insn.op0<R64>(), insn.op1<RM8>()});
+            case Insn::MOVZX_R64_RM16: return exec(Movzx<R64, RM16>{insn.op0<R64>(), insn.op1<RM16>()});
+            case Insn::MOVZX_R64_RM32: return exec(Movzx<R64, RM32>{insn.op0<R64>(), insn.op1<RM32>()});
+            case Insn::LEA_R32_ENCODING: return exec(Lea<R32, Encoding>{insn.op0<R32>(), insn.op1<Encoding>()});
+            case Insn::LEA_R64_ENCODING: return exec(Lea<R64, Encoding>{insn.op0<R64>(), insn.op1<Encoding>()});
+            case Insn::PUSH_IMM: return exec(Push<Imm>{insn.op0<Imm>()});
+            case Insn::PUSH_RM32: return exec(Push<RM32>{insn.op0<RM32>()});
+            case Insn::PUSH_RM64: return exec(Push<RM64>{insn.op0<RM64>()});
+            case Insn::POP_R32: return exec(Pop<R32>{insn.op0<R32>()});
+            case Insn::POP_R64: return exec(Pop<R64>{insn.op0<R64>()});
+            case Insn::CALLDIRECT: return exec(CallDirect{insn.op0<u64>()});
+            case Insn::CALLINDIRECT_RM32: return exec(CallIndirect<RM32>{insn.op0<RM32>()});
+            case Insn::CALLINDIRECT_RM64: return exec(CallIndirect<RM64>{insn.op0<RM64>()});
+            case Insn::RET: return exec(Ret{});
+            case Insn::RET_IMM: return exec(Ret<Imm>{insn.op0<Imm>()});
+            case Insn::LEAVE: return exec(Leave{});
+            case Insn::HALT: return exec(Halt{});
+            case Insn::NOP: return exec(Nop{});
+            case Insn::UD2: return exec(Ud2{});
+            case Insn::SYSCALL: return exec(Syscall{});
+            case Insn::NOTPARSED: return exec(NotParsed{});
+            case Insn::UNKNOWN: return exec(Unknown{});
+            case Insn::CDQ: return exec(Cdq{});
+            case Insn::CQO: return exec(Cqo{});
+            case Insn::INC_RM8: return exec(Inc<RM8>{insn.op0<RM8>()});
+            case Insn::INC_RM16: return exec(Inc<RM16>{insn.op0<RM16>()});
+            case Insn::INC_RM32: return exec(Inc<RM32>{insn.op0<RM32>()});
+            case Insn::INC_RM64: return exec(Inc<RM64>{insn.op0<RM64>()});
+            case Insn::DEC_RM8: return exec(Dec<RM8>{insn.op0<RM8>()});
+            case Insn::DEC_RM16: return exec(Dec<RM16>{insn.op0<RM16>()});
+            case Insn::DEC_RM32: return exec(Dec<RM32>{insn.op0<RM32>()});
+            case Insn::DEC_RM64: return exec(Dec<RM64>{insn.op0<RM64>()});
+            case Insn::SHR_RM8_R8: return exec(Shr<RM8, R8>{insn.op0<RM8>(), insn.op1<R8>()});
+            case Insn::SHR_RM8_IMM: return exec(Shr<RM8, Imm>{insn.op0<RM8>(), insn.op1<Imm>()});
+            case Insn::SHR_RM16_R8: return exec(Shr<RM16, R8>{insn.op0<RM16>(), insn.op1<R8>()});
+            case Insn::SHR_RM16_IMM: return exec(Shr<RM16, Imm>{insn.op0<RM16>(), insn.op1<Imm>()});
+            case Insn::SHR_RM32_R8: return exec(Shr<RM32, R8>{insn.op0<RM32>(), insn.op1<R8>()});
+            case Insn::SHR_RM32_IMM: return exec(Shr<RM32, Imm>{insn.op0<RM32>(), insn.op1<Imm>()});
+            case Insn::SHR_RM64_R8: return exec(Shr<RM64, R8>{insn.op0<RM64>(), insn.op1<R8>()});
+            case Insn::SHR_RM64_IMM: return exec(Shr<RM64, Imm>{insn.op0<RM64>(), insn.op1<Imm>()});
+            case Insn::SHL_RM8_R8: return exec(Shl<RM8, R8>{insn.op0<RM8>(), insn.op1<R8>()});
+            case Insn::SHL_RM8_IMM: return exec(Shl<RM8, Imm>{insn.op0<RM8>(), insn.op1<Imm>()});
+            case Insn::SHL_RM16_R8: return exec(Shl<RM16, R8>{insn.op0<RM16>(), insn.op1<R8>()});
+            case Insn::SHL_RM16_IMM: return exec(Shl<RM16, Imm>{insn.op0<RM16>(), insn.op1<Imm>()});
+            case Insn::SHL_RM32_R8: return exec(Shl<RM32, R8>{insn.op0<RM32>(), insn.op1<R8>()});
+            case Insn::SHL_RM32_IMM: return exec(Shl<RM32, Imm>{insn.op0<RM32>(), insn.op1<Imm>()});
+            case Insn::SHL_RM64_R8: return exec(Shl<RM64, R8>{insn.op0<RM64>(), insn.op1<R8>()});
+            case Insn::SHL_RM64_IMM: return exec(Shl<RM64, Imm>{insn.op0<RM64>(), insn.op1<Imm>()});
+            case Insn::SHLD_RM32_R32_R8: return exec(Shld<RM32, R32, R8>{insn.op0<RM32>(), insn.op1<R32>(), insn.op2<R8>()});
+            case Insn::SHLD_RM32_R32_IMM: return exec(Shld<RM32, R32, Imm>{insn.op0<RM32>(), insn.op1<R32>(), insn.op2<Imm>()});
+            case Insn::SHLD_RM64_R64_R8: return exec(Shld<RM64, R64, R8>{insn.op0<RM64>(), insn.op1<R64>(), insn.op2<R8>()});
+            case Insn::SHLD_RM64_R64_IMM: return exec(Shld<RM64, R64, Imm>{insn.op0<RM64>(), insn.op1<R64>(), insn.op2<Imm>()});
+            case Insn::SHRD_RM32_R32_R8: return exec(Shrd<RM32, R32, R8>{insn.op0<RM32>(), insn.op1<R32>(), insn.op2<R8>()});
+            case Insn::SHRD_RM32_R32_IMM: return exec(Shrd<RM32, R32, Imm>{insn.op0<RM32>(), insn.op1<R32>(), insn.op2<Imm>()});
+            case Insn::SHRD_RM64_R64_R8: return exec(Shrd<RM64, R64, R8>{insn.op0<RM64>(), insn.op1<R64>(), insn.op2<R8>()});
+            case Insn::SHRD_RM64_R64_IMM: return exec(Shrd<RM64, R64, Imm>{insn.op0<RM64>(), insn.op1<R64>(), insn.op2<Imm>()});
+            case Insn::SAR_RM8_R8: return exec(Sar<RM8, R8>{insn.op0<RM8>(), insn.op1<R8>()});
+            case Insn::SAR_RM8_IMM: return exec(Sar<RM8, Imm>{insn.op0<RM8>(), insn.op1<Imm>()});
+            case Insn::SAR_RM16_R8: return exec(Sar<RM16, R8>{insn.op0<RM16>(), insn.op1<R8>()});
+            case Insn::SAR_RM16_IMM: return exec(Sar<RM16, Imm>{insn.op0<RM16>(), insn.op1<Imm>()});
+            case Insn::SAR_RM32_R8: return exec(Sar<RM32, R8>{insn.op0<RM32>(), insn.op1<R8>()});
+            case Insn::SAR_RM32_IMM: return exec(Sar<RM32, Imm>{insn.op0<RM32>(), insn.op1<Imm>()});
+            case Insn::SAR_RM64_R8: return exec(Sar<RM64, R8>{insn.op0<RM64>(), insn.op1<R8>()});
+            case Insn::SAR_RM64_IMM: return exec(Sar<RM64, Imm>{insn.op0<RM64>(), insn.op1<Imm>()});
+            case Insn::ROL_RM8_R8: return exec(Rol<RM8, R8>{insn.op0<RM8>(), insn.op1<R8>()});
+            case Insn::ROL_RM8_IMM: return exec(Rol<RM8, Imm>{insn.op0<RM8>(), insn.op1<Imm>()});
+            case Insn::ROL_RM16_R8: return exec(Rol<RM16, R8>{insn.op0<RM16>(), insn.op1<R8>()});
+            case Insn::ROL_RM16_IMM: return exec(Rol<RM16, Imm>{insn.op0<RM16>(), insn.op1<Imm>()});
+            case Insn::ROL_RM32_R8: return exec(Rol<RM32, R8>{insn.op0<RM32>(), insn.op1<R8>()});
+            case Insn::ROL_RM32_IMM: return exec(Rol<RM32, Imm>{insn.op0<RM32>(), insn.op1<Imm>()});
+            case Insn::ROL_RM64_R8: return exec(Rol<RM64, R8>{insn.op0<RM64>(), insn.op1<R8>()});
+            case Insn::ROL_RM64_IMM: return exec(Rol<RM64, Imm>{insn.op0<RM64>(), insn.op1<Imm>()});
+            case Insn::ROR_RM8_R8: return exec(Ror<RM8, R8>{insn.op0<RM8>(), insn.op1<R8>()});
+            case Insn::ROR_RM8_IMM: return exec(Ror<RM8, Imm>{insn.op0<RM8>(), insn.op1<Imm>()});
+            case Insn::ROR_RM16_R8: return exec(Ror<RM16, R8>{insn.op0<RM16>(), insn.op1<R8>()});
+            case Insn::ROR_RM16_IMM: return exec(Ror<RM16, Imm>{insn.op0<RM16>(), insn.op1<Imm>()});
+            case Insn::ROR_RM32_R8: return exec(Ror<RM32, R8>{insn.op0<RM32>(), insn.op1<R8>()});
+            case Insn::ROR_RM32_IMM: return exec(Ror<RM32, Imm>{insn.op0<RM32>(), insn.op1<Imm>()});
+            case Insn::ROR_RM64_R8: return exec(Ror<RM64, R8>{insn.op0<RM64>(), insn.op1<R8>()});
+            case Insn::ROR_RM64_IMM: return exec(Ror<RM64, Imm>{insn.op0<RM64>(), insn.op1<Imm>()});
+            case Insn::TZCNT_R16_RM16: return exec(Tzcnt<R16, RM16>{insn.op0<R16>(), insn.op1<RM16>()});
+            case Insn::TZCNT_R32_RM32: return exec(Tzcnt<R32, RM32>{insn.op0<R32>(), insn.op1<RM32>()});
+            case Insn::TZCNT_R64_RM64: return exec(Tzcnt<R64, RM64>{insn.op0<R64>(), insn.op1<RM64>()});
+            case Insn::BT_RM16_R16: return exec(Bt<RM16, R16>{insn.op0<RM16>(), insn.op1<R16>()});
+            case Insn::BT_RM16_IMM: return exec(Bt<RM16, Imm>{insn.op0<RM16>(), insn.op1<Imm>()});
+            case Insn::BT_RM32_R32: return exec(Bt<RM32, R32>{insn.op0<RM32>(), insn.op1<R32>()});
+            case Insn::BT_RM32_IMM: return exec(Bt<RM32, Imm>{insn.op0<RM32>(), insn.op1<Imm>()});
+            case Insn::BT_RM64_R64: return exec(Bt<RM64, R64>{insn.op0<RM64>(), insn.op1<R64>()});
+            case Insn::BT_RM64_IMM: return exec(Bt<RM64, Imm>{insn.op0<RM64>(), insn.op1<Imm>()});
+            case Insn::BTR_RM16_R16: return exec(Btr<RM16, R16>{insn.op0<RM16>(), insn.op1<R16>()});
+            case Insn::BTR_RM16_IMM: return exec(Btr<RM16, Imm>{insn.op0<RM16>(), insn.op1<Imm>()});
+            case Insn::BTR_RM32_R32: return exec(Btr<RM32, R32>{insn.op0<RM32>(), insn.op1<R32>()});
+            case Insn::BTR_RM32_IMM: return exec(Btr<RM32, Imm>{insn.op0<RM32>(), insn.op1<Imm>()});
+            case Insn::BTR_RM64_R64: return exec(Btr<RM64, R64>{insn.op0<RM64>(), insn.op1<R64>()});
+            case Insn::BTR_RM64_IMM: return exec(Btr<RM64, Imm>{insn.op0<RM64>(), insn.op1<Imm>()});
+            case Insn::BTC_RM16_R16: return exec(Btc<RM16, R16>{insn.op0<RM16>(), insn.op1<R16>()});
+            case Insn::BTC_RM16_IMM: return exec(Btc<RM16, Imm>{insn.op0<RM16>(), insn.op1<Imm>()});
+            case Insn::BTC_RM32_R32: return exec(Btc<RM32, R32>{insn.op0<RM32>(), insn.op1<R32>()});
+            case Insn::BTC_RM32_IMM: return exec(Btc<RM32, Imm>{insn.op0<RM32>(), insn.op1<Imm>()});
+            case Insn::BTC_RM64_R64: return exec(Btc<RM64, R64>{insn.op0<RM64>(), insn.op1<R64>()});
+            case Insn::BTC_RM64_IMM: return exec(Btc<RM64, Imm>{insn.op0<RM64>(), insn.op1<Imm>()});
+            case Insn::BTS_RM16_R16: return exec(Bts<RM16, R16>{insn.op0<RM16>(), insn.op1<R16>()});
+            case Insn::BTS_RM16_IMM: return exec(Bts<RM16, Imm>{insn.op0<RM16>(), insn.op1<Imm>()});
+            case Insn::BTS_RM32_R32: return exec(Bts<RM32, R32>{insn.op0<RM32>(), insn.op1<R32>()});
+            case Insn::BTS_RM32_IMM: return exec(Bts<RM32, Imm>{insn.op0<RM32>(), insn.op1<Imm>()});
+            case Insn::BTS_RM64_R64: return exec(Bts<RM64, R64>{insn.op0<RM64>(), insn.op1<R64>()});
+            case Insn::BTS_RM64_IMM: return exec(Bts<RM64, Imm>{insn.op0<RM64>(), insn.op1<Imm>()});
+            case Insn::TEST_RM8_R8: return exec(Test<RM8, R8>{insn.op0<RM8>(), insn.op1<R8>()});
+            case Insn::TEST_RM8_IMM: return exec(Test<RM8, Imm>{insn.op0<RM8>(), insn.op1<Imm>()});
+            case Insn::TEST_RM16_R16: return exec(Test<RM16, R16>{insn.op0<RM16>(), insn.op1<R16>()});
+            case Insn::TEST_RM16_IMM: return exec(Test<RM16, Imm>{insn.op0<RM16>(), insn.op1<Imm>()});
+            case Insn::TEST_RM32_R32: return exec(Test<RM32, R32>{insn.op0<RM32>(), insn.op1<R32>()});
+            case Insn::TEST_RM32_IMM: return exec(Test<RM32, Imm>{insn.op0<RM32>(), insn.op1<Imm>()});
+            case Insn::TEST_RM64_R64: return exec(Test<RM64, R64>{insn.op0<RM64>(), insn.op1<R64>()});
+            case Insn::TEST_RM64_IMM: return exec(Test<RM64, Imm>{insn.op0<RM64>(), insn.op1<Imm>()});
+            case Insn::CMP_RM8_RM8: return exec(Cmp<RM8, RM8>{insn.op0<RM8>(), insn.op1<RM8>()});
+            case Insn::CMP_RM8_IMM: return exec(Cmp<RM8, Imm>{insn.op0<RM8>(), insn.op1<Imm>()});
+            case Insn::CMP_RM16_RM16: return exec(Cmp<RM16, RM16>{insn.op0<RM16>(), insn.op1<RM16>()});
+            case Insn::CMP_RM16_IMM: return exec(Cmp<RM16, Imm>{insn.op0<RM16>(), insn.op1<Imm>()});
+            case Insn::CMP_RM32_RM32: return exec(Cmp<RM32, RM32>{insn.op0<RM32>(), insn.op1<RM32>()});
+            case Insn::CMP_RM32_IMM: return exec(Cmp<RM32, Imm>{insn.op0<RM32>(), insn.op1<Imm>()});
+            case Insn::CMP_RM64_RM64: return exec(Cmp<RM64, RM64>{insn.op0<RM64>(), insn.op1<RM64>()});
+            case Insn::CMP_RM64_IMM: return exec(Cmp<RM64, Imm>{insn.op0<RM64>(), insn.op1<Imm>()});
+            case Insn::CMPXCHG_RM8_R8: return exec(Cmpxchg<RM8, R8>{insn.op0<RM8>(), insn.op1<R8>()});
+            case Insn::CMPXCHG_RM16_R16: return exec(Cmpxchg<RM16, R16>{insn.op0<RM16>(), insn.op1<R16>()});
+            case Insn::CMPXCHG_RM32_R32: return exec(Cmpxchg<RM32, R32>{insn.op0<RM32>(), insn.op1<R32>()});
+            case Insn::CMPXCHG_RM64_R64: return exec(Cmpxchg<RM64, R64>{insn.op0<RM64>(), insn.op1<R64>()});
+            case Insn::SET_RM8: return exec(Set<RM8>{insn.op0<Cond>(), insn.op1<RM8>()});
+            case Insn::JMP_RM32: return exec(Jmp<RM32>{insn.op0<RM32>()});
+            case Insn::JMP_RM64: return exec(Jmp<RM64>{insn.op0<RM64>()});
+            case Insn::JMP_U32: return exec(Jmp<u32>{insn.op0<u32>()});
+            case Insn::JCC: return exec(Jcc{insn.op0<Cond>(), insn.op1<u64>()});
+            case Insn::BSR_R32_R32: return exec(Bsr<R32, R32>{insn.op0<R32>(), insn.op1<R32>()});
+            case Insn::BSR_R64_R64: return exec(Bsr<R64, R64>{insn.op0<R64>(), insn.op1<R64>()});
+            case Insn::BSF_R32_R32: return exec(Bsf<R32, R32>{insn.op0<R32>(), insn.op1<R32>()});
+            case Insn::BSF_R64_R64: return exec(Bsf<R64, R64>{insn.op0<R64>(), insn.op1<R64>()});
+            case Insn::CLD: return exec(Cld{});
+            case Insn::STD: return exec(Std{});
+            case Insn::MOVS_M64_M64: return exec(Movs<M64, M64>{insn.op0<M64>(), insn.op1<M64>()});
+            case Insn::REP_MOVS_M8_M8: return exec(Rep<Movs<M8, M8>>{Movs<M8, M8>{insn.op0<M8>(), insn.op1<M8>()}});
+            case Insn::REP_MOVS_M32_M32: return exec(Rep<Movs<M32, M32>>{Movs<M32, M32>{insn.op0<M32>(), insn.op1<M32>()}});
+            case Insn::REP_MOVS_M64_M64: return exec(Rep<Movs<M64, M64>>{Movs<M64, M64>{insn.op0<M64>(), insn.op1<M64>()}});
+            case Insn::REP_CMPS_M8_M8: return exec(Rep<Cmps<M8, M8>>{Cmps<M8, M8>{insn.op0<M8>(), insn.op1<M8>()}});
+            case Insn::REP_STOS_M8_R8: return exec(Rep<Stos<M8, R8>>{Stos<M8, R8>{insn.op0<M8>(), insn.op1<R8>()}});
+            case Insn::REP_STOS_M16_R16: return exec(Rep<Stos<M16, R16>>{Stos<M16, R16>{insn.op0<M16>(), insn.op1<R16>()}});
+            case Insn::REP_STOS_M32_R32: return exec(Rep<Stos<M32, R32>>{Stos<M32, R32>{insn.op0<M32>(), insn.op1<R32>()}});
+            case Insn::REP_STOS_M64_R64: return exec(Rep<Stos<M64, R64>>{Stos<M64, R64>{insn.op0<M64>(), insn.op1<R64>()}});
+            case Insn::REPNZ_SCAS_R8_M8: return exec(RepNZ<Scas<R8, M8>>{Scas<R8, M8>{insn.op0<R8>(), insn.op1<M8>()}});
+            case Insn::CMOV_R16_RM16: return exec(Cmov<R16, RM16>{insn.op0<Cond>(), insn.op1<R16>(), insn.op2<RM16>()});
+            case Insn::CMOV_R32_RM32: return exec(Cmov<R32, RM32>{insn.op0<Cond>(), insn.op1<R32>(), insn.op2<RM32>()});
+            case Insn::CMOV_R64_RM64: return exec(Cmov<R64, RM64>{insn.op0<Cond>(), insn.op1<R64>(), insn.op2<RM64>()});
+            case Insn::CWDE: return exec(Cwde{});
+            case Insn::CDQE: return exec(Cdqe{});
+            case Insn::BSWAP_R32: return exec(Bswap<R32>{insn.op0<R32>()});
+            case Insn::BSWAP_R64: return exec(Bswap<R64>{insn.op0<R64>()});
+            case Insn::PXOR_RSSE_RMSSE: return exec(Pxor<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
+            case Insn::MOVAPS_RMSSE_RMSSE: return exec(Movaps<RMSSE, RMSSE>{insn.op0<RMSSE>(), insn.op1<RMSSE>()});
+            case Insn::MOVD_RSSE_RM32: return exec(Movd<RSSE, RM32>{insn.op0<RSSE>(), insn.op1<RM32>()});
+            case Insn::MOVD_RM32_RSSE: return exec(Movd<RM32, RSSE>{insn.op0<RM32>(), insn.op1<RSSE>()});
+            case Insn::MOVD_RSSE_RM64: return exec(Movd<RSSE, RM64>{insn.op0<RSSE>(), insn.op1<RM64>()});
+            case Insn::MOVD_RM64_RSSE: return exec(Movd<RM64, RSSE>{insn.op0<RM64>(), insn.op1<RSSE>()});
+            case Insn::MOVQ_RSSE_RM64: return exec(Movq<RSSE, RM64>{insn.op0<RSSE>(), insn.op1<RM64>()});
+            case Insn::MOVQ_RM64_RSSE: return exec(Movq<RM64, RSSE>{insn.op0<RM64>(), insn.op1<RSSE>()});
+            case Insn::FLDZ: return exec(Fldz{});
+            case Insn::FLD1: return exec(Fld1{});
+            case Insn::FLD_ST: return exec(Fld<ST>{insn.op0<ST>()});
+            case Insn::FLD_M32: return exec(Fld<M32>{insn.op0<M32>()});
+            case Insn::FLD_M64: return exec(Fld<M64>{insn.op0<M64>()});
+            case Insn::FLD_M80: return exec(Fld<M80>{insn.op0<M80>()});
+            case Insn::FILD_M16: return exec(Fild<M16>{insn.op0<M16>()});
+            case Insn::FILD_M32: return exec(Fild<M32>{insn.op0<M32>()});
+            case Insn::FILD_M64: return exec(Fild<M64>{insn.op0<M64>()});
+            case Insn::FSTP_ST: return exec(Fstp<ST>{insn.op0<ST>()});
+            case Insn::FSTP_M32: return exec(Fstp<M32>{insn.op0<M32>()});
+            case Insn::FSTP_M64: return exec(Fstp<M64>{insn.op0<M64>()});
+            case Insn::FSTP_M80: return exec(Fstp<M80>{insn.op0<M80>()});
+            case Insn::FISTP_M16: return exec(Fistp<M16>{insn.op0<M16>()});
+            case Insn::FISTP_M32: return exec(Fistp<M32>{insn.op0<M32>()});
+            case Insn::FISTP_M64: return exec(Fistp<M64>{insn.op0<M64>()});
+            case Insn::FXCH_ST: return exec(Fxch<ST>{insn.op0<ST>()});
+            case Insn::FADDP_ST: return exec(Faddp<ST>{insn.op0<ST>()});
+            case Insn::FSUBRP_ST: return exec(Fsubrp<ST>{insn.op0<ST>()});
+            case Insn::FMUL1_M32: return exec(Fmul1<M32>{insn.op0<M32>()});
+            case Insn::FMUL1_M64: return exec(Fmul1<M64>{insn.op0<M64>()});
+            case Insn::FDIV_ST_ST: return exec(Fdiv<ST, ST>{insn.op0<ST>(), insn.op1<ST>()});
+            case Insn::FDIVP_ST_ST: return exec(Fdivp<ST, ST>{insn.op0<ST>(), insn.op1<ST>()});
+            case Insn::FCOMI_ST: return exec(Fcomi<ST>{insn.op0<ST>()});
+            case Insn::FUCOMI_ST: return exec(Fucomi<ST>{insn.op0<ST>()});
+            case Insn::FRNDINT: return exec(Frndint{});
+            case Insn::FCMOV_ST: return exec(Fcmov<ST>{insn.op0<Cond>(), insn.op1<ST>()});
+            case Insn::FNSTCW_M16: return exec(Fnstcw<M16>{insn.op0<M16>()});
+            case Insn::FLDCW_M16: return exec(Fldcw<M16>{insn.op0<M16>()});
+            case Insn::FNSTSW_R16: return exec(Fnstsw<R16>{insn.op0<R16>()});
+            case Insn::FNSTSW_M16: return exec(Fnstsw<M16>{insn.op0<M16>()});
+            case Insn::FNSTENV_M224: return exec(Fnstenv<M224>{insn.op0<M224>()});
+            case Insn::FLDENV_M224: return exec(Fldenv<M224>{insn.op0<M224>()});
+            case Insn::MOVSS_RSSE_M32: return exec(Movss<RSSE, M32>{insn.op0<RSSE>(), insn.op1<M32>()});
+            case Insn::MOVSS_M32_RSSE: return exec(Movss<M32, RSSE>{insn.op0<M32>(), insn.op1<RSSE>()});
+            case Insn::MOVSD_RSSE_M64: return exec(Movsd<RSSE, M64>{insn.op0<RSSE>(), insn.op1<M64>()});
+            case Insn::MOVSD_M64_RSSE: return exec(Movsd<M64, RSSE>{insn.op0<M64>(), insn.op1<RSSE>()});
+            case Insn::ADDSS_RSSE_RSSE: return exec(Addss<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
+            case Insn::ADDSS_RSSE_M32: return exec(Addss<RSSE, M32>{insn.op0<RSSE>(), insn.op1<M32>()});
+            case Insn::ADDSD_RSSE_RSSE: return exec(Addsd<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
+            case Insn::ADDSD_RSSE_M64: return exec(Addsd<RSSE, M64>{insn.op0<RSSE>(), insn.op1<M64>()});
+            case Insn::SUBSS_RSSE_RSSE: return exec(Subss<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
+            case Insn::SUBSS_RSSE_M32: return exec(Subss<RSSE, M32>{insn.op0<RSSE>(), insn.op1<M32>()});
+            case Insn::SUBSD_RSSE_RSSE: return exec(Subsd<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
+            case Insn::SUBSD_RSSE_M64: return exec(Subsd<RSSE, M64>{insn.op0<RSSE>(), insn.op1<M64>()});
+            case Insn::MULSD_RSSE_RSSE: return exec(Mulsd<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
+            case Insn::MULSD_RSSE_M64: return exec(Mulsd<RSSE, M64>{insn.op0<RSSE>(), insn.op1<M64>()});
+            case Insn::DIVSS_RSSE_RSSE: return exec(Divss<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
+            case Insn::DIVSS_RSSE_M32: return exec(Divss<RSSE, M32>{insn.op0<RSSE>(), insn.op1<M32>()});
+            case Insn::DIVSD_RSSE_RSSE: return exec(Divsd<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
+            case Insn::DIVSD_RSSE_M64: return exec(Divsd<RSSE, M64>{insn.op0<RSSE>(), insn.op1<M64>()});
+            case Insn::COMISS_RSSE_RSSE: return exec(Comiss<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
+            case Insn::COMISS_RSSE_M32: return exec(Comiss<RSSE, M32>{insn.op0<RSSE>(), insn.op1<M32>()});
+            case Insn::COMISD_RSSE_RSSE: return exec(Comisd<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
+            case Insn::COMISD_RSSE_M64: return exec(Comisd<RSSE, M64>{insn.op0<RSSE>(), insn.op1<M64>()});
+            case Insn::UCOMISS_RSSE_RSSE: return exec(Ucomiss<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
+            case Insn::UCOMISS_RSSE_M32: return exec(Ucomiss<RSSE, M32>{insn.op0<RSSE>(), insn.op1<M32>()});
+            case Insn::UCOMISD_RSSE_RSSE: return exec(Ucomisd<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
+            case Insn::UCOMISD_RSSE_M64: return exec(Ucomisd<RSSE, M64>{insn.op0<RSSE>(), insn.op1<M64>()});
+            case Insn::MAXSS_RSSE_RSSE: return exec(Maxss<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
+            case Insn::MAXSS_RSSE_M32: return exec(Maxss<RSSE, M32>{insn.op0<RSSE>(), insn.op1<M32>()});
+            case Insn::MAXSD_RSSE_RSSE: return exec(Maxsd<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
+            case Insn::MAXSD_RSSE_M64: return exec(Maxsd<RSSE, M64>{insn.op0<RSSE>(), insn.op1<M64>()});
+            case Insn::MINSS_RSSE_RSSE: return exec(Minss<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
+            case Insn::MINSS_RSSE_M32: return exec(Minss<RSSE, M32>{insn.op0<RSSE>(), insn.op1<M32>()});
+            case Insn::MINSD_RSSE_RSSE: return exec(Minsd<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
+            case Insn::MINSD_RSSE_M64: return exec(Minsd<RSSE, M64>{insn.op0<RSSE>(), insn.op1<M64>()});
+            case Insn::CMPSD_RSSE_RSSE: return exec(Cmpsd<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>(), insn.op2<FCond>()});
+            case Insn::CMPSD_RSSE_M64: return exec(Cmpsd<RSSE, M64>{insn.op0<RSSE>(), insn.op1<M64>(), insn.op2<FCond>()});
+            case Insn::CVTSI2SS_RSSE_RM32: return exec(Cvtsi2ss<RSSE, RM32>{insn.op0<RSSE>(), insn.op1<RM32>()});
+            case Insn::CVTSI2SS_RSSE_RM64: return exec(Cvtsi2ss<RSSE, RM64>{insn.op0<RSSE>(), insn.op1<RM64>()});
+            case Insn::CVTSI2SD_RSSE_RM32: return exec(Cvtsi2sd<RSSE, RM32>{insn.op0<RSSE>(), insn.op1<RM32>()});
+            case Insn::CVTSI2SD_RSSE_RM64: return exec(Cvtsi2sd<RSSE, RM64>{insn.op0<RSSE>(), insn.op1<RM64>()});
+            case Insn::CVTSS2SD_RSSE_RSSE: return exec(Cvtss2sd<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
+            case Insn::CVTSS2SD_RSSE_M32: return exec(Cvtss2sd<RSSE, M32>{insn.op0<RSSE>(), insn.op1<M32>()});
+            case Insn::CVTTSD2SI_R32_RSSE: return exec(Cvttsd2si<R32, RSSE>{insn.op0<R32>(), insn.op1<RSSE>()});
+            case Insn::CVTTSD2SI_R32_M64: return exec(Cvttsd2si<R32, M64>{insn.op0<R32>(), insn.op1<M64>()});
+            case Insn::CVTTSD2SI_R64_RSSE: return exec(Cvttsd2si<R64, RSSE>{insn.op0<R64>(), insn.op1<RSSE>()});
+            case Insn::CVTTSD2SI_R64_M64: return exec(Cvttsd2si<R64, M64>{insn.op0<R64>(), insn.op1<M64>()});
+            case Insn::PAND_RSSE_RMSSE: return exec(Pand<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
+            case Insn::PANDN_RSSE_RMSSE: return exec(Pandn<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
+            case Insn::POR_RSSE_RMSSE: return exec(Por<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
+            case Insn::ANDPD_RSSE_RMSSE: return exec(Andpd<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
+            case Insn::ANDNPD_RSSE_RMSSE: return exec(Andnpd<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
+            case Insn::ORPD_RSSE_RMSSE: return exec(Orpd<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
+            case Insn::XORPD_RSSE_RMSSE: return exec(Xorpd<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
+            case Insn::SHUFPD_RSSE_RMSSE_IMM: return exec(Shufpd<RSSE, RMSSE, Imm>{insn.op0<RSSE>(), insn.op1<RMSSE>(), insn.op2<Imm>()});
+            case Insn::MOVLPS_RSSE_M64: return exec(Movlps<RSSE, M64>{insn.op0<RSSE>(), insn.op1<M64>()});
+            case Insn::MOVHPS_RSSE_M64: return exec(Movhps<RSSE, M64>{insn.op0<RSSE>(), insn.op1<M64>()});
+            case Insn::MOVHLPS_RSSE_RSSE: return exec(Movhlps<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
+            case Insn::PUNPCKLBW_RSSE_RSSE: return exec(Punpcklbw<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
+            case Insn::PUNPCKLWD_RSSE_RSSE: return exec(Punpcklwd<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
+            case Insn::PUNPCKLDQ_RSSE_RSSE: return exec(Punpckldq<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
+            case Insn::PUNPCKLQDQ_RSSE_RSSE: return exec(Punpcklqdq<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
+            case Insn::PUNPCKHBW_RSSE_RSSE: return exec(Punpckhbw<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
+            case Insn::PUNPCKHWD_RSSE_RSSE: return exec(Punpckhwd<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
+            case Insn::PUNPCKHDQ_RSSE_RSSE: return exec(Punpckhdq<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
+            case Insn::PUNPCKHQDQ_RSSE_RSSE: return exec(Punpckhqdq<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
+            case Insn::PSHUFB_RSSE_RMSSE: return exec(Pshufb<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
+            case Insn::PSHUFD_RSSE_RMSSE_IMM: return exec(Pshufd<RSSE, RMSSE, Imm>{insn.op0<RSSE>(), insn.op1<RMSSE>(), insn.op2<Imm>()});
+            case Insn::PCMPEQB_RSSE_RMSSE: return exec(Pcmpeqb<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
+            case Insn::PCMPEQW_RSSE_RMSSE: return exec(Pcmpeqw<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
+            case Insn::PCMPEQD_RSSE_RMSSE: return exec(Pcmpeqd<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
+            case Insn::PCMPEQQ_RSSE_RMSSE: return exec(Pcmpeqq<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
+            case Insn::PCMPGTB_RSSE_RMSSE: return exec(Pcmpgtb<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
+            case Insn::PCMPGTW_RSSE_RMSSE: return exec(Pcmpgtw<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
+            case Insn::PCMPGTD_RSSE_RMSSE: return exec(Pcmpgtd<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
+            case Insn::PCMPGTQ_RSSE_RMSSE: return exec(Pcmpgtq<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
+            case Insn::PMOVMSKB_R32_RSSE: return exec(Pmovmskb<R32, RSSE>{insn.op0<R32>(), insn.op1<RSSE>()});
+            case Insn::PADDB_RSSE_RMSSE: return exec(Paddb<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
+            case Insn::PADDW_RSSE_RMSSE: return exec(Paddw<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
+            case Insn::PADDD_RSSE_RMSSE: return exec(Paddd<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
+            case Insn::PADDQ_RSSE_RMSSE: return exec(Paddq<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
+            case Insn::PSUBB_RSSE_RMSSE: return exec(Psubb<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
+            case Insn::PSUBW_RSSE_RMSSE: return exec(Psubw<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
+            case Insn::PSUBD_RSSE_RMSSE: return exec(Psubd<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
+            case Insn::PSUBQ_RSSE_RMSSE: return exec(Psubq<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
+            case Insn::PMAXUB_RSSE_RMSSE: return exec(Pmaxub<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
+            case Insn::PMINUB_RSSE_RMSSE: return exec(Pminub<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
+            case Insn::PTEST_RSSE_RMSSE: return exec(Ptest<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
+            case Insn::PSLLW_RSSE_IMM: return exec(Psllw<RSSE, Imm>{insn.op0<RSSE>(), insn.op1<Imm>()});
+            case Insn::PSLLD_RSSE_IMM: return exec(Pslld<RSSE, Imm>{insn.op0<RSSE>(), insn.op1<Imm>()});
+            case Insn::PSLLQ_RSSE_IMM: return exec(Psllq<RSSE, Imm>{insn.op0<RSSE>(), insn.op1<Imm>()});
+            case Insn::PSRLW_RSSE_IMM: return exec(Psrlw<RSSE, Imm>{insn.op0<RSSE>(), insn.op1<Imm>()});
+            case Insn::PSRLD_RSSE_IMM: return exec(Psrld<RSSE, Imm>{insn.op0<RSSE>(), insn.op1<Imm>()});
+            case Insn::PSRLQ_RSSE_IMM: return exec(Psrlq<RSSE, Imm>{insn.op0<RSSE>(), insn.op1<Imm>()});
+            case Insn::PSLLDQ_RSSE_IMM: return exec(Pslldq<RSSE, Imm>{insn.op0<RSSE>(), insn.op1<Imm>()});
+            case Insn::PSRLDQ_RSSE_IMM: return exec(Psrldq<RSSE, Imm>{insn.op0<RSSE>(), insn.op1<Imm>()});
+            case Insn::PCMPISTRI_RSSE_RMSSE_IMM: return exec(Pcmpistri<RSSE, RMSSE, Imm>{insn.op0<RSSE>(), insn.op1<RMSSE>(), insn.op2<Imm>()});
+            case Insn::PACKUSWB_RSSE_RMSSE: return exec(Packuswb<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
+            case Insn::PACKUSDW_RSSE_RMSSE: return exec(Packusdw<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
+            case Insn::PACKSSWB_RSSE_RMSSE: return exec(Packsswb<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
+            case Insn::PACKSSDW_RSSE_RMSSE: return exec(Packssdw<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
+            case Insn::RDTSC: return exec(Rdtsc{});
+            case Insn::CPUID: return exec(Cpuid{});
+            case Insn::XGETBV: return exec(Xgetbv{});
+            case Insn::FXSAVE_M64: return exec(Fxsave<M64>{insn.op0<M64>()});
+            case Insn::FXRSTOR_M64: return exec(Fxrstor<M64>{insn.op0<M64>()});
+            case Insn::FWAIT: return exec(Fwait{});
+            case Insn::RDPKRU: return exec(Rdpkru{});
+            case Insn::WRPKRU: return exec(Wrpkru{});
+        }
     }
 
     void Cpu::exec(const Add<RM8, RM8>& ins) { set(ins.dst, Impl::add8(get(ins.dst), get(ins.src), &flags_)); }
@@ -1228,14 +1588,14 @@ namespace x64 {
     }
 
     void Cpu::exec(const Maxss<RSSE, RSSE>& ins) { set(ins.dst, Impl::maxss(get(ins.dst), get(ins.src))); }
-    void Cpu::exec(const Maxss<RSSE, M32>& ins) { set(ins.dst, Impl::maxss(get(ins.dst), zeroExtend<Xmm, u32>(get(ins.src)))); }
+    void Cpu::exec(const Maxss<RSSE, M32>& ins) { set(ins.dst, Impl::maxss(get(ins.dst), zeroExtend<Xmm, u32>(get(resolve(ins.src))))); }
     void Cpu::exec(const Maxsd<RSSE, RSSE>& ins) { set(ins.dst, Impl::maxsd(get(ins.dst), get(ins.src))); }
-    void Cpu::exec(const Maxsd<RSSE, M64>& ins) { set(ins.dst, Impl::maxsd(get(ins.dst), zeroExtend<Xmm, u64>(get(ins.src)))); }
+    void Cpu::exec(const Maxsd<RSSE, M64>& ins) { set(ins.dst, Impl::maxsd(get(ins.dst), zeroExtend<Xmm, u64>(get(resolve(ins.src))))); }
 
     void Cpu::exec(const Minss<RSSE, RSSE>& ins) { set(ins.dst, Impl::minss(get(ins.dst), get(ins.src))); }
-    void Cpu::exec(const Minss<RSSE, M32>& ins) { set(ins.dst, Impl::minss(get(ins.dst), zeroExtend<Xmm, u32>(get(ins.src)))); }
+    void Cpu::exec(const Minss<RSSE, M32>& ins) { set(ins.dst, Impl::minss(get(ins.dst), zeroExtend<Xmm, u32>(get(resolve(ins.src))))); }
     void Cpu::exec(const Minsd<RSSE, RSSE>& ins) { set(ins.dst, Impl::minsd(get(ins.dst), get(ins.src))); }
-    void Cpu::exec(const Minsd<RSSE, M64>& ins) { set(ins.dst, Impl::minsd(get(ins.dst), zeroExtend<Xmm, u64>(get(ins.src)))); }
+    void Cpu::exec(const Minsd<RSSE, M64>& ins) { set(ins.dst, Impl::minsd(get(ins.dst), zeroExtend<Xmm, u64>(get(resolve(ins.src))))); }
 
     void Cpu::exec(const Cmpsd<RSSE, RSSE>& ins) {
         u64 res = Impl::cmpsd(get(ins.dst).lo, get(ins.src).lo, ins.cond);

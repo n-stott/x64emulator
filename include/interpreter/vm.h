@@ -31,8 +31,8 @@ namespace x64 {
 
         void execute(u64 address);
 
-        const X86Instruction* fetchInstruction();
-        void log(size_t ticks, const X86Instruction* instruction) const;
+        const X64Instruction* fetchInstruction();
+        void log(size_t ticks, const X64Instruction* instruction) const;
 
         void notifyCall(u64 address);
         void notifyRet(u64 address);
@@ -56,7 +56,7 @@ namespace x64 {
         struct ExecutableSection {
             u64 begin;
             u64 end;
-            std::vector<std::unique_ptr<X86Instruction>> instructions;
+            std::vector<X64Instruction> instructions;
             std::string filename;
         };
 
@@ -67,7 +67,7 @@ namespace x64 {
 
         InstructionPosition findSectionWithAddress(u64 address, const ExecutableSection* sectionHint = nullptr) const;
         void tryRetrieveSymbolsFromExecutable(const Mmu::Region& region) const;
-        std::string callName(const X86Instruction& instruction) const;
+        std::string callName(const X64Instruction& instruction) const;
         std::string calledFunctionName(u64 address) const;
 
         Mmu mmu_;

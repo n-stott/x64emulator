@@ -231,23 +231,23 @@ namespace utils {
     }
 
     inline std::string toString(const Encoding& enc) {
-        if(enc.base.has_value()) {
-            if(enc.index.has_value()) {
+        if(enc.hasBase) {
+            if(enc.hasIndex) {
                 if(enc.displacement != 0) {
-                    return fmt::format("[{}+{}*{}{:+#x}]", toString(enc.base.value()), toString(enc.index.value()), enc.scale, enc.displacement);
+                    return fmt::format("[{}+{}*{}{:+#x}]", toString(enc.base), toString(enc.index), enc.scale, enc.displacement);
                 } else {
-                    return fmt::format("[{}+{}*{}]", toString(enc.base.value()), toString(enc.index.value()), enc.scale);
+                    return fmt::format("[{}+{}*{}]", toString(enc.base), toString(enc.index), enc.scale);
                 }
             } else {
                 if(enc.displacement != 0) {
-                    return fmt::format("[{}{:+#x}]", toString(enc.base.value()), enc.displacement);
+                    return fmt::format("[{}{:+#x}]", toString(enc.base), enc.displacement);
                 } else {
-                    return fmt::format("[{}]", toString(enc.base.value()));
+                    return fmt::format("[{}]", toString(enc.base));
                 }
             }
         } else {
-            if(enc.index.has_value()) {
-                return fmt::format("[{}*{}{:+#x}]", toString(enc.index.value()), enc.scale, enc.displacement);
+            if(enc.hasIndex) {
+                return fmt::format("[{}*{}{:+#x}]", toString(enc.index), enc.scale, enc.displacement);
             } else {
                 return fmt::format("{:#x}", enc.displacement);
             }
@@ -268,24 +268,10 @@ namespace utils {
         }
     }
 
-    inline std::string toString(const RM8& m8) {
-        return std::visit([](auto&& arg) -> std::string { return toString(arg); }, m8);
-    }
-
-    inline std::string toString(const RM16& m16) {
-        return std::visit([](auto&& arg) -> std::string { return toString(arg); }, m16);
-    }
-
-    inline std::string toString(const RM32& m32) {
-        return std::visit([](auto&& arg) -> std::string { return toString(arg); }, m32);
-    }
-
-    inline std::string toString(const RM64& m64) {
-        return std::visit([](auto&& arg) -> std::string { return toString(arg); }, m64);
-    }
-
-    inline std::string toString(const RMSSE& msse) {
-        return std::visit([](auto&& arg) -> std::string { return toString(arg); }, msse);
+    template<typename Reg, Size size>
+    inline std::string toString(const RM<Reg, size>& rm) {
+        if(rm.isReg) return toString(rm.reg);
+        return toString(rm.mem);
     }
 
     template<typename Src>
