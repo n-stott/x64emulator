@@ -201,12 +201,8 @@ namespace x64 {
 
     };
 
-    struct NotParsed {
-        std::string mnemonic;
-    };
-
     struct Unknown {
-        std::string mnemonic;
+        std::array<char, 16> mnemonic;
     };
 
     template<typename Dst>

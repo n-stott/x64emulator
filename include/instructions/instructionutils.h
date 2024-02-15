@@ -430,12 +430,8 @@ namespace utils {
         return fmt::format("{:8}", "cqo");
     }
 
-    inline std::string toString(const NotParsed& ins) {
-        return fmt::format("{:9}{}", "undef", ins.mnemonic);
-    }
-
     inline std::string toString(const Unknown& ins) {
-        return fmt::format("{:9}{}", "unkn", ins.mnemonic);
+        return fmt::format("{:9}{}", "unkn", ins.mnemonic.data());
     }
 
     template<typename Dst>

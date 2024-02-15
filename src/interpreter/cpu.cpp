@@ -319,8 +319,7 @@ namespace x64 {
             case Insn::NOP: return exec(Nop{});
             case Insn::UD2: return exec(Ud2{});
             case Insn::SYSCALL: return exec(Syscall{});
-            case Insn::NOTPARSED: return exec(NotParsed{});
-            case Insn::UNKNOWN: return exec(Unknown{});
+            case Insn::UNKNOWN: return exec(Unknown{insn.op0<std::array<char, 16>>()});
             case Insn::CDQ: return exec(Cdq{});
             case Insn::CQO: return exec(Cqo{});
             case Insn::INC_RM8: return exec(Inc<RM8>{insn.op0<RM8>()});
@@ -897,8 +896,6 @@ namespace x64 {
         fmt::print(stderr, "Illegal instruction\n");
         verify(false);
     }
-
-    void Cpu::exec(const NotParsed&) { }
 
     void Cpu::exec(const Unknown& ins) {
         fmt::print("{}\n", utils::toString(ins));

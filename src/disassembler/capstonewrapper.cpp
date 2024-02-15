@@ -9,7 +9,9 @@
 namespace x64 {
 
     static inline X64Instruction make_failed(const cs_insn& insn) {
-        return X64Instruction::make<Insn::UNKNOWN>(insn.address);
+        std::array<char, 16> name;
+        std::memcpy(name.data(), &insn.mnemonic[0], 16);
+        return X64Instruction::make<Insn::UNKNOWN>(insn.address, name);
     }
 
     X64Instruction CapstoneWrapper::makeInstruction(const cs_insn& insn) {
@@ -2808,6 +2810,7 @@ namespace x64 {
 
     CapstoneWrapper::DisassemblyResult CapstoneWrapper::disassembleRange(const u8* begin, size_t size, u64 address) {
         std::vector<X64Instruction> instructions;
+        instructions.reserve(size/2); // some initial capacity
 
         csh handle;
         if(cs_open(CS_ARCH_X86, CS_MODE_64, &handle) != CS_ERR_OK) return {};
@@ -2856,6 +2859,8 @@ namespace x64 {
         cs_free(insn, 1);
 #endif
         cs_close(&handle);
+
+        instructions.shrink_to_fit();
 
         DisassemblyResult result;
         result.instructions = std::move(instructions);

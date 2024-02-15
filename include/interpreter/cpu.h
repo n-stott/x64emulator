@@ -288,7 +288,6 @@ namespace x64 {
         void exec(const Nop&);
         void exec(const Ud2&);
         void exec(const Syscall&);
-        void exec(const NotParsed&);
         void exec(const Unknown&);
 
         void exec(const Cdq&);
