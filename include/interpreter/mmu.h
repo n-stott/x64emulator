@@ -189,6 +189,7 @@ namespace x64 {
 
         std::deque<std::unique_ptr<Region>> regions_;
         std::vector<Region*> regionLookup_;
+        u64 firstUnlookupdableAddress_ { 0 };
         u64 fsBase_ { 0 };
         
         struct dtv_t {

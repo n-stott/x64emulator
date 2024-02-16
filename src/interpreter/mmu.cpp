@@ -34,6 +34,7 @@ namespace x64 {
         verify(firstPage < lastPage);
         if(lastPage >= regionLookup_.size()) {
             regionLookup_.resize(lastPage, nullptr);
+            firstUnlookupdableAddress_ = regionLookup_.size()*PAGE_SIZE;
         }
         for(u64 pageIndex = firstPage; pageIndex < lastPage; ++pageIndex) {
             verify(pageIndex < regionLookup_.size());
@@ -234,12 +235,12 @@ namespace x64 {
     }
 
     Mmu::Region* Mmu::findAddress(u64 address) {
-        if(address / PAGE_SIZE >= regionLookup_.size()) return nullptr;
+        if(address >= firstUnlookupdableAddress_) return nullptr;
         return regionLookup_[address / PAGE_SIZE];
     }
 
     const Mmu::Region* Mmu::findAddress(u64 address) const {
-        if(address / PAGE_SIZE >= regionLookup_.size()) return nullptr;
+        if(address >= firstUnlookupdableAddress_) return nullptr;
         return regionLookup_[address / PAGE_SIZE];
     }
 
