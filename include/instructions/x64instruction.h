@@ -509,6 +509,17 @@ namespace x64 {
             return X64Instruction(address, insn, count, buf0, buf1, buf2);
         }
 
+        std::string toString(const char* mnemonic) const;
+
+        template<typename T0>
+        std::string toString(const char* mnemonic) const;
+
+        template<typename T0, typename T1>
+        std::string toString(const char* mnemonic) const;
+
+        template<typename T0, typename T1, typename T2>
+        std::string toString(const char* mnemonic) const;
+
         u64 address_;
         Insn insn_;
         u8 nbops_;
