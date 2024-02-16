@@ -417,7 +417,12 @@ namespace x64 {
     using Bytes = std::array<u8, N>;
 
     class X64Instruction {
-        using ArgBuffer = Bytes<24>;
+        using ArgBuffer = Bytes<16>;
+
+        static_assert(sizeof(R64) <= sizeof(ArgBuffer));
+        static_assert(sizeof(M64) <= sizeof(ArgBuffer));
+        static_assert(sizeof(RM64) <= sizeof(ArgBuffer));
+        static_assert(sizeof(Imm) <= sizeof(ArgBuffer));
     public:
         template<Insn insn, typename... Args>
         static X64Instruction make(u64 address, Args&& ...args) {
@@ -527,11 +532,6 @@ namespace x64 {
         ArgBuffer op1_;
         ArgBuffer op2_;
     };
-
-    static_assert(sizeof(R64) <= sizeof(Bytes<24>));
-    static_assert(sizeof(M64) <= sizeof(Bytes<24>));
-    static_assert(sizeof(RM64) <= sizeof(Bytes<24>));
-    static_assert(sizeof(Imm) <= sizeof(Bytes<24>));
 }
 
 

@@ -135,7 +135,7 @@ namespace x64 {
         XMM15,
     };
 
-    enum class ST {
+    enum class ST : u8 {
         ST0,
         ST1,
         ST2,
@@ -146,7 +146,7 @@ namespace x64 {
         ST7,
     };
 
-    enum class Cond {
+    enum class Cond : u8 {
         A,
         AE,
         B,
@@ -169,7 +169,7 @@ namespace x64 {
         U,
     };
     
-    enum class FCond {
+    enum class FCond : u8 {
         EQ,
         LT,
         LE,
@@ -180,23 +180,16 @@ namespace x64 {
         ORD,
     };
 
-    enum class Flag {
-        CARRY,
-        ZERO,
-        SIGN,
-        OVERFLOW
-    };
-
     struct Encoding {
         R64 base;
         R64 index;
-        bool hasBase;
-        bool hasIndex;
+        u8 hasBase : 1;
+        u8 hasIndex : 1;
         u8 scale;
         i32 displacement;
     };
 
-    enum class Size {
+    enum class Size : u8 {
         BYTE,
         WORD,
         DWORD,
