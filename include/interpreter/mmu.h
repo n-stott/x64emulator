@@ -109,7 +109,7 @@ namespace x64 {
 
         void setRegionName(u64 address, std::string name);
         
-        void setFsBase(u64 fsBase);
+        void setSegmentBase(Segment segment, u64 base);
         void registerTlsBlock(u64 templateAddress, u64 blockAddress);
 
         template<typename Callback>
@@ -190,7 +190,8 @@ namespace x64 {
         std::deque<std::unique_ptr<Region>> regions_;
         std::vector<Region*> regionLookup_;
         u64 firstUnlookupdableAddress_ { 0 };
-        u64 fsBase_ { 0 };
+
+        std::array<u64, 8> segmentBase_ {{ 0, 0, 0, 0, 0, 0, 0, 0 }};
         
         struct dtv_t {
             u64 templateAddress;

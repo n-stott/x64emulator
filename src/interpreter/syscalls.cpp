@@ -541,8 +541,8 @@ namespace x64 {
 
     int Sys::arch_prctl(int code, Ptr addr) {
         if(vm_->logSyscalls()) fmt::print("Sys::arch_prctl(code={}, addr={:#x}) = {}\n", code, addr.address(), code == ARCH_SET_FS ? 0 : -1);
-        if(code != ARCH_SET_FS) return -1;
-        mmu_->setFsBase(addr.address());
+        if(code != ARCH_SET_FS) return -EINVAL;
+        mmu_->setSegmentBase(Segment::FS, addr.address());
         return 0;
     }
 

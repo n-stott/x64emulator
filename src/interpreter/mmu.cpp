@@ -162,9 +162,8 @@ namespace x64 {
         (*it)->file_ = std::move(name);
     }
 
-    void Mmu::setFsBase(u64 fsBase) {
-        assert(fsBase_ == 0);
-        fsBase_ = fsBase;
+    void Mmu::setSegmentBase(Segment segment, u64 base) {
+        segmentBase_[(u8)segment] = base;
     }
     
     void Mmu::registerTlsBlock(u64 templateAddress, u64 blockAddress) {
@@ -229,7 +228,7 @@ namespace x64 {
 
     template<Size s>
     u64 Mmu::resolve(SPtr<s> ptr) const {
-        u64 segmentBase = (ptr.segment() != Segment::FS) ? 0x0 : fsBase_;
+        u64 segmentBase = segmentBase_[(u8)ptr.segment()];
         u64 address = segmentBase + ptr.address();
         return address;
     }
