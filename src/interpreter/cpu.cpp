@@ -69,109 +69,49 @@ namespace x64 {
         mmu_->write128(ptr, value);
     }
 
-    u8 Cpu::get(RM8 src) const {
-        return src.isReg ? get(src.reg) : get(resolve(src.mem));
-    }
-
-    u16 Cpu::get(RM16 src) const {
-        return src.isReg ? get(src.reg) : get(resolve(src.mem));
-    }
-
-    u32 Cpu::get(RM32 src) const {
-        return src.isReg ? get(src.reg) : get(resolve(src.mem));
-    }
-
-    u64 Cpu::get(RM64 src) const {
-        return src.isReg ? get(src.reg) : get(resolve(src.mem));
-    }
-
-    Xmm Cpu::get(RMSSE src) const {
-        return src.isReg ? get(src.reg) : get(resolve(src.mem));
-    }
-
-    void Cpu::set(RM8 dst, u8 value) {
-        if(dst.isReg) {
-            set(dst.reg, value);
-        } else {
-            set(resolve(dst.mem), value);
-        }
-    }
-
-    void Cpu::set(RM16 dst, u16 value) {
-        if(dst.isReg) {
-            set(dst.reg, value);
-        } else {
-            set(resolve(dst.mem), value);
-        }
-    }
-
-    void Cpu::set(RM32 dst, u32 value) {
-        if(dst.isReg) {
-            set(dst.reg, value);
-        } else {
-            set(resolve(dst.mem), value);
-        }
-    }
-
-    void Cpu::set(RM64 dst, u64 value) {
-        if(dst.isReg) {
-            set(dst.reg, value);
-        } else {
-            set(resolve(dst.mem), value);
-        }
-    }
-
-    void Cpu::set(RMSSE dst, Xmm value) {
-        if(dst.isReg) {
-            set(dst.reg, value);
-        } else {
-            set(resolve(dst.mem), value);
-        }
-    }
-
     void Cpu::push8(u8 value) {
-        regs_.rsp_ -= 8;
-        mmu_->write64(Ptr64{regs_.rsp_}, (u64)value);
+        regs_.rsp() -= 8;
+        mmu_->write64(Ptr64{regs_.rsp()}, (u64)value);
     }
 
     void Cpu::push16(u16 value) {
-        regs_.rsp_ -= 8;
-        mmu_->write64(Ptr64{regs_.rsp_}, (u64)value);
+        regs_.rsp() -= 8;
+        mmu_->write64(Ptr64{regs_.rsp()}, (u64)value);
     }
 
     void Cpu::push32(u32 value) {
-        regs_.rsp_ -= 8;
-        mmu_->write64(Ptr64{regs_.rsp_}, (u64)value);
+        regs_.rsp() -= 8;
+        mmu_->write64(Ptr64{regs_.rsp()}, (u64)value);
     }
 
     void Cpu::push64(u64 value) {
-        regs_.rsp_ -= 8;
-        mmu_->write64(Ptr64{regs_.rsp_}, value);
+        regs_.rsp() -= 8;
+        mmu_->write64(Ptr64{regs_.rsp()}, value);
     }
 
     u8 Cpu::pop8() {
-        u64 value = mmu_->read64(Ptr64{regs_.rsp_});
+        u64 value = mmu_->read64(Ptr64{regs_.rsp()});
         assert(value == (u8)value);
-        regs_.rsp_ += 8;
+        regs_.rsp() += 8;
         return static_cast<u8>(value);
     }
 
     u16 Cpu::pop16() {
-        u64 value = mmu_->read64(Ptr64{regs_.rsp_});
+        u64 value = mmu_->read64(Ptr64{regs_.rsp()});
         assert(value == (u16)value);
-        regs_.rsp_ += 8;
+        regs_.rsp() += 8;
         return static_cast<u16>(value);
     }
 
     u32 Cpu::pop32() {
-        u64 value = mmu_->read64(Ptr64{regs_.rsp_});
-        regs_.rsp_ += 8;
+        u64 value = mmu_->read64(Ptr64{regs_.rsp()});
+        regs_.rsp() += 8;
         return static_cast<u32>(value);
     }
 
     u64 Cpu::pop64() {
-        u64 value = mmu_->read64(Ptr64{regs_.rsp_});
-        regs_.rsp_ += 8;
+        u64 value = mmu_->read64(Ptr64{regs_.rsp()});
+        regs_.rsp() += 8;
         return value;
     }
 
@@ -849,39 +789,39 @@ namespace x64 {
 
     void Cpu::exec(const CallDirect& ins) {
         u64 address = ins.symbolAddress;
-        push64(regs_.rip_);
+        push64(regs_.rip());
         vm_->notifyCall(address);
-        regs_.rip_ = address;
+        regs_.rip() = address;
     }
 
     void Cpu::exec(const CallIndirect<RM32>& ins) {
         u64 address = get(ins.src);
-        push64(regs_.rip_);
+        push64(regs_.rip());
         vm_->notifyCall(address);
-        regs_.rip_ = address;
+        regs_.rip() = address;
     }
 
     void Cpu::exec(const CallIndirect<RM64>& ins) {
         u64 address = get(ins.src);
-        push64(regs_.rip_);
+        push64(regs_.rip());
         vm_->notifyCall(address);
-        regs_.rip_ = address;
+        regs_.rip() = address;
     }
 
     void Cpu::exec(const Ret<>&) {
-        regs_.rip_ = pop64();
-        vm_->notifyRet(regs_.rip_);
+        regs_.rip() = pop64();
+        vm_->notifyRet(regs_.rip());
     }
 
     void Cpu::exec(const Ret<Imm>& ins) {
-        regs_.rip_ = pop64();
-        regs_.rsp_ += get<u64>(ins.src);
-        vm_->notifyRet(regs_.rip_);
+        regs_.rip() = pop64();
+        regs_.rsp() += get<u64>(ins.src);
+        vm_->notifyRet(regs_.rip());
     }
 
     void Cpu::exec(const Leave&) {
-        regs_.rsp_ = regs_.rbp_;
-        regs_.rbp_ = pop64();
+        regs_.rsp() = regs_.rbp();
+        regs_.rbp() = pop64();
     }
 
     void Cpu::exec(const Halt&) { verify(false, "Halt not implemented"); }
@@ -1080,19 +1020,19 @@ namespace x64 {
     void Cpu::exec(const Jmp<RM32>& ins) {
         u64 dst = (u64)get(ins.symbolAddress);
         vm_->notifyJmp(dst);
-        regs_.rip_ = dst;
+        regs_.rip() = dst;
     }
 
     void Cpu::exec(const Jmp<RM64>& ins) {
         u64 dst = get(ins.symbolAddress);
         vm_->notifyJmp(dst);
-        regs_.rip_ = dst;
+        regs_.rip() = dst;
     }
 
     void Cpu::exec(const Jmp<u32>& ins) {
         u64 dst = ins.symbolAddress;
         vm_->notifyJmp(dst);
-        regs_.rip_ = dst;
+        regs_.rip() = dst;
     }
 
     void Cpu::exec(const Jcc& ins) {
@@ -1100,7 +1040,7 @@ namespace x64 {
         if(flags_.matches(ins.cond)) {
             u64 dst = ins.symbolAddress;
             vm_->notifyJmp(dst);
-            regs_.rip_ = dst;
+            regs_.rip() = dst;
         }
     }
 

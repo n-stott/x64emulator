@@ -277,8 +277,8 @@ namespace utils {
         }
     }
 
-    template<typename Reg, Size size>
-    inline std::string toString(const RM<Reg, size>& rm) {
+    template<Size size>
+    inline std::string toString(const RM<size>& rm) {
         if(rm.isReg) return toString(rm.reg);
         return toString(rm.mem);
     }

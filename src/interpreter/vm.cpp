@@ -55,14 +55,14 @@ namespace x64 {
 
     void VM::execute(u64 address) {
         if(stop_) return;
-        cpu_.regs_.rip_ = address;
+        cpu_.regs_.rip() = address;
         notifyCall(address);
         size_t ticks = 0;
-        while(!stop_ && cpu_.regs_.rip_ != 0x0) {
+        while(!stop_ && cpu_.regs_.rip() != 0x0) {
             try {
                 const X64Instruction* instruction = fetchInstruction();
                 verify(!!instruction, [&]() {
-                    fmt::print("Undefined instruction near {:#x}\n", cpu_.regs_.rip_);
+                    fmt::print("Undefined instruction near {:#x}\n", cpu_.regs_.rip());
                 });
                 log(ticks, instruction);
                 ++ticks;
@@ -86,11 +86,11 @@ namespace x64 {
         const X64Instruction& instruction = currentExecutedSection_->instructions[currentInstructionIdx_];
         if(currentInstructionIdx_+1 != currentExecutedSection_->instructions.size()) {
             const X64Instruction& nextInstruction = currentExecutedSection_->instructions[currentInstructionIdx_+1];
-            cpu_.regs_.rip_ = nextInstruction.address();
+            cpu_.regs_.rip() = nextInstruction.address();
             ++currentInstructionIdx_;
         } else {
             currentInstructionIdx_ = (size_t)(-1);
-            cpu_.regs_.rip_ = 0x0;
+            cpu_.regs_.rip() = 0x0;
         }
         return &instruction;
     }
@@ -107,9 +107,9 @@ namespace x64 {
         std::string registerDump = fmt::format( "rip={:0000008x} "
                                                 "rax={:0000008x} rbx={:0000008x} rcx={:0000008x} rdx={:0000008x} "
                                                 "rsi={:0000008x} rdi={:0000008x} rbp={:0000008x} rsp={:0000008x} ",
-                                                cpu_.regs_.rip_,
-                                                cpu_.regs_.rax_, cpu_.regs_.rbx_, cpu_.regs_.rcx_, cpu_.regs_.rdx_,
-                                                cpu_.regs_.rsi_, cpu_.regs_.rdi_, cpu_.regs_.rbp_, cpu_.regs_.rsp_);
+                                                cpu_.regs_.rip(),
+                                                cpu_.regs_.get(R64::RAX), cpu_.regs_.get(R64::RBX), cpu_.regs_.get(R64::RCX), cpu_.regs_.get(R64::RDX),
+                                                cpu_.regs_.get(R64::RSI), cpu_.regs_.get(R64::RDI), cpu_.regs_.get(R64::RBP), cpu_.regs_.get(R64::RSP));
         std::string indent = fmt::format("{:{}}", "", callstack_.size());
 
         std::string mnemonic = fmt::format("{}|{}", indent, instruction->toString());
@@ -154,19 +154,19 @@ namespace x64 {
     void VM::dumpRegisters() const {
         fmt::print(stderr,
             "rip {:#0000008x}\n",
-            cpu_.regs_.rip_);
+            cpu_.regs_.rip());
         fmt::print(stderr,
             "rsi {:#0000008x}  rdi {:#0000008x}  rbp {:#0000008x}  rsp {:#0000008x}\n",
-            cpu_.regs_.rsi_, cpu_.regs_.rdi_, cpu_.regs_.rbp_, cpu_.regs_.rsp_);
+            cpu_.regs_.get(R64::RSI), cpu_.regs_.get(R64::RDI), cpu_.regs_.get(R64::RBP), cpu_.regs_.get(R64::RSP));
         fmt::print(stderr,
             "rax {:#0000008x}  rbx {:#0000008x}  rcx {:#0000008x}  rdx {:#0000008x}\n",
-            cpu_.regs_.rax_, cpu_.regs_.rbx_, cpu_.regs_.rcx_, cpu_.regs_.rdx_);
+            cpu_.regs_.get(R64::RAX), cpu_.regs_.get(R64::RBX), cpu_.regs_.get(R64::RCX), cpu_.regs_.get(R64::RDX));
         fmt::print(stderr,
             "r8  {:#0000008x}  r9  {:#0000008x}  r10 {:#0000008x}  r11 {:#0000008x}\n",
-            cpu_.regs_.r8_, cpu_.regs_.r9_, cpu_.regs_.r10_, cpu_.regs_.r11_);
+            cpu_.regs_.get(R64::R8), cpu_.regs_.get(R64::R9), cpu_.regs_.get(R64::R10), cpu_.regs_.get(R64::R11));
         fmt::print(stderr,
             "r12 {:#0000008x}  r13 {:#0000008x}  r14 {:#0000008x}  r15 {:#0000008x}\n",
-            cpu_.regs_.r12_, cpu_.regs_.r13_, cpu_.regs_.r14_, cpu_.regs_.r15_);
+            cpu_.regs_.get(R64::R12), cpu_.regs_.get(R64::R13), cpu_.regs_.get(R64::R14), cpu_.regs_.get(R64::R15));
     }
 
     void VM::notifyCall(u64 address) {
@@ -351,7 +351,7 @@ namespace x64 {
         const X64Instruction& jmpInsn = pos.section->instructions[pos.index];
         if(jmpInsn.insn() == Insn::JMP_RM64) {
             Registers regs;
-            regs.rip_ = jmpInsn.address() + 6; // add instruction size offset
+            regs.rip() = jmpInsn.address() + 6; // add instruction size offset
             auto dst = cpu_.get(jmpInsn.op0<RM64>());
             auto symbolsAtAddress = symbolProvider_->lookupSymbol(dst);
             if(!symbolsAtAddress.empty()) {

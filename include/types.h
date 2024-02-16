@@ -58,14 +58,14 @@ namespace x64 {
     };
 
     enum class R16 : u8 {
-        BP,
-        SP,
-        DI,
-        SI,
         AX,
-        BX,
         CX,
         DX,
+        BX,
+        SP,
+        BP,
+        SI,
+        DI,
         R8W,
         R9W,
         R10W,
@@ -77,14 +77,14 @@ namespace x64 {
     };
 
     enum class R32 : u8 {
-        EBP,
-        ESP,
-        EDI,
-        ESI,
         EAX,
-        EBX,
         ECX,
         EDX,
+        EBX,
+        ESP,
+        EBP,
+        ESI,
+        EDI,
         R8D,
         R9D,
         R10D,
@@ -97,14 +97,14 @@ namespace x64 {
     };
 
     enum class R64 : u8 {
-        RBP,
-        RSP,
-        RDI,
-        RSI,
         RAX,
-        RBX,
         RCX,
         RDX,
+        RBX,
+        RSP,
+        RBP,
+        RSI,
+        RDI,
         R8,
         R9,
         R10,
@@ -252,6 +252,31 @@ namespace x64 {
         u64 address_;
     };
 
+    template<Size size>
+    struct Unsigned;
+
+    template<> struct Unsigned<Size::BYTE> { using type = u8; };
+    template<> struct Unsigned<Size::WORD> { using type = u16; };
+    template<> struct Unsigned<Size::DWORD> { using type = u32; };
+    template<> struct Unsigned<Size::QWORD> { using type = u64; };
+    template<> struct Unsigned<Size::XMMWORD> { using type = u128; };
+
+    template<Size size>
+    struct Register;
+
+    template<> struct Register<Size::BYTE> { using value = R8; };
+    template<> struct Register<Size::WORD> { using value = R16; };
+    template<> struct Register<Size::DWORD> { using value = R32; };
+    template<> struct Register<Size::QWORD> { using value = R64; };
+    template<> struct Register<Size::XMMWORD> { using value = RSSE; };
+
+
+    template<Size size>
+    using U = typename Unsigned<size>::type;
+
+    template<Size size>
+    using R = typename Register<size>::value;
+
     using Ptr = SPtr<Size::BYTE>;
     using Ptr8 = SPtr<Size::BYTE>;
     using Ptr16 = SPtr<Size::WORD>;
@@ -261,29 +286,29 @@ namespace x64 {
     using Ptr128 = SPtr<Size::XMMWORD>;
     using Ptr224 = SPtr<Size::FPUENV>;
 
-    template<typename Reg, Size size>
+    template<Size size>
     struct RM {
         bool isReg;
-        Reg reg;
+        R<size> reg;
         M<size> mem;
     };
 
     using M8 = M<Size::BYTE>;
-    using RM8 = RM<R8, Size::BYTE>;
+    using RM8 = RM<Size::BYTE>;
 
     using M16 = M<Size::WORD>;
-    using RM16 = RM<R16, Size::WORD>;
+    using RM16 = RM<Size::WORD>;
 
     using M32 = M<Size::DWORD>;
-    using RM32 = RM<R32, Size::DWORD>;
+    using RM32 = RM<Size::DWORD>;
 
     using M64 = M<Size::QWORD>;
-    using RM64 = RM<R64, Size::QWORD>;
+    using RM64 = RM<Size::QWORD>;
 
     using M80 = M<Size::TWORD>;
 
     using MSSE = M<Size::XMMWORD>;
-    using RMSSE = RM<RSSE, Size::XMMWORD>;
+    using RMSSE = RM<Size::XMMWORD>;
 
     using M224 = M<Size::FPUENV>;
 }
