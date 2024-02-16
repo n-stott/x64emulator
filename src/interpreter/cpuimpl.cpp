@@ -516,6 +516,24 @@ namespace x64 {
     void CpuImpl::test32(u32 src1, u32 src2, Flags* flags) { return test<u32>(src1, src2, flags); }
     void CpuImpl::test64(u64 src1, u64 src2, Flags* flags) { return test<u64>(src1, src2, flags); }
 
+    void CpuImpl::cmpxchg8(u8 eax, u8 dest, Flags* flags) {
+        CpuImpl::cmp8(eax, dest, flags);
+        if(eax == dest) {
+            flags->zero = 1;
+        } else {
+            flags->zero = 0;
+        }
+    }
+
+    void CpuImpl::cmpxchg16(u16 eax, u16 dest, Flags* flags) {
+        CpuImpl::cmp16(eax, dest, flags);
+        if(eax == dest) {
+            flags->zero = 1;
+        } else {
+            flags->zero = 0;
+        }
+    }
+
     void CpuImpl::cmpxchg32(u32 eax, u32 dest, Flags* flags) {
         CpuImpl::cmp32(eax, dest, flags);
         if(eax == dest) {

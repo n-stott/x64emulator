@@ -801,6 +801,24 @@ namespace x64 {
     void CheckedCpuImpl::test32(u32 src1, u32 src2, Flags* flags) { return test<u32>(src1, src2, flags, &CpuImpl::test32); }
     void CheckedCpuImpl::test64(u64 src1, u64 src2, Flags* flags) { return test<u64>(src1, src2, flags, &CpuImpl::test64); }
 
+    void CheckedCpuImpl::cmpxchg8(u8 eax, u8 dest, Flags* flags) {
+        CheckedCpuImpl::cmp8(eax, dest, flags);
+        if(eax == dest) {
+            flags->zero = 1;
+        } else {
+            flags->zero = 0;
+        }
+    }
+
+    void CheckedCpuImpl::cmpxchg16(u16 rax, u16 dest, Flags* flags) {
+        CheckedCpuImpl::cmp16(rax, dest, flags);
+        if(rax == dest) {
+            flags->zero = 1;
+        } else {
+            flags->zero = 0;
+        }
+    }
+
     void CheckedCpuImpl::cmpxchg32(u32 eax, u32 dest, Flags* flags) {
         CheckedCpuImpl::cmp32(eax, dest, flags);
         if(eax == dest) {

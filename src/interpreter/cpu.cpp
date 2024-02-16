@@ -175,11 +175,6 @@ namespace x64 {
         return value;
     }
 
-    #define TODO(ins) \
-        fmt::print(stderr, "Fail at : {}\n", x64::utils::toString(ins));\
-        std::string todoMessage = "Not implemented : "+x64::utils::toString(ins);\
-        verify(false, todoMessage.c_str());
-
 #ifndef NDEBUG
     #define DEBUG_ONLY(X) X
 #else
@@ -889,7 +884,7 @@ namespace x64 {
         regs_.rbp_ = pop64();
     }
 
-    void Cpu::exec(const Halt& ins) { TODO(ins); }
+    void Cpu::exec(const Halt&) { verify(false, "Halt not implemented"); }
     void Cpu::exec(const Nop&) { }
 
     void Cpu::exec(const Ud2&) {
@@ -898,7 +893,7 @@ namespace x64 {
     }
 
     void Cpu::exec(const Unknown& ins) {
-        fmt::print("{}\n", utils::toString(ins));
+        fmt::print("unknown {}\n", ins.mnemonic.data());
         verify(false);
     }
 
@@ -1022,6 +1017,30 @@ namespace x64 {
     void Cpu::exec(const Cmp<RM64, Imm>& ins) { Impl::cmp64(get(ins.src1), get<u64>(ins.src2), &flags_); }
 
     template<typename Dst>
+    void Cpu::execCmpxchg8Impl(Dst dst, u8 src) {
+        u8 eax = get(R8::AL);
+        u8 dest = get(dst);
+        Impl::cmpxchg8(eax, dest, &flags_);
+        if(flags_.zero == 1) {
+            set(dst, src);
+        } else {
+            set(R8::AL, dest);
+        }
+    }
+
+    template<typename Dst>
+    void Cpu::execCmpxchg16Impl(Dst dst, u16 src) {
+        u16 eax = get(R16::AX);
+        u16 dest = get(dst);
+        Impl::cmpxchg16(eax, dest, &flags_);
+        if(flags_.zero == 1) {
+            set(dst, src);
+        } else {
+            set(R16::AX, dest);
+        }
+    }
+
+    template<typename Dst>
     void Cpu::execCmpxchg32Impl(Dst dst, u32 src) {
         u32 eax = get(R32::EAX);
         u32 dest = get(dst);
@@ -1045,8 +1064,8 @@ namespace x64 {
         }
     }
 
-    void Cpu::exec(const Cmpxchg<RM8, R8>& ins) { TODO(ins); }
-    void Cpu::exec(const Cmpxchg<RM16, R16>& ins) { TODO(ins); }
+    void Cpu::exec(const Cmpxchg<RM8, R8>& ins) { execCmpxchg8Impl(ins.src1, get(ins.src2)); }
+    void Cpu::exec(const Cmpxchg<RM16, R16>& ins) { execCmpxchg16Impl(ins.src1, get(ins.src2)); }
     void Cpu::exec(const Cmpxchg<RM32, R32>& ins) { execCmpxchg32Impl(ins.src1, get(ins.src2)); }
     void Cpu::exec(const Cmpxchg<RM64, R64>& ins) { execCmpxchg64Impl(ins.src1, get(ins.src2)); }
 
@@ -1902,7 +1921,7 @@ namespace x64 {
     }
 
     void Cpu::exec(const Pcmpistri<RSSE, RMSSE, Imm>& ins) {
-        TODO(ins);
+        verify(false, "Pcmpistri not implemented");
         u32 res = Impl::pcmpistri(get(ins.dst), get(ins.src), get<u8>(ins.control), &flags_);
         set(R32::ECX, res);
     }
@@ -2037,12 +2056,12 @@ namespace x64 {
         setFpuState(fpuState);
     }
 
-    void Cpu::exec(const Rdpkru& ins) {
-        TODO(ins);
+    void Cpu::exec(const Rdpkru&) {
+        verify(false, "Rdpkru not implemented");
     }
 
-    void Cpu::exec(const Wrpkru& ins) {
-        TODO(ins);
+    void Cpu::exec(const Wrpkru&) {
+        verify(false, "Wrpkru not implemented");
     }
 
     void Cpu::exec(const Fwait&) {

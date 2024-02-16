@@ -81,6 +81,8 @@ namespace x64 {
         [[nodiscard]] static u32 bts32(u32 base, u32 index, Flags* flags);
         [[nodiscard]] static u64 bts64(u64 base, u64 index, Flags* flags);
         
+        static void cmpxchg8(u8 rax, u8 dest, Flags* flags);
+        static void cmpxchg16(u16 rax, u16 dest, Flags* flags);
         static void cmpxchg32(u32 rax, u32 dest, Flags* flags);
         static void cmpxchg64(u64 rax, u64 dest, Flags* flags);
 

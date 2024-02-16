@@ -138,6 +138,12 @@ namespace x64 {
         void execSet(Cond cond, Dst dst);
 
         template<typename Dst>
+        void execCmpxchg8Impl(Dst dst, u8 src);
+
+        template<typename Dst>
+        void execCmpxchg16Impl(Dst dst, u16 src);
+
+        template<typename Dst>
         void execCmpxchg32Impl(Dst dst, u32 src);
 
         template<typename Dst>
