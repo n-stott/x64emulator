@@ -15,13 +15,13 @@ namespace x64 {
         u32 eiz_ { 0 };
 
     public:
-        u64 rbp() const { return gpr_[(int)R64::RBP]; }
-        u64 rsp() const { return gpr_[(int)R64::RSP]; }
-        u64 rip() const { return gpr_[(int)R64::RIP]; }
+        u64 rbp() const { return gpr_[(u8)R64::RBP]; }
+        u64 rsp() const { return gpr_[(u8)R64::RSP]; }
+        u64 rip() const { return gpr_[(u8)R64::RIP]; }
 
-        u64& rbp() { return gpr_[(int)R64::RBP]; }
-        u64& rsp() { return gpr_[(int)R64::RSP]; }
-        u64& rip() { return gpr_[(int)R64::RIP]; }
+        u64& rbp() { return gpr_[(u8)R64::RBP]; }
+        u64& rsp() { return gpr_[(u8)R64::RSP]; }
+        u64& rip() { return gpr_[(u8)R64::RIP]; }
 
         u8 get(R8 reg) const {
             switch(reg) {
@@ -62,7 +62,7 @@ namespace x64 {
         }
 
         Xmm get(RSSE reg) const {
-            return xmm_[(int)reg];
+            return xmm_[(u8)reg];
         }
     
         void set(R8 reg, u8 value) {
@@ -108,7 +108,7 @@ namespace x64 {
         }
 
         void set(RSSE reg, Xmm value) {
-            xmm_[(int)reg] = value;
+            xmm_[(u8)reg] = value;
         }
 
         u64 resolve(Encoding enc) const {
