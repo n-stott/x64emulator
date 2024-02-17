@@ -8,11 +8,15 @@ namespace x64 {
 
     class Registers {
     public:
-        u64 gpr_[17];
+        u64 gpr_[18];
 
         Xmm xmm_[16];
 
         u32 eiz_ { 0 };
+
+        Registers() {
+            std::fill(gpr_, gpr_+18, (u64)0);
+        }
 
     public:
         u64 rbp() const { return gpr_[(u8)R64::RBP]; }
@@ -112,8 +116,8 @@ namespace x64 {
         }
 
         u64 resolve(Encoding enc) const {
-            return (enc.hasBase ? get(enc.base) : 0)
-                    + enc.scale * (enc.hasIndex ? get(enc.index) : 0)
+            return get(enc.base)
+                    + enc.scale * get(enc.index)
                     + (u64)enc.displacement;
         }
 

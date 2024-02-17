@@ -113,6 +113,7 @@ namespace utils {
             case R64::R14: return "r14";
             case R64::R15: return "r15";
             case R64::RIP: return "rip";
+            case R64::ZERO: return "";
         }
         return "";
     }
@@ -240,8 +241,8 @@ namespace utils {
     }
 
     inline std::string toString(const Encoding& enc) {
-        if(enc.hasBase) {
-            if(enc.hasIndex) {
+        if(enc.base != R64::ZERO) {
+            if(enc.index != R64::ZERO) {
                 if(enc.displacement != 0) {
                     return fmt::format("[{}+{}*{}{:+#x}]", toString(enc.base), toString(enc.index), enc.scale, enc.displacement);
                 } else {
@@ -255,7 +256,7 @@ namespace utils {
                 }
             }
         } else {
-            if(enc.hasIndex) {
+            if(enc.index != R64::ZERO) {
                 return fmt::format("[{}*{}{:+#x}]", toString(enc.index), enc.scale, enc.displacement);
             } else {
                 return fmt::format("{:#x}", enc.displacement);

@@ -114,6 +114,7 @@ namespace x64 {
         R14,
         R15,
         RIP,
+        ZERO,
     };
 
     enum class RSSE : u8 {
@@ -183,8 +184,6 @@ namespace x64 {
     struct Encoding {
         R64 base;
         R64 index;
-        u8 hasBase : 1;
-        u8 hasIndex : 1;
         u8 scale;
         i32 displacement;
     };

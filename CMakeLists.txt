@@ -10,8 +10,8 @@ add_library(x64 STATIC
     src/utils/host.cpp
     src/utils/utils.cpp
 )
-target_compile_options(x64 PUBLIC -Wall -Wextra -Wpedantic -pedantic -Wconversion -Werror)
-target_compile_options(x64 PUBLIC -Wno-braced-scalar-init -Wimplicit-fallthrough -Wno-missing-braces)
+target_compile_options(x64 PUBLIC -Wall -Wextra -Wpedantic -pedantic -Wconversion -Werror -Wimplicit-fallthrough)
+target_compile_options(x64 PUBLIC -Wno-braced-scalar-init -Wno-missing-braces -Wno-maybe-uninitialized)
 target_compile_options(x64 PUBLIC -frounding-math)
 target_include_directories(x64 PUBLIC include)
 
@@ -32,8 +32,8 @@ add_library(emulator STATIC
     src/utils/host.cpp
     src/utils/utils.cpp
 )
-target_compile_options(emulator PUBLIC -Wall -Wextra -Wpedantic -pedantic -Wconversion -Werror)
-target_compile_options(emulator PUBLIC -Wno-braced-scalar-init -Wimplicit-fallthrough -Wno-missing-braces)
+target_compile_options(emulator PUBLIC -Wall -Wextra -Wpedantic -pedantic -Wconversion -Werror -Wimplicit-fallthrough)
+target_compile_options(emulator PUBLIC -Wno-braced-scalar-init -Wno-missing-braces -Wno-maybe-uninitialized)
 target_compile_options(emulator PUBLIC -frounding-math)
 target_compile_options(emulator PUBLIC -DFMT_HEADER_ONLY)
 target_include_directories(emulator PUBLIC include)
@@ -44,8 +44,8 @@ target_link_libraries(emulator PUBLIC -lcapstone)
 add_executable(interpreter
     src/main.cpp
 )
-target_compile_options(interpreter PUBLIC -Wall -Wextra -Wpedantic -pedantic -Wconversion -Werror)
-target_compile_options(interpreter PUBLIC -Wno-braced-scalar-init -Wimplicit-fallthrough -Wno-missing-braces)
+target_compile_options(interpreter PUBLIC -Wall -Wextra -Wpedantic -pedantic -Wconversion -Werror -Wimplicit-fallthrough)
+target_compile_options(interpreter PUBLIC -Wno-braced-scalar-init -Wno-missing-braces -Wno-maybe-uninitialized)
 target_include_directories(interpreter PUBLIC include)
 target_include_directories(interpreter PUBLIC ../common/include)
 target_include_directories(interpreter PUBLIC external)

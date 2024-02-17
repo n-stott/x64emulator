@@ -460,10 +460,8 @@ namespace x64 {
         if(operand.type != X86_OP_MEM) return {};
         auto base = asRegister64(operand.mem.base);
         auto index = asRegister64(operand.mem.index);
-        return Encoding{base.value_or(R64::RAX),
-                        index.value_or(R64::RAX),
-                        base.has_value(),
-                        index.has_value(),
+        return Encoding{base.value_or(R64::ZERO),
+                        index.value_or(R64::ZERO),
                         (u8)operand.mem.scale,
                         (i32)operand.mem.disp};
     }
