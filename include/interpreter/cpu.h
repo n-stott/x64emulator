@@ -247,15 +247,20 @@ namespace x64 {
         void exec(const Xadd<RM32, R32>&);
         void exec(const Xadd<RM64, R64>&);
 
-        void exec(const Mov<RM8, RM8>&);
-        void exec(const Mov<RM8, Imm>&);
-        void exec(const Mov<RM16, RM16>&);
-        void exec(const Mov<RM16, Imm>&);
-        void exec(const Mov<RM32, RM32>&);
-        void exec(const Mov<RM32, Imm>&);
-        void exec(const Mov<RM64, RM64>&);
-        void exec(const Mov<RM64, Imm>&);
-        void exec(const Mov<RMSSE, RMSSE>&);
+        template<Size size>
+        void exec(const Mov<R<size>, R<size>>&);
+
+        template<Size size>
+        void exec(const Mov<R<size>, M<size>>&);
+
+        template<Size size>
+        void exec(const Mov<M<size>, R<size>>&);
+
+        template<Size size>
+        void exec(const Mov<R<size>, Imm>&);
+
+        template<Size size>
+        void exec(const Mov<M<size>, Imm>&);
 
         void exec(const Movsx<R16, RM8>&);
         void exec(const Movsx<R32, RM8>&);

@@ -216,15 +216,29 @@ namespace x64 {
             case Insn::XADD_RM16_R16: return exec(Xadd<RM16, R16>{insn.op0<RM16>(), insn.op1<R16>()});
             case Insn::XADD_RM32_R32: return exec(Xadd<RM32, R32>{insn.op0<RM32>(), insn.op1<R32>()});
             case Insn::XADD_RM64_R64: return exec(Xadd<RM64, R64>{insn.op0<RM64>(), insn.op1<R64>()});
-            case Insn::MOV_RM8_RM8: return exec(Mov<RM8, RM8>{insn.op0<RM8>(), insn.op1<RM8>()});
-            case Insn::MOV_RM8_IMM: return exec(Mov<RM8, Imm>{insn.op0<RM8>(), insn.op1<Imm>()});
-            case Insn::MOV_RM16_RM16: return exec(Mov<RM16, RM16>{insn.op0<RM16>(), insn.op1<RM16>()});
-            case Insn::MOV_RM16_IMM: return exec(Mov<RM16, Imm>{insn.op0<RM16>(), insn.op1<Imm>()});
-            case Insn::MOV_RM32_RM32: return exec(Mov<RM32, RM32>{insn.op0<RM32>(), insn.op1<RM32>()});
-            case Insn::MOV_RM32_IMM: return exec(Mov<RM32, Imm>{insn.op0<RM32>(), insn.op1<Imm>()});
-            case Insn::MOV_RM64_RM64: return exec(Mov<RM64, RM64>{insn.op0<RM64>(), insn.op1<RM64>()});
-            case Insn::MOV_RM64_IMM: return exec(Mov<RM64, Imm>{insn.op0<RM64>(), insn.op1<Imm>()});
-            case Insn::MOV_RMSSE_RMSSE: return exec(Mov<RMSSE, RMSSE>{insn.op0<RMSSE>(), insn.op1<RMSSE>()});
+            case Insn::MOV_R8_R8: return exec<Size::BYTE>(Mov<R8, R8>{insn.op0<R8>(), insn.op1<R8>()});
+            case Insn::MOV_R8_M8: return exec(Mov<R8, M8>{insn.op0<R8>(), insn.op1<M8>()});
+            case Insn::MOV_M8_R8: return exec(Mov<M8, R8>{insn.op0<M8>(), insn.op1<R8>()});
+            case Insn::MOV_R8_IMM: return exec<Size::BYTE>(Mov<R8, Imm>{insn.op0<R8>(), insn.op1<Imm>()});
+            case Insn::MOV_M8_IMM: return exec(Mov<M8, Imm>{insn.op0<M8>(), insn.op1<Imm>()});
+            case Insn::MOV_R16_R16: return exec<Size::WORD>(Mov<R16, R16>{insn.op0<R16>(), insn.op1<R16>()});
+            case Insn::MOV_R16_M16: return exec(Mov<R16, M16>{insn.op0<R16>(), insn.op1<M16>()});
+            case Insn::MOV_M16_R16: return exec(Mov<M16, R16>{insn.op0<M16>(), insn.op1<R16>()});
+            case Insn::MOV_R16_IMM: return exec<Size::WORD>(Mov<R16, Imm>{insn.op0<R16>(), insn.op1<Imm>()});
+            case Insn::MOV_M16_IMM: return exec(Mov<M16, Imm>{insn.op0<M16>(), insn.op1<Imm>()});
+            case Insn::MOV_R32_R32: return exec<Size::DWORD>(Mov<R32, R32>{insn.op0<R32>(), insn.op1<R32>()});
+            case Insn::MOV_R32_M32: return exec(Mov<R32, M32>{insn.op0<R32>(), insn.op1<M32>()});
+            case Insn::MOV_M32_R32: return exec(Mov<M32, R32>{insn.op0<M32>(), insn.op1<R32>()});
+            case Insn::MOV_R32_IMM: return exec<Size::DWORD>(Mov<R32, Imm>{insn.op0<R32>(), insn.op1<Imm>()});
+            case Insn::MOV_M32_IMM: return exec(Mov<M32, Imm>{insn.op0<M32>(), insn.op1<Imm>()});
+            case Insn::MOV_R64_R64: return exec<Size::QWORD>(Mov<R64, R64>{insn.op0<R64>(), insn.op1<R64>()});
+            case Insn::MOV_R64_M64: return exec(Mov<R64, M64>{insn.op0<R64>(), insn.op1<M64>()});
+            case Insn::MOV_M64_R64: return exec(Mov<M64, R64>{insn.op0<M64>(), insn.op1<R64>()});
+            case Insn::MOV_R64_IMM: return exec<Size::QWORD>(Mov<R64, Imm>{insn.op0<R64>(), insn.op1<Imm>()});
+            case Insn::MOV_M64_IMM: return exec(Mov<M64, Imm>{insn.op0<M64>(), insn.op1<Imm>()});
+            case Insn::MOV_RSSE_RSSE: return exec<Size::XMMWORD>(Mov<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
+            case Insn::MOV_RSSE_MSSE: return exec(Mov<RSSE, MSSE>{insn.op0<RSSE>(), insn.op1<MSSE>()});
+            case Insn::MOV_MSSE_RSSE: return exec(Mov<MSSE, RSSE>{insn.op0<MSSE>(), insn.op1<RSSE>()});
             case Insn::MOVSX_R16_RM8: return exec(Movsx<R16, RM8>{insn.op0<R16>(), insn.op1<RM8>()});
             case Insn::MOVSX_R32_RM8: return exec(Movsx<R32, RM8>{insn.op0<R32>(), insn.op1<RM8>()});
             case Insn::MOVSX_R32_RM16: return exec(Movsx<R32, RM16>{insn.op0<R32>(), insn.op1<RM16>()});
@@ -748,15 +762,21 @@ namespace x64 {
     template<> Xmm writeLow(Xmm t, u32 u) { return Xmm{(u64)u, t.hi}; }
     template<> Xmm writeLow(Xmm t, u64 u) { return Xmm{u, t.hi}; }
 
-    void Cpu::exec(const Mov<RM8, RM8>& ins) { set(ins.dst, get(ins.src)); }
-    void Cpu::exec(const Mov<RM8, Imm>& ins) { set(ins.dst, get<u8>(ins.src)); }
-    void Cpu::exec(const Mov<RM16, RM16>& ins) { set(ins.dst, get(ins.src)); }
-    void Cpu::exec(const Mov<RM16, Imm>& ins) { set(ins.dst, get<u16>(ins.src)); }
-    void Cpu::exec(const Mov<RM32, RM32>& ins) { set(ins.dst, get(ins.src)); }
-    void Cpu::exec(const Mov<RM32, Imm>& ins) { set(ins.dst, get<u32>(ins.src)); }
-    void Cpu::exec(const Mov<RM64, RM64>& ins) { set(ins.dst, get(ins.src)); }
-    void Cpu::exec(const Mov<RM64, Imm>& ins) { set(ins.dst, get<u64>(ins.src)); }
-    void Cpu::exec(const Mov<RMSSE, RMSSE>& ins) { set(ins.dst, get(ins.src)); }
+
+    template<Size size>
+    void Cpu::exec(const Mov<R<size>, R<size>>& ins) { set(ins.dst, get(ins.src)); }
+
+    template<Size size>
+    void Cpu::exec(const Mov<R<size>, M<size>>& ins) { set(ins.dst, get(resolve(ins.src))); }
+
+    template<Size size>
+    void Cpu::exec(const Mov<M<size>, R<size>>& ins) { set(resolve(ins.dst), get(ins.src)); }
+
+    template<Size size>
+    void Cpu::exec(const Mov<R<size>, Imm>& ins) { set(ins.dst, get<U<size>>(ins.src)); }
+
+    template<Size size>
+    void Cpu::exec(const Mov<M<size>, Imm>& ins) { set(resolve(ins.dst), get<U<size>>(ins.src)); }
 
     void Cpu::exec(const Movsx<R16, RM8>& ins) { set(ins.dst, signExtend<u16>(get(ins.src))); }
     void Cpu::exec(const Movsx<R32, RM8>& ins) { set(ins.dst, signExtend<u32>(get(ins.src))); }

@@ -563,14 +563,50 @@ namespace x64 {
         auto rm64dst = asRM64(dst);
         auto rm64src = asRM64(src);
         auto immsrc = asImmediate(src);
-        if(rm8dst && rm8src) return X64Instruction::make<Insn::MOV_RM8_RM8>(insn.address, rm8dst.value(), rm8src.value());
-        if(rm8dst && immsrc) return X64Instruction::make<Insn::MOV_RM8_IMM>(insn.address, rm8dst.value(), immsrc.value());
-        if(rm16dst && rm16src) return X64Instruction::make<Insn::MOV_RM16_RM16>(insn.address, rm16dst.value(), rm16src.value());
-        if(rm16dst && immsrc) return X64Instruction::make<Insn::MOV_RM16_IMM>(insn.address, rm16dst.value(), immsrc.value());
-        if(rm32dst && rm32src) return X64Instruction::make<Insn::MOV_RM32_RM32>(insn.address, rm32dst.value(), rm32src.value());
-        if(rm32dst && immsrc) return X64Instruction::make<Insn::MOV_RM32_IMM>(insn.address, rm32dst.value(), immsrc.value());
-        if(rm64dst && rm64src) return X64Instruction::make<Insn::MOV_RM64_RM64>(insn.address, rm64dst.value(), rm64src.value());
-        if(rm64dst && immsrc) return X64Instruction::make<Insn::MOV_RM64_IMM>(insn.address, rm64dst.value(), immsrc.value());
+        if(rm8dst && rm8src) {
+            if(rm8dst->isReg && rm8src->isReg) return X64Instruction::make<Insn::MOV_R8_R8>(insn.address, rm8dst->reg, rm8src->reg);
+            if(!rm8dst->isReg && rm8src->isReg) return X64Instruction::make<Insn::MOV_M8_R8>(insn.address, rm8dst->mem, rm8src->reg);
+            if(rm8dst->isReg && !rm8src->isReg) return X64Instruction::make<Insn::MOV_R8_M8>(insn.address, rm8dst->reg, rm8src->mem);
+        }
+        if(rm8dst && immsrc) {
+            if(rm8dst->isReg)
+                return X64Instruction::make<Insn::MOV_R8_IMM>(insn.address, rm8dst->reg, immsrc.value());
+            else
+                return X64Instruction::make<Insn::MOV_M8_IMM>(insn.address, rm8dst->mem, immsrc.value());
+        }
+        if(rm16dst && rm16src) {
+            if(rm16dst->isReg && rm16src->isReg) return X64Instruction::make<Insn::MOV_R16_R16>(insn.address, rm16dst->reg, rm16src->reg);
+            if(!rm16dst->isReg && rm16src->isReg) return X64Instruction::make<Insn::MOV_M16_R16>(insn.address, rm16dst->mem, rm16src->reg);
+            if(rm16dst->isReg && !rm16src->isReg) return X64Instruction::make<Insn::MOV_R16_M16>(insn.address, rm16dst->reg, rm16src->mem);
+        }
+        if(rm16dst && immsrc) {
+            if(rm16dst->isReg)
+                return X64Instruction::make<Insn::MOV_R16_IMM>(insn.address, rm16dst->reg, immsrc.value());
+            else
+                return X64Instruction::make<Insn::MOV_M16_IMM>(insn.address, rm16dst->mem, immsrc.value());
+        }
+        if(rm32dst && rm32src) {
+            if(rm32dst->isReg && rm32src->isReg) return X64Instruction::make<Insn::MOV_R32_R32>(insn.address, rm32dst->reg, rm32src->reg);
+            if(!rm32dst->isReg && rm32src->isReg) return X64Instruction::make<Insn::MOV_M32_R32>(insn.address, rm32dst->mem, rm32src->reg);
+            if(rm32dst->isReg && !rm32src->isReg) return X64Instruction::make<Insn::MOV_R32_M32>(insn.address, rm32dst->reg, rm32src->mem);
+        }
+        if(rm32dst && immsrc) {
+            if(rm32dst->isReg)
+                return X64Instruction::make<Insn::MOV_R32_IMM>(insn.address, rm32dst->reg, immsrc.value());
+            else
+                return X64Instruction::make<Insn::MOV_M32_IMM>(insn.address, rm32dst->mem, immsrc.value());
+        }
+        if(rm64dst && rm64src) {
+            if(rm64dst->isReg && rm64src->isReg) return X64Instruction::make<Insn::MOV_R64_R64>(insn.address, rm64dst->reg, rm64src->reg);
+            if(!rm64dst->isReg && rm64src->isReg) return X64Instruction::make<Insn::MOV_M64_R64>(insn.address, rm64dst->mem, rm64src->reg);
+            if(rm64dst->isReg && !rm64src->isReg) return X64Instruction::make<Insn::MOV_R64_M64>(insn.address, rm64dst->reg, rm64src->mem);
+        }
+        if(rm64dst && immsrc) {
+            if(rm64dst->isReg)
+                return X64Instruction::make<Insn::MOV_R64_IMM>(insn.address, rm64dst->reg, immsrc.value());
+            else
+                return X64Instruction::make<Insn::MOV_M64_IMM>(insn.address, rm64dst->mem, immsrc.value());
+        }
         return make_failed(insn);
     }
 
@@ -1541,7 +1577,12 @@ namespace x64 {
         const cs_x86_op& src = x86detail.operands[1];
         auto rm64dst = asRM64(dst);
         auto imm = asImmediate(src);
-        if(rm64dst && imm) return X64Instruction::make<Insn::MOV_RM64_IMM>(insn.address, rm64dst.value(), imm.value());
+        if(rm64dst && imm) {
+            if(rm64dst->isReg)
+                return X64Instruction::make<Insn::MOV_R64_IMM>(insn.address, rm64dst->reg, imm.value());
+            else
+                return X64Instruction::make<Insn::MOV_M64_IMM>(insn.address, rm64dst->mem, imm.value());
+        }
         return make_failed(insn);
     }
 
@@ -1552,7 +1593,11 @@ namespace x64 {
         const cs_x86_op& src = x86detail.operands[1];
         auto rmssedst = asRM128(dst);
         auto rmssesrc = asRM128(src);
-        if(rmssedst && rmssesrc) return X64Instruction::make<Insn::MOV_RMSSE_RMSSE>(insn.address, rmssedst.value(), rmssesrc.value());
+        if(rmssedst && rmssesrc) {
+            if(rmssedst->isReg && rmssesrc->isReg) return X64Instruction::make<Insn::MOV_RSSE_RSSE>(insn.address, rmssedst->reg, rmssesrc->reg);
+            if(!rmssedst->isReg && rmssesrc->isReg) return X64Instruction::make<Insn::MOV_MSSE_RSSE>(insn.address, rmssedst->mem, rmssesrc->reg);
+            if(rmssedst->isReg && !rmssesrc->isReg) return X64Instruction::make<Insn::MOV_RSSE_MSSE>(insn.address, rmssedst->reg, rmssesrc->mem);
+        }
         return make_failed(insn);
     }
 
@@ -1563,7 +1608,11 @@ namespace x64 {
         const cs_x86_op& src = x86detail.operands[1];
         auto rmssedst = asRM128(dst);
         auto rmssesrc = asRM128(src);
-        if(rmssedst && rmssesrc) return X64Instruction::make<Insn::MOV_RMSSE_RMSSE>(insn.address, rmssedst.value(), rmssesrc.value());
+        if(rmssedst && rmssesrc) {
+            if(rmssedst->isReg && rmssesrc->isReg) return X64Instruction::make<Insn::MOV_RSSE_RSSE>(insn.address, rmssedst->reg, rmssesrc->reg);
+            if(!rmssedst->isReg && rmssesrc->isReg) return X64Instruction::make<Insn::MOV_MSSE_RSSE>(insn.address, rmssedst->mem, rmssesrc->reg);
+            if(rmssedst->isReg && !rmssesrc->isReg) return X64Instruction::make<Insn::MOV_RSSE_MSSE>(insn.address, rmssedst->reg, rmssesrc->mem);
+        }
         return make_failed(insn);
     }
 
@@ -1574,7 +1623,11 @@ namespace x64 {
         const cs_x86_op& src = x86detail.operands[1];
         auto rmssedst = asRM128(dst);
         auto rmssesrc = asRM128(src);
-        if(rmssedst && rmssesrc) return X64Instruction::make<Insn::MOV_RMSSE_RMSSE>(insn.address, rmssedst.value(), rmssesrc.value());
+        if(rmssedst && rmssesrc) {
+            if(rmssedst->isReg && rmssesrc->isReg) return X64Instruction::make<Insn::MOV_RSSE_RSSE>(insn.address, rmssedst->reg, rmssesrc->reg);
+            if(!rmssedst->isReg && rmssesrc->isReg) return X64Instruction::make<Insn::MOV_MSSE_RSSE>(insn.address, rmssedst->mem, rmssesrc->reg);
+            if(rmssedst->isReg && !rmssesrc->isReg) return X64Instruction::make<Insn::MOV_RSSE_MSSE>(insn.address, rmssedst->reg, rmssesrc->mem);
+        }
         return make_failed(insn);
     }
 
@@ -1585,7 +1638,11 @@ namespace x64 {
         const cs_x86_op& src = x86detail.operands[1];
         auto rmssedst = asRM128(dst);
         auto rmssesrc = asRM128(src);
-        if(rmssedst && rmssesrc) return X64Instruction::make<Insn::MOV_RMSSE_RMSSE>(insn.address, rmssedst.value(), rmssesrc.value());
+        if(rmssedst && rmssesrc) {
+            if(rmssedst->isReg && rmssesrc->isReg) return X64Instruction::make<Insn::MOV_RSSE_RSSE>(insn.address, rmssedst->reg, rmssesrc->reg);
+            if(!rmssedst->isReg && rmssesrc->isReg) return X64Instruction::make<Insn::MOV_MSSE_RSSE>(insn.address, rmssedst->mem, rmssesrc->reg);
+            if(rmssedst->isReg && !rmssesrc->isReg) return X64Instruction::make<Insn::MOV_RSSE_MSSE>(insn.address, rmssedst->reg, rmssesrc->mem);
+        }
         return make_failed(insn);
     }
 
