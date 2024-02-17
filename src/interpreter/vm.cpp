@@ -53,21 +53,34 @@ namespace x64 {
         dumpStackTrace();
     }
 
+    extern bool signal_interrupt;
+
     void VM::execute(u64 address) {
         if(stop_) return;
         cpu_.regs_.rip() = address;
         notifyCall(address);
         size_t ticks = 0;
-        while(!stop_ && cpu_.regs_.rip() != 0x0) {
+        if(logInstructions()) {
             try {
-                const X64Instruction* instruction = fetchInstruction();
-                verify(!!instruction, [&]() {
-                    fmt::print("Undefined instruction near {:#x}\n", cpu_.regs_.rip());
-                });
-                log(ticks, instruction);
-                ++ticks;
-                cpu_.exec(*instruction);
-                // instruction->exec(&cpu_);
+                while(!stop_) {
+                    verify(!signal_interrupt);
+                    const X64Instruction& instruction = fetchInstruction();
+                    if(logInstructions()) log(ticks, instruction);
+                    ++ticks;
+                    cpu_.exec(instruction);
+                }
+            } catch(const VerificationException&) {
+                fmt::print("Interpreter crash after {} instructions\n", ticks);
+                crash();
+            }
+        } else {
+            try {
+                while(!stop_) {
+                    verify(!signal_interrupt);
+                    const X64Instruction& instruction = fetchInstruction();
+                    ++ticks;
+                    cpu_.exec(instruction);
+                }
             } catch(const VerificationException&) {
                 fmt::print("Interpreter crash after {} instructions\n", ticks);
                 crash();
@@ -76,29 +89,23 @@ namespace x64 {
         fmt::print("VM completed execution of {} instructions\n", ticks);
     }
 
-    extern bool signal_interrupt;
-
-    const X64Instruction* VM::fetchInstruction() {
-        verify(!signal_interrupt);
-        verify(!!currentExecutedSection_);
-        verify(currentInstructionIdx_ != (size_t)(-1));
-        verify(currentInstructionIdx_ < currentExecutedSection_->instructions.size());
-        const X64Instruction& instruction = currentExecutedSection_->instructions[currentInstructionIdx_];
-        if(currentInstructionIdx_+1 != currentExecutedSection_->instructions.size()) {
-            const X64Instruction& nextInstruction = currentExecutedSection_->instructions[currentInstructionIdx_+1];
+    const X64Instruction& VM::fetchInstruction() {
+        verify(executionPoint_.index < executionPoint_.sectionSize);
+        const X64Instruction& instruction = executionPoint_.section->instructions[executionPoint_.index];
+        if(executionPoint_.index+1 != executionPoint_.sectionSize) {
+            const X64Instruction& nextInstruction = executionPoint_.section->instructions[executionPoint_.index+1];
             cpu_.regs_.rip() = nextInstruction.address();
-            ++currentInstructionIdx_;
+            ++executionPoint_.index;
         } else {
-            currentInstructionIdx_ = (size_t)(-1);
-            cpu_.regs_.rip() = 0x0;
+            // This can happen when the last instruction of the section is a call/jmp/ret.
+            // The execution point will be resolved elsewhere, but we reset it anyway.
+            executionPoint_ = ExecutionPoint{};
         }
-        return &instruction;
+        return instruction;
     }
 
-    void VM::log(size_t ticks, const X64Instruction* instruction) const {
-        if(!logInstructions()) return;
+    void VM::log(size_t ticks, const X64Instruction& instruction) const {
         if(ticks < nbTicksBeforeLoggingInstructions_) return;
-        verify(!!instruction, "Unexpected nullptr");
         std::string eflags = fmt::format("flags = [{}{}{}{}{}]", (cpu_.flags_.carry ? 'C' : ' '),
                                                             (cpu_.flags_.zero ? 'Z' : ' '), 
                                                             (cpu_.flags_.overflow ? 'O' : ' '), 
@@ -112,12 +119,12 @@ namespace x64 {
                                                 cpu_.regs_.get(R64::RSI), cpu_.regs_.get(R64::RDI), cpu_.regs_.get(R64::RBP), cpu_.regs_.get(R64::RSP));
         std::string indent = fmt::format("{:{}}", "", callstack_.size());
 
-        std::string mnemonic = fmt::format("{}|{}", indent, instruction->toString());
-        if(instruction->isCall()) {
-            fmt::print(stderr, "{:10} {}[call {}]\n", ticks, indent, callName(*instruction));
+        std::string mnemonic = fmt::format("{}|{}", indent, instruction.toString());
+        if(instruction.isCall()) {
+            fmt::print(stderr, "{:10} {}[call {}]\n", ticks, indent, callName(instruction));
         }
         fmt::print(stderr, "{:10} {:55}{:20} {}\n", ticks, mnemonic, eflags, registerDump);
-        if(instruction->isX87()) {
+        if(instruction.isX87()) {
             std::string x87dump = fmt::format( "st0={} st1={} st2={} st3={} "
                                                     "st4={} st5={} st6={} st7={} top={}",
                                                     f80::toLongDouble(cpu_.x87fpu_.st(ST::ST0)),
@@ -132,7 +139,7 @@ namespace x64 {
                                                     );
             fmt::print(stderr, "{:86} {}\n", "", x87dump);
         }
-        if(instruction->isSSE()) {
+        if(instruction.isSSE()) {
             std::string sseDump = fmt::format( "xmm0={:16x} {:16x} xmm1={:16x} {:16x} xmm2={:16x} {:16x} xmm3={:16x} {:16x}",
                                                 cpu_.get(RSSE::XMM0).hi, cpu_.get(RSSE::XMM0).lo,
                                                 cpu_.get(RSSE::XMM1).hi, cpu_.get(RSSE::XMM1).lo,
@@ -175,18 +182,16 @@ namespace x64 {
         if(cachedValue != callCache_.end()) {
             cp = cachedValue->second;
         } else {
-            InstructionPosition pos = findSectionWithAddress(address, currentExecutedSection_);
+            InstructionPosition pos = findSectionWithAddress(address, executionPoint_.section);
             verify(!!pos.section, [=]() {
                 fmt::print("Unable to find section containing address {:#x}\n", address);
             });
             verify(pos.index != (size_t)(-1));
             cp.address = address;
-            cp.executedSection = pos.section;
-            cp.instructionIdx = pos.index;
+            cp.execPoint = ExecutionPoint{ pos.section, pos.section->instructions.size(), pos.index };
             callCache_.insert(std::make_pair(address, cp));
         }
-        currentExecutedSection_ = cp.executedSection;
-        currentInstructionIdx_ = cp.instructionIdx;
+        executionPoint_ = cp.execPoint;
         callstack_.push_back(address);
     }
 
@@ -201,17 +206,15 @@ namespace x64 {
         if(cachedValue != jmpCache_.end()) {
             cp = cachedValue->second;
         } else {
-            InstructionPosition pos = findSectionWithAddress(address, currentExecutedSection_);
+            InstructionPosition pos = findSectionWithAddress(address, executionPoint_.section);
             verify(!!pos.section && pos.index != (size_t)(-1), [&]() {
                 fmt::print("Unable to find jmp destination {:#x}\n", address);
             });
             cp.address = address;
-            cp.executedSection = pos.section;
-            cp.instructionIdx = pos.index;
+            cp.execPoint = ExecutionPoint{ pos.section, pos.section->instructions.size(), pos.index };
             jmpCache_.insert(std::make_pair(address, cp));
         }
-        currentExecutedSection_ = cp.executedSection;
-        currentInstructionIdx_ = cp.instructionIdx;
+        executionPoint_ = cp.execPoint;
     }
 
     VM::InstructionPosition VM::findSectionWithAddress(u64 address, const ExecutableSection* sectionHint) const {

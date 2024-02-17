@@ -31,8 +31,8 @@ namespace x64 {
 
         void execute(u64 address);
 
-        const X64Instruction* fetchInstruction();
-        void log(size_t ticks, const X64Instruction* instruction) const;
+        const X64Instruction& fetchInstruction();
+        void log(size_t ticks, const X64Instruction& instruction) const;
 
         void notifyCall(u64 address);
         void notifyRet(u64 address);
@@ -81,14 +81,17 @@ namespace x64 {
         unsigned long long nbTicksBeforeLoggingInstructions_;
         bool logSyscalls_ = false;
 
-        const ExecutableSection* currentExecutedSection_ = nullptr;
-        size_t currentInstructionIdx_ = (size_t)(-1);
+        struct ExecutionPoint {
+            const ExecutableSection* section { nullptr };
+            size_t sectionSize { 0 };
+            size_t index { (size_t)(-1) };
+        } executionPoint_;
+
         std::vector<u64> callstack_;
 
         struct CallPoint {
             u64 address;
-            const ExecutableSection* executedSection;
-            size_t instructionIdx;
+            ExecutionPoint execPoint;
         };
 
         std::unordered_map<u64, CallPoint> callCache_;
