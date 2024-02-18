@@ -351,6 +351,8 @@ namespace x64 {
             case Insn::SUBSS_RSSE_M32: return toString<RSSE, M32>("subss");
             case Insn::SUBSD_RSSE_RSSE: return toString<RSSE, RSSE>("subsd");
             case Insn::SUBSD_RSSE_M64: return toString<RSSE, M64>("subsd");
+            case Insn::MULSS_RSSE_RSSE: return toString<RSSE, RSSE>("mulss");
+            case Insn::MULSS_RSSE_M32: return toString<RSSE, M32>("mulss");
             case Insn::MULSD_RSSE_RSSE: return toString<RSSE, RSSE>("mulsd");
             case Insn::MULSD_RSSE_M64: return toString<RSSE, M64>("mulsd");
             case Insn::DIVSS_RSSE_RSSE: return toString<RSSE, RSSE>("divss");

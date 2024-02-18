@@ -597,6 +597,13 @@ namespace x64 {
     };
 
     template<typename Dst, typename Src>
+    struct Mulss {
+        Dst dst;
+        Src src;
+        TAG_SSE;
+    };
+
+    template<typename Dst, typename Src>
     struct Mulsd {
         Dst dst;
         Src src;

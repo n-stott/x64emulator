@@ -1140,6 +1140,18 @@ namespace x64 {
         return nativeRes;
     }
 
+    u128 CheckedCpuImpl::mulss(u128 dst, u128 src) {
+        u128 virtualRes = CpuImpl::mulss(dst, src);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("mulss %1, %0" : "+x"(nativeRes) : "x"(src));
+
+        assert(virtualRes.lo == nativeRes.lo);
+        assert(virtualRes.hi == nativeRes.hi);
+        return nativeRes;
+    }
+
     u128 CheckedCpuImpl::mulsd(u128 dst, u128 src) {
         u128 virtualRes = CpuImpl::mulsd(dst, src);
         (void)virtualRes;

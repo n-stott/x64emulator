@@ -158,6 +158,7 @@ namespace x64 {
         [[nodiscard]] static u128 minss(u128 dst, u128 src);
         [[nodiscard]] static u128 minsd(u128 dst, u128 src);
 
+        [[nodiscard]] static u128 mulss(u128 dst, u128 src);
         [[nodiscard]] static u128 mulsd(u128 dst, u128 src);
 
         [[nodiscard]] static u128 divss(u128 dst, u128 src);

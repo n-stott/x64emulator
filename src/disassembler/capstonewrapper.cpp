@@ -171,6 +171,7 @@ namespace x64 {
             case X86_INS_ADDSD: return makeAddsd(insn);
             case X86_INS_SUBSS: return makeSubss(insn);
             case X86_INS_SUBSD: return makeSubsd(insn);
+            case X86_INS_MULSS: return makeMulss(insn);
             case X86_INS_MULSD: return makeMulsd(insn);
             case X86_INS_DIVSS: return makeDivss(insn);
             case X86_INS_DIVSD: return makeDivsd(insn);
@@ -2003,6 +2004,19 @@ namespace x64 {
         auto m64src = asMemory64(src);
         if(rssedst && rssesrc) return X64Instruction::make<Insn::SUBSD_RSSE_RSSE>(insn.address, insn.size, rssedst.value(), rssesrc.value());
         if(rssedst && m64src) return X64Instruction::make<Insn::SUBSD_RSSE_M64>(insn.address, insn.size, rssedst.value(), m64src.value());
+        return make_failed(insn);
+    }
+
+    X64Instruction CapstoneWrapper::makeMulss(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto rssesrc = asRegister128(src);
+        auto m32src = asMemory32(src);
+        if(rssedst && rssesrc) return X64Instruction::make<Insn::MULSS_RSSE_RSSE>(insn.address, insn.size, rssedst.value(), rssesrc.value());
+        if(rssedst && m32src) return X64Instruction::make<Insn::MULSS_RSSE_M32>(insn.address, insn.size, rssedst.value(), m32src.value());
         return make_failed(insn);
     }
 

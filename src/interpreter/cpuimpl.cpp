@@ -759,6 +759,18 @@ namespace x64 {
         flags->setSureParity();
     }
 
+    u128 CpuImpl::mulss(u128 dst, u128 src) {
+        static_assert(sizeof(u64) == sizeof(double));
+        float d;
+        float s;
+        std::memcpy(&d, &dst, sizeof(d));
+        std::memcpy(&s, &src, sizeof(s));
+        float res = d * s;
+        u128 r = dst;
+        std::memcpy(&r, &res, sizeof(res));
+        return r;
+    }
+
     u128 CpuImpl::mulsd(u128 dst, u128 src) {
         static_assert(sizeof(u64) == sizeof(double));
         double d;

@@ -534,6 +534,8 @@ namespace x64 {
         void exec(const Subsd<RSSE, RSSE>&);
         void exec(const Subsd<RSSE, M64>&);
 
+        void exec(const Mulss<RSSE, RSSE>&);
+        void exec(const Mulss<RSSE, M32>&);
         void exec(const Mulsd<RSSE, RSSE>&);
         void exec(const Mulsd<RSSE, M64>&);
 

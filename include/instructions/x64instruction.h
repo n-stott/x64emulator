@@ -333,6 +333,8 @@ namespace x64 {
         SUBSS_RSSE_M32,
         SUBSD_RSSE_RSSE,
         SUBSD_RSSE_M64,
+        MULSS_RSSE_RSSE,
+        MULSS_RSSE_M32,
         MULSD_RSSE_RSSE,
         MULSD_RSSE_M64,
         DIVSS_RSSE_RSSE,

@@ -459,6 +459,8 @@ namespace x64 {
             case Insn::SUBSS_RSSE_M32: return exec(Subss<RSSE, M32>{insn.op0<RSSE>(), insn.op1<M32>()});
             case Insn::SUBSD_RSSE_RSSE: return exec(Subsd<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
             case Insn::SUBSD_RSSE_M64: return exec(Subsd<RSSE, M64>{insn.op0<RSSE>(), insn.op1<M64>()});
+            case Insn::MULSS_RSSE_RSSE: return exec(Mulss<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
+            case Insn::MULSS_RSSE_M32: return exec(Mulss<RSSE, M32>{insn.op0<RSSE>(), insn.op1<M32>()});
             case Insn::MULSD_RSSE_RSSE: return exec(Mulsd<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
             case Insn::MULSD_RSSE_M64: return exec(Mulsd<RSSE, M64>{insn.op0<RSSE>(), insn.op1<M64>()});
             case Insn::DIVSS_RSSE_RSSE: return exec(Divss<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
@@ -1510,7 +1512,17 @@ namespace x64 {
         set(ins.dst, res);
     }
 
+    void Cpu::exec(const Mulss<RSSE, RSSE>& ins) {
+        verify(roundingMode() == ROUNDING::NEAREST);
+        u128 res = Impl::mulss(get(ins.dst), get(ins.src));
+        set(ins.dst, res);
+    }
 
+    void Cpu::exec(const Mulss<RSSE, M32>& ins) {
+        verify(roundingMode() == ROUNDING::NEAREST);
+        u128 res = Impl::mulss(get(ins.dst), zeroExtend<Xmm, u32>(get(resolve(ins.src))));
+        set(ins.dst, res);
+    }
 
     void Cpu::exec(const Mulsd<RSSE, RSSE>& ins) {
         verify(roundingMode() == ROUNDING::NEAREST);

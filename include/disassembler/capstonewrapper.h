@@ -160,6 +160,7 @@ namespace x64 {
         static X64Instruction makeAddsd(const cs_insn& insn);
         static X64Instruction makeSubss(const cs_insn& insn);
         static X64Instruction makeSubsd(const cs_insn& insn);
+        static X64Instruction makeMulss(const cs_insn& insn);
         static X64Instruction makeMulsd(const cs_insn& insn);
         static X64Instruction makeDivss(const cs_insn& insn);
         static X64Instruction makeDivsd(const cs_insn& insn);
