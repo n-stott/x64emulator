@@ -364,7 +364,7 @@ namespace x64 {
         verify(false, [&]() {
             fmt::print("Unsupported fcntl {}\n", cmd);
         });
-        return -1;
+        return -ENOTSUP;
     }
 
     Ptr Sys::getcwd(Ptr buf, size_t size) {
