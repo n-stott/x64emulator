@@ -710,6 +710,13 @@ namespace x64 {
     };
 
     template<typename Dst, typename Src>
+    struct Cvttss2si {
+        Dst dst;
+        Src src;
+        TAG_SSE;
+    };
+
+    template<typename Dst, typename Src>
     struct Cvttsd2si {
         Dst dst;
         Src src;

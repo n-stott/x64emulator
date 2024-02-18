@@ -926,6 +926,18 @@ namespace x64 {
         return r;
     }
 
+    u32 CpuImpl::cvttss2si32(u128 src) {
+        float f;
+        std::memcpy(&f, &src, sizeof(f));
+        return (u32)(i32)f;
+    }
+
+    u64 CpuImpl::cvttss2si64(u128 src) {
+        float f;
+        std::memcpy(&f, &src, sizeof(f));
+        return (u64)(i64)f;
+    }
+
     u32 CpuImpl::cvttsd2si32(u128 src) {
         double f;
         std::memcpy(&f, &src, sizeof(f));

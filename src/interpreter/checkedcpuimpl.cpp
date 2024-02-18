@@ -1270,6 +1270,28 @@ namespace x64 {
         return nativeRes;
     }
 
+    u32 CheckedCpuImpl::cvttss2si32(u128 src) {
+        u32 virtualRes = CpuImpl::cvttss2si32(src);
+        (void)virtualRes;
+
+        u32 nativeRes = 0;
+        asm volatile("cvttss2si %1, %0" : "=r"(nativeRes) : "x"(src));
+        assert(nativeRes == virtualRes);
+        
+        return nativeRes;
+    }
+
+    u64 CheckedCpuImpl::cvttss2si64(u128 src) {
+        u64 virtualRes = CpuImpl::cvttss2si64(src);
+        (void)virtualRes;
+
+        u64 nativeRes = 0;
+        asm volatile("cvttss2si %1, %0" : "=r"(nativeRes) : "x"(src));
+        assert(nativeRes == virtualRes);
+        
+        return nativeRes;
+    }
+
     u32 CheckedCpuImpl::cvttsd2si32(u128 src) {
         u32 virtualRes = CpuImpl::cvttsd2si32(src);
         (void)virtualRes;

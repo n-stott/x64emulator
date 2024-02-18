@@ -181,6 +181,7 @@ namespace x64 {
         static X64Instruction makeCvtsi2ss(const cs_insn& insn);
         static X64Instruction makeCvtsi2sd(const cs_insn& insn);
         static X64Instruction makeCvtss2sd(const cs_insn& insn);
+        static X64Instruction makeCvttss2si(const cs_insn& insn);
         static X64Instruction makeCvttsd2si(const cs_insn& insn);
 
         static X64Instruction makePand(const cs_insn& insn);

@@ -491,6 +491,10 @@ namespace x64 {
             case Insn::CVTSI2SD_RSSE_RM64: return exec(Cvtsi2sd<RSSE, RM64>{insn.op0<RSSE>(), insn.op1<RM64>()});
             case Insn::CVTSS2SD_RSSE_RSSE: return exec(Cvtss2sd<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
             case Insn::CVTSS2SD_RSSE_M32: return exec(Cvtss2sd<RSSE, M32>{insn.op0<RSSE>(), insn.op1<M32>()});
+            case Insn::CVTTSS2SI_R32_RSSE: return exec(Cvttss2si<R32, RSSE>{insn.op0<R32>(), insn.op1<RSSE>()});
+            case Insn::CVTTSS2SI_R32_M32: return exec(Cvttss2si<R32, M32>{insn.op0<R32>(), insn.op1<M32>()});
+            case Insn::CVTTSS2SI_R64_RSSE: return exec(Cvttss2si<R64, RSSE>{insn.op0<R64>(), insn.op1<RSSE>()});
+            case Insn::CVTTSS2SI_R64_M32: return exec(Cvttss2si<R64, M32>{insn.op0<R64>(), insn.op1<M32>()});
             case Insn::CVTTSD2SI_R32_RSSE: return exec(Cvttsd2si<R32, RSSE>{insn.op0<R32>(), insn.op1<RSSE>()});
             case Insn::CVTTSD2SI_R32_M64: return exec(Cvttsd2si<R32, M64>{insn.op0<R32>(), insn.op1<M64>()});
             case Insn::CVTTSD2SI_R64_RSSE: return exec(Cvttsd2si<R64, RSSE>{insn.op0<R64>(), insn.op1<RSSE>()});
@@ -1651,6 +1655,11 @@ namespace x64 {
         u128 res = Impl::cvtss2sd(get(ins.dst), zeroExtend<u128, u32>(get(resolve(ins.src))));
         set(ins.dst, res);
     }
+
+    void Cpu::exec(const Cvttss2si<R32, RSSE>& ins) { set(ins.dst, Impl::cvttss2si32(get(ins.src))); }
+    void Cpu::exec(const Cvttss2si<R32, M32>& ins) { set(ins.dst, Impl::cvttss2si32(zeroExtend<u128, u32>(get(resolve(ins.src))))); }
+    void Cpu::exec(const Cvttss2si<R64, RSSE>& ins) { set(ins.dst, Impl::cvttss2si64(get(ins.src))); }
+    void Cpu::exec(const Cvttss2si<R64, M32>& ins) { set(ins.dst, Impl::cvttss2si64(zeroExtend<u128, u32>(get(resolve(ins.src))))); }
 
     void Cpu::exec(const Cvttsd2si<R32, RSSE>& ins) { set(ins.dst, Impl::cvttsd2si32(get(ins.src))); }
     void Cpu::exec(const Cvttsd2si<R32, M64>& ins) { set(ins.dst, Impl::cvttsd2si32(zeroExtend<u128, u64>(get(resolve(ins.src))))); }

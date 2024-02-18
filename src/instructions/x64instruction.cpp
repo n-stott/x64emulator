@@ -383,6 +383,10 @@ namespace x64 {
             case Insn::CVTSI2SD_RSSE_RM64: return toString<RSSE, RM64>("cvtsi2sd");
             case Insn::CVTSS2SD_RSSE_RSSE: return toString<RSSE, RSSE>("cvtss2sd");
             case Insn::CVTSS2SD_RSSE_M32: return toString<RSSE, M32>("cvtss2sd");
+            case Insn::CVTTSS2SI_R32_RSSE: return toString<R32, RSSE>("cvttss2si");
+            case Insn::CVTTSS2SI_R32_M32: return toString<R32, M32>("cvttss2si");
+            case Insn::CVTTSS2SI_R64_RSSE: return toString<R64, RSSE>("cvttss2si");
+            case Insn::CVTTSS2SI_R64_M32: return toString<R64, M32>("cvttss2si");
             case Insn::CVTTSD2SI_R32_RSSE: return toString<R32, RSSE>("cvttsd2si");
             case Insn::CVTTSD2SI_R32_M64: return toString<R32, M64>("cvttsd2si");
             case Insn::CVTTSD2SI_R64_RSSE: return toString<R64, RSSE>("cvttsd2si");
