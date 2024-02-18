@@ -9,8 +9,17 @@
 namespace x64 {
 
     static inline X64Instruction make_failed(const cs_insn& insn) {
+        std::string mnemonic(insn.mnemonic);
+        std::string operands(insn.op_str);
         std::array<char, 16> name;
-        std::memcpy(name.data(), &insn.mnemonic[0], 16);
+        auto it = std::copy(mnemonic.begin(), mnemonic.end(), name.begin());
+        if(it != name.end()) {
+            *it++ = ' ';
+        }
+        if(it != name.end()) {
+            size_t remainingLength = std::distance(it, name.end());
+            std::copy(operands.begin(), operands.begin()+remainingLength, it);
+        }
         return X64Instruction::make<Insn::UNKNOWN>(insn.address, insn.size, name);
     }
 

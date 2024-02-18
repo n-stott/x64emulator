@@ -193,8 +193,11 @@ namespace utils {
     }
 
     template<size_t N>
-    inline std::string toString(const std::array<char, N>& imm) {
-        return fmt::format("{}", imm.data());
+    inline std::string toString(const std::array<char, N>& str) {
+        std::array<char, N+1> str2;
+        std::memcpy(str2.data(), str.data(), N);
+        str2.back() = '\0'; // just in case
+        return fmt::format("{}", str2.data());
     }
 
     template<typename T>
