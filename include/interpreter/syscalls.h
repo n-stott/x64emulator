@@ -206,6 +206,8 @@ namespace x64 {
         long set_robust_list(Ptr head, size_t len);
         // 0x112
         long get_robust_list(int pid, Ptr64 head_ptr, Ptr64 len_ptr);
+        // 0x118
+        int utimensat(int dirfd, Ptr pathname, Ptr times, int flags);
         // 0x12e
         int prlimit64(pid_t pid, int resource, Ptr new_limit, Ptr old_limit);
         // 0x13e

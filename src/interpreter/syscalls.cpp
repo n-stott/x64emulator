@@ -87,6 +87,7 @@ namespace x64 {
             case 0x10e: return vm_->set(R64::RAX, invoke_syscall_6(&Sys::pselect6, regs));
             case 0x111: return vm_->set(R64::RAX, invoke_syscall_2(&Sys::set_robust_list, regs));
             case 0x112: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::get_robust_list, regs));
+            case 0x118: return vm_->set(R64::RAX, invoke_syscall_4(&Sys::utimensat, regs));
             case 0x12e: return vm_->set(R64::RAX, invoke_syscall_4(&Sys::prlimit64, regs));
             case 0x13e: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::getrandom, regs));
             case 0x14c: return vm_->set(R64::RAX, invoke_syscall_5(&Sys::statx, regs));
@@ -596,6 +597,12 @@ namespace x64 {
         (void)len_ptr;
         verify(false, "implement {get,set}_robust_list");
         return 0;
+    }
+
+    int Sys::utimensat(int dirfd, Ptr pathname, Ptr times, int flags) {
+        if(vm_->logSyscalls()) fmt::print("Sys::utimensat(dirfd={}, pathname={}, times={:#x}, flags={}) = -ENOTSUP\n",
+                                                          dirfd, mmu_->readString(pathname), times.address(), flags);
+        return -ENOTSUP;
     }
 
     int Sys::prlimit64(pid_t pid, int resource, Ptr new_limit, Ptr old_limit) {
