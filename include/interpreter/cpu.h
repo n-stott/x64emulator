@@ -430,10 +430,14 @@ namespace x64 {
         void exec(const Jcc&);
 
         void exec(const Bsr<R32, R32>&);
+        void exec(const Bsr<R32, M32>&);
         void exec(const Bsr<R64, R64>&);
-
+        void exec(const Bsr<R64, M64>&);
+        
         void exec(const Bsf<R32, R32>&);
+        void exec(const Bsf<R32, M32>&);
         void exec(const Bsf<R64, R64>&);
+        void exec(const Bsf<R64, M64>&);
 
         void exec(const Cld&);
         void exec(const Std&);

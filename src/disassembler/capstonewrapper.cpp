@@ -1430,10 +1430,14 @@ namespace x64 {
         const cs_x86_op& src = x86detail.operands[1];
         auto r32dst = asRegister32(dst);
         auto r32src = asRegister32(src);
+        auto m32src = asMemory32(src);
         auto r64dst = asRegister64(dst);
         auto r64src = asRegister64(src);
+        auto m64src = asMemory64(src);
         if(r32dst && r32src) return X64Instruction::make<Insn::BSR_R32_R32>(insn.address, insn.size, r32dst.value(), r32src.value());
+        if(r32dst && m32src) return X64Instruction::make<Insn::BSR_R32_M32>(insn.address, insn.size, r32dst.value(), m32src.value());
         if(r64dst && r64src) return X64Instruction::make<Insn::BSR_R64_R64>(insn.address, insn.size, r64dst.value(), r64src.value());
+        if(r64dst && m64src) return X64Instruction::make<Insn::BSR_R64_M64>(insn.address, insn.size, r64dst.value(), m64src.value());
         return make_failed(insn);
     }
 
@@ -1445,10 +1449,14 @@ namespace x64 {
         const cs_x86_op& src = x86detail.operands[1];
         auto r32dst = asRegister32(dst);
         auto r32src = asRegister32(src);
+        auto m32src = asMemory32(src);
         auto r64dst = asRegister64(dst);
         auto r64src = asRegister64(src);
+        auto m64src = asMemory64(src);
         if(r32dst && r32src) return X64Instruction::make<Insn::BSF_R32_R32>(insn.address, insn.size, r32dst.value(), r32src.value());
+        if(r32dst && m32src) return X64Instruction::make<Insn::BSF_R32_M32>(insn.address, insn.size, r32dst.value(), m32src.value());
         if(r64dst && r64src) return X64Instruction::make<Insn::BSF_R64_R64>(insn.address, insn.size, r64dst.value(), r64src.value());
+        if(r64dst && m64src) return X64Instruction::make<Insn::BSF_R64_M64>(insn.address, insn.size, r64dst.value(), m64src.value());
         return make_failed(insn);
     }
 

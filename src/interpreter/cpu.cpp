@@ -380,9 +380,13 @@ namespace x64 {
             case Insn::JMP_U32: return exec(Jmp<u32>{insn.op0<u32>()});
             case Insn::JCC: return exec(Jcc{insn.op0<Cond>(), insn.op1<u64>()});
             case Insn::BSR_R32_R32: return exec(Bsr<R32, R32>{insn.op0<R32>(), insn.op1<R32>()});
+            case Insn::BSR_R32_M32: return exec(Bsr<R32, M32>{insn.op0<R32>(), insn.op1<M32>()});
             case Insn::BSR_R64_R64: return exec(Bsr<R64, R64>{insn.op0<R64>(), insn.op1<R64>()});
+            case Insn::BSR_R64_M64: return exec(Bsr<R64, M64>{insn.op0<R64>(), insn.op1<M64>()});
             case Insn::BSF_R32_R32: return exec(Bsf<R32, R32>{insn.op0<R32>(), insn.op1<R32>()});
+            case Insn::BSF_R32_M32: return exec(Bsf<R32, M32>{insn.op0<R32>(), insn.op1<M32>()});
             case Insn::BSF_R64_R64: return exec(Bsf<R64, R64>{insn.op0<R64>(), insn.op1<R64>()});
+            case Insn::BSF_R64_M64: return exec(Bsf<R64, M64>{insn.op0<R64>(), insn.op1<M64>()});
             case Insn::CLD: return exec(Cld{});
             case Insn::STD: return exec(Std{});
             case Insn::MOVS_M64_M64: return exec(Movs<M64, M64>{insn.op0<M64>(), insn.op1<M64>()});
@@ -1070,8 +1074,20 @@ namespace x64 {
         if(mssb < 32) set(ins.dst, mssb);
     }
 
+    void Cpu::exec(const Bsr<R32, M32>& ins) {
+        u32 val = get(resolve(ins.src));
+        u32 mssb = Impl::bsr32(val, &flags_);
+        if(mssb < 32) set(ins.dst, mssb);
+    }
+
     void Cpu::exec(const Bsr<R64, R64>& ins) {
         u64 val = get(ins.src);
+        u64 mssb = Impl::bsr64(val, &flags_);
+        if(mssb < 64) set(ins.dst, mssb);
+    }
+
+    void Cpu::exec(const Bsr<R64, M64>& ins) {
+        u64 val = get(resolve(ins.src));
         u64 mssb = Impl::bsr64(val, &flags_);
         if(mssb < 64) set(ins.dst, mssb);
     }
@@ -1081,8 +1097,21 @@ namespace x64 {
         u32 mssb = Impl::bsf32(val, &flags_);
         if(mssb < 32) set(ins.dst, mssb);
     }
+
+    void Cpu::exec(const Bsf<R32, M32>& ins) {
+        u32 val = get(resolve(ins.src));
+        u32 mssb = Impl::bsf32(val, &flags_);
+        if(mssb < 32) set(ins.dst, mssb);
+    }
+
     void Cpu::exec(const Bsf<R64, R64>& ins) {
         u64 val = get(ins.src);
+        u64 mssb = Impl::bsf64(val, &flags_);
+        if(mssb < 64) set(ins.dst, mssb);
+    }
+
+    void Cpu::exec(const Bsf<R64, M64>& ins) {
+        u64 val = get(resolve(ins.src));
         u64 mssb = Impl::bsf64(val, &flags_);
         if(mssb < 64) set(ins.dst, mssb);
     }

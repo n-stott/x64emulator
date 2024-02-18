@@ -272,9 +272,13 @@ namespace x64 {
             case Insn::JMP_U32: return toString<u32>("jmp");
             case Insn::JCC: return toString<Cond, u64>("jcc");
             case Insn::BSR_R32_R32: return toString<R32, R32>("bsr");
+            case Insn::BSR_R32_M32: return toString<R32, M32>("bsr");
             case Insn::BSR_R64_R64: return toString<R64, R64>("bsr");
+            case Insn::BSR_R64_M64: return toString<R64, M64>("bsr");
             case Insn::BSF_R32_R32: return toString<R32, R32>("bsf");
+            case Insn::BSF_R32_M32: return toString<R32, M32>("bsf");
             case Insn::BSF_R64_R64: return toString<R64, R64>("bsf");
+            case Insn::BSF_R64_M64: return toString<R64, M64>("bsf");
             case Insn::CLD: return toString("cld");
             case Insn::STD: return toString("std");
             case Insn::MOVS_M64_M64: return toString<M64, M64>("movs");
