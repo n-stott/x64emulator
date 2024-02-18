@@ -331,8 +331,23 @@ namespace x64 {
                                          (int)(prot & PROT::WRITE) ? "W" : " ",
                                          (int)(prot & PROT::EXEC)  ? "X" : " ");
         };
+        struct DumpInfo {
+            std::string file;
+            u64 base;
+            u64 end;
+            std::string prot;
+        };
+        std::vector<DumpInfo> dumpInfos;
+        dumpInfos.reserve(regions_.size());
         for(const auto& ptr : regions_) {
-            fmt::print("    {:>20} {:#x} - {:#x} {}\n", ptr->file_, ptr->base(), ptr->end(), protectionToString(ptr->prot()));
+            dumpInfos.push_back(DumpInfo{ptr->file_, ptr->base(), ptr->end(), protectionToString(ptr->prot())});
+        }
+        std::sort(dumpInfos.begin(), dumpInfos.end(), [](const auto& a, const auto& b) {
+            return a.base < b.base;
+        });
+
+        for(const auto& info : dumpInfos) {
+            fmt::print("    {:>#10x} - {:<#10x} {} {:>20}\n", info.base, info.end, info.prot, info.file);
         }
     }
 
