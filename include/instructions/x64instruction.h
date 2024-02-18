@@ -466,7 +466,7 @@ namespace x64 {
         T op0() const {
             static_assert(std::is_trivially_constructible_v<T>);
             static_assert(sizeof(T) <= sizeof(ArgBuffer));
-            assert(nbops_ >= 1);
+            assert(nbOperands_ >= 1);
             T op;
             std::memcpy(&op, &op0_, sizeof(T));
             return op;
@@ -476,7 +476,7 @@ namespace x64 {
         T op1() const {
             static_assert(std::is_trivially_constructible_v<T>);
             static_assert(sizeof(T) <= sizeof(ArgBuffer));
-            assert(nbops_ >= 2);
+            assert(nbOperands_ >= 2);
             T op;
             std::memcpy(&op, &op1_, sizeof(T));
             return op;
@@ -486,7 +486,7 @@ namespace x64 {
         T op2() const {
             static_assert(std::is_trivially_constructible_v<T>);
             static_assert(sizeof(T) <= sizeof(ArgBuffer));
-            assert(nbops_ >= 3);
+            assert(nbOperands_ >= 3);
             T op;
             std::memcpy(&op, &op2_, sizeof(T));
             return op;
