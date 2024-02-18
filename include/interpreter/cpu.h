@@ -592,6 +592,7 @@ namespace x64 {
         void exec(const Andnpd<RSSE, RMSSE>&);
         void exec(const Orpd<RSSE, RMSSE>&);
         void exec(const Xorpd<RSSE, RMSSE>&);
+        void exec(const Shufps<RSSE, RMSSE, Imm>&);
         void exec(const Shufpd<RSSE, RMSSE, Imm>&);
 
         void exec(const Movlps<RSSE, M64>&);

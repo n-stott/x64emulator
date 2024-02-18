@@ -191,6 +191,7 @@ namespace x64 {
         static X64Instruction makeAndnpd(const cs_insn& insn);
         static X64Instruction makeOrpd(const cs_insn& insn);
         static X64Instruction makeXorpd(const cs_insn& insn);
+        static X64Instruction makeShufps(const cs_insn& insn);
         static X64Instruction makeShufpd(const cs_insn& insn);
 
         static X64Instruction makeMovlps(const cs_insn& insn);

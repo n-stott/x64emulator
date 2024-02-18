@@ -506,6 +506,7 @@ namespace x64 {
             case Insn::ANDNPD_RSSE_RMSSE: return exec(Andnpd<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
             case Insn::ORPD_RSSE_RMSSE: return exec(Orpd<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
             case Insn::XORPD_RSSE_RMSSE: return exec(Xorpd<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
+            case Insn::SHUFPS_RSSE_RMSSE_IMM: return exec(Shufps<RSSE, RMSSE, Imm>{insn.op0<RSSE>(), insn.op1<RMSSE>(), insn.op2<Imm>()});
             case Insn::SHUFPD_RSSE_RMSSE_IMM: return exec(Shufpd<RSSE, RMSSE, Imm>{insn.op0<RSSE>(), insn.op1<RMSSE>(), insn.op2<Imm>()});
             case Insn::MOVLPS_RSSE_M64: return exec(Movlps<RSSE, M64>{insn.op0<RSSE>(), insn.op1<M64>()});
             case Insn::MOVHPS_RSSE_M64: return exec(Movhps<RSSE, M64>{insn.op0<RSSE>(), insn.op1<M64>()});
@@ -1720,6 +1721,11 @@ namespace x64 {
         dst.lo = dst.lo ^ src.lo;
         dst.hi = dst.hi ^ src.hi;
         set(ins.dst, dst);
+    }
+
+    void Cpu::exec(const Shufps<RSSE, RMSSE, Imm>& ins) {
+        u128 res = Impl::shufps(get(ins.dst), get(ins.src), get<u8>(ins.order));
+        set(ins.dst, res);
     }
 
     void Cpu::exec(const Shufpd<RSSE, RMSSE, Imm>& ins) {

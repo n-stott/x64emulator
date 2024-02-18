@@ -219,6 +219,7 @@ namespace x64 {
             case X86_INS_ORPD: return makeOrpd(insn);
             case X86_INS_XORPS:
             case X86_INS_XORPD: return makeXorpd(insn);
+            case X86_INS_SHUFPS: return makeShufps(insn);
             case X86_INS_SHUFPD: return makeShufpd(insn);
             case X86_INS_MOVLPS:
             case X86_INS_MOVLPD: return makeMovlps(insn);
@@ -2338,6 +2339,19 @@ namespace x64 {
         auto rssedst = asRegister128(dst);
         auto rmssesrc = asRM128(src);
         if(rssedst && rmssesrc) return X64Instruction::make<Insn::XORPD_RSSE_RMSSE>(insn.address, insn.size, rssedst.value(), rmssesrc.value());
+        return make_failed(insn);
+    }
+
+    X64Instruction CapstoneWrapper::makeShufps(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 3);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        const cs_x86_op& order = x86detail.operands[2];
+        auto rssedst = asRegister128(dst);
+        auto rmssesrc = asRM128(src);
+        auto imm = asImmediate(order);
+        if(rssedst && rmssesrc && imm) return X64Instruction::make<Insn::SHUFPS_RSSE_RMSSE_IMM>(insn.address, insn.size, rssedst.value(), rmssesrc.value(), imm.value());
         return make_failed(insn);
     }
 

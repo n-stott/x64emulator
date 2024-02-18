@@ -398,6 +398,7 @@ namespace x64 {
             case Insn::ANDNPD_RSSE_RMSSE: return toString<RSSE, RMSSE>("andnpd");
             case Insn::ORPD_RSSE_RMSSE: return toString<RSSE, RMSSE>("orpd");
             case Insn::XORPD_RSSE_RMSSE: return toString<RSSE, RMSSE>("xorpd");
+            case Insn::SHUFPS_RSSE_RMSSE_IMM: return toString<RSSE, RMSSE, Imm>("shufps");
             case Insn::SHUFPD_RSSE_RMSSE_IMM: return toString<RSSE, RMSSE, Imm>("shufpd");
             case Insn::MOVLPS_RSSE_M64: return toString<RSSE, M64>("movlps");
             case Insn::MOVHPS_RSSE_M64: return toString<RSSE, M64>("movhps");

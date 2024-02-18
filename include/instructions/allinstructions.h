@@ -786,6 +786,14 @@ namespace x64 {
     };
 
     template<typename Dst, typename Src, typename Ord>
+    struct Shufps {
+        Dst dst;
+        Src src;
+        Ord order;
+        TAG_SSE;
+    };
+
+    template<typename Dst, typename Src, typename Ord>
     struct Shufpd {
         Dst dst;
         Src src;

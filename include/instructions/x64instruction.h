@@ -380,6 +380,7 @@ namespace x64 {
         ANDNPD_RSSE_RMSSE,
         ORPD_RSSE_RMSSE,
         XORPD_RSSE_RMSSE,
+        SHUFPS_RSSE_RMSSE_IMM,
         SHUFPD_RSSE_RMSSE_IMM,
         MOVLPS_RSSE_M64,
         MOVHPS_RSSE_M64,

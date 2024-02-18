@@ -1,5 +1,6 @@
 #include "interpreter/checkedcpuimpl.h"
 #include "interpreter/cpuimpl.h"
+#include "interpreter/verify.h"
 #include <fmt/core.h>
 #include <cassert>
 #include <cstring>
@@ -1311,6 +1312,43 @@ namespace x64 {
         asm volatile("cvttsd2si %1, %0" : "=r"(nativeRes) : "x"(src));
         assert(nativeRes == virtualRes);
         
+        return nativeRes;
+    }
+
+    u128 CheckedCpuImpl::shufps(u128 dst, u128 src, u8 order) {
+        u128 virtualRes = CpuImpl::shufps(dst, src, order);
+        (void)virtualRes;
+
+        __m128 a;
+        __m128 b;
+        std::memcpy(&a, &dst, sizeof(dst));
+        std::memcpy(&b, &src, sizeof(src));
+        __m128 res = [&]() {
+            assert((order & 0xf) == ((order >> 4) & 0xf));
+            if(order == 0x00) return _mm_shuffle_ps(a, b, 0x00);
+            if(order == 0x11) return _mm_shuffle_ps(a, b, 0x11);
+            if(order == 0x22) return _mm_shuffle_ps(a, b, 0x22);
+            if(order == 0x33) return _mm_shuffle_ps(a, b, 0x33);
+            if(order == 0x44) return _mm_shuffle_ps(a, b, 0x44);
+            if(order == 0x55) return _mm_shuffle_ps(a, b, 0x55);
+            if(order == 0x66) return _mm_shuffle_ps(a, b, 0x66);
+            if(order == 0x77) return _mm_shuffle_ps(a, b, 0x77);
+            if(order == 0x88) return _mm_shuffle_ps(a, b, 0x88);
+            if(order == 0x99) return _mm_shuffle_ps(a, b, 0x99);
+            if(order == 0xaa) return _mm_shuffle_ps(a, b, 0xaa);
+            if(order == 0xbb) return _mm_shuffle_ps(a, b, 0xbb);
+            if(order == 0xcc) return _mm_shuffle_ps(a, b, 0xcc);
+            if(order == 0xdd) return _mm_shuffle_ps(a, b, 0xdd);
+            if(order == 0xee) return _mm_shuffle_ps(a, b, 0xee);
+            if(order == 0xff) return _mm_shuffle_ps(a, b, 0xff);
+            verify(false, "unimplemented case in shufps");
+            return a; // dummy value
+        }();
+        u128 nativeRes;
+        std::memcpy(&nativeRes, &res, sizeof(nativeRes));
+
+        assert(nativeRes.lo == virtualRes.lo);
+        assert(nativeRes.hi == virtualRes.hi);
         return nativeRes;
     }
 

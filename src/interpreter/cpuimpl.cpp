@@ -949,6 +949,24 @@ namespace x64 {
         return (u64)(i64)f;
     }
 
+    u128 CpuImpl::shufps(u128 dst, u128 src, u8 order) {
+        std::array<u32, 4> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        std::memcpy(DST.data(), &dst, sizeof(u128));
+
+        std::array<u32, 4> SRC;
+        static_assert(sizeof(SRC) == sizeof(u128));
+        std::memcpy(SRC.data(), &src, sizeof(u128));
+
+        std::array<u32, 4> RES;
+        RES[0] = DST[((order >> 0) & 0x3)];
+        RES[1] = DST[((order >> 2) & 0x3)];
+        RES[2] = SRC[((order >> 4) & 0x3)];
+        RES[3] = SRC[((order >> 6) & 0x3)];
+        std::memcpy(&dst, RES.data(), sizeof(u128));
+        return dst;
+    }
+
     u128 CpuImpl::shufpd(u128 dst, u128 src, u8 order) {
         u128 res;
         res.lo = (order & 0x1) ? dst.hi : dst.lo;
