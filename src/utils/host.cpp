@@ -73,13 +73,14 @@ Host::CPUID Host::cpuid(u32 a) {
     asm volatile("cpuid" : "=a" (s.a), "=b" (s.b), "=c" (s.c), "=d" (s.d) : "0" (a));
     if(a == 1) {
         // Pretend that the cpu does not know
-        u32 sseMask = (u32)(1 << 0  // SSE3
-                          | 1 << 9  // SSE3 extension
-                          | 1 << 19 // SSE4.1
-                          | 1 << 20 // SSE4.2
-                          | 1 << 28 // AVX
-                          );
-        s.c = s.c & (~sseMask);
+        u32 mask = (u32)(1 << 0  // SSE3
+                       | 1 << 9  // SSE3 extension
+                       | 1 << 19 // SSE4.1
+                       | 1 << 20 // SSE4.2
+                       | 1 << 28 // AVX
+                       | 1 << 30 // RDRAND
+                       );
+        s.c = s.c & (~mask);
     }
     return s;
 }
