@@ -174,6 +174,7 @@ off_t Host::lseek(FD fd, off_t offset, int whence) {
 
 Host::FD Host::openat(FD dirfd, const std::string& pathname, int flags, [[maybe_unused]] mode_t mode) {
     flags = (flags & ~O_ACCMODE) | O_RDONLY | O_CLOEXEC;
+    flags = (flags & ~O_CREAT);
     int fd = ::openat(dirfd.fd, pathname.c_str(), flags);
     if(fd < 0) return FD{-errno};
     the().openFiles_[fd] = pathname;
