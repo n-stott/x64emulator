@@ -92,15 +92,8 @@ namespace x64 {
     const X64Instruction& VM::fetchInstruction() {
         verify(executionPoint_.index < executionPoint_.sectionSize);
         const X64Instruction& instruction = executionPoint_.section->instructions[executionPoint_.index];
-        if(executionPoint_.index+1 != executionPoint_.sectionSize) {
-            const X64Instruction& nextInstruction = executionPoint_.section->instructions[executionPoint_.index+1];
-            cpu_.regs_.rip() = nextInstruction.address();
-            ++executionPoint_.index;
-        } else {
-            // This can happen when the last instruction of the section is a call/jmp/ret.
-            // The execution point will be resolved elsewhere, but we reset it anyway.
-            executionPoint_ = ExecutionPoint{};
-        }
+        cpu_.regs_.rip() = instruction.nextAddress();
+        ++executionPoint_.index;
         return instruction;
     }
 

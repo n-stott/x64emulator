@@ -439,27 +439,27 @@ namespace x64 {
         static_assert(sizeof(Imm) <= sizeof(ArgBuffer));
     public:
         template<Insn insn, typename... Args>
-        static X64Instruction make(u64 address, Args&& ...args) {
-            return make(address, insn, args...);
+        static X64Instruction make(u64 address, u16 sizeInBytes, Args&& ...args) {
+            return make(address, insn, sizeInBytes, args...);
         }
 
-        static X64Instruction make(u64 address, Insn insn) {
-            return make(address, insn, 0, 0, 0, 0);
+        static X64Instruction make(u64 address, Insn insn, u16 sizeInBytes) {
+            return make(address, insn, sizeInBytes, 0, 0, 0, 0);
         }
         
         template<typename Arg0>
-        static X64Instruction make(u64 address, Insn insn, Arg0&& arg0) {
-            return make(address, insn, 1, arg0, 0, 0);
+        static X64Instruction make(u64 address, Insn insn, u16 sizeInBytes, Arg0&& arg0) {
+            return make(address, insn, sizeInBytes, 1, arg0, 0, 0);
         }
         
         template<typename Arg0, typename Arg1>
-        static X64Instruction make(u64 address, Insn insn, Arg0&& arg0, Arg1&& arg1) {
-            return make(address, insn, 2, arg0, arg1, 0);
+        static X64Instruction make(u64 address, Insn insn, u16 sizeInBytes, Arg0&& arg0, Arg1&& arg1) {
+            return make(address, insn, sizeInBytes, 2, arg0, arg1, 0);
         }
         
         template<typename Arg0, typename Arg1, typename Arg2>
-        static X64Instruction make(u64 address, Insn insn, Arg0&& arg0, Arg1&& arg1, Arg2&& arg2) {
-            return make(address, insn, 3, arg0, arg1, arg2);
+        static X64Instruction make(u64 address, Insn insn, u16 sizeInBytes, Arg0&& arg0, Arg1&& arg1, Arg2&& arg2) {
+            return make(address, insn, sizeInBytes, 3, arg0, arg1, arg2);
         }
 
         template<typename T>
@@ -495,8 +495,9 @@ namespace x64 {
         std::string toString() const;
 
         u64 address() const { return address_; }
+        u64 nextAddress() const { return nextAddress_; }
         Insn insn() const { return insn_; }
-        u8 nbOperands() const { return nbops_; }
+        u8 nbOperands() const { return nbOperands_; }
 
         bool isCall() const;
         bool isSSE() const;
@@ -504,12 +505,12 @@ namespace x64 {
 
     private:
 
-        X64Instruction(u64 address, Insn insn, u8 nbops, const ArgBuffer& op0, const ArgBuffer& op1, const ArgBuffer& op2) :
-            address_(address), insn_(insn), nbops_(nbops), op0_(op0), op1_(op1), op2_(op2) {} 
+        X64Instruction(u64 address, Insn insn, u16 sizeInBytes, u8 nbOperands, const ArgBuffer& op0, const ArgBuffer& op1, const ArgBuffer& op2) :
+            address_(address), nextAddress_(address+sizeInBytes), insn_(insn), nbOperands_(nbOperands), op0_(op0), op1_(op1), op2_(op2) {} 
 
 
         template<typename Arg0, typename Arg1, typename Arg2>
-        static X64Instruction make(u64 address, Insn insn, u8 count, Arg0&& arg0, Arg1&& arg1, Arg2&& arg2) {
+        static X64Instruction make(u64 address, Insn insn, u16 sizeInBytes, u8 nbOperands, Arg0&& arg0, Arg1&& arg1, Arg2&& arg2) {
             static_assert(std::is_trivially_constructible_v<std::remove_reference_t<Arg0>>);
             static_assert(std::is_trivially_constructible_v<std::remove_reference_t<Arg1>>);
             static_assert(std::is_trivially_constructible_v<std::remove_reference_t<Arg2>>);
@@ -525,7 +526,7 @@ namespace x64 {
             ArgBuffer buf2;
             std::memset(&buf2, 0, sizeof(buf2));
             std::memcpy(&buf2, &arg2, sizeof(arg2));
-            return X64Instruction(address, insn, count, buf0, buf1, buf2);
+            return X64Instruction(address, insn, sizeInBytes, nbOperands, buf0, buf1, buf2);
         }
 
         std::string toString(const char* mnemonic) const;
@@ -540,8 +541,9 @@ namespace x64 {
         std::string toString(const char* mnemonic) const;
 
         u64 address_;
+        u64 nextAddress_;
         Insn insn_;
-        u8 nbops_;
+        u8 nbOperands_;
         ArgBuffer op0_;
         ArgBuffer op1_;
         ArgBuffer op2_;
