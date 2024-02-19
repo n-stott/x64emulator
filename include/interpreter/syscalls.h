@@ -152,6 +152,12 @@ namespace x64 {
         int getpid();
         // 0x29
         int socket(int domain, int type, int protocol);
+        // 0x2a
+        int connect(int sockfd, Ptr addr, size_t addrlen);
+        // 0x33
+        int getsockname(int sockfd, Ptr addr, Ptr32 addrlen);
+        // 0x34
+        int getpeername(int sockfd, Ptr addr, Ptr32 addrlen);
         // 0x3f
         int uname(Ptr buf);
         // 0x48

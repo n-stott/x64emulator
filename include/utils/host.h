@@ -100,6 +100,9 @@ public:
     static int setfd(FD fd, int flag);
 
     static FD socket(int domain, int type, int protocol);
+    static int connect(int sockfd, const Buffer& addr);
+    static ErrnoOrBuffer getsockname(int sockfd, u32 buffersize);
+    static ErrnoOrBuffer getpeername(int sockfd, u32 buffersize);
 
     static ErrnoOrBuffer readlink(const std::string& path, size_t count);
     static ErrnoOrBuffer uname();

@@ -232,6 +232,32 @@ Host::FD Host::socket(int domain, int type, int protocol) {
     return FD{fd};
 }
 
+int Host::connect(int sockfd, const Buffer& addr) {
+    int ret = ::connect(sockfd, (const struct sockaddr*)addr.data(), (socklen_t)addr.size());
+    if(ret < 0) return -errno;
+    return ret;
+}
+
+ErrnoOrBuffer Host::getsockname(int sockfd, u32 buffersize) {
+    static_assert(sizeof(socklen_t) == sizeof(u32));
+    std::vector<u8> buffer;
+    buffer.resize(buffersize, 0x0);
+    int ret = ::getsockname(sockfd, (sockaddr*)buffer.data(), &buffersize);
+    if(ret < 0) return ErrnoOrBuffer(-errno);
+    buffer.resize(buffersize);
+    return ErrnoOrBuffer(Buffer{std::move(buffer)});
+}
+
+ErrnoOrBuffer Host::getpeername(int sockfd, u32 buffersize) {
+    static_assert(sizeof(socklen_t) == sizeof(u32));
+    std::vector<u8> buffer;
+    buffer.resize(buffersize, 0x0);
+    int ret = ::getpeername(sockfd, (sockaddr*)buffer.data(), &buffersize);
+    if(ret < 0) return ErrnoOrBuffer(-errno);
+    buffer.resize(buffersize);
+    return ErrnoOrBuffer(Buffer{std::move(buffer)});
+}
+
 ErrnoOrBuffer Host::tcgetattr(FD fd) {
     struct termios ts;
     int ret = ::ioctl(fd.fd, TCGETS, &ts);

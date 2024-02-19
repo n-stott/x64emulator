@@ -56,6 +56,9 @@ namespace x64 {
                 return;
             }
             case 0x29: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::socket, regs));
+            case 0x2a: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::connect, regs));
+            case 0x33: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::getsockname, regs));
+            case 0x34: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::getpeername, regs));
             case 0x3f: return vm_->set(R64::RAX, invoke_syscall_1(&Sys::uname, regs));
             case 0x48: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::fcntl, regs));
             case 0x4f: return vm_->set(R64::RAX, invoke_syscall_2(&Sys::getcwd, regs));
@@ -338,6 +341,53 @@ namespace x64 {
                                     domain, type, protocol, fd.fd);
         }
         return fd.fd;
+    }
+
+    int Sys::connect(int sockfd, Ptr addr, size_t addrlen) {
+        std::vector<u8> addrBuffer = mmu_->readFromMmu<u8>(addr, (size_t)addrlen);
+        Buffer buf(std::move(addrBuffer));
+        int ret = Host::connect(sockfd, buf);
+        if(vm_->logSyscalls()) {
+            fmt::print("Sys::connect(sockfd={}, addr={:#x}, addrlen={}) = {}\n",
+                        sockfd, addr.address(), addrlen, ret);
+        }
+        return ret;
+    }
+
+    int Sys::getsockname(int sockfd, Ptr addr, Ptr32 addrlen) {
+        u32 buffersize = mmu_->read32(addrlen);
+        ErrnoOrBuffer sockname = Host::getsockname(sockfd, buffersize);
+        if(vm_->logSyscalls()) {
+            fmt::print("Sys::getsockname(sockfd={}, addr={:#x}, addrlen={:#x}) = {}",
+                        sockfd, addr.address(), addrlen, sockname.errorOr(0));
+            sockname.errorOrWith<int>([&](const auto& buffer) {
+                fmt::print("{}\n", (const char*)buffer.data());
+                return 0;
+            });
+        }
+        return sockname.errorOrWith<int>([&](const auto& buffer) {
+            mmu_->copyToMmu(addr, buffer.data(), buffer.size());
+            mmu_->write32(addrlen, (u32)buffer.size());
+            return 0;
+        });
+    }
+
+    int Sys::getpeername(int sockfd, Ptr addr, Ptr32 addrlen) {
+        u32 buffersize = mmu_->read32(addrlen);
+        ErrnoOrBuffer peername = Host::getpeername(sockfd, buffersize);
+        if(vm_->logSyscalls()) {
+            fmt::print("Sys::getpeername(sockfd={}, addr={:#x}, addrlen={:#x}) = {}",
+                        sockfd, addr.address(), addrlen, peername.errorOr(0));
+            peername.errorOrWith<int>([&](const auto& buffer) {
+                fmt::print("{}\n", (const char*)buffer.data());
+                return 0;
+            });
+        }
+        return peername.errorOrWith<int>([&](const auto& buffer) {
+            mmu_->copyToMmu(addr, buffer.data(), buffer.size());
+            mmu_->write32(addrlen, (u32)buffer.size());
+            return 0;
+        });
     }
 
     int Sys::uname(Ptr buf) {
