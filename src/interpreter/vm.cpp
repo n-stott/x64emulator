@@ -348,7 +348,8 @@ namespace x64 {
         if(jmpInsn.insn() == Insn::JMP_RM64) {
             Registers regs;
             regs.rip() = jmpInsn.address() + 6; // add instruction size offset
-            auto dst = cpu_.get(jmpInsn.op0<RM64>());
+            RM64 rm64 = jmpInsn.op0<RM64>();
+            auto dst = rm64.isReg ? regs.get(rm64.reg) : cpu_.get(regs.resolve(rm64.mem));
             auto symbolsAtAddress = symbolProvider_->lookupSymbol(dst);
             if(!symbolsAtAddress.empty()) {
                 functionNameCache_[address] = symbolsAtAddress[0]->demangledSymbol;
