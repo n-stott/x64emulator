@@ -83,6 +83,7 @@ namespace x64 {
             case 0xdd: return vm_->set(R64::RAX, invoke_syscall_4(&Sys::posix_fadvise, regs));
             case 0xe4: return vm_->set(R64::RAX, invoke_syscall_2(&Sys::clock_gettime, regs));
             case 0xe7: return vm_->set(R64::RAX, invoke_syscall_1(&Sys::exit_group, regs));
+            case 0xea: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::tgkill, regs));
             case 0x101: return vm_->set(R64::RAX, invoke_syscall_4(&Sys::openat, regs));
             case 0x10e: return vm_->set(R64::RAX, invoke_syscall_6(&Sys::pselect6, regs));
             case 0x111: return vm_->set(R64::RAX, invoke_syscall_2(&Sys::set_robust_list, regs));
@@ -459,6 +460,12 @@ namespace x64 {
     u64 Sys::exit_group(int status) {
         (void)status;
         if(vm_->logSyscalls()) fmt::print("Sys::exit_group(status={})\n", status);
+        vm_->stop();
+        return 0;
+    }
+
+    int Sys::tgkill(int tgid, int tid, int sig) {
+        if(vm_->logSyscalls()) fmt::print("Sys::tgkill(tgid={}, tid={}, sig={})\n", tgid, tid, sig);
         vm_->stop();
         return 0;
     }

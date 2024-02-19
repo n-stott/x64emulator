@@ -198,6 +198,8 @@ namespace x64 {
         int clock_gettime(clockid_t clockid, Ptr tp);
         // 0xe7
         u64 exit_group(int status);
+        // 0xea
+        int tgkill(int tgid, int tid, int sig);
         // 0x101
         int openat(int dirfd, Ptr pathname, int flags, mode_t mode);
         // 0x10e
