@@ -272,24 +272,67 @@ ErrnoOrBuffer Host::getpeername(int sockfd, u32 buffersize) {
     return ErrnoOrBuffer(Buffer{std::move(buffer)});
 }
 
-ErrnoOrBuffer Host::tcgetattr(FD fd) {
-    struct termios ts;
-    int ret = ::ioctl(fd.fd, TCGETS, &ts);
-    if(ret < 0) return ErrnoOrBuffer(-errno);
-    std::vector<u8> buffer;
-    buffer.resize(sizeof(ts), 0x0);
-    std::memcpy(buffer.data(), &ts, sizeof(ts));
-    return ErrnoOrBuffer(Buffer{std::move(buffer)});
+
+std::string Host::ioctlName(unsigned long request) {
+    switch(request) {
+        case TCGETS: return "TCGETS";
+        case FIOCLEX: return "FIOCLEX";
+        case FIONCLEX: return "FIONCLEX";
+        case TIOCGWINSZ: return "TIOCGWINSZ";
+        case TIOCSWINSZ: return "TIOCSWINSZ";
+    }
+    return "unknown ioctl";
 }
 
-ErrnoOrBuffer Host::tiocgwinsz(FD fd) {
-    struct winsize ws;
-    int ret = ::ioctl(fd.fd, TIOCGWINSZ, &ws);
-    if(ret < 0) return ErrnoOrBuffer(-errno);
-    std::vector<u8> buffer;
-    buffer.resize(sizeof(ws), 0x0);
-    std::memcpy(buffer.data(), &ws, sizeof(ws));
-    return ErrnoOrBuffer(Buffer{std::move(buffer)});
+size_t Host::ioctlRequiredBufferSize(unsigned long request) {
+    switch(request) {
+        case TCGETS:
+        case FIOCLEX:
+        case FIONCLEX:
+        case TIOCGWINSZ: return 0;
+        case TIOCSWINSZ: return sizeof(winsize);
+    }
+    return 0;
+}
+
+ErrnoOrBuffer Host::ioctl(FD fd, unsigned long request, [[maybe_unused]] const Buffer& inputBuffer) {
+    switch(request) {
+        case TCGETS: {
+            struct termios ts;
+            int ret = ::ioctl(fd.fd, TCGETS, &ts);
+            if(ret < 0) return ErrnoOrBuffer(-errno);
+            std::vector<u8> buffer;
+            buffer.resize(sizeof(ts), 0x0);
+            std::memcpy(buffer.data(), &ts, sizeof(ts));
+            return ErrnoOrBuffer(Buffer{std::move(buffer)});
+        }
+        case FIOCLEX: {
+            int ret = ::ioctl(fd.fd, FIOCLEX, nullptr);
+            if(ret < 0) return ErrnoOrBuffer(-errno);
+            return ErrnoOrBuffer(Buffer{});
+        }
+        case FIONCLEX: {
+            int ret = ::ioctl(fd.fd, FIONCLEX, nullptr);
+            if(ret < 0) return ErrnoOrBuffer(-errno);
+            return ErrnoOrBuffer(Buffer{});
+        }
+        case TIOCGWINSZ: {
+            struct winsize ws;
+            int ret = ::ioctl(fd.fd, TIOCGWINSZ, &ws);
+            if(ret < 0) return ErrnoOrBuffer(-errno);
+            std::vector<u8> buffer;
+            buffer.resize(sizeof(ws), 0x0);
+            std::memcpy(buffer.data(), &ws, sizeof(ws));
+            return ErrnoOrBuffer(Buffer{std::move(buffer)});
+        }
+        case TIOCSWINSZ: {
+            return ErrnoOrBuffer(Buffer{});
+        }
+        case TCSETSW: {
+            return ErrnoOrBuffer(Buffer{});
+        }
+    }
+    return ErrnoOrBuffer(-ENOTSUP);
 }
 
 ErrnoOrBuffer Host::sysinfo() {

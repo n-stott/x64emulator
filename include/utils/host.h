@@ -10,6 +10,7 @@
 
 class Buffer {
 public:
+    Buffer() = default;
     explicit Buffer(std::vector<u8> buf) : data_(std::move(buf)) { }
 
     template<typename T>
@@ -116,8 +117,9 @@ public:
     static ErrnoOrBuffer readlink(const std::string& path, size_t count);
     static ErrnoOrBuffer uname();
 
-    static ErrnoOrBuffer tcgetattr(FD fd);
-    static ErrnoOrBuffer tiocgwinsz(FD fd);
+    static std::string ioctlName(unsigned long request);
+    static size_t ioctlRequiredBufferSize(unsigned long request);
+    static ErrnoOrBuffer ioctl(FD fd, unsigned long request, const Buffer& buffer);
 
     static ErrnoOrBuffer sysinfo();
     static int getuid();

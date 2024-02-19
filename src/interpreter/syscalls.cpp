@@ -4,7 +4,6 @@
 #include "interpreter/verify.h"
 #include "utils/host.h"
 #include <numeric>
-#include <sys/ioctl.h>
 #include <sys/resource.h>
 #include <fcntl.h>
 
@@ -216,40 +215,22 @@ namespace x64 {
     }
 
     int Sys::ioctl(int fd, unsigned long request, Ptr argp) {
-        if(request == TCGETS) {
-            if(vm_->logSyscalls()) fmt::print("Sys::ioctl({}, TCGETS, {:#x})\n", fd, argp.address());
-            ErrnoOrBuffer errnoOrBuffer = Host::tcgetattr(Host::FD{fd});
-            return errnoOrBuffer.errorOrWith<int>([&](const auto& buffer) {
-                mmu_->copyToMmu(argp, buffer.data(), buffer.size());
-                return 0;
-            });
+        // We need to ask the host for the expected buffer size behind argp.
+        size_t bufferSize = Host::ioctlRequiredBufferSize(request);
+        std::vector<u8> buf(bufferSize, 0x0);
+        Buffer buffer(std::move(buf));
+        mmu_->copyFromMmu(buffer.data(), argp, buffer.size());
+        auto errnoOrBuffer = Host::ioctl(Host::FD{fd}, request, buffer);
+        if(vm_->logSyscalls()) {
+            fmt::print("Sys::ioctl(fd={}, request={}, argp={:#x}) = {}\n",
+                        fd, Host::ioctlName(request), argp.address(),
+                        errnoOrBuffer.errorOrWith<ssize_t>([](const auto& buf) { return (ssize_t)buf.size(); }));
         }
-        if(request == FIOCLEX) {
-            return fcntl(fd, F_SETFD, FD_CLOEXEC);
-        }
-        if(request == FIONCLEX) {
-            return fcntl(fd, F_SETFD, 0);
-        }
-        if(request == TIOCGWINSZ) {
-            if(vm_->logSyscalls()) fmt::print("Sys::ioctl({}, TIOCGWINSZ, {:#x})\n", fd, argp.address());
-            ErrnoOrBuffer errnoOrBuffer = Host::tiocgwinsz(Host::FD{fd});
-            return errnoOrBuffer.errorOrWith<int>([&](const auto& buffer) {
-                mmu_->copyToMmu(argp, buffer.data(), buffer.size());
-                return 0;
-            });
-        }
-        if(request == TIOCSWINSZ) {
-            if(vm_->logSyscalls()) fmt::print("Sys::ioctl({}, TIOCSWINSZ, {:#x})\n", fd, argp.address());
+        return errnoOrBuffer.errorOrWith<int>([&](const auto& buffer) {
+            // The buffer returned by ioctl is empty when nothing needs to be written back.
+            mmu_->copyToMmu(argp, buffer.data(), buffer.size());
             return 0;
-        }
-        if(request == TCSETSW) {
-            if(vm_->logSyscalls()) fmt::print("Sys::ioctl({}, TCSETSW, {:#x})\n", fd, argp.address());
-            return 0;
-        }
-        verify(false, [&]() {
-            fmt::print("Unsupported ioctl {:x}\n", request);
         });
-        return -ENOTSUP;
     }
 
     ssize_t Sys::pread64(int fd, Ptr buf, size_t count, off_t offset) {
