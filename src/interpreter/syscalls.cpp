@@ -4,17 +4,9 @@
 #include "interpreter/verify.h"
 #include "utils/host.h"
 #include <numeric>
-#include <asm/prctl.h>
-#include <string.h>
 #include <sys/ioctl.h>
-#include <sys/mman.h>
-#include <sys/prctl.h>
 #include <sys/resource.h>
-#include <sys/stat.h>
-#include <sys/uio.h>
-#include <sys/utsname.h>
 #include <fcntl.h>
-#include <unistd.h>
 
 namespace x64 {
 
@@ -176,9 +168,9 @@ namespace x64 {
     }
 
     Ptr Sys::mmap(Ptr addr, size_t length, int prot, int flags, int fd, off_t offset) {
-        MAP f = MAP::PRIVATE;
-        if(flags & MAP_ANONYMOUS) f = f | MAP::ANONYMOUS;
-        if(flags & MAP_FIXED) f = f | MAP::FIXED;
+        MAP f =  MAP::PRIVATE;
+        if(Host::Mmap::isAnonymous(flags)) f = f | MAP::ANONYMOUS;
+        if(Host::Mmap::isFixed(flags)) f = f | MAP::FIXED;
         verify(addr.segment() != Segment::FS);
         u64 base = mmu_->mmap(addr.address(), length, (PROT)prot, f, fd, (int)offset);
         if(vm_->logSyscalls()) fmt::print("Sys::mmap(addr={:#x}, length={}, prot={}, flags={}, fd={}, offset={}) = {:#x}\n",
@@ -599,8 +591,9 @@ namespace x64 {
     }
 
     int Sys::arch_prctl(int code, Ptr addr) {
-        if(vm_->logSyscalls()) fmt::print("Sys::arch_prctl(code={}, addr={:#x}) = {}\n", code, addr.address(), code == ARCH_SET_FS ? 0 : -1);
-        if(code != ARCH_SET_FS) return -EINVAL;
+        bool isSetFS = Host::Prctl::isSetFS(code);
+        if(vm_->logSyscalls()) fmt::print("Sys::arch_prctl(code={}, addr={:#x}) = {}\n", code, addr.address(), isSetFS ? 0 : -EINVAL);
+        if(!isSetFS) return -EINVAL;
         mmu_->setSegmentBase(Segment::FS, addr.address());
         return 0;
     }

@@ -3,6 +3,7 @@
 #include <cstring>
 #include <dirent.h>
 #include <iostream>
+#include <asm/prctl.h>
 #include <asm/termbits.h>
 #include <sys/auxv.h>
 #include <sys/ioctl.h>
@@ -91,6 +92,19 @@ Host::XGETBV Host::xgetbv(u32 c) {
     asm volatile("mov %0, %%ecx" :: "r"(c));
     asm volatile("xgetbv" : "=a" (s.a), "=d" (s.d));
     return s;
+}
+
+
+bool Host::Mmap::isAnonymous(int flags) {
+    return flags & MAP_ANONYMOUS;
+}
+
+bool Host::Mmap::isFixed(int flags) {
+    return flags & MAP_FIXED;
+}
+
+bool Host::Prctl::isSetFS(int code) {
+    return code == ARCH_SET_FS;
 }
 
 ErrnoOrBuffer Host::read(FD fd, size_t count) {

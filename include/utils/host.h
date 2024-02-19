@@ -72,6 +72,15 @@ public:
     };
     static XGETBV xgetbv(u32 c);
 
+    struct Mmap {
+        static bool isAnonymous(int flags);
+        static bool isFixed(int flags);
+    };
+
+    struct Prctl {
+        static bool isSetFS(int code);
+    };
+
     // syscalls
     struct FD {
         int fd;
