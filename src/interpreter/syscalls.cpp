@@ -331,12 +331,13 @@ namespace x64 {
         return ret;
     }
 
-    int Sys::socket([[maybe_unused]] int domain, [[maybe_unused]] int type, [[maybe_unused]] int protocol) {
+    int Sys::socket(int domain, int type, int protocol) {
+        Host::FD fd = Host::socket(domain, type, protocol);
         if(vm_->logSyscalls()) {
             fmt::print("Sys::socket(domain={}, type={}, protocol={}) = {}\n",
-                                    domain, type, protocol, -ENOTSUP);
+                                    domain, type, protocol, fd.fd);
         }
-        return -ENOTSUP;
+        return fd.fd;
     }
 
     int Sys::uname(Ptr buf) {

@@ -10,6 +10,7 @@
 #include <sys/resource.h>
 #include <sys/time.h>
 #include <sys/types.h>
+#include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/sysinfo.h>
 #include <sys/utsname.h>
@@ -217,6 +218,18 @@ int Host::getfd(FD fd) {
 
 int Host::setfd(FD fd, int flag) {
     return ::fcntl(fd.fd, F_SETFD, flag);
+}
+
+Host::FD Host::socket(int domain, int type, int protocol) {
+    auto validateDomain = [](int domain) -> bool {
+        if(domain == AF_UNIX) return true;
+        if(domain == AF_LOCAL) return true;
+        return false;
+    };
+    if(!validateDomain(domain)) return FD{-ENOTSUP};
+    int fd = ::socket(domain, type, protocol);
+    if(fd < 0) return FD{-errno};
+    return FD{fd};
 }
 
 ErrnoOrBuffer Host::tcgetattr(FD fd) {

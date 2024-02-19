@@ -99,6 +99,8 @@ public:
     static int getfd(FD fd);
     static int setfd(FD fd, int flag);
 
+    static FD socket(int domain, int type, int protocol);
+
     static ErrnoOrBuffer readlink(const std::string& path, size_t count);
     static ErrnoOrBuffer uname();
 
