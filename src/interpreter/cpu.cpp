@@ -115,12 +115,6 @@ namespace x64 {
         return value;
     }
 
-#ifndef NDEBUG
-    #define DEBUG_ONLY(X) X
-#else
-    #define DEBUG_ONLY(X)
-#endif
-
     template<typename DU, typename SU>
     static DU signExtend(SU u) {
         static_assert(sizeof(DU) > sizeof(SU));
@@ -1587,25 +1581,21 @@ namespace x64 {
 
     void Cpu::exec(const Ucomiss<RSSE, RSSE>& ins) {
         verify(roundingMode() == ROUNDING::NEAREST);
-        DEBUG_ONLY(fmt::print(stderr, "Ucomiss treated as comiss\n");)
         Impl::comiss(get(ins.dst), get(ins.src), &flags_);
     }
 
     void Cpu::exec(const Ucomiss<RSSE, M32>& ins) {
         verify(roundingMode() == ROUNDING::NEAREST);
-        DEBUG_ONLY(fmt::print(stderr, "Ucomiss treated as comiss\n");)
         Impl::comiss(get(ins.dst), zeroExtend<Xmm, u32>(get(resolve(ins.src))), &flags_);
     }
 
     void Cpu::exec(const Ucomisd<RSSE, RSSE>& ins) {
         verify(roundingMode() == ROUNDING::NEAREST);
-        DEBUG_ONLY(fmt::print(stderr, "Ucomisd treated as comisd\n");)
         Impl::comisd(get(ins.dst), get(ins.src), &flags_);
     }
 
     void Cpu::exec(const Ucomisd<RSSE, M64>& ins) {
         verify(roundingMode() == ROUNDING::NEAREST);
-        DEBUG_ONLY(fmt::print(stderr, "Ucomisd treated as comisd\n");)
         Impl::comisd(get(ins.dst), zeroExtend<Xmm, u64>(get(resolve(ins.src))), &flags_);
     }
 
