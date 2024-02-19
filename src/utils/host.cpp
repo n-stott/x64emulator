@@ -111,19 +111,9 @@ ErrnoOrBuffer Host::pread64(FD fd, size_t count, off_t offset) {
 }
 
 ssize_t Host::write([[maybe_unused]] FD fd, [[maybe_unused]] const u8* data, size_t count) {
-    if(isStdout(fd) || isStderr(fd)) {
-        std::string s;
-        s.resize(count+1, '\0');
-        std::memcpy(s.data(), (const char*)data, count);
-        if(isStdout(fd)) {
-            std::cout << s << std::flush;
-        } else {
-            std::cerr << s << std::flush;
-        }
-        return (ssize_t)count;
-    } else {
-        return -EINVAL;
-    }
+    ssize_t ret = ::write(fd.fd, data, count);
+    if(ret < 0) return (ssize_t)(-errno);
+    return ret;
 }
 
 int Host::close(FD fd) {
