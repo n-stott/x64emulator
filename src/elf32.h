@@ -248,7 +248,7 @@ namespace elf {
         (void)size;
         if(!isNoBits()) {
             assert(sh_offset < size);
-            assert(sh_offset + sh_size < size);
+            assert(sh_offset + sh_size <= size);
         }
         return Section {
             sh_addr,
