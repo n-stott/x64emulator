@@ -334,6 +334,7 @@ size_t Host::ioctlRequiredBufferSize(unsigned long request) {
         case FIONCLEX:
         case TIOCGWINSZ: return 0;
         case TIOCSWINSZ: return sizeof(winsize);
+        case TCSETSW: return sizeof(termios);
     }
     return 0;
 }
@@ -369,9 +370,17 @@ ErrnoOrBuffer Host::ioctl(FD fd, unsigned long request, [[maybe_unused]] const B
             return ErrnoOrBuffer(Buffer{std::move(buffer)});
         }
         case TIOCSWINSZ: {
+            struct winsize ws;
+            std::memcpy(&ws, inputBuffer.data(), sizeof(ws));
+            int ret = ::ioctl(fd.fd, TIOCSWINSZ, &ws);
+            if(ret < 0) return ErrnoOrBuffer(-errno);
             return ErrnoOrBuffer(Buffer{});
         }
         case TCSETSW: {
+            struct termios ts;
+            std::memcpy(&ts, inputBuffer.data(), sizeof(ts));
+            int ret = ::ioctl(fd.fd, TCSETSW, &ts);
+            if(ret < 0) return ErrnoOrBuffer(-errno);
             return ErrnoOrBuffer(Buffer{});
         }
     }
