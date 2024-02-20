@@ -375,20 +375,9 @@ namespace x64 {
     }
 
     int Sys::fcntl(int fd, int cmd, int arg) {
-        if(cmd == F_GETFD) {
-            int ret = Host::getfd(Host::FD{fd});
-            if(vm_->logSyscalls()) fmt::print("Sys::fcntl(fd={}, cmd={}) = {:#x}\n", fd, "GETFD", ret);
-            return ret;
-        }
-        if(cmd == F_SETFD) {
-            int ret = Host::setfd(Host::FD{fd}, arg);
-            if(vm_->logSyscalls()) fmt::print("Sys::fcntl(fd={}, cmd={}, arg={}) = {:#x}\n", fd, "SETFD", arg, ret);
-            return ret;
-        }
-        verify(false, [&]() {
-            fmt::print("Unsupported fcntl {}\n", cmd);
-        });
-        return -ENOTSUP;
+        int ret = Host::fcntl(Host::FD{fd}, cmd, arg);
+        if(vm_->logSyscalls()) fmt::print("Sys::fcntl(fd={}, cmd={}, arg={}) = {}\n", fd, Host::fcntlName(cmd), arg, ret);
+        return ret;
     }
 
     Ptr Sys::getcwd(Ptr buf, size_t size) {

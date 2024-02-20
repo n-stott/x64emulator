@@ -106,8 +106,8 @@ public:
     static ErrnoOrBuffer getxattr(const std::string& path, const std::string& name, size_t size);
     static ErrnoOrBuffer lgetxattr(const std::string& path, const std::string& name, size_t size);
 
-    static int getfd(FD fd);
-    static int setfd(FD fd, int flag);
+    static std::string fcntlName(int cmd);
+    static int fcntl(FD fd, int cmd, int arg);
 
     static FD socket(int domain, int type, int protocol);
     static int connect(int sockfd, const Buffer& addr);

@@ -226,12 +226,24 @@ ErrnoOrBuffer Host::lgetxattr(const std::string& path, const std::string& name, 
     return ErrnoOrBuffer(Buffer{std::move(buf)});
 }
 
-int Host::getfd(FD fd) {
-    return ::fcntl(fd.fd, F_GETFD);
+std::string Host::fcntlName(int cmd) {
+    switch(cmd) {
+        case F_GETFD: return "F_GETFD";
+        case F_SETFD: return "F_SETFD";
+    }
+    return "unknown fcntl";
 }
 
-int Host::setfd(FD fd, int flag) {
-    return ::fcntl(fd.fd, F_SETFD, flag);
+int Host::fcntl(FD fd, int cmd, int arg) {
+    switch(cmd) {
+        case F_GETFD:
+        case F_SETFD: {
+            int ret = ::fcntl(fd.fd, cmd, arg);
+            if(ret < 0) return -errno;
+            return ret;
+        }
+    }
+    return -ENOTSUP;
 }
 
 Host::FD Host::socket(int domain, int type, int protocol) {
