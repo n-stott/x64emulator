@@ -156,6 +156,10 @@ namespace x64 {
         int socket(int domain, int type, int protocol);
         // 0x2a
         int connect(int sockfd, Ptr addr, size_t addrlen);
+        // 0x2d
+        ssize_t recvfrom(int sockfd, Ptr buf, size_t len, int flags, Ptr src_addr, Ptr32 addrlen);
+        // 0x2f
+        ssize_t recvmsg(int sockfd, Ptr msg, int flags);
         // 0x33
         int getsockname(int sockfd, Ptr addr, Ptr32 addrlen);
         // 0x34

@@ -4,6 +4,7 @@
 #include "interpreter/verify.h"
 #include "utils/host.h"
 #include <numeric>
+#include <sys/socket.h>
 
 namespace x64 {
 
@@ -47,6 +48,8 @@ namespace x64 {
             }
             case 0x29: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::socket, regs));
             case 0x2a: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::connect, regs));
+            case 0x2d: return vm_->set(R64::RAX, invoke_syscall_6(&Sys::recvfrom, regs));
+            case 0x2f: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::recvmsg, regs));
             case 0x33: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::getsockname, regs));
             case 0x34: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::getpeername, regs));
             case 0x3f: return vm_->set(R64::RAX, invoke_syscall_1(&Sys::uname, regs));
@@ -543,6 +546,61 @@ namespace x64 {
     long Sys::futex(Ptr32 uaddr, int futex_op, uint32_t val, Ptr timeout, Ptr32 uaddr2, uint32_t val3) {
         if(vm_->logSyscalls()) fmt::print("Sys::futex({:#x}, {}, {}, {:#x}, {:#x}, {})\n", uaddr.address(), futex_op, val, timeout.address(), uaddr2.address(), val3);
         return 1;
+    }
+
+    ssize_t Sys::recvfrom(int sockfd, Ptr buf, size_t len, int flags, Ptr src_addr, Ptr32 addrlen) {
+        bool requireSrcAddress = !!src_addr && !!addrlen;
+        ErrnoOr<std::pair<Buffer, Buffer>> ret = Host::recvfrom(Host::FD{sockfd}, len, flags, requireSrcAddress);
+        if(vm_->logSyscalls()) {
+            fmt::print("Sys::recvfrom(sockfd={}, buf={:#x}, len={}, flags={}, src_addr={:#x}, addrlen={:#x}) = {}",
+                                      sockfd, buf.address(), len, flags, src_addr.address(), addrlen,
+                                      ret.errorOrWith<ssize_t>([](const auto& buffers) {
+                return buffers.first.size();
+            }));
+        }
+        return ret.errorOrWith<ssize_t>([&](const auto& buffers) {
+            mmu_->copyToMmu(buf, buffers.first.data(), buffers.first.size());
+            if(requireSrcAddress) {
+                mmu_->copyToMmu(src_addr, buffers.second.data(), buffers.second.size());
+                mmu_->write32(addrlen, (u32)buffers.second.size());
+            }
+            return buffers.first.size();
+        });
+    }
+
+    ssize_t Sys::recvmsg(int sockfd, Ptr msg, int flags) {
+        // struct msghdr {
+        //     void*         msg_name;       /* Optional address */
+        //     socklen_t     msg_namelen;    /* Size of address */
+        //     struct iovec* msg_iov;        /* Scatter/gather array */
+        //     size_t        msg_iovlen;     /* # elements in msg_iov */
+        //     void*         msg_control;    /* Ancillary data, see below */
+        //     size_t        msg_controllen; /* Ancillary data buffer len */
+        //     int           msg_flags;      /* Flags on received message */
+        // };
+        msghdr header;
+        mmu_->copyFromMmu((u8*)&header, msg, sizeof(msghdr));
+        std::vector<u8> msg_name_buffer(header.msg_name ? header.msg_namelen : 0, 0x0);
+        Buffer msg_name(std::move(msg_name_buffer));
+        std::vector<u8> msg_control_buffer(header.msg_control ? header.msg_controllen : 0, 0x0);
+        Buffer msg_control(std::move(msg_control_buffer));
+        std::vector<Buffer> msg_iov;
+        std::vector<iovec> msg_iovecs = mmu_->readFromMmu<iovec>(Ptr8{(u64)header.msg_iov}, header.msg_iovlen);
+        for(size_t i = 0; i < header.msg_iovlen; ++i) {
+            std::vector<u8> buffer(msg_iovecs[i].iov_len, 0x0);
+            msg_iov.push_back(Buffer(std::move(buffer)));
+        }
+
+        int msg_flags = 0;
+        ssize_t nbytes = Host::recvmsg(Host::FD{sockfd}, flags, &msg_name, &msg_iov, &msg_control, &msg_flags);
+        if(nbytes < 0) return nbytes;
+
+        if(header.msg_name) mmu_->copyToMmu(Ptr8{(u64)header.msg_name}, msg_name.data(), msg_name.size());
+        if(header.msg_control) mmu_->copyToMmu(Ptr8{(u64)header.msg_control}, msg_control.data(), msg_control.size());
+        for(size_t i = 0; i < header.msg_iovlen; ++i) {
+            mmu_->copyToMmu(Ptr8{(u64)msg_iovecs[i].iov_base}, msg_iov[i].data(), msg_iov[i].size());
+        }
+        return nbytes;
     }
 
     ssize_t Sys::getdents64(int fd, Ptr dirp, size_t count) {

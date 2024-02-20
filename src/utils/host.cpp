@@ -161,7 +161,6 @@ u64 Host::iovecBase(const Buffer& buffer, size_t i) {
 }
 
 ssize_t Host::writev(FD fd, const std::vector<Buffer>& buffers) {
-    assert(buffer.size() % iovecRequiredBufferSize() == 0);
     std::vector<iovec> iovecs;
     for(const auto& buffer : buffers) {
         iovecs.push_back(iovec{(void*)buffer.data(), buffer.size()});
@@ -315,6 +314,49 @@ ErrnoOrBuffer Host::getpeername(int sockfd, u32 buffersize) {
     return ErrnoOrBuffer(Buffer{std::move(buffer)});
 }
 
+ErrnoOr<std::pair<Buffer, Buffer>> Host::recvfrom(FD sockfd, size_t len, int flags, bool requireSrcAddress) {
+    static_assert(sizeof(socklen_t) == sizeof(u32));
+    if(requireSrcAddress) {
+        return ErrnoOr<std::pair<Buffer, Buffer>>(-ENOTSUP);
+    }
+    std::vector<u8> buffer;
+    buffer.resize(len, 0);
+    ssize_t ret = ::recvfrom(sockfd.fd, buffer.data(), len, flags, nullptr, nullptr);
+    if(ret < 0) return ErrnoOr<std::pair<Buffer, Buffer>>(-errno);
+    buffer.resize(ret);
+    return ErrnoOr<std::pair<Buffer, Buffer>>(std::make_pair(Buffer{std::move(buffer)}, Buffer{}));
+}
+
+ssize_t Host::recvmsg(FD sockfd, int flags, Buffer* msg_name, std::vector<Buffer>* msg_iov, Buffer* msg_control, int* msg_flags) {
+    // struct msghdr {
+    //     void*         msg_name;       /* Optional address */
+    //     socklen_t     msg_namelen;    /* Size of address */
+    //     struct iovec* msg_iov;        /* Scatter/gather array */
+    //     size_t        msg_iovlen;     /* # elements in msg_iov */
+    //     void*         msg_control;    /* Ancillary data, see below */
+    //     size_t        msg_controllen; /* Ancillary data buffer len */
+    //     int           msg_flags;      /* Flags on received message */
+    // };
+    msghdr header;
+    header.msg_name = msg_name->data();
+    header.msg_namelen = (socklen_t)msg_name->size();
+    std::vector<iovec> iovs;
+    for(auto& buf : *msg_iov) {
+        iovec iov;
+        iov.iov_base = buf.data();
+        iov.iov_len = buf.size();
+        iovs.push_back(iov);
+    }
+    header.msg_iov = iovs.data();
+    header.msg_iovlen = iovs.size();
+    header.msg_control = msg_control->data();
+    header.msg_controllen = msg_control->size();
+    header.msg_flags = 0;
+    ssize_t ret = ::recvmsg(sockfd.fd, &header, flags);
+    *msg_flags = header.msg_flags;
+    if(ret < 0) return -errno;
+    return ret;
+}
 
 std::string Host::ioctlName(unsigned long request) {
     switch(request) {

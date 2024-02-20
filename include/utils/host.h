@@ -94,6 +94,17 @@ public:
         static bool isSetFS(int code);
     };
 
+    struct Iovec {
+        Buffer iov;
+    };
+
+    struct Msghdr {
+        Buffer msg_name;
+        std::vector<Iovec> msg_iov;
+        Buffer msg_control;
+        int msg_flags;
+    };
+
     // syscalls
     struct FD {
         int fd;
@@ -130,6 +141,9 @@ public:
     static int connect(int sockfd, const Buffer& addr);
     static ErrnoOrBuffer getsockname(int sockfd, u32 buffersize);
     static ErrnoOrBuffer getpeername(int sockfd, u32 buffersize);
+
+    static ErrnoOr<std::pair<Buffer, Buffer>> recvfrom(FD sockfd, size_t len, int flags, bool requireSrcAddress);
+    static ssize_t recvmsg(FD sockfd, int flags, Buffer* msg_name, std::vector<Buffer>* msg_iov, Buffer* msg_control, int* msg_flags);
 
     static ErrnoOrBuffer readlink(const std::string& path, size_t count);
     static ErrnoOrBuffer uname();
