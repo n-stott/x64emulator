@@ -247,7 +247,7 @@ std::string Host::fcntlName(int cmd) {
         case F_GETFD: return "F_GETFD";
         case F_SETFD: return "F_SETFD";
     }
-    return "unknown fcntl";
+    return "unknown fcntl " + std::to_string(cmd);
 }
 
 int Host::fcntl(FD fd, int cmd, int arg) {
