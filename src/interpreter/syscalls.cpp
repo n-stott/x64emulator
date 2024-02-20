@@ -247,7 +247,16 @@ namespace x64 {
     ssize_t Sys::writev(int fd, Ptr iov, int iovcnt) {
         std::vector<u8> iovecs = mmu_->readFromMmu<u8>(iov, ((size_t)iovcnt) * Host::iovecRequiredBufferSize());
         Buffer iovecBuffer(std::move(iovecs));
-        ssize_t nbytes = Host::writev(Host::FD{fd}, iovecBuffer);
+        std::vector<Buffer> buffers;
+        for(int i = 0; i < iovcnt; ++i) {
+            Ptr base{Host::iovecBase(iovecBuffer, i)};
+            size_t len = Host::iovecLen(iovecBuffer, i);
+            std::vector<u8> data;
+            data.resize(len);
+            mmu_->copyFromMmu(data.data(), base, len);
+            buffers.push_back(Buffer(std::move(data)));
+        }
+        ssize_t nbytes = Host::writev(Host::FD{fd}, buffers);
         if(vm_->logSyscalls()) fmt::print("Sys::writev(fd={}, iov={:#x}, iovcnt={}) = {}\n", fd, iov.address(), iovcnt, nbytes);
         return nbytes;
     }

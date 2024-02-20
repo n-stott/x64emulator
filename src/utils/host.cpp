@@ -150,11 +150,22 @@ size_t Host::iovecRequiredBufferSize() {
     return sizeof(iovec);
 }
 
-ssize_t Host::writev(FD fd, const Buffer& buffer) {
+size_t Host::iovecLen(const Buffer& buffer, size_t i) {
+    assert(i*sizeof(iovec) < buffer.size());
+    return ((const iovec*)buffer.data() + i)->iov_len;
+}
+
+u64 Host::iovecBase(const Buffer& buffer, size_t i) {
+    assert(i*sizeof(iovec) < buffer.size());
+    return (u64)((const iovec*)buffer.data() + i)->iov_base;
+}
+
+ssize_t Host::writev(FD fd, const std::vector<Buffer>& buffers) {
     assert(buffer.size() % iovecRequiredBufferSize() == 0);
     std::vector<iovec> iovecs;
-    iovecs.resize(buffer.size() / iovecRequiredBufferSize());
-    std::memcpy(iovecs.data(), buffer.data(), buffer.size());
+    for(const auto& buffer : buffers) {
+        iovecs.push_back(iovec{(void*)buffer.data(), buffer.size()});
+    }
     ssize_t nbytes = ::writev(fd.fd, iovecs.data(), (int)iovecs.size());
     if(nbytes < 0) return -errno;
     return nbytes;

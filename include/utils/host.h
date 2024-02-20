@@ -94,7 +94,9 @@ public:
     static FD dup(FD);
 
     static size_t iovecRequiredBufferSize();
-    static ssize_t writev(FD, const Buffer& buffer);
+    static size_t iovecLen(const Buffer& buffer, size_t i);
+    static u64 iovecBase(const Buffer& buffer, size_t i);
+    static ssize_t writev(FD, const std::vector<Buffer>& buffer);
 
     static ErrnoOrBuffer stat(const std::string& path);
     static ErrnoOrBuffer fstat(FD fd);
