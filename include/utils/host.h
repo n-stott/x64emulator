@@ -93,6 +93,9 @@ public:
     static int close(FD);
     static FD dup(FD);
 
+    static size_t iovecRequiredBufferSize();
+    static ssize_t writev(FD, const Buffer& buffer);
+
     static ErrnoOrBuffer stat(const std::string& path);
     static ErrnoOrBuffer fstat(FD fd);
     static ErrnoOrBuffer lstat(const std::string& path);

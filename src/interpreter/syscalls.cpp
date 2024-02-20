@@ -4,7 +4,6 @@
 #include "interpreter/verify.h"
 #include "utils/host.h"
 #include <numeric>
-#include <fcntl.h>
 
 namespace x64 {
 
@@ -246,16 +245,9 @@ namespace x64 {
     }
 
     ssize_t Sys::writev(int fd, Ptr iov, int iovcnt) {
-        std::vector<iovec> iovs = mmu_->readFromMmu<iovec>(iov, (size_t)iovcnt);
-
-        std::vector<u8> buffer;
-        ssize_t nbytes = 0;
-        for(size_t i = 0; i < (size_t)iovcnt; ++i) {
-            void* base = iovs[i].iov_base;
-            size_t len = iovs[i].iov_len;
-            std::vector<u8> buffer = mmu_->readFromMmu<u8>(Ptr8{(u64)base}, len);
-            nbytes += Host::write(Host::FD{fd}, buffer.data(), len);
-        }
+        std::vector<u8> iovecs = mmu_->readFromMmu<u8>(iov, ((size_t)iovcnt) * Host::iovecRequiredBufferSize());
+        Buffer iovecBuffer(std::move(iovecs));
+        ssize_t nbytes = Host::writev(Host::FD{fd}, iovecBuffer);
         if(vm_->logSyscalls()) fmt::print("Sys::writev(fd={}, iov={:#x}, iovcnt={}) = {}\n", fd, iov.address(), iovcnt, nbytes);
         return nbytes;
     }

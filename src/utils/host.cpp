@@ -14,6 +14,7 @@
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/sysinfo.h>
+#include <sys/uio.h>
 #include <sys/utsname.h>
 #include <sys/vfs.h>
 #include <sys/xattr.h>
@@ -142,6 +143,21 @@ Host::FD Host::dup(FD oldfd) {
     if(newfd < 0) return FD{-errno};
     the().openFiles_[newfd] = the().openFiles_[oldfd.fd];
     return FD{newfd};
+}
+
+
+size_t Host::iovecRequiredBufferSize() {
+    return sizeof(iovec);
+}
+
+ssize_t Host::writev(FD fd, const Buffer& buffer) {
+    assert(buffer.size() % iovecRequiredBufferSize() == 0);
+    std::vector<iovec> iovecs;
+    iovecs.resize(buffer.size() / iovecRequiredBufferSize());
+    std::memcpy(iovecs.data(), buffer.data(), buffer.size());
+    ssize_t nbytes = ::writev(fd.fd, iovecs.data(), (int)iovecs.size());
+    if(nbytes < 0) return -errno;
+    return nbytes;
 }
 
 ErrnoOrBuffer Host::stat(const std::string& path) {
