@@ -195,7 +195,7 @@ off_t Host::lseek(FD fd, off_t offset, int whence) {
 
 Host::FD Host::openat(FD dirfd, const std::string& pathname, int flags, [[maybe_unused]] mode_t mode) {
     flags = (flags & ~O_ACCMODE) | O_RDONLY | O_CLOEXEC;
-    flags = (flags & ~O_CREAT);
+    flags = (flags & ~(O_CREAT | O_EXCL | O_NOCTTY | O_TRUNC));
     int fd = ::openat(dirfd.fd, pathname.c_str(), flags);
     if(fd < 0) return FD{-errno};
     the().openFiles_[fd] = pathname;
@@ -246,6 +246,8 @@ std::string Host::fcntlName(int cmd) {
     switch(cmd) {
         case F_GETFD: return "F_GETFD";
         case F_SETFD: return "F_SETFD";
+        case F_GETFL: return "F_GETFL";
+        case F_SETFL: return "F_SETFL";
     }
     return "unknown fcntl " + std::to_string(cmd);
 }
@@ -253,7 +255,9 @@ std::string Host::fcntlName(int cmd) {
 int Host::fcntl(FD fd, int cmd, int arg) {
     switch(cmd) {
         case F_GETFD:
-        case F_SETFD: {
+        case F_SETFD:
+        case F_GETFL:
+        case F_SETFL: {
             int ret = ::fcntl(fd.fd, cmd, arg);
             if(ret < 0) return -errno;
             return ret;
