@@ -120,6 +120,8 @@ namespace x64 {
         int fstat(int fd, Ptr statbuf);
         // 0x6
         int lstat(Ptr pathname, Ptr statbuf);
+        // 0x7
+        int poll(Ptr fds, size_t nfds, int timeout);
         // 0x8
         off_t lseek(int fd, off_t offset, int whence);
         // 0x9

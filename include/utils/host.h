@@ -14,6 +14,12 @@ public:
     explicit Buffer(std::vector<u8> buf) : data_(std::move(buf)) { }
 
     template<typename T>
+    explicit Buffer(std::vector<T> buf) {
+        data_.resize(buf.size()*sizeof(T));
+        std::memcpy(data_.data(), buf.data(), buf.size()*sizeof(T));
+    }
+
+    template<typename T>
     explicit Buffer(const T& val) {
         data_.resize(sizeof(T));
         std::memcpy(data_.data(), &val, sizeof(T));
@@ -26,6 +32,12 @@ public:
 
 private:
     std::vector<u8> data_;
+};
+
+template<typename T>
+struct BufferAndReturnValue {
+    Buffer buffer;
+    T returnValue;
 };
 
 template<typename Value>
@@ -143,6 +155,9 @@ public:
     static std::vector<u8> readFromFile(FD fd, size_t length, off_t offset);
 
     static ErrnoOrBuffer getrlimit(pid_t pid, int resource);
+
+    static size_t pollRequiredBufferSize(size_t nfds);
+    static ErrnoOr<BufferAndReturnValue<int>> poll(const Buffer&, u64 nfds, int timeout);
 
     static int select(int nfds, fd_set* readfds, fd_set* writefds, fd_set* exceptfds, timeval* timeout);
     static int pselect6(int nfds, fd_set* readfds, fd_set* writefds, fd_set* exceptfds, timespec* timeout, const sigset_t* sigmask);

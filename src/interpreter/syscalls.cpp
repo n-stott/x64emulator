@@ -26,6 +26,7 @@ namespace x64 {
             case 0x4: return vm_->set(R64::RAX, invoke_syscall_2(&Sys::stat, regs));
             case 0x5: return vm_->set(R64::RAX, invoke_syscall_2(&Sys::fstat, regs));
             case 0x6: return vm_->set(R64::RAX, invoke_syscall_2(&Sys::lstat, regs));
+            case 0x7: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::poll, regs));
             case 0x8: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::lseek, regs));
             case 0x9: return vm_->set(R64::RAX, invoke_syscall_6(&Sys::mmap, regs));
             case 0xa: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::mprotect, regs));
@@ -155,6 +156,23 @@ namespace x64 {
         return errnoOrBuffer.errorOrWith<int>([&](const auto& buffer) {
             mmu_->copyToMmu(statbuf, buffer.data(), buffer.size());
             return 0;
+        });
+    }
+
+    int Sys::poll(Ptr fds, size_t nfds, int timeout) {
+        std::vector<u8> pollfds = mmu_->readFromMmu<u8>(fds, Host::pollRequiredBufferSize(nfds));
+        Buffer buffer(std::move(pollfds));
+        auto errnoOrBufferAndReturnValue = Host::poll(buffer, nfds, timeout);
+        if(vm_->logSyscalls()) {
+            fmt::print("Sys::poll(fds={:#x}, nfds={}, timeout={}) = {}\n",
+                                  fds.address(), nfds, timeout,
+                                  errnoOrBufferAndReturnValue.errorOrWith<int>([](const auto& bufferAndRetVal) {
+                                    return bufferAndRetVal.returnValue;
+                                  }));
+        }
+        return errnoOrBufferAndReturnValue.errorOrWith<int>([&](const auto& bufferAndRetVal) {
+            mmu_->copyToMmu(fds, bufferAndRetVal.buffer.data(), bufferAndRetVal.buffer.size());
+            return bufferAndRetVal.returnValue;
         });
     }
 

@@ -2,7 +2,7 @@
 #include <cassert>
 #include <cstring>
 #include <dirent.h>
-#include <iostream>
+#include <poll.h>
 #include <asm/prctl.h>
 #include <asm/termbits.h>
 #include <sys/auxv.h>
@@ -504,6 +504,25 @@ ErrnoOrBuffer Host::getrlimit([[maybe_unused]] pid_t pid, int resource) {
             return ErrnoOrBuffer(-ENOTSUP);
         }
     }
+}
+
+
+size_t Host::pollRequiredBufferSize(size_t nfds) {
+    return sizeof(pollfd)*nfds;
+}
+
+ErrnoOr<BufferAndReturnValue<int>> Host::poll(const Buffer& buffer, u64 nfds, int timeout) {
+    std::vector<pollfd> pollfds;
+    assert(buffer.size() % sizeof(pollfd) == 0);
+    pollfds.resize(buffer.size() / sizeof(pollfd));
+    std::memcpy(pollfds.data(), buffer.data(), buffer.size());
+    int ret = ::poll(pollfds.data(), nfds, timeout);
+    if(ret < 0) return ErrnoOr<BufferAndReturnValue<int>>(-errno);
+    BufferAndReturnValue<int> bufferAndRetVal {
+        Buffer{std::move(pollfds)},
+        ret,
+    };
+    return ErrnoOr<BufferAndReturnValue<int>>(std::move(bufferAndRetVal));
 }
 
 int Host::select(int nfds, fd_set* readfds, fd_set* writefds, fd_set* exceptfds, timeval* timeout) {
