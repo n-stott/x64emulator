@@ -4,7 +4,6 @@
 #include "interpreter/verify.h"
 #include "utils/host.h"
 #include <numeric>
-#include <sys/resource.h>
 #include <fcntl.h>
 
 namespace x64 {
@@ -637,27 +636,19 @@ namespace x64 {
         return -ENOTSUP;
     }
 
-    int Sys::prlimit64(pid_t pid, int resource, Ptr new_limit, Ptr old_limit) {
+    int Sys::prlimit64(pid_t pid, int resource, [[maybe_unused]] Ptr new_limit, Ptr old_limit) {
         if(vm_->logSyscalls()) 
             fmt::print("Sys::prlimit64(pid={}, resource={}, new_limit={:#x}, old_limit={:#x})", pid, resource, new_limit.address(), old_limit.address());
-        (void)new_limit;
         if(!old_limit.address()) {
             if(vm_->logSyscalls()) fmt::print(" = 0\n");
             return 0;
         }
-        std::vector<u8> oldLimitBuffer;
-        oldLimitBuffer.resize(sizeof(struct rlimit), 0x0);
-        int ret = Host::prlimit64(pid, resource, nullptr, &oldLimitBuffer);
-        if(ret < 0) {
-            if(vm_->logSyscalls()) fmt::print(" = {}\n", ret);
-            return ret;
-        } else {
-            struct rlimit oldLimit;
-            std::memcpy(&oldLimit, oldLimitBuffer.data(), oldLimitBuffer.size());
-            if(vm_->logSyscalls()) fmt::print(" = {} (oldLimit={}/{})\n", ret, oldLimit.rlim_cur, oldLimit.rlim_max);
-            mmu_->copyToMmu(old_limit, oldLimitBuffer.data(), oldLimitBuffer.size());
+        auto errnoOrBuffer = Host::getrlimit(pid, resource);
+        if(vm_->logSyscalls()) fmt::print(" = {}\n", errnoOrBuffer.errorOr(0));
+        return errnoOrBuffer.errorOrWith<int>([&](const auto& buffer) {
+            mmu_->copyToMmu(old_limit, buffer.data(), buffer.size());
             return 0;
-        }
+        });
     }
 
     ssize_t Sys::getrandom(Ptr buf, size_t len, int flags) {

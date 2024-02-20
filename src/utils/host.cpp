@@ -448,22 +448,17 @@ std::vector<u8> Host::readFromFile(Host::FD fd, size_t length, off_t offset) {
     return data;
 }
 
-int Host::prlimit64(pid_t pid, int resource, const std::vector<u8>* new_limit, std::vector<u8>* old_limit) {
-    (void)pid;
-    (void)new_limit;
-    if(!old_limit) return 0;
-    if(old_limit->size() != sizeof(struct rlimit)) return -1;
+ErrnoOrBuffer Host::getrlimit([[maybe_unused]] pid_t pid, int resource) {
     switch(resource) {
         case RLIMIT_STACK: {
             struct rlimit stackLimit {
                 16*0x1000,
                 RLIM64_INFINITY,
             };
-            std::memcpy(old_limit->data(), &stackLimit, sizeof(stackLimit));
-            return 0;
+            return ErrnoOrBuffer(Buffer{stackLimit});
         }
         default: {
-            return -1;
+            return ErrnoOrBuffer(-ENOTSUP);
         }
     }
 }

@@ -137,7 +137,7 @@ public:
 
     static std::vector<u8> readFromFile(FD fd, size_t length, off_t offset);
 
-    static int prlimit64(pid_t pid, int resource, const std::vector<u8>* new_limit, std::vector<u8>* old_limit);
+    static ErrnoOrBuffer getrlimit(pid_t pid, int resource);
 
     static int select(int nfds, fd_set* readfds, fd_set* writefds, fd_set* exceptfds, timeval* timeout);
     static int pselect6(int nfds, fd_set* readfds, fd_set* writefds, fd_set* exceptfds, timespec* timeout, const sigset_t* sigmask);
