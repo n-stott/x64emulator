@@ -1,13 +1,9 @@
 #ifndef ELFENUMS_H
 #define ELFENUMS_H
 
+#include "utils/utils.h"
 #include <fmt/format.h>
 #include <string>
-
-using u8 = unsigned char;
-using u16 = unsigned short;
-using u32 = unsigned int;
-using u64 = unsigned long long;
 
 namespace elf {
     enum class Class : u8 {

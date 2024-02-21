@@ -3,6 +3,9 @@
 
 #include "types.h"
 #include <array>
+#include <cassert>
+#include <cstring>
+#include <string>
 #include <type_traits>
 
 namespace x64 {

@@ -4,7 +4,6 @@
 #include "utils/utils.h"
 #include "elf-reader/enums.h"
 #include <deque>
-#include <optional>
 #include <string>
 #include <unordered_map>
 

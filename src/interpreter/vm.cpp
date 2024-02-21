@@ -1,9 +1,6 @@
 #include "interpreter/vm.h"
 #include "interpreter/registers.h"
 #include "interpreter/verify.h"
-#include "interpreter/symbolprovider.h"
-#include "instructions/instructionwrapper.h"
-#include "instructions/instructionutils.h"
 #include "disassembler/capstonewrapper.h"
 #include "elf-reader/elf-reader.h"
 
@@ -36,10 +33,6 @@ namespace x64 {
 
     bool VM::logSyscalls() const {
         return logSyscalls_;
-    }
-
-    void VM::setSymbolProvider(SymbolProvider* symbolProvider) {
-        symbolProvider_ = symbolProvider;
     }
 
     void VM::crash() {
@@ -274,7 +267,6 @@ namespace x64 {
 
 
     void VM::tryRetrieveSymbolsFromExecutable(const Mmu::Region& region) const {
-        if(!symbolProvider_) return;
         if(region.file().empty()) return;
 
         std::unique_ptr<elf::Elf> elf = elf::ElfReader::tryCreate(region.file());
@@ -308,7 +300,7 @@ namespace x64 {
             if(!entry.st_name) return;
             u64 address = entry.st_value;
             if(entry.type() != elf::SymbolType::TLS) address += elfOffset;
-            symbolProvider_->registerSymbol(symbol, "", address, nullptr, elfOffset, entry.st_size, entry.type(), entry.bind());
+            symbolProvider_.registerSymbol(symbol, "", address, nullptr, elfOffset, entry.st_size, entry.type(), entry.bind());
         };
 
         elf64->forAllSymbols(loadSymbol);
@@ -329,7 +321,6 @@ namespace x64 {
     }
 
     std::string VM::calledFunctionName(u64 address) const {
-        if(!symbolProvider_) return "";
         InstructionPosition pos = findSectionWithAddress(address);
         verify(!!pos.section, [&]() {
             fmt::print("Could not determine function origin section for address {:#x}\n", address);
@@ -337,7 +328,7 @@ namespace x64 {
         verify(pos.index != (size_t)(-1), "Could not find call destination instruction");
 
         // If we are in the text section, we can try to lookup the symbol for that address
-        auto symbolsAtAddress = symbolProvider_->lookupSymbol(address);
+        auto symbolsAtAddress = symbolProvider_.lookupSymbol(address);
         if(!symbolsAtAddress.empty()) {
             functionNameCache_[address] = symbolsAtAddress[0]->demangledSymbol;
             return symbolsAtAddress[0]->demangledSymbol;
@@ -350,7 +341,7 @@ namespace x64 {
             regs.rip() = jmpInsn.address() + 6; // add instruction size offset
             RM64 rm64 = jmpInsn.op0<RM64>();
             auto dst = rm64.isReg ? regs.get(rm64.reg) : cpu_.get(regs.resolve(rm64.mem));
-            auto symbolsAtAddress = symbolProvider_->lookupSymbol(dst);
+            auto symbolsAtAddress = symbolProvider_.lookupSymbol(dst);
             if(!symbolsAtAddress.empty()) {
                 functionNameCache_[address] = symbolsAtAddress[0]->demangledSymbol;
                 return symbolsAtAddress[0]->demangledSymbol;

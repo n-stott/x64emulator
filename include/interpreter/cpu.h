@@ -11,7 +11,6 @@ namespace x64 {
 
     class VM;
     class Mmu;
-    struct X86Instruction;
 
     class Cpu {
     public:

@@ -1,5 +1,4 @@
 #include "interpreter/interpreter.h"
-#include "interpreter/symbolprovider.h"
 #include "interpreter/verify.h"
 #include "interpreter/auxiliaryvector.h"
 #include "utils/host.h"
@@ -65,8 +64,6 @@ namespace x64 {
             u64 entrypoint = loadElf(programFilePath, true);
             setupStack();
             pushProgramArguments(programFilePath, arguments, environmentVariables);
-            SymbolProvider staticSymbolProvider;
-            vm_.setSymbolProvider(&staticSymbolProvider);
             vm_.execute(entrypoint);
         }, [&]() {
             vm_.crash();

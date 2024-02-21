@@ -2,23 +2,21 @@
 #define REGISTERS_H
 
 #include "types.h"
+#include <array>
 #include <cassert>
 
 namespace x64 {
 
     class Registers {
-    public:
-        u64 gpr_[18];
-
-        Xmm xmm_[16];
+    private:
+        std::array<u64, 18> gpr_;
+        std::array<Xmm, 16> xmm_;
 
         u32 eiz_ { 0 };
 
-        Registers() {
-            std::fill(gpr_, gpr_+18, (u64)0);
-        }
-
     public:
+        Registers();
+
         u64 rbp() const { return gpr_[(u8)R64::RBP]; }
         u64 rsp() const { return gpr_[(u8)R64::RSP]; }
         u64 rip() const { return gpr_[(u8)R64::RIP]; }

@@ -1,18 +1,13 @@
 #ifndef CAPSTONEWRAPPER_H
 #define CAPSTONEWRAPPER_H
 
-#include "types.h"
 #include "instructions/x64instruction.h"
-#include <memory>
-#include <string>
-#include <string_view>
+#include "types.h"
 #include <vector>
 
 struct cs_insn;
 
 namespace x64 {
-
-    struct X86Instruction;
 
     class CapstoneWrapper {
     public:

@@ -3,14 +3,13 @@
 
 #include "interpreter/cpu.h"
 #include "interpreter/mmu.h"
+#include "interpreter/symbolprovider.h"
 #include "interpreter/syscalls.h"
 #include "utils/utils.h"
 #include <deque>
 #include <unordered_map>
 
 namespace x64 {
-
-    class SymbolProvider;
 
     class VM {
     public:
@@ -97,7 +96,7 @@ namespace x64 {
         std::unordered_map<u64, CallPoint> callCache_;
         std::unordered_map<u64, CallPoint> jmpCache_;
 
-        SymbolProvider* symbolProvider_ { nullptr };
+        mutable SymbolProvider symbolProvider_;
         mutable std::unordered_map<u64, std::string> functionNameCache_;
 
     };

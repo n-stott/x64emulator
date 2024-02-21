@@ -4,8 +4,11 @@
 #include "types.h"
 #include "utils/utils.h"
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <tuple>
+#include <unistd.h>
+#include <sys/types.h>
 
 namespace x64 {
 

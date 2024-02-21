@@ -2,12 +2,7 @@
 #define TYPES_H
 
 #include "utils/utils.h"
-#include <array>
-#include <cassert>
-#include <cstring>
-#include <optional>
-#include <string>
-#include <variant>
+#include <cstddef>
 
 namespace x64 {
 
