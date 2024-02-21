@@ -1,6 +1,7 @@
 #include "interpreter/cpuimpl.h"
 #include "utils/utils.h"
 #include "fmt/core.h"
+#include <vector>
 
 long double runFrndint(long double x, x64::ROUNDING rounding) {
     {

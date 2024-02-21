@@ -153,19 +153,19 @@ namespace x64 {
 
     void VM::dumpRegisters() const {
         fmt::print(stderr,
-            "rip {:#0000008x}\n",
+            "rip {:>#8x}\n",
             cpu_.regs_.rip());
         fmt::print(stderr,
-            "rsi {:#0000008x}  rdi {:#0000008x}  rbp {:#0000008x}  rsp {:#0000008x}\n",
+            "rsi {:>#8x}  rdi {:>#8x}  rbp {:>#8x}  rsp {:>#8x}\n",
             cpu_.regs_.get(R64::RSI), cpu_.regs_.get(R64::RDI), cpu_.regs_.get(R64::RBP), cpu_.regs_.get(R64::RSP));
         fmt::print(stderr,
-            "rax {:#0000008x}  rbx {:#0000008x}  rcx {:#0000008x}  rdx {:#0000008x}\n",
+            "rax {:>#8x}  rbx {:>#8x}  rcx {:>#8x}  rdx {:>#8x}\n",
             cpu_.regs_.get(R64::RAX), cpu_.regs_.get(R64::RBX), cpu_.regs_.get(R64::RCX), cpu_.regs_.get(R64::RDX));
         fmt::print(stderr,
-            "r8  {:#0000008x}  r9  {:#0000008x}  r10 {:#0000008x}  r11 {:#0000008x}\n",
+            "r8  {:>#8x}  r9  {:>#8x}  r10 {:>#8x}  r11 {:>#8x}\n",
             cpu_.regs_.get(R64::R8), cpu_.regs_.get(R64::R9), cpu_.regs_.get(R64::R10), cpu_.regs_.get(R64::R11));
         fmt::print(stderr,
-            "r12 {:#0000008x}  r13 {:#0000008x}  r14 {:#0000008x}  r15 {:#0000008x}\n",
+            "r12 {:>#8x}  r13 {:>#8x}  r14 {:>#8x}  r15 {:>#8x}\n",
             cpu_.regs_.get(R64::R12), cpu_.regs_.get(R64::R13), cpu_.regs_.get(R64::R14), cpu_.regs_.get(R64::R15));
     }
 

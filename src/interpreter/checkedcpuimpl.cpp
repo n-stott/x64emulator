@@ -7,6 +7,12 @@
 #include <emmintrin.h>
 #include <limits>
 
+#if (defined(__GNUG__) && !defined(__clang__))
+#define GCC_COMPILER 1
+#else
+#define CLANG_COMPILER 1
+#endif
+
 namespace x64 {
     static Flags fromRflags(u64 rflags) {
         static constexpr u64 CARRY_MASK = 0x1;
@@ -1020,7 +1026,7 @@ namespace x64 {
     }
 
     u128 CheckedCpuImpl::addss(u128 dst, u128 src) {
-#ifdef __gcc__
+#if GCC_COMPILER
         u128 virtualRes = CpuImpl::addss(dst, src);
         (void)virtualRes;
 
@@ -1036,7 +1042,7 @@ namespace x64 {
     }
 
     u128 CheckedCpuImpl::addsd(u128 dst, u128 src) {
-#ifdef __gcc__
+#if GCC_COMPILER
         u128 virtualRes = CpuImpl::addsd(dst, src);
         (void)virtualRes;
 
@@ -1052,7 +1058,7 @@ namespace x64 {
     }
 
     u128 CheckedCpuImpl::subss(u128 dst, u128 src) {
-#ifdef __gcc__
+#if GCC_COMPILER
         u128 virtualRes = CpuImpl::subss(dst, src);
         (void)virtualRes;
 
@@ -1068,7 +1074,7 @@ namespace x64 {
     }
 
     u128 CheckedCpuImpl::subsd(u128 dst, u128 src) {
-#ifdef __gcc__
+#if GCC_COMPILER
         u128 virtualRes = CpuImpl::subsd(dst, src);
         (void)virtualRes;
 
@@ -1084,7 +1090,7 @@ namespace x64 {
     }
 
     void CheckedCpuImpl::comiss(u128 dst, u128 src, Flags* flags) {
-#ifdef __gcc__
+#if GCC_COMPILER
         Flags virtualFlags = *flags;
         CpuImpl::comiss(dst, src, &virtualFlags);
 
@@ -1103,7 +1109,7 @@ namespace x64 {
     }
 
     void CheckedCpuImpl::comisd(u128 dst, u128 src, Flags* flags) {
-#ifdef __gcc__
+#if GCC_COMPILER
         Flags virtualFlags = *flags;
         CpuImpl::comisd(dst, src, &virtualFlags);
 
@@ -1122,7 +1128,7 @@ namespace x64 {
     }
 
     u128 CheckedCpuImpl::maxss(u128 dst, u128 src) {
-#ifdef __gcc__
+#if GCC_COMPILER
         u128 virtualRes = CpuImpl::maxss(dst, src);
         (void)virtualRes;
 
@@ -1137,7 +1143,7 @@ namespace x64 {
     }
 
     u128 CheckedCpuImpl::maxsd(u128 dst, u128 src) {
-#ifdef __gcc__
+#if GCC_COMPILER
         u128 virtualRes = CpuImpl::maxsd(dst, src);
         (void)virtualRes;
 
@@ -1152,7 +1158,7 @@ namespace x64 {
     }
 
     u128 CheckedCpuImpl::minss(u128 dst, u128 src) {
-#ifdef __gcc__
+#if GCC_COMPILER
         u128 virtualRes = CpuImpl::minss(dst, src);
         (void)virtualRes;
 
@@ -1167,7 +1173,7 @@ namespace x64 {
     }
 
     u128 CheckedCpuImpl::minsd(u128 dst, u128 src) {
-#ifdef __gcc__
+#if GCC_COMPILER
         u128 virtualRes = CpuImpl::minsd(dst, src);
         (void)virtualRes;
 
@@ -1182,7 +1188,7 @@ namespace x64 {
     }
 
     u128 CheckedCpuImpl::mulss(u128 dst, u128 src) {
-#ifdef __gcc__
+#if GCC_COMPILER
         u128 virtualRes = CpuImpl::mulss(dst, src);
         (void)virtualRes;
 
@@ -1198,7 +1204,7 @@ namespace x64 {
     }
 
     u128 CheckedCpuImpl::mulsd(u128 dst, u128 src) {
-#ifdef __gcc__
+#if GCC_COMPILER
         u128 virtualRes = CpuImpl::mulsd(dst, src);
         (void)virtualRes;
 
@@ -1214,7 +1220,7 @@ namespace x64 {
     }
 
     u128 CheckedCpuImpl::divss(u128 dst, u128 src) {
-#ifdef __gcc__
+#if GCC_COMPILER
         u128 virtualRes = CpuImpl::divss(dst, src);
         (void)virtualRes;
 
@@ -1230,7 +1236,7 @@ namespace x64 {
     }
 
     u128 CheckedCpuImpl::divsd(u128 dst, u128 src) {
-#ifdef __gcc__
+#if GCC_COMPILER
         u128 virtualRes = CpuImpl::divsd(dst, src);
         (void)virtualRes;
 
@@ -1246,7 +1252,7 @@ namespace x64 {
     }
 
     u64 CheckedCpuImpl::cmpsd(u64 dst, u64 src, FCond cond) {
-#ifdef __gcc__
+#if GCC_COMPILER
         static_assert(sizeof(u64) == sizeof(double));
         double d;
         double s;
@@ -1272,7 +1278,7 @@ namespace x64 {
     }
 
     u128 CheckedCpuImpl::cvtsi2ss32(u128 dst, u32 src) {
-#ifdef __gcc__
+#if GCC_COMPILER
         u128 virtualRes = CpuImpl::cvtsi2ss32(dst, src);
         (void)virtualRes;
 
@@ -1288,7 +1294,7 @@ namespace x64 {
     }
 
     u128 CheckedCpuImpl::cvtsi2ss64(u128 dst, u64 src) {
-#ifdef __gcc__
+#if GCC_COMPILER
         u128 virtualRes = CpuImpl::cvtsi2ss64(dst, src);
         (void)virtualRes;
 
@@ -1304,7 +1310,7 @@ namespace x64 {
     }
 
     u128 CheckedCpuImpl::cvtsi2sd32(u128 dst, u32 src) {
-#ifdef __gcc__
+#if GCC_COMPILER
         u128 virtualRes = CpuImpl::cvtsi2sd32(dst, src);
         (void)virtualRes;
 
@@ -1320,7 +1326,7 @@ namespace x64 {
     }
 
     u128 CheckedCpuImpl::cvtsi2sd64(u128 dst, u64 src) {
-#ifdef __gcc__
+#if GCC_COMPILER
         u128 virtualRes = CpuImpl::cvtsi2sd64(dst, src);
         (void)virtualRes;
 
@@ -1336,7 +1342,7 @@ namespace x64 {
     }
 
     u128 CheckedCpuImpl::cvtss2sd(u128 dst, u128 src) {
-#ifdef __gcc__
+#if GCC_COMPILER
         u128 virtualRes = CpuImpl::cvtss2sd(dst, src);
         (void)virtualRes;
 
@@ -1352,7 +1358,7 @@ namespace x64 {
     }
 
     u32 CheckedCpuImpl::cvttss2si32(u128 src) {
-#ifdef __gcc__
+#if GCC_COMPILER
         u32 virtualRes = CpuImpl::cvttss2si32(src);
         (void)virtualRes;
 
@@ -1367,7 +1373,7 @@ namespace x64 {
     }
 
     u64 CheckedCpuImpl::cvttss2si64(u128 src) {
-#ifdef __gcc__
+#if GCC_COMPILER
         u64 virtualRes = CpuImpl::cvttss2si64(src);
         (void)virtualRes;
 
@@ -1382,7 +1388,7 @@ namespace x64 {
     }
 
     u32 CheckedCpuImpl::cvttsd2si32(u128 src) {
-#ifdef __gcc__
+#if GCC_COMPILER
         u32 virtualRes = CpuImpl::cvttsd2si32(src);
         (void)virtualRes;
 
@@ -1397,7 +1403,7 @@ namespace x64 {
     }
 
     u64 CheckedCpuImpl::cvttsd2si64(u128 src) {
-#ifdef __gcc__
+#if GCC_COMPILER
         u64 virtualRes = CpuImpl::cvttsd2si64(src);
         (void)virtualRes;
 
@@ -1412,7 +1418,7 @@ namespace x64 {
     }
 
     u128 CheckedCpuImpl::shufps(u128 dst, u128 src, u8 order) {
-#ifdef __gcc__
+#if GCC_COMPILER
         u128 virtualRes = CpuImpl::shufps(dst, src, order);
         (void)virtualRes;
 
@@ -1453,7 +1459,7 @@ namespace x64 {
     }
 
     u128 CheckedCpuImpl::shufpd(u128 dst, u128 src, u8 order) {
-#ifdef __gcc__
+#if GCC_COMPILER
         u128 virtualRes = CpuImpl::shufpd(dst, src, order);
         (void)virtualRes;
 
@@ -1481,7 +1487,7 @@ namespace x64 {
     }
 
     u128 CheckedCpuImpl::punpcklbw(u128 dst, u128 src) {
-#ifdef __gcc__
+#if GCC_COMPILER
         u128 virtualRes = CpuImpl::punpcklbw(dst, src);
         (void)virtualRes;
 
@@ -1497,7 +1503,7 @@ namespace x64 {
     }
 
     u128 CheckedCpuImpl::punpcklwd(u128 dst, u128 src) {
-#ifdef __gcc__
+#if GCC_COMPILER
         u128 virtualRes = CpuImpl::punpcklwd(dst, src);
         (void)virtualRes;
 
@@ -1513,7 +1519,7 @@ namespace x64 {
     }
 
     u128 CheckedCpuImpl::punpckldq(u128 dst, u128 src) {
-#ifdef __gcc__
+#if GCC_COMPILER
         u128 virtualRes = CpuImpl::punpckldq(dst, src);
         (void)virtualRes;
 
@@ -1529,7 +1535,7 @@ namespace x64 {
     }
 
     u128 CheckedCpuImpl::punpcklqdq(u128 dst, u128 src) {
-#ifdef __gcc__
+#if GCC_COMPILER
         u128 virtualRes = CpuImpl::punpcklqdq(dst, src);
         (void)virtualRes;
 
@@ -1545,7 +1551,7 @@ namespace x64 {
     }
 
     u128 CheckedCpuImpl::punpckhbw(u128 dst, u128 src) {
-#ifdef __gcc__
+#if GCC_COMPILER
         u128 virtualRes = CpuImpl::punpckhbw(dst, src);
         (void)virtualRes;
 
@@ -1561,7 +1567,7 @@ namespace x64 {
     }
 
     u128 CheckedCpuImpl::punpckhwd(u128 dst, u128 src) {
-#ifdef __gcc__
+#if GCC_COMPILER
         u128 virtualRes = CpuImpl::punpckhwd(dst, src);
         (void)virtualRes;
 
@@ -1577,7 +1583,7 @@ namespace x64 {
     }
 
     u128 CheckedCpuImpl::punpckhdq(u128 dst, u128 src) {
-#ifdef __gcc__
+#if GCC_COMPILER
         u128 virtualRes = CpuImpl::punpckhdq(dst, src);
         (void)virtualRes;
 
@@ -1593,7 +1599,7 @@ namespace x64 {
     }
 
     u128 CheckedCpuImpl::punpckhqdq(u128 dst, u128 src) {
-#ifdef __gcc__
+#if GCC_COMPILER
         u128 virtualRes = CpuImpl::punpckhqdq(dst, src);
         (void)virtualRes;
 
@@ -1609,7 +1615,7 @@ namespace x64 {
     }
 
     u128 CheckedCpuImpl::pshufb(u128 dst, u128 src) {
-#ifdef __gcc__
+#if GCC_COMPILER
         u128 virtualRes = CpuImpl::pshufb(dst, src);
         (void)virtualRes;
 
@@ -1625,7 +1631,7 @@ namespace x64 {
     }
 
     u128 CheckedCpuImpl::pshufd(u128 src, u8 order) {
-#ifdef __gcc__
+#if GCC_COMPILER
         std::array<u32, 4> SRC;
         static_assert(sizeof(SRC) == sizeof(u128));
         std::memcpy(SRC.data(), &src, sizeof(u128));
@@ -1648,7 +1654,7 @@ namespace x64 {
 
     template<typename I, typename Pcmpeq>
     static u128 pcmpeq(u128 dst, u128 src, Pcmpeq pcmpeqFunc) {
-#ifdef __gcc__
+#if GCC_COMPILER
         u128 virtualRes = pcmpeqFunc(dst, src);
         (void)virtualRes;
 
@@ -1678,7 +1684,7 @@ namespace x64 {
 
     template<typename I, typename Pcmpgt>
     static u128 pcmpgt(u128 dst, u128 src, Pcmpgt pcmpgtFunc) {
-#ifdef __gcc__
+#if GCC_COMPILER
         u128 virtualRes = pcmpgtFunc(dst, src);
         (void)virtualRes;
 
@@ -1707,7 +1713,7 @@ namespace x64 {
     u128 CheckedCpuImpl::pcmpgtq(u128 dst, u128 src) { return pcmpgt<i64>(dst, src, &CpuImpl::pcmpgtq); }
 
     u16 CheckedCpuImpl::pmovmskb(u128 src) {
-#ifdef __gcc__
+#if GCC_COMPILER
         u16 virtualRes = CpuImpl::pmovmskb(src);
         (void)virtualRes;
 
@@ -1723,7 +1729,7 @@ namespace x64 {
 
     template<typename U, typename Padd>
     u128 padd(u128 dst, u128 src, Padd paddFunc) {
-#ifdef __gcc__
+#if GCC_COMPILER
         u128 virtualRes = paddFunc(dst, src);
         (void)virtualRes;
 
@@ -1753,7 +1759,7 @@ namespace x64 {
 
     template<typename U, typename Psub>
     u128 psub(u128 dst, u128 src, Psub psubFunc) {
-#ifdef __gcc__
+#if GCC_COMPILER
         u128 virtualRes = psubFunc(dst, src);
         (void)virtualRes;
 
@@ -1782,7 +1788,7 @@ namespace x64 {
     u128 CheckedCpuImpl::psubq(u128 dst, u128 src) { return psub<u64>(dst, src, &CpuImpl::psubq); }
 
     u128 CheckedCpuImpl::pmaxub(u128 dst, u128 src) {
-#ifdef __gcc__
+#if GCC_COMPILER
         u128 virtualRes = CpuImpl::pmaxub(dst, src);
         (void)virtualRes;
 
@@ -1798,7 +1804,7 @@ namespace x64 {
     }
 
     u128 CheckedCpuImpl::pminub(u128 dst, u128 src) {
-#ifdef __gcc__
+#if GCC_COMPILER
         u128 virtualRes = CpuImpl::pminub(dst, src);
         (void)virtualRes;
 
@@ -1814,7 +1820,7 @@ namespace x64 {
     }
 
     void CheckedCpuImpl::ptest(u128 dst, u128 src, Flags* flags) {
-#ifdef __gcc__
+#if GCC_COMPILER
         Flags virtualFlags = *flags;
         CpuImpl::ptest(dst, src, &virtualFlags);
 
@@ -1950,7 +1956,7 @@ namespace x64 {
     }
 
     u128 CheckedCpuImpl::packuswb(u128 dst, u128 src) {
-#ifdef __gcc__
+#if GCC_COMPILER
         u128 virtualRes = CpuImpl::packuswb(dst, src);
         (void)virtualRes;
 
@@ -1966,7 +1972,7 @@ namespace x64 {
     }
 
     u128 CheckedCpuImpl::packusdw(u128 dst, u128 src) {
-#ifdef __gcc__
+#if GCC_COMPILER
         u128 virtualRes = CpuImpl::packusdw(dst, src);
         (void)virtualRes;
 
@@ -1982,7 +1988,7 @@ namespace x64 {
     }
 
     u128 CheckedCpuImpl::packsswb(u128 dst, u128 src) {
-#ifdef __gcc__
+#if GCC_COMPILER
         u128 virtualRes = CpuImpl::packsswb(dst, src);
         (void)virtualRes;
 
@@ -1998,7 +2004,7 @@ namespace x64 {
     }
 
     u128 CheckedCpuImpl::packssdw(u128 dst, u128 src) {
-#ifdef __gcc__
+#if GCC_COMPILER
         u128 virtualRes = CpuImpl::packssdw(dst, src);
         (void)virtualRes;
 

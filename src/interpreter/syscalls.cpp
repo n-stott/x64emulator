@@ -355,7 +355,7 @@ namespace x64 {
         ErrnoOrBuffer sockname = Host::getsockname(sockfd, buffersize);
         if(vm_->logSyscalls()) {
             fmt::print("Sys::getsockname(sockfd={}, addr={:#x}, addrlen={:#x}) = {}",
-                        sockfd, addr.address(), addrlen, sockname.errorOr(0));
+                        sockfd, addr.address(), addrlen.address(), sockname.errorOr(0));
             sockname.errorOrWith<int>([&](const auto& buffer) {
                 fmt::print("{}\n", (const char*)buffer.data());
                 return 0;
@@ -373,7 +373,7 @@ namespace x64 {
         ErrnoOrBuffer peername = Host::getpeername(sockfd, buffersize);
         if(vm_->logSyscalls()) {
             fmt::print("Sys::getpeername(sockfd={}, addr={:#x}, addrlen={:#x}) = {}",
-                        sockfd, addr.address(), addrlen, peername.errorOr(0));
+                        sockfd, addr.address(), addrlen.address(), peername.errorOr(0));
             peername.errorOrWith<int>([&](const auto& buffer) {
                 fmt::print("{}\n", (const char*)buffer.data());
                 return 0;
@@ -572,7 +572,7 @@ namespace x64 {
         ErrnoOr<std::pair<Buffer, Buffer>> ret = Host::recvfrom(Host::FD{sockfd}, len, flags, requireSrcAddress);
         if(vm_->logSyscalls()) {
             fmt::print("Sys::recvfrom(sockfd={}, buf={:#x}, len={}, flags={}, src_addr={:#x}, addrlen={:#x}) = {}",
-                                      sockfd, buf.address(), len, flags, src_addr.address(), addrlen,
+                                      sockfd, buf.address(), len, flags, src_addr.address(), addrlen.address(),
                                       ret.errorOrWith<ssize_t>([](const auto& buffers) {
                 return (ssize_t)buffers.first.size();
             }));

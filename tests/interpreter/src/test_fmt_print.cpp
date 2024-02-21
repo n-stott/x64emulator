@@ -74,7 +74,7 @@ void testC2() {
 }
 
 int testD1() {
-    int x = fmt::v8::detail::count_digits(10u);
+    int x = fmt::v10::detail::count_digits(10u);
     return x;
 }
 
