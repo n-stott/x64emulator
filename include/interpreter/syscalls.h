@@ -168,6 +168,8 @@ namespace x64 {
         int uname(Ptr buf);
         // 0x48
         int fcntl(int fd, int cmd, int arg);
+        // 0x4a
+        int fsync(int fd);
         // 0x4f
         Ptr getcwd(Ptr buf, size_t size);
         // 0x50

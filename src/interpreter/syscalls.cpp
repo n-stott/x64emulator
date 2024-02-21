@@ -54,6 +54,7 @@ namespace x64 {
             case 0x34: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::getpeername, regs));
             case 0x3f: return vm_->set(R64::RAX, invoke_syscall_1(&Sys::uname, regs));
             case 0x48: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::fcntl, regs));
+            case 0x4a: return vm_->set(R64::RAX, invoke_syscall_1(&Sys::fsync, regs));
             case 0x4f: return vm_->set(R64::RAX, invoke_syscall_2(&Sys::getcwd, regs));
             case 0x50: return vm_->set(R64::RAX, invoke_syscall_1(&Sys::chdir, regs));
             case 0x53: return vm_->set(R64::RAX, invoke_syscall_2(&Sys::mkdir, regs));
@@ -401,6 +402,11 @@ namespace x64 {
         int ret = Host::fcntl(Host::FD{fd}, cmd, arg);
         if(vm_->logSyscalls()) fmt::print("Sys::fcntl(fd={}, cmd={}, arg={}) = {}\n", fd, Host::fcntlName(cmd), arg, ret);
         return ret;
+    }
+
+    int Sys::fsync(int fd) {
+        if(vm_->logSyscalls()) fmt::print("Sys::fsync(fd={}) = {}\n", fd, -EINVAL);
+        return -EINVAL;
     }
 
     Ptr Sys::getcwd(Ptr buf, size_t size) {
