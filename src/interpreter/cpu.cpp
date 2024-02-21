@@ -1959,7 +1959,7 @@ namespace x64 {
     }
 
     void Cpu::exec(const Cpuid&) {
-        Host::CPUID cpuid = Host::cpuid(get(R32::EAX));
+        Host::CPUID cpuid = Host::cpuid(get(R32::EAX), get(R32::ECX));
         set(R32::EAX, cpuid.a);
         set(R32::EBX, cpuid.b);
         set(R32::ECX, cpuid.c);

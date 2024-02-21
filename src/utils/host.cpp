@@ -71,15 +71,25 @@ f80 Host::round(f80 val) {
     return f80::fromLongDouble(x);
 }
 
-Host::CPUID Host::cpuid(u32 a) {
+Host::CPUID Host::cpuid(u32 a, u32 c) {
     CPUID s;
-    asm volatile("cpuid" : "=a" (s.a), "=b" (s.b), "=c" (s.c), "=d" (s.d) : "a" (a) : "cc");
+    s.a = a;
+    s.c = c;
+    s.b = s.d = 0;
+    u64 savedRbx = 0;
+    asm volatile("xchgq  %%rbx, %0" : "+D"(savedRbx));
+    asm volatile("cpuid" : "+a"(s.a), "=b"(s.b), "+c"(s.c), "=d"(s.d));
+    asm volatile("xchgq  %%rbx, %0" : "+D"(savedRbx));
     if(a == 1) {
+        // Pretend that we run on cpu 0
+        s.b = s.b & 0x00FFFFFF;
         // Pretend that the cpu does not know
         u32 mask = (u32)(1 << 0  // SSE3
                        | 1 << 9  // SSE3 extension
                        | 1 << 19 // SSE4.1
                        | 1 << 20 // SSE4.2
+                       | 1 << 26 // xsave
+                       | 1 << 27 // xsave by os
                        | 1 << 28 // AVX
                        | 1 << 30 // RDRAND
                        );

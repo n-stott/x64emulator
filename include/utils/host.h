@@ -78,7 +78,7 @@ public:
     struct CPUID {
         u32 a, b, c, d;
     };
-    static CPUID cpuid(u32 a);
+    static CPUID cpuid(u32 a, u32 c);
 
     struct XGETBV {
         u32 a, d;
