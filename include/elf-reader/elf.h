@@ -1,7 +1,7 @@
-#ifndef ELF_ELF_H
-#define ELF_ELF_H
+#ifndef ELF_H
+#define ELF_H
 
-#include "enums.h"
+#include "elf-reader/enums.h"
 #include <cassert>
 #include <cstddef>
 #include <string>

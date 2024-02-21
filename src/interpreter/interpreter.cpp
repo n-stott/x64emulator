@@ -4,12 +4,11 @@
 #include "interpreter/auxiliaryvector.h"
 #include "utils/host.h"
 #include "disassembler/capstonewrapper.h"
-#include "elf-reader.h"
+#include "elf-reader/elf-reader.h"
 #include <fmt/core.h>
 #include <algorithm>
 #include <cassert>
 #include <numeric>
-#include <sys/auxv.h>
 #include <signal.h>
 
 namespace x64 {

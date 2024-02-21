@@ -1,10 +1,10 @@
-#ifndef ELF_ELFREADER_H
-#define ELF_ELFREADER_H
+#ifndef ELFREADER_H
+#define ELFREADER_H
 
-#include "enums.h"
-#include "elf.h"
-#include "elf32.h"
-#include "elf64.h"
+#include "elf-reader/enums.h"
+#include "elf-reader/elf.h"
+#include "elf-reader/elf32.h"
+#include "elf-reader/elf64.h"
 #include <cassert>
 #include <cstring>
 #include <iterator>

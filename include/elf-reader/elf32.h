@@ -1,8 +1,8 @@
-#ifndef ELF_ELF32_H
-#define ELF_ELF32_H
+#ifndef ELF32_H
+#define ELF32_H
 
-#include "enums.h"
-#include "elf.h"
+#include "elf-reader/enums.h"
+#include "elf-reader/elf.h"
 #include <functional>
 #include <optional>
 

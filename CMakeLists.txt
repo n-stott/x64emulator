@@ -4,6 +4,16 @@ set(CMAKE_CXX_STANDARD 17)
 
 enable_testing()
 
+add_executable(elf-reader
+    src/elf-reader/main.cpp
+)
+target_include_directories(elf-reader PUBLIC external)
+target_compile_options(elf-reader PUBLIC -Wall -Wextra -Wpedantic -pedantic -Wconversion -Werror)
+target_compile_options(elf-reader PUBLIC -g)
+target_compile_options(elf-reader PUBLIC -DFMT_HEADER_ONLY)
+target_include_directories(elf-reader PUBLIC include)
+
+
 add_library(x64 STATIC
     src/interpreter/cpuimpl.cpp
     src/interpreter/x87.cpp
@@ -40,6 +50,7 @@ target_include_directories(emulator PUBLIC include)
 target_include_directories(emulator PUBLIC external)
 target_include_directories(emulator PUBLIC external/elf-reader/src)
 target_link_libraries(emulator PUBLIC -lcapstone)
+
 
 add_executable(interpreter
     src/main.cpp

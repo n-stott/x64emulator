@@ -5,7 +5,7 @@
 #include "instructions/instructionwrapper.h"
 #include "instructions/instructionutils.h"
 #include "disassembler/capstonewrapper.h"
-#include "elf-reader.h"
+#include "elf-reader/elf-reader.h"
 
 namespace x64 {
 

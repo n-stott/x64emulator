@@ -1,7 +1,7 @@
-#ifndef ELF_ENUMS_H
-#define ELF_ENUMS_H
+#ifndef ELFENUMS_H
+#define ELFENUMS_H
 
-#include "fmt/format.h"
+#include <fmt/format.h>
 #include <string>
 
 using u8 = unsigned char;

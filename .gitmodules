@@ -1,3 +1,0 @@
-[submodule "external/elf-reader"]
-  path=external/elf-reader
-  url=https://github.com/n-stott/elf-reader.git

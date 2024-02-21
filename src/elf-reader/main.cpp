@@ -1,4 +1,4 @@
-#include "elf-reader.h"
+#include "elf-reader/elf-reader.h"
 #include <vector>
 #include <fmt/core.h>
 

@@ -2,7 +2,7 @@
 #define SYMBOLPROVIDER_H
 
 #include "utils/utils.h"
-#include "elf-reader/src/enums.h"
+#include "elf-reader/enums.h"
 #include <deque>
 #include <optional>
 #include <string>
