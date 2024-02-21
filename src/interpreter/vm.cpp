@@ -104,9 +104,9 @@ namespace x64 {
                                                             (cpu_.flags_.overflow ? 'O' : ' '), 
                                                             (cpu_.flags_.sign ? 'S' : ' '),
                                                             (cpu_.flags_.parity ? 'P' : ' '));
-        std::string registerDump = fmt::format( "rip={:0000008x} "
-                                                "rax={:0000008x} rbx={:0000008x} rcx={:0000008x} rdx={:0000008x} "
-                                                "rsi={:0000008x} rdi={:0000008x} rbp={:0000008x} rsp={:0000008x} ",
+        std::string registerDump = fmt::format( "rip={:0>8x} "
+                                                "rax={:0>8x} rbx={:0>8x} rcx={:0>8x} rdx={:0>8x} "
+                                                "rsi={:0>8x} rdi={:0>8x} rbp={:0>8x} rsp={:0>8x} ",
                                                 cpu_.regs_.rip(),
                                                 cpu_.regs_.get(R64::RAX), cpu_.regs_.get(R64::RBX), cpu_.regs_.get(R64::RCX), cpu_.regs_.get(R64::RDX),
                                                 cpu_.regs_.get(R64::RSI), cpu_.regs_.get(R64::RDI), cpu_.regs_.get(R64::RBP), cpu_.regs_.get(R64::RSP));

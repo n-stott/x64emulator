@@ -30,15 +30,25 @@ namespace x64 {
         return flags;
     }
 
+    static u64 readRflags() {
+        u64 rflags;
+        asm volatile("pushf;"
+                     "pop %0" : "=r"(rflags) :: "cc");
+        return rflags;
+    }
+
+    static void writeRflags(u64 rflags) {
+        asm volatile("push %0;"
+                     "popf;" :: "m"(rflags) : "cc");
+    }
+
     static u64 toRflags(const Flags& flags) {
         static constexpr u64 CARRY_MASK = 0x1;
         static constexpr u64 PARITY_MASK = 0x4;
         static constexpr u64 ZERO_MASK = 0x40;
         static constexpr u64 SIGN_MASK = 0x80;
         static constexpr u64 OVERFLOW_MASK = 0x800;
-        u64 rflags;
-        asm volatile("pushf");
-        asm volatile("pop %0" : "=r"(rflags));
+        u64 rflags = readRflags();
         rflags = (rflags & ~CARRY_MASK) | (flags.carry ? CARRY_MASK : 0);
         rflags = (rflags & ~PARITY_MASK) | (flags.parity ? PARITY_MASK : 0);
         rflags = (rflags & ~ZERO_MASK) | (flags.zero ? ZERO_MASK : 0);
@@ -49,22 +59,16 @@ namespace x64 {
 }
 
 #define GET_RFLAGS(flags_ptr)                               \
-            u64 TMP_GET_RFLAGS;                             \
-            asm volatile("pushf");                          \
-            asm volatile("pop %0" : "=m"(TMP_GET_RFLAGS));  \
-            *flags_ptr = fromRflags(TMP_GET_RFLAGS);
+            *flags_ptr = fromRflags(readRflags());
 
-#define SET_RFLAGS(flags)                                    \
-            u64 TMP_SET_RFLAGS = toRflags(flags);           \
-            asm volatile("push %0" :: "m"(TMP_SET_RFLAGS)); \
-            asm volatile("popf");
+#define SET_RFLAGS(flags_ref)                               \
+            writeRflags(toRflags(flags_ref));
 
 #define BEGIN_RFLAGS_SCOPE            \
-            Flags SavedRFlags;        \
-            GET_RFLAGS(&SavedRFlags); {
+            u64 SavedRFlags = readRflags(); {
 
 #define END_RFLAGS_SCOPE              \
-            } SET_RFLAGS(SavedRFlags);
+            } writeRflags(SavedRFlags);
 
 namespace x64 {
 

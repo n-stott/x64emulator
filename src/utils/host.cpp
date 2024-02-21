@@ -73,7 +73,7 @@ f80 Host::round(f80 val) {
 
 Host::CPUID Host::cpuid(u32 a) {
     CPUID s;
-    asm volatile("cpuid" : "=a" (s.a), "=b" (s.b), "=c" (s.c), "=d" (s.d) : "0" (a));
+    asm volatile("cpuid" : "=a" (s.a), "=b" (s.b), "=c" (s.c), "=d" (s.d) : "a" (a) : "cc");
     if(a == 1) {
         // Pretend that the cpu does not know
         u32 mask = (u32)(1 << 0  // SSE3
