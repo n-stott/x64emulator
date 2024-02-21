@@ -65,7 +65,7 @@ namespace x64 {
                 while(!stop_) {
                     verify(!signal_interrupt);
                     const X64Instruction& instruction = fetchInstruction();
-                    if(logInstructions()) log(ticks, instruction);
+                    log(ticks, instruction);
                     ++ticks;
                     cpu_.exec(instruction);
                 }
