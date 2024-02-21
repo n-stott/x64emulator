@@ -57,6 +57,7 @@ namespace x64 {
             case 0x4f: return vm_->set(R64::RAX, invoke_syscall_2(&Sys::getcwd, regs));
             case 0x50: return vm_->set(R64::RAX, invoke_syscall_1(&Sys::chdir, regs));
             case 0x53: return vm_->set(R64::RAX, invoke_syscall_2(&Sys::mkdir, regs));
+            case 0x57: return vm_->set(R64::RAX, invoke_syscall_1(&Sys::unlink, regs));
             case 0x59: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::readlink, regs));
             case 0x60: return vm_->set(R64::RAX, invoke_syscall_2(&Sys::gettimeofday, regs));
             case 0x63: return vm_->set(R64::RAX, invoke_syscall_1(&Sys::sysinfo, regs));
@@ -425,6 +426,18 @@ namespace x64 {
     }
 
     int Sys::mkdir([[maybe_unused]] Ptr pathname, [[maybe_unused]] mode_t mode) {
+        if(vm_->logSyscalls()) {
+            auto path = mmu_->readString(pathname);
+            fmt::print("Sys::mkdir(path={}, mode={}) = {}\n", path, mode, -ENOTSUP);
+        }
+        return -ENOTSUP;
+    }
+
+    int Sys::unlink([[maybe_unused]] Ptr pathname) {
+        if(vm_->logSyscalls()) {
+            auto path = mmu_->readString(pathname);
+            fmt::print("Sys::unlink(path={}) = {}\n", path, -ENOTSUP);
+        }
         return -ENOTSUP;
     }
 

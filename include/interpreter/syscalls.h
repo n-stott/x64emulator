@@ -174,6 +174,8 @@ namespace x64 {
         int chdir(Ptr path);
         // 0x53
         int mkdir(Ptr pathname, mode_t mode);
+        // 0x57
+        int unlink(Ptr pathname);
         // 0x59
         ssize_t readlink(Ptr pathname, Ptr buf, size_t bufsiz);
         // 0x60
