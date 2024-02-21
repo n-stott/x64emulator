@@ -58,52 +58,52 @@ namespace x64 {
 
         template<typename Func>
         u64 invoke_syscall_1(Func&& func, const RegisterDump& regs) {
-            using arg0_t = typename function_traits_impl<Func>::arg<0>::type;
+            using arg0_t = typename function_traits_impl<Func>::template arg<0>::type;
             return get_value_or_address((this->*func)((arg0_t)regs.args[0]));
         }
 
         template<typename Func>
         u64 invoke_syscall_2(Func&& func, const RegisterDump& regs) {
-            using arg0_t = typename function_traits_impl<Func>::arg<0>::type;
-            using arg1_t = typename function_traits_impl<Func>::arg<1>::type;
+            using arg0_t = typename function_traits_impl<Func>::template arg<0>::type;
+            using arg1_t = typename function_traits_impl<Func>::template arg<1>::type;
             return get_value_or_address((this->*func)((arg0_t)regs.args[0], (arg1_t)regs.args[1]));
         }
 
         template<typename Func>
         u64 invoke_syscall_3(Func&& func, const RegisterDump& regs) {
-            using arg0_t = typename function_traits_impl<Func>::arg<0>::type;
-            using arg1_t = typename function_traits_impl<Func>::arg<1>::type;
-            using arg2_t = typename function_traits_impl<Func>::arg<2>::type;
+            using arg0_t = typename function_traits_impl<Func>::template arg<0>::type;
+            using arg1_t = typename function_traits_impl<Func>::template arg<1>::type;
+            using arg2_t = typename function_traits_impl<Func>::template arg<2>::type;
             return get_value_or_address((this->*func)((arg0_t)regs.args[0], (arg1_t)regs.args[1], (arg2_t)regs.args[2]));
         }
 
         template<typename Func>
         u64 invoke_syscall_4(Func&& func, const RegisterDump& regs) {
-            using arg0_t = typename function_traits_impl<Func>::arg<0>::type;
-            using arg1_t = typename function_traits_impl<Func>::arg<1>::type;
-            using arg2_t = typename function_traits_impl<Func>::arg<2>::type;
-            using arg3_t = typename function_traits_impl<Func>::arg<3>::type;
+            using arg0_t = typename function_traits_impl<Func>::template arg<0>::type;
+            using arg1_t = typename function_traits_impl<Func>::template arg<1>::type;
+            using arg2_t = typename function_traits_impl<Func>::template arg<2>::type;
+            using arg3_t = typename function_traits_impl<Func>::template arg<3>::type;
             return get_value_or_address((this->*func)((arg0_t)regs.args[0], (arg1_t)regs.args[1], (arg2_t)regs.args[2], (arg3_t)regs.args[3]));
         }
 
         template<typename Func>
         u64 invoke_syscall_5(Func&& func, const RegisterDump& regs) {
-            using arg0_t = typename function_traits_impl<Func>::arg<0>::type;
-            using arg1_t = typename function_traits_impl<Func>::arg<1>::type;
-            using arg2_t = typename function_traits_impl<Func>::arg<2>::type;
-            using arg3_t = typename function_traits_impl<Func>::arg<3>::type;
-            using arg4_t = typename function_traits_impl<Func>::arg<4>::type;
+            using arg0_t = typename function_traits_impl<Func>::template arg<0>::type;
+            using arg1_t = typename function_traits_impl<Func>::template arg<1>::type;
+            using arg2_t = typename function_traits_impl<Func>::template arg<2>::type;
+            using arg3_t = typename function_traits_impl<Func>::template arg<3>::type;
+            using arg4_t = typename function_traits_impl<Func>::template arg<4>::type;
             return get_value_or_address((this->*func)((arg0_t)regs.args[0], (arg1_t)regs.args[1], (arg2_t)regs.args[2], (arg3_t)regs.args[3], (arg4_t)regs.args[4]));
         }
 
         template<typename Func>
         u64 invoke_syscall_6(Func&& func, const RegisterDump& regs) {
-            using arg0_t = typename function_traits_impl<Func>::arg<0>::type;
-            using arg1_t = typename function_traits_impl<Func>::arg<1>::type;
-            using arg2_t = typename function_traits_impl<Func>::arg<2>::type;
-            using arg3_t = typename function_traits_impl<Func>::arg<3>::type;
-            using arg4_t = typename function_traits_impl<Func>::arg<4>::type;
-            using arg5_t = typename function_traits_impl<Func>::arg<5>::type;
+            using arg0_t = typename function_traits_impl<Func>::template arg<0>::type;
+            using arg1_t = typename function_traits_impl<Func>::template arg<1>::type;
+            using arg2_t = typename function_traits_impl<Func>::template arg<2>::type;
+            using arg3_t = typename function_traits_impl<Func>::template arg<3>::type;
+            using arg4_t = typename function_traits_impl<Func>::template arg<4>::type;
+            using arg5_t = typename function_traits_impl<Func>::template arg<5>::type;
             return get_value_or_address((this->*func)((arg0_t)regs.args[0], (arg1_t)regs.args[1], (arg2_t)regs.args[2], (arg3_t)regs.args[3], (arg4_t)regs.args[4], (arg5_t)regs.args[5]));
         }
 

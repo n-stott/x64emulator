@@ -300,7 +300,7 @@ ErrnoOrBuffer Host::getsockname(int sockfd, u32 buffersize) {
     buffer.resize(buffersize, 0x0);
     int ret = ::getsockname(sockfd, (sockaddr*)buffer.data(), &buffersize);
     if(ret < 0) return ErrnoOrBuffer(-errno);
-    buffer.resize(buffersize);
+    buffer.resize((size_t)buffersize);
     return ErrnoOrBuffer(Buffer{std::move(buffer)});
 }
 
@@ -310,7 +310,7 @@ ErrnoOrBuffer Host::getpeername(int sockfd, u32 buffersize) {
     buffer.resize(buffersize, 0x0);
     int ret = ::getpeername(sockfd, (sockaddr*)buffer.data(), &buffersize);
     if(ret < 0) return ErrnoOrBuffer(-errno);
-    buffer.resize(buffersize);
+    buffer.resize((size_t)buffersize);
     return ErrnoOrBuffer(Buffer{std::move(buffer)});
 }
 
@@ -323,7 +323,7 @@ ErrnoOr<std::pair<Buffer, Buffer>> Host::recvfrom(FD sockfd, size_t len, int fla
     buffer.resize(len, 0);
     ssize_t ret = ::recvfrom(sockfd.fd, buffer.data(), len, flags, nullptr, nullptr);
     if(ret < 0) return ErrnoOr<std::pair<Buffer, Buffer>>(-errno);
-    buffer.resize(ret);
+    buffer.resize((size_t)ret);
     return ErrnoOr<std::pair<Buffer, Buffer>>(std::make_pair(Buffer{std::move(buffer)}, Buffer{}));
 }
 
@@ -440,19 +440,19 @@ ErrnoOrBuffer Host::sysinfo() {
 }
 
 int Host::getuid() {
-    return ::getuid();
+    return (int)::getuid();
 }
 
 int Host::getgid() {
-    return ::getgid();
+    return (int)::getgid();
 }
 
 int Host::geteuid() {
-    return ::geteuid();
+    return (int)::geteuid();
 }
 
 int Host::getegid() {
-    return ::getegid();
+    return (int)::getegid();
 }
 
 ErrnoOrBuffer Host::readlink(const std::string& path, size_t count) {
@@ -460,7 +460,7 @@ ErrnoOrBuffer Host::readlink(const std::string& path, size_t count) {
     buffer.resize(count, 0x0);
     ssize_t ret = ::readlink(path.c_str(), (char*)buffer.data(), buffer.size());
     if(ret < 0) return ErrnoOrBuffer(-errno);
-    buffer.resize(ret);
+    buffer.resize((size_t)ret);
     return ErrnoOrBuffer(Buffer{std::move(buffer)});
 }
 
@@ -487,7 +487,7 @@ ErrnoOrBuffer Host::getdents64(FD fd, size_t count) {
     buf.resize(count, 0x0);
     ssize_t nbytes = ::getdents64(fd.fd, buf.data(), buf.size());
     if(nbytes < 0) return ErrnoOrBuffer(-errno);
-    buf.resize(nbytes);
+    buf.resize((size_t)nbytes);
     return ErrnoOrBuffer(Buffer{std::move(buf)});
 }
 

@@ -17,8 +17,8 @@ namespace x64 {
             *it++ = ' ';
         }
         if(it != name.end()) {
-            size_t remainingLength = std::distance(it, name.end());
-            std::copy(operands.begin(), operands.begin()+remainingLength, it);
+            auto remainingLength = std::distance(it, name.end());
+            std::copy(operands.begin(), std::next(operands.begin(), remainingLength), it);
         }
         return X64Instruction::make<Insn::UNKNOWN>(insn.address, insn.size, name);
     }

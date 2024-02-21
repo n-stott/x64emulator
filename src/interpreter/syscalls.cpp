@@ -271,7 +271,7 @@ namespace x64 {
         std::vector<u8> iovecs = mmu_->readFromMmu<u8>(iov, ((size_t)iovcnt) * Host::iovecRequiredBufferSize());
         Buffer iovecBuffer(std::move(iovecs));
         std::vector<Buffer> buffers;
-        for(int i = 0; i < iovcnt; ++i) {
+        for(size_t i = 0; i < (size_t)iovcnt; ++i) {
             Ptr base{Host::iovecBase(iovecBuffer, i)};
             size_t len = Host::iovecLen(iovecBuffer, i);
             std::vector<u8> data;
@@ -574,7 +574,7 @@ namespace x64 {
             fmt::print("Sys::recvfrom(sockfd={}, buf={:#x}, len={}, flags={}, src_addr={:#x}, addrlen={:#x}) = {}",
                                       sockfd, buf.address(), len, flags, src_addr.address(), addrlen,
                                       ret.errorOrWith<ssize_t>([](const auto& buffers) {
-                return buffers.first.size();
+                return (ssize_t)buffers.first.size();
             }));
         }
         return ret.errorOrWith<ssize_t>([&](const auto& buffers) {
@@ -583,7 +583,7 @@ namespace x64 {
                 mmu_->copyToMmu(src_addr, buffers.second.data(), buffers.second.size());
                 mmu_->write32(addrlen, (u32)buffers.second.size());
             }
-            return buffers.first.size();
+            return (ssize_t)buffers.first.size();
         });
     }
 
