@@ -653,32 +653,16 @@ namespace x64 {
         set(R64::RDX, res.second);
     }
 
-    std::pair<u32, u32> Impl::idiv32(u32 dividendUpper, u32 dividendLower, u32 divisor) {
-        verify(divisor != 0);
-        u64 dividend = ((u64)dividendUpper) << 32 | (u64)dividendLower;
-        i64 tmp = ((i64)dividend) / ((i32)divisor);
-        verify(tmp >> 32 == 0);
-        return std::make_pair(tmp, ((i64)dividend) % ((i32)divisor));
-    }
-
-    std::pair<u64, u64> Impl::idiv64(u64 dividendUpper, u64 dividendLower, u64 divisor) {
-        verify(divisor != 0);
-        verify(dividendUpper == 0, "Idiv with nonzero upper dividend not supported");
-        u64 dividend = dividendLower;
-        i64 tmp = ((i64)dividend) / ((i64)divisor);
-        return std::make_pair(tmp, ((i64)dividend) % ((i64)divisor));
-    }
-
     void Cpu::exec(const Idiv<RM32>& ins) {
-        auto res = Impl::idiv32(get(R32::EDX), get(R32::EAX), get(ins.src));
-        set(R32::EAX, res.first);
-        set(R32::EDX, res.second);
+        auto res = Host::idiv32(get(R32::EDX), get(R32::EAX), get(ins.src));
+        set(R32::EAX, res.quotient);
+        set(R32::EDX, res.remainder);
     }
 
     void Cpu::exec(const Idiv<RM64>& ins) {
-        auto res = Impl::idiv64(get(R64::RDX), get(R64::RAX), get(ins.src));
-        set(R64::RAX, res.first);
-        set(R64::RDX, res.second);
+        auto res = Host::idiv64(get(R64::RDX), get(R64::RAX), get(ins.src));
+        set(R64::RAX, res.quotient);
+        set(R64::RDX, res.remainder);
     }
 
     void Cpu::exec(const And<RM8, RM8>& ins) { set(ins.dst, Impl::and8(get(ins.dst), get(ins.src), &flags_)); }

@@ -74,6 +74,15 @@ public:
     // math
     static f80 round(f80);
 
+    template<typename U>
+    struct IdivResult {
+        U quotient;
+        U remainder;
+    };
+
+    static IdivResult<u32> idiv32(u32 upperDividend, u32 lowerDividend, u32 divisor);
+    static IdivResult<u64> idiv64(u64 upperDividend, u64 lowerDividend, u64 divisor);
+
     // cpu
     struct CPUID {
         u32 a, b, c, d;

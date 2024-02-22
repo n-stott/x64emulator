@@ -72,6 +72,32 @@ f80 Host::round(f80 val) {
     return f80::fromLongDouble(x);
 }
 
+Host::IdivResult<u32> Host::idiv32(u32 upperDividend, u32 lowerDividend, u32 divisor) {
+    u32 quotient;
+    u32 remainder;
+    asm volatile("mov %2, %%edx\n"
+                 "mov %3, %%eax\n"
+                 "idiv %4\n"
+                 "mov %%edx, %0\n"
+                 "mov %%eax, %1\n" : "=r"(remainder), "=r"(quotient)
+                                 : "r"(upperDividend), "r"(lowerDividend), "r"(divisor)
+                                 : "eax", "edx");
+    return IdivResult<u32>{quotient, remainder};
+}
+
+Host::IdivResult<u64> Host::idiv64(u64 upperDividend, u64 lowerDividend, u64 divisor) {
+    u64 quotient;
+    u64 remainder;
+    asm volatile("mov %2, %%rdx\n"
+                 "mov %3, %%rax\n"
+                 "idiv %4\n"
+                 "mov %%rdx, %0\n"
+                 "mov %%rax, %1\n" : "=r"(remainder), "=r"(quotient)
+                                 : "r"(upperDividend), "r"(lowerDividend), "r"(divisor)
+                                 : "rax", "rdx");
+    return IdivResult<u64>{quotient, remainder};
+}
+
 Host::CPUID Host::cpuid(u32 a, u32 c) {
     CPUID s;
     s.a = a;
