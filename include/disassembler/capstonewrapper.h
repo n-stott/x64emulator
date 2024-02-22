@@ -159,6 +159,8 @@ namespace x64 {
         static X64Instruction makeMulsd(const cs_insn& insn);
         static X64Instruction makeDivss(const cs_insn& insn);
         static X64Instruction makeDivsd(const cs_insn& insn);
+        static X64Instruction makeSqrtss(const cs_insn& insn);
+        static X64Instruction makeSqrtsd(const cs_insn& insn);
 
         static X64Instruction makeComiss(const cs_insn& insn);
         static X64Instruction makeComisd(const cs_insn& insn);

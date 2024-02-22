@@ -459,6 +459,10 @@ namespace x64 {
             case Insn::DIVSS_RSSE_M32: return exec(Divss<RSSE, M32>{insn.op0<RSSE>(), insn.op1<M32>()});
             case Insn::DIVSD_RSSE_RSSE: return exec(Divsd<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
             case Insn::DIVSD_RSSE_M64: return exec(Divsd<RSSE, M64>{insn.op0<RSSE>(), insn.op1<M64>()});
+            case Insn::SQRTSS_RSSE_RSSE: return exec(Sqrtss<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
+            case Insn::SQRTSS_RSSE_M32: return exec(Sqrtss<RSSE, M32>{insn.op0<RSSE>(), insn.op1<M32>()});
+            case Insn::SQRTSD_RSSE_RSSE: return exec(Sqrtsd<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
+            case Insn::SQRTSD_RSSE_M64: return exec(Sqrtsd<RSSE, M64>{insn.op0<RSSE>(), insn.op1<M64>()});
             case Insn::COMISS_RSSE_RSSE: return exec(Comiss<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
             case Insn::COMISS_RSSE_M32: return exec(Comiss<RSSE, M32>{insn.op0<RSSE>(), insn.op1<M32>()});
             case Insn::COMISD_RSSE_RSSE: return exec(Comisd<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
@@ -1554,6 +1558,30 @@ namespace x64 {
     void Cpu::exec(const Divsd<RSSE, M64>& ins) {
         verify(roundingMode() == ROUNDING::NEAREST);
         u128 res = Impl::divsd(get(ins.dst), zeroExtend<Xmm, u64>(get(resolve(ins.src))));
+        set(ins.dst, res);
+    }
+
+    void Cpu::exec(const Sqrtss<RSSE, RSSE>& ins) {
+        verify(roundingMode() == ROUNDING::NEAREST);
+        u128 res = Impl::sqrtss(get(ins.dst), get(ins.src));
+        set(ins.dst, res);
+    }
+
+    void Cpu::exec(const Sqrtss<RSSE, M32>& ins) {
+        verify(roundingMode() == ROUNDING::NEAREST);
+        u128 res = Impl::sqrtss(get(ins.dst), zeroExtend<Xmm, u32>(get(resolve(ins.src))));
+        set(ins.dst, res);
+    }
+
+    void Cpu::exec(const Sqrtsd<RSSE, RSSE>& ins) {
+        verify(roundingMode() == ROUNDING::NEAREST);
+        u128 res = Impl::sqrtsd(get(ins.dst), get(ins.src));
+        set(ins.dst, res);
+    }
+
+    void Cpu::exec(const Sqrtsd<RSSE, M64>& ins) {
+        verify(roundingMode() == ROUNDING::NEAREST);
+        u128 res = Impl::sqrtsd(get(ins.dst), zeroExtend<Xmm, u64>(get(resolve(ins.src))));
         set(ins.dst, res);
     }
 

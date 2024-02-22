@@ -668,6 +668,20 @@ namespace x64 {
     };
 
     template<typename Dst, typename Src>
+    struct Sqrtss {
+        Dst dst;
+        Src src;
+        TAG_SSE;
+    };
+
+    template<typename Dst, typename Src>
+    struct Sqrtsd {
+        Dst dst;
+        Src src;
+        TAG_SSE;
+    };
+
+    template<typename Dst, typename Src>
     struct Cmpsd {
         Dst dst;
         Src src;

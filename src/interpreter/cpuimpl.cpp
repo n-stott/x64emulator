@@ -1,5 +1,6 @@
 #include "interpreter/cpuimpl.h"
 #include <cassert>
+#include <cmath>
 #include <cstring>
 #include <limits>
 
@@ -800,6 +801,24 @@ namespace x64 {
         std::memcpy(&d, &dst, sizeof(d));
         std::memcpy(&s, &src, sizeof(s));
         double res = d / s;
+        std::memcpy(&dst, &res, sizeof(res));
+        return dst;
+    }
+
+    u128 CpuImpl::sqrtss(u128 dst, u128 src) {
+        static_assert(sizeof(u32) == sizeof(float));
+        float s;
+        std::memcpy(&s, &src, sizeof(s));
+        float res = std::sqrt(s);
+        std::memcpy(&dst, &res, sizeof(res));
+        return dst;
+    }
+
+    u128 CpuImpl::sqrtsd(u128 dst, u128 src) {
+        static_assert(sizeof(u64) == sizeof(double));
+        double s;
+        std::memcpy(&s, &src, sizeof(s));
+        double res = std::sqrt(s);
         std::memcpy(&dst, &res, sizeof(res));
         return dst;
     }

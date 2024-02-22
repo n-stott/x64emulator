@@ -173,6 +173,8 @@ namespace x64 {
             case X86_INS_MULSD: return makeMulsd(insn);
             case X86_INS_DIVSS: return makeDivss(insn);
             case X86_INS_DIVSD: return makeDivsd(insn);
+            case X86_INS_SQRTSS: return makeSqrtss(insn);
+            case X86_INS_SQRTSD: return makeSqrtsd(insn);
             case X86_INS_COMISS: return makeComiss(insn);
             case X86_INS_COMISD: return makeComisd(insn);
             case X86_INS_UCOMISS: return makeUcomiss(insn);
@@ -2056,6 +2058,32 @@ namespace x64 {
         auto m64src = asMemory64(src);
         if(rssedst && rssesrc) return X64Instruction::make<Insn::DIVSD_RSSE_RSSE>(insn.address, insn.size, rssedst.value(), rssesrc.value());
         if(rssedst && m64src) return X64Instruction::make<Insn::DIVSD_RSSE_M64>(insn.address, insn.size, rssedst.value(), m64src.value());
+        return make_failed(insn);
+    }
+
+    X64Instruction CapstoneWrapper::makeSqrtss(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto rssesrc = asRegister128(src);
+        auto m32src = asMemory32(src);
+        if(rssedst && rssesrc) return X64Instruction::make<Insn::SQRTSS_RSSE_RSSE>(insn.address, insn.size, rssedst.value(), rssesrc.value());
+        if(rssedst && m32src) return X64Instruction::make<Insn::SQRTSS_RSSE_M32>(insn.address, insn.size, rssedst.value(), m32src.value());
+        return make_failed(insn);
+    }
+
+    X64Instruction CapstoneWrapper::makeSqrtsd(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto rssesrc = asRegister128(src);
+        auto m64src = asMemory64(src);
+        if(rssedst && rssesrc) return X64Instruction::make<Insn::SQRTSD_RSSE_RSSE>(insn.address, insn.size, rssedst.value(), rssesrc.value());
+        if(rssedst && m64src) return X64Instruction::make<Insn::SQRTSD_RSSE_M64>(insn.address, insn.size, rssedst.value(), m64src.value());
         return make_failed(insn);
     }
 

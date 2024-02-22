@@ -543,6 +543,11 @@ namespace x64 {
         void exec(const Divsd<RSSE, RSSE>&);
         void exec(const Divsd<RSSE, M64>&);
 
+        void exec(const Sqrtss<RSSE, RSSE>&);
+        void exec(const Sqrtss<RSSE, M32>&);
+        void exec(const Sqrtsd<RSSE, RSSE>&);
+        void exec(const Sqrtsd<RSSE, M64>&);
+
         void exec(const Comiss<RSSE, RSSE>&);
         void exec(const Comiss<RSSE, M32>&);
         void exec(const Comisd<RSSE, RSSE>&);

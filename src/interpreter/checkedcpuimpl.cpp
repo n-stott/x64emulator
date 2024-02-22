@@ -1255,6 +1255,38 @@ namespace x64 {
 #endif
     }
 
+    u128 CheckedCpuImpl::sqrtss(u128 dst, u128 src) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::sqrtss(dst, src);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("sqrtss %1, %0" : "+x"(nativeRes) : "x"(src));
+
+        assert(virtualRes.lo == nativeRes.lo);
+        assert(virtualRes.hi == nativeRes.hi);
+        return nativeRes;
+#else
+        return CpuImpl::sqrtss(dst, src);
+#endif
+    }
+
+    u128 CheckedCpuImpl::sqrtsd(u128 dst, u128 src) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::sqrtsd(dst, src);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("sqrtsd %1, %0" : "+x"(nativeRes) : "x"(src));
+
+        assert(virtualRes.lo == nativeRes.lo);
+        assert(virtualRes.hi == nativeRes.hi);
+        return nativeRes;
+#else
+        return CpuImpl::sqrtsd(dst, src);
+#endif
+    }
+
     u64 CheckedCpuImpl::cmpsd(u64 dst, u64 src, FCond cond) {
 #if GCC_COMPILER
         static_assert(sizeof(u64) == sizeof(double));

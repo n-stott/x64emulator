@@ -637,6 +637,10 @@ namespace utils {
             case Insn::DIVSS_RSSE_M32: return toString<RSSE, M32>("divss");
             case Insn::DIVSD_RSSE_RSSE: return toString<RSSE, RSSE>("divsd");
             case Insn::DIVSD_RSSE_M64: return toString<RSSE, M64>("divsd");
+            case Insn::SQRTSS_RSSE_RSSE: return toString<RSSE, RSSE>("sqrtss");
+            case Insn::SQRTSS_RSSE_M32: return toString<RSSE, M32>("sqrtss");
+            case Insn::SQRTSD_RSSE_RSSE: return toString<RSSE, RSSE>("sqrtsd");
+            case Insn::SQRTSD_RSSE_M64: return toString<RSSE, M64>("sqrtsd");
             case Insn::COMISS_RSSE_RSSE: return toString<RSSE, RSSE>("comiss");
             case Insn::COMISS_RSSE_M32: return toString<RSSE, M32>("comiss");
             case Insn::COMISD_RSSE_RSSE: return toString<RSSE, RSSE>("comisd");
