@@ -6,6 +6,7 @@
 #include <asm/prctl.h>
 #include <asm/termbits.h>
 #include <sys/auxv.h>
+#include <sys/epoll.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <sys/resource.h>
@@ -584,6 +585,12 @@ ErrnoOr<BufferAndReturnValue<int>> Host::poll(const Buffer& buffer, u64 nfds, in
         ret,
     };
     return ErrnoOr<BufferAndReturnValue<int>>(std::move(bufferAndRetVal));
+}
+
+Host::FD Host::epoll_create1(int flags) {
+    int fd = ::epoll_create1(flags);
+    if(fd < 0) return FD{-errno};
+    return FD{fd};
 }
 
 int Host::select(int nfds, fd_set* readfds, fd_set* writefds, fd_set* exceptfds, timeval* timeout) {

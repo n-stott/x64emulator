@@ -87,6 +87,7 @@ namespace x64 {
             case 0x111: return vm_->set(R64::RAX, invoke_syscall_2(&Sys::set_robust_list, regs));
             case 0x112: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::get_robust_list, regs));
             case 0x118: return vm_->set(R64::RAX, invoke_syscall_4(&Sys::utimensat, regs));
+            case 0x123: return vm_->set(R64::RAX, invoke_syscall_1(&Sys::epoll_create1, regs));
             case 0x12e: return vm_->set(R64::RAX, invoke_syscall_4(&Sys::prlimit64, regs));
             case 0x13e: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::getrandom, regs));
             case 0x14c: return vm_->set(R64::RAX, invoke_syscall_5(&Sys::statx, regs));
@@ -719,6 +720,14 @@ namespace x64 {
         if(vm_->logSyscalls()) fmt::print("Sys::utimensat(dirfd={}, pathname={}, times={:#x}, flags={}) = -ENOTSUP\n",
                                                           dirfd, mmu_->readString(pathname), times.address(), flags);
         return -ENOTSUP;
+    }
+
+    int Sys::epoll_create1(int flags) {
+        Host::FD fd = Host::epoll_create1(flags);
+        if(vm_->logSyscalls()) {
+            fmt::print("Sys::epoll_create1(flags={}) = {}\n", flags, fd.fd);
+        }
+        return fd.fd;
     }
 
     int Sys::prlimit64(pid_t pid, int resource, [[maybe_unused]] Ptr new_limit, Ptr old_limit) {
