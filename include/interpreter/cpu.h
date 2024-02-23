@@ -285,6 +285,9 @@ namespace x64 {
         void exec(const Pop<R32>&);
         void exec(const Pop<R64>&);
 
+        void exec(const Pushfq&);
+        void exec(const Popfq&);
+
         void exec(const CallDirect&);
         void exec(const CallIndirect<RM32>&);
         void exec(const CallIndirect<RM64>&);

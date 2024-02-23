@@ -428,6 +428,8 @@ namespace utils {
             case Insn::PUSH_RM64: return toString<RM64>("push");
             case Insn::POP_R32: return toString<R32>("pop");
             case Insn::POP_R64: return toString<R64>("pop");
+            case Insn::PUSHFQ: return toString("pushfq");
+            case Insn::POPFQ: return toString("popfq");
             case Insn::CALLDIRECT: return toString<u64>("call");
             case Insn::CALLINDIRECT_RM32: return toString<RM32>("call");
             case Insn::CALLINDIRECT_RM64: return toString<RM64>("call");

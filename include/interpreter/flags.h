@@ -31,6 +31,33 @@ namespace x64 {
         void setUnsureParity() { sureParity_ = false; }
         void setSureParity() { sureParity_ = true; }
         bool sure() const { return sure_; }
+
+        static constexpr u64 CARRY_MASK = 0x1;
+        static constexpr u64 PARITY_MASK = 0x4;
+        static constexpr u64 ZERO_MASK = 0x40;
+        static constexpr u64 SIGN_MASK = 0x80;
+        static constexpr u64 OVERFLOW_MASK = 0x800;
+
+        static Flags fromRflags(u64 rflags) {
+            Flags flags;
+            flags.carry = rflags & CARRY_MASK;
+            flags.parity = rflags & PARITY_MASK;
+            flags.zero = rflags & ZERO_MASK;
+            flags.sign = rflags & SIGN_MASK;
+            flags.overflow = rflags & OVERFLOW_MASK;
+            flags.setSure();
+            return flags;
+        }
+
+        u64 toRflags() const {
+            u64 rflags = 0;
+            rflags |= (carry ? CARRY_MASK : 0);
+            rflags |= (parity ? PARITY_MASK : 0);
+            rflags |= (zero ? ZERO_MASK : 0);
+            rflags |= (sign ? SIGN_MASK : 0);
+            rflags |= (overflow ? OVERFLOW_MASK : 0);
+            return rflags;
+        }
     };
 
 

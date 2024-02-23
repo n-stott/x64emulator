@@ -250,6 +250,8 @@ namespace x64 {
             case Insn::PUSH_RM64: return exec(Push<RM64>{insn.op0<RM64>()});
             case Insn::POP_R32: return exec(Pop<R32>{insn.op0<R32>()});
             case Insn::POP_R64: return exec(Pop<R64>{insn.op0<R64>()});
+            case Insn::PUSHFQ: return exec(Pushfq{});
+            case Insn::POPFQ: return exec(Popfq{});
             case Insn::CALLDIRECT: return exec(CallDirect{insn.op0<u64>()});
             case Insn::CALLINDIRECT_RM32: return exec(CallIndirect<RM32>{insn.op0<RM32>()});
             case Insn::CALLINDIRECT_RM64: return exec(CallIndirect<RM64>{insn.op0<RM64>()});
@@ -796,6 +798,15 @@ namespace x64 {
 
     void Cpu::exec(const Pop<R64>& ins) {
         set(ins.dst, pop64());
+    }
+
+    void Cpu::exec(const Pushfq&) {
+        push64(flags_.toRflags());
+    }
+
+    void Cpu::exec(const Popfq&) {
+        u64 rflags = pop64();
+        flags_ = Flags::fromRflags(rflags);
     }
 
     void Cpu::exec(const CallDirect& ins) {

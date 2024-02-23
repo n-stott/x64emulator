@@ -41,9 +41,17 @@ namespace x64 {
         Src src;
     };
 
-    template<typename Src>
+    template<typename Dst>
     struct Pop {
-        Src dst;
+        Dst dst;
+    };
+
+    struct Pushfq {
+
+    };
+
+    struct Popfq {
+
     };
 
     template<typename Dst, typename Src>

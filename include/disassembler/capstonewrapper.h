@@ -24,6 +24,8 @@ namespace x64 {
 
         static X64Instruction makePush(const cs_insn& insn);
         static X64Instruction makePop(const cs_insn& insn);
+        static X64Instruction makePushfq(const cs_insn& insn);
+        static X64Instruction makePopfq(const cs_insn& insn);
 
         static X64Instruction makeMov(const cs_insn& insn);
         static X64Instruction makeMovsx(const cs_insn& insn);

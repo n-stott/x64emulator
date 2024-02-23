@@ -25,6 +25,8 @@ namespace x64 {
         switch(insn.id) {
             case X86_INS_PUSH: return makePush(insn);
             case X86_INS_POP: return makePop(insn);
+            case X86_INS_PUSHFQ: return makePushfq(insn);
+            case X86_INS_POPFQ: return makePopfq(insn);
             case X86_INS_MOV: return makeMov(insn);
             case X86_INS_MOVABS: return makeMovabs(insn);
             case X86_INS_MOVDQA: return makeMovdqa(insn);
@@ -559,6 +561,14 @@ namespace x64 {
         if(r32) return X64Instruction::make<Insn::POP_R32>(insn.address, insn.size, r32.value());
         if(r64) return X64Instruction::make<Insn::POP_R64>(insn.address, insn.size, r64.value());
         return make_failed(insn);
+    }
+
+    X64Instruction CapstoneWrapper::makePushfq(const cs_insn& insn) {
+        return X64Instruction::make<Insn::PUSHFQ>(insn.address, insn.size);
+    }
+
+    X64Instruction CapstoneWrapper::makePopfq(const cs_insn& insn) {
+        return X64Instruction::make<Insn::POPFQ>(insn.address, insn.size);
     }
 
     X64Instruction CapstoneWrapper::makeMov(const cs_insn& insn) {
