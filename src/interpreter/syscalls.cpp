@@ -52,6 +52,7 @@ namespace x64 {
             case 0x2f: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::recvmsg, regs));
             case 0x33: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::getsockname, regs));
             case 0x34: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::getpeername, regs));
+            case 0x38: return vm_->set(R64::RAX, invoke_syscall_5(&Sys::clone, regs));
             case 0x3f: return vm_->set(R64::RAX, invoke_syscall_1(&Sys::uname, regs));
             case 0x48: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::fcntl, regs));
             case 0x4a: return vm_->set(R64::RAX, invoke_syscall_1(&Sys::fsync, regs));
@@ -386,6 +387,15 @@ namespace x64 {
             mmu_->write32(addrlen, (u32)buffer.size());
             return 0;
         });
+    }
+
+    long Sys::clone(unsigned long flags, Ptr stack, Ptr parent_tid, Ptr child_tid, unsigned long tls) {
+        int ret = -EAGAIN;
+        if(vm_->logSyscalls()) {
+            fmt::print("Sys::clone(flags={}, stack={:#x}, parent_tid={:#x}, child_tid={:#x}, tls={}) = {}\n",
+                        flags, stack.address(), parent_tid.address(), child_tid.address(), tls, ret);
+        }
+        return ret;
     }
 
     int Sys::uname(Ptr buf) {

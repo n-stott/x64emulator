@@ -167,6 +167,8 @@ namespace x64 {
         int getsockname(int sockfd, Ptr addr, Ptr32 addrlen);
         // 0x34
         int getpeername(int sockfd, Ptr addr, Ptr32 addrlen);
+        // 0x38
+        long clone(unsigned long flags, Ptr stack, Ptr parent_tid, Ptr child_tid, unsigned long tls);
         // 0x3f
         int uname(Ptr buf);
         // 0x48
