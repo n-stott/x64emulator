@@ -82,8 +82,9 @@ namespace x64 {
 
         struct ExecutionPoint {
             const ExecutableSection* section { nullptr };
-            size_t sectionSize { 0 };
-            size_t index { (size_t)(-1) };
+            const X64Instruction* sectionBegin { nullptr };
+            const X64Instruction* sectionEnd { nullptr };
+            const X64Instruction* nextInstruction { nullptr };
         } executionPoint_;
 
         std::vector<u64> callstack_;

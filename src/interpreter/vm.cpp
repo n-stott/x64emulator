@@ -83,10 +83,10 @@ namespace x64 {
     }
 
     const X64Instruction& VM::fetchInstruction() {
-        verify(executionPoint_.index < executionPoint_.sectionSize);
-        const X64Instruction& instruction = executionPoint_.section->instructions[executionPoint_.index];
+        verify(executionPoint_.nextInstruction < executionPoint_.sectionEnd);
+        const X64Instruction& instruction = *executionPoint_.nextInstruction;
         cpu_.regs_.rip() = instruction.nextAddress();
-        ++executionPoint_.index;
+        ++executionPoint_.nextInstruction;
         return instruction;
     }
 
@@ -174,7 +174,12 @@ namespace x64 {
             });
             verify(pos.index != (size_t)(-1));
             cp.address = address;
-            cp.execPoint = ExecutionPoint{ pos.section, pos.section->instructions.size(), pos.index };
+            cp.execPoint = ExecutionPoint{
+                                pos.section,
+                                pos.section->instructions.data(),
+                                pos.section->instructions.data() + pos.section->instructions.size(),
+                                pos.section->instructions.data() + pos.index
+                            };
             callCache_.insert(std::make_pair(address, cp));
         }
         executionPoint_ = cp.execPoint;
@@ -197,7 +202,12 @@ namespace x64 {
                 fmt::print("Unable to find jmp destination {:#x}\n", address);
             });
             cp.address = address;
-            cp.execPoint = ExecutionPoint{ pos.section, pos.section->instructions.size(), pos.index };
+            cp.execPoint = ExecutionPoint{
+                                pos.section,
+                                pos.section->instructions.data(),
+                                pos.section->instructions.data() + pos.section->instructions.size(),
+                                pos.section->instructions.data() + pos.index
+                            };
             jmpCache_.insert(std::make_pair(address, cp));
         }
         executionPoint_ = cp.execPoint;
