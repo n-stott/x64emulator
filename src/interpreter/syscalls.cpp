@@ -75,6 +75,7 @@ namespace x64 {
             case 0xbf: return vm_->set(R64::RAX, invoke_syscall_4(&Sys::getxattr, regs));
             case 0xc0: return vm_->set(R64::RAX, invoke_syscall_4(&Sys::lgetxattr, regs));
             case 0xc9: return vm_->set(R64::RAX, invoke_syscall_1(&Sys::time, regs));
+            case 0xcc: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::sched_getaffinity, regs));
             case 0xca: return vm_->set(R64::RAX, invoke_syscall_6(&Sys::futex, regs));
             case 0xd9: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::getdents64, regs));
             case 0xda: return vm_->set(R64::RAX, invoke_syscall_1(&Sys::set_tid_address, regs));
@@ -566,6 +567,25 @@ namespace x64 {
     long Sys::futex(Ptr32 uaddr, int futex_op, uint32_t val, Ptr timeout, Ptr32 uaddr2, uint32_t val3) {
         if(vm_->logSyscalls()) fmt::print("Sys::futex({:#x}, {}, {}, {:#x}, {:#x}, {})\n", uaddr.address(), futex_op, val, timeout.address(), uaddr2.address(), val3);
         return 1;
+    }
+
+    int Sys::sched_getaffinity(pid_t pid, size_t cpusetsize, Ptr mask) {
+        int ret = 0;
+        if(pid == 0) {
+            // pretend that only cpu 0 is available.
+            std::vector<u8> buffer;
+            buffer.resize(cpusetsize, 0x0);
+            if(!buffer.empty()) {
+                buffer[0] |= 0x1;
+            }
+            mmu_->copyToMmu(mask, buffer.data(), buffer.size());
+        } else {
+            // don't allow looking at other processes
+            ret = -EPERM;
+        }
+        if(vm_->logSyscalls()) fmt::print("Sys::sched_getaffinity({}, {}, {:#x}) = {}\n",
+                                                                  pid, cpusetsize, mask.address(), ret);
+        return ret;
     }
 
     ssize_t Sys::recvfrom(int sockfd, Ptr buf, size_t len, int flags, Ptr src_addr, Ptr32 addrlen) {

@@ -207,6 +207,8 @@ namespace x64 {
         time_t time(Ptr tloc);
         // 0xca
         long futex(Ptr32 uaddr, int futex_op, uint32_t val, Ptr timeout, Ptr32 uaddr2, uint32_t val3);
+        // 0xcc
+        int sched_getaffinity(pid_t pid, size_t cpusetsize, Ptr mask);
         // 0xd9
         ssize_t getdents64(int fd, Ptr dirp, size_t count);
         // 0xda
