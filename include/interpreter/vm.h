@@ -65,6 +65,7 @@ namespace x64 {
         };
 
         InstructionPosition findSectionWithAddress(u64 address, const ExecutableSection* sectionHint = nullptr) const;
+        void updateExecutionPoint(u64 address);
         void tryRetrieveSymbolsFromExecutable(const Mmu::Region& region) const;
         std::string callName(const X64Instruction& instruction) const;
         std::string calledFunctionName(u64 address) const;
@@ -97,6 +98,7 @@ namespace x64 {
         std::unordered_map<u64, CallPoint> callCache_;
         std::unordered_map<u64, CallPoint> jmpCache_;
 
+        mutable std::vector<std::string> symbolicatedElfs_;
         mutable SymbolProvider symbolProvider_;
         mutable std::unordered_map<u64, std::string> functionNameCache_;
 

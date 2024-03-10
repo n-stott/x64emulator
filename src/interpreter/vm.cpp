@@ -83,6 +83,9 @@ namespace x64 {
     }
 
     const X64Instruction& VM::fetchInstruction() {
+        if (executionPoint_.nextInstruction >= executionPoint_.sectionEnd) {
+            updateExecutionPoint(cpu_.regs_.rip());
+        }
         verify(executionPoint_.nextInstruction < executionPoint_.sectionEnd);
         const X64Instruction& instruction = *executionPoint_.nextInstruction;
         cpu_.regs_.rip() = instruction.nextAddress();
@@ -213,6 +216,19 @@ namespace x64 {
         executionPoint_ = cp.execPoint;
     }
 
+    void VM::updateExecutionPoint(u64 address) {
+        InstructionPosition pos = findSectionWithAddress(address, nullptr);
+        verify(!!pos.section && pos.index != (size_t)(-1), [&]() {
+            fmt::print("Unable to find executable address {:#x}\n", address);
+        });
+        executionPoint_ = ExecutionPoint{
+                            pos.section,
+                            pos.section->instructions.data(),
+                            pos.section->instructions.data() + pos.section->instructions.size(),
+                            pos.section->instructions.data() + pos.index
+                        };
+    }
+
     VM::InstructionPosition VM::findSectionWithAddress(u64 address, const ExecutableSection* sectionHint) const {
         if(!!sectionHint) {
             auto it = std::lower_bound(sectionHint->instructions.begin(), sectionHint->instructions.end(), address, [&](const auto& a, u64 b) {
@@ -240,9 +256,11 @@ namespace x64 {
         });
 
         // limit the size of disassembly range
-        u64 end = mmuRegion->end();
+        // limit to a single page
+        u64 end = std::min(mmuRegion->end(), address + Mmu::PAGE_SIZE);
+        // try to avoid re-disassembling
         for(const auto& execSection : executableSections_) {
-            if(address < execSection.end && execSection.end <= end) end = execSection.begin;
+            if(address < execSection.begin && execSection.begin <= end) end = execSection.begin;
         }
 
         if(address >= end) {
@@ -278,9 +296,12 @@ namespace x64 {
 
     void VM::tryRetrieveSymbolsFromExecutable(const Mmu::Region& region) const {
         if(region.file().empty()) return;
+        if(std::find(symbolicatedElfs_.begin(), symbolicatedElfs_.end(), region.file()) != symbolicatedElfs_.end()) return;
 
         std::unique_ptr<elf::Elf> elf = elf::ElfReader::tryCreate(region.file());
         if(!elf) return;
+
+        symbolicatedElfs_.push_back(region.file());
 
         verify(elf->archClass() == elf::Class::B64, "elf must be 64-bit");
         std::unique_ptr<elf::Elf64> elf64;
