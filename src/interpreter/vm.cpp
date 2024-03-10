@@ -284,9 +284,8 @@ namespace x64 {
                 executableProgramHeaderVirtualAddress = ph.virtualAddress();
             }
         });
-        verify(nbExecutableProgramHeaders == 1, [&]() {
-            fmt::print("Elf {} loads {} executable program headers\n", region.file(), nbExecutableProgramHeaders);
-        });
+        if(nbExecutableProgramHeaders != 1) return; // give up
+
         u64 elfOffset = region.base() - executableProgramHeaderVirtualAddress;
 
         size_t nbSymbols = 0;
