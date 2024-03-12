@@ -11,7 +11,7 @@ namespace x64 {
         U res = dst + src;
         flags->zero = res == 0;
         flags->carry = (dst > std::numeric_limits<U>::max() - src);
-        I sres = (I)dst + (I)src;
+        I sres = (I)((__int128_t)dst + (__int128_t)src);
         flags->overflow = ((I)dst >= 0 && (I)src >= 0 && sres < 0) || ((I)dst < 0 && (I)src < 0 && sres >= 0);
         flags->sign = (sres < 0);
         flags->parity = Flags::computeParity((u8)res);
@@ -32,7 +32,7 @@ namespace x64 {
         U res = (U)(dst + src + c);
         flags->zero = res == 0;
         flags->carry = (c == 1 && src == (U)(-1)) || (dst > std::numeric_limits<U>::max() - (U)(src + c));
-        I sres = (I)((I)dst + (I)src + (I)c);
+        I sres = (I)((__int128_t)dst + (__int128_t)src + (__int128_t)c);
         flags->overflow = ((I)dst >= 0 && (I)src >= 0 && sres < 0) || ((I)dst < 0 && (I)src < 0 && sres >= 0);
         flags->sign = (sres < 0);
         flags->parity = Flags::computeParity((u8)res);
@@ -50,7 +50,7 @@ namespace x64 {
         U res = dst - src;
         flags->zero = res == 0;
         flags->carry = (dst < src);
-        I sres = (I)dst - (I)src;
+        I sres = (I)((__int128_t)dst - (__int128_t)src);
         flags->overflow = ((I)dst >= 0 && (I)src < 0 && sres < 0) || ((I)dst < 0 && (I)src >= 0 && sres >= 0);
         flags->sign = (sres < 0);
         flags->parity = Flags::computeParity((u8)res);
@@ -69,7 +69,7 @@ namespace x64 {
         U res = dst - (U)(src + c);
         flags->zero = res == 0;
         flags->carry = (c == 1 && src == (U)(-1)) || (dst < src+c);
-        I sres = (I)dst - (I)((I)src + (I)c);
+        I sres = (I)((__int128_t)dst - (I)((__int128_t)src + (__int128_t)c));
         flags->overflow = ((I)dst >= 0 && (I)src < 0 && sres < 0) || ((I)dst < 0 && (I)src >= 0 && sres >= 0);
         flags->sign = (sres < 0);
         flags->parity = Flags::computeParity((u8)res);
@@ -364,7 +364,7 @@ namespace x64 {
     static U sar(U dst, U src, Flags* flags) {
         assert(src < 8*sizeof(U));
         using I = std::make_signed_t<U>;
-        I res = ((I)dst) >> src;
+        I res = (I)(((I)dst) >> src);
         if(src) {
             flags->carry = ((I)dst) & ((I)1 << (src-1));
         }
@@ -1299,10 +1299,6 @@ namespace x64 {
         static_assert(sizeof(DST) == sizeof(u128));
         std::memcpy(DST.data(), &dst, sizeof(u128));
 
-        std::array<U, N> SRC;
-        static_assert(sizeof(SRC) == sizeof(u128));
-        std::memcpy(SRC.data(), &src, sizeof(u128));
-
         for(size_t i = 0; i < N; ++i) {
             DST[i] = (U)(DST[i] << (U)src);
         }
@@ -1320,10 +1316,6 @@ namespace x64 {
         std::array<U, N> DST;
         static_assert(sizeof(DST) == sizeof(u128));
         std::memcpy(DST.data(), &dst, sizeof(u128));
-
-        std::array<U, N> SRC;
-        static_assert(sizeof(SRC) == sizeof(u128));
-        std::memcpy(SRC.data(), &src, sizeof(u128));
 
         for(size_t i = 0; i < N; ++i) {
             DST[i] = (U)(DST[i] >> (U)src);

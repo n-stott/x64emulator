@@ -97,7 +97,7 @@ namespace x64 {
     private:
         Region* addRegion(Region region);
         Region* addRegionAndEraseExisting(Region region);
-        void removeRegion(const Region& region);
+        void removeRegion(u64 regionBase, u64 regionEnd, u64 regionSize);
 
     public:
         Mmu();

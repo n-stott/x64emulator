@@ -58,7 +58,7 @@ namespace x64 {
             assert(std::distance(it, regions_.end()) == 1);
             std::unique_ptr<Region>& oldRegion = regions_.back();
             std::array<Region, 3> splitRegions = oldRegion->split(region.base(), region.end());
-            removeRegion(*oldRegion);
+            removeRegion(oldRegion->base(), oldRegion->end(), oldRegion->size());
             for(size_t i = 0; i < splitRegions.size(); ++i) {
                 if(i == 1) continue;
                 Region r("", 0, 0, PROT::NONE);
@@ -70,9 +70,9 @@ namespace x64 {
         return addRegion(std::move(region));
     }
 
-    void Mmu::removeRegion(const Region& region) {
-        u64 firstPage = pageRoundDown(region.base()) / PAGE_SIZE;
-        u64 lastPage = pageRoundUp(region.end()) / PAGE_SIZE;
+    void Mmu::removeRegion(u64 regionBase, u64 regionEnd, u64 regionSize) {
+        u64 firstPage = pageRoundDown(regionBase) / PAGE_SIZE;
+        u64 lastPage = pageRoundUp(regionEnd) / PAGE_SIZE;
         verify(firstPage < lastPage);
         for(u64 pageIndex = firstPage; pageIndex < lastPage; ++pageIndex) {
             verify(pageIndex < regionLookup_.size());
@@ -80,7 +80,8 @@ namespace x64 {
             regionLookup_[pageIndex] = nullptr;
         }
         regions_.erase(std::remove_if(regions_.begin(), regions_.end(), [&](const std::unique_ptr<Region>& ptr) {
-            return ptr->base() == region.base() && ptr->size() == region.size();
+            assert(!!ptr);
+            return ptr->base() == regionBase && ptr->size() == regionSize;
         }), regions_.end());
     }
 
@@ -118,11 +119,11 @@ namespace x64 {
         verify(!!regionPtr, "munmap: unable to find region");
         length = pageRoundUp(length);
         if(regionPtr->base() == address && regionPtr->size() == length) {
-            removeRegion(*regionPtr);
+            removeRegion(regionPtr->base(), regionPtr->end(), regionPtr->size());
             return 0;
         }
         std::array<Region, 3> splitRegions = regionPtr->split(address, address+length);
-        removeRegion(*regionPtr);
+        removeRegion(regionPtr->base(), regionPtr->end(), regionPtr->size());
         for(size_t i = 0; i < splitRegions.size(); ++i) {
             if(i == 1) continue;
             Region r("", 0, 0, PROT::NONE);
@@ -142,7 +143,7 @@ namespace x64 {
             return 0;
         }
         std::array<Region, 3> splitRegions = regionPtr->split(address, address+length);
-        removeRegion(*regionPtr);
+        removeRegion(regionPtr->base(), regionPtr->end(), regionPtr->size());
         for(size_t i = 0; i < splitRegions.size(); ++i) {
             Region r("", 0, 0, PROT::NONE);
             std::swap(r, splitRegions[i]);
@@ -433,13 +434,13 @@ namespace x64 {
         verify(contains(right) || right == end());
 
         Region l(file_, base_, left-base_, prot_);
-        std::memcpy(l.data_.data(), data_.data(), left-base_);
+        if(l.size()) std::memcpy(l.data_.data(), data_.data(), left-base_);
         
         Region m(file_, left, right-left, prot_);
-        std::memcpy(m.data_.data(), data_.data()+left-base_, right-left);
+        if(m.size()) std::memcpy(m.data_.data(), data_.data()+left-base_, right-left);
         
         Region r(file_, right, end()-right, prot_);
-        std::memcpy(r.data_.data(), data_.data()+right-base_, end()-right);
+        if(r.size()) std::memcpy(r.data_.data(), data_.data()+right-base_, end()-right);
 
         std::array<Region, 3> res {{ std::move(l), std::move(m), std::move(r) }};
         return res;
@@ -463,7 +464,7 @@ namespace x64 {
         }
         // we should be fine now
         Region copy = *region;
-        removeRegion(*region);
+        removeRegion(region->base(), region->end(), region->size());
         copy.setEnd(address);
         u64 newBrk = copy.end();
         addRegion(copy);

@@ -481,7 +481,8 @@ namespace x64 {
         END_RFLAGS_SCOPE
 
         assert(virtualRes == nativeRes);
-        if(src) {
+        U maskedSrc = src % (8*sizeof(U));
+        if(maskedSrc) {
             assert(virtualFlags.carry == flags->carry);
             if(src == 1)
                 assert(virtualFlags.overflow == flags->overflow);
@@ -513,7 +514,8 @@ namespace x64 {
         END_RFLAGS_SCOPE
 
         assert(virtualRes == nativeRes);
-        if(src) {
+        U maskedSrc = src % (8*sizeof(U));
+        if(maskedSrc) {
             assert(virtualFlags.carry == flags->carry);
             if(src == 1)
                 assert(virtualFlags.overflow == flags->overflow);
@@ -1880,10 +1882,6 @@ namespace x64 {
         static_assert(sizeof(DST) == sizeof(u128));
         std::memcpy(DST.data(), &dst, sizeof(u128));
 
-        std::array<U, N> SRC;
-        static_assert(sizeof(SRC) == sizeof(u128));
-        std::memcpy(SRC.data(), &src, sizeof(u128));
-
         for(size_t i = 0; i < N; ++i) {
             DST[i] = (U)(DST[i] << (U)src);
         }
@@ -1901,10 +1899,6 @@ namespace x64 {
         std::array<U, N> DST;
         static_assert(sizeof(DST) == sizeof(u128));
         std::memcpy(DST.data(), &dst, sizeof(u128));
-
-        std::array<U, N> SRC;
-        static_assert(sizeof(SRC) == sizeof(u128));
-        std::memcpy(SRC.data(), &src, sizeof(u128));
 
         for(size_t i = 0; i < N; ++i) {
             DST[i] = (U)(DST[i] >> (U)src);
