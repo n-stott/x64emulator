@@ -75,6 +75,7 @@ namespace x64 {
             case X86_INS_ROL: return makeRol(insn);
             case X86_INS_ROR: return makeRor(insn);
             case X86_INS_TZCNT: return makeTzcnt(insn);
+            case X86_INS_POPCNT: return makePopcnt(insn);
             case X86_INS_SETA: return makeSet<Cond::A>(insn);
             case X86_INS_SETAE: return makeSet<Cond::AE>(insn);
             case X86_INS_SETB: return makeSet<Cond::B>(insn);
@@ -1247,6 +1248,23 @@ namespace x64 {
         if(r16dst && rm16src) return X64Instruction::make<Insn::TZCNT_R16_RM16>(insn.address, insn.size, r16dst.value(), rm16src.value());
         if(r32dst && rm32src) return X64Instruction::make<Insn::TZCNT_R32_RM32>(insn.address, insn.size, r32dst.value(), rm32src.value());
         if(r64dst && rm64src) return X64Instruction::make<Insn::TZCNT_R64_RM64>(insn.address, insn.size, r64dst.value(), rm64src.value());
+        return make_failed(insn);
+    }
+
+    X64Instruction CapstoneWrapper::makePopcnt(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto r16dst = asRegister16(dst);
+        auto r32dst = asRegister32(dst);
+        auto r64dst = asRegister64(dst);
+        auto rm16src = asRM16(src);
+        auto rm32src = asRM32(src);
+        auto rm64src = asRM64(src);
+        if(r16dst && rm16src) return X64Instruction::make<Insn::POPCNT_R16_RM16>(insn.address, insn.size, r16dst.value(), rm16src.value());
+        if(r32dst && rm32src) return X64Instruction::make<Insn::POPCNT_R32_RM32>(insn.address, insn.size, r32dst.value(), rm32src.value());
+        if(r64dst && rm64src) return X64Instruction::make<Insn::POPCNT_R64_RM64>(insn.address, insn.size, r64dst.value(), rm64src.value());
         return make_failed(insn);
     }
 

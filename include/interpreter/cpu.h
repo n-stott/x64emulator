@@ -468,6 +468,10 @@ namespace x64 {
         void exec(const Bswap<R32>&);
         void exec(const Bswap<R64>&);
 
+        void exec(const Popcnt<R16, RM16>&);
+        void exec(const Popcnt<R32, RM32>&);
+        void exec(const Popcnt<R64, RM64>&);
+
         void exec(const Pxor<RSSE, RMSSE>&);
 
         void exec(const Movaps<RMSSE, RMSSE>&);

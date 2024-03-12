@@ -392,6 +392,12 @@ namespace x64 {
     };
 
     template<typename Dst, typename Src>
+    struct Popcnt {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
     struct Pxor {
         Dst dst;
         Src src;

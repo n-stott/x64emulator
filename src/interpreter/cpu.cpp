@@ -400,6 +400,9 @@ namespace x64 {
             case Insn::CDQE: return exec(Cdqe{});
             case Insn::BSWAP_R32: return exec(Bswap<R32>{insn.op0<R32>()});
             case Insn::BSWAP_R64: return exec(Bswap<R64>{insn.op0<R64>()});
+            case Insn::POPCNT_R16_RM16: return exec(Popcnt<R16, RM16>{insn.op0<R16>(), insn.op1<RM16>()});
+            case Insn::POPCNT_R32_RM32: return exec(Popcnt<R32, RM32>{insn.op0<R32>(), insn.op1<RM32>()});
+            case Insn::POPCNT_R64_RM64: return exec(Popcnt<R64, RM64>{insn.op0<R64>(), insn.op1<RM64>()});
             case Insn::PXOR_RSSE_RMSSE: return exec(Pxor<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
             case Insn::MOVAPS_RMSSE_RMSSE: return exec(Movaps<RMSSE, RMSSE>{insn.op0<RMSSE>(), insn.op1<RMSSE>()});
             case Insn::MOVD_RSSE_RM32: return exec(Movd<RSSE, RM32>{insn.op0<RSSE>(), insn.op1<RM32>()});
@@ -1314,6 +1317,10 @@ namespace x64 {
     void Cpu::exec(const Bswap<R64>& ins) {
         set(ins.dst, Impl::bswap64(get(ins.dst)));
     }
+
+    void Cpu::exec(const Popcnt<R16, RM16>& ins) { set(ins.dst, Impl::popcnt16(get(ins.src), &flags_)); }
+    void Cpu::exec(const Popcnt<R32, RM32>& ins) { set(ins.dst, Impl::popcnt32(get(ins.src), &flags_)); }
+    void Cpu::exec(const Popcnt<R64, RM64>& ins) { set(ins.dst, Impl::popcnt64(get(ins.src), &flags_)); }
 
     void Cpu::exec(const Pxor<RSSE, RMSSE>& ins) {
         u128 dst = get(ins.dst);

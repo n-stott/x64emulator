@@ -578,6 +578,9 @@ namespace utils {
             case Insn::CDQE: return toString("cdqe");
             case Insn::BSWAP_R32: return toString<R32>("bswap");
             case Insn::BSWAP_R64: return toString<R64>("bswap");
+            case Insn::POPCNT_R16_RM16: return toString<R16, RM16>("popcnt");
+            case Insn::POPCNT_R32_RM32: return toString<R32, RM32>("popcnt");
+            case Insn::POPCNT_R64_RM64: return toString<R64, RM64>("popcnt");
             case Insn::PXOR_RSSE_RMSSE: return toString<RSSE, RMSSE>("pxor");
             case Insn::MOVAPS_RMSSE_RMSSE: return toString<RMSSE, RMSSE>("movaps");
             case Insn::MOVD_RSSE_RM32: return toString<RSSE, RM32>("movd");

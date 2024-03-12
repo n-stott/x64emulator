@@ -74,6 +74,7 @@ namespace x64 {
         static X64Instruction makeRol(const cs_insn& insn);
         static X64Instruction makeRor(const cs_insn& insn);
         static X64Instruction makeTzcnt(const cs_insn& insn);
+        static X64Instruction makePopcnt(const cs_insn& insn);
 
         template<Cond cond>
         static X64Instruction makeSet(const cs_insn& insn);

@@ -704,6 +704,33 @@ namespace x64 {
     u32 CheckedCpuImpl::bswap32(u32 dst) { return bswap<u32>(dst, &CpuImpl::bswap32); }
     u64 CheckedCpuImpl::bswap64(u64 dst) { return bswap<u64>(dst, &CpuImpl::bswap64); }
 
+    template<typename U, typename Popcnt>
+    U popcnt(U src, Flags* flags, Popcnt popcntFunc) {
+        Flags virtualFlags = *flags;
+        U virtualRes = popcntFunc(src, &virtualFlags);
+        (void)virtualRes;
+
+        U nativeRes = 0;
+        BEGIN_RFLAGS_SCOPE
+            SET_RFLAGS(*flags);
+            asm volatile("popcnt %1, %0" : "=r" (nativeRes) : "r"(src));
+            GET_RFLAGS(flags);
+        END_RFLAGS_SCOPE
+
+        assert(virtualRes == nativeRes);
+        assert(virtualFlags.carry == flags->carry);
+        assert(virtualFlags.zero == flags->zero);
+        assert(virtualFlags.overflow == flags->overflow);
+        assert(virtualFlags.parity == flags->parity);
+        assert(virtualFlags.sign == flags->sign);
+        
+        return nativeRes;
+    }
+
+    u16 CheckedCpuImpl::popcnt16(u16 src, Flags* flags) { return popcnt<u16>(src, flags, &CpuImpl::popcnt16); }
+    u32 CheckedCpuImpl::popcnt32(u32 src, Flags* flags) { return popcnt<u32>(src, flags, &CpuImpl::popcnt32); }
+    u64 CheckedCpuImpl::popcnt64(u64 src, Flags* flags) { return popcnt<u64>(src, flags, &CpuImpl::popcnt64); }
+
     template<typename U, typename Bt>
     void bt(U base, U index, Flags* flags, Bt btFunc) {
         Flags virtualFlags = *flags;

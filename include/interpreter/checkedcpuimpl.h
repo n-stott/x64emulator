@@ -144,6 +144,10 @@ namespace x64 {
         [[nodiscard]] static u32 bswap32(u32 dst);
         [[nodiscard]] static u64 bswap64(u64 dst);
 
+        [[nodiscard]] static u16 popcnt16(u16 src, Flags* flags);
+        [[nodiscard]] static u32 popcnt32(u32 src, Flags* flags);
+        [[nodiscard]] static u64 popcnt64(u64 src, Flags* flags);
+
         [[nodiscard]] static u128 addss(u128 dst, u128 src);
         [[nodiscard]] static u128 addsd(u128 dst, u128 src);
 

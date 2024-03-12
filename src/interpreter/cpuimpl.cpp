@@ -452,6 +452,25 @@ namespace x64 {
     u64 CpuImpl::bswap64(u64 dst) { return bswap<u64>(dst); }
 
     template<typename U>
+    U popcnt(U src, Flags* flags) {
+        flags->overflow = 0;
+        flags->sign = 0;
+        flags->zero = (src == 0);
+        flags->parity = 0;
+        flags->carry = 0;
+        U res = (U)0;
+        for(U i = 0; i < 8*sizeof(U); ++i) {
+            res += src & 0x1;
+            src >>= 1;
+        }
+        return res;
+    }
+
+    u16 CpuImpl::popcnt16(u16 src, Flags* flags) { return popcnt<u16>(src, flags); }
+    u32 CpuImpl::popcnt32(u32 src, Flags* flags) { return popcnt<u32>(src, flags); }
+    u64 CpuImpl::popcnt64(u64 src, Flags* flags) { return popcnt<u64>(src, flags); }
+
+    template<typename U>
     void bt(U base, U index, Flags* flags) {
         U size = 8*sizeof(U);
         index = index % size;
