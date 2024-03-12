@@ -72,6 +72,8 @@ target_compile_options(emulator PUBLIC -DFMT_HEADER_ONLY)
 target_include_directories(emulator PUBLIC include)
 target_link_libraries(emulator PUBLIC ${CAPSTONE_LIBRARIES} fmt::fmt)
 
+# target_compile_options(emulator PUBLIC -fsanitize=address,undefined)
+# target_link_libraries(emulator PUBLIC asan ubsan)
 
 add_executable(interpreter
     src/main.cpp
@@ -86,6 +88,9 @@ endif()
 target_include_directories(interpreter PUBLIC include)
 target_include_directories(interpreter PUBLIC ../common/include)
 target_link_libraries(interpreter PUBLIC emulator fmt::fmt)
+
+# target_compile_options(interpreter PUBLIC -fsanitize=address,undefined)
+# target_link_libraries(interpreter PUBLIC asan ubsan)
 
 enable_testing()
 add_subdirectory(tests)
