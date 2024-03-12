@@ -2,6 +2,7 @@
 #include "instructions/allinstructions.h"
 #include "fmt/core.h"
 #include <cassert>
+#include <optional>
 #include <capstone/capstone.h>
 
 namespace x64 {

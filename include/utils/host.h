@@ -3,6 +3,7 @@
 
 #include "utils/utils.h"
 #include <cstring>
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <variant>
