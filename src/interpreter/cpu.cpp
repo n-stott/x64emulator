@@ -512,14 +512,14 @@ namespace x64 {
             case Insn::MOVLPS_RSSE_M64: return exec(Movlps<RSSE, M64>{insn.op0<RSSE>(), insn.op1<M64>()});
             case Insn::MOVHPS_RSSE_M64: return exec(Movhps<RSSE, M64>{insn.op0<RSSE>(), insn.op1<M64>()});
             case Insn::MOVHLPS_RSSE_RSSE: return exec(Movhlps<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
-            case Insn::PUNPCKLBW_RSSE_RSSE: return exec(Punpcklbw<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
-            case Insn::PUNPCKLWD_RSSE_RSSE: return exec(Punpcklwd<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
-            case Insn::PUNPCKLDQ_RSSE_RSSE: return exec(Punpckldq<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
-            case Insn::PUNPCKLQDQ_RSSE_RSSE: return exec(Punpcklqdq<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
-            case Insn::PUNPCKHBW_RSSE_RSSE: return exec(Punpckhbw<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
-            case Insn::PUNPCKHWD_RSSE_RSSE: return exec(Punpckhwd<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
-            case Insn::PUNPCKHDQ_RSSE_RSSE: return exec(Punpckhdq<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
-            case Insn::PUNPCKHQDQ_RSSE_RSSE: return exec(Punpckhqdq<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
+            case Insn::PUNPCKLBW_RSSE_RMSSE: return exec(Punpcklbw<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
+            case Insn::PUNPCKLWD_RSSE_RMSSE: return exec(Punpcklwd<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
+            case Insn::PUNPCKLDQ_RSSE_RMSSE: return exec(Punpckldq<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
+            case Insn::PUNPCKLQDQ_RSSE_RMSSE: return exec(Punpcklqdq<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
+            case Insn::PUNPCKHBW_RSSE_RMSSE: return exec(Punpckhbw<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
+            case Insn::PUNPCKHWD_RSSE_RMSSE: return exec(Punpckhwd<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
+            case Insn::PUNPCKHDQ_RSSE_RMSSE: return exec(Punpckhdq<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
+            case Insn::PUNPCKHQDQ_RSSE_RMSSE: return exec(Punpckhqdq<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
             case Insn::PSHUFB_RSSE_RMSSE: return exec(Pshufb<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
             case Insn::PSHUFD_RSSE_RMSSE_IMM: return exec(Pshufd<RSSE, RMSSE, Imm>{insn.op0<RSSE>(), insn.op1<RMSSE>(), insn.op2<Imm>()});
             case Insn::PCMPEQB_RSSE_RMSSE: return exec(Pcmpeqb<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
@@ -1773,42 +1773,42 @@ namespace x64 {
     }
 
 
-    void Cpu::exec(const Punpcklbw<RSSE, RSSE>& ins) {
+    void Cpu::exec(const Punpcklbw<RSSE, RMSSE>& ins) {
         u128 dst = Impl::punpcklbw(get(ins.dst), get(ins.src));
         set(ins.dst, dst);
     }
 
-    void Cpu::exec(const Punpcklwd<RSSE, RSSE>& ins) {
+    void Cpu::exec(const Punpcklwd<RSSE, RMSSE>& ins) {
         u128 dst = Impl::punpcklwd(get(ins.dst), get(ins.src));
         set(ins.dst, dst);
     }
 
-    void Cpu::exec(const Punpckldq<RSSE, RSSE>& ins) {
+    void Cpu::exec(const Punpckldq<RSSE, RMSSE>& ins) {
         u128 dst = Impl::punpckldq(get(ins.dst), get(ins.src));
         set(ins.dst, dst);
     }
 
-    void Cpu::exec(const Punpcklqdq<RSSE, RSSE>& ins) {
+    void Cpu::exec(const Punpcklqdq<RSSE, RMSSE>& ins) {
         u128 dst = Impl::punpcklqdq(get(ins.dst), get(ins.src));
         set(ins.dst, dst);
     }
 
-    void Cpu::exec(const Punpckhbw<RSSE, RSSE>& ins) {
+    void Cpu::exec(const Punpckhbw<RSSE, RMSSE>& ins) {
         u128 dst = Impl::punpckhbw(get(ins.dst), get(ins.src));
         set(ins.dst, dst);
     }
 
-    void Cpu::exec(const Punpckhwd<RSSE, RSSE>& ins) {
+    void Cpu::exec(const Punpckhwd<RSSE, RMSSE>& ins) {
         u128 dst = Impl::punpckhwd(get(ins.dst), get(ins.src));
         set(ins.dst, dst);
     }
 
-    void Cpu::exec(const Punpckhdq<RSSE, RSSE>& ins) {
+    void Cpu::exec(const Punpckhdq<RSSE, RMSSE>& ins) {
         u128 dst = Impl::punpckhdq(get(ins.dst), get(ins.src));
         set(ins.dst, dst);
     }
 
-    void Cpu::exec(const Punpckhqdq<RSSE, RSSE>& ins) {
+    void Cpu::exec(const Punpckhqdq<RSSE, RMSSE>& ins) {
         u128 dst = Impl::punpckhqdq(get(ins.dst), get(ins.src));
         set(ins.dst, dst);
     }
