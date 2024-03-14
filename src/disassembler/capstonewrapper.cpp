@@ -58,8 +58,9 @@ namespace x64 {
             case X86_INS_RET: return makeRet(insn);
             case X86_INS_LEAVE: return makeLeave(insn);
             case X86_INS_HLT: return makeHalt(insn);
-            case X86_INS_NOP: 
-            case X86_INS_PREFETCHT0: 
+            case X86_INS_NOP:
+            case X86_INS_PREFETCHT0:
+            case X86_INS_ENDBR64:
             case X86_INS_LFENCE:
             case X86_INS_SFENCE: return makeNop(insn);
             case X86_INS_UD2: return makeUd2(insn);
