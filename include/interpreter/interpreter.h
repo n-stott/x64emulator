@@ -2,6 +2,7 @@
 #define INTERPRETER_H
 
 #include "interpreter/vm.h"
+#include <optional>
 #include <string>
 #include <vector>
 
