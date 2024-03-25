@@ -206,8 +206,19 @@ namespace x64 {
 
     void Interpreter::pushProgramArguments(const std::string& programFilePath, const std::vector<std::string>& arguments, const std::vector<std::string>& environmentVariables) {
         VerificationScope::run([&]() {
+
+            size_t requiredSize = programFilePath.size()+1;
+            requiredSize = std::accumulate(arguments.begin(), arguments.end(), requiredSize, [](size_t size, const std::string& arg) {
+                return size + arg.size() + 1;
+            });
+            requiredSize = std::accumulate(environmentVariables.begin(), environmentVariables.end(), requiredSize, [](size_t size, const std::string& var) {
+                return size + var.size() + 1;
+            });
+            requiredSize += 8*(1 + arguments.size() + environmentVariables.size());
+            requiredSize = Mmu::pageRoundUp(requiredSize);
+
             vm_.mmu().mmap(0, Mmu::PAGE_SIZE, PROT::NONE, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0); // throwaway page
-            u64 argumentPage = vm_.mmu().mmap(0, Mmu::PAGE_SIZE, PROT::READ | PROT::WRITE, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0);
+            u64 argumentPage = vm_.mmu().mmap(0, requiredSize, PROT::READ | PROT::WRITE, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0);
             vm_.mmu().setRegionName(argumentPage, "program arguments");
             Ptr8 argumentPtr { argumentPage };
 
