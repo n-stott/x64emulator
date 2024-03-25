@@ -136,6 +136,7 @@ namespace x64 {
 
     int Mmu::mprotect(u64 address, u64 length, PROT prot) {
         verify(address % PAGE_SIZE == 0, "mprotect with non-page_size aligned address not supported");
+        length = pageRoundUp(length);
         auto* regionPtr = findAddress(address);
         verify(!!regionPtr, "mprotect: unable to find region");
         if(regionPtr->base() == address && regionPtr->size() == length) {
