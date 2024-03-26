@@ -677,6 +677,11 @@ namespace x64 {
         void exec(const Packusdw<RSSE, RMSSE>&);
         void exec(const Packsswb<RSSE, RMSSE>&);
         void exec(const Packssdw<RSSE, RMSSE>&);
+
+        void exec(const Unpckhps<RSSE, RMSSE>&);
+        void exec(const Unpckhpd<RSSE, RMSSE>&);
+        void exec(const Unpcklps<RSSE, RMSSE>&);
+        void exec(const Unpcklpd<RSSE, RMSSE>&);
         
         void exec(const Rdtsc&);
 

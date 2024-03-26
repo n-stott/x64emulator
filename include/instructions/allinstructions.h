@@ -1162,6 +1162,30 @@ namespace x64 {
         Src src;
     };
 
+    template<typename Dst, typename Src>
+    struct Unpckhps {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
+    struct Unpckhpd {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
+    struct Unpcklps {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
+    struct Unpcklpd {
+        Dst dst;
+        Src src;
+    };
+
     struct Syscall {
 
     };

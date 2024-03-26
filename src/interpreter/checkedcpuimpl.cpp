@@ -2099,4 +2099,68 @@ namespace x64 {
         return CpuImpl::packssdw(dst, src);
 #endif
     }
+
+    u128 CheckedCpuImpl::unpckhps(u128 dst, u128 src) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::unpckhps(dst, src);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("unpckhps %1, %0" : "+x"(nativeRes) : "x"(src));
+        assert(nativeRes.lo == virtualRes.lo);
+        assert(nativeRes.hi == virtualRes.hi);
+        
+        return nativeRes;
+#else
+        return CpuImpl::unpckhps(dst, src);
+#endif
+    }
+
+    u128 CheckedCpuImpl::unpckhpd(u128 dst, u128 src) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::unpckhpd(dst, src);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("unpckhpd %1, %0" : "+x"(nativeRes) : "x"(src));
+        assert(nativeRes.lo == virtualRes.lo);
+        assert(nativeRes.hi == virtualRes.hi);
+        
+        return nativeRes;
+#else
+        return CpuImpl::unpckhpd(dst, src);
+#endif
+    }
+
+    u128 CheckedCpuImpl::unpcklps(u128 dst, u128 src) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::unpcklps(dst, src);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("unpcklps %1, %0" : "+x"(nativeRes) : "x"(src));
+        assert(nativeRes.lo == virtualRes.lo);
+        assert(nativeRes.hi == virtualRes.hi);
+        
+        return nativeRes;
+#else
+        return CpuImpl::unpcklps(dst, src);
+#endif
+    }
+
+    u128 CheckedCpuImpl::unpcklpd(u128 dst, u128 src) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::unpcklpd(dst, src);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("unpcklpd %1, %0" : "+x"(nativeRes) : "x"(src));
+        assert(nativeRes.lo == virtualRes.lo);
+        assert(nativeRes.hi == virtualRes.hi);
+        
+        return nativeRes;
+#else
+        return CpuImpl::unpcklpd(dst, src);
+#endif
+    }
 }

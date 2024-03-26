@@ -739,6 +739,10 @@ namespace utils {
             case Insn::PACKUSDW_RSSE_RMSSE: return toString<RSSE, RMSSE>("packusdw");
             case Insn::PACKSSWB_RSSE_RMSSE: return toString<RSSE, RMSSE>("packsswb");
             case Insn::PACKSSDW_RSSE_RMSSE: return toString<RSSE, RMSSE>("packssdw");
+            case Insn::UNPCKHPS_RSSE_RMSSE: return toString<RSSE, RMSSE>("unpckhps");
+            case Insn::UNPCKHPD_RSSE_RMSSE: return toString<RSSE, RMSSE>("unpckhpd");
+            case Insn::UNPCKLPS_RSSE_RMSSE: return toString<RSSE, RMSSE>("unpcklps");
+            case Insn::UNPCKLPD_RSSE_RMSSE: return toString<RSSE, RMSSE>("unpcklpd");
             case Insn::RDTSC: return toString("rdtsc");
             case Insn::CPUID: return toString("cpuid");
             case Insn::XGETBV: return toString("xgetbv");

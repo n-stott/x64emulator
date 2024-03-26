@@ -250,6 +250,11 @@ namespace x64 {
         [[nodiscard]] static u128 packsswb(u128 dst, u128 src);
         [[nodiscard]] static u128 packssdw(u128 dst, u128 src);
 
+        [[nodiscard]] static u128 unpckhps(u128 dst, u128 src);
+        [[nodiscard]] static u128 unpckhpd(u128 dst, u128 src);
+        [[nodiscard]] static u128 unpcklps(u128 dst, u128 src);
+        [[nodiscard]] static u128 unpcklpd(u128 dst, u128 src);
+
         [[nodiscard]] static f80 fadd(f80 dst, f80 src, X87Fpu* fpu);
         [[nodiscard]] static f80 fsub(f80 dst, f80 src, X87Fpu* fpu);
         [[nodiscard]] static f80 fmul(f80 dst, f80 src, X87Fpu* fpu);

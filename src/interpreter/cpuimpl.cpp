@@ -1524,4 +1524,53 @@ namespace x64 {
         return pack<i16, i32>(dst, src);
     }
 
+
+    template<typename U, bool lo>
+    static u128 unpack(u128 dst, u128 src) {
+        constexpr u32 N = sizeof(u128)/sizeof(U);
+        std::array<U, N> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        std::memcpy(DST.data(), &dst, sizeof(u128));
+
+        std::array<U, N> SRC;
+        static_assert(sizeof(SRC) == sizeof(u128));
+        std::memcpy(SRC.data(), &src, sizeof(u128));
+
+        std::array<U, N> RES;
+        static_assert(sizeof(RES) == sizeof(u128));
+        std::memcpy(RES.data(), &dst, sizeof(u128));
+
+        if(lo) {
+            for(size_t i = 0; i < N/2; ++i) {
+                RES[2*i+0] = DST[i];
+                RES[2*i+1] = SRC[i];
+            }
+        } else {
+            for(size_t i = 0; i < N/2; ++i) {
+                RES[2*i+0] = DST[N/2+i];
+                RES[2*i+1] = SRC[N/2+i];
+            }
+        }
+
+        std::memcpy(&dst, RES.data(), sizeof(u128));
+        return dst;
+    }
+
+    u128 CpuImpl::unpckhps(u128 dst, u128 src) {
+        return unpack<f32, false>(dst, src);
+    }
+
+    u128 CpuImpl::unpckhpd(u128 dst, u128 src) {
+        return unpack<f64, false>(dst, src);
+    }
+
+    u128 CpuImpl::unpcklps(u128 dst, u128 src) {
+        return unpack<f64, true>(dst, src);
+    }
+
+    u128 CpuImpl::unpcklpd(u128 dst, u128 src) {
+        return unpack<f64, true>(dst, src);
+    }
+
+
 }

@@ -565,6 +565,10 @@ namespace x64 {
             case Insn::PACKUSDW_RSSE_RMSSE: return exec(Packusdw<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
             case Insn::PACKSSWB_RSSE_RMSSE: return exec(Packsswb<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
             case Insn::PACKSSDW_RSSE_RMSSE: return exec(Packssdw<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
+            case Insn::UNPCKHPS_RSSE_RMSSE: return exec(Unpckhps<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
+            case Insn::UNPCKHPD_RSSE_RMSSE: return exec(Unpckhpd<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
+            case Insn::UNPCKLPS_RSSE_RMSSE: return exec(Unpcklps<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
+            case Insn::UNPCKLPD_RSSE_RMSSE: return exec(Unpcklpd<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
             case Insn::RDTSC: return exec(Rdtsc{});
             case Insn::CPUID: return exec(Cpuid{});
             case Insn::XGETBV: return exec(Xgetbv{});
@@ -1978,6 +1982,22 @@ namespace x64 {
 
     void Cpu::exec(const Packssdw<RSSE, RMSSE>& ins) {
         set(ins.dst, Impl::packssdw(get(ins.dst), get(ins.src)));
+    }
+    
+    void Cpu::exec(const Unpckhps<RSSE, RMSSE>& ins) {
+        set(ins.dst, Impl::unpckhps(get(ins.dst), get(ins.src)));
+    }
+
+    void Cpu::exec(const Unpckhpd<RSSE, RMSSE>& ins) {
+        set(ins.dst, Impl::unpckhpd(get(ins.dst), get(ins.src)));
+    }
+
+    void Cpu::exec(const Unpcklps<RSSE, RMSSE>& ins) {
+        set(ins.dst, Impl::unpcklps(get(ins.dst), get(ins.src)));
+    }
+
+    void Cpu::exec(const Unpcklpd<RSSE, RMSSE>& ins) {
+        set(ins.dst, Impl::unpcklpd(get(ins.dst), get(ins.src)));
     }
 
 

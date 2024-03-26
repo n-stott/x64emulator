@@ -250,6 +250,11 @@ namespace x64 {
         static X64Instruction makePacksswb(const cs_insn& insn);
         static X64Instruction makePackssdw(const cs_insn& insn);
 
+        static X64Instruction makeUnpckhps(const cs_insn& insn);
+        static X64Instruction makeUnpckhpd(const cs_insn& insn);
+        static X64Instruction makeUnpcklps(const cs_insn& insn);
+        static X64Instruction makeUnpcklpd(const cs_insn& insn);
+
         static X64Instruction makePcmpistri(const cs_insn& insn);
 
         static X64Instruction makeRdtsc(const cs_insn& insn);
