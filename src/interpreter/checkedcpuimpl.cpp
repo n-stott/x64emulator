@@ -320,12 +320,7 @@ namespace x64 {
     }
 
     std::pair<u64, u64> CheckedCpuImpl::div64(u64 dividendUpper, u64 dividendLower, u64 divisor) {
-        assert(divisor != 0);
-        assert(dividendUpper == 0); // [NS] not handled yet
-        (void)dividendUpper;
-        u64 dividend = dividendLower;
-        u64 tmp = dividend / divisor;
-        return std::make_pair(tmp, dividend % divisor);
+        return CpuImpl::div64(dividendUpper, dividendLower, divisor);
     }
 
     template<typename U, typename And>
