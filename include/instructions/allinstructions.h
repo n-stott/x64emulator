@@ -738,6 +738,16 @@ namespace x64 {
         TAG_SSE;
     };
 
+    template<typename Dst>
+    struct Stmxcsr {
+        Dst dst;
+    };
+
+    template<typename Src>
+    struct Ldmxcsr {
+        Src src;
+    };
+
     template<typename Dst, typename Src>
     struct Pand {
         Dst dst;

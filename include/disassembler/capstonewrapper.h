@@ -184,6 +184,9 @@ namespace x64 {
         static X64Instruction makeCvttss2si(const cs_insn& insn);
         static X64Instruction makeCvttsd2si(const cs_insn& insn);
 
+        static X64Instruction makeStmxcsr(const cs_insn& insn);
+        static X64Instruction makeLdmxcsr(const cs_insn& insn);
+
         static X64Instruction makePand(const cs_insn& insn);
         static X64Instruction makePandn(const cs_insn& insn);
         static X64Instruction makePor(const cs_insn& insn);

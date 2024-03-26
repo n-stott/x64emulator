@@ -201,6 +201,8 @@ namespace x64 {
             case X86_INS_CVTSS2SD: return makeCvtss2sd(insn);
             case X86_INS_CVTTSS2SI: return makeCvttss2si(insn);
             case X86_INS_CVTTSD2SI: return makeCvttsd2si(insn);
+            case X86_INS_STMXCSR: return makeStmxcsr(insn);
+            case X86_INS_LDMXCSR: return makeLdmxcsr(insn);
             case X86_INS_CLD: return makeCld(insn);
             case X86_INS_STD: return makeStd(insn);
             case X86_INS_STOSB:
@@ -2318,6 +2320,24 @@ namespace x64 {
         if(r32dst && m64src) return X64Instruction::make<Insn::CVTTSD2SI_R32_M64>(insn.address, insn.size, r32dst.value(), m64src.value());
         if(r64dst && rssesrc) return X64Instruction::make<Insn::CVTTSD2SI_R64_RSSE>(insn.address, insn.size, r64dst.value(), rssesrc.value());
         if(r64dst && m64src) return X64Instruction::make<Insn::CVTTSD2SI_R64_M64>(insn.address, insn.size, r64dst.value(), m64src.value());
+        return make_failed(insn);
+    }
+
+    X64Instruction CapstoneWrapper::makeStmxcsr(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 1);
+        const cs_x86_op& dst = x86detail.operands[0];
+        auto m32dst = asMemory32(dst);
+        if(m32dst) return X64Instruction::make<Insn::STMXCSR_M32>(insn.address, insn.size, m32dst.value());
+        return make_failed(insn);
+    }
+
+    X64Instruction CapstoneWrapper::makeLdmxcsr(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 1);
+        const cs_x86_op& src = x86detail.operands[0];
+        auto m32src = asMemory32(src);
+        if(m32src) return X64Instruction::make<Insn::LDMXCSR_M32>(insn.address, insn.size, m32src.value());
         return make_failed(insn);
     }
 
