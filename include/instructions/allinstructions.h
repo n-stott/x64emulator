@@ -738,6 +738,13 @@ namespace x64 {
         TAG_SSE;
     };
 
+    template<typename Dst, typename Src>
+    struct Cvtdq2pd {
+        Dst dst;
+        Src src;
+        TAG_SSE;
+    };
+
     template<typename Dst>
     struct Stmxcsr {
         Dst dst;

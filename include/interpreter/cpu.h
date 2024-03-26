@@ -598,6 +598,9 @@ namespace x64 {
         void exec(const Cvttsd2si<R64, RSSE>&);
         void exec(const Cvttsd2si<R64, M64>&);
 
+        void exec(const Cvtdq2pd<RSSE, RSSE>&);
+        void exec(const Cvtdq2pd<RSSE, M64>&);
+
         void exec(const Stmxcsr<M32>&);
         void exec(const Ldmxcsr<M32>&);
 

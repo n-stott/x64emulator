@@ -201,6 +201,7 @@ namespace x64 {
             case X86_INS_CVTSS2SD: return makeCvtss2sd(insn);
             case X86_INS_CVTTSS2SI: return makeCvttss2si(insn);
             case X86_INS_CVTTSD2SI: return makeCvttsd2si(insn);
+            case X86_INS_CVTDQ2PD: return makeCvtdq2pd(insn);
             case X86_INS_STMXCSR: return makeStmxcsr(insn);
             case X86_INS_LDMXCSR: return makeLdmxcsr(insn);
             case X86_INS_CLD: return makeCld(insn);
@@ -2320,6 +2321,19 @@ namespace x64 {
         if(r32dst && m64src) return X64Instruction::make<Insn::CVTTSD2SI_R32_M64>(insn.address, insn.size, r32dst.value(), m64src.value());
         if(r64dst && rssesrc) return X64Instruction::make<Insn::CVTTSD2SI_R64_RSSE>(insn.address, insn.size, r64dst.value(), rssesrc.value());
         if(r64dst && m64src) return X64Instruction::make<Insn::CVTTSD2SI_R64_M64>(insn.address, insn.size, r64dst.value(), m64src.value());
+        return make_failed(insn);
+    }
+
+    X64Instruction CapstoneWrapper::makeCvtdq2pd(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto rssesrc = asRegister128(src);
+        auto m64src = asMemory64(src);
+        if(rssedst && rssesrc) return X64Instruction::make<Insn::CVTDQ2PD_RSSE_RSSE>(insn.address, insn.size, rssedst.value(), rssesrc.value());
+        if(rssedst && m64src) return X64Instruction::make<Insn::CVTDQ2PD_RSSE_M64>(insn.address, insn.size, rssedst.value(), m64src.value());
         return make_failed(insn);
     }
 

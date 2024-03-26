@@ -987,6 +987,20 @@ namespace x64 {
         return (u64)(i64)f;
     }
 
+    u128 CpuImpl::cvtdq2pd(u128 src) {
+        u128 res;
+        std::array<i32, 4> SRC;
+        static_assert(sizeof(SRC) == sizeof(u128));
+        std::memcpy(SRC.data(), &src, sizeof(u128));
+
+        std::array<double, 2> RES;
+        RES[0] = (double)SRC[0];
+        RES[1] = (double)SRC[1];
+        static_assert(sizeof(RES) == sizeof(u128));
+        std::memcpy(&res, RES.data(), sizeof(u128));
+        return res;
+    }
+
     u128 CpuImpl::shufps(u128 dst, u128 src, u8 order) {
         std::array<u32, 4> DST;
         static_assert(sizeof(DST) == sizeof(u128));

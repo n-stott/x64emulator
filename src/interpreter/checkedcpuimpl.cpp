@@ -1070,7 +1070,7 @@ namespace x64 {
         assert(virtualRes.hi == nativeRes.hi);
         return nativeRes;
 #else
-        return CpuImpl::addss(dst, src);
+        return CpuImpl::addss(dst, src, rounding);
 #endif
     }
 
@@ -1086,7 +1086,7 @@ namespace x64 {
         assert(virtualRes.hi == nativeRes.hi);
         return nativeRes;
 #else
-        return CpuImpl::addsd(dst, src);
+        return CpuImpl::addsd(dst, src, rounding);
 #endif
     }
 
@@ -1102,7 +1102,7 @@ namespace x64 {
         assert(virtualRes.hi == nativeRes.hi);
         return nativeRes;
 #else
-        return CpuImpl::subss(dst, src);
+        return CpuImpl::subss(dst, src, rounding);
 #endif
     }
 
@@ -1118,7 +1118,7 @@ namespace x64 {
         assert(virtualRes.hi == nativeRes.hi);
         return nativeRes;
 #else
-        return CpuImpl::subsd(dst, src);
+        return CpuImpl::subsd(dst, src, rounding);
 #endif
     }
 
@@ -1137,7 +1137,7 @@ namespace x64 {
         assert(virtualFlags.parity == flags->parity);
         assert(virtualFlags.carry == flags->carry);
 #else
-        CpuImpl::comiss(dst, src, flags);
+        CpuImpl::comiss(dst, src, flags, rounding);
 #endif
     }
 
@@ -1156,7 +1156,7 @@ namespace x64 {
         assert(virtualFlags.parity == flags->parity);
         assert(virtualFlags.carry == flags->carry);
 #else
-        CpuImpl::comisd(dst, src, flags);
+        CpuImpl::comisd(dst, src, flags, rounding);
 #endif
     }
 
@@ -1171,7 +1171,7 @@ namespace x64 {
         assert(virtualRes.hi == nativeRes.hi);
         return nativeRes;
 #else
-        return CpuImpl::maxss(dst, src);
+        return CpuImpl::maxss(dst, src, rounding);
 #endif
     }
 
@@ -1186,7 +1186,7 @@ namespace x64 {
         assert(virtualRes.hi == nativeRes.hi);
         return nativeRes;
 #else
-        return CpuImpl::maxsd(dst, src);
+        return CpuImpl::maxsd(dst, src, rounding);
 #endif
     }
 
@@ -1201,7 +1201,7 @@ namespace x64 {
         assert(virtualRes.hi == nativeRes.hi);
         return nativeRes;
 #else
-        return CpuImpl::minss(dst, src);
+        return CpuImpl::minss(dst, src, rounding);
 #endif
     }
 
@@ -1216,7 +1216,7 @@ namespace x64 {
         assert(virtualRes.hi == nativeRes.hi);
         return nativeRes;
 #else
-        return CpuImpl::minsd(dst, src);
+        return CpuImpl::minsd(dst, src, rounding);
 #endif
     }
 
@@ -1232,7 +1232,7 @@ namespace x64 {
         assert(virtualRes.hi == nativeRes.hi);
         return nativeRes;
 #else
-        return CpuImpl::mulss(dst, src);
+        return CpuImpl::mulss(dst, src, rounding);
 #endif
     }
 
@@ -1248,7 +1248,7 @@ namespace x64 {
         assert(virtualRes.hi == nativeRes.hi);
         return nativeRes;
 #else
-        return CpuImpl::mulsd(dst, src);
+        return CpuImpl::mulsd(dst, src, rounding);
 #endif
     }
 
@@ -1264,7 +1264,7 @@ namespace x64 {
         assert(virtualRes.hi == nativeRes.hi);
         return nativeRes;
 #else
-        return CpuImpl::divss(dst, src);
+        return CpuImpl::divss(dst, src, rounding);
 #endif
     }
 
@@ -1280,7 +1280,7 @@ namespace x64 {
         assert(virtualRes.hi == nativeRes.hi);
         return nativeRes;
 #else
-        return CpuImpl::divsd(dst, src);
+        return CpuImpl::divsd(dst, src, rounding);
 #endif
     }
 
@@ -1296,7 +1296,7 @@ namespace x64 {
         assert(virtualRes.hi == nativeRes.hi);
         return nativeRes;
 #else
-        return CpuImpl::sqrtss(dst, src);
+        return CpuImpl::sqrtss(dst, src, rounding);
 #endif
     }
 
@@ -1312,7 +1312,7 @@ namespace x64 {
         assert(virtualRes.hi == nativeRes.hi);
         return nativeRes;
 #else
-        return CpuImpl::sqrtsd(dst, src);
+        return CpuImpl::sqrtsd(dst, src, rounding);
 #endif
     }
 
@@ -1479,6 +1479,22 @@ namespace x64 {
         return nativeRes;
 #else
         return CpuImpl::cvttsd2si64(src);
+#endif
+    }
+
+    u128 CheckedCpuImpl::cvtdq2pd(u128 src) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::cvtdq2pd(src);
+        (void)virtualRes;
+
+        u128 nativeRes;
+        asm volatile("cvtdq2pd %1, %0" : "=x"(nativeRes) : "x"(src));
+        assert(nativeRes.lo == virtualRes.lo);
+        assert(nativeRes.hi == virtualRes.hi);
+        
+        return nativeRes;
+#else
+        return CpuImpl::cvtdq2pd(src);
 #endif
     }
 

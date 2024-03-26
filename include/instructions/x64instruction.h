@@ -385,6 +385,8 @@ namespace x64 {
         CVTTSD2SI_R32_M64,
         CVTTSD2SI_R64_RSSE,
         CVTTSD2SI_R64_M64,
+        CVTDQ2PD_RSSE_RSSE,
+        CVTDQ2PD_RSSE_M64,
         STMXCSR_M32,
         LDMXCSR_M32,
         PAND_RSSE_RMSSE,
