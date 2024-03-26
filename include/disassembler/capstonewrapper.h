@@ -211,6 +211,8 @@ namespace x64 {
         static X64Instruction makePunpckhdq(const cs_insn& insn);
         static X64Instruction makePunpckhqdq(const cs_insn& insn);
         static X64Instruction makePshufb(const cs_insn& insn);
+        static X64Instruction makePshuflw(const cs_insn& insn);
+        static X64Instruction makePshufhw(const cs_insn& insn);
         static X64Instruction makePshufd(const cs_insn& insn);
         static X64Instruction makePcmpeqb(const cs_insn& insn);
         static X64Instruction makePcmpeqw(const cs_insn& insn);

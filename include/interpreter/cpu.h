@@ -630,6 +630,8 @@ namespace x64 {
         void exec(const Punpckhqdq<RSSE, RMSSE>&);
 
         void exec(const Pshufb<RSSE, RMSSE>&);
+        void exec(const Pshuflw<RSSE, RMSSE, Imm>&);
+        void exec(const Pshufhw<RSSE, RMSSE, Imm>&);
         void exec(const Pshufd<RSSE, RMSSE, Imm>&);
 
         void exec(const Pcmpeqb<RSSE, RMSSE>&);

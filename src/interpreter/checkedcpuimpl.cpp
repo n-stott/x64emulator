@@ -1711,6 +1711,14 @@ namespace x64 {
 #endif
     }
 
+    u128 CheckedCpuImpl::pshuflw(u128 src, u8 order) {
+        return CpuImpl::pshuflw(src, order);
+    }
+
+    u128 CheckedCpuImpl::pshufhw(u128 src, u8 order) {
+        return CpuImpl::pshufhw(src, order);
+    }
+
     u128 CheckedCpuImpl::pshufd(u128 src, u8 order) {
 #if GCC_COMPILER
         std::array<u32, 4> SRC;

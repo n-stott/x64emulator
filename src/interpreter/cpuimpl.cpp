@@ -1166,6 +1166,48 @@ namespace x64 {
         return dst;
     }
 
+    u128 CpuImpl::pshuflw(u128 src, u8 order) {
+        std::array<u16, 8> SRC;
+        static_assert(sizeof(SRC) == sizeof(u128));
+        std::memcpy(SRC.data(), &src, sizeof(u128));
+
+        std::array<u16, 8> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        DST[0] = SRC[(order >> 0) & 0x3];
+        DST[1] = SRC[(order >> 2) & 0x3];
+        DST[2] = SRC[(order >> 4) & 0x3];
+        DST[3] = SRC[(order >> 6) & 0x3];
+        DST[4] = SRC[4];
+        DST[5] = SRC[5];
+        DST[6] = SRC[6];
+        DST[7] = SRC[7];
+
+        u128 dst;
+        std::memcpy(&dst, DST.data(), sizeof(u128));
+        return dst;
+    }
+
+    u128 CpuImpl::pshufhw(u128 src, u8 order) {
+        std::array<u16, 8> SRC;
+        static_assert(sizeof(SRC) == sizeof(u128));
+        std::memcpy(SRC.data(), &src, sizeof(u128));
+
+        std::array<u16, 8> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        DST[0] = SRC[0];
+        DST[1] = SRC[1];
+        DST[2] = SRC[2];
+        DST[3] = SRC[3];
+        DST[4] = SRC[4 + ((order >> 0) & 0x3)];
+        DST[5] = SRC[4 + ((order >> 2) & 0x3)];
+        DST[6] = SRC[4 + ((order >> 4) & 0x3)];
+        DST[7] = SRC[4 + ((order >> 6) & 0x3)];
+
+        u128 dst;
+        std::memcpy(&dst, DST.data(), sizeof(u128));
+        return dst;
+    }
+
     u128 CpuImpl::pshufd(u128 src, u8 order) {
         std::array<u32, 4> SRC;
         static_assert(sizeof(SRC) == sizeof(u128));

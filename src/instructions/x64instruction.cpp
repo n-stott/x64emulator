@@ -703,7 +703,9 @@ namespace utils {
             case Insn::PUNPCKHDQ_RSSE_RMSSE: return toString<RSSE, RMSSE>("punpckhdq");
             case Insn::PUNPCKHQDQ_RSSE_RMSSE: return toString<RSSE, RMSSE>("punpckhqdq");
             case Insn::PSHUFB_RSSE_RMSSE: return toString<RSSE, RMSSE>("pshufb");
-            case Insn::PSHUFD_RSSE_RMSSE_IMM: return toString<RSSE, RMSSE, Imm>("sshufd");
+            case Insn::PSHUFLW_RSSE_RMSSE_IMM: return toString<RSSE, RMSSE, Imm>("pshuflw");
+            case Insn::PSHUFHW_RSSE_RMSSE_IMM: return toString<RSSE, RMSSE, Imm>("pshufhw");
+            case Insn::PSHUFD_RSSE_RMSSE_IMM: return toString<RSSE, RMSSE, Imm>("pshufd");
             case Insn::PCMPEQB_RSSE_RMSSE: return toString<RSSE, RMSSE>("pcmpeqb");
             case Insn::PCMPEQW_RSSE_RMSSE: return toString<RSSE, RMSSE>("pcmpeqw");
             case Insn::PCMPEQD_RSSE_RMSSE: return toString<RSSE, RMSSE>("pcmpeqd");

@@ -529,6 +529,8 @@ namespace x64 {
             case Insn::PUNPCKHDQ_RSSE_RMSSE: return exec(Punpckhdq<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
             case Insn::PUNPCKHQDQ_RSSE_RMSSE: return exec(Punpckhqdq<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
             case Insn::PSHUFB_RSSE_RMSSE: return exec(Pshufb<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
+            case Insn::PSHUFLW_RSSE_RMSSE_IMM: return exec(Pshuflw<RSSE, RMSSE, Imm>{insn.op0<RSSE>(), insn.op1<RMSSE>(), insn.op2<Imm>()});
+            case Insn::PSHUFHW_RSSE_RMSSE_IMM: return exec(Pshufhw<RSSE, RMSSE, Imm>{insn.op0<RSSE>(), insn.op1<RMSSE>(), insn.op2<Imm>()});
             case Insn::PSHUFD_RSSE_RMSSE_IMM: return exec(Pshufd<RSSE, RMSSE, Imm>{insn.op0<RSSE>(), insn.op1<RMSSE>(), insn.op2<Imm>()});
             case Insn::PCMPEQB_RSSE_RMSSE: return exec(Pcmpeqb<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
             case Insn::PCMPEQW_RSSE_RMSSE: return exec(Pcmpeqw<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
@@ -1807,6 +1809,16 @@ namespace x64 {
 
     void Cpu::exec(const Pshufb<RSSE, RMSSE>& ins) {
         u128 res = Impl::pshufb(get(ins.dst), get(ins.src));
+        set(ins.dst, res);
+    }
+
+    void Cpu::exec(const Pshuflw<RSSE, RMSSE, Imm>& ins) {
+        u128 res = Impl::pshuflw(get(ins.src), get<u8>(ins.order));
+        set(ins.dst, res);
+    }
+
+    void Cpu::exec(const Pshufhw<RSSE, RMSSE, Imm>& ins) {
+        u128 res = Impl::pshufhw(get(ins.src), get<u8>(ins.order));
         set(ins.dst, res);
     }
 

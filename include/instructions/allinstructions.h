@@ -918,6 +918,22 @@ namespace x64 {
         TAG_SSE;
     };
 
+    template<typename Dst, typename Src, typename Ord>
+    struct Pshuflw {
+        Dst dst;
+        Src src;
+        Ord order;
+        TAG_SSE;
+    };
+
+    template<typename Dst, typename Src, typename Ord>
+    struct Pshufhw {
+        Dst dst;
+        Src src;
+        Ord order;
+        TAG_SSE;
+    };
+
     template<typename Dst, typename Src>
     struct Pcmpeqb {
         Dst dst;

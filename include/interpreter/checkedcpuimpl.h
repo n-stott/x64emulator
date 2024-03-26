@@ -203,6 +203,8 @@ namespace x64 {
         [[nodiscard]] static u128 punpckhqdq(u128 dst, u128 src);
 
         [[nodiscard]] static u128 pshufb(u128 dst, u128 src);
+        [[nodiscard]] static u128 pshuflw(u128 src, u8 order);
+        [[nodiscard]] static u128 pshufhw(u128 src, u8 order);
         [[nodiscard]] static u128 pshufd(u128 src, u8 order);
 
         [[nodiscard]] static u128 pcmpeqb(u128 dst, u128 src);

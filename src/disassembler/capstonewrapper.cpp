@@ -243,6 +243,8 @@ namespace x64 {
             case X86_INS_PUNPCKHDQ: return makePunpckhdq(insn);
             case X86_INS_PUNPCKHQDQ: return makePunpckhqdq(insn);
             case X86_INS_PSHUFB: return makePshufb(insn);
+            case X86_INS_PSHUFLW: return makePshuflw(insn);
+            case X86_INS_PSHUFHW: return makePshufhw(insn);
             case X86_INS_PSHUFD: return makePshufd(insn);
             case X86_INS_PCMPEQB: return makePcmpeqb(insn);
             case X86_INS_PCMPEQW: return makePcmpeqw(insn);
@@ -2587,6 +2589,32 @@ namespace x64 {
         auto rssedst = asRegister128(dst);
         auto rmssesrc = asRM128(src);
         if(rssedst && rmssesrc) return X64Instruction::make<Insn::PSHUFB_RSSE_RMSSE>(insn.address, insn.size, rssedst.value(), rmssesrc.value());
+        return make_failed(insn);
+    }
+
+    X64Instruction CapstoneWrapper::makePshuflw(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 3);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        const cs_x86_op& order = x86detail.operands[2];
+        auto rssedst = asRegister128(dst);
+        auto rmssesrc = asRM128(src);
+        auto imm = asImmediate(order);
+        if(rssedst && rmssesrc && imm) return X64Instruction::make<Insn::PSHUFLW_RSSE_RMSSE_IMM>(insn.address, insn.size, rssedst.value(), rmssesrc.value(), imm.value());
+        return make_failed(insn);
+    }
+
+    X64Instruction CapstoneWrapper::makePshufhw(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 3);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        const cs_x86_op& order = x86detail.operands[2];
+        auto rssedst = asRegister128(dst);
+        auto rmssesrc = asRM128(src);
+        auto imm = asImmediate(order);
+        if(rssedst && rmssesrc && imm) return X64Instruction::make<Insn::PSHUFHW_RSSE_RMSSE_IMM>(insn.address, insn.size, rssedst.value(), rmssesrc.value(), imm.value());
         return make_failed(insn);
     }
 
