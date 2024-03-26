@@ -241,6 +241,7 @@ namespace x64 {
         void exec(const Not<RM32>&);
         void exec(const Not<RM64>&);
 
+        void exec(const Xchg<RM8, R8>&);
         void exec(const Xchg<RM16, R16>&);
         void exec(const Xchg<RM32, R32>&);
         void exec(const Xchg<RM64, R64>&);

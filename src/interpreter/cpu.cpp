@@ -206,6 +206,7 @@ namespace x64 {
             case Insn::NOT_RM16: return exec(Not<RM16>{insn.op0<RM16>()});
             case Insn::NOT_RM32: return exec(Not<RM32>{insn.op0<RM32>()});
             case Insn::NOT_RM64: return exec(Not<RM64>{insn.op0<RM64>()});
+            case Insn::XCHG_RM8_R8: return exec(Xchg<RM8, R8>{insn.op0<RM8>(), insn.op1<R8>()});
             case Insn::XCHG_RM16_R16: return exec(Xchg<RM16, R16>{insn.op0<RM16>(), insn.op1<R16>()});
             case Insn::XCHG_RM32_R32: return exec(Xchg<RM32, R32>{insn.op0<RM32>(), insn.op1<R32>()});
             case Insn::XCHG_RM64_R64: return exec(Xchg<RM64, R64>{insn.op0<RM64>(), insn.op1<R64>()});
@@ -719,6 +720,12 @@ namespace x64 {
     void Cpu::exec(const Not<RM32>& ins) { set(ins.dst, ~get(ins.dst)); }
     void Cpu::exec(const Not<RM64>& ins) { set(ins.dst, ~get(ins.dst)); }
 
+    void Cpu::exec(const Xchg<RM8, R8>& ins) {
+        u8 dst = get(ins.dst);
+        u8 src = get(ins.src);
+        set(ins.dst, src);
+        set(ins.src, dst);
+    }
     void Cpu::exec(const Xchg<RM16, R16>& ins) {
         u16 dst = get(ins.dst);
         u16 src = get(ins.src);

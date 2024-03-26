@@ -87,6 +87,7 @@ namespace x64 {
         NOT_RM16,
         NOT_RM32,
         NOT_RM64,
+        XCHG_RM8_R8,
         XCHG_RM16_R16,
         XCHG_RM32_R32,
         XCHG_RM64_R64,

@@ -987,12 +987,15 @@ namespace x64 {
         assert(x86detail.op_count == 2);
         const cs_x86_op& dst = x86detail.operands[0];
         const cs_x86_op& src = x86detail.operands[1];
+        auto rm8dst = asRM8(dst);
+        auto r8src = asRegister8(src);
         auto rm16dst = asRM16(dst);
         auto r16src = asRegister16(src);
         auto rm32dst = asRM32(dst);
         auto r32src = asRegister32(src);
         auto rm64dst = asRM64(dst);
         auto r64src = asRegister64(src);
+        if(rm8dst && r8src) return X64Instruction::make<Insn::XCHG_RM8_R8>(insn.address, insn.size, rm8dst.value(), r8src.value());
         if(rm16dst && r16src) return X64Instruction::make<Insn::XCHG_RM16_R16>(insn.address, insn.size, rm16dst.value(), r16src.value());
         if(rm32dst && r32src) return X64Instruction::make<Insn::XCHG_RM32_R32>(insn.address, insn.size, rm32dst.value(), r32src.value());
         if(rm64dst && r64src) return X64Instruction::make<Insn::XCHG_RM64_R64>(insn.address, insn.size, rm64dst.value(), r64src.value());

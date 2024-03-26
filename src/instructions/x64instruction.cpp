@@ -380,6 +380,7 @@ namespace utils {
             case Insn::NOT_RM16: return toString<RM16>("not");
             case Insn::NOT_RM32: return toString<RM32>("not");
             case Insn::NOT_RM64: return toString<RM64>("not");
+            case Insn::XCHG_RM8_R8: return toString<RM8, R8>("xchg");
             case Insn::XCHG_RM16_R16: return toString<RM16, R16>("xchg");
             case Insn::XCHG_RM32_R32: return toString<RM32, R32>("xchg");
             case Insn::XCHG_RM64_R64: return toString<RM64, R64>("xchg");
