@@ -119,8 +119,12 @@ namespace x64 {
         return (DU)(std::make_signed_t<DU>)(std::make_signed_t<SU>)u;
     }
 
-    ROUNDING Cpu::roundingMode() const {
+    FPU_ROUNDING Cpu::fpuRoundingMode() const {
         return x87fpu_.control().rc;
+    }
+
+    SIMD_ROUNDING Cpu::simdRoundingMode() const {
+        return mxcsr_.rc;
     }
 
 
@@ -1471,174 +1475,146 @@ namespace x64 {
 
 
     void Cpu::exec(const Addss<RSSE, RSSE>& ins) {
-        verify(roundingMode() == ROUNDING::NEAREST);
-        u128 res = Impl::addss(get(ins.dst), get(ins.src));
+        u128 res = Impl::addss(get(ins.dst), get(ins.src), simdRoundingMode());
         set(ins.dst, res);
     }
 
     void Cpu::exec(const Addss<RSSE, M32>& ins) {
-        verify(roundingMode() == ROUNDING::NEAREST);
-        u128 res = Impl::addss(get(ins.dst), zeroExtend<Xmm, u32>(get(resolve(ins.src))));
+        u128 res = Impl::addss(get(ins.dst), zeroExtend<Xmm, u32>(get(resolve(ins.src))), simdRoundingMode());
         set(ins.dst, res);
     }
 
     void Cpu::exec(const Addsd<RSSE, RSSE>& ins) {
-        verify(roundingMode() == ROUNDING::NEAREST);
-        u128 res = Impl::addsd(get(ins.dst), get(ins.src));
+        u128 res = Impl::addsd(get(ins.dst), get(ins.src), simdRoundingMode());
         set(ins.dst, res);
     }
 
     void Cpu::exec(const Addsd<RSSE, M64>& ins) {
-        verify(roundingMode() == ROUNDING::NEAREST);
-        u128 res = Impl::addsd(get(ins.dst), zeroExtend<Xmm, u64>(get(resolve(ins.src))));
+        u128 res = Impl::addsd(get(ins.dst), zeroExtend<Xmm, u64>(get(resolve(ins.src))), simdRoundingMode());
         set(ins.dst, res);
     }
 
     void Cpu::exec(const Subss<RSSE, RSSE>& ins) {
-        verify(roundingMode() == ROUNDING::NEAREST);
-        u128 res = Impl::subss(get(ins.dst), get(ins.src));
+        u128 res = Impl::subss(get(ins.dst), get(ins.src), simdRoundingMode());
         set(ins.dst, res);
     }
 
     void Cpu::exec(const Subss<RSSE, M32>& ins) {
-        verify(roundingMode() == ROUNDING::NEAREST);
-        u128 res = Impl::subss(get(ins.dst), zeroExtend<Xmm, u32>(get(resolve(ins.src))));
+        u128 res = Impl::subss(get(ins.dst), zeroExtend<Xmm, u32>(get(resolve(ins.src))), simdRoundingMode());
         set(ins.dst, res);
     }
 
     void Cpu::exec(const Subsd<RSSE, RSSE>& ins) {
-        verify(roundingMode() == ROUNDING::NEAREST);
-        u128 res = Impl::subsd(get(ins.dst), get(ins.src));
+        u128 res = Impl::subsd(get(ins.dst), get(ins.src), simdRoundingMode());
         set(ins.dst, res);
     }
 
     void Cpu::exec(const Subsd<RSSE, M64>& ins) {
-        verify(roundingMode() == ROUNDING::NEAREST);
-        u128 res = Impl::subsd(get(ins.dst), zeroExtend<Xmm, u64>(get(resolve(ins.src))));
+        u128 res = Impl::subsd(get(ins.dst), zeroExtend<Xmm, u64>(get(resolve(ins.src))), simdRoundingMode());
         set(ins.dst, res);
     }
 
     void Cpu::exec(const Mulss<RSSE, RSSE>& ins) {
-        verify(roundingMode() == ROUNDING::NEAREST);
-        u128 res = Impl::mulss(get(ins.dst), get(ins.src));
+        u128 res = Impl::mulss(get(ins.dst), get(ins.src), simdRoundingMode());
         set(ins.dst, res);
     }
 
     void Cpu::exec(const Mulss<RSSE, M32>& ins) {
-        verify(roundingMode() == ROUNDING::NEAREST);
-        u128 res = Impl::mulss(get(ins.dst), zeroExtend<Xmm, u32>(get(resolve(ins.src))));
+        u128 res = Impl::mulss(get(ins.dst), zeroExtend<Xmm, u32>(get(resolve(ins.src))), simdRoundingMode());
         set(ins.dst, res);
     }
 
     void Cpu::exec(const Mulsd<RSSE, RSSE>& ins) {
-        verify(roundingMode() == ROUNDING::NEAREST);
-        u128 res = Impl::mulsd(get(ins.dst), get(ins.src));
+        u128 res = Impl::mulsd(get(ins.dst), get(ins.src), simdRoundingMode());
         set(ins.dst, res);
     }
 
     void Cpu::exec(const Mulsd<RSSE, M64>& ins) {
-        verify(roundingMode() == ROUNDING::NEAREST);
-        u128 res = Impl::mulsd(get(ins.dst), zeroExtend<Xmm, u64>(get(resolve(ins.src))));
+        u128 res = Impl::mulsd(get(ins.dst), zeroExtend<Xmm, u64>(get(resolve(ins.src))), simdRoundingMode());
         set(ins.dst, res);
     }
 
     void Cpu::exec(const Divss<RSSE, RSSE>& ins) {
-        verify(roundingMode() == ROUNDING::NEAREST);
-        u128 res = Impl::divss(get(ins.dst), get(ins.src));
+        u128 res = Impl::divss(get(ins.dst), get(ins.src), simdRoundingMode());
         set(ins.dst, res);
     }
 
     void Cpu::exec(const Divss<RSSE, M32>& ins) {
-        verify(roundingMode() == ROUNDING::NEAREST);
-        u128 res = Impl::divss(get(ins.dst), zeroExtend<Xmm, u32>(get(resolve(ins.src))));
+        u128 res = Impl::divss(get(ins.dst), zeroExtend<Xmm, u32>(get(resolve(ins.src))), simdRoundingMode());
         set(ins.dst, res);
     }
 
     void Cpu::exec(const Divsd<RSSE, RSSE>& ins) {
-        verify(roundingMode() == ROUNDING::NEAREST);
-        u128 res = Impl::divsd(get(ins.dst), get(ins.src));
+        u128 res = Impl::divsd(get(ins.dst), get(ins.src), simdRoundingMode());
         set(ins.dst, res);
     }
 
     void Cpu::exec(const Divsd<RSSE, M64>& ins) {
-        verify(roundingMode() == ROUNDING::NEAREST);
-        u128 res = Impl::divsd(get(ins.dst), zeroExtend<Xmm, u64>(get(resolve(ins.src))));
+        u128 res = Impl::divsd(get(ins.dst), zeroExtend<Xmm, u64>(get(resolve(ins.src))), simdRoundingMode());
         set(ins.dst, res);
     }
 
     void Cpu::exec(const Sqrtss<RSSE, RSSE>& ins) {
-        verify(roundingMode() == ROUNDING::NEAREST);
-        u128 res = Impl::sqrtss(get(ins.dst), get(ins.src));
+        u128 res = Impl::sqrtss(get(ins.dst), get(ins.src), simdRoundingMode());
         set(ins.dst, res);
     }
 
     void Cpu::exec(const Sqrtss<RSSE, M32>& ins) {
-        verify(roundingMode() == ROUNDING::NEAREST);
-        u128 res = Impl::sqrtss(get(ins.dst), zeroExtend<Xmm, u32>(get(resolve(ins.src))));
+        u128 res = Impl::sqrtss(get(ins.dst), zeroExtend<Xmm, u32>(get(resolve(ins.src))), simdRoundingMode());
         set(ins.dst, res);
     }
 
     void Cpu::exec(const Sqrtsd<RSSE, RSSE>& ins) {
-        verify(roundingMode() == ROUNDING::NEAREST);
-        u128 res = Impl::sqrtsd(get(ins.dst), get(ins.src));
+        u128 res = Impl::sqrtsd(get(ins.dst), get(ins.src), simdRoundingMode());
         set(ins.dst, res);
     }
 
     void Cpu::exec(const Sqrtsd<RSSE, M64>& ins) {
-        verify(roundingMode() == ROUNDING::NEAREST);
-        u128 res = Impl::sqrtsd(get(ins.dst), zeroExtend<Xmm, u64>(get(resolve(ins.src))));
+        u128 res = Impl::sqrtsd(get(ins.dst), zeroExtend<Xmm, u64>(get(resolve(ins.src))), simdRoundingMode());
         set(ins.dst, res);
     }
 
     void Cpu::exec(const Comiss<RSSE, RSSE>& ins) {
-        verify(roundingMode() == ROUNDING::NEAREST);
-        Impl::comiss(get(ins.dst), get(ins.src), &flags_);
+        Impl::comiss(get(ins.dst), get(ins.src), &flags_, simdRoundingMode());
     }
 
     void Cpu::exec(const Comiss<RSSE, M32>& ins) {
-        verify(roundingMode() == ROUNDING::NEAREST);
-        Impl::comiss(get(ins.dst), zeroExtend<Xmm, u32>(get(resolve(ins.src))), &flags_);
+        Impl::comiss(get(ins.dst), zeroExtend<Xmm, u32>(get(resolve(ins.src))), &flags_, simdRoundingMode());
     }
 
     void Cpu::exec(const Comisd<RSSE, RSSE>& ins) {
-        verify(roundingMode() == ROUNDING::NEAREST);
-        Impl::comisd(get(ins.dst), get(ins.src), &flags_);
+        Impl::comisd(get(ins.dst), get(ins.src), &flags_, simdRoundingMode());
     }
 
     void Cpu::exec(const Comisd<RSSE, M64>& ins) {
-        verify(roundingMode() == ROUNDING::NEAREST);
-        Impl::comisd(get(ins.dst), zeroExtend<Xmm, u64>(get(resolve(ins.src))), &flags_);
+        Impl::comisd(get(ins.dst), zeroExtend<Xmm, u64>(get(resolve(ins.src))), &flags_, simdRoundingMode());
     }
 
     void Cpu::exec(const Ucomiss<RSSE, RSSE>& ins) {
-        verify(roundingMode() == ROUNDING::NEAREST);
-        Impl::comiss(get(ins.dst), get(ins.src), &flags_);
+        Impl::comiss(get(ins.dst), get(ins.src), &flags_, simdRoundingMode());
     }
 
     void Cpu::exec(const Ucomiss<RSSE, M32>& ins) {
-        verify(roundingMode() == ROUNDING::NEAREST);
-        Impl::comiss(get(ins.dst), zeroExtend<Xmm, u32>(get(resolve(ins.src))), &flags_);
+        Impl::comiss(get(ins.dst), zeroExtend<Xmm, u32>(get(resolve(ins.src))), &flags_, simdRoundingMode());
     }
 
     void Cpu::exec(const Ucomisd<RSSE, RSSE>& ins) {
-        verify(roundingMode() == ROUNDING::NEAREST);
-        Impl::comisd(get(ins.dst), get(ins.src), &flags_);
+        Impl::comisd(get(ins.dst), get(ins.src), &flags_, simdRoundingMode());
     }
 
     void Cpu::exec(const Ucomisd<RSSE, M64>& ins) {
-        verify(roundingMode() == ROUNDING::NEAREST);
-        Impl::comisd(get(ins.dst), zeroExtend<Xmm, u64>(get(resolve(ins.src))), &flags_);
+        Impl::comisd(get(ins.dst), zeroExtend<Xmm, u64>(get(resolve(ins.src))), &flags_, simdRoundingMode());
     }
 
-    void Cpu::exec(const Maxss<RSSE, RSSE>& ins) { set(ins.dst, Impl::maxss(get(ins.dst), get(ins.src))); }
-    void Cpu::exec(const Maxss<RSSE, M32>& ins) { set(ins.dst, Impl::maxss(get(ins.dst), zeroExtend<Xmm, u32>(get(resolve(ins.src))))); }
-    void Cpu::exec(const Maxsd<RSSE, RSSE>& ins) { set(ins.dst, Impl::maxsd(get(ins.dst), get(ins.src))); }
-    void Cpu::exec(const Maxsd<RSSE, M64>& ins) { set(ins.dst, Impl::maxsd(get(ins.dst), zeroExtend<Xmm, u64>(get(resolve(ins.src))))); }
+    void Cpu::exec(const Maxss<RSSE, RSSE>& ins) { set(ins.dst, Impl::maxss(get(ins.dst), get(ins.src), simdRoundingMode())); }
+    void Cpu::exec(const Maxss<RSSE, M32>& ins) { set(ins.dst, Impl::maxss(get(ins.dst), zeroExtend<Xmm, u32>(get(resolve(ins.src))), simdRoundingMode())); }
+    void Cpu::exec(const Maxsd<RSSE, RSSE>& ins) { set(ins.dst, Impl::maxsd(get(ins.dst), get(ins.src), simdRoundingMode())); }
+    void Cpu::exec(const Maxsd<RSSE, M64>& ins) { set(ins.dst, Impl::maxsd(get(ins.dst), zeroExtend<Xmm, u64>(get(resolve(ins.src))), simdRoundingMode())); }
 
-    void Cpu::exec(const Minss<RSSE, RSSE>& ins) { set(ins.dst, Impl::minss(get(ins.dst), get(ins.src))); }
-    void Cpu::exec(const Minss<RSSE, M32>& ins) { set(ins.dst, Impl::minss(get(ins.dst), zeroExtend<Xmm, u32>(get(resolve(ins.src))))); }
-    void Cpu::exec(const Minsd<RSSE, RSSE>& ins) { set(ins.dst, Impl::minsd(get(ins.dst), get(ins.src))); }
-    void Cpu::exec(const Minsd<RSSE, M64>& ins) { set(ins.dst, Impl::minsd(get(ins.dst), zeroExtend<Xmm, u64>(get(resolve(ins.src))))); }
+    void Cpu::exec(const Minss<RSSE, RSSE>& ins) { set(ins.dst, Impl::minss(get(ins.dst), get(ins.src), simdRoundingMode())); }
+    void Cpu::exec(const Minss<RSSE, M32>& ins) { set(ins.dst, Impl::minss(get(ins.dst), zeroExtend<Xmm, u32>(get(resolve(ins.src))), simdRoundingMode())); }
+    void Cpu::exec(const Minsd<RSSE, RSSE>& ins) { set(ins.dst, Impl::minsd(get(ins.dst), get(ins.src), simdRoundingMode())); }
+    void Cpu::exec(const Minsd<RSSE, M64>& ins) { set(ins.dst, Impl::minsd(get(ins.dst), zeroExtend<Xmm, u64>(get(resolve(ins.src))), simdRoundingMode())); }
 
     void Cpu::exec(const Cmpsd<RSSE, RSSE>& ins) {
         u64 res = Impl::cmpsd(get(ins.dst).lo, get(ins.src).lo, ins.cond);
@@ -1688,11 +1664,11 @@ namespace x64 {
     void Cpu::exec(const Cvttsd2si<R64, RSSE>& ins) { set(ins.dst, Impl::cvttsd2si64(get(ins.src))); }
     void Cpu::exec(const Cvttsd2si<R64, M64>& ins) { set(ins.dst, Impl::cvttsd2si64(zeroExtend<u128, u64>(get(resolve(ins.src))))); }
 
-    void Cpu::exec(const Stmxcsr<M32>&) {
-        verify(false, "Stmxcsr not implemented");
+    void Cpu::exec(const Stmxcsr<M32>& ins) {
+        set(resolve(ins.dst), mxcsr_.asDoubleWord());
     }
-    void Cpu::exec(const Ldmxcsr<M32>&) {
-        verify(false, "Ldmxcsr not implemented");
+    void Cpu::exec(const Ldmxcsr<M32>& ins) {
+        mxcsr_ = SimdControlStatus::fromDoubleWord(get(resolve(ins.src)));
     }
 
     void Cpu::exec(const Pand<RSSE, RMSSE>& ins) {

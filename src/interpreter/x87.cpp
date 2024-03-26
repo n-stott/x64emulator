@@ -59,7 +59,7 @@ namespace x64 {
         c.um = (cw >> 4) & 0x1;
         c.pm = (cw >> 5) & 0x1;
         c.pc = (cw >> 8) & 0x3;
-        c.rc = (ROUNDING)((cw >> 10) & 0x3);
+        c.rc = (FPU_ROUNDING)((cw >> 10) & 0x3);
         c.x  = (cw >> 12) & 0x1;
         return c;
     }

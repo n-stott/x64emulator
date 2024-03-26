@@ -7,7 +7,7 @@
 
 namespace x64 {
 
-    enum class ROUNDING {
+    enum class FPU_ROUNDING {
         NEAREST,
         DOWN,
         UP,
@@ -23,7 +23,7 @@ namespace x64 {
         bool pm { 1 };
 
         u8 pc { 0x3 };
-        ROUNDING rc { ROUNDING::NEAREST };
+        FPU_ROUNDING rc { FPU_ROUNDING::NEAREST };
         bool x { 0 };
 
         u16 asWord() const;

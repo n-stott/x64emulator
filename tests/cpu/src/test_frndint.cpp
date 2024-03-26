@@ -3,7 +3,7 @@
 #include "fmt/core.h"
 #include <vector>
 
-long double runFrndint(long double x, x64::ROUNDING rounding) {
+long double runFrndint(long double x, x64::FPU_ROUNDING rounding) {
     {
         unsigned short cw = 0xfedc;
         asm volatile("fnstcw %0" : "=m" (cw));
@@ -24,14 +24,14 @@ long double runFrndint(long double x, x64::ROUNDING rounding) {
     return x;
 }
 
-long double runFrndintVirtual(long double x, x64::ROUNDING rounding) {
+long double runFrndintVirtual(long double x, x64::FPU_ROUNDING rounding) {
     x64::X87Fpu fpu;
     fpu.control().rc = rounding;
     f80 r = x64::CpuImpl::frndint(f80::fromLongDouble(x), &fpu);
     return f80::toLongDouble(r);
 }
 
-int compareFrndint(long double x, x64::ROUNDING rounding) {
+int compareFrndint(long double x, x64::FPU_ROUNDING rounding) {
     long double native = runFrndint(x, rounding);
     long double virt = runFrndintVirtual(x, rounding);
     int diff = ::memcmp(&native, &virt, 10);
@@ -53,10 +53,10 @@ int main() {
 
     int rc = 0;
     for(long double d : testCases) {
-        rc |= compareFrndint(d, x64::ROUNDING::NEAREST);
-        rc |= compareFrndint(d, x64::ROUNDING::DOWN);
-        rc |= compareFrndint(d, x64::ROUNDING::UP);
-        rc |= compareFrndint(d, x64::ROUNDING::ZERO);
+        rc |= compareFrndint(d, x64::FPU_ROUNDING::NEAREST);
+        rc |= compareFrndint(d, x64::FPU_ROUNDING::DOWN);
+        rc |= compareFrndint(d, x64::FPU_ROUNDING::UP);
+        rc |= compareFrndint(d, x64::FPU_ROUNDING::ZERO);
     }
     return rc;
 }

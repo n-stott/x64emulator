@@ -671,7 +671,7 @@ namespace x64 {
         return rounding[(u16)x87fpu->control().rc](dst);
     }
 
-    u128 CpuImpl::addss(u128 dst, u128 src) {
+    u128 CpuImpl::addss(u128 dst, u128 src, SIMD_ROUNDING) {
         static_assert(sizeof(u32) == sizeof(float));
         float d;
         float s;
@@ -683,7 +683,7 @@ namespace x64 {
         return r;
     }
 
-    u128 CpuImpl::addsd(u128 dst, u128 src) {
+    u128 CpuImpl::addsd(u128 dst, u128 src, SIMD_ROUNDING) {
         static_assert(sizeof(u64) == sizeof(double));
         double d;
         double s;
@@ -695,7 +695,7 @@ namespace x64 {
         return r;
     }
 
-    u128 CpuImpl::subss(u128 dst, u128 src) {
+    u128 CpuImpl::subss(u128 dst, u128 src, SIMD_ROUNDING) {
         static_assert(sizeof(u32) == sizeof(float));
         float d;
         float s;
@@ -707,7 +707,7 @@ namespace x64 {
         return r;
     }
 
-    u128 CpuImpl::subsd(u128 dst, u128 src) {
+    u128 CpuImpl::subsd(u128 dst, u128 src, SIMD_ROUNDING) {
         static_assert(sizeof(u64) == sizeof(double));
         double d;
         double s;
@@ -719,7 +719,7 @@ namespace x64 {
         return r;
     }
 
-    void CpuImpl::comiss(u128 dst, u128 src, Flags* flags) {
+    void CpuImpl::comiss(u128 dst, u128 src, Flags* flags, SIMD_ROUNDING) {
         static_assert(sizeof(u32) == sizeof(float));
         float d;
         float s;
@@ -748,7 +748,7 @@ namespace x64 {
         flags->setSure();
     }
 
-    void CpuImpl::comisd(u128 dst, u128 src, Flags* flags) {
+    void CpuImpl::comisd(u128 dst, u128 src, Flags* flags, SIMD_ROUNDING) {
         static_assert(sizeof(u64) == sizeof(double));
         double d;
         double s;
@@ -778,7 +778,7 @@ namespace x64 {
         flags->setSureParity();
     }
 
-    u128 CpuImpl::mulss(u128 dst, u128 src) {
+    u128 CpuImpl::mulss(u128 dst, u128 src, SIMD_ROUNDING) {
         static_assert(sizeof(u64) == sizeof(double));
         float d;
         float s;
@@ -790,7 +790,7 @@ namespace x64 {
         return r;
     }
 
-    u128 CpuImpl::mulsd(u128 dst, u128 src) {
+    u128 CpuImpl::mulsd(u128 dst, u128 src, SIMD_ROUNDING) {
         static_assert(sizeof(u64) == sizeof(double));
         double d;
         double s;
@@ -802,7 +802,7 @@ namespace x64 {
         return r;
     }
 
-    u128 CpuImpl::divss(u128 dst, u128 src) {
+    u128 CpuImpl::divss(u128 dst, u128 src, SIMD_ROUNDING) {
         static_assert(sizeof(u32) == sizeof(float));
         float d;
         float s;
@@ -813,7 +813,7 @@ namespace x64 {
         return dst;
     }
 
-    u128 CpuImpl::divsd(u128 dst, u128 src) {
+    u128 CpuImpl::divsd(u128 dst, u128 src, SIMD_ROUNDING) {
         static_assert(sizeof(u64) == sizeof(double));
         double d;
         double s;
@@ -824,7 +824,7 @@ namespace x64 {
         return dst;
     }
 
-    u128 CpuImpl::sqrtss(u128 dst, u128 src) {
+    u128 CpuImpl::sqrtss(u128 dst, u128 src, SIMD_ROUNDING) {
         static_assert(sizeof(u32) == sizeof(float));
         float s;
         std::memcpy(&s, &src, sizeof(s));
@@ -833,7 +833,7 @@ namespace x64 {
         return dst;
     }
 
-    u128 CpuImpl::sqrtsd(u128 dst, u128 src) {
+    u128 CpuImpl::sqrtsd(u128 dst, u128 src, SIMD_ROUNDING) {
         static_assert(sizeof(u64) == sizeof(double));
         double s;
         std::memcpy(&s, &src, sizeof(s));
@@ -851,7 +851,7 @@ namespace x64 {
         else return src;
     }
 
-    u128 CpuImpl::maxss(u128 dst, u128 src) {
+    u128 CpuImpl::maxss(u128 dst, u128 src, SIMD_ROUNDING) {
         float d, s;
         std::memcpy(&d, &dst, sizeof(d));
         std::memcpy(&s, &src, sizeof(s));
@@ -860,7 +860,7 @@ namespace x64 {
         return dst;
     }
 
-    u128 CpuImpl::maxsd(u128 dst, u128 src) {
+    u128 CpuImpl::maxsd(u128 dst, u128 src, SIMD_ROUNDING) {
         double d, s;
         std::memcpy(&d, &dst, sizeof(d));
         std::memcpy(&s, &src, sizeof(s));
@@ -878,7 +878,7 @@ namespace x64 {
         else return src;
     }
 
-    u128 CpuImpl::minss(u128 dst, u128 src) {
+    u128 CpuImpl::minss(u128 dst, u128 src, SIMD_ROUNDING) {
         float d, s;
         std::memcpy(&d, &dst, sizeof(d));
         std::memcpy(&s, &src, sizeof(s));
@@ -887,7 +887,7 @@ namespace x64 {
         return dst;
     }
 
-    u128 CpuImpl::minsd(u128 dst, u128 src) {
+    u128 CpuImpl::minsd(u128 dst, u128 src, SIMD_ROUNDING) {
         double d, s;
         std::memcpy(&d, &dst, sizeof(d));
         std::memcpy(&s, &src, sizeof(s));

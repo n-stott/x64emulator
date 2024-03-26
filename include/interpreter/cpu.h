@@ -3,6 +3,7 @@
 
 #include "interpreter/registers.h"
 #include "interpreter/flags.h"
+#include "interpreter/simd.h"
 #include "interpreter/x87.h"
 #include "instructions/allinstructions.h"
 #include "instructions/x64instruction.h"
@@ -24,6 +25,7 @@ namespace x64 {
         Flags flags_;
         Registers regs_;
         X87Fpu x87fpu_;
+        SimdControlStatus mxcsr_;
 
         struct FPUState {
             u16 fcw;
@@ -68,7 +70,8 @@ namespace x64 {
         FPUState getFpuState() const;
         void setFpuState(const FPUState&);
 
-        ROUNDING roundingMode() const;
+        FPU_ROUNDING fpuRoundingMode() const;
+        SIMD_ROUNDING simdRoundingMode() const;
 
         u8  get(R8 reg) const  { return regs_.get(reg); }
         u16 get(R16 reg) const { return regs_.get(reg); }

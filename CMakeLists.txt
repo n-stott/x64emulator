@@ -28,6 +28,7 @@ target_link_libraries(elf-reader PUBLIC fmt::fmt)
 
 add_library(x64 STATIC
     src/interpreter/cpuimpl.cpp
+    src/interpreter/simd.cpp
     src/interpreter/x87.cpp
     src/utils/host.cpp
     src/utils/utils.cpp
@@ -54,6 +55,7 @@ add_library(emulator STATIC
     src/interpreter/checkedcpuimpl.cpp
     src/interpreter/mmu.cpp
     src/interpreter/registers.cpp
+    src/interpreter/simd.cpp
     src/interpreter/x87.cpp
     src/interpreter/syscalls.cpp
     src/instructions/x64instruction.cpp

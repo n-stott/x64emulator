@@ -1058,9 +1058,9 @@ namespace x64 {
         return nativeRes;
     }
 
-    u128 CheckedCpuImpl::addss(u128 dst, u128 src) {
+    u128 CheckedCpuImpl::addss(u128 dst, u128 src, SIMD_ROUNDING rounding) {
 #if GCC_COMPILER
-        u128 virtualRes = CpuImpl::addss(dst, src);
+        u128 virtualRes = CpuImpl::addss(dst, src, rounding);
         (void)virtualRes;
 
         u128 nativeRes = dst;
@@ -1074,9 +1074,9 @@ namespace x64 {
 #endif
     }
 
-    u128 CheckedCpuImpl::addsd(u128 dst, u128 src) {
+    u128 CheckedCpuImpl::addsd(u128 dst, u128 src, SIMD_ROUNDING rounding) {
 #if GCC_COMPILER
-        u128 virtualRes = CpuImpl::addsd(dst, src);
+        u128 virtualRes = CpuImpl::addsd(dst, src, rounding);
         (void)virtualRes;
 
         u128 nativeRes = dst;
@@ -1090,9 +1090,9 @@ namespace x64 {
 #endif
     }
 
-    u128 CheckedCpuImpl::subss(u128 dst, u128 src) {
+    u128 CheckedCpuImpl::subss(u128 dst, u128 src, SIMD_ROUNDING rounding) {
 #if GCC_COMPILER
-        u128 virtualRes = CpuImpl::subss(dst, src);
+        u128 virtualRes = CpuImpl::subss(dst, src, rounding);
         (void)virtualRes;
 
         u128 nativeRes = dst;
@@ -1106,9 +1106,9 @@ namespace x64 {
 #endif
     }
 
-    u128 CheckedCpuImpl::subsd(u128 dst, u128 src) {
+    u128 CheckedCpuImpl::subsd(u128 dst, u128 src, SIMD_ROUNDING rounding) {
 #if GCC_COMPILER
-        u128 virtualRes = CpuImpl::subsd(dst, src);
+        u128 virtualRes = CpuImpl::subsd(dst, src, rounding);
         (void)virtualRes;
 
         u128 nativeRes = dst;
@@ -1122,10 +1122,10 @@ namespace x64 {
 #endif
     }
 
-    void CheckedCpuImpl::comiss(u128 dst, u128 src, Flags* flags) {
+    void CheckedCpuImpl::comiss(u128 dst, u128 src, Flags* flags, SIMD_ROUNDING rounding) {
 #if GCC_COMPILER
         Flags virtualFlags = *flags;
-        CpuImpl::comiss(dst, src, &virtualFlags);
+        CpuImpl::comiss(dst, src, &virtualFlags, rounding);
 
         BEGIN_RFLAGS_SCOPE
             SET_RFLAGS(*flags);
@@ -1141,10 +1141,10 @@ namespace x64 {
 #endif
     }
 
-    void CheckedCpuImpl::comisd(u128 dst, u128 src, Flags* flags) {
+    void CheckedCpuImpl::comisd(u128 dst, u128 src, Flags* flags, SIMD_ROUNDING rounding) {
 #if GCC_COMPILER
         Flags virtualFlags = *flags;
-        CpuImpl::comisd(dst, src, &virtualFlags);
+        CpuImpl::comisd(dst, src, &virtualFlags, rounding);
 
         BEGIN_RFLAGS_SCOPE
             SET_RFLAGS(*flags);
@@ -1160,9 +1160,9 @@ namespace x64 {
 #endif
     }
 
-    u128 CheckedCpuImpl::maxss(u128 dst, u128 src) {
+    u128 CheckedCpuImpl::maxss(u128 dst, u128 src, SIMD_ROUNDING rounding) {
 #if GCC_COMPILER
-        u128 virtualRes = CpuImpl::maxss(dst, src);
+        u128 virtualRes = CpuImpl::maxss(dst, src, rounding);
         (void)virtualRes;
 
         u128 nativeRes = dst;
@@ -1175,9 +1175,9 @@ namespace x64 {
 #endif
     }
 
-    u128 CheckedCpuImpl::maxsd(u128 dst, u128 src) {
+    u128 CheckedCpuImpl::maxsd(u128 dst, u128 src, SIMD_ROUNDING rounding) {
 #if GCC_COMPILER
-        u128 virtualRes = CpuImpl::maxsd(dst, src);
+        u128 virtualRes = CpuImpl::maxsd(dst, src, rounding);
         (void)virtualRes;
 
         u128 nativeRes = dst;
@@ -1190,9 +1190,9 @@ namespace x64 {
 #endif
     }
 
-    u128 CheckedCpuImpl::minss(u128 dst, u128 src) {
+    u128 CheckedCpuImpl::minss(u128 dst, u128 src, SIMD_ROUNDING rounding) {
 #if GCC_COMPILER
-        u128 virtualRes = CpuImpl::minss(dst, src);
+        u128 virtualRes = CpuImpl::minss(dst, src, rounding);
         (void)virtualRes;
 
         u128 nativeRes = dst;
@@ -1205,9 +1205,9 @@ namespace x64 {
 #endif
     }
 
-    u128 CheckedCpuImpl::minsd(u128 dst, u128 src) {
+    u128 CheckedCpuImpl::minsd(u128 dst, u128 src, SIMD_ROUNDING rounding) {
 #if GCC_COMPILER
-        u128 virtualRes = CpuImpl::minsd(dst, src);
+        u128 virtualRes = CpuImpl::minsd(dst, src, rounding);
         (void)virtualRes;
 
         u128 nativeRes = dst;
@@ -1220,9 +1220,9 @@ namespace x64 {
 #endif
     }
 
-    u128 CheckedCpuImpl::mulss(u128 dst, u128 src) {
+    u128 CheckedCpuImpl::mulss(u128 dst, u128 src, SIMD_ROUNDING rounding) {
 #if GCC_COMPILER
-        u128 virtualRes = CpuImpl::mulss(dst, src);
+        u128 virtualRes = CpuImpl::mulss(dst, src, rounding);
         (void)virtualRes;
 
         u128 nativeRes = dst;
@@ -1236,9 +1236,9 @@ namespace x64 {
 #endif
     }
 
-    u128 CheckedCpuImpl::mulsd(u128 dst, u128 src) {
+    u128 CheckedCpuImpl::mulsd(u128 dst, u128 src, SIMD_ROUNDING rounding) {
 #if GCC_COMPILER
-        u128 virtualRes = CpuImpl::mulsd(dst, src);
+        u128 virtualRes = CpuImpl::mulsd(dst, src, rounding);
         (void)virtualRes;
 
         u128 nativeRes = dst;
@@ -1252,9 +1252,9 @@ namespace x64 {
 #endif
     }
 
-    u128 CheckedCpuImpl::divss(u128 dst, u128 src) {
+    u128 CheckedCpuImpl::divss(u128 dst, u128 src, SIMD_ROUNDING rounding) {
 #if GCC_COMPILER
-        u128 virtualRes = CpuImpl::divss(dst, src);
+        u128 virtualRes = CpuImpl::divss(dst, src, rounding);
         (void)virtualRes;
 
         u128 nativeRes = dst;
@@ -1268,9 +1268,9 @@ namespace x64 {
 #endif
     }
 
-    u128 CheckedCpuImpl::divsd(u128 dst, u128 src) {
+    u128 CheckedCpuImpl::divsd(u128 dst, u128 src, SIMD_ROUNDING rounding) {
 #if GCC_COMPILER
-        u128 virtualRes = CpuImpl::divsd(dst, src);
+        u128 virtualRes = CpuImpl::divsd(dst, src, rounding);
         (void)virtualRes;
 
         u128 nativeRes = dst;
@@ -1284,9 +1284,9 @@ namespace x64 {
 #endif
     }
 
-    u128 CheckedCpuImpl::sqrtss(u128 dst, u128 src) {
+    u128 CheckedCpuImpl::sqrtss(u128 dst, u128 src, SIMD_ROUNDING rounding) {
 #if GCC_COMPILER
-        u128 virtualRes = CpuImpl::sqrtss(dst, src);
+        u128 virtualRes = CpuImpl::sqrtss(dst, src, rounding);
         (void)virtualRes;
 
         u128 nativeRes = dst;
@@ -1300,9 +1300,9 @@ namespace x64 {
 #endif
     }
 
-    u128 CheckedCpuImpl::sqrtsd(u128 dst, u128 src) {
+    u128 CheckedCpuImpl::sqrtsd(u128 dst, u128 src, SIMD_ROUNDING rounding) {
 #if GCC_COMPILER
-        u128 virtualRes = CpuImpl::sqrtsd(dst, src);
+        u128 virtualRes = CpuImpl::sqrtsd(dst, src, rounding);
         (void)virtualRes;
 
         u128 nativeRes = dst;
