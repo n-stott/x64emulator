@@ -1138,6 +1138,7 @@ namespace x64 {
     }
 
     u128 CpuImpl::punpckhqdq(u128 dst, u128 src) {
+        dst.lo = dst.hi;
         dst.hi = src.hi;
         return dst;
     }

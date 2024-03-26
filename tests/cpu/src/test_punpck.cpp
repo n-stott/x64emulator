@@ -20,6 +20,21 @@ static u128 punpcklbwVirtual(u128 dst, u128 src) {
     return x64::CpuImpl::punpcklbw(dst, src);
 }
 
+static u128 punpckhqdqNative(u128 dst, u128 src) {
+    __m128i DST;
+    __m128i SRC;
+    static_assert(sizeof(SRC) == sizeof(src));
+    ::memcpy(&DST, &dst, sizeof(dst));
+    ::memcpy(&SRC, &src, sizeof(src));
+    DST = _mm_unpackhi_epi64(DST, SRC);
+    ::memcpy(&dst, &DST, sizeof(dst));
+    return dst;
+}
+
+static u128 punpckhqdqVirtual(u128 dst, u128 src) {
+    return x64::CpuImpl::punpckhqdq(dst, src);
+}
+
 int compare(std::string name, punpck native, punpck virt, u128 a, u128 b) {
     u128 rn = native(a, b);
     u128 rv = virt(a, b);
@@ -36,6 +51,8 @@ int compare(std::string name, punpck native, punpck virt, u128 a, u128 b) {
 int main() {
     int rc = 0;
     rc = rc | compare("punpcklbw", &punpcklbwNative, &punpcklbwVirtual, 
+                        u128{0x12345678, 0x87654321}, u128{0x87654321, 0x12345678});
+    rc = rc | compare("punpckhqdq", &punpckhqdqNative, &punpckhqdqVirtual, 
                         u128{0x12345678, 0x87654321}, u128{0x87654321, 0x12345678});
     return rc;
 }
