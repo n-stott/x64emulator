@@ -20,6 +20,7 @@
 #include <sys/vfs.h>
 #include <sys/xattr.h>
 #include <fcntl.h>
+#include <time.h>
 #include <unistd.h>
 
 Host::Host() {

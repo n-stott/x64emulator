@@ -6,6 +6,7 @@
 #include <deque>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 namespace elf {
     class Elf64;
