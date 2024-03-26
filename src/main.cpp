@@ -20,6 +20,7 @@ int main(int argc, char* argv[], char* envp[]) {
     for(char** env = envp; *env != 0; ++env) {
         environmentVariables.push_back(*env);
     }
+    environmentVariables.push_back("GLIBC_TUNABLES=glibc.pthread.rseq=0");
 
     x64::Interpreter interpreter;
     interpreter.setLogInstructions(false);
