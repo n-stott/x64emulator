@@ -105,10 +105,10 @@ Host::CPUID Host::cpuid(u32 a, u32 c) {
     s.c = c;
     s.b = s.d = 0;
 
-    asm volatile ("xchg %%ebx, %1\n"
+    asm volatile ("xchgq %%rbx, %q1\n"
                   "cpuid\n"
-                  "xchg %%ebx, %1\n" : "=a" (s.a), "=r" (s.b), "=c" (s.c), "=d" (s.d)
-                                     : "0" (a), "2" (c));
+                  "xchgq %%rbx, %q1\n" : "=a" (s.a), "=r" (s.b), "=c" (s.c), "=d" (s.d)
+                                       : "0" (a), "2" (c));
 
     if(a == 1) {
         // Pretend that we run on cpu 0
