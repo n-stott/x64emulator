@@ -134,6 +134,7 @@ public:
     static ErrnoOrBuffer stat(const std::string& path);
     static ErrnoOrBuffer fstat(FD fd);
     static ErrnoOrBuffer lstat(const std::string& path);
+    static ErrnoOrBuffer fstatat64(FD dirfd, const std::string& path, int flags);
     static off_t lseek(FD fd, off_t offset, int whence);
     static FD openat(FD dirfd, const std::string& pathname, int flags, mode_t mode);
     static int access(const std::string& path, int mode);
@@ -151,6 +152,7 @@ public:
     static int connect(int sockfd, const Buffer& addr);
     static ErrnoOrBuffer getsockname(int sockfd, u32 buffersize);
     static ErrnoOrBuffer getpeername(int sockfd, u32 buffersize);
+    static int bind(FD sockfd, const Buffer& addr);
 
     static ErrnoOr<std::pair<Buffer, Buffer>> recvfrom(FD sockfd, size_t len, int flags, bool requireSrcAddress);
     static ssize_t recvmsg(FD sockfd, int flags, Buffer* msg_name, std::vector<Buffer>* msg_iov, Buffer* msg_control, int* msg_flags);

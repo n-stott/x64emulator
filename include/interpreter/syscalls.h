@@ -163,6 +163,8 @@ namespace x64 {
         ssize_t recvfrom(int sockfd, Ptr buf, size_t len, int flags, Ptr src_addr, Ptr32 addrlen);
         // 0x2f
         ssize_t recvmsg(int sockfd, Ptr msg, int flags);
+        // 0x31
+        int bind(int sockfd, Ptr addr, socklen_t addrlen);
         // 0x33
         int getsockname(int sockfd, Ptr addr, Ptr32 addrlen);
         // 0x34
@@ -225,6 +227,8 @@ namespace x64 {
         int tgkill(int tgid, int tid, int sig);
         // 0x101
         int openat(int dirfd, Ptr pathname, int flags, mode_t mode);
+        // 0x106
+        int fstatat64(int dirfd, Ptr pathname, Ptr statbuf, int flags);
         // 0x10e
         int pselect6(int nfds, Ptr readfds, Ptr writefds, Ptr exceptfds, Ptr timeout, Ptr sigmask);
         // 0x111

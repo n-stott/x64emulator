@@ -50,6 +50,7 @@ namespace x64 {
             case 0x2a: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::connect, regs));
             case 0x2d: return vm_->set(R64::RAX, invoke_syscall_6(&Sys::recvfrom, regs));
             case 0x2f: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::recvmsg, regs));
+            case 0x31: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::bind, regs));
             case 0x33: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::getsockname, regs));
             case 0x34: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::getpeername, regs));
             case 0x38: return vm_->set(R64::RAX, invoke_syscall_5(&Sys::clone, regs));
@@ -85,6 +86,7 @@ namespace x64 {
             case 0xe7: return vm_->set(R64::RAX, invoke_syscall_1(&Sys::exit_group, regs));
             case 0xea: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::tgkill, regs));
             case 0x101: return vm_->set(R64::RAX, invoke_syscall_4(&Sys::openat, regs));
+            case 0x106: return vm_->set(R64::RAX, invoke_syscall_4(&Sys::fstatat64, regs));
             case 0x10e: return vm_->set(R64::RAX, invoke_syscall_6(&Sys::pselect6, regs));
             case 0x111: return vm_->set(R64::RAX, invoke_syscall_2(&Sys::set_robust_list, regs));
             case 0x112: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::get_robust_list, regs));
@@ -653,6 +655,16 @@ namespace x64 {
         return nbytes;
     }
 
+    int Sys::bind(int sockfd, Ptr addr, socklen_t addrlen) {
+        Buffer saddr(mmu_->readFromMmu<u8>(addr, addrlen));
+        int rc = Host::bind(Host::FD{sockfd}, saddr);
+        if(vm_->logSyscalls()) {
+            fmt::print("Sys::bind(sockfd={}, addr={:#x}, addrlen={}) = {}\n",
+                        sockfd, addr.address(), addrlen, rc);
+        }
+        return rc;
+    }
+
     ssize_t Sys::getdents64(int fd, Ptr dirp, size_t count) {
         auto errnoOrBuffer = Host::getdents64(Host::FD{fd}, count);
         if(vm_->logSyscalls()) {
@@ -699,6 +711,19 @@ namespace x64 {
         Host::FD fd = Host::openat(Host::FD{dirfd}, path, flags, mode);
         if(vm_->logSyscalls()) fmt::print("Sys::openat(dirfd={}, path={}, flags={}, mode={}) = {}\n", dirfd, path, flags, mode, fd.fd);
         return fd.fd;
+    }
+
+    int Sys::fstatat64(int dirfd, Ptr pathname, Ptr statbuf, int flags) {
+        std::string path = mmu_->readString(pathname);
+        auto errnoOrBuffer = Host::fstatat64(Host::FD{dirfd}, path, flags);
+        if(vm_->logSyscalls()) {
+            fmt::print("Sys::fstatat64(dirfd={}, path={}, statbuf={:#x}, flags={}) = {}\n",
+                        dirfd, path, statbuf.address(), flags, errnoOrBuffer.errorOr(0));
+        }
+        return errnoOrBuffer.errorOrWith<int>([&](const auto& buffer) {
+            mmu_->copyToMmu(statbuf, buffer.data(), buffer.size());
+            return 0;
+        });
     }
 
     int Sys::pselect6(int nfds, Ptr readfds, Ptr writefds, Ptr exceptfds, Ptr timeout, Ptr sigmask) {

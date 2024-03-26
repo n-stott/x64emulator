@@ -243,6 +243,15 @@ ErrnoOrBuffer Host::lstat(const std::string& path) {
     return ErrnoOrBuffer(Buffer{std::move(buf)});
 }
 
+ErrnoOrBuffer Host::fstatat64(FD dirfd, const std::string& path, int flags) {
+    struct stat st;
+    int rc = ::fstatat(dirfd.fd, path.c_str(), &st, flags);
+    if(rc < 0) return ErrnoOrBuffer(-errno);
+    std::vector<u8> buf(sizeof(st), 0x0);
+    std::memcpy(buf.data(), &st, sizeof(st));
+    return ErrnoOrBuffer(Buffer{std::move(buf)});
+}
+
 off_t Host::lseek(FD fd, off_t offset, int whence) {
     off_t ret = ::lseek(fd.fd, offset, whence);
     if(ret < 0) return -errno;
@@ -358,6 +367,12 @@ ErrnoOrBuffer Host::getpeername(int sockfd, u32 buffersize) {
     if(ret < 0) return ErrnoOrBuffer(-errno);
     buffer.resize((size_t)buffersize);
     return ErrnoOrBuffer(Buffer{std::move(buffer)});
+}
+
+int Host::bind(FD sockfd, const Buffer& addr) {
+    int ret = ::bind(sockfd.fd, (const struct sockaddr*)addr.data(), (socklen_t)addr.size());
+    if(ret < 0) return -errno;
+    return ret;
 }
 
 ErrnoOr<std::pair<Buffer, Buffer>> Host::recvfrom(FD sockfd, size_t len, int flags, bool requireSrcAddress) {
