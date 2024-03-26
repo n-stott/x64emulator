@@ -616,7 +616,9 @@ namespace x64 {
         void exec(const Shufpd<RSSE, RMSSE, Imm>&);
 
         void exec(const Movlps<RSSE, M64>&);
+        void exec(const Movlps<M64, RSSE>&);
         void exec(const Movhps<RSSE, M64>&);
+        void exec(const Movhps<M64, RSSE>&);
         void exec(const Movhlps<RSSE, RSSE>&);
 
         void exec(const Punpcklbw<RSSE, RMSSE>&);

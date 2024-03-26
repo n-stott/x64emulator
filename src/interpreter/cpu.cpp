@@ -518,7 +518,9 @@ namespace x64 {
             case Insn::SHUFPS_RSSE_RMSSE_IMM: return exec(Shufps<RSSE, RMSSE, Imm>{insn.op0<RSSE>(), insn.op1<RMSSE>(), insn.op2<Imm>()});
             case Insn::SHUFPD_RSSE_RMSSE_IMM: return exec(Shufpd<RSSE, RMSSE, Imm>{insn.op0<RSSE>(), insn.op1<RMSSE>(), insn.op2<Imm>()});
             case Insn::MOVLPS_RSSE_M64: return exec(Movlps<RSSE, M64>{insn.op0<RSSE>(), insn.op1<M64>()});
+            case Insn::MOVLPS_M64_RSSE: return exec(Movlps<M64, RSSE>{insn.op0<M64>(), insn.op1<RSSE>()});
             case Insn::MOVHPS_RSSE_M64: return exec(Movhps<RSSE, M64>{insn.op0<RSSE>(), insn.op1<M64>()});
+            case Insn::MOVHPS_M64_RSSE: return exec(Movhps<M64, RSSE>{insn.op0<M64>(), insn.op1<RSSE>()});
             case Insn::MOVHLPS_RSSE_RSSE: return exec(Movhlps<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
             case Insn::PUNPCKLBW_RSSE_RMSSE: return exec(Punpcklbw<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
             case Insn::PUNPCKLWD_RSSE_RMSSE: return exec(Punpcklwd<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
@@ -1756,11 +1758,21 @@ namespace x64 {
         set(ins.dst, dst);
     }
 
+    void Cpu::exec(const Movlps<M64, RSSE>& ins) {
+        u128 src = get(ins.src);
+        set(resolve(ins.dst), src.lo);
+    }
+
     void Cpu::exec(const Movhps<RSSE, M64>& ins) {
         u128 dst = get(ins.dst);
         u64 src = get(resolve(ins.src));
         dst.hi = src;
         set(ins.dst, dst);
+    }
+
+    void Cpu::exec(const Movhps<M64, RSSE>& ins) {
+        u128 src = get(ins.src);
+        set(resolve(ins.dst), src.hi);
     }
 
     void Cpu::exec(const Movhlps<RSSE, RSSE>& ins) {
