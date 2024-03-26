@@ -2981,6 +2981,10 @@ namespace x64 {
         return X64Instruction::make<Insn::WRPKRU>(address, 0);
     }
 
+    X64Instruction CapstoneWrapper::makeRdsspd(u64 address) {
+        return X64Instruction::make<Insn::RDSSPD>(address, 0);
+    }
+
     CapstoneWrapper::DisassemblyResult CapstoneWrapper::disassembleRange(const u8* begin, size_t size, u64 address) {
         std::vector<X64Instruction> instructions;
         instructions.reserve(size/2); // some initial capacity
@@ -3011,18 +3015,35 @@ namespace x64 {
             }
             if(codeSize != 0) {
                 if(codeSize >= 3) {
-                    if(codeBegin[0] == 0xf && codeBegin[1] == 0x1 && codeBegin[2] == 0xee) {
+                    if(codeBegin[0] == 0xf
+                    && codeBegin[1] == 0x1
+                    && codeBegin[2] == 0xee) {
                         instructions.push_back(makeRdpkru(codeAddress));
                         codeAddress += 3;
                         codeBegin += 3;
                         codeSize -= 3;
                         continue;
                     }
-                    if(codeBegin[0] == 0xf && codeBegin[1] == 0x1 && codeBegin[2] == 0xef) {
+                    if(codeBegin[0] == 0xf
+                    && codeBegin[1] == 0x1
+                    && codeBegin[2] == 0xef) {
                         instructions.push_back(makeWrpkru(codeAddress));
                         codeAddress += 3;
                         codeBegin += 3;
                         codeSize -= 3;
+                        continue;
+                    }
+                }
+                if(codeSize >= 5) {
+                    if(codeBegin[0] == 0xf3
+                    && codeBegin[1] == 0x48
+                    && codeBegin[2] == 0x0f
+                    && codeBegin[3] == 0x1e
+                    && codeBegin[4] == 0xc8) {
+                        instructions.push_back(makeRdsspd(codeAddress));
+                        codeAddress += 5;
+                        codeBegin += 5;
+                        codeSize -= 5;
                         continue;
                     }
                 }

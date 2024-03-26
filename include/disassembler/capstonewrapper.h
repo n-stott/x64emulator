@@ -260,6 +260,8 @@ namespace x64 {
         static X64Instruction makeRdpkru(u64 address);
         static X64Instruction makeWrpkru(u64 address);
 
+        static X64Instruction makeRdsspd(u64 address);
+
     };
 }
 

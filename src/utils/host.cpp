@@ -104,10 +104,12 @@ Host::CPUID Host::cpuid(u32 a, u32 c) {
     s.a = a;
     s.c = c;
     s.b = s.d = 0;
-    u64 savedRbx = 0;
-    asm volatile("xchgq  %%rbx, %0" : "+D"(savedRbx));
-    asm volatile("cpuid" : "+a"(s.a), "=b"(s.b), "+c"(s.c), "=d"(s.d));
-    asm volatile("xchgq  %%rbx, %0" : "+D"(savedRbx));
+
+    asm volatile ("xchg %%ebx, %1\n"
+                  "cpuid\n"
+                  "xchg %%ebx, %1\n" : "=a" (s.a), "=r" (s.b), "=c" (s.c), "=d" (s.d)
+                                     : "0" (a), "2" (c));
+
     if(a == 1) {
         // Pretend that we run on cpu 0
         s.b = s.b & 0x00FFFFFF;
@@ -121,6 +123,12 @@ Host::CPUID Host::cpuid(u32 a, u32 c) {
                        | 1 << 28 // AVX
                        | 1 << 30 // RDRAND
                        );
+        s.c = s.c & (~mask);
+    }
+    if(a == 7 && c == 0) {
+        // Pretend that we do not have
+        u32 mask = (u32)(1 << 7 // Control flow enforcement: shadow stack
+                        );
         s.c = s.c & (~mask);
     }
     return s;

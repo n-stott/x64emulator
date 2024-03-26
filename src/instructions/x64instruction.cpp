@@ -741,6 +741,7 @@ namespace utils {
             case Insn::FWAIT: return toString("fwait");
             case Insn::RDPKRU: return toString("rdpkru");
             case Insn::WRPKRU: return toString("wrpkru");
+            case Insn::RDSSPD: return toString("rdsspd");
         }
         assert(false);
         return "unreachable";

@@ -680,6 +680,8 @@ namespace x64 {
         void exec(const Rdpkru&);
         void exec(const Wrpkru&);
 
+        void exec(const Rdsspd&);
+
     };
 
 }

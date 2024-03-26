@@ -563,6 +563,7 @@ namespace x64 {
             case Insn::FWAIT: return exec(Fwait{});
             case Insn::RDPKRU: return exec(Rdpkru{});
             case Insn::WRPKRU: return exec(Wrpkru{});
+            case Insn::RDSSPD: return exec(Rdsspd{});
         }
     }
 
@@ -2096,6 +2097,10 @@ namespace x64 {
 
     void Cpu::exec(const Wrpkru&) {
         verify(false, "Wrpkru not implemented");
+    }
+
+    void Cpu::exec(const Rdsspd&) {
+        // this is a nop
     }
 
     void Cpu::exec(const Fwait&) {

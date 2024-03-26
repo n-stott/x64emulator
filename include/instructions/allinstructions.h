@@ -1153,6 +1153,10 @@ namespace x64 {
 
     };
 
+    struct Rdsspd {
+
+    };
+
     template<typename Dst>
     struct Fxsave {
         Dst dst;

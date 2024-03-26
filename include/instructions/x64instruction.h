@@ -448,6 +448,7 @@ namespace x64 {
         FWAIT,
         RDPKRU,
         WRPKRU,
+        RDSSPD,
     };
 
     template<size_t N>
