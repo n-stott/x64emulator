@@ -27,9 +27,16 @@ int compareRol32(u32 val) {
     x64::Flags virtFlags;
     u32 virtRol = runRol32Virtual(val, count, &virtFlags);
 
-    if(virtRol == nativeRol
-    && virtFlags.carry == nativeFlags.carry
-    && virtFlags.overflow == nativeFlags.overflow) return 0;
+    if(count == 0) {
+        if(virtRol == nativeRol) return 0;
+    } else  if(count == 1) {
+        if(virtRol == nativeRol
+        && virtFlags.carry == nativeFlags.carry
+        && virtFlags.overflow == nativeFlags.overflow) return 0;    
+    } else {
+        if(virtRol == nativeRol
+        && virtFlags.carry == nativeFlags.carry) return 0;
+    }
 
     fmt::print(stderr, "rol32 {:#x} {:#x} failed\n", val, count);
     fmt::print(stderr, "native : rol={:#x} carry={} overflow={}\n",

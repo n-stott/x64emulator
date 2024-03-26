@@ -27,9 +27,16 @@ int compareShl32(u32 val) {
     x64::Flags virtFlags;
     u32 virtShl = runShl32Virtual(val, count%32, &virtFlags);
 
-    if(virtShl == nativeShl
-    && virtFlags.carry == nativeFlags.carry
-    && virtFlags.overflow == nativeFlags.overflow) return 0;
+    if(count == 0) {
+        if(virtShl == nativeShl) return 0;
+    } else  if(count == 1) {
+        if(virtShl == nativeShl
+        && virtFlags.carry == nativeFlags.carry
+        && virtFlags.overflow == nativeFlags.overflow) return 0;    
+    } else {
+        if(virtShl == nativeShl
+        && virtFlags.carry == nativeFlags.carry) return 0;
+    }
 
     fmt::print(stderr, "shl32 {:#x} {:#x} failed\n", val, count);
     fmt::print(stderr, "native : rol={:#x} carry={} overflow={}\n",

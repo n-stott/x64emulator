@@ -27,9 +27,16 @@ int compareRor32(u32 val) {
     x64::Flags virtFlags;
     u32 virtRor = runRor32Virtual(val, count, &virtFlags);
 
-    if(virtRor == nativeRor
-    && virtFlags.carry == nativeFlags.carry
-    && virtFlags.overflow == nativeFlags.overflow) return 0;
+    if(count == 0) {
+        if(virtRor == nativeRor) return 0;
+    } else  if(count == 1) {
+        if(virtRor == nativeRor
+        && virtFlags.carry == nativeFlags.carry
+        && virtFlags.overflow == nativeFlags.overflow) return 0;    
+    } else {
+        if(virtRor == nativeRor
+        && virtFlags.carry == nativeFlags.carry) return 0;
+    }
 
     fmt::print(stderr, "ror32 {:#x} {:#x} failed\n", val, count);
     fmt::print(stderr, "native : ror={:#x} carry={} overflow={}\n",

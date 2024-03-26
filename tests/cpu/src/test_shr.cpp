@@ -27,9 +27,16 @@ int compareShr32(u32 val) {
     x64::Flags virtFlags;
     u32 virtShr = runShr32Virtual(val, count%32, &virtFlags);
 
-    if(virtShr == nativeShr
-    && virtFlags.carry == nativeFlags.carry
-    && virtFlags.overflow == nativeFlags.overflow) return 0;
+    if(count == 0) {
+        if(virtShr == nativeShr) return 0;
+    } else  if(count == 1) {
+        if(virtShr == nativeShr
+        && virtFlags.carry == nativeFlags.carry
+        && virtFlags.overflow == nativeFlags.overflow) return 0;    
+    } else {
+        if(virtShr == nativeShr
+        && virtFlags.carry == nativeFlags.carry) return 0;
+    }
 
     fmt::print(stderr, "shr32 {:#x} {:#x} failed\n", val, count);
     fmt::print(stderr, "native : rol={:#x} carry={} overflow={}\n",
