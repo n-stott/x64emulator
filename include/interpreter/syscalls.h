@@ -245,6 +245,8 @@ namespace x64 {
         ssize_t getrandom(Ptr buf, size_t len, int flags);
         // 0x14c
         int statx(int dirfd, Ptr pathname, int flags, unsigned int mask, Ptr statxbuf);
+        // 0x1b3
+        int clone3(Ptr uargs, size_t size);
 
 
     private:

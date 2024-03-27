@@ -95,6 +95,7 @@ namespace x64 {
             case 0x12e: return vm_->set(R64::RAX, invoke_syscall_4(&Sys::prlimit64, regs));
             case 0x13e: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::getrandom, regs));
             case 0x14c: return vm_->set(R64::RAX, invoke_syscall_5(&Sys::statx, regs));
+            case 0x1b3: return vm_->set(R64::RAX, invoke_syscall_2(&Sys::clone3, regs));
             default: break;
         }
         verify(false, [&]() {
@@ -820,6 +821,14 @@ namespace x64 {
             mmu_->copyToMmu(statxbuf, buffer.data(), buffer.size());
             return 0;
         });
+    }
+
+    int Sys::clone3(Ptr uargs, size_t size) {
+        if(vm_->logSyscalls()) {
+            fmt::print("Sys::clone3(uargs={:#x}, size={}) = -ENOTSUP\n",
+                        uargs.address(), size);
+        }
+        return -ENOTSUP;
     }
 
 }
