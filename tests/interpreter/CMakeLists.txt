@@ -81,3 +81,8 @@ target_compile_options(test_fmt_print PUBLIC ${CC_OPTIONS})
 target_link_libraries(test_fmt_print PUBLIC fmt::fmt-header-only)
 target_link_options(test_fmt_print PUBLIC ${LD_OPTIONS} -static)
 add_test(NAME fmt_print COMMAND ${CMAKE_BINARY_DIR}/interpreter test_fmt_print)
+
+add_executable(test_thread src/test_thread.cpp)
+target_compile_options(test_thread PUBLIC ${CC_OPTIONS})
+target_link_libraries(test_thread PUBLIC pthread)
+add_test(NAME thread COMMAND ${CMAKE_BINARY_DIR}/interpreter test_thread)
