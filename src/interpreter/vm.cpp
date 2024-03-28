@@ -7,7 +7,7 @@
 namespace x64 {
 
 
-    VM::VM() : cpu_(this, &mmu_), syscalls_(this, &mmu_) {
+    VM::VM() : cpu_(this, &mmu_), syscalls_(this, &cpu_, &mmu_) {
         stop_ = false;
     }
 
@@ -46,16 +46,49 @@ namespace x64 {
         dumpStackTrace();
     }
 
+    void VM::setMainThread(Thread* mainThread) {
+        contextSwitch(mainThread);
+    }
+
+    void VM::contextSwitch(Thread* newThread) {
+        if(!!currentThread_) {
+            // if we have a current thread, we need to save the registers to that thread.
+            currentThread_->flags = cpu_.flags_;
+            currentThread_->regs = cpu_.regs_;
+            currentThread_->x87fpu = cpu_.x87fpu_;
+            currentThread_->mxcsr = cpu_.mxcsr_;
+            currentThread_->callstack = currentThreadCallstack_;
+        }
+        if(!!newThread) {
+            // we now install the new thread
+            currentThread_ = newThread;
+            cpu_.flags_ = currentThread_->flags;
+            cpu_.regs_ = currentThread_->regs;
+            cpu_.x87fpu_ = currentThread_->x87fpu;
+            cpu_.mxcsr_ = currentThread_->mxcsr;
+            currentThreadCallstack_ = currentThread_->callstack;
+            notifyJmp(cpu_.regs_.rip()); // no need to cache the destination here
+        } else {
+            currentThread_ = nullptr;
+            cpu_.flags_ = Flags{};
+            cpu_.regs_ = Registers{};
+            cpu_.x87fpu_ = X87Fpu{};
+            cpu_.mxcsr_ = SimdControlStatus{};
+            currentThreadCallstack_ = {};
+        }
+    }
+
     extern bool signal_interrupt;
 
-    void VM::execute(u64 address) {
+    void VM::execute(Thread* thread, size_t scheduledTicks) {
         if(stop_) return;
-        cpu_.regs_.rip() = address;
-        notifyCall(address);
+        assert(!!thread);
+        contextSwitch(thread);
+        notifyCall(cpu_.get(R64::RIP));
         size_t ticks = 0;
         if(logInstructions()) {
             try {
-                while(!stop_) {
+                while(!stop_ && ticks < scheduledTicks) {
                     verify(!signal_interrupt);
                     const X64Instruction& instruction = fetchInstruction();
                     log(ticks, instruction);
@@ -63,33 +96,35 @@ namespace x64 {
                     cpu_.exec(instruction);
                 }
             } catch(const VerificationException&) {
-                fmt::print("Interpreter crash after {} instructions\n", ticks);
+                fmt::print("Interpreter crash after {} instructions\n", currentThread_->ticks+ticks);
                 crash();
             }
         } else {
             try {
-                while(!stop_) {
+                while(!stop_ && ticks < scheduledTicks) {
                     verify(!signal_interrupt);
                     const X64Instruction& instruction = fetchInstruction();
                     ++ticks;
                     cpu_.exec(instruction);
                 }
             } catch(const VerificationException&) {
-                fmt::print("Interpreter crash after {} instructions\n", ticks);
+                fmt::print("Interpreter crash after {} instructions\n", currentThread_->ticks+ticks);
                 crash();
             }
         }
-        fmt::print("VM completed execution of {} instructions\n", ticks);
+        assert(!!currentThread_);
+        currentThread_->ticks += ticks;
+        contextSwitch(nullptr);
     }
 
     const X64Instruction& VM::fetchInstruction() {
-        if (executionPoint_.nextInstruction >= executionPoint_.sectionEnd) {
+        if (currentThreadExecutionPoint_.nextInstruction >= currentThreadExecutionPoint_.sectionEnd) {
             updateExecutionPoint(cpu_.regs_.rip());
         }
-        verify(executionPoint_.nextInstruction < executionPoint_.sectionEnd);
-        const X64Instruction& instruction = *executionPoint_.nextInstruction;
+        verify(currentThreadExecutionPoint_.nextInstruction < currentThreadExecutionPoint_.sectionEnd);
+        const X64Instruction& instruction = *currentThreadExecutionPoint_.nextInstruction;
         cpu_.regs_.rip() = instruction.nextAddress();
-        ++executionPoint_.nextInstruction;
+        ++currentThreadExecutionPoint_.nextInstruction;
         return instruction;
     }
 
@@ -106,7 +141,7 @@ namespace x64 {
                                                 cpu_.regs_.rip(),
                                                 cpu_.regs_.get(R64::RAX), cpu_.regs_.get(R64::RBX), cpu_.regs_.get(R64::RCX), cpu_.regs_.get(R64::RDX),
                                                 cpu_.regs_.get(R64::RSI), cpu_.regs_.get(R64::RDI), cpu_.regs_.get(R64::RBP), cpu_.regs_.get(R64::RSP));
-        std::string indent = fmt::format("{:{}}", "", callstack_.size());
+        std::string indent = fmt::format("{:{}}", "", currentThreadCallstack_.size());
 
         std::string mnemonic = fmt::format("{}|{}", indent, instruction.toString());
         if(instruction.isCall()) {
@@ -140,7 +175,7 @@ namespace x64 {
 
     void VM::dumpStackTrace() const {
         size_t frameId = 0;
-        for(auto it = callstack_.rbegin(); it != callstack_.rend(); ++it) {
+        for(auto it = currentThreadCallstack_.rbegin(); it != currentThreadCallstack_.rend(); ++it) {
             std::string name = calledFunctionName(*it);
             fmt::print(" {}:{:#x} : {}\n", frameId, *it, name);
             ++frameId;
@@ -171,7 +206,7 @@ namespace x64 {
         if(cachedValue != callCache_.end()) {
             cp = cachedValue->second;
         } else {
-            InstructionPosition pos = findSectionWithAddress(address, executionPoint_.section);
+            InstructionPosition pos = findSectionWithAddress(address, currentThreadExecutionPoint_.section);
             verify(!!pos.section, [=]() {
                 fmt::print("Unable to find section containing address {:#x}\n", address);
             });
@@ -184,12 +219,12 @@ namespace x64 {
                             };
             callCache_.insert(std::make_pair(address, cp));
         }
-        executionPoint_ = cp;
-        callstack_.push_back(address);
+        currentThreadExecutionPoint_ = cp;
+        currentThreadCallstack_.push_back(address);
     }
 
     void VM::notifyRet(u64 address) {
-        callstack_.pop_back();
+        currentThreadCallstack_.pop_back();
         notifyJmp(address);
     }
 
@@ -199,7 +234,7 @@ namespace x64 {
         if(cachedValue != jmpCache_.end()) {
             cp = cachedValue->second;
         } else {
-            InstructionPosition pos = findSectionWithAddress(address, executionPoint_.section);
+            InstructionPosition pos = findSectionWithAddress(address, currentThreadExecutionPoint_.section);
             verify(!!pos.section && pos.index != (size_t)(-1), [&]() {
                 fmt::print("Unable to find jmp destination {:#x}\n", address);
             });
@@ -211,7 +246,7 @@ namespace x64 {
                             };
             jmpCache_.insert(std::make_pair(address, cp));
         }
-        executionPoint_ = cp;
+        currentThreadExecutionPoint_ = cp;
     }
 
     void VM::updateExecutionPoint(u64 address) {
@@ -219,7 +254,7 @@ namespace x64 {
         verify(!!pos.section && pos.index != (size_t)(-1), [&]() {
             fmt::print("Unable to find executable address {:#x}\n", address);
         });
-        executionPoint_ = ExecutionPoint{
+        currentThreadExecutionPoint_ = ExecutionPoint{
                             pos.section,
                             pos.section->instructions.data(),
                             pos.section->instructions.data() + pos.section->instructions.size(),
@@ -380,20 +415,7 @@ namespace x64 {
         return fmt::format("Somewhere in {}", pos.section->filename);
     }
 
-    void VM::setStackPointer(u64 address) {
-        // align rsp to 256 bytes (at least 64 bytes)
-        cpu_.set(R64::RSP, address & 0xFFFFFFFFFFFFFF00);
-    }
-
     void VM::push64(u64 value) {
         cpu_.push64(value);
-    }
-
-    void VM::set(R64 reg, u64 value) {
-        cpu_.set(reg, value);
-    }
-
-    u64 VM::get(R64 reg) const {
-        return cpu_.get(reg);
     }
 }

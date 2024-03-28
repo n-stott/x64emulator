@@ -27,7 +27,7 @@ namespace x64 {
 
     private:
         u64 loadElf(const std::string& filepath, bool mainProgram);
-        void setupStack();
+        u64 setupStack();
         void pushProgramArguments(const std::string& programFilePath, const std::vector<std::string>& arguments, const std::vector<std::string>& environmentVariables);
 
         struct Auxiliary {

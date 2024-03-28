@@ -19,6 +19,7 @@ namespace x64 {
 
     private:
         friend class VM;
+        friend class Sys;
         
         VM* vm_;
         Mmu* mmu_;

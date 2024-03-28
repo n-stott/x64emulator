@@ -43,6 +43,8 @@ int main() {
 
     u64 length = 0;
 
+    bool errorEncountered = false;
+
     VerificationScope::run([&]() {
         u64 execPage = vm.mmu().mmap(0, Mmu::PAGE_SIZE, PROT::READ | PROT::WRITE | PROT::EXEC, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0);
         vm.mmu().copyToMmu(Ptr8{execPage}, strlen_sse2.data(), strlen_sse2.size());
@@ -51,11 +53,16 @@ int main() {
         u64 dataPage = vm.mmu().mmap(0, Mmu::PAGE_SIZE, PROT::READ | PROT::WRITE, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0);
         vm.mmu().copyToMmu(Ptr8{dataPage}, (const u8*)string.data(), string.size());
 
-        vm.set(R64::RDI, dataPage);
+        Thread mainThread;
+        mainThread.regs.rip() = execPage;
+        mainThread.regs.set(R64::RDI, dataPage);
+        vm.execute(&mainThread, 1'000'000);
+        length = mainThread.regs.get(R64::RAX);
+    }, [&]() {
+        errorEncountered = true;
+    });
 
-        vm.execute(execPage);
-        length = vm.get(R64::RAX);
-    }, [&]() { });
+    if(errorEncountered) return 1;
 
     fmt::print("Test string       : \"{}\"\n", string.data());
     fmt::print("VM computed length: {}\n", length);

@@ -1,5 +1,6 @@
 #include "interpreter/syscalls.h"
 #include "interpreter/vm.h"
+#include "interpreter/cpu.h"
 #include "interpreter/mmu.h"
 #include "interpreter/verify.h"
 #include "utils/host.h"
@@ -9,93 +10,93 @@
 namespace x64 {
 
     void Sys::syscall() {
-        u64 sysNumber = vm_->get(R64::RAX);
+        u64 sysNumber = cpu_->get(R64::RAX);
 
         RegisterDump regs {{
-            vm_->get(R64::RDI),
-            vm_->get(R64::RSI),
-            vm_->get(R64::RDX),
-            vm_->get(R64::R10),
-            vm_->get(R64::R8),
-            vm_->get(R64::R9),
+            cpu_->get(R64::RDI),
+            cpu_->get(R64::RSI),
+            cpu_->get(R64::RDX),
+            cpu_->get(R64::R10),
+            cpu_->get(R64::R8),
+            cpu_->get(R64::R9),
         }};
 
         switch(sysNumber) {
-            case 0x0: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::read, regs));
-            case 0x1: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::write, regs));
-            case 0x3: return vm_->set(R64::RAX, invoke_syscall_1(&Sys::close, regs));
-            case 0x4: return vm_->set(R64::RAX, invoke_syscall_2(&Sys::stat, regs));
-            case 0x5: return vm_->set(R64::RAX, invoke_syscall_2(&Sys::fstat, regs));
-            case 0x6: return vm_->set(R64::RAX, invoke_syscall_2(&Sys::lstat, regs));
-            case 0x7: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::poll, regs));
-            case 0x8: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::lseek, regs));
-            case 0x9: return vm_->set(R64::RAX, invoke_syscall_6(&Sys::mmap, regs));
-            case 0xa: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::mprotect, regs));
-            case 0xb: return vm_->set(R64::RAX, invoke_syscall_2(&Sys::munmap, regs));
-            case 0xc: return vm_->set(R64::RAX, invoke_syscall_1(&Sys::brk, regs));
-            case 0xd: return vm_->set(R64::RAX, invoke_syscall_4(&Sys::rt_sigaction, regs));
-            case 0xe: return vm_->set(R64::RAX, invoke_syscall_4(&Sys::rt_sigprocmask, regs));
-            case 0x10: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::ioctl, regs));
-            case 0x11: return vm_->set(R64::RAX, invoke_syscall_4(&Sys::pread64, regs));
-            case 0x14: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::writev, regs));
-            case 0x15: return vm_->set(R64::RAX, invoke_syscall_2(&Sys::access, regs));
-            case 0x17: return vm_->set(R64::RAX, invoke_syscall_5(&Sys::select, regs));
-            case 0x20: return vm_->set(R64::RAX, invoke_syscall_1(&Sys::dup, regs));
-            case 0x26: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::setitimer, regs));
+            case 0x0: return cpu_->set(R64::RAX, invoke_syscall_3(&Sys::read, regs));
+            case 0x1: return cpu_->set(R64::RAX, invoke_syscall_3(&Sys::write, regs));
+            case 0x3: return cpu_->set(R64::RAX, invoke_syscall_1(&Sys::close, regs));
+            case 0x4: return cpu_->set(R64::RAX, invoke_syscall_2(&Sys::stat, regs));
+            case 0x5: return cpu_->set(R64::RAX, invoke_syscall_2(&Sys::fstat, regs));
+            case 0x6: return cpu_->set(R64::RAX, invoke_syscall_2(&Sys::lstat, regs));
+            case 0x7: return cpu_->set(R64::RAX, invoke_syscall_3(&Sys::poll, regs));
+            case 0x8: return cpu_->set(R64::RAX, invoke_syscall_3(&Sys::lseek, regs));
+            case 0x9: return cpu_->set(R64::RAX, invoke_syscall_6(&Sys::mmap, regs));
+            case 0xa: return cpu_->set(R64::RAX, invoke_syscall_3(&Sys::mprotect, regs));
+            case 0xb: return cpu_->set(R64::RAX, invoke_syscall_2(&Sys::munmap, regs));
+            case 0xc: return cpu_->set(R64::RAX, invoke_syscall_1(&Sys::brk, regs));
+            case 0xd: return cpu_->set(R64::RAX, invoke_syscall_4(&Sys::rt_sigaction, regs));
+            case 0xe: return cpu_->set(R64::RAX, invoke_syscall_4(&Sys::rt_sigprocmask, regs));
+            case 0x10: return cpu_->set(R64::RAX, invoke_syscall_3(&Sys::ioctl, regs));
+            case 0x11: return cpu_->set(R64::RAX, invoke_syscall_4(&Sys::pread64, regs));
+            case 0x14: return cpu_->set(R64::RAX, invoke_syscall_3(&Sys::writev, regs));
+            case 0x15: return cpu_->set(R64::RAX, invoke_syscall_2(&Sys::access, regs));
+            case 0x17: return cpu_->set(R64::RAX, invoke_syscall_5(&Sys::select, regs));
+            case 0x20: return cpu_->set(R64::RAX, invoke_syscall_1(&Sys::dup, regs));
+            case 0x26: return cpu_->set(R64::RAX, invoke_syscall_3(&Sys::setitimer, regs));
             case 0x27: { // getpid
-                vm_->set(R64::RAX, (u64)0xface);
+                cpu_->set(R64::RAX, (u64)0xface);
                 return;
             }
-            case 0x29: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::socket, regs));
-            case 0x2a: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::connect, regs));
-            case 0x2d: return vm_->set(R64::RAX, invoke_syscall_6(&Sys::recvfrom, regs));
-            case 0x2f: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::recvmsg, regs));
-            case 0x31: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::bind, regs));
-            case 0x33: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::getsockname, regs));
-            case 0x34: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::getpeername, regs));
-            case 0x38: return vm_->set(R64::RAX, invoke_syscall_5(&Sys::clone, regs));
-            case 0x3f: return vm_->set(R64::RAX, invoke_syscall_1(&Sys::uname, regs));
-            case 0x48: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::fcntl, regs));
-            case 0x4a: return vm_->set(R64::RAX, invoke_syscall_1(&Sys::fsync, regs));
-            case 0x4f: return vm_->set(R64::RAX, invoke_syscall_2(&Sys::getcwd, regs));
-            case 0x50: return vm_->set(R64::RAX, invoke_syscall_1(&Sys::chdir, regs));
-            case 0x53: return vm_->set(R64::RAX, invoke_syscall_2(&Sys::mkdir, regs));
-            case 0x57: return vm_->set(R64::RAX, invoke_syscall_1(&Sys::unlink, regs));
-            case 0x59: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::readlink, regs));
-            case 0x60: return vm_->set(R64::RAX, invoke_syscall_2(&Sys::gettimeofday, regs));
-            case 0x63: return vm_->set(R64::RAX, invoke_syscall_1(&Sys::sysinfo, regs));
-            case 0x66: return vm_->set(R64::RAX, invoke_syscall_0(&Sys::getuid, regs));
-            case 0x68: return vm_->set(R64::RAX, invoke_syscall_0(&Sys::getgid, regs));
-            case 0x6b: return vm_->set(R64::RAX, invoke_syscall_0(&Sys::geteuid, regs));
-            case 0x6c: return vm_->set(R64::RAX, invoke_syscall_0(&Sys::getegid, regs));
-            case 0x89: return vm_->set(R64::RAX, invoke_syscall_2(&Sys::statfs, regs));
-            case 0x9e: return vm_->set(R64::RAX, invoke_syscall_2(&Sys::arch_prctl, regs));
+            case 0x29: return cpu_->set(R64::RAX, invoke_syscall_3(&Sys::socket, regs));
+            case 0x2a: return cpu_->set(R64::RAX, invoke_syscall_3(&Sys::connect, regs));
+            case 0x2d: return cpu_->set(R64::RAX, invoke_syscall_6(&Sys::recvfrom, regs));
+            case 0x2f: return cpu_->set(R64::RAX, invoke_syscall_3(&Sys::recvmsg, regs));
+            case 0x31: return cpu_->set(R64::RAX, invoke_syscall_3(&Sys::bind, regs));
+            case 0x33: return cpu_->set(R64::RAX, invoke_syscall_3(&Sys::getsockname, regs));
+            case 0x34: return cpu_->set(R64::RAX, invoke_syscall_3(&Sys::getpeername, regs));
+            case 0x38: return cpu_->set(R64::RAX, invoke_syscall_5(&Sys::clone, regs));
+            case 0x3f: return cpu_->set(R64::RAX, invoke_syscall_1(&Sys::uname, regs));
+            case 0x48: return cpu_->set(R64::RAX, invoke_syscall_3(&Sys::fcntl, regs));
+            case 0x4a: return cpu_->set(R64::RAX, invoke_syscall_1(&Sys::fsync, regs));
+            case 0x4f: return cpu_->set(R64::RAX, invoke_syscall_2(&Sys::getcwd, regs));
+            case 0x50: return cpu_->set(R64::RAX, invoke_syscall_1(&Sys::chdir, regs));
+            case 0x53: return cpu_->set(R64::RAX, invoke_syscall_2(&Sys::mkdir, regs));
+            case 0x57: return cpu_->set(R64::RAX, invoke_syscall_1(&Sys::unlink, regs));
+            case 0x59: return cpu_->set(R64::RAX, invoke_syscall_3(&Sys::readlink, regs));
+            case 0x60: return cpu_->set(R64::RAX, invoke_syscall_2(&Sys::gettimeofday, regs));
+            case 0x63: return cpu_->set(R64::RAX, invoke_syscall_1(&Sys::sysinfo, regs));
+            case 0x66: return cpu_->set(R64::RAX, invoke_syscall_0(&Sys::getuid, regs));
+            case 0x68: return cpu_->set(R64::RAX, invoke_syscall_0(&Sys::getgid, regs));
+            case 0x6b: return cpu_->set(R64::RAX, invoke_syscall_0(&Sys::geteuid, regs));
+            case 0x6c: return cpu_->set(R64::RAX, invoke_syscall_0(&Sys::getegid, regs));
+            case 0x89: return cpu_->set(R64::RAX, invoke_syscall_2(&Sys::statfs, regs));
+            case 0x9e: return cpu_->set(R64::RAX, invoke_syscall_2(&Sys::arch_prctl, regs));
             case 0xba: { // gettid
-                vm_->set(R64::RAX, (u64)0xfeed);
+                cpu_->set(R64::RAX, (u64)0xfeed);
                 return;
             }
-            case 0xbf: return vm_->set(R64::RAX, invoke_syscall_4(&Sys::getxattr, regs));
-            case 0xc0: return vm_->set(R64::RAX, invoke_syscall_4(&Sys::lgetxattr, regs));
-            case 0xc9: return vm_->set(R64::RAX, invoke_syscall_1(&Sys::time, regs));
-            case 0xcc: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::sched_getaffinity, regs));
-            case 0xca: return vm_->set(R64::RAX, invoke_syscall_6(&Sys::futex, regs));
-            case 0xd9: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::getdents64, regs));
-            case 0xda: return vm_->set(R64::RAX, invoke_syscall_1(&Sys::set_tid_address, regs));
-            case 0xdd: return vm_->set(R64::RAX, invoke_syscall_4(&Sys::posix_fadvise, regs));
-            case 0xe4: return vm_->set(R64::RAX, invoke_syscall_2(&Sys::clock_gettime, regs));
-            case 0xe7: return vm_->set(R64::RAX, invoke_syscall_1(&Sys::exit_group, regs));
-            case 0xea: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::tgkill, regs));
-            case 0x101: return vm_->set(R64::RAX, invoke_syscall_4(&Sys::openat, regs));
-            case 0x106: return vm_->set(R64::RAX, invoke_syscall_4(&Sys::fstatat64, regs));
-            case 0x10e: return vm_->set(R64::RAX, invoke_syscall_6(&Sys::pselect6, regs));
-            case 0x111: return vm_->set(R64::RAX, invoke_syscall_2(&Sys::set_robust_list, regs));
-            case 0x112: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::get_robust_list, regs));
-            case 0x118: return vm_->set(R64::RAX, invoke_syscall_4(&Sys::utimensat, regs));
-            case 0x123: return vm_->set(R64::RAX, invoke_syscall_1(&Sys::epoll_create1, regs));
-            case 0x12e: return vm_->set(R64::RAX, invoke_syscall_4(&Sys::prlimit64, regs));
-            case 0x13e: return vm_->set(R64::RAX, invoke_syscall_3(&Sys::getrandom, regs));
-            case 0x14c: return vm_->set(R64::RAX, invoke_syscall_5(&Sys::statx, regs));
-            case 0x1b3: return vm_->set(R64::RAX, invoke_syscall_2(&Sys::clone3, regs));
+            case 0xbf: return cpu_->set(R64::RAX, invoke_syscall_4(&Sys::getxattr, regs));
+            case 0xc0: return cpu_->set(R64::RAX, invoke_syscall_4(&Sys::lgetxattr, regs));
+            case 0xc9: return cpu_->set(R64::RAX, invoke_syscall_1(&Sys::time, regs));
+            case 0xcc: return cpu_->set(R64::RAX, invoke_syscall_3(&Sys::sched_getaffinity, regs));
+            case 0xca: return cpu_->set(R64::RAX, invoke_syscall_6(&Sys::futex, regs));
+            case 0xd9: return cpu_->set(R64::RAX, invoke_syscall_3(&Sys::getdents64, regs));
+            case 0xda: return cpu_->set(R64::RAX, invoke_syscall_1(&Sys::set_tid_address, regs));
+            case 0xdd: return cpu_->set(R64::RAX, invoke_syscall_4(&Sys::posix_fadvise, regs));
+            case 0xe4: return cpu_->set(R64::RAX, invoke_syscall_2(&Sys::clock_gettime, regs));
+            case 0xe7: return cpu_->set(R64::RAX, invoke_syscall_1(&Sys::exit_group, regs));
+            case 0xea: return cpu_->set(R64::RAX, invoke_syscall_3(&Sys::tgkill, regs));
+            case 0x101: return cpu_->set(R64::RAX, invoke_syscall_4(&Sys::openat, regs));
+            case 0x106: return cpu_->set(R64::RAX, invoke_syscall_4(&Sys::fstatat64, regs));
+            case 0x10e: return cpu_->set(R64::RAX, invoke_syscall_6(&Sys::pselect6, regs));
+            case 0x111: return cpu_->set(R64::RAX, invoke_syscall_2(&Sys::set_robust_list, regs));
+            case 0x112: return cpu_->set(R64::RAX, invoke_syscall_3(&Sys::get_robust_list, regs));
+            case 0x118: return cpu_->set(R64::RAX, invoke_syscall_4(&Sys::utimensat, regs));
+            case 0x123: return cpu_->set(R64::RAX, invoke_syscall_1(&Sys::epoll_create1, regs));
+            case 0x12e: return cpu_->set(R64::RAX, invoke_syscall_4(&Sys::prlimit64, regs));
+            case 0x13e: return cpu_->set(R64::RAX, invoke_syscall_3(&Sys::getrandom, regs));
+            case 0x14c: return cpu_->set(R64::RAX, invoke_syscall_5(&Sys::statx, regs));
+            case 0x1b3: return cpu_->set(R64::RAX, invoke_syscall_2(&Sys::clone3, regs));
             default: break;
         }
         verify(false, [&]() {

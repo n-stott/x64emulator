@@ -13,11 +13,12 @@
 namespace x64 {
 
     class VM;
+    class Cpu;
     class Mmu;
 
     class Sys {
     public:
-        Sys(VM* vm, Mmu* mmu) : vm_(vm), mmu_(mmu) { }
+        Sys(VM* vm, Cpu* cpu, Mmu* mmu) : vm_(vm), cpu_(cpu), mmu_(mmu) { }
 
         void syscall();
 
@@ -251,6 +252,7 @@ namespace x64 {
 
     private:
         VM* vm_;
+        Cpu* cpu_;
         Mmu* mmu_;
     };
 

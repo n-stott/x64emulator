@@ -5,6 +5,7 @@
 #include "interpreter/mmu.h"
 #include "interpreter/symbolprovider.h"
 #include "interpreter/syscalls.h"
+#include "interpreter/thread.h"
 #include "utils/utils.h"
 #include <deque>
 #include <unordered_map>
@@ -17,6 +18,7 @@ namespace x64 {
 
         void stop();
         void crash();
+        bool isStopped() const { return stop_; }
         bool hasCrashed() const { return hasCrashed_; }
         
         void setLogInstructions(bool);
@@ -26,9 +28,9 @@ namespace x64 {
         void setLogSyscalls(bool);
         bool logSyscalls() const;
 
-        void setSymbolProvider(SymbolProvider* symbolProvider);
+        void setMainThread(Thread* mainThread);
 
-        void execute(u64 address);
+        void execute(Thread* thread, size_t ticks);
 
         const X64Instruction& fetchInstruction();
         void log(size_t ticks, const X64Instruction& instruction) const;
@@ -40,14 +42,12 @@ namespace x64 {
         Mmu& mmu() { return mmu_; }
         Sys& syscalls() { return syscalls_; }
 
-        void setStackPointer(u64 address);
         void push64(u64 value);
-        
-        void set(R64 reg, u64 value);
-        u64 get(R64 reg) const;
 
     private:
         friend class Cpu;
+
+        void contextSwitch(Thread* newThread);
 
         void dumpStackTrace() const;
         void dumpRegisters() const;
@@ -86,9 +86,12 @@ namespace x64 {
             const X64Instruction* sectionBegin { nullptr };
             const X64Instruction* sectionEnd { nullptr };
             const X64Instruction* nextInstruction { nullptr };
-        } executionPoint_;
+        };
 
-        std::vector<u64> callstack_;
+        std::deque<Thread> threads_;
+        Thread* currentThread_ { nullptr };
+        ExecutionPoint currentThreadExecutionPoint_;
+        std::vector<u64> currentThreadCallstack_;
 
         std::unordered_map<u64, ExecutionPoint> callCache_;
         std::unordered_map<u64, ExecutionPoint> jmpCache_;

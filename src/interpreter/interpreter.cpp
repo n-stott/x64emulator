@@ -62,9 +62,16 @@ namespace x64 {
         SignalHandler handler;
         VerificationScope::run([&]() {
             u64 entrypoint = loadElf(programFilePath, true);
-            setupStack();
+            u64 stackTop = setupStack();
+            Thread mainThread;
+            mainThread.regs.rip() = entrypoint;
+            mainThread.regs.rsp() = (stackTop & 0xFFFFFFFFFFFFFF00); // stack needs to be 64-bit aligned
+            vm_.setMainThread(&mainThread);
             pushProgramArguments(programFilePath, arguments, environmentVariables);
-            vm_.execute(entrypoint);
+            while(!vm_.isStopped()) {
+                vm_.execute(&mainThread, 1'000'000);
+            }
+            fmt::print("Interpreter completed execution of {} instructions\n", mainThread.ticks);
         }, [&]() {
             vm_.crash();
         });
@@ -165,7 +172,7 @@ namespace x64 {
         }
     }
 
-    void Interpreter::setupStack() {
+    u64 Interpreter::setupStack() {
         {
             // page with random 16-bit value for AT_RANDOM
             verify(auxiliary_.has_value(), "no auxiliary...");
@@ -195,13 +202,14 @@ namespace x64 {
         const u64 stackSize = 256*Mmu::PAGE_SIZE;
         u64 stackBase = vm_.mmu().mmap(desiredStackBase, stackSize, PROT::READ | PROT::WRITE, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0);
         vm_.mmu().setRegionName(stackBase, "stack");
-        vm_.setStackPointer(stackBase + stackSize);
 
         // heap
         const u64 desiredHeapBase = stackBase + stackSize + Mmu::PAGE_SIZE;
         const u64 heapSize = 64*Mmu::PAGE_SIZE;
         u64 heapBase = vm_.mmu().mmap(desiredHeapBase, heapSize, PROT::READ | PROT::WRITE, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0);
         vm_.mmu().setRegionName(heapBase, "heap");
+
+        return stackBase + stackSize;
     }
 
     void Interpreter::pushProgramArguments(const std::string& programFilePath, const std::vector<std::string>& arguments, const std::vector<std::string>& environmentVariables) {
