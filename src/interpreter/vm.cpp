@@ -166,7 +166,7 @@ namespace x64 {
     }
 
     void VM::notifyCall(u64 address) {
-        CallPoint cp;
+        ExecutionPoint cp;
         auto cachedValue = callCache_.find(address);
         if(cachedValue != callCache_.end()) {
             cp = cachedValue->second;
@@ -176,8 +176,7 @@ namespace x64 {
                 fmt::print("Unable to find section containing address {:#x}\n", address);
             });
             verify(pos.index != (size_t)(-1));
-            cp.address = address;
-            cp.execPoint = ExecutionPoint{
+            cp = ExecutionPoint{
                                 pos.section,
                                 pos.section->instructions.data(),
                                 pos.section->instructions.data() + pos.section->instructions.size(),
@@ -185,7 +184,7 @@ namespace x64 {
                             };
             callCache_.insert(std::make_pair(address, cp));
         }
-        executionPoint_ = cp.execPoint;
+        executionPoint_ = cp;
         callstack_.push_back(address);
     }
 
@@ -195,7 +194,7 @@ namespace x64 {
     }
 
     void VM::notifyJmp(u64 address) {
-        CallPoint cp;
+        ExecutionPoint cp;
         auto cachedValue = jmpCache_.find(address);
         if(cachedValue != jmpCache_.end()) {
             cp = cachedValue->second;
@@ -204,8 +203,7 @@ namespace x64 {
             verify(!!pos.section && pos.index != (size_t)(-1), [&]() {
                 fmt::print("Unable to find jmp destination {:#x}\n", address);
             });
-            cp.address = address;
-            cp.execPoint = ExecutionPoint{
+            cp = ExecutionPoint{
                                 pos.section,
                                 pos.section->instructions.data(),
                                 pos.section->instructions.data() + pos.section->instructions.size(),
@@ -213,7 +211,7 @@ namespace x64 {
                             };
             jmpCache_.insert(std::make_pair(address, cp));
         }
-        executionPoint_ = cp.execPoint;
+        executionPoint_ = cp;
     }
 
     void VM::updateExecutionPoint(u64 address) {

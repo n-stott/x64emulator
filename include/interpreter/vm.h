@@ -90,13 +90,8 @@ namespace x64 {
 
         std::vector<u64> callstack_;
 
-        struct CallPoint {
-            u64 address;
-            ExecutionPoint execPoint;
-        };
-
-        std::unordered_map<u64, CallPoint> callCache_;
-        std::unordered_map<u64, CallPoint> jmpCache_;
+        std::unordered_map<u64, ExecutionPoint> callCache_;
+        std::unordered_map<u64, ExecutionPoint> jmpCache_;
 
         mutable std::vector<std::string> symbolicatedElfs_;
         mutable SymbolProvider symbolProvider_;
