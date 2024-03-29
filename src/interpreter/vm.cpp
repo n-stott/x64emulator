@@ -1,5 +1,6 @@
 #include "interpreter/vm.h"
 #include "interpreter/registers.h"
+#include "interpreter/thread.h"
 #include "interpreter/verify.h"
 #include "disassembler/capstonewrapper.h"
 #include "elf-reader/elf-reader.h"
@@ -7,7 +8,7 @@
 namespace x64 {
 
 
-    VM::VM() : cpu_(this, &mmu_), syscalls_(this, &cpu_, &mmu_) {
+    VM::VM(Mmu* mmu, Sys* syscalls) : mmu_(mmu), syscalls_(syscalls), cpu_(this, mmu_) {
         stop_ = false;
     }
 
@@ -26,14 +27,6 @@ namespace x64 {
     void VM::setLogInstructionsAfter(unsigned long long nbTicks) {
         nbTicksBeforeLoggingInstructions_ = nbTicks;
     }
-    
-    void VM::setLogSyscalls(bool logSyscalls) {
-        logSyscalls_ = logSyscalls;
-    }
-
-    bool VM::logSyscalls() const {
-        return logSyscalls_;
-    }
 
     void VM::crash() {
         stop();
@@ -41,13 +34,9 @@ namespace x64 {
         fmt::print("Register state:\n");
         dumpRegisters();
         fmt::print("Memory regions:\n");
-        mmu_.dumpRegions();
+        mmu_->dumpRegions();
         fmt::print("Stacktrace:\n");
         dumpStackTrace();
-    }
-
-    void VM::setMainThread(Thread* mainThread) {
-        contextSwitch(mainThread);
     }
 
     void VM::contextSwitch(Thread* newThread) {
@@ -282,7 +271,7 @@ namespace x64 {
             }
         }
         // If we land here, we probably have not disassembled the section yet...
-        const Mmu::Region* mmuRegion = mmu_.findAddress(address);
+        const Mmu::Region* mmuRegion = ((const Mmu*)mmu_)->findAddress(address);
         if(!mmuRegion) return InstructionPosition { nullptr, (size_t)(-1) };
         verify((bool)(mmuRegion->prot() & PROT::EXEC), [&]() {
             fmt::print(stderr, "Attempting to execute non-executable region [{:#x}-{:#x}]\n", mmuRegion->base(), mmuRegion->end());

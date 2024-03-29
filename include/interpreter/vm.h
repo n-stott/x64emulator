@@ -5,16 +5,17 @@
 #include "interpreter/mmu.h"
 #include "interpreter/symbolprovider.h"
 #include "interpreter/syscalls.h"
-#include "interpreter/thread.h"
 #include "utils/utils.h"
 #include <deque>
 #include <unordered_map>
 
 namespace x64 {
 
+    class Thread;
+
     class VM {
     public:
-        VM();
+        explicit VM(Mmu* mmu, Sys* syscalls);
 
         void stop();
         void crash();
@@ -24,13 +25,16 @@ namespace x64 {
         void setLogInstructions(bool);
         bool logInstructions() const;
         void setLogInstructionsAfter(unsigned long long);
-        
-        void setLogSyscalls(bool);
-        bool logSyscalls() const;
 
-        void setMainThread(Thread* mainThread);
+        void contextSwitch(Thread* newThread);
 
         void execute(Thread* thread, size_t ticks);
+
+        void push64(u64 value);
+
+    private:
+        friend class Cpu;
+        friend class Sys;
 
         const X64Instruction& fetchInstruction();
         void log(size_t ticks, const X64Instruction& instruction) const;
@@ -39,15 +43,7 @@ namespace x64 {
         void notifyRet(u64 address);
         void notifyJmp(u64 address);
 
-        Mmu& mmu() { return mmu_; }
-        Sys& syscalls() { return syscalls_; }
-
-        void push64(u64 value);
-
-    private:
-        friend class Cpu;
-
-        void contextSwitch(Thread* newThread);
+        Sys* syscalls() { return syscalls_; }
 
         void dumpStackTrace() const;
         void dumpRegisters() const;
@@ -70,9 +66,9 @@ namespace x64 {
         std::string callName(const X64Instruction& instruction) const;
         std::string calledFunctionName(u64 address) const;
 
-        Mmu mmu_;
+        Mmu* mmu_;
+        Sys* syscalls_;
         Cpu cpu_;
-        Sys syscalls_;
 
         mutable std::deque<ExecutableSection> executableSections_;
         bool stop_ = false;
@@ -88,7 +84,6 @@ namespace x64 {
             const X64Instruction* nextInstruction { nullptr };
         };
 
-        std::deque<Thread> threads_;
         Thread* currentThread_ { nullptr };
         ExecutionPoint currentThreadExecutionPoint_;
         std::vector<u64> currentThreadCallstack_;

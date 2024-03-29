@@ -1,4 +1,6 @@
 #include "interpreter/interpreter.h"
+#include "interpreter/thread.h"
+#include "interpreter/syscalls.h"
 #include "interpreter/verify.h"
 #include "interpreter/auxiliaryvector.h"
 #include "utils/host.h"
@@ -39,42 +41,50 @@ namespace x64 {
     Interpreter::Interpreter() = default;
 
     void Interpreter::setLogInstructions(bool logInstructions) {
-        vm_.setLogInstructions(logInstructions);
-    }
-
-    bool Interpreter::logInstructions() const {
-        return vm_.logInstructions();
+        logInstructions_ = logInstructions;
     }
 
     void Interpreter::setLogInstructionsAfter(unsigned long long nbTicks) {
-        vm_.setLogInstructionsAfter(nbTicks);
+        logInstructionsAfter_ = nbTicks;
     }
 
     void Interpreter::setLogSyscalls(bool logSyscalls) {
-        vm_.setLogSyscalls(logSyscalls);
+        logSyscalls_ = logSyscalls;
     }
 
-    bool Interpreter::logSyscalls() const {
-        return vm_.logSyscalls();
+    void Interpreter::stop() {
+        if(vm_) vm_->stop();
     }
 
-    void Interpreter::run(const std::string& programFilePath, const std::vector<std::string>& arguments, const std::vector<std::string>& environmentVariables) {
+    bool Interpreter::run(const std::string& programFilePath, const std::vector<std::string>& arguments, const std::vector<std::string>& environmentVariables) {
         SignalHandler handler;
+        
+        Sys sys(this, &mmu_);
+        sys.setLogSyscalls(logSyscalls_);
+
+        vm_ = std::make_unique<VM>(&mmu_, &sys);
+        vm_->setLogInstructions(logInstructions_);
+        vm_->setLogInstructionsAfter(logInstructionsAfter_);
+        
         VerificationScope::run([&]() {
             u64 entrypoint = loadElf(programFilePath, true);
             u64 stackTop = setupStack();
             Thread mainThread;
             mainThread.regs.rip() = entrypoint;
             mainThread.regs.rsp() = (stackTop & 0xFFFFFFFFFFFFFF00); // stack needs to be 64-bit aligned
-            vm_.setMainThread(&mainThread);
-            pushProgramArguments(programFilePath, arguments, environmentVariables);
-            while(!vm_.isStopped()) {
-                vm_.execute(&mainThread, 1'000'000);
+            vm_->contextSwitch(&mainThread);
+            pushProgramArguments(vm_.get(), programFilePath, arguments, environmentVariables);
+            while(!vm_->isStopped()) {
+                vm_->execute(&mainThread, 1'000'000);
             }
             fmt::print("Interpreter completed execution of {} instructions\n", mainThread.ticks);
+            vm_->contextSwitch(nullptr);
         }, [&]() {
-            vm_.crash();
+            vm_->crash();
         });
+        bool ok = !vm_->hasCrashed();
+        vm_.reset();
+        return ok;
     }
 
     u64 Interpreter::loadElf(const std::string& filepath, bool mainProgram) {
@@ -102,8 +112,8 @@ namespace x64 {
             u64 totalLoadSize = (minStart > maxEnd) ? 0 : (maxEnd - minStart);
 
             // Then, reserve enough space and return the base address of that memory region as the elf offset.
-            u64 address = vm_.mmu().mmap(0, totalLoadSize, PROT::NONE, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0);
-            vm_.mmu().munmap(address, totalLoadSize);
+            u64 address = mmu_.mmap(0, totalLoadSize, PROT::NONE, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0);
+            mmu_.munmap(address, totalLoadSize);
             return address;
         }();
 
@@ -135,17 +145,17 @@ namespace x64 {
             u64 start = Mmu::pageRoundDown(elfOffset + header.virtualAddress());
             u64 end = Mmu::pageRoundUp(elfOffset + header.virtualAddress() + header.sizeInMemory());
             u64 nonExecSectionSize = end-start;
-            u64 nonExecSectionBase = vm_.mmu().mmap(start, nonExecSectionSize, PROT::WRITE, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0);
+            u64 nonExecSectionBase = mmu_.mmap(start, nonExecSectionSize, PROT::WRITE, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0);
 
             const u8* data = elf64->dataAtOffset(header.offset(), header.sizeInFile());
-            vm_.mmu().copyToMmu(Ptr8{nonExecSectionBase + header.virtualAddress() % Mmu::PAGE_SIZE}, data, header.sizeInFile()); // Mmu regions are 0 initialized
+            mmu_.copyToMmu(Ptr8{nonExecSectionBase + header.virtualAddress() % Mmu::PAGE_SIZE}, data, header.sizeInFile()); // Mmu regions are 0 initialized
 
             PROT prot = PROT::NONE;
             if(header.isReadable()) prot = prot | PROT::READ;
             if(header.isWritable()) prot = prot | PROT::WRITE;
             if(header.isExecutable()) prot = prot | PROT::EXEC;
-            vm_.mmu().mprotect(nonExecSectionBase, nonExecSectionSize, prot);
-            vm_.mmu().setRegionName(nonExecSectionBase, shortFilePath);
+            mmu_.mprotect(nonExecSectionBase, nonExecSectionSize, prot);
+            mmu_.setRegionName(nonExecSectionBase, shortFilePath);
         };
 
         elf64->forAllProgramHeaders([&](const elf::ProgramHeader64& header) {
@@ -176,45 +186,44 @@ namespace x64 {
         {
             // page with random 16-bit value for AT_RANDOM
             verify(auxiliary_.has_value(), "no auxiliary...");
-            u64 random = vm_.mmu().mmap(0x0, Mmu::PAGE_SIZE, PROT::READ | PROT::WRITE, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0);
-            vm_.mmu().setRegionName(random, "random");
-            vm_.mmu().write16(Ptr16{random}, 0xabcd);
-            vm_.mmu().mprotect(random, Mmu::PAGE_SIZE, PROT::READ);
+            u64 random = mmu_.mmap(0x0, Mmu::PAGE_SIZE, PROT::READ | PROT::WRITE, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0);
+            mmu_.setRegionName(random, "random");
+            mmu_.write16(Ptr16{random}, 0xabcd);
+            mmu_.mprotect(random, Mmu::PAGE_SIZE, PROT::READ);
             auxiliary_->randomDataAddress = random;
         }
 
         {
             // page with platform string
             verify(auxiliary_.has_value(), "no auxiliary...");
-            u64 platformstring = vm_.mmu().mmap(0x0, Mmu::PAGE_SIZE, PROT::READ | PROT::WRITE, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0);
-            vm_.mmu().setRegionName(platformstring, "platform string");
+            u64 platformstring = mmu_.mmap(0x0, Mmu::PAGE_SIZE, PROT::READ | PROT::WRITE, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0);
+            mmu_.setRegionName(platformstring, "platform string");
             std::string platform = "x86_64";
             std::vector<u8> buffer;
             buffer.resize(platform.size()+1, 0x0);
             std::memcpy(buffer.data(), platform.data(), platform.size());
-            vm_.mmu().copyToMmu(Ptr8{platformstring}, buffer.data(), buffer.size());
-            vm_.mmu().mprotect(platformstring, Mmu::PAGE_SIZE, PROT::READ);
+            mmu_.copyToMmu(Ptr8{platformstring}, buffer.data(), buffer.size());
+            mmu_.mprotect(platformstring, Mmu::PAGE_SIZE, PROT::READ);
             auxiliary_->platformStringAddress = platformstring;
         }
         
         // stack
         const u64 desiredStackBase = 0x10000000;
         const u64 stackSize = 256*Mmu::PAGE_SIZE;
-        u64 stackBase = vm_.mmu().mmap(desiredStackBase, stackSize, PROT::READ | PROT::WRITE, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0);
-        vm_.mmu().setRegionName(stackBase, "stack");
+        u64 stackBase = mmu_.mmap(desiredStackBase, stackSize, PROT::READ | PROT::WRITE, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0);
+        mmu_.setRegionName(stackBase, "stack");
 
         // heap
         const u64 desiredHeapBase = stackBase + stackSize + Mmu::PAGE_SIZE;
         const u64 heapSize = 64*Mmu::PAGE_SIZE;
-        u64 heapBase = vm_.mmu().mmap(desiredHeapBase, heapSize, PROT::READ | PROT::WRITE, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0);
-        vm_.mmu().setRegionName(heapBase, "heap");
+        u64 heapBase = mmu_.mmap(desiredHeapBase, heapSize, PROT::READ | PROT::WRITE, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0);
+        mmu_.setRegionName(heapBase, "heap");
 
         return stackBase + stackSize;
     }
 
-    void Interpreter::pushProgramArguments(const std::string& programFilePath, const std::vector<std::string>& arguments, const std::vector<std::string>& environmentVariables) {
+    void Interpreter::pushProgramArguments(VM* vm, const std::string& programFilePath, const std::vector<std::string>& arguments, const std::vector<std::string>& environmentVariables) {
         VerificationScope::run([&]() {
-
             size_t requiredSize = programFilePath.size()+1;
             requiredSize = std::accumulate(arguments.begin(), arguments.end(), requiredSize, [](size_t size, const std::string& arg) {
                 return size + arg.size() + 1;
@@ -225,9 +234,9 @@ namespace x64 {
             requiredSize += 8*(1 + arguments.size() + environmentVariables.size());
             requiredSize = Mmu::pageRoundUp(requiredSize);
 
-            vm_.mmu().mmap(0, Mmu::PAGE_SIZE, PROT::NONE, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0); // throwaway page
-            u64 argumentPage = vm_.mmu().mmap(0, requiredSize, PROT::READ | PROT::WRITE, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0);
-            vm_.mmu().setRegionName(argumentPage, "program arguments");
+            mmu_.mmap(0, Mmu::PAGE_SIZE, PROT::NONE, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0); // throwaway page
+            u64 argumentPage = mmu_.mmap(0, requiredSize, PROT::READ | PROT::WRITE, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0);
+            mmu_.setRegionName(argumentPage, "program arguments");
             Ptr8 argumentPtr { argumentPage };
 
             std::vector<u64> argumentPositions;
@@ -237,7 +246,7 @@ namespace x64 {
                 buffer.resize(s.size()+1, 0x0);
                 std::memcpy(buffer.data(), s.c_str(), s.size());
                 verify(buffer.back() == 0x0, "string is not null-terminated");
-                vm_.mmu().copyToMmu(argumentPtr, buffer.data(), buffer.size());
+                mmu_.copyToMmu(argumentPtr, buffer.data(), buffer.size());
                 argumentPositions.push_back(argumentPtr.address());
                 Ptr8 oldArgumentPtr = argumentPtr;
                 argumentPtr += buffer.size();
@@ -274,16 +283,16 @@ namespace x64 {
                   .add((u64)Host::AUX_TYPE::EGID);
             std::vector<u64> data = auxvec.create();
             for(auto rit = data.rbegin(); rit != data.rend(); ++rit) {
-                vm_.push64(*rit);
+                vm->push64(*rit);
             }
             
             for(auto it = argumentPositions.rbegin(); it != argumentPositions.rend(); ++it) {
-                vm_.push64(*it);
+                vm->push64(*it);
             }
-            vm_.push64(arguments.size()+1);
+            vm->push64(arguments.size()+1);
         }, [&]() {
             fmt::print("Interpreter crash durig program argument setup\n");
-            vm_.stop();
+            vm->stop();
         });
     }
 

@@ -12,15 +12,17 @@
 
 namespace x64 {
 
-    class VM;
     class Cpu;
     class Mmu;
+    class Interpreter;
 
     class Sys {
     public:
-        Sys(VM* vm, Cpu* cpu, Mmu* mmu) : vm_(vm), cpu_(cpu), mmu_(mmu) { }
+        Sys(Interpreter* interpreter, Mmu* mmu) : interpreter_(interpreter), mmu_(mmu) { }
 
-        void syscall();
+        void setLogSyscalls(bool logSyscalls) { logSyscalls_ = logSyscalls; }
+
+        void syscall(Cpu* cpu);
 
     private:
         struct RegisterDump {
@@ -251,9 +253,9 @@ namespace x64 {
 
 
     private:
-        VM* vm_;
-        Cpu* cpu_;
+        Interpreter* interpreter_;
         Mmu* mmu_;
+        bool logSyscalls_ { false };
     };
 
 }

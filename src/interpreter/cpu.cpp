@@ -2021,7 +2021,9 @@ namespace x64 {
 
 
     void Cpu::exec(const Syscall&) {
-        vm_->syscalls().syscall();
+        auto* sys = vm_->syscalls();
+        verify(!!sys, "no syscall handler provided");
+        sys->syscall(this);
     }
 
     void Cpu::exec(const Rdtsc&) {

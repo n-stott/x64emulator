@@ -1,5 +1,5 @@
 #include "interpreter/syscalls.h"
-#include "interpreter/vm.h"
+#include "interpreter/interpreter.h"
 #include "interpreter/cpu.h"
 #include "interpreter/mmu.h"
 #include "interpreter/verify.h"
@@ -9,94 +9,94 @@
 
 namespace x64 {
 
-    void Sys::syscall() {
-        u64 sysNumber = cpu_->get(R64::RAX);
+    void Sys::syscall(Cpu* cpu) {
+        u64 sysNumber = cpu->get(R64::RAX);
 
         RegisterDump regs {{
-            cpu_->get(R64::RDI),
-            cpu_->get(R64::RSI),
-            cpu_->get(R64::RDX),
-            cpu_->get(R64::R10),
-            cpu_->get(R64::R8),
-            cpu_->get(R64::R9),
+            cpu->get(R64::RDI),
+            cpu->get(R64::RSI),
+            cpu->get(R64::RDX),
+            cpu->get(R64::R10),
+            cpu->get(R64::R8),
+            cpu->get(R64::R9),
         }};
 
         switch(sysNumber) {
-            case 0x0: return cpu_->set(R64::RAX, invoke_syscall_3(&Sys::read, regs));
-            case 0x1: return cpu_->set(R64::RAX, invoke_syscall_3(&Sys::write, regs));
-            case 0x3: return cpu_->set(R64::RAX, invoke_syscall_1(&Sys::close, regs));
-            case 0x4: return cpu_->set(R64::RAX, invoke_syscall_2(&Sys::stat, regs));
-            case 0x5: return cpu_->set(R64::RAX, invoke_syscall_2(&Sys::fstat, regs));
-            case 0x6: return cpu_->set(R64::RAX, invoke_syscall_2(&Sys::lstat, regs));
-            case 0x7: return cpu_->set(R64::RAX, invoke_syscall_3(&Sys::poll, regs));
-            case 0x8: return cpu_->set(R64::RAX, invoke_syscall_3(&Sys::lseek, regs));
-            case 0x9: return cpu_->set(R64::RAX, invoke_syscall_6(&Sys::mmap, regs));
-            case 0xa: return cpu_->set(R64::RAX, invoke_syscall_3(&Sys::mprotect, regs));
-            case 0xb: return cpu_->set(R64::RAX, invoke_syscall_2(&Sys::munmap, regs));
-            case 0xc: return cpu_->set(R64::RAX, invoke_syscall_1(&Sys::brk, regs));
-            case 0xd: return cpu_->set(R64::RAX, invoke_syscall_4(&Sys::rt_sigaction, regs));
-            case 0xe: return cpu_->set(R64::RAX, invoke_syscall_4(&Sys::rt_sigprocmask, regs));
-            case 0x10: return cpu_->set(R64::RAX, invoke_syscall_3(&Sys::ioctl, regs));
-            case 0x11: return cpu_->set(R64::RAX, invoke_syscall_4(&Sys::pread64, regs));
-            case 0x14: return cpu_->set(R64::RAX, invoke_syscall_3(&Sys::writev, regs));
-            case 0x15: return cpu_->set(R64::RAX, invoke_syscall_2(&Sys::access, regs));
-            case 0x17: return cpu_->set(R64::RAX, invoke_syscall_5(&Sys::select, regs));
-            case 0x20: return cpu_->set(R64::RAX, invoke_syscall_1(&Sys::dup, regs));
-            case 0x26: return cpu_->set(R64::RAX, invoke_syscall_3(&Sys::setitimer, regs));
+            case 0x0: return cpu->set(R64::RAX, invoke_syscall_3(&Sys::read, regs));
+            case 0x1: return cpu->set(R64::RAX, invoke_syscall_3(&Sys::write, regs));
+            case 0x3: return cpu->set(R64::RAX, invoke_syscall_1(&Sys::close, regs));
+            case 0x4: return cpu->set(R64::RAX, invoke_syscall_2(&Sys::stat, regs));
+            case 0x5: return cpu->set(R64::RAX, invoke_syscall_2(&Sys::fstat, regs));
+            case 0x6: return cpu->set(R64::RAX, invoke_syscall_2(&Sys::lstat, regs));
+            case 0x7: return cpu->set(R64::RAX, invoke_syscall_3(&Sys::poll, regs));
+            case 0x8: return cpu->set(R64::RAX, invoke_syscall_3(&Sys::lseek, regs));
+            case 0x9: return cpu->set(R64::RAX, invoke_syscall_6(&Sys::mmap, regs));
+            case 0xa: return cpu->set(R64::RAX, invoke_syscall_3(&Sys::mprotect, regs));
+            case 0xb: return cpu->set(R64::RAX, invoke_syscall_2(&Sys::munmap, regs));
+            case 0xc: return cpu->set(R64::RAX, invoke_syscall_1(&Sys::brk, regs));
+            case 0xd: return cpu->set(R64::RAX, invoke_syscall_4(&Sys::rt_sigaction, regs));
+            case 0xe: return cpu->set(R64::RAX, invoke_syscall_4(&Sys::rt_sigprocmask, regs));
+            case 0x10: return cpu->set(R64::RAX, invoke_syscall_3(&Sys::ioctl, regs));
+            case 0x11: return cpu->set(R64::RAX, invoke_syscall_4(&Sys::pread64, regs));
+            case 0x14: return cpu->set(R64::RAX, invoke_syscall_3(&Sys::writev, regs));
+            case 0x15: return cpu->set(R64::RAX, invoke_syscall_2(&Sys::access, regs));
+            case 0x17: return cpu->set(R64::RAX, invoke_syscall_5(&Sys::select, regs));
+            case 0x20: return cpu->set(R64::RAX, invoke_syscall_1(&Sys::dup, regs));
+            case 0x26: return cpu->set(R64::RAX, invoke_syscall_3(&Sys::setitimer, regs));
             case 0x27: { // getpid
-                cpu_->set(R64::RAX, (u64)0xface);
+                cpu->set(R64::RAX, (u64)0xface);
                 return;
             }
-            case 0x29: return cpu_->set(R64::RAX, invoke_syscall_3(&Sys::socket, regs));
-            case 0x2a: return cpu_->set(R64::RAX, invoke_syscall_3(&Sys::connect, regs));
-            case 0x2d: return cpu_->set(R64::RAX, invoke_syscall_6(&Sys::recvfrom, regs));
-            case 0x2f: return cpu_->set(R64::RAX, invoke_syscall_3(&Sys::recvmsg, regs));
-            case 0x31: return cpu_->set(R64::RAX, invoke_syscall_3(&Sys::bind, regs));
-            case 0x33: return cpu_->set(R64::RAX, invoke_syscall_3(&Sys::getsockname, regs));
-            case 0x34: return cpu_->set(R64::RAX, invoke_syscall_3(&Sys::getpeername, regs));
-            case 0x38: return cpu_->set(R64::RAX, invoke_syscall_5(&Sys::clone, regs));
-            case 0x3f: return cpu_->set(R64::RAX, invoke_syscall_1(&Sys::uname, regs));
-            case 0x48: return cpu_->set(R64::RAX, invoke_syscall_3(&Sys::fcntl, regs));
-            case 0x4a: return cpu_->set(R64::RAX, invoke_syscall_1(&Sys::fsync, regs));
-            case 0x4f: return cpu_->set(R64::RAX, invoke_syscall_2(&Sys::getcwd, regs));
-            case 0x50: return cpu_->set(R64::RAX, invoke_syscall_1(&Sys::chdir, regs));
-            case 0x53: return cpu_->set(R64::RAX, invoke_syscall_2(&Sys::mkdir, regs));
-            case 0x57: return cpu_->set(R64::RAX, invoke_syscall_1(&Sys::unlink, regs));
-            case 0x59: return cpu_->set(R64::RAX, invoke_syscall_3(&Sys::readlink, regs));
-            case 0x60: return cpu_->set(R64::RAX, invoke_syscall_2(&Sys::gettimeofday, regs));
-            case 0x63: return cpu_->set(R64::RAX, invoke_syscall_1(&Sys::sysinfo, regs));
-            case 0x66: return cpu_->set(R64::RAX, invoke_syscall_0(&Sys::getuid, regs));
-            case 0x68: return cpu_->set(R64::RAX, invoke_syscall_0(&Sys::getgid, regs));
-            case 0x6b: return cpu_->set(R64::RAX, invoke_syscall_0(&Sys::geteuid, regs));
-            case 0x6c: return cpu_->set(R64::RAX, invoke_syscall_0(&Sys::getegid, regs));
-            case 0x89: return cpu_->set(R64::RAX, invoke_syscall_2(&Sys::statfs, regs));
-            case 0x9e: return cpu_->set(R64::RAX, invoke_syscall_2(&Sys::arch_prctl, regs));
+            case 0x29: return cpu->set(R64::RAX, invoke_syscall_3(&Sys::socket, regs));
+            case 0x2a: return cpu->set(R64::RAX, invoke_syscall_3(&Sys::connect, regs));
+            case 0x2d: return cpu->set(R64::RAX, invoke_syscall_6(&Sys::recvfrom, regs));
+            case 0x2f: return cpu->set(R64::RAX, invoke_syscall_3(&Sys::recvmsg, regs));
+            case 0x31: return cpu->set(R64::RAX, invoke_syscall_3(&Sys::bind, regs));
+            case 0x33: return cpu->set(R64::RAX, invoke_syscall_3(&Sys::getsockname, regs));
+            case 0x34: return cpu->set(R64::RAX, invoke_syscall_3(&Sys::getpeername, regs));
+            case 0x38: return cpu->set(R64::RAX, invoke_syscall_5(&Sys::clone, regs));
+            case 0x3f: return cpu->set(R64::RAX, invoke_syscall_1(&Sys::uname, regs));
+            case 0x48: return cpu->set(R64::RAX, invoke_syscall_3(&Sys::fcntl, regs));
+            case 0x4a: return cpu->set(R64::RAX, invoke_syscall_1(&Sys::fsync, regs));
+            case 0x4f: return cpu->set(R64::RAX, invoke_syscall_2(&Sys::getcwd, regs));
+            case 0x50: return cpu->set(R64::RAX, invoke_syscall_1(&Sys::chdir, regs));
+            case 0x53: return cpu->set(R64::RAX, invoke_syscall_2(&Sys::mkdir, regs));
+            case 0x57: return cpu->set(R64::RAX, invoke_syscall_1(&Sys::unlink, regs));
+            case 0x59: return cpu->set(R64::RAX, invoke_syscall_3(&Sys::readlink, regs));
+            case 0x60: return cpu->set(R64::RAX, invoke_syscall_2(&Sys::gettimeofday, regs));
+            case 0x63: return cpu->set(R64::RAX, invoke_syscall_1(&Sys::sysinfo, regs));
+            case 0x66: return cpu->set(R64::RAX, invoke_syscall_0(&Sys::getuid, regs));
+            case 0x68: return cpu->set(R64::RAX, invoke_syscall_0(&Sys::getgid, regs));
+            case 0x6b: return cpu->set(R64::RAX, invoke_syscall_0(&Sys::geteuid, regs));
+            case 0x6c: return cpu->set(R64::RAX, invoke_syscall_0(&Sys::getegid, regs));
+            case 0x89: return cpu->set(R64::RAX, invoke_syscall_2(&Sys::statfs, regs));
+            case 0x9e: return cpu->set(R64::RAX, invoke_syscall_2(&Sys::arch_prctl, regs));
             case 0xba: { // gettid
-                cpu_->set(R64::RAX, (u64)0xfeed);
+                cpu->set(R64::RAX, (u64)0xfeed);
                 return;
             }
-            case 0xbf: return cpu_->set(R64::RAX, invoke_syscall_4(&Sys::getxattr, regs));
-            case 0xc0: return cpu_->set(R64::RAX, invoke_syscall_4(&Sys::lgetxattr, regs));
-            case 0xc9: return cpu_->set(R64::RAX, invoke_syscall_1(&Sys::time, regs));
-            case 0xcc: return cpu_->set(R64::RAX, invoke_syscall_3(&Sys::sched_getaffinity, regs));
-            case 0xca: return cpu_->set(R64::RAX, invoke_syscall_6(&Sys::futex, regs));
-            case 0xd9: return cpu_->set(R64::RAX, invoke_syscall_3(&Sys::getdents64, regs));
-            case 0xda: return cpu_->set(R64::RAX, invoke_syscall_1(&Sys::set_tid_address, regs));
-            case 0xdd: return cpu_->set(R64::RAX, invoke_syscall_4(&Sys::posix_fadvise, regs));
-            case 0xe4: return cpu_->set(R64::RAX, invoke_syscall_2(&Sys::clock_gettime, regs));
-            case 0xe7: return cpu_->set(R64::RAX, invoke_syscall_1(&Sys::exit_group, regs));
-            case 0xea: return cpu_->set(R64::RAX, invoke_syscall_3(&Sys::tgkill, regs));
-            case 0x101: return cpu_->set(R64::RAX, invoke_syscall_4(&Sys::openat, regs));
-            case 0x106: return cpu_->set(R64::RAX, invoke_syscall_4(&Sys::fstatat64, regs));
-            case 0x10e: return cpu_->set(R64::RAX, invoke_syscall_6(&Sys::pselect6, regs));
-            case 0x111: return cpu_->set(R64::RAX, invoke_syscall_2(&Sys::set_robust_list, regs));
-            case 0x112: return cpu_->set(R64::RAX, invoke_syscall_3(&Sys::get_robust_list, regs));
-            case 0x118: return cpu_->set(R64::RAX, invoke_syscall_4(&Sys::utimensat, regs));
-            case 0x123: return cpu_->set(R64::RAX, invoke_syscall_1(&Sys::epoll_create1, regs));
-            case 0x12e: return cpu_->set(R64::RAX, invoke_syscall_4(&Sys::prlimit64, regs));
-            case 0x13e: return cpu_->set(R64::RAX, invoke_syscall_3(&Sys::getrandom, regs));
-            case 0x14c: return cpu_->set(R64::RAX, invoke_syscall_5(&Sys::statx, regs));
-            case 0x1b3: return cpu_->set(R64::RAX, invoke_syscall_2(&Sys::clone3, regs));
+            case 0xbf: return cpu->set(R64::RAX, invoke_syscall_4(&Sys::getxattr, regs));
+            case 0xc0: return cpu->set(R64::RAX, invoke_syscall_4(&Sys::lgetxattr, regs));
+            case 0xc9: return cpu->set(R64::RAX, invoke_syscall_1(&Sys::time, regs));
+            case 0xcc: return cpu->set(R64::RAX, invoke_syscall_3(&Sys::sched_getaffinity, regs));
+            case 0xca: return cpu->set(R64::RAX, invoke_syscall_6(&Sys::futex, regs));
+            case 0xd9: return cpu->set(R64::RAX, invoke_syscall_3(&Sys::getdents64, regs));
+            case 0xda: return cpu->set(R64::RAX, invoke_syscall_1(&Sys::set_tid_address, regs));
+            case 0xdd: return cpu->set(R64::RAX, invoke_syscall_4(&Sys::posix_fadvise, regs));
+            case 0xe4: return cpu->set(R64::RAX, invoke_syscall_2(&Sys::clock_gettime, regs));
+            case 0xe7: return cpu->set(R64::RAX, invoke_syscall_1(&Sys::exit_group, regs));
+            case 0xea: return cpu->set(R64::RAX, invoke_syscall_3(&Sys::tgkill, regs));
+            case 0x101: return cpu->set(R64::RAX, invoke_syscall_4(&Sys::openat, regs));
+            case 0x106: return cpu->set(R64::RAX, invoke_syscall_4(&Sys::fstatat64, regs));
+            case 0x10e: return cpu->set(R64::RAX, invoke_syscall_6(&Sys::pselect6, regs));
+            case 0x111: return cpu->set(R64::RAX, invoke_syscall_2(&Sys::set_robust_list, regs));
+            case 0x112: return cpu->set(R64::RAX, invoke_syscall_3(&Sys::get_robust_list, regs));
+            case 0x118: return cpu->set(R64::RAX, invoke_syscall_4(&Sys::utimensat, regs));
+            case 0x123: return cpu->set(R64::RAX, invoke_syscall_1(&Sys::epoll_create1, regs));
+            case 0x12e: return cpu->set(R64::RAX, invoke_syscall_4(&Sys::prlimit64, regs));
+            case 0x13e: return cpu->set(R64::RAX, invoke_syscall_3(&Sys::getrandom, regs));
+            case 0x14c: return cpu->set(R64::RAX, invoke_syscall_5(&Sys::statx, regs));
+            case 0x1b3: return cpu->set(R64::RAX, invoke_syscall_2(&Sys::clone3, regs));
             default: break;
         }
         verify(false, [&]() {
@@ -106,7 +106,7 @@ namespace x64 {
 
     ssize_t Sys::read(int fd, Ptr8 buf, size_t count) {
         auto errnoOrBuffer = Host::read(Host::FD{fd}, count);
-        if(vm_->logSyscalls()) {
+        if(logSyscalls_) {
             fmt::print("Sys::read(fd={}, buf={:#x}, count={}) = {}\n",
                         fd, buf.address(), count,
                         errnoOrBuffer.errorOrWith<ssize_t>([](const auto& buf) { return (ssize_t)buf.size(); }));
@@ -120,7 +120,7 @@ namespace x64 {
     ssize_t Sys::write(int fd, Ptr8 buf, size_t count) {
         std::vector<u8> buffer = mmu_->readFromMmu<u8>(buf, count);
         ssize_t ret = Host::write(Host::FD{fd}, buffer.data(), buffer.size());
-        if(vm_->logSyscalls()) {
+        if(logSyscalls_) {
             fmt::print("Sys::write(fd={}, buf={:#x}, count={}) = {}\n",
                         fd, buf.address(), count, ret);
         }
@@ -129,14 +129,14 @@ namespace x64 {
 
     int Sys::close(int fd) {
         int ret = Host::close(Host::FD{fd});
-        if(vm_->logSyscalls()) fmt::print("Sys::close(fd={}) = {}\n", fd, ret);
+        if(logSyscalls_) fmt::print("Sys::close(fd={}) = {}\n", fd, ret);
         return ret;
     }
 
     int Sys::stat(Ptr pathname, Ptr statbuf) {
         std::string path = mmu_->readString(pathname);
         auto errnoOrBuffer = Host::stat(path);
-        if(vm_->logSyscalls()) {
+        if(logSyscalls_) {
             fmt::print("Sys::stat(path={}, statbuf={:#x}) = {}\n",
                         path, statbuf.address(), errnoOrBuffer.errorOr(0));
         }
@@ -148,7 +148,7 @@ namespace x64 {
 
     int Sys::fstat(int fd, Ptr8 statbuf) {
         ErrnoOrBuffer errnoOrBuffer = Host::fstat(Host::FD{fd});
-        if(vm_->logSyscalls()) {
+        if(logSyscalls_) {
             fmt::print("Sys::fstat(fd={}, statbuf={:#x}) = {}\n",
                         fd, statbuf.address(), errnoOrBuffer.errorOr(0));
         }
@@ -161,7 +161,7 @@ namespace x64 {
     int Sys::lstat(Ptr pathname, Ptr statbuf) {
         std::string path = mmu_->readString(pathname);
         ErrnoOrBuffer errnoOrBuffer = Host::lstat(path);
-        if(vm_->logSyscalls()) {
+        if(logSyscalls_) {
             fmt::print("Sys::lstat(path={}, statbuf={:#x}) = {}\n",
                         path, statbuf.address(), errnoOrBuffer.errorOr(0));
         }
@@ -175,7 +175,7 @@ namespace x64 {
         std::vector<u8> pollfds = mmu_->readFromMmu<u8>(fds, Host::pollRequiredBufferSize(nfds));
         Buffer buffer(std::move(pollfds));
         auto errnoOrBufferAndReturnValue = Host::poll(buffer, nfds, timeout);
-        if(vm_->logSyscalls()) {
+        if(logSyscalls_) {
             fmt::print("Sys::poll(fds={:#x}, nfds={}, timeout={}) = {}\n",
                                   fds.address(), nfds, timeout,
                                   errnoOrBufferAndReturnValue.errorOrWith<int>([](const auto& bufferAndRetVal) {
@@ -190,7 +190,7 @@ namespace x64 {
 
     off_t Sys::lseek(int fd, off_t offset, int whence) {
         off_t ret = Host::lseek(Host::FD{fd}, offset, whence);
-        if(vm_->logSyscalls()) fmt::print("Sys::lseek(fd={}, offset={:#x}, whence={}) = {}\n", fd, offset, whence, ret);
+        if(logSyscalls_) fmt::print("Sys::lseek(fd={}, offset={:#x}, whence={}) = {}\n", fd, offset, whence, ret);
         return ret;
     }
 
@@ -200,32 +200,32 @@ namespace x64 {
         if(Host::Mmap::isFixed(flags)) f = f | MAP::FIXED;
         verify(addr.segment() != Segment::FS);
         u64 base = mmu_->mmap(addr.address(), length, (PROT)prot, f, fd, (int)offset);
-        if(vm_->logSyscalls()) fmt::print("Sys::mmap(addr={:#x}, length={}, prot={}, flags={}, fd={}, offset={}) = {:#x}\n",
+        if(logSyscalls_) fmt::print("Sys::mmap(addr={:#x}, length={}, prot={}, flags={}, fd={}, offset={}) = {:#x}\n",
                                               addr.address(), length, prot, flags, fd, offset, base);
         return Ptr{addr.segment(), base};
     }
 
     int Sys::mprotect(Ptr addr, size_t length, int prot) {
         int ret = mmu_->mprotect(addr.address(), length, (PROT)prot);
-        if(vm_->logSyscalls()) fmt::print("Sys::mprotect(addr={:#x}, length={}, prot={}) = {}\n", addr.address(), length, prot, ret);
+        if(logSyscalls_) fmt::print("Sys::mprotect(addr={:#x}, length={}, prot={}) = {}\n", addr.address(), length, prot, ret);
         return ret;
     }
 
     int Sys::munmap(Ptr addr, size_t length) {
         int ret = mmu_->munmap(addr.address(), length);
-        if(vm_->logSyscalls()) fmt::print("Sys::munmap(addr={:#x}, length={}) = {}\n", addr.address(), length, ret);
+        if(logSyscalls_) fmt::print("Sys::munmap(addr={:#x}, length={}) = {}\n", addr.address(), length, ret);
         return ret;
     }
 
     Ptr Sys::brk(Ptr addr) {
         verify(addr.segment() != Segment::FS);
         u64 newBrk = mmu_->brk(addr.address());
-        if(vm_->logSyscalls()) fmt::print("Sys::brk(addr={:#x}) = {:#x}\n", addr.address(), newBrk);
+        if(logSyscalls_) fmt::print("Sys::brk(addr={:#x}) = {:#x}\n", addr.address(), newBrk);
         return Ptr{addr.segment(), newBrk};
     }
 
     int Sys::rt_sigaction(int sig, Ptr act, Ptr oact, size_t sigsetsize) {
-        if(vm_->logSyscalls()) fmt::print("Sys::rt_sigaction({}, {:#x}, {:#x}, {}) = 0\n", sig, act.address(), oact.address(), sigsetsize);
+        if(logSyscalls_) fmt::print("Sys::rt_sigaction({}, {:#x}, {:#x}, {}) = 0\n", sig, act.address(), oact.address(), sigsetsize);
         (void)sig;
         (void)act;
         (void)oact;
@@ -234,7 +234,7 @@ namespace x64 {
     }
 
     int Sys::rt_sigprocmask(int how, Ptr nset, Ptr oset, size_t sigsetsize) {
-        if(vm_->logSyscalls()) fmt::print("Sys::rt_sigprocmask({}, {:#x}, {:#x}, {}) = 0\n", how, nset.address(), oset.address(), sigsetsize);
+        if(logSyscalls_) fmt::print("Sys::rt_sigprocmask({}, {:#x}, {:#x}, {}) = 0\n", how, nset.address(), oset.address(), sigsetsize);
         (void)how;
         (void)nset;
         (void)oset;
@@ -249,7 +249,7 @@ namespace x64 {
         Buffer buffer(std::move(buf));
         mmu_->copyFromMmu(buffer.data(), argp, buffer.size());
         auto errnoOrBuffer = Host::ioctl(Host::FD{fd}, request, buffer);
-        if(vm_->logSyscalls()) {
+        if(logSyscalls_) {
             fmt::print("Sys::ioctl(fd={}, request={}, argp={:#x}) = {}\n",
                         fd, Host::ioctlName(request), argp.address(),
                         errnoOrBuffer.errorOrWith<ssize_t>([](const auto& buf) { return (ssize_t)buf.size(); }));
@@ -263,7 +263,7 @@ namespace x64 {
 
     ssize_t Sys::pread64(int fd, Ptr buf, size_t count, off_t offset) {
         auto errnoOrBuffer = Host::pread64(Host::FD{fd}, count, offset);
-        if(vm_->logSyscalls()) {
+        if(logSyscalls_) {
             fmt::print("Sys::read(fd={}, buf={:#x}, count={}, offset={}) = {}\n",
                         fd, buf.address(), count, offset,
                         errnoOrBuffer.errorOrWith<ssize_t>([](const auto& buf) { return (ssize_t)buf.size(); }));
@@ -287,7 +287,7 @@ namespace x64 {
             buffers.push_back(Buffer(std::move(data)));
         }
         ssize_t nbytes = Host::writev(Host::FD{fd}, buffers);
-        if(vm_->logSyscalls()) fmt::print("Sys::writev(fd={}, iov={:#x}, iovcnt={}) = {}\n", fd, iov.address(), iovcnt, nbytes);
+        if(logSyscalls_) fmt::print("Sys::writev(fd={}, iov={:#x}, iovcnt={}) = {}\n", fd, iov.address(), iovcnt, nbytes);
         return nbytes;
     }
 
@@ -298,13 +298,13 @@ namespace x64 {
         if(ret < 0) {
             info = strerror(-ret);
         }
-        if(vm_->logSyscalls()) fmt::print("Sys::access(path={}, mode={}) = {} {}\n", path, mode, ret, info);
+        if(logSyscalls_) fmt::print("Sys::access(path={}, mode={}) = {} {}\n", path, mode, ret, info);
         return ret;
     }
 
     int Sys::dup(int oldfd) {
         Host::FD newfd = Host::dup(Host::FD{oldfd});
-        if(vm_->logSyscalls()) fmt::print("Sys::dup(oldfd={}) = {}\n", oldfd, newfd.fd);
+        if(logSyscalls_) fmt::print("Sys::dup(oldfd={}) = {}\n", oldfd, newfd.fd);
         return newfd.fd;
     }
 
@@ -326,7 +326,7 @@ namespace x64 {
                                !!writefds ?  &wfds : nullptr,
                                !!exceptfds ? &efds : nullptr,
                                !!timeout ?   &to : nullptr);
-        if(vm_->logSyscalls()) {
+        if(logSyscalls_) {
             fmt::print("Sys::select(nfds={}, readfds={:#x}, writefds={:#x}, exceptfds={:#x}, timeout={:#x}) = {}\n",
                         nfds, readfds.address(), writefds.address(), exceptfds.address(), timeout.address(), ret);
         }
@@ -339,7 +339,7 @@ namespace x64 {
 
     int Sys::socket(int domain, int type, int protocol) {
         Host::FD fd = Host::socket(domain, type, protocol);
-        if(vm_->logSyscalls()) {
+        if(logSyscalls_) {
             fmt::print("Sys::socket(domain={}, type={}, protocol={}) = {}\n",
                                     domain, type, protocol, fd.fd);
         }
@@ -350,7 +350,7 @@ namespace x64 {
         std::vector<u8> addrBuffer = mmu_->readFromMmu<u8>(addr, (size_t)addrlen);
         Buffer buf(std::move(addrBuffer));
         int ret = Host::connect(sockfd, buf);
-        if(vm_->logSyscalls()) {
+        if(logSyscalls_) {
             fmt::print("Sys::connect(sockfd={}, addr={:#x}, addrlen={}) = {}\n",
                         sockfd, addr.address(), addrlen, ret);
         }
@@ -360,7 +360,7 @@ namespace x64 {
     int Sys::getsockname(int sockfd, Ptr addr, Ptr32 addrlen) {
         u32 buffersize = mmu_->read32(addrlen);
         ErrnoOrBuffer sockname = Host::getsockname(sockfd, buffersize);
-        if(vm_->logSyscalls()) {
+        if(logSyscalls_) {
             fmt::print("Sys::getsockname(sockfd={}, addr={:#x}, addrlen={:#x}) = {}",
                         sockfd, addr.address(), addrlen.address(), sockname.errorOr(0));
             sockname.errorOrWith<int>([&](const auto& buffer) {
@@ -378,7 +378,7 @@ namespace x64 {
     int Sys::getpeername(int sockfd, Ptr addr, Ptr32 addrlen) {
         u32 buffersize = mmu_->read32(addrlen);
         ErrnoOrBuffer peername = Host::getpeername(sockfd, buffersize);
-        if(vm_->logSyscalls()) {
+        if(logSyscalls_) {
             fmt::print("Sys::getpeername(sockfd={}, addr={:#x}, addrlen={:#x}) = {}",
                         sockfd, addr.address(), addrlen.address(), peername.errorOr(0));
             peername.errorOrWith<int>([&](const auto& buffer) {
@@ -395,7 +395,7 @@ namespace x64 {
 
     long Sys::clone(unsigned long flags, Ptr stack, Ptr parent_tid, Ptr child_tid, unsigned long tls) {
         int ret = -EAGAIN;
-        if(vm_->logSyscalls()) {
+        if(logSyscalls_) {
             fmt::print("Sys::clone(flags={}, stack={:#x}, parent_tid={:#x}, child_tid={:#x}, tls={}) = {}\n",
                         flags, stack.address(), parent_tid.address(), child_tid.address(), tls, ret);
         }
@@ -404,7 +404,7 @@ namespace x64 {
 
     int Sys::uname(Ptr buf) {
         ErrnoOrBuffer errnoOrBuffer = Host::uname();
-        if(vm_->logSyscalls()) {
+        if(logSyscalls_) {
             fmt::print("Sys::uname(buf={:#x}) = {}\n",
                         buf.address(), errnoOrBuffer.errorOr(0));
         }
@@ -416,18 +416,18 @@ namespace x64 {
 
     int Sys::fcntl(int fd, int cmd, int arg) {
         int ret = Host::fcntl(Host::FD{fd}, cmd, arg);
-        if(vm_->logSyscalls()) fmt::print("Sys::fcntl(fd={}, cmd={}, arg={}) = {}\n", fd, Host::fcntlName(cmd), arg, ret);
+        if(logSyscalls_) fmt::print("Sys::fcntl(fd={}, cmd={}, arg={}) = {}\n", fd, Host::fcntlName(cmd), arg, ret);
         return ret;
     }
 
     int Sys::fsync(int fd) {
-        if(vm_->logSyscalls()) fmt::print("Sys::fsync(fd={}) = {}\n", fd, -EINVAL);
+        if(logSyscalls_) fmt::print("Sys::fsync(fd={}) = {}\n", fd, -EINVAL);
         return -EINVAL;
     }
 
     Ptr Sys::getcwd(Ptr buf, size_t size) {
         ErrnoOrBuffer errnoOrBuffer = Host::getcwd(size);
-        if(vm_->logSyscalls()) {
+        if(logSyscalls_) {
             fmt::print("Sys::getcwd(buf={:#x}, size={}) = {:#x}\n",
                         buf.address(), size, errnoOrBuffer.isError() ? 0 : buf.address());
         }
@@ -441,14 +441,14 @@ namespace x64 {
     int Sys::chdir(Ptr pathname) {
         auto path = mmu_->readString(pathname);
         int ret = Host::chdir(path);
-        if(vm_->logSyscalls()) {
+        if(logSyscalls_) {
             fmt::print("Sys::chdir(path={}) = {}\n", path, ret);
         }
         return ret;
     }
 
     int Sys::mkdir([[maybe_unused]] Ptr pathname, [[maybe_unused]] mode_t mode) {
-        if(vm_->logSyscalls()) {
+        if(logSyscalls_) {
             auto path = mmu_->readString(pathname);
             fmt::print("Sys::mkdir(path={}, mode={}) = {}\n", path, mode, -ENOTSUP);
         }
@@ -456,7 +456,7 @@ namespace x64 {
     }
 
     int Sys::unlink([[maybe_unused]] Ptr pathname) {
-        if(vm_->logSyscalls()) {
+        if(logSyscalls_) {
             auto path = mmu_->readString(pathname);
             fmt::print("Sys::unlink(path={}) = {}\n", path, -ENOTSUP);
         }
@@ -466,7 +466,7 @@ namespace x64 {
     ssize_t Sys::readlink(Ptr pathname, Ptr buf, size_t bufsiz) {
         std::string path = mmu_->readString(pathname);
         auto errnoOrBuffer = Host::readlink(path, bufsiz);
-        if(vm_->logSyscalls()) {
+        if(logSyscalls_) {
             fmt::print("Sys::readlink(path={}, buf={:#x}, size={}) = {:#x}\n",
                         path, buf.address(), bufsiz, errnoOrBuffer.errorOrWith<ssize_t>([](const auto& buffer) { return (ssize_t)buffer.size(); }));
         }
@@ -478,7 +478,7 @@ namespace x64 {
 
     int Sys::gettimeofday(Ptr tv, Ptr tz) {
         auto errnoOrBuffers = Host::gettimeofday();
-        if(vm_->logSyscalls()) {
+        if(logSyscalls_) {
             fmt::print("Sys::gettimeofday(tv={:#x}, tz={:#x}) = {:#x}\n",
                         tv.address(), tz.address(), errnoOrBuffers.errorOr(0));
         }
@@ -491,7 +491,7 @@ namespace x64 {
 
     int Sys::sysinfo(Ptr info) {
         auto errnoOrBuffer = Host::sysinfo();
-        if(vm_->logSyscalls()) {
+        if(logSyscalls_) {
             fmt::print("Sys::sysinfo(info={:#x}) = {}\n",
                         info.address(), errnoOrBuffer.errorOr(0));
         }
@@ -528,14 +528,14 @@ namespace x64 {
 
     u64 Sys::exit_group(int status) {
         (void)status;
-        if(vm_->logSyscalls()) fmt::print("Sys::exit_group(status={})\n", status);
-        vm_->stop();
+        if(logSyscalls_) fmt::print("Sys::exit_group(status={})\n", status);
+        interpreter_->stop();
         return 0;
     }
 
     int Sys::tgkill(int tgid, int tid, int sig) {
-        if(vm_->logSyscalls()) fmt::print("Sys::tgkill(tgid={}, tid={}, sig={})\n", tgid, tid, sig);
-        vm_->stop();
+        if(logSyscalls_) fmt::print("Sys::tgkill(tgid={}, tid={}, sig={})\n", tgid, tid, sig);
+        interpreter_->stop();
         return 0;
     }
 
@@ -543,7 +543,7 @@ namespace x64 {
         auto spath = mmu_->readString(path);
         auto sname = mmu_->readString(name);
         auto errnoOrBuffer = Host::getxattr(spath, sname, size);
-        if(vm_->logSyscalls()) {
+        if(logSyscalls_) {
             fmt::print("Sys::getxaddr(path={}, name={}, value={:#x}, size={}) = {}\n",
                                       spath, sname, value.address(), size, errnoOrBuffer.errorOrWith<ssize_t>([](const auto& buffer) {
                                         return (ssize_t)buffer.size();
@@ -559,7 +559,7 @@ namespace x64 {
         auto spath = mmu_->readString(path);
         auto sname = mmu_->readString(name);
         auto errnoOrBuffer = Host::lgetxattr(spath, sname, size);
-        if(vm_->logSyscalls()) {
+        if(logSyscalls_) {
             fmt::print("Sys::getxaddr(path={}, name={}, value={:#x}, size={}) = {}\n",
                                       spath, sname, value.address(), size, errnoOrBuffer.errorOrWith<ssize_t>([](const auto& buffer) {
                                         return (ssize_t)buffer.size();
@@ -573,13 +573,13 @@ namespace x64 {
 
     time_t Sys::time(Ptr tloc) {
         time_t t = Host::time();
-        if(vm_->logSyscalls()) fmt::print("Sys::time({:#x}) = {}\n", tloc.address(), t);
+        if(logSyscalls_) fmt::print("Sys::time({:#x}) = {}\n", tloc.address(), t);
         if(tloc.address()) mmu_->copyToMmu(tloc, (const u8*)&t, sizeof(t));
         return t;
     }
 
     long Sys::futex(Ptr32 uaddr, int futex_op, uint32_t val, Ptr timeout, Ptr32 uaddr2, uint32_t val3) {
-        if(vm_->logSyscalls()) fmt::print("Sys::futex({:#x}, {}, {}, {:#x}, {:#x}, {})\n", uaddr.address(), futex_op, val, timeout.address(), uaddr2.address(), val3);
+        if(logSyscalls_) fmt::print("Sys::futex({:#x}, {}, {}, {:#x}, {:#x}, {})\n", uaddr.address(), futex_op, val, timeout.address(), uaddr2.address(), val3);
         return 1;
     }
 
@@ -597,7 +597,7 @@ namespace x64 {
             // don't allow looking at other processes
             ret = -EPERM;
         }
-        if(vm_->logSyscalls()) fmt::print("Sys::sched_getaffinity({}, {}, {:#x}) = {}\n",
+        if(logSyscalls_) fmt::print("Sys::sched_getaffinity({}, {}, {:#x}) = {}\n",
                                                                   pid, cpusetsize, mask.address(), ret);
         return ret;
     }
@@ -605,7 +605,7 @@ namespace x64 {
     ssize_t Sys::recvfrom(int sockfd, Ptr buf, size_t len, int flags, Ptr src_addr, Ptr32 addrlen) {
         bool requireSrcAddress = !!src_addr && !!addrlen;
         ErrnoOr<std::pair<Buffer, Buffer>> ret = Host::recvfrom(Host::FD{sockfd}, len, flags, requireSrcAddress);
-        if(vm_->logSyscalls()) {
+        if(logSyscalls_) {
             fmt::print("Sys::recvfrom(sockfd={}, buf={:#x}, len={}, flags={}, src_addr={:#x}, addrlen={:#x}) = {}",
                                       sockfd, buf.address(), len, flags, src_addr.address(), addrlen.address(),
                                       ret.errorOrWith<ssize_t>([](const auto& buffers) {
@@ -660,7 +660,7 @@ namespace x64 {
     int Sys::bind(int sockfd, Ptr addr, socklen_t addrlen) {
         Buffer saddr(mmu_->readFromMmu<u8>(addr, addrlen));
         int rc = Host::bind(Host::FD{sockfd}, saddr);
-        if(vm_->logSyscalls()) {
+        if(logSyscalls_) {
             fmt::print("Sys::bind(sockfd={}, addr={:#x}, addrlen={}) = {}\n",
                         sockfd, addr.address(), addrlen, rc);
         }
@@ -669,7 +669,7 @@ namespace x64 {
 
     ssize_t Sys::getdents64(int fd, Ptr dirp, size_t count) {
         auto errnoOrBuffer = Host::getdents64(Host::FD{fd}, count);
-        if(vm_->logSyscalls()) {
+        if(logSyscalls_) {
             fmt::print("Sys::getdents64(fd={}, dirp={:#x}, count={}) = {}\n",
                         fd, dirp.address(), count, errnoOrBuffer.errorOrWith<ssize_t>([&](const auto& buffer) { return (ssize_t)buffer.size(); }));
         }
@@ -680,7 +680,7 @@ namespace x64 {
     }
 
     pid_t Sys::set_tid_address(Ptr32 ptr) {
-        if(vm_->logSyscalls()) fmt::print("Sys::set_tid_address({:#x}) = {}\n", ptr.address(), 1);
+        if(logSyscalls_) fmt::print("Sys::set_tid_address({:#x}) = {}\n", ptr.address(), 1);
         return 1;
     }
 
@@ -690,7 +690,7 @@ namespace x64 {
 
     int Sys::clock_gettime(clockid_t clockid, Ptr tp) {
         auto errnoOrBuffer = Host::clock_gettime(clockid);
-        if(vm_->logSyscalls()) {
+        if(logSyscalls_) {
             fmt::print("Sys::clock_gettime({}, {:#x}) = {}\n",
                         clockid, tp.address(), errnoOrBuffer.errorOr(0));
         }
@@ -702,7 +702,7 @@ namespace x64 {
 
     int Sys::arch_prctl(int code, Ptr addr) {
         bool isSetFS = Host::Prctl::isSetFS(code);
-        if(vm_->logSyscalls()) fmt::print("Sys::arch_prctl(code={}, addr={:#x}) = {}\n", code, addr.address(), isSetFS ? 0 : -EINVAL);
+        if(logSyscalls_) fmt::print("Sys::arch_prctl(code={}, addr={:#x}) = {}\n", code, addr.address(), isSetFS ? 0 : -EINVAL);
         if(!isSetFS) return -EINVAL;
         mmu_->setSegmentBase(Segment::FS, addr.address());
         return 0;
@@ -711,14 +711,14 @@ namespace x64 {
     int Sys::openat(int dirfd, Ptr pathname, int flags, mode_t mode) {
         std::string path = mmu_->readString(pathname);
         Host::FD fd = Host::openat(Host::FD{dirfd}, path, flags, mode);
-        if(vm_->logSyscalls()) fmt::print("Sys::openat(dirfd={}, path={}, flags={}, mode={}) = {}\n", dirfd, path, flags, mode, fd.fd);
+        if(logSyscalls_) fmt::print("Sys::openat(dirfd={}, path={}, flags={}, mode={}) = {}\n", dirfd, path, flags, mode, fd.fd);
         return fd.fd;
     }
 
     int Sys::fstatat64(int dirfd, Ptr pathname, Ptr statbuf, int flags) {
         std::string path = mmu_->readString(pathname);
         auto errnoOrBuffer = Host::fstatat64(Host::FD{dirfd}, path, flags);
-        if(vm_->logSyscalls()) {
+        if(logSyscalls_) {
             fmt::print("Sys::fstatat64(dirfd={}, path={}, statbuf={:#x}, flags={}) = {}\n",
                         dirfd, path, statbuf.address(), flags, errnoOrBuffer.errorOr(0));
         }
@@ -745,7 +745,7 @@ namespace x64 {
                                exceptfds.address() != 0 ? &efds : nullptr,
                                timeout.address() != 0 ?   &ts : nullptr,
                                sigmask.address() != 0 ?   &smask : nullptr);
-        if(vm_->logSyscalls()) {
+        if(logSyscalls_) {
             fmt::print("Sys::pselect6(nfds={}, readfds={:#x}, writefds={:#x}, exceptfds={:#x}, timeout={:#x},sigmask={:#x}) = {}\n",
                         nfds, readfds.address(), writefds.address(), exceptfds.address(), timeout.address(), sigmask.address(), ret);
         }
@@ -757,7 +757,7 @@ namespace x64 {
     }
 
     long Sys::set_robust_list(Ptr head, size_t len) {
-        if(vm_->logSyscalls()) fmt::print("Sys::set_robust_list({:#x}, {}) = 0\n", head.address(), len);
+        if(logSyscalls_) fmt::print("Sys::set_robust_list({:#x}, {}) = 0\n", head.address(), len);
         // maybe we can do nothing ?
         (void)head;
         (void)len;
@@ -765,7 +765,7 @@ namespace x64 {
     }
 
     long Sys::get_robust_list(int pid, Ptr64 head_ptr, Ptr64 len_ptr) {
-        if(vm_->logSyscalls()) fmt::print("Sys::get_robust_list({}, {:#x}, {:#x}) = 0\n", pid, head_ptr.address(), len_ptr.address());
+        if(logSyscalls_) fmt::print("Sys::get_robust_list({}, {:#x}, {:#x}) = 0\n", pid, head_ptr.address(), len_ptr.address());
         (void)pid;
         (void)head_ptr;
         (void)len_ptr;
@@ -774,28 +774,28 @@ namespace x64 {
     }
 
     int Sys::utimensat(int dirfd, Ptr pathname, Ptr times, int flags) {
-        if(vm_->logSyscalls()) fmt::print("Sys::utimensat(dirfd={}, pathname={}, times={:#x}, flags={}) = -ENOTSUP\n",
+        if(logSyscalls_) fmt::print("Sys::utimensat(dirfd={}, pathname={}, times={:#x}, flags={}) = -ENOTSUP\n",
                                                           dirfd, mmu_->readString(pathname), times.address(), flags);
         return -ENOTSUP;
     }
 
     int Sys::epoll_create1(int flags) {
         Host::FD fd = Host::epoll_create1(flags);
-        if(vm_->logSyscalls()) {
+        if(logSyscalls_) {
             fmt::print("Sys::epoll_create1(flags={}) = {}\n", flags, fd.fd);
         }
         return fd.fd;
     }
 
     int Sys::prlimit64(pid_t pid, int resource, [[maybe_unused]] Ptr new_limit, Ptr old_limit) {
-        if(vm_->logSyscalls()) 
+        if(logSyscalls_) 
             fmt::print("Sys::prlimit64(pid={}, resource={}, new_limit={:#x}, old_limit={:#x})", pid, resource, new_limit.address(), old_limit.address());
         if(!old_limit.address()) {
-            if(vm_->logSyscalls()) fmt::print(" = 0\n");
+            if(logSyscalls_) fmt::print(" = 0\n");
             return 0;
         }
         auto errnoOrBuffer = Host::getrlimit(pid, resource);
-        if(vm_->logSyscalls()) fmt::print(" = {}\n", errnoOrBuffer.errorOr(0));
+        if(logSyscalls_) fmt::print(" = {}\n", errnoOrBuffer.errorOr(0));
         return errnoOrBuffer.errorOrWith<int>([&](const auto& buffer) {
             mmu_->copyToMmu(old_limit, buffer.data(), buffer.size());
             return 0;
@@ -803,7 +803,7 @@ namespace x64 {
     }
 
     ssize_t Sys::getrandom(Ptr buf, size_t len, int flags) {
-        if(vm_->logSyscalls()) 
+        if(logSyscalls_) 
             fmt::print("Sys::getrandom(buf={:#x}, len={}, flags={})\n", buf.address(), len, flags);
         std::vector<u8> buffer(len);
         std::iota(buffer.begin(), buffer.end(), 0);
@@ -814,7 +814,7 @@ namespace x64 {
     int Sys::statx(int dirfd, Ptr pathname, int flags, unsigned int mask, Ptr statxbuf) {
         std::string path = mmu_->readString(pathname);
         auto errnoOrBuffer = Host::statx(Host::FD{dirfd}, path, flags, mask);
-        if(vm_->logSyscalls()) {
+        if(logSyscalls_) {
             fmt::print("Sys::statx(dirfd={}, path={}, flags={}, mask={}, statxbuf={:#x}) = {}\n",
                         dirfd, path, flags, mask, statxbuf.address(), errnoOrBuffer.errorOr(0));
         }
@@ -825,7 +825,7 @@ namespace x64 {
     }
 
     int Sys::clone3(Ptr uargs, size_t size) {
-        if(vm_->logSyscalls()) {
+        if(logSyscalls_) {
             fmt::print("Sys::clone3(uargs={:#x}, size={}) = -ENOTSUP\n",
                         uargs.address(), size);
         }

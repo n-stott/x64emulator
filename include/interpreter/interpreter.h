@@ -1,6 +1,7 @@
 #ifndef INTERPRETER_H
 #define INTERPRETER_H
 
+#include "interpreter/mmu.h"
 #include "interpreter/vm.h"
 #include <optional>
 #include <string>
@@ -13,22 +14,18 @@ namespace x64 {
     class Interpreter {
     public:
         Interpreter();
-        void run(const std::string& programFilePath, const std::vector<std::string>& arguments, const std::vector<std::string>& environmentVariables);
-
-        void crash() { vm_.crash(); }
-        bool hasCrashed() const { return vm_.hasCrashed(); }
+        bool run(const std::string& programFilePath, const std::vector<std::string>& arguments, const std::vector<std::string>& environmentVariables);
 
         void setLogInstructions(bool);
-        bool logInstructions() const;
         void setLogInstructionsAfter(unsigned long long);
-
         void setLogSyscalls(bool);
-        bool logSyscalls() const;
+
+        void stop();
 
     private:
         u64 loadElf(const std::string& filepath, bool mainProgram);
         u64 setupStack();
-        void pushProgramArguments(const std::string& programFilePath, const std::vector<std::string>& arguments, const std::vector<std::string>& environmentVariables);
+        void pushProgramArguments(VM* vm, const std::string& programFilePath, const std::vector<std::string>& arguments, const std::vector<std::string>& environmentVariables);
 
         struct Auxiliary {
             u64 elfOffset;
@@ -41,8 +38,13 @@ namespace x64 {
             u64 execFileDescriptor;
         };
 
-        VM vm_;
+        Mmu mmu_;
+        std::unique_ptr<VM> vm_;
         std::optional<Auxiliary> auxiliary_;
+
+        bool logInstructions_ { false };
+        unsigned long long logInstructionsAfter_ { 0 };
+        bool logSyscalls_ { false };
     };
 
 }

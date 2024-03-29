@@ -1,4 +1,5 @@
 #include "interpreter/vm.h"
+#include "interpreter/thread.h"
 #include "interpreter/verify.h"
 #include "fmt/core.h"
 #include <vector>
@@ -38,21 +39,22 @@ std::vector<char> string {{
 
 int main() {
     using namespace x64;
-    VM vm;
-    vm.setLogInstructions(true);
+    Mmu mmu;
 
     u64 length = 0;
 
     bool errorEncountered = false;
 
     VerificationScope::run([&]() {
-        u64 execPage = vm.mmu().mmap(0, Mmu::PAGE_SIZE, PROT::READ | PROT::WRITE | PROT::EXEC, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0);
-        vm.mmu().copyToMmu(Ptr8{execPage}, strlen_sse2.data(), strlen_sse2.size());
-        vm.mmu().mprotect(execPage, Mmu::PAGE_SIZE, PROT::READ | PROT::EXEC);
+        u64 execPage = mmu.mmap(0, Mmu::PAGE_SIZE, PROT::READ | PROT::WRITE | PROT::EXEC, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0);
+        mmu.copyToMmu(Ptr8{execPage}, strlen_sse2.data(), strlen_sse2.size());
+        mmu.mprotect(execPage, Mmu::PAGE_SIZE, PROT::READ | PROT::EXEC);
 
-        u64 dataPage = vm.mmu().mmap(0, Mmu::PAGE_SIZE, PROT::READ | PROT::WRITE, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0);
-        vm.mmu().copyToMmu(Ptr8{dataPage}, (const u8*)string.data(), string.size());
+        u64 dataPage = mmu.mmap(0, Mmu::PAGE_SIZE, PROT::READ | PROT::WRITE, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0);
+        mmu.copyToMmu(Ptr8{dataPage}, (const u8*)string.data(), string.size());
 
+        VM vm(&mmu, nullptr);
+        vm.setLogInstructions(true);
         Thread mainThread;
         mainThread.regs.rip() = execPage;
         mainThread.regs.set(R64::RDI, dataPage);
