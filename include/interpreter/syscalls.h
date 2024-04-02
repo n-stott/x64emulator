@@ -156,6 +156,8 @@ namespace x64 {
         int access(Ptr pathname, int mode);
         // 0x17
         int select(int nfds, Ptr readfds, Ptr writefds, Ptr exceptfds, Ptr timeout);
+        // 0x1c
+        int madvise(Ptr addr, size_t length, int advice);
         // 0x20
         int dup(int oldfd);
         // 0x26

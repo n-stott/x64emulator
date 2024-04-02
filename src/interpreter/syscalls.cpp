@@ -49,6 +49,7 @@ namespace x64 {
             case 0x14: return cpu->set(R64::RAX, invoke_syscall_3(&Sys::writev, regs));
             case 0x15: return cpu->set(R64::RAX, invoke_syscall_2(&Sys::access, regs));
             case 0x17: return cpu->set(R64::RAX, invoke_syscall_5(&Sys::select, regs));
+            case 0x1c: return cpu->set(R64::RAX, invoke_syscall_3(&Sys::madvise, regs));
             case 0x20: return cpu->set(R64::RAX, invoke_syscall_1(&Sys::dup, regs));
             case 0x26: return cpu->set(R64::RAX, invoke_syscall_3(&Sys::setitimer, regs));
             case 0x27: { // getpid
@@ -345,6 +346,15 @@ namespace x64 {
         if(!!writefds) mmu_->copyToMmu(writefds, (const u8*)&wfds, sizeof(fd_set));
         if(!!exceptfds) mmu_->copyToMmu(exceptfds, (const u8*)&efds, sizeof(fd_set));
         if(!!timeout) mmu_->copyToMmu(timeout, (const u8*)&to, sizeof(timeval));
+        return ret;
+    }
+
+    int Sys::madvise(Ptr addr, size_t length, int advice) {
+        int ret = 0;
+        if(logSyscalls_) {
+            print("Sys::madvise(addr={:#x}, length={}, advice={}) = {}\n",
+                                    addr.address(), length, advice, ret);
+        }
         return ret;
     }
 
