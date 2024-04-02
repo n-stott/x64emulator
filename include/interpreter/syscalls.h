@@ -219,6 +219,8 @@ namespace x64 {
         // 0x89
         int statfs(Ptr path, Ptr buf);
         // 0x9e
+        int prctl(int option, unsigned long arg2, unsigned long arg3, unsigned long arg4, unsigned long arg5);
+        // 0x9e
         int arch_prctl(int code, Ptr addr);
         // 0xbf
         ssize_t getxattr(Ptr path, Ptr name, Ptr value, size_t size);
@@ -260,6 +262,8 @@ namespace x64 {
         int epoll_create1(int flags);
         // 0x12e
         int prlimit64(pid_t pid, int resource, Ptr new_limit, Ptr old_limit);
+        // 0x13b
+        int sched_getattr(pid_t pid, Ptr attr, unsigned int size, unsigned int flags);
         // 0x13e
         ssize_t getrandom(Ptr buf, size_t len, int flags);
         // 0x14c

@@ -84,6 +84,7 @@ namespace x64 {
             case 0x6c: return cpu->set(R64::RAX, invoke_syscall_0(&Sys::getegid, regs));
             case 0x6f: return cpu->set(R64::RAX, invoke_syscall_0(&Sys::getpgrp, regs));
             case 0x89: return cpu->set(R64::RAX, invoke_syscall_2(&Sys::statfs, regs));
+            case 0x9d: return cpu->set(R64::RAX, invoke_syscall_5(&Sys::prctl, regs));
             case 0x9e: return cpu->set(R64::RAX, invoke_syscall_2(&Sys::arch_prctl, regs));
             case 0xba: { // gettid
                 verify(!!scheduler_->currentThread());
@@ -110,6 +111,7 @@ namespace x64 {
             case 0x122: return cpu->set(R64::RAX, invoke_syscall_2(&Sys::eventfd2, regs));
             case 0x123: return cpu->set(R64::RAX, invoke_syscall_1(&Sys::epoll_create1, regs));
             case 0x12e: return cpu->set(R64::RAX, invoke_syscall_4(&Sys::prlimit64, regs));
+            case 0x13b: return cpu->set(R64::RAX, invoke_syscall_4(&Sys::sched_getattr, regs));
             case 0x13e: return cpu->set(R64::RAX, invoke_syscall_3(&Sys::getrandom, regs));
             case 0x14c: return cpu->set(R64::RAX, invoke_syscall_5(&Sys::statx, regs));
             case 0x1b3: return cpu->set(R64::RAX, invoke_syscall_2(&Sys::clone3, regs));
@@ -819,6 +821,13 @@ namespace x64 {
         });
     }
 
+    int Sys::prctl(int option, unsigned long arg2, unsigned long arg3, unsigned long arg4, unsigned long arg5) {
+        if(logSyscalls_) {
+            print("Sys::prctl(option={}, arg2={}, arg3={}, arg4={}, arg5={}) = {}\n", option, arg2, arg3, arg4, arg5, -ENOTSUP);
+        }
+        return -ENOTSUP;
+    }
+
     int Sys::arch_prctl(int code, Ptr addr) {
         bool isSetFS = Host::Prctl::isSetFS(code);
         if(logSyscalls_) print("Sys::arch_prctl(code={}, addr={:#x}) = {}\n", code, addr.address(), isSetFS ? 0 : -EINVAL);
@@ -927,6 +936,12 @@ namespace x64 {
             mmu_->copyToMmu(old_limit, buffer.data(), buffer.size());
             return 0;
         });
+    }
+
+    int Sys::sched_getattr(pid_t pid, Ptr attr, unsigned int size, unsigned int flags) {
+        if(logSyscalls_) 
+            print("Sys::sched_getattr(pid={}, attr={:#x}, size={:#x}, flags={:#x})", pid, attr.address(), size, flags);
+        return -ENOTSUP;
     }
 
     ssize_t Sys::getrandom(Ptr buf, size_t len, int flags) {
