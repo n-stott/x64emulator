@@ -289,7 +289,8 @@ namespace x64 {
                   .add((u64)Host::AUX_TYPE::UID)
                   .add((u64)Host::AUX_TYPE::GID)
                   .add((u64)Host::AUX_TYPE::EUID)
-                  .add((u64)Host::AUX_TYPE::EGID);
+                  .add((u64)Host::AUX_TYPE::EGID)
+                  .add((u64)Host::AUX_TYPE::SECURE);
             std::vector<u64> data = auxvec.create();
             for(auto rit = data.rbegin(); rit != data.rend(); ++rit) {
                 vm->push64(*rit);

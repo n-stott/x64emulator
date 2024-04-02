@@ -708,6 +708,7 @@ std::optional<Host::AuxVal> Host::getauxval(AUX_TYPE type) {
         return AuxVal{type, 0};
     };
     auto get = [](u64 type) -> std::optional<AuxVal> {
+        errno = 0;
         u64 res = ::getauxval(type);
         if(res == 0 && errno == ENOENT) return {};
         return AuxVal{type, res};
@@ -717,6 +718,7 @@ std::optional<Host::AuxVal> Host::getauxval(AUX_TYPE type) {
         case AUX_TYPE::GID: return get(AT_GID);
         case AUX_TYPE::EUID: return get(AT_EUID);
         case AUX_TYPE::EGID: return get(AT_EGID);
+        case AUX_TYPE::SECURE: return get(AT_SECURE);
         case AUX_TYPE::NIL: return getDummy(AT_NULL);
         case AUX_TYPE::ENTRYPOINT: return getDummy(AT_ENTRY);
         case AUX_TYPE::PROGRAM_HEADERS: return getDummy(AT_PHDR);

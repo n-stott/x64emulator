@@ -209,6 +209,7 @@ public:
         GID,
         EUID,
         EGID,
+        SECURE,
     };
 
     struct AuxVal {
