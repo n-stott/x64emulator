@@ -150,6 +150,8 @@ namespace x64 {
         int ioctl(int fd, unsigned long request, Ptr argp);
         // 0x11
         ssize_t pread64(int fd, Ptr buf, size_t count, off_t offset);
+        // 0x12
+        ssize_t pwrite64(int fd, Ptr buf, size_t count, off_t offset);
         // 0x14
         ssize_t writev(int fd, Ptr iov, int iovcnt);
         // 0x15

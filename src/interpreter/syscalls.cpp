@@ -46,6 +46,7 @@ namespace x64 {
             case 0xe: return cpu->set(R64::RAX, invoke_syscall_4(&Sys::rt_sigprocmask, regs));
             case 0x10: return cpu->set(R64::RAX, invoke_syscall_3(&Sys::ioctl, regs));
             case 0x11: return cpu->set(R64::RAX, invoke_syscall_4(&Sys::pread64, regs));
+            case 0x12: return cpu->set(R64::RAX, invoke_syscall_4(&Sys::pwrite64, regs));
             case 0x14: return cpu->set(R64::RAX, invoke_syscall_3(&Sys::writev, regs));
             case 0x15: return cpu->set(R64::RAX, invoke_syscall_2(&Sys::access, regs));
             case 0x17: return cpu->set(R64::RAX, invoke_syscall_5(&Sys::select, regs));
@@ -279,7 +280,7 @@ namespace x64 {
     ssize_t Sys::pread64(int fd, Ptr buf, size_t count, off_t offset) {
         auto errnoOrBuffer = Host::pread64(Host::FD{fd}, count, offset);
         if(logSyscalls_) {
-            print("Sys::read(fd={}, buf={:#x}, count={}, offset={}) = {}\n",
+            print("Sys::pread64(fd={}, buf={:#x}, count={}, offset={}) = {}\n",
                         fd, buf.address(), count, offset,
                         errnoOrBuffer.errorOrWith<ssize_t>([](const auto& buf) { return (ssize_t)buf.size(); }));
         }
@@ -287,6 +288,16 @@ namespace x64 {
             mmu_->copyToMmu(buf, buffer.data(), buffer.size());
             return (ssize_t)buffer.size();
         });
+    }
+
+    ssize_t Sys::pwrite64(int fd, Ptr buf, size_t count, off_t offset) {
+        std::vector<u8> buffer = mmu_->readFromMmu<u8>(buf, count);
+        auto errnoOrNbytes = Host::pwrite64(Host::FD{fd}, buffer.data(), buffer.size(), offset);
+        if(logSyscalls_) {
+            print("Sys::pwrite64(fd={}, buf={:#x}, count={}, offset={}) = {}\n",
+                        fd, buf.address(), count, offset, errnoOrNbytes);
+        }
+        return errnoOrNbytes;
     }
 
     ssize_t Sys::writev(int fd, Ptr iov, int iovcnt) {

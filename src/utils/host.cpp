@@ -173,8 +173,14 @@ ErrnoOrBuffer Host::pread64(FD fd, size_t count, off_t offset) {
     return ErrnoOrBuffer(Buffer{std::move(buffer)});
 }
 
-ssize_t Host::write([[maybe_unused]] FD fd, [[maybe_unused]] const u8* data, size_t count) {
+ssize_t Host::write(FD fd, [[maybe_unused]] const u8* data, size_t count) {
     ssize_t ret = ::write(fd.fd, data, count);
+    if(ret < 0) return (ssize_t)(-errno);
+    return ret;
+}
+
+ssize_t Host::pwrite64(FD fd, const u8* data, size_t count, off_t offset) {
+    ssize_t ret = ::pwrite(fd.fd, data, count, offset);
     if(ret < 0) return (ssize_t)(-errno);
     return ret;
 }

@@ -123,6 +123,7 @@ public:
     static ErrnoOrBuffer read(FD, size_t count);
     static ErrnoOrBuffer pread64(FD, size_t count, off_t offset);
     static ssize_t write(FD, const u8* data, size_t count);
+    static ssize_t pwrite64(FD, const u8* data, size_t count, off_t offset);
     static int close(FD);
     static FD dup(FD);
 
