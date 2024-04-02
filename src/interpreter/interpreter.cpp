@@ -38,7 +38,13 @@ namespace x64 {
         }
     };
 
-    Interpreter::Interpreter() = default;
+    Interpreter::Interpreter() :
+        mmu_(),
+        scheduler_(&mmu_),
+        sys_(this, &scheduler_, &mmu_),
+        vm_(&mmu_, &sys_) {
+
+        }
 
     void Interpreter::setLogInstructions(bool logInstructions) {
         logInstructions_ = logInstructions;
@@ -53,37 +59,40 @@ namespace x64 {
     }
 
     void Interpreter::stop() {
-        if(vm_) vm_->stop();
+        vm_.stop();
     }
 
     bool Interpreter::run(const std::string& programFilePath, const std::vector<std::string>& arguments, const std::vector<std::string>& environmentVariables) {
         SignalHandler handler;
         
-        Sys sys(this, &mmu_);
-        sys.setLogSyscalls(logSyscalls_);
+        sys_.setLogSyscalls(logSyscalls_);
 
-        vm_ = std::make_unique<VM>(&mmu_, &sys);
-        vm_->setLogInstructions(logInstructions_);
-        vm_->setLogInstructionsAfter(logInstructionsAfter_);
+        vm_.setLogInstructions(logInstructions_);
+        vm_.setLogInstructionsAfter(logInstructionsAfter_);
         
         VerificationScope::run([&]() {
             u64 entrypoint = loadElf(programFilePath, true);
             u64 stackTop = setupStack();
-            Thread mainThread;
-            mainThread.regs.rip() = entrypoint;
-            mainThread.regs.rsp() = (stackTop & 0xFFFFFFFFFFFFFF00); // stack needs to be 64-bit aligned
-            vm_->contextSwitch(&mainThread);
-            pushProgramArguments(vm_.get(), programFilePath, arguments, environmentVariables);
-            while(!vm_->isStopped()) {
-                vm_->execute(&mainThread, 1'000'000);
+
+            Thread* mainThread = scheduler_.createThread(0xface);
+            mainThread->data.regs.rip() = entrypoint;
+            mainThread->data.regs.rsp() = (stackTop & 0xFFFFFFFFFFFFFF00); // stack needs to be 64-bit aligned
+
+            vm_.contextSwitch(mainThread);
+            pushProgramArguments(&vm_, programFilePath, arguments, environmentVariables);
+
+            while(!vm_.isStopped()) {
+                Thread* thread = scheduler_.pickNext();
+                if(!thread) break;
+                thread->ticksUntilSwitch += 1'000'000;
+                vm_.execute(thread);
             }
-            fmt::print("Interpreter completed execution of {} instructions\n", mainThread.ticks);
-            vm_->contextSwitch(nullptr);
+            fmt::print("Interpreter completed execution of {} instructions\n", mainThread->ticks);
+            vm_.contextSwitch(nullptr);
         }, [&]() {
-            vm_->crash();
+            vm_.crash();
         });
-        bool ok = !vm_->hasCrashed();
-        vm_.reset();
+        bool ok = !vm_.hasCrashed();
         return ok;
     }
 

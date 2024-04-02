@@ -39,22 +39,26 @@ namespace x64 {
         dumpStackTrace();
     }
 
-    void VM::contextSwitch(Thread* newThread) {
+    void VM::syncThread() {
         if(!!currentThread_) {
-            // if we have a current thread, we need to save the registers to that thread.
-            currentThread_->flags = cpu_.flags_;
-            currentThread_->regs = cpu_.regs_;
-            currentThread_->x87fpu = cpu_.x87fpu_;
-            currentThread_->mxcsr = cpu_.mxcsr_;
+            
+            currentThread_->data.flags = cpu_.flags_;
+            currentThread_->data.regs = cpu_.regs_;
+            currentThread_->data.x87fpu = cpu_.x87fpu_;
+            currentThread_->data.mxcsr = cpu_.mxcsr_;
             currentThread_->callstack = currentThreadCallstack_;
         }
+    }
+
+    void VM::contextSwitch(Thread* newThread) {
+        syncThread(); // if we have a current thread, save the registers to that thread.
         if(!!newThread) {
             // we now install the new thread
             currentThread_ = newThread;
-            cpu_.flags_ = currentThread_->flags;
-            cpu_.regs_ = currentThread_->regs;
-            cpu_.x87fpu_ = currentThread_->x87fpu;
-            cpu_.mxcsr_ = currentThread_->mxcsr;
+            cpu_.flags_ = currentThread_->data.flags;
+            cpu_.regs_ = currentThread_->data.regs;
+            cpu_.x87fpu_ = currentThread_->data.x87fpu;
+            cpu_.mxcsr_ = currentThread_->data.mxcsr;
             currentThreadCallstack_ = currentThread_->callstack;
             notifyJmp(cpu_.regs_.rip()); // no need to cache the destination here
         } else {
@@ -69,40 +73,37 @@ namespace x64 {
 
     extern bool signal_interrupt;
 
-    void VM::execute(Thread* thread, size_t scheduledTicks) {
+    void VM::execute(Thread* thread) {
         if(stop_) return;
         assert(!!thread);
         contextSwitch(thread);
-        notifyCall(cpu_.get(R64::RIP));
-        size_t ticks = 0;
         if(logInstructions()) {
             try {
-                while(!stop_ && ticks < scheduledTicks) {
+                while(!stop_ && thread->ticks < thread->ticksUntilSwitch) {
                     verify(!signal_interrupt);
                     const X64Instruction& instruction = fetchInstruction();
-                    log(ticks, instruction);
-                    ++ticks;
+                    log(thread->ticks, instruction);
+                    ++(thread->ticks);
                     cpu_.exec(instruction);
                 }
             } catch(const VerificationException&) {
-                fmt::print("Interpreter crash after {} instructions\n", currentThread_->ticks+ticks);
+                fmt::print("Interpreter crash after {} instructions\n", thread->ticks);
                 crash();
             }
         } else {
             try {
-                while(!stop_ && ticks < scheduledTicks) {
+                while(!stop_ && thread->ticks < thread->ticksUntilSwitch) {
                     verify(!signal_interrupt);
                     const X64Instruction& instruction = fetchInstruction();
-                    ++ticks;
+                    ++(thread->ticks);
                     cpu_.exec(instruction);
                 }
             } catch(const VerificationException&) {
-                fmt::print("Interpreter crash after {} instructions\n", currentThread_->ticks+ticks);
+                fmt::print("Interpreter crash after {} instructions\n", thread->ticks);
                 crash();
             }
         }
         assert(!!currentThread_);
-        currentThread_->ticks += ticks;
         contextSwitch(nullptr);
     }
 

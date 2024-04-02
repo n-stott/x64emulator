@@ -55,6 +55,7 @@ add_library(emulator STATIC
     src/interpreter/checkedcpuimpl.cpp
     src/interpreter/mmu.cpp
     src/interpreter/registers.cpp
+    src/interpreter/scheduler.cpp
     src/interpreter/simd.cpp
     src/interpreter/x87.cpp
     src/interpreter/syscalls.cpp

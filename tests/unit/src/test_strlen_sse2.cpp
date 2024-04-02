@@ -55,11 +55,12 @@ int main() {
 
         VM vm(&mmu, nullptr);
         vm.setLogInstructions(true);
-        Thread mainThread;
-        mainThread.regs.rip() = execPage;
-        mainThread.regs.set(R64::RDI, dataPage);
-        vm.execute(&mainThread, 1'000'000);
-        length = mainThread.regs.get(R64::RAX);
+        Thread mainThread(0, 0);
+        mainThread.data.regs.rip() = execPage;
+        mainThread.data.regs.set(R64::RDI, dataPage);
+        mainThread.ticksUntilSwitch = 1'000'000;
+        vm.execute(&mainThread);
+        length = mainThread.data.regs.get(R64::RAX);
     }, [&]() {
         errorEncountered = true;
     });

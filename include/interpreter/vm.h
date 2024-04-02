@@ -28,7 +28,7 @@ namespace x64 {
 
         void contextSwitch(Thread* newThread);
 
-        void execute(Thread* thread, size_t ticks);
+        void execute(Thread* thread);
 
         void push64(u64 value);
 
@@ -42,6 +42,8 @@ namespace x64 {
         void notifyCall(u64 address);
         void notifyRet(u64 address);
         void notifyJmp(u64 address);
+
+        void syncThread();
 
         Sys* syscalls() { return syscalls_; }
 

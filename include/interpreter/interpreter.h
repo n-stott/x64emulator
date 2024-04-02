@@ -2,6 +2,7 @@
 #define INTERPRETER_H
 
 #include "interpreter/mmu.h"
+#include "interpreter/scheduler.h"
 #include "interpreter/vm.h"
 #include <optional>
 #include <string>
@@ -39,7 +40,10 @@ namespace x64 {
         };
 
         Mmu mmu_;
-        std::unique_ptr<VM> vm_;
+        Scheduler scheduler_;
+        Sys sys_;
+        VM vm_;
+
         std::optional<Auxiliary> auxiliary_;
 
         bool logInstructions_ { false };

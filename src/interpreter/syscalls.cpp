@@ -1,5 +1,7 @@
 #include "interpreter/syscalls.h"
 #include "interpreter/interpreter.h"
+#include "interpreter/scheduler.h"
+#include "interpreter/thread.h"
 #include "interpreter/cpu.h"
 #include "interpreter/mmu.h"
 #include "interpreter/verify.h"
@@ -8,6 +10,12 @@
 #include <sys/socket.h>
 
 namespace x64 {
+
+    template<typename... Args>
+    void Sys::print(const char* format, Args... args) const {
+        fmt::print("[{}:{}] ", scheduler_->currentThread()->descr.pid, scheduler_->currentThread()->descr.tid);
+        fmt::print(format, args...);
+    }
 
     void Sys::syscall(Cpu* cpu) {
         u64 sysNumber = cpu->get(R64::RAX);
@@ -44,7 +52,8 @@ namespace x64 {
             case 0x20: return cpu->set(R64::RAX, invoke_syscall_1(&Sys::dup, regs));
             case 0x26: return cpu->set(R64::RAX, invoke_syscall_3(&Sys::setitimer, regs));
             case 0x27: { // getpid
-                cpu->set(R64::RAX, (u64)0xface);
+                verify(!!scheduler_->currentThread());
+                cpu->set(R64::RAX, (u64)scheduler_->currentThread()->descr.pid);
                 return;
             }
             case 0x29: return cpu->set(R64::RAX, invoke_syscall_3(&Sys::socket, regs));
@@ -55,6 +64,7 @@ namespace x64 {
             case 0x33: return cpu->set(R64::RAX, invoke_syscall_3(&Sys::getsockname, regs));
             case 0x34: return cpu->set(R64::RAX, invoke_syscall_3(&Sys::getpeername, regs));
             case 0x38: return cpu->set(R64::RAX, invoke_syscall_5(&Sys::clone, regs));
+            case 0x3c: return cpu->set(R64::RAX, invoke_syscall_1(&Sys::exit, regs));
             case 0x3f: return cpu->set(R64::RAX, invoke_syscall_1(&Sys::uname, regs));
             case 0x48: return cpu->set(R64::RAX, invoke_syscall_3(&Sys::fcntl, regs));
             case 0x4a: return cpu->set(R64::RAX, invoke_syscall_1(&Sys::fsync, regs));
@@ -72,7 +82,8 @@ namespace x64 {
             case 0x89: return cpu->set(R64::RAX, invoke_syscall_2(&Sys::statfs, regs));
             case 0x9e: return cpu->set(R64::RAX, invoke_syscall_2(&Sys::arch_prctl, regs));
             case 0xba: { // gettid
-                cpu->set(R64::RAX, (u64)0xfeed);
+                verify(!!scheduler_->currentThread());
+                cpu->set(R64::RAX, (u64)scheduler_->currentThread()->descr.tid);
                 return;
             }
             case 0xbf: return cpu->set(R64::RAX, invoke_syscall_4(&Sys::getxattr, regs));
@@ -100,14 +111,14 @@ namespace x64 {
             default: break;
         }
         verify(false, [&]() {
-            fmt::print("Syscall {:#x} not handled\n", sysNumber);
+            print("Syscall {:#x} not handled\n", sysNumber);
         });
     }
 
     ssize_t Sys::read(int fd, Ptr8 buf, size_t count) {
         auto errnoOrBuffer = Host::read(Host::FD{fd}, count);
         if(logSyscalls_) {
-            fmt::print("Sys::read(fd={}, buf={:#x}, count={}) = {}\n",
+            print("Sys::read(fd={}, buf={:#x}, count={}) = {}\n",
                         fd, buf.address(), count,
                         errnoOrBuffer.errorOrWith<ssize_t>([](const auto& buf) { return (ssize_t)buf.size(); }));
         }
@@ -121,7 +132,7 @@ namespace x64 {
         std::vector<u8> buffer = mmu_->readFromMmu<u8>(buf, count);
         ssize_t ret = Host::write(Host::FD{fd}, buffer.data(), buffer.size());
         if(logSyscalls_) {
-            fmt::print("Sys::write(fd={}, buf={:#x}, count={}) = {}\n",
+            print("Sys::write(fd={}, buf={:#x}, count={}) = {}\n",
                         fd, buf.address(), count, ret);
         }
         return ret;
@@ -129,7 +140,7 @@ namespace x64 {
 
     int Sys::close(int fd) {
         int ret = Host::close(Host::FD{fd});
-        if(logSyscalls_) fmt::print("Sys::close(fd={}) = {}\n", fd, ret);
+        if(logSyscalls_) print("Sys::close(fd={}) = {}\n", fd, ret);
         return ret;
     }
 
@@ -137,7 +148,7 @@ namespace x64 {
         std::string path = mmu_->readString(pathname);
         auto errnoOrBuffer = Host::stat(path);
         if(logSyscalls_) {
-            fmt::print("Sys::stat(path={}, statbuf={:#x}) = {}\n",
+            print("Sys::stat(path={}, statbuf={:#x}) = {}\n",
                         path, statbuf.address(), errnoOrBuffer.errorOr(0));
         }
         return errnoOrBuffer.errorOrWith<int>([&](const auto& buffer) {
@@ -149,7 +160,7 @@ namespace x64 {
     int Sys::fstat(int fd, Ptr8 statbuf) {
         ErrnoOrBuffer errnoOrBuffer = Host::fstat(Host::FD{fd});
         if(logSyscalls_) {
-            fmt::print("Sys::fstat(fd={}, statbuf={:#x}) = {}\n",
+            print("Sys::fstat(fd={}, statbuf={:#x}) = {}\n",
                         fd, statbuf.address(), errnoOrBuffer.errorOr(0));
         }
         return errnoOrBuffer.errorOrWith<int>([&](const auto& buffer) {
@@ -162,7 +173,7 @@ namespace x64 {
         std::string path = mmu_->readString(pathname);
         ErrnoOrBuffer errnoOrBuffer = Host::lstat(path);
         if(logSyscalls_) {
-            fmt::print("Sys::lstat(path={}, statbuf={:#x}) = {}\n",
+            print("Sys::lstat(path={}, statbuf={:#x}) = {}\n",
                         path, statbuf.address(), errnoOrBuffer.errorOr(0));
         }
         return errnoOrBuffer.errorOrWith<int>([&](const auto& buffer) {
@@ -176,7 +187,7 @@ namespace x64 {
         Buffer buffer(std::move(pollfds));
         auto errnoOrBufferAndReturnValue = Host::poll(buffer, nfds, timeout);
         if(logSyscalls_) {
-            fmt::print("Sys::poll(fds={:#x}, nfds={}, timeout={}) = {}\n",
+            print("Sys::poll(fds={:#x}, nfds={}, timeout={}) = {}\n",
                                   fds.address(), nfds, timeout,
                                   errnoOrBufferAndReturnValue.errorOrWith<int>([](const auto& bufferAndRetVal) {
                                     return bufferAndRetVal.returnValue;
@@ -190,7 +201,7 @@ namespace x64 {
 
     off_t Sys::lseek(int fd, off_t offset, int whence) {
         off_t ret = Host::lseek(Host::FD{fd}, offset, whence);
-        if(logSyscalls_) fmt::print("Sys::lseek(fd={}, offset={:#x}, whence={}) = {}\n", fd, offset, whence, ret);
+        if(logSyscalls_) print("Sys::lseek(fd={}, offset={:#x}, whence={}) = {}\n", fd, offset, whence, ret);
         return ret;
     }
 
@@ -200,32 +211,32 @@ namespace x64 {
         if(Host::Mmap::isFixed(flags)) f = f | MAP::FIXED;
         verify(addr.segment() != Segment::FS);
         u64 base = mmu_->mmap(addr.address(), length, (PROT)prot, f, fd, (int)offset);
-        if(logSyscalls_) fmt::print("Sys::mmap(addr={:#x}, length={}, prot={}, flags={}, fd={}, offset={}) = {:#x}\n",
+        if(logSyscalls_) print("Sys::mmap(addr={:#x}, length={}, prot={}, flags={}, fd={}, offset={}) = {:#x}\n",
                                               addr.address(), length, prot, flags, fd, offset, base);
         return Ptr{addr.segment(), base};
     }
 
     int Sys::mprotect(Ptr addr, size_t length, int prot) {
         int ret = mmu_->mprotect(addr.address(), length, (PROT)prot);
-        if(logSyscalls_) fmt::print("Sys::mprotect(addr={:#x}, length={}, prot={}) = {}\n", addr.address(), length, prot, ret);
+        if(logSyscalls_) print("Sys::mprotect(addr={:#x}, length={}, prot={}) = {}\n", addr.address(), length, prot, ret);
         return ret;
     }
 
     int Sys::munmap(Ptr addr, size_t length) {
         int ret = mmu_->munmap(addr.address(), length);
-        if(logSyscalls_) fmt::print("Sys::munmap(addr={:#x}, length={}) = {}\n", addr.address(), length, ret);
+        if(logSyscalls_) print("Sys::munmap(addr={:#x}, length={}) = {}\n", addr.address(), length, ret);
         return ret;
     }
 
     Ptr Sys::brk(Ptr addr) {
         verify(addr.segment() != Segment::FS);
         u64 newBrk = mmu_->brk(addr.address());
-        if(logSyscalls_) fmt::print("Sys::brk(addr={:#x}) = {:#x}\n", addr.address(), newBrk);
+        if(logSyscalls_) print("Sys::brk(addr={:#x}) = {:#x}\n", addr.address(), newBrk);
         return Ptr{addr.segment(), newBrk};
     }
 
     int Sys::rt_sigaction(int sig, Ptr act, Ptr oact, size_t sigsetsize) {
-        if(logSyscalls_) fmt::print("Sys::rt_sigaction({}, {:#x}, {:#x}, {}) = 0\n", sig, act.address(), oact.address(), sigsetsize);
+        if(logSyscalls_) print("Sys::rt_sigaction({}, {:#x}, {:#x}, {}) = 0\n", sig, act.address(), oact.address(), sigsetsize);
         (void)sig;
         (void)act;
         (void)oact;
@@ -234,7 +245,7 @@ namespace x64 {
     }
 
     int Sys::rt_sigprocmask(int how, Ptr nset, Ptr oset, size_t sigsetsize) {
-        if(logSyscalls_) fmt::print("Sys::rt_sigprocmask({}, {:#x}, {:#x}, {}) = 0\n", how, nset.address(), oset.address(), sigsetsize);
+        if(logSyscalls_) print("Sys::rt_sigprocmask({}, {:#x}, {:#x}, {}) = 0\n", how, nset.address(), oset.address(), sigsetsize);
         (void)how;
         (void)nset;
         (void)oset;
@@ -250,7 +261,7 @@ namespace x64 {
         mmu_->copyFromMmu(buffer.data(), argp, buffer.size());
         auto errnoOrBuffer = Host::ioctl(Host::FD{fd}, request, buffer);
         if(logSyscalls_) {
-            fmt::print("Sys::ioctl(fd={}, request={}, argp={:#x}) = {}\n",
+            print("Sys::ioctl(fd={}, request={}, argp={:#x}) = {}\n",
                         fd, Host::ioctlName(request), argp.address(),
                         errnoOrBuffer.errorOrWith<ssize_t>([](const auto& buf) { return (ssize_t)buf.size(); }));
         }
@@ -264,7 +275,7 @@ namespace x64 {
     ssize_t Sys::pread64(int fd, Ptr buf, size_t count, off_t offset) {
         auto errnoOrBuffer = Host::pread64(Host::FD{fd}, count, offset);
         if(logSyscalls_) {
-            fmt::print("Sys::read(fd={}, buf={:#x}, count={}, offset={}) = {}\n",
+            print("Sys::read(fd={}, buf={:#x}, count={}, offset={}) = {}\n",
                         fd, buf.address(), count, offset,
                         errnoOrBuffer.errorOrWith<ssize_t>([](const auto& buf) { return (ssize_t)buf.size(); }));
         }
@@ -287,7 +298,7 @@ namespace x64 {
             buffers.push_back(Buffer(std::move(data)));
         }
         ssize_t nbytes = Host::writev(Host::FD{fd}, buffers);
-        if(logSyscalls_) fmt::print("Sys::writev(fd={}, iov={:#x}, iovcnt={}) = {}\n", fd, iov.address(), iovcnt, nbytes);
+        if(logSyscalls_) print("Sys::writev(fd={}, iov={:#x}, iovcnt={}) = {}\n", fd, iov.address(), iovcnt, nbytes);
         return nbytes;
     }
 
@@ -298,13 +309,13 @@ namespace x64 {
         if(ret < 0) {
             info = strerror(-ret);
         }
-        if(logSyscalls_) fmt::print("Sys::access(path={}, mode={}) = {} {}\n", path, mode, ret, info);
+        if(logSyscalls_) print("Sys::access(path={}, mode={}) = {} {}\n", path, mode, ret, info);
         return ret;
     }
 
     int Sys::dup(int oldfd) {
         Host::FD newfd = Host::dup(Host::FD{oldfd});
-        if(logSyscalls_) fmt::print("Sys::dup(oldfd={}) = {}\n", oldfd, newfd.fd);
+        if(logSyscalls_) print("Sys::dup(oldfd={}) = {}\n", oldfd, newfd.fd);
         return newfd.fd;
     }
 
@@ -327,7 +338,7 @@ namespace x64 {
                                !!exceptfds ? &efds : nullptr,
                                !!timeout ?   &to : nullptr);
         if(logSyscalls_) {
-            fmt::print("Sys::select(nfds={}, readfds={:#x}, writefds={:#x}, exceptfds={:#x}, timeout={:#x}) = {}\n",
+            print("Sys::select(nfds={}, readfds={:#x}, writefds={:#x}, exceptfds={:#x}, timeout={:#x}) = {}\n",
                         nfds, readfds.address(), writefds.address(), exceptfds.address(), timeout.address(), ret);
         }
         if(!!readfds) mmu_->copyToMmu(readfds, (const u8*)&rfds, sizeof(fd_set));
@@ -340,7 +351,7 @@ namespace x64 {
     int Sys::socket(int domain, int type, int protocol) {
         Host::FD fd = Host::socket(domain, type, protocol);
         if(logSyscalls_) {
-            fmt::print("Sys::socket(domain={}, type={}, protocol={}) = {}\n",
+            print("Sys::socket(domain={}, type={}, protocol={}) = {}\n",
                                     domain, type, protocol, fd.fd);
         }
         return fd.fd;
@@ -351,7 +362,7 @@ namespace x64 {
         Buffer buf(std::move(addrBuffer));
         int ret = Host::connect(sockfd, buf);
         if(logSyscalls_) {
-            fmt::print("Sys::connect(sockfd={}, addr={:#x}, addrlen={}) = {}\n",
+            print("Sys::connect(sockfd={}, addr={:#x}, addrlen={}) = {}\n",
                         sockfd, addr.address(), addrlen, ret);
         }
         return ret;
@@ -361,10 +372,10 @@ namespace x64 {
         u32 buffersize = mmu_->read32(addrlen);
         ErrnoOrBuffer sockname = Host::getsockname(sockfd, buffersize);
         if(logSyscalls_) {
-            fmt::print("Sys::getsockname(sockfd={}, addr={:#x}, addrlen={:#x}) = {}",
+            print("Sys::getsockname(sockfd={}, addr={:#x}, addrlen={:#x}) = {}",
                         sockfd, addr.address(), addrlen.address(), sockname.errorOr(0));
             sockname.errorOrWith<int>([&](const auto& buffer) {
-                fmt::print("{}\n", (const char*)buffer.data());
+                print("{}\n", (const char*)buffer.data());
                 return 0;
             });
         }
@@ -379,10 +390,10 @@ namespace x64 {
         u32 buffersize = mmu_->read32(addrlen);
         ErrnoOrBuffer peername = Host::getpeername(sockfd, buffersize);
         if(logSyscalls_) {
-            fmt::print("Sys::getpeername(sockfd={}, addr={:#x}, addrlen={:#x}) = {}",
+            print("Sys::getpeername(sockfd={}, addr={:#x}, addrlen={:#x}) = {}",
                         sockfd, addr.address(), addrlen.address(), peername.errorOr(0));
             peername.errorOrWith<int>([&](const auto& buffer) {
-                fmt::print("{}\n", (const char*)buffer.data());
+                print("{}\n", (const char*)buffer.data());
                 return 0;
             });
         }
@@ -393,19 +404,39 @@ namespace x64 {
         });
     }
 
-    long Sys::clone(unsigned long flags, Ptr stack, Ptr parent_tid, Ptr child_tid, unsigned long tls) {
-        int ret = -EAGAIN;
+    long Sys::clone(unsigned long flags, Ptr stack, Ptr parent_tid, Ptr32 child_tid, unsigned long tls) {
+        Thread* currentThread = scheduler_->currentThread();
+        Thread* newThread = scheduler_->createThread(currentThread->descr.pid);
+        newThread->data.regs.rip() = currentThread->data.regs.rip();
+        newThread->data.regs.set(R64::RAX, 0);
+        newThread->data.regs.rsp() = stack.address();
+        newThread->clear_child_tid = child_tid;
+        long ret = currentThread->descr.tid+1;
+        if(!!child_tid) {
+            static_assert(sizeof(pid_t) == sizeof(u32));
+            mmu_->write32(child_tid, (u32)ret);
+        }
         if(logSyscalls_) {
-            fmt::print("Sys::clone(flags={}, stack={:#x}, parent_tid={:#x}, child_tid={:#x}, tls={}) = {}\n",
+            print("Sys::clone(flags={}, stack={:#x}, parent_tid={:#x}, child_tid={:#x}, tls={}) = {}\n",
                         flags, stack.address(), parent_tid.address(), child_tid.address(), tls, ret);
         }
         return ret;
     }
 
+    int Sys::exit(int status) {
+        if(logSyscalls_) {
+            print("Sys::exit(status={})\n", status);
+        }
+        Thread* thread = scheduler_->currentThread();
+        thread->yield();
+        scheduler_->terminate(thread, status);
+        return status;
+    }
+
     int Sys::uname(Ptr buf) {
         ErrnoOrBuffer errnoOrBuffer = Host::uname();
         if(logSyscalls_) {
-            fmt::print("Sys::uname(buf={:#x}) = {}\n",
+            print("Sys::uname(buf={:#x}) = {}\n",
                         buf.address(), errnoOrBuffer.errorOr(0));
         }
         return errnoOrBuffer.errorOrWith<int>([&](const auto& buffer) {
@@ -416,19 +447,19 @@ namespace x64 {
 
     int Sys::fcntl(int fd, int cmd, int arg) {
         int ret = Host::fcntl(Host::FD{fd}, cmd, arg);
-        if(logSyscalls_) fmt::print("Sys::fcntl(fd={}, cmd={}, arg={}) = {}\n", fd, Host::fcntlName(cmd), arg, ret);
+        if(logSyscalls_) print("Sys::fcntl(fd={}, cmd={}, arg={}) = {}\n", fd, Host::fcntlName(cmd), arg, ret);
         return ret;
     }
 
     int Sys::fsync(int fd) {
-        if(logSyscalls_) fmt::print("Sys::fsync(fd={}) = {}\n", fd, -EINVAL);
+        if(logSyscalls_) print("Sys::fsync(fd={}) = {}\n", fd, -EINVAL);
         return -EINVAL;
     }
 
     Ptr Sys::getcwd(Ptr buf, size_t size) {
         ErrnoOrBuffer errnoOrBuffer = Host::getcwd(size);
         if(logSyscalls_) {
-            fmt::print("Sys::getcwd(buf={:#x}, size={}) = {:#x}\n",
+            print("Sys::getcwd(buf={:#x}, size={}) = {:#x}\n",
                         buf.address(), size, errnoOrBuffer.isError() ? 0 : buf.address());
         }
         errnoOrBuffer.errorOrWith<int>([&](const auto& buffer) {
@@ -442,7 +473,7 @@ namespace x64 {
         auto path = mmu_->readString(pathname);
         int ret = Host::chdir(path);
         if(logSyscalls_) {
-            fmt::print("Sys::chdir(path={}) = {}\n", path, ret);
+            print("Sys::chdir(path={}) = {}\n", path, ret);
         }
         return ret;
     }
@@ -450,7 +481,7 @@ namespace x64 {
     int Sys::mkdir([[maybe_unused]] Ptr pathname, [[maybe_unused]] mode_t mode) {
         if(logSyscalls_) {
             auto path = mmu_->readString(pathname);
-            fmt::print("Sys::mkdir(path={}, mode={}) = {}\n", path, mode, -ENOTSUP);
+            print("Sys::mkdir(path={}, mode={}) = {}\n", path, mode, -ENOTSUP);
         }
         return -ENOTSUP;
     }
@@ -458,7 +489,7 @@ namespace x64 {
     int Sys::unlink([[maybe_unused]] Ptr pathname) {
         if(logSyscalls_) {
             auto path = mmu_->readString(pathname);
-            fmt::print("Sys::unlink(path={}) = {}\n", path, -ENOTSUP);
+            print("Sys::unlink(path={}) = {}\n", path, -ENOTSUP);
         }
         return -ENOTSUP;
     }
@@ -467,7 +498,7 @@ namespace x64 {
         std::string path = mmu_->readString(pathname);
         auto errnoOrBuffer = Host::readlink(path, bufsiz);
         if(logSyscalls_) {
-            fmt::print("Sys::readlink(path={}, buf={:#x}, size={}) = {:#x}\n",
+            print("Sys::readlink(path={}, buf={:#x}, size={}) = {:#x}\n",
                         path, buf.address(), bufsiz, errnoOrBuffer.errorOrWith<ssize_t>([](const auto& buffer) { return (ssize_t)buffer.size(); }));
         }
         return errnoOrBuffer.errorOrWith<ssize_t>([&](const auto& buffer) {
@@ -479,7 +510,7 @@ namespace x64 {
     int Sys::gettimeofday(Ptr tv, Ptr tz) {
         auto errnoOrBuffers = Host::gettimeofday();
         if(logSyscalls_) {
-            fmt::print("Sys::gettimeofday(tv={:#x}, tz={:#x}) = {:#x}\n",
+            print("Sys::gettimeofday(tv={:#x}, tz={:#x}) = {:#x}\n",
                         tv.address(), tz.address(), errnoOrBuffers.errorOr(0));
         }
         return errnoOrBuffers.errorOrWith<int>([&](const auto& buffers) {
@@ -492,7 +523,7 @@ namespace x64 {
     int Sys::sysinfo(Ptr info) {
         auto errnoOrBuffer = Host::sysinfo();
         if(logSyscalls_) {
-            fmt::print("Sys::sysinfo(info={:#x}) = {}\n",
+            print("Sys::sysinfo(info={:#x}) = {}\n",
                         info.address(), errnoOrBuffer.errorOr(0));
         }
         return errnoOrBuffer.errorOrWith<int>([&](const auto& buffer) {
@@ -528,13 +559,13 @@ namespace x64 {
 
     u64 Sys::exit_group(int status) {
         (void)status;
-        if(logSyscalls_) fmt::print("Sys::exit_group(status={})\n", status);
+        if(logSyscalls_) print("Sys::exit_group(status={})\n", status);
         interpreter_->stop();
         return 0;
     }
 
     int Sys::tgkill(int tgid, int tid, int sig) {
-        if(logSyscalls_) fmt::print("Sys::tgkill(tgid={}, tid={}, sig={})\n", tgid, tid, sig);
+        if(logSyscalls_) print("Sys::tgkill(tgid={}, tid={}, sig={})\n", tgid, tid, sig);
         interpreter_->stop();
         return 0;
     }
@@ -544,7 +575,7 @@ namespace x64 {
         auto sname = mmu_->readString(name);
         auto errnoOrBuffer = Host::getxattr(spath, sname, size);
         if(logSyscalls_) {
-            fmt::print("Sys::getxaddr(path={}, name={}, value={:#x}, size={}) = {}\n",
+            print("Sys::getxaddr(path={}, name={}, value={:#x}, size={}) = {}\n",
                                       spath, sname, value.address(), size, errnoOrBuffer.errorOrWith<ssize_t>([](const auto& buffer) {
                                         return (ssize_t)buffer.size();
                                       }));
@@ -560,7 +591,7 @@ namespace x64 {
         auto sname = mmu_->readString(name);
         auto errnoOrBuffer = Host::lgetxattr(spath, sname, size);
         if(logSyscalls_) {
-            fmt::print("Sys::getxaddr(path={}, name={}, value={:#x}, size={}) = {}\n",
+            print("Sys::getxaddr(path={}, name={}, value={:#x}, size={}) = {}\n",
                                       spath, sname, value.address(), size, errnoOrBuffer.errorOrWith<ssize_t>([](const auto& buffer) {
                                         return (ssize_t)buffer.size();
                                       }));
@@ -573,13 +604,31 @@ namespace x64 {
 
     time_t Sys::time(Ptr tloc) {
         time_t t = Host::time();
-        if(logSyscalls_) fmt::print("Sys::time({:#x}) = {}\n", tloc.address(), t);
+        if(logSyscalls_) print("Sys::time({:#x}) = {}\n", tloc.address(), t);
         if(tloc.address()) mmu_->copyToMmu(tloc, (const u8*)&t, sizeof(t));
         return t;
     }
 
     long Sys::futex(Ptr32 uaddr, int futex_op, uint32_t val, Ptr timeout, Ptr32 uaddr2, uint32_t val3) {
-        if(logSyscalls_) fmt::print("Sys::futex({:#x}, {}, {}, {:#x}, {:#x}, {})\n", uaddr.address(), futex_op, val, timeout.address(), uaddr2.address(), val3);
+        if(logSyscalls_) print("Sys::futex(uaddr={:#x}, op={}, val={}, timeout={:#x}, uaddr2={:#x}, val3={})\n", uaddr.address(), futex_op, val, timeout.address(), uaddr2.address(), val3);
+        if((futex_op & 0x7f) == 0) {
+            // wait
+            u32 loaded = mmu_->read32(uaddr);
+            if(loaded != val) return -EAGAIN;
+            Thread* thread = scheduler_->currentThread();
+            scheduler_->wait(thread, uaddr, val);
+            thread->yield();
+            return 1;
+        }
+        if((futex_op & 0x7f) == 1) {
+            // wake
+            u32 nbWoken = scheduler_->wake(uaddr, val);
+            scheduler_->currentThread()->yield();
+            return nbWoken;
+        }
+        verify(false, [&]() {
+            fmt::print("futex with op={} is not supported\n", futex_op);
+        });
         return 1;
     }
 
@@ -597,7 +646,7 @@ namespace x64 {
             // don't allow looking at other processes
             ret = -EPERM;
         }
-        if(logSyscalls_) fmt::print("Sys::sched_getaffinity({}, {}, {:#x}) = {}\n",
+        if(logSyscalls_) print("Sys::sched_getaffinity({}, {}, {:#x}) = {}\n",
                                                                   pid, cpusetsize, mask.address(), ret);
         return ret;
     }
@@ -606,7 +655,7 @@ namespace x64 {
         bool requireSrcAddress = !!src_addr && !!addrlen;
         ErrnoOr<std::pair<Buffer, Buffer>> ret = Host::recvfrom(Host::FD{sockfd}, len, flags, requireSrcAddress);
         if(logSyscalls_) {
-            fmt::print("Sys::recvfrom(sockfd={}, buf={:#x}, len={}, flags={}, src_addr={:#x}, addrlen={:#x}) = {}",
+            print("Sys::recvfrom(sockfd={}, buf={:#x}, len={}, flags={}, src_addr={:#x}, addrlen={:#x}) = {}",
                                       sockfd, buf.address(), len, flags, src_addr.address(), addrlen.address(),
                                       ret.errorOrWith<ssize_t>([](const auto& buffers) {
                 return (ssize_t)buffers.first.size();
@@ -661,7 +710,7 @@ namespace x64 {
         Buffer saddr(mmu_->readFromMmu<u8>(addr, addrlen));
         int rc = Host::bind(Host::FD{sockfd}, saddr);
         if(logSyscalls_) {
-            fmt::print("Sys::bind(sockfd={}, addr={:#x}, addrlen={}) = {}\n",
+            print("Sys::bind(sockfd={}, addr={:#x}, addrlen={}) = {}\n",
                         sockfd, addr.address(), addrlen, rc);
         }
         return rc;
@@ -670,7 +719,7 @@ namespace x64 {
     ssize_t Sys::getdents64(int fd, Ptr dirp, size_t count) {
         auto errnoOrBuffer = Host::getdents64(Host::FD{fd}, count);
         if(logSyscalls_) {
-            fmt::print("Sys::getdents64(fd={}, dirp={:#x}, count={}) = {}\n",
+            print("Sys::getdents64(fd={}, dirp={:#x}, count={}) = {}\n",
                         fd, dirp.address(), count, errnoOrBuffer.errorOrWith<ssize_t>([&](const auto& buffer) { return (ssize_t)buffer.size(); }));
         }
         return errnoOrBuffer.errorOrWith<ssize_t>([&](const auto& buffer) {
@@ -680,7 +729,7 @@ namespace x64 {
     }
 
     pid_t Sys::set_tid_address(Ptr32 ptr) {
-        if(logSyscalls_) fmt::print("Sys::set_tid_address({:#x}) = {}\n", ptr.address(), 1);
+        if(logSyscalls_) print("Sys::set_tid_address({:#x}) = {}\n", ptr.address(), 1);
         return 1;
     }
 
@@ -691,7 +740,7 @@ namespace x64 {
     int Sys::clock_gettime(clockid_t clockid, Ptr tp) {
         auto errnoOrBuffer = Host::clock_gettime(clockid);
         if(logSyscalls_) {
-            fmt::print("Sys::clock_gettime({}, {:#x}) = {}\n",
+            print("Sys::clock_gettime({}, {:#x}) = {}\n",
                         clockid, tp.address(), errnoOrBuffer.errorOr(0));
         }
         return errnoOrBuffer.errorOrWith<int>([&](const auto& buffer) {
@@ -702,7 +751,7 @@ namespace x64 {
 
     int Sys::arch_prctl(int code, Ptr addr) {
         bool isSetFS = Host::Prctl::isSetFS(code);
-        if(logSyscalls_) fmt::print("Sys::arch_prctl(code={}, addr={:#x}) = {}\n", code, addr.address(), isSetFS ? 0 : -EINVAL);
+        if(logSyscalls_) print("Sys::arch_prctl(code={}, addr={:#x}) = {}\n", code, addr.address(), isSetFS ? 0 : -EINVAL);
         if(!isSetFS) return -EINVAL;
         mmu_->setSegmentBase(Segment::FS, addr.address());
         return 0;
@@ -711,7 +760,7 @@ namespace x64 {
     int Sys::openat(int dirfd, Ptr pathname, int flags, mode_t mode) {
         std::string path = mmu_->readString(pathname);
         Host::FD fd = Host::openat(Host::FD{dirfd}, path, flags, mode);
-        if(logSyscalls_) fmt::print("Sys::openat(dirfd={}, path={}, flags={}, mode={}) = {}\n", dirfd, path, flags, mode, fd.fd);
+        if(logSyscalls_) print("Sys::openat(dirfd={}, path={}, flags={}, mode={}) = {}\n", dirfd, path, flags, mode, fd.fd);
         return fd.fd;
     }
 
@@ -719,7 +768,7 @@ namespace x64 {
         std::string path = mmu_->readString(pathname);
         auto errnoOrBuffer = Host::fstatat64(Host::FD{dirfd}, path, flags);
         if(logSyscalls_) {
-            fmt::print("Sys::fstatat64(dirfd={}, path={}, statbuf={:#x}, flags={}) = {}\n",
+            print("Sys::fstatat64(dirfd={}, path={}, statbuf={:#x}, flags={}) = {}\n",
                         dirfd, path, statbuf.address(), flags, errnoOrBuffer.errorOr(0));
         }
         return errnoOrBuffer.errorOrWith<int>([&](const auto& buffer) {
@@ -746,7 +795,7 @@ namespace x64 {
                                timeout.address() != 0 ?   &ts : nullptr,
                                sigmask.address() != 0 ?   &smask : nullptr);
         if(logSyscalls_) {
-            fmt::print("Sys::pselect6(nfds={}, readfds={:#x}, writefds={:#x}, exceptfds={:#x}, timeout={:#x},sigmask={:#x}) = {}\n",
+            print("Sys::pselect6(nfds={}, readfds={:#x}, writefds={:#x}, exceptfds={:#x}, timeout={:#x},sigmask={:#x}) = {}\n",
                         nfds, readfds.address(), writefds.address(), exceptfds.address(), timeout.address(), sigmask.address(), ret);
         }
         if(readfds.address() != 0) mmu_->copyToMmu(readfds, (const u8*)&rfds, sizeof(fd_set));
@@ -757,7 +806,7 @@ namespace x64 {
     }
 
     long Sys::set_robust_list(Ptr head, size_t len) {
-        if(logSyscalls_) fmt::print("Sys::set_robust_list({:#x}, {}) = 0\n", head.address(), len);
+        if(logSyscalls_) print("Sys::set_robust_list({:#x}, {}) = 0\n", head.address(), len);
         // maybe we can do nothing ?
         (void)head;
         (void)len;
@@ -765,7 +814,7 @@ namespace x64 {
     }
 
     long Sys::get_robust_list(int pid, Ptr64 head_ptr, Ptr64 len_ptr) {
-        if(logSyscalls_) fmt::print("Sys::get_robust_list({}, {:#x}, {:#x}) = 0\n", pid, head_ptr.address(), len_ptr.address());
+        if(logSyscalls_) print("Sys::get_robust_list({}, {:#x}, {:#x}) = 0\n", pid, head_ptr.address(), len_ptr.address());
         (void)pid;
         (void)head_ptr;
         (void)len_ptr;
@@ -774,7 +823,7 @@ namespace x64 {
     }
 
     int Sys::utimensat(int dirfd, Ptr pathname, Ptr times, int flags) {
-        if(logSyscalls_) fmt::print("Sys::utimensat(dirfd={}, pathname={}, times={:#x}, flags={}) = -ENOTSUP\n",
+        if(logSyscalls_) print("Sys::utimensat(dirfd={}, pathname={}, times={:#x}, flags={}) = -ENOTSUP\n",
                                                           dirfd, mmu_->readString(pathname), times.address(), flags);
         return -ENOTSUP;
     }
@@ -782,20 +831,20 @@ namespace x64 {
     int Sys::epoll_create1(int flags) {
         Host::FD fd = Host::epoll_create1(flags);
         if(logSyscalls_) {
-            fmt::print("Sys::epoll_create1(flags={}) = {}\n", flags, fd.fd);
+            print("Sys::epoll_create1(flags={}) = {}\n", flags, fd.fd);
         }
         return fd.fd;
     }
 
     int Sys::prlimit64(pid_t pid, int resource, [[maybe_unused]] Ptr new_limit, Ptr old_limit) {
         if(logSyscalls_) 
-            fmt::print("Sys::prlimit64(pid={}, resource={}, new_limit={:#x}, old_limit={:#x})", pid, resource, new_limit.address(), old_limit.address());
+            print("Sys::prlimit64(pid={}, resource={}, new_limit={:#x}, old_limit={:#x})", pid, resource, new_limit.address(), old_limit.address());
         if(!old_limit.address()) {
-            if(logSyscalls_) fmt::print(" = 0\n");
+            if(logSyscalls_) print(" = 0\n");
             return 0;
         }
         auto errnoOrBuffer = Host::getrlimit(pid, resource);
-        if(logSyscalls_) fmt::print(" = {}\n", errnoOrBuffer.errorOr(0));
+        if(logSyscalls_) print(" = {}\n", errnoOrBuffer.errorOr(0));
         return errnoOrBuffer.errorOrWith<int>([&](const auto& buffer) {
             mmu_->copyToMmu(old_limit, buffer.data(), buffer.size());
             return 0;
@@ -804,7 +853,7 @@ namespace x64 {
 
     ssize_t Sys::getrandom(Ptr buf, size_t len, int flags) {
         if(logSyscalls_) 
-            fmt::print("Sys::getrandom(buf={:#x}, len={}, flags={})\n", buf.address(), len, flags);
+            print("Sys::getrandom(buf={:#x}, len={}, flags={})\n", buf.address(), len, flags);
         std::vector<u8> buffer(len);
         std::iota(buffer.begin(), buffer.end(), 0);
         mmu_->copyToMmu(buf, buffer.data(), buffer.size());
@@ -815,7 +864,7 @@ namespace x64 {
         std::string path = mmu_->readString(pathname);
         auto errnoOrBuffer = Host::statx(Host::FD{dirfd}, path, flags, mask);
         if(logSyscalls_) {
-            fmt::print("Sys::statx(dirfd={}, path={}, flags={}, mask={}, statxbuf={:#x}) = {}\n",
+            print("Sys::statx(dirfd={}, path={}, flags={}, mask={}, statxbuf={:#x}) = {}\n",
                         dirfd, path, flags, mask, statxbuf.address(), errnoOrBuffer.errorOr(0));
         }
         return errnoOrBuffer.errorOrWith<int>([&](const auto& buffer) {
@@ -826,7 +875,7 @@ namespace x64 {
 
     int Sys::clone3(Ptr uargs, size_t size) {
         if(logSyscalls_) {
-            fmt::print("Sys::clone3(uargs={:#x}, size={}) = -ENOTSUP\n",
+            print("Sys::clone3(uargs={:#x}, size={}) = -ENOTSUP\n",
                         uargs.address(), size);
         }
         return -ENOTSUP;

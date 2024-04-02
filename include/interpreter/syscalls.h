@@ -15,10 +15,14 @@ namespace x64 {
     class Cpu;
     class Mmu;
     class Interpreter;
+    class Scheduler;
 
     class Sys {
     public:
-        Sys(Interpreter* interpreter, Mmu* mmu) : interpreter_(interpreter), mmu_(mmu) { }
+        Sys(Interpreter* interpreter, Scheduler* scheduler, Mmu* mmu) :
+            interpreter_(interpreter),
+            scheduler_(scheduler),
+            mmu_(mmu) { }
 
         void setLogSyscalls(bool logSyscalls) { logSyscalls_ = logSyscalls; }
 
@@ -173,7 +177,9 @@ namespace x64 {
         // 0x34
         int getpeername(int sockfd, Ptr addr, Ptr32 addrlen);
         // 0x38
-        long clone(unsigned long flags, Ptr stack, Ptr parent_tid, Ptr child_tid, unsigned long tls);
+        long clone(unsigned long flags, Ptr stack, Ptr parent_tid, Ptr32 child_tid, unsigned long tls);
+        // 0x3c
+        int exit(int status);
         // 0x3f
         int uname(Ptr buf);
         // 0x48
@@ -251,9 +257,13 @@ namespace x64 {
         // 0x1b3
         int clone3(Ptr uargs, size_t size);
 
-
     private:
+
+        template<typename... Args>
+        void print(const char* format, Args... args) const;
+
         Interpreter* interpreter_;
+        Scheduler* scheduler_;
         Mmu* mmu_;
         bool logSyscalls_ { false };
     };
