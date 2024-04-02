@@ -170,6 +170,8 @@ namespace x64 {
         int connect(int sockfd, Ptr addr, size_t addrlen);
         // 0x2d
         ssize_t recvfrom(int sockfd, Ptr buf, size_t len, int flags, Ptr src_addr, Ptr32 addrlen);
+        // 0x2e
+        ssize_t sendmsg(int sockfd, Ptr msg, int flags);
         // 0x2f
         ssize_t recvmsg(int sockfd, Ptr msg, int flags);
         // 0x31

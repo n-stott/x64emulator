@@ -335,6 +335,7 @@ Host::FD Host::socket(int domain, int type, int protocol) {
     auto validateDomain = [](int domain) -> bool {
         if(domain == AF_UNIX) return true;
         if(domain == AF_LOCAL) return true;
+        if(domain == AF_NETLINK) return true;
         return false;
     };
     if(!validateDomain(domain)) return FD{-ENOTSUP};
@@ -415,6 +416,36 @@ ssize_t Host::recvmsg(FD sockfd, int flags, Buffer* msg_name, std::vector<Buffer
     header.msg_flags = 0;
     ssize_t ret = ::recvmsg(sockfd.fd, &header, flags);
     *msg_flags = header.msg_flags;
+    if(ret < 0) return -errno;
+    return ret;
+}
+
+ssize_t Host::sendmsg(FD sockfd, int flags, const Buffer& msg_name, const std::vector<Buffer>& msg_iov, const Buffer& msg_control, int msg_flags) {
+    // struct msghdr {
+    //     void*         msg_name;       /* Optional address */
+    //     socklen_t     msg_namelen;    /* Size of address */
+    //     struct iovec* msg_iov;        /* Scatter/gather array */
+    //     size_t        msg_iovlen;     /* # elements in msg_iov */
+    //     void*         msg_control;    /* Ancillary data, see below */
+    //     size_t        msg_controllen; /* Ancillary data buffer len */
+    //     int           msg_flags;      /* Flags on received message */
+    // };
+    msghdr header;
+    header.msg_name = (void*)msg_name.data();
+    header.msg_namelen = (socklen_t)msg_name.size();
+    std::vector<iovec> iovs;
+    for(auto& buf : msg_iov) {
+        iovec iov;
+        iov.iov_base = (void*)buf.data();
+        iov.iov_len = buf.size();
+        iovs.push_back(iov);
+    }
+    header.msg_iov = iovs.data();
+    header.msg_iovlen = iovs.size();
+    header.msg_control = (void*)msg_control.data();
+    header.msg_controllen = msg_control.size();
+    header.msg_flags = msg_flags;
+    ssize_t ret = ::sendmsg(sockfd.fd, &header, flags);
     if(ret < 0) return -errno;
     return ret;
 }

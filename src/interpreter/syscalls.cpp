@@ -60,6 +60,7 @@ namespace x64 {
             case 0x29: return cpu->set(R64::RAX, invoke_syscall_3(&Sys::socket, regs));
             case 0x2a: return cpu->set(R64::RAX, invoke_syscall_3(&Sys::connect, regs));
             case 0x2d: return cpu->set(R64::RAX, invoke_syscall_6(&Sys::recvfrom, regs));
+            case 0x2e: return cpu->set(R64::RAX, invoke_syscall_3(&Sys::sendmsg, regs));
             case 0x2f: return cpu->set(R64::RAX, invoke_syscall_3(&Sys::recvmsg, regs));
             case 0x31: return cpu->set(R64::RAX, invoke_syscall_3(&Sys::bind, regs));
             case 0x33: return cpu->set(R64::RAX, invoke_syscall_3(&Sys::getsockname, regs));
@@ -681,6 +682,44 @@ namespace x64 {
         });
     }
 
+    ssize_t Sys::sendmsg(int sockfd, Ptr msg, int flags) {
+        // struct msghdr {
+        //     void*         msg_name;       /* Optional address */
+        //     socklen_t     msg_namelen;    /* Size of address */
+        //     struct iovec* msg_iov;        /* Scatter/gather array */
+        //     size_t        msg_iovlen;     /* # elements in msg_iov */
+        //     void*         msg_control;    /* Ancillary data, see below */
+        //     size_t        msg_controllen; /* Ancillary data buffer len */
+        //     int           msg_flags;      /* Flags on received message */
+        // };
+        msghdr header;
+        mmu_->copyFromMmu((u8*)&header, msg, sizeof(msghdr));
+        std::vector<u8> msg_name_buffer(header.msg_name ? header.msg_namelen : 0, 0x0);
+        Buffer msg_name(std::move(msg_name_buffer));
+        if(header.msg_name) mmu_->copyFromMmu(msg_name.data(), Ptr8{(u64)header.msg_name}, msg_name.size());
+
+        std::vector<u8> msg_control_buffer(header.msg_control ? header.msg_controllen : 0, 0x0);
+        Buffer msg_control(std::move(msg_control_buffer));
+        if(header.msg_control) mmu_->copyFromMmu(msg_control.data(), Ptr8{(u64)header.msg_control}, msg_control.size());
+
+        std::vector<Buffer> msg_iov;
+        std::vector<iovec> msg_iovecs = mmu_->readFromMmu<iovec>(Ptr8{(u64)header.msg_iov}, header.msg_iovlen);
+        for(size_t i = 0; i < header.msg_iovlen; ++i) {
+            std::vector<u8> buffer(msg_iovecs[i].iov_len, 0x0);
+            msg_iov.push_back(Buffer(std::move(buffer)));
+            mmu_->copyFromMmu(msg_iov[i].data(), Ptr8{(u64)msg_iovecs[i].iov_base}, msg_iov[i].size());
+        }
+
+        int msg_flags = 0;
+        ssize_t nbytes = Host::sendmsg(Host::FD{sockfd}, flags, msg_name, msg_iov, msg_control, msg_flags);
+        if(logSyscalls_) {
+            print("Sys::sendmsg(sockfd={}, msg={:#x}, flags={}) = {}\n",
+                        sockfd, msg.address(), flags, nbytes);
+        }
+        if(nbytes < 0) return nbytes;
+        return nbytes;
+    }
+
     ssize_t Sys::recvmsg(int sockfd, Ptr msg, int flags) {
         // struct msghdr {
         //     void*         msg_name;       /* Optional address */
@@ -706,6 +745,10 @@ namespace x64 {
 
         int msg_flags = 0;
         ssize_t nbytes = Host::recvmsg(Host::FD{sockfd}, flags, &msg_name, &msg_iov, &msg_control, &msg_flags);
+        if(logSyscalls_) {
+            print("Sys::recvmsg(sockfd={}, msg={:#x}, flags={}) = {}\n",
+                        sockfd, msg.address(), flags, nbytes);
+        }
         if(nbytes < 0) return nbytes;
 
         if(header.msg_name) mmu_->copyToMmu(Ptr8{(u64)header.msg_name}, msg_name.data(), msg_name.size());
