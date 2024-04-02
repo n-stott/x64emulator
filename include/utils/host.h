@@ -188,6 +188,8 @@ public:
     static ErrnoOr<BufferAndReturnValue<int>> poll(const Buffer&, u64 nfds, int timeout);
     static FD epoll_create1(int flags);
 
+    static FD eventfd2(unsigned int initval, int flags);
+
     static int select(int nfds, fd_set* readfds, fd_set* writefds, fd_set* exceptfds, timeval* timeout);
     static int pselect6(int nfds, fd_set* readfds, fd_set* writefds, fd_set* exceptfds, timespec* timeout, const sigset_t* sigmask);
 

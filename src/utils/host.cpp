@@ -7,6 +7,7 @@
 #include <asm/termbits.h>
 #include <sys/auxv.h>
 #include <sys/epoll.h>
+#include <sys/eventfd.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <sys/resource.h>
@@ -674,6 +675,12 @@ ErrnoOr<BufferAndReturnValue<int>> Host::poll(const Buffer& buffer, u64 nfds, in
 
 Host::FD Host::epoll_create1(int flags) {
     int fd = ::epoll_create1(flags);
+    if(fd < 0) return FD{-errno};
+    return FD{fd};
+}
+
+Host::FD Host::eventfd2(unsigned int initval, int flags) {
+    int fd = ::eventfd(initval, flags);
     if(fd < 0) return FD{-errno};
     return FD{fd};
 }

@@ -106,6 +106,7 @@ namespace x64 {
             case 0x111: return cpu->set(R64::RAX, invoke_syscall_2(&Sys::set_robust_list, regs));
             case 0x112: return cpu->set(R64::RAX, invoke_syscall_3(&Sys::get_robust_list, regs));
             case 0x118: return cpu->set(R64::RAX, invoke_syscall_4(&Sys::utimensat, regs));
+            case 0x122: return cpu->set(R64::RAX, invoke_syscall_2(&Sys::eventfd2, regs));
             case 0x123: return cpu->set(R64::RAX, invoke_syscall_1(&Sys::epoll_create1, regs));
             case 0x12e: return cpu->set(R64::RAX, invoke_syscall_4(&Sys::prlimit64, regs));
             case 0x13e: return cpu->set(R64::RAX, invoke_syscall_3(&Sys::getrandom, regs));
@@ -884,6 +885,14 @@ namespace x64 {
         if(logSyscalls_) print("Sys::utimensat(dirfd={}, pathname={}, times={:#x}, flags={}) = -ENOTSUP\n",
                                                           dirfd, mmu_->readString(pathname), times.address(), flags);
         return -ENOTSUP;
+    }
+
+    int Sys::eventfd2(unsigned int initval, int flags) {
+        Host::FD fd = Host::eventfd2(initval, flags);
+        if(logSyscalls_) {
+            print("Sys::eventfd2(initval={}, flags={}) = {}\n", initval, flags, fd.fd);
+        }
+        return fd.fd;
     }
 
     int Sys::epoll_create1(int flags) {
