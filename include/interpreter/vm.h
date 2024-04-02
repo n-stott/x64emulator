@@ -17,9 +17,7 @@ namespace x64 {
     public:
         explicit VM(Mmu* mmu, Sys* syscalls);
 
-        void stop();
         void crash();
-        bool isStopped() const { return stop_; }
         bool hasCrashed() const { return hasCrashed_; }
         
         void setLogInstructions(bool);
@@ -73,7 +71,6 @@ namespace x64 {
         Cpu cpu_;
 
         mutable std::deque<ExecutableSection> executableSections_;
-        bool stop_ = false;
         bool hasCrashed_ = false;
         bool logInstructions_ = false;
         unsigned long long nbTicksBeforeLoggingInstructions_;

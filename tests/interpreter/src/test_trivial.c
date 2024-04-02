@@ -9,5 +9,5 @@ void f() {
 
 int main(int argc, char** argv) {
     if(1) f();
-    return argc;
+    return argc == 0;
 }

@@ -588,15 +588,14 @@ namespace x64 {
     }
 
     u64 Sys::exit_group(int status) {
-        (void)status;
         if(logSyscalls_) print("Sys::exit_group(status={})\n", status);
-        interpreter_->stop();
-        return 0;
+        scheduler_->terminateAll(status);
+        return status;
     }
 
     int Sys::tgkill(int tgid, int tid, int sig) {
         if(logSyscalls_) print("Sys::tgkill(tgid={}, tid={}, sig={})\n", tgid, tid, sig);
-        interpreter_->stop();
+        scheduler_->kill(sig);
         return 0;
     }
 

@@ -44,6 +44,7 @@ namespace x64 {
 
     void Scheduler::terminate(Thread* thread, int status) {
         assert(thread->state != Thread::STATE::DEAD);
+        thread->yield();
         thread->state = Thread::STATE::DEAD;
         thread->exitStatus = status;
 
@@ -56,6 +57,10 @@ namespace x64 {
             return fwd.thread == thread;
         }), futexWaitData.end());
         threadQueue_.erase(std::remove(threadQueue_.begin(), threadQueue_.end(), thread), threadQueue_.end());
+    }
+
+    void Scheduler::kill([[maybe_unused]] int signal) {
+        terminateAll(516);
     }
 
     void Scheduler::wait(Thread* thread, Ptr32 wordPtr, u32 expected) {

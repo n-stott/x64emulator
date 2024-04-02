@@ -23,6 +23,8 @@ namespace x64 {
         void terminateAll(int status);
         void terminate(Thread* thread, int status);
 
+        void kill(int signal);
+
         void wait(Thread* thread, Ptr32 wordPtr, u32 expected);
         u32 wake(Ptr32 wordPtr, u32 nbWaiters);
 

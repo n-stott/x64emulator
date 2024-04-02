@@ -58,10 +58,6 @@ namespace x64 {
         logSyscalls_ = logSyscalls;
     }
 
-    void Interpreter::stop() {
-        vm_.stop();
-    }
-
     bool Interpreter::run(const std::string& programFilePath, const std::vector<std::string>& arguments, const std::vector<std::string>& environmentVariables) {
         SignalHandler handler;
         
@@ -69,6 +65,8 @@ namespace x64 {
 
         vm_.setLogInstructions(logInstructions_);
         vm_.setLogInstructionsAfter(logInstructionsAfter_);
+
+        bool ok = true;
         
         VerificationScope::run([&]() {
             u64 entrypoint = loadElf(programFilePath, true);
@@ -81,18 +79,20 @@ namespace x64 {
             vm_.contextSwitch(mainThread);
             pushProgramArguments(&vm_, programFilePath, arguments, environmentVariables);
 
-            while(!vm_.isStopped()) {
+            while(true) {
                 Thread* thread = scheduler_.pickNext();
                 if(!thread) break;
                 thread->ticksUntilSwitch += 1'000'000;
                 vm_.execute(thread);
             }
             fmt::print("Interpreter completed execution of {} instructions\n", mainThread->ticks);
+            fmt::print("Main thread exit code ={}\n", mainThread->exitStatus);
+            ok &= (mainThread->exitStatus == 0);
             vm_.contextSwitch(nullptr);
         }, [&]() {
             vm_.crash();
+            ok = false;
         });
-        bool ok = !vm_.hasCrashed();
         return ok;
     }
 
@@ -232,78 +232,73 @@ namespace x64 {
     }
 
     void Interpreter::pushProgramArguments(VM* vm, const std::string& programFilePath, const std::vector<std::string>& arguments, const std::vector<std::string>& environmentVariables) {
-        VerificationScope::run([&]() {
-            size_t requiredSize = programFilePath.size()+1;
-            requiredSize = std::accumulate(arguments.begin(), arguments.end(), requiredSize, [](size_t size, const std::string& arg) {
-                return size + arg.size() + 1;
-            });
-            requiredSize = std::accumulate(environmentVariables.begin(), environmentVariables.end(), requiredSize, [](size_t size, const std::string& var) {
-                return size + var.size() + 1;
-            });
-            requiredSize += 8*(1 + arguments.size() + environmentVariables.size());
-            requiredSize = Mmu::pageRoundUp(requiredSize);
-
-            mmu_.mmap(0, Mmu::PAGE_SIZE, PROT::NONE, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0); // throwaway page
-            u64 argumentPage = mmu_.mmap(0, requiredSize, PROT::READ | PROT::WRITE, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0);
-            mmu_.setRegionName(argumentPage, "program arguments");
-            Ptr8 argumentPtr { argumentPage };
-
-            std::vector<u64> argumentPositions;
-
-            auto writeArgument = [&](const std::string& s) -> Ptr8 {
-                std::vector<u8> buffer;
-                buffer.resize(s.size()+1, 0x0);
-                std::memcpy(buffer.data(), s.c_str(), s.size());
-                verify(buffer.back() == 0x0, "string is not null-terminated");
-                mmu_.copyToMmu(argumentPtr, buffer.data(), buffer.size());
-                argumentPositions.push_back(argumentPtr.address());
-                Ptr8 oldArgumentPtr = argumentPtr;
-                argumentPtr += buffer.size();
-                return oldArgumentPtr;
-            };
-
-            // write argv
-            Ptr8 filepath = writeArgument(programFilePath);
-            for(const std::string& arg : arguments) writeArgument(arg);
-
-            // write null to mark argv[argc]
-            argumentPositions.push_back(0x0);
-
-            // write env
-            for(const std::string& env : environmentVariables) writeArgument(env);
-
-            // write null to mark end of env
-            argumentPositions.push_back(0x0);
-
-            // get and write aux vector entries
-            verify(auxiliary_.has_value(), "No auxiliary");
-            AuxiliaryVector auxvec;
-            auxvec.add((u64)Host::AUX_TYPE::ENTRYPOINT, auxiliary_->entrypoint)
-                  .add((u64)Host::AUX_TYPE::PROGRAM_HEADERS, auxiliary_->programHeaderTable)
-                  .add((u64)Host::AUX_TYPE::PROGRAM_HEADER_ENTRY_SIZE, auxiliary_->programHeaderEntrySize)
-                  .add((u64)Host::AUX_TYPE::PROGRAM_HEADER_COUNT, auxiliary_->programHeaderCount)
-                  .add((u64)Host::AUX_TYPE::RANDOM_VALUE_ADDRESS, auxiliary_->randomDataAddress)
-                  .add((u64)Host::AUX_TYPE::PLATFORM_STRING_ADDRESS, auxiliary_->platformStringAddress)
-                  .add((u64)Host::AUX_TYPE::VDSO_ADDRESS, 0x0)
-                  .add((u64)Host::AUX_TYPE::EXEC_PATH_NAME, filepath.address())
-                  .add((u64)Host::AUX_TYPE::UID)
-                  .add((u64)Host::AUX_TYPE::GID)
-                  .add((u64)Host::AUX_TYPE::EUID)
-                  .add((u64)Host::AUX_TYPE::EGID)
-                  .add((u64)Host::AUX_TYPE::SECURE);
-            std::vector<u64> data = auxvec.create();
-            for(auto rit = data.rbegin(); rit != data.rend(); ++rit) {
-                vm->push64(*rit);
-            }
-            
-            for(auto it = argumentPositions.rbegin(); it != argumentPositions.rend(); ++it) {
-                vm->push64(*it);
-            }
-            vm->push64(arguments.size()+1);
-        }, [&]() {
-            fmt::print("Interpreter crash durig program argument setup\n");
-            vm->stop();
+        size_t requiredSize = programFilePath.size()+1;
+        requiredSize = std::accumulate(arguments.begin(), arguments.end(), requiredSize, [](size_t size, const std::string& arg) {
+            return size + arg.size() + 1;
         });
+        requiredSize = std::accumulate(environmentVariables.begin(), environmentVariables.end(), requiredSize, [](size_t size, const std::string& var) {
+            return size + var.size() + 1;
+        });
+        requiredSize += 8*(1 + arguments.size() + environmentVariables.size());
+        requiredSize = Mmu::pageRoundUp(requiredSize);
+
+        mmu_.mmap(0, Mmu::PAGE_SIZE, PROT::NONE, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0); // throwaway page
+        u64 argumentPage = mmu_.mmap(0, requiredSize, PROT::READ | PROT::WRITE, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0);
+        mmu_.setRegionName(argumentPage, "program arguments");
+        Ptr8 argumentPtr { argumentPage };
+
+        std::vector<u64> argumentPositions;
+
+        auto writeArgument = [&](const std::string& s) -> Ptr8 {
+            std::vector<u8> buffer;
+            buffer.resize(s.size()+1, 0x0);
+            std::memcpy(buffer.data(), s.c_str(), s.size());
+            verify(buffer.back() == 0x0, "string is not null-terminated");
+            mmu_.copyToMmu(argumentPtr, buffer.data(), buffer.size());
+            argumentPositions.push_back(argumentPtr.address());
+            Ptr8 oldArgumentPtr = argumentPtr;
+            argumentPtr += buffer.size();
+            return oldArgumentPtr;
+        };
+
+        // write argv
+        Ptr8 filepath = writeArgument(programFilePath);
+        for(const std::string& arg : arguments) writeArgument(arg);
+
+        // write null to mark argv[argc]
+        argumentPositions.push_back(0x0);
+
+        // write env
+        for(const std::string& env : environmentVariables) writeArgument(env);
+
+        // write null to mark end of env
+        argumentPositions.push_back(0x0);
+
+        // get and write aux vector entries
+        verify(auxiliary_.has_value(), "No auxiliary");
+        AuxiliaryVector auxvec;
+        auxvec.add((u64)Host::AUX_TYPE::ENTRYPOINT, auxiliary_->entrypoint)
+                .add((u64)Host::AUX_TYPE::PROGRAM_HEADERS, auxiliary_->programHeaderTable)
+                .add((u64)Host::AUX_TYPE::PROGRAM_HEADER_ENTRY_SIZE, auxiliary_->programHeaderEntrySize)
+                .add((u64)Host::AUX_TYPE::PROGRAM_HEADER_COUNT, auxiliary_->programHeaderCount)
+                .add((u64)Host::AUX_TYPE::RANDOM_VALUE_ADDRESS, auxiliary_->randomDataAddress)
+                .add((u64)Host::AUX_TYPE::PLATFORM_STRING_ADDRESS, auxiliary_->platformStringAddress)
+                .add((u64)Host::AUX_TYPE::VDSO_ADDRESS, 0x0)
+                .add((u64)Host::AUX_TYPE::EXEC_PATH_NAME, filepath.address())
+                .add((u64)Host::AUX_TYPE::UID)
+                .add((u64)Host::AUX_TYPE::GID)
+                .add((u64)Host::AUX_TYPE::EUID)
+                .add((u64)Host::AUX_TYPE::EGID)
+                .add((u64)Host::AUX_TYPE::SECURE);
+        std::vector<u64> data = auxvec.create();
+        for(auto rit = data.rbegin(); rit != data.rend(); ++rit) {
+            vm->push64(*rit);
+        }
+        
+        for(auto it = argumentPositions.rbegin(); it != argumentPositions.rend(); ++it) {
+            vm->push64(*it);
+        }
+        vm->push64(arguments.size()+1);
     }
 
 

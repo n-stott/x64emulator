@@ -21,8 +21,6 @@ namespace x64 {
         void setLogInstructionsAfter(unsigned long long);
         void setLogSyscalls(bool);
 
-        void stop();
-
     private:
         u64 loadElf(const std::string& filepath, bool mainProgram);
         u64 setupStack();

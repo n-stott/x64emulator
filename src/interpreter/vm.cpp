@@ -8,13 +8,7 @@
 namespace x64 {
 
 
-    VM::VM(Mmu* mmu, Sys* syscalls) : mmu_(mmu), syscalls_(syscalls), cpu_(this, mmu_) {
-        stop_ = false;
-    }
-
-    void VM::stop() {
-        stop_ = true;
-    }
+    VM::VM(Mmu* mmu, Sys* syscalls) : mmu_(mmu), syscalls_(syscalls), cpu_(this, mmu_) { }
     
     void VM::setLogInstructions(bool logInstructions) {
         logInstructions_ = logInstructions;
@@ -29,7 +23,6 @@ namespace x64 {
     }
 
     void VM::crash() {
-        stop();
         hasCrashed_ = true;
         fmt::print("Register state:\n");
         dumpRegisters();
@@ -74,12 +67,11 @@ namespace x64 {
     extern bool signal_interrupt;
 
     void VM::execute(Thread* thread) {
-        if(stop_) return;
         assert(!!thread);
         contextSwitch(thread);
         if(logInstructions()) {
             try {
-                while(!stop_ && thread->ticks < thread->ticksUntilSwitch) {
+                while(thread->ticks < thread->ticksUntilSwitch) {
                     verify(!signal_interrupt);
                     const X64Instruction& instruction = fetchInstruction();
                     log(thread->ticks, instruction);
@@ -92,7 +84,7 @@ namespace x64 {
             }
         } else {
             try {
-                while(!stop_ && thread->ticks < thread->ticksUntilSwitch) {
+                while(thread->ticks < thread->ticksUntilSwitch) {
                     verify(!signal_interrupt);
                     const X64Instruction& instruction = fetchInstruction();
                     ++(thread->ticks);
