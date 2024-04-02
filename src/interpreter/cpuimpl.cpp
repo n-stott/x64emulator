@@ -104,6 +104,26 @@ namespace x64 {
     u32 CpuImpl::neg32(u32 dst, Flags* flags) { return sub32(0u, dst, flags); }
     u64 CpuImpl::neg64(u64 dst, Flags* flags) { return sub64(0ul, dst, flags); }
 
+    std::pair<u8, u8> CpuImpl::mul8(u8 src1, u8 src2, Flags* flags) {
+        u16 prod = (u16)src1 * (u16)src2;
+        u8 upper = static_cast<u8>(prod >> 8);
+        u8 lower = (u8)prod;
+        flags->overflow = !!upper;
+        flags->carry = !!upper;
+        flags->setUnsureParity();
+        return std::make_pair(upper, lower);
+    }
+
+    std::pair<u16, u16> CpuImpl::mul16(u16 src1, u16 src2, Flags* flags) {
+        u32 prod = (u32)src1 * (u32)src2;
+        u16 upper = static_cast<u16>(prod >> 16);
+        u16 lower = (u16)prod;
+        flags->overflow = !!upper;
+        flags->carry = !!upper;
+        flags->setUnsureParity();
+        return std::make_pair(upper, lower);
+    }
+
     std::pair<u32, u32> CpuImpl::mul32(u32 src1, u32 src2, Flags* flags) {
         u64 prod = (u64)src1 * (u64)src2;
         u32 upper = static_cast<u32>(prod >> 32);

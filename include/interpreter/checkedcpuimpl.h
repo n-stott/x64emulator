@@ -29,6 +29,8 @@ namespace x64 {
         [[nodiscard]] static u32 sbb32(u32 dst, u32 src, Flags* flags);
         [[nodiscard]] static u64 sbb64(u64 dst, u64 src, Flags* flags);
 
+        [[nodiscard]] static std::pair<u8, u8> mul8(u8 src1, u8 src2, Flags* flags);
+        [[nodiscard]] static std::pair<u16, u16> mul16(u16 src1, u16 src2, Flags* flags);
         [[nodiscard]] static std::pair<u32, u32> mul32(u32 src1, u32 src2, Flags* flags);
         [[nodiscard]] static std::pair<u64, u64> mul64(u64 src1, u64 src2, Flags* flags);
 

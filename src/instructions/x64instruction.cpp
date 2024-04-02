@@ -340,6 +340,8 @@ namespace utils {
             case Insn::NEG_RM16: return toString<RM16>("neg");
             case Insn::NEG_RM32: return toString<RM32>("neg");
             case Insn::NEG_RM64: return toString<RM64>("neg");
+            case Insn::MUL_RM8: return toString<RM8>("mul");
+            case Insn::MUL_RM16: return toString<RM16>("mul");
             case Insn::MUL_RM32: return toString<RM32>("mul");
             case Insn::MUL_RM64: return toString<RM64>("mul");
             case Insn::IMUL1_RM32: return toString<RM32>("imul");

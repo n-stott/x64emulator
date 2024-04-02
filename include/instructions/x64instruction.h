@@ -47,6 +47,8 @@ namespace x64 {
         NEG_RM16,
         NEG_RM32,
         NEG_RM64,
+        MUL_RM8,
+        MUL_RM16,
         MUL_RM32,
         MUL_RM64,
         IMUL1_RM32,

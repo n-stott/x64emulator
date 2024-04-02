@@ -206,6 +206,57 @@ namespace x64 {
     u32 CheckedCpuImpl::neg32(u32 dst, Flags* flags) { return sub32(0u, dst, flags); }
     u64 CheckedCpuImpl::neg64(u64 dst, Flags* flags) { return sub64(0ul, dst, flags); }
 
+    std::pair<u8, u8> CheckedCpuImpl::mul8(u8 src1, u8 src2, Flags* flags) {
+        Flags virtualFlags = *flags;
+        auto virtualRes = CpuImpl::mul8(src1, src2, &virtualFlags);
+        (void)virtualRes;
+
+        u16 res = 0;
+        BEGIN_RFLAGS_SCOPE
+            SET_RFLAGS(*flags);
+            asm volatile("mov %0, %%al" :: "m"(src1));
+            asm volatile("mul %0" :: "r"(src2) : "ax");
+            asm volatile("mov %%ax, %0" : "=m"(res));
+            GET_RFLAGS(flags);
+        END_RFLAGS_SCOPE
+
+        u8 lower = (u8)res;
+        u8 upper = (u8)(res >> 8);
+
+        assert(virtualRes.first == upper);
+        assert(virtualRes.second == lower);
+        assert(virtualFlags.carry == flags->carry);
+        assert(virtualFlags.overflow == flags->overflow);
+        // assert(virtualFlags.parity == flags->parity);
+
+        return std::make_pair(upper, lower);
+    }
+
+    std::pair<u16, u16> CheckedCpuImpl::mul16(u16 src1, u16 src2, Flags* flags) {
+        Flags virtualFlags = *flags;
+        auto virtualRes = CpuImpl::mul16(src1, src2, &virtualFlags);
+        (void)virtualRes;
+
+        u16 lower = 0;
+        u16 upper = 0;
+        BEGIN_RFLAGS_SCOPE
+            SET_RFLAGS(*flags);
+            asm volatile("mov %0, %%ax" :: "m"(src1));
+            asm volatile("mul %0" :: "r"(src2) : "ax", "dx");
+            asm volatile("mov %%ax, %0" : "=m"(lower));
+            asm volatile("mov %%dx, %0" : "=m"(upper));
+            GET_RFLAGS(flags);
+        END_RFLAGS_SCOPE
+
+        assert(virtualRes.first == upper);
+        assert(virtualRes.second == lower);
+        assert(virtualFlags.carry == flags->carry);
+        assert(virtualFlags.overflow == flags->overflow);
+        // assert(virtualFlags.parity == flags->parity);
+
+        return std::make_pair(upper, lower);
+    }
+
     std::pair<u32, u32> CheckedCpuImpl::mul32(u32 src1, u32 src2, Flags* flags) {
         Flags virtualFlags = *flags;
         auto virtualRes = CpuImpl::mul32(src1, src2, &virtualFlags);

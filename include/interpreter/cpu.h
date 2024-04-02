@@ -194,6 +194,8 @@ namespace x64 {
         void exec(const Neg<RM32>&);
         void exec(const Neg<RM64>&);
 
+        void exec(const Mul<RM8>&);
+        void exec(const Mul<RM16>&);
         void exec(const Mul<RM32>&);
         void exec(const Mul<RM64>&);
 

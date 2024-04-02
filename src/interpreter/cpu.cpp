@@ -166,6 +166,8 @@ namespace x64 {
             case Insn::NEG_RM16: return exec(Neg<RM16>{insn.op0<RM16>()});
             case Insn::NEG_RM32: return exec(Neg<RM32>{insn.op0<RM32>()});
             case Insn::NEG_RM64: return exec(Neg<RM64>{insn.op0<RM64>()});
+            case Insn::MUL_RM8: return exec(Mul<RM8>{insn.op0<RM8>()});
+            case Insn::MUL_RM16: return exec(Mul<RM16>{insn.op0<RM16>()});
             case Insn::MUL_RM32: return exec(Mul<RM32>{insn.op0<RM32>()});
             case Insn::MUL_RM64: return exec(Mul<RM64>{insn.op0<RM64>()});
             case Insn::IMUL1_RM32: return exec(Imul1<RM32>{insn.op0<RM32>()});
@@ -624,6 +626,17 @@ namespace x64 {
     void Cpu::exec(const Neg<RM16>& ins) { set(ins.src, Impl::neg16(get(ins.src), &flags_)); }
     void Cpu::exec(const Neg<RM32>& ins) { set(ins.src, Impl::neg32(get(ins.src), &flags_)); }
     void Cpu::exec(const Neg<RM64>& ins) { set(ins.src, Impl::neg64(get(ins.src), &flags_)); }
+
+    void Cpu::exec(const Mul<RM8>& ins) {
+        auto res = Impl::mul8(get(R8::AL), get(ins.src), &flags_);
+        set(R16::AX, (u16)((u16)res.first << 8 | (u16)res.second));
+    }
+
+    void Cpu::exec(const Mul<RM16>& ins) {
+        auto res = Impl::mul16(get(R16::AX), get(ins.src), &flags_);
+        set(R16::DX, res.first);
+        set(R16::AX, res.second);
+    }
 
     void Cpu::exec(const Mul<RM32>& ins) {
         auto res = Impl::mul32(get(R32::EAX), get(ins.src), &flags_);
