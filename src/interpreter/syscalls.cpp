@@ -81,6 +81,7 @@ namespace x64 {
             case 0x68: return cpu->set(R64::RAX, invoke_syscall_0(&Sys::getgid, regs));
             case 0x6b: return cpu->set(R64::RAX, invoke_syscall_0(&Sys::geteuid, regs));
             case 0x6c: return cpu->set(R64::RAX, invoke_syscall_0(&Sys::getegid, regs));
+            case 0x6f: return cpu->set(R64::RAX, invoke_syscall_0(&Sys::getpgrp, regs));
             case 0x89: return cpu->set(R64::RAX, invoke_syscall_2(&Sys::statfs, regs));
             case 0x9e: return cpu->set(R64::RAX, invoke_syscall_2(&Sys::arch_prctl, regs));
             case 0xba: { // gettid
@@ -557,6 +558,10 @@ namespace x64 {
 
     int Sys::getegid() {
         return Host::getegid();
+    }
+
+    int Sys::getpgrp() {
+        return Host::getpgrp();
     }
 
     int Sys::statfs(Ptr pathname, Ptr buf) {

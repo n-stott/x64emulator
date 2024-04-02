@@ -212,6 +212,8 @@ namespace x64 {
         int geteuid();
         // 0x6c
         int getegid();
+        // 0x6f
+        int getpgrp();
         // 0x89
         int statfs(Ptr path, Ptr buf);
         // 0x9e

@@ -170,6 +170,7 @@ public:
     static int getgid();
     static int geteuid();
     static int getegid();
+    static int getpgrp();
     
     static ErrnoOrBuffer getcwd(size_t size);
     static ErrnoOrBuffer getdents64(FD fd, size_t count);

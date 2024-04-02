@@ -547,6 +547,10 @@ int Host::getegid() {
     return (int)::getegid();
 }
 
+int Host::getpgrp() {
+    return (int)::getpgrp();
+}
+
 ErrnoOrBuffer Host::readlink(const std::string& path, size_t count) {
     std::vector<u8> buffer;
     buffer.resize(count, 0x0);
