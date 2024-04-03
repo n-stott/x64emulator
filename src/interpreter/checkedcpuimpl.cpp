@@ -1104,6 +1104,134 @@ namespace x64 {
         return nativeRes;
     }
 
+    u128 CheckedCpuImpl::addps(u128 dst, u128 src, SIMD_ROUNDING rounding) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::addps(dst, src, rounding);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("addps %1, %0" : "+x"(nativeRes) : "x"(src));
+
+        assert(virtualRes.lo == nativeRes.lo);
+        assert(virtualRes.hi == nativeRes.hi);
+        return nativeRes;
+#else
+        return CpuImpl::addps(dst, src, rounding);
+#endif
+    }
+
+    u128 CheckedCpuImpl::addpd(u128 dst, u128 src, SIMD_ROUNDING rounding) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::addpd(dst, src, rounding);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("addpd %1, %0" : "+x"(nativeRes) : "x"(src));
+
+        assert(virtualRes.lo == nativeRes.lo);
+        assert(virtualRes.hi == nativeRes.hi);
+        return nativeRes;
+#else
+        return CpuImpl::addpd(dst, src, rounding);
+#endif
+    }
+
+    u128 CheckedCpuImpl::subps(u128 dst, u128 src, SIMD_ROUNDING rounding) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::subps(dst, src, rounding);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("subps %1, %0" : "+x"(nativeRes) : "x"(src));
+
+        assert(virtualRes.lo == nativeRes.lo);
+        assert(virtualRes.hi == nativeRes.hi);
+        return nativeRes;
+#else
+        return CpuImpl::subps(dst, src, rounding);
+#endif
+    }
+
+    u128 CheckedCpuImpl::subpd(u128 dst, u128 src, SIMD_ROUNDING rounding) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::subpd(dst, src, rounding);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("subpd %1, %0" : "+x"(nativeRes) : "x"(src));
+
+        assert(virtualRes.lo == nativeRes.lo);
+        assert(virtualRes.hi == nativeRes.hi);
+        return nativeRes;
+#else
+        return CpuImpl::subpd(dst, src, rounding);
+#endif
+    }
+
+    u128 CheckedCpuImpl::mulps(u128 dst, u128 src, SIMD_ROUNDING rounding) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::mulps(dst, src, rounding);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("mulps %1, %0" : "+x"(nativeRes) : "x"(src));
+
+        assert(virtualRes.lo == nativeRes.lo);
+        assert(virtualRes.hi == nativeRes.hi);
+        return nativeRes;
+#else
+        return CpuImpl::mulps(dst, src, rounding);
+#endif
+    }
+
+    u128 CheckedCpuImpl::mulpd(u128 dst, u128 src, SIMD_ROUNDING rounding) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::mulpd(dst, src, rounding);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("mulpd %1, %0" : "+x"(nativeRes) : "x"(src));
+
+        assert(virtualRes.lo == nativeRes.lo);
+        assert(virtualRes.hi == nativeRes.hi);
+        return nativeRes;
+#else
+        return CpuImpl::mulpd(dst, src, rounding);
+#endif
+    }
+
+    u128 CheckedCpuImpl::divps(u128 dst, u128 src, SIMD_ROUNDING rounding) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::divps(dst, src, rounding);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("divps %1, %0" : "+x"(nativeRes) : "x"(src));
+
+        assert(virtualRes.lo == nativeRes.lo);
+        assert(virtualRes.hi == nativeRes.hi);
+        return nativeRes;
+#else
+        return CpuImpl::divps(dst, src, rounding);
+#endif
+    }
+
+    u128 CheckedCpuImpl::divpd(u128 dst, u128 src, SIMD_ROUNDING rounding) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::divpd(dst, src, rounding);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("divpd %1, %0" : "+x"(nativeRes) : "x"(src));
+
+        assert(virtualRes.lo == nativeRes.lo);
+        assert(virtualRes.hi == nativeRes.hi);
+        return nativeRes;
+#else
+        return CpuImpl::divpd(dst, src, rounding);
+#endif
+    }
+
     u128 CheckedCpuImpl::addss(u128 dst, u128 src, SIMD_ROUNDING rounding) {
 #if GCC_COMPILER
         u128 virtualRes = CpuImpl::addss(dst, src, rounding);

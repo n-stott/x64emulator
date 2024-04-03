@@ -154,6 +154,15 @@ namespace x64 {
         static X64Instruction makeMovss(const cs_insn& insn);
         static X64Instruction makeMovsd(const cs_insn& insn);
 
+        static X64Instruction makeAddps(const cs_insn& insn);
+        static X64Instruction makeAddpd(const cs_insn& insn);
+        static X64Instruction makeSubps(const cs_insn& insn);
+        static X64Instruction makeSubpd(const cs_insn& insn);
+        static X64Instruction makeMulps(const cs_insn& insn);
+        static X64Instruction makeMulpd(const cs_insn& insn);
+        static X64Instruction makeDivps(const cs_insn& insn);
+        static X64Instruction makeDivpd(const cs_insn& insn);
+
         static X64Instruction makeAddss(const cs_insn& insn);
         static X64Instruction makeAddsd(const cs_insn& insn);
         static X64Instruction makeSubss(const cs_insn& insn);

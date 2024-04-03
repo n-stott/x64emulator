@@ -689,53 +689,57 @@ namespace x64 {
         return rounding[(u16)x87fpu->control().rc](dst);
     }
 
-    u128 CpuImpl::addss(u128 dst, u128 src, SIMD_ROUNDING) {
-        static_assert(sizeof(u32) == sizeof(float));
-        float d;
-        float s;
+    template<typename F>
+    u128 packedOp(u128 dst, u128 src, F(*op)(F, F)) {
+        constexpr int N = sizeof(u128) / sizeof(F);
+        std::array<F, N> D;
+        std::array<F, N> S;
+        std::memcpy(D.data(), &dst, sizeof(dst));
+        std::memcpy(S.data(), &src, sizeof(src));
+        std::array<F, N> R;
+        for(int i = 0; i < N; ++i) {
+            R[i] = op(D[i], S[i]);
+        }
+        u128 res;
+        std::memcpy(&res, R.data(), sizeof(res));
+        return res;
+    }
+
+    u128 CpuImpl::addps(u128 dst, u128 src, SIMD_ROUNDING) { return packedOp<float>(dst, src, [](auto d, auto s) { return d + s; }); }
+    u128 CpuImpl::addpd(u128 dst, u128 src, SIMD_ROUNDING) { return packedOp<double>(dst, src, [](auto d, auto s) { return d + s; }); }
+
+    u128 CpuImpl::subps(u128 dst, u128 src, SIMD_ROUNDING) { return packedOp<float>(dst, src, [](auto d, auto s) { return d - s; }); }
+    u128 CpuImpl::subpd(u128 dst, u128 src, SIMD_ROUNDING) { return packedOp<double>(dst, src, [](auto d, auto s) { return d - s; }); }
+
+    u128 CpuImpl::mulps(u128 dst, u128 src, SIMD_ROUNDING) { return packedOp<float>(dst, src, [](auto d, auto s) { return d * s; }); }
+    u128 CpuImpl::mulpd(u128 dst, u128 src, SIMD_ROUNDING) { return packedOp<double>(dst, src, [](auto d, auto s) { return d * s; }); }
+
+    u128 CpuImpl::divps(u128 dst, u128 src, SIMD_ROUNDING) { return packedOp<float>(dst, src, [](auto d, auto s) { return d / s; }); }
+    u128 CpuImpl::divpd(u128 dst, u128 src, SIMD_ROUNDING) { return packedOp<double>(dst, src, [](auto d, auto s) { return d / s; }); }
+
+    template<typename F>
+    u128 scalarOp(u128 dst, u128 src, F(*op)(F, F)) {
+        F d;
+        F s;
         std::memcpy(&d, &dst, sizeof(d));
         std::memcpy(&s, &src, sizeof(s));
-        float res = d + s;
+        F res = op(d, s);
         u128 r = dst;
         std::memcpy(&r, &res, sizeof(res));
         return r;
     }
 
-    u128 CpuImpl::addsd(u128 dst, u128 src, SIMD_ROUNDING) {
-        static_assert(sizeof(u64) == sizeof(double));
-        double d;
-        double s;
-        std::memcpy(&d, &dst, sizeof(d));
-        std::memcpy(&s, &src, sizeof(s));
-        double res = d + s;
-        u128 r = dst;
-        std::memcpy(&r, &res, sizeof(res));
-        return r;
-    }
+    u128 CpuImpl::addss(u128 dst, u128 src, SIMD_ROUNDING) { return scalarOp<float>(dst, src, [](auto d, auto s) { return d + s; }); }
+    u128 CpuImpl::addsd(u128 dst, u128 src, SIMD_ROUNDING) { return scalarOp<double>(dst, src, [](auto d, auto s) { return d + s; }); }
 
-    u128 CpuImpl::subss(u128 dst, u128 src, SIMD_ROUNDING) {
-        static_assert(sizeof(u32) == sizeof(float));
-        float d;
-        float s;
-        std::memcpy(&d, &dst, sizeof(d));
-        std::memcpy(&s, &src, sizeof(s));
-        float res = d - s;
-        u128 r = dst;
-        std::memcpy(&r, &res, sizeof(res));
-        return r;
-    }
+    u128 CpuImpl::subss(u128 dst, u128 src, SIMD_ROUNDING) { return scalarOp<float>(dst, src, [](auto d, auto s) { return d - s; }); }
+    u128 CpuImpl::subsd(u128 dst, u128 src, SIMD_ROUNDING) { return scalarOp<double>(dst, src, [](auto d, auto s) { return d - s; }); }
 
-    u128 CpuImpl::subsd(u128 dst, u128 src, SIMD_ROUNDING) {
-        static_assert(sizeof(u64) == sizeof(double));
-        double d;
-        double s;
-        std::memcpy(&d, &dst, sizeof(d));
-        std::memcpy(&s, &src, sizeof(s));
-        double res = d - s;
-        u128 r = dst;
-        std::memcpy(&r, &res, sizeof(res));
-        return r;
-    }
+    u128 CpuImpl::mulss(u128 dst, u128 src, SIMD_ROUNDING) { return scalarOp<float>(dst, src, [](auto d, auto s) { return d * s; }); }
+    u128 CpuImpl::mulsd(u128 dst, u128 src, SIMD_ROUNDING) { return scalarOp<double>(dst, src, [](auto d, auto s) { return d * s; }); }
+
+    u128 CpuImpl::divss(u128 dst, u128 src, SIMD_ROUNDING) { return scalarOp<float>(dst, src, [](auto d, auto s) { return d / s; }); }
+    u128 CpuImpl::divsd(u128 dst, u128 src, SIMD_ROUNDING) { return scalarOp<double>(dst, src, [](auto d, auto s) { return d / s; }); }
 
     void CpuImpl::comiss(u128 dst, u128 src, Flags* flags, SIMD_ROUNDING) {
         static_assert(sizeof(u32) == sizeof(float));
@@ -794,52 +798,6 @@ namespace x64 {
         flags->sign = false;
         flags->setSure();
         flags->setSureParity();
-    }
-
-    u128 CpuImpl::mulss(u128 dst, u128 src, SIMD_ROUNDING) {
-        static_assert(sizeof(u64) == sizeof(double));
-        float d;
-        float s;
-        std::memcpy(&d, &dst, sizeof(d));
-        std::memcpy(&s, &src, sizeof(s));
-        float res = d * s;
-        u128 r = dst;
-        std::memcpy(&r, &res, sizeof(res));
-        return r;
-    }
-
-    u128 CpuImpl::mulsd(u128 dst, u128 src, SIMD_ROUNDING) {
-        static_assert(sizeof(u64) == sizeof(double));
-        double d;
-        double s;
-        std::memcpy(&d, &dst, sizeof(d));
-        std::memcpy(&s, &src, sizeof(s));
-        double res = d * s;
-        u128 r = dst;
-        std::memcpy(&r, &res, sizeof(res));
-        return r;
-    }
-
-    u128 CpuImpl::divss(u128 dst, u128 src, SIMD_ROUNDING) {
-        static_assert(sizeof(u32) == sizeof(float));
-        float d;
-        float s;
-        std::memcpy(&d, &dst, sizeof(d));
-        std::memcpy(&s, &src, sizeof(s));
-        float res = d / s;
-        std::memcpy(&dst, &res, sizeof(res));
-        return dst;
-    }
-
-    u128 CpuImpl::divsd(u128 dst, u128 src, SIMD_ROUNDING) {
-        static_assert(sizeof(u64) == sizeof(double));
-        double d;
-        double s;
-        std::memcpy(&d, &dst, sizeof(d));
-        std::memcpy(&s, &src, sizeof(s));
-        double res = d / s;
-        std::memcpy(&dst, &res, sizeof(res));
-        return dst;
     }
 
     u128 CpuImpl::sqrtss(u128 dst, u128 src, SIMD_ROUNDING) {

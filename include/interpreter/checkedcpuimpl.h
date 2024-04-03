@@ -151,25 +151,37 @@ namespace x64 {
         [[nodiscard]] static u32 popcnt32(u32 src, Flags* flags);
         [[nodiscard]] static u64 popcnt64(u64 src, Flags* flags);
 
+        [[nodiscard]] static u128 addps(u128 dst, u128 src, SIMD_ROUNDING);
+        [[nodiscard]] static u128 addpd(u128 dst, u128 src, SIMD_ROUNDING);
+
         [[nodiscard]] static u128 addss(u128 dst, u128 src, SIMD_ROUNDING);
         [[nodiscard]] static u128 addsd(u128 dst, u128 src, SIMD_ROUNDING);
 
+        [[nodiscard]] static u128 subps(u128 dst, u128 src, SIMD_ROUNDING);
+        [[nodiscard]] static u128 subpd(u128 dst, u128 src, SIMD_ROUNDING);
+
         [[nodiscard]] static u128 subss(u128 dst, u128 src, SIMD_ROUNDING);
         [[nodiscard]] static u128 subsd(u128 dst, u128 src, SIMD_ROUNDING);
-
-        static void comiss(u128 dst, u128 src, Flags* flags, SIMD_ROUNDING);
-        static void comisd(u128 dst, u128 src, Flags* flags, SIMD_ROUNDING);
 
         [[nodiscard]] static u128 maxss(u128 dst, u128 src, SIMD_ROUNDING);
         [[nodiscard]] static u128 maxsd(u128 dst, u128 src, SIMD_ROUNDING);
         [[nodiscard]] static u128 minss(u128 dst, u128 src, SIMD_ROUNDING);
         [[nodiscard]] static u128 minsd(u128 dst, u128 src, SIMD_ROUNDING);
 
+        [[nodiscard]] static u128 mulps(u128 dst, u128 src, SIMD_ROUNDING);
+        [[nodiscard]] static u128 mulpd(u128 dst, u128 src, SIMD_ROUNDING);
+
         [[nodiscard]] static u128 mulss(u128 dst, u128 src, SIMD_ROUNDING);
         [[nodiscard]] static u128 mulsd(u128 dst, u128 src, SIMD_ROUNDING);
 
+        [[nodiscard]] static u128 divps(u128 dst, u128 src, SIMD_ROUNDING);
+        [[nodiscard]] static u128 divpd(u128 dst, u128 src, SIMD_ROUNDING);
+
         [[nodiscard]] static u128 divss(u128 dst, u128 src, SIMD_ROUNDING);
         [[nodiscard]] static u128 divsd(u128 dst, u128 src, SIMD_ROUNDING);
+
+        static void comiss(u128 dst, u128 src, Flags* flags, SIMD_ROUNDING);
+        static void comisd(u128 dst, u128 src, Flags* flags, SIMD_ROUNDING);
 
         [[nodiscard]] static u128 sqrtss(u128 dst, u128 src, SIMD_ROUNDING);
         [[nodiscard]] static u128 sqrtsd(u128 dst, u128 src, SIMD_ROUNDING);

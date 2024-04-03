@@ -570,6 +570,20 @@ namespace x64 {
     };
 
     template<typename Dst, typename Src>
+    struct Addps {
+        Dst dst;
+        Src src;
+        TAG_SSE;
+    };
+
+    template<typename Dst, typename Src>
+    struct Addpd {
+        Dst dst;
+        Src src;
+        TAG_SSE;
+    };
+
+    template<typename Dst, typename Src>
     struct Addss {
         Dst dst;
         Src src;
@@ -578,6 +592,20 @@ namespace x64 {
 
     template<typename Dst, typename Src>
     struct Addsd {
+        Dst dst;
+        Src src;
+        TAG_SSE;
+    };
+
+    template<typename Dst, typename Src>
+    struct Subps {
+        Dst dst;
+        Src src;
+        TAG_SSE;
+    };
+
+    template<typename Dst, typename Src>
+    struct Subpd {
         Dst dst;
         Src src;
         TAG_SSE;
@@ -598,6 +626,20 @@ namespace x64 {
     };
 
     template<typename Dst, typename Src>
+    struct Mulps {
+        Dst dst;
+        Src src;
+        TAG_SSE;
+    };
+
+    template<typename Dst, typename Src>
+    struct Mulpd {
+        Dst dst;
+        Src src;
+        TAG_SSE;
+    };
+
+    template<typename Dst, typename Src>
     struct Mulss {
         Dst dst;
         Src src;
@@ -606,6 +648,20 @@ namespace x64 {
 
     template<typename Dst, typename Src>
     struct Mulsd {
+        Dst dst;
+        Src src;
+        TAG_SSE;
+    };
+
+    template<typename Dst, typename Src>
+    struct Divps {
+        Dst dst;
+        Src src;
+        TAG_SSE;
+    };
+
+    template<typename Dst, typename Src>
+    struct Divpd {
         Dst dst;
         Src src;
         TAG_SSE;
