@@ -641,21 +641,36 @@ namespace x64 {
     }
 
     long Sys::futex(Ptr32 uaddr, int futex_op, uint32_t val, Ptr timeout, Ptr32 uaddr2, uint32_t val3) {
-        if(logSyscalls_) print("Sys::futex(uaddr={:#x}, op={}, val={}, timeout={:#x}, uaddr2={:#x}, val3={})\n", uaddr.address(), futex_op, val, timeout.address(), uaddr2.address(), val3);
-        if((futex_op & 0x7f) == 0) {
+        verify(!timeout, "futex with non-null timeout is not supported");
+        auto onExit = [&](long ret) -> long {
+            if(!logSyscalls_) return ret;
+            print("Sys::futex(uaddr={:#x}, op={}, val={}, timeout={:#x}, uaddr2={:#x}, val3={}) = {}\n",
+                              uaddr.address(), futex_op, val, timeout.address(), uaddr2.address(), val3, ret);
+            return ret;
+        };
+        int unmaskedOp = futex_op & 0x7f;
+        if(unmaskedOp == 0) {
             // wait
             u32 loaded = mmu_->read32(uaddr);
             if(loaded != val) return -EAGAIN;
             Thread* thread = scheduler_->currentThread();
             scheduler_->wait(thread, uaddr, val);
             thread->yield();
-            return 1;
+            return onExit(0);
         }
-        if((futex_op & 0x7f) == 1) {
+        if(unmaskedOp == 1) {
             // wake
             u32 nbWoken = scheduler_->wake(uaddr, val);
-            scheduler_->currentThread()->yield();
-            return nbWoken;
+            return onExit(nbWoken);
+        }
+        if(unmaskedOp == 9 && val3 == std::numeric_limits<uint32_t>::max()) {
+            // wait_bitset
+            u32 loaded = mmu_->read32(uaddr);
+            if(loaded != val) return -EAGAIN;
+            Thread* thread = scheduler_->currentThread();
+            scheduler_->wait(thread, uaddr, val);
+            thread->yield();
+            return onExit(0);
         }
         verify(false, [&]() {
             fmt::print("futex with op={} is not supported\n", futex_op);
