@@ -30,6 +30,7 @@ namespace x64 {
             threadQueue_.pop_front();
             threadQueue_.push_back(currentThread_);
         } while(currentThread_->state != Thread::STATE::ALIVE);
+        currentThread_->ticksUntilSwitch += 1'000'000;
         return currentThread_;
     }
 

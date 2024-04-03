@@ -9,6 +9,8 @@
 #include <string>
 #include <vector>
 
+class Host;
+
 namespace x64 {
 
     class Interpreter;
@@ -100,7 +102,7 @@ namespace x64 {
         void removeRegion(u64 regionBase, u64 regionEnd, u64 regionSize);
 
     public:
-        Mmu();
+        explicit Mmu(Host* host);
 
         u64 mmap(u64 address, u64 length, PROT prot, MAP flags, int fd, int offset);
         int munmap(u64 address, u64 length);
@@ -185,6 +187,7 @@ namespace x64 {
         u64 topOfMemoryPageAligned() const;
         u64 firstFitPageAligned(u64 length) const;
 
+        Host* host_;
         u64 topOfReserved_ = 0;
 
         std::deque<std::unique_ptr<Region>> regions_;

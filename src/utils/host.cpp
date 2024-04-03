@@ -30,21 +30,7 @@ Host::Host() {
     openFiles_[2] = "___stderr";
 }
 
-Host& Host::the() {
-    static Host instance;
-    return instance;
-}
-
-
-bool Host::isStdout(FD fd) {
-    auto it = the().openFiles_.find(fd.fd);
-    return it != the().openFiles_.end() && it->second == "___stdout";
-}
-
-bool Host::isStderr(FD fd) {
-    auto it = the().openFiles_.find(fd.fd);
-    return it != the().openFiles_.end() && it->second == "___stderr";
-}
+Host::~Host() = default;
 
 std::optional<std::string> Host::filename(FD fd) const {
     if(auto it = openFiles_.find(fd.fd); it != openFiles_.end()) {
@@ -187,14 +173,14 @@ ssize_t Host::pwrite64(FD fd, const u8* data, size_t count, off_t offset) {
 
 int Host::close(FD fd) {
     int ret = ::close(fd.fd);
-    if(ret >= 0) the().openFiles_.erase(fd.fd);
+    if(ret >= 0) openFiles_.erase(fd.fd);
     return ret;
 }
 
 Host::FD Host::dup(FD oldfd) {
     int newfd = ::dup(oldfd.fd);
     if(newfd < 0) return FD{-errno};
-    the().openFiles_[newfd] = the().openFiles_[oldfd.fd];
+    openFiles_[newfd] = openFiles_[oldfd.fd];
     return FD{newfd};
 }
 
@@ -270,7 +256,7 @@ Host::FD Host::openat(FD dirfd, const std::string& pathname, int flags, [[maybe_
     flags = (flags & ~(O_CREAT | O_EXCL | O_NOCTTY | O_TRUNC));
     int fd = ::openat(dirfd.fd, pathname.c_str(), flags);
     if(fd < 0) return FD{-errno};
-    the().openFiles_[fd] = pathname;
+    openFiles_[fd] = pathname;
     return FD{fd};
 }
 

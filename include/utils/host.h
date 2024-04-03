@@ -72,6 +72,9 @@ using ErrnoOrBuffer = ErrnoOr<Buffer>;
 
 class Host {
 public:
+    Host();
+    ~Host();
+
     // math
     static f80 round(f80);
 
@@ -124,8 +127,8 @@ public:
     static ErrnoOrBuffer pread64(FD, size_t count, off_t offset);
     static ssize_t write(FD, const u8* data, size_t count);
     static ssize_t pwrite64(FD, const u8* data, size_t count, off_t offset);
-    static int close(FD);
-    static FD dup(FD);
+    int close(FD);
+    FD dup(FD);
 
     static size_t iovecRequiredBufferSize();
     static size_t iovecLen(const Buffer& buffer, size_t i);
@@ -137,7 +140,7 @@ public:
     static ErrnoOrBuffer lstat(const std::string& path);
     static ErrnoOrBuffer fstatat64(FD dirfd, const std::string& path, int flags);
     static off_t lseek(FD fd, off_t offset, int whence);
-    static FD openat(FD dirfd, const std::string& pathname, int flags, mode_t mode);
+    FD openat(FD dirfd, const std::string& pathname, int flags, mode_t mode);
     static int access(const std::string& path, int mode);
 
     static ErrnoOrBuffer statfs(const std::string& path);
@@ -218,18 +221,11 @@ public:
     };
 
     static std::optional<AuxVal> getauxval(AUX_TYPE type);
-
-    // singleton
-    static Host& the();
     
     std::optional<std::string> filename(FD fd) const;
 
 private:
-    Host();
     std::unordered_map<int, std::string> openFiles_;
-
-    static bool isStdout(FD fd);
-    static bool isStderr(FD fd);
 };
 
 #endif

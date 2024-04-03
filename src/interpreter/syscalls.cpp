@@ -1,5 +1,4 @@
 #include "interpreter/syscalls.h"
-#include "interpreter/interpreter.h"
 #include "interpreter/scheduler.h"
 #include "interpreter/thread.h"
 #include "interpreter/cpu.h"
@@ -10,6 +9,14 @@
 #include <sys/socket.h>
 
 namespace x64 {
+
+
+    Sys::Sys(Host* host, Scheduler* scheduler, Mmu* mmu) :
+        host_(host),
+        scheduler_(scheduler),
+        mmu_(mmu) { 
+        verify(!!host_, "Must provide a host");
+    }
 
     template<typename... Args>
     void Sys::print(const char* format, Args... args) const {
@@ -123,7 +130,7 @@ namespace x64 {
     }
 
     ssize_t Sys::read(int fd, Ptr8 buf, size_t count) {
-        auto errnoOrBuffer = Host::read(Host::FD{fd}, count);
+        auto errnoOrBuffer = host_->read(Host::FD{fd}, count);
         if(logSyscalls_) {
             print("Sys::read(fd={}, buf={:#x}, count={}) = {}\n",
                         fd, buf.address(), count,
@@ -137,7 +144,7 @@ namespace x64 {
 
     ssize_t Sys::write(int fd, Ptr8 buf, size_t count) {
         std::vector<u8> buffer = mmu_->readFromMmu<u8>(buf, count);
-        ssize_t ret = Host::write(Host::FD{fd}, buffer.data(), buffer.size());
+        ssize_t ret = host_->write(Host::FD{fd}, buffer.data(), buffer.size());
         if(logSyscalls_) {
             print("Sys::write(fd={}, buf={:#x}, count={}) = {}\n",
                         fd, buf.address(), count, ret);
@@ -146,14 +153,14 @@ namespace x64 {
     }
 
     int Sys::close(int fd) {
-        int ret = Host::close(Host::FD{fd});
+        int ret = host_->close(Host::FD{fd});
         if(logSyscalls_) print("Sys::close(fd={}) = {}\n", fd, ret);
         return ret;
     }
 
     int Sys::stat(Ptr pathname, Ptr statbuf) {
         std::string path = mmu_->readString(pathname);
-        auto errnoOrBuffer = Host::stat(path);
+        auto errnoOrBuffer = host_->stat(path);
         if(logSyscalls_) {
             print("Sys::stat(path={}, statbuf={:#x}) = {}\n",
                         path, statbuf.address(), errnoOrBuffer.errorOr(0));
@@ -165,7 +172,7 @@ namespace x64 {
     }
 
     int Sys::fstat(int fd, Ptr8 statbuf) {
-        ErrnoOrBuffer errnoOrBuffer = Host::fstat(Host::FD{fd});
+        ErrnoOrBuffer errnoOrBuffer = host_->fstat(Host::FD{fd});
         if(logSyscalls_) {
             print("Sys::fstat(fd={}, statbuf={:#x}) = {}\n",
                         fd, statbuf.address(), errnoOrBuffer.errorOr(0));
@@ -178,7 +185,7 @@ namespace x64 {
 
     int Sys::lstat(Ptr pathname, Ptr statbuf) {
         std::string path = mmu_->readString(pathname);
-        ErrnoOrBuffer errnoOrBuffer = Host::lstat(path);
+        ErrnoOrBuffer errnoOrBuffer = host_->lstat(path);
         if(logSyscalls_) {
             print("Sys::lstat(path={}, statbuf={:#x}) = {}\n",
                         path, statbuf.address(), errnoOrBuffer.errorOr(0));
@@ -190,9 +197,9 @@ namespace x64 {
     }
 
     int Sys::poll(Ptr fds, size_t nfds, int timeout) {
-        std::vector<u8> pollfds = mmu_->readFromMmu<u8>(fds, Host::pollRequiredBufferSize(nfds));
+        std::vector<u8> pollfds = mmu_->readFromMmu<u8>(fds, host_->pollRequiredBufferSize(nfds));
         Buffer buffer(std::move(pollfds));
-        auto errnoOrBufferAndReturnValue = Host::poll(buffer, nfds, timeout);
+        auto errnoOrBufferAndReturnValue = host_->poll(buffer, nfds, timeout);
         if(logSyscalls_) {
             print("Sys::poll(fds={:#x}, nfds={}, timeout={}) = {}\n",
                                   fds.address(), nfds, timeout,
@@ -207,7 +214,7 @@ namespace x64 {
     }
 
     off_t Sys::lseek(int fd, off_t offset, int whence) {
-        off_t ret = Host::lseek(Host::FD{fd}, offset, whence);
+        off_t ret = host_->lseek(Host::FD{fd}, offset, whence);
         if(logSyscalls_) print("Sys::lseek(fd={}, offset={:#x}, whence={}) = {}\n", fd, offset, whence, ret);
         return ret;
     }
@@ -262,14 +269,14 @@ namespace x64 {
 
     int Sys::ioctl(int fd, unsigned long request, Ptr argp) {
         // We need to ask the host for the expected buffer size behind argp.
-        size_t bufferSize = Host::ioctlRequiredBufferSize(request);
+        size_t bufferSize = host_->ioctlRequiredBufferSize(request);
         std::vector<u8> buf(bufferSize, 0x0);
         Buffer buffer(std::move(buf));
         mmu_->copyFromMmu(buffer.data(), argp, buffer.size());
-        auto errnoOrBuffer = Host::ioctl(Host::FD{fd}, request, buffer);
+        auto errnoOrBuffer = host_->ioctl(Host::FD{fd}, request, buffer);
         if(logSyscalls_) {
             print("Sys::ioctl(fd={}, request={}, argp={:#x}) = {}\n",
-                        fd, Host::ioctlName(request), argp.address(),
+                        fd, host_->ioctlName(request), argp.address(),
                         errnoOrBuffer.errorOrWith<ssize_t>([](const auto& buf) { return (ssize_t)buf.size(); }));
         }
         return errnoOrBuffer.errorOrWith<int>([&](const auto& buffer) {
@@ -280,7 +287,7 @@ namespace x64 {
     }
 
     ssize_t Sys::pread64(int fd, Ptr buf, size_t count, off_t offset) {
-        auto errnoOrBuffer = Host::pread64(Host::FD{fd}, count, offset);
+        auto errnoOrBuffer = host_->pread64(Host::FD{fd}, count, offset);
         if(logSyscalls_) {
             print("Sys::pread64(fd={}, buf={:#x}, count={}, offset={}) = {}\n",
                         fd, buf.address(), count, offset,
@@ -294,7 +301,7 @@ namespace x64 {
 
     ssize_t Sys::pwrite64(int fd, Ptr buf, size_t count, off_t offset) {
         std::vector<u8> buffer = mmu_->readFromMmu<u8>(buf, count);
-        auto errnoOrNbytes = Host::pwrite64(Host::FD{fd}, buffer.data(), buffer.size(), offset);
+        auto errnoOrNbytes = host_->pwrite64(Host::FD{fd}, buffer.data(), buffer.size(), offset);
         if(logSyscalls_) {
             print("Sys::pwrite64(fd={}, buf={:#x}, count={}, offset={}) = {}\n",
                         fd, buf.address(), count, offset, errnoOrNbytes);
@@ -303,25 +310,25 @@ namespace x64 {
     }
 
     ssize_t Sys::writev(int fd, Ptr iov, int iovcnt) {
-        std::vector<u8> iovecs = mmu_->readFromMmu<u8>(iov, ((size_t)iovcnt) * Host::iovecRequiredBufferSize());
+        std::vector<u8> iovecs = mmu_->readFromMmu<u8>(iov, ((size_t)iovcnt) * host_->iovecRequiredBufferSize());
         Buffer iovecBuffer(std::move(iovecs));
         std::vector<Buffer> buffers;
         for(size_t i = 0; i < (size_t)iovcnt; ++i) {
             Ptr base{Host::iovecBase(iovecBuffer, i)};
-            size_t len = Host::iovecLen(iovecBuffer, i);
+            size_t len = host_->iovecLen(iovecBuffer, i);
             std::vector<u8> data;
             data.resize(len);
             mmu_->copyFromMmu(data.data(), base, len);
             buffers.push_back(Buffer(std::move(data)));
         }
-        ssize_t nbytes = Host::writev(Host::FD{fd}, buffers);
+        ssize_t nbytes = host_->writev(Host::FD{fd}, buffers);
         if(logSyscalls_) print("Sys::writev(fd={}, iov={:#x}, iovcnt={}) = {}\n", fd, iov.address(), iovcnt, nbytes);
         return nbytes;
     }
 
     int Sys::access(Ptr pathname, int mode) {
         std::string path = mmu_->readString(pathname);
-        int ret = Host::access(path, mode);
+        int ret = host_->access(path, mode);
         std::string info;
         if(ret < 0) {
             info = strerror(-ret);
@@ -331,7 +338,7 @@ namespace x64 {
     }
 
     int Sys::dup(int oldfd) {
-        Host::FD newfd = Host::dup(Host::FD{oldfd});
+        Host::FD newfd = host_->dup(Host::FD{oldfd});
         if(logSyscalls_) print("Sys::dup(oldfd={}) = {}\n", oldfd, newfd.fd);
         return newfd.fd;
     }
@@ -349,7 +356,7 @@ namespace x64 {
         if(!!writefds) mmu_->copyFromMmu((u8*)&wfds, writefds, sizeof(fd_set));
         if(!!exceptfds) mmu_->copyFromMmu((u8*)&efds, exceptfds, sizeof(fd_set));
         if(!!timeout) mmu_->copyFromMmu((u8*)&to, timeout, sizeof(timeval));
-        int ret = Host::select(nfds,
+        int ret = host_->select(nfds,
                                !!readfds ?   &rfds : nullptr,
                                !!writefds ?  &wfds : nullptr,
                                !!exceptfds ? &efds : nullptr,
@@ -375,7 +382,7 @@ namespace x64 {
     }
 
     int Sys::socket(int domain, int type, int protocol) {
-        Host::FD fd = Host::socket(domain, type, protocol);
+        Host::FD fd = host_->socket(domain, type, protocol);
         if(logSyscalls_) {
             print("Sys::socket(domain={}, type={}, protocol={}) = {}\n",
                                     domain, type, protocol, fd.fd);
@@ -386,7 +393,7 @@ namespace x64 {
     int Sys::connect(int sockfd, Ptr addr, size_t addrlen) {
         std::vector<u8> addrBuffer = mmu_->readFromMmu<u8>(addr, (size_t)addrlen);
         Buffer buf(std::move(addrBuffer));
-        int ret = Host::connect(sockfd, buf);
+        int ret = host_->connect(sockfd, buf);
         if(logSyscalls_) {
             print("Sys::connect(sockfd={}, addr={:#x}, addrlen={}) = {}\n",
                         sockfd, addr.address(), addrlen, ret);
@@ -396,7 +403,7 @@ namespace x64 {
 
     int Sys::getsockname(int sockfd, Ptr addr, Ptr32 addrlen) {
         u32 buffersize = mmu_->read32(addrlen);
-        ErrnoOrBuffer sockname = Host::getsockname(sockfd, buffersize);
+        ErrnoOrBuffer sockname = host_->getsockname(sockfd, buffersize);
         if(logSyscalls_) {
             print("Sys::getsockname(sockfd={}, addr={:#x}, addrlen={:#x}) = {}",
                         sockfd, addr.address(), addrlen.address(), sockname.errorOr(0));
@@ -414,7 +421,7 @@ namespace x64 {
 
     int Sys::getpeername(int sockfd, Ptr addr, Ptr32 addrlen) {
         u32 buffersize = mmu_->read32(addrlen);
-        ErrnoOrBuffer peername = Host::getpeername(sockfd, buffersize);
+        ErrnoOrBuffer peername = host_->getpeername(sockfd, buffersize);
         if(logSyscalls_) {
             print("Sys::getpeername(sockfd={}, addr={:#x}, addrlen={:#x}) = {}",
                         sockfd, addr.address(), addrlen.address(), peername.errorOr(0));
@@ -460,7 +467,7 @@ namespace x64 {
     }
 
     int Sys::uname(Ptr buf) {
-        ErrnoOrBuffer errnoOrBuffer = Host::uname();
+        ErrnoOrBuffer errnoOrBuffer = host_->uname();
         if(logSyscalls_) {
             print("Sys::uname(buf={:#x}) = {}\n",
                         buf.address(), errnoOrBuffer.errorOr(0));
@@ -472,8 +479,8 @@ namespace x64 {
     }
 
     int Sys::fcntl(int fd, int cmd, int arg) {
-        int ret = Host::fcntl(Host::FD{fd}, cmd, arg);
-        if(logSyscalls_) print("Sys::fcntl(fd={}, cmd={}, arg={}) = {}\n", fd, Host::fcntlName(cmd), arg, ret);
+        int ret = host_->fcntl(Host::FD{fd}, cmd, arg);
+        if(logSyscalls_) print("Sys::fcntl(fd={}, cmd={}, arg={}) = {}\n", fd, host_->fcntlName(cmd), arg, ret);
         return ret;
     }
 
@@ -483,7 +490,7 @@ namespace x64 {
     }
 
     Ptr Sys::getcwd(Ptr buf, size_t size) {
-        ErrnoOrBuffer errnoOrBuffer = Host::getcwd(size);
+        ErrnoOrBuffer errnoOrBuffer = host_->getcwd(size);
         if(logSyscalls_) {
             print("Sys::getcwd(buf={:#x}, size={}) = {:#x}\n",
                         buf.address(), size, errnoOrBuffer.isError() ? 0 : buf.address());
@@ -497,7 +504,7 @@ namespace x64 {
 
     int Sys::chdir(Ptr pathname) {
         auto path = mmu_->readString(pathname);
-        int ret = Host::chdir(path);
+        int ret = host_->chdir(path);
         if(logSyscalls_) {
             print("Sys::chdir(path={}) = {}\n", path, ret);
         }
@@ -522,7 +529,7 @@ namespace x64 {
 
     ssize_t Sys::readlink(Ptr pathname, Ptr buf, size_t bufsiz) {
         std::string path = mmu_->readString(pathname);
-        auto errnoOrBuffer = Host::readlink(path, bufsiz);
+        auto errnoOrBuffer = host_->readlink(path, bufsiz);
         if(logSyscalls_) {
             print("Sys::readlink(path={}, buf={:#x}, size={}) = {:#x}\n",
                         path, buf.address(), bufsiz, errnoOrBuffer.errorOrWith<ssize_t>([](const auto& buffer) { return (ssize_t)buffer.size(); }));
@@ -534,7 +541,7 @@ namespace x64 {
     }
 
     int Sys::gettimeofday(Ptr tv, Ptr tz) {
-        auto errnoOrBuffers = Host::gettimeofday();
+        auto errnoOrBuffers = host_->gettimeofday();
         if(logSyscalls_) {
             print("Sys::gettimeofday(tv={:#x}, tz={:#x}) = {:#x}\n",
                         tv.address(), tz.address(), errnoOrBuffers.errorOr(0));
@@ -547,7 +554,7 @@ namespace x64 {
     }
 
     int Sys::sysinfo(Ptr info) {
-        auto errnoOrBuffer = Host::sysinfo();
+        auto errnoOrBuffer = host_->sysinfo();
         if(logSyscalls_) {
             print("Sys::sysinfo(info={:#x}) = {}\n",
                         info.address(), errnoOrBuffer.errorOr(0));
@@ -559,28 +566,28 @@ namespace x64 {
     }
 
     int Sys::getuid() {
-        return Host::getuid();
+        return host_->getuid();
     }
 
     int Sys::getgid() {
-        return Host::getgid();
+        return host_->getgid();
     }
 
     int Sys::geteuid() {
-        return Host::geteuid();
+        return host_->geteuid();
     }
 
     int Sys::getegid() {
-        return Host::getegid();
+        return host_->getegid();
     }
 
     int Sys::getpgrp() {
-        return Host::getpgrp();
+        return host_->getpgrp();
     }
 
     int Sys::statfs(Ptr pathname, Ptr buf) {
         std::string path = mmu_->readString(pathname);
-        auto errnoOrBuffer = Host::statfs(path);
+        auto errnoOrBuffer = host_->statfs(path);
         return errnoOrBuffer.errorOrWith<int>([&](const auto& buffer) {
             mmu_->copyToMmu(buf, buffer.data(), buffer.size());
             return 0;
@@ -602,7 +609,7 @@ namespace x64 {
     ssize_t Sys::getxattr(Ptr path, Ptr name, Ptr value, size_t size) {
         auto spath = mmu_->readString(path);
         auto sname = mmu_->readString(name);
-        auto errnoOrBuffer = Host::getxattr(spath, sname, size);
+        auto errnoOrBuffer = host_->getxattr(spath, sname, size);
         if(logSyscalls_) {
             print("Sys::getxaddr(path={}, name={}, value={:#x}, size={}) = {}\n",
                                       spath, sname, value.address(), size, errnoOrBuffer.errorOrWith<ssize_t>([](const auto& buffer) {
@@ -618,7 +625,7 @@ namespace x64 {
     ssize_t Sys::lgetxattr(Ptr path, Ptr name, Ptr value, size_t size) {
         auto spath = mmu_->readString(path);
         auto sname = mmu_->readString(name);
-        auto errnoOrBuffer = Host::lgetxattr(spath, sname, size);
+        auto errnoOrBuffer = host_->lgetxattr(spath, sname, size);
         if(logSyscalls_) {
             print("Sys::getxaddr(path={}, name={}, value={:#x}, size={}) = {}\n",
                                       spath, sname, value.address(), size, errnoOrBuffer.errorOrWith<ssize_t>([](const auto& buffer) {
@@ -632,7 +639,7 @@ namespace x64 {
     }
 
     time_t Sys::time(Ptr tloc) {
-        time_t t = Host::time();
+        time_t t = host_->time();
         if(logSyscalls_) print("Sys::time({:#x}) = {}\n", tloc.address(), t);
         if(tloc.address()) mmu_->copyToMmu(tloc, (const u8*)&t, sizeof(t));
         return t;
@@ -682,7 +689,7 @@ namespace x64 {
 
     ssize_t Sys::recvfrom(int sockfd, Ptr buf, size_t len, int flags, Ptr src_addr, Ptr32 addrlen) {
         bool requireSrcAddress = !!src_addr && !!addrlen;
-        ErrnoOr<std::pair<Buffer, Buffer>> ret = Host::recvfrom(Host::FD{sockfd}, len, flags, requireSrcAddress);
+        ErrnoOr<std::pair<Buffer, Buffer>> ret = host_->recvfrom(Host::FD{sockfd}, len, flags, requireSrcAddress);
         if(logSyscalls_) {
             print("Sys::recvfrom(sockfd={}, buf={:#x}, len={}, flags={}, src_addr={:#x}, addrlen={:#x}) = {}",
                                       sockfd, buf.address(), len, flags, src_addr.address(), addrlen.address(),
@@ -729,7 +736,7 @@ namespace x64 {
         }
 
         int msg_flags = 0;
-        ssize_t nbytes = Host::sendmsg(Host::FD{sockfd}, flags, msg_name, msg_iov, msg_control, msg_flags);
+        ssize_t nbytes = host_->sendmsg(Host::FD{sockfd}, flags, msg_name, msg_iov, msg_control, msg_flags);
         if(logSyscalls_) {
             print("Sys::sendmsg(sockfd={}, msg={:#x}, flags={}) = {}\n",
                         sockfd, msg.address(), flags, nbytes);
@@ -762,7 +769,7 @@ namespace x64 {
         }
 
         int msg_flags = 0;
-        ssize_t nbytes = Host::recvmsg(Host::FD{sockfd}, flags, &msg_name, &msg_iov, &msg_control, &msg_flags);
+        ssize_t nbytes = host_->recvmsg(Host::FD{sockfd}, flags, &msg_name, &msg_iov, &msg_control, &msg_flags);
         if(logSyscalls_) {
             print("Sys::recvmsg(sockfd={}, msg={:#x}, flags={}) = {}\n",
                         sockfd, msg.address(), flags, nbytes);
@@ -779,7 +786,7 @@ namespace x64 {
 
     int Sys::bind(int sockfd, Ptr addr, socklen_t addrlen) {
         Buffer saddr(mmu_->readFromMmu<u8>(addr, addrlen));
-        int rc = Host::bind(Host::FD{sockfd}, saddr);
+        int rc = host_->bind(Host::FD{sockfd}, saddr);
         if(logSyscalls_) {
             print("Sys::bind(sockfd={}, addr={:#x}, addrlen={}) = {}\n",
                         sockfd, addr.address(), addrlen, rc);
@@ -788,7 +795,7 @@ namespace x64 {
     }
 
     ssize_t Sys::getdents64(int fd, Ptr dirp, size_t count) {
-        auto errnoOrBuffer = Host::getdents64(Host::FD{fd}, count);
+        auto errnoOrBuffer = host_->getdents64(Host::FD{fd}, count);
         if(logSyscalls_) {
             print("Sys::getdents64(fd={}, dirp={:#x}, count={}) = {}\n",
                         fd, dirp.address(), count, errnoOrBuffer.errorOrWith<ssize_t>([&](const auto& buffer) { return (ssize_t)buffer.size(); }));
@@ -809,7 +816,7 @@ namespace x64 {
     }
 
     int Sys::clock_gettime(clockid_t clockid, Ptr tp) {
-        auto errnoOrBuffer = Host::clock_gettime(clockid);
+        auto errnoOrBuffer = host_->clock_gettime(clockid);
         if(logSyscalls_) {
             print("Sys::clock_gettime({}, {:#x}) = {}\n",
                         clockid, tp.address(), errnoOrBuffer.errorOr(0));
@@ -837,14 +844,14 @@ namespace x64 {
 
     int Sys::openat(int dirfd, Ptr pathname, int flags, mode_t mode) {
         std::string path = mmu_->readString(pathname);
-        Host::FD fd = Host::openat(Host::FD{dirfd}, path, flags, mode);
+        Host::FD fd = host_->openat(Host::FD{dirfd}, path, flags, mode);
         if(logSyscalls_) print("Sys::openat(dirfd={}, path={}, flags={}, mode={}) = {}\n", dirfd, path, flags, mode, fd.fd);
         return fd.fd;
     }
 
     int Sys::fstatat64(int dirfd, Ptr pathname, Ptr statbuf, int flags) {
         std::string path = mmu_->readString(pathname);
-        auto errnoOrBuffer = Host::fstatat64(Host::FD{dirfd}, path, flags);
+        auto errnoOrBuffer = host_->fstatat64(Host::FD{dirfd}, path, flags);
         if(logSyscalls_) {
             print("Sys::fstatat64(dirfd={}, path={}, statbuf={:#x}, flags={}) = {}\n",
                         dirfd, path, statbuf.address(), flags, errnoOrBuffer.errorOr(0));
@@ -866,7 +873,7 @@ namespace x64 {
         if(timeout.address() != 0) mmu_->copyFromMmu((u8*)&ts, timeout, sizeof(timespec));
         sigset_t smask;
         if(sigmask.address() != 0) mmu_->copyFromMmu((u8*)&smask, sigmask, sizeof(sigset_t));
-        int ret = Host::pselect6(nfds,
+        int ret = host_->pselect6(nfds,
                                readfds.address() != 0 ?   &rfds : nullptr,
                                writefds.address() != 0 ?  &wfds : nullptr,
                                exceptfds.address() != 0 ? &efds : nullptr,
@@ -907,7 +914,7 @@ namespace x64 {
     }
 
     int Sys::eventfd2(unsigned int initval, int flags) {
-        Host::FD fd = Host::eventfd2(initval, flags);
+        Host::FD fd = host_->eventfd2(initval, flags);
         if(logSyscalls_) {
             print("Sys::eventfd2(initval={}, flags={}) = {}\n", initval, flags, fd.fd);
         }
@@ -915,7 +922,7 @@ namespace x64 {
     }
 
     int Sys::epoll_create1(int flags) {
-        Host::FD fd = Host::epoll_create1(flags);
+        Host::FD fd = host_->epoll_create1(flags);
         if(logSyscalls_) {
             print("Sys::epoll_create1(flags={}) = {}\n", flags, fd.fd);
         }
@@ -929,7 +936,7 @@ namespace x64 {
             if(logSyscalls_) print(" = 0\n");
             return 0;
         }
-        auto errnoOrBuffer = Host::getrlimit(pid, resource);
+        auto errnoOrBuffer = host_->getrlimit(pid, resource);
         if(logSyscalls_) print(" = {}\n", errnoOrBuffer.errorOr(0));
         return errnoOrBuffer.errorOrWith<int>([&](const auto& buffer) {
             mmu_->copyToMmu(old_limit, buffer.data(), buffer.size());
@@ -954,7 +961,7 @@ namespace x64 {
 
     int Sys::statx(int dirfd, Ptr pathname, int flags, unsigned int mask, Ptr statxbuf) {
         std::string path = mmu_->readString(pathname);
-        auto errnoOrBuffer = Host::statx(Host::FD{dirfd}, path, flags, mask);
+        auto errnoOrBuffer = host_->statx(Host::FD{dirfd}, path, flags, mask);
         if(logSyscalls_) {
             print("Sys::statx(dirfd={}, path={}, flags={}, mask={}, statxbuf={:#x}) = {}\n",
                         dirfd, path, flags, mask, statxbuf.address(), errnoOrBuffer.errorOr(0));

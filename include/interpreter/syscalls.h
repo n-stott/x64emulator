@@ -10,19 +10,17 @@
 #include <unistd.h>
 #include <sys/types.h>
 
+class Host;
+
 namespace x64 {
 
     class Cpu;
     class Mmu;
-    class Interpreter;
     class Scheduler;
 
     class Sys {
     public:
-        Sys(Interpreter* interpreter, Scheduler* scheduler, Mmu* mmu) :
-            interpreter_(interpreter),
-            scheduler_(scheduler),
-            mmu_(mmu) { }
+        Sys(Host* host, Scheduler* scheduler, Mmu* mmu);
 
         void setLogSyscalls(bool logSyscalls) { logSyscalls_ = logSyscalls; }
 
@@ -276,7 +274,7 @@ namespace x64 {
         template<typename... Args>
         void print(const char* format, Args... args) const;
 
-        Interpreter* interpreter_;
+        Host* host_;
         Scheduler* scheduler_;
         Mmu* mmu_;
         bool logSyscalls_ { false };

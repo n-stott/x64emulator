@@ -39,7 +39,7 @@ std::vector<char> string {{
 
 int main() {
     using namespace x64;
-    Mmu mmu;
+    Mmu mmu(nullptr);
 
     u64 length = 0;
 
