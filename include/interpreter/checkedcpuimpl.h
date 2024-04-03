@@ -182,6 +182,7 @@ namespace x64 {
         [[nodiscard]] static u128 cvtsi2sd64(u128 dst, u64 src);
 
         [[nodiscard]] static u128 cvtss2sd(u128 dst, u128 src);
+        [[nodiscard]] static u128 cvtsd2ss(u128 dst, u128 src);
 
         [[nodiscard]] static u32 cvttss2si32(u128 src);
         [[nodiscard]] static u64 cvttss2si64(u128 src);
@@ -256,6 +257,9 @@ namespace x64 {
         [[nodiscard]] static u128 unpckhpd(u128 dst, u128 src);
         [[nodiscard]] static u128 unpcklps(u128 dst, u128 src);
         [[nodiscard]] static u128 unpcklpd(u128 dst, u128 src);
+
+        [[nodiscard]] static u32 movmskpd32(u128 src);
+        [[nodiscard]] static u64 movmskpd64(u128 src);
 
         [[nodiscard]] static f80 fadd(f80 dst, f80 src, X87Fpu* fpu);
         [[nodiscard]] static f80 fsub(f80 dst, f80 src, X87Fpu* fpu);

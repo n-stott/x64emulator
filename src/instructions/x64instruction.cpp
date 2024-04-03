@@ -673,6 +673,8 @@ namespace utils {
             case Insn::CVTSI2SD_RSSE_RM64: return toString<RSSE, RM64>("cvtsi2sd");
             case Insn::CVTSS2SD_RSSE_RSSE: return toString<RSSE, RSSE>("cvtss2sd");
             case Insn::CVTSS2SD_RSSE_M32: return toString<RSSE, M32>("cvtss2sd");
+            case Insn::CVTSD2SS_RSSE_RSSE: return toString<RSSE, RSSE>("cvtsd2ss");
+            case Insn::CVTSD2SS_RSSE_M64: return toString<RSSE, M64>("cvtsd2ss");
             case Insn::CVTTSS2SI_R32_RSSE: return toString<R32, RSSE>("cvttss2si");
             case Insn::CVTTSS2SI_R32_M32: return toString<R32, M32>("cvttss2si");
             case Insn::CVTTSS2SI_R64_RSSE: return toString<R64, RSSE>("cvttss2si");
@@ -748,6 +750,8 @@ namespace utils {
             case Insn::UNPCKHPD_RSSE_RMSSE: return toString<RSSE, RMSSE>("unpckhpd");
             case Insn::UNPCKLPS_RSSE_RMSSE: return toString<RSSE, RMSSE>("unpcklps");
             case Insn::UNPCKLPD_RSSE_RMSSE: return toString<RSSE, RMSSE>("unpcklpd");
+            case Insn::MOVMSKPD_R32_RSSE: return toString<R32, RSSE>("movmskpd");
+            case Insn::MOVMSKPD_R64_RSSE: return toString<R64, RSSE>("movmskpd");
             case Insn::RDTSC: return toString("rdtsc");
             case Insn::CPUID: return toString("cpuid");
             case Insn::XGETBV: return toString("xgetbv");

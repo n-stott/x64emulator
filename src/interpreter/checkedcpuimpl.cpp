@@ -1468,6 +1468,22 @@ namespace x64 {
 #endif
     }
 
+    u128 CheckedCpuImpl::cvtsd2ss(u128 dst, u128 src) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::cvtsd2ss(dst, src);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("cvtsd2ss %1, %0" : "+x"(nativeRes) : "x"(src));
+        assert(nativeRes.hi == virtualRes.hi);
+        assert(nativeRes.lo == virtualRes.lo);
+        
+        return nativeRes;
+#else
+        return CpuImpl::cvtsd2ss(dst, src);
+#endif
+    }
+
     u32 CheckedCpuImpl::cvttss2si32(u128 src) {
 #if GCC_COMPILER
         u32 virtualRes = CpuImpl::cvttss2si32(src);
@@ -2207,6 +2223,36 @@ namespace x64 {
         return nativeRes;
 #else
         return CpuImpl::unpcklpd(dst, src);
+#endif
+    }
+
+    u32 CheckedCpuImpl::movmskpd32(u128 src) {
+#if GCC_COMPILER
+        u32 virtualRes = CpuImpl::movmskpd32(src);
+        (void)virtualRes;
+
+        u32 nativeRes = 0;
+        asm volatile("movmskpd %1, %0" : "+r"(nativeRes) : "x"(src));
+        assert(nativeRes == virtualRes);
+        
+        return nativeRes;
+#else
+        return CpuImpl::movmskpd32(dst, src);
+#endif
+    }
+
+    u64 CheckedCpuImpl::movmskpd64(u128 src) {
+#if GCC_COMPILER
+        u64 virtualRes = CpuImpl::movmskpd64(src);
+        (void)virtualRes;
+
+        u64 nativeRes = 0;
+        asm volatile("movmskpd %1, %0" : "+r"(nativeRes) : "x"(src));
+        assert(nativeRes == virtualRes);
+        
+        return nativeRes;
+#else
+        return CpuImpl::movmskpd64(dst, src);
 #endif
     }
 }

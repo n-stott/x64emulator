@@ -981,6 +981,15 @@ namespace x64 {
         return r;
     }
 
+    u128 CpuImpl::cvtsd2ss(u128 dst, u128 src) {
+        double tmp;
+        std::memcpy(&tmp, &src, sizeof(tmp));
+        float res = (float)tmp;
+        u128 r = dst;
+        std::memcpy(&r, &res, sizeof(res));
+        return r;
+    }
+
     u32 CpuImpl::cvttss2si32(u128 src) {
         float f;
         std::memcpy(&f, &src, sizeof(f));
@@ -1591,5 +1600,18 @@ namespace x64 {
         return unpack<f64, true>(dst, src);
     }
 
+    u32 CpuImpl::movmskpd32(u128 src) {
+        u32 res = 0;
+        res |= (u32)((src.lo >> 63) & 0x1);
+        res |= (u32)(((src.hi >> 63) & 0x1) << 1);
+        return res;
+    }
+
+    u64 CpuImpl::movmskpd64(u128 src) {
+        u64 res = 0;
+        res |= (u64)((src.lo >> 63) & 0x1);
+        res |= (u64)(((src.hi >> 63) & 0x1) << 1);
+        return res;
+    }
 
 }

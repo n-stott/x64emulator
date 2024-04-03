@@ -725,6 +725,13 @@ namespace x64 {
     };
 
     template<typename Dst, typename Src>
+    struct Cvtsd2ss {
+        Dst dst;
+        Src src;
+        TAG_SSE;
+    };
+
+    template<typename Dst, typename Src>
     struct Cvttss2si {
         Dst dst;
         Src src;
@@ -1182,6 +1189,12 @@ namespace x64 {
 
     template<typename Dst, typename Src>
     struct Unpcklpd {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
+    struct Movmskpd {
         Dst dst;
         Src src;
     };

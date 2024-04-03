@@ -181,6 +181,7 @@ namespace x64 {
         static X64Instruction makeCvtsi2ss(const cs_insn& insn);
         static X64Instruction makeCvtsi2sd(const cs_insn& insn);
         static X64Instruction makeCvtss2sd(const cs_insn& insn);
+        static X64Instruction makeCvtsd2ss(const cs_insn& insn);
         static X64Instruction makeCvttss2si(const cs_insn& insn);
         static X64Instruction makeCvttsd2si(const cs_insn& insn);
         static X64Instruction makeCvtdq2pd(const cs_insn& insn);
@@ -254,6 +255,8 @@ namespace x64 {
         static X64Instruction makeUnpckhpd(const cs_insn& insn);
         static X64Instruction makeUnpcklps(const cs_insn& insn);
         static X64Instruction makeUnpcklpd(const cs_insn& insn);
+
+        static X64Instruction makeMovmskpd(const cs_insn& insn);
 
         static X64Instruction makePcmpistri(const cs_insn& insn);
 

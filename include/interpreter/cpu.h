@@ -592,6 +592,9 @@ namespace x64 {
         void exec(const Cvtss2sd<RSSE, RSSE>&);
         void exec(const Cvtss2sd<RSSE, M32>&);
 
+        void exec(const Cvtsd2ss<RSSE, RSSE>&);
+        void exec(const Cvtsd2ss<RSSE, M64>&);
+
         void exec(const Cvttss2si<R32, RSSE>&);
         void exec(const Cvttss2si<R32, M32>&);
         void exec(const Cvttss2si<R64, RSSE>&);
@@ -688,6 +691,9 @@ namespace x64 {
         void exec(const Unpckhpd<RSSE, RMSSE>&);
         void exec(const Unpcklps<RSSE, RMSSE>&);
         void exec(const Unpcklpd<RSSE, RMSSE>&);
+
+        void exec(const Movmskpd<R32, RSSE>&);
+        void exec(const Movmskpd<R64, RSSE>&);
         
         void exec(const Rdtsc&);
 
