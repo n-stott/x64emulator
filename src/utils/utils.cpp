@@ -70,7 +70,7 @@ i64 F80::castToI64(F80 val) {
 // It rounds away from 0 for midpoints, instead of towards even.
 // We let the host do this work instead.
 F80 F80::roundNearest(F80 val) {
-    return Host::round(val);
+    return x64::Host::round(val);
 }
 
 F80 F80::roundDown(F80 val) {

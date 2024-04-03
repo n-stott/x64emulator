@@ -10,11 +10,10 @@
 #include <unistd.h>
 #include <sys/types.h>
 
-class Host;
-
 namespace x64 {
 
     class Cpu;
+    class Host;
     class Mmu;
     class Scheduler;
 

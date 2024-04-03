@@ -9,11 +9,9 @@
 #include <string>
 #include <vector>
 
-class Host;
-
 namespace x64 {
 
-    class Interpreter;
+    class Host;
 
     enum class PROT {
         NONE = 0,
