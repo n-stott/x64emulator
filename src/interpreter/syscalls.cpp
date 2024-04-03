@@ -433,11 +433,12 @@ namespace x64 {
     long Sys::clone(unsigned long flags, Ptr stack, Ptr parent_tid, Ptr32 child_tid, unsigned long tls) {
         Thread* currentThread = scheduler_->currentThread();
         Thread* newThread = scheduler_->createThread(currentThread->descr.pid);
+        newThread->data.regs = currentThread->data.regs;
         newThread->data.regs.rip() = currentThread->data.regs.rip();
         newThread->data.regs.set(R64::RAX, 0);
         newThread->data.regs.rsp() = stack.address();
         newThread->clear_child_tid = child_tid;
-        long ret = currentThread->descr.tid+1;
+        long ret = newThread->descr.tid;
         if(!!child_tid) {
             static_assert(sizeof(pid_t) == sizeof(u32));
             mmu_->write32(child_tid, (u32)ret);
@@ -967,11 +968,48 @@ namespace x64 {
     }
 
     int Sys::clone3(Ptr uargs, size_t size) {
-        if(logSyscalls_) {
-            print("Sys::clone3(uargs={:#x}, size={}) = -ENOTSUP\n",
-                        uargs.address(), size);
+        // struct clone_args {
+        //     u64 flags;        /* Flags bit mask */
+        //     u64 pidfd;        /* Where to store PID file descriptor
+        //                         (int *) */
+        //     u64 child_tid;    /* Where to store child TID,
+        //                         in child's memory (pid_t *) */
+        //     u64 parent_tid;   /* Where to store child TID,
+        //                         in parent's memory (pid_t *) */
+        //     u64 exit_signal;  /* Signal to deliver to parent on
+        //                         child termination */
+        //     u64 stack;        /* Pointer to lowest byte of stack */
+        //     u64 stack_size;   /* Size of stack */
+        //     u64 tls;          /* Location of new TLS */
+        //     u64 set_tid;      /* Pointer to a pid_t array
+        //                         (since Linux 5.5) */
+        //     u64 set_tid_size; /* Number of elements in set_tid
+        //                         (since Linux 5.5) */
+        //     u64 cgroup;       /* File descriptor for target cgroup
+        //                         of child (since Linux 5.7) */
+        // };
+        std::vector<u64> args = mmu_->readFromMmu<u64>(uargs, size / sizeof(u64));
+        verify(args.size() >= 7);
+        Ptr32 child_tid { args[2] };
+        u64 stackAddress = args[5] + args[6];
+
+        Thread* currentThread = scheduler_->currentThread();
+        Thread* newThread = scheduler_->createThread(currentThread->descr.pid);
+        newThread->data.regs = currentThread->data.regs;
+        newThread->data.regs.rip() = currentThread->data.regs.rip();
+        newThread->data.regs.set(R64::RAX, 0);
+        newThread->data.regs.rsp() = stackAddress;
+        newThread->clear_child_tid = child_tid;
+        long ret = newThread->descr.tid;
+        if(!!child_tid) {
+            static_assert(sizeof(pid_t) == sizeof(u32));
+            mmu_->write32(child_tid, (u32)ret);
         }
-        return -ENOTSUP;
+        if(logSyscalls_) {
+            print("Sys::clone3(uargs={:#x}, size={}) = {}\n",
+                        uargs.address(), size, ret);
+        }
+        return (int)ret;
     }
 
 }
