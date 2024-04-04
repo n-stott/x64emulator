@@ -5,7 +5,7 @@
 #include "interpreter/syscalls.h"
 #include "interpreter/verify.h"
 #include "interpreter/vm.h"
-#include "utils/host.h"
+#include "host/host.h"
 #include <fmt/core.h>
 #include <cassert>
 

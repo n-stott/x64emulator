@@ -4,7 +4,7 @@
 #include "interpreter/cpu.h"
 #include "interpreter/mmu.h"
 #include "interpreter/verify.h"
-#include "utils/host.h"
+#include "host/host.h"
 #include <numeric>
 #include <sys/socket.h>
 

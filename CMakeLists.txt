@@ -30,7 +30,7 @@ add_library(x64 STATIC
     src/interpreter/cpuimpl.cpp
     src/interpreter/simd.cpp
     src/interpreter/x87.cpp
-    src/utils/host.cpp
+    src/host/host.cpp
     src/utils/utils.cpp
 )
 target_compile_options(x64 PUBLIC -Wall -Wextra -Wpedantic -pedantic -Wconversion -Werror -Wimplicit-fallthrough)
@@ -60,7 +60,7 @@ add_library(emulator STATIC
     src/interpreter/x87.cpp
     src/interpreter/syscalls.cpp
     src/instructions/x64instruction.cpp
-    src/utils/host.cpp
+    src/host/host.cpp
     src/utils/utils.cpp
 )
 target_compile_options(emulator PUBLIC -Wall -Wextra -Wpedantic -pedantic -Wconversion -Werror -Wimplicit-fallthrough)

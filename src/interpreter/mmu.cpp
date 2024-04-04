@@ -1,6 +1,6 @@
 #include "interpreter/mmu.h"
 #include "interpreter/verify.h"
-#include "utils/host.h"
+#include "host/host.h"
 #include <cassert>
 #include <cstring>
 

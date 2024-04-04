@@ -3,7 +3,7 @@
 #include "interpreter/syscalls.h"
 #include "interpreter/verify.h"
 #include "interpreter/auxiliaryvector.h"
-#include "utils/host.h"
+#include "host/host.h"
 #include "disassembler/capstonewrapper.h"
 #include "elf-reader/elf-reader.h"
 #include <fmt/core.h>
