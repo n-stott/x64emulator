@@ -31,7 +31,7 @@ namespace x64 {
             for(const auto& t : threads_) {
                 fmt::print("  {}\n", t->toString());
             }
-            for(const auto& fwd : futexWaitData) {
+            for(const auto& fwd : futexWaitData_) {
                 fmt::print("  thread {}:{} waiting on value {} at {:#x}\n",
                             fwd.thread->descr.pid, fwd.thread->descr.tid,
                             fwd.expected, fwd.wordPtr.address());
@@ -61,9 +61,9 @@ namespace x64 {
         thread->state = Thread::STATE::DEAD;
         thread->exitStatus = status;
 
-        futexWaitData.erase(std::remove_if(futexWaitData.begin(), futexWaitData.end(), [=](const FutexWaitData& fwd) {
+        futexWaitData_.erase(std::remove_if(futexWaitData_.begin(), futexWaitData_.end(), [=](const FutexWaitData& fwd) {
             return fwd.thread == thread;
-        }), futexWaitData.end());
+        }), futexWaitData_.end());
 
         if(!!thread->clear_child_tid) {
             mmu_->write32(thread->clear_child_tid, 0);
@@ -77,13 +77,13 @@ namespace x64 {
     }
 
     void Scheduler::wait(Thread* thread, Ptr32 wordPtr, u32 expected) {
-        futexWaitData.push_back(FutexWaitData{thread, wordPtr, expected});
+        futexWaitData_.push_back(FutexWaitData{thread, wordPtr, expected});
         thread->state = Thread::STATE::SLEEPING;
     }
 
     u32 Scheduler::wake(Ptr32 wordPtr, u32 nbWaiters) {
         u32 nbWoken = 0;
-        for(auto& fwd : futexWaitData) {
+        for(auto& fwd : futexWaitData_) {
             if(fwd.wordPtr != wordPtr) continue;
             u32 val = mmu_->read32(wordPtr);
             if(fwd.expected == val) continue;

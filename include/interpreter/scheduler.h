@@ -45,7 +45,7 @@ namespace x64 {
             u32 expected;
         };
 
-        std::vector<FutexWaitData> futexWaitData;
+        std::vector<FutexWaitData> futexWaitData_;
     };
 
 }
