@@ -8,6 +8,7 @@
 #include "utils/utils.h"
 #include "types.h"
 #include <cstddef>
+#include <string>
 #include <vector>
 
 namespace x64 {
@@ -47,6 +48,8 @@ namespace x64 {
         void yield() {
             ticksUntilSwitch = ticks;
         }
+
+        std::string toString() const;
     };
 
 }

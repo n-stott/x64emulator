@@ -1,6 +1,7 @@
 #include "interpreter/scheduler.h"
 #include "interpreter/mmu.h"
 #include "interpreter/thread.h"
+#include "interpreter/verify.h"
 #include <algorithm>
 
 namespace x64 {
@@ -22,9 +23,20 @@ namespace x64 {
 
     Thread* Scheduler::pickNext() {
         if(threadQueue_.empty()) return nullptr;
-        assert(std::any_of(threadQueue_.begin(), threadQueue_.end(), [](const Thread* t) {
+        bool anyThreadAlive = std::any_of(threadQueue_.begin(), threadQueue_.end(), [](const Thread* t) {
             return t->state == Thread::STATE::ALIVE;
-        }));
+        });
+        verify(anyThreadAlive, [&]() {
+            fmt::print("No thread is alive in queue:\n");
+            for(const auto& t : threads_) {
+                fmt::print("  {}\n", t->toString());
+            }
+            for(const auto& fwd : futexWaitData) {
+                fmt::print("  thread {}:{} waiting on value {} at {:#x}\n",
+                            fwd.thread->descr.pid, fwd.thread->descr.tid,
+                            fwd.expected, fwd.wordPtr.address());
+            }
+        });
         do {
             currentThread_ = threadQueue_.front();
             threadQueue_.pop_front();
