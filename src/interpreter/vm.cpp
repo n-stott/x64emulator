@@ -73,29 +73,19 @@ namespace x64 {
         assert(!!thread);
         contextSwitch(thread);
         if(logInstructions()) {
-            try {
-                while(thread->ticks < thread->ticksUntilSwitch) {
-                    verify(!signal_interrupt);
-                    const X64Instruction& instruction = fetchInstruction();
-                    log(thread->ticks, instruction);
-                    ++(thread->ticks);
-                    cpu_.exec(instruction);
-                }
-            } catch(const VerificationException&) {
-                fmt::print("Interpreter crash after {} instructions\n", thread->ticks);
-                crash();
+            while(thread->ticks < thread->ticksUntilSwitch) {
+                verify(!signal_interrupt);
+                const X64Instruction& instruction = fetchInstruction();
+                log(thread->ticks, instruction);
+                ++(thread->ticks);
+                cpu_.exec(instruction);
             }
         } else {
-            try {
-                while(thread->ticks < thread->ticksUntilSwitch) {
-                    verify(!signal_interrupt);
-                    const X64Instruction& instruction = fetchInstruction();
-                    ++(thread->ticks);
-                    cpu_.exec(instruction);
-                }
-            } catch(const VerificationException&) {
-                fmt::print("Interpreter crash after {} instructions\n", thread->ticks);
-                crash();
+            while(thread->ticks < thread->ticksUntilSwitch) {
+                verify(!signal_interrupt);
+                const X64Instruction& instruction = fetchInstruction();
+                ++(thread->ticks);
+                cpu_.exec(instruction);
             }
         }
         assert(!!currentThread_);

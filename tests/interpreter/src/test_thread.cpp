@@ -15,5 +15,6 @@ int main() {
         t2.join();
     } catch(std::exception& e) {
         std::puts(e.what());
+        return 1;
     }
 }

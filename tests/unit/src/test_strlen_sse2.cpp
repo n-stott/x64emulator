@@ -58,7 +58,7 @@ int main() {
         Thread mainThread(0, 0);
         mainThread.data.regs.rip() = execPage;
         mainThread.data.regs.set(R64::RDI, dataPage);
-        mainThread.ticksUntilSwitch = 1'000'000;
+        mainThread.ticksUntilSwitch = 15;
         vm.execute(&mainThread);
         length = mainThread.data.regs.get(R64::RAX);
     }, [&]() {
