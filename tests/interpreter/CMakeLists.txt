@@ -86,3 +86,8 @@ add_executable(test_thread src/test_thread.cpp)
 target_compile_options(test_thread PUBLIC ${CC_OPTIONS})
 target_link_libraries(test_thread PUBLIC pthread)
 add_test(NAME thread COMMAND ${CMAKE_BINARY_DIR}/interpreter test_thread)
+
+add_executable(test_threadlocal2 src/test_threadlocal2.cpp)
+target_compile_options(test_threadlocal2 PUBLIC ${CC_OPTIONS})
+target_link_libraries(test_threadlocal2 PUBLIC pthread)
+add_test(NAME threadlocal2 COMMAND ${CMAKE_BINARY_DIR}/interpreter test_threadlocal2)
