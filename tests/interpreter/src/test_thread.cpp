@@ -1,5 +1,6 @@
 #include <thread>
 #include <cstdio>
+#include <exception>
 
 int main() {
     try {

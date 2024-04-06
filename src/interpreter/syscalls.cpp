@@ -440,6 +440,7 @@ namespace x64 {
     long Sys::clone(unsigned long flags, Ptr stack, Ptr parent_tid, Ptr32 child_tid, unsigned long tls) {
         Thread* currentThread = scheduler_->currentThread();
         Thread* newThread = scheduler_->createThread(currentThread->descr.pid);
+        newThread->data.regs = currentThread->data.regs;
         newThread->data.regs.rip() = currentThread->data.regs.rip();
         newThread->data.regs.set(R64::RAX, 0);
         newThread->data.regs.rsp() = stack.address();
@@ -647,21 +648,36 @@ namespace x64 {
     }
 
     long Sys::futex(Ptr32 uaddr, int futex_op, uint32_t val, Ptr timeout, Ptr32 uaddr2, uint32_t val3) {
-        if(logSyscalls_) print("Sys::futex(uaddr={:#x}, op={}, val={}, timeout={:#x}, uaddr2={:#x}, val3={})\n", uaddr.address(), futex_op, val, timeout.address(), uaddr2.address(), val3);
-        if((futex_op & 0x7f) == 0) {
+        verify(!timeout, "futex with non-null timeout is not supported");
+        auto onExit = [&](long ret) -> long {
+            if(!logSyscalls_) return ret;
+            print("Sys::futex(uaddr={:#x}, op={}, val={}, timeout={:#x}, uaddr2={:#x}, val3={}) = {}\n",
+                              uaddr.address(), futex_op, val, timeout.address(), uaddr2.address(), val3, ret);
+            return ret;
+        };
+        int unmaskedOp = futex_op & 0x7f;
+        if(unmaskedOp == 0) {
             // wait
             u32 loaded = mmu_->read32(uaddr);
             if(loaded != val) return -EAGAIN;
             Thread* thread = scheduler_->currentThread();
             scheduler_->wait(thread, uaddr, val);
             thread->yield();
-            return 1;
+            return onExit(0);
         }
-        if((futex_op & 0x7f) == 1) {
+        if(unmaskedOp == 1) {
             // wake
             u32 nbWoken = scheduler_->wake(uaddr, val);
-            scheduler_->currentThread()->yield();
-            return nbWoken;
+            return onExit(nbWoken);
+        }
+        if(unmaskedOp == 9 && val3 == std::numeric_limits<uint32_t>::max()) {
+            // wait_bitset
+            u32 loaded = mmu_->read32(uaddr);
+            if(loaded != val) return -EAGAIN;
+            Thread* thread = scheduler_->currentThread();
+            scheduler_->wait(thread, uaddr, val);
+            thread->yield();
+            return onExit(0);
         }
         verify(false, [&]() {
             fmt::print("futex with op={} is not supported\n", futex_op);
@@ -974,11 +990,48 @@ namespace x64 {
     }
 
     int Sys::clone3(Ptr uargs, size_t size) {
-        if(logSyscalls_) {
-            print("Sys::clone3(uargs={:#x}, size={}) = -ENOTSUP\n",
-                        uargs.address(), size);
+        // struct clone_args {
+        //     u64 flags;        /* Flags bit mask */
+        //     u64 pidfd;        /* Where to store PID file descriptor
+        //                         (int *) */
+        //     u64 child_tid;    /* Where to store child TID,
+        //                         in child's memory (pid_t *) */
+        //     u64 parent_tid;   /* Where to store child TID,
+        //                         in parent's memory (pid_t *) */
+        //     u64 exit_signal;  /* Signal to deliver to parent on
+        //                         child termination */
+        //     u64 stack;        /* Pointer to lowest byte of stack */
+        //     u64 stack_size;   /* Size of stack */
+        //     u64 tls;          /* Location of new TLS */
+        //     u64 set_tid;      /* Pointer to a pid_t array
+        //                         (since Linux 5.5) */
+        //     u64 set_tid_size; /* Number of elements in set_tid
+        //                         (since Linux 5.5) */
+        //     u64 cgroup;       /* File descriptor for target cgroup
+        //                         of child (since Linux 5.7) */
+        // };
+        std::vector<u64> args = mmu_->readFromMmu<u64>(uargs, size / sizeof(u64));
+        verify(args.size() >= 7);
+        Ptr32 child_tid { args[2] };
+        u64 stackAddress = args[5] + args[6];
+
+        Thread* currentThread = scheduler_->currentThread();
+        Thread* newThread = scheduler_->createThread(currentThread->descr.pid);
+        newThread->data.regs = currentThread->data.regs;
+        newThread->data.regs.rip() = currentThread->data.regs.rip();
+        newThread->data.regs.set(R64::RAX, 0);
+        newThread->data.regs.rsp() = stackAddress;
+        newThread->clear_child_tid = child_tid;
+        long ret = newThread->descr.tid;
+        if(!!child_tid) {
+            static_assert(sizeof(pid_t) == sizeof(u32));
+            mmu_->write32(child_tid, (u32)ret);
         }
-        return -ENOTSUP;
+        if(logSyscalls_) {
+            print("Sys::clone3(uargs={:#x}, size={}) = {}\n",
+                        uargs.address(), size, ret);
+        }
+        return (int)ret;
     }
 
 }

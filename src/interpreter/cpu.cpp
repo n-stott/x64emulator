@@ -455,18 +455,26 @@ namespace x64 {
             case Insn::MOVSS_M32_RSSE: return exec(Movss<M32, RSSE>{insn.op0<M32>(), insn.op1<RSSE>()});
             case Insn::MOVSD_RSSE_M64: return exec(Movsd<RSSE, M64>{insn.op0<RSSE>(), insn.op1<M64>()});
             case Insn::MOVSD_M64_RSSE: return exec(Movsd<M64, RSSE>{insn.op0<M64>(), insn.op1<RSSE>()});
+            case Insn::ADDPS_RSSE_RMSSE: return exec(Addps<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
+            case Insn::ADDPD_RSSE_RMSSE: return exec(Addpd<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
             case Insn::ADDSS_RSSE_RSSE: return exec(Addss<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
             case Insn::ADDSS_RSSE_M32: return exec(Addss<RSSE, M32>{insn.op0<RSSE>(), insn.op1<M32>()});
             case Insn::ADDSD_RSSE_RSSE: return exec(Addsd<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
             case Insn::ADDSD_RSSE_M64: return exec(Addsd<RSSE, M64>{insn.op0<RSSE>(), insn.op1<M64>()});
+            case Insn::SUBPS_RSSE_RMSSE: return exec(Subps<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
+            case Insn::SUBPD_RSSE_RMSSE: return exec(Subpd<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
             case Insn::SUBSS_RSSE_RSSE: return exec(Subss<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
             case Insn::SUBSS_RSSE_M32: return exec(Subss<RSSE, M32>{insn.op0<RSSE>(), insn.op1<M32>()});
             case Insn::SUBSD_RSSE_RSSE: return exec(Subsd<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
             case Insn::SUBSD_RSSE_M64: return exec(Subsd<RSSE, M64>{insn.op0<RSSE>(), insn.op1<M64>()});
+            case Insn::MULPS_RSSE_RMSSE: return exec(Mulps<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
+            case Insn::MULPD_RSSE_RMSSE: return exec(Mulpd<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
             case Insn::MULSS_RSSE_RSSE: return exec(Mulss<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
             case Insn::MULSS_RSSE_M32: return exec(Mulss<RSSE, M32>{insn.op0<RSSE>(), insn.op1<M32>()});
             case Insn::MULSD_RSSE_RSSE: return exec(Mulsd<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
             case Insn::MULSD_RSSE_M64: return exec(Mulsd<RSSE, M64>{insn.op0<RSSE>(), insn.op1<M64>()});
+            case Insn::DIVPS_RSSE_RMSSE: return exec(Divps<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
+            case Insn::DIVPD_RSSE_RMSSE: return exec(Divpd<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
             case Insn::DIVSS_RSSE_RSSE: return exec(Divss<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
             case Insn::DIVSS_RSSE_M32: return exec(Divss<RSSE, M32>{insn.op0<RSSE>(), insn.op1<M32>()});
             case Insn::DIVSD_RSSE_RSSE: return exec(Divsd<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
@@ -499,6 +507,8 @@ namespace x64 {
             case Insn::CVTSI2SD_RSSE_RM64: return exec(Cvtsi2sd<RSSE, RM64>{insn.op0<RSSE>(), insn.op1<RM64>()});
             case Insn::CVTSS2SD_RSSE_RSSE: return exec(Cvtss2sd<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
             case Insn::CVTSS2SD_RSSE_M32: return exec(Cvtss2sd<RSSE, M32>{insn.op0<RSSE>(), insn.op1<M32>()});
+            case Insn::CVTSD2SS_RSSE_RSSE: return exec(Cvtsd2ss<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
+            case Insn::CVTSD2SS_RSSE_M64: return exec(Cvtsd2ss<RSSE, M64>{insn.op0<RSSE>(), insn.op1<M64>()});
             case Insn::CVTTSS2SI_R32_RSSE: return exec(Cvttss2si<R32, RSSE>{insn.op0<R32>(), insn.op1<RSSE>()});
             case Insn::CVTTSS2SI_R32_M32: return exec(Cvttss2si<R32, M32>{insn.op0<R32>(), insn.op1<M32>()});
             case Insn::CVTTSS2SI_R64_RSSE: return exec(Cvttss2si<R64, RSSE>{insn.op0<R64>(), insn.op1<RSSE>()});
@@ -574,6 +584,8 @@ namespace x64 {
             case Insn::UNPCKHPD_RSSE_RMSSE: return exec(Unpckhpd<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
             case Insn::UNPCKLPS_RSSE_RMSSE: return exec(Unpcklps<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
             case Insn::UNPCKLPD_RSSE_RMSSE: return exec(Unpcklpd<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
+            case Insn::MOVMSKPD_R32_RSSE: return exec(Movmskpd<R32, RSSE>{insn.op0<R32>(), insn.op1<RSSE>()});
+            case Insn::MOVMSKPD_R64_RSSE: return exec(Movmskpd<R64, RSSE>{insn.op0<R64>(), insn.op1<RSSE>()});
             case Insn::RDTSC: return exec(Rdtsc{});
             case Insn::CPUID: return exec(Cpuid{});
             case Insn::XGETBV: return exec(Xgetbv{});
@@ -1504,6 +1516,16 @@ namespace x64 {
     void Cpu::exec(const Movsd<M64, RSSE>& ins) { set(resolve(ins.dst), narrow<u64, Xmm>(get(ins.src))); }
 
 
+    void Cpu::exec(const Addps<RSSE, RMSSE>& ins) {
+        u128 res = Impl::addps(get(ins.dst), get(ins.src), simdRoundingMode());
+        set(ins.dst, res);
+    }
+
+    void Cpu::exec(const Addpd<RSSE, RMSSE>& ins) {
+        u128 res = Impl::addpd(get(ins.dst), get(ins.src), simdRoundingMode());
+        set(ins.dst, res);
+    }
+
     void Cpu::exec(const Addss<RSSE, RSSE>& ins) {
         u128 res = Impl::addss(get(ins.dst), get(ins.src), simdRoundingMode());
         set(ins.dst, res);
@@ -1521,6 +1543,16 @@ namespace x64 {
 
     void Cpu::exec(const Addsd<RSSE, M64>& ins) {
         u128 res = Impl::addsd(get(ins.dst), zeroExtend<Xmm, u64>(get(resolve(ins.src))), simdRoundingMode());
+        set(ins.dst, res);
+    }
+
+    void Cpu::exec(const Subps<RSSE, RMSSE>& ins) {
+        u128 res = Impl::subps(get(ins.dst), get(ins.src), simdRoundingMode());
+        set(ins.dst, res);
+    }
+
+    void Cpu::exec(const Subpd<RSSE, RMSSE>& ins) {
+        u128 res = Impl::subpd(get(ins.dst), get(ins.src), simdRoundingMode());
         set(ins.dst, res);
     }
 
@@ -1544,6 +1576,16 @@ namespace x64 {
         set(ins.dst, res);
     }
 
+    void Cpu::exec(const Mulps<RSSE, RMSSE>& ins) {
+        u128 res = Impl::mulps(get(ins.dst), get(ins.src), simdRoundingMode());
+        set(ins.dst, res);
+    }
+
+    void Cpu::exec(const Mulpd<RSSE, RMSSE>& ins) {
+        u128 res = Impl::mulpd(get(ins.dst), get(ins.src), simdRoundingMode());
+        set(ins.dst, res);
+    }
+
     void Cpu::exec(const Mulss<RSSE, RSSE>& ins) {
         u128 res = Impl::mulss(get(ins.dst), get(ins.src), simdRoundingMode());
         set(ins.dst, res);
@@ -1564,6 +1606,16 @@ namespace x64 {
         set(ins.dst, res);
     }
 
+    void Cpu::exec(const Divps<RSSE, RMSSE>& ins) {
+        u128 res = Impl::divps(get(ins.dst), get(ins.src), simdRoundingMode());
+        set(ins.dst, res);
+    }
+
+    void Cpu::exec(const Divpd<RSSE, RMSSE>& ins) {
+        u128 res = Impl::divpd(get(ins.dst), get(ins.src), simdRoundingMode());
+        set(ins.dst, res);
+    }
+    
     void Cpu::exec(const Divss<RSSE, RSSE>& ins) {
         u128 res = Impl::divss(get(ins.dst), get(ins.src), simdRoundingMode());
         set(ins.dst, res);
@@ -1681,6 +1733,16 @@ namespace x64 {
 
     void Cpu::exec(const Cvtss2sd<RSSE, M32>& ins) {
         u128 res = Impl::cvtss2sd(get(ins.dst), zeroExtend<u128, u32>(get(resolve(ins.src))));
+        set(ins.dst, res);
+    }
+
+    void Cpu::exec(const Cvtsd2ss<RSSE, RSSE>& ins) {
+        u128 res = Impl::cvtsd2ss(get(ins.dst), get(ins.src));
+        set(ins.dst, res);
+    }
+
+    void Cpu::exec(const Cvtsd2ss<RSSE, M64>& ins) {
+        u128 res = Impl::cvtsd2ss(get(ins.dst), zeroExtend<u128, u64>(get(resolve(ins.src))));
         set(ins.dst, res);
     }
 
@@ -2032,6 +2094,13 @@ namespace x64 {
         set(ins.dst, Impl::unpcklpd(get(ins.dst), get(ins.src)));
     }
 
+    void Cpu::exec(const Movmskpd<R32, RSSE>& ins) {
+        set(ins.dst, Impl::movmskpd32(get(ins.src)));
+    }
+
+    void Cpu::exec(const Movmskpd<R64, RSSE>& ins) {
+        set(ins.dst, Impl::movmskpd64(get(ins.src)));
+    }
 
     void Cpu::exec(const Syscall&) {
         vm_->syncThread(); // sync thread info before syscall
