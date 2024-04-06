@@ -61,14 +61,14 @@ namespace x64 {
         thread->state = Thread::STATE::DEAD;
         thread->exitStatus = status;
 
+        futexWaitData.erase(std::remove_if(futexWaitData.begin(), futexWaitData.end(), [=](const FutexWaitData& fwd) {
+            return fwd.thread == thread;
+        }), futexWaitData.end());
+
         if(!!thread->clear_child_tid) {
             mmu_->write32(thread->clear_child_tid, 0);
             wake(thread->clear_child_tid, 1);
         }
-
-        futexWaitData.erase(std::remove_if(futexWaitData.begin(), futexWaitData.end(), [=](const FutexWaitData& fwd) {
-            return fwd.thread == thread;
-        }), futexWaitData.end());
         threadQueue_.erase(std::remove(threadQueue_.begin(), threadQueue_.end(), thread), threadQueue_.end());
     }
 
