@@ -35,6 +35,7 @@ namespace x64 {
             Registers regs;
             X87Fpu x87fpu;
             SimdControlStatus mxcsr;
+            u64 fsBase { 0 };
         } data;
 
         size_t ticks { 0 };

@@ -443,8 +443,9 @@ namespace x64 {
         newThread->data.regs.rip() = currentThread->data.regs.rip();
         newThread->data.regs.set(R64::RAX, 0);
         newThread->data.regs.rsp() = stack.address();
+        newThread->data.fsBase = tls;
         newThread->clear_child_tid = child_tid;
-        long ret = currentThread->descr.tid+1;
+        long ret = newThread->descr.tid;
         if(!!child_tid) {
             static_assert(sizeof(pid_t) == sizeof(u32));
             mmu_->write32(child_tid, (u32)ret);

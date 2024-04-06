@@ -34,11 +34,11 @@ namespace x64 {
 
     void VM::syncThread() {
         if(!!currentThread_) {
-            
             currentThread_->data.flags = cpu_.flags_;
             currentThread_->data.regs = cpu_.regs_;
             currentThread_->data.x87fpu = cpu_.x87fpu_;
             currentThread_->data.mxcsr = cpu_.mxcsr_;
+            currentThread_->data.fsBase = mmu_->getSegmentBase(Segment::FS);
             currentThread_->callstack = currentThreadCallstack_;
         }
     }
@@ -52,6 +52,7 @@ namespace x64 {
             cpu_.regs_ = currentThread_->data.regs;
             cpu_.x87fpu_ = currentThread_->data.x87fpu;
             cpu_.mxcsr_ = currentThread_->data.mxcsr;
+            mmu_->setSegmentBase(Segment::FS, currentThread_->data.fsBase);
             currentThreadCallstack_ = currentThread_->callstack;
             notifyJmp(cpu_.regs_.rip()); // no need to cache the destination here
         } else {
@@ -60,6 +61,7 @@ namespace x64 {
             cpu_.regs_ = Registers{};
             cpu_.x87fpu_ = X87Fpu{};
             cpu_.mxcsr_ = SimdControlStatus{};
+            mmu_->setSegmentBase(Segment::FS, (u64)0);
             currentThreadCallstack_ = {};
         }
     }

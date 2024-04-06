@@ -110,6 +110,7 @@ namespace x64 {
         void setRegionName(u64 address, std::string name);
         
         void setSegmentBase(Segment segment, u64 base);
+        u64 getSegmentBase(Segment segment) const;
         void registerTlsBlock(u64 templateAddress, u64 blockAddress);
 
         template<typename Callback>

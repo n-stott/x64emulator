@@ -168,6 +168,10 @@ namespace x64 {
     void Mmu::setSegmentBase(Segment segment, u64 base) {
         segmentBase_[(u8)segment] = base;
     }
+
+    u64 Mmu::getSegmentBase(Segment segment) const {
+        return segmentBase_[(u8)segment];
+    }
     
     void Mmu::registerTlsBlock(u64 templateAddress, u64 blockAddress) {
         dtv_.push_back(dtv_t{templateAddress, blockAddress});
