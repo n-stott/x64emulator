@@ -24,7 +24,8 @@ namespace x64 {
 
     void VM::crash() {
         hasCrashed_ = true;
-        if(!!currentThread_) fmt::print("Crash in thread {}:{}\n", currentThread_->descr.pid, currentThread_->descr.tid);
+        syncThread();
+        if(!!currentThread_) fmt::print("Crash in thread {}:{} after {} instructions\n", currentThread_->descr.pid, currentThread_->descr.tid, currentThread_->ticks);
         fmt::print("Register state:\n");
         dumpRegisters();
         fmt::print("Memory regions:\n");
