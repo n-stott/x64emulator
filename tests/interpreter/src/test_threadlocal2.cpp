@@ -1,5 +1,6 @@
 #include <cstdio>
 #include <thread>
+#include <exception>
 
 struct S {
     static thread_local const char* message;
