@@ -1011,9 +1011,10 @@ namespace x64 {
         //                         of child (since Linux 5.7) */
         // };
         std::vector<u64> args = mmu_->readFromMmu<u64>(uargs, size / sizeof(u64));
-        verify(args.size() >= 7);
+        verify(args.size() >= 8);
         Ptr32 child_tid { args[2] };
         u64 stackAddress = args[5] + args[6];
+        u64 tls = args[7];
 
         Thread* currentThread = scheduler_->currentThread();
         Thread* newThread = scheduler_->createThread(currentThread->descr.pid);
@@ -1021,6 +1022,7 @@ namespace x64 {
         newThread->data.regs.rip() = currentThread->data.regs.rip();
         newThread->data.regs.set(R64::RAX, 0);
         newThread->data.regs.rsp() = stackAddress;
+        newThread->data.fsBase = tls;
         newThread->clear_child_tid = child_tid;
         long ret = newThread->descr.tid;
         if(!!child_tid) {
