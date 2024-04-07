@@ -77,7 +77,7 @@ namespace x64 {
 
             Thread* mainThread = scheduler.createThread(0xface);
             mainThread->data.regs.rip() = entrypoint;
-            mainThread->data.regs.rsp() = (stackTop & 0xFFFFFFFFFFFFFF00); // stack needs to be 64-bit aligned
+            mainThread->data.regs.rsp() = (stackTop & 0xFFFFFFFFFFFFFF00); // stack needs to be 16-byte aligned
 
             vm.contextSwitch(mainThread);
             pushProgramArguments(&mmu, &vm, programFilePath, arguments, environmentVariables, aux);
