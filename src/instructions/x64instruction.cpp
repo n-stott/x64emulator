@@ -665,6 +665,12 @@ namespace utils {
             case Insn::UCOMISS_RSSE_M32: return toString<RSSE, M32>("ucomiss");
             case Insn::UCOMISD_RSSE_RSSE: return toString<RSSE, RSSE>("ucomisd");
             case Insn::UCOMISD_RSSE_M64: return toString<RSSE, M64>("ucomisd");
+            case Insn::CMPSS_RSSE_RSSE: return toString<RSSE, RSSE>("cmpss");
+            case Insn::CMPSS_RSSE_M32: return toString<RSSE, M32>("cmpss");
+            case Insn::CMPSD_RSSE_RSSE: return toString<RSSE, RSSE>("cmpsd");
+            case Insn::CMPSD_RSSE_M64: return toString<RSSE, M64>("cmpsd");
+            case Insn::CMPPS_RSSE_RMSSE: return toString<RSSE, RMSSE>("cmpps");
+            case Insn::CMPPD_RSSE_RMSSE: return toString<RSSE, RMSSE>("cmppd");
             case Insn::MAXSS_RSSE_RSSE: return toString<RSSE, RSSE>("maxss");
             case Insn::MAXSS_RSSE_M32: return toString<RSSE, M32>("maxss");
             case Insn::MAXSD_RSSE_RSSE: return toString<RSSE, RSSE>("maxsd");
@@ -673,8 +679,6 @@ namespace utils {
             case Insn::MINSS_RSSE_M32: return toString<RSSE, M32>("minss");
             case Insn::MINSD_RSSE_RSSE: return toString<RSSE, RSSE>("minsd");
             case Insn::MINSD_RSSE_M64: return toString<RSSE, M64>("minsd");
-            case Insn::CMPSD_RSSE_RSSE: return toString<RSSE, RSSE>("cmpsd");
-            case Insn::CMPSD_RSSE_M64: return toString<RSSE, M64>("cmpsd");
             case Insn::CVTSI2SS_RSSE_RM32: return toString<RSSE, RM32>("cvtsi2ss");
             case Insn::CVTSI2SS_RSSE_RM64: return toString<RSSE, RM64>("cvtsi2ss");
             case Insn::CVTSI2SD_RSSE_RM32: return toString<RSSE, RM32>("cvtsi2sd");

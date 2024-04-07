@@ -185,7 +185,13 @@ namespace x64 {
         static X64Instruction makeMinsd(const cs_insn& insn);
 
         template<FCond cond>
+        static X64Instruction makeCmpss(const cs_insn& insn);
+        template<FCond cond>
         static X64Instruction makeCmpsd(const cs_insn& insn);
+        template<FCond cond>
+        static X64Instruction makeCmpps(const cs_insn& insn);
+        template<FCond cond>
+        static X64Instruction makeCmppd(const cs_insn& insn);
 
         static X64Instruction makeCvtsi2ss(const cs_insn& insn);
         static X64Instruction makeCvtsi2sd(const cs_insn& insn);

@@ -198,6 +198,14 @@ namespace x64 {
             case X86_INS_MAXSD: return makeMaxsd(insn);
             case X86_INS_MINSS: return makeMinss(insn);
             case X86_INS_MINSD: return makeMinsd(insn);
+            case X86_INS_CMPEQSS: return makeCmpss<FCond::EQ>(insn);
+            case X86_INS_CMPLTSS: return makeCmpss<FCond::LT>(insn);
+            case X86_INS_CMPLESS: return makeCmpss<FCond::LE>(insn);
+            case X86_INS_CMPUNORDSS: return makeCmpss<FCond::UNORD>(insn);
+            case X86_INS_CMPNEQSS: return makeCmpss<FCond::NEQ>(insn);
+            case X86_INS_CMPNLTSS: return makeCmpss<FCond::NLT>(insn);
+            case X86_INS_CMPNLESS: return makeCmpss<FCond::NLE>(insn);
+            case X86_INS_CMPORDSS: return makeCmpss<FCond::ORD>(insn);
             case X86_INS_CMPEQSD: return makeCmpsd<FCond::EQ>(insn);
             case X86_INS_CMPLTSD: return makeCmpsd<FCond::LT>(insn);
             case X86_INS_CMPLESD: return makeCmpsd<FCond::LE>(insn);
@@ -206,6 +214,22 @@ namespace x64 {
             case X86_INS_CMPNLTSD: return makeCmpsd<FCond::NLT>(insn);
             case X86_INS_CMPNLESD: return makeCmpsd<FCond::NLE>(insn);
             case X86_INS_CMPORDSD: return makeCmpsd<FCond::ORD>(insn);
+            case X86_INS_CMPEQPS: return makeCmpps<FCond::EQ>(insn);
+            case X86_INS_CMPLTPS: return makeCmpps<FCond::LT>(insn);
+            case X86_INS_CMPLEPS: return makeCmpps<FCond::LE>(insn);
+            case X86_INS_CMPUNORDPS: return makeCmpps<FCond::UNORD>(insn);
+            case X86_INS_CMPNEQPS: return makeCmpps<FCond::NEQ>(insn);
+            case X86_INS_CMPNLTPS: return makeCmpps<FCond::NLT>(insn);
+            case X86_INS_CMPNLEPS: return makeCmpps<FCond::NLE>(insn);
+            case X86_INS_CMPORDPS: return makeCmpps<FCond::ORD>(insn);
+            case X86_INS_CMPEQPD: return makeCmppd<FCond::EQ>(insn);
+            case X86_INS_CMPLTPD: return makeCmppd<FCond::LT>(insn);
+            case X86_INS_CMPLEPD: return makeCmppd<FCond::LE>(insn);
+            case X86_INS_CMPUNORDPD: return makeCmppd<FCond::UNORD>(insn);
+            case X86_INS_CMPNEQPD: return makeCmppd<FCond::NEQ>(insn);
+            case X86_INS_CMPNLTPD: return makeCmppd<FCond::NLT>(insn);
+            case X86_INS_CMPNLEPD: return makeCmppd<FCond::NLE>(insn);
+            case X86_INS_CMPORDPD: return makeCmppd<FCond::ORD>(insn);
             case X86_INS_CVTSI2SS: return makeCvtsi2ss(insn);
             case X86_INS_CVTSI2SD: return makeCvtsi2sd(insn);
             case X86_INS_CVTSS2SD: return makeCvtss2sd(insn);
@@ -2353,6 +2377,20 @@ namespace x64 {
 
 
     template<FCond cond>
+    X64Instruction CapstoneWrapper::makeCmpss(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto rssesrc = asRegister128(src);
+        auto m32src = asMemory32(src);
+        if(rssedst && rssesrc) return X64Instruction::make<Insn::CMPSS_RSSE_RSSE>(insn.address, insn.size, rssedst.value(), rssesrc.value(), cond);
+        if(rssedst && m32src) return X64Instruction::make<Insn::CMPSS_RSSE_M32>(insn.address, insn.size, rssedst.value(), m32src.value(), cond);
+        return make_failed(insn);
+    }
+
+    template<FCond cond>
     X64Instruction CapstoneWrapper::makeCmpsd(const cs_insn& insn) {
         const auto& x86detail = insn.detail->x86;
         assert(x86detail.op_count == 2);
@@ -2363,6 +2401,30 @@ namespace x64 {
         auto m64src = asMemory64(src);
         if(rssedst && rssesrc) return X64Instruction::make<Insn::CMPSD_RSSE_RSSE>(insn.address, insn.size, rssedst.value(), rssesrc.value(), cond);
         if(rssedst && m64src) return X64Instruction::make<Insn::CMPSD_RSSE_M64>(insn.address, insn.size, rssedst.value(), m64src.value(), cond);
+        return make_failed(insn);
+    }
+
+    template<FCond cond>
+    X64Instruction CapstoneWrapper::makeCmpps(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto rmssesrc = asRM128(src);
+        if(rssedst && rmssesrc) return X64Instruction::make<Insn::CMPPS_RSSE_RMSSE>(insn.address, insn.size, rssedst.value(), rmssesrc.value(), cond);
+        return make_failed(insn);
+    }
+
+    template<FCond cond>
+    X64Instruction CapstoneWrapper::makeCmppd(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto rmssesrc = asRM128(src);
+        if(rssedst && rmssesrc) return X64Instruction::make<Insn::CMPPD_RSSE_RMSSE>(insn.address, insn.size, rssedst.value(), rmssesrc.value(), cond);
         return make_failed(insn);
     }
 

@@ -1490,30 +1490,20 @@ namespace x64 {
 #endif
     }
 
-    u64 CheckedCpuImpl::cmpsd(u64 dst, u64 src, FCond cond) {
-#if GCC_COMPILER
-        static_assert(sizeof(u64) == sizeof(double));
-        double d;
-        double s;
-        std::memcpy(&d, &dst, sizeof(d));
-        std::memcpy(&s, &src, sizeof(s));
-        auto mask = [](bool res) -> u64 {
-            return res ? (u64)(-1) : 0x0;
-        };
-        switch(cond) {
-            case FCond::EQ:    return mask(d == s);
-            case FCond::LT:    return mask(d < s);
-            case FCond::LE:    return mask(d <= s);
-            case FCond::UNORD: return mask((d != d) || (s != s));
-            case FCond::NEQ:   return mask(!(d == s));
-            case FCond::NLT:   return mask(!(d < s));
-            case FCond::NLE:   return mask(!(d <= s));
-            case FCond::ORD:   return mask(d == d && s == s);
-        }
-        __builtin_unreachable();
-#else
+    u128 CheckedCpuImpl::cmpss(u128 dst, u128 src, FCond cond) {
+        return CpuImpl::cmpss(dst, src, cond);
+    }
+
+    u128 CheckedCpuImpl::cmpsd(u128 dst, u128 src, FCond cond) {
         return CpuImpl::cmpsd(dst, src, cond);
-#endif
+    }
+
+    u128 CheckedCpuImpl::cmpps(u128 dst, u128 src, FCond cond) {
+        return CpuImpl::cmpps(dst, src, cond);
+    }
+
+    u128 CheckedCpuImpl::cmppd(u128 dst, u128 src, FCond cond) {
+        return CpuImpl::cmppd(dst, src, cond);
     }
 
     u128 CheckedCpuImpl::cvtsi2ss32(u128 dst, u32 src) {

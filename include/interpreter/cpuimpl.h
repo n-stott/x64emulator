@@ -186,7 +186,10 @@ namespace x64 {
         [[nodiscard]] static u128 minss(u128 dst, u128 src, SIMD_ROUNDING);
         [[nodiscard]] static u128 minsd(u128 dst, u128 src, SIMD_ROUNDING);
 
-        [[nodiscard]] static u64 cmpsd(u64 dst, u64 src, FCond cond);
+        [[nodiscard]] static u128 cmpss(u128 dst, u128 src, FCond cond);
+        [[nodiscard]] static u128 cmpsd(u128 dst, u128 src, FCond cond);
+        [[nodiscard]] static u128 cmpps(u128 dst, u128 src, FCond cond);
+        [[nodiscard]] static u128 cmppd(u128 dst, u128 src, FCond cond);
 
         [[nodiscard]] static u128 cvtsi2ss32(u128 dst, u32 src);
         [[nodiscard]] static u128 cvtsi2ss64(u128 dst, u64 src);

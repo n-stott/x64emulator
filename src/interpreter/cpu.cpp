@@ -491,6 +491,12 @@ namespace x64 {
             case Insn::UCOMISS_RSSE_M32: return exec(Ucomiss<RSSE, M32>{insn.op0<RSSE>(), insn.op1<M32>()});
             case Insn::UCOMISD_RSSE_RSSE: return exec(Ucomisd<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
             case Insn::UCOMISD_RSSE_M64: return exec(Ucomisd<RSSE, M64>{insn.op0<RSSE>(), insn.op1<M64>()});
+            case Insn::CMPSS_RSSE_RSSE: return exec(Cmpss<RSSE, RSSE>{insn.op2<FCond>(), insn.op0<RSSE>(), insn.op1<RSSE>()});
+            case Insn::CMPSS_RSSE_M32: return exec(Cmpss<RSSE, M32>{insn.op2<FCond>(), insn.op0<RSSE>(), insn.op1<M32>()});
+            case Insn::CMPSD_RSSE_RSSE: return exec(Cmpsd<RSSE, RSSE>{insn.op2<FCond>(), insn.op0<RSSE>(), insn.op1<RSSE>()});
+            case Insn::CMPSD_RSSE_M64: return exec(Cmpsd<RSSE, M64>{insn.op2<FCond>(), insn.op0<RSSE>(), insn.op1<M64>()});
+            case Insn::CMPPS_RSSE_RMSSE: return exec(Cmpps<RSSE, RMSSE>{insn.op2<FCond>(), insn.op0<RSSE>(), insn.op1<RMSSE>()});
+            case Insn::CMPPD_RSSE_RMSSE: return exec(Cmppd<RSSE, RMSSE>{insn.op2<FCond>(), insn.op0<RSSE>(), insn.op1<RMSSE>()});
             case Insn::MAXSS_RSSE_RSSE: return exec(Maxss<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
             case Insn::MAXSS_RSSE_M32: return exec(Maxss<RSSE, M32>{insn.op0<RSSE>(), insn.op1<M32>()});
             case Insn::MAXSD_RSSE_RSSE: return exec(Maxsd<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
@@ -499,8 +505,6 @@ namespace x64 {
             case Insn::MINSS_RSSE_M32: return exec(Minss<RSSE, M32>{insn.op0<RSSE>(), insn.op1<M32>()});
             case Insn::MINSD_RSSE_RSSE: return exec(Minsd<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
             case Insn::MINSD_RSSE_M64: return exec(Minsd<RSSE, M64>{insn.op0<RSSE>(), insn.op1<M64>()});
-            case Insn::CMPSD_RSSE_RSSE: return exec(Cmpsd<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>(), insn.op2<FCond>()});
-            case Insn::CMPSD_RSSE_M64: return exec(Cmpsd<RSSE, M64>{insn.op0<RSSE>(), insn.op1<M64>(), insn.op2<FCond>()});
             case Insn::CVTSI2SS_RSSE_RM32: return exec(Cvtsi2ss<RSSE, RM32>{insn.op0<RSSE>(), insn.op1<RM32>()});
             case Insn::CVTSI2SS_RSSE_RM64: return exec(Cvtsi2ss<RSSE, RM64>{insn.op0<RSSE>(), insn.op1<RM64>()});
             case Insn::CVTSI2SD_RSSE_RM32: return exec(Cvtsi2sd<RSSE, RM32>{insn.op0<RSSE>(), insn.op1<RM32>()});
@@ -1698,14 +1702,34 @@ namespace x64 {
     void Cpu::exec(const Minsd<RSSE, RSSE>& ins) { set(ins.dst, Impl::minsd(get(ins.dst), get(ins.src), simdRoundingMode())); }
     void Cpu::exec(const Minsd<RSSE, M64>& ins) { set(ins.dst, Impl::minsd(get(ins.dst), zeroExtend<Xmm, u64>(get(resolve(ins.src))), simdRoundingMode())); }
 
+    void Cpu::exec(const Cmpss<RSSE, RSSE>& ins) {
+        u128 res = Impl::cmpss(get(ins.dst), get(ins.src), ins.cond);
+        set(ins.dst, res);
+    }
+
+    void Cpu::exec(const Cmpss<RSSE, M32>& ins) {
+        u128 res = Impl::cmpss(get(ins.dst), zeroExtend<Xmm, u32>(get(resolve(ins.src))), ins.cond);
+        set(ins.dst, res);
+    }
+
     void Cpu::exec(const Cmpsd<RSSE, RSSE>& ins) {
-        u64 res = Impl::cmpsd(get(ins.dst).lo, get(ins.src).lo, ins.cond);
-        set(ins.dst, writeLow<Xmm, u64>(get(ins.dst), res));
+        u128 res = Impl::cmpsd(get(ins.dst), get(ins.src), ins.cond);
+        set(ins.dst, res);
     }
 
     void Cpu::exec(const Cmpsd<RSSE, M64>& ins) {
-        u64 res = Impl::cmpsd(get(ins.dst).lo, get(resolve(ins.src)), ins.cond);
-        set(ins.dst, writeLow<Xmm, u64>(get(ins.dst), res));
+        u128 res = Impl::cmpsd(get(ins.dst), zeroExtend<Xmm, u64>(get(resolve(ins.src))), ins.cond);
+        set(ins.dst, res);
+    }
+
+    void Cpu::exec(const Cmpps<RSSE, RMSSE>& ins) {
+        u128 res = Impl::cmpps(get(ins.dst), get(ins.src), ins.cond);
+        set(ins.dst, res);
+    }
+
+    void Cpu::exec(const Cmppd<RSSE, RMSSE>& ins) {
+        u128 res = Impl::cmppd(get(ins.dst), get(ins.src), ins.cond);
+        set(ins.dst, res);
     }
 
     void Cpu::exec(const Cvtsi2ss<RSSE, RM32>& ins) {

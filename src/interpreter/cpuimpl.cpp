@@ -689,14 +689,15 @@ namespace x64 {
         return rounding[(u16)x87fpu->control().rc](dst);
     }
 
-    template<typename F>
-    u128 packedOp(u128 dst, u128 src, F(*op)(F, F)) {
+    template<typename T, typename F, typename OP>
+    u128 packedOp(u128 dst, u128 src, OP op) {
+        static_assert(sizeof(T) == sizeof(F));
         constexpr int N = sizeof(u128) / sizeof(F);
         std::array<F, N> D;
         std::array<F, N> S;
         std::memcpy(D.data(), &dst, sizeof(dst));
         std::memcpy(S.data(), &src, sizeof(src));
-        std::array<F, N> R;
+        std::array<T, N> R;
         for(int i = 0; i < N; ++i) {
             R[i] = op(D[i], S[i]);
         }
@@ -705,41 +706,42 @@ namespace x64 {
         return res;
     }
 
-    u128 CpuImpl::addps(u128 dst, u128 src, SIMD_ROUNDING) { return packedOp<float>(dst, src, [](auto d, auto s) { return d + s; }); }
-    u128 CpuImpl::addpd(u128 dst, u128 src, SIMD_ROUNDING) { return packedOp<double>(dst, src, [](auto d, auto s) { return d + s; }); }
+    u128 CpuImpl::addps(u128 dst, u128 src, SIMD_ROUNDING) { return packedOp<float, float>(dst, src, [](auto d, auto s) { return d + s; }); }
+    u128 CpuImpl::addpd(u128 dst, u128 src, SIMD_ROUNDING) { return packedOp<double, double>(dst, src, [](auto d, auto s) { return d + s; }); }
 
-    u128 CpuImpl::subps(u128 dst, u128 src, SIMD_ROUNDING) { return packedOp<float>(dst, src, [](auto d, auto s) { return d - s; }); }
-    u128 CpuImpl::subpd(u128 dst, u128 src, SIMD_ROUNDING) { return packedOp<double>(dst, src, [](auto d, auto s) { return d - s; }); }
+    u128 CpuImpl::subps(u128 dst, u128 src, SIMD_ROUNDING) { return packedOp<float, float>(dst, src, [](auto d, auto s) { return d - s; }); }
+    u128 CpuImpl::subpd(u128 dst, u128 src, SIMD_ROUNDING) { return packedOp<double, double>(dst, src, [](auto d, auto s) { return d - s; }); }
 
-    u128 CpuImpl::mulps(u128 dst, u128 src, SIMD_ROUNDING) { return packedOp<float>(dst, src, [](auto d, auto s) { return d * s; }); }
-    u128 CpuImpl::mulpd(u128 dst, u128 src, SIMD_ROUNDING) { return packedOp<double>(dst, src, [](auto d, auto s) { return d * s; }); }
+    u128 CpuImpl::mulps(u128 dst, u128 src, SIMD_ROUNDING) { return packedOp<float, float>(dst, src, [](auto d, auto s) { return d * s; }); }
+    u128 CpuImpl::mulpd(u128 dst, u128 src, SIMD_ROUNDING) { return packedOp<double, double>(dst, src, [](auto d, auto s) { return d * s; }); }
 
-    u128 CpuImpl::divps(u128 dst, u128 src, SIMD_ROUNDING) { return packedOp<float>(dst, src, [](auto d, auto s) { return d / s; }); }
-    u128 CpuImpl::divpd(u128 dst, u128 src, SIMD_ROUNDING) { return packedOp<double>(dst, src, [](auto d, auto s) { return d / s; }); }
+    u128 CpuImpl::divps(u128 dst, u128 src, SIMD_ROUNDING) { return packedOp<float, float>(dst, src, [](auto d, auto s) { return d / s; }); }
+    u128 CpuImpl::divpd(u128 dst, u128 src, SIMD_ROUNDING) { return packedOp<double, double>(dst, src, [](auto d, auto s) { return d / s; }); }
 
-    template<typename F>
-    u128 scalarOp(u128 dst, u128 src, F(*op)(F, F)) {
+    template<typename T, typename F, typename OP>
+    u128 scalarOp(u128 dst, u128 src, OP op) {
+        static_assert(sizeof(T) == sizeof(F));
         F d;
         F s;
         std::memcpy(&d, &dst, sizeof(d));
         std::memcpy(&s, &src, sizeof(s));
-        F res = op(d, s);
+        T res = op(d, s);
         u128 r = dst;
         std::memcpy(&r, &res, sizeof(res));
         return r;
     }
 
-    u128 CpuImpl::addss(u128 dst, u128 src, SIMD_ROUNDING) { return scalarOp<float>(dst, src, [](auto d, auto s) { return d + s; }); }
-    u128 CpuImpl::addsd(u128 dst, u128 src, SIMD_ROUNDING) { return scalarOp<double>(dst, src, [](auto d, auto s) { return d + s; }); }
+    u128 CpuImpl::addss(u128 dst, u128 src, SIMD_ROUNDING) { return scalarOp<float, float>(dst, src, [](auto d, auto s) { return d + s; }); }
+    u128 CpuImpl::addsd(u128 dst, u128 src, SIMD_ROUNDING) { return scalarOp<double, double>(dst, src, [](auto d, auto s) { return d + s; }); }
 
-    u128 CpuImpl::subss(u128 dst, u128 src, SIMD_ROUNDING) { return scalarOp<float>(dst, src, [](auto d, auto s) { return d - s; }); }
-    u128 CpuImpl::subsd(u128 dst, u128 src, SIMD_ROUNDING) { return scalarOp<double>(dst, src, [](auto d, auto s) { return d - s; }); }
+    u128 CpuImpl::subss(u128 dst, u128 src, SIMD_ROUNDING) { return scalarOp<float, float>(dst, src, [](auto d, auto s) { return d - s; }); }
+    u128 CpuImpl::subsd(u128 dst, u128 src, SIMD_ROUNDING) { return scalarOp<double, double>(dst, src, [](auto d, auto s) { return d - s; }); }
 
-    u128 CpuImpl::mulss(u128 dst, u128 src, SIMD_ROUNDING) { return scalarOp<float>(dst, src, [](auto d, auto s) { return d * s; }); }
-    u128 CpuImpl::mulsd(u128 dst, u128 src, SIMD_ROUNDING) { return scalarOp<double>(dst, src, [](auto d, auto s) { return d * s; }); }
+    u128 CpuImpl::mulss(u128 dst, u128 src, SIMD_ROUNDING) { return scalarOp<float, float>(dst, src, [](auto d, auto s) { return d * s; }); }
+    u128 CpuImpl::mulsd(u128 dst, u128 src, SIMD_ROUNDING) { return scalarOp<double, double>(dst, src, [](auto d, auto s) { return d * s; }); }
 
-    u128 CpuImpl::divss(u128 dst, u128 src, SIMD_ROUNDING) { return scalarOp<float>(dst, src, [](auto d, auto s) { return d / s; }); }
-    u128 CpuImpl::divsd(u128 dst, u128 src, SIMD_ROUNDING) { return scalarOp<double>(dst, src, [](auto d, auto s) { return d / s; }); }
+    u128 CpuImpl::divss(u128 dst, u128 src, SIMD_ROUNDING) { return scalarOp<float, float>(dst, src, [](auto d, auto s) { return d / s; }); }
+    u128 CpuImpl::divsd(u128 dst, u128 src, SIMD_ROUNDING) { return scalarOp<double, double>(dst, src, [](auto d, auto s) { return d / s; }); }
 
     void CpuImpl::comiss(u128 dst, u128 src, Flags* flags, SIMD_ROUNDING) {
         static_assert(sizeof(u32) == sizeof(float));
@@ -872,14 +874,10 @@ namespace x64 {
         return dst;
     }
 
-    u64 CpuImpl::cmpsd(u64 dst, u64 src, FCond cond) {
-        static_assert(sizeof(u64) == sizeof(double));
-        double d;
-        double s;
-        std::memcpy(&d, &dst, sizeof(d));
-        std::memcpy(&s, &src, sizeof(s));
-        auto mask = [](bool res) -> u64 {
-            return res ? (u64)(-1) : 0x0;
+    template<typename T, typename F>
+    static T compare(F d, F s, FCond cond) {
+        auto mask = [](bool res) -> T {
+            return res ? (T)(-1) : 0x0;
         };
         switch(cond) {
             case FCond::EQ:    return mask(d == s);
@@ -891,7 +889,24 @@ namespace x64 {
             case FCond::NLE:   return mask(!(d <= s));
             case FCond::ORD:   return mask(d == d && s == s);
         }
+        assert(false);
         __builtin_unreachable();
+    }
+
+    u128 CpuImpl::cmpss(u128 dst, u128 src, FCond cond) {
+        return scalarOp<u32, float>(dst, src, [=](float d, float s) -> u32 { return compare<u32, float>(d, s, cond); });
+    }
+
+    u128 CpuImpl::cmpsd(u128 dst, u128 src, FCond cond) {
+        return scalarOp<u64, double>(dst, src, [=](double d, double s) -> u64 { return compare<u64, double>(d, s, cond); });
+    }
+
+    u128 CpuImpl::cmpps(u128 dst, u128 src, FCond cond) {
+        return packedOp<u32, float>(dst, src, [=](float d, float s) -> u32 { return compare<u32, float>(d, s, cond); });
+    }
+
+    u128 CpuImpl::cmppd(u128 dst, u128 src, FCond cond) {
+        return packedOp<u64, double>(dst, src, [=](double d, double s) -> u64 { return compare<u64, double>(d, s, cond); });
     }
 
     u128 CpuImpl::cvtsi2ss32(u128 dst, u32 src) {

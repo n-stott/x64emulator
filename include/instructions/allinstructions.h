@@ -710,6 +710,38 @@ namespace x64 {
     };
 
     template<typename Dst, typename Src>
+    struct Cmpss {
+        FCond cond;
+        Dst dst;
+        Src src;
+        TAG_SSE;
+    };
+
+    template<typename Dst, typename Src>
+    struct Cmpsd {
+        FCond cond;
+        Dst dst;
+        Src src;
+        TAG_SSE;
+    };
+
+    template<typename Dst, typename Src>
+    struct Cmpps {
+        FCond cond;
+        Dst dst;
+        Src src;
+        TAG_SSE;
+    };
+
+    template<typename Dst, typename Src>
+    struct Cmppd {
+        FCond cond;
+        Dst dst;
+        Src src;
+        TAG_SSE;
+    };
+
+    template<typename Dst, typename Src>
     struct Maxss {
         Dst dst;
         Src src;
@@ -748,14 +780,6 @@ namespace x64 {
     struct Sqrtsd {
         Dst dst;
         Src src;
-        TAG_SSE;
-    };
-
-    template<typename Dst, typename Src>
-    struct Cmpsd {
-        Dst dst;
-        Src src;
-        FCond cond;
         TAG_SSE;
     };
 

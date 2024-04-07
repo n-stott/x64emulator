@@ -589,8 +589,12 @@ namespace x64 {
         void exec(const Minsd<RSSE, RSSE>&);
         void exec(const Minsd<RSSE, M64>&);
 
+        void exec(const Cmpss<RSSE, RSSE>&);
+        void exec(const Cmpss<RSSE, M32>&);
         void exec(const Cmpsd<RSSE, RSSE>&);
         void exec(const Cmpsd<RSSE, M64>&);
+        void exec(const Cmpps<RSSE, RMSSE>&);
+        void exec(const Cmppd<RSSE, RMSSE>&);
 
         void exec(const Cvtsi2ss<RSSE, RM32>&);
         void exec(const Cvtsi2ss<RSSE, RM64>&);
