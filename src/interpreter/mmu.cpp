@@ -8,6 +8,14 @@
 
 namespace x64 {
 
+    static u64 alignDown(u64 address, u64 alignment) {
+        return (address / alignment) * alignment;
+    }
+
+    static u64 alignUp(u64 address, u64 alignment) {
+        return ((address + alignment - 1) / alignment) * alignment;
+    }
+
     Mmu::Region::Region(std::string file, u64 base, u64 size, PROT prot) {
         this->file_ = std::move(file);
         this->base_ = base;
@@ -312,6 +320,26 @@ namespace x64 {
     u128 Mmu::read128(Ptr128 ptr) const {
         return read<u128>(ptr);
     }
+    u128 Mmu::readUnaligned128(Ptr128 ptr) const {
+        u64 address = resolve(ptr);
+        u64 endAddress = address + 31;
+        const Region* region = findAddress(address);
+        const Region* endRegion = findAddress(endAddress);
+        if(region == endRegion) return read128(ptr);
+        fmt::print("true unaligned read\n");
+        verify(!!region);
+        verify(!!endRegion);
+        u128 l = region->read128(alignDown(address, 128));
+        u128 r = endRegion->read128(alignUp(address, 128));
+        static_assert(sizeof(l) == 16);
+        std::array<u8, 32> bytes;
+        std::memcpy(bytes.data() + 0 , &l, sizeof(l));
+        std::memcpy(bytes.data() + 16, &r, sizeof(r));
+        u64 offset = address % 16;
+        u128 res;
+        std::memcpy(&res, bytes.data() + offset, sizeof(res));
+        return res;
+    }
 
     void Mmu::write8(Ptr8 ptr, u8 value) {
         write(ptr, value);
@@ -330,6 +358,26 @@ namespace x64 {
     }
     void Mmu::write128(Ptr128 ptr, u128 value) {
         write(ptr, value);
+    }
+    void Mmu::writeUnaligned128(Ptr128 ptr, u128 value) {
+        u64 address = resolve(ptr);
+        u64 endAddress = address + 31;
+        Region* region = findAddress(address);
+        Region* endRegion = findAddress(endAddress);
+        if(region == endRegion) return write128(ptr, value);
+        fmt::print("true unaligned write\n");
+        verify(!!region);
+        verify(!!endRegion);
+        u128 l = region->read128(alignDown(address, 128));
+        u128 r = endRegion->read128(alignUp(address, 128));
+        static_assert(sizeof(l) == 16);
+        std::array<u8, 32> bytes;
+        std::memcpy(bytes.data() + 0 , &l, sizeof(l));
+        std::memcpy(bytes.data() + 16, &r, sizeof(r));
+        u64 offset = address % 16;
+        std::memcpy(bytes.data() + offset, &value, sizeof(value));
+        region->write128(alignDown(address, 128), l);
+        endRegion->write128(alignUp(address, 128), r);
     }
 
     void Mmu::dumpRegions() const {

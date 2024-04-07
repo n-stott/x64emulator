@@ -9,6 +9,8 @@
 #include <fmt/core.h>
 #include <cassert>
 
+#define COMPLAIN_ABOUT_ALIGNMENT 0
+
 namespace x64 {
 
     using Impl = CheckedCpuImpl;
@@ -43,6 +45,10 @@ namespace x64 {
         return mmu_->read128(ptr);
     }
 
+    Xmm Cpu::getUnaligned(Ptr128 ptr) const {
+        return mmu_->readUnaligned128(ptr);
+    }
+
     void Cpu::set(Ptr8 ptr, u8 value) {
         mmu_->write8(ptr, value);
     }
@@ -65,6 +71,10 @@ namespace x64 {
 
     void Cpu::set(Ptr128 ptr, Xmm value) {
         mmu_->write128(ptr, value);
+    }
+
+    void Cpu::setUnaligned(Ptr128 ptr, Xmm value) {
+        mmu_->writeUnaligned128(ptr, value);
     }
 
     void Cpu::push8(u8 value) {
@@ -236,8 +246,10 @@ namespace x64 {
             case Insn::MOV_R64_IMM: return exec<Size::QWORD>(Mov<R64, Imm>{insn.op0<R64>(), insn.op1<Imm>()});
             case Insn::MOV_M64_IMM: return exec(Mov<M64, Imm>{insn.op0<M64>(), insn.op1<Imm>()});
             case Insn::MOV_RSSE_RSSE: return exec<Size::XMMWORD>(Mov<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
-            case Insn::MOV_RSSE_MSSE: return exec(Mov<RSSE, MSSE>{insn.op0<RSSE>(), insn.op1<MSSE>()});
-            case Insn::MOV_MSSE_RSSE: return exec(Mov<MSSE, RSSE>{insn.op0<MSSE>(), insn.op1<RSSE>()});
+            case Insn::MOV_ALIGNED_RSSE_MSSE: return exec(Mova<RSSE, MSSE>{insn.op0<RSSE>(), insn.op1<MSSE>()});
+            case Insn::MOV_ALIGNED_MSSE_RSSE: return exec(Mova<MSSE, RSSE>{insn.op0<MSSE>(), insn.op1<RSSE>()});
+            case Insn::MOV_UNALIGNED_RSSE_MSSE: return exec(Movu<RSSE, MSSE>{insn.op0<RSSE>(), insn.op1<MSSE>()});
+            case Insn::MOV_UNALIGNED_MSSE_RSSE: return exec(Movu<MSSE, RSSE>{insn.op0<MSSE>(), insn.op1<RSSE>()});
             case Insn::MOVSX_R16_RM8: return exec(Movsx<R16, RM8>{insn.op0<R16>(), insn.op1<RM8>()});
             case Insn::MOVSX_R32_RM8: return exec(Movsx<R32, RM8>{insn.op0<R32>(), insn.op1<RM8>()});
             case Insn::MOVSX_R32_RM16: return exec(Movsx<R32, RM16>{insn.op0<R32>(), insn.op1<RM16>()});
@@ -826,6 +838,48 @@ namespace x64 {
 
     template<Size size>
     void Cpu::exec(const Mov<M<size>, Imm>& ins) { set(resolve(ins.dst), get<U<size>>(ins.src)); }
+
+    static bool is128bitAligned(Ptr128 ptr) {
+        return ptr.address() % 16 == 0;
+    }
+
+    void Cpu::exec(const Mova<RSSE, MSSE>& ins) {
+        auto srcAddress = resolve(ins.src);
+#if COMPLAIN_ABOUT_ALIGNMENT
+        verify(is128bitAligned(srcAddress), [&]() {
+            fmt::print("source address {:#x} should be 16byte aligned\n", srcAddress.address());
+        });
+#endif
+        set(ins.dst, get(srcAddress));
+    }
+
+    void Cpu::exec(const Mova<MSSE, RSSE>& ins) {
+        auto dstAddress = resolve(ins.dst);
+#if COMPLAIN_ABOUT_ALIGNMENT
+        verify(is128bitAligned(dstAddress), [&]() {
+            fmt::print("destination address {:#x} should be 16byte aligned\n", dstAddress.address());
+        });
+#endif
+        set(dstAddress, get(ins.src));
+    }
+
+    void Cpu::exec(const Movu<RSSE, MSSE>& ins) {
+        auto srcAddress = resolve(ins.src);
+        if(is128bitAligned(srcAddress)) {
+            set(ins.dst, get(srcAddress));
+        } else {
+            set(ins.dst, getUnaligned(srcAddress));
+        }
+    }
+
+    void Cpu::exec(const Movu<MSSE, RSSE>& ins) {
+        auto dstAddress = resolve(ins.dst);
+        if(is128bitAligned(dstAddress)) {
+            set(dstAddress, get(ins.src));
+        } else {
+            setUnaligned(dstAddress, get(ins.src));
+        }
+    }
 
     void Cpu::exec(const Movsx<R16, RM8>& ins) { set(ins.dst, signExtend<u16>(get(ins.src))); }
     void Cpu::exec(const Movsx<R32, RM8>& ins) { set(ins.dst, signExtend<u32>(get(ins.src))); }

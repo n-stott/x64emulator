@@ -112,11 +112,9 @@ namespace x64 {
         static X64Instruction makeBswap(const cs_insn& insn);
 
         static X64Instruction makePxor(const cs_insn& insn);
-        static X64Instruction makeMovaps(const cs_insn& insn);
         static X64Instruction makeMovabs(const cs_insn& insn);
-        static X64Instruction makeMovdqa(const cs_insn& insn);
-        static X64Instruction makeMovdqu(const cs_insn& insn);
-        static X64Instruction makeMovups(const cs_insn& insn);
+
+        static X64Instruction makeMovupd(const cs_insn& insn);
         static X64Instruction makeMovapd(const cs_insn& insn);
 
         static X64Instruction makeMovd(const cs_insn& insn);

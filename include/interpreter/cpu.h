@@ -89,6 +89,7 @@ namespace x64 {
         u64 get(Ptr64 ptr) const;
         f80 get(Ptr80 ptr) const;
         Xmm get(Ptr128 ptr) const;
+        Xmm getUnaligned(Ptr128 ptr) const;
 
         u64 resolve(Encoding addr) const { return regs_.resolve(addr); }
 
@@ -115,6 +116,7 @@ namespace x64 {
         void set(Ptr64 ptr, u64 value);
         void set(Ptr80 ptr, f80 value);
         void set(Ptr128 ptr, Xmm value);
+        void setUnaligned(Ptr128 ptr, Xmm value);
 
         template<Size size>
         inline U<size> get(const RM<size>& rm) const {
@@ -267,6 +269,11 @@ namespace x64 {
 
         template<Size size>
         void exec(const Mov<M<size>, Imm>&);
+
+        void exec(const Mova<RSSE, MSSE>&);
+        void exec(const Mova<MSSE, RSSE>&);
+        void exec(const Movu<RSSE, MSSE>&);
+        void exec(const Movu<MSSE, RSSE>&);
 
         void exec(const Movsx<R16, RM8>&);
         void exec(const Movsx<R32, RM8>&);

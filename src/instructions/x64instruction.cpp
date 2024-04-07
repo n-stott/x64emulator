@@ -410,8 +410,10 @@ namespace utils {
             case Insn::MOV_R64_IMM: return toString<R64, Imm>("mov");
             case Insn::MOV_M64_IMM: return toString<M64, Imm>("mov");
             case Insn::MOV_RSSE_RSSE: return toString<RSSE, RSSE>("mov");
-            case Insn::MOV_RSSE_MSSE: return toString<RSSE, MSSE>("mov");
-            case Insn::MOV_MSSE_RSSE: return toString<MSSE, RSSE>("mov");
+            case Insn::MOV_ALIGNED_RSSE_MSSE: return toString<RSSE, MSSE>("mova");
+            case Insn::MOV_ALIGNED_MSSE_RSSE: return toString<MSSE, RSSE>("mova");
+            case Insn::MOV_UNALIGNED_RSSE_MSSE: return toString<RSSE, MSSE>("movu");
+            case Insn::MOV_UNALIGNED_MSSE_RSSE: return toString<MSSE, RSSE>("movu");
             case Insn::MOVSX_R16_RM8:  return toString<R16, RM8>("movsx");
             case Insn::MOVSX_R32_RM8:  return toString<R32, RM8>("movsx");
             case Insn::MOVSX_R32_RM16: return toString<R32, RM16>("movsx");

@@ -153,6 +153,7 @@ namespace x64 {
         u64 read64(Ptr64 ptr) const;
         f80 read80(Ptr80 ptr) const;
         u128 read128(Ptr128 ptr) const;
+        u128 readUnaligned128(Ptr128 ptr) const;
 
         void write8(Ptr8 ptr, u8 value);
         void write16(Ptr16 ptr, u16 value);
@@ -160,6 +161,7 @@ namespace x64 {
         void write64(Ptr64 ptr, u64 value);
         void write80(Ptr80 ptr, f80 value);
         void write128(Ptr128 ptr, u128 value);
+        void writeUnaligned128(Ptr128 ptr, u128 value);
 
         void dumpRegions() const;
     

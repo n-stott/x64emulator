@@ -30,10 +30,12 @@ namespace x64 {
             case X86_INS_POPFQ: return makePopfq(insn);
             case X86_INS_MOV: return makeMov(insn);
             case X86_INS_MOVABS: return makeMovabs(insn);
-            case X86_INS_MOVDQA: return makeMovdqa(insn);
-            case X86_INS_MOVDQU: return makeMovdqu(insn);
-            case X86_INS_MOVUPS: return makeMovups(insn);
-            case X86_INS_MOVUPD:
+            case X86_INS_MOVDQU:
+            case X86_INS_MOVUPS:
+            case X86_INS_MOVUPD: return makeMovupd(insn);
+            case X86_INS_MOVNTDQ:
+            case X86_INS_MOVDQA:
+            case X86_INS_MOVAPS:
             case X86_INS_MOVAPD: return makeMovapd(insn);
             case X86_INS_MOVSX: return makeMovsx(insn);
             case X86_INS_MOVZX: return makeMovzx(insn);
@@ -138,8 +140,6 @@ namespace x64 {
             case X86_INS_CDQE: return makeCdqe(insn);
             case X86_INS_BSWAP: return makeBswap(insn);
             case X86_INS_PXOR: return makePxor(insn);
-            case X86_INS_MOVAPS: 
-            case X86_INS_MOVNTDQ: return makeMovaps(insn);
             case X86_INS_MOVD: return makeMovd(insn);
             case X86_INS_MOVQ: return makeMovq(insn);
             case X86_INS_FLDZ: return makeFldz(insn);
@@ -1661,17 +1661,6 @@ namespace x64 {
         return make_failed(insn);
     }
 
-    X64Instruction CapstoneWrapper::makeMovaps(const cs_insn& insn) {
-        const auto& x86detail = insn.detail->x86;
-        assert(x86detail.op_count == 2);
-        const cs_x86_op& dst = x86detail.operands[0];
-        const cs_x86_op& src = x86detail.operands[1];
-        auto rmssedst = asRM128(dst);
-        auto rmssesrc = asRM128(src);
-        if(rmssedst && rmssesrc) return X64Instruction::make<Insn::MOVAPS_RMSSE_RMSSE>(insn.address, insn.size, rmssedst.value(), rmssesrc.value());
-        return make_failed(insn);
-    }
-
     X64Instruction CapstoneWrapper::makeMovabs(const cs_insn& insn) {
         const auto& x86detail = insn.detail->x86;
         assert(x86detail.op_count == 2);
@@ -1688,7 +1677,7 @@ namespace x64 {
         return make_failed(insn);
     }
 
-    X64Instruction CapstoneWrapper::makeMovdqa(const cs_insn& insn) {
+    X64Instruction CapstoneWrapper::makeMovupd(const cs_insn& insn) {
         const auto& x86detail = insn.detail->x86;
         assert(x86detail.op_count == 2);
         const cs_x86_op& dst = x86detail.operands[0];
@@ -1697,38 +1686,8 @@ namespace x64 {
         auto rmssesrc = asRM128(src);
         if(rmssedst && rmssesrc) {
             if(rmssedst->isReg && rmssesrc->isReg) return X64Instruction::make<Insn::MOV_RSSE_RSSE>(insn.address, insn.size, rmssedst->reg, rmssesrc->reg);
-            if(!rmssedst->isReg && rmssesrc->isReg) return X64Instruction::make<Insn::MOV_MSSE_RSSE>(insn.address, insn.size, rmssedst->mem, rmssesrc->reg);
-            if(rmssedst->isReg && !rmssesrc->isReg) return X64Instruction::make<Insn::MOV_RSSE_MSSE>(insn.address, insn.size, rmssedst->reg, rmssesrc->mem);
-        }
-        return make_failed(insn);
-    }
-
-    X64Instruction CapstoneWrapper::makeMovdqu(const cs_insn& insn) {
-        const auto& x86detail = insn.detail->x86;
-        assert(x86detail.op_count == 2);
-        const cs_x86_op& dst = x86detail.operands[0];
-        const cs_x86_op& src = x86detail.operands[1];
-        auto rmssedst = asRM128(dst);
-        auto rmssesrc = asRM128(src);
-        if(rmssedst && rmssesrc) {
-            if(rmssedst->isReg && rmssesrc->isReg) return X64Instruction::make<Insn::MOV_RSSE_RSSE>(insn.address, insn.size, rmssedst->reg, rmssesrc->reg);
-            if(!rmssedst->isReg && rmssesrc->isReg) return X64Instruction::make<Insn::MOV_MSSE_RSSE>(insn.address, insn.size, rmssedst->mem, rmssesrc->reg);
-            if(rmssedst->isReg && !rmssesrc->isReg) return X64Instruction::make<Insn::MOV_RSSE_MSSE>(insn.address, insn.size, rmssedst->reg, rmssesrc->mem);
-        }
-        return make_failed(insn);
-    }
-
-    X64Instruction CapstoneWrapper::makeMovups(const cs_insn& insn) {
-        const auto& x86detail = insn.detail->x86;
-        assert(x86detail.op_count == 2);
-        const cs_x86_op& dst = x86detail.operands[0];
-        const cs_x86_op& src = x86detail.operands[1];
-        auto rmssedst = asRM128(dst);
-        auto rmssesrc = asRM128(src);
-        if(rmssedst && rmssesrc) {
-            if(rmssedst->isReg && rmssesrc->isReg) return X64Instruction::make<Insn::MOV_RSSE_RSSE>(insn.address, insn.size, rmssedst->reg, rmssesrc->reg);
-            if(!rmssedst->isReg && rmssesrc->isReg) return X64Instruction::make<Insn::MOV_MSSE_RSSE>(insn.address, insn.size, rmssedst->mem, rmssesrc->reg);
-            if(rmssedst->isReg && !rmssesrc->isReg) return X64Instruction::make<Insn::MOV_RSSE_MSSE>(insn.address, insn.size, rmssedst->reg, rmssesrc->mem);
+            if(!rmssedst->isReg && rmssesrc->isReg) return X64Instruction::make<Insn::MOV_UNALIGNED_MSSE_RSSE>(insn.address, insn.size, rmssedst->mem, rmssesrc->reg);
+            if(rmssedst->isReg && !rmssesrc->isReg) return X64Instruction::make<Insn::MOV_UNALIGNED_RSSE_MSSE>(insn.address, insn.size, rmssedst->reg, rmssesrc->mem);
         }
         return make_failed(insn);
     }
@@ -1742,8 +1701,8 @@ namespace x64 {
         auto rmssesrc = asRM128(src);
         if(rmssedst && rmssesrc) {
             if(rmssedst->isReg && rmssesrc->isReg) return X64Instruction::make<Insn::MOV_RSSE_RSSE>(insn.address, insn.size, rmssedst->reg, rmssesrc->reg);
-            if(!rmssedst->isReg && rmssesrc->isReg) return X64Instruction::make<Insn::MOV_MSSE_RSSE>(insn.address, insn.size, rmssedst->mem, rmssesrc->reg);
-            if(rmssedst->isReg && !rmssesrc->isReg) return X64Instruction::make<Insn::MOV_RSSE_MSSE>(insn.address, insn.size, rmssedst->reg, rmssesrc->mem);
+            if(!rmssedst->isReg && rmssesrc->isReg) return X64Instruction::make<Insn::MOV_ALIGNED_MSSE_RSSE>(insn.address, insn.size, rmssedst->mem, rmssesrc->reg);
+            if(rmssedst->isReg && !rmssesrc->isReg) return X64Instruction::make<Insn::MOV_ALIGNED_RSSE_MSSE>(insn.address, insn.size, rmssedst->reg, rmssesrc->mem);
         }
         return make_failed(insn);
     }

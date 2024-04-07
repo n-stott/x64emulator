@@ -19,6 +19,18 @@ namespace x64 {
     };
 
     template<typename Dst, typename Src>
+    struct Mova {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
+    struct Movu {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
     struct Movsx {
         Dst dst;
         Src src;
