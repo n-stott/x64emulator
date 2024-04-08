@@ -326,7 +326,6 @@ namespace x64 {
         const Region* region = findAddress(address);
         const Region* endRegion = findAddress(endAddress);
         if(region == endRegion) return read128(ptr);
-        fmt::print("true unaligned read\n");
         verify(!!region);
         verify(!!endRegion);
         u128 l = region->read128(alignDown(address, 128));
@@ -365,7 +364,6 @@ namespace x64 {
         Region* region = findAddress(address);
         Region* endRegion = findAddress(endAddress);
         if(region == endRegion) return write128(ptr, value);
-        fmt::print("true unaligned write\n");
         verify(!!region);
         verify(!!endRegion);
         u128 l = region->read128(alignDown(address, 128));
