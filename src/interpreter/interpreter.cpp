@@ -142,10 +142,6 @@ namespace x64 {
             auxiliary->programHeaderEntrySize = sizeof(elf::ProgramHeader64);
         }
 
-        std::string shortFilePath = filepath.find_last_of('/') == std::string::npos 
-                                    ? filepath
-                                    : filepath.substr(filepath.find_last_of('/')+1);
-
         auto loadProgramHeader = [&](const elf::ProgramHeader64& header) {
             u64 start = Mmu::pageRoundDown(elfOffset + header.virtualAddress());
             u64 end = Mmu::pageRoundUp(elfOffset + header.virtualAddress() + header.sizeInMemory());
@@ -160,7 +156,7 @@ namespace x64 {
             if(header.isWritable()) prot = prot | PROT::WRITE;
             if(header.isExecutable()) prot = prot | PROT::EXEC;
             mmu->mprotect(nonExecSectionBase, nonExecSectionSize, prot);
-            mmu->setRegionName(nonExecSectionBase, shortFilePath);
+            mmu->setRegionName(nonExecSectionBase, filepath);
         };
 
         elf64->forAllProgramHeaders([&](const elf::ProgramHeader64& header) {
