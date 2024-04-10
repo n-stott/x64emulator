@@ -371,6 +371,12 @@ namespace x64 {
         return ret;
     }
 
+    int Host::shutdown(FD sockfd, int how) {
+        int ret = ::shutdown(sockfd.fd, how);
+        if(ret < 0) return -errno;
+        return ret;
+    }
+
     ErrnoOr<std::pair<Buffer, Buffer>> Host::recvfrom(FD sockfd, size_t len, int flags, bool requireSrcAddress) {
         static_assert(sizeof(socklen_t) == sizeof(u32));
         if(requireSrcAddress) {

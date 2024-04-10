@@ -158,6 +158,7 @@ namespace x64 {
         static ErrnoOrBuffer getsockname(int sockfd, u32 buffersize);
         static ErrnoOrBuffer getpeername(int sockfd, u32 buffersize);
         static int bind(FD sockfd, const Buffer& addr);
+        static int shutdown(FD sockfd, int how);
 
         static ErrnoOr<std::pair<Buffer, Buffer>> recvfrom(FD sockfd, size_t len, int flags, bool requireSrcAddress);
         static ssize_t recvmsg(FD sockfd, int flags, Buffer* msg_name, std::vector<Buffer>* msg_iov, Buffer* msg_control, int* msg_flags);

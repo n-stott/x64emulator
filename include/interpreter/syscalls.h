@@ -173,6 +173,8 @@ namespace x64 {
         ssize_t sendmsg(int sockfd, Ptr msg, int flags);
         // 0x2f
         ssize_t recvmsg(int sockfd, Ptr msg, int flags);
+        // 0x30
+        int shutdown(int sockfd, int how);
         // 0x31
         int bind(int sockfd, Ptr addr, socklen_t addrlen);
         // 0x33

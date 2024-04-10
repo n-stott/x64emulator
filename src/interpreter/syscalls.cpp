@@ -70,6 +70,7 @@ namespace x64 {
             case 0x2d: return cpu->set(R64::RAX, invoke_syscall_6(&Sys::recvfrom, regs));
             case 0x2e: return cpu->set(R64::RAX, invoke_syscall_3(&Sys::sendmsg, regs));
             case 0x2f: return cpu->set(R64::RAX, invoke_syscall_3(&Sys::recvmsg, regs));
+            case 0x30: return cpu->set(R64::RAX, invoke_syscall_2(&Sys::shutdown, regs));
             case 0x31: return cpu->set(R64::RAX, invoke_syscall_3(&Sys::bind, regs));
             case 0x33: return cpu->set(R64::RAX, invoke_syscall_3(&Sys::getsockname, regs));
             case 0x34: return cpu->set(R64::RAX, invoke_syscall_3(&Sys::getpeername, regs));
@@ -799,6 +800,15 @@ namespace x64 {
             mmu_->copyToMmu(Ptr8{(u64)msg_iovecs[i].iov_base}, msg_iov[i].data(), msg_iov[i].size());
         }
         return nbytes;
+    }
+
+    int Sys::shutdown(int sockfd, int how) {
+        int rc = host_->shutdown(Host::FD{sockfd}, how);
+        if(logSyscalls_) {
+            print("Sys::shutdown(sockfd={}, how={}) = {}\n",
+                        sockfd, how, rc);
+        }
+        return rc;
     }
 
     int Sys::bind(int sockfd, Ptr addr, socklen_t addrlen) {
