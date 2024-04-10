@@ -566,6 +566,7 @@ namespace utils {
             case Insn::BSF_R64_M64: return toString<R64, M64>("bsf");
             case Insn::CLD: return toString("cld");
             case Insn::STD: return toString("std");
+            case Insn::MOVS_M8_M8: return toString<M8, M8>("movs");
             case Insn::MOVS_M64_M64: return toString<M64, M64>("movs");
             case Insn::REP_MOVS_M8_M8: return toString<M8, M8>("rep movs");
             case Insn::REP_MOVS_M32_M32: return toString<M32, M32>("rep movs");

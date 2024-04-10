@@ -239,24 +239,34 @@ namespace x64 {
     }
 
     VM::InstructionPosition VM::findSectionWithAddress(u64 address, const ExecutableSection* sectionHint) const {
+        auto findInstructionPosition = [](const ExecutableSection* section, u64 address) -> std::optional<InstructionPosition> {
+            assert(!!section);
+
+            // find instruction following address
+            auto it = std::lower_bound(section->instructions.begin(), section->instructions.end(), address, [&](const auto& a, u64 b) {
+                return a.address() < b;
+            });
+            if(it == section->instructions.end()) return {};
+            if(address != it->address()) return {};
+
+            size_t index = (size_t)std::distance(section->instructions.begin(), it);
+            return InstructionPosition { section, index };
+        };
+
         if(!!sectionHint) {
-            auto it = std::lower_bound(sectionHint->instructions.begin(), sectionHint->instructions.end(), address, [&](const auto& a, u64 b) {
-                return a.address() < b;
-            });
-            if(it != sectionHint->instructions.end() && address == it->address()) {
-                size_t index = (size_t)std::distance(sectionHint->instructions.begin(), it);
-                return InstructionPosition { sectionHint, index };
+            if(auto ip = findInstructionPosition(sectionHint, address)) return ip.value();
+        }
+
+        auto candidateSectionIt = std::upper_bound(executableSections_.begin(), executableSections_.end(), address, [&](u64 a, const auto& b) {
+            return a < b->end;
+        });
+        if(candidateSectionIt != executableSections_.end()) {
+            const auto* candidateSection = candidateSectionIt->get();
+            if(candidateSection->begin <= address && address < candidateSection->end) {
+                if(auto ip = findInstructionPosition(candidateSection, address)) return ip.value();
             }
         }
-        for(const auto& execSection : executableSections_) {
-            auto it = std::lower_bound(execSection.instructions.begin(), execSection.instructions.end(), address, [&](const auto& a, u64 b) {
-                return a.address() < b;
-            });
-            if(it != execSection.instructions.end() && address == it->address()) {
-                size_t index = (size_t)std::distance(execSection.instructions.begin(), it);
-                return InstructionPosition { &execSection, index };
-            }
-        }
+        
         // If we land here, we probably have not disassembled the section yet...
         const Mmu::Region* mmuRegion = ((const Mmu*)mmu_)->findAddress(address);
         if(!mmuRegion) return InstructionPosition { nullptr, (size_t)(-1) };
@@ -269,7 +279,7 @@ namespace x64 {
         u64 end = std::min(mmuRegion->end(), address + Mmu::PAGE_SIZE);
         // try to avoid re-disassembling
         for(const auto& execSection : executableSections_) {
-            if(address < execSection.begin && execSection.begin <= end) end = execSection.begin;
+            if(address < execSection->begin && execSection->begin <= end) end = execSection->begin;
         }
 
         if(address >= end) {
@@ -294,12 +304,23 @@ namespace x64 {
         section.end = result.nextAddress;
         section.filename = mmuRegion->file();
         section.instructions = std::move(result.instructions);
-        executableSections_.push_back(std::move(section));
+        
+        auto newSection = std::make_unique<ExecutableSection>(std::move(section));
+        const auto* sectionPtr = newSection.get();
+
+        auto position = std::lower_bound(executableSections_.begin(), executableSections_.end(), address, [](const auto& a, u64 b) {
+            return a->begin < b;
+        });
+        executableSections_.insert(position, std::move(newSection));
+
+        assert(std::is_sorted(executableSections_.begin(), executableSections_.end(), [](const auto& a, const auto& b) {
+            return a->begin < b->begin;
+        }));
 
         // Retrieve symbols from that section
         tryRetrieveSymbolsFromExecutable(*mmuRegion);
 
-        return InstructionPosition { &executableSections_.back(), 0 };
+        return InstructionPosition { sectionPtr, 0 };
     }
 
 

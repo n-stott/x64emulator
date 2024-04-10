@@ -1605,6 +1605,7 @@ namespace x64 {
         auto m64src = asMemory64(src);
         auto m64dst = asMemory64(dst);
         if(prefixByte == 0) {
+            if(m8dst && m8src) return X64Instruction::make<Insn::MOVS_M8_M8>(insn.address, insn.size, m8dst.value(), m8src.value());
             if(m64dst && m64src) return X64Instruction::make<Insn::MOVS_M64_M64>(insn.address, insn.size, m64dst.value(), m64src.value());
         } else if((x86_prefix)prefixByte == X86_PREFIX_REP) {
             if(m8dst && m8src) return X64Instruction::make<Insn::REP_MOVS_M8_M8>(insn.address, insn.size, m8dst.value(), m8src.value());

@@ -458,6 +458,7 @@ namespace x64 {
         void exec(const Cld&);
         void exec(const Std&);
 
+        void exec(const Movs<M8, M8>&);
         void exec(const Movs<M64, M64>&);
         void exec(const Rep<Movs<M8, M8>>&);
         void exec(const Rep<Movs<M32, M32>>&);

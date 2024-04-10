@@ -70,7 +70,7 @@ namespace x64 {
         Sys* syscalls_;
         Cpu cpu_;
 
-        mutable std::deque<ExecutableSection> executableSections_;
+        mutable std::vector<std::unique_ptr<ExecutableSection>> executableSections_;
         bool hasCrashed_ = false;
         bool logInstructions_ = false;
         unsigned long long nbTicksBeforeLoggingInstructions_;

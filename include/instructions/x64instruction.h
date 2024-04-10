@@ -273,6 +273,7 @@ namespace x64 {
         BSF_R64_M64,
         CLD,
         STD,
+        MOVS_M8_M8,
         MOVS_M64_M64,
         REP_MOVS_M8_M8,
         REP_MOVS_M32_M32,

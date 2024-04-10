@@ -402,6 +402,7 @@ namespace x64 {
             case Insn::BSF_R64_M64: return exec(Bsf<R64, M64>{insn.op0<R64>(), insn.op1<M64>()});
             case Insn::CLD: return exec(Cld{});
             case Insn::STD: return exec(Std{});
+            case Insn::MOVS_M8_M8: return exec(Movs<M8, M8>{insn.op0<M8>(), insn.op1<M8>()});
             case Insn::MOVS_M64_M64: return exec(Movs<M64, M64>{insn.op0<M64>(), insn.op1<M64>()});
             case Insn::REP_MOVS_M8_M8: return exec(Rep<Movs<M8, M8>>{Movs<M8, M8>{insn.op0<M8>(), insn.op1<M8>()}});
             case Insn::REP_MOVS_M32_M32: return exec(Rep<Movs<M32, M32>>{Movs<M32, M32>{insn.op0<M32>(), insn.op1<M32>()}});
@@ -1264,6 +1265,18 @@ namespace x64 {
             --counter;
         }
         set(R32::ECX, counter);
+        set(R64::RSI, sptr.address());
+        set(R64::RDI, dptr.address());
+    }
+
+    void Cpu::exec(const Movs<M8, M8>& ins) {
+        Ptr8 dptr = resolve(ins.dst);
+        Ptr8 sptr = resolve(ins.src);
+        verify(flags_.direction == 0);
+        u8 val = mmu_->read8(sptr);
+        mmu_->write8(dptr, val);
+        ++sptr;
+        ++dptr;
         set(R64::RSI, sptr.address());
         set(R64::RDI, dptr.address());
     }
