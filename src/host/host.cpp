@@ -576,6 +576,9 @@ namespace x64 {
         path.resize(size, 0x0);
         char* cwd = ::getcwd((char*)path.data(), path.size());
         if(!cwd) return ErrnoOrBuffer(-errno);
+        size_t actualSize = 0;
+        for(auto it = path.begin(); it != path.end() && *it != '\0'; ++it) ++actualSize;
+        path.resize(actualSize+1);
         return ErrnoOrBuffer(Buffer{std::move(path)});
     }
 
