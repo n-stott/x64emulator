@@ -5,6 +5,7 @@
 #include "interpreter/mmu.h"
 #include "interpreter/verify.h"
 #include "host/host.h"
+#include <fmt/ranges.h>
 #include <numeric>
 #include <sys/socket.h>
 
@@ -202,8 +203,11 @@ namespace x64 {
         Buffer buffer(std::move(pollfds));
         auto errnoOrBufferAndReturnValue = host_->poll(buffer, nfds, timeout);
         if(logSyscalls_) {
-            print("Sys::poll(fds={:#x}, nfds={}, timeout={}) = {}\n",
-                                  fds.address(), nfds, timeout,
+            auto pfds = mmu_->readFromMmu<u32>(fds, nfds*2);
+            std::string fdsString = fmt::format("[{}]", fmt::join(pfds, ", "));
+
+            print("Sys::poll(fds={}, nfds={}, timeout={}) = {}\n",
+                                  fdsString, nfds, timeout,
                                   errnoOrBufferAndReturnValue.errorOrWith<int>([](const auto& bufferAndRetVal) {
                                     return bufferAndRetVal.returnValue;
                                   }));
@@ -709,7 +713,7 @@ namespace x64 {
         bool requireSrcAddress = !!src_addr && !!addrlen;
         ErrnoOr<std::pair<Buffer, Buffer>> ret = host_->recvfrom(Host::FD{sockfd}, len, flags, requireSrcAddress);
         if(logSyscalls_) {
-            print("Sys::recvfrom(sockfd={}, buf={:#x}, len={}, flags={}, src_addr={:#x}, addrlen={:#x}) = {}",
+            print("Sys::recvfrom(sockfd={}, buf={:#x}, len={}, flags={}, src_addr={:#x}, addrlen={:#x}) = {}\n",
                                       sockfd, buf.address(), len, flags, src_addr.address(), addrlen.address(),
                                       ret.errorOrWith<ssize_t>([](const auto& buffers) {
                 return (ssize_t)buffers.first.size();
