@@ -182,6 +182,10 @@ namespace x64 {
         static X64Instruction makeMaxsd(const cs_insn& insn);
         static X64Instruction makeMinss(const cs_insn& insn);
         static X64Instruction makeMinsd(const cs_insn& insn);
+        static X64Instruction makeMaxps(const cs_insn& insn);
+        static X64Instruction makeMaxpd(const cs_insn& insn);
+        static X64Instruction makeMinps(const cs_insn& insn);
+        static X64Instruction makeMinpd(const cs_insn& insn);
 
         template<FCond cond>
         static X64Instruction makeCmpss(const cs_insn& insn);

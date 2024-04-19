@@ -1394,6 +1394,66 @@ namespace x64 {
 #endif
     }
 
+    u128 CheckedCpuImpl::maxps(u128 dst, u128 src, SIMD_ROUNDING rounding) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::maxps(dst, src, rounding);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("maxps %1, %0" : "+x"(nativeRes) : "x"(src));
+        assert(virtualRes.lo == nativeRes.lo);
+        assert(virtualRes.hi == nativeRes.hi);
+        return nativeRes;
+#else
+        return CpuImpl::maxps(dst, src, rounding);
+#endif
+    }
+
+    u128 CheckedCpuImpl::maxpd(u128 dst, u128 src, SIMD_ROUNDING rounding) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::maxpd(dst, src, rounding);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("maxpd %1, %0" : "+x"(nativeRes) : "x"(src));
+        assert(virtualRes.lo == nativeRes.lo);
+        assert(virtualRes.hi == nativeRes.hi);
+        return nativeRes;
+#else
+        return CpuImpl::maxpd(dst, src, rounding);
+#endif
+    }
+
+    u128 CheckedCpuImpl::minps(u128 dst, u128 src, SIMD_ROUNDING rounding) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::minps(dst, src, rounding);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("minps %1, %0" : "+x"(nativeRes) : "x"(src));
+        assert(virtualRes.lo == nativeRes.lo);
+        assert(virtualRes.hi == nativeRes.hi);
+        return nativeRes;
+#else
+        return CpuImpl::minps(dst, src, rounding);
+#endif
+    }
+
+    u128 CheckedCpuImpl::minpd(u128 dst, u128 src, SIMD_ROUNDING rounding) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::minpd(dst, src, rounding);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("minpd %1, %0" : "+x"(nativeRes) : "x"(src));
+        assert(virtualRes.lo == nativeRes.lo);
+        assert(virtualRes.hi == nativeRes.hi);
+        return nativeRes;
+#else
+        return CpuImpl::minpd(dst, src, rounding);
+#endif
+    }
+
     u128 CheckedCpuImpl::mulss(u128 dst, u128 src, SIMD_ROUNDING rounding) {
 #if GCC_COMPILER
         u128 virtualRes = CpuImpl::mulss(dst, src, rounding);

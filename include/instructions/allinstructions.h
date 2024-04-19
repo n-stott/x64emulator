@@ -788,6 +788,34 @@ namespace x64 {
     };
 
     template<typename Dst, typename Src>
+    struct Maxps {
+        Dst dst;
+        Src src;
+        TAG_SSE;
+    };
+
+    template<typename Dst, typename Src>
+    struct Maxpd {
+        Dst dst;
+        Src src;
+        TAG_SSE;
+    };
+
+    template<typename Dst, typename Src>
+    struct Minps {
+        Dst dst;
+        Src src;
+        TAG_SSE;
+    };
+
+    template<typename Dst, typename Src>
+    struct Minpd {
+        Dst dst;
+        Src src;
+        TAG_SSE;
+    };
+
+    template<typename Dst, typename Src>
     struct Sqrtss {
         Dst dst;
         Src src;

@@ -168,6 +168,11 @@ namespace x64 {
         [[nodiscard]] static u128 minss(u128 dst, u128 src, SIMD_ROUNDING);
         [[nodiscard]] static u128 minsd(u128 dst, u128 src, SIMD_ROUNDING);
 
+        [[nodiscard]] static u128 maxps(u128 dst, u128 src, SIMD_ROUNDING);
+        [[nodiscard]] static u128 maxpd(u128 dst, u128 src, SIMD_ROUNDING);
+        [[nodiscard]] static u128 minps(u128 dst, u128 src, SIMD_ROUNDING);
+        [[nodiscard]] static u128 minpd(u128 dst, u128 src, SIMD_ROUNDING);
+
         [[nodiscard]] static u128 mulps(u128 dst, u128 src, SIMD_ROUNDING);
         [[nodiscard]] static u128 mulpd(u128 dst, u128 src, SIMD_ROUNDING);
 

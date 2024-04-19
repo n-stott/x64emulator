@@ -519,6 +519,10 @@ namespace x64 {
             case Insn::MINSS_RSSE_M32: return exec(Minss<RSSE, M32>{insn.op0<RSSE>(), insn.op1<M32>()});
             case Insn::MINSD_RSSE_RSSE: return exec(Minsd<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
             case Insn::MINSD_RSSE_M64: return exec(Minsd<RSSE, M64>{insn.op0<RSSE>(), insn.op1<M64>()});
+            case Insn::MAXPS_RSSE_RMSSE: return exec(Maxps<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
+            case Insn::MAXPD_RSSE_RMSSE: return exec(Maxpd<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
+            case Insn::MINPS_RSSE_RMSSE: return exec(Minps<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
+            case Insn::MINPD_RSSE_RMSSE: return exec(Minpd<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
             case Insn::CVTSI2SS_RSSE_RM32: return exec(Cvtsi2ss<RSSE, RM32>{insn.op0<RSSE>(), insn.op1<RM32>()});
             case Insn::CVTSI2SS_RSSE_RM64: return exec(Cvtsi2ss<RSSE, RM64>{insn.op0<RSSE>(), insn.op1<RM64>()});
             case Insn::CVTSI2SD_RSSE_RM32: return exec(Cvtsi2sd<RSSE, RM32>{insn.op0<RSSE>(), insn.op1<RM32>()});
@@ -1776,6 +1780,12 @@ namespace x64 {
     void Cpu::exec(const Minss<RSSE, M32>& ins) { set(ins.dst, Impl::minss(get(ins.dst), zeroExtend<Xmm, u32>(get(resolve(ins.src))), simdRoundingMode())); }
     void Cpu::exec(const Minsd<RSSE, RSSE>& ins) { set(ins.dst, Impl::minsd(get(ins.dst), get(ins.src), simdRoundingMode())); }
     void Cpu::exec(const Minsd<RSSE, M64>& ins) { set(ins.dst, Impl::minsd(get(ins.dst), zeroExtend<Xmm, u64>(get(resolve(ins.src))), simdRoundingMode())); }
+
+    void Cpu::exec(const Maxps<RSSE, RMSSE>& ins) { set(ins.dst, Impl::maxps(get(ins.dst), get(ins.src), simdRoundingMode())); }
+    void Cpu::exec(const Maxpd<RSSE, RMSSE>& ins) { set(ins.dst, Impl::maxpd(get(ins.dst), get(ins.src), simdRoundingMode())); }
+
+    void Cpu::exec(const Minps<RSSE, RMSSE>& ins) { set(ins.dst, Impl::minps(get(ins.dst), get(ins.src), simdRoundingMode())); }
+    void Cpu::exec(const Minpd<RSSE, RMSSE>& ins) { set(ins.dst, Impl::minpd(get(ins.dst), get(ins.src), simdRoundingMode())); }
 
     void Cpu::exec(const Cmpss<RSSE, RSSE>& ins) {
         u128 res = Impl::cmpss(get(ins.dst), get(ins.src), ins.cond);

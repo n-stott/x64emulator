@@ -199,6 +199,10 @@ namespace x64 {
             case X86_INS_MAXSD: return makeMaxsd(insn);
             case X86_INS_MINSS: return makeMinss(insn);
             case X86_INS_MINSD: return makeMinsd(insn);
+            case X86_INS_MAXPS: return makeMaxps(insn);
+            case X86_INS_MAXPD: return makeMaxpd(insn);
+            case X86_INS_MINPS: return makeMinps(insn);
+            case X86_INS_MINPD: return makeMinpd(insn);
             case X86_INS_CMPEQSS: return makeCmpss<FCond::EQ>(insn);
             case X86_INS_CMPLTSS: return makeCmpss<FCond::LT>(insn);
             case X86_INS_CMPLESS: return makeCmpss<FCond::LE>(insn);
@@ -2345,6 +2349,49 @@ namespace x64 {
         return make_failed(insn);
     }
 
+    X64Instruction CapstoneWrapper::makeMaxps(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto rmssesrc = asRM128(src);
+        if(rssedst && rmssesrc) return X64Instruction::make<Insn::MAXPS_RSSE_RMSSE>(insn.address, insn.size, rssedst.value(), rmssesrc.value());
+        return make_failed(insn);
+    }
+
+    X64Instruction CapstoneWrapper::makeMaxpd(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto rmssesrc = asRM128(src);
+        if(rssedst && rmssesrc) return X64Instruction::make<Insn::MAXPD_RSSE_RMSSE>(insn.address, insn.size, rssedst.value(), rmssesrc.value());
+        return make_failed(insn);
+    }
+
+    X64Instruction CapstoneWrapper::makeMinps(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto rmssesrc = asRM128(src);
+        if(rssedst && rmssesrc) return X64Instruction::make<Insn::MINPS_RSSE_RMSSE>(insn.address, insn.size, rssedst.value(), rmssesrc.value());
+        return make_failed(insn);
+    }
+
+    X64Instruction CapstoneWrapper::makeMinpd(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto rmssesrc = asRM128(src);
+        if(rssedst && rmssesrc) return X64Instruction::make<Insn::MINPD_RSSE_RMSSE>(insn.address, insn.size, rssedst.value(), rmssesrc.value());
+        return make_failed(insn);
+    }
 
     template<FCond cond>
     X64Instruction CapstoneWrapper::makeCmpss(const cs_insn& insn) {

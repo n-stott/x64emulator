@@ -829,23 +829,10 @@ namespace x64 {
         else return src;
     }
 
-    u128 CpuImpl::maxss(u128 dst, u128 src, SIMD_ROUNDING) {
-        float d, s;
-        std::memcpy(&d, &dst, sizeof(d));
-        std::memcpy(&s, &src, sizeof(s));
-        float res = max(d, s);
-        std::memcpy(&dst, &res, sizeof(res));
-        return dst;
-    }
-
-    u128 CpuImpl::maxsd(u128 dst, u128 src, SIMD_ROUNDING) {
-        double d, s;
-        std::memcpy(&d, &dst, sizeof(d));
-        std::memcpy(&s, &src, sizeof(s));
-        double res = max(d, s);
-        std::memcpy(&dst, &res, sizeof(res));
-        return dst;
-    }
+    u128 CpuImpl::maxss(u128 dst, u128 src, SIMD_ROUNDING) { return scalarOp<float, float>(dst, src, [](auto d, auto s) { return max(d, s); }); }
+    u128 CpuImpl::maxsd(u128 dst, u128 src, SIMD_ROUNDING) { return scalarOp<double, double>(dst, src, [](auto d, auto s) { return max(d, s); }); }
+    u128 CpuImpl::maxps(u128 dst, u128 src, SIMD_ROUNDING) { return packedOp<float, float>(dst, src, [](auto d, auto s) { return max(d, s); }); }
+    u128 CpuImpl::maxpd(u128 dst, u128 src, SIMD_ROUNDING) { return packedOp<double, double>(dst, src, [](auto d, auto s) { return max(d, s); }); }
 
     template<typename F>
     F min(F dst, F src) {
@@ -856,23 +843,10 @@ namespace x64 {
         else return src;
     }
 
-    u128 CpuImpl::minss(u128 dst, u128 src, SIMD_ROUNDING) {
-        float d, s;
-        std::memcpy(&d, &dst, sizeof(d));
-        std::memcpy(&s, &src, sizeof(s));
-        float res = min(d, s);
-        std::memcpy(&dst, &res, sizeof(res));
-        return dst;
-    }
-
-    u128 CpuImpl::minsd(u128 dst, u128 src, SIMD_ROUNDING) {
-        double d, s;
-        std::memcpy(&d, &dst, sizeof(d));
-        std::memcpy(&s, &src, sizeof(s));
-        double res = min(d, s);
-        std::memcpy(&dst, &res, sizeof(res));
-        return dst;
-    }
+    u128 CpuImpl::minss(u128 dst, u128 src, SIMD_ROUNDING) { return scalarOp<float, float>(dst, src, [](auto d, auto s) { return min(d, s); }); }
+    u128 CpuImpl::minsd(u128 dst, u128 src, SIMD_ROUNDING) { return scalarOp<double, double>(dst, src, [](auto d, auto s) { return min(d, s); }); }
+    u128 CpuImpl::minps(u128 dst, u128 src, SIMD_ROUNDING) { return packedOp<float, float>(dst, src, [](auto d, auto s) { return min(d, s); }); }
+    u128 CpuImpl::minpd(u128 dst, u128 src, SIMD_ROUNDING) { return packedOp<double, double>(dst, src, [](auto d, auto s) { return min(d, s); }); }
 
     template<typename T, typename F>
     static T compare(F d, F s, FCond cond) {

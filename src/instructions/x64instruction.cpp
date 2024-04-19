@@ -683,6 +683,10 @@ namespace utils {
             case Insn::MINSS_RSSE_M32: return toString<RSSE, M32>("minss");
             case Insn::MINSD_RSSE_RSSE: return toString<RSSE, RSSE>("minsd");
             case Insn::MINSD_RSSE_M64: return toString<RSSE, M64>("minsd");
+            case Insn::MAXPS_RSSE_RMSSE: return toString<RSSE, RMSSE>("maxps");
+            case Insn::MAXPD_RSSE_RMSSE: return toString<RSSE, RMSSE>("maxpd");
+            case Insn::MINPS_RSSE_RMSSE: return toString<RSSE, RMSSE>("minps");
+            case Insn::MINPD_RSSE_RMSSE: return toString<RSSE, RMSSE>("minpd");
             case Insn::CVTSI2SS_RSSE_RM32: return toString<RSSE, RM32>("cvtsi2ss");
             case Insn::CVTSI2SS_RSSE_RM64: return toString<RSSE, RM64>("cvtsi2ss");
             case Insn::CVTSI2SD_RSSE_RM32: return toString<RSSE, RM32>("cvtsi2sd");
