@@ -449,6 +449,7 @@ namespace x64 {
             case Insn::FISTP_M64: return exec(Fistp<M64>{insn.op0<M64>()});
             case Insn::FXCH_ST: return exec(Fxch<ST>{insn.op0<ST>()});
             case Insn::FADDP_ST: return exec(Faddp<ST>{insn.op0<ST>()});
+            case Insn::FSUBP_ST: return exec(Fsubp<ST>{insn.op0<ST>()});
             case Insn::FSUBRP_ST: return exec(Fsubrp<ST>{insn.op0<ST>()});
             case Insn::FMUL1_M32: return exec(Fmul1<M32>{insn.op0<M32>()});
             case Insn::FMUL1_M64: return exec(Fmul1<M64>{insn.op0<M64>()});
@@ -1491,6 +1492,13 @@ namespace x64 {
         f80 top = x87fpu_.st(ST::ST0);
         f80 dst = x87fpu_.st(ins.dst);
         x87fpu_.set(ins.dst, Impl::fadd(top, dst, &x87fpu_));
+        x87fpu_.pop();
+    }
+
+    void Cpu::exec(const Fsubp<ST>& ins) {
+        f80 top = x87fpu_.st(ST::ST0);
+        f80 dst = x87fpu_.st(ins.dst);
+        x87fpu_.set(ins.dst, Impl::fsub(top, dst, &x87fpu_));
         x87fpu_.pop();
     }
 

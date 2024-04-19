@@ -129,6 +129,7 @@ namespace x64 {
         static X64Instruction makeFxch(const cs_insn& insn);
         
         static X64Instruction makeFaddp(const cs_insn& insn);
+        static X64Instruction makeFsubp(const cs_insn& insn);
         static X64Instruction makeFsubrp(const cs_insn& insn);
         static X64Instruction makeFmul(const cs_insn& insn);
         static X64Instruction makeFdiv(const cs_insn& insn);

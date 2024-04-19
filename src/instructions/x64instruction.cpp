@@ -613,6 +613,7 @@ namespace utils {
             case Insn::FISTP_M64: return toString<M64>("fistp");
             case Insn::FXCH_ST: return toString<ST>("fxch");
             case Insn::FADDP_ST: return toString<ST>("faddp");
+            case Insn::FSUBP_ST: return toString<ST>("fsubp");
             case Insn::FSUBRP_ST: return toString<ST>("fsubrp");
             case Insn::FMUL1_M32: return toString<M32>("fmul1");
             case Insn::FMUL1_M64: return toString<M64>("fmul1");

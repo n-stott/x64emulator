@@ -482,6 +482,12 @@ namespace x64 {
     };
 
     template<typename Dst>
+    struct Fsubp {
+        Dst dst;
+        TAG_X87;
+    };
+
+    template<typename Dst>
     struct Fsubrp {
         Dst dst;
         TAG_X87;

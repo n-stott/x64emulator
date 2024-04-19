@@ -518,6 +518,7 @@ namespace x64 {
         void exec(const Fxch<ST>&);
 
         void exec(const Faddp<ST>&);
+        void exec(const Fsubp<ST>&);
         void exec(const Fsubrp<ST>&);
         void exec(const Fmul1<M32>&);
         void exec(const Fmul1<M64>&);

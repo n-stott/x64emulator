@@ -150,6 +150,7 @@ namespace x64 {
             case X86_INS_FISTP: return makeFistp(insn);
             case X86_INS_FXCH: return makeFxch(insn);
             case X86_INS_FADDP: return makeFaddp(insn);
+            case X86_INS_FSUBP: return makeFsubp(insn);
             case X86_INS_FSUBRP: return makeFsubrp(insn);
             case X86_INS_FMUL: return makeFmul(insn);
             case X86_INS_FDIV: return makeFdiv(insn);
@@ -1827,6 +1828,15 @@ namespace x64 {
         const cs_x86_op& src = x86detail.operands[0];
         auto stsrc = asST(src);
         if(stsrc) return X64Instruction::make<Insn::FADDP_ST>(insn.address, insn.size, stsrc.value());
+        return make_failed(insn);
+    }
+
+    X64Instruction CapstoneWrapper::makeFsubp(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 1);
+        const cs_x86_op& src = x86detail.operands[0];
+        auto stsrc = asST(src);
+        if(stsrc) return X64Instruction::make<Insn::FSUBP_ST>(insn.address, insn.size, stsrc.value());
         return make_failed(insn);
     }
 

@@ -320,6 +320,7 @@ namespace x64 {
         FISTP_M64,
         FXCH_ST,
         FADDP_ST,
+        FSUBP_ST,
         FSUBRP_ST,
         FMUL1_M32,
         FMUL1_M64,
