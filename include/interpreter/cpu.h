@@ -545,6 +545,7 @@ namespace x64 {
 
         void exec(const Movsd<RSSE, M64>&);
         void exec(const Movsd<M64, RSSE>&);
+        void exec(const Movsd<RSSE, RSSE>&);
 
         void exec(const Addps<RSSE, RMSSE>&);
         void exec(const Addpd<RSSE, RMSSE>&);

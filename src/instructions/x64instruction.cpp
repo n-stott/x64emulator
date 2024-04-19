@@ -633,6 +633,7 @@ namespace utils {
             case Insn::MOVSS_M32_RSSE: return toString<M32, RSSE>("movss");
             case Insn::MOVSD_RSSE_M64: return toString<RSSE, M64>("movsd");
             case Insn::MOVSD_M64_RSSE: return toString<M64, RSSE>("movsd");
+            case Insn::MOVSD_RSSE_RSSE: return toString<RSSE, RSSE>("movsd");
             case Insn::ADDPS_RSSE_RMSSE: return toString<RSSE, RMSSE>("addps");
             case Insn::ADDPD_RSSE_RMSSE: return toString<RSSE, RMSSE>("addpd");
             case Insn::ADDSS_RSSE_RSSE: return toString<RSSE, RSSE>("addss");

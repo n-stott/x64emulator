@@ -1999,6 +1999,7 @@ namespace x64 {
             auto m64src = asMemory64(src);
             if(m64dst && rssesrc) return X64Instruction::make<Insn::MOVSD_M64_RSSE>(insn.address, insn.size, m64dst.value(), rssesrc.value());
             if(rssedst && m64src) return X64Instruction::make<Insn::MOVSD_RSSE_M64>(insn.address, insn.size, rssedst.value(), m64src.value());
+            if(rssedst && rssesrc) return X64Instruction::make<Insn::MOVSD_RSSE_RSSE>(insn.address, insn.size, rssedst.value(), rssesrc.value());
         } else {
             x86_prefix prefix = (x86_prefix)prefixByte;
             auto m32dst = asMemory32(dst);

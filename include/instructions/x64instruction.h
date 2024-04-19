@@ -340,6 +340,7 @@ namespace x64 {
         MOVSS_M32_RSSE,
         MOVSD_RSSE_M64,
         MOVSD_M64_RSSE,
+        MOVSD_RSSE_RSSE,
         ADDPS_RSSE_RMSSE,
         ADDPD_RSSE_RMSSE,
         ADDSS_RSSE_RSSE,

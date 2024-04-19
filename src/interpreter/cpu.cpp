@@ -469,6 +469,7 @@ namespace x64 {
             case Insn::MOVSS_M32_RSSE: return exec(Movss<M32, RSSE>{insn.op0<M32>(), insn.op1<RSSE>()});
             case Insn::MOVSD_RSSE_M64: return exec(Movsd<RSSE, M64>{insn.op0<RSSE>(), insn.op1<M64>()});
             case Insn::MOVSD_M64_RSSE: return exec(Movsd<M64, RSSE>{insn.op0<M64>(), insn.op1<RSSE>()});
+            case Insn::MOVSD_RSSE_RSSE: return exec(Movsd<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
             case Insn::ADDPS_RSSE_RMSSE: return exec(Addps<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
             case Insn::ADDPD_RSSE_RMSSE: return exec(Addpd<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
             case Insn::ADDSS_RSSE_RSSE: return exec(Addss<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
@@ -1597,6 +1598,11 @@ namespace x64 {
 
     void Cpu::exec(const Movsd<RSSE, M64>& ins) { set(ins.dst, zeroExtend<Xmm, u64>(get(resolve(ins.src)))); }
     void Cpu::exec(const Movsd<M64, RSSE>& ins) { set(resolve(ins.dst), narrow<u64, Xmm>(get(ins.src))); }
+    void Cpu::exec(const Movsd<RSSE, RSSE>& ins) {
+        u128 res = get(ins.dst);
+        res.lo = get(ins.src).lo;
+        set(ins.dst, res);
+    }
 
 
     void Cpu::exec(const Addps<RSSE, RMSSE>& ins) {
