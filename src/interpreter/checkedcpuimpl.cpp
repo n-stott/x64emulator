@@ -2404,6 +2404,36 @@ namespace x64 {
 #endif
     }
 
+    u32 CheckedCpuImpl::movmskps32(u128 src) {
+#if GCC_COMPILER
+        u32 virtualRes = CpuImpl::movmskps32(src);
+        (void)virtualRes;
+
+        u32 nativeRes = 0;
+        asm volatile("movmskps %1, %0" : "+r"(nativeRes) : "x"(src));
+        assert(nativeRes == virtualRes);
+        
+        return nativeRes;
+#else
+        return CpuImpl::movmskps32(dst, src);
+#endif
+    }
+
+    u64 CheckedCpuImpl::movmskps64(u128 src) {
+#if GCC_COMPILER
+        u64 virtualRes = CpuImpl::movmskps64(src);
+        (void)virtualRes;
+
+        u64 nativeRes = 0;
+        asm volatile("movmskps %1, %0" : "+r"(nativeRes) : "x"(src));
+        assert(nativeRes == virtualRes);
+        
+        return nativeRes;
+#else
+        return CpuImpl::movmskps64(dst, src);
+#endif
+    }
+
     u32 CheckedCpuImpl::movmskpd32(u128 src) {
 #if GCC_COMPILER
         u32 virtualRes = CpuImpl::movmskpd32(src);

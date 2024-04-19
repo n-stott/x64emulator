@@ -1320,6 +1320,12 @@ namespace x64 {
     };
 
     template<typename Dst, typename Src>
+    struct Movmskps {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
     struct Movmskpd {
         Dst dst;
         Src src;

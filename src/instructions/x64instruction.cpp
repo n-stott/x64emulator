@@ -771,6 +771,8 @@ namespace utils {
             case Insn::UNPCKHPD_RSSE_RMSSE: return toString<RSSE, RMSSE>("unpckhpd");
             case Insn::UNPCKLPS_RSSE_RMSSE: return toString<RSSE, RMSSE>("unpcklps");
             case Insn::UNPCKLPD_RSSE_RMSSE: return toString<RSSE, RMSSE>("unpcklpd");
+            case Insn::MOVMSKPS_R32_RSSE: return toString<R32, RSSE>("movmskps");
+            case Insn::MOVMSKPS_R64_RSSE: return toString<R64, RSSE>("movmskps");
             case Insn::MOVMSKPD_R32_RSSE: return toString<R32, RSSE>("movmskpd");
             case Insn::MOVMSKPD_R64_RSSE: return toString<R64, RSSE>("movmskpd");
             case Insn::RDTSC: return toString("rdtsc");

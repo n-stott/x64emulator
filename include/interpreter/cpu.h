@@ -720,6 +720,8 @@ namespace x64 {
         void exec(const Unpcklps<RSSE, RMSSE>&);
         void exec(const Unpcklpd<RSSE, RMSSE>&);
 
+        void exec(const Movmskps<R32, RSSE>&);
+        void exec(const Movmskps<R64, RSSE>&);
         void exec(const Movmskpd<R32, RSSE>&);
         void exec(const Movmskpd<R64, RSSE>&);
         

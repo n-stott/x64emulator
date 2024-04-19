@@ -478,6 +478,8 @@ namespace x64 {
         UNPCKHPD_RSSE_RMSSE,
         UNPCKLPS_RSSE_RMSSE,
         UNPCKLPD_RSSE_RMSSE,
+        MOVMSKPS_R32_RSSE,
+        MOVMSKPS_R64_RSSE,
         MOVMSKPD_R32_RSSE,
         MOVMSKPD_R64_RSSE,
         RDTSC,

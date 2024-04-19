@@ -1547,6 +1547,24 @@ namespace x64 {
         return unpack<f64, true>(dst, src);
     }
 
+    u32 CpuImpl::movmskps32(u128 src) {
+        u32 res = 0;
+        res |= (u32)((src.lo >> 31) & 0x1);
+        res |= (u32)((src.lo >> 63) & 0x1) << 1;
+        res |= (u32)((src.hi >> 31) & 0x1) << 2;
+        res |= (u32)((src.hi >> 63) & 0x1) << 3;
+        return res;
+    }
+
+    u64 CpuImpl::movmskps64(u128 src) {
+        u64 res = 0;
+        res |= (u64)((src.lo >> 31) & 0x1);
+        res |= (u64)((src.lo >> 63) & 0x1) << 1;
+        res |= (u64)((src.hi >> 31) & 0x1) << 2;
+        res |= (u64)((src.hi >> 63) & 0x1) << 3;
+        return res;
+    }
+
     u32 CpuImpl::movmskpd32(u128 src) {
         u32 res = 0;
         res |= (u32)((src.lo >> 63) & 0x1);

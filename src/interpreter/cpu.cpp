@@ -607,6 +607,8 @@ namespace x64 {
             case Insn::UNPCKHPD_RSSE_RMSSE: return exec(Unpckhpd<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
             case Insn::UNPCKLPS_RSSE_RMSSE: return exec(Unpcklps<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
             case Insn::UNPCKLPD_RSSE_RMSSE: return exec(Unpcklpd<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
+            case Insn::MOVMSKPS_R32_RSSE: return exec(Movmskps<R32, RSSE>{insn.op0<R32>(), insn.op1<RSSE>()});
+            case Insn::MOVMSKPS_R64_RSSE: return exec(Movmskps<R64, RSSE>{insn.op0<R64>(), insn.op1<RSSE>()});
             case Insn::MOVMSKPD_R32_RSSE: return exec(Movmskpd<R32, RSSE>{insn.op0<R32>(), insn.op1<RSSE>()});
             case Insn::MOVMSKPD_R64_RSSE: return exec(Movmskpd<R64, RSSE>{insn.op0<R64>(), insn.op1<RSSE>()});
             case Insn::RDTSC: return exec(Rdtsc{});
@@ -2207,6 +2209,14 @@ namespace x64 {
 
     void Cpu::exec(const Unpcklpd<RSSE, RMSSE>& ins) {
         set(ins.dst, Impl::unpcklpd(get(ins.dst), get(ins.src)));
+    }
+
+    void Cpu::exec(const Movmskps<R32, RSSE>& ins) {
+        set(ins.dst, Impl::movmskps32(get(ins.src)));
+    }
+
+    void Cpu::exec(const Movmskps<R64, RSSE>& ins) {
+        set(ins.dst, Impl::movmskps64(get(ins.src)));
     }
 
     void Cpu::exec(const Movmskpd<R32, RSSE>& ins) {

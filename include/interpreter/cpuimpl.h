@@ -278,6 +278,8 @@ namespace x64 {
         [[nodiscard]] static u128 unpcklps(u128 dst, u128 src);
         [[nodiscard]] static u128 unpcklpd(u128 dst, u128 src);
 
+        [[nodiscard]] static u32 movmskps32(u128 src);
+        [[nodiscard]] static u64 movmskps64(u128 src);
         [[nodiscard]] static u32 movmskpd32(u128 src);
         [[nodiscard]] static u64 movmskpd64(u128 src);
 

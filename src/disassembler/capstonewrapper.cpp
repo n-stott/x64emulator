@@ -323,6 +323,7 @@ namespace x64 {
             case X86_INS_UNPCKHPD: return makeUnpckhpd(insn);
             case X86_INS_UNPCKLPS: return makeUnpcklps(insn);
             case X86_INS_UNPCKLPD: return makeUnpcklpd(insn);
+            case X86_INS_MOVMSKPS: return makeMovmskps(insn);
             case X86_INS_MOVMSKPD: return makeMovmskpd(insn);
             case X86_INS_RDTSC: return makeRdtsc(insn);
             case X86_INS_CPUID: return makeCpuid(insn);
@@ -3244,6 +3245,19 @@ namespace x64 {
         auto rssedst = asRegister128(dst);
         auto rmssesrc = asRM128(src);
         if(rssedst && rmssesrc) return X64Instruction::make<Insn::UNPCKLPD_RSSE_RMSSE>(insn.address, insn.size, rssedst.value(), rmssesrc.value());
+        return make_failed(insn);
+    }
+
+    X64Instruction CapstoneWrapper::makeMovmskps(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto r32dst = asRegister32(dst);
+        auto r64dst = asRegister64(dst);
+        auto rssesrc = asRegister128(src);
+        if(r32dst && rssesrc) return X64Instruction::make<Insn::MOVMSKPS_R32_RSSE>(insn.address, insn.size, r32dst.value(), rssesrc.value());
+        if(r64dst && rssesrc) return X64Instruction::make<Insn::MOVMSKPS_R64_RSSE>(insn.address, insn.size, r64dst.value(), rssesrc.value());
         return make_failed(insn);
     }
 
