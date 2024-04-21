@@ -93,4 +93,18 @@ namespace x64 {
         }
         return nbWoken;
     }
+
+    void Scheduler::dumpThreadSummary() const {
+        forEachThread([](const Thread& thread) {
+            fmt::print("  Thread #{}\n", thread.descr.tid);
+            fmt::print("    exit code      {}\n", thread.exitStatus);
+            fmt::print("    instructions   {:<10} \n", thread.ticks);
+            fmt::print("    syscalls       {:<10} \n", thread.stats.syscalls);
+            fmt::print("    function calls {:<10} \n", thread.stats.functionCalls);
+            
+            // for(auto call : thread.functionCalls) {
+            //     fmt::print("  {:>10}  {}  {} ({:#x})\n", call.tick, fmt::format("{:{}}", "", call.depth), call.symbol, call.address);
+            // }
+        });
+    }
 }

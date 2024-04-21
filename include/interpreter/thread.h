@@ -8,6 +8,7 @@
 #include "utils/utils.h"
 #include "types.h"
 #include <cstddef>
+#include <deque>
 #include <string>
 #include <vector>
 
@@ -43,7 +44,20 @@ namespace x64 {
         size_t ticksUntilSwitch { 0 };
         int exitStatus { -1 };
 
+        struct Stats {
+            size_t functionCalls { 0 };
+            size_t syscalls { 0 };
+        } stats;
+
         std::vector<u64> callstack;
+
+        struct FunctionCall {
+            u64 tick;
+            u64 depth;
+            u64 address;
+            std::string symbol;
+        };
+        std::deque<FunctionCall> functionCalls;
 
         void yield() {
             ticksUntilSwitch = ticks;

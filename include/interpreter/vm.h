@@ -85,7 +85,6 @@ namespace x64 {
 
         Thread* currentThread_ { nullptr };
         ExecutionPoint currentThreadExecutionPoint_;
-        std::vector<u64> currentThreadCallstack_;
 
         std::unordered_map<u64, ExecutionPoint> callCache_;
         std::unordered_map<u64, ExecutionPoint> jmpCache_;

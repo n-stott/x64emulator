@@ -30,7 +30,16 @@ namespace x64 {
 
         Thread* currentThread();
 
+        void dumpThreadSummary() const;
+
     private:
+
+        template<typename Func>
+        void forEachThread(Func&& func) const {
+            for(const auto& threadPtr : threads_) {
+                func(*threadPtr);
+            }
+        }
 
         Mmu* mmu_;
 

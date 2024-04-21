@@ -85,11 +85,15 @@ namespace x64 {
             while(Thread* thread = scheduler.pickNext()) {
                 vm.execute(thread);
             }
-            fmt::print("Interpreter completed execution of {} instructions\n", mainThread->ticks);
-            fmt::print("Main thread exit code ={}\n", mainThread->exitStatus);
+
+            fmt::print("Interpreter completed execution\n");
+            scheduler.dumpThreadSummary();
+
             ok &= (mainThread->exitStatus == 0);
             vm.contextSwitch(nullptr);
         }, [&]() {
+            fmt::print("Interpreter crash\n");
+            scheduler.dumpThreadSummary();
             vm.crash();
             ok = false;
         });

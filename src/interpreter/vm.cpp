@@ -41,7 +41,6 @@ namespace x64 {
             currentThread_->data.x87fpu = cpu_.x87fpu_;
             currentThread_->data.mxcsr = cpu_.mxcsr_;
             currentThread_->data.fsBase = mmu_->getSegmentBase(Segment::FS);
-            currentThread_->callstack = currentThreadCallstack_;
         }
     }
 
@@ -55,7 +54,6 @@ namespace x64 {
             cpu_.x87fpu_ = currentThread_->data.x87fpu;
             cpu_.mxcsr_ = currentThread_->data.mxcsr;
             mmu_->setSegmentBase(Segment::FS, currentThread_->data.fsBase);
-            currentThreadCallstack_ = currentThread_->callstack;
             notifyJmp(cpu_.regs_.rip()); // no need to cache the destination here
         } else {
             currentThread_ = nullptr;
@@ -64,28 +62,27 @@ namespace x64 {
             cpu_.x87fpu_ = X87Fpu{};
             cpu_.mxcsr_ = SimdControlStatus{};
             mmu_->setSegmentBase(Segment::FS, (u64)0);
-            currentThreadCallstack_ = {};
         }
     }
 
     extern bool signal_interrupt;
 
     void VM::execute(Thread* thread) {
-        assert(!!thread);
+        if(!thread) return;
         contextSwitch(thread);
         if(logInstructions()) {
             while(thread->ticks < thread->ticksUntilSwitch) {
                 verify(!signal_interrupt);
                 const X64Instruction& instruction = fetchInstruction();
                 log(thread->ticks, instruction);
-                ++(thread->ticks);
+                thread->ticks++;
                 cpu_.exec(instruction);
             }
         } else {
             while(thread->ticks < thread->ticksUntilSwitch) {
                 verify(!signal_interrupt);
                 const X64Instruction& instruction = fetchInstruction();
-                ++(thread->ticks);
+                thread->ticks++;
                 cpu_.exec(instruction);
             }
         }
@@ -117,7 +114,7 @@ namespace x64 {
                                                 cpu_.regs_.rip(),
                                                 cpu_.regs_.get(R64::RAX), cpu_.regs_.get(R64::RBX), cpu_.regs_.get(R64::RCX), cpu_.regs_.get(R64::RDX),
                                                 cpu_.regs_.get(R64::RSI), cpu_.regs_.get(R64::RDI), cpu_.regs_.get(R64::RBP), cpu_.regs_.get(R64::RSP));
-        std::string indent = fmt::format("{:{}}", "", currentThreadCallstack_.size());
+        std::string indent = fmt::format("{:{}}", "", currentThread_->callstack.size());
 
         std::string mnemonic = fmt::format("{}|{}", indent, instruction.toString());
         if(instruction.isCall()) {
@@ -151,7 +148,7 @@ namespace x64 {
 
     void VM::dumpStackTrace() const {
         size_t frameId = 0;
-        for(auto it = currentThreadCallstack_.rbegin(); it != currentThreadCallstack_.rend(); ++it) {
+        for(auto it = currentThread_->callstack.rbegin(); it != currentThread_->callstack.rend(); ++it) {
             std::string name = calledFunctionName(*it);
             fmt::print(" {}:{:#x} : {}\n", frameId, *it, name);
             ++frameId;
@@ -177,6 +174,13 @@ namespace x64 {
     }
 
     void VM::notifyCall(u64 address) {
+        currentThread_->stats.functionCalls++;
+        // currentThread_->functionCalls.push_back(Thread::FunctionCall{
+        //     currentThread_->ticks,
+        //     currentThread_->callstack.size(),
+        //     address,
+        //     calledFunctionName(address),
+        // });
         ExecutionPoint cp;
         auto cachedValue = callCache_.find(address);
         if(cachedValue != callCache_.end()) {
@@ -196,11 +200,11 @@ namespace x64 {
             callCache_.insert(std::make_pair(address, cp));
         }
         currentThreadExecutionPoint_ = cp;
-        currentThreadCallstack_.push_back(address);
+        currentThread_->callstack.push_back(address);
     }
 
     void VM::notifyRet(u64 address) {
-        currentThreadCallstack_.pop_back();
+        currentThread_->callstack.pop_back();
         notifyJmp(address);
     }
 

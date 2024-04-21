@@ -27,6 +27,7 @@ namespace x64 {
 
     void Sys::syscall(Cpu* cpu) {
         u64 sysNumber = cpu->get(R64::RAX);
+        scheduler_->currentThread()->stats.syscalls++;
 
         RegisterDump regs {{
             cpu->get(R64::RDI),
