@@ -126,6 +126,7 @@ namespace x64 {
         verify(address % PAGE_SIZE == 0, "munmap with non-page_size aligned address not supported");
         const auto* regionPtr = findAddress(address);
         verify(!!regionPtr, "munmap: unable to find region");
+        verify((regionPtr->prot() & PROT::EXEC) != PROT::EXEC, "munmapping of exec region not supported");
         length = pageRoundUp(length);
         if(regionPtr->base() == address && regionPtr->size() == length) {
             removeRegion(regionPtr->base(), regionPtr->end(), regionPtr->size());
