@@ -81,6 +81,7 @@ namespace x64 {
 
             vm.contextSwitch(mainThread);
             pushProgramArguments(&mmu, &vm, programFilePath, arguments, environmentVariables, aux);
+            vm.contextSwitch(nullptr);
 
             while(Thread* thread = scheduler.pickNext()) {
                 vm.execute(thread);
@@ -90,7 +91,6 @@ namespace x64 {
             scheduler.dumpThreadSummary();
 
             ok &= (mainThread->exitStatus == 0);
-            vm.contextSwitch(nullptr);
         }, [&]() {
             fmt::print("Interpreter crash\n");
             scheduler.dumpThreadSummary();
