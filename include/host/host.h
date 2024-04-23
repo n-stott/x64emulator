@@ -1,72 +1,21 @@
 #ifndef HOST_H
 #define HOST_H
 
+#include "utils/buffer.h"
+#include "utils/erroror.h"
 #include "utils/utils.h"
 #include <cstring>
 #include <optional>
 #include <string>
 #include <unordered_map>
-#include <variant>
 #include <vector>
 
 namespace x64 {
-    class Buffer {
-    public:
-        Buffer() = default;
-        explicit Buffer(std::vector<u8> buf) : data_(std::move(buf)) { }
-
-        template<typename T>
-        explicit Buffer(std::vector<T> buf) {
-            data_.resize(buf.size()*sizeof(T));
-            std::memcpy(data_.data(), buf.data(), buf.size()*sizeof(T));
-        }
-
-        template<typename T>
-        explicit Buffer(const T& val) {
-            data_.resize(sizeof(T));
-            std::memcpy(data_.data(), &val, sizeof(T));
-        }
-
-        size_t size() const { return data_.size(); }
-
-        const u8* data() const { return data_.data(); }
-        u8* data() { return data_.data(); }
-
-    private:
-        std::vector<u8> data_;
-    };
 
     template<typename T>
     struct BufferAndReturnValue {
         Buffer buffer;
         T returnValue;
-    };
-
-    template<typename Value>
-    class ErrnoOr {
-    public:
-        explicit ErrnoOr(int err) : data_(err) { }
-        explicit ErrnoOr(Value val) : data_(std::move(val)) { }
-
-        bool isError() const {
-            return std::holds_alternative<int>(data_);
-        }
-
-        int errorOr(int value) const {
-            if(isError()) return std::get<0>(data_);
-            return value;
-        }
-
-        template<typename T, typename Func>
-        T errorOrWith(Func func) {
-            static_assert(std::is_integral_v<T>);
-            if(isError()) return (T)std::get<0>(data_);
-            const Value& value = std::get<Value>(data_);
-            return func(value);
-        }
-
-    private:
-        std::variant<int, Value> data_;
     };
 
     using ErrnoOrBuffer = ErrnoOr<Buffer>;
