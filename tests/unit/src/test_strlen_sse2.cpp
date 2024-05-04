@@ -40,6 +40,7 @@ std::vector<char> string {{
 int main() {
     using namespace x64;
     Mmu mmu;
+    kernel::Kernel kernel(mmu);
 
     u64 length = 0;
 
@@ -53,7 +54,7 @@ int main() {
         u64 dataPage = mmu.mmap(0, Mmu::PAGE_SIZE, PROT::READ | PROT::WRITE, MAP::PRIVATE | MAP::ANONYMOUS);
         mmu.copyToMmu(Ptr8{dataPage}, (const u8*)string.data(), string.size());
 
-        VM vm(&mmu, nullptr);
+        VM vm(mmu, kernel);
         vm.setLogInstructions(true);
         Thread mainThread(0, 0);
         mainThread.data.regs.rip() = execPage;

@@ -2229,9 +2229,7 @@ namespace x64 {
 
     void Cpu::exec(const Syscall&) {
         vm_->syncThread(); // sync thread info before syscall
-        auto* sys = vm_->syscalls();
-        verify(!!sys, "no syscall handler provided");
-        sys->syscall(this);
+        vm_->syscall(*this);
     }
 
     void Cpu::exec(const Rdtsc&) {

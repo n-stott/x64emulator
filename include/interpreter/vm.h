@@ -4,7 +4,7 @@
 #include "interpreter/cpu.h"
 #include "interpreter/mmu.h"
 #include "interpreter/symbolprovider.h"
-#include "interpreter/syscalls.h"
+#include "interpreter/kernel.h"
 #include "utils/utils.h"
 #include <deque>
 #include <unordered_map>
@@ -15,7 +15,7 @@ namespace x64 {
 
     class VM {
     public:
-        explicit VM(Mmu* mmu, Sys* syscalls);
+        explicit VM(Mmu& mmu, kernel::Kernel& kernel);
 
         void crash();
         bool hasCrashed() const { return hasCrashed_; }
@@ -43,7 +43,7 @@ namespace x64 {
 
         void syncThread();
 
-        Sys* syscalls() { return syscalls_; }
+        void syscall(Cpu& cpu);
 
         void dumpStackTrace() const;
         void dumpRegisters() const;
@@ -65,8 +65,8 @@ namespace x64 {
         std::string callName(const X64Instruction& instruction) const;
         std::string calledFunctionName(u64 address) const;
 
-        Mmu* mmu_;
-        Sys* syscalls_;
+        Mmu& mmu_;
+        kernel::Kernel& kernel_;
         Cpu cpu_;
 
         mutable std::vector<std::unique_ptr<ExecutableSection>> executableSections_;

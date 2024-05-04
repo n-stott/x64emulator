@@ -3,6 +3,7 @@
 #include "interpreter/syscalls.h"
 #include "interpreter/verify.h"
 #include "interpreter/auxiliaryvector.h"
+#include "interpreter/kernel.h"
 #include "host/host.h"
 #include "disassembler/capstonewrapper.h"
 #include "elf-reader/elf-reader.h"
@@ -57,13 +58,11 @@ namespace x64 {
     bool Interpreter::run(const std::string& programFilePath, const std::vector<std::string>& arguments, const std::vector<std::string>& environmentVariables) {
         SignalHandler handler;
 
-        Host host;
         Mmu mmu;
-        Scheduler scheduler(&mmu);
-        Sys sys(&host, &scheduler, &mmu);
-        VM vm(&mmu, &sys);
+        kernel::Kernel kernel(mmu);
+        VM vm(mmu, kernel);
         
-        sys.setLogSyscalls(logSyscalls_);
+        kernel.setLogSyscalls(logSyscalls_);
 
         vm.setLogInstructions(logInstructions_);
         vm.setLogInstructionsAfter(logInstructionsAfter_);
@@ -75,7 +74,7 @@ namespace x64 {
             u64 entrypoint = loadElf(&mmu, &aux, programFilePath, true);
             u64 stackTop = setupMemory(&mmu, &aux);
 
-            Thread* mainThread = scheduler.createThread(0xface);
+            Thread* mainThread = kernel.scheduler().createThread(0xface);
             mainThread->data.regs.rip() = entrypoint;
             mainThread->data.regs.rsp() = (stackTop & 0xFFFFFFFFFFFFFF00); // stack needs to be 16-byte aligned
 
@@ -83,17 +82,17 @@ namespace x64 {
             pushProgramArguments(&mmu, &vm, programFilePath, arguments, environmentVariables, aux);
             vm.contextSwitch(nullptr);
 
-            while(Thread* thread = scheduler.pickNext()) {
+            while(Thread* thread = kernel.scheduler().pickNext()) {
                 vm.execute(thread);
             }
 
             fmt::print("Interpreter completed execution\n");
-            scheduler.dumpThreadSummary();
+            kernel.scheduler().dumpThreadSummary();
 
             ok &= (mainThread->exitStatus == 0);
         }, [&]() {
             fmt::print("Interpreter crash\n");
-            scheduler.dumpThreadSummary();
+            kernel.scheduler().dumpThreadSummary();
             vm.crash();
             ok = false;
         });

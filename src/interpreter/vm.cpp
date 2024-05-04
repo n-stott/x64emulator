@@ -7,7 +7,7 @@
 namespace x64 {
 
 
-    VM::VM(Mmu* mmu, Sys* syscalls) : mmu_(mmu), syscalls_(syscalls), cpu_(this, mmu_) { }
+    VM::VM(Mmu& mmu, kernel::Kernel& kernel) : mmu_(mmu), kernel_(kernel), cpu_(this, &mmu_) { }
     
     void VM::setLogInstructions(bool logInstructions) {
         logInstructions_ = logInstructions;
@@ -28,7 +28,7 @@ namespace x64 {
         fmt::print("Register state:\n");
         dumpRegisters();
         fmt::print("Memory regions:\n");
-        mmu_->dumpRegions();
+        mmu_.dumpRegions();
         fmt::print("Stacktrace:\n");
         dumpStackTrace();
     }
@@ -39,8 +39,12 @@ namespace x64 {
             currentThread_->data.regs = cpu_.regs_;
             currentThread_->data.x87fpu = cpu_.x87fpu_;
             currentThread_->data.mxcsr = cpu_.mxcsr_;
-            currentThread_->data.fsBase = mmu_->getSegmentBase(Segment::FS);
+            currentThread_->data.fsBase = mmu_.getSegmentBase(Segment::FS);
         }
+    }
+
+    void VM::syscall(Cpu& cpu) {
+        kernel_.syscall(cpu);
     }
 
     void VM::contextSwitch(Thread* newThread) {
@@ -52,7 +56,7 @@ namespace x64 {
             cpu_.regs_ = currentThread_->data.regs;
             cpu_.x87fpu_ = currentThread_->data.x87fpu;
             cpu_.mxcsr_ = currentThread_->data.mxcsr;
-            mmu_->setSegmentBase(Segment::FS, currentThread_->data.fsBase);
+            mmu_.setSegmentBase(Segment::FS, currentThread_->data.fsBase);
             notifyJmp(cpu_.regs_.rip()); // no need to cache the destination here
         } else {
             currentThread_ = nullptr;
@@ -60,7 +64,7 @@ namespace x64 {
             cpu_.regs_ = Registers{};
             cpu_.x87fpu_ = X87Fpu{};
             cpu_.mxcsr_ = SimdControlStatus{};
-            mmu_->setSegmentBase(Segment::FS, (u64)0);
+            mmu_.setSegmentBase(Segment::FS, (u64)0);
         }
     }
 
@@ -271,7 +275,7 @@ namespace x64 {
         }
         
         // If we land here, we probably have not disassembled the section yet...
-        const Mmu::Region* mmuRegion = ((const Mmu*)mmu_)->findAddress(address);
+        const Mmu::Region* mmuRegion = ((const Mmu&)mmu_).findAddress(address);
         if(!mmuRegion) return InstructionPosition { nullptr, (size_t)(-1) };
         verify((bool)(mmuRegion->prot() & PROT::EXEC), [&]() {
             fmt::print(stderr, "Attempting to execute non-executable region [{:#x}-{:#x}]\n", mmuRegion->base(), mmuRegion->end());
