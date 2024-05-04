@@ -73,6 +73,23 @@ namespace x64 {
             int fd;
         };
 
+        struct Open {
+            static bool isReadable(int flag);
+            static bool isWritable(int flag);
+            static bool isAppending(int flag);
+            static bool isTruncating(int flag);
+            static bool isCreatable(int flag);
+            static bool isCloseOnExec(int flag);
+        };
+
+        struct Mode {
+            static bool isUserReadable(unsigned int mode);
+            static bool isUserWritable(unsigned int mode);
+            static bool isUserExecutable(unsigned int mode);
+        };
+
+        static FD cwdfd();
+
         static ErrnoOrBuffer read(FD, size_t count);
         static ErrnoOrBuffer pread64(FD, size_t count, off_t offset);
         static ssize_t write(FD, const u8* data, size_t count);

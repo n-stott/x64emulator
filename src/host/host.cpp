@@ -143,6 +143,47 @@ namespace x64 {
         return code == ARCH_SET_FS;
     }
 
+
+    bool Host::Open::isReadable(int flag) {
+        return (flag & O_ACCMODE) == O_RDONLY;
+    }
+
+    bool Host::Open::isWritable(int flag) {
+        return (flag & O_ACCMODE) & (O_WRONLY | O_RDWR);
+    }
+
+    bool Host::Open::isAppending(int flag) {
+        return flag & O_APPEND;
+    }
+
+    bool Host::Open::isTruncating(int flag) {
+        return flag & O_TRUNC;
+    }
+
+    bool Host::Open::isCreatable(int flag) {
+        return flag & O_CREAT;
+    }
+    
+    bool Host::Open::isCloseOnExec(int flag) {
+        return flag & O_CLOEXEC;
+    }
+
+    bool Host::Mode::isUserReadable(unsigned int mode) {
+        return mode & S_IRUSR;
+    }
+
+    bool Host::Mode::isUserWritable(unsigned int mode) {
+        return mode & S_IWUSR;
+    }
+
+    bool Host::Mode::isUserExecutable(unsigned int mode) {
+        return mode & S_IXUSR;
+    }
+
+    Host::FD Host::cwdfd() {
+        return FD{AT_FDCWD};
+    }
+
     ErrnoOrBuffer Host::read(FD fd, size_t count) {
         std::vector<u8> buffer;
         buffer.resize(count, 0x0);

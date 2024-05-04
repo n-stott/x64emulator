@@ -13,13 +13,14 @@
 namespace x64 {
 
     class Cpu;
+    class FS;
     class Host;
     class Mmu;
     class Scheduler;
 
     class Sys {
     public:
-        Sys(Host* host, Scheduler* scheduler, Mmu* mmu);
+        Sys(FS* fs, Host* host, Scheduler* scheduler, Mmu* mmu);
 
         void setLogSyscalls(bool logSyscalls) { logSyscalls_ = logSyscalls; }
 
@@ -275,9 +276,10 @@ namespace x64 {
         template<typename... Args>
         void print(const char* format, Args... args) const;
 
-        Host* host_;
-        Scheduler* scheduler_;
-        Mmu* mmu_;
+        FS* fs_ { nullptr };
+        Host* host_ { nullptr };
+        Scheduler* scheduler_ { nullptr };
+        Mmu* mmu_ { nullptr };
         bool logSyscalls_ { false };
     };
 

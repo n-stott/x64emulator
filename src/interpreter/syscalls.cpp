@@ -1,3 +1,4 @@
+#include "fs/fs.h"
 #include "interpreter/syscalls.h"
 #include "interpreter/scheduler.h"
 #include "interpreter/thread.h"
@@ -12,11 +13,15 @@
 namespace x64 {
 
 
-    Sys::Sys(Host* host, Scheduler* scheduler, Mmu* mmu) :
+    Sys::Sys(FS* fs, Host* host, Scheduler* scheduler, Mmu* mmu) :
+        fs_(fs),
         host_(host),
         scheduler_(scheduler),
         mmu_(mmu) { 
+        verify(!!fs_, "Must provide a filesystem");
         verify(!!host_, "Must provide a host");
+        verify(!!scheduler_, "Must provide a scheduler");
+        verify(!!mmu_, "Must provide a mmu");
     }
 
     template<typename... Args>
@@ -877,6 +882,9 @@ namespace x64 {
     int Sys::openat(int dirfd, Ptr pathname, int flags, mode_t mode) {
         std::string path = mmu_->readString(pathname);
         Host::FD fd = host_->openat(Host::FD{dirfd}, path, flags, mode);
+        FS::OpenFlags openFlags = FS::fromFlags(flags);
+        FS::Permissions permissions = FS::fromMode(mode);
+        [[maybe_unused]] FS::FD fd2 = fs_->open(FS::FD{dirfd}, path, openFlags, permissions);
         if(logSyscalls_) print("Sys::openat(dirfd={}, path={}, flags={}, mode={}) = {}\n", dirfd, path, flags, mode, fd.fd);
         return fd.fd;
     }

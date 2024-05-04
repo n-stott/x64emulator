@@ -1,3 +1,4 @@
+#include "fs/fs.h"
 #include "interpreter/interpreter.h"
 #include "interpreter/thread.h"
 #include "interpreter/syscalls.h"
@@ -57,10 +58,11 @@ namespace x64 {
     bool Interpreter::run(const std::string& programFilePath, const std::vector<std::string>& arguments, const std::vector<std::string>& environmentVariables) {
         SignalHandler handler;
 
+        FS fs;
         Host host;
         Mmu mmu(&host);
         Scheduler scheduler(&mmu);
-        Sys sys(&host, &scheduler, &mmu);
+        Sys sys(&fs, &host, &scheduler, &mmu);
         VM vm(&mmu, &sys);
         
         sys.setLogSyscalls(logSyscalls_);
