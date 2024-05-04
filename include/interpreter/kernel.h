@@ -2,6 +2,7 @@
 #define KERNEL_H
 
 #include "host/host.h"
+#include "fs/fs.h"
 #include "interpreter/mmu.h"
 #include "interpreter/scheduler.h"
 #include "interpreter/syscalls.h"
@@ -17,7 +18,7 @@ namespace kernel {
 
     class Kernel {
     public:
-        explicit Kernel(x64::Mmu& mmu) : mmu_(mmu), host_(), scheduler_(mmu_), sys_(&host_, &scheduler_, &mmu_) { }
+        explicit Kernel(x64::Mmu& mmu) : mmu_(mmu), host_(), fs_(*this), scheduler_(mmu_), sys_(*this, mmu_) { }
 
         Thread* exec(x64::VM& vm,
                      const std::string& programFilePath,
@@ -29,10 +30,13 @@ namespace kernel {
         void setLogSyscalls(bool logSyscalls) { sys_.setLogSyscalls(logSyscalls); }
 
         Scheduler& scheduler() { return scheduler_; }
+        Host& host() { return host_; }
+        FS& fs() { return fs_; }
     
     private:
         x64::Mmu& mmu_;
         Host host_;
+        FS fs_;
         Scheduler scheduler_;
         Sys sys_;
 

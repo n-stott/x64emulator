@@ -9,11 +9,11 @@
 namespace kernel {
 
     class File;
-    class Host;
+    class Kernel;
 
     class FS {
     public:
-        explicit FS(Host* host);
+        explicit FS(Kernel& kernel);
         ~FS();
 
         struct OpenFlags {
@@ -48,7 +48,7 @@ namespace kernel {
             OpenFlags flags;
         };
 
-        Host* host_ { nullptr };
+        Kernel& kernel_;
         std::deque<Node> files_;
     };
 

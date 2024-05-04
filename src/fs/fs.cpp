@@ -1,12 +1,12 @@
 #include "fs/fs.h"
 #include "fs/file.h"
 #include "fs/hostfile.h"
-#include "host/host.h"
+#include "interpreter/kernel.h"
 #include "interpreter/verify.h"
 
 namespace kernel {
 
-    FS::FS(Host* host) : host_(host) { }
+    FS::FS(Kernel& kernel) : kernel_(kernel) { }
 
     FS::~FS() = default;
 
@@ -39,7 +39,7 @@ namespace kernel {
         
         x64::verify(canUseHostFile, "only host-backed files are supported for now");
 
-        Host::FD fd = host_->openat(Host::cwdfd(), path, 0, 0);
+        Host::FD fd = kernel_.host().openat(Host::cwdfd(), path, 0, 0);
         auto hostBackedFile = std::make_unique<HostFile>(this, fd.fd);
         File* file = hostBackedFile.get();
         Node node {

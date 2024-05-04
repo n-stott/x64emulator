@@ -17,11 +17,12 @@ namespace x64 {
 
 namespace kernel {
     class Host;
+    class Kernel;
     class Scheduler;
 
     class Sys {
     public:
-        Sys(Host* host, Scheduler* scheduler, x64::Mmu* mmu);
+        Sys(Kernel& kernel, x64::Mmu& mmu);
 
         void setLogSyscalls(bool logSyscalls) { logSyscalls_ = logSyscalls; }
 
@@ -277,9 +278,8 @@ namespace kernel {
         template<typename... Args>
         void print(const char* format, Args... args) const;
 
-        Host* host_;
-        Scheduler* scheduler_;
-        x64::Mmu* mmu_;
+        Kernel& kernel_;
+        x64::Mmu& mmu_;
         bool logSyscalls_ { false };
     };
 
