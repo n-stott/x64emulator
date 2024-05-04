@@ -8,6 +8,10 @@
 #include "instructions/allinstructions.h"
 #include "instructions/x64instruction.h"
 
+namespace kernel {
+    class Sys;
+}
+
 namespace x64 {
 
     class VM;
@@ -19,7 +23,7 @@ namespace x64 {
 
     private:
         friend class VM;
-        friend class Sys;
+        friend class kernel::Sys;
         
         VM* vm_;
         Mmu* mmu_;

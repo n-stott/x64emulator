@@ -4,18 +4,20 @@
 #include "interpreter/cpu.h"
 #include "interpreter/mmu.h"
 #include "interpreter/symbolprovider.h"
-#include "interpreter/syscalls.h"
+#include "interpreter/kernel.h"
 #include "utils/utils.h"
 #include <deque>
 #include <unordered_map>
 
-namespace x64 {
-
+namespace kernel {
     class Thread;
+}
+
+namespace x64 {
 
     class VM {
     public:
-        explicit VM(Mmu* mmu, Sys* syscalls);
+        explicit VM(Mmu& mmu, kernel::Kernel& kernel);
 
         void crash();
         bool hasCrashed() const { return hasCrashed_; }
@@ -24,9 +26,9 @@ namespace x64 {
         bool logInstructions() const;
         void setLogInstructionsAfter(unsigned long long);
 
-        void contextSwitch(Thread* newThread);
+        void contextSwitch(kernel::Thread* newThread);
 
-        void execute(Thread* thread);
+        void execute(kernel::Thread* thread);
 
         void push64(u64 value);
 
@@ -43,7 +45,7 @@ namespace x64 {
 
         void syncThread();
 
-        Sys* syscalls() { return syscalls_; }
+        void syscall(Cpu& cpu);
 
         void dumpStackTrace() const;
         void dumpRegisters() const;
@@ -62,12 +64,11 @@ namespace x64 {
 
         InstructionPosition findSectionWithAddress(u64 address, const ExecutableSection* sectionHint = nullptr) const;
         void updateExecutionPoint(u64 address);
-        void tryRetrieveSymbolsFromExecutable(const Mmu::Region& region) const;
         std::string callName(const X64Instruction& instruction) const;
         std::string calledFunctionName(u64 address) const;
 
-        Mmu* mmu_;
-        Sys* syscalls_;
+        Mmu& mmu_;
+        kernel::Kernel& kernel_;
         Cpu cpu_;
 
         mutable std::vector<std::unique_ptr<ExecutableSection>> executableSections_;
@@ -83,13 +84,12 @@ namespace x64 {
             const X64Instruction* nextInstruction { nullptr };
         };
 
-        Thread* currentThread_ { nullptr };
+        kernel::Thread* currentThread_ { nullptr };
         ExecutionPoint currentThreadExecutionPoint_;
 
         std::unordered_map<u64, ExecutionPoint> callCache_;
         std::unordered_map<u64, ExecutionPoint> jmpCache_;
 
-        mutable std::vector<std::string> symbolicatedElfs_;
         mutable SymbolProvider symbolProvider_;
         mutable std::unordered_map<u64, std::string> functionNameCache_;
 

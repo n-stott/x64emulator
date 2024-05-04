@@ -4,9 +4,9 @@
 #include "interpreter/verify.h"
 #include <algorithm>
 
-namespace x64 {
+namespace kernel {
 
-    Scheduler::Scheduler(Mmu* mmu) : mmu_(mmu) { }
+    Scheduler::Scheduler(x64::Mmu& mmu) : mmu_(mmu) { }
     Scheduler::~Scheduler() = default;
 
     Thread* Scheduler::createThread(int pid) {
@@ -26,7 +26,7 @@ namespace x64 {
         bool anyThreadAlive = std::any_of(threadQueue_.begin(), threadQueue_.end(), [](const Thread* t) {
             return t->state == Thread::STATE::ALIVE;
         });
-        verify(anyThreadAlive, [&]() {
+        x64::verify(anyThreadAlive, [&]() {
             fmt::print("No thread is alive in queue:\n");
             for(const auto& t : threads_) {
                 fmt::print("  {}\n", t->toString());
@@ -66,7 +66,7 @@ namespace x64 {
         }), futexWaitData_.end());
 
         if(!!thread->clear_child_tid) {
-            mmu_->write32(thread->clear_child_tid, 0);
+            mmu_.write32(thread->clear_child_tid, 0);
             wake(thread->clear_child_tid, 1);
         }
         threadQueue_.erase(std::remove(threadQueue_.begin(), threadQueue_.end(), thread), threadQueue_.end());
@@ -76,16 +76,16 @@ namespace x64 {
         terminateAll(516);
     }
 
-    void Scheduler::wait(Thread* thread, Ptr32 wordPtr, u32 expected) {
+    void Scheduler::wait(Thread* thread, x64::Ptr32 wordPtr, u32 expected) {
         futexWaitData_.push_back(FutexWaitData{thread, wordPtr, expected});
         thread->state = Thread::STATE::SLEEPING;
     }
 
-    u32 Scheduler::wake(Ptr32 wordPtr, u32 nbWaiters) {
+    u32 Scheduler::wake(x64::Ptr32 wordPtr, u32 nbWaiters) {
         u32 nbWoken = 0;
         for(auto& fwd : futexWaitData_) {
             if(fwd.wordPtr != wordPtr) continue;
-            u32 val = mmu_->read32(wordPtr);
+            u32 val = mmu_.read32(wordPtr);
             if(fwd.expected == val) continue;
             fwd.thread->state = Thread::STATE::ALIVE;
             ++nbWoken;

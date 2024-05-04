@@ -24,20 +24,6 @@ namespace x64 {
         void setLogSyscalls(bool);
 
     private:
-        struct Auxiliary {
-            u64 elfOffset;
-            u64 entrypoint;
-            u64 programHeaderTable;
-            u32 programHeaderCount;
-            u32 programHeaderEntrySize;
-            u64 randomDataAddress;
-            u64 platformStringAddress;
-        };
-
-        u64 loadElf(Mmu* mmu, Auxiliary* auxiliary, const std::string& filepath, bool mainProgram);
-        u64 setupMemory(Mmu* mmu, Auxiliary* auxiliary);
-        void pushProgramArguments(Mmu* mmu, VM* vm, const std::string& programFilePath, const std::vector<std::string>& arguments, const std::vector<std::string>& environmentVariables, const Auxiliary& auxiliary);
-
         bool logInstructions_ { false };
         unsigned long long logInstructionsAfter_ { 0 };
         bool logSyscalls_ { false };

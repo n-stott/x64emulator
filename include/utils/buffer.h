@@ -5,7 +5,7 @@
 #include <vector>
 #include "utils/utils.h"
 
-namespace x64 {
+namespace kernel {
 
     class Buffer {
     public:

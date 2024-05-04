@@ -2,7 +2,7 @@
 #include "host/host.h"
 #include <cassert>
 
-namespace x64 {
+namespace kernel {
 
     AuxiliaryVector& AuxiliaryVector::add(u64 type) {
         auto typeAndValue = Host::getauxval((Host::AUX_TYPE)type);

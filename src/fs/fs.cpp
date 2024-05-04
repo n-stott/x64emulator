@@ -4,7 +4,7 @@
 #include "host/host.h"
 #include "interpreter/verify.h"
 
-namespace x64 {
+namespace kernel {
 
     FS::FS(Host* host) : host_(host) { }
 
@@ -29,12 +29,13 @@ namespace x64 {
         };
     }
 
+/*
     FS::FD FS::open([[maybe_unused]] FD dirfd, const std::string& path, OpenFlags flags, Permissions permissions) {
-        verify(!path.empty(), "FS::open: empty path");
-        verify(path[0] == '/', "FS::open: non absolute path not supported");
+        x64::verify(!path.empty(), "FS::open: empty path");
+        x64::verify(path[0] == '/', "FS::open: non absolute path not supported");
         bool canUseHostFile = true;
         if(flags.append || flags.create || flags.truncate || flags.write) canUseHostFile = false;
-        verify(canUseHostFile, "unable to use host file without mutating it");
+        x64::verify(canUseHostFile, "unable to use host file without mutating it");
 
         if(canUseHostFile) {
             Host::FD fd = host_->openat(Host::FD{dirfd.fd}, path, flags, mode);
@@ -45,5 +46,5 @@ namespace x64 {
             }
         }
     }
-
+*/
 }

@@ -100,9 +100,9 @@ namespace x64 {
         void removeRegion(u64 regionBase, u64 regionEnd, u64 regionSize);
 
     public:
-        explicit Mmu(Host* host);
+        Mmu();
 
-        u64 mmap(u64 address, u64 length, PROT prot, MAP flags, int fd, int offset);
+        u64 mmap(u64 address, u64 length, PROT prot, MAP flags);
         int munmap(u64 address, u64 length);
         int mprotect(u64 address, u64 length, PROT prot);
         u64 brk(u64 address);
@@ -168,6 +168,8 @@ namespace x64 {
         static u64 pageRoundDown(u64 address);
         static u64 pageRoundUp(u64 address);
 
+        PROT prot(u64 address) const;
+
         const Region* findAddress(u64 address) const;
 
         static constexpr u64 PAGE_SIZE = 0x1000;
@@ -188,7 +190,6 @@ namespace x64 {
         u64 topOfMemoryPageAligned() const;
         u64 firstFitPageAligned(u64 length) const;
 
-        Host* host_;
         u64 topOfReserved_ = 0;
 
         std::deque<std::unique_ptr<Region>> regions_;

@@ -4,7 +4,7 @@
 #include <type_traits>
 #include <variant>
 
-namespace x64 {
+namespace kernel {
 
     template<typename Value>
     class ErrnoOr {

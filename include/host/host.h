@@ -10,7 +10,7 @@
 #include <unordered_map>
 #include <vector>
 
-namespace x64 {
+namespace kernel {
 
     template<typename T>
     struct BufferAndReturnValue {

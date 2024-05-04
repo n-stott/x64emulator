@@ -3,12 +3,11 @@
 #include "interpreter/thread.h"
 #include "interpreter/verify.h"
 #include "disassembler/capstonewrapper.h"
-#include "elf-reader/elf-reader.h"
 
 namespace x64 {
 
 
-    VM::VM(Mmu* mmu, Sys* syscalls) : mmu_(mmu), syscalls_(syscalls), cpu_(this, mmu_) { }
+    VM::VM(Mmu& mmu, kernel::Kernel& kernel) : mmu_(mmu), kernel_(kernel), cpu_(this, &mmu_) { }
     
     void VM::setLogInstructions(bool logInstructions) {
         logInstructions_ = logInstructions;
@@ -29,7 +28,7 @@ namespace x64 {
         fmt::print("Register state:\n");
         dumpRegisters();
         fmt::print("Memory regions:\n");
-        mmu_->dumpRegions();
+        mmu_.dumpRegions();
         fmt::print("Stacktrace:\n");
         dumpStackTrace();
     }
@@ -40,11 +39,15 @@ namespace x64 {
             currentThread_->data.regs = cpu_.regs_;
             currentThread_->data.x87fpu = cpu_.x87fpu_;
             currentThread_->data.mxcsr = cpu_.mxcsr_;
-            currentThread_->data.fsBase = mmu_->getSegmentBase(Segment::FS);
+            currentThread_->data.fsBase = mmu_.getSegmentBase(Segment::FS);
         }
     }
 
-    void VM::contextSwitch(Thread* newThread) {
+    void VM::syscall(Cpu& cpu) {
+        kernel_.syscall(cpu);
+    }
+
+    void VM::contextSwitch(kernel::Thread* newThread) {
         syncThread(); // if we have a current thread, save the registers to that thread.
         if(!!newThread) {
             // we now install the new thread
@@ -53,7 +56,7 @@ namespace x64 {
             cpu_.regs_ = currentThread_->data.regs;
             cpu_.x87fpu_ = currentThread_->data.x87fpu;
             cpu_.mxcsr_ = currentThread_->data.mxcsr;
-            mmu_->setSegmentBase(Segment::FS, currentThread_->data.fsBase);
+            mmu_.setSegmentBase(Segment::FS, currentThread_->data.fsBase);
             notifyJmp(cpu_.regs_.rip()); // no need to cache the destination here
         } else {
             currentThread_ = nullptr;
@@ -61,13 +64,13 @@ namespace x64 {
             cpu_.regs_ = Registers{};
             cpu_.x87fpu_ = X87Fpu{};
             cpu_.mxcsr_ = SimdControlStatus{};
-            mmu_->setSegmentBase(Segment::FS, (u64)0);
+            mmu_.setSegmentBase(Segment::FS, (u64)0);
         }
     }
 
     extern bool signal_interrupt;
 
-    void VM::execute(Thread* thread) {
+    void VM::execute(kernel::Thread* thread) {
         if(!thread) return;
         contextSwitch(thread);
         if(logInstructions()) {
@@ -272,7 +275,7 @@ namespace x64 {
         }
         
         // If we land here, we probably have not disassembled the section yet...
-        const Mmu::Region* mmuRegion = ((const Mmu*)mmu_)->findAddress(address);
+        const Mmu::Region* mmuRegion = ((const Mmu&)mmu_).findAddress(address);
         if(!mmuRegion) return InstructionPosition { nullptr, (size_t)(-1) };
         verify((bool)(mmuRegion->prot() & PROT::EXEC), [&]() {
             fmt::print(stderr, "Attempting to execute non-executable region [{:#x}-{:#x}]\n", mmuRegion->base(), mmuRegion->end());
@@ -322,53 +325,9 @@ namespace x64 {
         }));
 
         // Retrieve symbols from that section
-        tryRetrieveSymbolsFromExecutable(*mmuRegion);
+        symbolProvider_.tryRetrieveSymbolsFromExecutable(mmuRegion->file(), mmuRegion->base());
 
         return InstructionPosition { sectionPtr, 0 };
-    }
-
-
-    void VM::tryRetrieveSymbolsFromExecutable(const Mmu::Region& region) const {
-        if(region.file().empty()) return;
-        if(std::find(symbolicatedElfs_.begin(), symbolicatedElfs_.end(), region.file()) != symbolicatedElfs_.end()) return;
-
-        std::unique_ptr<elf::Elf> elf = elf::ElfReader::tryCreate(region.file());
-        if(!elf) return;
-
-        symbolicatedElfs_.push_back(region.file());
-
-        verify(elf->archClass() == elf::Class::B64, "elf must be 64-bit");
-        std::unique_ptr<elf::Elf64> elf64;
-        elf64.reset(static_cast<elf::Elf64*>(elf.release()));
-
-        size_t nbExecutableProgramHeaders = 0;
-        u64 executableProgramHeaderVirtualAddress = 0;
-        elf64->forAllProgramHeaders([&](const elf::ProgramHeader64& ph) {
-            if(ph.type() == elf::ProgramHeaderType::PT_LOAD && ph.isExecutable()) {
-                ++nbExecutableProgramHeaders;
-                executableProgramHeaderVirtualAddress = ph.virtualAddress();
-            }
-        });
-        if(nbExecutableProgramHeaders != 1) return; // give up
-
-        u64 elfOffset = region.base() - executableProgramHeaderVirtualAddress;
-
-        size_t nbSymbols = 0;
-        elf64->forAllSymbols([&](const elf::StringTable*, const elf::SymbolTableEntry64&) {
-            ++nbSymbols;
-        });
-
-        auto loadSymbol = [&](const elf::StringTable* stringTable, const elf::SymbolTableEntry64& entry) {
-            std::string symbol { entry.symbol(stringTable, *elf64) };
-            if(entry.isUndefined()) return;
-            if(!entry.st_name) return;
-            u64 address = entry.st_value;
-            if(entry.type() != elf::SymbolType::TLS) address += elfOffset;
-            symbolProvider_.registerSymbol(symbol, "", address, nullptr, elfOffset, entry.st_size, entry.type(), entry.bind());
-        };
-
-        elf64->forAllSymbols(loadSymbol);
-        elf64->forAllDynamicSymbols(loadSymbol);
     }
 
     std::string VM::callName(const X64Instruction& instruction) const {

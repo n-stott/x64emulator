@@ -28,13 +28,14 @@ namespace x64 {
             elf::SymbolBind bind;
         };
 
-        void registerSymbol(std::string symbol, std::string version, u64 address, const elf::Elf64* elf, u64 elfOffset, u64 size, elf::SymbolType type, elf::SymbolBind bind);
+        void tryRetrieveSymbolsFromExecutable(const std::string& filename, u64 loadAddress);
 
         std::vector<const SymbolProvider::Entry*> lookupSymbolWithVersion(const std::string& symbol, const std::string& version, bool demangled) const;
         std::vector<const SymbolProvider::Entry*> lookupSymbolWithoutVersion(const std::string& symbol, bool demangled) const;
         std::vector<const SymbolProvider::Entry*> lookupSymbol(u64 address) const;
 
     private:
+        void registerSymbol(std::string symbol, std::string version, u64 address, const elf::Elf64* elf, u64 elfOffset, u64 size, elf::SymbolType type, elf::SymbolBind bind);
 
         struct Table {
             void registerSymbol(std::string symbol, std::string version, u64 address, const elf::Elf64* elf, u64 elfOffset, u64 size, elf::SymbolType type, elf::SymbolBind bind);
@@ -53,6 +54,7 @@ namespace x64 {
         };
 
         Table symbolTable_;
+        std::vector<std::string> symbolicatedElfs_;
     };
 
 }

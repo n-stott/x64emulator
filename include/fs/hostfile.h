@@ -4,7 +4,7 @@
 #include "fs/file.h"
 #include "fs/fs.h"
 
-namespace x64 {
+namespace kernel {
 
     class HostFile : public File {
     public:

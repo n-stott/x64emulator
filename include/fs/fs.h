@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 
-namespace x64 {
+namespace kernel {
 
     class File;
     class Host;

@@ -5,7 +5,7 @@
 #include "utils/erroror.h"
 #include "utils/utils.h"
 
-namespace x64 {
+namespace kernel {
 
     class FS;
 

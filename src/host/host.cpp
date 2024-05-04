@@ -24,7 +24,7 @@
 #include <time.h>
 #include <unistd.h>
 
-namespace x64 {
+namespace kernel {
 
     Host::Host() {
         openFiles_[0] = "___stdin";
