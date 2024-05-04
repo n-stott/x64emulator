@@ -47,6 +47,7 @@ target_include_directories(x64 PUBLIC include)
 add_library(emulator STATIC
     src/disassembler/capstonewrapper.cpp
     src/fs/fs.cpp
+    src/fs/hostfile.cpp
     src/interpreter/auxiliaryvector.cpp
     src/interpreter/symbolprovider.cpp
     src/interpreter/interpreter.cpp

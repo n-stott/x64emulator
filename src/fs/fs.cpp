@@ -29,22 +29,26 @@ namespace kernel {
         };
     }
 
-/*
-    FS::FD FS::open([[maybe_unused]] FD dirfd, const std::string& path, OpenFlags flags, Permissions permissions) {
+
+    File* FS::open(const std::string& path, OpenFlags flags, Permissions permissions) {
+        (void)permissions;
         x64::verify(!path.empty(), "FS::open: empty path");
         x64::verify(path[0] == '/', "FS::open: non absolute path not supported");
         bool canUseHostFile = true;
         if(flags.append || flags.create || flags.truncate || flags.write) canUseHostFile = false;
-        x64::verify(canUseHostFile, "unable to use host file without mutating it");
+        
+        x64::verify(canUseHostFile, "only host-backed files are supported for now");
 
-        if(canUseHostFile) {
-            Host::FD fd = host_->openat(Host::FD{dirfd.fd}, path, flags, mode);
-        } else {
-            Host::FD fd = host_->openat(Host::FD{dirfd.fd}, path, flags, mode);
-            if(fd.fd < 0) {
-                
-            }
-        }
+        Host::FD fd = host_->openat(Host::cwdfd(), path, 0, 0);
+        auto hostBackedFile = std::make_unique<HostFile>(this, fd.fd);
+        File* file = hostBackedFile.get();
+        Node node {
+            path,
+            std::move(hostBackedFile),
+            Permissions { true, false, false },
+        };
+        files_.push_back(std::move(node));
+        return file;
     }
-*/
+
 }
