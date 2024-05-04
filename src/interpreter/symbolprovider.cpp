@@ -1,5 +1,6 @@
 #include "interpreter/symbolprovider.h"
 #include "interpreter/verify.h"
+#include "elf-reader/elf-reader.h"
 #include <cassert>
 #include <boost/core/demangle.hpp>
 #include <fmt/core.h>
@@ -110,6 +111,49 @@ namespace x64 {
             return symbol;
         }
         return s;
+    }
+
+    void SymbolProvider::tryRetrieveSymbolsFromExecutable(const std::string& filename, u64 loadAddress) {
+        if(filename.empty()) return;
+        if(std::find(symbolicatedElfs_.begin(), symbolicatedElfs_.end(), filename) != symbolicatedElfs_.end()) return;
+
+        std::unique_ptr<elf::Elf> elf = elf::ElfReader::tryCreate(filename);
+        if(!elf) return;
+
+        symbolicatedElfs_.push_back(filename);
+
+        verify(elf->archClass() == elf::Class::B64, "elf must be 64-bit");
+        std::unique_ptr<elf::Elf64> elf64;
+        elf64.reset(static_cast<elf::Elf64*>(elf.release()));
+
+        size_t nbExecutableProgramHeaders = 0;
+        u64 executableProgramHeaderVirtualAddress = 0;
+        elf64->forAllProgramHeaders([&](const elf::ProgramHeader64& ph) {
+            if(ph.type() == elf::ProgramHeaderType::PT_LOAD && ph.isExecutable()) {
+                ++nbExecutableProgramHeaders;
+                executableProgramHeaderVirtualAddress = ph.virtualAddress();
+            }
+        });
+        if(nbExecutableProgramHeaders != 1) return; // give up
+
+        u64 elfOffset = loadAddress - executableProgramHeaderVirtualAddress;
+
+        size_t nbSymbols = 0;
+        elf64->forAllSymbols([&](const elf::StringTable*, const elf::SymbolTableEntry64&) {
+            ++nbSymbols;
+        });
+
+        auto loadSymbol = [&](const elf::StringTable* stringTable, const elf::SymbolTableEntry64& entry) {
+            std::string symbol { entry.symbol(stringTable, *elf64) };
+            if(entry.isUndefined()) return;
+            if(!entry.st_name) return;
+            u64 address = entry.st_value;
+            if(entry.type() != elf::SymbolType::TLS) address += elfOffset;
+            registerSymbol(symbol, "", address, nullptr, elfOffset, entry.st_size, entry.type(), entry.bind());
+        };
+
+        elf64->forAllSymbols(loadSymbol);
+        elf64->forAllDynamicSymbols(loadSymbol);
     }
 
 }

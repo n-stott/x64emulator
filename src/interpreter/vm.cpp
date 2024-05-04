@@ -3,7 +3,6 @@
 #include "interpreter/thread.h"
 #include "interpreter/verify.h"
 #include "disassembler/capstonewrapper.h"
-#include "elf-reader/elf-reader.h"
 
 namespace x64 {
 
@@ -322,53 +321,9 @@ namespace x64 {
         }));
 
         // Retrieve symbols from that section
-        tryRetrieveSymbolsFromExecutable(*mmuRegion);
+        symbolProvider_.tryRetrieveSymbolsFromExecutable(mmuRegion->file(), mmuRegion->base());
 
         return InstructionPosition { sectionPtr, 0 };
-    }
-
-
-    void VM::tryRetrieveSymbolsFromExecutable(const Mmu::Region& region) const {
-        if(region.file().empty()) return;
-        if(std::find(symbolicatedElfs_.begin(), symbolicatedElfs_.end(), region.file()) != symbolicatedElfs_.end()) return;
-
-        std::unique_ptr<elf::Elf> elf = elf::ElfReader::tryCreate(region.file());
-        if(!elf) return;
-
-        symbolicatedElfs_.push_back(region.file());
-
-        verify(elf->archClass() == elf::Class::B64, "elf must be 64-bit");
-        std::unique_ptr<elf::Elf64> elf64;
-        elf64.reset(static_cast<elf::Elf64*>(elf.release()));
-
-        size_t nbExecutableProgramHeaders = 0;
-        u64 executableProgramHeaderVirtualAddress = 0;
-        elf64->forAllProgramHeaders([&](const elf::ProgramHeader64& ph) {
-            if(ph.type() == elf::ProgramHeaderType::PT_LOAD && ph.isExecutable()) {
-                ++nbExecutableProgramHeaders;
-                executableProgramHeaderVirtualAddress = ph.virtualAddress();
-            }
-        });
-        if(nbExecutableProgramHeaders != 1) return; // give up
-
-        u64 elfOffset = region.base() - executableProgramHeaderVirtualAddress;
-
-        size_t nbSymbols = 0;
-        elf64->forAllSymbols([&](const elf::StringTable*, const elf::SymbolTableEntry64&) {
-            ++nbSymbols;
-        });
-
-        auto loadSymbol = [&](const elf::StringTable* stringTable, const elf::SymbolTableEntry64& entry) {
-            std::string symbol { entry.symbol(stringTable, *elf64) };
-            if(entry.isUndefined()) return;
-            if(!entry.st_name) return;
-            u64 address = entry.st_value;
-            if(entry.type() != elf::SymbolType::TLS) address += elfOffset;
-            symbolProvider_.registerSymbol(symbol, "", address, nullptr, elfOffset, entry.st_size, entry.type(), entry.bind());
-        };
-
-        elf64->forAllSymbols(loadSymbol);
-        elf64->forAllDynamicSymbols(loadSymbol);
     }
 
     std::string VM::callName(const X64Instruction& instruction) const {
