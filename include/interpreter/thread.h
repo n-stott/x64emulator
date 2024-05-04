@@ -12,7 +12,7 @@
 #include <string>
 #include <vector>
 
-namespace x64 {
+namespace kernel {
 
     class Thread {
     public:
@@ -29,14 +29,14 @@ namespace x64 {
             int tid { 0xfeed };
         } descr;
 
-        Ptr32 set_child_tid { 0 };
-        Ptr32 clear_child_tid { 0 };
+        x64::Ptr32 set_child_tid { 0 };
+        x64::Ptr32 clear_child_tid { 0 };
 
         struct Data {
-            Flags flags;
-            Registers regs;
-            X87Fpu x87fpu;
-            SimdControlStatus mxcsr;
+            x64::Flags flags;
+            x64::Registers regs;
+            x64::X87Fpu x87fpu;
+            x64::SimdControlStatus mxcsr;
             u64 fsBase { 0 };
         } data;
 

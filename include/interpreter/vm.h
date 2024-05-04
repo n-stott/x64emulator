@@ -9,9 +9,11 @@
 #include <deque>
 #include <unordered_map>
 
-namespace x64 {
-
+namespace kernel {
     class Thread;
+}
+
+namespace x64 {
 
     class VM {
     public:
@@ -24,9 +26,9 @@ namespace x64 {
         bool logInstructions() const;
         void setLogInstructionsAfter(unsigned long long);
 
-        void contextSwitch(Thread* newThread);
+        void contextSwitch(kernel::Thread* newThread);
 
-        void execute(Thread* thread);
+        void execute(kernel::Thread* thread);
 
         void push64(u64 value);
 
@@ -82,7 +84,7 @@ namespace x64 {
             const X64Instruction* nextInstruction { nullptr };
         };
 
-        Thread* currentThread_ { nullptr };
+        kernel::Thread* currentThread_ { nullptr };
         ExecutionPoint currentThreadExecutionPoint_;
 
         std::unordered_map<u64, ExecutionPoint> callCache_;

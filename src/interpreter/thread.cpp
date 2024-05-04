@@ -1,7 +1,7 @@
 #include "interpreter/thread.h"
 #include <fmt/core.h>
 
-namespace x64 {
+namespace kernel {
 
     std::string Thread::toString() const {
         std::string res;

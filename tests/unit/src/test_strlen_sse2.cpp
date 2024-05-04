@@ -56,7 +56,7 @@ int main() {
 
         VM vm(mmu, kernel);
         vm.setLogInstructions(true);
-        Thread mainThread(0, 0);
+        kernel::Thread mainThread(0, 0);
         mainThread.data.regs.rip() = execPage;
         mainThread.data.regs.set(R64::RDI, dataPage);
         mainThread.ticksUntilSwitch = 15;

@@ -9,14 +9,13 @@
 #include <numeric>
 #include <sys/socket.h>
 
-namespace x64 {
+namespace kernel {
 
-
-    Sys::Sys(Host* host, Scheduler* scheduler, Mmu* mmu) :
+    Sys::Sys(Host* host, Scheduler* scheduler, x64::Mmu* mmu) :
         host_(host),
         scheduler_(scheduler),
         mmu_(mmu) { 
-        verify(!!host_, "Must provide a host");
+        x64::verify(!!host_, "Must provide a host");
     }
 
     template<typename... Args>
@@ -25,114 +24,114 @@ namespace x64 {
         fmt::print(format, args...);
     }
 
-    void Sys::syscall(Cpu* cpu) {
-        u64 sysNumber = cpu->get(R64::RAX);
+    void Sys::syscall(x64::Cpu* cpu) {
+        u64 sysNumber = cpu->get(x64::R64::RAX);
         scheduler_->currentThread()->stats.syscalls++;
 
         RegisterDump regs {{
-            cpu->get(R64::RDI),
-            cpu->get(R64::RSI),
-            cpu->get(R64::RDX),
-            cpu->get(R64::R10),
-            cpu->get(R64::R8),
-            cpu->get(R64::R9),
+            cpu->get(x64::R64::RDI),
+            cpu->get(x64::R64::RSI),
+            cpu->get(x64::R64::RDX),
+            cpu->get(x64::R64::R10),
+            cpu->get(x64::R64::R8),
+            cpu->get(x64::R64::R9),
         }};
 
         switch(sysNumber) {
-            case 0x0: return cpu->set(R64::RAX, invoke_syscall_3(&Sys::read, regs));
-            case 0x1: return cpu->set(R64::RAX, invoke_syscall_3(&Sys::write, regs));
-            case 0x3: return cpu->set(R64::RAX, invoke_syscall_1(&Sys::close, regs));
-            case 0x4: return cpu->set(R64::RAX, invoke_syscall_2(&Sys::stat, regs));
-            case 0x5: return cpu->set(R64::RAX, invoke_syscall_2(&Sys::fstat, regs));
-            case 0x6: return cpu->set(R64::RAX, invoke_syscall_2(&Sys::lstat, regs));
-            case 0x7: return cpu->set(R64::RAX, invoke_syscall_3(&Sys::poll, regs));
-            case 0x8: return cpu->set(R64::RAX, invoke_syscall_3(&Sys::lseek, regs));
-            case 0x9: return cpu->set(R64::RAX, invoke_syscall_6(&Sys::mmap, regs));
-            case 0xa: return cpu->set(R64::RAX, invoke_syscall_3(&Sys::mprotect, regs));
-            case 0xb: return cpu->set(R64::RAX, invoke_syscall_2(&Sys::munmap, regs));
-            case 0xc: return cpu->set(R64::RAX, invoke_syscall_1(&Sys::brk, regs));
-            case 0xd: return cpu->set(R64::RAX, invoke_syscall_4(&Sys::rt_sigaction, regs));
-            case 0xe: return cpu->set(R64::RAX, invoke_syscall_4(&Sys::rt_sigprocmask, regs));
-            case 0x10: return cpu->set(R64::RAX, invoke_syscall_3(&Sys::ioctl, regs));
-            case 0x11: return cpu->set(R64::RAX, invoke_syscall_4(&Sys::pread64, regs));
-            case 0x12: return cpu->set(R64::RAX, invoke_syscall_4(&Sys::pwrite64, regs));
-            case 0x14: return cpu->set(R64::RAX, invoke_syscall_3(&Sys::writev, regs));
-            case 0x15: return cpu->set(R64::RAX, invoke_syscall_2(&Sys::access, regs));
-            case 0x17: return cpu->set(R64::RAX, invoke_syscall_5(&Sys::select, regs));
-            case 0x1c: return cpu->set(R64::RAX, invoke_syscall_3(&Sys::madvise, regs));
-            case 0x20: return cpu->set(R64::RAX, invoke_syscall_1(&Sys::dup, regs));
-            case 0x26: return cpu->set(R64::RAX, invoke_syscall_3(&Sys::setitimer, regs));
+            case 0x0: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::read, regs));
+            case 0x1: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::write, regs));
+            case 0x3: return cpu->set(x64::R64::RAX, invoke_syscall_1(&Sys::close, regs));
+            case 0x4: return cpu->set(x64::R64::RAX, invoke_syscall_2(&Sys::stat, regs));
+            case 0x5: return cpu->set(x64::R64::RAX, invoke_syscall_2(&Sys::fstat, regs));
+            case 0x6: return cpu->set(x64::R64::RAX, invoke_syscall_2(&Sys::lstat, regs));
+            case 0x7: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::poll, regs));
+            case 0x8: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::lseek, regs));
+            case 0x9: return cpu->set(x64::R64::RAX, invoke_syscall_6(&Sys::mmap, regs));
+            case 0xa: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::mprotect, regs));
+            case 0xb: return cpu->set(x64::R64::RAX, invoke_syscall_2(&Sys::munmap, regs));
+            case 0xc: return cpu->set(x64::R64::RAX, invoke_syscall_1(&Sys::brk, regs));
+            case 0xd: return cpu->set(x64::R64::RAX, invoke_syscall_4(&Sys::rt_sigaction, regs));
+            case 0xe: return cpu->set(x64::R64::RAX, invoke_syscall_4(&Sys::rt_sigprocmask, regs));
+            case 0x10: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::ioctl, regs));
+            case 0x11: return cpu->set(x64::R64::RAX, invoke_syscall_4(&Sys::pread64, regs));
+            case 0x12: return cpu->set(x64::R64::RAX, invoke_syscall_4(&Sys::pwrite64, regs));
+            case 0x14: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::writev, regs));
+            case 0x15: return cpu->set(x64::R64::RAX, invoke_syscall_2(&Sys::access, regs));
+            case 0x17: return cpu->set(x64::R64::RAX, invoke_syscall_5(&Sys::select, regs));
+            case 0x1c: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::madvise, regs));
+            case 0x20: return cpu->set(x64::R64::RAX, invoke_syscall_1(&Sys::dup, regs));
+            case 0x26: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::setitimer, regs));
             case 0x27: { // getpid
-                verify(!!scheduler_->currentThread());
-                cpu->set(R64::RAX, (u64)scheduler_->currentThread()->descr.pid);
+                x64::verify(!!scheduler_->currentThread());
+                cpu->set(x64::R64::RAX, (u64)scheduler_->currentThread()->descr.pid);
                 return;
             }
-            case 0x29: return cpu->set(R64::RAX, invoke_syscall_3(&Sys::socket, regs));
-            case 0x2a: return cpu->set(R64::RAX, invoke_syscall_3(&Sys::connect, regs));
-            case 0x2d: return cpu->set(R64::RAX, invoke_syscall_6(&Sys::recvfrom, regs));
-            case 0x2e: return cpu->set(R64::RAX, invoke_syscall_3(&Sys::sendmsg, regs));
-            case 0x2f: return cpu->set(R64::RAX, invoke_syscall_3(&Sys::recvmsg, regs));
-            case 0x30: return cpu->set(R64::RAX, invoke_syscall_2(&Sys::shutdown, regs));
-            case 0x31: return cpu->set(R64::RAX, invoke_syscall_3(&Sys::bind, regs));
-            case 0x33: return cpu->set(R64::RAX, invoke_syscall_3(&Sys::getsockname, regs));
-            case 0x34: return cpu->set(R64::RAX, invoke_syscall_3(&Sys::getpeername, regs));
-            case 0x38: return cpu->set(R64::RAX, invoke_syscall_5(&Sys::clone, regs));
-            case 0x3c: return cpu->set(R64::RAX, invoke_syscall_1(&Sys::exit, regs));
-            case 0x3f: return cpu->set(R64::RAX, invoke_syscall_1(&Sys::uname, regs));
-            case 0x48: return cpu->set(R64::RAX, invoke_syscall_3(&Sys::fcntl, regs));
-            case 0x4a: return cpu->set(R64::RAX, invoke_syscall_1(&Sys::fsync, regs));
-            case 0x4f: return cpu->set(R64::RAX, invoke_syscall_2(&Sys::getcwd, regs));
-            case 0x50: return cpu->set(R64::RAX, invoke_syscall_1(&Sys::chdir, regs));
-            case 0x53: return cpu->set(R64::RAX, invoke_syscall_2(&Sys::mkdir, regs));
-            case 0x57: return cpu->set(R64::RAX, invoke_syscall_1(&Sys::unlink, regs));
-            case 0x59: return cpu->set(R64::RAX, invoke_syscall_3(&Sys::readlink, regs));
-            case 0x60: return cpu->set(R64::RAX, invoke_syscall_2(&Sys::gettimeofday, regs));
-            case 0x63: return cpu->set(R64::RAX, invoke_syscall_1(&Sys::sysinfo, regs));
-            case 0x66: return cpu->set(R64::RAX, invoke_syscall_0(&Sys::getuid, regs));
-            case 0x68: return cpu->set(R64::RAX, invoke_syscall_0(&Sys::getgid, regs));
-            case 0x6b: return cpu->set(R64::RAX, invoke_syscall_0(&Sys::geteuid, regs));
-            case 0x6c: return cpu->set(R64::RAX, invoke_syscall_0(&Sys::getegid, regs));
-            case 0x6f: return cpu->set(R64::RAX, invoke_syscall_0(&Sys::getpgrp, regs));
-            case 0x89: return cpu->set(R64::RAX, invoke_syscall_2(&Sys::statfs, regs));
-            case 0x9d: return cpu->set(R64::RAX, invoke_syscall_5(&Sys::prctl, regs));
-            case 0x9e: return cpu->set(R64::RAX, invoke_syscall_2(&Sys::arch_prctl, regs));
+            case 0x29: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::socket, regs));
+            case 0x2a: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::connect, regs));
+            case 0x2d: return cpu->set(x64::R64::RAX, invoke_syscall_6(&Sys::recvfrom, regs));
+            case 0x2e: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::sendmsg, regs));
+            case 0x2f: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::recvmsg, regs));
+            case 0x30: return cpu->set(x64::R64::RAX, invoke_syscall_2(&Sys::shutdown, regs));
+            case 0x31: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::bind, regs));
+            case 0x33: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::getsockname, regs));
+            case 0x34: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::getpeername, regs));
+            case 0x38: return cpu->set(x64::R64::RAX, invoke_syscall_5(&Sys::clone, regs));
+            case 0x3c: return cpu->set(x64::R64::RAX, invoke_syscall_1(&Sys::exit, regs));
+            case 0x3f: return cpu->set(x64::R64::RAX, invoke_syscall_1(&Sys::uname, regs));
+            case 0x48: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::fcntl, regs));
+            case 0x4a: return cpu->set(x64::R64::RAX, invoke_syscall_1(&Sys::fsync, regs));
+            case 0x4f: return cpu->set(x64::R64::RAX, invoke_syscall_2(&Sys::getcwd, regs));
+            case 0x50: return cpu->set(x64::R64::RAX, invoke_syscall_1(&Sys::chdir, regs));
+            case 0x53: return cpu->set(x64::R64::RAX, invoke_syscall_2(&Sys::mkdir, regs));
+            case 0x57: return cpu->set(x64::R64::RAX, invoke_syscall_1(&Sys::unlink, regs));
+            case 0x59: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::readlink, regs));
+            case 0x60: return cpu->set(x64::R64::RAX, invoke_syscall_2(&Sys::gettimeofday, regs));
+            case 0x63: return cpu->set(x64::R64::RAX, invoke_syscall_1(&Sys::sysinfo, regs));
+            case 0x66: return cpu->set(x64::R64::RAX, invoke_syscall_0(&Sys::getuid, regs));
+            case 0x68: return cpu->set(x64::R64::RAX, invoke_syscall_0(&Sys::getgid, regs));
+            case 0x6b: return cpu->set(x64::R64::RAX, invoke_syscall_0(&Sys::geteuid, regs));
+            case 0x6c: return cpu->set(x64::R64::RAX, invoke_syscall_0(&Sys::getegid, regs));
+            case 0x6f: return cpu->set(x64::R64::RAX, invoke_syscall_0(&Sys::getpgrp, regs));
+            case 0x89: return cpu->set(x64::R64::RAX, invoke_syscall_2(&Sys::statfs, regs));
+            case 0x9d: return cpu->set(x64::R64::RAX, invoke_syscall_5(&Sys::prctl, regs));
+            case 0x9e: return cpu->set(x64::R64::RAX, invoke_syscall_2(&Sys::arch_prctl, regs));
             case 0xba: { // gettid
-                verify(!!scheduler_->currentThread());
-                cpu->set(R64::RAX, (u64)scheduler_->currentThread()->descr.tid);
+                x64::verify(!!scheduler_->currentThread());
+                cpu->set(x64::R64::RAX, (u64)scheduler_->currentThread()->descr.tid);
                 return;
             }
-            case 0xbf: return cpu->set(R64::RAX, invoke_syscall_4(&Sys::getxattr, regs));
-            case 0xc0: return cpu->set(R64::RAX, invoke_syscall_4(&Sys::lgetxattr, regs));
-            case 0xc9: return cpu->set(R64::RAX, invoke_syscall_1(&Sys::time, regs));
-            case 0xcc: return cpu->set(R64::RAX, invoke_syscall_3(&Sys::sched_getaffinity, regs));
-            case 0xca: return cpu->set(R64::RAX, invoke_syscall_6(&Sys::futex, regs));
-            case 0xd9: return cpu->set(R64::RAX, invoke_syscall_3(&Sys::getdents64, regs));
-            case 0xda: return cpu->set(R64::RAX, invoke_syscall_1(&Sys::set_tid_address, regs));
-            case 0xdd: return cpu->set(R64::RAX, invoke_syscall_4(&Sys::posix_fadvise, regs));
-            case 0xe4: return cpu->set(R64::RAX, invoke_syscall_2(&Sys::clock_gettime, regs));
-            case 0xe7: return cpu->set(R64::RAX, invoke_syscall_1(&Sys::exit_group, regs));
-            case 0xea: return cpu->set(R64::RAX, invoke_syscall_3(&Sys::tgkill, regs));
-            case 0x101: return cpu->set(R64::RAX, invoke_syscall_4(&Sys::openat, regs));
-            case 0x106: return cpu->set(R64::RAX, invoke_syscall_4(&Sys::fstatat64, regs));
-            case 0x10e: return cpu->set(R64::RAX, invoke_syscall_6(&Sys::pselect6, regs));
-            case 0x111: return cpu->set(R64::RAX, invoke_syscall_2(&Sys::set_robust_list, regs));
-            case 0x112: return cpu->set(R64::RAX, invoke_syscall_3(&Sys::get_robust_list, regs));
-            case 0x118: return cpu->set(R64::RAX, invoke_syscall_4(&Sys::utimensat, regs));
-            case 0x122: return cpu->set(R64::RAX, invoke_syscall_2(&Sys::eventfd2, regs));
-            case 0x123: return cpu->set(R64::RAX, invoke_syscall_1(&Sys::epoll_create1, regs));
-            case 0x12e: return cpu->set(R64::RAX, invoke_syscall_4(&Sys::prlimit64, regs));
-            case 0x13b: return cpu->set(R64::RAX, invoke_syscall_4(&Sys::sched_getattr, regs));
-            case 0x13e: return cpu->set(R64::RAX, invoke_syscall_3(&Sys::getrandom, regs));
-            case 0x14c: return cpu->set(R64::RAX, invoke_syscall_5(&Sys::statx, regs));
-            case 0x1b3: return cpu->set(R64::RAX, invoke_syscall_2(&Sys::clone3, regs));
+            case 0xbf: return cpu->set(x64::R64::RAX, invoke_syscall_4(&Sys::getxattr, regs));
+            case 0xc0: return cpu->set(x64::R64::RAX, invoke_syscall_4(&Sys::lgetxattr, regs));
+            case 0xc9: return cpu->set(x64::R64::RAX, invoke_syscall_1(&Sys::time, regs));
+            case 0xcc: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::sched_getaffinity, regs));
+            case 0xca: return cpu->set(x64::R64::RAX, invoke_syscall_6(&Sys::futex, regs));
+            case 0xd9: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::getdents64, regs));
+            case 0xda: return cpu->set(x64::R64::RAX, invoke_syscall_1(&Sys::set_tid_address, regs));
+            case 0xdd: return cpu->set(x64::R64::RAX, invoke_syscall_4(&Sys::posix_fadvise, regs));
+            case 0xe4: return cpu->set(x64::R64::RAX, invoke_syscall_2(&Sys::clock_gettime, regs));
+            case 0xe7: return cpu->set(x64::R64::RAX, invoke_syscall_1(&Sys::exit_group, regs));
+            case 0xea: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::tgkill, regs));
+            case 0x101: return cpu->set(x64::R64::RAX, invoke_syscall_4(&Sys::openat, regs));
+            case 0x106: return cpu->set(x64::R64::RAX, invoke_syscall_4(&Sys::fstatat64, regs));
+            case 0x10e: return cpu->set(x64::R64::RAX, invoke_syscall_6(&Sys::pselect6, regs));
+            case 0x111: return cpu->set(x64::R64::RAX, invoke_syscall_2(&Sys::set_robust_list, regs));
+            case 0x112: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::get_robust_list, regs));
+            case 0x118: return cpu->set(x64::R64::RAX, invoke_syscall_4(&Sys::utimensat, regs));
+            case 0x122: return cpu->set(x64::R64::RAX, invoke_syscall_2(&Sys::eventfd2, regs));
+            case 0x123: return cpu->set(x64::R64::RAX, invoke_syscall_1(&Sys::epoll_create1, regs));
+            case 0x12e: return cpu->set(x64::R64::RAX, invoke_syscall_4(&Sys::prlimit64, regs));
+            case 0x13b: return cpu->set(x64::R64::RAX, invoke_syscall_4(&Sys::sched_getattr, regs));
+            case 0x13e: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::getrandom, regs));
+            case 0x14c: return cpu->set(x64::R64::RAX, invoke_syscall_5(&Sys::statx, regs));
+            case 0x1b3: return cpu->set(x64::R64::RAX, invoke_syscall_2(&Sys::clone3, regs));
             default: break;
         }
-        verify(false, [&]() {
+        x64::verify(false, [&]() {
             print("Syscall {:#x} not handled\n", sysNumber);
         });
     }
 
-    ssize_t Sys::read(int fd, Ptr8 buf, size_t count) {
+    ssize_t Sys::read(int fd, x64::Ptr8 buf, size_t count) {
         auto errnoOrBuffer = host_->read(Host::FD{fd}, count);
         if(logSyscalls_) {
             print("Sys::read(fd={}, buf={:#x}, count={}) = {}\n",
@@ -145,7 +144,7 @@ namespace x64 {
         });
     }
 
-    ssize_t Sys::write(int fd, Ptr8 buf, size_t count) {
+    ssize_t Sys::write(int fd, x64::Ptr8 buf, size_t count) {
         std::vector<u8> buffer = mmu_->readFromMmu<u8>(buf, count);
         ssize_t ret = host_->write(Host::FD{fd}, buffer.data(), buffer.size());
         if(logSyscalls_) {
@@ -161,7 +160,7 @@ namespace x64 {
         return ret;
     }
 
-    int Sys::stat(Ptr pathname, Ptr statbuf) {
+    int Sys::stat(x64::Ptr pathname, x64::Ptr statbuf) {
         std::string path = mmu_->readString(pathname);
         auto errnoOrBuffer = host_->stat(path);
         if(logSyscalls_) {
@@ -174,7 +173,7 @@ namespace x64 {
         });
     }
 
-    int Sys::fstat(int fd, Ptr8 statbuf) {
+    int Sys::fstat(int fd, x64::Ptr8 statbuf) {
         ErrnoOrBuffer errnoOrBuffer = host_->fstat(Host::FD{fd});
         if(logSyscalls_) {
             print("Sys::fstat(fd={}, statbuf={:#x}) = {}\n",
@@ -186,7 +185,7 @@ namespace x64 {
         });
     }
 
-    int Sys::lstat(Ptr pathname, Ptr statbuf) {
+    int Sys::lstat(x64::Ptr pathname, x64::Ptr statbuf) {
         std::string path = mmu_->readString(pathname);
         ErrnoOrBuffer errnoOrBuffer = host_->lstat(path);
         if(logSyscalls_) {
@@ -199,7 +198,7 @@ namespace x64 {
         });
     }
 
-    int Sys::poll(Ptr fds, size_t nfds, int timeout) {
+    int Sys::poll(x64::Ptr fds, size_t nfds, int timeout) {
         std::vector<u8> pollfds = mmu_->readFromMmu<u8>(fds, host_->pollRequiredBufferSize(nfds));
         Buffer buffer(std::move(pollfds));
         auto errnoOrBufferAndReturnValue = host_->poll(buffer, nfds, timeout);
@@ -225,47 +224,47 @@ namespace x64 {
         return ret;
     }
 
-    Ptr Sys::mmap(Ptr addr, size_t length, int prot, int flags, int fd, off_t offset) {
-        MAP f =  MAP::PRIVATE;
-        if(Host::Mmap::isAnonymous(flags)) f = f | MAP::ANONYMOUS;
-        if(Host::Mmap::isFixed(flags)) f = f | MAP::FIXED;
-        verify(addr.segment() != Segment::FS);
-        u64 base = mmu_->mmap(addr.address(), length, (PROT)prot, f);
-        if(!(bool)(f & MAP::ANONYMOUS)) {
-            verify(fd >= 0);
+    x64::Ptr Sys::mmap(x64::Ptr addr, size_t length, int prot, int flags, int fd, off_t offset) {
+        x64::MAP f =  x64::MAP::PRIVATE;
+        if(Host::Mmap::isAnonymous(flags)) f = f | x64::MAP::ANONYMOUS;
+        if(Host::Mmap::isFixed(flags)) f = f | x64::MAP::FIXED;
+        x64::verify(addr.segment() != x64::Segment::FS);
+        u64 base = mmu_->mmap(addr.address(), length, (x64::PROT)prot, f);
+        if(!(bool)(f & x64::MAP::ANONYMOUS)) {
+            x64::verify(fd >= 0);
             std::vector<u8> data = host_->readFromFile(Host::FD{fd}, length, offset);
-            PROT saved = mmu_->prot(base);
-            mmu_->mprotect(base, length, PROT::WRITE);
-            mmu_->copyToMmu(Ptr8{base}, data.data(), data.size());
+            x64::PROT saved = mmu_->prot(base);
+            mmu_->mprotect(base, length, x64::PROT::WRITE);
+            mmu_->copyToMmu(x64::Ptr8{base}, data.data(), data.size());
             mmu_->mprotect(base, length, saved);
             auto filename = host_->filename(Host::FD{fd});
             mmu_->setRegionName(base, filename.value_or(""));
         }
         if(logSyscalls_) print("Sys::mmap(addr={:#x}, length={}, prot={}, flags={}, fd={}, offset={}) = {:#x}\n",
                                               addr.address(), length, prot, flags, fd, offset, base);
-        return Ptr{addr.segment(), base};
+        return x64::Ptr{addr.segment(), base};
     }
 
-    int Sys::mprotect(Ptr addr, size_t length, int prot) {
-        int ret = mmu_->mprotect(addr.address(), length, (PROT)prot);
+    int Sys::mprotect(x64::Ptr addr, size_t length, int prot) {
+        int ret = mmu_->mprotect(addr.address(), length, (x64::PROT)prot);
         if(logSyscalls_) print("Sys::mprotect(addr={:#x}, length={}, prot={}) = {}\n", addr.address(), length, prot, ret);
         return ret;
     }
 
-    int Sys::munmap(Ptr addr, size_t length) {
+    int Sys::munmap(x64::Ptr addr, size_t length) {
         int ret = mmu_->munmap(addr.address(), length);
         if(logSyscalls_) print("Sys::munmap(addr={:#x}, length={}) = {}\n", addr.address(), length, ret);
         return ret;
     }
 
-    Ptr Sys::brk(Ptr addr) {
-        verify(addr.segment() != Segment::FS);
+    x64::Ptr Sys::brk(x64::Ptr addr) {
+        x64::verify(addr.segment() != x64::Segment::FS);
         u64 newBrk = mmu_->brk(addr.address());
         if(logSyscalls_) print("Sys::brk(addr={:#x}) = {:#x}\n", addr.address(), newBrk);
-        return Ptr{addr.segment(), newBrk};
+        return x64::Ptr{addr.segment(), newBrk};
     }
 
-    int Sys::rt_sigaction(int sig, Ptr act, Ptr oact, size_t sigsetsize) {
+    int Sys::rt_sigaction(int sig, x64::Ptr act, x64::Ptr oact, size_t sigsetsize) {
         if(logSyscalls_) print("Sys::rt_sigaction({}, {:#x}, {:#x}, {}) = 0\n", sig, act.address(), oact.address(), sigsetsize);
         (void)sig;
         (void)act;
@@ -274,7 +273,7 @@ namespace x64 {
         return 0;
     }
 
-    int Sys::rt_sigprocmask(int how, Ptr nset, Ptr oset, size_t sigsetsize) {
+    int Sys::rt_sigprocmask(int how, x64::Ptr nset, x64::Ptr oset, size_t sigsetsize) {
         if(logSyscalls_) print("Sys::rt_sigprocmask({}, {:#x}, {:#x}, {}) = 0\n", how, nset.address(), oset.address(), sigsetsize);
         (void)how;
         (void)nset;
@@ -283,7 +282,7 @@ namespace x64 {
         return 0;
     }
 
-    int Sys::ioctl(int fd, unsigned long request, Ptr argp) {
+    int Sys::ioctl(int fd, unsigned long request, x64::Ptr argp) {
         // We need to ask the host for the expected buffer size behind argp.
         size_t bufferSize = host_->ioctlRequiredBufferSize(request);
         std::vector<u8> buf(bufferSize, 0x0);
@@ -302,7 +301,7 @@ namespace x64 {
         });
     }
 
-    ssize_t Sys::pread64(int fd, Ptr buf, size_t count, off_t offset) {
+    ssize_t Sys::pread64(int fd, x64::Ptr buf, size_t count, off_t offset) {
         auto errnoOrBuffer = host_->pread64(Host::FD{fd}, count, offset);
         if(logSyscalls_) {
             print("Sys::pread64(fd={}, buf={:#x}, count={}, offset={}) = {}\n",
@@ -315,7 +314,7 @@ namespace x64 {
         });
     }
 
-    ssize_t Sys::pwrite64(int fd, Ptr buf, size_t count, off_t offset) {
+    ssize_t Sys::pwrite64(int fd, x64::Ptr buf, size_t count, off_t offset) {
         std::vector<u8> buffer = mmu_->readFromMmu<u8>(buf, count);
         auto errnoOrNbytes = host_->pwrite64(Host::FD{fd}, buffer.data(), buffer.size(), offset);
         if(logSyscalls_) {
@@ -325,12 +324,12 @@ namespace x64 {
         return errnoOrNbytes;
     }
 
-    ssize_t Sys::writev(int fd, Ptr iov, int iovcnt) {
+    ssize_t Sys::writev(int fd, x64::Ptr iov, int iovcnt) {
         std::vector<u8> iovecs = mmu_->readFromMmu<u8>(iov, ((size_t)iovcnt) * host_->iovecRequiredBufferSize());
         Buffer iovecBuffer(std::move(iovecs));
         std::vector<Buffer> buffers;
         for(size_t i = 0; i < (size_t)iovcnt; ++i) {
-            Ptr base{Host::iovecBase(iovecBuffer, i)};
+            x64::Ptr base{Host::iovecBase(iovecBuffer, i)};
             size_t len = host_->iovecLen(iovecBuffer, i);
             std::vector<u8> data;
             data.resize(len);
@@ -342,7 +341,7 @@ namespace x64 {
         return nbytes;
     }
 
-    int Sys::access(Ptr pathname, int mode) {
+    int Sys::access(x64::Ptr pathname, int mode) {
         std::string path = mmu_->readString(pathname);
         int ret = host_->access(path, mode);
         std::string info;
@@ -359,11 +358,11 @@ namespace x64 {
         return newfd.fd;
     }
 
-    int Sys::setitimer([[maybe_unused]] int which, [[maybe_unused]]const Ptr new_value, [[maybe_unused]]Ptr old_value) {
+    int Sys::setitimer([[maybe_unused]] int which, [[maybe_unused]]const x64::Ptr new_value, [[maybe_unused]]x64::Ptr old_value) {
         return 0;
     }
 
-    int Sys::select(int nfds, Ptr readfds, Ptr writefds, Ptr exceptfds, Ptr timeout) {
+    int Sys::select(int nfds, x64::Ptr readfds, x64::Ptr writefds, x64::Ptr exceptfds, x64::Ptr timeout) {
         fd_set rfds;
         fd_set wfds;
         fd_set efds;
@@ -388,7 +387,7 @@ namespace x64 {
         return ret;
     }
 
-    int Sys::madvise(Ptr addr, size_t length, int advice) {
+    int Sys::madvise(x64::Ptr addr, size_t length, int advice) {
         int ret = 0;
         if(logSyscalls_) {
             print("Sys::madvise(addr={:#x}, length={}, advice={}) = {}\n",
@@ -406,7 +405,7 @@ namespace x64 {
         return fd.fd;
     }
 
-    int Sys::connect(int sockfd, Ptr addr, size_t addrlen) {
+    int Sys::connect(int sockfd, x64::Ptr addr, size_t addrlen) {
         std::vector<u8> addrBuffer = mmu_->readFromMmu<u8>(addr, (size_t)addrlen);
         Buffer buf(std::move(addrBuffer));
         int ret = host_->connect(sockfd, buf);
@@ -417,7 +416,7 @@ namespace x64 {
         return ret;
     }
 
-    int Sys::getsockname(int sockfd, Ptr addr, Ptr32 addrlen) {
+    int Sys::getsockname(int sockfd, x64::Ptr addr, x64::Ptr32 addrlen) {
         u32 buffersize = mmu_->read32(addrlen);
         ErrnoOrBuffer sockname = host_->getsockname(sockfd, buffersize);
         if(logSyscalls_) {
@@ -435,7 +434,7 @@ namespace x64 {
         });
     }
 
-    int Sys::getpeername(int sockfd, Ptr addr, Ptr32 addrlen) {
+    int Sys::getpeername(int sockfd, x64::Ptr addr, x64::Ptr32 addrlen) {
         u32 buffersize = mmu_->read32(addrlen);
         ErrnoOrBuffer peername = host_->getpeername(sockfd, buffersize);
         if(logSyscalls_) {
@@ -453,12 +452,12 @@ namespace x64 {
         });
     }
 
-    long Sys::clone(unsigned long flags, Ptr stack, Ptr parent_tid, Ptr32 child_tid, unsigned long tls) {
+    long Sys::clone(unsigned long flags, x64::Ptr stack, x64::Ptr parent_tid, x64::Ptr32 child_tid, unsigned long tls) {
         Thread* currentThread = scheduler_->currentThread();
         Thread* newThread = scheduler_->createThread(currentThread->descr.pid);
         newThread->data.regs = currentThread->data.regs;
         newThread->data.regs.rip() = currentThread->data.regs.rip();
-        newThread->data.regs.set(R64::RAX, 0);
+        newThread->data.regs.set(x64::R64::RAX, 0);
         newThread->data.regs.rsp() = stack.address();
         newThread->data.fsBase = tls;
         newThread->clear_child_tid = child_tid;
@@ -484,7 +483,7 @@ namespace x64 {
         return status;
     }
 
-    int Sys::uname(Ptr buf) {
+    int Sys::uname(x64::Ptr buf) {
         ErrnoOrBuffer errnoOrBuffer = host_->uname();
         if(logSyscalls_) {
             print("Sys::uname(buf={:#x}) = {}\n",
@@ -507,7 +506,7 @@ namespace x64 {
         return -EINVAL;
     }
 
-    Ptr Sys::getcwd(Ptr buf, size_t size) {
+    x64::Ptr Sys::getcwd(x64::Ptr buf, size_t size) {
         ErrnoOrBuffer errnoOrBuffer = host_->getcwd(size);
         if(logSyscalls_) {
             print("Sys::getcwd(buf={:#x}, size={}) = {:#x}\n",
@@ -517,10 +516,10 @@ namespace x64 {
             mmu_->copyToMmu(buf, buffer.data(), buffer.size());
             return 0;
         });
-        return errnoOrBuffer.isError() ? Ptr{0x0} : buf;
+        return errnoOrBuffer.isError() ? x64::Ptr{0x0} : buf;
     }
 
-    int Sys::chdir(Ptr pathname) {
+    int Sys::chdir(x64::Ptr pathname) {
         auto path = mmu_->readString(pathname);
         int ret = host_->chdir(path);
         if(logSyscalls_) {
@@ -529,7 +528,7 @@ namespace x64 {
         return ret;
     }
 
-    int Sys::mkdir([[maybe_unused]] Ptr pathname, [[maybe_unused]] mode_t mode) {
+    int Sys::mkdir([[maybe_unused]] x64::Ptr pathname, [[maybe_unused]] mode_t mode) {
         if(logSyscalls_) {
             auto path = mmu_->readString(pathname);
             print("Sys::mkdir(path={}, mode={}) = {}\n", path, mode, -ENOTSUP);
@@ -537,7 +536,7 @@ namespace x64 {
         return -ENOTSUP;
     }
 
-    int Sys::unlink([[maybe_unused]] Ptr pathname) {
+    int Sys::unlink([[maybe_unused]] x64::Ptr pathname) {
         if(logSyscalls_) {
             auto path = mmu_->readString(pathname);
             print("Sys::unlink(path={}) = {}\n", path, -ENOTSUP);
@@ -545,7 +544,7 @@ namespace x64 {
         return -ENOTSUP;
     }
 
-    ssize_t Sys::readlink(Ptr pathname, Ptr buf, size_t bufsiz) {
+    ssize_t Sys::readlink(x64::Ptr pathname, x64::Ptr buf, size_t bufsiz) {
         std::string path = mmu_->readString(pathname);
         auto errnoOrBuffer = host_->readlink(path, bufsiz);
         if(logSyscalls_) {
@@ -558,7 +557,7 @@ namespace x64 {
         });
     }
 
-    int Sys::gettimeofday(Ptr tv, Ptr tz) {
+    int Sys::gettimeofday(x64::Ptr tv, x64::Ptr tz) {
         auto errnoOrBuffers = host_->gettimeofday();
         if(logSyscalls_) {
             print("Sys::gettimeofday(tv={:#x}, tz={:#x}) = {:#x}\n",
@@ -571,7 +570,7 @@ namespace x64 {
         });
     }
 
-    int Sys::sysinfo(Ptr info) {
+    int Sys::sysinfo(x64::Ptr info) {
         auto errnoOrBuffer = host_->sysinfo();
         if(logSyscalls_) {
             print("Sys::sysinfo(info={:#x}) = {}\n",
@@ -603,7 +602,7 @@ namespace x64 {
         return host_->getpgrp();
     }
 
-    int Sys::statfs(Ptr pathname, Ptr buf) {
+    int Sys::statfs(x64::Ptr pathname, x64::Ptr buf) {
         std::string path = mmu_->readString(pathname);
         auto errnoOrBuffer = host_->statfs(path);
         return errnoOrBuffer.errorOrWith<int>([&](const auto& buffer) {
@@ -624,7 +623,7 @@ namespace x64 {
         return 0;
     }
 
-    ssize_t Sys::getxattr(Ptr path, Ptr name, Ptr value, size_t size) {
+    ssize_t Sys::getxattr(x64::Ptr path, x64::Ptr name, x64::Ptr value, size_t size) {
         auto spath = mmu_->readString(path);
         auto sname = mmu_->readString(name);
         auto errnoOrBuffer = host_->getxattr(spath, sname, size);
@@ -640,7 +639,7 @@ namespace x64 {
         });
     }
 
-    ssize_t Sys::lgetxattr(Ptr path, Ptr name, Ptr value, size_t size) {
+    ssize_t Sys::lgetxattr(x64::Ptr path, x64::Ptr name, x64::Ptr value, size_t size) {
         auto spath = mmu_->readString(path);
         auto sname = mmu_->readString(name);
         auto errnoOrBuffer = host_->lgetxattr(spath, sname, size);
@@ -656,15 +655,15 @@ namespace x64 {
         });
     }
 
-    time_t Sys::time(Ptr tloc) {
+    time_t Sys::time(x64::Ptr tloc) {
         time_t t = host_->time();
         if(logSyscalls_) print("Sys::time({:#x}) = {}\n", tloc.address(), t);
         if(tloc.address()) mmu_->copyToMmu(tloc, (const u8*)&t, sizeof(t));
         return t;
     }
 
-    long Sys::futex(Ptr32 uaddr, int futex_op, uint32_t val, Ptr timeout, Ptr32 uaddr2, uint32_t val3) {
-        verify(!timeout, "futex with non-null timeout is not supported");
+    long Sys::futex(x64::Ptr32 uaddr, int futex_op, uint32_t val, x64::Ptr timeout, x64::Ptr32 uaddr2, uint32_t val3) {
+        x64::verify(!timeout, "futex with non-null timeout is not supported");
         auto onExit = [&](long ret) -> long {
             if(!logSyscalls_) return ret;
             print("Sys::futex(uaddr={:#x}, op={}, val={}, timeout={:#x}, uaddr2={:#x}, val3={}) = {}\n",
@@ -695,13 +694,13 @@ namespace x64 {
             thread->yield();
             return onExit(0);
         }
-        verify(false, [&]() {
+        x64::verify(false, [&]() {
             fmt::print("futex with op={} is not supported\n", futex_op);
         });
         return 1;
     }
 
-    int Sys::sched_getaffinity(pid_t pid, size_t cpusetsize, Ptr mask) {
+    int Sys::sched_getaffinity(pid_t pid, size_t cpusetsize, x64::Ptr mask) {
         int ret = 0;
         if(pid == 0) {
             // pretend that only cpu 0 is available.
@@ -720,7 +719,7 @@ namespace x64 {
         return ret;
     }
 
-    ssize_t Sys::recvfrom(int sockfd, Ptr buf, size_t len, int flags, Ptr src_addr, Ptr32 addrlen) {
+    ssize_t Sys::recvfrom(int sockfd, x64::Ptr buf, size_t len, int flags, x64::Ptr src_addr, x64::Ptr32 addrlen) {
         bool requireSrcAddress = !!src_addr && !!addrlen;
         ErrnoOr<std::pair<Buffer, Buffer>> ret = host_->recvfrom(Host::FD{sockfd}, len, flags, requireSrcAddress);
         if(logSyscalls_) {
@@ -740,7 +739,7 @@ namespace x64 {
         });
     }
 
-    ssize_t Sys::sendmsg(int sockfd, Ptr msg, int flags) {
+    ssize_t Sys::sendmsg(int sockfd, x64::Ptr msg, int flags) {
         // struct msghdr {
         //     void*         msg_name;       /* Optional address */
         //     socklen_t     msg_namelen;    /* Size of address */
@@ -754,18 +753,18 @@ namespace x64 {
         mmu_->copyFromMmu((u8*)&header, msg, sizeof(msghdr));
         std::vector<u8> msg_name_buffer(header.msg_name ? header.msg_namelen : 0, 0x0);
         Buffer msg_name(std::move(msg_name_buffer));
-        if(header.msg_name) mmu_->copyFromMmu(msg_name.data(), Ptr8{(u64)header.msg_name}, msg_name.size());
+        if(header.msg_name) mmu_->copyFromMmu(msg_name.data(), x64::Ptr8{(u64)header.msg_name}, msg_name.size());
 
         std::vector<u8> msg_control_buffer(header.msg_control ? header.msg_controllen : 0, 0x0);
         Buffer msg_control(std::move(msg_control_buffer));
-        if(header.msg_control) mmu_->copyFromMmu(msg_control.data(), Ptr8{(u64)header.msg_control}, msg_control.size());
+        if(header.msg_control) mmu_->copyFromMmu(msg_control.data(), x64::Ptr8{(u64)header.msg_control}, msg_control.size());
 
         std::vector<Buffer> msg_iov;
-        std::vector<iovec> msg_iovecs = mmu_->readFromMmu<iovec>(Ptr8{(u64)header.msg_iov}, header.msg_iovlen);
+        std::vector<iovec> msg_iovecs = mmu_->readFromMmu<iovec>(x64::Ptr8{(u64)header.msg_iov}, header.msg_iovlen);
         for(size_t i = 0; i < header.msg_iovlen; ++i) {
             std::vector<u8> buffer(msg_iovecs[i].iov_len, 0x0);
             msg_iov.push_back(Buffer(std::move(buffer)));
-            mmu_->copyFromMmu(msg_iov[i].data(), Ptr8{(u64)msg_iovecs[i].iov_base}, msg_iov[i].size());
+            mmu_->copyFromMmu(msg_iov[i].data(), x64::Ptr8{(u64)msg_iovecs[i].iov_base}, msg_iov[i].size());
         }
 
         int msg_flags = 0;
@@ -778,7 +777,7 @@ namespace x64 {
         return nbytes;
     }
 
-    ssize_t Sys::recvmsg(int sockfd, Ptr msg, int flags) {
+    ssize_t Sys::recvmsg(int sockfd, x64::Ptr msg, int flags) {
         // struct msghdr {
         //     void*         msg_name;       /* Optional address */
         //     socklen_t     msg_namelen;    /* Size of address */
@@ -795,7 +794,7 @@ namespace x64 {
         std::vector<u8> msg_control_buffer(header.msg_control ? header.msg_controllen : 0, 0x0);
         Buffer msg_control(std::move(msg_control_buffer));
         std::vector<Buffer> msg_iov;
-        std::vector<iovec> msg_iovecs = mmu_->readFromMmu<iovec>(Ptr8{(u64)header.msg_iov}, header.msg_iovlen);
+        std::vector<iovec> msg_iovecs = mmu_->readFromMmu<iovec>(x64::Ptr8{(u64)header.msg_iov}, header.msg_iovlen);
         for(size_t i = 0; i < header.msg_iovlen; ++i) {
             std::vector<u8> buffer(msg_iovecs[i].iov_len, 0x0);
             msg_iov.push_back(Buffer(std::move(buffer)));
@@ -809,10 +808,10 @@ namespace x64 {
         }
         if(nbytes < 0) return nbytes;
 
-        if(header.msg_name) mmu_->copyToMmu(Ptr8{(u64)header.msg_name}, msg_name.data(), msg_name.size());
-        if(header.msg_control) mmu_->copyToMmu(Ptr8{(u64)header.msg_control}, msg_control.data(), msg_control.size());
+        if(header.msg_name) mmu_->copyToMmu(x64::Ptr8{(u64)header.msg_name}, msg_name.data(), msg_name.size());
+        if(header.msg_control) mmu_->copyToMmu(x64::Ptr8{(u64)header.msg_control}, msg_control.data(), msg_control.size());
         for(size_t i = 0; i < header.msg_iovlen; ++i) {
-            mmu_->copyToMmu(Ptr8{(u64)msg_iovecs[i].iov_base}, msg_iov[i].data(), msg_iov[i].size());
+            mmu_->copyToMmu(x64::Ptr8{(u64)msg_iovecs[i].iov_base}, msg_iov[i].data(), msg_iov[i].size());
         }
         return nbytes;
     }
@@ -826,7 +825,7 @@ namespace x64 {
         return rc;
     }
 
-    int Sys::bind(int sockfd, Ptr addr, socklen_t addrlen) {
+    int Sys::bind(int sockfd, x64::Ptr addr, socklen_t addrlen) {
         Buffer saddr(mmu_->readFromMmu<u8>(addr, addrlen));
         int rc = host_->bind(Host::FD{sockfd}, saddr);
         if(logSyscalls_) {
@@ -836,7 +835,7 @@ namespace x64 {
         return rc;
     }
 
-    ssize_t Sys::getdents64(int fd, Ptr dirp, size_t count) {
+    ssize_t Sys::getdents64(int fd, x64::Ptr dirp, size_t count) {
         auto errnoOrBuffer = host_->getdents64(Host::FD{fd}, count);
         if(logSyscalls_) {
             print("Sys::getdents64(fd={}, dirp={:#x}, count={}) = {}\n",
@@ -848,7 +847,7 @@ namespace x64 {
         });
     }
 
-    pid_t Sys::set_tid_address(Ptr32 ptr) {
+    pid_t Sys::set_tid_address(x64::Ptr32 ptr) {
         if(logSyscalls_) print("Sys::set_tid_address({:#x}) = {}\n", ptr.address(), 1);
         return 1;
     }
@@ -857,7 +856,7 @@ namespace x64 {
         return 0;
     }
 
-    int Sys::clock_gettime(clockid_t clockid, Ptr tp) {
+    int Sys::clock_gettime(clockid_t clockid, x64::Ptr tp) {
         auto errnoOrBuffer = host_->clock_gettime(clockid);
         if(logSyscalls_) {
             print("Sys::clock_gettime({}, {:#x}) = {}\n",
@@ -876,22 +875,22 @@ namespace x64 {
         return -ENOTSUP;
     }
 
-    int Sys::arch_prctl(int code, Ptr addr) {
+    int Sys::arch_prctl(int code, x64::Ptr addr) {
         bool isSetFS = Host::Prctl::isSetFS(code);
         if(logSyscalls_) print("Sys::arch_prctl(code={}, addr={:#x}) = {}\n", code, addr.address(), isSetFS ? 0 : -EINVAL);
         if(!isSetFS) return -EINVAL;
-        mmu_->setSegmentBase(Segment::FS, addr.address());
+        mmu_->setSegmentBase(x64::Segment::FS, addr.address());
         return 0;
     }
 
-    int Sys::openat(int dirfd, Ptr pathname, int flags, mode_t mode) {
+    int Sys::openat(int dirfd, x64::Ptr pathname, int flags, mode_t mode) {
         std::string path = mmu_->readString(pathname);
         Host::FD fd = host_->openat(Host::FD{dirfd}, path, flags, mode);
         if(logSyscalls_) print("Sys::openat(dirfd={}, path={}, flags={}, mode={}) = {}\n", dirfd, path, flags, mode, fd.fd);
         return fd.fd;
     }
 
-    int Sys::fstatat64(int dirfd, Ptr pathname, Ptr statbuf, int flags) {
+    int Sys::fstatat64(int dirfd, x64::Ptr pathname, x64::Ptr statbuf, int flags) {
         std::string path = mmu_->readString(pathname);
         auto errnoOrBuffer = host_->fstatat64(Host::FD{dirfd}, path, flags);
         if(logSyscalls_) {
@@ -904,7 +903,7 @@ namespace x64 {
         });
     }
 
-    int Sys::pselect6(int nfds, Ptr readfds, Ptr writefds, Ptr exceptfds, Ptr timeout, Ptr sigmask) {
+    int Sys::pselect6(int nfds, x64::Ptr readfds, x64::Ptr writefds, x64::Ptr exceptfds, x64::Ptr timeout, x64::Ptr sigmask) {
         fd_set rfds;
         if(readfds.address() != 0) mmu_->copyFromMmu((u8*)&rfds, readfds, sizeof(fd_set));
         fd_set wfds;
@@ -932,7 +931,7 @@ namespace x64 {
         return ret;
     }
 
-    long Sys::set_robust_list(Ptr head, size_t len) {
+    long Sys::set_robust_list(x64::Ptr head, size_t len) {
         if(logSyscalls_) print("Sys::set_robust_list({:#x}, {}) = 0\n", head.address(), len);
         // maybe we can do nothing ?
         (void)head;
@@ -940,16 +939,16 @@ namespace x64 {
         return 0;
     }
 
-    long Sys::get_robust_list(int pid, Ptr64 head_ptr, Ptr64 len_ptr) {
+    long Sys::get_robust_list(int pid, x64::Ptr64 head_ptr, x64::Ptr64 len_ptr) {
         if(logSyscalls_) print("Sys::get_robust_list({}, {:#x}, {:#x}) = 0\n", pid, head_ptr.address(), len_ptr.address());
         (void)pid;
         (void)head_ptr;
         (void)len_ptr;
-        verify(false, "implement {get,set}_robust_list");
+        x64::verify(false, "implement {get,set}_robust_list");
         return 0;
     }
 
-    int Sys::utimensat(int dirfd, Ptr pathname, Ptr times, int flags) {
+    int Sys::utimensat(int dirfd, x64::Ptr pathname, x64::Ptr times, int flags) {
         if(logSyscalls_) print("Sys::utimensat(dirfd={}, pathname={}, times={:#x}, flags={}) = -ENOTSUP\n",
                                                           dirfd, mmu_->readString(pathname), times.address(), flags);
         return -ENOTSUP;
@@ -971,7 +970,7 @@ namespace x64 {
         return fd.fd;
     }
 
-    int Sys::prlimit64(pid_t pid, int resource, [[maybe_unused]] Ptr new_limit, Ptr old_limit) {
+    int Sys::prlimit64(pid_t pid, int resource, [[maybe_unused]] x64::Ptr new_limit, x64::Ptr old_limit) {
         if(logSyscalls_) 
             print("Sys::prlimit64(pid={}, resource={}, new_limit={:#x}, old_limit={:#x})", pid, resource, new_limit.address(), old_limit.address());
         if(!old_limit.address()) {
@@ -986,13 +985,13 @@ namespace x64 {
         });
     }
 
-    int Sys::sched_getattr(pid_t pid, Ptr attr, unsigned int size, unsigned int flags) {
+    int Sys::sched_getattr(pid_t pid, x64::Ptr attr, unsigned int size, unsigned int flags) {
         if(logSyscalls_) 
             print("Sys::sched_getattr(pid={}, attr={:#x}, size={:#x}, flags={:#x})", pid, attr.address(), size, flags);
         return -ENOTSUP;
     }
 
-    ssize_t Sys::getrandom(Ptr buf, size_t len, int flags) {
+    ssize_t Sys::getrandom(x64::Ptr buf, size_t len, int flags) {
         if(logSyscalls_) 
             print("Sys::getrandom(buf={:#x}, len={}, flags={})\n", buf.address(), len, flags);
         std::vector<u8> buffer(len);
@@ -1001,7 +1000,7 @@ namespace x64 {
         return (ssize_t)len;
     }
 
-    int Sys::statx(int dirfd, Ptr pathname, int flags, unsigned int mask, Ptr statxbuf) {
+    int Sys::statx(int dirfd, x64::Ptr pathname, int flags, unsigned int mask, x64::Ptr statxbuf) {
         std::string path = mmu_->readString(pathname);
         auto errnoOrBuffer = host_->statx(Host::FD{dirfd}, path, flags, mask);
         if(logSyscalls_) {
@@ -1014,7 +1013,7 @@ namespace x64 {
         });
     }
 
-    int Sys::clone3(Ptr uargs, size_t size) {
+    int Sys::clone3(x64::Ptr uargs, size_t size) {
         // struct clone_args {
         //     u64 flags;        /* Flags bit mask */
         //     u64 pidfd;        /* Where to store PID file descriptor
@@ -1036,8 +1035,8 @@ namespace x64 {
         //                         of child (since Linux 5.7) */
         // };
         std::vector<u64> args = mmu_->readFromMmu<u64>(uargs, size / sizeof(u64));
-        verify(args.size() >= 8);
-        Ptr32 child_tid { args[2] };
+        x64::verify(args.size() >= 8);
+        x64::Ptr32 child_tid { args[2] };
         u64 stackAddress = args[5] + args[6];
         u64 tls = args[7];
 
@@ -1045,7 +1044,7 @@ namespace x64 {
         Thread* newThread = scheduler_->createThread(currentThread->descr.pid);
         newThread->data.regs = currentThread->data.regs;
         newThread->data.regs.rip() = currentThread->data.regs.rip();
-        newThread->data.regs.set(R64::RAX, 0);
+        newThread->data.regs.set(x64::R64::RAX, 0);
         newThread->data.regs.rsp() = stackAddress;
         newThread->data.fsBase = tls;
         newThread->clear_child_tid = child_tid;

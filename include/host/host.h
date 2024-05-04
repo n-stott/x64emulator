@@ -9,7 +9,7 @@
 #include <variant>
 #include <vector>
 
-namespace x64 {
+namespace kernel {
     class Buffer {
     public:
         Buffer() = default;

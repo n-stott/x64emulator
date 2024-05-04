@@ -8,13 +8,16 @@
 #include <vector>
 
 namespace x64 {
-
     class Mmu;
+}
+
+namespace kernel {
+
     class Thread;
 
     class Scheduler {
     public:
-        explicit Scheduler(Mmu* mmu);
+        explicit Scheduler(x64::Mmu& mmu);
         ~Scheduler();
 
         Thread* createThread(int pid);
@@ -25,8 +28,8 @@ namespace x64 {
 
         void kill(int signal);
 
-        void wait(Thread* thread, Ptr32 wordPtr, u32 expected);
-        u32 wake(Ptr32 wordPtr, u32 nbWaiters);
+        void wait(Thread* thread, x64::Ptr32 wordPtr, u32 expected);
+        u32 wake(x64::Ptr32 wordPtr, u32 nbWaiters);
 
         Thread* currentThread();
 
@@ -41,7 +44,7 @@ namespace x64 {
             }
         }
 
-        Mmu* mmu_;
+        x64::Mmu& mmu_;
 
         Thread* currentThread_ { nullptr };
         std::vector<std::unique_ptr<Thread>> threads_;
@@ -50,7 +53,7 @@ namespace x64 {
 
         struct FutexWaitData {
             Thread* thread;
-            Ptr32 wordPtr;
+            x64::Ptr32 wordPtr;
             u32 expected;
         };
 

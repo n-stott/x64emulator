@@ -74,7 +74,7 @@ namespace x64 {
             u64 entrypoint = loadElf(&mmu, &aux, programFilePath, true);
             u64 stackTop = setupMemory(&mmu, &aux);
 
-            Thread* mainThread = kernel.scheduler().createThread(0xface);
+            kernel::Thread* mainThread = kernel.scheduler().createThread(0xface);
             mainThread->data.regs.rip() = entrypoint;
             mainThread->data.regs.rsp() = (stackTop & 0xFFFFFFFFFFFFFF00); // stack needs to be 16-byte aligned
 
@@ -82,7 +82,7 @@ namespace x64 {
             pushProgramArguments(&mmu, &vm, programFilePath, arguments, environmentVariables, aux);
             vm.contextSwitch(nullptr);
 
-            while(Thread* thread = kernel.scheduler().pickNext()) {
+            while(kernel::Thread* thread = kernel.scheduler().pickNext()) {
                 vm.execute(thread);
             }
 
@@ -271,19 +271,19 @@ namespace x64 {
 
         // get and write aux vector entries
         AuxiliaryVector auxvec;
-        auxvec.add((u64)Host::AUX_TYPE::ENTRYPOINT, auxiliary.entrypoint)
-                .add((u64)Host::AUX_TYPE::PROGRAM_HEADERS, auxiliary.programHeaderTable)
-                .add((u64)Host::AUX_TYPE::PROGRAM_HEADER_ENTRY_SIZE, auxiliary.programHeaderEntrySize)
-                .add((u64)Host::AUX_TYPE::PROGRAM_HEADER_COUNT, auxiliary.programHeaderCount)
-                .add((u64)Host::AUX_TYPE::RANDOM_VALUE_ADDRESS, auxiliary.randomDataAddress)
-                .add((u64)Host::AUX_TYPE::PLATFORM_STRING_ADDRESS, auxiliary.platformStringAddress)
-                .add((u64)Host::AUX_TYPE::VDSO_ADDRESS, 0x0)
-                .add((u64)Host::AUX_TYPE::EXEC_PATH_NAME, filepath.address())
-                .add((u64)Host::AUX_TYPE::UID)
-                .add((u64)Host::AUX_TYPE::GID)
-                .add((u64)Host::AUX_TYPE::EUID)
-                .add((u64)Host::AUX_TYPE::EGID)
-                .add((u64)Host::AUX_TYPE::SECURE);
+        auxvec.add((u64)kernel::Host::AUX_TYPE::ENTRYPOINT, auxiliary.entrypoint)
+                .add((u64)kernel::Host::AUX_TYPE::PROGRAM_HEADERS, auxiliary.programHeaderTable)
+                .add((u64)kernel::Host::AUX_TYPE::PROGRAM_HEADER_ENTRY_SIZE, auxiliary.programHeaderEntrySize)
+                .add((u64)kernel::Host::AUX_TYPE::PROGRAM_HEADER_COUNT, auxiliary.programHeaderCount)
+                .add((u64)kernel::Host::AUX_TYPE::RANDOM_VALUE_ADDRESS, auxiliary.randomDataAddress)
+                .add((u64)kernel::Host::AUX_TYPE::PLATFORM_STRING_ADDRESS, auxiliary.platformStringAddress)
+                .add((u64)kernel::Host::AUX_TYPE::VDSO_ADDRESS, 0x0)
+                .add((u64)kernel::Host::AUX_TYPE::EXEC_PATH_NAME, filepath.address())
+                .add((u64)kernel::Host::AUX_TYPE::UID)
+                .add((u64)kernel::Host::AUX_TYPE::GID)
+                .add((u64)kernel::Host::AUX_TYPE::EUID)
+                .add((u64)kernel::Host::AUX_TYPE::EGID)
+                .add((u64)kernel::Host::AUX_TYPE::SECURE);
         std::vector<u64> data = auxvec.create();
         for(auto rit = data.rbegin(); rit != data.rend(); ++rit) {
             vm->push64(*rit);

@@ -47,7 +47,7 @@ namespace x64 {
         kernel_.syscall(cpu);
     }
 
-    void VM::contextSwitch(Thread* newThread) {
+    void VM::contextSwitch(kernel::Thread* newThread) {
         syncThread(); // if we have a current thread, save the registers to that thread.
         if(!!newThread) {
             // we now install the new thread
@@ -70,7 +70,7 @@ namespace x64 {
 
     extern bool signal_interrupt;
 
-    void VM::execute(Thread* thread) {
+    void VM::execute(kernel::Thread* thread) {
         if(!thread) return;
         contextSwitch(thread);
         if(logInstructions()) {
