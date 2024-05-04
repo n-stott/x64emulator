@@ -49,6 +49,7 @@ add_library(emulator STATIC
     src/interpreter/auxiliaryvector.cpp
     src/interpreter/symbolprovider.cpp
     src/interpreter/interpreter.cpp
+    src/interpreter/kernel.cpp
     src/interpreter/vm.cpp
     src/interpreter/cpu.cpp
     src/interpreter/cpuimpl.cpp

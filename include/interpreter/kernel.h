@@ -8,13 +8,21 @@
 
 namespace x64 {
     class Cpu;
+    class VM;
 }
 
 namespace kernel {
 
+    class Thread;
+
     class Kernel {
     public:
         explicit Kernel(x64::Mmu& mmu) : mmu_(mmu), host_(), scheduler_(mmu_), sys_(&host_, &scheduler_, &mmu_) { }
+
+        Thread* exec(x64::VM& vm,
+                     const std::string& programFilePath,
+                     const std::vector<std::string>& arguments,
+                     const std::vector<std::string>& environmentVariables);
 
         void syscall(x64::Cpu& cpu) { sys_.syscall(&cpu); }
 
