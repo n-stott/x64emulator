@@ -58,7 +58,7 @@ namespace x64 {
         SignalHandler handler;
 
         Host host;
-        Mmu mmu(&host);
+        Mmu mmu;
         Scheduler scheduler(&mmu);
         Sys sys(&host, &scheduler, &mmu);
         VM vm(&mmu, &sys);
@@ -125,7 +125,7 @@ namespace x64 {
             u64 totalLoadSize = (minStart > maxEnd) ? 0 : (maxEnd - minStart);
 
             // Then, reserve enough space and return the base address of that memory region as the elf offset.
-            u64 address = mmu->mmap(0, totalLoadSize, PROT::NONE, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0);
+            u64 address = mmu->mmap(0, totalLoadSize, PROT::NONE, MAP::PRIVATE | MAP::ANONYMOUS);
             mmu->munmap(address, totalLoadSize);
             return address;
         }();
@@ -150,7 +150,7 @@ namespace x64 {
             u64 start = Mmu::pageRoundDown(elfOffset + header.virtualAddress());
             u64 end = Mmu::pageRoundUp(elfOffset + header.virtualAddress() + header.sizeInMemory());
             u64 nonExecSectionSize = end-start;
-            u64 nonExecSectionBase = mmu->mmap(start, nonExecSectionSize, PROT::WRITE, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0);
+            u64 nonExecSectionBase = mmu->mmap(start, nonExecSectionSize, PROT::WRITE, MAP::PRIVATE | MAP::ANONYMOUS);
 
             const u8* data = elf64->dataAtOffset(header.offset(), header.sizeInFile());
             mmu->copyToMmu(Ptr8{nonExecSectionBase + header.virtualAddress() % Mmu::PAGE_SIZE}, data, header.sizeInFile()); // Mmu regions are 0 initialized
@@ -191,7 +191,7 @@ namespace x64 {
         {
             // page with random 16-bit value for AT_RANDOM
             verify(!!auxiliary, "no auxiliary...");
-            u64 random = mmu->mmap(0x0, Mmu::PAGE_SIZE, PROT::READ | PROT::WRITE, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0);
+            u64 random = mmu->mmap(0x0, Mmu::PAGE_SIZE, PROT::READ | PROT::WRITE, MAP::PRIVATE | MAP::ANONYMOUS);
             mmu->setRegionName(random, "random");
             mmu->write16(Ptr16{random}, 0xabcd);
             mmu->mprotect(random, Mmu::PAGE_SIZE, PROT::READ);
@@ -201,7 +201,7 @@ namespace x64 {
         {
             // page with platform string
             verify(!!auxiliary, "no auxiliary...");
-            u64 platformstring = mmu->mmap(0x0, Mmu::PAGE_SIZE, PROT::READ | PROT::WRITE, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0);
+            u64 platformstring = mmu->mmap(0x0, Mmu::PAGE_SIZE, PROT::READ | PROT::WRITE, MAP::PRIVATE | MAP::ANONYMOUS);
             mmu->setRegionName(platformstring, "platform string");
             std::string platform = "x86_64";
             std::vector<u8> buffer;
@@ -215,13 +215,13 @@ namespace x64 {
         // stack
         const u64 desiredStackBase = 0x10000000;
         const u64 stackSize = 256*Mmu::PAGE_SIZE;
-        u64 stackBase = mmu->mmap(desiredStackBase, stackSize, PROT::READ | PROT::WRITE, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0);
+        u64 stackBase = mmu->mmap(desiredStackBase, stackSize, PROT::READ | PROT::WRITE, MAP::PRIVATE | MAP::ANONYMOUS);
         mmu->setRegionName(stackBase, "stack");
 
         // heap
         const u64 desiredHeapBase = stackBase + stackSize + Mmu::PAGE_SIZE;
         const u64 heapSize = 64*Mmu::PAGE_SIZE;
-        u64 heapBase = mmu->mmap(desiredHeapBase, heapSize, PROT::READ | PROT::WRITE, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0);
+        u64 heapBase = mmu->mmap(desiredHeapBase, heapSize, PROT::READ | PROT::WRITE, MAP::PRIVATE | MAP::ANONYMOUS);
         mmu->setRegionName(heapBase, "heap");
 
         return stackBase + stackSize;
@@ -238,8 +238,8 @@ namespace x64 {
         requiredSize += 8*(1 + arguments.size() + environmentVariables.size());
         requiredSize = Mmu::pageRoundUp(requiredSize);
 
-        mmu->mmap(0, Mmu::PAGE_SIZE, PROT::NONE, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0); // throwaway page
-        u64 argumentPage = mmu->mmap(0, requiredSize, PROT::READ | PROT::WRITE, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0);
+        mmu->mmap(0, Mmu::PAGE_SIZE, PROT::NONE, MAP::PRIVATE | MAP::ANONYMOUS); // throwaway page
+        u64 argumentPage = mmu->mmap(0, requiredSize, PROT::READ | PROT::WRITE, MAP::PRIVATE | MAP::ANONYMOUS);
         mmu->setRegionName(argumentPage, "program arguments");
         Ptr8 argumentPtr { argumentPage };
 

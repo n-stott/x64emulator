@@ -93,19 +93,7 @@ namespace x64 {
         }), regions_.end());
     }
 
-    u64 Mmu::mmap(u64 address, u64 length, PROT prot, MAP flags, int fd, int offset) {
-        auto copyFromFd = [&](Region* region) {
-            verify(fd >= 0);
-            verify(!!host_);
-            std::vector<u8> data = host_->readFromFile(Host::FD{fd}, length, offset);
-            PROT saved = region->prot();
-            region->prot_ = PROT::WRITE;
-            region->copyToRegion(region->base(), data.data(), data.size());
-            region->prot_ = saved;
-            auto filename = host_->filename(Host::FD{fd});
-            region->file_ = filename.value_or("");
-        };
-
+    u64 Mmu::mmap(u64 address, u64 length, PROT prot, MAP flags) {
         verify(address % PAGE_SIZE == 0, [&]() {
             fmt::print("mmap with non-page_size aligned address {:#x} not supported", address);
         });
@@ -118,7 +106,6 @@ namespace x64 {
         } else {
             regionPtr = addRegion(std::move(region));
         }
-        if(!(bool)(flags & MAP::ANONYMOUS)) copyFromFd(regionPtr);
         return regionPtr->base();
     }
 
@@ -237,7 +224,7 @@ namespace x64 {
     void Mmu::Region::write80(u64 address, f80 value) { write<f80>(address, value); }
     void Mmu::Region::write128(u64 address, u128 value) { write<u128>(address, value); }
 
-    Mmu::Mmu(Host* host) : host_(host) {
+    Mmu::Mmu() {
         // Make first page non-readable and non-writable
         addRegion(Region { "nullpage", 0, PAGE_SIZE, PROT::NONE });
     }
@@ -247,6 +234,12 @@ namespace x64 {
         u64 segmentBase = segmentBase_[(u8)ptr.segment()];
         u64 address = segmentBase + ptr.address();
         return address;
+    }
+
+    PROT Mmu::prot(u64 address) const {
+        const auto* region = findAddress(address);
+        if(!region) return PROT::NONE;
+        return region->prot();
     }
 
     Mmu::Region* Mmu::findAddress(u64 address) {

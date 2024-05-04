@@ -230,7 +230,17 @@ namespace x64 {
         if(Host::Mmap::isAnonymous(flags)) f = f | MAP::ANONYMOUS;
         if(Host::Mmap::isFixed(flags)) f = f | MAP::FIXED;
         verify(addr.segment() != Segment::FS);
-        u64 base = mmu_->mmap(addr.address(), length, (PROT)prot, f, fd, (int)offset);
+        u64 base = mmu_->mmap(addr.address(), length, (PROT)prot, f);
+        if(!(bool)(f & MAP::ANONYMOUS)) {
+            verify(fd >= 0);
+            std::vector<u8> data = host_->readFromFile(Host::FD{fd}, length, offset);
+            PROT saved = mmu_->prot(base);
+            mmu_->mprotect(base, length, PROT::WRITE);
+            mmu_->copyToMmu(Ptr8{base}, data.data(), data.size());
+            mmu_->mprotect(base, length, saved);
+            auto filename = host_->filename(Host::FD{fd});
+            mmu_->setRegionName(base, filename.value_or(""));
+        }
         if(logSyscalls_) print("Sys::mmap(addr={:#x}, length={}, prot={}, flags={}, fd={}, offset={}) = {:#x}\n",
                                               addr.address(), length, prot, flags, fd, offset, base);
         return Ptr{addr.segment(), base};

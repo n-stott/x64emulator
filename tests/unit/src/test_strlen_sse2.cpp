@@ -39,18 +39,18 @@ std::vector<char> string {{
 
 int main() {
     using namespace x64;
-    Mmu mmu(nullptr);
+    Mmu mmu;
 
     u64 length = 0;
 
     bool errorEncountered = false;
 
     VerificationScope::run([&]() {
-        u64 execPage = mmu.mmap(0, Mmu::PAGE_SIZE, PROT::READ | PROT::WRITE | PROT::EXEC, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0);
+        u64 execPage = mmu.mmap(0, Mmu::PAGE_SIZE, PROT::READ | PROT::WRITE | PROT::EXEC, MAP::PRIVATE | MAP::ANONYMOUS);
         mmu.copyToMmu(Ptr8{execPage}, strlen_sse2.data(), strlen_sse2.size());
         mmu.mprotect(execPage, Mmu::PAGE_SIZE, PROT::READ | PROT::EXEC);
 
-        u64 dataPage = mmu.mmap(0, Mmu::PAGE_SIZE, PROT::READ | PROT::WRITE, MAP::PRIVATE | MAP::ANONYMOUS, 0, 0);
+        u64 dataPage = mmu.mmap(0, Mmu::PAGE_SIZE, PROT::READ | PROT::WRITE, MAP::PRIVATE | MAP::ANONYMOUS);
         mmu.copyToMmu(Ptr8{dataPage}, (const u8*)string.data(), string.size());
 
         VM vm(&mmu, nullptr);
