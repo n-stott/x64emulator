@@ -15,7 +15,10 @@ namespace kernel {
         explicit File(FS* fs) : fs_(fs) { }
         virtual ~File() = default;
 
-        virtual ssize_t read(u8* buf, size_t count) const = 0;
+        virtual bool isReadable() const = 0;
+        virtual bool isWritable() const = 0;
+
+        virtual ssize_t read(u8* buf, size_t count) = 0;
         virtual ssize_t write(const u8* buf, size_t count) = 0;
 
     protected:

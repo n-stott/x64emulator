@@ -3,17 +3,23 @@
 
 #include "fs/file.h"
 #include "fs/fs.h"
+#include <memory>
+#include <string>
 
 namespace kernel {
 
     class HostFile : public File {
     public:
-        HostFile(FS* fs, int hostFd) : File(fs), hostFd_(hostFd) { }
+        static std::unique_ptr<HostFile> tryCreate(FS* fs, const std::string& path);
 
-        ssize_t read(u8* buf, size_t count) const override;
+        bool isReadable() const { return true; }
+        bool isWritable() const { return false; }
+
+        ssize_t read(u8* buf, size_t count) override;
         ssize_t write(const u8* buf, size_t count) override;
 
     private:
+        HostFile(FS* fs, int hostFd) : File(fs), hostFd_(hostFd) { }
         int hostFd_ { -1 };
     };
 

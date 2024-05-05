@@ -34,22 +34,29 @@ namespace kernel {
         static OpenFlags fromFlags(int flags);
         static Permissions fromMode(unsigned int mode);
 
-        File* open(const std::string& path, OpenFlags flags, Permissions permissions);
+        struct FD {
+            int fd;
+        };
+
+        FD open(const std::string& path, OpenFlags flags, Permissions permissions);
 
     private:
         struct Node {
             std::string path;
             std::unique_ptr<File> file;
-            Permissions permissions;
         };
 
         struct OpenNode {
-            Node* node;
-            OpenFlags flags;
+            FD fd { -1 };
+            Node* node { nullptr };
         };
+
+        void createStandardStreams();
+        FD insertNode(Node node);
 
         Kernel& kernel_;
         std::deque<Node> files_;
+        std::vector<OpenNode> openFiles_;
     };
 
 }

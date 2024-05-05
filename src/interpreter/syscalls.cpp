@@ -886,9 +886,10 @@ namespace kernel {
     int Sys::openat(int dirfd, x64::Ptr pathname, int flags, mode_t mode) {
         std::string path = mmu_.readString(pathname);
         Host::FD fd = kernel_.host().openat(Host::FD{dirfd}, path, flags, mode);
-        // FS::OpenFlags openFlags = FS::fromFlags(flags);
-        // FS::Permissions permissions = FS::fromMode(mode);
-        // [[maybe_unused]] File* file = kernel_.fs_.open(path, openFlags, permissions);
+        FS::OpenFlags openFlags = FS::fromFlags(flags);
+        FS::Permissions permissions = FS::fromMode(mode);
+        x64::verify(dirfd == Host::cwdfd().fd, "dirfd is not cwd");
+        [[maybe_unused]] FS::FD fd2 = kernel_.fs().open(path, openFlags, permissions);
         if(logSyscalls_) print("Sys::openat(dirfd={}, path={}, flags={}, mode={}) = {}\n", dirfd, path, flags, mode, fd.fd);
         return fd.fd;
     }
