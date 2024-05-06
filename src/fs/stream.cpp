@@ -12,6 +12,10 @@ namespace kernel {
         return type_ == TYPE::OUT || type_ == TYPE::ERR;
     }
 
+    void Stream::close() {
+        
+    }
+
     ErrnoOrBuffer Stream::read(size_t count) {
         if(!isReadable()) return ErrnoOrBuffer{-EINVAL};
         std::vector<u8> buffer;
@@ -36,6 +40,10 @@ namespace kernel {
     ssize_t Stream::pwrite(const u8*, size_t, size_t) {
         // File must be seekable
         return -EINVAL;
+    }
+
+    ErrnoOrBuffer Stream::stat() {
+        return ErrnoOrBuffer(-EINVAL);
     }
 
 }

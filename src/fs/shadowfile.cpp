@@ -1,4 +1,5 @@
 #include "fs/shadowfile.h"
+#include "interpreter/verify.h"
 #include "host/host.h"
 #include <fcntl.h>
 #include <unistd.h>
@@ -44,6 +45,10 @@ namespace kernel {
         }
     }
 
+    void ShadowFile::close() {
+        
+    }
+
     void ShadowFile::truncate() {
         data_.clear();
         offset_ = 0;
@@ -70,7 +75,6 @@ namespace kernel {
         }
         size_t bytesWritten = count;
         std::memcpy(data_.data() + offset_, buf, bytesWritten);
-        offset_ += bytesWritten;
         return bytesWritten;
     }
 
@@ -86,6 +90,11 @@ namespace kernel {
     ssize_t ShadowFile::pwrite(const u8*, size_t, size_t) {
         if(!isWritable()) return -EINVAL;
         return -ENOTSUP;
+    }
+
+    ErrnoOrBuffer ShadowFile::stat() {
+        x64::verify(false, "implement stat on ShadowFile");
+        return ErrnoOrBuffer(-EINVAL);
     }
 
 }

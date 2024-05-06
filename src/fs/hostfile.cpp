@@ -1,5 +1,7 @@
 #include "fs/hostfile.h"
+#include "interpreter/verify.h"
 #include <fcntl.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 namespace kernel {
@@ -8,7 +10,12 @@ namespace kernel {
         int flags = O_RDONLY | O_CLOEXEC;
         int fd = ::openat(AT_FDCWD, path.c_str(), flags);
         if(fd < 0) return {};
-        return std::unique_ptr<HostFile>(new HostFile(fs, fd));
+        return std::unique_ptr<HostFile>(new HostFile(fs, path, fd));
+    }
+
+    void HostFile::close() {
+        int rc = ::close(hostFd_);
+        x64::verify(rc == 0);
     }
 
     ErrnoOrBuffer HostFile::read(size_t count) {
@@ -38,6 +45,15 @@ namespace kernel {
 
     ssize_t HostFile::pwrite(const u8*, size_t, size_t) {
         return -EINVAL;
+    }
+
+    ErrnoOrBuffer HostFile::stat() {
+        struct stat st;
+        int rc = ::stat(path_.c_str(), &st);
+        if(rc < 0) return ErrnoOrBuffer(-errno);
+        std::vector<u8> buf(sizeof(st), 0x0);
+        std::memcpy(buf.data(), &st, sizeof(st));
+        return ErrnoOrBuffer(Buffer{std::move(buf)});
     }
 
 }

@@ -14,6 +14,9 @@ namespace kernel {
 
         bool isReadable() const { return true; }
         bool isWritable() const { return false; }
+        
+        void close() override;
+        bool keepAfterClose() const override { return false; }
 
         ErrnoOrBuffer read(size_t count) override;
         ssize_t write(const u8* buf, size_t count) override;
@@ -21,8 +24,11 @@ namespace kernel {
         ErrnoOrBuffer pread(size_t count, size_t offset) override;
         ssize_t pwrite(const u8* buf, size_t count, size_t offset) override;
 
+        ErrnoOrBuffer stat() override;
+
     private:
-        HostFile(FS* fs, int hostFd) : File(fs), hostFd_(hostFd) { }
+        HostFile(FS* fs, std::string path, int hostFd) : File(fs), path_(std::move(path)), hostFd_(hostFd) { }
+        std::string path_;
         int hostFd_ { -1 };
     };
 

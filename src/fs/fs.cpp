@@ -13,18 +13,18 @@ namespace kernel {
     }
 
     void FS::createStandardStreams() {
-        FD stdinFd = insertNode(Node {
+        FD stdinFd = insertNodeWithFd(Node {
             "__stdin",
             std::make_unique<Stream>(this, Stream::TYPE::IN),
-        });
-        FD stdoutFd = insertNode(Node {
+        }, FD{0});
+        FD stdoutFd = insertNodeWithFd(Node {
             "__stdout",
             std::make_unique<Stream>(this, Stream::TYPE::OUT),
-        });
-        FD stderrFd = insertNode(Node {
+        }, FD{1});
+        FD stderrFd = insertNodeWithFd(Node {
             "__stderr",
             std::make_unique<Stream>(this, Stream::TYPE::ERR),
-        });
+        }, FD{2});
         x64::verify(stdinFd.fd == 0, "stdin must have fd 0");
         x64::verify(stdoutFd.fd == 1, "stdout must have fd 1");
         x64::verify(stderrFd.fd == 2, "stderr must have fd 2");
@@ -54,16 +54,31 @@ namespace kernel {
     FS::FD FS::insertNode(Node node) {
         files_.push_back(std::move(node));
         Node* nodePtr = &files_.back();
+        return allocateFd(nodePtr);
+    }
 
+    FS::FD FS::allocateFd(Node* node) {
         // assign the file descriptor
         auto it = std::max_element(openFiles_.begin(), openFiles_.end(), [](const auto& a, const auto& b) {
             return a.fd.fd < b.fd.fd;
         });
-        int fd = (it == openFiles_.end()) ? 0 : it->fd.fd+1;
+        int fd = (it == openFiles_.end()) ? 0 : it->fd.fd+10;
 
-        openFiles_.push_back(OpenNode{fd, nodePtr});
+        openFiles_.push_back(OpenNode{fd, node});
 
         return FD{fd};
+    }
+
+    FS::FD FS::insertNodeWithFd(Node node, FD fd) {
+        OpenNode* nodeWithExistingFd = findOpenNode(fd);
+        x64::verify(!nodeWithExistingFd, [&]() {
+            fmt::print("cannot insert node with existing fd {}\n", fd.fd);
+        });
+        FD givenFd = insertNode(std::move(node));
+        OpenNode* openNode = findOpenNode(givenFd);
+        x64::verify(!!openNode);
+        openNode->fd = fd;
+        return fd;
     }
 
     FS::FD FS::open(const std::string& path, OpenFlags flags, Permissions permissions) {
@@ -71,6 +86,15 @@ namespace kernel {
         x64::verify(!path.empty(), "FS::open: empty path");
         bool canUseHostFile = true;
         if(flags.append || flags.create || flags.truncate || flags.write) canUseHostFile = false;
+
+        x64::verify(std::none_of(openFiles_.begin(), openFiles_.end(), [&](const OpenNode& openNode) {
+            return openNode.node->path == path;
+        }), "FS: opening same file twice is not supported");
+
+        for(auto& node : files_) {
+            if(node.path != path) continue;
+            return allocateFd(&node);
+        }
 
         if(canUseHostFile) {
             // open the file
@@ -107,14 +131,11 @@ namespace kernel {
     }
 
     FS::OpenNode* FS::findOpenNode(FD fd) {
-        OpenNode* openNode { nullptr };
-        for(OpenNode& n : openFiles_) {
-            if(n.fd.fd == fd.fd) {
-                openNode = &n;
-                break;
-            }
+        for(OpenNode& node : openFiles_) {
+            if(node.fd != fd) continue;
+            return &node;
         }
-        return openNode;
+        return nullptr;
     }
 
     ErrnoOrBuffer FS::read(FD fd, size_t count) {
@@ -151,6 +172,38 @@ namespace kernel {
         File* file = openNode->node->file.get();
         x64::verify(!!file, "unexpected nullptr");
         return file->pwrite(buf, count, offset);
+    }
+
+    ErrnoOrBuffer FS::stat(const std::string& path) {
+        for(auto& node : files_) {
+            if(node.path != path) continue;
+            x64::verify(false, "implement stat in FS");
+            return ErrnoOrBuffer(-ENOTSUP);
+            // return node.file->stat();
+        }
+        return kernel_.host().stat(path);
+    }
+
+    ErrnoOrBuffer FS::fstat(FD fd) {
+        OpenNode* openNode = findOpenNode(fd);
+        if(!openNode) return ErrnoOrBuffer(-EBADF);
+        return openNode->node->file->stat();
+    }
+
+    int FS::close(FD fd) {
+        OpenNode* openNode = findOpenNode(fd);
+        if(!openNode) return -EBADF;
+        OpenNode file = *openNode;
+        openFiles_.erase(std::remove_if(openFiles_.begin(), openFiles_.end(), [&](const auto& openNode) {
+            return openNode.fd == fd;
+        }), openFiles_.end());
+        file.node->file->close();
+        if(!file.node->file->keepAfterClose()) {
+            files_.erase(std::remove_if(files_.begin(), files_.end(), [&](const auto& f) {
+                return &f == file.node;
+            }), files_.end());
+        }
+        return 0;
     }
 
 }

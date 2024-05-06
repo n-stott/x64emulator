@@ -18,11 +18,16 @@ namespace kernel {
         bool isReadable() const override;
         bool isWritable() const override;
 
+        void close() override;
+        bool keepAfterClose() const override { return false; }
+
         ErrnoOrBuffer read(size_t count) override;
         ssize_t write(const u8* buf, size_t count) override;
 
         ErrnoOrBuffer pread(size_t count, size_t offset) override;
         ssize_t pwrite(const u8* buf, size_t count, size_t offset) override;
+
+        ErrnoOrBuffer stat() override;
 
     private:
         TYPE type_;

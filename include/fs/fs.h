@@ -38,15 +38,22 @@ namespace kernel {
 
         struct FD {
             int fd;
+
+            bool operator==(FD other) const { return fd == other.fd; }
+            bool operator!=(FD other) const { return fd != other.fd; }
         };
 
         FD open(const std::string& path, OpenFlags flags, Permissions permissions);
+        int close(FD fd);
 
         ErrnoOrBuffer read(FD fd, size_t count);
         ErrnoOrBuffer pread(FD fd, size_t count, size_t offset);
 
         ssize_t write(FD fd, const u8* buf, size_t count);
         ssize_t pwrite(FD fd, const u8* buf, size_t count, size_t offset);
+
+        ErrnoOrBuffer stat(const std::string& path);
+        ErrnoOrBuffer fstat(FD fd);
 
     private:
         struct Node {
@@ -61,6 +68,8 @@ namespace kernel {
 
         void createStandardStreams();
         FD insertNode(Node node);
+        FD allocateFd(Node* node);
+        FD insertNodeWithFd(Node node, FD fd);
 
         OpenNode* findOpenNode(FD fd);
 
