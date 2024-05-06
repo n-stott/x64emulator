@@ -1,6 +1,8 @@
 #ifndef FS_H
 #define FS_H
 
+#include "utils/buffer.h"
+#include "utils/erroror.h"
 #include <deque>
 #include <memory>
 #include <string>
@@ -40,6 +42,12 @@ namespace kernel {
 
         FD open(const std::string& path, OpenFlags flags, Permissions permissions);
 
+        ErrnoOrBuffer read(FD fd, size_t count);
+        ErrnoOrBuffer pread(FD fd, size_t count, size_t offset);
+
+        ssize_t write(FD fd, const u8* buf, size_t count);
+        ssize_t pwrite(FD fd, const u8* buf, size_t count, size_t offset);
+
     private:
         struct Node {
             std::string path;
@@ -53,6 +61,8 @@ namespace kernel {
 
         void createStandardStreams();
         FD insertNode(Node node);
+
+        OpenNode* findOpenNode(FD fd);
 
         Kernel& kernel_;
         std::deque<Node> files_;

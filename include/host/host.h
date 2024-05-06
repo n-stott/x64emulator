@@ -18,8 +18,6 @@ namespace kernel {
         T returnValue;
     };
 
-    using ErrnoOrBuffer = ErrnoOr<Buffer>;
-
     class Host {
     public:
         Host();

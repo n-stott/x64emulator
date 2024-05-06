@@ -15,8 +15,11 @@ namespace kernel {
         bool isReadable() const { return true; }
         bool isWritable() const { return false; }
 
-        ssize_t read(u8* buf, size_t count) override;
+        ErrnoOrBuffer read(size_t count) override;
         ssize_t write(const u8* buf, size_t count) override;
+
+        ErrnoOrBuffer pread(size_t count, size_t offset) override;
+        ssize_t pwrite(const u8* buf, size_t count, size_t offset) override;
 
     private:
         HostFile(FS* fs, int hostFd) : File(fs), hostFd_(hostFd) { }

@@ -53,13 +53,14 @@ namespace kernel {
         offset_ = data_.size();
     }
 
-    ssize_t ShadowFile::read(u8* buf, size_t count) {
-        if(!isReadable()) return -EINVAL;
-        if(offset_ == data_.size()) return 0;
-        size_t bytesRead = std::min(data_.size() - offset_, count);
-        std::memcpy(buf, data_.data() + offset_, bytesRead);
+    ErrnoOrBuffer ShadowFile::read(size_t count) {
+        if(!isReadable()) return ErrnoOrBuffer{-EINVAL};
+        size_t bytesRead = offset_ < data_.size() ? std::min(data_.size() - offset_, count) : 0;
+        const u8* beginRead = data_.data() + offset_;
+        const u8* endRead = beginRead + bytesRead;
+        std::vector<u8> buffer(beginRead, endRead);
         offset_ += bytesRead;
-        return bytesRead;
+        return ErrnoOrBuffer(Buffer{std::move(buffer)});
     }
 
     ssize_t ShadowFile::write(const u8* buf, size_t count) {
@@ -71,6 +72,20 @@ namespace kernel {
         std::memcpy(data_.data() + offset_, buf, bytesWritten);
         offset_ += bytesWritten;
         return bytesWritten;
+    }
+
+    ErrnoOrBuffer ShadowFile::pread(size_t count, size_t offset) {
+        if(!isReadable()) return ErrnoOrBuffer{-EINVAL};
+        size_t bytesRead = offset < data_.size() ? std::min(data_.size() - offset, count) : 0;
+        const u8* beginRead = data_.data() + offset;
+        const u8* endRead = beginRead + bytesRead;
+        std::vector<u8> buffer(beginRead, endRead);
+        return ErrnoOrBuffer(Buffer{std::move(buffer)});
+    }
+
+    ssize_t ShadowFile::pwrite(const u8*, size_t, size_t) {
+        if(!isWritable()) return -EINVAL;
+        return -ENOTSUP;
     }
 
 }

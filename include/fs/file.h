@@ -18,8 +18,11 @@ namespace kernel {
         virtual bool isReadable() const = 0;
         virtual bool isWritable() const = 0;
 
-        virtual ssize_t read(u8* buf, size_t count) = 0;
+        virtual ErrnoOrBuffer read(size_t count) = 0;
         virtual ssize_t write(const u8* buf, size_t count) = 0;
+
+        virtual ErrnoOrBuffer pread(size_t count, size_t offset) = 0;
+        virtual ssize_t pwrite(const u8* buf, size_t count, size_t offset) = 0;
 
     protected:
         FS* fs_;

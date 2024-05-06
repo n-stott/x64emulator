@@ -33,6 +33,10 @@ namespace kernel {
         std::variant<int, Value> data_;
     };
 
+    class Buffer;
+
+    using ErrnoOrBuffer = ErrnoOr<Buffer>;
+
 }
 
 #endif

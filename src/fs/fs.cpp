@@ -106,4 +106,51 @@ namespace kernel {
         return FD{-EINVAL};
     }
 
+    FS::OpenNode* FS::findOpenNode(FD fd) {
+        OpenNode* openNode { nullptr };
+        for(OpenNode& n : openFiles_) {
+            if(n.fd.fd == fd.fd) {
+                openNode = &n;
+                break;
+            }
+        }
+        return openNode;
+    }
+
+    ErrnoOrBuffer FS::read(FD fd, size_t count) {
+        OpenNode* openNode = findOpenNode(fd);
+        if(!openNode) return ErrnoOrBuffer{-EBADF};
+        x64::verify(!!openNode->node, "unexpected nullptr");
+        File* file = openNode->node->file.get();
+        x64::verify(!!file, "unexpected nullptr");
+        return file->read(count);
+    }
+
+    ErrnoOrBuffer FS::pread(FD fd, size_t count, size_t offset) {
+        OpenNode* openNode = findOpenNode(fd);
+        if(!openNode) return ErrnoOrBuffer{-EBADF};
+        x64::verify(!!openNode->node, "unexpected nullptr");
+        File* file = openNode->node->file.get();
+        x64::verify(!!file, "unexpected nullptr");
+        return file->pread(count, offset);
+    }
+
+    ssize_t FS::write(FD fd, const u8* buf, size_t count) {
+        OpenNode* openNode = findOpenNode(fd);
+        if(!openNode) return -EBADF;
+        x64::verify(!!openNode->node, "unexpected nullptr");
+        File* file = openNode->node->file.get();
+        x64::verify(!!file, "unexpected nullptr");
+        return file->write(buf, count);
+    }
+
+    ssize_t FS::pwrite(FD fd, const u8* buf, size_t count, size_t offset) {
+        OpenNode* openNode = findOpenNode(fd);
+        if(!openNode) return -EBADF;
+        x64::verify(!!openNode->node, "unexpected nullptr");
+        File* file = openNode->node->file.get();
+        x64::verify(!!file, "unexpected nullptr");
+        return file->pwrite(buf, count, offset);
+    }
+
 }
