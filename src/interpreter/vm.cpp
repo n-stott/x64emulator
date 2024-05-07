@@ -150,6 +150,7 @@ namespace x64 {
     }
 
     void VM::dumpStackTrace() const {
+        if(!currentThread_) return;
         size_t frameId = 0;
         for(auto it = currentThread_->callstack.rbegin(); it != currentThread_->callstack.rend(); ++it) {
             std::string name = calledFunctionName(*it);
