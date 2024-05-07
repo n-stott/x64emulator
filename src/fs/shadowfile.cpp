@@ -78,16 +78,17 @@ namespace kernel {
         return bytesWritten;
     }
 
-    ErrnoOrBuffer ShadowFile::pread(size_t count, size_t offset) {
+    ErrnoOrBuffer ShadowFile::pread(size_t count, off_t offset) {
         if(!isReadable()) return ErrnoOrBuffer{-EINVAL};
-        size_t bytesRead = offset < data_.size() ? std::min(data_.size() - offset, count) : 0;
+        if(offset < 0) return ErrnoOrBuffer{-EINVAL};
+        size_t bytesRead = (size_t)offset < data_.size() ? std::min(data_.size() - (size_t)offset, count) : 0;
         const u8* beginRead = data_.data() + offset;
         const u8* endRead = beginRead + bytesRead;
         std::vector<u8> buffer(beginRead, endRead);
         return ErrnoOrBuffer(Buffer{std::move(buffer)});
     }
 
-    ssize_t ShadowFile::pwrite(const u8*, size_t, size_t) {
+    ssize_t ShadowFile::pwrite(const u8*, size_t, off_t) {
         if(!isWritable()) return -EINVAL;
         return -ENOTSUP;
     }
@@ -95,6 +96,11 @@ namespace kernel {
     ErrnoOrBuffer ShadowFile::stat() {
         x64::verify(false, "implement stat on ShadowFile");
         return ErrnoOrBuffer(-EINVAL);
+    }
+
+    off_t ShadowFile::lseek(off_t, int) {
+        x64::verify(false, "implement lseek on ShadowFile");
+        return -EINVAL;
     }
 
 }

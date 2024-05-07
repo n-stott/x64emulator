@@ -64,7 +64,7 @@ namespace kernel {
         });
         int fd = (it == openFiles_.end()) ? 0 : it->fd.fd+10;
 
-        openFiles_.push_back(OpenNode{fd, node});
+        openFiles_.push_back(OpenNode{fd, node->path, node->file.get()});
 
         return FD{fd};
     }
@@ -88,7 +88,7 @@ namespace kernel {
         if(flags.append || flags.create || flags.truncate || flags.write) canUseHostFile = false;
 
         x64::verify(std::none_of(openFiles_.begin(), openFiles_.end(), [&](const OpenNode& openNode) {
-            return openNode.node->path == path;
+            return openNode.path == path;
         }), "FS: opening same file twice is not supported");
 
         for(auto& node : files_) {
@@ -101,7 +101,7 @@ namespace kernel {
             auto hostBackedFile = HostFile::tryCreate(this, path);
             if(!hostBackedFile) {
                 // TODO: return the actual value of errno
-                return FS::FD{-EINVAL};
+                return FS::FD{-ENOENT};
             }
             
             // create and add the node to the filesystem
@@ -141,17 +141,15 @@ namespace kernel {
     ErrnoOrBuffer FS::read(FD fd, size_t count) {
         OpenNode* openNode = findOpenNode(fd);
         if(!openNode) return ErrnoOrBuffer{-EBADF};
-        x64::verify(!!openNode->node, "unexpected nullptr");
-        File* file = openNode->node->file.get();
+        File* file = openNode->file;
         x64::verify(!!file, "unexpected nullptr");
         return file->read(count);
     }
 
-    ErrnoOrBuffer FS::pread(FD fd, size_t count, size_t offset) {
+    ErrnoOrBuffer FS::pread(FD fd, size_t count, off_t offset) {
         OpenNode* openNode = findOpenNode(fd);
         if(!openNode) return ErrnoOrBuffer{-EBADF};
-        x64::verify(!!openNode->node, "unexpected nullptr");
-        File* file = openNode->node->file.get();
+        File* file = openNode->file;
         x64::verify(!!file, "unexpected nullptr");
         return file->pread(count, offset);
     }
@@ -159,17 +157,15 @@ namespace kernel {
     ssize_t FS::write(FD fd, const u8* buf, size_t count) {
         OpenNode* openNode = findOpenNode(fd);
         if(!openNode) return -EBADF;
-        x64::verify(!!openNode->node, "unexpected nullptr");
-        File* file = openNode->node->file.get();
+        File* file = openNode->file;
         x64::verify(!!file, "unexpected nullptr");
         return file->write(buf, count);
     }
 
-    ssize_t FS::pwrite(FD fd, const u8* buf, size_t count, size_t offset) {
+    ssize_t FS::pwrite(FD fd, const u8* buf, size_t count, off_t offset) {
         OpenNode* openNode = findOpenNode(fd);
         if(!openNode) return -EBADF;
-        x64::verify(!!openNode->node, "unexpected nullptr");
-        File* file = openNode->node->file.get();
+        File* file = openNode->file;
         x64::verify(!!file, "unexpected nullptr");
         return file->pwrite(buf, count, offset);
     }
@@ -187,23 +183,35 @@ namespace kernel {
     ErrnoOrBuffer FS::fstat(FD fd) {
         OpenNode* openNode = findOpenNode(fd);
         if(!openNode) return ErrnoOrBuffer(-EBADF);
-        return openNode->node->file->stat();
+        return openNode->file->stat();
+    }
+
+    off_t FS::lseek(FD fd, off_t offset, int whence) {
+        OpenNode* openNode = findOpenNode(fd);
+        if(!openNode) return -EBADF;
+        return openNode->file->lseek(offset, whence);
     }
 
     int FS::close(FD fd) {
         OpenNode* openNode = findOpenNode(fd);
         if(!openNode) return -EBADF;
-        OpenNode file = *openNode;
+        OpenNode node = *openNode;
+        node.file->close();
         openFiles_.erase(std::remove_if(openFiles_.begin(), openFiles_.end(), [&](const auto& openNode) {
             return openNode.fd == fd;
         }), openFiles_.end());
-        file.node->file->close();
-        if(!file.node->file->keepAfterClose()) {
+        if(!node.file->keepAfterClose()) {
             files_.erase(std::remove_if(files_.begin(), files_.end(), [&](const auto& f) {
-                return &f == file.node;
+                return f.file.get() == node.file;
             }), files_.end());
         }
         return 0;
+    }
+
+    std::string FS::filename(FD fd) {
+        OpenNode* openNode = findOpenNode(fd);
+        if(!openNode) return "";
+        return openNode->path;
     }
 
 }

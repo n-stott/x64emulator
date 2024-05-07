@@ -1,5 +1,6 @@
 #include "fs/stream.h"
 #include <sys/errno.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 namespace kernel {
@@ -32,18 +33,30 @@ namespace kernel {
         return ::write((int)type_, buf, count);
     }
 
-    ErrnoOrBuffer Stream::pread(size_t, size_t) {
+    ErrnoOrBuffer Stream::pread(size_t, off_t) {
         // File must be seekable
         return ErrnoOrBuffer{-EINVAL};
     }
 
-    ssize_t Stream::pwrite(const u8*, size_t, size_t) {
+    ssize_t Stream::pwrite(const u8*, size_t, off_t) {
         // File must be seekable
         return -EINVAL;
     }
 
     ErrnoOrBuffer Stream::stat() {
-        return ErrnoOrBuffer(-EINVAL);
+        if(type_ != TYPE::IN
+        && type_ != TYPE::OUT
+        && type_ != TYPE::ERR) return ErrnoOrBuffer(-EINVAL);
+        struct stat st;
+        int rc = ::fstat((int)type_, &st);
+        if(rc < 0) return ErrnoOrBuffer(-errno);
+        std::vector<u8> buf(sizeof(st), 0x0);
+        std::memcpy(buf.data(), &st, sizeof(st));
+        return ErrnoOrBuffer(Buffer{std::move(buf)});
+    }
+
+    off_t Stream::lseek(off_t, int) {
+        return -ESPIPE;
     }
 
 }

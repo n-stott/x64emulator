@@ -47,13 +47,17 @@ namespace kernel {
         int close(FD fd);
 
         ErrnoOrBuffer read(FD fd, size_t count);
-        ErrnoOrBuffer pread(FD fd, size_t count, size_t offset);
+        ErrnoOrBuffer pread(FD fd, size_t count, off_t offset);
 
         ssize_t write(FD fd, const u8* buf, size_t count);
-        ssize_t pwrite(FD fd, const u8* buf, size_t count, size_t offset);
+        ssize_t pwrite(FD fd, const u8* buf, size_t count, off_t offset);
 
         ErrnoOrBuffer stat(const std::string& path);
         ErrnoOrBuffer fstat(FD fd);
+
+        off_t lseek(FD fd, off_t offset, int whence);
+
+        std::string filename(FD fd);
 
     private:
         struct Node {
@@ -63,7 +67,8 @@ namespace kernel {
 
         struct OpenNode {
             FD fd { -1 };
-            Node* node { nullptr };
+            std::string path;
+            File* file { nullptr };
         };
 
         void createStandardStreams();

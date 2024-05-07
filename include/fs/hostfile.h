@@ -21,10 +21,11 @@ namespace kernel {
         ErrnoOrBuffer read(size_t count) override;
         ssize_t write(const u8* buf, size_t count) override;
 
-        ErrnoOrBuffer pread(size_t count, size_t offset) override;
-        ssize_t pwrite(const u8* buf, size_t count, size_t offset) override;
+        ErrnoOrBuffer pread(size_t count, off_t offset) override;
+        ssize_t pwrite(const u8* buf, size_t count, off_t offset) override;
 
         ErrnoOrBuffer stat() override;
+        off_t lseek(off_t offset, int whence) override;
 
     private:
         HostFile(FS* fs, std::string path, int hostFd) : File(fs), path_(std::move(path)), hostFd_(hostFd) { }

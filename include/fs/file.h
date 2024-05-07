@@ -24,10 +24,11 @@ namespace kernel {
         virtual ErrnoOrBuffer read(size_t count) = 0;
         virtual ssize_t write(const u8* buf, size_t count) = 0;
 
-        virtual ErrnoOrBuffer pread(size_t count, size_t offset) = 0;
-        virtual ssize_t pwrite(const u8* buf, size_t count, size_t offset) = 0;
+        virtual ErrnoOrBuffer pread(size_t count, off_t offset) = 0;
+        virtual ssize_t pwrite(const u8* buf, size_t count, off_t offset) = 0;
 
         virtual ErrnoOrBuffer stat() = 0;
+        virtual off_t lseek(off_t offset, int whence) = 0;
 
     protected:
         FS* fs_;

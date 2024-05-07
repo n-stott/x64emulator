@@ -33,7 +33,7 @@ namespace kernel {
         return -EINVAL;
     }
 
-    ErrnoOrBuffer HostFile::pread(size_t count, size_t offset) {
+    ErrnoOrBuffer HostFile::pread(size_t count, off_t offset) {
         if(!isReadable()) return ErrnoOrBuffer{-EINVAL};
         std::vector<u8> buffer;
         buffer.resize(count, 0x0);
@@ -43,7 +43,7 @@ namespace kernel {
         return ErrnoOrBuffer(Buffer{std::move(buffer)});
     }
 
-    ssize_t HostFile::pwrite(const u8*, size_t, size_t) {
+    ssize_t HostFile::pwrite(const u8*, size_t, off_t) {
         return -EINVAL;
     }
 
@@ -54,6 +54,12 @@ namespace kernel {
         std::vector<u8> buf(sizeof(st), 0x0);
         std::memcpy(buf.data(), &st, sizeof(st));
         return ErrnoOrBuffer(Buffer{std::move(buf)});
+    }
+
+    off_t HostFile::lseek(off_t offset, int whence) {
+        off_t ret = ::lseek(hostFd_, offset, whence);
+        if(ret < 0) return -errno;
+        return ret;
     }
 
 }
