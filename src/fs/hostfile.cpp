@@ -1,5 +1,6 @@
 #include "fs/hostfile.h"
 #include "interpreter/verify.h"
+#include <dirent.h>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -60,6 +61,29 @@ namespace kernel {
         off_t ret = ::lseek(hostFd_, offset, whence);
         if(ret < 0) return -errno;
         return ret;
+    }
+
+    ErrnoOrBuffer HostFile::getdents64(size_t count) {
+        std::vector<u8> buf;
+        buf.resize(count, 0x0);
+        ssize_t nbytes = ::getdents64(hostFd_, buf.data(), buf.size());
+        if(nbytes < 0) return ErrnoOrBuffer(-errno);
+        buf.resize((size_t)nbytes);
+        return ErrnoOrBuffer(Buffer{std::move(buf)});
+    }
+
+    int HostFile::fcntl(int cmd, int arg) {
+        switch(cmd) {
+            case F_GETFD:
+            case F_SETFD:
+            case F_GETFL:
+            case F_SETFL: {
+                int ret = ::fcntl(hostFd_, cmd, arg);
+                if(ret < 0) return -errno;
+                return ret;
+            }
+        }
+        return -ENOTSUP;
     }
 
 }

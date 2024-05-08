@@ -51,11 +51,15 @@ namespace kernel {
 
         ssize_t write(FD fd, const u8* buf, size_t count);
         ssize_t pwrite(FD fd, const u8* buf, size_t count, off_t offset);
+        ssize_t writev(FD fd, const std::vector<Buffer>& buffers);
 
         ErrnoOrBuffer stat(const std::string& path);
         ErrnoOrBuffer fstat(FD fd);
 
         off_t lseek(FD fd, off_t offset, int whence);
+
+        ErrnoOrBuffer getdents64(FD fd, size_t count);
+        int fcntl(FD fd, int cmd, int arg);
 
         std::string filename(FD fd);
 

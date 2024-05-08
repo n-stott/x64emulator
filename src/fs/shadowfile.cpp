@@ -103,4 +103,12 @@ namespace kernel {
         return -EINVAL;
     }
 
+    ErrnoOrBuffer ShadowFile::getdents64(size_t) {
+        return ErrnoOrBuffer(-EINVAL);
+    }
+
+    int ShadowFile::fcntl(int, int) {
+        return -EINVAL;
+    }
+
 }

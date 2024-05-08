@@ -58,5 +58,13 @@ namespace kernel {
     off_t Stream::lseek(off_t, int) {
         return -ESPIPE;
     }
+    
+    ErrnoOrBuffer Stream::getdents64(size_t) {
+        return ErrnoOrBuffer(-EINVAL);
+    }
+
+    int Stream::fcntl(int, int) {
+        return -EINVAL;
+    }
 
 }

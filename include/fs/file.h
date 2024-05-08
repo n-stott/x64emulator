@@ -29,6 +29,9 @@ namespace kernel {
 
         virtual ErrnoOrBuffer stat() = 0;
         virtual off_t lseek(off_t offset, int whence) = 0;
+        
+        virtual ErrnoOrBuffer getdents64(size_t count) = 0;
+        virtual int fcntl(int cmd, int arg) = 0;
 
     protected:
         FS* fs_;

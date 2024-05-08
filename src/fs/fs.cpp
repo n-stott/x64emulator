@@ -170,6 +170,20 @@ namespace kernel {
         return file->pwrite(buf, count, offset);
     }
 
+    ssize_t FS::writev(FD fd, const std::vector<Buffer>& buffers) {
+        OpenNode* openNode = findOpenNode(fd);
+        if(!openNode) return -EBADF;
+        File* file = openNode->file;
+        x64::verify(!!file, "unexpected nullptr");
+        ssize_t nbytes = 0;
+        for(const Buffer& buf : buffers) {
+            ssize_t ret = file->write(buf.data(), buf.size());
+            if(ret < 0) return ret;
+            nbytes += ret;
+        }
+        return nbytes;
+    }
+
     ErrnoOrBuffer FS::stat(const std::string& path) {
         for(auto& node : files_) {
             if(node.path != path) continue;
@@ -206,6 +220,18 @@ namespace kernel {
             }), files_.end());
         }
         return 0;
+    }
+
+    ErrnoOrBuffer FS::getdents64(FD fd, size_t count) {
+        OpenNode* openNode = findOpenNode(fd);
+        if(!openNode) return ErrnoOrBuffer(-EBADF);
+        return openNode->file->getdents64(count);
+    }
+
+    int FS::fcntl(FD fd, int cmd, int arg) {
+        OpenNode* openNode = findOpenNode(fd);
+        if(!openNode) return -EBADF;
+        return openNode->file->fcntl(cmd, arg);
     }
 
     std::string FS::filename(FD fd) {
