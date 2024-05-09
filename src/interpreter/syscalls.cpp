@@ -506,17 +506,18 @@ namespace kernel {
         return -EINVAL;
     }
 
-    x64::Ptr Sys::getcwd(x64::Ptr buf, size_t size) {
+    int Sys::getcwd(x64::Ptr buf, size_t size) {
         ErrnoOrBuffer errnoOrBuffer = kernel_.host().getcwd(size);
         if(logSyscalls_) {
             print("Sys::getcwd(buf={:#x}, size={}) = {:#x}\n",
-                        buf.address(), size, errnoOrBuffer.isError() ? 0 : buf.address());
+                        buf.address(), size, errnoOrBuffer.errorOrWith<int>([&](const auto& buffer) {
+                            return (int)buffer.size();
+                        }));
         }
-        errnoOrBuffer.errorOrWith<int>([&](const auto& buffer) {
+        return errnoOrBuffer.errorOrWith<int>([&](const auto& buffer) {
             mmu_.copyToMmu(buf, buffer.data(), buffer.size());
-            return 0;
+            return (int)buffer.size();
         });
-        return errnoOrBuffer.isError() ? x64::Ptr{0x0} : buf;
     }
 
     int Sys::chdir(x64::Ptr pathname) {

@@ -195,7 +195,7 @@ namespace kernel {
         // 0x4a
         int fsync(int fd);
         // 0x4f
-        x64::Ptr getcwd(x64::Ptr buf, size_t size);
+        int getcwd(x64::Ptr buf, size_t size);
         // 0x50
         int chdir(x64::Ptr path);
         // 0x53
