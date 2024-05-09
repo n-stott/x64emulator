@@ -1,4 +1,5 @@
 #include "fs/fs.h"
+#include "fs/epoll.h"
 #include "fs/file.h"
 #include "fs/hostfile.h"
 #include "fs/shadowfile.h"
@@ -54,17 +55,18 @@ namespace kernel {
     FS::FD FS::insertNode(Node node) {
         files_.push_back(std::move(node));
         Node* nodePtr = &files_.back();
-        return allocateFd(nodePtr);
+        FD fd = allocateFd();
+        openFiles_.push_back(OpenNode{fd, nodePtr->path, nodePtr->object.get()});
+        nodePtr->object->ref();
+        return fd;
     }
 
-    FS::FD FS::allocateFd(Node* node) {
+    FS::FD FS::allocateFd() {
         // assign the file descriptor
         auto it = std::max_element(openFiles_.begin(), openFiles_.end(), [](const auto& a, const auto& b) {
             return a.fd.fd < b.fd.fd;
         });
         int fd = (it == openFiles_.end()) ? 0 : it->fd.fd+10;
-
-        openFiles_.push_back(OpenNode{fd, node->path, node->file.get()});
 
         return FD{fd};
     }
@@ -93,7 +95,10 @@ namespace kernel {
 
         for(auto& node : files_) {
             if(node.path != path) continue;
-            return allocateFd(&node);
+            FD fd = allocateFd();
+            node.object->ref();
+            openFiles_.push_back(OpenNode{fd, node.path, node.object.get()});
+            return fd;
         }
 
         if(canUseHostFile) {
@@ -130,6 +135,15 @@ namespace kernel {
         return FD{-EINVAL};
     }
 
+    FS::FD FS::dup(FD fd) {
+        OpenNode* openNode = findOpenNode(fd);
+        if(!openNode) return FD{-EBADF};
+        FD newFd = allocateFd();
+        openNode->object->ref();
+        openFiles_.push_back(OpenNode{newFd, openNode->path, openNode->object});
+        return newFd;
+    }
+
     FS::OpenNode* FS::findOpenNode(FD fd) {
         for(OpenNode& node : openFiles_) {
             if(node.fd != fd) continue;
@@ -141,7 +155,8 @@ namespace kernel {
     ErrnoOrBuffer FS::read(FD fd, size_t count) {
         OpenNode* openNode = findOpenNode(fd);
         if(!openNode) return ErrnoOrBuffer{-EBADF};
-        File* file = openNode->file;
+        if(!openNode->object->isFile()) return ErrnoOrBuffer{-EBADF};
+        File* file = static_cast<File*>(openNode->object);
         x64::verify(!!file, "unexpected nullptr");
         return file->read(count);
     }
@@ -149,7 +164,8 @@ namespace kernel {
     ErrnoOrBuffer FS::pread(FD fd, size_t count, off_t offset) {
         OpenNode* openNode = findOpenNode(fd);
         if(!openNode) return ErrnoOrBuffer{-EBADF};
-        File* file = openNode->file;
+        if(!openNode->object->isFile()) return ErrnoOrBuffer{-EBADF};
+        File* file = static_cast<File*>(openNode->object);
         x64::verify(!!file, "unexpected nullptr");
         return file->pread(count, offset);
     }
@@ -157,7 +173,8 @@ namespace kernel {
     ssize_t FS::write(FD fd, const u8* buf, size_t count) {
         OpenNode* openNode = findOpenNode(fd);
         if(!openNode) return -EBADF;
-        File* file = openNode->file;
+        if(!openNode->object->isFile()) return -EBADF;
+        File* file = static_cast<File*>(openNode->object);
         x64::verify(!!file, "unexpected nullptr");
         return file->write(buf, count);
     }
@@ -165,7 +182,8 @@ namespace kernel {
     ssize_t FS::pwrite(FD fd, const u8* buf, size_t count, off_t offset) {
         OpenNode* openNode = findOpenNode(fd);
         if(!openNode) return -EBADF;
-        File* file = openNode->file;
+        if(!openNode->object->isFile()) return -EBADF;
+        File* file = static_cast<File*>(openNode->object);
         x64::verify(!!file, "unexpected nullptr");
         return file->pwrite(buf, count, offset);
     }
@@ -173,7 +191,8 @@ namespace kernel {
     ssize_t FS::writev(FD fd, const std::vector<Buffer>& buffers) {
         OpenNode* openNode = findOpenNode(fd);
         if(!openNode) return -EBADF;
-        File* file = openNode->file;
+        if(!openNode->object->isFile()) return -EBADF;
+        File* file = static_cast<File*>(openNode->object);
         x64::verify(!!file, "unexpected nullptr");
         ssize_t nbytes = 0;
         for(const Buffer& buf : buffers) {
@@ -197,26 +216,31 @@ namespace kernel {
     ErrnoOrBuffer FS::fstat(FD fd) {
         OpenNode* openNode = findOpenNode(fd);
         if(!openNode) return ErrnoOrBuffer(-EBADF);
-        return openNode->file->stat();
+        if(!openNode->object->isFile()) return ErrnoOrBuffer{-EBADF};
+        File* file = static_cast<File*>(openNode->object);
+        return file->stat();
     }
 
     off_t FS::lseek(FD fd, off_t offset, int whence) {
         OpenNode* openNode = findOpenNode(fd);
         if(!openNode) return -EBADF;
-        return openNode->file->lseek(offset, whence);
+        if(!openNode->object->isFile()) return -EBADF;
+        File* file = static_cast<File*>(openNode->object);
+        return file->lseek(offset, whence);
     }
 
     int FS::close(FD fd) {
         OpenNode* openNode = findOpenNode(fd);
         if(!openNode) return -EBADF;
         OpenNode node = *openNode;
-        node.file->close();
+        node.object->unref();
+        node.object->close();
         openFiles_.erase(std::remove_if(openFiles_.begin(), openFiles_.end(), [&](const auto& openNode) {
             return openNode.fd == fd;
         }), openFiles_.end());
-        if(!node.file->keepAfterClose()) {
+        if(node.object->refCount() == 0 && !node.object->keepAfterClose()) {
             files_.erase(std::remove_if(files_.begin(), files_.end(), [&](const auto& f) {
-                return f.file.get() == node.file;
+                return f.object.get() == node.object;
             }), files_.end());
         }
         return 0;
@@ -225,13 +249,36 @@ namespace kernel {
     ErrnoOrBuffer FS::getdents64(FD fd, size_t count) {
         OpenNode* openNode = findOpenNode(fd);
         if(!openNode) return ErrnoOrBuffer(-EBADF);
-        return openNode->file->getdents64(count);
+        if(!openNode->object->isFile()) return ErrnoOrBuffer{-EBADF};
+        File* file = static_cast<File*>(openNode->object);
+        return file->getdents64(count);
     }
 
     int FS::fcntl(FD fd, int cmd, int arg) {
         OpenNode* openNode = findOpenNode(fd);
         if(!openNode) return -EBADF;
-        return openNode->file->fcntl(cmd, arg);
+        if(!openNode->object->isFile()) return -EBADF;
+        File* file = static_cast<File*>(openNode->object);
+        return file->fcntl(cmd, arg);
+    }
+
+    ErrnoOrBuffer FS::ioctl(FD fd, unsigned long request, const Buffer& buffer) {
+        OpenNode* openNode = findOpenNode(fd);
+        if(!openNode) return ErrnoOrBuffer(-EBADF);
+        if(!openNode->object->isFile()) return ErrnoOrBuffer{-EBADF};
+        File* file = static_cast<File*>(openNode->object);
+        return file->ioctl(request, buffer);
+    }
+
+    FS::FD FS::epoll_create1(int flags) {
+        (void)flags;
+
+        std::unique_ptr<Epoll> epoll = std::make_unique<Epoll>(this);
+
+        return insertNode(Node {
+            "",
+            std::move(epoll),
+        });
     }
 
     std::string FS::filename(FD fd) {

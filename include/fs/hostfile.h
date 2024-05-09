@@ -29,6 +29,7 @@ namespace kernel {
         
         ErrnoOrBuffer getdents64(size_t count) override;
         int fcntl(int cmd, int arg) override;
+        ErrnoOrBuffer ioctl(unsigned long request, const Buffer& buffer) override;
 
     private:
         HostFile(FS* fs, std::string path, int hostFd) : File(fs), path_(std::move(path)), hostFd_(hostFd) { }

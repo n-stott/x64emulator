@@ -10,6 +10,7 @@
 
 namespace kernel {
 
+    class FsObject;
     class File;
     class Kernel;
 
@@ -44,6 +45,7 @@ namespace kernel {
         };
 
         FD open(const std::string& path, OpenFlags flags, Permissions permissions);
+        FD dup(FD fd);
         int close(FD fd);
 
         ErrnoOrBuffer read(FD fd, size_t count);
@@ -60,24 +62,27 @@ namespace kernel {
 
         ErrnoOrBuffer getdents64(FD fd, size_t count);
         int fcntl(FD fd, int cmd, int arg);
+        ErrnoOrBuffer ioctl(FD fd, unsigned long request, const Buffer& buffer);
+
+        FD epoll_create1(int flags);
 
         std::string filename(FD fd);
 
     private:
         struct Node {
             std::string path;
-            std::unique_ptr<File> file;
+            std::unique_ptr<FsObject> object;
         };
 
         struct OpenNode {
             FD fd { -1 };
             std::string path;
-            File* file { nullptr };
+            FsObject* object { nullptr };
         };
 
         void createStandardStreams();
         FD insertNode(Node node);
-        FD allocateFd(Node* node);
+        FD allocateFd();
         FD insertNodeWithFd(Node node, FD fd);
 
         OpenNode* findOpenNode(FD fd);

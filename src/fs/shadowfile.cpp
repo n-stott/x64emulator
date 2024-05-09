@@ -111,4 +111,9 @@ namespace kernel {
         return -EINVAL;
     }
 
+    ErrnoOrBuffer ShadowFile::ioctl(unsigned long, const Buffer&) {
+        x64::verify(false, "ShadowFile::ioctl not implemented");
+        return ErrnoOrBuffer(-ENOTSUP);
+    }
+
 }

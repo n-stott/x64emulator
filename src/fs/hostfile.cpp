@@ -1,7 +1,9 @@
 #include "fs/hostfile.h"
 #include "interpreter/verify.h"
+#include <asm/termbits.h>
 #include <dirent.h>
 #include <fcntl.h>
+#include <sys/ioctl.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
@@ -15,6 +17,7 @@ namespace kernel {
     }
 
     void HostFile::close() {
+        if(refCount_ > 0) return;
         int rc = ::close(hostFd_);
         x64::verify(rc == 0);
     }
@@ -84,6 +87,54 @@ namespace kernel {
             }
         }
         return -ENOTSUP;
+    }
+
+    ErrnoOrBuffer HostFile::ioctl(unsigned long request, const Buffer& inputBuffer) {
+        switch(request) {
+            case TCGETS: {
+                struct termios ts;
+                int ret = ::ioctl(hostFd_, TCGETS, &ts);
+                if(ret < 0) return ErrnoOrBuffer(-errno);
+                std::vector<u8> buffer;
+                buffer.resize(sizeof(ts), 0x0);
+                std::memcpy(buffer.data(), &ts, sizeof(ts));
+                return ErrnoOrBuffer(Buffer{std::move(buffer)});
+            }
+            case FIOCLEX: {
+                int ret = ::ioctl(hostFd_, FIOCLEX, nullptr);
+                if(ret < 0) return ErrnoOrBuffer(-errno);
+                return ErrnoOrBuffer(Buffer{});
+            }
+            case FIONCLEX: {
+                int ret = ::ioctl(hostFd_, FIONCLEX, nullptr);
+                if(ret < 0) return ErrnoOrBuffer(-errno);
+                return ErrnoOrBuffer(Buffer{});
+            }
+            case TIOCGWINSZ: {
+                struct winsize ws;
+                int ret = ::ioctl(hostFd_, TIOCGWINSZ, &ws);
+                if(ret < 0) return ErrnoOrBuffer(-errno);
+                std::vector<u8> buffer;
+                buffer.resize(sizeof(ws), 0x0);
+                std::memcpy(buffer.data(), &ws, sizeof(ws));
+                return ErrnoOrBuffer(Buffer{std::move(buffer)});
+            }
+            case TIOCSWINSZ: {
+                struct winsize ws;
+                std::memcpy(&ws, inputBuffer.data(), sizeof(ws));
+                int ret = ::ioctl(hostFd_, TIOCSWINSZ, &ws);
+                if(ret < 0) return ErrnoOrBuffer(-errno);
+                return ErrnoOrBuffer(Buffer{});
+            }
+            case TCSETSW: {
+                struct termios ts;
+                std::memcpy(&ts, inputBuffer.data(), sizeof(ts));
+                int ret = ::ioctl(hostFd_, TCSETSW, &ts);
+                if(ret < 0) return ErrnoOrBuffer(-errno);
+                return ErrnoOrBuffer(Buffer{});
+            }
+        }
+        return ErrnoOrBuffer(-ENOTSUP);
     }
 
 }

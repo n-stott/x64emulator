@@ -32,6 +32,7 @@ namespace kernel {
         
         ErrnoOrBuffer getdents64(size_t count) override;
         int fcntl(int cmd, int arg) override;
+        ErrnoOrBuffer ioctl(unsigned long request, const Buffer& buffer) override;
 
     private:
         TYPE type_;

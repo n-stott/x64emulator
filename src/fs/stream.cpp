@@ -1,5 +1,8 @@
 #include "fs/stream.h"
+#include "interpreter/verify.h"
+#include <asm/termbits.h>
 #include <sys/errno.h>
+#include <sys/ioctl.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
@@ -65,6 +68,40 @@ namespace kernel {
 
     int Stream::fcntl(int, int) {
         return -EINVAL;
+    }
+
+    ErrnoOrBuffer Stream::ioctl(unsigned long request, const Buffer&) {
+        switch(request) {
+            case TCGETS: {
+                struct termios ts;
+                int ret = ::ioctl((int)type_, TCGETS, &ts);
+                if(ret < 0) return ErrnoOrBuffer(-errno);
+                std::vector<u8> buffer;
+                buffer.resize(sizeof(ts), 0x0);
+                std::memcpy(buffer.data(), &ts, sizeof(ts));
+                return ErrnoOrBuffer(Buffer{std::move(buffer)});
+            }
+            case FIOCLEX: {
+                int ret = ::ioctl((int)type_, FIOCLEX, nullptr);
+                if(ret < 0) return ErrnoOrBuffer(-errno);
+                return ErrnoOrBuffer(Buffer{});
+            }
+            case FIONCLEX: {
+                int ret = ::ioctl((int)type_, FIONCLEX, nullptr);
+                if(ret < 0) return ErrnoOrBuffer(-errno);
+                return ErrnoOrBuffer(Buffer{});
+            }
+            case TIOCGWINSZ: {
+                struct winsize ws;
+                int ret = ::ioctl((int)type_, TIOCGWINSZ, &ws);
+                if(ret < 0) return ErrnoOrBuffer(-errno);
+                std::vector<u8> buffer;
+                buffer.resize(sizeof(ws), 0x0);
+                std::memcpy(buffer.data(), &ws, sizeof(ws));
+                return ErrnoOrBuffer(Buffer{std::move(buffer)});
+            }
+        }
+        return ErrnoOrBuffer(-ENOTSUP);
     }
 
 }
