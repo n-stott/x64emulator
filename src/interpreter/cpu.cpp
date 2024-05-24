@@ -9,7 +9,7 @@
 #include <fmt/core.h>
 #include <cassert>
 
-#define COMPLAIN_ABOUT_ALIGNMENT 0
+#define COMPLAIN_ABOUT_ALIGNMENT 1
 
 namespace x64 {
 

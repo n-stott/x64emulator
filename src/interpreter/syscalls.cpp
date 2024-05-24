@@ -114,6 +114,7 @@ namespace kernel {
             case 0xea: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::tgkill, regs));
             case 0x101: return cpu->set(x64::R64::RAX, invoke_syscall_4(&Sys::openat, regs));
             case 0x106: return cpu->set(x64::R64::RAX, invoke_syscall_4(&Sys::fstatat64, regs));
+            case 0x10b: return cpu->set(x64::R64::RAX, invoke_syscall_4(&Sys::readlinkat, regs));
             case 0x10e: return cpu->set(x64::R64::RAX, invoke_syscall_6(&Sys::pselect6, regs));
             case 0x111: return cpu->set(x64::R64::RAX, invoke_syscall_2(&Sys::set_robust_list, regs));
             case 0x112: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::get_robust_list, regs));
@@ -909,9 +910,8 @@ namespace kernel {
     }
 
     int Sys::fstatat64(int dirfd, x64::Ptr pathname, x64::Ptr statbuf, int flags) {
-        x64::verify(dirfd == Host::cwdfd().fd, "dirfd is not cwd");
         std::string path = mmu_.readString(pathname);
-        auto errnoOrBuffer = kernel_.fs().fstatat64(path, flags);
+        auto errnoOrBuffer = kernel_.fs().fstatat64(FS::FD{dirfd}, path, flags);
         if(logSyscalls_) {
             print("Sys::fstatat64(dirfd={}, path={}, statbuf={:#x}, flags={}) = {}\n",
                         dirfd, path, statbuf.address(), flags, errnoOrBuffer.errorOr(0));
@@ -919,6 +919,20 @@ namespace kernel {
         return errnoOrBuffer.errorOrWith<int>([&](const auto& buffer) {
             mmu_.copyToMmu(statbuf, buffer.data(), buffer.size());
             return 0;
+        });
+    }
+
+    ssize_t Sys::readlinkat(int dirfd, x64::Ptr pathname, x64::Ptr buf, size_t bufsiz) {
+        x64::verify(dirfd == Host::cwdfd().fd, "dirfd is not cwd");
+        std::string path = mmu_.readString(pathname);
+        auto errnoOrBuffer = kernel_.host().readlink(path, bufsiz);
+        if(logSyscalls_) {
+            print("Sys::readlinkat(dirfd={}, path={}, buf={:#x}, size={}) = {:#x}\n",
+                        dirfd, path, buf.address(), bufsiz, errnoOrBuffer.errorOrWith<ssize_t>([](const auto& buffer) { return (ssize_t)buffer.size(); }));
+        }
+        return errnoOrBuffer.errorOrWith<ssize_t>([&](const auto& buffer) {
+            mmu_.copyToMmu(buf, buffer.data(), buffer.size());
+            return (ssize_t)buffer.size();
         });
     }
 

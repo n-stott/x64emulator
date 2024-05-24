@@ -204,6 +204,9 @@ namespace kernel {
                 .add((u64)Host::AUX_TYPE::EGID)
                 .add((u64)Host::AUX_TYPE::SECURE);
         std::vector<u64> data = auxvec.create();
+
+        size_t nbElementsOnStack = data.size() + argumentPositions.size() + 1;
+        if(nbElementsOnStack % 2 == 1) vm->push64(0);
         for(auto rit = data.rbegin(); rit != data.rend(); ++rit) {
             vm->push64(*rit);
         }

@@ -58,7 +58,7 @@ namespace kernel {
         ErrnoOrBuffer stat(const std::string& path);
         ErrnoOrBuffer fstat(FD fd);
         ErrnoOrBuffer statx(const std::string& path, int flags, unsigned int mask);
-        ErrnoOrBuffer fstatat64(const std::string& path, int flags);
+        ErrnoOrBuffer fstatat64(FD dirfd, const std::string& path, int flags);
 
         off_t lseek(FD fd, off_t offset, int whence);
 

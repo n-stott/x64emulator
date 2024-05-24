@@ -8,6 +8,7 @@
 #include "fs/stream.h"
 #include "interpreter/kernel.h"
 #include "interpreter/verify.h"
+#include <fcntl.h>
 #include <sys/poll.h>
 
 namespace kernel {
@@ -239,7 +240,11 @@ namespace kernel {
         return kernel_.host().statx(Host::cwdfd(), path, flags, mask);
     }
 
-    ErrnoOrBuffer FS::fstatat64(const std::string& path, int flags) {
+    ErrnoOrBuffer FS::fstatat64(FD dirfd, const std::string& path, int flags) {
+        if(flags == AT_EMPTY_PATH) {
+            return fstat(dirfd);
+        }
+        x64::verify(dirfd.fd == Host::cwdfd().fd, "dirfd is not cwd");
         for(auto& node : files_) {
             if(node.path != path) continue;
             if(node.object->isFile()) {
