@@ -6,14 +6,11 @@
 #include <asm/prctl.h>
 #include <asm/termbits.h>
 #include <sys/auxv.h>
-#include <sys/epoll.h>
-#include <sys/eventfd.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <sys/resource.h>
 #include <sys/time.h>
 #include <sys/types.h>
-#include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/sysinfo.h>
 #include <sys/uio.h>
@@ -26,20 +23,8 @@
 
 namespace kernel {
 
-    Host::Host() {
-        openFiles_[0] = "___stdin";
-        openFiles_[1] = "___stdout";
-        openFiles_[2] = "___stderr";
-    }
-
+    Host::Host() = default;
     Host::~Host() = default;
-
-    std::optional<std::string> Host::filename(FD fd) const {
-        if(auto it = openFiles_.find(fd.fd); it != openFiles_.end()) {
-            return it->second;
-        }
-        return {};
-    }
 
     f80 Host::round(f80 val) {
         // save control word
@@ -184,50 +169,6 @@ namespace kernel {
         return FD{AT_FDCWD};
     }
 
-    ErrnoOrBuffer Host::read(FD fd, size_t count) {
-        std::vector<u8> buffer;
-        buffer.resize(count, 0x0);
-        ssize_t nbytes = ::read(fd.fd, buffer.data(), count);
-        if(nbytes < 0) return ErrnoOrBuffer(-errno);
-        buffer.resize((size_t)nbytes);
-        return ErrnoOrBuffer(Buffer{std::move(buffer)});
-    }
-
-    ErrnoOrBuffer Host::pread64(FD fd, size_t count, off_t offset) {
-        std::vector<u8> buffer;
-        buffer.resize(count, 0x0);
-        ssize_t nbytes = ::pread(fd.fd, buffer.data(), count, offset);
-        if(nbytes < 0) return ErrnoOrBuffer(-errno);
-        buffer.resize((size_t)nbytes);
-        return ErrnoOrBuffer(Buffer{std::move(buffer)});
-    }
-
-    ssize_t Host::write(FD fd, [[maybe_unused]] const u8* data, size_t count) {
-        ssize_t ret = ::write(fd.fd, data, count);
-        if(ret < 0) return (ssize_t)(-errno);
-        return ret;
-    }
-
-    ssize_t Host::pwrite64(FD fd, const u8* data, size_t count, off_t offset) {
-        ssize_t ret = ::pwrite(fd.fd, data, count, offset);
-        if(ret < 0) return (ssize_t)(-errno);
-        return ret;
-    }
-
-    int Host::close(FD fd) {
-        int ret = ::close(fd.fd);
-        if(ret >= 0) openFiles_.erase(fd.fd);
-        return ret;
-    }
-
-    Host::FD Host::dup(FD oldfd) {
-        int newfd = ::dup(oldfd.fd);
-        if(newfd < 0) return FD{-errno};
-        openFiles_[newfd] = openFiles_[oldfd.fd];
-        return FD{newfd};
-    }
-
-
     size_t Host::iovecRequiredBufferSize() {
         return sizeof(iovec);
     }
@@ -240,16 +181,6 @@ namespace kernel {
     u64 Host::iovecBase(const Buffer& buffer, size_t i) {
         assert(i*sizeof(iovec) < buffer.size());
         return (u64)((const iovec*)buffer.data() + i)->iov_base;
-    }
-
-    ssize_t Host::writev(FD fd, const std::vector<Buffer>& buffers) {
-        std::vector<iovec> iovecs;
-        for(const auto& buffer : buffers) {
-            iovecs.push_back(iovec{(void*)buffer.data(), buffer.size()});
-        }
-        ssize_t nbytes = ::writev(fd.fd, iovecs.data(), (int)iovecs.size());
-        if(nbytes < 0) return -errno;
-        return nbytes;
     }
 
     ErrnoOrBuffer Host::stat(const std::string& path) {
@@ -286,21 +217,6 @@ namespace kernel {
         std::vector<u8> buf(sizeof(st), 0x0);
         std::memcpy(buf.data(), &st, sizeof(st));
         return ErrnoOrBuffer(Buffer{std::move(buf)});
-    }
-
-    off_t Host::lseek(FD fd, off_t offset, int whence) {
-        off_t ret = ::lseek(fd.fd, offset, whence);
-        if(ret < 0) return -errno;
-        return ret;
-    }
-
-    Host::FD Host::openat(FD dirfd, const std::string& pathname, int flags, [[maybe_unused]] mode_t mode) {
-        flags = (flags & ~O_ACCMODE) | O_RDONLY | O_CLOEXEC;
-        flags = (flags & ~(O_CREAT | O_EXCL | O_NOCTTY | O_TRUNC));
-        int fd = ::openat(dirfd.fd, pathname.c_str(), flags);
-        if(fd < 0) return FD{-errno};
-        openFiles_[fd] = pathname;
-        return FD{fd};
     }
 
     int Host::access(const std::string& path, int mode) {
@@ -367,131 +283,6 @@ namespace kernel {
         return -ENOTSUP;
     }
 
-    Host::FD Host::socket(int domain, int type, int protocol) {
-        auto validateDomain = [](int domain) -> bool {
-            if(domain == AF_UNIX) return true;
-            if(domain == AF_LOCAL) return true;
-            if(domain == AF_NETLINK) return true;
-            return false;
-        };
-        if(!validateDomain(domain)) return FD{-ENOTSUP};
-        int fd = ::socket(domain, type, protocol);
-        if(fd < 0) return FD{-errno};
-        return FD{fd};
-    }
-
-    int Host::connect(int sockfd, const Buffer& addr) {
-        int ret = ::connect(sockfd, (const struct sockaddr*)addr.data(), (socklen_t)addr.size());
-        if(ret < 0) return -errno;
-        return ret;
-    }
-
-    ErrnoOrBuffer Host::getsockname(int sockfd, u32 buffersize) {
-        static_assert(sizeof(socklen_t) == sizeof(u32));
-        std::vector<u8> buffer;
-        buffer.resize(buffersize, 0x0);
-        int ret = ::getsockname(sockfd, (sockaddr*)buffer.data(), &buffersize);
-        if(ret < 0) return ErrnoOrBuffer(-errno);
-        buffer.resize((size_t)buffersize);
-        return ErrnoOrBuffer(Buffer{std::move(buffer)});
-    }
-
-    ErrnoOrBuffer Host::getpeername(int sockfd, u32 buffersize) {
-        static_assert(sizeof(socklen_t) == sizeof(u32));
-        std::vector<u8> buffer;
-        buffer.resize(buffersize, 0x0);
-        int ret = ::getpeername(sockfd, (sockaddr*)buffer.data(), &buffersize);
-        if(ret < 0) return ErrnoOrBuffer(-errno);
-        buffer.resize((size_t)buffersize);
-        return ErrnoOrBuffer(Buffer{std::move(buffer)});
-    }
-
-    int Host::bind(FD sockfd, const Buffer& addr) {
-        int ret = ::bind(sockfd.fd, (const struct sockaddr*)addr.data(), (socklen_t)addr.size());
-        if(ret < 0) return -errno;
-        return ret;
-    }
-
-    int Host::shutdown(FD sockfd, int how) {
-        int ret = ::shutdown(sockfd.fd, how);
-        if(ret < 0) return -errno;
-        return ret;
-    }
-
-    ErrnoOr<std::pair<Buffer, Buffer>> Host::recvfrom(FD sockfd, size_t len, int flags, bool requireSrcAddress) {
-        static_assert(sizeof(socklen_t) == sizeof(u32));
-        if(requireSrcAddress) {
-            return ErrnoOr<std::pair<Buffer, Buffer>>(-ENOTSUP);
-        }
-        std::vector<u8> buffer;
-        buffer.resize(len, 0);
-        ssize_t ret = ::recvfrom(sockfd.fd, buffer.data(), len, flags, nullptr, nullptr);
-        if(ret < 0) return ErrnoOr<std::pair<Buffer, Buffer>>(-errno);
-        buffer.resize((size_t)ret);
-        return ErrnoOr<std::pair<Buffer, Buffer>>(std::make_pair(Buffer{std::move(buffer)}, Buffer{}));
-    }
-
-    ssize_t Host::recvmsg(FD sockfd, int flags, Buffer* msg_name, std::vector<Buffer>* msg_iov, Buffer* msg_control, int* msg_flags) {
-        // struct msghdr {
-        //     void*         msg_name;       /* Optional address */
-        //     socklen_t     msg_namelen;    /* Size of address */
-        //     struct iovec* msg_iov;        /* Scatter/gather array */
-        //     size_t        msg_iovlen;     /* # elements in msg_iov */
-        //     void*         msg_control;    /* Ancillary data, see below */
-        //     size_t        msg_controllen; /* Ancillary data buffer len */
-        //     int           msg_flags;      /* Flags on received message */
-        // };
-        msghdr header;
-        header.msg_name = msg_name->data();
-        header.msg_namelen = (socklen_t)msg_name->size();
-        std::vector<iovec> iovs;
-        for(auto& buf : *msg_iov) {
-            iovec iov;
-            iov.iov_base = buf.data();
-            iov.iov_len = buf.size();
-            iovs.push_back(iov);
-        }
-        header.msg_iov = iovs.data();
-        header.msg_iovlen = iovs.size();
-        header.msg_control = msg_control->data();
-        header.msg_controllen = msg_control->size();
-        header.msg_flags = 0;
-        ssize_t ret = ::recvmsg(sockfd.fd, &header, flags);
-        *msg_flags = header.msg_flags;
-        if(ret < 0) return -errno;
-        return ret;
-    }
-
-    ssize_t Host::sendmsg(FD sockfd, int flags, const Buffer& msg_name, const std::vector<Buffer>& msg_iov, const Buffer& msg_control, int msg_flags) {
-        // struct msghdr {
-        //     void*         msg_name;       /* Optional address */
-        //     socklen_t     msg_namelen;    /* Size of address */
-        //     struct iovec* msg_iov;        /* Scatter/gather array */
-        //     size_t        msg_iovlen;     /* # elements in msg_iov */
-        //     void*         msg_control;    /* Ancillary data, see below */
-        //     size_t        msg_controllen; /* Ancillary data buffer len */
-        //     int           msg_flags;      /* Flags on received message */
-        // };
-        msghdr header;
-        header.msg_name = (void*)msg_name.data();
-        header.msg_namelen = (socklen_t)msg_name.size();
-        std::vector<iovec> iovs;
-        for(auto& buf : msg_iov) {
-            iovec iov;
-            iov.iov_base = (void*)buf.data();
-            iov.iov_len = buf.size();
-            iovs.push_back(iov);
-        }
-        header.msg_iov = iovs.data();
-        header.msg_iovlen = iovs.size();
-        header.msg_control = (void*)msg_control.data();
-        header.msg_controllen = msg_control.size();
-        header.msg_flags = msg_flags;
-        ssize_t ret = ::sendmsg(sockfd.fd, &header, flags);
-        if(ret < 0) return -errno;
-        return ret;
-    }
-
     std::string Host::ioctlName(unsigned long request) {
         switch(request) {
             case TCGETS: return "TCGETS";
@@ -513,54 +304,6 @@ namespace kernel {
             case TCSETSW: return sizeof(termios);
         }
         return 0;
-    }
-
-    ErrnoOrBuffer Host::ioctl(FD fd, unsigned long request, [[maybe_unused]] const Buffer& inputBuffer) {
-        switch(request) {
-            case TCGETS: {
-                struct termios ts;
-                int ret = ::ioctl(fd.fd, TCGETS, &ts);
-                if(ret < 0) return ErrnoOrBuffer(-errno);
-                std::vector<u8> buffer;
-                buffer.resize(sizeof(ts), 0x0);
-                std::memcpy(buffer.data(), &ts, sizeof(ts));
-                return ErrnoOrBuffer(Buffer{std::move(buffer)});
-            }
-            case FIOCLEX: {
-                int ret = ::ioctl(fd.fd, FIOCLEX, nullptr);
-                if(ret < 0) return ErrnoOrBuffer(-errno);
-                return ErrnoOrBuffer(Buffer{});
-            }
-            case FIONCLEX: {
-                int ret = ::ioctl(fd.fd, FIONCLEX, nullptr);
-                if(ret < 0) return ErrnoOrBuffer(-errno);
-                return ErrnoOrBuffer(Buffer{});
-            }
-            case TIOCGWINSZ: {
-                struct winsize ws;
-                int ret = ::ioctl(fd.fd, TIOCGWINSZ, &ws);
-                if(ret < 0) return ErrnoOrBuffer(-errno);
-                std::vector<u8> buffer;
-                buffer.resize(sizeof(ws), 0x0);
-                std::memcpy(buffer.data(), &ws, sizeof(ws));
-                return ErrnoOrBuffer(Buffer{std::move(buffer)});
-            }
-            case TIOCSWINSZ: {
-                struct winsize ws;
-                std::memcpy(&ws, inputBuffer.data(), sizeof(ws));
-                int ret = ::ioctl(fd.fd, TIOCSWINSZ, &ws);
-                if(ret < 0) return ErrnoOrBuffer(-errno);
-                return ErrnoOrBuffer(Buffer{});
-            }
-            case TCSETSW: {
-                struct termios ts;
-                std::memcpy(&ts, inputBuffer.data(), sizeof(ts));
-                int ret = ::ioctl(fd.fd, TCSETSW, &ts);
-                if(ret < 0) return ErrnoOrBuffer(-errno);
-                return ErrnoOrBuffer(Buffer{});
-            }
-        }
-        return ErrnoOrBuffer(-ENOTSUP);
     }
 
     ErrnoOrBuffer Host::sysinfo() {
@@ -623,15 +366,6 @@ namespace kernel {
         return ErrnoOrBuffer(Buffer{std::move(path)});
     }
 
-    ErrnoOrBuffer Host::getdents64(FD fd, size_t count) {
-        std::vector<u8> buf;
-        buf.resize(count, 0x0);
-        ssize_t nbytes = ::getdents64(fd.fd, buf.data(), buf.size());
-        if(nbytes < 0) return ErrnoOrBuffer(-errno);
-        buf.resize((size_t)nbytes);
-        return ErrnoOrBuffer(Buffer{std::move(buf)});
-    }
-
     int Host::chdir(const std::string& path) {
         return ::chdir(path.c_str());
     }
@@ -661,28 +395,6 @@ namespace kernel {
         return ReturnType(std::make_pair(std::move(v), std::move(z)));
     }
 
-    std::vector<u8> Host::readFromFile(Host::FD fd, size_t length, off_t offset) {
-        // mmap the file
-        const u8* src = (const u8*)::mmap(nullptr, length, PROT_READ, MAP_PRIVATE, fd.fd, offset);
-        if(src == (void*)MAP_FAILED) return {};
-
-        // figure out size
-        struct stat buf;
-        if(::fstat(fd.fd, &buf) < 0) {
-            return {};
-        }
-        size_t size = std::min((size_t)buf.st_size, (size_t)length);
-        
-        // copy data out
-        std::vector<u8> data(src, src+size);
-        
-        // unmap the file
-        if(::munmap((void*)src, length) < 0) {
-            return {};
-        }
-        return data;
-    }
-
     ErrnoOrBuffer Host::getrlimit([[maybe_unused]] pid_t pid, int resource) {
         switch(resource) {
             case RLIMIT_STACK: {
@@ -701,32 +413,6 @@ namespace kernel {
 
     size_t Host::pollRequiredBufferSize(size_t nfds) {
         return sizeof(pollfd)*nfds;
-    }
-
-    ErrnoOr<BufferAndReturnValue<int>> Host::poll(const Buffer& buffer, u64 nfds, int timeout) {
-        std::vector<pollfd> pollfds;
-        assert(buffer.size() % sizeof(pollfd) == 0);
-        pollfds.resize(buffer.size() / sizeof(pollfd));
-        std::memcpy(pollfds.data(), buffer.data(), buffer.size());
-        int ret = ::poll(pollfds.data(), nfds, timeout);
-        if(ret < 0) return ErrnoOr<BufferAndReturnValue<int>>(-errno);
-        BufferAndReturnValue<int> bufferAndRetVal {
-            Buffer{std::move(pollfds)},
-            ret,
-        };
-        return ErrnoOr<BufferAndReturnValue<int>>(std::move(bufferAndRetVal));
-    }
-
-    Host::FD Host::epoll_create1(int flags) {
-        int fd = ::epoll_create1(flags);
-        if(fd < 0) return FD{-errno};
-        return FD{fd};
-    }
-
-    Host::FD Host::eventfd2(unsigned int initval, int flags) {
-        int fd = ::eventfd(initval, flags);
-        if(fd < 0) return FD{-errno};
-        return FD{fd};
     }
 
     int Host::select(int nfds, fd_set* readfds, fd_set* writefds, fd_set* exceptfds, timeval* timeout) {

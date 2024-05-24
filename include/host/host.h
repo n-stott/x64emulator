@@ -82,24 +82,14 @@ namespace kernel {
 
         static FD cwdfd();
 
-        static ErrnoOrBuffer read(FD, size_t count);
-        static ErrnoOrBuffer pread64(FD, size_t count, off_t offset);
-        static ssize_t write(FD, const u8* data, size_t count);
-        static ssize_t pwrite64(FD, const u8* data, size_t count, off_t offset);
-        int close(FD);
-        FD dup(FD);
-
         static size_t iovecRequiredBufferSize();
         static size_t iovecLen(const Buffer& buffer, size_t i);
         static u64 iovecBase(const Buffer& buffer, size_t i);
-        static ssize_t writev(FD, const std::vector<Buffer>& buffer);
 
         static ErrnoOrBuffer stat(const std::string& path);
         static ErrnoOrBuffer fstat(FD fd);
         static ErrnoOrBuffer lstat(const std::string& path);
         static ErrnoOrBuffer fstatat64(FD dirfd, const std::string& path, int flags);
-        static off_t lseek(FD fd, off_t offset, int whence);
-        FD openat(FD dirfd, const std::string& pathname, int flags, mode_t mode);
         static int access(const std::string& path, int mode);
 
         static ErrnoOrBuffer statfs(const std::string& path);
@@ -111,23 +101,11 @@ namespace kernel {
         static std::string fcntlName(int cmd);
         static int fcntl(FD fd, int cmd, int arg);
 
-        static FD socket(int domain, int type, int protocol);
-        static int connect(int sockfd, const Buffer& addr);
-        static ErrnoOrBuffer getsockname(int sockfd, u32 buffersize);
-        static ErrnoOrBuffer getpeername(int sockfd, u32 buffersize);
-        static int bind(FD sockfd, const Buffer& addr);
-        static int shutdown(FD sockfd, int how);
-
-        static ErrnoOr<std::pair<Buffer, Buffer>> recvfrom(FD sockfd, size_t len, int flags, bool requireSrcAddress);
-        static ssize_t recvmsg(FD sockfd, int flags, Buffer* msg_name, std::vector<Buffer>* msg_iov, Buffer* msg_control, int* msg_flags);
-        static ssize_t sendmsg(FD sockfd, int flags, const Buffer& msg_name, const std::vector<Buffer>& msg_iov, const Buffer& msg_control, int msg_flags);
-
         static ErrnoOrBuffer readlink(const std::string& path, size_t count);
         static ErrnoOrBuffer uname();
 
         static std::string ioctlName(unsigned long request);
         static size_t ioctlRequiredBufferSize(unsigned long request);
-        static ErrnoOrBuffer ioctl(FD fd, unsigned long request, const Buffer& buffer);
 
         static ErrnoOrBuffer sysinfo();
         static int getuid();
@@ -144,15 +122,9 @@ namespace kernel {
         static time_t time();
         static ErrnoOr<std::pair<Buffer, Buffer>> gettimeofday();
 
-        static std::vector<u8> readFromFile(FD fd, size_t length, off_t offset);
-
         static ErrnoOrBuffer getrlimit(pid_t pid, int resource);
 
         static size_t pollRequiredBufferSize(size_t nfds);
-        static ErrnoOr<BufferAndReturnValue<int>> poll(const Buffer&, u64 nfds, int timeout);
-        static FD epoll_create1(int flags);
-
-        static FD eventfd2(unsigned int initval, int flags);
 
         static int select(int nfds, fd_set* readfds, fd_set* writefds, fd_set* exceptfds, timeval* timeout);
         static int pselect6(int nfds, fd_set* readfds, fd_set* writefds, fd_set* exceptfds, timespec* timeout, const sigset_t* sigmask);
@@ -181,11 +153,6 @@ namespace kernel {
         };
 
         static std::optional<AuxVal> getauxval(AUX_TYPE type);
-        
-        std::optional<std::string> filename(FD fd) const;
-
-    private:
-        std::unordered_map<int, std::string> openFiles_;
     };
 }
 
