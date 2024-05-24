@@ -1,11 +1,14 @@
 #include "fs/fs.h"
 #include "fs/epoll.h"
+#include "fs/event.h"
 #include "fs/file.h"
 #include "fs/hostfile.h"
 #include "fs/shadowfile.h"
+#include "fs/socket.h"
 #include "fs/stream.h"
 #include "interpreter/kernel.h"
 #include "interpreter/verify.h"
+#include <sys/poll.h>
 
 namespace kernel {
 
@@ -85,7 +88,7 @@ namespace kernel {
 
     FS::FD FS::open(const std::string& path, OpenFlags flags, Permissions permissions) {
         (void)permissions;
-        x64::verify(!path.empty(), "FS::open: empty path");
+        if(path.empty()) return FD{-ENOENT};
         bool canUseHostFile = true;
         if(flags.append || flags.create || flags.truncate || flags.write) canUseHostFile = false;
 
@@ -191,12 +194,10 @@ namespace kernel {
     ssize_t FS::writev(FD fd, const std::vector<Buffer>& buffers) {
         OpenNode* openNode = findOpenNode(fd);
         if(!openNode) return -EBADF;
-        if(!openNode->object->isFile()) return -EBADF;
-        File* file = static_cast<File*>(openNode->object);
-        x64::verify(!!file, "unexpected nullptr");
+        if(!openNode->object->isWritable()) return -EBADF;
         ssize_t nbytes = 0;
         for(const Buffer& buf : buffers) {
-            ssize_t ret = file->write(buf.data(), buf.size());
+            ssize_t ret = openNode->object->write(buf.data(), buf.size());
             if(ret < 0) return ret;
             nbytes += ret;
         }
@@ -206,9 +207,12 @@ namespace kernel {
     ErrnoOrBuffer FS::stat(const std::string& path) {
         for(auto& node : files_) {
             if(node.path != path) continue;
-            x64::verify(false, "implement stat in FS");
+            if(node.object->isFile()) {
+                File* file = static_cast<File*>(node.object.get());
+                return file->stat();
+            }
+            x64::verify(false, "implement stat for non files in FS");
             return ErrnoOrBuffer(-ENOTSUP);
-            // return node.file->stat();
         }
         return kernel_.host().stat(path);
     }
@@ -219,6 +223,34 @@ namespace kernel {
         if(!openNode->object->isFile()) return ErrnoOrBuffer{-EBADF};
         File* file = static_cast<File*>(openNode->object);
         return file->stat();
+    }
+
+    ErrnoOrBuffer FS::statx(const std::string& path, int flags, unsigned int mask) {
+        for(auto& node : files_) {
+            if(node.path != path) continue;
+            if(node.object->isFile()) {
+                x64::verify(false, "implement statx for files in FS");
+                // File* file = static_cast<File*>(node.object.get());
+                // return file->statx(flags, mask);
+            }
+            x64::verify(false, "implement statx for non files in FS");
+            return ErrnoOrBuffer(-ENOTSUP);
+        }
+        return kernel_.host().statx(Host::cwdfd(), path, flags, mask);
+    }
+
+    ErrnoOrBuffer FS::fstatat64(const std::string& path, int flags) {
+        for(auto& node : files_) {
+            if(node.path != path) continue;
+            if(node.object->isFile()) {
+                x64::verify(false, "implement fstatat for files in FS");
+                // File* file = static_cast<File*>(node.object.get());
+                // return file->fstatat(flags, mask);
+            }
+            x64::verify(false, "implement fstatat for non files in FS");
+            return ErrnoOrBuffer(-ENOTSUP);
+        }
+        return kernel_.host().fstatat64(Host::cwdfd(), path, flags);
     }
 
     off_t FS::lseek(FD fd, off_t offset, int whence) {
@@ -257,9 +289,15 @@ namespace kernel {
     int FS::fcntl(FD fd, int cmd, int arg) {
         OpenNode* openNode = findOpenNode(fd);
         if(!openNode) return -EBADF;
-        if(!openNode->object->isFile()) return -EBADF;
-        File* file = static_cast<File*>(openNode->object);
-        return file->fcntl(cmd, arg);
+        if(openNode->object->isFile()) {
+            File* file = static_cast<File*>(openNode->object);
+            return file->fcntl(cmd, arg);
+        }
+        if(openNode->object->isSocket()) {
+            Socket* socket = static_cast<Socket*>(openNode->object);
+            return socket->fcntl(cmd, arg);
+        }
+        return -EBADF;
     }
 
     ErrnoOrBuffer FS::ioctl(FD fd, unsigned long request, const Buffer& buffer) {
@@ -270,15 +308,135 @@ namespace kernel {
         return file->ioctl(request, buffer);
     }
 
+    FS::FD FS::eventfd2(unsigned int initval, int flags) {
+        std::unique_ptr<Event> event = std::make_unique<Event>(this, initval, flags);
+        return insertNode(Node {
+            "",
+            std::move(event),
+        });
+    }
+
     FS::FD FS::epoll_create1(int flags) {
-        (void)flags;
-
-        std::unique_ptr<Epoll> epoll = std::make_unique<Epoll>(this);
-
+        std::unique_ptr<Epoll> epoll = std::make_unique<Epoll>(this, flags);
         return insertNode(Node {
             "",
             std::move(epoll),
         });
+    }
+
+    FS::FD FS::socket(int domain, int type, int protocol) {
+        auto socket = Socket::tryCreate(this, domain, type, protocol);
+        // TODO: return the actual value of errno
+        if(!socket) return FS::FD{-EINVAL};
+        return insertNode(Node {
+            "",
+            std::move(socket)
+        });
+    }
+
+    int FS::connect(FD sockfd, const Buffer& buffer) {
+        OpenNode* openNode = findOpenNode(sockfd);
+        if(!openNode) return -EBADF;
+        if(!openNode->object->isSocket()) return -EBADF;
+        Socket* socket = static_cast<Socket*>(openNode->object);
+        return socket->connect(buffer);
+    }
+
+    int FS::bind(FD sockfd, const Buffer& name) {
+        OpenNode* openNode = findOpenNode(sockfd);
+        if(!openNode) return -EBADF;
+        if(!openNode->object->isSocket()) return -EBADF;
+        Socket* socket = static_cast<Socket*>(openNode->object);
+        return socket->bind(name);
+    }
+
+    int FS::shutdown(FD sockfd, int how) {
+        OpenNode* openNode = findOpenNode(sockfd);
+        if(!openNode) return -EBADF;
+        if(!openNode->object->isSocket()) return -EBADF;
+        Socket* socket = static_cast<Socket*>(openNode->object);
+        return socket->shutdown(how);
+    }
+
+    ErrnoOrBuffer FS::getpeername(FD sockfd, u32 buffersize) {
+        OpenNode* openNode = findOpenNode(sockfd);
+        if(!openNode) return ErrnoOrBuffer(-EBADF);
+        if(!openNode->object->isSocket()) return ErrnoOrBuffer(-EBADF);
+        Socket* socket = static_cast<Socket*>(openNode->object);
+        return socket->getpeername(buffersize);
+    }
+
+    ErrnoOrBuffer FS::getsockname(FD sockfd, u32 buffersize) {
+        OpenNode* openNode = findOpenNode(sockfd);
+        if(!openNode) return ErrnoOrBuffer(-EBADF);
+        if(!openNode->object->isSocket()) return ErrnoOrBuffer(-EBADF);
+        Socket* socket = static_cast<Socket*>(openNode->object);
+        return socket->getsockname(buffersize);
+    }
+
+    ErrnoOr<BufferAndReturnValue<int>> FS::poll(const Buffer& buffer, u64 nfds, int timeout) {
+        std::vector<pollfd> virtualPollFds;
+        assert(buffer.size() % sizeof(pollfd) == 0);
+        virtualPollFds.resize(buffer.size() / sizeof(pollfd));
+        std::memcpy(virtualPollFds.data(), buffer.data(), buffer.size());
+
+        // check that all fds are pollable and have a host-side fd
+        for(pollfd vpfd : virtualPollFds) {
+            OpenNode* openNode = findOpenNode(FD{vpfd.fd});
+            x64::verify(!!openNode, [&]() { fmt::print("cannot poll fd={}\n", vpfd.fd); });
+            x64::verify(openNode->object->isPollable(), [&]() { fmt::print("fd={} is not pollable\n", vpfd.fd); });
+            auto hostFd = openNode->object->hostFileDescriptor();
+            x64::verify(hostFd.has_value(), [&]() { fmt::print("fd={} has no host-equivalent fd\n", vpfd.fd); });
+        }
+
+        // substitute the virtual fds with host fds
+        std::vector<pollfd> hostPollFds;
+        for(pollfd vpfd : virtualPollFds) {
+            OpenNode* openNode = findOpenNode(FD{vpfd.fd});
+            pollfd hostPollFd = vpfd;
+            auto hostFd = openNode->object->hostFileDescriptor();
+            hostPollFd.fd = *hostFd;
+            hostPollFds.push_back(hostPollFd);
+        }
+
+        // call poll
+        int ret = ::poll(hostPollFds.data(), nfds, timeout);
+        if(ret < 0) return ErrnoOr<BufferAndReturnValue<int>>(-errno);
+
+        // transfer the events to the virtual fds
+        for(size_t i = 0; i < virtualPollFds.size(); ++i) {
+            virtualPollFds[i].events = hostPollFds[i].events;
+            virtualPollFds[i].revents = hostPollFds[i].revents;
+        }
+        BufferAndReturnValue<int> bufferAndRetVal {
+            Buffer{std::move(virtualPollFds)},
+            ret,
+        };
+        return ErrnoOr<BufferAndReturnValue<int>>(std::move(bufferAndRetVal));
+    }
+
+    ErrnoOr<std::pair<Buffer, Buffer>> FS::recvfrom(FD sockfd, size_t len, int flags, bool requireSrcAddress) {
+        OpenNode* openNode = findOpenNode(sockfd);
+        if(!openNode) return ErrnoOr<std::pair<Buffer, Buffer>>(-EBADF);
+        if(!openNode->object->isSocket()) return ErrnoOr<std::pair<Buffer, Buffer>>(-EBADF);
+        Socket* socket = static_cast<Socket*>(openNode->object);
+        return socket->recvfrom(len, flags, requireSrcAddress);
+
+    }
+    ssize_t FS::recvmsg(FD sockfd, int flags, Buffer* msg_name, std::vector<Buffer>* msg_iov, Buffer* msg_control, int* msg_flags) {
+        OpenNode* openNode = findOpenNode(sockfd);
+        if(!openNode) return -EBADF;
+        if(!openNode->object->isSocket()) return -EBADF;
+        Socket* socket = static_cast<Socket*>(openNode->object);
+        return socket->recvmsg(flags, msg_name, msg_iov, msg_control, msg_flags);
+    }
+
+    ssize_t FS::sendmsg(FD sockfd, int flags, const Buffer& msg_name, const std::vector<Buffer>& msg_iov, const Buffer& msg_control, int msg_flags) {
+        OpenNode* openNode = findOpenNode(sockfd);
+        if(!openNode) return -EBADF;
+        if(!openNode->object->isSocket()) return -EBADF;
+        Socket* socket = static_cast<Socket*>(openNode->object);
+        return socket->sendmsg(flags, msg_name, msg_iov, msg_control, msg_flags);
     }
 
     std::string FS::filename(FD fd) {

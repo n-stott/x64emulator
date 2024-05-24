@@ -19,6 +19,8 @@ namespace kernel {
         void close() override;
         bool keepAfterClose() const override { return true; }
 
+        std::optional<int> hostFileDescriptor() const { return {}; }
+
         ErrnoOrBuffer read(size_t count) override;
         ssize_t write(const u8* buf, size_t count) override;
         

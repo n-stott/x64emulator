@@ -85,6 +85,7 @@ namespace kernel {
             case 0x53: return cpu->set(x64::R64::RAX, invoke_syscall_2(&Sys::mkdir, regs));
             case 0x57: return cpu->set(x64::R64::RAX, invoke_syscall_1(&Sys::unlink, regs));
             case 0x59: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::readlink, regs));
+            case 0x5a: return cpu->set(x64::R64::RAX, invoke_syscall_2(&Sys::chmod, regs));
             case 0x60: return cpu->set(x64::R64::RAX, invoke_syscall_2(&Sys::gettimeofday, regs));
             case 0x63: return cpu->set(x64::R64::RAX, invoke_syscall_1(&Sys::sysinfo, regs));
             case 0x66: return cpu->set(x64::R64::RAX, invoke_syscall_0(&Sys::getuid, regs));
@@ -132,7 +133,7 @@ namespace kernel {
     }
 
     ssize_t Sys::read(int fd, x64::Ptr8 buf, size_t count) {
-        auto errnoOrBuffer = kernel_.host().read(Host::FD{fd}, count);
+        auto errnoOrBuffer = kernel_.fs().read(FS::FD{fd}, count);
         if(logSyscalls_) {
             print("Sys::read(fd={}, buf={:#x}, count={}) = {}\n",
                         fd, buf.address(), count,
@@ -146,7 +147,7 @@ namespace kernel {
 
     ssize_t Sys::write(int fd, x64::Ptr8 buf, size_t count) {
         std::vector<u8> buffer = mmu_.readFromMmu<u8>(buf, count);
-        ssize_t ret = kernel_.host().write(Host::FD{fd}, buffer.data(), buffer.size());
+        ssize_t ret = kernel_.fs().write(FS::FD{fd}, buffer.data(), buffer.size());
         if(logSyscalls_) {
             print("Sys::write(fd={}, buf={:#x}, count={}) = {}\n",
                         fd, buf.address(), count, ret);
@@ -155,14 +156,14 @@ namespace kernel {
     }
 
     int Sys::close(int fd) {
-        int ret = kernel_.host().close(Host::FD{fd});
+        int ret = kernel_.fs().close(FS::FD{fd});
         if(logSyscalls_) print("Sys::close(fd={}) = {}\n", fd, ret);
         return ret;
     }
 
     int Sys::stat(x64::Ptr pathname, x64::Ptr statbuf) {
         std::string path = mmu_.readString(pathname);
-        auto errnoOrBuffer = kernel_.host().stat(path);
+        auto errnoOrBuffer = kernel_.fs().stat(path);
         if(logSyscalls_) {
             print("Sys::stat(path={}, statbuf={:#x}) = {}\n",
                         path, statbuf.address(), errnoOrBuffer.errorOr(0));
@@ -174,7 +175,7 @@ namespace kernel {
     }
 
     int Sys::fstat(int fd, x64::Ptr8 statbuf) {
-        ErrnoOrBuffer errnoOrBuffer = kernel_.host().fstat(Host::FD{fd});
+        ErrnoOrBuffer errnoOrBuffer = kernel_.fs().fstat(FS::FD{fd});
         if(logSyscalls_) {
             print("Sys::fstat(fd={}, statbuf={:#x}) = {}\n",
                         fd, statbuf.address(), errnoOrBuffer.errorOr(0));
@@ -201,7 +202,7 @@ namespace kernel {
     int Sys::poll(x64::Ptr fds, size_t nfds, int timeout) {
         std::vector<u8> pollfds = mmu_.readFromMmu<u8>(fds, kernel_.host().pollRequiredBufferSize(nfds));
         Buffer buffer(std::move(pollfds));
-        auto errnoOrBufferAndReturnValue = kernel_.host().poll(buffer, nfds, timeout);
+        auto errnoOrBufferAndReturnValue = kernel_.fs().poll(buffer, nfds, timeout);
         if(logSyscalls_) {
             auto pfds = mmu_.readFromMmu<u32>(fds, nfds*2);
             std::string fdsString = fmt::format("[{}]", fmt::join(pfds, ", "));
@@ -219,7 +220,7 @@ namespace kernel {
     }
 
     off_t Sys::lseek(int fd, off_t offset, int whence) {
-        off_t ret = kernel_.host().lseek(Host::FD{fd}, offset, whence);
+        off_t ret = kernel_.fs().lseek(FS::FD{fd}, offset, whence);
         if(logSyscalls_) print("Sys::lseek(fd={}, offset={:#x}, whence={}) = {}\n", fd, offset, whence, ret);
         return ret;
     }
@@ -232,13 +233,17 @@ namespace kernel {
         u64 base = mmu_.mmap(addr.address(), length, (x64::PROT)prot, f);
         if(!(bool)(f & x64::MAP::ANONYMOUS)) {
             x64::verify(fd >= 0);
-            std::vector<u8> data = kernel_.host().readFromFile(Host::FD{fd}, length, offset);
-            x64::PROT saved = mmu_.prot(base);
-            mmu_.mprotect(base, length, x64::PROT::WRITE);
-            mmu_.copyToMmu(x64::Ptr8{base}, data.data(), data.size());
-            mmu_.mprotect(base, length, saved);
-            auto filename = kernel_.host().filename(Host::FD{fd});
-            mmu_.setRegionName(base, filename.value_or(""));
+            ErrnoOrBuffer data = kernel_.fs().pread(FS::FD{fd}, length, offset);
+            x64::verify(!data.isError());
+            data.errorOrWith<int>([&](const Buffer& buffer) {
+                x64::PROT saved = mmu_.prot(base);
+                mmu_.mprotect(base, length, x64::PROT::WRITE);
+                mmu_.copyToMmu(x64::Ptr8{base}, buffer.data(), buffer.size());
+                mmu_.mprotect(base, length, saved);
+                return 0;
+            });
+            auto filename = kernel_.fs().filename(FS::FD{fd});
+            mmu_.setRegionName(base, filename);
         }
         if(logSyscalls_) print("Sys::mmap(addr={:#x}, length={}, prot={}, flags={}, fd={}, offset={}) = {:#x}\n",
                                               addr.address(), length, prot, flags, fd, offset, base);
@@ -288,7 +293,7 @@ namespace kernel {
         std::vector<u8> buf(bufferSize, 0x0);
         Buffer buffer(std::move(buf));
         mmu_.copyFromMmu(buffer.data(), argp, buffer.size());
-        auto errnoOrBuffer = kernel_.host().ioctl(Host::FD{fd}, request, buffer);
+        auto errnoOrBuffer = kernel_.fs().ioctl(FS::FD{fd}, request, buffer);
         if(logSyscalls_) {
             print("Sys::ioctl(fd={}, request={}, argp={:#x}) = {}\n",
                         fd, kernel_.host().ioctlName(request), argp.address(),
@@ -302,7 +307,7 @@ namespace kernel {
     }
 
     ssize_t Sys::pread64(int fd, x64::Ptr buf, size_t count, off_t offset) {
-        auto errnoOrBuffer = kernel_.host().pread64(Host::FD{fd}, count, offset);
+        auto errnoOrBuffer = kernel_.fs().pread(FS::FD{fd}, count, offset);
         if(logSyscalls_) {
             print("Sys::pread64(fd={}, buf={:#x}, count={}, offset={}) = {}\n",
                         fd, buf.address(), count, offset,
@@ -316,7 +321,7 @@ namespace kernel {
 
     ssize_t Sys::pwrite64(int fd, x64::Ptr buf, size_t count, off_t offset) {
         std::vector<u8> buffer = mmu_.readFromMmu<u8>(buf, count);
-        auto errnoOrNbytes = kernel_.host().pwrite64(Host::FD{fd}, buffer.data(), buffer.size(), offset);
+        auto errnoOrNbytes = kernel_.fs().pwrite(FS::FD{fd}, buffer.data(), buffer.size(), offset);
         if(logSyscalls_) {
             print("Sys::pwrite64(fd={}, buf={:#x}, count={}, offset={}) = {}\n",
                         fd, buf.address(), count, offset, errnoOrNbytes);
@@ -336,7 +341,7 @@ namespace kernel {
             mmu_.copyFromMmu(data.data(), base, len);
             buffers.push_back(Buffer(std::move(data)));
         }
-        ssize_t nbytes = kernel_.host().writev(Host::FD{fd}, buffers);
+        ssize_t nbytes = kernel_.fs().writev(FS::FD{fd}, buffers);
         if(logSyscalls_) print("Sys::writev(fd={}, iov={:#x}, iovcnt={}) = {}\n", fd, iov.address(), iovcnt, nbytes);
         return nbytes;
     }
@@ -353,7 +358,7 @@ namespace kernel {
     }
 
     int Sys::dup(int oldfd) {
-        Host::FD newfd = kernel_.host().dup(Host::FD{oldfd});
+        FS::FD newfd = kernel_.fs().dup(FS::FD{oldfd});
         if(logSyscalls_) print("Sys::dup(oldfd={}) = {}\n", oldfd, newfd.fd);
         return newfd.fd;
     }
@@ -397,7 +402,7 @@ namespace kernel {
     }
 
     int Sys::socket(int domain, int type, int protocol) {
-        Host::FD fd = kernel_.host().socket(domain, type, protocol);
+        FS::FD fd = kernel_.fs().socket(domain, type, protocol);
         if(logSyscalls_) {
             print("Sys::socket(domain={}, type={}, protocol={}) = {}\n",
                                     domain, type, protocol, fd.fd);
@@ -408,7 +413,7 @@ namespace kernel {
     int Sys::connect(int sockfd, x64::Ptr addr, size_t addrlen) {
         std::vector<u8> addrBuffer = mmu_.readFromMmu<u8>(addr, (size_t)addrlen);
         Buffer buf(std::move(addrBuffer));
-        int ret = kernel_.host().connect(sockfd, buf);
+        int ret = kernel_.fs().connect(FS::FD{sockfd}, buf);
         if(logSyscalls_) {
             print("Sys::connect(sockfd={}, addr={:#x}, addrlen={}) = {}\n",
                         sockfd, addr.address(), addrlen, ret);
@@ -418,14 +423,14 @@ namespace kernel {
 
     int Sys::getsockname(int sockfd, x64::Ptr addr, x64::Ptr32 addrlen) {
         u32 buffersize = mmu_.read32(addrlen);
-        ErrnoOrBuffer sockname = kernel_.host().getsockname(sockfd, buffersize);
+        ErrnoOrBuffer sockname = kernel_.fs().getsockname(FS::FD{sockfd}, buffersize);
         if(logSyscalls_) {
-            print("Sys::getsockname(sockfd={}, addr={:#x}, addrlen={:#x}) = {}",
+            print("Sys::getsockname(sockfd={}, addr={:#x}, addrlen={:#x}) = {}\n",
                         sockfd, addr.address(), addrlen.address(), sockname.errorOr(0));
-            sockname.errorOrWith<int>([&](const auto& buffer) {
-                print("{}\n", (const char*)buffer.data());
-                return 0;
-            });
+            // sockname.errorOrWith<int>([&](const auto& buffer) {
+            //     print("{:p}\n", (const char*)buffer.data());
+            //     return 0;
+            // });
         }
         return sockname.errorOrWith<int>([&](const auto& buffer) {
             mmu_.copyToMmu(addr, buffer.data(), buffer.size());
@@ -436,14 +441,14 @@ namespace kernel {
 
     int Sys::getpeername(int sockfd, x64::Ptr addr, x64::Ptr32 addrlen) {
         u32 buffersize = mmu_.read32(addrlen);
-        ErrnoOrBuffer peername = kernel_.host().getpeername(sockfd, buffersize);
+        ErrnoOrBuffer peername = kernel_.fs().getpeername(FS::FD{sockfd}, buffersize);
         if(logSyscalls_) {
-            print("Sys::getpeername(sockfd={}, addr={:#x}, addrlen={:#x}) = {}",
+            print("Sys::getpeername(sockfd={}, addr={:#x}, addrlen={:#x}) = {}\n",
                         sockfd, addr.address(), addrlen.address(), peername.errorOr(0));
-            peername.errorOrWith<int>([&](const auto& buffer) {
-                print("{}\n", (const char*)buffer.data());
-                return 0;
-            });
+            // peername.errorOrWith<int>([&](const auto& buffer) {
+            //     print("{}\n", (const char*)buffer.data());
+            //     return 0;
+            // });
         }
         return peername.errorOrWith<int>([&](const auto& buffer) {
             mmu_.copyToMmu(addr, buffer.data(), buffer.size());
@@ -496,7 +501,7 @@ namespace kernel {
     }
 
     int Sys::fcntl(int fd, int cmd, int arg) {
-        int ret = kernel_.host().fcntl(Host::FD{fd}, cmd, arg);
+        int ret = kernel_.fs().fcntl(FS::FD{fd}, cmd, arg);
         if(logSyscalls_) print("Sys::fcntl(fd={}, cmd={}, arg={}) = {}\n", fd, kernel_.host().fcntlName(cmd), arg, ret);
         return ret;
     }
@@ -556,6 +561,15 @@ namespace kernel {
             mmu_.copyToMmu(buf, buffer.data(), buffer.size());
             return (ssize_t)buffer.size();
         });
+    }
+
+    int Sys::chmod(x64::Ptr pathname, mode_t mode) {
+        std::string path = mmu_.readString(pathname);
+        if(logSyscalls_) {
+            print("Sys::chmod(path={}, mode={}) = {}\n",
+                        path, mode, -ENOTSUP);
+        }
+        return -ENOTSUP;
     }
 
     int Sys::gettimeofday(x64::Ptr tv, x64::Ptr tz) {
@@ -722,7 +736,7 @@ namespace kernel {
 
     ssize_t Sys::recvfrom(int sockfd, x64::Ptr buf, size_t len, int flags, x64::Ptr src_addr, x64::Ptr32 addrlen) {
         bool requireSrcAddress = !!src_addr && !!addrlen;
-        ErrnoOr<std::pair<Buffer, Buffer>> ret = kernel_.host().recvfrom(Host::FD{sockfd}, len, flags, requireSrcAddress);
+        ErrnoOr<std::pair<Buffer, Buffer>> ret = kernel_.fs().recvfrom(FS::FD{sockfd}, len, flags, requireSrcAddress);
         if(logSyscalls_) {
             print("Sys::recvfrom(sockfd={}, buf={:#x}, len={}, flags={}, src_addr={:#x}, addrlen={:#x}) = {}\n",
                                       sockfd, buf.address(), len, flags, src_addr.address(), addrlen.address(),
@@ -769,7 +783,7 @@ namespace kernel {
         }
 
         int msg_flags = 0;
-        ssize_t nbytes = kernel_.host().sendmsg(Host::FD{sockfd}, flags, msg_name, msg_iov, msg_control, msg_flags);
+        ssize_t nbytes = kernel_.fs().sendmsg(FS::FD{sockfd}, flags, msg_name, msg_iov, msg_control, msg_flags);
         if(logSyscalls_) {
             print("Sys::sendmsg(sockfd={}, msg={:#x}, flags={}) = {}\n",
                         sockfd, msg.address(), flags, nbytes);
@@ -802,7 +816,7 @@ namespace kernel {
         }
 
         int msg_flags = 0;
-        ssize_t nbytes = kernel_.host().recvmsg(Host::FD{sockfd}, flags, &msg_name, &msg_iov, &msg_control, &msg_flags);
+        ssize_t nbytes = kernel_.fs().recvmsg(FS::FD{sockfd}, flags, &msg_name, &msg_iov, &msg_control, &msg_flags);
         if(logSyscalls_) {
             print("Sys::recvmsg(sockfd={}, msg={:#x}, flags={}) = {}\n",
                         sockfd, msg.address(), flags, nbytes);
@@ -818,7 +832,7 @@ namespace kernel {
     }
 
     int Sys::shutdown(int sockfd, int how) {
-        int rc = kernel_.host().shutdown(Host::FD{sockfd}, how);
+        int rc = kernel_.fs().shutdown(FS::FD{sockfd}, how);
         if(logSyscalls_) {
             print("Sys::shutdown(sockfd={}, how={}) = {}\n",
                         sockfd, how, rc);
@@ -828,7 +842,7 @@ namespace kernel {
 
     int Sys::bind(int sockfd, x64::Ptr addr, socklen_t addrlen) {
         Buffer saddr(mmu_.readFromMmu<u8>(addr, addrlen));
-        int rc = kernel_.host().bind(Host::FD{sockfd}, saddr);
+        int rc = kernel_.fs().bind(FS::FD{sockfd}, saddr);
         if(logSyscalls_) {
             print("Sys::bind(sockfd={}, addr={:#x}, addrlen={}) = {}\n",
                         sockfd, addr.address(), addrlen, rc);
@@ -837,7 +851,7 @@ namespace kernel {
     }
 
     ssize_t Sys::getdents64(int fd, x64::Ptr dirp, size_t count) {
-        auto errnoOrBuffer = kernel_.host().getdents64(Host::FD{fd}, count);
+        auto errnoOrBuffer = kernel_.fs().getdents64(FS::FD{fd}, count);
         if(logSyscalls_) {
             print("Sys::getdents64(fd={}, dirp={:#x}, count={}) = {}\n",
                         fd, dirp.address(), count, errnoOrBuffer.errorOrWith<ssize_t>([&](const auto& buffer) { return (ssize_t)buffer.size(); }));
@@ -886,18 +900,18 @@ namespace kernel {
 
     int Sys::openat(int dirfd, x64::Ptr pathname, int flags, mode_t mode) {
         std::string path = mmu_.readString(pathname);
-        Host::FD fd = kernel_.host().openat(Host::FD{dirfd}, path, flags, mode);
         FS::OpenFlags openFlags = FS::fromFlags(flags);
         FS::Permissions permissions = FS::fromMode(mode);
         x64::verify(dirfd == Host::cwdfd().fd, "dirfd is not cwd");
-        [[maybe_unused]] FS::FD fd2 = kernel_.fs().open(path, openFlags, permissions);
-        if(logSyscalls_) print("Sys::openat(dirfd={}, path={}, flags={}, mode={}) = {}\n", dirfd, path, flags, mode, fd.fd);
+        FS::FD fd = kernel_.fs().open(path, openFlags, permissions);
+        if(logSyscalls_) print("Sys::openat(dirfd={}, path={}, flags={:#x}, mode={}) = {}\n", dirfd, path, flags, mode, fd.fd);
         return fd.fd;
     }
 
     int Sys::fstatat64(int dirfd, x64::Ptr pathname, x64::Ptr statbuf, int flags) {
+        x64::verify(dirfd == Host::cwdfd().fd, "dirfd is not cwd");
         std::string path = mmu_.readString(pathname);
-        auto errnoOrBuffer = kernel_.host().fstatat64(Host::FD{dirfd}, path, flags);
+        auto errnoOrBuffer = kernel_.fs().fstatat64(path, flags);
         if(logSyscalls_) {
             print("Sys::fstatat64(dirfd={}, path={}, statbuf={:#x}, flags={}) = {}\n",
                         dirfd, path, statbuf.address(), flags, errnoOrBuffer.errorOr(0));
@@ -960,7 +974,7 @@ namespace kernel {
     }
 
     int Sys::eventfd2(unsigned int initval, int flags) {
-        Host::FD fd = kernel_.host().eventfd2(initval, flags);
+        FS::FD fd = kernel_.fs().eventfd2(initval, flags);
         if(logSyscalls_) {
             print("Sys::eventfd2(initval={}, flags={}) = {}\n", initval, flags, fd.fd);
         }
@@ -968,7 +982,7 @@ namespace kernel {
     }
 
     int Sys::epoll_create1(int flags) {
-        Host::FD fd = kernel_.host().epoll_create1(flags);
+        FS::FD fd = kernel_.fs().epoll_create1(flags);
         if(logSyscalls_) {
             print("Sys::epoll_create1(flags={}) = {}\n", flags, fd.fd);
         }
@@ -1006,8 +1020,9 @@ namespace kernel {
     }
 
     int Sys::statx(int dirfd, x64::Ptr pathname, int flags, unsigned int mask, x64::Ptr statxbuf) {
+        x64::verify(dirfd == Host::cwdfd().fd, "dirfd is not cwd");
         std::string path = mmu_.readString(pathname);
-        auto errnoOrBuffer = kernel_.host().statx(Host::FD{dirfd}, path, flags, mask);
+        auto errnoOrBuffer = kernel_.fs().statx(path, flags, mask);
         if(logSyscalls_) {
             print("Sys::statx(dirfd={}, path={}, flags={}, mask={}, statxbuf={:#x}) = {}\n",
                         dirfd, path, flags, mask, statxbuf.address(), errnoOrBuffer.errorOr(0));

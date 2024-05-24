@@ -48,6 +48,7 @@ namespace kernel {
     }
 
     ssize_t HostFile::pwrite(const u8*, size_t, off_t) {
+        // Host-backed files must be read-only
         return -EINVAL;
     }
 
@@ -86,6 +87,7 @@ namespace kernel {
                 return ret;
             }
         }
+        x64::verify(false, "implement missing fcntl on HostFile");
         return -ENOTSUP;
     }
 
@@ -134,6 +136,7 @@ namespace kernel {
                 return ErrnoOrBuffer(Buffer{});
             }
         }
+        x64::verify(false, "implement ioctl on HostFile");
         return ErrnoOrBuffer(-ENOTSUP);
     }
 

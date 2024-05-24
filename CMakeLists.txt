@@ -47,9 +47,11 @@ target_include_directories(x64 PUBLIC include)
 add_library(emulator STATIC
     src/disassembler/capstonewrapper.cpp
     src/fs/epoll.cpp
+    src/fs/event.cpp
     src/fs/fs.cpp
     src/fs/hostfile.cpp
     src/fs/shadowfile.cpp
+    src/fs/socket.cpp
     src/fs/stream.cpp
     src/interpreter/auxiliaryvector.cpp
     src/interpreter/symbolprovider.cpp

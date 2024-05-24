@@ -57,6 +57,7 @@ create_simple_test(big_malloc)
 create_simple_test(x87)
 create_simple_test(fenv)
 create_simple_test(ostream)
+create_simple_test(tmpfile)
 
 
 add_executable(test_trivial_c src/test_trivial.c)

@@ -33,6 +33,12 @@ namespace kernel {
         std::vector<u8> data_;
     };
 
+    template<typename T>
+    struct BufferAndReturnValue {
+        Buffer buffer;
+        T returnValue;
+    };
+
 }
 
 

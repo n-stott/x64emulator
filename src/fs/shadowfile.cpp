@@ -90,6 +90,7 @@ namespace kernel {
 
     ssize_t ShadowFile::pwrite(const u8*, size_t, off_t) {
         if(!isWritable()) return -EINVAL;
+        x64::verify(false, "implement pwrite on ShadowFile");
         return -ENOTSUP;
     }
 
@@ -104,10 +105,12 @@ namespace kernel {
     }
 
     ErrnoOrBuffer ShadowFile::getdents64(size_t) {
+        x64::verify(false, "implement getdents64 on ShadowFile");
         return ErrnoOrBuffer(-EINVAL);
     }
 
     int ShadowFile::fcntl(int, int) {
+        x64::verify(false, "implement fcntl on ShadowFile");
         return -EINVAL;
     }
 

@@ -67,6 +67,7 @@ namespace kernel {
     }
 
     int Stream::fcntl(int, int) {
+        x64::verify(false, "implement fcntl on Stream");
         return -EINVAL;
     }
 
@@ -101,6 +102,7 @@ namespace kernel {
                 return ErrnoOrBuffer(Buffer{std::move(buffer)});
             }
         }
+        x64::verify(false, "implement missing ioctl on ShadowFile");
         return ErrnoOrBuffer(-ENOTSUP);
     }
 

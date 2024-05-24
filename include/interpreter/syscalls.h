@@ -204,6 +204,8 @@ namespace kernel {
         int unlink(x64::Ptr pathname);
         // 0x59
         ssize_t readlink(x64::Ptr pathname, x64::Ptr buf, size_t bufsiz);
+        // 0x5a
+        int chmod(x64::Ptr pathname, mode_t mode);
         // 0x60
         int gettimeofday(x64::Ptr tv, x64::Ptr tz);
         // 0x63

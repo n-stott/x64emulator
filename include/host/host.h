@@ -12,12 +12,6 @@
 
 namespace kernel {
 
-    template<typename T>
-    struct BufferAndReturnValue {
-        Buffer buffer;
-        T returnValue;
-    };
-
     class Host {
     public:
         Host();

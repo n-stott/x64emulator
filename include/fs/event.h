@@ -1,13 +1,13 @@
-#ifndef EPOLL_H
-#define EPOLL_H
+#ifndef EVENT_H
+#define EVENT_H
 
 #include "fs/fsobject.h"
 
 namespace kernel {
 
-    class Epoll : public FsObject {
+    class Event : public FsObject {
     public:
-        explicit Epoll(FS* fs, int flags) : FsObject(fs), flags_(flags) { }
+        explicit Event(FS* fs, unsigned int initval, int flags) : FsObject(fs), initval_(initval), flags_(flags) { }
 
         bool isEpoll() const override { return true; }
 
@@ -24,6 +24,7 @@ namespace kernel {
 
 
     private:
+        unsigned int initval_;
         int flags_;
     };
 

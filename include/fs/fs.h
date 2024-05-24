@@ -57,6 +57,8 @@ namespace kernel {
 
         ErrnoOrBuffer stat(const std::string& path);
         ErrnoOrBuffer fstat(FD fd);
+        ErrnoOrBuffer statx(const std::string& path, int flags, unsigned int mask);
+        ErrnoOrBuffer fstatat64(const std::string& path, int flags);
 
         off_t lseek(FD fd, off_t offset, int whence);
 
@@ -64,7 +66,21 @@ namespace kernel {
         int fcntl(FD fd, int cmd, int arg);
         ErrnoOrBuffer ioctl(FD fd, unsigned long request, const Buffer& buffer);
 
+        FD eventfd2(unsigned int initval, int flags);
         FD epoll_create1(int flags);
+
+        FD socket(int domain, int type, int protocol);
+        int connect(FD sockfd, const Buffer& buffer);
+        int bind(FD sockfd, const Buffer& name);
+        int shutdown(FD sockfd, int how);
+        ErrnoOrBuffer getpeername(FD sockfd, u32 buffersize);
+        ErrnoOrBuffer getsockname(FD sockfd, u32 buffersize);
+
+        ErrnoOr<std::pair<Buffer, Buffer>> recvfrom(FD sockfd, size_t len, int flags, bool requireSrcAddress);
+        ssize_t recvmsg(FD sockfd, int flags, Buffer* msg_name, std::vector<Buffer>* msg_iov, Buffer* msg_control, int* msg_flags);
+        ssize_t sendmsg(FD sockfd, int flags, const Buffer& msg_name, const std::vector<Buffer>& msg_iov, const Buffer& msg_control, int msg_flags);
+        
+        ErrnoOr<BufferAndReturnValue<int>> poll(const Buffer&, u64 nfds, int timeout);
 
         std::string filename(FD fd);
 
