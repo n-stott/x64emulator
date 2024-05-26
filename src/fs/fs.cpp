@@ -314,7 +314,7 @@ namespace kernel {
     }
 
     FS::FD FS::eventfd2(unsigned int initval, int flags) {
-        std::unique_ptr<Event> event = std::make_unique<Event>(this, initval, flags);
+        std::unique_ptr<Event> event = Event::tryCreate(this, initval, flags);
         return insertNode(Node {
             "",
             std::move(event),
