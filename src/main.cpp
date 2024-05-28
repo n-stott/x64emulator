@@ -1,6 +1,4 @@
-#include "interpreter/symbolprovider.h"
 #include "interpreter/interpreter.h"
-#include "interpreter/verify.h"
 #include <fmt/core.h>
 
 int main(int argc, char* argv[], char* envp[]) {
