@@ -71,7 +71,7 @@ namespace kernel {
         return -EINVAL;
     }
 
-    ErrnoOrBuffer Stream::ioctl(unsigned long request, const Buffer&) {
+    ErrnoOrBuffer Stream::ioctl(unsigned long request, const Buffer& buffer) {
         switch(request) {
             case TCGETS: {
                 struct termios ts;
@@ -101,8 +101,22 @@ namespace kernel {
                 std::memcpy(buffer.data(), &ws, sizeof(ws));
                 return ErrnoOrBuffer(Buffer{std::move(buffer)});
             }
+            case TIOCSWINSZ: {
+                struct winsize ws;
+                std::memcpy(&ws, buffer.data(), sizeof(ws));
+                int ret = ::ioctl((int)type_, TIOCSWINSZ, &ws);
+                if(ret < 0) return ErrnoOrBuffer(-errno);
+                return ErrnoOrBuffer(Buffer{});
+            }
+            case TCSETSW: {
+                struct termios ts;
+                std::memcpy(&ts, buffer.data(), sizeof(ts));
+                int ret = ::ioctl((int)type_, TCSETSW, &ts);
+                if(ret < 0) return ErrnoOrBuffer(-errno);
+                return ErrnoOrBuffer(Buffer{});
+            }
         }
-        x64::verify(false, "implement missing ioctl on ShadowFile");
+        x64::verify(false, [&]() { fmt::print("implement missing ioctl {:#x} on Stream\n", request); });
         return ErrnoOrBuffer(-ENOTSUP);
     }
 
