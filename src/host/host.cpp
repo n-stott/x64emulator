@@ -27,22 +27,20 @@ namespace kernel {
     Host::~Host() = default;
 
     f80 Host::round(f80 val) {
-        // save control word
         long double x = f80::toLongDouble(val);
+
+        // save rounding mode
         unsigned short cw { 0 };
         asm volatile("fnstcw %0" : "=m" (cw));
-
-        // set rounding mode to nearest
+                
         unsigned short nearest = (unsigned short)(cw & ~(0x3 << 10));
-        asm volatile("fldcw %0" :: "m" (nearest));
-
-        // do the rounding
-        asm volatile("fldt %0" :: "m"(x));
-        asm volatile("frndint");
-        asm volatile("fstpt %0" : "=m"(x));
-
-        // load initial control word
-        asm volatile("fldcw %0" :: "m" (cw));
+        asm volatile("fldcw %1;" // set rounding mode to nearest
+                     "fldt %2;"  // do the rounding
+                     "frndint;"
+                     "fstpt %0;"
+                     "fldcw %3;" // reset rounding mode
+                        : "=m"(x)
+                        : "m" (nearest), "m"(x), "m"(cw));
 
         return f80::fromLongDouble(x);
     }
