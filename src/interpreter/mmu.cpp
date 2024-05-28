@@ -168,10 +168,6 @@ namespace x64 {
     u64 Mmu::getSegmentBase(Segment segment) const {
         return segmentBase_[(u8)segment];
     }
-    
-    void Mmu::registerTlsBlock(u64 templateAddress, u64 blockAddress) {
-        dtv_.push_back(dtv_t{templateAddress, blockAddress});
-    }
 
     bool Mmu::Region::contains(u64 address) const {
         return address >= base() && address < end();

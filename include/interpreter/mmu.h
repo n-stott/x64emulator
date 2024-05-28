@@ -113,13 +113,6 @@ namespace x64 {
         u64 getSegmentBase(Segment segment) const;
         void registerTlsBlock(u64 templateAddress, u64 blockAddress);
 
-        template<typename Callback>
-        void onTlsTemplate(u64 templateAddress, Callback callback) {
-            for(const auto& dtv : dtv_) {
-                if(dtv.templateAddress == templateAddress) callback(dtv.blockAddress);
-            }
-        }
-
         Ptr8 copyToMmu(Ptr8 dst, const u8* src, size_t n);
         u8* copyFromMmu(u8* dst, Ptr8 src, size_t n) const;
 
@@ -197,12 +190,6 @@ namespace x64 {
         u64 firstUnlookupdableAddress_ { 0 };
 
         std::array<u64, 8> segmentBase_ {{ 0, 0, 0, 0, 0, 0, 0, 0 }};
-        
-        struct dtv_t {
-            u64 templateAddress;
-            u64 blockAddress;
-        };
-        std::vector<dtv_t> dtv_;
     };
 
 }
