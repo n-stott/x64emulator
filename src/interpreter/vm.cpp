@@ -310,7 +310,7 @@ namespace x64 {
         ExecutableSection section;
         section.begin = address;
         section.end = result.nextAddress;
-        section.filename = mmuRegion->file();
+        section.filename = mmuRegion->name();
         section.instructions = std::move(result.instructions);
         
         auto newSection = std::make_unique<ExecutableSection>(std::move(section));
@@ -326,7 +326,7 @@ namespace x64 {
         }));
 
         // Retrieve symbols from that section
-        symbolProvider_.tryRetrieveSymbolsFromExecutable(mmuRegion->file(), mmuRegion->base());
+        symbolProvider_.tryRetrieveSymbolsFromExecutable(mmuRegion->name(), mmuRegion->base());
 
         return InstructionPosition { sectionPtr, 0 };
     }

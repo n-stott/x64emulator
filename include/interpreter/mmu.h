@@ -46,13 +46,13 @@ namespace x64 {
     public:
         class Region {
         public:
-            Region(std::string file, u64 base, u64 size, PROT prot);
+            Region(std::string name, u64 base, u64 size, PROT prot);
 
             u64 base() const { return base_; }
             u64 size() const { return size_; }
             u64 end() const { return base_+size_; }
             PROT prot() const { return prot_; }
-            const std::string& file() const { return file_; }
+            const std::string& name() const { return name_; }
 
             bool contains(u64 address) const;
             bool intersectsRange(u64 base, u64 end) const;
@@ -87,11 +87,11 @@ namespace x64 {
             template<typename T>
             void write(u64 address, T value);
 
-            std::string file_;
             u64 base_;
             u64 size_;
             std::vector<u8> data_;
             PROT prot_;
+            std::string name_;
         };
 
     private:

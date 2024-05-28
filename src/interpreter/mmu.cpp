@@ -16,12 +16,12 @@ namespace x64 {
         return ((address + alignment - 1) / alignment) * alignment;
     }
 
-    Mmu::Region::Region(std::string file, u64 base, u64 size, PROT prot) {
-        this->file_ = std::move(file);
+    Mmu::Region::Region(std::string name, u64 base, u64 size, PROT prot) {
         this->base_ = base;
         this->size_ = size;
         this->data_.resize(size, 0x00);
         this->prot_ = prot;
+        this->name_ = std::move(name);
     }
 
     Mmu::Region* Mmu::addRegion(Region region) {
@@ -158,7 +158,7 @@ namespace x64 {
             return ptr->base() == address;
         });
         verify(it != regions_.end(), "Cannot set name of non-existing region");
-        (*it)->file_ = std::move(name);
+        (*it)->name_ = std::move(name);
     }
 
     void Mmu::setSegmentBase(Segment segment, u64 base) {
@@ -254,7 +254,7 @@ namespace x64 {
 
     Mmu::Region* Mmu::findRegion(const char* name) {
         for(const auto& ptr : regions_) {
-            if(ptr->file() == name) return ptr.get();
+            if(ptr->name() == name) return ptr.get();
         }
         return nullptr;
     }
@@ -387,7 +387,7 @@ namespace x64 {
         std::vector<DumpInfo> dumpInfos;
         dumpInfos.reserve(regions_.size());
         for(const auto& ptr : regions_) {
-            dumpInfos.push_back(DumpInfo{ptr->file_, ptr->base(), ptr->end(), protectionToString(ptr->prot())});
+            dumpInfos.push_back(DumpInfo{ptr->name_, ptr->base(), ptr->end(), protectionToString(ptr->prot())});
         }
         std::sort(dumpInfos.begin(), dumpInfos.end(), [](const auto& a, const auto& b) {
             return a.base < b.base;
@@ -479,13 +479,13 @@ namespace x64 {
         verify(contains(left));
         verify(contains(right) || right == end());
 
-        Region l(file_, base_, left-base_, prot_);
+        Region l(name_, base_, left-base_, prot_);
         if(l.size()) std::memcpy(l.data_.data(), data_.data(), left-base_);
         
-        Region m(file_, left, right-left, prot_);
+        Region m(name_, left, right-left, prot_);
         if(m.size()) std::memcpy(m.data_.data(), data_.data()+left-base_, right-left);
         
-        Region r(file_, right, end()-right, prot_);
+        Region r(name_, right, end()-right, prot_);
         if(r.size()) std::memcpy(r.data_.data(), data_.data()+right-base_, end()-right);
 
         std::array<Region, 3> res {{ std::move(l), std::move(m), std::move(r) }};
