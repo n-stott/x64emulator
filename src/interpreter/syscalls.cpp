@@ -82,6 +82,7 @@ namespace kernel {
             case 0x4a: return cpu->set(x64::R64::RAX, invoke_syscall_1(&Sys::fsync, regs));
             case 0x4f: return cpu->set(x64::R64::RAX, invoke_syscall_2(&Sys::getcwd, regs));
             case 0x50: return cpu->set(x64::R64::RAX, invoke_syscall_1(&Sys::chdir, regs));
+            case 0x52: return cpu->set(x64::R64::RAX, invoke_syscall_2(&Sys::rename, regs));
             case 0x53: return cpu->set(x64::R64::RAX, invoke_syscall_2(&Sys::mkdir, regs));
             case 0x57: return cpu->set(x64::R64::RAX, invoke_syscall_1(&Sys::unlink, regs));
             case 0x59: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::readlink, regs));
@@ -533,6 +534,15 @@ namespace kernel {
             print("Sys::chdir(path={}) = {}\n", path, ret);
         }
         return ret;
+    }
+
+    int Sys::rename(x64::Ptr oldpath, x64::Ptr newpath) {
+        auto oldname = mmu_.readString(oldpath);
+        auto newname = mmu_.readString(newpath);
+        if(logSyscalls_) {
+            print("Sys::rename(oldpath={}, newpath={}) = {}\n", oldname, newname, -ENOTSUP);
+        }
+        return -ENOTSUP;
     }
 
     int Sys::mkdir([[maybe_unused]] x64::Ptr pathname, [[maybe_unused]] mode_t mode) {

@@ -198,6 +198,8 @@ namespace kernel {
         int getcwd(x64::Ptr buf, size_t size);
         // 0x50
         int chdir(x64::Ptr path);
+        // 0x52
+        int rename(x64::Ptr oldpath, x64::Ptr newpath);
         // 0x53
         int mkdir(x64::Ptr pathname, mode_t mode);
         // 0x57
