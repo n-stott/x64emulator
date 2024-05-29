@@ -228,6 +228,8 @@ namespace kernel {
         int prctl(int option, unsigned long arg2, unsigned long arg3, unsigned long arg4, unsigned long arg5);
         // 0x9e
         int arch_prctl(int code, x64::Ptr addr);
+        // 0xba
+        int gettid();
         // 0xbf
         ssize_t getxattr(x64::Ptr path, x64::Ptr name, x64::Ptr value, size_t size);
         // 0xc0

@@ -61,11 +61,7 @@ namespace kernel {
             case 0x1c: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::madvise, regs));
             case 0x20: return cpu->set(x64::R64::RAX, invoke_syscall_1(&Sys::dup, regs));
             case 0x26: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::setitimer, regs));
-            case 0x27: { // getpid
-                x64::verify(!!kernel_.scheduler().currentThread());
-                cpu->set(x64::R64::RAX, (u64)kernel_.scheduler().currentThread()->descr.pid);
-                return;
-            }
+            case 0x27: return cpu->set(x64::R64::RAX, invoke_syscall_0(&Sys::getpid, regs));
             case 0x29: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::socket, regs));
             case 0x2a: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::connect, regs));
             case 0x2d: return cpu->set(x64::R64::RAX, invoke_syscall_6(&Sys::recvfrom, regs));
@@ -97,11 +93,7 @@ namespace kernel {
             case 0x89: return cpu->set(x64::R64::RAX, invoke_syscall_2(&Sys::statfs, regs));
             case 0x9d: return cpu->set(x64::R64::RAX, invoke_syscall_5(&Sys::prctl, regs));
             case 0x9e: return cpu->set(x64::R64::RAX, invoke_syscall_2(&Sys::arch_prctl, regs));
-            case 0xba: { // gettid
-                x64::verify(!!kernel_.scheduler().currentThread());
-                cpu->set(x64::R64::RAX, (u64)kernel_.scheduler().currentThread()->descr.tid);
-                return;
-            }
+            case 0xba: return cpu->set(x64::R64::RAX, invoke_syscall_0(&Sys::gettid, regs));
             case 0xbf: return cpu->set(x64::R64::RAX, invoke_syscall_4(&Sys::getxattr, regs));
             case 0xc0: return cpu->set(x64::R64::RAX, invoke_syscall_4(&Sys::lgetxattr, regs));
             case 0xc9: return cpu->set(x64::R64::RAX, invoke_syscall_1(&Sys::time, regs));
@@ -367,6 +359,13 @@ namespace kernel {
 
     int Sys::setitimer([[maybe_unused]] int which, [[maybe_unused]]const x64::Ptr new_value, [[maybe_unused]]x64::Ptr old_value) {
         return 0;
+    }
+
+    int Sys::getpid() {
+        x64::verify(!!kernel_.scheduler().currentThread());
+        int pid = kernel_.scheduler().currentThread()->descr.pid;
+        if(logSyscalls_) print("Sys::getpid() = {}\n", pid);
+        return pid;
     }
 
     int Sys::select(int nfds, x64::Ptr readfds, x64::Ptr writefds, x64::Ptr exceptfds, x64::Ptr timeout) {
@@ -907,6 +906,13 @@ namespace kernel {
         if(!isSetFS) return -EINVAL;
         mmu_.setSegmentBase(x64::Segment::FS, addr.address());
         return 0;
+    }
+
+    int Sys::gettid() {
+        x64::verify(!!kernel_.scheduler().currentThread());
+        int tid = kernel_.scheduler().currentThread()->descr.tid;
+        if(logSyscalls_) print("Sys::gettid() = {}\n", tid);
+        return tid;
     }
 
     int Sys::openat(int dirfd, x64::Ptr pathname, int flags, mode_t mode) {
