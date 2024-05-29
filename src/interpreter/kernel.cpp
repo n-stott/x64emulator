@@ -226,8 +226,9 @@ namespace kernel {
         u64 stackTop = setupMemory(&mmu_, &aux);
 
         Thread* mainThread = scheduler_.createThread(0xface);
-        mainThread->data.regs.rip() = entrypoint;
-        mainThread->data.regs.rsp() = (stackTop & 0xFFFFFFFFFFFFFF00); // stack needs to be 16-byte aligned
+        Thread::SavedCpuState& cpuState = mainThread->savedCpuState();
+        cpuState.regs.rip() = entrypoint;
+        cpuState.regs.rsp() = (stackTop & 0xFFFFFFFFFFFFFF00); // stack needs to be 16-byte aligned
 
         vm.contextSwitch(mainThread);
         pushProgramArguments(&mmu_, &vm, programFilePath, arguments, environmentVariables, aux);

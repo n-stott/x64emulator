@@ -24,7 +24,12 @@ namespace x64 {
     void VM::crash() {
         hasCrashed_ = true;
         syncThread();
-        if(!!currentThread_) fmt::print("Crash in thread {}:{} after {} instructions\n", currentThread_->descr.pid, currentThread_->descr.tid, currentThread_->ticks);
+        if(!!currentThread_) {
+            fmt::print("Crash in thread {}:{} after {} instructions\n",
+                            currentThread_->description().pid,
+                            currentThread_->description().tid,
+                            currentThread_->tickInfo().ticksFromStart);
+        }
         fmt::print("Register state:\n");
         dumpRegisters();
         fmt::print("Memory regions:\n");
@@ -35,11 +40,12 @@ namespace x64 {
 
     void VM::syncThread() {
         if(!!currentThread_) {
-            currentThread_->data.flags = cpu_.flags_;
-            currentThread_->data.regs = cpu_.regs_;
-            currentThread_->data.x87fpu = cpu_.x87fpu_;
-            currentThread_->data.mxcsr = cpu_.mxcsr_;
-            currentThread_->data.fsBase = mmu_.getSegmentBase(Segment::FS);
+            kernel::Thread::SavedCpuState& state = currentThread_->savedCpuState();
+            state.flags = cpu_.flags_;
+            state.regs = cpu_.regs_;
+            state.x87fpu = cpu_.x87fpu_;
+            state.mxcsr = cpu_.mxcsr_;
+            state.fsBase = mmu_.getSegmentBase(Segment::FS);
         }
     }
 
@@ -52,11 +58,12 @@ namespace x64 {
         if(!!newThread) {
             // we now install the new thread
             currentThread_ = newThread;
-            cpu_.flags_ = currentThread_->data.flags;
-            cpu_.regs_ = currentThread_->data.regs;
-            cpu_.x87fpu_ = currentThread_->data.x87fpu;
-            cpu_.mxcsr_ = currentThread_->data.mxcsr;
-            mmu_.setSegmentBase(Segment::FS, currentThread_->data.fsBase);
+            kernel::Thread::SavedCpuState& currentThreadState = currentThread_->savedCpuState();
+            cpu_.flags_ = currentThreadState.flags;
+            cpu_.regs_ = currentThreadState.regs;
+            cpu_.x87fpu_ = currentThreadState.x87fpu;
+            cpu_.mxcsr_ = currentThreadState.mxcsr;
+            mmu_.setSegmentBase(Segment::FS, currentThreadState.fsBase);
             notifyJmp(cpu_.regs_.rip()); // no need to cache the destination here
         } else {
             currentThread_ = nullptr;
@@ -74,18 +81,20 @@ namespace x64 {
         if(!thread) return;
         contextSwitch(thread);
         if(logInstructions()) {
-            while(thread->ticks < thread->ticksUntilSwitch) {
+            kernel::Thread::TickInfo& tickInfo = thread->tickInfo();
+            while(tickInfo.ticksFromStart < tickInfo.ticksUntilSwitch) {
                 verify(!signal_interrupt);
                 const X64Instruction& instruction = fetchInstruction();
-                log(thread->ticks, instruction);
-                thread->ticks++;
+                log(tickInfo.ticksFromStart, instruction);
+                tickInfo.ticksFromStart++;
                 cpu_.exec(instruction);
             }
         } else {
-            while(thread->ticks < thread->ticksUntilSwitch) {
+            kernel::Thread::TickInfo& tickInfo = thread->tickInfo();
+            while(tickInfo.ticksFromStart < tickInfo.ticksUntilSwitch) {
                 verify(!signal_interrupt);
                 const X64Instruction& instruction = fetchInstruction();
-                thread->ticks++;
+                tickInfo.ticksFromStart++;
                 cpu_.exec(instruction);
             }
         }
@@ -117,7 +126,7 @@ namespace x64 {
                                                 cpu_.regs_.rip(),
                                                 cpu_.regs_.get(R64::RAX), cpu_.regs_.get(R64::RBX), cpu_.regs_.get(R64::RCX), cpu_.regs_.get(R64::RDX),
                                                 cpu_.regs_.get(R64::RSI), cpu_.regs_.get(R64::RDI), cpu_.regs_.get(R64::RBP), cpu_.regs_.get(R64::RSP));
-        std::string indent = fmt::format("{:{}}", "", currentThread_->callstack.size());
+        std::string indent = fmt::format("{:{}}", "", currentThread_->callstack().size());
 
         std::string mnemonic = fmt::format("{}|{}", indent, instruction.toString());
         if(instruction.isCall()) {
@@ -152,7 +161,7 @@ namespace x64 {
     void VM::dumpStackTrace() const {
         if(!currentThread_) return;
         size_t frameId = 0;
-        for(auto it = currentThread_->callstack.rbegin(); it != currentThread_->callstack.rend(); ++it) {
+        for(auto it = currentThread_->callstack().rbegin(); it != currentThread_->callstack().rend(); ++it) {
             std::string name = calledFunctionName(*it);
             fmt::print(" {}:{:#x} : {}\n", frameId, *it, name);
             ++frameId;
@@ -178,7 +187,7 @@ namespace x64 {
     }
 
     void VM::notifyCall(u64 address) {
-        currentThread_->stats.functionCalls++;
+        currentThread_->stats().functionCalls++;
         // currentThread_->functionCalls.push_back(Thread::FunctionCall{
         //     currentThread_->ticks,
         //     currentThread_->callstack.size(),
@@ -204,11 +213,11 @@ namespace x64 {
             callCache_.insert(std::make_pair(address, cp));
         }
         currentThreadExecutionPoint_ = cp;
-        currentThread_->callstack.push_back(address);
+        currentThread_->pushCallstack(address);
     }
 
     void VM::notifyRet(u64 address) {
-        currentThread_->callstack.pop_back();
+        currentThread_->popCallstack();
         notifyJmp(address);
     }
 

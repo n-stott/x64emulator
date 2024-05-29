@@ -12,7 +12,7 @@ namespace kernel {
     Thread* Scheduler::createThread(int pid) {
         int tid = 1;
         for(const auto& t : threads_) {
-            tid = std::max(tid, t->descr.tid+1);
+            tid = std::max(tid, t->description().tid+1);
         }
         auto thread = std::make_unique<Thread>(pid, tid);
         auto* ptr = thread.get();
@@ -24,7 +24,7 @@ namespace kernel {
     Thread* Scheduler::pickNext() {
         if(threadQueue_.empty()) return nullptr;
         bool anyThreadAlive = std::any_of(threadQueue_.begin(), threadQueue_.end(), [](const Thread* t) {
-            return t->state == Thread::STATE::ALIVE;
+            return t->state() == Thread::THREAD_STATE::ALIVE;
         });
         x64::verify(anyThreadAlive, [&]() {
             fmt::print("No thread is alive in queue:\n");
@@ -33,7 +33,7 @@ namespace kernel {
             }
             for(const auto& fwd : futexWaitData_) {
                 fmt::print("  thread {}:{} waiting on value {} at {:#x}\n",
-                            fwd.thread->descr.pid, fwd.thread->descr.tid,
+                            fwd.thread->description().pid, fwd.thread->description().tid,
                             fwd.expected, fwd.wordPtr.address());
             }
         });
@@ -41,8 +41,8 @@ namespace kernel {
             currentThread_ = threadQueue_.front();
             threadQueue_.pop_front();
             threadQueue_.push_back(currentThread_);
-        } while(currentThread_->state != Thread::STATE::ALIVE);
-        currentThread_->ticksUntilSwitch += 1'000'000;
+        } while(currentThread_->state() != Thread::THREAD_STATE::ALIVE);
+        currentThread_->tickInfo().ticksUntilSwitch += 1'000'000;
         return currentThread_;
     }
 
@@ -56,18 +56,18 @@ namespace kernel {
     }
 
     void Scheduler::terminate(Thread* thread, int status) {
-        assert(thread->state != Thread::STATE::DEAD);
+        assert(thread->state() != Thread::THREAD_STATE::DEAD);
         thread->yield();
-        thread->state = Thread::STATE::DEAD;
-        thread->exitStatus = status;
+        thread->setState(Thread::THREAD_STATE::DEAD);
+        thread->setExitStatus(status);
 
         futexWaitData_.erase(std::remove_if(futexWaitData_.begin(), futexWaitData_.end(), [=](const FutexWaitData& fwd) {
             return fwd.thread == thread;
         }), futexWaitData_.end());
 
-        if(!!thread->clear_child_tid) {
-            mmu_.write32(thread->clear_child_tid, 0);
-            wake(thread->clear_child_tid, 1);
+        if(!!thread->clearChildTid()) {
+            mmu_.write32(thread->clearChildTid(), 0);
+            wake(thread->clearChildTid(), 1);
         }
         threadQueue_.erase(std::remove(threadQueue_.begin(), threadQueue_.end(), thread), threadQueue_.end());
     }
@@ -78,7 +78,7 @@ namespace kernel {
 
     void Scheduler::wait(Thread* thread, x64::Ptr32 wordPtr, u32 expected) {
         futexWaitData_.push_back(FutexWaitData{thread, wordPtr, expected});
-        thread->state = Thread::STATE::SLEEPING;
+        thread->setState(Thread::THREAD_STATE::SLEEPING);
     }
 
     u32 Scheduler::wake(x64::Ptr32 wordPtr, u32 nbWaiters) {
@@ -87,7 +87,7 @@ namespace kernel {
             if(fwd.wordPtr != wordPtr) continue;
             u32 val = mmu_.read32(wordPtr);
             if(fwd.expected == val) continue;
-            fwd.thread->state = Thread::STATE::ALIVE;
+            fwd.thread->setState(Thread::THREAD_STATE::ALIVE);
             ++nbWoken;
             if(nbWoken >= nbWaiters) break;
         }
@@ -96,11 +96,11 @@ namespace kernel {
 
     void Scheduler::dumpThreadSummary() const {
         forEachThread([](const Thread& thread) {
-            fmt::print("  Thread #{}\n", thread.descr.tid);
-            fmt::print("    exit code      {}\n", thread.exitStatus);
-            fmt::print("    instructions   {:<10} \n", thread.ticks);
-            fmt::print("    syscalls       {:<10} \n", thread.stats.syscalls);
-            fmt::print("    function calls {:<10} \n", thread.stats.functionCalls);
+            fmt::print("  Thread #{}\n", thread.description().tid);
+            fmt::print("    exit code      {}\n", thread.exitStatus());
+            fmt::print("    instructions   {:<10} \n", thread.tickInfo().ticksFromStart);
+            fmt::print("    syscalls       {:<10} \n", thread.stats().syscalls);
+            fmt::print("    function calls {:<10} \n", thread.stats().functionCalls);
             
             // for(auto call : thread.functionCalls) {
             //     fmt::print("  {:>10}  {}  {} ({:#x})\n", call.tick, fmt::format("{:{}}", "", call.depth), call.symbol, call.address);

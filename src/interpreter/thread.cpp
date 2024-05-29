@@ -5,13 +5,13 @@ namespace kernel {
 
     std::string Thread::toString() const {
         std::string res;
-        res += fmt::format("{}:{}  ", descr.pid, descr.tid);
-        switch(state) {
-            case STATE::ALIVE: { res += "alive  "; break; }
-            case STATE::SLEEPING: { res += "sleep  "; break; }
-            case STATE::DEAD: { res += "dead   "; break; }
+        res += fmt::format("{}:{}  ", description_.pid, description_.tid);
+        switch(state_) {
+            case THREAD_STATE::ALIVE: { res += "alive  "; break; }
+            case THREAD_STATE::SLEEPING: { res += "sleep  "; break; }
+            case THREAD_STATE::DEAD: { res += "dead   "; break; }
         }
-        res += fmt::format("exit={}  ", exitStatus);
+        res += fmt::format("exit={}  ", exitStatus_);
         return res;
     }
 

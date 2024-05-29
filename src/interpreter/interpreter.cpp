@@ -73,7 +73,7 @@ namespace x64 {
             fmt::print("Interpreter completed execution\n");
             kernel.scheduler().dumpThreadSummary();
 
-            ok &= (mainThread->exitStatus == 0);
+            ok &= (mainThread->exitStatus() == 0);
         }, [&]() {
             fmt::print("Interpreter crash\n");
             kernel.scheduler().dumpThreadSummary();

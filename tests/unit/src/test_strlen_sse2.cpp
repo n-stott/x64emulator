@@ -57,11 +57,11 @@ int main() {
         VM vm(mmu, kernel);
         vm.setLogInstructions(true);
         kernel::Thread mainThread(0, 0);
-        mainThread.data.regs.rip() = execPage;
-        mainThread.data.regs.set(R64::RDI, dataPage);
-        mainThread.ticksUntilSwitch = 15;
+        mainThread.savedCpuState().regs.rip() = execPage;
+        mainThread.savedCpuState().regs.set(R64::RDI, dataPage);
+        mainThread.tickInfo().ticksUntilSwitch = 15;
         vm.execute(&mainThread);
-        length = mainThread.data.regs.get(R64::RAX);
+        length = mainThread.savedCpuState().regs.get(R64::RAX);
     }, [&]() {
         errorEncountered = true;
     });

@@ -20,13 +20,13 @@ namespace kernel {
 
     template<typename... Args>
     void Sys::print(const char* format, Args... args) const {
-        fmt::print("[{}:{}] ", kernel_.scheduler().currentThread()->descr.pid, kernel_.scheduler().currentThread()->descr.tid);
+        fmt::print("[{}:{}] ", kernel_.scheduler().currentThread()->description().pid, kernel_.scheduler().currentThread()->description().tid);
         fmt::print(format, args...);
     }
 
     void Sys::syscall(x64::Cpu* cpu) {
         u64 sysNumber = cpu->get(x64::R64::RAX);
-        kernel_.scheduler().currentThread()->stats.syscalls++;
+        kernel_.scheduler().currentThread()->stats().syscalls++;
 
         RegisterDump regs {{
             cpu->get(x64::R64::RDI),
@@ -363,7 +363,7 @@ namespace kernel {
 
     int Sys::getpid() {
         x64::verify(!!kernel_.scheduler().currentThread());
-        int pid = kernel_.scheduler().currentThread()->descr.pid;
+        int pid = kernel_.scheduler().currentThread()->description().pid;
         if(logSyscalls_) print("Sys::getpid() = {}\n", pid);
         return pid;
     }
@@ -460,14 +460,17 @@ namespace kernel {
 
     long Sys::clone(unsigned long flags, x64::Ptr stack, x64::Ptr parent_tid, x64::Ptr32 child_tid, unsigned long tls) {
         Thread* currentThread = kernel_.scheduler().currentThread();
-        Thread* newThread = kernel_.scheduler().createThread(currentThread->descr.pid);
-        newThread->data.regs = currentThread->data.regs;
-        newThread->data.regs.rip() = currentThread->data.regs.rip();
-        newThread->data.regs.set(x64::R64::RAX, 0);
-        newThread->data.regs.rsp() = stack.address();
-        newThread->data.fsBase = tls;
-        newThread->clear_child_tid = child_tid;
-        long ret = newThread->descr.tid;
+        x64::verify(!!currentThread);
+        Thread* newThread = kernel_.scheduler().createThread(currentThread->description().pid);
+        const Thread::SavedCpuState& oldCpuState = currentThread->savedCpuState();
+        Thread::SavedCpuState& newCpuState = newThread->savedCpuState();
+        newCpuState.regs = oldCpuState.regs;
+        newCpuState.regs.set(x64::R64::RAX, 0);
+        newCpuState.regs.rip() = oldCpuState.regs.rip();
+        newCpuState.regs.rsp() = stack.address();
+        newCpuState.fsBase = tls;
+        newThread->setClearChildTid(child_tid);
+        long ret = newThread->description().tid;
         if(!!child_tid) {
             static_assert(sizeof(pid_t) == sizeof(u32));
             mmu_.write32(child_tid, (u32)ret);
@@ -910,7 +913,7 @@ namespace kernel {
 
     int Sys::gettid() {
         x64::verify(!!kernel_.scheduler().currentThread());
-        int tid = kernel_.scheduler().currentThread()->descr.tid;
+        int tid = kernel_.scheduler().currentThread()->description().tid;
         if(logSyscalls_) print("Sys::gettid() = {}\n", tid);
         return tid;
     }
@@ -1091,14 +1094,16 @@ namespace kernel {
         u64 tls = args[7];
 
         Thread* currentThread = kernel_.scheduler().currentThread();
-        Thread* newThread = kernel_.scheduler().createThread(currentThread->descr.pid);
-        newThread->data.regs = currentThread->data.regs;
-        newThread->data.regs.rip() = currentThread->data.regs.rip();
-        newThread->data.regs.set(x64::R64::RAX, 0);
-        newThread->data.regs.rsp() = stackAddress;
-        newThread->data.fsBase = tls;
-        newThread->clear_child_tid = child_tid;
-        long ret = newThread->descr.tid;
+        Thread* newThread = kernel_.scheduler().createThread(currentThread->description().pid);
+        const Thread::SavedCpuState& oldCpuState = currentThread->savedCpuState();
+        Thread::SavedCpuState& newCpuState = newThread->savedCpuState();
+        newCpuState.regs = oldCpuState.regs;
+        newCpuState.regs.set(x64::R64::RAX, 0);
+        newCpuState.regs.rip() = oldCpuState.regs.rip();
+        newCpuState.regs.rsp() = stackAddress;
+        newCpuState.fsBase = tls;
+        newThread->setClearChildTid(child_tid);
+        long ret = newThread->description().tid;
         if(!!child_tid) {
             static_assert(sizeof(pid_t) == sizeof(u32));
             mmu_.write32(child_tid, (u32)ret);
