@@ -7,18 +7,8 @@
 
 namespace x64 {
 
-    void SymbolProvider::registerSymbol(std::string symbol, std::string version, u64 address, const elf::Elf64* elf, u64 elfOffset, u64 size, elf::SymbolType type, elf::SymbolBind bind) {
-        symbolTable_.registerSymbol(symbol, version, address, elf, elfOffset, size, type, bind);
-    }
-
-    std::vector<const SymbolProvider::Entry*> SymbolProvider::lookupSymbolWithVersion(const std::string& symbol, const std::string& version, bool demangled) const {
-        auto result = symbolTable_.lookupSymbol(symbol, version, demangled);
-        return result;
-    }
-
-    std::vector<const SymbolProvider::Entry*> SymbolProvider::lookupSymbolWithoutVersion(const std::string& symbol, bool demangled) const {
-        auto result = symbolTable_.lookupSymbol(symbol, demangled);
-        return result;
+    void SymbolProvider::registerSymbol(std::string symbol, u64 address) {
+        symbolTable_.registerSymbol(symbol, address);
     }
 
     std::vector<const SymbolProvider::Entry*> SymbolProvider::lookupSymbol(u64 address) const {
@@ -26,7 +16,7 @@ namespace x64 {
         return result;
     }
     
-    void SymbolProvider::Table::registerSymbol(std::string symbol, std::string version, u64 address, const elf::Elf64* elf, u64 elfOffset, u64 size, elf::SymbolType type, elf::SymbolBind bind) {
+    void SymbolProvider::Table::registerSymbol(std::string symbol, u64 address) {
 #if 0
         fmt::print(stderr, "Register symbol address={:#x} symbol=\"{}\" version=\"{}\"\n", address, symbol, version);
 #endif
@@ -35,13 +25,7 @@ namespace x64 {
         storage_.push_back(Entry {
             symbol,
             demangledSymbol,
-            version,
             address,
-            elf,
-            elfOffset,
-            size,
-            type,
-            bind,
         });
         const Entry* e = &storage_.back();
 #if 0
@@ -54,40 +38,6 @@ namespace x64 {
         byAddress_[address].push_back(e);
         byName_[e->symbol].push_back(e);
         byDemangledName_[e->demangledSymbol].push_back(e);
-    }
-
-    std::vector<const SymbolProvider::Entry*> SymbolProvider::Table::lookupSymbol(const std::string& symbol, const std::string& version, bool demangled) const {
-        const auto* lookup = demangled ? &byDemangledName_ : &byName_;
-        auto it = lookup->find(symbol);
-        if(it != lookup->end()) {
-            auto res = it->second;
-            res.erase(std::remove_if(res.begin(), res.end(), [&](const SymbolProvider::Entry* entry) {
-                return entry->version != version;
-            }), res.end());
-            return res;
-        } else if(auto pos = symbol.find_first_of('@'); pos != std::string::npos) {
-            std::string truncatedSymbol = symbol.substr(0, pos);
-            it = lookup->find(symbol);
-            if(it != lookup->end()) {
-                return it->second;
-            }
-        }
-        return {};
-    }
-
-    std::vector<const SymbolProvider::Entry*> SymbolProvider::Table::lookupSymbol(const std::string& symbol, bool demangled) const {
-        const auto* lookup = demangled ? &byDemangledName_ : &byName_;
-        auto it = lookup->find(symbol);
-        if(it != lookup->end()) {
-            return it->second;
-        } else if(auto pos = symbol.find_first_of('@'); pos != std::string::npos) {
-            std::string truncatedSymbol = symbol.substr(0, pos);
-            it = lookup->find(symbol);
-            if(it != lookup->end()) {
-                return it->second;
-            }
-        }
-        return {};
     }
 
     std::vector<const SymbolProvider::Entry*> SymbolProvider::Table::lookupSymbol(u64 address) const {
@@ -149,7 +99,7 @@ namespace x64 {
             if(!entry.st_name) return;
             u64 address = entry.st_value;
             if(entry.type() != elf::SymbolType::TLS) address += elfOffset;
-            registerSymbol(symbol, "", address, nullptr, elfOffset, entry.st_size, entry.type(), entry.bind());
+            registerSymbol(symbol, address);
         };
 
         elf64->forAllSymbols(loadSymbol);
