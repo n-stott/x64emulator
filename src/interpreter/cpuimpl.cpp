@@ -15,7 +15,6 @@ namespace x64 {
         flags->overflow = ((I)dst >= 0 && (I)src >= 0 && sres < 0) || ((I)dst < 0 && (I)src < 0 && sres >= 0);
         flags->sign = (sres < 0);
         flags->parity = Flags::computeParity((u8)res);
-        flags->setSure();
         return res;
     }
 
@@ -36,7 +35,6 @@ namespace x64 {
         flags->overflow = ((I)dst >= 0 && (I)src >= 0 && sres < 0) || ((I)dst < 0 && (I)src < 0 && sres >= 0);
         flags->sign = (sres < 0);
         flags->parity = Flags::computeParity((u8)res);
-        flags->setSure();
         return res;
     }
 
@@ -54,7 +52,6 @@ namespace x64 {
         flags->overflow = ((I)dst >= 0 && (I)src < 0 && sres < 0) || ((I)dst < 0 && (I)src >= 0 && sres >= 0);
         flags->sign = (sres < 0);
         flags->parity = Flags::computeParity((u8)res);
-        flags->setSure();
         return res;
     }
 
@@ -73,7 +70,6 @@ namespace x64 {
         flags->overflow = ((I)dst >= 0 && (I)src < 0 && sres < 0) || ((I)dst < 0 && (I)src >= 0 && sres >= 0);
         flags->sign = (sres < 0);
         flags->parity = Flags::computeParity((u8)res);
-        flags->setSure();
         return res;
     }
 
@@ -159,7 +155,6 @@ namespace x64 {
         i64 tmp = (i64)(i32)src1 * (i64)(i32)src2;
         flags->carry = (tmp != (i64)(i32)tmp);
         flags->overflow = (tmp != (i64)(i32)tmp);
-        flags->setSure();
         flags->setUnsureParity();
         return std::make_pair((u32)(tmp >> 32), (u32)tmp);
     }
@@ -217,7 +212,6 @@ namespace x64 {
         flags->sign = signBit<U>(tmp);
         flags->zero = (tmp == 0);
         flags->parity = Flags::computeParity((u8)tmp);
-        flags->setSure();
         return tmp;
     }
 
@@ -234,7 +228,6 @@ namespace x64 {
         flags->sign = signBit<U>(tmp);
         flags->zero = (tmp == 0);
         flags->parity = Flags::computeParity((u8)tmp);
-        flags->setSure();
         return tmp;
     }
 
@@ -251,7 +244,6 @@ namespace x64 {
         flags->sign = signBit<U>(tmp);
         flags->zero = (tmp == 0);
         flags->parity = Flags::computeParity((u8)tmp);
-        flags->setSure();
         return tmp;
     }
 
@@ -267,7 +259,6 @@ namespace x64 {
         flags->sign = signBit<U>(res);
         flags->zero = (res == 0);
         flags->parity = Flags::computeParity((u8)res);
-        flags->setSure();
         return res;
     }
 
@@ -283,7 +274,6 @@ namespace x64 {
         flags->sign = signBit<U>(res);
         flags->zero = (res == 0);
         flags->parity = Flags::computeParity((u8)res);
-        flags->setSure();
         return res;
     }
 
@@ -304,7 +294,6 @@ namespace x64 {
             flags->sign = signBit<U>(res);
             flags->zero = (res == 0);
             flags->parity = Flags::computeParity((u8)res);
-            flags->setSure();
         }
         return res;
     }
@@ -326,7 +315,6 @@ namespace x64 {
             flags->sign = signBit<U>(res);
             flags->zero = (res == 0);
             flags->parity = Flags::computeParity((u8)res);
-            flags->setSure();
         }
         return res;
     }
@@ -350,7 +338,6 @@ namespace x64 {
             U signMask = (U)1 << (size-1);
             flags->overflow = (dst & signMask) ^ (res & signMask);
         }
-        flags->setSure();
         return res;
     }
 
@@ -371,7 +358,6 @@ namespace x64 {
             U signMask = (U)1 << (size-1);
             flags->overflow = (dst & signMask) ^ (res & signMask);
         }
-        flags->setSure();
         return res;
     }
 
@@ -392,7 +378,6 @@ namespace x64 {
         flags->sign = signBit<U>((U)res);
         flags->zero = (res == 0);
         flags->parity = Flags::computeParity((u8)res);
-        flags->setSure();
         return (U)res;
     }
 
@@ -545,7 +530,6 @@ namespace x64 {
         flags->overflow = 0;
         flags->carry = 0;
         flags->parity = Flags::computeParity((u8)tmp);
-        flags->setSure();
     }
 
     void CpuImpl::test8(u8 src1, u8 src2, Flags* flags) { return test<u8>(src1, src2, flags); }
@@ -592,7 +576,6 @@ namespace x64 {
     template<typename U>
     U bsr(U val, Flags* flags) {
         flags->zero = (val == 0);
-        flags->setSure();
         if(!val) return (U)(-1); // [NS] return value is undefined
         U mssb = 8*sizeof(U)-1;
         while(mssb > 0 && !(val & ((U)1 << mssb))) {
@@ -607,7 +590,6 @@ namespace x64 {
     template<typename U>
     U bsf(U val, Flags* flags) {
         flags->zero = (val == 0);
-        flags->setSure();
         if(!val) return (U)(-1); // [NS] return value is undefined
         U mssb = 0;
         while(mssb < 8*sizeof(U) && !(val & ((U)1 << mssb))) {
@@ -769,7 +751,6 @@ namespace x64 {
         }
         flags->overflow = false;
         flags->sign = false;
-        flags->setSure();
     }
 
     void CpuImpl::comisd(u128 dst, u128 src, Flags* flags, SIMD_ROUNDING) {
@@ -798,7 +779,6 @@ namespace x64 {
         }
         flags->overflow = false;
         flags->sign = false;
-        flags->setSure();
         flags->setSureParity();
     }
 

@@ -24,13 +24,9 @@ namespace x64 {
             return parity;
         }
 
-        bool sure_ = true;
         bool sureParity_ = true;
-        void setUnsure() { sure_ = false; }
-        void setSure() { sure_ = true; }
         void setUnsureParity() { sureParity_ = false; }
         void setSureParity() { sureParity_ = true; }
-        bool sure() const { return sure_; }
 
         static constexpr u64 CARRY_MASK = 0x1;
         static constexpr u64 PARITY_MASK = 0x4;
@@ -45,7 +41,6 @@ namespace x64 {
             flags.zero = rflags & ZERO_MASK;
             flags.sign = rflags & SIGN_MASK;
             flags.overflow = rflags & OVERFLOW_MASK;
-            flags.setSure();
             return flags;
         }
 

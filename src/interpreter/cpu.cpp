@@ -1152,7 +1152,6 @@ namespace x64 {
 
     template<typename Dst>
     void Cpu::execSet(Cond cond, Dst dst) {
-        verify(flags_.sure(), "Flags are not set");
         set(dst, flags_.matches(cond));
     }
 
@@ -1177,7 +1176,6 @@ namespace x64 {
     }
 
     void Cpu::exec(const Jcc& ins) {
-        verify(flags_.sure(), "Flags are not set");
         if(flags_.matches(ins.cond)) {
             u64 dst = ins.symbolAddress;
             vm_->notifyJmp(dst);
@@ -1413,19 +1411,16 @@ namespace x64 {
     }
 
     void Cpu::exec(const Cmov<R16, RM16>& ins) {
-        verify(flags_.sure(), "Flags are not set");
         if(!flags_.matches(ins.cond)) return;
         set(ins.dst, get(ins.src));
     }
 
     void Cpu::exec(const Cmov<R32, RM32>& ins) {
-        verify(flags_.sure(), "Flags are not set");
         if(!flags_.matches(ins.cond)) return;
         set(ins.dst, get(ins.src));
     }
 
     void Cpu::exec(const Cmov<R64, RM64>& ins) {
-        verify(flags_.sure(), "Flags are not set");
         if(!flags_.matches(ins.cond)) return;
         set(ins.dst, get(ins.src));
     }

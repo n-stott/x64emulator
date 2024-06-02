@@ -15,7 +15,6 @@ static x64::Flags fromRflags(u64 rflags) {
     flags.zero = rflags & ZERO_MASK;
     flags.sign = rflags & SIGN_MASK;
     flags.overflow = rflags & OVERFLOW_MASK;
-    flags.setSure();
     return flags;
 }
 

@@ -26,7 +26,6 @@ namespace x64 {
         flags.zero = rflags & ZERO_MASK;
         flags.sign = rflags & SIGN_MASK;
         flags.overflow = rflags & OVERFLOW_MASK;
-        flags.setSure();
         return flags;
     }
 
@@ -632,7 +631,6 @@ namespace x64 {
             U signMask = (U)1 << (size-1);
             flags->overflow = (dst & signMask) ^ (res & signMask);
         }
-        flags->setSure();
         return res;
     }
 
@@ -653,7 +651,6 @@ namespace x64 {
             U signMask = (U)1 << (size-1);
             flags->overflow = (dst & signMask) ^ (res & signMask);
         }
-        flags->setSure();
         return res;
     }
 
