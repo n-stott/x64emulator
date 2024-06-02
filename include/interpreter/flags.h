@@ -24,10 +24,6 @@ namespace x64 {
             return parity;
         }
 
-        bool sureParity_ = true;
-        void setUnsureParity() { sureParity_ = false; }
-        void setSureParity() { sureParity_ = true; }
-
         static constexpr u64 CARRY_MASK = 0x1;
         static constexpr u64 PARITY_MASK = 0x4;
         static constexpr u64 ZERO_MASK = 0x40;

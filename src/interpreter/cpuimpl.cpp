@@ -106,7 +106,6 @@ namespace x64 {
         u8 lower = (u8)prod;
         flags->overflow = !!upper;
         flags->carry = !!upper;
-        flags->setUnsureParity();
         return std::make_pair(upper, lower);
     }
 
@@ -116,7 +115,6 @@ namespace x64 {
         u16 lower = (u16)prod;
         flags->overflow = !!upper;
         flags->carry = !!upper;
-        flags->setUnsureParity();
         return std::make_pair(upper, lower);
     }
 
@@ -126,7 +124,6 @@ namespace x64 {
         u32 lower = (u32)prod;
         flags->overflow = !!upper;
         flags->carry = !!upper;
-        flags->setUnsureParity();
         return std::make_pair(upper, lower);
     }
 
@@ -147,7 +144,6 @@ namespace x64 {
 
         flags->overflow = !!upper;
         flags->carry = !!upper;
-        flags->setUnsureParity();
         return std::make_pair(upper, lower);
     }
 
@@ -155,7 +151,6 @@ namespace x64 {
         i64 tmp = (i64)(i32)src1 * (i64)(i32)src2;
         flags->carry = (tmp != (i64)(i32)tmp);
         flags->overflow = (tmp != (i64)(i32)tmp);
-        flags->setUnsureParity();
         return std::make_pair((u32)(tmp >> 32), (u32)tmp);
     }
 
@@ -779,7 +774,6 @@ namespace x64 {
         }
         flags->overflow = false;
         flags->sign = false;
-        flags->setSureParity();
     }
 
     u128 CpuImpl::sqrtss(u128 dst, u128 src, SIMD_ROUNDING) {
