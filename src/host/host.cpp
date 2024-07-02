@@ -87,14 +87,14 @@ namespace kernel {
             s.b = s.b & 0x00FFFFFF;
             // Pretend that the cpu does not know
             u32 mask = (u32)(1 << 0  // SSE3
-                        | 1 << 9  // SSE3 extension
-                        | 1 << 19 // SSE4.1
-                        | 1 << 20 // SSE4.2
-                        | 1 << 26 // xsave
-                        | 1 << 27 // xsave by os
-                        | 1 << 28 // AVX
-                        | 1 << 30 // RDRAND
-                        );
+                           | 1 << 9  // SSE3 extension
+                           | 1 << 19 // SSE4.1
+                           | 1 << 20 // SSE4.2
+                           | 1 << 26 // xsave
+                           | 1 << 27 // xsave by os
+                           | 1 << 28 // AVX
+                           | 1 << 30 // RDRAND
+                           );
             s.c = s.c & (~mask);
         }
         if(a == 7 && c == 0) {
