@@ -37,6 +37,15 @@ namespace x64 {
         }
     };
 
+
+    static inline void warn(const char* message) {
+        fmt::print("{}\n", message);
+    }
+
+    template<typename Callback>
+    static inline void warn(Callback callback) {
+        callback();
+    }
 }
 
 #endif

@@ -1,5 +1,6 @@
 #include "fs/hostfile.h"
 #include "interpreter/verify.h"
+#include <fmt/color.h>
 #include <asm/termbits.h>
 #include <dirent.h>
 #include <fcntl.h>
@@ -87,7 +88,7 @@ namespace kernel {
                 return ret;
             }
         }
-        x64::verify(false, "implement missing fcntl on HostFile");
+        x64::warn([&](){ fmt::print(fg(fmt::color::red), "implement missing fcntl {} on HostFile\n", cmd); });
         return -ENOTSUP;
     }
 
