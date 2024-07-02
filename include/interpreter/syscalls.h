@@ -158,6 +158,8 @@ namespace kernel {
         int access(x64::Ptr pathname, int mode);
         // 0x17
         int select(int nfds, x64::Ptr readfds, x64::Ptr writefds, x64::Ptr exceptfds, x64::Ptr timeout);
+        // 0x18
+        int sched_yield();
         // 0x1c
         int madvise(x64::Ptr addr, size_t length, int advice);
         // 0x20
@@ -252,6 +254,8 @@ namespace kernel {
         u64 exit_group(int status);
         // 0xea
         int tgkill(int tgid, int tid, int sig);
+        // 0xed
+        int mbind(unsigned long start, unsigned long len, unsigned long mode, x64::Ptr64 nmask, unsigned long maxnode, unsigned flags);
         // 0x101
         int openat(int dirfd, x64::Ptr pathname, int flags, mode_t mode);
         // 0x106

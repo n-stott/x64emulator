@@ -58,6 +58,7 @@ namespace kernel {
             case 0x14: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::writev, regs));
             case 0x15: return cpu->set(x64::R64::RAX, invoke_syscall_2(&Sys::access, regs));
             case 0x17: return cpu->set(x64::R64::RAX, invoke_syscall_5(&Sys::select, regs));
+            case 0x18: return cpu->set(x64::R64::RAX, invoke_syscall_0(&Sys::sched_yield, regs));
             case 0x1c: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::madvise, regs));
             case 0x20: return cpu->set(x64::R64::RAX, invoke_syscall_1(&Sys::dup, regs));
             case 0x26: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::setitimer, regs));
@@ -105,6 +106,7 @@ namespace kernel {
             case 0xe4: return cpu->set(x64::R64::RAX, invoke_syscall_2(&Sys::clock_gettime, regs));
             case 0xe7: return cpu->set(x64::R64::RAX, invoke_syscall_1(&Sys::exit_group, regs));
             case 0xea: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::tgkill, regs));
+            case 0xed: return cpu->set(x64::R64::RAX, invoke_syscall_6(&Sys::mbind, regs));
             case 0x101: return cpu->set(x64::R64::RAX, invoke_syscall_4(&Sys::openat, regs));
             case 0x106: return cpu->set(x64::R64::RAX, invoke_syscall_4(&Sys::fstatat64, regs));
             case 0x10b: return cpu->set(x64::R64::RAX, invoke_syscall_4(&Sys::readlinkat, regs));
@@ -393,6 +395,13 @@ namespace kernel {
         return ret;
     }
 
+    int Sys::sched_yield() {
+        if(logSyscalls_) print("Sys::sched_yield()\n");
+        x64::verify(!!kernel_.scheduler().currentThread());
+        kernel_.scheduler().currentThread()->yield();
+        return 0;
+    }
+
     int Sys::madvise(x64::Ptr addr, size_t length, int advice) {
         int ret = 0;
         if(logSyscalls_) {
@@ -649,6 +658,11 @@ namespace kernel {
         if(logSyscalls_) print("Sys::tgkill(tgid={}, tid={}, sig={})\n", tgid, tid, sig);
         kernel_.scheduler().kill(sig);
         return 0;
+    }
+
+    int Sys::mbind(unsigned long start, unsigned long len, unsigned long mode, x64::Ptr64 nmask, unsigned long maxnode, unsigned flags) {
+        if(logSyscalls_) print("Sys::mbind(start={}, len={}, mode={}, nmask={:#x}, maxnode={}, flags={})\n", start, len, mode, nmask.address(), maxnode, flags);
+        return -ENOTSUP;
     }
 
     ssize_t Sys::getxattr(x64::Ptr path, x64::Ptr name, x64::Ptr value, size_t size) {
