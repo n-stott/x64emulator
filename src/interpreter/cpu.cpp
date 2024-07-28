@@ -1,6 +1,9 @@
 #include "interpreter/cpu.h"
-#include "interpreter/cpuimpl.h"
+#ifndef NDEBUG
 #include "interpreter/checkedcpuimpl.h"
+#else
+#include "interpreter/cpuimpl.h"
+#endif
 #include "interpreter/mmu.h"
 #include "interpreter/syscalls.h"
 #include "interpreter/verify.h"
@@ -13,7 +16,11 @@
 
 namespace x64 {
 
+#ifndef NDEBUG
     using Impl = CheckedCpuImpl;
+#else
+    using Impl = CpuImpl;
+#endif
 
     template<typename T>
     T Cpu::get(Imm value) const {
