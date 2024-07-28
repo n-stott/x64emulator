@@ -19,7 +19,9 @@ namespace x64 {
     Mmu::Region::Region(std::string name, u64 base, u64 size, PROT prot) {
         this->base_ = base;
         this->size_ = size;
-        this->data_.resize(size, 0x00);
+        if(prot != PROT::NONE) {
+            this->data_.resize(size, 0x00);
+        }
         this->prot_ = prot;
         this->name_ = std::move(name);
     }
@@ -137,7 +139,7 @@ namespace x64 {
         auto* regionPtr = findAddress(address);
         verify(!!regionPtr, "mprotect: unable to find region");
         if(regionPtr->base() == address && regionPtr->size() == length) {
-            regionPtr->prot_ = prot;
+            regionPtr->setProtection(prot);
             return 0;
         }
         std::array<Region, 3> splitRegions = regionPtr->split(address, address+length);
@@ -146,7 +148,7 @@ namespace x64 {
             Region r("", 0, 0, PROT::NONE);
             std::swap(r, splitRegions[i]);
             if(r.size() == 0) continue;
-            if(i == 1) r.prot_ = prot;
+            if(i == 1) r.setProtection(prot);
             addRegion(std::move(r));
         }
         return 0;
@@ -177,6 +179,14 @@ namespace x64 {
         return std::max(this->base(), base) < std::min(this->end(), end);
     }
 
+    void Mmu::Region::setProtection(PROT prot) {
+        if(prot_ == PROT::NONE && prot != PROT::NONE) {
+            // set the actual size when a region is no longer PROT::NONE.
+            if(data_.size() != size_) data_.resize(size_, 0x0);
+        }
+        prot_ = prot;
+    }
+
     std::string Mmu::readString(Ptr8 src) const {
         Ptr8 end = src;
         while(read8(end++) != 0) {}
@@ -203,6 +213,9 @@ namespace x64 {
     void Mmu::Region::write(u64 address, T value) {
         assert(contains(address));
         assert(contains(address+sizeof(T)-1));
+        verify((bool)(prot() & PROT::WRITE), [&]() {
+            fmt::print("Attempt to write {:#x} to non-writable region [{:#x}:{:#x}]\n", address, base(), end());
+        });
         std::memcpy(&data_[address-base()], &value, sizeof(value));
     }
 
@@ -263,9 +276,6 @@ namespace x64 {
         verify(!!region, [&]() {
             fmt::print("No region containing {:#x}\n", address);
         });
-        verify((bool)(region->prot() & PROT::READ), [&]() {
-            fmt::print("Attempt to read from {:#x} in non-readable region [{:#x}:{:#x}]\n", address, region->base(), region->end());
-        });
         T value = region->read<T>(address);
 #if DEBUG_MMU
         if constexpr(std::is_integral_v<T>)
@@ -281,9 +291,6 @@ namespace x64 {
         Region* region = findAddress(address);
         verify(!!region, [&]() {
             fmt::print("No region containing {:#x}\n", address);
-        });
-        verify((bool)(region->prot() & PROT::WRITE), [&]() {
-            fmt::print("Attempt to write to {:#x} in non-writable region [{:#x}:{:#x}]\n", address, region->base(), region->end());
         });
 #if DEBUG_MMU
         if constexpr(std::is_integral_v<T>)
@@ -476,13 +483,14 @@ namespace x64 {
         verify(contains(right) || right == end());
 
         Region l(name_, base_, left-base_, prot_);
-        if(l.size()) std::memcpy(l.data_.data(), data_.data(), left-base_);
-        
         Region m(name_, left, right-left, prot_);
-        if(m.size()) std::memcpy(m.data_.data(), data_.data()+left-base_, right-left);
-        
         Region r(name_, right, end()-right, prot_);
-        if(r.size()) std::memcpy(r.data_.data(), data_.data()+right-base_, end()-right);
+
+        if(prot_ != PROT::NONE) {
+            if(l.size()) std::memcpy(l.data_.data(), data_.data(), left-base_);
+            if(m.size()) std::memcpy(m.data_.data(), data_.data()+left-base_, right-left);
+            if(r.size()) std::memcpy(r.data_.data(), data_.data()+right-base_, end()-right);
+        }
 
         std::array<Region, 3> res {{ std::move(l), std::move(m), std::move(r) }};
         return res;
@@ -490,7 +498,7 @@ namespace x64 {
 
     void Mmu::Region::setEnd(u64 newEnd) {
         size_ = pageRoundUp(size() + newEnd - end());
-        data_.resize(size_, 0x0);
+        if(prot_ != PROT::NONE) data_.resize(size_, 0x0);
     }
 
     u64 Mmu::brk(u64 address) {

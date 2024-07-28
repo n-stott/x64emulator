@@ -57,6 +57,8 @@ namespace x64 {
             bool contains(u64 address) const;
             bool intersectsRange(u64 base, u64 end) const;
 
+            void setProtection(PROT prot);
+
             std::array<Region, 3> split(u64 left, u64 right) const;
 
             u8 read8(u64 address) const;
