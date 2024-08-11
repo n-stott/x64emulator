@@ -66,9 +66,9 @@ namespace x64 {
         VerificationScope::run([&]() {
             kernel::Thread* mainThread = kernel.exec(vm, programFilePath, arguments, environmentVariables);
 
-            while(kernel::Thread* thread = kernel.scheduler().pickNext()) {
+            kernel.scheduler().run([&](kernel::Thread* thread) {
                 vm.execute(thread);
-            }
+            });
 
             fmt::print("Interpreter completed execution\n");
             kernel.scheduler().dumpThreadSummary();

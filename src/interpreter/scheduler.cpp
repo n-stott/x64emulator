@@ -9,6 +9,12 @@ namespace kernel {
     Scheduler::Scheduler(x64::Mmu& mmu) : mmu_(mmu) { }
     Scheduler::~Scheduler() = default;
 
+    void Scheduler::run(std::function<void(Thread*)> executeOnVm) {
+        while(kernel::Thread* thread = pickNext()) {
+            executeOnVm(thread);
+        }
+    }
+
     Thread* Scheduler::createThread(int pid) {
         int tid = 1;
         for(const auto& t : threads_) {

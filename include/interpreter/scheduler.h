@@ -4,6 +4,7 @@
 #include "utils/utils.h"
 #include "types.h"
 #include <deque>
+#include <functional>
 #include <memory>
 #include <vector>
 
@@ -19,6 +20,8 @@ namespace kernel {
     public:
         explicit Scheduler(x64::Mmu& mmu);
         ~Scheduler();
+
+        void run(std::function<void(Thread*)> executeOnVm);
 
         Thread* createThread(int pid);
         Thread* pickNext();
