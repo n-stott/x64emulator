@@ -22,6 +22,13 @@ namespace x64 {
     using Impl = CpuImpl;
 #endif
 
+    Cpu::Cpu(VM* vm, Mmu* mmu) :
+            vm_(vm),
+            mmu_(mmu) {
+        verify(!!vm_);
+        verify(!!mmu_);
+    }
+
     template<typename T>
     T Cpu::get(Imm value) const {
         // assert((u64)(T)value.immediate == value.immediate);

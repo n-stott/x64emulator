@@ -19,7 +19,7 @@ namespace x64 {
 
     class Cpu {
     public:
-        Cpu(VM* vm, Mmu* mmu) : vm_(vm), mmu_(mmu) { }
+        Cpu(VM* vm, Mmu* mmu);
 
     private:
         friend class VM;
