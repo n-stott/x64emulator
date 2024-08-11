@@ -24,7 +24,8 @@ namespace kernel {
         };
         
         enum class THREAD_STATE {
-            ALIVE,
+            RUNNABLE,
+            RUNNING,
             SLEEPING,
             DEAD,
         };
@@ -89,7 +90,7 @@ namespace kernel {
         }
 
     private:
-        THREAD_STATE state_ { THREAD_STATE::ALIVE };
+        THREAD_STATE state_ { THREAD_STATE::RUNNABLE };
         Description description_;
         SavedCpuState savedCpuState_;
         x64::Ptr32 setChildTid_ { 0 };

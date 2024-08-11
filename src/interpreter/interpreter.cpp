@@ -50,25 +50,22 @@ namespace x64 {
     }
 
     bool Interpreter::run(const std::string& programFilePath, const std::vector<std::string>& arguments, const std::vector<std::string>& environmentVariables) {
-        SignalHandler handler;
+        // SignalHandler handler;
 
         Mmu mmu;
         kernel::Kernel kernel(mmu);
-        VM vm(mmu, kernel);
         
         kernel.setLogSyscalls(logSyscalls_);
 
-        vm.setLogInstructions(logInstructions_);
-        vm.setLogInstructionsAfter(logInstructionsAfter_);
+        // vm.setLogInstructions(logInstructions_);
+        // vm.setLogInstructionsAfter(logInstructionsAfter_);
 
         bool ok = true;
         
         VerificationScope::run([&]() {
-            kernel::Thread* mainThread = kernel.exec(vm, programFilePath, arguments, environmentVariables);
+            kernel::Thread* mainThread = kernel.exec(programFilePath, arguments, environmentVariables);
 
-            kernel.scheduler().run([&](kernel::Thread* thread) {
-                vm.execute(thread);
-            });
+            kernel.scheduler().run();
 
             fmt::print("Interpreter completed execution\n");
             kernel.scheduler().dumpThreadSummary();
@@ -77,7 +74,7 @@ namespace x64 {
         }, [&]() {
             fmt::print("Interpreter crash\n");
             kernel.scheduler().dumpThreadSummary();
-            vm.crash();
+            // vm.crash();
             ok = false;
         });
         return ok;

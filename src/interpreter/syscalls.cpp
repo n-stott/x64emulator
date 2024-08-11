@@ -20,14 +20,29 @@ namespace kernel {
 
     template<typename... Args>
     void Sys::print(const char* format, Args... args) const {
-        fmt::print("[{}:{}] ", kernel_.scheduler().currentThread()->description().pid, kernel_.scheduler().currentThread()->description().tid);
+        fmt::print("[{}:{}] ", currentThread_->description().pid, currentThread_->description().tid);
         fmt::print(format, args...);
     }
 
-    void Sys::syscall(x64::Cpu* cpu) {
-        u64 sysNumber = cpu->get(x64::R64::RAX);
-        kernel_.scheduler().currentThread()->stats().syscalls++;
+    class ScopeGuard {
+    public:
+        explicit ScopeGuard(std::function<void(void)> onExit) : onExit_(onExit) { }
+        ~ScopeGuard() {
+            if(onExit_) onExit_();
+        }
 
+    private:
+        std::function<void(void)> onExit_;
+    };
+
+    void Sys::syscall(x64::Cpu* cpu) {
+        std::scoped_lock<std::mutex> lock(mutex_);
+        ScopeGuard scopeGuard([&]() {
+            currentThread_ = nullptr;
+        });
+        currentThread_ = cpu->currentThread();
+        u64 sysNumber = cpu->get(x64::R64::RAX);
+        currentThread_->stats().syscalls++;
         RegisterDump regs {{
             cpu->get(x64::R64::RDI),
             cpu->get(x64::R64::RSI),
@@ -364,8 +379,8 @@ namespace kernel {
     }
 
     int Sys::getpid() {
-        x64::verify(!!kernel_.scheduler().currentThread());
-        int pid = kernel_.scheduler().currentThread()->description().pid;
+        x64::verify(!!currentThread_);
+        int pid = currentThread_->description().pid;
         if(logSyscalls_) print("Sys::getpid() = {}\n", pid);
         return pid;
     }
@@ -397,8 +412,8 @@ namespace kernel {
 
     int Sys::sched_yield() {
         if(logSyscalls_) print("Sys::sched_yield()\n");
-        x64::verify(!!kernel_.scheduler().currentThread());
-        kernel_.scheduler().currentThread()->yield();
+        x64::verify(!!currentThread_);
+        currentThread_->yield();
         return 0;
     }
 
@@ -468,7 +483,7 @@ namespace kernel {
     }
 
     long Sys::clone(unsigned long flags, x64::Ptr stack, x64::Ptr parent_tid, x64::Ptr32 child_tid, unsigned long tls) {
-        Thread* currentThread = kernel_.scheduler().currentThread();
+        Thread* currentThread = currentThread_;
         x64::verify(!!currentThread);
         Thread* newThread = kernel_.scheduler().createThread(currentThread->description().pid);
         const Thread::SavedCpuState& oldCpuState = currentThread->savedCpuState();
@@ -495,7 +510,7 @@ namespace kernel {
         if(logSyscalls_) {
             print("Sys::exit(status={})\n", status);
         }
-        Thread* thread = kernel_.scheduler().currentThread();
+        Thread* thread = currentThread_;
         thread->yield();
         kernel_.scheduler().terminate(thread, status);
         return status;
@@ -717,7 +732,7 @@ namespace kernel {
             // wait
             u32 loaded = mmu_.read32(uaddr);
             if(loaded != val) return -EAGAIN;
-            Thread* thread = kernel_.scheduler().currentThread();
+            Thread* thread = currentThread_;
             kernel_.scheduler().wait(thread, uaddr, val);
             thread->yield();
             return onExit(0);
@@ -731,7 +746,7 @@ namespace kernel {
             // wait_bitset
             u32 loaded = mmu_.read32(uaddr);
             if(loaded != val) return -EAGAIN;
-            Thread* thread = kernel_.scheduler().currentThread();
+            Thread* thread = currentThread_;
             kernel_.scheduler().wait(thread, uaddr, val);
             thread->yield();
             return onExit(0);
@@ -926,8 +941,8 @@ namespace kernel {
     }
 
     int Sys::gettid() {
-        x64::verify(!!kernel_.scheduler().currentThread());
-        int tid = kernel_.scheduler().currentThread()->description().tid;
+        x64::verify(!!currentThread_);
+        int tid = currentThread_->description().tid;
         if(logSyscalls_) print("Sys::gettid() = {}\n", tid);
         return tid;
     }
@@ -1107,7 +1122,7 @@ namespace kernel {
         u64 stackAddress = args[5] + args[6];
         u64 tls = args[7];
 
-        Thread* currentThread = kernel_.scheduler().currentThread();
+        Thread* currentThread = currentThread_;
         Thread* newThread = kernel_.scheduler().createThread(currentThread->description().pid);
         const Thread::SavedCpuState& oldCpuState = currentThread->savedCpuState();
         Thread::SavedCpuState& newCpuState = newThread->savedCpuState();

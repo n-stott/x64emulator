@@ -10,6 +10,7 @@
 
 namespace kernel {
     class Sys;
+    class Thread;
 }
 
 namespace x64 {
@@ -155,6 +156,8 @@ namespace x64 {
 
         template<typename Dst>
         void execCmpxchg64Impl(Dst dst, u64 src);
+
+        kernel::Thread* currentThread();
 
     public:
         void exec(const X64Instruction&);

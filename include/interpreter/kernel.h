@@ -18,10 +18,9 @@ namespace kernel {
 
     class Kernel {
     public:
-        explicit Kernel(x64::Mmu& mmu) : mmu_(mmu), host_(), fs_(*this), scheduler_(mmu_), sys_(*this, mmu_) { }
+        explicit Kernel(x64::Mmu& mmu) : mmu_(mmu), host_(), fs_(*this), scheduler_(mmu_, *this), sys_(*this, mmu_) { }
 
-        Thread* exec(x64::VM& vm,
-                     const std::string& programFilePath,
+        Thread* exec(const std::string& programFilePath,
                      const std::vector<std::string>& arguments,
                      const std::vector<std::string>& environmentVariables);
 

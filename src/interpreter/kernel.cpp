@@ -217,10 +217,10 @@ namespace kernel {
         vm->push64(arguments.size()+1);
     }
 
-    Thread* Kernel::exec(x64::VM& vm,
-                         const std::string& programFilePath,
+    Thread* Kernel::exec(const std::string& programFilePath,
                          const std::vector<std::string>& arguments,
                          const std::vector<std::string>& environmentVariables) {
+        x64::VM vm(mmu_, *this);
         Auxiliary aux;
         u64 entrypoint = loadElf(&mmu_, &aux, programFilePath, true);
         u64 stackTop = setupMemory(&mmu_, &aux);

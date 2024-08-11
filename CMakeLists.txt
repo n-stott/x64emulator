@@ -99,7 +99,7 @@ elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
 endif()
 target_include_directories(interpreter PUBLIC include)
 target_include_directories(interpreter PUBLIC ../common/include)
-target_link_libraries(interpreter PUBLIC emulator fmt::fmt)
+target_link_libraries(interpreter PUBLIC emulator fmt::fmt pthread)
 
 # target_compile_options(interpreter PUBLIC -fsanitize=address,undefined)
 # target_link_libraries(interpreter PUBLIC asan ubsan)

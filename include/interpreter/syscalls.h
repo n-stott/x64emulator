@@ -6,6 +6,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <mutex>
 #include <tuple>
 #include <unistd.h>
 #include <sys/types.h>
@@ -19,6 +20,7 @@ namespace kernel {
     class Host;
     class Kernel;
     class Scheduler;
+    class Thread;
 
     class Sys {
     public:
@@ -292,6 +294,8 @@ namespace kernel {
 
         Kernel& kernel_;
         x64::Mmu& mmu_;
+        std::mutex mutex_;
+        Thread* currentThread_ { nullptr };
         bool logSyscalls_ { false };
     };
 

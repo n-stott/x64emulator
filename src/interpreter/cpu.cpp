@@ -151,6 +151,9 @@ namespace x64 {
         return mxcsr_.rc;
     }
 
+    kernel::Thread* Cpu::currentThread() {
+        return vm_->currentThread_;
+    }
 
     void Cpu::exec(const X64Instruction& insn) {
         switch(insn.insn()) {

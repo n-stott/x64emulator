@@ -3,9 +3,11 @@
 
 #include "utils/utils.h"
 #include "types.h"
+#include <condition_variable>
 #include <deque>
 #include <functional>
 #include <memory>
+#include <mutex>
 #include <vector>
 
 namespace x64 {
@@ -14,14 +16,15 @@ namespace x64 {
 
 namespace kernel {
 
+    class Kernel;
     class Thread;
 
     class Scheduler {
     public:
-        explicit Scheduler(x64::Mmu& mmu);
+        explicit Scheduler(x64::Mmu& mmu, Kernel& kernel);
         ~Scheduler();
 
-        void run(std::function<void(Thread*)> executeOnVm);
+        void run();
 
         Thread* createThread(int pid);
         Thread* pickNext();
@@ -34,11 +37,13 @@ namespace kernel {
         void wait(Thread* thread, x64::Ptr32 wordPtr, u32 expected);
         u32 wake(x64::Ptr32 wordPtr, u32 nbWaiters);
 
-        Thread* currentThread();
-
         void dumpThreadSummary() const;
 
     private:
+        void runOnWorkerThread(int id);
+        
+        bool hasAliveThread() const;
+        bool hasRunnableThread() const;
 
         template<typename Func>
         void forEachThread(Func&& func) const {
@@ -48,11 +53,11 @@ namespace kernel {
         }
 
         x64::Mmu& mmu_;
+        Kernel& kernel_;
 
-        Thread* currentThread_ { nullptr };
         std::vector<std::unique_ptr<Thread>> threads_;
 
-        std::deque<Thread*> threadQueue_;
+        std::deque<Thread*> allAliveThreads_;
 
         struct FutexWaitData {
             Thread* thread;
@@ -61,6 +66,8 @@ namespace kernel {
         };
 
         std::vector<FutexWaitData> futexWaitData_;
+        std::mutex schedulerMutex_;
+        std::condition_variable schedulerHasRunnableThread_;
     };
 
 }

@@ -2,16 +2,47 @@
 #include "interpreter/mmu.h"
 #include "interpreter/thread.h"
 #include "interpreter/verify.h"
+#include "interpreter/vm.h"
 #include <algorithm>
+#include <thread>
 
 namespace kernel {
 
-    Scheduler::Scheduler(x64::Mmu& mmu) : mmu_(mmu) { }
+    Scheduler::Scheduler(x64::Mmu& mmu, Kernel& kernel) : mmu_(mmu), kernel_(kernel) { }
     Scheduler::~Scheduler() = default;
 
-    void Scheduler::run(std::function<void(Thread*)> executeOnVm) {
-        while(kernel::Thread* thread = pickNext()) {
-            executeOnVm(thread);
+    void Scheduler::runOnWorkerThread(int id) {
+        while(true) {
+            Thread* threadToRun = nullptr;
+            {
+                std::unique_lock lock(schedulerMutex_);
+                schedulerHasRunnableThread_.wait(lock, [&]{ return this->hasRunnableThread() || !this->hasAliveThread(); });
+
+                assert(hasRunnableThread() || !hasAliveThread());
+                threadToRun = pickNext();
+                lock.unlock();
+            }
+
+            if(!threadToRun) return;
+            x64::VM vm(mmu_, kernel_);
+#if 0
+            fmt::print("Cpu {} scheduling thread {}\n", id, threadToRun->description().tid);
+#endif
+            vm.execute(threadToRun);
+            threadToRun->setState(Thread::THREAD_STATE::RUNNABLE);
+#if 0
+            fmt::print("Cpu {} done with thread {}\n", id, threadToRun->description().tid);
+#endif
+        }
+        fmt::print("Cpu {} is done\n", id);
+    }
+
+    void Scheduler::run() {
+        std::vector<std::thread> workerThreads;
+        workerThreads.emplace_back(std::bind(&Scheduler::runOnWorkerThread, this, 0));
+        workerThreads.emplace_back(std::bind(&Scheduler::runOnWorkerThread, this, 1));
+        for(std::thread& workerThread : workerThreads) {
+            workerThread.join();
         }
     }
 
@@ -21,19 +52,39 @@ namespace kernel {
             tid = std::max(tid, t->description().tid+1);
         }
         auto thread = std::make_unique<Thread>(pid, tid);
-        auto* ptr = thread.get();
+        Thread* ptr = thread.get();
         threads_.push_back(std::move(thread));
-        threadQueue_.push_back(ptr);
+        allAliveThreads_.push_back(ptr);
+        schedulerHasRunnableThread_.notify_one();
         return ptr;
     }
 
-    Thread* Scheduler::pickNext() {
-        if(threadQueue_.empty()) return nullptr;
-        bool anyThreadAlive = std::any_of(threadQueue_.begin(), threadQueue_.end(), [](const Thread* t) {
-            return t->state() == Thread::THREAD_STATE::ALIVE;
+    bool Scheduler::hasAliveThread() const {
+        return !allAliveThreads_.empty();
+    }
+
+    bool Scheduler::hasRunnableThread() const {
+        return std::any_of(allAliveThreads_.begin(), allAliveThreads_.end(), [](Thread* thread) {
+            assert(!!thread);
+            return thread->state() == Thread::THREAD_STATE::RUNNABLE;
         });
-        x64::verify(anyThreadAlive, [&]() {
-            fmt::print("No thread is alive in queue:\n");
+    }
+
+    Thread* Scheduler::pickNext() {
+        auto findThread = [&](Thread::THREAD_STATE state) -> Thread* {
+            auto it = std::find_if(allAliveThreads_.begin(), allAliveThreads_.end(), [=](Thread* thread) {
+                assert(!!thread);
+                return thread->state() == state;
+            });
+            if(it == allAliveThreads_.end()) return nullptr;
+            return *it;
+        };
+
+        bool deadlock = !findThread(Thread::THREAD_STATE::RUNNABLE)
+                    &&  !findThread(Thread::THREAD_STATE::RUNNING)
+                    &&  findThread(Thread::THREAD_STATE::SLEEPING);
+        x64::verify(!deadlock, [&]() {
+            fmt::print("No thread is runnable in queue:\n");
             for(const auto& t : threads_) {
                 fmt::print("  {}\n", t->toString());
             }
@@ -43,21 +94,24 @@ namespace kernel {
                             fwd.expected, fwd.wordPtr.address());
             }
         });
-        do {
-            currentThread_ = threadQueue_.front();
-            threadQueue_.pop_front();
-            threadQueue_.push_back(currentThread_);
-        } while(currentThread_->state() != Thread::THREAD_STATE::ALIVE);
-        currentThread_->tickInfo().ticksUntilSwitch += 1'000'000;
-        return currentThread_;
-    }
 
-    Thread* Scheduler::currentThread() {
-        return currentThread_;
+        if(allAliveThreads_.empty()) {
+            schedulerHasRunnableThread_.notify_all();
+            return nullptr;
+        }
+        
+        Thread* threadToRun = findThread(Thread::THREAD_STATE::RUNNABLE);
+        std::stable_partition(allAliveThreads_.begin(), allAliveThreads_.end(), [=](Thread* thread) -> bool {
+            return thread != threadToRun;
+        });
+        assert(allAliveThreads_.back() == threadToRun);
+        threadToRun->setState(Thread::THREAD_STATE::RUNNING);
+        threadToRun->tickInfo().ticksUntilSwitch += 1'000'000;
+        return threadToRun;
     }
 
     void Scheduler::terminateAll(int status) {
-        std::vector<Thread*> allThreads(threadQueue_.begin(), threadQueue_.end());
+        std::vector<Thread*> allThreads(allAliveThreads_.begin(), allAliveThreads_.end());
         for(Thread* t : allThreads) terminate(t, status);
     }
 
@@ -75,7 +129,7 @@ namespace kernel {
             mmu_.write32(thread->clearChildTid(), 0);
             wake(thread->clearChildTid(), 1);
         }
-        threadQueue_.erase(std::remove(threadQueue_.begin(), threadQueue_.end(), thread), threadQueue_.end());
+        allAliveThreads_.erase(std::remove(allAliveThreads_.begin(), allAliveThreads_.end(), thread), allAliveThreads_.end());
     }
 
     void Scheduler::kill([[maybe_unused]] int signal) {
@@ -93,7 +147,7 @@ namespace kernel {
             if(fwd.wordPtr != wordPtr) continue;
             u32 val = mmu_.read32(wordPtr);
             if(fwd.expected == val) continue;
-            fwd.thread->setState(Thread::THREAD_STATE::ALIVE);
+            fwd.thread->setState(Thread::THREAD_STATE::RUNNABLE);
             ++nbWoken;
             if(nbWoken >= nbWaiters) break;
         }
