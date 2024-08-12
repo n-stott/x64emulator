@@ -28,7 +28,12 @@ namespace kernel {
 #if 0
             fmt::print("Cpu {} scheduling thread {}\n", id, threadToRun->description().tid);
 #endif
-            vm.execute(threadToRun);
+            try {
+                vm.execute(threadToRun);
+            } catch(...) {
+                vm.crash();
+                terminateAll(516);
+            }
             threadToRun->setState(Thread::THREAD_STATE::RUNNABLE);
 #if 0
             fmt::print("Cpu {} done with thread {}\n", id, threadToRun->description().tid);
@@ -46,17 +51,19 @@ namespace kernel {
         }
     }
 
-    Thread* Scheduler::createThread(int pid) {
+    std::unique_ptr<Thread> Scheduler::allocateThread(int pid) {
         int tid = 1;
         for(const auto& t : threads_) {
             tid = std::max(tid, t->description().tid+1);
         }
-        auto thread = std::make_unique<Thread>(pid, tid);
+        return std::make_unique<Thread>(pid, tid);
+    }
+
+    void Scheduler::addThread(std::unique_ptr<Thread> thread) {
         Thread* ptr = thread.get();
         threads_.push_back(std::move(thread));
         allAliveThreads_.push_back(ptr);
         schedulerHasRunnableThread_.notify_one();
-        return ptr;
     }
 
     bool Scheduler::hasAliveThread() const {

@@ -26,7 +26,8 @@ namespace kernel {
 
         void run();
 
-        Thread* createThread(int pid);
+        std::unique_ptr<Thread> allocateThread(int pid);
+        void addThread(std::unique_ptr<Thread> thread);
         Thread* pickNext();
 
         void terminateAll(int status);

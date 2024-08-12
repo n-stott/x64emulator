@@ -485,7 +485,8 @@ namespace kernel {
     long Sys::clone(unsigned long flags, x64::Ptr stack, x64::Ptr parent_tid, x64::Ptr32 child_tid, unsigned long tls) {
         Thread* currentThread = currentThread_;
         x64::verify(!!currentThread);
-        Thread* newThread = kernel_.scheduler().createThread(currentThread->description().pid);
+        std::unique_ptr<Thread> newThread = kernel_.scheduler().allocateThread(currentThread->description().pid);
+        x64::verify(!!newThread);
         const Thread::SavedCpuState& oldCpuState = currentThread->savedCpuState();
         Thread::SavedCpuState& newCpuState = newThread->savedCpuState();
         newCpuState.regs = oldCpuState.regs;
@@ -503,6 +504,7 @@ namespace kernel {
             print("Sys::clone(flags={}, stack={:#x}, parent_tid={:#x}, child_tid={:#x}, tls={}) = {}\n",
                         flags, stack.address(), parent_tid.address(), child_tid.address(), tls, ret);
         }
+        kernel_.scheduler().addThread(std::move(newThread));
         return ret;
     }
 
@@ -1123,7 +1125,7 @@ namespace kernel {
         u64 tls = args[7];
 
         Thread* currentThread = currentThread_;
-        Thread* newThread = kernel_.scheduler().createThread(currentThread->description().pid);
+        std::unique_ptr<Thread> newThread = kernel_.scheduler().allocateThread(currentThread->description().pid);
         const Thread::SavedCpuState& oldCpuState = currentThread->savedCpuState();
         Thread::SavedCpuState& newCpuState = newThread->savedCpuState();
         newCpuState.regs = oldCpuState.regs;
@@ -1141,6 +1143,7 @@ namespace kernel {
             print("Sys::clone3(uargs={:#x}, size={}) = {}\n",
                         uargs.address(), size, ret);
         }
+        kernel_.scheduler().addThread(std::move(newThread));
         return (int)ret;
     }
 

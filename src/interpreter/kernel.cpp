@@ -225,15 +225,17 @@ namespace kernel {
         u64 entrypoint = loadElf(&mmu_, &aux, programFilePath, true);
         u64 stackTop = setupMemory(&mmu_, &aux);
 
-        Thread* mainThread = scheduler_.createThread(0xface);
+        std::unique_ptr<Thread> mainThread = scheduler_.allocateThread(0xface);
         Thread::SavedCpuState& cpuState = mainThread->savedCpuState();
         cpuState.regs.rip() = entrypoint;
         cpuState.regs.rsp() = (stackTop & 0xFFFFFFFFFFFFFF00); // stack needs to be 16-byte aligned
+        Thread* mainThreadPtr = mainThread.get();
+        scheduler_.addThread(std::move(mainThread));
 
-        vm.contextSwitch(mainThread);
+        vm.contextSwitch(mainThreadPtr);
         pushProgramArguments(&mmu_, &vm, programFilePath, arguments, environmentVariables, aux);
         vm.contextSwitch(nullptr);
 
-        return mainThread;
+        return mainThreadPtr;
     }
 }
