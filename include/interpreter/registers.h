@@ -119,11 +119,6 @@ namespace x64 {
                     + (u64)enc.displacement;
         }
 
-        template<Size size>
-        SPtr<size> resolve(M<size> addr) const {
-            return SPtr<size>{addr.segment, resolve(addr.encoding)};
-        }
-
     };
 
 }

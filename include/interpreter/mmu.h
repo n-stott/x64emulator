@@ -110,10 +110,6 @@ namespace x64 {
         u64 brk(u64 address);
 
         void setRegionName(u64 address, std::string name);
-        
-        void setSegmentBase(Segment segment, u64 base);
-        u64 getSegmentBase(Segment segment) const;
-        void registerTlsBlock(u64 templateAddress, u64 blockAddress);
 
         Ptr8 copyToMmu(Ptr8 dst, const u8* src, size_t n);
         u8* copyFromMmu(u8* dst, Ptr8 src, size_t n) const;
@@ -170,8 +166,6 @@ namespace x64 {
         static constexpr u64 PAGE_SIZE = 0x1000;
 
     private:
-        template<Size s>
-        u64 resolve(SPtr<s> ptr) const;
 
         template<typename T, Size s>
         T read(SPtr<s> ptr) const;
@@ -190,8 +184,6 @@ namespace x64 {
         std::deque<std::unique_ptr<Region>> regions_;
         std::vector<Region*> regionLookup_;
         u64 firstUnlookupdableAddress_ { 0 };
-
-        std::array<u64, 8> segmentBase_ {{ 0, 0, 0, 0, 0, 0, 0, 0 }};
     };
 
 }

@@ -39,7 +39,9 @@ namespace kernel {
         std::scoped_lock<std::mutex> lock(mutex_);
         ScopeGuard scopeGuard([&]() {
             currentThread_ = nullptr;
+            currentCpu_ = nullptr;
         });
+        currentCpu_ = cpu;
         currentThread_ = cpu->currentThread();
         u64 sysNumber = cpu->get(x64::R64::RAX);
         currentThread_->stats().syscalls++;
@@ -240,7 +242,6 @@ namespace kernel {
         x64::MAP f =  x64::MAP::PRIVATE;
         if(Host::Mmap::isAnonymous(flags)) f = f | x64::MAP::ANONYMOUS;
         if(Host::Mmap::isFixed(flags)) f = f | x64::MAP::FIXED;
-        x64::verify(addr.segment() != x64::Segment::FS);
         u64 base = mmu_.mmap(addr.address(), length, (x64::PROT)prot, f);
         if(!(bool)(f & x64::MAP::ANONYMOUS)) {
             x64::verify(fd >= 0);
@@ -258,7 +259,7 @@ namespace kernel {
         }
         if(logSyscalls_) print("Sys::mmap(addr={:#x}, length={}, prot={}, flags={}, fd={}, offset={}) = {:#x}\n",
                                               addr.address(), length, prot, flags, fd, offset, base);
-        return x64::Ptr{addr.segment(), base};
+        return x64::Ptr{base};
     }
 
     int Sys::mprotect(x64::Ptr addr, size_t length, int prot) {
@@ -274,10 +275,9 @@ namespace kernel {
     }
 
     x64::Ptr Sys::brk(x64::Ptr addr) {
-        x64::verify(addr.segment() != x64::Segment::FS);
         u64 newBrk = mmu_.brk(addr.address());
         if(logSyscalls_) print("Sys::brk(addr={:#x}) = {:#x}\n", addr.address(), newBrk);
-        return x64::Ptr{addr.segment(), newBrk};
+        return x64::Ptr{newBrk};
     }
 
     int Sys::rt_sigaction(int sig, x64::Ptr act, x64::Ptr oact, size_t sigsetsize) {
@@ -938,7 +938,8 @@ namespace kernel {
         bool isSetFS = Host::Prctl::isSetFS(code);
         if(logSyscalls_) print("Sys::arch_prctl(code={}, addr={:#x}) = {}\n", code, addr.address(), isSetFS ? 0 : -EINVAL);
         if(!isSetFS) return -EINVAL;
-        mmu_.setSegmentBase(x64::Segment::FS, addr.address());
+        x64::verify(!!currentCpu_);
+        currentCpu_->setSegmentBase(x64::Segment::FS, addr.address());
         return 0;
     }
 

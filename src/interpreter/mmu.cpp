@@ -163,14 +163,6 @@ namespace x64 {
         (*it)->name_ = std::move(name);
     }
 
-    void Mmu::setSegmentBase(Segment segment, u64 base) {
-        segmentBase_[(u8)segment] = base;
-    }
-
-    u64 Mmu::getSegmentBase(Segment segment) const {
-        return segmentBase_[(u8)segment];
-    }
-
     bool Mmu::Region::contains(u64 address) const {
         return address >= base() && address < end();
     }
@@ -238,13 +230,6 @@ namespace x64 {
         addRegion(Region { "nullpage", 0, PAGE_SIZE, PROT::NONE });
     }
 
-    template<Size s>
-    u64 Mmu::resolve(SPtr<s> ptr) const {
-        u64 segmentBase = segmentBase_[(u8)ptr.segment()];
-        u64 address = segmentBase + ptr.address();
-        return address;
-    }
-
     PROT Mmu::prot(u64 address) const {
         const auto* region = findAddress(address);
         if(!region) return PROT::NONE;
@@ -271,7 +256,7 @@ namespace x64 {
     template<typename T, Size s>
     T Mmu::read(SPtr<s> ptr) const {
         static_assert(sizeof(T) == pointerSize(s));
-        u64 address = resolve(ptr);
+        u64 address = ptr.address();
         const Region* region = findAddress(address);
         verify(!!region, [&]() {
             fmt::print("No region containing {:#x}\n", address);
@@ -287,7 +272,7 @@ namespace x64 {
     template<typename T, Size s>
     void Mmu::write(SPtr<s> ptr, T value) {
         static_assert(sizeof(T) == pointerSize(s));
-        u64 address = resolve(ptr);
+        u64 address = ptr.address();
         Region* region = findAddress(address);
         verify(!!region, [&]() {
             fmt::print("No region containing {:#x}\n", address);
@@ -318,7 +303,7 @@ namespace x64 {
         return read<u128>(ptr);
     }
     u128 Mmu::readUnaligned128(Ptr128 ptr) const {
-        u64 address = resolve(ptr);
+        u64 address = ptr.address();
         u64 endAddress = address + 31;
         const Region* region = findAddress(address);
         const Region* endRegion = findAddress(endAddress);
@@ -356,7 +341,7 @@ namespace x64 {
         write(ptr, value);
     }
     void Mmu::writeUnaligned128(Ptr128 ptr, u128 value) {
-        u64 address = resolve(ptr);
+        u64 address = ptr.address();
         u64 endAddress = address + 31;
         Region* region = findAddress(address);
         Region* endRegion = findAddress(endAddress);
@@ -439,7 +424,7 @@ namespace x64 {
 
     Ptr8 Mmu::copyToMmu(Ptr8 dst, const u8* src, size_t n) {
         if(n == 0) return dst;
-        u64 address = resolve(dst);
+        u64 address = dst.address();
         Region* region = findAddress(address);
         verify(!!region, [&]() {
             fmt::print("No region containing {:#x}\n", address);
@@ -450,7 +435,7 @@ namespace x64 {
 
     u8* Mmu::copyFromMmu(u8* dst, Ptr8 src, size_t n) const {
         if(n == 0) return dst;
-        u64 address = resolve(src);
+        u64 address = src.address();
         const Region* region = findAddress(address);
         verify(!!region, [&]() {
             fmt::print("No region containing {:#x}\n", address);

@@ -215,8 +215,7 @@ namespace x64 {
     template<Size size>
     class SPtr {
     public:
-        explicit SPtr(u64 address) : segment_(Segment::DS), address_(address) { }
-        SPtr(Segment segment, u64 address) : segment_(segment), address_(address) { }
+        explicit SPtr(u64 address) : address_(address) { }
 
         operator bool() const {
             return !!address();
@@ -238,11 +237,9 @@ namespace x64 {
             return *this;
         }
 
-        Segment segment() const { return segment_; }
         u64 address() const { return address_; }
 
     private:
-        Segment segment_;
         u64 address_;
     };
 

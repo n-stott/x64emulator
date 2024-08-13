@@ -45,7 +45,7 @@ namespace x64 {
             state.regs = cpu_.regs_;
             state.x87fpu = cpu_.x87fpu_;
             state.mxcsr = cpu_.mxcsr_;
-            state.fsBase = mmu_.getSegmentBase(Segment::FS);
+            state.fsBase = cpu_.getSegmentBase(Segment::FS);
         }
     }
 
@@ -63,7 +63,7 @@ namespace x64 {
             cpu_.regs_ = currentThreadState.regs;
             cpu_.x87fpu_ = currentThreadState.x87fpu;
             cpu_.mxcsr_ = currentThreadState.mxcsr;
-            mmu_.setSegmentBase(Segment::FS, currentThreadState.fsBase);
+            cpu_.setSegmentBase(Segment::FS, currentThreadState.fsBase);
             notifyJmp(cpu_.regs_.rip()); // no need to cache the destination here
         } else {
             currentThread_ = nullptr;
@@ -71,7 +71,7 @@ namespace x64 {
             cpu_.regs_ = Registers{};
             cpu_.x87fpu_ = X87Fpu{};
             cpu_.mxcsr_ = SimdControlStatus{};
-            mmu_.setSegmentBase(Segment::FS, (u64)0);
+            cpu_.setSegmentBase(Segment::FS, (u64)0);
         }
     }
 
@@ -373,7 +373,7 @@ namespace x64 {
             Registers regs;
             regs.rip() = jmpInsn.address() + 6; // add instruction size offset
             RM64 rm64 = jmpInsn.op0<RM64>();
-            auto dst = rm64.isReg ? regs.get(rm64.reg) : cpu_.get(regs.resolve(rm64.mem));
+            auto dst = rm64.isReg ? regs.get(rm64.reg) : cpu_.get(cpu_.resolve(rm64.mem));
             auto symbolsAtAddress = symbolProvider_.lookupSymbol(dst);
             if(!symbolsAtAddress.empty()) {
                 functionNameCache_[address] = symbolsAtAddress[0]->demangledSymbol;

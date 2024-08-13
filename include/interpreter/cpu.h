@@ -21,6 +21,9 @@ namespace x64 {
     class Cpu {
     public:
         Cpu(VM* vm, Mmu* mmu);
+        
+        void setSegmentBase(Segment segment, u64 base);
+        u64 getSegmentBase(Segment segment) const;
 
     private:
         friend class VM;
@@ -32,6 +35,7 @@ namespace x64 {
         Registers regs_;
         X87Fpu x87fpu_;
         SimdControlStatus mxcsr_;
+        std::array<u64, 8> segmentBase_ {{ 0, 0, 0, 0, 0, 0, 0, 0 }};
 
         struct FPUState {
             u16 fcw;
@@ -99,15 +103,9 @@ namespace x64 {
         u64 resolve(Encoding addr) const { return regs_.resolve(addr); }
 
         template<Size size>
-        SPtr<size> resolve(M<size> addr) const { return regs_.resolve(addr); }
-
-        Ptr8 resolve(const M8& m8) const { return regs_.resolve(m8); }
-        Ptr16 resolve(const M16& m16) const { return regs_.resolve(m16); }
-        Ptr32 resolve(const M32& m32) const { return regs_.resolve(m32); }
-        Ptr64 resolve(const M64& m64) const { return regs_.resolve(m64); }
-        Ptr80 resolve(const M80& m80) const { return regs_.resolve(m80); }
-        Ptr128 resolve(const MSSE& msse) const { return regs_.resolve(msse); }
-        Ptr224 resolve(const M224& m224) const { return regs_.resolve(m224); }
+        SPtr<size> resolve(M<size> addr) const {
+            return SPtr<size>{getSegmentBase(addr.segment) + resolve(addr.encoding)};
+        }
 
         void set(R8 reg, u8 value) { regs_.set(reg, value); }
         void set(R16 reg, u16 value) { regs_.set(reg, value); }

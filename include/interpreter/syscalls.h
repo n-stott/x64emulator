@@ -296,6 +296,7 @@ namespace kernel {
         x64::Mmu& mmu_;
         std::mutex mutex_;
         Thread* currentThread_ { nullptr };
+        x64::Cpu* currentCpu_ { nullptr };
         bool logSyscalls_ { false };
     };
 

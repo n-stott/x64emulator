@@ -29,6 +29,14 @@ namespace x64 {
         verify(!!mmu_);
     }
 
+    void Cpu::setSegmentBase(Segment segment, u64 base) {
+        segmentBase_[(u8)segment] = base;
+    }
+
+    u64 Cpu::getSegmentBase(Segment segment) const {
+        return segmentBase_[(u8)segment];
+    }
+
     template<typename T>
     T Cpu::get(Imm value) const {
         // assert((u64)(T)value.immediate == value.immediate);
@@ -1595,14 +1603,14 @@ namespace x64 {
 
     void Cpu::exec(const Fnstenv<M224>& ins) {
         Ptr224 dst224 = resolve(ins.dst);
-        Ptr32 dst { dst224.segment(), dst224.address() };
+        Ptr32 dst { dst224.address() };
         set(dst++, (u32)x87fpu_.control().asWord());
         set(dst++, (u32)x87fpu_.status().asWord());
     }
 
     void Cpu::exec(const Fldenv<M224>& ins) {
         Ptr224 src224 = resolve(ins.src);
-        Ptr32 src { src224.segment(), src224.address() };
+        Ptr32 src { src224.address() };
         x87fpu_.control() = X87Control::fromWord((u16)get(src++));
         x87fpu_.status() = X87Status::fromWord((u16)get(src++));
     }
@@ -2342,14 +2350,14 @@ namespace x64 {
         Ptr64 dst = resolve(ins.dst);
         verify(dst.address() % 16 == 0, "fxsave destination address must be 16-byte aligned");
         FPUState fpuState = getFpuState();
-        mmu_->copyToMmu(Ptr8{dst.segment(), dst.address()}, (const u8*)&fpuState, sizeof(fpuState));
+        mmu_->copyToMmu(Ptr8{dst.address()}, (const u8*)&fpuState, sizeof(fpuState));
     }
 
     void Cpu::exec(const Fxrstor<M64>& ins) {
         Ptr64 src = resolve(ins.src);
         verify(src.address() % 16 == 0, "fxrstor source address must be 16-byte aligned");
         FPUState fpuState;
-        mmu_->copyFromMmu((u8*)&fpuState, Ptr8{src.segment(), src.address()}, sizeof(fpuState));
+        mmu_->copyFromMmu((u8*)&fpuState, Ptr8{src.address()}, sizeof(fpuState));
         setFpuState(fpuState);
     }
 
