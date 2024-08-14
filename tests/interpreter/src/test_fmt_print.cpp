@@ -74,7 +74,11 @@ void testC2() {
 }
 
 int testD1() {
+#if ((FMT_VERSION / 10000) == 10)
+    int x = fmt::v10::detail::count_digits(10u);
+#elif ((FMT_VERSION / 10000) == 11)
     int x = fmt::v11::detail::count_digits(10u);
+#endif
     return x;
 }
 

@@ -15,6 +15,7 @@ namespace kernel {
     Scheduler::~Scheduler() = default;
 
     void Scheduler::runOnWorkerThread(int id) {
+        (void)id;
         x64::VM vm(mmu_, kernel_);
         while(true) {
             Thread* threadToRun = nullptr;
