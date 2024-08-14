@@ -4,7 +4,10 @@
 #include "interpreter/verify.h"
 #include "interpreter/vm.h"
 #include <algorithm>
+
+#ifdef MULTIPROCESSING
 #include <thread>
+#endif
 
 namespace kernel {
 
@@ -25,9 +28,6 @@ namespace kernel {
             }
 
             if(!threadToRun) return;
-#if 0
-            fmt::print("Cpu {} scheduling thread {}\n", id, threadToRun->description().tid);
-#endif
             try {
                 vm.execute(threadToRun);
             } catch(...) {
@@ -37,20 +37,20 @@ namespace kernel {
             }
             if(threadToRun->state() == Thread::THREAD_STATE::RUNNING)
                 threadToRun->setState(Thread::THREAD_STATE::RUNNABLE);
-#if 0
-            fmt::print("Cpu {} done with thread {}\n", id, threadToRun->description().tid);
-#endif
         }
-        fmt::print("Cpu {} is done\n", id);
     }
 
     void Scheduler::run() {
+#ifdef MULTIPROCESSING
         std::vector<std::thread> workerThreads;
         workerThreads.emplace_back(std::bind(&Scheduler::runOnWorkerThread, this, 0));
         workerThreads.emplace_back(std::bind(&Scheduler::runOnWorkerThread, this, 1));
         for(std::thread& workerThread : workerThreads) {
             workerThread.join();
         }
+#else
+        runOnWorkerThread(0);
+#endif
     }
 
     std::unique_ptr<Thread> Scheduler::allocateThread(int pid) {
