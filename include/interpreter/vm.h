@@ -75,7 +75,6 @@ namespace x64 {
         bool hasCrashed_ = false;
         bool logInstructions_ = false;
         unsigned long long nbTicksBeforeLoggingInstructions_;
-        bool logSyscalls_ = false;
 
         struct ExecutionPoint {
             const ExecutableSection* section { nullptr };
