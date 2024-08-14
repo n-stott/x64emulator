@@ -725,8 +725,15 @@ namespace kernel {
         x64::verify(!timeout, "futex with non-null timeout is not supported");
         auto onExit = [&](long ret) -> long {
             if(!logSyscalls_) return ret;
+            std::string op;
+            switch(futex_op) {
+                case 0: op = "wait"; break;
+                case 1: op = "wake"; break;
+                case 9: op = "wait_bitset"; break;
+                default: break;
+            }
             print("Sys::futex(uaddr={:#x}, op={}, val={}, timeout={:#x}, uaddr2={:#x}, val3={}) = {}\n",
-                              uaddr.address(), futex_op, val, timeout.address(), uaddr2.address(), val3, ret);
+                              uaddr.address(), op, val, timeout.address(), uaddr2.address(), val3, ret);
             return ret;
         };
         int unmaskedOp = futex_op & 0x7f;

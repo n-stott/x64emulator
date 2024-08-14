@@ -165,8 +165,7 @@ namespace kernel {
 
     void Scheduler::dumpThreadSummary() const {
         forEachThread([](const Thread& thread) {
-            fmt::print("  Thread #{}\n", thread.description().tid);
-            fmt::print("    exit code      {}\n", thread.exitStatus());
+            fmt::print("  Thread #{} : {}\n", thread.description().tid, thread.toString());
             fmt::print("    instructions   {:<10} \n", thread.tickInfo().ticksFromStart);
             fmt::print("    syscalls       {:<10} \n", thread.stats().syscalls);
             fmt::print("    function calls {:<10} \n", thread.stats().functionCalls);
