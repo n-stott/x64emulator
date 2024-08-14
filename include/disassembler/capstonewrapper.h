@@ -100,6 +100,7 @@ namespace x64 {
         static X64Instruction makeCld(const cs_insn& insn);
         static X64Instruction makeStd(const cs_insn& insn);
         static X64Instruction makeStos(const cs_insn& insn);
+        static X64Instruction makeScas(const cs_insn& insn);
         static X64Instruction makeCmps(const cs_insn& insn);
         static X64Instruction makeMovs(const cs_insn& insn);
 

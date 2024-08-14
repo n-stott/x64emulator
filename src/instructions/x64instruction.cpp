@@ -577,6 +577,9 @@ namespace utils {
             case Insn::REP_STOS_M32_R32: return toString<M32, R32>("rep stos");
             case Insn::REP_STOS_M64_R64: return toString<M64, R64>("rep stos");
             case Insn::REPNZ_SCAS_R8_M8: return toString<R8, M8>("repnz scas");
+            case Insn::REPNZ_SCAS_R16_M16: return toString<R8, M8>("repnz scas");
+            case Insn::REPNZ_SCAS_R32_M32: return toString<R8, M8>("repnz scas");
+            case Insn::REPNZ_SCAS_R64_M64: return toString<R8, M8>("repnz scas");
             case Insn::CMOV_R16_RM16: return toString<Cond, R16, RM16>("cmov");
             case Insn::CMOV_R32_RM32: return toString<Cond, R32, RM32>("cmov");
             case Insn::CMOV_R64_RM64: return toString<Cond, R64, RM64>("cmov");

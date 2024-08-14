@@ -476,6 +476,9 @@ namespace x64 {
         void exec(const Rep<Stos<M64, R64>>&);
 
         void exec(const RepNZ<Scas<R8, M8>>&);
+        void exec(const RepNZ<Scas<R16, M16>>&);
+        void exec(const RepNZ<Scas<R32, M32>>&);
+        void exec(const RepNZ<Scas<R64, M64>>&);
 
         void exec(const Cmov<R16, RM16>&);
         void exec(const Cmov<R32, RM32>&);
