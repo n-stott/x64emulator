@@ -438,6 +438,9 @@ namespace x64 {
             case Insn::REP_STOS_M32_R32: return exec(Rep<Stos<M32, R32>>{Stos<M32, R32>{insn.op0<M32>(), insn.op1<R32>()}});
             case Insn::REP_STOS_M64_R64: return exec(Rep<Stos<M64, R64>>{Stos<M64, R64>{insn.op0<M64>(), insn.op1<R64>()}});
             case Insn::REPNZ_SCAS_R8_M8: return exec(RepNZ<Scas<R8, M8>>{Scas<R8, M8>{insn.op0<R8>(), insn.op1<M8>()}});
+            case Insn::REPNZ_SCAS_R16_M16: return exec(RepNZ<Scas<R16, M16>>{Scas<R16, M16>{insn.op0<R16>(), insn.op1<M16>()}});
+            case Insn::REPNZ_SCAS_R32_M32: return exec(RepNZ<Scas<R32, M32>>{Scas<R32, M32>{insn.op0<R32>(), insn.op1<M32>()}});
+            case Insn::REPNZ_SCAS_R64_M64: return exec(RepNZ<Scas<R64, M64>>{Scas<R64, M64>{insn.op0<R64>(), insn.op1<M64>()}});
             case Insn::CMOV_R16_RM16: return exec(Cmov<R16, RM16>{insn.op0<Cond>(), insn.op1<R16>(), insn.op2<RM16>()});
             case Insn::CMOV_R32_RM32: return exec(Cmov<R32, RM32>{insn.op0<Cond>(), insn.op1<R32>(), insn.op2<RM32>()});
             case Insn::CMOV_R64_RM64: return exec(Cmov<R64, RM64>{insn.op0<Cond>(), insn.op1<R64>(), insn.op2<RM64>()});
@@ -1427,6 +1430,57 @@ namespace x64 {
         while(counter) {
             u8 src2 = mmu_->read8(ptr2);
             Impl::cmp8(src1, src2, &flags_);
+            ++ptr2;
+            --counter;
+            if(flags_.zero) break;
+        }
+        set(R32::ECX, counter);
+        set(R64::RDI, ptr2.address());
+    }
+
+    void Cpu::exec(const RepNZ<Scas<R16, M16>>& ins) {
+        assert(ins.op.src2.encoding.base == R64::RDI);
+        u32 counter = get(R32::ECX);
+        u16 src1 = get(ins.op.src1);
+        Ptr16 ptr2 = resolve(ins.op.src2);
+        verify(flags_.direction == 0);
+        while(counter) {
+            u16 src2 = mmu_->read16(ptr2);
+            Impl::cmp16(src1, src2, &flags_);
+            ++ptr2;
+            --counter;
+            if(flags_.zero) break;
+        }
+        set(R32::ECX, counter);
+        set(R64::RDI, ptr2.address());
+    }
+
+    void Cpu::exec(const RepNZ<Scas<R32, M32>>& ins) {
+        assert(ins.op.src2.encoding.base == R64::RDI);
+        u32 counter = get(R32::ECX);
+        u32 src1 = get(ins.op.src1);
+        Ptr32 ptr2 = resolve(ins.op.src2);
+        verify(flags_.direction == 0);
+        while(counter) {
+            u32 src2 = mmu_->read32(ptr2);
+            Impl::cmp32(src1, src2, &flags_);
+            ++ptr2;
+            --counter;
+            if(flags_.zero) break;
+        }
+        set(R32::ECX, counter);
+        set(R64::RDI, ptr2.address());
+    }
+
+    void Cpu::exec(const RepNZ<Scas<R64, M64>>& ins) {
+        assert(ins.op.src2.encoding.base == R64::RDI);
+        u32 counter = get(R32::ECX);
+        u64 src1 = get(ins.op.src1);
+        Ptr64 ptr2 = resolve(ins.op.src2);
+        verify(flags_.direction == 0);
+        while(counter) {
+            u64 src2 = mmu_->read64(ptr2);
+            Impl::cmp64(src1, src2, &flags_);
             ++ptr2;
             --counter;
             if(flags_.zero) break;

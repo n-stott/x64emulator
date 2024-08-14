@@ -1268,6 +1268,31 @@ namespace x64 {
         return make_failed(insn);
     }
 
+    static X64Instruction makeScas(const cs_insn& insn) {
+        u8 prefixByte = insn.detail->x86.prefix[0];
+        if(prefixByte == 0) return make_failed(insn);
+        x86_prefix prefix = (x86_prefix)prefixByte;
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto r8dst = asRegister8(dst);
+        auto m8src = asMemory8(src);
+        auto r16dst = asRegister16(dst);
+        auto m16src = asMemory16(src);
+        auto r32dst = asRegister32(dst);
+        auto m32src = asMemory32(src);
+        auto r64dst = asRegister64(dst);
+        auto m64src = asMemory64(src);
+        if(prefix == X86_PREFIX_REPNE) {
+            if(r8dst && m8src) return X64Instruction::make<Insn::REPNZ_SCAS_R8_M8>(insn.address, insn.size, r8dst.value(), m8src.value());
+            if(r16dst && m16src) return X64Instruction::make<Insn::REPNZ_SCAS_R16_M16>(insn.address, insn.size, r16dst.value(), m16src.value());
+            if(r32dst && m32src) return X64Instruction::make<Insn::REPNZ_SCAS_R32_M32>(insn.address, insn.size, r32dst.value(), m32src.value());
+            if(r64dst && m64src) return X64Instruction::make<Insn::REPNZ_SCAS_R64_M64>(insn.address, insn.size, r64dst.value(), m64src.value());
+        }
+        return make_failed(insn);
+    }
+
     static X64Instruction makeCmps(const cs_insn& insn) {
         u8 prefixByte = insn.detail->x86.prefix[0];
         if(prefixByte == 0) return make_failed(insn);
@@ -3241,6 +3266,10 @@ namespace x64 {
             case X86_INS_STOSW:
             case X86_INS_STOSD:
             case X86_INS_STOSQ: return makeStos(insn);
+            case X86_INS_SCASB:
+            case X86_INS_SCASW:
+            case X86_INS_SCASD:
+            case X86_INS_SCASQ: return makeScas(insn);
             case X86_INS_CMPSB:
             case X86_INS_CMPSW:
             case X86_INS_CMPSD:
