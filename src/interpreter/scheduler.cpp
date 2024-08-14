@@ -12,6 +12,7 @@ namespace kernel {
     Scheduler::~Scheduler() = default;
 
     void Scheduler::runOnWorkerThread(int id) {
+        x64::VM vm(mmu_, kernel_);
         while(true) {
             Thread* threadToRun = nullptr;
             {
@@ -24,7 +25,6 @@ namespace kernel {
             }
 
             if(!threadToRun) return;
-            x64::VM vm(mmu_, kernel_);
 #if 0
             fmt::print("Cpu {} scheduling thread {}\n", id, threadToRun->description().tid);
 #endif
@@ -33,8 +33,10 @@ namespace kernel {
             } catch(...) {
                 vm.crash();
                 terminateAll(516);
+                return;
             }
-            threadToRun->setState(Thread::THREAD_STATE::RUNNABLE);
+            if(threadToRun->state() == Thread::THREAD_STATE::RUNNING)
+                threadToRun->setState(Thread::THREAD_STATE::RUNNABLE);
 #if 0
             fmt::print("Cpu {} done with thread {}\n", id, threadToRun->description().tid);
 #endif
