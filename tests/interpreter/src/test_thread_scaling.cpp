@@ -9,7 +9,7 @@ void run(size_t count) {
     for(size_t i = 0; i < count; ++i) {
         threads.emplace_back([]() {
             volatile size_t counter = 0;
-            while(counter != 1'000'000) ++counter;
+            while(counter != 10'000'000) ++counter;
             return counter;
         });
     }
