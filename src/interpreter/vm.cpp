@@ -161,9 +161,14 @@ namespace x64 {
     void VM::dumpStackTrace() const {
         if(!currentThread_) return;
         size_t frameId = 0;
-        for(auto it = currentThread_->callstack().rbegin(); it != currentThread_->callstack().rend(); ++it) {
-            std::string name = calledFunctionName(*it);
-            fmt::print(" {}:{:#x} : {}\n", frameId, *it, name);
+        auto callstackBegin = currentThread_->callstack().rbegin();
+        auto callstackEnd = currentThread_->callstack().rend();
+        auto callpointBegin = currentThread_->callpoints().rbegin();
+        auto callstackIt = callstackBegin;
+        auto callpointIt = callpointBegin;
+        for(;callstackIt != callstackEnd; ++callstackIt, ++callpointIt) {
+            std::string name = calledFunctionName(*callstackIt);
+            fmt::print(" {}:{:#x} -> {:#x} : {}\n", frameId, *callpointIt, *callstackIt, name);
             ++frameId;
         }
     }
@@ -213,7 +218,7 @@ namespace x64 {
             callCache_.insert(std::make_pair(address, cp));
         }
         currentThreadExecutionPoint_ = cp;
-        currentThread_->pushCallstack(address);
+        currentThread_->pushCallstack(cpu_.get(R64::RIP), address);
     }
 
     void VM::notifyRet(u64 address) {

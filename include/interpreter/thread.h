@@ -81,11 +81,22 @@ namespace kernel {
         Stats& stats() { return stats_; }
         const Stats& stats() const { return stats_; }
 
-        const std::vector<u64>& callstack() const { return callstack_; }
-        void pushCallstack(u64 address) { callstack_.push_back(address); }
+        const std::vector<u64>& callstack() const {
+            return callstack_;
+        }
+
+        const std::vector<u64>& callpoints() const {
+            return callpoint_;
+        }
+
+        void pushCallstack(u64 from, u64 to) {
+            callpoint_.push_back(from);
+            callstack_.push_back(to);
+        }
         u64 popCallstack() {
             u64 address = callstack_.back();
             callstack_.pop_back();
+            callpoint_.pop_back();
             return address;
         }
 
@@ -101,6 +112,7 @@ namespace kernel {
 
         Stats stats_;
 
+        std::vector<u64> callpoint_;
         std::vector<u64> callstack_;
 
     };
