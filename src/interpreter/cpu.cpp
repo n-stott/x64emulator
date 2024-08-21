@@ -164,6 +164,9 @@ namespace x64 {
     }
 
     void Cpu::exec(const X64Instruction& insn) {
+        // if(insn.lock()) {
+        //     fmt::print("{}\n", insn.toString());
+        // }
         switch(insn.insn()) {
             case Insn::ADD_RM8_RM8: return exec(Add<RM8, RM8>{insn.op0<RM8>(), insn.op1<RM8>()});
             case Insn::ADD_RM8_IMM: return exec(Add<RM8, Imm>{insn.op0<RM8>(), insn.op1<Imm>()});
@@ -247,9 +250,15 @@ namespace x64 {
             case Insn::XCHG_RM16_R16: return exec(Xchg<RM16, R16>{insn.op0<RM16>(), insn.op1<R16>()});
             case Insn::XCHG_RM32_R32: return exec(Xchg<RM32, R32>{insn.op0<RM32>(), insn.op1<R32>()});
             case Insn::XCHG_RM64_R64: return exec(Xchg<RM64, R64>{insn.op0<RM64>(), insn.op1<R64>()});
-            case Insn::XADD_RM16_R16: return exec(Xadd<RM16, R16>{insn.op0<RM16>(), insn.op1<R16>()});
-            case Insn::XADD_RM32_R32: return exec(Xadd<RM32, R32>{insn.op0<RM32>(), insn.op1<R32>()});
-            case Insn::XADD_RM64_R64: return exec(Xadd<RM64, R64>{insn.op0<RM64>(), insn.op1<R64>()});
+            case Insn::XADD_R16_R16: return exec(Xadd<R16, R16>{insn.op0<R16>(), insn.op1<R16>()});
+            case Insn::XADD_R32_R32: return exec(Xadd<R32, R32>{insn.op0<R32>(), insn.op1<R32>()});
+            case Insn::XADD_R64_R64: return exec(Xadd<R64, R64>{insn.op0<R64>(), insn.op1<R64>()});
+            case Insn::XADD_M16_R16: return exec(Xadd<M16, R16>{insn.op0<M16>(), insn.op1<R16>()});
+            case Insn::XADD_M32_R32: return exec(Xadd<M32, R32>{insn.op0<M32>(), insn.op1<R32>()});
+            case Insn::XADD_M64_R64: return exec(Xadd<M64, R64>{insn.op0<M64>(), insn.op1<R64>()});
+            case Insn::LOCK_XADD_M16_R16: return execLock(Xadd<M16, R16>{insn.op0<M16>(), insn.op1<R16>()});
+            case Insn::LOCK_XADD_M32_R32: return execLock(Xadd<M32, R32>{insn.op0<M32>(), insn.op1<R32>()});
+            case Insn::LOCK_XADD_M64_R64: return execLock(Xadd<M64, R64>{insn.op0<M64>(), insn.op1<R64>()});
             case Insn::MOV_R8_R8: return exec<Size::BYTE>(Mov<R8, R8>{insn.op0<R8>(), insn.op1<R8>()});
             case Insn::MOV_R8_M8: return exec(Mov<R8, M8>{insn.op0<R8>(), insn.op1<M8>()});
             case Insn::MOV_M8_R8: return exec(Mov<M8, R8>{insn.op0<M8>(), insn.op1<R8>()});
@@ -823,21 +832,21 @@ namespace x64 {
         set(ins.src, dst);
     }
 
-    void Cpu::exec(const Xadd<RM16, R16>& ins) {
+    void Cpu::exec(const Xadd<R16, R16>& ins) {
         u16 dst = get(ins.dst);
         u16 src = get(ins.src);
         u16 tmp = Impl::add16(dst, src, &flags_);
         set(ins.dst, tmp);
         set(ins.src, dst);
     }
-    void Cpu::exec(const Xadd<RM32, R32>& ins) {
+    void Cpu::exec(const Xadd<R32, R32>& ins) {
         u32 dst = get(ins.dst);
         u32 src = get(ins.src);
         u32 tmp = Impl::add32(dst, src, &flags_);
         set(ins.dst, tmp);
         set(ins.src, dst);
     }
-    void Cpu::exec(const Xadd<RM64, R64>& ins) {
+    void Cpu::exec(const Xadd<R64, R64>& ins) {
         u64 dst = get(ins.dst);
         u64 src = get(ins.src);
         u64 tmp = Impl::add64(dst, src, &flags_);
@@ -845,6 +854,49 @@ namespace x64 {
         set(ins.src, dst);
     }
 
+    void Cpu::exec(const Xadd<M16, R16>& ins) {
+        u16 dst = get(resolve(ins.dst));
+        u16 src = get(ins.src);
+        u16 tmp = Impl::add16(dst, src, &flags_);
+        set(resolve(ins.dst), tmp);
+        set(ins.src, dst);
+    }
+    void Cpu::exec(const Xadd<M32, R32>& ins) {
+        u32 dst = get(resolve(ins.dst));
+        u32 src = get(ins.src);
+        u32 tmp = Impl::add32(dst, src, &flags_);
+        set(resolve(ins.dst), tmp);
+        set(ins.src, dst);
+    }
+    void Cpu::exec(const Xadd<M64, R64>& ins) {
+        u64 dst = get(resolve(ins.dst));
+        u64 src = get(ins.src);
+        u64 tmp = Impl::add64(dst, src, &flags_);
+        set(resolve(ins.dst), tmp);
+        set(ins.src, dst);
+    }
+
+    void Cpu::execLock(const Xadd<M16, R16>& ins) {
+        u16 dst = get(resolve(ins.dst));
+        u16 src = get(ins.src);
+        u16 tmp = Impl::add16(dst, src, &flags_);
+        set(resolve(ins.dst), tmp);
+        set(ins.src, dst);
+    }
+    void Cpu::execLock(const Xadd<M32, R32>& ins) {
+        u32 dst = get(resolve(ins.dst));
+        u32 src = get(ins.src);
+        u32 tmp = Impl::add32(dst, src, &flags_);
+        set(resolve(ins.dst), tmp);
+        set(ins.src, dst);
+    }
+    void Cpu::execLock(const Xadd<M64, R64>& ins) {
+        u64 dst = get(resolve(ins.dst));
+        u64 src = get(ins.src);
+        u64 tmp = Impl::add64(dst, src, &flags_);
+        set(resolve(ins.dst), tmp);
+        set(ins.src, dst);
+    }
 
     template<typename T, typename U> T narrow(const U& u);
     template<> u32 narrow(const u64& val) { return (u32)val; }

@@ -93,9 +93,15 @@ namespace x64 {
         XCHG_RM16_R16,
         XCHG_RM32_R32,
         XCHG_RM64_R64,
-        XADD_RM16_R16,
-        XADD_RM32_R32,
-        XADD_RM64_R64,
+        XADD_R16_R16,
+        XADD_R32_R32,
+        XADD_R64_R64,
+        XADD_M16_R16,
+        XADD_M32_R32,
+        XADD_M64_R64,
+        LOCK_XADD_M16_R16,
+        LOCK_XADD_M32_R32,
+        LOCK_XADD_M64_R64,
         MOV_R8_R8,
         MOV_R8_M8,
         MOV_M8_R8,
@@ -568,6 +574,14 @@ namespace x64 {
         Insn insn() const { return insn_; }
         u8 nbOperands() const { return nbOperands_; }
 
+        void setLock() {
+            lock_ = 1;
+        }
+        
+        bool lock() const {
+            return lock_;
+        }
+
         bool isCall() const;
         bool isSSE() const;
         bool isX87() const;
@@ -575,7 +589,7 @@ namespace x64 {
     private:
 
         X64Instruction(u64 address, Insn insn, u16 sizeInBytes, u8 nbOperands, const ArgBuffer& op0, const ArgBuffer& op1, const ArgBuffer& op2) :
-            address_(address), nextAddress_(address+sizeInBytes), insn_(insn), nbOperands_(nbOperands), op0_(op0), op1_(op1), op2_(op2) {} 
+            address_(address), nextAddress_(address+sizeInBytes), insn_(insn), nbOperands_(nbOperands & 0x3), lock_(0), op0_(op0), op1_(op1), op2_(op2) {} 
 
 
         template<typename Arg0, typename Arg1, typename Arg2>
@@ -612,7 +626,8 @@ namespace x64 {
         u64 address_;
         u64 nextAddress_;
         Insn insn_;
-        u8 nbOperands_;
+        u8 nbOperands_ : 2;
+        u8 lock_ : 1;
         ArgBuffer op0_;
         ArgBuffer op1_;
         ArgBuffer op2_;

@@ -58,6 +58,7 @@ create_simple_test(x87)
 create_simple_test(fenv)
 create_simple_test(ostream)
 create_simple_test(tmpfile)
+create_simple_test(loop)
 
 
 add_executable(test_trivial_c src/test_trivial.c)
@@ -97,3 +98,8 @@ add_executable(test_thread_scaling src/test_thread_scaling.cpp)
 target_compile_options(test_thread_scaling PUBLIC ${CC_OPTIONS})
 target_link_libraries(test_thread_scaling PUBLIC pthread)
 add_test(NAME thread_scaling COMMAND ${CMAKE_BINARY_DIR}/interpreter test_thread_scaling)
+
+add_executable(test_atomic src/test_atomic.cpp)
+target_compile_options(test_atomic PUBLIC ${CC_OPTIONS})
+target_link_libraries(test_atomic PUBLIC pthread)
+add_test(NAME test_atomic COMMAND ${CMAKE_BINARY_DIR}/interpreter test_atomic)
