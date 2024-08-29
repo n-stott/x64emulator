@@ -50,7 +50,7 @@ namespace x64 {
     }
 
     bool Interpreter::run(const std::string& programFilePath, const std::vector<std::string>& arguments, const std::vector<std::string>& environmentVariables) {
-        // SignalHandler handler;
+        SignalHandler handler;
 
         Mmu mmu;
         kernel::Kernel kernel(mmu);

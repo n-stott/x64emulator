@@ -877,25 +877,28 @@ namespace x64 {
     }
 
     void Cpu::execLock(const Xadd<M16, R16>& ins) {
-        u16 dst = get(resolve(ins.dst));
+        Ptr16 address = resolve(ins.dst);
         u16 src = get(ins.src);
-        u16 tmp = Impl::add16(dst, src, &flags_);
-        set(resolve(ins.dst), tmp);
-        set(ins.src, dst);
+        mmu_->withExclusiveRegion(address, [&](u16 oldValue) -> u16 {
+            u16 newValue = Impl::add16(oldValue, src, &flags_);
+            return newValue;
+        });
     }
     void Cpu::execLock(const Xadd<M32, R32>& ins) {
-        u32 dst = get(resolve(ins.dst));
+        Ptr32 address = resolve(ins.dst);
         u32 src = get(ins.src);
-        u32 tmp = Impl::add32(dst, src, &flags_);
-        set(resolve(ins.dst), tmp);
-        set(ins.src, dst);
+        mmu_->withExclusiveRegion(address, [&](u32 oldValue) -> u32 {
+            u32 newValue = Impl::add32(oldValue, src, &flags_);
+            return newValue;
+        });
     }
     void Cpu::execLock(const Xadd<M64, R64>& ins) {
-        u64 dst = get(resolve(ins.dst));
+        Ptr64 address = resolve(ins.dst);
         u64 src = get(ins.src);
-        u64 tmp = Impl::add64(dst, src, &flags_);
-        set(resolve(ins.dst), tmp);
-        set(ins.src, dst);
+        mmu_->withExclusiveRegion(address, [&](u64 oldValue) -> u64 {
+            u64 newValue = Impl::add64(oldValue, src, &flags_);
+            return newValue;
+        });
     }
 
     template<typename T, typename U> T narrow(const U& u);

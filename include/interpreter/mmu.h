@@ -1,9 +1,13 @@
 #ifndef MMU_H
 #define MMU_H
 
+#include "interpreter/verify.h"
 #include "utils/utils.h"
+#include "utils/spinlock.h"
 #include "types.h"
+#include <fmt/core.h>
 #include <array>
+#include <cassert>
 #include <deque>
 #include <memory>
 #include <string>
@@ -48,11 +52,19 @@ namespace x64 {
         public:
             Region(std::string name, u64 base, u64 size, PROT prot);
 
+            Region(const Region&);
+            Region(Region&&) noexcept;
+
+            Region& operator=(const Region&);
+            Region& operator=(Region&&) noexcept;
+
             u64 base() const { return base_; }
             u64 size() const { return size_; }
             u64 end() const { return base_+size_; }
             PROT prot() const { return prot_; }
             const std::string& name() const { return name_; }
+
+            Spinlock& lock() { return lock_; }
 
             bool contains(u64 address) const;
             bool intersectsRange(u64 base, u64 end) const;
@@ -84,11 +96,43 @@ namespace x64 {
             friend class Mmu;
 
             template<typename T>
-            T read(u64 address) const;
+            T read(u64 address) const {
+                assert(contains(address));
+                assert(contains(address+sizeof(T)-1));
+                verify((bool)(prot() & PROT::READ), [&]() {
+                    badRead(address);
+                });
+                T value;
+                std::memcpy(&value, &data_[address-base()], sizeof(value));
+                return value;
+            }
 
             template<typename T>
-            void write(u64 address, T value);
+            void write(u64 address, T value) {
+                assert(contains(address));
+                assert(contains(address+sizeof(T)-1));
+                verify((bool)(prot() & PROT::WRITE), [&]() {
+                    badWrite(address);
+                });
+                SpinlockLocker locker(lock_);
+                std::memcpy(&data_[address-base()], &value, sizeof(value));
+            }
 
+            template<typename T>
+            void write(u64 address, T value, SpinlockLocker& locker) {
+                assert(contains(address));
+                assert(contains(address+sizeof(T)-1));
+                verify((bool)(prot() & PROT::WRITE), [&]() {
+                    badWrite(address);
+                });
+                verify(locker.holdsLock(lock_));
+                std::memcpy(&data_[address-base()], &value, sizeof(value));
+            }
+
+            void badRead(u64 address) const;
+            void badWrite(u64 address) const;
+
+            Spinlock lock_;
             u64 base_;
             u64 size_;
             std::vector<u8> data_;
@@ -137,6 +181,20 @@ namespace x64 {
         }
 
         std::string readString(Ptr8 src) const;
+
+        template<Size s, typename Modify>
+        void withExclusiveRegion(SPtr<s> ptr, Modify modify) {
+            using type = typename Unsigned<s>::type;
+            
+            u64 address = ptr.address();
+            Region* region = findAddress(address);
+            verify(!!region, "No region found");
+
+            SpinlockLocker locker(region->lock());
+            type oldValue = region->read<type>(address);
+            type newValue = modify(oldValue);
+            region->write<type>(address, newValue, locker);
+        }
 
         u8 read8(Ptr8 ptr) const;
         u16 read16(Ptr16 ptr) const;

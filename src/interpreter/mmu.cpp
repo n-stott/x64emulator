@@ -26,6 +26,45 @@ namespace x64 {
         this->name_ = std::move(name);
     }
 
+
+    Mmu::Region::Region(const Region& r) : base_(r.base_),
+                                           size_(r.size_),
+                                           data_(r.data_),
+                                           prot_(r.prot_),
+                                           name_(r.name_) {
+        
+    }
+
+    Mmu::Region::Region(Region&& r) noexcept : base_(std::move(r.base_)),
+                                               size_(std::move(r.size_)),
+                                               data_(std::move(r.data_)),
+                                               prot_(std::move(r.prot_)),
+                                               name_(std::move(r.name_)) {
+        
+    }
+
+    Mmu::Region& Mmu::Region::operator=(const Region& r) {
+        if(&r != this) {
+            base_ = r.base_;
+            size_ = r.size_;
+            data_ = r.data_;
+            prot_ = r.prot_;
+            name_ = r.name_;
+        }
+        return *this;
+    }
+
+    Mmu::Region& Mmu::Region::operator=(Region&& r) noexcept {
+        if(&r != this) {
+            base_ = std::move(r.base_);
+            size_ = std::move(r.size_);
+            data_ = std::move(r.data_);
+            prot_ = std::move(r.prot_);
+            name_ = std::move(r.name_);
+        }
+        return *this;
+    }
+
     Mmu::Region* Mmu::addRegion(Region region) {
         auto emptyIntersection = [&](const std::unique_ptr<Region>& ptr) {
             return !ptr->contains(region.base()) && !ptr->contains(region.end() - 1);
@@ -188,27 +227,12 @@ namespace x64 {
         return s;
     }
 
-
-    template<typename T>
-    T Mmu::Region::read(u64 address) const {
-        assert(contains(address));
-        assert(contains(address+sizeof(T)-1));
-        verify((bool)(prot() & PROT::READ), [&]() {
-            fmt::print("Attempt to read {:#x} from non-readable region [{:#x}:{:#x}]\n", address, base(), end());
-        });
-        T value;
-        std::memcpy(&value, &data_[address-base()], sizeof(value));
-        return value;
+    void Mmu::Region::badRead(u64 address) const {
+        fmt::print("Attempt to read from {:#x} in non-readable region [{:#x}:{:#x}]\n", address, base(), end());
     }
 
-    template<typename T>
-    void Mmu::Region::write(u64 address, T value) {
-        assert(contains(address));
-        assert(contains(address+sizeof(T)-1));
-        verify((bool)(prot() & PROT::WRITE), [&]() {
-            fmt::print("Attempt to write {:#x} to non-writable region [{:#x}:{:#x}]\n", address, base(), end());
-        });
-        std::memcpy(&data_[address-base()], &value, sizeof(value));
+    void Mmu::Region::badWrite(u64 address) const {
+        fmt::print("Attempt to write to {:#x} in non-writable region [{:#x}:{:#x}]\n", address, base(), end());
     }
 
     u8 Mmu::Region::read8(u64 address) const { return read<u8>(address); }
