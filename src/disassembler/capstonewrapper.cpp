@@ -839,10 +839,51 @@ namespace x64 {
         auto rm16dst = asRM16(operand);
         auto rm32dst = asRM32(operand);
         auto rm64dst = asRM64(operand);
-        if(rm8dst) return X64Instruction::make<Insn::INC_RM8>(insn.address, insn.size, rm8dst.value());
-        if(rm16dst) return X64Instruction::make<Insn::INC_RM16>(insn.address, insn.size, rm16dst.value());
-        if(rm32dst) return X64Instruction::make<Insn::INC_RM32>(insn.address, insn.size, rm32dst.value());
-        if(rm64dst) return X64Instruction::make<Insn::INC_RM64>(insn.address, insn.size, rm64dst.value());
+        bool lock = (insn.detail->x86.prefix[0] == X86_PREFIX_LOCK);
+        if(rm8dst) {
+            if(rm8dst->isReg) {
+                return X64Instruction::make<Insn::INC_R8>(insn.address, insn.size, rm8dst->reg);
+            } else {
+                if(lock) {
+                    return X64Instruction::make<Insn::LOCK_INC_M8>(insn.address, insn.size, rm8dst->mem);
+                } else {
+                    return X64Instruction::make<Insn::INC_M8>(insn.address, insn.size, rm8dst->mem);
+                }
+            }
+        }
+        if(rm16dst) {
+            if(rm16dst->isReg) {
+                return X64Instruction::make<Insn::INC_R16>(insn.address, insn.size, rm16dst->reg);
+            } else {
+                if(lock) {
+                    return X64Instruction::make<Insn::LOCK_INC_M16>(insn.address, insn.size, rm16dst->mem);
+                } else {
+                    return X64Instruction::make<Insn::INC_M16>(insn.address, insn.size, rm16dst->mem);
+                }
+            }
+        }
+        if(rm32dst) {
+            if(rm32dst->isReg) {
+                return X64Instruction::make<Insn::INC_R32>(insn.address, insn.size, rm32dst->reg);
+            } else {
+                if(lock) {
+                    return X64Instruction::make<Insn::LOCK_INC_M32>(insn.address, insn.size, rm32dst->mem);
+                } else {
+                    return X64Instruction::make<Insn::INC_M32>(insn.address, insn.size, rm32dst->mem);
+                }
+            }
+        }
+        if(rm64dst) {
+            if(rm64dst->isReg) {
+                return X64Instruction::make<Insn::INC_R64>(insn.address, insn.size, rm64dst->reg);
+            } else {
+                if(lock) {
+                    return X64Instruction::make<Insn::LOCK_INC_M64>(insn.address, insn.size, rm64dst->mem);
+                } else {
+                    return X64Instruction::make<Insn::INC_M64>(insn.address, insn.size, rm64dst->mem);
+                }
+            }
+        }
         return make_failed(insn);
     }
 

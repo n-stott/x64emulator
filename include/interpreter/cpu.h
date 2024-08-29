@@ -336,10 +336,20 @@ namespace x64 {
         void exec(const Cdq&);
         void exec(const Cqo&);
 
-        void exec(const Inc<RM8>&);
-        void exec(const Inc<RM16>&);
-        void exec(const Inc<RM32>&);
-        void exec(const Inc<RM64>&);
+        void exec(const Inc<R8>&);
+        void exec(const Inc<R16>&);
+        void exec(const Inc<R32>&);
+        void exec(const Inc<R64>&);
+
+        void exec(const Inc<M8>&);
+        void exec(const Inc<M16>&);
+        void exec(const Inc<M32>&);
+        void exec(const Inc<M64>&);
+
+        void execLock(const Inc<M8>&);
+        void execLock(const Inc<M16>&);
+        void execLock(const Inc<M32>&);
+        void execLock(const Inc<M64>&);
 
         void exec(const Dec<RM8>&);
         void exec(const Dec<RM16>&);
