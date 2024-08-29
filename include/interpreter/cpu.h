@@ -155,6 +155,11 @@ namespace x64 {
         template<typename Dst>
         void execCmpxchg64Impl(Dst dst, u64 src);
 
+        void execLockCmpxchg8Impl(Ptr8 dst, u8 src);
+        void execLockCmpxchg16Impl(Ptr16 dst, u16 src);
+        void execLockCmpxchg32Impl(Ptr32 dst, u32 src);
+        void execLockCmpxchg64Impl(Ptr64 dst, u64 src);
+
         kernel::Thread* currentThread();
 
     public:
@@ -446,10 +451,20 @@ namespace x64 {
         void exec(const Cmp<RM64, RM64>&);
         void exec(const Cmp<RM64, Imm>&);
 
-        void exec(const Cmpxchg<RM8, R8>&);
-        void exec(const Cmpxchg<RM16, R16>&);
-        void exec(const Cmpxchg<RM32, R32>&);
-        void exec(const Cmpxchg<RM64, R64>&);
+        void exec(const Cmpxchg<R8, R8>&);
+        void exec(const Cmpxchg<R16, R16>&);
+        void exec(const Cmpxchg<R32, R32>&);
+        void exec(const Cmpxchg<R64, R64>&);
+
+        void exec(const Cmpxchg<M8, R8>&);
+        void exec(const Cmpxchg<M16, R16>&);
+        void exec(const Cmpxchg<M32, R32>&);
+        void exec(const Cmpxchg<M64, R64>&);
+
+        void execLock(const Cmpxchg<M8, R8>&);
+        void execLock(const Cmpxchg<M16, R16>&);
+        void execLock(const Cmpxchg<M32, R32>&);
+        void execLock(const Cmpxchg<M64, R64>&);
 
         void exec(const Set<RM8>&);
 

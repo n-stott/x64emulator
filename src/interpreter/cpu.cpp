@@ -417,10 +417,18 @@ namespace x64 {
             case Insn::CMP_RM32_IMM: return exec(Cmp<RM32, Imm>{insn.op0<RM32>(), insn.op1<Imm>()});
             case Insn::CMP_RM64_RM64: return exec(Cmp<RM64, RM64>{insn.op0<RM64>(), insn.op1<RM64>()});
             case Insn::CMP_RM64_IMM: return exec(Cmp<RM64, Imm>{insn.op0<RM64>(), insn.op1<Imm>()});
-            case Insn::CMPXCHG_RM8_R8: return exec(Cmpxchg<RM8, R8>{insn.op0<RM8>(), insn.op1<R8>()});
-            case Insn::CMPXCHG_RM16_R16: return exec(Cmpxchg<RM16, R16>{insn.op0<RM16>(), insn.op1<R16>()});
-            case Insn::CMPXCHG_RM32_R32: return exec(Cmpxchg<RM32, R32>{insn.op0<RM32>(), insn.op1<R32>()});
-            case Insn::CMPXCHG_RM64_R64: return exec(Cmpxchg<RM64, R64>{insn.op0<RM64>(), insn.op1<R64>()});
+            case Insn::CMPXCHG_R8_R8: return exec(Cmpxchg<R8, R8>{insn.op0<R8>(), insn.op1<R8>()});
+            case Insn::CMPXCHG_R16_R16: return exec(Cmpxchg<R16, R16>{insn.op0<R16>(), insn.op1<R16>()});
+            case Insn::CMPXCHG_R32_R32: return exec(Cmpxchg<R32, R32>{insn.op0<R32>(), insn.op1<R32>()});
+            case Insn::CMPXCHG_R64_R64: return exec(Cmpxchg<R64, R64>{insn.op0<R64>(), insn.op1<R64>()});
+            case Insn::CMPXCHG_M8_R8: return exec(Cmpxchg<M8, R8>{insn.op0<M8>(), insn.op1<R8>()});
+            case Insn::CMPXCHG_M16_R16: return exec(Cmpxchg<M16, R16>{insn.op0<M16>(), insn.op1<R16>()});
+            case Insn::CMPXCHG_M32_R32: return exec(Cmpxchg<M32, R32>{insn.op0<M32>(), insn.op1<R32>()});
+            case Insn::CMPXCHG_M64_R64: return exec(Cmpxchg<M64, R64>{insn.op0<M64>(), insn.op1<R64>()});
+            case Insn::LOCK_CMPXCHG_M8_R8: return execLock(Cmpxchg<M8, R8>{insn.op0<M8>(), insn.op1<R8>()});
+            case Insn::LOCK_CMPXCHG_M16_R16: return execLock(Cmpxchg<M16, R16>{insn.op0<M16>(), insn.op1<R16>()});
+            case Insn::LOCK_CMPXCHG_M32_R32: return execLock(Cmpxchg<M32, R32>{insn.op0<M32>(), insn.op1<R32>()});
+            case Insn::LOCK_CMPXCHG_M64_R64: return execLock(Cmpxchg<M64, R64>{insn.op0<M64>(), insn.op1<R64>()});
             case Insn::SET_RM8: return exec(Set<RM8>{insn.op0<Cond>(), insn.op1<RM8>()});
             case Insn::JMP_RM32: return exec(Jmp<RM32>{insn.op0<RM32>()});
             case Insn::JMP_RM64: return exec(Jmp<RM64>{insn.op0<RM64>()});
@@ -1228,10 +1236,72 @@ namespace x64 {
         }
     }
 
-    void Cpu::exec(const Cmpxchg<RM8, R8>& ins) { execCmpxchg8Impl(ins.src1, get(ins.src2)); }
-    void Cpu::exec(const Cmpxchg<RM16, R16>& ins) { execCmpxchg16Impl(ins.src1, get(ins.src2)); }
-    void Cpu::exec(const Cmpxchg<RM32, R32>& ins) { execCmpxchg32Impl(ins.src1, get(ins.src2)); }
-    void Cpu::exec(const Cmpxchg<RM64, R64>& ins) { execCmpxchg64Impl(ins.src1, get(ins.src2)); }
+    void Cpu::execLockCmpxchg8Impl(Ptr8 dst, u8 src) {
+        u8 eax = get(R8::AL);
+        mmu_->withExclusiveRegion(dst, [&](u8 oldValue) {
+            Impl::cmpxchg8(eax, oldValue, &flags_);
+            if(flags_.zero == 1) {
+                return src;
+            } else {
+                set(R8::AL, oldValue);
+                return oldValue;
+            }
+        });
+    }
+
+    void Cpu::execLockCmpxchg16Impl(Ptr16 dst, u16 src) {
+        u16 eax = get(R16::AX);
+        mmu_->withExclusiveRegion(dst, [&](u16 oldValue) {
+            Impl::cmpxchg16(eax, oldValue, &flags_);
+            if(flags_.zero == 1) {
+                return src;
+            } else {
+                set(R16::AX, oldValue);
+                return oldValue;
+            }
+        });
+    }
+
+    void Cpu::execLockCmpxchg32Impl(Ptr32 dst, u32 src) {
+        u32 eax = get(R32::EAX);
+        mmu_->withExclusiveRegion(dst, [&](u32 oldValue) {
+            Impl::cmpxchg32(eax, oldValue, &flags_);
+            if(flags_.zero == 1) {
+                return src;
+            } else {
+                set(R32::EAX, oldValue);
+                return oldValue;
+            }
+        });
+    }
+
+    void Cpu::execLockCmpxchg64Impl(Ptr64 dst, u64 src) {
+        u64 eax = get(R64::RAX);
+        mmu_->withExclusiveRegion(dst, [&](u64 oldValue) {
+            Impl::cmpxchg64(eax, oldValue, &flags_);
+            if(flags_.zero == 1) {
+                return src;
+            } else {
+                set(R64::RAX, oldValue);
+                return oldValue;
+            }
+        });
+    }
+
+    void Cpu::exec(const Cmpxchg<R8, R8>& ins) { execCmpxchg8Impl(ins.src1, get(ins.src2)); }
+    void Cpu::exec(const Cmpxchg<R16, R16>& ins) { execCmpxchg16Impl(ins.src1, get(ins.src2)); }
+    void Cpu::exec(const Cmpxchg<R32, R32>& ins) { execCmpxchg32Impl(ins.src1, get(ins.src2)); }
+    void Cpu::exec(const Cmpxchg<R64, R64>& ins) { execCmpxchg64Impl(ins.src1, get(ins.src2)); }
+
+    void Cpu::exec(const Cmpxchg<M8, R8>& ins) { execCmpxchg8Impl(resolve(ins.src1), get(ins.src2)); }
+    void Cpu::exec(const Cmpxchg<M16, R16>& ins) { execCmpxchg16Impl(resolve(ins.src1), get(ins.src2)); }
+    void Cpu::exec(const Cmpxchg<M32, R32>& ins) { execCmpxchg32Impl(resolve(ins.src1), get(ins.src2)); }
+    void Cpu::exec(const Cmpxchg<M64, R64>& ins) { execCmpxchg64Impl(resolve(ins.src1), get(ins.src2)); }
+
+    void Cpu::execLock(const Cmpxchg<M8, R8>& ins) { execCmpxchg8Impl(resolve(ins.src1), get(ins.src2)); }
+    void Cpu::execLock(const Cmpxchg<M16, R16>& ins) { execCmpxchg16Impl(resolve(ins.src1), get(ins.src2)); }
+    void Cpu::execLock(const Cmpxchg<M32, R32>& ins) { execCmpxchg32Impl(resolve(ins.src1), get(ins.src2)); }
+    void Cpu::execLock(const Cmpxchg<M64, R64>& ins) { execCmpxchg64Impl(resolve(ins.src1), get(ins.src2)); }
 
     template<typename Dst>
     void Cpu::execSet(Cond cond, Dst dst) {

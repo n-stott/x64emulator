@@ -1200,10 +1200,51 @@ namespace x64 {
         auto r16src = asRegister16(src);
         auto r32src = asRegister32(src);
         auto r64src = asRegister64(src);
-        if(rm8dst && r8src) return X64Instruction::make<Insn::CMPXCHG_RM8_R8>(insn.address, insn.size, rm8dst.value(), r8src.value());
-        if(rm16dst && r16src) return X64Instruction::make<Insn::CMPXCHG_RM16_R16>(insn.address, insn.size, rm16dst.value(), r16src.value());
-        if(rm32dst && r32src) return X64Instruction::make<Insn::CMPXCHG_RM32_R32>(insn.address, insn.size, rm32dst.value(), r32src.value());
-        if(rm64dst && r64src) return X64Instruction::make<Insn::CMPXCHG_RM64_R64>(insn.address, insn.size, rm64dst.value(), r64src.value());
+        bool lock = (insn.detail->x86.prefix[0] == X86_PREFIX_LOCK);
+        if(rm8dst && r8src) {
+            if(rm8dst->isReg) {
+                return X64Instruction::make<Insn::CMPXCHG_R8_R8>(insn.address, insn.size, rm8dst->reg, r8src.value());
+            } else {
+                if(lock) {
+                    return X64Instruction::make<Insn::LOCK_CMPXCHG_M8_R8>(insn.address, insn.size, rm8dst->mem, r8src.value());
+                } else {
+                    return X64Instruction::make<Insn::CMPXCHG_M8_R8>(insn.address, insn.size, rm8dst->mem, r8src.value());
+                }
+            }
+        }
+        if(rm16dst && r16src) {
+            if(rm16dst->isReg) {
+                return X64Instruction::make<Insn::CMPXCHG_R16_R16>(insn.address, insn.size, rm16dst->reg, r16src.value());
+            } else {
+                if(lock) {
+                    return X64Instruction::make<Insn::LOCK_CMPXCHG_M16_R16>(insn.address, insn.size, rm16dst->mem, r16src.value());
+                } else {
+                    return X64Instruction::make<Insn::CMPXCHG_M16_R16>(insn.address, insn.size, rm16dst->mem, r16src.value());
+                }
+            }
+        }
+        if(rm32dst && r32src) {
+            if(rm32dst->isReg) {
+                return X64Instruction::make<Insn::CMPXCHG_R32_R32>(insn.address, insn.size, rm32dst->reg, r32src.value());
+            } else {
+                if(lock) {
+                    return X64Instruction::make<Insn::LOCK_CMPXCHG_M32_R32>(insn.address, insn.size, rm32dst->mem, r32src.value());
+                } else {
+                    return X64Instruction::make<Insn::CMPXCHG_M32_R32>(insn.address, insn.size, rm32dst->mem, r32src.value());
+                }
+            }
+        }
+        if(rm64dst && r64src) {
+            if(rm64dst->isReg) {
+                return X64Instruction::make<Insn::CMPXCHG_R64_R64>(insn.address, insn.size, rm64dst->reg, r64src.value());
+            } else {
+                if(lock) {
+                    return X64Instruction::make<Insn::LOCK_CMPXCHG_M64_R64>(insn.address, insn.size, rm64dst->mem, r64src.value());
+                } else {
+                    return X64Instruction::make<Insn::CMPXCHG_M64_R64>(insn.address, insn.size, rm64dst->mem, r64src.value());
+                }
+            }
+        }
         return make_failed(insn);
     }
 
