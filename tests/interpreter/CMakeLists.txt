@@ -103,3 +103,8 @@ add_executable(test_atomic src/test_atomic.cpp)
 target_compile_options(test_atomic PUBLIC ${CC_OPTIONS})
 target_link_libraries(test_atomic PUBLIC pthread)
 add_test(NAME test_atomic COMMAND ${CMAKE_BINARY_DIR}/interpreter test_atomic)
+
+add_executable(test_lock src/test_lock.cpp)
+target_compile_options(test_lock PUBLIC ${CC_OPTIONS})
+target_link_libraries(test_lock PUBLIC pthread)
+add_test(NAME test_lock COMMAND ${CMAKE_BINARY_DIR}/interpreter test_lock)
