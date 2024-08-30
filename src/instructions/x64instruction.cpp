@@ -550,6 +550,12 @@ namespace utils {
             case Insn::BTS_RM32_IMM: return toString<RM32, Imm>("bts");
             case Insn::BTS_RM64_R64: return toString<RM64, R64>("bts");
             case Insn::BTS_RM64_IMM: return toString<RM64, Imm>("bts");
+            case Insn::LOCK_BTS_M16_R16: return toString<RM16, R16>("lock bts");
+            case Insn::LOCK_BTS_M16_IMM: return toString<RM16, Imm>("lock bts");
+            case Insn::LOCK_BTS_M32_R32: return toString<RM32, R32>("lock bts");
+            case Insn::LOCK_BTS_M32_IMM: return toString<RM32, Imm>("lock bts");
+            case Insn::LOCK_BTS_M64_R64: return toString<RM64, R64>("lock bts");
+            case Insn::LOCK_BTS_M64_IMM: return toString<RM64, Imm>("lock bts");
             case Insn::TEST_RM8_R8: return toString<RM8, R8>("test");
             case Insn::TEST_RM8_IMM: return toString<RM8, Imm>("test");
             case Insn::TEST_RM16_R16: return toString<RM16, R16>("test");

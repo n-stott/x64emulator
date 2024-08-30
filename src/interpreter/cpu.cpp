@@ -414,6 +414,12 @@ namespace x64 {
             case Insn::BTS_RM32_IMM: return exec(Bts<RM32, Imm>{insn.op0<RM32>(), insn.op1<Imm>()});
             case Insn::BTS_RM64_R64: return exec(Bts<RM64, R64>{insn.op0<RM64>(), insn.op1<R64>()});
             case Insn::BTS_RM64_IMM: return exec(Bts<RM64, Imm>{insn.op0<RM64>(), insn.op1<Imm>()});
+            case Insn::LOCK_BTS_M16_R16: return execLock(Bts<M16, R16>{insn.op0<M16>(), insn.op1<R16>()});
+            case Insn::LOCK_BTS_M16_IMM: return execLock(Bts<M16, Imm>{insn.op0<M16>(), insn.op1<Imm>()});
+            case Insn::LOCK_BTS_M32_R32: return execLock(Bts<M32, R32>{insn.op0<M32>(), insn.op1<R32>()});
+            case Insn::LOCK_BTS_M32_IMM: return execLock(Bts<M32, Imm>{insn.op0<M32>(), insn.op1<Imm>()});
+            case Insn::LOCK_BTS_M64_R64: return execLock(Bts<M64, R64>{insn.op0<M64>(), insn.op1<R64>()});
+            case Insn::LOCK_BTS_M64_IMM: return execLock(Bts<M64, Imm>{insn.op0<M64>(), insn.op1<Imm>()});
             case Insn::TEST_RM8_R8: return exec(Test<RM8, R8>{insn.op0<RM8>(), insn.op1<R8>()});
             case Insn::TEST_RM8_IMM: return exec(Test<RM8, Imm>{insn.op0<RM8>(), insn.op1<Imm>()});
             case Insn::TEST_RM16_R16: return exec(Test<RM16, R16>{insn.op0<RM16>(), insn.op1<R16>()});
@@ -1239,6 +1245,37 @@ namespace x64 {
     void Cpu::exec(const Bts<RM32, Imm>& ins) { set(ins.base, Impl::bts32(get(ins.base), get<u32>(ins.offset), &flags_)); }
     void Cpu::exec(const Bts<RM64, R64>& ins) { set(ins.base, Impl::bts64(get(ins.base), get(ins.offset), &flags_)); }
     void Cpu::exec(const Bts<RM64, Imm>& ins) { set(ins.base, Impl::bts64(get(ins.base), get<u64>(ins.offset), &flags_)); }
+
+    void Cpu::execLock(const Bts<M16, R16>& ins) {
+        mmu_->withExclusiveRegion(resolve(ins.base), [&](u16 oldValue) {
+            return Impl::bts16(oldValue, get(ins.offset), &flags_);
+        });
+    }
+    void Cpu::execLock(const Bts<M16, Imm>& ins) {
+        mmu_->withExclusiveRegion(resolve(ins.base), [&](u16 oldValue) {
+            return Impl::bts16(oldValue, get<u16>(ins.offset), &flags_);
+        });
+    }
+    void Cpu::execLock(const Bts<M32, R32>& ins) {
+        mmu_->withExclusiveRegion(resolve(ins.base), [&](u32 oldValue) {
+            return Impl::bts32(oldValue, get(ins.offset), &flags_);
+        });
+    }
+    void Cpu::execLock(const Bts<M32, Imm>& ins) {
+        mmu_->withExclusiveRegion(resolve(ins.base), [&](u32 oldValue) {
+            return Impl::bts32(oldValue, get<u32>(ins.offset), &flags_);
+        });
+    }
+    void Cpu::execLock(const Bts<M64, R64>& ins) {
+        mmu_->withExclusiveRegion(resolve(ins.base), [&](u64 oldValue) {
+            return Impl::bts64(oldValue, get(ins.offset), &flags_);
+        });
+    }
+    void Cpu::execLock(const Bts<M64, Imm>& ins) {
+        mmu_->withExclusiveRegion(resolve(ins.base), [&](u64 oldValue) {
+            return Impl::bts64(oldValue, get<u64>(ins.offset), &flags_);
+        });
+    }
 
     void Cpu::exec(const Test<RM8, R8>& ins) { Impl::test8(get(ins.src1), get(ins.src2), &flags_); }
     void Cpu::exec(const Test<RM8, Imm>& ins) { Impl::test8(get(ins.src1), get<u8>(ins.src2), &flags_); }

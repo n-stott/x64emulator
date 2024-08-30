@@ -448,6 +448,13 @@ namespace x64 {
         void exec(const Bts<RM64, R64>&);
         void exec(const Bts<RM64, Imm>&);
 
+        void execLock(const Bts<M16, R16>&);
+        void execLock(const Bts<M16, Imm>&);
+        void execLock(const Bts<M32, R32>&);
+        void execLock(const Bts<M32, Imm>&);
+        void execLock(const Bts<M64, R64>&);
+        void execLock(const Bts<M64, Imm>&);
+
         void exec(const Test<RM8, R8>&);
         void exec(const Test<RM8, Imm>&);
         void exec(const Test<RM16, R16>&);
