@@ -250,12 +250,9 @@ namespace x64 {
             case Insn::XCHG_RM16_R16: return exec(Xchg<RM16, R16>{insn.op0<RM16>(), insn.op1<R16>()});
             case Insn::XCHG_RM32_R32: return exec(Xchg<RM32, R32>{insn.op0<RM32>(), insn.op1<R32>()});
             case Insn::XCHG_RM64_R64: return exec(Xchg<RM64, R64>{insn.op0<RM64>(), insn.op1<R64>()});
-            case Insn::XADD_R16_R16: return exec(Xadd<R16, R16>{insn.op0<R16>(), insn.op1<R16>()});
-            case Insn::XADD_R32_R32: return exec(Xadd<R32, R32>{insn.op0<R32>(), insn.op1<R32>()});
-            case Insn::XADD_R64_R64: return exec(Xadd<R64, R64>{insn.op0<R64>(), insn.op1<R64>()});
-            case Insn::XADD_M16_R16: return exec(Xadd<M16, R16>{insn.op0<M16>(), insn.op1<R16>()});
-            case Insn::XADD_M32_R32: return exec(Xadd<M32, R32>{insn.op0<M32>(), insn.op1<R32>()});
-            case Insn::XADD_M64_R64: return exec(Xadd<M64, R64>{insn.op0<M64>(), insn.op1<R64>()});
+            case Insn::XADD_RM16_R16: return exec(Xadd<RM16, R16>{insn.op0<RM16>(), insn.op1<R16>()});
+            case Insn::XADD_RM32_R32: return exec(Xadd<RM32, R32>{insn.op0<RM32>(), insn.op1<R32>()});
+            case Insn::XADD_RM64_R64: return exec(Xadd<RM64, R64>{insn.op0<RM64>(), insn.op1<R64>()});
             case Insn::LOCK_XADD_M16_R16: return execLock(Xadd<M16, R16>{insn.op0<M16>(), insn.op1<R16>()});
             case Insn::LOCK_XADD_M32_R32: return execLock(Xadd<M32, R32>{insn.op0<M32>(), insn.op1<R32>()});
             case Insn::LOCK_XADD_M64_R64: return execLock(Xadd<M64, R64>{insn.op0<M64>(), insn.op1<R64>()});
@@ -318,14 +315,10 @@ namespace x64 {
             case Insn::UNKNOWN: return exec(Unknown{insn.op0<std::array<char, 16>>()});
             case Insn::CDQ: return exec(Cdq{});
             case Insn::CQO: return exec(Cqo{});
-            case Insn::INC_R8: return exec(Inc<R8>{insn.op0<R8>()});
-            case Insn::INC_R16: return exec(Inc<R16>{insn.op0<R16>()});
-            case Insn::INC_R32: return exec(Inc<R32>{insn.op0<R32>()});
-            case Insn::INC_R64: return exec(Inc<R64>{insn.op0<R64>()});
-            case Insn::INC_M8: return exec(Inc<M8>{insn.op0<M8>()});
-            case Insn::INC_M16: return exec(Inc<M16>{insn.op0<M16>()});
-            case Insn::INC_M32: return exec(Inc<M32>{insn.op0<M32>()});
-            case Insn::INC_M64: return exec(Inc<M64>{insn.op0<M64>()});
+            case Insn::INC_RM8: return exec(Inc<RM8>{insn.op0<RM8>()});
+            case Insn::INC_RM16: return exec(Inc<RM16>{insn.op0<RM16>()});
+            case Insn::INC_RM32: return exec(Inc<RM32>{insn.op0<RM32>()});
+            case Insn::INC_RM64: return exec(Inc<RM64>{insn.op0<RM64>()});
             case Insn::LOCK_INC_M8: return execLock(Inc<M8>{insn.op0<M8>()});
             case Insn::LOCK_INC_M16: return execLock(Inc<M16>{insn.op0<M16>()});
             case Insn::LOCK_INC_M32: return execLock(Inc<M32>{insn.op0<M32>()});
@@ -334,6 +327,10 @@ namespace x64 {
             case Insn::DEC_RM16: return exec(Dec<RM16>{insn.op0<RM16>()});
             case Insn::DEC_RM32: return exec(Dec<RM32>{insn.op0<RM32>()});
             case Insn::DEC_RM64: return exec(Dec<RM64>{insn.op0<RM64>()});
+            case Insn::LOCK_DEC_M8: return execLock(Dec<M8>{insn.op0<M8>()});
+            case Insn::LOCK_DEC_M16: return execLock(Dec<M16>{insn.op0<M16>()});
+            case Insn::LOCK_DEC_M32: return execLock(Dec<M32>{insn.op0<M32>()});
+            case Insn::LOCK_DEC_M64: return execLock(Dec<M64>{insn.op0<M64>()});
             case Insn::SHR_RM8_R8: return exec(Shr<RM8, R8>{insn.op0<RM8>(), insn.op1<R8>()});
             case Insn::SHR_RM8_IMM: return exec(Shr<RM8, Imm>{insn.op0<RM8>(), insn.op1<Imm>()});
             case Insn::SHR_RM16_R8: return exec(Shr<RM16, R8>{insn.op0<RM16>(), insn.op1<R8>()});
@@ -425,14 +422,10 @@ namespace x64 {
             case Insn::CMP_RM32_IMM: return exec(Cmp<RM32, Imm>{insn.op0<RM32>(), insn.op1<Imm>()});
             case Insn::CMP_RM64_RM64: return exec(Cmp<RM64, RM64>{insn.op0<RM64>(), insn.op1<RM64>()});
             case Insn::CMP_RM64_IMM: return exec(Cmp<RM64, Imm>{insn.op0<RM64>(), insn.op1<Imm>()});
-            case Insn::CMPXCHG_R8_R8: return exec(Cmpxchg<R8, R8>{insn.op0<R8>(), insn.op1<R8>()});
-            case Insn::CMPXCHG_R16_R16: return exec(Cmpxchg<R16, R16>{insn.op0<R16>(), insn.op1<R16>()});
-            case Insn::CMPXCHG_R32_R32: return exec(Cmpxchg<R32, R32>{insn.op0<R32>(), insn.op1<R32>()});
-            case Insn::CMPXCHG_R64_R64: return exec(Cmpxchg<R64, R64>{insn.op0<R64>(), insn.op1<R64>()});
-            case Insn::CMPXCHG_M8_R8: return exec(Cmpxchg<M8, R8>{insn.op0<M8>(), insn.op1<R8>()});
-            case Insn::CMPXCHG_M16_R16: return exec(Cmpxchg<M16, R16>{insn.op0<M16>(), insn.op1<R16>()});
-            case Insn::CMPXCHG_M32_R32: return exec(Cmpxchg<M32, R32>{insn.op0<M32>(), insn.op1<R32>()});
-            case Insn::CMPXCHG_M64_R64: return exec(Cmpxchg<M64, R64>{insn.op0<M64>(), insn.op1<R64>()});
+            case Insn::CMPXCHG_RM8_R8: return exec(Cmpxchg<RM8, R8>{insn.op0<RM8>(), insn.op1<R8>()});
+            case Insn::CMPXCHG_RM16_R16: return exec(Cmpxchg<RM16, R16>{insn.op0<RM16>(), insn.op1<R16>()});
+            case Insn::CMPXCHG_RM32_R32: return exec(Cmpxchg<RM32, R32>{insn.op0<RM32>(), insn.op1<R32>()});
+            case Insn::CMPXCHG_RM64_R64: return exec(Cmpxchg<RM64, R64>{insn.op0<RM64>(), insn.op1<R64>()});
             case Insn::LOCK_CMPXCHG_M8_R8: return execLock(Cmpxchg<M8, R8>{insn.op0<M8>(), insn.op1<R8>()});
             case Insn::LOCK_CMPXCHG_M16_R16: return execLock(Cmpxchg<M16, R16>{insn.op0<M16>(), insn.op1<R16>()});
             case Insn::LOCK_CMPXCHG_M32_R32: return execLock(Cmpxchg<M32, R32>{insn.op0<M32>(), insn.op1<R32>()});
@@ -848,47 +841,25 @@ namespace x64 {
         set(ins.src, dst);
     }
 
-    void Cpu::exec(const Xadd<R16, R16>& ins) {
+    void Cpu::exec(const Xadd<RM16, R16>& ins) {
         u16 dst = get(ins.dst);
         u16 src = get(ins.src);
         u16 tmp = Impl::add16(dst, src, &flags_);
         set(ins.dst, tmp);
         set(ins.src, dst);
     }
-    void Cpu::exec(const Xadd<R32, R32>& ins) {
+    void Cpu::exec(const Xadd<RM32, R32>& ins) {
         u32 dst = get(ins.dst);
         u32 src = get(ins.src);
         u32 tmp = Impl::add32(dst, src, &flags_);
         set(ins.dst, tmp);
         set(ins.src, dst);
     }
-    void Cpu::exec(const Xadd<R64, R64>& ins) {
+    void Cpu::exec(const Xadd<RM64, R64>& ins) {
         u64 dst = get(ins.dst);
         u64 src = get(ins.src);
         u64 tmp = Impl::add64(dst, src, &flags_);
         set(ins.dst, tmp);
-        set(ins.src, dst);
-    }
-
-    void Cpu::exec(const Xadd<M16, R16>& ins) {
-        u16 dst = get(resolve(ins.dst));
-        u16 src = get(ins.src);
-        u16 tmp = Impl::add16(dst, src, &flags_);
-        set(resolve(ins.dst), tmp);
-        set(ins.src, dst);
-    }
-    void Cpu::exec(const Xadd<M32, R32>& ins) {
-        u32 dst = get(resolve(ins.dst));
-        u32 src = get(ins.src);
-        u32 tmp = Impl::add32(dst, src, &flags_);
-        set(resolve(ins.dst), tmp);
-        set(ins.src, dst);
-    }
-    void Cpu::exec(const Xadd<M64, R64>& ins) {
-        u64 dst = get(resolve(ins.dst));
-        u64 src = get(ins.src);
-        u64 tmp = Impl::add64(dst, src, &flags_);
-        set(resolve(ins.dst), tmp);
         set(ins.src, dst);
     }
 
@@ -1080,15 +1051,10 @@ namespace x64 {
     void Cpu::exec(const Cdq&) { set(R32::EDX, (get(R32::EAX) & 0x80000000) ? 0xFFFFFFFF : 0x0); }
     void Cpu::exec(const Cqo&) { set(R64::RDX, (get(R64::RAX) & 0x8000000000000000) ? 0xFFFFFFFFFFFFFFFF : 0x0); }
 
-    void Cpu::exec(const Inc<R8>& ins) { set(ins.dst, Impl::inc8(get(ins.dst), &flags_)); }
-    void Cpu::exec(const Inc<R16>& ins) { set(ins.dst, Impl::inc16(get(ins.dst), &flags_)); }
-    void Cpu::exec(const Inc<R32>& ins) { set(ins.dst, Impl::inc32(get(ins.dst), &flags_)); }
-    void Cpu::exec(const Inc<R64>& ins) { set(ins.dst, Impl::inc64(get(ins.dst), &flags_)); }
-
-    void Cpu::exec(const Inc<M8>& ins) { set(resolve(ins.dst), Impl::inc8(get(resolve(ins.dst)), &flags_)); }
-    void Cpu::exec(const Inc<M16>& ins) { set(resolve(ins.dst), Impl::inc16(get(resolve(ins.dst)), &flags_)); }
-    void Cpu::exec(const Inc<M32>& ins) { set(resolve(ins.dst), Impl::inc32(get(resolve(ins.dst)), &flags_)); }
-    void Cpu::exec(const Inc<M64>& ins) { set(resolve(ins.dst), Impl::inc64(get(resolve(ins.dst)), &flags_)); }
+    void Cpu::exec(const Inc<RM8>& ins) { set(ins.dst, Impl::inc8(get(ins.dst), &flags_)); }
+    void Cpu::exec(const Inc<RM16>& ins) { set(ins.dst, Impl::inc16(get(ins.dst), &flags_)); }
+    void Cpu::exec(const Inc<RM32>& ins) { set(ins.dst, Impl::inc32(get(ins.dst), &flags_)); }
+    void Cpu::exec(const Inc<RM64>& ins) { set(ins.dst, Impl::inc64(get(ins.dst), &flags_)); }
 
     void Cpu::execLock(const Inc<M8>& ins) {
         mmu_->withExclusiveRegion(resolve(ins.dst), [&](u8 oldValue) {
@@ -1115,6 +1081,27 @@ namespace x64 {
     void Cpu::exec(const Dec<RM16>& ins) { set(ins.dst, Impl::dec16(get(ins.dst), &flags_)); }
     void Cpu::exec(const Dec<RM32>& ins) { set(ins.dst, Impl::dec32(get(ins.dst), &flags_)); }
     void Cpu::exec(const Dec<RM64>& ins) { set(ins.dst, Impl::dec64(get(ins.dst), &flags_)); }
+
+    void Cpu::execLock(const Dec<M8>& ins) {
+        mmu_->withExclusiveRegion(resolve(ins.dst), [&](u8 oldValue) {
+            return Impl::dec8(oldValue, &flags_);
+        });
+    }
+    void Cpu::execLock(const Dec<M16>& ins) {
+        mmu_->withExclusiveRegion(resolve(ins.dst), [&](u16 oldValue) {
+            return Impl::dec16(oldValue, &flags_);
+        });
+    }
+    void Cpu::execLock(const Dec<M32>& ins) {
+        mmu_->withExclusiveRegion(resolve(ins.dst), [&](u32 oldValue) {
+            return Impl::dec32(oldValue, &flags_);
+        });
+    }
+    void Cpu::execLock(const Dec<M64>& ins) {
+        mmu_->withExclusiveRegion(resolve(ins.dst), [&](u64 oldValue) {
+            return Impl::dec64(oldValue, &flags_);
+        });
+    }
 
     void Cpu::exec(const Shl<RM8, R8>& ins) { set(ins.dst, Impl::shl8(get(ins.dst), get(ins.src), &flags_)); }
     void Cpu::exec(const Shl<RM8, Imm>& ins) { set(ins.dst, Impl::shl8(get(ins.dst), get<u8>(ins.src), &flags_)); }
@@ -1322,15 +1309,10 @@ namespace x64 {
         });
     }
 
-    void Cpu::exec(const Cmpxchg<R8, R8>& ins) { execCmpxchg8Impl(ins.src1, get(ins.src2)); }
-    void Cpu::exec(const Cmpxchg<R16, R16>& ins) { execCmpxchg16Impl(ins.src1, get(ins.src2)); }
-    void Cpu::exec(const Cmpxchg<R32, R32>& ins) { execCmpxchg32Impl(ins.src1, get(ins.src2)); }
-    void Cpu::exec(const Cmpxchg<R64, R64>& ins) { execCmpxchg64Impl(ins.src1, get(ins.src2)); }
-
-    void Cpu::exec(const Cmpxchg<M8, R8>& ins) { execCmpxchg8Impl(resolve(ins.src1), get(ins.src2)); }
-    void Cpu::exec(const Cmpxchg<M16, R16>& ins) { execCmpxchg16Impl(resolve(ins.src1), get(ins.src2)); }
-    void Cpu::exec(const Cmpxchg<M32, R32>& ins) { execCmpxchg32Impl(resolve(ins.src1), get(ins.src2)); }
-    void Cpu::exec(const Cmpxchg<M64, R64>& ins) { execCmpxchg64Impl(resolve(ins.src1), get(ins.src2)); }
+    void Cpu::exec(const Cmpxchg<RM8, R8>& ins) { execCmpxchg8Impl(ins.src1, get(ins.src2)); }
+    void Cpu::exec(const Cmpxchg<RM16, R16>& ins) { execCmpxchg16Impl(ins.src1, get(ins.src2)); }
+    void Cpu::exec(const Cmpxchg<RM32, R32>& ins) { execCmpxchg32Impl(ins.src1, get(ins.src2)); }
+    void Cpu::exec(const Cmpxchg<RM64, R64>& ins) { execCmpxchg64Impl(ins.src1, get(ins.src2)); }
 
     void Cpu::execLock(const Cmpxchg<M8, R8>& ins) { execCmpxchg8Impl(resolve(ins.src1), get(ins.src2)); }
     void Cpu::execLock(const Cmpxchg<M16, R16>& ins) { execCmpxchg16Impl(resolve(ins.src1), get(ins.src2)); }

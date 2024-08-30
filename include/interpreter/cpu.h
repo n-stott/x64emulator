@@ -261,13 +261,9 @@ namespace x64 {
         void exec(const Xchg<RM32, R32>&);
         void exec(const Xchg<RM64, R64>&);
 
-        void exec(const Xadd<R16, R16>&);
-        void exec(const Xadd<R32, R32>&);
-        void exec(const Xadd<R64, R64>&);
-
-        void exec(const Xadd<M16, R16>&);
-        void exec(const Xadd<M32, R32>&);
-        void exec(const Xadd<M64, R64>&);
+        void exec(const Xadd<RM16, R16>&);
+        void exec(const Xadd<RM32, R32>&);
+        void exec(const Xadd<RM64, R64>&);
 
         void execLock(const Xadd<M16, R16>&);
         void execLock(const Xadd<M32, R32>&);
@@ -336,15 +332,10 @@ namespace x64 {
         void exec(const Cdq&);
         void exec(const Cqo&);
 
-        void exec(const Inc<R8>&);
-        void exec(const Inc<R16>&);
-        void exec(const Inc<R32>&);
-        void exec(const Inc<R64>&);
-
-        void exec(const Inc<M8>&);
-        void exec(const Inc<M16>&);
-        void exec(const Inc<M32>&);
-        void exec(const Inc<M64>&);
+        void exec(const Inc<RM8>&);
+        void exec(const Inc<RM16>&);
+        void exec(const Inc<RM32>&);
+        void exec(const Inc<RM64>&);
 
         void execLock(const Inc<M8>&);
         void execLock(const Inc<M16>&);
@@ -355,6 +346,11 @@ namespace x64 {
         void exec(const Dec<RM16>&);
         void exec(const Dec<RM32>&);
         void exec(const Dec<RM64>&);
+
+        void execLock(const Dec<M8>&);
+        void execLock(const Dec<M16>&);
+        void execLock(const Dec<M32>&);
+        void execLock(const Dec<M64>&);
 
         void exec(const Shr<RM8, R8>&);
         void exec(const Shr<RM8, Imm>&);
@@ -461,15 +457,10 @@ namespace x64 {
         void exec(const Cmp<RM64, RM64>&);
         void exec(const Cmp<RM64, Imm>&);
 
-        void exec(const Cmpxchg<R8, R8>&);
-        void exec(const Cmpxchg<R16, R16>&);
-        void exec(const Cmpxchg<R32, R32>&);
-        void exec(const Cmpxchg<R64, R64>&);
-
-        void exec(const Cmpxchg<M8, R8>&);
-        void exec(const Cmpxchg<M16, R16>&);
-        void exec(const Cmpxchg<M32, R32>&);
-        void exec(const Cmpxchg<M64, R64>&);
+        void exec(const Cmpxchg<RM8, R8>&);
+        void exec(const Cmpxchg<RM16, R16>&);
+        void exec(const Cmpxchg<RM32, R32>&);
+        void exec(const Cmpxchg<RM64, R64>&);
 
         void execLock(const Cmpxchg<M8, R8>&);
         void execLock(const Cmpxchg<M16, R16>&);
