@@ -370,6 +370,14 @@ namespace utils {
             case Insn::OR_RM32_IMM:  return toString<RM32, Imm>("or");
             case Insn::OR_RM64_RM64: return toString<RM64, RM64>("or");
             case Insn::OR_RM64_IMM:  return toString<RM64, Imm>("or");
+            case Insn::LOCK_OR_M8_RM8: return toString<M8, RM8>("lock or");
+            case Insn::LOCK_OR_M8_IMM: return toString<M8, Imm>("lock or");
+            case Insn::LOCK_OR_M16_RM16: return toString<M16, RM16>("lock or");
+            case Insn::LOCK_OR_M16_IMM: return toString<M16, Imm>("lock or");
+            case Insn::LOCK_OR_M32_RM32: return toString<M32, RM32>("lock or");
+            case Insn::LOCK_OR_M32_IMM: return toString<M32, Imm>("lock or");
+            case Insn::LOCK_OR_M64_RM64: return toString<M64, RM64>("lock or");
+            case Insn::LOCK_OR_M64_IMM: return toString<M64, Imm>("lock or");
             case Insn::XOR_RM8_RM8:   return toString<RM8, RM8>("xor");
             case Insn::XOR_RM8_IMM:   return toString<RM8, Imm>("xor");
             case Insn::XOR_RM16_RM16: return toString<RM16, RM16>("xor");

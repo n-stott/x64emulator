@@ -242,6 +242,15 @@ namespace x64 {
         void exec(const Or<RM64, RM64>&);
         void exec(const Or<RM64, Imm>&);
 
+        void execLock(const Or<M8, RM8>&);
+        void execLock(const Or<M8, Imm>&);
+        void execLock(const Or<M16, RM16>&);
+        void execLock(const Or<M16, Imm>&);
+        void execLock(const Or<M32, RM32>&);
+        void execLock(const Or<M32, Imm>&);
+        void execLock(const Or<M64, RM64>&);
+        void execLock(const Or<M64, Imm>&);
+
         void exec(const Xor<RM8, RM8>&);
         void exec(const Xor<RM8, Imm>&);
         void exec(const Xor<RM16, RM16>&);

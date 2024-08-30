@@ -234,6 +234,14 @@ namespace x64 {
             case Insn::OR_RM32_IMM: return exec(Or<RM32, Imm>{insn.op0<RM32>(), insn.op1<Imm>()});
             case Insn::OR_RM64_RM64: return exec(Or<RM64, RM64>{insn.op0<RM64>(), insn.op1<RM64>()});
             case Insn::OR_RM64_IMM: return exec(Or<RM64, Imm>{insn.op0<RM64>(), insn.op1<Imm>()});
+            case Insn::LOCK_OR_M8_RM8: return execLock(Or<M8, RM8>{insn.op0<M8>(), insn.op1<RM8>()});
+            case Insn::LOCK_OR_M8_IMM: return execLock(Or<M8, Imm>{insn.op0<M8>(), insn.op1<Imm>()});
+            case Insn::LOCK_OR_M16_RM16: return execLock(Or<M16, RM16>{insn.op0<M16>(), insn.op1<RM16>()});
+            case Insn::LOCK_OR_M16_IMM: return execLock(Or<M16, Imm>{insn.op0<M16>(), insn.op1<Imm>()});
+            case Insn::LOCK_OR_M32_RM32: return execLock(Or<M32, RM32>{insn.op0<M32>(), insn.op1<RM32>()});
+            case Insn::LOCK_OR_M32_IMM: return execLock(Or<M32, Imm>{insn.op0<M32>(), insn.op1<Imm>()});
+            case Insn::LOCK_OR_M64_RM64: return execLock(Or<M64, RM64>{insn.op0<M64>(), insn.op1<RM64>()});
+            case Insn::LOCK_OR_M64_IMM: return execLock(Or<M64, Imm>{insn.op0<M64>(), insn.op1<Imm>()});
             case Insn::XOR_RM8_RM8: return exec(Xor<RM8, RM8>{insn.op0<RM8>(), insn.op1<RM8>()});
             case Insn::XOR_RM8_IMM: return exec(Xor<RM8, Imm>{insn.op0<RM8>(), insn.op1<Imm>()});
             case Insn::XOR_RM16_RM16: return exec(Xor<RM16, RM16>{insn.op0<RM16>(), insn.op1<RM16>()});
@@ -801,6 +809,47 @@ namespace x64 {
     void Cpu::exec(const Or<RM32, Imm>& ins) { set(ins.dst, Impl::or32(get(ins.dst), get<u32>(ins.src), &flags_)); }
     void Cpu::exec(const Or<RM64, RM64>& ins) { set(ins.dst, Impl::or64(get(ins.dst), get(ins.src), &flags_)); }
     void Cpu::exec(const Or<RM64, Imm>& ins) { set(ins.dst, Impl::or64(get(ins.dst), get<u64>(ins.src), &flags_)); }
+
+    void Cpu::execLock(const Or<M8, RM8>& ins) {
+        mmu_->withExclusiveRegion(resolve(ins.dst), [&](u8 oldValue) {
+            return Impl::or8(oldValue, get(ins.src), &flags_);
+        });
+    }
+    void Cpu::execLock(const Or<M8, Imm>& ins) {
+        mmu_->withExclusiveRegion(resolve(ins.dst), [&](u8 oldValue) {
+            return Impl::or8(oldValue, get<u8>(ins.src), &flags_);
+        });
+    }
+    void Cpu::execLock(const Or<M16, RM16>& ins) {
+        mmu_->withExclusiveRegion(resolve(ins.dst), [&](u16 oldValue) {
+            return Impl::or16(oldValue, get(ins.src), &flags_);
+        });
+    }
+    void Cpu::execLock(const Or<M16, Imm>& ins) {
+        mmu_->withExclusiveRegion(resolve(ins.dst), [&](u16 oldValue) {
+            return Impl::or16(oldValue, get<u16>(ins.src), &flags_);
+        });
+    }
+    void Cpu::execLock(const Or<M32, RM32>& ins) {
+        mmu_->withExclusiveRegion(resolve(ins.dst), [&](u32 oldValue) {
+            return Impl::or32(oldValue, get(ins.src), &flags_);
+        });
+    }
+    void Cpu::execLock(const Or<M32, Imm>& ins) {
+        mmu_->withExclusiveRegion(resolve(ins.dst), [&](u32 oldValue) {
+            return Impl::or32(oldValue, get<u32>(ins.src), &flags_);
+        });
+    }
+    void Cpu::execLock(const Or<M64, RM64>& ins) {
+        mmu_->withExclusiveRegion(resolve(ins.dst), [&](u64 oldValue) {
+            return Impl::or64(oldValue, get(ins.src), &flags_);
+        });
+    }
+    void Cpu::execLock(const Or<M64, Imm>& ins) {
+        mmu_->withExclusiveRegion(resolve(ins.dst), [&](u64 oldValue) {
+            return Impl::or64(oldValue, get<u64>(ins.src), &flags_);
+        });
+    }
 
     void Cpu::exec(const Xor<RM8, RM8>& ins) { set(ins.dst, Impl::xor8(get(ins.dst), get(ins.src), &flags_)); }
     void Cpu::exec(const Xor<RM8, Imm>& ins) { set(ins.dst, Impl::xor8(get(ins.dst), get<u8>(ins.src), &flags_)); }
