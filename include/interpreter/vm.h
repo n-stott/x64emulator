@@ -74,7 +74,7 @@ namespace x64 {
         mutable std::vector<std::unique_ptr<ExecutableSection>> executableSections_;
         bool hasCrashed_ = false;
         bool logInstructions_ = false;
-        unsigned long long nbTicksBeforeLoggingInstructions_;
+        unsigned long long nbTicksBeforeLoggingInstructions_ { 0 };
 
         struct ExecutionPoint {
             const ExecutableSection* section { nullptr };
