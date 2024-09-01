@@ -359,12 +359,6 @@ namespace x64 {
     }
 
     std::string VM::calledFunctionName(u64 address) const {
-        InstructionPosition pos = findSectionWithAddress(address);
-        verify(!!pos.section, [&]() {
-            fmt::print("Could not determine function origin section for address {:#x}\n", address);
-        });
-        verify(pos.index != (size_t)(-1), "Could not find call destination instruction");
-
         // If we are in the text section, we can try to lookup the symbol for that address
         auto symbolsAtAddress = symbolProvider_.lookupSymbol(address);
         if(!symbolsAtAddress.empty()) {
@@ -373,18 +367,24 @@ namespace x64 {
         }
 
         // If we are in the PLT instead, lets' look at the first instruction to determine the jmp location
+        InstructionPosition pos = findSectionWithAddress(address);
+        verify(!!pos.section, [&]() {
+            fmt::print("Could not determine function origin section for address {:#x}\n", address);
+        });
+        verify(pos.index != (size_t)(-1), "Could not find call destination instruction");
         const X64Instruction& jmpInsn = pos.section->instructions[pos.index];
         if(jmpInsn.insn() == Insn::JMP_RM64) {
-            Registers regs;
-            regs.rip() = jmpInsn.address() + 6; // add instruction size offset
+            Cpu cpu(const_cast<VM*>(this), &mmu_);
+            cpu.regs_.rip() = jmpInsn.nextAddress(); // add instruction size offset
             RM64 rm64 = jmpInsn.op0<RM64>();
-            auto dst = rm64.isReg ? regs.get(rm64.reg) : cpu_.get(cpu_.resolve(rm64.mem));
+            auto dst = cpu.get(rm64);
             auto symbolsAtAddress = symbolProvider_.lookupSymbol(dst);
             if(!symbolsAtAddress.empty()) {
                 functionNameCache_[address] = symbolsAtAddress[0]->demangledSymbol;
                 return symbolsAtAddress[0]->demangledSymbol;
             }
         }
+        
         // We are not in the PLT either :'(
         // Let's just fail
         return fmt::format("Somewhere in {}", pos.section->filename);
