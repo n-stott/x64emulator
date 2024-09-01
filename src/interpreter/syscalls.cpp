@@ -730,7 +730,7 @@ namespace kernel {
                 case 0: op = "wait"; break;
                 case 1: op = "wake"; break;
                 case 9: op = "wait_bitset"; break;
-                default: break;
+                default: op = "unknown"; break;
             }
             print("Sys::futex(uaddr={:#x}, op={}, val={}, timeout={:#x}, uaddr2={:#x}, val3={}) = {}\n",
                               uaddr.address(), op, val, timeout.address(), uaddr2.address(), val3, ret);
