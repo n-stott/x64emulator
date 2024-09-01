@@ -163,6 +163,8 @@ namespace x64 {
         u64 usrc1 = (s1 ? -src1 : src1);
         u64 usrc2 = (s2 ? -src2 : src2);
         if(src1 == 0 || src2 == 0) {
+            flags->carry = false;
+            flags->overflow = false;
             return std::make_pair(0, 0);
         }
         if(s1 == s2) {
