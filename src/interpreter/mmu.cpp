@@ -328,14 +328,14 @@ namespace x64 {
     }
     u128 Mmu::readUnaligned128(Ptr128 ptr) const {
         u64 address = ptr.address();
-        u64 endAddress = address + 31;
+        u64 endAddress = address + 15;
         const Region* region = findAddress(address);
         const Region* endRegion = findAddress(endAddress);
         if(region == endRegion) return read128(ptr);
         verify(!!region);
         verify(!!endRegion);
-        u128 l = region->read128(alignDown(address, 128));
-        u128 r = endRegion->read128(alignUp(address, 128));
+        u128 l = region->read128(alignDown(address, 16));
+        u128 r = endRegion->read128(alignUp(address, 16));
         static_assert(sizeof(l) == 16);
         std::array<u8, 32> bytes;
         std::memcpy(bytes.data() + 0 , &l, sizeof(l));
@@ -366,22 +366,22 @@ namespace x64 {
     }
     void Mmu::writeUnaligned128(Ptr128 ptr, u128 value) {
         u64 address = ptr.address();
-        u64 endAddress = address + 31;
+        u64 endAddress = address + 15;
         Region* region = findAddress(address);
         Region* endRegion = findAddress(endAddress);
         if(region == endRegion) return write128(ptr, value);
         verify(!!region);
         verify(!!endRegion);
-        u128 l = region->read128(alignDown(address, 128));
-        u128 r = endRegion->read128(alignUp(address, 128));
+        u128 l = region->read128(alignDown(address, 16));
+        u128 r = endRegion->read128(alignUp(address, 16));
         static_assert(sizeof(l) == 16);
         std::array<u8, 32> bytes;
         std::memcpy(bytes.data() + 0 , &l, sizeof(l));
         std::memcpy(bytes.data() + 16, &r, sizeof(r));
         u64 offset = address % 16;
         std::memcpy(bytes.data() + offset, &value, sizeof(value));
-        region->write128(alignDown(address, 128), l);
-        endRegion->write128(alignUp(address, 128), r);
+        region->write128(alignDown(address, 16), l);
+        endRegion->write128(alignUp(address, 16), r);
     }
 
     void Mmu::dumpRegions() const {
