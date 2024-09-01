@@ -923,6 +923,7 @@ namespace x64 {
         u16 src = get(ins.src);
         mmu_->withExclusiveRegion(address, [&](u16 oldValue) -> u16 {
             u16 newValue = Impl::add16(oldValue, src, &flags_);
+            set(ins.src, oldValue);
             return newValue;
         });
     }
@@ -931,6 +932,7 @@ namespace x64 {
         u32 src = get(ins.src);
         mmu_->withExclusiveRegion(address, [&](u32 oldValue) -> u32 {
             u32 newValue = Impl::add32(oldValue, src, &flags_);
+            set(ins.src, oldValue);
             return newValue;
         });
     }
@@ -939,6 +941,7 @@ namespace x64 {
         u64 src = get(ins.src);
         mmu_->withExclusiveRegion(address, [&](u64 oldValue) -> u64 {
             u64 newValue = Impl::add64(oldValue, src, &flags_);
+            set(ins.src, oldValue);
             return newValue;
         });
     }
