@@ -12,6 +12,13 @@ target_link_libraries(test_cpu_punpck PUBLIC x64 fmt::fmt-header-only)
 target_link_options(test_cpu_punpck PUBLIC ${LD_OPTIONS})
 add_test(NAME punpck COMMAND test_cpu_punpck)
 
+add_executable(test_cpu_mul src/test_mul.cpp)
+target_compile_options(test_cpu_mul PUBLIC ${CC_OPTIONS})
+target_include_directories(test_cpu_mul PUBLIC include ${CMAKE_SOURCE_DIR}/include)
+target_link_libraries(test_cpu_mul PUBLIC x64 fmt::fmt-header-only)
+target_link_options(test_cpu_mul PUBLIC ${LD_OPTIONS})
+add_test(NAME mul COMMAND test_cpu_mul)
+
 add_executable(test_cpu_pshufd src/test_pshufd.cpp)
 target_compile_options(test_cpu_pshufd PUBLIC ${CC_OPTIONS})
 target_include_directories(test_cpu_pshufd PUBLIC include ${CMAKE_SOURCE_DIR}/include)

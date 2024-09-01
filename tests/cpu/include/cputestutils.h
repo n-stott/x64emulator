@@ -3,7 +3,7 @@
 
 #include "interpreter/flags.h"
 
-static x64::Flags fromRflags(u64 rflags) {
+[[maybe_unused]] static x64::Flags fromRflags(u64 rflags) {
     static constexpr u64 CARRY_MASK = 0x1;
     static constexpr u64 PARITY_MASK = 0x4;
     static constexpr u64 ZERO_MASK = 0x40;

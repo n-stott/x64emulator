@@ -137,10 +137,11 @@ namespace x64 {
         u64 adbc = a*d+b*c;
         u64 bd = b*d;
 
-        bool carry = (bd > std::numeric_limits<u64>::max() - (adbc << 32));
+        bool adbc_carry = (a*d > std::numeric_limits<u64>::max() - b*c);
+        bool lower_carry = (bd > std::numeric_limits<u64>::max() - (adbc << 32));
 
         u64 lower = bd + (adbc << 32);
-        u64 upper = ac + (adbc >> 32) + carry;
+        u64 upper = ac + (adbc >> 32) + ((u64)adbc_carry << 32) + lower_carry;
 
         flags->overflow = !!upper;
         flags->carry = !!upper;

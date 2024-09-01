@@ -1,9 +1,8 @@
 #include "interpreter/checkedcpuimpl.h"
 #include "interpreter/cpuimpl.h"
-#include "interpreter/verify.h"
-#include <fmt/core.h>
 #include <cassert>
 #include <cstring>
+#include <stdexcept>
 #include <emmintrin.h>
 #include <limits>
 
@@ -387,16 +386,10 @@ namespace x64 {
             GET_RFLAGS(flags);
         END_RFLAGS_SCOPE
 
-        if(virtualRes.first != upper
-        || virtualRes.second != lower) {
-            fmt::print(stderr, "virtual {:#x} x {:#x} = {:#x} {:x}\n", src1, src2, virtualRes.first, virtualRes.second);
-            fmt::print(stderr, "native  {:#x} x {:#x} = {:#x} {:x}\n", src1, src2, upper, lower);
-        }
-
         assert(virtualRes.first == upper);
         assert(virtualRes.second == lower);
-        // assert(virtualFlags.carry == flags->carry);
-        // assert(virtualFlags.overflow == flags->overflow);
+        assert(virtualFlags.carry == flags->carry);
+        assert(virtualFlags.overflow == flags->overflow);
 
         return std::make_pair(upper, lower);
     }
@@ -1802,7 +1795,7 @@ namespace x64 {
             if(order == 0xdd) return _mm_shuffle_ps(a, b, 0xdd);
             if(order == 0xee) return _mm_shuffle_ps(a, b, 0xee);
             if(order == 0xff) return _mm_shuffle_ps(a, b, 0xff);
-            verify(false, "unimplemented case in shufps");
+            throw std::logic_error{"unimplemented case in shufps"};
             return a; // dummy value
         }();
         u128 nativeRes;

@@ -28,6 +28,7 @@ target_link_libraries(elf-reader PUBLIC fmt::fmt)
 
 
 add_library(x64 STATIC
+    src/interpreter/checkedcpuimpl.cpp
     src/interpreter/cpuimpl.cpp
     src/interpreter/simd.cpp
     src/interpreter/x87.cpp
