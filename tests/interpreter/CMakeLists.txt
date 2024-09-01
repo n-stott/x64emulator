@@ -59,6 +59,7 @@ create_simple_test(fenv)
 create_simple_test(ostream)
 create_simple_test(tmpfile)
 create_simple_test(loop)
+create_simple_test(memmove)
 
 
 add_executable(test_trivial_c src/test_trivial.c)

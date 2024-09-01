@@ -90,7 +90,7 @@ namespace x64 {
             verify(regionLookup_[pageIndex] == nullptr);
             regionLookup_[pageIndex] = r;
         }
-
+        tryMergeRegions();
         return r;
     }
     
@@ -116,6 +116,7 @@ namespace x64 {
                 addRegion(std::move(r));
             }
         }
+        tryMergeRegions();
         return addRegion(std::move(region));
     }
 
@@ -132,6 +133,7 @@ namespace x64 {
             assert(!!ptr);
             return ptr->base() == regionBase && ptr->size() == regionSize;
         }), regions_.end());
+        tryMergeRegions();
     }
 
     u64 Mmu::mmap(u64 address, u64 length, PROT prot, MAP flags) {
@@ -141,13 +143,12 @@ namespace x64 {
 
         u64 baseAddress = (address != 0) ? address : firstFitPageAligned(length);
         Region region("", baseAddress, pageRoundUp(length), (PROT)prot);
-        Region* regionPtr = nullptr;
         if((bool)(flags & MAP::FIXED)) {
-            regionPtr = addRegionAndEraseExisting(std::move(region));
+            addRegionAndEraseExisting(std::move(region));
         } else {
-            regionPtr = addRegion(std::move(region));
+            addRegion(std::move(region));
         }
-        return regionPtr->base();
+        return baseAddress;
     }
 
     int Mmu::munmap(u64 address, u64 length) {
@@ -528,6 +529,35 @@ namespace x64 {
         u64 newBrk = copy.end();
         addRegion(copy);
         return newBrk;
+    }
+
+    void Mmu::tryMergeRegions() {
+        std::sort(regions_.begin(), regions_.end(), [](const std::unique_ptr<Region>& a, const std::unique_ptr<Region>& b) {
+            return a->base() < b->base();
+        });
+        for(size_t i = 1; i < regions_.size(); ++i) {
+            Region* a = regions_[i-1].get();
+            Region* b = regions_[i].get();
+            if(a == nullptr) continue;
+            if(b == nullptr) continue;
+            if(a->end() != b->base()) continue;
+            if(a->prot() != b->prot()) continue;
+            if(a->name() != b->name()) continue;
+            // Update region lookup
+            u64 firstPage = pageRoundDown(b->base()) / PAGE_SIZE;
+            u64 lastPage = pageRoundUp(b->end()) / PAGE_SIZE;
+            verify(firstPage < lastPage);
+            for(u64 pageIndex = firstPage; pageIndex < lastPage; ++pageIndex) {
+                verify(pageIndex < regionLookup_.size());
+                verify(regionLookup_[pageIndex] == b);
+                regionLookup_[pageIndex] = a;
+            }
+            // transfer ownership
+            a->size_ += b->size_;
+            a->data_.insert(a->data_.end(), b->data_.begin(), b->data_.end());
+            regions_[i].reset();
+        }
+        regions_.erase(std::remove(regions_.begin(), regions_.end(), nullptr), regions_.end());
     }
 
 }

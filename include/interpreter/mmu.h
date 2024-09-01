@@ -97,8 +97,8 @@ namespace x64 {
 
             template<typename T>
             T read(u64 address) const {
-                assert(contains(address));
-                assert(contains(address+sizeof(T)-1));
+                verify(contains(address));
+                verify(contains(address+sizeof(T)-1));
                 verify((bool)(prot() & PROT::READ), [&]() {
                     badRead(address);
                 });
@@ -144,6 +144,7 @@ namespace x64 {
         Region* addRegion(Region region);
         Region* addRegionAndEraseExisting(Region region);
         void removeRegion(u64 regionBase, u64 regionEnd, u64 regionSize);
+        void tryMergeRegions();
 
     public:
         Mmu();
