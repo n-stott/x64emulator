@@ -76,6 +76,30 @@ namespace x64 {
         std::unique_ptr<elf::Elf64> elf64;
         elf64.reset(static_cast<elf::Elf64*>(elf.release()));
 
+        std::optional<elf::Section> debugLinkSection = elf64->sectionFromName(".gnu_debuglink");
+        std::optional<elf::Section> buildIdSection = elf64->sectionFromName(".note.gnu.build-id");
+        if(!!debugLinkSection && !!buildIdSection) {
+            std::string debugLink(reinterpret_cast<const char*>(debugLinkSection->begin));
+            verify(buildIdSection->size() >= 3*sizeof(u64));
+            u32 namesize = *(u32*)buildIdSection->begin;
+            verify(namesize == 4);
+            u32 descsize = *(u32*)(buildIdSection->begin + 1*sizeof(u32));
+            verify(descsize == 20);
+            std::string name(reinterpret_cast<const char*>(buildIdSection->begin + 3*sizeof(u32)));
+            const u8* desc = buildIdSection->begin + 3*sizeof(u32) + namesize;
+            verify(name == "GNU");
+            // u32 ntype = *(u32*)(buildIdSection->begin + 2*sizeof(u32));
+            // verify(ntype == NT_GNU_BUILD_ID);
+            std::vector<u8> buildId(desc, desc+descsize);
+
+            std::string debugElfFilename = fmt::format("/usr/lib/debug/.build-id/{:x}/{}", buildId[0], debugLink);
+            std::unique_ptr<elf::Elf> debugElf = elf::ElfReader::tryCreate(debugElfFilename);
+            if(!!debugElf) {
+                // replace the elf file to recover the symbols
+                elf64.reset(static_cast<elf::Elf64*>(debugElf.release()));
+            }
+        }
+
         size_t nbExecutableProgramHeaders = 0;
         u64 executableProgramHeaderVirtualAddress = 0;
         elf64->forAllProgramHeaders([&](const elf::ProgramHeader64& ph) {
