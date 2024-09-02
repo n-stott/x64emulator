@@ -20,7 +20,12 @@ namespace kernel {
             if(domain == AF_NETLINK) return true;
             return false;
         };
-        if(!validateDomain(domain)) return {};
+        if(!validateDomain(domain)) {
+            x64::verify(false, [&]() {
+                fmt::print("Unsupported socket domain {}\n", domain);
+            });
+            return {};
+        }
         int fd = ::socket(domain, type, protocol);
         if(fd < 0) return {};
         return std::unique_ptr<Socket>(new Socket(fs, fd, domain, type, protocol));
