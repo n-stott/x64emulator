@@ -1,7 +1,7 @@
-#include "emulator/interpreter.h"
-#include "verify.h"
+#include "emulator/emulator.h"
 #include "kernel/kernel.h"
 #include "kernel/thread.h"
+#include "verify.h"
 #include <fmt/core.h>
 #include <cassert>
 #include <signal.h>
@@ -32,32 +32,21 @@ namespace emulator {
         }
     };
 
-    Interpreter::Interpreter() = default;
+    Emulator::Emulator() = default;
 
-    Interpreter::~Interpreter() = default;
+    Emulator::~Emulator() = default;
 
-    void Interpreter::setLogInstructions(bool logInstructions) {
-        logInstructions_ = logInstructions;
-    }
-
-    void Interpreter::setLogInstructionsAfter(unsigned long long nbTicks) {
-        logInstructionsAfter_ = nbTicks;
-    }
-
-    void Interpreter::setLogSyscalls(bool logSyscalls) {
+    void Emulator::setLogSyscalls(bool logSyscalls) {
         logSyscalls_ = logSyscalls;
     }
 
-    bool Interpreter::run(const std::string& programFilePath, const std::vector<std::string>& arguments, const std::vector<std::string>& environmentVariables) {
+    bool Emulator::run(const std::string& programFilePath, const std::vector<std::string>& arguments, const std::vector<std::string>& environmentVariables) {
         SignalHandler handler;
 
         x64::Mmu mmu;
         kernel::Kernel kernel(mmu);
         
         kernel.setLogSyscalls(logSyscalls_);
-
-        // vm.setLogInstructions(logInstructions_);
-        // vm.setLogInstructionsAfter(logInstructionsAfter_);
 
         bool ok = true;
         
@@ -66,14 +55,13 @@ namespace emulator {
 
             kernel.scheduler().run();
 
-            fmt::print("Interpreter completed execution\n");
+            fmt::print("Emulator completed execution\n");
             kernel.scheduler().dumpThreadSummary();
 
             ok &= (mainThread->exitStatus() == 0);
         }, [&]() {
-            fmt::print("Interpreter crash\n");
+            fmt::print("Emulator crash\n");
             kernel.scheduler().dumpThreadSummary();
-            // vm.crash();
             ok = false;
         });
         return ok;

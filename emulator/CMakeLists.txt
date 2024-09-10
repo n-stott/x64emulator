@@ -32,7 +32,7 @@ target_include_directories(x64cpu PUBLIC include)
 
 add_library(x64emulator STATIC
     src/emulator/symbolprovider.cpp
-    src/emulator/interpreter.cpp
+    src/emulator/emulator.cpp
     src/emulator/vm.cpp
     src/kernel/auxiliaryvector.cpp
     src/kernel/fs/epoll.cpp
