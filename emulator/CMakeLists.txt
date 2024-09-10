@@ -12,12 +12,12 @@ target_link_libraries(elf-reader PUBLIC fmt::fmt)
 
 
 add_library(x64cpu STATIC
-    src/interpreter/checkedcpuimpl.cpp
-    src/interpreter/cpuimpl.cpp
-    src/interpreter/simd.cpp
-    src/interpreter/x87.cpp
-    src/host/host.cpp
-    src/utils/utils.cpp
+    src/x64/checkedcpuimpl.cpp
+    src/x64/cpuimpl.cpp
+    src/x64/simd.cpp
+    src/x64/x87.cpp
+    src/kernel/host.cpp
+    src/utils.cpp
 )
 target_compile_options(x64cpu PUBLIC -Wall -Wextra -Wpedantic -pedantic -Wconversion -Werror -Wimplicit-fallthrough)
 target_compile_options(x64cpu PUBLIC -Wno-braced-scalar-init -Wno-missing-braces)
@@ -31,32 +31,32 @@ target_include_directories(x64cpu PUBLIC include)
 
 
 add_library(x64emulator STATIC
-    src/disassembler/capstonewrapper.cpp
-    src/fs/epoll.cpp
-    src/fs/event.cpp
-    src/fs/fs.cpp
-    src/fs/hostfile.cpp
-    src/fs/shadowfile.cpp
-    src/fs/socket.cpp
-    src/fs/stream.cpp
-    src/interpreter/auxiliaryvector.cpp
-    src/interpreter/symbolprovider.cpp
-    src/interpreter/interpreter.cpp
-    src/interpreter/kernel.cpp
-    src/interpreter/vm.cpp
-    src/interpreter/cpu.cpp
-    src/interpreter/cpuimpl.cpp
-    src/interpreter/checkedcpuimpl.cpp
-    src/interpreter/mmu.cpp
-    src/interpreter/registers.cpp
-    src/interpreter/scheduler.cpp
-    src/interpreter/simd.cpp
-    src/interpreter/thread.cpp
-    src/interpreter/x87.cpp
-    src/interpreter/syscalls.cpp
-    src/instructions/x64instruction.cpp
-    src/host/host.cpp
-    src/utils/utils.cpp
+    src/emulator/symbolprovider.cpp
+    src/emulator/interpreter.cpp
+    src/emulator/vm.cpp
+    src/kernel/auxiliaryvector.cpp
+    src/kernel/fs/epoll.cpp
+    src/kernel/fs/event.cpp
+    src/kernel/fs/fs.cpp
+    src/kernel/fs/hostfile.cpp
+    src/kernel/fs/shadowfile.cpp
+    src/kernel/fs/socket.cpp
+    src/kernel/fs/stream.cpp
+    src/kernel/kernel.cpp
+    src/kernel/scheduler.cpp
+    src/kernel/syscalls.cpp
+    src/kernel/thread.cpp
+    src/x64/disassembler/capstonewrapper.cpp
+    src/x64/instructions/x64instruction.cpp
+    src/x64/cpu.cpp
+    src/x64/cpuimpl.cpp
+    src/x64/checkedcpuimpl.cpp
+    src/x64/mmu.cpp
+    src/x64/registers.cpp
+    src/x64/simd.cpp
+    src/x64/x87.cpp
+    src/kernel/host.cpp
+    src/utils.cpp
 )
 target_compile_options(x64emulator PUBLIC -Wall -Wextra -Wpedantic -pedantic -Wconversion -Werror -Wimplicit-fallthrough)
 target_compile_options(x64emulator PUBLIC -Wno-braced-scalar-init -Wno-missing-braces)

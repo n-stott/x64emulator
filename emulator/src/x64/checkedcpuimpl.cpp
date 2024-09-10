@@ -1,0 +1,2496 @@
+#include "x64/checkedcpuimpl.h"
+#include "x64/cpuimpl.h"
+#include <cassert>
+#include <cstring>
+#include <stdexcept>
+#include <emmintrin.h>
+#include <limits>
+
+#if (defined(__GNUG__) && !defined(__clang__))
+#define GCC_COMPILER 1
+#else
+#define CLANG_COMPILER 1
+#endif
+
+namespace x64 {
+    static Flags fromRflags(u64 rflags) {
+        static constexpr u64 CARRY_MASK = 0x1;
+        static constexpr u64 PARITY_MASK = 0x4;
+        static constexpr u64 ZERO_MASK = 0x40;
+        static constexpr u64 SIGN_MASK = 0x80;
+        static constexpr u64 OVERFLOW_MASK = 0x800;
+        Flags flags;
+        flags.carry = rflags & CARRY_MASK;
+        flags.parity = rflags & PARITY_MASK;
+        flags.zero = rflags & ZERO_MASK;
+        flags.sign = rflags & SIGN_MASK;
+        flags.overflow = rflags & OVERFLOW_MASK;
+        return flags;
+    }
+
+    static u64 readRflags() {
+        u64 rflags;
+        asm volatile("pushf;"
+                     "pop %0" : "=r"(rflags) :: "cc");
+        return rflags;
+    }
+
+    static void writeRflags(u64 rflags) {
+        asm volatile("push %0;"
+                     "popf;" :: "m"(rflags) : "cc");
+    }
+
+    static u64 toRflags(const Flags& flags) {
+        static constexpr u64 CARRY_MASK = 0x1;
+        static constexpr u64 PARITY_MASK = 0x4;
+        static constexpr u64 ZERO_MASK = 0x40;
+        static constexpr u64 SIGN_MASK = 0x80;
+        static constexpr u64 OVERFLOW_MASK = 0x800;
+        u64 rflags = readRflags();
+        rflags = (rflags & ~CARRY_MASK) | (flags.carry ? CARRY_MASK : 0);
+        rflags = (rflags & ~PARITY_MASK) | (flags.parity ? PARITY_MASK : 0);
+        rflags = (rflags & ~ZERO_MASK) | (flags.zero ? ZERO_MASK : 0);
+        rflags = (rflags & ~SIGN_MASK) | (flags.sign ? SIGN_MASK : 0);
+        rflags = (rflags & ~OVERFLOW_MASK) | (flags.overflow ? OVERFLOW_MASK : 0);
+        return rflags;
+    }
+}
+
+#define GET_RFLAGS(flags_ptr)                               \
+            *flags_ptr = fromRflags(readRflags());
+
+#define SET_RFLAGS(flags_ref)                               \
+            writeRflags(toRflags(flags_ref));
+
+#define BEGIN_RFLAGS_SCOPE            \
+            u64 SavedRFlags = readRflags(); {
+
+#define END_RFLAGS_SCOPE              \
+            } writeRflags(SavedRFlags);
+
+namespace x64 {
+
+    template<typename U, typename Add>
+    static U add(U dst, U src, Flags* flags, Add addFunc) {
+        Flags virtualFlags = *flags;
+        U virtualRes = addFunc(dst, src, &virtualFlags);
+        (void)virtualRes;
+
+        U nativeRes = dst;
+        {
+            u64 rflags = toRflags(*flags);
+            u64 SavedRFlags = 0;
+            asm volatile("pushf;"
+                         "pop %0;"
+                         "push %1;"
+                         "popf;"
+                         "add %3, %2;"
+                         "pushf;"
+                         "pop %1;"
+                         "push %0;"
+                         "popf;"
+                         : "+r"(SavedRFlags), "+r"(rflags), "+r"(nativeRes) : "r"(src) : "cc");
+            *flags = fromRflags(rflags);
+        }
+
+        assert(virtualRes == nativeRes);
+        assert(virtualFlags.carry == flags->carry);
+        assert(virtualFlags.overflow == flags->overflow);
+        assert(virtualFlags.parity == flags->parity);
+        assert(virtualFlags.sign == flags->sign);
+        assert(virtualFlags.zero == flags->zero);
+        
+        return nativeRes;
+    }
+
+    u8 CheckedCpuImpl::add8(u8 dst, u8 src, Flags* flags) { return add<u8>(dst, src, flags, &CpuImpl::add8); }
+    u16 CheckedCpuImpl::add16(u16 dst, u16 src, Flags* flags) { return add<u16>(dst, src, flags, &CpuImpl::add16); }
+    u32 CheckedCpuImpl::add32(u32 dst, u32 src, Flags* flags) { return add<u32>(dst, src, flags, &CpuImpl::add32); }
+    u64 CheckedCpuImpl::add64(u64 dst, u64 src, Flags* flags) { return add<u64>(dst, src, flags, &CpuImpl::add64); }
+
+    template<typename U, typename Adc>
+    static U adc(U dst, U src, Flags* flags, Adc adcFunc) {
+        Flags virtualFlags = *flags;
+        U virtualRes = adcFunc(dst, src, &virtualFlags);
+        (void)virtualRes;
+
+        U nativeRes = dst;
+        {
+            u64 rflags = toRflags(*flags);
+            u64 SavedRFlags = 0;
+            asm volatile("pushf;"
+                         "pop %0;"
+                         "push %1;"
+                         "popf;"
+                         "adc %3, %2;"
+                         "pushf;"
+                         "pop %1;"
+                         "push %0;"
+                         "popf;"
+                         : "+r"(SavedRFlags), "+r"(rflags), "+r"(nativeRes) : "r"(src) : "cc");
+            *flags = fromRflags(rflags);
+        }
+
+        assert(virtualRes == nativeRes);
+        assert(virtualFlags.carry == flags->carry);
+        assert(virtualFlags.overflow == flags->overflow);
+        assert(virtualFlags.parity == flags->parity);
+        assert(virtualFlags.sign == flags->sign);
+        assert(virtualFlags.zero == flags->zero);
+        
+        return nativeRes;
+    }
+
+    u8 CheckedCpuImpl::adc8(u8 dst, u8 src, Flags* flags) { return adc<u8>(dst, src, flags, &CpuImpl::adc8); }
+    u16 CheckedCpuImpl::adc16(u16 dst, u16 src, Flags* flags) { return adc<u16>(dst, src, flags, &CpuImpl::adc16); }
+    u32 CheckedCpuImpl::adc32(u32 dst, u32 src, Flags* flags) { return adc<u32>(dst, src, flags, &CpuImpl::adc32); }
+    u64 CheckedCpuImpl::adc64(u64 dst, u64 src, Flags* flags) { return adc<u64>(dst, src, flags, &CpuImpl::adc64); }
+
+    template<typename U, typename Sub>
+    static U sub(U dst, U src, Flags* flags, Sub subFunc) {
+        Flags virtualFlags = *flags;
+        U virtualRes = subFunc(dst, src, &virtualFlags);
+        (void)virtualRes;
+
+        U nativeRes = dst;
+        {
+            u64 rflags = toRflags(*flags);
+            u64 SavedRFlags = 0;
+            asm volatile("pushf;"
+                         "pop %0;"
+                         "push %1;"
+                         "popf;"
+                         "sub %3, %2;"
+                         "pushf;"
+                         "pop %1;"
+                         "push %0;"
+                         "popf;"
+                         : "+r"(SavedRFlags), "+r"(rflags), "+r"(nativeRes) : "r"(src) : "cc");
+            *flags = fromRflags(rflags);
+        }
+
+        assert(virtualRes == nativeRes);
+        assert(virtualFlags.carry == flags->carry);
+        assert(virtualFlags.overflow == flags->overflow);
+        assert(virtualFlags.parity == flags->parity);
+        assert(virtualFlags.sign == flags->sign);
+        assert(virtualFlags.zero == flags->zero);
+        
+        return nativeRes;
+    }
+
+    u8 CheckedCpuImpl::sub8(u8 dst, u8 src, Flags* flags) { return sub<u8>(dst, src, flags, &CpuImpl::sub8); }
+    u16 CheckedCpuImpl::sub16(u16 dst, u16 src, Flags* flags) { return sub<u16>(dst, src, flags, &CpuImpl::sub16); }
+    u32 CheckedCpuImpl::sub32(u32 dst, u32 src, Flags* flags) { return sub<u32>(dst, src, flags, &CpuImpl::sub32); }
+    u64 CheckedCpuImpl::sub64(u64 dst, u64 src, Flags* flags) { return sub<u64>(dst, src, flags, &CpuImpl::sub64); }
+
+    template<typename U, typename Sbb>
+    static U sbb(U dst, U src, Flags* flags, Sbb sbbFunc) {
+        Flags virtualFlags = *flags;
+        U virtualRes = sbbFunc(dst, src, &virtualFlags);
+        (void)virtualRes;
+
+        U nativeRes = dst;
+        {
+            u64 rflags = toRflags(*flags);
+            u64 SavedRFlags = 0;
+            asm volatile("pushf;"
+                         "pop %0;"
+                         "push %1;"
+                         "popf;"
+                         "sbb %3, %2;"
+                         "pushf;"
+                         "pop %1;"
+                         "push %0;"
+                         "popf;"
+                         : "+r"(SavedRFlags), "+r"(rflags), "+r"(nativeRes) : "r"(src) : "cc");
+            *flags = fromRflags(rflags);
+        }
+
+        assert(virtualRes == nativeRes);
+        assert(virtualFlags.carry == flags->carry);
+        assert(virtualFlags.overflow == flags->overflow);
+        assert(virtualFlags.parity == flags->parity);
+        assert(virtualFlags.sign == flags->sign);
+        assert(virtualFlags.zero == flags->zero);
+        
+        return nativeRes;
+    }
+
+    u8 CheckedCpuImpl::sbb8(u8 dst, u8 src, Flags* flags) { return sbb<u8>(dst, src, flags, &CpuImpl::sbb8); }
+    u16 CheckedCpuImpl::sbb16(u16 dst, u16 src, Flags* flags) { return sbb<u16>(dst, src, flags, &CpuImpl::sbb16); }
+    u32 CheckedCpuImpl::sbb32(u32 dst, u32 src, Flags* flags) { return sbb<u32>(dst, src, flags, &CpuImpl::sbb32); }
+    u64 CheckedCpuImpl::sbb64(u64 dst, u64 src, Flags* flags) { return sbb<u64>(dst, src, flags, &CpuImpl::sbb64); }
+
+
+    void CheckedCpuImpl::cmp8(u8 src1, u8 src2, Flags* flags) {
+        [[maybe_unused]] u8 res = sub8(src1, src2, flags);
+    }
+
+    void CheckedCpuImpl::cmp16(u16 src1, u16 src2, Flags* flags) {
+        [[maybe_unused]] u16 res = sub16(src1, src2, flags);
+    }
+
+    void CheckedCpuImpl::cmp32(u32 src1, u32 src2, Flags* flags) {
+        [[maybe_unused]] u32 res = sub32(src1, src2, flags);
+    }
+
+    void CheckedCpuImpl::cmp64(u64 src1, u64 src2, Flags* flags) {
+        [[maybe_unused]] u64 res = sub64(src1, src2, flags);
+    }
+
+    u8 CheckedCpuImpl::neg8(u8 dst, Flags* flags) { return sub8(0u, dst, flags); }
+    u16 CheckedCpuImpl::neg16(u16 dst, Flags* flags) { return sub16(0u, dst, flags); }
+    u32 CheckedCpuImpl::neg32(u32 dst, Flags* flags) { return sub32(0u, dst, flags); }
+    u64 CheckedCpuImpl::neg64(u64 dst, Flags* flags) { return sub64(0ul, dst, flags); }
+
+    std::pair<u8, u8> CheckedCpuImpl::mul8(u8 src1, u8 src2, Flags* flags) {
+        Flags virtualFlags = *flags;
+        auto virtualRes = CpuImpl::mul8(src1, src2, &virtualFlags);
+        (void)virtualRes;
+
+        u16 res = 0;
+        BEGIN_RFLAGS_SCOPE
+            SET_RFLAGS(*flags);
+            asm volatile("mov %0, %%al" :: "m"(src1));
+            asm volatile("mul %0" :: "r"(src2) : "ax");
+            asm volatile("mov %%ax, %0" : "=m"(res));
+            GET_RFLAGS(flags);
+        END_RFLAGS_SCOPE
+
+        u8 lower = (u8)res;
+        u8 upper = (u8)(res >> 8);
+
+        assert(virtualRes.first == upper);
+        assert(virtualRes.second == lower);
+        assert(virtualFlags.carry == flags->carry);
+        assert(virtualFlags.overflow == flags->overflow);
+        // assert(virtualFlags.parity == flags->parity);
+
+        return std::make_pair(upper, lower);
+    }
+
+    std::pair<u16, u16> CheckedCpuImpl::mul16(u16 src1, u16 src2, Flags* flags) {
+        Flags virtualFlags = *flags;
+        auto virtualRes = CpuImpl::mul16(src1, src2, &virtualFlags);
+        (void)virtualRes;
+
+        u16 lower = 0;
+        u16 upper = 0;
+        BEGIN_RFLAGS_SCOPE
+            SET_RFLAGS(*flags);
+            asm volatile("mov %0, %%ax" :: "m"(src1));
+            asm volatile("mul %0" :: "r"(src2) : "ax", "dx");
+            asm volatile("mov %%ax, %0" : "=m"(lower));
+            asm volatile("mov %%dx, %0" : "=m"(upper));
+            GET_RFLAGS(flags);
+        END_RFLAGS_SCOPE
+
+        assert(virtualRes.first == upper);
+        assert(virtualRes.second == lower);
+        assert(virtualFlags.carry == flags->carry);
+        assert(virtualFlags.overflow == flags->overflow);
+        // assert(virtualFlags.parity == flags->parity);
+
+        return std::make_pair(upper, lower);
+    }
+
+    std::pair<u32, u32> CheckedCpuImpl::mul32(u32 src1, u32 src2, Flags* flags) {
+        Flags virtualFlags = *flags;
+        auto virtualRes = CpuImpl::mul32(src1, src2, &virtualFlags);
+        (void)virtualRes;
+
+        u32 lower = 0;
+        u32 upper = 0;
+        BEGIN_RFLAGS_SCOPE
+            SET_RFLAGS(*flags);
+            asm volatile("mov %0, %%eax" :: "m"(src1));
+            asm volatile("mul %0" :: "r"(src2) : "eax", "edx");
+            asm volatile("mov %%eax, %0" : "=m"(lower));
+            asm volatile("mov %%edx, %0" : "=m"(upper));
+            GET_RFLAGS(flags);
+        END_RFLAGS_SCOPE
+
+        assert(virtualRes.first == upper);
+        assert(virtualRes.second == lower);
+        assert(virtualFlags.carry == flags->carry);
+        assert(virtualFlags.overflow == flags->overflow);
+        // assert(virtualFlags.parity == flags->parity);
+
+        return std::make_pair(upper, lower);
+    }
+    
+    std::pair<u64, u64> CheckedCpuImpl::mul64(u64 src1, u64 src2, Flags* flags) {
+        Flags virtualFlags = *flags;
+        auto virtualRes = CpuImpl::mul64(src1, src2, &virtualFlags);
+        (void)virtualRes;
+
+        u64 lower = 0;
+        u64 upper = 0;
+        BEGIN_RFLAGS_SCOPE
+            SET_RFLAGS(*flags);
+            asm volatile("mov %0, %%rax" :: "m"(src1));
+            asm volatile("mulq %0" :: "m"(src2) : "rax", "rdx");
+            asm volatile("mov %%rax, %0" : "=m"(lower));
+            asm volatile("mov %%rdx, %0" : "=m"(upper));
+            GET_RFLAGS(flags);
+        END_RFLAGS_SCOPE
+
+        assert(virtualRes.first == upper);
+        assert(virtualRes.second == lower);
+        assert(virtualFlags.carry == flags->carry);
+        assert(virtualFlags.overflow == flags->overflow);
+        // assert(virtualFlags.parity == flags->parity);
+
+        return std::make_pair(upper, lower);
+    }
+
+    std::pair<u32, u32> CheckedCpuImpl::imul32(u32 src1, u32 src2, Flags* flags) {
+        Flags virtualFlags = *flags;
+        auto virtualRes = CpuImpl::imul32(src1, src2, &virtualFlags);
+        (void)virtualRes;
+
+        u32 lower = 0;
+        u32 upper = 0;
+        BEGIN_RFLAGS_SCOPE
+            SET_RFLAGS(*flags);
+            asm volatile("mov %0, %%eax" :: "m"(src1));
+            asm volatile("imul %0" :: "r"(src2) : "eax", "edx");
+            asm volatile("mov %%eax, %0" : "=m"(lower));
+            asm volatile("mov %%edx, %0" : "=m"(upper));
+            GET_RFLAGS(flags);
+        END_RFLAGS_SCOPE
+
+        assert(virtualRes.first == upper);
+        assert(virtualRes.second == lower);
+        assert(virtualFlags.carry == flags->carry);
+        assert(virtualFlags.overflow == flags->overflow);
+        // assert(virtualFlags.parity == flags->parity);
+
+        return std::make_pair(upper, lower);
+    }
+
+    std::pair<u64, u64> CheckedCpuImpl::imul64(u64 src1, u64 src2, Flags* flags) {
+        Flags virtualFlags = *flags;
+        auto virtualRes = CpuImpl::imul64(src1, src2, &virtualFlags);
+        (void)virtualRes;
+
+        u64 lower = 0;
+        u64 upper = 0;
+        BEGIN_RFLAGS_SCOPE
+            SET_RFLAGS(*flags);
+            asm volatile("mov %0, %%rax" :: "m"(src1));
+            asm volatile("imulq %0" :: "m"(src2) : "rax", "rdx");
+            asm volatile("mov %%rax, %0" : "=m"(lower));
+            asm volatile("mov %%rdx, %0" : "=m"(upper));
+            GET_RFLAGS(flags);
+        END_RFLAGS_SCOPE
+
+        assert(virtualRes.first == upper);
+        assert(virtualRes.second == lower);
+        assert(virtualFlags.carry == flags->carry);
+        assert(virtualFlags.overflow == flags->overflow);
+
+        return std::make_pair(upper, lower);
+    }
+
+    std::pair<u32, u32> CheckedCpuImpl::div32(u32 dividendUpper, u32 dividendLower, u32 divisor) {
+        assert(divisor != 0);
+        u64 dividend = ((u64)dividendUpper) << 32 | (u64)dividendLower;
+        u64 tmp = dividend / divisor;
+        assert(tmp >> 32 == 0);
+        return std::make_pair(tmp, dividend % divisor);
+    }
+
+    std::pair<u64, u64> CheckedCpuImpl::div64(u64 dividendUpper, u64 dividendLower, u64 divisor) {
+        return CpuImpl::div64(dividendUpper, dividendLower, divisor);
+    }
+
+    template<typename U, typename And>
+    static U and_(U dst, U src, Flags* flags, And andFunc) {
+        Flags virtualFlags = *flags;
+        U virtualRes = andFunc(dst, src, &virtualFlags);
+        (void)virtualRes;
+
+        U nativeRes = dst;
+        BEGIN_RFLAGS_SCOPE
+            SET_RFLAGS(*flags);
+            asm volatile("and %1, %0" : "+r" (nativeRes) : "r"(src));
+            GET_RFLAGS(flags);
+        END_RFLAGS_SCOPE
+
+        assert(virtualRes == nativeRes);
+        assert(virtualFlags.carry == flags->carry);
+        assert(virtualFlags.overflow == flags->overflow);
+        assert(virtualFlags.parity == flags->parity);
+        assert(virtualFlags.sign == flags->sign);
+        assert(virtualFlags.zero == flags->zero);
+        
+        return nativeRes;
+    }
+
+    u8 CheckedCpuImpl::and8(u8 dst, u8 src, Flags* flags) { return and_<u8>(dst, src, flags, &CpuImpl::and8); }
+    u16 CheckedCpuImpl::and16(u16 dst, u16 src, Flags* flags) { return and_<u16>(dst, src, flags, &CpuImpl::and16); }
+    u32 CheckedCpuImpl::and32(u32 dst, u32 src, Flags* flags) { return and_<u32>(dst, src, flags, &CpuImpl::and32); }
+    u64 CheckedCpuImpl::and64(u64 dst, u64 src, Flags* flags) { return and_<u64>(dst, src, flags, &CpuImpl::and64); }
+
+    template<typename U, typename Or>
+    static U or_(U dst, U src, Flags* flags, Or orFunc) {
+        Flags virtualFlags = *flags;
+        U virtualRes = orFunc(dst, src, &virtualFlags);
+        (void)virtualRes;
+
+        U nativeRes = dst;
+        BEGIN_RFLAGS_SCOPE
+            SET_RFLAGS(*flags);
+            asm volatile("or %1, %0" : "+r" (nativeRes) : "r"(src));
+            GET_RFLAGS(flags);
+        END_RFLAGS_SCOPE
+
+        assert(virtualRes == nativeRes);
+        assert(virtualFlags.carry == flags->carry);
+        assert(virtualFlags.overflow == flags->overflow);
+        assert(virtualFlags.parity == flags->parity);
+        assert(virtualFlags.sign == flags->sign);
+        assert(virtualFlags.zero == flags->zero);
+        
+        return nativeRes;
+    }
+
+    u8 CheckedCpuImpl::or8(u8 dst, u8 src, Flags* flags) { return or_<u8>(dst, src, flags, &CpuImpl::or8); }
+    u16 CheckedCpuImpl::or16(u16 dst, u16 src, Flags* flags) { return or_<u16>(dst, src, flags, &CpuImpl::or16); }
+    u32 CheckedCpuImpl::or32(u32 dst, u32 src, Flags* flags) { return or_<u32>(dst, src, flags, &CpuImpl::or32); }
+    u64 CheckedCpuImpl::or64(u64 dst, u64 src, Flags* flags) { return or_<u64>(dst, src, flags, &CpuImpl::or64); }
+
+    template<typename U, typename Xor>
+    static U xor_(U dst, U src, Flags* flags, Xor xorFunc) {
+        Flags virtualFlags = *flags;
+        U virtualRes = xorFunc(dst, src, &virtualFlags);
+        (void)virtualRes;
+
+        U nativeRes = dst;
+        BEGIN_RFLAGS_SCOPE
+            SET_RFLAGS(*flags);
+            asm volatile("xor %1, %0" : "+r" (nativeRes) : "r"(src));
+            GET_RFLAGS(flags);
+        END_RFLAGS_SCOPE
+
+        assert(virtualRes == nativeRes);
+        assert(virtualFlags.carry == flags->carry);
+        assert(virtualFlags.overflow == flags->overflow);
+        assert(virtualFlags.parity == flags->parity);
+        assert(virtualFlags.sign == flags->sign);
+        assert(virtualFlags.zero == flags->zero);
+        
+        return nativeRes;
+    }
+
+    u8 CheckedCpuImpl::xor8(u8 dst, u8 src, Flags* flags) { return xor_<u8>(dst, src, flags, &CpuImpl::xor8); }
+    u16 CheckedCpuImpl::xor16(u16 dst, u16 src, Flags* flags) { return xor_<u16>(dst, src, flags, &CpuImpl::xor16); }
+    u32 CheckedCpuImpl::xor32(u32 dst, u32 src, Flags* flags) { return xor_<u32>(dst, src, flags, &CpuImpl::xor32); }
+    u64 CheckedCpuImpl::xor64(u64 dst, u64 src, Flags* flags) { return xor_<u64>(dst, src, flags, &CpuImpl::xor64); }
+
+    template<typename U, typename Inc>
+    static U inc(U src, Flags* flags, Inc incFunc) {
+        Flags virtualFlags = *flags;
+        U virtualRes = incFunc(src, &virtualFlags);
+        (void)virtualRes;
+
+        U nativeRes = src;
+        BEGIN_RFLAGS_SCOPE
+            SET_RFLAGS(*flags);
+            asm volatile("inc %0" : "+r" (nativeRes));
+            GET_RFLAGS(flags);
+        END_RFLAGS_SCOPE
+
+        assert(virtualRes == nativeRes);
+        assert(virtualFlags.overflow == flags->overflow);
+        assert(virtualFlags.parity == flags->parity);
+        assert(virtualFlags.sign == flags->sign);
+        assert(virtualFlags.zero == flags->zero);
+        
+        return nativeRes;
+    }
+
+    u8 CheckedCpuImpl::inc8(u8 src, Flags* flags) { return inc<u8>(src, flags, &CpuImpl::inc8); }
+    u16 CheckedCpuImpl::inc16(u16 src, Flags* flags) { return inc<u16>(src, flags, &CpuImpl::inc16); }
+    u32 CheckedCpuImpl::inc32(u32 src, Flags* flags) { return inc<u32>(src, flags, &CpuImpl::inc32); }
+    u64 CheckedCpuImpl::inc64(u64 src, Flags* flags) { return inc<u64>(src, flags, &CpuImpl::inc64); }
+
+    template<typename U, typename Dec>
+    static U dec(U src, Flags* flags, Dec decFunc) {
+        Flags virtualFlags = *flags;
+        U virtualRes = decFunc(src, &virtualFlags);
+        (void)virtualRes;
+
+        U nativeRes = src;
+        BEGIN_RFLAGS_SCOPE
+            SET_RFLAGS(*flags);
+            asm volatile("dec %0" : "+r" (nativeRes));
+            GET_RFLAGS(flags);
+        END_RFLAGS_SCOPE
+
+        assert(virtualRes == nativeRes);
+        assert(virtualFlags.overflow == flags->overflow);
+        assert(virtualFlags.parity == flags->parity);
+        assert(virtualFlags.sign == flags->sign);
+        assert(virtualFlags.zero == flags->zero);
+        
+        return nativeRes;
+    }
+
+    u8 CheckedCpuImpl::dec8(u8 src, Flags* flags) { return dec<u8>(src, flags, &CpuImpl::dec8); }
+    u16 CheckedCpuImpl::dec16(u16 src, Flags* flags) { return dec<u16>(src, flags, &CpuImpl::dec16); }
+    u32 CheckedCpuImpl::dec32(u32 src, Flags* flags) { return dec<u32>(src, flags, &CpuImpl::dec32); }
+    u64 CheckedCpuImpl::dec64(u64 src, Flags* flags) { return dec<u64>(src, flags, &CpuImpl::dec64); }
+
+    template<typename U, typename Shl>
+    static U shl(U dst, U src, Flags* flags, Shl shlFunc) {
+        Flags virtualFlags = *flags;
+        U virtualRes = shlFunc(dst, src, &virtualFlags);
+        (void)virtualRes;
+
+        U nativeRes = dst;
+        BEGIN_RFLAGS_SCOPE
+            SET_RFLAGS(*flags);
+            asm volatile("mov %0, %%cl" :: "r"((u8)src));
+            asm volatile("shl %%cl, %0" : "+r" (nativeRes));
+            GET_RFLAGS(flags);
+        END_RFLAGS_SCOPE
+
+        assert(virtualRes == nativeRes);
+        U maskedSrc = src % (8*sizeof(U));
+        if(maskedSrc) {
+            assert(virtualFlags.carry == flags->carry);
+            if(src == 1)
+                assert(virtualFlags.overflow == flags->overflow);
+            assert(virtualFlags.parity == flags->parity);
+            assert(virtualFlags.sign == flags->sign);
+            assert(virtualFlags.zero == flags->zero);
+        }
+        
+        return nativeRes;
+    }
+
+    u8 CheckedCpuImpl::shl8(u8 dst, u8 src, Flags* flags) { return shl<u8>(dst, src, flags, &CpuImpl::shl8); }
+    u16 CheckedCpuImpl::shl16(u16 dst, u16 src, Flags* flags) { return shl<u16>(dst, src, flags, &CpuImpl::shl16); }
+    u32 CheckedCpuImpl::shl32(u32 dst, u32 src, Flags* flags) { return shl<u32>(dst, src, flags, &CpuImpl::shl32); }
+    u64 CheckedCpuImpl::shl64(u64 dst, u64 src, Flags* flags) { return shl<u64>(dst, src, flags, &CpuImpl::shl64); }
+
+    template<typename U, typename Shr>
+    static U shr(U dst, U src, Flags* flags, Shr shrFunc) {
+        Flags virtualFlags = *flags;
+        U virtualRes = shrFunc(dst, src, &virtualFlags);
+        (void)virtualRes;
+
+        U nativeRes = dst;
+        BEGIN_RFLAGS_SCOPE
+            SET_RFLAGS(*flags);
+            asm volatile("mov %0, %%cl" :: "r"((u8)src));
+            asm volatile("shr %%cl, %0" : "+r" (nativeRes));
+            GET_RFLAGS(flags);
+        END_RFLAGS_SCOPE
+
+        assert(virtualRes == nativeRes);
+        U maskedSrc = src % (8*sizeof(U));
+        if(maskedSrc) {
+            assert(virtualFlags.carry == flags->carry);
+            if(src == 1)
+                assert(virtualFlags.overflow == flags->overflow);
+            assert(virtualFlags.parity == flags->parity);
+            assert(virtualFlags.sign == flags->sign);
+            assert(virtualFlags.zero == flags->zero);
+        }
+        
+        return nativeRes;
+    }
+
+    u8 CheckedCpuImpl::shr8(u8 dst, u8 src, Flags* flags) { return shr<u8>(dst, src, flags, &CpuImpl::shr8); }
+    u16 CheckedCpuImpl::shr16(u16 dst, u16 src, Flags* flags) { return shr<u16>(dst, src, flags, &CpuImpl::shr16); }
+    u32 CheckedCpuImpl::shr32(u32 dst, u32 src, Flags* flags) { return shr<u32>(dst, src, flags, &CpuImpl::shr32); }
+    u64 CheckedCpuImpl::shr64(u64 dst, u64 src, Flags* flags) { return shr<u64>(dst, src, flags, &CpuImpl::shr64); }
+
+    template<typename U>
+    static U shld(U dst, U src, u8 count, Flags* flags) {
+        u8 size = 8*sizeof(U);
+        count = count % size;
+        if(count == 0) return dst;
+        U res = (U)(dst << count) | (U)(src >> (size-count));
+        flags->carry = dst & (size-count);
+        flags->sign = (res & ((U)1 << (size-1)));
+        flags->zero = (res == 0);
+        flags->parity = Flags::computeParity((u8)res);
+        if(count == 1) {
+            U signMask = (U)1 << (size-1);
+            flags->overflow = (dst & signMask) ^ (res & signMask);
+        }
+        return res;
+    }
+
+    u32 CheckedCpuImpl::shld32(u32 dst, u32 src, u8 count, Flags* flags) { return shld<u32>(dst, src, count, flags); }
+    u64 CheckedCpuImpl::shld64(u64 dst, u64 src, u8 count, Flags* flags) { return shld<u64>(dst, src, count, flags); }
+
+    template<typename U>
+    static U shrd(U dst, U src, u8 count, Flags* flags) {
+        u8 size = 8*sizeof(U);
+        count = count % size;
+        if(count == 0) return dst;
+        U res = (U)(dst >> count) | (U)(src << (size-count));
+        flags->carry = dst & (count-1);
+        flags->sign = (res & ((U)1 << (size-1)));
+        flags->zero = (res == 0);
+        flags->parity = Flags::computeParity((u8)res);
+        if(count == 1) {
+            U signMask = (U)1 << (size-1);
+            flags->overflow = (dst & signMask) ^ (res & signMask);
+        }
+        return res;
+    }
+
+    u32 CheckedCpuImpl::shrd32(u32 dst, u32 src, u8 count, Flags* flags) { return shrd<u32>(dst, src, count, flags); }
+    u64 CheckedCpuImpl::shrd64(u64 dst, u64 src, u8 count, Flags* flags) { return shrd<u64>(dst, src, count, flags); }
+
+    template<typename U, typename Sar>
+    static U sar(U dst, U src, Flags* flags, Sar sarFunc) {
+        Flags virtualFlags = *flags;
+        U virtualRes = sarFunc(dst, src, &virtualFlags);
+        (void)virtualRes;
+
+        U nativeRes = dst;
+        BEGIN_RFLAGS_SCOPE
+            SET_RFLAGS(*flags);
+            asm volatile("mov %0, %%cl" :: "r"((u8)src));
+            asm volatile("sar %%cl, %0" : "+r" (nativeRes));
+            GET_RFLAGS(flags);
+        END_RFLAGS_SCOPE
+
+        assert(virtualRes == nativeRes);
+        if(src) {
+            assert(virtualFlags.carry == flags->carry);
+            if(src == 1)
+                assert(virtualFlags.overflow == flags->overflow);
+            assert(virtualFlags.parity == flags->parity);
+            assert(virtualFlags.sign == flags->sign);
+            assert(virtualFlags.zero == flags->zero);
+        }
+        
+        return nativeRes;
+    }
+
+    u8 CheckedCpuImpl::sar8(u8 dst, u8 src, Flags* flags) { return sar<u8>(dst, src, flags, &CpuImpl::sar8); }
+    u16 CheckedCpuImpl::sar16(u16 dst, u16 src, Flags* flags) { return sar<u16>(dst, src, flags, &CpuImpl::sar16); }
+    u32 CheckedCpuImpl::sar32(u32 dst, u32 src, Flags* flags) { return sar<u32>(dst, src, flags, &CpuImpl::sar32); }
+    u64 CheckedCpuImpl::sar64(u64 dst, u64 src, Flags* flags) { return sar<u64>(dst, src, flags, &CpuImpl::sar64); }
+
+    template<typename U, typename Rol>
+    U rol(U val, u8 count, Flags* flags, Rol rolFunc) {
+        Flags virtualFlags = *flags;
+        U virtualRes = rolFunc(val, count, &virtualFlags);
+        (void)virtualRes;
+
+        U nativeRes = val;
+        BEGIN_RFLAGS_SCOPE
+            SET_RFLAGS(*flags);
+            asm volatile("mov %0, %%cl" :: "r"((u8)count));
+            asm volatile("rol %%cl, %0" : "+r" (nativeRes));
+            GET_RFLAGS(flags);
+        END_RFLAGS_SCOPE
+
+        assert(virtualRes == nativeRes);
+        if(count) {
+            assert(virtualFlags.carry == flags->carry);
+            if(count % 64 == 1)
+                assert(virtualFlags.overflow == flags->overflow);
+        }
+        
+        return nativeRes;
+    }
+    
+ 
+    u8 CheckedCpuImpl::rol8(u8 val, u8 count, Flags* flags) { return rol<u8>(val, count, flags, &CpuImpl::rol8); }
+    u16 CheckedCpuImpl::rol16(u16 val, u8 count, Flags* flags) { return rol<u16>(val, count, flags, &CpuImpl::rol16); }
+    u32 CheckedCpuImpl::rol32(u32 val, u8 count, Flags* flags) { return rol<u32>(val, count, flags, &CpuImpl::rol32); }
+    u64 CheckedCpuImpl::rol64(u64 val, u8 count, Flags* flags) { return rol<u64>(val, count, flags, &CpuImpl::rol64); }
+ 
+    template<typename U, typename Ror>
+    U ror(U val, u8 count, Flags* flags, Ror rorFunc) {
+        Flags virtualFlags = *flags;
+        U virtualRes = rorFunc(val, count, &virtualFlags);
+        (void)virtualRes;
+
+        U nativeRes = val;
+        BEGIN_RFLAGS_SCOPE
+            SET_RFLAGS(*flags);
+            asm volatile("mov %0, %%cl" :: "r"((u8)count));
+            asm volatile("ror %%cl, %0" : "+r" (nativeRes));
+            GET_RFLAGS(flags);
+        END_RFLAGS_SCOPE
+
+        assert(virtualRes == nativeRes);
+        if(count) {
+            assert(virtualFlags.carry == flags->carry);
+            if(count % 64 == 1)
+                assert(virtualFlags.overflow == flags->overflow);
+        }
+        
+        return nativeRes;
+    }
+ 
+    u8 CheckedCpuImpl::ror8(u8 val, u8 count, Flags* flags) { return ror<u8>(val, count, flags, &CpuImpl::ror8); }
+    u16 CheckedCpuImpl::ror16(u16 val, u8 count, Flags* flags) { return ror<u16>(val, count, flags, &CpuImpl::ror16); }
+    u32 CheckedCpuImpl::ror32(u32 val, u8 count, Flags* flags) { return ror<u32>(val, count, flags, &CpuImpl::ror32); }
+    u64 CheckedCpuImpl::ror64(u64 val, u8 count, Flags* flags) { return ror<u64>(val, count, flags, &CpuImpl::ror64); }
+
+    template<typename U, typename Tzcnt>
+    static U tzcnt(U src, Flags* flags, Tzcnt tzcntFunc) {
+        Flags virtualFlags = *flags;
+        U virtualRes = tzcntFunc(src, &virtualFlags);
+        (void)virtualRes;
+
+        U nativeRes = 0;
+        BEGIN_RFLAGS_SCOPE
+            SET_RFLAGS(*flags);
+            asm volatile("tzcnt %1, %0" : "=r" (nativeRes) : "r"(src));
+            GET_RFLAGS(flags);
+        END_RFLAGS_SCOPE
+
+        assert(virtualRes == nativeRes);
+        assert(virtualFlags.carry == flags->carry);
+        assert(virtualFlags.zero == flags->zero);
+        
+        return nativeRes;
+    }
+
+    u16 CheckedCpuImpl::tzcnt16(u16 src, Flags* flags) { return tzcnt<u16>(src, flags, &CpuImpl::tzcnt16); }
+    u32 CheckedCpuImpl::tzcnt32(u32 src, Flags* flags) { return tzcnt<u32>(src, flags, &CpuImpl::tzcnt32); }
+    u64 CheckedCpuImpl::tzcnt64(u64 src, Flags* flags) { return tzcnt<u64>(src, flags, &CpuImpl::tzcnt64); }
+
+    template<typename U, typename Bswap>
+    U bswap(U val, Bswap bswapFunc) {
+        U virtualRes = bswapFunc(val);
+        (void)virtualRes;
+
+        U nativeRes = val;
+        asm volatile("bswap %0" : "+r"(nativeRes));
+        assert(virtualRes == nativeRes);
+
+        return nativeRes;
+    }
+
+    u32 CheckedCpuImpl::bswap32(u32 dst) { return bswap<u32>(dst, &CpuImpl::bswap32); }
+    u64 CheckedCpuImpl::bswap64(u64 dst) { return bswap<u64>(dst, &CpuImpl::bswap64); }
+
+    template<typename U, typename Popcnt>
+    U popcnt(U src, Flags* flags, Popcnt popcntFunc) {
+        Flags virtualFlags = *flags;
+        U virtualRes = popcntFunc(src, &virtualFlags);
+        (void)virtualRes;
+
+        U nativeRes = 0;
+        BEGIN_RFLAGS_SCOPE
+            SET_RFLAGS(*flags);
+            asm volatile("popcnt %1, %0" : "=r" (nativeRes) : "r"(src));
+            GET_RFLAGS(flags);
+        END_RFLAGS_SCOPE
+
+        assert(virtualRes == nativeRes);
+        assert(virtualFlags.carry == flags->carry);
+        assert(virtualFlags.zero == flags->zero);
+        assert(virtualFlags.overflow == flags->overflow);
+        assert(virtualFlags.parity == flags->parity);
+        assert(virtualFlags.sign == flags->sign);
+        
+        return nativeRes;
+    }
+
+    u16 CheckedCpuImpl::popcnt16(u16 src, Flags* flags) { return popcnt<u16>(src, flags, &CpuImpl::popcnt16); }
+    u32 CheckedCpuImpl::popcnt32(u32 src, Flags* flags) { return popcnt<u32>(src, flags, &CpuImpl::popcnt32); }
+    u64 CheckedCpuImpl::popcnt64(u64 src, Flags* flags) { return popcnt<u64>(src, flags, &CpuImpl::popcnt64); }
+
+    template<typename U, typename Bt>
+    void bt(U base, U index, Flags* flags, Bt btFunc) {
+        Flags virtualFlags = *flags;
+        btFunc(base, index, &virtualFlags);
+
+        BEGIN_RFLAGS_SCOPE
+            SET_RFLAGS(*flags);
+            asm volatile("bt %1, %0" :: "r"(base), "r"(index));
+            GET_RFLAGS(flags);
+        END_RFLAGS_SCOPE
+
+        assert(virtualFlags.carry == flags->carry);
+    }
+
+    void CheckedCpuImpl::bt16(u16 base, u16 index, Flags* flags) { return bt<u16>(base, index, flags, &CpuImpl::bt16); }
+    void CheckedCpuImpl::bt32(u32 base, u32 index, Flags* flags) { return bt<u32>(base, index, flags, &CpuImpl::bt32); }
+    void CheckedCpuImpl::bt64(u64 base, u64 index, Flags* flags) { return bt<u64>(base, index, flags, &CpuImpl::bt64); }
+    
+    template<typename U, typename Btr>
+    U btr(U base, U index, Flags* flags,Btr btrFunc) {
+        Flags virtualFlags = *flags;
+        U virtualRes = btrFunc(base, index, &virtualFlags);
+        (void)virtualRes;
+
+        U nativeRes = base;
+        BEGIN_RFLAGS_SCOPE
+            SET_RFLAGS(*flags);
+            asm volatile("btr %1, %0" : "+r"(nativeRes) : "r"(index));
+            GET_RFLAGS(flags);
+        END_RFLAGS_SCOPE
+
+        assert(virtualRes == nativeRes);
+        assert(virtualFlags.carry == flags->carry);
+
+        return nativeRes;
+    }
+
+    u16 CheckedCpuImpl::btr16(u16 base, u16 index, Flags* flags) { return btr<u16>(base, index, flags, &CpuImpl::btr16); }
+    u32 CheckedCpuImpl::btr32(u32 base, u32 index, Flags* flags) { return btr<u32>(base, index, flags, &CpuImpl::btr32); }
+    u64 CheckedCpuImpl::btr64(u64 base, u64 index, Flags* flags) { return btr<u64>(base, index, flags, &CpuImpl::btr64); }
+    
+    template<typename U, typename Btc>
+    U btc(U base, U index, Flags* flags, Btc btcFunc) {
+        Flags virtualFlags = *flags;
+        U virtualRes = btcFunc(base, index, &virtualFlags);
+        (void)virtualRes;
+
+        U nativeRes = base;
+        BEGIN_RFLAGS_SCOPE
+            SET_RFLAGS(*flags);
+            asm volatile("btc %1, %0" : "+r"(nativeRes) : "r"(index));
+            GET_RFLAGS(flags);
+        END_RFLAGS_SCOPE
+
+        assert(virtualRes == nativeRes);
+        assert(virtualFlags.carry == flags->carry);
+        
+        return nativeRes;
+    }
+
+    u16 CheckedCpuImpl::btc16(u16 base, u16 index, Flags* flags) { return btc<u16>(base, index, flags, &CpuImpl::btc16); }
+    u32 CheckedCpuImpl::btc32(u32 base, u32 index, Flags* flags) { return btc<u32>(base, index, flags, &CpuImpl::btc32); }
+    u64 CheckedCpuImpl::btc64(u64 base, u64 index, Flags* flags) { return btc<u64>(base, index, flags, &CpuImpl::btc64); }
+    
+    template<typename U, typename Bts>
+    U bts(U base, U index, Flags* flags, Bts btsFunc) {
+        Flags virtualFlags = *flags;
+        U virtualRes = btsFunc(base, index, &virtualFlags);
+        (void)virtualRes;
+
+        U nativeRes = base;
+        BEGIN_RFLAGS_SCOPE
+            SET_RFLAGS(*flags);
+            asm volatile("bts %1, %0" : "+r"(nativeRes) : "r"(index));
+            GET_RFLAGS(flags);
+        END_RFLAGS_SCOPE
+
+        assert(virtualRes == nativeRes);
+        assert(virtualFlags.carry == flags->carry);
+        
+        return nativeRes;
+    }
+
+    u16 CheckedCpuImpl::bts16(u16 base, u16 index, Flags* flags) { return bts<u16>(base, index, flags, &CpuImpl::bts16); }
+    u32 CheckedCpuImpl::bts32(u32 base, u32 index, Flags* flags) { return bts<u32>(base, index, flags, &CpuImpl::bts32); }
+    u64 CheckedCpuImpl::bts64(u64 base, u64 index, Flags* flags) { return bts<u64>(base, index, flags, &CpuImpl::bts64); }
+
+    template<typename U, typename Test>
+    void test(U src1, U src2, Flags* flags, Test testFunc) {
+        Flags virtualFlags = *flags;
+        testFunc(src1, src2, &virtualFlags);
+
+        BEGIN_RFLAGS_SCOPE
+            SET_RFLAGS(*flags);
+            asm volatile("test %0, %1" :: "r"(src1), "r"(src2));
+            GET_RFLAGS(flags);
+        END_RFLAGS_SCOPE
+
+        assert(virtualFlags.sign == flags->sign);
+        assert(virtualFlags.zero == flags->zero);
+        assert(virtualFlags.overflow == flags->overflow);
+        assert(virtualFlags.carry == flags->carry);
+        assert(virtualFlags.parity == flags->parity);
+    }
+
+    void CheckedCpuImpl::test8(u8 src1, u8 src2, Flags* flags) { return test<u8>(src1, src2, flags, &CpuImpl::test8); }
+    void CheckedCpuImpl::test16(u16 src1, u16 src2, Flags* flags) { return test<u16>(src1, src2, flags, &CpuImpl::test16); }
+    void CheckedCpuImpl::test32(u32 src1, u32 src2, Flags* flags) { return test<u32>(src1, src2, flags, &CpuImpl::test32); }
+    void CheckedCpuImpl::test64(u64 src1, u64 src2, Flags* flags) { return test<u64>(src1, src2, flags, &CpuImpl::test64); }
+
+    void CheckedCpuImpl::cmpxchg8(u8 eax, u8 dest, Flags* flags) {
+        CheckedCpuImpl::cmp8(eax, dest, flags);
+        if(eax == dest) {
+            flags->zero = 1;
+        } else {
+            flags->zero = 0;
+        }
+    }
+
+    void CheckedCpuImpl::cmpxchg16(u16 rax, u16 dest, Flags* flags) {
+        CheckedCpuImpl::cmp16(rax, dest, flags);
+        if(rax == dest) {
+            flags->zero = 1;
+        } else {
+            flags->zero = 0;
+        }
+    }
+
+    void CheckedCpuImpl::cmpxchg32(u32 eax, u32 dest, Flags* flags) {
+        CheckedCpuImpl::cmp32(eax, dest, flags);
+        if(eax == dest) {
+            flags->zero = 1;
+        } else {
+            flags->zero = 0;
+        }
+    }
+
+    void CheckedCpuImpl::cmpxchg64(u64 rax, u64 dest, Flags* flags) {
+        CheckedCpuImpl::cmp64(rax, dest, flags);
+        if(rax == dest) {
+            flags->zero = 1;
+        } else {
+            flags->zero = 0;
+        }
+    }
+
+    template<typename U, typename Bsr>
+    static U bsr(U val, Flags* flags, Bsr bsrFunc) {
+        Flags virtualFlags = *flags;
+        U virtualRes = bsrFunc(val, &virtualFlags);
+        (void)virtualRes;
+
+        U nativeRes = 0;
+        BEGIN_RFLAGS_SCOPE
+            SET_RFLAGS(*flags);
+            asm volatile("bsr %1, %0" : "+r"(nativeRes) : "r"(val));
+            GET_RFLAGS(flags);
+        END_RFLAGS_SCOPE
+
+        assert(virtualFlags.zero == flags->zero);
+        if(!!val) {
+            assert(virtualRes == nativeRes);
+        }
+        
+        return nativeRes;
+    }
+
+    u32 CheckedCpuImpl::bsr32(u32 val, Flags* flags) { return bsr<u32>(val, flags, &CpuImpl::bsr32); }
+    u64 CheckedCpuImpl::bsr64(u64 val, Flags* flags) { return bsr<u64>(val, flags, &CpuImpl::bsr64); }
+
+    template<typename U, typename Bsf>
+    static U bsf(U val, Flags* flags, Bsf bsfFunc) {
+        Flags virtualFlags = *flags;
+        U virtualRes = bsfFunc(val, &virtualFlags);
+        (void)virtualRes;
+
+        U nativeRes = 0;
+        BEGIN_RFLAGS_SCOPE
+            SET_RFLAGS(*flags);
+            asm volatile("bsf %1, %0" : "+r"(nativeRes) : "r"(val));
+            GET_RFLAGS(flags);
+        END_RFLAGS_SCOPE
+
+        assert(virtualFlags.zero == flags->zero);
+        if(!!val) {
+            assert(virtualRes == nativeRes);
+        }
+        
+        return nativeRes;
+    }
+
+    u32 CheckedCpuImpl::bsf32(u32 val, Flags* flags) { return bsf<u32>(val, flags, &CpuImpl::bsf32); }
+    u64 CheckedCpuImpl::bsf64(u64 val, Flags* flags) { return bsf<u64>(val, flags, &CpuImpl::bsf64); }
+
+    f80 CheckedCpuImpl::fadd(f80 dst, f80 src, X87Fpu* fpu) {
+        f80 virtualRes = CpuImpl::fadd(dst, src, fpu);
+        (void)virtualRes;
+
+        f80 nativeRes;
+        asm volatile("fldt %0" :: "m"(src));
+        asm volatile("fldt %0" :: "m"(dst));
+        asm volatile("faddp");
+        asm volatile("fstpt %0" : "=m"(nativeRes));
+        
+        assert(std::memcmp(&nativeRes, &virtualRes, sizeof(nativeRes)) == 0);
+        return nativeRes;
+    }
+
+    f80 CheckedCpuImpl::fsub(f80 dst, f80 src, X87Fpu* fpu) {
+        f80 virtualRes = CpuImpl::fsub(dst, src, fpu);
+        (void)virtualRes;
+
+        f80 nativeRes;
+        asm volatile("fldt %0" :: "m"(src));
+        asm volatile("fldt %0" :: "m"(dst));
+        asm volatile("fsubp");
+        asm volatile("fstpt %0" : "=m"(nativeRes));
+        
+        assert(std::memcmp(&nativeRes, &virtualRes, sizeof(nativeRes)) == 0);
+        return nativeRes;
+    }
+
+    f80 CheckedCpuImpl::fmul(f80 dst, f80 src, X87Fpu* fpu) {
+        f80 virtualRes = CpuImpl::fmul(dst, src, fpu);
+        (void)virtualRes;
+
+        f80 nativeRes;
+        asm volatile("fldt %0" :: "m"(src));
+        asm volatile("fldt %0" :: "m"(dst));
+        asm volatile("fmulp");
+        asm volatile("fstpt %0" : "=m"(nativeRes));
+        
+        assert(std::memcmp(&nativeRes, &virtualRes, sizeof(nativeRes)) == 0);
+        return nativeRes;
+    }
+
+    f80 CheckedCpuImpl::fdiv(f80 dst, f80 src, X87Fpu* fpu) {
+        f80 virtualRes = CpuImpl::fdiv(dst, src, fpu);
+        (void)virtualRes;
+
+        f80 nativeRes;
+        asm volatile("fldt %0" :: "m"(src));
+        asm volatile("fldt %0" :: "m"(dst));
+        asm volatile("fdivp");
+        asm volatile("fstpt %0" : "=m"(nativeRes));
+        
+        assert(std::memcmp(&nativeRes, &virtualRes, sizeof(nativeRes)) == 0);
+        return nativeRes;
+    }
+
+    void CheckedCpuImpl::fcomi(f80 dst, f80 src, X87Fpu* x87fpu, Flags* flags) {
+        X87Fpu virtualX87fpu = *x87fpu;
+        Flags virtualFlags = *flags;
+        CpuImpl::fcomi(dst, src, &virtualX87fpu, &virtualFlags);
+
+        u16 x87cw;
+        asm volatile("fstcw %0" : "+m"(x87cw));
+        X87Control cw = X87Control::fromWord(x87cw);
+        (void)cw;
+        // TODO: change host fpu state if it does not match the emulated state
+        assert(cw.im == x87fpu->control().im);
+
+        f80 dummy;
+        BEGIN_RFLAGS_SCOPE
+            SET_RFLAGS(*flags);
+            asm volatile("fldt %0" :: "m"(src));
+            asm volatile("fldt %0" :: "m"(dst));
+            asm volatile("fcomip");
+            asm volatile("fstpt %0" : "=m"(dummy));
+            GET_RFLAGS(flags);
+        END_RFLAGS_SCOPE
+
+        assert(virtualFlags.zero == flags->zero);
+        assert(virtualFlags.parity == flags->parity);
+        assert(virtualFlags.carry == flags->carry);
+    }
+
+    void CheckedCpuImpl::fucomi(f80 dst, f80 src, X87Fpu* x87fpu, Flags* flags) {
+        X87Fpu virtualX87fpu = *x87fpu;
+        Flags virtualFlags = *flags;
+        CpuImpl::fucomi(dst, src, &virtualX87fpu, &virtualFlags);
+
+        u16 x87cw;
+        asm volatile("fstcw %0" : "+m"(x87cw));
+        X87Control cw = X87Control::fromWord(x87cw);
+        (void)cw;
+        // TODO: change host fpu state if it does not match the emulated state
+        assert(cw.im == x87fpu->control().im);
+
+        f80 dummy;
+        BEGIN_RFLAGS_SCOPE
+            SET_RFLAGS(*flags);
+            asm volatile("fldt %0" :: "m"(src));
+            asm volatile("fldt %0" :: "m"(dst));
+            asm volatile("fucomip");
+            asm volatile("fstpt %0" : "=m"(dummy));
+            GET_RFLAGS(flags);
+        END_RFLAGS_SCOPE
+
+        assert(virtualFlags.zero == flags->zero);
+        assert(virtualFlags.parity == flags->parity);
+        assert(virtualFlags.carry == flags->carry);
+    }
+
+    f80 CheckedCpuImpl::frndint(f80 dst, X87Fpu* x87fpu) {
+        X87Fpu virtualX87fpu = *x87fpu;
+        f80 virtualRes = CpuImpl::frndint(dst, &virtualX87fpu);
+        (void)virtualRes;
+
+        u16 hostCW;
+        asm volatile("fstcw %0" : "+m"(hostCW));
+        X87Control cw = X87Control::fromWord(hostCW);
+        cw.rc = x87fpu->control().rc;
+        u16 tmpCW = cw.asWord();
+
+        f80 nativeRes = dst;
+        asm volatile("fldcw %0" : "+m"(tmpCW));
+        asm volatile("fldt %0" :: "m"(nativeRes));
+        asm volatile("frndint");
+        asm volatile("fstpt %0" : "=m"(nativeRes));
+        asm volatile("fldcw %0" : "+m"(hostCW));
+
+        assert(std::memcmp(&nativeRes, &virtualRes, sizeof(nativeRes)) == 0);
+
+        return nativeRes;
+    }
+
+    u128 CheckedCpuImpl::addps(u128 dst, u128 src, SIMD_ROUNDING rounding) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::addps(dst, src, rounding);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("addps %1, %0" : "+x"(nativeRes) : "x"(src));
+
+        assert(virtualRes.lo == nativeRes.lo);
+        assert(virtualRes.hi == nativeRes.hi);
+        return nativeRes;
+#else
+        return CpuImpl::addps(dst, src, rounding);
+#endif
+    }
+
+    u128 CheckedCpuImpl::addpd(u128 dst, u128 src, SIMD_ROUNDING rounding) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::addpd(dst, src, rounding);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("addpd %1, %0" : "+x"(nativeRes) : "x"(src));
+
+        assert(virtualRes.lo == nativeRes.lo);
+        assert(virtualRes.hi == nativeRes.hi);
+        return nativeRes;
+#else
+        return CpuImpl::addpd(dst, src, rounding);
+#endif
+    }
+
+    u128 CheckedCpuImpl::subps(u128 dst, u128 src, SIMD_ROUNDING rounding) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::subps(dst, src, rounding);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("subps %1, %0" : "+x"(nativeRes) : "x"(src));
+
+        assert(virtualRes.lo == nativeRes.lo);
+        assert(virtualRes.hi == nativeRes.hi);
+        return nativeRes;
+#else
+        return CpuImpl::subps(dst, src, rounding);
+#endif
+    }
+
+    u128 CheckedCpuImpl::subpd(u128 dst, u128 src, SIMD_ROUNDING rounding) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::subpd(dst, src, rounding);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("subpd %1, %0" : "+x"(nativeRes) : "x"(src));
+
+        assert(virtualRes.lo == nativeRes.lo);
+        assert(virtualRes.hi == nativeRes.hi);
+        return nativeRes;
+#else
+        return CpuImpl::subpd(dst, src, rounding);
+#endif
+    }
+
+    u128 CheckedCpuImpl::mulps(u128 dst, u128 src, SIMD_ROUNDING rounding) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::mulps(dst, src, rounding);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("mulps %1, %0" : "+x"(nativeRes) : "x"(src));
+
+        assert(virtualRes.lo == nativeRes.lo);
+        assert(virtualRes.hi == nativeRes.hi);
+        return nativeRes;
+#else
+        return CpuImpl::mulps(dst, src, rounding);
+#endif
+    }
+
+    u128 CheckedCpuImpl::mulpd(u128 dst, u128 src, SIMD_ROUNDING rounding) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::mulpd(dst, src, rounding);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("mulpd %1, %0" : "+x"(nativeRes) : "x"(src));
+
+        assert(virtualRes.lo == nativeRes.lo);
+        assert(virtualRes.hi == nativeRes.hi);
+        return nativeRes;
+#else
+        return CpuImpl::mulpd(dst, src, rounding);
+#endif
+    }
+
+    u128 CheckedCpuImpl::divps(u128 dst, u128 src, SIMD_ROUNDING rounding) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::divps(dst, src, rounding);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("divps %1, %0" : "+x"(nativeRes) : "x"(src));
+
+        assert(virtualRes.lo == nativeRes.lo);
+        assert(virtualRes.hi == nativeRes.hi);
+        return nativeRes;
+#else
+        return CpuImpl::divps(dst, src, rounding);
+#endif
+    }
+
+    u128 CheckedCpuImpl::divpd(u128 dst, u128 src, SIMD_ROUNDING rounding) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::divpd(dst, src, rounding);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("divpd %1, %0" : "+x"(nativeRes) : "x"(src));
+
+        assert(virtualRes.lo == nativeRes.lo);
+        assert(virtualRes.hi == nativeRes.hi);
+        return nativeRes;
+#else
+        return CpuImpl::divpd(dst, src, rounding);
+#endif
+    }
+
+    u128 CheckedCpuImpl::addss(u128 dst, u128 src, SIMD_ROUNDING rounding) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::addss(dst, src, rounding);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("addss %1, %0" : "+x"(nativeRes) : "x"(src));
+
+        assert(virtualRes.lo == nativeRes.lo);
+        assert(virtualRes.hi == nativeRes.hi);
+        return nativeRes;
+#else
+        return CpuImpl::addss(dst, src, rounding);
+#endif
+    }
+
+    u128 CheckedCpuImpl::addsd(u128 dst, u128 src, SIMD_ROUNDING rounding) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::addsd(dst, src, rounding);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("addsd %1, %0" : "+x"(nativeRes) : "x"(src));
+
+        assert(virtualRes.lo == nativeRes.lo);
+        assert(virtualRes.hi == nativeRes.hi);
+        return nativeRes;
+#else
+        return CpuImpl::addsd(dst, src, rounding);
+#endif
+    }
+
+    u128 CheckedCpuImpl::subss(u128 dst, u128 src, SIMD_ROUNDING rounding) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::subss(dst, src, rounding);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("subss %1, %0" : "+x"(nativeRes) : "x"(src));
+
+        assert(virtualRes.lo == nativeRes.lo);
+        assert(virtualRes.hi == nativeRes.hi);
+        return nativeRes;
+#else
+        return CpuImpl::subss(dst, src, rounding);
+#endif
+    }
+
+    u128 CheckedCpuImpl::subsd(u128 dst, u128 src, SIMD_ROUNDING rounding) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::subsd(dst, src, rounding);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("subsd %1, %0" : "+x"(nativeRes) : "x"(src));
+
+        assert(virtualRes.lo == nativeRes.lo);
+        assert(virtualRes.hi == nativeRes.hi);
+        return nativeRes;
+#else
+        return CpuImpl::subsd(dst, src, rounding);
+#endif
+    }
+
+    void CheckedCpuImpl::comiss(u128 dst, u128 src, Flags* flags, SIMD_ROUNDING rounding) {
+#if GCC_COMPILER
+        Flags virtualFlags = *flags;
+        CpuImpl::comiss(dst, src, &virtualFlags, rounding);
+
+        BEGIN_RFLAGS_SCOPE
+            SET_RFLAGS(*flags);
+            asm volatile("comiss %1, %0" :: "x"(dst), "x"(src));
+            GET_RFLAGS(flags);
+        END_RFLAGS_SCOPE
+
+        assert(virtualFlags.zero == flags->zero);
+        assert(virtualFlags.parity == flags->parity);
+        assert(virtualFlags.carry == flags->carry);
+#else
+        CpuImpl::comiss(dst, src, flags, rounding);
+#endif
+    }
+
+    void CheckedCpuImpl::comisd(u128 dst, u128 src, Flags* flags, SIMD_ROUNDING rounding) {
+#if GCC_COMPILER
+        Flags virtualFlags = *flags;
+        CpuImpl::comisd(dst, src, &virtualFlags, rounding);
+
+        BEGIN_RFLAGS_SCOPE
+            SET_RFLAGS(*flags);
+            asm volatile("comisd %1, %0" :: "x"(dst), "x"(src));
+            GET_RFLAGS(flags);
+        END_RFLAGS_SCOPE
+
+        assert(virtualFlags.zero == flags->zero);
+        assert(virtualFlags.parity == flags->parity);
+        assert(virtualFlags.carry == flags->carry);
+#else
+        CpuImpl::comisd(dst, src, flags, rounding);
+#endif
+    }
+
+    u128 CheckedCpuImpl::maxss(u128 dst, u128 src, SIMD_ROUNDING rounding) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::maxss(dst, src, rounding);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("maxss %1, %0" : "+x"(nativeRes) : "x"(src));
+        assert(virtualRes.lo == nativeRes.lo);
+        assert(virtualRes.hi == nativeRes.hi);
+        return nativeRes;
+#else
+        return CpuImpl::maxss(dst, src, rounding);
+#endif
+    }
+
+    u128 CheckedCpuImpl::maxsd(u128 dst, u128 src, SIMD_ROUNDING rounding) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::maxsd(dst, src, rounding);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("maxsd %1, %0" : "+x"(nativeRes) : "x"(src));
+        assert(virtualRes.lo == nativeRes.lo);
+        assert(virtualRes.hi == nativeRes.hi);
+        return nativeRes;
+#else
+        return CpuImpl::maxsd(dst, src, rounding);
+#endif
+    }
+
+    u128 CheckedCpuImpl::minss(u128 dst, u128 src, SIMD_ROUNDING rounding) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::minss(dst, src, rounding);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("minss %1, %0" : "+x"(nativeRes) : "x"(src));
+        assert(virtualRes.lo == nativeRes.lo);
+        assert(virtualRes.hi == nativeRes.hi);
+        return nativeRes;
+#else
+        return CpuImpl::minss(dst, src, rounding);
+#endif
+    }
+
+    u128 CheckedCpuImpl::minsd(u128 dst, u128 src, SIMD_ROUNDING rounding) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::minsd(dst, src, rounding);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("minsd %1, %0" : "+x"(nativeRes) : "x"(src));
+        assert(virtualRes.lo == nativeRes.lo);
+        assert(virtualRes.hi == nativeRes.hi);
+        return nativeRes;
+#else
+        return CpuImpl::minsd(dst, src, rounding);
+#endif
+    }
+
+    u128 CheckedCpuImpl::maxps(u128 dst, u128 src, SIMD_ROUNDING rounding) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::maxps(dst, src, rounding);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("maxps %1, %0" : "+x"(nativeRes) : "x"(src));
+        assert(virtualRes.lo == nativeRes.lo);
+        assert(virtualRes.hi == nativeRes.hi);
+        return nativeRes;
+#else
+        return CpuImpl::maxps(dst, src, rounding);
+#endif
+    }
+
+    u128 CheckedCpuImpl::maxpd(u128 dst, u128 src, SIMD_ROUNDING rounding) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::maxpd(dst, src, rounding);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("maxpd %1, %0" : "+x"(nativeRes) : "x"(src));
+        assert(virtualRes.lo == nativeRes.lo);
+        assert(virtualRes.hi == nativeRes.hi);
+        return nativeRes;
+#else
+        return CpuImpl::maxpd(dst, src, rounding);
+#endif
+    }
+
+    u128 CheckedCpuImpl::minps(u128 dst, u128 src, SIMD_ROUNDING rounding) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::minps(dst, src, rounding);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("minps %1, %0" : "+x"(nativeRes) : "x"(src));
+        assert(virtualRes.lo == nativeRes.lo);
+        assert(virtualRes.hi == nativeRes.hi);
+        return nativeRes;
+#else
+        return CpuImpl::minps(dst, src, rounding);
+#endif
+    }
+
+    u128 CheckedCpuImpl::minpd(u128 dst, u128 src, SIMD_ROUNDING rounding) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::minpd(dst, src, rounding);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("minpd %1, %0" : "+x"(nativeRes) : "x"(src));
+        assert(virtualRes.lo == nativeRes.lo);
+        assert(virtualRes.hi == nativeRes.hi);
+        return nativeRes;
+#else
+        return CpuImpl::minpd(dst, src, rounding);
+#endif
+    }
+
+    u128 CheckedCpuImpl::mulss(u128 dst, u128 src, SIMD_ROUNDING rounding) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::mulss(dst, src, rounding);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("mulss %1, %0" : "+x"(nativeRes) : "x"(src));
+
+        assert(virtualRes.lo == nativeRes.lo);
+        assert(virtualRes.hi == nativeRes.hi);
+        return nativeRes;
+#else
+        return CpuImpl::mulss(dst, src, rounding);
+#endif
+    }
+
+    u128 CheckedCpuImpl::mulsd(u128 dst, u128 src, SIMD_ROUNDING rounding) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::mulsd(dst, src, rounding);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("mulsd %1, %0" : "+x"(nativeRes) : "x"(src));
+
+        assert(virtualRes.lo == nativeRes.lo);
+        assert(virtualRes.hi == nativeRes.hi);
+        return nativeRes;
+#else
+        return CpuImpl::mulsd(dst, src, rounding);
+#endif
+    }
+
+    u128 CheckedCpuImpl::divss(u128 dst, u128 src, SIMD_ROUNDING rounding) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::divss(dst, src, rounding);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("divss %1, %0" : "+x"(nativeRes) : "x"(src));
+
+        assert(virtualRes.lo == nativeRes.lo);
+        assert(virtualRes.hi == nativeRes.hi);
+        return nativeRes;
+#else
+        return CpuImpl::divss(dst, src, rounding);
+#endif
+    }
+
+    u128 CheckedCpuImpl::divsd(u128 dst, u128 src, SIMD_ROUNDING rounding) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::divsd(dst, src, rounding);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("divsd %1, %0" : "+x"(nativeRes) : "x"(src));
+
+        assert(virtualRes.lo == nativeRes.lo);
+        assert(virtualRes.hi == nativeRes.hi);
+        return nativeRes;
+#else
+        return CpuImpl::divsd(dst, src, rounding);
+#endif
+    }
+
+    u128 CheckedCpuImpl::sqrtss(u128 dst, u128 src, SIMD_ROUNDING rounding) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::sqrtss(dst, src, rounding);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("sqrtss %1, %0" : "+x"(nativeRes) : "x"(src));
+
+        assert(virtualRes.lo == nativeRes.lo);
+        assert(virtualRes.hi == nativeRes.hi);
+        return nativeRes;
+#else
+        return CpuImpl::sqrtss(dst, src, rounding);
+#endif
+    }
+
+    u128 CheckedCpuImpl::sqrtsd(u128 dst, u128 src, SIMD_ROUNDING rounding) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::sqrtsd(dst, src, rounding);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("sqrtsd %1, %0" : "+x"(nativeRes) : "x"(src));
+
+        assert(virtualRes.lo == nativeRes.lo);
+        assert(virtualRes.hi == nativeRes.hi);
+        return nativeRes;
+#else
+        return CpuImpl::sqrtsd(dst, src, rounding);
+#endif
+    }
+
+    u128 CheckedCpuImpl::cmpss(u128 dst, u128 src, FCond cond) {
+        return CpuImpl::cmpss(dst, src, cond);
+    }
+
+    u128 CheckedCpuImpl::cmpsd(u128 dst, u128 src, FCond cond) {
+        return CpuImpl::cmpsd(dst, src, cond);
+    }
+
+    u128 CheckedCpuImpl::cmpps(u128 dst, u128 src, FCond cond) {
+        return CpuImpl::cmpps(dst, src, cond);
+    }
+
+    u128 CheckedCpuImpl::cmppd(u128 dst, u128 src, FCond cond) {
+        return CpuImpl::cmppd(dst, src, cond);
+    }
+
+    u128 CheckedCpuImpl::cvtsi2ss32(u128 dst, u32 src) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::cvtsi2ss32(dst, src);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("cvtsi2ss %1, %0" : "+x"(nativeRes) : "r"(src));
+        assert(nativeRes.hi == virtualRes.hi);
+        assert(nativeRes.lo == virtualRes.lo);
+        
+        return nativeRes;
+#else
+        return CpuImpl::cvtsi2ss32(dst, src);
+#endif
+    }
+
+    u128 CheckedCpuImpl::cvtsi2ss64(u128 dst, u64 src) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::cvtsi2ss64(dst, src);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("cvtsi2ss %1, %0" : "+x"(nativeRes) : "r"(src));
+        assert(nativeRes.hi == virtualRes.hi);
+        assert(nativeRes.lo == virtualRes.lo);
+        
+        return nativeRes;
+#else
+        return CpuImpl::cvtsi2ss64(dst, src);
+#endif
+    }
+
+    u128 CheckedCpuImpl::cvtsi2sd32(u128 dst, u32 src) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::cvtsi2sd32(dst, src);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("cvtsi2sd %1, %0" : "+x"(nativeRes) : "r"(src));
+        assert(nativeRes.hi == virtualRes.hi);
+        assert(nativeRes.lo == virtualRes.lo);
+        
+        return nativeRes;
+#else
+        return CpuImpl::cvtsi2sd32(dst, src);
+#endif
+    }
+
+    u128 CheckedCpuImpl::cvtsi2sd64(u128 dst, u64 src) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::cvtsi2sd64(dst, src);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("cvtsi2sd %1, %0" : "+x"(nativeRes) : "r"(src));
+        assert(nativeRes.hi == virtualRes.hi);
+        assert(nativeRes.lo == virtualRes.lo);
+        
+        return nativeRes;
+#else
+        return CpuImpl::cvtsi2sd64(dst, src);
+#endif
+    }
+
+    u128 CheckedCpuImpl::cvtss2sd(u128 dst, u128 src) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::cvtss2sd(dst, src);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("cvtss2sd %1, %0" : "+x"(nativeRes) : "x"(src));
+        assert(nativeRes.hi == virtualRes.hi);
+        assert(nativeRes.lo == virtualRes.lo);
+        
+        return nativeRes;
+#else
+        return CpuImpl::cvtss2sd(dst, src);
+#endif
+    }
+
+    u128 CheckedCpuImpl::cvtsd2ss(u128 dst, u128 src) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::cvtsd2ss(dst, src);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("cvtsd2ss %1, %0" : "+x"(nativeRes) : "x"(src));
+        assert(nativeRes.hi == virtualRes.hi);
+        assert(nativeRes.lo == virtualRes.lo);
+        
+        return nativeRes;
+#else
+        return CpuImpl::cvtsd2ss(dst, src);
+#endif
+    }
+
+    u32 CheckedCpuImpl::cvttss2si32(u128 src) {
+#if GCC_COMPILER
+        u32 virtualRes = CpuImpl::cvttss2si32(src);
+        (void)virtualRes;
+
+        u32 nativeRes = 0;
+        asm volatile("cvttss2si %1, %0" : "=r"(nativeRes) : "x"(src));
+        assert(nativeRes == virtualRes);
+        
+        return nativeRes;
+#else
+        return CpuImpl::cvttss2si32(src);
+#endif
+    }
+
+    u64 CheckedCpuImpl::cvttss2si64(u128 src) {
+#if GCC_COMPILER
+        u64 virtualRes = CpuImpl::cvttss2si64(src);
+        (void)virtualRes;
+
+        u64 nativeRes = 0;
+        asm volatile("cvttss2si %1, %0" : "=r"(nativeRes) : "x"(src));
+        assert(nativeRes == virtualRes);
+        
+        return nativeRes;
+#else
+        return CpuImpl::cvttss2si64(src);
+#endif
+    }
+
+    u32 CheckedCpuImpl::cvttsd2si32(u128 src) {
+#if GCC_COMPILER
+        u32 virtualRes = CpuImpl::cvttsd2si32(src);
+        (void)virtualRes;
+
+        u32 nativeRes = 0;
+        asm volatile("cvttsd2si %1, %0" : "=r"(nativeRes) : "x"(src));
+        assert(nativeRes == virtualRes);
+        
+        return nativeRes;
+#else
+        return CpuImpl::cvttsd2si32(src);
+#endif
+    }
+
+    u64 CheckedCpuImpl::cvttsd2si64(u128 src) {
+#if GCC_COMPILER
+        u64 virtualRes = CpuImpl::cvttsd2si64(src);
+        (void)virtualRes;
+
+        u64 nativeRes = 0;
+        asm volatile("cvttsd2si %1, %0" : "=r"(nativeRes) : "x"(src));
+        assert(nativeRes == virtualRes);
+        
+        return nativeRes;
+#else
+        return CpuImpl::cvttsd2si64(src);
+#endif
+    }
+
+    u128 CheckedCpuImpl::cvtdq2pd(u128 src) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::cvtdq2pd(src);
+        (void)virtualRes;
+
+        u128 nativeRes;
+        asm volatile("cvtdq2pd %1, %0" : "=x"(nativeRes) : "x"(src));
+        assert(nativeRes.lo == virtualRes.lo);
+        assert(nativeRes.hi == virtualRes.hi);
+        
+        return nativeRes;
+#else
+        return CpuImpl::cvtdq2pd(src);
+#endif
+    }
+
+    u128 CheckedCpuImpl::shufps(u128 dst, u128 src, u8 order) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::shufps(dst, src, order);
+        (void)virtualRes;
+
+        __m128 a;
+        __m128 b;
+        std::memcpy(&a, &dst, sizeof(dst));
+        std::memcpy(&b, &src, sizeof(src));
+        __m128 res = [&]() {
+            assert((order & 0xf) == ((order >> 4) & 0xf));
+            if(order == 0x00) return _mm_shuffle_ps(a, b, 0x00);
+            if(order == 0x11) return _mm_shuffle_ps(a, b, 0x11);
+            if(order == 0x22) return _mm_shuffle_ps(a, b, 0x22);
+            if(order == 0x33) return _mm_shuffle_ps(a, b, 0x33);
+            if(order == 0x44) return _mm_shuffle_ps(a, b, 0x44);
+            if(order == 0x55) return _mm_shuffle_ps(a, b, 0x55);
+            if(order == 0x66) return _mm_shuffle_ps(a, b, 0x66);
+            if(order == 0x77) return _mm_shuffle_ps(a, b, 0x77);
+            if(order == 0x88) return _mm_shuffle_ps(a, b, 0x88);
+            if(order == 0x99) return _mm_shuffle_ps(a, b, 0x99);
+            if(order == 0xaa) return _mm_shuffle_ps(a, b, 0xaa);
+            if(order == 0xbb) return _mm_shuffle_ps(a, b, 0xbb);
+            if(order == 0xcc) return _mm_shuffle_ps(a, b, 0xcc);
+            if(order == 0xdd) return _mm_shuffle_ps(a, b, 0xdd);
+            if(order == 0xee) return _mm_shuffle_ps(a, b, 0xee);
+            if(order == 0xff) return _mm_shuffle_ps(a, b, 0xff);
+            throw std::logic_error{"unimplemented case in shufps"};
+            return a; // dummy value
+        }();
+        u128 nativeRes;
+        std::memcpy(&nativeRes, &res, sizeof(nativeRes));
+
+        assert(nativeRes.lo == virtualRes.lo);
+        assert(nativeRes.hi == virtualRes.hi);
+        return nativeRes;
+#else
+        return CpuImpl::shufps(dst, src, order);
+#endif
+    }
+
+    u128 CheckedCpuImpl::shufpd(u128 dst, u128 src, u8 order) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::shufpd(dst, src, order);
+        (void)virtualRes;
+
+        __m128d a;
+        __m128d b;
+        std::memcpy(&a, &dst, sizeof(dst));
+        std::memcpy(&b, &src, sizeof(src));
+        __m128d res = [&]() {
+            assert(order <= 3);
+            if(order == 0) return _mm_shuffle_pd(a, b, 0);
+            if(order == 1) return _mm_shuffle_pd(a, b, 1);
+            if(order == 2) return _mm_shuffle_pd(a, b, 2);
+            if(order == 3) return _mm_shuffle_pd(a, b, 3);
+            return a;
+        }();
+        u128 nativeRes;
+        std::memcpy(&nativeRes, &res, sizeof(nativeRes));
+
+        assert(nativeRes.lo == virtualRes.lo);
+        assert(nativeRes.hi == virtualRes.hi);
+        return nativeRes;
+#else
+        return CpuImpl::shufpd(dst, src, order);
+#endif
+    }
+
+    u128 CheckedCpuImpl::punpcklbw(u128 dst, u128 src) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::punpcklbw(dst, src);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("punpcklbw %1, %0" : "+x"(nativeRes) : "x"(src));
+        assert(nativeRes.lo == virtualRes.lo);
+        assert(nativeRes.hi == virtualRes.hi);
+        
+        return nativeRes;
+#else
+        return CpuImpl::punpcklbw(dst, src);
+#endif
+    }
+
+    u128 CheckedCpuImpl::punpcklwd(u128 dst, u128 src) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::punpcklwd(dst, src);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("punpcklwd %1, %0" : "+x"(nativeRes) : "x"(src));
+        assert(nativeRes.lo == virtualRes.lo);
+        assert(nativeRes.hi == virtualRes.hi);
+        
+        return nativeRes;
+#else
+        return CpuImpl::punpcklwd(dst, src);
+#endif
+    }
+
+    u128 CheckedCpuImpl::punpckldq(u128 dst, u128 src) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::punpckldq(dst, src);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("punpckldq %1, %0" : "+x"(nativeRes) : "x"(src));
+        assert(nativeRes.lo == virtualRes.lo);
+        assert(nativeRes.hi == virtualRes.hi);
+        
+        return nativeRes;
+#else
+        return CpuImpl::punpckldq(dst, src);
+#endif
+    }
+
+    u128 CheckedCpuImpl::punpcklqdq(u128 dst, u128 src) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::punpcklqdq(dst, src);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("punpcklqdq %1, %0" : "+x"(nativeRes) : "x"(src));
+        assert(nativeRes.lo == virtualRes.lo);
+        assert(nativeRes.hi == virtualRes.hi);
+        
+        return nativeRes;
+#else
+        return CpuImpl::punpcklqdq(dst, src);
+#endif
+    }
+
+    u128 CheckedCpuImpl::punpckhbw(u128 dst, u128 src) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::punpckhbw(dst, src);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("punpckhbw %1, %0" : "+x"(nativeRes) : "x"(src));
+        assert(nativeRes.lo == virtualRes.lo);
+        assert(nativeRes.hi == virtualRes.hi);
+        
+        return nativeRes;
+#else
+        return CpuImpl::punpckhbw(dst, src);
+#endif
+    }
+
+    u128 CheckedCpuImpl::punpckhwd(u128 dst, u128 src) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::punpckhwd(dst, src);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("punpckhwd %1, %0" : "+x"(nativeRes) : "x"(src));
+        assert(nativeRes.lo == virtualRes.lo);
+        assert(nativeRes.hi == virtualRes.hi);
+        
+        return nativeRes;
+#else
+        return CpuImpl::punpckhwd(dst, src);
+#endif
+    }
+
+    u128 CheckedCpuImpl::punpckhdq(u128 dst, u128 src) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::punpckhdq(dst, src);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("punpckhdq %1, %0" : "+x"(nativeRes) : "x"(src));
+        assert(nativeRes.lo == virtualRes.lo);
+        assert(nativeRes.hi == virtualRes.hi);
+        
+        return nativeRes;
+#else
+        return CpuImpl::punpckhdq(dst, src);
+#endif
+    }
+
+    u128 CheckedCpuImpl::punpckhqdq(u128 dst, u128 src) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::punpckhqdq(dst, src);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("punpckhqdq %1, %0" : "+x"(nativeRes) : "x"(src));
+        assert(nativeRes.lo == virtualRes.lo);
+        assert(nativeRes.hi == virtualRes.hi);
+        
+        return nativeRes;
+#else
+        return CpuImpl::punpckhqdq(dst, src);
+#endif
+    }
+
+    u128 CheckedCpuImpl::pshufb(u128 dst, u128 src) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::pshufb(dst, src);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("pshufb %1, %0" : "+x"(nativeRes) : "x"(src));
+        assert(nativeRes.lo == virtualRes.lo);
+        assert(nativeRes.hi == virtualRes.hi);
+        
+        return nativeRes;
+#else
+        return CpuImpl::pshufb(dst, src);
+#endif
+    }
+
+    u128 CheckedCpuImpl::pshuflw(u128 src, u8 order) {
+        return CpuImpl::pshuflw(src, order);
+    }
+
+    u128 CheckedCpuImpl::pshufhw(u128 src, u8 order) {
+        return CpuImpl::pshufhw(src, order);
+    }
+
+    u128 CheckedCpuImpl::pshufd(u128 src, u8 order) {
+#if GCC_COMPILER
+        std::array<u32, 4> SRC;
+        static_assert(sizeof(SRC) == sizeof(u128));
+        std::memcpy(SRC.data(), &src, sizeof(u128));
+
+        std::array<u32, 4> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        DST[0] = SRC[(order >> 0) & 0x3];
+        DST[1] = SRC[(order >> 2) & 0x3];
+        DST[2] = SRC[(order >> 4) & 0x3];
+        DST[3] = SRC[(order >> 6) & 0x3];
+
+        u128 dst;
+        std::memcpy(&dst, DST.data(), sizeof(u128));
+        return dst;
+#else
+        return CpuImpl::pshufd(src, order);
+#endif
+    }
+
+
+    template<typename I, typename Pcmpeq>
+    static u128 pcmpeq(u128 dst, u128 src, Pcmpeq pcmpeqFunc) {
+#if GCC_COMPILER
+        u128 virtualRes = pcmpeqFunc(dst, src);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        if constexpr(std::is_same_v<I, i8>) {
+            asm volatile("pcmpeqb %1, %0" : "+x"(nativeRes) : "x"(src));
+        } else if constexpr(std::is_same_v<I, i16>) {
+            asm volatile("pcmpeqw %1, %0" : "+x"(nativeRes) : "x"(src));
+        } else if constexpr(std::is_same_v<I, i32>) {
+            asm volatile("pcmpeqd %1, %0" : "+x"(nativeRes) : "x"(src));
+        } else {
+            asm volatile("pcmpeqq %1, %0" : "+x"(nativeRes) : "x"(src));
+        }
+        assert(nativeRes.lo == virtualRes.lo);
+        assert(nativeRes.hi == virtualRes.hi);
+        
+        return nativeRes;
+#else
+        return pcmpeqFunc(dst, src);
+#endif
+    }
+
+    u128 CheckedCpuImpl::pcmpeqb(u128 dst, u128 src) { return pcmpeq<i8>(dst, src, &CpuImpl::pcmpeqb); }
+    u128 CheckedCpuImpl::pcmpeqw(u128 dst, u128 src) { return pcmpeq<i16>(dst, src, &CpuImpl::pcmpeqw); }
+    u128 CheckedCpuImpl::pcmpeqd(u128 dst, u128 src) { return pcmpeq<i32>(dst, src, &CpuImpl::pcmpeqd); }
+    u128 CheckedCpuImpl::pcmpeqq(u128 dst, u128 src) { return pcmpeq<i64>(dst, src, &CpuImpl::pcmpeqq); }
+
+    template<typename I, typename Pcmpgt>
+    static u128 pcmpgt(u128 dst, u128 src, Pcmpgt pcmpgtFunc) {
+#if GCC_COMPILER
+        u128 virtualRes = pcmpgtFunc(dst, src);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        if constexpr(std::is_same_v<I, i8>) {
+            asm volatile("pcmpgtb %1, %0" : "+x"(nativeRes) : "x"(src));
+        } else if constexpr(std::is_same_v<I, i16>) {
+            asm volatile("pcmpgtw %1, %0" : "+x"(nativeRes) : "x"(src));
+        } else if constexpr(std::is_same_v<I, i32>) {
+            asm volatile("pcmpgtd %1, %0" : "+x"(nativeRes) : "x"(src));
+        } else {
+            asm volatile("pcmpgtq %1, %0" : "+x"(nativeRes) : "x"(src));
+        }
+        assert(nativeRes.lo == virtualRes.lo);
+        assert(nativeRes.hi == virtualRes.hi);
+        
+        return nativeRes;
+#else
+        return pcmpgtFunc(dst, src);
+#endif
+    }
+
+    u128 CheckedCpuImpl::pcmpgtb(u128 dst, u128 src) { return pcmpgt<i8>(dst, src, &CpuImpl::pcmpgtb); }
+    u128 CheckedCpuImpl::pcmpgtw(u128 dst, u128 src) { return pcmpgt<i16>(dst, src, &CpuImpl::pcmpgtw); }
+    u128 CheckedCpuImpl::pcmpgtd(u128 dst, u128 src) { return pcmpgt<i32>(dst, src, &CpuImpl::pcmpgtd); }
+    u128 CheckedCpuImpl::pcmpgtq(u128 dst, u128 src) { return pcmpgt<i64>(dst, src, &CpuImpl::pcmpgtq); }
+
+    u16 CheckedCpuImpl::pmovmskb(u128 src) {
+#if GCC_COMPILER
+        u16 virtualRes = CpuImpl::pmovmskb(src);
+        (void)virtualRes;
+
+        u64 nativeRes = 0;
+        asm volatile("pmovmskb %1, %0" : "+r"(nativeRes) : "x"(src));
+        assert(virtualRes == nativeRes);
+
+        return (u16)nativeRes;
+#else
+        return CpuImpl::pmovmskb(src);
+#endif
+    }
+
+    template<typename U, typename Padd>
+    u128 padd(u128 dst, u128 src, Padd paddFunc) {
+#if GCC_COMPILER
+        u128 virtualRes = paddFunc(dst, src);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        if constexpr(std::is_same_v<U, u8>) {
+            asm volatile("paddb %1, %0" : "+x"(nativeRes) : "x"(src));
+        } else if constexpr(std::is_same_v<U, u16>) {
+            asm volatile("paddw %1, %0" : "+x"(nativeRes) : "x"(src));
+        } else if constexpr(std::is_same_v<U, u32>) {
+            asm volatile("paddd %1, %0" : "+x"(nativeRes) : "x"(src));
+        } else {
+            asm volatile("paddq %1, %0" : "+x"(nativeRes) : "x"(src));
+        }
+        assert(nativeRes.lo == virtualRes.lo);
+        assert(nativeRes.hi == virtualRes.hi);
+        
+        return nativeRes;
+#else
+        return paddFunc(dst, src);
+#endif
+    }
+
+    u128 CheckedCpuImpl::paddb(u128 dst, u128 src) { return padd<u8>(dst, src, &CpuImpl::paddb); }
+    u128 CheckedCpuImpl::paddw(u128 dst, u128 src) { return padd<u16>(dst, src, &CpuImpl::paddw); }
+    u128 CheckedCpuImpl::paddd(u128 dst, u128 src) { return padd<u32>(dst, src, &CpuImpl::paddd); }
+    u128 CheckedCpuImpl::paddq(u128 dst, u128 src) { return padd<u64>(dst, src, &CpuImpl::paddq); }
+
+    template<typename U, typename Psub>
+    u128 psub(u128 dst, u128 src, Psub psubFunc) {
+#if GCC_COMPILER
+        u128 virtualRes = psubFunc(dst, src);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        if constexpr(std::is_same_v<U, u8>) {
+            asm volatile("psubb %1, %0" : "+x"(nativeRes) : "x"(src));
+        } else if constexpr(std::is_same_v<U, u16>) {
+            asm volatile("psubw %1, %0" : "+x"(nativeRes) : "x"(src));
+        } else if constexpr(std::is_same_v<U, u32>) {
+            asm volatile("psubd %1, %0" : "+x"(nativeRes) : "x"(src));
+        } else {
+            asm volatile("psubq %1, %0" : "+x"(nativeRes) : "x"(src));
+        }
+        assert(nativeRes.lo == virtualRes.lo);
+        assert(nativeRes.hi == virtualRes.hi);
+        
+        return nativeRes;
+#else
+        return psubFunc(dst, src);
+#endif
+    }
+
+    u128 CheckedCpuImpl::psubb(u128 dst, u128 src) { return psub<u8>(dst, src, &CpuImpl::psubb); }
+    u128 CheckedCpuImpl::psubw(u128 dst, u128 src) { return psub<u16>(dst, src, &CpuImpl::psubw); }
+    u128 CheckedCpuImpl::psubd(u128 dst, u128 src) { return psub<u32>(dst, src, &CpuImpl::psubd); }
+    u128 CheckedCpuImpl::psubq(u128 dst, u128 src) { return psub<u64>(dst, src, &CpuImpl::psubq); }
+
+    u128 CheckedCpuImpl::pmaxub(u128 dst, u128 src) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::pmaxub(dst, src);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("pmaxub %1, %0" : "+x"(nativeRes) : "x"(src));
+        assert(nativeRes.lo == virtualRes.lo);
+        assert(nativeRes.hi == virtualRes.hi);
+        
+        return nativeRes;
+#else
+        return CpuImpl::pmaxub(dst, src);
+#endif
+    }
+
+    u128 CheckedCpuImpl::pminub(u128 dst, u128 src) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::pminub(dst, src);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("pminub %1, %0" : "+x"(nativeRes) : "x"(src));
+        assert(nativeRes.lo == virtualRes.lo);
+        assert(nativeRes.hi == virtualRes.hi);
+        
+        return nativeRes;
+#else
+        return CpuImpl::pminub(dst, src);
+#endif
+    }
+
+    void CheckedCpuImpl::ptest(u128 dst, u128 src, Flags* flags) {
+#if GCC_COMPILER
+        Flags virtualFlags = *flags;
+        CpuImpl::ptest(dst, src, &virtualFlags);
+
+        BEGIN_RFLAGS_SCOPE
+            SET_RFLAGS(*flags);
+            asm volatile("ptest %0, %1" :: "x"(dst), "x"(src));
+            GET_RFLAGS(flags);
+        END_RFLAGS_SCOPE
+
+        assert(virtualFlags.zero == flags->zero);
+        assert(virtualFlags.carry == flags->carry);
+#else
+        CpuImpl::ptest(dst, src, flags);
+#endif
+    }
+
+    template<typename U>
+    static u128 psll(u128 dst, u8 src) {
+        constexpr u32 N = sizeof(u128)/sizeof(U);
+        std::array<U, N> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        std::memcpy(DST.data(), &dst, sizeof(u128));
+
+        for(size_t i = 0; i < N; ++i) {
+            DST[i] = (U)(DST[i] << (U)src);
+        }
+        std::memcpy(&dst, DST.data(), sizeof(u128));
+        return dst;
+    }
+
+    u128 CheckedCpuImpl::psllw(u128 dst, u8 src) { return psll<u16>(dst, src); }
+    u128 CheckedCpuImpl::pslld(u128 dst, u8 src) { return psll<u32>(dst, src); }
+    u128 CheckedCpuImpl::psllq(u128 dst, u8 src) { return psll<u64>(dst, src); }
+
+    template<typename U>
+    static u128 psrl(u128 dst, u8 src) {
+        constexpr u32 N = sizeof(u128)/sizeof(U);
+        std::array<U, N> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        std::memcpy(DST.data(), &dst, sizeof(u128));
+
+        for(size_t i = 0; i < N; ++i) {
+            DST[i] = (U)(DST[i] >> (U)src);
+        }
+        std::memcpy(&dst, DST.data(), sizeof(u128));
+        return dst;
+    }
+
+    u128 CheckedCpuImpl::psrlw(u128 dst, u8 src) { return psrl<u16>(dst, src); }
+    u128 CheckedCpuImpl::psrld(u128 dst, u8 src) { return psrl<u32>(dst, src); }
+    u128 CheckedCpuImpl::psrlq(u128 dst, u8 src) { return psrl<u64>(dst, src); }
+
+    u128 CheckedCpuImpl::pslldq(u128 dst, u8 src) {
+        if(src >= 16) {
+            return u128{0, 0};
+        } else if(src >= 8) {
+            dst.hi = (dst.lo << 8*(src-8));
+            dst.lo = 0;
+        } else {
+            dst.hi = (dst.hi << 8*src) | (dst.lo >> (64-8*src));
+            dst.lo = (dst.lo << 8*src);
+        }
+        return dst;
+    }
+
+    u128 CheckedCpuImpl::psrldq(u128 dst, u8 src) {
+        if(src >= 16) {
+            return u128{0, 0};
+        } else if(src >= 8) {
+            dst.lo = (dst.hi >> 8*(src-8));
+            dst.hi = 0;
+        } else {
+            dst.lo = (dst.lo >> 8*src) | (dst.hi << (64-8*src));
+            dst.hi = (dst.hi >> 8*src);
+        }
+        return dst;
+    }
+
+    u32 CheckedCpuImpl::pcmpistri(u128 dst, u128 src, u8 control, Flags* flags) {
+        enum DATA_FORMAT {
+            UNSIGNED_BYTE,
+            UNSIGNED_WORD,
+            SIGNED_BYTE,
+            SIGNED_WORD,
+        };
+
+        enum AGGREGATION_OPERATION {
+            EQUAL_ANY,
+            RANGES,
+            EQUAL_EACH,
+            EQUAL_ORDERED,
+        };
+
+        enum POLARITY {
+            POSITIVE_POLARITY,
+            NEGATIVE_POLARITY,
+            MASKED_POSITIVE,
+            MASKED_NEGATIVE,
+        };
+
+        enum OUTPUT_SELECTION {
+            LEAST_SIGNIFICANT_INDEX,
+            MOST_SIGNIFICANT_INDEX,
+        };
+
+        DATA_FORMAT format = (DATA_FORMAT)(control & 0x3);
+        AGGREGATION_OPERATION operation = (AGGREGATION_OPERATION)((control >> 2) & 0x3);
+        POLARITY polarity = (POLARITY)((control >> 4) & 0x3);
+        OUTPUT_SELECTION output = (OUTPUT_SELECTION)((control >> 6) & 0x1);
+
+        assert(format == DATA_FORMAT::SIGNED_BYTE);
+        assert(operation == AGGREGATION_OPERATION::EQUAL_EACH);
+        assert(polarity == POLARITY::MASKED_NEGATIVE);
+        assert(output == OUTPUT_SELECTION::LEAST_SIGNIFICANT_INDEX);
+
+        (void)dst;
+        (void)src;
+        (void)control;
+        (void)flags;
+        (void)format;
+        (void)operation;
+        (void)polarity;
+        (void)output;
+        return 0;
+    }
+
+    u128 CheckedCpuImpl::packuswb(u128 dst, u128 src) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::packuswb(dst, src);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("packuswb %1, %0" : "+x"(nativeRes) : "x"(src));
+        assert(nativeRes.lo == virtualRes.lo);
+        assert(nativeRes.hi == virtualRes.hi);
+        
+        return nativeRes;
+#else
+        return CpuImpl::packuswb(dst, src);
+#endif
+    }
+
+    u128 CheckedCpuImpl::packusdw(u128 dst, u128 src) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::packusdw(dst, src);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("packusdw %1, %0" : "+x"(nativeRes) : "x"(src));
+        assert(nativeRes.lo == virtualRes.lo);
+        assert(nativeRes.hi == virtualRes.hi);
+        
+        return nativeRes;
+#else
+        return CpuImpl::packusdw(dst, src);
+#endif
+    }
+
+    u128 CheckedCpuImpl::packsswb(u128 dst, u128 src) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::packsswb(dst, src);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("packsswb %1, %0" : "+x"(nativeRes) : "x"(src));
+        assert(nativeRes.lo == virtualRes.lo);
+        assert(nativeRes.hi == virtualRes.hi);
+        
+        return nativeRes;
+#else
+        return CpuImpl::packsswb(dst, src);
+#endif
+    }
+
+    u128 CheckedCpuImpl::packssdw(u128 dst, u128 src) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::packssdw(dst, src);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("packssdw %1, %0" : "+x"(nativeRes) : "x"(src));
+        assert(nativeRes.lo == virtualRes.lo);
+        assert(nativeRes.hi == virtualRes.hi);
+        
+        return nativeRes;
+#else
+        return CpuImpl::packssdw(dst, src);
+#endif
+    }
+
+    u128 CheckedCpuImpl::unpckhps(u128 dst, u128 src) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::unpckhps(dst, src);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("unpckhps %1, %0" : "+x"(nativeRes) : "x"(src));
+        assert(nativeRes.lo == virtualRes.lo);
+        assert(nativeRes.hi == virtualRes.hi);
+        
+        return nativeRes;
+#else
+        return CpuImpl::unpckhps(dst, src);
+#endif
+    }
+
+    u128 CheckedCpuImpl::unpckhpd(u128 dst, u128 src) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::unpckhpd(dst, src);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("unpckhpd %1, %0" : "+x"(nativeRes) : "x"(src));
+        assert(nativeRes.lo == virtualRes.lo);
+        assert(nativeRes.hi == virtualRes.hi);
+        
+        return nativeRes;
+#else
+        return CpuImpl::unpckhpd(dst, src);
+#endif
+    }
+
+    u128 CheckedCpuImpl::unpcklps(u128 dst, u128 src) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::unpcklps(dst, src);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("unpcklps %1, %0" : "+x"(nativeRes) : "x"(src));
+        assert(nativeRes.lo == virtualRes.lo);
+        assert(nativeRes.hi == virtualRes.hi);
+        
+        return nativeRes;
+#else
+        return CpuImpl::unpcklps(dst, src);
+#endif
+    }
+
+    u128 CheckedCpuImpl::unpcklpd(u128 dst, u128 src) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::unpcklpd(dst, src);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("unpcklpd %1, %0" : "+x"(nativeRes) : "x"(src));
+        assert(nativeRes.lo == virtualRes.lo);
+        assert(nativeRes.hi == virtualRes.hi);
+        
+        return nativeRes;
+#else
+        return CpuImpl::unpcklpd(dst, src);
+#endif
+    }
+
+    u32 CheckedCpuImpl::movmskps32(u128 src) {
+#if GCC_COMPILER
+        u32 virtualRes = CpuImpl::movmskps32(src);
+        (void)virtualRes;
+
+        u32 nativeRes = 0;
+        asm volatile("movmskps %1, %0" : "+r"(nativeRes) : "x"(src));
+        assert(nativeRes == virtualRes);
+        
+        return nativeRes;
+#else
+        return CpuImpl::movmskps32(dst, src);
+#endif
+    }
+
+    u64 CheckedCpuImpl::movmskps64(u128 src) {
+#if GCC_COMPILER
+        u64 virtualRes = CpuImpl::movmskps64(src);
+        (void)virtualRes;
+
+        u64 nativeRes = 0;
+        asm volatile("movmskps %1, %0" : "+r"(nativeRes) : "x"(src));
+        assert(nativeRes == virtualRes);
+        
+        return nativeRes;
+#else
+        return CpuImpl::movmskps64(dst, src);
+#endif
+    }
+
+    u32 CheckedCpuImpl::movmskpd32(u128 src) {
+#if GCC_COMPILER
+        u32 virtualRes = CpuImpl::movmskpd32(src);
+        (void)virtualRes;
+
+        u32 nativeRes = 0;
+        asm volatile("movmskpd %1, %0" : "+r"(nativeRes) : "x"(src));
+        assert(nativeRes == virtualRes);
+        
+        return nativeRes;
+#else
+        return CpuImpl::movmskpd32(dst, src);
+#endif
+    }
+
+    u64 CheckedCpuImpl::movmskpd64(u128 src) {
+#if GCC_COMPILER
+        u64 virtualRes = CpuImpl::movmskpd64(src);
+        (void)virtualRes;
+
+        u64 nativeRes = 0;
+        asm volatile("movmskpd %1, %0" : "+r"(nativeRes) : "x"(src));
+        assert(nativeRes == virtualRes);
+        
+        return nativeRes;
+#else
+        return CpuImpl::movmskpd64(dst, src);
+#endif
+    }
+}

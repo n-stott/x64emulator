@@ -1,7 +1,6 @@
-#include "utils/utils.h"
-#include "interpreter/cpuimpl.h"
-#include "interpreter/checkedcpuimpl.h"
-#include "interpreter/flags.h"
+#include "x64/checkedcpuimpl.h"
+#include "x64/flags.h"
+#include "utils.h"
 #include "cputestutils.h"
 #include "fmt/core.h"
 #include <vector>

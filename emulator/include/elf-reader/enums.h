@@ -1,7 +1,7 @@
 #ifndef ELFENUMS_H
 #define ELFENUMS_H
 
-#include "utils/utils.h"
+#include "utils.h"
 #include <fmt/format.h>
 #include <string>
 

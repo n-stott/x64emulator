@@ -1,4 +1,4 @@
-#include "interpreter/interpreter.h"
+#include "emulator/interpreter.h"
 #include <fmt/core.h>
 
 int main(int argc, char* argv[], char* envp[]) {
@@ -20,7 +20,7 @@ int main(int argc, char* argv[], char* envp[]) {
     }
     environmentVariables.push_back("GLIBC_TUNABLES=glibc.pthread.rseq=0");
 
-    x64::Interpreter interpreter;
+    emulator::Interpreter interpreter;
     interpreter.setLogInstructions(false);
     interpreter.setLogInstructionsAfter(0ull);
     interpreter.setLogSyscalls(false);

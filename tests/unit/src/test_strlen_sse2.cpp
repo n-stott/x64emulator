@@ -1,6 +1,6 @@
-#include "interpreter/vm.h"
-#include "interpreter/thread.h"
-#include "interpreter/verify.h"
+#include "emulator/vm.h"
+#include "verify.h"
+#include "kernel/thread.h"
 #include "fmt/core.h"
 #include <vector>
 
@@ -54,7 +54,7 @@ int main() {
         u64 dataPage = mmu.mmap(0, Mmu::PAGE_SIZE, PROT::READ | PROT::WRITE, MAP::PRIVATE | MAP::ANONYMOUS);
         mmu.copyToMmu(Ptr8{dataPage}, (const u8*)string.data(), string.size());
 
-        VM vm(mmu, kernel);
+        emulator::VM vm(mmu, kernel);
         vm.setLogInstructions(true);
         kernel::Thread mainThread(0, 0);
         mainThread.savedCpuState().regs.rip() = execPage;

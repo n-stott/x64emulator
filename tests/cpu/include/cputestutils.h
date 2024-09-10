@@ -1,7 +1,7 @@
 #ifndef CPUTESTUTILS_H
 #define CPUTESTUTILS_H
 
-#include "interpreter/flags.h"
+#include "x64/flags.h"
 
 [[maybe_unused]] static x64::Flags fromRflags(u64 rflags) {
     static constexpr u64 CARRY_MASK = 0x1;
