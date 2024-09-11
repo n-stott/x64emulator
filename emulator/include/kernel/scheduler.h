@@ -14,6 +14,10 @@ namespace x64 {
     class Mmu;
 }
 
+namespace emulator {
+    class ProfilingData;
+}
+
 namespace kernel {
 
     class Kernel;
@@ -39,6 +43,8 @@ namespace kernel {
         u32 wake(x64::Ptr32 wordPtr, u32 nbWaiters);
 
         void dumpThreadSummary() const;
+
+        void retrieveProfilingData(emulator::ProfilingData*);
 
     private:
         void runOnWorkerThread(int id);
@@ -69,6 +75,8 @@ namespace kernel {
         std::vector<FutexWaitData> futexWaitData_;
         std::mutex schedulerMutex_;
         std::condition_variable schedulerHasRunnableThread_;
+
+        std::unordered_map<u64, std::string> addressToSymbol_;
     };
 
 }

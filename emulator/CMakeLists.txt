@@ -31,8 +31,9 @@ target_include_directories(x64cpu PUBLIC include)
 
 
 add_library(x64emulator STATIC
-    src/emulator/symbolprovider.cpp
     src/emulator/emulator.cpp
+    src/emulator/profilingdata.cpp
+    src/emulator/symbolprovider.cpp
     src/emulator/vm.cpp
     src/kernel/auxiliaryvector.cpp
     src/kernel/fs/epoll.cpp
@@ -68,7 +69,11 @@ endif()
 target_compile_options(x64emulator PUBLIC -frounding-math)
 target_compile_options(x64emulator PUBLIC -DFMT_HEADER_ONLY)
 target_include_directories(x64emulator PUBLIC include)
-target_link_libraries(x64emulator PUBLIC ${CAPSTONE_LIBRARIES} fmt::fmt)
+target_link_libraries(x64emulator PUBLIC
+    ${CAPSTONE_LIBRARIES}
+    fmt::fmt
+    nlohmann_json::nlohmann_json
+)
 if(MULTIPROCESSING)
     target_compile_definitions(x64emulator PUBLIC MULTIPROCESSING=1)
 endif(MULTIPROCESSING)

@@ -1,7 +1,9 @@
 #include "kernel/scheduler.h"
 #include "kernel/thread.h"
-#include "verify.h"
+#include "emulator/profilingdata.h"
+#include "emulator/symbolprovider.h"
 #include "emulator/vm.h"
+#include "verify.h"
 #include "x64/mmu.h"
 #include <algorithm>
 
@@ -28,16 +30,29 @@ namespace kernel {
                 lock.unlock();
             }
 
-            if(!threadToRun) return;
+            if(!threadToRun) break;
             try {
                 vm.execute(threadToRun);
             } catch(...) {
                 vm.crash();
                 terminateAll(516);
-                return;
+                break;
             }
             if(threadToRun->state() == Thread::THREAD_STATE::RUNNING)
                 threadToRun->setState(Thread::THREAD_STATE::RUNNABLE);
+        }
+
+        // Before the VM dies, we should retrieve the symbols and function names
+        if(kernel_.isProfiling()) {
+            std::unique_lock lock(schedulerMutex_);
+            std::vector<u64> addresses;
+            forEachThread([&](const Thread& thread) {
+                thread.forEachCallEvent([&](const Thread::CallEvent& event) {
+                    if(event.type != Thread::CallEvent::Type::CALL) return;
+                    addresses.push_back(event.address);
+                });
+            });
+            vm.tryRetrieveSymbols(addresses, &addressToSymbol_);
         }
     }
 
@@ -59,7 +74,9 @@ namespace kernel {
         for(const auto& t : threads_) {
             tid = std::max(tid, t->description().tid+1);
         }
-        return std::make_unique<Thread>(pid, tid);
+        auto thread = std::make_unique<Thread>(pid, tid);
+        thread->setProfiling(kernel_.isProfiling());
+        return thread;
     }
 
     void Scheduler::addThread(std::unique_ptr<Thread> thread) {
@@ -171,9 +188,32 @@ namespace kernel {
             fmt::print("    syscalls       {:<10} \n", thread.stats().syscalls);
             fmt::print("    function calls {:<10} \n", thread.stats().functionCalls);
             
-            // for(auto call : thread.functionCalls) {
-            //     fmt::print("  {:>10}  {}  {} ({:#x})\n", call.tick, fmt::format("{:{}}", "", call.depth), call.symbol, call.address);
+            // for(auto call : thread.stats().calls) {
+            //     fmt::print("  {:>10}  {}  {} ({:#x})\n", call.tick, fmt::format("{:{}}", "", call.depth), "call.symbol", call.address);
             // }
         });
+    }
+
+    void Scheduler::retrieveProfilingData(emulator::ProfilingData* profilingData) {
+        if(!profilingData) return;
+        forEachThread([&](const Thread& thread) {
+            emulator::ThreadProfilingData& threadProfileData
+                    = profilingData->addThread(thread.description().pid, thread.description().tid);
+            thread.forEachCallEvent([&](const Thread::CallEvent& event) {
+                switch(event.type) {
+                    case Thread::CallEvent::Type::CALL: {
+                        threadProfileData.addEvent(emulator::ThreadProfilingData::Event::Type::CALL, event.tick, event.address);
+                        break;
+                    }
+                    case Thread::CallEvent::Type::RET: {
+                        threadProfileData.addEvent(emulator::ThreadProfilingData::Event::Type::RET, event.tick, event.address);
+                        break;
+                    }
+                }
+            });
+        });
+        for(const auto& kv : addressToSymbol_) {
+            profilingData->addSymbol(kv.first, kv.second);
+        }
     }
 }

@@ -1,9 +1,11 @@
 #include "emulator/emulator.h"
+#include "emulator/profilingdata.h"
 #include "kernel/kernel.h"
 #include "kernel/thread.h"
 #include "verify.h"
 #include <fmt/core.h>
 #include <cassert>
+#include <iostream>
 #include <signal.h>
 
 namespace emulator {
@@ -40,6 +42,10 @@ namespace emulator {
         logSyscalls_ = logSyscalls;
     }
 
+    void Emulator::setProfiling(bool isProfiling) {
+        isProfiling_ = isProfiling;
+    }
+
     bool Emulator::run(const std::string& programFilePath, const std::vector<std::string>& arguments, const std::vector<std::string>& environmentVariables) {
         SignalHandler handler;
 
@@ -47,6 +53,7 @@ namespace emulator {
         kernel::Kernel kernel(mmu);
         
         kernel.setLogSyscalls(logSyscalls_);
+        kernel.setProfiling(isProfiling_);
 
         bool ok = true;
         
@@ -64,6 +71,20 @@ namespace emulator {
             kernel.scheduler().dumpThreadSummary();
             ok = false;
         });
+
+        if(isProfiling_) {
+            ProfilingData profilingData;
+            kernel.scheduler().retrieveProfilingData(&profilingData);
+
+            fmt::print("Retrieved profiling data from {} threads\n", profilingData.nbThreads());
+            for(size_t i = 0; i < profilingData.nbThreads(); ++i) {
+                const ThreadProfilingData& threadProfilingData = profilingData.threadData(i);
+                fmt::print("  [{}:{}] Retrieved {} events\n", threadProfilingData.pid(), threadProfilingData.tid(), threadProfilingData.nbEvents());
+            }
+            fmt::print("Retrieved {} symbols\n", profilingData.symbolTable().size());
+            profilingData.toJson(std::cout);
+        }
+
         return ok;
     }
 

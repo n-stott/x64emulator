@@ -18,6 +18,10 @@ namespace kernel {
     public:
         Thread(int pid, int tid) : description_{pid, tid} { }
 
+        void setProfiling(bool isProfiling) {
+            isProfiling_ = isProfiling;
+        }
+
         struct Description {
             int pid { 0xface };
             int tid { 0xfeed };
@@ -73,7 +77,6 @@ namespace kernel {
                 u64 tick;
                 u64 depth;
                 u64 address;
-                std::string symbol;
             };
             std::deque<FunctionCall> calls;
         };
@@ -89,15 +92,36 @@ namespace kernel {
             return callpoint_;
         }
 
+        struct CallEvent {
+            enum class Type {
+                CALL,
+                RET,
+            } type;
+            u64 tick;
+            u64 address;
+        };
+
         void pushCallstack(u64 from, u64 to) {
             callpoint_.push_back(from);
             callstack_.push_back(to);
+            if(isProfiling_) {
+                callEvents_.push_back(CallEvent{CallEvent::Type::CALL, tickInfo_.ticksFromStart, to});
+            }
         }
+
         u64 popCallstack() {
             u64 address = callstack_.back();
+            if(isProfiling_) {
+                callEvents_.push_back(CallEvent{CallEvent::Type::RET, tickInfo_.ticksFromStart, address});
+            }
             callstack_.pop_back();
             callpoint_.pop_back();
             return address;
+        }
+
+        template<typename Func>
+        void forEachCallEvent(Func&& func) const {
+            for(const CallEvent& event : callEvents_) func(event);
         }
 
     private:
@@ -115,6 +139,8 @@ namespace kernel {
         std::vector<u64> callpoint_;
         std::vector<u64> callstack_;
 
+        bool isProfiling_ { false };
+        std::deque<CallEvent> callEvents_;
     };
 
 }

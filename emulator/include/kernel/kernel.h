@@ -27,6 +27,9 @@ namespace kernel {
         void syscall(x64::Cpu& cpu) { sys_.syscall(&cpu); }
 
         void setLogSyscalls(bool logSyscalls) { sys_.setLogSyscalls(logSyscalls); }
+        void setProfiling(bool isProfiling) { isProfiling_ = isProfiling; }
+
+        bool isProfiling() const { return isProfiling_; }
 
         Scheduler& scheduler() { return scheduler_; }
         Host& host() { return host_; }
@@ -38,6 +41,7 @@ namespace kernel {
         FS fs_;
         Scheduler scheduler_;
         Sys sys_;
+        bool isProfiling_ { false };
 
     };
 

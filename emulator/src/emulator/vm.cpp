@@ -192,9 +192,9 @@ namespace emulator {
 
     void VM::notifyCall(u64 address) {
         currentThread_->stats().functionCalls++;
-        // currentThread_->functionCalls.push_back(Thread::FunctionCall{
-        //     currentThread_->ticks,
-        //     currentThread_->callstack.size(),
+        // currentThread_->stats().calls.push_back(kernel::Thread::Stats::FunctionCall{
+        //     currentThread_->tickInfo().ticksFromStart,
+        //     currentThread_->callstack().size(),
         //     address,
         //     calledFunctionName(address),
         // });
@@ -358,6 +358,11 @@ namespace emulator {
     }
 
     std::string VM::calledFunctionName(u64 address) const {
+        // if we already have something cached, just return the cached value
+        if(auto it = functionNameCache_.find(address); it != functionNameCache_.end()) {
+            return it->second;
+        }
+
         // If we are in the text section, we can try to lookup the symbol for that address
         auto symbolsAtAddress = symbolProvider_.lookupSymbol(address);
         if(!symbolsAtAddress.empty()) {
@@ -391,5 +396,13 @@ namespace emulator {
 
     void VM::push64(u64 value) {
         cpu_.push64(value);
+    }
+
+    void VM::tryRetrieveSymbols(const std::vector<u64>& addresses, std::unordered_map<u64, std::string>* m) const {
+        if(!m) return;
+        for(u64 address : addresses) {
+            auto symbol = calledFunctionName(address);
+            m->emplace(address, std::move(symbol));
+        }
     }
 }

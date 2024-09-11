@@ -32,6 +32,8 @@ namespace emulator {
 
         void push64(u64 value);
 
+        void tryRetrieveSymbols(const std::vector<u64>& addresses, std::unordered_map<u64, std::string>* addressesToSymbols) const;
+
     private:
         friend class x64::Cpu;
         friend class kernel::Sys;
