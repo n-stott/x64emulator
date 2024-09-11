@@ -265,7 +265,6 @@ namespace x64 {
         assert(virtualRes.second == lower);
         assert(virtualFlags.carry == flags->carry);
         assert(virtualFlags.overflow == flags->overflow);
-        // assert(virtualFlags.parity == flags->parity);
 
         return std::make_pair(upper, lower);
     }
@@ -290,7 +289,6 @@ namespace x64 {
         assert(virtualRes.second == lower);
         assert(virtualFlags.carry == flags->carry);
         assert(virtualFlags.overflow == flags->overflow);
-        // assert(virtualFlags.parity == flags->parity);
 
         return std::make_pair(upper, lower);
     }
@@ -315,7 +313,6 @@ namespace x64 {
         assert(virtualRes.second == lower);
         assert(virtualFlags.carry == flags->carry);
         assert(virtualFlags.overflow == flags->overflow);
-        // assert(virtualFlags.parity == flags->parity);
 
         return std::make_pair(upper, lower);
     }
@@ -340,7 +337,6 @@ namespace x64 {
         assert(virtualRes.second == lower);
         assert(virtualFlags.carry == flags->carry);
         assert(virtualFlags.overflow == flags->overflow);
-        // assert(virtualFlags.parity == flags->parity);
 
         return std::make_pair(upper, lower);
     }
@@ -365,7 +361,6 @@ namespace x64 {
         assert(virtualRes.second == lower);
         assert(virtualFlags.carry == flags->carry);
         assert(virtualFlags.overflow == flags->overflow);
-        // assert(virtualFlags.parity == flags->parity);
 
         return std::make_pair(upper, lower);
     }

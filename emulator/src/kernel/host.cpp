@@ -71,6 +71,27 @@ namespace kernel {
         return IdivResult<u64>{quotient, remainder};
     }
 
+    Host::ImulResult<u64> Host::imul64(u64 a, u64 b) {
+        u64 lower;
+        u64 upper;
+        u64 rflags;
+        asm volatile("mov %3, %%rax\n"
+                     "imulq %4\n"
+                     "mov %%rax, %0\n"
+                     "mov %%rdx, %1\n"
+                     "pushf\n"
+                     "pop %2" : "=m"(lower), "=m"(upper), "=r"(rflags)
+                              : "m"(a), "m"(b)
+                              : "cc", "rax", "rdx");
+
+        static constexpr u64 CARRY_MASK = 0x1;
+        static constexpr u64 OVERFLOW_MASK = 0x800;
+
+        bool carry = (rflags & CARRY_MASK);
+        bool overflow = (rflags & OVERFLOW_MASK);
+        return ImulResult<u64>{lower, upper, carry, overflow};
+    }
+
     Host::CPUID Host::cpuid(u32 a, u32 c) {
         CPUID s;
         s.a = a;

@@ -29,6 +29,17 @@ namespace kernel {
         static IdivResult<u32> idiv32(u32 upperDividend, u32 lowerDividend, u32 divisor);
         static IdivResult<u64> idiv64(u64 upperDividend, u64 lowerDividend, u64 divisor);
 
+
+        template<typename U>
+        struct ImulResult {
+            U lower;
+            U upper;
+            bool carry;
+            bool overflow;
+        };
+
+        static ImulResult<u64> imul64(u64 a, u64 b);
+
         // cpu
         struct CPUID {
             u32 a, b, c, d;
