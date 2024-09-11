@@ -156,30 +156,34 @@ namespace x64 {
     }
 
     std::pair<u64, u64> CpuImpl::imul64(u64 src1, u64 src2, Flags* flags) {
-        // cheat with mul64
-        constexpr u64 SIGNMASK = (1ull << 63);
-        bool s1 = (src1 & SIGNMASK);
-        bool s2 = (src2 & SIGNMASK);
-        u64 usrc1 = (s1 ? -src1 : src1);
-        u64 usrc2 = (s2 ? -src2 : src2);
         if(src1 == 0 || src2 == 0) {
             flags->carry = false;
             flags->overflow = false;
             return std::make_pair(0, 0);
         }
-        if(s1 == s2) {
-            auto ures = mul64(usrc1, usrc2, flags);
-            return ures;
-        } else {
-            auto ures = mul64(usrc1, usrc2, flags);
-            if(ures.first == 0 && ures.second != 0) {
-                // sign extend the result
-                return std::make_pair(-1, -ures.second);
-            } else {
-                // this works, but it's fishy
-                return std::make_pair(~ures.first, -ures.second);
-            }
+
+        bool s1negative = ((i64)src1 < 0);
+        bool s2negative = ((i64)src2 < 0);
+        u64 usrc1 = (s1negative ? -src1 : src1);
+        u64 usrc2 = (s2negative ? -src2 : src2);
+
+        // cheat with mul64
+        auto ures = x64::CpuImpl::mul64(usrc1, usrc2, flags);
+        u64 upper = ures.first;
+        u64 lower = ures.second;
+
+        // apply the sign !
+        if(s1negative != s2negative) {
+            upper = ~upper;
+            lower = -lower;
         }
+
+        bool differentSignExtention = ((i64)lower < 0 && upper != (u64)(-1))
+                                || ((i64)lower >= 0 && upper != 0);
+        
+        flags->carry = differentSignExtention;
+        flags->overflow = differentSignExtention;
+        return std::make_pair(upper, lower);
     }
 
     std::pair<u32, u32> CpuImpl::div32(u32 dividendUpper, u32 dividendLower, u32 divisor) {

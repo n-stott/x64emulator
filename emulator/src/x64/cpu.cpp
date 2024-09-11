@@ -761,23 +761,17 @@ namespace x64 {
         set(ins.dst, res.second);
     }
     void Cpu::exec(const Imul1<RM64>& ins) {
-        auto res = kernel::Host::imul64(get(R64::RAX), get(ins.src));
-        flags_.carry = res.carry;
-        flags_.overflow = res.overflow;
-        set(R64::RDX, res.upper);
-        set(R64::RAX, res.lower);
+        auto res = Impl::imul64(get(R64::RAX), get(ins.src), &flags_);
+        set(R64::RDX, res.first);
+        set(R64::RAX, res.second);
     }
     void Cpu::exec(const Imul2<R64, RM64>& ins) {
-        auto res = kernel::Host::imul64(get(ins.dst), get(ins.src));
-        flags_.carry = res.carry;
-        flags_.overflow = res.overflow;
-        set(ins.dst, res.lower);
+        auto res = Impl::imul64(get(ins.dst), get(ins.src), &flags_);
+        set(ins.dst, res.second);
     }
     void Cpu::exec(const Imul3<R64, RM64, Imm>& ins) {
-        auto res = kernel::Host::imul64(get(ins.src1), get<u64>(ins.src2));
-        flags_.carry = res.carry;
-        flags_.overflow = res.overflow;
-        set(ins.dst, res.lower);
+        auto res = Impl::imul64(get(ins.src1), get<u64>(ins.src2), &flags_);
+        set(ins.dst, res.second);
     }
 
     void Cpu::exec(const Div<RM32>& ins) {
