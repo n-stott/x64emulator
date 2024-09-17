@@ -6,7 +6,7 @@ add_executable(elf-reader
     src/elf-reader/main.cpp
 )
 target_compile_options(elf-reader PUBLIC -Wall -Wextra -Wpedantic -pedantic -Wconversion -Werror)
-target_compile_options(elf-reader PUBLIC -g)
+target_compile_options(elf-reader PUBLIC)
 target_include_directories(elf-reader PUBLIC include)
 target_link_libraries(elf-reader PUBLIC fmt::fmt)
 
@@ -32,7 +32,6 @@ target_include_directories(x64cpu PUBLIC include)
 
 add_library(x64emulator STATIC
     src/emulator/emulator.cpp
-    src/emulator/profilingdata.cpp
     src/emulator/symbolprovider.cpp
     src/emulator/vm.cpp
     src/kernel/auxiliaryvector.cpp
@@ -67,12 +66,18 @@ elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
     target_compile_options(x64emulator PUBLIC -Wno-uninitialized)
 endif()
 target_compile_options(x64emulator PUBLIC -frounding-math)
-target_compile_options(x64emulator PUBLIC -DFMT_HEADER_ONLY)
+target_compile_options(x64emulator PUBLIC
+    -DFMT_HEADER_ONLY
+    -DFMT_USE_FLOAT=0
+    -DFMT_USE_DOUBLE=0
+    -DFMT_USE_LONG_DOUBLE=0
+)
 target_include_directories(x64emulator PUBLIC include)
+target_include_directories(x64emulator PUBLIC ${CMAKE_SOURCE_DIR}/profiling/include)
 target_link_libraries(x64emulator PUBLIC
     ${CAPSTONE_LIBRARIES}
     fmt::fmt
-    nlohmann_json::nlohmann_json
+    profiling
 )
 if(MULTIPROCESSING)
     target_compile_definitions(x64emulator PUBLIC MULTIPROCESSING=1)

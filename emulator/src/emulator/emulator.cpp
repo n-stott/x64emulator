@@ -1,11 +1,11 @@
 #include "emulator/emulator.h"
-#include "emulator/profilingdata.h"
 #include "kernel/kernel.h"
 #include "kernel/thread.h"
 #include "verify.h"
+#include "profilingdata.h"
 #include <fmt/core.h>
 #include <cassert>
-#include <iostream>
+#include <fstream>
 #include <signal.h>
 
 namespace emulator {
@@ -73,16 +73,15 @@ namespace emulator {
         });
 
         if(isProfiling_) {
+            using namespace profiling;
             ProfilingData profilingData;
             kernel.scheduler().retrieveProfilingData(&profilingData);
+            
+            std::ofstream outputJsonFile("output.json");
+            profilingData.toJson(outputJsonFile);
 
-            fmt::print("Retrieved profiling data from {} threads\n", profilingData.nbThreads());
-            for(size_t i = 0; i < profilingData.nbThreads(); ++i) {
-                const ThreadProfilingData& threadProfilingData = profilingData.threadData(i);
-                fmt::print("  [{}:{}] Retrieved {} events\n", threadProfilingData.pid(), threadProfilingData.tid(), threadProfilingData.nbEvents());
-            }
-            fmt::print("Retrieved {} symbols\n", profilingData.symbolTable().size());
-            profilingData.toJson(std::cout);
+            // std::ofstream outputBinFile("output.bin", std::ios::binary);
+            // profilingData.toBin(outputBinFile);
         }
 
         return ok;

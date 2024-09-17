@@ -4,42 +4,57 @@
 #include "utils.h"
 #include <cassert>
 #include <deque>
+#include <memory>
 #include <ostream>
 #include <unordered_map>
 
-namespace emulator {
+namespace profiling {
 
     class ThreadProfilingData {
     public:
-        struct Event {
-            enum class Type {
-                CALL,
-                RET,
-            } type;
+        struct CallEvent {
             u64 tick;
             u64 address;
         };
 
+        struct RetEvent {
+            u64 tick;
+        };
+
         ThreadProfilingData(int pid, int tid) : pid_(pid), tid_(tid) { }
 
-        void addEvent(Event::Type type, u64 tick, u64 address) {
-            events_.push_back(Event{type, tick, address});
+        void addCallEvent(u64 tick, u64 address) {
+            callEvents_.push_back(CallEvent{tick, address});
+        }
+
+        void addRetEvent(u64 tick) {
+            retEvents_.push_back(RetEvent{tick});
         }
 
         int pid() const { return pid_; }
         int tid() const { return tid_; }
 
-        size_t nbEvents() const { return events_.size(); }
+        size_t nbCallEvents() const { return callEvents_.size(); }
+        size_t nbRetEvents() const { return retEvents_.size(); }
 
-        const Event& event(size_t i) const {
-            assert(i < nbEvents());
-            return events_[i];
+        template<typename Func>
+        void forEachCallEvent(Func&& func) const {
+            for(const auto& event : callEvents_) func(event);
         }
+
+        template<typename Func>
+        void forEachRetEvent(Func&& func) const {
+            for(const auto& event : retEvents_) func(event);
+        }
+
+        size_t largestCallTickDifference() const;
+        void analyzeCallTickDifference() const;
 
     private:
         int pid_;
         int tid_;
-        std::deque<Event> events_;
+        std::deque<CallEvent> callEvents_;
+        std::deque<RetEvent> retEvents_;
     };
 
     class ProfilingSymbolTable {
@@ -67,6 +82,9 @@ namespace emulator {
 
     class ProfilingData {
     public:
+        static std::unique_ptr<ProfilingData> tryCreateFromJson(std::istream& is);
+        static std::unique_ptr<ProfilingData> tryCreateFromBin(std::istream& is);
+
         ThreadProfilingData& addThread(int pid, int tid) {
             threadProfilingData_.emplace_back(pid, tid);
             return threadProfilingData_.back();
@@ -90,7 +108,8 @@ namespace emulator {
         }
 
         void toJson(std::ostream& os) const;
-
+        void toBin(std::ostream& os) const;
+        void toChallenge(std::string) const;
 
     private:
         std::deque<ThreadProfilingData> threadProfilingData_;

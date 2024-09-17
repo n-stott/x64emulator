@@ -93,26 +93,26 @@ namespace kernel {
         }
 
         struct CallEvent {
-            enum class Type {
-                CALL,
-                RET,
-            } type;
             u64 tick;
             u64 address;
+        };
+
+        struct RetEvent {
+            u64 tick;
         };
 
         void pushCallstack(u64 from, u64 to) {
             callpoint_.push_back(from);
             callstack_.push_back(to);
             if(isProfiling_) {
-                callEvents_.push_back(CallEvent{CallEvent::Type::CALL, tickInfo_.ticksFromStart, to});
+                callEvents_.push_back(CallEvent{tickInfo_.ticksFromStart, to});
             }
         }
 
         u64 popCallstack() {
             u64 address = callstack_.back();
             if(isProfiling_) {
-                callEvents_.push_back(CallEvent{CallEvent::Type::RET, tickInfo_.ticksFromStart, address});
+                retEvents_.push_back(RetEvent{tickInfo_.ticksFromStart});
             }
             callstack_.pop_back();
             callpoint_.pop_back();
@@ -122,6 +122,11 @@ namespace kernel {
         template<typename Func>
         void forEachCallEvent(Func&& func) const {
             for(const CallEvent& event : callEvents_) func(event);
+        }
+
+        template<typename Func>
+        void forEachRetEvent(Func&& func) const {
+            for(const RetEvent& event : retEvents_) func(event);
         }
 
     private:
@@ -141,6 +146,7 @@ namespace kernel {
 
         bool isProfiling_ { false };
         std::deque<CallEvent> callEvents_;
+        std::deque<RetEvent> retEvents_;
     };
 
 }

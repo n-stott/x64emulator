@@ -14,7 +14,7 @@ namespace x64 {
     class Mmu;
 }
 
-namespace emulator {
+namespace profiling {
     class ProfilingData;
 }
 
@@ -44,7 +44,7 @@ namespace kernel {
 
         void dumpThreadSummary() const;
 
-        void retrieveProfilingData(emulator::ProfilingData*);
+        void retrieveProfilingData(profiling::ProfilingData*);
 
     private:
         void runOnWorkerThread(int id);

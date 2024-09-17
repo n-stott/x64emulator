@@ -1,8 +1,8 @@
 #include "kernel/scheduler.h"
 #include "kernel/thread.h"
-#include "emulator/profilingdata.h"
 #include "emulator/symbolprovider.h"
 #include "emulator/vm.h"
+#include "profilingdata.h"
 #include "verify.h"
 #include "x64/mmu.h"
 #include <algorithm>
@@ -48,7 +48,6 @@ namespace kernel {
             std::vector<u64> addresses;
             forEachThread([&](const Thread& thread) {
                 thread.forEachCallEvent([&](const Thread::CallEvent& event) {
-                    if(event.type != Thread::CallEvent::Type::CALL) return;
                     addresses.push_back(event.address);
                 });
             });
@@ -194,22 +193,16 @@ namespace kernel {
         });
     }
 
-    void Scheduler::retrieveProfilingData(emulator::ProfilingData* profilingData) {
+    void Scheduler::retrieveProfilingData(profiling::ProfilingData* profilingData) {
         if(!profilingData) return;
         forEachThread([&](const Thread& thread) {
-            emulator::ThreadProfilingData& threadProfileData
+            profiling::ThreadProfilingData& threadProfileData
                     = profilingData->addThread(thread.description().pid, thread.description().tid);
             thread.forEachCallEvent([&](const Thread::CallEvent& event) {
-                switch(event.type) {
-                    case Thread::CallEvent::Type::CALL: {
-                        threadProfileData.addEvent(emulator::ThreadProfilingData::Event::Type::CALL, event.tick, event.address);
-                        break;
-                    }
-                    case Thread::CallEvent::Type::RET: {
-                        threadProfileData.addEvent(emulator::ThreadProfilingData::Event::Type::RET, event.tick, event.address);
-                        break;
-                    }
-                }
+                threadProfileData.addCallEvent(event.tick, event.address);
+            });
+            thread.forEachRetEvent([&](const Thread::RetEvent& event) {
+                threadProfileData.addRetEvent(event.tick);
             });
         });
         for(const auto& kv : addressToSymbol_) {
