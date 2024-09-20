@@ -6,21 +6,44 @@
 #include <fmt/core.h>
 #include <SDL.h>
 #include <SDL_opengl.h>
+#include <algorithm>
 #include <cassert>
 #include <fstream>
+#include <optional>
 #include <stack>
 #include <unordered_map>
 
-struct ProfileRange {
-    u64 start;
+struct Range {
+    u64 begin;
     u64 end;
+};
+
+struct ProfileRange {
+    Range range;
     u32 symbolIndex;
     u32 depth;
+};
+
+struct FocusedProfileRange {
+    std::vector<ProfileRange>::const_iterator begin;
+    std::vector<ProfileRange>::const_iterator end;
 };
 
 struct AllProfileData {
     std::vector<ProfileRange> profileRanges;
     std::vector<std::string> symbols;
+    Range currentFocusRange;
+    std::optional<Range> newFocusRange;
+    FocusedProfileRange focusedProfileRange;
+};
+
+static auto CompareProfileRanges = [](const ProfileRange& pra, const ProfileRange& prb) {
+    const Range& a = pra.range;
+    const Range& b = prb.range;
+    if(a.begin < b.begin) return true;
+    if(a.begin > b.begin) return false;
+    if(a.end > b.end) return true;
+    return false;
 };
 
 int main(int argc, char** argv) {
@@ -93,22 +116,29 @@ int main(int argc, char** argv) {
             maxTick = std::max(maxTick, callIt->tick);
             ++callIt;
         } else {
-            ProfileRange range = stack.top();
+            ProfileRange pr = stack.top();
             stack.pop();
-            range.end = retIt->tick;
+            pr.range.end = retIt->tick;
             maxTick = std::max(maxTick, retIt->tick);
-            allProfileData.profileRanges.push_back(range);
+            allProfileData.profileRanges.push_back(pr);
             ++retIt;
         }
     }
 
     fmt::print("{} ranges remaining in stack\n", stack.size());
     while(!stack.empty()) {
-            ProfileRange range = stack.top();
+            ProfileRange pr = stack.top();
             stack.pop();
-            range.end = maxTick+1;
-            allProfileData.profileRanges.push_back(range);
+            pr.range.end = maxTick+1;
+            allProfileData.profileRanges.push_back(pr);
     }
+
+    // sort ranges
+    std::sort(allProfileData.profileRanges.begin(), allProfileData.profileRanges.end(), CompareProfileRanges);
+    allProfileData.focusedProfileRange.begin = allProfileData.profileRanges.begin();
+    allProfileData.focusedProfileRange.end = allProfileData.profileRanges.end();
+
+    allProfileData.currentFocusRange = Range{0, maxTick+1};
     fmt::print("Created {} profile ranges\n", allProfileData.profileRanges.size());
     
     if(SDL_Init(SDL_INIT_EVERYTHING) != 0) return 1;
@@ -162,15 +192,25 @@ int main(int argc, char** argv) {
         std::string label = "calls";
         auto valuesGetter = [](float* start, float* end, ImU8* level, const char** caption, const void* data, int idx) {
             const AllProfileData* profileData = (const AllProfileData*)data;
-            const ProfileRange& range = profileData->profileRanges[idx];
-            if(!!start) *start = (float)range.start;
-            if(!!end) *end = (float)range.end;
-            if(!!level) *level = (ImU8)range.depth;
-            if(!!caption) *caption = profileData->symbols[range.symbolIndex].c_str();
+            const ProfileRange& pr = profileData->profileRanges[idx];
+            if(!!start) *start = (float)pr.range.begin;
+            if(!!end) *end = (float)pr.range.end;
+            if(!!level) *level = (ImU8)pr.depth;
+            if(!!caption) *caption = profileData->symbols[pr.symbolIndex].c_str();
         };
-        const void* data = &allProfileData;
-        int values_count = (int)allProfileData.profileRanges.size();
-        ImGuiWidgetFlameGraph::PlotFlame(label.c_str(), valuesGetter, data, values_count);
+
+        auto onClick = [](void* data, int idx) {
+            AllProfileData* profileData = (AllProfileData*)data;
+            const ProfileRange& pr = profileData->profileRanges[idx];
+            profileData->newFocusRange = pr.range;
+        };
+
+        void* data = &allProfileData;
+        // int values_count = (int)allProfileData.profileRanges.size();
+        // int values_offset = 0;
+        int values_offset = std::distance(allProfileData.profileRanges.cbegin(), allProfileData.focusedProfileRange.begin);
+        int values_count = values_offset + std::distance(allProfileData.focusedProfileRange.begin, allProfileData.focusedProfileRange.end);
+        ImGuiWidgetFlameGraph::PlotFlame(label.c_str(), valuesGetter, onClick, data, values_count, values_offset);
 
         // Rendering
         ImGui::Render();
@@ -179,6 +219,28 @@ int main(int argc, char** argv) {
         glClear(GL_COLOR_BUFFER_BIT);
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         SDL_GL_SwapWindow(window);
+
+        if(!!allProfileData.newFocusRange) {
+            allProfileData.currentFocusRange = allProfileData.newFocusRange.value();
+            allProfileData.newFocusRange.reset();
+            ProfileRange fakeFocusProfileRangeStart;
+            fakeFocusProfileRangeStart.range.begin = allProfileData.currentFocusRange.begin;
+            fakeFocusProfileRangeStart.range.end = allProfileData.currentFocusRange.begin;
+            allProfileData.focusedProfileRange.begin = std::lower_bound(allProfileData.profileRanges.begin(),
+                                                                        allProfileData.profileRanges.end(),
+                                                                        fakeFocusProfileRangeStart,
+                                                                        CompareProfileRanges);
+
+            ProfileRange fakeFocusProfileRangeEnd;
+            fakeFocusProfileRangeEnd.range.begin = allProfileData.currentFocusRange.end;
+            fakeFocusProfileRangeEnd.range.end = allProfileData.currentFocusRange.end;
+            allProfileData.focusedProfileRange.end = std::upper_bound(allProfileData.profileRanges.begin(),
+                                                                      allProfileData.profileRanges.end(),
+                                                                      fakeFocusProfileRangeEnd,
+                                                                      CompareProfileRanges);
+
+            fmt::print("New range has {} elements\n", std::distance(allProfileData.focusedProfileRange.begin, allProfileData.focusedProfileRange.end));
+        }
     }
 
     // Cleanup
