@@ -8,6 +8,6 @@ add_library(profiling
 target_compile_options(profiling PUBLIC -Wall -Wextra -Wpedantic -pedantic -Wconversion -Werror)
 target_include_directories(profiling PUBLIC include)
 target_link_libraries(profiling
-    fmt::fmt
+    fmt::fmt-header-only
     nlohmann_json::nlohmann_json
 )

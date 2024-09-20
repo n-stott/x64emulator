@@ -8,7 +8,7 @@ add_executable(elf-reader
 target_compile_options(elf-reader PUBLIC -Wall -Wextra -Wpedantic -pedantic -Wconversion -Werror)
 target_compile_options(elf-reader PUBLIC)
 target_include_directories(elf-reader PUBLIC include)
-target_link_libraries(elf-reader PUBLIC fmt::fmt)
+target_link_libraries(elf-reader PUBLIC fmt::fmt-header-only)
 
 
 add_library(x64cpu STATIC
@@ -76,7 +76,7 @@ target_include_directories(x64emulator PUBLIC include)
 target_include_directories(x64emulator PUBLIC ${CMAKE_SOURCE_DIR}/profiling/include)
 target_link_libraries(x64emulator PUBLIC
     ${CAPSTONE_LIBRARIES}
-    fmt::fmt
+    fmt::fmt-header-only
     profiling
 )
 if(MULTIPROCESSING)
@@ -97,7 +97,7 @@ elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
     target_compile_options(emulator PUBLIC -Wno-uninitialized)
 endif()
 target_include_directories(emulator PUBLIC include)
-target_link_libraries(emulator PUBLIC x64emulator fmt::fmt)
+target_link_libraries(emulator PUBLIC x64emulator fmt::fmt-header-only)
 if(MULTIPROCESSING)
     target_compile_definitions(x64emulator PUBLIC MULTIPROCESSING=1)
     target_link_libraries(emulator PUBLIC pthread)

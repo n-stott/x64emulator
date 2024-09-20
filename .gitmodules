@@ -1,0 +1,3 @@
+[submodule "profileviewer/external/imgui"]
+	path = profileviewer/external/imgui
+	url = https://github.com/ocornut/imgui.git
