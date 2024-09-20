@@ -1,16 +1,32 @@
 #include "profilingdata.h"
-#include <fmt/core.h>
-#include <fstream>
 #include <imgui.h>
 #include <imgui_impl_sdl2.h>
 #include <imgui_impl_opengl3.h>
+#include <imgui_widget_flamegraph.h>
+#include <fmt/core.h>
 #include <SDL.h>
 #include <SDL_opengl.h>
+#include <cassert>
+#include <fstream>
+#include <stack>
+#include <unordered_map>
 
-int main() {
+struct ProfileRange {
+    u64 start;
+    u64 end;
+    u32 symbolIndex;
+    u32 depth;
+};
+
+struct AllProfileData {
+    std::vector<ProfileRange> profileRanges;
+    std::vector<std::string> symbols;
+};
+
+int main(int argc, char** argv) {
     using namespace profiling;
     
-    std::ifstream inputFile("output.json");
+    std::ifstream inputFile(argc != 2 ? "output.json" : argv[1]);
     auto profileData = ProfilingData::tryCreateFromJson(inputFile);
     if(!profileData) {
         fmt::print(stderr, "Unable to read {}\n", "output.json");
@@ -22,6 +38,78 @@ int main() {
             fmt::print("Thread {}:{} : {} call events and {} ret events.\n", tpd.pid(), tpd.tid(), tpd.nbCallEvents(), tpd.nbRetEvents());
         }
     }
+
+    if(profileData->nbThreads() == 0) {
+        fmt::print(stderr, "Cannot show profile data for 0 threads\n");
+        return 1;
+    }
+
+    AllProfileData allProfileData;
+    const ThreadProfilingData& tpd = profileData->threadData(0);
+
+    std::vector<ThreadProfilingData::CallEvent> callEvents;
+    callEvents.reserve(tpd.nbCallEvents());
+    tpd.forEachCallEvent([&](const auto& e) { callEvents.push_back(e); });
+
+    std::vector<ThreadProfilingData::RetEvent> retEvents;
+    retEvents.reserve(tpd.nbRetEvents());
+    tpd.forEachRetEvent([&](const auto& e) { retEvents.push_back(e); });
+
+    auto callIt = callEvents.cbegin();
+    auto retIt = retEvents.cbegin();
+    auto callEnd = callEvents.cend();
+    auto retEnd = retEvents.cend();
+    
+    std::unordered_map<u64, u32> addressToSymbolIndex;
+    allProfileData.symbols.push_back("???");
+    u32 unknownSymbolIndex = 0;
+
+    u64 maxTick = 0;
+    std::stack<ProfileRange> stack;
+    for(; callIt != callEnd && retIt != retEnd;) {
+        assert(callIt->tick != retIt->tick);
+        if(callIt->tick < retIt->tick) {
+            u32 symbolIndex = unknownSymbolIndex;
+            auto symbolIndexIt = addressToSymbolIndex.find(callIt->address);
+            if(symbolIndexIt == addressToSymbolIndex.end()) {
+                auto symbol = profileData->symbolTable().findSymbol(callIt->address);
+                if(!!symbol) {
+                    symbolIndex = (u32)allProfileData.symbols.size();
+                    addressToSymbolIndex[callIt->address] = symbolIndex;
+                    allProfileData.symbols.push_back(symbol.value());
+                } else {
+                    addressToSymbolIndex[callIt->address] = unknownSymbolIndex;
+                }
+            } else {
+                symbolIndex = symbolIndexIt->second;
+            }
+
+            stack.push(ProfileRange {
+                callIt->tick,
+                (u64)(-1), // filled in later
+                symbolIndex,
+                (u32)stack.size(),
+            });
+            maxTick = std::max(maxTick, callIt->tick);
+            ++callIt;
+        } else {
+            ProfileRange range = stack.top();
+            stack.pop();
+            range.end = retIt->tick;
+            maxTick = std::max(maxTick, retIt->tick);
+            allProfileData.profileRanges.push_back(range);
+            ++retIt;
+        }
+    }
+
+    fmt::print("{} ranges remaining in stack\n", stack.size());
+    while(!stack.empty()) {
+            ProfileRange range = stack.top();
+            stack.pop();
+            range.end = maxTick+1;
+            allProfileData.profileRanges.push_back(range);
+    }
+    fmt::print("Created {} profile ranges\n", allProfileData.profileRanges.size());
     
     if(SDL_Init(SDL_INIT_EVERYTHING) != 0) return 1;
 
@@ -29,8 +117,8 @@ int main() {
     const std::string windowTitle = "profileviewer";
     const int windowX = SDL_WINDOWPOS_CENTERED;
     const int windowY = SDL_WINDOWPOS_CENTERED;
-    const int windowW = 600;
-    const int windowH = 400;
+    const int windowW = 1200;
+    const int windowH = 600;
     const u32 windowFlags = 0;
     SDL_Window* window = SDL_CreateWindow(windowTitle.c_str(), windowX, windowY, windowW, windowH, windowFlags);
     SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
@@ -42,13 +130,7 @@ int main() {
 
     ImGuiIO& io = ImGui::GetIO();
 
-    // ImGuiIO &io = ImGui::GetIO();
-    // io.Fonts->AddFontDefault();
-    // io.Fonts->Build();
-
     bool done = false;
-    bool show_demo_window = false;
-    bool show_another_window = false;
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
     while (!done) {
@@ -77,42 +159,18 @@ int main() {
         ImGui_ImplSDL2_NewFrame();
         ImGui::NewFrame();
 
-        // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
-        if (show_demo_window)
-            ImGui::ShowDemoWindow(&show_demo_window);
-
-        // 2. Show a simple window that we create ourselves. We use a Begin/End pair to create a named window.
-        {
-            static float f = 0.0f;
-            static int counter = 0;
-
-            ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
-
-            ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
-            ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
-            ImGui::Checkbox("Another Window", &show_another_window);
-
-            ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
-            ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
-
-            if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
-                counter++;
-            ImGui::SameLine();
-            ImGui::Text("counter = %d", counter);
-
-            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
-            ImGui::End();
-        }
-
-        // 3. Show another simple window.
-        if (show_another_window)
-        {
-            ImGui::Begin("Another Window", &show_another_window);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
-            ImGui::Text("Hello from another window!");
-            if (ImGui::Button("Close Me"))
-                show_another_window = false;
-            ImGui::End();
-        }
+        std::string label = "calls";
+        auto valuesGetter = [](float* start, float* end, ImU8* level, const char** caption, const void* data, int idx) {
+            const AllProfileData* profileData = (const AllProfileData*)data;
+            const ProfileRange& range = profileData->profileRanges[idx];
+            if(!!start) *start = (float)range.start;
+            if(!!end) *end = (float)range.end;
+            if(!!level) *level = (ImU8)range.depth;
+            if(!!caption) *caption = profileData->symbols[range.symbolIndex].c_str();
+        };
+        const void* data = &allProfileData;
+        int values_count = (int)allProfileData.profileRanges.size();
+        ImGuiWidgetFlameGraph::PlotFlame(label.c_str(), valuesGetter, data, values_count);
 
         // Rendering
         ImGui::Render();

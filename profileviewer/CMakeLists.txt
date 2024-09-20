@@ -10,6 +10,7 @@ add_executable(profileviewer
     external/imgui/imgui_widgets.cpp
     external/imgui/backends/imgui_impl_sdl2.cpp
     external/imgui/backends/imgui_impl_opengl3.cpp
+    external/imgui-flame-graph/imgui_widget_flamegraph.cpp
     src/main.cpp
 )
 target_compile_options(profileviewer PUBLIC -Wall -Wextra -Wpedantic -pedantic -Werror -Wimplicit-fallthrough)
@@ -24,6 +25,7 @@ target_include_directories(profileviewer PUBLIC
     ${CMAKE_SOURCE_DIR}/profiling/include
     external/imgui
     external/imgui/backends
+    external/imgui-flame-graph
     /usr/include/SDL2
 )
 target_link_libraries(profileviewer PUBLIC

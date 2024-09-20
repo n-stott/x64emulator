@@ -1,3 +1,6 @@
 [submodule "profileviewer/external/imgui"]
 	path = profileviewer/external/imgui
 	url = https://github.com/ocornut/imgui.git
+[submodule "profileviewer/external/imgui-flame-graph"]
+	path = profileviewer/external/imgui-flame-graph
+	url = https://github.com/bwrsandman/imgui-flame-graph.git
