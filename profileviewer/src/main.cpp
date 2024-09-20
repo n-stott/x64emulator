@@ -16,6 +16,16 @@
 struct Range {
     u64 begin;
     u64 end;
+
+    bool contains(Range other) const {
+        return begin <= other.begin && end >= other.end;
+    }
+
+    static Range intersection(Range a, Range b) {
+        Range result{std::max(a.begin, b.begin), std::min(a.end, b.end)};
+        assert(result.begin <= result.end);
+        return result;
+    }
 };
 
 struct ProfileRange {
@@ -32,9 +42,13 @@ struct FocusedProfileRange {
 struct AllProfileData {
     std::vector<ProfileRange> profileRanges;
     std::vector<std::string> symbols;
-    Range currentFocusRange;
+};
+
+struct FocusedProfileData {
+    const AllProfileData* data;
+    std::stack<Range> focusStack;
     std::optional<Range> newFocusRange;
-    FocusedProfileRange focusedProfileRange;
+    std::vector<ProfileRange> focusedProfileRanges;
 };
 
 static auto CompareProfileRanges = [](const ProfileRange& pra, const ProfileRange& prb) {
@@ -135,11 +149,12 @@ int main(int argc, char** argv) {
 
     // sort ranges
     std::sort(allProfileData.profileRanges.begin(), allProfileData.profileRanges.end(), CompareProfileRanges);
-    allProfileData.focusedProfileRange.begin = allProfileData.profileRanges.begin();
-    allProfileData.focusedProfileRange.end = allProfileData.profileRanges.end();
-
-    allProfileData.currentFocusRange = Range{0, maxTick+1};
     fmt::print("Created {} profile ranges\n", allProfileData.profileRanges.size());
+
+    FocusedProfileData focusedProfileData;
+    focusedProfileData.data = &allProfileData;
+    focusedProfileData.focusStack.push(Range{0, maxTick+1});
+    focusedProfileData.focusedProfileRanges = allProfileData.profileRanges;
     
     if(SDL_Init(SDL_INIT_EVERYTHING) != 0) return 1;
 
@@ -191,25 +206,23 @@ int main(int argc, char** argv) {
 
         std::string label = "calls";
         auto valuesGetter = [](float* start, float* end, ImU8* level, const char** caption, const void* data, int idx) {
-            const AllProfileData* profileData = (const AllProfileData*)data;
-            const ProfileRange& pr = profileData->profileRanges[idx];
+            const FocusedProfileData* profileData = (const FocusedProfileData*)data;
+            const ProfileRange& pr = profileData->focusedProfileRanges[idx];
             if(!!start) *start = (float)pr.range.begin;
             if(!!end) *end = (float)pr.range.end;
             if(!!level) *level = (ImU8)pr.depth;
-            if(!!caption) *caption = profileData->symbols[pr.symbolIndex].c_str();
+            if(!!caption) *caption = profileData->data->symbols[pr.symbolIndex].c_str();
         };
 
         auto onClick = [](void* data, int idx) {
-            AllProfileData* profileData = (AllProfileData*)data;
-            const ProfileRange& pr = profileData->profileRanges[idx];
+            FocusedProfileData* profileData = (FocusedProfileData*)data;
+            const ProfileRange& pr = profileData->focusedProfileRanges[idx];
             profileData->newFocusRange = pr.range;
         };
 
-        void* data = &allProfileData;
-        // int values_count = (int)allProfileData.profileRanges.size();
-        // int values_offset = 0;
-        int values_offset = std::distance(allProfileData.profileRanges.cbegin(), allProfileData.focusedProfileRange.begin);
-        int values_count = values_offset + std::distance(allProfileData.focusedProfileRange.begin, allProfileData.focusedProfileRange.end);
+        void* data = &focusedProfileData;
+        int values_offset = 0;
+        int values_count = (int)focusedProfileData.focusedProfileRanges.size();
         ImGuiWidgetFlameGraph::PlotFlame(label.c_str(), valuesGetter, onClick, data, values_count, values_offset);
 
         // Rendering
@@ -220,26 +233,38 @@ int main(int argc, char** argv) {
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         SDL_GL_SwapWindow(window);
 
-        if(!!allProfileData.newFocusRange) {
-            allProfileData.currentFocusRange = allProfileData.newFocusRange.value();
-            allProfileData.newFocusRange.reset();
+        if(!!focusedProfileData.newFocusRange) {
+            Range newFocusRange = focusedProfileData.newFocusRange.value();
+            focusedProfileData.focusStack.push(newFocusRange);
+            focusedProfileData.newFocusRange.reset();
             ProfileRange fakeFocusProfileRangeStart;
-            fakeFocusProfileRangeStart.range.begin = allProfileData.currentFocusRange.begin;
-            fakeFocusProfileRangeStart.range.end = allProfileData.currentFocusRange.begin;
-            allProfileData.focusedProfileRange.begin = std::lower_bound(allProfileData.profileRanges.begin(),
-                                                                        allProfileData.profileRanges.end(),
-                                                                        fakeFocusProfileRangeStart,
-                                                                        CompareProfileRanges);
+            fakeFocusProfileRangeStart.range.begin = newFocusRange.begin;
+            fakeFocusProfileRangeStart.range.end = newFocusRange.begin;
+            auto begin = std::lower_bound(allProfileData.profileRanges.begin(),
+                                          allProfileData.profileRanges.end(),
+                                          fakeFocusProfileRangeStart,
+                                          CompareProfileRanges);
 
             ProfileRange fakeFocusProfileRangeEnd;
-            fakeFocusProfileRangeEnd.range.begin = allProfileData.currentFocusRange.end;
-            fakeFocusProfileRangeEnd.range.end = allProfileData.currentFocusRange.end;
-            allProfileData.focusedProfileRange.end = std::upper_bound(allProfileData.profileRanges.begin(),
-                                                                      allProfileData.profileRanges.end(),
-                                                                      fakeFocusProfileRangeEnd,
-                                                                      CompareProfileRanges);
+            fakeFocusProfileRangeEnd.range.begin = newFocusRange.end;
+            fakeFocusProfileRangeEnd.range.end = newFocusRange.end;
+            auto end = std::upper_bound(allProfileData.profileRanges.begin(),
+                                        allProfileData.profileRanges.end(),
+                                        fakeFocusProfileRangeEnd,
+                                        CompareProfileRanges);
 
-            fmt::print("New range has {} elements\n", std::distance(allProfileData.focusedProfileRange.begin, allProfileData.focusedProfileRange.end));
+            focusedProfileData.focusedProfileRanges = std::vector<ProfileRange>(begin, end);
+
+            for(auto it = allProfileData.profileRanges.begin(); it != begin; ++it) {
+                if(it->range.contains(newFocusRange)) {
+                    ProfileRange clamped = *it;
+                    clamped.range = Range::intersection(clamped.range, newFocusRange);
+                    focusedProfileData.focusedProfileRanges.push_back(clamped);
+                }
+            }
+
+
+            fmt::print("New range has {} elements\n", focusedProfileData.focusedProfileRanges.size());
         }
     }
 
