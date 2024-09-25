@@ -341,6 +341,30 @@ namespace x64 {
         return std::make_pair(upper, lower);
     }
 
+    std::pair<u16, u16> CheckedCpuImpl::imul16(u16 src1, u16 src2, Flags* flags) {
+        Flags virtualFlags = *flags;
+        auto virtualRes = CpuImpl::imul16(src1, src2, &virtualFlags);
+        (void)virtualRes;
+
+        u16 lower = 0;
+        u16 upper = 0;
+        BEGIN_RFLAGS_SCOPE
+            SET_RFLAGS(*flags);
+            asm volatile("mov %0, %%ax" :: "m"(src1));
+            asm volatile("imul %0" :: "r"(src2) : "ax", "dx");
+            asm volatile("mov %%ax, %0" : "=m"(lower));
+            asm volatile("mov %%dx, %0" : "=m"(upper));
+            GET_RFLAGS(flags);
+        END_RFLAGS_SCOPE
+
+        assert(virtualRes.first == upper);
+        assert(virtualRes.second == lower);
+        assert(virtualFlags.carry == flags->carry);
+        assert(virtualFlags.overflow == flags->overflow);
+
+        return std::make_pair(upper, lower);
+    }
+
     std::pair<u32, u32> CheckedCpuImpl::imul32(u32 src1, u32 src2, Flags* flags) {
         Flags virtualFlags = *flags;
         auto virtualRes = CpuImpl::imul32(src1, src2, &virtualFlags);

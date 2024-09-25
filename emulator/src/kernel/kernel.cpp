@@ -166,7 +166,7 @@ namespace kernel {
         auto writeArgument = [&](const std::string& s) -> x64::Ptr8 {
             std::vector<u8> buffer;
             buffer.resize(s.size()+1, 0x0);
-            std::memcpy(buffer.data(), s.c_str(), s.size());
+            std::copy(s.begin(), s.end(), buffer.data());
             verify(buffer.back() == 0x0, "string is not null-terminated");
             mmu->copyToMmu(argumentPtr, buffer.data(), buffer.size());
             argumentPositions.push_back(argumentPtr.address());

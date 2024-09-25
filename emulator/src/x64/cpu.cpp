@@ -176,6 +176,14 @@ namespace x64 {
             case Insn::ADD_RM32_IMM: return exec(Add<RM32, Imm>{insn.op0<RM32>(), insn.op1<Imm>()});
             case Insn::ADD_RM64_RM64: return exec(Add<RM64, RM64>{insn.op0<RM64>(), insn.op1<RM64>()});
             case Insn::ADD_RM64_IMM: return exec(Add<RM64, Imm>{insn.op0<RM64>(), insn.op1<Imm>()});
+            case Insn::LOCK_ADD_M8_RM8: return execLock(Add<M8, RM8>{insn.op0<M8>(), insn.op1<RM8>()});
+            case Insn::LOCK_ADD_M8_IMM: return execLock(Add<M8, Imm>{insn.op0<M8>(), insn.op1<Imm>()});
+            case Insn::LOCK_ADD_M16_RM16: return execLock(Add<M16, RM16>{insn.op0<M16>(), insn.op1<RM16>()});
+            case Insn::LOCK_ADD_M16_IMM: return execLock(Add<M16, Imm>{insn.op0<M16>(), insn.op1<Imm>()});
+            case Insn::LOCK_ADD_M32_RM32: return execLock(Add<M32, RM32>{insn.op0<M32>(), insn.op1<RM32>()});
+            case Insn::LOCK_ADD_M32_IMM: return execLock(Add<M32, Imm>{insn.op0<M32>(), insn.op1<Imm>()});
+            case Insn::LOCK_ADD_M64_RM64: return execLock(Add<M64, RM64>{insn.op0<M64>(), insn.op1<RM64>()});
+            case Insn::LOCK_ADD_M64_IMM: return execLock(Add<M64, Imm>{insn.op0<M64>(), insn.op1<Imm>()});
             case Insn::ADC_RM8_RM8: return exec(Adc<RM8, RM8>{insn.op0<RM8>(), insn.op1<RM8>()});
             case Insn::ADC_RM8_IMM: return exec(Adc<RM8, Imm>{insn.op0<RM8>(), insn.op1<Imm>()});
             case Insn::ADC_RM16_RM16: return exec(Adc<RM16, RM16>{insn.op0<RM16>(), insn.op1<RM16>()});
@@ -192,6 +200,14 @@ namespace x64 {
             case Insn::SUB_RM32_IMM: return exec(Sub<RM32, Imm>{insn.op0<RM32>(), insn.op1<Imm>()});
             case Insn::SUB_RM64_RM64: return exec(Sub<RM64, RM64>{insn.op0<RM64>(), insn.op1<RM64>()});
             case Insn::SUB_RM64_IMM: return exec(Sub<RM64, Imm>{insn.op0<RM64>(), insn.op1<Imm>()});
+            case Insn::LOCK_SUB_M8_RM8: return execLock(Sub<M8, RM8>{insn.op0<M8>(), insn.op1<RM8>()});
+            case Insn::LOCK_SUB_M8_IMM: return execLock(Sub<M8, Imm>{insn.op0<M8>(), insn.op1<Imm>()});
+            case Insn::LOCK_SUB_M16_RM16: return execLock(Sub<M16, RM16>{insn.op0<M16>(), insn.op1<RM16>()});
+            case Insn::LOCK_SUB_M16_IMM: return execLock(Sub<M16, Imm>{insn.op0<M16>(), insn.op1<Imm>()});
+            case Insn::LOCK_SUB_M32_RM32: return execLock(Sub<M32, RM32>{insn.op0<M32>(), insn.op1<RM32>()});
+            case Insn::LOCK_SUB_M32_IMM: return execLock(Sub<M32, Imm>{insn.op0<M32>(), insn.op1<Imm>()});
+            case Insn::LOCK_SUB_M64_RM64: return execLock(Sub<M64, RM64>{insn.op0<M64>(), insn.op1<RM64>()});
+            case Insn::LOCK_SUB_M64_IMM: return execLock(Sub<M64, Imm>{insn.op0<M64>(), insn.op1<Imm>()});
             case Insn::SBB_RM8_RM8: return exec(Sbb<RM8, RM8>{insn.op0<RM8>(), insn.op1<RM8>()});
             case Insn::SBB_RM8_IMM: return exec(Sbb<RM8, Imm>{insn.op0<RM8>(), insn.op1<Imm>()});
             case Insn::SBB_RM16_RM16: return exec(Sbb<RM16, RM16>{insn.op0<RM16>(), insn.op1<RM16>()});
@@ -208,6 +224,9 @@ namespace x64 {
             case Insn::MUL_RM16: return exec(Mul<RM16>{insn.op0<RM16>()});
             case Insn::MUL_RM32: return exec(Mul<RM32>{insn.op0<RM32>()});
             case Insn::MUL_RM64: return exec(Mul<RM64>{insn.op0<RM64>()});
+            case Insn::IMUL1_RM16: return exec(Imul1<RM16>{insn.op0<RM16>()});
+            case Insn::IMUL2_R16_RM16: return exec(Imul2<R16, RM16>{insn.op0<R16>(), insn.op1<RM16>()});
+            case Insn::IMUL3_R16_RM16_IMM: return exec(Imul3<R16, RM16, Imm>{insn.op0<R16>(), insn.op1<RM16>(), insn.op2<Imm>()});
             case Insn::IMUL1_RM32: return exec(Imul1<RM32>{insn.op0<RM32>()});
             case Insn::IMUL2_R32_RM32: return exec(Imul2<R32, RM32>{insn.op0<R32>(), insn.op1<RM32>()});
             case Insn::IMUL3_R32_RM32_IMM: return exec(Imul3<R32, RM32, Imm>{insn.op0<R32>(), insn.op1<RM32>(), insn.op2<Imm>()});
@@ -692,6 +711,47 @@ namespace x64 {
     void Cpu::exec(const Add<RM64, RM64>& ins) { set(ins.dst, Impl::add64(get(ins.dst), get(ins.src), &flags_)); }
     void Cpu::exec(const Add<RM64, Imm>& ins) { set(ins.dst, Impl::add64(get(ins.dst), get<u64>(ins.src), &flags_)); }
 
+    void Cpu::execLock(const Add<M8, RM8>& ins) {
+        mmu_->withExclusiveRegion(resolve(ins.dst), [&](u8 oldValue) {
+            return Impl::add8(oldValue, get(ins.src), &flags_);
+        });
+    }
+    void Cpu::execLock(const Add<M8, Imm>& ins) {
+        mmu_->withExclusiveRegion(resolve(ins.dst), [&](u8 oldValue) {
+            return Impl::add8(oldValue, get<u8>(ins.src), &flags_);
+        });
+    }
+    void Cpu::execLock(const Add<M16, RM16>& ins) {
+        mmu_->withExclusiveRegion(resolve(ins.dst), [&](u16 oldValue) {
+            return Impl::add16(oldValue, get(ins.src), &flags_);
+        });
+    }
+    void Cpu::execLock(const Add<M16, Imm>& ins) {
+        mmu_->withExclusiveRegion(resolve(ins.dst), [&](u16 oldValue) {
+            return Impl::add16(oldValue, get<u16>(ins.src), &flags_);
+        });
+    }
+    void Cpu::execLock(const Add<M32, RM32>& ins) {
+        mmu_->withExclusiveRegion(resolve(ins.dst), [&](u32 oldValue) {
+            return Impl::add32(oldValue, get(ins.src), &flags_);
+        });
+    }
+    void Cpu::execLock(const Add<M32, Imm>& ins) {
+        mmu_->withExclusiveRegion(resolve(ins.dst), [&](u32 oldValue) {
+            return Impl::add32(oldValue, get<u32>(ins.src), &flags_);
+        });
+    }
+    void Cpu::execLock(const Add<M64, RM64>& ins) {
+        mmu_->withExclusiveRegion(resolve(ins.dst), [&](u64 oldValue) {
+            return Impl::add64(oldValue, get(ins.src), &flags_);
+        });
+    }
+    void Cpu::execLock(const Add<M64, Imm>& ins) {
+        mmu_->withExclusiveRegion(resolve(ins.dst), [&](u64 oldValue) {
+            return Impl::add64(oldValue, get<u64>(ins.src), &flags_);
+        });
+    }
+
     void Cpu::exec(const Adc<RM8, RM8>& ins) { set(ins.dst, Impl::adc8(get(ins.dst), get(ins.src), &flags_)); }
     void Cpu::exec(const Adc<RM8, Imm>& ins) { set(ins.dst, Impl::adc8(get(ins.dst), get<u8>(ins.src), &flags_)); }
     void Cpu::exec(const Adc<RM16, RM16>& ins) { set(ins.dst, Impl::adc16(get(ins.dst), get(ins.src), &flags_)); }
@@ -709,6 +769,47 @@ namespace x64 {
     void Cpu::exec(const Sub<RM32, Imm>& ins) { set(ins.dst, Impl::sub32(get(ins.dst), get<u32>(ins.src), &flags_)); }
     void Cpu::exec(const Sub<RM64, RM64>& ins) { set(ins.dst, Impl::sub64(get(ins.dst), get(ins.src), &flags_)); }
     void Cpu::exec(const Sub<RM64, Imm>& ins) { set(ins.dst, Impl::sub64(get(ins.dst), get<u64>(ins.src), &flags_)); }
+
+    void Cpu::execLock(const Sub<M8, RM8>& ins) {
+        mmu_->withExclusiveRegion(resolve(ins.dst), [&](u8 oldValue) {
+            return Impl::sub8(oldValue, get(ins.src), &flags_);
+        });
+    }
+    void Cpu::execLock(const Sub<M8, Imm>& ins) {
+        mmu_->withExclusiveRegion(resolve(ins.dst), [&](u8 oldValue) {
+            return Impl::sub8(oldValue, get<u8>(ins.src), &flags_);
+        });
+    }
+    void Cpu::execLock(const Sub<M16, RM16>& ins) {
+        mmu_->withExclusiveRegion(resolve(ins.dst), [&](u16 oldValue) {
+            return Impl::sub16(oldValue, get(ins.src), &flags_);
+        });
+    }
+    void Cpu::execLock(const Sub<M16, Imm>& ins) {
+        mmu_->withExclusiveRegion(resolve(ins.dst), [&](u16 oldValue) {
+            return Impl::sub16(oldValue, get<u16>(ins.src), &flags_);
+        });
+    }
+    void Cpu::execLock(const Sub<M32, RM32>& ins) {
+        mmu_->withExclusiveRegion(resolve(ins.dst), [&](u32 oldValue) {
+            return Impl::sub32(oldValue, get(ins.src), &flags_);
+        });
+    }
+    void Cpu::execLock(const Sub<M32, Imm>& ins) {
+        mmu_->withExclusiveRegion(resolve(ins.dst), [&](u32 oldValue) {
+            return Impl::sub32(oldValue, get<u32>(ins.src), &flags_);
+        });
+    }
+    void Cpu::execLock(const Sub<M64, RM64>& ins) {
+        mmu_->withExclusiveRegion(resolve(ins.dst), [&](u64 oldValue) {
+            return Impl::sub64(oldValue, get(ins.src), &flags_);
+        });
+    }
+    void Cpu::execLock(const Sub<M64, Imm>& ins) {
+        mmu_->withExclusiveRegion(resolve(ins.dst), [&](u64 oldValue) {
+            return Impl::sub64(oldValue, get<u64>(ins.src), &flags_);
+        });
+    }
 
     void Cpu::exec(const Sbb<RM8, RM8>& ins) { set(ins.dst, Impl::sbb8(get(ins.dst), get(ins.src), &flags_)); }
     void Cpu::exec(const Sbb<RM8, Imm>& ins) { set(ins.dst, Impl::sbb8(get(ins.dst), get<u8>(ins.src), &flags_)); }
@@ -747,6 +848,19 @@ namespace x64 {
         set(R64::RAX, res.second);
     }
 
+    void Cpu::exec(const Imul1<RM16>& ins) {
+        auto res = Impl::imul16(get(R16::AX), get(ins.src), &flags_);
+        set(R16::DX, res.first);
+        set(R16::AX, res.second);
+    }
+    void Cpu::exec(const Imul2<R16, RM16>& ins) {
+        auto res = Impl::imul16(get(ins.dst), get(ins.src), &flags_);
+        set(ins.dst, res.second);
+    }
+    void Cpu::exec(const Imul3<R16, RM16, Imm>& ins) {
+        auto res = Impl::imul16(get(ins.src1), get<u16>(ins.src2), &flags_);
+        set(ins.dst, res.second);
+    }
     void Cpu::exec(const Imul1<RM32>& ins) {
         auto res = Impl::imul32(get(R32::EAX), get(ins.src), &flags_);
         set(R32::EDX, res.first);

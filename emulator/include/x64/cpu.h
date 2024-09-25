@@ -177,6 +177,15 @@ namespace x64 {
         void exec(const Add<RM64, RM64>&);
         void exec(const Add<RM64, Imm>&);
 
+        void execLock(const Add<M8, RM8>&);
+        void execLock(const Add<M8, Imm>&);
+        void execLock(const Add<M16, RM16>&);
+        void execLock(const Add<M16, Imm>&);
+        void execLock(const Add<M32, RM32>&);
+        void execLock(const Add<M32, Imm>&);
+        void execLock(const Add<M64, RM64>&);
+        void execLock(const Add<M64, Imm>&);
+
         void exec(const Adc<RM8, RM8>&);
         void exec(const Adc<RM8, Imm>&);
         void exec(const Adc<RM16, RM16>&);
@@ -194,6 +203,15 @@ namespace x64 {
         void exec(const Sub<RM32, Imm>&);
         void exec(const Sub<RM64, RM64>&);
         void exec(const Sub<RM64, Imm>&);
+
+        void execLock(const Sub<M8, RM8>&);
+        void execLock(const Sub<M8, Imm>&);
+        void execLock(const Sub<M16, RM16>&);
+        void execLock(const Sub<M16, Imm>&);
+        void execLock(const Sub<M32, RM32>&);
+        void execLock(const Sub<M32, Imm>&);
+        void execLock(const Sub<M64, RM64>&);
+        void execLock(const Sub<M64, Imm>&);
 
         void exec(const Sbb<RM8, RM8>&);
         void exec(const Sbb<RM8, Imm>&);
@@ -214,6 +232,9 @@ namespace x64 {
         void exec(const Mul<RM32>&);
         void exec(const Mul<RM64>&);
 
+        void exec(const Imul1<RM16>&);
+        void exec(const Imul2<R16, RM16>&);
+        void exec(const Imul3<R16, RM16, Imm>&);
         void exec(const Imul1<RM32>&);
         void exec(const Imul2<R32, RM32>&);
         void exec(const Imul3<R32, RM32, Imm>&);

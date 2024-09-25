@@ -1,6 +1,7 @@
 #include "x64/mmu.h"
 #include "verify.h"
 #include "kernel/host.h"
+#include <algorithm>
 #include <cassert>
 #include <cstring>
 

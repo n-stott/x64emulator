@@ -1,14 +1,15 @@
 #include "emulator/symbolprovider.h"
 #include "verify.h"
 #include "elf-reader/elf-reader.h"
+#include <fmt/core.h>
+#include <algorithm>
 #include <cassert>
 #include <boost/core/demangle.hpp>
-#include <fmt/core.h>
 
 namespace emulator {
 
     void SymbolProvider::registerSymbol(std::string symbol, u64 address) {
-        symbolTable_.registerSymbol(symbol, address);
+        symbolTable_.registerSymbol(std::move(symbol), address);
     }
 
     std::vector<const SymbolProvider::Entry*> SymbolProvider::lookupSymbol(u64 address) const {
@@ -17,32 +18,23 @@ namespace emulator {
     }
     
     void SymbolProvider::Table::registerSymbol(std::string symbol, u64 address) {
-#if 0
-        fmt::print(stderr, "Register symbol address={:#x} symbol=\"{}\" version=\"{}\"\n", address, symbol, version);
-#endif
-        std::string demangledSymbol = boost::core::demangle(symbol.c_str());
-        demangledSymbol = foldTemplateArguments(demangledSymbol);
         storage_.push_back(Entry {
-            symbol,
-            demangledSymbol,
             address,
+            std::move(symbol),
+            "",
         });
         const Entry* e = &storage_.back();
-#if 0
-        auto it = byAddress_.find(address);
-        notify(it == byAddress_.end(), [&]() {
-            fmt::print("Symbol \"{:p}:{}\" already registered at address {:#x} but wanted to write \"{:p}:{}\"\n", 
-                       (void*)it->second->elf, it->second->symbol, address, (void*)elf,  symbol);
-        });
-#endif
         byAddress_[address].push_back(e);
-        byName_[e->symbol].push_back(e);
-        byDemangledName_[e->demangledSymbol].push_back(e);
     }
 
     std::vector<const SymbolProvider::Entry*> SymbolProvider::Table::lookupSymbol(u64 address) const {
         auto it = byAddress_.find(address);
         if(it != byAddress_.end()) {
+            for(auto& entry : it->second) {
+                if(!entry->demangledSymbol.empty()) continue;
+                entry->demangledSymbol = boost::core::demangle(entry->symbol.c_str());
+                entry->demangledSymbol = foldTemplateArguments(entry->demangledSymbol);
+            }
             return it->second;
         }
         return {};
@@ -123,7 +115,7 @@ namespace emulator {
             if(!entry.st_name) return;
             u64 address = entry.st_value;
             if(entry.type() != elf::SymbolType::TLS) address += elfOffset;
-            registerSymbol(symbol, address);
+            registerSymbol(std::move(symbol), address);
         };
 
         elf64->forAllSymbols(loadSymbol);

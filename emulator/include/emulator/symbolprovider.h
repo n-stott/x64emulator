@@ -12,9 +12,9 @@ namespace emulator {
     class SymbolProvider {
     public:
         struct Entry {
-            std::string symbol;
-            std::string demangledSymbol;
             u64 address;
+            std::string symbol;
+            mutable std::string demangledSymbol;
         };
 
         void tryRetrieveSymbolsFromExecutable(const std::string& filename, u64 loadAddress);
@@ -34,8 +34,6 @@ namespace emulator {
             std::deque<Entry> storage_;
 
             std::unordered_map<u64, std::vector<const Entry*>> byAddress_;
-            std::unordered_map<std::string, std::vector<const Entry*>> byName_;
-            std::unordered_map<std::string, std::vector<const Entry*>> byDemangledName_;
         };
 
         Table symbolTable_;

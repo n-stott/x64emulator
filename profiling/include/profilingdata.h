@@ -5,6 +5,7 @@
 #include <cassert>
 #include <deque>
 #include <memory>
+#include <optional>
 #include <ostream>
 #include <unordered_map>
 

@@ -1,6 +1,8 @@
 #include "kernel/fs/shadowfile.h"
 #include "kernel/host.h"
 #include "verify.h"
+#include <fmt/core.h>
+#include <fmt/color.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/stat.h>
@@ -109,8 +111,12 @@ namespace kernel {
         return ErrnoOrBuffer(-EINVAL);
     }
 
-    int ShadowFile::fcntl(int, int) {
-        verify(false, "implement fcntl on ShadowFile");
+    int ShadowFile::fcntl(int cmd, int arg) {
+        if(cmd == F_SETLK) {
+            warn([&]() { fmt::print(stderr, fmt::bg(fmt::color::orange), "ShadowFile::fcntl({}, {}) not implemented\n", cmd, arg); });
+            return 0;
+        }
+        verify(false, [&]() { fmt::print("ShadowFile::fcntl({}, {}) not implemented", cmd, arg); });
         return -EINVAL;
     }
 
