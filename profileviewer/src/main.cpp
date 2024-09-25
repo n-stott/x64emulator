@@ -164,7 +164,7 @@ int main(int argc, char** argv) {
     const int windowY = SDL_WINDOWPOS_CENTERED;
     const int windowW = 1200;
     const int windowH = 600;
-    const u32 windowFlags = 0;
+    const SDL_WindowFlags windowFlags = (SDL_WindowFlags)(SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
     SDL_Window* window = SDL_CreateWindow(windowTitle.c_str(), windowX, windowY, windowW, windowH, windowFlags);
     SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
@@ -206,24 +206,33 @@ int main(int argc, char** argv) {
 
         std::string label = "calls";
         auto valuesGetter = [](float* start, float* end, ImU8* level, const char** caption, const void* data, int idx) {
-            const FocusedProfileData* profileData = (const FocusedProfileData*)data;
-            const ProfileRange& pr = profileData->focusedProfileRanges[idx];
+            const FocusedProfileData* focusedProfileData = (const FocusedProfileData*)data;
+            const ProfileRange& pr = focusedProfileData->focusedProfileRanges[idx];
             if(!!start) *start = (float)pr.range.begin;
             if(!!end) *end = (float)pr.range.end;
             if(!!level) *level = (ImU8)pr.depth;
-            if(!!caption) *caption = profileData->data->symbols[pr.symbolIndex].c_str();
+            if(!!caption) *caption = focusedProfileData->data->symbols[pr.symbolIndex].c_str();
         };
 
         auto onClick = [](void* data, int idx) {
-            FocusedProfileData* profileData = (FocusedProfileData*)data;
-            const ProfileRange& pr = profileData->focusedProfileRanges[idx];
-            profileData->newFocusRange = pr.range;
+            FocusedProfileData* focusedProfileData = (FocusedProfileData*)data;
+            const ProfileRange& pr = focusedProfileData->focusedProfileRanges[idx];
+            focusedProfileData->newFocusRange = pr.range;
+        };
+
+        auto popFocusStack = [](void* data) {
+            FocusedProfileData* focusedProfileData = (FocusedProfileData*)data;
+            if(focusedProfileData->focusStack.size() <= 1) return;
+            focusedProfileData->focusStack.pop();
+            focusedProfileData->newFocusRange = focusedProfileData->focusStack.top();
+            focusedProfileData->focusStack.pop();
+            fmt::print("stack has {} elements remaining\n", focusedProfileData->focusStack.size());
         };
 
         void* data = &focusedProfileData;
         int values_offset = 0;
         int values_count = (int)focusedProfileData.focusedProfileRanges.size();
-        ImGuiWidgetFlameGraph::PlotFlame(label.c_str(), valuesGetter, onClick, data, values_count, values_offset);
+        ImGuiWidgetFlameGraph::PlotFlame(label.c_str(), valuesGetter, onClick, popFocusStack, data, values_count, values_offset);
 
         // Rendering
         ImGui::Render();
@@ -235,8 +244,9 @@ int main(int argc, char** argv) {
 
         if(!!focusedProfileData.newFocusRange) {
             Range newFocusRange = focusedProfileData.newFocusRange.value();
-            focusedProfileData.focusStack.push(newFocusRange);
             focusedProfileData.newFocusRange.reset();
+
+            focusedProfileData.focusStack.push(newFocusRange);
             ProfileRange fakeFocusProfileRangeStart;
             fakeFocusProfileRangeStart.range.begin = newFocusRange.begin;
             fakeFocusProfileRangeStart.range.end = newFocusRange.begin;
