@@ -15,7 +15,7 @@ namespace x64 {
 
     template<>
     struct SignExtended<u8> {
-        SignExtended<u8>(u8 value) : extendedValue(value) { }
+        SignExtended(u8 value) : extendedValue(value) { }
         u8 extendedValue;
     };
 

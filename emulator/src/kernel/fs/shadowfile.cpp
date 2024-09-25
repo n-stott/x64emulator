@@ -1,6 +1,8 @@
 #include "kernel/fs/shadowfile.h"
 #include "kernel/host.h"
 #include "verify.h"
+#include <fmt/core.h>
+#include <fmt/color.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/stat.h>

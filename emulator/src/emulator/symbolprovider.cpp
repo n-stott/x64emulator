@@ -1,9 +1,10 @@
 #include "emulator/symbolprovider.h"
 #include "verify.h"
 #include "elf-reader/elf-reader.h"
+#include <fmt/core.h>
+#include <algorithm>
 #include <cassert>
 #include <boost/core/demangle.hpp>
-#include <fmt/core.h>
 
 namespace emulator {
 

@@ -8,6 +8,7 @@
 #include "kernel/fs/stream.h"
 #include "kernel/kernel.h"
 #include "verify.h"
+#include <algorithm>
 #include <fcntl.h>
 #include <sys/poll.h>
 
