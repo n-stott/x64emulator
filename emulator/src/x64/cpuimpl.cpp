@@ -148,6 +148,13 @@ namespace x64 {
         return std::make_pair(upper, lower);
     }
 
+    std::pair<u16, u16> CpuImpl::imul16(u16 src1, u16 src2, Flags* flags) {
+        i32 tmp = (i32)(i16)src1 * (i32)(i16)src2;
+        flags->carry = (tmp != (i32)(i16)tmp);
+        flags->overflow = (tmp != (i32)(i16)tmp);
+        return std::make_pair((u16)(tmp >> 16), (u16)tmp);
+    }
+
     std::pair<u32, u32> CpuImpl::imul32(u32 src1, u32 src2, Flags* flags) {
         i64 tmp = (i64)(i32)src1 * (i64)(i32)src2;
         flags->carry = (tmp != (i64)(i32)tmp);
