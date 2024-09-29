@@ -455,7 +455,17 @@ namespace x64 {
         verify(!!region, [&]() {
             fmt::print("No region containing {:#x}\n", address);
         });
-        region->copyToRegion(address, src, n);
+        if(address + n <= region->end()) {
+            region->copyToRegion(address, src, n);
+        } else {
+            Region* nextRegion = findAddress(region->end());
+            verify(!!nextRegion, "No adjacent region");
+            verify(nextRegion->contains(address+n-1), "Next region is too small");
+            size_t firstChunk = region->end()-address;
+            size_t secondChunk = n-firstChunk;
+            region->copyToRegion(address, src, firstChunk);
+            nextRegion->copyToRegion(nextRegion->base(), src+firstChunk, secondChunk);
+        }
         return dst;
     }
 
