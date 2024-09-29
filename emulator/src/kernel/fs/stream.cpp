@@ -1,6 +1,8 @@
 #include "kernel/fs/stream.h"
 #include "verify.h"
+#include <fmt/color.h>
 #include <asm/termbits.h>
+#include <fcntl.h>
 #include <sys/errno.h>
 #include <sys/ioctl.h>
 #include <sys/stat.h>
@@ -66,9 +68,21 @@ namespace kernel {
         return ErrnoOrBuffer(-EINVAL);
     }
 
-    int Stream::fcntl(int, int) {
-        verify(false, "implement fcntl on Stream");
-        return -EINVAL;
+    int Stream::fcntl(int cmd, int arg) {
+        switch(cmd) {
+            case F_GETFD:
+            case F_GETFL: {
+                int ret = ::fcntl((int)type_, cmd, arg);
+                if(ret < 0) return -errno;
+                return ret;
+            }
+            case F_SETFD:
+            case F_SETFL: {
+                return 0;
+            }
+        }
+        warn([&](){ fmt::print(fg(fmt::color::red), "implement missing fcntl {} on HostFile\n", cmd); });
+        return -ENOTSUP;
     }
 
     ErrnoOrBuffer Stream::ioctl(unsigned long request, const Buffer& buffer) {
@@ -116,7 +130,7 @@ namespace kernel {
                 return ErrnoOrBuffer(Buffer{});
             }
         }
-        verify(false, [&]() { fmt::print("implement missing ioctl {:#x} on Stream\n", request); });
+        warn([&]() { fmt::print(fg(fmt::color::red), "ioctl({:#x}) not implemented\n", request); });
         return ErrnoOrBuffer(-ENOTSUP);
     }
 

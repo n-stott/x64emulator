@@ -113,7 +113,7 @@ namespace kernel {
 
     int ShadowFile::fcntl(int cmd, int arg) {
         if(cmd == F_SETLK) {
-            warn([&]() { fmt::print(stderr, fmt::bg(fmt::color::orange), "ShadowFile::fcntl({}, {}) not implemented\n", cmd, arg); });
+            warn([&]() { fmt::print(fg(fmt::color::red), "ShadowFile::fcntl({}, {}) not implemented\n", cmd, arg); });
             return 0;
         }
         verify(false, [&]() { fmt::print("ShadowFile::fcntl({}, {}) not implemented", cmd, arg); });
