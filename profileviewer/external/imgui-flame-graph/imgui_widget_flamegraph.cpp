@@ -25,13 +25,6 @@
 #include "imgui.h"
 #include "imgui_internal.h"
 
-#if defined(__clang__)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wimplicit-int-float-conversion"  // warning: implicit conversion from 'xxx' to 'float' may lose precision
-#elif defined(__GNUC__)
-#pragma GCC diagnostic ignored "-Wconversion"                       // warning: conversion to 'xxxx' from 'xxxx' may alter its value
-#endif
-
 void ImGuiWidgetFlameGraph::PlotFlame(const char* label, ValuesGetter values_getter, OnClick on_click, PopFocusStack popFocusStack, void* data, int values_count, int values_offset, const char* overlay_text, float scale_min, float scale_max, ImVec2 graph_size)
 {
     ImGuiWindow* window = ImGui::GetCurrentWindow();
