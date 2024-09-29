@@ -120,7 +120,12 @@ namespace kernel {
         }
         if(a == 7 && c == 0) {
             // Pretend that we do not have
-            u32 mask = (u32)(1 << 7 // Control flow enforcement: shadow stack
+            u32 mask = (u32)(1 << 5  // AVX2
+                           | 1 << 16 // AVX512-f
+                            );
+            s.b = s.b & (~mask);
+            // Pretend that we do not have
+                mask = (u32)(1 << 7  // Control flow enforcement: shadow stack
                             );
             s.c = s.c & (~mask);
         }
