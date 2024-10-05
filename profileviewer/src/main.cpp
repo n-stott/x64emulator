@@ -1,4 +1,6 @@
 #include "profilingdata.h"
+#include "range.h"
+#include "profiledata.h"
 #include <imgui.h>
 #include <imgui_impl_sdl2.h>
 #include <imgui_impl_opengl3.h>
@@ -6,75 +8,12 @@
 #include <fmt/core.h>
 #include <SDL.h>
 #include <SDL_opengl.h>
-#include <algorithm>
-#include <cassert>
 #include <fstream>
-#include <optional>
-#include <stack>
 #include <unordered_map>
-
-struct Range {
-    u64 begin;
-    u64 end;
-
-    bool contains(u64 point) const {
-        return begin <= point && point <= end;
-    }
-
-    bool contains(Range other) const {
-        return begin <= other.begin && other.end <= end;
-    }
-
-    static Range intersection(Range a, Range b) {
-        Range result{std::max(a.begin, b.begin), std::min(a.end, b.end)};
-        assert(result.begin <= result.end);
-        return result;
-    }
-
-    bool intersects(Range other) {
-        return std::max(begin, other.begin) <= std::min(end, other.end);
-    }
-
-    u64 width() const {
-        assert(begin <= end);
-        return end-begin;
-    }
-};
-
-struct ProfileRange {
-    Range range;
-    u32 symbolIndex;
-    u32 depth;
-};
-
-struct FocusedProfileRange {
-    std::vector<ProfileRange>::const_iterator begin;
-    std::vector<ProfileRange>::const_iterator end;
-};
-
-struct AllProfileData {
-    std::vector<ProfileRange> profileRanges;
-    std::vector<std::string> symbols;
-};
-
-struct FocusedProfileData {
-    const AllProfileData* data;
-    std::stack<Range> focusStack;
-    std::optional<Range> newFocusRange;
-    std::vector<ProfileRange> focusedProfileRanges;
-};
-
-static auto CompareProfileRanges = [](const ProfileRange& pra, const ProfileRange& prb) {
-    const Range& a = pra.range;
-    const Range& b = prb.range;
-    if(a.begin < b.begin) return true;
-    if(a.begin > b.begin) return false;
-    if(a.end > b.end) return true;
-    return false;
-};
 
 int main(int argc, char** argv) {
     using namespace profiling;
+    using namespace profileviewer;
     
     std::ifstream inputFile(argc != 2 ? "output.json" : argv[1]);
     auto profileData = ProfilingData::tryCreateFromJson(inputFile);
@@ -163,7 +102,7 @@ int main(int argc, char** argv) {
     }
 
     // sort ranges
-    std::sort(allProfileData.profileRanges.begin(), allProfileData.profileRanges.end(), CompareProfileRanges);
+    std::sort(allProfileData.profileRanges.begin(), allProfileData.profileRanges.end());
     fmt::print("Created {} profile ranges\n", allProfileData.profileRanges.size());
 
     FocusedProfileData focusedProfileData;
@@ -287,16 +226,14 @@ int main(int argc, char** argv) {
             fakeFocusProfileRangeStart.range.end = newFocusRange.begin;
             auto begin = std::lower_bound(allProfileData.profileRanges.begin(),
                                           allProfileData.profileRanges.end(),
-                                          fakeFocusProfileRangeStart,
-                                          CompareProfileRanges);
+                                          fakeFocusProfileRangeStart);
 
             ProfileRange fakeFocusProfileRangeEnd;
             fakeFocusProfileRangeEnd.range.begin = newFocusRange.end;
             fakeFocusProfileRangeEnd.range.end = newFocusRange.end;
             auto end = std::upper_bound(allProfileData.profileRanges.begin(),
                                         allProfileData.profileRanges.end(),
-                                        fakeFocusProfileRangeEnd,
-                                        CompareProfileRanges);
+                                        fakeFocusProfileRangeEnd);
 
             focusedProfileData.focusedProfileRanges = std::vector<ProfileRange>(begin, end);
             std::for_each(focusedProfileData.focusedProfileRanges.begin(),
