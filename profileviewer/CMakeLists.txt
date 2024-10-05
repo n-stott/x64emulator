@@ -11,6 +11,7 @@ add_executable(profileviewer
     external/imgui/backends/imgui_impl_sdl2.cpp
     external/imgui/backends/imgui_impl_opengl3.cpp
     external/imgui-flame-graph/imgui_widget_flamegraph.cpp
+    src/profiledata.cpp
     src/main.cpp
 )
 target_compile_options(profileviewer PUBLIC -Wall -Wextra -Wpedantic -pedantic -Werror -Wimplicit-fallthrough)

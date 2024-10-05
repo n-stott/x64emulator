@@ -28,87 +28,17 @@ int main(int argc, char** argv) {
         }
     }
 
-    if(profileData->nbThreads() == 0) {
-        fmt::print(stderr, "Cannot show profile data for 0 threads\n");
+    auto allProfileData = AllProfileData::tryCreate(*profileData);
+
+    if(!allProfileData) {
+        fmt::print("Unable to extract profile data\n");
         return 1;
     }
 
-    AllProfileData allProfileData;
-    const ThreadProfilingData& tpd = profileData->threadData(0);
-
-    std::vector<ThreadProfilingData::CallEvent> callEvents;
-    callEvents.reserve(tpd.nbCallEvents());
-    tpd.forEachCallEvent([&](const auto& e) { callEvents.push_back(e); });
-
-    std::vector<ThreadProfilingData::RetEvent> retEvents;
-    retEvents.reserve(tpd.nbRetEvents());
-    tpd.forEachRetEvent([&](const auto& e) { retEvents.push_back(e); });
-
-    auto callIt = callEvents.cbegin();
-    auto retIt = retEvents.cbegin();
-    auto callEnd = callEvents.cend();
-    auto retEnd = retEvents.cend();
-    
-    std::unordered_map<u64, u32> addressToSymbolIndex;
-    allProfileData.symbols.push_back("???");
-    u32 unknownSymbolIndex = 0;
-
-    u64 maxTick = 0;
-    u32 maxLevel = 0;
-    std::stack<ProfileRange> stack;
-    for(; callIt != callEnd && retIt != retEnd;) {
-        assert(callIt->tick != retIt->tick);
-        if(callIt->tick < retIt->tick) {
-            u32 symbolIndex = unknownSymbolIndex;
-            auto symbolIndexIt = addressToSymbolIndex.find(callIt->address);
-            if(symbolIndexIt == addressToSymbolIndex.end()) {
-                auto symbol = profileData->symbolTable().findSymbol(callIt->address);
-                if(!!symbol) {
-                    symbolIndex = (u32)allProfileData.symbols.size();
-                    addressToSymbolIndex[callIt->address] = symbolIndex;
-                    allProfileData.symbols.push_back(symbol.value());
-                } else {
-                    addressToSymbolIndex[callIt->address] = unknownSymbolIndex;
-                }
-            } else {
-                symbolIndex = symbolIndexIt->second;
-            }
-
-            stack.push(ProfileRange {
-                callIt->tick,
-                (u64)(-1), // filled in later
-                symbolIndex,
-                (u32)stack.size(),
-            });
-            maxTick = std::max(maxTick, callIt->tick);
-            maxLevel = std::max(maxLevel, (u32)stack.size());
-            ++callIt;
-        } else {
-            ProfileRange pr = stack.top();
-            stack.pop();
-            pr.range.end = retIt->tick;
-            maxTick = std::max(maxTick, retIt->tick);
-            allProfileData.profileRanges.push_back(pr);
-            ++retIt;
-        }
-    }
-
-    fmt::print("{} ranges remaining in stack\n", stack.size());
-    while(!stack.empty()) {
-            ProfileRange pr = stack.top();
-            stack.pop();
-            pr.range.end = maxTick+1;
-            allProfileData.profileRanges.push_back(pr);
-    }
-
-    // sort ranges
-    std::sort(allProfileData.profileRanges.begin(), allProfileData.profileRanges.end());
-    fmt::print("Created {} profile ranges\n", allProfileData.profileRanges.size());
-
     FocusedProfileData focusedProfileData;
-    focusedProfileData.data = &allProfileData;
-    focusedProfileData.focusStack.push(Range{0, maxTick+1});
-    focusedProfileData.focusedProfileRanges = allProfileData.profileRanges;
+    focusedProfileData.data = allProfileData.get();
+    focusedProfileData.focusStack.push(Range{0, allProfileData->maxTick+1});
+    focusedProfileData.focusedProfileRanges = allProfileData->profileRanges;
     
     if(SDL_Init(SDL_INIT_EVERYTHING) != 0) return 1;
 
@@ -193,7 +123,7 @@ int main(int argc, char** argv) {
         void* data = &focusedProfileData;
         int values_offset = 0;
         int values_count = (int)focusedProfileData.focusedProfileRanges.size();
-        ImGuiWidgetFlameGraph::PlotFlame(label.c_str(), maxLevel, valuesGetter, onClick, popFocusStack, data, values_count, values_offset);
+        ImGuiWidgetFlameGraph::PlotFlame(label.c_str(), allProfileData->maxDepth, valuesGetter, onClick, popFocusStack, data, values_count, values_offset);
 
         if(!!focusedProfileData.newFocusRange) {
             Range newFocusRange = focusedProfileData.newFocusRange.value();
@@ -224,15 +154,15 @@ int main(int argc, char** argv) {
             ProfileRange fakeFocusProfileRangeStart;
             fakeFocusProfileRangeStart.range.begin = newFocusRange.begin;
             fakeFocusProfileRangeStart.range.end = newFocusRange.begin;
-            auto begin = std::lower_bound(allProfileData.profileRanges.begin(),
-                                          allProfileData.profileRanges.end(),
+            auto begin = std::lower_bound(allProfileData->profileRanges.begin(),
+                                          allProfileData->profileRanges.end(),
                                           fakeFocusProfileRangeStart);
 
             ProfileRange fakeFocusProfileRangeEnd;
             fakeFocusProfileRangeEnd.range.begin = newFocusRange.end;
             fakeFocusProfileRangeEnd.range.end = newFocusRange.end;
-            auto end = std::upper_bound(allProfileData.profileRanges.begin(),
-                                        allProfileData.profileRanges.end(),
+            auto end = std::upper_bound(allProfileData->profileRanges.begin(),
+                                        allProfileData->profileRanges.end(),
                                         fakeFocusProfileRangeEnd);
 
             focusedProfileData.focusedProfileRanges = std::vector<ProfileRange>(begin, end);
@@ -241,7 +171,7 @@ int main(int argc, char** argv) {
                 pr.range = Range::intersection(pr.range, newFocusRange);
             });
 
-            for(auto it = allProfileData.profileRanges.begin(); it != begin; ++it) {
+            for(auto it = allProfileData->profileRanges.begin(); it != begin; ++it) {
                 if(newFocusRange.intersects(it->range)) {
                     ProfileRange clamped = *it;
                     clamped.range = Range::intersection(clamped.range, newFocusRange);
