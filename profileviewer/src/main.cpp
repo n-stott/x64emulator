@@ -17,14 +17,27 @@ struct Range {
     u64 begin;
     u64 end;
 
+    bool contains(u64 point) const {
+        return begin <= point && point <= end;
+    }
+
     bool contains(Range other) const {
-        return begin <= other.begin && end >= other.end;
+        return begin <= other.begin && other.end <= end;
     }
 
     static Range intersection(Range a, Range b) {
         Range result{std::max(a.begin, b.begin), std::min(a.end, b.end)};
         assert(result.begin <= result.end);
         return result;
+    }
+
+    bool intersects(Range other) {
+        return std::max(begin, other.begin) <= std::min(end, other.end);
+    }
+
+    u64 width() const {
+        assert(begin <= end);
+        return end-begin;
     }
 };
 
@@ -102,6 +115,7 @@ int main(int argc, char** argv) {
     u32 unknownSymbolIndex = 0;
 
     u64 maxTick = 0;
+    u32 maxLevel = 0;
     std::stack<ProfileRange> stack;
     for(; callIt != callEnd && retIt != retEnd;) {
         assert(callIt->tick != retIt->tick);
@@ -128,6 +142,7 @@ int main(int argc, char** argv) {
                 (u32)stack.size(),
             });
             maxTick = std::max(maxTick, callIt->tick);
+            maxLevel = std::max(maxLevel, (u32)stack.size());
             ++callIt;
         } else {
             ProfileRange pr = stack.top();
@@ -178,6 +193,13 @@ int main(int argc, char** argv) {
     bool done = false;
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
+    assert(!focusedProfileData.focusedProfileRanges.empty());
+    ProfileRange first = focusedProfileData.focusedProfileRanges.front();
+    ProfileRange last = focusedProfileData.focusedProfileRanges.back();
+    Range wholeRange{first.range.begin, last.range.end};
+    fmt::print("initial focus range : {}-{}\n", wholeRange.begin, wholeRange.end);
+    float bounds[2] = { 0.0, (float)wholeRange.width() };
+
     while (!done) {
         // Poll and handle events (inputs, window resize, etc.)
         // You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to tell if dear imgui wants to use your inputs.
@@ -205,12 +227,12 @@ int main(int argc, char** argv) {
         ImGui::NewFrame();
 
         std::string label = "calls";
-        auto valuesGetter = [](float* start, float* end, ImU8* level, const char** caption, const void* data, int idx) {
+        auto valuesGetter = [](float* start, float* end, ImU16* level, const char** caption, const void* data, int idx) {
             const FocusedProfileData* focusedProfileData = (const FocusedProfileData*)data;
             const ProfileRange& pr = focusedProfileData->focusedProfileRanges[idx];
             if(!!start) *start = (float)pr.range.begin;
             if(!!end) *end = (float)pr.range.end;
-            if(!!level) *level = (ImU8)pr.depth;
+            if(!!level) *level = (ImU16)pr.depth;
             if(!!caption) *caption = focusedProfileData->data->symbols[pr.symbolIndex].c_str();
         };
 
@@ -232,7 +254,21 @@ int main(int argc, char** argv) {
         void* data = &focusedProfileData;
         int values_offset = 0;
         int values_count = (int)focusedProfileData.focusedProfileRanges.size();
-        ImGuiWidgetFlameGraph::PlotFlame(label.c_str(), valuesGetter, onClick, popFocusStack, data, values_count, values_offset);
+        ImGuiWidgetFlameGraph::PlotFlame(label.c_str(), maxLevel, valuesGetter, onClick, popFocusStack, data, values_count, values_offset);
+
+        if(!!focusedProfileData.newFocusRange) {
+            Range newFocusRange = focusedProfileData.newFocusRange.value();
+            focusedProfileData.focusStack.push(newFocusRange);
+        }
+
+        BeginTimeline("timeline", (float)wholeRange.width());
+        if(TimelineEvent("timeline", bounds) && !focusedProfileData.newFocusRange) {
+            focusedProfileData.newFocusRange = Range{
+                (u64)bounds[0],
+                (u64)bounds[1],
+            };
+        }
+        EndTimeline();
 
         // Rendering
         ImGui::Render();
@@ -246,7 +282,6 @@ int main(int argc, char** argv) {
             Range newFocusRange = focusedProfileData.newFocusRange.value();
             focusedProfileData.newFocusRange.reset();
 
-            focusedProfileData.focusStack.push(newFocusRange);
             ProfileRange fakeFocusProfileRangeStart;
             fakeFocusProfileRangeStart.range.begin = newFocusRange.begin;
             fakeFocusProfileRangeStart.range.end = newFocusRange.begin;
@@ -264,17 +299,21 @@ int main(int argc, char** argv) {
                                         CompareProfileRanges);
 
             focusedProfileData.focusedProfileRanges = std::vector<ProfileRange>(begin, end);
+            std::for_each(focusedProfileData.focusedProfileRanges.begin(),
+                          focusedProfileData.focusedProfileRanges.end(), [&](ProfileRange& pr) {
+                pr.range = Range::intersection(pr.range, newFocusRange);
+            });
 
             for(auto it = allProfileData.profileRanges.begin(); it != begin; ++it) {
-                if(it->range.contains(newFocusRange)) {
+                if(newFocusRange.intersects(it->range)) {
                     ProfileRange clamped = *it;
                     clamped.range = Range::intersection(clamped.range, newFocusRange);
                     focusedProfileData.focusedProfileRanges.push_back(clamped);
                 }
             }
 
-
-            fmt::print("New range has {} elements\n", focusedProfileData.focusedProfileRanges.size());
+            bounds[0] = (float)newFocusRange.begin;
+            bounds[1] = (float)newFocusRange.end;
         }
     }
 
