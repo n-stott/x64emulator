@@ -28,113 +28,111 @@
 static float s_max_timeline_value;
 
 
-bool BeginTimeline(const char* str_id, float max_value)
-{
-	s_max_timeline_value = max_value;
-	return ImGui::BeginChild(str_id);
+bool BeginTimeline(const char* str_id, float max_value) {
+    s_max_timeline_value = max_value;
+    return ImGui::BeginChild(str_id);
 }
 
 
 static const float TIMELINE_RADIUS = 6;
 
 
-bool TimelineEvent(const char* str_id, float* values)
-{
-	ImGuiWindow* win = ImGui::GetCurrentWindow();
-	const ImU32 inactive_color = ImGui::ColorConvertFloat4ToU32(GImGui->Style.Colors[ImGuiCol_Button]);
-	const ImU32 active_color = ImGui::ColorConvertFloat4ToU32(GImGui->Style.Colors[ImGuiCol_ButtonHovered]);
-	const ImU32 line_color = ImGui::ColorConvertFloat4ToU32(GImGui->Style.Colors[ImGuiCol_SeparatorActive]);
-	bool changed = false;
-	ImVec2 cursor_pos = win->DC.CursorPos;
-	
-	for (int i = 0; i < 2; ++i)
-	{
-		ImVec2 pos = cursor_pos;
-		pos.x += win->Size.x * values[i] / s_max_timeline_value + TIMELINE_RADIUS;
-		pos.y += TIMELINE_RADIUS;
+bool TimelineEvent(const char* str_id, float* values) {
+    ImGuiWindow* win = ImGui::GetCurrentWindow();
+    const ImU32 inactive_color = ImGui::ColorConvertFloat4ToU32(GImGui->Style.Colors[ImGuiCol_Button]);
+    const ImU32 active_color = ImGui::ColorConvertFloat4ToU32(GImGui->Style.Colors[ImGuiCol_ButtonHovered]);
+    const ImU32 line_color = ImGui::ColorConvertFloat4ToU32(GImGui->Style.Colors[ImGuiCol_SeparatorActive]);
+    bool changed = false;
+    ImVec2 cursor_pos = win->DC.CursorPos;
 
-		ImGui::SetCursorScreenPos(pos - ImVec2(TIMELINE_RADIUS, TIMELINE_RADIUS));
-		ImGui::PushID(i);
-		ImGui::InvisibleButton(str_id, ImVec2(2 * TIMELINE_RADIUS, 2 * TIMELINE_RADIUS));
-		if (ImGui::IsItemActive() || ImGui::IsItemHovered())
-		{
-			ImGui::SetTooltip("%f", values[i]);
-			ImVec2 a(pos.x, ImGui::GetWindowContentRegionMin().y + win->Pos.y);
-			ImVec2 b(pos.x, ImGui::GetWindowContentRegionMax().y + win->Pos.y);
-			win->DrawList->AddLine(a, b, line_color);
-		}
-		if (ImGui::IsItemActive() && ImGui::IsMouseDragging(0))
-		{
-			values[i] += ImGui::GetIO().MouseDelta.x / win->Size.x * s_max_timeline_value;
-			changed = true;
-		}
-		ImGui::PopID();
-		win->DrawList->AddCircleFilled(
-			pos, TIMELINE_RADIUS, ImGui::IsItemActive() || ImGui::IsItemHovered() ? active_color : inactive_color);
-	}
-	
-	ImVec2 start = cursor_pos;
-	start.x += win->Size.x * values[0] / s_max_timeline_value + 2 * TIMELINE_RADIUS;
-	start.y += TIMELINE_RADIUS * 0.5f;
-	ImVec2 end = start + ImVec2(win->Size.x * (values[1] - values[0]) / s_max_timeline_value - 2 * TIMELINE_RADIUS,
-							 TIMELINE_RADIUS);
+    ImGuiContext& g = *GImGui;
+    const ImGuiStyle& style = g.Style;
+    
+    for (int i = 0; i < 2; ++i) {
+        ImVec2 pos = cursor_pos;
+        pos.x += (win->Size.x - 2*style.WindowPadding.x) * values[i] / s_max_timeline_value + TIMELINE_RADIUS;
+        pos.y += TIMELINE_RADIUS;
 
-	ImGui::PushID(-1);
-	ImGui::SetCursorScreenPos(start);
-	ImGui::InvisibleButton(str_id, end - start);
-	if (ImGui::IsItemActive() && ImGui::IsMouseDragging(0))
-	{
-		values[0] += ImGui::GetIO().MouseDelta.x / win->Size.x * s_max_timeline_value;
-		values[1] += ImGui::GetIO().MouseDelta.x / win->Size.x * s_max_timeline_value;
-		changed = true;
-	}
-	ImGui::PopID();
+        ImGui::SetCursorScreenPos(pos - ImVec2(TIMELINE_RADIUS, TIMELINE_RADIUS));
+        ImGui::PushID(i);
+        ImGui::InvisibleButton(str_id, ImVec2(2 * TIMELINE_RADIUS, 2 * TIMELINE_RADIUS));
+        if (ImGui::IsItemActive() || ImGui::IsItemHovered()) {
+            ImGui::SetTooltip("%lld", (long long)values[i]);
+            ImVec2 a(pos.x, ImGui::GetWindowContentRegionMin().y + win->Pos.y);
+            ImVec2 b(pos.x, ImGui::GetWindowContentRegionMax().y + win->Pos.y);
+            win->DrawList->AddLine(a, b, line_color);
+        }
+        if (ImGui::IsItemActive() && ImGui::IsMouseDragging(0)) {
+            values[i] += ImGui::GetIO().MouseDelta.x / win->Size.x * s_max_timeline_value;
+            changed = true;
+        }
+        ImGui::PopID();
+        win->DrawList->AddCircleFilled(
+            pos, TIMELINE_RADIUS, ImGui::IsItemActive() || ImGui::IsItemHovered() ? active_color : inactive_color);
+    }
+    
+    ImVec2 start = cursor_pos;
+    start.x += (win->Size.x - 2*style.WindowPadding.x) * values[0] / s_max_timeline_value + 2 * TIMELINE_RADIUS;
+    start.y += TIMELINE_RADIUS * 0.5f;
+    ImVec2 end = start + ImVec2((win->Size.x - 2*style.WindowPadding.x) * (values[1] - values[0]) / s_max_timeline_value - 2 * TIMELINE_RADIUS,
+                             TIMELINE_RADIUS);
 
-	ImGui::SetCursorScreenPos(cursor_pos + ImVec2(0, ImGui::GetTextLineHeightWithSpacing()));
+    ImGui::PushID(-1);
+    ImGui::SetCursorScreenPos(start);
+    ImGui::InvisibleButton(str_id, end - start);
+    if (ImGui::IsItemActive() && ImGui::IsMouseDragging(0)) {
+        values[0] += ImGui::GetIO().MouseDelta.x / win->Size.x * s_max_timeline_value;
+        values[1] += ImGui::GetIO().MouseDelta.x / win->Size.x * s_max_timeline_value;
+        changed = true;
+    }
+    ImGui::PopID();
 
-	win->DrawList->AddRectFilled(start, end, ImGui::IsItemActive() || ImGui::IsItemHovered() ? active_color : inactive_color);
-	
-	if (values[0] > values[1])
-	{
-		float tmp = values[0];
-		values[0] = values[1];
-		values[1] = tmp;
-	}
-	if (values[1] > s_max_timeline_value) values[1] = s_max_timeline_value;
-	if (values[0] < 0) values[0] = 0;
-	return changed;
+    ImGui::SetCursorScreenPos(cursor_pos + ImVec2(0, ImGui::GetTextLineHeightWithSpacing()));
+
+    win->DrawList->AddRectFilled(start, end, ImGui::IsItemActive() || ImGui::IsItemHovered() ? active_color : inactive_color);
+    
+    if (values[0] > values[1]) {
+        float tmp = values[0];
+        values[0] = values[1];
+        values[1] = tmp;
+    }
+    if (values[1] > s_max_timeline_value) values[1] = s_max_timeline_value;
+    if (values[0] < 0) values[0] = 0;
+    return changed;
 }
 
 
-void EndTimeline()
-{
-	ImGuiWindow* win = ImGui::GetCurrentWindow();
-	
-	ImU32 color = ImGui::ColorConvertFloat4ToU32(GImGui->Style.Colors[ImGuiCol_Button]);
-	ImU32 line_color = ImGui::ColorConvertFloat4ToU32(GImGui->Style.Colors[ImGuiCol_Border]);
-	ImU32 text_color = ImGui::ColorConvertFloat4ToU32(GImGui->Style.Colors[ImGuiCol_Text]);
-	float rounding = GImGui->Style.ScrollbarRounding;
-	ImVec2 start(ImGui::GetWindowContentRegionMin().x + win->Pos.x,
-		ImGui::GetWindowContentRegionMax().y - ImGui::GetTextLineHeightWithSpacing() + win->Pos.y);
-	ImVec2 end = ImGui::GetWindowContentRegionMax() + win->Pos;
+void EndTimeline() {
+    ImGuiWindow* win = ImGui::GetCurrentWindow();
 
-	win->DrawList->AddRectFilled(start, end, color, rounding);
+    ImGuiContext& g = *GImGui;
+    const ImGuiStyle& style = g.Style;
+    
+    ImU32 color = ImGui::ColorConvertFloat4ToU32(GImGui->Style.Colors[ImGuiCol_Button]);
+    ImU32 line_color = ImGui::ColorConvertFloat4ToU32(GImGui->Style.Colors[ImGuiCol_Border]);
+    ImU32 text_color = ImGui::ColorConvertFloat4ToU32(GImGui->Style.Colors[ImGuiCol_Text]);
+    float rounding = GImGui->Style.ScrollbarRounding;
+    ImVec2 start(ImGui::GetWindowContentRegionMin().x + win->Pos.x,
+        ImGui::GetWindowContentRegionMax().y - ImGui::GetTextLineHeightWithSpacing() + win->Pos.y);
+    ImVec2 end = ImGui::GetWindowContentRegionMax() + win->Pos;
 
-	const int LINE_COUNT = 5;
-	const ImVec2 text_offset(0, ImGui::GetTextLineHeightWithSpacing());
-	for (int i = 0; i < LINE_COUNT; ++i)
-	{
-		ImVec2 a = ImGui::GetWindowContentRegionMin() + win->Pos + ImVec2(TIMELINE_RADIUS, 0);
-		a.x += i * (ImGui::GetWindowContentRegionMax()-ImGui::GetWindowContentRegionMin()).x / LINE_COUNT;
-		ImVec2 b = a;
-		b.y = start.y;
-		win->DrawList->AddLine(a, b, line_color);
-		char tmp[256];
-		ImFormatString(tmp, sizeof(tmp), "%.2f", i * s_max_timeline_value / LINE_COUNT);
-		win->DrawList->AddText(b, text_color, tmp);
-	}
+    win->DrawList->AddRectFilled(start, end, color, rounding);
 
-	ImGui::EndChild();
+    const int LINE_COUNT = 5;
+    const ImVec2 text_offset(0, ImGui::GetTextLineHeightWithSpacing());
+    for (int i = 0; i <= LINE_COUNT; ++i) {
+        ImVec2 a = ImGui::GetWindowContentRegionMin() + win->Pos + ImVec2(TIMELINE_RADIUS, 0);
+        a.x += i * ((ImGui::GetWindowContentRegionMax()-ImGui::GetWindowContentRegionMin()).x - 2*style.WindowPadding.x) / LINE_COUNT;
+        ImVec2 b = a;
+        b.y = start.y;
+        win->DrawList->AddLine(a, b, line_color);
+        if(i == LINE_COUNT) break;
+        char tmp[256];
+        ImFormatString(tmp, sizeof(tmp), "%lld", (long long)(i * s_max_timeline_value / LINE_COUNT));
+        win->DrawList->AddText(b, text_color, tmp);
+    }
+
+    ImGui::EndChild();
 }
 
 void ImGuiWidgetFlameGraph::PlotFlame(const char* label, ImU16 minDepth, ValuesGetter values_getter, OnClick on_click, PopFocusStack popFocusStack, void* data, int values_count, int values_offset, const char* overlay_text, float scale_min, float scale_max, ImVec2 graph_size)
@@ -149,8 +147,7 @@ void ImGuiWidgetFlameGraph::PlotFlame(const char* label, ImU16 minDepth, ValuesG
 
     // Find the maximum depth
     ImU16 maxDepth = minDepth;
-    for (int i = values_offset; i < values_count; ++i)
-    {
+    for (int i = values_offset; i < values_count; ++i) {
         ImU16 depth;
         values_getter(nullptr, nullptr, &depth, nullptr, data, i);
         maxDepth = ImMax(maxDepth, depth);
@@ -159,7 +156,7 @@ void ImGuiWidgetFlameGraph::PlotFlame(const char* label, ImU16 minDepth, ValuesG
     const ImVec2 text_size = ImGui::CalcTextSize(label, NULL, true);
     const auto blockHeight = ImGui::GetTextLineHeight() + (style.FramePadding.y * 2);
     if (graph_size.x == 0.0f)
-        graph_size.x = ImGui::GetWindowSize().x - 4*style.FramePadding.x;
+        graph_size.x = ImGui::GetWindowSize().x - 4*style.FramePadding.x - window->ScrollbarY * style.ScrollbarSize;
     if (graph_size.y == 0.0f)
         graph_size.y = text_size.y + (style.FramePadding.y * 3) + blockHeight * (maxDepth + 1);
 
@@ -170,12 +167,10 @@ void ImGuiWidgetFlameGraph::PlotFlame(const char* label, ImU16 minDepth, ValuesG
         return;
 
     // Determine scale from values if not specified
-    if (scale_min == FLT_MAX || scale_max == FLT_MAX)
-    {
+    if (scale_min == FLT_MAX || scale_max == FLT_MAX) {
         float v_min = FLT_MAX;
         float v_max = -FLT_MAX;
-        for (int i = values_offset; i < values_count; i++)
-        {
+        for (int i = values_offset; i < values_count; i++) {
             float v_start, v_end;
             values_getter(&v_start, &v_end, nullptr, nullptr, data, i);
             if (v_start == v_start) // Check non-NaN values
@@ -192,15 +187,13 @@ void ImGuiWidgetFlameGraph::PlotFlame(const char* label, ImU16 minDepth, ValuesG
     ImGui::RenderFrame(frame_bb.Min, frame_bb.Max, ImGui::GetColorU32(ImGuiCol_FrameBg), true, style.FrameRounding);
 
     bool any_hovered = false;
-    if (values_count - values_offset >= 1)
-    {
+    if (values_count - values_offset >= 1) {
         const ImU32 col_base = ImGui::GetColorU32(ImGuiCol_PlotHistogram) & 0x77FFFFFF;
         const ImU32 col_hovered = ImGui::GetColorU32(ImGuiCol_PlotHistogramHovered) & 0x77FFFFFF;
         const ImU32 col_outline_base = ImGui::GetColorU32(ImGuiCol_PlotHistogram) & 0x7FFFFFFF;
         const ImU32 col_outline_hovered = ImGui::GetColorU32(ImGuiCol_PlotHistogramHovered) & 0x7FFFFFFF;
 
-        for (int i = values_offset; i < values_count; ++i)
-        {
+        for (int i = values_offset; i < values_count; ++i) {
             float stageStart, stageEnd;
             ImU16 depth;
             const char* caption;
@@ -208,8 +201,7 @@ void ImGuiWidgetFlameGraph::PlotFlame(const char* label, ImU16 minDepth, ValuesG
             values_getter(&stageStart, &stageEnd, &depth, &caption, data, i);
 
             auto duration = scale_max - scale_min;
-            if (duration == 0)
-            {
+            if (duration == 0) {
                 return;
             }
 
@@ -226,8 +218,7 @@ void ImGuiWidgetFlameGraph::PlotFlame(const char* label, ImU16 minDepth, ValuesG
             auto pos1 = inner_bb.Min + ImVec2(endX * width, height + blockHeight);
 
             bool v_hovered = false;
-            if (ImGui::IsMouseHoveringRect(pos0, pos1))
-            {
+            if (ImGui::IsMouseHoveringRect(pos0, pos1)) {
                 ImGui::SetTooltip("%s: %8.4g", caption, stageEnd - stageStart);
                 v_hovered = true;
                 any_hovered = v_hovered;
@@ -242,8 +233,7 @@ void ImGuiWidgetFlameGraph::PlotFlame(const char* label, ImU16 minDepth, ValuesG
             auto textSize = ImGui::CalcTextSize(caption);
             auto boxSize = (pos1 - pos0);
             auto textOffset = ImVec2(0.0f, 0.0f);
-            if (textSize.x < boxSize.x)
-            {
+            if (textSize.x < boxSize.x) {
                 textOffset = ImVec2(0.5f, 0.5f) * (boxSize - textSize);
                 ImGui::RenderText(pos0 + textOffset, caption);
             }
@@ -258,8 +248,7 @@ void ImGuiWidgetFlameGraph::PlotFlame(const char* label, ImU16 minDepth, ValuesG
         popFocusStack(data);
     }
 
-    if (!any_hovered && ImGui::IsItemHovered())
-    {
+    if (!any_hovered && ImGui::IsItemHovered()) {
         ImGui::SetTooltip("Total: %8.4g", scale_max - scale_min);
     }
 }

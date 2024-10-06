@@ -52,7 +52,11 @@ int main(int argc, char** argv) {
     SDL_Window* window = SDL_CreateWindow(windowTitle.c_str(), windowX, windowY, windowW, windowH, windowFlags);
     SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
+
     ImGui::CreateContext();
+    auto& imGuiIO = ImGui::GetIO();
+    imGuiIO.IniFilename = nullptr;
+    imGuiIO.LogFilename = nullptr;
     ImGui_ImplSDL2_InitForSDLRenderer(window, renderer);
     const char* glsl_version = "#version 130";
     ImGui_ImplOpenGL3_Init(glsl_version);
