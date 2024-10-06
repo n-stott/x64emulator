@@ -3,6 +3,7 @@
 
 #include "profiledata.h"
 #include "range.h"
+#include <functional>
 #include <optional>
 #include <stack>
 #include <vector>
@@ -13,27 +14,37 @@ namespace profileviewer {
     public:
         explicit FocusedProfileData(const AllProfileData& data);
 
+        // ranges whose relative width to the focused width is smaller than the
+        // threshold can be merged together to improve performance
+        void setMergeThreshold(float mergeThreshold);
+
         Range focusedRange() const;
         const std::vector<ProfileRange>& focusedProfileRanges() const { return focusedProfileRanges_; }
         const AllProfileData& data() const { return data_; }
 
         void pop();
 
-        void setFocusRange(Range range) { newFocusRange_ = range; }
-        void flushNewRange();
+        void setFocusRange(Range range) {
+            newFocusRange_ = range;
+            for(const auto& callback : newFocusRangeCallbacks_) callback(range);
+            flushNewRange();
+        }
 
-        template<typename Func>
-        void onNewFocusRange(Func&& func) {
-            if(!newFocusRange_) return;
-            func(*newFocusRange_);
+        void addNewFocusRangeCallback(std::function<void(const Range&)> func) {
+            newFocusRangeCallbacks_.push_back(std::move(func));
         }
 
     private:
+        void flushNewRange();
+
         const AllProfileData& data_;
         std::stack<Range> focusStack_;
         std::vector<ProfileRange> focusedProfileRanges_;
 
+        std::vector<std::function<void(const Range&)>> newFocusRangeCallbacks_;
+
         std::optional<Range> newFocusRange_;
+        float mergeThreshold_ { 0.0 };
     };
 
 }

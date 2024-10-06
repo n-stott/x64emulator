@@ -18,13 +18,26 @@ namespace profileviewer {
         u32 symbolIndex;
         u32 depth;
 
-        friend bool operator<(const ProfileRange& pra, const ProfileRange& prb) {
-            const Range& a = pra.range;
-            const Range& b = prb.range;
-            if(a.begin < b.begin) return true;
-            if(a.begin > b.begin) return false;
-            if(a.end > b.end) return true;
-            return false;
+        struct DfsOrder {
+            bool operator()(const ProfileRange& pra, const ProfileRange& prb) const {
+                const Range& a = pra.range;
+                const Range& b = prb.range;
+                if(a.begin < b.begin) return true;
+                if(a.begin > b.begin) return false;
+                if(a.end > b.end) return true;
+                return false;
+            }
+        };
+
+        struct BfsOrder {
+            bool operator()(const ProfileRange& pra, const ProfileRange& prb) const {
+                if(pra.depth < prb.depth) return true;
+                if(pra.depth > prb.depth) return false;
+                const Range& a = pra.range;
+                const Range& b = prb.range;
+                if(a.begin < b.begin) return true;
+                return false;
+            }
         };
     };
 

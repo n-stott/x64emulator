@@ -50,6 +50,7 @@ int main(int argc, char** argv) {
     SDL_Window* window = SDL_CreateWindow(windowTitle.c_str(), windowX, windowY, windowW, windowH, windowFlags);
     SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
+    focusedProfileData.setMergeThreshold(1.0/windowW);
 
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO();
@@ -65,6 +66,11 @@ int main(int argc, char** argv) {
     Range wholeRange = focusedProfileData.focusedRange();
     fmt::print("initial focus range : {}-{}\n", wholeRange.begin, wholeRange.end);
     float bounds[2] = { 0.0, (float)wholeRange.width() };
+
+    focusedProfileData.addNewFocusRangeCallback([&](Range newFocusRange) {
+        bounds[0] = (float)newFocusRange.begin;
+        bounds[1] = (float)newFocusRange.end; 
+    });
 
     while (!done) {
         // Poll and handle events (inputs, window resize, etc.)
@@ -142,12 +148,6 @@ int main(int argc, char** argv) {
         glClear(GL_COLOR_BUFFER_BIT);
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         SDL_GL_SwapWindow(window);
-
-        focusedProfileData.onNewFocusRange([&](Range newFocusRange) {
-            bounds[0] = (float)newFocusRange.begin;
-            bounds[1] = (float)newFocusRange.end; 
-        });
-        focusedProfileData.flushNewRange();
     }
 
     // Cleanup

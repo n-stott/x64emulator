@@ -79,8 +79,8 @@ namespace profileviewer {
                 allProfileData.profileRanges.push_back(pr);
         }
 
-        // sort ranges
-        std::sort(allProfileData.profileRanges.begin(), allProfileData.profileRanges.end());
+        // sort ranges in dfs order
+        std::sort(allProfileData.profileRanges.begin(), allProfileData.profileRanges.end(), ProfileRange::DfsOrder{});
 
         return std::make_unique<AllProfileData>(std::move(allProfileData));
     }
