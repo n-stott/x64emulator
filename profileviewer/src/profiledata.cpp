@@ -73,14 +73,43 @@ namespace profileviewer {
         allProfileData.maxDepth = maxDepth;
 
         while(!stack.empty()) {
-                ProfileRange pr = stack.top();
-                stack.pop();
-                pr.range.end = maxTick+1;
-                allProfileData.profileRanges.push_back(pr);
+            ProfileRange pr = stack.top();
+            stack.pop();
+            pr.range.end = maxTick+1;
+            allProfileData.profileRanges.push_back(pr);
         }
 
         // sort ranges in dfs order
         std::sort(allProfileData.profileRanges.begin(), allProfileData.profileRanges.end(), ProfileRange::DfsOrder{});
+
+        std::vector<ThreadProfilingData::SyscallEvent> syscallEvents;
+        syscallEvents.reserve(tpd.nbSyscallEvents());
+        tpd.forEachSyscallEvent([&](const auto& e) { syscallEvents.push_back(e); });
+
+        std::sort(syscallEvents.begin(), syscallEvents.end(), [](const auto& a, const auto& b) {
+            return a.tick < b.tick;
+        });
+
+        allProfileData.syscallRanges.reserve(syscallEvents.size());
+        for(const auto& event : syscallEvents) {
+            ProfileRange fakeProfileRange {
+                Range{event.tick, event.tick},
+                0,
+                0,
+            };
+            auto it = std::lower_bound(allProfileData.profileRanges.begin(),
+                                       allProfileData.profileRanges.end(),
+                                       fakeProfileRange,
+                                       ProfileRange::DfsOrder{});
+            u32 depth = it != allProfileData.profileRanges.end()
+                    ? it->depth + 1
+                    : allProfileData.profileRanges.back().depth+1;
+            allProfileData.syscallRanges.push_back(ProfileRange {
+                Range{event.tick, event.tick+1},
+                depth,
+                0,
+            });
+        }
 
         return std::make_unique<AllProfileData>(std::move(allProfileData));
     }

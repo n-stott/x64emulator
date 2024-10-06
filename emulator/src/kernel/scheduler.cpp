@@ -45,6 +45,7 @@ namespace kernel {
         // Before the VM dies, we should retrieve the symbols and function names
         if(kernel_.isProfiling()) {
             std::unique_lock lock(schedulerMutex_);
+            // we get the relevant addresses
             std::vector<u64> addresses;
             forEachThread([&](const Thread& thread) {
                 thread.forEachCallEvent([&](const Thread::CallEvent& event) {
@@ -203,6 +204,9 @@ namespace kernel {
             });
             thread.forEachRetEvent([&](const Thread::RetEvent& event) {
                 threadProfileData.addRetEvent(event.tick);
+            });
+            thread.forEachSyscallEvent([&](const Thread::SyscallEvent& event) {
+                threadProfileData.addSyscallEvent(event.tick, event.syscallNumber);
             });
         });
         for(const auto& kv : addressToSymbol_) {

@@ -22,6 +22,11 @@ namespace profiling {
             u64 tick;
         };
 
+        struct SyscallEvent {
+            u64 tick;
+            u64 syscallNumber;
+        };
+
         ThreadProfilingData(int pid, int tid) : pid_(pid), tid_(tid) { }
 
         void addCallEvent(u64 tick, u64 address) {
@@ -32,11 +37,16 @@ namespace profiling {
             retEvents_.push_back(RetEvent{tick});
         }
 
+        void addSyscallEvent(u64 tick, u64 syscallNumber) {
+            syscallEvents_.push_back(SyscallEvent{tick, syscallNumber});
+        }
+
         int pid() const { return pid_; }
         int tid() const { return tid_; }
 
         size_t nbCallEvents() const { return callEvents_.size(); }
         size_t nbRetEvents() const { return retEvents_.size(); }
+        size_t nbSyscallEvents() const { return syscallEvents_.size(); }
 
         template<typename Func>
         void forEachCallEvent(Func&& func) const {
@@ -48,6 +58,11 @@ namespace profiling {
             for(const auto& event : retEvents_) func(event);
         }
 
+        template<typename Func>
+        void forEachSyscallEvent(Func&& func) const {
+            for(const auto& event : syscallEvents_) func(event);
+        }
+
         size_t largestCallTickDifference() const;
         void analyzeCallTickDifference() const;
 
@@ -56,6 +71,7 @@ namespace profiling {
         int tid_;
         std::deque<CallEvent> callEvents_;
         std::deque<RetEvent> retEvents_;
+        std::deque<SyscallEvent> syscallEvents_;
     };
 
     class ProfilingSymbolTable {

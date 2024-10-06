@@ -46,6 +46,7 @@ namespace profileviewer {
         static std::unique_ptr<AllProfileData> tryCreate(const profiling::ProfilingData&);
 
         std::vector<ProfileRange> profileRanges;
+        std::vector<ProfileRange> syscallRanges;
         std::vector<std::string> symbols;
         u64 maxTick { 0 };
         u32 maxDepth { 0 };

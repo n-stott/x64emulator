@@ -45,6 +45,7 @@ namespace kernel {
         currentThread_ = cpu->currentThread();
         u64 sysNumber = cpu->get(x64::R64::RAX);
         currentThread_->stats().syscalls++;
+        if(kernel_.isProfiling()) currentThread_->didSyscall(sysNumber);
         RegisterDump regs {{
             cpu->get(x64::R64::RDI),
             cpu->get(x64::R64::RSI),

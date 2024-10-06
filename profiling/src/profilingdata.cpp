@@ -64,6 +64,12 @@ namespace profiling {
                 retEvents.emplace_back(e.tick);
             });
             threadObject["retEvents"] = std::move(retEvents);
+            json syscallEvents = json::array();
+            tpd.forEachSyscallEvent([&](const auto& e) {
+                json event = json::array({ e.tick, e.syscallNumber });
+                syscallEvents.emplace_back(std::move(event));
+            });
+            threadObject["syscallEvents"] = std::move(syscallEvents);
             threadsObject.emplace_back(std::move(threadObject));
         }
         

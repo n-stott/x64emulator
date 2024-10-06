@@ -101,6 +101,15 @@ namespace kernel {
             u64 tick;
         };
 
+        struct SyscallEvent {
+            u64 tick;
+            u64 syscallNumber;
+        };
+
+        void didSyscall(u64 syscallNumber) {
+            syscallEvents_.push_back(SyscallEvent{tickInfo_.ticksFromStart, syscallNumber});
+        }
+
         void pushCallstack(u64 from, u64 to) {
             callpoint_.push_back(from);
             callstack_.push_back(to);
@@ -129,6 +138,11 @@ namespace kernel {
             for(const RetEvent& event : retEvents_) func(event);
         }
 
+        template<typename Func>
+        void forEachSyscallEvent(Func&& func) const {
+            for(const SyscallEvent& event : syscallEvents_) func(event);
+        }
+
     private:
         THREAD_STATE state_ { THREAD_STATE::RUNNABLE };
         Description description_;
@@ -147,6 +161,7 @@ namespace kernel {
         bool isProfiling_ { false };
         std::deque<CallEvent> callEvents_;
         std::deque<RetEvent> retEvents_;
+        std::deque<SyscallEvent> syscallEvents_;
     };
 
 }
