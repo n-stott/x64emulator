@@ -54,14 +54,12 @@ int main(int argc, char** argv) {
 
 
     ImGui::CreateContext();
-    auto& imGuiIO = ImGui::GetIO();
-    imGuiIO.IniFilename = nullptr;
-    imGuiIO.LogFilename = nullptr;
+    ImGuiIO& io = ImGui::GetIO();
+    io.IniFilename = nullptr;
+    io.LogFilename = nullptr;
     ImGui_ImplSDL2_InitForSDLRenderer(window, renderer);
     const char* glsl_version = "#version 130";
     ImGui_ImplOpenGL3_Init(glsl_version);
-
-    ImGuiIO& io = ImGui::GetIO();
 
     bool done = false;
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
@@ -98,6 +96,11 @@ int main(int argc, char** argv) {
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplSDL2_NewFrame();
         ImGui::NewFrame();
+
+        bool showDialog { true };
+        ImGui::SetNextWindowSize(ImVec2(windowW, windowH));
+        ImGui::SetNextWindowPos(ImVec2(0, 0)); // Set the position of the new window
+        ImGui::Begin("Profile", &showDialog, ImGuiWindowFlags_NoCollapse);
 
         std::string label = "calls";
         auto valuesGetter = [](float* start, float* end, ImU16* level, const char** caption, const void* data, int idx) {
@@ -142,6 +145,8 @@ int main(int argc, char** argv) {
             };
         }
         EndTimeline();
+
+        ImGui::End();
 
         // Rendering
         ImGui::Render();
