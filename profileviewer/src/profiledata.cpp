@@ -1,5 +1,6 @@
 #include "profiledata.h"
 #include "profilingdata.h"
+#include <stack>
 
 namespace profileviewer {
 

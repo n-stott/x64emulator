@@ -1,6 +1,7 @@
 #include "profilingdata.h"
 #include "range.h"
 #include "profiledata.h"
+#include "focusedprofiledata.h"
 #include <imgui.h>
 #include <imgui_impl_sdl2.h>
 #include <imgui_impl_opengl3.h>
@@ -35,10 +36,7 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    FocusedProfileData focusedProfileData;
-    focusedProfileData.data = allProfileData.get();
-    focusedProfileData.focusStack.push(Range{0, allProfileData->maxTick+1});
-    focusedProfileData.focusedProfileRanges = allProfileData->profileRanges;
+    FocusedProfileData focusedProfileData(*allProfileData);
     
     if(SDL_Init(SDL_INIT_EVERYTHING) != 0) return 1;
 
@@ -64,10 +62,7 @@ int main(int argc, char** argv) {
     bool done = false;
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
-    assert(!focusedProfileData.focusedProfileRanges.empty());
-    ProfileRange first = focusedProfileData.focusedProfileRanges.front();
-    ProfileRange last = focusedProfileData.focusedProfileRanges.back();
-    Range wholeRange{first.range.begin, last.range.end};
+    Range wholeRange = focusedProfileData.focusedRange();
     fmt::print("initial focus range : {}-{}\n", wholeRange.begin, wholeRange.end);
     float bounds[2] = { 0.0, (float)wholeRange.width() };
 
@@ -105,44 +100,36 @@ int main(int argc, char** argv) {
         std::string label = "calls";
         auto valuesGetter = [](float* start, float* end, ImU16* level, const char** caption, const void* data, int idx) {
             const FocusedProfileData* focusedProfileData = (const FocusedProfileData*)data;
-            const ProfileRange& pr = focusedProfileData->focusedProfileRanges[idx];
+            const ProfileRange& pr = focusedProfileData->focusedProfileRanges()[idx];
             if(!!start) *start = (float)pr.range.begin;
             if(!!end) *end = (float)pr.range.end;
             if(!!level) *level = (ImU16)pr.depth;
-            if(!!caption) *caption = focusedProfileData->data->symbols[pr.symbolIndex].c_str();
+            if(!!caption) *caption = focusedProfileData->data().symbols[pr.symbolIndex].c_str();
         };
 
         auto onClick = [](void* data, int idx) {
             FocusedProfileData* focusedProfileData = (FocusedProfileData*)data;
-            const ProfileRange& pr = focusedProfileData->focusedProfileRanges[idx];
-            focusedProfileData->newFocusRange = pr.range;
+            const ProfileRange& pr = focusedProfileData->focusedProfileRanges()[idx];
+            focusedProfileData->setFocusRange(pr.range);
         };
 
         auto popFocusStack = [](void* data) {
             FocusedProfileData* focusedProfileData = (FocusedProfileData*)data;
-            if(focusedProfileData->focusStack.size() <= 1) return;
-            focusedProfileData->focusStack.pop();
-            focusedProfileData->newFocusRange = focusedProfileData->focusStack.top();
-            focusedProfileData->focusStack.pop();
-            fmt::print("stack has {} elements remaining\n", focusedProfileData->focusStack.size());
+            focusedProfileData->pop();
         };
 
         void* data = &focusedProfileData;
         int values_offset = 0;
-        int values_count = (int)focusedProfileData.focusedProfileRanges.size();
+        int values_count = (int)focusedProfileData.focusedProfileRanges().size();
         ImGuiWidgetFlameGraph::PlotFlame(label.c_str(), allProfileData->maxDepth, valuesGetter, onClick, popFocusStack, data, values_count, values_offset);
 
-        if(!!focusedProfileData.newFocusRange) {
-            Range newFocusRange = focusedProfileData.newFocusRange.value();
-            focusedProfileData.focusStack.push(newFocusRange);
-        }
 
         BeginTimeline("timeline", (float)wholeRange.width());
-        if(TimelineEvent("timeline", bounds) && !focusedProfileData.newFocusRange) {
-            focusedProfileData.newFocusRange = Range{
+        if(TimelineEvent("timeline", bounds)) {
+            focusedProfileData.setFocusRange(Range{
                 (u64)bounds[0],
                 (u64)bounds[1],
-            };
+            });
         }
         EndTimeline();
 
@@ -156,41 +143,11 @@ int main(int argc, char** argv) {
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         SDL_GL_SwapWindow(window);
 
-        if(!!focusedProfileData.newFocusRange) {
-            Range newFocusRange = focusedProfileData.newFocusRange.value();
-            focusedProfileData.newFocusRange.reset();
-
-            ProfileRange fakeFocusProfileRangeStart;
-            fakeFocusProfileRangeStart.range.begin = newFocusRange.begin;
-            fakeFocusProfileRangeStart.range.end = newFocusRange.begin;
-            auto begin = std::lower_bound(allProfileData->profileRanges.begin(),
-                                          allProfileData->profileRanges.end(),
-                                          fakeFocusProfileRangeStart);
-
-            ProfileRange fakeFocusProfileRangeEnd;
-            fakeFocusProfileRangeEnd.range.begin = newFocusRange.end;
-            fakeFocusProfileRangeEnd.range.end = newFocusRange.end;
-            auto end = std::upper_bound(allProfileData->profileRanges.begin(),
-                                        allProfileData->profileRanges.end(),
-                                        fakeFocusProfileRangeEnd);
-
-            focusedProfileData.focusedProfileRanges = std::vector<ProfileRange>(begin, end);
-            std::for_each(focusedProfileData.focusedProfileRanges.begin(),
-                          focusedProfileData.focusedProfileRanges.end(), [&](ProfileRange& pr) {
-                pr.range = Range::intersection(pr.range, newFocusRange);
-            });
-
-            for(auto it = allProfileData->profileRanges.begin(); it != begin; ++it) {
-                if(newFocusRange.intersects(it->range)) {
-                    ProfileRange clamped = *it;
-                    clamped.range = Range::intersection(clamped.range, newFocusRange);
-                    focusedProfileData.focusedProfileRanges.push_back(clamped);
-                }
-            }
-
+        focusedProfileData.onNewFocusRange([&](Range newFocusRange) {
             bounds[0] = (float)newFocusRange.begin;
-            bounds[1] = (float)newFocusRange.end;
-        }
+            bounds[1] = (float)newFocusRange.end; 
+        });
+        focusedProfileData.flushNewRange();
     }
 
     // Cleanup

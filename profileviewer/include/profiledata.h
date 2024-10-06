@@ -4,8 +4,6 @@
 #include "range.h"
 #include "utils.h"
 #include <memory>
-#include <optional>
-#include <stack>
 #include <string>
 #include <vector>
 
@@ -38,14 +36,6 @@ namespace profileviewer {
         std::vector<std::string> symbols;
         u64 maxTick { 0 };
         u32 maxDepth { 0 };
-    };
-
-
-    struct FocusedProfileData {
-        const AllProfileData* data { nullptr };
-        std::stack<Range> focusStack;
-        std::optional<Range> newFocusRange;
-        std::vector<ProfileRange> focusedProfileRanges;
     };
 
 }
