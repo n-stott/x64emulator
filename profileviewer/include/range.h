@@ -36,6 +36,11 @@ namespace profileviewer {
             assert(begin <= end);
             return end-begin;
         }
+
+        friend bool operator==(const Range& a, const Range& b) {
+            return a.begin == b.begin
+                && a.end == b.end;
+        }
     };
 
 }

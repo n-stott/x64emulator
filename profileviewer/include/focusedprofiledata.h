@@ -22,23 +22,17 @@ namespace profileviewer {
         const std::vector<ProfileRange>& focusedProfileRanges() const { return focusedProfileRanges_; }
         const AllProfileData& data() const { return data_; }
 
-        void pop();
+        void reset();
 
-        void setFocusRange(Range range) {
-            newFocusRange_ = range;
-            for(const auto& callback : newFocusRangeCallbacks_) callback(range);
-            flushNewRange();
-        }
+        void setFocusRange(Range newFocusRange);
 
         void addNewFocusRangeCallback(std::function<void(const Range&)> func) {
             newFocusRangeCallbacks_.push_back(std::move(func));
         }
 
     private:
-        void flushNewRange();
 
         const AllProfileData& data_;
-        std::stack<Range> focusStack_;
         std::vector<ProfileRange> focusedProfileRanges_;
 
         std::vector<std::function<void(const Range&)>> newFocusRangeCallbacks_;

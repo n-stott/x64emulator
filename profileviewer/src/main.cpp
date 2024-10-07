@@ -25,7 +25,7 @@ int main(int argc, char** argv) {
         fmt::print("Read {} : has data from {} thread(s)\n", "output.json", profileData->nbThreads());
         for(size_t t = 0; t < profileData->nbThreads(); ++t) {
             const ThreadProfilingData& tpd = profileData->threadData(t);
-            fmt::print("Thread {}:{} : {} call events and {} ret events.\n", tpd.pid(), tpd.tid(), tpd.nbCallEvents(), tpd.nbRetEvents());
+            fmt::print("Thread {}:{} : {} call events, {} ret events and {} sys events.\n", tpd.pid(), tpd.tid(), tpd.nbCallEvents(), tpd.nbRetEvents(), tpd.nbSyscallEvents());
         }
     }
 
@@ -103,7 +103,7 @@ int main(int argc, char** argv) {
         ImGui::SetNextWindowPos(ImVec2(0, 0)); // Set the position of the new window
         ImGui::Begin("Profile", &showDialog, ImGuiWindowFlags_NoCollapse);
 
-        std::string label = "calls";
+        std::string label = "Thread 0";
         auto valuesGetter = [](float* start, float* end, ImU16* level, const char** caption, const void* data, int idx) {
             const FocusedProfileData* focusedProfileData = (const FocusedProfileData*)data;
             const ProfileRange& pr = focusedProfileData->focusedProfileRanges()[idx];
@@ -119,15 +119,14 @@ int main(int argc, char** argv) {
             focusedProfileData->setFocusRange(pr.range);
         };
 
-        auto popFocusStack = [](void* data) {
+        auto resetFocus = [](void* data) {
             FocusedProfileData* focusedProfileData = (FocusedProfileData*)data;
-            focusedProfileData->pop();
+            focusedProfileData->reset();
         };
 
         void* data = &focusedProfileData;
-        int values_offset = 0;
-        int values_count = (int)focusedProfileData.focusedProfileRanges().size();
-        ImGuiWidgetFlameGraph::PlotFlame(label.c_str(), allProfileData->maxDepth, valuesGetter, onClick, popFocusStack, data, values_count, values_offset);
+        int valuesCount = (int)focusedProfileData.focusedProfileRanges().size();
+        ImGuiWidgetFlameGraph::PlotFlame(label.c_str(), allProfileData->maxDepth, valuesCount, valuesGetter, onClick, resetFocus, data);
 
 
         BeginTimeline("timeline", (float)wholeRange.width());

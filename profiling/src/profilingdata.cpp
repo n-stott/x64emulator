@@ -237,10 +237,14 @@ namespace profiling {
                 u64 address = event[1];
                 tpd.addCallEvent(tick, address);
             }
-            std::vector<ThreadProfilingData::RetEvent> retEvents;
             for(const auto& event : threadData["retEvents"]) {
                 u64 tick = event;
                 tpd.addRetEvent(tick);
+            }
+            for(const auto& event : threadData["syscallEvents"]) {
+                u64 tick = event[0];
+                u64 syscallNumber = event[1];
+                tpd.addSyscallEvent(tick, syscallNumber);
             }
         }
 

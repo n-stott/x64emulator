@@ -135,8 +135,10 @@ void EndTimeline() {
     ImGui::EndChild();
 }
 
-void ImGuiWidgetFlameGraph::PlotFlame(const char* label, ImU16 minDepth, ValuesGetter values_getter, OnClick on_click, PopFocusStack popFocusStack, void* data, int values_count, int values_offset, const char* overlay_text, float scale_min, float scale_max, ImVec2 graph_size)
+void ImGuiWidgetFlameGraph::PlotFlame(const char* overlayText, ImU16 minDepth, int valuesCount, ValuesGetter values_getter, OnClick on_click, ResetFocus resetFocus, void* data)
 {
+
+    ImVec2 graph_size = ImVec2(0, 0);
     ImGuiWindow* window = ImGui::GetCurrentWindow();
     if (window->SkipItems)
         return;
@@ -147,13 +149,13 @@ void ImGuiWidgetFlameGraph::PlotFlame(const char* label, ImU16 minDepth, ValuesG
 
     // Find the maximum depth
     ImU16 maxDepth = minDepth;
-    for (int i = values_offset; i < values_count; ++i) {
+    for (int i = 0; i < valuesCount; ++i) {
         ImU16 depth;
         values_getter(nullptr, nullptr, &depth, nullptr, data, i);
         maxDepth = ImMax(maxDepth, depth);
     }
 
-    const ImVec2 text_size = ImGui::CalcTextSize(label, NULL, true);
+    const ImVec2 text_size = ImGui::CalcTextSize(overlayText, NULL, true);
     const auto blockHeight = ImGui::GetTextLineHeight() + (style.FramePadding.y * 2);
     if (graph_size.x == 0.0f)
         graph_size.x = ImGui::GetWindowSize().x - 4*style.FramePadding.x - window->ScrollbarY * style.ScrollbarSize;
@@ -167,33 +169,29 @@ void ImGuiWidgetFlameGraph::PlotFlame(const char* label, ImU16 minDepth, ValuesG
         return;
 
     // Determine scale from values if not specified
-    if (scale_min == FLT_MAX || scale_max == FLT_MAX) {
-        float v_min = FLT_MAX;
-        float v_max = -FLT_MAX;
-        for (int i = values_offset; i < values_count; i++) {
-            float v_start, v_end;
-            values_getter(&v_start, &v_end, nullptr, nullptr, data, i);
-            if (v_start == v_start) // Check non-NaN values
-                v_min = ImMin(v_min, v_start);
-            if (v_end == v_end) // Check non-NaN values
-                v_max = ImMax(v_max, v_end);
-        }
-        if (scale_min == FLT_MAX)
-            scale_min = v_min;
-        if (scale_max == FLT_MAX)
-            scale_max = v_max;
+    float v_min = FLT_MAX;
+    float v_max = -FLT_MAX;
+    for (int i = 0; i < valuesCount; i++) {
+        float v_start, v_end;
+        values_getter(&v_start, &v_end, nullptr, nullptr, data, i);
+        if (v_start == v_start) // Check non-NaN values
+            v_min = ImMin(v_min, v_start);
+        if (v_end == v_end) // Check non-NaN values
+            v_max = ImMax(v_max, v_end);
     }
+    float scale_min = v_min;
+    float scale_max = v_max;
 
     ImGui::RenderFrame(frame_bb.Min, frame_bb.Max, ImGui::GetColorU32(ImGuiCol_FrameBg), true, style.FrameRounding);
 
     bool any_hovered = false;
-    if (values_count - values_offset >= 1) {
+    if (valuesCount>= 1) {
         const ImU32 col_base = ImGui::GetColorU32(ImGuiCol_PlotHistogram) & 0x77FFFFFF;
         const ImU32 col_hovered = ImGui::GetColorU32(ImGuiCol_PlotHistogramHovered) & 0x77FFFFFF;
         const ImU32 col_outline_base = ImGui::GetColorU32(ImGuiCol_PlotHistogram) & 0x7FFFFFFF;
         const ImU32 col_outline_hovered = ImGui::GetColorU32(ImGuiCol_PlotHistogramHovered) & 0x7FFFFFFF;
 
-        for (int i = values_offset; i < values_count; ++i) {
+        for (int i = 0; i < valuesCount; ++i) {
             float stageStart, stageEnd;
             ImU16 depth;
             const char* caption;
@@ -232,20 +230,19 @@ void ImGuiWidgetFlameGraph::PlotFlame(const char* label, ImU16 minDepth, ValuesG
             window->DrawList->AddRect(pos0, pos1, v_hovered ? col_outline_hovered : col_outline_base);
             auto textSize = ImGui::CalcTextSize(caption);
             auto boxSize = (pos1 - pos0);
-            auto textOffset = ImVec2(0.0f, 0.0f);
             if (textSize.x < boxSize.x) {
-                textOffset = ImVec2(0.5f, 0.5f) * (boxSize - textSize);
+                auto textOffset = ImVec2(0.5f, 0.5f) * (boxSize - textSize);
                 ImGui::RenderText(pos0 + textOffset, caption);
             }
         }
 
         // Text overlay
-        if (overlay_text)
-            ImGui::RenderTextClipped(ImVec2(frame_bb.Min.x, frame_bb.Min.y + style.FramePadding.y), frame_bb.Max, overlay_text, NULL, NULL, ImVec2(0.5f,0.0f));
+        if (overlayText)
+            ImGui::RenderTextClipped(ImVec2(frame_bb.Min.x, frame_bb.Min.y + style.FramePadding.y), frame_bb.Max, overlayText, NULL, NULL, ImVec2(0.5f,0.0f));
     }
 
-    if(ImGui::Button("Pop focus stack")) {
-        popFocusStack(data);
+    if(ImGui::Button("Reset focus")) {
+        resetFocus(data);
     }
 
     if (!any_hovered && ImGui::IsItemHovered()) {

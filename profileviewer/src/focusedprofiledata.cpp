@@ -5,7 +5,6 @@ namespace profileviewer {
 
     FocusedProfileData::FocusedProfileData(const AllProfileData& data) :
             data_(data) {
-        focusStack_.push(Range{0, data_.maxTick+1});
         focusedProfileRanges_ = data_.profileRanges;
     }
 
@@ -16,30 +15,18 @@ namespace profileviewer {
         return Range{first.range.begin, last.range.end};
     }
 
-    void FocusedProfileData::pop() {
-        if(focusStack_.size() <= 1) return;
-        focusStack_.pop();
-        newFocusRange_ = focusStack_.top();
-        focusStack_.pop();
-        flushNewRange();
+    void FocusedProfileData::reset() {
+        setFocusRange(Range{0, data_.maxTick+1});
     }
 
     void FocusedProfileData::setMergeThreshold(float mergeThreshold) {
         mergeThreshold_ = mergeThreshold;
         // update the focus ranges
-        newFocusRange_ = Range{0, data_.maxTick+1};
-        flushNewRange();
+        reset();
     }
 
-    void FocusedProfileData::flushNewRange() {
-        if(!newFocusRange_) return;
-
-        Range newFocusRange = newFocusRange_.value();
-        newFocusRange_.reset();
-
-        // push the new range on the stack
-        focusStack_.push(newFocusRange);
-
+    void FocusedProfileData::setFocusRange(Range newFocusRange) {
+        for(const auto& callback : newFocusRangeCallbacks_) callback(newFocusRange);
         u64 newFocusWidth = newFocusRange.width();
 
         // update the focused ranges
