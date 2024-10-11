@@ -32,6 +32,15 @@ namespace profileviewer {
             return std::max(begin, other.begin) <= std::min(end, other.end);
         }
 
+        static Range reunion(Range a, Range b) {
+            Range result {
+                std::min(a.begin, b.begin),
+                std::max(a.end, b.end)
+            };
+            assert(result.begin <= result.end);
+            return result;
+        }
+
         u64 width() const {
             assert(begin <= end);
             return end-begin;

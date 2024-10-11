@@ -64,7 +64,6 @@ int main(int argc, char** argv) {
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
     Range wholeRange = focusedProfileData.focusedRange();
-    fmt::print("initial focus range : {}-{}\n", wholeRange.begin, wholeRange.end);
     float bounds[2] = { 0.0, (float)wholeRange.width() };
 
     focusedProfileData.addNewFocusRangeCallback([&](Range newFocusRange) {
@@ -117,6 +116,7 @@ int main(int argc, char** argv) {
             FocusedProfileData* focusedProfileData = (FocusedProfileData*)data;
             const ProfileRange& pr = focusedProfileData->focusedProfileRanges()[idx];
             focusedProfileData->setFocusRange(pr.range);
+            focusedProfileData->push();
         };
 
         auto resetFocus = [](void* data) {
@@ -124,9 +124,33 @@ int main(int argc, char** argv) {
             focusedProfileData->reset();
         };
 
+        auto pushFocus = [](void* data) {
+            FocusedProfileData* focusedProfileData = (FocusedProfileData*)data;
+            focusedProfileData->push();
+        };
+
+        auto popFocus = [](void* data) {
+            FocusedProfileData* focusedProfileData = (FocusedProfileData*)data;
+            focusedProfileData->pop();
+        };
+        
+        auto getStackSize = [](void* data, int* stackSize) {
+            FocusedProfileData* focusedProfileData = (FocusedProfileData*)data;
+            if(!!stackSize) *stackSize = (int)focusedProfileData->stackSize();
+        };
+
         void* data = &focusedProfileData;
         int valuesCount = (int)focusedProfileData.focusedProfileRanges().size();
-        ImGuiWidgetFlameGraph::PlotFlame(label.c_str(), allProfileData->maxDepth, valuesCount, valuesGetter, onClick, resetFocus, data);
+        ImGuiWidgetFlameGraph::PlotFlame(label.c_str(),
+                                         allProfileData->maxDepth,
+                                         valuesCount,
+                                         valuesGetter,
+                                         onClick,
+                                         resetFocus,
+                                         pushFocus,
+                                         popFocus,
+                                         getStackSize,
+                                         data);
 
 
         BeginTimeline("timeline", (float)wholeRange.width());

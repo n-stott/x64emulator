@@ -23,6 +23,9 @@ namespace profileviewer {
         const AllProfileData& data() const { return data_; }
 
         void reset();
+        void push();
+        void pop();
+        size_t stackSize() const { return shownRangeStack_.size(); }
 
         void setFocusRange(Range newFocusRange);
 
@@ -34,8 +37,9 @@ namespace profileviewer {
 
         const AllProfileData& data_;
         std::vector<ProfileRange> focusedProfileRanges_;
-
         std::vector<std::function<void(const Range&)>> newFocusRangeCallbacks_;
+
+        std::stack<Range> shownRangeStack_;
 
         std::optional<Range> newFocusRange_;
         float mergeThreshold_ { 0.0 };

@@ -36,7 +36,19 @@ namespace ImGuiWidgetFlameGraph {
     using ValuesGetter = void (*)(float* start, float* end, ImU16* level, const char** caption, const void* data, int idx);
     using OnClick = void(*)(void* data, int idx);
     using ResetFocus = void(*)(void* data);
-    IMGUI_API void PlotFlame(const char* overlayText, ImU16 minDepth, int valuesCount, ValuesGetter values_getter, OnClick onClick, ResetFocus resetFocus, void* data);
+    using PushFocus = void(*)(void* data);
+    using PopFocus = void(*)(void* data);
+    using GetStackSize = void(*)(void* data, int*);
+    IMGUI_API void PlotFlame(const char* overlayText,
+                             ImU16 minDepth,
+                             int valuesCount,
+                             ValuesGetter valuesGetter,
+                             OnClick onClick,
+                             ResetFocus resetFocus,
+                             PushFocus pushFocus,
+                             PopFocus popFocus,
+                             GetStackSize getStackSize,
+                             void* data);
 }
 
 bool BeginTimeline(const char* str_id, float max_value);

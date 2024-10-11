@@ -135,8 +135,16 @@ void EndTimeline() {
     ImGui::EndChild();
 }
 
-void ImGuiWidgetFlameGraph::PlotFlame(const char* overlayText, ImU16 minDepth, int valuesCount, ValuesGetter values_getter, OnClick on_click, ResetFocus resetFocus, void* data)
-{
+void ImGuiWidgetFlameGraph::PlotFlame(const char* overlayText,
+                                      ImU16 minDepth,
+                                      int valuesCount,
+                                      ValuesGetter valuesGetter,
+                                      OnClick onClick,
+                                      ResetFocus resetFocus,
+                                      PushFocus pushFocus,
+                                      PopFocus popFocus,
+                                      GetStackSize getStackSize,
+                                      void* data) {
 
     ImVec2 graph_size = ImVec2(0, 0);
     ImGuiWindow* window = ImGui::GetCurrentWindow();
@@ -151,7 +159,7 @@ void ImGuiWidgetFlameGraph::PlotFlame(const char* overlayText, ImU16 minDepth, i
     ImU16 maxDepth = minDepth;
     for (int i = 0; i < valuesCount; ++i) {
         ImU16 depth;
-        values_getter(nullptr, nullptr, &depth, nullptr, data, i);
+        valuesGetter(nullptr, nullptr, &depth, nullptr, data, i);
         maxDepth = ImMax(maxDepth, depth);
     }
 
@@ -173,7 +181,7 @@ void ImGuiWidgetFlameGraph::PlotFlame(const char* overlayText, ImU16 minDepth, i
     float v_max = -FLT_MAX;
     for (int i = 0; i < valuesCount; i++) {
         float v_start, v_end;
-        values_getter(&v_start, &v_end, nullptr, nullptr, data, i);
+        valuesGetter(&v_start, &v_end, nullptr, nullptr, data, i);
         if (v_start == v_start) // Check non-NaN values
             v_min = ImMin(v_min, v_start);
         if (v_end == v_end) // Check non-NaN values
@@ -196,7 +204,7 @@ void ImGuiWidgetFlameGraph::PlotFlame(const char* overlayText, ImU16 minDepth, i
             ImU16 depth;
             const char* caption;
 
-            values_getter(&stageStart, &stageEnd, &depth, &caption, data, i);
+            valuesGetter(&stageStart, &stageEnd, &depth, &caption, data, i);
 
             auto duration = scale_max - scale_min;
             if (duration == 0) {
@@ -222,7 +230,7 @@ void ImGuiWidgetFlameGraph::PlotFlame(const char* overlayText, ImU16 minDepth, i
                 any_hovered = v_hovered;
 
                 if(ImGui::IsItemClicked()) {
-                    on_click(data, i);
+                    onClick(data, i);
                 }
             }
 
@@ -244,6 +252,21 @@ void ImGuiWidgetFlameGraph::PlotFlame(const char* overlayText, ImU16 minDepth, i
     if(ImGui::Button("Reset focus")) {
         resetFocus(data);
     }
+
+    ImGui::SameLine();
+    if(ImGui::Button("Push focus")) {
+        pushFocus(data);
+    }
+
+    ImGui::SameLine();
+    if(ImGui::Button("Pop focus")) {
+        popFocus(data);
+    }
+
+    int stackSize = 0;
+    getStackSize(data, &stackSize);
+    ImGui::SameLine();
+    ImGui::Text("Stack size : %d", stackSize);
 
     if (!any_hovered && ImGui::IsItemHovered()) {
         ImGui::SetTooltip("Total: %8.4g", scale_max - scale_min);

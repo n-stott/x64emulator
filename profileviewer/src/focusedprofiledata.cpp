@@ -1,5 +1,4 @@
 #include "focusedprofiledata.h"
-#include <fmt/core.h>
 
 namespace profileviewer {
 
@@ -10,13 +9,30 @@ namespace profileviewer {
 
     Range FocusedProfileData::focusedRange() const {
         assert(!focusedProfileRanges_.empty());
-        ProfileRange first = focusedProfileRanges_.front();
-        ProfileRange last = focusedProfileRanges_.back();
-        return Range{first.range.begin, last.range.end};
+        Range reunion = focusedProfileRanges_.front().range;
+        for(const ProfileRange& pr : focusedProfileRanges_) reunion = Range::reunion(reunion, pr.range);
+        return reunion;
     }
 
     void FocusedProfileData::reset() {
+        focusedProfileRanges_.clear();
         setFocusRange(Range{0, data_.maxTick+1});
+    }
+
+    void FocusedProfileData::push() {
+        auto range = focusedRange();
+        shownRangeStack_.push(range);
+    }
+
+    void FocusedProfileData::pop() {
+        if(shownRangeStack_.empty()) return;
+        shownRangeStack_.pop();
+        if(shownRangeStack_.empty()) {
+            reset();
+        } else {
+            Range range = shownRangeStack_.top();
+            setFocusRange(range);
+        }
     }
 
     void FocusedProfileData::setMergeThreshold(float mergeThreshold) {
@@ -70,7 +86,6 @@ namespace profileviewer {
         }
         if(mergeableRange)
             focusedProfileRanges_.push_back(*mergeableRange);
-        std::sort(focusedProfileRanges_.begin(), focusedProfileRanges_.end(), ProfileRange::DfsOrder{});
         
         std::for_each(focusedProfileRanges_.begin(),
                         focusedProfileRanges_.end(), [&](ProfileRange& pr) {
@@ -84,6 +99,8 @@ namespace profileviewer {
                 focusedProfileRanges_.push_back(clamped);
             }
         }
+
+        std::sort(focusedProfileRanges_.begin(), focusedProfileRanges_.end(), ProfileRange::DfsOrder{});
     }
 
 }
