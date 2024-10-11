@@ -683,13 +683,13 @@ namespace x64 {
     template<typename T, typename F, typename OP>
     u128 packedOp(u128 dst, u128 src, OP op) {
         static_assert(sizeof(T) == sizeof(F));
-        constexpr int N = sizeof(u128) / sizeof(F);
+        constexpr size_t N = sizeof(u128) / sizeof(F);
         std::array<F, N> D;
         std::array<F, N> S;
         std::memcpy(D.data(), &dst, sizeof(dst));
         std::memcpy(S.data(), &src, sizeof(src));
         std::array<T, N> R;
-        for(int i = 0; i < N; ++i) {
+        for(size_t i = 0; i < N; ++i) {
             R[i] = op(D[i], S[i]);
         }
         u128 res;

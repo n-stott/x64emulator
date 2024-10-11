@@ -37,7 +37,7 @@ namespace kernel {
             if(::fstat(fd, &buf) < 0) return {};
             
             // create data vector
-            std::vector<u8> data(buf.st_size, 0x0);
+            std::vector<u8> data((size_t)buf.st_size, 0x0);
 
             ssize_t nread = ::read(fd, data.data(), data.size());
             if(nread < 0) return {};
@@ -77,7 +77,7 @@ namespace kernel {
         }
         size_t bytesWritten = count;
         std::memcpy(data_.data() + offset_, buf, bytesWritten);
-        return bytesWritten;
+        return (ssize_t)bytesWritten;
     }
 
     ErrnoOrBuffer ShadowFile::pread(size_t count, off_t offset) {

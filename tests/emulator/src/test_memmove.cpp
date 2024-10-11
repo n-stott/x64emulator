@@ -56,9 +56,9 @@ int test2() {
         for(size_t offset = 1; offset < 256 && offset < size; ++offset) {
             memmove(region3, region2 - offset, size);
             if(region3[offset] == region3[offset-1]) {
-                printf("size=%d offset=%d\n", size, offset);
+                printf("size=%zu offset=%zu\n", size, offset);
                 for(size_t i = 0; i < size+2; ++i) {
-                    printf("region3[%d] = %d\n", i, region3[i]);
+                    printf("region3[%zu] = %hhd\n", i, region3[i]);
                 }
                 puts("memmove");
                 return 1;

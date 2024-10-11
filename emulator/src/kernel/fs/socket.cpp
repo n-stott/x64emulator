@@ -12,7 +12,9 @@ namespace kernel {
             domain_(domain),
             type_(type),
             protocol_(protocol) {
-
+        (void)domain_;
+        (void)type_;
+        (void)protocol_;
     }
 
     std::unique_ptr<Socket> Socket::tryCreate(FS* fs, int domain, int type, int protocol) {

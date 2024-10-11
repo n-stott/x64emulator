@@ -669,7 +669,7 @@ namespace kernel {
     u64 Sys::exit_group(int status) {
         if(logSyscalls_) print("Sys::exit_group(status={})\n", status);
         kernel_.scheduler().terminateAll(status);
-        return status;
+        return (u64)status;
     }
 
     int Sys::tgkill(int tgid, int tid, int sig) {

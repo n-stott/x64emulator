@@ -32,13 +32,13 @@ namespace kernel {
         ssize_t recvmsg(int flags, Buffer* msg_name, std::vector<Buffer>* msg_iov, Buffer* msg_control, int* msg_flags);
         ssize_t sendmsg(int flags, const Buffer& msg_name, const std::vector<Buffer>& msg_iov, const Buffer& msg_control, int msg_flags);
 
-        bool isReadable() const { return true; }
-        bool isWritable() const { return true; }
+        bool isReadable() const override { return true; }
+        bool isWritable() const override { return true; }
 
-        ErrnoOrBuffer read(size_t count);
-        ssize_t write(const u8* buf, size_t count);
+        ErrnoOrBuffer read(size_t count) override;
+        ssize_t write(const u8* buf, size_t count) override;
 
-        std::optional<int> hostFileDescriptor() const { return hostFd_; }
+        std::optional<int> hostFileDescriptor() const override { return hostFd_; }
 
     private:
         Socket(FS* fs, int fd, int domain, int type, int protocol);

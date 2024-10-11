@@ -12,15 +12,15 @@ namespace kernel {
     public:
         static std::unique_ptr<HostFile> tryCreate(FS* fs, const std::string& path);
 
-        bool isReadable() const { return true; }
-        bool isWritable() const { return false; }
+        bool isReadable() const override { return true; }
+        bool isWritable() const override { return false; }
 
-        bool isPollable() const { return true; }
+        bool isPollable() const override { return true; }
         
         void close() override;
         bool keepAfterClose() const override { return false; }
 
-        std::optional<int> hostFileDescriptor() const { return hostFd_; }
+        std::optional<int> hostFileDescriptor() const override { return hostFd_; }
 
         ErrnoOrBuffer read(size_t count) override;
         ssize_t write(const u8* buf, size_t count) override;

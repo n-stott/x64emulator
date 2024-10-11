@@ -2464,7 +2464,7 @@ namespace x64 {
         
         return nativeRes;
 #else
-        return CpuImpl::movmskps32(dst, src);
+        return CpuImpl::movmskps32(src);
 #endif
     }
 
@@ -2479,7 +2479,7 @@ namespace x64 {
         
         return nativeRes;
 #else
-        return CpuImpl::movmskps64(dst, src);
+        return CpuImpl::movmskps64(src);
 #endif
     }
 
@@ -2494,7 +2494,7 @@ namespace x64 {
         
         return nativeRes;
 #else
-        return CpuImpl::movmskpd32(dst, src);
+        return CpuImpl::movmskpd32(src);
 #endif
     }
 
@@ -2509,7 +2509,7 @@ namespace x64 {
         
         return nativeRes;
 #else
-        return CpuImpl::movmskpd64(dst, src);
+        return CpuImpl::movmskpd64(src);
 #endif
     }
 }

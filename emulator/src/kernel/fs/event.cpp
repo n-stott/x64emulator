@@ -15,7 +15,8 @@ namespace kernel {
             initval_(initval),
             flags_(flags),
             hostFd_(hostFd) {
-
+        (void)initval_;
+        (void)flags_;
     }
 
     void Event::close() {

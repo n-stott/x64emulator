@@ -15,13 +15,13 @@ namespace kernel {
         void close() override;
         bool keepAfterClose() const override { return false; }
 
-        bool isReadable() const { return false; }
-        bool isWritable() const { return false; }
+        bool isReadable() const override { return false; }
+        bool isWritable() const override { return false; }
 
-        bool isPollable() const { return true; }
+        bool isPollable() const override { return true; }
 
-        ErrnoOrBuffer read(size_t);
-        ssize_t write(const u8*, size_t);
+        ErrnoOrBuffer read(size_t) override;
+        ssize_t write(const u8*, size_t) override;
 
         std::optional<int> hostFileDescriptor() const override { return hostFd_; }
 

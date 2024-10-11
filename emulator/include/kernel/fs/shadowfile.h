@@ -13,13 +13,13 @@ namespace kernel {
     public:
         static std::unique_ptr<ShadowFile> tryCreate(FS* fs, const std::string& path, bool create);
 
-        bool isReadable() const { return true; }
-        bool isWritable() const { return true; }
+        bool isReadable() const override { return true; }
+        bool isWritable() const override { return true; }
 
         void close() override;
         bool keepAfterClose() const override { return true; }
 
-        std::optional<int> hostFileDescriptor() const { return {}; }
+        std::optional<int> hostFileDescriptor() const override { return {}; }
 
         ErrnoOrBuffer read(size_t count) override;
         ssize_t write(const u8* buf, size_t count) override;

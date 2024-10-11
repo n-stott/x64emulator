@@ -15,10 +15,10 @@ add_executable(profileviewer
     src/profiledata.cpp
     src/main.cpp
 )
-target_compile_options(profileviewer PUBLIC -Wall -Wextra -Wpedantic -pedantic -Werror -Wimplicit-fallthrough)
+target_compile_options(profileviewer PUBLIC -Wall -Wextra -Wpedantic -pedantic -Werror)
 target_compile_options(profileviewer PUBLIC -Wno-braced-scalar-init -Wno-missing-braces)
 if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
-    target_compile_options(profileviewer PUBLIC -Wno-maybe-uninitialized -Wno-stringop-overflow)
+    target_compile_options(profileviewer PUBLIC -Wno-maybe-uninitialized -Wno-stringop-overflow -Wimplicit-fallthrough)
 elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
     target_compile_options(profileviewer PUBLIC -Wno-uninitialized)
 endif()

@@ -4,7 +4,7 @@
 namespace kernel {
 
     void Epoll::close() {
-
+        (void)flags_;
     }
     
     ErrnoOrBuffer Epoll::read(size_t) {
