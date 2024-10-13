@@ -1,4 +1,5 @@
 #include "kernel/fs/fs.h"
+#include "kernel/fs/openfiledescription.h"
 #include "kernel/fs/epoll.h"
 #include "kernel/fs/event.h"
 #include "kernel/fs/regularfile.h"
@@ -19,15 +20,15 @@ namespace kernel {
     }
 
     void FS::createStandardStreams() {
-        FD stdinFd = insertNodeWithFd(Node {
+        FD stdinFd = insertNodeWithFd(FsNode {
             "__stdin",
             std::make_unique<Stream>(this, Stream::TYPE::IN),
         }, FD{0});
-        FD stdoutFd = insertNodeWithFd(Node {
+        FD stdoutFd = insertNodeWithFd(FsNode {
             "__stdout",
             std::make_unique<Stream>(this, Stream::TYPE::OUT),
         }, FD{1});
-        FD stderrFd = insertNodeWithFd(Node {
+        FD stderrFd = insertNodeWithFd(FsNode {
             "__stderr",
             std::make_unique<Stream>(this, Stream::TYPE::ERR),
         }, FD{2});
@@ -57,12 +58,14 @@ namespace kernel {
         };
     }
 
-    FS::FD FS::insertNode(Node node) {
+    FS::FD FS::insertNode(FsNode node) {
+        std::string path = node.path;
         files_.push_back(std::move(node));
-        Node* nodePtr = &files_.back();
+        File* filePtr = files_.back().file.get();
         FD fd = allocateFd();
-        openFiles_.push_back(OpenNode{fd, nodePtr->path, nodePtr->file.get()});
-        nodePtr->file->ref();
+        openFileDescriptions_.push_back(OpenFileDescription(filePtr, {}));
+        openFiles_.push_back(OpenNode{fd, std::move(path), &openFileDescriptions_.back()});
+        filePtr->ref();
         return fd;
     }
 
@@ -71,20 +74,17 @@ namespace kernel {
         auto it = std::max_element(openFiles_.begin(), openFiles_.end(), [](const auto& a, const auto& b) {
             return a.fd.fd < b.fd.fd;
         });
-        int fd = (it == openFiles_.end()) ? 0 : it->fd.fd+10;
-
+        int fd = (it == openFiles_.end()) ? 0 : it->fd.fd+1;
         return FD{fd};
     }
 
-    FS::FD FS::insertNodeWithFd(Node node, FD fd) {
-        OpenNode* nodeWithExistingFd = findOpenNode(fd);
-        verify(!nodeWithExistingFd, [&]() {
+    FS::FD FS::insertNodeWithFd(FsNode node, FD fd) {
+        OpenFileDescription* openFileDescriptionWithExistingFD = findOpenFileDescription(fd);
+        verify(!openFileDescriptionWithExistingFD, [&]() {
             fmt::print("cannot insert node with existing fd {}\n", fd.fd);
         });
         FD givenFd = insertNode(std::move(node));
-        OpenNode* openNode = findOpenNode(givenFd);
-        verify(!!openNode);
-        openNode->fd = fd;
+        verify(givenFd == fd);
         return fd;
     }
 
@@ -102,7 +102,8 @@ namespace kernel {
             if(node.path != path) continue;
             FD fd = allocateFd();
             node.file->ref();
-            openFiles_.push_back(OpenNode{fd, node.path, node.file.get()});
+            openFileDescriptions_.push_back(OpenFileDescription { node.file.get(), {} });
+            openFiles_.push_back(OpenNode{fd, node.path, &openFileDescriptions_.back()});
             return fd;
         }
 
@@ -115,7 +116,7 @@ namespace kernel {
             }
             
             // create and add the node to the filesystem
-            return insertNode(Node {
+            return insertNode(FsNode {
                 path,
                 std::move(hostBackedFile),
             });
@@ -132,7 +133,7 @@ namespace kernel {
             shadowFile->setWritable(flags.write);
             
             // create and add the node to the filesystem
-            return insertNode(Node {
+            return insertNode(FsNode {
                 path,
                 std::move(shadowFile),
             });
@@ -141,65 +142,66 @@ namespace kernel {
     }
 
     FS::FD FS::dup(FD fd) {
-        OpenNode* openNode = findOpenNode(fd);
-        if(!openNode) return FD{-EBADF};
+        OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
+        if(!openFileDescription) return FD{-EBADF};
         FD newFd = allocateFd();
-        openNode->file->ref();
-        openFiles_.push_back(OpenNode{newFd, openNode->path, openNode->file});
+        openFileDescription->file()->ref();
+        std::string path = filename(fd);
+        openFiles_.push_back(OpenNode{newFd, std::move(path), openFileDescription});
         return newFd;
     }
 
-    FS::OpenNode* FS::findOpenNode(FD fd) {
+    OpenFileDescription* FS::findOpenFileDescription(FD fd) {
         for(OpenNode& node : openFiles_) {
             if(node.fd != fd) continue;
-            return &node;
+            return node.openFiledescription;
         }
         return nullptr;
     }
 
     ErrnoOrBuffer FS::read(FD fd, size_t count) {
-        OpenNode* openNode = findOpenNode(fd);
-        if(!openNode) return ErrnoOrBuffer{-EBADF};
-        if(!openNode->file->isRegularFile()) return ErrnoOrBuffer{-EBADF};
-        RegularFile* file = static_cast<RegularFile*>(openNode->file);
+        OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
+        if(!openFileDescription) return ErrnoOrBuffer{-EBADF};
+        if(!openFileDescription->file()->isRegularFile()) return ErrnoOrBuffer{-EBADF};
+        RegularFile* file = static_cast<RegularFile*>(openFileDescription->file());
         verify(!!file, "unexpected nullptr");
         return file->read(count);
     }
 
     ErrnoOrBuffer FS::pread(FD fd, size_t count, off_t offset) {
-        OpenNode* openNode = findOpenNode(fd);
-        if(!openNode) return ErrnoOrBuffer{-EBADF};
-        if(!openNode->file->isRegularFile()) return ErrnoOrBuffer{-EBADF};
-        RegularFile* file = static_cast<RegularFile*>(openNode->file);
+        OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
+        if(!openFileDescription) return ErrnoOrBuffer{-EBADF};
+        if(!openFileDescription->file()->isRegularFile()) return ErrnoOrBuffer{-EBADF};
+        RegularFile* file = static_cast<RegularFile*>(openFileDescription->file());
         verify(!!file, "unexpected nullptr");
         return file->pread(count, offset);
     }
 
     ssize_t FS::write(FD fd, const u8* buf, size_t count) {
-        OpenNode* openNode = findOpenNode(fd);
-        if(!openNode) return -EBADF;
-        if(!openNode->file->isRegularFile()) return -EBADF;
-        RegularFile* file = static_cast<RegularFile*>(openNode->file);
+        OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
+        if(!openFileDescription) return -EBADF;
+        if(!openFileDescription->file()->isRegularFile()) return -EBADF;
+        RegularFile* file = static_cast<RegularFile*>(openFileDescription->file());
         verify(!!file, "unexpected nullptr");
         return file->write(buf, count);
     }
 
     ssize_t FS::pwrite(FD fd, const u8* buf, size_t count, off_t offset) {
-        OpenNode* openNode = findOpenNode(fd);
-        if(!openNode) return -EBADF;
-        if(!openNode->file->isRegularFile()) return -EBADF;
-        RegularFile* file = static_cast<RegularFile*>(openNode->file);
+        OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
+        if(!openFileDescription) return -EBADF;
+        if(!openFileDescription->file()->isRegularFile()) return -EBADF;
+        RegularFile* file = static_cast<RegularFile*>(openFileDescription->file());
         verify(!!file, "unexpected nullptr");
         return file->pwrite(buf, count, offset);
     }
 
     ssize_t FS::writev(FD fd, const std::vector<Buffer>& buffers) {
-        OpenNode* openNode = findOpenNode(fd);
-        if(!openNode) return -EBADF;
-        if(!openNode->file->isWritable()) return -EBADF;
+        OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
+        if(!openFileDescription) return -EBADF;
+        if(!openFileDescription->file()->isWritable()) return -EBADF;
         ssize_t nbytes = 0;
         for(const Buffer& buf : buffers) {
-            ssize_t ret = openNode->file->write(buf.data(), buf.size());
+            ssize_t ret = openFileDescription->file()->write(buf.data(), buf.size());
             if(ret < 0) return ret;
             nbytes += ret;
         }
@@ -220,10 +222,10 @@ namespace kernel {
     }
 
     ErrnoOrBuffer FS::fstat(FD fd) {
-        OpenNode* openNode = findOpenNode(fd);
-        if(!openNode) return ErrnoOrBuffer(-EBADF);
-        if(!openNode->file->isRegularFile()) return ErrnoOrBuffer{-EBADF};
-        RegularFile* file = static_cast<RegularFile*>(openNode->file);
+        OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
+        if(!openFileDescription) return ErrnoOrBuffer(-EBADF);
+        if(!openFileDescription->file()->isRegularFile()) return ErrnoOrBuffer{-EBADF};
+        RegularFile* file = static_cast<RegularFile*>(openFileDescription->file());
         return file->stat();
     }
 
@@ -260,63 +262,62 @@ namespace kernel {
     }
 
     off_t FS::lseek(FD fd, off_t offset, int whence) {
-        OpenNode* openNode = findOpenNode(fd);
-        if(!openNode) return -EBADF;
-        if(!openNode->file->isRegularFile()) return -EBADF;
-        RegularFile* file = static_cast<RegularFile*>(openNode->file);
+        OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
+        if(!openFileDescription) return -EBADF;
+        if(!openFileDescription->file()->isRegularFile()) return -EBADF;
+        RegularFile* file = static_cast<RegularFile*>(openFileDescription->file());
         return file->lseek(offset, whence);
     }
 
     int FS::close(FD fd) {
-        OpenNode* openNode = findOpenNode(fd);
-        if(!openNode) return -EBADF;
-        OpenNode node = *openNode;
-        node.file->unref();
-        node.file->close();
+        OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
+        if(!openFileDescription) return -EBADF;
+        openFileDescription->file()->unref();
+        openFileDescription->file()->close();
         openFiles_.erase(std::remove_if(openFiles_.begin(), openFiles_.end(), [&](const auto& openNode) {
             return openNode.fd == fd;
         }), openFiles_.end());
-        if(node.file->refCount() == 0 && !node.file->keepAfterClose()) {
+        if(openFileDescription->file()->refCount() == 0 && !openFileDescription->file()->keepAfterClose()) {
             files_.erase(std::remove_if(files_.begin(), files_.end(), [&](const auto& f) {
-                return f.file.get() == node.file;
+                return f.file.get() == openFileDescription->file();
             }), files_.end());
         }
         return 0;
     }
 
     ErrnoOrBuffer FS::getdents64(FD fd, size_t count) {
-        OpenNode* openNode = findOpenNode(fd);
-        if(!openNode) return ErrnoOrBuffer(-EBADF);
-        if(!openNode->file->isRegularFile()) return ErrnoOrBuffer{-EBADF};
-        RegularFile* file = static_cast<RegularFile*>(openNode->file);
+        OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
+        if(!openFileDescription) return ErrnoOrBuffer(-EBADF);
+        if(!openFileDescription->file()->isRegularFile()) return ErrnoOrBuffer{-EBADF};
+        RegularFile* file = static_cast<RegularFile*>(openFileDescription->file());
         return file->getdents64(count);
     }
 
     int FS::fcntl(FD fd, int cmd, int arg) {
-        OpenNode* openNode = findOpenNode(fd);
-        if(!openNode) return -EBADF;
-        if(openNode->file->isRegularFile()) {
-            RegularFile* file = static_cast<RegularFile*>(openNode->file);
+        OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
+        if(!openFileDescription) return -EBADF;
+        if(openFileDescription->file()->isRegularFile()) {
+            RegularFile* file = static_cast<RegularFile*>(openFileDescription->file());
             return file->fcntl(cmd, arg);
         }
-        if(openNode->file->isSocket()) {
-            Socket* socket = static_cast<Socket*>(openNode->file);
+        if(openFileDescription->file()->isSocket()) {
+            Socket* socket = static_cast<Socket*>(openFileDescription->file());
             return socket->fcntl(cmd, arg);
         }
         return -EBADF;
     }
 
     ErrnoOrBuffer FS::ioctl(FD fd, unsigned long request, const Buffer& buffer) {
-        OpenNode* openNode = findOpenNode(fd);
-        if(!openNode) return ErrnoOrBuffer(-EBADF);
-        if(!openNode->file->isRegularFile()) return ErrnoOrBuffer{-EBADF};
-        RegularFile* file = static_cast<RegularFile*>(openNode->file);
+        OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
+        if(!openFileDescription) return ErrnoOrBuffer(-EBADF);
+        if(!openFileDescription->file()->isRegularFile()) return ErrnoOrBuffer{-EBADF};
+        RegularFile* file = static_cast<RegularFile*>(openFileDescription->file());
         return file->ioctl(request, buffer);
     }
 
     FS::FD FS::eventfd2(unsigned int initval, int flags) {
         std::unique_ptr<Event> event = Event::tryCreate(this, initval, flags);
-        return insertNode(Node {
+        return insertNode(FsNode {
             "",
             std::move(event),
         });
@@ -324,7 +325,7 @@ namespace kernel {
 
     FS::FD FS::epoll_create1(int flags) {
         std::unique_ptr<Epoll> epoll = std::make_unique<Epoll>(this, flags);
-        return insertNode(Node {
+        return insertNode(FsNode {
             "",
             std::move(epoll),
         });
@@ -334,49 +335,49 @@ namespace kernel {
         auto socket = Socket::tryCreate(this, domain, type, protocol);
         // TODO: return the actual value of errno
         if(!socket) return FS::FD{-EINVAL};
-        return insertNode(Node {
+        return insertNode(FsNode {
             "",
             std::move(socket)
         });
     }
 
     int FS::connect(FD sockfd, const Buffer& buffer) {
-        OpenNode* openNode = findOpenNode(sockfd);
-        if(!openNode) return -EBADF;
-        if(!openNode->file->isSocket()) return -EBADF;
-        Socket* socket = static_cast<Socket*>(openNode->file);
+        OpenFileDescription* openFileDescription = findOpenFileDescription(sockfd);
+        if(!openFileDescription) return -EBADF;
+        if(!openFileDescription->file()->isSocket()) return -EBADF;
+        Socket* socket = static_cast<Socket*>(openFileDescription->file());
         return socket->connect(buffer);
     }
 
     int FS::bind(FD sockfd, const Buffer& name) {
-        OpenNode* openNode = findOpenNode(sockfd);
-        if(!openNode) return -EBADF;
-        if(!openNode->file->isSocket()) return -EBADF;
-        Socket* socket = static_cast<Socket*>(openNode->file);
+        OpenFileDescription* openFileDescription = findOpenFileDescription(sockfd);
+        if(!openFileDescription) return -EBADF;
+        if(!openFileDescription->file()->isSocket()) return -EBADF;
+        Socket* socket = static_cast<Socket*>(openFileDescription->file());
         return socket->bind(name);
     }
 
     int FS::shutdown(FD sockfd, int how) {
-        OpenNode* openNode = findOpenNode(sockfd);
-        if(!openNode) return -EBADF;
-        if(!openNode->file->isSocket()) return -EBADF;
-        Socket* socket = static_cast<Socket*>(openNode->file);
+        OpenFileDescription* openFileDescription = findOpenFileDescription(sockfd);
+        if(!openFileDescription) return -EBADF;
+        if(!openFileDescription->file()->isSocket()) return -EBADF;
+        Socket* socket = static_cast<Socket*>(openFileDescription->file());
         return socket->shutdown(how);
     }
 
     ErrnoOrBuffer FS::getpeername(FD sockfd, u32 buffersize) {
-        OpenNode* openNode = findOpenNode(sockfd);
-        if(!openNode) return ErrnoOrBuffer(-EBADF);
-        if(!openNode->file->isSocket()) return ErrnoOrBuffer(-EBADF);
-        Socket* socket = static_cast<Socket*>(openNode->file);
+        OpenFileDescription* openFileDescription = findOpenFileDescription(sockfd);
+        if(!openFileDescription) return ErrnoOrBuffer(-EBADF);
+        if(!openFileDescription->file()->isSocket()) return ErrnoOrBuffer(-EBADF);
+        Socket* socket = static_cast<Socket*>(openFileDescription->file());
         return socket->getpeername(buffersize);
     }
 
     ErrnoOrBuffer FS::getsockname(FD sockfd, u32 buffersize) {
-        OpenNode* openNode = findOpenNode(sockfd);
-        if(!openNode) return ErrnoOrBuffer(-EBADF);
-        if(!openNode->file->isSocket()) return ErrnoOrBuffer(-EBADF);
-        Socket* socket = static_cast<Socket*>(openNode->file);
+        OpenFileDescription* openFileDescription = findOpenFileDescription(sockfd);
+        if(!openFileDescription) return ErrnoOrBuffer(-EBADF);
+        if(!openFileDescription->file()->isSocket()) return ErrnoOrBuffer(-EBADF);
+        Socket* socket = static_cast<Socket*>(openFileDescription->file());
         return socket->getsockname(buffersize);
     }
 
@@ -388,19 +389,20 @@ namespace kernel {
 
         // check that all fds are pollable and have a host-side fd
         for(pollfd vpfd : virtualPollFds) {
-            OpenNode* openNode = findOpenNode(FD{vpfd.fd});
-            verify(!!openNode, [&]() { fmt::print("cannot poll fd={}\n", vpfd.fd); });
-            verify(openNode->file->isPollable(), [&]() { fmt::print("fd={} is not pollable\n", vpfd.fd); });
-            auto hostFd = openNode->file->hostFileDescriptor();
+            OpenFileDescription* openFileDescription = findOpenFileDescription(FD{vpfd.fd});
+            verify(!!openFileDescription, [&]() { fmt::print("cannot poll fd={}\n", vpfd.fd); });
+            File* file = openFileDescription->file();
+            verify(file->isPollable(), [&]() { fmt::print("fd={} is not pollable\n", vpfd.fd); });
+            auto hostFd = file->hostFileDescriptor();
             verify(hostFd.has_value(), [&]() { fmt::print("fd={} has no host-equivalent fd\n", vpfd.fd); });
         }
 
         // substitute the virtual fds with host fds
         std::vector<pollfd> hostPollFds;
         for(pollfd vpfd : virtualPollFds) {
-            OpenNode* openNode = findOpenNode(FD{vpfd.fd});
+            OpenFileDescription* openFileDescription = findOpenFileDescription(FD{vpfd.fd});
             pollfd hostPollFd = vpfd;
-            auto hostFd = openNode->file->hostFileDescriptor();
+            auto hostFd = openFileDescription->file()->hostFileDescriptor();
             hostPollFd.fd = *hostFd;
             hostPollFds.push_back(hostPollFd);
         }
@@ -422,33 +424,35 @@ namespace kernel {
     }
 
     ErrnoOr<std::pair<Buffer, Buffer>> FS::recvfrom(FD sockfd, size_t len, int flags, bool requireSrcAddress) {
-        OpenNode* openNode = findOpenNode(sockfd);
-        if(!openNode) return ErrnoOr<std::pair<Buffer, Buffer>>(-EBADF);
-        if(!openNode->file->isSocket()) return ErrnoOr<std::pair<Buffer, Buffer>>(-EBADF);
-        Socket* socket = static_cast<Socket*>(openNode->file);
+        OpenFileDescription* openFileDescription = findOpenFileDescription(sockfd);
+        if(!openFileDescription) return ErrnoOr<std::pair<Buffer, Buffer>>(-EBADF);
+        if(!openFileDescription->file()->isSocket()) return ErrnoOr<std::pair<Buffer, Buffer>>(-EBADF);
+        Socket* socket = static_cast<Socket*>(openFileDescription->file());
         return socket->recvfrom(len, flags, requireSrcAddress);
 
     }
     ssize_t FS::recvmsg(FD sockfd, int flags, Buffer* msg_name, std::vector<Buffer>* msg_iov, Buffer* msg_control, int* msg_flags) {
-        OpenNode* openNode = findOpenNode(sockfd);
-        if(!openNode) return -EBADF;
-        if(!openNode->file->isSocket()) return -EBADF;
-        Socket* socket = static_cast<Socket*>(openNode->file);
+        OpenFileDescription* openFileDescription = findOpenFileDescription(sockfd);
+        if(!openFileDescription) return -EBADF;
+        if(!openFileDescription->file()->isSocket()) return -EBADF;
+        Socket* socket = static_cast<Socket*>(openFileDescription->file());
         return socket->recvmsg(flags, msg_name, msg_iov, msg_control, msg_flags);
     }
 
     ssize_t FS::sendmsg(FD sockfd, int flags, const Buffer& msg_name, const std::vector<Buffer>& msg_iov, const Buffer& msg_control, int msg_flags) {
-        OpenNode* openNode = findOpenNode(sockfd);
-        if(!openNode) return -EBADF;
-        if(!openNode->file->isSocket()) return -EBADF;
-        Socket* socket = static_cast<Socket*>(openNode->file);
+        OpenFileDescription* openFileDescription = findOpenFileDescription(sockfd);
+        if(!openFileDescription) return -EBADF;
+        if(!openFileDescription->file()->isSocket()) return -EBADF;
+        Socket* socket = static_cast<Socket*>(openFileDescription->file());
         return socket->sendmsg(flags, msg_name, msg_iov, msg_control, msg_flags);
     }
 
     std::string FS::filename(FD fd) {
-        OpenNode* openNode = findOpenNode(fd);
-        if(!openNode) return "";
-        return openNode->path;
+        for(const OpenNode& node : openFiles_) {
+            if(node.fd != fd) continue;
+            return node.path;
+        }
+        return "";
     }
 
 }

@@ -12,7 +12,7 @@ namespace kernel {
 
     class File;
     class Kernel;
-    class RegularFile;
+    class OpenFileDescription;
 
     class FS {
     public:
@@ -85,7 +85,7 @@ namespace kernel {
         std::string filename(FD fd);
 
     private:
-        struct Node {
+        struct FsNode {
             std::string path;
             std::unique_ptr<File> file;
         };
@@ -93,18 +93,19 @@ namespace kernel {
         struct OpenNode {
             FD fd { -1 };
             std::string path;
-            File* file { nullptr };
+            OpenFileDescription* openFiledescription;
         };
 
         void createStandardStreams();
-        FD insertNode(Node node);
+        FD insertNode(FsNode node);
         FD allocateFd();
-        FD insertNodeWithFd(Node node, FD fd);
+        FD insertNodeWithFd(FsNode node, FD fd);
 
-        OpenNode* findOpenNode(FD fd);
+        OpenFileDescription* findOpenFileDescription(FD fd);
 
         Kernel& kernel_;
-        std::deque<Node> files_;
+        std::deque<FsNode> files_;
+        std::deque<OpenFileDescription> openFileDescriptions_;
         std::vector<OpenNode> openFiles_;
     };
 
