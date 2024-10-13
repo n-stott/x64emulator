@@ -122,6 +122,7 @@ namespace kernel {
             case 0xda: return cpu->set(x64::R64::RAX, invoke_syscall_1(&Sys::set_tid_address, regs));
             case 0xdd: return cpu->set(x64::R64::RAX, invoke_syscall_4(&Sys::posix_fadvise, regs));
             case 0xe4: return cpu->set(x64::R64::RAX, invoke_syscall_2(&Sys::clock_gettime, regs));
+            case 0xe5: return cpu->set(x64::R64::RAX, invoke_syscall_2(&Sys::clock_getres, regs));
             case 0xe7: return cpu->set(x64::R64::RAX, invoke_syscall_1(&Sys::exit_group, regs));
             case 0xea: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::tgkill, regs));
             case 0xed: return cpu->set(x64::R64::RAX, invoke_syscall_6(&Sys::mbind, regs));
@@ -931,6 +932,18 @@ namespace kernel {
         }
         return errnoOrBuffer.errorOrWith<int>([&](const auto& buffer) {
             mmu_.copyToMmu(tp, buffer.data(), buffer.size());
+            return 0;
+        });
+    }
+
+    int Sys::clock_getres(clockid_t clockid, x64::Ptr res) {
+        auto errnoOrBuffer = kernel_.host().clock_getres(clockid);
+        if(logSyscalls_) {
+            print("Sys::clock_getres({}, {:#x}) = {}\n",
+                        clockid, res.address(), errnoOrBuffer.errorOr(0));
+        }
+        return errnoOrBuffer.errorOrWith<int>([&](const auto& buffer) {
+            mmu_.copyToMmu(res, buffer.data(), buffer.size());
             return 0;
         });
     }

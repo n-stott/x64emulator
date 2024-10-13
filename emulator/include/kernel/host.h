@@ -130,6 +130,7 @@ namespace kernel {
         static int chdir(const std::string& path);
 
         static ErrnoOrBuffer clock_gettime(clockid_t clockid);
+        static ErrnoOrBuffer clock_getres(clockid_t clockid);
         static time_t time();
         static ErrnoOr<std::pair<Buffer, Buffer>> gettimeofday();
 

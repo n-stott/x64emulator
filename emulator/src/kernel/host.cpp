@@ -404,6 +404,16 @@ namespace kernel {
         return ErrnoOrBuffer(Buffer{std::move(buffer)});
     }
 
+    ErrnoOrBuffer Host::clock_getres(clockid_t clockid) {
+        timespec ts;
+        int ret = ::clock_getres(clockid, &ts);
+        if(ret < 0) return ErrnoOrBuffer(-errno);
+        std::vector<u8> buffer;
+        buffer.resize(sizeof(ts), 0x0);
+        std::memcpy(buffer.data(), &ts, sizeof(ts));
+        return ErrnoOrBuffer(Buffer{std::move(buffer)});
+    }
+
     time_t Host::time() {
         return ::time(nullptr);
     }

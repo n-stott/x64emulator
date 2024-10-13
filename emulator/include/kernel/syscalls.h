@@ -252,6 +252,8 @@ namespace kernel {
         int posix_fadvise(int fd, off_t offset, off_t len, int advice);
         // 0xe4
         int clock_gettime(clockid_t clockid, x64::Ptr tp);
+        // 0xe5
+        int clock_getres(clockid_t clockid, x64::Ptr res);
         // 0xe7
         u64 exit_group(int status);
         // 0xea
