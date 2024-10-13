@@ -1,7 +1,7 @@
 #include "kernel/fs/fs.h"
 #include "kernel/fs/epoll.h"
 #include "kernel/fs/event.h"
-#include "kernel/fs/file.h"
+#include "kernel/fs/regularfile.h"
 #include "kernel/fs/hostfile.h"
 #include "kernel/fs/shadowfile.h"
 #include "kernel/fs/socket.h"
@@ -161,7 +161,7 @@ namespace kernel {
         OpenNode* openNode = findOpenNode(fd);
         if(!openNode) return ErrnoOrBuffer{-EBADF};
         if(!openNode->object->isFile()) return ErrnoOrBuffer{-EBADF};
-        File* file = static_cast<File*>(openNode->object);
+        RegularFile* file = static_cast<RegularFile*>(openNode->object);
         verify(!!file, "unexpected nullptr");
         return file->read(count);
     }
@@ -170,7 +170,7 @@ namespace kernel {
         OpenNode* openNode = findOpenNode(fd);
         if(!openNode) return ErrnoOrBuffer{-EBADF};
         if(!openNode->object->isFile()) return ErrnoOrBuffer{-EBADF};
-        File* file = static_cast<File*>(openNode->object);
+        RegularFile* file = static_cast<RegularFile*>(openNode->object);
         verify(!!file, "unexpected nullptr");
         return file->pread(count, offset);
     }
@@ -179,7 +179,7 @@ namespace kernel {
         OpenNode* openNode = findOpenNode(fd);
         if(!openNode) return -EBADF;
         if(!openNode->object->isFile()) return -EBADF;
-        File* file = static_cast<File*>(openNode->object);
+        RegularFile* file = static_cast<RegularFile*>(openNode->object);
         verify(!!file, "unexpected nullptr");
         return file->write(buf, count);
     }
@@ -188,7 +188,7 @@ namespace kernel {
         OpenNode* openNode = findOpenNode(fd);
         if(!openNode) return -EBADF;
         if(!openNode->object->isFile()) return -EBADF;
-        File* file = static_cast<File*>(openNode->object);
+        RegularFile* file = static_cast<RegularFile*>(openNode->object);
         verify(!!file, "unexpected nullptr");
         return file->pwrite(buf, count, offset);
     }
@@ -210,7 +210,7 @@ namespace kernel {
         for(auto& node : files_) {
             if(node.path != path) continue;
             if(node.object->isFile()) {
-                File* file = static_cast<File*>(node.object.get());
+                RegularFile* file = static_cast<RegularFile*>(node.object.get());
                 return file->stat();
             }
             verify(false, "implement stat for non files in FS");
@@ -223,7 +223,7 @@ namespace kernel {
         OpenNode* openNode = findOpenNode(fd);
         if(!openNode) return ErrnoOrBuffer(-EBADF);
         if(!openNode->object->isFile()) return ErrnoOrBuffer{-EBADF};
-        File* file = static_cast<File*>(openNode->object);
+        RegularFile* file = static_cast<RegularFile*>(openNode->object);
         return file->stat();
     }
 
@@ -232,7 +232,7 @@ namespace kernel {
             if(node.path != path) continue;
             if(node.object->isFile()) {
                 verify(false, "implement statx for files in FS");
-                // File* file = static_cast<File*>(node.object.get());
+                // RegularFile* file = static_cast<RegularFile*>(node.object.get());
                 // return file->statx(flags, mask);
             }
             verify(false, "implement statx for non files in FS");
@@ -250,7 +250,7 @@ namespace kernel {
             if(node.path != path) continue;
             if(node.object->isFile()) {
                 verify(false, "implement fstatat for files in FS");
-                // File* file = static_cast<File*>(node.object.get());
+                // RegularFile* file = static_cast<RegularFile*>(node.object.get());
                 // return file->fstatat(flags, mask);
             }
             verify(false, "implement fstatat for non files in FS");
@@ -263,7 +263,7 @@ namespace kernel {
         OpenNode* openNode = findOpenNode(fd);
         if(!openNode) return -EBADF;
         if(!openNode->object->isFile()) return -EBADF;
-        File* file = static_cast<File*>(openNode->object);
+        RegularFile* file = static_cast<RegularFile*>(openNode->object);
         return file->lseek(offset, whence);
     }
 
@@ -288,7 +288,7 @@ namespace kernel {
         OpenNode* openNode = findOpenNode(fd);
         if(!openNode) return ErrnoOrBuffer(-EBADF);
         if(!openNode->object->isFile()) return ErrnoOrBuffer{-EBADF};
-        File* file = static_cast<File*>(openNode->object);
+        RegularFile* file = static_cast<RegularFile*>(openNode->object);
         return file->getdents64(count);
     }
 
@@ -296,7 +296,7 @@ namespace kernel {
         OpenNode* openNode = findOpenNode(fd);
         if(!openNode) return -EBADF;
         if(openNode->object->isFile()) {
-            File* file = static_cast<File*>(openNode->object);
+            RegularFile* file = static_cast<RegularFile*>(openNode->object);
             return file->fcntl(cmd, arg);
         }
         if(openNode->object->isSocket()) {
@@ -310,7 +310,7 @@ namespace kernel {
         OpenNode* openNode = findOpenNode(fd);
         if(!openNode) return ErrnoOrBuffer(-EBADF);
         if(!openNode->object->isFile()) return ErrnoOrBuffer{-EBADF};
-        File* file = static_cast<File*>(openNode->object);
+        RegularFile* file = static_cast<RegularFile*>(openNode->object);
         return file->ioctl(request, buffer);
     }
 

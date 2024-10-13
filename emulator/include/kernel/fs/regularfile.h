@@ -1,5 +1,5 @@
-#ifndef FILE_H
-#define FILE_H
+#ifndef REGULARFILE_H
+#define REGULARFILE_H
 
 #include "kernel/fs/fsobject.h"
 #include "kernel/utils/buffer.h"
@@ -10,9 +10,9 @@
 
 namespace kernel {
 
-    class File : public FsObject {
+    class RegularFile : public FsObject {
     public:
-        explicit File(FS* fs) : FsObject(fs) { }
+        explicit RegularFile(FS* fs) : FsObject(fs) { }
 
         bool isFile() const override { return true; }
 

@@ -1,11 +1,11 @@
 #ifndef STREAM_H
 #define STREAM_H
 
-#include "kernel/fs/file.h"
+#include "kernel/fs/regularfile.h"
 
 namespace kernel {
 
-    class Stream : public File {
+    class Stream : public RegularFile {
     public:
         enum class TYPE {
             IN = 0,
@@ -13,7 +13,7 @@ namespace kernel {
             ERR = 2,
         };
 
-        Stream(FS* fs, TYPE type) : File(fs), type_(type) { }
+        Stream(FS* fs, TYPE type) : RegularFile(fs), type_(type) { }
 
         bool isReadable() const override;
         bool isWritable() const override;

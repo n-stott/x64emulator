@@ -11,8 +11,8 @@
 namespace kernel {
 
     class FsObject;
-    class File;
     class Kernel;
+    class RegularFile;
 
     class FS {
     public:

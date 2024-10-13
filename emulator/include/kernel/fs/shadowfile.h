@@ -1,7 +1,7 @@
 #ifndef SHADOWFILE_H
 #define SHADOWFILE_H
 
-#include "kernel/fs/file.h"
+#include "kernel/fs/regularfile.h"
 #include "kernel/fs/fs.h"
 #include <memory>
 #include <string>
@@ -9,7 +9,7 @@
 
 namespace kernel {
 
-    class ShadowFile : public File {
+    class ShadowFile : public RegularFile {
     public:
         static std::unique_ptr<ShadowFile> tryCreate(FS* fs, const std::string& path, bool create);
 
@@ -39,7 +39,7 @@ namespace kernel {
         void setWritable(bool writable) { writable_ = writable; }
 
     private:
-        ShadowFile(FS* fs, std::vector<u8> data) : File(fs), data_(data) { }
+        ShadowFile(FS* fs, std::vector<u8> data) : RegularFile(fs), data_(data) { }
         std::vector<u8> data_;
         size_t offset_ { 0 };
         bool writable_ { false };

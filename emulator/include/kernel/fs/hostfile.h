@@ -1,14 +1,14 @@
 #ifndef HOSTFILE_H
 #define HOSTFILE_H
 
-#include "kernel/fs/file.h"
+#include "kernel/fs/regularfile.h"
 #include "kernel/fs/fs.h"
 #include <memory>
 #include <string>
 
 namespace kernel {
 
-    class HostFile : public File {
+    class HostFile : public RegularFile {
     public:
         static std::unique_ptr<HostFile> tryCreate(FS* fs, const std::string& path);
 
@@ -36,7 +36,7 @@ namespace kernel {
         ErrnoOrBuffer ioctl(unsigned long request, const Buffer& buffer) override;
 
     private:
-        HostFile(FS* fs, std::string path, int hostFd) : File(fs), path_(std::move(path)), hostFd_(hostFd) { }
+        HostFile(FS* fs, std::string path, int hostFd) : RegularFile(fs), path_(std::move(path)), hostFd_(hostFd) { }
         std::string path_;
         int hostFd_ { -1 };
     };
