@@ -1,12 +1,12 @@
 #ifndef EVENT_H
 #define EVENT_H
 
-#include "kernel/fs/fsobject.h"
+#include "kernel/fs/file.h"
 #include <memory>
 
 namespace kernel {
 
-    class Event : public FsObject {
+    class Event : public File {
     public:
         static std::unique_ptr<Event> tryCreate(FS* fs, unsigned int initval, int flags);
 

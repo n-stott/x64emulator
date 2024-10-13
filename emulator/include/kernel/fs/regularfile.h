@@ -1,20 +1,18 @@
 #ifndef REGULARFILE_H
 #define REGULARFILE_H
 
-#include "kernel/fs/fsobject.h"
-#include "kernel/utils/buffer.h"
-#include "kernel/utils/erroror.h"
+#include "kernel/fs/file.h"
 #include "utils.h"
 #include <cassert>
 #include <sys/types.h>
 
 namespace kernel {
 
-    class RegularFile : public FsObject {
+    class RegularFile : public File {
     public:
-        explicit RegularFile(FS* fs) : FsObject(fs) { }
+        explicit RegularFile(FS* fs) : File(fs) { }
 
-        bool isFile() const override { return true; }
+        bool isRegularFile() const override { return true; }
 
         virtual ErrnoOrBuffer pread(size_t count, off_t offset) = 0;
         virtual ssize_t pwrite(const u8* buf, size_t count, off_t offset) = 0;

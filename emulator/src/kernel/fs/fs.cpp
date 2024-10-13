@@ -61,8 +61,8 @@ namespace kernel {
         files_.push_back(std::move(node));
         Node* nodePtr = &files_.back();
         FD fd = allocateFd();
-        openFiles_.push_back(OpenNode{fd, nodePtr->path, nodePtr->object.get()});
-        nodePtr->object->ref();
+        openFiles_.push_back(OpenNode{fd, nodePtr->path, nodePtr->file.get()});
+        nodePtr->file->ref();
         return fd;
     }
 
@@ -101,8 +101,8 @@ namespace kernel {
         for(auto& node : files_) {
             if(node.path != path) continue;
             FD fd = allocateFd();
-            node.object->ref();
-            openFiles_.push_back(OpenNode{fd, node.path, node.object.get()});
+            node.file->ref();
+            openFiles_.push_back(OpenNode{fd, node.path, node.file.get()});
             return fd;
         }
 
@@ -144,8 +144,8 @@ namespace kernel {
         OpenNode* openNode = findOpenNode(fd);
         if(!openNode) return FD{-EBADF};
         FD newFd = allocateFd();
-        openNode->object->ref();
-        openFiles_.push_back(OpenNode{newFd, openNode->path, openNode->object});
+        openNode->file->ref();
+        openFiles_.push_back(OpenNode{newFd, openNode->path, openNode->file});
         return newFd;
     }
 
@@ -160,8 +160,8 @@ namespace kernel {
     ErrnoOrBuffer FS::read(FD fd, size_t count) {
         OpenNode* openNode = findOpenNode(fd);
         if(!openNode) return ErrnoOrBuffer{-EBADF};
-        if(!openNode->object->isFile()) return ErrnoOrBuffer{-EBADF};
-        RegularFile* file = static_cast<RegularFile*>(openNode->object);
+        if(!openNode->file->isRegularFile()) return ErrnoOrBuffer{-EBADF};
+        RegularFile* file = static_cast<RegularFile*>(openNode->file);
         verify(!!file, "unexpected nullptr");
         return file->read(count);
     }
@@ -169,8 +169,8 @@ namespace kernel {
     ErrnoOrBuffer FS::pread(FD fd, size_t count, off_t offset) {
         OpenNode* openNode = findOpenNode(fd);
         if(!openNode) return ErrnoOrBuffer{-EBADF};
-        if(!openNode->object->isFile()) return ErrnoOrBuffer{-EBADF};
-        RegularFile* file = static_cast<RegularFile*>(openNode->object);
+        if(!openNode->file->isRegularFile()) return ErrnoOrBuffer{-EBADF};
+        RegularFile* file = static_cast<RegularFile*>(openNode->file);
         verify(!!file, "unexpected nullptr");
         return file->pread(count, offset);
     }
@@ -178,8 +178,8 @@ namespace kernel {
     ssize_t FS::write(FD fd, const u8* buf, size_t count) {
         OpenNode* openNode = findOpenNode(fd);
         if(!openNode) return -EBADF;
-        if(!openNode->object->isFile()) return -EBADF;
-        RegularFile* file = static_cast<RegularFile*>(openNode->object);
+        if(!openNode->file->isRegularFile()) return -EBADF;
+        RegularFile* file = static_cast<RegularFile*>(openNode->file);
         verify(!!file, "unexpected nullptr");
         return file->write(buf, count);
     }
@@ -187,8 +187,8 @@ namespace kernel {
     ssize_t FS::pwrite(FD fd, const u8* buf, size_t count, off_t offset) {
         OpenNode* openNode = findOpenNode(fd);
         if(!openNode) return -EBADF;
-        if(!openNode->object->isFile()) return -EBADF;
-        RegularFile* file = static_cast<RegularFile*>(openNode->object);
+        if(!openNode->file->isRegularFile()) return -EBADF;
+        RegularFile* file = static_cast<RegularFile*>(openNode->file);
         verify(!!file, "unexpected nullptr");
         return file->pwrite(buf, count, offset);
     }
@@ -196,10 +196,10 @@ namespace kernel {
     ssize_t FS::writev(FD fd, const std::vector<Buffer>& buffers) {
         OpenNode* openNode = findOpenNode(fd);
         if(!openNode) return -EBADF;
-        if(!openNode->object->isWritable()) return -EBADF;
+        if(!openNode->file->isWritable()) return -EBADF;
         ssize_t nbytes = 0;
         for(const Buffer& buf : buffers) {
-            ssize_t ret = openNode->object->write(buf.data(), buf.size());
+            ssize_t ret = openNode->file->write(buf.data(), buf.size());
             if(ret < 0) return ret;
             nbytes += ret;
         }
@@ -209,8 +209,8 @@ namespace kernel {
     ErrnoOrBuffer FS::stat(const std::string& path) {
         for(auto& node : files_) {
             if(node.path != path) continue;
-            if(node.object->isFile()) {
-                RegularFile* file = static_cast<RegularFile*>(node.object.get());
+            if(node.file->isRegularFile()) {
+                RegularFile* file = static_cast<RegularFile*>(node.file.get());
                 return file->stat();
             }
             verify(false, "implement stat for non files in FS");
@@ -222,15 +222,15 @@ namespace kernel {
     ErrnoOrBuffer FS::fstat(FD fd) {
         OpenNode* openNode = findOpenNode(fd);
         if(!openNode) return ErrnoOrBuffer(-EBADF);
-        if(!openNode->object->isFile()) return ErrnoOrBuffer{-EBADF};
-        RegularFile* file = static_cast<RegularFile*>(openNode->object);
+        if(!openNode->file->isRegularFile()) return ErrnoOrBuffer{-EBADF};
+        RegularFile* file = static_cast<RegularFile*>(openNode->file);
         return file->stat();
     }
 
     ErrnoOrBuffer FS::statx(const std::string& path, int flags, unsigned int mask) {
         for(auto& node : files_) {
             if(node.path != path) continue;
-            if(node.object->isFile()) {
+            if(node.file->isRegularFile()) {
                 verify(false, "implement statx for files in FS");
                 // RegularFile* file = static_cast<RegularFile*>(node.object.get());
                 // return file->statx(flags, mask);
@@ -248,7 +248,7 @@ namespace kernel {
         verify(dirfd.fd == Host::cwdfd().fd, "dirfd is not cwd");
         for(auto& node : files_) {
             if(node.path != path) continue;
-            if(node.object->isFile()) {
+            if(node.file->isRegularFile()) {
                 verify(false, "implement fstatat for files in FS");
                 // RegularFile* file = static_cast<RegularFile*>(node.object.get());
                 // return file->fstatat(flags, mask);
@@ -262,8 +262,8 @@ namespace kernel {
     off_t FS::lseek(FD fd, off_t offset, int whence) {
         OpenNode* openNode = findOpenNode(fd);
         if(!openNode) return -EBADF;
-        if(!openNode->object->isFile()) return -EBADF;
-        RegularFile* file = static_cast<RegularFile*>(openNode->object);
+        if(!openNode->file->isRegularFile()) return -EBADF;
+        RegularFile* file = static_cast<RegularFile*>(openNode->file);
         return file->lseek(offset, whence);
     }
 
@@ -271,14 +271,14 @@ namespace kernel {
         OpenNode* openNode = findOpenNode(fd);
         if(!openNode) return -EBADF;
         OpenNode node = *openNode;
-        node.object->unref();
-        node.object->close();
+        node.file->unref();
+        node.file->close();
         openFiles_.erase(std::remove_if(openFiles_.begin(), openFiles_.end(), [&](const auto& openNode) {
             return openNode.fd == fd;
         }), openFiles_.end());
-        if(node.object->refCount() == 0 && !node.object->keepAfterClose()) {
+        if(node.file->refCount() == 0 && !node.file->keepAfterClose()) {
             files_.erase(std::remove_if(files_.begin(), files_.end(), [&](const auto& f) {
-                return f.object.get() == node.object;
+                return f.file.get() == node.file;
             }), files_.end());
         }
         return 0;
@@ -287,20 +287,20 @@ namespace kernel {
     ErrnoOrBuffer FS::getdents64(FD fd, size_t count) {
         OpenNode* openNode = findOpenNode(fd);
         if(!openNode) return ErrnoOrBuffer(-EBADF);
-        if(!openNode->object->isFile()) return ErrnoOrBuffer{-EBADF};
-        RegularFile* file = static_cast<RegularFile*>(openNode->object);
+        if(!openNode->file->isRegularFile()) return ErrnoOrBuffer{-EBADF};
+        RegularFile* file = static_cast<RegularFile*>(openNode->file);
         return file->getdents64(count);
     }
 
     int FS::fcntl(FD fd, int cmd, int arg) {
         OpenNode* openNode = findOpenNode(fd);
         if(!openNode) return -EBADF;
-        if(openNode->object->isFile()) {
-            RegularFile* file = static_cast<RegularFile*>(openNode->object);
+        if(openNode->file->isRegularFile()) {
+            RegularFile* file = static_cast<RegularFile*>(openNode->file);
             return file->fcntl(cmd, arg);
         }
-        if(openNode->object->isSocket()) {
-            Socket* socket = static_cast<Socket*>(openNode->object);
+        if(openNode->file->isSocket()) {
+            Socket* socket = static_cast<Socket*>(openNode->file);
             return socket->fcntl(cmd, arg);
         }
         return -EBADF;
@@ -309,8 +309,8 @@ namespace kernel {
     ErrnoOrBuffer FS::ioctl(FD fd, unsigned long request, const Buffer& buffer) {
         OpenNode* openNode = findOpenNode(fd);
         if(!openNode) return ErrnoOrBuffer(-EBADF);
-        if(!openNode->object->isFile()) return ErrnoOrBuffer{-EBADF};
-        RegularFile* file = static_cast<RegularFile*>(openNode->object);
+        if(!openNode->file->isRegularFile()) return ErrnoOrBuffer{-EBADF};
+        RegularFile* file = static_cast<RegularFile*>(openNode->file);
         return file->ioctl(request, buffer);
     }
 
@@ -343,40 +343,40 @@ namespace kernel {
     int FS::connect(FD sockfd, const Buffer& buffer) {
         OpenNode* openNode = findOpenNode(sockfd);
         if(!openNode) return -EBADF;
-        if(!openNode->object->isSocket()) return -EBADF;
-        Socket* socket = static_cast<Socket*>(openNode->object);
+        if(!openNode->file->isSocket()) return -EBADF;
+        Socket* socket = static_cast<Socket*>(openNode->file);
         return socket->connect(buffer);
     }
 
     int FS::bind(FD sockfd, const Buffer& name) {
         OpenNode* openNode = findOpenNode(sockfd);
         if(!openNode) return -EBADF;
-        if(!openNode->object->isSocket()) return -EBADF;
-        Socket* socket = static_cast<Socket*>(openNode->object);
+        if(!openNode->file->isSocket()) return -EBADF;
+        Socket* socket = static_cast<Socket*>(openNode->file);
         return socket->bind(name);
     }
 
     int FS::shutdown(FD sockfd, int how) {
         OpenNode* openNode = findOpenNode(sockfd);
         if(!openNode) return -EBADF;
-        if(!openNode->object->isSocket()) return -EBADF;
-        Socket* socket = static_cast<Socket*>(openNode->object);
+        if(!openNode->file->isSocket()) return -EBADF;
+        Socket* socket = static_cast<Socket*>(openNode->file);
         return socket->shutdown(how);
     }
 
     ErrnoOrBuffer FS::getpeername(FD sockfd, u32 buffersize) {
         OpenNode* openNode = findOpenNode(sockfd);
         if(!openNode) return ErrnoOrBuffer(-EBADF);
-        if(!openNode->object->isSocket()) return ErrnoOrBuffer(-EBADF);
-        Socket* socket = static_cast<Socket*>(openNode->object);
+        if(!openNode->file->isSocket()) return ErrnoOrBuffer(-EBADF);
+        Socket* socket = static_cast<Socket*>(openNode->file);
         return socket->getpeername(buffersize);
     }
 
     ErrnoOrBuffer FS::getsockname(FD sockfd, u32 buffersize) {
         OpenNode* openNode = findOpenNode(sockfd);
         if(!openNode) return ErrnoOrBuffer(-EBADF);
-        if(!openNode->object->isSocket()) return ErrnoOrBuffer(-EBADF);
-        Socket* socket = static_cast<Socket*>(openNode->object);
+        if(!openNode->file->isSocket()) return ErrnoOrBuffer(-EBADF);
+        Socket* socket = static_cast<Socket*>(openNode->file);
         return socket->getsockname(buffersize);
     }
 
@@ -390,8 +390,8 @@ namespace kernel {
         for(pollfd vpfd : virtualPollFds) {
             OpenNode* openNode = findOpenNode(FD{vpfd.fd});
             verify(!!openNode, [&]() { fmt::print("cannot poll fd={}\n", vpfd.fd); });
-            verify(openNode->object->isPollable(), [&]() { fmt::print("fd={} is not pollable\n", vpfd.fd); });
-            auto hostFd = openNode->object->hostFileDescriptor();
+            verify(openNode->file->isPollable(), [&]() { fmt::print("fd={} is not pollable\n", vpfd.fd); });
+            auto hostFd = openNode->file->hostFileDescriptor();
             verify(hostFd.has_value(), [&]() { fmt::print("fd={} has no host-equivalent fd\n", vpfd.fd); });
         }
 
@@ -400,7 +400,7 @@ namespace kernel {
         for(pollfd vpfd : virtualPollFds) {
             OpenNode* openNode = findOpenNode(FD{vpfd.fd});
             pollfd hostPollFd = vpfd;
-            auto hostFd = openNode->object->hostFileDescriptor();
+            auto hostFd = openNode->file->hostFileDescriptor();
             hostPollFd.fd = *hostFd;
             hostPollFds.push_back(hostPollFd);
         }
@@ -424,24 +424,24 @@ namespace kernel {
     ErrnoOr<std::pair<Buffer, Buffer>> FS::recvfrom(FD sockfd, size_t len, int flags, bool requireSrcAddress) {
         OpenNode* openNode = findOpenNode(sockfd);
         if(!openNode) return ErrnoOr<std::pair<Buffer, Buffer>>(-EBADF);
-        if(!openNode->object->isSocket()) return ErrnoOr<std::pair<Buffer, Buffer>>(-EBADF);
-        Socket* socket = static_cast<Socket*>(openNode->object);
+        if(!openNode->file->isSocket()) return ErrnoOr<std::pair<Buffer, Buffer>>(-EBADF);
+        Socket* socket = static_cast<Socket*>(openNode->file);
         return socket->recvfrom(len, flags, requireSrcAddress);
 
     }
     ssize_t FS::recvmsg(FD sockfd, int flags, Buffer* msg_name, std::vector<Buffer>* msg_iov, Buffer* msg_control, int* msg_flags) {
         OpenNode* openNode = findOpenNode(sockfd);
         if(!openNode) return -EBADF;
-        if(!openNode->object->isSocket()) return -EBADF;
-        Socket* socket = static_cast<Socket*>(openNode->object);
+        if(!openNode->file->isSocket()) return -EBADF;
+        Socket* socket = static_cast<Socket*>(openNode->file);
         return socket->recvmsg(flags, msg_name, msg_iov, msg_control, msg_flags);
     }
 
     ssize_t FS::sendmsg(FD sockfd, int flags, const Buffer& msg_name, const std::vector<Buffer>& msg_iov, const Buffer& msg_control, int msg_flags) {
         OpenNode* openNode = findOpenNode(sockfd);
         if(!openNode) return -EBADF;
-        if(!openNode->object->isSocket()) return -EBADF;
-        Socket* socket = static_cast<Socket*>(openNode->object);
+        if(!openNode->file->isSocket()) return -EBADF;
+        Socket* socket = static_cast<Socket*>(openNode->file);
         return socket->sendmsg(flags, msg_name, msg_iov, msg_control, msg_flags);
     }
 

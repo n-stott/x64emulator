@@ -7,7 +7,7 @@
 namespace kernel {
 
     Socket::Socket(FS* fs, int fd, int domain, int type, int protocol) :
-            FsObject(fs),
+            File(fs),
             hostFd_(fd),
             domain_(domain),
             type_(type),

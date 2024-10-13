@@ -1,13 +1,13 @@
 #ifndef EPOLL_H
 #define EPOLL_H
 
-#include "kernel/fs/fsobject.h"
+#include "kernel/fs/file.h"
 
 namespace kernel {
 
-    class Epoll : public FsObject {
+    class Epoll : public File {
     public:
-        explicit Epoll(FS* fs, int flags) : FsObject(fs), flags_(flags) { }
+        explicit Epoll(FS* fs, int flags) : File(fs), flags_(flags) { }
 
         bool isEpoll() const override { return true; }
 

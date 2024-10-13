@@ -11,7 +11,7 @@ namespace kernel {
     }
 
     Event::Event(FS* fs, unsigned int initval, int flags, int hostFd) :
-            FsObject(fs),
+            File(fs),
             initval_(initval),
             flags_(flags),
             hostFd_(hostFd) {

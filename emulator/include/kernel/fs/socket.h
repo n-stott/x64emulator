@@ -1,14 +1,14 @@
 #ifndef SOCKET_H
 #define SOCKET_H
 
-#include "kernel/fs/fsobject.h"
+#include "kernel/fs/file.h"
 #include "kernel/utils/buffer.h"
 #include "kernel/utils/erroror.h"
 #include <memory> 
 
 namespace kernel {
 
-    class Socket : public FsObject {
+    class Socket : public File {
     public:
         static std::unique_ptr<Socket> tryCreate(FS* fs, int domain, int type, int protocol);
 

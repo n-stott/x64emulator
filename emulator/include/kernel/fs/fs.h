@@ -10,7 +10,7 @@
 
 namespace kernel {
 
-    class FsObject;
+    class File;
     class Kernel;
     class RegularFile;
 
@@ -87,13 +87,13 @@ namespace kernel {
     private:
         struct Node {
             std::string path;
-            std::unique_ptr<FsObject> object;
+            std::unique_ptr<File> file;
         };
 
         struct OpenNode {
             FD fd { -1 };
             std::string path;
-            FsObject* object { nullptr };
+            File* file { nullptr };
         };
 
         void createStandardStreams();
