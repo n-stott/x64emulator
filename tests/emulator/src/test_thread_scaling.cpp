@@ -9,7 +9,11 @@ void run(size_t count) {
     for(size_t i = 0; i < count; ++i) {
         threads.emplace_back([]() {
             volatile size_t counter = 0;
+#ifndef NDEBUG
+            while(counter != 100'000) ++counter;
+#else
             while(counter != 10'000'000) ++counter;
+#endif
             return counter;
         });
     }

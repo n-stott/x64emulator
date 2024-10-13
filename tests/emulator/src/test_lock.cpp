@@ -8,6 +8,12 @@ int main() {
     unsigned long long counter { 0 };
     std::atomic<unsigned long long> waits { 0 };
 
+#ifndef NDEBUG
+    const long long target = 10'000;
+#else
+    const long long target = 1'000'000;
+#endif
+
     auto inc = [&]() {
         bool has_lock = false;
         while(true) {
@@ -15,12 +21,12 @@ int main() {
             unsigned int desired = 1;
             while(!lockers.compare_exchange_strong(expected, desired)) { expected = 0; }
             has_lock = true;
-            if(counter == 1'000'000) {
+            if(counter == target) {
                 lockers.store(0);
                 has_lock = false;
                 break;
             }
-            assert(counter < 1'000'000);
+            assert(counter < target);
             assert(has_lock);
             ++counter;
             assert(has_lock);
