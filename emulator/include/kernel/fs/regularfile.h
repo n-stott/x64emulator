@@ -14,9 +14,6 @@ namespace kernel {
 
         bool isRegularFile() const override { return true; }
 
-        virtual ErrnoOrBuffer pread(size_t count, off_t offset) = 0;
-        virtual ssize_t pwrite(const u8* buf, size_t count, off_t offset) = 0;
-
         virtual ErrnoOrBuffer stat() = 0;
         virtual off_t lseek(off_t offset, int whence) = 0;
         

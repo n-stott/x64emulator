@@ -94,10 +94,7 @@ namespace kernel {
         bool canUseHostFile = true;
         if(flags.append || flags.create || flags.truncate || flags.write) canUseHostFile = false;
 
-        verify(std::none_of(openFiles_.begin(), openFiles_.end(), [&](const OpenNode& openNode) {
-            return openNode.path == path;
-        }), "FS: opening same file twice is not supported");
-
+        // Look if the file is already present in FS, open of closed.
         for(auto& node : files_) {
             if(node.path != path) continue;
             FD fd = allocateFd();
@@ -162,37 +159,25 @@ namespace kernel {
     ErrnoOrBuffer FS::read(FD fd, size_t count) {
         OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
         if(!openFileDescription) return ErrnoOrBuffer{-EBADF};
-        if(!openFileDescription->file()->isRegularFile()) return ErrnoOrBuffer{-EBADF};
-        RegularFile* file = static_cast<RegularFile*>(openFileDescription->file());
-        verify(!!file, "unexpected nullptr");
-        return file->read(count);
+        return openFileDescription->read(count);
     }
 
     ErrnoOrBuffer FS::pread(FD fd, size_t count, off_t offset) {
         OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
         if(!openFileDescription) return ErrnoOrBuffer{-EBADF};
-        if(!openFileDescription->file()->isRegularFile()) return ErrnoOrBuffer{-EBADF};
-        RegularFile* file = static_cast<RegularFile*>(openFileDescription->file());
-        verify(!!file, "unexpected nullptr");
-        return file->pread(count, offset);
+        return openFileDescription->pread(count, offset);
     }
 
     ssize_t FS::write(FD fd, const u8* buf, size_t count) {
         OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
         if(!openFileDescription) return -EBADF;
-        if(!openFileDescription->file()->isRegularFile()) return -EBADF;
-        RegularFile* file = static_cast<RegularFile*>(openFileDescription->file());
-        verify(!!file, "unexpected nullptr");
-        return file->write(buf, count);
+        return openFileDescription->write(buf, count);
     }
 
     ssize_t FS::pwrite(FD fd, const u8* buf, size_t count, off_t offset) {
         OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
         if(!openFileDescription) return -EBADF;
-        if(!openFileDescription->file()->isRegularFile()) return -EBADF;
-        RegularFile* file = static_cast<RegularFile*>(openFileDescription->file());
-        verify(!!file, "unexpected nullptr");
-        return file->pwrite(buf, count, offset);
+        return openFileDescription->pwrite(buf, count, offset);
     }
 
     ssize_t FS::writev(FD fd, const std::vector<Buffer>& buffers) {
@@ -201,7 +186,7 @@ namespace kernel {
         if(!openFileDescription->file()->isWritable()) return -EBADF;
         ssize_t nbytes = 0;
         for(const Buffer& buf : buffers) {
-            ssize_t ret = openFileDescription->file()->write(buf.data(), buf.size());
+            ssize_t ret = openFileDescription->write(buf.data(), buf.size());
             if(ret < 0) return ret;
             nbytes += ret;
         }

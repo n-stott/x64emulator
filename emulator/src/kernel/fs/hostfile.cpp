@@ -23,23 +23,9 @@ namespace kernel {
         verify(rc == 0);
     }
 
-    ErrnoOrBuffer HostFile::read(size_t count) {
+    ErrnoOrBuffer HostFile::read(size_t count, off_t offset) {
         if(!isReadable()) return ErrnoOrBuffer{-EINVAL};
-        std::vector<u8> buffer;
-        buffer.resize(count, 0x0);
-        ssize_t nbytes = ::read(hostFd_, buffer.data(), count);
-        if(nbytes < 0) return ErrnoOrBuffer(-errno);
-        buffer.resize((size_t)nbytes);
-        return ErrnoOrBuffer(Buffer{std::move(buffer)});
-    }
-
-    ssize_t HostFile::write(const u8*, size_t) {
-        // Host-backed files must be read-only
-        return -EINVAL;
-    }
-
-    ErrnoOrBuffer HostFile::pread(size_t count, off_t offset) {
-        if(!isReadable()) return ErrnoOrBuffer{-EINVAL};
+        if(offset < 0) return ErrnoOrBuffer{-EINVAL};
         std::vector<u8> buffer;
         buffer.resize(count, 0x0);
         ssize_t nbytes = ::pread(hostFd_, buffer.data(), count, offset);
@@ -48,7 +34,7 @@ namespace kernel {
         return ErrnoOrBuffer(Buffer{std::move(buffer)});
     }
 
-    ssize_t HostFile::pwrite(const u8*, size_t, off_t) {
+    ssize_t HostFile::write(const u8*, size_t, off_t) {
         // Host-backed files must be read-only
         return -EINVAL;
     }

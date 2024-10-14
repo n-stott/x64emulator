@@ -20,8 +20,8 @@ namespace kernel {
 
         bool isPollable() const override { return true; }
 
-        ErrnoOrBuffer read(size_t) override;
-        ssize_t write(const u8*, size_t) override;
+        ErrnoOrBuffer read(size_t, off_t) override;
+        ssize_t write(const u8*, size_t, off_t) override;
 
         std::optional<int> hostFileDescriptor() const override { return hostFd_; }
 

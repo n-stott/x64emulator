@@ -17,8 +17,8 @@ namespace kernel {
         bool isReadable() const override { return false; }
         bool isWritable() const override { return false; }
 
-        ErrnoOrBuffer read(size_t) override;
-        ssize_t write(const u8*, size_t) override;
+        ErrnoOrBuffer read(size_t, off_t) override;
+        ssize_t write(const u8*, size_t, off_t) override;
 
         std::optional<int> hostFileDescriptor() const override { return {}; }
 

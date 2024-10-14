@@ -20,12 +20,9 @@ namespace kernel {
         bool keepAfterClose() const override { return true; }
 
         std::optional<int> hostFileDescriptor() const override { return {}; }
-
-        ErrnoOrBuffer read(size_t count) override;
-        ssize_t write(const u8* buf, size_t count) override;
         
-        ErrnoOrBuffer pread(size_t count, off_t offset) override;
-        ssize_t pwrite(const u8* buf, size_t count, off_t offset) override;
+        ErrnoOrBuffer read(size_t count, off_t offset) override;
+        ssize_t write(const u8* buf, size_t count, off_t offset) override;
 
         ErrnoOrBuffer stat() override;
         off_t lseek(off_t offset, int whence) override;
@@ -41,7 +38,6 @@ namespace kernel {
     private:
         ShadowFile(FS* fs, std::vector<u8> data) : RegularFile(fs), data_(data) { }
         std::vector<u8> data_;
-        size_t offset_ { 0 };
         bool writable_ { false };
     };
 

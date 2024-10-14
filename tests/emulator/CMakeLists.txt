@@ -60,7 +60,7 @@ create_simple_test(ostream)
 create_simple_test(tmpfile)
 create_simple_test(loop)
 create_simple_test(memmove)
-
+create_simple_test(open_file_twice)
 
 add_executable(test_trivial_c src/test_trivial.c)
 target_compile_options(test_trivial_c PUBLIC ${CC_OPTIONS})

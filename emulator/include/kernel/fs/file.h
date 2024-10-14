@@ -15,8 +15,8 @@ namespace kernel {
         virtual bool isReadable() const = 0;
         virtual bool isWritable() const = 0;
 
-        virtual ErrnoOrBuffer read(size_t count) = 0;
-        virtual ssize_t write(const u8* buf, size_t count) = 0;
+        virtual ErrnoOrBuffer read(size_t count, off_t offset) = 0;
+        virtual ssize_t write(const u8* buf, size_t count, off_t offset) = 0;
     };
 
 }

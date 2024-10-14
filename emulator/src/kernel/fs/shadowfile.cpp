@@ -53,34 +53,13 @@ namespace kernel {
 
     void ShadowFile::truncate() {
         data_.clear();
-        offset_ = 0;
     }
 
     void ShadowFile::append() {
-        offset_ = data_.size();
+        verify(false, "ShadowFile::append() not implemented");
     }
 
-    ErrnoOrBuffer ShadowFile::read(size_t count) {
-        if(!isReadable()) return ErrnoOrBuffer{-EINVAL};
-        size_t bytesRead = offset_ < data_.size() ? std::min(data_.size() - offset_, count) : 0;
-        const u8* beginRead = data_.data() + offset_;
-        const u8* endRead = beginRead + bytesRead;
-        std::vector<u8> buffer(beginRead, endRead);
-        offset_ += bytesRead;
-        return ErrnoOrBuffer(Buffer{std::move(buffer)});
-    }
-
-    ssize_t ShadowFile::write(const u8* buf, size_t count) {
-        if(!isWritable()) return -EINVAL;
-        if(offset_ + count > data_.size()) {
-            data_.resize(offset_ + count);
-        }
-        size_t bytesWritten = count;
-        std::memcpy(data_.data() + offset_, buf, bytesWritten);
-        return (ssize_t)bytesWritten;
-    }
-
-    ErrnoOrBuffer ShadowFile::pread(size_t count, off_t offset) {
+    ErrnoOrBuffer ShadowFile::read(size_t count, off_t offset) {
         if(!isReadable()) return ErrnoOrBuffer{-EINVAL};
         if(offset < 0) return ErrnoOrBuffer{-EINVAL};
         size_t bytesRead = (size_t)offset < data_.size() ? std::min(data_.size() - (size_t)offset, count) : 0;
@@ -90,10 +69,15 @@ namespace kernel {
         return ErrnoOrBuffer(Buffer{std::move(buffer)});
     }
 
-    ssize_t ShadowFile::pwrite(const u8*, size_t, off_t) {
+    ssize_t ShadowFile::write(const u8* buf, size_t count, off_t offset) {
         if(!isWritable()) return -EINVAL;
-        verify(false, "implement pwrite on ShadowFile");
-        return -ENOTSUP;
+        if(offset < 0) return -EINVAL;
+        if(offset + count > data_.size()) {
+            data_.resize(offset + count);
+        }
+        size_t bytesWritten = count;
+        std::memcpy(data_.data() + offset, buf, bytesWritten);
+        return (ssize_t)bytesWritten;
     }
 
     ErrnoOrBuffer ShadowFile::stat() {

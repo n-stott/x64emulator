@@ -22,7 +22,7 @@ namespace kernel {
         
     }
 
-    ErrnoOrBuffer Stream::read(size_t count) {
+    ErrnoOrBuffer Stream::read(size_t count, off_t) {
         if(!isReadable()) return ErrnoOrBuffer{-EINVAL};
         std::vector<u8> buffer;
         buffer.resize(count, 0x0);
@@ -33,19 +33,9 @@ namespace kernel {
         
     }
 
-    ssize_t Stream::write(const u8* buf, size_t count) {
+    ssize_t Stream::write(const u8* buf, size_t count, off_t) {
         if(!isWritable()) return -EINVAL;
         return ::write((int)type_, buf, count);
-    }
-
-    ErrnoOrBuffer Stream::pread(size_t, off_t) {
-        // File must be seekable
-        return ErrnoOrBuffer{-EINVAL};
-    }
-
-    ssize_t Stream::pwrite(const u8*, size_t, off_t) {
-        // File must be seekable
-        return -EINVAL;
     }
 
     ErrnoOrBuffer Stream::stat() {

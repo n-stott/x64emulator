@@ -7,11 +7,11 @@ namespace kernel {
         (void)flags_;
     }
     
-    ErrnoOrBuffer Epoll::read(size_t) {
+    ErrnoOrBuffer Epoll::read(size_t, off_t) {
         return ErrnoOrBuffer(-EINVAL);
     }
     
-    ssize_t Epoll::write(const u8*, size_t) {
+    ssize_t Epoll::write(const u8*, size_t, off_t) {
         return -EINVAL;
     }
 
