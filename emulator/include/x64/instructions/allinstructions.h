@@ -1072,6 +1072,24 @@ namespace x64 {
     };
 
     template<typename Dst, typename Src>
+    struct Pmulhw {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
+    struct Pmullw {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
+    struct Pmaddwd {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
     struct Pmaxub {
         Dst dst;
         Src src;
@@ -1085,6 +1103,24 @@ namespace x64 {
 
     template<typename Dst, typename Src>
     struct Ptest {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
+    struct Psraw {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
+    struct Psrad {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
+    struct Psraq {
         Dst dst;
         Src src;
     };

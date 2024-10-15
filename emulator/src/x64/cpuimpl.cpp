@@ -1293,6 +1293,64 @@ namespace x64 {
     u128 CpuImpl::psubd(u128 dst, u128 src) { return psub<u32>(dst, src); }
     u128 CpuImpl::psubq(u128 dst, u128 src) { return psub<u64>(dst, src); }
 
+    u128 CpuImpl::pmulhw(u128 dst, u128 src) {
+        std::array<i16, 8> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        std::memcpy(DST.data(), &dst, sizeof(u128));
+
+        std::array<i16, 8> SRC;
+        static_assert(sizeof(SRC) == sizeof(u128));
+        std::memcpy(SRC.data(), &src, sizeof(u128));
+
+        for(size_t i = 0; i < 8; ++i) {
+            i32 prod = (i32)DST[i] * (i32)SRC[i];
+            i16 res[2];
+            std::memcpy(&res, &prod, sizeof(res));
+            DST[i] = res[1];
+        }
+        std::memcpy(&dst, DST.data(), sizeof(u128));
+        return dst;
+    }
+
+    u128 CpuImpl::pmullw(u128 dst, u128 src) {
+        std::array<i16, 8> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        std::memcpy(DST.data(), &dst, sizeof(u128));
+
+        std::array<i16, 8> SRC;
+        static_assert(sizeof(SRC) == sizeof(u128));
+        std::memcpy(SRC.data(), &src, sizeof(u128));
+
+        for(size_t i = 0; i < 8; ++i) {
+            i32 prod = (i32)DST[i] * (i32)SRC[i];
+            i16 res[2];
+            std::memcpy(&res, &prod, sizeof(res));
+            DST[i] = res[0];
+        }
+        std::memcpy(&dst, DST.data(), sizeof(u128));
+        return dst;
+    }
+
+    u128 CpuImpl::pmaddwd(u128 dst, u128 src) {
+        std::array<i16, 8> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        std::memcpy(DST.data(), &dst, sizeof(u128));
+
+        std::array<i16, 8> SRC;
+        static_assert(sizeof(SRC) == sizeof(u128));
+        std::memcpy(SRC.data(), &src, sizeof(u128));
+
+        std::array<i32, 4> TMP;
+
+        for(size_t i = 0; i < 4; ++i) {
+            TMP[i] = (i32)DST[2*i] * (i32)SRC[2*i];
+            TMP[i] += (i32)DST[2*i+1] * (i32)SRC[2*i+1];
+        }
+
+        std::memcpy(&dst, TMP.data(), sizeof(u128));
+        return dst;
+    }
+
     u128 CpuImpl::pmaxub(u128 dst, u128 src) {
         std::array<u8, 16> DST;
         static_assert(sizeof(DST) == sizeof(u128));
@@ -1329,6 +1387,24 @@ namespace x64 {
         flags->zero = (dst.lo & src.lo) == 0 && (dst.hi & src.hi) == 0;
         flags->carry = (~dst.lo & src.lo) == 0 && (~dst.hi & src.hi) == 0;
     }
+
+    template<typename I>
+    static u128 psra(u128 dst, u8 src) {
+        constexpr u32 N = sizeof(u128)/sizeof(I);
+        std::array<I, N> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        std::memcpy(DST.data(), &dst, sizeof(u128));
+
+        for(size_t i = 0; i < N; ++i) {
+            DST[i] = (I)(DST[i] >> (I)src);
+        }
+        std::memcpy(&dst, DST.data(), sizeof(u128));
+        return dst;
+    }
+
+    u128 CpuImpl::psraw(u128 dst, u8 src) { return psra<i16>(dst, src); }
+    u128 CpuImpl::psrad(u128 dst, u8 src) { return psra<i32>(dst, src); }
+    u128 CpuImpl::psraq(u128 dst, u8 src) { return psra<i64>(dst, src); }
 
     template<typename U>
     static u128 psll(u128 dst, u8 src) {

@@ -765,10 +765,18 @@ namespace x64 {
         void exec(const Psubd<RSSE, RMSSE>&);
         void exec(const Psubq<RSSE, RMSSE>&);
 
+        void exec(const Pmulhw<RSSE, RMSSE>&);
+        void exec(const Pmullw<RSSE, RMSSE>&);
+        void exec(const Pmaddwd<RSSE, RMSSE>&);
+
         void exec(const Pmaxub<RSSE, RMSSE>&);
         void exec(const Pminub<RSSE, RMSSE>&);
 
         void exec(const Ptest<RSSE, RMSSE>&);
+
+        void exec(const Psraw<RSSE, Imm>&);
+        void exec(const Psrad<RSSE, Imm>&);
+        void exec(const Psraq<RSSE, Imm>&);
 
         void exec(const Psllw<RSSE, Imm>&);
         void exec(const Pslld<RSSE, Imm>&);

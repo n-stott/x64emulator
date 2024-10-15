@@ -3024,6 +3024,39 @@ namespace x64 {
         return make_failed(insn);
     }
 
+    static X64Instruction makePmulhw(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto rmssesrc = asRM128(src);
+        if(rssedst && rmssesrc) return X64Instruction::make<Insn::PMULHW_RSSE_RMSSE>(insn.address, insn.size, rssedst.value(), rmssesrc.value());
+        return make_failed(insn);
+    }
+
+    static X64Instruction makePmullw(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto rmssesrc = asRM128(src);
+        if(rssedst && rmssesrc) return X64Instruction::make<Insn::PMULLW_RSSE_RMSSE>(insn.address, insn.size, rssedst.value(), rmssesrc.value());
+        return make_failed(insn);
+    }
+
+    static X64Instruction makePmaddwd(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto rmssesrc = asRM128(src);
+        if(rssedst && rmssesrc) return X64Instruction::make<Insn::PMADDWD_RSSE_RMSSE>(insn.address, insn.size, rssedst.value(), rmssesrc.value());
+        return make_failed(insn);
+    }
+
     static X64Instruction makePminub(const cs_insn& insn) {
         const auto& x86detail = insn.detail->x86;
         assert(x86detail.op_count == 2);
@@ -3106,6 +3139,27 @@ namespace x64 {
         auto rssedst = asRegister128(dst);
         auto immsrc = asImmediate(src);
         if(rssedst && immsrc) return X64Instruction::make<Insn::PSRLD_RSSE_IMM>(insn.address, insn.size, rssedst.value(), immsrc.value());
+        return make_failed(insn);
+    }
+
+    static X64Instruction makePsraw(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto immsrc = asImmediate(src);
+        if(rssedst && immsrc) return X64Instruction::make<Insn::PSRAW_RSSE_IMM>(insn.address, insn.size, rssedst.value(), immsrc.value());
+        return make_failed(insn);
+    }
+    static X64Instruction makePsrad(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto immsrc = asImmediate(src);
+        if(rssedst && immsrc) return X64Instruction::make<Insn::PSRAD_RSSE_IMM>(insn.address, insn.size, rssedst.value(), immsrc.value());
         return make_failed(insn);
     }
 
@@ -3363,6 +3417,7 @@ namespace x64 {
             case X86_INS_HLT: return makeHalt(insn);
             case X86_INS_NOP:
             case X86_INS_PREFETCHT0:
+            case X86_INS_PREFETCHNTA:
             case X86_INS_ENDBR64:
             case X86_INS_LFENCE:
             case X86_INS_MFENCE:
@@ -3609,9 +3664,15 @@ namespace x64 {
             case X86_INS_PSUBW: return makePsubw(insn);
             case X86_INS_PSUBD: return makePsubd(insn);
             case X86_INS_PSUBQ: return makePsubq(insn);
+            case X86_INS_PMULHW: return makePmulhw(insn);
+            case X86_INS_PMULLW: return makePmullw(insn);
+            case X86_INS_PMADDWD: return makePmaddwd(insn);
             case X86_INS_PMAXUB: return makePmaxub(insn);
             case X86_INS_PMINUB: return makePminub(insn);
             case X86_INS_PTEST: return makePtest(insn);
+            case X86_INS_PSRAW: return makePsraw(insn);
+            case X86_INS_PSRAD: return makePsrad(insn);
+            // case X86_INS_PSRAQ: return makePsraq(insn);
             case X86_INS_PSLLW: return makePsllw(insn);
             case X86_INS_PSLLD: return makePslld(insn);
             case X86_INS_PSLLQ: return makePsllq(insn);

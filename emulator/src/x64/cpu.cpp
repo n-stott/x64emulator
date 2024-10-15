@@ -666,9 +666,15 @@ namespace x64 {
             case Insn::PSUBW_RSSE_RMSSE: return exec(Psubw<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
             case Insn::PSUBD_RSSE_RMSSE: return exec(Psubd<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
             case Insn::PSUBQ_RSSE_RMSSE: return exec(Psubq<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
+            case Insn::PMULHW_RSSE_RMSSE: return exec(Pmulhw<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
+            case Insn::PMULLW_RSSE_RMSSE: return exec(Pmullw<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
+            case Insn::PMADDWD_RSSE_RMSSE: return exec(Pmaddwd<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
             case Insn::PMAXUB_RSSE_RMSSE: return exec(Pmaxub<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
             case Insn::PMINUB_RSSE_RMSSE: return exec(Pminub<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
             case Insn::PTEST_RSSE_RMSSE: return exec(Ptest<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
+            case Insn::PSRAW_RSSE_IMM: return exec(Psraw<RSSE, Imm>{insn.op0<RSSE>(), insn.op1<Imm>()});
+            case Insn::PSRAD_RSSE_IMM: return exec(Psrad<RSSE, Imm>{insn.op0<RSSE>(), insn.op1<Imm>()});
+            case Insn::PSRAQ_RSSE_IMM: return exec(Psraq<RSSE, Imm>{insn.op0<RSSE>(), insn.op1<Imm>()});
             case Insn::PSLLW_RSSE_IMM: return exec(Psllw<RSSE, Imm>{insn.op0<RSSE>(), insn.op1<Imm>()});
             case Insn::PSLLD_RSSE_IMM: return exec(Pslld<RSSE, Imm>{insn.op0<RSSE>(), insn.op1<Imm>()});
             case Insn::PSLLQ_RSSE_IMM: return exec(Psllq<RSSE, Imm>{insn.op0<RSSE>(), insn.op1<Imm>()});
@@ -2545,6 +2551,21 @@ namespace x64 {
         set(ins.dst, res);
     }
 
+    void Cpu::exec(const Pmulhw<RSSE, RMSSE>& ins) {
+        u128 res = Impl::pmulhw(get(ins.dst), get(ins.src));
+        set(ins.dst, res);
+    }
+
+    void Cpu::exec(const Pmullw<RSSE, RMSSE>& ins) {
+        u128 res = Impl::pmullw(get(ins.dst), get(ins.src));
+        set(ins.dst, res);
+    }
+
+    void Cpu::exec(const Pmaddwd<RSSE, RMSSE>& ins) {
+        u128 res = Impl::pmaddwd(get(ins.dst), get(ins.src));
+        set(ins.dst, res);
+    }
+
     void Cpu::exec(const Pmaxub<RSSE, RMSSE>& ins) {
         u128 res = Impl::pmaxub(get(ins.dst), get(ins.src));
         set(ins.dst, res);
@@ -2557,6 +2578,18 @@ namespace x64 {
 
     void Cpu::exec(const Ptest<RSSE, RMSSE>& ins) {
         Impl::ptest(get(ins.dst), get(ins.src), &flags_);
+    }
+
+    void Cpu::exec(const Psraw<RSSE, Imm>& ins) {
+        set(ins.dst, Impl::psraw(get(ins.dst), get<u8>(ins.src)));
+    }
+
+    void Cpu::exec(const Psrad<RSSE, Imm>& ins) {
+        set(ins.dst, Impl::psrad(get(ins.dst), get<u8>(ins.src)));
+    }
+
+    void Cpu::exec(const Psraq<RSSE, Imm>& ins) {
+        set(ins.dst, Impl::psraq(get(ins.dst), get<u8>(ins.src)));
     }
 
     void Cpu::exec(const Psllw<RSSE, Imm>& ins) {

@@ -252,10 +252,18 @@ namespace x64 {
         [[nodiscard]] static u128 psubd(u128 dst, u128 src);
         [[nodiscard]] static u128 psubq(u128 dst, u128 src);
 
+        [[nodiscard]] static u128 pmulhw(u128 dst, u128 src);
+        [[nodiscard]] static u128 pmullw(u128 dst, u128 src);
+        [[nodiscard]] static u128 pmaddwd(u128 dst, u128 src);
+
         [[nodiscard]] static u128 pmaxub(u128 dst, u128 src);
         [[nodiscard]] static u128 pminub(u128 dst, u128 src);
 
         static void ptest(u128 dst, u128 src, Flags* flags);
+
+        [[nodiscard]] static u128 psraw(u128 dst, u8 src);
+        [[nodiscard]] static u128 psrad(u128 dst, u8 src);
+        [[nodiscard]] static u128 psraq(u128 dst, u8 src);
 
         [[nodiscard]] static u128 psllw(u128 dst, u8 src);
         [[nodiscard]] static u128 pslld(u128 dst, u8 src);

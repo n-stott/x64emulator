@@ -2165,6 +2165,54 @@ namespace x64 {
     u128 CheckedCpuImpl::psubd(u128 dst, u128 src) { return psub<u32>(dst, src, &CpuImpl::psubd); }
     u128 CheckedCpuImpl::psubq(u128 dst, u128 src) { return psub<u64>(dst, src, &CpuImpl::psubq); }
 
+    u128 CheckedCpuImpl::pmulhw(u128 dst, u128 src) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::pmulhw(dst, src);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("pmulhw %1, %0" : "+x"(nativeRes) : "x"(src));
+        assert(nativeRes.lo == virtualRes.lo);
+        assert(nativeRes.hi == virtualRes.hi);
+        
+        return nativeRes;
+#else
+        return CpuImpl::pmulhw(dst, src);
+#endif
+    }
+
+    u128 CheckedCpuImpl::pmullw(u128 dst, u128 src) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::pmullw(dst, src);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("pmullw %1, %0" : "+x"(nativeRes) : "x"(src));
+        assert(nativeRes.lo == virtualRes.lo);
+        assert(nativeRes.hi == virtualRes.hi);
+        
+        return nativeRes;
+#else
+        return CpuImpl::pmullw(dst, src);
+#endif
+    }
+
+    u128 CheckedCpuImpl::pmaddwd(u128 dst, u128 src) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::pmaddwd(dst, src);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("pmaddwd %1, %0" : "+x"(nativeRes) : "x"(src));
+        assert(nativeRes.lo == virtualRes.lo);
+        assert(nativeRes.hi == virtualRes.hi);
+        
+        return nativeRes;
+#else
+        return CpuImpl::pmaddwd(dst, src);
+#endif
+    }
+
     u128 CheckedCpuImpl::pmaxub(u128 dst, u128 src) {
 #if GCC_COMPILER
         u128 virtualRes = CpuImpl::pmaxub(dst, src);
@@ -2214,6 +2262,24 @@ namespace x64 {
         CpuImpl::ptest(dst, src, flags);
 #endif
     }
+
+    template<typename I>
+    static u128 psra(u128 dst, u8 src) {
+        constexpr u32 N = sizeof(u128)/sizeof(I);
+        std::array<I, N> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        std::memcpy(DST.data(), &dst, sizeof(u128));
+
+        for(size_t i = 0; i < N; ++i) {
+            DST[i] = (I)(DST[i] >> (I)src);
+        }
+        std::memcpy(&dst, DST.data(), sizeof(u128));
+        return dst;
+    }
+
+    u128 CheckedCpuImpl::psraw(u128 dst, u8 src) { return psra<i16>(dst, src); }
+    u128 CheckedCpuImpl::psrad(u128 dst, u8 src) { return psra<i32>(dst, src); }
+    u128 CheckedCpuImpl::psraq(u128 dst, u8 src) { return psra<i64>(dst, src); }
 
     template<typename U>
     static u128 psll(u128 dst, u8 src) {

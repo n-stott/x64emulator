@@ -5,6 +5,13 @@ set(CMAKE_CXX_STANDARD 17)
 set(CC_OPTIONS -g -O0 -DDEBUG -fpic)
 set(LD_OPTIONS)
 
+add_executable(test_cpu_pmulhw src/test_pmulhw.cpp)
+target_compile_options(test_cpu_pmulhw PUBLIC ${CC_OPTIONS})
+target_include_directories(test_cpu_pmulhw PUBLIC include ${CMAKE_SOURCE_DIR}/emulator/include)
+target_link_libraries(test_cpu_pmulhw PUBLIC x64cpu fmt::fmt-header-only)
+target_link_options(test_cpu_pmulhw PUBLIC ${LD_OPTIONS})
+add_test(NAME pmulhw COMMAND test_cpu_pmulhw)
+
 add_executable(test_cpu_punpck src/test_punpck.cpp)
 target_compile_options(test_cpu_punpck PUBLIC ${CC_OPTIONS})
 target_include_directories(test_cpu_punpck PUBLIC include ${CMAKE_SOURCE_DIR}/emulator/include)
