@@ -8,6 +8,7 @@
 #include "x64/mmu.h"
 #include "x64/cpu.h"
 #include <fmt/ranges.h>
+#include <fmt/color.h>
 #include <numeric>
 #include <sys/socket.h>
 
@@ -248,16 +249,22 @@ namespace kernel {
         if(!(bool)(f & x64::MAP::ANONYMOUS)) {
             verify(fd >= 0);
             ErrnoOrBuffer data = kernel_.fs().pread(FS::FD{fd}, length, offset);
-            verify(!data.isError());
+            if(data.isError()) {
+                auto filename = kernel_.fs().filename(FS::FD{fd});
+                warn([&](){ fmt::print(fg(fmt::color::red), "Could not mmap file \"{}\" with fd={}\n", filename, fd); });
+            }
             data.errorOrWith<int>([&](const Buffer& buffer) {
                 x64::PROT saved = mmu_.prot(base);
                 mmu_.mprotect(base, length, x64::PROT::WRITE);
                 mmu_.copyToMmu(x64::Ptr8{base}, buffer.data(), buffer.size());
                 mmu_.mprotect(base, length, saved);
+                auto filename = kernel_.fs().filename(FS::FD{fd});
+                mmu_.setRegionName(base, filename);
                 return 0;
             });
-            auto filename = kernel_.fs().filename(FS::FD{fd});
-            mmu_.setRegionName(base, filename);
+            if(data.isError()) {
+                base = (u64)(-1); // map failed
+            }
         }
         if(logSyscalls_) print("Sys::mmap(addr={:#x}, length={}, prot={}, flags={}, fd={}, offset={}) = {:#x}\n",
                                               addr.address(), length, prot, flags, fd, offset, base);
