@@ -31,4 +31,8 @@ namespace kernel {
         return -EINVAL;
     }
 
+    off_t Event::lseek(off_t, int) {
+        return -ESPIPE;
+    }
+
 }

@@ -15,4 +15,8 @@ namespace kernel {
         return -EINVAL;
     }
 
+    off_t Epoll::lseek(off_t, int) {
+        return -ESPIPE;
+    }
+
 }

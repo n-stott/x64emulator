@@ -41,6 +41,13 @@ namespace kernel {
             return file_->write(buf, count, offset);
         }
 
+        off_t lseek(off_t offset, int whence) {
+            off_t newoffset = file_->lseek(offset, whence);
+            if(newoffset < 0) return newoffset;
+            offset_ = newoffset;
+            return newoffset;
+        }
+
     private:
         File* file_ { nullptr };
         off_t offset_ { 0 };

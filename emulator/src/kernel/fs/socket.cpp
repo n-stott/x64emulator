@@ -108,6 +108,10 @@ namespace kernel {
         return nbytes;
     }
 
+    off_t Socket::lseek(off_t, int) {
+        return -ESPIPE;
+    }
+
     ErrnoOr<std::pair<Buffer, Buffer>> Socket::recvfrom(size_t len, int flags, bool requireSrcAddress) {
         static_assert(sizeof(socklen_t) == sizeof(u32));
         if(requireSrcAddress) {

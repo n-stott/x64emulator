@@ -249,9 +249,7 @@ namespace kernel {
     off_t FS::lseek(FD fd, off_t offset, int whence) {
         OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
         if(!openFileDescription) return -EBADF;
-        if(!openFileDescription->file()->isRegularFile()) return -EBADF;
-        RegularFile* file = static_cast<RegularFile*>(openFileDescription->file());
-        return file->lseek(offset, whence);
+        return openFileDescription->lseek(offset, whence);
     }
 
     int FS::close(FD fd) {

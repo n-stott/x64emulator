@@ -20,6 +20,8 @@ namespace kernel {
         ErrnoOrBuffer read(size_t, off_t) override;
         ssize_t write(const u8*, size_t, off_t) override;
 
+        off_t lseek(off_t offset, int whence) override;
+
         std::optional<int> hostFileDescriptor() const override { return {}; }
 
 
