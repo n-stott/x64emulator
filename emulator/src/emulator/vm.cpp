@@ -35,6 +35,7 @@ namespace emulator {
         mmu_.dumpRegions();
         fmt::print("Stacktrace:\n");
         dumpStackTrace();
+        kernel_.panic();
     }
 
     void VM::syncThread() {

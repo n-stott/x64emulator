@@ -34,6 +34,8 @@ namespace kernel {
         Scheduler& scheduler() { return scheduler_; }
         Host& host() { return host_; }
         FS& fs() { return fs_; }
+
+        void panic() const;
     
     private:
         x64::Mmu& mmu_;

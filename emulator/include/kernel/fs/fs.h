@@ -83,6 +83,7 @@ namespace kernel {
         ErrnoOr<BufferAndReturnValue<int>> poll(const Buffer&, u64 nfds, int timeout);
 
         std::string filename(FD fd);
+        void dumpSummary() const;
 
     private:
         struct FsNode {

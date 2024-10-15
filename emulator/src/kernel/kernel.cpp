@@ -238,4 +238,9 @@ namespace kernel {
 
         return mainThreadPtr;
     }
+
+    void Kernel::panic() const {
+        fs_.dumpSummary();
+        scheduler_.dumpThreadSummary();
+    }
 }

@@ -68,7 +68,7 @@ namespace emulator {
             ok &= (mainThread->exitStatus() == 0);
         }, [&]() {
             fmt::print("Emulator crash\n");
-            kernel.scheduler().dumpThreadSummary();
+            kernel.panic();
             ok = false;
         });
 

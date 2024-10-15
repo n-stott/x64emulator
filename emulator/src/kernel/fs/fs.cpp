@@ -438,4 +438,15 @@ namespace kernel {
         return "";
     }
 
+    void FS::dumpSummary() const {
+        fmt::print("Known files:\n");
+        for(const auto& node : files_) {
+            fmt::print("  path={}\n", node.path);
+        }
+        fmt::print("Open files:\n");
+        for(const auto& openFile : openFiles_) {
+            fmt::print("  fd={} : path={}\n", openFile.fd.fd, openFile.path);
+        }
+    }
+
 }
