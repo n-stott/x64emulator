@@ -111,6 +111,7 @@ namespace kernel {
             case 0x68: return cpu->set(x64::R64::RAX, invoke_syscall_0(&Sys::getgid, regs));
             case 0x6b: return cpu->set(x64::R64::RAX, invoke_syscall_0(&Sys::geteuid, regs));
             case 0x6c: return cpu->set(x64::R64::RAX, invoke_syscall_0(&Sys::getegid, regs));
+            case 0x6e: return cpu->set(x64::R64::RAX, invoke_syscall_0(&Sys::getppid, regs));
             case 0x6f: return cpu->set(x64::R64::RAX, invoke_syscall_0(&Sys::getpgrp, regs));
             case 0x76: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::getresuid, regs));
             case 0x78: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::getresgid, regs));
@@ -687,6 +688,10 @@ namespace kernel {
 
     int Sys::getegid() {
         return kernel_.host().getegid();
+    }
+
+    int Sys::getppid() {
+        return kernel_.host().getppid();
     }
 
     int Sys::getpgrp() {

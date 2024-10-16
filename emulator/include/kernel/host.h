@@ -124,6 +124,7 @@ namespace kernel {
         static int geteuid();
         static int getegid();
         static int getpgrp();
+        static int getppid();
 
         struct UserCredentials {
             int ruid;

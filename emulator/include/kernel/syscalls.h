@@ -228,6 +228,8 @@ namespace kernel {
         int geteuid();
         // 0x6c
         int getegid();
+        // 0x6e
+        int getppid();
         // 0x6f
         int getpgrp();
         // 0x76

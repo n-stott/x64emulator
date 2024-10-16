@@ -360,6 +360,10 @@ namespace kernel {
         return (int)::getpgrp();
     }
 
+    int Host::getppid() {
+        return (int)::getppid();
+    }
+
     ErrnoOrBuffer Host::readlink(const std::string& path, size_t count) {
         std::vector<u8> buffer;
         buffer.resize(count, 0x0);
