@@ -46,6 +46,7 @@ namespace kernel {
 
         FD open(const std::string& path, OpenFlags flags, Permissions permissions);
         FD dup(FD fd);
+        FD dup2(FD oldfd, FD newfd);
         int close(FD fd);
 
         ErrnoOrBuffer read(FD fd, size_t count);

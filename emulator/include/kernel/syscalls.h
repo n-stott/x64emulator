@@ -168,6 +168,8 @@ namespace kernel {
         int madvise(x64::Ptr addr, size_t length, int advice);
         // 0x20
         int dup(int oldfd);
+        // 0x21
+        int dup2(int oldfd, int newfd);
         // 0x26
         int setitimer(int which, const x64::Ptr new_value, x64::Ptr old_value);
         // 0x27

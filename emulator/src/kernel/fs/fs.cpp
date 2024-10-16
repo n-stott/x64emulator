@@ -148,6 +148,21 @@ namespace kernel {
         return newFd;
     }
 
+    FS::FD FS::dup2(FD oldfd, FD newfd) {
+        OpenFileDescription* oldOfd = findOpenFileDescription(oldfd);
+        if(!oldOfd) return FD{-EBADF};
+        if(oldfd == newfd) return newfd;
+        OpenFileDescription* newOfd = findOpenFileDescription(newfd);
+        if(!!newOfd) {
+            int ret = close(newfd);
+            verify(ret == 0, "close in dup2 failed");
+        }
+        oldOfd->file()->ref();
+        std::string path = filename(oldfd);
+        openFiles_.push_back(OpenNode{newfd, std::move(path), oldOfd});
+        return newfd;
+    }
+
     OpenFileDescription* FS::findOpenFileDescription(FD fd) {
         for(OpenNode& node : openFiles_) {
             if(node.fd != fd) continue;

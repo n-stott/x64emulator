@@ -81,6 +81,7 @@ namespace kernel {
             case 0x19: return cpu->set(x64::R64::RAX, invoke_syscall_5(&Sys::mremap, regs));
             case 0x1c: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::madvise, regs));
             case 0x20: return cpu->set(x64::R64::RAX, invoke_syscall_1(&Sys::dup, regs));
+            case 0x21: return cpu->set(x64::R64::RAX, invoke_syscall_2(&Sys::dup2, regs));
             case 0x26: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::setitimer, regs));
             case 0x27: return cpu->set(x64::R64::RAX, invoke_syscall_0(&Sys::getpid, regs));
             case 0x29: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::socket, regs));
@@ -388,6 +389,12 @@ namespace kernel {
         FS::FD newfd = kernel_.fs().dup(FS::FD{oldfd});
         if(logSyscalls_) print("Sys::dup(oldfd={}) = {}\n", oldfd, newfd.fd);
         return newfd.fd;
+    }
+
+    int Sys::dup2(int oldfd, int newfd) {
+        FS::FD fd = kernel_.fs().dup2(FS::FD{oldfd}, FS::FD{newfd});
+        if(logSyscalls_) print("Sys::dup2(oldfd={}, newfd={}) = {}\n", oldfd, newfd, fd.fd);
+        return fd.fd;
     }
 
     int Sys::setitimer([[maybe_unused]] int which, [[maybe_unused]]const x64::Ptr new_value, [[maybe_unused]]x64::Ptr old_value) {
