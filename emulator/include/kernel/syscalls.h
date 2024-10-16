@@ -268,6 +268,10 @@ namespace kernel {
         int tgkill(int tgid, int tid, int sig);
         // 0xed
         int mbind(unsigned long start, unsigned long len, unsigned long mode, x64::Ptr64 nmask, unsigned long maxnode, unsigned flags);
+        // 0xfd
+        int inotify_init();
+        // 0xfe
+        int inotify_add_watch(int fd, x64::Ptr pathname, uint32_t mask);
         // 0x101
         int openat(int dirfd, x64::Ptr pathname, int flags, mode_t mode);
         // 0x106

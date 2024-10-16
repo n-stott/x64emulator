@@ -131,6 +131,8 @@ namespace kernel {
             case 0xe7: return cpu->set(x64::R64::RAX, invoke_syscall_1(&Sys::exit_group, regs));
             case 0xea: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::tgkill, regs));
             case 0xed: return cpu->set(x64::R64::RAX, invoke_syscall_6(&Sys::mbind, regs));
+            case 0xfd: return cpu->set(x64::R64::RAX, invoke_syscall_0(&Sys::inotify_init, regs));
+            case 0xfe: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::inotify_add_watch, regs));
             case 0x101: return cpu->set(x64::R64::RAX, invoke_syscall_4(&Sys::openat, regs));
             case 0x106: return cpu->set(x64::R64::RAX, invoke_syscall_4(&Sys::fstatat64, regs));
             case 0x10b: return cpu->set(x64::R64::RAX, invoke_syscall_4(&Sys::readlinkat, regs));
@@ -730,6 +732,16 @@ namespace kernel {
 
     int Sys::mbind(unsigned long start, unsigned long len, unsigned long mode, x64::Ptr64 nmask, unsigned long maxnode, unsigned flags) {
         if(logSyscalls_) print("Sys::mbind(start={}, len={}, mode={}, nmask={:#x}, maxnode={}, flags={})\n", start, len, mode, nmask.address(), maxnode, flags);
+        return -ENOTSUP;
+    }
+
+    int Sys::inotify_init() {
+        if(logSyscalls_) print("Sys::inotify_init() = {}\n", -ENOTSUP);
+        return -ENOTSUP;
+    }
+
+    int Sys::inotify_add_watch(int fd, x64::Ptr pathname, uint32_t mask) {
+        if(logSyscalls_) print("Sys::inotify_add_watch(fd={}, pathname={}, mask={}) = {}\n", fd, mmu_.readString(pathname), mask, -ENOTSUP);
         return -ENOTSUP;
     }
 
