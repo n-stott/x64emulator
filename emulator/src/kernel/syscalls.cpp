@@ -85,6 +85,7 @@ namespace kernel {
             case 0x27: return cpu->set(x64::R64::RAX, invoke_syscall_0(&Sys::getpid, regs));
             case 0x29: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::socket, regs));
             case 0x2a: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::connect, regs));
+            case 0x2c: return cpu->set(x64::R64::RAX, invoke_syscall_6(&Sys::sendto, regs));
             case 0x2d: return cpu->set(x64::R64::RAX, invoke_syscall_6(&Sys::recvfrom, regs));
             case 0x2e: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::sendmsg, regs));
             case 0x2f: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::recvmsg, regs));
@@ -463,6 +464,19 @@ namespace kernel {
         if(logSyscalls_) {
             print("Sys::connect(sockfd={}, addr={:#x}, addrlen={}) = {}\n",
                         sockfd, addr.address(), addrlen, ret);
+        }
+        return ret;
+    }
+
+    ssize_t Sys::sendto(int sockfd, x64::Ptr buf, size_t len, int flags, x64::Ptr dest_addr, socklen_t addrlen) {
+        verify(dest_addr.address() == 0);
+        verify(addrlen == 0);
+        std::vector<u8> bufData = mmu_.readFromMmu<u8>(buf, len);
+        Buffer buffer(std::move(bufData));
+        ssize_t ret = kernel_.fs().send(FS::FD{sockfd}, buffer, flags);
+        if(logSyscalls_) {
+            print("Sys::sendto(sockfd={}, buf={:#x}, len={}, flags={}, dest_addr={:#x}, addrlen={}) = {}\n",
+                        sockfd, buf.address(), len, flags, dest_addr.address(), addrlen, ret);
         }
         return ret;
     }

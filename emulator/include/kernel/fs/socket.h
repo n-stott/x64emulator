@@ -30,6 +30,7 @@ namespace kernel {
 
         ErrnoOr<std::pair<Buffer, Buffer>> recvfrom(size_t len, int flags, bool requireSrcAddress);
         ssize_t recvmsg(int flags, Buffer* msg_name, std::vector<Buffer>* msg_iov, Buffer* msg_control, int* msg_flags);
+        ssize_t send(const Buffer& buffer, int flags);
         ssize_t sendmsg(int flags, const Buffer& msg_name, const std::vector<Buffer>& msg_iov, const Buffer& msg_control, int msg_flags);
 
         bool isReadable() const override { return true; }

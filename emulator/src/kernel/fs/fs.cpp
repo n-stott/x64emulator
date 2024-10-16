@@ -422,6 +422,14 @@ namespace kernel {
         return socket->recvmsg(flags, msg_name, msg_iov, msg_control, msg_flags);
     }
 
+    ssize_t FS::send(FD sockfd, const Buffer& buffer, int flags) {
+        OpenFileDescription* openFileDescription = findOpenFileDescription(sockfd);
+        if(!openFileDescription) return -EBADF;
+        if(!openFileDescription->file()->isSocket()) return -EBADF;
+        Socket* socket = static_cast<Socket*>(openFileDescription->file());
+        return socket->send(buffer, flags);
+    }
+
     ssize_t FS::sendmsg(FD sockfd, int flags, const Buffer& msg_name, const std::vector<Buffer>& msg_iov, const Buffer& msg_control, int msg_flags) {
         OpenFileDescription* openFileDescription = findOpenFileDescription(sockfd);
         if(!openFileDescription) return -EBADF;

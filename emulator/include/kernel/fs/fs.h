@@ -78,6 +78,7 @@ namespace kernel {
 
         ErrnoOr<std::pair<Buffer, Buffer>> recvfrom(FD sockfd, size_t len, int flags, bool requireSrcAddress);
         ssize_t recvmsg(FD sockfd, int flags, Buffer* msg_name, std::vector<Buffer>* msg_iov, Buffer* msg_control, int* msg_flags);
+        ssize_t send(FD sockfd, const Buffer& buffer, int flags);
         ssize_t sendmsg(FD sockfd, int flags, const Buffer& msg_name, const std::vector<Buffer>& msg_iov, const Buffer& msg_control, int msg_flags);
         
         ErrnoOr<BufferAndReturnValue<int>> poll(const Buffer&, u64 nfds, int timeout);

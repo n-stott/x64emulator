@@ -156,6 +156,12 @@ namespace kernel {
         return ret;
     }
 
+    ssize_t Socket::send(const Buffer& buffer, int flags) {
+        ssize_t ret = ::send(hostFd_, buffer.data(), buffer.size(), flags);
+        if(ret < 0) return -errno;
+        return ret;
+    }
+
     ssize_t Socket::sendmsg(int flags, const Buffer& msg_name, const std::vector<Buffer>& msg_iov, const Buffer& msg_control, int msg_flags) {
         // struct msghdr {
         //     void*         msg_name;       /* Optional address */

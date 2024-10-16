@@ -176,6 +176,8 @@ namespace kernel {
         int socket(int domain, int type, int protocol);
         // 0x2a
         int connect(int sockfd, x64::Ptr addr, size_t addrlen);
+        // 0x2c
+        ssize_t sendto(int sockfd, x64::Ptr buf, size_t len, int flags, x64::Ptr dest_addr, socklen_t addrlen);
         // 0x2d
         ssize_t recvfrom(int sockfd, x64::Ptr buf, size_t len, int flags, x64::Ptr src_addr, x64::Ptr32 addrlen);
         // 0x2e
