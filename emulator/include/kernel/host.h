@@ -124,6 +124,17 @@ namespace kernel {
         static int geteuid();
         static int getegid();
         static int getpgrp();
+
+        struct UserCredentials {
+            int ruid;
+            int euid;
+            int suid;
+            int rgid;
+            int egid;
+            int sgid;
+        };
+
+        static UserCredentials getUserCredentials();
         
         static ErrnoOrBuffer getcwd(size_t size);
         static ErrnoOrBuffer getdents64(FD fd, size_t count);

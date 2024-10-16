@@ -379,6 +379,29 @@ namespace kernel {
         return ErrnoOrBuffer(Buffer{std::move(buffer)});
     }
 
+    Host::UserCredentials Host::getUserCredentials() {
+        uid_t ruid { 0 };
+        uid_t euid { 0 };
+        uid_t suid { 0 };
+        int ret = ::getresuid(&ruid, &euid, &suid);
+        (void)ret;
+        assert(ret == 0);
+        gid_t rgid { 0 };
+        gid_t egid { 0 };
+        gid_t sgid { 0 };
+        ret = ::getresgid(&rgid, &egid, &sgid);
+        (void)ret;
+        assert(ret == 0);
+        return UserCredentials {
+            (int)ruid,
+            (int)euid,
+            (int)suid,
+            (int)rgid,
+            (int)egid,
+            (int)sgid,
+        };
+    }
+
     ErrnoOrBuffer Host::getcwd(size_t size) {
         std::vector<u8> path;
         path.resize(size, 0x0);

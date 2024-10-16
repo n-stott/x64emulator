@@ -110,6 +110,8 @@ namespace kernel {
             case 0x6b: return cpu->set(x64::R64::RAX, invoke_syscall_0(&Sys::geteuid, regs));
             case 0x6c: return cpu->set(x64::R64::RAX, invoke_syscall_0(&Sys::getegid, regs));
             case 0x6f: return cpu->set(x64::R64::RAX, invoke_syscall_0(&Sys::getpgrp, regs));
+            case 0x76: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::getresuid, regs));
+            case 0x78: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::getresgid, regs));
             case 0x89: return cpu->set(x64::R64::RAX, invoke_syscall_2(&Sys::statfs, regs));
             case 0x9d: return cpu->set(x64::R64::RAX, invoke_syscall_5(&Sys::prctl, regs));
             case 0x9e: return cpu->set(x64::R64::RAX, invoke_syscall_2(&Sys::arch_prctl, regs));
@@ -663,6 +665,22 @@ namespace kernel {
 
     int Sys::getpgrp() {
         return kernel_.host().getpgrp();
+    }
+
+    int Sys::getresuid(x64::Ptr32 ruid, x64::Ptr32 euid, x64::Ptr32 suid) {
+        Host::UserCredentials creds = kernel_.host().getUserCredentials();
+        mmu_.write32(ruid, creds.ruid);
+        mmu_.write32(euid, creds.euid);
+        mmu_.write32(suid, creds.suid);
+        return 0;
+    }
+
+    int Sys::getresgid(x64::Ptr32 rgid, x64::Ptr32 egid, x64::Ptr32 sgid) {
+        Host::UserCredentials creds = kernel_.host().getUserCredentials();
+        mmu_.write32(rgid, creds.rgid);
+        mmu_.write32(egid, creds.egid);
+        mmu_.write32(sgid, creds.sgid);
+        return 0;
     }
 
     int Sys::statfs(x64::Ptr pathname, x64::Ptr buf) {

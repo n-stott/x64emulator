@@ -226,6 +226,10 @@ namespace kernel {
         int getegid();
         // 0x6f
         int getpgrp();
+        // 0x76
+        int getresuid(x64::Ptr32 ruid, x64::Ptr32 euid, x64::Ptr32 suid);
+        // 0x78
+        int getresgid(x64::Ptr32 rgid, x64::Ptr32 egid, x64::Ptr32 sgid);
         // 0x89
         int statfs(x64::Ptr path, x64::Ptr buf);
         // 0x9e
