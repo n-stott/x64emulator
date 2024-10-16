@@ -78,6 +78,7 @@ namespace kernel {
             case 0x15: return cpu->set(x64::R64::RAX, invoke_syscall_2(&Sys::access, regs));
             case 0x17: return cpu->set(x64::R64::RAX, invoke_syscall_5(&Sys::select, regs));
             case 0x18: return cpu->set(x64::R64::RAX, invoke_syscall_0(&Sys::sched_yield, regs));
+            case 0x19: return cpu->set(x64::R64::RAX, invoke_syscall_5(&Sys::mremap, regs));
             case 0x1c: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::madvise, regs));
             case 0x20: return cpu->set(x64::R64::RAX, invoke_syscall_1(&Sys::dup, regs));
             case 0x26: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::setitimer, regs));
@@ -426,6 +427,15 @@ namespace kernel {
         verify(!!currentThread_);
         currentThread_->yield();
         return 0;
+    }
+
+    x64::Ptr Sys::mremap(x64::Ptr old_address, size_t old_size, size_t new_size, int flags, x64::Ptr new_address) {
+        if(logSyscalls_) {
+            print("Sys::mremap(old_address={:#x}, old_size={}, new_size={}, flags={}, new_address={:#x}) = {}\n",
+                                    old_address.address(), old_size, new_size, flags, new_address.address(), -ENOTSUP);
+        }
+        warn([&](){ fmt::print(fg(fmt::color::red), "mremap not implemented\n"); });
+        return x64::Ptr{(u64)-ENOTSUP};
     }
 
     int Sys::madvise(x64::Ptr addr, size_t length, int advice) {

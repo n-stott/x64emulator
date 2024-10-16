@@ -162,6 +162,8 @@ namespace kernel {
         int select(int nfds, x64::Ptr readfds, x64::Ptr writefds, x64::Ptr exceptfds, x64::Ptr timeout);
         // 0x18
         int sched_yield();
+        // 0x19
+        x64::Ptr mremap(x64::Ptr old_address, size_t old_size, size_t new_size, int flags, x64::Ptr new_address);
         // 0x1c
         int madvise(x64::Ptr addr, size_t length, int advice);
         // 0x20
