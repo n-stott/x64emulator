@@ -5,6 +5,7 @@
 
 namespace x64 {
 
+#ifdef MULTIPROCESSING
     class Spinlock {
     public:
         Spinlock() = default;
@@ -48,6 +49,33 @@ namespace x64 {
     private:
         Spinlock& lock_;
     };
+#else
+
+    class Spinlock {
+    public:
+        Spinlock() = default;
+        ~Spinlock() = default;
+
+        void lock() { }
+        void unlock() { }
+        bool isLocked() const { return false; }
+
+    private:
+        Spinlock(Spinlock&&) = delete;
+        Spinlock(const Spinlock&) = delete;
+    };
+
+    class SpinlockLocker {
+    public:
+        explicit SpinlockLocker(Spinlock&) { }
+        ~SpinlockLocker() = default;
+
+        bool holdsLock(const Spinlock&) {
+            return false;
+        }
+    };
+#endif
+
 
 }
 

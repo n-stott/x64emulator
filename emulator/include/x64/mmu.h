@@ -125,7 +125,11 @@ namespace x64 {
                 verify((bool)(prot() & PROT::WRITE), [&]() {
                     badWrite(address);
                 });
+#ifdef MULTIPROCESSING
                 verify(locker.holdsLock(lock_));
+#else
+                (void)locker;
+#endif
                 std::memcpy(&data_[address-base()], &value, sizeof(value));
             }
 
