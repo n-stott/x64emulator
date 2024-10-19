@@ -59,12 +59,8 @@ namespace emulator {
         
         VerificationScope::run([&]() {
             kernel::Thread* mainThread = kernel.exec(programFilePath, arguments, environmentVariables);
-
             kernel.scheduler().run();
-
             fmt::print("Emulator completed execution\n");
-            kernel.scheduler().dumpThreadSummary();
-
             ok &= (mainThread->exitStatus() == 0);
         }, [&]() {
             fmt::print("Emulator crash\n");
