@@ -35,7 +35,9 @@ namespace kernel {
         Host& host() { return host_; }
         FS& fs() { return fs_; }
 
-        void panic() const;
+        void panic();
+        bool hasPanicked() const { return hasPanicked_; }
+        void dumpPanicInfo() const;
     
     private:
         x64::Mmu& mmu_;
@@ -44,6 +46,7 @@ namespace kernel {
         Scheduler scheduler_;
         Sys sys_;
         bool isProfiling_ { false };
+        bool hasPanicked_ { false };
 
     };
 

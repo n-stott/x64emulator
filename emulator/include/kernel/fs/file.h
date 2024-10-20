@@ -5,6 +5,7 @@
 #include "kernel/utils/buffer.h"
 #include "kernel/utils/erroror.h"
 #include <sys/types.h>
+#include <string>
 
 namespace kernel {
 
@@ -19,6 +20,8 @@ namespace kernel {
         virtual ssize_t write(const u8* buf, size_t count, off_t offset) = 0;
 
         virtual off_t lseek(off_t offset, int whence) = 0;
+
+        virtual std::string className() const = 0;
     };
 
 }

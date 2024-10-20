@@ -3,6 +3,7 @@
 
 #include "kernel/fs/regularfile.h"
 #include "kernel/fs/fs.h"
+#include <fmt/core.h>
 #include <memory>
 #include <string>
 
@@ -31,6 +32,10 @@ namespace kernel {
         ErrnoOrBuffer getdents64(size_t count) override;
         int fcntl(int cmd, int arg) override;
         ErrnoOrBuffer ioctl(unsigned long request, const Buffer& buffer) override;
+
+        std::string className() const override {
+            return fmt::format("HostFile(realfd={})", hostFd_);
+        }
 
     private:
         HostFile(FS* fs, std::string path, int hostFd) : RegularFile(fs), path_(std::move(path)), hostFd_(hostFd) { }

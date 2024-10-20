@@ -33,6 +33,15 @@ namespace kernel {
         int fcntl(int cmd, int arg) override;
         ErrnoOrBuffer ioctl(unsigned long request, const Buffer& buffer) override;
 
+        std::string className() const override {
+            switch(type_) {
+                case TYPE::IN: return "stdin";
+                case TYPE::OUT: return "stdout";
+                case TYPE::ERR: return "stderr";
+            }
+            return "Unknown stream";
+        }
+
     private:
         TYPE type_;
     };

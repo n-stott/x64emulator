@@ -10,6 +10,7 @@
 #include <cstddef>
 #include <deque>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace kernel {
@@ -142,6 +143,9 @@ namespace kernel {
         void forEachSyscallEvent(Func&& func) const {
             for(const SyscallEvent& event : syscallEvents_) func(event);
         }
+
+        void dumpRegisters() const;
+        void dumpStackTrace(const std::unordered_map<u64, std::string>& addressToSymbol) const;
 
     private:
         THREAD_STATE state_ { THREAD_STATE::RUNNABLE };

@@ -35,6 +35,10 @@ namespace kernel {
         void append();
         void setWritable(bool writable) { writable_ = writable; }
 
+        std::string className() const override {
+            return "ShadowFile";
+        }
+
     private:
         ShadowFile(FS* fs, std::vector<u8> data) : RegularFile(fs), data_(data) { }
         std::vector<u8> data_;

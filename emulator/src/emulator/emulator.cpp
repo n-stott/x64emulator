@@ -68,6 +68,10 @@ namespace emulator {
             ok = false;
         });
 
+        if(kernel.hasPanicked()) {
+            kernel.dumpPanicInfo();
+        }
+
         if(isProfiling_) {
             using namespace profiling;
             ProfilingData profilingData;

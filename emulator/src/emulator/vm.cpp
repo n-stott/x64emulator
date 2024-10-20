@@ -29,13 +29,6 @@ namespace emulator {
                             currentThread_->description().tid,
                             currentThread_->tickInfo().ticksFromStart);
         }
-        fmt::print("Register state:\n");
-        dumpRegisters();
-        fmt::print("Memory regions:\n");
-        mmu_.dumpRegions();
-        fmt::print("Stacktrace:\n");
-        dumpStackTrace();
-        kernel_.panic();
     }
 
     void VM::syncThread() {
@@ -156,39 +149,6 @@ namespace emulator {
                                                 cpu_.get(x64::RSSE::XMM3).hi, cpu_.get(x64::RSSE::XMM3).lo);
             fmt::print(stderr, "{:86} {}\n", "", sseDump);
         }
-    }
-
-    void VM::dumpStackTrace() const {
-        if(!currentThread_) return;
-        size_t frameId = 0;
-        auto callstackBegin = currentThread_->callstack().rbegin();
-        auto callstackEnd = currentThread_->callstack().rend();
-        auto callpointBegin = currentThread_->callpoints().rbegin();
-        auto callstackIt = callstackBegin;
-        auto callpointIt = callpointBegin;
-        for(;callstackIt != callstackEnd; ++callstackIt, ++callpointIt) {
-            std::string name = calledFunctionName(*callstackIt);
-            fmt::print(" {}:{:#x} -> {:#x} : {}\n", frameId, *callpointIt, *callstackIt, name);
-            ++frameId;
-        }
-    }
-
-    void VM::dumpRegisters() const {
-        fmt::print(stderr,
-            "rip {:>#8x}\n",
-            cpu_.regs_.rip());
-        fmt::print(stderr,
-            "rsi {:>#8x}  rdi {:>#8x}  rbp {:>#8x}  rsp {:>#8x}\n",
-            cpu_.regs_.get(x64::R64::RSI), cpu_.regs_.get(x64::R64::RDI), cpu_.regs_.get(x64::R64::RBP), cpu_.regs_.get(x64::R64::RSP));
-        fmt::print(stderr,
-            "rax {:>#8x}  rbx {:>#8x}  rcx {:>#8x}  rdx {:>#8x}\n",
-            cpu_.regs_.get(x64::R64::RAX), cpu_.regs_.get(x64::R64::RBX), cpu_.regs_.get(x64::R64::RCX), cpu_.regs_.get(x64::R64::RDX));
-        fmt::print(stderr,
-            "r8  {:>#8x}  r9  {:>#8x}  r10 {:>#8x}  r11 {:>#8x}\n",
-            cpu_.regs_.get(x64::R64::R8), cpu_.regs_.get(x64::R64::R9), cpu_.regs_.get(x64::R64::R10), cpu_.regs_.get(x64::R64::R11));
-        fmt::print(stderr,
-            "r12 {:>#8x}  r13 {:>#8x}  r14 {:>#8x}  r15 {:>#8x}\n",
-            cpu_.regs_.get(x64::R64::R12), cpu_.regs_.get(x64::R64::R13), cpu_.regs_.get(x64::R64::R14), cpu_.regs_.get(x64::R64::R15));
     }
 
     void VM::notifyCall(u64 address) {

@@ -48,6 +48,10 @@ namespace kernel {
             return newoffset;
         }
 
+        std::string toString() const {
+            return file_->className();
+        }
+
     private:
         File* file_ { nullptr };
         off_t offset_ { 0 };

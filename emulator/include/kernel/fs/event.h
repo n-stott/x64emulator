@@ -2,6 +2,7 @@
 #define EVENT_H
 
 #include "kernel/fs/file.h"
+#include <fmt/core.h>
 #include <memory>
 
 namespace kernel {
@@ -26,6 +27,10 @@ namespace kernel {
         off_t lseek(off_t offset, int whence) override;
 
         std::optional<int> hostFileDescriptor() const override { return hostFd_; }
+
+        std::string className() const override {
+            return fmt::format("Event(realfd={})", hostFd_);
+        }
 
     private:
         explicit Event(FS* fs, unsigned int initval, int flags, int hostFd);

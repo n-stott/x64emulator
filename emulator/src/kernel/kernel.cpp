@@ -239,8 +239,14 @@ namespace kernel {
         return mainThreadPtr;
     }
 
-    void Kernel::panic() const {
-        fs_.dumpSummary();
+    void Kernel::panic() {
+        hasPanicked_ = true;
+    }
+
+    void Kernel::dumpPanicInfo() const {
         scheduler_.dumpThreadSummary();
+        fmt::print("Memory regions:\n");
+        mmu_.dumpRegions();
+        fs_.dumpSummary();
     }
 }

@@ -4,6 +4,7 @@
 #include "kernel/fs/file.h"
 #include "kernel/utils/buffer.h"
 #include "kernel/utils/erroror.h"
+#include <fmt/core.h>
 #include <memory> 
 
 namespace kernel {
@@ -42,6 +43,10 @@ namespace kernel {
         off_t lseek(off_t offset, int whence) override;
 
         std::optional<int> hostFileDescriptor() const override { return hostFd_; }
+
+        std::string className() const override {
+            return fmt::format("Socket(realfd={})", hostFd_);
+        }
 
     private:
         Socket(FS* fs, int fd, int domain, int type, int protocol);

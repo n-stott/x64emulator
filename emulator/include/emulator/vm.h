@@ -49,9 +49,6 @@ namespace emulator {
 
         void syscall(x64::Cpu& cpu);
 
-        void dumpStackTrace() const;
-        void dumpRegisters() const;
-
         struct ExecutableSection {
             u64 begin;
             u64 end;

@@ -24,6 +24,9 @@ namespace kernel {
 
         std::optional<int> hostFileDescriptor() const override { return {}; }
 
+        std::string className() const override {
+            return "Epoll";
+        }
 
     private:
         int flags_;

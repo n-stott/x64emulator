@@ -27,13 +27,13 @@ namespace kernel {
 
                 assert(hasRunnableThread() || !hasAliveThread());
                 threadToRun = pickNext();
-                lock.unlock();
             }
 
             if(!threadToRun) break;
             try {
                 vm.execute(threadToRun);
             } catch(...) {
+                kernel_.panic();
                 vm.crash();
                 terminateAll(516);
                 break;
@@ -43,6 +43,7 @@ namespace kernel {
         }
 
         // Before the VM dies, we should retrieve the symbols and function names
+        // If we are profiling, we retrieve all called addresses
         if(kernel_.isProfiling()) {
             std::unique_lock lock(schedulerMutex_);
             // we get the relevant addresses
@@ -51,6 +52,18 @@ namespace kernel {
                 thread.forEachCallEvent([&](const Thread::CallEvent& event) {
                     addresses.push_back(event.address);
                 });
+            });
+            vm.tryRetrieveSymbols(addresses, &addressToSymbol_);
+        }
+        // If we have packined, we retrieve the callstacks
+        if(kernel_.hasPanicked()) {
+            std::unique_lock lock(schedulerMutex_);
+            // we get the relevant addresses
+            std::vector<u64> addresses;
+            forEachThread([&](const Thread& thread) {
+                for(u64 address : thread.callstack()) {
+                    addresses.push_back(address);
+                }
             });
             vm.tryRetrieveSymbols(addresses, &addressToSymbol_);
         }
@@ -182,11 +195,15 @@ namespace kernel {
     }
 
     void Scheduler::dumpThreadSummary() const {
-        forEachThread([](const Thread& thread) {
-            fmt::print("  Thread #{} : {}\n", thread.description().tid, thread.toString());
+        forEachThread([&](const Thread& thread) {
+            fmt::print("Thread #{} : {}\n", thread.description().tid, thread.toString());
             fmt::print("    instructions   {:<10} \n", thread.tickInfo().ticksFromStart);
             fmt::print("    syscalls       {:<10} \n", thread.stats().syscalls);
             fmt::print("    function calls {:<10} \n", thread.stats().functionCalls);
+            thread.dumpRegisters();
+            thread.dumpStackTrace(addressToSymbol_);
+            fmt::print("\n");
+
             
             // for(auto call : thread.stats().calls) {
             //     fmt::print("  {:>10}  {}  {} ({:#x})\n", call.tick, fmt::format("{:{}}", "", call.depth), "call.symbol", call.address);
