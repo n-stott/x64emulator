@@ -35,7 +35,7 @@ namespace kernel {
     private:
         explicit Event(FS* fs, unsigned int initval, int flags, int hostFd);
 
-        unsigned int initval_;
+        u64 counter_;
         int flags_;
         int hostFd_ { -1 };
     };
