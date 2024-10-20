@@ -228,7 +228,12 @@ namespace kernel {
         Buffer buffer(std::move(pollfds));
         auto errnoOrBufferAndReturnValue = kernel_.fs().poll(buffer, nfds, timeout);
         if(logSyscalls_) {
-            auto pfds = mmu_.readFromMmu<u32>(fds, nfds*2);
+            assert(kernel_.host().pollRequiredBufferSize(1) == sizeof(u64));
+            auto dwords = mmu_.readFromMmu<u32>(fds, nfds*2);
+            std::vector<u32> pfds;
+            for(size_t i = 0; i < nfds; ++i) {
+                pfds.push_back(dwords[2*i]);
+            }
             std::string fdsString = fmt::format("[{}]", fmt::join(pfds, ", "));
 
             print("Sys::poll(fds={}, nfds={}, timeout={}) = {}\n",
@@ -801,11 +806,11 @@ namespace kernel {
         auto onExit = [&](long ret) -> long {
             if(!logSyscalls_) return ret;
             std::string op;
-            switch(futex_op) {
+            switch(futex_op & 0x7f) {
                 case 0: op = "wait"; break;
                 case 1: op = "wake"; break;
                 case 9: op = "wait_bitset"; break;
-                default: op = "unknown"; break;
+                default: op = fmt::format("unknown futex {}", futex_op); break;
             }
             print("Sys::futex(uaddr={:#x}, op={}, val={}, timeout={:#x}, uaddr2={:#x}, val3={}) = {}\n",
                               uaddr.address(), op, val, timeout.address(), uaddr2.address(), val3, ret);
