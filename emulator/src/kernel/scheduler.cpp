@@ -20,26 +20,30 @@ namespace kernel {
         (void)id;
         emulator::VM vm(mmu_, kernel_);
         while(true) {
-            Thread* threadToRun = nullptr;
-            {
-                std::unique_lock lock(schedulerMutex_);
-                schedulerHasRunnableThread_.wait(lock, [&]{ return this->hasRunnableThread() || !this->hasAliveThread(); });
-
-                assert(hasRunnableThread() || !hasAliveThread());
-                threadToRun = pickNext();
-            }
-
-            if(!threadToRun) break;
             try {
+                Thread* threadToRun = nullptr;
+                {
+                    std::unique_lock lock(schedulerMutex_);
+                    schedulerHasRunnableThread_.wait(lock, [&]{
+                        return this->hasRunnableThread()  // we want to run an available thread
+                            || this->allThreadsDead()     // we need to exit because all threads are dead
+                            || this->allThreadsBlocked(); // we have a deadlock :(
+                    });
+
+                    assert(hasRunnableThread() || allThreadsDead() || allThreadsBlocked());
+                    threadToRun = pickNext();
+                }
+
+                if(!threadToRun) break;
                 vm.execute(threadToRun);
+                if(threadToRun->state() == Thread::THREAD_STATE::RUNNING)
+                    threadToRun->setState(Thread::THREAD_STATE::RUNNABLE);
+
             } catch(...) {
                 kernel_.panic();
                 vm.crash();
-                terminateAll(516);
                 break;
             }
-            if(threadToRun->state() == Thread::THREAD_STATE::RUNNING)
-                threadToRun->setState(Thread::THREAD_STATE::RUNNABLE);
         }
 
         // Before the VM dies, we should retrieve the symbols and function names
@@ -99,8 +103,14 @@ namespace kernel {
         schedulerHasRunnableThread_.notify_one();
     }
 
-    bool Scheduler::hasAliveThread() const {
+    bool Scheduler::allThreadsDead() const {
         return !allAliveThreads_.empty();
+    }
+
+    bool Scheduler::allThreadsBlocked() const {
+        return std::all_of(allAliveThreads_.begin(), allAliveThreads_.end(), [](Thread* thread) {
+            return thread->state() == Thread::THREAD_STATE::BLOCKED;
+        });
     }
 
     bool Scheduler::hasRunnableThread() const {
@@ -124,14 +134,13 @@ namespace kernel {
                     &&  !findThread(Thread::THREAD_STATE::RUNNING)
                     &&  findThread(Thread::THREAD_STATE::BLOCKED);
         verify(!deadlock, [&]() {
+            fmt::print("DEADLOCK !\n");
             fmt::print("No thread is runnable in queue:\n");
             for(const auto& t : threads_) {
                 fmt::print("  {}\n", t->toString());
             }
-            for(const auto& fwd : futexWaitData_) {
-                fmt::print("  thread {}:{} waiting on value {} at {:#x}\n",
-                            fwd.thread->description().pid, fwd.thread->description().tid,
-                            fwd.expected, fwd.wordPtr.address());
+            for(const auto& blocker : futexBlockers_) {
+                fmt::print("  {}\n", blocker.toString());
             }
         });
 
@@ -141,6 +150,8 @@ namespace kernel {
         }
         
         Thread* threadToRun = findThread(Thread::THREAD_STATE::RUNNABLE);
+        if(!threadToRun) return threadToRun;
+
         std::stable_partition(allAliveThreads_.begin(), allAliveThreads_.end(), [=](Thread* thread) -> bool {
             return thread != threadToRun;
         });
@@ -161,9 +172,9 @@ namespace kernel {
         thread->setState(Thread::THREAD_STATE::DEAD);
         thread->setExitStatus(status);
 
-        futexWaitData_.erase(std::remove_if(futexWaitData_.begin(), futexWaitData_.end(), [=](const FutexWaitData& fwd) {
-            return fwd.thread == thread;
-        }), futexWaitData_.end());
+        futexBlockers_.erase(std::remove_if(futexBlockers_.begin(), futexBlockers_.end(), [=](const FutexBlocker& blocker) {
+            return blocker.thread() == thread;
+        }), futexBlockers_.end());
 
         if(!!thread->clearChildTid()) {
             mmu_.write32(thread->clearChildTid(), 0);
@@ -177,18 +188,17 @@ namespace kernel {
     }
 
     void Scheduler::wait(Thread* thread, x64::Ptr32 wordPtr, u32 expected) {
-        futexWaitData_.push_back(FutexWaitData{thread, wordPtr, expected});
+        futexBlockers_.push_back(FutexBlocker{thread, mmu_, wordPtr, expected});
         thread->setState(Thread::THREAD_STATE::BLOCKED);
         thread->yield();
     }
 
     u32 Scheduler::wake(x64::Ptr32 wordPtr, u32 nbWaiters) {
         u32 nbWoken = 0;
-        for(auto& fwd : futexWaitData_) {
-            if(fwd.wordPtr != wordPtr) continue;
-            u32 val = mmu_.read32(wordPtr);
-            if(fwd.expected == val) continue;
-            fwd.thread->setState(Thread::THREAD_STATE::RUNNABLE);
+        for(auto& blocker : futexBlockers_) {
+            bool canUnblock = blocker.canUnblock(wordPtr);
+            if(!canUnblock) continue;
+            blocker.thread()->setState(Thread::THREAD_STATE::RUNNABLE);
             ++nbWoken;
             if(nbWoken >= nbWaiters) break;
         }

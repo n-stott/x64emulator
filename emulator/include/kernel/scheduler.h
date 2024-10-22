@@ -1,8 +1,9 @@
 #ifndef SCHEDULER_H
 #define SCHEDULER_H
 
-#include "utils.h"
+#include "kernel/threadblocker.h"
 #include "x64/types.h"
+#include "utils.h"
 #include <condition_variable>
 #include <deque>
 #include <functional>
@@ -49,8 +50,9 @@ namespace kernel {
     private:
         void runOnWorkerThread(int id);
         
-        bool hasAliveThread() const;
         bool hasRunnableThread() const;
+        bool allThreadsBlocked() const;
+        bool allThreadsDead() const;
 
         template<typename Func>
         void forEachThread(Func&& func) const {
@@ -66,13 +68,8 @@ namespace kernel {
 
         std::deque<Thread*> allAliveThreads_;
 
-        struct FutexWaitData {
-            Thread* thread;
-            x64::Ptr32 wordPtr;
-            u32 expected;
-        };
-
-        std::vector<FutexWaitData> futexWaitData_;
+        std::vector<FutexBlocker> futexBlockers_;
+        
         std::mutex schedulerMutex_;
         std::condition_variable schedulerHasRunnableThread_;
 

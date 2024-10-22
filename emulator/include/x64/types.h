@@ -217,7 +217,7 @@ namespace x64 {
     public:
         explicit SPtr(u64 address) : address_(address) { }
 
-        operator bool() const {
+        explicit operator bool() const {
             return !!address();
         }
 
@@ -235,6 +235,14 @@ namespace x64 {
         SPtr& operator+=(size_t count) {
             address_ += count*pointerSize(size);
             return *this;
+        }
+
+        bool operator==(SPtr other) const {
+            return address_ == other.address_;
+        }
+
+        bool operator!=(SPtr other) const {
+            return !(*this == other);
         }
 
         u64 address() const { return address_; }
