@@ -240,6 +240,10 @@ namespace kernel {
         int getresgid(x64::Ptr32 rgid, x64::Ptr32 egid, x64::Ptr32 sgid);
         // 0x89
         int statfs(x64::Ptr path, x64::Ptr buf);
+        // 0x8f
+        int sched_getparam(pid_t pid, x64::Ptr param);
+        // 0x91
+        int sched_getscheduler(pid_t pid);
         // 0x9e
         int prctl(int option, unsigned long arg2, unsigned long arg3, unsigned long arg4, unsigned long arg5);
         // 0x9e
@@ -294,6 +298,8 @@ namespace kernel {
         int eventfd2(unsigned int initval, int flags);
         // 0x123
         int epoll_create1(int flags);
+        // 0x125
+        int pipe2(x64::Ptr32 pipefd, int flags);
         // 0x12e
         int prlimit64(pid_t pid, int resource, x64::Ptr new_limit, x64::Ptr old_limit);
         // 0x13b

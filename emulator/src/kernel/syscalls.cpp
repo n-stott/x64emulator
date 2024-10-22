@@ -117,6 +117,8 @@ namespace kernel {
             case 0x76: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::getresuid, regs));
             case 0x78: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::getresgid, regs));
             case 0x89: return cpu->set(x64::R64::RAX, invoke_syscall_2(&Sys::statfs, regs));
+            case 0x8f: return cpu->set(x64::R64::RAX, invoke_syscall_2(&Sys::sched_getparam, regs));
+            case 0x91: return cpu->set(x64::R64::RAX, invoke_syscall_1(&Sys::sched_getscheduler, regs));
             case 0x9d: return cpu->set(x64::R64::RAX, invoke_syscall_5(&Sys::prctl, regs));
             case 0x9e: return cpu->set(x64::R64::RAX, invoke_syscall_2(&Sys::arch_prctl, regs));
             case 0xba: return cpu->set(x64::R64::RAX, invoke_syscall_0(&Sys::gettid, regs));
@@ -144,6 +146,7 @@ namespace kernel {
             case 0x118: return cpu->set(x64::R64::RAX, invoke_syscall_4(&Sys::utimensat, regs));
             case 0x122: return cpu->set(x64::R64::RAX, invoke_syscall_2(&Sys::eventfd2, regs));
             case 0x123: return cpu->set(x64::R64::RAX, invoke_syscall_1(&Sys::epoll_create1, regs));
+            case 0x125: return cpu->set(x64::R64::RAX, invoke_syscall_2(&Sys::pipe2, regs));
             case 0x12e: return cpu->set(x64::R64::RAX, invoke_syscall_4(&Sys::prlimit64, regs));
             case 0x13b: return cpu->set(x64::R64::RAX, invoke_syscall_4(&Sys::sched_getattr, regs));
             case 0x13e: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::getrandom, regs));
@@ -622,6 +625,7 @@ namespace kernel {
         if(logSyscalls_) {
             print("Sys::rename(oldpath={}, newpath={}) = {}\n", oldname, newname, -ENOTSUP);
         }
+        warn([&](){ fmt::print(fg(fmt::color::red), "rename not implemented\n"); });
         return -ENOTSUP;
     }
 
@@ -630,6 +634,7 @@ namespace kernel {
             auto path = mmu_.readString(pathname);
             print("Sys::mkdir(path={}, mode={}) = {}\n", path, mode, -ENOTSUP);
         }
+        warn([&](){ fmt::print(fg(fmt::color::red), "mkdir not implemented\n"); });
         return -ENOTSUP;
     }
 
@@ -638,6 +643,7 @@ namespace kernel {
             auto path = mmu_.readString(pathname);
             print("Sys::unlink(path={}) = {}\n", path, -ENOTSUP);
         }
+        warn([&](){ fmt::print(fg(fmt::color::red), "unlink not implemented\n"); });
         return -ENOTSUP;
     }
 
@@ -660,6 +666,7 @@ namespace kernel {
             print("Sys::chmod(path={}, mode={}) = {}\n",
                         path, mode, -ENOTSUP);
         }
+        warn([&](){ fmt::print(fg(fmt::color::red), "chmod not implemented\n"); });
         return -ENOTSUP;
     }
 
@@ -737,6 +744,22 @@ namespace kernel {
         });
     }
 
+    int Sys::sched_getparam(pid_t pid, x64::Ptr param) {
+        if(logSyscalls_) {
+            print("Sys::sched_getparam(pid={}, param={:#x}) = {}\n", pid, param.address(), -ENOTSUP);
+        }
+        warn([&](){ fmt::print(fg(fmt::color::red), "sched_getparam not implemented\n"); });
+        return -ENOTSUP;
+    }
+
+    int Sys::sched_getscheduler(pid_t pid) {
+        if(logSyscalls_) {
+            print("Sys::sched_getscheduler(pid={}) = {}\n", pid, -ENOTSUP);
+        }
+        warn([&](){ fmt::print(fg(fmt::color::red), "sched_getscheduler not implemented\n"); });
+        return -ENOTSUP;
+    }
+
     u64 Sys::exit_group(int status) {
         if(logSyscalls_) print("Sys::exit_group(status={})\n", status);
         kernel_.scheduler().terminateAll(status);
@@ -750,17 +773,22 @@ namespace kernel {
     }
 
     int Sys::mbind(unsigned long start, unsigned long len, unsigned long mode, x64::Ptr64 nmask, unsigned long maxnode, unsigned flags) {
-        if(logSyscalls_) print("Sys::mbind(start={}, len={}, mode={}, nmask={:#x}, maxnode={}, flags={})\n", start, len, mode, nmask.address(), maxnode, flags);
+        if(logSyscalls_) {
+            print("Sys::mbind(start={}, len={}, mode={}, nmask={:#x}, maxnode={}, flags={})\n", start, len, mode, nmask.address(), maxnode, flags);
+        }
+        warn([&](){ fmt::print(fg(fmt::color::red), "mbind not implemented\n"); });
         return -ENOTSUP;
     }
 
     int Sys::inotify_init() {
         if(logSyscalls_) print("Sys::inotify_init() = {}\n", -ENOTSUP);
+        warn([&](){ fmt::print(fg(fmt::color::red), "inotify_init not implemented\n"); });
         return -ENOTSUP;
     }
 
     int Sys::inotify_add_watch(int fd, x64::Ptr pathname, uint32_t mask) {
         if(logSyscalls_) print("Sys::inotify_add_watch(fd={}, pathname={}, mask={}) = {}\n", fd, mmu_.readString(pathname), mask, -ENOTSUP);
+        warn([&](){ fmt::print(fg(fmt::color::red), "inotify_add_watch not implemented\n"); });
         return -ENOTSUP;
     }
 
@@ -1028,6 +1056,7 @@ namespace kernel {
         if(logSyscalls_) {
             print("Sys::prctl(option={}, arg2={}, arg3={}, arg4={}, arg5={}) = {}\n", option, arg2, arg3, arg4, arg5, -ENOTSUP);
         }
+        warn([&](){ fmt::print(fg(fmt::color::red), "prctl not implemented\n"); });
         return -ENOTSUP;
     }
 
@@ -1132,6 +1161,7 @@ namespace kernel {
     int Sys::utimensat(int dirfd, x64::Ptr pathname, x64::Ptr times, int flags) {
         if(logSyscalls_) print("Sys::utimensat(dirfd={}, pathname={}, times={:#x}, flags={}) = -ENOTSUP\n",
                                                           dirfd, mmu_.readString(pathname), times.address(), flags);
+        warn([&](){ fmt::print(fg(fmt::color::red), "utimensat not implemented\n"); });
         return -ENOTSUP;
     }
 
@@ -1149,6 +1179,14 @@ namespace kernel {
             print("Sys::epoll_create1(flags={}) = {}\n", flags, fd.fd);
         }
         return fd.fd;
+    }
+    
+    int Sys::pipe2(x64::Ptr32 pipefd, int flags) {
+        if(logSyscalls_) {
+            print("Sys::pipe(pipefd={:#x}, flags={}) = {}\n", pipefd.address(), flags, -ENOTSUP);
+        }
+        warn([&](){ fmt::print(fg(fmt::color::red), "pipe2 not implemented\n"); });
+        return -ENOTSUP;
     }
 
     int Sys::prlimit64(pid_t pid, int resource, [[maybe_unused]] x64::Ptr new_limit, x64::Ptr old_limit) {
