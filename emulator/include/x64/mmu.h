@@ -227,6 +227,19 @@ namespace x64 {
         const Region* findAddress(u64 address) const;
 
         static constexpr u64 PAGE_SIZE = 0x1000;
+        class MunmapCallback {
+        public:
+            virtual ~MunmapCallback() = default;
+            virtual void onMunmap(u64 base, u64 length) = 0;
+        };
+
+        void addCallback(MunmapCallback* callback) {
+            callbacks_.push_back(callback);
+        }
+
+        void removeCallback(MunmapCallback* callback) {
+            callbacks_.erase(std::remove(callbacks_.begin(), callbacks_.end(), callback), callbacks_.end());
+        }
 
     private:
 
@@ -247,6 +260,7 @@ namespace x64 {
         std::deque<std::unique_ptr<Region>> regions_;
         std::vector<Region*> regionLookup_;
         u64 firstUnlookupdableAddress_ { 0 };
+        std::vector<MunmapCallback*> callbacks_;
     };
 
 }

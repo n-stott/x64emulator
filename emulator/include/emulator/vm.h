@@ -91,6 +91,7 @@ namespace emulator {
         mutable SymbolProvider symbolProvider_;
         mutable std::unordered_map<u64, std::string> functionNameCache_;
 
+        friend class MunmapCallback;
     };
 
 }

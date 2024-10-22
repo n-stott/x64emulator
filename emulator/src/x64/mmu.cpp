@@ -158,7 +158,6 @@ namespace x64 {
         std::vector<Region*> regionsToSplit;
         for(auto& regionPtr : regions_) {
             if(!regionPtr->intersectsRange(address, address+length)) continue;
-            verify((regionPtr->prot() & PROT::EXEC) != PROT::EXEC, "munmapping of exec region not supported");
             if(regionPtr->base() == address && regionPtr->size() == length) {
                 regionsToRemove.push_back(regionPtr.get());
             } else {
@@ -182,6 +181,7 @@ namespace x64 {
                 addRegion(std::move(r));
             }
         }
+        for(auto* callback : callbacks_) callback->onMunmap(address, length);
         return 0;
     }
 
