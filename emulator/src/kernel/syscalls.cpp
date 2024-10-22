@@ -265,6 +265,7 @@ namespace kernel {
             if(data.isError()) {
                 auto filename = kernel_.fs().filename(FS::FD{fd});
                 warn([&](){ fmt::print(fg(fmt::color::red), "Could not mmap file \"{}\" with fd={}\n", filename, fd); });
+                base = (u64)data.errorOr(0);
             }
             data.errorOrWith<int>([&](const Buffer& buffer) {
                 x64::PROT saved = mmu_.prot(base);
@@ -275,9 +276,6 @@ namespace kernel {
                 mmu_.setRegionName(base, filename);
                 return 0;
             });
-            if(data.isError()) {
-                base = (u64)(-1); // map failed
-            }
         }
         if(logSyscalls_) print("Sys::mmap(addr={:#x}, length={}, prot={}, flags={}, fd={}, offset={}) = {:#x}\n",
                                               addr.address(), length, prot, flags, fd, offset, base);
