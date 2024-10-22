@@ -122,7 +122,7 @@ namespace kernel {
 
         bool deadlock = !findThread(Thread::THREAD_STATE::RUNNABLE)
                     &&  !findThread(Thread::THREAD_STATE::RUNNING)
-                    &&  findThread(Thread::THREAD_STATE::SLEEPING);
+                    &&  findThread(Thread::THREAD_STATE::BLOCKED);
         verify(!deadlock, [&]() {
             fmt::print("No thread is runnable in queue:\n");
             for(const auto& t : threads_) {
@@ -178,7 +178,8 @@ namespace kernel {
 
     void Scheduler::wait(Thread* thread, x64::Ptr32 wordPtr, u32 expected) {
         futexWaitData_.push_back(FutexWaitData{thread, wordPtr, expected});
-        thread->setState(Thread::THREAD_STATE::SLEEPING);
+        thread->setState(Thread::THREAD_STATE::BLOCKED);
+        thread->yield();
     }
 
     u32 Scheduler::wake(x64::Ptr32 wordPtr, u32 nbWaiters) {

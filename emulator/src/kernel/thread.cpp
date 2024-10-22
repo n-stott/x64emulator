@@ -9,7 +9,7 @@ namespace kernel {
         switch(state_) {
             case THREAD_STATE::RUNNABLE: { res += "runnable  "; break; }
             case THREAD_STATE::RUNNING:  { res += "running   "; break; }
-            case THREAD_STATE::SLEEPING: { res += "sleeping  "; break; }
+            case THREAD_STATE::BLOCKED:  { res += "blocked   "; break; }
             case THREAD_STATE::DEAD:     { res += "dead      "; break; }
         }
         res += fmt::format("exit={}  ", exitStatus_);

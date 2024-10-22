@@ -31,7 +31,7 @@ namespace kernel {
         enum class THREAD_STATE {
             RUNNABLE,
             RUNNING,
-            SLEEPING,
+            BLOCKED,
             DEAD,
         };
 

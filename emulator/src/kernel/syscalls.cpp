@@ -533,11 +533,10 @@ namespace kernel {
     }
 
     long Sys::clone(unsigned long flags, x64::Ptr stack, x64::Ptr parent_tid, x64::Ptr32 child_tid, unsigned long tls) {
-        Thread* currentThread = currentThread_;
-        verify(!!currentThread);
-        std::unique_ptr<Thread> newThread = kernel_.scheduler().allocateThread(currentThread->description().pid);
+        verify(!!currentThread_);
+        std::unique_ptr<Thread> newThread = kernel_.scheduler().allocateThread(currentThread_->description().pid);
         verify(!!newThread);
-        const Thread::SavedCpuState& oldCpuState = currentThread->savedCpuState();
+        const Thread::SavedCpuState& oldCpuState = currentThread_->savedCpuState();
         Thread::SavedCpuState& newCpuState = newThread->savedCpuState();
         newCpuState.regs = oldCpuState.regs;
         newCpuState.regs.set(x64::R64::RAX, 0);
@@ -562,9 +561,7 @@ namespace kernel {
         if(logSyscalls_) {
             print("Sys::exit(status={})\n", status);
         }
-        Thread* thread = currentThread_;
-        thread->yield();
-        kernel_.scheduler().terminate(thread, status);
+        kernel_.scheduler().terminate(currentThread_, status);
         return status;
     }
 
@@ -821,9 +818,7 @@ namespace kernel {
             // wait
             u32 loaded = mmu_.read32(uaddr);
             if(loaded != val) return -EAGAIN;
-            Thread* thread = currentThread_;
-            kernel_.scheduler().wait(thread, uaddr, val);
-            thread->yield();
+            kernel_.scheduler().wait(currentThread_, uaddr, val);
             return onExit(0);
         }
         if(unmaskedOp == 1) {
@@ -835,9 +830,7 @@ namespace kernel {
             // wait_bitset
             u32 loaded = mmu_.read32(uaddr);
             if(loaded != val) return -EAGAIN;
-            Thread* thread = currentThread_;
-            kernel_.scheduler().wait(thread, uaddr, val);
-            thread->yield();
+            kernel_.scheduler().wait(currentThread_, uaddr, val);
             return onExit(0);
         }
         verify(false, [&]() {
