@@ -153,6 +153,13 @@ namespace kernel {
         }
         verify(false, [&]() {
             print("Syscall {:#x} not handled\n", sysNumber);
+            print("Arguments:\n");
+            print("  {:#x}\n", regs.args[0]);
+            print("  {:#x}\n", regs.args[1]);
+            print("  {:#x}\n", regs.args[2]);
+            print("  {:#x}\n", regs.args[3]);
+            print("  {:#x}\n", regs.args[4]);
+            print("  {:#x}\n", regs.args[5]);
         });
     }
 
