@@ -154,22 +154,33 @@ namespace x64 {
 
     int Mmu::munmap(u64 address, u64 length) {
         verify(address % PAGE_SIZE == 0, "munmap with non-page_size aligned address not supported");
-        const auto* regionPtr = findAddress(address);
-        verify(!!regionPtr, "munmap: unable to find region");
-        verify((regionPtr->prot() & PROT::EXEC) != PROT::EXEC, "munmapping of exec region not supported");
-        length = pageRoundUp(length);
-        if(regionPtr->base() == address && regionPtr->size() == length) {
-            removeRegion(regionPtr->base(), regionPtr->end(), regionPtr->size());
-            return 0;
+        std::vector<Region*> regionsToRemove;
+        std::vector<Region*> regionsToSplit;
+        for(auto& regionPtr : regions_) {
+            if(!regionPtr->intersectsRange(address, address+length)) continue;
+            verify((regionPtr->prot() & PROT::EXEC) != PROT::EXEC, "munmapping of exec region not supported");
+            if(regionPtr->base() == address && regionPtr->size() == length) {
+                regionsToRemove.push_back(regionPtr.get());
+            } else {
+                regionsToSplit.push_back(regionPtr.get());
+            }
         }
-        std::array<Region, 3> splitRegions = regionPtr->split(address, address+length);
-        removeRegion(regionPtr->base(), regionPtr->end(), regionPtr->size());
-        for(size_t i = 0; i < splitRegions.size(); ++i) {
-            if(i == 1) continue;
-            Region r("", 0, 0, PROT::NONE);
-            std::swap(r, splitRegions[i]);
-            if(r.size() == 0) continue;
-            addRegion(std::move(r));
+        for(Region* regionPtr : regionsToRemove) {
+            removeRegion(regionPtr->base(), regionPtr->end(), regionPtr->size());
+        }
+        for(Region* regionPtr : regionsToSplit) {
+            u64 intersectionStart = std::max(address, regionPtr->base());
+            u64 intersectionEnd = std::min(address+length, regionPtr->end());
+            verify(intersectionStart <= intersectionEnd);
+            std::array<Region, 3> splitRegions = regionPtr->split(intersectionStart, intersectionEnd);
+            removeRegion(regionPtr->base(), regionPtr->end(), regionPtr->size());
+            for(size_t i = 0; i < splitRegions.size(); ++i) {
+                if(i == 1) continue;
+                Region r("", 0, 0, PROT::NONE);
+                std::swap(r, splitRegions[i]);
+                if(r.size() == 0) continue;
+                addRegion(std::move(r));
+            }
         }
         return 0;
     }
