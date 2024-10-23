@@ -1,4 +1,5 @@
 #include "kernel/fs/hostfile.h"
+#include "scopeguard.h"
 #include "verify.h"
 #include <fmt/color.h>
 #include <asm/termbits.h>
@@ -14,6 +15,25 @@ namespace kernel {
         int flags = O_RDONLY | O_CLOEXEC;
         int fd = ::openat(AT_FDCWD, path.c_str(), flags);
         if(fd < 0) return {};
+
+        ScopeGuard guard([=]() {
+            if(fd >= 0) ::close(fd);
+        });
+
+        // check that the file is a regular file
+        struct stat s;
+        if(::fstat(fd, &s) < 0) {
+            return {};
+        }
+        
+        mode_t fileType = (s.st_mode & S_IFMT);
+        if (fileType != S_IFREG && fileType != S_IFLNK && fileType != S_IFDIR) {
+            // not a regular file or a symbolic link
+            warn([&](){ fmt::print(fg(fmt::color::red), "File {} is not a regular file or a symbolic link\n", path); });
+            return {};
+        }
+
+        guard.disable();
         return std::unique_ptr<HostFile>(new HostFile(fs, path, fd));
     }
 

@@ -4,6 +4,7 @@
 #include "kernel/syscalls.h"
 #include "kernel/scheduler.h"
 #include "kernel/thread.h"
+#include "scopeguard.h"
 #include "verify.h"
 #include "x64/mmu.h"
 #include "x64/cpu.h"
@@ -24,17 +25,6 @@ namespace kernel {
         fmt::print("[{}:{}] ", currentThread_->description().pid, currentThread_->description().tid);
         fmt::print(format, args...);
     }
-
-    class ScopeGuard {
-    public:
-        explicit ScopeGuard(std::function<void(void)> onExit) : onExit_(onExit) { }
-        ~ScopeGuard() {
-            if(onExit_) onExit_();
-        }
-
-    private:
-        std::function<void(void)> onExit_;
-    };
 
     void Sys::syscall(x64::Cpu* cpu) {
         std::scoped_lock<std::mutex> lock(mutex_);

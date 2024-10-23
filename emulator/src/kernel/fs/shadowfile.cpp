@@ -1,5 +1,6 @@
 #include "kernel/fs/shadowfile.h"
 #include "kernel/host.h"
+#include "scopeguard.h"
 #include "verify.h"
 #include <fmt/core.h>
 #include <fmt/color.h>
@@ -8,17 +9,6 @@
 #include <sys/stat.h>
 
 namespace kernel {
-
-    template<typename Func>
-    class ScopeGuard {
-    public:
-        ScopeGuard(Func&& func) : func_(func) { }
-        ~ScopeGuard() {
-            func_();
-        }
-    private:
-        Func func_;
-    };
 
     std::unique_ptr<ShadowFile> ShadowFile::tryCreate(FS* fs, const std::string& path, bool create) {
         int fd = ::openat(AT_FDCWD, path.c_str(), O_RDONLY | O_CLOEXEC);
