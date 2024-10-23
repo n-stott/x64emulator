@@ -104,15 +104,33 @@ add_test(NAME thread_scaling COMMAND ${CMAKE_BINARY_DIR}/emulator/emulator test_
 add_executable(test_atomic src/test_atomic.cpp)
 target_compile_options(test_atomic PUBLIC ${CC_OPTIONS})
 target_link_libraries(test_atomic PUBLIC pthread)
-add_test(NAME test_atomic COMMAND ${CMAKE_BINARY_DIR}/emulator/emulator test_atomic)
+add_test(NAME atomic COMMAND ${CMAKE_BINARY_DIR}/emulator/emulator test_atomic)
 
 add_executable(test_lock src/test_lock.cpp)
 target_compile_options(test_lock PUBLIC ${CC_OPTIONS})
 target_link_libraries(test_lock PUBLIC pthread)
-add_test(NAME test_lock COMMAND ${CMAKE_BINARY_DIR}/emulator/emulator test_lock)
+add_test(NAME lock COMMAND ${CMAKE_BINARY_DIR}/emulator/emulator test_lock)
 
 add_executable(test_deadlock src/test_deadlock.cpp)
 target_compile_options(test_deadlock PUBLIC ${CC_OPTIONS})
 target_link_libraries(test_deadlock PUBLIC pthread)
-add_test(NAME test_deadlock COMMAND ${CMAKE_BINARY_DIR}/emulator/emulator test_deadlock)
-set_tests_properties(test_deadlock PROPERTIES WILL_FAIL TRUE)
+add_test(NAME deadlock COMMAND ${CMAKE_BINARY_DIR}/emulator/emulator test_deadlock)
+set_tests_properties(deadlock PROPERTIES WILL_FAIL TRUE)
+
+if(EXISTS "/usr/bin/whoami")
+    add_test(NAME whoami COMMAND ${CMAKE_BINARY_DIR}/emulator/emulator /usr/bin/whoami)
+endif()
+
+if(EXISTS "/usr/bin/python3")
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/empty.py ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
+    add_test(NAME empty_python_script COMMAND ${CMAKE_BINARY_DIR}/emulator/emulator /usr/bin/python3 empty.py)
+
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/trivial.py ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
+    add_test(NAME trivial_python_script COMMAND ${CMAKE_BINARY_DIR}/emulator/emulator /usr/bin/python3 trivial.py)
+
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/json.py ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
+    add_test(NAME python_json COMMAND ${CMAKE_BINARY_DIR}/emulator/emulator /usr/bin/python3 json.py)
+
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/networkx.py ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
+    add_test(NAME python_networkx COMMAND ${CMAKE_BINARY_DIR}/emulator/emulator /usr/bin/python3 networkx.py)
+endif()
