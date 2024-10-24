@@ -122,6 +122,7 @@ namespace kernel {
             case 0xdd: return cpu->set(x64::R64::RAX, invoke_syscall_4(&Sys::posix_fadvise, regs));
             case 0xe4: return cpu->set(x64::R64::RAX, invoke_syscall_2(&Sys::clock_gettime, regs));
             case 0xe5: return cpu->set(x64::R64::RAX, invoke_syscall_2(&Sys::clock_getres, regs));
+            case 0xe6: return cpu->set(x64::R64::RAX, invoke_syscall_4(&Sys::clock_nanosleep, regs));
             case 0xe7: return cpu->set(x64::R64::RAX, invoke_syscall_1(&Sys::exit_group, regs));
             case 0xea: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::tgkill, regs));
             case 0xed: return cpu->set(x64::R64::RAX, invoke_syscall_6(&Sys::mbind, regs));
@@ -1040,6 +1041,16 @@ namespace kernel {
             mmu_.copyToMmu(res, buffer.data(), buffer.size());
             return 0;
         });
+    }
+
+    int Sys::clock_nanosleep(clockid_t clockid, int flags, x64::Ptr request, x64::Ptr remain) {
+        if(logSyscalls_) {
+            print("Sys::clock_nanosleep(clockid={}, flags={}, request={:#x}, remain={:#x}) = {}\n",
+                        clockid, flags, request.address(), remain.address(), -ENOTSUP);
+        }
+        warn([&](){ fmt::print(fg(fmt::color::red), "clock_nanosleep not implemented\n"); });
+        currentThread_->yield();
+        return -ENOTSUP;
     }
 
     int Sys::prctl(int option, unsigned long arg2, unsigned long arg3, unsigned long arg4, unsigned long arg5) {

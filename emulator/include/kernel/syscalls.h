@@ -270,6 +270,8 @@ namespace kernel {
         int clock_gettime(clockid_t clockid, x64::Ptr tp);
         // 0xe5
         int clock_getres(clockid_t clockid, x64::Ptr res);
+        // 0xe6
+        int clock_nanosleep(clockid_t clockid, int flags, x64::Ptr request, x64::Ptr remain);
         // 0xe7
         u64 exit_group(int status);
         // 0xea
