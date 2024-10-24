@@ -7,6 +7,11 @@ add_executable(elf-reader
 )
 target_compile_options(elf-reader PUBLIC -Wall -Wextra -Wpedantic -pedantic -Wconversion -Werror)
 target_compile_options(elf-reader PUBLIC)
+if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
+    target_compile_options(elf-reader PUBLIC -Wno-maybe-uninitialized -Wno-stringop-overflow)
+elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
+    target_compile_options(elf-reader PUBLIC -Wno-uninitialized)
+endif()
 target_include_directories(elf-reader PUBLIC include)
 target_link_libraries(elf-reader PUBLIC fmt::fmt-header-only)
 
