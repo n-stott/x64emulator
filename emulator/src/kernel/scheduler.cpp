@@ -121,6 +121,7 @@ namespace kernel {
     }
 
     Thread* Scheduler::pickNext() {
+        tryUnblockThreads();
         auto findThread = [&](Thread::THREAD_STATE state) -> Thread* {
             auto it = std::find_if(allAliveThreads_.begin(), allAliveThreads_.end(), [=](Thread* thread) {
                 assert(!!thread);
@@ -159,6 +160,12 @@ namespace kernel {
         threadToRun->setState(Thread::THREAD_STATE::RUNNING);
         threadToRun->tickInfo().ticksUntilSwitch += 1'000'000;
         return threadToRun;
+    }
+
+    void Scheduler::tryUnblockThreads() {
+        for(PollBlocker& blocker : pollBlockers_) {
+            blocker.tryUnblock(kernel_.fs());
+        }
     }
 
     void Scheduler::terminateAll(int status) {

@@ -23,6 +23,16 @@ namespace kernel {
     void Event::close() {
 
     }
+
+    bool Event::canRead() const {
+        verify(false, "Event::canRead not implemented");
+        return false;
+    }
+
+    bool Event::canWrite() const {
+        verify(false, "Event::canWrite not implemented");
+        return false;
+    }
     
     ErrnoOrBuffer Event::read(size_t, off_t) {
         return ErrnoOrBuffer(-EINVAL);

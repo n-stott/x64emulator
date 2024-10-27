@@ -19,6 +19,8 @@ namespace kernel {
         bool isSocket() const override { return true; }
 
         bool isPollable() const override { return true; }
+        bool canRead() const override;
+        bool canWrite() const override;
 
         int connect(const Buffer& buffer);
         int fcntl(int cmd, int arg);

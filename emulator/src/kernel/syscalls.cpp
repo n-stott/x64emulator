@@ -225,9 +225,17 @@ namespace kernel {
     }
 
     int Sys::poll(x64::Ptr fds, size_t nfds, int timeout) {
-        std::vector<u8> pollfds = mmu_.readFromMmu<u8>(fds, kernel_.host().pollRequiredBufferSize(nfds));
-        Buffer buffer(std::move(pollfds));
-        auto errnoOrBufferAndReturnValue = kernel_.fs().poll(buffer, nfds, timeout);
+        assert(sizeof(FS::PollData) == kernel_.host().pollRequiredBufferSize(1));
+        std::vector<FS::PollData> pollfds = mmu_.readFromMmu<FS::PollData>(fds, nfds);
+        if(timeout == 0) {
+            auto errnoOrBufferAndReturnValue = kernel_.fs().pollImmediate(pollfds);
+            return errnoOrBufferAndReturnValue.errorOrWith<int>([&](const auto& bufferAndRetVal) {
+                mmu_.copyToMmu(fds, bufferAndRetVal.buffer.data(), bufferAndRetVal.buffer.size());
+                return bufferAndRetVal.returnValue;
+            });
+        } else {
+            PollBlocker blocker(currentThread_, mmu_, fds, nfds, timeout);
+        }
         if(logSyscalls_) {
             assert(kernel_.host().pollRequiredBufferSize(1) == sizeof(u64));
             auto dwords = mmu_.readFromMmu<u32>(fds, nfds*2);

@@ -19,4 +19,17 @@ namespace kernel {
                     pid, tid, expected_, wordPtr_.address(), contained);
     }
 
+    void PollBlocker::tryUnblock(FS& fs) {
+        std::vector<FS::PollData> pollfds(mmu_->readFromMmu<FS::PollData>(pollfds_, nfds_));
+        fs.doPoll(&pollfds);
+        bool canUnblock = false;
+        if(!canUnblock) return;
+        u64 nzrevents = std::count_if(pollfds.begin(), pollfds.end(), [](const FS::PollData& data) {
+            return data.revents != FS::PollEvent::NONE;
+        });
+        mmu_->writeToMmu(pollfds_, pollfds);
+        thread_->savedCpuState().regs.set(x64::R64::RAX, nzrevents);
+        thread_->setState(Thread::THREAD_STATE::RUNNABLE);
+    }
+
 }

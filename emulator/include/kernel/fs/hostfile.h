@@ -17,6 +17,8 @@ namespace kernel {
         bool isWritable() const override { return false; }
 
         bool isPollable() const override { return true; }
+        bool canRead() const override;
+        bool canWrite() const override;
         
         void close() override;
         bool keepAfterClose() const override { return false; }

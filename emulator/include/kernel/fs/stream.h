@@ -18,6 +18,10 @@ namespace kernel {
         bool isReadable() const override;
         bool isWritable() const override;
 
+        // non pollable
+        bool canRead() const override { return false; }
+        bool canWrite() const override { return false; }
+
         void close() override;
         bool keepAfterClose() const override { return false; }
 

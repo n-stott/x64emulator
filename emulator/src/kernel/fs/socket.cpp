@@ -2,6 +2,7 @@
 #include "verify.h"
 #include <fcntl.h>
 #include <unistd.h>
+#include <sys/poll.h>
 #include <sys/socket.h>
 
 namespace kernel {
@@ -19,6 +20,7 @@ namespace kernel {
 
     std::unique_ptr<Socket> Socket::tryCreate(FS* fs, int domain, int type, int protocol) {
         auto validateDomain = [](int domain) -> bool {
+            if(domain == AF_UNIX) return true;
             if(domain == AF_NETLINK) return true;
             return false;
         };
@@ -37,6 +39,28 @@ namespace kernel {
         if(refCount_ > 0) return;
         int rc = ::close(hostFd_);
         verify(rc == 0);
+    }
+
+    bool Socket::canRead() const {
+        struct pollfd pfd;
+        pfd.fd = hostFd_;
+        pfd.events = POLLIN;
+        pfd.revents = 0;
+        int timeout = 0; // return immediately
+        int ret = ::poll(&pfd, 1, timeout);
+        if(ret < 0) return false;
+        return !!(pfd.revents & POLLIN);
+    }
+
+    bool Socket::canWrite() const {
+        struct pollfd pfd;
+        pfd.fd = hostFd_;
+        pfd.events = POLLOUT;
+        pfd.revents = 0;
+        int timeout = 0; // return immediately
+        int ret = ::poll(&pfd, 1, timeout);
+        if(ret < 0) return false;
+        return !!(pfd.revents & POLLOUT);
     }
 
     int Socket::connect(const Buffer& buffer) {

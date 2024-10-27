@@ -33,7 +33,6 @@ namespace kernel {
 
         std::unique_ptr<Thread> allocateThread(int pid);
         void addThread(std::unique_ptr<Thread> thread);
-        Thread* pickNext();
 
         void terminateAll(int status);
         void terminate(Thread* thread, int status);
@@ -49,6 +48,8 @@ namespace kernel {
 
     private:
         void runOnWorkerThread(int id);
+        Thread* pickNext();
+        void tryUnblockThreads();
         
         bool hasRunnableThread() const;
         bool allThreadsBlocked() const;
@@ -69,6 +70,7 @@ namespace kernel {
         std::deque<Thread*> allAliveThreads_;
 
         std::vector<FutexBlocker> futexBlockers_;
+        std::vector<PollBlocker> pollBlockers_;
         
         std::mutex schedulerMutex_;
         std::condition_variable schedulerHasRunnableThread_;

@@ -20,6 +20,8 @@ namespace kernel {
         bool isWritable() const override { return false; }
 
         bool isPollable() const override { return true; }
+        bool canRead() const override;
+        bool canWrite() const override;
 
         ErrnoOrBuffer read(size_t, off_t) override;
         ssize_t write(const u8*, size_t, off_t) override;

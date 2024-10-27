@@ -2,8 +2,10 @@
 #define THREADBLOCKER_H
 
 #include "x64/types.h"
+#include "kernel/fs/fs.h"
 #include "utils.h"
 #include <string>
+#include <vector>
 
 namespace x64 {
     class Mmu;
@@ -29,6 +31,21 @@ namespace kernel {
         x64::Mmu* mmu_;
         x64::Ptr32 wordPtr_;
         u32 expected_;
+    };
+
+    class PollBlocker {
+    public:
+        PollBlocker(Thread* thread, x64::Mmu& mmu, x64::Ptr pollfds, int nfds, int timeoutInMs)
+            : thread_(thread), mmu_(&mmu), pollfds_(pollfds), nfds_(nfds), timeoutInMs_(timeoutInMs) { }
+        
+        void tryUnblock(FS& fs);
+
+    private:
+        Thread* thread_;
+        x64::Mmu* mmu_;
+        x64::Ptr pollfds_;
+        int nfds_;
+        int timeoutInMs_;
     };
 
 }

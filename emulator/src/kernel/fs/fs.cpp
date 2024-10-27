@@ -379,6 +379,59 @@ namespace kernel {
         return socket->getsockname(buffersize);
     }
 
+#define NATIVE_POLL
+#ifdef NATIVE_POLL
+    ErrnoOr<BufferAndReturnValue<int>> FS::poll(const Buffer& buffer, u64 nfds, int timeout) {
+        static_assert(sizeof(PollData) == sizeof(pollfd), "");
+        verify(timeout <= 0, [&]() { fmt::print("poll::timeout must be infinite or zero (i.e. <= 0) but is {}\n", timeout); });
+        std::vector<PollData> virtualPollFds;
+        assert(buffer.size() % sizeof(pollfd) == 0);
+        virtualPollFds.resize(buffer.size() / sizeof(pollfd));
+        std::memcpy(virtualPollFds.data(), buffer.data(), buffer.size());
+
+        // check that all fds are pollable and have a host-side fd
+        for(PollData vpfd : virtualPollFds) {
+            OpenFileDescription* openFileDescription = findOpenFileDescription(FD{vpfd.fd});
+            verify(!!openFileDescription, [&]() { fmt::print("cannot poll fd={}\n", vpfd.fd); });
+            File* file = openFileDescription->file();
+            verify(file->isPollable(), [&]() { fmt::print("fd={} is not pollable\n", vpfd.fd); });
+            auto hostFd = file->hostFileDescriptor();
+            verify(hostFd.has_value(), [&]() { fmt::print("fd={} has no host-equivalent fd\n", vpfd.fd); });
+        }
+
+        // PollBlocker blocker(nullptr, )
+        verify(false);
+        return {};
+        
+        // Poll handling is transfered to the PollBlocker and done in the scheduler.
+        // From here on,
+    }
+
+
+    ErrnoOr<BufferAndReturnValue<int>> FS::pollImmediate(const std::vector<PollData>& pfds) {
+        std::vector<PollData> rfds = pfds;
+        for(auto& rfd : rfds) {
+            // check that all fds are pollable and have a host-side fd
+            OpenFileDescription* openFileDescription = findOpenFileDescription(FD{rfd.fd});
+            verify(!!openFileDescription, [&]() { fmt::print("cannot poll fd={}\n", rfd.fd); });
+            File* file = openFileDescription->file();
+            verify(file->isPollable(), [&]() { fmt::print("fd={} is not pollable\n", rfd.fd); });
+            auto hostFd = file->hostFileDescriptor();
+            verify(hostFd.has_value(), [&]() { fmt::print("fd={} has no host-equivalent fd\n", rfd.fd); });
+
+            bool testRead = ((rfd.events & PollEvent::CAN_READ) == PollEvent::CAN_READ);
+            bool testWrite = ((rfd.events & PollEvent::CAN_WRITE) == PollEvent::CAN_WRITE);
+            if(testRead && file->canRead())   rfd.revents = rfd.revents | PollEvent::CAN_READ;
+            if(testWrite && file->canWrite()) rfd.revents = rfd.revents | PollEvent::CAN_WRITE;
+        }
+        int ret = 0; // TODO check errors
+        BufferAndReturnValue<int> bufferAndRetVal {
+            Buffer{std::move(rfds)},
+            ret,
+        };
+        return ErrnoOr<BufferAndReturnValue<int>>(std::move(bufferAndRetVal));
+    }
+#else
     ErrnoOr<BufferAndReturnValue<int>> FS::poll(const Buffer& buffer, u64 nfds, int timeout) {
         static_assert(sizeof(PollData) == sizeof(pollfd), "");
         verify(timeout <= 0, [&]() { fmt::print("poll::timeout must be infinite or zero (i.e. <= 0) but is {}\n", timeout); });
@@ -420,12 +473,38 @@ namespace kernel {
         for(size_t i = 0; i < virtualPollFds.size(); ++i) {
             virtualPollFds[i].revents = (PollEvent)hostPollFds[i].revents;
             verify((hostPollFds[i].revents & (~(POLLIN | POLLOUT))) == 0, "poll revent must be read or write");
+            OpenFileDescription* openFileDescription = findOpenFileDescription(FD{virtualPollFds[i].fd});
+            verify(!!openFileDescription, [&]() { fmt::print("cannot poll fd={}\n", virtualPollFds[i].fd); });
+            File* file = openFileDescription->file();
+            if(!!(hostPollFds[i].revents & POLLIN)) {
+                verify(file->canRead(), "Poll says we can read");
+            }
+            if(!!(hostPollFds[i].revents & POLLOUT)) {
+                verify(file->canWrite(), "Poll says we can write");
+            }
         }
         BufferAndReturnValue<int> bufferAndRetVal {
             Buffer{std::move(virtualPollFds)},
             ret,
         };
         return ErrnoOr<BufferAndReturnValue<int>>(std::move(bufferAndRetVal));
+    }
+#endif
+
+    void FS::doPoll(std::vector<PollData>* data) {
+        if(!data) return;
+        for(PollData& pollfd : *data) {
+            FD fd { pollfd.fd };
+            OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
+            verify(!!openFileDescription, [&]() {
+                fmt::print("Polling on non-existing open file description for fd={}\n", pollfd.fd);
+            });
+            File* file = openFileDescription->file();
+            bool testRead = (pollfd.events & PollEvent::CAN_READ) == PollEvent::CAN_READ;
+            bool testWrite = (pollfd.events & PollEvent::CAN_WRITE) == PollEvent::CAN_WRITE;
+            if(testRead && file->canRead())   pollfd.revents = pollfd.revents | PollEvent::CAN_READ;
+            if(testWrite && file->canWrite()) pollfd.revents = pollfd.revents | PollEvent::CAN_WRITE;
+        }
     }
 
     ErrnoOr<std::pair<Buffer, Buffer>> FS::recvfrom(FD sockfd, size_t len, int flags, bool requireSrcAddress) {

@@ -43,6 +43,16 @@ namespace kernel {
         verify(rc == 0);
     }
 
+    bool HostFile::canRead() const {
+        verify(false, "HostFile::canRead not implemented");
+        return false;
+    }
+
+    bool HostFile::canWrite() const {
+        verify(false, "HostFile::canWrite not implemented");
+        return false;
+    }
+
     ErrnoOrBuffer HostFile::read(size_t count, off_t offset) {
         if(!isReadable()) return ErrnoOrBuffer{-EINVAL};
         if(offset < 0) return ErrnoOrBuffer{-EINVAL};
@@ -143,7 +153,9 @@ namespace kernel {
                 return ErrnoOrBuffer(Buffer{});
             }
         }
-        verify(false, "implement ioctl on HostFile");
+        verify(false, [&]() {
+            fmt::print("implement ioctl {:#x} on HostFile\n", request);
+        });
         return ErrnoOrBuffer(-ENOTSUP);
     }
 

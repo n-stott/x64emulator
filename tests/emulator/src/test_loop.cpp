@@ -3,6 +3,6 @@ int main() {
 #ifndef NDEBUG
     while(counter != 100'000) ++counter;
 #else
-    while(counter != 10'000'000) ++counter;
+    while(counter != 10'000) ++counter;
 #endif
 }
