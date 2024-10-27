@@ -19,6 +19,7 @@ namespace kernel {
 
     std::unique_ptr<Socket> Socket::tryCreate(FS* fs, int domain, int type, int protocol) {
         auto validateDomain = [](int domain) -> bool {
+            if(domain == AF_LOCAL) return true;
             if(domain == AF_NETLINK) return true;
             return false;
         };
