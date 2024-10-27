@@ -81,6 +81,22 @@ namespace kernel {
         ssize_t recvmsg(FD sockfd, int flags, Buffer* msg_name, std::vector<Buffer>* msg_iov, Buffer* msg_control, int* msg_flags);
         ssize_t send(FD sockfd, const Buffer& buffer, int flags);
         ssize_t sendmsg(FD sockfd, int flags, const Buffer& msg_name, const std::vector<Buffer>& msg_iov, const Buffer& msg_control, int msg_flags);
+
+        enum class PollEvent : i16 {
+            NONE = 0,
+            CAN_READ = 1,
+            CAN_WRITE = 4,
+        };
+
+        friend PollEvent operator&(PollEvent a, PollEvent b) { return (PollEvent)((i16)a & (i16)b); }
+        friend PollEvent operator|(PollEvent a, PollEvent b) { return (PollEvent)((i16)a | (i16)b); }
+        friend PollEvent operator~(PollEvent a) { return (PollEvent)(~(i16)a); }
+
+        struct PollData {
+            i32 fd;
+            PollEvent events;
+            PollEvent revents;
+        };
         
         ErrnoOr<BufferAndReturnValue<int>> poll(const Buffer&, u64 nfds, int timeout);
 

@@ -380,13 +380,15 @@ namespace kernel {
     }
 
     ErrnoOr<BufferAndReturnValue<int>> FS::poll(const Buffer& buffer, u64 nfds, int timeout) {
-        std::vector<pollfd> virtualPollFds;
+        static_assert(sizeof(PollData) == sizeof(pollfd), "");
+        verify(timeout <= 0, [&]() { fmt::print("poll::timeout must be infinite or zero (i.e. <= 0) but is {}\n", timeout); });
+        std::vector<PollData> virtualPollFds;
         assert(buffer.size() % sizeof(pollfd) == 0);
         virtualPollFds.resize(buffer.size() / sizeof(pollfd));
         std::memcpy(virtualPollFds.data(), buffer.data(), buffer.size());
 
         // check that all fds are pollable and have a host-side fd
-        for(pollfd vpfd : virtualPollFds) {
+        for(PollData vpfd : virtualPollFds) {
             OpenFileDescription* openFileDescription = findOpenFileDescription(FD{vpfd.fd});
             verify(!!openFileDescription, [&]() { fmt::print("cannot poll fd={}\n", vpfd.fd); });
             File* file = openFileDescription->file();
@@ -397,11 +399,16 @@ namespace kernel {
 
         // substitute the virtual fds with host fds
         std::vector<pollfd> hostPollFds;
-        for(pollfd vpfd : virtualPollFds) {
+        for(PollData vpfd : virtualPollFds) {
             OpenFileDescription* openFileDescription = findOpenFileDescription(FD{vpfd.fd});
-            pollfd hostPollFd = vpfd;
+            pollfd hostPollFd {
+                vpfd.fd,
+                (i16)vpfd.events,
+                (i16)vpfd.revents,
+            };
             auto hostFd = openFileDescription->file()->hostFileDescriptor();
             hostPollFd.fd = *hostFd;
+            verify((hostPollFd.events & (~(POLLIN | POLLOUT))) == 0, "poll event must either look for read or write");
             hostPollFds.push_back(hostPollFd);
         }
 
@@ -411,8 +418,8 @@ namespace kernel {
 
         // transfer the events to the virtual fds
         for(size_t i = 0; i < virtualPollFds.size(); ++i) {
-            virtualPollFds[i].events = hostPollFds[i].events;
-            virtualPollFds[i].revents = hostPollFds[i].revents;
+            virtualPollFds[i].revents = (PollEvent)hostPollFds[i].revents;
+            verify((hostPollFds[i].revents & (~(POLLIN | POLLOUT))) == 0, "poll revent must be read or write");
         }
         BufferAndReturnValue<int> bufferAndRetVal {
             Buffer{std::move(virtualPollFds)},
