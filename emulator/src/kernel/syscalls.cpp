@@ -1011,8 +1011,9 @@ namespace kernel {
     }
 
     pid_t Sys::set_tid_address(x64::Ptr32 ptr) {
-        if(logSyscalls_) print("Sys::set_tid_address({:#x}) = {}\n", ptr.address(), 1);
-        return 1;
+        if(logSyscalls_) print("Sys::set_tid_address({:#x}) = {}\n", ptr.address(), currentThread_->description().tid);
+        currentThread_->setClearChildTid(ptr);
+        return currentThread_->description().tid;
     }
 
     int Sys::posix_fadvise([[maybe_unused]] int fd, [[maybe_unused]] off_t offset, [[maybe_unused]] off_t len, [[maybe_unused]] int advice) {
