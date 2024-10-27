@@ -172,8 +172,8 @@ namespace x64 {
         }
 
         template<typename T>
-        void writeToMmu(Ptr8 src, const T& t) {
-            copyToMmu(src, (const u8*)&t, sizeof(T));
+        void writeToMmu(Ptr8 dst, const T& t) {
+            copyToMmu(dst, (const u8*)&t, sizeof(T));
         }
 
         template<typename T>
@@ -183,6 +183,12 @@ namespace x64 {
             buf.resize(n);
             copyFromMmu((u8*)buf.data(), src, n*sizeof(T));
             return buf;
+        }
+        
+        template<typename T>
+        void writeToMmu(Ptr8 dst, const std::vector<T>& buf) {
+            static_assert(std::is_trivially_constructible_v<T>);
+            copyToMmu(dst, (u8*)buf.data(), buf.size()*sizeof(T));
         }
 
         std::string readString(Ptr8 src) const;
