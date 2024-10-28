@@ -10,6 +10,10 @@
 
 namespace kernel {
 
+    struct ShadowFileHostData {
+        struct stat st;
+    };
+
     std::unique_ptr<ShadowFile> ShadowFile::tryCreate(FS* fs, const std::string& path, bool create) {
         int fd = ::openat(AT_FDCWD, path.c_str(), O_RDONLY | O_CLOEXEC);
         
@@ -33,9 +37,18 @@ namespace kernel {
             if(nread < 0) return {};
             if((size_t)nread != data.size()) return {};
 
-            return std::unique_ptr<ShadowFile>(new ShadowFile(fs, std::move(data)));
+            auto hostData = std::make_unique<ShadowFileHostData>();
+            hostData->st = buf;
+
+            auto shadowFile = std::unique_ptr<ShadowFile>(new ShadowFile(fs, std::move(data)));
+            shadowFile->hostData_ = std::move(hostData);
+            return shadowFile;
         }
     }
+
+    ShadowFile::ShadowFile(FS* fs, std::vector<u8> data) : RegularFile(fs), data_(data) { }
+
+    ShadowFile::~ShadowFile() = default;
 
     void ShadowFile::close() {
         
@@ -71,8 +84,11 @@ namespace kernel {
     }
 
     ErrnoOrBuffer ShadowFile::stat() {
-        verify(false, "implement stat on ShadowFile");
-        return ErrnoOrBuffer(-EINVAL);
+        verify(!!hostData_, "implemented stat on ShadowFile without hostData");
+        struct stat st = hostData_->st;
+        st.st_size = data_.size();
+        Buffer buf(st);
+        return ErrnoOrBuffer(std::move(buf));
     }
 
     off_t ShadowFile::lseek(off_t, int) {

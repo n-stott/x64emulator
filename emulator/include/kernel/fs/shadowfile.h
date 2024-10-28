@@ -9,9 +9,13 @@
 
 namespace kernel {
 
+    // pimpl
+    struct ShadowFileHostData;
+
     class ShadowFile : public RegularFile {
     public:
         static std::unique_ptr<ShadowFile> tryCreate(FS* fs, const std::string& path, bool create);
+        ~ShadowFile();
 
         bool isReadable() const override { return true; }
         bool isWritable() const override { return true; }
@@ -44,7 +48,9 @@ namespace kernel {
         }
 
     private:
-        ShadowFile(FS* fs, std::vector<u8> data) : RegularFile(fs), data_(data) { }
+        ShadowFile(FS* fs, std::vector<u8> data);
+
+        std::unique_ptr<ShadowFileHostData> hostData_;
         std::vector<u8> data_;
         bool writable_ { false };
     };
