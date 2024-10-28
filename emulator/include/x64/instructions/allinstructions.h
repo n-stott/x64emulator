@@ -825,6 +825,12 @@ namespace x64 {
         Src src;
     };
 
+    template<typename Dst, typename Src>
+    struct Cvtps2dq {
+        Dst dst;
+        Src src;
+    };
+
     template<typename Dst>
     struct Stmxcsr {
         Dst dst;

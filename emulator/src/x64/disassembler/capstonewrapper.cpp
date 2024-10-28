@@ -2595,6 +2595,17 @@ namespace x64 {
         return make_failed(insn);
     }
 
+    static X64Instruction makeCvtps2dq(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto rm128src = asRM128(src);
+        if(rssedst && rm128src) return X64Instruction::make<Insn::CVTPS2DQ_RSSE_RMSSE>(insn.address, insn.size, rssedst.value(), rm128src.value());
+        return make_failed(insn);
+    }
+
     static X64Instruction makeStmxcsr(const cs_insn& insn) {
         const auto& x86detail = insn.detail->x86;
         assert(x86detail.op_count == 1);
@@ -3680,6 +3691,7 @@ namespace x64 {
             case X86_INS_CVTTSS2SI: return makeCvttss2si(insn);
             case X86_INS_CVTTSD2SI: return makeCvttsd2si(insn);
             case X86_INS_CVTDQ2PD: return makeCvtdq2pd(insn);
+            case X86_INS_CVTPS2DQ: return makeCvtps2dq(insn);
             case X86_INS_STMXCSR: return makeStmxcsr(insn);
             case X86_INS_LDMXCSR: return makeLdmxcsr(insn);
             case X86_INS_CLD: return makeCld(insn);
