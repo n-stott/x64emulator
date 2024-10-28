@@ -825,11 +825,17 @@ namespace utils {
             case Insn::PSRAD_RSSE_IMM: return toString<RSSE, Imm>("psrad");
             case Insn::PSRAQ_RSSE_IMM: return toString<RSSE, Imm>("psraq");
             case Insn::PSLLW_RSSE_IMM: return toString<RSSE, Imm>("psllw");
+            case Insn::PSLLW_RSSE_RMSSE: return toString<RSSE, RMSSE>("psllw");
             case Insn::PSLLD_RSSE_IMM: return toString<RSSE, Imm>("pslld");
+            case Insn::PSLLD_RSSE_RMSSE: return toString<RSSE, RMSSE>("pslld");
             case Insn::PSLLQ_RSSE_IMM: return toString<RSSE, Imm>("psllq");
+            case Insn::PSLLQ_RSSE_RMSSE: return toString<RSSE, RMSSE>("psllq");
             case Insn::PSRLW_RSSE_IMM: return toString<RSSE, Imm>("psrlw");
+            case Insn::PSRLW_RSSE_RMSSE: return toString<RSSE, RMSSE>("psrlw");
             case Insn::PSRLD_RSSE_IMM: return toString<RSSE, Imm>("psrld");
+            case Insn::PSRLD_RSSE_RMSSE: return toString<RSSE, RMSSE>("psrld");
             case Insn::PSRLQ_RSSE_IMM: return toString<RSSE, Imm>("psrlq");
+            case Insn::PSRLQ_RSSE_RMSSE: return toString<RSSE, RMSSE>("psrlq");
             case Insn::PSLLDQ_RSSE_IMM: return toString<RSSE, Imm>("pslldq");
             case Insn::PSRLDQ_RSSE_IMM: return toString<RSSE, Imm>("psrldq");
             case Insn::PCMPISTRI_RSSE_RMSSE_IMM: return toString<RSSE, RMSSE, Imm>("pcmpistri");

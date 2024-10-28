@@ -790,11 +790,17 @@ namespace x64 {
         void exec(const Psraq<RSSE, Imm>&);
 
         void exec(const Psllw<RSSE, Imm>&);
+        void exec(const Psllw<RSSE, RMSSE>&);
         void exec(const Pslld<RSSE, Imm>&);
+        void exec(const Pslld<RSSE, RMSSE>&);
         void exec(const Psllq<RSSE, Imm>&);
+        void exec(const Psllq<RSSE, RMSSE>&);
         void exec(const Psrlw<RSSE, Imm>&);
+        void exec(const Psrlw<RSSE, RMSSE>&);
         void exec(const Psrld<RSSE, Imm>&);
+        void exec(const Psrld<RSSE, RMSSE>&);
         void exec(const Psrlq<RSSE, Imm>&);
+        void exec(const Psrlq<RSSE, RMSSE>&);
 
         void exec(const Pslldq<RSSE, Imm>&);
         void exec(const Psrldq<RSSE, Imm>&);

@@ -3186,10 +3186,11 @@ namespace x64 {
         const cs_x86_op& src = x86detail.operands[1];
         auto rssedst = asRegister128(dst);
         auto immsrc = asImmediate(src);
+        auto rmssesrc = asRM128(src);
         if(rssedst && immsrc) return X64Instruction::make<Insn::PSLLW_RSSE_IMM>(insn.address, insn.size, rssedst.value(), immsrc.value());
+        if(rssedst && rmssesrc) return X64Instruction::make<Insn::PSLLW_RSSE_RMSSE>(insn.address, insn.size, rssedst.value(), rmssesrc.value());
         return make_failed(insn);
     }
-
     static X64Instruction makePslld(const cs_insn& insn) {
         const auto& x86detail = insn.detail->x86;
         assert(x86detail.op_count == 2);
@@ -3197,7 +3198,9 @@ namespace x64 {
         const cs_x86_op& src = x86detail.operands[1];
         auto rssedst = asRegister128(dst);
         auto immsrc = asImmediate(src);
+        auto rmssesrc = asRM128(src);
         if(rssedst && immsrc) return X64Instruction::make<Insn::PSLLD_RSSE_IMM>(insn.address, insn.size, rssedst.value(), immsrc.value());
+        if(rssedst && rmssesrc) return X64Instruction::make<Insn::PSLLD_RSSE_RMSSE>(insn.address, insn.size, rssedst.value(), rmssesrc.value());
         return make_failed(insn);
     }
     static X64Instruction makePsllq(const cs_insn& insn) {
@@ -3207,7 +3210,9 @@ namespace x64 {
         const cs_x86_op& src = x86detail.operands[1];
         auto rssedst = asRegister128(dst);
         auto immsrc = asImmediate(src);
+        auto rmssesrc = asRM128(src);
         if(rssedst && immsrc) return X64Instruction::make<Insn::PSLLQ_RSSE_IMM>(insn.address, insn.size, rssedst.value(), immsrc.value());
+        if(rssedst && rmssesrc) return X64Instruction::make<Insn::PSLLQ_RSSE_RMSSE>(insn.address, insn.size, rssedst.value(), rmssesrc.value());
         return make_failed(insn);
     }
     static X64Instruction makePsrlw(const cs_insn& insn) {
@@ -3217,7 +3222,9 @@ namespace x64 {
         const cs_x86_op& src = x86detail.operands[1];
         auto rssedst = asRegister128(dst);
         auto immsrc = asImmediate(src);
+        auto rmssesrc = asRM128(src);
         if(rssedst && immsrc) return X64Instruction::make<Insn::PSRLW_RSSE_IMM>(insn.address, insn.size, rssedst.value(), immsrc.value());
+        if(rssedst && rmssesrc) return X64Instruction::make<Insn::PSRLW_RSSE_RMSSE>(insn.address, insn.size, rssedst.value(), rmssesrc.value());
         return make_failed(insn);
     }
     static X64Instruction makePsrld(const cs_insn& insn) {
@@ -3227,7 +3234,21 @@ namespace x64 {
         const cs_x86_op& src = x86detail.operands[1];
         auto rssedst = asRegister128(dst);
         auto immsrc = asImmediate(src);
+        auto rmssesrc = asRM128(src);
         if(rssedst && immsrc) return X64Instruction::make<Insn::PSRLD_RSSE_IMM>(insn.address, insn.size, rssedst.value(), immsrc.value());
+        if(rssedst && rmssesrc) return X64Instruction::make<Insn::PSRLD_RSSE_RMSSE>(insn.address, insn.size, rssedst.value(), rmssesrc.value());
+        return make_failed(insn);
+    }
+    static X64Instruction makePsrlq(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto immsrc = asImmediate(src);
+        auto rmssesrc = asRM128(src);
+        if(rssedst && immsrc) return X64Instruction::make<Insn::PSRLQ_RSSE_IMM>(insn.address, insn.size, rssedst.value(), immsrc.value());
+        if(rssedst && rmssesrc) return X64Instruction::make<Insn::PSRLQ_RSSE_RMSSE>(insn.address, insn.size, rssedst.value(), rmssesrc.value());
         return make_failed(insn);
     }
 
@@ -3249,17 +3270,6 @@ namespace x64 {
         auto rssedst = asRegister128(dst);
         auto immsrc = asImmediate(src);
         if(rssedst && immsrc) return X64Instruction::make<Insn::PSRAD_RSSE_IMM>(insn.address, insn.size, rssedst.value(), immsrc.value());
-        return make_failed(insn);
-    }
-
-    static X64Instruction makePsrlq(const cs_insn& insn) {
-        const auto& x86detail = insn.detail->x86;
-        assert(x86detail.op_count == 2);
-        const cs_x86_op& dst = x86detail.operands[0];
-        const cs_x86_op& src = x86detail.operands[1];
-        auto rssedst = asRegister128(dst);
-        auto immsrc = asImmediate(src);
-        if(rssedst && immsrc) return X64Instruction::make<Insn::PSRLQ_RSSE_IMM>(insn.address, insn.size, rssedst.value(), immsrc.value());
         return make_failed(insn);
     }
 

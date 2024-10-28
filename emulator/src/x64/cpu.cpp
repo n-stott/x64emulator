@@ -683,11 +683,17 @@ namespace x64 {
             case Insn::PSRAD_RSSE_IMM: return exec(Psrad<RSSE, Imm>{insn.op0<RSSE>(), insn.op1<Imm>()});
             case Insn::PSRAQ_RSSE_IMM: return exec(Psraq<RSSE, Imm>{insn.op0<RSSE>(), insn.op1<Imm>()});
             case Insn::PSLLW_RSSE_IMM: return exec(Psllw<RSSE, Imm>{insn.op0<RSSE>(), insn.op1<Imm>()});
+            case Insn::PSLLW_RSSE_RMSSE: return exec(Psllw<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
             case Insn::PSLLD_RSSE_IMM: return exec(Pslld<RSSE, Imm>{insn.op0<RSSE>(), insn.op1<Imm>()});
+            case Insn::PSLLD_RSSE_RMSSE: return exec(Pslld<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
             case Insn::PSLLQ_RSSE_IMM: return exec(Psllq<RSSE, Imm>{insn.op0<RSSE>(), insn.op1<Imm>()});
+            case Insn::PSLLQ_RSSE_RMSSE: return exec(Psllq<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
             case Insn::PSRLW_RSSE_IMM: return exec(Psrlw<RSSE, Imm>{insn.op0<RSSE>(), insn.op1<Imm>()});
+            case Insn::PSRLW_RSSE_RMSSE: return exec(Psrlw<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
             case Insn::PSRLD_RSSE_IMM: return exec(Psrld<RSSE, Imm>{insn.op0<RSSE>(), insn.op1<Imm>()});
+            case Insn::PSRLD_RSSE_RMSSE: return exec(Psrld<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
             case Insn::PSRLQ_RSSE_IMM: return exec(Psrlq<RSSE, Imm>{insn.op0<RSSE>(), insn.op1<Imm>()});
+            case Insn::PSRLQ_RSSE_RMSSE: return exec(Psrlq<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
             case Insn::PSLLDQ_RSSE_IMM: return exec(Pslldq<RSSE, Imm>{insn.op0<RSSE>(), insn.op1<Imm>()});
             case Insn::PSRLDQ_RSSE_IMM: return exec(Psrldq<RSSE, Imm>{insn.op0<RSSE>(), insn.op1<Imm>()});
             case Insn::PCMPISTRI_RSSE_RMSSE_IMM: return exec(Pcmpistri<RSSE, RMSSE, Imm>{insn.op0<RSSE>(), insn.op1<RMSSE>(), insn.op2<Imm>()});
@@ -2650,28 +2656,60 @@ namespace x64 {
         set(ins.dst, Impl::psraq(get(ins.dst), get<u8>(ins.src)));
     }
 
+    static u8 shiftFromU128(u128 count) {
+        if(count.hi > 0) {
+            return 255;
+        } else {
+            return (u8)std::min((u64)255, count.lo);
+        }
+    }
+
     void Cpu::exec(const Psllw<RSSE, Imm>& ins) {
         set(ins.dst, Impl::psllw(get(ins.dst), get<u8>(ins.src)));
+    }
+    void Cpu::exec(const Psllw<RSSE, RMSSE>& ins) {
+        auto shift = shiftFromU128(get(ins.src));
+        set(ins.dst, Impl::psllw(get(ins.dst), shift));
     }
 
     void Cpu::exec(const Pslld<RSSE, Imm>& ins) {
         set(ins.dst, Impl::pslld(get(ins.dst), get<u8>(ins.src)));
     }
+    void Cpu::exec(const Pslld<RSSE, RMSSE>& ins) {
+        auto shift = shiftFromU128(get(ins.src));
+        set(ins.dst, Impl::pslld(get(ins.dst), shift));
+    }
 
     void Cpu::exec(const Psllq<RSSE, Imm>& ins) {
         set(ins.dst, Impl::psllq(get(ins.dst), get<u8>(ins.src)));
+    }
+    void Cpu::exec(const Psllq<RSSE, RMSSE>& ins) {
+        auto shift = shiftFromU128(get(ins.src));
+        set(ins.dst, Impl::psllq(get(ins.dst), shift));
     }
 
     void Cpu::exec(const Psrlw<RSSE, Imm>& ins) {
         set(ins.dst, Impl::psrlw(get(ins.dst), get<u8>(ins.src)));
     }
+    void Cpu::exec(const Psrlw<RSSE, RMSSE>& ins) {
+        auto shift = shiftFromU128(get(ins.src));
+        set(ins.dst, Impl::psrlw(get(ins.dst), shift));
+    }
 
     void Cpu::exec(const Psrld<RSSE, Imm>& ins) {
         set(ins.dst, Impl::psrld(get(ins.dst), get<u8>(ins.src)));
     }
+    void Cpu::exec(const Psrld<RSSE, RMSSE>& ins) {
+        auto shift = shiftFromU128(get(ins.src));
+        set(ins.dst, Impl::psrld(get(ins.dst), shift));
+    }
 
     void Cpu::exec(const Psrlq<RSSE, Imm>& ins) {
         set(ins.dst, Impl::psrlq(get(ins.dst), get<u8>(ins.src)));
+    }
+    void Cpu::exec(const Psrlq<RSSE, RMSSE>& ins) {
+        auto shift = shiftFromU128(get(ins.src));
+        set(ins.dst, Impl::psrlq(get(ins.dst), shift));
     }
 
     void Cpu::exec(const Pslldq<RSSE, Imm>& ins) {
