@@ -70,6 +70,7 @@ namespace kernel {
             case 0x18: return threadRegs.set(x64::R64::RAX, invoke_syscall_0(&Sys::sched_yield, regs));
             case 0x19: return threadRegs.set(x64::R64::RAX, invoke_syscall_5(&Sys::mremap, regs));
             case 0x1c: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::madvise, regs));
+            case 0x1d: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::shmget, regs));
             case 0x20: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::dup, regs));
             case 0x21: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::dup2, regs));
             case 0x26: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::setitimer, regs));
@@ -107,7 +108,9 @@ namespace kernel {
             case 0x76: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::getresuid, regs));
             case 0x78: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::getresgid, regs));
             case 0x89: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::statfs, regs));
+            case 0x8d: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::setpriority, regs));
             case 0x8f: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::sched_getparam, regs));
+            case 0x90: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::sched_setscheduler, regs));
             case 0x91: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::sched_getscheduler, regs));
             case 0x9d: return threadRegs.set(x64::R64::RAX, invoke_syscall_5(&Sys::prctl, regs));
             case 0x9e: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::arch_prctl, regs));
@@ -115,8 +118,9 @@ namespace kernel {
             case 0xbf: return threadRegs.set(x64::R64::RAX, invoke_syscall_4(&Sys::getxattr, regs));
             case 0xc0: return threadRegs.set(x64::R64::RAX, invoke_syscall_4(&Sys::lgetxattr, regs));
             case 0xc9: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::time, regs));
-            case 0xcc: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::sched_getaffinity, regs));
             case 0xca: return threadRegs.set(x64::R64::RAX, invoke_syscall_6(&Sys::futex, regs));
+            case 0xcb: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::sched_setaffinity, regs));
+            case 0xcc: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::sched_getaffinity, regs));
             case 0xd9: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::getdents64, regs));
             case 0xda: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::set_tid_address, regs));
             case 0xdd: return threadRegs.set(x64::R64::RAX, invoke_syscall_4(&Sys::posix_fadvise, regs));
@@ -452,6 +456,14 @@ namespace kernel {
         return ret;
     }
 
+    int Sys::shmget(key_t key, size_t size, int shmflg) {
+        if(logSyscalls_) {
+            print("Sys::shmget(key={}, size={:#x}, shmflg={:#x}) = {}\n", key, size, shmflg, -ENOTSUP);
+        }
+        warn(fmt::format("shmget not implemented"));
+        return -ENOTSUP;
+    }
+
     int Sys::socket(int domain, int type, int protocol) {
         FS::FD fd = kernel_.fs().socket(domain, type, protocol);
         if(logSyscalls_) {
@@ -725,11 +737,27 @@ namespace kernel {
         });
     }
 
+    int Sys::setpriority(int which, id_t who, int prio) {
+        if(logSyscalls_) {
+            print("Sys::setpriority(which={}, who={}, prio={}) = {}\n", which, who, prio, -ENOTSUP);
+        }
+        warn(fmt::format("setpriority not implemented"));
+        return -ENOTSUP;
+    }
+
     int Sys::sched_getparam(pid_t pid, x64::Ptr param) {
         if(logSyscalls_) {
             print("Sys::sched_getparam(pid={}, param={:#x}) = {}\n", pid, param.address(), -ENOTSUP);
         }
         warn(fmt::format("sched_getparam not implemented"));
+        return -ENOTSUP;
+    }
+
+    int Sys::sched_setscheduler(pid_t pid, int policy, x64::Ptr param) {
+        if(logSyscalls_) {
+            print("Sys::sched_setscheduler(pid={}, policy={}, param={:#x}) = {}\n", pid, policy, param.address(), -ENOTSUP);
+        }
+        warn(fmt::format("sched_setscheduler not implemented"));
         return -ENOTSUP;
     }
 
@@ -853,6 +881,14 @@ namespace kernel {
         return 1;
     }
 
+    int Sys::sched_setaffinity(pid_t pid, size_t cpusetsize, x64::Ptr mask) {
+        if(logSyscalls_) {
+            print("Sys::sched_setaffinity(pid={}, cpusetsize={}, mask={:#x}) = {}\n", pid, cpusetsize, mask.address(), -ENOTSUP);
+        }
+        warn(fmt::format("sched_setaffinity not implemented"));
+        return -ENOTSUP;
+    }
+
     int Sys::sched_getaffinity(pid_t pid, size_t cpusetsize, x64::Ptr mask) {
         int ret = 0;
         if(pid == 0) {
@@ -868,7 +904,7 @@ namespace kernel {
             ret = -EPERM;
         }
         if(logSyscalls_) print("Sys::sched_getaffinity({}, {}, {:#x}) = {}\n",
-                                                                  pid, cpusetsize, mask.address(), ret);
+                pid, cpusetsize, mask.address(), ret);
         return ret;
     }
 

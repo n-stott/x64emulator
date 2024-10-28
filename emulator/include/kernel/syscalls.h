@@ -165,6 +165,8 @@ namespace kernel {
         x64::Ptr mremap(x64::Ptr old_address, size_t old_size, size_t new_size, int flags, x64::Ptr new_address);
         // 0x1c
         int madvise(x64::Ptr addr, size_t length, int advice);
+        // 0x1d
+        int shmget(key_t key, size_t size, int shmflg);
         // 0x20
         int dup(int oldfd);
         // 0x21
@@ -239,8 +241,12 @@ namespace kernel {
         int getresgid(x64::Ptr32 rgid, x64::Ptr32 egid, x64::Ptr32 sgid);
         // 0x89
         int statfs(x64::Ptr path, x64::Ptr buf);
+        // 0x8d
+        int setpriority(int which, id_t who, int prio);
         // 0x8f
         int sched_getparam(pid_t pid, x64::Ptr param);
+        // 0x90
+        int sched_setscheduler(pid_t pid, int policy, x64::Ptr param);
         // 0x91
         int sched_getscheduler(pid_t pid);
         // 0x9e
@@ -257,6 +263,8 @@ namespace kernel {
         time_t time(x64::Ptr tloc);
         // 0xca
         long futex(x64::Ptr32 uaddr, int futex_op, uint32_t val, x64::Ptr timeout, x64::Ptr32 uaddr2, uint32_t val3);
+        // 0xcb
+        int sched_setaffinity(pid_t pid, size_t cpusetsize, x64::Ptr mask);
         // 0xcc
         int sched_getaffinity(pid_t pid, size_t cpusetsize, x64::Ptr mask);
         // 0xd9
