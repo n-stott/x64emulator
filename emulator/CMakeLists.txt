@@ -52,6 +52,7 @@ add_library(x64emulator STATIC
     src/kernel/syscalls.cpp
     src/kernel/thread.cpp
     src/kernel/threadblocker.cpp
+    src/kernel/timers.cpp
     src/x64/disassembler/capstonewrapper.cpp
     src/x64/instructions/x64instruction.cpp
     src/x64/cpu.cpp

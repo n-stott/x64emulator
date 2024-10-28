@@ -5,6 +5,7 @@
 #include "kernel/fs/fs.h"
 #include "kernel/scheduler.h"
 #include "kernel/syscalls.h"
+#include "kernel/timers.h"
 #include "x64/mmu.h"
 
 namespace x64 {
@@ -33,6 +34,7 @@ namespace kernel {
         FS& fs() { return fs_; }
         Scheduler& scheduler() { return scheduler_; }
         Sys& sys() { return sys_; }
+        Timers& timers() { return timers_; }
 
         void panic();
         bool hasPanicked() const { return hasPanicked_; }
@@ -44,6 +46,7 @@ namespace kernel {
         FS fs_;
         Scheduler scheduler_;
         Sys sys_;
+        Timers timers_;
         bool isProfiling_ { false };
         bool hasPanicked_ { false };
 

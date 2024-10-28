@@ -1,0 +1,44 @@
+#include "kernel/timers.h"
+#include "x64/mmu.h"
+#include "verify.h"
+#include <stdio.h>
+#include <time.h>
+
+namespace kernel {
+
+    std::unique_ptr<Timer> Timer::tryCreate(int id) {
+        return std::unique_ptr<Timer>(new Timer(id));
+    }
+
+    void Timer::measure() {
+        struct timespec ts;
+        int ret = ::clock_gettime(id_, &ts);
+        verify(ret == 0, [&]() { perror("clock_gettime failed"); });
+        now_.seconds = ts.tv_sec;
+        now_.nanoseconds = ts.tv_nsec;
+    }
+
+    std::optional<PreciseTime> Timer::readTime(x64::Mmu& mmu, x64::Ptr ptr) {
+        struct timespec ts = mmu.readFromMmu<struct timespec>(ptr);
+        PreciseTime time;
+        time.nanoseconds = ts.tv_nsec;
+        time.seconds = ts.tv_sec;
+        return time;
+    }
+
+    Timer* Timers::getOrTryCreate(int id) {
+        for(auto& timerPtr : timers_) {
+            if(timerPtr->id() == id) return timerPtr.get();
+        }
+        auto timer = Timer::tryCreate(id);
+        if(!timer) return nullptr;
+        Timer* ptr = timer.get();
+        timers_.push_back(std::move(timer));
+        return ptr;
+    }
+
+    void Timers::measureAll() {
+        for(auto& timer : timers_) timer->measure();
+    }
+
+}
