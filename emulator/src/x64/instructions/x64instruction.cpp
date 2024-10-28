@@ -783,6 +783,7 @@ namespace utils {
             case Insn::MOVHPS_RSSE_M64: return toString<RSSE, M64>("movhps");
             case Insn::MOVHPS_M64_RSSE: return toString<M64, RSSE>("movhps");
             case Insn::MOVHLPS_RSSE_RSSE: return toString<RSSE, RSSE>("movhlps");
+            case Insn::MOVLHPS_RSSE_RSSE: return toString<RSSE, RSSE>("movlhps");
             case Insn::PUNPCKLBW_RSSE_RMSSE: return toString<RSSE, RMSSE>("punpcklbw");
             case Insn::PUNPCKLWD_RSSE_RMSSE: return toString<RSSE, RMSSE>("punpcklwd");
             case Insn::PUNPCKLDQ_RSSE_RMSSE: return toString<RSSE, RMSSE>("punpckldq");

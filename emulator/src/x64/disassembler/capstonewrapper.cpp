@@ -2754,6 +2754,17 @@ namespace x64 {
         return make_failed(insn);
     }
 
+    static X64Instruction makeMovlhps(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto rssesrc = asRegister128(src);
+        if(rssedst && rssesrc) return X64Instruction::make<Insn::MOVLHPS_RSSE_RSSE>(insn.address, insn.size, rssedst.value(), rssesrc.value());
+        return make_failed(insn);
+    }
+
     static X64Instruction makePunpcklbw(const cs_insn& insn) {
         const auto& x86detail = insn.detail->x86;
         assert(x86detail.op_count == 2);
@@ -3704,6 +3715,7 @@ namespace x64 {
             case X86_INS_MOVHPS: 
             case X86_INS_MOVHPD: return makeMovhps(insn);
             case X86_INS_MOVHLPS: return makeMovhlps(insn);
+            case X86_INS_MOVLHPS: return makeMovlhps(insn);
             case X86_INS_PUNPCKLBW: return makePunpcklbw(insn);
             case X86_INS_PUNPCKLWD: return makePunpcklwd(insn);
             case X86_INS_PUNPCKLDQ: return makePunpckldq(insn);

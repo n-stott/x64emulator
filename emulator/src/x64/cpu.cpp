@@ -641,6 +641,7 @@ namespace x64 {
             case Insn::MOVHPS_RSSE_M64: return exec(Movhps<RSSE, M64>{insn.op0<RSSE>(), insn.op1<M64>()});
             case Insn::MOVHPS_M64_RSSE: return exec(Movhps<M64, RSSE>{insn.op0<M64>(), insn.op1<RSSE>()});
             case Insn::MOVHLPS_RSSE_RSSE: return exec(Movhlps<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
+            case Insn::MOVLHPS_RSSE_RSSE: return exec(Movlhps<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
             case Insn::PUNPCKLBW_RSSE_RMSSE: return exec(Punpcklbw<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
             case Insn::PUNPCKLWD_RSSE_RMSSE: return exec(Punpcklwd<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
             case Insn::PUNPCKLDQ_RSSE_RMSSE: return exec(Punpckldq<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
@@ -2446,6 +2447,12 @@ namespace x64 {
         set(ins.dst, dst);
     }
 
+    void Cpu::exec(const Movlhps<RSSE, RSSE>& ins) {
+        u128 dst = get(ins.dst);
+        u128 src = get(ins.src);
+        dst.hi = src.lo;
+        set(ins.dst, dst);
+    }
 
     void Cpu::exec(const Punpcklbw<RSSE, RMSSE>& ins) {
         u128 dst = Impl::punpcklbw(get(ins.dst), get(ins.src));

@@ -916,6 +916,12 @@ namespace x64 {
     };
 
     template<typename Dst, typename Src>
+    struct Movlhps {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
     struct Punpcklbw {
         Dst dst;
         Src src;
