@@ -236,25 +236,6 @@ namespace kernel {
             kernel_.scheduler().poll(currentThread_, fds, nfds, timeout);
         }
         return 0;
-        // if(logSyscalls_) {
-        //     assert(kernel_.host().pollRequiredBufferSize(1) == sizeof(u64));
-        //     auto dwords = mmu_.readFromMmu<u32>(fds, nfds*2);
-        //     std::vector<u32> pfds;
-        //     for(size_t i = 0; i < nfds; ++i) {
-        //         pfds.push_back(dwords[2*i]);
-        //     }
-        //     std::string fdsString = fmt::format("[{}]", fmt::join(pfds, ", "));
-
-        //     print("Sys::poll(fds={}, nfds={}, timeout={}) = {}\n",
-        //                           fdsString, nfds, timeout,
-        //                           errnoOrBufferAndReturnValue.errorOrWith<int>([](const auto& bufferAndRetVal) {
-        //                             return bufferAndRetVal.returnValue;
-        //                           }));
-        // }
-        // return errnoOrBufferAndReturnValue.errorOrWith<int>([&](const auto& bufferAndRetVal) {
-        //     mmu_.copyToMmu(fds, bufferAndRetVal.buffer.data(), bufferAndRetVal.buffer.size());
-        //     return bufferAndRetVal.returnValue;
-        // });
     }
 
     off_t Sys::lseek(int fd, off_t offset, int whence) {
@@ -273,7 +254,7 @@ namespace kernel {
             ErrnoOrBuffer data = kernel_.fs().pread(FS::FD{fd}, length, offset);
             if(data.isError()) {
                 auto filename = kernel_.fs().filename(FS::FD{fd});
-                warn(fmt::format("Could not mmap file \"{}\" with fd={}\n", filename, fd));
+                warn(fmt::format("Could not mmap file \"{}\" with fd={}", filename, fd));
                 base = (u64)data.errorOr(0);
             }
             data.errorOrWith<int>([&](const Buffer& buffer) {
@@ -457,7 +438,7 @@ namespace kernel {
             print("Sys::mremap(old_address={:#x}, old_size={}, new_size={}, flags={}, new_address={:#x}) = {}\n",
                                     old_address.address(), old_size, new_size, flags, new_address.address(), -ENOTSUP);
         }
-        warn(fmt::format("mremap not implemented\n"));
+        warn(fmt::format("mremap not implemented"));
         return x64::Ptr{(u64)-ENOTSUP};
     }
 
@@ -624,7 +605,7 @@ namespace kernel {
         if(logSyscalls_) {
             print("Sys::rename(oldpath={}, newpath={}) = {}\n", oldname, newname, -ENOTSUP);
         }
-        warn(fmt::format("rename not implemented\n"));
+        warn(fmt::format("rename not implemented"));
         return -ENOTSUP;
     }
 
@@ -633,7 +614,7 @@ namespace kernel {
             auto path = mmu_.readString(pathname);
             print("Sys::mkdir(path={}, mode={}) = {}\n", path, mode, -ENOTSUP);
         }
-        warn(fmt::format("mkdir not implemented\n"));
+        warn(fmt::format("mkdir not implemented"));
         return -ENOTSUP;
     }
 
@@ -642,7 +623,7 @@ namespace kernel {
             auto path = mmu_.readString(pathname);
             print("Sys::unlink(path={}) = {}\n", path, -ENOTSUP);
         }
-        warn(fmt::format("unlink not implemented\n"));
+        warn(fmt::format("unlink not implemented"));
         return -ENOTSUP;
     }
 
@@ -665,7 +646,7 @@ namespace kernel {
             print("Sys::chmod(path={}, mode={}) = {}\n",
                         path, mode, -ENOTSUP);
         }
-        warn(fmt::format("chmod not implemented\n"));
+        warn(fmt::format("chmod not implemented"));
         return -ENOTSUP;
     }
 
@@ -747,7 +728,7 @@ namespace kernel {
         if(logSyscalls_) {
             print("Sys::sched_getparam(pid={}, param={:#x}) = {}\n", pid, param.address(), -ENOTSUP);
         }
-        warn(fmt::format("sched_getparam not implemented\n"));
+        warn(fmt::format("sched_getparam not implemented"));
         return -ENOTSUP;
     }
 
@@ -755,7 +736,7 @@ namespace kernel {
         if(logSyscalls_) {
             print("Sys::sched_getscheduler(pid={}) = {}\n", pid, -ENOTSUP);
         }
-        warn(fmt::format("sched_getscheduler not implemented\n"));
+        warn(fmt::format("sched_getscheduler not implemented"));
         return -ENOTSUP;
     }
 
@@ -775,19 +756,19 @@ namespace kernel {
         if(logSyscalls_) {
             print("Sys::mbind(start={}, len={}, mode={}, nmask={:#x}, maxnode={}, flags={})\n", start, len, mode, nmask.address(), maxnode, flags);
         }
-        warn(fmt::format("mbind not implemented\n"));
+        warn(fmt::format("mbind not implemented"));
         return -ENOTSUP;
     }
 
     int Sys::inotify_init() {
         if(logSyscalls_) print("Sys::inotify_init() = {}\n", -ENOTSUP);
-        warn(fmt::format("inotify_init not implemented\n"));
+        warn(fmt::format("inotify_init not implemented"));
         return -ENOTSUP;
     }
 
     int Sys::inotify_add_watch(int fd, x64::Ptr pathname, uint32_t mask) {
         if(logSyscalls_) print("Sys::inotify_add_watch(fd={}, pathname={}, mask={}) = {}\n", fd, mmu_.readString(pathname), mask, -ENOTSUP);
-        warn(fmt::format("inotify_add_watch not implemented\n"));
+        warn(fmt::format("inotify_add_watch not implemented"));
         return -ENOTSUP;
     }
 
@@ -1053,20 +1034,25 @@ namespace kernel {
     }
 
     int Sys::clock_nanosleep(clockid_t clockid, int flags, x64::Ptr request, x64::Ptr remain) {
+        verify(flags == 0, "clock_nanosleep with nonzero flags not supported (relative only)");
+        Timer* timer = kernel_.timers().getOrTryCreate(clockid);
+        if(!timer) { return -EINVAL; }
+        auto time = timer->readTime(mmu_, request);
+        if(!time) { return -EFAULT; }
+        timer->measure();
+        kernel_.scheduler().sleep(currentThread_, timer, timer->now() + time.value());
         if(logSyscalls_) {
-            print("Sys::clock_nanosleep(clockid={}, flags={}, request={:#x}, remain={:#x}) = {}\n",
-                        clockid, flags, request.address(), remain.address(), -ENOTSUP);
+            print("Sys::clock_nanosleep(clockid={}, flags={}, request={}s{}ns, remain={:#x}) = {}\n",
+                        clockid, flags, time->seconds, time->nanoseconds, remain.address(), 0);
         }
-        warn(fmt::format("clock_nanosleep not implemented\n"));
-        currentThread_->yield();
-        return -ENOTSUP;
+        return 0;
     }
 
     int Sys::prctl(int option, unsigned long arg2, unsigned long arg3, unsigned long arg4, unsigned long arg5) {
         if(logSyscalls_) {
             print("Sys::prctl(option={}, arg2={}, arg3={}, arg4={}, arg5={}) = {}\n", option, arg2, arg3, arg4, arg5, -ENOTSUP);
         }
-        warn(fmt::format("prctl not implemented\n"));
+        warn(fmt::format("prctl not implemented"));
         return -ENOTSUP;
     }
 
@@ -1171,7 +1157,7 @@ namespace kernel {
     int Sys::utimensat(int dirfd, x64::Ptr pathname, x64::Ptr times, int flags) {
         if(logSyscalls_) print("Sys::utimensat(dirfd={}, pathname={}, times={:#x}, flags={}) = -ENOTSUP\n",
                                                           dirfd, mmu_.readString(pathname), times.address(), flags);
-        warn(fmt::format("utimensat not implemented\n"));
+        warn(fmt::format("utimensat not implemented"));
         return -ENOTSUP;
     }
 
@@ -1195,7 +1181,7 @@ namespace kernel {
         if(logSyscalls_) {
             print("Sys::pipe(pipefd={:#x}, flags={}) = {}\n", pipefd.address(), flags, -ENOTSUP);
         }
-        warn(fmt::format("pipe2 not implemented\n"));
+        warn(fmt::format("pipe2 not implemented"));
         return -ENOTSUP;
     }
 
