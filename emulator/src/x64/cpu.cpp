@@ -229,6 +229,8 @@ namespace x64 {
             case Insn::IMUL1_RM64: return exec(Imul1<RM64>{insn.op0<RM64>()});
             case Insn::IMUL2_R64_RM64: return exec(Imul2<R64, RM64>{insn.op0<R64>(), insn.op1<RM64>()});
             case Insn::IMUL3_R64_RM64_IMM: return exec(Imul3<R64, RM64, Imm>{insn.op0<R64>(), insn.op1<RM64>(), insn.op2<Imm>()});
+            case Insn::DIV_RM8: return exec(Div<RM8>{insn.op0<RM8>()});
+            case Insn::DIV_RM16: return exec(Div<RM16>{insn.op0<RM16>()});
             case Insn::DIV_RM32: return exec(Div<RM32>{insn.op0<RM32>()});
             case Insn::DIV_RM64: return exec(Div<RM64>{insn.op0<RM64>()});
             case Insn::IDIV_RM32: return exec(Idiv<RM32>{insn.op0<RM32>()});
@@ -894,6 +896,18 @@ namespace x64 {
     void Cpu::exec(const Imul3<R64, RM64, Imm>& ins) {
         auto res = Impl::imul64(get(ins.src1), get<u64>(ins.src2), &flags_);
         set(ins.dst, res.second);
+    }
+
+    void Cpu::exec(const Div<RM8>& ins) {
+        auto res = Impl::div8(get(R8::AH), get(R8::AL), get(ins.src));
+        set(R8::AL, res.first);
+        set(R8::AH, res.second);
+    }
+
+    void Cpu::exec(const Div<RM16>& ins) {
+        auto res = Impl::div16(get(R16::DX), get(R16::AX), get(ins.src));
+        set(R16::AX, res.first);
+        set(R16::DX, res.second);
     }
 
     void Cpu::exec(const Div<RM32>& ins) {

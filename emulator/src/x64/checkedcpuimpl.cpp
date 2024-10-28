@@ -413,6 +413,14 @@ namespace x64 {
         return std::make_pair(upper, lower);
     }
 
+    std::pair<u8, u8> CheckedCpuImpl::div8(u8 dividendUpper, u8 dividendLower, u8 divisor) {
+        return CpuImpl::div8(dividendUpper, dividendLower, divisor);
+    }
+
+    std::pair<u16, u16> CheckedCpuImpl::div16(u16 dividendUpper, u16 dividendLower, u16 divisor) {
+        return CpuImpl::div16(dividendUpper, dividendLower, divisor);
+    }
+
     std::pair<u32, u32> CheckedCpuImpl::div32(u32 dividendUpper, u32 dividendLower, u32 divisor) {
         assert(divisor != 0);
         u64 dividend = ((u64)dividendUpper) << 32 | (u64)dividendLower;

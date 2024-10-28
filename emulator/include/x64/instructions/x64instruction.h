@@ -76,6 +76,8 @@ namespace x64 {
         IMUL1_RM64,
         IMUL2_R64_RM64,
         IMUL3_R64_RM64_IMM,
+        DIV_RM8,
+        DIV_RM16,
         DIV_RM32,
         DIV_RM64,
         IDIV_RM32,

@@ -38,6 +38,8 @@ namespace x64 {
         [[nodiscard]] static std::pair<u32, u32> imul32(u32 src1, u32 src2, Flags* flags);
         [[nodiscard]] static std::pair<u64, u64> imul64(u64 src1, u64 src2, Flags* flags);
 
+        [[nodiscard]] static std::pair<u8, u8> div8(u8 dividendUpper, u8 dividendLower, u8 divisor);
+        [[nodiscard]] static std::pair<u16, u16> div16(u16 dividendUpper, u16 dividendLower, u16 divisor);
         [[nodiscard]] static std::pair<u32, u32> div32(u32 dividendUpper, u32 dividendLower, u32 divisor);
         [[nodiscard]] static std::pair<u64, u64> div64(u64 dividendUpper, u64 dividendLower, u64 divisor);
 

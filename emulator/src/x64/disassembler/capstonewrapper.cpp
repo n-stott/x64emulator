@@ -710,8 +710,12 @@ namespace x64 {
         const auto& x86detail = insn.detail->x86;
         assert(x86detail.op_count == 1);
         const cs_x86_op& operand = x86detail.operands[0];
+        auto rm8dst = asRM8(operand);
+        auto rm16dst = asRM16(operand);
         auto rm32dst = asRM32(operand);
         auto rm64dst = asRM64(operand);
+        if(rm8dst) return X64Instruction::make<Insn::DIV_RM8>(insn.address, insn.size, rm8dst.value());
+        if(rm16dst) return X64Instruction::make<Insn::DIV_RM16>(insn.address, insn.size, rm16dst.value());
         if(rm32dst) return X64Instruction::make<Insn::DIV_RM32>(insn.address, insn.size, rm32dst.value());
         if(rm64dst) return X64Instruction::make<Insn::DIV_RM64>(insn.address, insn.size, rm64dst.value());
         return make_failed(insn);

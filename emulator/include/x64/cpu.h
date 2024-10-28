@@ -240,6 +240,8 @@ namespace x64 {
         void exec(const Imul2<R64, RM64>&);
         void exec(const Imul3<R64, RM64, Imm>&);
 
+        void exec(const Div<RM8>&);
+        void exec(const Div<RM16>&);
         void exec(const Div<RM32>&);
         void exec(const Div<RM64>&);
 

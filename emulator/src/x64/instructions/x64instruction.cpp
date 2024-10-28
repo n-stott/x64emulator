@@ -371,6 +371,8 @@ namespace utils {
             case Insn::IMUL1_RM64: return toString<RM64>("imul");
             case Insn::IMUL2_R64_RM64: return toString<R64, RM64>("imul");
             case Insn::IMUL3_R64_RM64_IMM: return toString<R64, RM64, Imm>("imul");
+            case Insn::DIV_RM8: return toString<RM8>("div");
+            case Insn::DIV_RM16: return toString<RM16>("div");
             case Insn::DIV_RM32: return toString<RM32>("div");
             case Insn::DIV_RM64: return toString<RM64>("div");
             case Insn::IDIV_RM32: return toString<RM32>("idiv");

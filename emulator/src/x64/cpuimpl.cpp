@@ -193,6 +193,22 @@ namespace x64 {
         return std::make_pair(upper, lower);
     }
 
+    std::pair<u8, u8> CpuImpl::div8(u8 dividendUpper, u8 dividendLower, u8 divisor) {
+        assert(divisor != 0);
+        u16 dividend = (u16)(((u16)dividendUpper) << 8 | (u16)dividendLower);
+        u16 tmp = dividend / divisor;
+        assert(tmp >> 8 == 0);
+        return std::make_pair(tmp, dividend % divisor);
+    }
+
+    std::pair<u16, u16> CpuImpl::div16(u16 dividendUpper, u16 dividendLower, u16 divisor) {
+        assert(divisor != 0);
+        u32 dividend = (u32)((u32)dividendUpper) << 16 | (u32)dividendLower;
+        u32 tmp = dividend / divisor;
+        assert(tmp >> 16 == 0);
+        return std::make_pair(tmp, dividend % divisor);
+    }
+
     std::pair<u32, u32> CpuImpl::div32(u32 dividendUpper, u32 dividendLower, u32 divisor) {
         assert(divisor != 0);
         u64 dividend = ((u64)dividendUpper) << 32 | (u64)dividendLower;
