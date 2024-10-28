@@ -672,6 +672,7 @@ namespace x64 {
             case Insn::PSUBQ_RSSE_RMSSE: return exec(Psubq<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
             case Insn::PMULHW_RSSE_RMSSE: return exec(Pmulhw<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
             case Insn::PMULLW_RSSE_RMSSE: return exec(Pmullw<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
+            case Insn::PMULUDQ_RSSE_RMSSE: return exec(Pmuludq<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
             case Insn::PMADDWD_RSSE_RMSSE: return exec(Pmaddwd<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
             case Insn::PMAXUB_RSSE_RMSSE: return exec(Pmaxub<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
             case Insn::PMINUB_RSSE_RMSSE: return exec(Pminub<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
@@ -2598,6 +2599,11 @@ namespace x64 {
 
     void Cpu::exec(const Pmullw<RSSE, RMSSE>& ins) {
         u128 res = Impl::pmullw(get(ins.dst), get(ins.src));
+        set(ins.dst, res);
+    }
+
+    void Cpu::exec(const Pmuludq<RSSE, RMSSE>& ins) {
+        u128 res = Impl::pmuludq(get(ins.dst), get(ins.src));
         set(ins.dst, res);
     }
 

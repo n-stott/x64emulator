@@ -814,6 +814,7 @@ namespace utils {
             case Insn::PSUBQ_RSSE_RMSSE: return toString<RSSE, RMSSE>("psubq");
             case Insn::PMULHW_RSSE_RMSSE: return toString<RSSE, RMSSE>("pmulhw");
             case Insn::PMULLW_RSSE_RMSSE: return toString<RSSE, RMSSE>("pmullw");
+            case Insn::PMULUDQ_RSSE_RMSSE: return toString<RSSE, RMSSE>("pmuludq");
             case Insn::PMADDWD_RSSE_RMSSE: return toString<RSSE, RMSSE>("pmaddwd");
             case Insn::PMAXUB_RSSE_RMSSE: return toString<RSSE, RMSSE>("pmaxub");
             case Insn::PMINUB_RSSE_RMSSE: return toString<RSSE, RMSSE>("pminub");

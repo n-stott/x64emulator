@@ -2205,6 +2205,22 @@ namespace x64 {
 #endif
     }
 
+    u128 CheckedCpuImpl::pmuludq(u128 dst, u128 src) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::pmuludq(dst, src);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("pmuludq %1, %0" : "+x"(nativeRes) : "x"(src));
+        assert(nativeRes.lo == virtualRes.lo);
+        assert(nativeRes.hi == virtualRes.hi);
+        
+        return nativeRes;
+#else
+        return CpuImpl::pmuludq(dst, src);
+#endif
+    }
+
     u128 CheckedCpuImpl::pmaddwd(u128 dst, u128 src) {
 #if GCC_COMPILER
         u128 virtualRes = CpuImpl::pmaddwd(dst, src);

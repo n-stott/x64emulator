@@ -1347,6 +1347,26 @@ namespace x64 {
         return dst;
     }
 
+    u128 CpuImpl::pmuludq(u128 dst, u128 src) {
+        std::array<u32, 4> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        std::memcpy(DST.data(), &dst, sizeof(u128));
+
+        std::array<u32, 4> SRC;
+        static_assert(sizeof(SRC) == sizeof(u128));
+        std::memcpy(SRC.data(), &src, sizeof(u128));
+
+        for(size_t i = 0; i < 2; ++i) {
+            u64 prod = (u64)DST[2*i] * (u64)SRC[2*i];
+            u32 res[2];
+            std::memcpy(&res, &prod, sizeof(res));
+            DST[2*i+0] = res[0];
+            DST[2*i+1] = res[1];
+        }
+        std::memcpy(&dst, DST.data(), sizeof(u128));
+        return dst;
+    }
+
     u128 CpuImpl::pmaddwd(u128 dst, u128 src) {
         std::array<i16, 8> DST;
         static_assert(sizeof(DST) == sizeof(u128));

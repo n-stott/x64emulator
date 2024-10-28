@@ -774,6 +774,7 @@ namespace x64 {
 
         void exec(const Pmulhw<RSSE, RMSSE>&);
         void exec(const Pmullw<RSSE, RMSSE>&);
+        void exec(const Pmuludq<RSSE, RMSSE>&);
         void exec(const Pmaddwd<RSSE, RMSSE>&);
 
         void exec(const Pmaxub<RSSE, RMSSE>&);

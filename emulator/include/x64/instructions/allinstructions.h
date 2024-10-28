@@ -1105,6 +1105,12 @@ namespace x64 {
     };
 
     template<typename Dst, typename Src>
+    struct Pmuludq {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
     struct Pmaddwd {
         Dst dst;
         Src src;

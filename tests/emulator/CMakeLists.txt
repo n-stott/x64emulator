@@ -121,7 +121,6 @@ add_executable(test_time src/test_time.cpp)
 target_compile_options(test_time PUBLIC ${CC_OPTIONS})
 target_link_libraries(test_time PUBLIC pthread)
 add_test(NAME time COMMAND ${CMAKE_BINARY_DIR}/emulator/emulator test_time)
-set_tests_properties(time PROPERTIES WILL_FAIL TRUE)
 
 if(EXISTS "/usr/bin/whoami")
     add_test(NAME whoami COMMAND ${CMAKE_BINARY_DIR}/emulator/emulator /usr/bin/whoami)

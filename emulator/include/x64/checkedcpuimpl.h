@@ -256,6 +256,7 @@ namespace x64 {
 
         [[nodiscard]] static u128 pmulhw(u128 dst, u128 src);
         [[nodiscard]] static u128 pmullw(u128 dst, u128 src);
+        [[nodiscard]] static u128 pmuludq(u128 dst, u128 src);
         [[nodiscard]] static u128 pmaddwd(u128 dst, u128 src);
 
         [[nodiscard]] static u128 pmaxub(u128 dst, u128 src);
