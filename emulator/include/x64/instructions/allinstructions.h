@@ -820,6 +820,12 @@ namespace x64 {
     };
 
     template<typename Dst, typename Src>
+    struct Cvtdq2ps {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
     struct Cvtdq2pd {
         Dst dst;
         Src src;
