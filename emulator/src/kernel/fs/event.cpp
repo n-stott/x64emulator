@@ -2,6 +2,7 @@
 #include "verify.h"
 #include <sys/errno.h>
 #include <sys/eventfd.h>
+#include <sys/poll.h>
 
 namespace kernel {
 
@@ -25,13 +26,25 @@ namespace kernel {
     }
 
     bool Event::canRead() const {
-        verify(false, "Event::canRead not implemented");
-        return false;
+        struct pollfd pfd;
+        pfd.fd = hostFd_;
+        pfd.events = POLLIN;
+        pfd.revents = 0;
+        int timeout = 0; // return immediately
+        int ret = ::poll(&pfd, 1, timeout);
+        if(ret < 0) return false;
+        return !!(pfd.revents & POLLIN);
     }
 
     bool Event::canWrite() const {
-        verify(false, "Event::canWrite not implemented");
-        return false;
+        struct pollfd pfd;
+        pfd.fd = hostFd_;
+        pfd.events = POLLOUT;
+        pfd.revents = 0;
+        int timeout = 0; // return immediately
+        int ret = ::poll(&pfd, 1, timeout);
+        if(ret < 0) return false;
+        return !!(pfd.revents & POLLOUT);
     }
     
     ErrnoOrBuffer Event::read(size_t, off_t) {
