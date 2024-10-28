@@ -29,7 +29,7 @@ namespace kernel {
         mode_t fileType = (s.st_mode & S_IFMT);
         if (fileType != S_IFREG && fileType != S_IFLNK && fileType != S_IFDIR) {
             // not a regular file or a symbolic link
-            warn([&](){ fmt::print(fg(fmt::color::red), "File {} is not a regular file or a symbolic link\n", path); });
+            warn(fmt::format("File {} is not a regular file or a symbolic link\n", path));
             return {};
         }
 
@@ -104,7 +104,7 @@ namespace kernel {
                 return ret;
             }
         }
-        warn([&](){ fmt::print(fg(fmt::color::red), "implement missing fcntl {} on HostFile\n", cmd); });
+        warn(fmt::format("implement missing fcntl {} on HostFile\n", cmd));
         return -ENOTSUP;
     }
 

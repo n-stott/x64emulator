@@ -1,7 +1,8 @@
 #ifndef VERIFY_H
 #define VERIFY_H
 
-#include "fmt/core.h"
+#include <fmt/core.h>
+#include <fmt/color.h>
 #include <exception>
 
 struct VerificationException : public std::exception { };
@@ -35,14 +36,12 @@ struct VerificationScope {
     }
 };
 
-
 static inline void warn(const char* message) {
-    fmt::print("{}\n", message);
+    fmt::print(fg(fmt::color::red), "{}\n", message);
 }
 
-template<typename Callback>
-static inline void warn(Callback callback) {
-    callback();
+static inline void warn(std::string message) {
+    fmt::print(fg(fmt::color::red), "{}\n", std::move(message));
 }
 
 #endif

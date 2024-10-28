@@ -71,7 +71,7 @@ namespace kernel {
                 return 0;
             }
         }
-        warn([&](){ fmt::print(fg(fmt::color::red), "implement missing fcntl {} on HostFile\n", cmd); });
+        warn(fmt::format("implement missing fcntl {} on HostFile\n", cmd));
         return -ENOTSUP;
     }
 
@@ -120,7 +120,7 @@ namespace kernel {
                 return ErrnoOrBuffer(Buffer{});
             }
         }
-        warn([&]() { fmt::print(fg(fmt::color::red), "ioctl({:#x}) not implemented\n", request); });
+        warn(fmt::format("ioctl({:#x}) not implemented\n", request));
         return ErrnoOrBuffer(-ENOTSUP);
     }
 

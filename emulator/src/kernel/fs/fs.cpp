@@ -9,6 +9,8 @@
 #include "kernel/fs/stream.h"
 #include "kernel/kernel.h"
 #include "verify.h"
+#include <fmt/core.h>
+#include <fmt/color.h>
 #include <algorithm>
 #include <fcntl.h>
 #include <sys/poll.h>
@@ -395,6 +397,7 @@ namespace kernel {
             if(testRead && file->canRead())   rfd.revents = rfd.revents | PollEvent::CAN_READ;
             if(testWrite && file->canWrite()) rfd.revents = rfd.revents | PollEvent::CAN_WRITE;
         }
+        warn("pollImmediate, errors not checked\n");
         int ret = 0; // TODO check errors
         BufferAndReturnValue<int> bufferAndRetVal {
             Buffer{std::move(rfds)},
