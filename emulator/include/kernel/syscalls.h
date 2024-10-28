@@ -203,6 +203,8 @@ namespace kernel {
         int uname(x64::Ptr buf);
         // 0x48
         int fcntl(int fd, int cmd, int arg);
+        // 0x49
+        int flock(int fd, int operation);
         // 0x4a
         int fsync(int fd);
         // 0x4f

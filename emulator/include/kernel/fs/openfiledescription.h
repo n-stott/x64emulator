@@ -2,6 +2,7 @@
 #define OPENFILEDESCRIPTION_H
 
 #include "kernel/fs/file.h"
+#include "verify.h"
 
 namespace kernel {
 
@@ -13,9 +14,36 @@ namespace kernel {
 
         };
 
+        enum class Lock {
+            NONE,
+            SHARED,
+            EXCLUSIVE,
+        };
+
+        enum class Blocking {
+            NO,
+            YES,
+        };
+
         explicit OpenFileDescription(File* file, Flags flags) : file_(file), flags_(flags) { }
 
         File* file() { return file_; }
+        
+        bool isLockedExclusively() const { return lock_ == Lock::EXCLUSIVE; }
+        bool isLockedShared() const { return lock_ == Lock::SHARED; }
+        
+        [[nodiscard]] int tryLock(Lock lock, Blocking blocking) {
+            if(blocking == Blocking::NO && lock_ == Lock::EXCLUSIVE) return -EWOULDBLOCK;
+            verify(lock_ == Lock::NONE, "Lock contention not supported");
+            lock_ = lock;
+            return 0;
+        }
+
+        void unlock() {
+            lock_ = Lock::NONE;
+        }
+
+
 
         ErrnoOrBuffer read(size_t count) {
             ErrnoOrBuffer errnoOrBuffer = file_->read(count, offset_);
@@ -56,6 +84,7 @@ namespace kernel {
         File* file_ { nullptr };
         off_t offset_ { 0 };
         Flags flags_;
+        Lock lock_;
     };
 
 }

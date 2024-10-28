@@ -14,6 +14,7 @@
 #include <algorithm>
 #include <fcntl.h>
 #include <sys/poll.h>
+#include <sys/file.h>
 
 namespace kernel {
 
@@ -313,6 +314,33 @@ namespace kernel {
         if(!openFileDescription->file()->isRegularFile()) return ErrnoOrBuffer{-EBADF};
         RegularFile* file = static_cast<RegularFile*>(openFileDescription->file());
         return file->ioctl(request, buffer);
+    }
+
+    int FS::flock(FD fd, int operation) {
+        OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
+        if(!openFileDescription) return -EBADF;
+        bool lockShared = (operation & LOCK_SH);
+        bool lockExclusively = (operation & LOCK_EX);
+        bool unlock = (operation & LOCK_UN);
+        bool nonBlocking = (operation & LOCK_NB);
+        OpenFileDescription::Blocking blocking
+                = nonBlocking ? OpenFileDescription::Blocking::NO
+                              : OpenFileDescription::Blocking::YES;
+        if(lockExclusively) {
+            if(lockShared) return -EINVAL;
+            if(unlock) return -EINVAL;
+            return openFileDescription->tryLock(OpenFileDescription::Lock::EXCLUSIVE, blocking);
+        } else if(lockShared) {
+            if(lockExclusively) return -EINVAL;
+            if(unlock) return -EINVAL;
+            return openFileDescription->tryLock(OpenFileDescription::Lock::EXCLUSIVE, blocking);
+        } else if(unlock) {
+            if(lockExclusively) return -EINVAL;
+            if(lockShared) return -EINVAL;
+            openFileDescription->unlock();
+            return 0;
+        }
+        return -EINVAL;
     }
 
     FS::FD FS::eventfd2(unsigned int initval, int flags) {

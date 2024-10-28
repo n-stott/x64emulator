@@ -67,6 +67,8 @@ namespace kernel {
         int fcntl(FD fd, int cmd, int arg);
         ErrnoOrBuffer ioctl(FD fd, unsigned long request, const Buffer& buffer);
 
+        int flock(FD fd, int operation);
+
         FD eventfd2(unsigned int initval, int flags);
         FD epoll_create1(int flags);
 

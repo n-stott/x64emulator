@@ -89,6 +89,7 @@ namespace kernel {
             case 0x3c: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::exit, regs));
             case 0x3f: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::uname, regs));
             case 0x48: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::fcntl, regs));
+            case 0x49: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::flock, regs));
             case 0x4a: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::fsync, regs));
             case 0x4f: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::getcwd, regs));
             case 0x50: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::chdir, regs));
@@ -584,8 +585,15 @@ namespace kernel {
         return ret;
     }
 
+    int Sys::flock(int fd, int operation) {
+        int ret = kernel_.fs().flock(FS::FD{fd}, operation);
+        if(logSyscalls_) print("Sys::flock(fd={}, operation={}) = {}\n", fd, operation, ret);
+        return ret;
+    }
+
     int Sys::fsync(int fd) {
         if(logSyscalls_) print("Sys::fsync(fd={}) = {}\n", fd, -EINVAL);
+        warn(fmt::format("fsync not implemented"));
         return -EINVAL;
     }
 
