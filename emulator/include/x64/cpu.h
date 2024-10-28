@@ -163,8 +163,6 @@ namespace x64 {
         void execLockCmpxchg32Impl(Ptr32 dst, u32 src);
         void execLockCmpxchg64Impl(Ptr64 dst, u64 src);
 
-        kernel::Thread* currentThread();
-
     public:
         void exec(const X64Instruction&);
 

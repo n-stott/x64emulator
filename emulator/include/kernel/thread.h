@@ -32,6 +32,7 @@ namespace kernel {
             RUNNABLE,
             RUNNING,
             BLOCKED,
+            IN_SYSCALL,
             DEAD,
         };
 
@@ -46,8 +47,18 @@ namespace kernel {
         struct TickInfo {
             size_t ticksFromStart { 0 };
             size_t ticksUntilSwitch { 0 };
+            size_t savedTicksUntilSwitch { 0 };
 
             void yield() { ticksUntilSwitch = ticksFromStart; }
+            
+            void enterSyscall() {
+                savedTicksUntilSwitch = ticksUntilSwitch;
+                ticksUntilSwitch = ticksFromStart;
+            }
+
+            void exitSyscall() {
+                ticksUntilSwitch = savedTicksUntilSwitch;
+            }
         };
 
         const Description& description() const { return description_; }
@@ -58,6 +69,18 @@ namespace kernel {
         TickInfo& tickInfo() { return tickInfo_; }
         const TickInfo& tickInfo() const { return tickInfo_; }
         void yield() { tickInfo_.yield(); }
+
+        void enterSyscall() {
+            tickInfo_.enterSyscall();
+            setState(THREAD_STATE::IN_SYSCALL);
+        }
+
+        void exitSyscall() {
+            if(state() == THREAD_STATE::IN_SYSCALL) {
+                tickInfo_.exitSyscall();
+                setState(THREAD_STATE::RUNNING);
+            }
+        }
 
         SavedCpuState& savedCpuState() { return savedCpuState_; }
 

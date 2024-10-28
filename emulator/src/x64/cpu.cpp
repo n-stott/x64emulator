@@ -159,10 +159,6 @@ namespace x64 {
         return mxcsr_.rc;
     }
 
-    kernel::Thread* Cpu::currentThread() {
-        return vm_->currentThread_;
-    }
-
     void Cpu::exec(const X64Instruction& insn) {
         // if(insn.lock()) {
         //     fmt::print("{}\n", insn.toString());
@@ -2679,8 +2675,7 @@ namespace x64 {
     }
 
     void Cpu::exec(const Syscall&) {
-        vm_->syncThread(); // sync thread info before syscall
-        vm_->syscall(*this);
+        vm_->enterSyscall();
     }
 
     void Cpu::exec(const Rdtsc&) {

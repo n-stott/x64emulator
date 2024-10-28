@@ -43,32 +43,10 @@ namespace emulator {
         }
     }
 
-    class MunmapCallback : public x64::Mmu::MunmapCallback {
-    public:
-        MunmapCallback(x64::Mmu& mmu, VM& vm) : mmu_(mmu), vm_(vm) {
-            mmu_.addCallback(this);
+    void VM::enterSyscall() {
+        if(!!currentThread_) {
+            currentThread_->enterSyscall();
         }
-
-        ~MunmapCallback() {
-            mmu_.removeCallback(this);
-        }
-
-        void onMunmap(u64 base, u64 length) override {
-            auto& execSections = vm_.executableSections_;
-            execSections.erase(std::remove_if(execSections.begin(), execSections.end(), [&](const auto& sectionPtr) {
-                const auto& section = *sectionPtr;
-                return section.begin >= base && section.end <= base+length;
-            }), execSections.end());
-        }
-    
-    private:
-        x64::Mmu& mmu_;
-        VM& vm_;
-    };
-
-    void VM::syscall(x64::Cpu& cpu) {
-        MunmapCallback callback(mmu_, *this);
-        kernel_.syscall(cpu);
     }
 
     void VM::contextSwitch(kernel::Thread* newThread) {

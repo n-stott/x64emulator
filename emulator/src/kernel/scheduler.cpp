@@ -35,7 +35,14 @@ namespace kernel {
                 }
 
                 if(!threadToRun) break;
-                vm.execute(threadToRun);
+                while(threadToRun->tickInfo().ticksFromStart < threadToRun->tickInfo().ticksUntilSwitch) {
+                    verify(threadToRun->state() == Thread::THREAD_STATE::RUNNING);
+                    vm.execute(threadToRun);
+                    if(threadToRun->state() == Thread::THREAD_STATE::IN_SYSCALL) {
+                        kernel_.sys().syscall(threadToRun);
+                        threadToRun->exitSyscall();
+                    }
+                }
                 if(threadToRun->state() == Thread::THREAD_STATE::RUNNING)
                     threadToRun->setState(Thread::THREAD_STATE::RUNNABLE);
 

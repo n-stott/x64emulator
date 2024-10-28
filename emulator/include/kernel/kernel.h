@@ -24,16 +24,15 @@ namespace kernel {
                      const std::vector<std::string>& arguments,
                      const std::vector<std::string>& environmentVariables);
 
-        void syscall(x64::Cpu& cpu) { sys_.syscall(&cpu); }
-
         void setLogSyscalls(bool logSyscalls) { sys_.setLogSyscalls(logSyscalls); }
         void setProfiling(bool isProfiling) { isProfiling_ = isProfiling; }
 
         bool isProfiling() const { return isProfiling_; }
 
-        Scheduler& scheduler() { return scheduler_; }
         Host& host() { return host_; }
         FS& fs() { return fs_; }
+        Scheduler& scheduler() { return scheduler_; }
+        Sys& sys() { return sys_; }
 
         void panic();
         bool hasPanicked() const { return hasPanicked_; }
