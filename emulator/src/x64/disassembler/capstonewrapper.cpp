@@ -1793,6 +1793,7 @@ namespace x64 {
         auto rssesrc = asRegister128(src);
         if(rm64dst && rssesrc) return X64Instruction::make<Insn::MOVQ_RM64_RSSE>(insn.address, insn.size, rm64dst.value(), rssesrc.value());
         if(rssedst && rm64src) return X64Instruction::make<Insn::MOVQ_RSSE_RM64>(insn.address, insn.size, rssedst.value(), rm64src.value());
+        if(rssedst && rssedst) return X64Instruction::make<Insn::MOV_RSSE_RSSE>(insn.address, insn.size, rssedst.value(), rssedst.value());
         return make_failed(insn);
     }
 
