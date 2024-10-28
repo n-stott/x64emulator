@@ -226,6 +226,13 @@ namespace kernel {
         return nbWoken;
     }
 
+    void Scheduler::poll(Thread* thread, x64::Ptr fds, size_t nfds, int timeout) {
+        verify(timeout != 0, "poll with zero timeout should not reach the scheduler");
+        pollBlockers_.push_back(PollBlocker(thread, mmu_, fds, nfds, timeout));
+        thread->setState(Thread::THREAD_STATE::BLOCKED);
+        thread->yield();
+    }
+
     void Scheduler::dumpThreadSummary() const {
         forEachThread([&](const Thread& thread) {
             fmt::print("Thread #{} : {}\n", thread.description().tid, thread.toString());

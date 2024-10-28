@@ -233,27 +233,28 @@ namespace kernel {
                 return bufferAndRetVal.returnValue;
             });
         } else {
-            PollBlocker blocker(currentThread_, mmu_, fds, nfds, timeout);
+            kernel_.scheduler().poll(currentThread_, fds, nfds, timeout);
         }
-        if(logSyscalls_) {
-            assert(kernel_.host().pollRequiredBufferSize(1) == sizeof(u64));
-            auto dwords = mmu_.readFromMmu<u32>(fds, nfds*2);
-            std::vector<u32> pfds;
-            for(size_t i = 0; i < nfds; ++i) {
-                pfds.push_back(dwords[2*i]);
-            }
-            std::string fdsString = fmt::format("[{}]", fmt::join(pfds, ", "));
+        return 0;
+        // if(logSyscalls_) {
+        //     assert(kernel_.host().pollRequiredBufferSize(1) == sizeof(u64));
+        //     auto dwords = mmu_.readFromMmu<u32>(fds, nfds*2);
+        //     std::vector<u32> pfds;
+        //     for(size_t i = 0; i < nfds; ++i) {
+        //         pfds.push_back(dwords[2*i]);
+        //     }
+        //     std::string fdsString = fmt::format("[{}]", fmt::join(pfds, ", "));
 
-            print("Sys::poll(fds={}, nfds={}, timeout={}) = {}\n",
-                                  fdsString, nfds, timeout,
-                                  errnoOrBufferAndReturnValue.errorOrWith<int>([](const auto& bufferAndRetVal) {
-                                    return bufferAndRetVal.returnValue;
-                                  }));
-        }
-        return errnoOrBufferAndReturnValue.errorOrWith<int>([&](const auto& bufferAndRetVal) {
-            mmu_.copyToMmu(fds, bufferAndRetVal.buffer.data(), bufferAndRetVal.buffer.size());
-            return bufferAndRetVal.returnValue;
-        });
+        //     print("Sys::poll(fds={}, nfds={}, timeout={}) = {}\n",
+        //                           fdsString, nfds, timeout,
+        //                           errnoOrBufferAndReturnValue.errorOrWith<int>([](const auto& bufferAndRetVal) {
+        //                             return bufferAndRetVal.returnValue;
+        //                           }));
+        // }
+        // return errnoOrBufferAndReturnValue.errorOrWith<int>([&](const auto& bufferAndRetVal) {
+        //     mmu_.copyToMmu(fds, bufferAndRetVal.buffer.data(), bufferAndRetVal.buffer.size());
+        //     return bufferAndRetVal.returnValue;
+        // });
     }
 
     off_t Sys::lseek(int fd, off_t offset, int whence) {

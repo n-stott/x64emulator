@@ -35,7 +35,7 @@ namespace kernel {
 
     class PollBlocker {
     public:
-        PollBlocker(Thread* thread, x64::Mmu& mmu, x64::Ptr pollfds, int nfds, int timeoutInMs)
+        PollBlocker(Thread* thread, x64::Mmu& mmu, x64::Ptr pollfds, size_t nfds, int timeoutInMs)
             : thread_(thread), mmu_(&mmu), pollfds_(pollfds), nfds_(nfds), timeoutInMs_(timeoutInMs) { }
         
         void tryUnblock(FS& fs);
@@ -44,7 +44,7 @@ namespace kernel {
         Thread* thread_;
         x64::Mmu* mmu_;
         x64::Ptr pollfds_;
-        int nfds_;
+        size_t nfds_;
         int timeoutInMs_;
     };
 

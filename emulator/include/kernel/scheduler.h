@@ -42,6 +42,8 @@ namespace kernel {
         void wait(Thread* thread, x64::Ptr32 wordPtr, u32 expected);
         u32 wake(x64::Ptr32 wordPtr, u32 nbWaiters);
 
+        void poll(Thread* thread, x64::Ptr fds, size_t nfds, int timeout);
+
         void dumpThreadSummary() const;
 
         void retrieveProfilingData(profiling::ProfilingData*);
