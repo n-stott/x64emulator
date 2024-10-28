@@ -250,6 +250,27 @@ namespace x64 {
         Src src;
     };
 
+    template<typename Dst, typename Src, typename Cnt>
+    struct Sarx {
+        Dst dst;
+        Src src;
+        Cnt cnt;
+    };
+
+    template<typename Dst, typename Src, typename Cnt>
+    struct Shlx {
+        Dst dst;
+        Src src;
+        Cnt cnt;
+    };
+
+    template<typename Dst, typename Src, typename Cnt>
+    struct Shrx {
+        Dst dst;
+        Src src;
+        Cnt cnt;
+    };
+
     template<typename Dst, typename Src>
     struct Rol {
         Dst dst;

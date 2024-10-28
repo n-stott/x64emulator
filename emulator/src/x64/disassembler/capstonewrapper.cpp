@@ -1158,6 +1158,57 @@ namespace x64 {
         return make_failed(insn);
     }
 
+    static X64Instruction makeSarx(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 3);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        const cs_x86_op& cnt = x86detail.operands[2];
+        auto r32dst = asRegister32(dst);
+        auto r64dst = asRegister64(dst);
+        auto rm32src = asRM32(src);
+        auto rm64src = asRM64(src);
+        auto r32cnt = asRegister32(cnt);
+        auto r64cnt = asRegister64(cnt);
+        if(r32dst && rm32src && r32cnt) return X64Instruction::make<Insn::SARX_R32_RM32_R32>(insn.address, insn.size, r32dst.value(), rm32src.value(), r32cnt.value());
+        if(r64dst && rm64src && r64cnt) return X64Instruction::make<Insn::SARX_R64_RM64_R64>(insn.address, insn.size, r64dst.value(), rm64src.value(), r64cnt.value());
+        return make_failed(insn);
+    }
+
+    static X64Instruction makeShlx(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 3);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        const cs_x86_op& cnt = x86detail.operands[2];
+        auto r32dst = asRegister32(dst);
+        auto r64dst = asRegister64(dst);
+        auto rm32src = asRM32(src);
+        auto rm64src = asRM64(src);
+        auto r32cnt = asRegister32(cnt);
+        auto r64cnt = asRegister64(cnt);
+        if(r32dst && rm32src && r32cnt) return X64Instruction::make<Insn::SHLX_R32_RM32_R32>(insn.address, insn.size, r32dst.value(), rm32src.value(), r32cnt.value());
+        if(r64dst && rm64src && r64cnt) return X64Instruction::make<Insn::SHLX_R64_RM64_R64>(insn.address, insn.size, r64dst.value(), rm64src.value(), r64cnt.value());
+        return make_failed(insn);
+    }
+
+    static X64Instruction makeShrx(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 3);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        const cs_x86_op& cnt = x86detail.operands[2];
+        auto r32dst = asRegister32(dst);
+        auto r64dst = asRegister64(dst);
+        auto rm32src = asRM32(src);
+        auto rm64src = asRM64(src);
+        auto r32cnt = asRegister32(cnt);
+        auto r64cnt = asRegister64(cnt);
+        if(r32dst && rm32src && r32cnt) return X64Instruction::make<Insn::SHRX_R32_RM32_R32>(insn.address, insn.size, r32dst.value(), rm32src.value(), r32cnt.value());
+        if(r64dst && rm64src && r64cnt) return X64Instruction::make<Insn::SHRX_R64_RM64_R64>(insn.address, insn.size, r64dst.value(), rm64src.value(), r64cnt.value());
+        return make_failed(insn);
+    }
+
     static X64Instruction makeRol(const cs_insn& insn) {
         const auto& x86detail = insn.detail->x86;
         assert(x86detail.op_count == 2);
@@ -3433,6 +3484,9 @@ namespace x64 {
             case X86_INS_SHRD: return makeShrd(insn);
             case X86_INS_SHLD: return makeShld(insn);
             case X86_INS_SAR: return makeSar(insn);
+            case X86_INS_SARX: return makeSarx(insn);
+            case X86_INS_SHLX: return makeShlx(insn);
+            case X86_INS_SHRX: return makeShrx(insn);
             case X86_INS_ROL: return makeRol(insn);
             case X86_INS_ROR: return makeRor(insn);
             case X86_INS_TZCNT: return makeTzcnt(insn);

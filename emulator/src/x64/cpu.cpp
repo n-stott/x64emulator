@@ -386,6 +386,12 @@ namespace x64 {
             case Insn::SAR_RM32_IMM: return exec(Sar<RM32, Imm>{insn.op0<RM32>(), insn.op1<Imm>()});
             case Insn::SAR_RM64_R8: return exec(Sar<RM64, R8>{insn.op0<RM64>(), insn.op1<R8>()});
             case Insn::SAR_RM64_IMM: return exec(Sar<RM64, Imm>{insn.op0<RM64>(), insn.op1<Imm>()});
+            case Insn::SARX_R32_RM32_R32: return exec(Sarx<R32, RM32, R32>{insn.op0<R32>(), insn.op1<RM32>(), insn.op2<R32>()});
+            case Insn::SARX_R64_RM64_R64: return exec(Sarx<R64, RM64, R64>{insn.op0<R64>(), insn.op1<RM64>(), insn.op2<R64>()});
+            case Insn::SHLX_R32_RM32_R32: return exec(Shlx<R32, RM32, R32>{insn.op0<R32>(), insn.op1<RM32>(), insn.op2<R32>()});
+            case Insn::SHLX_R64_RM64_R64: return exec(Shlx<R64, RM64, R64>{insn.op0<R64>(), insn.op1<RM64>(), insn.op2<R64>()});
+            case Insn::SHRX_R32_RM32_R32: return exec(Shrx<R32, RM32, R32>{insn.op0<R32>(), insn.op1<RM32>(), insn.op2<R32>()});
+            case Insn::SHRX_R64_RM64_R64: return exec(Shrx<R64, RM64, R64>{insn.op0<R64>(), insn.op1<RM64>(), insn.op2<R64>()});
             case Insn::ROL_RM8_R8: return exec(Rol<RM8, R8>{insn.op0<RM8>(), insn.op1<R8>()});
             case Insn::ROL_RM8_IMM: return exec(Rol<RM8, Imm>{insn.op0<RM8>(), insn.op1<Imm>()});
             case Insn::ROL_RM16_R8: return exec(Rol<RM16, R8>{insn.op0<RM16>(), insn.op1<R8>()});
@@ -1314,6 +1320,30 @@ namespace x64 {
     void Cpu::exec(const Sar<RM64, R8>& ins) { set(ins.dst, Impl::sar64(get(ins.dst), get(ins.src), &flags_)); }
     void Cpu::exec(const Sar<RM64, Imm>& ins) { set(ins.dst, Impl::sar64(get(ins.dst), get<u64>(ins.src), &flags_)); }
 
+    void Cpu::exec(const Sarx<R32, RM32, R32>& ins) {
+        Flags flags;
+        set(ins.dst, Impl::sar32(get(ins.src), get(ins.cnt), &flags));
+    }
+    void Cpu::exec(const Sarx<R64, RM64, R64>& ins) {
+        Flags flags;
+        set(ins.dst, Impl::sar64(get(ins.src), get(ins.cnt), &flags));
+    }
+    void Cpu::exec(const Shlx<R32, RM32, R32>& ins) {
+        Flags flags;
+        set(ins.dst, Impl::shl32(get(ins.src), get(ins.cnt), &flags));
+    }
+    void Cpu::exec(const Shlx<R64, RM64, R64>& ins) {
+        Flags flags;
+        set(ins.dst, Impl::shl64(get(ins.src), get(ins.cnt), &flags));
+    }
+    void Cpu::exec(const Shrx<R32, RM32, R32>& ins) {
+        Flags flags;
+        set(ins.dst, Impl::shr32(get(ins.src), get(ins.cnt), &flags));
+    }
+    void Cpu::exec(const Shrx<R64, RM64, R64>& ins) {
+        Flags flags;
+        set(ins.dst, Impl::shr64(get(ins.src), get(ins.cnt), &flags));
+    }
 
     void Cpu::exec(const Rol<RM8, R8>& ins) { set(ins.dst, Impl::rol8(get(ins.dst), get(ins.src), &flags_)); }
     void Cpu::exec(const Rol<RM8, Imm>& ins) { set(ins.dst, Impl::rol8(get(ins.dst), get<u8>(ins.src), &flags_)); }

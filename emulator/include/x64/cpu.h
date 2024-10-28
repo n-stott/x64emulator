@@ -420,6 +420,13 @@ namespace x64 {
         void exec(const Sar<RM64, R8>&);
         void exec(const Sar<RM64, Imm>&);
 
+        void exec(const Sarx<R32, RM32, R32>&);
+        void exec(const Sarx<R64, RM64, R64>&);
+        void exec(const Shlx<R32, RM32, R32>&);
+        void exec(const Shlx<R64, RM64, R64>&);
+        void exec(const Shrx<R32, RM32, R32>&);
+        void exec(const Shrx<R64, RM64, R64>&);
+
         void exec(const Rol<RM8, R8>&);
         void exec(const Rol<RM8, Imm>&);
         void exec(const Rol<RM16, R8>&);
