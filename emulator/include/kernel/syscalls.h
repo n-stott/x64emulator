@@ -12,7 +12,6 @@
 #include <sys/types.h>
 
 namespace x64 {
-    class Cpu;
     class Mmu;
 }
 
@@ -28,7 +27,7 @@ namespace kernel {
 
         void setLogSyscalls(bool logSyscalls) { logSyscalls_ = logSyscalls; }
 
-        void syscall(x64::Cpu* cpu);
+        void syscall(Thread* thread);
 
     private:
         struct RegisterDump {
@@ -322,7 +321,6 @@ namespace kernel {
         x64::Mmu& mmu_;
         std::mutex mutex_;
         Thread* currentThread_ { nullptr };
-        x64::Cpu* currentCpu_ { nullptr };
         bool logSyscalls_ { false };
     };
 

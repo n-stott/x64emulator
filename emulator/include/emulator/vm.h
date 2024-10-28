@@ -46,8 +46,7 @@ namespace emulator {
         void notifyJmp(u64 address);
 
         void syncThread();
-
-        void syscall(x64::Cpu& cpu);
+        void enterSyscall();
 
         struct ExecutableSection {
             u64 begin;

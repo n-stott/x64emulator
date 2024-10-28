@@ -26,123 +26,122 @@ namespace kernel {
         fmt::print(format, args...);
     }
 
-    void Sys::syscall(x64::Cpu* cpu) {
+    void Sys::syscall(Thread* thread) {
         std::scoped_lock<std::mutex> lock(mutex_);
+        currentThread_ = thread;
         ScopeGuard scopeGuard([&]() {
             currentThread_ = nullptr;
-            currentCpu_ = nullptr;
         });
-        currentCpu_ = cpu;
-        currentThread_ = cpu->currentThread();
-        u64 sysNumber = cpu->get(x64::R64::RAX);
+        x64::Registers& threadRegs = currentThread_->savedCpuState().regs;
+        u64 sysNumber = threadRegs.get(x64::R64::RAX);
         currentThread_->stats().syscalls++;
         if(kernel_.isProfiling()) currentThread_->didSyscall(sysNumber);
         RegisterDump regs {{
-            cpu->get(x64::R64::RDI),
-            cpu->get(x64::R64::RSI),
-            cpu->get(x64::R64::RDX),
-            cpu->get(x64::R64::R10),
-            cpu->get(x64::R64::R8),
-            cpu->get(x64::R64::R9),
+            threadRegs.get(x64::R64::RDI),
+            threadRegs.get(x64::R64::RSI),
+            threadRegs.get(x64::R64::RDX),
+            threadRegs.get(x64::R64::R10),
+            threadRegs.get(x64::R64::R8),
+            threadRegs.get(x64::R64::R9),
         }};
 
         switch(sysNumber) {
-            case 0x0: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::read, regs));
-            case 0x1: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::write, regs));
-            case 0x3: return cpu->set(x64::R64::RAX, invoke_syscall_1(&Sys::close, regs));
-            case 0x4: return cpu->set(x64::R64::RAX, invoke_syscall_2(&Sys::stat, regs));
-            case 0x5: return cpu->set(x64::R64::RAX, invoke_syscall_2(&Sys::fstat, regs));
-            case 0x6: return cpu->set(x64::R64::RAX, invoke_syscall_2(&Sys::lstat, regs));
-            case 0x7: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::poll, regs));
-            case 0x8: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::lseek, regs));
-            case 0x9: return cpu->set(x64::R64::RAX, invoke_syscall_6(&Sys::mmap, regs));
-            case 0xa: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::mprotect, regs));
-            case 0xb: return cpu->set(x64::R64::RAX, invoke_syscall_2(&Sys::munmap, regs));
-            case 0xc: return cpu->set(x64::R64::RAX, invoke_syscall_1(&Sys::brk, regs));
-            case 0xd: return cpu->set(x64::R64::RAX, invoke_syscall_4(&Sys::rt_sigaction, regs));
-            case 0xe: return cpu->set(x64::R64::RAX, invoke_syscall_4(&Sys::rt_sigprocmask, regs));
-            case 0x10: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::ioctl, regs));
-            case 0x11: return cpu->set(x64::R64::RAX, invoke_syscall_4(&Sys::pread64, regs));
-            case 0x12: return cpu->set(x64::R64::RAX, invoke_syscall_4(&Sys::pwrite64, regs));
-            case 0x14: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::writev, regs));
-            case 0x15: return cpu->set(x64::R64::RAX, invoke_syscall_2(&Sys::access, regs));
-            case 0x17: return cpu->set(x64::R64::RAX, invoke_syscall_5(&Sys::select, regs));
-            case 0x18: return cpu->set(x64::R64::RAX, invoke_syscall_0(&Sys::sched_yield, regs));
-            case 0x19: return cpu->set(x64::R64::RAX, invoke_syscall_5(&Sys::mremap, regs));
-            case 0x1c: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::madvise, regs));
-            case 0x20: return cpu->set(x64::R64::RAX, invoke_syscall_1(&Sys::dup, regs));
-            case 0x21: return cpu->set(x64::R64::RAX, invoke_syscall_2(&Sys::dup2, regs));
-            case 0x26: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::setitimer, regs));
-            case 0x27: return cpu->set(x64::R64::RAX, invoke_syscall_0(&Sys::getpid, regs));
-            case 0x29: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::socket, regs));
-            case 0x2a: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::connect, regs));
-            case 0x2c: return cpu->set(x64::R64::RAX, invoke_syscall_6(&Sys::sendto, regs));
-            case 0x2d: return cpu->set(x64::R64::RAX, invoke_syscall_6(&Sys::recvfrom, regs));
-            case 0x2e: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::sendmsg, regs));
-            case 0x2f: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::recvmsg, regs));
-            case 0x30: return cpu->set(x64::R64::RAX, invoke_syscall_2(&Sys::shutdown, regs));
-            case 0x31: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::bind, regs));
-            case 0x33: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::getsockname, regs));
-            case 0x34: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::getpeername, regs));
-            case 0x38: return cpu->set(x64::R64::RAX, invoke_syscall_5(&Sys::clone, regs));
-            case 0x3c: return cpu->set(x64::R64::RAX, invoke_syscall_1(&Sys::exit, regs));
-            case 0x3f: return cpu->set(x64::R64::RAX, invoke_syscall_1(&Sys::uname, regs));
-            case 0x48: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::fcntl, regs));
-            case 0x4a: return cpu->set(x64::R64::RAX, invoke_syscall_1(&Sys::fsync, regs));
-            case 0x4f: return cpu->set(x64::R64::RAX, invoke_syscall_2(&Sys::getcwd, regs));
-            case 0x50: return cpu->set(x64::R64::RAX, invoke_syscall_1(&Sys::chdir, regs));
-            case 0x52: return cpu->set(x64::R64::RAX, invoke_syscall_2(&Sys::rename, regs));
-            case 0x53: return cpu->set(x64::R64::RAX, invoke_syscall_2(&Sys::mkdir, regs));
-            case 0x57: return cpu->set(x64::R64::RAX, invoke_syscall_1(&Sys::unlink, regs));
-            case 0x59: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::readlink, regs));
-            case 0x5a: return cpu->set(x64::R64::RAX, invoke_syscall_2(&Sys::chmod, regs));
-            case 0x60: return cpu->set(x64::R64::RAX, invoke_syscall_2(&Sys::gettimeofday, regs));
-            case 0x63: return cpu->set(x64::R64::RAX, invoke_syscall_1(&Sys::sysinfo, regs));
-            case 0x66: return cpu->set(x64::R64::RAX, invoke_syscall_0(&Sys::getuid, regs));
-            case 0x68: return cpu->set(x64::R64::RAX, invoke_syscall_0(&Sys::getgid, regs));
-            case 0x6b: return cpu->set(x64::R64::RAX, invoke_syscall_0(&Sys::geteuid, regs));
-            case 0x6c: return cpu->set(x64::R64::RAX, invoke_syscall_0(&Sys::getegid, regs));
-            case 0x6e: return cpu->set(x64::R64::RAX, invoke_syscall_0(&Sys::getppid, regs));
-            case 0x6f: return cpu->set(x64::R64::RAX, invoke_syscall_0(&Sys::getpgrp, regs));
-            case 0x76: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::getresuid, regs));
-            case 0x78: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::getresgid, regs));
-            case 0x89: return cpu->set(x64::R64::RAX, invoke_syscall_2(&Sys::statfs, regs));
-            case 0x8f: return cpu->set(x64::R64::RAX, invoke_syscall_2(&Sys::sched_getparam, regs));
-            case 0x91: return cpu->set(x64::R64::RAX, invoke_syscall_1(&Sys::sched_getscheduler, regs));
-            case 0x9d: return cpu->set(x64::R64::RAX, invoke_syscall_5(&Sys::prctl, regs));
-            case 0x9e: return cpu->set(x64::R64::RAX, invoke_syscall_2(&Sys::arch_prctl, regs));
-            case 0xba: return cpu->set(x64::R64::RAX, invoke_syscall_0(&Sys::gettid, regs));
-            case 0xbf: return cpu->set(x64::R64::RAX, invoke_syscall_4(&Sys::getxattr, regs));
-            case 0xc0: return cpu->set(x64::R64::RAX, invoke_syscall_4(&Sys::lgetxattr, regs));
-            case 0xc9: return cpu->set(x64::R64::RAX, invoke_syscall_1(&Sys::time, regs));
-            case 0xcc: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::sched_getaffinity, regs));
-            case 0xca: return cpu->set(x64::R64::RAX, invoke_syscall_6(&Sys::futex, regs));
-            case 0xd9: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::getdents64, regs));
-            case 0xda: return cpu->set(x64::R64::RAX, invoke_syscall_1(&Sys::set_tid_address, regs));
-            case 0xdd: return cpu->set(x64::R64::RAX, invoke_syscall_4(&Sys::posix_fadvise, regs));
-            case 0xe4: return cpu->set(x64::R64::RAX, invoke_syscall_2(&Sys::clock_gettime, regs));
-            case 0xe5: return cpu->set(x64::R64::RAX, invoke_syscall_2(&Sys::clock_getres, regs));
-            case 0xe6: return cpu->set(x64::R64::RAX, invoke_syscall_4(&Sys::clock_nanosleep, regs));
-            case 0xe7: return cpu->set(x64::R64::RAX, invoke_syscall_1(&Sys::exit_group, regs));
-            case 0xea: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::tgkill, regs));
-            case 0xed: return cpu->set(x64::R64::RAX, invoke_syscall_6(&Sys::mbind, regs));
-            case 0xfd: return cpu->set(x64::R64::RAX, invoke_syscall_0(&Sys::inotify_init, regs));
-            case 0xfe: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::inotify_add_watch, regs));
-            case 0x101: return cpu->set(x64::R64::RAX, invoke_syscall_4(&Sys::openat, regs));
-            case 0x106: return cpu->set(x64::R64::RAX, invoke_syscall_4(&Sys::fstatat64, regs));
-            case 0x10b: return cpu->set(x64::R64::RAX, invoke_syscall_4(&Sys::readlinkat, regs));
-            case 0x10e: return cpu->set(x64::R64::RAX, invoke_syscall_6(&Sys::pselect6, regs));
-            case 0x111: return cpu->set(x64::R64::RAX, invoke_syscall_2(&Sys::set_robust_list, regs));
-            case 0x112: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::get_robust_list, regs));
-            case 0x118: return cpu->set(x64::R64::RAX, invoke_syscall_4(&Sys::utimensat, regs));
-            case 0x122: return cpu->set(x64::R64::RAX, invoke_syscall_2(&Sys::eventfd2, regs));
-            case 0x123: return cpu->set(x64::R64::RAX, invoke_syscall_1(&Sys::epoll_create1, regs));
-            case 0x125: return cpu->set(x64::R64::RAX, invoke_syscall_2(&Sys::pipe2, regs));
-            case 0x12e: return cpu->set(x64::R64::RAX, invoke_syscall_4(&Sys::prlimit64, regs));
-            case 0x13b: return cpu->set(x64::R64::RAX, invoke_syscall_4(&Sys::sched_getattr, regs));
-            case 0x13e: return cpu->set(x64::R64::RAX, invoke_syscall_3(&Sys::getrandom, regs));
-            case 0x14c: return cpu->set(x64::R64::RAX, invoke_syscall_5(&Sys::statx, regs));
-            case 0x1b3: return cpu->set(x64::R64::RAX, invoke_syscall_2(&Sys::clone3, regs));
+            case 0x0: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::read, regs));
+            case 0x1: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::write, regs));
+            case 0x3: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::close, regs));
+            case 0x4: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::stat, regs));
+            case 0x5: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::fstat, regs));
+            case 0x6: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::lstat, regs));
+            case 0x7: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::poll, regs));
+            case 0x8: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::lseek, regs));
+            case 0x9: return threadRegs.set(x64::R64::RAX, invoke_syscall_6(&Sys::mmap, regs));
+            case 0xa: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::mprotect, regs));
+            case 0xb: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::munmap, regs));
+            case 0xc: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::brk, regs));
+            case 0xd: return threadRegs.set(x64::R64::RAX, invoke_syscall_4(&Sys::rt_sigaction, regs));
+            case 0xe: return threadRegs.set(x64::R64::RAX, invoke_syscall_4(&Sys::rt_sigprocmask, regs));
+            case 0x10: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::ioctl, regs));
+            case 0x11: return threadRegs.set(x64::R64::RAX, invoke_syscall_4(&Sys::pread64, regs));
+            case 0x12: return threadRegs.set(x64::R64::RAX, invoke_syscall_4(&Sys::pwrite64, regs));
+            case 0x14: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::writev, regs));
+            case 0x15: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::access, regs));
+            case 0x17: return threadRegs.set(x64::R64::RAX, invoke_syscall_5(&Sys::select, regs));
+            case 0x18: return threadRegs.set(x64::R64::RAX, invoke_syscall_0(&Sys::sched_yield, regs));
+            case 0x19: return threadRegs.set(x64::R64::RAX, invoke_syscall_5(&Sys::mremap, regs));
+            case 0x1c: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::madvise, regs));
+            case 0x20: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::dup, regs));
+            case 0x21: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::dup2, regs));
+            case 0x26: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::setitimer, regs));
+            case 0x27: return threadRegs.set(x64::R64::RAX, invoke_syscall_0(&Sys::getpid, regs));
+            case 0x29: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::socket, regs));
+            case 0x2a: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::connect, regs));
+            case 0x2c: return threadRegs.set(x64::R64::RAX, invoke_syscall_6(&Sys::sendto, regs));
+            case 0x2d: return threadRegs.set(x64::R64::RAX, invoke_syscall_6(&Sys::recvfrom, regs));
+            case 0x2e: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::sendmsg, regs));
+            case 0x2f: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::recvmsg, regs));
+            case 0x30: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::shutdown, regs));
+            case 0x31: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::bind, regs));
+            case 0x33: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::getsockname, regs));
+            case 0x34: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::getpeername, regs));
+            case 0x38: return threadRegs.set(x64::R64::RAX, invoke_syscall_5(&Sys::clone, regs));
+            case 0x3c: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::exit, regs));
+            case 0x3f: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::uname, regs));
+            case 0x48: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::fcntl, regs));
+            case 0x4a: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::fsync, regs));
+            case 0x4f: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::getcwd, regs));
+            case 0x50: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::chdir, regs));
+            case 0x52: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::rename, regs));
+            case 0x53: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::mkdir, regs));
+            case 0x57: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::unlink, regs));
+            case 0x59: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::readlink, regs));
+            case 0x5a: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::chmod, regs));
+            case 0x60: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::gettimeofday, regs));
+            case 0x63: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::sysinfo, regs));
+            case 0x66: return threadRegs.set(x64::R64::RAX, invoke_syscall_0(&Sys::getuid, regs));
+            case 0x68: return threadRegs.set(x64::R64::RAX, invoke_syscall_0(&Sys::getgid, regs));
+            case 0x6b: return threadRegs.set(x64::R64::RAX, invoke_syscall_0(&Sys::geteuid, regs));
+            case 0x6c: return threadRegs.set(x64::R64::RAX, invoke_syscall_0(&Sys::getegid, regs));
+            case 0x6e: return threadRegs.set(x64::R64::RAX, invoke_syscall_0(&Sys::getppid, regs));
+            case 0x6f: return threadRegs.set(x64::R64::RAX, invoke_syscall_0(&Sys::getpgrp, regs));
+            case 0x76: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::getresuid, regs));
+            case 0x78: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::getresgid, regs));
+            case 0x89: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::statfs, regs));
+            case 0x8f: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::sched_getparam, regs));
+            case 0x91: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::sched_getscheduler, regs));
+            case 0x9d: return threadRegs.set(x64::R64::RAX, invoke_syscall_5(&Sys::prctl, regs));
+            case 0x9e: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::arch_prctl, regs));
+            case 0xba: return threadRegs.set(x64::R64::RAX, invoke_syscall_0(&Sys::gettid, regs));
+            case 0xbf: return threadRegs.set(x64::R64::RAX, invoke_syscall_4(&Sys::getxattr, regs));
+            case 0xc0: return threadRegs.set(x64::R64::RAX, invoke_syscall_4(&Sys::lgetxattr, regs));
+            case 0xc9: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::time, regs));
+            case 0xcc: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::sched_getaffinity, regs));
+            case 0xca: return threadRegs.set(x64::R64::RAX, invoke_syscall_6(&Sys::futex, regs));
+            case 0xd9: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::getdents64, regs));
+            case 0xda: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::set_tid_address, regs));
+            case 0xdd: return threadRegs.set(x64::R64::RAX, invoke_syscall_4(&Sys::posix_fadvise, regs));
+            case 0xe4: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::clock_gettime, regs));
+            case 0xe5: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::clock_getres, regs));
+            case 0xe6: return threadRegs.set(x64::R64::RAX, invoke_syscall_4(&Sys::clock_nanosleep, regs));
+            case 0xe7: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::exit_group, regs));
+            case 0xea: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::tgkill, regs));
+            case 0xed: return threadRegs.set(x64::R64::RAX, invoke_syscall_6(&Sys::mbind, regs));
+            case 0xfd: return threadRegs.set(x64::R64::RAX, invoke_syscall_0(&Sys::inotify_init, regs));
+            case 0xfe: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::inotify_add_watch, regs));
+            case 0x101: return threadRegs.set(x64::R64::RAX, invoke_syscall_4(&Sys::openat, regs));
+            case 0x106: return threadRegs.set(x64::R64::RAX, invoke_syscall_4(&Sys::fstatat64, regs));
+            case 0x10b: return threadRegs.set(x64::R64::RAX, invoke_syscall_4(&Sys::readlinkat, regs));
+            case 0x10e: return threadRegs.set(x64::R64::RAX, invoke_syscall_6(&Sys::pselect6, regs));
+            case 0x111: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::set_robust_list, regs));
+            case 0x112: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::get_robust_list, regs));
+            case 0x118: return threadRegs.set(x64::R64::RAX, invoke_syscall_4(&Sys::utimensat, regs));
+            case 0x122: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::eventfd2, regs));
+            case 0x123: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::epoll_create1, regs));
+            case 0x125: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::pipe2, regs));
+            case 0x12e: return threadRegs.set(x64::R64::RAX, invoke_syscall_4(&Sys::prlimit64, regs));
+            case 0x13b: return threadRegs.set(x64::R64::RAX, invoke_syscall_4(&Sys::sched_getattr, regs));
+            case 0x13e: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::getrandom, regs));
+            case 0x14c: return threadRegs.set(x64::R64::RAX, invoke_syscall_5(&Sys::statx, regs));
+            case 0x1b3: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::clone3, regs));
             default: break;
         }
         verify(false, [&]() {
@@ -1019,8 +1018,9 @@ namespace kernel {
     }
 
     pid_t Sys::set_tid_address(x64::Ptr32 ptr) {
-        if(logSyscalls_) print("Sys::set_tid_address({:#x}) = {}\n", ptr.address(), 1);
-        return 1;
+        if(logSyscalls_) print("Sys::set_tid_address({:#x}) = {}\n", ptr.address(), currentThread_->description().tid);
+        currentThread_->setClearChildTid(ptr);
+        return currentThread_->description().tid;
     }
 
     int Sys::posix_fadvise([[maybe_unused]] int fd, [[maybe_unused]] off_t offset, [[maybe_unused]] off_t len, [[maybe_unused]] int advice) {
@@ -1073,8 +1073,8 @@ namespace kernel {
         bool isSetFS = Host::Prctl::isSetFS(code);
         if(logSyscalls_) print("Sys::arch_prctl(code={}, addr={:#x}) = {}\n", code, addr.address(), isSetFS ? 0 : -EINVAL);
         if(!isSetFS) return -EINVAL;
-        verify(!!currentCpu_);
-        currentCpu_->setSegmentBase(x64::Segment::FS, addr.address());
+        verify(!!currentThread_);
+        currentThread_->savedCpuState().fsBase = addr.address();
         return 0;
     }
 

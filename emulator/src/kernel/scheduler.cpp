@@ -35,7 +35,14 @@ namespace kernel {
                 }
 
                 if(!threadToRun) break;
-                vm.execute(threadToRun);
+                while(threadToRun->tickInfo().ticksFromStart < threadToRun->tickInfo().ticksUntilSwitch) {
+                    verify(threadToRun->state() == Thread::THREAD_STATE::RUNNING);
+                    vm.execute(threadToRun);
+                    if(threadToRun->state() == Thread::THREAD_STATE::IN_SYSCALL) {
+                        kernel_.sys().syscall(threadToRun);
+                        threadToRun->exitSyscall();
+                    }
+                }
                 if(threadToRun->state() == Thread::THREAD_STATE::RUNNING)
                     threadToRun->setState(Thread::THREAD_STATE::RUNNABLE);
 
@@ -202,13 +209,20 @@ namespace kernel {
 
     u32 Scheduler::wake(x64::Ptr32 wordPtr, u32 nbWaiters) {
         u32 nbWoken = 0;
+        std::vector<FutexBlocker*> removableBlockers;
         for(auto& blocker : futexBlockers_) {
             bool canUnblock = blocker.canUnblock(wordPtr);
             if(!canUnblock) continue;
             blocker.thread()->setState(Thread::THREAD_STATE::RUNNABLE);
+            removableBlockers.push_back(&blocker);
             ++nbWoken;
             if(nbWoken >= nbWaiters) break;
         }
+        futexBlockers_.erase(std::remove_if(futexBlockers_.begin(), futexBlockers_.end(), [&](const FutexBlocker& blocker) {
+            return std::any_of(removableBlockers.begin(), removableBlockers.end(), [&](FutexBlocker* compareBlocker) {
+                return &blocker == compareBlocker;
+            });
+        }), futexBlockers_.end());
         return nbWoken;
     }
 
