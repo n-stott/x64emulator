@@ -39,6 +39,8 @@ namespace kernel {
 
         void kill(int signal);
 
+        void sleep(Thread* thread, Timer* timer, PreciseTime targetTime);
+
         void wait(Thread* thread, x64::Ptr32 wordPtr, u32 expected);
         u32 wake(x64::Ptr32 wordPtr, u32 nbWaiters);
 
@@ -51,9 +53,11 @@ namespace kernel {
     private:
         void runOnWorkerThread(int id);
         Thread* pickNext();
+        void tryWakeUpThreads();
         void tryUnblockThreads();
         
         bool hasRunnableThread() const;
+        bool hasSleepingThread() const;
         bool allThreadsBlocked() const;
         bool allThreadsDead() const;
 
@@ -73,6 +77,7 @@ namespace kernel {
 
         std::vector<FutexBlocker> futexBlockers_;
         std::vector<PollBlocker> pollBlockers_;
+        std::vector<SleepBlocker> sleepBlockers_;
         
         std::mutex schedulerMutex_;
         std::condition_variable schedulerHasRunnableThread_;

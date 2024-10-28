@@ -36,6 +36,7 @@ namespace kernel {
         u64 sysNumber = threadRegs.get(x64::R64::RAX);
         currentThread_->stats().syscalls++;
         if(kernel_.isProfiling()) currentThread_->didSyscall(sysNumber);
+        kernel_.timers().measureAll();
         RegisterDump regs {{
             threadRegs.get(x64::R64::RDI),
             threadRegs.get(x64::R64::RSI),

@@ -19,17 +19,30 @@ namespace kernel {
                     pid, tid, expected_, wordPtr_.address(), contained);
     }
 
-    void PollBlocker::tryUnblock(FS& fs) {
+    bool PollBlocker::tryUnblock(FS& fs) {
         std::vector<FS::PollData> pollfds(mmu_->readFromMmu<FS::PollData>(pollfds_, nfds_));
         fs.doPoll(&pollfds);
-        bool canUnblock = false;
-        if(!canUnblock) return;
         u64 nzrevents = std::count_if(pollfds.begin(), pollfds.end(), [](const FS::PollData& data) {
             return data.revents != FS::PollEvent::NONE;
         });
+        bool canUnblock
+                = (nzrevents > 0);
+        if(!canUnblock) return false;
         mmu_->writeToMmu(pollfds_, pollfds);
         thread_->savedCpuState().regs.set(x64::R64::RAX, nzrevents);
         thread_->setState(Thread::THREAD_STATE::RUNNABLE);
+        return true;
+    }
+
+    bool SleepBlocker::tryUnblock(Timers& timers) {
+        Timer* timer = timers.getOrTryCreate(timer_->id());
+        verify(!!timer, "Sleeping on null timer");
+        verify(timer_ == timer, "Mutated timer");
+        PreciseTime now = timer_->now();
+        if(targetTime_ > now) return false;
+        thread_->savedCpuState().regs.set(x64::R64::RAX, 0);
+        thread_->setState(Thread::THREAD_STATE::RUNNABLE);
+        return true;
     }
 
 }

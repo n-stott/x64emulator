@@ -11,6 +11,7 @@ namespace kernel {
             case THREAD_STATE::RUNNING:    { res += "running   "; break; }
             case THREAD_STATE::BLOCKED:    { res += "blocked   "; break; }
             case THREAD_STATE::IN_SYSCALL: { res += "in syscall"; break; }
+            case THREAD_STATE::SLEEPING:   { res += "sleeping  "; break; }
             case THREAD_STATE::DEAD:       { res += "dead      "; break; }
         }
         res += fmt::format("exit={}  ", exitStatus_);

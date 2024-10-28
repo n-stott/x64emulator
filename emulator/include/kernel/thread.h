@@ -33,6 +33,7 @@ namespace kernel {
             RUNNING,
             BLOCKED,
             IN_SYSCALL,
+            SLEEPING,
             DEAD,
         };
 

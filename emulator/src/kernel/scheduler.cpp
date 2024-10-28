@@ -27,14 +27,28 @@ namespace kernel {
                     schedulerHasRunnableThread_.wait(lock, [&]{
                         return this->hasRunnableThread()  // we want to run an available thread
                             || this->allThreadsDead()     // we need to exit because all threads are dead
+                            || this->hasSleepingThread()  // we need to exit to test the sleep condition
                             || this->allThreadsBlocked(); // we have a deadlock :(
                     });
 
-                    assert(hasRunnableThread() || allThreadsDead() || allThreadsBlocked());
+                    assert(hasRunnableThread() || allThreadsDead() || this->hasSleepingThread() || allThreadsBlocked());
                     threadToRun = pickNext();
                 }
 
-                if(!threadToRun) break;
+                if(!threadToRun) {
+                    if(!allAliveThreads_.empty()) {
+                        // Unable to run a thread, we have some threads alive
+                        // Just waste time
+#ifndef NDEBUG
+                        for(volatile int i = 0; i < 1'000'000; ++i) { }
+#else
+                        for(volatile int i = 0; i < 1'000'000; ++i) { }
+#endif
+                        continue;
+                    } else {
+                        break;
+                    }
+                }
                 while(threadToRun->tickInfo().ticksFromStart < threadToRun->tickInfo().ticksUntilSwitch) {
                     verify(threadToRun->state() == Thread::THREAD_STATE::RUNNING);
                     vm.execute(threadToRun);
@@ -114,6 +128,12 @@ namespace kernel {
         return !allAliveThreads_.empty();
     }
 
+    bool Scheduler::hasSleepingThread() const {
+        return std::all_of(allAliveThreads_.begin(), allAliveThreads_.end(), [](Thread* thread) {
+            return thread->state() == Thread::THREAD_STATE::SLEEPING;
+        });
+    }
+
     bool Scheduler::allThreadsBlocked() const {
         return std::all_of(allAliveThreads_.begin(), allAliveThreads_.end(), [](Thread* thread) {
             return thread->state() == Thread::THREAD_STATE::BLOCKED;
@@ -128,6 +148,7 @@ namespace kernel {
     }
 
     Thread* Scheduler::pickNext() {
+        tryWakeUpThreads();
         tryUnblockThreads();
         auto findThread = [&](Thread::THREAD_STATE state) -> Thread* {
             auto it = std::find_if(allAliveThreads_.begin(), allAliveThreads_.end(), [=](Thread* thread) {
@@ -140,6 +161,7 @@ namespace kernel {
 
         bool deadlock = !findThread(Thread::THREAD_STATE::RUNNABLE)
                     &&  !findThread(Thread::THREAD_STATE::RUNNING)
+                    &&  !findThread(Thread::THREAD_STATE::SLEEPING)
                     &&  findThread(Thread::THREAD_STATE::BLOCKED);
         verify(!deadlock, [&]() {
             fmt::print("DEADLOCK !\n");
@@ -169,10 +191,31 @@ namespace kernel {
         return threadToRun;
     }
 
-    void Scheduler::tryUnblockThreads() {
-        for(PollBlocker& blocker : pollBlockers_) {
-            blocker.tryUnblock(kernel_.fs());
+    void Scheduler::tryWakeUpThreads() {
+        kernel_.timers().measureAll();
+        std::vector<SleepBlocker*> removableBlockers;
+        for(SleepBlocker& blocker : sleepBlockers_) {
+            bool canUnblock = blocker.tryUnblock(kernel_.timers());
+            if(canUnblock) removableBlockers.push_back(&blocker);
         }
+        sleepBlockers_.erase(std::remove_if(sleepBlockers_.begin(), sleepBlockers_.end(), [&](const SleepBlocker& blocker) {
+            return std::any_of(removableBlockers.begin(), removableBlockers.end(), [&](SleepBlocker* compareBlocker) {
+                return &blocker == compareBlocker;
+            });
+        }), sleepBlockers_.end());
+    }
+
+    void Scheduler::tryUnblockThreads() {
+        std::vector<PollBlocker*> removableBlockers;
+        for(PollBlocker& blocker : pollBlockers_) {
+            bool canUnblock = blocker.tryUnblock(kernel_.fs());
+            if(canUnblock) removableBlockers.push_back(&blocker);
+        }
+        pollBlockers_.erase(std::remove_if(pollBlockers_.begin(), pollBlockers_.end(), [&](const PollBlocker& blocker) {
+            return std::any_of(removableBlockers.begin(), removableBlockers.end(), [&](PollBlocker* compareBlocker) {
+                return &blocker == compareBlocker;
+            });
+        }), pollBlockers_.end());
     }
 
     void Scheduler::terminateAll(int status) {
@@ -199,6 +242,12 @@ namespace kernel {
 
     void Scheduler::kill([[maybe_unused]] int signal) {
         terminateAll(516);
+    }
+
+    void Scheduler::sleep(Thread* thread, Timer* timer, PreciseTime targetTime) {
+        sleepBlockers_.push_back(SleepBlocker(thread, timer, targetTime));
+        thread->setState(Thread::THREAD_STATE::SLEEPING);
+        thread->yield();
     }
 
     void Scheduler::wait(Thread* thread, x64::Ptr32 wordPtr, u32 expected) {

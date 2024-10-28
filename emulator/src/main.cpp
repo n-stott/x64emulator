@@ -21,7 +21,7 @@ int main(int argc, char* argv[], char* envp[]) {
     environmentVariables.push_back("GLIBC_TUNABLES=glibc.pthread.rseq=0");
 
     emulator::Emulator emulator;
-    emulator.setLogSyscalls(true);
+    emulator.setLogSyscalls(false);
     emulator.setProfiling(false);
     bool ok = emulator.run(programPath, arguments, environmentVariables);
 

@@ -3,6 +3,7 @@
 
 #include "x64/types.h"
 #include "kernel/fs/fs.h"
+#include "kernel/timers.h"
 #include "utils.h"
 #include <string>
 #include <vector>
@@ -20,7 +21,7 @@ namespace kernel {
         FutexBlocker(Thread* thread, x64::Mmu& mmu, x64::Ptr32 wordPtr, u32 expected)
             : thread_(thread), mmu_(&mmu), wordPtr_(wordPtr), expected_(expected) { }
 
-        bool canUnblock(x64::Ptr32 ptr) const;
+        [[nodiscard]] bool canUnblock(x64::Ptr32 ptr) const;
 
         Thread* thread() const { return thread_; }
 
@@ -38,7 +39,7 @@ namespace kernel {
         PollBlocker(Thread* thread, x64::Mmu& mmu, x64::Ptr pollfds, size_t nfds, int timeoutInMs)
             : thread_(thread), mmu_(&mmu), pollfds_(pollfds), nfds_(nfds), timeoutInMs_(timeoutInMs) { }
         
-        void tryUnblock(FS& fs);
+        [[nodiscard]] bool tryUnblock(FS& fs);
 
     private:
         Thread* thread_;
@@ -46,6 +47,19 @@ namespace kernel {
         x64::Ptr pollfds_;
         size_t nfds_;
         int timeoutInMs_;
+    };
+
+    class SleepBlocker {
+    public:
+        SleepBlocker(Thread* thread, Timer* timer, PreciseTime targetTime)
+            : thread_(thread), timer_(timer), targetTime_(targetTime) { }
+
+        [[nodiscard]] bool tryUnblock(Timers& timers);
+
+    private:
+        Thread* thread_;
+        Timer* timer_;
+        PreciseTime targetTime_;
     };
 
 }
