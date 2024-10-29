@@ -1682,7 +1682,7 @@ namespace x64 {
     }
 
     u128 CpuImpl::unpcklps(u128 dst, u128 src) {
-        return unpack<f64, true>(dst, src);
+        return unpack<f32, true>(dst, src);
     }
 
     u128 CpuImpl::unpcklpd(u128 dst, u128 src) {
