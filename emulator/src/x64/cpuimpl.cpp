@@ -309,12 +309,13 @@ namespace x64 {
 
     template<typename U>
     static U shl(U dst, U src, Flags* flags) {
-        U maskedSrc = src % (8*sizeof(U));
-        U res = static_cast<U>(dst << maskedSrc);
-        if(maskedSrc) {
-            flags->carry = dst & ((U)1 << (8*sizeof(U) - maskedSrc));
+        constexpr U srcMask = std::is_same_v<U, u64> ? 0x3f : 0x1f;
+        src = src & srcMask;
+        U res = static_cast<U>(dst << src);
+        if(src) {
+            flags->carry = dst & ((U)1 << (8*sizeof(U) - src));
             if(src == 1) {
-                flags->overflow = signBit<U>(dst) != flags->carry;
+                flags->overflow = signBit<U>(res) != flags->carry;
             }
             flags->sign = signBit<U>(res);
             flags->zero = (res == 0);
@@ -330,10 +331,11 @@ namespace x64 {
 
     template<typename U>
     static U shr(U dst, U src, Flags* flags) {
-        U maskedSrc = src % (8*sizeof(U));
-        U res = static_cast<U>(dst >> maskedSrc);
-        if(maskedSrc) {
-            flags->carry = dst & ((U)1 << (maskedSrc-1));
+        constexpr U srcMask = std::is_same_v<U, u64> ? 0x3f : 0x1f;
+        src = src & srcMask;
+        U res = static_cast<U>(dst >> src);
+        if(src) {
+            flags->carry = dst & ((U)1 << (src-1));
             if(src == 1) {
                 flags->overflow = signBit<U>(dst);
             }
@@ -391,18 +393,20 @@ namespace x64 {
 
     template<typename U>
     static U sar(U dst, U src, Flags* flags) {
+        constexpr U srcMask = std::is_same_v<U, u64> ? 0x3f : 0x1f;
+        src = src & srcMask;
         assert(src < 8*sizeof(U));
         using I = std::make_signed_t<U>;
         I res = (I)(((I)dst) >> src);
-        if(src) {
-            flags->carry = ((I)dst) & ((I)1 << (src-1));
-        }
         if(src == 1) {
             flags->overflow = 0;
         }
-        flags->sign = signBit<U>((U)res);
-        flags->zero = (res == 0);
-        flags->parity = Flags::computeParity((u8)res);
+        if(src) {
+            flags->carry = ((I)dst) & ((I)1 << (src-1));
+            flags->sign = signBit<U>((U)res);
+            flags->zero = (res == 0);
+            flags->parity = Flags::computeParity((u8)res);
+        }
         return (U)res;
     }
 
