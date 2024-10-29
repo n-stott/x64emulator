@@ -84,7 +84,7 @@ namespace kernel {
         File* file_ { nullptr };
         off_t offset_ { 0 };
         Flags flags_;
-        Lock lock_;
+        Lock lock_ { Lock::NONE };
     };
 
 }
