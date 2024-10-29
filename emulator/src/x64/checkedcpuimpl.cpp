@@ -1719,6 +1719,22 @@ namespace x64 {
 #endif
     }
 
+    u128 CheckedCpuImpl::cvttps2dq(u128 src) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::cvttps2dq(src);
+        (void)virtualRes;
+
+        u128 nativeRes;
+        asm volatile("cvttps2dq %1, %0" : "+x"(nativeRes) : "x"(src));
+        assert(nativeRes.hi == virtualRes.hi);
+        assert(nativeRes.lo == virtualRes.lo);
+        
+        return nativeRes;
+#else
+        return CpuImpl::cvttps2dq(dst, src);
+#endif
+    }
+
     u32 CheckedCpuImpl::cvttss2si32(u128 src) {
 #if GCC_COMPILER
         u32 virtualRes = CpuImpl::cvttss2si32(src);

@@ -615,6 +615,7 @@ namespace x64 {
             case Insn::CVTSS2SD_RSSE_M32: return exec(Cvtss2sd<RSSE, M32>{insn.op0<RSSE>(), insn.op1<M32>()});
             case Insn::CVTSD2SS_RSSE_RSSE: return exec(Cvtsd2ss<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
             case Insn::CVTSD2SS_RSSE_M64: return exec(Cvtsd2ss<RSSE, M64>{insn.op0<RSSE>(), insn.op1<M64>()});
+            case Insn::CVTTPS2DQ_RSSE_RMSSE: return exec(Cvttps2dq<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
             case Insn::CVTTSS2SI_R32_RSSE: return exec(Cvttss2si<R32, RSSE>{insn.op0<R32>(), insn.op1<RSSE>()});
             case Insn::CVTTSS2SI_R32_M32: return exec(Cvttss2si<R32, M32>{insn.op0<R32>(), insn.op1<M32>()});
             case Insn::CVTTSS2SI_R64_RSSE: return exec(Cvttss2si<R64, RSSE>{insn.op0<R64>(), insn.op1<RSSE>()});
@@ -2336,6 +2337,8 @@ namespace x64 {
         u128 res = Impl::cvtsd2ss(get(ins.dst), zeroExtend<u128, u64>(get(resolve(ins.src))));
         set(ins.dst, res);
     }
+
+    void Cpu::exec(const Cvttps2dq<RSSE, RMSSE>& ins) { set(ins.dst, Impl::cvttps2dq(get(ins.src))); }
 
     void Cpu::exec(const Cvttss2si<R32, RSSE>& ins) { set(ins.dst, Impl::cvttss2si32(get(ins.src))); }
     void Cpu::exec(const Cvttss2si<R32, M32>& ins) { set(ins.dst, Impl::cvttss2si32(zeroExtend<u128, u32>(get(resolve(ins.src))))); }

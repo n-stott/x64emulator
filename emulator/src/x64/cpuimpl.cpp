@@ -941,6 +941,12 @@ namespace x64 {
         return r;
     }
 
+    u128 CpuImpl::cvttps2dq(u128 src) {
+        return packedOp<i32, float>(src, src, [](auto, auto s) {
+            return (i32)s;
+        });
+    }
+
     u32 CpuImpl::cvttss2si32(u128 src) {
         float f;
         std::memcpy(&f, &src, sizeof(f));

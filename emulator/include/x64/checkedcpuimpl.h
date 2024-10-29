@@ -207,6 +207,8 @@ namespace x64 {
         [[nodiscard]] static u128 cvtss2sd(u128 dst, u128 src);
         [[nodiscard]] static u128 cvtsd2ss(u128 dst, u128 src);
 
+        [[nodiscard]] static u128 cvttps2dq(u128 src);
+
         [[nodiscard]] static u32 cvttss2si32(u128 src);
         [[nodiscard]] static u64 cvttss2si64(u128 src);
 

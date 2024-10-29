@@ -808,6 +808,12 @@ namespace x64 {
     };
 
     template<typename Dst, typename Src>
+    struct Cvttps2dq {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
     struct Cvttss2si {
         Dst dst;
         Src src;
