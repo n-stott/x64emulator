@@ -896,7 +896,7 @@ namespace x64 {
         float res = (float)isrc;
         u32 r;
         std::memcpy(&r, &res, sizeof(r));
-        dst.lo = (dst.lo & 0xFFFFFFFFFFFF0000) | r;
+        dst.lo = (dst.lo & 0xFFFFFFFF00000000) | r;
         return dst;
     }
 
