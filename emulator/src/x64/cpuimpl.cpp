@@ -700,15 +700,15 @@ namespace x64 {
         return rounding[(u16)x87fpu->control().rc](dst);
     }
 
-    template<typename T, typename F, typename OP>
+    template<typename OpOutputType, typename OpInputFloatingType, typename OP>
     u128 packedOp(u128 dst, u128 src, OP op) {
-        static_assert(sizeof(T) == sizeof(F));
-        constexpr size_t N = sizeof(u128) / sizeof(F);
-        std::array<F, N> D;
-        std::array<F, N> S;
+        static_assert(sizeof(OpOutputType) == sizeof(OpInputFloatingType));
+        constexpr size_t N = sizeof(u128) / sizeof(OpInputFloatingType);
+        std::array<OpInputFloatingType, N> D;
+        std::array<OpInputFloatingType, N> S;
         std::memcpy(D.data(), &dst, sizeof(dst));
         std::memcpy(S.data(), &src, sizeof(src));
-        std::array<T, N> R;
+        std::array<OpOutputType, N> R;
         for(size_t i = 0; i < N; ++i) {
             R[i] = op(D[i], S[i]);
         }
