@@ -1827,9 +1827,9 @@ namespace x64 {
 #endif
     }
 
-    u128 CheckedCpuImpl::cvtps2dq(u128 src) {
+    u128 CheckedCpuImpl::cvtps2dq(u128 src, SIMD_ROUNDING rounding) {
 #if GCC_COMPILER
-        u128 virtualRes = CpuImpl::cvtps2dq(src);
+        u128 virtualRes = CpuImpl::cvtps2dq(src, rounding);
         (void)virtualRes;
 
         u128 nativeRes;

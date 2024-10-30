@@ -2356,7 +2356,7 @@ namespace x64 {
     void Cpu::exec(const Cvtdq2pd<RSSE, M64>& ins) { set(ins.dst, Impl::cvtdq2pd(zeroExtend<u128, u64>(get(resolve(ins.src))))); }
 
     void Cpu::exec(const Cvtps2dq<RSSE, RMSSE>& ins) {
-        set(ins.dst, Impl::cvtps2dq(get(ins.src)));
+        set(ins.dst, Impl::cvtps2dq(get(ins.src), simdRoundingMode()));
     }
 
     void Cpu::exec(const Stmxcsr<M32>& ins) {
