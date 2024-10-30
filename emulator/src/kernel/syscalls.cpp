@@ -273,14 +273,32 @@ namespace kernel {
                 return 0;
             });
         }
-        if(logSyscalls_) print("Sys::mmap(addr={:#x}, length={}, prot={}, flags={}, fd={}, offset={}) = {:#x}\n",
-                                              addr.address(), length, prot, flags, fd, offset, base);
+        if(logSyscalls_) {
+            bool protRead = ((x64::PROT)prot & x64::PROT::READ) == x64::PROT::READ;
+            bool protWrite = ((x64::PROT)prot & x64::PROT::WRITE) == x64::PROT::WRITE;
+            bool protExec = ((x64::PROT)prot & x64::PROT::EXEC) == x64::PROT::EXEC;
+            std::string protString = fmt::format("{}{}{}",
+                    protRead  ? "R" : "",
+                    protWrite ? "W" : "",
+                    protExec  ? "X" : "");
+            print("Sys::mmap(addr={:#x}, length={}, prot={}, flags={}, fd={}, offset={}) = {:#x}\n",
+                    addr.address(), length, protString, flags, fd, offset, base);
+        }
         return x64::Ptr{base};
     }
 
     int Sys::mprotect(x64::Ptr addr, size_t length, int prot) {
         int ret = mmu_.mprotect(addr.address(), length, (x64::PROT)prot);
-        if(logSyscalls_) print("Sys::mprotect(addr={:#x}, length={}, prot={}) = {}\n", addr.address(), length, prot, ret);
+        if(logSyscalls_) {
+            bool protRead = ((x64::PROT)prot & x64::PROT::READ) == x64::PROT::READ;
+            bool protWrite = ((x64::PROT)prot & x64::PROT::WRITE) == x64::PROT::WRITE;
+            bool protExec = ((x64::PROT)prot & x64::PROT::EXEC) == x64::PROT::EXEC;
+            std::string protString = fmt::format("{}{}{}",
+                    protRead  ? "R" : "",
+                    protWrite ? "W" : "",
+                    protExec  ? "X" : "");
+            print("Sys::mprotect(addr={:#x}, length={}, prot={}) = {}\n", addr.address(), length, protString, ret);
+        }
         return ret;
     }
 
