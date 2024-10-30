@@ -18,6 +18,12 @@ static inline void verify(bool condition, const char* message) {
     verify(condition);
 }
 
+static inline void verify(bool condition, std::string message) {
+    if(condition) return;
+    fmt::print("{}\n", std::move(message));
+    verify(condition);
+}
+
 template<typename Callback>
 static inline void verify(bool condition, Callback onFail) {
     if(condition) return;
