@@ -480,13 +480,21 @@ namespace kernel {
     }
 
     int Sys::madvise(x64::Ptr addr, size_t length, int advice) {
-        int ret = 0;
-        if(logSyscalls_) {
-            print("Sys::madvise(addr={:#x}, length={}, advice={}) = {}\n",
-                                    addr.address(), length, advice, ret);
+        if(Host::Madvise::isDontNeed(advice)) {
+            if(logSyscalls_) {
+                print("Sys::madvise(addr={:#x}, length={}, advice=DONT_NEED) = {}\n",
+                                        addr.address(), length, advice, 0);
+            }
+            return 0;
+        } else {
+            int ret = 0;
+            if(logSyscalls_) {
+                print("Sys::madvise(addr={:#x}, length={}, advice={}) = {}\n",
+                                        addr.address(), length, advice, ret);
+            }
+            warn(fmt::format("madvise not implemented with advice {} - returning bogus 0", advice));
+            return ret;
         }
-        warn(fmt::format("madvise not implemented - returning bogus 0"));
-        return ret;
     }
 
     int Sys::shmget(key_t key, size_t size, int shmflg) {

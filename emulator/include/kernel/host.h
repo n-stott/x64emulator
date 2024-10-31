@@ -56,6 +56,10 @@ namespace kernel {
             static bool isFixed(int flags);
         };
 
+        struct Madvise {
+            static bool isDontNeed(int advice);
+        };
+
         struct Prctl {
             static bool isSetFS(int code);
         };

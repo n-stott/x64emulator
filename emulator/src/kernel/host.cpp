@@ -147,6 +147,10 @@ namespace kernel {
     bool Host::Mmap::isFixed(int flags) {
         return flags & MAP_FIXED;
     }
+    
+    bool Host::Madvise::isDontNeed(int advice) {
+        return advice == MADV_DONTNEED;
+    }
 
     bool Host::Prctl::isSetFS(int code) {
         return code == ARCH_SET_FS;
