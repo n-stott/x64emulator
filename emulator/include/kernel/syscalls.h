@@ -305,6 +305,8 @@ namespace kernel {
         long get_robust_list(int pid, x64::Ptr64 head_ptr, x64::Ptr64 len_ptr);
         // 0x118
         int utimensat(int dirfd, x64::Ptr pathname, x64::Ptr times, int flags);
+        // 0x11d
+        int fallocate(int fd, int mode, off_t offset, off_t len);
         // 0x122
         int eventfd2(unsigned int initval, int flags);
         // 0x123
