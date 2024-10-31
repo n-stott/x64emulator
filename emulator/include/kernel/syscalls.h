@@ -319,6 +319,8 @@ namespace kernel {
         int sched_getattr(pid_t pid, x64::Ptr attr, unsigned int size, unsigned int flags);
         // 0x13e
         ssize_t getrandom(x64::Ptr buf, size_t len, int flags);
+        // 0x13f
+        int memfd_create(x64::Ptr name, unsigned int flags);
         // 0x14c
         int statx(int dirfd, x64::Ptr pathname, int flags, unsigned int mask, x64::Ptr statxbuf);
         // 0x1b3

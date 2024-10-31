@@ -147,6 +147,7 @@ namespace kernel {
             case 0x12e: return threadRegs.set(x64::R64::RAX, invoke_syscall_4(&Sys::prlimit64, regs));
             case 0x13b: return threadRegs.set(x64::R64::RAX, invoke_syscall_4(&Sys::sched_getattr, regs));
             case 0x13e: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::getrandom, regs));
+            case 0x13f: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::memfd_create, regs));
             case 0x14c: return threadRegs.set(x64::R64::RAX, invoke_syscall_5(&Sys::statx, regs));
             case 0x1b3: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::clone3, regs));
             default: break;
@@ -1284,6 +1285,15 @@ namespace kernel {
         std::iota(buffer.begin(), buffer.end(), 0);
         mmu_.copyToMmu(buf, buffer.data(), buffer.size());
         return (ssize_t)len;
+    }
+
+    int Sys::memfd_create(x64::Ptr name, unsigned int flags) {
+        if(logSyscalls_) {
+            std::string pathname = mmu_.readString(name);
+            print("Sys::memfd_create(name={}, flags={:#x}) = {}", pathname, flags, -ENOTSUP);
+        }
+        warn("memfd_create not implemented");
+        return -ENOTSUP;
     }
 
     int Sys::statx(int dirfd, x64::Ptr pathname, int flags, unsigned int mask, x64::Ptr statxbuf) {
