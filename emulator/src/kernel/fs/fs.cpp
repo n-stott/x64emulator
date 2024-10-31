@@ -165,6 +165,21 @@ namespace kernel {
         openFiles_.push_back(OpenNode{newfd, std::move(path), oldOfd});
         return newfd;
     }
+    
+    int FS::unlink(const std::string& path) {
+        auto it = std::find_if(files_.begin(), files_.end(), [&](const FsNode& node) {
+            return node.path == path;
+        });
+        if(it == files_.end()) {
+            return -ENOENT;
+        }
+        if(it->file->refCount() > 0) {
+            it->file->setDeleteAfterClose();
+        } else {
+            files_.erase(it);
+        }
+        return 0;
+    }
 
     OpenFileDescription* FS::findOpenFileDescription(FD fd) {
         for(OpenNode& node : openFiles_) {

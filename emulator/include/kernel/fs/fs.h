@@ -49,6 +49,8 @@ namespace kernel {
         FD dup2(FD oldfd, FD newfd);
         int close(FD fd);
 
+        int unlink(const std::string& path);
+
         ErrnoOrBuffer read(FD fd, size_t count);
         ErrnoOrBuffer pread(FD fd, size_t count, off_t offset);
 

@@ -672,12 +672,12 @@ namespace kernel {
     }
 
     int Sys::unlink([[maybe_unused]] x64::Ptr pathname) {
+        auto path = mmu_.readString(pathname);
+        int ret = kernel_.fs().unlink(path);
         if(logSyscalls_) {
-            auto path = mmu_.readString(pathname);
-            print("Sys::unlink(path={}) = {}\n", path, -ENOTSUP);
+            print("Sys::unlink(path={}) = {}\n", path, ret);
         }
-        warn(fmt::format("unlink not implemented"));
-        return -ENOTSUP;
+        return ret;
     }
 
     ssize_t Sys::readlink(x64::Ptr pathname, x64::Ptr buf, size_t bufsiz) {

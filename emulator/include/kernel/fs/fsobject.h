@@ -19,6 +19,9 @@ namespace kernel {
 
         virtual void close() = 0;
         virtual bool keepAfterClose() const = 0;
+        
+        bool deleteAfterClose() const { return deleteAfterClose_; }
+        void setDeleteAfterClose() { deleteAfterClose_ = true; }
 
         u32 refCount() const { return refCount_; }
         void ref() { ++refCount_; }
@@ -35,6 +38,7 @@ namespace kernel {
     protected:
         FS* fs_;
         u32 refCount_ { 0 };
+        bool deleteAfterClose_ { false };
 
     };
 
