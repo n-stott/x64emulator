@@ -1221,10 +1221,7 @@ namespace kernel {
 
     long Sys::set_robust_list(x64::Ptr head, size_t len) {
         if(logSyscalls_) print("Sys::set_robust_list({:#x}, {}) = 0\n", head.address(), len);
-        warn(fmt::format("set_robust_list not implemented - returning bogus 0"));
-        // maybe we can do nothing ?
-        (void)head;
-        (void)len;
+        currentThread_->setRobustList(head, len);
         return 0;
     }
 

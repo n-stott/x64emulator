@@ -92,6 +92,11 @@ namespace kernel {
         x64::Ptr32 clearChildTid() const { return clearChildTid_; }
         void setClearChildTid(x64::Ptr32 clearChildTid) { clearChildTid_ = clearChildTid; }
 
+        void setRobustList(x64::Ptr robustListHead, size_t len) {
+            robustListHead_ = robustListHead;
+            robustListSize_ = len;
+        }
+
         std::string toString() const;
 
         struct Stats {
@@ -177,6 +182,9 @@ namespace kernel {
         SavedCpuState savedCpuState_;
         x64::Ptr32 setChildTid_ { 0 };
         x64::Ptr32 clearChildTid_ { 0 };
+
+        x64::Ptr robustListHead_ { 0 };
+        size_t robustListSize_ { 0 };
 
         TickInfo tickInfo_;
         int exitStatus_ { -1 };
