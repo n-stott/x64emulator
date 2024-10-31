@@ -236,6 +236,10 @@ namespace kernel {
         std::vector<FS::PollData> pollfds = mmu_.readFromMmu<FS::PollData>(fds, nfds);
         if(timeout == 0) {
             auto errnoOrBufferAndReturnValue = kernel_.fs().pollImmediate(pollfds);
+            if(logSyscalls_) {
+                print("Sys::poll(fds={:#x}, nfds={}, timeout={}) = {}\n",
+                            fds.address(), nfds, timeout, errnoOrBufferAndReturnValue.errorOrWith<int>([](const auto&){ return 0; }));
+            }
             return errnoOrBufferAndReturnValue.errorOrWith<int>([&](const auto& bufferAndRetVal) {
                 mmu_.copyToMmu(fds, bufferAndRetVal.buffer.data(), bufferAndRetVal.buffer.size());
                 return bufferAndRetVal.returnValue;
@@ -396,11 +400,13 @@ namespace kernel {
     int Sys::access(x64::Ptr pathname, int mode) {
         std::string path = mmu_.readString(pathname);
         int ret = kernel_.host().access(path, mode);
-        std::string info;
-        if(ret < 0) {
-            info = strerror(-ret);
+        if(logSyscalls_) {
+            std::string info;
+            if(ret < 0) {
+                info = strerror(-ret);
+            }
+            print("Sys::access(path={}, mode={}) = {} {}\n", path, mode, ret, info);
         }
-        if(logSyscalls_) print("Sys::access(path={}, mode={}) = {} {}\n", path, mode, ret, info);
         return ret;
     }
 
@@ -416,8 +422,13 @@ namespace kernel {
         return fd.fd;
     }
 
-    int Sys::setitimer([[maybe_unused]] int which, [[maybe_unused]]const x64::Ptr new_value, [[maybe_unused]]x64::Ptr old_value) {
-        return 0;
+    int Sys::setitimer(int which, const x64::Ptr new_value, x64::Ptr old_value) {
+        if(logSyscalls_) {
+            print("Sys::setitimer(which={}, new_value={:#x}, old_value={:#x}) = {}\n",
+                                    which, new_value.address(), old_value.address(), -ENOTSUP);
+        }
+        warn(fmt::format("setitimer not implemented"));
+        return -ENOTSUP;
     }
 
     int Sys::getpid() {
@@ -474,6 +485,7 @@ namespace kernel {
             print("Sys::madvise(addr={:#x}, length={}, advice={}) = {}\n",
                                     addr.address(), length, advice, ret);
         }
+        warn(fmt::format("madvise not implemented - returning bogus 0"));
         return ret;
     }
 
@@ -612,9 +624,9 @@ namespace kernel {
     }
 
     int Sys::fsync(int fd) {
-        if(logSyscalls_) print("Sys::fsync(fd={}) = {}\n", fd, -EINVAL);
+        if(logSyscalls_) print("Sys::fsync(fd={}) = {}\n", fd, -ENOTSUP);
         warn(fmt::format("fsync not implemented"));
-        return -EINVAL;
+        return -ENOTSUP;
     }
 
     int Sys::getcwd(x64::Ptr buf, size_t size) {
@@ -641,9 +653,9 @@ namespace kernel {
     }
 
     int Sys::rename(x64::Ptr oldpath, x64::Ptr newpath) {
-        auto oldname = mmu_.readString(oldpath);
-        auto newname = mmu_.readString(newpath);
         if(logSyscalls_) {
+            auto oldname = mmu_.readString(oldpath);
+            auto newname = mmu_.readString(newpath);
             print("Sys::rename(oldpath={}, newpath={}) = {}\n", oldname, newname, -ENOTSUP);
         }
         warn(fmt::format("rename not implemented"));
@@ -682,8 +694,8 @@ namespace kernel {
     }
 
     int Sys::chmod(x64::Ptr pathname, mode_t mode) {
-        std::string path = mmu_.readString(pathname);
         if(logSyscalls_) {
+            std::string path = mmu_.readString(pathname);
             print("Sys::chmod(path={}, mode={}) = {}\n",
                         path, mode, -ENOTSUP);
         }
@@ -1070,7 +1082,12 @@ namespace kernel {
         return currentThread_->description().tid;
     }
 
-    int Sys::posix_fadvise([[maybe_unused]] int fd, [[maybe_unused]] off_t offset, [[maybe_unused]] off_t len, [[maybe_unused]] int advice) {
+    int Sys::posix_fadvise(int fd, off_t offset, off_t len, int advice) {
+        if(logSyscalls_) {
+            print("Sys::posix_fadvise(fd={}, offset={}, len={}, advise={}) = {}\n",
+                                    fd, offset, len, advice, 0);
+        }
+        warn(fmt::format("posix_fadvise not implemented - returning bogus 0"));
         return 0;
     }
 
@@ -1204,6 +1221,7 @@ namespace kernel {
 
     long Sys::set_robust_list(x64::Ptr head, size_t len) {
         if(logSyscalls_) print("Sys::set_robust_list({:#x}, {}) = 0\n", head.address(), len);
+        warn(fmt::format("set_robust_list not implemented - returning bogus 0"));
         // maybe we can do nothing ?
         (void)head;
         (void)len;
@@ -1257,7 +1275,7 @@ namespace kernel {
         return -ENOTSUP;
     }
 
-    int Sys::prlimit64(pid_t pid, int resource, [[maybe_unused]] x64::Ptr new_limit, x64::Ptr old_limit) {
+    int Sys::prlimit64(pid_t pid, int resource, x64::Ptr new_limit, x64::Ptr old_limit) {
         if(logSyscalls_) 
             print("Sys::prlimit64(pid={}, resource={}, new_limit={:#x}, old_limit={:#x})", pid, resource, new_limit.address(), old_limit.address());
         if(!old_limit.address()) {
@@ -1275,6 +1293,7 @@ namespace kernel {
     int Sys::sched_getattr(pid_t pid, x64::Ptr attr, unsigned int size, unsigned int flags) {
         if(logSyscalls_) 
             print("Sys::sched_getattr(pid={}, attr={:#x}, size={:#x}, flags={:#x})", pid, attr.address(), size, flags);
+        warn(fmt::format("sched_getattr not implemented"));
         return -ENOTSUP;
     }
 
