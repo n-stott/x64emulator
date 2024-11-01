@@ -315,6 +315,8 @@ namespace kernel {
         int pipe2(x64::Ptr32 pipefd, int flags);
         // 0x12e
         int prlimit64(pid_t pid, int resource, x64::Ptr new_limit, x64::Ptr old_limit);
+        // 0x13a
+        int sched_setattr(pid_t pid, x64::Ptr attr, unsigned int flags);
         // 0x13b
         int sched_getattr(pid_t pid, x64::Ptr attr, unsigned int size, unsigned int flags);
         // 0x13e

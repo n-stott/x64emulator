@@ -5,6 +5,7 @@
 #include <poll.h>
 #include <asm/prctl.h>
 #include <asm/termbits.h>
+#include <sched.h>
 #include <sys/auxv.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
@@ -191,6 +192,19 @@ namespace kernel {
 
     bool Host::Mode::isUserExecutable(unsigned int mode) {
         return mode & S_IXUSR;
+    }
+
+    Host::SchedAttr Host::getSchedulerAttributes() {
+        Host::SchedAttr attr;
+        attr.size = sizeof(Host::SchedAttr);
+        attr.schedPolicy = SCHED_OTHER;
+        attr.schedFlags = 0;
+        attr.schedNice = 0;
+        attr.schedPriority = 0;
+        attr.schedRuntime = 0;
+        attr.schedDeadline = 0;
+        attr.schedPeriod = 0;
+        return attr;
     }
 
     Host::FD Host::cwdfd() {

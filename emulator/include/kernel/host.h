@@ -95,6 +95,19 @@ namespace kernel {
             static bool isUserExecutable(unsigned int mode);
         };
 
+        struct SchedAttr {
+            u32 size;
+            u32 schedPolicy;
+            u64 schedFlags;
+            i32 schedNice;
+            u32 schedPriority;
+            u64 schedRuntime;
+            u64 schedDeadline;
+            u64 schedPeriod;
+        };
+
+        static SchedAttr getSchedulerAttributes();
+
         static FD cwdfd();
 
         static size_t iovecRequiredBufferSize();

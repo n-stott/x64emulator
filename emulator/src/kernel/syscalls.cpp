@@ -145,6 +145,7 @@ namespace kernel {
             case 0x123: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::epoll_create1, regs));
             case 0x125: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::pipe2, regs));
             case 0x12e: return threadRegs.set(x64::R64::RAX, invoke_syscall_4(&Sys::prlimit64, regs));
+            case 0x13a: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::sched_setattr, regs));
             case 0x13b: return threadRegs.set(x64::R64::RAX, invoke_syscall_4(&Sys::sched_getattr, regs));
             case 0x13e: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::getrandom, regs));
             case 0x13f: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::memfd_create, regs));
@@ -1295,11 +1296,26 @@ namespace kernel {
         });
     }
 
+    int Sys::sched_setattr(pid_t pid, x64::Ptr attr, unsigned int flags) {
+        if(logSyscalls_) {
+            Host::SchedAttr attributes = mmu_.readFromMmu<Host::SchedAttr>(attr);
+            std::string attributeString = fmt::format("policy={} flags={} nice={} priority={}", attributes.schedPolicy, attributes.schedFlags, attributes.schedNice, attributes.schedPriority);
+            print("Sys::sched_setattr(pid={}, attr={:#x} ({}), flags={:#x}) = 0", pid, attr.address(), attributeString, flags);
+        }
+        return 0;
+    }
+
     int Sys::sched_getattr(pid_t pid, x64::Ptr attr, unsigned int size, unsigned int flags) {
+        Host::SchedAttr attributes = kernel_.host().getSchedulerAttributes();
+        if(size < sizeof(attributes)) {
+            if(logSyscalls_) 
+                print("Sys::sched_getattr(pid={}, attr={:#x}, size={:#x}, flags={:#x}) = {}", pid, attr.address(), size, flags, -EINVAL);
+            return -EINVAL;
+        }
+        mmu_.writeToMmu<Host::SchedAttr>(attr, attributes);
         if(logSyscalls_) 
-            print("Sys::sched_getattr(pid={}, attr={:#x}, size={:#x}, flags={:#x})", pid, attr.address(), size, flags);
-        warn(fmt::format("sched_getattr not implemented"));
-        return -ENOTSUP;
+            print("Sys::sched_getattr(pid={}, attr={:#x}, size={:#x}, flags={:#x}) = 0", pid, attr.address(), size, flags);
+        return 0;
     }
 
     ssize_t Sys::getrandom(x64::Ptr buf, size_t len, int flags) {
