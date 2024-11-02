@@ -1,6 +1,7 @@
 #ifndef REGULARFILE_H
 #define REGULARFILE_H
 
+#include "kernel/fs/directory.h"
 #include "kernel/fs/file.h"
 #include "utils.h"
 #include <cassert>
@@ -10,16 +11,9 @@ namespace kernel {
 
     class RegularFile : public File {
     public:
-        explicit RegularFile(FS* fs) : File(fs) { }
+        explicit RegularFile(FS* fs, Directory* dir, std::string name) : File(fs, dir, std::move(name)) { }
 
-        bool isRegularFile() const override { return true; }
-
-        virtual ErrnoOrBuffer stat() = 0;
-        virtual off_t lseek(off_t offset, int whence) = 0;
-        
-        virtual ErrnoOrBuffer getdents64(size_t count) = 0;
-        virtual int fcntl(int cmd, int arg) = 0;
-        virtual ErrnoOrBuffer ioctl(unsigned long request, const Buffer& buffer) = 0;
+        bool isRegularFile() const override final { return true; }
     };
 
 }

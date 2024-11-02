@@ -40,8 +40,10 @@ add_library(x64emulator STATIC
     src/emulator/symbolprovider.cpp
     src/emulator/vm.cpp
     src/kernel/auxiliaryvector.cpp
+    src/kernel/fs/directory.cpp
     src/kernel/fs/epoll.cpp
     src/kernel/fs/event.cpp
+    src/kernel/fs/file.cpp
     src/kernel/fs/fs.cpp
     src/kernel/fs/hostfile.cpp
     src/kernel/fs/shadowfile.cpp

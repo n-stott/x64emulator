@@ -23,7 +23,7 @@ namespace kernel {
         bool canWrite() const override;
 
         int connect(const Buffer& buffer);
-        int fcntl(int cmd, int arg);
+        int fcntl(int cmd, int arg) override;
         int shutdown(int how);
 
         int bind(const Buffer& name);
@@ -43,6 +43,12 @@ namespace kernel {
         ssize_t write(const u8* buf, size_t count, off_t) override;
 
         off_t lseek(off_t offset, int whence) override;
+
+        ErrnoOrBuffer stat() override;
+
+        ErrnoOrBuffer ioctl(unsigned long request, const Buffer& buffer) override;
+        
+        ErrnoOrBuffer getdents64(size_t count) override;
 
         std::optional<int> hostFileDescriptor() const override { return hostFd_; }
 

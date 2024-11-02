@@ -14,7 +14,7 @@ namespace kernel {
 
     class ShadowFile : public RegularFile {
     public:
-        static std::unique_ptr<ShadowFile> tryCreate(FS* fs, const std::string& path, bool create);
+        static std::unique_ptr<ShadowFile> tryCreate(FS* fs, Directory* dir, std::string name, bool create);
         ~ShadowFile();
 
         bool isReadable() const override { return true; }
@@ -48,7 +48,7 @@ namespace kernel {
         }
 
     private:
-        ShadowFile(FS* fs, std::vector<u8> data);
+        ShadowFile(FS* fs, Directory* parent, std::string name, std::vector<u8> data);
 
         std::unique_ptr<ShadowFileHostData> hostData_;
         std::vector<u8> data_;

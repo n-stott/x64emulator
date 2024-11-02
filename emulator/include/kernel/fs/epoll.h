@@ -26,6 +26,13 @@ namespace kernel {
 
         off_t lseek(off_t offset, int whence) override;
 
+        ErrnoOrBuffer stat() override;
+        
+        int fcntl(int cmd, int arg) override;
+        ErrnoOrBuffer ioctl(unsigned long request, const Buffer& buffer) override;
+        
+        ErrnoOrBuffer getdents64(size_t count) override;
+
         std::optional<int> hostFileDescriptor() const override { return {}; }
 
         std::string className() const override {

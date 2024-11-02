@@ -66,4 +66,23 @@ namespace kernel {
         return -ESPIPE;
     }
 
+    ErrnoOrBuffer Event::stat() {
+        verify(false, "stat not implemented on event");
+        return ErrnoOrBuffer(-ENOTSUP);
+    }
+    
+    ErrnoOrBuffer Event::getdents64(size_t) {
+        return ErrnoOrBuffer(-ENOTDIR);
+    }
+
+    int Event::fcntl(int cmd, int arg) {
+        verify(false, fmt::format("fcntl(cmd={}, arg={}) not implemented on event", cmd, arg));
+        return -ENOTSUP;
+    }
+
+    ErrnoOrBuffer Event::ioctl(unsigned long request, const Buffer&) {
+        verify(false, fmt::format("ioctl(request={}) not implemented on event", request));
+        return ErrnoOrBuffer(-ENOTSUP);
+    }
+
 }

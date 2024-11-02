@@ -658,6 +658,7 @@ namespace kernel {
         if(logSyscalls_) {
             print("Sys::chdir(path={}) = {}\n", path, ret);
         }
+        warn(fmt::format("chdir not implemented"));
         return ret;
     }
 
@@ -671,10 +672,10 @@ namespace kernel {
         return -ENOTSUP;
     }
 
-    int Sys::mkdir([[maybe_unused]] x64::Ptr pathname, [[maybe_unused]] mode_t mode) {
+    int Sys::mkdir(x64::Ptr pathname, mode_t mode) {
         if(logSyscalls_) {
             auto path = mmu_.readString(pathname);
-            print("Sys::mkdir(path={}, mode={}) = {}\n", path, mode, -ENOTSUP);
+            print("Sys::mkdir(path={}, mode={:o}) = {}\n", path, mode, -ENOTSUP);
         }
         warn(fmt::format("mkdir not implemented"));
         return -ENOTSUP;

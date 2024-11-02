@@ -1,4 +1,5 @@
 #include "kernel/fs/shadowfile.h"
+#include "kernel/fs/directory.h"
 #include "kernel/host.h"
 #include "scopeguard.h"
 #include "verify.h"
@@ -14,7 +15,13 @@ namespace kernel {
         struct stat st;
     };
 
-    std::unique_ptr<ShadowFile> ShadowFile::tryCreate(FS* fs, const std::string& path, bool create) {
+    std::unique_ptr<ShadowFile> ShadowFile::tryCreate(FS* fs, Directory* parent, std::string name, bool create) {
+        std::string path;
+        if(!parent || parent == fs->root()) {
+            path = name;
+        } else {
+            path = (parent->path() + "/" + name);
+        }
         int fd = ::openat(AT_FDCWD, path.c_str(), O_RDONLY | O_CLOEXEC);
         
         ScopeGuard guard([=]() {
@@ -24,7 +31,7 @@ namespace kernel {
         if(fd < 0) {
             if(!create) return {};
             std::vector<u8> data;
-            return std::unique_ptr<ShadowFile>(new ShadowFile(fs, std::move(data)));
+            return std::unique_ptr<ShadowFile>(new ShadowFile(fs, parent, std::move(name), std::move(data)));
         } else {
             // figure out size
             struct stat buf;
@@ -40,13 +47,13 @@ namespace kernel {
             auto hostData = std::make_unique<ShadowFileHostData>();
             hostData->st = buf;
 
-            auto shadowFile = std::unique_ptr<ShadowFile>(new ShadowFile(fs, std::move(data)));
+            auto shadowFile = std::unique_ptr<ShadowFile>(new ShadowFile(fs, parent, std::move(name), std::move(data)));
             shadowFile->hostData_ = std::move(hostData);
             return shadowFile;
         }
     }
 
-    ShadowFile::ShadowFile(FS* fs, std::vector<u8> data) : RegularFile(fs), data_(data) { }
+    ShadowFile::ShadowFile(FS* fs, Directory* parent, std::string name, std::vector<u8> data) : RegularFile(fs, parent, std::move(name)), data_(data) { }
 
     ShadowFile::~ShadowFile() = default;
 

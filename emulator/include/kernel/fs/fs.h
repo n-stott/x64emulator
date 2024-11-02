@@ -10,6 +10,7 @@
 
 namespace kernel {
 
+    class Directory;
     class File;
     class Kernel;
     class OpenFileDescription;
@@ -44,12 +45,14 @@ namespace kernel {
             bool operator!=(FD other) const { return fd != other.fd; }
         };
 
-        FD open(const std::string& path, OpenFlags flags, Permissions permissions);
+        Directory* root() { return root_.get(); }
+
+        FD open(const std::string& pathname, OpenFlags flags, Permissions permissions);
         FD dup(FD fd);
         FD dup2(FD oldfd, FD newfd);
         int close(FD fd);
 
-        int unlink(const std::string& path);
+        int unlink(const std::string& pathname);
 
         ErrnoOrBuffer read(FD fd, size_t count);
         ErrnoOrBuffer pread(FD fd, size_t count, off_t offset);
@@ -58,7 +61,7 @@ namespace kernel {
         ssize_t pwrite(FD fd, const u8* buf, size_t count, off_t offset);
         ssize_t writev(FD fd, const std::vector<Buffer>& buffers);
 
-        ErrnoOrBuffer stat(const std::string& path);
+        ErrnoOrBuffer stat(const std::string& pathname);
         ErrnoOrBuffer fstat(FD fd);
         ErrnoOrBuffer statx(const std::string& path, int flags, unsigned int mask);
         ErrnoOrBuffer fstatat64(FD dirfd, const std::string& path, int flags);
@@ -129,6 +132,7 @@ namespace kernel {
         OpenFileDescription* findOpenFileDescription(FD fd);
 
         Kernel& kernel_;
+        std::unique_ptr<Directory> root_;
         std::deque<FsNode> files_;
         std::deque<OpenFileDescription> openFileDescriptions_;
         std::vector<OpenNode> openFiles_;

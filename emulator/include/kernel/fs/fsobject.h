@@ -28,6 +28,7 @@ namespace kernel {
         void unref() { assert(refCount_ > 0); --refCount_; }
 
         virtual bool isRegularFile() const { return false; }
+        virtual bool isDirectory() const { return false; }
         virtual bool isEpoll() const { return false; }
         virtual bool isSocket() const { return false; }
 

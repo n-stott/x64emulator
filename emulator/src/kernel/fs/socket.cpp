@@ -216,4 +216,18 @@ namespace kernel {
         return ret;
     }
 
+    ErrnoOrBuffer Socket::stat() {
+        verify(false, "stat not implemented on socket");
+        return ErrnoOrBuffer(-ENOTSUP);
+    }
+
+    ErrnoOrBuffer Socket::ioctl(unsigned long request, const Buffer&) {
+        verify(false, fmt::format("ioctl(request={}) not implemented on socket", request));
+        return ErrnoOrBuffer(-ENOTSUP);
+    }
+    
+    ErrnoOrBuffer Socket::getdents64(size_t) {
+        return ErrnoOrBuffer(-ENOTDIR);
+    }
+
 }

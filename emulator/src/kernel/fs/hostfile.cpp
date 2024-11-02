@@ -11,7 +11,14 @@
 
 namespace kernel {
 
-    std::unique_ptr<HostFile> HostFile::tryCreate(FS* fs, const std::string& path) {
+    std::unique_ptr<HostFile> HostFile::tryCreate(FS* fs, Directory* parent, std::string name) {
+        std::string path;
+        if(!parent || parent == fs->root()) {
+            path = name;
+        } else {
+            path = (parent->path() + "/" + name);
+        }
+
         int flags = O_RDONLY | O_CLOEXEC;
         int fd = ::openat(AT_FDCWD, path.c_str(), flags);
         if(fd < 0) return {};
@@ -34,7 +41,7 @@ namespace kernel {
         }
 
         guard.disable();
-        return std::unique_ptr<HostFile>(new HostFile(fs, path, fd));
+        return std::unique_ptr<HostFile>(new HostFile(fs, parent, std::move(name), fd));
     }
 
     void HostFile::close() {
@@ -71,7 +78,8 @@ namespace kernel {
 
     ErrnoOrBuffer HostFile::stat() {
         struct stat st;
-        int rc = ::stat(path_.c_str(), &st);
+        std::string path = this->path();
+        int rc = ::stat(path.c_str(), &st);
         if(rc < 0) return ErrnoOrBuffer(-errno);
         std::vector<u8> buf(sizeof(st), 0x0);
         std::memcpy(buf.data(), &st, sizeof(st));

@@ -9,9 +9,11 @@
 
 namespace kernel {
 
+    class Directory;
+
     class HostFile : public RegularFile {
     public:
-        static std::unique_ptr<HostFile> tryCreate(FS* fs, const std::string& path);
+        static std::unique_ptr<HostFile> tryCreate(FS* fs, Directory* parent, std::string pathname);
 
         bool isReadable() const override { return true; }
         bool isWritable() const override { return false; }
@@ -40,8 +42,7 @@ namespace kernel {
         }
 
     private:
-        HostFile(FS* fs, std::string path, int hostFd) : RegularFile(fs), path_(std::move(path)), hostFd_(hostFd) { }
-        std::string path_;
+        HostFile(FS* fs, Directory* dir, std::string name, int hostFd) : RegularFile(fs, dir, std::move(name)), hostFd_(hostFd) { }
         int hostFd_ { -1 };
     };
 

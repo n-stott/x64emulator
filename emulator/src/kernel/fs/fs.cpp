@@ -19,6 +19,7 @@
 namespace kernel {
 
     FS::FS(Kernel& kernel) : kernel_(kernel) {
+        root_ = std::make_unique<Directory>(this, nullptr, "");
         createStandardStreams();
     }
 
@@ -91,15 +92,15 @@ namespace kernel {
         return fd;
     }
 
-    FS::FD FS::open(const std::string& path, OpenFlags flags, Permissions permissions) {
+    FS::FD FS::open(const std::string& pathname, OpenFlags flags, Permissions permissions) {
         (void)permissions;
-        if(path.empty()) return FD{-ENOENT};
+        if(pathname.empty()) return FD{-ENOENT};
         bool canUseHostFile = true;
         if(flags.append || flags.create || flags.truncate || flags.write) canUseHostFile = false;
 
-        // Look if the file is already present in FS, open of closed.
+        // Look if the file is already present in FS, open or closed.
         for(auto& node : files_) {
-            if(node.path != path) continue;
+            if(node.path != pathname) continue;
             FD fd = allocateFd();
             node.file->ref();
             openFileDescriptions_.push_back(OpenFileDescription { node.file.get(), {} });
@@ -109,7 +110,7 @@ namespace kernel {
 
         if(canUseHostFile) {
             // open the file
-            auto hostBackedFile = HostFile::tryCreate(this, path);
+            auto hostBackedFile = HostFile::tryCreate(this, root_.get(), pathname);
             if(!hostBackedFile) {
                 // TODO: return the actual value of errno
                 return FS::FD{-ENOENT};
@@ -117,12 +118,12 @@ namespace kernel {
             
             // create and add the node to the filesystem
             return insertNode(FsNode {
-                path,
+                pathname,
                 std::move(hostBackedFile),
             });
         } else {
             // open the file
-            auto shadowFile = ShadowFile::tryCreate(this, path, flags.create);
+            auto shadowFile = ShadowFile::tryCreate(this, root_.get(), pathname, flags.create);
             if(!shadowFile) {
                 // TODO: return the actual value of errno
                 return FS::FD{-EINVAL};
@@ -134,7 +135,7 @@ namespace kernel {
             
             // create and add the node to the filesystem
             return insertNode(FsNode {
-                path,
+                pathname,
                 std::move(shadowFile),
             });
         }
@@ -166,9 +167,9 @@ namespace kernel {
         return newfd;
     }
     
-    int FS::unlink(const std::string& path) {
+    int FS::unlink(const std::string& pathname) {
         auto it = std::find_if(files_.begin(), files_.end(), [&](const FsNode& node) {
-            return node.path == path;
+            return node.path == pathname;
         });
         if(it == files_.end()) {
             return -ENOENT;
@@ -226,25 +227,18 @@ namespace kernel {
         return nbytes;
     }
 
-    ErrnoOrBuffer FS::stat(const std::string& path) {
+    ErrnoOrBuffer FS::stat(const std::string& pathname) {
         for(auto& node : files_) {
-            if(node.path != path) continue;
-            if(node.file->isRegularFile()) {
-                RegularFile* file = static_cast<RegularFile*>(node.file.get());
-                return file->stat();
-            }
-            verify(false, "implement stat for non files in FS");
-            return ErrnoOrBuffer(-ENOTSUP);
+            if(node.path != pathname) continue;
+            return node.file->stat();
         }
-        return kernel_.host().stat(path);
+        return kernel_.host().stat(pathname);
     }
 
     ErrnoOrBuffer FS::fstat(FD fd) {
         OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
         if(!openFileDescription) return ErrnoOrBuffer(-EBADF);
-        if(!openFileDescription->file()->isRegularFile()) return ErrnoOrBuffer{-EBADF};
-        RegularFile* file = static_cast<RegularFile*>(openFileDescription->file());
-        return file->stat();
+        return openFileDescription->file()->stat();
     }
 
     ErrnoOrBuffer FS::statx(const std::string& path, int flags, unsigned int mask) {
