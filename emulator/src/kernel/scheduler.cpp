@@ -160,10 +160,13 @@ namespace kernel {
             return *it;
         };
 
-        bool deadlock = !findThread(Thread::THREAD_STATE::RUNNABLE)
-                    &&  !findThread(Thread::THREAD_STATE::RUNNING)
-                    &&  !findThread(Thread::THREAD_STATE::SLEEPING)
-                    &&  findThread(Thread::THREAD_STATE::BLOCKED);
+        // All threads are blocked and are waiting on a mutex
+        bool deadlock = std::all_of(allAliveThreads_.begin(), allAliveThreads_.end(), [&](Thread* thread) {
+            return thread->state() == Thread::THREAD_STATE::BLOCKED
+                    && std::any_of(futexBlockers_.begin(), futexBlockers_.end(), [=](const FutexBlocker& blocker) {
+                        return blocker.thread() == thread;
+                    });
+        });
         verify(!deadlock, [&]() {
             fmt::print("DEADLOCK !\n");
             fmt::print("No thread is runnable in queue:\n");
