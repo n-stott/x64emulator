@@ -2,7 +2,6 @@
 #define VM_H
 
 #include "emulator/symbolprovider.h"
-#include "kernel/kernel.h"
 #include "x64/cpu.h"
 #include "x64/mmu.h"
 #include "utils.h"
@@ -10,6 +9,7 @@
 #include <unordered_map>
 
 namespace kernel {
+    class Kernel;
     class Thread;
 }
 

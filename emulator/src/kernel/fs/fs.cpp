@@ -200,6 +200,29 @@ namespace kernel {
         openFiles_.push_back(OpenNode{newfd, std::move(path), oldOfd});
         return newfd;
     }
+
+    int FS::mkdir(const std::string& pathname) {
+        auto path = Path::tryCreate(pathname);
+        if(!path) return -ENOENT;
+        ensurePath(*path);
+        return 0;
+    }
+
+    int FS::rename(const std::string& oldname, const std::string& newname) {
+        auto oldpath = Path::tryCreate(oldname);
+        auto newpath = Path::tryCreate(newname);
+        if(!oldpath) return -ENOENT;
+        if(!newpath) return -ENOENT;
+        auto it = std::find_if(files_.begin(), files_.end(), [&](const FsNode& node) {
+            return node.path == oldname;
+        });
+        if(it == files_.end()) {
+            return -ENOENT;
+        }
+        ensurePath(*newpath);
+        it->path = newname;
+        return 0;
+    }
     
     int FS::unlink(const std::string& pathname) {
         auto it = std::find_if(files_.begin(), files_.end(), [&](const FsNode& node) {
@@ -542,6 +565,7 @@ namespace kernel {
         for(const auto& openFile : openFiles_) {
             fmt::print("  fd={} : type={:20} path={}\n", openFile.fd.fd, openFile.openFiledescription->toString(), openFile.path);
         }
+        root_->printSubtree();
     }
 
 }

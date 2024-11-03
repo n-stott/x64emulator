@@ -1,6 +1,7 @@
 #include "emulator/vm.h"
-#include "verify.h"
+#include "kernel/kernel.h"
 #include "kernel/thread.h"
+#include "verify.h"
 #include "fmt/core.h"
 #include <vector>
 

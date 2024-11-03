@@ -46,6 +46,8 @@ namespace kernel {
             bool operator!=(FD other) const { return fd != other.fd; }
         };
 
+        Kernel& kernel() { return kernel_; }
+
         Directory* root() { return root_.get(); }
         Directory* cwd() { return currentWorkDirectory_; }
 
@@ -57,6 +59,8 @@ namespace kernel {
         FD dup2(FD oldfd, FD newfd);
         int close(FD fd);
 
+        int mkdir(const std::string& pathname);
+        int rename(const std::string& oldname, const std::string& newname);
         int unlink(const std::string& pathname);
 
         ErrnoOrBuffer read(FD fd, size_t count);

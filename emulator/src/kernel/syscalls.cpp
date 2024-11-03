@@ -663,22 +663,22 @@ namespace kernel {
     }
 
     int Sys::rename(x64::Ptr oldpath, x64::Ptr newpath) {
+        auto oldname = mmu_.readString(oldpath);
+        auto newname = mmu_.readString(newpath);
+        int ret = kernel_.fs().rename(oldname, newname);
         if(logSyscalls_) {
-            auto oldname = mmu_.readString(oldpath);
-            auto newname = mmu_.readString(newpath);
-            print("Sys::rename(oldpath={}, newpath={}) = {}\n", oldname, newname, -ENOTSUP);
+            print("Sys::rename(oldpath={}, newpath={}) = {}\n", oldname, newname, ret);
         }
-        warn(fmt::format("rename not implemented"));
-        return -ENOTSUP;
+        return ret;
     }
 
     int Sys::mkdir(x64::Ptr pathname, mode_t mode) {
+        auto path = mmu_.readString(pathname);
+        auto ret = kernel_.fs().mkdir(path);
         if(logSyscalls_) {
-            auto path = mmu_.readString(pathname);
-            print("Sys::mkdir(path={}, mode={:o}) = {}\n", path, mode, -ENOTSUP);
+            print("Sys::mkdir(path={}, mode={:o}) = {}\n", path, mode, ret);
         }
-        warn(fmt::format("mkdir not implemented"));
-        return -ENOTSUP;
+        return ret;
     }
 
     int Sys::unlink([[maybe_unused]] x64::Ptr pathname) {

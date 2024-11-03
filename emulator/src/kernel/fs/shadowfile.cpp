@@ -1,6 +1,7 @@
 #include "kernel/fs/shadowfile.h"
 #include "kernel/fs/directory.h"
 #include "kernel/host.h"
+#include "kernel/kernel.h"
 #include "scopeguard.h"
 #include "verify.h"
 #include <fmt/core.h>
@@ -91,11 +92,30 @@ namespace kernel {
     }
 
     ErrnoOrBuffer ShadowFile::stat() {
-        verify(!!hostData_, "implemented stat on ShadowFile without hostData");
-        struct stat st = hostData_->st;
-        st.st_size = data_.size();
-        Buffer buf(st);
-        return ErrnoOrBuffer(std::move(buf));
+        if(!!hostData_) {
+            struct stat st = hostData_->st;
+            st.st_size = data_.size();
+            Buffer buf(st);
+            return ErrnoOrBuffer(std::move(buf));
+        } else {
+            struct stat st;
+            st.st_dev = 0xcafe; // dummy value
+            st.st_ino = 0xbabe; // dummy value
+            st.st_mode = (u32)File::Type::IFREG
+                    | (u32)File::Mode::IRWXU
+                    | (u32)File::Mode::IRWXG
+                    | (u32)File::Mode::IRWXO;
+            st.st_nlink = 0;
+            st.st_uid = fs_->kernel().host().getuid();
+            st.st_gid = fs_->kernel().host().getgid();
+            st.st_rdev = 0; // dummy value
+            st.st_size = data_.size();
+            st.st_blksize = 0x200; // dummy value
+            st.st_blocks = data_.size() / 0x200;
+
+            Buffer buf(st);
+            return ErrnoOrBuffer(std::move(buf));
+        }
     }
 
     off_t ShadowFile::lseek(off_t, int) {

@@ -1,5 +1,6 @@
 #include "kernel/threadblocker.h"
 #include "kernel/thread.h"
+#include "kernel/fs/fs.h"
 #include "x64/mmu.h"
 #include <fmt/core.h>
 

@@ -2,7 +2,6 @@
 #define THREADBLOCKER_H
 
 #include "x64/types.h"
-#include "kernel/fs/fs.h"
 #include "kernel/timers.h"
 #include "utils.h"
 #include <string>
@@ -14,6 +13,7 @@ namespace x64 {
 
 namespace kernel {
 
+    class FS;
     class Thread;
 
     class FutexBlocker {

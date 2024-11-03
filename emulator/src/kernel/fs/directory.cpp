@@ -35,6 +35,9 @@ namespace kernel {
                 if(!entry->isDirectory()) continue;
                 newd.push_back(static_cast<Directory*>(entry.get()));
             }
+            std::sort(newd.begin(), newd.end(), [](const Directory* a, const Directory* b) {
+                return a->name() > b->name();
+            });
             ++depth;
             s.push(newd);
         }

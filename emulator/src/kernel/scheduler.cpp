@@ -1,3 +1,4 @@
+#include "kernel/kernel.h"
 #include "kernel/scheduler.h"
 #include "kernel/thread.h"
 #include "emulator/symbolprovider.h"
