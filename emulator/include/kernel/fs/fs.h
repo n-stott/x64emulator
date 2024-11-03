@@ -14,6 +14,7 @@ namespace kernel {
     class File;
     class Kernel;
     class OpenFileDescription;
+    class Path;
 
     class FS {
     public:
@@ -46,6 +47,10 @@ namespace kernel {
         };
 
         Directory* root() { return root_.get(); }
+        Directory* cwd() { return currentWorkDirectory_; }
+
+        std::string toAbsolutePathname(const std::string& pathname) const;
+        Directory* ensurePath(const Path& path);
 
         FD open(const std::string& pathname, OpenFlags flags, Permissions permissions);
         FD dup(FD fd);
@@ -125,6 +130,7 @@ namespace kernel {
         };
 
         void createStandardStreams();
+        void findCurrentWorkDirectory();
         FD insertNode(FsNode node);
         FD allocateFd();
         FD insertNodeWithFd(FsNode node, FD fd);
@@ -133,6 +139,7 @@ namespace kernel {
 
         Kernel& kernel_;
         std::unique_ptr<Directory> root_;
+        Directory* currentWorkDirectory_ { nullptr };
         std::deque<FsNode> files_;
         std::deque<OpenFileDescription> openFileDescriptions_;
         std::vector<OpenNode> openFiles_;

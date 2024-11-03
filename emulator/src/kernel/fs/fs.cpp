@@ -4,6 +4,7 @@
 #include "kernel/fs/event.h"
 #include "kernel/fs/regularfile.h"
 #include "kernel/fs/hostfile.h"
+#include "kernel/fs/path.h"
 #include "kernel/fs/shadowfile.h"
 #include "kernel/fs/socket.h"
 #include "kernel/fs/stream.h"
@@ -21,7 +22,9 @@ namespace kernel {
     FS::FS(Kernel& kernel) : kernel_(kernel) {
         root_ = std::make_unique<Directory>(this, nullptr, "");
         createStandardStreams();
+        findCurrentWorkDirectory();
     }
+    
 
     void FS::createStandardStreams() {
         FD stdinFd = insertNodeWithFd(FsNode {
@@ -39,6 +42,19 @@ namespace kernel {
         verify(stdinFd.fd == 0, "stdin must have fd 0");
         verify(stdoutFd.fd == 1, "stdout must have fd 1");
         verify(stderrFd.fd == 2, "stderr must have fd 2");
+    }
+
+    void FS::findCurrentWorkDirectory() {
+        auto bufferOrError = kernel_.host().getcwd(1024);
+        verify(!bufferOrError.isError());
+        std::string cwdpathname;
+        bufferOrError.errorOrWith<int>([&](const Buffer& buf) {
+            cwdpathname = (char*)buf.data();
+            return 0;
+        });
+        auto cwdPath = Path::tryCreate(cwdpathname);
+        verify(!!cwdPath);
+        currentWorkDirectory_ = ensurePath(*cwdPath);
     }
 
     FS::~FS() = default;
@@ -90,6 +106,24 @@ namespace kernel {
         FD givenFd = insertNode(std::move(node));
         verify(givenFd == fd);
         return fd;
+    }
+
+    std::string FS::toAbsolutePathname(const std::string& pathname) const {
+        verify(!pathname.empty(), "Empty pathname");
+        if(pathname[0] == '/') {
+            return pathname;
+        } else {
+            verify(!!currentWorkDirectory_, "No current work directory");
+            return currentWorkDirectory_->path() + "/" + pathname;
+        }
+    }
+
+    Directory* FS::ensurePath(const Path& path) {
+        Directory* dir = root();
+        for(const std::string& component : path.componentsExceptLast()) {
+            dir = dir->tryGetOrAddSubDirectory(component);
+        }
+        return dir;
     }
 
     FS::FD FS::open(const std::string& pathname, OpenFlags flags, Permissions permissions) {

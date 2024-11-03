@@ -1,4 +1,5 @@
 #include "kernel/fs/hostfile.h"
+#include "kernel/fs/path.h"
 #include "scopeguard.h"
 #include "verify.h"
 #include <fmt/color.h>
@@ -12,15 +13,15 @@
 namespace kernel {
 
     std::unique_ptr<HostFile> HostFile::tryCreate(FS* fs, Directory* parent, std::string name) {
-        std::string path;
+        std::string pathname;
         if(!parent || parent == fs->root()) {
-            path = name;
+            pathname = name;
         } else {
-            path = (parent->path() + "/" + name);
+            pathname = (parent->path() + "/" + name);
         }
 
         int flags = O_RDONLY | O_CLOEXEC;
-        int fd = ::openat(AT_FDCWD, path.c_str(), flags);
+        int fd = ::openat(AT_FDCWD, pathname.c_str(), flags);
         if(fd < 0) return {};
 
         ScopeGuard guard([=]() {
@@ -36,12 +37,18 @@ namespace kernel {
         mode_t fileType = (s.st_mode & S_IFMT);
         if (fileType != S_IFREG && fileType != S_IFLNK && fileType != S_IFDIR) {
             // not a regular file or a symbolic link
-            warn(fmt::format("File {} is not a regular file or a symbolic link", path));
+            warn(fmt::format("File {} is not a regular file or a symbolic link", pathname));
             return {};
         }
 
         guard.disable();
-        return std::unique_ptr<HostFile>(new HostFile(fs, parent, std::move(name), fd));
+
+        std::string absolutePathname = fs->toAbsolutePathname(pathname);
+        auto path = Path::tryCreate(absolutePathname);
+        verify(!!path, "Unable to create path");
+        Directory* containingDirectory = fs->ensurePath(*path);
+
+        return std::unique_ptr<HostFile>(new HostFile(fs, containingDirectory, path->last(), fd));
     }
 
     void HostFile::close() {
