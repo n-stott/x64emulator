@@ -100,6 +100,7 @@ namespace kernel {
             case 0x57: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::unlink, regs));
             case 0x59: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::readlink, regs));
             case 0x5a: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::chmod, regs));
+            case 0x5f: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::umask, regs));
             case 0x60: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::gettimeofday, regs));
             case 0x63: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::sysinfo, regs));
             case 0x66: return threadRegs.set(x64::R64::RAX, invoke_syscall_0(&Sys::getuid, regs));
@@ -731,6 +732,15 @@ namespace kernel {
         }
         warn(fmt::format("chmod not implemented"));
         return -ENOTSUP;
+    }
+
+    int Sys::umask(int mask) {
+        if(logSyscalls_) {
+            print("Sys::umask(mask={}) = {}\n",
+                        mask, 0777);
+        }
+        warn(fmt::format("umask not implemented"));
+        return 0777;
     }
 
     int Sys::gettimeofday(x64::Ptr tv, x64::Ptr tz) {
