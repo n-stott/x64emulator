@@ -2,6 +2,7 @@
 #define FIFO_H
 
 #include "kernel/fs/file.h"
+#include <deque>
 #include <memory>
 #include <vector>
 
@@ -25,8 +26,12 @@ namespace kernel {
         bool keepAfterClose() const override { return false; }
         std::optional<int> hostFileDescriptor() const override { return {}; };
 
+        ErrnoOrBuffer read(size_t size);
+        ssize_t write(const u8* buf, size_t size);
+
     private:
         Pipe(FS* fs, int flags) : FsObject(fs), flags_(flags) { }
+        std::deque<u8> data_;
         int flags_;
         std::vector<PipeEndpoint*> endpoints_;
     };

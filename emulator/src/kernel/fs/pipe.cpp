@@ -32,15 +32,27 @@ namespace kernel {
     void PipeEndpoint::close() {
         (void)flags_;
     }
-    
-    ErrnoOrBuffer PipeEndpoint::read(size_t, off_t) {
-        verify(false, "read not implemented on PipeEndpoint");
-        return ErrnoOrBuffer(-EINVAL);
+
+    ErrnoOrBuffer Pipe::read(size_t size) {
+        verify(!data_.empty(), "Reading from empty pipe (possibly blocking) not implemented");
+        size_t readSize = std::min(size, data_.size());
+        std::vector<u8> buf(readSize, 0x0);
+        std::copy(data_.begin(), data_.begin() + readSize, buf.begin());
+        data_.erase(data_.begin(), data_.begin() + readSize);
+        return ErrnoOrBuffer(Buffer(std::move(buf)));
     }
     
-    ssize_t PipeEndpoint::write(const u8*, size_t, off_t) {
-        verify(false, "write not implemented on PipeEndpoint");
-        return -EINVAL;
+    ErrnoOrBuffer PipeEndpoint::read(size_t size, off_t) {
+        return pipe_->read(size);
+    }
+
+    ssize_t Pipe::write(const u8* buf, size_t size) {
+        data_.insert(data_.end(), buf, buf+size);
+        return (ssize_t)size;
+    }
+    
+    ssize_t PipeEndpoint::write(const u8* buf, size_t size, off_t) {
+        return pipe_->write(buf, size);
     }
 
     off_t PipeEndpoint::lseek(off_t, int) {
