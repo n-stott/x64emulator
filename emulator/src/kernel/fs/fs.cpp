@@ -570,7 +570,7 @@ namespace kernel {
     ssize_t FS::send(FD sockfd, const Buffer& buffer, int flags) {
         OpenFileDescription* openFileDescription = findOpenFileDescription(sockfd);
         if(!openFileDescription) return -EBADF;
-        if(!openFileDescription->file()->isSocket()) return -EBADF;
+        if(!openFileDescription->file()->isSocket()) return -ENOTSOCK;
         Socket* socket = static_cast<Socket*>(openFileDescription->file());
         return socket->send(buffer, flags);
     }
