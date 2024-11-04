@@ -114,9 +114,10 @@ namespace kernel {
             PollEvent revents;
         };
         
-        ErrnoOr<BufferAndReturnValue<int>> poll(const Buffer&, u64 nfds, int timeout);
         ErrnoOr<BufferAndReturnValue<int>> pollImmediate(const std::vector<PollData>& pfds);
         void doPoll(std::vector<PollData>* data);
+
+        ErrnoOr<std::pair<FD, FD>> pipe2(int flags);
 
         std::string filename(FD fd);
         void dumpSummary() const;

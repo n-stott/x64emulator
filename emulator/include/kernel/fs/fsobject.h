@@ -31,6 +31,7 @@ namespace kernel {
         virtual bool isDirectory() const { return false; }
         virtual bool isEpoll() const { return false; }
         virtual bool isSocket() const { return false; }
+        virtual bool isPipe() const { return false; }
 
         virtual bool isPollable() const { return false; }
 

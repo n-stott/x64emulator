@@ -1275,11 +1275,17 @@ namespace kernel {
     }
     
     int Sys::pipe2(x64::Ptr32 pipefd, int flags) {
+        auto errnoOrFds = kernel_.fs().pipe2(flags);
+        int ret = errnoOrFds.errorOrWith<int>([&](std::pair<FS::FD, FS::FD> fds) {
+            std::vector<u32> fdsbuf {{ (u32)fds.first.fd, (u32)fds.second.fd }};
+            x64::Ptr ptr { pipefd.address() };
+            mmu_.writeToMmu(ptr, fdsbuf);
+            return 0;
+        });
         if(logSyscalls_) {
-            print("Sys::pipe(pipefd={:#x}, flags={}) = {}\n", pipefd.address(), flags, -ENOTSUP);
+            print("Sys::pipe(pipefd={:#x}, flags={}) = {}\n", pipefd.address(), flags, ret);
         }
-        warn(fmt::format("pipe2 not implemented"));
-        return -ENOTSUP;
+        return ret;
     }
 
     int Sys::prlimit64(pid_t pid, int resource, x64::Ptr new_limit, x64::Ptr old_limit) {

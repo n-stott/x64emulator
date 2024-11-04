@@ -5,6 +5,7 @@
 #include "kernel/fs/regularfile.h"
 #include "kernel/fs/hostfile.h"
 #include "kernel/fs/path.h"
+#include "kernel/fs/pipe.h"
 #include "kernel/fs/shadowfile.h"
 #include "kernel/fs/socket.h"
 #include "kernel/fs/stream.h"
@@ -514,6 +515,26 @@ namespace kernel {
             if(testRead && file->canRead())   pollfd.revents = pollfd.revents | PollEvent::CAN_READ;
             if(testWrite && file->canWrite()) pollfd.revents = pollfd.revents | PollEvent::CAN_WRITE;
         }
+    }
+
+    ErrnoOr<std::pair<FS::FD, FS::FD>> FS::pipe2(int flags) {
+        using ReturnType = ErrnoOr<std::pair<FS::FD, FS::FD>>;
+        auto pipe = Pipe::tryCreate(this, flags);
+        if(!pipe) return ReturnType(-EINVAL);
+        FD readFd = allocateFd();
+        FD writeFd = allocateFd();
+
+        std::string path = "";
+        FsNode node {
+            path,
+            std::move(fifo)
+        };
+        files_.push_back(std::move(node));
+        File* filePtr = files_.back().file.get();
+        openFileDescriptions_.push_back(OpenFileDescription(filePtr, {}));
+        openFiles_.push_back(OpenNode{fd, std::move(path), &openFileDescriptions_.back()});
+        filePtr->ref();
+        return fd;
     }
 
     ErrnoOr<std::pair<Buffer, Buffer>> FS::recvfrom(FD sockfd, size_t len, int flags, bool requireSrcAddress) {
