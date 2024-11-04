@@ -918,6 +918,10 @@ namespace kernel {
             u32 nbWoken = kernel_.scheduler().wake(uaddr, val);
             return onExit(nbWoken);
         }
+        if(unmaskedOp == 7) {
+            warn("futex_unlock_pi returns bogus 0 value");
+            return onExit(-EPERM);
+        }
         if(unmaskedOp == 9 && val3 == std::numeric_limits<uint32_t>::max()) {
             // wait_bitset
             u32 loaded = mmu_.read32(uaddr);
@@ -926,7 +930,7 @@ namespace kernel {
             return onExit(0);
         }
         verify(false, [&]() {
-            fmt::print("futex with op={} is not supported\n", futex_op);
+            fmt::print("futex with op={} is not supported\n", unmaskedOp);
         });
         return 1;
     }
