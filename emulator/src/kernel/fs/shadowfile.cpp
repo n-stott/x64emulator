@@ -1,5 +1,6 @@
 #include "kernel/fs/shadowfile.h"
 #include "kernel/fs/directory.h"
+#include "kernel/fs/path.h"
 #include "kernel/host.h"
 #include "kernel/kernel.h"
 #include "scopeguard.h"
@@ -16,23 +17,29 @@ namespace kernel {
         struct stat st;
     };
 
-    std::unique_ptr<ShadowFile> ShadowFile::tryCreate(FS* fs, Directory* parent, std::string name, bool create) {
-        std::string path;
+    ShadowFile* ShadowFile::tryCreateAndAdd(FS* fs, Directory* parent, std::string name, bool create) {
+        std::string pathname;
         if(!parent || parent == fs->root()) {
-            path = name;
+            pathname = name;
         } else {
-            path = (parent->path() + "/" + name);
+            pathname = (parent->path() + "/" + name);
         }
-        int fd = ::openat(AT_FDCWD, path.c_str(), O_RDONLY | O_CLOEXEC);
+        int fd = ::openat(AT_FDCWD, pathname.c_str(), O_RDONLY | O_CLOEXEC);
         
         ScopeGuard guard([=]() {
             if(fd >= 0) ::close(fd);
         });
 
+        std::string absolutePathname = fs->toAbsolutePathname(pathname);
+        auto path = Path::tryCreate(absolutePathname);
+        verify(!!path, "Unable to create path");
+        Directory* containingDirectory = fs->ensurePathExceptLast(*path);
+
         if(fd < 0) {
             if(!create) return {};
             std::vector<u8> data;
-            return std::unique_ptr<ShadowFile>(new ShadowFile(fs, parent, std::move(name), std::move(data)));
+            auto shadowFile = std::unique_ptr<ShadowFile>(new ShadowFile(fs, containingDirectory, path->last(), std::move(data)));
+            return containingDirectory->addFile(std::move(shadowFile));
         } else {
             // figure out size
             struct stat buf;
@@ -48,9 +55,9 @@ namespace kernel {
             auto hostData = std::make_unique<ShadowFileHostData>();
             hostData->st = buf;
 
-            auto shadowFile = std::unique_ptr<ShadowFile>(new ShadowFile(fs, parent, std::move(name), std::move(data)));
+            auto shadowFile = std::unique_ptr<ShadowFile>(new ShadowFile(fs, containingDirectory, path->last(), std::move(data)));
             shadowFile->hostData_ = std::move(hostData);
-            return shadowFile;
+            return containingDirectory->addFile(std::move(shadowFile));
         }
     }
 

@@ -45,8 +45,10 @@ add_library(x64emulator STATIC
     src/kernel/fs/event.cpp
     src/kernel/fs/file.cpp
     src/kernel/fs/fs.cpp
+    src/kernel/fs/hostdirectory.cpp
     src/kernel/fs/hostfile.cpp
     src/kernel/fs/path.cpp
+    src/kernel/fs/shadowdirectory.cpp
     src/kernel/fs/shadowfile.cpp
     src/kernel/fs/socket.cpp
     src/kernel/fs/stream.cpp

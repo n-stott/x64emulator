@@ -16,7 +16,23 @@ namespace kernel {
         bool isDirectory() const override final { return true; }
         void printSubtree() const;
 
-        Directory* tryGetOrAddSubDirectory(std::string name);
+        File* tryGetEntry(std::string name);
+        std::unique_ptr<File> tryTakeEntry(std::string name);
+        Directory* tryGetSubDirectory(std::string name);
+
+        Directory* tryAddHostDirectory(std::string name);
+        Directory* tryAddShadowDirectory(std::string name);
+
+        bool hasBeenTaintedByShadow() const { return taintedByShadow_; }
+        void setTaintedByShadow() { taintedByShadow_ = true; }
+
+        template<typename FileType>
+        FileType* addFile(std::unique_ptr<FileType> file) {
+            FileType* ptr = file.get();
+            entries_.push_back(std::move(file));
+            if(ptr->isShadow()) setTaintedByShadow();
+            return ptr;
+        }
 
         void close() override;
         bool keepAfterClose() const override { return true; }
@@ -35,8 +51,6 @@ namespace kernel {
         off_t lseek(off_t offset, int whence) override;
 
         ErrnoOrBuffer stat() override;
-        
-        ErrnoOrBuffer getdents64(size_t count) override;
 
         int fcntl(int cmd, int arg) override;
         ErrnoOrBuffer ioctl(unsigned long request, const Buffer& buffer) override;
@@ -45,6 +59,7 @@ namespace kernel {
 
     private:
         std::vector<std::unique_ptr<File>> entries_;
+        bool taintedByShadow_ { false };
     };
 
 }
