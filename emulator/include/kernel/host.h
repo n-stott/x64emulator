@@ -89,6 +89,13 @@ namespace kernel {
             static bool isCloseOnExec(int flag);
         };
 
+        struct Fcntl {
+            static bool isGetFd(int cmd);
+            static bool isSetFd(int cmd);
+            static bool isGetFl(int cmd);
+            static bool isSetFl(int cmd);
+        };
+
         struct Mode {
             static bool isUserReadable(unsigned int mode);
             static bool isUserWritable(unsigned int mode);

@@ -183,6 +183,22 @@ namespace kernel {
         return flag & O_CLOEXEC;
     }
 
+    bool Host::Fcntl::isGetFd(int cmd) {
+        return cmd == F_GETFD;
+    }
+
+    bool Host::Fcntl::isSetFd(int cmd) {
+        return cmd == F_SETFD;
+    }
+
+    bool Host::Fcntl::isGetFl(int cmd) {
+        return cmd == F_GETFL;
+    }
+
+    bool Host::Fcntl::isSetFl(int cmd) {
+        return cmd == F_SETFL;
+    }
+
     bool Host::Mode::isUserReadable(unsigned int mode) {
         return mode & S_IRUSR;
     }

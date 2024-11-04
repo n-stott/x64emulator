@@ -396,15 +396,8 @@ namespace kernel {
     int FS::fcntl(FD fd, int cmd, int arg) {
         OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
         if(!openFileDescription) return -EBADF;
-        if(openFileDescription->file()->isRegularFile()) {
-            RegularFile* file = static_cast<RegularFile*>(openFileDescription->file());
-            return file->fcntl(cmd, arg);
-        }
-        if(openFileDescription->file()->isSocket()) {
-            Socket* socket = static_cast<Socket*>(openFileDescription->file());
-            return socket->fcntl(cmd, arg);
-        }
-        return -EBADF;
+        File* file = openFileDescription->file();
+        return file->fcntl(cmd, arg);
     }
 
     ErrnoOrBuffer FS::ioctl(FD fd, unsigned long request, const Buffer& buffer) {
@@ -543,21 +536,19 @@ namespace kernel {
     ErrnoOr<std::pair<FS::FD, FS::FD>> FS::pipe2(int flags) {
         using ReturnType = ErrnoOr<std::pair<FS::FD, FS::FD>>;
         auto pipe = Pipe::tryCreate(this, flags);
-        if(!pipe) return ReturnType(-EINVAL);
-        FD readFd = allocateFd();
-        FD writeFd = allocateFd();
+        if(!pipe) return ReturnType(-EMFILE);
 
-        std::string path = "";
-        FsNode node {
-            path,
-            std::move(fifo)
-        };
-        files_.push_back(std::move(node));
-        File* filePtr = files_.back().file.get();
-        openFileDescriptions_.push_back(OpenFileDescription(filePtr, {}));
-        openFiles_.push_back(OpenNode{fd, std::move(path), &openFileDescriptions_.back()});
-        filePtr->ref();
-        return fd;
+        auto readingSide = pipe->tryCreateReader();
+        if(!readingSide) return ReturnType(-EMFILE);
+
+        auto writingSide = pipe->tryCreateWriter();
+        if(!writingSide) return ReturnType(-EMFILE);
+
+        pipes_.push_back(std::move(pipe));
+        FD reader = insertNode(std::move(readingSide));
+        FD writer = insertNode(std::move(writingSide));
+
+        return ReturnType(std::make_pair(reader, writer));
     }
 
     ErrnoOr<std::pair<Buffer, Buffer>> FS::recvfrom(FD sockfd, size_t len, int flags, bool requireSrcAddress) {

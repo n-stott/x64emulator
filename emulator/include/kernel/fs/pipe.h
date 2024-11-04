@@ -1,0 +1,78 @@
+#ifndef FIFO_H
+#define FIFO_H
+
+#include "kernel/fs/file.h"
+#include <memory>
+#include <vector>
+
+namespace kernel {
+
+    enum class PipeSide {
+        READ,
+        WRITE,
+    };
+
+    class PipeEndpoint;
+
+    class Pipe : public FsObject {
+    public:
+        static std::unique_ptr<Pipe> tryCreate(FS* fs, int flags);
+
+        std::unique_ptr<PipeEndpoint> tryCreateReader();
+        std::unique_ptr<PipeEndpoint> tryCreateWriter();
+
+        void close() override;
+        bool keepAfterClose() const override { return false; }
+        std::optional<int> hostFileDescriptor() const override { return {}; };
+
+    private:
+        Pipe(FS* fs, int flags) : FsObject(fs), flags_(flags) { }
+        int flags_;
+        std::vector<PipeEndpoint*> endpoints_;
+    };
+
+    class PipeEndpoint : public File {
+    public:
+        static std::unique_ptr<PipeEndpoint> tryCreate(FS* fs, Pipe* pipe, PipeSide side, int flags);
+
+        bool isPipe() const override { return true; }
+
+        void close() override;
+        bool keepAfterClose() const override { return false; }
+
+        bool isReadable() const override { return false; }
+        bool isWritable() const override { return false; }
+
+        // non pollable
+        bool canRead() const override { return false; }
+        bool canWrite() const override { return false; }
+
+        ErrnoOrBuffer read(size_t, off_t) override;
+        ssize_t write(const u8*, size_t, off_t) override;
+
+        off_t lseek(off_t offset, int whence) override;
+
+        ErrnoOrBuffer stat() override;
+        
+        int fcntl(int cmd, int arg) override;
+        ErrnoOrBuffer ioctl(unsigned long request, const Buffer& buffer) override;
+        
+        ErrnoOrBuffer getdents64(size_t count) override;
+
+        std::optional<int> hostFileDescriptor() const override { return {}; }
+
+        std::string className() const override {
+            return "Pipe";
+        }
+    
+    private:
+        explicit PipeEndpoint(FS* fs, Pipe* pipe, PipeSide side, int flags) :
+                File(fs), pipe_(pipe), side_(side), flags_(flags) { }
+        Pipe* pipe_;
+        PipeSide side_;
+        int flags_;
+    };
+
+}
+
+#endif

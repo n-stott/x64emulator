@@ -16,6 +16,7 @@ namespace kernel {
     class Kernel;
     class OpenFileDescription;
     class Path;
+    class Pipe;
 
     class FS {
     public:
@@ -147,6 +148,7 @@ namespace kernel {
         Kernel& kernel_;
         std::unique_ptr<Directory> root_;
         std::vector<std::unique_ptr<File>> orphanFiles_;
+        std::vector<std::unique_ptr<Pipe>> pipes_;
         Directory* currentWorkDirectory_ { nullptr };
         std::deque<OpenFileDescription> openFileDescriptions_;
         std::vector<OpenNode> openFiles_;
