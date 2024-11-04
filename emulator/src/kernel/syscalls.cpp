@@ -85,6 +85,8 @@ namespace kernel {
             case 0x31: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::bind, regs));
             case 0x33: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::getsockname, regs));
             case 0x34: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::getpeername, regs));
+            case 0x36: return threadRegs.set(x64::R64::RAX, invoke_syscall_5(&Sys::setsockopt, regs));
+            case 0x37: return threadRegs.set(x64::R64::RAX, invoke_syscall_5(&Sys::getsockopt, regs));
             case 0x38: return threadRegs.set(x64::R64::RAX, invoke_syscall_5(&Sys::clone, regs));
             case 0x3c: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::exit, regs));
             case 0x3f: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::uname, regs));
@@ -573,6 +575,24 @@ namespace kernel {
             mmu_.write32(addrlen, (u32)buffer.size());
             return 0;
         });
+    }
+
+    int Sys::setsockopt(int sockfd, int level, int optname, x64::Ptr optval, socklen_t optlen) {
+        if(logSyscalls_) {
+            print("Sys::setsockopt(sockfd={}, level={}, optname={}, optval={:#x}, optlen={}) = {}\n",
+                        sockfd, level, optname, optval.address(), optlen, -ENOTSUP);
+        }
+        warn("Sys::setsockopt not implemented");
+        return -ENOTSUP;
+    }
+    
+    int Sys::getsockopt(int sockfd, int level, int optname, x64::Ptr optval, x64::Ptr optlen) {
+        if(logSyscalls_) {
+            print("Sys::getsockopt(sockfd={}, level={}, optname={}, optval={:#x}, optlen={:#x}) = {}\n",
+                        sockfd, level, optname, optval.address(), optlen.address(), -ENOTSUP);
+        }
+        warn("Sys::getsockopt not implemented");
+        return -ENOTSUP;
     }
 
     long Sys::clone(unsigned long flags, x64::Ptr stack, x64::Ptr parent_tid, x64::Ptr32 child_tid, unsigned long tls) {
