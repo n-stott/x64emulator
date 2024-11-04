@@ -3,6 +3,7 @@
 #include "kernel/fs/epoll.h"
 #include "kernel/fs/event.h"
 #include "kernel/fs/regularfile.h"
+#include "kernel/fs/hostdirectory.h"
 #include "kernel/fs/hostfile.h"
 #include "kernel/fs/path.h"
 #include "kernel/fs/pipe.h"
@@ -21,25 +22,17 @@
 namespace kernel {
 
     FS::FS(Kernel& kernel) : kernel_(kernel) {
-        root_ = std::make_unique<Directory>(this, nullptr, "");
+        root_ = HostDirectory::tryCreateRoot(this);
+        verify(!!root_, "Unable to create root directory");
         createStandardStreams();
         findCurrentWorkDirectory();
     }
     
 
     void FS::createStandardStreams() {
-        FD stdinFd = insertNodeWithFd(FsNode {
-            "__stdin",
-            std::make_unique<Stream>(this, Stream::TYPE::IN),
-        }, FD{0});
-        FD stdoutFd = insertNodeWithFd(FsNode {
-            "__stdout",
-            std::make_unique<Stream>(this, Stream::TYPE::OUT),
-        }, FD{1});
-        FD stderrFd = insertNodeWithFd(FsNode {
-            "__stderr",
-            std::make_unique<Stream>(this, Stream::TYPE::ERR),
-        }, FD{2});
+        FD stdinFd = insertNodeWithFd(std::make_unique<Stream>(this, Stream::TYPE::IN), FD{0});
+        FD stdoutFd = insertNodeWithFd(std::make_unique<Stream>(this, Stream::TYPE::OUT), FD{1});
+        FD stderrFd = insertNodeWithFd(std::make_unique<Stream>(this, Stream::TYPE::ERR), FD{2});
         verify(stdinFd.fd == 0, "stdin must have fd 0");
         verify(stdoutFd.fd == 1, "stdout must have fd 1");
         verify(stderrFd.fd == 2, "stderr must have fd 2");
@@ -55,7 +48,7 @@ namespace kernel {
         });
         auto cwdPath = Path::tryCreate(cwdpathname);
         verify(!!cwdPath);
-        currentWorkDirectory_ = ensurePath(*cwdPath);
+        currentWorkDirectory_ = ensureCompletePath(*cwdPath);
     }
 
     FS::~FS() = default;
@@ -79,13 +72,20 @@ namespace kernel {
         };
     }
 
-    FS::FD FS::insertNode(FsNode node) {
-        std::string path = node.path;
-        files_.push_back(std::move(node));
-        File* filePtr = files_.back().file.get();
+    FS::FD FS::insertNode(std::unique_ptr<File> file) {
+        File* filePtr = file.get();
+        orphanFiles_.push_back(std::move(file));
         FD fd = allocateFd();
         openFileDescriptions_.push_back(OpenFileDescription(filePtr, {}));
-        openFiles_.push_back(OpenNode{fd, std::move(path), &openFileDescriptions_.back()});
+        openFiles_.push_back(OpenNode{fd, "", &openFileDescriptions_.back()});
+        filePtr->ref();
+        return fd;
+    }
+
+    FS::FD FS::openNode(File* filePtr) {
+        FD fd = allocateFd();
+        openFileDescriptions_.push_back(OpenFileDescription(filePtr, {}));
+        openFiles_.push_back(OpenNode{fd, "", &openFileDescriptions_.back()});
         filePtr->ref();
         return fd;
     }
@@ -99,12 +99,12 @@ namespace kernel {
         return FD{fd};
     }
 
-    FS::FD FS::insertNodeWithFd(FsNode node, FD fd) {
+    FS::FD FS::insertNodeWithFd(std::unique_ptr<File> file, FD fd) {
         OpenFileDescription* openFileDescriptionWithExistingFD = findOpenFileDescription(fd);
         verify(!openFileDescriptionWithExistingFD, [&]() {
             fmt::print("cannot insert node with existing fd {}\n", fd.fd);
         });
-        FD givenFd = insertNode(std::move(node));
+        FD givenFd = insertNode(std::move(file));
         verify(givenFd == fd);
         return fd;
     }
@@ -119,12 +119,55 @@ namespace kernel {
         }
     }
 
-    Directory* FS::ensurePath(const Path& path) {
+    Directory* FS::ensureCompletePath(const Path& path) {
+        return ensurePathImpl(path.components());
+    }
+
+    Directory* FS::ensurePathExceptLast(const Path& path) {
+        return ensurePathImpl(path.componentsExceptLast());
+    }
+
+    Directory* FS::ensurePathImpl(Span<const std::string> components) {
         Directory* dir = root();
-        for(const std::string& component : path.componentsExceptLast()) {
-            dir = dir->tryGetOrAddSubDirectory(component);
+        for(const std::string& component : components) {
+            // First, look if it is already there
+            Directory* subdir = dir->tryGetSubDirectory(component);
+            if(!!subdir) {
+                dir = subdir;
+                continue;
+            }
+            // Then try to get it on the host
+            Directory* hostSubdir = dir->tryAddHostDirectory(component);
+            if(!!hostSubdir) {
+                dir = hostSubdir;
+                continue;
+            }
+            // Finally, resort to creating a shadow version
+            Directory* shadowSubdir = dir->tryAddShadowDirectory(component);
+            verify(!!shadowSubdir, "Unable to create shadow subdirectory");
+            dir = shadowSubdir;
         }
         return dir;
+    }
+
+    File* FS::tryGetFile(const Path& path) {
+        Directory* dir = root();
+        for(const std::string& component : path.componentsExceptLast()) {
+            dir = dir->tryGetSubDirectory(component);
+            if(!dir) return nullptr;
+        }
+        File* file = dir->tryGetEntry(path.last());
+        return file;
+    }
+
+    std::unique_ptr<File> FS::tryTakeFile(const Path& path) {
+        Directory* dir = root();
+        for(const std::string& component : path.componentsExceptLast()) {
+            dir = dir->tryGetSubDirectory(component);
+            if(!dir) return nullptr;
+        }
+        std::unique_ptr<File> file = dir->tryTakeEntry(path.last());
+        return file;
     }
 
     FS::FD FS::open(const std::string& pathname, OpenFlags flags, Permissions permissions) {
@@ -134,31 +177,34 @@ namespace kernel {
         if(flags.append || flags.create || flags.truncate || flags.write) canUseHostFile = false;
 
         // Look if the file is already present in FS, open or closed.
-        for(auto& node : files_) {
-            if(node.path != pathname) continue;
+        auto absolutePathname = toAbsolutePathname(pathname);
+        auto path = Path::tryCreate(absolutePathname);
+        verify(!!path, "Unable to create path");
+        
+        File* file = tryGetFile(*path);
+        if(!!file) {
             FD fd = allocateFd();
-            node.file->ref();
-            openFileDescriptions_.push_back(OpenFileDescription { node.file.get(), {} });
-            openFiles_.push_back(OpenNode{fd, node.path, &openFileDescriptions_.back()});
+            file->ref();
+            openFileDescriptions_.push_back(OpenFileDescription { file, {} });
+            openFiles_.push_back(OpenNode{fd, "", &openFileDescriptions_.back()});
+            file->open();
             return fd;
         }
 
         if(canUseHostFile) {
             // open the file
-            auto hostBackedFile = HostFile::tryCreate(this, root_.get(), pathname);
+            auto* hostBackedFile = HostFile::tryCreateAndAdd(this, root_.get(), absolutePathname);
             if(!hostBackedFile) {
                 // TODO: return the actual value of errno
                 return FS::FD{-ENOENT};
             }
             
             // create and add the node to the filesystem
-            return insertNode(FsNode {
-                pathname,
-                std::move(hostBackedFile),
-            });
+            hostBackedFile->open();
+            return openNode(hostBackedFile);
         } else {
             // open the file
-            auto shadowFile = ShadowFile::tryCreate(this, root_.get(), pathname, flags.create);
+            auto* shadowFile = ShadowFile::tryCreateAndAdd(this, root_.get(), absolutePathname, flags.create);
             if(!shadowFile) {
                 // TODO: return the actual value of errno
                 return FS::FD{-EINVAL};
@@ -169,10 +215,8 @@ namespace kernel {
             shadowFile->setWritable(flags.write);
             
             // create and add the node to the filesystem
-            return insertNode(FsNode {
-                pathname,
-                std::move(shadowFile),
-            });
+            shadowFile->open();
+            return openNode(shadowFile);
         }
         return FD{-EINVAL};
     }
@@ -205,7 +249,7 @@ namespace kernel {
     int FS::mkdir(const std::string& pathname) {
         auto path = Path::tryCreate(pathname);
         if(!path) return -ENOENT;
-        ensurePath(*path);
+        ensureCompletePath(*path);
         return 0;
     }
 
@@ -214,28 +258,24 @@ namespace kernel {
         auto newpath = Path::tryCreate(newname);
         if(!oldpath) return -ENOENT;
         if(!newpath) return -ENOENT;
-        auto it = std::find_if(files_.begin(), files_.end(), [&](const FsNode& node) {
-            return node.path == oldname;
-        });
-        if(it == files_.end()) {
-            return -ENOENT;
-        }
-        ensurePath(*newpath);
-        it->path = newname;
+        auto file = tryTakeFile(*oldpath);
+        if(!file) return -ENOENT;
+        auto* newdir = ensurePathExceptLast(*newpath);
+        verify(!!newdir, "Unable to create new directory");
+        newdir->addFile(std::move(file));
         return 0;
     }
     
     int FS::unlink(const std::string& pathname) {
-        auto it = std::find_if(files_.begin(), files_.end(), [&](const FsNode& node) {
-            return node.path == pathname;
-        });
-        if(it == files_.end()) {
-            return -ENOENT;
-        }
-        if(it->file->refCount() > 0) {
-            it->file->setDeleteAfterClose();
+        auto path = Path::tryCreate(toAbsolutePathname(pathname));
+        if(!path) return -ENOENT;
+        File* filePtr = tryGetFile(*path);
+        if(!filePtr) return -ENOENT;
+        if(filePtr->refCount() > 0) {
+            filePtr->setDeleteAfterClose();
         } else {
-            files_.erase(it);
+            auto file = tryTakeFile(*path);
+            // let the file die  here
         }
         return 0;
     }
@@ -286,9 +326,10 @@ namespace kernel {
     }
 
     ErrnoOrBuffer FS::stat(const std::string& pathname) {
-        for(auto& node : files_) {
-            if(node.path != pathname) continue;
-            return node.file->stat();
+        auto path = Path::tryCreate(pathname);
+        if(!!path) {
+            File* file = tryGetFile(*path);
+            if(!!file) return file->stat();
         }
         return kernel_.host().stat(pathname);
     }
@@ -299,36 +340,29 @@ namespace kernel {
         return openFileDescription->file()->stat();
     }
 
-    ErrnoOrBuffer FS::statx(const std::string& path, int flags, unsigned int mask) {
-        for(auto& node : files_) {
-            if(node.path != path) continue;
-            if(node.file->isRegularFile()) {
-                verify(false, "implement statx for files in FS");
-                // RegularFile* file = static_cast<RegularFile*>(node.object.get());
-                // return file->statx(flags, mask);
-            }
-            verify(false, "implement statx for non files in FS");
+    ErrnoOrBuffer FS::statx(const std::string& pathname, int flags, unsigned int mask) {
+        auto path = Path::tryCreate(pathname);
+        if(!!path) {
+            verify(false, "implement statx in FS");
             return ErrnoOrBuffer(-ENOTSUP);
+        } else {
+            return kernel_.host().statx(Host::cwdfd(), pathname, flags, mask);
         }
-        return kernel_.host().statx(Host::cwdfd(), path, flags, mask);
+        
     }
 
-    ErrnoOrBuffer FS::fstatat64(FD dirfd, const std::string& path, int flags) {
+    ErrnoOrBuffer FS::fstatat64(FD dirfd, const std::string& pathname, int flags) {
         if(flags == AT_EMPTY_PATH) {
             return fstat(dirfd);
         }
         verify(dirfd.fd == Host::cwdfd().fd, "dirfd is not cwd");
-        for(auto& node : files_) {
-            if(node.path != path) continue;
-            if(node.file->isRegularFile()) {
-                verify(false, "implement fstatat for files in FS");
-                // RegularFile* file = static_cast<RegularFile*>(node.object.get());
-                // return file->fstatat(flags, mask);
-            }
-            verify(false, "implement fstatat for non files in FS");
+        auto path = Path::tryCreate(pathname);
+        if(!!path) {
+            verify(false, "implement fstatat in FS");
             return ErrnoOrBuffer(-ENOTSUP);
+        } else {
+            return kernel_.host().fstatat64(Host::cwdfd(), pathname, flags);
         }
-        return kernel_.host().fstatat64(Host::cwdfd(), path, flags);
     }
 
     off_t FS::lseek(FD fd, off_t offset, int whence) {
@@ -340,15 +374,14 @@ namespace kernel {
     int FS::close(FD fd) {
         OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
         if(!openFileDescription) return -EBADF;
-        openFileDescription->file()->unref();
-        openFileDescription->file()->close();
+        File* file = openFileDescription->file();
+        file->unref();
+        file->close();
         openFiles_.erase(std::remove_if(openFiles_.begin(), openFiles_.end(), [&](const auto& openNode) {
             return openNode.fd == fd;
         }), openFiles_.end());
-        if(openFileDescription->file()->refCount() == 0 && !openFileDescription->file()->keepAfterClose()) {
-            files_.erase(std::remove_if(files_.begin(), files_.end(), [&](const auto& f) {
-                return f.file.get() == openFileDescription->file();
-            }), files_.end());
+        if(file->refCount() == 0 && !file->keepAfterClose()) {
+            unlink(file->path());
         }
         return 0;
     }
@@ -356,8 +389,7 @@ namespace kernel {
     ErrnoOrBuffer FS::getdents64(FD fd, size_t count) {
         OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
         if(!openFileDescription) return ErrnoOrBuffer(-EBADF);
-        if(!openFileDescription->file()->isRegularFile()) return ErrnoOrBuffer{-EBADF};
-        RegularFile* file = static_cast<RegularFile*>(openFileDescription->file());
+        File* file = openFileDescription->file();
         return file->getdents64(count);
     }
 
@@ -412,28 +444,19 @@ namespace kernel {
 
     FS::FD FS::eventfd2(unsigned int initval, int flags) {
         std::unique_ptr<Event> event = Event::tryCreate(this, initval, flags);
-        return insertNode(FsNode {
-            "",
-            std::move(event),
-        });
+        return insertNode(std::move(event));
     }
 
     FS::FD FS::epoll_create1(int flags) {
         std::unique_ptr<Epoll> epoll = std::make_unique<Epoll>(this, flags);
-        return insertNode(FsNode {
-            "",
-            std::move(epoll),
-        });
+        return insertNode(std::move(epoll));
     }
 
     FS::FD FS::socket(int domain, int type, int protocol) {
         auto socket = Socket::tryCreate(this, domain, type, protocol);
         // TODO: return the actual value of errno
         if(!socket) return FS::FD{-EINVAL};
-        return insertNode(FsNode {
-            "",
-            std::move(socket)
-        });
+        return insertNode(std::move(socket));
     }
 
     int FS::connect(FD sockfd, const Buffer& buffer) {
@@ -578,10 +601,6 @@ namespace kernel {
     }
 
     void FS::dumpSummary() const {
-        fmt::print("Known files:\n");
-        for(const auto& node : files_) {
-            fmt::print("  type={:20} path={}\n", node.file->className(), node.path);
-        }
         fmt::print("Open files:\n");
         for(const auto& openFile : openFiles_) {
             fmt::print("  fd={} : type={:20} path={}\n", openFile.fd.fd, openFile.openFiledescription->toString(), openFile.path);

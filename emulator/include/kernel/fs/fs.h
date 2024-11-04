@@ -3,6 +3,7 @@
 
 #include "kernel/utils/buffer.h"
 #include "kernel/utils/erroror.h"
+#include "span.h"
 #include <deque>
 #include <memory>
 #include <string>
@@ -52,7 +53,8 @@ namespace kernel {
         Directory* cwd() { return currentWorkDirectory_; }
 
         std::string toAbsolutePathname(const std::string& pathname) const;
-        Directory* ensurePath(const Path& path);
+        Directory* ensurePathExceptLast(const Path& path);
+        Directory* ensureCompletePath(const Path& path);
 
         FD open(const std::string& pathname, OpenFlags flags, Permissions permissions);
         FD dup(FD fd);
@@ -72,8 +74,8 @@ namespace kernel {
 
         ErrnoOrBuffer stat(const std::string& pathname);
         ErrnoOrBuffer fstat(FD fd);
-        ErrnoOrBuffer statx(const std::string& path, int flags, unsigned int mask);
-        ErrnoOrBuffer fstatat64(FD dirfd, const std::string& path, int flags);
+        ErrnoOrBuffer statx(const std::string& pathname, int flags, unsigned int mask);
+        ErrnoOrBuffer fstatat64(FD dirfd, const std::string& pathname, int flags);
 
         off_t lseek(FD fd, off_t offset, int whence);
 
@@ -123,10 +125,9 @@ namespace kernel {
         void dumpSummary() const;
 
     private:
-        struct FsNode {
-            std::string path;
-            std::unique_ptr<File> file;
-        };
+        File* tryGetFile(const Path& path);
+        std::unique_ptr<File> tryTakeFile(const Path& path);
+        Directory* ensurePathImpl(Span<const std::string> components);
 
         struct OpenNode {
             FD fd { -1 };
@@ -136,16 +137,17 @@ namespace kernel {
 
         void createStandardStreams();
         void findCurrentWorkDirectory();
-        FD insertNode(FsNode node);
+        FD insertNode(std::unique_ptr<File> file);
+        FD openNode(File* filePtr);
         FD allocateFd();
-        FD insertNodeWithFd(FsNode node, FD fd);
+        FD insertNodeWithFd(std::unique_ptr<File> file, FD fd);
 
         OpenFileDescription* findOpenFileDescription(FD fd);
 
         Kernel& kernel_;
         std::unique_ptr<Directory> root_;
+        std::vector<std::unique_ptr<File>> orphanFiles_;
         Directory* currentWorkDirectory_ { nullptr };
-        std::deque<FsNode> files_;
         std::deque<OpenFileDescription> openFileDescriptions_;
         std::vector<OpenNode> openFiles_;
     };

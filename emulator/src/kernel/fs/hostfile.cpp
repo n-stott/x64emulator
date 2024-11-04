@@ -12,7 +12,7 @@
 
 namespace kernel {
 
-    std::unique_ptr<HostFile> HostFile::tryCreate(FS* fs, Directory* parent, std::string name) {
+    File* HostFile::tryCreateAndAdd(FS* fs, Directory* parent, std::string name) {
         std::string pathname;
         if(!parent || parent == fs->root()) {
             pathname = name;
@@ -41,14 +41,15 @@ namespace kernel {
             return {};
         }
 
-        guard.disable();
-
         std::string absolutePathname = fs->toAbsolutePathname(pathname);
         auto path = Path::tryCreate(absolutePathname);
         verify(!!path, "Unable to create path");
-        Directory* containingDirectory = fs->ensurePath(*path);
+        Directory* containingDirectory = fs->ensurePathExceptLast(*path);
 
-        return std::unique_ptr<HostFile>(new HostFile(fs, containingDirectory, path->last(), fd));
+        guard.disable();
+
+        auto hostFile = std::unique_ptr<HostFile>(new HostFile(fs, containingDirectory, path->last(), fd));
+        return containingDirectory->addFile(std::move(hostFile));
     }
 
     void HostFile::close() {

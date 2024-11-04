@@ -1,16 +1,59 @@
 #include "kernel/fs/directory.h"
+#include "kernel/fs/hostdirectory.h"
+#include "kernel/fs/shadowdirectory.h"
+#include "kernel/kernel.h"
+#include "kernel/host.h"
 #include "verify.h"
 #include <stack>
+#include <dirent.h>
 
 namespace kernel {
 
-    Directory* Directory::tryGetOrAddSubDirectory(std::string name) {
+    File* Directory::tryGetEntry(std::string name) {
+        for(auto& entry : entries_) {
+            if(entry->name() != name) continue;
+            return entry.get();
+        }
+        return nullptr;
+    }
+
+    std::unique_ptr<File> Directory::tryTakeEntry(std::string name) {
+        auto it = std::find_if(entries_.begin(), entries_.end(), [&](const auto& entry) {
+            return entry->name() == name;
+        });
+        if(it == entries_.end()) return nullptr;
+        auto file = std::move(*it);
+        entries_.erase(it);
+        return file;
+    }
+
+    Directory* Directory::tryGetSubDirectory(std::string name) {
         for(auto& entry : entries_) {
             if(entry->name() != name) continue;
             if(!entry->isDirectory()) return nullptr;
             return static_cast<Directory*>(entry.get());
         }
-        std::unique_ptr<Directory> dir = std::make_unique<Directory>(fs_, this, std::move(name));
+        return nullptr;
+    }
+
+    Directory* Directory::tryAddHostDirectory(std::string name) {
+        for(auto& entry : entries_) {
+            if(entry->name() == name) return nullptr;
+        }
+        auto dir = HostDirectory::tryCreate(fs_, this, std::move(name));
+        if(!dir) return nullptr;
+        Directory* dirPtr = dir.get();
+        entries_.push_back(std::move(dir));
+        return dirPtr;
+    }
+
+    Directory* Directory::tryAddShadowDirectory(std::string name) {
+        for(auto& entry : entries_) {
+            if(entry->name() == name) return nullptr;
+        }
+        auto dir = ShadowDirectory::tryCreate(fs_, this, std::move(name));
+        if(!dir) return nullptr;
+        this->setTaintedByShadow();
         Directory* dirPtr = dir.get();
         entries_.push_back(std::move(dir));
         return dirPtr;
@@ -29,7 +72,7 @@ namespace kernel {
             }
             const Directory* d = v.back();
             v.pop_back();
-            fmt::print("{:{}} {}\n", "", depth, d->name());
+            fmt::print("{:{}} \"{}\"\n", "", depth, d->name());
             std::vector<const Directory*> newd;
             for(const auto& entry : d->entries_) {
                 if(!entry->isDirectory()) continue;
@@ -63,13 +106,8 @@ namespace kernel {
     }
 
     ErrnoOrBuffer Directory::stat() {
-        verify(false, "stat not implemented on directory");
-        return ErrnoOrBuffer(-ENOTSUP);
-    }
-    
-    ErrnoOrBuffer Directory::getdents64(size_t) {
-        verify(false, "getdents64 not implemented on directory");
-        return ErrnoOrBuffer(-ENOTSUP);
+        std::string path = this->path();
+        return fs_->kernel().host().stat(path);
     }
 
     int Directory::fcntl(int cmd, int arg) {

@@ -13,7 +13,9 @@ namespace kernel {
         }
         std::stringstream ss;
         for(auto it = rdir.rbegin(); it != rdir.rend(); ++it) {
-            ss << '/' << (*it)->name();
+            const auto& name = (*it)->name();
+            if(name.empty()) continue;
+            ss << '/' << name;
         }
         ss << '/' << name_;
         return ss.str();

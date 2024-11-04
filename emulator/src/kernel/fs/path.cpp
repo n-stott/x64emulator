@@ -11,7 +11,7 @@ namespace kernel {
         while(true) {
             size_t nextPos = pathname.find('/', pos);
             std::string component = pathname.substr(pos, nextPos-pos);
-            if(component == ".") {
+            if(component.empty() || component == ".") {
                 // do nothing
             } else if(component == "..") {
                 if(components.empty()) return {};

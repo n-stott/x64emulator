@@ -13,7 +13,7 @@ namespace kernel {
 
     class HostFile : public RegularFile {
     public:
-        static std::unique_ptr<HostFile> tryCreate(FS* fs, Directory* parent, std::string pathname);
+        static File* tryCreateAndAdd(FS* fs, Directory* parent, std::string pathname);
 
         bool isReadable() const override { return true; }
         bool isWritable() const override { return false; }

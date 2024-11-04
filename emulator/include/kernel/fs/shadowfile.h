@@ -14,8 +14,10 @@ namespace kernel {
 
     class ShadowFile : public RegularFile {
     public:
-        static std::unique_ptr<ShadowFile> tryCreate(FS* fs, Directory* dir, std::string name, bool create);
+        static ShadowFile* tryCreateAndAdd(FS* fs, Directory* dir, std::string name, bool create);
         ~ShadowFile();
+
+        bool isShadow() const override { return true; }
 
         bool isReadable() const override { return true; }
         bool isWritable() const override { return true; }

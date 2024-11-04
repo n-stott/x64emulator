@@ -1,4 +1,5 @@
 #include "kernel/host.h"
+#include "scopeguard.h"
 #include <cassert>
 #include <cstring>
 #include <dirent.h>
@@ -433,6 +434,15 @@ namespace kernel {
         for(auto it = path.begin(); it != path.end() && *it != '\0'; ++it) ++actualSize;
         path.resize(actualSize+1);
         return ErrnoOrBuffer(Buffer{std::move(path)});
+    }
+
+    ErrnoOrBuffer Host::getdents64(FD fd, size_t count) {
+        std::vector<u8> buf;
+        buf.resize(count, 0x0);
+        ssize_t nbytes = ::getdents64(fd.fd, buf.data(), buf.size());
+        if(nbytes < 0) return ErrnoOrBuffer(-errno);
+        buf.resize((size_t)nbytes);
+        return ErrnoOrBuffer(Buffer{std::move(buf)});
     }
 
     int Host::chdir(const std::string& path) {

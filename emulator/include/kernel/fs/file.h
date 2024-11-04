@@ -16,8 +16,12 @@ namespace kernel {
         explicit File(FS* fs) : FsObject(fs), parent_(nullptr), name_("_anonymous_file_") { }
         explicit File(FS* fs, Directory* parent, std::string name) : FsObject(fs), parent_(parent), name_(std::move(name)) { }
 
+        virtual bool isShadow() const { return false; }
+
         virtual std::string path() const;
         virtual std::string name() const { return name_; }
+
+        virtual void open() { }
 
         virtual bool isReadable() const = 0;
         virtual bool isWritable() const = 0;

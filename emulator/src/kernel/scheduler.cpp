@@ -161,10 +161,11 @@ namespace kernel {
         };
 
         // All threads are blocked and are waiting on a mutex
-        bool deadlock = std::all_of(allAliveThreads_.begin(), allAliveThreads_.end(), [&](Thread* thread) {
-            return thread->state() == Thread::THREAD_STATE::BLOCKED
-                    && std::any_of(futexBlockers_.begin(), futexBlockers_.end(), [=](const FutexBlocker& blocker) {
-                        return blocker.thread() == thread;
+        bool deadlock = !allAliveThreads_.empty()
+                && std::all_of(allAliveThreads_.begin(), allAliveThreads_.end(), [&](Thread* thread) {
+                    return thread->state() == Thread::THREAD_STATE::BLOCKED
+                        && std::any_of(futexBlockers_.begin(), futexBlockers_.end(), [=](const FutexBlocker& blocker) {
+                            return blocker.thread() == thread;
                     });
         });
         verify(!deadlock, [&]() {
