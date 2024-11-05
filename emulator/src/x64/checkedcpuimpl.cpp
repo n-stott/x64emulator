@@ -2189,6 +2189,7 @@ namespace x64 {
 
     u128 CheckedCpuImpl::cmpss(u128 dst, u128 src, FCond cond) {
         u128 virtualRes = CpuImpl::cmpss(dst, src, cond);
+        (void)virtualRes;
 
         __m128 d;
         __m128 s;
@@ -2239,6 +2240,7 @@ namespace x64 {
 
     u128 CheckedCpuImpl::cmpsd(u128 dst, u128 src, FCond cond) {
         u128 virtualRes = CpuImpl::cmpsd(dst, src, cond);
+        (void)virtualRes;
 
         __m128d d;
         __m128d s;
@@ -2289,6 +2291,7 @@ namespace x64 {
 
     u128 CheckedCpuImpl::cmpps(u128 dst, u128 src, FCond cond) {
         u128 virtualRes = CpuImpl::cmpps(dst, src, cond);
+        (void)virtualRes;
 
         __m128 d;
         __m128 s;
@@ -2339,6 +2342,7 @@ namespace x64 {
 
     u128 CheckedCpuImpl::cmppd(u128 dst, u128 src, FCond cond) {
         u128 virtualRes = CpuImpl::cmppd(dst, src, cond);
+        (void)virtualRes;
 
         __m128d d;
         __m128d s;
