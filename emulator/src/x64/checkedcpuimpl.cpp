@@ -12,6 +12,532 @@
 #define CLANG_COMPILER 1
 #endif
 
+#define COMPLAIN_ON_NON_CHECK 1
+#if COMPLAIN_ON_NON_CHECK
+#define NON_CHECKED std::abort();
+#endif
+
+
+#define CALL_1_WITH_IMM8(f, a) \
+    switch(order) { \
+        case 0x00: return f(a, 0x00); \
+        case 0x01: return f(a, 0x01); \
+        case 0x02: return f(a, 0x02); \
+        case 0x03: return f(a, 0x03); \
+        case 0x04: return f(a, 0x04); \
+        case 0x05: return f(a, 0x05); \
+        case 0x06: return f(a, 0x06); \
+        case 0x07: return f(a, 0x07); \
+        case 0x08: return f(a, 0x08); \
+        case 0x09: return f(a, 0x09); \
+        case 0x0a: return f(a, 0x0a); \
+        case 0x0b: return f(a, 0x0b); \
+        case 0x0c: return f(a, 0x0c); \
+        case 0x0d: return f(a, 0x0d); \
+        case 0x0e: return f(a, 0x0e); \
+        case 0x0f: return f(a, 0x0f); \
+        case 0x10: return f(a, 0x10); \
+        case 0x11: return f(a, 0x11); \
+        case 0x12: return f(a, 0x12); \
+        case 0x13: return f(a, 0x13); \
+        case 0x14: return f(a, 0x14); \
+        case 0x15: return f(a, 0x15); \
+        case 0x16: return f(a, 0x16); \
+        case 0x17: return f(a, 0x17); \
+        case 0x18: return f(a, 0x18); \
+        case 0x19: return f(a, 0x19); \
+        case 0x1a: return f(a, 0x1a); \
+        case 0x1b: return f(a, 0x1b); \
+        case 0x1c: return f(a, 0x1c); \
+        case 0x1d: return f(a, 0x1d); \
+        case 0x1e: return f(a, 0x1e); \
+        case 0x1f: return f(a, 0x1f); \
+        case 0x20: return f(a, 0x20); \
+        case 0x21: return f(a, 0x21); \
+        case 0x22: return f(a, 0x22); \
+        case 0x23: return f(a, 0x23); \
+        case 0x24: return f(a, 0x24); \
+        case 0x25: return f(a, 0x25); \
+        case 0x26: return f(a, 0x26); \
+        case 0x27: return f(a, 0x27); \
+        case 0x28: return f(a, 0x28); \
+        case 0x29: return f(a, 0x29); \
+        case 0x2a: return f(a, 0x2a); \
+        case 0x2b: return f(a, 0x2b); \
+        case 0x2c: return f(a, 0x2c); \
+        case 0x2d: return f(a, 0x2d); \
+        case 0x2e: return f(a, 0x2e); \
+        case 0x2f: return f(a, 0x2f); \
+        case 0x30: return f(a, 0x30); \
+        case 0x31: return f(a, 0x31); \
+        case 0x32: return f(a, 0x32); \
+        case 0x33: return f(a, 0x33); \
+        case 0x34: return f(a, 0x34); \
+        case 0x35: return f(a, 0x35); \
+        case 0x36: return f(a, 0x36); \
+        case 0x37: return f(a, 0x37); \
+        case 0x38: return f(a, 0x38); \
+        case 0x39: return f(a, 0x39); \
+        case 0x3a: return f(a, 0x3a); \
+        case 0x3b: return f(a, 0x3b); \
+        case 0x3c: return f(a, 0x3c); \
+        case 0x3d: return f(a, 0x3d); \
+        case 0x3e: return f(a, 0x3e); \
+        case 0x3f: return f(a, 0x3f); \
+        case 0x40: return f(a, 0x40); \
+        case 0x41: return f(a, 0x41); \
+        case 0x42: return f(a, 0x42); \
+        case 0x43: return f(a, 0x43); \
+        case 0x44: return f(a, 0x44); \
+        case 0x45: return f(a, 0x45); \
+        case 0x46: return f(a, 0x46); \
+        case 0x47: return f(a, 0x47); \
+        case 0x48: return f(a, 0x48); \
+        case 0x49: return f(a, 0x49); \
+        case 0x4a: return f(a, 0x4a); \
+        case 0x4b: return f(a, 0x4b); \
+        case 0x4c: return f(a, 0x4c); \
+        case 0x4d: return f(a, 0x4d); \
+        case 0x4e: return f(a, 0x4e); \
+        case 0x4f: return f(a, 0x4f); \
+        case 0x50: return f(a, 0x50); \
+        case 0x51: return f(a, 0x51); \
+        case 0x52: return f(a, 0x52); \
+        case 0x53: return f(a, 0x53); \
+        case 0x54: return f(a, 0x54); \
+        case 0x55: return f(a, 0x55); \
+        case 0x56: return f(a, 0x56); \
+        case 0x57: return f(a, 0x57); \
+        case 0x58: return f(a, 0x58); \
+        case 0x59: return f(a, 0x59); \
+        case 0x5a: return f(a, 0x5a); \
+        case 0x5b: return f(a, 0x5b); \
+        case 0x5c: return f(a, 0x5c); \
+        case 0x5d: return f(a, 0x5d); \
+        case 0x5e: return f(a, 0x5e); \
+        case 0x5f: return f(a, 0x5f); \
+        case 0x60: return f(a, 0x60); \
+        case 0x61: return f(a, 0x61); \
+        case 0x62: return f(a, 0x62); \
+        case 0x63: return f(a, 0x63); \
+        case 0x64: return f(a, 0x64); \
+        case 0x65: return f(a, 0x65); \
+        case 0x66: return f(a, 0x66); \
+        case 0x67: return f(a, 0x67); \
+        case 0x68: return f(a, 0x68); \
+        case 0x69: return f(a, 0x69); \
+        case 0x6a: return f(a, 0x6a); \
+        case 0x6b: return f(a, 0x6b); \
+        case 0x6c: return f(a, 0x6c); \
+        case 0x6d: return f(a, 0x6d); \
+        case 0x6e: return f(a, 0x6e); \
+        case 0x6f: return f(a, 0x6f); \
+        case 0x70: return f(a, 0x70); \
+        case 0x71: return f(a, 0x71); \
+        case 0x72: return f(a, 0x72); \
+        case 0x73: return f(a, 0x73); \
+        case 0x74: return f(a, 0x74); \
+        case 0x75: return f(a, 0x75); \
+        case 0x76: return f(a, 0x76); \
+        case 0x77: return f(a, 0x77); \
+        case 0x78: return f(a, 0x78); \
+        case 0x79: return f(a, 0x79); \
+        case 0x7a: return f(a, 0x7a); \
+        case 0x7b: return f(a, 0x7b); \
+        case 0x7c: return f(a, 0x7c); \
+        case 0x7d: return f(a, 0x7d); \
+        case 0x7e: return f(a, 0x7e); \
+        case 0x7f: return f(a, 0x7f); \
+        case 0x80: return f(a, 0x80); \
+        case 0x81: return f(a, 0x81); \
+        case 0x82: return f(a, 0x82); \
+        case 0x83: return f(a, 0x83); \
+        case 0x84: return f(a, 0x84); \
+        case 0x85: return f(a, 0x85); \
+        case 0x86: return f(a, 0x86); \
+        case 0x87: return f(a, 0x87); \
+        case 0x88: return f(a, 0x88); \
+        case 0x89: return f(a, 0x89); \
+        case 0x8a: return f(a, 0x8a); \
+        case 0x8b: return f(a, 0x8b); \
+        case 0x8c: return f(a, 0x8c); \
+        case 0x8d: return f(a, 0x8d); \
+        case 0x8e: return f(a, 0x8e); \
+        case 0x8f: return f(a, 0x8f); \
+        case 0x90: return f(a, 0x90); \
+        case 0x91: return f(a, 0x91); \
+        case 0x92: return f(a, 0x92); \
+        case 0x93: return f(a, 0x93); \
+        case 0x94: return f(a, 0x94); \
+        case 0x95: return f(a, 0x95); \
+        case 0x96: return f(a, 0x96); \
+        case 0x97: return f(a, 0x97); \
+        case 0x98: return f(a, 0x98); \
+        case 0x99: return f(a, 0x99); \
+        case 0x9a: return f(a, 0x9a); \
+        case 0x9b: return f(a, 0x9b); \
+        case 0x9c: return f(a, 0x9c); \
+        case 0x9d: return f(a, 0x9d); \
+        case 0x9e: return f(a, 0x9e); \
+        case 0x9f: return f(a, 0x9f); \
+        case 0xa0: return f(a, 0xa0); \
+        case 0xa1: return f(a, 0xa1); \
+        case 0xa2: return f(a, 0xa2); \
+        case 0xa3: return f(a, 0xa3); \
+        case 0xa4: return f(a, 0xa4); \
+        case 0xa5: return f(a, 0xa5); \
+        case 0xa6: return f(a, 0xa6); \
+        case 0xa7: return f(a, 0xa7); \
+        case 0xa8: return f(a, 0xa8); \
+        case 0xa9: return f(a, 0xa9); \
+        case 0xaa: return f(a, 0xaa); \
+        case 0xab: return f(a, 0xab); \
+        case 0xac: return f(a, 0xac); \
+        case 0xad: return f(a, 0xad); \
+        case 0xae: return f(a, 0xae); \
+        case 0xaf: return f(a, 0xaf); \
+        case 0xb0: return f(a, 0xb0); \
+        case 0xb1: return f(a, 0xb1); \
+        case 0xb2: return f(a, 0xb2); \
+        case 0xb3: return f(a, 0xb3); \
+        case 0xb4: return f(a, 0xb4); \
+        case 0xb5: return f(a, 0xb5); \
+        case 0xb6: return f(a, 0xb6); \
+        case 0xb7: return f(a, 0xb7); \
+        case 0xb8: return f(a, 0xb8); \
+        case 0xb9: return f(a, 0xb9); \
+        case 0xba: return f(a, 0xba); \
+        case 0xbb: return f(a, 0xbb); \
+        case 0xbc: return f(a, 0xbc); \
+        case 0xbd: return f(a, 0xbd); \
+        case 0xbe: return f(a, 0xbe); \
+        case 0xbf: return f(a, 0xbf); \
+        case 0xc0: return f(a, 0xc0); \
+        case 0xc1: return f(a, 0xc1); \
+        case 0xc2: return f(a, 0xc2); \
+        case 0xc3: return f(a, 0xc3); \
+        case 0xc4: return f(a, 0xc4); \
+        case 0xc5: return f(a, 0xc5); \
+        case 0xc6: return f(a, 0xc6); \
+        case 0xc7: return f(a, 0xc7); \
+        case 0xc8: return f(a, 0xc8); \
+        case 0xc9: return f(a, 0xc9); \
+        case 0xca: return f(a, 0xca); \
+        case 0xcb: return f(a, 0xcb); \
+        case 0xcc: return f(a, 0xcc); \
+        case 0xcd: return f(a, 0xcd); \
+        case 0xce: return f(a, 0xce); \
+        case 0xcf: return f(a, 0xcf); \
+        case 0xd0: return f(a, 0xd0); \
+        case 0xd1: return f(a, 0xd1); \
+        case 0xd2: return f(a, 0xd2); \
+        case 0xd3: return f(a, 0xd3); \
+        case 0xd4: return f(a, 0xd4); \
+        case 0xd5: return f(a, 0xd5); \
+        case 0xd6: return f(a, 0xd6); \
+        case 0xd7: return f(a, 0xd7); \
+        case 0xd8: return f(a, 0xd8); \
+        case 0xd9: return f(a, 0xd9); \
+        case 0xda: return f(a, 0xda); \
+        case 0xdb: return f(a, 0xdb); \
+        case 0xdc: return f(a, 0xdc); \
+        case 0xdd: return f(a, 0xdd); \
+        case 0xde: return f(a, 0xde); \
+        case 0xdf: return f(a, 0xdf); \
+        case 0xe0: return f(a, 0xe0); \
+        case 0xe1: return f(a, 0xe1); \
+        case 0xe2: return f(a, 0xe2); \
+        case 0xe3: return f(a, 0xe3); \
+        case 0xe4: return f(a, 0xe4); \
+        case 0xe5: return f(a, 0xe5); \
+        case 0xe6: return f(a, 0xe6); \
+        case 0xe7: return f(a, 0xe7); \
+        case 0xe8: return f(a, 0xe8); \
+        case 0xe9: return f(a, 0xe9); \
+        case 0xea: return f(a, 0xea); \
+        case 0xeb: return f(a, 0xeb); \
+        case 0xec: return f(a, 0xec); \
+        case 0xed: return f(a, 0xed); \
+        case 0xee: return f(a, 0xee); \
+        case 0xef: return f(a, 0xef); \
+        case 0xf0: return f(a, 0xf0); \
+        case 0xf1: return f(a, 0xf1); \
+        case 0xf2: return f(a, 0xf2); \
+        case 0xf3: return f(a, 0xf3); \
+        case 0xf4: return f(a, 0xf4); \
+        case 0xf5: return f(a, 0xf5); \
+        case 0xf6: return f(a, 0xf6); \
+        case 0xf7: return f(a, 0xf7); \
+        case 0xf8: return f(a, 0xf8); \
+        case 0xf9: return f(a, 0xf9); \
+        case 0xfa: return f(a, 0xfa); \
+        case 0xfb: return f(a, 0xfb); \
+        case 0xfc: return f(a, 0xfc); \
+        case 0xfd: return f(a, 0xfd); \
+        case 0xfe: return f(a, 0xfe); \
+        case 0xff: return f(a, 0xff); \
+    }
+
+#define CALL_2_WITH_IMM8(f, a, b) \
+    switch(order) { \
+        case 0x00: return f(a, b, 0x00); \
+        case 0x01: return f(a, b, 0x01); \
+        case 0x02: return f(a, b, 0x02); \
+        case 0x03: return f(a, b, 0x03); \
+        case 0x04: return f(a, b, 0x04); \
+        case 0x05: return f(a, b, 0x05); \
+        case 0x06: return f(a, b, 0x06); \
+        case 0x07: return f(a, b, 0x07); \
+        case 0x08: return f(a, b, 0x08); \
+        case 0x09: return f(a, b, 0x09); \
+        case 0x0a: return f(a, b, 0x0a); \
+        case 0x0b: return f(a, b, 0x0b); \
+        case 0x0c: return f(a, b, 0x0c); \
+        case 0x0d: return f(a, b, 0x0d); \
+        case 0x0e: return f(a, b, 0x0e); \
+        case 0x0f: return f(a, b, 0x0f); \
+        case 0x10: return f(a, b, 0x10); \
+        case 0x11: return f(a, b, 0x11); \
+        case 0x12: return f(a, b, 0x12); \
+        case 0x13: return f(a, b, 0x13); \
+        case 0x14: return f(a, b, 0x14); \
+        case 0x15: return f(a, b, 0x15); \
+        case 0x16: return f(a, b, 0x16); \
+        case 0x17: return f(a, b, 0x17); \
+        case 0x18: return f(a, b, 0x18); \
+        case 0x19: return f(a, b, 0x19); \
+        case 0x1a: return f(a, b, 0x1a); \
+        case 0x1b: return f(a, b, 0x1b); \
+        case 0x1c: return f(a, b, 0x1c); \
+        case 0x1d: return f(a, b, 0x1d); \
+        case 0x1e: return f(a, b, 0x1e); \
+        case 0x1f: return f(a, b, 0x1f); \
+        case 0x20: return f(a, b, 0x20); \
+        case 0x21: return f(a, b, 0x21); \
+        case 0x22: return f(a, b, 0x22); \
+        case 0x23: return f(a, b, 0x23); \
+        case 0x24: return f(a, b, 0x24); \
+        case 0x25: return f(a, b, 0x25); \
+        case 0x26: return f(a, b, 0x26); \
+        case 0x27: return f(a, b, 0x27); \
+        case 0x28: return f(a, b, 0x28); \
+        case 0x29: return f(a, b, 0x29); \
+        case 0x2a: return f(a, b, 0x2a); \
+        case 0x2b: return f(a, b, 0x2b); \
+        case 0x2c: return f(a, b, 0x2c); \
+        case 0x2d: return f(a, b, 0x2d); \
+        case 0x2e: return f(a, b, 0x2e); \
+        case 0x2f: return f(a, b, 0x2f); \
+        case 0x30: return f(a, b, 0x30); \
+        case 0x31: return f(a, b, 0x31); \
+        case 0x32: return f(a, b, 0x32); \
+        case 0x33: return f(a, b, 0x33); \
+        case 0x34: return f(a, b, 0x34); \
+        case 0x35: return f(a, b, 0x35); \
+        case 0x36: return f(a, b, 0x36); \
+        case 0x37: return f(a, b, 0x37); \
+        case 0x38: return f(a, b, 0x38); \
+        case 0x39: return f(a, b, 0x39); \
+        case 0x3a: return f(a, b, 0x3a); \
+        case 0x3b: return f(a, b, 0x3b); \
+        case 0x3c: return f(a, b, 0x3c); \
+        case 0x3d: return f(a, b, 0x3d); \
+        case 0x3e: return f(a, b, 0x3e); \
+        case 0x3f: return f(a, b, 0x3f); \
+        case 0x40: return f(a, b, 0x40); \
+        case 0x41: return f(a, b, 0x41); \
+        case 0x42: return f(a, b, 0x42); \
+        case 0x43: return f(a, b, 0x43); \
+        case 0x44: return f(a, b, 0x44); \
+        case 0x45: return f(a, b, 0x45); \
+        case 0x46: return f(a, b, 0x46); \
+        case 0x47: return f(a, b, 0x47); \
+        case 0x48: return f(a, b, 0x48); \
+        case 0x49: return f(a, b, 0x49); \
+        case 0x4a: return f(a, b, 0x4a); \
+        case 0x4b: return f(a, b, 0x4b); \
+        case 0x4c: return f(a, b, 0x4c); \
+        case 0x4d: return f(a, b, 0x4d); \
+        case 0x4e: return f(a, b, 0x4e); \
+        case 0x4f: return f(a, b, 0x4f); \
+        case 0x50: return f(a, b, 0x50); \
+        case 0x51: return f(a, b, 0x51); \
+        case 0x52: return f(a, b, 0x52); \
+        case 0x53: return f(a, b, 0x53); \
+        case 0x54: return f(a, b, 0x54); \
+        case 0x55: return f(a, b, 0x55); \
+        case 0x56: return f(a, b, 0x56); \
+        case 0x57: return f(a, b, 0x57); \
+        case 0x58: return f(a, b, 0x58); \
+        case 0x59: return f(a, b, 0x59); \
+        case 0x5a: return f(a, b, 0x5a); \
+        case 0x5b: return f(a, b, 0x5b); \
+        case 0x5c: return f(a, b, 0x5c); \
+        case 0x5d: return f(a, b, 0x5d); \
+        case 0x5e: return f(a, b, 0x5e); \
+        case 0x5f: return f(a, b, 0x5f); \
+        case 0x60: return f(a, b, 0x60); \
+        case 0x61: return f(a, b, 0x61); \
+        case 0x62: return f(a, b, 0x62); \
+        case 0x63: return f(a, b, 0x63); \
+        case 0x64: return f(a, b, 0x64); \
+        case 0x65: return f(a, b, 0x65); \
+        case 0x66: return f(a, b, 0x66); \
+        case 0x67: return f(a, b, 0x67); \
+        case 0x68: return f(a, b, 0x68); \
+        case 0x69: return f(a, b, 0x69); \
+        case 0x6a: return f(a, b, 0x6a); \
+        case 0x6b: return f(a, b, 0x6b); \
+        case 0x6c: return f(a, b, 0x6c); \
+        case 0x6d: return f(a, b, 0x6d); \
+        case 0x6e: return f(a, b, 0x6e); \
+        case 0x6f: return f(a, b, 0x6f); \
+        case 0x70: return f(a, b, 0x70); \
+        case 0x71: return f(a, b, 0x71); \
+        case 0x72: return f(a, b, 0x72); \
+        case 0x73: return f(a, b, 0x73); \
+        case 0x74: return f(a, b, 0x74); \
+        case 0x75: return f(a, b, 0x75); \
+        case 0x76: return f(a, b, 0x76); \
+        case 0x77: return f(a, b, 0x77); \
+        case 0x78: return f(a, b, 0x78); \
+        case 0x79: return f(a, b, 0x79); \
+        case 0x7a: return f(a, b, 0x7a); \
+        case 0x7b: return f(a, b, 0x7b); \
+        case 0x7c: return f(a, b, 0x7c); \
+        case 0x7d: return f(a, b, 0x7d); \
+        case 0x7e: return f(a, b, 0x7e); \
+        case 0x7f: return f(a, b, 0x7f); \
+        case 0x80: return f(a, b, 0x80); \
+        case 0x81: return f(a, b, 0x81); \
+        case 0x82: return f(a, b, 0x82); \
+        case 0x83: return f(a, b, 0x83); \
+        case 0x84: return f(a, b, 0x84); \
+        case 0x85: return f(a, b, 0x85); \
+        case 0x86: return f(a, b, 0x86); \
+        case 0x87: return f(a, b, 0x87); \
+        case 0x88: return f(a, b, 0x88); \
+        case 0x89: return f(a, b, 0x89); \
+        case 0x8a: return f(a, b, 0x8a); \
+        case 0x8b: return f(a, b, 0x8b); \
+        case 0x8c: return f(a, b, 0x8c); \
+        case 0x8d: return f(a, b, 0x8d); \
+        case 0x8e: return f(a, b, 0x8e); \
+        case 0x8f: return f(a, b, 0x8f); \
+        case 0x90: return f(a, b, 0x90); \
+        case 0x91: return f(a, b, 0x91); \
+        case 0x92: return f(a, b, 0x92); \
+        case 0x93: return f(a, b, 0x93); \
+        case 0x94: return f(a, b, 0x94); \
+        case 0x95: return f(a, b, 0x95); \
+        case 0x96: return f(a, b, 0x96); \
+        case 0x97: return f(a, b, 0x97); \
+        case 0x98: return f(a, b, 0x98); \
+        case 0x99: return f(a, b, 0x99); \
+        case 0x9a: return f(a, b, 0x9a); \
+        case 0x9b: return f(a, b, 0x9b); \
+        case 0x9c: return f(a, b, 0x9c); \
+        case 0x9d: return f(a, b, 0x9d); \
+        case 0x9e: return f(a, b, 0x9e); \
+        case 0x9f: return f(a, b, 0x9f); \
+        case 0xa0: return f(a, b, 0xa0); \
+        case 0xa1: return f(a, b, 0xa1); \
+        case 0xa2: return f(a, b, 0xa2); \
+        case 0xa3: return f(a, b, 0xa3); \
+        case 0xa4: return f(a, b, 0xa4); \
+        case 0xa5: return f(a, b, 0xa5); \
+        case 0xa6: return f(a, b, 0xa6); \
+        case 0xa7: return f(a, b, 0xa7); \
+        case 0xa8: return f(a, b, 0xa8); \
+        case 0xa9: return f(a, b, 0xa9); \
+        case 0xaa: return f(a, b, 0xaa); \
+        case 0xab: return f(a, b, 0xab); \
+        case 0xac: return f(a, b, 0xac); \
+        case 0xad: return f(a, b, 0xad); \
+        case 0xae: return f(a, b, 0xae); \
+        case 0xaf: return f(a, b, 0xaf); \
+        case 0xb0: return f(a, b, 0xb0); \
+        case 0xb1: return f(a, b, 0xb1); \
+        case 0xb2: return f(a, b, 0xb2); \
+        case 0xb3: return f(a, b, 0xb3); \
+        case 0xb4: return f(a, b, 0xb4); \
+        case 0xb5: return f(a, b, 0xb5); \
+        case 0xb6: return f(a, b, 0xb6); \
+        case 0xb7: return f(a, b, 0xb7); \
+        case 0xb8: return f(a, b, 0xb8); \
+        case 0xb9: return f(a, b, 0xb9); \
+        case 0xba: return f(a, b, 0xba); \
+        case 0xbb: return f(a, b, 0xbb); \
+        case 0xbc: return f(a, b, 0xbc); \
+        case 0xbd: return f(a, b, 0xbd); \
+        case 0xbe: return f(a, b, 0xbe); \
+        case 0xbf: return f(a, b, 0xbf); \
+        case 0xc0: return f(a, b, 0xc0); \
+        case 0xc1: return f(a, b, 0xc1); \
+        case 0xc2: return f(a, b, 0xc2); \
+        case 0xc3: return f(a, b, 0xc3); \
+        case 0xc4: return f(a, b, 0xc4); \
+        case 0xc5: return f(a, b, 0xc5); \
+        case 0xc6: return f(a, b, 0xc6); \
+        case 0xc7: return f(a, b, 0xc7); \
+        case 0xc8: return f(a, b, 0xc8); \
+        case 0xc9: return f(a, b, 0xc9); \
+        case 0xca: return f(a, b, 0xca); \
+        case 0xcb: return f(a, b, 0xcb); \
+        case 0xcc: return f(a, b, 0xcc); \
+        case 0xcd: return f(a, b, 0xcd); \
+        case 0xce: return f(a, b, 0xce); \
+        case 0xcf: return f(a, b, 0xcf); \
+        case 0xd0: return f(a, b, 0xd0); \
+        case 0xd1: return f(a, b, 0xd1); \
+        case 0xd2: return f(a, b, 0xd2); \
+        case 0xd3: return f(a, b, 0xd3); \
+        case 0xd4: return f(a, b, 0xd4); \
+        case 0xd5: return f(a, b, 0xd5); \
+        case 0xd6: return f(a, b, 0xd6); \
+        case 0xd7: return f(a, b, 0xd7); \
+        case 0xd8: return f(a, b, 0xd8); \
+        case 0xd9: return f(a, b, 0xd9); \
+        case 0xda: return f(a, b, 0xda); \
+        case 0xdb: return f(a, b, 0xdb); \
+        case 0xdc: return f(a, b, 0xdc); \
+        case 0xdd: return f(a, b, 0xdd); \
+        case 0xde: return f(a, b, 0xde); \
+        case 0xdf: return f(a, b, 0xdf); \
+        case 0xe0: return f(a, b, 0xe0); \
+        case 0xe1: return f(a, b, 0xe1); \
+        case 0xe2: return f(a, b, 0xe2); \
+        case 0xe3: return f(a, b, 0xe3); \
+        case 0xe4: return f(a, b, 0xe4); \
+        case 0xe5: return f(a, b, 0xe5); \
+        case 0xe6: return f(a, b, 0xe6); \
+        case 0xe7: return f(a, b, 0xe7); \
+        case 0xe8: return f(a, b, 0xe8); \
+        case 0xe9: return f(a, b, 0xe9); \
+        case 0xea: return f(a, b, 0xea); \
+        case 0xeb: return f(a, b, 0xeb); \
+        case 0xec: return f(a, b, 0xec); \
+        case 0xed: return f(a, b, 0xed); \
+        case 0xee: return f(a, b, 0xee); \
+        case 0xef: return f(a, b, 0xef); \
+        case 0xf0: return f(a, b, 0xf0); \
+        case 0xf1: return f(a, b, 0xf1); \
+        case 0xf2: return f(a, b, 0xf2); \
+        case 0xf3: return f(a, b, 0xf3); \
+        case 0xf4: return f(a, b, 0xf4); \
+        case 0xf5: return f(a, b, 0xf5); \
+        case 0xf6: return f(a, b, 0xf6); \
+        case 0xf7: return f(a, b, 0xf7); \
+        case 0xf8: return f(a, b, 0xf8); \
+        case 0xf9: return f(a, b, 0xf9); \
+        case 0xfa: return f(a, b, 0xfa); \
+        case 0xfb: return f(a, b, 0xfb); \
+        case 0xfc: return f(a, b, 0xfc); \
+        case 0xfd: return f(a, b, 0xfd); \
+        case 0xfe: return f(a, b, 0xfe); \
+        case 0xff: return f(a, b, 0xff); \
+    }
+
 namespace x64 {
     static Flags fromRflags(u64 rflags) {
         static constexpr u64 CARRY_MASK = 0x1;
@@ -414,23 +940,75 @@ namespace x64 {
     }
 
     std::pair<u8, u8> CheckedCpuImpl::div8(u8 dividendUpper, u8 dividendLower, u8 divisor) {
-        return CpuImpl::div8(dividendUpper, dividendLower, divisor);
+        auto virtualRes = CpuImpl::div8(dividendUpper, dividendLower, divisor);
+        (void)virtualRes;
+
+        u8 quotient;
+        u8 remainder;
+        asm volatile("mov %2, %%ah\n"
+                     "mov %3, %%al\n"
+                     "div %4\n"
+                     "mov %%ah, %0\n"
+                     "mov %%al, %1\n" : "=r"(remainder), "=r"(quotient)
+                                    : "r"(dividendUpper), "r"(dividendLower), "r"(divisor)
+                                    : "al", "ah");
+        assert(quotient == virtualRes.first);
+        assert(remainder == virtualRes.second);
+        return std::make_pair(quotient, remainder);
     }
 
     std::pair<u16, u16> CheckedCpuImpl::div16(u16 dividendUpper, u16 dividendLower, u16 divisor) {
-        return CpuImpl::div16(dividendUpper, dividendLower, divisor);
+        auto virtualRes = CpuImpl::div16(dividendUpper, dividendLower, divisor);
+        (void)virtualRes;
+
+        u16 quotient;
+        u16 remainder;
+        asm volatile("mov %2, %%dx\n"
+                     "mov %3, %%ax\n"
+                     "div %4\n"
+                     "mov %%dx, %0\n"
+                     "mov %%ax, %1\n" : "=r"(remainder), "=r"(quotient)
+                                    : "r"(dividendUpper), "r"(dividendLower), "r"(divisor)
+                                    : "ax", "dx");
+        assert(quotient == virtualRes.first);
+        assert(remainder == virtualRes.second);
+        return std::make_pair(quotient, remainder);
     }
 
     std::pair<u32, u32> CheckedCpuImpl::div32(u32 dividendUpper, u32 dividendLower, u32 divisor) {
-        assert(divisor != 0);
-        u64 dividend = ((u64)dividendUpper) << 32 | (u64)dividendLower;
-        u64 tmp = dividend / divisor;
-        assert(tmp >> 32 == 0);
-        return std::make_pair(tmp, dividend % divisor);
+        auto virtualRes = CpuImpl::div32(dividendUpper, dividendLower, divisor);
+        (void)virtualRes;
+
+        u32 quotient;
+        u32 remainder;
+        asm volatile("mov %2, %%edx\n"
+                     "mov %3, %%eax\n"
+                     "div %4\n"
+                     "mov %%edx, %0\n"
+                     "mov %%eax, %1\n" : "=r"(remainder), "=r"(quotient)
+                                    : "r"(dividendUpper), "r"(dividendLower), "r"(divisor)
+                                    : "eax", "edx");
+        assert(quotient == virtualRes.first);
+        assert(remainder == virtualRes.second);
+        return std::make_pair(quotient, remainder);
     }
 
     std::pair<u64, u64> CheckedCpuImpl::div64(u64 dividendUpper, u64 dividendLower, u64 divisor) {
-        return CpuImpl::div64(dividendUpper, dividendLower, divisor);
+        auto virtualRes = CpuImpl::div64(dividendUpper, dividendLower, divisor);
+        (void)virtualRes;
+
+        u64 quotient;
+        u64 remainder;
+        asm volatile("mov %2, %%rdx\n"
+                     "mov %3, %%rax\n"
+                     "div %4\n"
+                     "mov %%rdx, %0\n"
+                     "mov %%rax, %1\n" : "=r"(remainder), "=r"(quotient)
+                                    : "r"(dividendUpper), "r"(dividendLower), "r"(divisor)
+                                    : "rax", "rdx");
+        assert(quotient == virtualRes.first);
+        assert(remainder == virtualRes.second);
+        return std::make_pair(quotient, remainder);
     }
 
     template<typename U, typename And>
@@ -639,6 +1217,7 @@ namespace x64 {
 
     template<typename U>
     static U shld(U dst, U src, u8 count, Flags* flags) {
+        // NON_CHECKED
         u8 size = 8*sizeof(U);
         count = count % size;
         if(count == 0) return dst;
@@ -659,6 +1238,7 @@ namespace x64 {
 
     template<typename U>
     static U shrd(U dst, U src, u8 count, Flags* flags) {
+        // NON_CHECKED
         u8 size = 8*sizeof(U);
         count = count % size;
         if(count == 0) return dst;
@@ -1608,19 +2188,203 @@ namespace x64 {
     }
 
     u128 CheckedCpuImpl::cmpss(u128 dst, u128 src, FCond cond) {
-        return CpuImpl::cmpss(dst, src, cond);
+        u128 virtualRes = CpuImpl::cmpss(dst, src, cond);
+
+        __m128 d;
+        __m128 s;
+        static_assert(sizeof(d) == sizeof(dst));
+        memcpy(&d, &dst, sizeof(dst));
+        memcpy(&s, &src, sizeof(src));
+        __m128 r;
+        switch(cond) {
+            case FCond::EQ: {
+                r = _mm_cmpeq_ss(d, s);
+                break;
+            }
+            case FCond::LT: {
+                r = _mm_cmplt_ss(d, s);
+                break;
+            }
+            case FCond::LE: {
+                r = _mm_cmple_ss(d, s);
+                break;
+            }
+            case FCond::UNORD: {
+                r = _mm_cmpunord_ss(d, s);
+                break;
+            }
+            case FCond::NEQ: {
+                r = _mm_cmpneq_ss(d, s);
+                break;
+            }
+            case FCond::NLT: {
+                r = _mm_cmpnlt_ss(d, s);
+                break;
+            }
+            case FCond::NLE: {
+                r = _mm_cmpnle_ss(d, s);
+                break;
+            }
+            case FCond::ORD: {
+                r = _mm_cmpord_ss(d, s);
+                break;
+            }
+        }
+        u128 nativeRes;
+        memcpy(&nativeRes, &r, sizeof(nativeRes));
+        assert(virtualRes.lo == nativeRes.lo);
+        assert(virtualRes.hi == nativeRes.hi);
+        return nativeRes;
     }
 
     u128 CheckedCpuImpl::cmpsd(u128 dst, u128 src, FCond cond) {
-        return CpuImpl::cmpsd(dst, src, cond);
+        u128 virtualRes = CpuImpl::cmpsd(dst, src, cond);
+
+        __m128d d;
+        __m128d s;
+        static_assert(sizeof(d) == sizeof(dst));
+        memcpy(&d, &dst, sizeof(dst));
+        memcpy(&s, &src, sizeof(src));
+        __m128d r;
+        switch(cond) {
+            case FCond::EQ: {
+                r = _mm_cmpeq_sd(d, s);
+                break;
+            }
+            case FCond::LT: {
+                r = _mm_cmplt_sd(d, s);
+                break;
+            }
+            case FCond::LE: {
+                r = _mm_cmple_sd(d, s);
+                break;
+            }
+            case FCond::UNORD: {
+                r = _mm_cmpunord_sd(d, s);
+                break;
+            }
+            case FCond::NEQ: {
+                r = _mm_cmpneq_sd(d, s);
+                break;
+            }
+            case FCond::NLT: {
+                r = _mm_cmpnlt_sd(d, s);
+                break;
+            }
+            case FCond::NLE: {
+                r = _mm_cmpnle_sd(d, s);
+                break;
+            }
+            case FCond::ORD: {
+                r = _mm_cmpord_sd(d, s);
+                break;
+            }
+        }
+        u128 nativeRes;
+        memcpy(&nativeRes, &r, sizeof(nativeRes));
+        assert(virtualRes.lo == nativeRes.lo);
+        assert(virtualRes.hi == nativeRes.hi);
+        return nativeRes;
     }
 
     u128 CheckedCpuImpl::cmpps(u128 dst, u128 src, FCond cond) {
-        return CpuImpl::cmpps(dst, src, cond);
+        u128 virtualRes = CpuImpl::cmpps(dst, src, cond);
+
+        __m128 d;
+        __m128 s;
+        static_assert(sizeof(d) == sizeof(dst));
+        memcpy(&d, &dst, sizeof(dst));
+        memcpy(&s, &src, sizeof(src));
+        __m128 r;
+        switch(cond) {
+            case FCond::EQ: {
+                r = _mm_cmpeq_ps(d, s);
+                break;
+            }
+            case FCond::LT: {
+                r = _mm_cmplt_ps(d, s);
+                break;
+            }
+            case FCond::LE: {
+                r = _mm_cmple_ps(d, s);
+                break;
+            }
+            case FCond::UNORD: {
+                r = _mm_cmpunord_ps(d, s);
+                break;
+            }
+            case FCond::NEQ: {
+                r = _mm_cmpneq_ps(d, s);
+                break;
+            }
+            case FCond::NLT: {
+                r = _mm_cmpnlt_ps(d, s);
+                break;
+            }
+            case FCond::NLE: {
+                r = _mm_cmpnle_ps(d, s);
+                break;
+            }
+            case FCond::ORD: {
+                r = _mm_cmpord_ps(d, s);
+                break;
+            }
+        }
+        u128 nativeRes;
+        memcpy(&nativeRes, &r, sizeof(nativeRes));
+        assert(virtualRes.lo == nativeRes.lo);
+        assert(virtualRes.hi == nativeRes.hi);
+        return nativeRes;
     }
 
     u128 CheckedCpuImpl::cmppd(u128 dst, u128 src, FCond cond) {
-        return CpuImpl::cmppd(dst, src, cond);
+        u128 virtualRes = CpuImpl::cmppd(dst, src, cond);
+
+        __m128d d;
+        __m128d s;
+        static_assert(sizeof(d) == sizeof(dst));
+        memcpy(&d, &dst, sizeof(dst));
+        memcpy(&s, &src, sizeof(src));
+        __m128d r;
+        switch(cond) {
+            case FCond::EQ: {
+                r = _mm_cmpeq_pd(d, s);
+                break;
+            }
+            case FCond::LT: {
+                r = _mm_cmplt_pd(d, s);
+                break;
+            }
+            case FCond::LE: {
+                r = _mm_cmple_pd(d, s);
+                break;
+            }
+            case FCond::UNORD: {
+                r = _mm_cmpunord_pd(d, s);
+                break;
+            }
+            case FCond::NEQ: {
+                r = _mm_cmpneq_pd(d, s);
+                break;
+            }
+            case FCond::NLT: {
+                r = _mm_cmpnlt_pd(d, s);
+                break;
+            }
+            case FCond::NLE: {
+                r = _mm_cmpnle_pd(d, s);
+                break;
+            }
+            case FCond::ORD: {
+                r = _mm_cmpord_pd(d, s);
+                break;
+            }
+        }
+        u128 nativeRes;
+        memcpy(&nativeRes, &r, sizeof(nativeRes));
+        assert(virtualRes.lo == nativeRes.lo);
+        assert(virtualRes.hi == nativeRes.hi);
+        return nativeRes;
     }
 
     u128 CheckedCpuImpl::cvtsi2ss32(u128 dst, u32 src) {
@@ -1852,266 +2616,9 @@ namespace x64 {
         __m128 b;
         std::memcpy(&a, &dst, sizeof(dst));
         std::memcpy(&b, &src, sizeof(src));
-        __m128 res = [&]() {
-            if(order == 0x00) return _mm_shuffle_ps(a, b, 0x00);
-            if(order == 0x01) return _mm_shuffle_ps(a, b, 0x01);
-            if(order == 0x02) return _mm_shuffle_ps(a, b, 0x02);
-            if(order == 0x03) return _mm_shuffle_ps(a, b, 0x03);
-            if(order == 0x04) return _mm_shuffle_ps(a, b, 0x04);
-            if(order == 0x05) return _mm_shuffle_ps(a, b, 0x05);
-            if(order == 0x06) return _mm_shuffle_ps(a, b, 0x06);
-            if(order == 0x07) return _mm_shuffle_ps(a, b, 0x07);
-            if(order == 0x08) return _mm_shuffle_ps(a, b, 0x08);
-            if(order == 0x09) return _mm_shuffle_ps(a, b, 0x09);
-            if(order == 0x0a) return _mm_shuffle_ps(a, b, 0x0a);
-            if(order == 0x0b) return _mm_shuffle_ps(a, b, 0x0b);
-            if(order == 0x0c) return _mm_shuffle_ps(a, b, 0x0c);
-            if(order == 0x0d) return _mm_shuffle_ps(a, b, 0x0d);
-            if(order == 0x0e) return _mm_shuffle_ps(a, b, 0x0e);
-            if(order == 0x0f) return _mm_shuffle_ps(a, b, 0x0f);
-            if(order == 0x10) return _mm_shuffle_ps(a, b, 0x10);
-            if(order == 0x11) return _mm_shuffle_ps(a, b, 0x11);
-            if(order == 0x12) return _mm_shuffle_ps(a, b, 0x12);
-            if(order == 0x13) return _mm_shuffle_ps(a, b, 0x13);
-            if(order == 0x14) return _mm_shuffle_ps(a, b, 0x14);
-            if(order == 0x15) return _mm_shuffle_ps(a, b, 0x15);
-            if(order == 0x16) return _mm_shuffle_ps(a, b, 0x16);
-            if(order == 0x17) return _mm_shuffle_ps(a, b, 0x17);
-            if(order == 0x18) return _mm_shuffle_ps(a, b, 0x18);
-            if(order == 0x19) return _mm_shuffle_ps(a, b, 0x19);
-            if(order == 0x1a) return _mm_shuffle_ps(a, b, 0x1a);
-            if(order == 0x1b) return _mm_shuffle_ps(a, b, 0x1b);
-            if(order == 0x1c) return _mm_shuffle_ps(a, b, 0x1c);
-            if(order == 0x1d) return _mm_shuffle_ps(a, b, 0x1d);
-            if(order == 0x1e) return _mm_shuffle_ps(a, b, 0x1e);
-            if(order == 0x1f) return _mm_shuffle_ps(a, b, 0x1f);
-            if(order == 0x20) return _mm_shuffle_ps(a, b, 0x20);
-            if(order == 0x21) return _mm_shuffle_ps(a, b, 0x21);
-            if(order == 0x22) return _mm_shuffle_ps(a, b, 0x22);
-            if(order == 0x23) return _mm_shuffle_ps(a, b, 0x23);
-            if(order == 0x24) return _mm_shuffle_ps(a, b, 0x24);
-            if(order == 0x25) return _mm_shuffle_ps(a, b, 0x25);
-            if(order == 0x26) return _mm_shuffle_ps(a, b, 0x26);
-            if(order == 0x27) return _mm_shuffle_ps(a, b, 0x27);
-            if(order == 0x28) return _mm_shuffle_ps(a, b, 0x28);
-            if(order == 0x29) return _mm_shuffle_ps(a, b, 0x29);
-            if(order == 0x2a) return _mm_shuffle_ps(a, b, 0x2a);
-            if(order == 0x2b) return _mm_shuffle_ps(a, b, 0x2b);
-            if(order == 0x2c) return _mm_shuffle_ps(a, b, 0x2c);
-            if(order == 0x2d) return _mm_shuffle_ps(a, b, 0x2d);
-            if(order == 0x2e) return _mm_shuffle_ps(a, b, 0x2e);
-            if(order == 0x2f) return _mm_shuffle_ps(a, b, 0x2f);
-            if(order == 0x30) return _mm_shuffle_ps(a, b, 0x30);
-            if(order == 0x31) return _mm_shuffle_ps(a, b, 0x31);
-            if(order == 0x32) return _mm_shuffle_ps(a, b, 0x32);
-            if(order == 0x33) return _mm_shuffle_ps(a, b, 0x33);
-            if(order == 0x34) return _mm_shuffle_ps(a, b, 0x34);
-            if(order == 0x35) return _mm_shuffle_ps(a, b, 0x35);
-            if(order == 0x36) return _mm_shuffle_ps(a, b, 0x36);
-            if(order == 0x37) return _mm_shuffle_ps(a, b, 0x37);
-            if(order == 0x38) return _mm_shuffle_ps(a, b, 0x38);
-            if(order == 0x39) return _mm_shuffle_ps(a, b, 0x39);
-            if(order == 0x3a) return _mm_shuffle_ps(a, b, 0x3a);
-            if(order == 0x3b) return _mm_shuffle_ps(a, b, 0x3b);
-            if(order == 0x3c) return _mm_shuffle_ps(a, b, 0x3c);
-            if(order == 0x3d) return _mm_shuffle_ps(a, b, 0x3d);
-            if(order == 0x3e) return _mm_shuffle_ps(a, b, 0x3e);
-            if(order == 0x3f) return _mm_shuffle_ps(a, b, 0x3f);
-            if(order == 0x40) return _mm_shuffle_ps(a, b, 0x40);
-            if(order == 0x41) return _mm_shuffle_ps(a, b, 0x41);
-            if(order == 0x42) return _mm_shuffle_ps(a, b, 0x42);
-            if(order == 0x43) return _mm_shuffle_ps(a, b, 0x43);
-            if(order == 0x44) return _mm_shuffle_ps(a, b, 0x44);
-            if(order == 0x45) return _mm_shuffle_ps(a, b, 0x45);
-            if(order == 0x46) return _mm_shuffle_ps(a, b, 0x46);
-            if(order == 0x47) return _mm_shuffle_ps(a, b, 0x47);
-            if(order == 0x48) return _mm_shuffle_ps(a, b, 0x48);
-            if(order == 0x49) return _mm_shuffle_ps(a, b, 0x49);
-            if(order == 0x4a) return _mm_shuffle_ps(a, b, 0x4a);
-            if(order == 0x4b) return _mm_shuffle_ps(a, b, 0x4b);
-            if(order == 0x4c) return _mm_shuffle_ps(a, b, 0x4c);
-            if(order == 0x4d) return _mm_shuffle_ps(a, b, 0x4d);
-            if(order == 0x4e) return _mm_shuffle_ps(a, b, 0x4e);
-            if(order == 0x4f) return _mm_shuffle_ps(a, b, 0x4f);
-            if(order == 0x50) return _mm_shuffle_ps(a, b, 0x50);
-            if(order == 0x51) return _mm_shuffle_ps(a, b, 0x51);
-            if(order == 0x52) return _mm_shuffle_ps(a, b, 0x52);
-            if(order == 0x53) return _mm_shuffle_ps(a, b, 0x53);
-            if(order == 0x54) return _mm_shuffle_ps(a, b, 0x54);
-            if(order == 0x55) return _mm_shuffle_ps(a, b, 0x55);
-            if(order == 0x56) return _mm_shuffle_ps(a, b, 0x56);
-            if(order == 0x57) return _mm_shuffle_ps(a, b, 0x57);
-            if(order == 0x58) return _mm_shuffle_ps(a, b, 0x58);
-            if(order == 0x59) return _mm_shuffle_ps(a, b, 0x59);
-            if(order == 0x5a) return _mm_shuffle_ps(a, b, 0x5a);
-            if(order == 0x5b) return _mm_shuffle_ps(a, b, 0x5b);
-            if(order == 0x5c) return _mm_shuffle_ps(a, b, 0x5c);
-            if(order == 0x5d) return _mm_shuffle_ps(a, b, 0x5d);
-            if(order == 0x5e) return _mm_shuffle_ps(a, b, 0x5e);
-            if(order == 0x5f) return _mm_shuffle_ps(a, b, 0x5f);
-            if(order == 0x60) return _mm_shuffle_ps(a, b, 0x60);
-            if(order == 0x61) return _mm_shuffle_ps(a, b, 0x61);
-            if(order == 0x62) return _mm_shuffle_ps(a, b, 0x62);
-            if(order == 0x63) return _mm_shuffle_ps(a, b, 0x63);
-            if(order == 0x64) return _mm_shuffle_ps(a, b, 0x64);
-            if(order == 0x65) return _mm_shuffle_ps(a, b, 0x65);
-            if(order == 0x66) return _mm_shuffle_ps(a, b, 0x66);
-            if(order == 0x67) return _mm_shuffle_ps(a, b, 0x67);
-            if(order == 0x68) return _mm_shuffle_ps(a, b, 0x68);
-            if(order == 0x69) return _mm_shuffle_ps(a, b, 0x69);
-            if(order == 0x6a) return _mm_shuffle_ps(a, b, 0x6a);
-            if(order == 0x6b) return _mm_shuffle_ps(a, b, 0x6b);
-            if(order == 0x6c) return _mm_shuffle_ps(a, b, 0x6c);
-            if(order == 0x6d) return _mm_shuffle_ps(a, b, 0x6d);
-            if(order == 0x6e) return _mm_shuffle_ps(a, b, 0x6e);
-            if(order == 0x6f) return _mm_shuffle_ps(a, b, 0x6f);
-            if(order == 0x70) return _mm_shuffle_ps(a, b, 0x70);
-            if(order == 0x71) return _mm_shuffle_ps(a, b, 0x71);
-            if(order == 0x72) return _mm_shuffle_ps(a, b, 0x72);
-            if(order == 0x73) return _mm_shuffle_ps(a, b, 0x73);
-            if(order == 0x74) return _mm_shuffle_ps(a, b, 0x74);
-            if(order == 0x75) return _mm_shuffle_ps(a, b, 0x75);
-            if(order == 0x76) return _mm_shuffle_ps(a, b, 0x76);
-            if(order == 0x77) return _mm_shuffle_ps(a, b, 0x77);
-            if(order == 0x78) return _mm_shuffle_ps(a, b, 0x78);
-            if(order == 0x79) return _mm_shuffle_ps(a, b, 0x79);
-            if(order == 0x7a) return _mm_shuffle_ps(a, b, 0x7a);
-            if(order == 0x7b) return _mm_shuffle_ps(a, b, 0x7b);
-            if(order == 0x7c) return _mm_shuffle_ps(a, b, 0x7c);
-            if(order == 0x7d) return _mm_shuffle_ps(a, b, 0x7d);
-            if(order == 0x7e) return _mm_shuffle_ps(a, b, 0x7e);
-            if(order == 0x7f) return _mm_shuffle_ps(a, b, 0x7f);
-            if(order == 0x80) return _mm_shuffle_ps(a, b, 0x80);
-            if(order == 0x81) return _mm_shuffle_ps(a, b, 0x81);
-            if(order == 0x82) return _mm_shuffle_ps(a, b, 0x82);
-            if(order == 0x83) return _mm_shuffle_ps(a, b, 0x83);
-            if(order == 0x84) return _mm_shuffle_ps(a, b, 0x84);
-            if(order == 0x85) return _mm_shuffle_ps(a, b, 0x85);
-            if(order == 0x86) return _mm_shuffle_ps(a, b, 0x86);
-            if(order == 0x87) return _mm_shuffle_ps(a, b, 0x87);
-            if(order == 0x88) return _mm_shuffle_ps(a, b, 0x88);
-            if(order == 0x89) return _mm_shuffle_ps(a, b, 0x89);
-            if(order == 0x8a) return _mm_shuffle_ps(a, b, 0x8a);
-            if(order == 0x8b) return _mm_shuffle_ps(a, b, 0x8b);
-            if(order == 0x8c) return _mm_shuffle_ps(a, b, 0x8c);
-            if(order == 0x8d) return _mm_shuffle_ps(a, b, 0x8d);
-            if(order == 0x8e) return _mm_shuffle_ps(a, b, 0x8e);
-            if(order == 0x8f) return _mm_shuffle_ps(a, b, 0x8f);
-            if(order == 0x90) return _mm_shuffle_ps(a, b, 0x90);
-            if(order == 0x91) return _mm_shuffle_ps(a, b, 0x91);
-            if(order == 0x92) return _mm_shuffle_ps(a, b, 0x92);
-            if(order == 0x93) return _mm_shuffle_ps(a, b, 0x93);
-            if(order == 0x94) return _mm_shuffle_ps(a, b, 0x94);
-            if(order == 0x95) return _mm_shuffle_ps(a, b, 0x95);
-            if(order == 0x96) return _mm_shuffle_ps(a, b, 0x96);
-            if(order == 0x97) return _mm_shuffle_ps(a, b, 0x97);
-            if(order == 0x98) return _mm_shuffle_ps(a, b, 0x98);
-            if(order == 0x99) return _mm_shuffle_ps(a, b, 0x99);
-            if(order == 0x9a) return _mm_shuffle_ps(a, b, 0x9a);
-            if(order == 0x9b) return _mm_shuffle_ps(a, b, 0x9b);
-            if(order == 0x9c) return _mm_shuffle_ps(a, b, 0x9c);
-            if(order == 0x9d) return _mm_shuffle_ps(a, b, 0x9d);
-            if(order == 0x9e) return _mm_shuffle_ps(a, b, 0x9e);
-            if(order == 0x9f) return _mm_shuffle_ps(a, b, 0x9f);
-            if(order == 0xa0) return _mm_shuffle_ps(a, b, 0xa0);
-            if(order == 0xa1) return _mm_shuffle_ps(a, b, 0xa1);
-            if(order == 0xa2) return _mm_shuffle_ps(a, b, 0xa2);
-            if(order == 0xa3) return _mm_shuffle_ps(a, b, 0xa3);
-            if(order == 0xa4) return _mm_shuffle_ps(a, b, 0xa4);
-            if(order == 0xa5) return _mm_shuffle_ps(a, b, 0xa5);
-            if(order == 0xa6) return _mm_shuffle_ps(a, b, 0xa6);
-            if(order == 0xa7) return _mm_shuffle_ps(a, b, 0xa7);
-            if(order == 0xa8) return _mm_shuffle_ps(a, b, 0xa8);
-            if(order == 0xa9) return _mm_shuffle_ps(a, b, 0xa9);
-            if(order == 0xaa) return _mm_shuffle_ps(a, b, 0xaa);
-            if(order == 0xab) return _mm_shuffle_ps(a, b, 0xab);
-            if(order == 0xac) return _mm_shuffle_ps(a, b, 0xac);
-            if(order == 0xad) return _mm_shuffle_ps(a, b, 0xad);
-            if(order == 0xae) return _mm_shuffle_ps(a, b, 0xae);
-            if(order == 0xaf) return _mm_shuffle_ps(a, b, 0xaf);
-            if(order == 0xb0) return _mm_shuffle_ps(a, b, 0xb0);
-            if(order == 0xb1) return _mm_shuffle_ps(a, b, 0xb1);
-            if(order == 0xb2) return _mm_shuffle_ps(a, b, 0xb2);
-            if(order == 0xb3) return _mm_shuffle_ps(a, b, 0xb3);
-            if(order == 0xb4) return _mm_shuffle_ps(a, b, 0xb4);
-            if(order == 0xb5) return _mm_shuffle_ps(a, b, 0xb5);
-            if(order == 0xb6) return _mm_shuffle_ps(a, b, 0xb6);
-            if(order == 0xb7) return _mm_shuffle_ps(a, b, 0xb7);
-            if(order == 0xb8) return _mm_shuffle_ps(a, b, 0xb8);
-            if(order == 0xb9) return _mm_shuffle_ps(a, b, 0xb9);
-            if(order == 0xba) return _mm_shuffle_ps(a, b, 0xba);
-            if(order == 0xbb) return _mm_shuffle_ps(a, b, 0xbb);
-            if(order == 0xbc) return _mm_shuffle_ps(a, b, 0xbc);
-            if(order == 0xbd) return _mm_shuffle_ps(a, b, 0xbd);
-            if(order == 0xbe) return _mm_shuffle_ps(a, b, 0xbe);
-            if(order == 0xbf) return _mm_shuffle_ps(a, b, 0xbf);
-            if(order == 0xc0) return _mm_shuffle_ps(a, b, 0xc0);
-            if(order == 0xc1) return _mm_shuffle_ps(a, b, 0xc1);
-            if(order == 0xc2) return _mm_shuffle_ps(a, b, 0xc2);
-            if(order == 0xc3) return _mm_shuffle_ps(a, b, 0xc3);
-            if(order == 0xc4) return _mm_shuffle_ps(a, b, 0xc4);
-            if(order == 0xc5) return _mm_shuffle_ps(a, b, 0xc5);
-            if(order == 0xc6) return _mm_shuffle_ps(a, b, 0xc6);
-            if(order == 0xc7) return _mm_shuffle_ps(a, b, 0xc7);
-            if(order == 0xc8) return _mm_shuffle_ps(a, b, 0xc8);
-            if(order == 0xc9) return _mm_shuffle_ps(a, b, 0xc9);
-            if(order == 0xca) return _mm_shuffle_ps(a, b, 0xca);
-            if(order == 0xcb) return _mm_shuffle_ps(a, b, 0xcb);
-            if(order == 0xcc) return _mm_shuffle_ps(a, b, 0xcc);
-            if(order == 0xcd) return _mm_shuffle_ps(a, b, 0xcd);
-            if(order == 0xce) return _mm_shuffle_ps(a, b, 0xce);
-            if(order == 0xcf) return _mm_shuffle_ps(a, b, 0xcf);
-            if(order == 0xd0) return _mm_shuffle_ps(a, b, 0xd0);
-            if(order == 0xd1) return _mm_shuffle_ps(a, b, 0xd1);
-            if(order == 0xd2) return _mm_shuffle_ps(a, b, 0xd2);
-            if(order == 0xd3) return _mm_shuffle_ps(a, b, 0xd3);
-            if(order == 0xd4) return _mm_shuffle_ps(a, b, 0xd4);
-            if(order == 0xd5) return _mm_shuffle_ps(a, b, 0xd5);
-            if(order == 0xd6) return _mm_shuffle_ps(a, b, 0xd6);
-            if(order == 0xd7) return _mm_shuffle_ps(a, b, 0xd7);
-            if(order == 0xd8) return _mm_shuffle_ps(a, b, 0xd8);
-            if(order == 0xd9) return _mm_shuffle_ps(a, b, 0xd9);
-            if(order == 0xda) return _mm_shuffle_ps(a, b, 0xda);
-            if(order == 0xdb) return _mm_shuffle_ps(a, b, 0xdb);
-            if(order == 0xdc) return _mm_shuffle_ps(a, b, 0xdc);
-            if(order == 0xdd) return _mm_shuffle_ps(a, b, 0xdd);
-            if(order == 0xde) return _mm_shuffle_ps(a, b, 0xde);
-            if(order == 0xdf) return _mm_shuffle_ps(a, b, 0xdf);
-            if(order == 0xe0) return _mm_shuffle_ps(a, b, 0xe0);
-            if(order == 0xe1) return _mm_shuffle_ps(a, b, 0xe1);
-            if(order == 0xe2) return _mm_shuffle_ps(a, b, 0xe2);
-            if(order == 0xe3) return _mm_shuffle_ps(a, b, 0xe3);
-            if(order == 0xe4) return _mm_shuffle_ps(a, b, 0xe4);
-            if(order == 0xe5) return _mm_shuffle_ps(a, b, 0xe5);
-            if(order == 0xe6) return _mm_shuffle_ps(a, b, 0xe6);
-            if(order == 0xe7) return _mm_shuffle_ps(a, b, 0xe7);
-            if(order == 0xe8) return _mm_shuffle_ps(a, b, 0xe8);
-            if(order == 0xe9) return _mm_shuffle_ps(a, b, 0xe9);
-            if(order == 0xea) return _mm_shuffle_ps(a, b, 0xea);
-            if(order == 0xeb) return _mm_shuffle_ps(a, b, 0xeb);
-            if(order == 0xec) return _mm_shuffle_ps(a, b, 0xec);
-            if(order == 0xed) return _mm_shuffle_ps(a, b, 0xed);
-            if(order == 0xee) return _mm_shuffle_ps(a, b, 0xee);
-            if(order == 0xef) return _mm_shuffle_ps(a, b, 0xef);
-            if(order == 0xf0) return _mm_shuffle_ps(a, b, 0xf0);
-            if(order == 0xf1) return _mm_shuffle_ps(a, b, 0xf1);
-            if(order == 0xf2) return _mm_shuffle_ps(a, b, 0xf2);
-            if(order == 0xf3) return _mm_shuffle_ps(a, b, 0xf3);
-            if(order == 0xf4) return _mm_shuffle_ps(a, b, 0xf4);
-            if(order == 0xf5) return _mm_shuffle_ps(a, b, 0xf5);
-            if(order == 0xf6) return _mm_shuffle_ps(a, b, 0xf6);
-            if(order == 0xf7) return _mm_shuffle_ps(a, b, 0xf7);
-            if(order == 0xf8) return _mm_shuffle_ps(a, b, 0xf8);
-            if(order == 0xf9) return _mm_shuffle_ps(a, b, 0xf9);
-            if(order == 0xfa) return _mm_shuffle_ps(a, b, 0xfa);
-            if(order == 0xfb) return _mm_shuffle_ps(a, b, 0xfb);
-            if(order == 0xfc) return _mm_shuffle_ps(a, b, 0xfc);
-            if(order == 0xfd) return _mm_shuffle_ps(a, b, 0xfd);
-            if(order == 0xfe) return _mm_shuffle_ps(a, b, 0xfe);
-            if(order == 0xff) return _mm_shuffle_ps(a, b, 0xff);
-            throw std::logic_error{"unimplemented case in shufps"};
-            return a; // dummy value
-        }();
+        __m128 res = [=](__m128 a, __m128 b) {
+            CALL_2_WITH_IMM8(_mm_shuffle_ps, a, b);
+        }(a, b);
         u128 nativeRes;
         std::memcpy(&nativeRes, &res, sizeof(nativeRes));
 
@@ -2296,29 +2803,72 @@ namespace x64 {
     }
 
     u128 CheckedCpuImpl::pshuflw(u128 src, u8 order) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::pshuflw(src, order);
+        (void)virtualRes;
+
+        auto native = [=](__m128i s) -> __m128i {
+            CALL_1_WITH_IMM8(_mm_shufflelo_epi16, s);
+        };
+
+        __m128i s;
+        static_assert(sizeof(s) == sizeof(src));
+        memcpy(&s, &src, sizeof(src));
+        __m128i r = native(s);
+        u128 nativeRes;
+        memcpy(&nativeRes, &r, sizeof(r));
+        assert(nativeRes.lo == virtualRes.lo);
+        assert(nativeRes.hi == virtualRes.hi);
+
+        return nativeRes;
+#else
         return CpuImpl::pshuflw(src, order);
+#endif
     }
 
     u128 CheckedCpuImpl::pshufhw(u128 src, u8 order) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::pshufhw(src, order);
+        (void)virtualRes;
+
+        auto native = [=](__m128i s) -> __m128i {
+            CALL_1_WITH_IMM8(_mm_shufflehi_epi16, s);
+        };
+
+        __m128i s;
+        static_assert(sizeof(s) == sizeof(src));
+        memcpy(&s, &src, sizeof(src));
+        __m128i r = native(s);
+        u128 nativeRes;
+        memcpy(&nativeRes, &r, sizeof(r));
+        assert(nativeRes.lo == virtualRes.lo);
+        assert(nativeRes.hi == virtualRes.hi);
+
+        return nativeRes;
+#else
         return CpuImpl::pshufhw(src, order);
+#endif
     }
 
     u128 CheckedCpuImpl::pshufd(u128 src, u8 order) {
 #if GCC_COMPILER
-        std::array<u32, 4> SRC;
-        static_assert(sizeof(SRC) == sizeof(u128));
-        std::memcpy(SRC.data(), &src, sizeof(u128));
+        u128 virtualRes = CpuImpl::pshufd(src, order);
+        (void)virtualRes;
 
-        std::array<u32, 4> DST;
-        static_assert(sizeof(DST) == sizeof(u128));
-        DST[0] = SRC[(order >> 0) & 0x3];
-        DST[1] = SRC[(order >> 2) & 0x3];
-        DST[2] = SRC[(order >> 4) & 0x3];
-        DST[3] = SRC[(order >> 6) & 0x3];
+        auto native = [=](__m128i s) -> __m128i {
+            CALL_1_WITH_IMM8(_mm_shuffle_epi32, s);
+        };
 
-        u128 dst;
-        std::memcpy(&dst, DST.data(), sizeof(u128));
-        return dst;
+        __m128i s;
+        static_assert(sizeof(s) == sizeof(src));
+        memcpy(&s, &src, sizeof(src));
+        __m128i r = native(s);
+        u128 nativeRes;
+        memcpy(&nativeRes, &r, sizeof(r));
+        assert(nativeRes.lo == virtualRes.lo);
+        assert(nativeRes.hi == virtualRes.hi);
+
+        return nativeRes;
 #else
         return CpuImpl::pshufd(src, order);
 #endif
@@ -2576,16 +3126,47 @@ namespace x64 {
 
     template<typename I>
     static u128 psra(u128 dst, u8 src) {
-        constexpr u32 N = sizeof(u128)/sizeof(I);
-        std::array<I, N> DST;
-        static_assert(sizeof(DST) == sizeof(u128));
-        std::memcpy(DST.data(), &dst, sizeof(u128));
 
-        for(size_t i = 0; i < N; ++i) {
-            DST[i] = (I)(DST[i] >> (I)src);
+        auto sraw = [=](u128 src, u8 imm) -> u128 {
+            auto nativesra = [](__m128i src, u8 imm) -> __m128i {
+                u8 order = imm;
+                CALL_1_WITH_IMM8(_mm_srai_epi16, src);
+            };
+            __m128i msrc;
+            std::memcpy(&msrc, &src, sizeof(msrc));
+            __m128i res = nativesra(msrc, imm);
+            u128 realRes;
+            std::memcpy(&realRes, &res, sizeof(realRes));
+            return realRes;
+        };
+
+        auto srad = [=](u128 src, u8 imm) -> u128 {
+            auto nativesra = [](__m128i src, u8 imm) -> __m128i {
+                u8 order = imm;
+                CALL_1_WITH_IMM8(_mm_srai_epi32, src);
+            };
+            __m128i msrc;
+            std::memcpy(&msrc, &src, sizeof(msrc));
+            __m128i res = nativesra(msrc, imm);
+            u128 realRes;
+            std::memcpy(&realRes, &res, sizeof(realRes));
+            return realRes;
+        };
+
+        u128 virtualRes;
+        u128 nativeRes;
+        if constexpr(std::is_same_v<I, i16>) {
+            virtualRes = CpuImpl::psraw(dst, src);
+            nativeRes = sraw(dst, src);
+        } else if constexpr(std::is_same_v<I, i32>) {
+            virtualRes = CpuImpl::psrad(dst, src);
+            nativeRes = srad(dst, src);
+        } else if constexpr(std::is_same_v<I, i64>) {
+            throw std::logic_error{"psraq does not exist"};
         }
-        std::memcpy(&dst, DST.data(), sizeof(u128));
-        return dst;
+        assert(virtualRes.lo == nativeRes.lo);
+        assert(virtualRes.hi == nativeRes.hi);
+        return nativeRes;
     }
 
     u128 CheckedCpuImpl::psraw(u128 dst, u8 src) { return psra<i16>(dst, src); }
@@ -2594,34 +3175,125 @@ namespace x64 {
 
     template<typename U>
     static u128 psll(u128 dst, u8 src) {
-        constexpr u32 N = sizeof(u128)/sizeof(U);
-        std::array<U, N> DST;
-        static_assert(sizeof(DST) == sizeof(u128));
-        std::memcpy(DST.data(), &dst, sizeof(u128));
 
-        for(size_t i = 0; i < N; ++i) {
-            DST[i] = (U)(DST[i] << (U)src);
+        auto sllw = [=](u128 src, u8 imm) -> u128 {
+            auto nativesll = [](__m128i src, u8 imm) -> __m128i {
+                u8 order = imm;
+                CALL_1_WITH_IMM8(_mm_slli_epi16, src);
+            };
+            __m128i msrc;
+            std::memcpy(&msrc, &src, sizeof(msrc));
+            __m128i res = nativesll(msrc, imm);
+            u128 realRes;
+            std::memcpy(&realRes, &res, sizeof(realRes));
+            return realRes;
+        };
+
+        auto slld = [=](u128 src, u8 imm) -> u128 {
+            auto nativesll = [](__m128i src, u8 imm) -> __m128i {
+                u8 order = imm;
+                CALL_1_WITH_IMM8(_mm_slli_epi32, src);
+            };
+            __m128i msrc;
+            std::memcpy(&msrc, &src, sizeof(msrc));
+            __m128i res = nativesll(msrc, imm);
+            u128 realRes;
+            std::memcpy(&realRes, &res, sizeof(realRes));
+            return realRes;
+        };
+
+        auto sllq = [=](u128 src, u8 imm) -> u128 {
+            auto nativesll = [](__m128i src, u8 imm) -> __m128i {
+                u8 order = imm;
+                CALL_1_WITH_IMM8(_mm_slli_epi64, src);
+            };
+            __m128i msrc;
+            std::memcpy(&msrc, &src, sizeof(msrc));
+            __m128i res = nativesll(msrc, imm);
+            u128 realRes;
+            std::memcpy(&realRes, &res, sizeof(realRes));
+            return realRes;
+        };
+
+        u128 virtualRes;
+        u128 nativeRes;
+        if constexpr(std::is_same_v<U, u16>) {
+            virtualRes = CpuImpl::psllw(dst, src);
+            nativeRes = sllw(dst, src);
+        } else if constexpr(std::is_same_v<U, u32>) {
+            virtualRes = CpuImpl::pslld(dst, src);
+            nativeRes = slld(dst, src);
+        } else if constexpr(std::is_same_v<U, u64>) {
+            virtualRes = CpuImpl::psllq(dst, src);
+            nativeRes = sllq(dst, src);
         }
-        std::memcpy(&dst, DST.data(), sizeof(u128));
-        return dst;
+        assert(virtualRes.lo == nativeRes.lo);
+        assert(virtualRes.hi == nativeRes.hi);
+        return nativeRes;
     }
 
     u128 CheckedCpuImpl::psllw(u128 dst, u8 src) { return psll<u16>(dst, src); }
     u128 CheckedCpuImpl::pslld(u128 dst, u8 src) { return psll<u32>(dst, src); }
     u128 CheckedCpuImpl::psllq(u128 dst, u8 src) { return psll<u64>(dst, src); }
 
+
     template<typename U>
     static u128 psrl(u128 dst, u8 src) {
-        constexpr u32 N = sizeof(u128)/sizeof(U);
-        std::array<U, N> DST;
-        static_assert(sizeof(DST) == sizeof(u128));
-        std::memcpy(DST.data(), &dst, sizeof(u128));
 
-        for(size_t i = 0; i < N; ++i) {
-            DST[i] = (U)(DST[i] >> (U)src);
+        auto srlw = [=](u128 src, u8 imm) -> u128 {
+            auto nativesrl = [](__m128i src, u8 imm) -> __m128i {
+                u8 order = imm;
+                CALL_1_WITH_IMM8(_mm_srli_epi16, src);
+            };
+            __m128i msrc;
+            std::memcpy(&msrc, &src, sizeof(msrc));
+            __m128i res = nativesrl(msrc, imm);
+            u128 realRes;
+            std::memcpy(&realRes, &res, sizeof(realRes));
+            return realRes;
+        };
+
+        auto srld = [=](u128 src, u8 imm) -> u128 {
+            auto nativesrl = [](__m128i src, u8 imm) -> __m128i {
+                u8 order = imm;
+                CALL_1_WITH_IMM8(_mm_srli_epi32, src);
+            };
+            __m128i msrc;
+            std::memcpy(&msrc, &src, sizeof(msrc));
+            __m128i res = nativesrl(msrc, imm);
+            u128 realRes;
+            std::memcpy(&realRes, &res, sizeof(realRes));
+            return realRes;
+        };
+
+        auto srlq = [=](u128 src, u8 imm) -> u128 {
+            auto nativesrl = [](__m128i src, u8 imm) -> __m128i {
+                u8 order = imm;
+                CALL_1_WITH_IMM8(_mm_srli_epi64, src);
+            };
+            __m128i msrc;
+            std::memcpy(&msrc, &src, sizeof(msrc));
+            __m128i res = nativesrl(msrc, imm);
+            u128 realRes;
+            std::memcpy(&realRes, &res, sizeof(realRes));
+            return realRes;
+        };
+
+        u128 virtualRes;
+        u128 nativeRes;
+        if constexpr(std::is_same_v<U, u16>) {
+            virtualRes = CpuImpl::psrlw(dst, src);
+            nativeRes = srlw(dst, src);
+        } else if constexpr(std::is_same_v<U, u32>) {
+            virtualRes = CpuImpl::psrld(dst, src);
+            nativeRes = srld(dst, src);
+        } else if constexpr(std::is_same_v<U, u64>) {
+            virtualRes = CpuImpl::psrlq(dst, src);
+            nativeRes = srlq(dst, src);
         }
-        std::memcpy(&dst, DST.data(), sizeof(u128));
-        return dst;
+        assert(virtualRes.lo == nativeRes.lo);
+        assert(virtualRes.hi == nativeRes.hi);
+        return nativeRes;
     }
 
     u128 CheckedCpuImpl::psrlw(u128 dst, u8 src) { return psrl<u16>(dst, src); }
@@ -2629,32 +3301,61 @@ namespace x64 {
     u128 CheckedCpuImpl::psrlq(u128 dst, u8 src) { return psrl<u64>(dst, src); }
 
     u128 CheckedCpuImpl::pslldq(u128 dst, u8 src) {
-        if(src >= 16) {
-            return u128{0, 0};
-        } else if(src >= 8) {
-            dst.hi = (dst.lo << 8*(src-8));
-            dst.lo = 0;
-        } else {
-            dst.hi = (dst.hi << 8*src) | (dst.lo >> (64-8*src));
-            dst.lo = (dst.lo << 8*src);
-        }
-        return dst;
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::pslldq(dst, src);
+        (void)virtualRes;
+
+        auto slldq = [=](u128 src, u8 imm) -> u128 {
+            auto nativesrl = [](__m128i src, u8 imm) -> __m128i {
+                u8 order = imm;
+                CALL_1_WITH_IMM8(_mm_slli_si128, src);
+            };
+            __m128i msrc;
+            std::memcpy(&msrc, &src, sizeof(msrc));
+            __m128i res = nativesrl(msrc, imm);
+            u128 realRes;
+            std::memcpy(&realRes, &res, sizeof(realRes));
+            return realRes;
+        };
+
+        u128 nativeRes = slldq(dst, src);
+        assert(virtualRes.lo == nativeRes.lo);
+        assert(virtualRes.hi == nativeRes.hi);
+        return nativeRes;
+#else
+        return CpuImpl::pslldq(dst, src);
+#endif
     }
 
     u128 CheckedCpuImpl::psrldq(u128 dst, u8 src) {
-        if(src >= 16) {
-            return u128{0, 0};
-        } else if(src >= 8) {
-            dst.lo = (dst.hi >> 8*(src-8));
-            dst.hi = 0;
-        } else {
-            dst.lo = (dst.lo >> 8*src) | (dst.hi << (64-8*src));
-            dst.hi = (dst.hi >> 8*src);
-        }
-        return dst;
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::psrldq(dst, src);
+        (void)virtualRes;
+
+        auto srldq = [=](u128 src, u8 imm) -> u128 {
+            auto nativesrl = [](__m128i src, u8 imm) -> __m128i {
+                u8 order = imm;
+                CALL_1_WITH_IMM8(_mm_srli_si128, src);
+            };
+            __m128i msrc;
+            std::memcpy(&msrc, &src, sizeof(msrc));
+            __m128i res = nativesrl(msrc, imm);
+            u128 realRes;
+            std::memcpy(&realRes, &res, sizeof(realRes));
+            return realRes;
+        };
+
+        u128 nativeRes = srldq(dst, src);
+        assert(virtualRes.lo == nativeRes.lo);
+        assert(virtualRes.hi == nativeRes.hi);
+        return nativeRes;
+#else
+        return CpuImpl::psrldq(dst, src);
+#endif
     }
 
     u32 CheckedCpuImpl::pcmpistri(u128 dst, u128 src, u8 control, Flags* flags) {
+        NON_CHECKED
         enum DATA_FORMAT {
             UNSIGNED_BYTE,
             UNSIGNED_WORD,
