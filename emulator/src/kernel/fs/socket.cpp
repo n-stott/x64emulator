@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <sys/poll.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 
 namespace kernel {
 
@@ -217,8 +218,12 @@ namespace kernel {
     }
 
     ErrnoOrBuffer Socket::stat() {
-        verify(false, "stat not implemented on socket");
-        return ErrnoOrBuffer(-ENOTSUP);
+        struct stat st;
+        int rc = ::fstat(hostFd_, &st);
+        if(rc < 0) return ErrnoOrBuffer(-errno);
+        std::vector<u8> buf(sizeof(st), 0x0);
+        std::memcpy(buf.data(), &st, sizeof(st));
+        return ErrnoOrBuffer(Buffer{std::move(buf)});
     }
 
     ErrnoOrBuffer Socket::ioctl(unsigned long request, const Buffer&) {
