@@ -497,7 +497,10 @@ namespace kernel {
         for(auto& rfd : rfds) {
             // check that all fds are pollable and have a host-side fd
             OpenFileDescription* openFileDescription = findOpenFileDescription(FD{rfd.fd});
-            verify(!!openFileDescription, [&]() { fmt::print("cannot poll fd={}\n", rfd.fd); });
+            if(!openFileDescription) {
+                rfd.revents = rfd.revents | PollEvent::INVALID_REQUEST;
+                continue;
+            }
             File* file = openFileDescription->file();
             verify(file->isPollable(), [&]() { fmt::print("fd={} is not pollable\n", rfd.fd); });
             auto hostFd = file->hostFileDescriptor();
