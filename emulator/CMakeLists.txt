@@ -111,10 +111,11 @@ elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
 endif()
 target_include_directories(emulator PUBLIC include)
 target_link_libraries(emulator PUBLIC x64emulator fmt::fmt-header-only)
+
+# target_compile_options(emulator PUBLIC -fsanitize=address,undefined)
+# target_link_libraries(emulator PUBLIC asan ubsan)
+
 if(MULTIPROCESSING)
     target_compile_definitions(x64emulator PUBLIC MULTIPROCESSING=1)
     target_link_libraries(emulator PUBLIC pthread)
 endif(MULTIPROCESSING)
-
-# target_compile_options(emulator PUBLIC -fsanitize=address,undefined)
-# target_link_libraries(emulator PUBLIC asan ubsan)
