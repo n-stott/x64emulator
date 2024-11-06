@@ -263,10 +263,16 @@ namespace x64 {
 
         u64 topOfReserved_ = 0;
 
-        std::deque<std::unique_ptr<Region>> regions_;
+        std::vector<std::unique_ptr<Region>> regions_;
         std::vector<Region*> regionLookup_;
         u64 firstUnlookupdableAddress_ { 0 };
         std::vector<MunmapCallback*> callbacks_;
+
+        static bool compareRegions(const std::unique_ptr<Region>& a, const std::unique_ptr<Region>& b) {
+            return a->base() < b->base();
+        };
+
+        void checkRegionsAreSorted() const;
     };
 
 }

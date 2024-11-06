@@ -76,8 +76,13 @@ namespace x64 {
             fmt::print("Unable to add region : memory range [{:#x}, {:#x}] already occupied by region [{:#x}, {:#x}]\n", region.base(), region.end(), (*r)->base(), (*r)->end());
             dumpRegions();
         });
-        regions_.push_back(std::make_unique<Region>(std::move(region)));
-        Region* r = regions_.back().get();
+        std::unique_ptr<Region> regionPtr = std::make_unique<Region>(std::move(region));
+        Region* r = regionPtr.get();
+
+        checkRegionsAreSorted();
+        auto insertionPosition = std::lower_bound(regions_.begin(), regions_.end(), regionPtr, Mmu::compareRegions);
+        regions_.insert(insertionPosition, std::move(regionPtr));
+        checkRegionsAreSorted();
 
         u64 firstPage = pageRoundDown(r->base()) / PAGE_SIZE;
         u64 lastPage = pageRoundUp(r->end()) / PAGE_SIZE;
@@ -103,7 +108,7 @@ namespace x64 {
             return !emptyIntersection(ptr);
         });
         verify(nbImpactedRegions <= 1, "More than one region is impacted in Mmu::addRegionAndEraseExisting");
-        auto it = std::partition(regions_.begin(), regions_.end(), emptyIntersection);
+        auto it = std::stable_partition(regions_.begin(), regions_.end(), emptyIntersection);
         if(it != regions_.end()) {
             assert(std::distance(it, regions_.end()) == 1);
             std::unique_ptr<Region>& oldRegion = regions_.back();
@@ -117,7 +122,6 @@ namespace x64 {
                 addRegion(std::move(r));
             }
         }
-        tryMergeRegions();
         return addRegion(std::move(region));
     }
 
@@ -433,22 +437,17 @@ namespace x64 {
 
     u64 Mmu::firstFitPageAligned(u64 length) const {
         verify(length > 0, "zero sized region is not allowed");
+        checkRegionsAreSorted();
         length = pageRoundUp(length);
         std::optional<u64> chosenAddress;
-        for(const auto& ptr : regions_) {
-            if(ptr->base() < length) continue;
-            u64 candidate = pageRoundDown(ptr->base() - length);
-            if(std::none_of(regions_.begin(), regions_.end(), [&](const auto& regionPtr) {
-                return regionPtr->intersectsRange(candidate, candidate+length);
-            })) {
-                if(chosenAddress) {
-                    chosenAddress = std::max(*chosenAddress, candidate);
-                } else {
-                    chosenAddress = candidate;
-                }
-            }
+        auto it = std::adjacent_find(regions_.begin(), regions_.end(), [&](const auto& a, const auto& b) {
+            return a->end() + length <= b->base();
+        });
+        if(it == regions_.end()) {
+            return topOfMemoryPageAligned();
+        } else {
+            return (*it)->end();
         }
-        return chosenAddress.value_or(topOfMemoryPageAligned());
     }
 
     u64 Mmu::pageRoundDown(u64 address) {
@@ -555,9 +554,7 @@ namespace x64 {
     }
 
     void Mmu::tryMergeRegions() {
-        std::sort(regions_.begin(), regions_.end(), [](const std::unique_ptr<Region>& a, const std::unique_ptr<Region>& b) {
-            return a->base() < b->base();
-        });
+        checkRegionsAreSorted();
         for(size_t i = 1; i < regions_.size(); ++i) {
             Region* a = regions_[i-1].get();
             Region* b = regions_[i].get();
@@ -581,6 +578,11 @@ namespace x64 {
             regions_[i].reset();
         }
         regions_.erase(std::remove(regions_.begin(), regions_.end(), nullptr), regions_.end());
+        checkRegionsAreSorted();
+    }
+
+    void Mmu::checkRegionsAreSorted() const {
+        assert(std::is_sorted(regions_.begin(), regions_.end(), Mmu::compareRegions));
     }
 
 }
