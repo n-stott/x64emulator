@@ -289,7 +289,9 @@ namespace emulator {
         section.end = result.nextAddress;
         section.filename = mmuRegion->name();
         section.instructions = std::move(result.instructions);
-        verify(!section.instructions.empty(), fmt::format("Disassembly of {:#x}:{:#x} provided no instructions", address, end));
+        verify(!section.instructions.empty(), [&]() {
+            fmt::print("Disassembly of {:#x}:{:#x} provided no instructions", address, end);
+        });
         verify(section.end == section.instructions.back().nextAddress());
         
         auto newSection = std::make_unique<ExecutableSection>(std::move(section));
@@ -328,7 +330,9 @@ namespace emulator {
         for(size_t i = 1; i < executableSections_.size(); ++i) {
             const auto& a = *executableSections_[i-1];
             const auto& b = *executableSections_[i];
-            verify(a.end <= b.begin, fmt::format("Overlapping executable regions {:#x}:{:#x} and {:#x}:{:#x}", a.begin, a.end, b.begin, b.end));
+            verify(a.end <= b.begin, [&]() {
+                fmt::print("Overlapping executable regions {:#x}:{:#x} and {:#x}:{:#x}", a.begin, a.end, b.begin, b.end);
+            });
         }
 
         // Retrieve symbols from that section
