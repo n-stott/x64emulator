@@ -197,7 +197,7 @@ namespace x64 {
     std::pair<u8, u8> CpuImpl::div8(u8 dividendUpper, u8 dividendLower, u8 divisor) {
         assert(divisor != 0);
         u16 dividend = (u16)(((u16)dividendUpper) << 8 | (u16)dividendLower);
-        u16 tmp = dividend / divisor;
+        u16 tmp = (u16)(dividend / divisor);
         assert(tmp >> 8 == 0);
         return std::make_pair(tmp, dividend % divisor);
     }
