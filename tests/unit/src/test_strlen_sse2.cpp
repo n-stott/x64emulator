@@ -60,7 +60,7 @@ int main() {
         kernel::Thread mainThread(0, 0);
         mainThread.savedCpuState().regs.rip() = execPage;
         mainThread.savedCpuState().regs.set(R64::RDI, dataPage);
-        mainThread.tickInfo().ticksUntilSwitch = 15;
+        mainThread.tickInfo().setSlice(0, 15);
         vm.execute(&mainThread);
         length = mainThread.savedCpuState().regs.get(R64::RAX);
     }, [&]() {

@@ -28,7 +28,7 @@ namespace emulator {
             fmt::print("Crash in thread {}:{} after {} instructions\n",
                             currentThread_->description().pid,
                             currentThread_->description().tid,
-                            currentThread_->tickInfo().ticksFromStart);
+                            currentThread_->tickInfo().current());
         }
     }
 
@@ -78,19 +78,19 @@ namespace emulator {
         contextSwitch(thread);
         if(logInstructions()) {
             kernel::Thread::TickInfo& tickInfo = thread->tickInfo();
-            while(tickInfo.ticksFromStart < tickInfo.ticksUntilSwitch) {
+            while(!tickInfo.isStopAsked()) {
                 verify(!signal_interrupt);
                 const x64::X64Instruction& instruction = fetchInstruction();
-                log(tickInfo.ticksFromStart, instruction);
-                tickInfo.ticksFromStart++;
+                log(tickInfo.current(), instruction);
+                tickInfo.tick();
                 cpu_.exec(instruction);
             }
         } else {
             kernel::Thread::TickInfo& tickInfo = thread->tickInfo();
-            while(tickInfo.ticksFromStart < tickInfo.ticksUntilSwitch) {
+            while(!tickInfo.isStopAsked()) {
                 verify(!signal_interrupt);
                 const x64::X64Instruction& instruction = fetchInstruction();
-                tickInfo.ticksFromStart++;
+                tickInfo.tick();
                 cpu_.exec(instruction);
             }
         }

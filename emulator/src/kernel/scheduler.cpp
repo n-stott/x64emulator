@@ -50,7 +50,11 @@ namespace kernel {
                         break;
                     }
                 }
-                while(threadToRun->tickInfo().ticksFromStart < threadToRun->tickInfo().ticksUntilSwitch) {
+
+                threadToRun->setState(Thread::THREAD_STATE::RUNNING);
+                threadToRun->tickInfo().setSlice(currentTime_.count(), currentTime_.count() + DEFAULT_TIME_SLICE);
+
+                while(!threadToRun->tickInfo().isStopAsked()) {
                     verify(threadToRun->state() == Thread::THREAD_STATE::RUNNING);
                     vm.execute(threadToRun);
                     if(threadToRun->state() == Thread::THREAD_STATE::IN_SYSCALL) {
@@ -60,6 +64,11 @@ namespace kernel {
                 }
                 if(threadToRun->state() == Thread::THREAD_STATE::RUNNING)
                     threadToRun->setState(Thread::THREAD_STATE::RUNNABLE);
+                
+                {
+                    std::unique_lock lock(schedulerMutex_);
+                    currentTime_ = std::max(currentTime_, currentTime_ + PreciseTime { 0 , threadToRun->tickInfo().sliceTime() });
+                }
 
             } catch(...) {
                 kernel_.panic();
@@ -185,14 +194,12 @@ namespace kernel {
         }
         
         Thread* threadToRun = findThread(Thread::THREAD_STATE::RUNNABLE);
-        if(!threadToRun) return threadToRun;
+        if(!threadToRun) return nullptr;
 
         std::stable_partition(allAliveThreads_.begin(), allAliveThreads_.end(), [=](Thread* thread) -> bool {
             return thread != threadToRun;
         });
         assert(allAliveThreads_.back() == threadToRun);
-        threadToRun->setState(Thread::THREAD_STATE::RUNNING);
-        threadToRun->tickInfo().ticksUntilSwitch += 1'000'000;
         return threadToRun;
     }
 
@@ -290,17 +297,12 @@ namespace kernel {
     void Scheduler::dumpThreadSummary() const {
         forEachThread([&](const Thread& thread) {
             fmt::print("Thread #{} : {}\n", thread.description().tid, thread.toString());
-            fmt::print("    instructions   {:<10} \n", thread.tickInfo().ticksFromStart);
+            fmt::print("    instructions   {:<10} \n", thread.tickInfo().total());
             fmt::print("    syscalls       {:<10} \n", thread.stats().syscalls);
             fmt::print("    function calls {:<10} \n", thread.stats().functionCalls);
             thread.dumpRegisters();
             thread.dumpStackTrace(addressToSymbol_);
             fmt::print("\n");
-
-            
-            // for(auto call : thread.stats().calls) {
-            //     fmt::print("  {:>10}  {}  {} ({:#x})\n", call.tick, fmt::format("{:{}}", "", call.depth), "call.symbol", call.address);
-            // }
         });
     }
 

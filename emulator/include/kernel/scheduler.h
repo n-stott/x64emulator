@@ -2,6 +2,7 @@
 #define SCHEDULER_H
 
 #include "kernel/threadblocker.h"
+#include "kernel/timers.h"
 #include "x64/types.h"
 #include "utils.h"
 #include <condition_variable>
@@ -83,6 +84,9 @@ namespace kernel {
         std::condition_variable schedulerHasRunnableThread_;
 
         std::unordered_map<u64, std::string> addressToSymbol_;
+
+        static constexpr size_t DEFAULT_TIME_SLICE = 1'000'000;
+        PreciseTime currentTime_ { 0, 0 };
     };
 
 }

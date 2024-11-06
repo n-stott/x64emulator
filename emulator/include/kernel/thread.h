@@ -45,20 +45,41 @@ namespace kernel {
             u64 fsBase { 0 };
         };
 
-        struct TickInfo {
-            size_t ticksFromStart { 0 };
-            size_t ticksUntilSwitch { 0 };
-            size_t savedTicksUntilSwitch { 0 };
+        class TickInfo {
+            size_t current_ { 0 };
+            size_t end_ { 0 };
+            size_t savedEnd_ { 0 };
+            size_t start_ { 0 };
+            size_t totalExceptCurrentSlice_ { 0 };
 
-            void yield() { ticksUntilSwitch = ticksFromStart; }
+        public:
+            bool isStopAsked() const {
+                return current_ >= end_;
+            }
+
+            size_t total() const {
+                return totalExceptCurrentSlice_ + (current_ - start_);
+            }
+
+            void tick() { ++current_; }
+            size_t current() const { return current_; }
+            size_t sliceTime() const { return current_ - start_; }
+            void setSlice(size_t start, size_t end) {
+                totalExceptCurrentSlice_ += current_ - start_;
+                start_ = start;
+                current_ = start;
+                end_ = end;
+            }
+
+            void yield() { end_ = current_; }
             
             void enterSyscall() {
-                savedTicksUntilSwitch = ticksUntilSwitch;
-                ticksUntilSwitch = ticksFromStart;
+                savedEnd_ = end_;
+                end_ = current_;
             }
 
             void exitSyscall() {
-                ticksUntilSwitch = savedTicksUntilSwitch;
+                end_ = savedEnd_;
             }
         };
 
@@ -137,21 +158,21 @@ namespace kernel {
         };
 
         void didSyscall(u64 syscallNumber) {
-            syscallEvents_.push_back(SyscallEvent{tickInfo_.ticksFromStart, syscallNumber});
+            syscallEvents_.push_back(SyscallEvent{tickInfo_.current(), syscallNumber});
         }
 
         void pushCallstack(u64 from, u64 to) {
             callpoint_.push_back(from);
             callstack_.push_back(to);
             if(isProfiling_) {
-                callEvents_.push_back(CallEvent{tickInfo_.ticksFromStart, to});
+                callEvents_.push_back(CallEvent{tickInfo_.current(), to});
             }
         }
 
         u64 popCallstack() {
             u64 address = callstack_.back();
             if(isProfiling_) {
-                retEvents_.push_back(RetEvent{tickInfo_.ticksFromStart});
+                retEvents_.push_back(RetEvent{tickInfo_.current()});
             }
             callstack_.pop_back();
             callpoint_.pop_back();

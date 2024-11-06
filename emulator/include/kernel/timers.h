@@ -17,6 +17,12 @@ namespace kernel {
         u64 seconds { 0 };
         u64 nanoseconds { 0 };
 
+        static constexpr u64 NS_PER_S = 1'000'000'000;
+
+        size_t count() const {
+            return seconds * NS_PER_S + nanoseconds;
+        }
+
         friend bool operator<(PreciseTime a, PreciseTime b) {
             if(a.seconds < b.seconds) return true;
             if(a.seconds > b.seconds) return false;
@@ -33,9 +39,9 @@ namespace kernel {
             PreciseTime res;
             res.nanoseconds = a.nanoseconds + b.nanoseconds;
             res.seconds = a.seconds + b.seconds;
-            if(res.nanoseconds > 1'000'000'000) {
-                res.seconds += (res.nanoseconds / 1'000'000'000);
-                res.nanoseconds = res.nanoseconds % 1'000'000'000;
+            if(res.nanoseconds > NS_PER_S) {
+                res.seconds += (res.nanoseconds / NS_PER_S);
+                res.nanoseconds = res.nanoseconds % NS_PER_S;
             }
             return res;
         }
