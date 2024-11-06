@@ -87,6 +87,7 @@ namespace kernel {
             static bool isTruncating(int flag);
             static bool isCreatable(int flag);
             static bool isCloseOnExec(int flag);
+            static bool isDirectory(int flag);
         };
 
         struct Fcntl {

@@ -61,6 +61,7 @@ namespace kernel {
             Host::Open::isTruncating(flags),
             Host::Open::isCreatable(flags),
             Host::Open::isCloseOnExec(flags),
+            Host::Open::isDirectory(flags),
         };
     }
 
@@ -192,16 +193,29 @@ namespace kernel {
         }
 
         if(canUseHostFile) {
-            // open the file
-            auto* hostBackedFile = HostFile::tryCreateAndAdd(this, root_.get(), absolutePathname);
-            if(!hostBackedFile) {
-                // TODO: return the actual value of errno
-                return FS::FD{-ENOENT};
+            if(flags.directory) {
+                // open the directory
+                auto hostBackedDirectory = HostDirectory::tryCreate(this, root_.get(), absolutePathname);
+                if(!hostBackedDirectory) {
+                    // TODO: return the actual value of errno
+                    return FS::FD{-ENOENT};
+                }
+                
+                // create and add the node to the filesystem
+                hostBackedDirectory->open();
+                return insertNode(std::move(hostBackedDirectory));
+            } else {
+                // open the file
+                auto* hostBackedFile = HostFile::tryCreateAndAdd(this, root_.get(), absolutePathname);
+                if(!hostBackedFile) {
+                    // TODO: return the actual value of errno
+                    return FS::FD{-ENOENT};
+                }
+                
+                // create and add the node to the filesystem
+                hostBackedFile->open();
+                return openNode(hostBackedFile);
             }
-            
-            // create and add the node to the filesystem
-            hostBackedFile->open();
-            return openNode(hostBackedFile);
         } else {
             // open the file
             auto* shadowFile = ShadowFile::tryCreateAndAdd(this, root_.get(), absolutePathname, flags.create);

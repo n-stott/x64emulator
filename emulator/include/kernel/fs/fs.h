@@ -30,6 +30,7 @@ namespace kernel {
             bool truncate { false };
             bool create { false };
             bool closeOnExec { false };
+            bool directory { false };
         };
 
         struct Permissions {

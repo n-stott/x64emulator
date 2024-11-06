@@ -182,6 +182,10 @@ namespace kernel {
     bool Host::Open::isCloseOnExec(int flag) {
         return flag & O_CLOEXEC;
     }
+    
+    bool Host::Open::isDirectory(int flag) {
+        return flag & O_DIRECTORY;
+    }
 
     bool Host::Fcntl::isGetFd(int cmd) {
         return cmd == F_GETFD;
