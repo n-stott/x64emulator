@@ -40,6 +40,10 @@ namespace kernel {
                     if(!allAliveThreads_.empty()) {
                         // Unable to run a thread, we have some threads alive
                         // Just waste time
+                        {
+                            std::unique_lock lock(schedulerMutex_);
+                            currentTime_ = std::max(currentTime_, currentTime_ + PreciseTime { 0 , 1'000'000 }); // 1ms
+                        }
 #ifndef NDEBUG
                         for(volatile int i = 0; i < 1'000'000; ++i) { }
 #else
@@ -57,7 +61,14 @@ namespace kernel {
                 while(!threadToRun->tickInfo().isStopAsked()) {
                     verify(threadToRun->state() == Thread::THREAD_STATE::RUNNING);
                     vm.execute(threadToRun);
+
+                    {
+                        std::unique_lock lock(schedulerMutex_);
+                        currentTime_ = std::max(currentTime_, currentTime_ + PreciseTime { 0 , threadToRun->tickInfo().sliceTime() });
+                    }
+
                     if(threadToRun->state() == Thread::THREAD_STATE::IN_SYSCALL) {
+                        kernel_.timers().updateAll(currentTime_);
                         kernel_.sys().syscall(threadToRun);
                         threadToRun->exitSyscall();
                     }
@@ -204,7 +215,7 @@ namespace kernel {
     }
 
     void Scheduler::tryWakeUpThreads() {
-        kernel_.timers().measureAll();
+        kernel_.timers().updateAll(currentTime_);
         std::vector<SleepBlocker*> removableBlockers;
         for(SleepBlocker& blocker : sleepBlockers_) {
             bool canUnblock = blocker.tryUnblock(kernel_.timers());

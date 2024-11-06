@@ -51,7 +51,7 @@ namespace kernel {
     public:
         static std::unique_ptr<Timer> tryCreate(int id);
         int id() const { return id_; }
-        void measure();
+        void update(PreciseTime kernelTime);
         std::optional<PreciseTime> readTime(x64::Mmu& mmu, x64::Ptr ptr);
         PreciseTime now() const { return now_; }
 
@@ -64,7 +64,7 @@ namespace kernel {
     class Timers {
     public:
         Timer* getOrTryCreate(int id);
-        void measureAll();
+        void updateAll(PreciseTime kernelTime);
     private:
         std::vector<std::unique_ptr<Timer>> timers_;
     };

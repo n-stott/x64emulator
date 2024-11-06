@@ -3,6 +3,7 @@
 
 #include "kernel/utils/buffer.h"
 #include "kernel/utils/erroror.h"
+#include "kernel/timers.h"
 #include "utils.h"
 #include <cstring>
 #include <optional>
@@ -185,10 +186,9 @@ namespace kernel {
         static ErrnoOrBuffer getdents64(FD fd, size_t count);
         static int chdir(const std::string& path);
 
-        static ErrnoOrBuffer clock_gettime(clockid_t clockid);
-        static ErrnoOrBuffer clock_getres(clockid_t clockid);
-        static time_t time();
-        static ErrnoOr<std::pair<Buffer, Buffer>> gettimeofday();
+        static Buffer clock_gettime(PreciseTime time);
+        static Buffer clock_getres();
+        static Buffer gettimeofday(PreciseTime time);
 
         static ErrnoOrBuffer getrlimit(pid_t pid, int resource);
 

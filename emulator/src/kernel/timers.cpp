@@ -10,12 +10,8 @@ namespace kernel {
         return std::unique_ptr<Timer>(new Timer(id));
     }
 
-    void Timer::measure() {
-        struct timespec ts;
-        int ret = ::clock_gettime(id_, &ts);
-        verify(ret == 0, [&]() { perror("clock_gettime failed"); });
-        now_.seconds = ts.tv_sec;
-        now_.nanoseconds = ts.tv_nsec;
+    void Timer::update(PreciseTime kernelTime) {
+        now_ = kernelTime;
     }
 
     std::optional<PreciseTime> Timer::readTime(x64::Mmu& mmu, x64::Ptr ptr) {
@@ -37,8 +33,8 @@ namespace kernel {
         return ptr;
     }
 
-    void Timers::measureAll() {
-        for(auto& timer : timers_) timer->measure();
+    void Timers::updateAll(PreciseTime kernelTime) {
+        for(auto& timer : timers_) timer->update(kernelTime);
     }
 
 }

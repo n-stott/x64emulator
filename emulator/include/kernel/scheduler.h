@@ -51,6 +51,8 @@ namespace kernel {
 
         void retrieveProfilingData(profiling::ProfilingData*);
 
+        PreciseTime kernelTime() const { return currentTime_; }
+
     private:
         void runOnWorkerThread(int id);
         Thread* pickNext();

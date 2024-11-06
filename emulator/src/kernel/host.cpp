@@ -488,39 +488,25 @@ namespace kernel {
         return ::chdir(path.c_str());
     }
 
-    ErrnoOrBuffer Host::clock_gettime(clockid_t clockid) {
+    Buffer Host::clock_gettime(PreciseTime time) {
+        struct timespec ts;
+        ts.tv_sec = time.seconds;
+        ts.tv_nsec = time.nanoseconds;
+        return Buffer(ts);
+    }
+
+    Buffer Host::clock_getres() {
         timespec ts;
-        int ret = ::clock_gettime(clockid, &ts);
-        if(ret < 0) return ErrnoOrBuffer(-errno);
-        std::vector<u8> buffer;
-        buffer.resize(sizeof(ts), 0x0);
-        std::memcpy(buffer.data(), &ts, sizeof(ts));
-        return ErrnoOrBuffer(Buffer{std::move(buffer)});
+        ts.tv_sec = 0;
+        ts.tv_nsec = 1;
+        return Buffer(ts);
     }
 
-    ErrnoOrBuffer Host::clock_getres(clockid_t clockid) {
-        timespec ts;
-        int ret = ::clock_getres(clockid, &ts);
-        if(ret < 0) return ErrnoOrBuffer(-errno);
-        std::vector<u8> buffer;
-        buffer.resize(sizeof(ts), 0x0);
-        std::memcpy(buffer.data(), &ts, sizeof(ts));
-        return ErrnoOrBuffer(Buffer{std::move(buffer)});
-    }
-
-    time_t Host::time() {
-        return ::time(nullptr);
-    }
-
-    ErrnoOr<std::pair<Buffer, Buffer>> Host::gettimeofday() {
-        using ReturnType = ErrnoOr<std::pair<Buffer, Buffer>>;
+    Buffer Host::gettimeofday(PreciseTime time) {
         struct timeval tv;
-        struct timezone tz;
-        int rc = ::gettimeofday(&tv, &tz);
-        if(rc < 0) return ReturnType(-errno);
-        Buffer v(tv);
-        Buffer z(tz);
-        return ReturnType(std::make_pair(std::move(v), std::move(z)));
+        tv.tv_sec = time.seconds;
+        tv.tv_usec = time.nanoseconds / 1'000;
+        return Buffer(tv);
     }
 
     ErrnoOrBuffer Host::getrlimit([[maybe_unused]] pid_t pid, int resource) {

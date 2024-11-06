@@ -36,7 +36,6 @@ namespace kernel {
         u64 sysNumber = threadRegs.get(x64::R64::RAX);
         currentThread_->stats().syscalls++;
         if(kernel_.isProfiling()) currentThread_->didSyscall(sysNumber);
-        kernel_.timers().measureAll();
         RegisterDump regs {{
             threadRegs.get(x64::R64::RDI),
             threadRegs.get(x64::R64::RSI),
@@ -771,16 +770,15 @@ namespace kernel {
     }
 
     int Sys::gettimeofday(x64::Ptr tv, x64::Ptr tz) {
-        auto errnoOrBuffers = kernel_.host().gettimeofday();
+        verify(!tz, "null ptr to timezone expected in gettimeofday");
+        PreciseTime time = kernel_.scheduler().kernelTime();
+        auto timevalBuffer = kernel_.host().gettimeofday(time);
         if(logSyscalls_) {
             print("Sys::gettimeofday(tv={:#x}, tz={:#x}) = {:#x}\n",
-                        tv.address(), tz.address(), errnoOrBuffers.errorOr(0));
+                        tv.address(), tz.address(), 0);
         }
-        return errnoOrBuffers.errorOrWith<int>([&](const auto& buffers) {
-            if(!!tv) mmu_.copyToMmu(tv, buffers.first.data(), buffers.first.size());
-            if(!!tz) mmu_.copyToMmu(tz, buffers.second.data(), buffers.second.size());
-            return 0;
-        });
+        if(!!tv) mmu_.copyToMmu(tv, timevalBuffer.data(), timevalBuffer.size());
+        return 0;
     }
 
     int Sys::sysinfo(x64::Ptr info) {
@@ -941,7 +939,7 @@ namespace kernel {
     }
 
     time_t Sys::time(x64::Ptr tloc) {
-        time_t t = kernel_.host().time();
+        time_t t = kernel_.scheduler().kernelTime().seconds;
         if(logSyscalls_) print("Sys::time({:#x}) = {}\n", tloc.address(), t);
         if(tloc.address()) mmu_.copyToMmu(tloc, (const u8*)&t, sizeof(t));
         return t;
@@ -1163,27 +1161,29 @@ namespace kernel {
     }
 
     int Sys::clock_gettime(clockid_t clockid, x64::Ptr tp) {
-        auto errnoOrBuffer = kernel_.host().clock_gettime(clockid);
+        // create the timer for future reference
+        auto timer = kernel_.timers().getOrTryCreate(clockid);
+        if(!timer) return -EINVAL;
+        // TODO: we should read from the timer, not the scheduler
+        PreciseTime time = kernel_.scheduler().kernelTime();
+        timer->update(time); // just in case
+        Buffer buffer = Host::clock_gettime(time);
+        mmu_.copyToMmu(tp, buffer.data(), buffer.size());
         if(logSyscalls_) {
             print("Sys::clock_gettime({}, {:#x}) = {}\n",
-                        clockid, tp.address(), errnoOrBuffer.errorOr(0));
+                        clockid, tp.address(), 0);
         }
-        return errnoOrBuffer.errorOrWith<int>([&](const auto& buffer) {
-            mmu_.copyToMmu(tp, buffer.data(), buffer.size());
-            return 0;
-        });
+        return 0;
     }
 
     int Sys::clock_getres(clockid_t clockid, x64::Ptr res) {
-        auto errnoOrBuffer = kernel_.host().clock_getres(clockid);
+        auto buffer = kernel_.host().clock_getres();
         if(logSyscalls_) {
             print("Sys::clock_getres({}, {:#x}) = {}\n",
-                        clockid, res.address(), errnoOrBuffer.errorOr(0));
+                        clockid, res.address(), 0);
         }
-        return errnoOrBuffer.errorOrWith<int>([&](const auto& buffer) {
-            mmu_.copyToMmu(res, buffer.data(), buffer.size());
-            return 0;
-        });
+        mmu_.copyToMmu(res, buffer.data(), buffer.size());
+        return 0;
     }
 
     int Sys::clock_nanosleep(clockid_t clockid, int flags, x64::Ptr request, x64::Ptr remain) {
@@ -1192,7 +1192,7 @@ namespace kernel {
         if(!timer) { return -EINVAL; }
         auto time = timer->readTime(mmu_, request);
         if(!time) { return -EFAULT; }
-        timer->measure();
+        timer->update(kernel_.scheduler().kernelTime());
         kernel_.scheduler().sleep(currentThread_, timer, timer->now() + time.value());
         if(logSyscalls_) {
             print("Sys::clock_nanosleep(clockid={}, flags={}, request={}s{}ns, remain={:#x}) = {}\n",
