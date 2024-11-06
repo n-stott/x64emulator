@@ -602,11 +602,10 @@ namespace kernel {
     }
 
     std::string FS::filename(FD fd) {
-        for(const OpenNode& node : openFiles_) {
-            if(node.fd != fd) continue;
-            return node.path;
-        }
-        return "";
+        OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
+        if(!openFileDescription) return "Unknown";
+        File* file = openFileDescription->file();
+        return file->path();
     }
 
     void FS::dumpSummary() const {
