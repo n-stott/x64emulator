@@ -165,6 +165,7 @@ namespace x64 {
             }
         }
         for(Region* regionPtr : regionsToRemove) {
+            verify((regionPtr->prot() & PROT::EXEC) == PROT::NONE, "Cannot unmap exec region");
             removeRegion(regionPtr->base(), regionPtr->end(), regionPtr->size());
         }
         for(Region* regionPtr : regionsToSplit) {
