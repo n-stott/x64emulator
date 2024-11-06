@@ -596,7 +596,24 @@ namespace kernel {
         return -ENOTSUP;
     }
 
-    long Sys::clone(unsigned long flags, x64::Ptr stack, x64::Ptr parent_tid, x64::Ptr32 child_tid, unsigned long tls) {
+    void checkCloneFlags(const Host::CloneFlags& flags) {
+        verify(flags.childClearTid == true, "Expected cloneFlags.childClearTid == true");
+        verify(flags.childSetTid == false, "Expected cloneFlags.childSetTid == false");
+        verify(flags.clearSignalHandlers == false, "Expected cloneFlags.clearSignalHandlers == false");
+        verify(flags.cloneSignalHandlers == true, "Expected cloneFlags.cloneSignalHandlers == true");
+        verify(flags.cloneFiles == true, "Expected cloneFlags.cloneFiles == true");
+        verify(flags.cloneFs == true, "Expected cloneFlags.cloneFs == true");
+        verify(flags.cloneIo == false, "Expected cloneFlags.cloneIo == false");
+        verify(flags.cloneParent == false, "Expected cloneFlags.cloneParent == false");
+        verify(flags.parentSetTid == true, "Expected cloneFlags.parentSetTid == true");
+        verify(flags.clonePidFd == false, "Expected cloneFlags.clonePidFd == false");
+        verify(flags.setTls == true, "Expected cloneFlags.setTls == true");
+        verify(flags.cloneThread == true, "Expected cloneFlags.cloneThread == true");
+        verify(flags.cloneVm == true, "Expected cloneFlags.cloneVm) == true");
+        verify(flags.cloneVfork == false, "Expected cloneFlags.cloneVfork) == false");
+    }
+
+    long Sys::clone(unsigned long flags, x64::Ptr stack, x64::Ptr32 parent_tid, x64::Ptr32 child_tid, unsigned long tls) {
         verify(!!currentThread_);
         std::unique_ptr<Thread> newThread = kernel_.scheduler().allocateThread(currentThread_->description().pid);
         verify(!!newThread);
@@ -607,11 +624,21 @@ namespace kernel {
         newCpuState.regs.rip() = oldCpuState.regs.rip();
         newCpuState.regs.rsp() = stack.address();
         newCpuState.fsBase = tls;
-        newThread->setClearChildTid(child_tid);
         long ret = newThread->description().tid;
-        if(!!child_tid) {
+
+        Host::CloneFlags cloneFlags = Host::fromCloneFlags(flags);
+        checkCloneFlags(cloneFlags);
+
+        if(cloneFlags.childClearTid) {
+            newThread->setClearChildTid(child_tid);
+        }
+        if(!!child_tid && cloneFlags.childSetTid) {
             static_assert(sizeof(pid_t) == sizeof(u32));
             mmu_.write32(child_tid, (u32)ret);
+        }
+        if(!!parent_tid && cloneFlags.parentSetTid) {
+            static_assert(sizeof(pid_t) == sizeof(u32));
+            mmu_.write32(parent_tid, (u32)ret);
         }
         if(logSyscalls_) {
             print("Sys::clone(flags={}, stack={:#x}, parent_tid={:#x}, child_tid={:#x}, tls={}) = {}\n",

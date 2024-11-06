@@ -116,6 +116,25 @@ namespace kernel {
 
         static SchedAttr getSchedulerAttributes();
 
+        struct CloneFlags {
+            bool childClearTid;
+            bool childSetTid;
+            bool clearSignalHandlers;
+            bool cloneSignalHandlers;
+            bool cloneFiles;
+            bool cloneFs;
+            bool cloneIo;
+            bool cloneParent;
+            bool parentSetTid;
+            bool clonePidFd;
+            bool setTls;
+            bool cloneThread;
+            bool cloneVm;
+            bool cloneVfork;
+        };
+
+        static CloneFlags fromCloneFlags(unsigned long flags);
+
         static FD cwdfd();
 
         static size_t iovecRequiredBufferSize();

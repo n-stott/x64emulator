@@ -200,7 +200,7 @@ namespace kernel {
         // 0x37
         int getsockopt(int sockfd, int level, int optname, x64::Ptr optval, x64::Ptr optlen);
         // 0x38
-        long clone(unsigned long flags, x64::Ptr stack, x64::Ptr parent_tid, x64::Ptr32 child_tid, unsigned long tls);
+        long clone(unsigned long flags, x64::Ptr stack, x64::Ptr32 parent_tid, x64::Ptr32 child_tid, unsigned long tls);
         // 0x3c
         int exit(int status);
         // 0x3f

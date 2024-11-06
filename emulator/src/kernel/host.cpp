@@ -228,6 +228,25 @@ namespace kernel {
         return attr;
     }
 
+    Host::CloneFlags Host::fromCloneFlags(unsigned long flags) {
+        CloneFlags cloneFlags;
+        cloneFlags.childClearTid = flags & CLONE_CHILD_CLEARTID;
+        cloneFlags.childSetTid = flags & CLONE_CHILD_SETTID;
+        cloneFlags.clearSignalHandlers = false; // unsupported on my machine ?
+        cloneFlags.cloneSignalHandlers = flags & CLONE_SIGHAND;
+        cloneFlags.cloneFiles = flags & CLONE_FILES;
+        cloneFlags.cloneFs = flags & CLONE_FS;
+        cloneFlags.cloneIo = flags & CLONE_IO;
+        cloneFlags.cloneParent = flags & CLONE_PARENT;
+        cloneFlags.parentSetTid = flags & CLONE_PARENT_SETTID;
+        cloneFlags.clonePidFd = flags & CLONE_PIDFD;
+        cloneFlags.setTls = flags & CLONE_SETTLS;
+        cloneFlags.cloneThread = flags & CLONE_THREAD;
+        cloneFlags.cloneVm = flags & CLONE_VM;
+        cloneFlags.cloneVfork = flags & CLONE_VFORK;
+        return cloneFlags;
+    }
+
     Host::FD Host::cwdfd() {
         return FD{AT_FDCWD};
     }
