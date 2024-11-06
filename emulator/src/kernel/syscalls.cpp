@@ -1380,7 +1380,7 @@ namespace kernel {
     int Sys::statx(int dirfd, x64::Ptr pathname, int flags, unsigned int mask, x64::Ptr statxbuf) {
         verify(dirfd == Host::cwdfd().fd, "dirfd is not cwd");
         std::string path = mmu_.readString(pathname);
-        auto errnoOrBuffer = kernel_.fs().statx(path, flags, mask);
+        auto errnoOrBuffer = kernel_.fs().statx(FS::FD{dirfd}, path, flags, mask);
         if(logSyscalls_) {
             print("Sys::statx(dirfd={}, path={}, flags={}, mask={}, statxbuf={:#x}) = {}\n",
                         dirfd, path, flags, mask, statxbuf.address(), errnoOrBuffer.errorOr(0));

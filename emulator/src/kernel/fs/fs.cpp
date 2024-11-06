@@ -354,7 +354,8 @@ namespace kernel {
         return openFileDescription->file()->stat();
     }
 
-    ErrnoOrBuffer FS::statx(const std::string& pathname, int flags, unsigned int mask) {
+    ErrnoOrBuffer FS::statx(FD dirfd, const std::string& pathname, int flags, unsigned int mask) {
+        verify(dirfd.fd == Host::cwdfd().fd, "dirfd is not cwd");
         auto path = Path::tryCreate(pathname);
         if(!!path) {
             verify(false, "implement statx in FS");
