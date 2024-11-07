@@ -871,4 +871,18 @@ namespace utils {
     bool X64Instruction::isSSE() const { return false; }
     bool X64Instruction::isX87() const { return false; }
 
+    bool X64Instruction::isBranch() const {
+        switch(insn()) {
+            case Insn::RET:
+            case Insn::RET_IMM:
+            case Insn::JMP_RM32:
+            case Insn::JMP_RM64:
+            case Insn::JMP_U32:
+            case Insn::JCC:
+                return true;
+            default:
+                return false;
+        }
+    }
+
 }

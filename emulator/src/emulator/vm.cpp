@@ -4,6 +4,7 @@
 #include "x64/mmu.h"
 #include "x64/registers.h"
 #include "kernel/thread.h"
+#include <optional>
 
 namespace emulator {
 
@@ -401,5 +402,38 @@ namespace emulator {
             auto symbol = calledFunctionName(address);
             m->emplace(address, std::move(symbol));
         }
+    }
+
+    std::vector<VM::BasicBlock> VM::ExecutableSection::extractBasicBlocks() {
+        // Assume that the first instruction is a basic block entry instruction
+        // This is probably wrong, because we may not have disassembled the last bit of the previous section.
+        std::vector<BasicBlock> basicBlocks;
+
+        // Build up the basic block until we reach a branch
+        const auto* begin = instructions.data();
+        const auto* end = instructions.data() + instructions.size();
+        const auto* it = begin;
+        for(; it != end; ++it) {
+            if(!it->isBranch()) continue;
+            if(it+1 != end) {
+                ++it;
+                basicBlocks.push_back(BasicBlock { begin, (u32)(it-begin) });
+                begin = it;
+            } else {
+                break;
+            }
+        }
+
+        // Try and trim excess instructions from the end
+        // We will probably disassemble them again, but they will be put in the
+        // correct basic block then.
+        if(!basicBlocks.empty()) {
+            size_t packedInstructions = std::distance((const x64::X64Instruction*)instructions.data(), begin);
+            instructions.erase(instructions.begin() + packedInstructions, instructions.end());
+            const auto& lastBlock = basicBlocks.back();
+            this->end = lastBlock.instructions[lastBlock.size-1].nextAddress();
+        }
+
+        return basicBlocks;
     }
 }

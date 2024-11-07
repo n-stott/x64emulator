@@ -649,6 +649,7 @@ namespace x64 {
             return lock_;
         }
 
+        bool isBranch() const;
         bool isCall() const;
         bool isSSE() const;
         bool isX87() const;
