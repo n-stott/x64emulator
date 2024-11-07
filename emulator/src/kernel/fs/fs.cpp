@@ -340,7 +340,8 @@ namespace kernel {
     }
 
     ErrnoOrBuffer FS::stat(const std::string& pathname) {
-        auto path = Path::tryCreate(pathname);
+        auto absolutePathname = toAbsolutePathname(pathname);
+        auto path = Path::tryCreate(absolutePathname);
         if(!!path) {
             File* file = tryGetFile(*path);
             if(!!file) return file->stat();
