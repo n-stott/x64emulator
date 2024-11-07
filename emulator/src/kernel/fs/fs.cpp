@@ -120,6 +120,20 @@ namespace kernel {
         }
     }
 
+    std::string FS::toAbsolutePathname(const std::string& pathname, FD dirfd) const {
+        verify(!pathname.empty(), "Empty pathname");
+        if(pathname[0] == '/') {
+            return pathname;
+        } else if(dirfd.fd == Host::cwdfd().fd) {
+            return currentWorkDirectory_->path() + "/" + pathname;
+        } else {
+            OpenFileDescription* openFileDescription = const_cast<FS&>(*this).findOpenFileDescription(dirfd);
+            verify(!!openFileDescription, "Trying to call toAbsolutePathname with unopened directory");
+            verify(openFileDescription->file()->isDirectory(), "Trying to call toAbsolutePathname with non-directory");
+            return openFileDescription->file()->path() + "/" + pathname;
+        }
+    }
+
     Directory* FS::ensureCompletePath(const Path& path) {
         return ensurePathImpl(path.components());
     }
@@ -171,14 +185,14 @@ namespace kernel {
         return file;
     }
 
-    FS::FD FS::open(const std::string& pathname, OpenFlags flags, Permissions permissions) {
+    FS::FD FS::open(FD dirfd, const std::string& pathname, OpenFlags flags, Permissions permissions) {
         (void)permissions;
         if(pathname.empty()) return FD{-ENOENT};
         bool canUseHostFile = true;
         if(flags.append || flags.create || flags.truncate || flags.write) canUseHostFile = false;
 
         // Look if the file is already present in FS, open or closed.
-        auto absolutePathname = toAbsolutePathname(pathname);
+        auto absolutePathname = toAbsolutePathname(pathname, dirfd);
         auto path = Path::tryCreate(absolutePathname);
         verify(!!path, "Unable to create path");
         
@@ -205,7 +219,15 @@ namespace kernel {
                 hostBackedDirectory->open();
                 return insertNode(std::move(hostBackedDirectory));
             } else {
-                // open the file
+                // try open the directory
+                auto hostBackedDirectory = HostDirectory::tryCreate(this, root_.get(), absolutePathname);
+                if(!!hostBackedDirectory) {
+                    // create and add the node to the filesystem
+                    hostBackedDirectory->open();
+                    return insertNode(std::move(hostBackedDirectory));
+                }
+
+                // try open the file
                 auto* hostBackedFile = HostFile::tryCreateAndAdd(this, root_.get(), absolutePathname);
                 if(!hostBackedFile) {
                     // TODO: return the actual value of errno

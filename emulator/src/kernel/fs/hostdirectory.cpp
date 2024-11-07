@@ -40,8 +40,7 @@ namespace kernel {
         
         mode_t fileType = (s.st_mode & S_IFMT);
         if (fileType != S_IFDIR) {
-            // not a regular file or a symbolic link
-            warn(fmt::format("Directory {} is not a directory", pathname));
+            // not a directory
             return {};
         }
 

@@ -1229,8 +1229,7 @@ namespace kernel {
         std::string path = mmu_.readString(pathname);
         FS::OpenFlags openFlags = FS::fromFlags(flags);
         FS::Permissions permissions = FS::fromMode(mode);
-        verify(dirfd == Host::cwdfd().fd, "dirfd is not cwd");
-        FS::FD fd = kernel_.fs().open(path, openFlags, permissions);
+        FS::FD fd = kernel_.fs().open(FS::FD{dirfd}, path, openFlags, permissions);
         if(logSyscalls_) print("Sys::openat(dirfd={}, path={}, flags={:#x}, mode={}) = {}\n", dirfd, path, flags, mode, fd.fd);
         return fd.fd;
     }

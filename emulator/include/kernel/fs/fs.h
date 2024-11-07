@@ -55,10 +55,11 @@ namespace kernel {
         Directory* cwd() { return currentWorkDirectory_; }
 
         std::string toAbsolutePathname(const std::string& pathname) const;
+        std::string toAbsolutePathname(const std::string& pathname, FD dirfd) const;
         Directory* ensurePathExceptLast(const Path& path);
         Directory* ensureCompletePath(const Path& path);
 
-        FD open(const std::string& pathname, OpenFlags flags, Permissions permissions);
+        FD open(FD dirfd, const std::string& pathname, OpenFlags flags, Permissions permissions);
         FD dup(FD fd);
         FD dup2(FD oldfd, FD newfd);
         int close(FD fd);
