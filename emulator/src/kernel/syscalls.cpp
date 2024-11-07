@@ -108,6 +108,7 @@ namespace kernel {
             case 0x6c: return threadRegs.set(x64::R64::RAX, invoke_syscall_0(&Sys::getegid, regs));
             case 0x6e: return threadRegs.set(x64::R64::RAX, invoke_syscall_0(&Sys::getppid, regs));
             case 0x6f: return threadRegs.set(x64::R64::RAX, invoke_syscall_0(&Sys::getpgrp, regs));
+            case 0x73: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::getgroups, regs));
             case 0x76: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::getresuid, regs));
             case 0x78: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::getresgid, regs));
             case 0x89: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::statfs, regs));
@@ -815,6 +816,20 @@ namespace kernel {
 
     int Sys::getpgrp() {
         return kernel_.host().getpgrp();
+    }
+
+    int Sys::getgroups(int size, x64::Ptr list) {
+        ErrnoOrBuffer groups = kernel_.host().getgroups(size);
+        int ret = groups.errorOrWith<int>([&](const Buffer& buf) {
+            if(size > 0) {
+                mmu_.copyToMmu(list, buf.data(), buf.size());
+            }
+            return (int)(buf.size() / sizeof(gid_t));
+        });
+        if(logSyscalls_) {
+            print("Sys::getgroups(size={}, list={:#x}) = {}\n", size, list.address(), ret);
+        }
+        return ret;
     }
 
     int Sys::getresuid(x64::Ptr32 ruid, x64::Ptr32 euid, x64::Ptr32 suid) {

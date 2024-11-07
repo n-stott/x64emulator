@@ -126,6 +126,10 @@ if(EXISTS "/usr/bin/whoami")
     add_test(NAME whoami COMMAND ${CMAKE_BINARY_DIR}/emulator/emulator /usr/bin/whoami)
 endif()
 
+if(EXISTS "/usr/bin/id")
+    add_test(NAME id COMMAND ${CMAKE_BINARY_DIR}/emulator/emulator /usr/bin/id)
+endif()
+
 if(EXISTS "/usr/bin/python2.7")
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/empty.py ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
     add_test(NAME empty_python27_script COMMAND ${CMAKE_BINARY_DIR}/emulator/emulator /usr/bin/python2.7 empty.py)

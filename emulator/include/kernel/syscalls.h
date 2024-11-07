@@ -243,6 +243,8 @@ namespace kernel {
         int getppid();
         // 0x6f
         int getpgrp();
+        // 0x73
+        int getgroups(int size, x64::Ptr list);
         // 0x76
         int getresuid(x64::Ptr32 ruid, x64::Ptr32 euid, x64::Ptr32 suid);
         // 0x78

@@ -170,6 +170,7 @@ namespace kernel {
         static int getegid();
         static int getpgrp();
         static int getppid();
+        static ErrnoOrBuffer getgroups(int size);
 
         struct UserCredentials {
             int ruid;

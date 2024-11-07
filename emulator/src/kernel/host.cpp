@@ -422,6 +422,13 @@ namespace kernel {
         return (int)::getppid();
     }
 
+    ErrnoOrBuffer Host::getgroups(int size) {
+        std::vector<gid_t> groups(size, 0);
+        int ret = ::getgroups(size, groups.data());
+        if(ret < 0) return ErrnoOrBuffer(-errno);
+        return ErrnoOrBuffer(Buffer{std::move(groups)});
+    }
+
     ErrnoOrBuffer Host::readlink(const std::string& path, size_t count) {
         std::vector<u8> buffer;
         buffer.resize(count, 0x0);
