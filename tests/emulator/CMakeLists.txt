@@ -126,16 +126,30 @@ if(EXISTS "/usr/bin/whoami")
     add_test(NAME whoami COMMAND ${CMAKE_BINARY_DIR}/emulator/emulator /usr/bin/whoami)
 endif()
 
-if(EXISTS "/usr/bin/python3")
+if(EXISTS "/usr/bin/python2.7")
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/empty.py ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
-    add_test(NAME empty_python_script COMMAND ${CMAKE_BINARY_DIR}/emulator/emulator /usr/bin/python3 empty.py)
+    add_test(NAME empty_python27_script COMMAND ${CMAKE_BINARY_DIR}/emulator/emulator /usr/bin/python2.7 empty.py)
 
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/trivial.py ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
-    add_test(NAME trivial_python_script COMMAND ${CMAKE_BINARY_DIR}/emulator/emulator /usr/bin/python3 trivial.py)
+    add_test(NAME trivial_python27_script COMMAND ${CMAKE_BINARY_DIR}/emulator/emulator /usr/bin/python2.7 trivial.py)
 
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/json.py ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
-    add_test(NAME python_json COMMAND ${CMAKE_BINARY_DIR}/emulator/emulator /usr/bin/python3 json.py)
+    add_test(NAME python27_json COMMAND ${CMAKE_BINARY_DIR}/emulator/emulator /usr/bin/python2.7 json.py)
 
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/networkx.py ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
-    add_test(NAME python_networkx COMMAND ${CMAKE_BINARY_DIR}/emulator/emulator /usr/bin/python3 networkx.py)
+    add_test(NAME python27_networkx COMMAND ${CMAKE_BINARY_DIR}/emulator/emulator /usr/bin/python2.7 networkx.py)
+endif()
+
+if(EXISTS "/usr/bin/python3")
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/empty.py ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
+    add_test(NAME empty_python3_script COMMAND ${CMAKE_BINARY_DIR}/emulator/emulator /usr/bin/python3 empty.py)
+
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/trivial.py ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
+    add_test(NAME trivial_python3_script COMMAND ${CMAKE_BINARY_DIR}/emulator/emulator /usr/bin/python3 trivial.py)
+
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/json.py ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
+    add_test(NAME python3_json COMMAND ${CMAKE_BINARY_DIR}/emulator/emulator /usr/bin/python3 json.py)
+
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/networkx.py ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
+    add_test(NAME python3_networkx COMMAND ${CMAKE_BINARY_DIR}/emulator/emulator /usr/bin/python3 networkx.py)
 endif()
