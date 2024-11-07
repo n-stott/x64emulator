@@ -419,8 +419,7 @@ namespace kernel {
     ErrnoOrBuffer FS::ioctl(FD fd, unsigned long request, const Buffer& buffer) {
         OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
         if(!openFileDescription) return ErrnoOrBuffer(-EBADF);
-        if(!openFileDescription->file()->isRegularFile()) return ErrnoOrBuffer{-EBADF};
-        RegularFile* file = static_cast<RegularFile*>(openFileDescription->file());
+        File* file = openFileDescription->file();
         return file->ioctl(request, buffer);
     }
 
