@@ -316,6 +316,20 @@ namespace kernel {
         return 0;
     }
 
+    int FS::access(const std::string& pathname, int mode) {
+        auto absolutePathname = toAbsolutePathname(pathname);
+        auto path = Path::tryCreate(absolutePathname);
+        verify(!!path, "Unable to create path");
+        return kernel_.host().access(absolutePathname, mode);
+    }
+
+    int FS::faccessat(FS::FD dirfd, const std::string& pathname, int mode) {
+        auto absolutePathname = toAbsolutePathname(pathname, dirfd);
+        auto path = Path::tryCreate(absolutePathname);
+        verify(!!path, "Unable to create path");
+        return kernel_.host().access(absolutePathname, mode);
+    }
+
     OpenFileDescription* FS::findOpenFileDescription(FD fd) {
         for(OpenNode& node : openFiles_) {
             if(node.fd != fd) continue;

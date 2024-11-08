@@ -305,6 +305,8 @@ namespace kernel {
         int fstatat64(int dirfd, x64::Ptr pathname, x64::Ptr statbuf, int flags);
         // 0x10b
         ssize_t readlinkat(int dirfd, x64::Ptr pathname, x64::Ptr buf, size_t bufsiz);
+        // 0x10d
+        int faccessat(int dirfd, x64::Ptr pathname, int mode);
         // 0x10e
         int pselect6(int nfds, x64::Ptr readfds, x64::Ptr writefds, x64::Ptr exceptfds, x64::Ptr timeout, x64::Ptr sigmask);
         // 0x111

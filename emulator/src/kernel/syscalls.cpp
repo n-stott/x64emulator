@@ -139,6 +139,7 @@ namespace kernel {
             case 0x101: return threadRegs.set(x64::R64::RAX, invoke_syscall_4(&Sys::openat, regs));
             case 0x106: return threadRegs.set(x64::R64::RAX, invoke_syscall_4(&Sys::fstatat64, regs));
             case 0x10b: return threadRegs.set(x64::R64::RAX, invoke_syscall_4(&Sys::readlinkat, regs));
+            case 0x10d: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::faccessat, regs));
             case 0x10e: return threadRegs.set(x64::R64::RAX, invoke_syscall_6(&Sys::pselect6, regs));
             case 0x111: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::set_robust_list, regs));
             case 0x112: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::get_robust_list, regs));
@@ -403,7 +404,7 @@ namespace kernel {
 
     int Sys::access(x64::Ptr pathname, int mode) {
         std::string path = mmu_.readString(pathname);
-        int ret = kernel_.host().access(path, mode);
+        int ret = kernel_.fs().access(path, mode);
         if(logSyscalls_) {
             std::string info;
             if(ret < 0) {
@@ -1274,6 +1275,19 @@ namespace kernel {
             mmu_.copyToMmu(buf, buffer.data(), buffer.size());
             return (ssize_t)buffer.size();
         });
+    }
+
+    int Sys::faccessat(int dirfd, x64::Ptr pathname, int mode) {
+        std::string path = mmu_.readString(pathname);
+        int ret = kernel_.fs().faccessat(FS::FD{dirfd}, path, mode);
+        if(logSyscalls_) {
+            std::string info;
+            if(ret < 0) {
+                info = strerror(-ret);
+            }
+            print("Sys::faccessat(dirfd={}, path={}, mode={}) = {} {}\n", dirfd, path, mode, ret, info);
+        }
+        return ret;
     }
 
     int Sys::pselect6(int nfds, x64::Ptr readfds, x64::Ptr writefds, x64::Ptr exceptfds, x64::Ptr timeout, x64::Ptr sigmask) {

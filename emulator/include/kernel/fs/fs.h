@@ -68,6 +68,9 @@ namespace kernel {
         int rename(const std::string& oldname, const std::string& newname);
         int unlink(const std::string& pathname);
 
+        int access(const std::string& pathname, int mode);
+        int faccessat(FD dirfd, const std::string& pathname, int mode);
+
         ErrnoOrBuffer read(FD fd, size_t count);
         ErrnoOrBuffer pread(FD fd, size_t count, off_t offset);
 
