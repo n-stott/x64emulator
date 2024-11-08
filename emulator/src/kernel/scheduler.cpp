@@ -17,6 +17,13 @@ namespace kernel {
     Scheduler::Scheduler(x64::Mmu& mmu, Kernel& kernel) : mmu_(mmu), kernel_(kernel) { }
     Scheduler::~Scheduler() = default;
 
+
+    void Scheduler::syncThreadTimeSlice(Thread* thread) {
+        verify(!!thread);
+        std::unique_lock lock(schedulerMutex_);
+        currentTime_ = std::max(currentTime_, currentTime_ + PreciseTime { 0 , thread->tickInfo().timeElapsedThisSlice() });
+    }
+
     void Scheduler::runOnWorkerThread(int id) {
         (void)id;
         emulator::VM vm(mmu_, kernel_);
@@ -37,22 +44,23 @@ namespace kernel {
                 }
 
                 if(!threadToRun) {
-                    if(!allAliveThreads_.empty()) {
-                        // Unable to run a thread, we have some threads alive
-                        // Just waste time
-                        {
-                            std::unique_lock lock(schedulerMutex_);
-                            currentTime_ = std::max(currentTime_, currentTime_ + PreciseTime { 0 , 1'000'000 }); // 1ms
-                        }
+                    // No more thread alive
+                    if(allAliveThreads_.empty()) break;
+
+                    bool needsToWaitForNewThreads = !sleepBlockers_.empty();
+                    if(needsToWaitForNewThreads) {
+                        // If we need some time to pass, actually advance in time
+                        std::unique_lock lock(schedulerMutex_);
+                        currentTime_ = std::max(currentTime_, currentTime_ + PreciseTime { 0 , 1'000'000 }); // 1ms
+                    } else {
+                        // Otherwise, just wait a bit
 #ifndef NDEBUG
                         for(volatile int i = 0; i < 1'000'000; ++i) { }
 #else
                         for(volatile int i = 0; i < 1'000'000; ++i) { }
 #endif
-                        continue;
-                    } else {
-                        break;
                     }
+                    continue;
                 }
 
                 threadToRun->setState(Thread::THREAD_STATE::RUNNING);
@@ -60,12 +68,9 @@ namespace kernel {
 
                 while(!threadToRun->tickInfo().isStopAsked()) {
                     verify(threadToRun->state() == Thread::THREAD_STATE::RUNNING);
+                    syncThreadTimeSlice(threadToRun);
                     vm.execute(threadToRun);
-
-                    {
-                        std::unique_lock lock(schedulerMutex_);
-                        currentTime_ = std::max(currentTime_, currentTime_ + PreciseTime { 0 , threadToRun->tickInfo().sliceTime() });
-                    }
+                    syncThreadTimeSlice(threadToRun);
 
                     if(threadToRun->state() == Thread::THREAD_STATE::IN_SYSCALL) {
                         kernel_.timers().updateAll(currentTime_);
@@ -76,10 +81,7 @@ namespace kernel {
                 if(threadToRun->state() == Thread::THREAD_STATE::RUNNING)
                     threadToRun->setState(Thread::THREAD_STATE::RUNNABLE);
                 
-                {
-                    std::unique_lock lock(schedulerMutex_);
-                    currentTime_ = std::max(currentTime_, currentTime_ + PreciseTime { 0 , threadToRun->tickInfo().sliceTime() });
-                }
+                syncThreadTimeSlice(threadToRun);
 
             } catch(...) {
                 kernel_.panic();

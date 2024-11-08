@@ -64,6 +64,8 @@ namespace kernel {
         bool allThreadsBlocked() const;
         bool allThreadsDead() const;
 
+        void syncThreadTimeSlice(Thread* thread);
+
         template<typename Func>
         void forEachThread(Func&& func) const {
             for(const auto& threadPtr : threads_) {

@@ -63,7 +63,7 @@ namespace kernel {
 
             void tick() { ++current_; }
             size_t current() const { return current_; }
-            size_t sliceTime() const { return current_ - start_; }
+            size_t timeElapsedThisSlice() const { return current_ - start_; }
             void setSlice(size_t start, size_t end) {
                 totalExceptCurrentSlice_ += current_ - start_;
                 start_ = start;
