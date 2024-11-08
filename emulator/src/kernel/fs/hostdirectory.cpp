@@ -69,9 +69,21 @@ namespace kernel {
         hostFd_.reset();
     }
 
+    off_t HostDirectory::lseek(off_t offset, int whence) {
+        verify(!!hostFd_, "Trying to close un-opened directory");
+        off_t ret = ::lseek(hostFd_.value(), offset, whence);
+        if(ret < 0) return -errno;
+        return ret;
+    }
+
     ErrnoOrBuffer HostDirectory::getdents64(size_t count) {
         verify(!!hostFd_, "Directory must be opened first");
         return fs_->kernel().host().getdents64(Host::FD{hostFd_.value()}, count);
+    }
+
+    int HostDirectory::fcntl(int cmd, int arg) {
+        verify(!!hostFd_, "Directory must be opened first");
+        return fs_->kernel().host().fcntl(Host::FD{hostFd_.value()}, cmd, arg);
     }
 
 }
