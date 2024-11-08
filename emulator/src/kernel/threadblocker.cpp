@@ -3,13 +3,15 @@
 #include "kernel/fs/fs.h"
 #include "x64/mmu.h"
 #include <fmt/core.h>
+#include <algorithm>
 
 namespace kernel {
 
     bool FutexBlocker::canUnblock(x64::Ptr32 ptr) const {
         if(ptr != wordPtr_) return false;
         u32 val = mmu_->read32(ptr);
-        return val != expected_;
+        if(val == expected_) return false;
+        return true;
     }
 
     std::string FutexBlocker::toString() const {
