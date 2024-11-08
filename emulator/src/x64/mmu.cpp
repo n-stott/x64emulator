@@ -81,6 +81,9 @@ namespace x64 {
 
         checkRegionsAreSorted();
         auto insertionPosition = std::lower_bound(regions_.begin(), regions_.end(), regionPtr, Mmu::compareRegions);
+#ifdef CANNOT_REUSE_PAST_REGIONS
+        allSlicesEverMmaped_.push_back(std::make_pair(regionPtr->base(), regionPtr->end()));
+#endif
         regions_.insert(insertionPosition, std::move(regionPtr));
         checkRegionsAreSorted();
 
@@ -439,6 +442,18 @@ namespace x64 {
         verify(length > 0, "zero sized region is not allowed");
         checkRegionsAreSorted();
         length = pageRoundUp(length);
+#ifdef CANNOT_REUSE_PAST_REGIONS
+        std::sort(allSlicesEverMmaped_.begin(), allSlicesEverMmaped_.end());
+        std::optional<u64> chosenAddress;
+        auto it = std::adjacent_find(allSlicesEverMmaped_.begin(), allSlicesEverMmaped_.end(), [&](const auto& a, const auto& b) {
+            return a.second + length <= b.first;
+        });
+        if(it == allSlicesEverMmaped_.end()) {
+            return topOfMemoryPageAligned();
+        } else {
+            return it->second;
+        }
+#else
         std::optional<u64> chosenAddress;
         auto it = std::adjacent_find(regions_.begin(), regions_.end(), [&](const auto& a, const auto& b) {
             return a->end() + length <= b->base();
@@ -448,6 +463,7 @@ namespace x64 {
         } else {
             return (*it)->end();
         }
+#endif
     }
 
     u64 Mmu::pageRoundDown(u64 address) {

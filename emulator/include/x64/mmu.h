@@ -268,6 +268,10 @@ namespace x64 {
         u64 firstUnlookupdableAddress_ { 0 };
         std::vector<MunmapCallback*> callbacks_;
 
+#ifdef CANNOT_REUSE_PAST_REGIONS
+        mutable std::vector<std::pair<u64, u64>> allSlicesEverMmaped_;
+#endif
+
         static bool compareRegions(const std::unique_ptr<Region>& a, const std::unique_ptr<Region>& b) {
             return a->base() < b->base();
         };
