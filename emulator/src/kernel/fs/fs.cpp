@@ -427,13 +427,14 @@ namespace kernel {
         OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
         if(!openFileDescription) return -EBADF;
         File* file = openFileDescription->file();
-        file->unref();
-        file->close();
         openFiles_.erase(std::remove_if(openFiles_.begin(), openFiles_.end(), [&](const auto& openNode) {
             return openNode.fd == fd;
         }), openFiles_.end());
-        if(file->refCount() == 0 && !file->keepAfterClose()) {
-            unlink(file->path());
+        file->unref();
+        if(file->refCount() == 0) {
+            file->close();
+            if(!file->keepAfterClose())
+                unlink(file->path());
         }
         return 0;
     }
