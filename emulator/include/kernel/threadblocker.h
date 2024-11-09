@@ -4,6 +4,7 @@
 #include "x64/types.h"
 #include "kernel/timers.h"
 #include "utils.h"
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -18,10 +19,9 @@ namespace kernel {
 
     class FutexBlocker {
     public:
-        FutexBlocker(Thread* thread, x64::Mmu& mmu, x64::Ptr32 wordPtr, u32 expected)
-            : thread_(thread), mmu_(&mmu), wordPtr_(wordPtr), expected_(expected) { }
+        FutexBlocker(Thread* thread, x64::Mmu& mmu, x64::Ptr32 wordPtr, u32 expected, Timers& timers, x64::Ptr timeout);
 
-        [[nodiscard]] bool canUnblock(x64::Ptr32 ptr) const;
+        [[nodiscard]] bool canUnblock(x64::Ptr32 ptr, Timers& timers) const;
 
         Thread* thread() const { return thread_; }
 
@@ -32,6 +32,7 @@ namespace kernel {
         x64::Mmu* mmu_;
         x64::Ptr32 wordPtr_;
         u32 expected_;
+        std::optional<PreciseTime> timeLimit_;
     };
 
     class PollBlocker {

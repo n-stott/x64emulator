@@ -275,8 +275,8 @@ namespace kernel {
         thread->yield();
     }
 
-    void Scheduler::wait(Thread* thread, x64::Ptr32 wordPtr, u32 expected) {
-        futexBlockers_.push_back(FutexBlocker{thread, mmu_, wordPtr, expected});
+    void Scheduler::wait(Thread* thread, x64::Ptr32 wordPtr, u32 expected, x64::Ptr timeout) {
+        futexBlockers_.push_back(FutexBlocker{thread, mmu_, wordPtr, expected, kernel_.timers(), timeout});
         thread->setState(Thread::THREAD_STATE::BLOCKED);
         thread->yield();
     }
@@ -285,7 +285,7 @@ namespace kernel {
         u32 nbWoken = 0;
         std::vector<FutexBlocker*> removableBlockers;
         for(auto& blocker : futexBlockers_) {
-            bool canUnblock = blocker.canUnblock(wordPtr);
+            bool canUnblock = blocker.canUnblock(wordPtr, kernel_.timers());
             if(!canUnblock) continue;
             blocker.thread()->setState(Thread::THREAD_STATE::RUNNABLE);
             removableBlockers.push_back(&blocker);

@@ -7,10 +7,29 @@
 
 namespace kernel {
 
-    bool FutexBlocker::canUnblock(x64::Ptr32 ptr) const {
+
+    FutexBlocker::FutexBlocker(Thread* thread, x64::Mmu& mmu, x64::Ptr32 wordPtr, u32 expected, Timers& timers, x64::Ptr timeout)
+        : thread_(thread), mmu_(&mmu), wordPtr_(wordPtr), expected_(expected) {
+        if(!!timeout) {
+            Timer* timer = timers.getOrTryCreate(0); // get the same timer as in the setup
+            verify(!!timer);
+            PreciseTime now = timer->now();
+            auto relative = timer->readTime(*mmu_, timeout);
+            verify(!!relative, "Could not read timeout value");
+            timeLimit_ = now + *relative;
+        }
+    }
+
+    bool FutexBlocker::canUnblock(x64::Ptr32 ptr, Timers& timers) const {
         if(ptr != wordPtr_) return false;
         u32 val = mmu_->read32(ptr);
         if(val == expected_) return false;
+        if(!!timeLimit_) {
+            Timer* timer = timers.getOrTryCreate(0); // get the same timer as in the setup
+            verify(!!timer);
+            PreciseTime now = timer->now();
+            if(now < timeLimit_) return false;
+        }
         return true;
     }
 
@@ -42,7 +61,7 @@ namespace kernel {
         verify(!!timer, "Sleeping on null timer");
         verify(timer_ == timer, "Mutated timer");
         PreciseTime now = timer_->now();
-        if(targetTime_ > now) return false;
+        if(now < targetTime_) return false;
         thread_->savedCpuState().regs.set(x64::R64::RAX, 0);
         thread_->setState(Thread::THREAD_STATE::RUNNABLE);
         return true;

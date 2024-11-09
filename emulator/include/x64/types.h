@@ -217,6 +217,8 @@ namespace x64 {
     public:
         explicit SPtr(u64 address) : address_(address) { }
 
+        static SPtr null() { return SPtr{0}; }
+
         explicit operator bool() const {
             return !!address();
         }

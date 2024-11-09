@@ -963,7 +963,6 @@ namespace kernel {
     }
 
     long Sys::futex(x64::Ptr32 uaddr, int futex_op, uint32_t val, x64::Ptr timeout, x64::Ptr32 uaddr2, uint32_t val3) {
-        verify(!timeout, "futex with non-null timeout is not supported");
         auto onExit = [&](long ret) -> long {
             if(!logSyscalls_) return ret;
             std::string op;
@@ -982,7 +981,11 @@ namespace kernel {
             // wait
             u32 loaded = mmu_.read32(uaddr);
             if(loaded != val) return -EAGAIN;
-            kernel_.scheduler().wait(currentThread_, uaddr, val);
+            // create timer 0
+            Timer* timer = kernel_.timers().getOrTryCreate(0);
+            verify(!!timer);
+            timer->update(kernel_.scheduler().kernelTime());
+            kernel_.scheduler().wait(currentThread_, uaddr, val, timeout);
             return onExit(0);
         }
         if(unmaskedOp == 1) {
@@ -995,10 +998,11 @@ namespace kernel {
             return onExit(-EPERM);
         }
         if(unmaskedOp == 9 && val3 == std::numeric_limits<uint32_t>::max()) {
+            verify(!timeout, "futex_wait_bitset with non-null timeout is not supported");
             // wait_bitset
             u32 loaded = mmu_.read32(uaddr);
             if(loaded != val) return -EAGAIN;
-            kernel_.scheduler().wait(currentThread_, uaddr, val);
+            kernel_.scheduler().wait(currentThread_, uaddr, val, x64::Ptr::null());
             return onExit(0);
         }
         verify(false, [&]() {
