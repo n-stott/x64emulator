@@ -648,7 +648,7 @@ namespace kernel {
     void FS::dumpSummary() const {
         fmt::print("Open files:\n");
         for(const auto& openFile : openFiles_) {
-            fmt::print("  fd={} : type={:20} path={}\n", openFile.fd.fd, openFile.openFiledescription->toString(), openFile.path);
+            fmt::print("  fd={} : type={:20} path={}\n", openFile.fd.fd, openFile.openFiledescription->toString(), openFile.openFiledescription->file()->path());
         }
         root_->printSubtree();
     }
