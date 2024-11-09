@@ -1251,7 +1251,17 @@ namespace kernel {
         FS::OpenFlags openFlags = FS::fromFlags(flags);
         FS::Permissions permissions = FS::fromMode(mode);
         FS::FD fd = kernel_.fs().open(FS::FD{dirfd}, path, openFlags, permissions);
-        if(logSyscalls_) print("Sys::openat(dirfd={}, path={}, flags={:#x}, mode={}) = {}\n", dirfd, path, flags, mode, fd.fd);
+        if(logSyscalls_) {
+            std::string flagsString = fmt::format("[{}{}{}{}{}{}{}]",
+                openFlags.read ? "Read " : "",
+                openFlags.write ? "Write " : "",
+                openFlags.append ? "Append " : "",
+                openFlags.truncate ? "Truncate " : "",
+                openFlags.create ? "Create " : "",
+                openFlags.closeOnExec ? "CloseOnExec " : "",
+                openFlags.directory ? "Directory " : "");
+            print("Sys::openat(dirfd={}, path={}, flags={}, mode={:o}) = {}\n", dirfd, path, flagsString, mode, fd.fd);
+        }
         return fd.fd;
     }
 
