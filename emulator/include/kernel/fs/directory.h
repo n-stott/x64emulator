@@ -16,12 +16,12 @@ namespace kernel {
         bool isDirectory() const override final { return true; }
         void printSubtree() const;
 
-        File* tryGetEntry(std::string name);
-        std::unique_ptr<File> tryTakeEntry(std::string name);
-        Directory* tryGetSubDirectory(std::string name);
+        File* tryGetEntry(const std::string& name);
+        std::unique_ptr<File> tryTakeEntry(const std::string& name);
+        Directory* tryGetSubDirectory(const std::string& name);
 
-        Directory* tryAddHostDirectory(std::string name);
-        Directory* tryAddShadowDirectory(std::string name);
+        Directory* tryAddHostDirectory(const std::string& name);
+        Directory* tryAddShadowDirectory(const std::string& name);
 
         bool hasBeenTaintedByShadow() const { return taintedByShadow_; }
         void setTaintedByShadow() { taintedByShadow_ = true; }

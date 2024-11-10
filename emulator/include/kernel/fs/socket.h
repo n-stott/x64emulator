@@ -22,19 +22,19 @@ namespace kernel {
         bool canRead() const override;
         bool canWrite() const override;
 
-        int connect(const Buffer& buffer);
+        int connect(const Buffer& buffer) const;
         int fcntl(int cmd, int arg) override;
-        int shutdown(int how);
+        int shutdown(int how) const;
 
-        int bind(const Buffer& name);
+        int bind(const Buffer& name) const;
 
-        ErrnoOrBuffer getpeername(u32 buffersize);
-        ErrnoOrBuffer getsockname(u32 buffersize);
+        ErrnoOrBuffer getpeername(u32 buffersize) const;
+        ErrnoOrBuffer getsockname(u32 buffersize) const;
 
-        ErrnoOr<std::pair<Buffer, Buffer>> recvfrom(size_t len, int flags, bool requireSrcAddress);
-        ssize_t recvmsg(int flags, Buffer* msg_name, std::vector<Buffer>* msg_iov, Buffer* msg_control, int* msg_flags);
-        ssize_t send(const Buffer& buffer, int flags);
-        ssize_t sendmsg(int flags, const Buffer& msg_name, const std::vector<Buffer>& msg_iov, const Buffer& msg_control, int msg_flags);
+        ErrnoOr<std::pair<Buffer, Buffer>> recvfrom(size_t len, int flags, bool requireSrcAddress) const;
+        ssize_t recvmsg(int flags, Buffer* msg_name, std::vector<Buffer>* msg_iov, Buffer* msg_control, int* msg_flags) const;
+        ssize_t send(const Buffer& buffer, int flags) const;
+        ssize_t sendmsg(int flags, const Buffer& msg_name, const std::vector<Buffer>& msg_iov, const Buffer& msg_control, int msg_flags) const;
 
         bool isReadable() const override { return true; }
         bool isWritable() const override { return true; }

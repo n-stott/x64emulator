@@ -375,6 +375,7 @@ namespace kernel {
             case F_SETFD: return "F_SETFD";
             case F_GETFL: return "F_GETFL";
             case F_SETFL: return "F_SETFL";
+            default: break;
         }
         return "unknown fcntl " + std::to_string(cmd);
     }
@@ -389,6 +390,7 @@ namespace kernel {
                 if(ret < 0) return -errno;
                 return ret;
             }
+            default: break;
         }
         return -ENOTSUP;
     }
@@ -400,6 +402,7 @@ namespace kernel {
             case FIONCLEX: return "FIONCLEX";
             case TIOCGWINSZ: return "TIOCGWINSZ";
             case TIOCSWINSZ: return "TIOCSWINSZ";
+            default: break;
         }
         return "unknown ioctl";
     }
@@ -412,6 +415,7 @@ namespace kernel {
             case TIOCGWINSZ: return 0;
             case TIOCSWINSZ: return sizeof(winsize);
             case TCSETSW: return sizeof(termios);
+            default: break;
         }
         return 0;
     }
@@ -606,6 +610,7 @@ namespace kernel {
             case AUX_TYPE::VDSO_ADDRESS: return getDummy(AT_SYSINFO_EHDR);
             case AUX_TYPE::EXEC_FILE_DESCRIPTOR: return getDummy(AT_EXECFD);
             case AUX_TYPE::EXEC_PATH_NAME: return getDummy(AT_EXECFN);
+            default: break;
         }
         return {};
     }

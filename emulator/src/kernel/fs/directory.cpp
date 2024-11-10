@@ -9,7 +9,7 @@
 
 namespace kernel {
 
-    File* Directory::tryGetEntry(std::string name) {
+    File* Directory::tryGetEntry(const std::string& name) {
         for(auto& entry : entries_) {
             if(entry->name() != name) continue;
             return entry.get();
@@ -17,7 +17,7 @@ namespace kernel {
         return nullptr;
     }
 
-    std::unique_ptr<File> Directory::tryTakeEntry(std::string name) {
+    std::unique_ptr<File> Directory::tryTakeEntry(const std::string& name) {
         auto it = std::find_if(entries_.begin(), entries_.end(), [&](const auto& entry) {
             return entry->name() == name;
         });
@@ -27,7 +27,7 @@ namespace kernel {
         return file;
     }
 
-    Directory* Directory::tryGetSubDirectory(std::string name) {
+    Directory* Directory::tryGetSubDirectory(const std::string& name) {
         for(auto& entry : entries_) {
             if(entry->name() != name) continue;
             if(!entry->isDirectory()) return nullptr;
@@ -36,22 +36,22 @@ namespace kernel {
         return nullptr;
     }
 
-    Directory* Directory::tryAddHostDirectory(std::string name) {
+    Directory* Directory::tryAddHostDirectory(const std::string& name) {
         for(auto& entry : entries_) {
             if(entry->name() == name) return nullptr;
         }
-        auto dir = HostDirectory::tryCreate(fs_, this, std::move(name));
+        auto dir = HostDirectory::tryCreate(fs_, this, name);
         if(!dir) return nullptr;
         Directory* dirPtr = dir.get();
         entries_.push_back(std::move(dir));
         return dirPtr;
     }
 
-    Directory* Directory::tryAddShadowDirectory(std::string name) {
+    Directory* Directory::tryAddShadowDirectory(const std::string& name) {
         for(auto& entry : entries_) {
             if(entry->name() == name) return nullptr;
         }
-        auto dir = ShadowDirectory::tryCreate(fs_, this, std::move(name));
+        auto dir = ShadowDirectory::tryCreate(fs_, this, name);
         if(!dir) return nullptr;
         this->setTaintedByShadow();
         Directory* dirPtr = dir.get();

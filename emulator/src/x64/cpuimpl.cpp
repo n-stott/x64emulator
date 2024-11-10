@@ -96,10 +96,10 @@ namespace x64 {
         [[maybe_unused]] u64 res = sub64(src1, src2, flags);
     }
 
-    u8 CpuImpl::neg8(u8 dst, Flags* flags) { return sub8(0u, dst, flags); }
-    u16 CpuImpl::neg16(u16 dst, Flags* flags) { return sub16(0u, dst, flags); }
-    u32 CpuImpl::neg32(u32 dst, Flags* flags) { return sub32(0u, dst, flags); }
-    u64 CpuImpl::neg64(u64 dst, Flags* flags) { return sub64(0ul, dst, flags); }
+    u8 CpuImpl::neg8(u8 dst, Flags* flags) { return sub8(0U, dst, flags); }
+    u16 CpuImpl::neg16(u16 dst, Flags* flags) { return sub16(0U, dst, flags); }
+    u32 CpuImpl::neg32(u32 dst, Flags* flags) { return sub32(0U, dst, flags); }
+    u64 CpuImpl::neg64(u64 dst, Flags* flags) { return sub64(0UL, dst, flags); }
 
     std::pair<u8, u8> CpuImpl::mul8(u8 src1, u8 src2, Flags* flags) {
         u16 prod = (u16)src1 * (u16)src2;
@@ -204,7 +204,7 @@ namespace x64 {
 
     std::pair<u16, u16> CpuImpl::div16(u16 dividendUpper, u16 dividendLower, u16 divisor) {
         assert(divisor != 0);
-        u32 dividend = (u32)((u32)dividendUpper) << 16 | (u32)dividendLower;
+        u32 dividend = (((u32)dividendUpper) << 16 | (u32)dividendLower);
         u32 tmp = dividend / divisor;
         assert(tmp >> 16 == 0);
         return std::make_pair(tmp, dividend % divisor);
@@ -476,7 +476,7 @@ namespace x64 {
         U res = 0;
         for(u32 i = 0; i < sizeof(U); ++i) {
             U byte = (val >> (8*i)) & 0xff;
-            res |= byte << (8*sizeof(U) - 8*(i+1));
+            res |= byte << (8*(sizeof(U) - (i+1)));
         }
         return res;
     }
@@ -567,18 +567,18 @@ namespace x64 {
     void CpuImpl::test32(u32 src1, u32 src2, Flags* flags) { return test<u32>(src1, src2, flags); }
     void CpuImpl::test64(u64 src1, u64 src2, Flags* flags) { return test<u64>(src1, src2, flags); }
 
-    void CpuImpl::cmpxchg8(u8 eax, u8 dest, Flags* flags) {
-        CpuImpl::cmp8(eax, dest, flags);
-        if(eax == dest) {
+    void CpuImpl::cmpxchg8(u8 al, u8 dest, Flags* flags) {
+        CpuImpl::cmp8(al, dest, flags);
+        if(al == dest) {
             flags->zero = 1;
         } else {
             flags->zero = 0;
         }
     }
 
-    void CpuImpl::cmpxchg16(u16 eax, u16 dest, Flags* flags) {
-        CpuImpl::cmp16(eax, dest, flags);
-        if(eax == dest) {
+    void CpuImpl::cmpxchg16(u16 ax, u16 dest, Flags* flags) {
+        CpuImpl::cmp16(ax, dest, flags);
+        if(ax == dest) {
             flags->zero = 1;
         } else {
             flags->zero = 0;

@@ -64,7 +64,7 @@ namespace kernel {
         return !!(pfd.revents & POLLOUT);
     }
 
-    int Socket::connect(const Buffer& buffer) {
+    int Socket::connect(const Buffer& buffer) const {
         int ret = ::connect(hostFd_, (const struct sockaddr*)buffer.data(), (socklen_t)buffer.size());
         if(ret < 0) return -errno;
         return ret;
@@ -80,23 +80,24 @@ namespace kernel {
                 if(ret < 0) return -errno;
                 return ret;
             }
+            default: break;
         }
         return -ENOTSUP;
     }
 
-    int Socket::shutdown(int how) {
+    int Socket::shutdown(int how) const {
         int ret = ::shutdown(hostFd_, how);
         if(ret < 0) return -errno;
         return ret;
     }
 
-    int Socket::bind(const Buffer& name) {
+    int Socket::bind(const Buffer& name) const {
         int ret = ::bind(hostFd_, (const struct sockaddr*)name.data(), (socklen_t)name.size());
         if(ret < 0) return -errno;
         return ret;
     }
 
-    ErrnoOrBuffer Socket::getpeername(u32 buffersize) {
+    ErrnoOrBuffer Socket::getpeername(u32 buffersize) const {
         static_assert(sizeof(socklen_t) == sizeof(u32));
         std::vector<u8> buffer;
         buffer.resize(buffersize, 0x0);
@@ -106,7 +107,7 @@ namespace kernel {
         return ErrnoOrBuffer(Buffer{std::move(buffer)});
     }
 
-    ErrnoOrBuffer Socket::getsockname(u32 buffersize) {
+    ErrnoOrBuffer Socket::getsockname(u32 buffersize) const {
         static_assert(sizeof(socklen_t) == sizeof(u32));
         std::vector<u8> buffer;
         buffer.resize(buffersize, 0x0);
@@ -137,7 +138,7 @@ namespace kernel {
         return -ESPIPE;
     }
 
-    ErrnoOr<std::pair<Buffer, Buffer>> Socket::recvfrom(size_t len, int flags, bool requireSrcAddress) {
+    ErrnoOr<std::pair<Buffer, Buffer>> Socket::recvfrom(size_t len, int flags, bool requireSrcAddress) const {
         static_assert(sizeof(socklen_t) == sizeof(u32));
         if(requireSrcAddress) {
             return ErrnoOr<std::pair<Buffer, Buffer>>(-ENOTSUP);
@@ -150,7 +151,7 @@ namespace kernel {
         return ErrnoOr<std::pair<Buffer, Buffer>>(std::make_pair(Buffer{std::move(buffer)}, Buffer{}));
     }
 
-    ssize_t Socket::recvmsg(int flags, Buffer* msg_name, std::vector<Buffer>* msg_iov, Buffer* msg_control, int* msg_flags) {
+    ssize_t Socket::recvmsg(int flags, Buffer* msg_name, std::vector<Buffer>* msg_iov, Buffer* msg_control, int* msg_flags) const {
         // struct msghdr {
         //     void*         msg_name;       /* Optional address */
         //     socklen_t     msg_namelen;    /* Size of address */
@@ -181,13 +182,13 @@ namespace kernel {
         return ret;
     }
 
-    ssize_t Socket::send(const Buffer& buffer, int flags) {
+    ssize_t Socket::send(const Buffer& buffer, int flags) const {
         ssize_t ret = ::send(hostFd_, buffer.data(), buffer.size(), flags);
         if(ret < 0) return -errno;
         return ret;
     }
 
-    ssize_t Socket::sendmsg(int flags, const Buffer& msg_name, const std::vector<Buffer>& msg_iov, const Buffer& msg_control, int msg_flags) {
+    ssize_t Socket::sendmsg(int flags, const Buffer& msg_name, const std::vector<Buffer>& msg_iov, const Buffer& msg_control, int msg_flags) const {
         // struct msghdr {
         //     void*         msg_name;       /* Optional address */
         //     socklen_t     msg_namelen;    /* Size of address */
@@ -201,7 +202,7 @@ namespace kernel {
         header.msg_name = (void*)msg_name.data();
         header.msg_namelen = (socklen_t)msg_name.size();
         std::vector<iovec> iovs;
-        for(auto& buf : msg_iov) {
+        for(const auto& buf : msg_iov) {
             iovec iov;
             iov.iov_base = (void*)buf.data();
             iov.iov_len = buf.size();

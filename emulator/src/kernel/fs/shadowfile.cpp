@@ -17,7 +17,7 @@ namespace kernel {
         struct stat st;
     };
 
-    ShadowFile* ShadowFile::tryCreateAndAdd(FS* fs, Directory* parent, std::string name, bool create) {
+    ShadowFile* ShadowFile::tryCreateAndAdd(FS* fs, Directory* parent, const std::string& name, bool create) {
         std::string pathname;
         if(!parent || parent == fs->root()) {
             pathname = name;
@@ -61,13 +61,13 @@ namespace kernel {
         }
     }
 
-    std::unique_ptr<ShadowFile> ShadowFile::tryCreate(FS* fs, std::string name) {
+    std::unique_ptr<ShadowFile> ShadowFile::tryCreate(FS* fs, const std::string& name) {
         std::vector<u8> data;
-        auto shadowFile = std::unique_ptr<ShadowFile>(new ShadowFile(fs, nullptr, std::move(name), std::move(data)));
+        auto shadowFile = std::unique_ptr<ShadowFile>(new ShadowFile(fs, nullptr, name, std::move(data)));
         return shadowFile;
     }
 
-    ShadowFile::ShadowFile(FS* fs, Directory* parent, std::string name, std::vector<u8> data) : RegularFile(fs, parent, std::move(name)), data_(data) { }
+    ShadowFile::ShadowFile(FS* fs, Directory* parent, std::string name, std::vector<u8> data) : RegularFile(fs, parent, std::move(name)), data_(std::move(data)) { }
 
     ShadowFile::~ShadowFile() = default;
 
@@ -81,6 +81,7 @@ namespace kernel {
 
     void ShadowFile::append() {
         verify(false, "ShadowFile::append() not implemented");
+        (void)data_;
     }
 
     ErrnoOrBuffer ShadowFile::read(size_t count, off_t offset) {
@@ -124,7 +125,7 @@ namespace kernel {
             st.st_rdev = 0; // dummy value
             st.st_size = (off_t)data_.size();
             st.st_blksize = 0x200; // dummy value
-            st.st_blocks = data_.size() / 0x200;
+            st.st_blocks = (__blkcnt_t)((data_.size() + st.st_blksize - 1) / st.st_blksize);
 
             Buffer buf(st);
             return ErrnoOrBuffer(std::move(buf));

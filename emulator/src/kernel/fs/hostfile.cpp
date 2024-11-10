@@ -12,7 +12,7 @@
 
 namespace kernel {
 
-    File* HostFile::tryCreateAndAdd(FS* fs, Directory* parent, std::string name) {
+    File* HostFile::tryCreateAndAdd(FS* fs, Directory* parent, const std::string& name) {
         std::string pathname;
         if(!parent || parent == fs->root()) {
             pathname = name;
@@ -122,6 +122,7 @@ namespace kernel {
                 if(ret < 0) return -errno;
                 return ret;
             }
+            default: break;
         }
         warn(fmt::format("implement missing fcntl {} on HostFile", cmd));
         return -ENOTSUP;
@@ -171,6 +172,7 @@ namespace kernel {
                 if(ret < 0) return ErrnoOrBuffer(-errno);
                 return ErrnoOrBuffer(Buffer{});
             }
+            default: break;
         }
         verify(false, [&]() {
             fmt::print("implement ioctl {:#x} on HostFile\n", request);

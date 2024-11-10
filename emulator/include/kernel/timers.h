@@ -52,8 +52,9 @@ namespace kernel {
         static std::unique_ptr<Timer> tryCreate(int id);
         int id() const { return id_; }
         void update(PreciseTime kernelTime);
-        std::optional<PreciseTime> readTime(x64::Mmu& mmu, x64::Ptr ptr);
         PreciseTime now() const { return now_; }
+        
+        static std::optional<PreciseTime> readTime(x64::Mmu& mmu, x64::Ptr ptr);
 
     private:
         explicit Timer(int id) : id_(id) { }

@@ -6,7 +6,7 @@
 
 namespace kernel {
 
-    std::unique_ptr<ShadowDirectory> ShadowDirectory::tryCreate(FS* fs, Directory* parent, std::string name) {
+    std::unique_ptr<ShadowDirectory> ShadowDirectory::tryCreate(FS* fs, Directory* parent, const std::string& name) {
         std::string pathname;
         if(!parent) {
             pathname = name;

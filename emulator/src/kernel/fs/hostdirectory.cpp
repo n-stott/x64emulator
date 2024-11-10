@@ -16,7 +16,7 @@ namespace kernel {
         return std::unique_ptr<HostDirectory>(new HostDirectory(fs, nullptr, ""));
     }
 
-    std::unique_ptr<HostDirectory> HostDirectory::tryCreate(FS* fs, Directory* parent, std::string name) {
+    std::unique_ptr<HostDirectory> HostDirectory::tryCreate(FS* fs, Directory* parent, const std::string& name) {
         std::string pathname;
         if(!parent) {
             pathname = name;

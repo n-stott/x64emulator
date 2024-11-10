@@ -243,7 +243,7 @@ namespace x64 {
         Ptr8 end = src;
         while(read8(end++) != 0) {}
         std::vector<char> v = readFromMmu<char>(src, end.address()-src.address());
-        verify(v.size() > 0 && v.back() == 0x0);
+        verify(!v.empty() && v.back() == 0x0);
         std::string s(v.data());
         return s;
     }

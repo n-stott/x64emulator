@@ -11,7 +11,7 @@ namespace x64 {
         std::string mnemonic(insn.mnemonic);
         std::string operands(insn.op_str);
         std::array<char, 16> name;
-        auto it = std::copy(mnemonic.begin(), mnemonic.end(), name.begin());
+        auto* it = std::copy(mnemonic.begin(), mnemonic.end(), name.begin());
         if(it != name.end()) {
             *it++ = ' ';
         }
@@ -3855,20 +3855,11 @@ namespace x64 {
         uint64_t codeAddress = address;
         static_assert(sizeof(uint64_t) == sizeof(u64), "");
 
-#if 0
-        cs_insn* insns;
-        size_t count = cs_disasm(handle, codeBegin, codeSize, address, 0, &insns);
-        for(size_t j = 0; j < count; ++j) {
-            auto x86insn = makeInstruction(insns[j]);
-            instructions.push_back(std::move(x86insn));
-        }
-        cs_free(insns, count);
-#else
         cs_insn* insn = cs_malloc(handle);
         while(codeSize != 0) {
             while(cs_disasm_iter(handle, &codeBegin, &codeSize, &codeAddress, insn)) {
                 auto x86insn = make(*insn);
-                instructions.push_back(std::move(x86insn));
+                instructions.push_back(x86insn);
             }
             if(codeSize != 0) {
                 if(codeSize >= 3) {
@@ -3908,7 +3899,6 @@ namespace x64 {
             }
         }
         cs_free(insn, 1);
-#endif
         cs_close(&handle);
 
         instructions.shrink_to_fit();

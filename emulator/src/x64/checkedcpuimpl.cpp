@@ -276,8 +276,8 @@
         case 0xfd: return f(a, 0xfd); \
         case 0xfe: return f(a, 0xfe); \
         case 0xff: return f(a, 0xff); \
-    }\
-    __builtin_unreachable();
+        default: __builtin_unreachable(); \
+    }
 
 #define CALL_2_WITH_IMM8(f, a, b) \
     switch(order) { \
@@ -537,8 +537,8 @@
         case 0xfd: return f(a, b, 0xfd); \
         case 0xfe: return f(a, b, 0xfe); \
         case 0xff: return f(a, b, 0xff); \
-    }\
-    __builtin_unreachable();
+        default: __builtin_unreachable(); \
+    }
 
 namespace x64 {
     static Flags fromRflags(u64 rflags) {
@@ -585,7 +585,7 @@ namespace x64 {
 }
 
 #define GET_RFLAGS(flags_ptr)                               \
-            *flags_ptr = fromRflags(readRflags());
+            *(flags_ptr) = fromRflags(readRflags());
 
 #define SET_RFLAGS(flags_ref)                               \
             writeRflags(toRflags(flags_ref));
@@ -767,10 +767,10 @@ namespace x64 {
         [[maybe_unused]] u64 res = sub64(src1, src2, flags);
     }
 
-    u8 CheckedCpuImpl::neg8(u8 dst, Flags* flags) { return sub8(0u, dst, flags); }
-    u16 CheckedCpuImpl::neg16(u16 dst, Flags* flags) { return sub16(0u, dst, flags); }
-    u32 CheckedCpuImpl::neg32(u32 dst, Flags* flags) { return sub32(0u, dst, flags); }
-    u64 CheckedCpuImpl::neg64(u64 dst, Flags* flags) { return sub64(0ul, dst, flags); }
+    u8 CheckedCpuImpl::neg8(u8 dst, Flags* flags) { return sub8(0U, dst, flags); }
+    u16 CheckedCpuImpl::neg16(u16 dst, Flags* flags) { return sub16(0U, dst, flags); }
+    u32 CheckedCpuImpl::neg32(u32 dst, Flags* flags) { return sub32(0U, dst, flags); }
+    u64 CheckedCpuImpl::neg64(u64 dst, Flags* flags) { return sub64(0UL, dst, flags); }
 
     std::pair<u8, u8> CheckedCpuImpl::mul8(u8 src1, u8 src2, Flags* flags) {
         Flags virtualFlags = *flags;
@@ -1300,7 +1300,7 @@ namespace x64 {
         U nativeRes = val;
         BEGIN_RFLAGS_SCOPE
             SET_RFLAGS(*flags);
-            asm volatile("mov %0, %%cl" :: "r"((u8)count));
+            asm volatile("mov %0, %%cl" :: "r"(count));
             asm volatile("rol %%cl, %0" : "+r" (nativeRes));
             GET_RFLAGS(flags);
         END_RFLAGS_SCOPE
@@ -1330,7 +1330,7 @@ namespace x64 {
         U nativeRes = val;
         BEGIN_RFLAGS_SCOPE
             SET_RFLAGS(*flags);
-            asm volatile("mov %0, %%cl" :: "r"((u8)count));
+            asm volatile("mov %0, %%cl" :: "r"(count));
             asm volatile("ror %%cl, %0" : "+r" (nativeRes));
             GET_RFLAGS(flags);
         END_RFLAGS_SCOPE
@@ -1526,18 +1526,18 @@ namespace x64 {
     void CheckedCpuImpl::test32(u32 src1, u32 src2, Flags* flags) { return test<u32>(src1, src2, flags, &CpuImpl::test32); }
     void CheckedCpuImpl::test64(u64 src1, u64 src2, Flags* flags) { return test<u64>(src1, src2, flags, &CpuImpl::test64); }
 
-    void CheckedCpuImpl::cmpxchg8(u8 eax, u8 dest, Flags* flags) {
-        CheckedCpuImpl::cmp8(eax, dest, flags);
-        if(eax == dest) {
+    void CheckedCpuImpl::cmpxchg8(u8 al, u8 dest, Flags* flags) {
+        CheckedCpuImpl::cmp8(al, dest, flags);
+        if(al == dest) {
             flags->zero = 1;
         } else {
             flags->zero = 0;
         }
     }
 
-    void CheckedCpuImpl::cmpxchg16(u16 rax, u16 dest, Flags* flags) {
-        CheckedCpuImpl::cmp16(rax, dest, flags);
-        if(rax == dest) {
+    void CheckedCpuImpl::cmpxchg16(u16 ax, u16 dest, Flags* flags) {
+        CheckedCpuImpl::cmp16(ax, dest, flags);
+        if(ax == dest) {
             flags->zero = 1;
         } else {
             flags->zero = 0;

@@ -413,11 +413,7 @@ namespace kernel {
         std::string path = mmu_.readString(pathname);
         int ret = kernel_.fs().access(path, mode);
         if(logSyscalls_) {
-            std::string info;
-            if(ret < 0) {
-                info = strerror(-ret);
-            }
-            print("Sys::access(path={}, mode={}) = {} {}\n", path, mode, ret, info);
+            print("Sys::access(path={}, mode={}) = {}\n", path, mode, ret);
         }
         return ret;
     }
@@ -527,7 +523,7 @@ namespace kernel {
     }
 
     int Sys::connect(int sockfd, x64::Ptr addr, size_t addrlen) {
-        std::vector<u8> addrBuffer = mmu_.readFromMmu<u8>(addr, (size_t)addrlen);
+        std::vector<u8> addrBuffer = mmu_.readFromMmu<u8>(addr, addrlen);
         Buffer buf(std::move(addrBuffer));
         int ret = kernel_.fs().connect(FS::FD{sockfd}, buf);
         if(logSyscalls_) {
@@ -605,20 +601,20 @@ namespace kernel {
     }
 
     void checkCloneFlags(const Host::CloneFlags& flags) {
-        verify(flags.childClearTid == true, "Expected cloneFlags.childClearTid == true");
-        verify(flags.childSetTid == false, "Expected cloneFlags.childSetTid == false");
-        verify(flags.clearSignalHandlers == false, "Expected cloneFlags.clearSignalHandlers == false");
-        verify(flags.cloneSignalHandlers == true, "Expected cloneFlags.cloneSignalHandlers == true");
-        verify(flags.cloneFiles == true, "Expected cloneFlags.cloneFiles == true");
-        verify(flags.cloneFs == true, "Expected cloneFlags.cloneFs == true");
-        verify(flags.cloneIo == false, "Expected cloneFlags.cloneIo == false");
-        verify(flags.cloneParent == false, "Expected cloneFlags.cloneParent == false");
-        verify(flags.parentSetTid == true, "Expected cloneFlags.parentSetTid == true");
-        verify(flags.clonePidFd == false, "Expected cloneFlags.clonePidFd == false");
-        verify(flags.setTls == true, "Expected cloneFlags.setTls == true");
-        verify(flags.cloneThread == true, "Expected cloneFlags.cloneThread == true");
-        verify(flags.cloneVm == true, "Expected cloneFlags.cloneVm) == true");
-        verify(flags.cloneVfork == false, "Expected cloneFlags.cloneVfork) == false");
+        verify(flags.childClearTid, "Expected cloneFlags.childClearTid == true");
+        verify(!flags.childSetTid, "Expected cloneFlags.childSetTid == false");
+        verify(!flags.clearSignalHandlers, "Expected cloneFlags.clearSignalHandlers == false");
+        verify(flags.cloneSignalHandlers, "Expected cloneFlags.cloneSignalHandlers == true");
+        verify(flags.cloneFiles, "Expected cloneFlags.cloneFiles == true");
+        verify(flags.cloneFs, "Expected cloneFlags.cloneFs == true");
+        verify(!flags.cloneIo, "Expected cloneFlags.cloneIo == false");
+        verify(!flags.cloneParent, "Expected cloneFlags.cloneParent == false");
+        verify(flags.parentSetTid, "Expected cloneFlags.parentSetTid == true");
+        verify(!flags.clonePidFd, "Expected cloneFlags.clonePidFd == false");
+        verify(flags.setTls, "Expected cloneFlags.setTls == true");
+        verify(flags.cloneThread, "Expected cloneFlags.cloneThread == true");
+        verify(flags.cloneVm, "Expected cloneFlags.cloneVm) == true");
+        verify(!flags.cloneVfork, "Expected cloneFlags.cloneVfork) == false");
     }
 
     long Sys::clone(unsigned long flags, x64::Ptr stack, x64::Ptr32 parent_tid, x64::Ptr32 child_tid, unsigned long tls) {
@@ -1195,7 +1191,7 @@ namespace kernel {
 
     int Sys::clock_gettime(clockid_t clockid, x64::Ptr tp) {
         // create the timer for future reference
-        auto timer = kernel_.timers().getOrTryCreate(clockid);
+        auto* timer = kernel_.timers().getOrTryCreate(clockid);
         if(!timer) return -EINVAL;
         // TODO: we should read from the timer, not the scheduler
         PreciseTime time = kernel_.scheduler().kernelTime();
@@ -1308,11 +1304,7 @@ namespace kernel {
         std::string path = mmu_.readString(pathname);
         int ret = kernel_.fs().faccessat(FS::FD{dirfd}, path, mode);
         if(logSyscalls_) {
-            std::string info;
-            if(ret < 0) {
-                info = strerror(-ret);
-            }
-            print("Sys::faccessat(dirfd={}, path={}, mode={}) = {} {}\n", dirfd, path, mode, ret, info);
+            print("Sys::faccessat(dirfd={}, path={}, mode={}) = {}\n", dirfd, path, mode, ret);
         }
         return ret;
     }

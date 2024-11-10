@@ -13,7 +13,7 @@ namespace kernel {
 
     class ShadowDirectory : public Directory {
     public:
-        static std::unique_ptr<ShadowDirectory> tryCreate(FS* fs, Directory* parent, std::string pathname);
+        static std::unique_ptr<ShadowDirectory> tryCreate(FS* fs, Directory* parent, const std::string& pathname);
         
         bool isShadow() const override { return true; }
 

@@ -70,6 +70,7 @@ namespace kernel {
             case F_SETFL: {
                 return 0;
             }
+            default: break;
         }
         warn(fmt::format("implement missing fcntl {} on HostFile", cmd));
         return -ENOTSUP;
@@ -119,6 +120,7 @@ namespace kernel {
                 if(ret < 0) return ErrnoOrBuffer(-errno);
                 return ErrnoOrBuffer(Buffer{});
             }
+            default: break;
         }
         warn(fmt::format("ioctl({:#x}) not implemented", request));
         return ErrnoOrBuffer(-ENOTSUP);

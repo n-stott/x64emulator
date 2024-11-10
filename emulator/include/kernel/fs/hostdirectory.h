@@ -14,7 +14,7 @@ namespace kernel {
     class HostDirectory : public Directory {
     public:
         static std::unique_ptr<HostDirectory> tryCreateRoot(FS* fs);
-        static std::unique_ptr<HostDirectory> tryCreate(FS* fs, Directory* parent, std::string pathname);
+        static std::unique_ptr<HostDirectory> tryCreate(FS* fs, Directory* parent, const std::string& pathname);
 
         void open() override;
         void close() override;

@@ -19,10 +19,10 @@ namespace x64 {
         [[nodiscard]] static u32 adc32(u32 dst, u32 src, Flags* flags);
         [[nodiscard]] static u64 adc64(u64 dst, u64 src, Flags* flags);
 
-        [[nodiscard]] static u8 sub8(u8 src1, u8 src2, Flags* flags);
-        [[nodiscard]] static u16 sub16(u16 src1, u16 src2, Flags* flags);
-        [[nodiscard]] static u32 sub32(u32 src1, u32 src2, Flags* flags);
-        [[nodiscard]] static u64 sub64(u64 src1, u64 src2, Flags* flags);
+        [[nodiscard]] static u8 sub8(u8 dst, u8 src, Flags* flags);
+        [[nodiscard]] static u16 sub16(u16 dst, u16 src, Flags* flags);
+        [[nodiscard]] static u32 sub32(u32 dst, u32 src, Flags* flags);
+        [[nodiscard]] static u64 sub64(u64 dst, u64 src, Flags* flags);
 
         [[nodiscard]] static u8 sbb8(u8 dst, u8 src, Flags* flags);
         [[nodiscard]] static u16 sbb16(u16 dst, u16 src, Flags* flags);
@@ -87,9 +87,9 @@ namespace x64 {
         [[nodiscard]] static u32 bts32(u32 base, u32 index, Flags* flags);
         [[nodiscard]] static u64 bts64(u64 base, u64 index, Flags* flags);
         
-        static void cmpxchg8(u8 rax, u8 dest, Flags* flags);
-        static void cmpxchg16(u16 rax, u16 dest, Flags* flags);
-        static void cmpxchg32(u32 rax, u32 dest, Flags* flags);
+        static void cmpxchg8(u8 al, u8 dest, Flags* flags);
+        static void cmpxchg16(u16 ax, u16 dest, Flags* flags);
+        static void cmpxchg32(u32 eax, u32 dest, Flags* flags);
         static void cmpxchg64(u64 rax, u64 dest, Flags* flags);
 
         [[nodiscard]] static u8 and8(u8 dst, u8 src, Flags* flags);

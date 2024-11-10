@@ -16,7 +16,9 @@ namespace kernel {
             PreciseTime now = timer->now();
             auto relative = timer->readTime(*mmu_, timeout);
             verify(!!relative, "Could not read timeout value");
-            timeLimit_ = now + *relative;
+            if(!!relative) {
+                timeLimit_ = now + *relative;
+            }
         }
     }
 
