@@ -93,6 +93,9 @@ namespace kernel {
 
         int flock(FD fd, int operation);
 
+        int fallocate(FD fd, int mode, off_t offset, off_t len);
+        int ftruncate(FD fd, off_t length);
+
         FD eventfd2(unsigned int initval, int flags);
         FD epoll_create1(int flags);
 

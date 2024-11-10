@@ -75,8 +75,8 @@ namespace kernel {
         
     }
 
-    void ShadowFile::truncate() {
-        data_.clear();
+    void ShadowFile::truncate(size_t length) {
+        data_.resize(length, 0x0);
     }
 
     void ShadowFile::append() {
@@ -153,6 +153,20 @@ namespace kernel {
     ErrnoOrBuffer ShadowFile::ioctl(unsigned long request, const Buffer&) {
         verify(false, [&]() { fmt::print("ShadowFile::ioctl({}) not implemented", request); });
         return ErrnoOrBuffer(-ENOTSUP);
+    }
+
+    int ShadowFile::fallocate(int mode, off_t offset, off_t len) {
+        verify(!Host::FallocateMode::isKeepSize(mode), "ShadowFile::fallocate with mode = KeepSize not supported");
+        verify(!Host::FallocateMode::isPunchHole(mode), "ShadowFile::fallocate with mode = PunchHole not supported");
+        verify(!Host::FallocateMode::isNoHidestale(mode), "ShadowFile::fallocate with mode = NoHidestale not supported");
+        verify(!Host::FallocateMode::isCollapseRange(mode), "ShadowFile::fallocate with mode = CollapseRange not supported");
+        verify(!Host::FallocateMode::isZeroRange(mode), "ShadowFile::fallocate with mode = ZeroRange not supported");
+        verify(!Host::FallocateMode::isInsertRange(mode), "ShadowFile::fallocate with mode = InsertRange not supported");
+        verify(!Host::FallocateMode::isUnshareRange(mode), "ShadowFile::fallocate with mode = UnshareRange not supported");
+        data_.resize(std::max(data_.size(), (size_t)(offset+len)));
+        (void)offset;
+        (void)len;
+        return 0;
     }
 
 }

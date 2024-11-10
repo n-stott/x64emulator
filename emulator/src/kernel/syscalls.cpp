@@ -93,6 +93,7 @@ namespace kernel {
             case 0x48: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::fcntl, regs));
             case 0x49: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::flock, regs));
             case 0x4a: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::fsync, regs));
+            case 0x4d: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::ftruncate, regs));
             case 0x4f: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::getcwd, regs));
             case 0x50: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::chdir, regs));
             case 0x52: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::rename, regs));
@@ -686,6 +687,12 @@ namespace kernel {
         if(logSyscalls_) print("Sys::fsync(fd={}) = {}\n", fd, -ENOTSUP);
         warn(fmt::format("fsync not implemented"));
         return -ENOTSUP;
+    }
+
+    int Sys::ftruncate(int fd, off_t length) {
+        int ret = kernel_.fs().ftruncate(FS::FD{fd}, length);
+        if(logSyscalls_) print("Sys::ftruncate(fd={}, length={}) = {}\n", fd, length, ret);
+        return ret;
     }
 
     int Sys::getcwd(x64::Ptr buf, size_t size) {
@@ -1356,10 +1363,12 @@ namespace kernel {
     }
 
     int Sys::fallocate(int fd, int mode, off_t offset, off_t len) {
-        if(logSyscalls_) print("Sys::fallocate(fd={}, mode={}, offset={:#x}, len={}) = -ENOTSUP\n",
-                                                          fd, mode, offset, len);
-        warn(fmt::format("fallocate not implemented"));
-        return -ENOTSUP;
+        int ret = kernel_.fs().fallocate(FS::FD{fd}, mode, offset, len);
+        if(logSyscalls_) {
+            print("Sys::fallocate(fd={}, mode={}, offset={:#x}, len={}) = {}\n",
+                                                          fd, mode, offset, len, ret);
+        }
+        return ret;
     }
 
     int Sys::eventfd2(unsigned int initval, int flags) {

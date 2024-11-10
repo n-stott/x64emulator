@@ -215,6 +215,34 @@ namespace kernel {
         return mode & S_IXUSR;
     }
 
+    bool Host::FallocateMode::isKeepSize(int mode) {
+        return mode & FALLOC_FL_KEEP_SIZE;
+    }
+
+    bool Host::FallocateMode::isPunchHole(int mode) {
+        return mode & FALLOC_FL_PUNCH_HOLE;
+    }
+
+    bool Host::FallocateMode::isNoHidestale(int mode) {
+        return mode & FALLOC_FL_NO_HIDE_STALE;
+    }
+
+    bool Host::FallocateMode::isCollapseRange(int mode) {
+        return mode & FALLOC_FL_COLLAPSE_RANGE;
+    }
+
+    bool Host::FallocateMode::isZeroRange(int mode) {
+        return mode & FALLOC_FL_ZERO_RANGE;
+    }
+
+    bool Host::FallocateMode::isInsertRange(int mode) {
+        return mode & FALLOC_FL_INSERT_RANGE;
+    }
+
+    bool Host::FallocateMode::isUnshareRange(int mode) {
+        return mode & FALLOC_FL_UNSHARE_RANGE;
+    }
+
     Host::SchedAttr Host::getSchedulerAttributes() {
         Host::SchedAttr attr;
         attr.size = sizeof(Host::SchedAttr);

@@ -211,6 +211,8 @@ namespace kernel {
         int flock(int fd, int operation);
         // 0x4a
         int fsync(int fd);
+        // 0x4d
+        int ftruncate(int fd, off_t length);
         // 0x4f
         int getcwd(x64::Ptr buf, size_t size);
         // 0x50

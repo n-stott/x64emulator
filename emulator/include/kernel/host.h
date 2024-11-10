@@ -104,6 +104,16 @@ namespace kernel {
             static bool isUserExecutable(unsigned int mode);
         };
 
+        struct FallocateMode {
+            static bool isKeepSize(int mode);
+            static bool isPunchHole(int mode);
+            static bool isNoHidestale(int mode);
+            static bool isCollapseRange(int mode);
+            static bool isZeroRange(int mode);
+            static bool isInsertRange(int mode);
+            static bool isUnshareRange(int mode);
+        };
+
         struct SchedAttr {
             u32 size;
             u32 schedPolicy;

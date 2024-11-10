@@ -246,7 +246,7 @@ namespace kernel {
                 return FS::FD{-EINVAL};
             }
 
-            if(flags.truncate) shadowFile->truncate();
+            if(flags.truncate) shadowFile->truncate(0);
             if(flags.append) shadowFile->append();
             shadowFile->setWritable(flags.write);
             
@@ -491,6 +491,27 @@ namespace kernel {
             return 0;
         }
         return -EINVAL;
+    }
+
+    int FS::fallocate(FD fd, int mode, off_t offset, off_t len) {
+        OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
+        if(!openFileDescription) return -EBADF;
+        File* file = openFileDescription->file();
+        verify(file->isRegularFile(), "fallocate not implemented on non-regular files");
+        verify(file->isShadow(), "fallocate not implemented on non-shadow files");
+        ShadowFile* shadowFile = static_cast<ShadowFile*>(file);
+        return shadowFile->fallocate(mode, offset, len);
+    }
+
+    int FS::ftruncate(FD fd, off_t length) {
+        OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
+        if(!openFileDescription) return -EBADF;
+        File* file = openFileDescription->file();
+        verify(file->isRegularFile(), "fallocate not implemented on non-regular files");
+        verify(file->isShadow(), "fallocate not implemented on non-shadow files");
+        ShadowFile* shadowFile = static_cast<ShadowFile*>(file);
+        shadowFile->truncate((size_t)length);
+        return 0;
     }
 
     FS::FD FS::eventfd2(unsigned int initval, int flags) {

@@ -37,12 +37,14 @@ namespace kernel {
 
         ErrnoOrBuffer stat() override;
         off_t lseek(off_t offset, int whence) override;
-        
+
         ErrnoOrBuffer getdents64(size_t count) override;
         int fcntl(int cmd, int arg) override;
         ErrnoOrBuffer ioctl(unsigned long request, const Buffer& buffer) override;
 
-        void truncate();
+        int fallocate(int mode, off_t offset, off_t len);
+        
+        void truncate(size_t length);
         void append();
         void setWritable(bool writable) { writable_ = writable; }
 
