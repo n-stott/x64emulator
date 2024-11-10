@@ -3,6 +3,7 @@
 #include "kernel/fs/epoll.h"
 #include "kernel/fs/event.h"
 #include "kernel/fs/regularfile.h"
+#include "kernel/fs/hostdevice.h"
 #include "kernel/fs/hostdirectory.h"
 #include "kernel/fs/hostfile.h"
 #include "kernel/fs/path.h"
@@ -229,14 +230,22 @@ namespace kernel {
 
                 // try open the file
                 auto* hostBackedFile = HostFile::tryCreateAndAdd(this, root_.get(), absolutePathname);
-                if(!hostBackedFile) {
-                    // TODO: return the actual value of errno
-                    return FS::FD{-ENOENT};
+                if(!!hostBackedFile) {
+                    // create and add the node to the filesystem
+                    hostBackedFile->open();
+                    return openNode(hostBackedFile);
                 }
-                
-                // create and add the node to the filesystem
-                hostBackedFile->open();
-                return openNode(hostBackedFile);
+
+                // try open device
+                auto* hostDevice = HostDevice::tryCreateAndAdd(this, root_.get(), absolutePathname);
+                if(!!hostDevice) {
+                    // create and add the node to the filesystem
+                    hostDevice->open();
+                    return openNode(hostDevice);
+                }
+
+                // TODO: return the actual value of errno
+                return FS::FD{-ENOENT};
             }
         } else {
             // open the file
