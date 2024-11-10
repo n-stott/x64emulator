@@ -1439,12 +1439,13 @@ namespace kernel {
     }
 
     int Sys::memfd_create(x64::Ptr name, unsigned int flags) {
+        auto filename = mmu_.readString(name);
+        FS::FD fd = kernel_.fs().memfd_create(filename, flags);
         if(logSyscalls_) {
             std::string pathname = mmu_.readString(name);
-            print("Sys::memfd_create(name={}, flags={:#x}) = {}", pathname, flags, -ENOTSUP);
+            print("Sys::memfd_create(name={}, flags={:#x}) = {}\n", pathname, flags, fd.fd);
         }
-        warn("memfd_create not implemented");
-        return -ENOTSUP;
+        return fd.fd;
     }
 
     int Sys::statx(int dirfd, x64::Ptr pathname, int flags, unsigned int mask, x64::Ptr statxbuf) {

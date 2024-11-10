@@ -61,6 +61,12 @@ namespace kernel {
         }
     }
 
+    std::unique_ptr<ShadowFile> ShadowFile::tryCreate(FS* fs, std::string name) {
+        std::vector<u8> data;
+        auto shadowFile = std::unique_ptr<ShadowFile>(new ShadowFile(fs, nullptr, std::move(name), std::move(data)));
+        return shadowFile;
+    }
+
     ShadowFile::ShadowFile(FS* fs, Directory* parent, std::string name, std::vector<u8> data) : RegularFile(fs, parent, std::move(name)), data_(data) { }
 
     ShadowFile::~ShadowFile() = default;

@@ -330,6 +330,12 @@ namespace kernel {
         return kernel_.host().access(absolutePathname, mode);
     }
 
+    FS::FD FS::memfd_create(const std::string& name, int flags) {
+        verify((flags & ~0x3) == 0, "Allow (and ignore) cloexec and allow_sealing");
+        auto shadowFile = ShadowFile::tryCreate(this, name);
+        return insertNode(std::move(shadowFile));
+    }
+
     OpenFileDescription* FS::findOpenFileDescription(FD fd) {
         for(OpenNode& node : openFiles_) {
             if(node.fd != fd) continue;
