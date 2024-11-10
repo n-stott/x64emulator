@@ -1,6 +1,8 @@
 #include "kernel/auxiliaryvector.h"
 #include "kernel/host.h"
+#include "utils.h"
 #include <cassert>
+#include <vector>
 
 namespace kernel {
 

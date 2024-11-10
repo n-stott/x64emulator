@@ -11,7 +11,7 @@ namespace emulator {
         Emulator();
         ~Emulator();
 
-        bool run(const std::string& programFilePath, const std::vector<std::string>& arguments, const std::vector<std::string>& environmentVariables);
+        bool run(const std::string& programFilePath, const std::vector<std::string>& arguments, const std::vector<std::string>& environmentVariables) const;
 
         void setLogSyscalls(bool);
         void setProfiling(bool);

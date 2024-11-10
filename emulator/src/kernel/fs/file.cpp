@@ -1,6 +1,8 @@
 #include "kernel/fs/file.h"
 #include "kernel/fs/directory.h"
 #include <sstream>
+#include <string>
+#include <vector>
 
 namespace kernel {
 

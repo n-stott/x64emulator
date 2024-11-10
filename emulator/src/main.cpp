@@ -1,5 +1,7 @@
 #include "emulator/emulator.h"
 #include <fmt/core.h>
+#include <string>
+#include <vector>
 
 int main(int argc, char* argv[], char* envp[]) {
     if(argc < 2) {

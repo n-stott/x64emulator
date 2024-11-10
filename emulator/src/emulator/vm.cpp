@@ -397,11 +397,11 @@ namespace emulator {
         cpu_.push64(value);
     }
 
-    void VM::tryRetrieveSymbols(const std::vector<u64>& addresses, std::unordered_map<u64, std::string>* m) const {
-        if(!m) return;
+    void VM::tryRetrieveSymbols(const std::vector<u64>& addresses, std::unordered_map<u64, std::string>* addressesToSymbols) const {
+        if(!addressesToSymbols) return;
         for(u64 address : addresses) {
             auto symbol = calledFunctionName(address);
-            m->emplace(address, std::move(symbol));
+            addressesToSymbols->emplace(address, std::move(symbol));
         }
     }
 

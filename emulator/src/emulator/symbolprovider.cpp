@@ -30,7 +30,7 @@ namespace emulator {
     std::vector<const SymbolProvider::Entry*> SymbolProvider::Table::lookupSymbol(u64 address) const {
         auto it = byAddress_.find(address);
         if(it != byAddress_.end()) {
-            for(auto& entry : it->second) {
+            for(const auto& entry : it->second) {
                 if(!entry->demangledSymbol.empty()) continue;
                 entry->demangledSymbol = boost::core::demangle(entry->symbol.c_str());
                 entry->demangledSymbol = foldTemplateArguments(entry->demangledSymbol);

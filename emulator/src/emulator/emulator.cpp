@@ -17,20 +17,21 @@ namespace emulator {
         signal_interrupt = true;
     }
 
-    struct SignalHandler {
-        struct sigaction new_action;
-        struct sigaction old_action;
+    class SignalHandler {
+        struct sigaction new_action_;
+        struct sigaction old_action_;
 
+    public:
         SignalHandler() {
-            new_action.sa_handler = termination_handler;
-            sigemptyset(&new_action.sa_mask);
-            new_action.sa_flags = 0;
-            sigaction(SIGINT, NULL, &old_action);
-            if (old_action.sa_handler != SIG_IGN) sigaction(SIGINT, &new_action, NULL);
+            new_action_.sa_handler = termination_handler;
+            sigemptyset(&new_action_.sa_mask);
+            new_action_.sa_flags = 0;
+            sigaction(SIGINT, NULL, &old_action_);
+            if (old_action_.sa_handler != SIG_IGN) sigaction(SIGINT, &new_action_, NULL);
         }
 
         ~SignalHandler() {
-            sigaction(SIGINT, &old_action, NULL);
+            sigaction(SIGINT, &old_action_, NULL);
         }
     };
 
@@ -46,7 +47,7 @@ namespace emulator {
         isProfiling_ = isProfiling;
     }
 
-    bool Emulator::run(const std::string& programFilePath, const std::vector<std::string>& arguments, const std::vector<std::string>& environmentVariables) {
+    bool Emulator::run(const std::string& programFilePath, const std::vector<std::string>& arguments, const std::vector<std::string>& environmentVariables) const {
         SignalHandler handler;
 
         x64::Mmu mmu;
