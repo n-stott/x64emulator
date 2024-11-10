@@ -455,6 +455,9 @@ namespace kernel {
     int FS::fcntl(FD fd, int cmd, int arg) {
         OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
         if(!openFileDescription) return -EBADF;
+        if(cmd == F_DUPFD_CLOEXEC) {
+            return dup(fd).fd;
+        }
         File* file = openFileDescription->file();
         return file->fcntl(cmd, arg);
     }
