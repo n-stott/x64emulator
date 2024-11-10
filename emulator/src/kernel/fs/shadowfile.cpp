@@ -96,8 +96,8 @@ namespace kernel {
     ssize_t ShadowFile::write(const u8* buf, size_t count, off_t offset) {
         if(!isWritable()) return -EINVAL;
         if(offset < 0) return -EINVAL;
-        if(offset + count > data_.size()) {
-            data_.resize(offset + count);
+        if((size_t)offset + count > data_.size()) {
+            data_.resize((size_t)offset + count);
         }
         size_t bytesWritten = count;
         std::memcpy(data_.data() + offset, buf, bytesWritten);
@@ -107,7 +107,7 @@ namespace kernel {
     ErrnoOrBuffer ShadowFile::stat() {
         if(!!hostData_) {
             struct stat st = hostData_->st;
-            st.st_size = data_.size();
+            st.st_size = (off_t)data_.size();
             Buffer buf(st);
             return ErrnoOrBuffer(std::move(buf));
         } else {
@@ -119,10 +119,10 @@ namespace kernel {
                     | (u32)File::Mode::IRWXG
                     | (u32)File::Mode::IRWXO;
             st.st_nlink = 0;
-            st.st_uid = fs_->kernel().host().getuid();
-            st.st_gid = fs_->kernel().host().getgid();
+            st.st_uid = (uid_t)fs_->kernel().host().getuid();
+            st.st_gid = (gid_t)fs_->kernel().host().getgid();
             st.st_rdev = 0; // dummy value
-            st.st_size = data_.size();
+            st.st_size = (off_t)data_.size();
             st.st_blksize = 0x200; // dummy value
             st.st_blocks = data_.size() / 0x200;
 

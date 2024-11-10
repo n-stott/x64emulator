@@ -43,8 +43,9 @@ namespace kernel {
 
     bool PollBlocker::tryUnblock(FS& fs) {
         std::vector<FS::PollData> pollfds(mmu_->readFromMmu<FS::PollData>(pollfds_, nfds_));
+        verify(timeoutInMs_ == 0, "Non-zero timeout in poll not supported");
         fs.doPoll(&pollfds);
-        u64 nzrevents = std::count_if(pollfds.begin(), pollfds.end(), [](const FS::PollData& data) {
+        u64 nzrevents = (u64)std::count_if(pollfds.begin(), pollfds.end(), [](const FS::PollData& data) {
             return data.revents != FS::PollEvent::NONE;
         });
         bool canUnblock

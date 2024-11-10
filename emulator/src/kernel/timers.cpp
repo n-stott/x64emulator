@@ -17,8 +17,8 @@ namespace kernel {
     std::optional<PreciseTime> Timer::readTime(x64::Mmu& mmu, x64::Ptr ptr) {
         struct timespec ts = mmu.readFromMmu<struct timespec>(ptr);
         PreciseTime time;
-        time.nanoseconds = ts.tv_nsec;
-        time.seconds = ts.tv_sec;
+        time.nanoseconds = (u64)ts.tv_nsec;
+        time.seconds = (u64)ts.tv_sec;
         return time;
     }
 

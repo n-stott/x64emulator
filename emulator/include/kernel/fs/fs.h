@@ -71,7 +71,7 @@ namespace kernel {
         int access(const std::string& pathname, int mode);
         int faccessat(FD dirfd, const std::string& pathname, int mode);
 
-        FD memfd_create(const std::string& name, int flags);
+        FD memfd_create(const std::string& name, unsigned int flags);
 
         ErrnoOrBuffer read(FD fd, size_t count);
         ErrnoOrBuffer pread(FD fd, size_t count, off_t offset);

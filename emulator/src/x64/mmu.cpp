@@ -444,7 +444,6 @@ namespace x64 {
         length = pageRoundUp(length);
 #ifdef CANNOT_REUSE_PAST_REGIONS
         std::sort(allSlicesEverMmaped_.begin(), allSlicesEverMmaped_.end());
-        std::optional<u64> chosenAddress;
         auto it = std::adjacent_find(allSlicesEverMmaped_.begin(), allSlicesEverMmaped_.end(), [&](const auto& a, const auto& b) {
             return a.second + length <= b.first;
         });
@@ -454,7 +453,6 @@ namespace x64 {
             return it->second;
         }
 #else
-        std::optional<u64> chosenAddress;
         auto it = std::adjacent_find(regions_.begin(), regions_.end(), [&](const auto& a, const auto& b) {
             return a->end() + length <= b->base();
         });

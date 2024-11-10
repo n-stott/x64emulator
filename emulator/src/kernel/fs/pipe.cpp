@@ -37,8 +37,8 @@ namespace kernel {
         verify(!data_.empty(), "Reading from empty pipe (possibly blocking) not implemented");
         size_t readSize = std::min(size, data_.size());
         std::vector<u8> buf(readSize, 0x0);
-        std::copy(data_.begin(), data_.begin() + readSize, buf.begin());
-        data_.erase(data_.begin(), data_.begin() + readSize);
+        std::copy(data_.begin(), data_.begin() + (off64_t)readSize, buf.begin());
+        data_.erase(data_.begin(), data_.begin() + (off64_t)readSize);
         return ErrnoOrBuffer(Buffer(std::move(buf)));
     }
     

@@ -276,7 +276,8 @@
         case 0xfd: return f(a, 0xfd); \
         case 0xfe: return f(a, 0xfe); \
         case 0xff: return f(a, 0xff); \
-    }
+    }\
+    __builtin_unreachable();
 
 #define CALL_2_WITH_IMM8(f, a, b) \
     switch(order) { \
@@ -536,7 +537,8 @@
         case 0xfd: return f(a, b, 0xfd); \
         case 0xfe: return f(a, b, 0xfe); \
         case 0xff: return f(a, b, 0xff); \
-    }
+    }\
+    __builtin_unreachable();
 
 namespace x64 {
     static Flags fromRflags(u64 rflags) {
@@ -947,10 +949,10 @@ namespace x64 {
         u8 remainder;
         asm volatile("mov %2, %%ah\n"
                      "mov %3, %%al\n"
-                     "div %4\n"
+                     "divb %4\n"
                      "mov %%ah, %0\n"
                      "mov %%al, %1\n" : "=r"(remainder), "=r"(quotient)
-                                    : "r"(dividendUpper), "r"(dividendLower), "r"(divisor)
+                                    : "rm"(dividendUpper), "rm"(dividendLower), "rm"(divisor)
                                     : "al", "ah");
         assert(quotient == virtualRes.first);
         assert(remainder == virtualRes.second);
@@ -2499,7 +2501,7 @@ namespace x64 {
         
         return nativeRes;
 #else
-        return CpuImpl::cvttps2dq(dst, src);
+        return CpuImpl::cvttps2dq(src);
 #endif
     }
 
@@ -2607,7 +2609,7 @@ namespace x64 {
         
         return nativeRes;
 #else
-        return CpuImpl::cvtps2dq(src);
+        return CpuImpl::cvtps2dq(src, rounding);
 #endif
     }
 

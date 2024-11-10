@@ -25,7 +25,9 @@ namespace kernel {
             YES,
         };
 
-        explicit OpenFileDescription(File* file, Flags flags) : file_(file), flags_(flags) { }
+        explicit OpenFileDescription(File* file, Flags flags) : file_(file), flags_(flags) {
+            (void)flags_;
+        }
 
         File* file() { return file_; }
         

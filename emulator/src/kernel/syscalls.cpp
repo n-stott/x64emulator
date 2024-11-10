@@ -843,17 +843,17 @@ namespace kernel {
 
     int Sys::getresuid(x64::Ptr32 ruid, x64::Ptr32 euid, x64::Ptr32 suid) {
         Host::UserCredentials creds = kernel_.host().getUserCredentials();
-        mmu_.write32(ruid, creds.ruid);
-        mmu_.write32(euid, creds.euid);
-        mmu_.write32(suid, creds.suid);
+        mmu_.write32(ruid, (u32)creds.ruid);
+        mmu_.write32(euid, (u32)creds.euid);
+        mmu_.write32(suid, (u32)creds.suid);
         return 0;
     }
 
     int Sys::getresgid(x64::Ptr32 rgid, x64::Ptr32 egid, x64::Ptr32 sgid) {
         Host::UserCredentials creds = kernel_.host().getUserCredentials();
-        mmu_.write32(rgid, creds.rgid);
-        mmu_.write32(egid, creds.egid);
-        mmu_.write32(sgid, creds.sgid);
+        mmu_.write32(rgid, (u32)creds.rgid);
+        mmu_.write32(egid, (u32)creds.egid);
+        mmu_.write32(sgid, (u32)creds.sgid);
         return 0;
     }
 
@@ -963,7 +963,7 @@ namespace kernel {
     }
 
     time_t Sys::time(x64::Ptr tloc) {
-        time_t t = kernel_.scheduler().kernelTime().seconds;
+        time_t t = (time_t)kernel_.scheduler().kernelTime().seconds;
         if(logSyscalls_) print("Sys::time({:#x}) = {}\n", tloc.address(), t);
         if(tloc.address()) mmu_.copyToMmu(tloc, (const u8*)&t, sizeof(t));
         return t;

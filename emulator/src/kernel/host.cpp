@@ -451,7 +451,7 @@ namespace kernel {
     }
 
     ErrnoOrBuffer Host::getgroups(int size) {
-        std::vector<gid_t> groups(size, 0);
+        std::vector<gid_t> groups((size_t)size, 0);
         int ret = ::getgroups(size, groups.data());
         if(ret < 0) return ErrnoOrBuffer(-errno);
         return ErrnoOrBuffer(Buffer{std::move(groups)});
@@ -525,8 +525,10 @@ namespace kernel {
 
     Buffer Host::clock_gettime(PreciseTime time) {
         struct timespec ts;
-        ts.tv_sec = time.seconds;
-        ts.tv_nsec = time.nanoseconds;
+        assert(time.seconds <= std::numeric_limits<time_t>::max());
+        assert(time.nanoseconds <= std::numeric_limits<long>::max());
+        ts.tv_sec = (time_t)time.seconds;
+        ts.tv_nsec = (long)time.nanoseconds;
         return Buffer(ts);
     }
 
@@ -539,7 +541,9 @@ namespace kernel {
 
     Buffer Host::gettimeofday(PreciseTime time) {
         struct timeval tv;
-        tv.tv_sec = time.seconds;
+        assert(time.seconds <= std::numeric_limits<time_t>::max());
+        assert(time.nanoseconds / 1'000 <= std::numeric_limits<suseconds_t>::max());
+        tv.tv_sec = (time_t)time.seconds;
         tv.tv_usec = time.nanoseconds / 1'000;
         return Buffer(tv);
     }

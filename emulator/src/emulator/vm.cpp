@@ -428,7 +428,7 @@ namespace emulator {
         // We will probably disassemble them again, but they will be put in the
         // correct basic block then.
         if(!basicBlocks.empty()) {
-            size_t packedInstructions = std::distance((const x64::X64Instruction*)instructions.data(), begin);
+            auto packedInstructions = std::distance((const x64::X64Instruction*)instructions.data(), begin);
             instructions.erase(instructions.begin() + packedInstructions, instructions.end());
             const auto& lastBlock = basicBlocks.back();
             this->end = lastBlock.instructions[lastBlock.size-1].nextAddress();

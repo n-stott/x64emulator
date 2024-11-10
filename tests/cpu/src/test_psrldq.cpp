@@ -5216,6 +5216,7 @@ int main() {
         auto nativesrl = [](__m128i src, u8 imm) -> __m128i {
             u8 order = imm;
             CALL_1_WITH_IMM8(_mm_srli_epi16, src);
+            __builtin_unreachable();
         };
         __m128i msrc;
         std::memcpy(&msrc, &src, sizeof(msrc));
@@ -5229,6 +5230,7 @@ int main() {
         auto nativesrl = [](__m128i src, u8 imm) -> __m128i {
             u8 order = imm;
             CALL_1_WITH_IMM8(_mm_srli_epi32, src);
+            __builtin_unreachable();
         };
         __m128i msrc;
         std::memcpy(&msrc, &src, sizeof(msrc));
@@ -5242,6 +5244,7 @@ int main() {
         auto nativesrl = [](__m128i src, u8 imm) -> __m128i {
             u8 order = imm;
             CALL_1_WITH_IMM8(_mm_srli_epi64, src);
+            __builtin_unreachable();
         };
         __m128i msrc;
         std::memcpy(&msrc, &src, sizeof(msrc));
@@ -5255,6 +5258,7 @@ int main() {
         auto nativesrl = [](__m128i src, u8 imm) -> __m128i {
             u8 order = imm;
             CALL_1_WITH_IMM8(_mm_srli_si128, src);
+            __builtin_unreachable();
         };
         __m128i msrc;
         std::memcpy(&msrc, &src, sizeof(msrc));

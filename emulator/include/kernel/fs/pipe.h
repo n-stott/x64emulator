@@ -72,7 +72,9 @@ namespace kernel {
     
     private:
         explicit PipeEndpoint(FS* fs, Pipe* pipe, PipeSide side, int flags) :
-                File(fs), pipe_(pipe), side_(side), flags_(flags) { }
+                File(fs), pipe_(pipe), side_(side), flags_(flags) {
+            (void)side_;
+        }
         Pipe* pipe_;
         PipeSide side_;
         int flags_;
