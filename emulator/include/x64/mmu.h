@@ -2,6 +2,7 @@
 #define MMU_H
 
 #include "verify.h"
+#include "bitflags.h"
 #include "x64/spinlock.h"
 #include "utils.h"
 #include "types.h"
@@ -24,33 +25,17 @@ namespace x64 {
         EXEC = 4,
     };
 
-    inline PROT operator|(PROT a, PROT b) {
-        return (PROT)((int)a | (int)b);
-    }
-    
-    inline PROT operator&(PROT a, PROT b) {
-        return (PROT)((int)a & (int)b);
-    }
-
     enum class MAP {
         PRIVATE,
         FIXED,
         ANONYMOUS,
     };
 
-    inline MAP operator|(MAP a, MAP b) {
-        return (MAP)((int)a | (int)b);
-    }
-    
-    inline MAP operator&(MAP a, MAP b) {
-        return (MAP)((int)a & (int)b);
-    }
-
     class Mmu {
     public:
         class Region {
         public:
-            Region(std::string name, u64 base, u64 size, PROT prot);
+            Region(std::string name, u64 base, u64 size, BitFlags<PROT> prot);
 
             Region(const Region&);
             Region(Region&&) noexcept;
@@ -61,7 +46,7 @@ namespace x64 {
             u64 base() const { return base_; }
             u64 size() const { return size_; }
             u64 end() const { return base_+size_; }
-            PROT prot() const { return prot_; }
+            BitFlags<PROT> prot() const { return prot_; }
             const std::string& name() const { return name_; }
 
             Spinlock& lock() { return lock_; }
@@ -69,7 +54,7 @@ namespace x64 {
             bool contains(u64 address) const;
             bool intersectsRange(u64 base, u64 end) const;
 
-            void setProtection(PROT prot);
+            void setProtection(BitFlags<PROT> prot);
 
             std::array<Region, 3> split(u64 left, u64 right) const;
 
@@ -99,7 +84,7 @@ namespace x64 {
             T read(u64 address) const {
                 verify(contains(address));
                 verify(contains(address+sizeof(T)-1));
-                verify((bool)(prot() & PROT::READ), [&]() {
+                verify((prot_.test(PROT::READ)), [&]() {
                     badRead(address);
                 });
                 T value;
@@ -111,7 +96,7 @@ namespace x64 {
             void write(u64 address, T value) {
                 assert(contains(address));
                 assert(contains(address+sizeof(T)-1));
-                verify((bool)(prot() & PROT::WRITE), [&]() {
+                verify(prot_.test(PROT::WRITE), [&]() {
                     badWrite(address);
                 });
                 SpinlockLocker locker(lock_);
@@ -122,7 +107,7 @@ namespace x64 {
             void write(u64 address, T value, SpinlockLocker& locker) {
                 assert(contains(address));
                 assert(contains(address+sizeof(T)-1));
-                verify((bool)(prot() & PROT::WRITE), [&]() {
+                verify(prot_.test(PROT::WRITE), [&]() {
                     badWrite(address);
                 });
 #ifdef MULTIPROCESSING
@@ -140,7 +125,7 @@ namespace x64 {
             u64 base_;
             u64 size_;
             std::vector<u8> data_;
-            PROT prot_;
+            BitFlags<PROT> prot_;
             std::string name_;
         };
 
@@ -153,9 +138,9 @@ namespace x64 {
     public:
         Mmu();
 
-        u64 mmap(u64 address, u64 length, PROT prot, MAP flags);
+        u64 mmap(u64 address, u64 length, BitFlags<PROT> prot, BitFlags<MAP> flags);
         int munmap(u64 address, u64 length);
-        int mprotect(u64 address, u64 length, PROT prot);
+        int mprotect(u64 address, u64 length, BitFlags<PROT> prot);
         u64 brk(u64 address);
 
         void setRegionName(u64 address, std::string name);
@@ -228,7 +213,7 @@ namespace x64 {
         static u64 pageRoundDown(u64 address);
         static u64 pageRoundUp(u64 address);
 
-        PROT prot(u64 address) const;
+        BitFlags<PROT> prot(u64 address) const;
 
         const Region* findAddress(u64 address) const;
 

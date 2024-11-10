@@ -43,7 +43,7 @@ namespace kernel {
             u64 totalLoadSize = (minStart > maxEnd) ? 0 : (maxEnd - minStart);
 
             // Then, reserve enough space and return the base address of that memory region as the elf offset.
-            u64 address = mmu->mmap(0, totalLoadSize, x64::PROT::NONE, x64::MAP::PRIVATE | x64::MAP::ANONYMOUS);
+            u64 address = mmu->mmap(0, totalLoadSize, BitFlags<x64::PROT>{x64::PROT::NONE}, BitFlags<x64::MAP>{x64::MAP::PRIVATE, x64::MAP::ANONYMOUS});
             mmu->munmap(address, totalLoadSize);
             return address;
         }();
@@ -68,15 +68,15 @@ namespace kernel {
             u64 start = x64::Mmu::pageRoundDown(elfOffset + header.virtualAddress());
             u64 end = x64::Mmu::pageRoundUp(elfOffset + header.virtualAddress() + header.sizeInMemory());
             u64 nonExecSectionSize = end-start;
-            u64 nonExecSectionBase = mmu->mmap(start, nonExecSectionSize, x64::PROT::WRITE, x64::MAP::PRIVATE | x64::MAP::ANONYMOUS);
+            u64 nonExecSectionBase = mmu->mmap(start, nonExecSectionSize, BitFlags<x64::PROT>{x64::PROT::WRITE}, BitFlags<x64::MAP>{x64::MAP::PRIVATE, x64::MAP::ANONYMOUS});
 
             const u8* data = elf64->dataAtOffset(header.offset(), header.sizeInFile());
             mmu->copyToMmu(x64::Ptr8{nonExecSectionBase + header.virtualAddress() % x64::Mmu::PAGE_SIZE}, data, header.sizeInFile()); // Mmu regions are 0 initialized
 
-            x64::PROT prot = x64::PROT::NONE;
-            if(header.isReadable()) prot = prot | x64::PROT::READ;
-            if(header.isWritable()) prot = prot | x64::PROT::WRITE;
-            if(header.isExecutable()) prot = prot | x64::PROT::EXEC;
+            BitFlags<x64::PROT> prot;
+            if(header.isReadable()) prot.add(x64::PROT::READ);
+            if(header.isWritable()) prot.add(x64::PROT::WRITE);
+            if(header.isExecutable()) prot.add(x64::PROT::EXEC);
             mmu->mprotect(nonExecSectionBase, nonExecSectionSize, prot);
             mmu->setRegionName(nonExecSectionBase, filepath);
         };
@@ -109,37 +109,37 @@ namespace kernel {
         {
             // page with random 16-bit value for AT_RANDOM
             verify(!!auxiliary, "no auxiliary...");
-            u64 random = mmu->mmap(0x0, x64::Mmu::PAGE_SIZE, x64::PROT::READ | x64::PROT::WRITE, x64::MAP::PRIVATE | x64::MAP::ANONYMOUS);
+            u64 random = mmu->mmap(0x0, x64::Mmu::PAGE_SIZE, BitFlags<x64::PROT>{x64::PROT::READ, x64::PROT::WRITE}, BitFlags<x64::MAP>{x64::MAP::PRIVATE, x64::MAP::ANONYMOUS});
             mmu->setRegionName(random, "random");
             mmu->write16(x64::Ptr16{random}, 0xabcd);
-            mmu->mprotect(random, x64::Mmu::PAGE_SIZE, x64::PROT::READ);
+            mmu->mprotect(random, x64::Mmu::PAGE_SIZE, BitFlags<x64::PROT>{x64::PROT::READ});
             auxiliary->randomDataAddress = random;
         }
 
         {
             // page with platform string
             verify(!!auxiliary, "no auxiliary...");
-            u64 platformstring = mmu->mmap(0x0, x64::Mmu::PAGE_SIZE, x64::PROT::READ | x64::PROT::WRITE, x64::MAP::PRIVATE | x64::MAP::ANONYMOUS);
+            u64 platformstring = mmu->mmap(0x0, x64::Mmu::PAGE_SIZE, BitFlags<x64::PROT>{x64::PROT::READ, x64::PROT::WRITE}, BitFlags<x64::MAP>{x64::MAP::PRIVATE, x64::MAP::ANONYMOUS});
             mmu->setRegionName(platformstring, "platform string");
             std::string platform = "x86_64";
             std::vector<u8> buffer;
             buffer.resize(platform.size()+1, 0x0);
             std::memcpy(buffer.data(), platform.data(), platform.size());
             mmu->copyToMmu(x64::Ptr8{platformstring}, buffer.data(), buffer.size());
-            mmu->mprotect(platformstring, x64::Mmu::PAGE_SIZE, x64::PROT::READ);
+            mmu->mprotect(platformstring, x64::Mmu::PAGE_SIZE, BitFlags<x64::PROT>{x64::PROT::READ});
             auxiliary->platformStringAddress = platformstring;
         }
         
         // stack
         const u64 desiredStackBase = 0x10000000;
         const u64 stackSize = 256*x64::Mmu::PAGE_SIZE;
-        u64 stackBase = mmu->mmap(desiredStackBase, stackSize, x64::PROT::READ | x64::PROT::WRITE, x64::MAP::PRIVATE | x64::MAP::ANONYMOUS);
+        u64 stackBase = mmu->mmap(desiredStackBase, stackSize, BitFlags<x64::PROT>{x64::PROT::READ, x64::PROT::WRITE}, BitFlags<x64::MAP>{x64::MAP::PRIVATE, x64::MAP::ANONYMOUS});
         mmu->setRegionName(stackBase, "stack");
 
         // heap
         const u64 desiredHeapBase = stackBase + stackSize + x64::Mmu::PAGE_SIZE;
         const u64 heapSize = 64*x64::Mmu::PAGE_SIZE;
-        u64 heapBase = mmu->mmap(desiredHeapBase, heapSize, x64::PROT::READ | x64::PROT::WRITE, x64::MAP::PRIVATE | x64::MAP::ANONYMOUS);
+        u64 heapBase = mmu->mmap(desiredHeapBase, heapSize, BitFlags<x64::PROT>{x64::PROT::READ, x64::PROT::WRITE}, BitFlags<x64::MAP>{x64::MAP::PRIVATE, x64::MAP::ANONYMOUS});
         mmu->setRegionName(heapBase, "heap");
 
         return stackBase + stackSize;
@@ -156,8 +156,8 @@ namespace kernel {
         requiredSize += 8*(1 + arguments.size() + environmentVariables.size());
         requiredSize = x64::Mmu::pageRoundUp(requiredSize);
 
-        mmu->mmap(0, x64::Mmu::PAGE_SIZE, x64::PROT::NONE, x64::MAP::PRIVATE | x64::MAP::ANONYMOUS); // throwaway page
-        u64 argumentPage = mmu->mmap(0, requiredSize, x64::PROT::READ | x64::PROT::WRITE, x64::MAP::PRIVATE | x64::MAP::ANONYMOUS);
+        mmu->mmap(0, x64::Mmu::PAGE_SIZE, BitFlags<x64::PROT>{x64::PROT::NONE}, BitFlags<x64::MAP>{x64::MAP::PRIVATE, x64::MAP::ANONYMOUS}); // throwaway page
+        u64 argumentPage = mmu->mmap(0, requiredSize, BitFlags<x64::PROT>{x64::PROT::READ, x64::PROT::WRITE}, BitFlags<x64::MAP>{x64::MAP::PRIVATE, x64::MAP::ANONYMOUS});
         mmu->setRegionName(argumentPage, "program arguments");
         x64::Ptr8 argumentPtr { argumentPage };
 

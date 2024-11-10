@@ -17,10 +17,10 @@ namespace x64 {
         return ((address + alignment - 1) / alignment) * alignment;
     }
 
-    Mmu::Region::Region(std::string name, u64 base, u64 size, PROT prot) {
+    Mmu::Region::Region(std::string name, u64 base, u64 size, BitFlags<PROT> prot) {
         this->base_ = base;
         this->size_ = size;
-        if(prot != PROT::NONE) {
+        if(prot.any()) {
             this->data_.resize(size, 0x00);
         }
         this->prot_ = prot;
@@ -119,7 +119,7 @@ namespace x64 {
             removeRegion(oldRegion->base(), oldRegion->end(), oldRegion->size());
             for(size_t i = 0; i < splitRegions.size(); ++i) {
                 if(i == 1) continue;
-                Region r("", 0, 0, PROT::NONE);
+                Region r("", 0, 0, BitFlags<PROT>{PROT::NONE});
                 std::swap(r, splitRegions[i]);
                 if(r.size() == 0) continue;
                 addRegion(std::move(r));
@@ -144,14 +144,14 @@ namespace x64 {
         tryMergeRegions();
     }
 
-    u64 Mmu::mmap(u64 address, u64 length, PROT prot, MAP flags) {
+    u64 Mmu::mmap(u64 address, u64 length, BitFlags<PROT> prot, BitFlags<MAP> flags) {
         verify(address % PAGE_SIZE == 0, [&]() {
             fmt::print("mmap with non-page_size aligned address {:#x} not supported", address);
         });
 
         u64 baseAddress = (address != 0) ? address : firstFitPageAligned(length);
-        Region region("", baseAddress, pageRoundUp(length), (PROT)prot);
-        if((bool)(flags & MAP::FIXED)) {
+        Region region("", baseAddress, pageRoundUp(length), prot);
+        if(flags.test(MAP::FIXED)) {
             addRegionAndEraseExisting(std::move(region));
         } else {
             addRegion(std::move(region));
@@ -172,7 +172,7 @@ namespace x64 {
             }
         }
         for(Region* regionPtr : regionsToRemove) {
-            verify((regionPtr->prot() & PROT::EXEC) == PROT::NONE, "Cannot unmap exec region");
+            verify(!regionPtr->prot().test(PROT::EXEC), "Cannot unmap exec region");
             removeRegion(regionPtr->base(), regionPtr->end(), regionPtr->size());
         }
         for(Region* regionPtr : regionsToSplit) {
@@ -183,7 +183,7 @@ namespace x64 {
             removeRegion(regionPtr->base(), regionPtr->end(), regionPtr->size());
             for(size_t i = 0; i < splitRegions.size(); ++i) {
                 if(i == 1) continue;
-                Region r("", 0, 0, PROT::NONE);
+                Region r("", 0, 0, BitFlags<PROT>{PROT::NONE});
                 std::swap(r, splitRegions[i]);
                 if(r.size() == 0) continue;
                 addRegion(std::move(r));
@@ -193,7 +193,7 @@ namespace x64 {
         return 0;
     }
 
-    int Mmu::mprotect(u64 address, u64 length, PROT prot) {
+    int Mmu::mprotect(u64 address, u64 length, BitFlags<PROT> prot) {
         verify(address % PAGE_SIZE == 0, "mprotect with non-page_size aligned address not supported");
         length = pageRoundUp(length);
         auto* regionPtr = findAddress(address);
@@ -205,7 +205,7 @@ namespace x64 {
         std::array<Region, 3> splitRegions = regionPtr->split(address, address+length);
         removeRegion(regionPtr->base(), regionPtr->end(), regionPtr->size());
         for(size_t i = 0; i < splitRegions.size(); ++i) {
-            Region r("", 0, 0, PROT::NONE);
+            Region r("", 0, 0, BitFlags<PROT>{PROT::NONE});
             std::swap(r, splitRegions[i]);
             if(r.size() == 0) continue;
             if(i == 1) r.setProtection(prot);
@@ -231,8 +231,8 @@ namespace x64 {
         return std::max(this->base(), base) < std::min(this->end(), end);
     }
 
-    void Mmu::Region::setProtection(PROT prot) {
-        if(prot_ == PROT::NONE && prot != PROT::NONE) {
+    void Mmu::Region::setProtection(BitFlags<PROT> prot) {
+        if(prot_.none() && prot.any()) {
             // set the actual size when a region is no longer PROT::NONE.
             if(data_.size() != size_) data_.resize(size_, 0x0);
         }
@@ -272,12 +272,12 @@ namespace x64 {
 
     Mmu::Mmu() {
         // Make first page non-readable and non-writable
-        addRegion(Region { "nullpage", 0, PAGE_SIZE, PROT::NONE });
+        addRegion(Region { "nullpage", 0, PAGE_SIZE, BitFlags<PROT>{PROT::NONE} });
     }
 
-    PROT Mmu::prot(u64 address) const {
+    BitFlags<PROT> Mmu::prot(u64 address) const {
         const auto* region = findAddress(address);
-        if(!region) return PROT::NONE;
+        if(!region) return BitFlags<PROT>{PROT::NONE};
         return region->prot();
     }
 
@@ -406,10 +406,10 @@ namespace x64 {
     }
 
     void Mmu::dumpRegions() const {
-        auto protectionToString = [](PROT prot) -> std::string {
-            return fmt::format("{}{}{}", (int)(prot & PROT::READ)  ? "R" : " ",
-                                         (int)(prot & PROT::WRITE) ? "W" : " ",
-                                         (int)(prot & PROT::EXEC)  ? "X" : " ");
+        auto protectionToString = [](BitFlags<PROT> prot) -> std::string {
+            return fmt::format("{}{}{}", prot.test(PROT::READ)  ? "R" : " ",
+                                         prot.test(PROT::WRITE) ? "W" : " ",
+                                         prot.test(PROT::EXEC)  ? "X" : " ");
         };
         struct DumpInfo {
             std::string file;
@@ -508,7 +508,7 @@ namespace x64 {
     void Mmu::Region::copyToRegion(u64 dst, const u8* src, size_t n) {
         verify(contains(dst));
         verify(contains(dst + n -1));
-        verify((bool)(prot() & PROT::WRITE), [&]() {
+        verify(prot().test(PROT::WRITE), [&]() {
             fmt::print("Attempt to write to {:#x} in non-writable region [{:#x}:{:#x}]\n", dst, base(), end());
         });
         std::memcpy(&data_[dst-base_], src, n);
@@ -517,7 +517,7 @@ namespace x64 {
     void Mmu::Region::copyFromRegion(u8* dst, u64 src, size_t n) const {
         verify(contains(src));
         verify(contains(src + n -1));
-        verify((bool)(prot() & PROT::READ), [&]() {
+        verify(prot().test(PROT::READ), [&]() {
             fmt::print("Attempt to read from {:#x} in non-readable region [{:#x}:{:#x}]\n", src, base(), end());
         });
         std::memcpy(dst, &data_[src-base_], n);
@@ -532,7 +532,7 @@ namespace x64 {
         Region m(name_, left, right-left, prot_);
         Region r(name_, right, end()-right, prot_);
 
-        if(prot_ != PROT::NONE) {
+        if(prot_.any()) {
             if(l.size()) std::memcpy(l.data_.data(), data_.data(), left-base_);
             if(m.size()) std::memcpy(m.data_.data(), data_.data()+left-base_, right-left);
             if(r.size()) std::memcpy(r.data_.data(), data_.data()+right-base_, end()-right);
@@ -544,7 +544,7 @@ namespace x64 {
 
     void Mmu::Region::setEnd(u64 newEnd) {
         size_ = pageRoundUp(size() + newEnd - end());
-        if(prot_ != PROT::NONE) data_.resize(size_, 0x0);
+        if(prot_.any()) data_.resize(size_, 0x0);
     }
 
     u64 Mmu::brk(u64 address) {

@@ -4,6 +4,7 @@
 #include "x64/mmu.h"
 #include "x64/registers.h"
 #include "kernel/thread.h"
+#include <algorithm>
 #include <optional>
 
 namespace emulator {
@@ -256,7 +257,7 @@ namespace emulator {
         // If we land here, we probably have not disassembled the section yet...
         const x64::Mmu::Region* mmuRegion = ((const x64::Mmu&)mmu_).findAddress(address);
         if(!mmuRegion) return InstructionPosition { nullptr, (size_t)(-1) };
-        verify((bool)(mmuRegion->prot() & x64::PROT::EXEC), [&]() {
+        verify(mmuRegion->prot().test(x64::PROT::EXEC), [&]() {
             fmt::print(stderr, "Attempting to execute non-executable region [{:#x}-{:#x}]\n", mmuRegion->base(), mmuRegion->end());
         });
 

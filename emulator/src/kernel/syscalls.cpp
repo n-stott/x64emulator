@@ -264,11 +264,14 @@ namespace kernel {
     }
 
     x64::Ptr Sys::mmap(x64::Ptr addr, size_t length, int prot, int flags, int fd, off_t offset) {
-        x64::MAP f =  x64::MAP::PRIVATE;
-        if(Host::Mmap::isAnonymous(flags)) f = f | x64::MAP::ANONYMOUS;
-        if(Host::Mmap::isFixed(flags)) f = f | x64::MAP::FIXED;
-        u64 base = mmu_.mmap(addr.address(), length, (x64::PROT)prot, f);
-        if(!(bool)(f & x64::MAP::ANONYMOUS)) {
+        BitFlags<x64::MAP> mmapFlags {x64::MAP::PRIVATE};
+        if(Host::Mmap::isAnonymous(flags)) mmapFlags.add(x64::MAP::ANONYMOUS);
+        if(Host::Mmap::isFixed(flags)) mmapFlags.add(x64::MAP::FIXED);
+
+        BitFlags<x64::PROT> protFlags = BitFlags<x64::PROT>::fromIntegerType(prot);
+
+        u64 base = mmu_.mmap(addr.address(), length, protFlags, mmapFlags);
+        if(!mmapFlags.test(x64::MAP::ANONYMOUS)) {
             verify(fd >= 0);
             ErrnoOrBuffer data = kernel_.fs().pread(FS::FD{fd}, length, offset);
             if(data.isError()) {
@@ -277,8 +280,8 @@ namespace kernel {
                 base = (u64)data.errorOr(0);
             }
             data.errorOrWith<int>([&](const Buffer& buffer) {
-                x64::PROT saved = mmu_.prot(base);
-                mmu_.mprotect(base, length, x64::PROT::WRITE);
+                BitFlags<x64::PROT> saved = mmu_.prot(base);
+                mmu_.mprotect(base, length, BitFlags<x64::PROT>{x64::PROT::WRITE});
                 mmu_.copyToMmu(x64::Ptr8{base}, buffer.data(), buffer.size());
                 mmu_.mprotect(base, length, saved);
                 auto filename = kernel_.fs().filename(FS::FD{fd});
@@ -287,9 +290,10 @@ namespace kernel {
             });
         }
         if(logSyscalls_) {
-            bool protRead = ((x64::PROT)prot & x64::PROT::READ) == x64::PROT::READ;
-            bool protWrite = ((x64::PROT)prot & x64::PROT::WRITE) == x64::PROT::WRITE;
-            bool protExec = ((x64::PROT)prot & x64::PROT::EXEC) == x64::PROT::EXEC;
+            BitFlags<x64::PROT> protFlags = BitFlags<x64::PROT>::fromIntegerType(prot);
+            bool protRead = protFlags.test(x64::PROT::READ);
+            bool protWrite = protFlags.test(x64::PROT::WRITE);
+            bool protExec = protFlags.test(x64::PROT::EXEC);
             std::string protString = fmt::format("{}{}{}",
                     protRead  ? "R" : "",
                     protWrite ? "W" : "",
@@ -301,11 +305,12 @@ namespace kernel {
     }
 
     int Sys::mprotect(x64::Ptr addr, size_t length, int prot) {
-        int ret = mmu_.mprotect(addr.address(), length, (x64::PROT)prot);
+        BitFlags<x64::PROT> protFlags = BitFlags<x64::PROT>::fromIntegerType(prot);
+        int ret = mmu_.mprotect(addr.address(), length, protFlags);
         if(logSyscalls_) {
-            bool protRead = ((x64::PROT)prot & x64::PROT::READ) == x64::PROT::READ;
-            bool protWrite = ((x64::PROT)prot & x64::PROT::WRITE) == x64::PROT::WRITE;
-            bool protExec = ((x64::PROT)prot & x64::PROT::EXEC) == x64::PROT::EXEC;
+            bool protRead = protFlags.test(x64::PROT::READ);
+            bool protWrite = protFlags.test(x64::PROT::WRITE);
+            bool protExec = protFlags.test(x64::PROT::EXEC);
             std::string protString = fmt::format("{}{}{}",
                     protRead  ? "R" : "",
                     protWrite ? "W" : "",

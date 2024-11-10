@@ -48,11 +48,11 @@ int main() {
     bool errorEncountered = false;
 
     VerificationScope::run([&]() {
-        u64 execPage = mmu.mmap(0, Mmu::PAGE_SIZE, PROT::READ | PROT::WRITE | PROT::EXEC, MAP::PRIVATE | MAP::ANONYMOUS);
+        u64 execPage = mmu.mmap(0, Mmu::PAGE_SIZE, BitFlags<PROT>{PROT::READ, PROT::WRITE, PROT::EXEC}, BitFlags<MAP>{MAP::PRIVATE, MAP::ANONYMOUS});
         mmu.copyToMmu(Ptr8{execPage}, strlen_sse2.data(), strlen_sse2.size());
-        mmu.mprotect(execPage, Mmu::PAGE_SIZE, PROT::READ | PROT::EXEC);
+        mmu.mprotect(execPage, Mmu::PAGE_SIZE, BitFlags<PROT>{PROT::READ, PROT::EXEC});
 
-        u64 dataPage = mmu.mmap(0, Mmu::PAGE_SIZE, PROT::READ | PROT::WRITE, MAP::PRIVATE | MAP::ANONYMOUS);
+        u64 dataPage = mmu.mmap(0, Mmu::PAGE_SIZE, BitFlags<PROT>{PROT::READ, PROT::WRITE}, BitFlags<MAP>{MAP::PRIVATE, MAP::ANONYMOUS});
         mmu.copyToMmu(Ptr8{dataPage}, (const u8*)string.data(), string.size());
 
         emulator::VM vm(mmu, kernel);
