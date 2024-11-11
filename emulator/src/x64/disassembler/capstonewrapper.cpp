@@ -3194,6 +3194,28 @@ namespace x64 {
         return make_failed(insn);
     }
 
+    static X64Instruction makePavgb(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto rmssesrc = asRM128(src);
+        if(rssedst && rmssesrc) return X64Instruction::make<Insn::PAVGB_RSSE_RMSSE>(insn.address, insn.size, rssedst.value(), rmssesrc.value());
+        return make_failed(insn);
+    }
+
+    static X64Instruction makePavgw(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto rmssesrc = asRM128(src);
+        if(rssedst && rmssesrc) return X64Instruction::make<Insn::PAVGW_RSSE_RMSSE>(insn.address, insn.size, rssedst.value(), rmssesrc.value());
+        return make_failed(insn);
+    }
+
     static X64Instruction makePminub(const cs_insn& insn) {
         const auto& x86detail = insn.detail->x86;
         assert(x86detail.op_count == 2);
@@ -3824,6 +3846,8 @@ namespace x64 {
             case X86_INS_PMULUDQ: return makePmuludq(insn);
             case X86_INS_PMADDWD: return makePmaddwd(insn);
             case X86_INS_PSADBW: return makePsadbw(insn);
+            case X86_INS_PAVGB: return makePavgb(insn);
+            case X86_INS_PAVGW: return makePavgw(insn);
             case X86_INS_PMAXUB: return makePmaxub(insn);
             case X86_INS_PMINUB: return makePminub(insn);
             case X86_INS_PTEST: return makePtest(insn);

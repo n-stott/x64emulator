@@ -528,6 +528,8 @@ namespace x64 {
         PMULUDQ_RSSE_RMSSE,
         PMADDWD_RSSE_RMSSE,
         PSADBW_RSSE_RMSSE,
+        PAVGB_RSSE_RMSSE,
+        PAVGW_RSSE_RMSSE,
         PMAXUB_RSSE_RMSSE,
         PMINUB_RSSE_RMSSE,
         PTEST_RSSE_RMSSE,

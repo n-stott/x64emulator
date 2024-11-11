@@ -1464,6 +1464,48 @@ namespace x64 {
         return res;
     }
 
+    u128 CpuImpl::pavgb(u128 dst, u128 src) {
+        std::array<u8, 16> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        std::memcpy(DST.data(), &dst, sizeof(u128));
+
+        std::array<u8, 16> SRC;
+        static_assert(sizeof(SRC) == sizeof(u128));
+        std::memcpy(SRC.data(), &src, sizeof(u128));
+
+        std::array<u16, 16> TMP;
+        for(size_t i = 0; i < 16; ++i) {
+            TMP[i] = (u16)(((u16)DST[i] + (u16)SRC[i] + 1) >> 1);
+        }
+
+        for(size_t i = 0; i < 16; ++i) {
+            DST[i] = (u8)TMP[i];
+        }
+        std::memcpy(&dst, DST.data(), sizeof(u128));
+        return dst;
+    }
+
+    u128 CpuImpl::pavgw(u128 dst, u128 src) {
+        std::array<u16, 8> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        std::memcpy(DST.data(), &dst, sizeof(u128));
+
+        std::array<u16, 8> SRC;
+        static_assert(sizeof(SRC) == sizeof(u128));
+        std::memcpy(SRC.data(), &src, sizeof(u128));
+
+        std::array<u32, 8> TMP;
+        for(size_t i = 0; i < 8; ++i) {
+            TMP[i] = (u32)(((u32)DST[i] + (u32)SRC[i] + 1) >> 1);
+        }
+
+        for(size_t i = 0; i < 8; ++i) {
+            DST[i] = (u16)TMP[i];
+        }
+        std::memcpy(&dst, DST.data(), sizeof(u128));
+        return dst;
+    }
+
     u128 CpuImpl::pmaxub(u128 dst, u128 src) {
         std::array<u8, 16> DST;
         static_assert(sizeof(DST) == sizeof(u128));

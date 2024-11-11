@@ -787,6 +787,8 @@ namespace x64 {
         void exec(const Pmaddwd<RSSE, RMSSE>&);
 
         void exec(const Psadbw<RSSE, RMSSE>&);
+        void exec(const Pavgb<RSSE, RMSSE>&);
+        void exec(const Pavgw<RSSE, RMSSE>&);
 
         void exec(const Pmaxub<RSSE, RMSSE>&);
         void exec(const Pminub<RSSE, RMSSE>&);

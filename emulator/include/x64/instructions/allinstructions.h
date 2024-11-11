@@ -1154,6 +1154,18 @@ namespace x64 {
     };
 
     template<typename Dst, typename Src>
+    struct Pavgb {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
+    struct Pavgw {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
     struct Pmaxub {
         Dst dst;
         Src src;
