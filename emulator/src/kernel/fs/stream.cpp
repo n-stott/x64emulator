@@ -81,7 +81,8 @@ namespace kernel {
         return -ENOTSUP;
     }
 
-    ErrnoOrBuffer Stream::ioctl(unsigned long request, const Buffer& buffer) {
+    ErrnoOrBuffer Stream::ioctl(unsigned long request, const Buffer& buf) {
+        Buffer buffer(buf);
         switch(request) {
             case TCGETS: {
                 verify(buffer.size() == sizeof(struct termios));

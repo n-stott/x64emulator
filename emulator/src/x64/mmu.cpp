@@ -36,10 +36,10 @@ namespace x64 {
         
     }
 
-    Mmu::Region::Region(Region&& r) noexcept : base_(std::move(r.base_)),
-                                               size_(std::move(r.size_)),
+    Mmu::Region::Region(Region&& r) noexcept : base_(r.base_),
+                                               size_(r.size_),
                                                data_(std::move(r.data_)),
-                                               prot_(std::move(r.prot_)),
+                                               prot_(r.prot_),
                                                name_(std::move(r.name_)) {
         
     }
@@ -57,10 +57,10 @@ namespace x64 {
 
     Mmu::Region& Mmu::Region::operator=(Region&& r) noexcept {
         if(&r != this) {
-            base_ = std::move(r.base_);
-            size_ = std::move(r.size_);
+            base_ = r.base_;
+            size_ = r.size_;
             data_ = std::move(r.data_);
-            prot_ = std::move(r.prot_);
+            prot_ = r.prot_;
             name_ = std::move(r.name_);
         }
         return *this;

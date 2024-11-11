@@ -93,7 +93,7 @@ namespace x64 {
         Xmm get(RSSE reg) const { return regs_.get(reg); }
 
         template<typename T>
-        T  get(Imm immediate) const;
+        T  get(Imm value) const;
 
         u8  get(Ptr8 ptr) const;
         u16 get(Ptr16 ptr) const;

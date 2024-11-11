@@ -24,7 +24,7 @@ namespace kernel {
     void Sys::print(const char* format, Args... args) const {
         fmt::print("[{}:{}@{:#12x}] ", currentThread_->description().pid, currentThread_->description().tid, currentThread_->tickInfo().current());
         fmt::print(format, args...);
-        fflush(stdout);
+        [[maybe_unused]]int ret = fflush(stdout);
     }
 
     void Sys::syscall(Thread* thread) {
@@ -358,6 +358,7 @@ namespace kernel {
         verify(!!bufferSize, [&]() {
             fmt::print("Could not decide buffer size for ioctl {:#x}\n", request);
         });
+        if(!bufferSize) return -EINVAL;
         std::vector<u8> buf(bufferSize.value(), 0x0);
         Buffer buffer(std::move(buf));
         mmu_.copyFromMmu(buffer.data(), argp, buffer.size());

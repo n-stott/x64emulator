@@ -3268,6 +3268,7 @@ namespace x64 {
     u128 CheckedCpuImpl::psrad(u128 dst, u8 src) { return psra<i32>(dst, src); }
     u128 CheckedCpuImpl::psraq(u128 dst, u8 src) { return psra<i64>(dst, src); }
 
+    // NOLINTBEGIN(readability-function-size)
     template<typename U>
     static u128 psll(u128 dst, u8 src) {
 
@@ -3326,12 +3327,14 @@ namespace x64 {
         assert(virtualRes.hi == nativeRes.hi);
         return nativeRes;
     }
+    // NOLINTEND(readability-function-size)
 
     u128 CheckedCpuImpl::psllw(u128 dst, u8 src) { return psll<u16>(dst, src); }
     u128 CheckedCpuImpl::pslld(u128 dst, u8 src) { return psll<u32>(dst, src); }
     u128 CheckedCpuImpl::psllq(u128 dst, u8 src) { return psll<u64>(dst, src); }
 
 
+    // NOLINTBEGIN(readability-function-size)
     template<typename U>
     static u128 psrl(u128 dst, u8 src) {
 
@@ -3390,6 +3393,7 @@ namespace x64 {
         assert(virtualRes.hi == nativeRes.hi);
         return nativeRes;
     }
+    // NOLINTEND(readability-function-size)
 
     u128 CheckedCpuImpl::psrlw(u128 dst, u8 src) { return psrl<u16>(dst, src); }
     u128 CheckedCpuImpl::psrld(u128 dst, u8 src) { return psrl<u32>(dst, src); }
@@ -3451,28 +3455,28 @@ namespace x64 {
 
     u32 CheckedCpuImpl::pcmpistri(u128 dst, u128 src, u8 control, Flags* flags) {
         NON_CHECKED
-        enum DATA_FORMAT {
+        enum DATA_FORMAT : u8 {
             UNSIGNED_BYTE,
             UNSIGNED_WORD,
             SIGNED_BYTE,
             SIGNED_WORD,
         };
 
-        enum AGGREGATION_OPERATION {
+        enum AGGREGATION_OPERATION : u8 {
             EQUAL_ANY,
             RANGES,
             EQUAL_EACH,
             EQUAL_ORDERED,
         };
 
-        enum POLARITY {
+        enum POLARITY : u8 {
             POSITIVE_POLARITY,
             NEGATIVE_POLARITY,
             MASKED_POSITIVE,
             MASKED_NEGATIVE,
         };
 
-        enum OUTPUT_SELECTION {
+        enum OUTPUT_SELECTION : u8 {
             LEAST_SIGNIFICANT_INDEX,
             MOST_SIGNIFICANT_INDEX,
         };

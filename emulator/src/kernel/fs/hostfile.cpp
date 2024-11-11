@@ -99,7 +99,6 @@ namespace kernel {
 
     ErrnoOrBuffer HostFile::statfs() {
         struct statfs stfs;
-        std::string path = this->path();
         int rc = ::fstatfs(hostFd_, &stfs);
         if(rc < 0) return ErrnoOrBuffer(-errno);
         std::vector<u8> buf(sizeof(stfs), 0x0);

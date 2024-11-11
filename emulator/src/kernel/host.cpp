@@ -550,7 +550,7 @@ namespace kernel {
         assert(time.seconds <= std::numeric_limits<time_t>::max());
         assert(time.nanoseconds / 1'000 <= std::numeric_limits<suseconds_t>::max());
         tv.tv_sec = (time_t)time.seconds;
-        tv.tv_usec = time.nanoseconds / 1'000;
+        tv.tv_usec = (suseconds_t)(time.nanoseconds / 1'000);
         return Buffer(tv);
     }
 
@@ -558,7 +558,7 @@ namespace kernel {
         switch(resource) {
             case RLIMIT_STACK: {
                 struct rlimit stackLimit {
-                    16*0x1000,
+                    static_cast<rlim_t>(16*0x1000),
                     RLIM64_INFINITY,
                 };
                 return ErrnoOrBuffer(Buffer{stackLimit});

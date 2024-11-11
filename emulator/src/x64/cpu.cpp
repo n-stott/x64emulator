@@ -1098,12 +1098,12 @@ namespace x64 {
         });
     }
 
-    template<typename T, typename U> T narrow(const U& u);
+    template<typename T, typename U> T narrow(const U& val);
     template<> u32 narrow(const u64& val) { return (u32)val; }
     template<> u32 narrow(const Xmm& val) { return (u32)val.lo; }
     template<> u64 narrow(const Xmm& val) { return val.lo; }
 
-    template<typename T, typename U> T zeroExtend(const U& u);
+    template<typename T, typename U> T zeroExtend(const U& val);
     template<> u32 zeroExtend(const u16& val) { return (u32)val; }
     template<> Xmm zeroExtend(const u32& val) { return Xmm{ val, 0 }; }
     template<> Xmm zeroExtend(const u64& val) { return Xmm{ val, 0 }; }
@@ -1245,7 +1245,11 @@ namespace x64 {
         regs_.rbp() = pop64();
     }
 
-    void Cpu::exec(const Halt&) { verify(false, "Halt not implemented"); }
+    // NOLINTBEGIN(readability-convert-member-functions-to-static)
+    void Cpu::exec(const Halt&) {
+        verify(false, "Halt not implemented");
+    }
+    
     void Cpu::exec(const Nop&) { }
 
     void Cpu::exec(const Ud2&) {
@@ -1257,6 +1261,7 @@ namespace x64 {
         fmt::print("unknown {}\n", ins.mnemonic.data());
         verify(false);
     }
+    // NOLINTEND(readability-convert-member-functions-to-static)
 
     void Cpu::exec(const Cdq&) { set(R32::EDX, (get(R32::EAX) & 0x80000000) ? 0xFFFFFFFF : 0x0); }
     void Cpu::exec(const Cqo&) { set(R64::RDX, (get(R64::RAX) & 0x8000000000000000) ? 0xFFFFFFFFFFFFFFFF : 0x0); }
@@ -1978,21 +1983,21 @@ namespace x64 {
     void Cpu::exec(const Faddp<ST>& ins) {
         f80 top = x87fpu_.st(ST::ST0);
         f80 dst = x87fpu_.st(ins.dst);
-        x87fpu_.set(ins.dst, Impl::fadd(top, dst, &x87fpu_));
+        x87fpu_.set(ins.dst, Impl::fadd(top, dst, &x87fpu_)); // NOLINT(readability-suspicious-call-argument)
         x87fpu_.pop();
     }
 
     void Cpu::exec(const Fsubp<ST>& ins) {
         f80 top = x87fpu_.st(ST::ST0);
         f80 dst = x87fpu_.st(ins.dst);
-        x87fpu_.set(ins.dst, Impl::fsub(top, dst, &x87fpu_));
+        x87fpu_.set(ins.dst, Impl::fsub(top, dst, &x87fpu_)); // NOLINT(readability-suspicious-call-argument)
         x87fpu_.pop();
     }
 
     void Cpu::exec(const Fsubrp<ST>& ins) {
         f80 top = x87fpu_.st(ST::ST0);
         f80 dst = x87fpu_.st(ins.dst);
-        x87fpu_.set(ins.dst, Impl::fsub(top, dst, &x87fpu_));
+        x87fpu_.set(ins.dst, Impl::fsub(top, dst, &x87fpu_)); // NOLINT(readability-suspicious-call-argument)
         x87fpu_.pop();
     }
 
@@ -2922,6 +2927,7 @@ namespace x64 {
         setFpuState(fpuState);
     }
 
+    // NOLINTBEGIN(readability-convert-member-functions-to-static)
     void Cpu::exec(const Rdpkru&) {
         verify(false, "Rdpkru not implemented");
     }
@@ -2937,4 +2943,5 @@ namespace x64 {
     void Cpu::exec(const Fwait&) {
         
     }
+    // NOLINTEND(readability-convert-member-functions-to-static)
 }

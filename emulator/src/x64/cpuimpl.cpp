@@ -492,7 +492,7 @@ namespace x64 {
         flags->parity = 0;
         flags->carry = 0;
         U res = (U)0;
-        for(U i = 0; i < 8*sizeof(U); ++i) {
+        for(size_t i = 0; i < 8*sizeof(U); ++i) {
             res += src & 0x1;
             src >>= 1;
         }
@@ -1634,28 +1634,28 @@ namespace x64 {
     }
 
     u32 CpuImpl::pcmpistri(u128 dst, u128 src, u8 control, Flags* flags) {
-        enum DATA_FORMAT {
+        enum DATA_FORMAT : u8 {
             UNSIGNED_BYTE,
             UNSIGNED_WORD,
             SIGNED_BYTE,
             SIGNED_WORD,
         };
 
-        enum AGGREGATION_OPERATION {
+        enum AGGREGATION_OPERATION : u8 {
             EQUAL_ANY,
             RANGES,
             EQUAL_EACH,
             EQUAL_ORDERED,
         };
 
-        enum POLARITY {
+        enum POLARITY : u8 {
             POSITIVE_POLARITY,
             NEGATIVE_POLARITY,
             MASKED_POSITIVE,
             MASKED_NEGATIVE,
         };
 
-        enum OUTPUT_SELECTION {
+        enum OUTPUT_SELECTION : u8 {
             LEAST_SIGNIFICANT_INDEX,
             MOST_SIGNIFICANT_INDEX,
         };
@@ -1686,12 +1686,12 @@ namespace x64 {
     static u128 pack(u128 dst, u128 src) {
         static_assert(sizeof(SRC_T) == 2*sizeof(DST_T));
         auto saturate = [](SRC_T val) -> DST_T {
-            static constexpr SRC_T l = (SRC_T)std::numeric_limits<DST_T>::min();
-            static constexpr SRC_T u = (SRC_T)std::numeric_limits<DST_T>::max();
+            static constexpr SRC_T l = (SRC_T)std::numeric_limits<DST_T>::min(); // NOLINT(bugprone-signed-char-misuse, cert-str34-c)
+            static constexpr SRC_T u = (SRC_T)std::numeric_limits<DST_T>::max(); // NOLINT(bugprone-signed-char-misuse, cert-str34-c)
             return (DST_T)std::max(std::min(val, u), l);
         };
 
-        constexpr u32 N = sizeof(u128)/sizeof(SRC_T);
+        constexpr size_t N = sizeof(u128)/sizeof(SRC_T);
         std::array<SRC_T, N> DST;
         static_assert(sizeof(DST) == sizeof(u128));
         std::memcpy(DST.data(), &dst, sizeof(u128));
@@ -1731,7 +1731,7 @@ namespace x64 {
 
     template<typename U, bool lo>
     static u128 unpack(u128 dst, u128 src) {
-        constexpr u32 N = sizeof(u128)/sizeof(U);
+        constexpr size_t N = sizeof(u128)/sizeof(U);
         std::array<U, N> DST;
         static_assert(sizeof(DST) == sizeof(u128));
         std::memcpy(DST.data(), &dst, sizeof(u128));

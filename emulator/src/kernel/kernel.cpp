@@ -5,6 +5,7 @@
 #include "emulator/vm.h"
 #include "elf-reader/elf-reader.h"
 #include <numeric>
+#include <variant>
 
 namespace kernel {
 
@@ -18,7 +19,11 @@ namespace kernel {
         u64 platformStringAddress;
     };
 
-    static u64 loadElf(x64::Mmu* mmu, Auxiliary* auxiliary, const std::string& filepath, bool mainProgram) {
+    struct InterpreterPath {
+        std::string path;
+    };
+
+    static std::variant<u64, InterpreterPath> loadElf(x64::Mmu* mmu, Auxiliary* auxiliary, const std::string& filepath, bool mainProgram) {
         auto elf = elf::ElfReader::tryCreate(filepath);
         verify(!!elf, [&]() { fmt::print("Failed to load elf {}\n", filepath); });
         verify(elf->archClass() == elf::Class::B64, "elf must be 64-bit");
@@ -99,7 +104,7 @@ namespace kernel {
         });
 
         if(interpreterPath) {
-            return loadElf(mmu, nullptr, interpreterPath.value(), false);
+            return InterpreterPath{interpreterPath.value()};
         } else {
             return elfOffset + elf64->entrypoint();
         }
@@ -222,7 +227,20 @@ namespace kernel {
                          const std::vector<std::string>& environmentVariables) {
         emulator::VM vm(mmu_, *this);
         Auxiliary aux;
-        u64 entrypoint = loadElf(&mmu_, &aux, programFilePath, true);
+
+        auto entrypointOrInterpreterPath = loadElf(&mmu_, &aux, programFilePath, true);
+        u64 entrypoint = std::visit([&](auto&& arg) -> u64
+        {
+            using T = std::decay_t<decltype(arg)>;
+            if constexpr (std::is_same_v<T, u64>) {
+                return arg;
+            } else {
+                auto interpreterEntrypoint = loadElf(&mmu_, nullptr, arg.path, false);
+                verify(std::holds_alternative<u64>(interpreterEntrypoint));
+                return std::get<u64>(interpreterEntrypoint);
+            }
+        }, entrypointOrInterpreterPath);
+
         u64 stackTop = setupMemory(&mmu_, &aux);
 
         std::unique_ptr<Thread> mainThread = scheduler_.allocateThread(0xface);
