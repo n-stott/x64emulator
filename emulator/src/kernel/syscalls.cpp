@@ -151,6 +151,7 @@ namespace kernel {
             case 0x122: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::eventfd2, regs));
             case 0x123: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::epoll_create1, regs));
             case 0x125: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::pipe2, regs));
+            case 0x126: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::inotify_init1, regs));
             case 0x12e: return threadRegs.set(x64::R64::RAX, invoke_syscall_4(&Sys::prlimit64, regs));
             case 0x13a: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::sched_setattr, regs));
             case 0x13b: return threadRegs.set(x64::R64::RAX, invoke_syscall_4(&Sys::sched_getattr, regs));
@@ -1414,6 +1415,13 @@ namespace kernel {
             print("Sys::pipe(pipefd={:#x}, flags={}) = {}\n", pipefd.address(), flags, ret);
         }
         return ret;
+    }
+
+    int Sys::inotify_init1(int flags) {
+        if(logSyscalls_) {
+            print("Sys::inotify_init1(flags={}) = {}\n", flags, -ENOTSUP);
+        }
+        return -ENOTSUP;
     }
 
     int Sys::prlimit64(pid_t pid, int resource, x64::Ptr new_limit, x64::Ptr old_limit) {

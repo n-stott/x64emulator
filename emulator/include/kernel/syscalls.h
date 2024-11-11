@@ -327,6 +327,8 @@ namespace kernel {
         int epoll_create1(int flags);
         // 0x125
         int pipe2(x64::Ptr32 pipefd, int flags);
+        // 0x126
+        int inotify_init1(int flags);
         // 0x12e
         int prlimit64(pid_t pid, int resource, x64::Ptr new_limit, x64::Ptr old_limit);
         // 0x13a
