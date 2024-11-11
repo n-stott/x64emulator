@@ -84,6 +84,11 @@ namespace kernel {
         return ErrnoOrBuffer(-ENOTSUP);
     }
 
+    ErrnoOrBuffer HostDevice::statfs() {
+        verify(false, "HostDevice::statfs not implemented");
+        return ErrnoOrBuffer(-ENOTSUP);
+    }
+
     off_t HostDevice::lseek(off_t, int) {
         verify(false, "HostDevice::lseek not implemented");
         return -ENOTSUP;

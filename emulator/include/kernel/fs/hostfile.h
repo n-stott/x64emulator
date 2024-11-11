@@ -31,6 +31,7 @@ namespace kernel {
         ssize_t write(const u8* buf, size_t count, off_t offset) override;
 
         ErrnoOrBuffer stat() override;
+        ErrnoOrBuffer statfs() override;
         off_t lseek(off_t offset, int whence) override;
         
         ErrnoOrBuffer getdents64(size_t count) override;

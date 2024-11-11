@@ -105,11 +105,6 @@ namespace kernel {
         return -EINVAL;
     }
 
-    ErrnoOrBuffer Directory::stat() {
-        std::string path = this->path();
-        return fs_->kernel().host().stat(path);
-    }
-
     int Directory::fcntl(int cmd, int arg) {
         verify(false, fmt::format("fcntl(cmd={}, arg={}) not implemented on directory", cmd, arg));
         return -ENOTSUP;

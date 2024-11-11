@@ -253,6 +253,8 @@ namespace kernel {
         int getresgid(x64::Ptr32 rgid, x64::Ptr32 egid, x64::Ptr32 sgid);
         // 0x89
         int statfs(x64::Ptr path, x64::Ptr buf);
+        // 0x8a
+        int fstatfs(int fd, x64::Ptr buf);
         // 0x8d
         int setpriority(int which, id_t who, int prio);
         // 0x8f

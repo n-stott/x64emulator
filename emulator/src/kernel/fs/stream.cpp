@@ -49,6 +49,11 @@ namespace kernel {
         std::memcpy(buf.data(), &st, sizeof(st));
         return ErrnoOrBuffer(Buffer{std::move(buf)});
     }
+    
+    ErrnoOrBuffer Stream::statfs() {
+        verify(false, "Stream::statfs not implemented");
+        return ErrnoOrBuffer(-ENOTSUP);
+    }
 
     off_t Stream::lseek(off_t, int) {
         return -ESPIPE;

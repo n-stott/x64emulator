@@ -64,6 +64,11 @@ namespace kernel {
         verify(false, "stat not implemented on PipeEndpoint");
         return ErrnoOrBuffer(-ENOTSUP);
     }
+
+    ErrnoOrBuffer PipeEndpoint::statfs() {
+        verify(false, "statfs not implemented on PipeEndpoint");
+        return ErrnoOrBuffer(-ENOTSUP);
+    }
     
     ErrnoOrBuffer PipeEndpoint::getdents64(size_t) {
         return ErrnoOrBuffer(-ENOTDIR);

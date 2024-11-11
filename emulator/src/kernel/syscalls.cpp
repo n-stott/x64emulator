@@ -114,6 +114,7 @@ namespace kernel {
             case 0x76: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::getresuid, regs));
             case 0x78: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::getresgid, regs));
             case 0x89: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::statfs, regs));
+            case 0x8a: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::fstatfs, regs));
             case 0x8d: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::setpriority, regs));
             case 0x8f: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::sched_getparam, regs));
             case 0x90: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::sched_setscheduler, regs));
@@ -864,6 +865,20 @@ namespace kernel {
     int Sys::statfs(x64::Ptr pathname, x64::Ptr buf) {
         std::string path = mmu_.readString(pathname);
         auto errnoOrBuffer = kernel_.host().statfs(path);
+        if(logSyscalls_) {
+            fmt::print("Sys::statfs(pathname={}, buf={:#x} = {})\n", path, buf.address(), errnoOrBuffer.errorOr(0));
+        }
+        return errnoOrBuffer.errorOrWith<int>([&](const auto& buffer) {
+            mmu_.copyToMmu(buf, buffer.data(), buffer.size());
+            return 0;
+        });
+    }
+
+    int Sys::fstatfs(int fd, x64::Ptr buf) {
+        auto errnoOrBuffer = kernel_.fs().fstatfs(FS::FD{fd});
+        if(logSyscalls_) {
+            fmt::print("Sys::fstatfs(fd={}, buf={:#x} = {})\n", fd, buf.address(), errnoOrBuffer.errorOr(0));
+        }
         return errnoOrBuffer.errorOrWith<int>([&](const auto& buffer) {
             mmu_.copyToMmu(buf, buffer.data(), buffer.size());
             return 0;

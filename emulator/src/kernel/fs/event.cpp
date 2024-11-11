@@ -69,6 +69,11 @@ namespace kernel {
         verify(false, "stat not implemented on event");
         return ErrnoOrBuffer(-ENOTSUP);
     }
+
+    ErrnoOrBuffer Event::statfs() {
+        verify(false, "statfs not implemented on event");
+        return ErrnoOrBuffer(-ENOTSUP);
+    }
     
     ErrnoOrBuffer Event::getdents64(size_t) {
         return ErrnoOrBuffer(-ENOTDIR);

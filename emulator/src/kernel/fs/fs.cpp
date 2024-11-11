@@ -432,6 +432,12 @@ namespace kernel {
         }
     }
 
+    ErrnoOrBuffer FS::fstatfs(FD fd) {
+        OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
+        if(!openFileDescription) return ErrnoOrBuffer(-EBADF);
+        return openFileDescription->file()->statfs();
+    }
+
     off_t FS::lseek(FD fd, off_t offset, int whence) {
         OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
         if(!openFileDescription) return -EBADF;

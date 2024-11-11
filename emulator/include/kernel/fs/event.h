@@ -29,6 +29,7 @@ namespace kernel {
         off_t lseek(off_t offset, int whence) override;
 
         ErrnoOrBuffer stat() override;
+        ErrnoOrBuffer statfs() override;
         
         ErrnoOrBuffer getdents64(size_t count) override;
 
