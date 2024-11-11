@@ -12,7 +12,11 @@ void run(size_t count) {
 #ifndef NDEBUG
             while(counter != 100'000) ++counter;
 #else
+    #ifndef MULTIPROCESSING
+            while(counter != 1'000'000) ++counter;
+    #else
             while(counter != 10'000'000) ++counter;
+    #endif
 #endif
             return counter;
         });
