@@ -76,6 +76,16 @@ namespace kernel {
         return ret;
     }
 
+    ErrnoOrBuffer HostDirectory::stat() {
+        std::string path = this->path();
+        return fs_->kernel().host().stat(path);
+    }
+
+    ErrnoOrBuffer HostDirectory::statfs() {
+        std::string path = this->path();
+        return fs_->kernel().host().statfs(path);
+    }
+
     ErrnoOrBuffer HostDirectory::getdents64(size_t count) {
         verify(!!hostFd_, "Directory must be opened first");
         return fs_->kernel().host().getdents64(Host::FD{hostFd_.value()}, count); // NOLINT(bugprone-unchecked-optional-access)

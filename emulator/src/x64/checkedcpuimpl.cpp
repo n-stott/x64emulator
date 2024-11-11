@@ -278,6 +278,18 @@
         case 0xff: return f(a, 0xff); \
         default: __builtin_unreachable(); \
     }
+#define CALL_2_WITH_IMM3(f, a, b) \
+    switch(order) { \
+        case 0x00: return f(a, b, 0x00); \
+        case 0x01: return f(a, b, 0x01); \
+        case 0x02: return f(a, b, 0x02); \
+        case 0x03: return f(a, b, 0x03); \
+        case 0x04: return f(a, b, 0x04); \
+        case 0x05: return f(a, b, 0x05); \
+        case 0x06: return f(a, b, 0x06); \
+        case 0x07: return f(a, b, 0x07); \
+        default: __builtin_unreachable(); \
+    }
 
 #define CALL_2_WITH_IMM8(f, a, b) \
     switch(order) { \
@@ -2664,6 +2676,35 @@ namespace x64 {
 #endif
     }
 
+    u128 CheckedCpuImpl::pinsrw16(u128 dst, u16 src, u8 order) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::pinsrw16(dst, src, order);
+        (void)virtualRes;
+
+        auto native = [=](__m128i d, u16 s) -> __m128i {
+            CALL_2_WITH_IMM3(_mm_insert_epi16, d, s);
+        };
+
+        __m128i d;
+        static_assert(sizeof(d) == sizeof(dst));
+        memcpy(&d, &dst, sizeof(dst));
+        assert(order < 8);
+        __m128i r = native(d, src);
+        u128 nativeRes;
+        memcpy(&nativeRes, &r, sizeof(r));
+        assert(nativeRes.lo == virtualRes.lo);
+        assert(nativeRes.hi == virtualRes.hi);
+
+        return nativeRes;
+#else
+        return CpuImpl::pinsrw16(dst, src, order);
+#endif
+    }
+
+    u128 CheckedCpuImpl::pinsrw32(u128 dst, u32 src, u8 order) {
+        return CheckedCpuImpl::pinsrw16(dst, (u16)src, order);
+    }
+
     u128 CheckedCpuImpl::punpcklbw(u128 dst, u128 src) {
 #if GCC_COMPILER
         u128 virtualRes = CpuImpl::punpcklbw(dst, src);
@@ -3077,6 +3118,54 @@ namespace x64 {
         return nativeRes;
 #else
         return CpuImpl::pmaddwd(dst, src);
+#endif
+    }
+
+    u128 CheckedCpuImpl::psadbw(u128 dst, u128 src) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::psadbw(dst, src);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("psadbw %1, %0" : "+x"(nativeRes) : "x"(src));
+        assert(nativeRes.lo == virtualRes.lo);
+        assert(nativeRes.hi == virtualRes.hi);
+        
+        return nativeRes;
+#else
+        return CpuImpl::psadbw(dst, src);
+#endif
+    }
+    
+    u128 CheckedCpuImpl::pavgb(u128 dst, u128 src) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::pavgb(dst, src);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("pavgb %1, %0" : "+x"(nativeRes) : "x"(src));
+        assert(nativeRes.lo == virtualRes.lo);
+        assert(nativeRes.hi == virtualRes.hi);
+        
+        return nativeRes;
+#else
+        return CpuImpl::pavgb(dst, src);
+#endif
+    }
+    
+    u128 CheckedCpuImpl::pavgw(u128 dst, u128 src) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::pavgw(dst, src);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("pavgw %1, %0" : "+x"(nativeRes) : "x"(src));
+        assert(nativeRes.lo == virtualRes.lo);
+        assert(nativeRes.hi == virtualRes.hi);
+        
+        return nativeRes;
+#else
+        return CpuImpl::pavgw(dst, src);
 #endif
     }
 

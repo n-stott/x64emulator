@@ -27,4 +27,16 @@ namespace kernel {
         return ErrnoOrBuffer(-ENOTSUP);
     }
 
+    ErrnoOrBuffer ShadowDirectory::stat() {
+        std::string path = this->path();
+        return fs_->kernel().host().stat(path);
+    }
+
+    ErrnoOrBuffer ShadowDirectory::statfs() {
+        std::string path = this->path();
+        auto errnoOrBuffer = fs_->kernel().host().statfs(path);
+        verify(!errnoOrBuffer.isError(), "ShadowDirectory::statfs returned error");
+        return errnoOrBuffer;
+    }
+
 }

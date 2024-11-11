@@ -114,6 +114,7 @@ namespace kernel {
             case 0x76: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::getresuid, regs));
             case 0x78: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::getresgid, regs));
             case 0x89: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::statfs, regs));
+            case 0x8a: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::fstatfs, regs));
             case 0x8d: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::setpriority, regs));
             case 0x8f: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::sched_getparam, regs));
             case 0x90: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::sched_setscheduler, regs));
@@ -150,6 +151,7 @@ namespace kernel {
             case 0x122: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::eventfd2, regs));
             case 0x123: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::epoll_create1, regs));
             case 0x125: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::pipe2, regs));
+            case 0x126: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::inotify_init1, regs));
             case 0x12e: return threadRegs.set(x64::R64::RAX, invoke_syscall_4(&Sys::prlimit64, regs));
             case 0x13a: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::sched_setattr, regs));
             case 0x13b: return threadRegs.set(x64::R64::RAX, invoke_syscall_4(&Sys::sched_getattr, regs));
@@ -864,6 +866,20 @@ namespace kernel {
     int Sys::statfs(x64::Ptr pathname, x64::Ptr buf) {
         std::string path = mmu_.readString(pathname);
         auto errnoOrBuffer = kernel_.host().statfs(path);
+        if(logSyscalls_) {
+            fmt::print("Sys::statfs(pathname={}, buf={:#x} = {})\n", path, buf.address(), errnoOrBuffer.errorOr(0));
+        }
+        return errnoOrBuffer.errorOrWith<int>([&](const auto& buffer) {
+            mmu_.copyToMmu(buf, buffer.data(), buffer.size());
+            return 0;
+        });
+    }
+
+    int Sys::fstatfs(int fd, x64::Ptr buf) {
+        auto errnoOrBuffer = kernel_.fs().fstatfs(FS::FD{fd});
+        if(logSyscalls_) {
+            fmt::print("Sys::fstatfs(fd={}, buf={:#x} = {})\n", fd, buf.address(), errnoOrBuffer.errorOr(0));
+        }
         return errnoOrBuffer.errorOrWith<int>([&](const auto& buffer) {
             mmu_.copyToMmu(buf, buffer.data(), buffer.size());
             return 0;
@@ -1399,6 +1415,13 @@ namespace kernel {
             print("Sys::pipe(pipefd={:#x}, flags={}) = {}\n", pipefd.address(), flags, ret);
         }
         return ret;
+    }
+
+    int Sys::inotify_init1(int flags) {
+        if(logSyscalls_) {
+            print("Sys::inotify_init1(flags={}) = {}\n", flags, -ENOTSUP);
+        }
+        return -ENOTSUP;
     }
 
     int Sys::prlimit64(pid_t pid, int resource, x64::Ptr new_limit, x64::Ptr old_limit) {

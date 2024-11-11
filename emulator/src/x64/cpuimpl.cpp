@@ -1056,6 +1056,20 @@ namespace x64 {
         return res;
     }
 
+    u128 CpuImpl::pinsrw16(u128 dst, u16 src, u8 order) {
+        order = order & 0x7;
+        std::array<u16, 8> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        std::memcpy(DST.data(), &dst, sizeof(u128));
+        DST[order] = src;
+        std::memcpy(&dst, DST.data(), sizeof(u128));
+        return dst;
+    }
+
+    u128 CpuImpl::pinsrw32(u128 dst, u32 src, u8 order) {
+        return pinsrw16(dst, (u16)src, order);
+    }
+
     u128 CpuImpl::punpcklbw(u128 dst, u128 src) {
         std::array<u8, 16> DST;
         static_assert(sizeof(DST) == sizeof(u128));
@@ -1436,6 +1450,69 @@ namespace x64 {
         }
 
         std::memcpy(&dst, TMP.data(), sizeof(u128));
+        return dst;
+    }
+
+    u128 CpuImpl::psadbw(u128 dst, u128 src) {
+        std::array<u8, 16> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        std::memcpy(DST.data(), &dst, sizeof(u128));
+
+        std::array<u8, 16> SRC;
+        static_assert(sizeof(SRC) == sizeof(u128));
+        std::memcpy(SRC.data(), &src, sizeof(u128));
+
+        u16 lo = 0;
+        for(size_t i = 0; i < 8; ++i) {
+            lo += (u16)std::abs(DST[i]-SRC[i]);
+        }
+        u16 hi = 0;
+        for(size_t i = 8; i < 16; ++i) {
+            hi += (u16)std::abs(DST[i]-SRC[i]);
+        }
+        u128 res { lo, hi };
+        return res;
+    }
+
+    u128 CpuImpl::pavgb(u128 dst, u128 src) {
+        std::array<u8, 16> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        std::memcpy(DST.data(), &dst, sizeof(u128));
+
+        std::array<u8, 16> SRC;
+        static_assert(sizeof(SRC) == sizeof(u128));
+        std::memcpy(SRC.data(), &src, sizeof(u128));
+
+        std::array<u16, 16> TMP;
+        for(size_t i = 0; i < 16; ++i) {
+            TMP[i] = (u16)(((u16)DST[i] + (u16)SRC[i] + 1) >> 1);
+        }
+
+        for(size_t i = 0; i < 16; ++i) {
+            DST[i] = (u8)TMP[i];
+        }
+        std::memcpy(&dst, DST.data(), sizeof(u128));
+        return dst;
+    }
+
+    u128 CpuImpl::pavgw(u128 dst, u128 src) {
+        std::array<u16, 8> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        std::memcpy(DST.data(), &dst, sizeof(u128));
+
+        std::array<u16, 8> SRC;
+        static_assert(sizeof(SRC) == sizeof(u128));
+        std::memcpy(SRC.data(), &src, sizeof(u128));
+
+        std::array<u32, 8> TMP;
+        for(size_t i = 0; i < 8; ++i) {
+            TMP[i] = (u32)(((u32)DST[i] + (u32)SRC[i] + 1) >> 1);
+        }
+
+        for(size_t i = 0; i < 8; ++i) {
+            DST[i] = (u16)TMP[i];
+        }
+        std::memcpy(&dst, DST.data(), sizeof(u128));
         return dst;
     }
 

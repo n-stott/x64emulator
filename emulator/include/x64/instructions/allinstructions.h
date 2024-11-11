@@ -939,6 +939,13 @@ namespace x64 {
         Src src;
     };
 
+    template<typename Dst, typename Src, typename Pos>
+    struct Pinsrw {
+        Dst dst;
+        Src src;
+        Pos pos;
+    };
+
     template<typename Dst, typename Src>
     struct Punpcklbw {
         Dst dst;
@@ -1136,6 +1143,24 @@ namespace x64 {
 
     template<typename Dst, typename Src>
     struct Pmaddwd {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
+    struct Psadbw {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
+    struct Pavgb {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
+    struct Pavgw {
         Dst dst;
         Src src;
     };

@@ -787,6 +787,8 @@ namespace utils {
             case Insn::MOVHPS_M64_RSSE: return toString<M64, RSSE>("movhps");
             case Insn::MOVHLPS_RSSE_RSSE: return toString<RSSE, RSSE>("movhlps");
             case Insn::MOVLHPS_RSSE_RSSE: return toString<RSSE, RSSE>("movlhps");
+            case Insn::PINSRW_RSSE_R32_IMM: return toString<RSSE, R32, Imm>("pinsrw");
+            case Insn::PINSRW_RSSE_M16_IMM: return toString<RSSE, M16, Imm>("pinsrw");
             case Insn::PUNPCKLBW_RSSE_RMSSE: return toString<RSSE, RMSSE>("punpcklbw");
             case Insn::PUNPCKLWD_RSSE_RMSSE: return toString<RSSE, RMSSE>("punpcklwd");
             case Insn::PUNPCKLDQ_RSSE_RMSSE: return toString<RSSE, RMSSE>("punpckldq");
@@ -820,6 +822,9 @@ namespace utils {
             case Insn::PMULLW_RSSE_RMSSE: return toString<RSSE, RMSSE>("pmullw");
             case Insn::PMULUDQ_RSSE_RMSSE: return toString<RSSE, RMSSE>("pmuludq");
             case Insn::PMADDWD_RSSE_RMSSE: return toString<RSSE, RMSSE>("pmaddwd");
+            case Insn::PSADBW_RSSE_RMSSE: return toString<RSSE, RMSSE>("psadbw");
+            case Insn::PAVGB_RSSE_RMSSE: return toString<RSSE, RMSSE>("pavgb");
+            case Insn::PAVGW_RSSE_RMSSE: return toString<RSSE, RMSSE>("pavgw");
             case Insn::PMAXUB_RSSE_RMSSE: return toString<RSSE, RMSSE>("pmaxub");
             case Insn::PMINUB_RSSE_RMSSE: return toString<RSSE, RMSSE>("pminub");
             case Insn::PTEST_RSSE_RMSSE: return toString<RSSE, RMSSE>("ptest");

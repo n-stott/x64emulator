@@ -45,8 +45,6 @@ namespace kernel {
             lock_ = Lock::NONE;
         }
 
-
-
         ErrnoOrBuffer read(size_t count) {
             ErrnoOrBuffer errnoOrBuffer = file_->read(count, offset_);
             errnoOrBuffer.errorOrWith<int>([&](const Buffer& buf) {

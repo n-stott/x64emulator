@@ -24,6 +24,11 @@ namespace kernel {
         verify(false, "stat not implemented on epoll");
         return ErrnoOrBuffer(-ENOTSUP);
     }
+
+    ErrnoOrBuffer Epoll::statfs() {
+        verify(false, "statfs not implemented on epoll");
+        return ErrnoOrBuffer(-ENOTSUP);
+    }
     
     ErrnoOrBuffer Epoll::getdents64(size_t) {
         return ErrnoOrBuffer(-ENOTDIR);

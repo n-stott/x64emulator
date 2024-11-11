@@ -85,6 +85,8 @@ namespace kernel {
         ErrnoOrBuffer statx(FD dirfd, const std::string& pathname, int flags, unsigned int mask);
         ErrnoOrBuffer fstatat64(FD dirfd, const std::string& pathname, int flags);
 
+        ErrnoOrBuffer fstatfs(FD fd);
+
         off_t lseek(FD fd, off_t offset, int whence);
 
         ErrnoOrBuffer getdents64(FD fd, size_t count);

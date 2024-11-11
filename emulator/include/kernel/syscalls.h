@@ -253,6 +253,8 @@ namespace kernel {
         int getresgid(x64::Ptr32 rgid, x64::Ptr32 egid, x64::Ptr32 sgid);
         // 0x89
         int statfs(x64::Ptr path, x64::Ptr buf);
+        // 0x8a
+        int fstatfs(int fd, x64::Ptr buf);
         // 0x8d
         int setpriority(int which, id_t who, int prio);
         // 0x8f
@@ -325,6 +327,8 @@ namespace kernel {
         int epoll_create1(int flags);
         // 0x125
         int pipe2(x64::Ptr32 pipefd, int flags);
+        // 0x126
+        int inotify_init1(int flags);
         // 0x12e
         int prlimit64(pid_t pid, int resource, x64::Ptr new_limit, x64::Ptr old_limit);
         // 0x13a

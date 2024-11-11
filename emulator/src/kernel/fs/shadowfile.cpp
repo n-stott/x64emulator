@@ -132,6 +132,11 @@ namespace kernel {
         }
     }
 
+    ErrnoOrBuffer ShadowFile::statfs() {
+        verify(false, "implement statfs on ShadowFile");
+        return ErrnoOrBuffer(-ENOTSUP);
+    }
+
     off_t ShadowFile::lseek(off_t, int) {
         verify(false, "implement lseek on ShadowFile");
         return -EINVAL;

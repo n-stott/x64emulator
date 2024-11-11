@@ -33,6 +33,13 @@ namespace kernel {
         return ptr;
     }
 
+    Timer* Timers::get(int id) {
+        for(auto& timerPtr : timers_) {
+            if(timerPtr->id() == id) return timerPtr.get();
+        }
+        return nullptr;
+    }
+
     void Timers::updateAll(PreciseTime kernelTime) {
         for(auto& timer : timers_) timer->update(kernelTime);
     }

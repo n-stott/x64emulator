@@ -27,6 +27,7 @@ namespace kernel {
         off_t lseek(off_t offset, int whence) override;
 
         ErrnoOrBuffer stat() override;
+        ErrnoOrBuffer statfs() override;
         
         int fcntl(int cmd, int arg) override;
         ErrnoOrBuffer ioctl(unsigned long request, const Buffer& buffer) override;

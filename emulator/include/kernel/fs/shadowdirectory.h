@@ -19,6 +19,11 @@ namespace kernel {
 
         ErrnoOrBuffer getdents64(size_t count) override;
 
+        ErrnoOrBuffer stat() override;
+        ErrnoOrBuffer statfs() override;
+
+        std::string className() const override { return "ShadowDirectory"; }
+
     private:
         ShadowDirectory(FS* fs, Directory* parent, std::string name) : Directory(fs, parent, std::move(name)) { }
 

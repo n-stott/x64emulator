@@ -8,6 +8,7 @@
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <sys/stat.h>
+#include <sys/vfs.h>
 #include <unistd.h>
 
 namespace kernel {
@@ -40,7 +41,6 @@ namespace kernel {
         }
         if (fileType != S_IFREG && fileType != S_IFLNK) {
             // not a regular file or a symbolic link
-            warn(fmt::format("File {} is not a regular file or a symbolic link", pathname));
             return {};
         }
 
@@ -94,6 +94,16 @@ namespace kernel {
         if(rc < 0) return ErrnoOrBuffer(-errno);
         std::vector<u8> buf(sizeof(st), 0x0);
         std::memcpy(buf.data(), &st, sizeof(st));
+        return ErrnoOrBuffer(Buffer{std::move(buf)});
+    }
+
+    ErrnoOrBuffer HostFile::statfs() {
+        struct statfs stfs;
+        std::string path = this->path();
+        int rc = ::fstatfs(hostFd_, &stfs);
+        if(rc < 0) return ErrnoOrBuffer(-errno);
+        std::vector<u8> buf(sizeof(stfs), 0x0);
+        std::memcpy(buf.data(), &stfs, sizeof(stfs));
         return ErrnoOrBuffer(Buffer{std::move(buf)});
     }
 

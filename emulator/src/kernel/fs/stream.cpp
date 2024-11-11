@@ -49,6 +49,11 @@ namespace kernel {
         std::memcpy(buf.data(), &st, sizeof(st));
         return ErrnoOrBuffer(Buffer{std::move(buf)});
     }
+    
+    ErrnoOrBuffer Stream::statfs() {
+        verify(false, "Stream::statfs not implemented");
+        return ErrnoOrBuffer(-ENOTSUP);
+    }
 
     off_t Stream::lseek(off_t, int) {
         return -ESPIPE;
@@ -79,13 +84,16 @@ namespace kernel {
     ErrnoOrBuffer Stream::ioctl(unsigned long request, const Buffer& buffer) {
         switch(request) {
             case TCGETS: {
-                struct termios ts;
-                int ret = ::ioctl((int)type_, TCGETS, &ts);
+                verify(buffer.size() == sizeof(struct termios));
+                int ret = ::ioctl((int)type_, TCGETS, buffer.data());
                 if(ret < 0) return ErrnoOrBuffer(-errno);
-                std::vector<u8> buffer;
-                buffer.resize(sizeof(ts), 0x0);
-                std::memcpy(buffer.data(), &ts, sizeof(ts));
-                return ErrnoOrBuffer(Buffer{std::move(buffer)});
+                return ErrnoOrBuffer(std::move(buffer));
+            }
+            case TCSETS: {
+                verify(buffer.size() == sizeof(struct termios));
+                int ret = ::ioctl((int)type_, TCSETS, buffer.data());
+                if(ret < 0) return ErrnoOrBuffer(-errno);
+                return ErrnoOrBuffer(std::move(buffer));
             }
             case FIOCLEX: {
                 int ret = ::ioctl((int)type_, FIOCLEX, nullptr);
@@ -98,31 +106,32 @@ namespace kernel {
                 return ErrnoOrBuffer(Buffer{});
             }
             case TIOCGWINSZ: {
-                struct winsize ws;
-                int ret = ::ioctl((int)type_, TIOCGWINSZ, &ws);
+                verify(buffer.size() == sizeof(struct winsize));
+                int ret = ::ioctl((int)type_, TIOCGWINSZ, buffer.data());
                 if(ret < 0) return ErrnoOrBuffer(-errno);
-                std::vector<u8> buffer;
-                buffer.resize(sizeof(ws), 0x0);
-                std::memcpy(buffer.data(), &ws, sizeof(ws));
-                return ErrnoOrBuffer(Buffer{std::move(buffer)});
+                return ErrnoOrBuffer(std::move(buffer));
             }
             case TIOCSWINSZ: {
-                struct winsize ws;
-                std::memcpy(&ws, buffer.data(), sizeof(ws));
-                int ret = ::ioctl((int)type_, TIOCSWINSZ, &ws);
+                verify(buffer.size() == sizeof(struct winsize));
+                int ret = ::ioctl((int)type_, TIOCSWINSZ, buffer.data());
                 if(ret < 0) return ErrnoOrBuffer(-errno);
-                return ErrnoOrBuffer(Buffer{});
+                return ErrnoOrBuffer(std::move(buffer));
             }
             case TCSETSW: {
-                struct termios ts;
-                std::memcpy(&ts, buffer.data(), sizeof(ts));
-                int ret = ::ioctl((int)type_, TCSETSW, &ts);
+                verify(buffer.size() == sizeof(struct termios));
+                int ret = ::ioctl((int)type_, TCSETSW, buffer.data());
                 if(ret < 0) return ErrnoOrBuffer(-errno);
-                return ErrnoOrBuffer(Buffer{});
+                return ErrnoOrBuffer(std::move(buffer));
+            }
+            case TIOCGPGRP: {
+                verify(buffer.size() == sizeof(pid_t));
+                int ret = ::ioctl((int)type_, TIOCGPGRP, buffer.data());
+                if(ret < 0) return ErrnoOrBuffer(-errno);
+                return ErrnoOrBuffer(std::move(buffer));
             }
             default: break;
         }
-        warn(fmt::format("ioctl({:#x}) not implemented", request));
+        warn(fmt::format("Stream::ioctl({:#x}) not implemented", request));
         return ErrnoOrBuffer(-ENOTSUP);
     }
 
