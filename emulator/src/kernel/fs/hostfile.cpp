@@ -41,7 +41,6 @@ namespace kernel {
         }
         if (fileType != S_IFREG && fileType != S_IFLNK) {
             // not a regular file or a symbolic link
-            warn(fmt::format("File {} is not a regular file or a symbolic link", pathname));
             return {};
         }
 
