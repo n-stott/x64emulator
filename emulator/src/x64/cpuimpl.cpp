@@ -1443,6 +1443,27 @@ namespace x64 {
         return dst;
     }
 
+    u128 CpuImpl::psadbw(u128 dst, u128 src) {
+        std::array<u8, 16> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        std::memcpy(DST.data(), &dst, sizeof(u128));
+
+        std::array<u8, 16> SRC;
+        static_assert(sizeof(SRC) == sizeof(u128));
+        std::memcpy(SRC.data(), &src, sizeof(u128));
+
+        u16 lo = 0;
+        for(size_t i = 0; i < 8; ++i) {
+            lo += (u16)std::abs(DST[i]-SRC[i]);
+        }
+        u16 hi = 0;
+        for(size_t i = 8; i < 16; ++i) {
+            hi += (u16)std::abs(DST[i]-SRC[i]);
+        }
+        u128 res { lo, hi };
+        return res;
+    }
+
     u128 CpuImpl::pmaxub(u128 dst, u128 src) {
         std::array<u8, 16> DST;
         static_assert(sizeof(DST) == sizeof(u128));

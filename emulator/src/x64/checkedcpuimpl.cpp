@@ -3121,6 +3121,22 @@ namespace x64 {
 #endif
     }
 
+    u128 CheckedCpuImpl::psadbw(u128 dst, u128 src) {
+#if GCC_COMPILER
+        u128 virtualRes = CpuImpl::psadbw(dst, src);
+        (void)virtualRes;
+
+        u128 nativeRes = dst;
+        asm volatile("psadbw %1, %0" : "+x"(nativeRes) : "x"(src));
+        assert(nativeRes.lo == virtualRes.lo);
+        assert(nativeRes.hi == virtualRes.hi);
+        
+        return nativeRes;
+#else
+        return CpuImpl::psadbw(dst, src);
+#endif
+    }
+
     u128 CheckedCpuImpl::pmaxub(u128 dst, u128 src) {
 #if GCC_COMPILER
         u128 virtualRes = CpuImpl::pmaxub(dst, src);
