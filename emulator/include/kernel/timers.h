@@ -65,6 +65,7 @@ namespace kernel {
     class Timers {
     public:
         Timer* getOrTryCreate(int id);
+        Timer* get(int id);
         void updateAll(PreciseTime kernelTime);
     private:
         std::vector<std::unique_ptr<Timer>> timers_;

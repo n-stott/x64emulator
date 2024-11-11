@@ -276,7 +276,7 @@ namespace kernel {
     }
 
     void Scheduler::wait(Thread* thread, x64::Ptr32 wordPtr, u32 expected, x64::Ptr timeout) {
-        futexBlockers_.push_back(FutexBlocker{thread, mmu_, wordPtr, expected, kernel_.timers(), timeout});
+        futexBlockers_.push_back(FutexBlocker{thread, mmu_, kernel_.timers(), wordPtr, expected, timeout});
         thread->setState(Thread::THREAD_STATE::BLOCKED);
         thread->yield();
     }
@@ -285,7 +285,7 @@ namespace kernel {
         u32 nbWoken = 0;
         std::vector<FutexBlocker*> removableBlockers;
         for(auto& blocker : futexBlockers_) {
-            bool canUnblock = blocker.canUnblock(wordPtr, kernel_.timers());
+            bool canUnblock = blocker.canUnblock(wordPtr);
             if(!canUnblock) continue;
             blocker.thread()->setState(Thread::THREAD_STATE::RUNNABLE);
             removableBlockers.push_back(&blocker);
@@ -302,7 +302,7 @@ namespace kernel {
 
     void Scheduler::poll(Thread* thread, x64::Ptr fds, size_t nfds, int timeout) {
         verify(timeout != 0, "poll with zero timeout should not reach the scheduler");
-        pollBlockers_.push_back(PollBlocker(thread, mmu_, fds, nfds, timeout));
+        pollBlockers_.push_back(PollBlocker(thread, mmu_, kernel_.timers(), fds, nfds, timeout));
         thread->setState(Thread::THREAD_STATE::BLOCKED);
         thread->yield();
     }

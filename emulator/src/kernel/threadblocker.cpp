@@ -8,10 +8,10 @@
 namespace kernel {
 
 
-    FutexBlocker::FutexBlocker(Thread* thread, x64::Mmu& mmu, x64::Ptr32 wordPtr, u32 expected, Timers& timers, x64::Ptr timeout)
-        : thread_(thread), mmu_(&mmu), wordPtr_(wordPtr), expected_(expected) {
+    FutexBlocker::FutexBlocker(Thread* thread, x64::Mmu& mmu, Timers& timers, x64::Ptr32 wordPtr, u32 expected, x64::Ptr timeout)
+        : thread_(thread), mmu_(&mmu), timers_(&timers), wordPtr_(wordPtr), expected_(expected) {
         if(!!timeout) {
-            Timer* timer = timers.getOrTryCreate(0); // get the same timer as in the setup
+            Timer* timer = timers.get(0); // get the same timer as in the setup
             verify(!!timer);
             PreciseTime now = timer->now();
             auto relative = timer->readTime(*mmu_, timeout);
@@ -22,12 +22,12 @@ namespace kernel {
         }
     }
 
-    bool FutexBlocker::canUnblock(x64::Ptr32 ptr, Timers& timers) const {
+    bool FutexBlocker::canUnblock(x64::Ptr32 ptr) const {
         if(ptr != wordPtr_) return false;
         u32 val = mmu_->read32(ptr);
         if(val == expected_) return false;
         if(!!timeLimit_) {
-            Timer* timer = timers.getOrTryCreate(0); // get the same timer as in the setup
+            Timer* timer = timers_->get(0); // get the same timer as in the setup
             verify(!!timer);
             PreciseTime now = timer->now();
             if(now < timeLimit_) return false;
@@ -43,15 +43,32 @@ namespace kernel {
                     pid, tid, expected_, wordPtr_.address(), contained);
     }
 
+    PollBlocker::PollBlocker(Thread* thread, x64::Mmu& mmu, Timers& timers, x64::Ptr pollfds, size_t nfds, int timeoutInMs)
+        : thread_(thread), mmu_(&mmu), timers_(&timers), pollfds_(pollfds), nfds_(nfds) {
+        if(!!timeLimit_) {
+            Timer* timer = timers_->getOrTryCreate(0); // get any timer
+            verify(!!timer);
+            verify(timeoutInMs >= 0);
+            PreciseTime now = timer->now();
+            u64 timeoutInNs = (u64)timeoutInMs*1'000'000;
+            timeLimit_ = now + PreciseTime{0, timeoutInNs};
+        }
+    }
+
     bool PollBlocker::tryUnblock(FS& fs) {
         std::vector<FS::PollData> pollfds(mmu_->readFromMmu<FS::PollData>(pollfds_, nfds_));
-        verify(timeoutInMs_ == 0, "Non-zero timeout in poll not supported");
         fs.doPoll(&pollfds);
         u64 nzrevents = (u64)std::count_if(pollfds.begin(), pollfds.end(), [](const FS::PollData& data) {
             return data.revents != FS::PollEvent::NONE;
         });
-        bool canUnblock
-                = (nzrevents > 0);
+        bool timeout = false;
+        if(!!timeLimit_) {
+            Timer* timer = timers_->get(0); // get the same timer as in the ctor
+            verify(!!timer);
+            PreciseTime now = timer->now();
+            timeout |= (now > timeLimit_);
+        }
+        bool canUnblock = (nzrevents > 0) || timeout;
         if(!canUnblock) return false;
         mmu_->writeToMmu(pollfds_, pollfds);
         thread_->savedCpuState().regs.set(x64::R64::RAX, nzrevents);

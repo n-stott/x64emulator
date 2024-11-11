@@ -19,9 +19,9 @@ namespace kernel {
 
     class FutexBlocker {
     public:
-        FutexBlocker(Thread* thread, x64::Mmu& mmu, x64::Ptr32 wordPtr, u32 expected, Timers& timers, x64::Ptr timeout);
+        FutexBlocker(Thread* thread, x64::Mmu& mmu, Timers& timers, x64::Ptr32 wordPtr, u32 expected, x64::Ptr timeout);
 
-        [[nodiscard]] bool canUnblock(x64::Ptr32 ptr, Timers& timers) const;
+        [[nodiscard]] bool canUnblock(x64::Ptr32 ptr) const;
 
         Thread* thread() const { return thread_; }
 
@@ -30,6 +30,7 @@ namespace kernel {
     private:
         Thread* thread_;
         x64::Mmu* mmu_;
+        Timers* timers_;
         x64::Ptr32 wordPtr_;
         u32 expected_;
         std::optional<PreciseTime> timeLimit_;
@@ -37,17 +38,17 @@ namespace kernel {
 
     class PollBlocker {
     public:
-        PollBlocker(Thread* thread, x64::Mmu& mmu, x64::Ptr pollfds, size_t nfds, int timeoutInMs)
-            : thread_(thread), mmu_(&mmu), pollfds_(pollfds), nfds_(nfds), timeoutInMs_(timeoutInMs) { }
+        PollBlocker(Thread* thread, x64::Mmu& mmu, Timers& timers, x64::Ptr pollfds, size_t nfds, int timeoutInMs);
         
         [[nodiscard]] bool tryUnblock(FS& fs);
 
     private:
         Thread* thread_;
         x64::Mmu* mmu_;
+        Timers* timers_;
         x64::Ptr pollfds_;
         size_t nfds_;
-        int timeoutInMs_;
+        std::optional<PreciseTime> timeLimit_;
     };
 
     class SleepBlocker {
