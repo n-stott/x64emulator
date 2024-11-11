@@ -171,7 +171,7 @@ namespace kernel {
         static ErrnoOrBuffer uname();
 
         static std::string ioctlName(unsigned long request);
-        static size_t ioctlRequiredBufferSize(unsigned long request);
+        static std::optional<size_t> ioctlRequiredBufferSize(unsigned long request);
 
         static ErrnoOrBuffer sysinfo();
         static int getuid();

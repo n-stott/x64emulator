@@ -407,7 +407,7 @@ namespace kernel {
         return "unknown ioctl";
     }
 
-    size_t Host::ioctlRequiredBufferSize(unsigned long request) {
+    std::optional<size_t> Host::ioctlRequiredBufferSize(unsigned long request) {
         switch(request) {
             case TCGETS:
             case FIOCLEX:
@@ -415,9 +415,10 @@ namespace kernel {
             case TIOCGWINSZ: return 0;
             case TIOCSWINSZ: return sizeof(winsize);
             case TCSETSW: return sizeof(termios);
+            case TIOCGPGRP: return sizeof(pid_t);
             default: break;
         }
-        return 0;
+        return {};
     }
 
     ErrnoOrBuffer Host::sysinfo() {

@@ -352,8 +352,11 @@ namespace kernel {
 
     int Sys::ioctl(int fd, unsigned long request, x64::Ptr argp) {
         // We need to ask the host for the expected buffer size behind argp.
-        size_t bufferSize = kernel_.host().ioctlRequiredBufferSize(request);
-        std::vector<u8> buf(bufferSize, 0x0);
+        auto bufferSize = kernel_.host().ioctlRequiredBufferSize(request);
+        verify(!!bufferSize, [&]() {
+            fmt::print("Could not decide buffer size for ioctl {:#x}\n", request);
+        });
+        std::vector<u8> buf(bufferSize.value(), 0x0);
         Buffer buffer(std::move(buf));
         mmu_.copyFromMmu(buffer.data(), argp, buffer.size());
         auto errnoOrBuffer = kernel_.fs().ioctl(FS::FD{fd}, request, buffer);
