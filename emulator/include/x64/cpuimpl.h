@@ -223,6 +223,9 @@ namespace x64 {
         [[nodiscard]] static u128 shufps(u128 dst, u128 src, u8 order);
         [[nodiscard]] static u128 shufpd(u128 dst, u128 src, u8 order);
 
+        [[nodiscard]] static u128 pinsrw16(u128 dst, u16 src, u8 order);
+        [[nodiscard]] static u128 pinsrw32(u128 dst, u32 src, u8 order);
+
         [[nodiscard]] static u128 punpcklbw(u128 dst, u128 src);
         [[nodiscard]] static u128 punpcklwd(u128 dst, u128 src);
         [[nodiscard]] static u128 punpckldq(u128 dst, u128 src);

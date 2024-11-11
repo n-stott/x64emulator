@@ -741,6 +741,9 @@ namespace x64 {
         void exec(const Movhlps<RSSE, RSSE>&);
         void exec(const Movlhps<RSSE, RSSE>&);
 
+        void exec(const Pinsrw<RSSE, R32, Imm>&);
+        void exec(const Pinsrw<RSSE, M16, Imm>&);
+
         void exec(const Punpcklbw<RSSE, RMSSE>&);
         void exec(const Punpcklwd<RSSE, RMSSE>&);
         void exec(const Punpckldq<RSSE, RMSSE>&);
