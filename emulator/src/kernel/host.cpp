@@ -410,9 +410,10 @@ namespace kernel {
     std::optional<size_t> Host::ioctlRequiredBufferSize(unsigned long request) {
         switch(request) {
             case TCGETS:
+            case TCSETS: return sizeof(termios);
             case FIOCLEX:
-            case FIONCLEX:
-            case TIOCGWINSZ: return 0;
+            case FIONCLEX: return 0;
+            case TIOCGWINSZ: 
             case TIOCSWINSZ: return sizeof(winsize);
             case TCSETSW: return sizeof(termios);
             case TIOCGPGRP: return sizeof(pid_t);
