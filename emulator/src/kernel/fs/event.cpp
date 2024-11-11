@@ -51,8 +51,7 @@ namespace kernel {
         return ErrnoOrBuffer(-EINVAL);
     }
     
-    ssize_t Event::write(const u8* buf, size_t size, off_t offset) {
-        verify(offset == 0);
+    ssize_t Event::write(const u8* buf, size_t size, off_t) {
         if(size < 8) return -EINVAL;
         u64 value;
         std::memcpy(&value, buf, sizeof(value));
