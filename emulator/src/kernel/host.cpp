@@ -26,7 +26,7 @@
 namespace kernel {
 
     Host::Host() = default;
-    Host::~Host() = default;
+    Host::~Host() = default; // NOLINT(performance-trivially-destructible)
 
     f80 Host::round(f80 val) {
         long double x = f80::toLongDouble(val);

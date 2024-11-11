@@ -340,7 +340,7 @@ namespace kernel {
     }
 
     FS::FD FS::memfd_create(const std::string& name, unsigned int flags) {
-        verify((flags & ~0x3u) == 0, "Allow (and ignore) cloexec and allow_sealing");
+        verify((flags & ~0x3U) == 0, "Allow (and ignore) cloexec and allow_sealing");
         auto shadowFile = ShadowFile::tryCreate(this, name);
         return insertNode(std::move(shadowFile));
     }

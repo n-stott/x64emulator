@@ -169,6 +169,7 @@ namespace emulator {
         if(cachedValue != callCache_.end()) {
             cp = cachedValue->second;
         } else {
+            // NOLINTBEGIN(clang-analyzer-core.CallAndMessage)
             InstructionPosition pos = findSectionWithAddress(address, currentThreadExecutionPoint_.section);
             verify(!!pos.section, [=]() {
                 fmt::print("Unable to find section containing address {:#x}\n", address);
@@ -181,6 +182,7 @@ namespace emulator {
                                 pos.section->instructions.data() + pos.index
                             };
             callCache_.insert(std::make_pair(address, cp));
+            // NOLINTEND(clang-analyzer-core.CallAndMessage)
         }
         currentThreadExecutionPoint_ = cp;
         currentThread_->pushCallstack(cpu_.get(x64::R64::RIP), address);
@@ -375,6 +377,7 @@ namespace emulator {
             fmt::print("Could not determine function origin section for address {:#x}\n", address);
         });
         verify(pos.index != (size_t)(-1), "Could not find call destination instruction");
+        // NOLINTBEGIN(clang-analyzer-core.CallAndMessage)
         const x64::X64Instruction& jmpInsn = pos.section->instructions[pos.index];
         if(jmpInsn.insn() == x64::Insn::JMP_RM64) {
             x64::Cpu cpu(const_cast<VM*>(this), &mmu_);
@@ -387,6 +390,7 @@ namespace emulator {
                 return symbolsAtAddress[0]->demangledSymbol;
             }
         }
+        // NOLINTEND(clang-analyzer-core.CallAndMessage)
         
         // We are not in the PLT either :'(
         // Let's just fail

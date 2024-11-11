@@ -1,0 +1,7 @@
+ExtraArgs:
+  - "-Wno-unknown-warning-option" # same result without single quotes
+
+# Disable all checks in this folder.
+Checks:
+  -*,
+  misc-definitions-in-headers

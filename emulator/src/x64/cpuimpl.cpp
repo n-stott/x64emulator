@@ -831,11 +831,15 @@ namespace x64 {
 
     template<typename F>
     F max(F dst, F src) {
+        // NOLINTBEGIN(bugprone-branch-clone)
+        // NOLINTBEGIN(misc-redundant-expression)
         if(dst == (F)0.0 && src == (F)0.0) return src;
         else if(dst != dst) return src;
         else if(src != src) return dst;
         else if(dst > src) return dst;
         else return src;
+        // NOLINTEND(misc-redundant-expression)
+        // NOLINTEND(bugprone-branch-clone)
     }
 
     u128 CpuImpl::maxss(u128 dst, u128 src, SIMD_ROUNDING) { return scalarOp<float, float>(dst, src, [](auto d, auto s) { return max(d, s); }); }
@@ -845,11 +849,15 @@ namespace x64 {
 
     template<typename F>
     F min(F dst, F src) {
+        // NOLINTBEGIN(bugprone-branch-clone)
+        // NOLINTBEGIN(misc-redundant-expression)
         if(dst == (F)0.0 && src == (F)0.0) return src;
         else if(dst != dst) return src;
         else if(src != src) return dst;
         else if(dst < src) return dst;
         else return src;
+        // NOLINTEND(misc-redundant-expression)
+        // NOLINTEND(bugprone-branch-clone)
     }
 
     u128 CpuImpl::minss(u128 dst, u128 src, SIMD_ROUNDING) { return scalarOp<float, float>(dst, src, [](auto d, auto s) { return min(d, s); }); }
@@ -859,6 +867,7 @@ namespace x64 {
 
     template<typename T, typename F>
     static T compare(F d, F s, FCond cond) {
+        // NOLINTBEGIN(misc-redundant-expression)
         auto mask = [](bool res) -> T {
             return res ? (T)(-1) : 0x0;
         };
@@ -874,6 +883,7 @@ namespace x64 {
         }
         assert(false);
         __builtin_unreachable();
+        // NOLINTEND(misc-redundant-expression)
     }
 
     u128 CpuImpl::cmpss(u128 dst, u128 src, FCond cond) {

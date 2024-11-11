@@ -37,7 +37,7 @@ namespace emulator {
 
     Emulator::Emulator() = default;
 
-    Emulator::~Emulator() = default;
+    Emulator::~Emulator() = default; // NOLINT(performance-trivially-destructible)
 
     void Emulator::setLogSyscalls(bool logSyscalls) {
         logSyscalls_ = logSyscalls;

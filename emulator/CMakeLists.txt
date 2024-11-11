@@ -100,6 +100,14 @@ endif(MULTIPROCESSING)
 # target_compile_options(x64emulator PUBLIC -fsanitize=address,undefined)
 # target_link_libraries(x64emulator PUBLIC asan ubsan)
 
+IF(CMAKE_BUILD_TYPE MATCHES DEBUG)
+    set_target_properties(x64emulator PROPERTIES CXX_CLANG_TIDY
+        clang-tidy-18;
+        --use-color;
+        -header-filter=${CMAKE_CURRENT_SOURCE_DIR}
+    )
+ENDIF(CMAKE_BUILD_TYPE MATCHES DEBUG)
+
 add_executable(emulator
     src/main.cpp
 )
