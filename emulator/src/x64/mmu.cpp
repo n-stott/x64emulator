@@ -429,6 +429,12 @@ namespace x64 {
         for(const auto& info : dumpInfos) {
             fmt::print("    {:>#10x} - {:<#10x} {} {:>20}\n", info.base, info.end, info.prot, info.file);
         }
+
+        size_t memoryConsumptionInBytes = 0;
+        for(const auto& ptr : regions_) {
+            memoryConsumptionInBytes += ptr->size();
+        }
+        fmt::print("Memory consumption : {}MB\n", memoryConsumptionInBytes/1024/1024);
     }
 
     u64 Mmu::topOfMemoryPageAligned() const {
