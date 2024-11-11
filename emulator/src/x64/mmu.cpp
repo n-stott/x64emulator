@@ -563,7 +563,7 @@ namespace x64 {
         removeRegion(region->base(), region->end(), region->size());
         copy.setEnd(address);
         u64 newBrk = copy.end();
-        addRegion(copy);
+        addRegion(std::move(copy));
         return newBrk;
     }
 
