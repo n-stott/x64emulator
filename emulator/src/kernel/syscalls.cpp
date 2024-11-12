@@ -589,21 +589,34 @@ namespace kernel {
     }
 
     int Sys::setsockopt(int sockfd, int level, int optname, x64::Ptr optval, socklen_t optlen) {
+        static_assert(sizeof(socklen_t) == sizeof(u32));
+        verify(!!optval, "getsockopt with null optval not implemented");
+        Buffer buf(mmu_.readFromMmu<u8>(optval, (size_t)optlen));
+        int ret = kernel_.fs().setsockopt(FS::FD{sockfd}, level, optname, buf);
         if(logSyscalls_) {
             print("Sys::setsockopt(sockfd={}, level={}, optname={}, optval={:#x}, optlen={}) = {}\n",
-                        sockfd, level, optname, optval.address(), optlen, -ENOTSUP);
+                        sockfd, level, optname, optval.address(), optlen, ret);
         }
-        warn("Sys::setsockopt not implemented");
-        return -ENOTSUP;
+        return ret;
     }
     
-    int Sys::getsockopt(int sockfd, int level, int optname, x64::Ptr optval, x64::Ptr optlen) {
+    int Sys::getsockopt(int sockfd, int level, int optname, x64::Ptr optval, x64::Ptr32 optlen) {
+        static_assert(sizeof(socklen_t) == sizeof(u32));
+        verify(!!optval, "getsockopt with null optval not implemented");
+        verify(!!optlen, "getsockopt with null optlen not implemented");
+        u32 len = mmu_.read32(optlen);
+        Buffer buf(mmu_.readFromMmu<u8>(optval, len));
+        ErrnoOrBuffer errnoOrBuffer = kernel_.fs().getsockopt(FS::FD{sockfd}, level, optname, buf);
+        int ret = errnoOrBuffer.errorOrWith<int>([&](const Buffer& buffer) {
+            mmu_.copyToMmu(optval, buffer.data(), buffer.size());
+            mmu_.write32(optlen, (u32)buffer.size());
+            return 0;
+        });
         if(logSyscalls_) {
             print("Sys::getsockopt(sockfd={}, level={}, optname={}, optval={:#x}, optlen={:#x}) = {}\n",
-                        sockfd, level, optname, optval.address(), optlen.address(), -ENOTSUP);
+                        sockfd, level, optname, optval.address(), optlen.address(), ret);
         }
-        warn("Sys::getsockopt not implemented");
-        return -ENOTSUP;
+        return ret;
     }
 
     void checkCloneFlags(const Host::CloneFlags& flags) {

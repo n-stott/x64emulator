@@ -107,6 +107,8 @@ namespace kernel {
         int shutdown(FD sockfd, int how);
         ErrnoOrBuffer getpeername(FD sockfd, u32 buffersize);
         ErrnoOrBuffer getsockname(FD sockfd, u32 buffersize);
+        ErrnoOrBuffer getsockopt(FD sockfd, int level, int optname, const Buffer& buffer);
+        int setsockopt(FD sockfd, int level, int optname, const Buffer& buffer);
 
         ErrnoOr<std::pair<Buffer, Buffer>> recvfrom(FD sockfd, size_t len, int flags, bool requireSrcAddress);
         ssize_t recvmsg(FD sockfd, int flags, Buffer* msg_name, std::vector<Buffer>* msg_iov, Buffer* msg_control, int* msg_flags);

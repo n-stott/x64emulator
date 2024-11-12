@@ -589,6 +589,22 @@ namespace kernel {
         return socket->getsockname(buffersize);
     }
 
+    ErrnoOrBuffer FS::getsockopt(FD sockfd, int level, int optname, const Buffer& buffer) {
+        OpenFileDescription* openFileDescription = findOpenFileDescription(sockfd);
+        if(!openFileDescription) return ErrnoOrBuffer(-EBADF);
+        if(!openFileDescription->file()->isSocket()) return ErrnoOrBuffer(-EBADF);
+        Socket* socket = static_cast<Socket*>(openFileDescription->file());
+        return socket->getsockopt(level, optname, buffer);
+    }
+
+    int FS::setsockopt(FD sockfd, int level, int optname, const Buffer& buffer) {
+        OpenFileDescription* openFileDescription = findOpenFileDescription(sockfd);
+        if(!openFileDescription) return -EBADF;
+        if(!openFileDescription->file()->isSocket()) return -EBADF;
+        Socket* socket = static_cast<Socket*>(openFileDescription->file());
+        return socket->setsockopt(level, optname, buffer);
+    }
+
     ErrnoOr<BufferAndReturnValue<int>> FS::pollImmediate(const std::vector<PollData>& pfds) {
         std::vector<PollData> rfds = pfds;
         for(auto& rfd : rfds) {

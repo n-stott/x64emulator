@@ -117,6 +117,21 @@ namespace kernel {
         return ErrnoOrBuffer(Buffer{std::move(buffer)});
     }
 
+    ErrnoOrBuffer Socket::getsockopt(int level, int optname, const Buffer& buffer) const {
+        static_assert(sizeof(socklen_t) == sizeof(u32));
+        std::vector<u8> buf(buffer.data(), buffer.data() + buffer.size());
+        socklen_t bufsize = (socklen_t)buf.size();
+        int ret = ::getsockopt(hostFd_, level, optname, buf.data(), &bufsize);
+        if(ret < 0) return ErrnoOrBuffer(-errno);
+        buf.resize((size_t)bufsize);
+        return ErrnoOrBuffer(Buffer{std::move(buf)});
+    }
+
+    int Socket::setsockopt(int level, int optname, const Buffer& buffer) const {
+        static_assert(sizeof(socklen_t) == sizeof(u32));
+        return ::setsockopt(hostFd_, level, optname, buffer.data(), (socklen_t)buffer.size());
+    }
+
     ErrnoOrBuffer Socket::read(size_t count, off_t) {
         if(!isReadable()) return ErrnoOrBuffer{-EINVAL};
         std::vector<u8> buffer;

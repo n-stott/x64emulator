@@ -30,6 +30,8 @@ namespace kernel {
 
         ErrnoOrBuffer getpeername(u32 buffersize) const;
         ErrnoOrBuffer getsockname(u32 buffersize) const;
+        ErrnoOrBuffer getsockopt(int level, int optname, const Buffer& buffer) const;
+        int setsockopt(int level, int optname, const Buffer& buffer) const;
 
         ErrnoOr<std::pair<Buffer, Buffer>> recvfrom(size_t len, int flags, bool requireSrcAddress) const;
         ssize_t recvmsg(int flags, Buffer* msg_name, std::vector<Buffer>* msg_iov, Buffer* msg_control, int* msg_flags) const;
