@@ -143,13 +143,18 @@ namespace emulator {
                                                 cpu_.regs_.rip(),
                                                 cpu_.regs_.get(x64::R64::RAX), cpu_.regs_.get(x64::R64::RBX), cpu_.regs_.get(x64::R64::RCX), cpu_.regs_.get(x64::R64::RDX),
                                                 cpu_.regs_.get(x64::R64::RSI), cpu_.regs_.get(x64::R64::RDI), cpu_.regs_.get(x64::R64::RBP), cpu_.regs_.get(x64::R64::RSP));
-        std::string indent = fmt::format("{:{}}", "", currentThread_->callstack().size());
-
+        std::string indent = fmt::format("{:{}}", "", 2*currentThread_->callstack().size());
         std::string mnemonic = fmt::format("{}|{}", indent, instruction.toString());
-        if(instruction.isCall()) {
-            fmt::print(stderr, "{:10} {}[call {}]\n", ticks, indent, callName(instruction));
-        }
         fmt::print(stderr, "{:10} {:55}{:20} {}\n", ticks, mnemonic, eflags, registerDump);
+        if(instruction.isCall()) {
+            fmt::print(stderr, "{:10} {}[call {}({:#x}, {:#x}, {:#x}, {:#x}, {:#x}, {:#x})]\n", ticks, indent, callName(instruction),
+                cpu_.regs_.get(x64::R64::RDI),
+                cpu_.regs_.get(x64::R64::RSI),
+                cpu_.regs_.get(x64::R64::RDX),
+                cpu_.regs_.get(x64::R64::RCX),
+                cpu_.regs_.get(x64::R64::R8),
+                cpu_.regs_.get(x64::R64::R9));
+        }
         if(instruction.isX87()) {
             std::string x87dump = fmt::format( "st0={} st1={} st2={} st3={} "
                                                     "st4={} st5={} st6={} st7={} top={}",

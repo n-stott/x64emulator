@@ -873,8 +873,14 @@ namespace utils {
     }
 
     bool X64Instruction::isCall() const {
-        (void)insn_;
-        return false;
+        switch(insn()) {
+            case Insn::CALLDIRECT:
+            case Insn::CALLINDIRECT_RM32:
+            case Insn::CALLINDIRECT_RM64:
+                return true;
+            default:
+                return false;
+        }
     }
 
     bool X64Instruction::isSSE() const {
