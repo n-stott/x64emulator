@@ -32,6 +32,25 @@ namespace emulator {
                             currentThread_->description().tid,
                             currentThread_->tickInfo().current());
         }
+        std::vector<BasicBlock> basicBlocks = ((ExecutableSection*)currentThreadExecutionPoint_.section)->extractBasicBlocks();
+        u64 rip = currentThread_->savedCpuState().regs.rip();
+        fmt::print("Looking for basic block in {:#x}:{:#x} with rip={:#x}\n", currentThreadExecutionPoint_.section->begin, currentThreadExecutionPoint_.section->end, rip);
+        bool foundBasicBlock = false;
+        for(const auto& bb : basicBlocks) {
+            if(bb.size == 0) continue;
+            if(rip < bb.instructions[0].address()) continue;
+            if(rip > bb.instructions[bb.size-1].address()) continue;
+            foundBasicBlock = true;
+            for(size_t i = 0; i < bb.size; ++i) {
+                const auto& ins = bb.instructions[i];
+                if(ins.nextAddress() == rip) {
+                    fmt::print("  ==> {:#12x} {}\n", ins.address(), ins.toString());
+                } else {
+                    fmt::print("      {:#12x} {}\n", ins.address(), ins.toString());
+                }
+            }
+        }
+        verify(foundBasicBlock, "Could not find the basic block");
     }
 
     void VM::syncThread() {
