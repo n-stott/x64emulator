@@ -119,6 +119,7 @@ namespace kernel {
             case 0x8f: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::sched_getparam, regs));
             case 0x90: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::sched_setscheduler, regs));
             case 0x91: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::sched_getscheduler, regs));
+            case 0x95: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::mlock, regs));
             case 0x9d: return threadRegs.set(x64::R64::RAX, invoke_syscall_5(&Sys::prctl, regs));
             case 0x9e: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::arch_prctl, regs));
             case 0xba: return threadRegs.set(x64::R64::RAX, invoke_syscall_0(&Sys::gettid, regs));
@@ -948,6 +949,13 @@ namespace kernel {
         }
         warn(fmt::format("sched_getscheduler not implemented"));
         return -ENOTSUP;
+    }
+
+    int Sys::mlock(x64::Ptr addr, size_t len) {
+        if(logSyscalls_) {
+            print("Sys::mlock(addr={:#x}, len={}) = {}\n", addr.address(), len, 0);
+        }
+        return 0;
     }
 
     u64 Sys::exit_group(int status) {
