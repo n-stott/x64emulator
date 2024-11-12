@@ -200,6 +200,7 @@ namespace kernel {
         static Buffer clock_gettime(PreciseTime time);
         static Buffer clock_getres();
         static Buffer gettimeofday(PreciseTime time);
+        static Buffer gettimezone();
 
         static ErrnoOrBuffer getrlimit(pid_t pid, int resource);
 

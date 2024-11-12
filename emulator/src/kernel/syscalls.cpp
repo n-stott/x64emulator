@@ -819,14 +819,15 @@ namespace kernel {
     }
 
     int Sys::gettimeofday(x64::Ptr tv, x64::Ptr tz) {
-        verify(!tz, "null ptr to timezone expected in gettimeofday");
         PreciseTime time = kernel_.scheduler().kernelTime();
         auto timevalBuffer = kernel_.host().gettimeofday(time);
+        auto timezoneBuffer = kernel_.host().gettimezone();
         if(logSyscalls_) {
             print("Sys::gettimeofday(tv={:#x}, tz={:#x}) = {:#x}\n",
                         tv.address(), tz.address(), 0);
         }
         if(!!tv) mmu_.copyToMmu(tv, timevalBuffer.data(), timevalBuffer.size());
+        if(!!tz) mmu_.copyToMmu(tv, timezoneBuffer.data(), timezoneBuffer.size());
         return 0;
     }
 

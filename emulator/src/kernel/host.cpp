@@ -554,6 +554,13 @@ namespace kernel {
         return Buffer(tv);
     }
 
+    Buffer Host::gettimezone() {
+        struct timezone tz;
+        tz.tz_minuteswest = 0;    // minutes west of Greenwich
+        tz.tz_dsttime = 0;        // type of DST correction. 0 should be none
+        return Buffer(tz);
+    }
+
     ErrnoOrBuffer Host::getrlimit([[maybe_unused]] pid_t pid, int resource) {
         switch(resource) {
             case RLIMIT_STACK: {
