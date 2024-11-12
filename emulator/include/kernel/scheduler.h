@@ -46,6 +46,7 @@ namespace kernel {
         u32 wake(x64::Ptr32 wordPtr, u32 nbWaiters);
 
         void poll(Thread* thread, x64::Ptr fds, size_t nfds, int timeout);
+        void select(Thread* thread, int nfds, x64::Ptr readfds, x64::Ptr writefds, x64::Ptr exceptfds, x64::Ptr timeout);
 
         void dumpThreadSummary() const;
 
@@ -82,6 +83,7 @@ namespace kernel {
 
         std::vector<FutexBlocker> futexBlockers_;
         std::vector<PollBlocker> pollBlockers_;
+        std::vector<SelectBlocker> selectBlockers_;
         std::vector<SleepBlocker> sleepBlockers_;
         
         std::mutex schedulerMutex_;

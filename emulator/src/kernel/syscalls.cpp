@@ -453,28 +453,46 @@ namespace kernel {
     }
 
     int Sys::select(int nfds, x64::Ptr readfds, x64::Ptr writefds, x64::Ptr exceptfds, x64::Ptr timeout) {
-        fd_set rfds;
-        fd_set wfds;
-        fd_set efds;
-        timeval to;
-        if(!!readfds) mmu_.copyFromMmu((u8*)&rfds, readfds, sizeof(fd_set));
-        if(!!writefds) mmu_.copyFromMmu((u8*)&wfds, writefds, sizeof(fd_set));
-        if(!!exceptfds) mmu_.copyFromMmu((u8*)&efds, exceptfds, sizeof(fd_set));
-        if(!!timeout) mmu_.copyFromMmu((u8*)&to, timeout, sizeof(timeval));
-        int ret = kernel_.host().select(nfds,
-                               !!readfds ?   &rfds : nullptr,
-                               !!writefds ?  &wfds : nullptr,
-                               !!exceptfds ? &efds : nullptr,
-                               !!timeout ?   &to : nullptr);
-        if(logSyscalls_) {
-            print("Sys::select(nfds={}, readfds={:#x}, writefds={:#x}, exceptfds={:#x}, timeout={:#x}) = {}\n",
-                        nfds, readfds.address(), writefds.address(), exceptfds.address(), timeout.address(), ret);
+        // assert(sizeof(FS::PollData) == kernel_.host().pollRequiredBufferSize(1));
+        // std::vector<FS::PollData> pollfds = mmu_.readFromMmu<FS::PollData>(fds, nfds);
+        // if(timeout == 0) {
+        //     auto errnoOrBufferAndReturnValue = kernel_.fs().pollImmediate(pollfds);
+        //     if(logSyscalls_) {
+        //         print("Sys::poll(fds={:#x}, nfds={}, timeout={}) = {}\n",
+        //                     fds.address(), nfds, timeout, errnoOrBufferAndReturnValue.errorOrWith<int>([](const auto&){ return 0; }));
+        //     }
+        //     return errnoOrBufferAndReturnValue.errorOrWith<int>([&](const auto& bufferAndRetVal) {
+        //         mmu_.copyToMmu(fds, bufferAndRetVal.buffer.data(), bufferAndRetVal.buffer.size());
+        //         return bufferAndRetVal.returnValue;
+        //     });
+        // } else {
+        //     kernel_.scheduler().poll(currentThread_, fds, nfds, timeout);
+        // }
+        // return 0;
+
+        static_assert(sizeof(FS::SelectData::readfds) == sizeof(fd_set));
+        FS::SelectData selectData;
+        selectData.nfds = nfds;
+        if(!!readfds) mmu_.copyFromMmu((u8*)&selectData.readfds, readfds, sizeof(selectData.readfds));
+        if(!!writefds) mmu_.copyFromMmu((u8*)&selectData.writefds, writefds, sizeof(selectData.writefds));
+        if(!!exceptfds) mmu_.copyFromMmu((u8*)&selectData.exceptfds, exceptfds, sizeof(selectData.exceptfds));
+        Timer* timer = kernel_.timers().getOrTryCreate(0);
+        auto timeoutDuration = timer->readTimeval(mmu_, timeout);
+        if(!!timeoutDuration && timeoutDuration->seconds == 0 && timeoutDuration->nanoseconds == 0) {
+            int ret = kernel_.fs().selectImmediate(&selectData);
+            if(logSyscalls_) {
+                print("Sys::select(nfds={}, readfds=:#x, writefds=:#x, exceptfds=:#x, timeout=:#x) = {}\n",
+                            nfds, readfds.address(), writefds.address(), exceptfds.address(), timeout.address(), ret);
+            }
+            if(ret < 0) return ret;
+            if(!!readfds) mmu_.copyToMmu(readfds, (const u8*)&selectData.readfds, sizeof(selectData.readfds));
+            if(!!writefds) mmu_.copyToMmu(writefds, (const u8*)&selectData.writefds, sizeof(selectData.writefds));
+            if(!!exceptfds) mmu_.copyToMmu(exceptfds, (const u8*)&selectData.exceptfds, sizeof(selectData.exceptfds));
+            return ret;
+        } else {
+            kernel_.scheduler().select(currentThread_, nfds, readfds, writefds, exceptfds, timeout);
+            return 0;
         }
-        if(!!readfds) mmu_.copyToMmu(readfds, (const u8*)&rfds, sizeof(fd_set));
-        if(!!writefds) mmu_.copyToMmu(writefds, (const u8*)&wfds, sizeof(fd_set));
-        if(!!exceptfds) mmu_.copyToMmu(exceptfds, (const u8*)&efds, sizeof(fd_set));
-        if(!!timeout) mmu_.copyToMmu(timeout, (const u8*)&to, sizeof(timeval));
-        return ret;
     }
 
     int Sys::sched_yield() {
@@ -881,7 +899,7 @@ namespace kernel {
         std::string path = mmu_.readString(pathname);
         auto errnoOrBuffer = kernel_.host().statfs(path);
         if(logSyscalls_) {
-            fmt::print("Sys::statfs(pathname={}, buf={:#x} = {})\n", path, buf.address(), errnoOrBuffer.errorOr(0));
+            print("Sys::statfs(pathname={}, buf={:#x} = {})\n", path, buf.address(), errnoOrBuffer.errorOr(0));
         }
         return errnoOrBuffer.errorOrWith<int>([&](const auto& buffer) {
             mmu_.copyToMmu(buf, buffer.data(), buffer.size());
@@ -892,7 +910,7 @@ namespace kernel {
     int Sys::fstatfs(int fd, x64::Ptr buf) {
         auto errnoOrBuffer = kernel_.fs().fstatfs(FS::FD{fd});
         if(logSyscalls_) {
-            fmt::print("Sys::fstatfs(fd={}, buf={:#x} = {})\n", fd, buf.address(), errnoOrBuffer.errorOr(0));
+            print("Sys::fstatfs(fd={}, buf={:#x} = {})\n", fd, buf.address(), errnoOrBuffer.errorOr(0));
         }
         return errnoOrBuffer.errorOrWith<int>([&](const auto& buffer) {
             mmu_.copyToMmu(buf, buffer.data(), buffer.size());
@@ -1252,7 +1270,7 @@ namespace kernel {
         verify(flags == 0, "clock_nanosleep with nonzero flags not supported (relative only)");
         Timer* timer = kernel_.timers().getOrTryCreate(clockid);
         if(!timer) { return -EINVAL; }
-        auto time = timer->readTime(mmu_, request);
+        auto time = timer->readTimespec(mmu_, request);
         if(!time) { return -EFAULT; }
         timer->update(kernel_.scheduler().kernelTime());
         kernel_.scheduler().sleep(currentThread_, timer, timer->now() + time.value());

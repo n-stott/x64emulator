@@ -47,7 +47,10 @@ namespace kernel {
                     // No more thread alive
                     if(allAliveThreads_.empty()) break;
 
-                    bool needsToWaitForNewThreads = !sleepBlockers_.empty();
+                    bool needsToWaitForNewThreads = !sleepBlockers_.empty()
+                            || std::any_of(pollBlockers_.begin(), pollBlockers_.end(), [](const PollBlocker& blocker) { return blocker.hasTimeout(); })
+                            || std::any_of(selectBlockers_.begin(), selectBlockers_.end(), [](const SelectBlocker& blocker) { return blocker.hasTimeout(); })
+                            || std::any_of(futexBlockers_.begin(), futexBlockers_.end(), [](const FutexBlocker& blocker) { return blocker.hasTimeout(); });
                     if(needsToWaitForNewThreads) {
                         // If we need some time to pass, actually advance in time
                         std::unique_lock lock(schedulerMutex_);
@@ -231,16 +234,28 @@ namespace kernel {
     }
 
     void Scheduler::tryUnblockThreads() {
-        std::vector<PollBlocker*> removableBlockers;
+        kernel_.timers().updateAll(currentTime_);
+        std::vector<PollBlocker*> removablePollBlockers;
         for(PollBlocker& blocker : pollBlockers_) {
             bool canUnblock = blocker.tryUnblock(kernel_.fs());
-            if(canUnblock) removableBlockers.push_back(&blocker);
+            if(canUnblock) removablePollBlockers.push_back(&blocker);
         }
         pollBlockers_.erase(std::remove_if(pollBlockers_.begin(), pollBlockers_.end(), [&](const PollBlocker& blocker) {
-            return std::any_of(removableBlockers.begin(), removableBlockers.end(), [&](PollBlocker* compareBlocker) {
+            return std::any_of(removablePollBlockers.begin(), removablePollBlockers.end(), [&](PollBlocker* compareBlocker) {
                 return &blocker == compareBlocker;
             });
         }), pollBlockers_.end());
+
+        std::vector<SelectBlocker*> removableSelectBlockers;
+        for(SelectBlocker& blocker : selectBlockers_) {
+            bool canUnblock = blocker.tryUnblock(kernel_.fs());
+            if(canUnblock) removableSelectBlockers.push_back(&blocker);
+        }
+        selectBlockers_.erase(std::remove_if(selectBlockers_.begin(), selectBlockers_.end(), [&](const SelectBlocker& blocker) {
+            return std::any_of(removableSelectBlockers.begin(), removableSelectBlockers.end(), [&](SelectBlocker* compareBlocker) {
+                return &blocker == compareBlocker;
+            });
+        }), selectBlockers_.end());
     }
 
     void Scheduler::terminateAll(int status) {
@@ -303,6 +318,13 @@ namespace kernel {
     void Scheduler::poll(Thread* thread, x64::Ptr fds, size_t nfds, int timeout) {
         verify(timeout != 0, "poll with zero timeout should not reach the scheduler");
         pollBlockers_.push_back(PollBlocker(thread, mmu_, kernel_.timers(), fds, nfds, timeout));
+        thread->setState(Thread::THREAD_STATE::BLOCKED);
+        thread->yield();
+    }
+
+    void Scheduler::select(Thread* thread, int nfds, x64::Ptr readfds, x64::Ptr writefds, x64::Ptr exceptfds, x64::Ptr timeout) {
+        // verify(!timeout || (timeout->seconds + timeout->nanoseconds > 0), "select with zero timeout should not reach the scheduler");
+        selectBlockers_.push_back(SelectBlocker(thread, mmu_, kernel_.timers(), nfds, readfds, writefds, exceptfds, timeout));
         thread->setState(Thread::THREAD_STATE::BLOCKED);
         thread->yield();
     }

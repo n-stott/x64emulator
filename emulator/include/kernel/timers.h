@@ -54,7 +54,11 @@ namespace kernel {
         void update(PreciseTime kernelTime);
         PreciseTime now() const { return now_; }
         
-        static std::optional<PreciseTime> readTime(x64::Mmu& mmu, x64::Ptr ptr);
+        static std::optional<PreciseTime> readTimespec(x64::Mmu& mmu, x64::Ptr ptr);
+        static std::optional<PreciseTime> readTimeval(x64::Mmu& mmu, x64::Ptr ptr);
+
+        static void writeTimespec(x64::Mmu& mmu, x64::Ptr ptr, PreciseTime time);
+        static void writeTimeval(x64::Mmu& mmu, x64::Ptr ptr, PreciseTime time);
 
     private:
         explicit Timer(int id) : id_(id) { }

@@ -15,11 +15,12 @@ namespace kernel {
 
         Stream(FS* fs, TYPE type) : File(fs), type_(type) { }
 
+        bool isPollable() const override { return type_ == TYPE::IN; }
+
         bool isReadable() const override;
         bool isWritable() const override;
 
-        // non pollable
-        bool canRead() const override { return false; }
+        bool canRead() const override;
         bool canWrite() const override { return false; }
 
         void close() override;

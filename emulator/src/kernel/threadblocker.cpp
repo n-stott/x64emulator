@@ -14,7 +14,7 @@ namespace kernel {
             Timer* timer = timers.get(0); // get the same timer as in the setup
             verify(!!timer);
             PreciseTime now = timer->now();
-            auto relative = timer->readTime(*mmu_, timeout);
+            auto relative = timer->readTimespec(*mmu_, timeout);
             verify(!!relative, "Could not read timeout value");
             if(!!relative) {
                 timeLimit_ = now + *relative;
@@ -45,7 +45,7 @@ namespace kernel {
 
     PollBlocker::PollBlocker(Thread* thread, x64::Mmu& mmu, Timers& timers, x64::Ptr pollfds, size_t nfds, int timeoutInMs)
         : thread_(thread), mmu_(&mmu), timers_(&timers), pollfds_(pollfds), nfds_(nfds) {
-        if(!!timeLimit_) {
+        if(timeoutInMs > 0) {
             Timer* timer = timers_->getOrTryCreate(0); // get any timer
             verify(!!timer);
             verify(timeoutInMs >= 0);
@@ -72,6 +72,44 @@ namespace kernel {
         if(!canUnblock) return false;
         mmu_->writeToMmu(pollfds_, pollfds);
         thread_->savedCpuState().regs.set(x64::R64::RAX, nzrevents);
+        thread_->setState(Thread::THREAD_STATE::RUNNABLE);
+        return true;
+    }
+
+    SelectBlocker::SelectBlocker(Thread* thread, x64::Mmu& mmu, Timers& timers, int nfds, x64::Ptr readfds, x64::Ptr writefds, x64::Ptr exceptfds, x64::Ptr timeout)
+            : thread_(thread), mmu_(&mmu), timers_(&timers), nfds_(nfds), readfds_(readfds), writefds_(writefds), exceptfds_(exceptfds), timeout_(timeout) {
+        Timer* timer = timers_->getOrTryCreate(0); // get any timer
+        verify(!!timer);
+        auto duration = timer->readTimeval(mmu, timeout);
+        if(!!duration) {
+            PreciseTime now = timer->now();
+            timeLimit_ = now + duration.value();
+        }
+    }
+
+    bool SelectBlocker::tryUnblock(FS& fs) {
+        FS::SelectData selectData;
+        selectData.nfds = (i32)nfds_;
+        if(!!readfds_) mmu_->copyFromMmu((u8*)&selectData.readfds, readfds_, sizeof(selectData.readfds));
+        if(!!writefds_) mmu_->copyFromMmu((u8*)&selectData.writefds, writefds_, sizeof(selectData.writefds));
+        if(!!exceptfds_) mmu_->copyFromMmu((u8*)&selectData.exceptfds, exceptfds_, sizeof(selectData.exceptfds));
+        int ret = fs.selectImmediate(&selectData);
+        u64 nzevents = selectData.readfds.count() + selectData.writefds.count() + selectData.exceptfds.count();
+        bool timeout = false;
+        if(!!timeLimit_) {
+            Timer* timer = timers_->get(0); // get the same timer as in the ctor
+            verify(!!timer);
+            PreciseTime now = timer->now();
+            timeout |= (now > timeLimit_);
+        }
+        bool canUnblock = (ret < 0) || (nzevents > 0) || timeout;
+        if(!canUnblock) return false;
+
+        if(!!readfds_) mmu_->copyToMmu(readfds_, (const u8*)&selectData.readfds, sizeof(selectData.readfds));
+        if(!!writefds_) mmu_->copyToMmu(writefds_, (const u8*)&selectData.writefds, sizeof(selectData.writefds));
+        if(!!exceptfds_) mmu_->copyToMmu(exceptfds_, (const u8*)&selectData.exceptfds, sizeof(selectData.exceptfds));
+        if(ret >= 0) ret = (int)nzevents;
+        thread_->savedCpuState().regs.set(x64::R64::RAX, ret);
         thread_->setState(Thread::THREAD_STATE::RUNNABLE);
         return true;
     }

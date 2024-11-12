@@ -649,6 +649,31 @@ namespace kernel {
         }
     }
 
+    int FS::selectImmediate(SelectData* selectData) {
+        if(!selectData) return 0;
+        for(int fd = 0; fd < selectData->nfds; ++fd) {
+            bool testRead = selectData->readfds.test(fd);
+            bool testWrite = selectData->writefds.test(fd);
+            if(!testRead && !testWrite) continue;
+
+            selectData->readfds.reset(fd);
+            selectData->writefds.reset(fd);
+
+            // check that all fds are pollable and have a host-side fd
+            OpenFileDescription* openFileDescription = findOpenFileDescription(FD{fd});
+            if(!openFileDescription) return -EBADF;
+
+            File* file = openFileDescription->file();
+            verify(file->isPollable(), [&]() { fmt::print("fd={} is not pollable\n", fd); });
+            auto hostFd = file->hostFileDescriptor();
+            verify(hostFd.has_value(), [&]() { fmt::print("fd={} has no host-equivalent fd\n", fd); });
+
+            if(testRead && file->canRead())   selectData->readfds.set(fd);
+            if(testWrite && file->canWrite()) selectData->writefds.set(fd);
+        }
+        return 0;
+    }
+
     ErrnoOr<std::pair<FS::FD, FS::FD>> FS::pipe2(int flags) {
         using ReturnType = ErrnoOr<std::pair<FS::FD, FS::FD>>;
         auto pipe = Pipe::tryCreate(this, flags);

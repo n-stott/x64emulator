@@ -5,6 +5,7 @@
 #include <fcntl.h>
 #include <sys/errno.h>
 #include <sys/ioctl.h>
+#include <sys/poll.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
@@ -20,6 +21,18 @@ namespace kernel {
 
     void Stream::close() {
         
+    }
+
+    bool Stream::canRead() const {
+        if(!isPollable()) return false;
+        struct pollfd pfd;
+        pfd.fd = (int)type_;
+        pfd.events = POLLIN;
+        pfd.revents = 0;
+        int timeout = 0; // return immediately
+        int ret = ::poll(&pfd, 1, timeout);
+        if(ret < 0) return false;
+        return !!(pfd.revents & POLLIN);
     }
 
     ErrnoOrBuffer Stream::read(size_t count, off_t) {

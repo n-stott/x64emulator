@@ -574,6 +574,10 @@ namespace kernel {
         return sizeof(pollfd)*nfds;
     }
 
+    size_t Host::selectFdSetSize() {
+        return FD_SETSIZE;
+    }
+
     int Host::select(int nfds, fd_set* readfds, fd_set* writefds, fd_set* exceptfds, timeval* timeout) {
         int ret = ::select(nfds, readfds, writefds, exceptfds, timeout);
         if(ret < 0) return -errno;

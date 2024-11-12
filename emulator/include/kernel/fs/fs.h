@@ -4,6 +4,7 @@
 #include "kernel/utils/buffer.h"
 #include "kernel/utils/erroror.h"
 #include "span.h"
+#include <bitset>
 #include <deque>
 #include <memory>
 #include <string>
@@ -134,6 +135,15 @@ namespace kernel {
         
         ErrnoOr<BufferAndReturnValue<int>> pollImmediate(const std::vector<PollData>& pfds);
         void doPoll(std::vector<PollData>* data);
+
+        struct SelectData {
+            i32 nfds;
+            std::bitset<FD_SETSIZE> readfds;
+            std::bitset<FD_SETSIZE> writefds;
+            std::bitset<FD_SETSIZE> exceptfds;
+        };
+
+        int selectImmediate(SelectData* selectData);
 
         ErrnoOr<std::pair<FD, FD>> pipe2(int flags);
 

@@ -22,6 +22,7 @@ namespace kernel {
         FutexBlocker(Thread* thread, x64::Mmu& mmu, Timers& timers, x64::Ptr32 wordPtr, u32 expected, x64::Ptr timeout);
 
         [[nodiscard]] bool canUnblock(x64::Ptr32 ptr) const;
+        [[nodiscard]] bool hasTimeout() const { return !!timeLimit_; }
 
         Thread* thread() const { return thread_; }
 
@@ -41,6 +42,7 @@ namespace kernel {
         PollBlocker(Thread* thread, x64::Mmu& mmu, Timers& timers, x64::Ptr pollfds, size_t nfds, int timeoutInMs);
         
         [[nodiscard]] bool tryUnblock(FS& fs);
+        [[nodiscard]] bool hasTimeout() const { return !!timeLimit_; }
 
     private:
         Thread* thread_;
@@ -48,6 +50,25 @@ namespace kernel {
         Timers* timers_;
         x64::Ptr pollfds_;
         size_t nfds_;
+        std::optional<PreciseTime> timeLimit_;
+    };
+
+    class SelectBlocker {
+    public:
+        SelectBlocker(Thread* thread, x64::Mmu& mmu, Timers& timers, int nfds, x64::Ptr readfds, x64::Ptr writefds, x64::Ptr exceptfds, x64::Ptr timeout);
+        
+        [[nodiscard]] bool tryUnblock(FS& fs);
+        [[nodiscard]] bool hasTimeout() const { return !!timeLimit_; }
+
+    private:
+        Thread* thread_;
+        x64::Mmu* mmu_;
+        Timers* timers_;
+        size_t nfds_;
+        x64::Ptr readfds_;
+        x64::Ptr writefds_;
+        x64::Ptr exceptfds_;
+        x64::Ptr timeout_;
         std::optional<PreciseTime> timeLimit_;
     };
 

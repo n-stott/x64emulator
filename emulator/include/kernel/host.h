@@ -204,6 +204,7 @@ namespace kernel {
         static ErrnoOrBuffer getrlimit(pid_t pid, int resource);
 
         static size_t pollRequiredBufferSize(size_t nfds);
+        static size_t selectFdSetSize();
 
         static int select(int nfds, fd_set* readfds, fd_set* writefds, fd_set* exceptfds, timeval* timeout);
         static int pselect6(int nfds, fd_set* readfds, fd_set* writefds, fd_set* exceptfds, timespec* timeout, const sigset_t* sigmask);
