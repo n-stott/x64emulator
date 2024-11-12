@@ -1088,6 +1088,7 @@ namespace kernel {
                 buffer[0] |= 0x1;
             }
             mmu_.copyToMmu(mask, buffer.data(), buffer.size());
+            ret = 1;
         } else {
             // don't allow looking at other processes
             ret = -EPERM;
