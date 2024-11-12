@@ -117,6 +117,10 @@ target_link_libraries(test_deadlock PUBLIC pthread)
 add_test(NAME deadlock COMMAND ${CMAKE_BINARY_DIR}/emulator/emulator test_deadlock)
 set_tests_properties(deadlock PROPERTIES WILL_FAIL TRUE)
 
+add_executable(test_repnzscas src/test_repnzscas.cpp)
+target_compile_options(test_repnzscas PUBLIC ${CC_OPTIONS})
+add_test(NAME repnzscas COMMAND ${CMAKE_BINARY_DIR}/emulator/emulator test_repnzscas)
+
 add_executable(test_time src/test_time.cpp)
 target_compile_options(test_time PUBLIC ${CC_OPTIONS})
 target_link_libraries(test_time PUBLIC pthread)

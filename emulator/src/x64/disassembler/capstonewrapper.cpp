@@ -1627,8 +1627,14 @@ namespace x64 {
         auto m64src = asMemory64(src);
         if(prefix == X86_PREFIX_REPNE) {
             if(r8dst && m8src) return X64Instruction::make<Insn::REPNZ_SCAS_R8_M8>(insn.address, insn.size, r8dst.value(), m8src.value());
-            if(r16dst && m16src) return X64Instruction::make<Insn::REPNZ_SCAS_R16_M16>(insn.address, insn.size, r16dst.value(), m16src.value());
-            if(r32dst && m32src) return X64Instruction::make<Insn::REPNZ_SCAS_R32_M32>(insn.address, insn.size, r32dst.value(), m32src.value());
+            if(r16dst && m16src) {
+                assert(insn.detail->x86.prefix[2] == 0x0);
+                return X64Instruction::make<Insn::REPNZ_SCAS_R16_M16>(insn.address, insn.size, r16dst.value(), m16src.value());
+            }
+            if(r32dst && m32src) {
+                assert(insn.detail->x86.prefix[2] == 0x0);
+                return X64Instruction::make<Insn::REPNZ_SCAS_R32_M32>(insn.address, insn.size, r32dst.value(), m32src.value());
+            }
             if(r64dst && m64src) return X64Instruction::make<Insn::REPNZ_SCAS_R64_M64>(insn.address, insn.size, r64dst.value(), m64src.value());
         }
         return make_failed(insn);

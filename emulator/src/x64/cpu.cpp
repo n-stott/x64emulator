@@ -1834,7 +1834,7 @@ namespace x64 {
 
     void Cpu::exec(const RepNZ<Scas<R8, M8>>& ins) {
         assert(ins.op.src2.encoding.base == R64::RDI);
-        u32 counter = get(R32::ECX);
+        u64 counter = get(R64::RCX);
         u8 src1 = get(ins.op.src1);
         Ptr8 ptr2 = resolve(ins.op.src2);
         verify(flags_.direction == 0);
@@ -1845,13 +1845,13 @@ namespace x64 {
             --counter;
             if(flags_.zero) break;
         }
-        set(R32::ECX, counter);
+        set(R64::RCX, counter);
         set(R64::RDI, ptr2.address());
     }
 
     void Cpu::exec(const RepNZ<Scas<R16, M16>>& ins) {
         assert(ins.op.src2.encoding.base == R64::RDI);
-        u32 counter = get(R32::ECX);
+        u64 counter = get(R64::RCX);
         u16 src1 = get(ins.op.src1);
         Ptr16 ptr2 = resolve(ins.op.src2);
         verify(flags_.direction == 0);
@@ -1862,13 +1862,13 @@ namespace x64 {
             --counter;
             if(flags_.zero) break;
         }
-        set(R32::ECX, counter);
+        set(R64::RCX, counter);
         set(R64::RDI, ptr2.address());
     }
 
     void Cpu::exec(const RepNZ<Scas<R32, M32>>& ins) {
         assert(ins.op.src2.encoding.base == R64::RDI);
-        u32 counter = get(R32::ECX);
+        u64 counter = get(R64::RCX);
         u32 src1 = get(ins.op.src1);
         Ptr32 ptr2 = resolve(ins.op.src2);
         verify(flags_.direction == 0);
@@ -1879,13 +1879,13 @@ namespace x64 {
             --counter;
             if(flags_.zero) break;
         }
-        set(R32::ECX, counter);
+        set(R64::RCX, counter);
         set(R64::RDI, ptr2.address());
     }
 
     void Cpu::exec(const RepNZ<Scas<R64, M64>>& ins) {
         assert(ins.op.src2.encoding.base == R64::RDI);
-        u32 counter = get(R32::ECX);
+        u64 counter = get(R64::RCX);
         u64 src1 = get(ins.op.src1);
         Ptr64 ptr2 = resolve(ins.op.src2);
         verify(flags_.direction == 0);
@@ -1896,7 +1896,7 @@ namespace x64 {
             --counter;
             if(flags_.zero) break;
         }
-        set(R32::ECX, counter);
+        set(R64::RCX, counter);
         set(R64::RDI, ptr2.address());
     }
 
