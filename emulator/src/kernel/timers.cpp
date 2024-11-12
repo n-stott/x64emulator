@@ -40,15 +40,15 @@ namespace kernel {
 
     void Timer::writeTimespec(x64::Mmu& mmu, x64::Ptr ptr, PreciseTime time) {
         struct timespec ts;
-        ts.tv_nsec = time.nanoseconds;
-        ts.tv_sec = time.seconds;
+        ts.tv_nsec = (long)time.nanoseconds;
+        ts.tv_sec = (time_t)time.seconds;
         mmu.writeToMmu<struct timespec>(ptr, ts);
     }
 
     void Timer::writeTimeval(x64::Mmu& mmu, x64::Ptr ptr, PreciseTime time) {
         struct timeval tv;
-        tv.tv_usec = time.nanoseconds/1'000;
-        tv.tv_sec = time.seconds;
+        tv.tv_usec = (suseconds_t)(time.nanoseconds/1'000);
+        tv.tv_sec = (time_t)time.seconds;
         mmu.writeToMmu<struct timeval>(ptr, tv);
     }
 
