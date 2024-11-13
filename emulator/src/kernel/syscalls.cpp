@@ -66,6 +66,7 @@ namespace kernel {
             case 0x12: return threadRegs.set(x64::R64::RAX, invoke_syscall_4(&Sys::pwrite64, regs));
             case 0x14: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::writev, regs));
             case 0x15: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::access, regs));
+            case 0x16: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::pipe, regs));
             case 0x17: return threadRegs.set(x64::R64::RAX, invoke_syscall_5(&Sys::select, regs));
             case 0x18: return threadRegs.set(x64::R64::RAX, invoke_syscall_0(&Sys::sched_yield, regs));
             case 0x19: return threadRegs.set(x64::R64::RAX, invoke_syscall_5(&Sys::mremap, regs));
@@ -421,6 +422,20 @@ namespace kernel {
         int ret = kernel_.fs().access(path, mode);
         if(logSyscalls_) {
             print("Sys::access(path={}, mode={}) = {}\n", path, mode, ret);
+        }
+        return ret;
+    }
+    
+    int Sys::pipe(x64::Ptr32 pipefd) {
+        auto errnoOrFds = kernel_.fs().pipe2(0);
+        int ret = errnoOrFds.errorOrWith<int>([&](std::pair<FS::FD, FS::FD> fds) {
+            std::vector<u32> fdsbuf {{ (u32)fds.first.fd, (u32)fds.second.fd }};
+            x64::Ptr ptr { pipefd.address() };
+            mmu_.writeToMmu(ptr, fdsbuf);
+            return 0;
+        });
+        if(logSyscalls_) {
+            print("Sys::pipe(pipefd={:#x}) = {}\n", pipefd.address(), ret);
         }
         return ret;
     }
@@ -1454,7 +1469,7 @@ namespace kernel {
             return 0;
         });
         if(logSyscalls_) {
-            print("Sys::pipe(pipefd={:#x}, flags={}) = {}\n", pipefd.address(), flags, ret);
+            print("Sys::pipe2(pipefd={:#x}, flags={}) = {}\n", pipefd.address(), flags, ret);
         }
         return ret;
     }

@@ -157,6 +157,8 @@ namespace kernel {
         ssize_t writev(int fd, x64::Ptr iov, int iovcnt);
         // 0x15
         int access(x64::Ptr pathname, int mode);
+        // 0x16
+        int pipe(x64::Ptr32 pipefd);
         // 0x17
         int select(int nfds, x64::Ptr readfds, x64::Ptr writefds, x64::Ptr exceptfds, x64::Ptr timeout);
         // 0x18
