@@ -8,6 +8,7 @@
 #include "kernel/fs/hostfile.h"
 #include "kernel/fs/path.h"
 #include "kernel/fs/pipe.h"
+#include "kernel/fs/shadowdevice.h"
 #include "kernel/fs/shadowfile.h"
 #include "kernel/fs/socket.h"
 #include "kernel/fs/stream.h"
@@ -250,18 +251,26 @@ namespace kernel {
         } else {
             // open the file
             auto* shadowFile = ShadowFile::tryCreateAndAdd(this, root_.get(), absolutePathname, flags.create);
-            if(!shadowFile) {
-                // TODO: return the actual value of errno
-                return FS::FD{-EINVAL};
+            if(!!shadowFile) {
+                if(flags.truncate) shadowFile->truncate(0);
+                if(flags.append) shadowFile->append();
+                shadowFile->setWritable(flags.write);
+                
+                // create and add the node to the filesystem
+                shadowFile->open();
+                return openNode(shadowFile);
             }
 
-            if(flags.truncate) shadowFile->truncate(0);
-            if(flags.append) shadowFile->append();
-            shadowFile->setWritable(flags.write);
-            
-            // create and add the node to the filesystem
-            shadowFile->open();
-            return openNode(shadowFile);
+            // try open device
+            auto* shadowDevice = ShadowDevice::tryCreateAndAdd(this, root_.get(), absolutePathname);
+            if(!!shadowDevice) {
+                // create and add the node to the filesystem
+                shadowDevice->open();
+                return openNode(shadowDevice);
+            }
+
+            // TODO: return the actual value of errno
+            return FS::FD{-EINVAL};
         }
         return FD{-EINVAL};
     }

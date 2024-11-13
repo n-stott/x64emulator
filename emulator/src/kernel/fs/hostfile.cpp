@@ -36,9 +36,6 @@ namespace kernel {
         }
         
         mode_t fileType = (s.st_mode & S_IFMT);
-        if(fileType == S_IFDIR) {
-            return {};
-        }
         if (fileType != S_IFREG && fileType != S_IFLNK) {
             // not a regular file or a symbolic link
             return {};

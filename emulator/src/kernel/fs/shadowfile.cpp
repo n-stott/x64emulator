@@ -42,18 +42,24 @@ namespace kernel {
             return containingDirectory->addFile(std::move(shadowFile));
         } else {
             // figure out size
-            struct stat buf;
-            if(::fstat(fd, &buf) < 0) return {};
+            struct stat st;
+            if(::fstat(fd, &st) < 0) return {};
+            
+            mode_t fileType = (st.st_mode & S_IFMT);
+            if (fileType != S_IFREG && fileType != S_IFLNK) {
+                // not a regular file or a symbolic link
+                return {};
+            }
             
             // create data vector
-            std::vector<u8> data((size_t)buf.st_size, 0x0);
+            std::vector<u8> data((size_t)st.st_size, 0x0);
 
             ssize_t nread = ::read(fd, data.data(), data.size());
             if(nread < 0) return {};
             if((size_t)nread != data.size()) return {};
 
             auto hostData = std::make_unique<ShadowFileHostData>();
-            hostData->st = buf;
+            hostData->st = st;
 
             auto shadowFile = std::unique_ptr<ShadowFile>(new ShadowFile(fs, containingDirectory, path->last(), std::move(data)));
             shadowFile->hostData_ = std::move(hostData);
@@ -165,7 +171,7 @@ namespace kernel {
     }
 
     ErrnoOrBuffer ShadowFile::ioctl(unsigned long request, const Buffer&) {
-        verify(false, [&]() { fmt::print("ShadowFile::ioctl({}) not implemented", request); });
+        verify(false, [&]() { fmt::print("ShadowFile::ioctl({:#x}) not implemented", request); });
         return ErrnoOrBuffer(-ENOTSUP);
     }
 

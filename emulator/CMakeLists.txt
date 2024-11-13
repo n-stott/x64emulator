@@ -50,6 +50,7 @@ add_library(x64emulator STATIC
     src/kernel/fs/hostfile.cpp
     src/kernel/fs/path.cpp
     src/kernel/fs/pipe.cpp
+    src/kernel/fs/shadowdevice.cpp
     src/kernel/fs/shadowdirectory.cpp
     src/kernel/fs/shadowfile.cpp
     src/kernel/fs/socket.cpp
