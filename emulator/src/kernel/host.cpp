@@ -568,7 +568,7 @@ namespace kernel {
         switch(resource) {
             case RLIMIT_STACK: {
                 struct rlimit stackLimit {
-                    static_cast<rlim_t>(16*0x1000),
+                    static_cast<rlim_t>(64*0x1000),
                     RLIM64_INFINITY,
                 };
                 return ErrnoOrBuffer(Buffer{stackLimit});
