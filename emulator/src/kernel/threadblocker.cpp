@@ -55,8 +55,17 @@ namespace kernel {
         int pid = thread_->description().pid;
         int tid = thread_->description().tid;
         u32 contained = mmu_->read32(wordPtr_);
-        return fmt::format("thread {}:{} waiting on value {} at {:#x} (containing {})",
-                    pid, tid, expected_, wordPtr_.address(), contained);
+        std::string timeoutString;
+        if(!!timeLimit_) {
+            Timer* timer = timers_->get(0); // get the same timer as in the setup
+            verify(!!timer);
+            PreciseTime now = timer->now();
+            timeoutString = fmt::format("with timeout at {}s{}ns (now is {}s{}ns)", timeLimit_->seconds, timeLimit_->nanoseconds, now.seconds, now.nanoseconds);
+        } else {
+            timeoutString = "without timeout";
+        }
+        return fmt::format("thread {}:{} waiting on value {} at {:#x} (containing {}) {}",
+                    pid, tid, expected_, wordPtr_.address(), contained, timeoutString);
     }
 
     PollBlocker::PollBlocker(Thread* thread, x64::Mmu& mmu, Timers& timers, x64::Ptr pollfds, size_t nfds, int timeoutInMs)

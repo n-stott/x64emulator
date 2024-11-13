@@ -256,6 +256,10 @@ namespace kernel {
                 return bufferAndRetVal.returnValue;
             });
         } else {
+            if(logSyscalls_) {
+                print("Sys::poll(fds={:#x}, nfds={}, timeout={}) = pending\n",
+                            fds.address(), nfds, timeout);
+            }
             kernel_.scheduler().poll(currentThread_, fds, nfds, timeout);
         }
         return 0;
