@@ -44,8 +44,8 @@ namespace kernel {
 
         guard.disable();
 
-        auto hostFile = std::unique_ptr<HostDevice>(new HostDevice(fs, containingDirectory, path->last(), fd));
-        return containingDirectory->addFile(std::move(hostFile));
+        auto hostDevice = std::unique_ptr<HostDevice>(new HostDevice(fs, containingDirectory, path->last(), fd));
+        return containingDirectory->addFile(std::move(hostDevice));
     }
 
     void HostDevice::close() {

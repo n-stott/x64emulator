@@ -1,4 +1,3 @@
-#include "kernel/fs/shadowdevice.h"
 #include "kernel/fs/ttydevice.h"
 #include "kernel/fs/path.h"
 #include "scopeguard.h"
@@ -11,7 +10,7 @@
 
 namespace kernel {
 
-    File* ShadowDevice::tryCreateAndAdd(FS* fs, Directory* parent, const std::string& name) {
+    File* TtyDevice::tryCreateAndAdd(FS* fs, Directory* parent, const std::string& name) {
         std::string pathname;
         if(!parent || parent == fs->root()) {
             pathname = name;
@@ -19,17 +18,11 @@ namespace kernel {
             pathname = (parent->path() + "/" + name);
         }
 
-        if(pathname == "/dev/tty") {
-            return TtyDevice::tryCreateAndAdd(fs, parent, name);
-        }
-
-        verify(false, "/dev/tty is the only supported shadow device");
-
-        int flags = O_RDONLY | O_CLOEXEC;
+        int flags = O_RDWR | O_CLOEXEC;
         int fd = ::openat(AT_FDCWD, pathname.c_str(), flags);
         if(fd < 0) {
-            verify(false, "ShadowDevice without host backer is not implemented");
-            return {};
+            verify(false, "Failed to open /dev/tty");
+            return nullptr;
         }
 
         ScopeGuard guard([=]() {
@@ -39,13 +32,13 @@ namespace kernel {
         // check that the file is a device
         struct stat s;
         if(::fstat(fd, &s) < 0) {
-            return {};
+            return nullptr;
         }
         
         mode_t fileType = (s.st_mode & S_IFMT);
         if(fileType != S_IFCHR && fileType != S_IFBLK) {
             // not a character device or block device
-            return {};
+            return nullptr;
         }
 
         std::string absolutePathname = fs->toAbsolutePathname(pathname);
@@ -55,11 +48,11 @@ namespace kernel {
 
         guard.disable();
 
-        auto shadowFile = std::unique_ptr<ShadowDevice>(new ShadowDevice(fs, containingDirectory, path->last(), fd));
-        return containingDirectory->addFile(std::move(shadowFile));
+        auto ttyDevice = std::unique_ptr<ShadowDevice>(new TtyDevice(fs, containingDirectory, path->last(), fd));
+        return containingDirectory->addFile(std::move(ttyDevice));
     }
 
-    void ShadowDevice::close() {
+    void TtyDevice::close() {
         if(refCount_ > 0) return;
         if(!!hostFd_) {
             int rc = ::close(hostFd_.value());
@@ -67,56 +60,40 @@ namespace kernel {
         }
     }
 
-    bool ShadowDevice::canRead() const {
-        verify(false, "ShadowDevice::canRead not implemented");
-        return false;
-    }
-
-    bool ShadowDevice::canWrite() const {
-        verify(false, "ShadowDevice::canWrite not implemented");
-        return false;
-    }
-
-    ErrnoOrBuffer ShadowDevice::read(size_t, off_t) {
-        verify(false, "ShadowDevice::read not implemented");
+    ErrnoOrBuffer TtyDevice::read(size_t, off_t) {
+        verify(false, "TtyDevice::read not implemented");
         return ErrnoOrBuffer(-ENOTSUP);
     }
 
-    ssize_t ShadowDevice::write(const u8*, size_t, off_t) {
-        verify(false, "ShadowDevice::write not implemented");
+    ssize_t TtyDevice::write(const u8* buf, size_t count, off_t) {
+        if(!!hostFd_) {
+            ssize_t ret = ::write(hostFd_.value(), buf, count);
+            return ret;
+        }
+        verify(false, "TtyDevice::write not implemented");
         return -ENOTSUP;
     }
 
-    ErrnoOrBuffer ShadowDevice::stat() {
-        verify(false, "ShadowDevice::stat not implemented");
+    off_t TtyDevice::lseek(off_t, int) {
+        return -ESPIPE;
+    }
+
+    ErrnoOrBuffer TtyDevice::getdents64(size_t) {
+        verify(false, "TtyDevice::getdents64 not implemented");
         return ErrnoOrBuffer(-ENOTSUP);
     }
 
-    ErrnoOrBuffer ShadowDevice::statfs() {
-        verify(false, "ShadowDevice::statfs not implemented");
-        return ErrnoOrBuffer(-ENOTSUP);
-    }
-
-    off_t ShadowDevice::lseek(off_t, int) {
-        verify(false, "ShadowDevice::lseek not implemented");
+    int TtyDevice::fcntl(int, int) {
+        verify(false, "TtyDevice::fcntl not implemented");
         return -ENOTSUP;
     }
 
-    ErrnoOrBuffer ShadowDevice::getdents64(size_t) {
-        verify(false, "ShadowDevice::getdents64 not implemented");
-        return ErrnoOrBuffer(-ENOTSUP);
-    }
-
-    int ShadowDevice::fcntl(int, int) {
-        verify(false, "ShadowDevice::fcntl not implemented");
-        return -ENOTSUP;
-    }
-
-    ErrnoOrBuffer ShadowDevice::ioctl(unsigned long request, const Buffer& inputBuffer) {
+    ErrnoOrBuffer TtyDevice::ioctl(unsigned long request, const Buffer& inputBuffer) {
         if(!hostFd_) {
             verify(false, "ShadowDevice without host backer is not implemented");
             return ErrnoOrBuffer(-ENOTSUP);
         }
+        Buffer buffer(inputBuffer);
         switch(request) {
             case TCGETS: {
                 struct termios ts;
@@ -135,9 +112,15 @@ namespace kernel {
                 if(ret < 0) return ErrnoOrBuffer(-errno);
                 return ErrnoOrBuffer(Buffer{});
             }
+            case TIOCGWINSZ: {
+                verify(buffer.size() == sizeof(struct winsize));
+                int ret = ::ioctl(hostFd_.value(), TIOCGWINSZ, buffer.data());
+                if(ret < 0) return ErrnoOrBuffer(-errno);
+                return ErrnoOrBuffer(std::move(buffer));
+            }
             default: break;
         }
-        verify(false, fmt::format("ShadowDevice::ioctl({:#x}) not implemented", request));
+        verify(false, fmt::format("TtyDevice::ioctl({:#x}) not implemented", request));
         return ErrnoOrBuffer(-ENOTSUP);
     }
 
