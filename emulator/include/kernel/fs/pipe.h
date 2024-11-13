@@ -26,6 +26,9 @@ namespace kernel {
         bool keepAfterClose() const override { return false; }
         std::optional<int> hostFileDescriptor() const override { return {}; };
 
+        bool canRead() const;
+        bool canWrite() const;
+
         ErrnoOrBuffer read(size_t size);
         ssize_t write(const u8* buf, size_t size);
 
@@ -45,12 +48,13 @@ namespace kernel {
         void close() override;
         bool keepAfterClose() const override { return false; }
 
-        bool isReadable() const override { return false; }
-        bool isWritable() const override { return false; }
+        bool isReadable() const override { return side_ == PipeSide::READ; }
+        bool isWritable() const override { return side_ == PipeSide::WRITE; }
 
-        // non pollable
-        bool canRead() const override { return false; }
-        bool canWrite() const override { return false; }
+        bool isPollable() const override { return true; }
+
+        bool canRead() const override;
+        bool canWrite() const override;
 
         ErrnoOrBuffer read(size_t, off_t) override;
         ssize_t write(const u8*, size_t, off_t) override;
@@ -67,9 +71,7 @@ namespace kernel {
 
         std::optional<int> hostFileDescriptor() const override { return {}; }
 
-        std::string className() const override {
-            return "Pipe";
-        }
+        std::string className() const override;
     
     private:
         explicit PipeEndpoint(FS* fs, Pipe* pipe, PipeSide side, int flags) :

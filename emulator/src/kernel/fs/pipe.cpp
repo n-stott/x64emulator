@@ -16,7 +16,7 @@ namespace kernel {
     }
 
     std::unique_ptr<PipeEndpoint> Pipe::tryCreateWriter() {
-        auto ptr = PipeEndpoint::tryCreate(fs_, this, PipeSide::READ, flags_);
+        auto ptr = PipeEndpoint::tryCreate(fs_, this, PipeSide::WRITE, flags_);
         if(!!ptr) endpoints_.push_back(ptr.get());
         return ptr;
     }
@@ -33,6 +33,15 @@ namespace kernel {
         (void)flags_;
     }
 
+    bool Pipe::canRead() const {
+        return !data_.empty();
+    }
+
+    bool Pipe::canWrite() const {
+        (void)data_;
+        return true;
+    }
+
     ErrnoOrBuffer Pipe::read(size_t size) {
         verify(!data_.empty(), "Reading from empty pipe (possibly blocking) not implemented");
         size_t readSize = std::min(size, data_.size());
@@ -41,6 +50,9 @@ namespace kernel {
         data_.erase(data_.begin(), data_.begin() + (off64_t)readSize);
         return ErrnoOrBuffer(Buffer(std::move(buf)));
     }
+
+    bool PipeEndpoint::canRead() const { return pipe_->canRead(); }
+    bool PipeEndpoint::canWrite() const { return pipe_->canWrite(); }
     
     ErrnoOrBuffer PipeEndpoint::read(size_t size, off_t) {
         return pipe_->read(size);
@@ -98,6 +110,14 @@ namespace kernel {
     ErrnoOrBuffer PipeEndpoint::ioctl(unsigned long request, const Buffer&) {
         verify(false, fmt::format("ioctl(request={}) not implemented on PipeEndpoint", request));
         return ErrnoOrBuffer(-ENOTSUP);
+    }
+
+    std::string PipeEndpoint::className() const {
+        if(side_ == PipeSide::READ) {
+            return "Pipe Read Endpoint";
+        } else {
+            return "Pipe Write Endpoint";
+        }
     }
 
 }
