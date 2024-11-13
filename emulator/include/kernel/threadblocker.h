@@ -19,7 +19,8 @@ namespace kernel {
 
     class FutexBlocker {
     public:
-        FutexBlocker(Thread* thread, x64::Mmu& mmu, Timers& timers, x64::Ptr32 wordPtr, u32 expected, x64::Ptr timeout);
+        static FutexBlocker withAbsoluteTimeout(Thread* thread, x64::Mmu& mmu, Timers& timers, x64::Ptr32 wordPtr, u32 expected, x64::Ptr timeout);
+        static FutexBlocker withRelativeTimeout(Thread* thread, x64::Mmu& mmu, Timers& timers, x64::Ptr32 wordPtr, u32 expected, x64::Ptr timeout);
 
         [[nodiscard]] bool canUnblock(x64::Ptr32 ptr) const;
         [[nodiscard]] bool hasTimeout() const { return !!timeLimit_; }
@@ -29,6 +30,8 @@ namespace kernel {
         std::string toString() const;
 
     private:
+        FutexBlocker(Thread* thread, x64::Mmu& mmu, Timers& timers, x64::Ptr32 wordPtr, u32 expected, x64::Ptr timeout, bool absoluteTimeout);
+
         Thread* thread_;
         x64::Mmu* mmu_;
         Timers* timers_;

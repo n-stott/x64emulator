@@ -1088,7 +1088,7 @@ namespace kernel {
             Timer* timer = kernel_.timers().getOrTryCreate(0);
             verify(!!timer);
             timer->update(kernel_.scheduler().kernelTime());
-            kernel_.scheduler().wait(currentThread_, uaddr, val, timeout);
+            kernel_.scheduler().waitBitset(currentThread_, uaddr, val, timeout);
             return onExit(0);
         }
         verify(false, [&]() {
@@ -1298,13 +1298,13 @@ namespace kernel {
         verify(flags == 0, "clock_nanosleep with nonzero flags not supported (relative only)");
         Timer* timer = kernel_.timers().getOrTryCreate(clockid);
         if(!timer) { return -EINVAL; }
-        auto time = timer->readTimespec(mmu_, request);
-        if(!time) { return -EFAULT; }
+        auto timediff = timer->readRelativeTimespec(mmu_, request);
+        if(!timediff) { return -EFAULT; }
         timer->update(kernel_.scheduler().kernelTime());
-        kernel_.scheduler().sleep(currentThread_, timer, timer->now() + time.value());
+        kernel_.scheduler().sleep(currentThread_, timer, timer->now() + timediff.value());
         if(logSyscalls_) {
             print("Sys::clock_nanosleep(clockid={}, flags={}, request={}s{}ns, remain={:#x}) = {}\n",
-                        clockid, flags, time->seconds, time->nanoseconds, remain.address(), 0);
+                        clockid, flags, timediff->seconds, timediff->nanoseconds, remain.address(), 0);
         }
         return 0;
     }

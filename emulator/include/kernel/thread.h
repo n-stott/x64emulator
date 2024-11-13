@@ -1,6 +1,7 @@
 #ifndef THREAD_H
 #define THREAD_H
 
+#include "kernel/timers.h"
 #include "x64/registers.h"
 #include "x64/flags.h"
 #include "x64/simd.h"
@@ -63,7 +64,7 @@ namespace kernel {
 
             void tick() { ++current_; }
             size_t current() const { return current_; }
-            size_t timeElapsedThisSlice() const { return current_ - start_; }
+            TimeDifference timeElapsedThisSlice() const { return TimeDifference::fromNanoSeconds(current_ - start_); }
             void setSlice(size_t start, size_t end) {
                 totalExceptCurrentSlice_ += current_ - start_;
                 start_ = start;

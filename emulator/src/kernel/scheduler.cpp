@@ -21,7 +21,7 @@ namespace kernel {
     void Scheduler::syncThreadTimeSlice(Thread* thread) {
         verify(!!thread);
         std::unique_lock lock(schedulerMutex_);
-        currentTime_ = std::max(currentTime_, currentTime_ + PreciseTime { 0 , thread->tickInfo().timeElapsedThisSlice() });
+        currentTime_ = std::max(currentTime_, currentTime_ + thread->tickInfo().timeElapsedThisSlice());
     }
 
     void Scheduler::runOnWorkerThread(int id) {
@@ -54,7 +54,7 @@ namespace kernel {
                     if(needsToWaitForNewThreads) {
                         // If we need some time to pass, actually advance in time
                         std::unique_lock lock(schedulerMutex_);
-                        currentTime_ = std::max(currentTime_, currentTime_ + PreciseTime { 0 , 1'000'000 }); // 1ms
+                        currentTime_ = std::max(currentTime_, currentTime_ + TimeDifference::fromNanoSeconds(1'000'000 )); // 1ms
                     } else {
                         // Otherwise, just wait a bit
 #ifndef NDEBUG
@@ -290,8 +290,14 @@ namespace kernel {
         thread->yield();
     }
 
-    void Scheduler::wait(Thread* thread, x64::Ptr32 wordPtr, u32 expected, x64::Ptr timeout) {
-        futexBlockers_.push_back(FutexBlocker{thread, mmu_, kernel_.timers(), wordPtr, expected, timeout});
+    void Scheduler::wait(Thread* thread, x64::Ptr32 wordPtr, u32 expected, x64::Ptr relativeTimeout) {
+        futexBlockers_.push_back(FutexBlocker::withRelativeTimeout(thread, mmu_, kernel_.timers(), wordPtr, expected, relativeTimeout));
+        thread->setState(Thread::THREAD_STATE::BLOCKED);
+        thread->yield();
+    }
+
+    void Scheduler::waitBitset(Thread* thread, x64::Ptr32 wordPtr, u32 expected, x64::Ptr absoluteTimeout) {
+        futexBlockers_.push_back(FutexBlocker::withAbsoluteTimeout(thread, mmu_, kernel_.timers(), wordPtr, expected, absoluteTimeout));
         thread->setState(Thread::THREAD_STATE::BLOCKED);
         thread->yield();
     }

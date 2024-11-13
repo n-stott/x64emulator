@@ -38,6 +38,30 @@ namespace kernel {
         }
     }
 
+    std::optional<TimeDifference> Timer::readRelativeTimespec(x64::Mmu& mmu, x64::Ptr ptr) {
+        if(!!ptr) {
+            struct timespec ts = mmu.readFromMmu<struct timespec>(ptr);
+            TimeDifference dt;
+            dt.nanoseconds = (u64)ts.tv_nsec;
+            dt.seconds = (u64)ts.tv_sec;
+            return dt;
+        } else {
+            return {};
+        }
+    }
+
+    std::optional<TimeDifference> Timer::readRelativeTimeval(x64::Mmu& mmu, x64::Ptr ptr) {
+        if(!!ptr) {
+            struct timeval tv = mmu.readFromMmu<struct timeval>(ptr);
+            TimeDifference dt;
+            dt.nanoseconds = (u64)tv.tv_usec*1'000;
+            dt.seconds = (u64)tv.tv_sec;
+            return dt;
+        } else {
+            return {};
+        }
+    }
+
     void Timer::writeTimespec(x64::Mmu& mmu, x64::Ptr ptr, PreciseTime time) {
         struct timespec ts;
         ts.tv_nsec = (long)time.nanoseconds;

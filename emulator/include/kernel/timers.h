@@ -34,18 +34,40 @@ namespace kernel {
             if(a.seconds < b.seconds) return false;
             return a.nanoseconds > b.nanoseconds;
         }
+    };
 
-        friend PreciseTime operator+(PreciseTime a, PreciseTime b) {
-            PreciseTime res;
-            res.nanoseconds = a.nanoseconds + b.nanoseconds;
-            res.seconds = a.seconds + b.seconds;
-            if(res.nanoseconds > NS_PER_S) {
-                res.seconds += (res.nanoseconds / NS_PER_S);
-                res.nanoseconds = res.nanoseconds % NS_PER_S;
+    struct TimeDifference {
+        u64 seconds { 0 };
+        u64 nanoseconds { 0 };
+
+        static constexpr u64 NS_PER_S = 1'000'000'000;
+
+        static TimeDifference fromNanoSeconds(u64 ns) {
+            TimeDifference res;
+            res.seconds = 0;
+            res.nanoseconds = ns;
+            if(res.nanoseconds > PreciseTime::NS_PER_S) {
+                res.seconds += (res.nanoseconds / PreciseTime::NS_PER_S);
+                res.nanoseconds = res.nanoseconds % PreciseTime::NS_PER_S;
             }
             return res;
         }
+
+        size_t count() const {
+            return seconds * NS_PER_S + nanoseconds;
+        }
     };
+
+    inline PreciseTime operator+(PreciseTime t, TimeDifference dt) {
+        PreciseTime res;
+        res.nanoseconds = t.nanoseconds + dt.nanoseconds;
+        res.seconds = t.seconds + dt.seconds;
+        if(res.nanoseconds > PreciseTime::NS_PER_S) {
+            res.seconds += (res.nanoseconds / PreciseTime::NS_PER_S);
+            res.nanoseconds = res.nanoseconds % PreciseTime::NS_PER_S;
+        }
+        return res;
+    }
 
     class Timer {
     public:
@@ -56,6 +78,9 @@ namespace kernel {
         
         static std::optional<PreciseTime> readTimespec(x64::Mmu& mmu, x64::Ptr ptr);
         static std::optional<PreciseTime> readTimeval(x64::Mmu& mmu, x64::Ptr ptr);
+
+        static std::optional<TimeDifference> readRelativeTimespec(x64::Mmu& mmu, x64::Ptr ptr);
+        static std::optional<TimeDifference> readRelativeTimeval(x64::Mmu& mmu, x64::Ptr ptr);
 
         static void writeTimespec(x64::Mmu& mmu, x64::Ptr ptr, PreciseTime time);
         static void writeTimeval(x64::Mmu& mmu, x64::Ptr ptr, PreciseTime time);

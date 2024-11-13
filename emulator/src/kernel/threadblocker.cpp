@@ -8,17 +8,32 @@
 
 namespace kernel {
 
+    FutexBlocker FutexBlocker::withAbsoluteTimeout(Thread* thread, x64::Mmu& mmu, Timers& timers, x64::Ptr32 wordPtr, u32 expected, x64::Ptr timeout) {
+        return FutexBlocker(thread, mmu, timers, wordPtr, expected, timeout, true);
+    }
 
-    FutexBlocker::FutexBlocker(Thread* thread, x64::Mmu& mmu, Timers& timers, x64::Ptr32 wordPtr, u32 expected, x64::Ptr timeout)
+    FutexBlocker FutexBlocker::withRelativeTimeout(Thread* thread, x64::Mmu& mmu, Timers& timers, x64::Ptr32 wordPtr, u32 expected, x64::Ptr timeout) {
+        return FutexBlocker(thread, mmu, timers, wordPtr, expected, timeout, false);
+    }
+
+    FutexBlocker::FutexBlocker(Thread* thread, x64::Mmu& mmu, Timers& timers, x64::Ptr32 wordPtr, u32 expected, x64::Ptr timeout, bool absoluteTimeout)
         : thread_(thread), mmu_(&mmu), timers_(&timers), wordPtr_(wordPtr), expected_(expected) {
         if(!!timeout) {
             Timer* timer = timers.get(0); // get the same timer as in the setup
             verify(!!timer);
-            PreciseTime now = timer->now();
-            auto relative = timer->readTimespec(*mmu_, timeout);
-            verify(!!relative, "Could not read timeout value");
-            if(!!relative) {
-                timeLimit_ = now + *relative;
+            if(absoluteTimeout) {
+                auto absolute = timer->readTimespec(*mmu_, timeout);
+                verify(!!absolute, "Could not read timeout value");
+                if(!!absolute) {
+                    timeLimit_ = *absolute;
+                }
+            } else {
+                PreciseTime now = timer->now();
+                auto relative = timer->readRelativeTimespec(*mmu_, timeout);
+                verify(!!relative, "Could not read timeout value");
+                if(!!relative) {
+                    timeLimit_ = now + *relative;
+                }
             }
         }
     }
@@ -52,7 +67,7 @@ namespace kernel {
             verify(timeoutInMs >= 0);
             PreciseTime now = timer->now();
             u64 timeoutInNs = (u64)timeoutInMs*1'000'000;
-            timeLimit_ = now + PreciseTime{0, timeoutInNs};
+            timeLimit_ = now + TimeDifference::fromNanoSeconds(timeoutInNs);
         }
     }
 
@@ -104,7 +119,7 @@ namespace kernel {
             : thread_(thread), mmu_(&mmu), timers_(&timers), nfds_(nfds), readfds_(readfds), writefds_(writefds), exceptfds_(exceptfds), timeout_(timeout) {
         Timer* timer = timers_->getOrTryCreate(0); // get any timer
         verify(!!timer);
-        auto duration = timer->readTimeval(mmu, timeout);
+        auto duration = timer->readRelativeTimeval(mmu, timeout);
         if(!!duration) {
             PreciseTime now = timer->now();
             timeLimit_ = now + duration.value();
