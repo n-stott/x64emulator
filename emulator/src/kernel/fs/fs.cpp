@@ -365,24 +365,32 @@ namespace kernel {
     ErrnoOrBuffer FS::read(FD fd, size_t count) {
         OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
         if(!openFileDescription) return ErrnoOrBuffer{-EBADF};
+        File* file = openFileDescription->file();
+        if(!file->isReadable()) ErrnoOrBuffer{-EBADF};
         return openFileDescription->read(count);
     }
 
     ErrnoOrBuffer FS::pread(FD fd, size_t count, off_t offset) {
         OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
         if(!openFileDescription) return ErrnoOrBuffer{-EBADF};
+        File* file = openFileDescription->file();
+        if(!file->isReadable()) ErrnoOrBuffer{-EBADF};
         return openFileDescription->pread(count, offset);
     }
 
     ssize_t FS::write(FD fd, const u8* buf, size_t count) {
         OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
         if(!openFileDescription) return -EBADF;
+        File* file = openFileDescription->file();
+        if(!file->isWritable()) return -EBADF;
         return openFileDescription->write(buf, count);
     }
 
     ssize_t FS::pwrite(FD fd, const u8* buf, size_t count, off_t offset) {
         OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
         if(!openFileDescription) return -EBADF;
+        File* file = openFileDescription->file();
+        if(!file->isWritable()) return -EBADF;
         return openFileDescription->pwrite(buf, count, offset);
     }
 
@@ -651,6 +659,7 @@ namespace kernel {
                 fmt::print("Polling on non-existing open file description for fd={}\n", pollfd.fd);
             });
             File* file = openFileDescription->file();
+            verify(file->isPollable(), fmt::format("Attempting to poll non-pollable file with fd={}", fd.fd));
             bool testRead = (pollfd.events & PollEvent::CAN_READ) == PollEvent::CAN_READ;
             bool testWrite = (pollfd.events & PollEvent::CAN_WRITE) == PollEvent::CAN_WRITE;
             if(testRead && file->canRead())   pollfd.revents = pollfd.revents | PollEvent::CAN_READ;
