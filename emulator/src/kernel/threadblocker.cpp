@@ -39,16 +39,15 @@ namespace kernel {
     }
 
     bool FutexBlocker::canUnblock(x64::Ptr32 ptr) const {
-        if(ptr != wordPtr_) return false;
-        u32 val = mmu_->read32(ptr);
-        if(val == expected_) return false;
         if(!!timeLimit_) {
             Timer* timer = timers_->get(0); // get the same timer as in the setup
             verify(!!timer);
             PreciseTime now = timer->now();
-            if(now < timeLimit_) return false;
+            if(now > timeLimit_) return true;
         }
-        return true;
+        if(ptr != wordPtr_) return false;
+        u32 val = mmu_->read32(ptr);
+        return val != expected_;
     }
 
     std::string FutexBlocker::toString() const {
