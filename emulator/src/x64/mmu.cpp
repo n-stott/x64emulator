@@ -426,6 +426,7 @@ namespace x64 {
             return a.base < b.base;
         });
 
+        fmt::print("Memory regions:\n");
         for(const auto& info : dumpInfos) {
             fmt::print("    {:>#10x} - {:<#10x} {} {:>20}\n", info.base, info.end, info.prot, info.file);
         }

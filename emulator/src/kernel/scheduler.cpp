@@ -341,6 +341,25 @@ namespace kernel {
         });
     }
 
+    void Scheduler::dumpBlockerSummary() const {
+        fmt::print("Futex blockers :\n");
+        for(const FutexBlocker& blocker : futexBlockers_) {
+            fmt::print("  {}\n", blocker.toString());
+        }
+        fmt::print("Poll blockers :\n");
+        for(const PollBlocker& blocker : pollBlockers_) {
+            fmt::print("  {}\n", blocker.toString());
+        }
+        fmt::print("Select blockers :\n");
+        for(const SelectBlocker& blocker : selectBlockers_) {
+            fmt::print("  {}\n", blocker.toString());
+        }
+        fmt::print("Sleep blockers :\n");
+        for(const SleepBlocker& blocker : sleepBlockers_) {
+            fmt::print("  {}\n", blocker.toString());
+        }
+    }
+
     void Scheduler::retrieveProfilingData(profiling::ProfilingData* profilingData) {
         if(!profilingData) return;
         forEachThread([&](const Thread& thread) {

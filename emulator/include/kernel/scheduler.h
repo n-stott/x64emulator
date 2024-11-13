@@ -49,6 +49,7 @@ namespace kernel {
         void select(Thread* thread, int nfds, x64::Ptr readfds, x64::Ptr writefds, x64::Ptr exceptfds, x64::Ptr timeout);
 
         void dumpThreadSummary() const;
+        void dumpBlockerSummary() const;
 
         void retrieveProfilingData(profiling::ProfilingData*);
 

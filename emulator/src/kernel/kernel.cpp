@@ -263,7 +263,7 @@ namespace kernel {
 
     void Kernel::dumpPanicInfo() const {
         scheduler_.dumpThreadSummary();
-        fmt::print("Memory regions:\n");
+        scheduler_.dumpBlockerSummary();
         mmu_.dumpRegions();
         fs_.dumpSummary();
     }

@@ -4,6 +4,7 @@
 #include "x64/mmu.h"
 #include <fmt/core.h>
 #include <algorithm>
+#include <sstream>
 
 namespace kernel {
 
@@ -76,6 +77,29 @@ namespace kernel {
         return true;
     }
 
+    std::string PollBlocker::toString() const {
+        int pid = thread_->description().pid;
+        int tid = thread_->description().tid;
+        std::stringstream ss;
+        ss << '{';
+        std::vector<FS::PollData> pollfds(mmu_->readFromMmu<FS::PollData>(pollfds_, nfds_));
+        for(const auto& pfd : pollfds) {
+            ss << pfd.fd << " [";
+            if((pfd.events & FS::PollEvent::CAN_READ) == FS::PollEvent::CAN_READ) ss << "CAN_READ, ";
+            if((pfd.events & FS::PollEvent::CAN_WRITE) == FS::PollEvent::CAN_WRITE) ss << "CAN_WRITE, ";
+            ss << "], ";
+        }
+        ss << '}';
+        std::string pollfdsString = ss.str();
+        std::string timeoutString;
+        if(!!timeLimit_) {
+            timeoutString = fmt::format("with timeout at {}s{}ns", timeLimit_->seconds, timeLimit_->nanoseconds);
+        } else {
+            timeoutString = "without timeout";
+        }
+        return fmt::format("thread {}:{} polling on {} fds {} {}", pid, tid, nfds_, pollfdsString, timeoutString);
+    }
+
     SelectBlocker::SelectBlocker(Thread* thread, x64::Mmu& mmu, Timers& timers, int nfds, x64::Ptr readfds, x64::Ptr writefds, x64::Ptr exceptfds, x64::Ptr timeout)
             : thread_(thread), mmu_(&mmu), timers_(&timers), nfds_(nfds), readfds_(readfds), writefds_(writefds), exceptfds_(exceptfds), timeout_(timeout) {
         Timer* timer = timers_->getOrTryCreate(0); // get any timer
@@ -114,6 +138,18 @@ namespace kernel {
         return true;
     }
 
+    std::string SelectBlocker::toString() const {
+        int pid = thread_->description().pid;
+        int tid = thread_->description().tid;
+        std::string timeoutString;
+        if(!!timeLimit_) {
+            timeoutString = fmt::format("with timeout at {}s{}ns", timeLimit_->seconds, timeLimit_->nanoseconds);
+        } else {
+            timeoutString = "without timeout";
+        }
+        return fmt::format("thread {}:{} selecting on {} fds {}", pid, tid, nfds_, timeoutString);
+    }
+
     bool SleepBlocker::tryUnblock(Timers& timers) {
         Timer* timer = timers.getOrTryCreate(timer_->id());
         verify(!!timer, "Sleeping on null timer");
@@ -123,6 +159,12 @@ namespace kernel {
         thread_->savedCpuState().regs.set(x64::R64::RAX, 0);
         thread_->setState(Thread::THREAD_STATE::RUNNABLE);
         return true;
+    }
+
+    std::string SleepBlocker::toString() const {
+        int pid = thread_->description().pid;
+        int tid = thread_->description().tid;
+        return fmt::format("thread {}:{} sleeping until {}s{}ns", pid, tid, targetTime_.seconds, targetTime_.nanoseconds);
     }
 
 }
