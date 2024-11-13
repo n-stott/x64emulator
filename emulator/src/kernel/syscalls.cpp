@@ -684,6 +684,7 @@ namespace kernel {
         newCpuState.regs.set(x64::R64::RAX, 0);
         newCpuState.regs.rip() = oldCpuState.regs.rip();
         newCpuState.regs.rsp() = stack.address();
+        mmu_.setRegionName(stack.address(), fmt::format("Stack of thread {}", newThread->description().tid));
         newCpuState.fsBase = tls;
         long ret = newThread->description().tid;
 
@@ -1593,6 +1594,7 @@ namespace kernel {
         newCpuState.regs.set(x64::R64::RAX, 0);
         newCpuState.regs.rip() = oldCpuState.regs.rip();
         newCpuState.regs.rsp() = stackAddress;
+        mmu_.setRegionName(stackAddress, fmt::format("Stack of thread {}", newThread->description().tid));
         newCpuState.fsBase = tls;
         newThread->setClearChildTid(child_tid);
         long ret = newThread->description().tid;

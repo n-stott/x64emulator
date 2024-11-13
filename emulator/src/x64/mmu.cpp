@@ -215,12 +215,9 @@ namespace x64 {
     }
 
     void Mmu::setRegionName(u64 address, std::string name) {
-        verify(address % PAGE_SIZE == 0, "address must be a multiple of the page size");
-        auto it = std::find_if(regions_.begin(), regions_.end(), [&](const std::unique_ptr<Region>& ptr) {
-            return ptr->base() == address;
-        });
-        verify(it != regions_.end(), "Cannot set name of non-existing region");
-        (*it)->name_ = std::move(name);
+        Region* regionPtr = findAddress(address);
+        verify(!!regionPtr, "Cannot set name of non-existing region");
+        regionPtr->name_ = std::move(name);
     }
 
     bool Mmu::Region::contains(u64 address) const {
