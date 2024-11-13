@@ -2,6 +2,7 @@
 #include "scopeguard.h"
 #include <cassert>
 #include <cstring>
+#include <sstream>
 #include <dirent.h>
 #include <poll.h>
 #include <asm/prctl.h>
@@ -404,7 +405,9 @@ namespace kernel {
             case TIOCSWINSZ: return "TIOCSWINSZ";
             default: break;
         }
-        return "unknown ioctl";
+        std::stringstream ss;
+        ss << "Unknown ioctl" << std::hex << request;
+        return ss.str();
     }
 
     std::optional<size_t> Host::ioctlRequiredBufferSize(unsigned long request) {
