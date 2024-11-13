@@ -12,6 +12,10 @@
 #include <thread>
 #endif
 
+namespace emulator {
+    extern bool signal_interrupt;
+}
+
 namespace kernel {
 
     Scheduler::Scheduler(x64::Mmu& mmu, Kernel& kernel) : mmu_(mmu), kernel_(kernel) { }
@@ -27,7 +31,7 @@ namespace kernel {
     void Scheduler::runOnWorkerThread(int id) {
         (void)id;
         emulator::VM vm(mmu_, kernel_);
-        while(true) {
+        while(!emulator::signal_interrupt) {
             try {
                 Thread* threadToRun = nullptr;
                 {
@@ -91,6 +95,11 @@ namespace kernel {
                 vm.crash();
                 break;
             }
+        }
+
+        if(emulator::signal_interrupt) {
+            kernel_.panic();
+            vm.crash();
         }
 
         // Before the VM dies, we should retrieve the symbols and function names
