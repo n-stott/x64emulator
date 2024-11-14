@@ -73,6 +73,7 @@ namespace kernel {
 
         virtual int fcntl(int cmd, int arg) = 0;
         virtual ErrnoOrBuffer ioctl(unsigned long request, const Buffer& buffer) = 0;
+        virtual ErrnoOrBuffer ioctlWithBufferSizeGuess(unsigned long request, const Buffer& buffer);
 
         virtual std::string className() const = 0;
 

@@ -361,24 +361,41 @@ namespace kernel {
     int Sys::ioctl(int fd, unsigned long request, x64::Ptr argp) {
         // We need to ask the host for the expected buffer size behind argp.
         auto bufferSize = kernel_.host().ioctlRequiredBufferSize(request);
-        verify(!!bufferSize, [&]() {
-            fmt::print("Could not decide buffer size for ioctl {:#x}\n", request);
-        });
-        if(!bufferSize) return -EINVAL;
-        std::vector<u8> buf(bufferSize.value(), 0x0);
-        Buffer buffer(std::move(buf));
-        mmu_.copyFromMmu(buffer.data(), argp, buffer.size());
-        auto errnoOrBuffer = kernel_.fs().ioctl(FS::FD{fd}, request, buffer);
-        if(logSyscalls_) {
-            print("Sys::ioctl(fd={}, request={}, argp={:#x}) = {}\n",
-                        fd, kernel_.host().ioctlName(request), argp.address(),
-                        errnoOrBuffer.errorOrWith<ssize_t>([](const auto& buf) { return (ssize_t)buf.size(); }));
+        if(!!bufferSize) {
+            std::vector<u8> buf(bufferSize.value(), 0x0);
+            Buffer buffer(std::move(buf));
+            mmu_.copyFromMmu(buffer.data(), argp, buffer.size());
+            auto errnoOrBuffer = kernel_.fs().ioctl(FS::FD{fd}, request, buffer);
+            if(logSyscalls_) {
+                print("Sys::ioctl(fd={}, request={}, argp={:#x}) = {}\n",
+                            fd, kernel_.host().ioctlName(request), argp.address(),
+                            errnoOrBuffer.errorOrWith<ssize_t>([](const auto& buf) { return (ssize_t)buf.size(); }));
+            }
+            return errnoOrBuffer.errorOrWith<int>([&](const auto& buffer) {
+                // The buffer returned by ioctl is empty when nothing needs to be written back.
+                mmu_.copyToMmu(argp, buffer.data(), buffer.size());
+                return 0;
+            });
+        } else {
+            const x64::Mmu::Region* regionPtr = static_cast<const x64::Mmu&>(mmu_).findAddress(argp.address());
+            verify(!!regionPtr, "Unable to find region for ioctl");
+            // read no more than 1 page
+            const size_t bufferSize = std::min(x64::Mmu::PAGE_SIZE, regionPtr->end() - argp.address());
+            std::vector<u8> buf(bufferSize);
+            Buffer buffer(std::move(buf));
+            mmu_.copyFromMmu(buffer.data(), argp, buffer.size());
+            auto errnoOrBuffer = kernel_.fs().ioctlWithBufferSizeGuess(FS::FD{fd}, request, buffer);
+            if(logSyscalls_) {
+                print("Sys::ioctl(fd={}, request={}, argp={:#x}) = {}\n",
+                            fd, kernel_.host().ioctlName(request), argp.address(),
+                            errnoOrBuffer.errorOrWith<ssize_t>([](const auto& buf) { return (ssize_t)buf.size(); }));
+            }
+            return errnoOrBuffer.errorOrWith<int>([&](const auto& buffer) {
+                // The buffer returned by ioctl is empty when nothing needs to be written back.
+                mmu_.copyToMmu(argp, buffer.data(), buffer.size());
+                return 0;
+            });
         }
-        return errnoOrBuffer.errorOrWith<int>([&](const auto& buffer) {
-            // The buffer returned by ioctl is empty when nothing needs to be written back.
-            mmu_.copyToMmu(argp, buffer.data(), buffer.size());
-            return 0;
-        });
     }
 
     ssize_t Sys::pread64(int fd, x64::Ptr buf, size_t count, off_t offset) {

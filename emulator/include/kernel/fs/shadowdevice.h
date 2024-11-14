@@ -41,6 +41,7 @@ namespace kernel {
         ErrnoOrBuffer getdents64(size_t count) override;
         int fcntl(int cmd, int arg) override;
         ErrnoOrBuffer ioctl(unsigned long request, const Buffer& buffer) override;
+        ErrnoOrBuffer ioctlWithBufferSizeGuess(unsigned long request, const Buffer& inputBuffer) override;
 
         std::string className() const override {
             return fmt::format("ShadowDevice(realfd={})", hostFd_.value_or(-1));
@@ -49,6 +50,9 @@ namespace kernel {
     protected:
         ShadowDevice(FS* fs, Directory* dir, std::string name, std::optional<int> hostFd) : Device(fs, dir, std::move(name)), hostFd_(hostFd) { }
         std::optional<int> hostFd_ { -1 };
+
+        static std::vector<std::string> allAllowedDevices_;
+        static std::vector<std::string> allCandidateDevices_;
     };
 
 }

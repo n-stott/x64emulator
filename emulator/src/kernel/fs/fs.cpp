@@ -501,6 +501,13 @@ namespace kernel {
         return file->ioctl(request, buffer);
     }
 
+    ErrnoOrBuffer FS::ioctlWithBufferSizeGuess(FD fd, unsigned long request, const Buffer& buffer) {
+        OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
+        if(!openFileDescription) return ErrnoOrBuffer(-EBADF);
+        File* file = openFileDescription->file();
+        return file->ioctlWithBufferSizeGuess(request, buffer);
+    }
+
     int FS::flock(FD fd, int operation) {
         OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
         if(!openFileDescription) return -EBADF;

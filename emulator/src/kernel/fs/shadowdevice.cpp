@@ -1,6 +1,7 @@
 #include "kernel/fs/shadowdevice.h"
 #include "kernel/fs/ttydevice.h"
 #include "kernel/fs/path.h"
+#include "kernel/host.h"
 #include "scopeguard.h"
 #include "verify.h"
 #include <asm/termbits.h>
@@ -11,6 +12,14 @@
 
 namespace kernel {
 
+    std::vector<std::string> ShadowDevice::allAllowedDevices_ { // NOLINT(cert-err58-cpp)
+        "/dev/tty",
+    };
+
+    std::vector<std::string> ShadowDevice::allCandidateDevices_ { // NOLINT(cert-err58-cpp)
+        "/dev/dri/card0", // relevant header is drm/drm.h
+    };
+
     File* ShadowDevice::tryCreateAndAdd(FS* fs, Directory* parent, const std::string& name) {
         std::string pathname;
         if(!parent || parent == fs->root()) {
@@ -19,13 +28,15 @@ namespace kernel {
             pathname = (parent->path() + "/" + name);
         }
 
+        if(std::find(allAllowedDevices_.begin(), allAllowedDevices_.end(), pathname) == allAllowedDevices_.end()) {
+            verify(false, fmt::format("Device {} is not a supported shadow device", pathname));
+        }
+
         if(pathname == "/dev/tty") {
             return TtyDevice::tryCreateAndAdd(fs, parent, name);
         }
 
-        verify(false, "/dev/tty is the only supported shadow device");
-
-        int flags = O_RDONLY | O_CLOEXEC;
+        int flags = O_RDWR | O_CLOEXEC;
         int fd = ::openat(AT_FDCWD, pathname.c_str(), flags);
         if(fd < 0) {
             verify(false, "ShadowDevice without host backer is not implemented");
@@ -88,8 +99,7 @@ namespace kernel {
     }
 
     ErrnoOrBuffer ShadowDevice::stat() {
-        verify(false, "ShadowDevice::stat not implemented");
-        return ErrnoOrBuffer(-ENOTSUP);
+        return Host::stat(path());
     }
 
     ErrnoOrBuffer ShadowDevice::statfs() {
@@ -139,6 +149,29 @@ namespace kernel {
         }
         verify(false, fmt::format("ShadowDevice::ioctl({:#x}) not implemented", request));
         return ErrnoOrBuffer(-ENOTSUP);
+    }
+
+    ErrnoOrBuffer ShadowDevice::ioctlWithBufferSizeGuess(unsigned long request, const Buffer& inputBuffer) {
+        if(!hostFd_) {
+            verify(false, "ShadowDevice without host backer is not implemented");
+            return ErrnoOrBuffer(-ENOTSUP);
+        }
+        auto guessedSize = Host::tryGuessIoctlBufferSize(Host::FD{hostFd_.value()}, request, inputBuffer.data(), inputBuffer.size());
+        if(!guessedSize) {
+            verify(false, "Unable to guess size");
+            return ErrnoOrBuffer(-ENOTSUP);
+        } else {
+            fmt::print("Guessed size={} (max={})\n", guessedSize.value(), inputBuffer.size());
+            ssize_t sizeOrErrno = guessedSize.value();
+            if(sizeOrErrno < 0) {
+                return ErrnoOrBuffer((int)sizeOrErrno);
+            } else {
+                std::vector<u8> buffer(sizeOrErrno);
+                int ret = ::ioctl(hostFd_.value(), request, buffer.data());
+                verify(ret == 0, "ioctl succeeded during guess, it should succeed now ?");
+                return ErrnoOrBuffer(Buffer(std::move(buffer)));
+            }
+        }
     }
 
 }

@@ -1,5 +1,6 @@
 #include "kernel/fs/file.h"
 #include "kernel/fs/directory.h"
+#include "verify.h"
 #include <sstream>
 #include <string>
 #include <vector>
@@ -21,6 +22,11 @@ namespace kernel {
         }
         ss << '/' << name_;
         return ss.str();
+    }
+
+    ErrnoOrBuffer File::ioctlWithBufferSizeGuess(unsigned long request, const Buffer&) {
+        verify(false, fmt::format("File::ioctlWithBufferSizeGuess(request={:#x}) not implemented for file type {}\n", request, className()));
+        return ErrnoOrBuffer(-ENOTSUP);
     }
 
 }

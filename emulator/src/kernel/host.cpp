@@ -412,8 +412,88 @@ namespace kernel {
             default: break;
         }
         std::stringstream ss;
-        ss << "Unknown ioctl" << std::hex << request;
+        ss << "Unknown ioctl 0x" << std::hex << request;
         return ss.str();
+    }
+
+    std::optional<ssize_t> Host::tryGuessIoctlBufferSize(FD fd, unsigned long request, const u8* data, size_t size) {
+
+        class PageBoundary {
+        public:
+            static std::optional<PageBoundary> tryCreate() {
+                const size_t PAGE_SIZE = 0x1000;
+                char* ptr = (char*)::mmap(nullptr, 2*PAGE_SIZE, PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_PRIVATE, -1, 0);
+                if(ptr != (char*)MAP_FAILED) {
+                    return std::optional<PageBoundary>(PageBoundary(ptr));
+                } else {
+                    return {};
+                }
+            }
+
+            PageBoundary(PageBoundary&& pb) noexcept : ptr_(pb.ptr_) {
+                pb.ptr_ = nullptr;
+            }
+
+            ~PageBoundary() {
+                if(!!ptr_) {
+                    int ret = ::munmap(ptr_, 2*PAGE_SIZE);
+                    if(ret < 0) {
+                        perror("PageBoundary::munmap");
+                    }
+                }
+            }
+
+            void* get(size_t readableBytes) {
+                assert(readableBytes < PAGE_SIZE);
+                return boundary() - readableBytes;
+            }
+
+            size_t availableSize() const {
+                return PAGE_SIZE;
+            }
+
+            [[nodiscard]] bool tryLock() {
+                if(::mprotect(boundary(), PAGE_SIZE, PROT_NONE) < 0) {
+                    perror("lock");
+                    return false;
+                }
+                return true;
+            }
+
+            [[nodiscard]] bool tryUnlock() {
+                if(::mprotect(boundary(), PAGE_SIZE, PROT_READ|PROT_WRITE) < 0) {
+                    perror("unlock");
+                    return false;
+                }
+                return true;
+            }
+
+        private:
+            PageBoundary(char* ptr) : ptr_(ptr) { }
+            char* boundary() { return ptr_ + PAGE_SIZE; }
+            char* ptr_ { nullptr };
+            const size_t PAGE_SIZE = 0x1000;
+        };
+
+
+        std::optional<PageBoundary> boundary = PageBoundary::tryCreate();
+        if(!boundary) return {};
+        if(size > boundary->availableSize()) return {};
+
+        for(size_t s = 1; s <= size; ++s) {
+            void* ptr = boundary->get(s);
+            ::memcpy(ptr, data, s);
+            if(!boundary->tryLock()) return {};
+            int ret = ::ioctl(fd.fd, request, ptr);
+            if(ret < 0) {
+                if(errno != EFAULT) return -errno;
+                if(!boundary->tryUnlock()) return {};
+                continue;
+            } else {
+                return (ssize_t)s;
+            }
+        }
+        return {};
     }
 
     std::optional<size_t> Host::ioctlRequiredBufferSize(unsigned long request) {

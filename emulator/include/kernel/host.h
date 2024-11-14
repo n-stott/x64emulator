@@ -173,6 +173,7 @@ namespace kernel {
 
         static std::string ioctlName(unsigned long request);
         static std::optional<size_t> ioctlRequiredBufferSize(unsigned long request);
+        static std::optional<ssize_t> tryGuessIoctlBufferSize(FD fd, unsigned long request, const u8* data, size_t size);
 
         static ErrnoOrBuffer sysinfo();
         static int getuid();

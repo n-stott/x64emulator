@@ -93,6 +93,7 @@ namespace kernel {
         ErrnoOrBuffer getdents64(FD fd, size_t count);
         int fcntl(FD fd, int cmd, int arg);
         ErrnoOrBuffer ioctl(FD fd, unsigned long request, const Buffer& buffer);
+        ErrnoOrBuffer ioctlWithBufferSizeGuess(FD fd, unsigned long request, const Buffer& buffer);
 
         int flock(FD fd, int operation);
 
