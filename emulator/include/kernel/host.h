@@ -19,6 +19,7 @@ namespace kernel {
         ~Host();
 
         // math
+        static i64 roundWithoutTruncation(f64);
         static f80 round(f80);
 
         template<typename U>

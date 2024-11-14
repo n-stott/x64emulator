@@ -2501,6 +2501,21 @@ namespace x64 {
 #endif
     }
 
+    u64 CheckedCpuImpl::cvtsd2si64(u64 src, SIMD_ROUNDING rounding) {
+#if GCC_COMPILER
+        u64 virtualRes = CpuImpl::cvtsd2si64(src, rounding);
+        (void)virtualRes;
+
+        u64 nativeRes = 0;
+        asm volatile("cvtsd2si %1, %0" : "+r"(nativeRes) : "m"(src));
+        assert(nativeRes == virtualRes);
+        
+        return nativeRes;
+#else
+        return CpuImpl::cvtsd2si64(src, rounding);
+#endif
+    }
+
     u128 CheckedCpuImpl::cvttps2dq(u128 src) {
 #if GCC_COMPILER
         u128 virtualRes = CpuImpl::cvttps2dq(src);

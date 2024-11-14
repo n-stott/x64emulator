@@ -3,6 +3,13 @@
 #include <cmath>
 #include <cstring>
 
+// LOL, std::round does not take rounding mode into account.
+// It rounds away from 0 for midpoints, instead of towards even.
+// We let the host do this work instead.
+i64 F64::round(f64 val) {
+    return kernel::Host::roundWithoutTruncation(val);
+}
+
 F80 F80::fromLongDouble(long double d) {
     F80 f;
     std::memcpy(&f, &d, sizeof(f));

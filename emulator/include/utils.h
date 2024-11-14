@@ -21,6 +21,10 @@ using u128 = Xmm;
 using f32 = float;
 using f64 = double;
 
+struct F64 {
+    static i64 round(f64 val);
+};
+
 struct F80 {
     u8 val[10];
 

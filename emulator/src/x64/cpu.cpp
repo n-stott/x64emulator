@@ -613,6 +613,8 @@ namespace x64 {
             case Insn::CVTSI2SD_RSSE_RM64: return exec(Cvtsi2sd<RSSE, RM64>{insn.op0<RSSE>(), insn.op1<RM64>()});
             case Insn::CVTSS2SD_RSSE_RSSE: return exec(Cvtss2sd<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
             case Insn::CVTSS2SD_RSSE_M32: return exec(Cvtss2sd<RSSE, M32>{insn.op0<RSSE>(), insn.op1<M32>()});
+            case Insn::CVTSD2SI_R64_RSSE: return exec(Cvtsd2si<R64, RSSE>{insn.op0<R64>(), insn.op1<RSSE>()});
+            case Insn::CVTSD2SI_R64_M64: return exec(Cvtsd2si<R64, M64>{insn.op0<R64>(), insn.op1<M64>()});
             case Insn::CVTSD2SS_RSSE_RSSE: return exec(Cvtsd2ss<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
             case Insn::CVTSD2SS_RSSE_M64: return exec(Cvtsd2ss<RSSE, M64>{insn.op0<RSSE>(), insn.op1<M64>()});
             case Insn::CVTTPS2DQ_RSSE_RMSSE: return exec(Cvttps2dq<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
@@ -2336,6 +2338,14 @@ namespace x64 {
     void Cpu::exec(const Cvtss2sd<RSSE, M32>& ins) {
         u128 res = Impl::cvtss2sd(get(ins.dst), zeroExtend<u128, u32>(get(resolve(ins.src))));
         set(ins.dst, res);
+    }
+
+    void Cpu::exec(const Cvtsd2si<R64, RSSE>& ins) {
+        set(ins.dst, Impl::cvtsd2si64(get(ins.src).lo, simdRoundingMode()));
+    }
+
+    void Cpu::exec(const Cvtsd2si<R64, M64>& ins) {
+        set(ins.dst, Impl::cvtsd2si64(get(resolve(ins.src)), simdRoundingMode()));
     }
 
     void Cpu::exec(const Cvtsd2ss<RSSE, RSSE>& ins) {

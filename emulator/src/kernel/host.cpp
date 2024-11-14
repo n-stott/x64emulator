@@ -28,6 +28,12 @@ namespace kernel {
 
     Host::Host() = default;
     Host::~Host() = default; // NOLINT(performance-trivially-destructible)
+    
+    i64 Host::roundWithoutTruncation(f64 src) {
+        i64 res = 0;
+        asm volatile("cvtsd2si %1, %0" : "+r"(res) : "m"(src));
+        return res;
+    }
 
     f80 Host::round(f80 val) {
         long double x = f80::toLongDouble(val);
