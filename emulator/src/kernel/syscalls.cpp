@@ -249,7 +249,7 @@ namespace kernel {
             auto errnoOrBufferAndReturnValue = kernel_.fs().pollImmediate(pollfds);
             if(logSyscalls_) {
                 print("Sys::poll(fds={:#x}, nfds={}, timeout={}) = {}\n",
-                            fds.address(), nfds, timeout, errnoOrBufferAndReturnValue.errorOrWith<int>([](const auto&){ return 0; }));
+                            fds.address(), nfds, timeout, errnoOrBufferAndReturnValue.errorOr(0));
             }
             return errnoOrBufferAndReturnValue.errorOrWith<int>([&](const auto& bufferAndRetVal) {
                 mmu_.copyToMmu(fds, bufferAndRetVal.buffer.data(), bufferAndRetVal.buffer.size());

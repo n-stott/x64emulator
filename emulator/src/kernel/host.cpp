@@ -409,6 +409,7 @@ namespace kernel {
             case FIONCLEX: return "FIONCLEX";
             case TIOCGWINSZ: return "TIOCGWINSZ";
             case TIOCSWINSZ: return "TIOCSWINSZ";
+            case TIOCGPGRP: return "TIOCGPGRP";
             default: break;
         }
         std::stringstream ss;
