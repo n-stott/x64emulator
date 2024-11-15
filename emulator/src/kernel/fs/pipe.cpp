@@ -1,4 +1,5 @@
 #include "kernel/fs/pipe.h"
+#include "kernel/fs/openfiledescription.h"
 #include "kernel/host.h"
 #include "verify.h"
 #include <sys/errno.h>
@@ -42,8 +43,11 @@ namespace kernel {
         return true;
     }
 
-    ErrnoOrBuffer Pipe::read(size_t size) {
-        verify(!data_.empty(), "Reading from empty pipe (possibly blocking) not implemented");
+    ErrnoOrBuffer Pipe::read(OpenFileDescription& openFileDescription, size_t size) {
+        verify(!data_.empty(), [&]() {
+            fmt::print("Reading from empty pipe not implemented\n");
+            fmt::print("Pipe is non-blocking: {}\n", openFileDescription.flags().test(OpenFileDescription::StatusFlags::NONBLOCK));
+        });
         size_t readSize = std::min(size, data_.size());
         std::vector<u8> buf(readSize, 0x0);
         std::copy(data_.begin(), data_.begin() + (off64_t)readSize, buf.begin());
@@ -54,17 +58,17 @@ namespace kernel {
     bool PipeEndpoint::canRead() const { return pipe_->canRead(); }
     bool PipeEndpoint::canWrite() const { return pipe_->canWrite(); }
     
-    ErrnoOrBuffer PipeEndpoint::read(OpenFileDescription&, size_t size) {
-        return pipe_->read(size);
+    ErrnoOrBuffer PipeEndpoint::read(OpenFileDescription& openFileDescription, size_t size) {
+        return pipe_->read(openFileDescription, size);
     }
 
-    ssize_t Pipe::write(const u8* buf, size_t size) {
+    ssize_t Pipe::write(OpenFileDescription&, const u8* buf, size_t size) {
         data_.insert(data_.end(), buf, buf+size);
         return (ssize_t)size;
     }
     
-    ssize_t PipeEndpoint::write(OpenFileDescription&, const u8* buf, size_t size) {
-        return pipe_->write(buf, size);
+    ssize_t PipeEndpoint::write(OpenFileDescription& openFileDescription, const u8* buf, size_t size) {
+        return pipe_->write(openFileDescription, buf, size);
     }
 
     off_t PipeEndpoint::lseek(off_t, int) {

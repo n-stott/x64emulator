@@ -29,8 +29,8 @@ namespace kernel {
         bool canRead() const;
         bool canWrite() const;
 
-        ErrnoOrBuffer read(size_t size);
-        ssize_t write(const u8* buf, size_t size);
+        ErrnoOrBuffer read(OpenFileDescription&, size_t size);
+        ssize_t write(OpenFileDescription&, const u8* buf, size_t size);
 
     private:
         Pipe(FS* fs, int flags) : FsObject(fs), flags_(flags) { }
