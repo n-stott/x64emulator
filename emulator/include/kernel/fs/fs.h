@@ -209,6 +209,7 @@ namespace kernel {
         FD insertNode(std::unique_ptr<File> file, bool closeOnExec);
         FD allocateFd();
 
+        OpenNode* findOpenNode(FD fd);
         OpenFileDescription* findOpenFileDescription(FD fd);
 
         Kernel& kernel_;

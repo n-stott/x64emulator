@@ -398,6 +398,14 @@ namespace kernel {
         return insertNode(std::move(shadowFile), Host::MemfdFlags::isCloseOnExec(flags));
     }
 
+    FS::OpenNode* FS::findOpenNode(FD fd) {
+        for(OpenNode& node : openFiles_) {
+            if(node.fd != fd) continue;
+            return &node;
+        }
+        return nullptr;
+    }
+
     OpenFileDescription* FS::findOpenFileDescription(FD fd) {
         for(OpenNode& node : openFiles_) {
             if(node.fd != fd) continue;
@@ -531,8 +539,16 @@ namespace kernel {
     int FS::fcntl(FD fd, int cmd, int arg) {
         OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
         if(!openFileDescription) return -EBADF;
+        if(cmd == F_DUPFD) {
+            FD newfd = dup(fd);
+            return newfd.fd;
+        }
         if(cmd == F_DUPFD_CLOEXEC) {
-            return dup(fd).fd;
+            FD newfd = dup(fd);
+            OpenNode* newNode = findOpenNode(newfd);
+            verify(!!newNode);
+            newNode->closeOnExec = true;
+            return newfd.fd;
         }
         File* file = openFileDescription->file();
         return file->fcntl(cmd, arg);
