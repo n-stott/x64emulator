@@ -524,6 +524,7 @@ namespace kernel {
     int FS::fcntl(FD fd, int cmd, int arg) {
         OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
         if(!openFileDescription) return -EBADF;
+        // If we can do it in FS alone, do it here
         if(cmd == F_DUPFD) {
             FD newfd = dup(fd);
             return newfd.fd;
@@ -535,6 +536,35 @@ namespace kernel {
             newNode->closeOnExec = true;
             return newfd.fd;
         }
+        if(cmd == F_GETFD) {
+            OpenNode* node = findOpenNode(fd);
+            verify(!!node);
+            return node->closeOnExec ? FD_CLOEXEC : 0;
+        }
+        if(cmd == F_SETFD) {
+            OpenNode* node = findOpenNode(fd);
+            verify(!!node);
+            bool currentFlag = node->closeOnExec;
+            if(Host::Open::isCloseOnExec(arg) && !currentFlag) node->closeOnExec = true;
+            if(!Host::Open::isCloseOnExec(arg) && currentFlag) node->closeOnExec = false;
+            return 0;
+        }
+        // If the open file description is sufficient, do it there
+        if(cmd == F_GETFL) {
+            return assembleAccessModeAndFileStatusFlags(openFileDescription->accessMode(), openFileDescription->statusFlags());
+        }
+        if(cmd == F_SETFL) {
+            verify(!Host::Open::isAppending(arg), "changing append flag is not supported");
+            auto currentFlags = openFileDescription->statusFlags();
+            if(Host::Open::isNonBlock(arg) && !currentFlags.test(StatusFlags::NONBLOCK)) {
+                openFileDescription->statusFlags().add(StatusFlags::NONBLOCK);
+            }
+            if(!Host::Open::isNonBlock(arg) && currentFlags.test(StatusFlags::NONBLOCK)) {
+                openFileDescription->statusFlags().remove(StatusFlags::NONBLOCK);
+            }
+            return 0;
+        }
+        // Otherwise, go ask the file
         File* file = openFileDescription->file();
         return file->fcntl(cmd, arg);
     }
@@ -826,6 +856,33 @@ namespace kernel {
             fmt::print("  fd={} : type={:20} path={}\n", openFile.fd.fd, openFile.openFiledescription->toString(), openFile.openFiledescription->file()->path());
         }
         root_->printSubtree();
+    }
+
+    int FS::assembleAccessModeAndFileStatusFlags(BitFlags<AccessMode> accessMode, BitFlags<StatusFlags> statusFlags) {
+        int ret = 0;
+        bool read = accessMode.test(AccessMode::READ);
+        bool write = accessMode.test(AccessMode::WRITE);
+        assert(read | write); // cannot have none
+        if(read && write) {
+            ret = 2;
+        } else if(write) {
+            ret = 1;
+        } else {
+            ret = 0;
+        }
+        auto getActiveBit = [](bool(*func)(int)) -> int {
+            for(int i = 0; i < 32; ++i) {
+                int mask = 1 << i;
+                if(func(mask)) return mask;
+            }
+            assert(false);
+            return 0;
+        };
+        // Quick and dirty: do it by asking the host for each bit
+        // see toStatusFlags
+        if(statusFlags.test(StatusFlags::APPEND))    ret |= getActiveBit(&Host::Open::isAppending);
+        if(statusFlags.test(StatusFlags::NONBLOCK))  ret |= getActiveBit(&Host::Open::isNonBlock);
+        return ret;
     }
 
 }

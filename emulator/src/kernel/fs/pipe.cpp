@@ -44,8 +44,10 @@ namespace kernel {
     }
 
     ErrnoOrBuffer Pipe::read(OpenFileDescription& openFileDescription, size_t size) {
+        bool nonBlocking = openFileDescription.statusFlags().test(FS::StatusFlags::NONBLOCK);
+        if(data_.empty() && nonBlocking) return ErrnoOrBuffer(Buffer{});
         verify(!data_.empty(), [&]() {
-            fmt::print("Reading from empty pipe not implemented\n");
+            fmt::print("Reading from blocking empty pipe not implemented\n");
             fmt::print("Pipe is non-blocking: {}\n", openFileDescription.statusFlags().test(FS::StatusFlags::NONBLOCK));
         });
         size_t readSize = std::min(size, data_.size());
@@ -91,22 +93,6 @@ namespace kernel {
     }
 
     int PipeEndpoint::fcntl(int cmd, int arg) {
-        if(Host::Fcntl::isGetFd(cmd)) {
-            // TODO
-            return 0;
-        }
-        if(Host::Fcntl::isSetFd(cmd)) {
-            // TODO
-            return 0;
-        }
-        if(Host::Fcntl::isGetFl(cmd)) {
-            // TODO
-            return 0;
-        }
-        if(Host::Fcntl::isSetFl(cmd)) {
-            // TODO
-            return 0;
-        }
         verify(false, fmt::format("fcntl(cmd={}, arg={}) not implemented on PipeEndpoint", cmd, arg));
         return -ENOTSUP;
     }

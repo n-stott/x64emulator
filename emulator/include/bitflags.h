@@ -38,6 +38,10 @@ public:
         flags_ |= ((underlying_t)flag);
     }
 
+    void remove(E flag) {
+        flags_ &= ~((underlying_t)flag);
+    }
+
     bool test(E flag) const {
         return flags_ & ((underlying_t)flag);
     }

@@ -211,6 +211,8 @@ namespace kernel {
         OpenNode* findOpenNode(FD fd);
         OpenFileDescription* findOpenFileDescription(FD fd);
 
+        static int assembleAccessModeAndFileStatusFlags(BitFlags<AccessMode>, BitFlags<StatusFlags>);
+
         Kernel& kernel_;
         std::unique_ptr<Directory> root_;
         TtyDevice* tty_ { nullptr };
