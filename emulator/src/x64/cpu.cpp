@@ -5,10 +5,9 @@
 #include "x64/cpuimpl.h"
 #endif
 #include "x64/mmu.h"
-#include "kernel/syscalls.h"
+#include "emulator/vm.h"
 #include "kernel/host.h"
 #include "verify.h"
-#include "emulator/vm.h"
 #include <fmt/core.h>
 #include <cassert>
 
