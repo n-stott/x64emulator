@@ -2,6 +2,7 @@
 #define OPENFILEDESCRIPTION_H
 
 #include "kernel/fs/file.h"
+#include "bitflags.h"
 #include "verify.h"
 
 namespace kernel {
@@ -10,8 +11,19 @@ namespace kernel {
 
     class OpenFileDescription {
     public:
-        struct Flags {
-
+        // keep aligned with FS::StatusFlags
+        enum class StatusFlags {
+            APPEND    = (1 << 0),
+            ASYNC     = (1 << 1),
+            DIRECT    = (1 << 2),
+            DSYNC     = (1 << 3),
+            LARGEFILE = (1 << 4),
+            NDELAY    = (1 << 5),
+            NOATIME   = (1 << 6),
+            NONBLOCK  = (1 << 7),
+            PATH      = (1 << 8),
+            RDWR      = (1 << 9),
+            SYNC      = (1 << 10),
         };
 
         enum class Lock {
@@ -25,11 +37,12 @@ namespace kernel {
             YES,
         };
 
-        explicit OpenFileDescription(File* file, Flags flags) : file_(file), flags_(flags) {
+        explicit OpenFileDescription(File* file, BitFlags<StatusFlags> flags) : file_(file), flags_(flags) {
             (void)flags_;
         }
 
         File* file() { return file_; }
+        BitFlags<StatusFlags>& flags() { return flags_; }
         
         bool isLockedExclusively() const { return lock_ == Lock::EXCLUSIVE; }
         bool isLockedShared() const { return lock_ == Lock::SHARED; }
@@ -83,7 +96,7 @@ namespace kernel {
     private:
         File* file_ { nullptr };
         off_t offset_ { 0 };
-        Flags flags_;
+        BitFlags<StatusFlags> flags_;
         Lock lock_ { Lock::NONE };
     };
 

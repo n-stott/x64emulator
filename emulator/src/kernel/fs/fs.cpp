@@ -33,15 +33,15 @@ namespace kernel {
     
 
     void FS::createStandardStreams() {
-        OpenFlags openFlags;
-        openFlags.read = true;
-        openFlags.write = true;
+        BitFlags<AccessMode> accessMode { AccessMode::READ, AccessMode::WRITE };
+        BitFlags<CreationFlags> creationFlags {};
+        BitFlags<StatusFlags> statusFlags {};
         Permissions permissions;
         permissions.userReadable = true;
         permissions.userWriteable = true;
-        FD stdinFd = open(FD{-100}, "/dev/tty", openFlags, permissions);
-        FD stdoutFd = open(FD{-100}, "/dev/tty", openFlags, permissions);
-        FD stderrFd = open(FD{-100}, "/dev/tty", openFlags, permissions);
+        FD stdinFd = open(FD{-100}, "/dev/tty", accessMode, creationFlags, statusFlags, permissions);
+        FD stdoutFd = open(FD{-100}, "/dev/tty", accessMode, creationFlags, statusFlags, permissions);
+        FD stderrFd = open(FD{-100}, "/dev/tty", accessMode, creationFlags, statusFlags, permissions);
         verify(stdinFd.fd == 0, "stdin must have fd 0");
         verify(stdoutFd.fd == 1, "stdout must have fd 1");
         verify(stderrFd.fd == 2, "stderr must have fd 2");
@@ -62,16 +62,38 @@ namespace kernel {
 
     FS::~FS() = default;
 
-    FS::OpenFlags FS::fromFlags(int flags) {
-        return OpenFlags {
-            Host::Open::isReadable(flags),
-            Host::Open::isWritable(flags),
-            Host::Open::isAppending(flags),
-            Host::Open::isTruncating(flags),
-            Host::Open::isCreatable(flags),
-            Host::Open::isCloseOnExec(flags),
-            Host::Open::isDirectory(flags),
-        };
+    BitFlags<FS::AccessMode> FS::toAccessMode(int flags) {
+        BitFlags<AccessMode> am;
+        if(Host::Open::isReadable(flags)) am.add(AccessMode::READ);
+        if(Host::Open::isWritable(flags)) am.add(AccessMode::WRITE);
+        return am;
+    }
+
+    BitFlags<FS::CreationFlags> FS::toCreationFlags(int flags) {
+        BitFlags<CreationFlags> cf;
+        if(Host::Open::isCloseOnExec(flags)) cf.add(CreationFlags::CLOEXEC);
+        if(Host::Open::isCreatable(flags))   cf.add(CreationFlags::CREAT);
+        if(Host::Open::isDirectory(flags))   cf.add(CreationFlags::DIRECTORY);
+        // EXCL      // not supported
+        // NOCTTY    // not supported
+        // NOFOLLOW  // not supported
+        // TMPFILE   // not supported
+        if(Host::Open::isTruncating(flags))  cf.add(CreationFlags::TRUNC);
+        return cf;
+    }
+
+    BitFlags<FS::StatusFlags> FS::toStatusFlags(int flags) {
+        BitFlags<StatusFlags> sf;
+        if(Host::Open::isAppending(flags)) sf.add(StatusFlags::APPEND);
+        // ASYNC     // not supported
+        // DIRECT    // not supported
+        // DSYNC     // not supported
+        // LARGEFILE // not supported
+        // NOATIME   // not supported
+        // NONBLOCK  // not supported
+        // PATH      // not supported
+        // SYNC      // not supported
+        return sf;
     }
 
     FS::Permissions FS::fromMode(unsigned int mode) {
@@ -82,20 +104,12 @@ namespace kernel {
         };
     }
 
-    FS::FD FS::insertNode(std::unique_ptr<File> file) {
+    FS::FD FS::insertNode(std::unique_ptr<File> file, bool closeOnExec) {
         File* filePtr = file.get();
         orphanFiles_.push_back(std::move(file));
         FD fd = allocateFd();
-        openFileDescriptions_.push_back(OpenFileDescription(filePtr, {}));
-        openFiles_.push_back(OpenNode{fd, "", &openFileDescriptions_.back()});
-        filePtr->ref();
-        return fd;
-    }
-
-    FS::FD FS::openNode(File* filePtr) {
-        FD fd = allocateFd();
-        openFileDescriptions_.push_back(OpenFileDescription(filePtr, {}));
-        openFiles_.push_back(OpenNode{fd, "", &openFileDescriptions_.back()});
+        openFileDescriptions_.push_back(OpenFileDescription(filePtr, BitFlags<OpenFileDescription::StatusFlags>{}));
+        openFiles_.push_back(OpenNode{fd, &openFileDescriptions_.back(), closeOnExec});
         filePtr->ref();
         return fd;
     }
@@ -107,16 +121,6 @@ namespace kernel {
         });
         int fd = (it == openFiles_.end()) ? 0 : it->fd.fd+1;
         return FD{fd};
-    }
-
-    FS::FD FS::insertNodeWithFd(std::unique_ptr<File> file, FD fd) {
-        OpenFileDescription* openFileDescriptionWithExistingFD = findOpenFileDescription(fd);
-        verify(!openFileDescriptionWithExistingFD, [&]() {
-            fmt::print("cannot insert node with existing fd {}\n", fd.fd);
-        });
-        FD givenFd = insertNode(std::move(file));
-        verify(givenFd == fd);
-        return fd;
     }
 
     std::string FS::toAbsolutePathname(const std::string& pathname) const {
@@ -194,29 +198,63 @@ namespace kernel {
         return file;
     }
 
-    FS::FD FS::open(FD dirfd, const std::string& pathname, OpenFlags flags, Permissions permissions) {
+    FS::FD FS::open(FD dirfd,
+            const std::string& pathname,
+            BitFlags<FS::AccessMode> accessMode,
+            BitFlags<FS::CreationFlags> creationFlags,
+            BitFlags<FS::StatusFlags> statusFlags,
+            Permissions permissions) {
         (void)permissions;
         if(pathname.empty()) return FD{-ENOENT};
         bool canUseHostFile = true;
-        if(flags.append || flags.create || flags.truncate || flags.write) canUseHostFile = false;
+        if(accessMode.test(AccessMode::WRITE))       canUseHostFile = false;
+        if(creationFlags.test(CreationFlags::CREAT)) canUseHostFile = false;
+        if(creationFlags.test(CreationFlags::TRUNC)) canUseHostFile = false;
+        if(statusFlags.test(StatusFlags::APPEND))    canUseHostFile = false;
 
         // Look if the file is already present in FS, open or closed.
         auto absolutePathname = toAbsolutePathname(pathname, dirfd);
         auto path = Path::tryCreate(absolutePathname);
         verify(!!path, "Unable to create path");
+
+        bool closeOnExec = creationFlags.test(CreationFlags::CLOEXEC);
+
+        auto toOpenFileStatusFlags = [](BitFlags<StatusFlags> flags) -> BitFlags<OpenFileDescription::StatusFlags> {
+            BitFlags<OpenFileDescription::StatusFlags> ofdsf;
+            if(flags.test(StatusFlags::APPEND))    ofdsf.add(OpenFileDescription::StatusFlags::APPEND);
+            if(flags.test(StatusFlags::ASYNC))     ofdsf.add(OpenFileDescription::StatusFlags::ASYNC);
+            if(flags.test(StatusFlags::DIRECT))    ofdsf.add(OpenFileDescription::StatusFlags::DIRECT);
+            if(flags.test(StatusFlags::DSYNC))     ofdsf.add(OpenFileDescription::StatusFlags::DSYNC);
+            if(flags.test(StatusFlags::LARGEFILE)) ofdsf.add(OpenFileDescription::StatusFlags::LARGEFILE);
+            if(flags.test(StatusFlags::NDELAY))    ofdsf.add(OpenFileDescription::StatusFlags::NDELAY);
+            if(flags.test(StatusFlags::NOATIME))   ofdsf.add(OpenFileDescription::StatusFlags::NOATIME);
+            if(flags.test(StatusFlags::NONBLOCK))  ofdsf.add(OpenFileDescription::StatusFlags::NONBLOCK);
+            if(flags.test(StatusFlags::PATH))      ofdsf.add(OpenFileDescription::StatusFlags::PATH);
+            if(flags.test(StatusFlags::RDWR))      ofdsf.add(OpenFileDescription::StatusFlags::RDWR);
+            if(flags.test(StatusFlags::SYNC))      ofdsf.add(OpenFileDescription::StatusFlags::SYNC);
+            return ofdsf;
+        };
+
+        auto openNode = [&](File* filePtr) -> FD {
+            FD fd = allocateFd();
+            BitFlags<OpenFileDescription::StatusFlags> openFileDescriptionStatusFlags
+                    = toOpenFileStatusFlags(statusFlags);
+            openFileDescriptions_.push_back(OpenFileDescription(filePtr, openFileDescriptionStatusFlags));
+            openFiles_.push_back(OpenNode{fd, &openFileDescriptions_.back(), closeOnExec});
+            filePtr->ref();
+            return fd;
+        };
         
         File* file = tryGetFile(*path);
         if(!!file) {
-            FD fd = allocateFd();
-            file->ref();
-            openFileDescriptions_.push_back(OpenFileDescription { file, {} });
-            openFiles_.push_back(OpenNode{fd, "", &openFileDescriptions_.back()});
+            FD fd = openNode(file);
             file->open();
             return fd;
         }
 
+        // Otherwise, try to create it
         if(canUseHostFile) {
-            if(flags.directory) {
+            if(creationFlags.test(CreationFlags::DIRECTORY)) {
                 // open the directory
                 auto hostBackedDirectory = HostDirectory::tryCreate(this, root_.get(), absolutePathname);
                 if(!hostBackedDirectory) {
@@ -226,14 +264,14 @@ namespace kernel {
                 
                 // create and add the node to the filesystem
                 hostBackedDirectory->open();
-                return insertNode(std::move(hostBackedDirectory));
+                return insertNode(std::move(hostBackedDirectory), closeOnExec);
             } else {
                 // try open the directory
                 auto hostBackedDirectory = HostDirectory::tryCreate(this, root_.get(), absolutePathname);
                 if(!!hostBackedDirectory) {
                     // create and add the node to the filesystem
                     hostBackedDirectory->open();
-                    return insertNode(std::move(hostBackedDirectory));
+                    return insertNode(std::move(hostBackedDirectory), closeOnExec);
                 }
 
                 // try open the file
@@ -257,11 +295,12 @@ namespace kernel {
             }
         } else {
             // open the file
-            auto* shadowFile = ShadowFile::tryCreateAndAdd(this, root_.get(), absolutePathname, flags.create);
+            bool createIfNotFound = creationFlags.test(CreationFlags::CREAT);
+            auto* shadowFile = ShadowFile::tryCreateAndAdd(this, root_.get(), absolutePathname, createIfNotFound);
             if(!!shadowFile) {
-                if(flags.truncate) shadowFile->truncate(0);
-                if(flags.append) shadowFile->append();
-                shadowFile->setWritable(flags.write);
+                if(creationFlags.test(CreationFlags::TRUNC)) shadowFile->truncate(0);
+                if(statusFlags.test(StatusFlags::APPEND)) shadowFile->append();
+                shadowFile->setWritable(accessMode.test(AccessMode::WRITE));
                 
                 // create and add the node to the filesystem
                 shadowFile->open();
@@ -287,8 +326,7 @@ namespace kernel {
         if(!openFileDescription) return FD{-EBADF};
         FD newFd = allocateFd();
         openFileDescription->file()->ref();
-        std::string path = filename(fd);
-        openFiles_.push_back(OpenNode{newFd, std::move(path), openFileDescription});
+        openFiles_.push_back(OpenNode{newFd, openFileDescription, false});
         return newFd;
     }
 
@@ -302,8 +340,7 @@ namespace kernel {
             verify(ret == 0, "close in dup2 failed");
         }
         oldOfd->file()->ref();
-        std::string path = filename(oldfd);
-        openFiles_.push_back(OpenNode{newfd, std::move(path), oldOfd});
+        openFiles_.push_back(OpenNode{newfd, oldOfd, false});
         return newfd;
     }
 
@@ -356,9 +393,9 @@ namespace kernel {
     }
 
     FS::FD FS::memfd_create(const std::string& name, unsigned int flags) {
-        verify((flags & ~0x3U) == 0, "Allow (and ignore) cloexec and allow_sealing");
+        verify(!Host::MemfdFlags::isOther(flags), "Allow (and ignore) cloexec and allow_sealing");
         auto shadowFile = ShadowFile::tryCreate(this, name);
-        return insertNode(std::move(shadowFile));
+        return insertNode(std::move(shadowFile), Host::MemfdFlags::isCloseOnExec(flags));
     }
 
     OpenFileDescription* FS::findOpenFileDescription(FD fd) {
@@ -564,20 +601,31 @@ namespace kernel {
     }
 
     FS::FD FS::eventfd2(unsigned int initval, int flags) {
+        verify(!Host::Eventfd2Flags::isOther(flags), "only closeOnExec and nonBlock are allowed on eventfd2");
         std::unique_ptr<Event> event = Event::tryCreate(this, initval, flags);
-        return insertNode(std::move(event));
+        verify(!!event, "Unable to create event");
+        bool closeOnExec = Host::Eventfd2Flags::isCloseOnExec(flags);
+        FD fd = insertNode(std::move(event), closeOnExec);
+        if(Host::Eventfd2Flags::isNonBlock(flags)) {
+            OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
+            verify(!!openFileDescription);
+            openFileDescription->flags().add(OpenFileDescription::StatusFlags::NONBLOCK);
+        }
+        return fd;
     }
 
     FS::FD FS::epoll_create1(int flags) {
         std::unique_ptr<Epoll> epoll = std::make_unique<Epoll>(this, flags);
-        return insertNode(std::move(epoll));
+        verify(!!epoll, "Unable to create epoll");
+        bool closeOnExec = Host::Eventfd2Flags::isCloseOnExec(flags);
+        return insertNode(std::move(epoll), closeOnExec);
     }
 
     FS::FD FS::socket(int domain, int type, int protocol) {
         auto socket = Socket::tryCreate(this, domain, type, protocol);
         // TODO: return the actual value of errno
         if(!socket) return FS::FD{-EINVAL};
-        return insertNode(std::move(socket));
+        return insertNode(std::move(socket), false);
     }
 
     int FS::connect(FD sockfd, const Buffer& buffer) {
@@ -717,9 +765,26 @@ namespace kernel {
         auto writingSide = pipe->tryCreateWriter();
         if(!writingSide) return ReturnType(-EMFILE);
 
+        BitFlags<CreationFlags> creationFlags = FS::toCreationFlags(flags);
+        bool closeOnExec = creationFlags.test(CreationFlags::CLOEXEC);
+
         pipes_.push_back(std::move(pipe));
-        FD reader = insertNode(std::move(readingSide));
-        FD writer = insertNode(std::move(writingSide));
+        FD reader = insertNode(std::move(readingSide), closeOnExec);
+        FD writer = insertNode(std::move(writingSide), closeOnExec);
+
+        BitFlags<StatusFlags> statusFlags = FS::toStatusFlags(flags);
+        OpenFileDescription* readerFileDescription = findOpenFileDescription(reader);
+        OpenFileDescription* writerFileDescription = findOpenFileDescription(writer);
+        verify(!!readerFileDescription);
+        verify(!!writerFileDescription);
+        if(statusFlags.test(StatusFlags::DIRECT)) {
+            readerFileDescription->flags().add(OpenFileDescription::StatusFlags::DIRECT);
+            writerFileDescription->flags().add(OpenFileDescription::StatusFlags::DIRECT);
+        }
+        if(statusFlags.test(StatusFlags::NONBLOCK)) {
+            readerFileDescription->flags().add(OpenFileDescription::StatusFlags::NONBLOCK);
+            writerFileDescription->flags().add(OpenFileDescription::StatusFlags::NONBLOCK);
+        }
 
         return ReturnType(std::make_pair(reader, writer));
     }

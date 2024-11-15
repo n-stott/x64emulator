@@ -1357,18 +1357,20 @@ namespace kernel {
 
     int Sys::openat(int dirfd, x64::Ptr pathname, int flags, mode_t mode) {
         std::string path = mmu_.readString(pathname);
-        FS::OpenFlags openFlags = FS::fromFlags(flags);
+        BitFlags<FS::AccessMode> accessMode = FS::toAccessMode(flags);
+        BitFlags<FS::CreationFlags> creationFlags = FS::toCreationFlags(flags);
+        BitFlags<FS::StatusFlags> statusFlags = FS::toStatusFlags(flags);
         FS::Permissions permissions = FS::fromMode(mode);
-        FS::FD fd = kernel_.fs().open(FS::FD{dirfd}, path, openFlags, permissions);
+        FS::FD fd = kernel_.fs().open(FS::FD{dirfd}, path, accessMode, creationFlags, statusFlags, permissions);
         if(logSyscalls_) {
             std::string flagsString = fmt::format("[{}{}{}{}{}{}{}]",
-                openFlags.read ? "Read " : "",
-                openFlags.write ? "Write " : "",
-                openFlags.append ? "Append " : "",
-                openFlags.truncate ? "Truncate " : "",
-                openFlags.create ? "Create " : "",
-                openFlags.closeOnExec ? "CloseOnExec " : "",
-                openFlags.directory ? "Directory " : "");
+                accessMode.test(FS::AccessMode::READ)  ? "Read " : "",
+                accessMode.test(FS::AccessMode::WRITE) ? "Write " : "",
+                statusFlags.test(FS::StatusFlags::APPEND) ? "Append " : "",
+                creationFlags.test(FS::CreationFlags::TRUNC) ? "Truncate " : "",
+                creationFlags.test(FS::CreationFlags::CREAT) ? "Create " : "",
+                creationFlags.test(FS::CreationFlags::CLOEXEC) ? "CloseOnExec " : "",
+                creationFlags.test(FS::CreationFlags::DIRECTORY) ? "Directory " : "");
             print("Sys::openat(dirfd={}, path={}, flags={}, mode={:o}) = {}\n", dirfd, path, flagsString, mode, fd.fd);
         }
         return fd.fd;

@@ -23,6 +23,10 @@ public:
         return flags;
     }
 
+    explicit BitFlags() {
+        flags_ = underlying_t { 0 };
+    }
+
     template<typename... Args>
     explicit BitFlags(Args... args) {
         static_assert(is_all_enum_class<Args...>::value);

@@ -9,6 +9,8 @@
 #include <asm/termbits.h>
 #include <sched.h>
 #include <sys/auxv.h>
+#include <sys/epoll.h>
+#include <sys/eventfd.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <sys/resource.h>
@@ -248,6 +250,38 @@ namespace kernel {
 
     bool Host::FallocateMode::isUnshareRange(int mode) {
         return mode & FALLOC_FL_UNSHARE_RANGE;
+    }
+
+    bool Host::MemfdFlags::isCloseOnExec(unsigned int flags) {
+        return flags & MFD_CLOEXEC;
+    }
+
+    bool Host::MemfdFlags::allowsSealing(unsigned int flags) {
+        return flags & MFD_ALLOW_SEALING;
+    }
+
+    bool Host::MemfdFlags::isOther(unsigned int flags) {
+        return flags & ~(MFD_CLOEXEC | MFD_ALLOW_SEALING);
+    }
+
+    bool Host::Eventfd2Flags::isCloseOnExec(int flags) {
+        return flags & EFD_CLOEXEC;
+    }
+
+    bool Host::Eventfd2Flags::isNonBlock(int flags) {
+        return flags & EFD_NONBLOCK;
+    }
+
+    bool Host::Eventfd2Flags::isOther(int flags) {
+        return flags & ~(EFD_CLOEXEC | EFD_NONBLOCK);
+    }
+
+    bool Host::EpollFlags::isCloseOnExec(int flags) {
+        return flags & EPOLL_CLOEXEC;
+    }
+
+    bool Host::EpollFlags::isOther(int flags) {
+        return flags & ~(EPOLL_CLOEXEC);
     }
 
     Host::SchedAttr Host::getSchedulerAttributes() {

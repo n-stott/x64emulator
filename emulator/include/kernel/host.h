@@ -115,6 +115,23 @@ namespace kernel {
             static bool isUnshareRange(int mode);
         };
 
+        struct MemfdFlags {
+            static bool isCloseOnExec(unsigned int flags);
+            static bool allowsSealing(unsigned int flags);
+            static bool isOther(unsigned int flags);
+        };
+
+        struct Eventfd2Flags {
+            static bool isCloseOnExec(int flags);
+            static bool isNonBlock(int flags);
+            static bool isOther(int flags);
+        };
+
+        struct EpollFlags {
+            static bool isCloseOnExec(int flags);
+            static bool isOther(int flags);
+        };
+
         struct SchedAttr {
             u32 size;
             u32 schedPolicy;

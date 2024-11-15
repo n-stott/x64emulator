@@ -3,6 +3,7 @@
 
 #include "kernel/utils/buffer.h"
 #include "kernel/utils/erroror.h"
+#include "bitflags.h"
 #include "span.h"
 #include <bitset>
 #include <deque>
@@ -25,6 +26,39 @@ namespace kernel {
         explicit FS(Kernel& kernel);
         ~FS();
 
+        // Careful with this !
+        // O_RDWR in linux is 2, not 3
+        enum class AccessMode {
+            READ       = (1 << 0),
+            WRITE      = (1 << 1),
+        };
+
+        enum class CreationFlags {
+            CLOEXEC   = (1 << 0),
+            CREAT     = (1 << 1),
+            DIRECTORY = (1 << 2),
+            EXCL      = (1 << 3),
+            NOCTTY    = (1 << 4),
+            NOFOLLOW  = (1 << 5),
+            TMPFILE   = (1 << 6),
+            TRUNC     = (1 << 7),
+        };
+
+        // keep aligned with OpenFileDescription::StatusFlags
+        enum class StatusFlags {
+            APPEND    = (1 << 0),
+            ASYNC     = (1 << 1),
+            DIRECT    = (1 << 2),
+            DSYNC     = (1 << 3),
+            LARGEFILE = (1 << 4),
+            NDELAY    = (1 << 5),
+            NOATIME   = (1 << 6),
+            NONBLOCK  = (1 << 7),
+            PATH      = (1 << 8),
+            RDWR      = (1 << 9),
+            SYNC      = (1 << 10),
+        };
+
         struct OpenFlags {
             bool read { false };
             bool write { false };
@@ -41,7 +75,9 @@ namespace kernel {
             bool userExecutable { false };
         };
 
-        static OpenFlags fromFlags(int flags);
+        static BitFlags<AccessMode> toAccessMode(int flags);
+        static BitFlags<CreationFlags> toCreationFlags(int flags);
+        static BitFlags<StatusFlags> toStatusFlags(int flags);
         static Permissions fromMode(unsigned int mode);
 
         struct FD {
@@ -61,7 +97,12 @@ namespace kernel {
         Directory* ensurePathExceptLast(const Path& path);
         Directory* ensureCompletePath(const Path& path);
 
-        FD open(FD dirfd, const std::string& pathname, OpenFlags flags, Permissions permissions);
+        FD open(FD dirfd,
+                const std::string& pathname,
+                BitFlags<AccessMode> accessMode,
+                BitFlags<CreationFlags> creationFlags,
+                BitFlags<StatusFlags> statusFlags,
+                Permissions permissions);
         FD dup(FD fd);
         FD dup2(FD oldfd, FD newfd);
         int close(FD fd);
@@ -159,16 +200,14 @@ namespace kernel {
 
         struct OpenNode {
             FD fd { -1 };
-            std::string path;
             OpenFileDescription* openFiledescription;
+            bool closeOnExec { false };
         };
 
         void createStandardStreams();
         void findCurrentWorkDirectory();
-        FD insertNode(std::unique_ptr<File> file);
-        FD openNode(File* filePtr);
+        FD insertNode(std::unique_ptr<File> file, bool closeOnExec);
         FD allocateFd();
-        FD insertNodeWithFd(std::unique_ptr<File> file, FD fd);
 
         OpenFileDescription* findOpenFileDescription(FD fd);
 
