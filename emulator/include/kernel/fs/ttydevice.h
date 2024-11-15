@@ -14,10 +14,14 @@ namespace kernel {
 
     class TtyDevice : public ShadowDevice {
     public:
-        static File* tryCreateAndAdd(FS* fs, Directory* parent, const std::string& pathname);
+        static TtyDevice* tryCreateAndAdd(FS* fs, Directory* parent, const std::string& pathname);
 
         bool isReadable() const override { return true; }
         bool isWritable() const override { return true; }
+
+        bool isPollable() const override { return true; }
+        bool canRead() const override;
+        bool canWrite() const override { return true; }
         
         void close() override;
         bool keepAfterClose() const override { return false; }
@@ -26,6 +30,8 @@ namespace kernel {
 
         ErrnoOrBuffer read(size_t count, off_t offset) override;
         ssize_t write(const u8* buf, size_t count, off_t offset) override;
+
+        ErrnoOrBuffer stat() override;
 
         off_t lseek(off_t offset, int whence) override;
         

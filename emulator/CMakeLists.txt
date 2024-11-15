@@ -54,7 +54,6 @@ add_library(x64emulator STATIC
     src/kernel/fs/shadowdirectory.cpp
     src/kernel/fs/shadowfile.cpp
     src/kernel/fs/socket.cpp
-    src/kernel/fs/stream.cpp
     src/kernel/fs/ttydevice.cpp
     src/kernel/kernel.cpp
     src/kernel/scheduler.cpp

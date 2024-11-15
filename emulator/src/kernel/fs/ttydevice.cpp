@@ -5,12 +5,13 @@
 #include <asm/termbits.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
+#include <sys/poll.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
 namespace kernel {
 
-    File* TtyDevice::tryCreateAndAdd(FS* fs, Directory* parent, const std::string& name) {
+    TtyDevice* TtyDevice::tryCreateAndAdd(FS* fs, Directory* parent, const std::string& name) {
         std::string pathname;
         if(!parent || parent == fs->root()) {
             pathname = name;
@@ -48,7 +49,7 @@ namespace kernel {
 
         guard.disable();
 
-        auto ttyDevice = std::unique_ptr<ShadowDevice>(new TtyDevice(fs, containingDirectory, path->last(), fd));
+        auto ttyDevice = std::unique_ptr<TtyDevice>(new TtyDevice(fs, containingDirectory, path->last(), fd));
         return containingDirectory->addFile(std::move(ttyDevice));
     }
 
@@ -60,18 +61,45 @@ namespace kernel {
         }
     }
 
-    ErrnoOrBuffer TtyDevice::read(size_t, off_t) {
-        verify(false, "TtyDevice::read not implemented");
-        return ErrnoOrBuffer(-ENOTSUP);
+    bool TtyDevice::canRead() const {
+        if(!isPollable()) return false;
+        if(!hostFd_) return false;
+        struct pollfd pfd;
+        pfd.fd = hostFd_.value();
+        pfd.events = POLLIN;
+        pfd.revents = 0;
+        int timeout = 0; // return immediately
+        int ret = ::poll(&pfd, 1, timeout);
+        if(ret < 0) return false;
+        return !!(pfd.revents & POLLIN);
+    }
+
+    ErrnoOrBuffer TtyDevice::read(size_t count, off_t) {
+        if(!isReadable()) return ErrnoOrBuffer{-EBADF};
+        if(!hostFd_) return ErrnoOrBuffer{-EBADF};
+        std::vector<u8> buffer;
+        buffer.resize(count, 0x0);
+        ssize_t nbytes = ::read(hostFd_.value(), buffer.data(), count);
+        if(nbytes < 0) return ErrnoOrBuffer(-errno);
+        buffer.resize((size_t)nbytes);
+        return ErrnoOrBuffer(Buffer{std::move(buffer)});
     }
 
     ssize_t TtyDevice::write(const u8* buf, size_t count, off_t) {
-        if(!!hostFd_) {
-            ssize_t ret = ::write(hostFd_.value(), buf, count);
-            return ret;
-        }
-        verify(false, "TtyDevice::write not implemented");
-        return -ENOTSUP;
+        if(!isReadable()) return -EBADF;
+        if(!hostFd_) return -EBADF;
+        ssize_t ret = ::write(2, buf, count);
+        return ret;
+    }
+
+    ErrnoOrBuffer TtyDevice::stat() {
+        if(!hostFd_) return ErrnoOrBuffer(-EBADF);
+        struct stat st;
+        int rc = ::fstat(hostFd_.value(), &st);
+        if(rc < 0) return ErrnoOrBuffer(-errno);
+        std::vector<u8> buf(sizeof(st), 0x0);
+        std::memcpy(buf.data(), &st, sizeof(st));
+        return ErrnoOrBuffer(Buffer{std::move(buf)});
     }
 
     off_t TtyDevice::lseek(off_t, int) {
@@ -96,25 +124,48 @@ namespace kernel {
         Buffer buffer(inputBuffer);
         switch(request) {
             case TCGETS: {
-                struct termios ts;
-                int ret = ::ioctl(hostFd_.value(), TCGETS, &ts);
+                verify(buffer.size() == sizeof(struct termios));
+                int ret = ::ioctl(hostFd_.value(), TCGETS, buffer.data());
                 if(ret < 0) return ErrnoOrBuffer(-errno);
-                std::vector<u8> buffer;
-                buffer.resize(sizeof(ts), 0x0);
-                std::memcpy(buffer.data(), &ts, sizeof(ts));
-                return ErrnoOrBuffer(Buffer{std::move(buffer)});
+                return ErrnoOrBuffer(std::move(buffer));
             }
-            case TIOCGPGRP: {
-                assert(inputBuffer.size() == sizeof(pid_t));
-                pid_t pid;
-                std::memcpy(&pid, inputBuffer.data(), sizeof(pid));
-                int ret = ::ioctl(hostFd_.value(), TIOCGPGRP, &pid);
+            case TCSETS: {
+                verify(buffer.size() == sizeof(struct termios));
+                int ret = ::ioctl(hostFd_.value(), TCSETS, buffer.data());
+                if(ret < 0) return ErrnoOrBuffer(-errno);
+                return ErrnoOrBuffer(std::move(buffer));
+            }
+            case FIOCLEX: {
+                int ret = ::ioctl(hostFd_.value(), FIOCLEX, nullptr);
+                if(ret < 0) return ErrnoOrBuffer(-errno);
+                return ErrnoOrBuffer(Buffer{});
+            }
+            case FIONCLEX: {
+                int ret = ::ioctl(hostFd_.value(), FIONCLEX, nullptr);
                 if(ret < 0) return ErrnoOrBuffer(-errno);
                 return ErrnoOrBuffer(Buffer{});
             }
             case TIOCGWINSZ: {
                 verify(buffer.size() == sizeof(struct winsize));
                 int ret = ::ioctl(hostFd_.value(), TIOCGWINSZ, buffer.data());
+                if(ret < 0) return ErrnoOrBuffer(-errno);
+                return ErrnoOrBuffer(std::move(buffer));
+            }
+            case TIOCSWINSZ: {
+                verify(buffer.size() == sizeof(struct winsize));
+                int ret = ::ioctl(hostFd_.value(), TIOCSWINSZ, buffer.data());
+                if(ret < 0) return ErrnoOrBuffer(-errno);
+                return ErrnoOrBuffer(std::move(buffer));
+            }
+            case TCSETSW: {
+                verify(buffer.size() == sizeof(struct termios));
+                int ret = ::ioctl(hostFd_.value(), TCSETSW, buffer.data());
+                if(ret < 0) return ErrnoOrBuffer(-errno);
+                return ErrnoOrBuffer(std::move(buffer));
+            }
+            case TIOCGPGRP: {
+                verify(buffer.size() == sizeof(pid_t));
+                int ret = ::ioctl(hostFd_.value(), TIOCGPGRP, buffer.data());
                 if(ret < 0) return ErrnoOrBuffer(-errno);
                 return ErrnoOrBuffer(std::move(buffer));
             }

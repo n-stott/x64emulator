@@ -11,7 +11,7 @@
 #include "kernel/fs/shadowdevice.h"
 #include "kernel/fs/shadowfile.h"
 #include "kernel/fs/socket.h"
-#include "kernel/fs/stream.h"
+#include "kernel/fs/ttydevice.h"
 #include "kernel/kernel.h"
 #include "verify.h"
 #include <fmt/core.h>
@@ -26,15 +26,22 @@ namespace kernel {
     FS::FS(Kernel& kernel) : kernel_(kernel) {
         root_ = HostDirectory::tryCreateRoot(this);
         verify(!!root_, "Unable to create root directory");
-        createStandardStreams();
         findCurrentWorkDirectory();
+        tty_ = TtyDevice::tryCreateAndAdd(this, root_.get(), "/dev/tty");
+        createStandardStreams();
     }
     
 
     void FS::createStandardStreams() {
-        FD stdinFd = insertNodeWithFd(std::make_unique<Stream>(this, Stream::TYPE::IN), FD{0});
-        FD stdoutFd = insertNodeWithFd(std::make_unique<Stream>(this, Stream::TYPE::OUT), FD{1});
-        FD stderrFd = insertNodeWithFd(std::make_unique<Stream>(this, Stream::TYPE::ERR), FD{2});
+        OpenFlags openFlags;
+        openFlags.read = true;
+        openFlags.write = true;
+        Permissions permissions;
+        permissions.userReadable = true;
+        permissions.userWriteable = true;
+        FD stdinFd = open(FD{-100}, "/dev/tty", openFlags, permissions);
+        FD stdoutFd = open(FD{-100}, "/dev/tty", openFlags, permissions);
+        FD stderrFd = open(FD{-100}, "/dev/tty", openFlags, permissions);
         verify(stdinFd.fd == 0, "stdin must have fd 0");
         verify(stdoutFd.fd == 1, "stdout must have fd 1");
         verify(stderrFd.fd == 2, "stderr must have fd 2");
