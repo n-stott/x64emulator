@@ -46,7 +46,7 @@ namespace kernel {
     ErrnoOrBuffer Pipe::read(OpenFileDescription& openFileDescription, size_t size) {
         verify(!data_.empty(), [&]() {
             fmt::print("Reading from empty pipe not implemented\n");
-            fmt::print("Pipe is non-blocking: {}\n", openFileDescription.flags().test(OpenFileDescription::StatusFlags::NONBLOCK));
+            fmt::print("Pipe is non-blocking: {}\n", openFileDescription.statusFlags().test(FS::StatusFlags::NONBLOCK));
         });
         size_t readSize = std::min(size, data_.size());
         std::vector<u8> buf(readSize, 0x0);

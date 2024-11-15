@@ -86,10 +86,11 @@ namespace kernel {
             static bool isReadable(int flag);
             static bool isWritable(int flag);
             static bool isAppending(int flag);
-            static bool isTruncating(int flag);
-            static bool isCreatable(int flag);
             static bool isCloseOnExec(int flag);
+            static bool isCreatable(int flag);
             static bool isDirectory(int flag);
+            static bool isNonBlock(int flag);
+            static bool isTruncating(int flag);
         };
 
         struct Fcntl {
@@ -130,6 +131,11 @@ namespace kernel {
         struct EpollFlags {
             static bool isCloseOnExec(int flags);
             static bool isOther(int flags);
+        };
+
+        struct SocketType {
+            static bool isCloseOnExec(int type);
+            static bool isNonBlock(int type);
         };
 
         struct SchedAttr {

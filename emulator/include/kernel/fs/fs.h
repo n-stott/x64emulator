@@ -44,7 +44,6 @@ namespace kernel {
             TRUNC     = (1 << 7),
         };
 
-        // keep aligned with OpenFileDescription::StatusFlags
         enum class StatusFlags {
             APPEND    = (1 << 0),
             ASYNC     = (1 << 1),
@@ -206,7 +205,7 @@ namespace kernel {
 
         void createStandardStreams();
         void findCurrentWorkDirectory();
-        FD insertNode(std::unique_ptr<File> file, bool closeOnExec);
+        FD insertNode(std::unique_ptr<File> file, BitFlags<AccessMode>, BitFlags<StatusFlags>, bool closeOnExec);
         FD allocateFd();
 
         OpenNode* findOpenNode(FD fd);

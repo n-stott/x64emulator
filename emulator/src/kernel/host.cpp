@@ -16,6 +16,7 @@
 #include <sys/resource.h>
 #include <sys/time.h>
 #include <sys/types.h>
+#include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/sysinfo.h>
 #include <sys/uio.h>
@@ -196,6 +197,10 @@ namespace kernel {
         return flag & O_DIRECTORY;
     }
 
+    bool Host::Open::isNonBlock(int flag) {
+        return flag & O_NONBLOCK;
+    }
+
     bool Host::Fcntl::isGetFd(int cmd) {
         return cmd == F_GETFD;
     }
@@ -282,6 +287,14 @@ namespace kernel {
 
     bool Host::EpollFlags::isOther(int flags) {
         return flags & ~(EPOLL_CLOEXEC);
+    }
+
+    bool Host::SocketType::isCloseOnExec(int type) {
+        return type & SOCK_CLOEXEC;
+    }
+
+    bool Host::SocketType::isNonBlock(int type) {
+        return type & SOCK_NONBLOCK;
     }
 
     Host::SchedAttr Host::getSchedulerAttributes() {
