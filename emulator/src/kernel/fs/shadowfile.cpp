@@ -156,7 +156,7 @@ namespace kernel {
         return ErrnoOrBuffer(-EINVAL);
     }
 
-    int ShadowFile::fcntl(int cmd, int arg) {
+    std::optional<int> ShadowFile::fcntl(int cmd, int arg) {
         if(cmd == F_SETLK) {
             warn(fmt::format("ShadowFile::fcntl(F_SETLK, {}) not implemented", arg));
             return 0;

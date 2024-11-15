@@ -72,7 +72,10 @@ namespace kernel {
         
         virtual ErrnoOrBuffer getdents64(size_t count) = 0;
 
-        virtual int fcntl(int cmd, int arg) = 0;
+        // Return a value if we need to run the fcntl on the host side
+        // or empty otherwise
+        virtual std::optional<int> fcntl(int cmd, int arg) = 0;
+
         virtual ErrnoOrBuffer ioctl(unsigned long request, const Buffer& buffer) = 0;
         virtual ErrnoOrBuffer ioctlWithBufferSizeGuess(unsigned long request, const Buffer& buffer);
 

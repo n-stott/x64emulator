@@ -524,49 +524,69 @@ namespace kernel {
     int FS::fcntl(FD fd, int cmd, int arg) {
         OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
         if(!openFileDescription) return -EBADF;
+        std::optional<int> emulatedRet;
         // If we can do it in FS alone, do it here
-        if(cmd == F_DUPFD) {
-            FD newfd = dup(fd);
-            return newfd.fd;
-        }
-        if(cmd == F_DUPFD_CLOEXEC) {
-            FD newfd = dup(fd);
-            OpenNode* newNode = findOpenNode(newfd);
-            verify(!!newNode);
-            newNode->closeOnExec = true;
-            return newfd.fd;
-        }
-        if(cmd == F_GETFD) {
-            OpenNode* node = findOpenNode(fd);
-            verify(!!node);
-            return node->closeOnExec ? FD_CLOEXEC : 0;
-        }
-        if(cmd == F_SETFD) {
-            OpenNode* node = findOpenNode(fd);
-            verify(!!node);
-            bool currentFlag = node->closeOnExec;
-            if(Host::Open::isCloseOnExec(arg) && !currentFlag) node->closeOnExec = true;
-            if(!Host::Open::isCloseOnExec(arg) && currentFlag) node->closeOnExec = false;
-            return 0;
-        }
+        switch(cmd) {
+            case F_DUPFD: {
+                FD newfd = dup(fd);
+                emulatedRet = newfd.fd;
+                break;
+            }
+            case F_DUPFD_CLOEXEC: {
+                FD newfd = dup(fd);
+                OpenNode* newNode = findOpenNode(newfd);
+                verify(!!newNode);
+                newNode->closeOnExec = true;
+                emulatedRet = newfd.fd;
+                break;
+            }
+            case F_GETFD: {
+                OpenNode* node = findOpenNode(fd);
+                verify(!!node);
+                emulatedRet = node->closeOnExec ? FD_CLOEXEC : 0;
+                break;
+            }
+            case F_SETFD: {
+                OpenNode* node = findOpenNode(fd);
+                verify(!!node);
+                bool currentFlag = node->closeOnExec;
+                if(Host::Open::isCloseOnExec(arg) && !currentFlag) node->closeOnExec = true;
+                if(!Host::Open::isCloseOnExec(arg) && currentFlag) node->closeOnExec = false;
+                emulatedRet = 0;
+                break;
+            }
         // If the open file description is sufficient, do it there
-        if(cmd == F_GETFL) {
-            return assembleAccessModeAndFileStatusFlags(openFileDescription->accessMode(), openFileDescription->statusFlags());
-        }
-        if(cmd == F_SETFL) {
-            verify(!Host::Open::isAppending(arg), "changing append flag is not supported");
-            auto currentFlags = openFileDescription->statusFlags();
-            if(Host::Open::isNonBlock(arg) && !currentFlags.test(StatusFlags::NONBLOCK)) {
-                openFileDescription->statusFlags().add(StatusFlags::NONBLOCK);
+            case F_GETFL: {
+                emulatedRet = assembleAccessModeAndFileStatusFlags(openFileDescription->accessMode(), openFileDescription->statusFlags());
+                break;
             }
-            if(!Host::Open::isNonBlock(arg) && currentFlags.test(StatusFlags::NONBLOCK)) {
-                openFileDescription->statusFlags().remove(StatusFlags::NONBLOCK);
+            case F_SETFL: {
+                verify(!Host::Open::isAppending(arg), "changing append flag is not supported");
+                auto currentFlags = openFileDescription->statusFlags();
+                if(Host::Open::isNonBlock(arg) && !currentFlags.test(StatusFlags::NONBLOCK)) {
+                    openFileDescription->statusFlags().add(StatusFlags::NONBLOCK);
+                }
+                if(!Host::Open::isNonBlock(arg) && currentFlags.test(StatusFlags::NONBLOCK)) {
+                    openFileDescription->statusFlags().remove(StatusFlags::NONBLOCK);
+                }
+                emulatedRet = 0;
+                break;
             }
-            return 0;
+            default: break;
         }
-        // Otherwise, go ask the file
+        // Otherwise, go ask the file.
+        // Note: we have to go here anyway, so the information makes it to the host when relevant
         File* file = openFileDescription->file();
-        return file->fcntl(cmd, arg);
+        std::optional<int> fileRet = file->fcntl(cmd, arg);
+        if(!!emulatedRet) {
+            if(!!fileRet) {
+                verify(emulatedRet == fileRet, "emulation of fcntl differs from file's answer");
+            }
+            return emulatedRet.value();
+        } else {
+            assert(!!fileRet);
+            return fileRet.value();
+        }
     }
 
     ErrnoOrBuffer FS::ioctl(FD fd, unsigned long request, const Buffer& buffer) {

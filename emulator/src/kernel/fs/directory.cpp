@@ -105,7 +105,7 @@ namespace kernel {
         return -EINVAL;
     }
 
-    int Directory::fcntl(int cmd, int arg) {
+    std::optional<int> Directory::fcntl(int cmd, int arg) {
         verify(false, fmt::format("fcntl(cmd={}, arg={}) not implemented on directory", cmd, arg));
         return -ENOTSUP;
     }

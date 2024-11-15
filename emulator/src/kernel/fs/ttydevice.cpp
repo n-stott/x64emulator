@@ -111,7 +111,7 @@ namespace kernel {
         return ErrnoOrBuffer(-ENOTSUP);
     }
 
-    int TtyDevice::fcntl(int, int) {
+    std::optional<int> TtyDevice::fcntl(int, int) {
         verify(false, "TtyDevice::fcntl not implemented");
         return -ENOTSUP;
     }

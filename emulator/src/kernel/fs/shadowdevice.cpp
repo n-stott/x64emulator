@@ -117,7 +117,7 @@ namespace kernel {
         return ErrnoOrBuffer(-ENOTSUP);
     }
 
-    int ShadowDevice::fcntl(int, int) {
+    std::optional<int> ShadowDevice::fcntl(int, int) {
         verify(false, "ShadowDevice::fcntl not implemented");
         return -ENOTSUP;
     }

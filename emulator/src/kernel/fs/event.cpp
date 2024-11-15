@@ -80,7 +80,7 @@ namespace kernel {
         return ErrnoOrBuffer(-ENOTDIR);
     }
 
-    int Event::fcntl(int cmd, int arg) {
+    std::optional<int> Event::fcntl(int cmd, int arg) {
         verify(false, fmt::format("fcntl(cmd={}, arg={}) not implemented on event", cmd, arg));
         return -ENOTSUP;
     }

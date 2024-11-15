@@ -1,4 +1,5 @@
 #include "kernel/fs/socket.h"
+#include "kernel/host.h"
 #include "verify.h"
 #include <fcntl.h>
 #include <unistd.h>
@@ -70,19 +71,8 @@ namespace kernel {
         return ret;
     }
 
-    int Socket::fcntl(int cmd, int arg) {
-        switch(cmd) {
-            case F_GETFD:
-            case F_SETFD:
-            case F_GETFL:
-            case F_SETFL: {
-                int ret = ::fcntl(hostFd_, cmd, arg);
-                if(ret < 0) return -errno;
-                return ret;
-            }
-            default: break;
-        }
-        return -ENOTSUP;
+    std::optional<int> Socket::fcntl(int cmd, int arg) {
+        return Host::fcntl(Host::FD{hostFd_}, cmd, arg);
     }
 
     int Socket::shutdown(int how) const {

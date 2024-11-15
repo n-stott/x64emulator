@@ -41,7 +41,7 @@ namespace kernel {
         ErrnoOrBuffer statfs() override;
 
         ErrnoOrBuffer getdents64(size_t count) override;
-        int fcntl(int cmd, int arg) override;
+        std::optional<int> fcntl(int cmd, int arg) override;
         ErrnoOrBuffer ioctl(unsigned long request, const Buffer& buffer) override;
 
         int fallocate(int mode, off_t offset, off_t len);

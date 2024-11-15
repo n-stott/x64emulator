@@ -91,9 +91,9 @@ namespace kernel {
         return fs_->kernel().host().getdents64(Host::FD{hostFd_.value()}, count); // NOLINT(bugprone-unchecked-optional-access)
     }
 
-    int HostDirectory::fcntl(int cmd, int arg) {
+    std::optional<int> HostDirectory::fcntl(int cmd, int arg) {
         verify(!!hostFd_, "Directory must be opened first");
-        return fs_->kernel().host().fcntl(Host::FD{hostFd_.value()}, cmd, arg); // NOLINT(bugprone-unchecked-optional-access)
+        return Host::fcntl(Host::FD{hostFd_.value()}, cmd, arg); // NOLINT(bugprone-unchecked-optional-access)
     }
 
 }

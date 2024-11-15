@@ -1,5 +1,6 @@
 #include "kernel/fs/hostdevice.h"
 #include "kernel/fs/path.h"
+#include "kernel/host.h"
 #include "scopeguard.h"
 #include "verify.h"
 #include <fcntl.h>
@@ -99,14 +100,8 @@ namespace kernel {
         return ErrnoOrBuffer(-ENOTSUP);
     }
 
-    int HostDevice::fcntl(int cmd, int arg) {
-        if(cmd == F_GETFD || cmd == F_SETFD) {
-            // warn(fmt::format("implement missing fcntl(F_GETFD) on HostDevice", cmd, arg));
-            return 0;
-        }
-        warn(fmt::format("implement missing fcntl({}, {}) on HostDevice", cmd, arg));
-        verify(false, "HostDevice::fcntl not implemented");
-        return -ENOTSUP;
+    std::optional<int> HostDevice::fcntl(int cmd, int arg) {
+        return Host::fcntl(Host::FD{hostFd_}, cmd, arg);
     }
 
     ErrnoOrBuffer HostDevice::ioctl(unsigned long, const Buffer&) {

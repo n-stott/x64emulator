@@ -92,9 +92,9 @@ namespace kernel {
         return ErrnoOrBuffer(-ENOTDIR);
     }
 
-    int PipeEndpoint::fcntl(int cmd, int arg) {
-        verify(false, fmt::format("fcntl(cmd={}, arg={}) not implemented on PipeEndpoint", cmd, arg));
-        return -ENOTSUP;
+    std::optional<int> PipeEndpoint::fcntl(int, int) {
+        // nothing to do ?
+        return {};
     }
 
     ErrnoOrBuffer PipeEndpoint::ioctl(unsigned long request, const Buffer&) {

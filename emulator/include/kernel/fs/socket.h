@@ -23,7 +23,7 @@ namespace kernel {
         bool canWrite() const override;
 
         int connect(const Buffer& buffer) const;
-        int fcntl(int cmd, int arg) override;
+        std::optional<int> fcntl(int cmd, int arg) override;
         int shutdown(int how) const;
 
         int bind(const Buffer& name) const;

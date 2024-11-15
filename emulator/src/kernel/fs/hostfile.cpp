@@ -1,6 +1,7 @@
 #include "kernel/fs/hostfile.h"
 #include "kernel/fs/openfiledescription.h"
 #include "kernel/fs/path.h"
+#include "kernel/host.h"
 #include "scopeguard.h"
 #include "verify.h"
 #include <fmt/color.h>
@@ -120,20 +121,8 @@ namespace kernel {
         return ErrnoOrBuffer(Buffer{std::move(buf)});
     }
 
-    int HostFile::fcntl(int cmd, int arg) {
-        switch(cmd) {
-            case F_GETFD:
-            case F_SETFD:
-            case F_GETFL:
-            case F_SETFL: {
-                int ret = ::fcntl(hostFd_, cmd, arg);
-                if(ret < 0) return -errno;
-                return ret;
-            }
-            default: break;
-        }
-        warn(fmt::format("implement missing fcntl {} on HostFile", cmd));
-        return -ENOTSUP;
+    std::optional<int> HostFile::fcntl(int cmd, int arg) {
+        return Host::fcntl(Host::FD{hostFd_}, cmd, arg);
     }
 
     ErrnoOrBuffer HostFile::ioctl(unsigned long request, const Buffer& inputBuffer) {
