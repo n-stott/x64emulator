@@ -47,11 +47,12 @@ namespace kernel {
         return !!(pfd.revents & POLLOUT);
     }
     
-    ErrnoOrBuffer Event::read(size_t, off_t) {
-        return ErrnoOrBuffer(-EINVAL);
+    ErrnoOrBuffer Event::read(OpenFileDescription&, size_t) {
+        verify(false, "Event::read not implemented");
+        return ErrnoOrBuffer(-ENOTSUP);
     }
     
-    ssize_t Event::write(const u8* buf, size_t size, off_t) {
+    ssize_t Event::write(OpenFileDescription&, const u8* buf, size_t size) {
         if(size < 8) return -EINVAL;
         u64 value;
         std::memcpy(&value, buf, sizeof(value));

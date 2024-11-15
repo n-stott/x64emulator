@@ -10,6 +10,7 @@
 namespace kernel {
 
     class Directory;
+    class OpenFileDescription;
 
     class File : public FsObject {
     public:
@@ -29,8 +30,8 @@ namespace kernel {
         virtual bool canRead() const = 0;
         virtual bool canWrite() const = 0;
 
-        virtual ErrnoOrBuffer read(size_t count, off_t offset) = 0;
-        virtual ssize_t write(const u8* buf, size_t count, off_t offset) = 0;
+        virtual ErrnoOrBuffer read(OpenFileDescription&, size_t count) = 0;
+        virtual ssize_t write(OpenFileDescription&, const u8* buf, size_t count) = 0;
 
         virtual off_t lseek(off_t offset, int whence) = 0;
 

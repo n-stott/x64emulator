@@ -64,7 +64,7 @@ namespace kernel {
         return false;
     }
 
-    ErrnoOrBuffer HostDevice::read(size_t count, off_t) {
+    ErrnoOrBuffer HostDevice::read(OpenFileDescription&, size_t count) {
         if(!isReadable()) return ErrnoOrBuffer{-EINVAL};
         std::vector<u8> buffer;
         buffer.resize(count, 0x0);
@@ -74,7 +74,7 @@ namespace kernel {
         return ErrnoOrBuffer(Buffer{std::move(buffer)});
     }
 
-    ssize_t HostDevice::write(const u8*, size_t, off_t) {
+    ssize_t HostDevice::write(OpenFileDescription&, const u8*, size_t) {
         verify(false, "HostDevice::write not implemented");
         return -ENOTSUP;
     }

@@ -32,8 +32,8 @@ namespace kernel {
 
         std::optional<int> hostFileDescriptor() const override { return {}; }
         
-        ErrnoOrBuffer read(size_t count, off_t offset) override;
-        ssize_t write(const u8* buf, size_t count, off_t offset) override;
+        ErrnoOrBuffer read(OpenFileDescription&, size_t count) override;
+        ssize_t write(OpenFileDescription&, const u8* buf, size_t count) override;
 
         off_t lseek(off_t offset, int whence) override;
 

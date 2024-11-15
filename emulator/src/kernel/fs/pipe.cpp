@@ -54,7 +54,7 @@ namespace kernel {
     bool PipeEndpoint::canRead() const { return pipe_->canRead(); }
     bool PipeEndpoint::canWrite() const { return pipe_->canWrite(); }
     
-    ErrnoOrBuffer PipeEndpoint::read(size_t size, off_t) {
+    ErrnoOrBuffer PipeEndpoint::read(OpenFileDescription&, size_t size) {
         return pipe_->read(size);
     }
 
@@ -63,7 +63,7 @@ namespace kernel {
         return (ssize_t)size;
     }
     
-    ssize_t PipeEndpoint::write(const u8* buf, size_t size, off_t) {
+    ssize_t PipeEndpoint::write(OpenFileDescription&, const u8* buf, size_t size) {
         return pipe_->write(buf, size);
     }
 

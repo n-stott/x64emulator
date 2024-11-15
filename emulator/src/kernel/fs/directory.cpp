@@ -90,12 +90,12 @@ namespace kernel {
         // nothing to do ?
     }
 
-    ErrnoOrBuffer Directory::read(size_t, off_t) {
+    ErrnoOrBuffer Directory::read(OpenFileDescription&, size_t) {
         verify(false, "Cannot read from directory");
         return ErrnoOrBuffer(-EINVAL);
     }
 
-    ssize_t Directory::write(const u8*, size_t, off_t) {
+    ssize_t Directory::write(OpenFileDescription&, const u8*, size_t) {
         verify(false, "Cannot write to directory");
         return -EINVAL;
     }

@@ -56,8 +56,8 @@ namespace kernel {
         bool canRead() const override;
         bool canWrite() const override;
 
-        ErrnoOrBuffer read(size_t, off_t) override;
-        ssize_t write(const u8*, size_t, off_t) override;
+        ErrnoOrBuffer read(OpenFileDescription&, size_t) override;
+        ssize_t write(OpenFileDescription&, const u8*, size_t) override;
 
         off_t lseek(off_t offset, int whence) override;
 

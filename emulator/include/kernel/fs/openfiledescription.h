@@ -43,6 +43,7 @@ namespace kernel {
 
         File* file() { return file_; }
         BitFlags<StatusFlags>& flags() { return flags_; }
+        off_t offset() const { return offset_; }
         
         bool isLockedExclusively() const { return lock_ == Lock::EXCLUSIVE; }
         bool isLockedShared() const { return lock_ == Lock::SHARED; }
@@ -59,7 +60,7 @@ namespace kernel {
         }
 
         ErrnoOrBuffer read(size_t count) {
-            ErrnoOrBuffer errnoOrBuffer = file_->read(count, offset_);
+            ErrnoOrBuffer errnoOrBuffer = file_->read(*this, count);
             errnoOrBuffer.errorOrWith<int>([&](const Buffer& buf) {
                 offset_ += buf.size();
                 return 0;
@@ -68,18 +69,26 @@ namespace kernel {
         }
 
         ssize_t write(const u8* buf, size_t count) {
-            ssize_t nbytes = file_->write(buf, count, offset_);
+            ssize_t nbytes = file_->write(*this, buf, count);
             if(nbytes < 0) return nbytes;
             offset_ += nbytes;
             return nbytes;
         }
 
         ErrnoOrBuffer pread(size_t count, off_t offset) {
-            return file_->read(count, offset);
+            off_t savedOffset = offset_;
+            offset_ = offset;
+            auto result = file_->read(*this, count);
+            offset_ = savedOffset;
+            return result;
         }
 
         ssize_t pwrite(const u8* buf, size_t count, off_t offset) {
-            return file_->write(buf, count, offset);
+            off_t savedOffset = offset_;
+            offset_ = offset;
+            auto result = file_->write(*this, buf, count);
+            offset_ = savedOffset;
+            return result;
         }
 
         off_t lseek(off_t offset, int whence) {

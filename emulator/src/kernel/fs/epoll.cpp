@@ -8,12 +8,14 @@ namespace kernel {
         (void)flags_;
     }
     
-    ErrnoOrBuffer Epoll::read(size_t, off_t) {
-        return ErrnoOrBuffer(-EINVAL);
+    ErrnoOrBuffer Epoll::read(OpenFileDescription&, size_t) {
+        verify(false, "Epoll::read not implemented");
+        return ErrnoOrBuffer(-ENOTSUP);
     }
     
-    ssize_t Epoll::write(const u8*, size_t, off_t) {
-        return -EINVAL;
+    ssize_t Epoll::write(OpenFileDescription&, const u8*, size_t) {
+        verify(false, "Epoll::write not implemented");
+        return -ENOTSUP;
     }
 
     off_t Epoll::lseek(off_t, int) {

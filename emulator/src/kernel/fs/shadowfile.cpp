@@ -1,5 +1,6 @@
 #include "kernel/fs/shadowfile.h"
 #include "kernel/fs/directory.h"
+#include "kernel/fs/openfiledescription.h"
 #include "kernel/fs/path.h"
 #include "kernel/host.h"
 #include "kernel/kernel.h"
@@ -90,8 +91,9 @@ namespace kernel {
         (void)data_;
     }
 
-    ErrnoOrBuffer ShadowFile::read(size_t count, off_t offset) {
+    ErrnoOrBuffer ShadowFile::read(OpenFileDescription& openFileDescription, size_t count) {
         if(!isReadable()) return ErrnoOrBuffer{-EINVAL};
+        off_t offset = openFileDescription.offset();
         if(offset < 0) return ErrnoOrBuffer{-EINVAL};
         size_t bytesRead = (size_t)offset < data_.size() ? std::min(data_.size() - (size_t)offset, count) : 0;
         const u8* beginRead = data_.data() + offset;
@@ -100,8 +102,9 @@ namespace kernel {
         return ErrnoOrBuffer(Buffer{std::move(buffer)});
     }
 
-    ssize_t ShadowFile::write(const u8* buf, size_t count, off_t offset) {
+    ssize_t ShadowFile::write(OpenFileDescription& openFileDescription, const u8* buf, size_t count) {
         if(!isWritable()) return -EINVAL;
+        off_t offset = openFileDescription.offset();
         if(offset < 0) return -EINVAL;
         if((size_t)offset + count > data_.size()) {
             data_.resize((size_t)offset + count);

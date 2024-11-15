@@ -88,12 +88,12 @@ namespace kernel {
         return false;
     }
 
-    ErrnoOrBuffer ShadowDevice::read(size_t, off_t) {
+    ErrnoOrBuffer ShadowDevice::read(OpenFileDescription&, size_t) {
         verify(false, "ShadowDevice::read not implemented");
         return ErrnoOrBuffer(-ENOTSUP);
     }
 
-    ssize_t ShadowDevice::write(const u8*, size_t, off_t) {
+    ssize_t ShadowDevice::write(OpenFileDescription&, const u8*, size_t) {
         verify(false, "ShadowDevice::write not implemented");
         return -ENOTSUP;
     }

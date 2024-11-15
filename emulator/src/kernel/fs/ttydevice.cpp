@@ -74,7 +74,7 @@ namespace kernel {
         return !!(pfd.revents & POLLIN);
     }
 
-    ErrnoOrBuffer TtyDevice::read(size_t count, off_t) {
+    ErrnoOrBuffer TtyDevice::read(OpenFileDescription&, size_t count) {
         if(!isReadable()) return ErrnoOrBuffer{-EBADF};
         if(!hostFd_) return ErrnoOrBuffer{-EBADF};
         std::vector<u8> buffer;
@@ -85,7 +85,7 @@ namespace kernel {
         return ErrnoOrBuffer(Buffer{std::move(buffer)});
     }
 
-    ssize_t TtyDevice::write(const u8* buf, size_t count, off_t) {
+    ssize_t TtyDevice::write(OpenFileDescription&, const u8* buf, size_t count) {
         if(!isReadable()) return -EBADF;
         if(!hostFd_) return -EBADF;
         ssize_t ret = ::write(2, buf, count);

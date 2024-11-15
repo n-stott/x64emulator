@@ -132,7 +132,7 @@ namespace kernel {
         return ::setsockopt(hostFd_, level, optname, buffer.data(), (socklen_t)buffer.size());
     }
 
-    ErrnoOrBuffer Socket::read(size_t count, off_t) {
+    ErrnoOrBuffer Socket::read(OpenFileDescription&, size_t count) {
         if(!isReadable()) return ErrnoOrBuffer{-EINVAL};
         std::vector<u8> buffer;
         buffer.resize(count, 0x0);
@@ -142,7 +142,7 @@ namespace kernel {
         return ErrnoOrBuffer(Buffer{std::move(buffer)});
     }
 
-    ssize_t Socket::write(const u8* buf, size_t count, off_t) {
+    ssize_t Socket::write(OpenFileDescription&, const u8* buf, size_t count) {
         if(!isWritable()) return -EINVAL;
         ssize_t nbytes = ::write(hostFd_, buf, count);
         if(nbytes < 0) return -errno;
