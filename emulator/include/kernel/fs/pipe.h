@@ -22,6 +22,8 @@ namespace kernel {
         std::unique_ptr<PipeEndpoint> tryCreateReader();
         std::unique_ptr<PipeEndpoint> tryCreateWriter();
 
+        void closedEndpoint(const PipeEndpoint*);
+
         void close() override;
         bool keepAfterClose() const override { return false; }
         std::optional<int> hostFileDescriptor() const override { return {}; };
@@ -36,7 +38,8 @@ namespace kernel {
         Pipe(FS* fs, int flags) : FsObject(fs), flags_(flags) { }
         std::deque<u8> data_;
         int flags_;
-        std::vector<PipeEndpoint*> endpoints_;
+        std::vector<PipeEndpoint*> readEndpoints_;
+        std::vector<PipeEndpoint*> writeEndpoints_;
     };
 
     class PipeEndpoint : public File {

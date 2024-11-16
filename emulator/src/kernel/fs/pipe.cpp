@@ -2,6 +2,7 @@
 #include "kernel/fs/openfiledescription.h"
 #include "host/host.h"
 #include "verify.h"
+#include <algorithm>
 #include <sys/errno.h>
 
 namespace kernel {
@@ -12,18 +13,24 @@ namespace kernel {
 
     std::unique_ptr<PipeEndpoint> Pipe::tryCreateReader() {
         auto ptr = PipeEndpoint::tryCreate(fs_, this, PipeSide::READ, flags_);
-        if(!!ptr) endpoints_.push_back(ptr.get());
+        if(!!ptr) readEndpoints_.push_back(ptr.get());
         return ptr;
     }
 
     std::unique_ptr<PipeEndpoint> Pipe::tryCreateWriter() {
         auto ptr = PipeEndpoint::tryCreate(fs_, this, PipeSide::WRITE, flags_);
-        if(!!ptr) endpoints_.push_back(ptr.get());
+        if(!!ptr) writeEndpoints_.push_back(ptr.get());
         return ptr;
     }
 
+    void Pipe::closedEndpoint(const PipeEndpoint* endpoint) {
+        readEndpoints_.erase(std::remove(readEndpoints_.begin(), readEndpoints_.end(), endpoint), readEndpoints_.end());
+        writeEndpoints_.erase(std::remove(writeEndpoints_.begin(), writeEndpoints_.end(), endpoint), writeEndpoints_.end());
+    }
+
     void Pipe::close() {
-        verify(endpoints_.empty(), "cannot close pipe with active endpoints");
+        verify(readEndpoints_.empty(), "cannot close pipe with active read endpoints");
+        verify(writeEndpoints_.empty(), "cannot close pipe with active write endpoints");
     }
 
     std::unique_ptr<PipeEndpoint> PipeEndpoint::tryCreate(FS* fs, Pipe* pipe, PipeSide side, int flags) {
@@ -31,7 +38,7 @@ namespace kernel {
     }
 
     void PipeEndpoint::close() {
-        (void)flags_;
+        pipe_->closedEndpoint(this);
     }
 
     bool Pipe::canRead() const {
@@ -45,7 +52,13 @@ namespace kernel {
 
     ErrnoOrBuffer Pipe::read(OpenFileDescription& openFileDescription, size_t size) {
         bool nonBlocking = openFileDescription.statusFlags().test(FS::StatusFlags::NONBLOCK);
-        if(data_.empty() && nonBlocking) return ErrnoOrBuffer(Buffer{});
+        if(data_.empty() && nonBlocking) {
+            if(writeEndpoints_.empty()) {
+                return ErrnoOrBuffer(Buffer{});
+            } else {
+                return ErrnoOrBuffer(-EAGAIN);
+            }
+        }
         verify(!data_.empty(), [&]() {
             fmt::print("Reading from blocking empty pipe not implemented\n");
             fmt::print("Pipe is non-blocking: {}\n", openFileDescription.statusFlags().test(FS::StatusFlags::NONBLOCK));
