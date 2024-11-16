@@ -146,9 +146,13 @@ namespace kernel {
         return ErrnoOrBuffer(-ENOTSUP);
     }
 
-    off_t ShadowFile::lseek(off_t, int) {
-        verify(false, "implement lseek on ShadowFile");
-        return -EINVAL;
+    off_t ShadowFile::lseek(off_t offset, int whence) {
+        verify(whence == SEEK_SET, [&]() {
+            fmt::print("implement lseek(offset={}, whence={}) on ShadowFile", offset, whence);
+        });
+        if(offset < 0) return -EINVAL;
+        if((size_t)offset > data_.size()) return -EINVAL;
+        return offset; // ok
     }
 
     ErrnoOrBuffer ShadowFile::getdents64(size_t) {
