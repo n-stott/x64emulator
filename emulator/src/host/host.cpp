@@ -325,6 +325,8 @@ namespace kernel {
             case F_SETFD: return "F_SETFD";
             case F_GETFL: return "F_GETFL";
             case F_SETFL: return "F_SETFL";
+            case F_SETLK: return "F_SETLK";
+            case F_SETLKW: return "F_SETLKW";
             default: break;
         }
         return "unknown fcntl " + std::to_string(cmd);
