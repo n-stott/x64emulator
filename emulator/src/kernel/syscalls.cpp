@@ -102,6 +102,7 @@ namespace kernel {
             case 0x57: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::unlink, regs));
             case 0x59: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::readlink, regs));
             case 0x5a: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::chmod, regs));
+            case 0x5c: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::chown, regs));
             case 0x5f: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::umask, regs));
             case 0x60: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::gettimeofday, regs));
             case 0x63: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::sysinfo, regs));
@@ -844,7 +845,17 @@ namespace kernel {
             print("Sys::chmod(path={}, mode={}) = {}\n",
                         path, mode, -ENOTSUP);
         }
-        warn(fmt::format("chmod not implemented"));
+        warn("chmod not implemented");
+        return -ENOTSUP;
+    }
+
+    int Sys::chown(x64::Ptr pathname, uid_t owner, gid_t group) {
+        if(logSyscalls_) {
+            std::string path = mmu_.readString(pathname);
+            print("Sys::chown(path={}, owner={}, group={}) = {}\n",
+                        path, owner, group, -ENOTSUP);
+        }
+        warn("chown not implemented");
         return -ENOTSUP;
     }
 
@@ -853,7 +864,7 @@ namespace kernel {
             print("Sys::umask(mask={}) = {}\n",
                         mask, 0777);
         }
-        warn(fmt::format("umask not implemented"));
+        warn("umask not implemented");
         return 0777;
     }
 
@@ -941,6 +952,7 @@ namespace kernel {
             std::string path = mmu_.readString(filename);
             print("Sys::utime(filename={}, times={:#x} = {})\n", path, times.address(), -ENOTSUP);
         }
+        warn("utime not implemented");
         return -ENOTSUP;
     }
 

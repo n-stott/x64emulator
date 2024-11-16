@@ -229,6 +229,8 @@ namespace kernel {
         ssize_t readlink(x64::Ptr pathname, x64::Ptr buf, size_t bufsiz);
         // 0x5a
         int chmod(x64::Ptr pathname, mode_t mode);
+        // 0x5c
+        int chown(x64::Ptr pathname, uid_t owner, gid_t group);
         // 0x5f
         int umask(int mask);
         // 0x60
