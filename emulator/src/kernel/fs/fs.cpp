@@ -12,7 +12,7 @@
 #include "kernel/fs/shadowfile.h"
 #include "kernel/fs/socket.h"
 #include "kernel/fs/ttydevice.h"
-#include "kernel/kernel.h"
+#include "kernel/host.h"
 #include "verify.h"
 #include <fmt/core.h>
 #include <fmt/color.h>
@@ -48,7 +48,7 @@ namespace kernel {
     }
 
     void FS::findCurrentWorkDirectory() {
-        auto bufferOrError = kernel_.host().getcwd(1024);
+        auto bufferOrError = Host::getcwd(1024);
         verify(!bufferOrError.isError());
         std::string cwdpathname;
         bufferOrError.errorOrWith<int>([&](const Buffer& buf) {
@@ -369,14 +369,14 @@ namespace kernel {
         auto absolutePathname = toAbsolutePathname(pathname);
         auto path = Path::tryCreate(absolutePathname);
         verify(!!path, "Unable to create path");
-        return kernel_.host().access(absolutePathname, mode);
+        return Host::access(absolutePathname, mode);
     }
 
     int FS::faccessat(FS::FD dirfd, const std::string& pathname, int mode) {
         auto absolutePathname = toAbsolutePathname(pathname, dirfd);
         auto path = Path::tryCreate(absolutePathname);
         verify(!!path, "Unable to create path");
-        return kernel_.host().access(absolutePathname, mode);
+        return Host::access(absolutePathname, mode);
     }
 
     FS::FD FS::memfd_create(const std::string& name, unsigned int flags) {
@@ -455,7 +455,7 @@ namespace kernel {
             File* file = tryGetFile(*path);
             if(!!file) return file->stat();
         }
-        return kernel_.host().stat(pathname);
+        return Host::stat(pathname);
     }
 
     ErrnoOrBuffer FS::fstat(FD fd) {
@@ -471,7 +471,7 @@ namespace kernel {
             verify(false, "implement statx in FS");
             return ErrnoOrBuffer(-ENOTSUP);
         } else {
-            return kernel_.host().statx(Host::cwdfd(), pathname, flags, mask);
+            return Host::statx(Host::cwdfd(), pathname, flags, mask);
         }
         
     }
@@ -486,7 +486,7 @@ namespace kernel {
             verify(false, "implement fstatat in FS");
             return ErrnoOrBuffer(-ENOTSUP);
         } else {
-            return kernel_.host().fstatat64(Host::cwdfd(), pathname, flags);
+            return Host::fstatat64(Host::cwdfd(), pathname, flags);
         }
     }
 

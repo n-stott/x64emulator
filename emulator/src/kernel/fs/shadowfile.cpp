@@ -3,7 +3,6 @@
 #include "kernel/fs/openfiledescription.h"
 #include "kernel/fs/path.h"
 #include "kernel/host.h"
-#include "kernel/kernel.h"
 #include "scopeguard.h"
 #include "verify.h"
 #include <fmt/core.h>
@@ -129,8 +128,8 @@ namespace kernel {
                     | (u32)File::Mode::IRWXG
                     | (u32)File::Mode::IRWXO;
             st.st_nlink = 0;
-            st.st_uid = (uid_t)fs_->kernel().host().getuid();
-            st.st_gid = (gid_t)fs_->kernel().host().getgid();
+            st.st_uid = (uid_t)Host::getuid();
+            st.st_gid = (gid_t)Host::getgid();
             st.st_rdev = 0; // dummy value
             st.st_size = (off_t)data_.size();
             st.st_blksize = 0x200; // dummy value

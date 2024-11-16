@@ -1,9 +1,8 @@
 #include "kernel/fs/directory.h"
 #include "kernel/fs/hostdirectory.h"
 #include "kernel/fs/shadowdirectory.h"
-#include "kernel/kernel.h"
-#include "kernel/host.h"
 #include "verify.h"
+#include <algorithm>
 #include <stack>
 #include <dirent.h>
 

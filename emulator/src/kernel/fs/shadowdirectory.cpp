@@ -1,7 +1,7 @@
 #include "kernel/fs/shadowdirectory.h"
 #include "kernel/fs/fs.h"
 #include "kernel/fs/path.h"
-#include "kernel/kernel.h"
+#include "kernel/host.h"
 #include "verify.h"
 
 namespace kernel {
@@ -29,12 +29,12 @@ namespace kernel {
 
     ErrnoOrBuffer ShadowDirectory::stat() {
         std::string path = this->path();
-        return fs_->kernel().host().stat(path);
+        return Host::stat(path);
     }
 
     ErrnoOrBuffer ShadowDirectory::statfs() {
         std::string path = this->path();
-        auto errnoOrBuffer = fs_->kernel().host().statfs(path);
+        auto errnoOrBuffer = Host::statfs(path);
         verify(!errnoOrBuffer.isError(), "ShadowDirectory::statfs returned error");
         return errnoOrBuffer;
     }

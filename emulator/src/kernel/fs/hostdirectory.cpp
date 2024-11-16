@@ -1,7 +1,6 @@
 #include "kernel/fs/hostdirectory.h"
 #include "kernel/fs/fs.h"
 #include "kernel/fs/path.h"
-#include "kernel/kernel.h"
 #include "kernel/host.h"
 #include "scopeguard.h"
 #include "verify.h"
@@ -78,17 +77,17 @@ namespace kernel {
 
     ErrnoOrBuffer HostDirectory::stat() {
         std::string path = this->path();
-        return fs_->kernel().host().stat(path);
+        return Host::stat(path);
     }
 
     ErrnoOrBuffer HostDirectory::statfs() {
         std::string path = this->path();
-        return fs_->kernel().host().statfs(path);
+        return Host::statfs(path);
     }
 
     ErrnoOrBuffer HostDirectory::getdents64(size_t count) {
         verify(!!hostFd_, "Directory must be opened first");
-        return fs_->kernel().host().getdents64(Host::FD{hostFd_.value()}, count); // NOLINT(bugprone-unchecked-optional-access)
+        return Host::getdents64(Host::FD{hostFd_.value()}, count); // NOLINT(bugprone-unchecked-optional-access)
     }
 
     std::optional<int> HostDirectory::fcntl(int cmd, int arg) {
