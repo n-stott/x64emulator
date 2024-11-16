@@ -33,7 +33,7 @@ namespace kernel {
         virtual ErrnoOrBuffer read(OpenFileDescription&, size_t count) = 0;
         virtual ssize_t write(OpenFileDescription&, const u8* buf, size_t count) = 0;
 
-        virtual off_t lseek(off_t offset, int whence) = 0;
+        virtual off_t lseek(OpenFileDescription&, off_t offset, int whence) = 0;
 
         enum class Mode : u32 {
             ISUID = 04000, // set-user-ID bit (see execve(2))

@@ -107,7 +107,7 @@ namespace kernel {
         return ErrnoOrBuffer(-ENOTSUP);
     }
 
-    off_t ShadowDevice::lseek(off_t, int) {
+    off_t ShadowDevice::lseek(OpenFileDescription&, off_t, int) {
         verify(false, "ShadowDevice::lseek not implemented");
         return -ENOTSUP;
     }

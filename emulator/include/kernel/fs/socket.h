@@ -44,7 +44,7 @@ namespace kernel {
         ErrnoOrBuffer read(OpenFileDescription&, size_t) override;
         ssize_t write(OpenFileDescription&, const u8* buf, size_t) override;
 
-        off_t lseek(off_t offset, int whence) override;
+        off_t lseek(OpenFileDescription&, off_t offset, int whence) override;
 
         ErrnoOrBuffer stat() override;
         ErrnoOrBuffer statfs() override;

@@ -108,7 +108,7 @@ namespace kernel {
         return ErrnoOrBuffer(Buffer{std::move(buf)});
     }
 
-    off_t HostFile::lseek(off_t offset, int whence) {
+    off_t HostFile::lseek(OpenFileDescription&, off_t offset, int whence) {
         off_t ret = ::lseek(hostFd_, offset, whence);
         if(ret < 0) return -errno;
         return ret;

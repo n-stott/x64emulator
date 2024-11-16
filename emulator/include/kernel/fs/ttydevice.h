@@ -33,7 +33,7 @@ namespace kernel {
 
         ErrnoOrBuffer stat() override;
 
-        off_t lseek(off_t offset, int whence) override;
+        off_t lseek(OpenFileDescription&, off_t offset, int whence) override;
         
         ErrnoOrBuffer getdents64(size_t count) override;
         std::optional<int> fcntl(int cmd, int arg) override;

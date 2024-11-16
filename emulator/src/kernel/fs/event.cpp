@@ -62,7 +62,7 @@ namespace kernel {
         return sizeof(value);
     }
 
-    off_t Event::lseek(off_t, int) {
+    off_t Event::lseek(OpenFileDescription&, off_t, int) {
         return -ESPIPE;
     }
 

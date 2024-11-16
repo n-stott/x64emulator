@@ -18,7 +18,7 @@ namespace kernel {
         return -ENOTSUP;
     }
 
-    off_t Epoll::lseek(off_t, int) {
+    off_t Epoll::lseek(OpenFileDescription&, off_t, int) {
         return -ESPIPE;
     }
 

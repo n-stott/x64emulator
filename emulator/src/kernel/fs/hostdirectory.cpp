@@ -68,7 +68,7 @@ namespace kernel {
         hostFd_.reset();
     }
 
-    off_t HostDirectory::lseek(off_t offset, int whence) {
+    off_t HostDirectory::lseek(OpenFileDescription&, off_t offset, int whence) {
         verify(!!hostFd_, "Trying to close un-opened directory");
         off_t ret = ::lseek(hostFd_.value(), offset, whence); // NOLINT(bugprone-unchecked-optional-access)
         if(ret < 0) return -errno;

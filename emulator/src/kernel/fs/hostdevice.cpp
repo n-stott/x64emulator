@@ -90,7 +90,7 @@ namespace kernel {
         return ErrnoOrBuffer(-ENOTSUP);
     }
 
-    off_t HostDevice::lseek(off_t, int) {
+    off_t HostDevice::lseek(OpenFileDescription&, off_t, int) {
         verify(false, "HostDevice::lseek not implemented");
         return -ENOTSUP;
     }

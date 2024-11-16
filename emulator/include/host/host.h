@@ -104,6 +104,12 @@ namespace kernel {
             static bool isNonBlock(int type);
         };
 
+        struct Lseek {
+            static bool isSeekSet(int whence);
+            static bool isSeekCur(int whence);
+            static bool isSeekEnd(int whence);
+        };
+
         struct SchedAttr {
             u32 size;
             u32 schedPolicy;

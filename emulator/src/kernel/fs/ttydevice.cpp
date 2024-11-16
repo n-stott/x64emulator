@@ -102,7 +102,7 @@ namespace kernel {
         return ErrnoOrBuffer(Buffer{std::move(buf)});
     }
 
-    off_t TtyDevice::lseek(off_t, int) {
+    off_t TtyDevice::lseek(OpenFileDescription&, off_t, int) {
         return -ESPIPE;
     }
 

@@ -180,6 +180,18 @@ namespace kernel {
     bool Host::SocketType::isNonBlock(int type) {
         return type & SOCK_NONBLOCK;
     }
+    
+    bool Host::Lseek::isSeekSet(int whence) {
+        return whence == SEEK_SET;
+    }
+    
+    bool Host::Lseek::isSeekCur(int whence) {
+        return whence == SEEK_CUR;
+    }
+    
+    bool Host::Lseek::isSeekEnd(int whence) {
+        return whence == SEEK_END;
+    }
 
     Host::SchedAttr Host::getSchedulerAttributes() {
         Host::SchedAttr attr;

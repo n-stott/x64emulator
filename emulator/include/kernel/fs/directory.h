@@ -48,7 +48,7 @@ namespace kernel {
         ErrnoOrBuffer read(OpenFileDescription&, size_t count) override;
         ssize_t write(OpenFileDescription&, const u8* buf, size_t count) override;
 
-        off_t lseek(off_t offset, int whence) override;
+        off_t lseek(OpenFileDescription&, off_t offset, int whence) override;
 
         std::optional<int> fcntl(int cmd, int arg) override;
         ErrnoOrBuffer ioctl(unsigned long request, const Buffer& buffer) override;

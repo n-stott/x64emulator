@@ -145,13 +145,23 @@ namespace kernel {
         return ErrnoOrBuffer(-ENOTSUP);
     }
 
-    off_t ShadowFile::lseek(off_t offset, int whence) {
-        verify(whence == SEEK_SET, [&]() {
-            fmt::print("implement lseek(offset={}, whence={}) on ShadowFile\n", offset, whence);
-        });
-        if(offset < 0) return -EINVAL;
-        if((size_t)offset > data_.size()) return -EINVAL;
-        return offset; // ok
+    off_t ShadowFile::lseek(OpenFileDescription& openFileDescription, off_t offset, int whence) {
+        off_t baseOffset = 0;
+        if(Host::Lseek::isSeekSet(whence)) {
+            baseOffset = 0;
+        } else if(Host::Lseek::isSeekCur(whence)) {
+            baseOffset = openFileDescription.offset();
+        } else if(Host::Lseek::isSeekEnd(whence)) {
+            baseOffset = (off_t)data_.size();
+        } else {
+            return -EINVAL;
+        }
+        if(baseOffset + offset < 0) return -EINVAL;
+        if((size_t)(baseOffset + offset) > data_.size()) {
+            verify(false, "Seeking beyond file size not implemented in ShadowFile");
+            return -EINVAL;
+        }
+        return baseOffset + offset;
     }
 
     ErrnoOrBuffer ShadowFile::getdents64(size_t) {

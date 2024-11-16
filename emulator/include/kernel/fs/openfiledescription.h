@@ -78,7 +78,7 @@ namespace kernel {
         }
 
         off_t lseek(off_t offset, int whence) {
-            off_t newoffset = file_->lseek(offset, whence);
+            off_t newoffset = file_->lseek(*this, offset, whence);
             if(newoffset < 0) return newoffset;
             offset_ = newoffset;
             return newoffset;

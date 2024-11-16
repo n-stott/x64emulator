@@ -99,7 +99,7 @@ namespace kernel {
         return -EINVAL;
     }
 
-    off_t Directory::lseek(off_t, int) {
+    off_t Directory::lseek(OpenFileDescription&, off_t, int) {
         verify(false, "Cannot seek in directory");
         return -EINVAL;
     }

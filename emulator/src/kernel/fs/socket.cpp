@@ -139,7 +139,7 @@ namespace kernel {
         return nbytes;
     }
 
-    off_t Socket::lseek(off_t, int) {
+    off_t Socket::lseek(OpenFileDescription&, off_t, int) {
         return -ESPIPE;
     }
 

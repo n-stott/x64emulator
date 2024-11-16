@@ -19,7 +19,7 @@ namespace kernel {
         void open() override;
         void close() override;
 
-        off_t lseek(off_t offset, int whence) override;
+        off_t lseek(OpenFileDescription&, off_t offset, int whence) override;
 
         ErrnoOrBuffer stat() override;
         ErrnoOrBuffer statfs() override;
