@@ -255,6 +255,8 @@ namespace kernel {
         int getresuid(x64::Ptr32 ruid, x64::Ptr32 euid, x64::Ptr32 suid);
         // 0x78
         int getresgid(x64::Ptr32 rgid, x64::Ptr32 egid, x64::Ptr32 sgid);
+        // 0x83
+        int sigaltstack(x64::Ptr ss, x64::Ptr old_ss);
         // 0x84
         int utime(x64::Ptr filename, x64::Ptr times);
         // 0x89

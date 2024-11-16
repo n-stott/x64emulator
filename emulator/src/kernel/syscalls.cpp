@@ -115,6 +115,7 @@ namespace kernel {
             case 0x73: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::getgroups, regs));
             case 0x76: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::getresuid, regs));
             case 0x78: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::getresgid, regs));
+            case 0x83: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::sigaltstack, regs));
             case 0x84: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::utime, regs));
             case 0x89: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::statfs, regs));
             case 0x8a: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::fstatfs, regs));
@@ -945,6 +946,14 @@ namespace kernel {
         mmu_.write32(egid, (u32)creds.egid);
         mmu_.write32(sgid, (u32)creds.sgid);
         return 0;
+    }
+
+    int Sys::sigaltstack(x64::Ptr ss, x64::Ptr old_ss) {
+        if(logSyscalls_) {
+            print("Sys::sigaltstack(ss={:#x}, old_ss={:#x} = {})\n", ss.address(), old_ss.address(), -ENOTSUP);
+        }
+        warn("sigaltstack not implemented");
+        return -ENOTSUP;
     }
 
     int Sys::utime(x64::Ptr filename, x64::Ptr times) {
