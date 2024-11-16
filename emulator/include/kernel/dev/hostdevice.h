@@ -1,27 +1,26 @@
-#ifndef TTYDEVICE_H
-#define TTYDEVICE_H
+#ifndef HOSTDEVICE_H
+#define HOSTDEVICE_H
 
-#include "kernel/fs/shadowdevice.h"
+#include "kernel/dev/device.h"
 #include "kernel/fs/fs.h"
 #include <fmt/core.h>
 #include <memory>
-#include <optional>
 #include <string>
 
 namespace kernel {
 
     class Directory;
 
-    class TtyDevice : public ShadowDevice {
+    class HostDevice : public Device {
     public:
-        static TtyDevice* tryCreateAndAdd(FS* fs, Directory* parent, const std::string& pathname);
+        static File* tryCreateAndAdd(FS* fs, Directory* parent, const std::string& pathname);
 
         bool isReadable() const override { return true; }
-        bool isWritable() const override { return true; }
+        bool isWritable() const override { return false; }
 
         bool isPollable() const override { return true; }
         bool canRead() const override;
-        bool canWrite() const override { return true; }
+        bool canWrite() const override;
         
         void close() override;
         bool keepAfterClose() const override { return false; }
@@ -31,20 +30,22 @@ namespace kernel {
         ErrnoOrBuffer read(OpenFileDescription&, size_t count) override;
         ssize_t write(OpenFileDescription&, const u8* buf, size_t count) override;
 
-        ErrnoOrBuffer stat() override;
-
         off_t lseek(OpenFileDescription&, off_t offset, int whence) override;
+
+        ErrnoOrBuffer stat() override;
+        ErrnoOrBuffer statfs() override;
         
         ErrnoOrBuffer getdents64(size_t count) override;
         std::optional<int> fcntl(int cmd, int arg) override;
         ErrnoOrBuffer ioctl(unsigned long request, const Buffer& buffer) override;
 
         std::string className() const override {
-            return fmt::format("TtyDevice(realfd={})", hostFd_.value_or(-1));
+            return fmt::format("HostDevice(realfd={})", hostFd_);
         }
 
     private:
-        TtyDevice(FS* fs, Directory* dir, std::string name, std::optional<int> hostFd) : ShadowDevice(fs, dir, std::move(name), hostFd) { }
+        HostDevice(FS* fs, Directory* dir, std::string name, int hostFd) : Device(fs, dir, std::move(name)), hostFd_(hostFd) { }
+        int hostFd_ { -1 };
     };
 
 }

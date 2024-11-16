@@ -1,4 +1,4 @@
-#include "kernel/fs/hostdevice.h"
+#include "kernel/dev/hostdevice.h"
 #include "kernel/fs/path.h"
 #include "host/host.h"
 #include "scopeguard.h"

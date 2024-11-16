@@ -1,7 +1,7 @@
 #ifndef SHADOWDEVICE_H
 #define SHADOWDEVICE_H
 
-#include "kernel/fs/device.h"
+#include "kernel/dev/device.h"
 #include "kernel/fs/fs.h"
 #include <fmt/core.h>
 #include <memory>

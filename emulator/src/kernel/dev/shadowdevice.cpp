@@ -1,5 +1,5 @@
-#include "kernel/fs/shadowdevice.h"
-#include "kernel/fs/ttydevice.h"
+#include "kernel/dev/shadowdevice.h"
+#include "kernel/dev/tty.h"
 #include "kernel/fs/path.h"
 #include "host/host.h"
 #include "scopeguard.h"
@@ -33,7 +33,7 @@ namespace kernel {
         }
 
         if(pathname == "/dev/tty") {
-            return TtyDevice::tryCreateAndAdd(fs, parent, name);
+            return Tty::tryCreateAndAdd(fs, parent, name);
         }
 
         int flags = O_RDWR | O_CLOEXEC;

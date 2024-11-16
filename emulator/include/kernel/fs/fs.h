@@ -19,7 +19,7 @@ namespace kernel {
     class OpenFileDescription;
     class Path;
     class Pipe;
-    class TtyDevice;
+    class Tty;
 
     class FS {
     public:
@@ -215,7 +215,7 @@ namespace kernel {
 
         Kernel& kernel_;
         std::unique_ptr<Directory> root_;
-        TtyDevice* tty_ { nullptr };
+        Tty* tty_ { nullptr };
         std::vector<std::unique_ptr<File>> orphanFiles_;
         std::vector<std::unique_ptr<Pipe>> pipes_;
         Directory* currentWorkDirectory_ { nullptr };

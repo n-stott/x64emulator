@@ -42,21 +42,21 @@ add_library(x64emulator STATIC
     src/host/host.cpp
     src/host/hostinstructions.cpp
     src/kernel/auxiliaryvector.cpp
+    src/kernel/dev/hostdevice.cpp
+    src/kernel/dev/shadowdevice.cpp
+    src/kernel/dev/tty.cpp
     src/kernel/fs/directory.cpp
     src/kernel/fs/epoll.cpp
     src/kernel/fs/event.cpp
     src/kernel/fs/file.cpp
     src/kernel/fs/fs.cpp
-    src/kernel/fs/hostdevice.cpp
     src/kernel/fs/hostdirectory.cpp
     src/kernel/fs/hostfile.cpp
     src/kernel/fs/path.cpp
     src/kernel/fs/pipe.cpp
-    src/kernel/fs/shadowdevice.cpp
     src/kernel/fs/shadowdirectory.cpp
     src/kernel/fs/shadowfile.cpp
     src/kernel/fs/socket.cpp
-    src/kernel/fs/ttydevice.cpp
     src/kernel/kernel.cpp
     src/kernel/scheduler.cpp
     src/kernel/syscalls.cpp

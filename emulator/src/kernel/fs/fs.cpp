@@ -1,17 +1,17 @@
 #include "kernel/fs/fs.h"
+#include "kernel/dev/hostdevice.h"
+#include "kernel/dev/shadowdevice.h"
+#include "kernel/dev/tty.h"
 #include "kernel/fs/openfiledescription.h"
 #include "kernel/fs/epoll.h"
 #include "kernel/fs/event.h"
 #include "kernel/fs/regularfile.h"
-#include "kernel/fs/hostdevice.h"
 #include "kernel/fs/hostdirectory.h"
 #include "kernel/fs/hostfile.h"
 #include "kernel/fs/path.h"
 #include "kernel/fs/pipe.h"
-#include "kernel/fs/shadowdevice.h"
 #include "kernel/fs/shadowfile.h"
 #include "kernel/fs/socket.h"
-#include "kernel/fs/ttydevice.h"
 #include "host/host.h"
 #include "verify.h"
 #include <fmt/core.h>
@@ -27,7 +27,7 @@ namespace kernel {
         root_ = HostDirectory::tryCreateRoot(this);
         verify(!!root_, "Unable to create root directory");
         findCurrentWorkDirectory();
-        tty_ = TtyDevice::tryCreateAndAdd(this, root_.get(), "/dev/tty");
+        tty_ = Tty::tryCreateAndAdd(this, root_.get(), "/dev/tty");
         createStandardStreams();
     }
     

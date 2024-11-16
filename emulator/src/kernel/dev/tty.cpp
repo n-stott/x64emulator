@@ -1,4 +1,4 @@
-#include "kernel/fs/ttydevice.h"
+#include "kernel/dev/tty.h"
 #include "kernel/fs/path.h"
 #include "scopeguard.h"
 #include "verify.h"
@@ -11,7 +11,7 @@
 
 namespace kernel {
 
-    TtyDevice* TtyDevice::tryCreateAndAdd(FS* fs, Directory* parent, const std::string& name) {
+    Tty* Tty::tryCreateAndAdd(FS* fs, Directory* parent, const std::string& name) {
         std::string pathname;
         if(!parent || parent == fs->root()) {
             pathname = name;
@@ -49,11 +49,11 @@ namespace kernel {
 
         guard.disable();
 
-        auto ttyDevice = std::unique_ptr<TtyDevice>(new TtyDevice(fs, containingDirectory, path->last(), fd));
-        return containingDirectory->addFile(std::move(ttyDevice));
+        auto tty = std::unique_ptr<Tty>(new Tty(fs, containingDirectory, path->last(), fd));
+        return containingDirectory->addFile(std::move(tty));
     }
 
-    void TtyDevice::close() {
+    void Tty::close() {
         if(refCount_ > 0) return;
         if(!!hostFd_) {
             int rc = ::close(hostFd_.value());
@@ -61,7 +61,7 @@ namespace kernel {
         }
     }
 
-    bool TtyDevice::canRead() const {
+    bool Tty::canRead() const {
         if(!isPollable()) return false;
         if(!hostFd_) return false;
         struct pollfd pfd;
@@ -74,7 +74,7 @@ namespace kernel {
         return !!(pfd.revents & POLLIN);
     }
 
-    ErrnoOrBuffer TtyDevice::read(OpenFileDescription&, size_t count) {
+    ErrnoOrBuffer Tty::read(OpenFileDescription&, size_t count) {
         if(!isReadable()) return ErrnoOrBuffer{-EBADF};
         if(!hostFd_) return ErrnoOrBuffer{-EBADF};
         std::vector<u8> buffer;
@@ -85,14 +85,14 @@ namespace kernel {
         return ErrnoOrBuffer(Buffer{std::move(buffer)});
     }
 
-    ssize_t TtyDevice::write(OpenFileDescription&, const u8* buf, size_t count) {
+    ssize_t Tty::write(OpenFileDescription&, const u8* buf, size_t count) {
         if(!isReadable()) return -EBADF;
         if(!hostFd_) return -EBADF;
         ssize_t ret = ::write(2, buf, count);
         return ret;
     }
 
-    ErrnoOrBuffer TtyDevice::stat() {
+    ErrnoOrBuffer Tty::stat() {
         if(!hostFd_) return ErrnoOrBuffer(-EBADF);
         struct stat st;
         int rc = ::fstat(hostFd_.value(), &st);
@@ -102,21 +102,21 @@ namespace kernel {
         return ErrnoOrBuffer(Buffer{std::move(buf)});
     }
 
-    off_t TtyDevice::lseek(OpenFileDescription&, off_t, int) {
+    off_t Tty::lseek(OpenFileDescription&, off_t, int) {
         return -ESPIPE;
     }
 
-    ErrnoOrBuffer TtyDevice::getdents64(size_t) {
-        verify(false, "TtyDevice::getdents64 not implemented");
+    ErrnoOrBuffer Tty::getdents64(size_t) {
+        verify(false, "Tty::getdents64 not implemented");
         return ErrnoOrBuffer(-ENOTSUP);
     }
 
-    std::optional<int> TtyDevice::fcntl(int, int) {
-        verify(false, "TtyDevice::fcntl not implemented");
+    std::optional<int> Tty::fcntl(int, int) {
+        verify(false, "Tty::fcntl not implemented");
         return -ENOTSUP;
     }
 
-    ErrnoOrBuffer TtyDevice::ioctl(unsigned long request, const Buffer& inputBuffer) {
+    ErrnoOrBuffer Tty::ioctl(unsigned long request, const Buffer& inputBuffer) {
         if(!hostFd_) {
             verify(false, "ShadowDevice without host backer is not implemented");
             return ErrnoOrBuffer(-ENOTSUP);
@@ -171,7 +171,7 @@ namespace kernel {
             }
             default: break;
         }
-        verify(false, fmt::format("TtyDevice::ioctl({:#x}) not implemented", request));
+        verify(false, fmt::format("Tty::ioctl({:#x}) not implemented", request));
         return ErrnoOrBuffer(-ENOTSUP);
     }
 
