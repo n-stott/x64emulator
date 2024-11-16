@@ -581,6 +581,7 @@ namespace kernel {
         // Note: we have to go here anyway, so the information makes it to the host when relevant
         File* file = openFileDescription->file();
         std::optional<int> fileRet = file->fcntl(cmd, arg);
+        // Note: if cmd is F_DUPFD or F_DUPFD_CLOEXEC, we probably leak a file descriptor on the host side...
         if(!!emulatedRet) {
             if(!!fileRet && emulatedRet != fileRet) {
                 warn(fmt::format("Emulation of fcntl failed : emulated = {}  file = {}\n"
