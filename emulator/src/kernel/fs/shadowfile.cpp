@@ -167,7 +167,7 @@ namespace kernel {
         }
         if(cmd == F_GETFL) {
             warn(fmt::format("ShadowFile::fcntl(F_GETFL, {}) not implemented", arg));
-            return 0;
+            return {}; // trust the open file description
         }
         if(cmd == F_ADD_SEALS) {
             warn(fmt::format("ShadowFile::fcntl(F_ADD_SEALS, {}) not implemented", arg));
