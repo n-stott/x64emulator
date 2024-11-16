@@ -147,7 +147,7 @@ namespace kernel {
 
     off_t ShadowFile::lseek(off_t offset, int whence) {
         verify(whence == SEEK_SET, [&]() {
-            fmt::print("implement lseek(offset={}, whence={}) on ShadowFile", offset, whence);
+            fmt::print("implement lseek(offset={}, whence={}) on ShadowFile\n", offset, whence);
         });
         if(offset < 0) return -EINVAL;
         if((size_t)offset > data_.size()) return -EINVAL;
