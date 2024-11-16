@@ -197,6 +197,10 @@ namespace kernel {
         return flag & O_DIRECTORY;
     }
 
+    bool Host::Open::isLargeFile(int flag) {
+        return flag & O_LARGEFILE;
+    }
+
     bool Host::Open::isNonBlock(int flag) {
         return flag & O_NONBLOCK;
     }

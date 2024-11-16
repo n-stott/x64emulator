@@ -89,6 +89,7 @@ namespace kernel {
             static bool isCloseOnExec(int flag);
             static bool isCreatable(int flag);
             static bool isDirectory(int flag);
+            static bool isLargeFile(int flag);
             static bool isNonBlock(int flag);
             static bool isTruncating(int flag);
         };

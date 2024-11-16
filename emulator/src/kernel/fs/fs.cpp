@@ -89,7 +89,7 @@ namespace kernel {
         // ASYNC     // not supported
         // DIRECT    // not supported
         // DSYNC     // not supported
-        // LARGEFILE // not supported
+        if(Host::Open::isLargeFile(flags)) sf.add(StatusFlags::LARGEFILE);
         // NOATIME   // not supported
         if(Host::Open::isNonBlock(flags))  sf.add(StatusFlags::NONBLOCK);
         // PATH      // not supported
@@ -207,6 +207,10 @@ namespace kernel {
             Permissions permissions) {
         (void)permissions;
         if(pathname.empty()) return FD{-ENOENT};
+
+        // For some reason, 64-bit linux adds this flag without notification
+        statusFlags.add(StatusFlags::LARGEFILE);
+
         bool canUseHostFile = true;
         if(accessMode.test(AccessMode::WRITE))       canUseHostFile = false;
         if(creationFlags.test(CreationFlags::CREAT)) canUseHostFile = false;
@@ -579,8 +583,10 @@ namespace kernel {
         File* file = openFileDescription->file();
         std::optional<int> fileRet = file->fcntl(cmd, arg);
         if(!!emulatedRet) {
-            if(!!fileRet) {
-                verify(emulatedRet == fileRet, "emulation of fcntl differs from file's answer");
+            if(!!fileRet && emulatedRet != fileRet) {
+                warn(fmt::format("Emulation of fcntl failed : emulated = {}  file = {}\n"
+                                 "    Note: this may be due to O_LARGEFILE (32768)",
+                    emulatedRet.value(), fileRet.value()));
             }
             return emulatedRet.value();
         } else {
@@ -895,12 +901,12 @@ namespace kernel {
                 int mask = 1 << i;
                 if(func(mask)) return mask;
             }
-            assert(false);
             return 0;
         };
         // Quick and dirty: do it by asking the host for each bit
         // see toStatusFlags
         if(statusFlags.test(StatusFlags::APPEND))    ret |= getActiveBit(&Host::Open::isAppending);
+        if(statusFlags.test(StatusFlags::LARGEFILE)) ret |= getActiveBit(&Host::Open::isLargeFile);
         if(statusFlags.test(StatusFlags::NONBLOCK))  ret |= getActiveBit(&Host::Open::isNonBlock);
         return ret;
     }
