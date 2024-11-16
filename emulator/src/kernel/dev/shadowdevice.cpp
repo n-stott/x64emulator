@@ -1,4 +1,5 @@
 #include "kernel/dev/shadowdevice.h"
+#include "kernel/dev/nulldevice.h"
 #include "kernel/dev/tty.h"
 #include "kernel/fs/path.h"
 #include "host/host.h"
@@ -13,6 +14,7 @@
 namespace kernel {
 
     std::vector<std::string> ShadowDevice::allAllowedDevices_ { // NOLINT(cert-err58-cpp)
+        "/dev/null",
         "/dev/tty",
     };
 
@@ -32,6 +34,9 @@ namespace kernel {
             verify(false, fmt::format("Device {} is not a supported shadow device", pathname));
         }
 
+        if(pathname == "/dev/null") {
+            return NullDevice::tryCreateAndAdd(fs, parent, name);
+        }
         if(pathname == "/dev/tty") {
             return Tty::tryCreateAndAdd(fs, parent, name);
         }

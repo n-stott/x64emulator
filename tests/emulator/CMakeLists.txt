@@ -64,6 +64,7 @@ create_simple_test(open_file_twice)
 create_simple_test(munmap)
 create_simple_test(devttywrite)
 create_simple_test(streams)
+create_simple_test(devnull)
 
 add_executable(test_trivial_c src/test_trivial.c)
 target_compile_options(test_trivial_c PUBLIC ${CC_OPTIONS})
