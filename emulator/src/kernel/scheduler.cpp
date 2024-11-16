@@ -312,9 +312,8 @@ namespace kernel {
         u32 nbWoken = 0;
         std::vector<FutexBlocker*> removableBlockers;
         for(auto& blocker : futexBlockers_) {
-            bool canUnblock = blocker.canUnblock(wordPtr);
+            bool canUnblock = blocker.tryUnblock(wordPtr);
             if(!canUnblock) continue;
-            blocker.thread()->setState(Thread::THREAD_STATE::RUNNABLE);
             removableBlockers.push_back(&blocker);
             ++nbWoken;
             if(nbWoken >= nbWaiters) break;

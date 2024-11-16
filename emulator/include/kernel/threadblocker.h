@@ -22,7 +22,7 @@ namespace kernel {
         static FutexBlocker withAbsoluteTimeout(Thread* thread, x64::Mmu& mmu, Timers& timers, x64::Ptr32 wordPtr, u32 expected, x64::Ptr timeout);
         static FutexBlocker withRelativeTimeout(Thread* thread, x64::Mmu& mmu, Timers& timers, x64::Ptr32 wordPtr, u32 expected, x64::Ptr timeout);
 
-        [[nodiscard]] bool canUnblock(x64::Ptr32 ptr) const;
+        [[nodiscard]] bool tryUnblock(x64::Ptr32 ptr) const;
         [[nodiscard]] bool hasTimeout() const { return !!timeLimit_; }
 
         Thread* thread() const { return thread_; }

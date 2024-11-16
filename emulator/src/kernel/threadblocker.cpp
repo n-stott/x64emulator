@@ -38,16 +38,26 @@ namespace kernel {
         }
     }
 
-    bool FutexBlocker::canUnblock(x64::Ptr32 ptr) const {
+    bool FutexBlocker::tryUnblock(x64::Ptr32 ptr) const {
         if(!!timeLimit_) {
             Timer* timer = timers_->get(0); // get the same timer as in the setup
             verify(!!timer);
             PreciseTime now = timer->now();
-            if(now > timeLimit_) return true;
+            if(now > timeLimit_) {
+                thread_->savedCpuState().regs.set(x64::R64::RAX, -ETIMEDOUT);
+                thread_->setState(Thread::THREAD_STATE::RUNNABLE);
+                return true;
+            }
         }
         if(ptr != wordPtr_) return false;
         u32 val = mmu_->read32(ptr);
-        return val != expected_;
+        if(val == expected_) {
+            return false;
+        } else {
+            thread_->savedCpuState().regs.set(x64::R64::RAX, 0);
+            thread_->setState(Thread::THREAD_STATE::RUNNABLE);
+            return true;
+        }
     }
 
     std::string FutexBlocker::toString() const {
@@ -92,12 +102,18 @@ namespace kernel {
             PreciseTime now = timer->now();
             timeout |= (now > timeLimit_);
         }
-        bool canUnblock = (nzrevents > 0) || timeout;
-        if(!canUnblock) return false;
-        mmu_->writeToMmu(pollfds_, pollfds);
-        thread_->savedCpuState().regs.set(x64::R64::RAX, nzrevents);
-        thread_->setState(Thread::THREAD_STATE::RUNNABLE);
-        return true;
+        if(nzrevents > 0) {
+            mmu_->writeToMmu(pollfds_, pollfds);
+            thread_->savedCpuState().regs.set(x64::R64::RAX, nzrevents);
+            thread_->setState(Thread::THREAD_STATE::RUNNABLE);
+            return true;
+        } else if (timeout) {
+            thread_->savedCpuState().regs.set(x64::R64::RAX, 0);
+            thread_->setState(Thread::THREAD_STATE::RUNNABLE);
+            return true;
+        } else {
+            return false;
+        }
     }
 
     std::string PollBlocker::toString() const {
