@@ -110,8 +110,8 @@ namespace kernel {
         int rename(const std::string& oldname, const std::string& newname);
         int unlink(const std::string& pathname);
 
-        int access(const std::string& pathname, int mode);
-        int faccessat(FD dirfd, const std::string& pathname, int mode);
+        int access(const std::string& pathname, int mode) const;
+        int faccessat(FD dirfd, const std::string& pathname, int mode) const;
 
         FD memfd_create(const std::string& name, unsigned int flags);
 
@@ -124,7 +124,7 @@ namespace kernel {
 
         ErrnoOrBuffer stat(const std::string& pathname);
         ErrnoOrBuffer fstat(FD fd);
-        ErrnoOrBuffer statx(FD dirfd, const std::string& pathname, int flags, unsigned int mask);
+        ErrnoOrBuffer statx(FD dirfd, const std::string& pathname, int flags, unsigned int mask) const;
         ErrnoOrBuffer fstatat64(FD dirfd, const std::string& pathname, int flags);
 
         ErrnoOrBuffer fstatfs(FD fd);

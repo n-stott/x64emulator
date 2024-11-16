@@ -365,14 +365,14 @@ namespace kernel {
         return 0;
     }
 
-    int FS::access(const std::string& pathname, int mode) {
+    int FS::access(const std::string& pathname, int mode) const {
         auto absolutePathname = toAbsolutePathname(pathname);
         auto path = Path::tryCreate(absolutePathname);
         verify(!!path, "Unable to create path");
         return Host::access(absolutePathname, mode);
     }
 
-    int FS::faccessat(FS::FD dirfd, const std::string& pathname, int mode) {
+    int FS::faccessat(FS::FD dirfd, const std::string& pathname, int mode) const {
         auto absolutePathname = toAbsolutePathname(pathname, dirfd);
         auto path = Path::tryCreate(absolutePathname);
         verify(!!path, "Unable to create path");
@@ -464,7 +464,7 @@ namespace kernel {
         return openFileDescription->file()->stat();
     }
 
-    ErrnoOrBuffer FS::statx(FD dirfd, const std::string& pathname, int flags, unsigned int mask) {
+    ErrnoOrBuffer FS::statx(FD dirfd, const std::string& pathname, int flags, unsigned int mask) const { // NOLINT(readability-convert-member-functions-to-static)
         verify(dirfd.fd == Host::cwdfd().fd, "dirfd is not cwd");
         auto path = Path::tryCreate(pathname);
         if(!!path) {
@@ -473,7 +473,6 @@ namespace kernel {
         } else {
             return Host::statx(Host::cwdfd(), pathname, flags, mask);
         }
-        
     }
 
     ErrnoOrBuffer FS::fstatat64(FD dirfd, const std::string& pathname, int flags) {
