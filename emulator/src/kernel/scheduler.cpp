@@ -7,10 +7,7 @@
 #include "verify.h"
 #include "x64/mmu.h"
 #include <algorithm>
-
-#ifdef MULTIPROCESSING
 #include <thread>
-#endif
 
 namespace emulator {
     extern bool signal_interrupt;
@@ -30,6 +27,7 @@ namespace kernel {
 
     void Scheduler::runOnWorkerThread(int id) {
         (void)id;
+        bool didShowCrashMessage = false;
         emulator::VM vm(mmu_, kernel_);
         while(!emulator::signal_interrupt) {
             try {
@@ -57,15 +55,13 @@ namespace kernel {
                             || std::any_of(futexBlockers_.begin(), futexBlockers_.end(), [](const FutexBlocker& blocker) { return blocker.hasTimeout(); });
                     if(needsToWaitForNewThreads) {
                         // If we need some time to pass, actually advance in time
+                        // Note: we actually need to honor the wait time. The host may need some time to give an answer.
+                        std::this_thread::sleep_for(std::chrono::milliseconds{1});
                         std::unique_lock lock(schedulerMutex_);
                         currentTime_ = std::max(currentTime_, currentTime_ + TimeDifference::fromNanoSeconds(1'000'000 )); // 1ms
                     } else {
                         // Otherwise, just wait a bit
-#ifndef NDEBUG
-                        for(volatile int i = 0; i < 1'000'000; ++i) { }
-#else
-                        for(volatile int i = 0; i < 1'000'000; ++i) { }
-#endif
+                        std::this_thread::sleep_for(std::chrono::milliseconds{1});
                     }
                     continue;
                 }
@@ -93,11 +89,12 @@ namespace kernel {
             } catch(...) {
                 kernel_.panic();
                 vm.crash();
+                didShowCrashMessage = true;
                 break;
             }
         }
 
-        if(emulator::signal_interrupt) {
+        if(emulator::signal_interrupt && !didShowCrashMessage) {
             kernel_.panic();
             vm.crash();
         }
