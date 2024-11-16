@@ -15,7 +15,7 @@
 
 namespace kernel {
 
-    File* HostFile::tryCreateAndAdd(FS* fs, Directory* parent, const std::string& name) {
+    File* HostFile::tryCreateAndAdd(FS* fs, Directory* parent, const std::string& name, BitFlags<FS::AccessMode> accessMode, bool closeOnExec) {
         std::string pathname;
         if(!parent || parent == fs->root()) {
             pathname = name;
@@ -23,7 +23,9 @@ namespace kernel {
             pathname = (parent->path() + "/" + name);
         }
 
-        int flags = O_RDONLY | O_CLOEXEC;
+        verify(!accessMode.test(FS::AccessMode::WRITE), "HostFile should not have write access");
+        int flags = O_RDONLY;
+        if(closeOnExec) flags |= O_CLOEXEC;
         int fd = ::openat(AT_FDCWD, pathname.c_str(), flags);
         if(fd < 0) return {};
 

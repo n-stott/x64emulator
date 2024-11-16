@@ -258,7 +258,7 @@ namespace kernel {
                 }
 
                 // try open the file
-                auto* hostBackedFile = HostFile::tryCreateAndAdd(this, root_.get(), absolutePathname);
+                auto* hostBackedFile = HostFile::tryCreateAndAdd(this, root_.get(), absolutePathname, accessMode, closeOnExec);
                 if(!!hostBackedFile) {
                     // create and add the node to the filesystem
                     hostBackedFile->open();

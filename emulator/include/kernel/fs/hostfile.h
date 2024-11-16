@@ -13,7 +13,7 @@ namespace kernel {
 
     class HostFile : public RegularFile {
     public:
-        static File* tryCreateAndAdd(FS* fs, Directory* parent, const std::string& pathname);
+        static File* tryCreateAndAdd(FS* fs, Directory* parent, const std::string& pathname, BitFlags<FS::AccessMode> accessMode, bool closeOnExec);
 
         bool isReadable() const override { return true; }
         bool isWritable() const override { return false; }
