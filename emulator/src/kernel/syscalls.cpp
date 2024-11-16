@@ -114,6 +114,7 @@ namespace kernel {
             case 0x73: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::getgroups, regs));
             case 0x76: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::getresuid, regs));
             case 0x78: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::getresgid, regs));
+            case 0x84: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::utime, regs));
             case 0x89: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::statfs, regs));
             case 0x8a: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::fstatfs, regs));
             case 0x8d: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::setpriority, regs));
@@ -933,6 +934,14 @@ namespace kernel {
         mmu_.write32(egid, (u32)creds.egid);
         mmu_.write32(sgid, (u32)creds.sgid);
         return 0;
+    }
+
+    int Sys::utime(x64::Ptr filename, x64::Ptr times) {
+        if(logSyscalls_) {
+            std::string path = mmu_.readString(filename);
+            print("Sys::utime(filename={}, times={:#x} = {})\n", path, times.address(), -ENOTSUP);
+        }
+        return -ENOTSUP;
     }
 
     int Sys::statfs(x64::Ptr pathname, x64::Ptr buf) {
