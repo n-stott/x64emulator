@@ -3158,6 +3158,17 @@ namespace x64 {
         return make_failed(insn);
     }
 
+    static X64Instruction makePmulhuw(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto rmssesrc = asRM128(src);
+        if(rssedst && rmssesrc) return X64Instruction::make<Insn::PMULHUW_RSSE_RMSSE>(insn.address, insn.size, rssedst.value(), rmssesrc.value());
+        return make_failed(insn);
+    }
+
     static X64Instruction makePmulhw(const cs_insn& insn) {
         const auto& x86detail = insn.detail->x86;
         assert(x86detail.op_count == 2);
@@ -3861,6 +3872,7 @@ namespace x64 {
             case X86_INS_PSUBW: return makePsubw(insn);
             case X86_INS_PSUBD: return makePsubd(insn);
             case X86_INS_PSUBQ: return makePsubq(insn);
+            case X86_INS_PMULHUW: return makePmulhuw(insn);
             case X86_INS_PMULHW: return makePmulhw(insn);
             case X86_INS_PMULLW: return makePmullw(insn);
             case X86_INS_PMULUDQ: return makePmuludq(insn);

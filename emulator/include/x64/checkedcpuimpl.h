@@ -264,6 +264,7 @@ namespace x64 {
         [[nodiscard]] static u128 psubd(u128 dst, u128 src);
         [[nodiscard]] static u128 psubq(u128 dst, u128 src);
 
+        [[nodiscard]] static u128 pmulhuw(u128 dst, u128 src);
         [[nodiscard]] static u128 pmulhw(u128 dst, u128 src);
         [[nodiscard]] static u128 pmullw(u128 dst, u128 src);
         [[nodiscard]] static u128 pmuludq(u128 dst, u128 src);

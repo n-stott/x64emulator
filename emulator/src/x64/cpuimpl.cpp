@@ -1382,6 +1382,25 @@ namespace x64 {
     u128 CpuImpl::psubd(u128 dst, u128 src) { return psub<u32>(dst, src); }
     u128 CpuImpl::psubq(u128 dst, u128 src) { return psub<u64>(dst, src); }
 
+    u128 CpuImpl::pmulhuw(u128 dst, u128 src) {
+        std::array<u16, 8> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        std::memcpy(DST.data(), &dst, sizeof(u128));
+
+        std::array<u16, 8> SRC;
+        static_assert(sizeof(SRC) == sizeof(u128));
+        std::memcpy(SRC.data(), &src, sizeof(u128));
+
+        for(size_t i = 0; i < 8; ++i) {
+            u32 prod = (u32)DST[i] * (u32)SRC[i];
+            u16 res[2];
+            std::memcpy(&res, &prod, sizeof(res));
+            DST[i] = res[1];
+        }
+        std::memcpy(&dst, DST.data(), sizeof(u128));
+        return dst;
+    }
+
     u128 CpuImpl::pmulhw(u128 dst, u128 src) {
         std::array<i16, 8> DST;
         static_assert(sizeof(DST) == sizeof(u128));

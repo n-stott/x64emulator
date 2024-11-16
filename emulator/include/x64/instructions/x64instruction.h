@@ -525,6 +525,7 @@ namespace x64 {
         PSUBW_RSSE_RMSSE,
         PSUBD_RSSE_RMSSE,
         PSUBQ_RSSE_RMSSE,
+        PMULHUW_RSSE_RMSSE,
         PMULHW_RSSE_RMSSE,
         PMULLW_RSSE_RMSSE,
         PMULUDQ_RSSE_RMSSE,

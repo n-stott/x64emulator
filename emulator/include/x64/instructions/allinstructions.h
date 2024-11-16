@@ -1130,6 +1130,12 @@ namespace x64 {
     };
 
     template<typename Dst, typename Src>
+    struct Pmulhuw {
+        Dst dst;
+        Src src;
+    };
+
+    template<typename Dst, typename Src>
     struct Pmulhw {
         Dst dst;
         Src src;
