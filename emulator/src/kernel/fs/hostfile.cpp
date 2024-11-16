@@ -1,7 +1,7 @@
 #include "kernel/fs/hostfile.h"
 #include "kernel/fs/openfiledescription.h"
 #include "kernel/fs/path.h"
-#include "kernel/host.h"
+#include "host/host.h"
 #include "scopeguard.h"
 #include "verify.h"
 #include <fmt/color.h>

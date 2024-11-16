@@ -1,5 +1,5 @@
 #include "utils.h"
-#include "kernel/host.h"
+#include "host/hostinstructions.h"
 #include <cmath>
 #include <cstring>
 
@@ -7,7 +7,7 @@
 // It rounds away from 0 for midpoints, instead of towards even.
 // We let the host do this work instead.
 i64 F64::round(f64 val) {
-    return kernel::Host::roundWithoutTruncation(val);
+    return host::roundWithoutTruncation(val);
 }
 
 F80 F80::fromLongDouble(long double d) {
@@ -77,7 +77,7 @@ i64 F80::castToI64(F80 val) {
 // It rounds away from 0 for midpoints, instead of towards even.
 // We let the host do this work instead.
 F80 F80::roundNearest(F80 val) {
-    return kernel::Host::round(val);
+    return host::round(val);
 }
 
 F80 F80::roundDown(F80 val) {

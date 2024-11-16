@@ -18,41 +18,6 @@ namespace kernel {
         Host();
         ~Host();
 
-        // math
-        static i64 roundWithoutTruncation(f64);
-        static f80 round(f80);
-
-        template<typename U>
-        struct IdivResult {
-            U quotient;
-            U remainder;
-        };
-
-        static IdivResult<u32> idiv32(u32 upperDividend, u32 lowerDividend, u32 divisor);
-        static IdivResult<u64> idiv64(u64 upperDividend, u64 lowerDividend, u64 divisor);
-
-
-        template<typename U>
-        struct ImulResult {
-            U lower;
-            U upper;
-            bool carry;
-            bool overflow;
-        };
-
-        static ImulResult<u64> imul64(u64 a, u64 b);
-
-        // cpu
-        struct CPUID {
-            u32 a, b, c, d;
-        };
-        static CPUID cpuid(u32 a, u32 c);
-
-        struct XGETBV {
-            u32 a, d;
-        };
-        static XGETBV xgetbv(u32 c);
-
         struct Mmap {
             static bool isAnonymous(int flags);
             static bool isFixed(int flags);

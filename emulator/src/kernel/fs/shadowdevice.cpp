@@ -1,7 +1,7 @@
 #include "kernel/fs/shadowdevice.h"
 #include "kernel/fs/ttydevice.h"
 #include "kernel/fs/path.h"
-#include "kernel/host.h"
+#include "host/host.h"
 #include "scopeguard.h"
 #include "verify.h"
 #include <asm/termbits.h>

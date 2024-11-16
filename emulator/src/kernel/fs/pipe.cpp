@@ -1,6 +1,6 @@
 #include "kernel/fs/pipe.h"
 #include "kernel/fs/openfiledescription.h"
-#include "kernel/host.h"
+#include "host/host.h"
 #include "verify.h"
 #include <sys/errno.h>
 

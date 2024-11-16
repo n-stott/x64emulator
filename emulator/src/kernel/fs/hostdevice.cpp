@@ -1,6 +1,6 @@
 #include "kernel/fs/hostdevice.h"
 #include "kernel/fs/path.h"
-#include "kernel/host.h"
+#include "host/host.h"
 #include "scopeguard.h"
 #include "verify.h"
 #include <fcntl.h>

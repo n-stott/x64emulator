@@ -1,5 +1,5 @@
 #include "kernel/auxiliaryvector.h"
-#include "kernel/host.h"
+#include "host/host.h"
 #include "utils.h"
 #include <cassert>
 #include <vector>

@@ -12,7 +12,7 @@
 #include "kernel/fs/shadowfile.h"
 #include "kernel/fs/socket.h"
 #include "kernel/fs/ttydevice.h"
-#include "kernel/host.h"
+#include "host/host.h"
 #include "verify.h"
 #include <fmt/core.h>
 #include <fmt/color.h>

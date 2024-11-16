@@ -17,11 +17,11 @@ target_link_libraries(elf-reader PUBLIC fmt::fmt-header-only)
 
 
 add_library(x64cpu STATIC
+    src/host/hostinstructions.cpp
     src/x64/checkedcpuimpl.cpp
     src/x64/cpuimpl.cpp
     src/x64/simd.cpp
     src/x64/x87.cpp
-    src/kernel/host.cpp
     src/utils.cpp
 )
 target_compile_options(x64cpu PUBLIC -Wall -Wextra -Wpedantic -pedantic -Wconversion -Werror -Wimplicit-fallthrough)
@@ -39,6 +39,8 @@ add_library(x64emulator STATIC
     src/emulator/emulator.cpp
     src/emulator/symbolprovider.cpp
     src/emulator/vm.cpp
+    src/host/host.cpp
+    src/host/hostinstructions.cpp
     src/kernel/auxiliaryvector.cpp
     src/kernel/fs/directory.cpp
     src/kernel/fs/epoll.cpp
@@ -70,7 +72,6 @@ add_library(x64emulator STATIC
     src/x64/registers.cpp
     src/x64/simd.cpp
     src/x64/x87.cpp
-    src/kernel/host.cpp
     src/utils.cpp
 )
 target_compile_options(x64emulator PUBLIC -Wall -Wextra -Wpedantic -pedantic -Wconversion -Werror -Wimplicit-fallthrough)

@@ -1,6 +1,7 @@
 #include "kernel/kernel.h"
 #include "kernel/auxiliaryvector.h"
 #include "kernel/thread.h"
+#include "host/host.h"
 #include "verify.h"
 #include "emulator/vm.h"
 #include "elf-reader/elf-reader.h"

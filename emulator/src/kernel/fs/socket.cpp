@@ -1,5 +1,5 @@
 #include "kernel/fs/socket.h"
-#include "kernel/host.h"
+#include "host/host.h"
 #include "verify.h"
 #include <fcntl.h>
 #include <unistd.h>

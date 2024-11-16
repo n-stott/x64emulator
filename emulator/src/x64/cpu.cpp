@@ -6,7 +6,7 @@
 #endif
 #include "x64/mmu.h"
 #include "emulator/vm.h"
-#include "kernel/host.h"
+#include "host/hostinstructions.h"
 #include "verify.h"
 #include <fmt/core.h>
 #include <cassert>
@@ -941,13 +941,13 @@ namespace x64 {
     }
 
     void Cpu::exec(const Idiv<RM32>& ins) {
-        auto res = kernel::Host::idiv32(get(R32::EDX), get(R32::EAX), get(ins.src));
+        auto res = host::idiv32(get(R32::EDX), get(R32::EAX), get(ins.src));
         set(R32::EAX, res.quotient);
         set(R32::EDX, res.remainder);
     }
 
     void Cpu::exec(const Idiv<RM64>& ins) {
-        auto res = kernel::Host::idiv64(get(R64::RDX), get(R64::RAX), get(ins.src));
+        auto res = host::idiv64(get(R64::RDX), get(R64::RAX), get(ins.src));
         set(R64::RAX, res.quotient);
         set(R64::RDX, res.remainder);
     }
@@ -2839,7 +2839,7 @@ namespace x64 {
     }
 
     void Cpu::exec(const Cpuid&) {
-        kernel::Host::CPUID cpuid = kernel::Host::cpuid(get(R32::EAX), get(R32::ECX));
+        host::CPUID cpuid = host::cpuid(get(R32::EAX), get(R32::ECX));
         set(R32::EAX, cpuid.a);
         set(R32::EBX, cpuid.b);
         set(R32::ECX, cpuid.c);
@@ -2847,7 +2847,7 @@ namespace x64 {
     }
 
     void Cpu::exec(const Xgetbv&) {
-        kernel::Host::XGETBV xgetbv = kernel::Host::xgetbv(get(R32::ECX));
+        host::XGETBV xgetbv = host::xgetbv(get(R32::ECX));
         set(R32::EAX, xgetbv.a);
         set(R32::EDX, xgetbv.d);
     }

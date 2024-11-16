@@ -1,7 +1,7 @@
 #include "x64/checkedcpuimpl.h"
 #include "x64/cpuimpl.h"
 #include "x64/flags.h"
-#include "kernel/host.h"
+#include "host/host.h"
 #include "utils.h"
 #include "cputestutils.h"
 #include "fmt/core.h"
