@@ -146,6 +146,7 @@ namespace kernel {
             case 0x10b: return threadRegs.set(x64::R64::RAX, invoke_syscall_4(&Sys::readlinkat, regs));
             case 0x10d: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::faccessat, regs));
             case 0x10e: return threadRegs.set(x64::R64::RAX, invoke_syscall_6(&Sys::pselect6, regs));
+            case 0x10f: return threadRegs.set(x64::R64::RAX, invoke_syscall_4(&Sys::ppoll, regs));
             case 0x111: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::set_robust_list, regs));
             case 0x112: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::get_robust_list, regs));
             case 0x118: return threadRegs.set(x64::R64::RAX, invoke_syscall_4(&Sys::utimensat, regs));
@@ -1438,6 +1439,15 @@ namespace kernel {
         if(exceptfds.address() != 0) mmu_.copyToMmu(exceptfds, (const u8*)&efds, sizeof(fd_set));
         if(timeout.address() != 0) mmu_.copyToMmu(timeout, (const u8*)&ts, sizeof(timespec));
         return ret;
+    }
+
+    int Sys::ppoll(x64::Ptr fds, int nfds, x64::Ptr tmo_p, x64::Ptr sigmask) {
+        if(logSyscalls_) {
+            print("Sys::ppoll(fds={:#x}, nfds={}, timeout={:#x}, sigmask={:#x}) = {}\n",
+                        fds.address(), nfds, tmo_p.address(), sigmask.address(), -ENOTSUP);
+        }
+        warn("ppoll not implemented");
+        return -ENOTSUP;
     }
 
     long Sys::set_robust_list(x64::Ptr head, size_t len) {

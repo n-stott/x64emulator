@@ -317,6 +317,8 @@ namespace kernel {
         int faccessat(int dirfd, x64::Ptr pathname, int mode);
         // 0x10e
         int pselect6(int nfds, x64::Ptr readfds, x64::Ptr writefds, x64::Ptr exceptfds, x64::Ptr timeout, x64::Ptr sigmask);
+        // 0x10f
+        int ppoll(x64::Ptr fds, int nfds, x64::Ptr tmo_p, x64::Ptr sigmask);
         // 0x111
         long set_robust_list(x64::Ptr head, size_t len);
         // 0x112
