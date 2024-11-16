@@ -1099,8 +1099,8 @@ namespace kernel {
             return onExit(nbWoken);
         }
         if(unmaskedOp == 7) {
-            warn("futex_unlock_pi returns bogus 0 value");
-            return onExit(-EPERM);
+            warn("futex_unlock_pi returns bogus ENOSYS value");
+            return onExit(-ENOSYS);
         }
         if(unmaskedOp == 9 && val3 == std::numeric_limits<uint32_t>::max()) {
             // wait_bitset
