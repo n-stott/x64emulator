@@ -30,7 +30,7 @@ namespace kernel {
     }
 
     ssize_t NullDevice::write(OpenFileDescription&, const u8*, size_t count) {
-        return count;
+        return (ssize_t)count;
     }
 
     ErrnoOrBuffer NullDevice::stat() {
