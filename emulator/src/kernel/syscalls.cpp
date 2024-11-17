@@ -1208,31 +1208,37 @@ namespace kernel {
         //     size_t        msg_controllen; /* Ancillary data buffer len */
         //     int           msg_flags;      /* Flags on received message */
         // };
-        msghdr header;
-        mmu_.copyFromMmu((u8*)&header, msg, sizeof(msghdr));
-        std::vector<u8> msg_name_buffer(header.msg_name ? header.msg_namelen : 0, 0x0);
-        Buffer msg_name(std::move(msg_name_buffer));
-        if(header.msg_name) mmu_.copyFromMmu(msg_name.data(), x64::Ptr8{(u64)header.msg_name}, msg_name.size());
+        msghdr header = mmu_.readFromMmu<msghdr>(msg);
 
-        std::vector<u8> msg_control_buffer(header.msg_control ? header.msg_controllen : 0, 0x0);
-        Buffer msg_control(std::move(msg_control_buffer));
-        if(header.msg_control) mmu_.copyFromMmu(msg_control.data(), x64::Ptr8{(u64)header.msg_control}, msg_control.size());
+        FS::Message message;
 
-        std::vector<Buffer> msg_iov;
-        std::vector<iovec> msg_iovecs = mmu_.readFromMmu<iovec>(x64::Ptr8{(u64)header.msg_iov}, header.msg_iovlen);
-        for(size_t i = 0; i < header.msg_iovlen; ++i) {
-            std::vector<u8> buffer(msg_iovecs[i].iov_len, 0x0);
-            msg_iov.push_back(Buffer(std::move(buffer)));
-            mmu_.copyFromMmu(msg_iov[i].data(), x64::Ptr8{(u64)msg_iovecs[i].iov_base}, msg_iov[i].size());
+        // read Message::msg_name
+        if(!!header.msg_name && header.msg_namelen > 0) {
+            std::vector<u8> msg_name_buffer = mmu_.readFromMmu<u8>(x64::Ptr8{(u64)header.msg_name}, header.msg_namelen);
+            message.msg_name = Buffer(std::move(msg_name_buffer));
         }
 
-        int msg_flags = 0;
-        ssize_t nbytes = kernel_.fs().sendmsg(FS::FD{sockfd}, flags, msg_name, msg_iov, msg_control, msg_flags);
+        // read Message::msg_iov
+        std::vector<iovec> msg_iovecs = mmu_.readFromMmu<iovec>(x64::Ptr8{(u64)header.msg_iov}, header.msg_iovlen);
+        for(size_t i = 0; i < header.msg_iovlen; ++i) {
+            std::vector<u8> msg_iovec_buffer = mmu_.readFromMmu<u8>(x64::Ptr8{(u64)msg_iovecs[i].iov_base}, msg_iovecs[i].iov_len);
+            message.msg_iov.push_back(Buffer(std::move(msg_iovec_buffer)));
+        }
+
+        // read Message::control
+        if(!!header.msg_control && header.msg_controllen > 0) {
+            std::vector<u8> msg_control_buffer = mmu_.readFromMmu<u8>(x64::Ptr8{(u64)header.msg_control}, header.msg_controllen);
+            message.msg_control = Buffer(std::move(msg_control_buffer));
+        }
+
+        // read Message::msg_flags
+        message.msg_flags = header.msg_flags;
+
+        ssize_t nbytes = kernel_.fs().sendmsg(FS::FD{sockfd}, flags, message);
         if(logSyscalls_) {
             print("Sys::sendmsg(sockfd={}, msg={:#x}, flags={}) = {}\n",
                         sockfd, msg.address(), flags, nbytes);
         }
-        if(nbytes < 0) return nbytes;
         return nbytes;
     }
 

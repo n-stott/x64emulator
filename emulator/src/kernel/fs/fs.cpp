@@ -861,12 +861,12 @@ namespace kernel {
         return socket->send(buffer, flags);
     }
 
-    ssize_t FS::sendmsg(FD sockfd, int flags, const Buffer& msg_name, const std::vector<Buffer>& msg_iov, const Buffer& msg_control, int msg_flags) {
+    ssize_t FS::sendmsg(FD sockfd, int flags, const Message& message) {
         OpenFileDescription* openFileDescription = findOpenFileDescription(sockfd);
         if(!openFileDescription) return -EBADF;
         if(!openFileDescription->file()->isSocket()) return -EBADF;
         Socket* socket = static_cast<Socket*>(openFileDescription->file());
-        return socket->sendmsg(flags, msg_name, msg_iov, msg_control, msg_flags);
+        return socket->sendmsg(flags, message.msg_name, message.msg_iov, message.msg_control, message.msg_flags);
     }
 
     std::string FS::filename(FD fd) {

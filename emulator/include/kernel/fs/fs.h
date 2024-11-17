@@ -153,10 +153,17 @@ namespace kernel {
         ErrnoOrBuffer getsockopt(FD sockfd, int level, int optname, const Buffer& buffer);
         int setsockopt(FD sockfd, int level, int optname, const Buffer& buffer);
 
+        struct Message {
+            Buffer msg_name;
+            std::vector<Buffer> msg_iov;
+            Buffer msg_control;
+            int msg_flags;
+        };
+
         ErrnoOr<std::pair<Buffer, Buffer>> recvfrom(FD sockfd, size_t len, int flags, bool requireSrcAddress);
         ssize_t recvmsg(FD sockfd, int flags, Buffer* msg_name, std::vector<Buffer>* msg_iov, Buffer* msg_control, int* msg_flags);
         ssize_t send(FD sockfd, const Buffer& buffer, int flags);
-        ssize_t sendmsg(FD sockfd, int flags, const Buffer& msg_name, const std::vector<Buffer>& msg_iov, const Buffer& msg_control, int msg_flags);
+        ssize_t sendmsg(FD sockfd, int flags, const Message& message);
 
         enum class PollEvent : i16 {
             NONE = 0x0,
