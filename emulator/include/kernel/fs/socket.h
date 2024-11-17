@@ -34,9 +34,17 @@ namespace kernel {
         int setsockopt(int level, int optname, const Buffer& buffer) const;
 
         ErrnoOr<std::pair<Buffer, Buffer>> recvfrom(size_t len, int flags, bool requireSrcAddress) const;
-        ssize_t recvmsg(int flags, Buffer* msg_name, std::vector<Buffer>* msg_iov, Buffer* msg_control, int* msg_flags) const;
         ssize_t send(const Buffer& buffer, int flags) const;
-        ssize_t sendmsg(int flags, const Buffer& msg_name, const std::vector<Buffer>& msg_iov, const Buffer& msg_control, int msg_flags) const;
+
+        struct Message {
+            Buffer msg_name;
+            std::vector<Buffer> msg_iov;
+            Buffer msg_control;
+            int msg_flags;
+        };
+
+        ssize_t recvmsg(int flags, Message* message) const;
+        ssize_t sendmsg(int flags, const Message& message) const;
 
         bool isReadable() const override { return true; }
         bool isWritable() const override { return true; }

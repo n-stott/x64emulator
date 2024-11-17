@@ -161,8 +161,8 @@ namespace kernel {
         };
 
         ErrnoOr<std::pair<Buffer, Buffer>> recvfrom(FD sockfd, size_t len, int flags, bool requireSrcAddress);
-        ssize_t recvmsg(FD sockfd, int flags, Buffer* msg_name, std::vector<Buffer>* msg_iov, Buffer* msg_control, int* msg_flags);
         ssize_t send(FD sockfd, const Buffer& buffer, int flags);
+        ssize_t recvmsg(FD sockfd, int flags, Message* message);
         ssize_t sendmsg(FD sockfd, int flags, const Message& message);
 
         enum class PollEvent : i16 {

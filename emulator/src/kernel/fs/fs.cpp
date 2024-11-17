@@ -845,12 +845,22 @@ namespace kernel {
         return socket->recvfrom(len, flags, requireSrcAddress);
 
     }
-    ssize_t FS::recvmsg(FD sockfd, int flags, Buffer* msg_name, std::vector<Buffer>* msg_iov, Buffer* msg_control, int* msg_flags) {
+    ssize_t FS::recvmsg(FD sockfd, int flags, Message* message) {
         OpenFileDescription* openFileDescription = findOpenFileDescription(sockfd);
         if(!openFileDescription) return -EBADF;
         if(!openFileDescription->file()->isSocket()) return -EBADF;
         Socket* socket = static_cast<Socket*>(openFileDescription->file());
-        return socket->recvmsg(flags, msg_name, msg_iov, msg_control, msg_flags);
+        Socket::Message socketMessage;
+        socketMessage.msg_name = message->msg_name;
+        socketMessage.msg_iov = message->msg_iov;
+        socketMessage.msg_control = message->msg_control;
+        socketMessage.msg_flags = message->msg_flags;
+        ssize_t ret = socket->recvmsg(flags, &socketMessage);
+        message->msg_name = socketMessage.msg_name;
+        message->msg_iov = socketMessage.msg_iov;
+        message->msg_control = socketMessage.msg_control;
+        message->msg_flags = socketMessage.msg_flags;
+        return ret;
     }
 
     ssize_t FS::send(FD sockfd, const Buffer& buffer, int flags) {
@@ -866,7 +876,12 @@ namespace kernel {
         if(!openFileDescription) return -EBADF;
         if(!openFileDescription->file()->isSocket()) return -EBADF;
         Socket* socket = static_cast<Socket*>(openFileDescription->file());
-        return socket->sendmsg(flags, message.msg_name, message.msg_iov, message.msg_control, message.msg_flags);
+        Socket::Message socketMessage;
+        socketMessage.msg_name = message.msg_name;
+        socketMessage.msg_iov = message.msg_iov;
+        socketMessage.msg_control = message.msg_control;
+        socketMessage.msg_flags = message.msg_flags;
+        return socket->sendmsg(flags, socketMessage);
     }
 
     std::string FS::filename(FD fd) {

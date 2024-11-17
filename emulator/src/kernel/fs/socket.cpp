@@ -156,7 +156,7 @@ namespace kernel {
         return ErrnoOr<std::pair<Buffer, Buffer>>(std::make_pair(Buffer{std::move(buffer)}, Buffer{}));
     }
 
-    ssize_t Socket::recvmsg(int flags, Buffer* msg_name, std::vector<Buffer>* msg_iov, Buffer* msg_control, int* msg_flags) const {
+    ssize_t Socket::recvmsg(int flags, Socket::Message* message) const {
         // struct msghdr {
         //     void*         msg_name;       /* Optional address */
         //     socklen_t     msg_namelen;    /* Size of address */
@@ -167,10 +167,10 @@ namespace kernel {
         //     int           msg_flags;      /* Flags on received message */
         // };
         msghdr header;
-        header.msg_name = msg_name->data();
-        header.msg_namelen = (socklen_t)msg_name->size();
+        header.msg_name = message->msg_name.data();
+        header.msg_namelen = (socklen_t)message->msg_name.size();
         std::vector<iovec> iovs;
-        for(auto& buf : *msg_iov) {
+        for(auto& buf : message->msg_iov) {
             iovec iov;
             iov.iov_base = buf.data();
             iov.iov_len = buf.size();
@@ -178,11 +178,11 @@ namespace kernel {
         }
         header.msg_iov = iovs.data();
         header.msg_iovlen = iovs.size();
-        header.msg_control = msg_control->data();
-        header.msg_controllen = msg_control->size();
+        header.msg_control = message->msg_control.data();
+        header.msg_controllen = message->msg_control.size();
         header.msg_flags = 0;
         ssize_t ret = ::recvmsg(hostFd_, &header, flags);
-        *msg_flags = header.msg_flags;
+        message->msg_flags = header.msg_flags;
         if(ret < 0) return -errno;
         return ret;
     }
@@ -193,7 +193,7 @@ namespace kernel {
         return ret;
     }
 
-    ssize_t Socket::sendmsg(int flags, const Buffer& msg_name, const std::vector<Buffer>& msg_iov, const Buffer& msg_control, int msg_flags) const {
+    ssize_t Socket::sendmsg(int flags, const Socket::Message& message) const {
         // struct msghdr {
         //     void*         msg_name;       /* Optional address */
         //     socklen_t     msg_namelen;    /* Size of address */
@@ -204,10 +204,10 @@ namespace kernel {
         //     int           msg_flags;      /* Flags on received message */
         // };
         msghdr header;
-        header.msg_name = (void*)msg_name.data();
-        header.msg_namelen = (socklen_t)msg_name.size();
+        header.msg_name = (void*)message.msg_name.data();
+        header.msg_namelen = (socklen_t)message.msg_name.size();
         std::vector<iovec> iovs;
-        for(const auto& buf : msg_iov) {
+        for(const auto& buf : message.msg_iov) {
             iovec iov;
             iov.iov_base = (void*)buf.data();
             iov.iov_len = buf.size();
@@ -215,9 +215,9 @@ namespace kernel {
         }
         header.msg_iov = iovs.data();
         header.msg_iovlen = iovs.size();
-        header.msg_control = (void*)msg_control.data();
-        header.msg_controllen = msg_control.size();
-        header.msg_flags = msg_flags;
+        header.msg_control = (void*)message.msg_control.data();
+        header.msg_controllen = message.msg_control.size();
+        header.msg_flags = message.msg_flags;
         ssize_t ret = ::sendmsg(hostFd_, &header, flags);
         if(ret < 0) return -errno;
         return ret;
