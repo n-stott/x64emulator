@@ -1278,17 +1278,43 @@ namespace kernel {
         // read Message::msg_flags
         message.msg_flags = header.msg_flags;
 
+        // do the syscall
         ssize_t nbytes = kernel_.fs().recvmsg(FS::FD{sockfd}, flags, &message);
-        if(logSyscalls_) {
-            print("Sys::recvmsg(sockfd={}, msg={:#x}, flags={}) = {}\n",
-                        sockfd, msg.address(), flags, nbytes);
-        }
-        if(nbytes < 0) return nbytes;
 
-        if(header.msg_name) mmu_.copyToMmu(x64::Ptr8{(u64)header.msg_name}, message.msg_name.data(), message.msg_name.size());
-        if(header.msg_control) mmu_.copyToMmu(x64::Ptr8{(u64)header.msg_control}, message.msg_control.data(), message.msg_control.size());
+        // write back to header
+        header.msg_namelen = (socklen_t)message.msg_name.size();
+        if(!!header.msg_name) {
+            mmu_.copyToMmu(x64::Ptr8{(u64)header.msg_name}, message.msg_name.data(), message.msg_name.size());
+        }
+        header.msg_iovlen = message.msg_iov.size();
+        verify(header.msg_iovlen == message.msg_iov.size(), "message iov changed length...");
         for(size_t i = 0; i < header.msg_iovlen; ++i) {
             mmu_.copyToMmu(x64::Ptr8{(u64)msg_iovecs[i].iov_base}, message.msg_iov[i].data(), message.msg_iov[i].size());
+        }
+        header.msg_controllen = message.msg_control.size();
+        if(!!header.msg_control) {
+            mmu_.copyToMmu(x64::Ptr8{(u64)header.msg_control}, message.msg_control.data(), message.msg_control.size());
+        }
+        header.msg_flags = message.msg_flags;
+
+        mmu_.writeToMmu<msghdr>(msg, header);
+        
+        if(logSyscalls_) {
+            std::vector<std::string> iovStringElements;
+            for(const auto& buf : message.msg_iov) {
+                iovStringElements.push_back(fmt::format("len={}", buf.size()));
+            }
+            std::string iovString = fmt::format("[{}]", fmt::join(iovStringElements, ", "));
+            std::string messageString = fmt::format("namelen={}, name={}, "
+                    "iovlen={}, iov=[{}], "
+                    "controllen={}, control={}, "
+                    "msg_flags={:#x}",
+                        header.msg_namelen, (void*)header.msg_name,
+                        header.msg_iovlen, iovString,
+                        header.msg_controllen, (void*)header.msg_control,
+                        header.msg_flags);
+            print("Sys::recvmsg(sockfd={}, msg=[{}], flags={:#x}) = {}\n",
+                        sockfd, messageString, flags, nbytes);
         }
         return nbytes;
     }

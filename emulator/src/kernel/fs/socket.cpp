@@ -185,6 +185,12 @@ namespace kernel {
         header.msg_controllen = message->msg_control.size();
         header.msg_flags = 0;
         ssize_t ret = ::recvmsg(hostFd_, &header, flags);
+        if(header.msg_controllen != 0) {
+            std::vector<u8> new_control((const u8*)header.msg_control, (const u8*)header.msg_control + header.msg_controllen);
+            message->msg_control = Buffer(std::move(new_control));
+        } else {
+            message->msg_control = {};
+        }
         message->msg_flags = header.msg_flags;
         if(ret < 0) return -errno;
         return ret;
