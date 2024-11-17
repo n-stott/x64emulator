@@ -130,6 +130,14 @@ target_compile_options(test_time PUBLIC ${CC_OPTIONS})
 target_link_libraries(test_time PUBLIC pthread)
 add_test(NAME time COMMAND ${CMAKE_BINARY_DIR}/emulator/emulator test_time)
 
+add_executable(test_unix_socket src/test_unix_socket.cpp)
+target_compile_options(test_unix_socket PUBLIC ${CC_OPTIONS})
+target_link_libraries(test_unix_socket PUBLIC pthread)
+add_test(NAME unix_socket COMMAND ${CMAKE_BINARY_DIR}/emulator/emulator test_unix_socket)
+
+add_test(NAME unix_socket_fail COMMAND ${CMAKE_BINARY_DIR}/emulator/emulator test_unix_socket fail)
+set_tests_properties(unix_socket_fail PROPERTIES WILL_FAIL TRUE)
+
 find_library(LUA_NUMA numa)
 if(LUA_NUMA)
     add_executable(test_numa src/test_numa.cpp)
