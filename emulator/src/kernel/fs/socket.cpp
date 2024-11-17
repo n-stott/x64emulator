@@ -1,4 +1,5 @@
 #include "kernel/fs/socket.h"
+#include "kernel/fs/localsocket.h"
 #include "host/host.h"
 #include "verify.h"
 #include <fcntl.h>
@@ -21,8 +22,10 @@ namespace kernel {
     }
 
     std::unique_ptr<Socket> Socket::tryCreate(FS* fs, int domain, int type, int protocol) {
+        if(domain == AF_LOCAL) {
+            return LocalSocket::tryCreate(fs, domain, type, protocol);
+        }
         auto validateDomain = [](int domain) -> bool {
-            if(domain == AF_LOCAL) return true;
             if(domain == AF_NETLINK) return true;
             return false;
         };

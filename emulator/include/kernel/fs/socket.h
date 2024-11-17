@@ -43,8 +43,8 @@ namespace kernel {
             int msg_flags;
         };
 
-        ssize_t recvmsg(int flags, Message* message) const;
-        ssize_t sendmsg(int flags, const Message& message) const;
+        virtual ssize_t recvmsg(int flags, Message* message) const;
+        virtual ssize_t sendmsg(int flags, const Message& message) const;
 
         bool isReadable() const override { return true; }
         bool isWritable() const override { return true; }
@@ -67,7 +67,7 @@ namespace kernel {
             return fmt::format("Socket(realfd={})", hostFd_);
         }
 
-    private:
+    protected:
         Socket(FS* fs, int fd, int domain, int type, int protocol);
 
         int hostFd_ { -1 };
