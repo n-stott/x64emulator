@@ -176,6 +176,7 @@ namespace kernel {
         static int geteuid();
         static int getegid();
         static int getpgrp();
+        static int getpid();
         static int getppid();
         static ErrnoOrBuffer getgroups(int size);
 

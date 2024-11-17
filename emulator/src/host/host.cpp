@@ -487,6 +487,10 @@ namespace kernel {
         return (int)::getpgrp();
     }
 
+    int Host::getpid() {
+        return (int)::getpid();
+    }
+
     int Host::getppid() {
         return (int)::getppid();
     }

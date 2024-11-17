@@ -244,7 +244,7 @@ namespace kernel {
 
         u64 stackTop = setupMemory(&mmu_, &aux);
 
-        std::unique_ptr<Thread> mainThread = scheduler_.allocateThread(0xface);
+        std::unique_ptr<Thread> mainThread = scheduler_.allocateThread(Host::getpid());
         Thread::SavedCpuState& cpuState = mainThread->savedCpuState();
         cpuState.regs.rip() = entrypoint;
         cpuState.regs.rsp() = (stackTop & 0xFFFFFFFFFFFFFF00); // stack needs to be 16-byte aligned
