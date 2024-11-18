@@ -26,9 +26,10 @@ namespace x64 {
     };
 
     enum class MAP {
-        PRIVATE,
-        FIXED,
-        ANONYMOUS,
+        ANONYMOUS = (1 << 1),
+        FIXED     = (1 << 2),
+        PRIVATE   = (1 << 3),
+        SHARED    = (1 << 4),
     };
 
     class Mmu {

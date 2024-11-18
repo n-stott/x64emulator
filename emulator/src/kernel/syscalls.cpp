@@ -276,11 +276,19 @@ namespace kernel {
     }
 
     x64::Ptr Sys::mmap(x64::Ptr addr, size_t length, int prot, int flags, int fd, off_t offset) {
-        BitFlags<x64::MAP> mmapFlags {x64::MAP::PRIVATE};
+        BitFlags<x64::MAP> mmapFlags;
         if(Host::Mmap::isAnonymous(flags)) mmapFlags.add(x64::MAP::ANONYMOUS);
         if(Host::Mmap::isFixed(flags)) mmapFlags.add(x64::MAP::FIXED);
+        if(Host::Mmap::isPrivate(flags)) mmapFlags.add(x64::MAP::PRIVATE);
+        if(Host::Mmap::isShared(flags)) mmapFlags.add(x64::MAP::SHARED);
 
         BitFlags<x64::PROT> protFlags = BitFlags<x64::PROT>::fromIntegerType(prot);
+
+        if(mmapFlags.test(x64::MAP::SHARED) && protFlags.test(x64::PROT::WRITE)) {
+            warn("Writable and shared mapping not supported. Making mapping private.");
+            mmapFlags.remove(x64::MAP::SHARED);
+            mmapFlags.add(x64::MAP::PRIVATE);
+        }
 
         u64 base = mmu_.mmap(addr.address(), length, protFlags, mmapFlags);
         if(!mmapFlags.test(x64::MAP::ANONYMOUS)) {
@@ -310,8 +318,13 @@ namespace kernel {
                     protRead  ? "R" : "",
                     protWrite ? "W" : "",
                     protExec  ? "X" : "");
+            std::string flagsString = fmt::format("{}{}{}{}",
+                    mmapFlags.test(x64::MAP::ANONYMOUS) ? "ANONYMOUS " : "",
+                    mmapFlags.test(x64::MAP::FIXED) ? "FIXED " : "",
+                    mmapFlags.test(x64::MAP::PRIVATE) ? "PRIVATE " : "",
+                    mmapFlags.test(x64::MAP::SHARED) ? "SHARED " : "");
             print("Sys::mmap(addr={:#x}, length={}, prot={}, flags={}, fd={}, offset={}) = {:#x}\n",
-                    addr.address(), length, protString, flags, fd, offset, base);
+                    addr.address(), length, protString, flagsString, fd, offset, base);
         }
         return x64::Ptr{base};
     }

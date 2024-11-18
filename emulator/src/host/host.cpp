@@ -39,6 +39,14 @@ namespace kernel {
     bool Host::Mmap::isFixed(int flags) {
         return flags & MAP_FIXED;
     }
+
+    bool Host::Mmap::isPrivate(int flags) {
+        return flags & MAP_PRIVATE;
+    }
+
+    bool Host::Mmap::isShared(int flags) {
+        return flags & MAP_SHARED;
+    }
     
     bool Host::Madvise::isDontNeed(int advice) {
         return advice == MADV_DONTNEED;
