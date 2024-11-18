@@ -1,7 +1,17 @@
 #include "emulator/emulator.h"
+#include "signalhandler.h"
 #include <fmt/core.h>
 #include <string>
 #include <vector>
+
+namespace emulator {
+    extern bool signal_interrupt;
+}
+
+void crashHandler(int signum) {
+    if(signum != SIGINT) return;
+    emulator::signal_interrupt = true;
+}
 
 int main(int argc, char* argv[], char* envp[]) {
     if(argc < 2) {
@@ -21,6 +31,8 @@ int main(int argc, char* argv[], char* envp[]) {
         environmentVariables.push_back(*env);
     }
     environmentVariables.push_back("GLIBC_TUNABLES=glibc.pthread.rseq=0");
+
+    SignalHandler<SIGINT> sigintHandler(&crashHandler);
 
     emulator::Emulator emulator;
     emulator.setLogSyscalls(false);

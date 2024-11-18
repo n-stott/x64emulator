@@ -11,29 +11,7 @@
 namespace emulator {
 
     bool signal_interrupt = false;
-
-    void termination_handler(int signum) {
-        if(signum != SIGINT) return;
-        signal_interrupt = true;
-    }
-
-    class SignalHandler {
-        struct sigaction new_action_;
-        struct sigaction old_action_;
-
-    public:
-        SignalHandler() {
-            new_action_.sa_handler = termination_handler;
-            sigemptyset(&new_action_.sa_mask);
-            new_action_.sa_flags = 0;
-            sigaction(SIGINT, NULL, &old_action_);
-            if (old_action_.sa_handler != SIG_IGN) sigaction(SIGINT, &new_action_, NULL);
-        }
-
-        ~SignalHandler() {
-            sigaction(SIGINT, &old_action_, NULL);
-        }
-    };
+    bool force_graceful_exit = false;
 
     Emulator::Emulator() = default;
 
@@ -48,8 +26,6 @@ namespace emulator {
     }
 
     bool Emulator::run(const std::string& programFilePath, const std::vector<std::string>& arguments, const std::vector<std::string>& environmentVariables) const {
-        SignalHandler handler;
-
         x64::Mmu mmu;
         kernel::Kernel kernel(mmu);
         
@@ -68,6 +44,8 @@ namespace emulator {
             kernel.panic();
             ok = false;
         });
+
+        if(force_graceful_exit) return true;
 
         if(kernel.hasPanicked()) {
             kernel.dumpPanicInfo();
