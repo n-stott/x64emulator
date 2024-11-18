@@ -68,6 +68,7 @@ create_simple_test(devnull)
 create_simple_test(pipe)
 create_simple_test(mmap2)
 create_simple_test(munmap2)
+create_simple_test(memfd_munmap)
 
 add_executable(test_trivial_c src/test_trivial.c)
 target_compile_options(test_trivial_c PUBLIC ${CC_OPTIONS})
