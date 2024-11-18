@@ -170,6 +170,7 @@ namespace kernel {
     }
 
     std::optional<int> ShadowFile::fcntl(int cmd, int arg) {
+        if(cmd == F_DUPFD || cmd == F_DUPFD_CLOEXEC) return {}; // nothing to do here
         if(cmd == F_SETLK) {
             warn(fmt::format("ShadowFile::fcntl(F_SETLK, {}) not implemented", arg));
             return 0;
