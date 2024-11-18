@@ -147,9 +147,10 @@ namespace x64 {
         verify(address % PAGE_SIZE == 0, [&]() {
             fmt::print("mmap with non-page_size aligned address {:#x} not supported", address);
         });
+        length = pageRoundUp(length);
 
         u64 baseAddress = (address != 0) ? address : firstFitPageAligned(length);
-        Region region("", baseAddress, pageRoundUp(length), prot);
+        Region region("", baseAddress, length, prot);
         if(flags.test(MAP::FIXED)) {
             addRegionAndEraseExisting(std::move(region));
         } else {
@@ -160,6 +161,7 @@ namespace x64 {
 
     int Mmu::munmap(u64 address, u64 length) {
         verify(address % PAGE_SIZE == 0, "munmap with non-page_size aligned address not supported");
+        length = pageRoundUp(length);
         std::vector<Region*> regionsToRemove;
         std::vector<Region*> regionsToSplit;
         for(auto& regionPtr : regions_) {
@@ -196,7 +198,7 @@ namespace x64 {
         verify(address % PAGE_SIZE == 0, "mprotect with non-page_size aligned address not supported");
         length = pageRoundUp(length);
         auto* regionPtr = findAddress(address);
-        verify(!!regionPtr, "mprotect: unable to find region");
+        if(!regionPtr) return -ENOMEM;
         if(regionPtr->base() == address && regionPtr->size() == length) {
             regionPtr->setProtection(prot);
             return 0;
