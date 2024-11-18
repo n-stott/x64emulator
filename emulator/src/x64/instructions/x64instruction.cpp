@@ -690,6 +690,7 @@ namespace utils {
             case Insn::FNSTSW_M16: return toString<M16>("fnstsw");
             case Insn::FNSTENV_M224: return toString<M224>("fnstenv");
             case Insn::FLDENV_M224: return toString<M224>("fldenv");
+            case Insn::EMMS: return toString("emms");
             case Insn::MOVSS_RSSE_M32: return toString<RSSE, M32>("movss");
             case Insn::MOVSS_M32_RSSE: return toString<M32, RSSE>("movss");
             case Insn::MOVSD_RSSE_M64: return toString<RSSE, M64>("movsd");

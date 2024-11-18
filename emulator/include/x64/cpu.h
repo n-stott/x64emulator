@@ -619,6 +619,8 @@ namespace x64 {
         void exec(const Fnstenv<M224>&);
         void exec(const Fldenv<M224>&);
 
+        void exec(const Emms&);
+
         void exec(const Movss<RSSE, M32>&);
         void exec(const Movss<M32, RSSE>&);
 

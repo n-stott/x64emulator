@@ -31,12 +31,18 @@ namespace x64 {
     };
 
     struct X87Status {
-        u8 top;
+        u8 top { 0 };
 
         u16 asWord() const;
         static X87Status fromWord(u16 sw);
     };
 
+    struct X87Tag {
+        u16 tags { 0xFFFF };
+
+        u16 asWord() const;
+        static X87Tag fromWord(u16 tw);
+    };
 
     class X87Fpu {
     public:
@@ -53,6 +59,8 @@ namespace x64 {
         const X87Control& control() const { return control_; }
         X87Status& status() { return status_; }
         const X87Status& status() const { return status_; }
+        X87Tag& tag() { return tag_; }
+        const X87Tag& tag() const { return tag_; }
 
     private:
         void incrTop();
@@ -61,6 +69,7 @@ namespace x64 {
         std::array<f80, 8> stack_;
         X87Control control_;
         X87Status status_;
+        X87Tag tag_;
         // bool C0_ { false }; // unused
         bool C1_ { false };
         // bool C2_ { false }; // unused

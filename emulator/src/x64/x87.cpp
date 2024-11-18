@@ -74,4 +74,12 @@ namespace x64 {
         return s;
     }
 
+    u16 X87Tag::asWord() const {
+        return tags;
+    }
+
+    X87Tag X87Tag::fromWord(u16 tw) {
+        return X87Tag{tw};
+    }
+
 }

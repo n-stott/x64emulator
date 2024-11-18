@@ -547,6 +547,7 @@ namespace x64 {
             case Insn::FNSTSW_M16: return exec(Fnstsw<M16>{insn.op0<M16>()});
             case Insn::FNSTENV_M224: return exec(Fnstenv<M224>{insn.op0<M224>()});
             case Insn::FLDENV_M224: return exec(Fldenv<M224>{insn.op0<M224>()});
+            case Insn::EMMS: return exec(Emms{});
             case Insn::MOVSS_RSSE_M32: return exec(Movss<RSSE, M32>{insn.op0<RSSE>(), insn.op1<M32>()});
             case Insn::MOVSS_M32_RSSE: return exec(Movss<M32, RSSE>{insn.op0<M32>(), insn.op1<RSSE>()});
             case Insn::MOVSD_RSSE_M64: return exec(Movsd<RSSE, M64>{insn.op0<RSSE>(), insn.op1<M64>()});
@@ -2073,6 +2074,7 @@ namespace x64 {
         Ptr32 dst { dst224.address() };
         set(dst++, (u32)x87fpu_.control().asWord());
         set(dst++, (u32)x87fpu_.status().asWord());
+        set(dst++, (u32)x87fpu_.tag().asWord());
     }
 
     void Cpu::exec(const Fldenv<M224>& ins) {
@@ -2080,6 +2082,11 @@ namespace x64 {
         Ptr32 src { src224.address() };
         x87fpu_.control() = X87Control::fromWord((u16)get(src++));
         x87fpu_.status() = X87Status::fromWord((u16)get(src++));
+        x87fpu_.tag() = X87Tag::fromWord((u16)get(src++));
+    }
+
+    void Cpu::exec(const Emms&) {
+        x87fpu_.tag() = X87Tag::fromWord(0xFFFF);
     }
 
     void Cpu::exec(const Movss<RSSE, M32>& ins) { set(ins.dst, zeroExtend<Xmm, u32>(get(resolve(ins.src)))); }

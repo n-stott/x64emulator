@@ -563,6 +563,10 @@ namespace x64 {
         Src src;
     };
 
+    struct Emms {
+
+    };
+
     template<typename Dst, typename Src>
     struct Movss {
         Dst dst;

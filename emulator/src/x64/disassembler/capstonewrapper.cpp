@@ -2030,6 +2030,14 @@ namespace x64 {
         return make_failed(insn);
     }
 
+    static X64Instruction makeEmms(const cs_insn& insn) {
+#ifndef NDEBUG
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 0);
+#endif
+        return X64Instruction::make<Insn::EMMS>(insn.address, insn.size);
+    }
+
     static X64Instruction makeMovss(const cs_insn& insn) {
         const auto& x86detail = insn.detail->x86;
         assert(x86detail.op_count == 2);
@@ -3730,6 +3738,7 @@ namespace x64 {
             case X86_INS_FNSTSW: return makeFnstsw(insn);
             case X86_INS_FNSTENV: return makeFnstenv(insn);
             case X86_INS_FLDENV: return makeFldenv(insn);
+            case X86_INS_EMMS: return makeEmms(insn);
             case X86_INS_MOVSS: return makeMovss(insn);
             case X86_INS_MOVSD: return makeMovsd(insn);
             case X86_INS_ADDPS: return makeAddps(insn);

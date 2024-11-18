@@ -395,6 +395,7 @@ namespace x64 {
         FNSTSW_M16,
         FNSTENV_M224,
         FLDENV_M224,
+        EMMS,
         MOVSS_RSSE_M32,
         MOVSS_M32_RSSE,
         MOVSD_RSSE_M64,
