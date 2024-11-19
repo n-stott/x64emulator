@@ -335,6 +335,8 @@ namespace kernel {
             case F_SETFL: return "F_SETFL";
             case F_SETLK: return "F_SETLK";
             case F_SETLKW: return "F_SETLKW";
+            case F_DUPFD: return "F_DUPFD";
+            case F_DUPFD_CLOEXEC: return "F_DUPFD_CLOEXEC";
             default: break;
         }
         return "unknown fcntl " + std::to_string(cmd);
