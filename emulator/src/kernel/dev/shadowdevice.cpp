@@ -18,20 +18,12 @@ namespace kernel {
         "/dev/tty",
     };
 
-    std::vector<std::string> ShadowDevice::allCandidateDevices_ { // NOLINT(cert-err58-cpp)
-        "/dev/dri/card0", // relevant header is drm/drm.h
-    };
-
     File* ShadowDevice::tryCreateAndAdd(FS* fs, Directory* parent, const std::string& name) {
         std::string pathname;
         if(!parent || parent == fs->root()) {
             pathname = name;
         } else {
             pathname = (parent->path() + "/" + name);
-        }
-
-        if(std::find(allAllowedDevices_.begin(), allAllowedDevices_.end(), pathname) == allAllowedDevices_.end()) {
-            verify(false, fmt::format("Device {} is not a supported shadow device", pathname));
         }
 
         if(pathname == "/dev/null") {
@@ -41,38 +33,8 @@ namespace kernel {
             return Tty::tryCreateAndAdd(fs, parent, name);
         }
 
-        int flags = O_RDWR | O_CLOEXEC;
-        int fd = ::openat(AT_FDCWD, pathname.c_str(), flags);
-        if(fd < 0) {
-            verify(false, "ShadowDevice without host backer is not implemented");
-            return {};
-        }
-
-        ScopeGuard guard([=]() {
-            if(fd >= 0) ::close(fd);
-        });
-
-        // check that the file is a device
-        struct stat s;
-        if(::fstat(fd, &s) < 0) {
-            return {};
-        }
-        
-        mode_t fileType = (s.st_mode & S_IFMT);
-        if(fileType != S_IFCHR && fileType != S_IFBLK) {
-            // not a character device or block device
-            return {};
-        }
-
-        std::string absolutePathname = fs->toAbsolutePathname(pathname);
-        auto path = Path::tryCreate(absolutePathname);
-        verify(!!path, "Unable to create path");
-        Directory* containingDirectory = fs->ensurePathExceptLast(*path);
-
-        guard.disable();
-
-        auto shadowFile = std::unique_ptr<ShadowDevice>(new ShadowDevice(fs, containingDirectory, path->last(), fd));
-        return containingDirectory->addFile(std::move(shadowFile));
+        warn(fmt::format("Device {} is not a supported shadow device", pathname));
+        return nullptr;
     }
 
     std::optional<int> ShadowDevice::tryGetDeviceHostFd(const std::string& pathname) {

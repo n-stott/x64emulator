@@ -21,7 +21,7 @@ namespace kernel {
         bool isShadow() const override { return true; }
 
         bool isReadable() const override { return false; }
-        bool isWritable() const override { return false; }
+        bool isWritable() const override { return true; }
 
         bool isPollable() const override { return false; }
         bool canRead() const override;
@@ -53,7 +53,6 @@ namespace kernel {
         std::optional<int> hostFd_ { -1 };
 
         static std::vector<std::string> allAllowedDevices_;
-        static std::vector<std::string> allCandidateDevices_;
     };
 
 }

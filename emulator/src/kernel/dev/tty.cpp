@@ -19,37 +19,15 @@ namespace kernel {
             pathname = (parent->path() + "/" + name);
         }
 
-        int flags = O_RDWR | O_CLOEXEC;
-        int fd = ::openat(AT_FDCWD, pathname.c_str(), flags);
-        if(fd < 0) {
-            verify(false, "Failed to open /dev/tty");
-            return nullptr;
-        }
-
-        ScopeGuard guard([=]() {
-            if(fd >= 0) ::close(fd);
-        });
-
-        // check that the file is a device
-        struct stat s;
-        if(::fstat(fd, &s) < 0) {
-            return nullptr;
-        }
-        
-        mode_t fileType = (s.st_mode & S_IFMT);
-        if(fileType != S_IFCHR && fileType != S_IFBLK) {
-            // not a character device or block device
-            return nullptr;
-        }
+        auto hostFd = ShadowDevice::tryGetDeviceHostFd(pathname);
+        if(!hostFd) return nullptr;
 
         std::string absolutePathname = fs->toAbsolutePathname(pathname);
         auto path = Path::tryCreate(absolutePathname);
         verify(!!path, "Unable to create path");
         Directory* containingDirectory = fs->ensurePathExceptLast(*path);
 
-        guard.disable();
-
-        auto tty = std::unique_ptr<Tty>(new Tty(fs, containingDirectory, path->last(), fd));
+        auto tty = std::unique_ptr<Tty>(new Tty(fs, containingDirectory, path->last(), hostFd.value()));
         return containingDirectory->addFile(std::move(tty));
     }
 
