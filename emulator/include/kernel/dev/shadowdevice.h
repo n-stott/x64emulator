@@ -38,7 +38,6 @@ namespace kernel {
         ErrnoOrBuffer stat() override;
         ErrnoOrBuffer statfs() override;
         
-        ErrnoOrBuffer getdents64(size_t count) override;
         std::optional<int> fcntl(int cmd, int arg) override;
         ErrnoOrBuffer ioctl(unsigned long request, const Buffer& buffer) override;
         ErrnoOrBuffer ioctlWithBufferSizeGuess(unsigned long request, const Buffer& inputBuffer) override;

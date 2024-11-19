@@ -117,11 +117,6 @@ namespace kernel {
         return -ENOTSUP;
     }
 
-    ErrnoOrBuffer ShadowDevice::getdents64(size_t) {
-        verify(false, "ShadowDevice::getdents64 not implemented");
-        return ErrnoOrBuffer(-ENOTSUP);
-    }
-
     std::optional<int> ShadowDevice::fcntl(int, int) {
         verify(false, "ShadowDevice::fcntl not implemented");
         return -ENOTSUP;

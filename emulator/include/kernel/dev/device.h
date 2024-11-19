@@ -4,6 +4,7 @@
 #include "kernel/fs/directory.h"
 #include "kernel/fs/file.h"
 #include "utils.h"
+#include <verify.h>
 #include <cassert>
 #include <sys/types.h>
 
@@ -14,6 +15,11 @@ namespace kernel {
         explicit Device(FS* fs, Directory* dir, std::string name) : File(fs, dir, std::move(name)) { }
 
         bool isDevice() const override final { return true; }
+
+        ErrnoOrBuffer getdents64(size_t) override final {
+            verify(false, "Device::getdents64 not implemented");
+            return ErrnoOrBuffer(-ENOTSUP);
+        }
     };
 
 }

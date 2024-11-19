@@ -95,11 +95,6 @@ namespace kernel {
         return -ENOTSUP;
     }
 
-    ErrnoOrBuffer HostDevice::getdents64(size_t) {
-        verify(false, "HostDevice::getdents64 not implemented");
-        return ErrnoOrBuffer(-ENOTSUP);
-    }
-
     std::optional<int> HostDevice::fcntl(int cmd, int arg) {
         return Host::fcntl(Host::FD{hostFd_}, cmd, arg);
     }

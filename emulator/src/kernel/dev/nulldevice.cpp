@@ -47,11 +47,6 @@ namespace kernel {
         return -ENOTSUP;
     }
 
-    ErrnoOrBuffer NullDevice::getdents64(size_t) {
-        verify(false, "NullDevice::getdents64 not implemented");
-        return ErrnoOrBuffer(-ENOTSUP);
-    }
-
     std::optional<int> NullDevice::fcntl(int, int) {
         verify(false, "NullDevice::fcntl not implemented");
         return -ENOTSUP;

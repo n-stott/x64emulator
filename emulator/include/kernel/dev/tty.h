@@ -35,7 +35,6 @@ namespace kernel {
 
         off_t lseek(OpenFileDescription&, off_t offset, int whence) override;
         
-        ErrnoOrBuffer getdents64(size_t count) override;
         std::optional<int> fcntl(int cmd, int arg) override;
         ErrnoOrBuffer ioctl(unsigned long request, const Buffer& buffer) override;
 

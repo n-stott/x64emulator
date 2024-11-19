@@ -106,11 +106,6 @@ namespace kernel {
         return -ESPIPE;
     }
 
-    ErrnoOrBuffer Tty::getdents64(size_t) {
-        verify(false, "Tty::getdents64 not implemented");
-        return ErrnoOrBuffer(-ENOTSUP);
-    }
-
     std::optional<int> Tty::fcntl(int, int) {
         verify(false, "Tty::fcntl not implemented");
         return -ENOTSUP;
