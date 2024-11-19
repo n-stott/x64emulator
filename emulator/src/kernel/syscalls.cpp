@@ -1314,6 +1314,7 @@ namespace kernel {
         
         if(logSyscalls_) {
             std::vector<std::string> iovStringElements;
+            iovStringElements.reserve(message.msg_iov.size());
             for(const auto& buf : message.msg_iov) {
                 iovStringElements.push_back(fmt::format("len={}", buf.size()));
             }
@@ -1322,9 +1323,9 @@ namespace kernel {
                     "iovlen={}, iov=[{}], "
                     "controllen={}, control={}, "
                     "msg_flags={:#x}",
-                        header.msg_namelen, (void*)header.msg_name,
+                        header.msg_namelen, header.msg_name,
                         header.msg_iovlen, iovString,
-                        header.msg_controllen, (void*)header.msg_control,
+                        header.msg_controllen, header.msg_control,
                         header.msg_flags);
             print("Sys::recvmsg(sockfd={}, msg=[{}], flags={:#x}) = {}\n",
                         sockfd, messageString, flags, nbytes);

@@ -26,8 +26,7 @@ namespace kernel {
             return LocalSocket::tryCreate(fs, domain, type, protocol);
         }
         auto validateDomain = [](int domain) -> bool {
-            if(domain == AF_NETLINK) return true;
-            return false;
+            return domain == AF_NETLINK; // add other valid domains here
         };
         if(!validateDomain(domain)) {
             verify(false, [&]() {

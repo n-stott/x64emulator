@@ -27,7 +27,7 @@ namespace kernel {
         verify(!!path, "Unable to create path");
         Directory* containingDirectory = fs->ensurePathExceptLast(*path);
 
-        auto tty = std::unique_ptr<Tty>(new Tty(fs, containingDirectory, path->last(), hostFd.value()));
+        auto tty = std::unique_ptr<Tty>(new Tty(fs, containingDirectory, path->last(), hostFd));
         return containingDirectory->addFile(std::move(tty));
     }
 
