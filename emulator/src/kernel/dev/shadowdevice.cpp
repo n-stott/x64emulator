@@ -75,6 +75,35 @@ namespace kernel {
         return containingDirectory->addFile(std::move(shadowFile));
     }
 
+    std::optional<int> ShadowDevice::tryGetDeviceHostFd(const std::string& pathname) {
+        int flags = O_RDWR | O_CLOEXEC;
+        int fd = ::openat(AT_FDCWD, pathname.c_str(), flags);
+        if(fd < 0) {
+            verify(false, "ShadowDevice without host backer is not implemented");
+            return {};
+        }
+
+        ScopeGuard guard([=]() {
+            if(fd >= 0) ::close(fd);
+        });
+
+        // check that the file is a device
+        struct stat s;
+        if(::fstat(fd, &s) < 0) {
+            return {};
+        }
+        
+        mode_t fileType = (s.st_mode & S_IFMT);
+        if(fileType != S_IFCHR && fileType != S_IFBLK) {
+            // not a character device or block device
+            return {};
+        }
+
+        guard.disable();
+
+        return fd;
+    }
+
     void ShadowDevice::close() {
         if(refCount_ > 0) return;
         if(!!hostFd_) {
