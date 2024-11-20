@@ -262,6 +262,17 @@ namespace kernel {
                 return &blocker == compareBlocker;
             });
         }), selectBlockers_.end());
+
+        std::vector<FutexBlocker*> removableFutexBlockers;
+        for(FutexBlocker& blocker : futexBlockers_) {
+            bool canUnblock = blocker.tryUnblock(x64::Ptr32{0});
+            if(canUnblock) removableFutexBlockers.push_back(&blocker);
+        }
+        futexBlockers_.erase(std::remove_if(futexBlockers_.begin(), futexBlockers_.end(), [&](const FutexBlocker& blocker) {
+            return std::any_of(removableFutexBlockers.begin(), removableFutexBlockers.end(), [&](FutexBlocker* compareBlocker) {
+                return &blocker == compareBlocker;
+            });
+        }), futexBlockers_.end());
     }
 
     void Scheduler::terminateAll(int status) {
