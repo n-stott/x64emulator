@@ -296,6 +296,20 @@ namespace x64 {
         return nullptr;
     }
 
+    std::unique_ptr<Mmu::Region> Mmu::takeRegion(const char* name) {
+        std::unique_ptr<Region> region;
+        for(auto& ptr : regions_) {
+            if(ptr->name() != name) continue;
+            std::swap(region, ptr);
+        }
+        if(!!region) {
+            regions_.erase(std::remove_if(regions_.begin(), regions_.end(), [](const auto& regionPtr) {
+                return !regionPtr;
+            }), regions_.end());
+        }
+        return region;
+    }
+
     template<typename T, Size s>
     T Mmu::read(SPtr<s> ptr) const {
         static_assert(sizeof(T) == pointerSize(s));
@@ -564,11 +578,12 @@ namespace x64 {
             if(oldBrk <= ptr->base() && ptr->end() <= address && ptr.get() != region) return oldBrk;
         }
         // we should be fine now
-        Region copy = *region;
-        removeRegion(region->base(), region->end(), region->size());
-        copy.setEnd(address);
-        u64 newBrk = copy.end();
-        addRegion(std::move(copy));
+        auto heap = takeRegion("heap");
+        verify(!!heap, "brk: no heap to take");
+        removeRegion(heap->base(), heap->end(), heap->size());
+        heap->setEnd(address);
+        u64 newBrk = heap->end();
+        addRegion(std::move(*heap));
         return newBrk;
     }
 

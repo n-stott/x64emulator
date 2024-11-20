@@ -243,6 +243,7 @@ namespace x64 {
 
         Region* findAddress(u64 address);
         Region* findRegion(const char* name);
+        std::unique_ptr<Region> takeRegion(const char* name);
 
         u64 topOfMemoryPageAligned() const;
         u64 firstFitPageAligned(u64 length) const;
