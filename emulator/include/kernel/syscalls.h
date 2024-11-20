@@ -339,6 +339,8 @@ namespace kernel {
         int eventfd2(unsigned int initval, int flags);
         // 0x123
         int epoll_create1(int flags);
+        // 0x124
+        int dup3(int oldfd, int newfd, int flags);
         // 0x125
         int pipe2(x64::Ptr32 pipefd, int flags);
         // 0x126

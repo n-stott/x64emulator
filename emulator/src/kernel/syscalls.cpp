@@ -157,6 +157,7 @@ namespace kernel {
             case 0x11d: return threadRegs.set(x64::R64::RAX, invoke_syscall_4(&Sys::fallocate, regs));
             case 0x122: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::eventfd2, regs));
             case 0x123: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::epoll_create1, regs));
+            case 0x124: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::dup3, regs));
             case 0x125: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::pipe2, regs));
             case 0x126: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::inotify_init1, regs));
             case 0x12e: return threadRegs.set(x64::R64::RAX, invoke_syscall_4(&Sys::prlimit64, regs));
@@ -1615,6 +1616,14 @@ namespace kernel {
         FS::FD fd = kernel_.fs().epoll_create1(flags);
         if(logSyscalls_) {
             print("Sys::epoll_create1(flags={}) = {}\n", flags, fd.fd);
+        }
+        return fd.fd;
+    }
+
+    int Sys::dup3(int oldfd, int newfd, int flags) {
+        FS::FD fd = kernel_.fs().dup3(FS::FD{oldfd}, FS::FD{newfd}, flags);
+        if(logSyscalls_) {
+            print("Sys::dup3(oldfd={}, newfd={}, flags={}) = {}\n", oldfd, newfd, flags, fd.fd);
         }
         return fd.fd;
     }

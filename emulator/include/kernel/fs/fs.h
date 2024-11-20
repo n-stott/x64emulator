@@ -104,6 +104,7 @@ namespace kernel {
                 Permissions permissions);
         FD dup(FD fd);
         FD dup2(FD oldfd, FD newfd);
+        FD dup3(FD oldfd, FD newfd, int flags);
         int close(FD fd);
 
         int mkdir(const std::string& pathname);

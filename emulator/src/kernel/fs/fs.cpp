@@ -331,6 +331,21 @@ namespace kernel {
         return newfd;
     }
 
+    FS::FD FS::dup3(FS::FD oldfd, FS::FD newfd, int flags) {
+        if(oldfd == newfd) return FD{-EINVAL};
+        OpenFileDescription* oldOfd = findOpenFileDescription(oldfd);
+        if(!oldOfd) return FD{-EBADF};
+        OpenFileDescription* newOfd = findOpenFileDescription(newfd);
+        if(!!newOfd) {
+            int ret = close(newfd);
+            verify(ret == 0, "close in dup3 failed");
+        }
+        oldOfd->file()->ref();
+        bool closeOnExec = Host::Open::isCloseOnExec(flags);
+        openFiles_.push_back(OpenNode{newfd, oldOfd, closeOnExec});
+        return newfd;
+    }
+
     int FS::mkdir(const std::string& pathname) {
         auto path = Path::tryCreate(pathname);
         if(!path) return -ENOENT;
