@@ -153,6 +153,8 @@ namespace kernel {
         ssize_t pread64(int fd, x64::Ptr buf, size_t count, off_t offset);
         // 0x12
         ssize_t pwrite64(int fd, x64::Ptr buf, size_t count, off_t offset);
+        // 0x13
+        ssize_t readv(int fd, x64::Ptr iov, int iovcnt);
         // 0x14
         ssize_t writev(int fd, x64::Ptr iov, int iovcnt);
         // 0x15

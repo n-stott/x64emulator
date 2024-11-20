@@ -117,6 +117,7 @@ namespace kernel {
 
         ErrnoOrBuffer read(FD fd, size_t count);
         ErrnoOrBuffer pread(FD fd, size_t count, off_t offset);
+        ssize_t readv(FD fd, std::vector<Buffer>* buffers);
 
         ssize_t write(FD fd, const u8* buf, size_t count);
         ssize_t pwrite(FD fd, const u8* buf, size_t count, off_t offset);

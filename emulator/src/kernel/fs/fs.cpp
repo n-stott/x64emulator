@@ -419,6 +419,24 @@ namespace kernel {
         return openFileDescription->pread(count, offset);
     }
 
+    ssize_t FS::readv(FD fd, std::vector<Buffer>* buffers) {
+        OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
+        if(!openFileDescription) return -EBADF;
+        if(!openFileDescription->file()->isReadable()) return -EBADF;
+        ssize_t nbytes = 0;
+        for(Buffer& buf : *buffers) {
+            ErrnoOrBuffer errnoOrReadBuffer = openFileDescription->read(buf.size());
+            ssize_t ret = errnoOrReadBuffer.errorOrWith<ssize_t>([&](const Buffer& readBuffer) {
+                verify(readBuffer.size() <= buf.size());
+                ::memcpy(buf.data(), readBuffer.data(), readBuffer.size());
+                return (ssize_t)readBuffer.size();
+            });
+            if(ret < 0) return ret;
+            nbytes += ret;
+        }
+        return nbytes;
+    }
+
     ssize_t FS::write(FD fd, const u8* buf, size_t count) {
         OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
         if(!openFileDescription) return -EBADF;

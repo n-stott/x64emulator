@@ -64,6 +64,7 @@ namespace kernel {
             case 0x10: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::ioctl, regs));
             case 0x11: return threadRegs.set(x64::R64::RAX, invoke_syscall_4(&Sys::pread64, regs));
             case 0x12: return threadRegs.set(x64::R64::RAX, invoke_syscall_4(&Sys::pwrite64, regs));
+            case 0x13: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::readv, regs));
             case 0x14: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::writev, regs));
             case 0x15: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::access, regs));
             case 0x16: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::pipe, regs));
@@ -436,6 +437,29 @@ namespace kernel {
                         fd, buf.address(), count, offset, errnoOrNbytes);
         }
         return errnoOrNbytes;
+    }
+
+    ssize_t Sys::readv(int fd, x64::Ptr iov, int iovcnt) {
+        std::vector<u8> iovecs = mmu_.readFromMmu<u8>(iov, ((size_t)iovcnt) * Host::iovecRequiredBufferSize());
+        Buffer iovecBuffer(std::move(iovecs));
+        std::vector<Buffer> buffers;
+        buffers.reserve((size_t)iovcnt);
+        for(size_t i = 0; i < (size_t)iovcnt; ++i) {
+            x64::Ptr base{Host::iovecBase(iovecBuffer, i)};
+            size_t len = Host::iovecLen(iovecBuffer, i);
+            std::vector<u8> data(len);
+            mmu_.copyFromMmu(data.data(), base, len);
+            buffers.push_back(Buffer(std::move(data)));
+        }
+        ssize_t nbytes = kernel_.fs().readv(FS::FD{fd}, &buffers);
+        if(nbytes >= 0) {
+            for(size_t i = 0; i < (size_t)iovcnt; ++i) {
+                x64::Ptr base{Host::iovecBase(iovecBuffer, i)};
+                mmu_.copyToMmu(base, buffers[i].data(), buffers[i].size());
+            }
+        }
+        if(logSyscalls_) print("Sys::readv(fd={}, iov={:#x}, iovcnt={}) = {}\n", fd, iov.address(), iovcnt, nbytes);
+        return nbytes;
     }
 
     ssize_t Sys::writev(int fd, x64::Ptr iov, int iovcnt) {
