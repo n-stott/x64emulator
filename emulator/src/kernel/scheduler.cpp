@@ -191,12 +191,12 @@ namespace kernel {
             return *it;
         };
 
-        // All threads are blocked and are waiting on a mutex
+        // All threads are blocked and are waiting on a mutex without a timeout
         bool deadlock = !allAliveThreads_.empty()
                 && std::all_of(allAliveThreads_.begin(), allAliveThreads_.end(), [&](Thread* thread) {
                     return thread->state() == Thread::THREAD_STATE::BLOCKED
                         && std::any_of(futexBlockers_.begin(), futexBlockers_.end(), [=](const FutexBlocker& blocker) {
-                            return blocker.thread() == thread;
+                            return blocker.thread() == thread && !blocker.hasTimeout();
                     });
         });
         verify(!deadlock, [&]() {
