@@ -201,6 +201,10 @@ namespace kernel {
         return whence == SEEK_END;
     }
 
+    bool Host::Statx::isAtEmptyPath(int flags) {
+        return flags & AT_EMPTY_PATH;
+    }
+
     Host::SchedAttr Host::getSchedulerAttributes() {
         Host::SchedAttr attr;
         attr.size = sizeof(Host::SchedAttr);

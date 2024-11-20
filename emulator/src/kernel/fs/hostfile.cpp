@@ -115,6 +115,10 @@ namespace kernel {
         return ErrnoOrBuffer(Buffer{std::move(buf)});
     }
 
+    ErrnoOrBuffer HostFile::statx(unsigned int mask) {
+        return Host::statx(Host::FD{hostFd_}, "", AT_EMPTY_PATH, mask);
+    }
+
     off_t HostFile::lseek(OpenFileDescription&, off_t offset, int whence) {
         off_t ret = ::lseek(hostFd_, offset, whence);
         if(ret < 0) return -errno;

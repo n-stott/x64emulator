@@ -24,6 +24,11 @@ namespace kernel {
         return ss.str();
     }
 
+    ErrnoOrBuffer File::statx(unsigned int mask) {
+        verify(false, fmt::format("File::statx(mask={:#x}) not implemented for file type {}\n", mask, className()));
+        return ErrnoOrBuffer(-ENOTSUP);
+    }
+
     ErrnoOrBuffer File::ioctlWithBufferSizeGuess(unsigned long request, const Buffer&) {
         verify(false, fmt::format("File::ioctlWithBufferSizeGuess(request={:#x}) not implemented for file type {}\n", request, className()));
         return ErrnoOrBuffer(-ENOTSUP);

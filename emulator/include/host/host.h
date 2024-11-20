@@ -112,6 +112,10 @@ namespace kernel {
             static bool isSeekEnd(int whence);
         };
 
+        struct Statx {
+            static bool isAtEmptyPath(int flags);
+        };
+
         struct SchedAttr {
             u32 size;
             u32 schedPolicy;

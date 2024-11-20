@@ -497,15 +497,50 @@ namespace kernel {
         return openFileDescription->file()->stat();
     }
 
-    ErrnoOrBuffer FS::statx(FD dirfd, const std::string& pathname, int flags, unsigned int mask) const { // NOLINT(readability-convert-member-functions-to-static)
-        verify(dirfd.fd == Host::cwdfd().fd, "dirfd is not cwd");
-        auto path = Path::tryCreate(pathname);
-        if(!!path) {
-            verify(false, "implement statx in FS");
-            return ErrnoOrBuffer(-ENOTSUP);
+    ErrnoOrBuffer FS::statx(FD dirfd, const std::string& pathname, int flags, unsigned int mask) { // NOLINT(readability-convert-member-functions-to-static)
+        // statx() uses pathname, dirfd, and flags to identify the target file in one of the following ways:
+        if(pathname.empty()) {
+            if(Host::Statx::isAtEmptyPath(flags)) {
+                // By file descriptor
+                // If  pathname  is  an  empty string and the AT_EMPTY_PATH flag is specified in flags (see below), then the target file is the one re‐
+                // ferred to by the file descriptor dirfd.
+                OpenFileDescription* openFileDescription = findOpenFileDescription(dirfd);
+                if(!openFileDescription) return ErrnoOrBuffer(-EBADF);
+                return openFileDescription->file()->statx(mask);
+            } else {
+                return ErrnoOrBuffer(-ENOENT);
+            }
+        } else if(pathname[0] == '/') {
+            // An absolute pathname
+            // If pathname begins with a slash, then it is an absolute pathname that identifies the target file. In this case, dirfd is ignored.
+            auto path = Path::tryCreate(pathname);
+            verify(!!path, "Unable to create path");
+            File* file = tryGetFile(*path);
+            if(!!file) {
+                return file->statx(mask);    
+            } else {
+                // if we don't know the file, delegating to the host is probably fine
+                return Host::statx(Host::cwdfd(), pathname, flags, mask);
+            }
         } else {
-            return Host::statx(Host::cwdfd(), pathname, flags, mask);
+            if(dirfd.fd == Host::cwdfd().fd) {
+                // A relative pathname
+                // If pathname is a string that begins with a character other than a slash and dirfd is AT_FDCWD, then pathname is a relative pathname
+                // that is interpreted relative to the process's current working directory.
+                verify(false, "implement cwd-based relative path lookup in statx");
+            } else {
+                // A directory-relative pathname
+                // If pathname is a string that begins with a character other than a slash and dirfd is a file descriptor that refers to a directory,
+                // then pathname is a relative pathname that is interpreted relative to the directory referred to by dirfd.
+                OpenFileDescription* dirOpenFileDescription = findOpenFileDescription(dirfd);
+                verify(!!dirOpenFileDescription, "trying to perform relative path lookup in statx w.r.t. unopened directory");
+                if(!dirOpenFileDescription->file()->isDirectory()) return ErrnoOrBuffer(-ENOTDIR);
+                verify(false, "implement directory-based relative path lookup in statx");
+            }
+
         }
+        verify(false, "Unexpected code path in FS::statx");
+        return ErrnoOrBuffer(-ENOTSUP);
     }
 
     ErrnoOrBuffer FS::fstatat64(FD dirfd, const std::string& pathname, int flags) {

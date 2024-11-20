@@ -126,7 +126,7 @@ namespace kernel {
 
         ErrnoOrBuffer stat(const std::string& pathname);
         ErrnoOrBuffer fstat(FD fd);
-        ErrnoOrBuffer statx(FD dirfd, const std::string& pathname, int flags, unsigned int mask) const;
+        ErrnoOrBuffer statx(FD dirfd, const std::string& pathname, int flags, unsigned int mask);
         ErrnoOrBuffer fstatat64(FD dirfd, const std::string& pathname, int flags);
 
         ErrnoOrBuffer fstatfs(FD fd);
