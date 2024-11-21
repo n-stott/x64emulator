@@ -178,8 +178,8 @@ namespace x64 {
         [[nodiscard]] static u128 divss(u128 dst, u128 src, SIMD_ROUNDING);
         [[nodiscard]] static u128 divsd(u128 dst, u128 src, SIMD_ROUNDING);
 
-        static void comiss(u128 dst, u128 src, Flags* flags, SIMD_ROUNDING);
-        static void comisd(u128 dst, u128 src, Flags* flags, SIMD_ROUNDING);
+        static void comiss(u128 dst, u128 src, SIMD_ROUNDING, Flags* flags);
+        static void comisd(u128 dst, u128 src, SIMD_ROUNDING, Flags* flags);
 
         [[nodiscard]] static u128 sqrtss(u128 dst, u128 src, SIMD_ROUNDING);
         [[nodiscard]] static u128 sqrtsd(u128 dst, u128 src, SIMD_ROUNDING);

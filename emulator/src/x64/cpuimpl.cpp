@@ -755,7 +755,7 @@ namespace x64 {
     u128 CpuImpl::divss(u128 dst, u128 src, SIMD_ROUNDING) { return scalarOp<float, float>(dst, src, [](auto d, auto s) { return d / s; }); }
     u128 CpuImpl::divsd(u128 dst, u128 src, SIMD_ROUNDING) { return scalarOp<double, double>(dst, src, [](auto d, auto s) { return d / s; }); }
 
-    void CpuImpl::comiss(u128 dst, u128 src, Flags* flags, SIMD_ROUNDING) {
+    void CpuImpl::comiss(u128 dst, u128 src, SIMD_ROUNDING, Flags* flags) {
         static_assert(sizeof(u32) == sizeof(float));
         float d;
         float s;
@@ -783,7 +783,7 @@ namespace x64 {
         flags->sign = false;
     }
 
-    void CpuImpl::comisd(u128 dst, u128 src, Flags* flags, SIMD_ROUNDING) {
+    void CpuImpl::comisd(u128 dst, u128 src, SIMD_ROUNDING, Flags* flags) {
         static_assert(sizeof(u64) == sizeof(double));
         double d;
         double s;

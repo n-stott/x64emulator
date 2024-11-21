@@ -2,6 +2,7 @@
 #define UTILS_H
 
 #include <cstdint>
+#include <cstring>
 
 using u8 = uint8_t;
 using u16 = uint16_t;
@@ -17,6 +18,10 @@ struct Xmm {
     u64 hi;
 };
 using u128 = Xmm;
+
+inline bool operator==(u128 a, u128 b) {
+    return a.lo == b.lo && a.hi == b.hi;
+}
 
 using f32 = float;
 using f64 = double;
@@ -47,6 +52,9 @@ struct F80 {
     static F80 roundZero(F80 val);
 };
 using f80 = F80;
+inline bool operator==(f80 a, f80 b) {
+    return memcmp(a.val, b.val, sizeof(f80)) == 0;
+}
 
 static_assert(sizeof(u8) == 1);
 static_assert(sizeof(u16) == 2);

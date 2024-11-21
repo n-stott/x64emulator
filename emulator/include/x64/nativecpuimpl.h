@@ -1,5 +1,5 @@
-#ifndef CHECKED_CPU_IMPL_H
-#define CHECKED_CPU_IMPL_H
+#ifndef NATIVECPUIMPL_H
+#define NATIVECPUIMPL_H
 
 #include "x64/flags.h"
 #include "x64/simd.h"
@@ -8,7 +8,7 @@
 
 namespace x64 {
 
-    struct CheckedCpuImpl {
+    struct NativeCpuImpl {
         [[nodiscard]] static u8 add8(u8 dst, u8 src, Flags* flags);
         [[nodiscard]] static u16 add16(u16 dst, u16 src, Flags* flags);
         [[nodiscard]] static u32 add32(u32 dst, u32 src, Flags* flags);

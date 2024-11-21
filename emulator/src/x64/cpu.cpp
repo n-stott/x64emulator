@@ -3,6 +3,7 @@
 #include "x64/checkedcpuimpl.h"
 #else
 #include "x64/cpuimpl.h"
+// #include "x64/nativecpuimpl.h"
 #endif
 #include "x64/mmu.h"
 #include "emulator/vm.h"
@@ -19,6 +20,7 @@ namespace x64 {
     using Impl = CheckedCpuImpl;
 #else
     using Impl = CpuImpl;
+    // using Impl = NativeCpuImpl;
 #endif
 
     Cpu::Cpu(emulator::VM* vm, Mmu* mmu) :
@@ -2242,35 +2244,35 @@ namespace x64 {
     }
 
     void Cpu::exec(const Comiss<RSSE, RSSE>& ins) {
-        Impl::comiss(get(ins.dst), get(ins.src), &flags_, simdRoundingMode());
+        Impl::comiss(get(ins.dst), get(ins.src), simdRoundingMode(), &flags_);
     }
 
     void Cpu::exec(const Comiss<RSSE, M32>& ins) {
-        Impl::comiss(get(ins.dst), zeroExtend<Xmm, u32>(get(resolve(ins.src))), &flags_, simdRoundingMode());
+        Impl::comiss(get(ins.dst), zeroExtend<Xmm, u32>(get(resolve(ins.src))), simdRoundingMode(), &flags_);
     }
 
     void Cpu::exec(const Comisd<RSSE, RSSE>& ins) {
-        Impl::comisd(get(ins.dst), get(ins.src), &flags_, simdRoundingMode());
+        Impl::comisd(get(ins.dst), get(ins.src), simdRoundingMode(), &flags_);
     }
 
     void Cpu::exec(const Comisd<RSSE, M64>& ins) {
-        Impl::comisd(get(ins.dst), zeroExtend<Xmm, u64>(get(resolve(ins.src))), &flags_, simdRoundingMode());
+        Impl::comisd(get(ins.dst), zeroExtend<Xmm, u64>(get(resolve(ins.src))), simdRoundingMode(), &flags_);
     }
 
     void Cpu::exec(const Ucomiss<RSSE, RSSE>& ins) {
-        Impl::comiss(get(ins.dst), get(ins.src), &flags_, simdRoundingMode());
+        Impl::comiss(get(ins.dst), get(ins.src), simdRoundingMode(), &flags_);
     }
 
     void Cpu::exec(const Ucomiss<RSSE, M32>& ins) {
-        Impl::comiss(get(ins.dst), zeroExtend<Xmm, u32>(get(resolve(ins.src))), &flags_, simdRoundingMode());
+        Impl::comiss(get(ins.dst), zeroExtend<Xmm, u32>(get(resolve(ins.src))), simdRoundingMode(), &flags_);
     }
 
     void Cpu::exec(const Ucomisd<RSSE, RSSE>& ins) {
-        Impl::comisd(get(ins.dst), get(ins.src), &flags_, simdRoundingMode());
+        Impl::comisd(get(ins.dst), get(ins.src), simdRoundingMode(), &flags_);
     }
 
     void Cpu::exec(const Ucomisd<RSSE, M64>& ins) {
-        Impl::comisd(get(ins.dst), zeroExtend<Xmm, u64>(get(resolve(ins.src))), &flags_, simdRoundingMode());
+        Impl::comisd(get(ins.dst), zeroExtend<Xmm, u64>(get(resolve(ins.src))), simdRoundingMode(), &flags_);
     }
 
     void Cpu::exec(const Maxss<RSSE, RSSE>& ins) { set(ins.dst, Impl::maxss(get(ins.dst), get(ins.src), simdRoundingMode())); }

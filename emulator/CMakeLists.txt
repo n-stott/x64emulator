@@ -20,6 +20,7 @@ add_library(x64cpu STATIC
     src/host/hostinstructions.cpp
     src/x64/checkedcpuimpl.cpp
     src/x64/cpuimpl.cpp
+    src/x64/nativecpuimpl.cpp
     src/x64/simd.cpp
     src/x64/x87.cpp
     src/utils.cpp
@@ -70,6 +71,7 @@ add_library(x64emulator STATIC
     src/x64/cpu.cpp
     src/x64/cpuimpl.cpp
     src/x64/checkedcpuimpl.cpp
+    src/x64/nativecpuimpl.cpp
     src/x64/mmu.cpp
     src/x64/registers.cpp
     src/x64/simd.cpp
