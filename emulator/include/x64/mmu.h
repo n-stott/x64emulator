@@ -7,6 +7,7 @@
 #include "utils.h"
 #include "types.h"
 #include <fmt/core.h>
+#include <algorithm>
 #include <array>
 #include <cassert>
 #include <deque>
@@ -77,6 +78,9 @@ namespace x64 {
             void copyFromRegion(u8* dst, u64 src, size_t n) const;
 
             void setEnd(u64 newEnd);
+
+            u8* data() { return data_.data(); }
+            const u8* data() const { return data_.data(); }
 
         private:
             friend class Mmu;
@@ -241,6 +245,9 @@ namespace x64 {
         template<typename T, Size s>
         void write(SPtr<s> ptr, T value);
 
+        const u8* getReadPtr(u64 address) const;
+        u8* getWritePtr(u64 address);
+
         Region* findAddress(u64 address);
         Region* findRegion(const char* name);
         std::unique_ptr<Region> takeRegion(const char* name);
@@ -252,8 +259,24 @@ namespace x64 {
 
         std::vector<std::unique_ptr<Region>> regions_;
         std::vector<Region*> regionLookup_;
+        std::vector<const u8*> readablePageLookup_;
+        std::vector<u8*> writablePageLookup_;
         u64 firstUnlookupdableAddress_ { 0 };
         std::vector<MunmapCallback*> callbacks_;
+
+        void fillRegionLookup(Region* region);
+        void invalidateRegionLookup(Region* region);
+
+        void updatePageLookup(Region* region, BitFlags<PROT> previousProt);
+        void fillReadablePageLookup(u64 base, u64 end);
+        void fillWritablePageLookup(u64 base, u64 end);
+
+        void invalidateReadablePageLookup(u64 base, u64 end);
+        void invalidateWritablePageLookup(u64 base, u64 end);
+
+        static bool isPageAligned(u64 address) {
+            return address % PAGE_SIZE == 0;
+        }
 
 #ifdef CANNOT_REUSE_PAST_REGIONS
         mutable std::vector<std::pair<u64, u64>> allSlicesEverMmaped_;
