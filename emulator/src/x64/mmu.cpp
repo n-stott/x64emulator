@@ -315,11 +315,27 @@ namespace x64 {
     T Mmu::read(SPtr<s> ptr) const {
         static_assert(sizeof(T) == pointerSize(s));
         u64 address = ptr.address();
+        const u8* dataPtr = getReadPtr(address);
+        verify(!!dataPtr, [&]() {
+            fmt::print("Read lookup for {:#x} is null\n", address);
+        });
+        T value;
+        ::memcpy(&value, dataPtr, sizeof(T));
+
+#ifndef NDEBUG
         const Region* region = findAddress(address);
         verify(!!region, [&]() {
             fmt::print("No region containing {:#x}\n", address);
         });
-        T value = region->read<T>(address);
+        T debugValue = region->read<T>(address);
+        verify(::memcmp(&value, &debugValue, sizeof(T)) == 0, [&]() {
+            if constexpr(std::is_integral_v<T>) {
+                fmt::print("Did not read the same value\n  region: {:#x}\n  dataPtr: {:#x}\n", value, debugValue);
+            } else {
+                fmt::print("Did not read the same value\n");
+            }
+        });
+#endif
 #if DEBUG_MMU
         if constexpr(std::is_integral_v<T>)
             fmt::print(stderr, "Read {:#x} from address {:#x}\n", value, address);
@@ -331,15 +347,30 @@ namespace x64 {
     void Mmu::write(SPtr<s> ptr, T value) {
         static_assert(sizeof(T) == pointerSize(s));
         u64 address = ptr.address();
-        Region* region = findAddress(address);
+        u8* dataPtr = getWritePtr(address);
+        verify(!!dataPtr, [&]() {
+            fmt::print("Read lookup for {:#x} is null\n", address);
+        });
+        ::memcpy(dataPtr, &value, sizeof(T));
+
+#ifndef NDEBUG
+        const Region* region = findAddress(address);
         verify(!!region, [&]() {
             fmt::print("No region containing {:#x}\n", address);
         });
+        T debugValue = region->read<T>(address);
+        verify(::memcmp(&value, &debugValue, sizeof(T)) == 0, [&]() {
+            if constexpr(std::is_integral_v<T>) {
+                fmt::print("Did not read the same value\n  region: {:#x}\n  dataPtr: {:#x}\n", value, debugValue);
+            } else {
+                fmt::print("Did not read the same value\n");
+            }
+        });
+#endif
 #if DEBUG_MMU
         if constexpr(std::is_integral_v<T>)
             fmt::print(stderr, "Wrote {:#x} to address {:#x}\n", value, address);
 #endif
-        region->write(address, value);
     }
 
     u8 Mmu::read8(Ptr8 ptr) const {
