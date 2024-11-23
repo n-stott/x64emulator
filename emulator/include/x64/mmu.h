@@ -39,12 +39,6 @@ namespace x64 {
         public:
             Region(std::string name, u64 base, u64 size, BitFlags<PROT> prot);
 
-            Region(const Region&);
-            Region(Region&&) noexcept;
-
-            Region& operator=(const Region&);
-            Region& operator=(Region&&) noexcept;
-
             u64 base() const { return base_; }
             u64 size() const { return size_; }
             u64 end() const { return base_+size_; }
@@ -58,7 +52,7 @@ namespace x64 {
 
             void setProtection(BitFlags<PROT> prot);
 
-            std::array<Region, 3> split(u64 left, u64 right) const;
+            std::array<std::unique_ptr<Region>, 3> split(u64 left, u64 right) const;
 
             u8 read8(u64 address) const;
             u16 read16(u64 address) const;
@@ -135,10 +129,12 @@ namespace x64 {
         };
 
     private:
-        Region* addRegion(Region region);
-        Region* addRegionAndEraseExisting(Region region);
+        Region* addRegion(std::unique_ptr<Region> region);
+        Region* addRegionAndEraseExisting(std::unique_ptr<Region> region);
         void removeRegion(u64 regionBase, u64 regionEnd, u64 regionSize);
         void tryMergeRegions();
+
+        static std::unique_ptr<Region> makeRegion(u64 base, u64 size, BitFlags<PROT> prot, std::string name = "");
 
     public:
         Mmu();

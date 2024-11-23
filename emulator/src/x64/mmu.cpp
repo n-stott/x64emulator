@@ -26,74 +26,35 @@ namespace x64 {
         this->name_ = std::move(name);
     }
 
-
-    Mmu::Region::Region(const Region& r) : base_(r.base_),
-                                           size_(r.size_),
-                                           data_(r.data_),
-                                           prot_(r.prot_),
-                                           name_(r.name_) {
-        
-    }
-
-    Mmu::Region::Region(Region&& r) noexcept : base_(r.base_),
-                                               size_(r.size_),
-                                               data_(std::move(r.data_)),
-                                               prot_(r.prot_),
-                                               name_(std::move(r.name_)) {
-        
-    }
-
-    Mmu::Region& Mmu::Region::operator=(const Region& r) {
-        if(&r != this) {
-            base_ = r.base_;
-            size_ = r.size_;
-            data_ = r.data_;
-            prot_ = r.prot_;
-            name_ = r.name_;
-        }
-        return *this;
-    }
-
-    Mmu::Region& Mmu::Region::operator=(Region&& r) noexcept {
-        if(&r != this) {
-            base_ = r.base_;
-            size_ = r.size_;
-            data_ = std::move(r.data_);
-            prot_ = r.prot_;
-            name_ = std::move(r.name_);
-        }
-        return *this;
-    }
-
-    Mmu::Region* Mmu::addRegion(Region region) {
+    Mmu::Region* Mmu::addRegion(std::unique_ptr<Region> region) {
         auto emptyIntersection = [&](const std::unique_ptr<Region>& ptr) {
-            return !ptr->contains(region.base()) && !ptr->contains(region.end() - 1);
+            return !ptr->contains(region->base()) && !ptr->contains(region->end() - 1);
         };
         verify(std::all_of(regions_.begin(), regions_.end(), emptyIntersection), [&]() {
             auto r = std::find_if_not(regions_.begin(), regions_.end(), emptyIntersection);
             assert(r != regions_.end());
-            fmt::print("Unable to add region : memory range [{:#x}, {:#x}] already occupied by region [{:#x}, {:#x}]\n", region.base(), region.end(), (*r)->base(), (*r)->end());
+            fmt::print("Unable to add region : memory range [{:#x}, {:#x}] already occupied by region [{:#x}, {:#x}]\n",
+                    region->base(), region->end(), (*r)->base(), (*r)->end());
             dumpRegions();
         });
-        std::unique_ptr<Region> regionPtr = std::make_unique<Region>(std::move(region));
-        Region* r = regionPtr.get();
+        Region* regionPtr = region.get();
 
         checkRegionsAreSorted();
-        auto insertionPosition = std::lower_bound(regions_.begin(), regions_.end(), regionPtr, Mmu::compareRegions);
+        auto insertionPosition = std::lower_bound(regions_.begin(), regions_.end(), region, Mmu::compareRegions);
 #ifdef CANNOT_REUSE_PAST_REGIONS
         allSlicesEverMmaped_.push_back(std::make_pair(regionPtr->base(), regionPtr->end()));
 #endif
-        regions_.insert(insertionPosition, std::move(regionPtr));
+        regions_.insert(insertionPosition, std::move(region));
         checkRegionsAreSorted();
 
-        fillRegionLookup(r);
+        fillRegionLookup(regionPtr);
         tryMergeRegions();
-        return r;
+        return regionPtr;
     }
     
-    Mmu::Region* Mmu::addRegionAndEraseExisting(Region region) {
+    Mmu::Region* Mmu::addRegionAndEraseExisting(std::unique_ptr<Region> region) {
         auto emptyIntersection = [&](const std::unique_ptr<Region>& ptr) {
-            return !ptr->contains(region.base()) && !ptr->contains(region.end() - 1);
+            return !ptr->contains(region->base()) && !ptr->contains(region->end() - 1);
         };
         std::ptrdiff_t nbImpactedRegions = std::count_if(regions_.begin(), regions_.end(), [&](const auto& ptr) {
             return !emptyIntersection(ptr);
@@ -103,14 +64,13 @@ namespace x64 {
         if(it != regions_.end()) {
             assert(std::distance(it, regions_.end()) == 1);
             std::unique_ptr<Region>& oldRegion = regions_.back();
-            std::array<Region, 3> splitRegions = oldRegion->split(region.base(), region.end());
+            auto splitRegions = oldRegion->split(region->base(), region->end());
             removeRegion(oldRegion->base(), oldRegion->end(), oldRegion->size());
             for(size_t i = 0; i < splitRegions.size(); ++i) {
                 if(i == 1) continue;
-                Region r("", 0, 0, BitFlags<PROT>{PROT::NONE});
-                std::swap(r, splitRegions[i]);
-                if(r.size() == 0) continue;
-                addRegion(std::move(r));
+                std::unique_ptr<Region> sideRegion = std::move(splitRegions[i]);
+                if(sideRegion->size() == 0) continue;
+                addRegion(std::move(sideRegion));
             }
         }
         return addRegion(std::move(region));
@@ -139,7 +99,7 @@ namespace x64 {
         length = pageRoundUp(length);
 
         u64 baseAddress = (address != 0) ? address : firstFitPageAligned(length);
-        Region region("", baseAddress, length, prot);
+        std::unique_ptr<Region> region = makeRegion(baseAddress, length, prot);
         if(flags.test(MAP::FIXED)) {
             addRegionAndEraseExisting(std::move(region));
         } else {
@@ -169,14 +129,13 @@ namespace x64 {
             u64 intersectionStart = std::max(address, regionPtr->base());
             u64 intersectionEnd = std::min(address+length, regionPtr->end());
             verify(intersectionStart <= intersectionEnd);
-            std::array<Region, 3> splitRegions = regionPtr->split(intersectionStart, intersectionEnd);
+            auto splitRegions = regionPtr->split(intersectionStart, intersectionEnd);
             removeRegion(regionPtr->base(), regionPtr->end(), regionPtr->size());
             for(size_t i = 0; i < splitRegions.size(); ++i) {
                 if(i == 1) continue;
-                Region r("", 0, 0, BitFlags<PROT>{PROT::NONE});
-                std::swap(r, splitRegions[i]);
-                if(r.size() == 0) continue;
-                addRegion(std::move(r));
+                std::unique_ptr<Region> sideRegion = std::move(splitRegions[i]);
+                if(sideRegion->size() == 0) continue;
+                addRegion(std::move(sideRegion));
             }
         }
         for(auto* callback : callbacks_) callback->onMunmap(address, length);
@@ -194,14 +153,13 @@ namespace x64 {
             updatePageLookup(regionPtr, previousProt);
             return 0;
         }
-        std::array<Region, 3> splitRegions = regionPtr->split(address, address+length);
+        std::array<std::unique_ptr<Region>, 3> splitRegions = regionPtr->split(address, address+length);
         removeRegion(regionPtr->base(), regionPtr->end(), regionPtr->size());
         for(size_t i = 0; i < splitRegions.size(); ++i) {
-            Region r("", 0, 0, BitFlags<PROT>{PROT::NONE});
-            std::swap(r, splitRegions[i]);
-            if(r.size() == 0) continue;
-            if(i == 1) r.setProtection(prot);
-            addRegion(std::move(r));
+            std::unique_ptr<Region> subRegion = std::move(splitRegions[i]);
+            if(subRegion->size() == 0) continue;
+            if(i == 1) subRegion->setProtection(prot);
+            addRegion(std::move(subRegion));
         }
         return 0;
     }
@@ -259,9 +217,14 @@ namespace x64 {
     void Mmu::Region::write80(u64 address, f80 value) { write<f80>(address, value); }
     void Mmu::Region::write128(u64 address, u128 value) { write<u128>(address, value); }
 
+    std::unique_ptr<Mmu::Region> Mmu::makeRegion(u64 base, u64 size, BitFlags<PROT> prot, std::string name) {
+        return std::unique_ptr<Region>(new Region(std::move(name), base, size, prot));
+    }
+
     Mmu::Mmu() {
         // Make first page non-readable and non-writable
-        addRegion(Region { "nullpage", 0, PAGE_SIZE, BitFlags<PROT>{PROT::NONE} });
+        std::unique_ptr<Region> zeroPage = makeRegion(0, PAGE_SIZE, BitFlags<PROT>{PROT::NONE}, "nullpage");
+        addRegion(std::move(zeroPage));
     }
 
     BitFlags<PROT> Mmu::prot(u64 address) const {
@@ -574,22 +537,22 @@ namespace x64 {
         std::memcpy(dst, &data_[src-base_], n);
     }
 
-    std::array<Mmu::Region, 3> Mmu::Region::split(u64 left, u64 right) const {
+    std::array<std::unique_ptr<Mmu::Region>, 3> Mmu::Region::split(u64 left, u64 right) const {
         verify(left <= right);
         verify(contains(left));
         verify(contains(right) || right == end());
 
-        Region l(name_, base_, left-base_, prot_);
-        Region m(name_, left, right-left, prot_);
-        Region r(name_, right, end()-right, prot_);
+        std::unique_ptr<Region> l = makeRegion(base_, left-base_, prot_, name_);
+        std::unique_ptr<Region> m = makeRegion(left, right-left, prot_, name_);
+        std::unique_ptr<Region> r = makeRegion(right, end()-right, prot_, name_);
 
         if(prot_.any()) {
-            if(l.size()) std::memcpy(l.data_.data(), data_.data(), left-base_);
-            if(m.size()) std::memcpy(m.data_.data(), data_.data()+left-base_, right-left);
-            if(r.size()) std::memcpy(r.data_.data(), data_.data()+right-base_, end()-right);
+            if(l->size()) std::memcpy(l->data_.data(), data_.data(), left-base_);
+            if(m->size()) std::memcpy(m->data_.data(), data_.data()+left-base_, right-left);
+            if(r->size()) std::memcpy(r->data_.data(), data_.data()+right-base_, end()-right);
         }
 
-        std::array<Region, 3> res {{ std::move(l), std::move(m), std::move(r) }};
+        std::array<std::unique_ptr<Region>, 3> res {{ std::move(l), std::move(m), std::move(r) }};
         return res;
     }
 
@@ -615,7 +578,7 @@ namespace x64 {
         removeRegion(heap->base(), heap->end(), heap->size());
         heap->setEnd(address);
         u64 newBrk = heap->end();
-        addRegion(std::move(*heap));
+        addRegion(std::move(heap));
         return newBrk;
     }
 
