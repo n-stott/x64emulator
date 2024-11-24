@@ -538,15 +538,26 @@ namespace x64 {
         std::memcpy(dst, &data_[src-base_], n);
     }
 
+    void Mmu::Region::append(std::unique_ptr<Region> region) {
+        verify(region->base() == end());
+        verify(region->prot() == prot());
+        verify(region->name() == name());
+        if(prot_.any()) {
+            data_.resize(size_ + region->size());
+            std::memcpy(data_.data() + size_, region->data_.data(), region->data_.size());
+        }
+        size_ += region->size();
+    }
+
     std::unique_ptr<Mmu::Region> Mmu::Region::splitAt(u64 address) {
         verify(contains(address));
         verify(address != base()); // split should never create or leave an empty region.
         std::unique_ptr<Region> subRegion = makeRegion(address, end()-address, prot_, name_);
-        if(prot_.any()) {
-            std::memcpy(subRegion->data_.data(), data_.data() + (address - base_), subRegion->size());
-        }
         size_ = address - base_;
-        data_.resize(size_);
+        if(prot_.any()) {
+            std::memcpy(subRegion->data_.data(), data_.data() + size_, subRegion->size());
+            data_.resize(size_);
+        }
         return subRegion;
     }
 
@@ -577,22 +588,21 @@ namespace x64 {
 
     void Mmu::tryMergeRegions() {
         checkRegionsAreSorted();
-        for(size_t i = 1; i < regions_.size(); ++i) {
-            Region* a = regions_[i-1].get();
-            Region* b = regions_[i].get();
-            if(a == nullptr) continue;
-            if(b == nullptr) continue;
+        size_t regionIndex = 1;
+        while(regionIndex < regions_.size()) {
+            Region* a = regions_[regionIndex-1].get();
+            Region* b = regions_[regionIndex].get();
+            ++regionIndex;
+            verify(!!a);
+            verify(!!b);
             if(a->end() != b->base()) continue;
             if(a->prot() != b->prot()) continue;
             if(a->name() != b->name()) continue;
-            // Update region lookup
-            invalidateRegionLookup(a);
-            invalidateRegionLookup(b);
-            // transfer ownership
-            a->size_ += b->size_;
-            a->data_.insert(a->data_.end(), b->data_.begin(), b->data_.end());
-            regions_[i].reset();
-            fillRegionLookup(a);
+            // commit to the merge
+            auto regionA = takeRegion(a->base(), a->size());
+            auto regionB = takeRegion(b->base(), b->size());
+            regionA->append(std::move(regionB));
+            addRegion(std::move(regionA));
         }
         regions_.erase(std::remove(regions_.begin(), regions_.end(), nullptr), regions_.end());
         checkRegionsAreSorted();

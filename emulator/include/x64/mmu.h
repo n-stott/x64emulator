@@ -52,6 +52,7 @@ namespace x64 {
 
             void setProtection(BitFlags<PROT> prot);
 
+            void append(std::unique_ptr<Region>);
             std::unique_ptr<Region> splitAt(u64 address);
 
             u8 read8(u64 address) const;
