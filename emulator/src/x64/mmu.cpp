@@ -25,6 +25,8 @@ namespace x64 {
         this->prot_ = prot;
     }
 
+    Mmu::Region::~Region() = default;
+
     Mmu::Region* Mmu::addRegion(std::unique_ptr<Region> region) {
         auto emptyIntersection = [&](const std::unique_ptr<Region>& ptr) {
             return !ptr->contains(region->base()) && !ptr->contains(region->end() - 1);

@@ -38,6 +38,7 @@ namespace x64 {
         class Region {
         public:
             Region(u64 base, u64 size, BitFlags<PROT> prot);
+            ~Region();
 
             u64 base() const { return base_; }
             u64 size() const { return size_; }
