@@ -16,14 +16,13 @@ namespace x64 {
         return ((address + alignment - 1) / alignment) * alignment;
     }
 
-    Mmu::Region::Region(std::string name, u64 base, u64 size, BitFlags<PROT> prot) {
+    Mmu::Region::Region(u64 base, u64 size, BitFlags<PROT> prot) {
         this->base_ = base;
         this->size_ = size;
         if(prot.any()) {
             this->data_.resize(size, 0x00);
         }
         this->prot_ = prot;
-        this->name_ = std::move(name);
     }
 
     Mmu::Region* Mmu::addRegion(std::unique_ptr<Region> region) {
@@ -203,14 +202,15 @@ namespace x64 {
     void Mmu::Region::write80(u64 address, f80 value) { write<f80>(address, value); }
     void Mmu::Region::write128(u64 address, u128 value) { write<u128>(address, value); }
 
-    std::unique_ptr<Mmu::Region> Mmu::makeRegion(u64 base, u64 size, BitFlags<PROT> prot, std::string name) {
-        return std::unique_ptr<Region>(new Region(std::move(name), base, size, prot));
+    std::unique_ptr<Mmu::Region> Mmu::makeRegion(u64 base, u64 size, BitFlags<PROT> prot) {
+        return std::unique_ptr<Region>(new Region(base, size, prot));
     }
 
     Mmu::Mmu() {
         // Make first page non-readable and non-writable
-        std::unique_ptr<Region> zeroPage = makeRegion(0, PAGE_SIZE, BitFlags<PROT>{PROT::NONE}, "nullpage");
-        addRegion(std::move(zeroPage));
+        std::unique_ptr<Region> nullpage = makeRegion(0, PAGE_SIZE, BitFlags<PROT>{PROT::NONE});
+        nullpage->setName("nullpage");
+        addRegion(std::move(nullpage));
     }
 
     BitFlags<PROT> Mmu::prot(u64 address) const {
@@ -552,7 +552,8 @@ namespace x64 {
     std::unique_ptr<Mmu::Region> Mmu::Region::splitAt(u64 address) {
         verify(contains(address));
         verify(address != base()); // split should never create or leave an empty region.
-        std::unique_ptr<Region> subRegion = makeRegion(address, end()-address, prot_, name_);
+        std::unique_ptr<Region> subRegion = makeRegion(address, end()-address, prot_);
+        subRegion->setName(name());
         size_ = address - base_;
         if(prot_.any()) {
             std::memcpy(subRegion->data_.data(), data_.data() + size_, subRegion->size());

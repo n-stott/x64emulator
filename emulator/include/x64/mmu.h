@@ -37,7 +37,7 @@ namespace x64 {
     public:
         class Region {
         public:
-            Region(std::string name, u64 base, u64 size, BitFlags<PROT> prot);
+            Region(u64 base, u64 size, BitFlags<PROT> prot);
 
             u64 base() const { return base_; }
             u64 size() const { return size_; }
@@ -238,7 +238,7 @@ namespace x64 {
         const u8* getReadPtr(u64 address) const;
         u8* getWritePtr(u64 address);
 
-        static std::unique_ptr<Region> makeRegion(u64 base, u64 size, BitFlags<PROT> prot, std::string name = "");
+        static std::unique_ptr<Region> makeRegion(u64 base, u64 size, BitFlags<PROT> prot);
         
         Region* addRegion(std::unique_ptr<Region> region);
         Region* addRegionAndEraseExisting(std::unique_ptr<Region> region);
