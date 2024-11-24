@@ -57,7 +57,7 @@ namespace kernel {
         });
         auto cwdPath = Path::tryCreate(cwdpathname);
         verify(!!cwdPath);
-        currentWorkDirectory_ = ensureCompletePath(*cwdPath);
+        currentWorkDirectory_ = ensureCompletePath(*cwdPath); // NOLINT(clang-analyzer-core.CallAndMessage)
     }
 
     FS::~FS() = default;
