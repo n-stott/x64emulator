@@ -26,7 +26,7 @@ namespace x64 {
         this->name_ = std::move(name);
     }
 
-    Mmu::Region* Mmu::addRegion(std::unique_ptr<Region> region, bool tryMerge) {
+    Mmu::Region* Mmu::addRegion(std::unique_ptr<Region> region) {
         auto emptyIntersection = [&](const std::unique_ptr<Region>& ptr) {
             return !ptr->contains(region->base()) && !ptr->contains(region->end() - 1);
         };
@@ -48,8 +48,6 @@ namespace x64 {
         checkRegionsAreSorted();
 
         fillRegionLookup(regionPtr);
-        if(tryMerge)
-            tryMergeRegions();
         return regionPtr;
     }
     
@@ -60,52 +58,33 @@ namespace x64 {
         split(region->end());
         // remove intersecting regions (guaranteed to be included)
         std::vector<const Region*> regionsToRemove;
-        for(const auto& ptr : regions_) {
-            if(ptr->contains(region->base()) || ptr->contains(region->end() - 1)) regionsToRemove.push_back(ptr.get());
+        for(const auto& regionPtr : regions_) {
+            if(regionPtr->contains(region->base()) || regionPtr->contains(region->end() - 1)) regionsToRemove.push_back(regionPtr.get());
         }
-        for(const Region* ptr : regionsToRemove) {
-            removeRegion(ptr->base(), region->end(), region->size(), false);
+        for(const Region* regionPtr : regionsToRemove) {
+            [[maybe_unused]] auto regionLeftToDie = takeRegion(regionPtr->base(), regionPtr->size());
         }
         return addRegion(std::move(region));
     }
 
-    void Mmu::removeRegion(u64 regionBase, u64 regionEnd, u64 regionSize, bool tryMerge) {
-        u64 firstPage = pageRoundDown(regionBase) / PAGE_SIZE;
-        u64 lastPage = pageRoundUp(regionEnd) / PAGE_SIZE;
-        verify(firstPage < lastPage);
-        for(u64 pageIndex = firstPage; pageIndex < lastPage; ++pageIndex) {
-            verify(pageIndex < regionLookup_.size());
-            verify(regionLookup_[pageIndex] != nullptr);
-            regionLookup_[pageIndex] = nullptr;
-        }
-        regions_.erase(std::remove_if(regions_.begin(), regions_.end(), [&](const std::unique_ptr<Region>& ptr) {
-            assert(!!ptr);
-            return ptr->base() == regionBase && ptr->size() == regionSize;
-        }), regions_.end());
-        if(tryMerge)
-            tryMergeRegions();
-    }
-
-    Mmu::Region* Mmu::split(u64 address) {
+    void Mmu::split(u64 address) {
         verify(address % PAGE_SIZE == 0, [&]() {
             fmt::print("split with non-page_size aligned address {:#x} not supported", address);
         });
         // Find the containing region
         Region* containingRegion = findAddress(address);
-        if(!containingRegion) return nullptr;
-        if(address == containingRegion->base()) return nullptr;
+        if(!containingRegion) return;
+        if(address == containingRegion->base()) return;
 
-        // Take ownership of the containing region, so caches are not invalidated
+        // Take ownership of the containing region, so lookups are invalidated
         std::unique_ptr<Region> region = takeRegion(containingRegion->base(), containingRegion->size());
 
         // Create the new region and mutate the old one
         std::unique_ptr<Region> newRegion = region->splitAt(address);
-        Region* newRegionPtr = newRegion.get();
 
         // Reinsert the old one and add the new one, without merging !
-        addRegion(std::move(region), false);
-        addRegion(std::move(newRegion), false);
-        return newRegionPtr;
+        addRegion(std::move(region));
+        addRegion(std::move(newRegion));
     }
 
     u64 Mmu::mmap(u64 address, u64 length, BitFlags<PROT> prot, BitFlags<MAP> flags) {
@@ -139,7 +118,7 @@ namespace x64 {
         }
         for(Region* regionPtr : regionsToRemove) {
             verify(!regionPtr->prot().test(PROT::EXEC), "Cannot unmap exec region");
-            removeRegion(regionPtr->base(), regionPtr->end(), regionPtr->size(), false);
+            [[maybe_unused]] auto regionLeftToDie = takeRegion(regionPtr->base(), regionPtr->size());
         }
         tryMergeRegions();
         for(auto* callback : callbacks_) callback->onMunmap(address, length);
@@ -273,12 +252,10 @@ namespace x64 {
             if(ptr->base() != base) continue;
             if(ptr->size() != size) continue;
             std::swap(region, ptr);
-            // first remove nullptr from regions_ to keep things clean
-            regions_.erase(std::remove_if(regions_.begin(), regions_.end(), [](const auto& regionPtr) {
-                return !regionPtr;
-            }), regions_.end());
-            // then perform region removal, without merging (unexpected side effect)
-            removeRegion(region->base(), region->end(), region->size(), false);
+            // invalidate all the lookups
+            invalidateRegionLookup(region.get());
+            // then keep regions_ clean
+            regions_.erase(std::remove(regions_.begin(), regions_.end(), nullptr), regions_.end());
             break;
         }
         return region;
@@ -289,12 +266,10 @@ namespace x64 {
         for(auto& ptr : regions_) {
             if(ptr->name() != name) continue;
             std::swap(region, ptr);
-            // first remove nullptr from regions_ to keep things clean
-            regions_.erase(std::remove_if(regions_.begin(), regions_.end(), [](const auto& regionPtr) {
-                return !regionPtr;
-            }), regions_.end());
-            // then perform region removal
-            removeRegion(region->base(), region->end(), region->size());
+            // invalidate all the lookups
+            invalidateRegionLookup(region.get());
+            // then keep regions_ clean
+            regions_.erase(std::remove(regions_.begin(), regions_.end(), nullptr), regions_.end());
             break;
         }
         return region;
@@ -660,8 +635,8 @@ namespace x64 {
             verify(pageIndex < regionLookup_.size());
             regionLookup_[pageIndex] = nullptr;
         }
-        invalidateReadablePageLookup(region->base(), region->end());
-        invalidateWritablePageLookup(region->base(), region->end());
+        if(region->prot().test(PROT::READ))  invalidateReadablePageLookup(region->base(), region->end());
+        if(region->prot().test(PROT::WRITE)) invalidateWritablePageLookup(region->base(), region->end());
     }
 
     void Mmu::updatePageLookup(Region* region, BitFlags<PROT> previousProt) {

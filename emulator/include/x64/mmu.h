@@ -128,15 +128,6 @@ namespace x64 {
             std::string name_;
         };
 
-    private:
-        Region* addRegion(std::unique_ptr<Region> region, bool tryMerge = true);
-        Region* addRegionAndEraseExisting(std::unique_ptr<Region> region);
-        void removeRegion(u64 regionBase, u64 regionEnd, u64 regionSize, bool tryMerge = true);
-        Region* split(u64 address);
-        void tryMergeRegions();
-
-        static std::unique_ptr<Region> makeRegion(u64 base, u64 size, BitFlags<PROT> prot, std::string name = "");
-
     public:
         Mmu();
 
@@ -245,10 +236,18 @@ namespace x64 {
         const u8* getReadPtr(u64 address) const;
         u8* getWritePtr(u64 address);
 
-        Region* findAddress(u64 address);
-        Region* findRegion(const char* name);
+        static std::unique_ptr<Region> makeRegion(u64 base, u64 size, BitFlags<PROT> prot, std::string name = "");
+        
+        Region* addRegion(std::unique_ptr<Region> region);
+        Region* addRegionAndEraseExisting(std::unique_ptr<Region> region);
         std::unique_ptr<Region> takeRegion(u64 base, u64 size);
         std::unique_ptr<Region> takeRegion(const char* name);
+
+        void split(u64 address);
+        void tryMergeRegions();
+
+        Region* findAddress(u64 address);
+        Region* findRegion(const char* name);
 
         u64 topOfMemoryPageAligned() const;
         u64 firstFitPageAligned(u64 length) const;
