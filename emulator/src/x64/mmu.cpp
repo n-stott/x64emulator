@@ -153,7 +153,7 @@ namespace x64 {
     void Mmu::setRegionName(u64 address, std::string name) {
         Region* regionPtr = findAddress(address);
         verify(!!regionPtr, "Cannot set name of non-existing region");
-        regionPtr->name_ = std::move(name);
+        regionPtr->setName(std::move(name));
     }
 
     bool Mmu::Region::contains(u64 address) const {
@@ -428,7 +428,7 @@ namespace x64 {
         std::vector<DumpInfo> dumpInfos;
         dumpInfos.reserve(regions_.size());
         for(const auto& ptr : regions_) {
-            dumpInfos.push_back(DumpInfo{ptr->name_, ptr->base(), ptr->end(), protectionToString(ptr->prot())});
+            dumpInfos.push_back(DumpInfo{ptr->name(), ptr->base(), ptr->end(), protectionToString(ptr->prot())});
         }
         std::sort(dumpInfos.begin(), dumpInfos.end(), [](const auto& a, const auto& b) {
             return a.base < b.base;

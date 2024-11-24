@@ -50,6 +50,7 @@ namespace x64 {
             bool contains(u64 address) const;
             bool intersectsRange(u64 base, u64 end) const;
 
+            void setName(std::string name) { name_ = std::move(name); }
             void setProtection(BitFlags<PROT> prot);
 
             void append(std::unique_ptr<Region>);
