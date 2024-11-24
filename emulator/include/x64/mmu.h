@@ -52,7 +52,7 @@ namespace x64 {
 
             void setProtection(BitFlags<PROT> prot);
 
-            std::array<std::unique_ptr<Region>, 3> split(u64 left, u64 right) const;
+            std::unique_ptr<Region> splitAt(u64 address);
 
             u8 read8(u64 address) const;
             u16 read16(u64 address) const;
@@ -129,9 +129,10 @@ namespace x64 {
         };
 
     private:
-        Region* addRegion(std::unique_ptr<Region> region);
+        Region* addRegion(std::unique_ptr<Region> region, bool tryMerge = true);
         Region* addRegionAndEraseExisting(std::unique_ptr<Region> region);
-        void removeRegion(u64 regionBase, u64 regionEnd, u64 regionSize);
+        void removeRegion(u64 regionBase, u64 regionEnd, u64 regionSize, bool tryMerge = true);
+        Region* split(u64 address);
         void tryMergeRegions();
 
         static std::unique_ptr<Region> makeRegion(u64 base, u64 size, BitFlags<PROT> prot, std::string name = "");
@@ -246,6 +247,7 @@ namespace x64 {
 
         Region* findAddress(u64 address);
         Region* findRegion(const char* name);
+        std::unique_ptr<Region> takeRegion(u64 base, u64 size);
         std::unique_ptr<Region> takeRegion(const char* name);
 
         u64 topOfMemoryPageAligned() const;
