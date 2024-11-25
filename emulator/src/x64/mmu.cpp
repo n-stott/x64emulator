@@ -28,7 +28,9 @@ namespace x64 {
         
     }
 
-    Mmu::Region::~Region() = default;
+    Mmu::Region::~Region() {
+        verifyNotActivated();
+    }
 
     Mmu::Region* Mmu::addRegion(std::unique_ptr<Region> region) {
         auto emptyIntersection = [&](const std::unique_ptr<Region>& ptr) {
@@ -53,6 +55,7 @@ namespace x64 {
 
         fillRegionLookup(regionPtr);
         applyRegionProtection(regionPtr, regionPtr->prot());
+        regionPtr->activate();
         return regionPtr;
     }
     
@@ -201,6 +204,7 @@ namespace x64 {
     }
 
     Mmu::~Mmu() {
+        for(auto& region : regions_) region->deactivate();
         host::HostMemory::releaseVirtualMemoryRange(memoryBase_, memorySize_);
     }
 
@@ -248,6 +252,7 @@ namespace x64 {
             invalidateRegionLookup(region.get());
             // then keep regions_ clean
             regions_.erase(std::remove(regions_.begin(), regions_.end(), nullptr), regions_.end());
+            region->deactivate();
             break;
         }
         return region;
@@ -263,6 +268,7 @@ namespace x64 {
             invalidateRegionLookup(region.get());
             // then keep regions_ clean
             regions_.erase(std::remove(regions_.begin(), regions_.end(), nullptr), regions_.end());
+            region->deactivate();
             break;
         }
         return region;
@@ -451,6 +457,7 @@ namespace x64 {
     }
 
     void Mmu::Region::append(std::unique_ptr<Region> region) {
+        verifyNotActivated();
         verify(region->base() == end());
         verify(region->prot() == prot());
         verify(region->name() == name());
@@ -458,6 +465,7 @@ namespace x64 {
     }
 
     std::unique_ptr<Mmu::Region> Mmu::Region::splitAt(u64 address) {
+        verifyNotActivated();
         verify(contains(address));
         verify(address != base()); // split should never create or leave an empty region.
         std::unique_ptr<Region> subRegion =
@@ -468,7 +476,12 @@ namespace x64 {
     }
 
     void Mmu::Region::setEnd(u64 newEnd) {
+        verifyNotActivated();
         size_ = pageRoundUp(size() + newEnd - end());
+    }
+
+    void Mmu::Region::verifyNotActivated() const {
+        verify(!activated_, "This function cannot be called on an activated region");
     }
 
     u64 Mmu::brk(u64 address) {

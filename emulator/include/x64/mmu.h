@@ -63,8 +63,11 @@ namespace x64 {
 
             void setEnd(u64 newEnd);
 
+            void activate() { activated_ = true; }
+            void deactivate() { activated_ = false; }
+
         private:
-            friend class Mmu;
+            void verifyNotActivated() const;
 
             Spinlock lock_;
             u64 base_;
@@ -72,6 +75,7 @@ namespace x64 {
             BitFlags<PROT> prot_;
             std::string name_;
             bool requiresMemsetToZero_ { false };
+            bool activated_ { false };
         };
 
     public:
