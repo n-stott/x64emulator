@@ -308,7 +308,7 @@ namespace emulator {
         // fmt::print(stderr, "Requesting disassembly for [{:#x}-{:#x}] (size={:#x}) {}\n", address, end, end-address, mmuRegion->file());
         std::vector<u8> disassemblyData;
         disassemblyData.resize(end-address, 0x0);
-        mmuRegion->copyFromRegion(disassemblyData.data(), address, end-address);
+        mmu_.copyFromMmu(disassemblyData.data(), x64::Ptr8{address}, end-address);
         x64::CapstoneWrapper::DisassemblyResult result = x64::CapstoneWrapper::disassembleRange(disassemblyData.data(), disassemblyData.size(), address);
 
         // Finally, create the new executable region

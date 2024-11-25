@@ -23,14 +23,6 @@ namespace x64 {
         return p;
     }
 
-    static u64 alignDown(u64 address, u64 alignment) {
-        return (address / alignment) * alignment;
-    }
-
-    static u64 alignUp(u64 address, u64 alignment) {
-        return ((address + alignment - 1) / alignment) * alignment;
-    }
-
     Mmu::Region::Region(u64 base, u64 size, u8* data, BitFlags<PROT> prot) :
             base_(base), size_(size), data_(data), prot_(prot) {
         setProtection(prot); // we need to set the protection of the underlying pages
@@ -200,28 +192,6 @@ namespace x64 {
         return s;
     }
 
-    void Mmu::Region::badRead(u64 address) const {
-        fmt::print("Attempt to read from {:#x} in non-readable region [{:#x}:{:#x}]\n", address, base(), end());
-    }
-
-    void Mmu::Region::badWrite(u64 address) const {
-        fmt::print("Attempt to write to {:#x} in non-writable region [{:#x}:{:#x}]\n", address, base(), end());
-    }
-
-    u8 Mmu::Region::read8(u64 address) const { return read<u8>(address); }
-    u16 Mmu::Region::read16(u64 address) const { return read<u16>(address); }
-    u32 Mmu::Region::read32(u64 address) const { return read<u32>(address); }
-    u64 Mmu::Region::read64(u64 address) const { return read<u64>(address); }
-    f80 Mmu::Region::read80(u64 address) const { return read<f80>(address); }
-    u128 Mmu::Region::read128(u64 address) const { return read<u128>(address); }
-    
-    void Mmu::Region::write8(u64 address, u8 value) { write<u8>(address, value); }
-    void Mmu::Region::write16(u64 address, u16 value) { write<u16>(address, value); }
-    void Mmu::Region::write32(u64 address, u32 value) { write<u32>(address, value); }
-    void Mmu::Region::write64(u64 address, u64 value) { write<u64>(address, value); }
-    void Mmu::Region::write80(u64 address, f80 value) { write<f80>(address, value); }
-    void Mmu::Region::write128(u64 address, u128 value) { write<u128>(address, value); }
-
     std::unique_ptr<Mmu::Region> Mmu::makeRegion(u64 base, u64 size, BitFlags<PROT> prot) {
         verify(base + size <= memorySize_);
         return std::unique_ptr<Region>(new Region(base, size, memoryBase_ + base, prot));
@@ -316,21 +286,6 @@ namespace x64 {
         });
         T value;
         ::memcpy(&value, dataPtr, sizeof(T));
-
-#ifndef NDEBUG
-        const Region* region = findAddress(address);
-        verify(!!region, [&]() {
-            fmt::print("No region containing {:#x}\n", address);
-        });
-        T debugValue = region->read<T>(address);
-        verify(::memcmp(&value, &debugValue, sizeof(T)) == 0, [&]() {
-            if constexpr(std::is_integral_v<T>) {
-                fmt::print("Did not read the same value\n  region: {:#x}\n  dataPtr: {:#x}\n", value, debugValue);
-            } else {
-                fmt::print("Did not read the same value\n");
-            }
-        });
-#endif
 #if DEBUG_MMU
         if constexpr(std::is_integral_v<T>)
             fmt::print(stderr, "Read {:#x} from address {:#x}\n", value, address);
@@ -347,21 +302,6 @@ namespace x64 {
             fmt::print("Read lookup for {:#x} is null\n", address);
         });
         ::memcpy(dataPtr, &value, sizeof(T));
-
-#ifndef NDEBUG
-        const Region* region = findAddress(address);
-        verify(!!region, [&]() {
-            fmt::print("No region containing {:#x}\n", address);
-        });
-        T debugValue = region->read<T>(address);
-        verify(::memcmp(&value, &debugValue, sizeof(T)) == 0, [&]() {
-            if constexpr(std::is_integral_v<T>) {
-                fmt::print("Did not read the same value\n  region: {:#x}\n  dataPtr: {:#x}\n", value, debugValue);
-            } else {
-                fmt::print("Did not read the same value\n");
-            }
-        });
-#endif
 #if DEBUG_MMU
         if constexpr(std::is_integral_v<T>)
             fmt::print(stderr, "Wrote {:#x} to address {:#x}\n", value, address);
@@ -387,23 +327,7 @@ namespace x64 {
         return read<u128>(ptr);
     }
     u128 Mmu::readUnaligned128(Ptr128 ptr) const {
-        u64 address = ptr.address();
-        u64 endAddress = address + 15;
-        const Region* region = findAddress(address);
-        const Region* endRegion = findAddress(endAddress);
-        if(region == endRegion) return read128(ptr);
-        verify(!!region);
-        verify(!!endRegion);
-        u128 l = region->read128(alignDown(address, 16));
-        u128 r = endRegion->read128(alignUp(address, 16));
-        static_assert(sizeof(l) == 16);
-        std::array<u8, 32> bytes;
-        std::memcpy(bytes.data() + 0 , &l, sizeof(l));
-        std::memcpy(bytes.data() + 16, &r, sizeof(r));
-        u64 offset = address % 16;
-        u128 res;
-        std::memcpy(&res, bytes.data() + offset, sizeof(res));
-        return res;
+        return read<u128>(ptr);
     }
 
     void Mmu::write8(Ptr8 ptr, u8 value) {
@@ -425,23 +349,7 @@ namespace x64 {
         write(ptr, value);
     }
     void Mmu::writeUnaligned128(Ptr128 ptr, u128 value) {
-        u64 address = ptr.address();
-        u64 endAddress = address + 15;
-        Region* region = findAddress(address);
-        Region* endRegion = findAddress(endAddress);
-        if(region == endRegion) return write128(ptr, value);
-        verify(!!region);
-        verify(!!endRegion);
-        u128 l = region->read128(alignDown(address, 16));
-        u128 r = endRegion->read128(alignUp(address, 16));
-        static_assert(sizeof(l) == 16);
-        std::array<u8, 32> bytes;
-        std::memcpy(bytes.data() + 0 , &l, sizeof(l));
-        std::memcpy(bytes.data() + 16, &r, sizeof(r));
-        u64 offset = address % 16;
-        std::memcpy(bytes.data() + offset, &value, sizeof(value));
-        region->write128(alignDown(address, 16), l);
-        endRegion->write128(alignUp(address, 16), r);
+        write(ptr, value);
     }
 
     void Mmu::dumpRegions() const {
@@ -529,51 +437,25 @@ namespace x64 {
     Ptr8 Mmu::copyToMmu(Ptr8 dst, const u8* src, size_t n) {
         if(n == 0) return dst;
         u64 address = dst.address();
-        Region* region = findAddress(address);
-        verify(!!region, [&]() {
-            fmt::print("No region containing {:#x}\n", address);
+        u8* dataPtr = getWritePtr(address);
+        verify(!!dataPtr, [&]() {
+            fmt::print("Write lookup for {:#x} is null\n", address);
         });
-        if(address + n <= region->end()) {
-            region->copyToRegion(address, src, n);
-        } else {
-            Region* nextRegion = findAddress(region->end());
-            verify(!!nextRegion, "No adjacent region");
-            verify(nextRegion->contains(address+n-1), "Next region is too small");
-            size_t firstChunk = region->end()-address;
-            size_t secondChunk = n-firstChunk;
-            region->copyToRegion(address, src, firstChunk);
-            nextRegion->copyToRegion(nextRegion->base(), src+firstChunk, secondChunk);
-        }
+        // TODO check that the whole range is writable
+        ::memcpy(dataPtr, src, n);
         return dst;
     }
 
     u8* Mmu::copyFromMmu(u8* dst, Ptr8 src, size_t n) const {
         if(n == 0) return dst;
         u64 address = src.address();
-        const Region* region = findAddress(address);
-        verify(!!region, [&]() {
-            fmt::print("No region containing {:#x}\n", address);
+        const u8* dataPtr = getReadPtr(address);
+        verify(!!dataPtr, [&]() {
+            fmt::print("Read lookup for {:#x} is null\n", address);
         });
-        region->copyFromRegion(dst, address, n);
+        // TODO check that the whole range is readable
+        ::memcpy(dst, dataPtr, n);
         return dst;
-    }
-
-    void Mmu::Region::copyToRegion(u64 dst, const u8* src, size_t n) {
-        verify(contains(dst));
-        verify(contains(dst + n -1));
-        verify(prot().test(PROT::WRITE), [&]() {
-            fmt::print("Attempt to write to {:#x} in non-writable region [{:#x}:{:#x}]\n", dst, base(), end());
-        });
-        std::memcpy(&data_[dst-base_], src, n);
-    }
-
-    void Mmu::Region::copyFromRegion(u8* dst, u64 src, size_t n) const {
-        verify(contains(src));
-        verify(contains(src + n -1));
-        verify(prot().test(PROT::READ), [&]() {
-            fmt::print("Attempt to read from {:#x} in non-readable region [{:#x}:{:#x}]\n", src, base(), end());
-        });
-        std::memcpy(dst, &data_[src-base_], n);
     }
 
     void Mmu::Region::append(std::unique_ptr<Region> region) {

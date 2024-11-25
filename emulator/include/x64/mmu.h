@@ -58,23 +58,6 @@ namespace x64 {
             void append(std::unique_ptr<Region>);
             std::unique_ptr<Region> splitAt(u64 address);
 
-            u8 read8(u64 address) const;
-            u16 read16(u64 address) const;
-            u32 read32(u64 address) const;
-            u64 read64(u64 address) const;
-            f80 read80(u64 address) const;
-            u128 read128(u64 address) const;
-
-            void write8(u64 address, u8 value);
-            void write16(u64 address, u16 value);
-            void write32(u64 address, u32 value);
-            void write64(u64 address, u64 value);
-            void write80(u64 address, f80 value);
-            void write128(u64 address, u128 value);
-
-            void copyToRegion(u64 dst, const u8* src, size_t n);
-            void copyFromRegion(u8* dst, u64 src, size_t n) const;
-
             void setEnd(u64 newEnd);
 
             u8* data() { return data_; }
@@ -82,47 +65,6 @@ namespace x64 {
 
         private:
             friend class Mmu;
-
-            template<typename T>
-            T read(u64 address) const {
-                verify(contains(address));
-                verify(contains(address+sizeof(T)-1));
-                verify((prot_.test(PROT::READ)), [&]() {
-                    badRead(address);
-                });
-                T value;
-                std::memcpy(&value, &data_[address-base()], sizeof(value));
-                return value;
-            }
-
-            template<typename T>
-            void write(u64 address, T value) {
-                assert(contains(address));
-                assert(contains(address+sizeof(T)-1));
-                verify(prot_.test(PROT::WRITE), [&]() {
-                    badWrite(address);
-                });
-                SpinlockLocker locker(lock_);
-                std::memcpy(&data_[address-base()], &value, sizeof(value));
-            }
-
-            template<typename T>
-            void write(u64 address, T value, SpinlockLocker& locker) {
-                assert(contains(address));
-                assert(contains(address+sizeof(T)-1));
-                verify(prot_.test(PROT::WRITE), [&]() {
-                    badWrite(address);
-                });
-#ifdef MULTIPROCESSING
-                verify(locker.holdsLock(lock_));
-#else
-                (void)locker;
-#endif
-                std::memcpy(&data_[address-base()], &value, sizeof(value));
-            }
-
-            void badRead(u64 address) const;
-            void badWrite(u64 address) const;
 
             Spinlock lock_;
             u64 base_;
@@ -179,16 +121,28 @@ namespace x64 {
 
         template<Size s, typename Modify>
         void withExclusiveRegion(SPtr<s> ptr, Modify modify) {
-            using type = typename Unsigned<s>::type;
-            
             u64 address = ptr.address();
             Region* region = findAddress(address);
             verify(!!region, "No region found");
 
             SpinlockLocker locker(region->lock());
-            type oldValue = region->read<type>(address);
-            type newValue = modify(oldValue);
-            region->write<type>(address, newValue, locker);
+            if constexpr(s == Size::BYTE) {
+                u8 oldValue = read8(ptr);
+                u8 newValue = modify(oldValue);
+                write8(ptr, newValue);
+            } else if constexpr(s == Size::WORD) {
+                u16 oldValue = read16(ptr);
+                u16 newValue = modify(oldValue);
+                write16(ptr, newValue);
+            } else if constexpr(s == Size::DWORD) {
+                u32 oldValue = read32(ptr);
+                u32 newValue = modify(oldValue);
+                write32(ptr, newValue);
+            } else if constexpr(s == Size::QWORD) {
+                u64 oldValue = read64(ptr);
+                u64 newValue = modify(oldValue);
+                write64(ptr, newValue);
+            }
         }
 
         u8 read8(Ptr8 ptr) const;
