@@ -37,7 +37,7 @@ namespace x64 {
     public:
         class Region {
         public:
-            Region(u64 base, u64 size, u8* data, BitFlags<PROT> prot);
+            Region(u64 base, u64 size, BitFlags<PROT> prot);
             ~Region();
 
             u64 base() const { return base_; }
@@ -53,15 +53,15 @@ namespace x64 {
 
             void setName(std::string name) { name_ = std::move(name); }
             void setProtection(BitFlags<PROT> prot);
+
+            bool requiresMemsetToZero() const { return requiresMemsetToZero_; }
             void setRequiresMemsetToZero() { requiresMemsetToZero_ = true; }
+            void didMemsetToZero() { requiresMemsetToZero_ = false; }
 
             void append(std::unique_ptr<Region>);
             std::unique_ptr<Region> splitAt(u64 address);
 
             void setEnd(u64 newEnd);
-
-            u8* data() { return data_; }
-            const u8* data() const { return data_; }
 
         private:
             friend class Mmu;
@@ -69,7 +69,6 @@ namespace x64 {
             Spinlock lock_;
             u64 base_;
             u64 size_;
-            u8* data_;
             BitFlags<PROT> prot_;
             std::string name_;
             bool requiresMemsetToZero_ { false };
@@ -206,6 +205,9 @@ namespace x64 {
         void split(u64 address);
         void tryMergeRegions();
 
+        u8* getPointerToRegion(Region*);
+        const u8* getPointerToRegion(const Region*) const;
+
         Region* findAddress(u64 address);
         Region* findRegion(const char* name);
 
@@ -223,6 +225,8 @@ namespace x64 {
         std::vector<u8*> writablePageLookup_;
         u64 firstUnlookupdableAddress_ { 0 };
         std::vector<MunmapCallback*> callbacks_;
+
+        void applyRegionProtection(Region*, BitFlags<PROT>);
 
         void fillRegionLookup(Region* region);
         void invalidateRegionLookup(Region* region);
