@@ -37,7 +37,7 @@ namespace x64 {
     public:
         class Region {
         public:
-            Region(u64 base, u64 size, BitFlags<PROT> prot);
+            Region(u64 base, u64 size, u8* data, BitFlags<PROT> prot);
             ~Region();
 
             u64 base() const { return base_; }
@@ -53,6 +53,7 @@ namespace x64 {
 
             void setName(std::string name) { name_ = std::move(name); }
             void setProtection(BitFlags<PROT> prot);
+            void setRequiresMemsetToZero() { requiresMemsetToZero_ = true; }
 
             void append(std::unique_ptr<Region>);
             std::unique_ptr<Region> splitAt(u64 address);
@@ -76,8 +77,8 @@ namespace x64 {
 
             void setEnd(u64 newEnd);
 
-            u8* data() { return data_.data(); }
-            const u8* data() const { return data_.data(); }
+            u8* data() { return data_; }
+            const u8* data() const { return data_; }
 
         private:
             friend class Mmu;
@@ -126,13 +127,15 @@ namespace x64 {
             Spinlock lock_;
             u64 base_;
             u64 size_;
-            std::vector<u8> data_;
+            u8* data_;
             BitFlags<PROT> prot_;
             std::string name_;
+            bool requiresMemsetToZero_ { false };
         };
 
     public:
         Mmu();
+        ~Mmu();
 
         u64 mmap(u64 address, u64 length, BitFlags<PROT> prot, BitFlags<MAP> flags);
         int munmap(u64 address, u64 length);
@@ -239,7 +242,7 @@ namespace x64 {
         const u8* getReadPtr(u64 address) const;
         u8* getWritePtr(u64 address);
 
-        static std::unique_ptr<Region> makeRegion(u64 base, u64 size, BitFlags<PROT> prot);
+        std::unique_ptr<Region> makeRegion(u64 base, u64 size, BitFlags<PROT> prot);
         
         Region* addRegion(std::unique_ptr<Region> region);
         Region* addRegionAndEraseExisting(std::unique_ptr<Region> region);
@@ -255,6 +258,9 @@ namespace x64 {
         u64 topOfMemoryPageAligned() const;
         u64 firstFitPageAligned(u64 length) const;
 
+        u8* memoryBase_ { nullptr };
+        u8* startOfMappedMemory_ { nullptr };
+        u64 memorySize_ { 0 };
         u64 topOfReserved_ = 0;
 
         std::vector<std::unique_ptr<Region>> regions_;

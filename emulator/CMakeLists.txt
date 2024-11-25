@@ -42,6 +42,7 @@ add_library(x64emulator STATIC
     src/emulator/vm.cpp
     src/host/host.cpp
     src/host/hostinstructions.cpp
+    src/host/hostmemory.cpp
     src/kernel/auxiliaryvector.cpp
     src/kernel/dev/hostdevice.cpp
     src/kernel/dev/nulldevice.cpp

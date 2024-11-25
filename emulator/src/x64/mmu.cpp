@@ -1,4 +1,5 @@
 #include "x64/mmu.h"
+#include "host/hostmemory.h"
 #include "verify.h"
 #include <algorithm>
 #include <cassert>
@@ -8,6 +9,20 @@
 
 namespace x64 {
 
+    [[maybe_unused]] static BitFlags<host::HostMemory::Protection> toHostProtection(BitFlags<PROT> prot) {
+        BitFlags<host::HostMemory::Protection> p;
+        if(prot.test(PROT::READ))  p.add(host::HostMemory::Protection::READ);
+        if(prot.test(PROT::WRITE)) p.add(host::HostMemory::Protection::WRITE);
+        return p;
+    }
+
+    [[maybe_unused]] static BitFlags<host::HostMemory::Protection> toHostProtection(PROT prot) {
+        BitFlags<host::HostMemory::Protection> p;
+        if(prot == PROT::READ)  p.add(host::HostMemory::Protection::READ);
+        if(prot == PROT::WRITE) p.add(host::HostMemory::Protection::WRITE);
+        return p;
+    }
+
     static u64 alignDown(u64 address, u64 alignment) {
         return (address / alignment) * alignment;
     }
@@ -16,13 +31,9 @@ namespace x64 {
         return ((address + alignment - 1) / alignment) * alignment;
     }
 
-    Mmu::Region::Region(u64 base, u64 size, BitFlags<PROT> prot) {
-        this->base_ = base;
-        this->size_ = size;
-        if(prot.any()) {
-            this->data_.resize(size, 0x00);
-        }
-        this->prot_ = prot;
+    Mmu::Region::Region(u64 base, u64 size, u8* data, BitFlags<PROT> prot) :
+            base_(base), size_(size), data_(data), prot_(prot) {
+        setProtection(prot); // we need to set the protection of the underlying pages
     }
 
     Mmu::Region::~Region() = default;
@@ -49,6 +60,7 @@ namespace x64 {
         checkRegionsAreSorted();
 
         fillRegionLookup(regionPtr);
+        host::HostMemory::protectVirtualMemoryRange(regionPtr->data(), regionPtr->size(), toHostProtection(regionPtr->prot()));
         return regionPtr;
     }
     
@@ -96,6 +108,11 @@ namespace x64 {
 
         u64 baseAddress = (address != 0) ? address : firstFitPageAligned(length);
         std::unique_ptr<Region> region = makeRegion(baseAddress, length, prot);
+        if(region->prot().test(PROT::WRITE)) {
+            std::memset(region->data(), 0, region->size());
+        } else {
+            region->setRequiresMemsetToZero();
+        }
         if(flags.test(MAP::FIXED)) {
             addRegionAndEraseExisting(std::move(region));
         } else {
@@ -166,11 +183,12 @@ namespace x64 {
     }
 
     void Mmu::Region::setProtection(BitFlags<PROT> prot) {
-        if(prot_.none() && prot.any()) {
-            // set the actual size when a region is no longer PROT::NONE.
-            if(data_.size() != size_) data_.resize(size_, 0x0);
-        }
         prot_ = prot;
+        host::HostMemory::protectVirtualMemoryRange(data(), size(), toHostProtection(prot));
+        if(requiresMemsetToZero_ && prot.test(PROT::WRITE)) {
+            std::memset(data_, 0, size_);
+            requiresMemsetToZero_ = false;
+        }
     }
 
     std::string Mmu::readString(Ptr8 src) const {
@@ -205,14 +223,23 @@ namespace x64 {
     void Mmu::Region::write128(u64 address, u128 value) { write<u128>(address, value); }
 
     std::unique_ptr<Mmu::Region> Mmu::makeRegion(u64 base, u64 size, BitFlags<PROT> prot) {
-        return std::unique_ptr<Region>(new Region(base, size, prot));
+        verify(base + size <= memorySize_);
+        return std::unique_ptr<Region>(new Region(base, size, memoryBase_ + base, prot));
     }
 
     Mmu::Mmu() {
-        // Make first page non-readable and non-writable
-        std::unique_ptr<Region> nullpage = makeRegion(0, PAGE_SIZE, BitFlags<PROT>{PROT::NONE});
+        memoryBase_ = 0x0; // nullptr maps to 0 !
+        memorySize_ = 1024 * 1024 * 1024;
+        startOfMappedMemory_ = host::HostMemory::getLowestPossibleVirtualMemoryRange(memorySize_);
+        
+        // Make range below non-readable and non-writable
+        std::unique_ptr<Region> nullpage = makeRegion(0, (u64)startOfMappedMemory_, BitFlags<PROT>{PROT::NONE});
         nullpage->setName("nullpage");
         addRegion(std::move(nullpage));
+    }
+
+    Mmu::~Mmu() {
+        host::HostMemory::releaseVirtualMemoryRange(memoryBase_, memorySize_);
     }
 
     BitFlags<PROT> Mmu::prot(u64 address) const {
@@ -254,6 +281,7 @@ namespace x64 {
             if(ptr->base() != base) continue;
             if(ptr->size() != size) continue;
             std::swap(region, ptr);
+            host::HostMemory::protectVirtualMemoryRange(region->data(), region->size(), toHostProtection(BitFlags<PROT>{}));
             // invalidate all the lookups
             invalidateRegionLookup(region.get());
             // then keep regions_ clean
@@ -268,6 +296,7 @@ namespace x64 {
         for(auto& ptr : regions_) {
             if(ptr->name() != name) continue;
             std::swap(region, ptr);
+            host::HostMemory::protectVirtualMemoryRange(region->data(), region->size(), toHostProtection(BitFlags<PROT>{}));
             // invalidate all the lookups
             invalidateRegionLookup(region.get());
             // then keep regions_ clean
@@ -425,12 +454,19 @@ namespace x64 {
             std::string file;
             u64 base;
             u64 end;
+            u64 data;
             std::string prot;
         };
         std::vector<DumpInfo> dumpInfos;
         dumpInfos.reserve(regions_.size());
         for(const auto& ptr : regions_) {
-            dumpInfos.push_back(DumpInfo{ptr->name(), ptr->base(), ptr->end(), protectionToString(ptr->prot())});
+            dumpInfos.push_back(DumpInfo{
+                ptr->name(),
+                ptr->base(),
+                ptr->end(),
+                (u64)ptr->data(),
+                protectionToString(ptr->prot())
+            });
         }
         std::sort(dumpInfos.begin(), dumpInfos.end(), [](const auto& a, const auto& b) {
             return a.base < b.base;
@@ -438,7 +474,7 @@ namespace x64 {
 
         fmt::print("Memory regions:\n");
         for(const auto& info : dumpInfos) {
-            fmt::print("    {:>#10x} - {:<#10x} {} {:>20}\n", info.base, info.end, info.prot, info.file);
+            fmt::print("    {:>#10x} - {:<#10x} {:#20x} {} {:>20}\n", info.base, info.end, info.data, info.prot, info.file);
         }
 
         size_t memoryConsumptionInBytes = 0;
@@ -544,29 +580,21 @@ namespace x64 {
         verify(region->base() == end());
         verify(region->prot() == prot());
         verify(region->name() == name());
-        if(prot_.any()) {
-            data_.resize(size_ + region->size());
-            std::memcpy(data_.data() + size_, region->data_.data(), region->data_.size());
-        }
         size_ += region->size();
     }
 
     std::unique_ptr<Mmu::Region> Mmu::Region::splitAt(u64 address) {
         verify(contains(address));
         verify(address != base()); // split should never create or leave an empty region.
-        std::unique_ptr<Region> subRegion = makeRegion(address, end()-address, prot_);
+        std::unique_ptr<Region> subRegion =
+            std::unique_ptr<Region>(new Region(address, end()-address, data_ + address - base(), prot_));
         subRegion->setName(name());
         size_ = address - base_;
-        if(prot_.any()) {
-            std::memcpy(subRegion->data_.data(), data_.data() + size_, subRegion->size());
-            data_.resize(size_);
-        }
         return subRegion;
     }
 
     void Mmu::Region::setEnd(u64 newEnd) {
         size_ = pageRoundUp(size() + newEnd - end());
-        if(prot_.any()) data_.resize(size_, 0x0);
     }
 
     u64 Mmu::brk(u64 address) {
