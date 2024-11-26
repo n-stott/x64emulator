@@ -223,12 +223,16 @@ namespace x64 {
 
     const u8* Mmu::getReadPtr(u64 address) const {
         if(address >= firstUnlookupdableAddress_) return nullptr;
-        return readablePageLookup_[address / PAGE_SIZE] + (address % PAGE_SIZE);
+        const u8* pagePtr = readablePageLookup_[address / PAGE_SIZE];
+        if(!pagePtr) return nullptr;
+        return pagePtr + (address % PAGE_SIZE);
     }
 
     u8* Mmu::getWritePtr(u64 address) {
         if(address >= firstUnlookupdableAddress_) return nullptr;
-        return writablePageLookup_[address / PAGE_SIZE] + (address % PAGE_SIZE);
+        u8* pagePtr = writablePageLookup_[address / PAGE_SIZE];
+        if(!pagePtr) return nullptr;
+        return pagePtr + (address % PAGE_SIZE);
     }
 
     Mmu::Region* Mmu::findAddress(u64 address) {
