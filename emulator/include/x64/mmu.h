@@ -218,29 +218,21 @@ namespace x64 {
         u64 topOfMemoryPageAligned() const;
         u64 firstFitPageAligned(u64 length) const;
 
+
+        std::vector<std::unique_ptr<Region>> regions_;
+        std::vector<Region*> regionLookup_;
+        u64 firstUnlookupdableAddress_ { 0 };
+        std::vector<MunmapCallback*> callbacks_;
+
         u8* memoryBase_ { nullptr };
         u8* startOfMappedMemory_ { nullptr };
         u64 memorySize_ { 0 };
         u64 topOfReserved_ = 0;
 
-        std::vector<std::unique_ptr<Region>> regions_;
-        std::vector<Region*> regionLookup_;
-        std::vector<const u8*> readablePageLookup_;
-        std::vector<u8*> writablePageLookup_;
-        u64 firstUnlookupdableAddress_ { 0 };
-        std::vector<MunmapCallback*> callbacks_;
-
         void applyRegionProtection(Region*, BitFlags<PROT>);
 
         void fillRegionLookup(Region* region);
         void invalidateRegionLookup(Region* region);
-
-        void updatePageLookup(Region* region, BitFlags<PROT> previousProt);
-        void fillReadablePageLookup(u64 base, u64 end);
-        void fillWritablePageLookup(u64 base, u64 end);
-
-        void invalidateReadablePageLookup(u64 base, u64 end);
-        void invalidateWritablePageLookup(u64 base, u64 end);
 
         static bool isPageAligned(u64 address) {
             return address % PAGE_SIZE == 0;

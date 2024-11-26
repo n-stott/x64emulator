@@ -151,10 +151,8 @@ namespace x64 {
         split(address+length);
         for(auto& regionPtr : regions_) {
             if(!regionPtr->intersectsRange(address, address+length)) continue;
-            auto previousProt = regionPtr->prot();
             regionPtr->setProtection(prot);
             applyRegionProtection(regionPtr.get(), regionPtr->prot());
-            updatePageLookup(regionPtr.get(), previousProt);
         }
         tryMergeRegions();
         return 0;
@@ -215,13 +213,11 @@ namespace x64 {
     }
 
     const u8* Mmu::getReadPtr(u64 address) const {
-        if(address >= firstUnlookupdableAddress_) return nullptr;
-        return readablePageLookup_[address / PAGE_SIZE] + (address % PAGE_SIZE);
+        return (const u8*)address;
     }
 
     u8* Mmu::getWritePtr(u64 address) {
-        if(address >= firstUnlookupdableAddress_) return nullptr;
-        return writablePageLookup_[address / PAGE_SIZE] + (address % PAGE_SIZE);
+        return (u8*)address;
     }
 
     Mmu::Region* Mmu::findAddress(u64 address) {
@@ -279,9 +275,6 @@ namespace x64 {
         static_assert(sizeof(T) == pointerSize(s));
         u64 address = ptr.address();
         const u8* dataPtr = getReadPtr(address);
-        verify(!!dataPtr, [&]() {
-            fmt::print("Read lookup for {:#x} is null\n", address);
-        });
         T value;
         ::memcpy(&value, dataPtr, sizeof(T));
 #if DEBUG_MMU
@@ -296,9 +289,6 @@ namespace x64 {
         static_assert(sizeof(T) == pointerSize(s));
         u64 address = ptr.address();
         u8* dataPtr = getWritePtr(address);
-        verify(!!dataPtr, [&]() {
-            fmt::print("Read lookup for {:#x} is null\n", address);
-        });
         ::memcpy(dataPtr, &value, sizeof(T));
 #if DEBUG_MMU
         if constexpr(std::is_integral_v<T>)
@@ -564,7 +554,6 @@ namespace x64 {
             verify(regionLookup_[pageIndex] == nullptr);
             regionLookup_[pageIndex] = region;
         }
-        updatePageLookup(region, BitFlags<PROT>{});
     }
 
     void Mmu::invalidateRegionLookup(Region* region) {
@@ -579,86 +568,6 @@ namespace x64 {
         for(u64 pageIndex = startPage; pageIndex < endPage; ++pageIndex) {
             verify(pageIndex < regionLookup_.size());
             regionLookup_[pageIndex] = nullptr;
-        }
-        if(region->prot().test(PROT::READ))  invalidateReadablePageLookup(region->base(), region->end());
-        if(region->prot().test(PROT::WRITE)) invalidateWritablePageLookup(region->base(), region->end());
-    }
-
-    void Mmu::updatePageLookup(Region* region, BitFlags<PROT> previousProt) {
-        BitFlags<PROT> currentProt = region->prot();
-        bool wasReadable = previousProt.test(PROT::READ);
-        bool isReadable = currentProt.test(PROT::READ);
-        if(wasReadable && !isReadable) invalidateReadablePageLookup(region->base(), region->end());
-        if(!wasReadable && isReadable) fillReadablePageLookup(region->base(), region->end());
-        bool wasWritable = previousProt.test(PROT::WRITE);
-        bool isWritable = currentProt.test(PROT::WRITE);
-        if(wasWritable && !isWritable) invalidateWritablePageLookup(region->base(), region->end());
-        if(!wasWritable && isWritable) fillWritablePageLookup(region->base(), region->end());
-    }
-
-    void Mmu::fillReadablePageLookup(u64 base, u64 end) {
-        verify(isPageAligned(base));
-        verify(isPageAligned(end));
-        verify(end <= firstUnlookupdableAddress_);
-        u64 startPage = base / PAGE_SIZE;
-        u64 endPage = end / PAGE_SIZE;
-        verify(startPage < endPage);
-        if(endPage > readablePageLookup_.size()) {
-            readablePageLookup_.resize(endPage, nullptr);
-        }
-        for(u64 pageIndex = startPage; pageIndex < endPage; ++pageIndex) {
-            verify(pageIndex < readablePageLookup_.size());
-            u64 address = pageIndex*PAGE_SIZE;
-            const Region* region = findAddress(address);
-            verify(!!region);
-            verify(isPageAligned(region->base()));
-            verify(isPageAligned(region->end()));
-            const u8* data = getPointerToRegion(region);
-            readablePageLookup_[pageIndex] = data + (address - region->base());
-        }
-    }
-
-    void Mmu::fillWritablePageLookup(u64 base, u64 end) {
-        verify(isPageAligned(base));
-        verify(isPageAligned(end));
-        verify(end <= firstUnlookupdableAddress_);
-        u64 startPage = base / PAGE_SIZE;
-        u64 endPage = end / PAGE_SIZE;
-        verify(startPage < endPage);
-        if(endPage > writablePageLookup_.size()) {
-            writablePageLookup_.resize(endPage, nullptr);
-        }
-        for(u64 pageIndex = startPage; pageIndex < endPage; ++pageIndex) {
-            verify(pageIndex < writablePageLookup_.size());
-            u64 address = pageIndex*PAGE_SIZE;
-            Region* region = findAddress(address);
-            verify(!!region);
-            verify(isPageAligned(region->base()));
-            verify(isPageAligned(region->end()));
-            u8* data = getPointerToRegion(region);
-            writablePageLookup_[pageIndex] = data + (address - region->base());
-        }
-    }
-
-    void Mmu::invalidateReadablePageLookup(u64 base, u64 end) {
-        verify(isPageAligned(base));
-        verify(isPageAligned(end));
-        u64 startPage = base / PAGE_SIZE;
-        u64 endPage = end / PAGE_SIZE;
-        endPage = std::min(endPage, readablePageLookup_.size());
-        for(u64 pageIndex = startPage; pageIndex < endPage; ++pageIndex) {
-            readablePageLookup_[pageIndex] = nullptr;
-        }
-    }
-
-    void Mmu::invalidateWritablePageLookup(u64 base, u64 end) {
-        verify(isPageAligned(base));
-        verify(isPageAligned(end));
-        u64 startPage = base / PAGE_SIZE;
-        u64 endPage = end / PAGE_SIZE;
-        endPage = std::min(endPage, writablePageLookup_.size());
-        for(u64 pageIndex = startPage; pageIndex < endPage; ++pageIndex) {
-            writablePageLookup_[pageIndex] = nullptr;
         }
     }
 
