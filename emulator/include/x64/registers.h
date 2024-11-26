@@ -12,8 +12,6 @@ namespace x64 {
         std::array<u64, 18> gpr_;
         std::array<Xmm, 16> xmm_;
 
-        u32 eiz_ { 0 };
-
     public:
         Registers();
 
@@ -56,7 +54,7 @@ namespace x64 {
         }
 
         u32 get(R32 reg) const {
-            return (reg == R32::EIZ) ? eiz_ : (u32)gpr_[(u8)reg];
+            return (u32)gpr_[(u8)reg];
         }
 
         u64 get(R64 reg) const {
@@ -98,14 +96,12 @@ namespace x64 {
         }
         
         void set(R32 reg, u32 value) {
-            if(reg == R32::EIZ) {
-                eiz_ = value;
-            } else {
-                gpr_[(u8)reg] = value;
-            }
+            assert(reg != R32::EIZ);
+            gpr_[(u8)reg] = value;
         }
 
         void set(R64 reg, u64 value) {
+            assert(reg != R64::ZERO);
             gpr_[(u8)reg] = value;
         }
 
