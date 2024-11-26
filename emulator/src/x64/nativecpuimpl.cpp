@@ -564,7 +564,7 @@ namespace x64 {
         static constexpr u64 OVERFLOW_MASK = 0x800;
         Flags flags;
         flags.carry = rflags & CARRY_MASK;
-        flags.parity = rflags & PARITY_MASK;
+        flags.setParity(rflags & PARITY_MASK);
         flags.zero = rflags & ZERO_MASK;
         flags.sign = rflags & SIGN_MASK;
         flags.overflow = rflags & OVERFLOW_MASK;
@@ -591,7 +591,7 @@ namespace x64 {
         static constexpr u64 OVERFLOW_MASK = 0x800;
         u64 rflags = readRflags();
         rflags = (rflags & ~CARRY_MASK) | (flags.carry ? CARRY_MASK : 0);
-        rflags = (rflags & ~PARITY_MASK) | (flags.parity ? PARITY_MASK : 0);
+        rflags = (rflags & ~PARITY_MASK) | (flags.parity() ? PARITY_MASK : 0);
         rflags = (rflags & ~ZERO_MASK) | (flags.zero ? ZERO_MASK : 0);
         rflags = (rflags & ~SIGN_MASK) | (flags.sign ? SIGN_MASK : 0);
         rflags = (rflags & ~OVERFLOW_MASK) | (flags.overflow ? OVERFLOW_MASK : 0);

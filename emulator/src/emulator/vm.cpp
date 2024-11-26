@@ -136,7 +136,7 @@ namespace emulator {
                                                             (cpu_.flags_.zero ? 'Z' : ' '), 
                                                             (cpu_.flags_.overflow ? 'O' : ' '), 
                                                             (cpu_.flags_.sign ? 'S' : ' '),
-                                                            (cpu_.flags_.parity ? 'P' : ' '));
+                                                            (cpu_.flags_.parity() ? 'P' : ' '));
         std::string registerDump = fmt::format( "rip={:0>8x} "
                                                 "rax={:0>8x} rbx={:0>8x} rcx={:0>8x} rdx={:0>8x} "
                                                 "rsi={:0>8x} rdi={:0>8x} rbp={:0>8x} rsp={:0>8x} ",

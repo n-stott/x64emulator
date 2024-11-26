@@ -10,11 +10,11 @@
 namespace x64 {
 
     static void sameFlags([[maybe_unused]] const Flags& a, [[maybe_unused]] const Flags& b) {
-        assert(a.carry    == b.carry);
-        assert(a.overflow == b.overflow);
-        assert(a.parity   == b.parity);
-        assert(a.sign     == b.sign);
-        assert(a.zero     == b.zero);
+        assert(a.carry      == b.carry);
+        assert(a.overflow   == b.overflow);
+        assert(a.parity()   == b.parity());
+        assert(a.sign       == b.sign);
+        assert(a.zero       == b.zero);
     }
 
     static void sameCarryOverflow([[maybe_unused]] const Flags& a, [[maybe_unused]] const Flags& b) {
@@ -36,9 +36,9 @@ namespace x64 {
     }
 
     static void sameCarryZeroParity([[maybe_unused]] const Flags& a, [[maybe_unused]] const Flags& b) {
-        assert(a.carry  == b.carry);
-        assert(a.zero   == b.zero);
-        assert(a.parity == b.parity);
+        assert(a.carry    == b.carry);
+        assert(a.zero     == b.zero);
+        assert(a.parity() == b.parity());
     }
 
     static void noComparison([[maybe_unused]] const Flags& a, [[maybe_unused]] const Flags& b) { }
@@ -354,10 +354,10 @@ namespace x64 {
     template<typename U>
     auto sameFlagsShift([[maybe_unused]] const Flags& a, [[maybe_unused]] const Flags& b, U src) {
         if(src == 0) return;
-        assert(a.carry  == b.carry);
-        assert(a.parity == b.parity);
-        assert(a.sign   == b.sign);
-        assert(a.zero   == b.zero);
+        assert(a.carry    == b.carry);
+        assert(a.parity() == b.parity());
+        assert(a.sign     == b.sign);
+        assert(a.zero     == b.zero);
         if(src == 1) assert(a.overflow == b.overflow);
     }
 
@@ -390,10 +390,10 @@ namespace x64 {
     template<typename U>
     auto sameFlagsShiftd([[maybe_unused]] const Flags& a, [[maybe_unused]] const Flags& b, U count) {
         if(count == 0) return;
-        assert(a.carry  == b.carry);
-        assert(a.parity == b.parity);
-        assert(a.sign   == b.sign);
-        assert(a.zero   == b.zero);
+        assert(a.carry    == b.carry);
+        assert(a.parity() == b.parity());
+        assert(a.sign     == b.sign);
+        assert(a.zero     == b.zero);
         if(count == 1) assert(a.overflow == b.overflow);
     }
 

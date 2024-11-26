@@ -11,7 +11,7 @@
     static constexpr u64 OVERFLOW_MASK = 0x800;
     x64::Flags flags;
     flags.carry = rflags & CARRY_MASK;
-    flags.parity = rflags & PARITY_MASK;
+    flags.setParity(rflags & PARITY_MASK);
     flags.zero = rflags & ZERO_MASK;
     flags.sign = rflags & SIGN_MASK;
     flags.overflow = rflags & OVERFLOW_MASK;

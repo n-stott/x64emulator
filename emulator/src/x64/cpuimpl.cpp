@@ -15,7 +15,7 @@ namespace x64 {
         I sres = (I)((__int128_t)dst + (__int128_t)src);
         flags->overflow = ((I)dst >= 0 && (I)src >= 0 && sres < 0) || ((I)dst < 0 && (I)src < 0 && sres >= 0);
         flags->sign = (sres < 0);
-        flags->parity = Flags::computeParity((u8)res);
+        flags->deferParity((u8)res);
         return res;
     }
 
@@ -35,7 +35,7 @@ namespace x64 {
         I sres = (I)((__int128_t)dst + (__int128_t)src + (__int128_t)c);
         flags->overflow = ((I)dst >= 0 && (I)src >= 0 && sres < 0) || ((I)dst < 0 && (I)src < 0 && sres >= 0);
         flags->sign = (sres < 0);
-        flags->parity = Flags::computeParity((u8)res);
+        flags->deferParity((u8)res);
         return res;
     }
 
@@ -52,7 +52,7 @@ namespace x64 {
         I sres = (I)((__int128_t)dst - (__int128_t)src);
         flags->overflow = ((I)dst >= 0 && (I)src < 0 && sres < 0) || ((I)dst < 0 && (I)src >= 0 && sres >= 0);
         flags->sign = (sres < 0);
-        flags->parity = Flags::computeParity((u8)res);
+        flags->deferParity((u8)res);
         return res;
     }
 
@@ -70,7 +70,7 @@ namespace x64 {
         I sres = (I)((__int128_t)dst - (I)((__int128_t)src + (__int128_t)c));
         flags->overflow = ((I)dst >= 0 && (I)src < 0 && sres < 0) || ((I)dst < 0 && (I)src >= 0 && sres >= 0);
         flags->sign = (sres < 0);
-        flags->parity = Flags::computeParity((u8)res);
+        flags->deferParity((u8)res);
         return res;
     }
 
@@ -237,7 +237,7 @@ namespace x64 {
         flags->carry = false;
         flags->sign = signBit<U>(tmp);
         flags->zero = (tmp == 0);
-        flags->parity = Flags::computeParity((u8)tmp);
+        flags->deferParity((u8)tmp);
         return tmp;
     }
 
@@ -253,7 +253,7 @@ namespace x64 {
         flags->carry = false;
         flags->sign = signBit<U>(tmp);
         flags->zero = (tmp == 0);
-        flags->parity = Flags::computeParity((u8)tmp);
+        flags->deferParity((u8)tmp);
         return tmp;
     }
 
@@ -269,7 +269,7 @@ namespace x64 {
         flags->carry = false;
         flags->sign = signBit<U>(tmp);
         flags->zero = (tmp == 0);
-        flags->parity = Flags::computeParity((u8)tmp);
+        flags->deferParity((u8)tmp);
         return tmp;
     }
 
@@ -284,7 +284,7 @@ namespace x64 {
         U res = src+1;
         flags->sign = signBit<U>(res);
         flags->zero = (res == 0);
-        flags->parity = Flags::computeParity((u8)res);
+        flags->deferParity((u8)res);
         return res;
     }
 
@@ -299,7 +299,7 @@ namespace x64 {
         U res = src-1;
         flags->sign = signBit<U>(res);
         flags->zero = (res == 0);
-        flags->parity = Flags::computeParity((u8)res);
+        flags->deferParity((u8)res);
         return res;
     }
 
@@ -320,7 +320,7 @@ namespace x64 {
             }
             flags->sign = signBit<U>(res);
             flags->zero = (res == 0);
-            flags->parity = Flags::computeParity((u8)res);
+            flags->deferParity((u8)res);
         }
         return res;
     }
@@ -342,7 +342,7 @@ namespace x64 {
             }
             flags->sign = signBit<U>(res);
             flags->zero = (res == 0);
-            flags->parity = Flags::computeParity((u8)res);
+            flags->deferParity((u8)res);
         }
         return res;
     }
@@ -361,7 +361,7 @@ namespace x64 {
         flags->carry = dst & (size-count);
         flags->sign = (res & ((U)1 << (size-1)));
         flags->zero = (res == 0);
-        flags->parity = Flags::computeParity((u8)res);
+        flags->deferParity((u8)res);
         if(count == 1) {
             U signMask = (U)1 << (size-1);
             flags->overflow = (dst & signMask) ^ (res & signMask);
@@ -381,7 +381,7 @@ namespace x64 {
         flags->carry = dst & (count-1);
         flags->sign = (res & ((U)1 << (size-1)));
         flags->zero = (res == 0);
-        flags->parity = Flags::computeParity((u8)res);
+        flags->deferParity((u8)res);
         if(count == 1) {
             U signMask = (U)1 << (size-1);
             flags->overflow = (dst & signMask) ^ (res & signMask);
@@ -406,7 +406,7 @@ namespace x64 {
             flags->carry = ((I)dst) & ((I)1 << (src-1));
             flags->sign = signBit<U>((U)res);
             flags->zero = (res == 0);
-            flags->parity = Flags::computeParity((u8)res);
+            flags->deferParity((u8)res);
         }
         return (U)res;
     }
@@ -489,7 +489,7 @@ namespace x64 {
         flags->overflow = 0;
         flags->sign = 0;
         flags->zero = (src == 0);
-        flags->parity = 0;
+        flags->setParity(false);
         flags->carry = 0;
         U res = (U)0;
         for(size_t i = 0; i < 8*sizeof(U); ++i) {
@@ -559,7 +559,7 @@ namespace x64 {
         flags->zero = (tmp == 0);
         flags->overflow = 0;
         flags->carry = 0;
-        flags->parity = Flags::computeParity((u8)tmp);
+        flags->deferParity((u8)tmp);
     }
 
     void CpuImpl::test8(u8 src1, u8 src2, Flags* flags) { return test<u8>(src1, src2, flags); }
@@ -664,23 +664,23 @@ namespace x64 {
         long double s = f80::toLongDouble(src);
         if(d > s) {
             flags->zero = 0;
-            flags->parity = 0;
+            flags->setParity(false);
             flags->carry = 0;
         }
         if(d < s) {
             flags->zero = 0;
-            flags->parity = 0;
+            flags->setParity(false);
             flags->carry = 1;
         }
         if(d == s) {
             flags->zero = 1;
-            flags->parity = 0;
+            flags->setParity(false);
             flags->carry = 0;
         }
         if(d != d || s != s) {
             if(x87fpu->control().im) {
                 flags->zero = 1;
-                flags->parity = 1;
+                flags->setParity(1);
                 flags->carry = 1;
             }
         }
@@ -764,19 +764,19 @@ namespace x64 {
         float res = d - s;
         if(d == s) {
             flags->zero = true;
-            flags->parity = false;
+            flags->setParity(false);
             flags->carry = false;
         } else if(res != res) {
             flags->zero = true;
-            flags->parity = true;
+            flags->setParity(true);
             flags->carry = true;
         } else if(res > 0.0) {
             flags->zero = false;
-            flags->parity = false;
+            flags->setParity(false);
             flags->carry = false;
         } else if(res < 0.0) {
             flags->zero = false;
-            flags->parity = false;
+            flags->setParity(false);
             flags->carry = true;
         }
         flags->overflow = false;
@@ -792,19 +792,19 @@ namespace x64 {
         double res = d - s;
         if(d == s) {
             flags->zero = true;
-            flags->parity = false;
+            flags->setParity(false);
             flags->carry = false;
         } else if(res != res) {
             flags->zero = true;
-            flags->parity = true;
+            flags->setParity(true);
             flags->carry = true;
         } else if(res > 0.0) {
             flags->zero = false;
-            flags->parity = false;
+            flags->setParity(false);
             flags->carry = false;
         } else if(res < 0.0) {
             flags->zero = false;
-            flags->parity = false;
+            flags->setParity(false);
             flags->carry = true;
         }
         flags->overflow = false;

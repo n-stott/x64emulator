@@ -2,6 +2,7 @@
 #define FLAGS_H
 
 #include "x64/types.h"
+#include <optional>
 
 namespace x64 {
 
@@ -10,18 +11,23 @@ namespace x64 {
         bool zero { false };
         bool sign { false };
         bool overflow { false };
-        bool parity { false };
         bool direction { false };
 
         bool matches(Cond condition) const;
 
-        static bool computeParity(u8 val) {
-            bool parity = true;  // parity will be the parity of v
-            while (val) {
-                parity = !parity;
-                val = val & (u8)(val - 1);
+        void setParity(bool value) {
+            parity_ = value;
+            awaitingParity_.reset();
+        }
+        void deferParity(u8 value) {
+            awaitingParity_ = value;
+        }
+        bool parity() const {
+            if(!!awaitingParity_) {
+                parity_ = computeParity(awaitingParity_.value());
+                awaitingParity_.reset();
             }
-            return parity;
+            return parity_;
         }
 
         static constexpr u64 CARRY_MASK = 0x1;
@@ -33,7 +39,7 @@ namespace x64 {
         static Flags fromRflags(u64 rflags) {
             Flags flags;
             flags.carry = rflags & CARRY_MASK;
-            flags.parity = rflags & PARITY_MASK;
+            flags.setParity(rflags & PARITY_MASK);
             flags.zero = rflags & ZERO_MASK;
             flags.sign = rflags & SIGN_MASK;
             flags.overflow = rflags & OVERFLOW_MASK;
@@ -43,11 +49,24 @@ namespace x64 {
         u64 toRflags() const {
             u64 rflags = 0;
             rflags |= (carry ? CARRY_MASK : 0);
-            rflags |= (parity ? PARITY_MASK : 0);
+            rflags |= (parity() ? PARITY_MASK : 0);
             rflags |= (zero ? ZERO_MASK : 0);
             rflags |= (sign ? SIGN_MASK : 0);
             rflags |= (overflow ? OVERFLOW_MASK : 0);
             return rflags;
+        }
+
+    private:
+        mutable std::optional<u8> awaitingParity_;
+        mutable bool parity_ { false };
+
+        static bool computeParity(u8 val) {
+            bool parity = true;  // parity will be the parity of v
+            while (val) {
+                parity = !parity;
+                val = val & (u8)(val - 1);
+            }
+            return parity;
         }
     };
 
@@ -68,13 +87,13 @@ namespace x64 {
             case Cond::NBE: return (carry == 0 && zero == 0);
             case Cond::NE: return (zero == 0);
             case Cond::NO: return (overflow == 0);
-            case Cond::NP: return (parity == 0);
+            case Cond::NP: return (parity() == 0);
             case Cond::NS: return (sign == 0);
-            case Cond::NU: return (parity == 0);
+            case Cond::NU: return (parity() == 0);
             case Cond::O: return (overflow == 1);
-            case Cond::P: return (parity == 1);
+            case Cond::P: return (parity() == 1);
             case Cond::S: return (sign == 1);
-            case Cond::U: return (parity == 1);
+            case Cond::U: return (parity() == 1);
         }
         __builtin_unreachable();
     }
