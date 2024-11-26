@@ -318,6 +318,8 @@ namespace x64 {
         JMP_RM32,
         JMP_RM64,
         JMP_U32,
+        JE,
+        JNE,
         JCC,
         BSR_R32_R32,
         BSR_R32_M32,

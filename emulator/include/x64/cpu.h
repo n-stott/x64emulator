@@ -519,6 +519,8 @@ namespace x64 {
         void exec(const Jmp<RM32>&);
         void exec(const Jmp<RM64>&);
         void exec(const Jmp<u32>&);
+        void exec(const Je&);
+        void exec(const Jne&);
         void exec(const Jcc&);
 
         void exec(const Bsr<R32, R32>&);

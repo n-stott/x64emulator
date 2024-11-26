@@ -613,6 +613,8 @@ namespace utils {
             case Insn::JMP_RM32: return toString<RM32>("jmp");
             case Insn::JMP_RM64: return toString<RM64>("jmp");
             case Insn::JMP_U32: return toString<u32>("jmp");
+            case Insn::JE: return toString<u64>("je");
+            case Insn::JNE: return toString<u64>("jne");
             case Insn::JCC: return toString<Cond, u64>("jcc");
             case Insn::BSR_R32_R32: return toString<R32, R32>("bsr");
             case Insn::BSR_R32_M32: return toString<R32, M32>("bsr");
@@ -904,6 +906,8 @@ namespace utils {
             case Insn::JMP_RM32:
             case Insn::JMP_RM64:
             case Insn::JMP_U32:
+            case Insn::JE:
+            case Insn::JNE:
             case Insn::JCC:
                 return true;
             default:

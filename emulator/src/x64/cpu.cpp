@@ -472,6 +472,8 @@ namespace x64 {
             case Insn::JMP_RM32: return exec(Jmp<RM32>{insn.op0<RM32>()});
             case Insn::JMP_RM64: return exec(Jmp<RM64>{insn.op0<RM64>()});
             case Insn::JMP_U32: return exec(Jmp<u32>{insn.op0<u32>()});
+            case Insn::JE: return exec(Je{insn.op0<u64>()});
+            case Insn::JNE: return exec(Jne{insn.op0<u64>()});
             case Insn::JCC: return exec(Jcc{insn.op0<Cond>(), insn.op1<u64>()});
             case Insn::BSR_R32_R32: return exec(Bsr<R32, R32>{insn.op0<R32>(), insn.op1<R32>()});
             case Insn::BSR_R32_M32: return exec(Bsr<R32, M32>{insn.op0<R32>(), insn.op1<M32>()});
@@ -1617,6 +1619,22 @@ namespace x64 {
         u64 dst = ins.symbolAddress;
         vm_->notifyJmp(dst);
         regs_.rip() = dst;
+    }
+
+    void Cpu::exec(const Je& ins) {
+        if(flags_.matches(Cond::E)) {
+            u64 dst = ins.dst;
+            vm_->notifyJmp(dst);
+            regs_.rip() = dst;
+        }
+    }
+
+    void Cpu::exec(const Jne& ins) {
+        if(flags_.matches(Cond::NE)) {
+            u64 dst = ins.dst;
+            vm_->notifyJmp(dst);
+            regs_.rip() = dst;
+        }
     }
 
     void Cpu::exec(const Jcc& ins) {

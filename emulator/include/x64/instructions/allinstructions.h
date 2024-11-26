@@ -336,6 +336,14 @@ namespace x64 {
         Dst symbolAddress;
     };
 
+    struct Je {
+        u64 dst;
+    };
+
+    struct Jne {
+        u64 dst;
+    };
+
     struct Jcc {
         Cond cond;
         u64 symbolAddress;

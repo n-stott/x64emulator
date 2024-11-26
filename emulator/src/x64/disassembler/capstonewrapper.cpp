@@ -1535,7 +1535,15 @@ namespace x64 {
         assert(x86detail.op_count == 1);
         const cs_x86_op& dst = x86detail.operands[0];
         auto imm = asImmediate(dst);
-        if(imm) return X64Instruction::make<Insn::JCC>(insn.address, insn.size, cond, imm->immediate);
+        if(imm) {
+            if(cond == Cond::E) {
+                return X64Instruction::make<Insn::JE>(insn.address, insn.size, imm->immediate);
+            } else if(cond == Cond::NE) {
+                return X64Instruction::make<Insn::JNE>(insn.address, insn.size, imm->immediate);
+            } else {
+                return X64Instruction::make<Insn::JCC>(insn.address, insn.size, cond, imm->immediate);
+            }
+        }
         return make_failed(insn);
     }
 
