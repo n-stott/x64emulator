@@ -171,7 +171,7 @@ namespace utils {
             case Cond::O: return "o";
             case Cond::P:  return "p";
             case Cond::S:  return "s";
-            case Cond::U: return "nu";
+            case Cond::U: return "u";
         }
         __builtin_unreachable();
     }
