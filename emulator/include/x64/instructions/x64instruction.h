@@ -591,6 +591,13 @@ namespace x64 {
         static_assert(sizeof(RM64) <= sizeof(ArgBuffer));
         static_assert(sizeof(Imm) <= sizeof(ArgBuffer));
     public:
+
+        struct Operands {
+            ArgBuffer op0;
+            ArgBuffer op1;
+            ArgBuffer op2;
+        };
+
         template<Insn insn, typename... Args>
         static X64Instruction make(u64 address, u16 sizeInBytes, Args&& ...args) {
             return make(address, insn, sizeInBytes, args...);
@@ -616,33 +623,27 @@ namespace x64 {
         }
 
         template<typename T>
-        T op0() const {
+        const T& op0() const {
             static_assert(std::is_trivially_constructible_v<T>);
             static_assert(sizeof(T) <= sizeof(ArgBuffer));
             assert(nbOperands_ >= 1);
-            T op;
-            std::memcpy(&op, &op0_, sizeof(T));
-            return op;
+            return *reinterpret_cast<const T*>(&operands_.op0);
         }
 
         template<typename T>
-        T op1() const {
+        const T& op1() const {
             static_assert(std::is_trivially_constructible_v<T>);
             static_assert(sizeof(T) <= sizeof(ArgBuffer));
             assert(nbOperands_ >= 2);
-            T op;
-            std::memcpy(&op, &op1_, sizeof(T));
-            return op;
+            return *reinterpret_cast<const T*>(&operands_.op1);
         }
 
         template<typename T>
-        T op2() const {
+        const T& op2() const {
             static_assert(std::is_trivially_constructible_v<T>);
             static_assert(sizeof(T) <= sizeof(ArgBuffer));
             assert(nbOperands_ >= 3);
-            T op;
-            std::memcpy(&op, &op2_, sizeof(T));
-            return op;
+            return *reinterpret_cast<const T*>(&operands_.op2);
         }
 
         std::string toString() const;
@@ -651,6 +652,7 @@ namespace x64 {
         u64 nextAddress() const { return nextAddress_; }
         Insn insn() const { return insn_; }
         u8 nbOperands() const { return nbOperands_; }
+        const Operands& operands() const { return operands_; }
 
         void setLock() {
             lock_ = 1;
@@ -668,7 +670,7 @@ namespace x64 {
     private:
 
         X64Instruction(u64 address, Insn insn, u16 sizeInBytes, u8 nbOperands, const ArgBuffer& op0, const ArgBuffer& op1, const ArgBuffer& op2) :
-            address_(address), nextAddress_(address+sizeInBytes), insn_(insn), nbOperands_(nbOperands & 0x3), lock_(0), op0_(op0), op1_(op1), op2_(op2) {} 
+            address_(address), nextAddress_(address+sizeInBytes), insn_(insn), nbOperands_(nbOperands & 0x3), lock_(0), operands_{op0, op1, op2} {} 
 
 
         template<typename Arg0, typename Arg1, typename Arg2>
@@ -707,9 +709,7 @@ namespace x64 {
         Insn insn_;
         u8 nbOperands_ : 2;
         u8 lock_ : 1;
-        ArgBuffer op0_;
-        ArgBuffer op1_;
-        ArgBuffer op2_;
+        Operands operands_;
     };
 }
 
