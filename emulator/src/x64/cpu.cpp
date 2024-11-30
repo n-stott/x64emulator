@@ -213,14 +213,14 @@ namespace x64 {
             case Insn::SBB_RM32_IMM: return execSbbRM32Imm(insn);
             case Insn::SBB_RM64_RM64: return execSbbRM64RM64(insn);
             case Insn::SBB_RM64_IMM: return execSbbRM64Imm(insn);
-            case Insn::NEG_RM8: return exec(Neg<RM8>{insn.op0<RM8>()});
-            case Insn::NEG_RM16: return exec(Neg<RM16>{insn.op0<RM16>()});
-            case Insn::NEG_RM32: return exec(Neg<RM32>{insn.op0<RM32>()});
-            case Insn::NEG_RM64: return exec(Neg<RM64>{insn.op0<RM64>()});
-            case Insn::MUL_RM8: return exec(Mul<RM8>{insn.op0<RM8>()});
-            case Insn::MUL_RM16: return exec(Mul<RM16>{insn.op0<RM16>()});
-            case Insn::MUL_RM32: return exec(Mul<RM32>{insn.op0<RM32>()});
-            case Insn::MUL_RM64: return exec(Mul<RM64>{insn.op0<RM64>()});
+            case Insn::NEG_RM8: return execNegRM8(insn);
+            case Insn::NEG_RM16: return execNegRM16(insn);
+            case Insn::NEG_RM32: return execNegRM32(insn);
+            case Insn::NEG_RM64: return execNegRM64(insn);
+            case Insn::MUL_RM8: return execMulRM8(insn);
+            case Insn::MUL_RM16: return execMulRM16(insn);
+            case Insn::MUL_RM32: return execMulRM32(insn);
+            case Insn::MUL_RM64: return execMulRM64(insn);
             case Insn::IMUL1_RM16: return exec(Imul1<RM16>{insn.op0<RM16>()});
             case Insn::IMUL2_R16_RM16: return exec(Imul2<R16, RM16>{insn.op0<R16>(), insn.op1<RM16>()});
             case Insn::IMUL3_R16_RM16_IMM: return exec(Imul3<R16, RM16, Imm>{insn.op0<R16>(), insn.op1<RM16>(), insn.op2<Imm>()});
@@ -230,10 +230,10 @@ namespace x64 {
             case Insn::IMUL1_RM64: return exec(Imul1<RM64>{insn.op0<RM64>()});
             case Insn::IMUL2_R64_RM64: return exec(Imul2<R64, RM64>{insn.op0<R64>(), insn.op1<RM64>()});
             case Insn::IMUL3_R64_RM64_IMM: return exec(Imul3<R64, RM64, Imm>{insn.op0<R64>(), insn.op1<RM64>(), insn.op2<Imm>()});
-            case Insn::DIV_RM8: return exec(Div<RM8>{insn.op0<RM8>()});
-            case Insn::DIV_RM16: return exec(Div<RM16>{insn.op0<RM16>()});
-            case Insn::DIV_RM32: return exec(Div<RM32>{insn.op0<RM32>()});
-            case Insn::DIV_RM64: return exec(Div<RM64>{insn.op0<RM64>()});
+            case Insn::DIV_RM8: return execDivRM8(insn);
+            case Insn::DIV_RM16: return execDivRM16(insn);
+            case Insn::DIV_RM32: return execDivRM32(insn);
+            case Insn::DIV_RM64: return execDivRM64(insn);
             case Insn::IDIV_RM32: return exec(Idiv<RM32>{insn.op0<RM32>()});
             case Insn::IDIV_RM64: return exec(Idiv<RM64>{insn.op0<RM64>()});
             case Insn::AND_RM8_RM8: return execAndRM8RM8(insn);
@@ -268,14 +268,14 @@ namespace x64 {
             case Insn::XOR_RM32_IMM: return execXorRM32Imm(insn);
             case Insn::XOR_RM64_RM64: return execXorRM64RM64(insn);
             case Insn::XOR_RM64_IMM: return execXorRM64Imm(insn);
-            case Insn::NOT_RM8: return exec(Not<RM8>{insn.op0<RM8>()});
-            case Insn::NOT_RM16: return exec(Not<RM16>{insn.op0<RM16>()});
-            case Insn::NOT_RM32: return exec(Not<RM32>{insn.op0<RM32>()});
-            case Insn::NOT_RM64: return exec(Not<RM64>{insn.op0<RM64>()});
-            case Insn::XCHG_RM8_R8: return exec(Xchg<RM8, R8>{insn.op0<RM8>(), insn.op1<R8>()});
-            case Insn::XCHG_RM16_R16: return exec(Xchg<RM16, R16>{insn.op0<RM16>(), insn.op1<R16>()});
-            case Insn::XCHG_RM32_R32: return exec(Xchg<RM32, R32>{insn.op0<RM32>(), insn.op1<R32>()});
-            case Insn::XCHG_RM64_R64: return exec(Xchg<RM64, R64>{insn.op0<RM64>(), insn.op1<R64>()});
+            case Insn::NOT_RM8: return execNotRM8(insn);
+            case Insn::NOT_RM16: return execNotRM16(insn);
+            case Insn::NOT_RM32: return execNotRM32(insn);
+            case Insn::NOT_RM64: return execNotRM64(insn);
+            case Insn::XCHG_RM8_R8: return execXchgRM8R8(insn);
+            case Insn::XCHG_RM16_R16: return execXchgRM16R16(insn);
+            case Insn::XCHG_RM32_R32: return execXchgRM32R32(insn);
+            case Insn::XCHG_RM64_R64: return execXchgRM64R64(insn);
             case Insn::XADD_RM16_R16: return exec(Xadd<RM16, R16>{insn.op0<RM16>(), insn.op1<R16>()});
             case Insn::XADD_RM32_R32: return exec(Xadd<RM32, R32>{insn.op0<RM32>(), insn.op1<R32>()});
             case Insn::XADD_RM64_R64: return exec(Xadd<RM64, R64>{insn.op0<RM64>(), insn.op1<R64>()});
@@ -341,22 +341,22 @@ namespace x64 {
             case Insn::UNKNOWN: return exec(Unknown{insn.op0<std::array<char, 16>>()});
             case Insn::CDQ: return exec(Cdq{});
             case Insn::CQO: return exec(Cqo{});
-            case Insn::INC_RM8: return exec(Inc<RM8>{insn.op0<RM8>()});
-            case Insn::INC_RM16: return exec(Inc<RM16>{insn.op0<RM16>()});
-            case Insn::INC_RM32: return exec(Inc<RM32>{insn.op0<RM32>()});
-            case Insn::INC_RM64: return exec(Inc<RM64>{insn.op0<RM64>()});
-            case Insn::LOCK_INC_M8: return execLock(Inc<M8>{insn.op0<M8>()});
-            case Insn::LOCK_INC_M16: return execLock(Inc<M16>{insn.op0<M16>()});
-            case Insn::LOCK_INC_M32: return execLock(Inc<M32>{insn.op0<M32>()});
-            case Insn::LOCK_INC_M64: return execLock(Inc<M64>{insn.op0<M64>()});
-            case Insn::DEC_RM8: return exec(Dec<RM8>{insn.op0<RM8>()});
-            case Insn::DEC_RM16: return exec(Dec<RM16>{insn.op0<RM16>()});
-            case Insn::DEC_RM32: return exec(Dec<RM32>{insn.op0<RM32>()});
-            case Insn::DEC_RM64: return exec(Dec<RM64>{insn.op0<RM64>()});
-            case Insn::LOCK_DEC_M8: return execLock(Dec<M8>{insn.op0<M8>()});
-            case Insn::LOCK_DEC_M16: return execLock(Dec<M16>{insn.op0<M16>()});
-            case Insn::LOCK_DEC_M32: return execLock(Dec<M32>{insn.op0<M32>()});
-            case Insn::LOCK_DEC_M64: return execLock(Dec<M64>{insn.op0<M64>()});
+            case Insn::INC_RM8: return execIncRM8(insn);
+            case Insn::INC_RM16: return execIncRM16(insn);
+            case Insn::INC_RM32: return execIncRM32(insn);
+            case Insn::INC_RM64: return execIncRM64(insn);
+            case Insn::LOCK_INC_M8: return execLockIncM8(insn);
+            case Insn::LOCK_INC_M16: return execLockIncM16(insn);
+            case Insn::LOCK_INC_M32: return execLockIncM32(insn);
+            case Insn::LOCK_INC_M64: return execLockIncM64(insn);
+            case Insn::DEC_RM8: return execDecRM8(insn);
+            case Insn::DEC_RM16: return execDecRM16(insn);
+            case Insn::DEC_RM32: return execDecRM32(insn);
+            case Insn::DEC_RM64: return execDecRM64(insn);
+            case Insn::LOCK_DEC_M8: return execLockDecM8(insn);
+            case Insn::LOCK_DEC_M16: return execLockDecM16(insn);
+            case Insn::LOCK_DEC_M32: return execLockDecM32(insn);
+            case Insn::LOCK_DEC_M64: return execLockDecM64(insn);
             case Insn::SHR_RM8_R8: return execShrRM8R8(insn);
             case Insn::SHR_RM8_IMM: return execShrRM8Imm(insn);
             case Insn::SHR_RM16_R8: return execShrRM16R8(insn);
@@ -373,14 +373,14 @@ namespace x64 {
             case Insn::SHL_RM32_IMM: return execShlRM32Imm(insn);
             case Insn::SHL_RM64_R8: return execShlRM64R8(insn);
             case Insn::SHL_RM64_IMM: return execShlRM64Imm(insn);
-            case Insn::SHLD_RM32_R32_R8: return exec(Shld<RM32, R32, R8>{insn.op0<RM32>(), insn.op1<R32>(), insn.op2<R8>()});
-            case Insn::SHLD_RM32_R32_IMM: return exec(Shld<RM32, R32, Imm>{insn.op0<RM32>(), insn.op1<R32>(), insn.op2<Imm>()});
-            case Insn::SHLD_RM64_R64_R8: return exec(Shld<RM64, R64, R8>{insn.op0<RM64>(), insn.op1<R64>(), insn.op2<R8>()});
-            case Insn::SHLD_RM64_R64_IMM: return exec(Shld<RM64, R64, Imm>{insn.op0<RM64>(), insn.op1<R64>(), insn.op2<Imm>()});
-            case Insn::SHRD_RM32_R32_R8: return exec(Shrd<RM32, R32, R8>{insn.op0<RM32>(), insn.op1<R32>(), insn.op2<R8>()});
-            case Insn::SHRD_RM32_R32_IMM: return exec(Shrd<RM32, R32, Imm>{insn.op0<RM32>(), insn.op1<R32>(), insn.op2<Imm>()});
-            case Insn::SHRD_RM64_R64_R8: return exec(Shrd<RM64, R64, R8>{insn.op0<RM64>(), insn.op1<R64>(), insn.op2<R8>()});
-            case Insn::SHRD_RM64_R64_IMM: return exec(Shrd<RM64, R64, Imm>{insn.op0<RM64>(), insn.op1<R64>(), insn.op2<Imm>()});
+            case Insn::SHLD_RM32_R32_R8: return execShldRM32R32R8(insn);
+            case Insn::SHLD_RM32_R32_IMM: return execShldRM32R32Imm(insn);
+            case Insn::SHLD_RM64_R64_R8: return execShldRM64R64R8(insn);
+            case Insn::SHLD_RM64_R64_IMM: return execShldRM64R64Imm(insn);
+            case Insn::SHRD_RM32_R32_R8: return execShrdRM32R32R8(insn);
+            case Insn::SHRD_RM32_R32_IMM: return execShrdRM32R32Imm(insn);
+            case Insn::SHRD_RM64_R64_R8: return execShrdRM64R64R8(insn);
+            case Insn::SHRD_RM64_R64_IMM: return execShrdRM64R64Imm(insn);
             case Insn::SAR_RM8_R8: return execSarRM8R8(insn);
             case Insn::SAR_RM8_IMM: return execSarRM8Imm(insn);
             case Insn::SAR_RM16_R8: return execSarRM16R8(insn);
@@ -460,14 +460,14 @@ namespace x64 {
             case Insn::CMP_RM32_IMM: return execCmpRM32Imm(insn);
             case Insn::CMP_RM64_RM64: return execCmpRM64RM64(insn);
             case Insn::CMP_RM64_IMM: return execCmpRM64Imm(insn);
-            case Insn::CMPXCHG_RM8_R8: return exec(Cmpxchg<RM8, R8>{insn.op0<RM8>(), insn.op1<R8>()});
-            case Insn::CMPXCHG_RM16_R16: return exec(Cmpxchg<RM16, R16>{insn.op0<RM16>(), insn.op1<R16>()});
-            case Insn::CMPXCHG_RM32_R32: return exec(Cmpxchg<RM32, R32>{insn.op0<RM32>(), insn.op1<R32>()});
-            case Insn::CMPXCHG_RM64_R64: return exec(Cmpxchg<RM64, R64>{insn.op0<RM64>(), insn.op1<R64>()});
-            case Insn::LOCK_CMPXCHG_M8_R8: return execLock(Cmpxchg<M8, R8>{insn.op0<M8>(), insn.op1<R8>()});
-            case Insn::LOCK_CMPXCHG_M16_R16: return execLock(Cmpxchg<M16, R16>{insn.op0<M16>(), insn.op1<R16>()});
-            case Insn::LOCK_CMPXCHG_M32_R32: return execLock(Cmpxchg<M32, R32>{insn.op0<M32>(), insn.op1<R32>()});
-            case Insn::LOCK_CMPXCHG_M64_R64: return execLock(Cmpxchg<M64, R64>{insn.op0<M64>(), insn.op1<R64>()});
+            case Insn::CMPXCHG_RM8_R8: return execCmpxchgRM8R8(insn);
+            case Insn::CMPXCHG_RM16_R16: return execCmpxchgRM16R16(insn);
+            case Insn::CMPXCHG_RM32_R32: return execCmpxchgRM32R32(insn);
+            case Insn::CMPXCHG_RM64_R64: return execCmpxchgRM64R64(insn);
+            case Insn::LOCK_CMPXCHG_M8_R8: return execLockCmpxchgM8R8(insn);
+            case Insn::LOCK_CMPXCHG_M16_R16: return execLockCmpxchgM16R16(insn);
+            case Insn::LOCK_CMPXCHG_M32_R32: return execLockCmpxchgM32R32(insn);
+            case Insn::LOCK_CMPXCHG_M64_R64: return execLockCmpxchgM64R64(insn);
             case Insn::SET_RM8: return exec(Set<RM8>{insn.op0<Cond>(), insn.op1<RM8>()});
             case Insn::JMP_RM32: return exec(Jmp<RM32>{insn.op0<RM32>()});
             case Insn::JMP_RM64: return exec(Jmp<RM64>{insn.op0<RM64>()});
@@ -1013,30 +1013,46 @@ namespace x64 {
         set(dst, Impl::sbb64(get(dst), get<u64>(src), &flags_));
     }
 
-    void Cpu::exec(const Neg<RM8>& ins) { set(ins.src, Impl::neg8(get(ins.src), &flags_)); }
-    void Cpu::exec(const Neg<RM16>& ins) { set(ins.src, Impl::neg16(get(ins.src), &flags_)); }
-    void Cpu::exec(const Neg<RM32>& ins) { set(ins.src, Impl::neg32(get(ins.src), &flags_)); }
-    void Cpu::exec(const Neg<RM64>& ins) { set(ins.src, Impl::neg64(get(ins.src), &flags_)); }
+    void Cpu::execNegRM8(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RM8>();
+        set(dst, Impl::neg8(get(dst), &flags_));
+    }
+    void Cpu::execNegRM16(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RM16>();
+        set(dst, Impl::neg16(get(dst), &flags_));
+    }
+    void Cpu::execNegRM32(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RM32>();
+        set(dst, Impl::neg32(get(dst), &flags_));
+    }
+    void Cpu::execNegRM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RM64>();
+        set(dst, Impl::neg64(get(dst), &flags_));
+    }
 
-    void Cpu::exec(const Mul<RM8>& ins) {
-        auto res = Impl::mul8(get(R8::AL), get(ins.src), &flags_);
+    void Cpu::execMulRM8(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RM8>();
+        auto res = Impl::mul8(get(R8::AL), get(dst), &flags_);
         set(R16::AX, (u16)((u16)res.first << 8 | (u16)res.second));
     }
 
-    void Cpu::exec(const Mul<RM16>& ins) {
-        auto res = Impl::mul16(get(R16::AX), get(ins.src), &flags_);
+    void Cpu::execMulRM16(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RM16>();
+        auto res = Impl::mul16(get(R16::AX), get(dst), &flags_);
         set(R16::DX, res.first);
         set(R16::AX, res.second);
     }
 
-    void Cpu::exec(const Mul<RM32>& ins) {
-        auto res = Impl::mul32(get(R32::EAX), get(ins.src), &flags_);
+    void Cpu::execMulRM32(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RM32>();
+        auto res = Impl::mul32(get(R32::EAX), get(dst), &flags_);
         set(R32::EDX, res.first);
         set(R32::EAX, res.second);
     }
 
-    void Cpu::exec(const Mul<RM64>& ins) {
-        auto res = Impl::mul64(get(R64::RAX), get(ins.src), &flags_);
+    void Cpu::execMulRM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RM64>();
+        auto res = Impl::mul64(get(R64::RAX), get(dst), &flags_);
         set(R64::RDX, res.first);
         set(R64::RAX, res.second);
     }
@@ -1081,26 +1097,30 @@ namespace x64 {
         set(ins.dst, res.second);
     }
 
-    void Cpu::exec(const Div<RM8>& ins) {
-        auto res = Impl::div8(get(R8::AH), get(R8::AL), get(ins.src));
+    void Cpu::execDivRM8(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RM8>();
+        auto res = Impl::div8(get(R8::AH), get(R8::AL), get(dst));
         set(R8::AL, res.first);
         set(R8::AH, res.second);
     }
 
-    void Cpu::exec(const Div<RM16>& ins) {
-        auto res = Impl::div16(get(R16::DX), get(R16::AX), get(ins.src));
+    void Cpu::execDivRM16(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RM16>();
+        auto res = Impl::div16(get(R16::DX), get(R16::AX), get(dst));
         set(R16::AX, res.first);
         set(R16::DX, res.second);
     }
 
-    void Cpu::exec(const Div<RM32>& ins) {
-        auto res = Impl::div32(get(R32::EDX), get(R32::EAX), get(ins.src));
+    void Cpu::execDivRM32(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RM32>();
+        auto res = Impl::div32(get(R32::EDX), get(R32::EAX), get(dst));
         set(R32::EAX, res.first);
         set(R32::EDX, res.second);
     }
 
-    void Cpu::exec(const Div<RM64>& ins) {
-        auto res = Impl::div64(get(R64::RDX), get(R64::RAX), get(ins.src));
+    void Cpu::execDivRM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RM64>();
+        auto res = Impl::div64(get(R64::RDX), get(R64::RAX), get(dst));
         set(R64::RAX, res.first);
         set(R64::RDX, res.second);
     }
@@ -1297,34 +1317,54 @@ namespace x64 {
         set(dst, Impl::xor64(get(dst), get<u64>(src), &flags_));
     }
 
-    void Cpu::exec(const Not<RM8>& ins) { set(ins.dst, ~get(ins.dst)); }
-    void Cpu::exec(const Not<RM16>& ins) { set(ins.dst, ~get(ins.dst)); }
-    void Cpu::exec(const Not<RM32>& ins) { set(ins.dst, ~get(ins.dst)); }
-    void Cpu::exec(const Not<RM64>& ins) { set(ins.dst, ~get(ins.dst)); }
+    void Cpu::execNotRM8(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RM8>();
+        set(dst, ~get(dst));
+    }
+    void Cpu::execNotRM16(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RM16>();
+        set(dst, ~get(dst));
+    }
+    void Cpu::execNotRM32(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RM32>();
+        set(dst, ~get(dst));
+    }
+    void Cpu::execNotRM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RM64>();
+        set(dst, ~get(dst));
+    }
 
-    void Cpu::exec(const Xchg<RM8, R8>& ins) {
-        u8 dst = get(ins.dst);
-        u8 src = get(ins.src);
-        set(ins.dst, src);
-        set(ins.src, dst);
+    void Cpu::execXchgRM8R8(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RM8>();
+        const auto& src = ins.op1<R8>();
+        u8 dstValue = get(dst);
+        u8 srcValue = get(src);
+        set(dst, srcValue);
+        set(src, dstValue);
     }
-    void Cpu::exec(const Xchg<RM16, R16>& ins) {
-        u16 dst = get(ins.dst);
-        u16 src = get(ins.src);
-        set(ins.dst, src);
-        set(ins.src, dst);
+    void Cpu::execXchgRM16R16(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RM16>();
+        const auto& src = ins.op1<R16>();
+        u16 dstValue = get(dst);
+        u16 srcValue = get(src);
+        set(dst, srcValue);
+        set(src, dstValue);
     }
-    void Cpu::exec(const Xchg<RM32, R32>& ins) {
-        u32 dst = get(ins.dst);
-        u32 src = get(ins.src);
-        set(ins.dst, src);
-        set(ins.src, dst);
+    void Cpu::execXchgRM32R32(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RM32>();
+        const auto& src = ins.op1<R32>();
+        u32 dstValue = get(dst);
+        u32 srcValue = get(src);
+        set(dst, srcValue);
+        set(src, dstValue);
     }
-    void Cpu::exec(const Xchg<RM64, R64>& ins) {
-        u64 dst = get(ins.dst);
-        u64 src = get(ins.src);
-        set(ins.dst, src);
-        set(ins.src, dst);
+    void Cpu::execXchgRM64R64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RM64>();
+        const auto& src = ins.op1<R64>();
+        u64 dstValue = get(dst);
+        u64 srcValue = get(src);
+        set(dst, srcValue);
+        set(src, dstValue);
     }
 
     void Cpu::exec(const Xadd<RM16, R16>& ins) {
@@ -1565,54 +1605,86 @@ namespace x64 {
     void Cpu::exec(const Cdq&) { set(R32::EDX, (get(R32::EAX) & 0x80000000) ? 0xFFFFFFFF : 0x0); }
     void Cpu::exec(const Cqo&) { set(R64::RDX, (get(R64::RAX) & 0x8000000000000000) ? 0xFFFFFFFFFFFFFFFF : 0x0); }
 
-    void Cpu::exec(const Inc<RM8>& ins) { set(ins.dst, Impl::inc8(get(ins.dst), &flags_)); }
-    void Cpu::exec(const Inc<RM16>& ins) { set(ins.dst, Impl::inc16(get(ins.dst), &flags_)); }
-    void Cpu::exec(const Inc<RM32>& ins) { set(ins.dst, Impl::inc32(get(ins.dst), &flags_)); }
-    void Cpu::exec(const Inc<RM64>& ins) { set(ins.dst, Impl::inc64(get(ins.dst), &flags_)); }
+    void Cpu::execIncRM8(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RM8>();
+        set(dst, Impl::inc8(get(dst), &flags_));
+    }
+    void Cpu::execIncRM16(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RM16>();
+        set(dst, Impl::inc16(get(dst), &flags_));
+    }
+    void Cpu::execIncRM32(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RM32>();
+        set(dst, Impl::inc32(get(dst), &flags_));
+    }
+    void Cpu::execIncRM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RM64>();
+        set(dst, Impl::inc64(get(dst), &flags_));
+    }
 
-    void Cpu::execLock(const Inc<M8>& ins) {
-        mmu_->withExclusiveRegion(resolve(ins.dst), [&](u8 oldValue) {
+    void Cpu::execLockIncM8(const X64Instruction& ins) {
+        const auto& dst = ins.op0<M8>();
+        mmu_->withExclusiveRegion(resolve(dst), [&](u8 oldValue) {
             return Impl::inc8(oldValue, &flags_);
         });
     }
-    void Cpu::execLock(const Inc<M16>& ins) {
-        mmu_->withExclusiveRegion(resolve(ins.dst), [&](u16 oldValue) {
+    void Cpu::execLockIncM16(const X64Instruction& ins) {
+        const auto& dst = ins.op0<M16>();
+        mmu_->withExclusiveRegion(resolve(dst), [&](u16 oldValue) {
             return Impl::inc16(oldValue, &flags_);
         });
     }
-    void Cpu::execLock(const Inc<M32>& ins) {
-        mmu_->withExclusiveRegion(resolve(ins.dst), [&](u32 oldValue) {
+    void Cpu::execLockIncM32(const X64Instruction& ins) {
+        const auto& dst = ins.op0<M32>();
+        mmu_->withExclusiveRegion(resolve(dst), [&](u32 oldValue) {
             return Impl::inc32(oldValue, &flags_);
         });
     }
-    void Cpu::execLock(const Inc<M64>& ins) {
-        mmu_->withExclusiveRegion(resolve(ins.dst), [&](u64 oldValue) {
+    void Cpu::execLockIncM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<M64>();
+        mmu_->withExclusiveRegion(resolve(dst), [&](u64 oldValue) {
             return Impl::inc64(oldValue, &flags_);
         });
     }
 
-    void Cpu::exec(const Dec<RM8>& ins) { set(ins.dst, Impl::dec8(get(ins.dst), &flags_)); }
-    void Cpu::exec(const Dec<RM16>& ins) { set(ins.dst, Impl::dec16(get(ins.dst), &flags_)); }
-    void Cpu::exec(const Dec<RM32>& ins) { set(ins.dst, Impl::dec32(get(ins.dst), &flags_)); }
-    void Cpu::exec(const Dec<RM64>& ins) { set(ins.dst, Impl::dec64(get(ins.dst), &flags_)); }
+    void Cpu::execDecRM8(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RM8>();
+        set(dst, Impl::dec8(get(dst), &flags_));
+    }
+    void Cpu::execDecRM16(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RM16>();
+        set(dst, Impl::dec16(get(dst), &flags_));
+    }
+    void Cpu::execDecRM32(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RM32>();
+        set(dst, Impl::dec32(get(dst), &flags_));
+    }
+    void Cpu::execDecRM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RM64>();
+        set(dst, Impl::dec64(get(dst), &flags_));
+    }
 
-    void Cpu::execLock(const Dec<M8>& ins) {
-        mmu_->withExclusiveRegion(resolve(ins.dst), [&](u8 oldValue) {
+    void Cpu::execLockDecM8(const X64Instruction& ins) {
+        const auto& dst = ins.op0<M8>();
+        mmu_->withExclusiveRegion(resolve(dst), [&](u8 oldValue) {
             return Impl::dec8(oldValue, &flags_);
         });
     }
-    void Cpu::execLock(const Dec<M16>& ins) {
-        mmu_->withExclusiveRegion(resolve(ins.dst), [&](u16 oldValue) {
+    void Cpu::execLockDecM16(const X64Instruction& ins) {
+        const auto& dst = ins.op0<M16>();
+        mmu_->withExclusiveRegion(resolve(dst), [&](u16 oldValue) {
             return Impl::dec16(oldValue, &flags_);
         });
     }
-    void Cpu::execLock(const Dec<M32>& ins) {
-        mmu_->withExclusiveRegion(resolve(ins.dst), [&](u32 oldValue) {
+    void Cpu::execLockDecM32(const X64Instruction& ins) {
+        const auto& dst = ins.op0<M32>();
+        mmu_->withExclusiveRegion(resolve(dst), [&](u32 oldValue) {
             return Impl::dec32(oldValue, &flags_);
         });
     }
-    void Cpu::execLock(const Dec<M64>& ins) {
-        mmu_->withExclusiveRegion(resolve(ins.dst), [&](u64 oldValue) {
+    void Cpu::execLockDecM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<M64>();
+        mmu_->withExclusiveRegion(resolve(dst), [&](u64 oldValue) {
             return Impl::dec64(oldValue, &flags_);
         });
     }
@@ -1699,15 +1771,55 @@ namespace x64 {
         set(dst, Impl::shr64(get(dst), get<u64>(src), &flags_));
     }
 
-    void Cpu::exec(const Shld<RM32, R32, R8>& ins) { set(ins.dst, Impl::shld32(get(ins.dst), get(ins.src1), get(ins.src2), &flags_)); }
-    void Cpu::exec(const Shld<RM32, R32, Imm>& ins) { set(ins.dst, Impl::shld32(get(ins.dst), get(ins.src1), get<u8>(ins.src2), &flags_)); }
-    void Cpu::exec(const Shld<RM64, R64, R8>& ins) { set(ins.dst, Impl::shld64(get(ins.dst), get(ins.src1), get(ins.src2), &flags_)); }
-    void Cpu::exec(const Shld<RM64, R64, Imm>& ins) { set(ins.dst, Impl::shld64(get(ins.dst), get(ins.src1), get<u8>(ins.src2), &flags_)); }
+    void Cpu::execShldRM32R32R8(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RM32>();
+        const auto& src1 = ins.op1<R32>();
+        const auto& src2 = ins.op2<R8>();
+        set(dst, Impl::shld32(get(dst), get(src1), get(src2), &flags_));
+    }
+    void Cpu::execShldRM32R32Imm(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RM32>();
+        const auto& src1 = ins.op1<R32>();
+        const auto& src2 = ins.op2<Imm>();
+        set(dst, Impl::shld32(get(dst), get(src1), get<u8>(src2), &flags_));
+    }
+    void Cpu::execShldRM64R64R8(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RM64>();
+        const auto& src1 = ins.op1<R64>();
+        const auto& src2 = ins.op2<R8>();
+        set(dst, Impl::shld64(get(dst), get(src1), get(src2), &flags_));
+    }
+    void Cpu::execShldRM64R64Imm(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RM64>();
+        const auto& src1 = ins.op1<R64>();
+        const auto& src2 = ins.op2<Imm>();
+        set(dst, Impl::shld64(get(dst), get(src1), get<u8>(src2), &flags_));
+    }
 
-    void Cpu::exec(const Shrd<RM32, R32, R8>& ins) { set(ins.dst, Impl::shrd32(get(ins.dst), get(ins.src1), get(ins.src2), &flags_)); }
-    void Cpu::exec(const Shrd<RM32, R32, Imm>& ins) { set(ins.dst, Impl::shrd32(get(ins.dst), get(ins.src1), get<u8>(ins.src2), &flags_)); }
-    void Cpu::exec(const Shrd<RM64, R64, R8>& ins) { set(ins.dst, Impl::shrd64(get(ins.dst), get(ins.src1), get(ins.src2), &flags_)); }
-    void Cpu::exec(const Shrd<RM64, R64, Imm>& ins) { set(ins.dst, Impl::shrd64(get(ins.dst), get(ins.src1), get<u8>(ins.src2), &flags_)); }
+    void Cpu::execShrdRM32R32R8(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RM32>();
+        const auto& src1 = ins.op1<R32>();
+        const auto& src2 = ins.op2<R8>();
+        set(dst, Impl::shrd32(get(dst), get(src1), get(src2), &flags_));
+    }
+    void Cpu::execShrdRM32R32Imm(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RM32>();
+        const auto& src1 = ins.op1<R32>();
+        const auto& src2 = ins.op2<Imm>();
+        set(dst, Impl::shrd32(get(dst), get(src1), get<u8>(src2), &flags_));
+    }
+    void Cpu::execShrdRM64R64R8(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RM64>();
+        const auto& src1 = ins.op1<R64>();
+        const auto& src2 = ins.op2<R8>();
+        set(dst, Impl::shrd64(get(dst), get(src1), get(src2), &flags_));
+    }
+    void Cpu::execShrdRM64R64Imm(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RM64>();
+        const auto& src1 = ins.op1<R64>();
+        const auto& src2 = ins.op2<Imm>();
+        set(dst, Impl::shrd64(get(dst), get(src1), get<u8>(src2), &flags_));
+    }
 
     void Cpu::execSarRM8R8(const X64Instruction& ins) {
         const auto& dst = ins.op0<RM8>();
@@ -2102,15 +2214,47 @@ namespace x64 {
         });
     }
 
-    void Cpu::exec(const Cmpxchg<RM8, R8>& ins) { execCmpxchg8Impl(ins.src1, get(ins.src2)); }
-    void Cpu::exec(const Cmpxchg<RM16, R16>& ins) { execCmpxchg16Impl(ins.src1, get(ins.src2)); }
-    void Cpu::exec(const Cmpxchg<RM32, R32>& ins) { execCmpxchg32Impl(ins.src1, get(ins.src2)); }
-    void Cpu::exec(const Cmpxchg<RM64, R64>& ins) { execCmpxchg64Impl(ins.src1, get(ins.src2)); }
+    void Cpu::execCmpxchgRM8R8(const X64Instruction& ins) {
+        const auto& src1 = ins.op0<RM8>();
+        const auto& src2 = ins.op1<R8>();
+        execCmpxchg8Impl(src1, get(src2));
+    }
+    void Cpu::execCmpxchgRM16R16(const X64Instruction& ins) {
+        const auto& src1 = ins.op0<RM16>();
+        const auto& src2 = ins.op1<R16>();
+        execCmpxchg16Impl(src1, get(src2));
+    }
+    void Cpu::execCmpxchgRM32R32(const X64Instruction& ins) {
+        const auto& src1 = ins.op0<RM32>();
+        const auto& src2 = ins.op1<R32>();
+        execCmpxchg32Impl(src1, get(src2));
+    }
+    void Cpu::execCmpxchgRM64R64(const X64Instruction& ins) {
+        const auto& src1 = ins.op0<RM64>();
+        const auto& src2 = ins.op1<R64>();
+        execCmpxchg64Impl(src1, get(src2));
+    }
 
-    void Cpu::execLock(const Cmpxchg<M8, R8>& ins) { execCmpxchg8Impl(resolve(ins.src1), get(ins.src2)); }
-    void Cpu::execLock(const Cmpxchg<M16, R16>& ins) { execCmpxchg16Impl(resolve(ins.src1), get(ins.src2)); }
-    void Cpu::execLock(const Cmpxchg<M32, R32>& ins) { execCmpxchg32Impl(resolve(ins.src1), get(ins.src2)); }
-    void Cpu::execLock(const Cmpxchg<M64, R64>& ins) { execCmpxchg64Impl(resolve(ins.src1), get(ins.src2)); }
+    void Cpu::execLockCmpxchgM8R8(const X64Instruction& ins) {
+        const auto& src1 = ins.op0<M8>();
+        const auto& src2 = ins.op1<R8>();
+        execCmpxchg8Impl(resolve(src1), get(src2));
+    }
+    void Cpu::execLockCmpxchgM16R16(const X64Instruction& ins) {
+        const auto& src1 = ins.op0<M16>();
+        const auto& src2 = ins.op1<R16>();
+        execCmpxchg16Impl(resolve(src1), get(src2));
+    }
+    void Cpu::execLockCmpxchgM32R32(const X64Instruction& ins) {
+        const auto& src1 = ins.op0<M32>();
+        const auto& src2 = ins.op1<R32>();
+        execCmpxchg32Impl(resolve(src1), get(src2));
+    }
+    void Cpu::execLockCmpxchgM64R64(const X64Instruction& ins) {
+        const auto& src1 = ins.op0<M64>();
+        const auto& src2 = ins.op1<R64>();
+        execCmpxchg64Impl(resolve(src1), get(src2));
+    }
 
     template<typename Dst>
     void Cpu::execSet(Cond cond, Dst dst) {
