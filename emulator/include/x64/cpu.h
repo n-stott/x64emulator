@@ -230,23 +230,23 @@ namespace x64 {
         void execMulRM32(const X64Instruction&);
         void execMulRM64(const X64Instruction&);
 
-        void exec(const Imul1<RM16>&);
-        void exec(const Imul2<R16, RM16>&);
-        void exec(const Imul3<R16, RM16, Imm>&);
-        void exec(const Imul1<RM32>&);
-        void exec(const Imul2<R32, RM32>&);
-        void exec(const Imul3<R32, RM32, Imm>&);
-        void exec(const Imul1<RM64>&);
-        void exec(const Imul2<R64, RM64>&);
-        void exec(const Imul3<R64, RM64, Imm>&);
+        void execImul1RM16(const X64Instruction&);
+        void execImul2R16RM16(const X64Instruction&);
+        void execImul3R16RM16Imm(const X64Instruction&);
+        void execImul1RM32(const X64Instruction&);
+        void execImul2R32RM32(const X64Instruction&);
+        void execImul3R32RM32Imm(const X64Instruction&);
+        void execImul1RM64(const X64Instruction&);
+        void execImul2R64RM64(const X64Instruction&);
+        void execImul3R64RM64Imm(const X64Instruction&);
 
         void execDivRM8(const X64Instruction&);
         void execDivRM16(const X64Instruction&);
         void execDivRM32(const X64Instruction&);
         void execDivRM64(const X64Instruction&);
 
-        void exec(const Idiv<RM32>&);
-        void exec(const Idiv<RM64>&);
+        void execIdivRM32(const X64Instruction&);
+        void execIdivRM64(const X64Instruction&);
 
         void execAndRM8RM8(const X64Instruction&);
         void execAndRM8Imm(const X64Instruction&);
@@ -294,13 +294,13 @@ namespace x64 {
         void execXchgRM32R32(const X64Instruction&);
         void execXchgRM64R64(const X64Instruction&);
 
-        void exec(const Xadd<RM16, R16>&);
-        void exec(const Xadd<RM32, R32>&);
-        void exec(const Xadd<RM64, R64>&);
+        void execXaddRM16R16(const X64Instruction&);
+        void execXaddRM32R32(const X64Instruction&);
+        void execXaddRM64R64(const X64Instruction&);
 
-        void execLock(const Xadd<M16, R16>&);
-        void execLock(const Xadd<M32, R32>&);
-        void execLock(const Xadd<M64, R64>&);
+        void execLockXaddM16R16(const X64Instruction&);
+        void execLockXaddM32R32(const X64Instruction&);
+        void execLockXaddM64R64(const X64Instruction&);
 
         template<Size size>
         void execMovRR(const X64Instruction&);
@@ -322,19 +322,19 @@ namespace x64 {
         void exec(const Movu<RSSE, MSSE>&);
         void exec(const Movu<MSSE, RSSE>&);
 
-        void exec(const Movsx<R16, RM8>&);
-        void exec(const Movsx<R32, RM8>&);
-        void exec(const Movsx<R32, RM16>&);
-        void exec(const Movsx<R64, RM8>&);
-        void exec(const Movsx<R64, RM16>&);
-        void exec(const Movsx<R64, RM32>&);
+        void execMovsxR16RM8(const X64Instruction&);
+        void execMovsxR32RM8(const X64Instruction&);
+        void execMovsxR32RM16(const X64Instruction&);
+        void execMovsxR64RM8(const X64Instruction&);
+        void execMovsxR64RM16(const X64Instruction&);
+        void execMovsxR64RM32(const X64Instruction&);
 
-        void exec(const Movzx<R16, RM8>&);
-        void exec(const Movzx<R32, RM8>&);
-        void exec(const Movzx<R32, RM16>&);
-        void exec(const Movzx<R64, RM8>&);
-        void exec(const Movzx<R64, RM16>&);
-        void exec(const Movzx<R64, RM32>&);
+        void execMovzxR16RM8(const X64Instruction&);
+        void execMovzxR32RM8(const X64Instruction&);
+        void execMovzxR32RM16(const X64Instruction&);
+        void execMovzxR64RM8(const X64Instruction&);
+        void execMovzxR64RM16(const X64Instruction&);
+        void execMovzxR64RM32(const X64Instruction&);
 
         void exec(const Lea<R32, Encoding>&);
         void exec(const Lea<R64, Encoding>&);
@@ -422,12 +422,12 @@ namespace x64 {
         void execSarRM64R8(const X64Instruction&);
         void execSarRM64Imm(const X64Instruction&);
 
-        void exec(const Sarx<R32, RM32, R32>&);
-        void exec(const Sarx<R64, RM64, R64>&);
-        void exec(const Shlx<R32, RM32, R32>&);
-        void exec(const Shlx<R64, RM64, R64>&);
-        void exec(const Shrx<R32, RM32, R32>&);
-        void exec(const Shrx<R64, RM64, R64>&);
+        void execSarxR32RM32R32(const X64Instruction&);
+        void execSarxR64RM64R64(const X64Instruction&);
+        void execShlxR32RM32R32(const X64Instruction&);
+        void execShlxR64RM64R64(const X64Instruction&);
+        void execShrxR32RM32R32(const X64Instruction&);
+        void execShrxR64RM64R64(const X64Instruction&);
 
         void execRolRM8R8(const X64Instruction&);
         void execRolRM8Imm(const X64Instruction&);
@@ -447,44 +447,44 @@ namespace x64 {
         void execRorRM64R8(const X64Instruction&);
         void execRorRM64Imm(const X64Instruction&);
 
-        void exec(const Tzcnt<R16, RM16>&);
-        void exec(const Tzcnt<R32, RM32>&);
-        void exec(const Tzcnt<R64, RM64>&);
+        void execTzcntR16RM16(const X64Instruction&);
+        void execTzcntR32RM32(const X64Instruction&);
+        void execTzcntR64RM64(const X64Instruction&);
 
-        void exec(const Bt<RM16, R16>&);
-        void exec(const Bt<RM16, Imm>&);
-        void exec(const Bt<RM32, R32>&);
-        void exec(const Bt<RM32, Imm>&);
-        void exec(const Bt<RM64, R64>&);
-        void exec(const Bt<RM64, Imm>&);
+        void execBtRM16R16(const X64Instruction&);
+        void execBtRM16Imm(const X64Instruction&);
+        void execBtRM32R32(const X64Instruction&);
+        void execBtRM32Imm(const X64Instruction&);
+        void execBtRM64R64(const X64Instruction&);
+        void execBtRM64Imm(const X64Instruction&);
 
-        void exec(const Btr<RM16, R16>&);
-        void exec(const Btr<RM16, Imm>&);
-        void exec(const Btr<RM32, R32>&);
-        void exec(const Btr<RM32, Imm>&);
-        void exec(const Btr<RM64, R64>&);
-        void exec(const Btr<RM64, Imm>&);
+        void execBtrRM16R16(const X64Instruction&);
+        void execBtrRM16Imm(const X64Instruction&);
+        void execBtrRM32R32(const X64Instruction&);
+        void execBtrRM32Imm(const X64Instruction&);
+        void execBtrRM64R64(const X64Instruction&);
+        void execBtrRM64Imm(const X64Instruction&);
 
-        void exec(const Btc<RM16, R16>&);
-        void exec(const Btc<RM16, Imm>&);
-        void exec(const Btc<RM32, R32>&);
-        void exec(const Btc<RM32, Imm>&);
-        void exec(const Btc<RM64, R64>&);
-        void exec(const Btc<RM64, Imm>&);
+        void execBtcRM16R16(const X64Instruction&);
+        void execBtcRM16Imm(const X64Instruction&);
+        void execBtcRM32R32(const X64Instruction&);
+        void execBtcRM32Imm(const X64Instruction&);
+        void execBtcRM64R64(const X64Instruction&);
+        void execBtcRM64Imm(const X64Instruction&);
 
-        void exec(const Bts<RM16, R16>&);
-        void exec(const Bts<RM16, Imm>&);
-        void exec(const Bts<RM32, R32>&);
-        void exec(const Bts<RM32, Imm>&);
-        void exec(const Bts<RM64, R64>&);
-        void exec(const Bts<RM64, Imm>&);
+        void execBtsRM16R16(const X64Instruction&);
+        void execBtsRM16Imm(const X64Instruction&);
+        void execBtsRM32R32(const X64Instruction&);
+        void execBtsRM32Imm(const X64Instruction&);
+        void execBtsRM64R64(const X64Instruction&);
+        void execBtsRM64Imm(const X64Instruction&);
 
-        void execLock(const Bts<M16, R16>&);
-        void execLock(const Bts<M16, Imm>&);
-        void execLock(const Bts<M32, R32>&);
-        void execLock(const Bts<M32, Imm>&);
-        void execLock(const Bts<M64, R64>&);
-        void execLock(const Bts<M64, Imm>&);
+        void execLockBtsM16R16(const X64Instruction&);
+        void execLockBtsM16Imm(const X64Instruction&);
+        void execLockBtsM32R32(const X64Instruction&);
+        void execLockBtsM32Imm(const X64Instruction&);
+        void execLockBtsM64R64(const X64Instruction&);
+        void execLockBtsM64Imm(const X64Instruction&);
 
         void execTestRM8R8(const X64Instruction&);
         void execTestRM8Imm(const X64Instruction&);
@@ -514,7 +514,7 @@ namespace x64 {
         void execLockCmpxchgM32R32(const X64Instruction&);
         void execLockCmpxchgM64R64(const X64Instruction&);
 
-        void exec(const Set<RM8>&);
+        void execSetRM8(const X64Instruction&);
 
         void exec(const Jmp<RM32>&);
         void exec(const Jmp<RM64>&);
@@ -523,15 +523,15 @@ namespace x64 {
         void exec(const Jne&);
         void exec(const Jcc&);
 
-        void exec(const Bsr<R32, R32>&);
-        void exec(const Bsr<R32, M32>&);
-        void exec(const Bsr<R64, R64>&);
-        void exec(const Bsr<R64, M64>&);
+        void execBsrR32R32(const X64Instruction&);
+        void execBsrR32M32(const X64Instruction&);
+        void execBsrR64R64(const X64Instruction&);
+        void execBsrR64M64(const X64Instruction&);
         
-        void exec(const Bsf<R32, R32>&);
-        void exec(const Bsf<R32, M32>&);
-        void exec(const Bsf<R64, R64>&);
-        void exec(const Bsf<R64, M64>&);
+        void execBsfR32R32(const X64Instruction&);
+        void execBsfR32M32(const X64Instruction&);
+        void execBsfR64R64(const X64Instruction&);
+        void execBsfR64M64(const X64Instruction&);
 
         void exec(const Cld&);
         void exec(const Std&);
@@ -552,21 +552,22 @@ namespace x64 {
         void exec(const RepNZ<Scas<R8, M8>>&);
         void exec(const RepNZ<Scas<R16, M16>>&);
         void exec(const RepNZ<Scas<R32, M32>>&);
+        
         void exec(const RepNZ<Scas<R64, M64>>&);
 
-        void exec(const Cmov<R16, RM16>&);
-        void exec(const Cmov<R32, RM32>&);
-        void exec(const Cmov<R64, RM64>&);
+        void execCmovR16RM16(const X64Instruction&);
+        void execCmovR32RM32(const X64Instruction&);
+        void execCmovR64RM64(const X64Instruction&);
 
         void exec(const Cwde&);
         void exec(const Cdqe&);
 
-        void exec(const Bswap<R32>&);
-        void exec(const Bswap<R64>&);
+        void execBswapR32(const X64Instruction&);
+        void execBswapR64(const X64Instruction&);
 
-        void exec(const Popcnt<R16, RM16>&);
-        void exec(const Popcnt<R32, RM32>&);
-        void exec(const Popcnt<R64, RM64>&);
+        void execPopcntR16RM16(const X64Instruction&);
+        void execPopcntR32RM32(const X64Instruction&);
+        void execPopcntR64RM64(const X64Instruction&);
 
         void exec(const Pxor<RSSE, RMSSE>&);
 
