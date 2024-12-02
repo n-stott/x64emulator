@@ -580,48 +580,48 @@ namespace x64 {
         void execMovqRSSERM64(const X64Instruction&);
         void execMovqRM64RSSE(const X64Instruction&);
 
-        void exec(const Fldz&);
-        void exec(const Fld1&);
-        void exec(const Fld<ST>&);
-        void exec(const Fld<M32>&);
-        void exec(const Fld<M64>&);
-        void exec(const Fld<M80>&);
-        void exec(const Fild<M16>&);
-        void exec(const Fild<M32>&);
-        void exec(const Fild<M64>&);
-        void exec(const Fstp<ST>&);
-        void exec(const Fstp<M32>&);
-        void exec(const Fstp<M64>&);
-        void exec(const Fstp<M80>&);
-        void exec(const Fistp<M16>&);
-        void exec(const Fistp<M32>&);
-        void exec(const Fistp<M64>&);
-        void exec(const Fxch<ST>&);
+        void execFldz(const X64Instruction&);
+        void execFld1(const X64Instruction&);
+        void execFldST(const X64Instruction&);
+        void execFldM32(const X64Instruction&);
+        void execFldM64(const X64Instruction&);
+        void execFldM80(const X64Instruction&);
+        void execFildM16(const X64Instruction&);
+        void execFildM32(const X64Instruction&);
+        void execFildM64(const X64Instruction&);
+        void execFstpST(const X64Instruction&);
+        void execFstpM32(const X64Instruction&);
+        void execFstpM64(const X64Instruction&);
+        void execFstpM80(const X64Instruction&);
+        void execFistpM16(const X64Instruction&);
+        void execFistpM32(const X64Instruction&);
+        void execFistpM64(const X64Instruction&);
+        void execFxchST(const X64Instruction&);
 
-        void exec(const Faddp<ST>&);
-        void exec(const Fsubp<ST>&);
-        void exec(const Fsubrp<ST>&);
-        void exec(const Fmul1<M32>&);
-        void exec(const Fmul1<M64>&);
-        void exec(const Fdiv<ST, ST>&);
-        void exec(const Fdivp<ST, ST>&);
+        void execFaddpST(const X64Instruction&);
+        void execFsubpST(const X64Instruction&);
+        void execFsubrpST(const X64Instruction&);
+        void execFmul1M32(const X64Instruction&);
+        void execFmul1M64(const X64Instruction&);
+        void execFdivSTST(const X64Instruction&);
+        void execFdivpSTST(const X64Instruction&);
 
-        void exec(const Fcomi<ST>&);
-        void exec(const Fucomi<ST>&);
-        void exec(const Frndint&);
+        void execFcomiST(const X64Instruction&);
+        void execFucomiST(const X64Instruction&);
+        void execFrndint(const X64Instruction&);
 
-        void exec(const Fcmov<ST>&);
+        void execFcmovST(const X64Instruction&);
 
-        void exec(const Fnstcw<M16>&);
-        void exec(const Fldcw<M16>&);
+        void execFnstcwM16(const X64Instruction&);
+        void execFldcwM16(const X64Instruction&);
 
-        void exec(const Fnstsw<R16>&);
-        void exec(const Fnstsw<M16>&);
+        void execFnstswR16(const X64Instruction&);
+        void execFnstswM16(const X64Instruction&);
 
-        void exec(const Fnstenv<M224>&);
-        void exec(const Fldenv<M224>&);
+        void execFnstenvM224(const X64Instruction&);
+        void execFldenvM224(const X64Instruction&);
 
-        void exec(const Emms&);
+        void execEmms(const X64Instruction&);
 
         void execMovssRSSEM32(const X64Instruction&);
         void execMovssM32RSSE(const X64Instruction&);

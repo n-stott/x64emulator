@@ -516,41 +516,41 @@ namespace x64 {
             case Insn::MOVD_RM64_RSSE: return execMovdRM64RSSE(insn);
             case Insn::MOVQ_RSSE_RM64: return execMovqRSSERM64(insn);
             case Insn::MOVQ_RM64_RSSE: return execMovqRM64RSSE(insn);
-            case Insn::FLDZ: return exec(Fldz{});
-            case Insn::FLD1: return exec(Fld1{});
-            case Insn::FLD_ST: return exec(Fld<ST>{insn.op0<ST>()});
-            case Insn::FLD_M32: return exec(Fld<M32>{insn.op0<M32>()});
-            case Insn::FLD_M64: return exec(Fld<M64>{insn.op0<M64>()});
-            case Insn::FLD_M80: return exec(Fld<M80>{insn.op0<M80>()});
-            case Insn::FILD_M16: return exec(Fild<M16>{insn.op0<M16>()});
-            case Insn::FILD_M32: return exec(Fild<M32>{insn.op0<M32>()});
-            case Insn::FILD_M64: return exec(Fild<M64>{insn.op0<M64>()});
-            case Insn::FSTP_ST: return exec(Fstp<ST>{insn.op0<ST>()});
-            case Insn::FSTP_M32: return exec(Fstp<M32>{insn.op0<M32>()});
-            case Insn::FSTP_M64: return exec(Fstp<M64>{insn.op0<M64>()});
-            case Insn::FSTP_M80: return exec(Fstp<M80>{insn.op0<M80>()});
-            case Insn::FISTP_M16: return exec(Fistp<M16>{insn.op0<M16>()});
-            case Insn::FISTP_M32: return exec(Fistp<M32>{insn.op0<M32>()});
-            case Insn::FISTP_M64: return exec(Fistp<M64>{insn.op0<M64>()});
-            case Insn::FXCH_ST: return exec(Fxch<ST>{insn.op0<ST>()});
-            case Insn::FADDP_ST: return exec(Faddp<ST>{insn.op0<ST>()});
-            case Insn::FSUBP_ST: return exec(Fsubp<ST>{insn.op0<ST>()});
-            case Insn::FSUBRP_ST: return exec(Fsubrp<ST>{insn.op0<ST>()});
-            case Insn::FMUL1_M32: return exec(Fmul1<M32>{insn.op0<M32>()});
-            case Insn::FMUL1_M64: return exec(Fmul1<M64>{insn.op0<M64>()});
-            case Insn::FDIV_ST_ST: return exec(Fdiv<ST, ST>{insn.op0<ST>(), insn.op1<ST>()});
-            case Insn::FDIVP_ST_ST: return exec(Fdivp<ST, ST>{insn.op0<ST>(), insn.op1<ST>()});
-            case Insn::FCOMI_ST: return exec(Fcomi<ST>{insn.op0<ST>()});
-            case Insn::FUCOMI_ST: return exec(Fucomi<ST>{insn.op0<ST>()});
-            case Insn::FRNDINT: return exec(Frndint{});
-            case Insn::FCMOV_ST: return exec(Fcmov<ST>{insn.op0<Cond>(), insn.op1<ST>()});
-            case Insn::FNSTCW_M16: return exec(Fnstcw<M16>{insn.op0<M16>()});
-            case Insn::FLDCW_M16: return exec(Fldcw<M16>{insn.op0<M16>()});
-            case Insn::FNSTSW_R16: return exec(Fnstsw<R16>{insn.op0<R16>()});
-            case Insn::FNSTSW_M16: return exec(Fnstsw<M16>{insn.op0<M16>()});
-            case Insn::FNSTENV_M224: return exec(Fnstenv<M224>{insn.op0<M224>()});
-            case Insn::FLDENV_M224: return exec(Fldenv<M224>{insn.op0<M224>()});
-            case Insn::EMMS: return exec(Emms{});
+            case Insn::FLDZ: return execFldz(insn);
+            case Insn::FLD1: return execFld1(insn);
+            case Insn::FLD_ST: return execFldST(insn);
+            case Insn::FLD_M32: return execFldM32(insn);
+            case Insn::FLD_M64: return execFldM64(insn);
+            case Insn::FLD_M80: return execFldM80(insn);
+            case Insn::FILD_M16: return execFildM16(insn);
+            case Insn::FILD_M32: return execFildM32(insn);
+            case Insn::FILD_M64: return execFildM64(insn);
+            case Insn::FSTP_ST: return execFstpST(insn);
+            case Insn::FSTP_M32: return execFstpM32(insn);
+            case Insn::FSTP_M64: return execFstpM64(insn);
+            case Insn::FSTP_M80: return execFstpM80(insn);
+            case Insn::FISTP_M16: return execFistpM16(insn);
+            case Insn::FISTP_M32: return execFistpM32(insn);
+            case Insn::FISTP_M64: return execFistpM64(insn);
+            case Insn::FXCH_ST: return execFxchST(insn);
+            case Insn::FADDP_ST: return execFaddpST(insn);
+            case Insn::FSUBP_ST: return execFsubpST(insn);
+            case Insn::FSUBRP_ST: return execFsubrpST(insn);
+            case Insn::FMUL1_M32: return execFmul1M32(insn);
+            case Insn::FMUL1_M64: return execFmul1M64(insn);
+            case Insn::FDIV_ST_ST: return execFdivSTST(insn);
+            case Insn::FDIVP_ST_ST: return execFdivpSTST(insn);
+            case Insn::FCOMI_ST: return execFcomiST(insn);
+            case Insn::FUCOMI_ST: return execFucomiST(insn);
+            case Insn::FRNDINT: return execFrndint(insn);
+            case Insn::FCMOV_ST: return execFcmovST(insn);
+            case Insn::FNSTCW_M16: return execFnstcwM16(insn);
+            case Insn::FLDCW_M16: return execFldcwM16(insn);
+            case Insn::FNSTSW_R16: return execFnstswR16(insn);
+            case Insn::FNSTSW_M16: return execFnstswM16(insn);
+            case Insn::FNSTENV_M224: return execFnstenvM224(insn);
+            case Insn::FLDENV_M224: return execFldenvM224(insn);
+            case Insn::EMMS: return execEmms(insn);
             case Insn::MOVSS_RSSE_M32: return execMovssRSSEM32(insn);
             case Insn::MOVSS_M32_RSSE: return execMovssM32RSSE(insn);
             case Insn::MOVSD_RSSE_M64: return execMovsdRSSEM64(insn);
@@ -2990,136 +2990,205 @@ namespace x64 {
         set(dst, narrow<u64, Xmm>(get(src)));
     }
 
-    void Cpu::exec(const Fldz&) { x87fpu_.push(f80::fromLongDouble(0.0)); }
-    void Cpu::exec(const Fld1&) { x87fpu_.push(f80::fromLongDouble(1.0)); }
-    void Cpu::exec(const Fld<ST>& ins) { x87fpu_.push(x87fpu_.st(ins.src)); }
-    void Cpu::exec(const Fld<M32>& ins) { x87fpu_.push(f80::bitcastFromU32(get(resolve(ins.src)))); }
-    void Cpu::exec(const Fld<M64>& ins) { x87fpu_.push(f80::bitcastFromU64(get(resolve(ins.src)))); }
-    void Cpu::exec(const Fld<M80>& ins) { x87fpu_.push(get(resolve(ins.src))); }
-
-    void Cpu::exec(const Fild<M16>& ins) { x87fpu_.push(f80::castFromI16((i16)get(resolve(ins.src)))); }
-    void Cpu::exec(const Fild<M32>& ins) { x87fpu_.push(f80::castFromI32((i32)get(resolve(ins.src)))); }
-    void Cpu::exec(const Fild<M64>& ins) { x87fpu_.push(f80::castFromI64((i64)get(resolve(ins.src)))); }
-
-    void Cpu::exec(const Fstp<ST>& ins) { x87fpu_.set(ins.dst, x87fpu_.st(ST::ST0)); x87fpu_.pop(); }
-    void Cpu::exec(const Fstp<M32>& ins) { set(resolve(ins.dst), f80::bitcastToU32(x87fpu_.st(ST::ST0))); x87fpu_.pop(); }
-    void Cpu::exec(const Fstp<M64>& ins) { set(resolve(ins.dst), f80::bitcastToU64(x87fpu_.st(ST::ST0))); x87fpu_.pop(); }
-    void Cpu::exec(const Fstp<M80>& ins) { set(resolve(ins.dst), x87fpu_.st(ST::ST0)); x87fpu_.pop(); }
-
-    void Cpu::exec(const Fistp<M16>& ins) { set(resolve(ins.dst), (u16)f80::castToI16(x87fpu_.st(ST::ST0))); x87fpu_.pop(); }
-    void Cpu::exec(const Fistp<M32>& ins) { set(resolve(ins.dst), (u32)f80::castToI32(x87fpu_.st(ST::ST0))); x87fpu_.pop(); }
-    void Cpu::exec(const Fistp<M64>& ins) { set(resolve(ins.dst), (u64)f80::castToI64(x87fpu_.st(ST::ST0))); x87fpu_.pop(); }
-
-    void Cpu::exec(const Fxch<ST>& ins) {
-        f80 src = x87fpu_.st(ins.src);
-        f80 dst = x87fpu_.st(ST::ST0);
-        x87fpu_.set(ins.src, dst);
-        x87fpu_.set(ST::ST0, src);
+    void Cpu::execFldz(const X64Instruction&) { x87fpu_.push(f80::fromLongDouble(0.0)); }
+    void Cpu::execFld1(const X64Instruction&) { x87fpu_.push(f80::fromLongDouble(1.0)); }
+    void Cpu::execFldST(const X64Instruction& ins) {
+        const auto& src = ins.op0<ST>();
+        x87fpu_.push(x87fpu_.st(src));
+    }
+    void Cpu::execFldM32(const X64Instruction& ins) {
+        const auto& src = ins.op0<M32>();
+        x87fpu_.push(f80::bitcastFromU32(get(resolve(src))));
+    }
+    void Cpu::execFldM64(const X64Instruction& ins) {
+        const auto& src = ins.op0<M64>();
+        x87fpu_.push(f80::bitcastFromU64(get(resolve(src))));
+    }
+    void Cpu::execFldM80(const X64Instruction& ins) {
+        const auto& src = ins.op0<M80>();
+        x87fpu_.push(get(resolve(src)));
     }
 
-    void Cpu::exec(const Faddp<ST>& ins) {
-        f80 top = x87fpu_.st(ST::ST0);
-        f80 dst = x87fpu_.st(ins.dst);
-        x87fpu_.set(ins.dst, Impl::fadd(top, dst, &x87fpu_)); // NOLINT(readability-suspicious-call-argument)
+    void Cpu::execFildM16(const X64Instruction& ins) {
+        const auto& src = ins.op0<M16>();
+        x87fpu_.push(f80::castFromI16((i16)get(resolve(src))));
+    }
+    void Cpu::execFildM32(const X64Instruction& ins) {
+        const auto& src = ins.op0<M32>();
+        x87fpu_.push(f80::castFromI32((i32)get(resolve(src))));
+    }
+    void Cpu::execFildM64(const X64Instruction& ins) {
+        const auto& src = ins.op0<M64>();
+        x87fpu_.push(f80::castFromI64((i64)get(resolve(src))));
+    }
+
+    void Cpu::execFstpST(const X64Instruction& ins) {
+        const auto& dst = ins.op0<ST>();
+        x87fpu_.set(dst, x87fpu_.st(ST::ST0));
+        x87fpu_.pop();
+    }
+    void Cpu::execFstpM32(const X64Instruction& ins) {
+        const auto& dst = ins.op0<M32>();
+        set(resolve(dst), f80::bitcastToU32(x87fpu_.st(ST::ST0)));
+        x87fpu_.pop();
+    }
+    void Cpu::execFstpM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<M64>();
+        set(resolve(dst), f80::bitcastToU64(x87fpu_.st(ST::ST0)));
+        x87fpu_.pop();
+    }
+    void Cpu::execFstpM80(const X64Instruction& ins) {
+        const auto& dst = ins.op0<M80>();
+        set(resolve(dst), x87fpu_.st(ST::ST0));
         x87fpu_.pop();
     }
 
-    void Cpu::exec(const Fsubp<ST>& ins) {
-        f80 top = x87fpu_.st(ST::ST0);
-        f80 dst = x87fpu_.st(ins.dst);
-        x87fpu_.set(ins.dst, Impl::fsub(top, dst, &x87fpu_)); // NOLINT(readability-suspicious-call-argument)
+    void Cpu::execFistpM16(const X64Instruction& ins) {
+        const auto& dst = ins.op0<M16>();
+        set(resolve(dst), (u16)f80::castToI16(x87fpu_.st(ST::ST0)));
+        x87fpu_.pop();
+    }
+    void Cpu::execFistpM32(const X64Instruction& ins) {
+        const auto& dst = ins.op0<M32>();
+        set(resolve(dst), (u32)f80::castToI32(x87fpu_.st(ST::ST0)));
+        x87fpu_.pop();
+    }
+    void Cpu::execFistpM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<M64>();
+        set(resolve(dst), (u64)f80::castToI64(x87fpu_.st(ST::ST0)));
         x87fpu_.pop();
     }
 
-    void Cpu::exec(const Fsubrp<ST>& ins) {
-        f80 top = x87fpu_.st(ST::ST0);
-        f80 dst = x87fpu_.st(ins.dst);
-        x87fpu_.set(ins.dst, Impl::fsub(top, dst, &x87fpu_)); // NOLINT(readability-suspicious-call-argument)
+    void Cpu::execFxchST(const X64Instruction& ins) {
+        const auto& src = ins.op0<ST>();
+        f80 srcValue = x87fpu_.st(src);
+        f80 dstValue = x87fpu_.st(ST::ST0);
+        x87fpu_.set(src, dstValue);
+        x87fpu_.set(ST::ST0, srcValue);
+    }
+
+    void Cpu::execFaddpST(const X64Instruction& ins) {
+        const auto& dst = ins.op0<ST>();
+        f80 topValue = x87fpu_.st(ST::ST0);
+        f80 dstValue = x87fpu_.st(dst);
+        x87fpu_.set(dst, Impl::fadd(topValue, dstValue, &x87fpu_)); // NOLINT(readability-suspicious-call-argument)
         x87fpu_.pop();
     }
 
-    void Cpu::exec(const Fmul1<M32>& ins) {
-        f80 top = x87fpu_.st(ST::ST0);
-        f80 src = f80::bitcastFromU32(get(resolve(ins.src)));
-        x87fpu_.set(ST::ST0, Impl::fmul(top, src, &x87fpu_));
-    }
-
-    void Cpu::exec(const Fmul1<M64>& ins) {
-        f80 top = x87fpu_.st(ST::ST0);
-        f80 src = f80::bitcastFromU64(get(resolve(ins.src)));
-        x87fpu_.set(ST::ST0, Impl::fmul(top, src, &x87fpu_));
-    }
-
-    void Cpu::exec(const Fdiv<ST, ST>& ins) {
-        f80 dst = x87fpu_.st(ins.dst);
-        f80 src = x87fpu_.st(ins.src);
-        x87fpu_.set(ins.dst, Impl::fdiv(dst, src, &x87fpu_));
-    }
-
-    void Cpu::exec(const Fdivp<ST, ST>& ins) {
-        f80 dst = x87fpu_.st(ins.dst);
-        f80 src = x87fpu_.st(ins.src);
-        f80 res = Impl::fdiv(dst, src, &x87fpu_);
-        x87fpu_.set(ins.dst, res);
+    void Cpu::execFsubpST(const X64Instruction& ins) {
+        const auto& dst = ins.op0<ST>();
+        f80 topValue = x87fpu_.st(ST::ST0);
+        f80 dstValue = x87fpu_.st(dst);
+        x87fpu_.set(dst, Impl::fsub(topValue, dstValue, &x87fpu_)); // NOLINT(readability-suspicious-call-argument)
         x87fpu_.pop();
     }
 
-    void Cpu::exec(const Fcomi<ST>& ins) {
-        f80 dst = x87fpu_.st(ST::ST0);
-        f80 src = x87fpu_.st(ins.src);
-        Impl::fcomi(dst, src, &x87fpu_, &flags_);
+    void Cpu::execFsubrpST(const X64Instruction& ins) {
+        const auto& dst = ins.op0<ST>();
+        f80 topValue = x87fpu_.st(ST::ST0);
+        f80 dstValue = x87fpu_.st(dst);
+        x87fpu_.set(dst, Impl::fsub(topValue, dstValue, &x87fpu_)); // NOLINT(readability-suspicious-call-argument)
+        x87fpu_.pop();
     }
 
-    void Cpu::exec(const Fucomi<ST>& ins) {
-        f80 dst = x87fpu_.st(ST::ST0);
-        f80 src = x87fpu_.st(ins.src);
-        Impl::fucomi(dst, src, &x87fpu_, &flags_);
+    void Cpu::execFmul1M32(const X64Instruction& ins) {
+        const auto& src = ins.op0<M32>();
+        f80 topValue = x87fpu_.st(ST::ST0);
+        f80 srcValue = f80::bitcastFromU32(get(resolve(src)));
+        x87fpu_.set(ST::ST0, Impl::fmul(topValue, srcValue, &x87fpu_));
     }
 
-    void Cpu::exec(const Frndint&) {
-        f80 dst = x87fpu_.st(ST::ST0);
-        x87fpu_.set(ST::ST0, Impl::frndint(dst, &x87fpu_));
+    void Cpu::execFmul1M64(const X64Instruction& ins) {
+        const auto& src = ins.op0<M64>();
+        f80 topValue = x87fpu_.st(ST::ST0);
+        f80 srcValue = f80::bitcastFromU64(get(resolve(src)));
+        x87fpu_.set(ST::ST0, Impl::fmul(topValue, srcValue, &x87fpu_));
     }
 
-    void Cpu::exec(const Fcmov<ST>& ins) {
-        if(flags_.matches(ins.cond)) {
-            x87fpu_.set(ST::ST0, x87fpu_.st(ins.src));
+    void Cpu::execFdivSTST(const X64Instruction& ins) {
+        const auto& dst = ins.op0<ST>();
+        const auto& src = ins.op1<ST>();
+        f80 dstValue = x87fpu_.st(dst);
+        f80 srcValue = x87fpu_.st(src);
+        x87fpu_.set(dst, Impl::fdiv(dstValue, srcValue, &x87fpu_));
+    }
+
+    void Cpu::execFdivpSTST(const X64Instruction& ins) {
+        const auto& dst = ins.op0<ST>();
+        const auto& src = ins.op1<ST>();
+        f80 dstValue = x87fpu_.st(dst);
+        f80 srcValue = x87fpu_.st(src);
+        f80 res = Impl::fdiv(dstValue, srcValue, &x87fpu_);
+        x87fpu_.set(dst, res);
+        x87fpu_.pop();
+    }
+
+    void Cpu::execFcomiST(const X64Instruction& ins) {
+        const auto& src = ins.op0<ST>();
+        f80 dstValue = x87fpu_.st(ST::ST0);
+        f80 srcValue = x87fpu_.st(src);
+        Impl::fcomi(dstValue, srcValue, &x87fpu_, &flags_);
+    }
+
+    void Cpu::execFucomiST(const X64Instruction& ins) {
+        const auto& src = ins.op0<ST>();
+        f80 dstValue = x87fpu_.st(ST::ST0);
+        f80 srcValue = x87fpu_.st(src);
+        Impl::fucomi(dstValue, srcValue, &x87fpu_, &flags_);
+    }
+
+    void Cpu::execFrndint(const X64Instruction&) {
+        f80 dstValue = x87fpu_.st(ST::ST0);
+        x87fpu_.set(ST::ST0, Impl::frndint(dstValue, &x87fpu_));
+    }
+
+    void Cpu::execFcmovST(const X64Instruction& ins) {
+        const auto& cond = ins.op0<Cond>();
+        const auto& src = ins.op0<ST>();
+        if(flags_.matches(cond)) {
+            x87fpu_.set(ST::ST0, x87fpu_.st(src));
         }
     }
 
-    void Cpu::exec(const Fnstcw<M16>& ins) {
-        set(resolve(ins.dst), x87fpu_.control().asWord());
+    void Cpu::execFnstcwM16(const X64Instruction& ins) {
+        const auto& dst = ins.op0<M16>();
+        set(resolve(dst), x87fpu_.control().asWord());
     }
 
-    void Cpu::exec(const Fldcw<M16>& ins) {
-        x87fpu_.control() = X87Control::fromWord(get(resolve(ins.src)));
+    void Cpu::execFldcwM16(const X64Instruction& ins) {
+        const auto& src = ins.op0<M16>();
+        x87fpu_.control() = X87Control::fromWord(get(resolve(src)));
     }
 
-    void Cpu::exec(const Fnstsw<R16>& ins) {
-        set(ins.dst, x87fpu_.status().asWord());
+    void Cpu::execFnstswR16(const X64Instruction& ins) {
+        const auto& dst = ins.op0<R16>();
+        set(dst, x87fpu_.status().asWord());
     }
 
-    void Cpu::exec(const Fnstsw<M16>& ins) {
-        set(resolve(ins.dst), x87fpu_.status().asWord());
+    void Cpu::execFnstswM16(const X64Instruction& ins) {
+        const auto& dst = ins.op0<M16>();
+        set(resolve(dst), x87fpu_.status().asWord());
     }
 
-    void Cpu::exec(const Fnstenv<M224>& ins) {
-        Ptr224 dst224 = resolve(ins.dst);
-        Ptr32 dst { dst224.address() };
-        set(dst++, (u32)x87fpu_.control().asWord());
-        set(dst++, (u32)x87fpu_.status().asWord());
-        set(dst++, (u32)x87fpu_.tag().asWord());
+    void Cpu::execFnstenvM224(const X64Instruction& ins) {
+        const auto& dst = ins.op0<M224>();
+        Ptr224 dst224 = resolve(dst);
+        Ptr32 dstPtr { dst224.address() };
+        set(dstPtr++, (u32)x87fpu_.control().asWord());
+        set(dstPtr++, (u32)x87fpu_.status().asWord());
+        set(dstPtr++, (u32)x87fpu_.tag().asWord());
     }
 
-    void Cpu::exec(const Fldenv<M224>& ins) {
-        Ptr224 src224 = resolve(ins.src);
-        Ptr32 src { src224.address() };
-        x87fpu_.control() = X87Control::fromWord((u16)get(src++));
-        x87fpu_.status() = X87Status::fromWord((u16)get(src++));
-        x87fpu_.tag() = X87Tag::fromWord((u16)get(src++));
+    void Cpu::execFldenvM224(const X64Instruction& ins) {
+        const auto& src = ins.op0<M224>();
+        Ptr224 src224 = resolve(src);
+        Ptr32 srcPtr { src224.address() };
+        x87fpu_.control() = X87Control::fromWord((u16)get(srcPtr++));
+        x87fpu_.status() = X87Status::fromWord((u16)get(srcPtr++));
+        x87fpu_.tag() = X87Tag::fromWord((u16)get(srcPtr++));
     }
 
-    void Cpu::exec(const Emms&) {
+    void Cpu::execEmms(const X64Instruction&) {
         x87fpu_.tag() = X87Tag::fromWord(0xFFFF);
     }
 
