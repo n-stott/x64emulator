@@ -673,56 +673,56 @@ namespace x64 {
             case Insn::PCMPGTD_RSSE_RMSSE: return execPcmpgtdRSSERMSSE(insn);
             case Insn::PCMPGTQ_RSSE_RMSSE: return execPcmpgtqRSSERMSSE(insn);
             case Insn::PMOVMSKB_R32_RSSE: return execPmovmskbR32RSSE(insn);
-            case Insn::PADDB_RSSE_RMSSE: return exec(Paddb<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::PADDW_RSSE_RMSSE: return exec(Paddw<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::PADDD_RSSE_RMSSE: return exec(Paddd<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::PADDQ_RSSE_RMSSE: return exec(Paddq<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::PSUBB_RSSE_RMSSE: return exec(Psubb<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::PSUBW_RSSE_RMSSE: return exec(Psubw<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::PSUBD_RSSE_RMSSE: return exec(Psubd<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::PSUBQ_RSSE_RMSSE: return exec(Psubq<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::PMULHUW_RSSE_RMSSE: return exec(Pmulhuw<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::PMULHW_RSSE_RMSSE: return exec(Pmulhw<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::PMULLW_RSSE_RMSSE: return exec(Pmullw<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::PMULUDQ_RSSE_RMSSE: return exec(Pmuludq<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::PMADDWD_RSSE_RMSSE: return exec(Pmaddwd<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::PSADBW_RSSE_RMSSE: return exec(Psadbw<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::PAVGB_RSSE_RMSSE: return exec(Pavgb<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::PAVGW_RSSE_RMSSE: return exec(Pavgw<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::PMAXUB_RSSE_RMSSE: return exec(Pmaxub<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::PMINUB_RSSE_RMSSE: return exec(Pminub<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::PTEST_RSSE_RMSSE: return exec(Ptest<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::PSRAW_RSSE_IMM: return exec(Psraw<RSSE, Imm>{insn.op0<RSSE>(), insn.op1<Imm>()});
-            case Insn::PSRAD_RSSE_IMM: return exec(Psrad<RSSE, Imm>{insn.op0<RSSE>(), insn.op1<Imm>()});
-            case Insn::PSRAQ_RSSE_IMM: return exec(Psraq<RSSE, Imm>{insn.op0<RSSE>(), insn.op1<Imm>()});
-            case Insn::PSLLW_RSSE_IMM: return exec(Psllw<RSSE, Imm>{insn.op0<RSSE>(), insn.op1<Imm>()});
-            case Insn::PSLLW_RSSE_RMSSE: return exec(Psllw<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::PSLLD_RSSE_IMM: return exec(Pslld<RSSE, Imm>{insn.op0<RSSE>(), insn.op1<Imm>()});
-            case Insn::PSLLD_RSSE_RMSSE: return exec(Pslld<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::PSLLQ_RSSE_IMM: return exec(Psllq<RSSE, Imm>{insn.op0<RSSE>(), insn.op1<Imm>()});
-            case Insn::PSLLQ_RSSE_RMSSE: return exec(Psllq<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::PSRLW_RSSE_IMM: return exec(Psrlw<RSSE, Imm>{insn.op0<RSSE>(), insn.op1<Imm>()});
-            case Insn::PSRLW_RSSE_RMSSE: return exec(Psrlw<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::PSRLD_RSSE_IMM: return exec(Psrld<RSSE, Imm>{insn.op0<RSSE>(), insn.op1<Imm>()});
-            case Insn::PSRLD_RSSE_RMSSE: return exec(Psrld<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::PSRLQ_RSSE_IMM: return exec(Psrlq<RSSE, Imm>{insn.op0<RSSE>(), insn.op1<Imm>()});
-            case Insn::PSRLQ_RSSE_RMSSE: return exec(Psrlq<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::PSLLDQ_RSSE_IMM: return exec(Pslldq<RSSE, Imm>{insn.op0<RSSE>(), insn.op1<Imm>()});
-            case Insn::PSRLDQ_RSSE_IMM: return exec(Psrldq<RSSE, Imm>{insn.op0<RSSE>(), insn.op1<Imm>()});
-            case Insn::PCMPISTRI_RSSE_RMSSE_IMM: return exec(Pcmpistri<RSSE, RMSSE, Imm>{insn.op0<RSSE>(), insn.op1<RMSSE>(), insn.op2<Imm>()});
-            case Insn::PACKUSWB_RSSE_RMSSE: return exec(Packuswb<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::PACKUSDW_RSSE_RMSSE: return exec(Packusdw<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::PACKSSWB_RSSE_RMSSE: return exec(Packsswb<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::PACKSSDW_RSSE_RMSSE: return exec(Packssdw<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::UNPCKHPS_RSSE_RMSSE: return exec(Unpckhps<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::UNPCKHPD_RSSE_RMSSE: return exec(Unpckhpd<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::UNPCKLPS_RSSE_RMSSE: return exec(Unpcklps<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::UNPCKLPD_RSSE_RMSSE: return exec(Unpcklpd<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
+            case Insn::PADDB_RSSE_RMSSE: return execPaddbRSSERMSSE(insn);
+            case Insn::PADDW_RSSE_RMSSE: return execPaddwRSSERMSSE(insn);
+            case Insn::PADDD_RSSE_RMSSE: return execPadddRSSERMSSE(insn);
+            case Insn::PADDQ_RSSE_RMSSE: return execPaddqRSSERMSSE(insn);
+            case Insn::PSUBB_RSSE_RMSSE: return execPsubbRSSERMSSE(insn);
+            case Insn::PSUBW_RSSE_RMSSE: return execPsubwRSSERMSSE(insn);
+            case Insn::PSUBD_RSSE_RMSSE: return execPsubdRSSERMSSE(insn);
+            case Insn::PSUBQ_RSSE_RMSSE: return execPsubqRSSERMSSE(insn);
+            case Insn::PMULHUW_RSSE_RMSSE: return execPmulhuwRSSERMSSE(insn);
+            case Insn::PMULHW_RSSE_RMSSE: return execPmulhwRSSERMSSE(insn);
+            case Insn::PMULLW_RSSE_RMSSE: return execPmullwRSSERMSSE(insn);
+            case Insn::PMULUDQ_RSSE_RMSSE: return execPmuludqRSSERMSSE(insn);
+            case Insn::PMADDWD_RSSE_RMSSE: return execPmaddwdRSSERMSSE(insn);
+            case Insn::PSADBW_RSSE_RMSSE: return execPsadbwRSSERMSSE(insn);
+            case Insn::PAVGB_RSSE_RMSSE: return execPavgbRSSERMSSE(insn);
+            case Insn::PAVGW_RSSE_RMSSE: return execPavgwRSSERMSSE(insn);
+            case Insn::PMAXUB_RSSE_RMSSE: return execPmaxubRSSERMSSE(insn);
+            case Insn::PMINUB_RSSE_RMSSE: return execPminubRSSERMSSE(insn);
+            case Insn::PTEST_RSSE_RMSSE: return execPtestRSSERMSSE(insn);
+            case Insn::PSRAW_RSSE_IMM: return execPsrawRSSEImm(insn);
+            case Insn::PSRAD_RSSE_IMM: return execPsradRSSEImm(insn);
+            case Insn::PSRAQ_RSSE_IMM: return execPsraqRSSEImm(insn);
+            case Insn::PSLLW_RSSE_IMM: return execPsllwRSSEImm(insn);
+            case Insn::PSLLW_RSSE_RMSSE: return execPsllwRSSERMSSE(insn);
+            case Insn::PSLLD_RSSE_IMM: return execPslldRSSEImm(insn);
+            case Insn::PSLLD_RSSE_RMSSE: return execPslldRSSERMSSE(insn);
+            case Insn::PSLLQ_RSSE_IMM: return execPsllqRSSEImm(insn);
+            case Insn::PSLLQ_RSSE_RMSSE: return execPsllqRSSERMSSE(insn);
+            case Insn::PSRLW_RSSE_IMM: return execPsrlwRSSEImm(insn);
+            case Insn::PSRLW_RSSE_RMSSE: return execPsrlwRSSERMSSE(insn);
+            case Insn::PSRLD_RSSE_IMM: return execPsrldRSSEImm(insn);
+            case Insn::PSRLD_RSSE_RMSSE: return execPsrldRSSERMSSE(insn);
+            case Insn::PSRLQ_RSSE_IMM: return execPsrlqRSSEImm(insn);
+            case Insn::PSRLQ_RSSE_RMSSE: return execPsrlqRSSERMSSE(insn);
+            case Insn::PSLLDQ_RSSE_IMM: return execPslldqRSSEImm(insn);
+            case Insn::PSRLDQ_RSSE_IMM: return execPsrldqRSSEImm(insn);
+            case Insn::PCMPISTRI_RSSE_RMSSE_IMM: return execPcmpistriRSSERMSSEImm(insn);
+            case Insn::PACKUSWB_RSSE_RMSSE: return execPackuswbRSSERMSSE(insn);
+            case Insn::PACKUSDW_RSSE_RMSSE: return execPackusdwRSSERMSSE(insn);
+            case Insn::PACKSSWB_RSSE_RMSSE: return execPacksswbRSSERMSSE(insn);
+            case Insn::PACKSSDW_RSSE_RMSSE: return execPackssdwRSSERMSSE(insn);
+            case Insn::UNPCKHPS_RSSE_RMSSE: return execUnpckhpsRSSERMSSE(insn);
+            case Insn::UNPCKHPD_RSSE_RMSSE: return execUnpckhpdRSSERMSSE(insn);
+            case Insn::UNPCKLPS_RSSE_RMSSE: return execUnpcklpsRSSERMSSE(insn);
+            case Insn::UNPCKLPD_RSSE_RMSSE: return execUnpcklpdRSSERMSSE(insn);
             case Insn::MOVMSKPS_R32_RSSE: return execMovmskpsR32RSSE(insn);
             case Insn::MOVMSKPS_R64_RSSE: return execMovmskpsR64RSSE(insn);
             case Insn::MOVMSKPD_R32_RSSE: return execMovmskpdR32RSSE(insn);
             case Insn::MOVMSKPD_R64_RSSE: return execMovmskpdR64RSSE(insn);
-            case Insn::RDTSC: return exec(Rdtsc{});
+            case Insn::RDTSC: return execRdtsc(insn);
             case Insn::CPUID: return execCpuid(insn);
             case Insn::XGETBV: return execXgetbv(insn);
             case Insn::FXSAVE_M64: return exec(Fxsave<M64>{insn.op0<M64>()});
@@ -3955,110 +3955,154 @@ namespace x64 {
         set(dst, zeroExtend<u32, u16>(res));
     }
 
-    void Cpu::exec(const Paddb<RSSE, RMSSE>& ins) {
-        u128 res = Impl::paddb(get(ins.dst), get(ins.src));
-        set(ins.dst, res);
+    void Cpu::execPaddbRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        u128 res = Impl::paddb(get(dst), get(src));
+        set(dst, res);
     }
 
-    void Cpu::exec(const Paddw<RSSE, RMSSE>& ins) {
-        u128 res = Impl::paddw(get(ins.dst), get(ins.src));
-        set(ins.dst, res);
+    void Cpu::execPaddwRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        u128 res = Impl::paddw(get(dst), get(src));
+        set(dst, res);
     }
 
-    void Cpu::exec(const Paddd<RSSE, RMSSE>& ins) {
-        u128 res = Impl::paddd(get(ins.dst), get(ins.src));
-        set(ins.dst, res);
+    void Cpu::execPadddRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        u128 res = Impl::paddd(get(dst), get(src));
+        set(dst, res);
     }
 
-    void Cpu::exec(const Paddq<RSSE, RMSSE>& ins) {
-        u128 res = Impl::paddq(get(ins.dst), get(ins.src));
-        set(ins.dst, res);
+    void Cpu::execPaddqRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        u128 res = Impl::paddq(get(dst), get(src));
+        set(dst, res);
     }
 
-    void Cpu::exec(const Psubb<RSSE, RMSSE>& ins) {
-        u128 res = Impl::psubb(get(ins.dst), get(ins.src));
-        set(ins.dst, res);
+    void Cpu::execPsubbRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        u128 res = Impl::psubb(get(dst), get(src));
+        set(dst, res);
     }
 
-    void Cpu::exec(const Psubw<RSSE, RMSSE>& ins) {
-        u128 res = Impl::psubw(get(ins.dst), get(ins.src));
-        set(ins.dst, res);
+    void Cpu::execPsubwRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        u128 res = Impl::psubw(get(dst), get(src));
+        set(dst, res);
     }
 
-    void Cpu::exec(const Psubd<RSSE, RMSSE>& ins) {
-        u128 res = Impl::psubd(get(ins.dst), get(ins.src));
-        set(ins.dst, res);
+    void Cpu::execPsubdRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        u128 res = Impl::psubd(get(dst), get(src));
+        set(dst, res);
     }
 
-    void Cpu::exec(const Psubq<RSSE, RMSSE>& ins) {
-        u128 res = Impl::psubq(get(ins.dst), get(ins.src));
-        set(ins.dst, res);
+    void Cpu::execPsubqRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        u128 res = Impl::psubq(get(dst), get(src));
+        set(dst, res);
     }
 
-    void Cpu::exec(const Pmulhuw<RSSE, RMSSE>& ins) {
-        u128 res = Impl::pmulhuw(get(ins.dst), get(ins.src));
-        set(ins.dst, res);
+    void Cpu::execPmulhuwRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        u128 res = Impl::pmulhuw(get(dst), get(src));
+        set(dst, res);
     }
 
-    void Cpu::exec(const Pmulhw<RSSE, RMSSE>& ins) {
-        u128 res = Impl::pmulhw(get(ins.dst), get(ins.src));
-        set(ins.dst, res);
+    void Cpu::execPmulhwRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        u128 res = Impl::pmulhw(get(dst), get(src));
+        set(dst, res);
     }
 
-    void Cpu::exec(const Pmullw<RSSE, RMSSE>& ins) {
-        u128 res = Impl::pmullw(get(ins.dst), get(ins.src));
-        set(ins.dst, res);
+    void Cpu::execPmullwRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        u128 res = Impl::pmullw(get(dst), get(src));
+        set(dst, res);
     }
 
-    void Cpu::exec(const Pmuludq<RSSE, RMSSE>& ins) {
-        u128 res = Impl::pmuludq(get(ins.dst), get(ins.src));
-        set(ins.dst, res);
+    void Cpu::execPmuludqRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        u128 res = Impl::pmuludq(get(dst), get(src));
+        set(dst, res);
     }
 
-    void Cpu::exec(const Pmaddwd<RSSE, RMSSE>& ins) {
-        u128 res = Impl::pmaddwd(get(ins.dst), get(ins.src));
-        set(ins.dst, res);
+    void Cpu::execPmaddwdRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        u128 res = Impl::pmaddwd(get(dst), get(src));
+        set(dst, res);
     }
 
-    void Cpu::exec(const Psadbw<RSSE, RMSSE>& ins) {
-        u128 res = Impl::psadbw(get(ins.dst), get(ins.src));
-        set(ins.dst, res);
+    void Cpu::execPsadbwRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        u128 res = Impl::psadbw(get(dst), get(src));
+        set(dst, res);
     }
 
-    void Cpu::exec(const Pavgb<RSSE, RMSSE>& ins) {
-        u128 res = Impl::pavgb(get(ins.dst), get(ins.src));
-        set(ins.dst, res);
+    void Cpu::execPavgbRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        u128 res = Impl::pavgb(get(dst), get(src));
+        set(dst, res);
     }
 
-    void Cpu::exec(const Pavgw<RSSE, RMSSE>& ins) {
-        u128 res = Impl::pavgw(get(ins.dst), get(ins.src));
-        set(ins.dst, res);
+    void Cpu::execPavgwRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        u128 res = Impl::pavgw(get(dst), get(src));
+        set(dst, res);
     }
 
-    void Cpu::exec(const Pmaxub<RSSE, RMSSE>& ins) {
-        u128 res = Impl::pmaxub(get(ins.dst), get(ins.src));
-        set(ins.dst, res);
+    void Cpu::execPmaxubRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        u128 res = Impl::pmaxub(get(dst), get(src));
+        set(dst, res);
     }
 
-    void Cpu::exec(const Pminub<RSSE, RMSSE>& ins) {
-        u128 res = Impl::pminub(get(ins.dst), get(ins.src));
-        set(ins.dst, res);
+    void Cpu::execPminubRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        u128 res = Impl::pminub(get(dst), get(src));
+        set(dst, res);
     }
 
-    void Cpu::exec(const Ptest<RSSE, RMSSE>& ins) {
-        Impl::ptest(get(ins.dst), get(ins.src), &flags_);
+    void Cpu::execPtestRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        Impl::ptest(get(dst), get(src), &flags_);
     }
 
-    void Cpu::exec(const Psraw<RSSE, Imm>& ins) {
-        set(ins.dst, Impl::psraw(get(ins.dst), get<u8>(ins.src)));
+    void Cpu::execPsrawRSSEImm(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<Imm>();
+        set(dst, Impl::psraw(get(dst), get<u8>(src)));
     }
 
-    void Cpu::exec(const Psrad<RSSE, Imm>& ins) {
-        set(ins.dst, Impl::psrad(get(ins.dst), get<u8>(ins.src)));
+    void Cpu::execPsradRSSEImm(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<Imm>();
+        set(dst, Impl::psrad(get(dst), get<u8>(src)));
     }
 
-    void Cpu::exec(const Psraq<RSSE, Imm>& ins) {
-        set(ins.dst, Impl::psraq(get(ins.dst), get<u8>(ins.src)));
+    void Cpu::execPsraqRSSEImm(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<Imm>();
+        set(dst, Impl::psraq(get(dst), get<u8>(src)));
     }
 
     static u8 shiftFromU128(u128 count) {
@@ -4069,98 +4113,145 @@ namespace x64 {
         }
     }
 
-    void Cpu::exec(const Psllw<RSSE, Imm>& ins) {
-        set(ins.dst, Impl::psllw(get(ins.dst), get<u8>(ins.src)));
+    void Cpu::execPsllwRSSEImm(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<Imm>();
+        set(dst, Impl::psllw(get(dst), get<u8>(src)));
     }
-    void Cpu::exec(const Psllw<RSSE, RMSSE>& ins) {
-        auto shift = shiftFromU128(get(ins.src));
-        set(ins.dst, Impl::psllw(get(ins.dst), shift));
-    }
-
-    void Cpu::exec(const Pslld<RSSE, Imm>& ins) {
-        set(ins.dst, Impl::pslld(get(ins.dst), get<u8>(ins.src)));
-    }
-    void Cpu::exec(const Pslld<RSSE, RMSSE>& ins) {
-        auto shift = shiftFromU128(get(ins.src));
-        set(ins.dst, Impl::pslld(get(ins.dst), shift));
+    void Cpu::execPsllwRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        auto shift = shiftFromU128(get(src));
+        set(dst, Impl::psllw(get(dst), shift));
     }
 
-    void Cpu::exec(const Psllq<RSSE, Imm>& ins) {
-        set(ins.dst, Impl::psllq(get(ins.dst), get<u8>(ins.src)));
+    void Cpu::execPslldRSSEImm(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<Imm>();
+        set(dst, Impl::pslld(get(dst), get<u8>(src)));
     }
-    void Cpu::exec(const Psllq<RSSE, RMSSE>& ins) {
-        auto shift = shiftFromU128(get(ins.src));
-        set(ins.dst, Impl::psllq(get(ins.dst), shift));
-    }
-
-    void Cpu::exec(const Psrlw<RSSE, Imm>& ins) {
-        set(ins.dst, Impl::psrlw(get(ins.dst), get<u8>(ins.src)));
-    }
-    void Cpu::exec(const Psrlw<RSSE, RMSSE>& ins) {
-        auto shift = shiftFromU128(get(ins.src));
-        set(ins.dst, Impl::psrlw(get(ins.dst), shift));
+    void Cpu::execPslldRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        auto shift = shiftFromU128(get(src));
+        set(dst, Impl::pslld(get(dst), shift));
     }
 
-    void Cpu::exec(const Psrld<RSSE, Imm>& ins) {
-        set(ins.dst, Impl::psrld(get(ins.dst), get<u8>(ins.src)));
+    void Cpu::execPsllqRSSEImm(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<Imm>();
+        set(dst, Impl::psllq(get(dst), get<u8>(src)));
     }
-    void Cpu::exec(const Psrld<RSSE, RMSSE>& ins) {
-        auto shift = shiftFromU128(get(ins.src));
-        set(ins.dst, Impl::psrld(get(ins.dst), shift));
-    }
-
-    void Cpu::exec(const Psrlq<RSSE, Imm>& ins) {
-        set(ins.dst, Impl::psrlq(get(ins.dst), get<u8>(ins.src)));
-    }
-    void Cpu::exec(const Psrlq<RSSE, RMSSE>& ins) {
-        auto shift = shiftFromU128(get(ins.src));
-        set(ins.dst, Impl::psrlq(get(ins.dst), shift));
+    void Cpu::execPsllqRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        auto shift = shiftFromU128(get(src));
+        set(dst, Impl::psllq(get(dst), shift));
     }
 
-    void Cpu::exec(const Pslldq<RSSE, Imm>& ins) {
-        set(ins.dst, Impl::pslldq(get(ins.dst), get<u8>(ins.src)));
+    void Cpu::execPsrlwRSSEImm(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<Imm>();
+        set(dst, Impl::psrlw(get(dst), get<u8>(src)));
+    }
+    void Cpu::execPsrlwRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        auto shift = shiftFromU128(get(src));
+        set(dst, Impl::psrlw(get(dst), shift));
     }
 
-    void Cpu::exec(const Psrldq<RSSE, Imm>& ins) {
-        set(ins.dst, Impl::psrldq(get(ins.dst), get<u8>(ins.src)));
+    void Cpu::execPsrldRSSEImm(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<Imm>();
+        set(dst, Impl::psrld(get(dst), get<u8>(src)));
+    }
+    void Cpu::execPsrldRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        auto shift = shiftFromU128(get(src));
+        set(dst, Impl::psrld(get(dst), shift));
     }
 
-    void Cpu::exec(const Pcmpistri<RSSE, RMSSE, Imm>& ins) {
+    void Cpu::execPsrlqRSSEImm(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<Imm>();
+        set(dst, Impl::psrlq(get(dst), get<u8>(src)));
+    }
+    void Cpu::execPsrlqRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        auto shift = shiftFromU128(get(src));
+        set(dst, Impl::psrlq(get(dst), shift));
+    }
+
+    void Cpu::execPslldqRSSEImm(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<Imm>();
+        set(dst, Impl::pslldq(get(dst), get<u8>(src)));
+    }
+
+    void Cpu::execPsrldqRSSEImm(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<Imm>();
+        set(dst, Impl::psrldq(get(dst), get<u8>(src)));
+    }
+
+    void Cpu::execPcmpistriRSSERMSSEImm(const X64Instruction& ins) {
         verify(false, "Pcmpistri not implemented");
-        u32 res = Impl::pcmpistri(get(ins.dst), get(ins.src), get<u8>(ins.control), &flags_);
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        const auto& control = ins.op2<Imm>();
+        u32 res = Impl::pcmpistri(get(dst), get(src), get<u8>(control), &flags_);
         set(R32::ECX, res);
     }
 
-    void Cpu::exec(const Packuswb<RSSE, RMSSE>& ins) {
-        set(ins.dst, Impl::packuswb(get(ins.dst), get(ins.src)));
+    void Cpu::execPackuswbRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        set(dst, Impl::packuswb(get(dst), get(src)));
     }
 
-    void Cpu::exec(const Packusdw<RSSE, RMSSE>& ins) {
-        set(ins.dst, Impl::packusdw(get(ins.dst), get(ins.src)));
+    void Cpu::execPackusdwRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        set(dst, Impl::packusdw(get(dst), get(src)));
     }
 
-    void Cpu::exec(const Packsswb<RSSE, RMSSE>& ins) {
-        set(ins.dst, Impl::packsswb(get(ins.dst), get(ins.src)));
+    void Cpu::execPacksswbRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        set(dst, Impl::packsswb(get(dst), get(src)));
     }
 
-    void Cpu::exec(const Packssdw<RSSE, RMSSE>& ins) {
-        set(ins.dst, Impl::packssdw(get(ins.dst), get(ins.src)));
+    void Cpu::execPackssdwRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        set(dst, Impl::packssdw(get(dst), get(src)));
     }
     
-    void Cpu::exec(const Unpckhps<RSSE, RMSSE>& ins) {
-        set(ins.dst, Impl::unpckhps(get(ins.dst), get(ins.src)));
+    void Cpu::execUnpckhpsRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        set(dst, Impl::unpckhps(get(dst), get(src)));
     }
 
-    void Cpu::exec(const Unpckhpd<RSSE, RMSSE>& ins) {
-        set(ins.dst, Impl::unpckhpd(get(ins.dst), get(ins.src)));
+    void Cpu::execUnpckhpdRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        set(dst, Impl::unpckhpd(get(dst), get(src)));
     }
 
-    void Cpu::exec(const Unpcklps<RSSE, RMSSE>& ins) {
-        set(ins.dst, Impl::unpcklps(get(ins.dst), get(ins.src)));
+    void Cpu::execUnpcklpsRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        set(dst, Impl::unpcklps(get(dst), get(src)));
     }
 
-    void Cpu::exec(const Unpcklpd<RSSE, RMSSE>& ins) {
-        set(ins.dst, Impl::unpcklpd(get(ins.dst), get(ins.src)));
+    void Cpu::execUnpcklpdRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        set(dst, Impl::unpcklpd(get(dst), get(src)));
     }
 
     void Cpu::execMovmskpsR32RSSE(const X64Instruction& ins) {
@@ -4191,7 +4282,7 @@ namespace x64 {
         vm_->enterSyscall();
     }
 
-    void Cpu::exec(const Rdtsc&) {
+    void Cpu::execRdtsc(const X64Instruction&) {
         set(R32::EDX, 0);
         set(R32::EAX, 0);
     }
