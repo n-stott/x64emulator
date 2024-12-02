@@ -846,15 +846,17 @@ namespace x64 {
         void execCpuid(const X64Instruction&);
         void execXgetbv(const X64Instruction&);
 
-        void exec(const Fxsave<M64>&);
-        void exec(const Fxrstor<M64>&);
+        void execFxsaveM64(const X64Instruction&);
+        void execFxrstorM64(const X64Instruction&);
 
-        void exec(const Fwait&);
+        void execFwait(const X64Instruction&);
 
-        void exec(const Rdpkru&);
-        void exec(const Wrpkru&);
+        void execRdpkru(const X64Instruction&);
+        void execWrpkru(const X64Instruction&);
 
-        void exec(const Rdsspd&);
+        void execRdsspd(const X64Instruction&);
+
+        void execUnimplemented(const X64Instruction&);
 
     };
 

@@ -725,12 +725,12 @@ namespace x64 {
             case Insn::RDTSC: return execRdtsc(insn);
             case Insn::CPUID: return execCpuid(insn);
             case Insn::XGETBV: return execXgetbv(insn);
-            case Insn::FXSAVE_M64: return exec(Fxsave<M64>{insn.op0<M64>()});
-            case Insn::FXRSTOR_M64: return exec(Fxrstor<M64>{insn.op0<M64>()});
-            case Insn::FWAIT: return exec(Fwait{});
-            case Insn::RDPKRU: return exec(Rdpkru{});
-            case Insn::WRPKRU: return exec(Wrpkru{});
-            case Insn::RDSSPD: return exec(Rdsspd{});
+            case Insn::FXSAVE_M64: return execFxsaveM64(insn);
+            case Insn::FXRSTOR_M64: return execFxrstorM64(insn);
+            case Insn::FWAIT: return execFwait(insn);
+            case Insn::RDPKRU: return execRdpkru(insn);
+            case Insn::WRPKRU: return execWrpkru(insn);
+            case Insn::RDSSPD: return execRdsspd(insn);
             case Insn::UNKNOWN: return execUnknown(insn);
         }
     }
@@ -3462,49 +3462,49 @@ namespace x64 {
     }
 
     void Cpu::execCmpssRSSERSSE(const X64Instruction& ins) {
-        const auto& cond = ins.op0<FCond>();
-        const auto& dst = ins.op1<RSSE>();
-        const auto& src = ins.op2<RSSE>();
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RSSE>();
+        const auto& cond = ins.op2<FCond>();
         u128 res = Impl::cmpss(get(dst), get(src), cond);
         set(dst, res);
     }
 
     void Cpu::execCmpssRSSEM32(const X64Instruction& ins) {
-        const auto& cond = ins.op0<FCond>();
-        const auto& dst = ins.op1<RSSE>();
-        const auto& src = ins.op2<M32>();
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<M32>();
+        const auto& cond = ins.op2<FCond>();
         u128 res = Impl::cmpss(get(dst), zeroExtend<Xmm, u32>(get(resolve(src))), cond);
         set(dst, res);
     }
 
     void Cpu::execCmpsdRSSERSSE(const X64Instruction& ins) {
-        const auto& cond = ins.op0<FCond>();
-        const auto& dst = ins.op1<RSSE>();
-        const auto& src = ins.op2<RSSE>();
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RSSE>();
+        const auto& cond = ins.op2<FCond>();
         u128 res = Impl::cmpsd(get(dst), get(src), cond);
         set(dst, res);
     }
 
     void Cpu::execCmpsdRSSEM64(const X64Instruction& ins) {
-        const auto& cond = ins.op0<FCond>();
-        const auto& dst = ins.op1<RSSE>();
-        const auto& src = ins.op2<M64>();
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<M64>();
+        const auto& cond = ins.op2<FCond>();
         u128 res = Impl::cmpsd(get(dst), zeroExtend<Xmm, u64>(get(resolve(src))), cond);
         set(dst, res);
     }
 
     void Cpu::execCmppsRSSERMSSE(const X64Instruction& ins) {
-        const auto& cond = ins.op0<FCond>();
-        const auto& dst = ins.op1<RSSE>();
-        const auto& src = ins.op2<RMSSE>();
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        const auto& cond = ins.op2<FCond>();
         u128 res = Impl::cmpps(get(dst), get(src), cond);
         set(dst, res);
     }
 
     void Cpu::execCmppdRSSERMSSE(const X64Instruction& ins) {
-        const auto& cond = ins.op0<FCond>();
-        const auto& dst = ins.op1<RSSE>();
-        const auto& src = ins.op2<RMSSE>();
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        const auto& cond = ins.op2<FCond>();
         u128 res = Impl::cmppd(get(dst), get(src), cond);
         set(dst, res);
     }
@@ -4376,36 +4376,47 @@ namespace x64 {
         set(RSSE::XMM15, s.xmm15);
     }
 
-    void Cpu::exec(const Fxsave<M64>& ins) {
-        Ptr64 dst = resolve(ins.dst);
-        verify(dst.address() % 16 == 0, "fxsave destination address must be 16-byte aligned");
+    void Cpu::execFxsaveM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<M64>();
+        Ptr64 dstPtr = resolve(dst);
+        verify(dstPtr.address() % 16 == 0, "fxsave destination address must be 16-byte aligned");
         FPUState fpuState = getFpuState();
-        mmu_->copyToMmu(Ptr8{dst.address()}, (const u8*)&fpuState, sizeof(fpuState));
+        mmu_->copyToMmu(Ptr8{dstPtr.address()}, (const u8*)&fpuState, sizeof(fpuState));
     }
 
-    void Cpu::exec(const Fxrstor<M64>& ins) {
-        Ptr64 src = resolve(ins.src);
-        verify(src.address() % 16 == 0, "fxrstor source address must be 16-byte aligned");
+    void Cpu::execFxrstorM64(const X64Instruction& ins) {
+        const auto& src = ins.op0<M64>();
+        Ptr64 srcPtr = resolve(src);
+        verify(srcPtr.address() % 16 == 0, "fxrstor source address must be 16-byte aligned");
         FPUState fpuState;
-        mmu_->copyFromMmu((u8*)&fpuState, Ptr8{src.address()}, sizeof(fpuState));
+        mmu_->copyFromMmu((u8*)&fpuState, Ptr8{srcPtr.address()}, sizeof(fpuState));
         setFpuState(fpuState);
     }
 
     // NOLINTBEGIN(readability-convert-member-functions-to-static)
-    void Cpu::exec(const Rdpkru&) {
+    void Cpu::execRdpkru(const X64Instruction&) {
         verify(false, "Rdpkru not implemented");
     }
 
-    void Cpu::exec(const Wrpkru&) {
+    void Cpu::execWrpkru(const X64Instruction&) {
         verify(false, "Wrpkru not implemented");
     }
 
-    void Cpu::exec(const Rdsspd&) {
+    void Cpu::execRdsspd(const X64Instruction&) {
         // this is a nop
     }
 
-    void Cpu::exec(const Fwait&) {
+    void Cpu::execFwait(const X64Instruction&) {
         
     }
     // NOLINTEND(readability-convert-member-functions-to-static)
+
+    void Cpu::execUnimplemented(const X64Instruction& ins) {
+        verify(false, [&]() {
+            fmt::print("Instruction \"{}\" is not executable through pointer to member function", ins.toString());
+        });
+    }
+
+
+    
 }
