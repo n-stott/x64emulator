@@ -160,579 +160,580 @@ namespace x64 {
         return mxcsr_.rc;
     }
 
+    #define WRAP(f) [](Cpu& cpu, const X64Instruction& ins) { cpu.f(ins); }
+
+    const std::array<Cpu::ExecPtr, (size_t)Insn::UNKNOWN+1> Cpu::execFunctions_ {{
+        WRAP(execAddRM8RM8), // ADD_RM8_RM8
+        WRAP(execAddRM8Imm), // ADD_RM8_IMM
+        WRAP(execAddRM16RM16), // ADD_RM16_RM16
+        WRAP(execAddRM16Imm), // ADD_RM16_IMM
+        WRAP(execAddRM32RM32), // ADD_RM32_RM32
+        WRAP(execAddRM32Imm), // ADD_RM32_IMM
+        WRAP(execAddRM64RM64), // ADD_RM64_RM64
+        WRAP(execAddRM64Imm), // ADD_RM64_IMM
+        WRAP(execLockAddM8RM8), // LOCK_ADD_M8_RM8
+        WRAP(execLockAddM8Imm), // LOCK_ADD_M8_IMM
+        WRAP(execLockAddM16RM16), // LOCK_ADD_M16_RM16
+        WRAP(execLockAddM16Imm), // LOCK_ADD_M16_IMM
+        WRAP(execLockAddM32RM32), // LOCK_ADD_M32_RM32
+        WRAP(execLockAddM32Imm), // LOCK_ADD_M32_IMM
+        WRAP(execLockAddM64RM64), // LOCK_ADD_M64_RM64
+        WRAP(execLockAddM64Imm), // LOCK_ADD_M64_IMM
+        WRAP(execAdcRM8RM8), // ADC_RM8_RM8
+        WRAP(execAdcRM8Imm), // ADC_RM8_IMM
+        WRAP(execAdcRM16RM16), // ADC_RM16_RM16
+        WRAP(execAdcRM16Imm), // ADC_RM16_IMM
+        WRAP(execAdcRM32RM32), // ADC_RM32_RM32
+        WRAP(execAdcRM32Imm), // ADC_RM32_IMM
+        WRAP(execAdcRM64RM64), // ADC_RM64_RM64
+        WRAP(execAdcRM64Imm), // ADC_RM64_IMM
+        WRAP(execSubRM8RM8), // SUB_RM8_RM8
+        WRAP(execSubRM8Imm), // SUB_RM8_IMM
+        WRAP(execSubRM16RM16), // SUB_RM16_RM16
+        WRAP(execSubRM16Imm), // SUB_RM16_IMM
+        WRAP(execSubRM32RM32), // SUB_RM32_RM32
+        WRAP(execSubRM32Imm), // SUB_RM32_IMM
+        WRAP(execSubRM64RM64), // SUB_RM64_RM64
+        WRAP(execSubRM64Imm), // SUB_RM64_IMM
+        WRAP(execLockSubM8RM8), // LOCK_SUB_M8_RM8
+        WRAP(execLockSubM8Imm), // LOCK_SUB_M8_IMM
+        WRAP(execLockSubM16RM16), // LOCK_SUB_M16_RM16
+        WRAP(execLockSubM16Imm), // LOCK_SUB_M16_IMM
+        WRAP(execLockSubM32RM32), // LOCK_SUB_M32_RM32
+        WRAP(execLockSubM32Imm), // LOCK_SUB_M32_IMM
+        WRAP(execLockSubM64RM64), // LOCK_SUB_M64_RM64
+        WRAP(execLockSubM64Imm), // LOCK_SUB_M64_IMM
+        WRAP(execSbbRM8RM8), // SBB_RM8_RM8
+        WRAP(execSbbRM8Imm), // SBB_RM8_IMM
+        WRAP(execSbbRM16RM16), // SBB_RM16_RM16
+        WRAP(execSbbRM16Imm), // SBB_RM16_IMM
+        WRAP(execSbbRM32RM32), // SBB_RM32_RM32
+        WRAP(execSbbRM32Imm), // SBB_RM32_IMM
+        WRAP(execSbbRM64RM64), // SBB_RM64_RM64
+        WRAP(execSbbRM64Imm), // SBB_RM64_IMM
+        WRAP(execNegRM8), // NEG_RM8
+        WRAP(execNegRM16), // NEG_RM16
+        WRAP(execNegRM32), // NEG_RM32
+        WRAP(execNegRM64), // NEG_RM64
+        WRAP(execMulRM8), // MUL_RM8
+        WRAP(execMulRM16), // MUL_RM16
+        WRAP(execMulRM32), // MUL_RM32
+        WRAP(execMulRM64), // MUL_RM64
+        WRAP(execImul1RM16), // IMUL1_RM16
+        WRAP(execImul2R16RM16), // IMUL2_R16_RM16
+        WRAP(execImul3R16RM16Imm), // IMUL3_R16_RM16_IMM
+        WRAP(execImul1RM32), // IMUL1_RM32
+        WRAP(execImul2R32RM32), // IMUL2_R32_RM32
+        WRAP(execImul3R32RM32Imm), // IMUL3_R32_RM32_IMM
+        WRAP(execImul1RM64), // IMUL1_RM64
+        WRAP(execImul2R64RM64), // IMUL2_R64_RM64
+        WRAP(execImul3R64RM64Imm), // IMUL3_R64_RM64_IMM
+        WRAP(execDivRM8), // DIV_RM8
+        WRAP(execDivRM16), // DIV_RM16
+        WRAP(execDivRM32), // DIV_RM32
+        WRAP(execDivRM64), // DIV_RM64
+        WRAP(execIdivRM32), // IDIV_RM32
+        WRAP(execIdivRM64), // IDIV_RM64
+        WRAP(execAndRM8RM8), // AND_RM8_RM8
+        WRAP(execAndRM8Imm), // AND_RM8_IMM
+        WRAP(execAndRM16RM16), // AND_RM16_RM16
+        WRAP(execAndRM16Imm), // AND_RM16_IMM
+        WRAP(execAndRM32RM32), // AND_RM32_RM32
+        WRAP(execAndRM32Imm), // AND_RM32_IMM
+        WRAP(execAndRM64RM64), // AND_RM64_RM64
+        WRAP(execAndRM64Imm), // AND_RM64_IMM
+        WRAP(execOrRM8RM8), // OR_RM8_RM8
+        WRAP(execOrRM8Imm), // OR_RM8_IMM
+        WRAP(execOrRM16RM16), // OR_RM16_RM16
+        WRAP(execOrRM16Imm), // OR_RM16_IMM
+        WRAP(execOrRM32RM32), // OR_RM32_RM32
+        WRAP(execOrRM32Imm), // OR_RM32_IMM
+        WRAP(execOrRM64RM64), // OR_RM64_RM64
+        WRAP(execOrRM64Imm), // OR_RM64_IMM
+        WRAP(execLockOrM8RM8), // LOCK_OR_M8_RM8
+        WRAP(execLockOrM8Imm), // LOCK_OR_M8_IMM
+        WRAP(execLockOrM16RM16), // LOCK_OR_M16_RM16
+        WRAP(execLockOrM16Imm), // LOCK_OR_M16_IMM
+        WRAP(execLockOrM32RM32), // LOCK_OR_M32_RM32
+        WRAP(execLockOrM32Imm), // LOCK_OR_M32_IMM
+        WRAP(execLockOrM64RM64), // LOCK_OR_M64_RM64
+        WRAP(execLockOrM64Imm), // LOCK_OR_M64_IMM
+        WRAP(execXorRM8RM8), // XOR_RM8_RM8
+        WRAP(execXorRM8Imm), // XOR_RM8_IMM
+        WRAP(execXorRM16RM16), // XOR_RM16_RM16
+        WRAP(execXorRM16Imm), // XOR_RM16_IMM
+        WRAP(execXorRM32RM32), // XOR_RM32_RM32
+        WRAP(execXorRM32Imm), // XOR_RM32_IMM
+        WRAP(execXorRM64RM64), // XOR_RM64_RM64
+        WRAP(execXorRM64Imm), // XOR_RM64_IMM
+        WRAP(execNotRM8), // NOT_RM8
+        WRAP(execNotRM16), // NOT_RM16
+        WRAP(execNotRM32), // NOT_RM32
+        WRAP(execNotRM64), // NOT_RM64
+        WRAP(execXchgRM8R8), // XCHG_RM8_R8
+        WRAP(execXchgRM16R16), // XCHG_RM16_R16
+        WRAP(execXchgRM32R32), // XCHG_RM32_R32
+        WRAP(execXchgRM64R64), // XCHG_RM64_R64
+        WRAP(execXaddRM16R16), // XADD_RM16_R16
+        WRAP(execXaddRM32R32), // XADD_RM32_R32
+        WRAP(execXaddRM64R64), // XADD_RM64_R64
+        WRAP(execLockXaddM16R16), // LOCK_XADD_M16_R16
+        WRAP(execLockXaddM32R32), // LOCK_XADD_M32_R32
+        WRAP(execLockXaddM64R64), // LOCK_XADD_M64_R64
+        WRAP(execMovRR<Size::BYTE>), // MOV_R8_R8
+        WRAP(execMovRM<Size::BYTE>), // MOV_R8_M8
+        WRAP(execMovMR<Size::BYTE>), // MOV_M8_R8
+        WRAP(execMovRImm<Size::BYTE>), // MOV_R8_IMM
+        WRAP(execMovMImm<Size::BYTE>), // MOV_M8_IMM
+        WRAP(execMovRR<Size::WORD>), // MOV_R16_R16
+        WRAP(execMovRM<Size::WORD>), // MOV_R16_M16
+        WRAP(execMovMR<Size::WORD>), // MOV_M16_R16
+        WRAP(execMovRImm<Size::WORD>), // MOV_R16_IMM
+        WRAP(execMovMImm<Size::WORD>), // MOV_M16_IMM
+        WRAP(execMovRR<Size::DWORD>), // MOV_R32_R32
+        WRAP(execMovRM<Size::DWORD>), // MOV_R32_M32
+        WRAP(execMovMR<Size::DWORD>), // MOV_M32_R32
+        WRAP(execMovRImm<Size::DWORD>), // MOV_R32_IMM
+        WRAP(execMovMImm<Size::DWORD>), // MOV_M32_IMM
+        WRAP(execMovRR<Size::QWORD>), // MOV_R64_R64
+        WRAP(execMovRM<Size::QWORD>), // MOV_R64_M64
+        WRAP(execMovMR<Size::QWORD>), // MOV_M64_R64
+        WRAP(execMovRImm<Size::QWORD>), // MOV_R64_IMM
+        WRAP(execMovMImm<Size::QWORD>), // MOV_M64_IMM
+        WRAP(execMovRR<Size::XMMWORD>), // MOV_RSSE_RSSE
+        WRAP(execMovaRSSEMSSE), // MOV_ALIGNED_RSSE_MSSE
+        WRAP(execMovaMSSERSSE), // MOV_ALIGNED_MSSE_RSSE
+        WRAP(execMovuRSSEMSSE), // MOV_UNALIGNED_RSSE_MSSE
+        WRAP(execMovuMSSERSSE), // MOV_UNALIGNED_MSSE_RSSE
+        WRAP(execMovsxR16RM8), // MOVSX_R16_RM8
+        WRAP(execMovsxR32RM8), // MOVSX_R32_RM8
+        WRAP(execMovsxR32RM16), // MOVSX_R32_RM16
+        WRAP(execMovsxR64RM8), // MOVSX_R64_RM8
+        WRAP(execMovsxR64RM16), // MOVSX_R64_RM16
+        WRAP(execMovsxR64RM32), // MOVSX_R64_RM32
+        WRAP(execMovzxR16RM8), // MOVZX_R16_RM8
+        WRAP(execMovzxR32RM8), // MOVZX_R32_RM8
+        WRAP(execMovzxR32RM16), // MOVZX_R32_RM16
+        WRAP(execMovzxR64RM8), // MOVZX_R64_RM8
+        WRAP(execMovzxR64RM16), // MOVZX_R64_RM16
+        WRAP(execMovzxR64RM32), // MOVZX_R64_RM32
+        WRAP(execLeaR32Encoding), // LEA_R32_ENCODING
+        WRAP(execLeaR64Encoding), // LEA_R64_ENCODING
+        WRAP(execPushImm), // PUSH_IMM
+        WRAP(execPushRM32), // PUSH_RM32
+        WRAP(execPushRM64), // PUSH_RM64
+        WRAP(execPopR32), // POP_R32
+        WRAP(execPopR64), // POP_R64
+        WRAP(execPushfq), // PUSHFQ
+        WRAP(execPopfq), // POPFQ
+        WRAP(execCallDirect), // CALLDIRECT
+        WRAP(execCallIndirectRM32), // CALLINDIRECT_RM32
+        WRAP(execCallIndirectRM64), // CALLINDIRECT_RM64
+        WRAP(execRet), // RET
+        WRAP(execRetImm), // RET_IMM
+        WRAP(execLeave), // LEAVE
+        WRAP(execHalt), // HALT
+        WRAP(execNop), // NOP
+        WRAP(execUd2), // UD2
+        WRAP(execSyscall), // SYSCALL
+        WRAP(execCdq), // CDQ
+        WRAP(execCqo), // CQO
+        WRAP(execIncRM8), // INC_RM8
+        WRAP(execIncRM16), // INC_RM16
+        WRAP(execIncRM32), // INC_RM32
+        WRAP(execIncRM64), // INC_RM64
+        WRAP(execLockIncM8), // LOCK_INC_M8
+        WRAP(execLockIncM16), // LOCK_INC_M16
+        WRAP(execLockIncM32), // LOCK_INC_M32
+        WRAP(execLockIncM64), // LOCK_INC_M64
+        WRAP(execDecRM8), // DEC_RM8
+        WRAP(execDecRM16), // DEC_RM16
+        WRAP(execDecRM32), // DEC_RM32
+        WRAP(execDecRM64), // DEC_RM64
+        WRAP(execLockDecM8), // LOCK_DEC_M8
+        WRAP(execLockDecM16), // LOCK_DEC_M16
+        WRAP(execLockDecM32), // LOCK_DEC_M32
+        WRAP(execLockDecM64), // LOCK_DEC_M64
+        WRAP(execShrRM8R8), // SHR_RM8_R8
+        WRAP(execShrRM8Imm), // SHR_RM8_IMM
+        WRAP(execShrRM16R8), // SHR_RM16_R8
+        WRAP(execShrRM16Imm), // SHR_RM16_IMM
+        WRAP(execShrRM32R8), // SHR_RM32_R8
+        WRAP(execShrRM32Imm), // SHR_RM32_IMM
+        WRAP(execShrRM64R8), // SHR_RM64_R8
+        WRAP(execShrRM64Imm), // SHR_RM64_IMM
+        WRAP(execShlRM8R8), // SHL_RM8_R8
+        WRAP(execShlRM8Imm), // SHL_RM8_IMM
+        WRAP(execShlRM16R8), // SHL_RM16_R8
+        WRAP(execShlRM16Imm), // SHL_RM16_IMM
+        WRAP(execShlRM32R8), // SHL_RM32_R8
+        WRAP(execShlRM32Imm), // SHL_RM32_IMM
+        WRAP(execShlRM64R8), // SHL_RM64_R8
+        WRAP(execShlRM64Imm), // SHL_RM64_IMM
+        WRAP(execShldRM32R32R8), // SHLD_RM32_R32_R8
+        WRAP(execShldRM32R32Imm), // SHLD_RM32_R32_IMM
+        WRAP(execShldRM64R64R8), // SHLD_RM64_R64_R8
+        WRAP(execShldRM64R64Imm), // SHLD_RM64_R64_IMM
+        WRAP(execShrdRM32R32R8), // SHRD_RM32_R32_R8
+        WRAP(execShrdRM32R32Imm), // SHRD_RM32_R32_IMM
+        WRAP(execShrdRM64R64R8), // SHRD_RM64_R64_R8
+        WRAP(execShrdRM64R64Imm), // SHRD_RM64_R64_IMM
+        WRAP(execSarRM8R8), // SAR_RM8_R8
+        WRAP(execSarRM8Imm), // SAR_RM8_IMM
+        WRAP(execSarRM16R8), // SAR_RM16_R8
+        WRAP(execSarRM16Imm), // SAR_RM16_IMM
+        WRAP(execSarRM32R8), // SAR_RM32_R8
+        WRAP(execSarRM32Imm), // SAR_RM32_IMM
+        WRAP(execSarRM64R8), // SAR_RM64_R8
+        WRAP(execSarRM64Imm), // SAR_RM64_IMM
+        WRAP(execSarxR32RM32R32), // SARX_R32_RM32_R32
+        WRAP(execSarxR64RM64R64), // SARX_R64_RM64_R64
+        WRAP(execShlxR32RM32R32), // SHLX_R32_RM32_R32
+        WRAP(execShlxR64RM64R64), // SHLX_R64_RM64_R64
+        WRAP(execShrxR32RM32R32), // SHRX_R32_RM32_R32
+        WRAP(execShrxR64RM64R64), // SHRX_R64_RM64_R64
+        WRAP(execRolRM8R8), // ROL_RM8_R8
+        WRAP(execRolRM8Imm), // ROL_RM8_IMM
+        WRAP(execRolRM16R8), // ROL_RM16_R8
+        WRAP(execRolRM16Imm), // ROL_RM16_IMM
+        WRAP(execRolRM32R8), // ROL_RM32_R8
+        WRAP(execRolRM32Imm), // ROL_RM32_IMM
+        WRAP(execRolRM64R8), // ROL_RM64_R8
+        WRAP(execRolRM64Imm), // ROL_RM64_IMM
+        WRAP(execRorRM8R8), // ROR_RM8_R8
+        WRAP(execRorRM8Imm), // ROR_RM8_IMM
+        WRAP(execRorRM16R8), // ROR_RM16_R8
+        WRAP(execRorRM16Imm), // ROR_RM16_IMM
+        WRAP(execRorRM32R8), // ROR_RM32_R8
+        WRAP(execRorRM32Imm), // ROR_RM32_IMM
+        WRAP(execRorRM64R8), // ROR_RM64_R8
+        WRAP(execRorRM64Imm), // ROR_RM64_IMM
+        WRAP(execTzcntR16RM16), // TZCNT_R16_RM16
+        WRAP(execTzcntR32RM32), // TZCNT_R32_RM32
+        WRAP(execTzcntR64RM64), // TZCNT_R64_RM64
+        WRAP(execBtRM16R16), // BT_RM16_R16
+        WRAP(execBtRM16Imm), // BT_RM16_IMM
+        WRAP(execBtRM32R32), // BT_RM32_R32
+        WRAP(execBtRM32Imm), // BT_RM32_IMM
+        WRAP(execBtRM64R64), // BT_RM64_R64
+        WRAP(execBtRM64Imm), // BT_RM64_IMM
+        WRAP(execBtrRM16R16), // BTR_RM16_R16
+        WRAP(execBtrRM16Imm), // BTR_RM16_IMM
+        WRAP(execBtrRM32R32), // BTR_RM32_R32
+        WRAP(execBtrRM32Imm), // BTR_RM32_IMM
+        WRAP(execBtrRM64R64), // BTR_RM64_R64
+        WRAP(execBtrRM64Imm), // BTR_RM64_IMM
+        WRAP(execBtcRM16R16), // BTC_RM16_R16
+        WRAP(execBtcRM16Imm), // BTC_RM16_IMM
+        WRAP(execBtcRM32R32), // BTC_RM32_R32
+        WRAP(execBtcRM32Imm), // BTC_RM32_IMM
+        WRAP(execBtcRM64R64), // BTC_RM64_R64
+        WRAP(execBtcRM64Imm), // BTC_RM64_IMM
+        WRAP(execBtsRM16R16), // BTS_RM16_R16
+        WRAP(execBtsRM16Imm), // BTS_RM16_IMM
+        WRAP(execBtsRM32R32), // BTS_RM32_R32
+        WRAP(execBtsRM32Imm), // BTS_RM32_IMM
+        WRAP(execBtsRM64R64), // BTS_RM64_R64
+        WRAP(execBtsRM64Imm), // BTS_RM64_IMM
+        WRAP(execLockBtsM16R16), // LOCK_BTS_M16_R16
+        WRAP(execLockBtsM16Imm), // LOCK_BTS_M16_IMM
+        WRAP(execLockBtsM32R32), // LOCK_BTS_M32_R32
+        WRAP(execLockBtsM32Imm), // LOCK_BTS_M32_IMM
+        WRAP(execLockBtsM64R64), // LOCK_BTS_M64_R64
+        WRAP(execLockBtsM64Imm), // LOCK_BTS_M64_IMM
+        WRAP(execTestRM8R8), // TEST_RM8_R8
+        WRAP(execTestRM8Imm), // TEST_RM8_IMM
+        WRAP(execTestRM16R16), // TEST_RM16_R16
+        WRAP(execTestRM16Imm), // TEST_RM16_IMM
+        WRAP(execTestRM32R32), // TEST_RM32_R32
+        WRAP(execTestRM32Imm), // TEST_RM32_IMM
+        WRAP(execTestRM64R64), // TEST_RM64_R64
+        WRAP(execTestRM64Imm), // TEST_RM64_IMM
+        WRAP(execCmpRM8RM8), // CMP_RM8_RM8
+        WRAP(execCmpRM8Imm), // CMP_RM8_IMM
+        WRAP(execCmpRM16RM16), // CMP_RM16_RM16
+        WRAP(execCmpRM16Imm), // CMP_RM16_IMM
+        WRAP(execCmpRM32RM32), // CMP_RM32_RM32
+        WRAP(execCmpRM32Imm), // CMP_RM32_IMM
+        WRAP(execCmpRM64RM64), // CMP_RM64_RM64
+        WRAP(execCmpRM64Imm), // CMP_RM64_IMM
+        WRAP(execCmpxchgRM8R8), // CMPXCHG_RM8_R8
+        WRAP(execCmpxchgRM16R16), // CMPXCHG_RM16_R16
+        WRAP(execCmpxchgRM32R32), // CMPXCHG_RM32_R32
+        WRAP(execCmpxchgRM64R64), // CMPXCHG_RM64_R64
+        WRAP(execLockCmpxchgM8R8), // LOCK_CMPXCHG_M8_R8
+        WRAP(execLockCmpxchgM16R16), // LOCK_CMPXCHG_M16_R16
+        WRAP(execLockCmpxchgM32R32), // LOCK_CMPXCHG_M32_R32
+        WRAP(execLockCmpxchgM64R64), // LOCK_CMPXCHG_M64_R64
+        WRAP(execSetRM8), // SET_RM8
+        WRAP(execJmpRM32), // JMP_RM32
+        WRAP(execJmpRM64), // JMP_RM64
+        WRAP(execJmpu32), // JMP_U32
+        WRAP(execJe), // JE
+        WRAP(execJne), // JNE
+        WRAP(execJcc), // JCC
+        WRAP(execBsrR32R32), // BSR_R32_R32
+        WRAP(execBsrR32M32), // BSR_R32_M32
+        WRAP(execBsrR64R64), // BSR_R64_R64
+        WRAP(execBsrR64M64), // BSR_R64_M64
+        WRAP(execBsfR32R32), // BSF_R32_R32
+        WRAP(execBsfR32M32), // BSF_R32_M32
+        WRAP(execBsfR64R64), // BSF_R64_R64
+        WRAP(execBsfR64M64), // BSF_R64_M64
+        WRAP(execCld), // CLD
+        WRAP(execStd), // STD
+        WRAP(execMovsM8M8), // MOVS_M8_M8
+        WRAP(execMovsM64M64), // MOVS_M64_M64
+        WRAP(execRepMovsM8M8), // REP_MOVS_M8_M8
+        WRAP(execRepMovsM32M32), // REP_MOVS_M32_M32
+        WRAP(execRepMovsM64M64), // REP_MOVS_M64_M64
+        WRAP(execRepCmpsM8M8), // REP_CMPS_M8_M8
+        WRAP(execRepStosM8R8), // REP_STOS_M8_R8
+        WRAP(execRepStosM16R16), // REP_STOS_M16_R16
+        WRAP(execRepStosM32R32), // REP_STOS_M32_R32
+        WRAP(execRepStosM64R64), // REP_STOS_M64_R64
+        WRAP(execRepNZScasR8M8), // REPNZ_SCAS_R8_M8
+        WRAP(execRepNZScasR16M16), // REPNZ_SCAS_R16_M16
+        WRAP(execRepNZScasR32M32), // REPNZ_SCAS_R32_M32
+        WRAP(execRepNZScasR64M64), // REPNZ_SCAS_R64_M64
+        WRAP(execCmovR16RM16), // CMOV_R16_RM16
+        WRAP(execCmovR32RM32), // CMOV_R32_RM32
+        WRAP(execCmovR64RM64), // CMOV_R64_RM64
+        WRAP(execCwde), // CWDE
+        WRAP(execCdqe), // CDQE
+        WRAP(execBswapR32), // BSWAP_R32
+        WRAP(execBswapR64), // BSWAP_R64
+        WRAP(execPopcntR16RM16), // POPCNT_R16_RM16
+        WRAP(execPopcntR32RM32), // POPCNT_R32_RM32
+        WRAP(execPopcntR64RM64), // POPCNT_R64_RM64
+        WRAP(execPxorRSSERMSSE), // PXOR_RSSE_RMSSE
+        WRAP(execMovapsRMSSERMSSE), // MOVAPS_RMSSE_RMSSE
+        WRAP(execMovdRSSERM32), // MOVD_RSSE_RM32
+        WRAP(execMovdRM32RSSE), // MOVD_RM32_RSSE
+        WRAP(execMovdRSSERM64), // MOVD_RSSE_RM64
+        WRAP(execMovdRM64RSSE), // MOVD_RM64_RSSE
+        WRAP(execMovqRSSERM64), // MOVQ_RSSE_RM64
+        WRAP(execMovqRM64RSSE), // MOVQ_RM64_RSSE
+        WRAP(execFldz), // FLDZ
+        WRAP(execFld1), // FLD1
+        WRAP(execFldST), // FLD_ST
+        WRAP(execFldM32), // FLD_M32
+        WRAP(execFldM64), // FLD_M64
+        WRAP(execFldM80), // FLD_M80
+        WRAP(execFildM16), // FILD_M16
+        WRAP(execFildM32), // FILD_M32
+        WRAP(execFildM64), // FILD_M64
+        WRAP(execFstpST), // FSTP_ST
+        WRAP(execFstpM32), // FSTP_M32
+        WRAP(execFstpM64), // FSTP_M64
+        WRAP(execFstpM80), // FSTP_M80
+        WRAP(execFistpM16), // FISTP_M16
+        WRAP(execFistpM32), // FISTP_M32
+        WRAP(execFistpM64), // FISTP_M64
+        WRAP(execFxchST), // FXCH_ST
+        WRAP(execFaddpST), // FADDP_ST
+        WRAP(execFsubpST), // FSUBP_ST
+        WRAP(execFsubrpST), // FSUBRP_ST
+        WRAP(execFmul1M32), // FMUL1_M32
+        WRAP(execFmul1M64), // FMUL1_M64
+        WRAP(execFdivSTST), // FDIV_ST_ST
+        WRAP(execFdivpSTST), // FDIVP_ST_ST
+        WRAP(execFcomiST), // FCOMI_ST
+        WRAP(execFucomiST), // FUCOMI_ST
+        WRAP(execFrndint), // FRNDINT
+        WRAP(execFcmovST), // FCMOV_ST
+        WRAP(execFnstcwM16), // FNSTCW_M16
+        WRAP(execFldcwM16), // FLDCW_M16
+        WRAP(execFnstswR16), // FNSTSW_R16
+        WRAP(execFnstswM16), // FNSTSW_M16
+        WRAP(execFnstenvM224), // FNSTENV_M224
+        WRAP(execFldenvM224), // FLDENV_M224
+        WRAP(execEmms), // EMMS
+        WRAP(execMovssRSSEM32), // MOVSS_RSSE_M32
+        WRAP(execMovssM32RSSE), // MOVSS_M32_RSSE
+        WRAP(execMovsdRSSEM64), // MOVSD_RSSE_M64
+        WRAP(execMovsdM64RSSE), // MOVSD_M64_RSSE
+        WRAP(execMovsdRSSERSSE), // MOVSD_RSSE_RSSE
+        WRAP(execAddpsRSSERMSSE), // ADDPS_RSSE_RMSSE
+        WRAP(execAddpdRSSERMSSE), // ADDPD_RSSE_RMSSE
+        WRAP(execAddssRSSERSSE), // ADDSS_RSSE_RSSE
+        WRAP(execAddssRSSEM32), // ADDSS_RSSE_M32
+        WRAP(execAddsdRSSERSSE), // ADDSD_RSSE_RSSE
+        WRAP(execAddsdRSSEM64), // ADDSD_RSSE_M64
+        WRAP(execSubpsRSSERMSSE), // SUBPS_RSSE_RMSSE
+        WRAP(execSubpdRSSERMSSE), // SUBPD_RSSE_RMSSE
+        WRAP(execSubssRSSERSSE), // SUBSS_RSSE_RSSE
+        WRAP(execSubssRSSEM32), // SUBSS_RSSE_M32
+        WRAP(execSubsdRSSERSSE), // SUBSD_RSSE_RSSE
+        WRAP(execSubsdRSSEM64), // SUBSD_RSSE_M64
+        WRAP(execMulpsRSSERMSSE), // MULPS_RSSE_RMSSE
+        WRAP(execMulpdRSSERMSSE), // MULPD_RSSE_RMSSE
+        WRAP(execMulssRSSERSSE), // MULSS_RSSE_RSSE
+        WRAP(execMulssRSSEM32), // MULSS_RSSE_M32
+        WRAP(execMulsdRSSERSSE), // MULSD_RSSE_RSSE
+        WRAP(execMulsdRSSEM64), // MULSD_RSSE_M64
+        WRAP(execDivpsRSSERMSSE), // DIVPS_RSSE_RMSSE
+        WRAP(execDivpdRSSERMSSE), // DIVPD_RSSE_RMSSE
+        WRAP(execDivssRSSERSSE), // DIVSS_RSSE_RSSE
+        WRAP(execDivssRSSEM32), // DIVSS_RSSE_M32
+        WRAP(execDivsdRSSERSSE), // DIVSD_RSSE_RSSE
+        WRAP(execDivsdRSSEM64), // DIVSD_RSSE_M64
+        WRAP(execSqrtssRSSERSSE), // SQRTSS_RSSE_RSSE
+        WRAP(execSqrtssRSSEM32), // SQRTSS_RSSE_M32
+        WRAP(execSqrtsdRSSERSSE), // SQRTSD_RSSE_RSSE
+        WRAP(execSqrtsdRSSEM64), // SQRTSD_RSSE_M64
+        WRAP(execComissRSSERSSE), // COMISS_RSSE_RSSE
+        WRAP(execComissRSSEM32), // COMISS_RSSE_M32
+        WRAP(execComisdRSSERSSE), // COMISD_RSSE_RSSE
+        WRAP(execComisdRSSEM64), // COMISD_RSSE_M64
+        WRAP(execUcomissRSSERSSE), // UCOMISS_RSSE_RSSE
+        WRAP(execUcomissRSSEM32), // UCOMISS_RSSE_M32
+        WRAP(execUcomisdRSSERSSE), // UCOMISD_RSSE_RSSE
+        WRAP(execUcomisdRSSEM64), // UCOMISD_RSSE_M64
+        WRAP(execCmpssRSSERSSE), // CMPSS_RSSE_RSSE
+        WRAP(execCmpssRSSEM32), // CMPSS_RSSE_M32
+        WRAP(execCmpsdRSSERSSE), // CMPSD_RSSE_RSSE
+        WRAP(execCmpsdRSSEM64), // CMPSD_RSSE_M64
+        WRAP(execCmppsRSSERMSSE), // CMPPS_RSSE_RMSSE
+        WRAP(execCmppdRSSERMSSE), // CMPPD_RSSE_RMSSE
+        WRAP(execMaxssRSSERSSE), // MAXSS_RSSE_RSSE
+        WRAP(execMaxssRSSEM32), // MAXSS_RSSE_M32
+        WRAP(execMaxsdRSSERSSE), // MAXSD_RSSE_RSSE
+        WRAP(execMaxsdRSSEM64), // MAXSD_RSSE_M64
+        WRAP(execMinssRSSERSSE), // MINSS_RSSE_RSSE
+        WRAP(execMinssRSSEM32), // MINSS_RSSE_M32
+        WRAP(execMinsdRSSERSSE), // MINSD_RSSE_RSSE
+        WRAP(execMinsdRSSEM64), // MINSD_RSSE_M64
+        WRAP(execMaxpsRSSERMSSE), // MAXPS_RSSE_RMSSE
+        WRAP(execMaxpdRSSERMSSE), // MAXPD_RSSE_RMSSE
+        WRAP(execMinpsRSSERMSSE), // MINPS_RSSE_RMSSE
+        WRAP(execMinpdRSSERMSSE), // MINPD_RSSE_RMSSE
+        WRAP(execCvtsi2ssRSSERM32), // CVTSI2SS_RSSE_RM32
+        WRAP(execCvtsi2ssRSSERM64), // CVTSI2SS_RSSE_RM64
+        WRAP(execCvtsi2sdRSSERM32), // CVTSI2SD_RSSE_RM32
+        WRAP(execCvtsi2sdRSSERM64), // CVTSI2SD_RSSE_RM64
+        WRAP(execCvtss2sdRSSERSSE), // CVTSS2SD_RSSE_RSSE
+        WRAP(execCvtss2sdRSSEM32), // CVTSS2SD_RSSE_M32
+        WRAP(execCvtsd2siR64RSSE), // CVTSD2SI_R64_RSSE
+        WRAP(execCvtsd2siR64M64), // CVTSD2SI_R64_M64
+        WRAP(execCvtsd2ssRSSERSSE), // CVTSD2SS_RSSE_RSSE
+        WRAP(execCvtsd2ssRSSEM64), // CVTSD2SS_RSSE_M64
+        WRAP(execCvttps2dqRSSERMSSE), // CVTTPS2DQ_RSSE_RMSSE
+        WRAP(execCvttss2siR32RSSE), // CVTTSS2SI_R32_RSSE
+        WRAP(execCvttss2siR32M32), // CVTTSS2SI_R32_M32
+        WRAP(execCvttss2siR64RSSE), // CVTTSS2SI_R64_RSSE
+        WRAP(execCvttss2siR64M32), // CVTTSS2SI_R64_M32
+        WRAP(execCvttsd2siR32RSSE), // CVTTSD2SI_R32_RSSE
+        WRAP(execCvttsd2siR32M64), // CVTTSD2SI_R32_M64
+        WRAP(execCvttsd2siR64RSSE), // CVTTSD2SI_R64_RSSE
+        WRAP(execCvttsd2siR64M64), // CVTTSD2SI_R64_M64
+        WRAP(execCvtdq2pdRSSERSSE), // CVTDQ2PD_RSSE_RSSE
+        WRAP(execCvtdq2psRSSERMSSE), // CVTDQ2PS_RSSE_RMSSE
+        WRAP(execCvtdq2pdRSSEM64), // CVTDQ2PD_RSSE_M64
+        WRAP(execCvtps2dqRSSERMSSE), // CVTPS2DQ_RSSE_RMSSE
+        WRAP(execStmxcsrM32), // STMXCSR_M32
+        WRAP(execLdmxcsrM32), // LDMXCSR_M32
+        WRAP(execPandRSSERMSSE), // PAND_RSSE_RMSSE
+        WRAP(execPandnRSSERMSSE), // PANDN_RSSE_RMSSE
+        WRAP(execPorRSSERMSSE), // POR_RSSE_RMSSE
+        WRAP(execAndpdRSSERMSSE), // ANDPD_RSSE_RMSSE
+        WRAP(execAndnpdRSSERMSSE), // ANDNPD_RSSE_RMSSE
+        WRAP(execOrpdRSSERMSSE), // ORPD_RSSE_RMSSE
+        WRAP(execXorpdRSSERMSSE), // XORPD_RSSE_RMSSE
+        WRAP(execShufpsRSSERMSSEImm), // SHUFPS_RSSE_RMSSE_IMM
+        WRAP(execShufpdRSSERMSSEImm), // SHUFPD_RSSE_RMSSE_IMM
+        WRAP(execMovlpsRSSEM64), // MOVLPS_RSSE_M64
+        WRAP(execMovlpsM64RSSE), // MOVLPS_M64_RSSE
+        WRAP(execMovhpsRSSEM64), // MOVHPS_RSSE_M64
+        WRAP(execMovhpsM64RSSE), // MOVHPS_M64_RSSE
+        WRAP(execMovhlpsRSSERSSE), // MOVHLPS_RSSE_RSSE
+        WRAP(execMovlhpsRSSERSSE), // MOVLHPS_RSSE_RSSE
+        WRAP(execPinsrwRSSER32Imm), // PINSRW_RSSE_R32_IMM
+        WRAP(execPinsrwRSSEM16Imm), // PINSRW_RSSE_M16_IMM
+        WRAP(execPunpcklbwRSSERMSSE), // PUNPCKLBW_RSSE_RMSSE
+        WRAP(execPunpcklwdRSSERMSSE), // PUNPCKLWD_RSSE_RMSSE
+        WRAP(execPunpckldqRSSERMSSE), // PUNPCKLDQ_RSSE_RMSSE
+        WRAP(execPunpcklqdqRSSERMSSE), // PUNPCKLQDQ_RSSE_RMSSE
+        WRAP(execPunpckhbwRSSERMSSE), // PUNPCKHBW_RSSE_RMSSE
+        WRAP(execPunpckhwdRSSERMSSE), // PUNPCKHWD_RSSE_RMSSE
+        WRAP(execPunpckhdqRSSERMSSE), // PUNPCKHDQ_RSSE_RMSSE
+        WRAP(execPunpckhqdqRSSERMSSE), // PUNPCKHQDQ_RSSE_RMSSE
+        WRAP(execPshufbRSSERMSSE), // PSHUFB_RSSE_RMSSE
+        WRAP(execPshuflwRSSERMSSEImm), // PSHUFLW_RSSE_RMSSE_IMM
+        WRAP(execPshufhwRSSERMSSEImm), // PSHUFHW_RSSE_RMSSE_IMM
+        WRAP(execPshufdRSSERMSSEImm), // PSHUFD_RSSE_RMSSE_IMM
+        WRAP(execPcmpeqbRSSERMSSE), // PCMPEQB_RSSE_RMSSE
+        WRAP(execPcmpeqwRSSERMSSE), // PCMPEQW_RSSE_RMSSE
+        WRAP(execPcmpeqdRSSERMSSE), // PCMPEQD_RSSE_RMSSE
+        WRAP(execPcmpeqqRSSERMSSE), // PCMPEQQ_RSSE_RMSSE
+        WRAP(execPcmpgtbRSSERMSSE), // PCMPGTB_RSSE_RMSSE
+        WRAP(execPcmpgtwRSSERMSSE), // PCMPGTW_RSSE_RMSSE
+        WRAP(execPcmpgtdRSSERMSSE), // PCMPGTD_RSSE_RMSSE
+        WRAP(execPcmpgtqRSSERMSSE), // PCMPGTQ_RSSE_RMSSE
+        WRAP(execPmovmskbR32RSSE), // PMOVMSKB_R32_RSSE
+        WRAP(execPaddbRSSERMSSE), // PADDB_RSSE_RMSSE
+        WRAP(execPaddwRSSERMSSE), // PADDW_RSSE_RMSSE
+        WRAP(execPadddRSSERMSSE), // PADDD_RSSE_RMSSE
+        WRAP(execPaddqRSSERMSSE), // PADDQ_RSSE_RMSSE
+        WRAP(execPsubbRSSERMSSE), // PSUBB_RSSE_RMSSE
+        WRAP(execPsubwRSSERMSSE), // PSUBW_RSSE_RMSSE
+        WRAP(execPsubdRSSERMSSE), // PSUBD_RSSE_RMSSE
+        WRAP(execPsubqRSSERMSSE), // PSUBQ_RSSE_RMSSE
+        WRAP(execPmulhuwRSSERMSSE), // PMULHUW_RSSE_RMSSE
+        WRAP(execPmulhwRSSERMSSE), // PMULHW_RSSE_RMSSE
+        WRAP(execPmullwRSSERMSSE), // PMULLW_RSSE_RMSSE
+        WRAP(execPmuludqRSSERMSSE), // PMULUDQ_RSSE_RMSSE
+        WRAP(execPmaddwdRSSERMSSE), // PMADDWD_RSSE_RMSSE
+        WRAP(execPsadbwRSSERMSSE), // PSADBW_RSSE_RMSSE
+        WRAP(execPavgbRSSERMSSE), // PAVGB_RSSE_RMSSE
+        WRAP(execPavgwRSSERMSSE), // PAVGW_RSSE_RMSSE
+        WRAP(execPmaxubRSSERMSSE), // PMAXUB_RSSE_RMSSE
+        WRAP(execPminubRSSERMSSE), // PMINUB_RSSE_RMSSE
+        WRAP(execPtestRSSERMSSE), // PTEST_RSSE_RMSSE
+        WRAP(execPsrawRSSEImm), // PSRAW_RSSE_IMM
+        WRAP(execPsradRSSEImm), // PSRAD_RSSE_IMM
+        WRAP(execPsraqRSSEImm), // PSRAQ_RSSE_IMM
+        WRAP(execPsllwRSSEImm), // PSLLW_RSSE_IMM
+        WRAP(execPsllwRSSERMSSE), // PSLLW_RSSE_RMSSE
+        WRAP(execPslldRSSEImm), // PSLLD_RSSE_IMM
+        WRAP(execPslldRSSERMSSE), // PSLLD_RSSE_RMSSE
+        WRAP(execPsllqRSSEImm), // PSLLQ_RSSE_IMM
+        WRAP(execPsllqRSSERMSSE), // PSLLQ_RSSE_RMSSE
+        WRAP(execPsrlwRSSEImm), // PSRLW_RSSE_IMM
+        WRAP(execPsrlwRSSERMSSE), // PSRLW_RSSE_RMSSE
+        WRAP(execPsrldRSSEImm), // PSRLD_RSSE_IMM
+        WRAP(execPsrldRSSERMSSE), // PSRLD_RSSE_RMSSE
+        WRAP(execPsrlqRSSEImm), // PSRLQ_RSSE_IMM
+        WRAP(execPsrlqRSSERMSSE), // PSRLQ_RSSE_RMSSE
+        WRAP(execPslldqRSSEImm), // PSLLDQ_RSSE_IMM
+        WRAP(execPsrldqRSSEImm), // PSRLDQ_RSSE_IMM
+        WRAP(execPcmpistriRSSERMSSEImm), // PCMPISTRI_RSSE_RMSSE_IMM
+        WRAP(execPackuswbRSSERMSSE), // PACKUSWB_RSSE_RMSSE
+        WRAP(execPackusdwRSSERMSSE), // PACKUSDW_RSSE_RMSSE
+        WRAP(execPacksswbRSSERMSSE), // PACKSSWB_RSSE_RMSSE
+        WRAP(execPackssdwRSSERMSSE), // PACKSSDW_RSSE_RMSSE
+        WRAP(execUnpckhpsRSSERMSSE), // UNPCKHPS_RSSE_RMSSE
+        WRAP(execUnpckhpdRSSERMSSE), // UNPCKHPD_RSSE_RMSSE
+        WRAP(execUnpcklpsRSSERMSSE), // UNPCKLPS_RSSE_RMSSE
+        WRAP(execUnpcklpdRSSERMSSE), // UNPCKLPD_RSSE_RMSSE
+        WRAP(execMovmskpsR32RSSE), // MOVMSKPS_R32_RSSE
+        WRAP(execMovmskpsR64RSSE), // MOVMSKPS_R64_RSSE
+        WRAP(execMovmskpdR32RSSE), // MOVMSKPD_R32_RSSE
+        WRAP(execMovmskpdR64RSSE), // MOVMSKPD_R64_RSSE
+        WRAP(execRdtsc), // RDTSC
+        WRAP(execCpuid), // CPUID
+        WRAP(execXgetbv), // XGETBV
+        WRAP(execFxsaveM64), // FXSAVE_M64
+        WRAP(execFxrstorM64), // FXRSTOR_M64
+        WRAP(execFwait), // FWAIT
+        WRAP(execRdpkru), // RDPKRU
+        WRAP(execWrpkru), // WRPKRU
+        WRAP(execRdsspd), // RDSSPD
+        WRAP(execUnknown), // UNKNOWN
+    }};
+
     void Cpu::exec(const X64Instruction& insn) {
-        // if(insn.lock()) {
-        //     fmt::print("{}\n", insn.toString());
-        // }
-        switch(insn.insn()) {
-            case Insn::ADD_RM8_RM8: return execAddRM8RM8(insn);
-            case Insn::ADD_RM8_IMM: return execAddRM8Imm(insn);
-            case Insn::ADD_RM16_RM16: return execAddRM16RM16(insn);
-            case Insn::ADD_RM16_IMM: return execAddRM16Imm(insn);
-            case Insn::ADD_RM32_RM32: return execAddRM32RM32(insn);
-            case Insn::ADD_RM32_IMM: return execAddRM32Imm(insn);
-            case Insn::ADD_RM64_RM64: return execAddRM64RM64(insn);
-            case Insn::ADD_RM64_IMM: return execAddRM64Imm(insn);
-            case Insn::LOCK_ADD_M8_RM8: return execLockAddM8RM8(insn);
-            case Insn::LOCK_ADD_M8_IMM: return execLockAddM8Imm(insn);
-            case Insn::LOCK_ADD_M16_RM16: return execLockAddM16RM16(insn);
-            case Insn::LOCK_ADD_M16_IMM: return execLockAddM16Imm(insn);
-            case Insn::LOCK_ADD_M32_RM32: return execLockAddM32RM32(insn);
-            case Insn::LOCK_ADD_M32_IMM: return execLockAddM32Imm(insn);
-            case Insn::LOCK_ADD_M64_RM64: return execLockAddM64RM64(insn);
-            case Insn::LOCK_ADD_M64_IMM: return execLockAddM64Imm(insn);
-            case Insn::ADC_RM8_RM8: return execAdcRM8RM8(insn);
-            case Insn::ADC_RM8_IMM: return execAdcRM8Imm(insn);
-            case Insn::ADC_RM16_RM16: return execAdcRM16RM16(insn);
-            case Insn::ADC_RM16_IMM: return execAdcRM16Imm(insn);
-            case Insn::ADC_RM32_RM32: return execAdcRM32RM32(insn);
-            case Insn::ADC_RM32_IMM: return execAdcRM32Imm(insn);
-            case Insn::ADC_RM64_RM64: return execAdcRM64RM64(insn);
-            case Insn::ADC_RM64_IMM: return execAdcRM64Imm(insn);
-            case Insn::SUB_RM8_RM8: return execSubRM8RM8(insn);
-            case Insn::SUB_RM8_IMM: return execSubRM8Imm(insn);
-            case Insn::SUB_RM16_RM16: return execSubRM16RM16(insn);
-            case Insn::SUB_RM16_IMM: return execSubRM16Imm(insn);
-            case Insn::SUB_RM32_RM32: return execSubRM32RM32(insn);
-            case Insn::SUB_RM32_IMM: return execSubRM32Imm(insn);
-            case Insn::SUB_RM64_RM64: return execSubRM64RM64(insn);
-            case Insn::SUB_RM64_IMM: return execSubRM64Imm(insn);
-            case Insn::LOCK_SUB_M8_RM8: return execLockSubM8RM8(insn);
-            case Insn::LOCK_SUB_M8_IMM: return execLockSubM8Imm(insn);
-            case Insn::LOCK_SUB_M16_RM16: return execLockSubM16RM16(insn);
-            case Insn::LOCK_SUB_M16_IMM: return execLockSubM16Imm(insn);
-            case Insn::LOCK_SUB_M32_RM32: return execLockSubM32RM32(insn);
-            case Insn::LOCK_SUB_M32_IMM: return execLockSubM32Imm(insn);
-            case Insn::LOCK_SUB_M64_RM64: return execLockSubM64RM64(insn);
-            case Insn::LOCK_SUB_M64_IMM: return execLockSubM64Imm(insn);
-            case Insn::SBB_RM8_RM8: return execSbbRM8RM8(insn);
-            case Insn::SBB_RM8_IMM: return execSbbRM8Imm(insn);
-            case Insn::SBB_RM16_RM16: return execSbbRM16RM16(insn);
-            case Insn::SBB_RM16_IMM: return execSbbRM16Imm(insn);
-            case Insn::SBB_RM32_RM32: return execSbbRM32RM32(insn);
-            case Insn::SBB_RM32_IMM: return execSbbRM32Imm(insn);
-            case Insn::SBB_RM64_RM64: return execSbbRM64RM64(insn);
-            case Insn::SBB_RM64_IMM: return execSbbRM64Imm(insn);
-            case Insn::NEG_RM8: return execNegRM8(insn);
-            case Insn::NEG_RM16: return execNegRM16(insn);
-            case Insn::NEG_RM32: return execNegRM32(insn);
-            case Insn::NEG_RM64: return execNegRM64(insn);
-            case Insn::MUL_RM8: return execMulRM8(insn);
-            case Insn::MUL_RM16: return execMulRM16(insn);
-            case Insn::MUL_RM32: return execMulRM32(insn);
-            case Insn::MUL_RM64: return execMulRM64(insn);
-            case Insn::IMUL1_RM16: return execImul1RM16(insn);
-            case Insn::IMUL2_R16_RM16: return execImul2R16RM16(insn);
-            case Insn::IMUL3_R16_RM16_IMM: return execImul3R16RM16Imm(insn);
-            case Insn::IMUL1_RM32: return execImul1RM32(insn);
-            case Insn::IMUL2_R32_RM32: return execImul2R32RM32(insn);
-            case Insn::IMUL3_R32_RM32_IMM: return execImul3R32RM32Imm(insn);
-            case Insn::IMUL1_RM64: return execImul1RM64(insn);
-            case Insn::IMUL2_R64_RM64: return execImul2R64RM64(insn);
-            case Insn::IMUL3_R64_RM64_IMM: return execImul3R64RM64Imm(insn);
-            case Insn::DIV_RM8: return execDivRM8(insn);
-            case Insn::DIV_RM16: return execDivRM16(insn);
-            case Insn::DIV_RM32: return execDivRM32(insn);
-            case Insn::DIV_RM64: return execDivRM64(insn);
-            case Insn::IDIV_RM32: return execIdivRM32(insn);
-            case Insn::IDIV_RM64: return execIdivRM64(insn);
-            case Insn::AND_RM8_RM8: return execAndRM8RM8(insn);
-            case Insn::AND_RM8_IMM: return execAndRM8Imm(insn);
-            case Insn::AND_RM16_RM16: return execAndRM16RM16(insn);
-            case Insn::AND_RM16_IMM: return execAndRM16Imm(insn);
-            case Insn::AND_RM32_RM32: return execAndRM32RM32(insn);
-            case Insn::AND_RM32_IMM: return execAndRM32Imm(insn);
-            case Insn::AND_RM64_RM64: return execAndRM64RM64(insn);
-            case Insn::AND_RM64_IMM: return execAndRM64Imm(insn);
-            case Insn::OR_RM8_RM8: return execOrRM8RM8(insn);
-            case Insn::OR_RM8_IMM: return execOrRM8Imm(insn);
-            case Insn::OR_RM16_RM16: return execOrRM16RM16(insn);
-            case Insn::OR_RM16_IMM: return execOrRM16Imm(insn);
-            case Insn::OR_RM32_RM32: return execOrRM32RM32(insn);
-            case Insn::OR_RM32_IMM: return execOrRM32Imm(insn);
-            case Insn::OR_RM64_RM64: return execOrRM64RM64(insn);
-            case Insn::OR_RM64_IMM: return execOrRM64Imm(insn);
-            case Insn::LOCK_OR_M8_RM8: return execLockOrM8RM8(insn);
-            case Insn::LOCK_OR_M8_IMM: return execLockOrM8Imm(insn);
-            case Insn::LOCK_OR_M16_RM16: return execLockOrM16RM16(insn);
-            case Insn::LOCK_OR_M16_IMM: return execLockOrM16Imm(insn);
-            case Insn::LOCK_OR_M32_RM32: return execLockOrM32RM32(insn);
-            case Insn::LOCK_OR_M32_IMM: return execLockOrM32Imm(insn);
-            case Insn::LOCK_OR_M64_RM64: return execLockOrM64RM64(insn);
-            case Insn::LOCK_OR_M64_IMM: return execLockOrM64Imm(insn);
-            case Insn::XOR_RM8_RM8: return execXorRM8RM8(insn);
-            case Insn::XOR_RM8_IMM: return execXorRM8Imm(insn);
-            case Insn::XOR_RM16_RM16: return execXorRM16RM16(insn);
-            case Insn::XOR_RM16_IMM: return execXorRM16Imm(insn);
-            case Insn::XOR_RM32_RM32: return execXorRM32RM32(insn);
-            case Insn::XOR_RM32_IMM: return execXorRM32Imm(insn);
-            case Insn::XOR_RM64_RM64: return execXorRM64RM64(insn);
-            case Insn::XOR_RM64_IMM: return execXorRM64Imm(insn);
-            case Insn::NOT_RM8: return execNotRM8(insn);
-            case Insn::NOT_RM16: return execNotRM16(insn);
-            case Insn::NOT_RM32: return execNotRM32(insn);
-            case Insn::NOT_RM64: return execNotRM64(insn);
-            case Insn::XCHG_RM8_R8: return execXchgRM8R8(insn);
-            case Insn::XCHG_RM16_R16: return execXchgRM16R16(insn);
-            case Insn::XCHG_RM32_R32: return execXchgRM32R32(insn);
-            case Insn::XCHG_RM64_R64: return execXchgRM64R64(insn);
-            case Insn::XADD_RM16_R16: return execXaddRM16R16(insn);
-            case Insn::XADD_RM32_R32: return execXaddRM32R32(insn);
-            case Insn::XADD_RM64_R64: return execXaddRM64R64(insn);
-            case Insn::LOCK_XADD_M16_R16: return execLockXaddM16R16(insn);
-            case Insn::LOCK_XADD_M32_R32: return execLockXaddM32R32(insn);
-            case Insn::LOCK_XADD_M64_R64: return execLockXaddM64R64(insn);
-            case Insn::MOV_R8_R8: return execMovRR<Size::BYTE>(insn);
-            case Insn::MOV_R8_M8: return execMovRM<Size::BYTE>(insn);
-            case Insn::MOV_M8_R8: return execMovMR<Size::BYTE>(insn);
-            case Insn::MOV_R8_IMM: return execMovRImm<Size::BYTE>(insn);
-            case Insn::MOV_M8_IMM: return execMovMImm<Size::BYTE>(insn);
-            case Insn::MOV_R16_R16: return execMovRR<Size::WORD>(insn);
-            case Insn::MOV_R16_M16: return execMovRM<Size::WORD>(insn);
-            case Insn::MOV_M16_R16: return execMovMR<Size::WORD>(insn);
-            case Insn::MOV_R16_IMM: return execMovRImm<Size::WORD>(insn);
-            case Insn::MOV_M16_IMM: return execMovMImm<Size::WORD>(insn);
-            case Insn::MOV_R32_R32: return execMovRR<Size::DWORD>(insn);
-            case Insn::MOV_R32_M32: return execMovRM<Size::DWORD>(insn);
-            case Insn::MOV_M32_R32: return execMovMR<Size::DWORD>(insn);
-            case Insn::MOV_R32_IMM: return execMovRImm<Size::DWORD>(insn);
-            case Insn::MOV_M32_IMM: return execMovMImm<Size::DWORD>(insn);
-            case Insn::MOV_R64_R64: return execMovRR<Size::QWORD>(insn);
-            case Insn::MOV_R64_M64: return execMovRM<Size::QWORD>(insn);
-            case Insn::MOV_M64_R64: return execMovMR<Size::QWORD>(insn);
-            case Insn::MOV_R64_IMM: return execMovRImm<Size::QWORD>(insn);
-            case Insn::MOV_M64_IMM: return execMovMImm<Size::QWORD>(insn);
-            case Insn::MOV_RSSE_RSSE: return execMovRR<Size::XMMWORD>(insn);
-            case Insn::MOV_ALIGNED_RSSE_MSSE: return execMovaRSSEMSSE(insn);
-            case Insn::MOV_ALIGNED_MSSE_RSSE: return execMovaMSSERSSE(insn);
-            case Insn::MOV_UNALIGNED_RSSE_MSSE: return execMovuRSSEMSSE(insn);
-            case Insn::MOV_UNALIGNED_MSSE_RSSE: return execMovuMSSERSSE(insn);
-            case Insn::MOVSX_R16_RM8: return execMovsxR16RM8(insn);
-            case Insn::MOVSX_R32_RM8: return execMovsxR32RM8(insn);
-            case Insn::MOVSX_R32_RM16: return execMovsxR32RM16(insn);
-            case Insn::MOVSX_R64_RM8: return execMovsxR64RM8(insn);
-            case Insn::MOVSX_R64_RM16: return execMovsxR64RM16(insn);
-            case Insn::MOVSX_R64_RM32: return execMovsxR64RM32(insn);
-            case Insn::MOVZX_R16_RM8: return execMovzxR16RM8(insn);
-            case Insn::MOVZX_R32_RM8: return execMovzxR32RM8(insn);
-            case Insn::MOVZX_R32_RM16: return execMovzxR32RM16(insn);
-            case Insn::MOVZX_R64_RM8: return execMovzxR64RM8(insn);
-            case Insn::MOVZX_R64_RM16: return execMovzxR64RM16(insn);
-            case Insn::MOVZX_R64_RM32: return execMovzxR64RM32(insn);
-            case Insn::LEA_R32_ENCODING: return execLeaR32Encoding(insn);
-            case Insn::LEA_R64_ENCODING: return execLeaR64Encoding(insn);
-            case Insn::PUSH_IMM: return execPushImm(insn);
-            case Insn::PUSH_RM32: return execPushRM32(insn);
-            case Insn::PUSH_RM64: return execPushRM64(insn);
-            case Insn::POP_R32: return execPopR32(insn);
-            case Insn::POP_R64: return execPopR64(insn);
-            case Insn::PUSHFQ: return execPushfq(insn);
-            case Insn::POPFQ: return execPopfq(insn);
-            case Insn::CALLDIRECT: return execCallDirect(insn);
-            case Insn::CALLINDIRECT_RM32: return execCallIndirectRM32(insn);
-            case Insn::CALLINDIRECT_RM64: return execCallIndirectRM64(insn);
-            case Insn::RET: return execRet(insn);
-            case Insn::RET_IMM: return execRetImm(insn);
-            case Insn::LEAVE: return execLeave(insn);
-            case Insn::HALT: return execHalt(insn);
-            case Insn::NOP: return execNop(insn);
-            case Insn::UD2: return execUd2(insn);
-            case Insn::SYSCALL: return execSyscall(insn);
-            case Insn::CDQ: return execCdq(insn);
-            case Insn::CQO: return execCqo(insn);
-            case Insn::INC_RM8: return execIncRM8(insn);
-            case Insn::INC_RM16: return execIncRM16(insn);
-            case Insn::INC_RM32: return execIncRM32(insn);
-            case Insn::INC_RM64: return execIncRM64(insn);
-            case Insn::LOCK_INC_M8: return execLockIncM8(insn);
-            case Insn::LOCK_INC_M16: return execLockIncM16(insn);
-            case Insn::LOCK_INC_M32: return execLockIncM32(insn);
-            case Insn::LOCK_INC_M64: return execLockIncM64(insn);
-            case Insn::DEC_RM8: return execDecRM8(insn);
-            case Insn::DEC_RM16: return execDecRM16(insn);
-            case Insn::DEC_RM32: return execDecRM32(insn);
-            case Insn::DEC_RM64: return execDecRM64(insn);
-            case Insn::LOCK_DEC_M8: return execLockDecM8(insn);
-            case Insn::LOCK_DEC_M16: return execLockDecM16(insn);
-            case Insn::LOCK_DEC_M32: return execLockDecM32(insn);
-            case Insn::LOCK_DEC_M64: return execLockDecM64(insn);
-            case Insn::SHR_RM8_R8: return execShrRM8R8(insn);
-            case Insn::SHR_RM8_IMM: return execShrRM8Imm(insn);
-            case Insn::SHR_RM16_R8: return execShrRM16R8(insn);
-            case Insn::SHR_RM16_IMM: return execShrRM16Imm(insn);
-            case Insn::SHR_RM32_R8: return execShrRM32R8(insn);
-            case Insn::SHR_RM32_IMM: return execShrRM32Imm(insn);
-            case Insn::SHR_RM64_R8: return execShrRM64R8(insn);
-            case Insn::SHR_RM64_IMM: return execShrRM64Imm(insn);
-            case Insn::SHL_RM8_R8: return execShlRM8R8(insn);
-            case Insn::SHL_RM8_IMM: return execShlRM8Imm(insn);
-            case Insn::SHL_RM16_R8: return execShlRM16R8(insn);
-            case Insn::SHL_RM16_IMM: return execShlRM16Imm(insn);
-            case Insn::SHL_RM32_R8: return execShlRM32R8(insn);
-            case Insn::SHL_RM32_IMM: return execShlRM32Imm(insn);
-            case Insn::SHL_RM64_R8: return execShlRM64R8(insn);
-            case Insn::SHL_RM64_IMM: return execShlRM64Imm(insn);
-            case Insn::SHLD_RM32_R32_R8: return execShldRM32R32R8(insn);
-            case Insn::SHLD_RM32_R32_IMM: return execShldRM32R32Imm(insn);
-            case Insn::SHLD_RM64_R64_R8: return execShldRM64R64R8(insn);
-            case Insn::SHLD_RM64_R64_IMM: return execShldRM64R64Imm(insn);
-            case Insn::SHRD_RM32_R32_R8: return execShrdRM32R32R8(insn);
-            case Insn::SHRD_RM32_R32_IMM: return execShrdRM32R32Imm(insn);
-            case Insn::SHRD_RM64_R64_R8: return execShrdRM64R64R8(insn);
-            case Insn::SHRD_RM64_R64_IMM: return execShrdRM64R64Imm(insn);
-            case Insn::SAR_RM8_R8: return execSarRM8R8(insn);
-            case Insn::SAR_RM8_IMM: return execSarRM8Imm(insn);
-            case Insn::SAR_RM16_R8: return execSarRM16R8(insn);
-            case Insn::SAR_RM16_IMM: return execSarRM16Imm(insn);
-            case Insn::SAR_RM32_R8: return execSarRM32R8(insn);
-            case Insn::SAR_RM32_IMM: return execSarRM32Imm(insn);
-            case Insn::SAR_RM64_R8: return execSarRM64R8(insn);
-            case Insn::SAR_RM64_IMM: return execSarRM64Imm(insn);
-            case Insn::SARX_R32_RM32_R32: return execSarxR32RM32R32(insn);
-            case Insn::SARX_R64_RM64_R64: return execSarxR64RM64R64(insn);
-            case Insn::SHLX_R32_RM32_R32: return execShlxR32RM32R32(insn);
-            case Insn::SHLX_R64_RM64_R64: return execShlxR64RM64R64(insn);
-            case Insn::SHRX_R32_RM32_R32: return execShrxR32RM32R32(insn);
-            case Insn::SHRX_R64_RM64_R64: return execShrxR64RM64R64(insn);
-            case Insn::ROL_RM8_R8: return execRolRM8R8(insn);
-            case Insn::ROL_RM8_IMM: return execRolRM8Imm(insn);
-            case Insn::ROL_RM16_R8: return execRolRM16R8(insn);
-            case Insn::ROL_RM16_IMM: return execRolRM16Imm(insn);
-            case Insn::ROL_RM32_R8: return execRolRM32R8(insn);
-            case Insn::ROL_RM32_IMM: return execRolRM32Imm(insn);
-            case Insn::ROL_RM64_R8: return execRolRM64R8(insn);
-            case Insn::ROL_RM64_IMM: return execRolRM64Imm(insn);
-            case Insn::ROR_RM8_R8: return execRorRM8R8(insn);
-            case Insn::ROR_RM8_IMM: return execRorRM8Imm(insn);
-            case Insn::ROR_RM16_R8: return execRorRM16R8(insn);
-            case Insn::ROR_RM16_IMM: return execRorRM16Imm(insn);
-            case Insn::ROR_RM32_R8: return execRorRM32R8(insn);
-            case Insn::ROR_RM32_IMM: return execRorRM32Imm(insn);
-            case Insn::ROR_RM64_R8: return execRorRM64R8(insn);
-            case Insn::ROR_RM64_IMM: return execRorRM64Imm(insn);
-            case Insn::TZCNT_R16_RM16: return execTzcntR16RM16(insn);
-            case Insn::TZCNT_R32_RM32: return execTzcntR32RM32(insn);
-            case Insn::TZCNT_R64_RM64: return execTzcntR64RM64(insn);
-            case Insn::BT_RM16_R16: return execBtRM16R16(insn);
-            case Insn::BT_RM16_IMM: return execBtRM16Imm(insn);
-            case Insn::BT_RM32_R32: return execBtRM32R32(insn);
-            case Insn::BT_RM32_IMM: return execBtRM32Imm(insn);
-            case Insn::BT_RM64_R64: return execBtRM64R64(insn);
-            case Insn::BT_RM64_IMM: return execBtRM64Imm(insn);
-            case Insn::BTR_RM16_R16: return execBtrRM16R16(insn);
-            case Insn::BTR_RM16_IMM: return execBtrRM16Imm(insn);
-            case Insn::BTR_RM32_R32: return execBtrRM32R32(insn);
-            case Insn::BTR_RM32_IMM: return execBtrRM32Imm(insn);
-            case Insn::BTR_RM64_R64: return execBtrRM64R64(insn);
-            case Insn::BTR_RM64_IMM: return execBtrRM64Imm(insn);
-            case Insn::BTC_RM16_R16: return execBtcRM16R16(insn);
-            case Insn::BTC_RM16_IMM: return execBtcRM16Imm(insn);
-            case Insn::BTC_RM32_R32: return execBtcRM32R32(insn);
-            case Insn::BTC_RM32_IMM: return execBtcRM32Imm(insn);
-            case Insn::BTC_RM64_R64: return execBtcRM64R64(insn);
-            case Insn::BTC_RM64_IMM: return execBtcRM64Imm(insn);
-            case Insn::BTS_RM16_R16: return execBtsRM16R16(insn);
-            case Insn::BTS_RM16_IMM: return execBtsRM16Imm(insn);
-            case Insn::BTS_RM32_R32: return execBtsRM32R32(insn);
-            case Insn::BTS_RM32_IMM: return execBtsRM32Imm(insn);
-            case Insn::BTS_RM64_R64: return execBtsRM64R64(insn);
-            case Insn::BTS_RM64_IMM: return execBtsRM64Imm(insn);
-            case Insn::LOCK_BTS_M16_R16: return execLockBtsM16R16(insn);
-            case Insn::LOCK_BTS_M16_IMM: return execLockBtsM16Imm(insn);
-            case Insn::LOCK_BTS_M32_R32: return execLockBtsM32R32(insn);
-            case Insn::LOCK_BTS_M32_IMM: return execLockBtsM32Imm(insn);
-            case Insn::LOCK_BTS_M64_R64: return execLockBtsM64R64(insn);
-            case Insn::LOCK_BTS_M64_IMM: return execLockBtsM64Imm(insn);
-            case Insn::TEST_RM8_R8: return execTestRM8R8(insn);
-            case Insn::TEST_RM8_IMM: return execTestRM8Imm(insn);
-            case Insn::TEST_RM16_R16: return execTestRM16R16(insn);
-            case Insn::TEST_RM16_IMM: return execTestRM16Imm(insn);
-            case Insn::TEST_RM32_R32: return execTestRM32R32(insn);
-            case Insn::TEST_RM32_IMM: return execTestRM32Imm(insn);
-            case Insn::TEST_RM64_R64: return execTestRM64R64(insn);
-            case Insn::TEST_RM64_IMM: return execTestRM64Imm(insn);
-            case Insn::CMP_RM8_RM8: return execCmpRM8RM8(insn);
-            case Insn::CMP_RM8_IMM: return execCmpRM8Imm(insn);
-            case Insn::CMP_RM16_RM16: return execCmpRM16RM16(insn);
-            case Insn::CMP_RM16_IMM: return execCmpRM16Imm(insn);
-            case Insn::CMP_RM32_RM32: return execCmpRM32RM32(insn);
-            case Insn::CMP_RM32_IMM: return execCmpRM32Imm(insn);
-            case Insn::CMP_RM64_RM64: return execCmpRM64RM64(insn);
-            case Insn::CMP_RM64_IMM: return execCmpRM64Imm(insn);
-            case Insn::CMPXCHG_RM8_R8: return execCmpxchgRM8R8(insn);
-            case Insn::CMPXCHG_RM16_R16: return execCmpxchgRM16R16(insn);
-            case Insn::CMPXCHG_RM32_R32: return execCmpxchgRM32R32(insn);
-            case Insn::CMPXCHG_RM64_R64: return execCmpxchgRM64R64(insn);
-            case Insn::LOCK_CMPXCHG_M8_R8: return execLockCmpxchgM8R8(insn);
-            case Insn::LOCK_CMPXCHG_M16_R16: return execLockCmpxchgM16R16(insn);
-            case Insn::LOCK_CMPXCHG_M32_R32: return execLockCmpxchgM32R32(insn);
-            case Insn::LOCK_CMPXCHG_M64_R64: return execLockCmpxchgM64R64(insn);
-            case Insn::SET_RM8: return execSetRM8(insn);
-            case Insn::JMP_RM32: return execJmpRM32(insn);
-            case Insn::JMP_RM64: return execJmpRM64(insn);
-            case Insn::JMP_U32: return execJmpu32(insn);
-            case Insn::JE: return execJe(insn);
-            case Insn::JNE: return execJne(insn);
-            case Insn::JCC: return execJcc(insn);
-            case Insn::BSR_R32_R32: return execBsrR32R32(insn);
-            case Insn::BSR_R32_M32: return execBsrR32M32(insn);
-            case Insn::BSR_R64_R64: return execBsrR64R64(insn);
-            case Insn::BSR_R64_M64: return execBsrR64M64(insn);
-            case Insn::BSF_R32_R32: return execBsfR32R32(insn);
-            case Insn::BSF_R32_M32: return execBsfR32M32(insn);
-            case Insn::BSF_R64_R64: return execBsfR64R64(insn);
-            case Insn::BSF_R64_M64: return execBsfR64M64(insn);
-            case Insn::CLD: return execCld(insn);
-            case Insn::STD: return execStd(insn);
-            case Insn::MOVS_M8_M8: return execMovsM8M8(insn);
-            case Insn::MOVS_M64_M64: return execMovsM64M64(insn);
-            case Insn::REP_MOVS_M8_M8: return execRepMovsM8M8(insn);
-            case Insn::REP_MOVS_M32_M32: return execRepMovsM32M32(insn);
-            case Insn::REP_MOVS_M64_M64: return execRepMovsM64M64(insn);
-            case Insn::REP_CMPS_M8_M8: return execRepCmpsM8M8(insn);
-            case Insn::REP_STOS_M8_R8: return execRepStosM8R8(insn);
-            case Insn::REP_STOS_M16_R16: return execRepStosM16R16(insn);
-            case Insn::REP_STOS_M32_R32: return execRepStosM32R32(insn);
-            case Insn::REP_STOS_M64_R64: return execRepStosM64R64(insn);
-            case Insn::REPNZ_SCAS_R8_M8: return execRepNZScasR8M8(insn);
-            case Insn::REPNZ_SCAS_R16_M16: return execRepNZScasR16M16(insn);
-            case Insn::REPNZ_SCAS_R32_M32: return execRepNZScasR32M32(insn);
-            case Insn::REPNZ_SCAS_R64_M64: return execRepNZScasR64M64(insn);
-            case Insn::CMOV_R16_RM16: return execCmovR16RM16(insn);
-            case Insn::CMOV_R32_RM32: return execCmovR32RM32(insn);
-            case Insn::CMOV_R64_RM64: return execCmovR64RM64(insn);
-            case Insn::CWDE: return execCwde(insn);
-            case Insn::CDQE: return execCdqe(insn);
-            case Insn::BSWAP_R32: return execBswapR32(insn);
-            case Insn::BSWAP_R64: return execBswapR64(insn);
-            case Insn::POPCNT_R16_RM16: return execPopcntR16RM16(insn);
-            case Insn::POPCNT_R32_RM32: return execPopcntR32RM32(insn);
-            case Insn::POPCNT_R64_RM64: return execPopcntR64RM64(insn);
-            case Insn::PXOR_RSSE_RMSSE: return execPxorRSSERMSSE(insn);
-            case Insn::MOVAPS_RMSSE_RMSSE: return execMovapsRMSSERMSSE(insn);
-            case Insn::MOVD_RSSE_RM32: return execMovdRSSERM32(insn);
-            case Insn::MOVD_RM32_RSSE: return execMovdRM32RSSE(insn);
-            case Insn::MOVD_RSSE_RM64: return execMovdRSSERM64(insn);
-            case Insn::MOVD_RM64_RSSE: return execMovdRM64RSSE(insn);
-            case Insn::MOVQ_RSSE_RM64: return execMovqRSSERM64(insn);
-            case Insn::MOVQ_RM64_RSSE: return execMovqRM64RSSE(insn);
-            case Insn::FLDZ: return execFldz(insn);
-            case Insn::FLD1: return execFld1(insn);
-            case Insn::FLD_ST: return execFldST(insn);
-            case Insn::FLD_M32: return execFldM32(insn);
-            case Insn::FLD_M64: return execFldM64(insn);
-            case Insn::FLD_M80: return execFldM80(insn);
-            case Insn::FILD_M16: return execFildM16(insn);
-            case Insn::FILD_M32: return execFildM32(insn);
-            case Insn::FILD_M64: return execFildM64(insn);
-            case Insn::FSTP_ST: return execFstpST(insn);
-            case Insn::FSTP_M32: return execFstpM32(insn);
-            case Insn::FSTP_M64: return execFstpM64(insn);
-            case Insn::FSTP_M80: return execFstpM80(insn);
-            case Insn::FISTP_M16: return execFistpM16(insn);
-            case Insn::FISTP_M32: return execFistpM32(insn);
-            case Insn::FISTP_M64: return execFistpM64(insn);
-            case Insn::FXCH_ST: return execFxchST(insn);
-            case Insn::FADDP_ST: return execFaddpST(insn);
-            case Insn::FSUBP_ST: return execFsubpST(insn);
-            case Insn::FSUBRP_ST: return execFsubrpST(insn);
-            case Insn::FMUL1_M32: return execFmul1M32(insn);
-            case Insn::FMUL1_M64: return execFmul1M64(insn);
-            case Insn::FDIV_ST_ST: return execFdivSTST(insn);
-            case Insn::FDIVP_ST_ST: return execFdivpSTST(insn);
-            case Insn::FCOMI_ST: return execFcomiST(insn);
-            case Insn::FUCOMI_ST: return execFucomiST(insn);
-            case Insn::FRNDINT: return execFrndint(insn);
-            case Insn::FCMOV_ST: return execFcmovST(insn);
-            case Insn::FNSTCW_M16: return execFnstcwM16(insn);
-            case Insn::FLDCW_M16: return execFldcwM16(insn);
-            case Insn::FNSTSW_R16: return execFnstswR16(insn);
-            case Insn::FNSTSW_M16: return execFnstswM16(insn);
-            case Insn::FNSTENV_M224: return execFnstenvM224(insn);
-            case Insn::FLDENV_M224: return execFldenvM224(insn);
-            case Insn::EMMS: return execEmms(insn);
-            case Insn::MOVSS_RSSE_M32: return execMovssRSSEM32(insn);
-            case Insn::MOVSS_M32_RSSE: return execMovssM32RSSE(insn);
-            case Insn::MOVSD_RSSE_M64: return execMovsdRSSEM64(insn);
-            case Insn::MOVSD_M64_RSSE: return execMovsdM64RSSE(insn);
-            case Insn::MOVSD_RSSE_RSSE: return execMovsdRSSERSSE(insn);
-            case Insn::ADDPS_RSSE_RMSSE: return execAddpsRSSERMSSE(insn);
-            case Insn::ADDPD_RSSE_RMSSE: return execAddpdRSSERMSSE(insn);
-            case Insn::ADDSS_RSSE_RSSE: return execAddssRSSERSSE(insn);
-            case Insn::ADDSS_RSSE_M32: return execAddssRSSEM32(insn);
-            case Insn::ADDSD_RSSE_RSSE: return execAddsdRSSERSSE(insn);
-            case Insn::ADDSD_RSSE_M64: return execAddsdRSSEM64(insn);
-            case Insn::SUBPS_RSSE_RMSSE: return execSubpsRSSERMSSE(insn);
-            case Insn::SUBPD_RSSE_RMSSE: return execSubpdRSSERMSSE(insn);
-            case Insn::SUBSS_RSSE_RSSE: return execSubssRSSERSSE(insn);
-            case Insn::SUBSS_RSSE_M32: return execSubssRSSEM32(insn);
-            case Insn::SUBSD_RSSE_RSSE: return execSubsdRSSERSSE(insn);
-            case Insn::SUBSD_RSSE_M64: return execSubsdRSSEM64(insn);
-            case Insn::MULPS_RSSE_RMSSE: return execMulpsRSSERMSSE(insn);
-            case Insn::MULPD_RSSE_RMSSE: return execMulpdRSSERMSSE(insn);
-            case Insn::MULSS_RSSE_RSSE: return execMulssRSSERSSE(insn);
-            case Insn::MULSS_RSSE_M32: return execMulssRSSEM32(insn);
-            case Insn::MULSD_RSSE_RSSE: return execMulsdRSSERSSE(insn);
-            case Insn::MULSD_RSSE_M64: return execMulsdRSSEM64(insn);
-            case Insn::DIVPS_RSSE_RMSSE: return execDivpsRSSERMSSE(insn);
-            case Insn::DIVPD_RSSE_RMSSE: return execDivpdRSSERMSSE(insn);
-            case Insn::DIVSS_RSSE_RSSE: return execDivssRSSERSSE(insn);
-            case Insn::DIVSS_RSSE_M32: return execDivssRSSEM32(insn);
-            case Insn::DIVSD_RSSE_RSSE: return execDivsdRSSERSSE(insn);
-            case Insn::DIVSD_RSSE_M64: return execDivsdRSSEM64(insn);
-            case Insn::SQRTSS_RSSE_RSSE: return execSqrtssRSSERSSE(insn);
-            case Insn::SQRTSS_RSSE_M32: return execSqrtssRSSEM32(insn);
-            case Insn::SQRTSD_RSSE_RSSE: return execSqrtsdRSSERSSE(insn);
-            case Insn::SQRTSD_RSSE_M64: return execSqrtsdRSSEM64(insn);
-            case Insn::COMISS_RSSE_RSSE: return execComissRSSERSSE(insn);
-            case Insn::COMISS_RSSE_M32: return execComissRSSEM32(insn);
-            case Insn::COMISD_RSSE_RSSE: return execComisdRSSERSSE(insn);
-            case Insn::COMISD_RSSE_M64: return execComisdRSSEM64(insn);
-            case Insn::UCOMISS_RSSE_RSSE: return execUcomissRSSERSSE(insn);
-            case Insn::UCOMISS_RSSE_M32: return execUcomissRSSEM32(insn);
-            case Insn::UCOMISD_RSSE_RSSE: return execUcomisdRSSERSSE(insn);
-            case Insn::UCOMISD_RSSE_M64: return execUcomisdRSSEM64(insn);
-            case Insn::CMPSS_RSSE_RSSE: return execCmpssRSSERSSE(insn);
-            case Insn::CMPSS_RSSE_M32: return execCmpssRSSEM32(insn);
-            case Insn::CMPSD_RSSE_RSSE: return execCmpsdRSSERSSE(insn);
-            case Insn::CMPSD_RSSE_M64: return execCmpsdRSSEM64(insn);
-            case Insn::CMPPS_RSSE_RMSSE: return execCmppsRSSERMSSE(insn);
-            case Insn::CMPPD_RSSE_RMSSE: return execCmppdRSSERMSSE(insn);
-            case Insn::MAXSS_RSSE_RSSE: return execMaxssRSSERSSE(insn);
-            case Insn::MAXSS_RSSE_M32: return execMaxssRSSEM32(insn);
-            case Insn::MAXSD_RSSE_RSSE: return execMaxsdRSSERSSE(insn);
-            case Insn::MAXSD_RSSE_M64: return execMaxsdRSSEM64(insn);
-            case Insn::MINSS_RSSE_RSSE: return execMinssRSSERSSE(insn);
-            case Insn::MINSS_RSSE_M32: return execMinssRSSEM32(insn);
-            case Insn::MINSD_RSSE_RSSE: return execMinsdRSSERSSE(insn);
-            case Insn::MINSD_RSSE_M64: return execMinsdRSSEM64(insn);
-            case Insn::MAXPS_RSSE_RMSSE: return execMaxpsRSSERMSSE(insn);
-            case Insn::MAXPD_RSSE_RMSSE: return execMaxpdRSSERMSSE(insn);
-            case Insn::MINPS_RSSE_RMSSE: return execMinpsRSSERMSSE(insn);
-            case Insn::MINPD_RSSE_RMSSE: return execMinpdRSSERMSSE(insn);
-            case Insn::CVTSI2SS_RSSE_RM32: return execCvtsi2ssRSSERM32(insn);
-            case Insn::CVTSI2SS_RSSE_RM64: return execCvtsi2ssRSSERM64(insn);
-            case Insn::CVTSI2SD_RSSE_RM32: return execCvtsi2sdRSSERM32(insn);
-            case Insn::CVTSI2SD_RSSE_RM64: return execCvtsi2sdRSSERM64(insn);
-            case Insn::CVTSS2SD_RSSE_RSSE: return execCvtss2sdRSSERSSE(insn);
-            case Insn::CVTSS2SD_RSSE_M32: return execCvtss2sdRSSEM32(insn);
-            case Insn::CVTSD2SI_R64_RSSE: return execCvtsd2siR64RSSE(insn);
-            case Insn::CVTSD2SI_R64_M64: return execCvtsd2siR64M64(insn);
-            case Insn::CVTSD2SS_RSSE_RSSE: return execCvtsd2ssRSSERSSE(insn);
-            case Insn::CVTSD2SS_RSSE_M64: return execCvtsd2ssRSSEM64(insn);
-            case Insn::CVTTPS2DQ_RSSE_RMSSE: return execCvttps2dqRSSERMSSE(insn);
-            case Insn::CVTTSS2SI_R32_RSSE: return execCvttss2siR32RSSE(insn);
-            case Insn::CVTTSS2SI_R32_M32: return execCvttss2siR32M32(insn);
-            case Insn::CVTTSS2SI_R64_RSSE: return execCvttss2siR64RSSE(insn);
-            case Insn::CVTTSS2SI_R64_M32: return execCvttss2siR64M32(insn);
-            case Insn::CVTTSD2SI_R32_RSSE: return execCvttsd2siR32RSSE(insn);
-            case Insn::CVTTSD2SI_R32_M64: return execCvttsd2siR32M64(insn);
-            case Insn::CVTTSD2SI_R64_RSSE: return execCvttsd2siR64RSSE(insn);
-            case Insn::CVTTSD2SI_R64_M64: return execCvttsd2siR64M64(insn);
-            case Insn::CVTDQ2PD_RSSE_RSSE: return execCvtdq2pdRSSERSSE(insn);
-            case Insn::CVTDQ2PS_RSSE_RMSSE: return execCvtdq2psRSSERMSSE(insn);
-            case Insn::CVTDQ2PD_RSSE_M64: return execCvtdq2pdRSSEM64(insn);
-            case Insn::CVTPS2DQ_RSSE_RMSSE: return execCvtps2dqRSSERMSSE(insn);
-            case Insn::STMXCSR_M32: return execStmxcsrM32(insn);
-            case Insn::LDMXCSR_M32: return execLdmxcsrM32(insn);
-            case Insn::PAND_RSSE_RMSSE: return execPandRSSERMSSE(insn);
-            case Insn::PANDN_RSSE_RMSSE: return execPandnRSSERMSSE(insn);
-            case Insn::POR_RSSE_RMSSE: return execPorRSSERMSSE(insn);
-            case Insn::ANDPD_RSSE_RMSSE: return execAndpdRSSERMSSE(insn);
-            case Insn::ANDNPD_RSSE_RMSSE: return execAndnpdRSSERMSSE(insn);
-            case Insn::ORPD_RSSE_RMSSE: return execOrpdRSSERMSSE(insn);
-            case Insn::XORPD_RSSE_RMSSE: return execXorpdRSSERMSSE(insn);
-            case Insn::SHUFPS_RSSE_RMSSE_IMM: return execShufpsRSSERMSSEImm(insn);
-            case Insn::SHUFPD_RSSE_RMSSE_IMM: return execShufpdRSSERMSSEImm(insn);
-            case Insn::MOVLPS_RSSE_M64: return execMovlpsRSSEM64(insn);
-            case Insn::MOVLPS_M64_RSSE: return execMovlpsM64RSSE(insn);
-            case Insn::MOVHPS_RSSE_M64: return execMovhpsRSSEM64(insn);
-            case Insn::MOVHPS_M64_RSSE: return execMovhpsM64RSSE(insn);
-            case Insn::MOVHLPS_RSSE_RSSE: return execMovhlpsRSSERSSE(insn);
-            case Insn::MOVLHPS_RSSE_RSSE: return execMovlhpsRSSERSSE(insn);
-            case Insn::PINSRW_RSSE_R32_IMM: return execPinsrwRSSER32Imm(insn);
-            case Insn::PINSRW_RSSE_M16_IMM: return execPinsrwRSSEM16Imm(insn);
-            case Insn::PUNPCKLBW_RSSE_RMSSE: return execPunpcklbwRSSERMSSE(insn);
-            case Insn::PUNPCKLWD_RSSE_RMSSE: return execPunpcklwdRSSERMSSE(insn);
-            case Insn::PUNPCKLDQ_RSSE_RMSSE: return execPunpckldqRSSERMSSE(insn);
-            case Insn::PUNPCKLQDQ_RSSE_RMSSE: return execPunpcklqdqRSSERMSSE(insn);
-            case Insn::PUNPCKHBW_RSSE_RMSSE: return execPunpckhbwRSSERMSSE(insn);
-            case Insn::PUNPCKHWD_RSSE_RMSSE: return execPunpckhwdRSSERMSSE(insn);
-            case Insn::PUNPCKHDQ_RSSE_RMSSE: return execPunpckhdqRSSERMSSE(insn);
-            case Insn::PUNPCKHQDQ_RSSE_RMSSE: return execPunpckhqdqRSSERMSSE(insn);
-            case Insn::PSHUFB_RSSE_RMSSE: return execPshufbRSSERMSSE(insn);
-            case Insn::PSHUFLW_RSSE_RMSSE_IMM: return execPshuflwRSSERMSSEImm(insn);
-            case Insn::PSHUFHW_RSSE_RMSSE_IMM: return execPshufhwRSSERMSSEImm(insn);
-            case Insn::PSHUFD_RSSE_RMSSE_IMM: return execPshufdRSSERMSSEImm(insn);
-            case Insn::PCMPEQB_RSSE_RMSSE: return execPcmpeqbRSSERMSSE(insn);
-            case Insn::PCMPEQW_RSSE_RMSSE: return execPcmpeqwRSSERMSSE(insn);
-            case Insn::PCMPEQD_RSSE_RMSSE: return execPcmpeqdRSSERMSSE(insn);
-            case Insn::PCMPEQQ_RSSE_RMSSE: return execPcmpeqqRSSERMSSE(insn);
-            case Insn::PCMPGTB_RSSE_RMSSE: return execPcmpgtbRSSERMSSE(insn);
-            case Insn::PCMPGTW_RSSE_RMSSE: return execPcmpgtwRSSERMSSE(insn);
-            case Insn::PCMPGTD_RSSE_RMSSE: return execPcmpgtdRSSERMSSE(insn);
-            case Insn::PCMPGTQ_RSSE_RMSSE: return execPcmpgtqRSSERMSSE(insn);
-            case Insn::PMOVMSKB_R32_RSSE: return execPmovmskbR32RSSE(insn);
-            case Insn::PADDB_RSSE_RMSSE: return execPaddbRSSERMSSE(insn);
-            case Insn::PADDW_RSSE_RMSSE: return execPaddwRSSERMSSE(insn);
-            case Insn::PADDD_RSSE_RMSSE: return execPadddRSSERMSSE(insn);
-            case Insn::PADDQ_RSSE_RMSSE: return execPaddqRSSERMSSE(insn);
-            case Insn::PSUBB_RSSE_RMSSE: return execPsubbRSSERMSSE(insn);
-            case Insn::PSUBW_RSSE_RMSSE: return execPsubwRSSERMSSE(insn);
-            case Insn::PSUBD_RSSE_RMSSE: return execPsubdRSSERMSSE(insn);
-            case Insn::PSUBQ_RSSE_RMSSE: return execPsubqRSSERMSSE(insn);
-            case Insn::PMULHUW_RSSE_RMSSE: return execPmulhuwRSSERMSSE(insn);
-            case Insn::PMULHW_RSSE_RMSSE: return execPmulhwRSSERMSSE(insn);
-            case Insn::PMULLW_RSSE_RMSSE: return execPmullwRSSERMSSE(insn);
-            case Insn::PMULUDQ_RSSE_RMSSE: return execPmuludqRSSERMSSE(insn);
-            case Insn::PMADDWD_RSSE_RMSSE: return execPmaddwdRSSERMSSE(insn);
-            case Insn::PSADBW_RSSE_RMSSE: return execPsadbwRSSERMSSE(insn);
-            case Insn::PAVGB_RSSE_RMSSE: return execPavgbRSSERMSSE(insn);
-            case Insn::PAVGW_RSSE_RMSSE: return execPavgwRSSERMSSE(insn);
-            case Insn::PMAXUB_RSSE_RMSSE: return execPmaxubRSSERMSSE(insn);
-            case Insn::PMINUB_RSSE_RMSSE: return execPminubRSSERMSSE(insn);
-            case Insn::PTEST_RSSE_RMSSE: return execPtestRSSERMSSE(insn);
-            case Insn::PSRAW_RSSE_IMM: return execPsrawRSSEImm(insn);
-            case Insn::PSRAD_RSSE_IMM: return execPsradRSSEImm(insn);
-            case Insn::PSRAQ_RSSE_IMM: return execPsraqRSSEImm(insn);
-            case Insn::PSLLW_RSSE_IMM: return execPsllwRSSEImm(insn);
-            case Insn::PSLLW_RSSE_RMSSE: return execPsllwRSSERMSSE(insn);
-            case Insn::PSLLD_RSSE_IMM: return execPslldRSSEImm(insn);
-            case Insn::PSLLD_RSSE_RMSSE: return execPslldRSSERMSSE(insn);
-            case Insn::PSLLQ_RSSE_IMM: return execPsllqRSSEImm(insn);
-            case Insn::PSLLQ_RSSE_RMSSE: return execPsllqRSSERMSSE(insn);
-            case Insn::PSRLW_RSSE_IMM: return execPsrlwRSSEImm(insn);
-            case Insn::PSRLW_RSSE_RMSSE: return execPsrlwRSSERMSSE(insn);
-            case Insn::PSRLD_RSSE_IMM: return execPsrldRSSEImm(insn);
-            case Insn::PSRLD_RSSE_RMSSE: return execPsrldRSSERMSSE(insn);
-            case Insn::PSRLQ_RSSE_IMM: return execPsrlqRSSEImm(insn);
-            case Insn::PSRLQ_RSSE_RMSSE: return execPsrlqRSSERMSSE(insn);
-            case Insn::PSLLDQ_RSSE_IMM: return execPslldqRSSEImm(insn);
-            case Insn::PSRLDQ_RSSE_IMM: return execPsrldqRSSEImm(insn);
-            case Insn::PCMPISTRI_RSSE_RMSSE_IMM: return execPcmpistriRSSERMSSEImm(insn);
-            case Insn::PACKUSWB_RSSE_RMSSE: return execPackuswbRSSERMSSE(insn);
-            case Insn::PACKUSDW_RSSE_RMSSE: return execPackusdwRSSERMSSE(insn);
-            case Insn::PACKSSWB_RSSE_RMSSE: return execPacksswbRSSERMSSE(insn);
-            case Insn::PACKSSDW_RSSE_RMSSE: return execPackssdwRSSERMSSE(insn);
-            case Insn::UNPCKHPS_RSSE_RMSSE: return execUnpckhpsRSSERMSSE(insn);
-            case Insn::UNPCKHPD_RSSE_RMSSE: return execUnpckhpdRSSERMSSE(insn);
-            case Insn::UNPCKLPS_RSSE_RMSSE: return execUnpcklpsRSSERMSSE(insn);
-            case Insn::UNPCKLPD_RSSE_RMSSE: return execUnpcklpdRSSERMSSE(insn);
-            case Insn::MOVMSKPS_R32_RSSE: return execMovmskpsR32RSSE(insn);
-            case Insn::MOVMSKPS_R64_RSSE: return execMovmskpsR64RSSE(insn);
-            case Insn::MOVMSKPD_R32_RSSE: return execMovmskpdR32RSSE(insn);
-            case Insn::MOVMSKPD_R64_RSSE: return execMovmskpdR64RSSE(insn);
-            case Insn::RDTSC: return execRdtsc(insn);
-            case Insn::CPUID: return execCpuid(insn);
-            case Insn::XGETBV: return execXgetbv(insn);
-            case Insn::FXSAVE_M64: return execFxsaveM64(insn);
-            case Insn::FXRSTOR_M64: return execFxrstorM64(insn);
-            case Insn::FWAIT: return execFwait(insn);
-            case Insn::RDPKRU: return execRdpkru(insn);
-            case Insn::WRPKRU: return execWrpkru(insn);
-            case Insn::RDSSPD: return execRdsspd(insn);
-            case Insn::UNKNOWN: return execUnknown(insn);
-        }
+        return execFunctions_[(size_t)insn.insn()](*this, insn);
     }
 
     void Cpu::execAddRM8RM8(const X64Instruction& ins) {

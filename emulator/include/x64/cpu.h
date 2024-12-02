@@ -163,6 +163,10 @@ namespace x64 {
         void execLockCmpxchg32Impl(Ptr32 dst, u32 src);
         void execLockCmpxchg64Impl(Ptr64 dst, u64 src);
 
+        using ExecPtr = void(*)(Cpu&, const X64Instruction&);
+
+        static const std::array<ExecPtr, (size_t)Insn::UNKNOWN+1> execFunctions_;
+
     public:
         void exec(const X64Instruction&);
 
