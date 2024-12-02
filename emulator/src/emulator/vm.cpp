@@ -5,11 +5,69 @@
 #include "x64/registers.h"
 #include "kernel/thread.h"
 #include <algorithm>
+#include <numeric>
 #include <optional>
 
 namespace emulator {
 
     VM::VM(x64::Mmu& mmu, kernel::Kernel& kernel) : mmu_(mmu), kernel_(kernel), cpu_(this, &mmu_) { }
+
+    VM::~VM() {
+        if(countInstructions()) {
+            std::sort(instructionTypeAndExample_.begin(), instructionTypeAndExample_.end(), [](const auto& a, const auto& b) {
+                return a.first > b.first;
+            });
+            for(const auto& p : instructionTypeAndExample_) {
+                if(p.first == 0) break; // don't print zeros
+                fmt::print("  {:10}  {:20}\n", p.first, p.second);
+            }
+
+            // auto size = instructionCount_.size();
+            // auto total = std::accumulate(instructionCount_.begin(), instructionCount_.end(), (u64)0, [](u64 tot, const auto& p) {
+            //     return tot + p.second;
+            // });
+            // fmt::print("Executed {} different instructions and {} total instructions\n", size, total);
+            // std::vector<std::pair<u64, u64>> ps;
+            // ps.insert(ps.begin(), instructionCount_.begin(), instructionCount_.end());
+            // std::sort(ps.begin(), ps.end(), [](const auto& a, const auto& b) {
+            //     return a.second > b.second;
+            // });
+            // for(size_t i = 0; i < ps.size(); ++i) {
+            //     if(i >= 50) break;
+            //     u64 address = ps[i].first;
+            //     u64 count = ps[i].second;
+            //     updateExecutionPoint(address);
+            //     const x64::X64Instruction& instruction = *currentThreadExecutionPoint_.nextInstruction;
+            //     fmt::print("  {:10}  {}\n", count, instruction.toString());
+            // }
+
+
+            // auto size = basicBlockCount_.size();
+            // auto total = std::accumulate(basicBlockCount_.begin(), basicBlockCount_.end(), (u64)0, [](u64 tot, const auto& p) {
+            //     return tot + p.second;
+            // });
+            // fmt::print("Executed {} different basic blocks and {} total basic blocks\n", size, total);
+            // std::vector<std::pair<u64, u64>> ps;
+            // ps.insert(ps.begin(), basicBlockCount_.begin(), basicBlockCount_.end());
+            // std::sort(ps.begin(), ps.end(), [](const auto& a, const auto& b) {
+            //     return a.second > b.second;
+            // });
+            // for(size_t i = 0; i < ps.size(); ++i) {
+            //     if(i >= 50) break;
+            //     u64 address = ps[i].first;
+            //     u64 count = ps[i].second;
+            //     fmt::print("  {:10}  {:#x}\n", count, address);
+            // }
+        }
+    }
+
+    void VM::setCountInstructions(bool countInstructions) {
+        countInstructions_ = countInstructions;
+    }
+
+    bool VM::countInstructions() const {
+        return countInstructions_;
+    }
     
     void VM::setLogInstructions(bool logInstructions) {
         logInstructions_ = logInstructions;
@@ -103,6 +161,27 @@ namespace emulator {
                 verify(!signal_interrupt);
                 const x64::X64Instruction& instruction = fetchInstruction();
                 log(tickInfo.current(), instruction);
+                tickInfo.tick();
+                cpu_.exec(instruction);
+            }
+        } else if(countInstructions()) {
+            kernel::Thread::TickInfo& tickInfo = thread->tickInfo();
+            auto incrementInstructionCount = [&]() {
+                ++instructionCount_[cpu_.regs_.rip()];
+            };
+            auto incrementInstructionType = [&](const x64::X64Instruction& instruction) {
+                size_t index = (size_t)instruction.insn();
+                if(index >= instructionTypeAndExample_.size()) instructionTypeAndExample_.resize(index+1, std::make_pair(0, ""));
+                if(instructionTypeAndExample_[index].first == 0) {
+                    instructionTypeAndExample_[index].second = instruction.toString();
+                }
+                ++instructionTypeAndExample_[index].first;
+            };
+            while(!tickInfo.isStopAsked()) {
+                verify(!signal_interrupt);
+                incrementInstructionCount();
+                const x64::X64Instruction& instruction = fetchInstruction();
+                incrementInstructionType(instruction);
                 tickInfo.tick();
                 cpu_.exec(instruction);
             }

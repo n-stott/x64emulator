@@ -6,6 +6,7 @@
 #include "x64/mmu.h"
 #include "utils.h"
 #include <deque>
+#include <string>
 #include <unordered_map>
 
 namespace kernel {
@@ -18,9 +19,13 @@ namespace emulator {
     class VM {
     public:
         explicit VM(x64::Mmu& mmu, kernel::Kernel& kernel);
+        ~VM();
 
         void crash();
         bool hasCrashed() const { return hasCrashed_; }
+
+        void setCountInstructions(bool);
+        bool countInstructions() const;
         
         void setLogInstructions(bool);
         bool logInstructions() const;
@@ -79,6 +84,7 @@ namespace emulator {
         mutable std::vector<std::unique_ptr<ExecutableSection>> executableSections_;
         bool hasCrashed_ = false;
         bool logInstructions_ = false;
+        bool countInstructions_ = false;
         unsigned long long nbTicksBeforeLoggingInstructions_ { 0 };
 
         struct ExecutionPoint {
@@ -96,6 +102,9 @@ namespace emulator {
 
         mutable SymbolProvider symbolProvider_;
         mutable std::unordered_map<u64, std::string> functionNameCache_;
+
+        std::unordered_map<u64, u64> instructionCount_;
+        std::vector<std::pair<u64, std::string>> instructionTypeAndExample_;
 
         friend class MunmapCallback;
     };
