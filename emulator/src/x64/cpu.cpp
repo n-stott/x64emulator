@@ -338,7 +338,6 @@ namespace x64 {
             case Insn::NOP: return execNop(insn);
             case Insn::UD2: return execUd2(insn);
             case Insn::SYSCALL: return execSyscall(insn);
-            case Insn::UNKNOWN: return execUnknown(insn);
             case Insn::CDQ: return execCdq(insn);
             case Insn::CQO: return execCqo(insn);
             case Insn::INC_RM8: return execIncRM8(insn);
@@ -509,14 +508,14 @@ namespace x64 {
             case Insn::POPCNT_R16_RM16: return execPopcntR16RM16(insn);
             case Insn::POPCNT_R32_RM32: return execPopcntR32RM32(insn);
             case Insn::POPCNT_R64_RM64: return execPopcntR64RM64(insn);
-            case Insn::PXOR_RSSE_RMSSE: return exec(Pxor<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::MOVAPS_RMSSE_RMSSE: return exec(Movaps<RMSSE, RMSSE>{insn.op0<RMSSE>(), insn.op1<RMSSE>()});
-            case Insn::MOVD_RSSE_RM32: return exec(Movd<RSSE, RM32>{insn.op0<RSSE>(), insn.op1<RM32>()});
-            case Insn::MOVD_RM32_RSSE: return exec(Movd<RM32, RSSE>{insn.op0<RM32>(), insn.op1<RSSE>()});
-            case Insn::MOVD_RSSE_RM64: return exec(Movd<RSSE, RM64>{insn.op0<RSSE>(), insn.op1<RM64>()});
-            case Insn::MOVD_RM64_RSSE: return exec(Movd<RM64, RSSE>{insn.op0<RM64>(), insn.op1<RSSE>()});
-            case Insn::MOVQ_RSSE_RM64: return exec(Movq<RSSE, RM64>{insn.op0<RSSE>(), insn.op1<RM64>()});
-            case Insn::MOVQ_RM64_RSSE: return exec(Movq<RM64, RSSE>{insn.op0<RM64>(), insn.op1<RSSE>()});
+            case Insn::PXOR_RSSE_RMSSE: return execPxorRSSERMSSE(insn);
+            case Insn::MOVAPS_RMSSE_RMSSE: return execMovapsRMSSERMSSE(insn);
+            case Insn::MOVD_RSSE_RM32: return execMovdRSSERM32(insn);
+            case Insn::MOVD_RM32_RSSE: return execMovdRM32RSSE(insn);
+            case Insn::MOVD_RSSE_RM64: return execMovdRSSERM64(insn);
+            case Insn::MOVD_RM64_RSSE: return execMovdRM64RSSE(insn);
+            case Insn::MOVQ_RSSE_RM64: return execMovqRSSERM64(insn);
+            case Insn::MOVQ_RM64_RSSE: return execMovqRM64RSSE(insn);
             case Insn::FLDZ: return exec(Fldz{});
             case Insn::FLD1: return exec(Fld1{});
             case Insn::FLD_ST: return exec(Fld<ST>{insn.op0<ST>()});
@@ -552,128 +551,128 @@ namespace x64 {
             case Insn::FNSTENV_M224: return exec(Fnstenv<M224>{insn.op0<M224>()});
             case Insn::FLDENV_M224: return exec(Fldenv<M224>{insn.op0<M224>()});
             case Insn::EMMS: return exec(Emms{});
-            case Insn::MOVSS_RSSE_M32: return exec(Movss<RSSE, M32>{insn.op0<RSSE>(), insn.op1<M32>()});
-            case Insn::MOVSS_M32_RSSE: return exec(Movss<M32, RSSE>{insn.op0<M32>(), insn.op1<RSSE>()});
-            case Insn::MOVSD_RSSE_M64: return exec(Movsd<RSSE, M64>{insn.op0<RSSE>(), insn.op1<M64>()});
-            case Insn::MOVSD_M64_RSSE: return exec(Movsd<M64, RSSE>{insn.op0<M64>(), insn.op1<RSSE>()});
-            case Insn::MOVSD_RSSE_RSSE: return exec(Movsd<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
-            case Insn::ADDPS_RSSE_RMSSE: return exec(Addps<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::ADDPD_RSSE_RMSSE: return exec(Addpd<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::ADDSS_RSSE_RSSE: return exec(Addss<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
-            case Insn::ADDSS_RSSE_M32: return exec(Addss<RSSE, M32>{insn.op0<RSSE>(), insn.op1<M32>()});
-            case Insn::ADDSD_RSSE_RSSE: return exec(Addsd<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
-            case Insn::ADDSD_RSSE_M64: return exec(Addsd<RSSE, M64>{insn.op0<RSSE>(), insn.op1<M64>()});
-            case Insn::SUBPS_RSSE_RMSSE: return exec(Subps<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::SUBPD_RSSE_RMSSE: return exec(Subpd<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::SUBSS_RSSE_RSSE: return exec(Subss<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
-            case Insn::SUBSS_RSSE_M32: return exec(Subss<RSSE, M32>{insn.op0<RSSE>(), insn.op1<M32>()});
-            case Insn::SUBSD_RSSE_RSSE: return exec(Subsd<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
-            case Insn::SUBSD_RSSE_M64: return exec(Subsd<RSSE, M64>{insn.op0<RSSE>(), insn.op1<M64>()});
-            case Insn::MULPS_RSSE_RMSSE: return exec(Mulps<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::MULPD_RSSE_RMSSE: return exec(Mulpd<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::MULSS_RSSE_RSSE: return exec(Mulss<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
-            case Insn::MULSS_RSSE_M32: return exec(Mulss<RSSE, M32>{insn.op0<RSSE>(), insn.op1<M32>()});
-            case Insn::MULSD_RSSE_RSSE: return exec(Mulsd<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
-            case Insn::MULSD_RSSE_M64: return exec(Mulsd<RSSE, M64>{insn.op0<RSSE>(), insn.op1<M64>()});
-            case Insn::DIVPS_RSSE_RMSSE: return exec(Divps<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::DIVPD_RSSE_RMSSE: return exec(Divpd<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::DIVSS_RSSE_RSSE: return exec(Divss<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
-            case Insn::DIVSS_RSSE_M32: return exec(Divss<RSSE, M32>{insn.op0<RSSE>(), insn.op1<M32>()});
-            case Insn::DIVSD_RSSE_RSSE: return exec(Divsd<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
-            case Insn::DIVSD_RSSE_M64: return exec(Divsd<RSSE, M64>{insn.op0<RSSE>(), insn.op1<M64>()});
-            case Insn::SQRTSS_RSSE_RSSE: return exec(Sqrtss<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
-            case Insn::SQRTSS_RSSE_M32: return exec(Sqrtss<RSSE, M32>{insn.op0<RSSE>(), insn.op1<M32>()});
-            case Insn::SQRTSD_RSSE_RSSE: return exec(Sqrtsd<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
-            case Insn::SQRTSD_RSSE_M64: return exec(Sqrtsd<RSSE, M64>{insn.op0<RSSE>(), insn.op1<M64>()});
-            case Insn::COMISS_RSSE_RSSE: return exec(Comiss<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
-            case Insn::COMISS_RSSE_M32: return exec(Comiss<RSSE, M32>{insn.op0<RSSE>(), insn.op1<M32>()});
-            case Insn::COMISD_RSSE_RSSE: return exec(Comisd<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
-            case Insn::COMISD_RSSE_M64: return exec(Comisd<RSSE, M64>{insn.op0<RSSE>(), insn.op1<M64>()});
-            case Insn::UCOMISS_RSSE_RSSE: return exec(Ucomiss<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
-            case Insn::UCOMISS_RSSE_M32: return exec(Ucomiss<RSSE, M32>{insn.op0<RSSE>(), insn.op1<M32>()});
-            case Insn::UCOMISD_RSSE_RSSE: return exec(Ucomisd<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
-            case Insn::UCOMISD_RSSE_M64: return exec(Ucomisd<RSSE, M64>{insn.op0<RSSE>(), insn.op1<M64>()});
-            case Insn::CMPSS_RSSE_RSSE: return exec(Cmpss<RSSE, RSSE>{insn.op2<FCond>(), insn.op0<RSSE>(), insn.op1<RSSE>()});
-            case Insn::CMPSS_RSSE_M32: return exec(Cmpss<RSSE, M32>{insn.op2<FCond>(), insn.op0<RSSE>(), insn.op1<M32>()});
-            case Insn::CMPSD_RSSE_RSSE: return exec(Cmpsd<RSSE, RSSE>{insn.op2<FCond>(), insn.op0<RSSE>(), insn.op1<RSSE>()});
-            case Insn::CMPSD_RSSE_M64: return exec(Cmpsd<RSSE, M64>{insn.op2<FCond>(), insn.op0<RSSE>(), insn.op1<M64>()});
-            case Insn::CMPPS_RSSE_RMSSE: return exec(Cmpps<RSSE, RMSSE>{insn.op2<FCond>(), insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::CMPPD_RSSE_RMSSE: return exec(Cmppd<RSSE, RMSSE>{insn.op2<FCond>(), insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::MAXSS_RSSE_RSSE: return exec(Maxss<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
-            case Insn::MAXSS_RSSE_M32: return exec(Maxss<RSSE, M32>{insn.op0<RSSE>(), insn.op1<M32>()});
-            case Insn::MAXSD_RSSE_RSSE: return exec(Maxsd<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
-            case Insn::MAXSD_RSSE_M64: return exec(Maxsd<RSSE, M64>{insn.op0<RSSE>(), insn.op1<M64>()});
-            case Insn::MINSS_RSSE_RSSE: return exec(Minss<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
-            case Insn::MINSS_RSSE_M32: return exec(Minss<RSSE, M32>{insn.op0<RSSE>(), insn.op1<M32>()});
-            case Insn::MINSD_RSSE_RSSE: return exec(Minsd<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
-            case Insn::MINSD_RSSE_M64: return exec(Minsd<RSSE, M64>{insn.op0<RSSE>(), insn.op1<M64>()});
-            case Insn::MAXPS_RSSE_RMSSE: return exec(Maxps<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::MAXPD_RSSE_RMSSE: return exec(Maxpd<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::MINPS_RSSE_RMSSE: return exec(Minps<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::MINPD_RSSE_RMSSE: return exec(Minpd<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::CVTSI2SS_RSSE_RM32: return exec(Cvtsi2ss<RSSE, RM32>{insn.op0<RSSE>(), insn.op1<RM32>()});
-            case Insn::CVTSI2SS_RSSE_RM64: return exec(Cvtsi2ss<RSSE, RM64>{insn.op0<RSSE>(), insn.op1<RM64>()});
-            case Insn::CVTSI2SD_RSSE_RM32: return exec(Cvtsi2sd<RSSE, RM32>{insn.op0<RSSE>(), insn.op1<RM32>()});
-            case Insn::CVTSI2SD_RSSE_RM64: return exec(Cvtsi2sd<RSSE, RM64>{insn.op0<RSSE>(), insn.op1<RM64>()});
-            case Insn::CVTSS2SD_RSSE_RSSE: return exec(Cvtss2sd<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
-            case Insn::CVTSS2SD_RSSE_M32: return exec(Cvtss2sd<RSSE, M32>{insn.op0<RSSE>(), insn.op1<M32>()});
-            case Insn::CVTSD2SI_R64_RSSE: return exec(Cvtsd2si<R64, RSSE>{insn.op0<R64>(), insn.op1<RSSE>()});
-            case Insn::CVTSD2SI_R64_M64: return exec(Cvtsd2si<R64, M64>{insn.op0<R64>(), insn.op1<M64>()});
-            case Insn::CVTSD2SS_RSSE_RSSE: return exec(Cvtsd2ss<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
-            case Insn::CVTSD2SS_RSSE_M64: return exec(Cvtsd2ss<RSSE, M64>{insn.op0<RSSE>(), insn.op1<M64>()});
-            case Insn::CVTTPS2DQ_RSSE_RMSSE: return exec(Cvttps2dq<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::CVTTSS2SI_R32_RSSE: return exec(Cvttss2si<R32, RSSE>{insn.op0<R32>(), insn.op1<RSSE>()});
-            case Insn::CVTTSS2SI_R32_M32: return exec(Cvttss2si<R32, M32>{insn.op0<R32>(), insn.op1<M32>()});
-            case Insn::CVTTSS2SI_R64_RSSE: return exec(Cvttss2si<R64, RSSE>{insn.op0<R64>(), insn.op1<RSSE>()});
-            case Insn::CVTTSS2SI_R64_M32: return exec(Cvttss2si<R64, M32>{insn.op0<R64>(), insn.op1<M32>()});
-            case Insn::CVTTSD2SI_R32_RSSE: return exec(Cvttsd2si<R32, RSSE>{insn.op0<R32>(), insn.op1<RSSE>()});
-            case Insn::CVTTSD2SI_R32_M64: return exec(Cvttsd2si<R32, M64>{insn.op0<R32>(), insn.op1<M64>()});
-            case Insn::CVTTSD2SI_R64_RSSE: return exec(Cvttsd2si<R64, RSSE>{insn.op0<R64>(), insn.op1<RSSE>()});
-            case Insn::CVTTSD2SI_R64_M64: return exec(Cvttsd2si<R64, M64>{insn.op0<R64>(), insn.op1<M64>()});
-            case Insn::CVTDQ2PD_RSSE_RSSE: return exec(Cvtdq2pd<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
-            case Insn::CVTDQ2PS_RSSE_RMSSE: return exec(Cvtdq2ps<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::CVTDQ2PD_RSSE_M64: return exec(Cvtdq2pd<RSSE, M64>{insn.op0<RSSE>(), insn.op1<M64>()});
-            case Insn::CVTPS2DQ_RSSE_RMSSE: return exec(Cvtps2dq<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::STMXCSR_M32: return exec(Stmxcsr<M32>{insn.op0<M32>()});
-            case Insn::LDMXCSR_M32: return exec(Ldmxcsr<M32>{insn.op0<M32>()});
-            case Insn::PAND_RSSE_RMSSE: return exec(Pand<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::PANDN_RSSE_RMSSE: return exec(Pandn<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::POR_RSSE_RMSSE: return exec(Por<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::ANDPD_RSSE_RMSSE: return exec(Andpd<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::ANDNPD_RSSE_RMSSE: return exec(Andnpd<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::ORPD_RSSE_RMSSE: return exec(Orpd<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::XORPD_RSSE_RMSSE: return exec(Xorpd<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::SHUFPS_RSSE_RMSSE_IMM: return exec(Shufps<RSSE, RMSSE, Imm>{insn.op0<RSSE>(), insn.op1<RMSSE>(), insn.op2<Imm>()});
-            case Insn::SHUFPD_RSSE_RMSSE_IMM: return exec(Shufpd<RSSE, RMSSE, Imm>{insn.op0<RSSE>(), insn.op1<RMSSE>(), insn.op2<Imm>()});
-            case Insn::MOVLPS_RSSE_M64: return exec(Movlps<RSSE, M64>{insn.op0<RSSE>(), insn.op1<M64>()});
-            case Insn::MOVLPS_M64_RSSE: return exec(Movlps<M64, RSSE>{insn.op0<M64>(), insn.op1<RSSE>()});
-            case Insn::MOVHPS_RSSE_M64: return exec(Movhps<RSSE, M64>{insn.op0<RSSE>(), insn.op1<M64>()});
-            case Insn::MOVHPS_M64_RSSE: return exec(Movhps<M64, RSSE>{insn.op0<M64>(), insn.op1<RSSE>()});
-            case Insn::MOVHLPS_RSSE_RSSE: return exec(Movhlps<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
-            case Insn::MOVLHPS_RSSE_RSSE: return exec(Movlhps<RSSE, RSSE>{insn.op0<RSSE>(), insn.op1<RSSE>()});
-            case Insn::PINSRW_RSSE_R32_IMM: return exec(Pinsrw<RSSE, R32, Imm>{insn.op0<RSSE>(), insn.op1<R32>(), insn.op2<Imm>()});
-            case Insn::PINSRW_RSSE_M16_IMM: return exec(Pinsrw<RSSE, M16, Imm>{insn.op0<RSSE>(), insn.op1<M16>(), insn.op2<Imm>()});
-            case Insn::PUNPCKLBW_RSSE_RMSSE: return exec(Punpcklbw<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::PUNPCKLWD_RSSE_RMSSE: return exec(Punpcklwd<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::PUNPCKLDQ_RSSE_RMSSE: return exec(Punpckldq<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::PUNPCKLQDQ_RSSE_RMSSE: return exec(Punpcklqdq<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::PUNPCKHBW_RSSE_RMSSE: return exec(Punpckhbw<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::PUNPCKHWD_RSSE_RMSSE: return exec(Punpckhwd<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::PUNPCKHDQ_RSSE_RMSSE: return exec(Punpckhdq<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::PUNPCKHQDQ_RSSE_RMSSE: return exec(Punpckhqdq<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::PSHUFB_RSSE_RMSSE: return exec(Pshufb<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::PSHUFLW_RSSE_RMSSE_IMM: return exec(Pshuflw<RSSE, RMSSE, Imm>{insn.op0<RSSE>(), insn.op1<RMSSE>(), insn.op2<Imm>()});
-            case Insn::PSHUFHW_RSSE_RMSSE_IMM: return exec(Pshufhw<RSSE, RMSSE, Imm>{insn.op0<RSSE>(), insn.op1<RMSSE>(), insn.op2<Imm>()});
-            case Insn::PSHUFD_RSSE_RMSSE_IMM: return exec(Pshufd<RSSE, RMSSE, Imm>{insn.op0<RSSE>(), insn.op1<RMSSE>(), insn.op2<Imm>()});
-            case Insn::PCMPEQB_RSSE_RMSSE: return exec(Pcmpeqb<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::PCMPEQW_RSSE_RMSSE: return exec(Pcmpeqw<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::PCMPEQD_RSSE_RMSSE: return exec(Pcmpeqd<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::PCMPEQQ_RSSE_RMSSE: return exec(Pcmpeqq<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::PCMPGTB_RSSE_RMSSE: return exec(Pcmpgtb<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::PCMPGTW_RSSE_RMSSE: return exec(Pcmpgtw<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::PCMPGTD_RSSE_RMSSE: return exec(Pcmpgtd<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::PCMPGTQ_RSSE_RMSSE: return exec(Pcmpgtq<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::PMOVMSKB_R32_RSSE: return exec(Pmovmskb<R32, RSSE>{insn.op0<R32>(), insn.op1<RSSE>()});
+            case Insn::MOVSS_RSSE_M32: return execMovssRSSEM32(insn);
+            case Insn::MOVSS_M32_RSSE: return execMovssM32RSSE(insn);
+            case Insn::MOVSD_RSSE_M64: return execMovsdRSSEM64(insn);
+            case Insn::MOVSD_M64_RSSE: return execMovsdM64RSSE(insn);
+            case Insn::MOVSD_RSSE_RSSE: return execMovsdRSSERSSE(insn);
+            case Insn::ADDPS_RSSE_RMSSE: return execAddpsRSSERMSSE(insn);
+            case Insn::ADDPD_RSSE_RMSSE: return execAddpdRSSERMSSE(insn);
+            case Insn::ADDSS_RSSE_RSSE: return execAddssRSSERSSE(insn);
+            case Insn::ADDSS_RSSE_M32: return execAddssRSSEM32(insn);
+            case Insn::ADDSD_RSSE_RSSE: return execAddsdRSSERSSE(insn);
+            case Insn::ADDSD_RSSE_M64: return execAddsdRSSEM64(insn);
+            case Insn::SUBPS_RSSE_RMSSE: return execSubpsRSSERMSSE(insn);
+            case Insn::SUBPD_RSSE_RMSSE: return execSubpdRSSERMSSE(insn);
+            case Insn::SUBSS_RSSE_RSSE: return execSubssRSSERSSE(insn);
+            case Insn::SUBSS_RSSE_M32: return execSubssRSSEM32(insn);
+            case Insn::SUBSD_RSSE_RSSE: return execSubsdRSSERSSE(insn);
+            case Insn::SUBSD_RSSE_M64: return execSubsdRSSEM64(insn);
+            case Insn::MULPS_RSSE_RMSSE: return execMulpsRSSERMSSE(insn);
+            case Insn::MULPD_RSSE_RMSSE: return execMulpdRSSERMSSE(insn);
+            case Insn::MULSS_RSSE_RSSE: return execMulssRSSERSSE(insn);
+            case Insn::MULSS_RSSE_M32: return execMulssRSSEM32(insn);
+            case Insn::MULSD_RSSE_RSSE: return execMulsdRSSERSSE(insn);
+            case Insn::MULSD_RSSE_M64: return execMulsdRSSEM64(insn);
+            case Insn::DIVPS_RSSE_RMSSE: return execDivpsRSSERMSSE(insn);
+            case Insn::DIVPD_RSSE_RMSSE: return execDivpdRSSERMSSE(insn);
+            case Insn::DIVSS_RSSE_RSSE: return execDivssRSSERSSE(insn);
+            case Insn::DIVSS_RSSE_M32: return execDivssRSSEM32(insn);
+            case Insn::DIVSD_RSSE_RSSE: return execDivsdRSSERSSE(insn);
+            case Insn::DIVSD_RSSE_M64: return execDivsdRSSEM64(insn);
+            case Insn::SQRTSS_RSSE_RSSE: return execSqrtssRSSERSSE(insn);
+            case Insn::SQRTSS_RSSE_M32: return execSqrtssRSSEM32(insn);
+            case Insn::SQRTSD_RSSE_RSSE: return execSqrtsdRSSERSSE(insn);
+            case Insn::SQRTSD_RSSE_M64: return execSqrtsdRSSEM64(insn);
+            case Insn::COMISS_RSSE_RSSE: return execComissRSSERSSE(insn);
+            case Insn::COMISS_RSSE_M32: return execComissRSSEM32(insn);
+            case Insn::COMISD_RSSE_RSSE: return execComisdRSSERSSE(insn);
+            case Insn::COMISD_RSSE_M64: return execComisdRSSEM64(insn);
+            case Insn::UCOMISS_RSSE_RSSE: return execUcomissRSSERSSE(insn);
+            case Insn::UCOMISS_RSSE_M32: return execUcomissRSSEM32(insn);
+            case Insn::UCOMISD_RSSE_RSSE: return execUcomisdRSSERSSE(insn);
+            case Insn::UCOMISD_RSSE_M64: return execUcomisdRSSEM64(insn);
+            case Insn::CMPSS_RSSE_RSSE: return execCmpssRSSERSSE(insn);
+            case Insn::CMPSS_RSSE_M32: return execCmpssRSSEM32(insn);
+            case Insn::CMPSD_RSSE_RSSE: return execCmpsdRSSERSSE(insn);
+            case Insn::CMPSD_RSSE_M64: return execCmpsdRSSEM64(insn);
+            case Insn::CMPPS_RSSE_RMSSE: return execCmppsRSSERMSSE(insn);
+            case Insn::CMPPD_RSSE_RMSSE: return execCmppdRSSERMSSE(insn);
+            case Insn::MAXSS_RSSE_RSSE: return execMaxssRSSERSSE(insn);
+            case Insn::MAXSS_RSSE_M32: return execMaxssRSSEM32(insn);
+            case Insn::MAXSD_RSSE_RSSE: return execMaxsdRSSERSSE(insn);
+            case Insn::MAXSD_RSSE_M64: return execMaxsdRSSEM64(insn);
+            case Insn::MINSS_RSSE_RSSE: return execMinssRSSERSSE(insn);
+            case Insn::MINSS_RSSE_M32: return execMinssRSSEM32(insn);
+            case Insn::MINSD_RSSE_RSSE: return execMinsdRSSERSSE(insn);
+            case Insn::MINSD_RSSE_M64: return execMinsdRSSEM64(insn);
+            case Insn::MAXPS_RSSE_RMSSE: return execMaxpsRSSERMSSE(insn);
+            case Insn::MAXPD_RSSE_RMSSE: return execMaxpdRSSERMSSE(insn);
+            case Insn::MINPS_RSSE_RMSSE: return execMinpsRSSERMSSE(insn);
+            case Insn::MINPD_RSSE_RMSSE: return execMinpdRSSERMSSE(insn);
+            case Insn::CVTSI2SS_RSSE_RM32: return execCvtsi2ssRSSERM32(insn);
+            case Insn::CVTSI2SS_RSSE_RM64: return execCvtsi2ssRSSERM64(insn);
+            case Insn::CVTSI2SD_RSSE_RM32: return execCvtsi2sdRSSERM32(insn);
+            case Insn::CVTSI2SD_RSSE_RM64: return execCvtsi2sdRSSERM64(insn);
+            case Insn::CVTSS2SD_RSSE_RSSE: return execCvtss2sdRSSERSSE(insn);
+            case Insn::CVTSS2SD_RSSE_M32: return execCvtss2sdRSSEM32(insn);
+            case Insn::CVTSD2SI_R64_RSSE: return execCvtsd2siR64RSSE(insn);
+            case Insn::CVTSD2SI_R64_M64: return execCvtsd2siR64M64(insn);
+            case Insn::CVTSD2SS_RSSE_RSSE: return execCvtsd2ssRSSERSSE(insn);
+            case Insn::CVTSD2SS_RSSE_M64: return execCvtsd2ssRSSEM64(insn);
+            case Insn::CVTTPS2DQ_RSSE_RMSSE: return execCvttps2dqRSSERMSSE(insn);
+            case Insn::CVTTSS2SI_R32_RSSE: return execCvttss2siR32RSSE(insn);
+            case Insn::CVTTSS2SI_R32_M32: return execCvttss2siR32M32(insn);
+            case Insn::CVTTSS2SI_R64_RSSE: return execCvttss2siR64RSSE(insn);
+            case Insn::CVTTSS2SI_R64_M32: return execCvttss2siR64M32(insn);
+            case Insn::CVTTSD2SI_R32_RSSE: return execCvttsd2siR32RSSE(insn);
+            case Insn::CVTTSD2SI_R32_M64: return execCvttsd2siR32M64(insn);
+            case Insn::CVTTSD2SI_R64_RSSE: return execCvttsd2siR64RSSE(insn);
+            case Insn::CVTTSD2SI_R64_M64: return execCvttsd2siR64M64(insn);
+            case Insn::CVTDQ2PD_RSSE_RSSE: return execCvtdq2pdRSSERSSE(insn);
+            case Insn::CVTDQ2PS_RSSE_RMSSE: return execCvtdq2psRSSERMSSE(insn);
+            case Insn::CVTDQ2PD_RSSE_M64: return execCvtdq2pdRSSEM64(insn);
+            case Insn::CVTPS2DQ_RSSE_RMSSE: return execCvtps2dqRSSERMSSE(insn);
+            case Insn::STMXCSR_M32: return execStmxcsrM32(insn);
+            case Insn::LDMXCSR_M32: return execLdmxcsrM32(insn);
+            case Insn::PAND_RSSE_RMSSE: return execPandRSSERMSSE(insn);
+            case Insn::PANDN_RSSE_RMSSE: return execPandnRSSERMSSE(insn);
+            case Insn::POR_RSSE_RMSSE: return execPorRSSERMSSE(insn);
+            case Insn::ANDPD_RSSE_RMSSE: return execAndpdRSSERMSSE(insn);
+            case Insn::ANDNPD_RSSE_RMSSE: return execAndnpdRSSERMSSE(insn);
+            case Insn::ORPD_RSSE_RMSSE: return execOrpdRSSERMSSE(insn);
+            case Insn::XORPD_RSSE_RMSSE: return execXorpdRSSERMSSE(insn);
+            case Insn::SHUFPS_RSSE_RMSSE_IMM: return execShufpsRSSERMSSEImm(insn);
+            case Insn::SHUFPD_RSSE_RMSSE_IMM: return execShufpdRSSERMSSEImm(insn);
+            case Insn::MOVLPS_RSSE_M64: return execMovlpsRSSEM64(insn);
+            case Insn::MOVLPS_M64_RSSE: return execMovlpsM64RSSE(insn);
+            case Insn::MOVHPS_RSSE_M64: return execMovhpsRSSEM64(insn);
+            case Insn::MOVHPS_M64_RSSE: return execMovhpsM64RSSE(insn);
+            case Insn::MOVHLPS_RSSE_RSSE: return execMovhlpsRSSERSSE(insn);
+            case Insn::MOVLHPS_RSSE_RSSE: return execMovlhpsRSSERSSE(insn);
+            case Insn::PINSRW_RSSE_R32_IMM: return execPinsrwRSSER32Imm(insn);
+            case Insn::PINSRW_RSSE_M16_IMM: return execPinsrwRSSEM16Imm(insn);
+            case Insn::PUNPCKLBW_RSSE_RMSSE: return execPunpcklbwRSSERMSSE(insn);
+            case Insn::PUNPCKLWD_RSSE_RMSSE: return execPunpcklwdRSSERMSSE(insn);
+            case Insn::PUNPCKLDQ_RSSE_RMSSE: return execPunpckldqRSSERMSSE(insn);
+            case Insn::PUNPCKLQDQ_RSSE_RMSSE: return execPunpcklqdqRSSERMSSE(insn);
+            case Insn::PUNPCKHBW_RSSE_RMSSE: return execPunpckhbwRSSERMSSE(insn);
+            case Insn::PUNPCKHWD_RSSE_RMSSE: return execPunpckhwdRSSERMSSE(insn);
+            case Insn::PUNPCKHDQ_RSSE_RMSSE: return execPunpckhdqRSSERMSSE(insn);
+            case Insn::PUNPCKHQDQ_RSSE_RMSSE: return execPunpckhqdqRSSERMSSE(insn);
+            case Insn::PSHUFB_RSSE_RMSSE: return execPshufbRSSERMSSE(insn);
+            case Insn::PSHUFLW_RSSE_RMSSE_IMM: return execPshuflwRSSERMSSEImm(insn);
+            case Insn::PSHUFHW_RSSE_RMSSE_IMM: return execPshufhwRSSERMSSEImm(insn);
+            case Insn::PSHUFD_RSSE_RMSSE_IMM: return execPshufdRSSERMSSEImm(insn);
+            case Insn::PCMPEQB_RSSE_RMSSE: return execPcmpeqbRSSERMSSE(insn);
+            case Insn::PCMPEQW_RSSE_RMSSE: return execPcmpeqwRSSERMSSE(insn);
+            case Insn::PCMPEQD_RSSE_RMSSE: return execPcmpeqdRSSERMSSE(insn);
+            case Insn::PCMPEQQ_RSSE_RMSSE: return execPcmpeqqRSSERMSSE(insn);
+            case Insn::PCMPGTB_RSSE_RMSSE: return execPcmpgtbRSSERMSSE(insn);
+            case Insn::PCMPGTW_RSSE_RMSSE: return execPcmpgtwRSSERMSSE(insn);
+            case Insn::PCMPGTD_RSSE_RMSSE: return execPcmpgtdRSSERMSSE(insn);
+            case Insn::PCMPGTQ_RSSE_RMSSE: return execPcmpgtqRSSERMSSE(insn);
+            case Insn::PMOVMSKB_R32_RSSE: return execPmovmskbR32RSSE(insn);
             case Insn::PADDB_RSSE_RMSSE: return exec(Paddb<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
             case Insn::PADDW_RSSE_RMSSE: return exec(Paddw<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
             case Insn::PADDD_RSSE_RMSSE: return exec(Paddd<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
@@ -719,19 +718,20 @@ namespace x64 {
             case Insn::UNPCKHPD_RSSE_RMSSE: return exec(Unpckhpd<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
             case Insn::UNPCKLPS_RSSE_RMSSE: return exec(Unpcklps<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
             case Insn::UNPCKLPD_RSSE_RMSSE: return exec(Unpcklpd<RSSE, RMSSE>{insn.op0<RSSE>(), insn.op1<RMSSE>()});
-            case Insn::MOVMSKPS_R32_RSSE: return exec(Movmskps<R32, RSSE>{insn.op0<R32>(), insn.op1<RSSE>()});
-            case Insn::MOVMSKPS_R64_RSSE: return exec(Movmskps<R64, RSSE>{insn.op0<R64>(), insn.op1<RSSE>()});
-            case Insn::MOVMSKPD_R32_RSSE: return exec(Movmskpd<R32, RSSE>{insn.op0<R32>(), insn.op1<RSSE>()});
-            case Insn::MOVMSKPD_R64_RSSE: return exec(Movmskpd<R64, RSSE>{insn.op0<R64>(), insn.op1<RSSE>()});
+            case Insn::MOVMSKPS_R32_RSSE: return execMovmskpsR32RSSE(insn);
+            case Insn::MOVMSKPS_R64_RSSE: return execMovmskpsR64RSSE(insn);
+            case Insn::MOVMSKPD_R32_RSSE: return execMovmskpdR32RSSE(insn);
+            case Insn::MOVMSKPD_R64_RSSE: return execMovmskpdR64RSSE(insn);
             case Insn::RDTSC: return exec(Rdtsc{});
-            case Insn::CPUID: return exec(Cpuid{});
-            case Insn::XGETBV: return exec(Xgetbv{});
+            case Insn::CPUID: return execCpuid(insn);
+            case Insn::XGETBV: return execXgetbv(insn);
             case Insn::FXSAVE_M64: return exec(Fxsave<M64>{insn.op0<M64>()});
             case Insn::FXRSTOR_M64: return exec(Fxrstor<M64>{insn.op0<M64>()});
             case Insn::FWAIT: return exec(Fwait{});
             case Insn::RDPKRU: return exec(Rdpkru{});
             case Insn::WRPKRU: return exec(Wrpkru{});
             case Insn::RDSSPD: return exec(Rdsspd{});
+            case Insn::UNKNOWN: return execUnknown(insn);
         }
     }
 
@@ -2942,23 +2942,53 @@ namespace x64 {
         set(dst, Impl::popcnt64(get(src), &flags_));
     }
 
-    void Cpu::exec(const Pxor<RSSE, RMSSE>& ins) {
-        u128 dst = get(ins.dst);
-        u128 src = get(ins.src);
-        dst.lo = dst.lo ^ src.lo;
-        dst.hi = dst.hi ^ src.hi;
-        set(ins.dst, dst);
+    void Cpu::execPxorRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        u128 dstValue = get(dst);
+        u128 srcValue = get(src);
+        dstValue.lo = dstValue.lo ^ srcValue.lo;
+        dstValue.hi = dstValue.hi ^ srcValue.hi;
+        set(dst, dstValue);
     }
 
-    void Cpu::exec(const Movaps<RMSSE, RMSSE>& ins) { set(ins.dst, get(ins.src)); }
+    void Cpu::execMovapsRMSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RMSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        set(dst, get(src));
+    }
 
-    void Cpu::exec(const Movd<RSSE, RM32>& ins) { set(ins.dst, zeroExtend<Xmm, u32>(get(ins.src))); }
-    void Cpu::exec(const Movd<RM32, RSSE>& ins) { set(ins.dst, narrow<u32, Xmm>(get(ins.src))); }
-    void Cpu::exec(const Movd<RSSE, RM64>& ins) { set(ins.dst, zeroExtend<Xmm, u64>(get(ins.src))); }
-    void Cpu::exec(const Movd<RM64, RSSE>& ins) { set(ins.dst, narrow<u64, Xmm>(get(ins.src))); }
+    void Cpu::execMovdRSSERM32(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RM32>();
+        set(dst, zeroExtend<Xmm, u32>(get(src)));
+    }
+    void Cpu::execMovdRM32RSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RM32>();
+        const auto& src = ins.op1<RSSE>();
+        set(dst, narrow<u32, Xmm>(get(src)));
+    }
+    void Cpu::execMovdRSSERM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RM64>();
+        set(dst, zeroExtend<Xmm, u64>(get(src)));
+    }
+    void Cpu::execMovdRM64RSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RM64>();
+        const auto& src = ins.op1<RSSE>();
+        set(dst, narrow<u64, Xmm>(get(src)));
+    }
 
-    void Cpu::exec(const Movq<RSSE, RM64>& ins) { set(ins.dst, zeroExtend<Xmm, u64>(get(ins.src))); }
-    void Cpu::exec(const Movq<RM64, RSSE>& ins) { set(ins.dst, narrow<u64, Xmm>(get(ins.src))); }
+    void Cpu::execMovqRSSERM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RM64>();
+        set(dst, zeroExtend<Xmm, u64>(get(src)));
+    }
+    void Cpu::execMovqRM64RSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RM64>();
+        const auto& src = ins.op1<RSSE>();
+        set(dst, narrow<u64, Xmm>(get(src)));
+    }
 
     void Cpu::exec(const Fldz&) { x87fpu_.push(f80::fromLongDouble(0.0)); }
     void Cpu::exec(const Fld1&) { x87fpu_.push(f80::fromLongDouble(1.0)); }
@@ -3093,527 +3123,836 @@ namespace x64 {
         x87fpu_.tag() = X87Tag::fromWord(0xFFFF);
     }
 
-    void Cpu::exec(const Movss<RSSE, M32>& ins) { set(ins.dst, zeroExtend<Xmm, u32>(get(resolve(ins.src)))); }
-    void Cpu::exec(const Movss<M32, RSSE>& ins) { set(resolve(ins.dst), narrow<u32, Xmm>(get(ins.src))); }
+    void Cpu::execMovssRSSEM32(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<M32>();
+        set(dst, zeroExtend<Xmm, u32>(get(resolve(src))));
+    }
+    void Cpu::execMovssM32RSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<M32>();
+        const auto& src = ins.op1<RSSE>();
+        set(resolve(dst), narrow<u32, Xmm>(get(src)));
+    }
 
-    void Cpu::exec(const Movsd<RSSE, M64>& ins) { set(ins.dst, zeroExtend<Xmm, u64>(get(resolve(ins.src)))); }
-    void Cpu::exec(const Movsd<M64, RSSE>& ins) { set(resolve(ins.dst), narrow<u64, Xmm>(get(ins.src))); }
-    void Cpu::exec(const Movsd<RSSE, RSSE>& ins) {
-        u128 res = get(ins.dst);
-        res.lo = get(ins.src).lo;
-        set(ins.dst, res);
+    void Cpu::execMovsdRSSEM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<M64>();
+        set(dst, zeroExtend<Xmm, u64>(get(resolve(src))));
+    }
+    void Cpu::execMovsdM64RSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<M64>();
+        const auto& src = ins.op1<RSSE>();
+        set(resolve(dst), narrow<u64, Xmm>(get(src)));
+    }
+    void Cpu::execMovsdRSSERSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RSSE>();
+        u128 res = get(dst);
+        res.lo = get(src).lo;
+        set(dst, res);
     }
 
 
-    void Cpu::exec(const Addps<RSSE, RMSSE>& ins) {
-        u128 res = Impl::addps(get(ins.dst), get(ins.src), simdRoundingMode());
-        set(ins.dst, res);
+    void Cpu::execAddpsRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        u128 res = Impl::addps(get(dst), get(src), simdRoundingMode());
+        set(dst, res);
     }
 
-    void Cpu::exec(const Addpd<RSSE, RMSSE>& ins) {
-        u128 res = Impl::addpd(get(ins.dst), get(ins.src), simdRoundingMode());
-        set(ins.dst, res);
+    void Cpu::execAddpdRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        u128 res = Impl::addpd(get(dst), get(src), simdRoundingMode());
+        set(dst, res);
     }
 
-    void Cpu::exec(const Addss<RSSE, RSSE>& ins) {
-        u128 res = Impl::addss(get(ins.dst), get(ins.src), simdRoundingMode());
-        set(ins.dst, res);
+    void Cpu::execAddssRSSERSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RSSE>();
+        u128 res = Impl::addss(get(dst), get(src), simdRoundingMode());
+        set(dst, res);
     }
 
-    void Cpu::exec(const Addss<RSSE, M32>& ins) {
-        u128 res = Impl::addss(get(ins.dst), zeroExtend<Xmm, u32>(get(resolve(ins.src))), simdRoundingMode());
-        set(ins.dst, res);
+    void Cpu::execAddssRSSEM32(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<M32>();
+        u128 res = Impl::addss(get(dst), zeroExtend<Xmm, u32>(get(resolve(src))), simdRoundingMode());
+        set(dst, res);
     }
 
-    void Cpu::exec(const Addsd<RSSE, RSSE>& ins) {
-        u128 res = Impl::addsd(get(ins.dst), get(ins.src), simdRoundingMode());
-        set(ins.dst, res);
+    void Cpu::execAddsdRSSERSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RSSE>();
+        u128 res = Impl::addsd(get(dst), get(src), simdRoundingMode());
+        set(dst, res);
     }
 
-    void Cpu::exec(const Addsd<RSSE, M64>& ins) {
-        u128 res = Impl::addsd(get(ins.dst), zeroExtend<Xmm, u64>(get(resolve(ins.src))), simdRoundingMode());
-        set(ins.dst, res);
+    void Cpu::execAddsdRSSEM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<M64>();
+        u128 res = Impl::addsd(get(dst), zeroExtend<Xmm, u64>(get(resolve(src))), simdRoundingMode());
+        set(dst, res);
     }
 
-    void Cpu::exec(const Subps<RSSE, RMSSE>& ins) {
-        u128 res = Impl::subps(get(ins.dst), get(ins.src), simdRoundingMode());
-        set(ins.dst, res);
+    void Cpu::execSubpsRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src =ins.op1<RMSSE>();
+        u128 res = Impl::subps(get(dst), get(src), simdRoundingMode());
+        set(dst, res);
     }
 
-    void Cpu::exec(const Subpd<RSSE, RMSSE>& ins) {
-        u128 res = Impl::subpd(get(ins.dst), get(ins.src), simdRoundingMode());
-        set(ins.dst, res);
+    void Cpu::execSubpdRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src =ins.op1<RMSSE>();
+        u128 res = Impl::subpd(get(dst), get(src), simdRoundingMode());
+        set(dst, res);
     }
 
-    void Cpu::exec(const Subss<RSSE, RSSE>& ins) {
-        u128 res = Impl::subss(get(ins.dst), get(ins.src), simdRoundingMode());
-        set(ins.dst, res);
+    void Cpu::execSubssRSSERSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src =ins.op1<RSSE>();
+        u128 res = Impl::subss(get(dst), get(src), simdRoundingMode());
+        set(dst, res);
     }
 
-    void Cpu::exec(const Subss<RSSE, M32>& ins) {
-        u128 res = Impl::subss(get(ins.dst), zeroExtend<Xmm, u32>(get(resolve(ins.src))), simdRoundingMode());
-        set(ins.dst, res);
+    void Cpu::execSubssRSSEM32(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src =ins.op1<M32>();
+        u128 res = Impl::subss(get(dst), zeroExtend<Xmm, u32>(get(resolve(src))), simdRoundingMode());
+        set(dst, res);
     }
 
-    void Cpu::exec(const Subsd<RSSE, RSSE>& ins) {
-        u128 res = Impl::subsd(get(ins.dst), get(ins.src), simdRoundingMode());
-        set(ins.dst, res);
+    void Cpu::execSubsdRSSERSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src =ins.op1<RSSE>();
+        u128 res = Impl::subsd(get(dst), get(src), simdRoundingMode());
+        set(dst, res);
     }
 
-    void Cpu::exec(const Subsd<RSSE, M64>& ins) {
-        u128 res = Impl::subsd(get(ins.dst), zeroExtend<Xmm, u64>(get(resolve(ins.src))), simdRoundingMode());
-        set(ins.dst, res);
+    void Cpu::execSubsdRSSEM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src =ins.op1<M64>();
+        u128 res = Impl::subsd(get(dst), zeroExtend<Xmm, u64>(get(resolve(src))), simdRoundingMode());
+        set(dst, res);
     }
 
-    void Cpu::exec(const Mulps<RSSE, RMSSE>& ins) {
-        u128 res = Impl::mulps(get(ins.dst), get(ins.src), simdRoundingMode());
-        set(ins.dst, res);
+    void Cpu::execMulpsRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        u128 res = Impl::mulps(get(dst), get(src), simdRoundingMode());
+        set(dst, res);
     }
 
-    void Cpu::exec(const Mulpd<RSSE, RMSSE>& ins) {
-        u128 res = Impl::mulpd(get(ins.dst), get(ins.src), simdRoundingMode());
-        set(ins.dst, res);
+    void Cpu::execMulpdRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        u128 res = Impl::mulpd(get(dst), get(src), simdRoundingMode());
+        set(dst, res);
     }
 
-    void Cpu::exec(const Mulss<RSSE, RSSE>& ins) {
-        u128 res = Impl::mulss(get(ins.dst), get(ins.src), simdRoundingMode());
-        set(ins.dst, res);
+    void Cpu::execMulssRSSERSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RSSE>();
+        u128 res = Impl::mulss(get(dst), get(src), simdRoundingMode());
+        set(dst, res);
     }
 
-    void Cpu::exec(const Mulss<RSSE, M32>& ins) {
-        u128 res = Impl::mulss(get(ins.dst), zeroExtend<Xmm, u32>(get(resolve(ins.src))), simdRoundingMode());
-        set(ins.dst, res);
+    void Cpu::execMulssRSSEM32(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<M32>();
+        u128 res = Impl::mulss(get(dst), zeroExtend<Xmm, u32>(get(resolve(src))), simdRoundingMode());
+        set(dst, res);
     }
 
-    void Cpu::exec(const Mulsd<RSSE, RSSE>& ins) {
-        u128 res = Impl::mulsd(get(ins.dst), get(ins.src), simdRoundingMode());
-        set(ins.dst, res);
+    void Cpu::execMulsdRSSERSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RSSE>();
+        u128 res = Impl::mulsd(get(dst), get(src), simdRoundingMode());
+        set(dst, res);
     }
 
-    void Cpu::exec(const Mulsd<RSSE, M64>& ins) {
-        u128 res = Impl::mulsd(get(ins.dst), zeroExtend<Xmm, u64>(get(resolve(ins.src))), simdRoundingMode());
-        set(ins.dst, res);
+    void Cpu::execMulsdRSSEM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<M64>();
+        u128 res = Impl::mulsd(get(dst), zeroExtend<Xmm, u64>(get(resolve(src))), simdRoundingMode());
+        set(dst, res);
     }
 
-    void Cpu::exec(const Divps<RSSE, RMSSE>& ins) {
-        u128 res = Impl::divps(get(ins.dst), get(ins.src), simdRoundingMode());
-        set(ins.dst, res);
+    void Cpu::execDivpsRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        u128 res = Impl::divps(get(dst), get(src), simdRoundingMode());
+        set(dst, res);
     }
 
-    void Cpu::exec(const Divpd<RSSE, RMSSE>& ins) {
-        u128 res = Impl::divpd(get(ins.dst), get(ins.src), simdRoundingMode());
-        set(ins.dst, res);
+    void Cpu::execDivpdRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        u128 res = Impl::divpd(get(dst), get(src), simdRoundingMode());
+        set(dst, res);
     }
     
-    void Cpu::exec(const Divss<RSSE, RSSE>& ins) {
-        u128 res = Impl::divss(get(ins.dst), get(ins.src), simdRoundingMode());
-        set(ins.dst, res);
+    void Cpu::execDivssRSSERSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RSSE>();
+        u128 res = Impl::divss(get(dst), get(src), simdRoundingMode());
+        set(dst, res);
     }
 
-    void Cpu::exec(const Divss<RSSE, M32>& ins) {
-        u128 res = Impl::divss(get(ins.dst), zeroExtend<Xmm, u32>(get(resolve(ins.src))), simdRoundingMode());
-        set(ins.dst, res);
+    void Cpu::execDivssRSSEM32(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<M32>();
+        u128 res = Impl::divss(get(dst), zeroExtend<Xmm, u32>(get(resolve(src))), simdRoundingMode());
+        set(dst, res);
     }
 
-    void Cpu::exec(const Divsd<RSSE, RSSE>& ins) {
-        u128 res = Impl::divsd(get(ins.dst), get(ins.src), simdRoundingMode());
-        set(ins.dst, res);
+    void Cpu::execDivsdRSSERSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RSSE>();
+        u128 res = Impl::divsd(get(dst), get(src), simdRoundingMode());
+        set(dst, res);
     }
 
-    void Cpu::exec(const Divsd<RSSE, M64>& ins) {
-        u128 res = Impl::divsd(get(ins.dst), zeroExtend<Xmm, u64>(get(resolve(ins.src))), simdRoundingMode());
-        set(ins.dst, res);
+    void Cpu::execDivsdRSSEM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<M64>();
+        u128 res = Impl::divsd(get(dst), zeroExtend<Xmm, u64>(get(resolve(src))), simdRoundingMode());
+        set(dst, res);
     }
 
-    void Cpu::exec(const Sqrtss<RSSE, RSSE>& ins) {
-        u128 res = Impl::sqrtss(get(ins.dst), get(ins.src), simdRoundingMode());
-        set(ins.dst, res);
+    void Cpu::execSqrtssRSSERSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RSSE>();
+        u128 res = Impl::sqrtss(get(dst), get(src), simdRoundingMode());
+        set(dst, res);
     }
 
-    void Cpu::exec(const Sqrtss<RSSE, M32>& ins) {
-        u128 res = Impl::sqrtss(get(ins.dst), zeroExtend<Xmm, u32>(get(resolve(ins.src))), simdRoundingMode());
-        set(ins.dst, res);
+    void Cpu::execSqrtssRSSEM32(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<M32>();
+        u128 res = Impl::sqrtss(get(dst), zeroExtend<Xmm, u32>(get(resolve(src))), simdRoundingMode());
+        set(dst, res);
     }
 
-    void Cpu::exec(const Sqrtsd<RSSE, RSSE>& ins) {
-        u128 res = Impl::sqrtsd(get(ins.dst), get(ins.src), simdRoundingMode());
-        set(ins.dst, res);
+    void Cpu::execSqrtsdRSSERSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RSSE>();
+        u128 res = Impl::sqrtsd(get(dst), get(src), simdRoundingMode());
+        set(dst, res);
     }
 
-    void Cpu::exec(const Sqrtsd<RSSE, M64>& ins) {
-        u128 res = Impl::sqrtsd(get(ins.dst), zeroExtend<Xmm, u64>(get(resolve(ins.src))), simdRoundingMode());
-        set(ins.dst, res);
+    void Cpu::execSqrtsdRSSEM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<M64>();
+        u128 res = Impl::sqrtsd(get(dst), zeroExtend<Xmm, u64>(get(resolve(src))), simdRoundingMode());
+        set(dst, res);
     }
 
-    void Cpu::exec(const Comiss<RSSE, RSSE>& ins) {
-        Impl::comiss(get(ins.dst), get(ins.src), simdRoundingMode(), &flags_);
+    void Cpu::execComissRSSERSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RSSE>();
+        Impl::comiss(get(dst), get(src), simdRoundingMode(), &flags_);
     }
 
-    void Cpu::exec(const Comiss<RSSE, M32>& ins) {
-        Impl::comiss(get(ins.dst), zeroExtend<Xmm, u32>(get(resolve(ins.src))), simdRoundingMode(), &flags_);
+    void Cpu::execComissRSSEM32(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<M32>();
+        Impl::comiss(get(dst), zeroExtend<Xmm, u32>(get(resolve(src))), simdRoundingMode(), &flags_);
     }
 
-    void Cpu::exec(const Comisd<RSSE, RSSE>& ins) {
-        Impl::comisd(get(ins.dst), get(ins.src), simdRoundingMode(), &flags_);
+    void Cpu::execComisdRSSERSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RSSE>();
+        Impl::comisd(get(dst), get(src), simdRoundingMode(), &flags_);
     }
 
-    void Cpu::exec(const Comisd<RSSE, M64>& ins) {
-        Impl::comisd(get(ins.dst), zeroExtend<Xmm, u64>(get(resolve(ins.src))), simdRoundingMode(), &flags_);
+    void Cpu::execComisdRSSEM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<M64>();
+        Impl::comisd(get(dst), zeroExtend<Xmm, u64>(get(resolve(src))), simdRoundingMode(), &flags_);
     }
 
-    void Cpu::exec(const Ucomiss<RSSE, RSSE>& ins) {
-        Impl::comiss(get(ins.dst), get(ins.src), simdRoundingMode(), &flags_);
+    void Cpu::execUcomissRSSERSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RSSE>();
+        Impl::comiss(get(dst), get(src), simdRoundingMode(), &flags_);
     }
 
-    void Cpu::exec(const Ucomiss<RSSE, M32>& ins) {
-        Impl::comiss(get(ins.dst), zeroExtend<Xmm, u32>(get(resolve(ins.src))), simdRoundingMode(), &flags_);
+    void Cpu::execUcomissRSSEM32(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<M32>();
+        Impl::comiss(get(dst), zeroExtend<Xmm, u32>(get(resolve(src))), simdRoundingMode(), &flags_);
     }
 
-    void Cpu::exec(const Ucomisd<RSSE, RSSE>& ins) {
-        Impl::comisd(get(ins.dst), get(ins.src), simdRoundingMode(), &flags_);
+    void Cpu::execUcomisdRSSERSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RSSE>();
+        Impl::comisd(get(dst), get(src), simdRoundingMode(), &flags_);
     }
 
-    void Cpu::exec(const Ucomisd<RSSE, M64>& ins) {
-        Impl::comisd(get(ins.dst), zeroExtend<Xmm, u64>(get(resolve(ins.src))), simdRoundingMode(), &flags_);
+    void Cpu::execUcomisdRSSEM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<M64>();
+        Impl::comisd(get(dst), zeroExtend<Xmm, u64>(get(resolve(src))), simdRoundingMode(), &flags_);
     }
 
-    void Cpu::exec(const Maxss<RSSE, RSSE>& ins) { set(ins.dst, Impl::maxss(get(ins.dst), get(ins.src), simdRoundingMode())); }
-    void Cpu::exec(const Maxss<RSSE, M32>& ins) { set(ins.dst, Impl::maxss(get(ins.dst), zeroExtend<Xmm, u32>(get(resolve(ins.src))), simdRoundingMode())); }
-    void Cpu::exec(const Maxsd<RSSE, RSSE>& ins) { set(ins.dst, Impl::maxsd(get(ins.dst), get(ins.src), simdRoundingMode())); }
-    void Cpu::exec(const Maxsd<RSSE, M64>& ins) { set(ins.dst, Impl::maxsd(get(ins.dst), zeroExtend<Xmm, u64>(get(resolve(ins.src))), simdRoundingMode())); }
-
-    void Cpu::exec(const Minss<RSSE, RSSE>& ins) { set(ins.dst, Impl::minss(get(ins.dst), get(ins.src), simdRoundingMode())); }
-    void Cpu::exec(const Minss<RSSE, M32>& ins) { set(ins.dst, Impl::minss(get(ins.dst), zeroExtend<Xmm, u32>(get(resolve(ins.src))), simdRoundingMode())); }
-    void Cpu::exec(const Minsd<RSSE, RSSE>& ins) { set(ins.dst, Impl::minsd(get(ins.dst), get(ins.src), simdRoundingMode())); }
-    void Cpu::exec(const Minsd<RSSE, M64>& ins) { set(ins.dst, Impl::minsd(get(ins.dst), zeroExtend<Xmm, u64>(get(resolve(ins.src))), simdRoundingMode())); }
+    void Cpu::execMaxssRSSERSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RSSE>();
+        set(dst, Impl::maxss(get(dst), get(src), simdRoundingMode()));
+    }
+    void Cpu::execMaxssRSSEM32(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<M32>();
+        set(dst, Impl::maxss(get(dst), zeroExtend<Xmm, u32>(get(resolve(src))), simdRoundingMode()));
+    }
+    void Cpu::execMaxsdRSSERSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RSSE>();
+        set(dst, Impl::maxsd(get(dst), get(src), simdRoundingMode()));
+    }
+    void Cpu::execMaxsdRSSEM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<M64>();
+        set(dst, Impl::maxsd(get(dst), zeroExtend<Xmm, u64>(get(resolve(src))), simdRoundingMode()));
+    }
 
-    void Cpu::exec(const Maxps<RSSE, RMSSE>& ins) { set(ins.dst, Impl::maxps(get(ins.dst), get(ins.src), simdRoundingMode())); }
-    void Cpu::exec(const Maxpd<RSSE, RMSSE>& ins) { set(ins.dst, Impl::maxpd(get(ins.dst), get(ins.src), simdRoundingMode())); }
+    void Cpu::execMinssRSSERSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RSSE>();
+        set(dst, Impl::minss(get(dst), get(src), simdRoundingMode()));
+    }
+    void Cpu::execMinssRSSEM32(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<M32>();
+        set(dst, Impl::minss(get(dst), zeroExtend<Xmm, u32>(get(resolve(src))), simdRoundingMode()));
+    }
+    void Cpu::execMinsdRSSERSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RSSE>();
+        set(dst, Impl::minsd(get(dst), get(src), simdRoundingMode()));
+    }
+    void Cpu::execMinsdRSSEM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<M64>();
+        set(dst, Impl::minsd(get(dst), zeroExtend<Xmm, u64>(get(resolve(src))), simdRoundingMode()));
+    }
+
+    void Cpu::execMaxpsRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        set(dst, Impl::maxps(get(dst), get(src), simdRoundingMode()));
+    }
+    void Cpu::execMaxpdRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        set(dst, Impl::maxpd(get(dst), get(src), simdRoundingMode()));
+    }
 
-    void Cpu::exec(const Minps<RSSE, RMSSE>& ins) { set(ins.dst, Impl::minps(get(ins.dst), get(ins.src), simdRoundingMode())); }
-    void Cpu::exec(const Minpd<RSSE, RMSSE>& ins) { set(ins.dst, Impl::minpd(get(ins.dst), get(ins.src), simdRoundingMode())); }
+    void Cpu::execMinpsRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        set(dst, Impl::minps(get(dst), get(src), simdRoundingMode()));
+    }
+    void Cpu::execMinpdRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        set(dst, Impl::minpd(get(dst), get(src), simdRoundingMode()));
+    }
 
-    void Cpu::exec(const Cmpss<RSSE, RSSE>& ins) {
-        u128 res = Impl::cmpss(get(ins.dst), get(ins.src), ins.cond);
-        set(ins.dst, res);
+    void Cpu::execCmpssRSSERSSE(const X64Instruction& ins) {
+        const auto& cond = ins.op0<FCond>();
+        const auto& dst = ins.op1<RSSE>();
+        const auto& src = ins.op2<RSSE>();
+        u128 res = Impl::cmpss(get(dst), get(src), cond);
+        set(dst, res);
     }
 
-    void Cpu::exec(const Cmpss<RSSE, M32>& ins) {
-        u128 res = Impl::cmpss(get(ins.dst), zeroExtend<Xmm, u32>(get(resolve(ins.src))), ins.cond);
-        set(ins.dst, res);
+    void Cpu::execCmpssRSSEM32(const X64Instruction& ins) {
+        const auto& cond = ins.op0<FCond>();
+        const auto& dst = ins.op1<RSSE>();
+        const auto& src = ins.op2<M32>();
+        u128 res = Impl::cmpss(get(dst), zeroExtend<Xmm, u32>(get(resolve(src))), cond);
+        set(dst, res);
     }
 
-    void Cpu::exec(const Cmpsd<RSSE, RSSE>& ins) {
-        u128 res = Impl::cmpsd(get(ins.dst), get(ins.src), ins.cond);
-        set(ins.dst, res);
+    void Cpu::execCmpsdRSSERSSE(const X64Instruction& ins) {
+        const auto& cond = ins.op0<FCond>();
+        const auto& dst = ins.op1<RSSE>();
+        const auto& src = ins.op2<RSSE>();
+        u128 res = Impl::cmpsd(get(dst), get(src), cond);
+        set(dst, res);
     }
 
-    void Cpu::exec(const Cmpsd<RSSE, M64>& ins) {
-        u128 res = Impl::cmpsd(get(ins.dst), zeroExtend<Xmm, u64>(get(resolve(ins.src))), ins.cond);
-        set(ins.dst, res);
+    void Cpu::execCmpsdRSSEM64(const X64Instruction& ins) {
+        const auto& cond = ins.op0<FCond>();
+        const auto& dst = ins.op1<RSSE>();
+        const auto& src = ins.op2<M64>();
+        u128 res = Impl::cmpsd(get(dst), zeroExtend<Xmm, u64>(get(resolve(src))), cond);
+        set(dst, res);
     }
 
-    void Cpu::exec(const Cmpps<RSSE, RMSSE>& ins) {
-        u128 res = Impl::cmpps(get(ins.dst), get(ins.src), ins.cond);
-        set(ins.dst, res);
+    void Cpu::execCmppsRSSERMSSE(const X64Instruction& ins) {
+        const auto& cond = ins.op0<FCond>();
+        const auto& dst = ins.op1<RSSE>();
+        const auto& src = ins.op2<RMSSE>();
+        u128 res = Impl::cmpps(get(dst), get(src), cond);
+        set(dst, res);
     }
 
-    void Cpu::exec(const Cmppd<RSSE, RMSSE>& ins) {
-        u128 res = Impl::cmppd(get(ins.dst), get(ins.src), ins.cond);
-        set(ins.dst, res);
+    void Cpu::execCmppdRSSERMSSE(const X64Instruction& ins) {
+        const auto& cond = ins.op0<FCond>();
+        const auto& dst = ins.op1<RSSE>();
+        const auto& src = ins.op2<RMSSE>();
+        u128 res = Impl::cmppd(get(dst), get(src), cond);
+        set(dst, res);
     }
 
-    void Cpu::exec(const Cvtsi2ss<RSSE, RM32>& ins) {
-        u128 res = Impl::cvtsi2ss32(get(ins.dst), get(ins.src));
-        set(ins.dst, res);
+    void Cpu::execCvtsi2ssRSSERM32(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RM32>();
+        u128 res = Impl::cvtsi2ss32(get(dst), get(src));
+        set(dst, res);
     }
-    void Cpu::exec(const Cvtsi2ss<RSSE, RM64>& ins) {
-        u128 res = Impl::cvtsi2ss64(get(ins.dst), get(ins.src));
-        set(ins.dst, res);
+    void Cpu::execCvtsi2ssRSSERM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RM64>();
+        u128 res = Impl::cvtsi2ss64(get(dst), get(src));
+        set(dst, res);
     }
 
-    void Cpu::exec(const Cvtsi2sd<RSSE, RM32>& ins) {
-        u128 res = Impl::cvtsi2sd32(get(ins.dst), get(ins.src));
-        set(ins.dst, res);
+    void Cpu::execCvtsi2sdRSSERM32(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RM32>();
+        u128 res = Impl::cvtsi2sd32(get(dst), get(src));
+        set(dst, res);
     }
-    void Cpu::exec(const Cvtsi2sd<RSSE, RM64>& ins) {
-        u128 res = Impl::cvtsi2sd64(get(ins.dst), get(ins.src));
-        set(ins.dst, res);
+    void Cpu::execCvtsi2sdRSSERM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RM64>();
+        u128 res = Impl::cvtsi2sd64(get(dst), get(src));
+        set(dst, res);
     }
 
-    void Cpu::exec(const Cvtss2sd<RSSE, RSSE>& ins) {
-        u128 res = Impl::cvtss2sd(get(ins.dst), get(ins.src));
-        set(ins.dst, res);
+    void Cpu::execCvtss2sdRSSERSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RSSE>();
+        u128 res = Impl::cvtss2sd(get(dst), get(src));
+        set(dst, res);
     }
 
-    void Cpu::exec(const Cvtss2sd<RSSE, M32>& ins) {
-        u128 res = Impl::cvtss2sd(get(ins.dst), zeroExtend<u128, u32>(get(resolve(ins.src))));
-        set(ins.dst, res);
+    void Cpu::execCvtss2sdRSSEM32(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<M32>();
+        u128 res = Impl::cvtss2sd(get(dst), zeroExtend<u128, u32>(get(resolve(src))));
+        set(dst, res);
     }
 
-    void Cpu::exec(const Cvtsd2si<R64, RSSE>& ins) {
-        set(ins.dst, Impl::cvtsd2si64(get(ins.src).lo, simdRoundingMode()));
+    void Cpu::execCvtsd2siR64RSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<R64>();
+        const auto& src = ins.op1<RSSE>();
+        set(dst, Impl::cvtsd2si64(get(src).lo, simdRoundingMode()));
     }
 
-    void Cpu::exec(const Cvtsd2si<R64, M64>& ins) {
-        set(ins.dst, Impl::cvtsd2si64(get(resolve(ins.src)), simdRoundingMode()));
+    void Cpu::execCvtsd2siR64M64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<R64>();
+        const auto& src = ins.op1<M64>();
+        set(dst, Impl::cvtsd2si64(get(resolve(src)), simdRoundingMode()));
     }
 
-    void Cpu::exec(const Cvtsd2ss<RSSE, RSSE>& ins) {
-        u128 res = Impl::cvtsd2ss(get(ins.dst), get(ins.src));
-        set(ins.dst, res);
+    void Cpu::execCvtsd2ssRSSERSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RSSE>();
+        set(dst, Impl::cvtsd2ss(get(dst), get(src)));
     }
 
-    void Cpu::exec(const Cvtsd2ss<RSSE, M64>& ins) {
-        u128 res = Impl::cvtsd2ss(get(ins.dst), zeroExtend<u128, u64>(get(resolve(ins.src))));
-        set(ins.dst, res);
+    void Cpu::execCvtsd2ssRSSEM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<M64>();
+        set(dst, Impl::cvtsd2ss(get(dst), zeroExtend<u128, u64>(get(resolve(src)))));
     }
-
-    void Cpu::exec(const Cvttps2dq<RSSE, RMSSE>& ins) { set(ins.dst, Impl::cvttps2dq(get(ins.src))); }
-
-    void Cpu::exec(const Cvttss2si<R32, RSSE>& ins) { set(ins.dst, Impl::cvttss2si32(get(ins.src))); }
-    void Cpu::exec(const Cvttss2si<R32, M32>& ins) { set(ins.dst, Impl::cvttss2si32(zeroExtend<u128, u32>(get(resolve(ins.src))))); }
-    void Cpu::exec(const Cvttss2si<R64, RSSE>& ins) { set(ins.dst, Impl::cvttss2si64(get(ins.src))); }
-    void Cpu::exec(const Cvttss2si<R64, M32>& ins) { set(ins.dst, Impl::cvttss2si64(zeroExtend<u128, u32>(get(resolve(ins.src))))); }
 
-    void Cpu::exec(const Cvttsd2si<R32, RSSE>& ins) { set(ins.dst, Impl::cvttsd2si32(get(ins.src))); }
-    void Cpu::exec(const Cvttsd2si<R32, M64>& ins) { set(ins.dst, Impl::cvttsd2si32(zeroExtend<u128, u64>(get(resolve(ins.src))))); }
-    void Cpu::exec(const Cvttsd2si<R64, RSSE>& ins) { set(ins.dst, Impl::cvttsd2si64(get(ins.src))); }
-    void Cpu::exec(const Cvttsd2si<R64, M64>& ins) { set(ins.dst, Impl::cvttsd2si64(zeroExtend<u128, u64>(get(resolve(ins.src))))); }
+    void Cpu::execCvttps2dqRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        set(dst, Impl::cvttps2dq(get(src)));
+    }
 
-    void Cpu::exec(const Cvtdq2ps<RSSE, RMSSE>& ins) { set(ins.dst, Impl::cvtdq2ps(get(ins.src))); }
+    void Cpu::execCvttss2siR32RSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<R32>();
+        const auto& src = ins.op1<RSSE>();
+        set(dst, Impl::cvttss2si32(get(src)));
+    }
+    void Cpu::execCvttss2siR32M32(const X64Instruction& ins) {
+        const auto& dst = ins.op0<R32>();
+        const auto& src = ins.op1<M32>();
+        set(dst, Impl::cvttss2si32(zeroExtend<u128, u32>(get(resolve(src)))));
+    }
+    void Cpu::execCvttss2siR64RSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<R64>();
+        const auto& src = ins.op1<RSSE>();
+        set(dst, Impl::cvttss2si64(get(src)));
+    }
+    void Cpu::execCvttss2siR64M32(const X64Instruction& ins) {
+        const auto& dst = ins.op0<R64>();
+        const auto& src = ins.op1<M32>();
+        set(dst, Impl::cvttss2si64(zeroExtend<u128, u32>(get(resolve(src)))));
+    }
 
-    void Cpu::exec(const Cvtdq2pd<RSSE, RSSE>& ins) { set(ins.dst, Impl::cvtdq2pd(get(ins.src))); }
-    void Cpu::exec(const Cvtdq2pd<RSSE, M64>& ins) { set(ins.dst, Impl::cvtdq2pd(zeroExtend<u128, u64>(get(resolve(ins.src))))); }
+    void Cpu::execCvttsd2siR32RSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<R32>();
+        const auto& src = ins.op1<RSSE>();
+        set(dst, Impl::cvttsd2si32(get(src)));
+    }
+    void Cpu::execCvttsd2siR32M64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<R32>();
+        const auto& src = ins.op1<M64>();
+        set(dst, Impl::cvttsd2si32(zeroExtend<u128, u64>(get(resolve(src)))));
+    }
+    void Cpu::execCvttsd2siR64RSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<R64>();
+        const auto& src = ins.op1<RSSE>();
+        set(dst, Impl::cvttsd2si64(get(src)));
+    }
+    void Cpu::execCvttsd2siR64M64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<R64>();
+        const auto& src = ins.op1<M64>();
+        set(dst, Impl::cvttsd2si64(zeroExtend<u128, u64>(get(resolve(src)))));
+    }
 
-    void Cpu::exec(const Cvtps2dq<RSSE, RMSSE>& ins) {
-        set(ins.dst, Impl::cvtps2dq(get(ins.src), simdRoundingMode()));
+    void Cpu::execCvtdq2psRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        set(dst, Impl::cvtdq2ps(get(src)));
     }
 
-    void Cpu::exec(const Stmxcsr<M32>& ins) {
-        set(resolve(ins.dst), mxcsr_.asDoubleWord());
+    void Cpu::execCvtdq2pdRSSERSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RSSE>();
+        set(dst, Impl::cvtdq2pd(get(src)));
     }
-    void Cpu::exec(const Ldmxcsr<M32>& ins) {
-        mxcsr_ = SimdControlStatus::fromDoubleWord(get(resolve(ins.src)));
+    void Cpu::execCvtdq2pdRSSEM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<M64>();
+        set(dst, Impl::cvtdq2pd(zeroExtend<u128, u64>(get(resolve(src)))));
     }
 
-    void Cpu::exec(const Pand<RSSE, RMSSE>& ins) {
-        u128 dst = get(ins.dst);
-        u128 src = get(ins.src);
-        dst.lo = dst.lo & src.lo;
-        dst.hi = dst.hi & src.hi;
-        set(ins.dst, dst);
+    void Cpu::execCvtps2dqRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        set(dst, Impl::cvtps2dq(get(src), simdRoundingMode()));
     }
 
-    void Cpu::exec(const Pandn<RSSE, RMSSE>& ins) {
-        u128 dst = get(ins.dst);
-        u128 src = get(ins.src);
-        dst.lo = (~dst.lo) & src.lo;
-        dst.hi = (~dst.hi) & src.hi;
-        set(ins.dst, dst);
+    void Cpu::execStmxcsrM32(const X64Instruction& ins) {
+        const auto& dst = ins.op0<M32>();
+        set(resolve(dst), mxcsr_.asDoubleWord());
     }
+    void Cpu::execLdmxcsrM32(const X64Instruction& ins) {
+        const auto& src = ins.op0<M32>();
+        mxcsr_ = SimdControlStatus::fromDoubleWord(get(resolve(src)));
+    }
 
-    void Cpu::exec(const Por<RSSE, RMSSE>& ins) {
-        u128 dst = get(ins.dst);
-        u128 src = get(ins.src);
-        dst.lo = dst.lo | src.lo;
-        dst.hi = dst.hi | src.hi;
-        set(ins.dst, dst);
+    void Cpu::execPandRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        u128 dstValue = get(dst);
+        u128 srcValue = get(src);
+        dstValue.lo = dstValue.lo & srcValue.lo;
+        dstValue.hi = dstValue.hi & srcValue.hi;
+        set(dst, dstValue);
     }
+
+    void Cpu::execPandnRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        u128 dstValue = get(dst);
+        u128 srcValue = get(src);
+        dstValue.lo = (~dstValue.lo) & srcValue.lo;
+        dstValue.hi = (~dstValue.hi) & srcValue.hi;
+        set(dst, dstValue);
+    }
 
-    void Cpu::exec(const Andpd<RSSE, RMSSE>& ins) {
-        u128 dst = get(ins.dst);
-        u128 src = get(ins.src);
-        dst.lo = dst.lo & src.lo;
-        dst.hi = dst.hi & src.hi;
-        set(ins.dst, dst);
+    void Cpu::execPorRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        u128 dstValue = get(dst);
+        u128 srcValue = get(src);
+        dstValue.lo = dstValue.lo | srcValue.lo;
+        dstValue.hi = dstValue.hi | srcValue.hi;
+        set(dst, dstValue);
     }
 
-    void Cpu::exec(const Andnpd<RSSE, RMSSE>& ins) {
-        u128 dst = get(ins.dst);
-        u128 src = get(ins.src);
-        dst.lo = (~dst.lo) & src.lo;
-        dst.hi = (~dst.hi) & src.hi;
-        set(ins.dst, dst);
+    void Cpu::execAndpdRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        u128 dstValue = get(dst);
+        u128 srcValue = get(src);
+        dstValue.lo = dstValue.lo & srcValue.lo;
+        dstValue.hi = dstValue.hi & srcValue.hi;
+        set(dst, dstValue);
     }
 
-    void Cpu::exec(const Orpd<RSSE, RMSSE>& ins) {
-        u128 dst = get(ins.dst);
-        u128 src = get(ins.src);
-        dst.lo = dst.lo | src.lo;
-        dst.hi = dst.hi | src.hi;
-        set(ins.dst, dst);
+    void Cpu::execAndnpdRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        u128 dstValue = get(dst);
+        u128 srcValue = get(src);
+        dstValue.lo = (~dstValue.lo) & srcValue.lo;
+        dstValue.hi = (~dstValue.hi) & srcValue.hi;
+        set(dst, dstValue);
+    }
+
+    void Cpu::execOrpdRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        u128 dstValue = get(dst);
+        u128 srcValue = get(src);
+        dstValue.lo = dstValue.lo | srcValue.lo;
+        dstValue.hi = dstValue.hi | srcValue.hi;
+        set(dst, dstValue);
     }
 
-    void Cpu::exec(const Xorpd<RSSE, RMSSE>& ins) {
-        u128 dst = get(ins.dst);
-        u128 src = get(ins.src);
-        dst.lo = dst.lo ^ src.lo;
-        dst.hi = dst.hi ^ src.hi;
-        set(ins.dst, dst);
+    void Cpu::execXorpdRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        u128 dstValue = get(dst);
+        u128 srcValue = get(src);
+        dstValue.lo = dstValue.lo ^ srcValue.lo;
+        dstValue.hi = dstValue.hi ^ srcValue.hi;
+        set(dst, dstValue);
     }
 
-    void Cpu::exec(const Shufps<RSSE, RMSSE, Imm>& ins) {
-        u128 res = Impl::shufps(get(ins.dst), get(ins.src), get<u8>(ins.order));
-        set(ins.dst, res);
+    void Cpu::execShufpsRSSERMSSEImm(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        const auto& order = ins.op2<Imm>();
+        u128 res = Impl::shufps(get(dst), get(src), get<u8>(order));
+        set(dst, res);
     }
 
-    void Cpu::exec(const Shufpd<RSSE, RMSSE, Imm>& ins) {
-        u128 res = Impl::shufpd(get(ins.dst), get(ins.src), get<u8>(ins.order));
-        set(ins.dst, res);
+    void Cpu::execShufpdRSSERMSSEImm(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        const auto& order = ins.op2<Imm>();
+        u128 res = Impl::shufpd(get(dst), get(src), get<u8>(order));
+        set(dst, res);
     }
 
-    void Cpu::exec(const Movlps<RSSE, M64>& ins) {
-        u128 dst = get(ins.dst);
-        u64 src = get(resolve(ins.src));
-        dst.lo = src;
-        set(ins.dst, dst);
+    void Cpu::execMovlpsRSSEM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<M64>();
+        u128 dstValue = get(dst);
+        u64 srcValue = get(resolve(src));
+        dstValue.lo = srcValue;
+        set(dst, dstValue);
     }
 
-    void Cpu::exec(const Movlps<M64, RSSE>& ins) {
-        u128 src = get(ins.src);
-        set(resolve(ins.dst), src.lo);
+    void Cpu::execMovlpsM64RSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<M64>();
+        const auto& src = ins.op1<RSSE>();
+        u128 srcValue = get(src);
+        set(resolve(dst), srcValue.lo);
     }
 
-    void Cpu::exec(const Movhps<RSSE, M64>& ins) {
-        u128 dst = get(ins.dst);
-        u64 src = get(resolve(ins.src));
-        dst.hi = src;
-        set(ins.dst, dst);
+    void Cpu::execMovhpsRSSEM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<M64>();
+        u128 dstValue = get(dst);
+        u64 srcValue = get(resolve(src));
+        dstValue.hi = srcValue;
+        set(dst, dstValue);
     }
 
-    void Cpu::exec(const Movhps<M64, RSSE>& ins) {
-        u128 src = get(ins.src);
-        set(resolve(ins.dst), src.hi);
+    void Cpu::execMovhpsM64RSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<M64>();
+        const auto& src = ins.op1<RSSE>();
+        u128 srcValue = get(src);
+        set(resolve(dst), srcValue.hi);
     }
 
-    void Cpu::exec(const Movhlps<RSSE, RSSE>& ins) {
-        u128 dst = get(ins.dst);
-        u128 src = get(ins.src);
-        dst.lo = src.hi;
-        set(ins.dst, dst);
+    void Cpu::execMovhlpsRSSERSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RSSE>();
+        u128 dstValue = get(dst);
+        u128 srcValue = get(src);
+        dstValue.lo = srcValue.hi;
+        set(dst, dstValue);
     }
 
-    void Cpu::exec(const Movlhps<RSSE, RSSE>& ins) {
-        u128 dst = get(ins.dst);
-        u128 src = get(ins.src);
-        dst.hi = src.lo;
-        set(ins.dst, dst);
+    void Cpu::execMovlhpsRSSERSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RSSE>();
+        u128 dstValue = get(dst);
+        u128 srcValue = get(src);
+        dstValue.hi = srcValue.lo;
+        set(dst, dstValue);
     }
 
-    void Cpu::exec(const Pinsrw<RSSE, R32, Imm>& ins) {
-        u128 dst = Impl::pinsrw32(get(ins.dst), get(ins.src), get<u8>(ins.pos));
-        set(ins.dst, dst);
+    void Cpu::execPinsrwRSSER32Imm(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<R32>();
+        const auto& pos = ins.op2<Imm>();
+        u128 res = Impl::pinsrw32(get(dst), get(src), get<u8>(pos));
+        set(dst, res);
     }
 
-    void Cpu::exec(const Pinsrw<RSSE, M16, Imm>& ins) {
-        u128 dst = Impl::pinsrw16(get(ins.dst), get(resolve(ins.src)), get<u8>(ins.pos));
-        set(ins.dst, dst);
+    void Cpu::execPinsrwRSSEM16Imm(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<M16>();
+        const auto& pos = ins.op2<Imm>();
+        u128 res = Impl::pinsrw16(get(dst), get(resolve(src)), get<u8>(pos));
+        set(dst, res);
     }
 
-    void Cpu::exec(const Punpcklbw<RSSE, RMSSE>& ins) {
-        u128 dst = Impl::punpcklbw(get(ins.dst), get(ins.src));
-        set(ins.dst, dst);
+    void Cpu::execPunpcklbwRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        u128 res = Impl::punpcklbw(get(dst), get(src));
+        set(dst, res);
     }
 
-    void Cpu::exec(const Punpcklwd<RSSE, RMSSE>& ins) {
-        u128 dst = Impl::punpcklwd(get(ins.dst), get(ins.src));
-        set(ins.dst, dst);
+    void Cpu::execPunpcklwdRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        u128 res = Impl::punpcklwd(get(dst), get(src));
+        set(dst, res);
     }
 
-    void Cpu::exec(const Punpckldq<RSSE, RMSSE>& ins) {
-        u128 dst = Impl::punpckldq(get(ins.dst), get(ins.src));
-        set(ins.dst, dst);
+    void Cpu::execPunpckldqRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        u128 res = Impl::punpckldq(get(dst), get(src));
+        set(dst, res);
     }
 
-    void Cpu::exec(const Punpcklqdq<RSSE, RMSSE>& ins) {
-        u128 dst = Impl::punpcklqdq(get(ins.dst), get(ins.src));
-        set(ins.dst, dst);
+    void Cpu::execPunpcklqdqRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        u128 res = Impl::punpcklqdq(get(dst), get(src));
+        set(dst, res);
     }
 
-    void Cpu::exec(const Punpckhbw<RSSE, RMSSE>& ins) {
-        u128 dst = Impl::punpckhbw(get(ins.dst), get(ins.src));
-        set(ins.dst, dst);
+    void Cpu::execPunpckhbwRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        u128 res = Impl::punpckhbw(get(dst), get(src));
+        set(dst, res);
     }
 
-    void Cpu::exec(const Punpckhwd<RSSE, RMSSE>& ins) {
-        u128 dst = Impl::punpckhwd(get(ins.dst), get(ins.src));
-        set(ins.dst, dst);
+    void Cpu::execPunpckhwdRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        u128 res = Impl::punpckhwd(get(dst), get(src));
+        set(dst, res);
     }
 
-    void Cpu::exec(const Punpckhdq<RSSE, RMSSE>& ins) {
-        u128 dst = Impl::punpckhdq(get(ins.dst), get(ins.src));
-        set(ins.dst, dst);
+    void Cpu::execPunpckhdqRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        u128 res = Impl::punpckhdq(get(dst), get(src));
+        set(dst, res);
     }
 
-    void Cpu::exec(const Punpckhqdq<RSSE, RMSSE>& ins) {
-        u128 dst = Impl::punpckhqdq(get(ins.dst), get(ins.src));
-        set(ins.dst, dst);
+    void Cpu::execPunpckhqdqRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        u128 res = Impl::punpckhqdq(get(dst), get(src));
+        set(dst, res);
     }
 
-    void Cpu::exec(const Pshufb<RSSE, RMSSE>& ins) {
-        u128 res = Impl::pshufb(get(ins.dst), get(ins.src));
-        set(ins.dst, res);
+    void Cpu::execPshufbRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        u128 res = Impl::pshufb(get(dst), get(src));
+        set(dst, res);
     }
 
-    void Cpu::exec(const Pshuflw<RSSE, RMSSE, Imm>& ins) {
-        u128 res = Impl::pshuflw(get(ins.src), get<u8>(ins.order));
-        set(ins.dst, res);
+    void Cpu::execPshuflwRSSERMSSEImm(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        const auto& order = ins.op2<Imm>();
+        u128 res = Impl::pshuflw(get(src), get<u8>(order));
+        set(dst, res);
     }
 
-    void Cpu::exec(const Pshufhw<RSSE, RMSSE, Imm>& ins) {
-        u128 res = Impl::pshufhw(get(ins.src), get<u8>(ins.order));
-        set(ins.dst, res);
+    void Cpu::execPshufhwRSSERMSSEImm(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        const auto& order = ins.op2<Imm>();
+        u128 res = Impl::pshufhw(get(src), get<u8>(order));
+        set(dst, res);
     }
 
-    void Cpu::exec(const Pshufd<RSSE, RMSSE, Imm>& ins) {
-        u128 res = Impl::pshufd(get(ins.src), get<u8>(ins.order));
-        set(ins.dst, res);
+    void Cpu::execPshufdRSSERMSSEImm(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        const auto& order = ins.op2<Imm>();
+        u128 res = Impl::pshufd(get(src), get<u8>(order));
+        set(dst, res);
     }
 
-    void Cpu::exec(const Pcmpeqb<RSSE, RMSSE>& ins) {
-        u128 res = Impl::pcmpeqb(get(ins.dst), get(ins.src));
-        set(ins.dst, res);
+    void Cpu::execPcmpeqbRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        u128 res = Impl::pcmpeqb(get(dst), get(src));
+        set(dst, res);
     }
 
-    void Cpu::exec(const Pcmpeqw<RSSE, RMSSE>& ins) {
-        u128 res = Impl::pcmpeqw(get(ins.dst), get(ins.src));
-        set(ins.dst, res);
+    void Cpu::execPcmpeqwRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        u128 res = Impl::pcmpeqw(get(dst), get(src));
+        set(dst, res);
     }
 
-    void Cpu::exec(const Pcmpeqd<RSSE, RMSSE>& ins) {
-        u128 res = Impl::pcmpeqd(get(ins.dst), get(ins.src));
-        set(ins.dst, res);
+    void Cpu::execPcmpeqdRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        u128 res = Impl::pcmpeqd(get(dst), get(src));
+        set(dst, res);
     }
 
-    void Cpu::exec(const Pcmpeqq<RSSE, RMSSE>& ins) {
-        u128 res = Impl::pcmpeqq(get(ins.dst), get(ins.src));
-        set(ins.dst, res);
+    void Cpu::execPcmpeqqRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        u128 res = Impl::pcmpeqq(get(dst), get(src));
+        set(dst, res);
     }
 
-    void Cpu::exec(const Pcmpgtb<RSSE, RMSSE>& ins) {
-        u128 res = Impl::pcmpgtb(get(ins.dst), get(ins.src));
-        set(ins.dst, res);
+    void Cpu::execPcmpgtbRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        u128 res = Impl::pcmpgtb(get(dst), get(src));
+        set(dst, res);
     }
 
-    void Cpu::exec(const Pcmpgtw<RSSE, RMSSE>& ins) {
-        u128 res = Impl::pcmpgtw(get(ins.dst), get(ins.src));
-        set(ins.dst, res);
+    void Cpu::execPcmpgtwRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        u128 res = Impl::pcmpgtw(get(dst), get(src));
+        set(dst, res);
     }
 
-    void Cpu::exec(const Pcmpgtd<RSSE, RMSSE>& ins) {
-        u128 res = Impl::pcmpgtd(get(ins.dst), get(ins.src));
-        set(ins.dst, res);
+    void Cpu::execPcmpgtdRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        u128 res = Impl::pcmpgtd(get(dst), get(src));
+        set(dst, res);
     }
 
-    void Cpu::exec(const Pcmpgtq<RSSE, RMSSE>& ins) {
-        u128 res = Impl::pcmpgtq(get(ins.dst), get(ins.src));
-        set(ins.dst, res);
+    void Cpu::execPcmpgtqRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        u128 res = Impl::pcmpgtq(get(dst), get(src));
+        set(dst, res);
     }
 
-    void Cpu::exec(const Pmovmskb<R32, RSSE>& ins) {
-        u16 dst = Impl::pmovmskb(get(ins.src));
-        set(ins.dst, zeroExtend<u32, u16>(dst));
+    void Cpu::execPmovmskbR32RSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<R32>();
+        const auto& src = ins.op1<RSSE>();
+        u16 res = Impl::pmovmskb(get(src));
+        set(dst, zeroExtend<u32, u16>(res));
     }
 
     void Cpu::exec(const Paddb<RSSE, RMSSE>& ins) {
@@ -3824,20 +4163,28 @@ namespace x64 {
         set(ins.dst, Impl::unpcklpd(get(ins.dst), get(ins.src)));
     }
 
-    void Cpu::exec(const Movmskps<R32, RSSE>& ins) {
-        set(ins.dst, Impl::movmskps32(get(ins.src)));
+    void Cpu::execMovmskpsR32RSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<R32>();
+        const auto& src = ins.op1<RSSE>();
+        set(dst, Impl::movmskps32(get(src)));
     }
 
-    void Cpu::exec(const Movmskps<R64, RSSE>& ins) {
-        set(ins.dst, Impl::movmskps64(get(ins.src)));
+    void Cpu::execMovmskpsR64RSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<R64>();
+        const auto& src = ins.op1<RSSE>();
+        set(dst, Impl::movmskps64(get(src)));
     }
 
-    void Cpu::exec(const Movmskpd<R32, RSSE>& ins) {
-        set(ins.dst, Impl::movmskpd32(get(ins.src)));
+    void Cpu::execMovmskpdR32RSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<R32>();
+        const auto& src = ins.op1<RSSE>();
+        set(dst, Impl::movmskpd32(get(src)));
     }
 
-    void Cpu::exec(const Movmskpd<R64, RSSE>& ins) {
-        set(ins.dst, Impl::movmskpd64(get(ins.src)));
+    void Cpu::execMovmskpdR64RSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<R64>();
+        const auto& src = ins.op1<RSSE>();
+        set(dst, Impl::movmskpd64(get(src)));
     }
 
     void Cpu::execSyscall(const X64Instruction&) {
@@ -3849,7 +4196,7 @@ namespace x64 {
         set(R32::EAX, 0);
     }
 
-    void Cpu::exec(const Cpuid&) {
+    void Cpu::execCpuid(const X64Instruction&) {
         host::CPUID cpuid = host::cpuid(get(R32::EAX), get(R32::ECX));
         set(R32::EAX, cpuid.a);
         set(R32::EBX, cpuid.b);
@@ -3857,7 +4204,7 @@ namespace x64 {
         set(R32::EDX, cpuid.d);
     }
 
-    void Cpu::exec(const Xgetbv&) {
+    void Cpu::execXgetbv(const X64Instruction&) {
         host::XGETBV xgetbv = host::xgetbv(get(R32::ECX));
         set(R32::EAX, xgetbv.a);
         set(R32::EDX, xgetbv.d);

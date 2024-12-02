@@ -184,7 +184,6 @@ namespace x64 {
         NOP,
         UD2,
         SYSCALL,
-        UNKNOWN,
         CDQ,
         CQO,
         INC_RM8,
@@ -435,16 +434,16 @@ namespace x64 {
         COMISS_RSSE_M32,
         COMISD_RSSE_RSSE,
         COMISD_RSSE_M64,
+        UCOMISS_RSSE_RSSE,
+        UCOMISS_RSSE_M32,
+        UCOMISD_RSSE_RSSE,
+        UCOMISD_RSSE_M64,
         CMPSS_RSSE_RSSE,
         CMPSS_RSSE_M32,
         CMPSD_RSSE_RSSE,
         CMPSD_RSSE_M64,
         CMPPS_RSSE_RMSSE,
         CMPPD_RSSE_RMSSE,
-        UCOMISS_RSSE_RSSE,
-        UCOMISS_RSSE_M32,
-        UCOMISD_RSSE_RSSE,
-        UCOMISD_RSSE_M64,
         MAXSS_RSSE_RSSE,
         MAXSS_RSSE_M32,
         MAXSD_RSSE_RSSE,
@@ -578,6 +577,7 @@ namespace x64 {
         RDPKRU,
         WRPKRU,
         RDSSPD,
+        UNKNOWN, // must be last
     };
 
     template<size_t N>
