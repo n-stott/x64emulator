@@ -45,8 +45,8 @@ namespace x64 {
 
     static void noFpuComparison([[maybe_unused]] const X87Fpu& a, [[maybe_unused]] const X87Fpu& b) { }
 
-    template<typename Ret, typename NativeFunc, typename EmulatedFunc, typename FlagsCheck, typename... Args>
-    Ret checkFlags(NativeFunc nativeFunc, EmulatedFunc emulatedFunc, FlagsCheck flagsCheck, Flags* flags, Args&& ...args) {
+    template<typename Ret, typename EmulatedFunc, typename NativeFunc, typename FlagsCheck, typename... Args>
+    Ret checkFlags(EmulatedFunc emulatedFunc, NativeFunc nativeFunc, FlagsCheck flagsCheck, Flags* flags, Args&& ...args) {
         if constexpr(std::is_same_v<Ret, void>) {
             auto nativeFlags = *flags;
             nativeFunc(args..., &nativeFlags);
@@ -72,8 +72,8 @@ namespace x64 {
         }
     }
 
-    template<typename Ret, typename NativeFunc, typename EmulatedFunc, typename FlagsCheck, typename... Args>
-    Ret checkCallWithFlags(NativeFunc nativeFunc, EmulatedFunc emulatedFunc, FlagsCheck flagsCheck, Flags* flags, Args&& ...args) {
+    template<typename Ret, typename EmulatedFunc, typename NativeFunc, typename FlagsCheck, typename... Args>
+    Ret checkCallWithFlags(EmulatedFunc emulatedFunc, NativeFunc nativeFunc, FlagsCheck flagsCheck, Flags* flags, Args&& ...args) {
         if constexpr(std::is_same_v<Ret, void>) {
             auto nativeFlags = *flags;
             nativeFunc(args..., &nativeFlags);
@@ -100,8 +100,8 @@ namespace x64 {
         }
     }
 
-    template<typename Ret, typename NativeFunc, typename EmulatedFunc, typename FlagsCheck, typename Arg1, typename Arg2>
-    Ret checkCallShift(NativeFunc nativeFunc, EmulatedFunc emulatedFunc, FlagsCheck flagsCheck, Flags* flags, Arg1 arg1, Arg2 arg2) {
+    template<typename Ret, typename EmulatedFunc, typename NativeFunc, typename FlagsCheck, typename Arg1, typename Arg2>
+    Ret checkCallShift(EmulatedFunc emulatedFunc, NativeFunc nativeFunc, FlagsCheck flagsCheck, Flags* flags, Arg1 arg1, Arg2 arg2) {
         auto nativeFlags = *flags;
         [[maybe_unused]] auto native = nativeFunc(arg1, arg2, &nativeFlags);
 
@@ -115,8 +115,8 @@ namespace x64 {
         return emulated;
     }
 
-    template<typename Ret, typename NativeFunc, typename EmulatedFunc, typename FlagsCheck, typename Arg, typename Count>
-    Ret checkCallShiftd(NativeFunc nativeFunc, EmulatedFunc emulatedFunc, FlagsCheck flagsCheck, Flags* flags, Arg arg1, Arg arg2, Count count) {
+    template<typename Ret, typename EmulatedFunc, typename NativeFunc, typename FlagsCheck, typename Arg, typename Count>
+    Ret checkCallShiftd(EmulatedFunc emulatedFunc, NativeFunc nativeFunc, FlagsCheck flagsCheck, Flags* flags, Arg arg1, Arg arg2, Count count) {
         auto nativeFlags = *flags;
         [[maybe_unused]] auto native = nativeFunc(arg1, arg2, count, &nativeFlags);
 
@@ -130,8 +130,8 @@ namespace x64 {
         return emulated;
     }
 
-    template<typename Ret, typename NativeFunc, typename EmulatedFunc, typename... Args>
-    Ret checkCall(NativeFunc nativeFunc, EmulatedFunc emulatedFunc, Args&& ...args) {
+    template<typename Ret, typename EmulatedFunc, typename NativeFunc, typename... Args>
+    Ret checkCall(EmulatedFunc emulatedFunc, NativeFunc nativeFunc, Args&& ...args) {
         if constexpr(std::is_same_v<Ret, void>) {
             nativeFunc(args...);
             emulatedFunc(args...);
@@ -144,8 +144,8 @@ namespace x64 {
         }
     }
 
-    template<typename Ret, typename NativeFunc, typename EmulatedFunc, typename FpuCheck, typename... Args>
-    Ret checkCallWithFpu(NativeFunc nativeFunc, EmulatedFunc emulatedFunc, FpuCheck fpuCheck, X87Fpu* fpu, Args&& ...args) {
+    template<typename Ret, typename EmulatedFunc, typename NativeFunc, typename FpuCheck, typename... Args>
+    Ret checkCallWithFpu(EmulatedFunc emulatedFunc, NativeFunc nativeFunc, FpuCheck fpuCheck, X87Fpu* fpu, Args&& ...args) {
         if constexpr(std::is_same_v<Ret, void>) {
             auto nativeFpu = *fpu;
             nativeFunc(args..., &nativeFpu);
