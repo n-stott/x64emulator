@@ -30,7 +30,9 @@ namespace emulator {
             // std::vector<std::pair<u64, u64>> ps;
             // ps.insert(ps.begin(), instructionCount_.begin(), instructionCount_.end());
             // std::sort(ps.begin(), ps.end(), [](const auto& a, const auto& b) {
-            //     return a.second > b.second;
+            //     if(a.second > b.second) return true;
+            //     if(a.second < b.second) return false;
+            //     return a.first < b.first;
             // });
             // for(size_t i = 0; i < ps.size(); ++i) {
             //     if(i >= 50) break;
@@ -38,7 +40,7 @@ namespace emulator {
             //     u64 count = ps[i].second;
             //     updateExecutionPoint(address);
             //     const x64::X64Instruction& instruction = *currentThreadExecutionPoint_.nextInstruction;
-            //     fmt::print("  {:10}  {}\n", count, instruction.toString());
+            //     fmt::print("  {:10} {:#16x} {}\n", count, instruction.address(), instruction.toString());
             // }
 
 
@@ -95,8 +97,8 @@ namespace emulator {
             bool foundBasicBlock = false;
             for(const auto& bb : basicBlocks) {
                 if(bb.size == 0) continue;
-                if(rip < bb.instructions[0].address()) continue;
-                if(rip > bb.instructions[bb.size-1].address()) continue;
+                if(rip < bb.instructions[0].nextAddress()) continue;
+                if(rip > bb.instructions[bb.size-1].nextAddress()) continue;
                 foundBasicBlock = true;
                 for(size_t i = 0; i < bb.size; ++i) {
                     const auto& ins = bb.instructions[i];
