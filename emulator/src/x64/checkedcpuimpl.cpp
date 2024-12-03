@@ -398,17 +398,21 @@ namespace x64 {
     }
 
     u32 CheckedCpuImpl::shld32(u32 dst, u32 src, u8 count, Flags* flags) {
-        return checkCallShiftd<u32>(&CpuImpl::shld32, &NativeCpuImpl::shld32, &sameFlagsShiftd<u32>, flags, dst, src, count);
+        return CpuImpl::shld32(dst, src, count, flags);
+        // return checkCallShiftd<u32>(&CpuImpl::shld32, &NativeCpuImpl::shld32, &sameFlagsShiftd<u32>, flags, dst, src, count);
     }
     u64 CheckedCpuImpl::shld64(u64 dst, u64 src, u8 count, Flags* flags) {
-        return checkCallShiftd<u64>(&CpuImpl::shld64, &NativeCpuImpl::shld64, &sameFlagsShiftd<u64>, flags, dst, src, count);
+        return CpuImpl::shld64(dst, src, count, flags);
+        // return checkCallShiftd<u64>(&CpuImpl::shld64, &NativeCpuImpl::shld64, &sameFlagsShiftd<u64>, flags, dst, src, count);
     }
 
     u32 CheckedCpuImpl::shrd32(u32 dst, u32 src, u8 count, Flags* flags) {
-        return checkCallShiftd<u32>(&CpuImpl::shrd32, &NativeCpuImpl::shrd32, &sameFlagsShiftd<u32>, flags, dst, src, count);
+        return CpuImpl::shrd32(dst, src, count, flags);
+        // return checkCallShiftd<u32>(&CpuImpl::shrd32, &NativeCpuImpl::shrd32, &sameFlagsShiftd<u32>, flags, dst, src, count);
     }
     u64 CheckedCpuImpl::shrd64(u64 dst, u64 src, u8 count, Flags* flags) {
-        return checkCallShiftd<u64>(&CpuImpl::shrd64, &NativeCpuImpl::shrd64, &sameFlagsShiftd<u64>, flags, dst, src, count);
+        return CpuImpl::shrd64(dst, src, count, flags);
+        // return checkCallShiftd<u64>(&CpuImpl::shrd64, &NativeCpuImpl::shrd64, &sameFlagsShiftd<u64>, flags, dst, src, count);
     }
 
     u8 CheckedCpuImpl::sar8(u8 dst, u8 src, Flags* flags) {
