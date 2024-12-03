@@ -1,5 +1,4 @@
 #include "x64/disassembler/capstonewrapper.h"
-#include "x64/instructions/allinstructions.h"
 #include "fmt/core.h"
 #include <cassert>
 #include <optional>

@@ -5,7 +5,6 @@
 #include "x64/flags.h"
 #include "x64/simd.h"
 #include "x64/x87.h"
-#include "x64/instructions/allinstructions.h"
 #include "x64/instructions/x64instruction.h"
 
 namespace emulator {
