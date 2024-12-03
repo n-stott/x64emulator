@@ -2000,6 +2000,20 @@ namespace x64 {
     u128 NativeCpuImpl::paddq(u128 dst, u128 src) { return padd<u64>(dst, src); }
 
     template<typename U>
+    u128 paddus(u128 dst, u128 src) {
+        u128 nativeRes = dst;
+        if constexpr(std::is_same_v<U, u8>) {
+            asm volatile("paddusb %1, %0" : "+x"(nativeRes) : "x"(src));
+        } else {
+            asm volatile("paddusw %1, %0" : "+x"(nativeRes) : "x"(src));
+        }
+        return nativeRes;
+    }
+
+    u128 NativeCpuImpl::paddusb(u128 dst, u128 src) { return paddus<u8>(dst, src); }
+    u128 NativeCpuImpl::paddusw(u128 dst, u128 src) { return paddus<u16>(dst, src); }
+
+    template<typename U>
     u128 psub(u128 dst, u128 src) {
         u128 nativeRes = dst;
         if constexpr(std::is_same_v<U, u8>) {

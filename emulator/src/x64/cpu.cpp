@@ -686,6 +686,8 @@ namespace x64 {
         WRAP(execPaddwRSSERMSSE, Insn::PADDW_RSSE_RMSSE),
         WRAP(execPadddRSSERMSSE, Insn::PADDD_RSSE_RMSSE),
         WRAP(execPaddqRSSERMSSE, Insn::PADDQ_RSSE_RMSSE),
+        WRAP(execPaddusbRSSERMSSE, Insn::PADDUSB_RSSE_RMSSE),
+        WRAP(execPadduswRSSERMSSE, Insn::PADDUSW_RSSE_RMSSE),
         WRAP(execPsubbRSSERMSSE, Insn::PSUBB_RSSE_RMSSE),
         WRAP(execPsubwRSSERMSSE, Insn::PSUBW_RSSE_RMSSE),
         WRAP(execPsubdRSSERMSSE, Insn::PSUBD_RSSE_RMSSE),
@@ -4128,6 +4130,20 @@ namespace x64 {
         const auto& dst = ins.op0<RSSE>();
         const auto& src = ins.op1<RMSSE>();
         u128 res = Impl::paddq(get(dst), get(src));
+        set(dst, res);
+    }
+
+    void Cpu::execPaddusbRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        u128 res = Impl::paddusb(get(dst), get(src));
+        set(dst, res);
+    }
+
+    void Cpu::execPadduswRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        u128 res = Impl::paddusw(get(dst), get(src));
         set(dst, res);
     }
 

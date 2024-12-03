@@ -260,6 +260,8 @@ namespace x64 {
         [[nodiscard]] static u128 paddw(u128 dst, u128 src);
         [[nodiscard]] static u128 paddd(u128 dst, u128 src);
         [[nodiscard]] static u128 paddq(u128 dst, u128 src);
+        [[nodiscard]] static u128 paddusb(u128 dst, u128 src);
+        [[nodiscard]] static u128 paddusw(u128 dst, u128 src);
         
         [[nodiscard]] static u128 psubb(u128 dst, u128 src);
         [[nodiscard]] static u128 psubw(u128 dst, u128 src);
