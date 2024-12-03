@@ -254,8 +254,14 @@ namespace kernel {
         if(timeout == 0) {
             auto errnoOrBufferAndReturnValue = kernel_.fs().pollImmediate(pollfds);
             if(logSyscalls_) {
-                print("Sys::poll(fds={:#x}, nfds={}, timeout={}) = {}\n",
-                            fds.address(), nfds, timeout, errnoOrBufferAndReturnValue.errorOr(0));
+                std::vector<std::string> allfds;
+                for(const auto& pfd : pollfds) allfds.push_back(fmt::format("[fd={}, events={}]", pfd.fd, (int)pfd.events));
+                auto fdsString = fmt::format("{}", fmt::join(allfds, ", "));
+                print("Sys::poll(fds={:#x}, nfds={} (fds={}), timeout={}) = {}\n",
+                            fds.address(), nfds, fdsString, timeout, errnoOrBufferAndReturnValue.errorOr(0));
+                for(const auto& pd : pollfds) {
+                    fmt::print("  fd={}  events={}, revents={}\n", pd.fd, (int)pd.events, (int)pd.revents);
+                }
             }
             return errnoOrBufferAndReturnValue.errorOrWith<int>([&](const auto& bufferAndRetVal) {
                 mmu_.copyToMmu(fds, bufferAndRetVal.buffer.data(), bufferAndRetVal.buffer.size());
@@ -263,8 +269,11 @@ namespace kernel {
             });
         } else {
             if(logSyscalls_) {
-                print("Sys::poll(fds={:#x}, nfds={}, timeout={}) = pending\n",
-                            fds.address(), nfds, timeout);
+                std::vector<std::string> allfds;
+                for(const auto& pfd : pollfds) allfds.push_back(fmt::format("[fd={}, events={}]", pfd.fd, (int)pfd.events));
+                auto fdsString = fmt::format("{}", fmt::join(allfds, ", "));
+                print("Sys::poll(fds={:#x}, nfds={} (fds={}), timeout={}) = pending\n",
+                            fds.address(), nfds, fdsString, timeout);
             }
             kernel_.scheduler().poll(currentThread_, fds, nfds, timeout);
         }
