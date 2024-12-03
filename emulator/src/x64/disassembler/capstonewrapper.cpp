@@ -1948,7 +1948,9 @@ namespace x64 {
         assert(x86detail.op_count == 1);
         const cs_x86_op& src = x86detail.operands[0];
         auto stsrc = asST(src);
+        auto m32src = asMemory32(src);
         if(stsrc) return X64Instruction::make<Insn::FDIV_ST_ST>(insn.address, insn.size, ST::ST0, stsrc.value());
+        if(m32src) return X64Instruction::make<Insn::FDIV_M32>(insn.address, insn.size, m32src.value());
         return make_failed(insn);
     }
 
@@ -1958,6 +1960,28 @@ namespace x64 {
         const cs_x86_op& dst = x86detail.operands[0];
         auto stdst = asST(dst);
         if(stdst) return X64Instruction::make<Insn::FDIVP_ST_ST>(insn.address, insn.size, stdst.value(), ST::ST0);
+        return make_failed(insn);
+    }
+
+    static X64Instruction makeFdivr(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        if(x86detail.opcode[0] != 0xd8) return make_failed(insn);
+        // FDIVR ST(0), ST(i)
+        assert(x86detail.op_count == 1);
+        const cs_x86_op& dst = x86detail.operands[0];
+        auto stdst = asST(dst);
+        auto m32dst = asMemory32(dst);
+        if(stdst) return X64Instruction::make<Insn::FDIVR_ST_ST>(insn.address, insn.size, ST::ST0, stdst.value());
+        if(m32dst) return X64Instruction::make<Insn::FDIVR_M32>(insn.address, insn.size, m32dst.value());
+        return make_failed(insn);
+    }
+
+    static X64Instruction makeFdivrp(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 1);
+        const cs_x86_op& dst = x86detail.operands[0];
+        auto stdst = asST(dst);
+        if(stdst) return X64Instruction::make<Insn::FDIVRP_ST_ST>(insn.address, insn.size, stdst.value(), ST::ST0);
         return make_failed(insn);
     }
 
@@ -3739,6 +3763,8 @@ namespace x64 {
             case X86_INS_FMUL: return makeFmul(insn);
             case X86_INS_FDIV: return makeFdiv(insn);
             case X86_INS_FDIVP: return makeFdivp(insn);
+            case X86_INS_FDIVR: return makeFdivr(insn);
+            case X86_INS_FDIVRP: return makeFdivrp(insn);
             case X86_INS_FCOMI: return makeFcomi(insn);
             case X86_INS_FUCOMI: return makeFucomi(insn);
             case X86_INS_FRNDINT: return makeFrndint(insn);

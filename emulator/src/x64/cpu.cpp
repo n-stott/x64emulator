@@ -544,7 +544,11 @@ namespace x64 {
         WRAP(execFmul1M32, Insn::FMUL1_M32),
         WRAP(execFmul1M64, Insn::FMUL1_M64),
         WRAP(execFdivSTST, Insn::FDIV_ST_ST),
+        WRAP(execFdivM32, Insn::FDIV_M32),
         WRAP(execFdivpSTST, Insn::FDIVP_ST_ST),
+        WRAP(execFdivrSTST, Insn::FDIVR_ST_ST),
+        WRAP(execFdivrM32, Insn::FDIVR_M32),
+        WRAP(execFdivrpSTST, Insn::FDIVRP_ST_ST),
         WRAP(execFcomiST, Insn::FCOMI_ST),
         WRAP(execFucomiST, Insn::FUCOMI_ST),
         WRAP(execFrndint, Insn::FRNDINT),
@@ -3153,12 +3157,47 @@ namespace x64 {
         x87fpu_.set(dst, Impl::fdiv(dstValue, srcValue, &x87fpu_));
     }
 
+    void Cpu::execFdivM32(const X64Instruction& ins) {
+        auto dst = ST::ST0;
+        f80 dstValue = x87fpu_.st(dst);
+        const auto& src = ins.op0<M32>();
+        f80 srcValue = f80::bitcastFromU32(get(resolve(src)));
+        x87fpu_.set(dst, Impl::fdiv(dstValue, srcValue, &x87fpu_));
+    }
+
     void Cpu::execFdivpSTST(const X64Instruction& ins) {
         const auto& dst = ins.op0<ST>();
         const auto& src = ins.op1<ST>();
         f80 dstValue = x87fpu_.st(dst);
         f80 srcValue = x87fpu_.st(src);
         f80 res = Impl::fdiv(dstValue, srcValue, &x87fpu_);
+        x87fpu_.set(dst, res);
+        x87fpu_.pop();
+    }
+
+    void Cpu::execFdivrSTST(const X64Instruction& ins) {
+        const auto& dst = ins.op0<ST>();
+        const auto& src = ins.op1<ST>();
+        f80 dstValue = x87fpu_.st(dst);
+        f80 srcValue = x87fpu_.st(src);
+        x87fpu_.set(dst, Impl::fdiv(srcValue, dstValue, &x87fpu_));
+    }
+
+    void Cpu::execFdivrM32(const X64Instruction& ins) {
+        auto dst = ST::ST0;
+        f80 dstValue = x87fpu_.st(dst);
+        const auto& src = ins.op0<M32>();
+        Ptr32 srcPtr = resolve(src);
+        f80 srcValue = f80::bitcastFromU32(get(srcPtr));
+        x87fpu_.set(dst, Impl::fdiv(srcValue, dstValue, &x87fpu_));
+    }
+
+    void Cpu::execFdivrpSTST(const X64Instruction& ins) {
+        const auto& dst = ins.op0<ST>();
+        const auto& src = ins.op1<ST>();
+        f80 dstValue = x87fpu_.st(dst);
+        f80 srcValue = x87fpu_.st(src);
+        f80 res = Impl::fdiv(srcValue, dstValue, &x87fpu_);
         x87fpu_.set(dst, res);
         x87fpu_.pop();
     }

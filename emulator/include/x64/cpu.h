@@ -611,7 +611,11 @@ namespace x64 {
         void execFmul1M32(const X64Instruction&);
         void execFmul1M64(const X64Instruction&);
         void execFdivSTST(const X64Instruction&);
+        void execFdivM32(const X64Instruction&);
         void execFdivpSTST(const X64Instruction&);
+        void execFdivrSTST(const X64Instruction&);
+        void execFdivrM32(const X64Instruction&);
+        void execFdivrpSTST(const X64Instruction&);
 
         void execFcomiST(const X64Instruction&);
         void execFucomiST(const X64Instruction&);

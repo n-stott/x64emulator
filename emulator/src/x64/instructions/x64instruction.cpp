@@ -685,7 +685,11 @@ namespace utils {
             case Insn::FMUL1_M32: return toString<M32>("fmul1");
             case Insn::FMUL1_M64: return toString<M64>("fmul1");
             case Insn::FDIV_ST_ST: return toString<ST, ST>("fdiv");
+            case Insn::FDIV_M32: return toString<M32>("fdiv");
             case Insn::FDIVP_ST_ST: return toString<ST, ST>("fdivp");
+            case Insn::FDIVR_ST_ST: return toString<ST, ST>("fdivr");
+            case Insn::FDIVR_M32: return toString<M32>("fdivr");
+            case Insn::FDIVRP_ST_ST: return toString<ST, ST>("fdivrp");
             case Insn::FCOMI_ST: return toString<ST>("fcomi");
             case Insn::FUCOMI_ST: return toString<ST>("fucomi");
             case Insn::FRNDINT: return toString("frndint");
