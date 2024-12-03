@@ -526,11 +526,15 @@ namespace x64 {
         void execJne(const X64Instruction&);
         void execJcc(const X64Instruction&);
 
+        void execBsrR16R16(const X64Instruction&);
+        void execBsrR16M16(const X64Instruction&);
         void execBsrR32R32(const X64Instruction&);
         void execBsrR32M32(const X64Instruction&);
         void execBsrR64R64(const X64Instruction&);
         void execBsrR64M64(const X64Instruction&);
         
+        void execBsfR16R16(const X64Instruction&);
+        void execBsfR16M16(const X64Instruction&);
         void execBsfR32R32(const X64Instruction&);
         void execBsfR32M32(const X64Instruction&);
         void execBsfR64R64(const X64Instruction&);

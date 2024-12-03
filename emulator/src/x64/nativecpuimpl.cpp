@@ -1231,6 +1231,7 @@ namespace x64 {
         return nativeRes;
     }
 
+    u16 NativeCpuImpl::bsr16(u16 val, Flags* flags) { return bsr<u16>(val, flags); }
     u32 NativeCpuImpl::bsr32(u32 val, Flags* flags) { return bsr<u32>(val, flags); }
     u64 NativeCpuImpl::bsr64(u64 val, Flags* flags) { return bsr<u64>(val, flags); }
 
@@ -1245,6 +1246,7 @@ namespace x64 {
         return nativeRes;
     }
 
+    u16 NativeCpuImpl::bsf16(u16 val, Flags* flags) { return bsf<u16>(val, flags); }
     u32 NativeCpuImpl::bsf32(u32 val, Flags* flags) { return bsf<u32>(val, flags); }
     u64 NativeCpuImpl::bsf64(u64 val, Flags* flags) { return bsf<u64>(val, flags); }
 

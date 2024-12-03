@@ -616,10 +616,14 @@ namespace utils {
             case Insn::JE: return toString<u64>("je");
             case Insn::JNE: return toString<u64>("jne");
             case Insn::JCC: return toString<Cond, u64>("jcc");
+            case Insn::BSR_R16_R16: return toString<R16, R16>("bsr");
+            case Insn::BSR_R16_M16: return toString<R16, M16>("bsr");
             case Insn::BSR_R32_R32: return toString<R32, R32>("bsr");
             case Insn::BSR_R32_M32: return toString<R32, M32>("bsr");
             case Insn::BSR_R64_R64: return toString<R64, R64>("bsr");
             case Insn::BSR_R64_M64: return toString<R64, M64>("bsr");
+            case Insn::BSF_R16_R16: return toString<R16, R16>("bsf");
+            case Insn::BSF_R16_M16: return toString<R16, M16>("bsf");
             case Insn::BSF_R32_R32: return toString<R32, R32>("bsf");
             case Insn::BSF_R32_M32: return toString<R32, M32>("bsf");
             case Insn::BSF_R64_R64: return toString<R64, R64>("bsf");

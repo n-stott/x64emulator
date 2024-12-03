@@ -475,10 +475,14 @@ namespace x64 {
         WRAP(execJe, Insn::JE),
         WRAP(execJne, Insn::JNE),
         WRAP(execJcc, Insn::JCC),
+        WRAP(execBsrR16R16, Insn::BSR_R16_R16),
+        WRAP(execBsrR16M16, Insn::BSR_R16_M16),
         WRAP(execBsrR32R32, Insn::BSR_R32_R32),
         WRAP(execBsrR32M32, Insn::BSR_R32_M32),
         WRAP(execBsrR64R64, Insn::BSR_R64_R64),
         WRAP(execBsrR64M64, Insn::BSR_R64_M64),
+        WRAP(execBsfR16R16, Insn::BSF_R16_R16),
+        WRAP(execBsfR16M16, Insn::BSF_R16_M16),
         WRAP(execBsfR32R32, Insn::BSF_R32_R32),
         WRAP(execBsfR32M32, Insn::BSF_R32_M32),
         WRAP(execBsfR64R64, Insn::BSF_R64_R64),
@@ -2566,6 +2570,22 @@ namespace x64 {
         }
     }
 
+    void Cpu::execBsrR16R16(const X64Instruction& ins) {
+        const auto& dst = ins.op0<R16>();
+        const auto& src = ins.op1<R16>();
+        u16 val = get(src);
+        u16 mssb = Impl::bsr16(val, &flags_);
+        if(mssb < 16) set(dst, mssb);
+    }
+
+    void Cpu::execBsrR16M16(const X64Instruction& ins) {
+        const auto& dst = ins.op0<R16>();
+        const auto& src = ins.op1<M16>();
+        u16 val = get(resolve(src));
+        u16 mssb = Impl::bsr16(val, &flags_);
+        if(mssb < 16) set(dst, mssb);
+    }
+
     void Cpu::execBsrR32R32(const X64Instruction& ins) {
         const auto& dst = ins.op0<R32>();
         const auto& src = ins.op1<R32>();
@@ -2596,6 +2616,22 @@ namespace x64 {
         u64 val = get(resolve(src));
         u64 mssb = Impl::bsr64(val, &flags_);
         if(mssb < 64) set(dst, mssb);
+    }
+
+    void Cpu::execBsfR16R16(const X64Instruction& ins) {
+        const auto& dst = ins.op0<R16>();
+        const auto& src = ins.op1<R16>();
+        u16 val = get(src);
+        u16 mssb = Impl::bsf16(val, &flags_);
+        if(mssb < 16) set(dst, mssb);
+    }
+
+    void Cpu::execBsfR16M16(const X64Instruction& ins) {
+        const auto& dst = ins.op0<R16>();
+        const auto& src = ins.op1<M16>();
+        u16 val = get(resolve(src));
+        u16 mssb = Impl::bsf16(val, &flags_);
+        if(mssb < 16) set(dst, mssb);
     }
 
     void Cpu::execBsfR32R32(const X64Instruction& ins) {

@@ -554,6 +554,13 @@ namespace x64 {
         return checkCallWithFlags<void>(&CpuImpl::cmpxchg64, &NativeCpuImpl::cmpxchg64, &sameFlags, flags, rax, dest);
     }
 
+    u16 CheckedCpuImpl::bsr16(u16 val, Flags* flags) {
+        if(val == 0) {
+            return checkFlags<u16>(&CpuImpl::bsr16, &NativeCpuImpl::bsr16, &sameZero, flags, val);
+        } else {
+            return checkCallWithFlags<u16>(&CpuImpl::bsr16, &NativeCpuImpl::bsr16, &sameZero, flags, val);
+        }
+    }
     u32 CheckedCpuImpl::bsr32(u32 val, Flags* flags) {
         if(val == 0) {
             return checkFlags<u32>(&CpuImpl::bsr32, &NativeCpuImpl::bsr32, &sameZero, flags, val);
@@ -569,6 +576,13 @@ namespace x64 {
         }
     }
 
+    u16 CheckedCpuImpl::bsf16(u16 val, Flags* flags) {
+        if(val == 0) {
+            return checkFlags<u16>(&CpuImpl::bsf16, &NativeCpuImpl::bsf16, &sameZero, flags, val);
+        } else {
+            return checkCallWithFlags<u16>(&CpuImpl::bsf16, &NativeCpuImpl::bsf16, &sameZero, flags, val);
+        }
+    }
     u32 CheckedCpuImpl::bsf32(u32 val, Flags* flags) {
         if(val == 0) {
             return checkFlags<u32>(&CpuImpl::bsf32, &NativeCpuImpl::bsf32, &sameZero, flags, val);

@@ -614,6 +614,7 @@ namespace x64 {
         return mssb;
     }
 
+    u16 CpuImpl::bsr16(u16 val, Flags* flags) { return bsr<u16>(val, flags); }
     u32 CpuImpl::bsr32(u32 val, Flags* flags) { return bsr<u32>(val, flags); }
     u64 CpuImpl::bsr64(u64 val, Flags* flags) { return bsr<u64>(val, flags); }
 
@@ -628,6 +629,7 @@ namespace x64 {
         return mssb;
     }
 
+    u16 CpuImpl::bsf16(u16 val, Flags* flags) { return bsf<u16>(val, flags); }
     u32 CpuImpl::bsf32(u32 val, Flags* flags) { return bsf<u32>(val, flags); }
     u64 CpuImpl::bsf64(u64 val, Flags* flags) { return bsf<u64>(val, flags); }
 
