@@ -141,7 +141,7 @@ namespace kernel {
     }
 
     ErrnoOrBuffer ShadowFile::statfs() {
-        verify(false, "implement statfs on ShadowFile");
+        warn("ShadowFile::statfs not implemented");
         return ErrnoOrBuffer(-ENOTSUP);
     }
 
