@@ -30,7 +30,7 @@ namespace kernel {
     }
     
     ErrnoOrBuffer Event::read(OpenFileDescription& openFileDescription, size_t size) {
-        if(size != 8) return ErrnoOrBuffer(-EINVAL);
+        if(size < 8) return ErrnoOrBuffer(-EINVAL);
         if(counter_ == 0) {
             if(openFileDescription.statusFlags().test(FS::StatusFlags::NONBLOCK)) {
                 return ErrnoOrBuffer(-EAGAIN);
