@@ -93,7 +93,7 @@ namespace kernel {
         struct Eventfd2Flags {
             static bool isCloseOnExec(int flags);
             static bool isNonBlock(int flags);
-            static bool isOther(int flags);
+            static bool isSemaphore(int flags);
         };
 
         struct EpollFlags {

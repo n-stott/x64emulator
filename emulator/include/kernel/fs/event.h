@@ -2,7 +2,6 @@
 #define EVENT_H
 
 #include "kernel/fs/file.h"
-#include <fmt/core.h>
 #include <memory>
 
 namespace kernel {
@@ -16,8 +15,8 @@ namespace kernel {
         void close() override;
         bool keepAfterClose() const override { return false; }
 
-        bool isReadable() const override { return false; }
-        bool isWritable() const override { return false; }
+        bool isReadable() const override { return true; }
+        bool isWritable() const override { return true; }
 
         bool isPollable() const override { return true; }
         bool canRead() const override;
@@ -36,18 +35,17 @@ namespace kernel {
         std::optional<int> fcntl(int cmd, int arg) override;
         ErrnoOrBuffer ioctl(unsigned long request, const Buffer& buffer) override;
 
-        std::optional<int> hostFileDescriptor() const override { return hostFd_; }
+        std::optional<int> hostFileDescriptor() const override { return {}; }
 
         std::string className() const override {
-            return fmt::format("Event(realfd={})", hostFd_);
+            return "Event";
         }
 
     private:
-        explicit Event(FS* fs, unsigned int initval, int flags, int hostFd);
+        explicit Event(FS* fs, unsigned int initval, int flags);
 
         u64 counter_;
         int flags_;
-        int hostFd_ { -1 };
     };
 
 }

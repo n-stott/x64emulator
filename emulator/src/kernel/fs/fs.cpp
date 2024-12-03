@@ -16,6 +16,7 @@
 #include "verify.h"
 #include <fmt/core.h>
 #include <fmt/color.h>
+#include <fmt/ranges.h>
 #include <algorithm>
 #include <fcntl.h>
 #include <sys/poll.h>
@@ -725,7 +726,7 @@ namespace kernel {
     }
 
     FS::FD FS::eventfd2(unsigned int initval, int flags) {
-        verify(!Host::Eventfd2Flags::isOther(flags), "only closeOnExec and nonBlock are allowed on eventfd2");
+        verify(!Host::Eventfd2Flags::isSemaphore(flags), "only closeOnExec and nonBlock are allowed on eventfd2");
         std::unique_ptr<Event> event = Event::tryCreate(this, initval, flags);
         verify(!!event, "Unable to create event");
         BitFlags<AccessMode> accessMode { AccessMode::READ, AccessMode::WRITE };
@@ -823,8 +824,6 @@ namespace kernel {
             }
             File* file = openFileDescription->file();
             verify(file->isPollable(), [&]() { fmt::print("fd={} is not pollable\n", rfd.fd); });
-            auto hostFd = file->hostFileDescriptor();
-            verify(hostFd.has_value(), [&]() { fmt::print("fd={} has no host-equivalent fd\n", rfd.fd); });
 
             bool testRead = ((rfd.events & PollEvent::CAN_READ) == PollEvent::CAN_READ);
             bool testWrite = ((rfd.events & PollEvent::CAN_WRITE) == PollEvent::CAN_WRITE);
@@ -873,8 +872,6 @@ namespace kernel {
 
             File* file = openFileDescription->file();
             verify(file->isPollable(), [&]() { fmt::print("fd={} is not pollable\n", fd); });
-            auto hostFd = file->hostFileDescriptor();
-            verify(hostFd.has_value(), [&]() { fmt::print("fd={} has no host-equivalent fd\n", fd); });
 
             if(testRead && file->canRead())   selectData->readfds.set(fd);
             if(testWrite && file->canWrite()) selectData->writefds.set(fd);

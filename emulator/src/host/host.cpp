@@ -169,8 +169,8 @@ namespace kernel {
         return flags & EFD_NONBLOCK;
     }
 
-    bool Host::Eventfd2Flags::isOther(int flags) {
-        return flags & ~(EFD_CLOEXEC | EFD_NONBLOCK);
+    bool Host::Eventfd2Flags::isSemaphore(int flags) {
+        return flags & EFD_SEMAPHORE;
     }
 
     bool Host::EpollFlags::isCloseOnExec(int flags) {
