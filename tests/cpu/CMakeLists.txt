@@ -19,6 +19,13 @@ target_link_libraries(test_cpu_cvtsi2ss32 PUBLIC x64cpu fmt::fmt-header-only)
 target_link_options(test_cpu_cvtsi2ss32 PUBLIC ${LD_OPTIONS})
 add_test(NAME cvtsi2ss32 COMMAND test_cpu_cvtsi2ss32)
 
+add_executable(test_cpu_cvtsi2sd32 src/test_cvtsi2sd32.cpp)
+target_compile_options(test_cpu_cvtsi2sd32 PUBLIC ${CC_OPTIONS})
+target_include_directories(test_cpu_cvtsi2sd32 PUBLIC include ${CMAKE_SOURCE_DIR}/emulator/include)
+target_link_libraries(test_cpu_cvtsi2sd32 PUBLIC x64cpu fmt::fmt-header-only)
+target_link_options(test_cpu_cvtsi2sd32 PUBLIC ${LD_OPTIONS})
+add_test(NAME cvtsi2sd32 COMMAND test_cpu_cvtsi2sd32)
+
 add_executable(test_cpu_unpcklps src/test_unpcklps.cpp)
 target_compile_options(test_cpu_unpcklps PUBLIC ${CC_OPTIONS})
 target_include_directories(test_cpu_unpcklps PUBLIC include ${CMAKE_SOURCE_DIR}/emulator/include)

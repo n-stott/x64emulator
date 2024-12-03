@@ -927,7 +927,7 @@ namespace x64 {
         double res = (double)isrc;
         u64 r;
         std::memcpy(&r, &res, sizeof(r));
-        dst.lo = (dst.lo & 0xFFFFFFFF00000000) | r;
+        dst.lo = r;
         return dst;
     }
 
