@@ -85,6 +85,12 @@ namespace kernel {
         return Host::statfs(path);
     }
 
+    ErrnoOrBuffer HostDirectory::statx(unsigned int mask) {
+        if(!hostFd_) open();
+        verify(!!hostFd_, "Directory must be opened first");
+        return Host::statx(Host::FD{hostFd_.value()}, "", AT_EMPTY_PATH, mask);
+    }
+
     ErrnoOrBuffer HostDirectory::getdents64(size_t count) {
         verify(!!hostFd_, "Directory must be opened first");
         return Host::getdents64(Host::FD{hostFd_.value()}, count); // NOLINT(bugprone-unchecked-optional-access)
