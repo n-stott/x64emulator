@@ -160,576 +160,579 @@ namespace x64 {
         return mxcsr_.rc;
     }
 
-    #define WRAP(f) [](Cpu& cpu, const X64Instruction& ins) { cpu.f(ins); }
+    #define WRAP(f, type) [](Cpu& cpu, const X64Instruction& ins) { \
+        assert(ins.insn() == type);                                 \
+        cpu.f(ins);                                                 \
+    }
 
     const std::array<Cpu::ExecPtr, (size_t)Insn::UNKNOWN+1> Cpu::execFunctions_ {{
-        WRAP(execAddRM8RM8), // ADD_RM8_RM8
-        WRAP(execAddRM8Imm), // ADD_RM8_IMM
-        WRAP(execAddRM16RM16), // ADD_RM16_RM16
-        WRAP(execAddRM16Imm), // ADD_RM16_IMM
-        WRAP(execAddRM32RM32), // ADD_RM32_RM32
-        WRAP(execAddRM32Imm), // ADD_RM32_IMM
-        WRAP(execAddRM64RM64), // ADD_RM64_RM64
-        WRAP(execAddRM64Imm), // ADD_RM64_IMM
-        WRAP(execLockAddM8RM8), // LOCK_ADD_M8_RM8
-        WRAP(execLockAddM8Imm), // LOCK_ADD_M8_IMM
-        WRAP(execLockAddM16RM16), // LOCK_ADD_M16_RM16
-        WRAP(execLockAddM16Imm), // LOCK_ADD_M16_IMM
-        WRAP(execLockAddM32RM32), // LOCK_ADD_M32_RM32
-        WRAP(execLockAddM32Imm), // LOCK_ADD_M32_IMM
-        WRAP(execLockAddM64RM64), // LOCK_ADD_M64_RM64
-        WRAP(execLockAddM64Imm), // LOCK_ADD_M64_IMM
-        WRAP(execAdcRM8RM8), // ADC_RM8_RM8
-        WRAP(execAdcRM8Imm), // ADC_RM8_IMM
-        WRAP(execAdcRM16RM16), // ADC_RM16_RM16
-        WRAP(execAdcRM16Imm), // ADC_RM16_IMM
-        WRAP(execAdcRM32RM32), // ADC_RM32_RM32
-        WRAP(execAdcRM32Imm), // ADC_RM32_IMM
-        WRAP(execAdcRM64RM64), // ADC_RM64_RM64
-        WRAP(execAdcRM64Imm), // ADC_RM64_IMM
-        WRAP(execSubRM8RM8), // SUB_RM8_RM8
-        WRAP(execSubRM8Imm), // SUB_RM8_IMM
-        WRAP(execSubRM16RM16), // SUB_RM16_RM16
-        WRAP(execSubRM16Imm), // SUB_RM16_IMM
-        WRAP(execSubRM32RM32), // SUB_RM32_RM32
-        WRAP(execSubRM32Imm), // SUB_RM32_IMM
-        WRAP(execSubRM64RM64), // SUB_RM64_RM64
-        WRAP(execSubRM64Imm), // SUB_RM64_IMM
-        WRAP(execLockSubM8RM8), // LOCK_SUB_M8_RM8
-        WRAP(execLockSubM8Imm), // LOCK_SUB_M8_IMM
-        WRAP(execLockSubM16RM16), // LOCK_SUB_M16_RM16
-        WRAP(execLockSubM16Imm), // LOCK_SUB_M16_IMM
-        WRAP(execLockSubM32RM32), // LOCK_SUB_M32_RM32
-        WRAP(execLockSubM32Imm), // LOCK_SUB_M32_IMM
-        WRAP(execLockSubM64RM64), // LOCK_SUB_M64_RM64
-        WRAP(execLockSubM64Imm), // LOCK_SUB_M64_IMM
-        WRAP(execSbbRM8RM8), // SBB_RM8_RM8
-        WRAP(execSbbRM8Imm), // SBB_RM8_IMM
-        WRAP(execSbbRM16RM16), // SBB_RM16_RM16
-        WRAP(execSbbRM16Imm), // SBB_RM16_IMM
-        WRAP(execSbbRM32RM32), // SBB_RM32_RM32
-        WRAP(execSbbRM32Imm), // SBB_RM32_IMM
-        WRAP(execSbbRM64RM64), // SBB_RM64_RM64
-        WRAP(execSbbRM64Imm), // SBB_RM64_IMM
-        WRAP(execNegRM8), // NEG_RM8
-        WRAP(execNegRM16), // NEG_RM16
-        WRAP(execNegRM32), // NEG_RM32
-        WRAP(execNegRM64), // NEG_RM64
-        WRAP(execMulRM8), // MUL_RM8
-        WRAP(execMulRM16), // MUL_RM16
-        WRAP(execMulRM32), // MUL_RM32
-        WRAP(execMulRM64), // MUL_RM64
-        WRAP(execImul1RM16), // IMUL1_RM16
-        WRAP(execImul2R16RM16), // IMUL2_R16_RM16
-        WRAP(execImul3R16RM16Imm), // IMUL3_R16_RM16_IMM
-        WRAP(execImul1RM32), // IMUL1_RM32
-        WRAP(execImul2R32RM32), // IMUL2_R32_RM32
-        WRAP(execImul3R32RM32Imm), // IMUL3_R32_RM32_IMM
-        WRAP(execImul1RM64), // IMUL1_RM64
-        WRAP(execImul2R64RM64), // IMUL2_R64_RM64
-        WRAP(execImul3R64RM64Imm), // IMUL3_R64_RM64_IMM
-        WRAP(execDivRM8), // DIV_RM8
-        WRAP(execDivRM16), // DIV_RM16
-        WRAP(execDivRM32), // DIV_RM32
-        WRAP(execDivRM64), // DIV_RM64
-        WRAP(execIdivRM32), // IDIV_RM32
-        WRAP(execIdivRM64), // IDIV_RM64
-        WRAP(execAndRM8RM8), // AND_RM8_RM8
-        WRAP(execAndRM8Imm), // AND_RM8_IMM
-        WRAP(execAndRM16RM16), // AND_RM16_RM16
-        WRAP(execAndRM16Imm), // AND_RM16_IMM
-        WRAP(execAndRM32RM32), // AND_RM32_RM32
-        WRAP(execAndRM32Imm), // AND_RM32_IMM
-        WRAP(execAndRM64RM64), // AND_RM64_RM64
-        WRAP(execAndRM64Imm), // AND_RM64_IMM
-        WRAP(execOrRM8RM8), // OR_RM8_RM8
-        WRAP(execOrRM8Imm), // OR_RM8_IMM
-        WRAP(execOrRM16RM16), // OR_RM16_RM16
-        WRAP(execOrRM16Imm), // OR_RM16_IMM
-        WRAP(execOrRM32RM32), // OR_RM32_RM32
-        WRAP(execOrRM32Imm), // OR_RM32_IMM
-        WRAP(execOrRM64RM64), // OR_RM64_RM64
-        WRAP(execOrRM64Imm), // OR_RM64_IMM
-        WRAP(execLockOrM8RM8), // LOCK_OR_M8_RM8
-        WRAP(execLockOrM8Imm), // LOCK_OR_M8_IMM
-        WRAP(execLockOrM16RM16), // LOCK_OR_M16_RM16
-        WRAP(execLockOrM16Imm), // LOCK_OR_M16_IMM
-        WRAP(execLockOrM32RM32), // LOCK_OR_M32_RM32
-        WRAP(execLockOrM32Imm), // LOCK_OR_M32_IMM
-        WRAP(execLockOrM64RM64), // LOCK_OR_M64_RM64
-        WRAP(execLockOrM64Imm), // LOCK_OR_M64_IMM
-        WRAP(execXorRM8RM8), // XOR_RM8_RM8
-        WRAP(execXorRM8Imm), // XOR_RM8_IMM
-        WRAP(execXorRM16RM16), // XOR_RM16_RM16
-        WRAP(execXorRM16Imm), // XOR_RM16_IMM
-        WRAP(execXorRM32RM32), // XOR_RM32_RM32
-        WRAP(execXorRM32Imm), // XOR_RM32_IMM
-        WRAP(execXorRM64RM64), // XOR_RM64_RM64
-        WRAP(execXorRM64Imm), // XOR_RM64_IMM
-        WRAP(execNotRM8), // NOT_RM8
-        WRAP(execNotRM16), // NOT_RM16
-        WRAP(execNotRM32), // NOT_RM32
-        WRAP(execNotRM64), // NOT_RM64
-        WRAP(execXchgRM8R8), // XCHG_RM8_R8
-        WRAP(execXchgRM16R16), // XCHG_RM16_R16
-        WRAP(execXchgRM32R32), // XCHG_RM32_R32
-        WRAP(execXchgRM64R64), // XCHG_RM64_R64
-        WRAP(execXaddRM16R16), // XADD_RM16_R16
-        WRAP(execXaddRM32R32), // XADD_RM32_R32
-        WRAP(execXaddRM64R64), // XADD_RM64_R64
-        WRAP(execLockXaddM16R16), // LOCK_XADD_M16_R16
-        WRAP(execLockXaddM32R32), // LOCK_XADD_M32_R32
-        WRAP(execLockXaddM64R64), // LOCK_XADD_M64_R64
-        WRAP(execMovRR<Size::BYTE>), // MOV_R8_R8
-        WRAP(execMovRM<Size::BYTE>), // MOV_R8_M8
-        WRAP(execMovMR<Size::BYTE>), // MOV_M8_R8
-        WRAP(execMovRImm<Size::BYTE>), // MOV_R8_IMM
-        WRAP(execMovMImm<Size::BYTE>), // MOV_M8_IMM
-        WRAP(execMovRR<Size::WORD>), // MOV_R16_R16
-        WRAP(execMovRM<Size::WORD>), // MOV_R16_M16
-        WRAP(execMovMR<Size::WORD>), // MOV_M16_R16
-        WRAP(execMovRImm<Size::WORD>), // MOV_R16_IMM
-        WRAP(execMovMImm<Size::WORD>), // MOV_M16_IMM
-        WRAP(execMovRR<Size::DWORD>), // MOV_R32_R32
-        WRAP(execMovRM<Size::DWORD>), // MOV_R32_M32
-        WRAP(execMovMR<Size::DWORD>), // MOV_M32_R32
-        WRAP(execMovRImm<Size::DWORD>), // MOV_R32_IMM
-        WRAP(execMovMImm<Size::DWORD>), // MOV_M32_IMM
-        WRAP(execMovRR<Size::QWORD>), // MOV_R64_R64
-        WRAP(execMovRM<Size::QWORD>), // MOV_R64_M64
-        WRAP(execMovMR<Size::QWORD>), // MOV_M64_R64
-        WRAP(execMovRImm<Size::QWORD>), // MOV_R64_IMM
-        WRAP(execMovMImm<Size::QWORD>), // MOV_M64_IMM
-        WRAP(execMovRR<Size::XMMWORD>), // MOV_RSSE_RSSE
-        WRAP(execMovaRSSEMSSE), // MOV_ALIGNED_RSSE_MSSE
-        WRAP(execMovaMSSERSSE), // MOV_ALIGNED_MSSE_RSSE
-        WRAP(execMovuRSSEMSSE), // MOV_UNALIGNED_RSSE_MSSE
-        WRAP(execMovuMSSERSSE), // MOV_UNALIGNED_MSSE_RSSE
-        WRAP(execMovsxR16RM8), // MOVSX_R16_RM8
-        WRAP(execMovsxR32RM8), // MOVSX_R32_RM8
-        WRAP(execMovsxR32RM16), // MOVSX_R32_RM16
-        WRAP(execMovsxR64RM8), // MOVSX_R64_RM8
-        WRAP(execMovsxR64RM16), // MOVSX_R64_RM16
-        WRAP(execMovsxR64RM32), // MOVSX_R64_RM32
-        WRAP(execMovzxR16RM8), // MOVZX_R16_RM8
-        WRAP(execMovzxR32RM8), // MOVZX_R32_RM8
-        WRAP(execMovzxR32RM16), // MOVZX_R32_RM16
-        WRAP(execMovzxR64RM8), // MOVZX_R64_RM8
-        WRAP(execMovzxR64RM16), // MOVZX_R64_RM16
-        WRAP(execMovzxR64RM32), // MOVZX_R64_RM32
-        WRAP(execLeaR32Encoding), // LEA_R32_ENCODING
-        WRAP(execLeaR64Encoding), // LEA_R64_ENCODING
-        WRAP(execPushImm), // PUSH_IMM
-        WRAP(execPushRM32), // PUSH_RM32
-        WRAP(execPushRM64), // PUSH_RM64
-        WRAP(execPopR32), // POP_R32
-        WRAP(execPopR64), // POP_R64
-        WRAP(execPushfq), // PUSHFQ
-        WRAP(execPopfq), // POPFQ
-        WRAP(execCallDirect), // CALLDIRECT
-        WRAP(execCallIndirectRM32), // CALLINDIRECT_RM32
-        WRAP(execCallIndirectRM64), // CALLINDIRECT_RM64
-        WRAP(execRet), // RET
-        WRAP(execRetImm), // RET_IMM
-        WRAP(execLeave), // LEAVE
-        WRAP(execHalt), // HALT
-        WRAP(execNop), // NOP
-        WRAP(execUd2), // UD2
-        WRAP(execSyscall), // SYSCALL
-        WRAP(execCdq), // CDQ
-        WRAP(execCqo), // CQO
-        WRAP(execIncRM8), // INC_RM8
-        WRAP(execIncRM16), // INC_RM16
-        WRAP(execIncRM32), // INC_RM32
-        WRAP(execIncRM64), // INC_RM64
-        WRAP(execLockIncM8), // LOCK_INC_M8
-        WRAP(execLockIncM16), // LOCK_INC_M16
-        WRAP(execLockIncM32), // LOCK_INC_M32
-        WRAP(execLockIncM64), // LOCK_INC_M64
-        WRAP(execDecRM8), // DEC_RM8
-        WRAP(execDecRM16), // DEC_RM16
-        WRAP(execDecRM32), // DEC_RM32
-        WRAP(execDecRM64), // DEC_RM64
-        WRAP(execLockDecM8), // LOCK_DEC_M8
-        WRAP(execLockDecM16), // LOCK_DEC_M16
-        WRAP(execLockDecM32), // LOCK_DEC_M32
-        WRAP(execLockDecM64), // LOCK_DEC_M64
-        WRAP(execShrRM8R8), // SHR_RM8_R8
-        WRAP(execShrRM8Imm), // SHR_RM8_IMM
-        WRAP(execShrRM16R8), // SHR_RM16_R8
-        WRAP(execShrRM16Imm), // SHR_RM16_IMM
-        WRAP(execShrRM32R8), // SHR_RM32_R8
-        WRAP(execShrRM32Imm), // SHR_RM32_IMM
-        WRAP(execShrRM64R8), // SHR_RM64_R8
-        WRAP(execShrRM64Imm), // SHR_RM64_IMM
-        WRAP(execShlRM8R8), // SHL_RM8_R8
-        WRAP(execShlRM8Imm), // SHL_RM8_IMM
-        WRAP(execShlRM16R8), // SHL_RM16_R8
-        WRAP(execShlRM16Imm), // SHL_RM16_IMM
-        WRAP(execShlRM32R8), // SHL_RM32_R8
-        WRAP(execShlRM32Imm), // SHL_RM32_IMM
-        WRAP(execShlRM64R8), // SHL_RM64_R8
-        WRAP(execShlRM64Imm), // SHL_RM64_IMM
-        WRAP(execShldRM32R32R8), // SHLD_RM32_R32_R8
-        WRAP(execShldRM32R32Imm), // SHLD_RM32_R32_IMM
-        WRAP(execShldRM64R64R8), // SHLD_RM64_R64_R8
-        WRAP(execShldRM64R64Imm), // SHLD_RM64_R64_IMM
-        WRAP(execShrdRM32R32R8), // SHRD_RM32_R32_R8
-        WRAP(execShrdRM32R32Imm), // SHRD_RM32_R32_IMM
-        WRAP(execShrdRM64R64R8), // SHRD_RM64_R64_R8
-        WRAP(execShrdRM64R64Imm), // SHRD_RM64_R64_IMM
-        WRAP(execSarRM8R8), // SAR_RM8_R8
-        WRAP(execSarRM8Imm), // SAR_RM8_IMM
-        WRAP(execSarRM16R8), // SAR_RM16_R8
-        WRAP(execSarRM16Imm), // SAR_RM16_IMM
-        WRAP(execSarRM32R8), // SAR_RM32_R8
-        WRAP(execSarRM32Imm), // SAR_RM32_IMM
-        WRAP(execSarRM64R8), // SAR_RM64_R8
-        WRAP(execSarRM64Imm), // SAR_RM64_IMM
-        WRAP(execSarxR32RM32R32), // SARX_R32_RM32_R32
-        WRAP(execSarxR64RM64R64), // SARX_R64_RM64_R64
-        WRAP(execShlxR32RM32R32), // SHLX_R32_RM32_R32
-        WRAP(execShlxR64RM64R64), // SHLX_R64_RM64_R64
-        WRAP(execShrxR32RM32R32), // SHRX_R32_RM32_R32
-        WRAP(execShrxR64RM64R64), // SHRX_R64_RM64_R64
-        WRAP(execRolRM8R8), // ROL_RM8_R8
-        WRAP(execRolRM8Imm), // ROL_RM8_IMM
-        WRAP(execRolRM16R8), // ROL_RM16_R8
-        WRAP(execRolRM16Imm), // ROL_RM16_IMM
-        WRAP(execRolRM32R8), // ROL_RM32_R8
-        WRAP(execRolRM32Imm), // ROL_RM32_IMM
-        WRAP(execRolRM64R8), // ROL_RM64_R8
-        WRAP(execRolRM64Imm), // ROL_RM64_IMM
-        WRAP(execRorRM8R8), // ROR_RM8_R8
-        WRAP(execRorRM8Imm), // ROR_RM8_IMM
-        WRAP(execRorRM16R8), // ROR_RM16_R8
-        WRAP(execRorRM16Imm), // ROR_RM16_IMM
-        WRAP(execRorRM32R8), // ROR_RM32_R8
-        WRAP(execRorRM32Imm), // ROR_RM32_IMM
-        WRAP(execRorRM64R8), // ROR_RM64_R8
-        WRAP(execRorRM64Imm), // ROR_RM64_IMM
-        WRAP(execTzcntR16RM16), // TZCNT_R16_RM16
-        WRAP(execTzcntR32RM32), // TZCNT_R32_RM32
-        WRAP(execTzcntR64RM64), // TZCNT_R64_RM64
-        WRAP(execBtRM16R16), // BT_RM16_R16
-        WRAP(execBtRM16Imm), // BT_RM16_IMM
-        WRAP(execBtRM32R32), // BT_RM32_R32
-        WRAP(execBtRM32Imm), // BT_RM32_IMM
-        WRAP(execBtRM64R64), // BT_RM64_R64
-        WRAP(execBtRM64Imm), // BT_RM64_IMM
-        WRAP(execBtrRM16R16), // BTR_RM16_R16
-        WRAP(execBtrRM16Imm), // BTR_RM16_IMM
-        WRAP(execBtrRM32R32), // BTR_RM32_R32
-        WRAP(execBtrRM32Imm), // BTR_RM32_IMM
-        WRAP(execBtrRM64R64), // BTR_RM64_R64
-        WRAP(execBtrRM64Imm), // BTR_RM64_IMM
-        WRAP(execBtcRM16R16), // BTC_RM16_R16
-        WRAP(execBtcRM16Imm), // BTC_RM16_IMM
-        WRAP(execBtcRM32R32), // BTC_RM32_R32
-        WRAP(execBtcRM32Imm), // BTC_RM32_IMM
-        WRAP(execBtcRM64R64), // BTC_RM64_R64
-        WRAP(execBtcRM64Imm), // BTC_RM64_IMM
-        WRAP(execBtsRM16R16), // BTS_RM16_R16
-        WRAP(execBtsRM16Imm), // BTS_RM16_IMM
-        WRAP(execBtsRM32R32), // BTS_RM32_R32
-        WRAP(execBtsRM32Imm), // BTS_RM32_IMM
-        WRAP(execBtsRM64R64), // BTS_RM64_R64
-        WRAP(execBtsRM64Imm), // BTS_RM64_IMM
-        WRAP(execLockBtsM16R16), // LOCK_BTS_M16_R16
-        WRAP(execLockBtsM16Imm), // LOCK_BTS_M16_IMM
-        WRAP(execLockBtsM32R32), // LOCK_BTS_M32_R32
-        WRAP(execLockBtsM32Imm), // LOCK_BTS_M32_IMM
-        WRAP(execLockBtsM64R64), // LOCK_BTS_M64_R64
-        WRAP(execLockBtsM64Imm), // LOCK_BTS_M64_IMM
-        WRAP(execTestRM8R8), // TEST_RM8_R8
-        WRAP(execTestRM8Imm), // TEST_RM8_IMM
-        WRAP(execTestRM16R16), // TEST_RM16_R16
-        WRAP(execTestRM16Imm), // TEST_RM16_IMM
-        WRAP(execTestRM32R32), // TEST_RM32_R32
-        WRAP(execTestRM32Imm), // TEST_RM32_IMM
-        WRAP(execTestRM64R64), // TEST_RM64_R64
-        WRAP(execTestRM64Imm), // TEST_RM64_IMM
-        WRAP(execCmpRM8RM8), // CMP_RM8_RM8
-        WRAP(execCmpRM8Imm), // CMP_RM8_IMM
-        WRAP(execCmpRM16RM16), // CMP_RM16_RM16
-        WRAP(execCmpRM16Imm), // CMP_RM16_IMM
-        WRAP(execCmpRM32RM32), // CMP_RM32_RM32
-        WRAP(execCmpRM32Imm), // CMP_RM32_IMM
-        WRAP(execCmpRM64RM64), // CMP_RM64_RM64
-        WRAP(execCmpRM64Imm), // CMP_RM64_IMM
-        WRAP(execCmpxchgRM8R8), // CMPXCHG_RM8_R8
-        WRAP(execCmpxchgRM16R16), // CMPXCHG_RM16_R16
-        WRAP(execCmpxchgRM32R32), // CMPXCHG_RM32_R32
-        WRAP(execCmpxchgRM64R64), // CMPXCHG_RM64_R64
-        WRAP(execLockCmpxchgM8R8), // LOCK_CMPXCHG_M8_R8
-        WRAP(execLockCmpxchgM16R16), // LOCK_CMPXCHG_M16_R16
-        WRAP(execLockCmpxchgM32R32), // LOCK_CMPXCHG_M32_R32
-        WRAP(execLockCmpxchgM64R64), // LOCK_CMPXCHG_M64_R64
-        WRAP(execSetRM8), // SET_RM8
-        WRAP(execJmpRM32), // JMP_RM32
-        WRAP(execJmpRM64), // JMP_RM64
-        WRAP(execJmpu32), // JMP_U32
-        WRAP(execJe), // JE
-        WRAP(execJne), // JNE
-        WRAP(execJcc), // JCC
-        WRAP(execBsrR32R32), // BSR_R32_R32
-        WRAP(execBsrR32M32), // BSR_R32_M32
-        WRAP(execBsrR64R64), // BSR_R64_R64
-        WRAP(execBsrR64M64), // BSR_R64_M64
-        WRAP(execBsfR32R32), // BSF_R32_R32
-        WRAP(execBsfR32M32), // BSF_R32_M32
-        WRAP(execBsfR64R64), // BSF_R64_R64
-        WRAP(execBsfR64M64), // BSF_R64_M64
-        WRAP(execCld), // CLD
-        WRAP(execStd), // STD
-        WRAP(execMovsM8M8), // MOVS_M8_M8
-        WRAP(execMovsM64M64), // MOVS_M64_M64
-        WRAP(execRepMovsM8M8), // REP_MOVS_M8_M8
-        WRAP(execRepMovsM32M32), // REP_MOVS_M32_M32
-        WRAP(execRepMovsM64M64), // REP_MOVS_M64_M64
-        WRAP(execRepCmpsM8M8), // REP_CMPS_M8_M8
-        WRAP(execRepStosM8R8), // REP_STOS_M8_R8
-        WRAP(execRepStosM16R16), // REP_STOS_M16_R16
-        WRAP(execRepStosM32R32), // REP_STOS_M32_R32
-        WRAP(execRepStosM64R64), // REP_STOS_M64_R64
-        WRAP(execRepNZScasR8M8), // REPNZ_SCAS_R8_M8
-        WRAP(execRepNZScasR16M16), // REPNZ_SCAS_R16_M16
-        WRAP(execRepNZScasR32M32), // REPNZ_SCAS_R32_M32
-        WRAP(execRepNZScasR64M64), // REPNZ_SCAS_R64_M64
-        WRAP(execCmovR16RM16), // CMOV_R16_RM16
-        WRAP(execCmovR32RM32), // CMOV_R32_RM32
-        WRAP(execCmovR64RM64), // CMOV_R64_RM64
-        WRAP(execCwde), // CWDE
-        WRAP(execCdqe), // CDQE
-        WRAP(execBswapR32), // BSWAP_R32
-        WRAP(execBswapR64), // BSWAP_R64
-        WRAP(execPopcntR16RM16), // POPCNT_R16_RM16
-        WRAP(execPopcntR32RM32), // POPCNT_R32_RM32
-        WRAP(execPopcntR64RM64), // POPCNT_R64_RM64
-        WRAP(execPxorRSSERMSSE), // PXOR_RSSE_RMSSE
-        WRAP(execMovapsRMSSERMSSE), // MOVAPS_RMSSE_RMSSE
-        WRAP(execMovdRSSERM32), // MOVD_RSSE_RM32
-        WRAP(execMovdRM32RSSE), // MOVD_RM32_RSSE
-        WRAP(execMovdRSSERM64), // MOVD_RSSE_RM64
-        WRAP(execMovdRM64RSSE), // MOVD_RM64_RSSE
-        WRAP(execMovqRSSERM64), // MOVQ_RSSE_RM64
-        WRAP(execMovqRM64RSSE), // MOVQ_RM64_RSSE
-        WRAP(execFldz), // FLDZ
-        WRAP(execFld1), // FLD1
-        WRAP(execFldST), // FLD_ST
-        WRAP(execFldM32), // FLD_M32
-        WRAP(execFldM64), // FLD_M64
-        WRAP(execFldM80), // FLD_M80
-        WRAP(execFildM16), // FILD_M16
-        WRAP(execFildM32), // FILD_M32
-        WRAP(execFildM64), // FILD_M64
-        WRAP(execFstpST), // FSTP_ST
-        WRAP(execFstpM32), // FSTP_M32
-        WRAP(execFstpM64), // FSTP_M64
-        WRAP(execFstpM80), // FSTP_M80
-        WRAP(execFistpM16), // FISTP_M16
-        WRAP(execFistpM32), // FISTP_M32
-        WRAP(execFistpM64), // FISTP_M64
-        WRAP(execFxchST), // FXCH_ST
-        WRAP(execFaddpST), // FADDP_ST
-        WRAP(execFsubpST), // FSUBP_ST
-        WRAP(execFsubrpST), // FSUBRP_ST
-        WRAP(execFmul1M32), // FMUL1_M32
-        WRAP(execFmul1M64), // FMUL1_M64
-        WRAP(execFdivSTST), // FDIV_ST_ST
-        WRAP(execFdivpSTST), // FDIVP_ST_ST
-        WRAP(execFcomiST), // FCOMI_ST
-        WRAP(execFucomiST), // FUCOMI_ST
-        WRAP(execFrndint), // FRNDINT
-        WRAP(execFcmovST), // FCMOV_ST
-        WRAP(execFnstcwM16), // FNSTCW_M16
-        WRAP(execFldcwM16), // FLDCW_M16
-        WRAP(execFnstswR16), // FNSTSW_R16
-        WRAP(execFnstswM16), // FNSTSW_M16
-        WRAP(execFnstenvM224), // FNSTENV_M224
-        WRAP(execFldenvM224), // FLDENV_M224
-        WRAP(execEmms), // EMMS
-        WRAP(execMovssRSSEM32), // MOVSS_RSSE_M32
-        WRAP(execMovssM32RSSE), // MOVSS_M32_RSSE
-        WRAP(execMovsdRSSEM64), // MOVSD_RSSE_M64
-        WRAP(execMovsdM64RSSE), // MOVSD_M64_RSSE
-        WRAP(execMovsdRSSERSSE), // MOVSD_RSSE_RSSE
-        WRAP(execAddpsRSSERMSSE), // ADDPS_RSSE_RMSSE
-        WRAP(execAddpdRSSERMSSE), // ADDPD_RSSE_RMSSE
-        WRAP(execAddssRSSERSSE), // ADDSS_RSSE_RSSE
-        WRAP(execAddssRSSEM32), // ADDSS_RSSE_M32
-        WRAP(execAddsdRSSERSSE), // ADDSD_RSSE_RSSE
-        WRAP(execAddsdRSSEM64), // ADDSD_RSSE_M64
-        WRAP(execSubpsRSSERMSSE), // SUBPS_RSSE_RMSSE
-        WRAP(execSubpdRSSERMSSE), // SUBPD_RSSE_RMSSE
-        WRAP(execSubssRSSERSSE), // SUBSS_RSSE_RSSE
-        WRAP(execSubssRSSEM32), // SUBSS_RSSE_M32
-        WRAP(execSubsdRSSERSSE), // SUBSD_RSSE_RSSE
-        WRAP(execSubsdRSSEM64), // SUBSD_RSSE_M64
-        WRAP(execMulpsRSSERMSSE), // MULPS_RSSE_RMSSE
-        WRAP(execMulpdRSSERMSSE), // MULPD_RSSE_RMSSE
-        WRAP(execMulssRSSERSSE), // MULSS_RSSE_RSSE
-        WRAP(execMulssRSSEM32), // MULSS_RSSE_M32
-        WRAP(execMulsdRSSERSSE), // MULSD_RSSE_RSSE
-        WRAP(execMulsdRSSEM64), // MULSD_RSSE_M64
-        WRAP(execDivpsRSSERMSSE), // DIVPS_RSSE_RMSSE
-        WRAP(execDivpdRSSERMSSE), // DIVPD_RSSE_RMSSE
-        WRAP(execDivssRSSERSSE), // DIVSS_RSSE_RSSE
-        WRAP(execDivssRSSEM32), // DIVSS_RSSE_M32
-        WRAP(execDivsdRSSERSSE), // DIVSD_RSSE_RSSE
-        WRAP(execDivsdRSSEM64), // DIVSD_RSSE_M64
-        WRAP(execSqrtssRSSERSSE), // SQRTSS_RSSE_RSSE
-        WRAP(execSqrtssRSSEM32), // SQRTSS_RSSE_M32
-        WRAP(execSqrtsdRSSERSSE), // SQRTSD_RSSE_RSSE
-        WRAP(execSqrtsdRSSEM64), // SQRTSD_RSSE_M64
-        WRAP(execComissRSSERSSE), // COMISS_RSSE_RSSE
-        WRAP(execComissRSSEM32), // COMISS_RSSE_M32
-        WRAP(execComisdRSSERSSE), // COMISD_RSSE_RSSE
-        WRAP(execComisdRSSEM64), // COMISD_RSSE_M64
-        WRAP(execUcomissRSSERSSE), // UCOMISS_RSSE_RSSE
-        WRAP(execUcomissRSSEM32), // UCOMISS_RSSE_M32
-        WRAP(execUcomisdRSSERSSE), // UCOMISD_RSSE_RSSE
-        WRAP(execUcomisdRSSEM64), // UCOMISD_RSSE_M64
-        WRAP(execCmpssRSSERSSE), // CMPSS_RSSE_RSSE
-        WRAP(execCmpssRSSEM32), // CMPSS_RSSE_M32
-        WRAP(execCmpsdRSSERSSE), // CMPSD_RSSE_RSSE
-        WRAP(execCmpsdRSSEM64), // CMPSD_RSSE_M64
-        WRAP(execCmppsRSSERMSSE), // CMPPS_RSSE_RMSSE
-        WRAP(execCmppdRSSERMSSE), // CMPPD_RSSE_RMSSE
-        WRAP(execMaxssRSSERSSE), // MAXSS_RSSE_RSSE
-        WRAP(execMaxssRSSEM32), // MAXSS_RSSE_M32
-        WRAP(execMaxsdRSSERSSE), // MAXSD_RSSE_RSSE
-        WRAP(execMaxsdRSSEM64), // MAXSD_RSSE_M64
-        WRAP(execMinssRSSERSSE), // MINSS_RSSE_RSSE
-        WRAP(execMinssRSSEM32), // MINSS_RSSE_M32
-        WRAP(execMinsdRSSERSSE), // MINSD_RSSE_RSSE
-        WRAP(execMinsdRSSEM64), // MINSD_RSSE_M64
-        WRAP(execMaxpsRSSERMSSE), // MAXPS_RSSE_RMSSE
-        WRAP(execMaxpdRSSERMSSE), // MAXPD_RSSE_RMSSE
-        WRAP(execMinpsRSSERMSSE), // MINPS_RSSE_RMSSE
-        WRAP(execMinpdRSSERMSSE), // MINPD_RSSE_RMSSE
-        WRAP(execCvtsi2ssRSSERM32), // CVTSI2SS_RSSE_RM32
-        WRAP(execCvtsi2ssRSSERM64), // CVTSI2SS_RSSE_RM64
-        WRAP(execCvtsi2sdRSSERM32), // CVTSI2SD_RSSE_RM32
-        WRAP(execCvtsi2sdRSSERM64), // CVTSI2SD_RSSE_RM64
-        WRAP(execCvtss2sdRSSERSSE), // CVTSS2SD_RSSE_RSSE
-        WRAP(execCvtss2sdRSSEM32), // CVTSS2SD_RSSE_M32
-        WRAP(execCvtsd2siR64RSSE), // CVTSD2SI_R64_RSSE
-        WRAP(execCvtsd2siR64M64), // CVTSD2SI_R64_M64
-        WRAP(execCvtsd2ssRSSERSSE), // CVTSD2SS_RSSE_RSSE
-        WRAP(execCvtsd2ssRSSEM64), // CVTSD2SS_RSSE_M64
-        WRAP(execCvttps2dqRSSERMSSE), // CVTTPS2DQ_RSSE_RMSSE
-        WRAP(execCvttss2siR32RSSE), // CVTTSS2SI_R32_RSSE
-        WRAP(execCvttss2siR32M32), // CVTTSS2SI_R32_M32
-        WRAP(execCvttss2siR64RSSE), // CVTTSS2SI_R64_RSSE
-        WRAP(execCvttss2siR64M32), // CVTTSS2SI_R64_M32
-        WRAP(execCvttsd2siR32RSSE), // CVTTSD2SI_R32_RSSE
-        WRAP(execCvttsd2siR32M64), // CVTTSD2SI_R32_M64
-        WRAP(execCvttsd2siR64RSSE), // CVTTSD2SI_R64_RSSE
-        WRAP(execCvttsd2siR64M64), // CVTTSD2SI_R64_M64
-        WRAP(execCvtdq2pdRSSERSSE), // CVTDQ2PD_RSSE_RSSE
-        WRAP(execCvtdq2psRSSERMSSE), // CVTDQ2PS_RSSE_RMSSE
-        WRAP(execCvtdq2pdRSSEM64), // CVTDQ2PD_RSSE_M64
-        WRAP(execCvtps2dqRSSERMSSE), // CVTPS2DQ_RSSE_RMSSE
-        WRAP(execStmxcsrM32), // STMXCSR_M32
-        WRAP(execLdmxcsrM32), // LDMXCSR_M32
-        WRAP(execPandRSSERMSSE), // PAND_RSSE_RMSSE
-        WRAP(execPandnRSSERMSSE), // PANDN_RSSE_RMSSE
-        WRAP(execPorRSSERMSSE), // POR_RSSE_RMSSE
-        WRAP(execAndpdRSSERMSSE), // ANDPD_RSSE_RMSSE
-        WRAP(execAndnpdRSSERMSSE), // ANDNPD_RSSE_RMSSE
-        WRAP(execOrpdRSSERMSSE), // ORPD_RSSE_RMSSE
-        WRAP(execXorpdRSSERMSSE), // XORPD_RSSE_RMSSE
-        WRAP(execShufpsRSSERMSSEImm), // SHUFPS_RSSE_RMSSE_IMM
-        WRAP(execShufpdRSSERMSSEImm), // SHUFPD_RSSE_RMSSE_IMM
-        WRAP(execMovlpsRSSEM64), // MOVLPS_RSSE_M64
-        WRAP(execMovlpsM64RSSE), // MOVLPS_M64_RSSE
-        WRAP(execMovhpsRSSEM64), // MOVHPS_RSSE_M64
-        WRAP(execMovhpsM64RSSE), // MOVHPS_M64_RSSE
-        WRAP(execMovhlpsRSSERSSE), // MOVHLPS_RSSE_RSSE
-        WRAP(execMovlhpsRSSERSSE), // MOVLHPS_RSSE_RSSE
-        WRAP(execPinsrwRSSER32Imm), // PINSRW_RSSE_R32_IMM
-        WRAP(execPinsrwRSSEM16Imm), // PINSRW_RSSE_M16_IMM
-        WRAP(execPunpcklbwRSSERMSSE), // PUNPCKLBW_RSSE_RMSSE
-        WRAP(execPunpcklwdRSSERMSSE), // PUNPCKLWD_RSSE_RMSSE
-        WRAP(execPunpckldqRSSERMSSE), // PUNPCKLDQ_RSSE_RMSSE
-        WRAP(execPunpcklqdqRSSERMSSE), // PUNPCKLQDQ_RSSE_RMSSE
-        WRAP(execPunpckhbwRSSERMSSE), // PUNPCKHBW_RSSE_RMSSE
-        WRAP(execPunpckhwdRSSERMSSE), // PUNPCKHWD_RSSE_RMSSE
-        WRAP(execPunpckhdqRSSERMSSE), // PUNPCKHDQ_RSSE_RMSSE
-        WRAP(execPunpckhqdqRSSERMSSE), // PUNPCKHQDQ_RSSE_RMSSE
-        WRAP(execPshufbRSSERMSSE), // PSHUFB_RSSE_RMSSE
-        WRAP(execPshuflwRSSERMSSEImm), // PSHUFLW_RSSE_RMSSE_IMM
-        WRAP(execPshufhwRSSERMSSEImm), // PSHUFHW_RSSE_RMSSE_IMM
-        WRAP(execPshufdRSSERMSSEImm), // PSHUFD_RSSE_RMSSE_IMM
-        WRAP(execPcmpeqbRSSERMSSE), // PCMPEQB_RSSE_RMSSE
-        WRAP(execPcmpeqwRSSERMSSE), // PCMPEQW_RSSE_RMSSE
-        WRAP(execPcmpeqdRSSERMSSE), // PCMPEQD_RSSE_RMSSE
-        WRAP(execPcmpeqqRSSERMSSE), // PCMPEQQ_RSSE_RMSSE
-        WRAP(execPcmpgtbRSSERMSSE), // PCMPGTB_RSSE_RMSSE
-        WRAP(execPcmpgtwRSSERMSSE), // PCMPGTW_RSSE_RMSSE
-        WRAP(execPcmpgtdRSSERMSSE), // PCMPGTD_RSSE_RMSSE
-        WRAP(execPcmpgtqRSSERMSSE), // PCMPGTQ_RSSE_RMSSE
-        WRAP(execPmovmskbR32RSSE), // PMOVMSKB_R32_RSSE
-        WRAP(execPaddbRSSERMSSE), // PADDB_RSSE_RMSSE
-        WRAP(execPaddwRSSERMSSE), // PADDW_RSSE_RMSSE
-        WRAP(execPadddRSSERMSSE), // PADDD_RSSE_RMSSE
-        WRAP(execPaddqRSSERMSSE), // PADDQ_RSSE_RMSSE
-        WRAP(execPsubbRSSERMSSE), // PSUBB_RSSE_RMSSE
-        WRAP(execPsubwRSSERMSSE), // PSUBW_RSSE_RMSSE
-        WRAP(execPsubdRSSERMSSE), // PSUBD_RSSE_RMSSE
-        WRAP(execPsubqRSSERMSSE), // PSUBQ_RSSE_RMSSE
-        WRAP(execPmulhuwRSSERMSSE), // PMULHUW_RSSE_RMSSE
-        WRAP(execPmulhwRSSERMSSE), // PMULHW_RSSE_RMSSE
-        WRAP(execPmullwRSSERMSSE), // PMULLW_RSSE_RMSSE
-        WRAP(execPmuludqRSSERMSSE), // PMULUDQ_RSSE_RMSSE
-        WRAP(execPmaddwdRSSERMSSE), // PMADDWD_RSSE_RMSSE
-        WRAP(execPsadbwRSSERMSSE), // PSADBW_RSSE_RMSSE
-        WRAP(execPavgbRSSERMSSE), // PAVGB_RSSE_RMSSE
-        WRAP(execPavgwRSSERMSSE), // PAVGW_RSSE_RMSSE
-        WRAP(execPmaxubRSSERMSSE), // PMAXUB_RSSE_RMSSE
-        WRAP(execPminubRSSERMSSE), // PMINUB_RSSE_RMSSE
-        WRAP(execPtestRSSERMSSE), // PTEST_RSSE_RMSSE
-        WRAP(execPsrawRSSEImm), // PSRAW_RSSE_IMM
-        WRAP(execPsradRSSEImm), // PSRAD_RSSE_IMM
-        WRAP(execPsraqRSSEImm), // PSRAQ_RSSE_IMM
-        WRAP(execPsllwRSSEImm), // PSLLW_RSSE_IMM
-        WRAP(execPsllwRSSERMSSE), // PSLLW_RSSE_RMSSE
-        WRAP(execPslldRSSEImm), // PSLLD_RSSE_IMM
-        WRAP(execPslldRSSERMSSE), // PSLLD_RSSE_RMSSE
-        WRAP(execPsllqRSSEImm), // PSLLQ_RSSE_IMM
-        WRAP(execPsllqRSSERMSSE), // PSLLQ_RSSE_RMSSE
-        WRAP(execPsrlwRSSEImm), // PSRLW_RSSE_IMM
-        WRAP(execPsrlwRSSERMSSE), // PSRLW_RSSE_RMSSE
-        WRAP(execPsrldRSSEImm), // PSRLD_RSSE_IMM
-        WRAP(execPsrldRSSERMSSE), // PSRLD_RSSE_RMSSE
-        WRAP(execPsrlqRSSEImm), // PSRLQ_RSSE_IMM
-        WRAP(execPsrlqRSSERMSSE), // PSRLQ_RSSE_RMSSE
-        WRAP(execPslldqRSSEImm), // PSLLDQ_RSSE_IMM
-        WRAP(execPsrldqRSSEImm), // PSRLDQ_RSSE_IMM
-        WRAP(execPcmpistriRSSERMSSEImm), // PCMPISTRI_RSSE_RMSSE_IMM
-        WRAP(execPackuswbRSSERMSSE), // PACKUSWB_RSSE_RMSSE
-        WRAP(execPackusdwRSSERMSSE), // PACKUSDW_RSSE_RMSSE
-        WRAP(execPacksswbRSSERMSSE), // PACKSSWB_RSSE_RMSSE
-        WRAP(execPackssdwRSSERMSSE), // PACKSSDW_RSSE_RMSSE
-        WRAP(execUnpckhpsRSSERMSSE), // UNPCKHPS_RSSE_RMSSE
-        WRAP(execUnpckhpdRSSERMSSE), // UNPCKHPD_RSSE_RMSSE
-        WRAP(execUnpcklpsRSSERMSSE), // UNPCKLPS_RSSE_RMSSE
-        WRAP(execUnpcklpdRSSERMSSE), // UNPCKLPD_RSSE_RMSSE
-        WRAP(execMovmskpsR32RSSE), // MOVMSKPS_R32_RSSE
-        WRAP(execMovmskpsR64RSSE), // MOVMSKPS_R64_RSSE
-        WRAP(execMovmskpdR32RSSE), // MOVMSKPD_R32_RSSE
-        WRAP(execMovmskpdR64RSSE), // MOVMSKPD_R64_RSSE
-        WRAP(execRdtsc), // RDTSC
-        WRAP(execCpuid), // CPUID
-        WRAP(execXgetbv), // XGETBV
-        WRAP(execFxsaveM64), // FXSAVE_M64
-        WRAP(execFxrstorM64), // FXRSTOR_M64
-        WRAP(execFwait), // FWAIT
-        WRAP(execRdpkru), // RDPKRU
-        WRAP(execWrpkru), // WRPKRU
-        WRAP(execRdsspd), // RDSSPD
-        WRAP(execUnknown), // UNKNOWN
+        WRAP(execAddRM8RM8, Insn::ADD_RM8_RM8),
+        WRAP(execAddRM8Imm, Insn::ADD_RM8_IMM),
+        WRAP(execAddRM16RM16, Insn::ADD_RM16_RM16),
+        WRAP(execAddRM16Imm, Insn::ADD_RM16_IMM),
+        WRAP(execAddRM32RM32, Insn::ADD_RM32_RM32),
+        WRAP(execAddRM32Imm, Insn::ADD_RM32_IMM),
+        WRAP(execAddRM64RM64, Insn::ADD_RM64_RM64),
+        WRAP(execAddRM64Imm, Insn::ADD_RM64_IMM),
+        WRAP(execLockAddM8RM8, Insn::LOCK_ADD_M8_RM8),
+        WRAP(execLockAddM8Imm, Insn::LOCK_ADD_M8_IMM),
+        WRAP(execLockAddM16RM16, Insn::LOCK_ADD_M16_RM16),
+        WRAP(execLockAddM16Imm, Insn::LOCK_ADD_M16_IMM),
+        WRAP(execLockAddM32RM32, Insn::LOCK_ADD_M32_RM32),
+        WRAP(execLockAddM32Imm, Insn::LOCK_ADD_M32_IMM),
+        WRAP(execLockAddM64RM64, Insn::LOCK_ADD_M64_RM64),
+        WRAP(execLockAddM64Imm, Insn::LOCK_ADD_M64_IMM),
+        WRAP(execAdcRM8RM8, Insn::ADC_RM8_RM8),
+        WRAP(execAdcRM8Imm, Insn::ADC_RM8_IMM),
+        WRAP(execAdcRM16RM16, Insn::ADC_RM16_RM16),
+        WRAP(execAdcRM16Imm, Insn::ADC_RM16_IMM),
+        WRAP(execAdcRM32RM32, Insn::ADC_RM32_RM32),
+        WRAP(execAdcRM32Imm, Insn::ADC_RM32_IMM),
+        WRAP(execAdcRM64RM64, Insn::ADC_RM64_RM64),
+        WRAP(execAdcRM64Imm, Insn::ADC_RM64_IMM),
+        WRAP(execSubRM8RM8, Insn::SUB_RM8_RM8),
+        WRAP(execSubRM8Imm, Insn::SUB_RM8_IMM),
+        WRAP(execSubRM16RM16, Insn::SUB_RM16_RM16),
+        WRAP(execSubRM16Imm, Insn::SUB_RM16_IMM),
+        WRAP(execSubRM32RM32, Insn::SUB_RM32_RM32),
+        WRAP(execSubRM32Imm, Insn::SUB_RM32_IMM),
+        WRAP(execSubRM64RM64, Insn::SUB_RM64_RM64),
+        WRAP(execSubRM64Imm, Insn::SUB_RM64_IMM),
+        WRAP(execLockSubM8RM8, Insn::LOCK_SUB_M8_RM8),
+        WRAP(execLockSubM8Imm, Insn::LOCK_SUB_M8_IMM),
+        WRAP(execLockSubM16RM16, Insn::LOCK_SUB_M16_RM16),
+        WRAP(execLockSubM16Imm, Insn::LOCK_SUB_M16_IMM),
+        WRAP(execLockSubM32RM32, Insn::LOCK_SUB_M32_RM32),
+        WRAP(execLockSubM32Imm, Insn::LOCK_SUB_M32_IMM),
+        WRAP(execLockSubM64RM64, Insn::LOCK_SUB_M64_RM64),
+        WRAP(execLockSubM64Imm, Insn::LOCK_SUB_M64_IMM),
+        WRAP(execSbbRM8RM8, Insn::SBB_RM8_RM8),
+        WRAP(execSbbRM8Imm, Insn::SBB_RM8_IMM),
+        WRAP(execSbbRM16RM16, Insn::SBB_RM16_RM16),
+        WRAP(execSbbRM16Imm, Insn::SBB_RM16_IMM),
+        WRAP(execSbbRM32RM32, Insn::SBB_RM32_RM32),
+        WRAP(execSbbRM32Imm, Insn::SBB_RM32_IMM),
+        WRAP(execSbbRM64RM64, Insn::SBB_RM64_RM64),
+        WRAP(execSbbRM64Imm, Insn::SBB_RM64_IMM),
+        WRAP(execNegRM8, Insn::NEG_RM8),
+        WRAP(execNegRM16, Insn::NEG_RM16),
+        WRAP(execNegRM32, Insn::NEG_RM32),
+        WRAP(execNegRM64, Insn::NEG_RM64),
+        WRAP(execMulRM8, Insn::MUL_RM8),
+        WRAP(execMulRM16, Insn::MUL_RM16),
+        WRAP(execMulRM32, Insn::MUL_RM32),
+        WRAP(execMulRM64, Insn::MUL_RM64),
+        WRAP(execImul1RM16, Insn::IMUL1_RM16),
+        WRAP(execImul2R16RM16, Insn::IMUL2_R16_RM16),
+        WRAP(execImul3R16RM16Imm, Insn::IMUL3_R16_RM16_IMM),
+        WRAP(execImul1RM32, Insn::IMUL1_RM32),
+        WRAP(execImul2R32RM32, Insn::IMUL2_R32_RM32),
+        WRAP(execImul3R32RM32Imm, Insn::IMUL3_R32_RM32_IMM),
+        WRAP(execImul1RM64, Insn::IMUL1_RM64),
+        WRAP(execImul2R64RM64, Insn::IMUL2_R64_RM64),
+        WRAP(execImul3R64RM64Imm, Insn::IMUL3_R64_RM64_IMM),
+        WRAP(execDivRM8, Insn::DIV_RM8),
+        WRAP(execDivRM16, Insn::DIV_RM16),
+        WRAP(execDivRM32, Insn::DIV_RM32),
+        WRAP(execDivRM64, Insn::DIV_RM64),
+        WRAP(execIdivRM32, Insn::IDIV_RM32),
+        WRAP(execIdivRM64, Insn::IDIV_RM64),
+        WRAP(execAndRM8RM8, Insn::AND_RM8_RM8),
+        WRAP(execAndRM8Imm, Insn::AND_RM8_IMM),
+        WRAP(execAndRM16RM16, Insn::AND_RM16_RM16),
+        WRAP(execAndRM16Imm, Insn::AND_RM16_IMM),
+        WRAP(execAndRM32RM32, Insn::AND_RM32_RM32),
+        WRAP(execAndRM32Imm, Insn::AND_RM32_IMM),
+        WRAP(execAndRM64RM64, Insn::AND_RM64_RM64),
+        WRAP(execAndRM64Imm, Insn::AND_RM64_IMM),
+        WRAP(execOrRM8RM8, Insn::OR_RM8_RM8),
+        WRAP(execOrRM8Imm, Insn::OR_RM8_IMM),
+        WRAP(execOrRM16RM16, Insn::OR_RM16_RM16),
+        WRAP(execOrRM16Imm, Insn::OR_RM16_IMM),
+        WRAP(execOrRM32RM32, Insn::OR_RM32_RM32),
+        WRAP(execOrRM32Imm, Insn::OR_RM32_IMM),
+        WRAP(execOrRM64RM64, Insn::OR_RM64_RM64),
+        WRAP(execOrRM64Imm, Insn::OR_RM64_IMM),
+        WRAP(execLockOrM8RM8, Insn::LOCK_OR_M8_RM8),
+        WRAP(execLockOrM8Imm, Insn::LOCK_OR_M8_IMM),
+        WRAP(execLockOrM16RM16, Insn::LOCK_OR_M16_RM16),
+        WRAP(execLockOrM16Imm, Insn::LOCK_OR_M16_IMM),
+        WRAP(execLockOrM32RM32, Insn::LOCK_OR_M32_RM32),
+        WRAP(execLockOrM32Imm, Insn::LOCK_OR_M32_IMM),
+        WRAP(execLockOrM64RM64, Insn::LOCK_OR_M64_RM64),
+        WRAP(execLockOrM64Imm, Insn::LOCK_OR_M64_IMM),
+        WRAP(execXorRM8RM8, Insn::XOR_RM8_RM8),
+        WRAP(execXorRM8Imm, Insn::XOR_RM8_IMM),
+        WRAP(execXorRM16RM16, Insn::XOR_RM16_RM16),
+        WRAP(execXorRM16Imm, Insn::XOR_RM16_IMM),
+        WRAP(execXorRM32RM32, Insn::XOR_RM32_RM32),
+        WRAP(execXorRM32Imm, Insn::XOR_RM32_IMM),
+        WRAP(execXorRM64RM64, Insn::XOR_RM64_RM64),
+        WRAP(execXorRM64Imm, Insn::XOR_RM64_IMM),
+        WRAP(execNotRM8, Insn::NOT_RM8),
+        WRAP(execNotRM16, Insn::NOT_RM16),
+        WRAP(execNotRM32, Insn::NOT_RM32),
+        WRAP(execNotRM64, Insn::NOT_RM64),
+        WRAP(execXchgRM8R8, Insn::XCHG_RM8_R8),
+        WRAP(execXchgRM16R16, Insn::XCHG_RM16_R16),
+        WRAP(execXchgRM32R32, Insn::XCHG_RM32_R32),
+        WRAP(execXchgRM64R64, Insn::XCHG_RM64_R64),
+        WRAP(execXaddRM16R16, Insn::XADD_RM16_R16),
+        WRAP(execXaddRM32R32, Insn::XADD_RM32_R32),
+        WRAP(execXaddRM64R64, Insn::XADD_RM64_R64),
+        WRAP(execLockXaddM16R16, Insn::LOCK_XADD_M16_R16),
+        WRAP(execLockXaddM32R32, Insn::LOCK_XADD_M32_R32),
+        WRAP(execLockXaddM64R64, Insn::LOCK_XADD_M64_R64),
+        WRAP(execMovRR<Size::BYTE>, Insn::MOV_R8_R8),
+        WRAP(execMovRM<Size::BYTE>, Insn::MOV_R8_M8),
+        WRAP(execMovMR<Size::BYTE>, Insn::MOV_M8_R8),
+        WRAP(execMovRImm<Size::BYTE>, Insn::MOV_R8_IMM),
+        WRAP(execMovMImm<Size::BYTE>, Insn::MOV_M8_IMM),
+        WRAP(execMovRR<Size::WORD>, Insn::MOV_R16_R16),
+        WRAP(execMovRM<Size::WORD>, Insn::MOV_R16_M16),
+        WRAP(execMovMR<Size::WORD>, Insn::MOV_M16_R16),
+        WRAP(execMovRImm<Size::WORD>, Insn::MOV_R16_IMM),
+        WRAP(execMovMImm<Size::WORD>, Insn::MOV_M16_IMM),
+        WRAP(execMovRR<Size::DWORD>, Insn::MOV_R32_R32),
+        WRAP(execMovRM<Size::DWORD>, Insn::MOV_R32_M32),
+        WRAP(execMovMR<Size::DWORD>, Insn::MOV_M32_R32),
+        WRAP(execMovRImm<Size::DWORD>, Insn::MOV_R32_IMM),
+        WRAP(execMovMImm<Size::DWORD>, Insn::MOV_M32_IMM),
+        WRAP(execMovRR<Size::QWORD>, Insn::MOV_R64_R64),
+        WRAP(execMovRM<Size::QWORD>, Insn::MOV_R64_M64),
+        WRAP(execMovMR<Size::QWORD>, Insn::MOV_M64_R64),
+        WRAP(execMovRImm<Size::QWORD>, Insn::MOV_R64_IMM),
+        WRAP(execMovMImm<Size::QWORD>, Insn::MOV_M64_IMM),
+        WRAP(execMovRR<Size::XMMWORD>, Insn::MOV_RSSE_RSSE),
+        WRAP(execMovaRSSEMSSE, Insn::MOV_ALIGNED_RSSE_MSSE),
+        WRAP(execMovaMSSERSSE, Insn::MOV_ALIGNED_MSSE_RSSE),
+        WRAP(execMovuRSSEMSSE, Insn::MOV_UNALIGNED_RSSE_MSSE),
+        WRAP(execMovuMSSERSSE, Insn::MOV_UNALIGNED_MSSE_RSSE),
+        WRAP(execMovsxR16RM8, Insn::MOVSX_R16_RM8),
+        WRAP(execMovsxR32RM8, Insn::MOVSX_R32_RM8),
+        WRAP(execMovsxR32RM16, Insn::MOVSX_R32_RM16),
+        WRAP(execMovsxR64RM8, Insn::MOVSX_R64_RM8),
+        WRAP(execMovsxR64RM16, Insn::MOVSX_R64_RM16),
+        WRAP(execMovsxR64RM32, Insn::MOVSX_R64_RM32),
+        WRAP(execMovzxR16RM8, Insn::MOVZX_R16_RM8),
+        WRAP(execMovzxR32RM8, Insn::MOVZX_R32_RM8),
+        WRAP(execMovzxR32RM16, Insn::MOVZX_R32_RM16),
+        WRAP(execMovzxR64RM8, Insn::MOVZX_R64_RM8),
+        WRAP(execMovzxR64RM16, Insn::MOVZX_R64_RM16),
+        WRAP(execMovzxR64RM32, Insn::MOVZX_R64_RM32),
+        WRAP(execLeaR32Encoding, Insn::LEA_R32_ENCODING),
+        WRAP(execLeaR64Encoding, Insn::LEA_R64_ENCODING),
+        WRAP(execPushImm, Insn::PUSH_IMM),
+        WRAP(execPushRM32, Insn::PUSH_RM32),
+        WRAP(execPushRM64, Insn::PUSH_RM64),
+        WRAP(execPopR32, Insn::POP_R32),
+        WRAP(execPopR64, Insn::POP_R64),
+        WRAP(execPushfq, Insn::PUSHFQ),
+        WRAP(execPopfq, Insn::POPFQ),
+        WRAP(execCallDirect, Insn::CALLDIRECT),
+        WRAP(execCallIndirectRM32, Insn::CALLINDIRECT_RM32),
+        WRAP(execCallIndirectRM64, Insn::CALLINDIRECT_RM64),
+        WRAP(execRet, Insn::RET),
+        WRAP(execRetImm, Insn::RET_IMM),
+        WRAP(execLeave, Insn::LEAVE),
+        WRAP(execHalt, Insn::HALT),
+        WRAP(execNop, Insn::NOP),
+        WRAP(execUd2, Insn::UD2),
+        WRAP(execSyscall, Insn::SYSCALL),
+        WRAP(execCdq, Insn::CDQ),
+        WRAP(execCqo, Insn::CQO),
+        WRAP(execIncRM8, Insn::INC_RM8),
+        WRAP(execIncRM16, Insn::INC_RM16),
+        WRAP(execIncRM32, Insn::INC_RM32),
+        WRAP(execIncRM64, Insn::INC_RM64),
+        WRAP(execLockIncM8, Insn::LOCK_INC_M8),
+        WRAP(execLockIncM16, Insn::LOCK_INC_M16),
+        WRAP(execLockIncM32, Insn::LOCK_INC_M32),
+        WRAP(execLockIncM64, Insn::LOCK_INC_M64),
+        WRAP(execDecRM8, Insn::DEC_RM8),
+        WRAP(execDecRM16, Insn::DEC_RM16),
+        WRAP(execDecRM32, Insn::DEC_RM32),
+        WRAP(execDecRM64, Insn::DEC_RM64),
+        WRAP(execLockDecM8, Insn::LOCK_DEC_M8),
+        WRAP(execLockDecM16, Insn::LOCK_DEC_M16),
+        WRAP(execLockDecM32, Insn::LOCK_DEC_M32),
+        WRAP(execLockDecM64, Insn::LOCK_DEC_M64),
+        WRAP(execShrRM8R8, Insn::SHR_RM8_R8),
+        WRAP(execShrRM8Imm, Insn::SHR_RM8_IMM),
+        WRAP(execShrRM16R8, Insn::SHR_RM16_R8),
+        WRAP(execShrRM16Imm, Insn::SHR_RM16_IMM),
+        WRAP(execShrRM32R8, Insn::SHR_RM32_R8),
+        WRAP(execShrRM32Imm, Insn::SHR_RM32_IMM),
+        WRAP(execShrRM64R8, Insn::SHR_RM64_R8),
+        WRAP(execShrRM64Imm, Insn::SHR_RM64_IMM),
+        WRAP(execShlRM8R8, Insn::SHL_RM8_R8),
+        WRAP(execShlRM8Imm, Insn::SHL_RM8_IMM),
+        WRAP(execShlRM16R8, Insn::SHL_RM16_R8),
+        WRAP(execShlRM16Imm, Insn::SHL_RM16_IMM),
+        WRAP(execShlRM32R8, Insn::SHL_RM32_R8),
+        WRAP(execShlRM32Imm, Insn::SHL_RM32_IMM),
+        WRAP(execShlRM64R8, Insn::SHL_RM64_R8),
+        WRAP(execShlRM64Imm, Insn::SHL_RM64_IMM),
+        WRAP(execShldRM32R32R8, Insn::SHLD_RM32_R32_R8),
+        WRAP(execShldRM32R32Imm, Insn::SHLD_RM32_R32_IMM),
+        WRAP(execShldRM64R64R8, Insn::SHLD_RM64_R64_R8),
+        WRAP(execShldRM64R64Imm, Insn::SHLD_RM64_R64_IMM),
+        WRAP(execShrdRM32R32R8, Insn::SHRD_RM32_R32_R8),
+        WRAP(execShrdRM32R32Imm, Insn::SHRD_RM32_R32_IMM),
+        WRAP(execShrdRM64R64R8, Insn::SHRD_RM64_R64_R8),
+        WRAP(execShrdRM64R64Imm, Insn::SHRD_RM64_R64_IMM),
+        WRAP(execSarRM8R8, Insn::SAR_RM8_R8),
+        WRAP(execSarRM8Imm, Insn::SAR_RM8_IMM),
+        WRAP(execSarRM16R8, Insn::SAR_RM16_R8),
+        WRAP(execSarRM16Imm, Insn::SAR_RM16_IMM),
+        WRAP(execSarRM32R8, Insn::SAR_RM32_R8),
+        WRAP(execSarRM32Imm, Insn::SAR_RM32_IMM),
+        WRAP(execSarRM64R8, Insn::SAR_RM64_R8),
+        WRAP(execSarRM64Imm, Insn::SAR_RM64_IMM),
+        WRAP(execSarxR32RM32R32, Insn::SARX_R32_RM32_R32),
+        WRAP(execSarxR64RM64R64, Insn::SARX_R64_RM64_R64),
+        WRAP(execShlxR32RM32R32, Insn::SHLX_R32_RM32_R32),
+        WRAP(execShlxR64RM64R64, Insn::SHLX_R64_RM64_R64),
+        WRAP(execShrxR32RM32R32, Insn::SHRX_R32_RM32_R32),
+        WRAP(execShrxR64RM64R64, Insn::SHRX_R64_RM64_R64),
+        WRAP(execRolRM8R8, Insn::ROL_RM8_R8),
+        WRAP(execRolRM8Imm, Insn::ROL_RM8_IMM),
+        WRAP(execRolRM16R8, Insn::ROL_RM16_R8),
+        WRAP(execRolRM16Imm, Insn::ROL_RM16_IMM),
+        WRAP(execRolRM32R8, Insn::ROL_RM32_R8),
+        WRAP(execRolRM32Imm, Insn::ROL_RM32_IMM),
+        WRAP(execRolRM64R8, Insn::ROL_RM64_R8),
+        WRAP(execRolRM64Imm, Insn::ROL_RM64_IMM),
+        WRAP(execRorRM8R8, Insn::ROR_RM8_R8),
+        WRAP(execRorRM8Imm, Insn::ROR_RM8_IMM),
+        WRAP(execRorRM16R8, Insn::ROR_RM16_R8),
+        WRAP(execRorRM16Imm, Insn::ROR_RM16_IMM),
+        WRAP(execRorRM32R8, Insn::ROR_RM32_R8),
+        WRAP(execRorRM32Imm, Insn::ROR_RM32_IMM),
+        WRAP(execRorRM64R8, Insn::ROR_RM64_R8),
+        WRAP(execRorRM64Imm, Insn::ROR_RM64_IMM),
+        WRAP(execTzcntR16RM16, Insn::TZCNT_R16_RM16),
+        WRAP(execTzcntR32RM32, Insn::TZCNT_R32_RM32),
+        WRAP(execTzcntR64RM64, Insn::TZCNT_R64_RM64),
+        WRAP(execBtRM16R16, Insn::BT_RM16_R16),
+        WRAP(execBtRM16Imm, Insn::BT_RM16_IMM),
+        WRAP(execBtRM32R32, Insn::BT_RM32_R32),
+        WRAP(execBtRM32Imm, Insn::BT_RM32_IMM),
+        WRAP(execBtRM64R64, Insn::BT_RM64_R64),
+        WRAP(execBtRM64Imm, Insn::BT_RM64_IMM),
+        WRAP(execBtrRM16R16, Insn::BTR_RM16_R16),
+        WRAP(execBtrRM16Imm, Insn::BTR_RM16_IMM),
+        WRAP(execBtrRM32R32, Insn::BTR_RM32_R32),
+        WRAP(execBtrRM32Imm, Insn::BTR_RM32_IMM),
+        WRAP(execBtrRM64R64, Insn::BTR_RM64_R64),
+        WRAP(execBtrRM64Imm, Insn::BTR_RM64_IMM),
+        WRAP(execBtcRM16R16, Insn::BTC_RM16_R16),
+        WRAP(execBtcRM16Imm, Insn::BTC_RM16_IMM),
+        WRAP(execBtcRM32R32, Insn::BTC_RM32_R32),
+        WRAP(execBtcRM32Imm, Insn::BTC_RM32_IMM),
+        WRAP(execBtcRM64R64, Insn::BTC_RM64_R64),
+        WRAP(execBtcRM64Imm, Insn::BTC_RM64_IMM),
+        WRAP(execBtsRM16R16, Insn::BTS_RM16_R16),
+        WRAP(execBtsRM16Imm, Insn::BTS_RM16_IMM),
+        WRAP(execBtsRM32R32, Insn::BTS_RM32_R32),
+        WRAP(execBtsRM32Imm, Insn::BTS_RM32_IMM),
+        WRAP(execBtsRM64R64, Insn::BTS_RM64_R64),
+        WRAP(execBtsRM64Imm, Insn::BTS_RM64_IMM),
+        WRAP(execLockBtsM16R16, Insn::LOCK_BTS_M16_R16),
+        WRAP(execLockBtsM16Imm, Insn::LOCK_BTS_M16_IMM),
+        WRAP(execLockBtsM32R32, Insn::LOCK_BTS_M32_R32),
+        WRAP(execLockBtsM32Imm, Insn::LOCK_BTS_M32_IMM),
+        WRAP(execLockBtsM64R64, Insn::LOCK_BTS_M64_R64),
+        WRAP(execLockBtsM64Imm, Insn::LOCK_BTS_M64_IMM),
+        WRAP(execTestRM8R8, Insn::TEST_RM8_R8),
+        WRAP(execTestRM8Imm, Insn::TEST_RM8_IMM),
+        WRAP(execTestRM16R16, Insn::TEST_RM16_R16),
+        WRAP(execTestRM16Imm, Insn::TEST_RM16_IMM),
+        WRAP(execTestRM32R32, Insn::TEST_RM32_R32),
+        WRAP(execTestRM32Imm, Insn::TEST_RM32_IMM),
+        WRAP(execTestRM64R64, Insn::TEST_RM64_R64),
+        WRAP(execTestRM64Imm, Insn::TEST_RM64_IMM),
+        WRAP(execCmpRM8RM8, Insn::CMP_RM8_RM8),
+        WRAP(execCmpRM8Imm, Insn::CMP_RM8_IMM),
+        WRAP(execCmpRM16RM16, Insn::CMP_RM16_RM16),
+        WRAP(execCmpRM16Imm, Insn::CMP_RM16_IMM),
+        WRAP(execCmpRM32RM32, Insn::CMP_RM32_RM32),
+        WRAP(execCmpRM32Imm, Insn::CMP_RM32_IMM),
+        WRAP(execCmpRM64RM64, Insn::CMP_RM64_RM64),
+        WRAP(execCmpRM64Imm, Insn::CMP_RM64_IMM),
+        WRAP(execCmpxchgRM8R8, Insn::CMPXCHG_RM8_R8),
+        WRAP(execCmpxchgRM16R16, Insn::CMPXCHG_RM16_R16),
+        WRAP(execCmpxchgRM32R32, Insn::CMPXCHG_RM32_R32),
+        WRAP(execCmpxchgRM64R64, Insn::CMPXCHG_RM64_R64),
+        WRAP(execLockCmpxchgM8R8, Insn::LOCK_CMPXCHG_M8_R8),
+        WRAP(execLockCmpxchgM16R16, Insn::LOCK_CMPXCHG_M16_R16),
+        WRAP(execLockCmpxchgM32R32, Insn::LOCK_CMPXCHG_M32_R32),
+        WRAP(execLockCmpxchgM64R64, Insn::LOCK_CMPXCHG_M64_R64),
+        WRAP(execSetRM8, Insn::SET_RM8),
+        WRAP(execJmpRM32, Insn::JMP_RM32),
+        WRAP(execJmpRM64, Insn::JMP_RM64),
+        WRAP(execJmpu32, Insn::JMP_U32),
+        WRAP(execJe, Insn::JE),
+        WRAP(execJne, Insn::JNE),
+        WRAP(execJcc, Insn::JCC),
+        WRAP(execBsrR32R32, Insn::BSR_R32_R32),
+        WRAP(execBsrR32M32, Insn::BSR_R32_M32),
+        WRAP(execBsrR64R64, Insn::BSR_R64_R64),
+        WRAP(execBsrR64M64, Insn::BSR_R64_M64),
+        WRAP(execBsfR32R32, Insn::BSF_R32_R32),
+        WRAP(execBsfR32M32, Insn::BSF_R32_M32),
+        WRAP(execBsfR64R64, Insn::BSF_R64_R64),
+        WRAP(execBsfR64M64, Insn::BSF_R64_M64),
+        WRAP(execCld, Insn::CLD),
+        WRAP(execStd, Insn::STD),
+        WRAP(execMovsM8M8, Insn::MOVS_M8_M8),
+        WRAP(execMovsM64M64, Insn::MOVS_M64_M64),
+        WRAP(execRepMovsM8M8, Insn::REP_MOVS_M8_M8),
+        WRAP(execRepMovsM32M32, Insn::REP_MOVS_M32_M32),
+        WRAP(execRepMovsM64M64, Insn::REP_MOVS_M64_M64),
+        WRAP(execRepCmpsM8M8, Insn::REP_CMPS_M8_M8),
+        WRAP(execRepStosM8R8, Insn::REP_STOS_M8_R8),
+        WRAP(execRepStosM16R16, Insn::REP_STOS_M16_R16),
+        WRAP(execRepStosM32R32, Insn::REP_STOS_M32_R32),
+        WRAP(execRepStosM64R64, Insn::REP_STOS_M64_R64),
+        WRAP(execRepNZScasR8M8, Insn::REPNZ_SCAS_R8_M8),
+        WRAP(execRepNZScasR16M16, Insn::REPNZ_SCAS_R16_M16),
+        WRAP(execRepNZScasR32M32, Insn::REPNZ_SCAS_R32_M32),
+        WRAP(execRepNZScasR64M64, Insn::REPNZ_SCAS_R64_M64),
+        WRAP(execCmovR16RM16, Insn::CMOV_R16_RM16),
+        WRAP(execCmovR32RM32, Insn::CMOV_R32_RM32),
+        WRAP(execCmovR64RM64, Insn::CMOV_R64_RM64),
+        WRAP(execCwde, Insn::CWDE),
+        WRAP(execCdqe, Insn::CDQE),
+        WRAP(execBswapR32, Insn::BSWAP_R32),
+        WRAP(execBswapR64, Insn::BSWAP_R64),
+        WRAP(execPopcntR16RM16, Insn::POPCNT_R16_RM16),
+        WRAP(execPopcntR32RM32, Insn::POPCNT_R32_RM32),
+        WRAP(execPopcntR64RM64, Insn::POPCNT_R64_RM64),
+        WRAP(execPxorRSSERMSSE, Insn::PXOR_RSSE_RMSSE),
+        WRAP(execMovapsRMSSERMSSE, Insn::MOVAPS_RMSSE_RMSSE),
+        WRAP(execMovdRSSERM32, Insn::MOVD_RSSE_RM32),
+        WRAP(execMovdRM32RSSE, Insn::MOVD_RM32_RSSE),
+        WRAP(execMovdRSSERM64, Insn::MOVD_RSSE_RM64),
+        WRAP(execMovdRM64RSSE, Insn::MOVD_RM64_RSSE),
+        WRAP(execMovqRSSERM64, Insn::MOVQ_RSSE_RM64),
+        WRAP(execMovqRM64RSSE, Insn::MOVQ_RM64_RSSE),
+        WRAP(execFldz, Insn::FLDZ),
+        WRAP(execFld1, Insn::FLD1),
+        WRAP(execFldST, Insn::FLD_ST),
+        WRAP(execFldM32, Insn::FLD_M32),
+        WRAP(execFldM64, Insn::FLD_M64),
+        WRAP(execFldM80, Insn::FLD_M80),
+        WRAP(execFildM16, Insn::FILD_M16),
+        WRAP(execFildM32, Insn::FILD_M32),
+        WRAP(execFildM64, Insn::FILD_M64),
+        WRAP(execFstpST, Insn::FSTP_ST),
+        WRAP(execFstpM32, Insn::FSTP_M32),
+        WRAP(execFstpM64, Insn::FSTP_M64),
+        WRAP(execFstpM80, Insn::FSTP_M80),
+        WRAP(execFistpM16, Insn::FISTP_M16),
+        WRAP(execFistpM32, Insn::FISTP_M32),
+        WRAP(execFistpM64, Insn::FISTP_M64),
+        WRAP(execFxchST, Insn::FXCH_ST),
+        WRAP(execFaddpST, Insn::FADDP_ST),
+        WRAP(execFsubpST, Insn::FSUBP_ST),
+        WRAP(execFsubrpST, Insn::FSUBRP_ST),
+        WRAP(execFmul1M32, Insn::FMUL1_M32),
+        WRAP(execFmul1M64, Insn::FMUL1_M64),
+        WRAP(execFdivSTST, Insn::FDIV_ST_ST),
+        WRAP(execFdivpSTST, Insn::FDIVP_ST_ST),
+        WRAP(execFcomiST, Insn::FCOMI_ST),
+        WRAP(execFucomiST, Insn::FUCOMI_ST),
+        WRAP(execFrndint, Insn::FRNDINT),
+        WRAP(execFcmovST, Insn::FCMOV_ST),
+        WRAP(execFnstcwM16, Insn::FNSTCW_M16),
+        WRAP(execFldcwM16, Insn::FLDCW_M16),
+        WRAP(execFnstswR16, Insn::FNSTSW_R16),
+        WRAP(execFnstswM16, Insn::FNSTSW_M16),
+        WRAP(execFnstenvM224, Insn::FNSTENV_M224),
+        WRAP(execFldenvM224, Insn::FLDENV_M224),
+        WRAP(execEmms, Insn::EMMS),
+        WRAP(execMovssRSSEM32, Insn::MOVSS_RSSE_M32),
+        WRAP(execMovssM32RSSE, Insn::MOVSS_M32_RSSE),
+        WRAP(execMovsdRSSEM64, Insn::MOVSD_RSSE_M64),
+        WRAP(execMovsdM64RSSE, Insn::MOVSD_M64_RSSE),
+        WRAP(execMovsdRSSERSSE, Insn::MOVSD_RSSE_RSSE),
+        WRAP(execAddpsRSSERMSSE, Insn::ADDPS_RSSE_RMSSE),
+        WRAP(execAddpdRSSERMSSE, Insn::ADDPD_RSSE_RMSSE),
+        WRAP(execAddssRSSERSSE, Insn::ADDSS_RSSE_RSSE),
+        WRAP(execAddssRSSEM32, Insn::ADDSS_RSSE_M32),
+        WRAP(execAddsdRSSERSSE, Insn::ADDSD_RSSE_RSSE),
+        WRAP(execAddsdRSSEM64, Insn::ADDSD_RSSE_M64),
+        WRAP(execSubpsRSSERMSSE, Insn::SUBPS_RSSE_RMSSE),
+        WRAP(execSubpdRSSERMSSE, Insn::SUBPD_RSSE_RMSSE),
+        WRAP(execSubssRSSERSSE, Insn::SUBSS_RSSE_RSSE),
+        WRAP(execSubssRSSEM32, Insn::SUBSS_RSSE_M32),
+        WRAP(execSubsdRSSERSSE, Insn::SUBSD_RSSE_RSSE),
+        WRAP(execSubsdRSSEM64, Insn::SUBSD_RSSE_M64),
+        WRAP(execMulpsRSSERMSSE, Insn::MULPS_RSSE_RMSSE),
+        WRAP(execMulpdRSSERMSSE, Insn::MULPD_RSSE_RMSSE),
+        WRAP(execMulssRSSERSSE, Insn::MULSS_RSSE_RSSE),
+        WRAP(execMulssRSSEM32, Insn::MULSS_RSSE_M32),
+        WRAP(execMulsdRSSERSSE, Insn::MULSD_RSSE_RSSE),
+        WRAP(execMulsdRSSEM64, Insn::MULSD_RSSE_M64),
+        WRAP(execDivpsRSSERMSSE, Insn::DIVPS_RSSE_RMSSE),
+        WRAP(execDivpdRSSERMSSE, Insn::DIVPD_RSSE_RMSSE),
+        WRAP(execDivssRSSERSSE, Insn::DIVSS_RSSE_RSSE),
+        WRAP(execDivssRSSEM32, Insn::DIVSS_RSSE_M32),
+        WRAP(execDivsdRSSERSSE, Insn::DIVSD_RSSE_RSSE),
+        WRAP(execDivsdRSSEM64, Insn::DIVSD_RSSE_M64),
+        WRAP(execSqrtssRSSERSSE, Insn::SQRTSS_RSSE_RSSE),
+        WRAP(execSqrtssRSSEM32, Insn::SQRTSS_RSSE_M32),
+        WRAP(execSqrtsdRSSERSSE, Insn::SQRTSD_RSSE_RSSE),
+        WRAP(execSqrtsdRSSEM64, Insn::SQRTSD_RSSE_M64),
+        WRAP(execComissRSSERSSE, Insn::COMISS_RSSE_RSSE),
+        WRAP(execComissRSSEM32, Insn::COMISS_RSSE_M32),
+        WRAP(execComisdRSSERSSE, Insn::COMISD_RSSE_RSSE),
+        WRAP(execComisdRSSEM64, Insn::COMISD_RSSE_M64),
+        WRAP(execUcomissRSSERSSE, Insn::UCOMISS_RSSE_RSSE),
+        WRAP(execUcomissRSSEM32, Insn::UCOMISS_RSSE_M32),
+        WRAP(execUcomisdRSSERSSE, Insn::UCOMISD_RSSE_RSSE),
+        WRAP(execUcomisdRSSEM64, Insn::UCOMISD_RSSE_M64),
+        WRAP(execCmpssRSSERSSE, Insn::CMPSS_RSSE_RSSE),
+        WRAP(execCmpssRSSEM32, Insn::CMPSS_RSSE_M32),
+        WRAP(execCmpsdRSSERSSE, Insn::CMPSD_RSSE_RSSE),
+        WRAP(execCmpsdRSSEM64, Insn::CMPSD_RSSE_M64),
+        WRAP(execCmppsRSSERMSSE, Insn::CMPPS_RSSE_RMSSE),
+        WRAP(execCmppdRSSERMSSE, Insn::CMPPD_RSSE_RMSSE),
+        WRAP(execMaxssRSSERSSE, Insn::MAXSS_RSSE_RSSE),
+        WRAP(execMaxssRSSEM32, Insn::MAXSS_RSSE_M32),
+        WRAP(execMaxsdRSSERSSE, Insn::MAXSD_RSSE_RSSE),
+        WRAP(execMaxsdRSSEM64, Insn::MAXSD_RSSE_M64),
+        WRAP(execMinssRSSERSSE, Insn::MINSS_RSSE_RSSE),
+        WRAP(execMinssRSSEM32, Insn::MINSS_RSSE_M32),
+        WRAP(execMinsdRSSERSSE, Insn::MINSD_RSSE_RSSE),
+        WRAP(execMinsdRSSEM64, Insn::MINSD_RSSE_M64),
+        WRAP(execMaxpsRSSERMSSE, Insn::MAXPS_RSSE_RMSSE),
+        WRAP(execMaxpdRSSERMSSE, Insn::MAXPD_RSSE_RMSSE),
+        WRAP(execMinpsRSSERMSSE, Insn::MINPS_RSSE_RMSSE),
+        WRAP(execMinpdRSSERMSSE, Insn::MINPD_RSSE_RMSSE),
+        WRAP(execCvtsi2ssRSSERM32, Insn::CVTSI2SS_RSSE_RM32),
+        WRAP(execCvtsi2ssRSSERM64, Insn::CVTSI2SS_RSSE_RM64),
+        WRAP(execCvtsi2sdRSSERM32, Insn::CVTSI2SD_RSSE_RM32),
+        WRAP(execCvtsi2sdRSSERM64, Insn::CVTSI2SD_RSSE_RM64),
+        WRAP(execCvtss2sdRSSERSSE, Insn::CVTSS2SD_RSSE_RSSE),
+        WRAP(execCvtss2sdRSSEM32, Insn::CVTSS2SD_RSSE_M32),
+        WRAP(execCvtsd2ssRSSERSSE, Insn::CVTSD2SS_RSSE_RSSE),
+        WRAP(execCvtsd2ssRSSEM64, Insn::CVTSD2SS_RSSE_M64),
+        WRAP(execCvtsd2siR64RSSE, Insn::CVTSD2SI_R64_RSSE),
+        WRAP(execCvtsd2siR64M64, Insn::CVTSD2SI_R64_M64),
+        WRAP(execCvttps2dqRSSERMSSE, Insn::CVTTPS2DQ_RSSE_RMSSE),
+        WRAP(execCvttss2siR32RSSE, Insn::CVTTSS2SI_R32_RSSE),
+        WRAP(execCvttss2siR32M32, Insn::CVTTSS2SI_R32_M32),
+        WRAP(execCvttss2siR64RSSE, Insn::CVTTSS2SI_R64_RSSE),
+        WRAP(execCvttss2siR64M32, Insn::CVTTSS2SI_R64_M32),
+        WRAP(execCvttsd2siR32RSSE, Insn::CVTTSD2SI_R32_RSSE),
+        WRAP(execCvttsd2siR32M64, Insn::CVTTSD2SI_R32_M64),
+        WRAP(execCvttsd2siR64RSSE, Insn::CVTTSD2SI_R64_RSSE),
+        WRAP(execCvttsd2siR64M64, Insn::CVTTSD2SI_R64_M64),
+        WRAP(execCvtdq2pdRSSERSSE, Insn::CVTDQ2PD_RSSE_RSSE),
+        WRAP(execCvtdq2psRSSERMSSE, Insn::CVTDQ2PS_RSSE_RMSSE),
+        WRAP(execCvtdq2pdRSSEM64, Insn::CVTDQ2PD_RSSE_M64),
+        WRAP(execCvtps2dqRSSERMSSE, Insn::CVTPS2DQ_RSSE_RMSSE),
+        WRAP(execStmxcsrM32, Insn::STMXCSR_M32),
+        WRAP(execLdmxcsrM32, Insn::LDMXCSR_M32),
+        WRAP(execPandRSSERMSSE, Insn::PAND_RSSE_RMSSE),
+        WRAP(execPandnRSSERMSSE, Insn::PANDN_RSSE_RMSSE),
+        WRAP(execPorRSSERMSSE, Insn::POR_RSSE_RMSSE),
+        WRAP(execAndpdRSSERMSSE, Insn::ANDPD_RSSE_RMSSE),
+        WRAP(execAndnpdRSSERMSSE, Insn::ANDNPD_RSSE_RMSSE),
+        WRAP(execOrpdRSSERMSSE, Insn::ORPD_RSSE_RMSSE),
+        WRAP(execXorpdRSSERMSSE, Insn::XORPD_RSSE_RMSSE),
+        WRAP(execShufpsRSSERMSSEImm, Insn::SHUFPS_RSSE_RMSSE_IMM),
+        WRAP(execShufpdRSSERMSSEImm, Insn::SHUFPD_RSSE_RMSSE_IMM),
+        WRAP(execMovlpsRSSEM64, Insn::MOVLPS_RSSE_M64),
+        WRAP(execMovlpsM64RSSE, Insn::MOVLPS_M64_RSSE),
+        WRAP(execMovhpsRSSEM64, Insn::MOVHPS_RSSE_M64),
+        WRAP(execMovhpsM64RSSE, Insn::MOVHPS_M64_RSSE),
+        WRAP(execMovhlpsRSSERSSE, Insn::MOVHLPS_RSSE_RSSE),
+        WRAP(execMovlhpsRSSERSSE, Insn::MOVLHPS_RSSE_RSSE),
+        WRAP(execPinsrwRSSER32Imm, Insn::PINSRW_RSSE_R32_IMM),
+        WRAP(execPinsrwRSSEM16Imm, Insn::PINSRW_RSSE_M16_IMM),
+        WRAP(execPunpcklbwRSSERMSSE, Insn::PUNPCKLBW_RSSE_RMSSE),
+        WRAP(execPunpcklwdRSSERMSSE, Insn::PUNPCKLWD_RSSE_RMSSE),
+        WRAP(execPunpckldqRSSERMSSE, Insn::PUNPCKLDQ_RSSE_RMSSE),
+        WRAP(execPunpcklqdqRSSERMSSE, Insn::PUNPCKLQDQ_RSSE_RMSSE),
+        WRAP(execPunpckhbwRSSERMSSE, Insn::PUNPCKHBW_RSSE_RMSSE),
+        WRAP(execPunpckhwdRSSERMSSE, Insn::PUNPCKHWD_RSSE_RMSSE),
+        WRAP(execPunpckhdqRSSERMSSE, Insn::PUNPCKHDQ_RSSE_RMSSE),
+        WRAP(execPunpckhqdqRSSERMSSE, Insn::PUNPCKHQDQ_RSSE_RMSSE),
+        WRAP(execPshufbRSSERMSSE, Insn::PSHUFB_RSSE_RMSSE),
+        WRAP(execPshuflwRSSERMSSEImm, Insn::PSHUFLW_RSSE_RMSSE_IMM),
+        WRAP(execPshufhwRSSERMSSEImm, Insn::PSHUFHW_RSSE_RMSSE_IMM),
+        WRAP(execPshufdRSSERMSSEImm, Insn::PSHUFD_RSSE_RMSSE_IMM),
+        WRAP(execPcmpeqbRSSERMSSE, Insn::PCMPEQB_RSSE_RMSSE),
+        WRAP(execPcmpeqwRSSERMSSE, Insn::PCMPEQW_RSSE_RMSSE),
+        WRAP(execPcmpeqdRSSERMSSE, Insn::PCMPEQD_RSSE_RMSSE),
+        WRAP(execPcmpeqqRSSERMSSE, Insn::PCMPEQQ_RSSE_RMSSE),
+        WRAP(execPcmpgtbRSSERMSSE, Insn::PCMPGTB_RSSE_RMSSE),
+        WRAP(execPcmpgtwRSSERMSSE, Insn::PCMPGTW_RSSE_RMSSE),
+        WRAP(execPcmpgtdRSSERMSSE, Insn::PCMPGTD_RSSE_RMSSE),
+        WRAP(execPcmpgtqRSSERMSSE, Insn::PCMPGTQ_RSSE_RMSSE),
+        WRAP(execPmovmskbR32RSSE, Insn::PMOVMSKB_R32_RSSE),
+        WRAP(execPaddbRSSERMSSE, Insn::PADDB_RSSE_RMSSE),
+        WRAP(execPaddwRSSERMSSE, Insn::PADDW_RSSE_RMSSE),
+        WRAP(execPadddRSSERMSSE, Insn::PADDD_RSSE_RMSSE),
+        WRAP(execPaddqRSSERMSSE, Insn::PADDQ_RSSE_RMSSE),
+        WRAP(execPsubbRSSERMSSE, Insn::PSUBB_RSSE_RMSSE),
+        WRAP(execPsubwRSSERMSSE, Insn::PSUBW_RSSE_RMSSE),
+        WRAP(execPsubdRSSERMSSE, Insn::PSUBD_RSSE_RMSSE),
+        WRAP(execPsubqRSSERMSSE, Insn::PSUBQ_RSSE_RMSSE),
+        WRAP(execPmulhuwRSSERMSSE, Insn::PMULHUW_RSSE_RMSSE),
+        WRAP(execPmulhwRSSERMSSE, Insn::PMULHW_RSSE_RMSSE),
+        WRAP(execPmullwRSSERMSSE, Insn::PMULLW_RSSE_RMSSE),
+        WRAP(execPmuludqRSSERMSSE, Insn::PMULUDQ_RSSE_RMSSE),
+        WRAP(execPmaddwdRSSERMSSE, Insn::PMADDWD_RSSE_RMSSE),
+        WRAP(execPsadbwRSSERMSSE, Insn::PSADBW_RSSE_RMSSE),
+        WRAP(execPavgbRSSERMSSE, Insn::PAVGB_RSSE_RMSSE),
+        WRAP(execPavgwRSSERMSSE, Insn::PAVGW_RSSE_RMSSE),
+        WRAP(execPmaxubRSSERMSSE, Insn::PMAXUB_RSSE_RMSSE),
+        WRAP(execPminubRSSERMSSE, Insn::PMINUB_RSSE_RMSSE),
+        WRAP(execPtestRSSERMSSE, Insn::PTEST_RSSE_RMSSE),
+        WRAP(execPsrawRSSEImm, Insn::PSRAW_RSSE_IMM),
+        WRAP(execPsradRSSEImm, Insn::PSRAD_RSSE_IMM),
+        WRAP(execPsraqRSSEImm, Insn::PSRAQ_RSSE_IMM),
+        WRAP(execPsllwRSSEImm, Insn::PSLLW_RSSE_IMM),
+        WRAP(execPsllwRSSERMSSE, Insn::PSLLW_RSSE_RMSSE),
+        WRAP(execPslldRSSEImm, Insn::PSLLD_RSSE_IMM),
+        WRAP(execPslldRSSERMSSE, Insn::PSLLD_RSSE_RMSSE),
+        WRAP(execPsllqRSSEImm, Insn::PSLLQ_RSSE_IMM),
+        WRAP(execPsllqRSSERMSSE, Insn::PSLLQ_RSSE_RMSSE),
+        WRAP(execPsrlwRSSEImm, Insn::PSRLW_RSSE_IMM),
+        WRAP(execPsrlwRSSERMSSE, Insn::PSRLW_RSSE_RMSSE),
+        WRAP(execPsrldRSSEImm, Insn::PSRLD_RSSE_IMM),
+        WRAP(execPsrldRSSERMSSE, Insn::PSRLD_RSSE_RMSSE),
+        WRAP(execPsrlqRSSEImm, Insn::PSRLQ_RSSE_IMM),
+        WRAP(execPsrlqRSSERMSSE, Insn::PSRLQ_RSSE_RMSSE),
+        WRAP(execPslldqRSSEImm, Insn::PSLLDQ_RSSE_IMM),
+        WRAP(execPsrldqRSSEImm, Insn::PSRLDQ_RSSE_IMM),
+        WRAP(execPcmpistriRSSERMSSEImm, Insn::PCMPISTRI_RSSE_RMSSE_IMM),
+        WRAP(execPackuswbRSSERMSSE, Insn::PACKUSWB_RSSE_RMSSE),
+        WRAP(execPackusdwRSSERMSSE, Insn::PACKUSDW_RSSE_RMSSE),
+        WRAP(execPacksswbRSSERMSSE, Insn::PACKSSWB_RSSE_RMSSE),
+        WRAP(execPackssdwRSSERMSSE, Insn::PACKSSDW_RSSE_RMSSE),
+        WRAP(execUnpckhpsRSSERMSSE, Insn::UNPCKHPS_RSSE_RMSSE),
+        WRAP(execUnpckhpdRSSERMSSE, Insn::UNPCKHPD_RSSE_RMSSE),
+        WRAP(execUnpcklpsRSSERMSSE, Insn::UNPCKLPS_RSSE_RMSSE),
+        WRAP(execUnpcklpdRSSERMSSE, Insn::UNPCKLPD_RSSE_RMSSE),
+        WRAP(execMovmskpsR32RSSE, Insn::MOVMSKPS_R32_RSSE),
+        WRAP(execMovmskpsR64RSSE, Insn::MOVMSKPS_R64_RSSE),
+        WRAP(execMovmskpdR32RSSE, Insn::MOVMSKPD_R32_RSSE),
+        WRAP(execMovmskpdR64RSSE, Insn::MOVMSKPD_R64_RSSE),
+        WRAP(execRdtsc, Insn::RDTSC),
+        WRAP(execCpuid, Insn::CPUID),
+        WRAP(execXgetbv, Insn::XGETBV),
+        WRAP(execFxsaveM64, Insn::FXSAVE_M64),
+        WRAP(execFxrstorM64, Insn::FXRSTOR_M64),
+        WRAP(execFwait, Insn::FWAIT),
+        WRAP(execRdpkru, Insn::RDPKRU),
+        WRAP(execWrpkru, Insn::WRPKRU),
+        WRAP(execRdsspd, Insn::RDSSPD),
+        WRAP(execUnknown, Insn::UNKNOWN),
     }};
 
     void Cpu::exec(const X64Instruction& insn) {
