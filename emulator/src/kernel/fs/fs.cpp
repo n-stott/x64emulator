@@ -599,10 +599,13 @@ namespace kernel {
         if(!openFileDescription) return -EBADF;
         std::optional<int> emulatedRet;
         // If we can do it in FS alone, do it here
+        // and check if we need to do it on the file as well
+        bool callFcntlOnFile = true;
         switch(cmd) {
             case F_DUPFD: {
                 FD newfd = dup(fd);
                 emulatedRet = newfd.fd;
+                callFcntlOnFile = false;
                 break;
             }
             case F_DUPFD_CLOEXEC: {
@@ -611,6 +614,7 @@ namespace kernel {
                 verify(!!newNode);
                 newNode->closeOnExec = true;
                 emulatedRet = newfd.fd;
+                callFcntlOnFile = false;
                 break;
             }
             case F_GETFD: {
@@ -631,6 +635,7 @@ namespace kernel {
         // If the open file description is sufficient, do it there
             case F_GETFL: {
                 emulatedRet = assembleAccessModeAndFileStatusFlags(openFileDescription->accessMode(), openFileDescription->statusFlags());
+                callFcntlOnFile = false;
                 break;
             }
             case F_SETFL: {
@@ -648,18 +653,22 @@ namespace kernel {
             default: break;
         }
         // Otherwise, go ask the file.
-        // Note: we have to go here anyway, so the information makes it to the host when relevant
-        File* file = openFileDescription->file();
-        std::optional<int> fileRet = file->fcntl(cmd, arg);
+        // Note: we may have to go here, so the information makes it to the host when relevant
+        std::optional<int> fileRet;
+        if(callFcntlOnFile) {
+            File* file = openFileDescription->file();
+            fileRet = file->fcntl(cmd, arg);
+        }
         if(!!emulatedRet) {
             if(!!fileRet && emulatedRet != fileRet) {
                 warn(fmt::format("Emulation of fcntl failed : emulated = {}  file = {}\n"
                                  "    Note: this may be due to O_LARGEFILE (32768)",
                     emulatedRet.value(), fileRet.value()));
+                verify(false);
             }
             return emulatedRet.value();
         } else {
-            assert(!!fileRet);
+            verify(!!fileRet);
             return fileRet.value();
         }
     }
