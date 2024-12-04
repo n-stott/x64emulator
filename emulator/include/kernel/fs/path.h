@@ -2,7 +2,7 @@
 #define PATH_H
 
 #include "span.h"
-#include <cassert>
+#include "verify.h"
 #include <memory>
 #include <string>
 #include <vector>
@@ -30,8 +30,12 @@ namespace kernel {
         }
 
         const std::string& last() const {
-            assert(!components_.empty());
+            verify(!components_.empty(), "Path has empty components");
             return components_.back();
+        }
+
+        bool isRoot() const {
+            return components_.empty();
         }
 
     private:

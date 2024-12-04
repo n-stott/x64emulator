@@ -182,6 +182,7 @@ namespace kernel {
 
     File* FS::tryGetFile(const Path& path) {
         Directory* dir = root();
+        if(path.isRoot()) return dir;
         for(const std::string& component : path.componentsExceptLast()) {
             dir = dir->tryGetSubDirectory(component);
             if(!dir) return nullptr;
