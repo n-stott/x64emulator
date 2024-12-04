@@ -90,6 +90,11 @@ namespace kernel {
         return ErrnoOrBuffer(-ENOTSUP);
     }
 
+    void HostDevice::advanceInternalOffset(off_t offset) {
+        off_t ret = ::lseek(hostFd_, offset, SEEK_CUR);
+        verify(ret >= 0, "advanceInternalOffset failed in HostDevice");
+    }
+
     off_t HostDevice::lseek(OpenFileDescription&, off_t, int) {
         verify(false, "HostDevice::lseek not implemented");
         return -ENOTSUP;

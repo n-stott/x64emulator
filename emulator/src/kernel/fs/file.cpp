@@ -24,6 +24,10 @@ namespace kernel {
         return ss.str();
     }
 
+    void File::advanceInternalOffset(off_t offset) {
+        verify(false, fmt::format("File::advanceInternalOffset(offset={}) not implemented for file type {}\n", offset, className()));
+    }
+
     ErrnoOrBuffer File::statx(unsigned int mask) {
         verify(false, fmt::format("File::statx(mask={:#x}) not implemented for file type {}\n", mask, className()));
         return ErrnoOrBuffer(-ENOTSUP);

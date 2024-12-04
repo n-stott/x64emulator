@@ -80,6 +80,10 @@ namespace kernel {
         return ErrnoOrBuffer(Buffer{std::move(buf)});
     }
 
+    void Tty::advanceInternalOffset(off_t) {
+        // nothing to do here
+    }
+
     off_t Tty::lseek(OpenFileDescription&, off_t, int) {
         return -ESPIPE;
     }

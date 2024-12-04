@@ -141,6 +141,10 @@ namespace kernel {
         return nbytes;
     }
 
+    void Socket::advanceInternalOffset(off_t) {
+        // nothing to do
+    }
+
     off_t Socket::lseek(OpenFileDescription&, off_t, int) {
         return -ESPIPE;
     }

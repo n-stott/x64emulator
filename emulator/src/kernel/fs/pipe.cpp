@@ -86,6 +86,10 @@ namespace kernel {
         return pipe_->write(openFileDescription, buf, size);
     }
 
+    void PipeEndpoint::advanceInternalOffset(off_t) {
+        // nothing to do here
+    }
+
     off_t PipeEndpoint::lseek(OpenFileDescription&, off_t, int) {
         verify(false, "lseek not implemented on PipeEndpoint");
         return -ESPIPE;

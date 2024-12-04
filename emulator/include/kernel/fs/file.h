@@ -33,6 +33,7 @@ namespace kernel {
         virtual ErrnoOrBuffer read(OpenFileDescription&, size_t count) = 0;
         virtual ssize_t write(OpenFileDescription&, const u8* buf, size_t count) = 0;
 
+        virtual void advanceInternalOffset(off_t offset);
         virtual off_t lseek(OpenFileDescription&, off_t offset, int whence) = 0;
 
         enum class Mode : u32 {

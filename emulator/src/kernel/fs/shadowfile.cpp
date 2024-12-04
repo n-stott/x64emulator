@@ -145,6 +145,10 @@ namespace kernel {
         return ErrnoOrBuffer(-ENOTSUP);
     }
 
+    void ShadowFile::advanceInternalOffset(off_t) {
+        // nothing to do here
+    }
+
     off_t ShadowFile::lseek(OpenFileDescription& openFileDescription, off_t offset, int whence) {
         off_t baseOffset = 0;
         if(Host::Lseek::isSeekSet(whence)) {

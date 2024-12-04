@@ -56,6 +56,10 @@ namespace kernel {
         return sizeof(value);
     }
 
+    void Event::advanceInternalOffset(off_t) {
+        // nothing to do
+    }
+
     off_t Event::lseek(OpenFileDescription&, off_t, int) {
         return -ESPIPE;
     }

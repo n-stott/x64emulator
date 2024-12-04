@@ -119,6 +119,13 @@ namespace kernel {
         return Host::statx(Host::FD{hostFd_}, "", AT_EMPTY_PATH, mask);
     }
 
+    void HostFile::advanceInternalOffset(off_t offset) {
+        off_t ret = ::lseek(hostFd_, offset, SEEK_CUR);
+        verify(ret >= 0, []() {
+            fmt::print("Expected no error in HostFile::advanceInternalOffset, but got errno = {}\n", errno);
+        });
+    }
+
     off_t HostFile::lseek(OpenFileDescription&, off_t offset, int whence) {
         off_t ret = ::lseek(hostFd_, offset, whence);
         if(ret < 0) return -errno;
