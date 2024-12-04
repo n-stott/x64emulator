@@ -112,7 +112,7 @@ namespace kernel {
             });
             vm.tryRetrieveSymbols(addresses, &addressToSymbol_);
         }
-        // If we have packined, we retrieve the callstacks
+        // If we have panicked, we retrieve the callstacks
         if(kernel_.hasPanicked()) {
             std::unique_lock lock(schedulerMutex_);
             // we get the relevant addresses
