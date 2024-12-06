@@ -13,74 +13,8 @@ namespace emulator {
     VM::VM(x64::Mmu& mmu, kernel::Kernel& kernel) : mmu_(mmu), kernel_(kernel), cpu_(this, &mmu_) { }
 
     VM::~VM() {
-        if(countInstructions()) {
-            std::sort(instructionTypeAndExample_.begin(), instructionTypeAndExample_.end(), [](const auto& a, const auto& b) {
-                return a.first > b.first;
-            });
-            for(const auto& p : instructionTypeAndExample_) {
-                if(p.first == 0) break; // don't print zeros
-                fmt::print("  {:10}  {:20}\n", p.first, p.second);
-            }
-
-            // auto size = instructionCount_.size();
-            // auto total = std::accumulate(instructionCount_.begin(), instructionCount_.end(), (u64)0, [](u64 tot, const auto& p) {
-            //     return tot + p.second;
-            // });
-            // fmt::print("Executed {} different instructions and {} total instructions\n", size, total);
-            // std::vector<std::pair<u64, u64>> ps;
-            // ps.insert(ps.begin(), instructionCount_.begin(), instructionCount_.end());
-            // std::sort(ps.begin(), ps.end(), [](const auto& a, const auto& b) {
-            //     if(a.second > b.second) return true;
-            //     if(a.second < b.second) return false;
-            //     return a.first < b.first;
-            // });
-            // for(size_t i = 0; i < ps.size(); ++i) {
-            //     if(i >= 50) break;
-            //     u64 address = ps[i].first;
-            //     u64 count = ps[i].second;
-            //     updateExecutionPoint(address);
-            //     const x64::X64Instruction& instruction = *currentThreadExecutionPoint_.nextInstruction;
-            //     fmt::print("  {:10} {:#16x} {}\n", count, instruction.address(), instruction.toString());
-            // }
-
-
-            // auto size = basicBlockCount_.size();
-            // auto total = std::accumulate(basicBlockCount_.begin(), basicBlockCount_.end(), (u64)0, [](u64 tot, const auto& p) {
-            //     return tot + p.second;
-            // });
-            // fmt::print("Executed {} different basic blocks and {} total basic blocks\n", size, total);
-            // std::vector<std::pair<u64, u64>> ps;
-            // ps.insert(ps.begin(), basicBlockCount_.begin(), basicBlockCount_.end());
-            // std::sort(ps.begin(), ps.end(), [](const auto& a, const auto& b) {
-            //     return a.second > b.second;
-            // });
-            // for(size_t i = 0; i < ps.size(); ++i) {
-            //     if(i >= 50) break;
-            //     u64 address = ps[i].first;
-            //     u64 count = ps[i].second;
-            //     fmt::print("  {:10}  {:#x}\n", count, address);
-            // }
-        }
-    }
-
-    void VM::setCountInstructions(bool countInstructions) {
-        countInstructions_ = countInstructions;
-    }
-
-    bool VM::countInstructions() const {
-        return countInstructions_;
-    }
-    
-    void VM::setLogInstructions(bool logInstructions) {
-        logInstructions_ = logInstructions;
-    }
-
-    bool VM::logInstructions() const {
-        return logInstructions_;
-    }
-
-    void VM::setLogInstructionsAfter(unsigned long long nbTicks) {
-        nbTicksBeforeLoggingInstructions_ = nbTicks;
+        fmt::print("blockCacheHits  :{}\n", blockCacheHits_);
+        fmt::print("blockCacheMisses:{}\n", blockCacheMisses_);
     }
 
     void VM::crash() {
@@ -91,26 +25,22 @@ namespace emulator {
                             currentThread_->description().pid,
                             currentThread_->description().tid,
                             currentThread_->tickInfo().current());
-            // u64 rip = currentThread_->savedCpuState().regs.rip();
-            // updateExecutionPoint(rip);
-            // std::vector<BasicBlock> basicBlocks = ((ExecutableSection*)currentThreadExecutionPoint_.section)->extractBasicBlocks();
-            // fmt::print("Looking for basic block in {:#x}:{:#x} with rip={:#x}\n", currentThreadExecutionPoint_.section->begin, currentThreadExecutionPoint_.section->end, rip);
-            // bool foundBasicBlock = false;
-            // for(const auto& bb : basicBlocks) {
-            //     if(bb.size == 0) continue;
-            //     if(rip < bb.instructions[0].nextAddress()) continue;
-            //     if(rip > bb.instructions[bb.size-1].nextAddress()) continue;
-            //     foundBasicBlock = true;
-            //     for(size_t i = 0; i < bb.size; ++i) {
-            //         const auto& ins = bb.instructions[i];
-            //         if(ins.nextAddress() == rip) {
-            //             fmt::print("  ==> {:#12x} {}\n", ins.address(), ins.toString());
-            //         } else {
-            //             fmt::print("      {:#12x} {}\n", ins.address(), ins.toString());
-            //         }
-            //     }
-            // }
-            // verify(foundBasicBlock, "Could not find the basic block");
+            u64 rip = currentThread_->savedCpuState().regs.rip();
+            for(const auto& p : basicBlocks_) {
+                auto start = p.second->start();
+                auto end = p.second->end();
+                if(!start || !end) continue;
+                if(rip < start || rip > end) continue;
+                const auto& bb = p.second->cpuBasicBlock;
+                for(const auto& ins : bb.instructions) {
+                    if(ins.first.nextAddress() == rip) {
+                        fmt::print("  ==> {:#12x} {}\n", ins.first.address(), ins.first.toString());
+                    } else {
+                        fmt::print("      {:#12x} {}\n", ins.first.address(), ins.first.toString());
+                    }
+                }
+                break;
+            }
         }
     }
 
@@ -227,7 +157,6 @@ namespace emulator {
     }
 
     void VM::log(size_t ticks, const x64::X64Instruction& instruction) const {
-        if(ticks < nbTicksBeforeLoggingInstructions_) return;
         std::string eflags = fmt::format("flags = [{}{}{}{}{}]", (cpu_.flags_.carry ? 'C' : ' '),
                                                             (cpu_.flags_.zero ? 'Z' : ' '), 
                                                             (cpu_.flags_.overflow ? 'O' : ' '), 

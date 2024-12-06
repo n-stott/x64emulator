@@ -56,7 +56,6 @@ int main() {
         mmu.copyToMmu(Ptr8{dataPage}, (const u8*)string.data(), string.size());
 
         emulator::VM vm(mmu, kernel);
-        vm.setLogInstructions(true);
         kernel::Thread mainThread(0, 0);
         mainThread.savedCpuState().regs.rip() = execPage;
         mainThread.savedCpuState().regs.set(R64::RDI, dataPage);

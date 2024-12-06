@@ -24,13 +24,6 @@ namespace emulator {
         void crash();
         bool hasCrashed() const { return hasCrashed_; }
 
-        void setCountInstructions(bool);
-        bool countInstructions() const;
-        
-        void setLogInstructions(bool);
-        bool logInstructions() const;
-        void setLogInstructionsAfter(unsigned long long);
-
         void contextSwitch(kernel::Thread* newThread);
 
         void execute(kernel::Thread* thread);
@@ -84,21 +77,8 @@ namespace emulator {
 
         mutable std::vector<std::unique_ptr<ExecutableSection>> executableSections_;
         bool hasCrashed_ = false;
-        bool logInstructions_ = false;
-        bool countInstructions_ = false;
-        unsigned long long nbTicksBeforeLoggingInstructions_ { 0 };
-
-        struct ExecutionPoint {
-            const ExecutableSection* section { nullptr };
-            const x64::X64Instruction* sectionBegin { nullptr };
-            const x64::X64Instruction* sectionEnd { nullptr };
-            const x64::X64Instruction* nextInstruction { nullptr };
-        };
 
         kernel::Thread* currentThread_ { nullptr };
-
-        std::unordered_map<u64, ExecutionPoint> callCache_;
-        std::unordered_map<u64, ExecutionPoint> jmpCache_;
 
         struct BBlock {
             x64::Cpu::BasicBlock cpuBasicBlock;
@@ -108,6 +88,10 @@ namespace emulator {
                 if(cpuBasicBlock.instructions.empty()) return {};
                 return cpuBasicBlock.instructions[0].first.address();
             }
+            std::optional<u64> end() const {
+                if(cpuBasicBlock.instructions.empty()) return {};
+                return cpuBasicBlock.instructions.back().first.nextAddress();
+            }
         };
 
         std::unordered_map<u64, std::unique_ptr<BBlock>> basicBlocks_;
@@ -116,9 +100,6 @@ namespace emulator {
 
         mutable SymbolProvider symbolProvider_;
         mutable std::unordered_map<u64, std::string> functionNameCache_;
-
-        std::unordered_map<u64, u64> instructionCount_;
-        std::vector<std::pair<u64, std::string>> instructionTypeAndExample_;
 
         friend class MunmapCallback;
     };
