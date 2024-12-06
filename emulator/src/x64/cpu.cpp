@@ -751,20 +751,17 @@ namespace x64 {
 
     Cpu::BasicBlock Cpu::createBasicBlock(const X64Instruction* instructions, size_t count) const {
         Cpu::BasicBlock bb;
-        bb.instructions.insert(bb.instructions.end(), instructions, instructions+count);
-        bb.execPtrs.reserve(count);
+        bb.instructions.reserve(count);
         for(size_t i = 0; i < count; ++i) {
-            bb.execPtrs.push_back(execFunctions_[(size_t)instructions[i].insn()]);
+            bb.instructions.push_back(std::make_pair(instructions[i], execFunctions_[(size_t)instructions[i].insn()]));
         }
         return bb;
     }
 
     void Cpu::exec(const BasicBlock& bb) {
-        assert(bb.execPtrs.size() == bb.instructions.size());
-        for(size_t i = 0; i < bb.execPtrs.size(); ++i) {
-            set(R64::RIP, bb.instructions[i].nextAddress());
-            // vm_->log(0, bb.instructions[i]);
-            bb.execPtrs[i](*this, bb.instructions[i]);
+        for(const auto& p : bb.instructions) {
+            set(R64::RIP, p.first.nextAddress());
+            p.second(*this, p.first);
         }
     }
 

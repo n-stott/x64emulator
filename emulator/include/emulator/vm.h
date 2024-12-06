@@ -106,7 +106,7 @@ namespace emulator {
 
             std::optional<u64> start() const {
                 if(cpuBasicBlock.instructions.empty()) return {};
-                return cpuBasicBlock.instructions[0].address();
+                return cpuBasicBlock.instructions[0].first.address();
             }
         };
 

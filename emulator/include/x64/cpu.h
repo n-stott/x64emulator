@@ -171,8 +171,7 @@ namespace x64 {
         void exec(const X64Instruction&);
 
         struct BasicBlock {
-            std::vector<X64Instruction> instructions;
-            std::vector<ExecPtr> execPtrs;
+            std::vector<std::pair<X64Instruction, ExecPtr>> instructions;
         };
 
         BasicBlock createBasicBlock(const X64Instruction*, size_t) const;
