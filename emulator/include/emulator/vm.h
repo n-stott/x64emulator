@@ -43,12 +43,14 @@ namespace emulator {
         friend class x64::Cpu;
         friend class kernel::Sys;
 
-        const x64::X64Instruction& fetchInstruction();
         void log(size_t ticks, const x64::X64Instruction& instruction) const;
 
+        struct BBlock;
+
+        BBlock* fetchBasicBlock();
+
         void notifyCall(u64 address);
-        void notifyRet(u64 address);
-        void notifyJmp(u64 address);
+        void notifyRet();
 
         void syncThread();
         void enterSyscall();
@@ -73,7 +75,6 @@ namespace emulator {
         };
 
         InstructionPosition findSectionWithAddress(u64 address, const ExecutableSection* sectionHint = nullptr) const;
-        void updateExecutionPoint(u64 address);
         std::string callName(const x64::X64Instruction& instruction) const;
         std::string calledFunctionName(u64 address) const;
 
@@ -95,10 +96,23 @@ namespace emulator {
         };
 
         kernel::Thread* currentThread_ { nullptr };
-        ExecutionPoint currentThreadExecutionPoint_;
 
         std::unordered_map<u64, ExecutionPoint> callCache_;
         std::unordered_map<u64, ExecutionPoint> jmpCache_;
+
+        struct BBlock {
+            x64::Cpu::BasicBlock cpuBasicBlock;
+            BBlock* cachedDestination { nullptr };
+
+            std::optional<u64> start() const {
+                if(cpuBasicBlock.instructions.empty()) return {};
+                return cpuBasicBlock.instructions[0].address();
+            }
+        };
+
+        std::unordered_map<u64, std::unique_ptr<BBlock>> basicBlocks_;
+        u64 blockCacheHits_ { 0 };
+        u64 blockCacheMisses_ { 0 };
 
         mutable SymbolProvider symbolProvider_;
         mutable std::unordered_map<u64, std::string> functionNameCache_;

@@ -919,6 +919,10 @@ namespace utils {
             case Insn::JE:
             case Insn::JNE:
             case Insn::JCC:
+            case Insn::CALLDIRECT:
+            case Insn::CALLINDIRECT_RM32:
+            case Insn::CALLINDIRECT_RM64:
+            case Insn::SYSCALL:
                 return true;
             default:
                 return false;

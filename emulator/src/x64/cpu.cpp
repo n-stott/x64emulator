@@ -749,6 +749,25 @@ namespace x64 {
         return execFunctions_[(size_t)insn.insn()](*this, insn);
     }
 
+    Cpu::BasicBlock Cpu::createBasicBlock(const X64Instruction* instructions, size_t count) const {
+        Cpu::BasicBlock bb;
+        bb.instructions.insert(bb.instructions.end(), instructions, instructions+count);
+        bb.execPtrs.reserve(count);
+        for(size_t i = 0; i < count; ++i) {
+            bb.execPtrs.push_back(execFunctions_[(size_t)instructions[i].insn()]);
+        }
+        return bb;
+    }
+
+    void Cpu::exec(const BasicBlock& bb) {
+        assert(bb.execPtrs.size() == bb.instructions.size());
+        for(size_t i = 0; i < bb.execPtrs.size(); ++i) {
+            set(R64::RIP, bb.instructions[i].nextAddress());
+            // vm_->log(0, bb.instructions[i]);
+            bb.execPtrs[i](*this, bb.instructions[i]);
+        }
+    }
+
     void Cpu::execAddRM8RM8(const X64Instruction& ins) {
         const auto& dst = ins.op0<RM8>();
         const auto& src = ins.op1<RM8>();
@@ -1693,14 +1712,14 @@ namespace x64 {
 
     void Cpu::execRet(const X64Instruction&) {
         regs_.rip() = pop64();
-        vm_->notifyRet(regs_.rip());
+        vm_->notifyRet();
     }
 
     void Cpu::execRetImm(const X64Instruction& ins) {
         const auto& src = ins.op0<Imm>();
         regs_.rip() = pop64();
         regs_.rsp() += get<u64>(src);
-        vm_->notifyRet(regs_.rip());
+        vm_->notifyRet();
     }
 
     void Cpu::execLeave(const X64Instruction&) {
@@ -2533,28 +2552,24 @@ namespace x64 {
     void Cpu::execJmpRM32(const X64Instruction& ins) {
         const auto& dst = ins.op0<RM32>();
         u64 dstValue = (u64)get(dst);
-        vm_->notifyJmp(dstValue);
         regs_.rip() = dstValue;
     }
 
     void Cpu::execJmpRM64(const X64Instruction& ins) {
         const auto& dst = ins.op0<RM64>();
         u64 dstValue = get(dst);
-        vm_->notifyJmp(dstValue);
         regs_.rip() = dstValue;
     }
 
     void Cpu::execJmpu32(const X64Instruction& ins) {
         const auto& dst = ins.op0<u32>();
         u64 dstValue = dst;
-        vm_->notifyJmp(dstValue);
         regs_.rip() = dstValue;
     }
 
     void Cpu::execJe(const X64Instruction& ins) {
         if(flags_.matches(Cond::E)) {
             u64 dst = ins.op0<u64>();
-            vm_->notifyJmp(dst);
             regs_.rip() = dst;
         }
     }
@@ -2562,7 +2577,6 @@ namespace x64 {
     void Cpu::execJne(const X64Instruction& ins) {
         if(flags_.matches(Cond::NE)) {
             u64 dst = ins.op0<u64>();
-            vm_->notifyJmp(dst);
             regs_.rip() = dst;
         }
     }
@@ -2571,7 +2585,6 @@ namespace x64 {
         const auto& cond = ins.op0<Cond>();
         if(flags_.matches(cond)) {
             u64 dst = ins.op1<u64>();
-            vm_->notifyJmp(dst);
             regs_.rip() = dst;
         }
     }

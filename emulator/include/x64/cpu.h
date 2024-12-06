@@ -6,6 +6,7 @@
 #include "x64/simd.h"
 #include "x64/x87.h"
 #include "x64/instructions/x64instruction.h"
+#include <vector>
 
 namespace emulator {
     class VM;
@@ -168,6 +169,15 @@ namespace x64 {
 
     public:
         void exec(const X64Instruction&);
+
+        struct BasicBlock {
+            std::vector<X64Instruction> instructions;
+            std::vector<ExecPtr> execPtrs;
+        };
+
+        BasicBlock createBasicBlock(const X64Instruction*, size_t) const;
+
+        void exec(const BasicBlock&);
 
         void execAddRM8RM8(const X64Instruction&);
         void execAddRM8Imm(const X64Instruction&);
