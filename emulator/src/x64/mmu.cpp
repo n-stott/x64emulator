@@ -94,7 +94,7 @@ namespace x64 {
         });
         length = pageRoundUp(length);
 
-        u64 baseAddress = (address != 0) ? address : firstFitPageAligned(length);
+        u64 baseAddress = flags.test(MAP::FIXED) ? address : firstFitPageAligned(length);
         std::unique_ptr<Region> region = makeRegion(baseAddress, length, prot);
         if(flags.test(MAP::FIXED)) {
             addRegionAndEraseExisting(std::move(region));

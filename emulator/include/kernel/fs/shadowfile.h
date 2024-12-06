@@ -61,6 +61,7 @@ namespace kernel {
         std::unique_ptr<ShadowFileHostData> hostData_;
         std::vector<u8> data_;
         bool writable_ { false };
+        bool isAppending_ { false };
     };
 
 }
