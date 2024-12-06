@@ -86,8 +86,7 @@ namespace kernel {
     }
 
     void ShadowFile::append() {
-        verify(false, "ShadowFile::append() not implemented");
-        (void)data_;
+        isAppending_ = true;
     }
 
     ErrnoOrBuffer ShadowFile::read(OpenFileDescription& openFileDescription, size_t count) {
@@ -103,6 +102,7 @@ namespace kernel {
 
     ssize_t ShadowFile::write(OpenFileDescription& openFileDescription, const u8* buf, size_t count) {
         if(!isWritable()) return -EINVAL;
+        if(isAppending_) openFileDescription.lseek(0, SEEK_END);
         off_t offset = openFileDescription.offset();
         if(offset < 0) return -EINVAL;
         if((size_t)offset + count > data_.size()) {
