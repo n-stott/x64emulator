@@ -353,7 +353,7 @@ namespace x64 {
 
     template<typename U>
     auto sameFlagsShift([[maybe_unused]] const Flags& a, [[maybe_unused]] const Flags& b, U src) {
-        if(src == 0) return;
+        if((src & 0x3f) == 0) return;
         assert(a.carry    == b.carry);
         assert(a.parity() == b.parity());
         assert(a.sign     == b.sign);
@@ -389,7 +389,7 @@ namespace x64 {
 
     template<typename U>
     auto sameFlagsShiftd([[maybe_unused]] const Flags& a, [[maybe_unused]] const Flags& b, U count) {
-        if(count == 0) return;
+        if((count & 0x3f) == 0) return;
         assert(a.carry    == b.carry);
         assert(a.parity() == b.parity());
         assert(a.sign     == b.sign);
