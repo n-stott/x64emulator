@@ -95,8 +95,12 @@ namespace emulator {
         };
 
         std::unordered_map<u64, std::unique_ptr<BBlock>> basicBlocks_;
+
+#ifdef VM_BASICBLOCK_TELEMETRY
         u64 blockCacheHits_ { 0 };
         u64 blockCacheMisses_ { 0 };
+        std::unordered_map<u64, u64> basicBlockCount_;
+#endif
 
         mutable SymbolProvider symbolProvider_;
         mutable std::unordered_map<u64, std::string> functionNameCache_;

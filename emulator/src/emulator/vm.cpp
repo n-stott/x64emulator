@@ -13,8 +13,30 @@ namespace emulator {
     VM::VM(x64::Mmu& mmu, kernel::Kernel& kernel) : mmu_(mmu), kernel_(kernel), cpu_(this, &mmu_) { }
 
     VM::~VM() {
+#ifdef VM_BASICBLOCK_TELEMETRY
         fmt::print("blockCacheHits  :{}\n", blockCacheHits_);
         fmt::print("blockCacheMisses:{}\n", blockCacheMisses_);
+
+        fmt::print("Executed {} different basic blocks\n", basicBlockCount_.size());
+        std::vector<std::pair<u64, u64>> cb(basicBlockCount_.begin(), basicBlockCount_.end());
+        std::sort(cb.begin(), cb.end(), [](const auto& a, const auto& b) {
+            if(a.second > b.second) return true;
+            if(a.second < b.second) return false;
+            return a.first < b.first;
+        });
+        fmt::print("Most executed basic blocks:\n");
+        for(size_t i = 0; i < std::min((size_t)10, cb.size()); ++i) {
+            u64 address = cb[i].first;
+            const auto* region = ((const x64::Mmu&)mmu_).findAddress(address);
+            fmt::print("{:#16x} : {} ({})\n", address, cb[i].second, region->name());
+
+            const auto& bb = basicBlocks_[address];
+            for(const auto& ins : bb->cpuBasicBlock.instructions) {
+                fmt::print("      {:#12x} {}\n", ins.first.address(), ins.first.toString());
+            }
+
+        }
+#endif
     }
 
     void VM::crash() {
@@ -103,31 +125,38 @@ namespace emulator {
         kernel::Thread::TickInfo& tickInfo = thread->tickInfo();
         BBlock* currentBasicBlock = nullptr;
         BBlock* nextBasicBlock = fetchBasicBlock();
-        while(!tickInfo.isStopAsked()) {
-            verify(!signal_interrupt);
-            verify(!!nextBasicBlock, "No nextBasicBlock");
-            std::swap(currentBasicBlock, nextBasicBlock);
-            verify(!!currentBasicBlock);
-            cpu_.exec(currentBasicBlock->cpuBasicBlock);
-            for(const auto& ins: currentBasicBlock->cpuBasicBlock.instructions) {
-                (void)ins;
-                tickInfo.tick();
-            }
+
+        auto findNextBasicBlock = [&]() {
             bool foundNextBlock = false;
             for(size_t i = 0; i < currentBasicBlock->cachedDestinations.size(); ++i) {
                 if(!currentBasicBlock->cachedDestinations[i]) continue;
                 if(currentBasicBlock->cachedDestinations[i]->start() != cpu_.regs_.rip()) continue;
                 nextBasicBlock = currentBasicBlock->cachedDestinations[i];
                 std::swap(currentBasicBlock->cachedDestinations[i], currentBasicBlock->cachedDestinations[0]);
+#ifdef VM_BASICBLOCK_TELEMETRY
                 ++blockCacheHits_;
+#endif
                 foundNextBlock = true;
                 break;
             }
             if(!foundNextBlock) {
                 nextBasicBlock = fetchBasicBlock();
                 currentBasicBlock->cachedDestinations.back() = nextBasicBlock;
+#ifdef VM_BASICBLOCK_TELEMETRY
                 ++blockCacheMisses_;
+#endif
             }
+        };
+
+        while(!tickInfo.isStopAsked()) {
+            verify(!signal_interrupt);
+            std::swap(currentBasicBlock, nextBasicBlock);
+#ifdef VM_BASICBLOCK_TELEMETRY
+            ++basicBlockCount_[currentBasicBlock->start().value_or(0)];
+#endif
+            cpu_.exec(currentBasicBlock->cpuBasicBlock);
+            tickInfo.tick(currentBasicBlock->cpuBasicBlock.instructions.size());
+            findNextBasicBlock();
         }
         assert(!!currentThread_);
     }

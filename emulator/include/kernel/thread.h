@@ -63,6 +63,7 @@ namespace kernel {
             }
 
             void tick() { ++current_; }
+            void tick(u64 count) { current_ += count; }
             size_t current() const { return current_; }
             TimeDifference timeElapsedThisSlice() const { return TimeDifference::fromNanoSeconds(current_ - start_); }
             void setSlice(size_t start, size_t end) {
