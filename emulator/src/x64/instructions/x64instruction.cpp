@@ -606,9 +606,9 @@ namespace utils {
             case Insn::CMPXCHG_RM32_R32: return toString<RM32, R32>("cmpxchg");
             case Insn::CMPXCHG_RM64_R64: return toString<RM64, R64>("cmpxchg");
             case Insn::LOCK_CMPXCHG_M8_R8: return toString<RM8, R8>("lock cmpxchg");
-            case Insn::LOCK_CMPXCHG_M16_R16: return toString<RM16, R16>("lock cmpxchg");
-            case Insn::LOCK_CMPXCHG_M32_R32: return toString<RM32, R32>("lock cmpxchg");
-            case Insn::LOCK_CMPXCHG_M64_R64: return toString<RM64, R64>("lock cmpxchg");
+            case Insn::LOCK_CMPXCHG_M16_R16: return toString<M16, R16>("lock cmpxchg");
+            case Insn::LOCK_CMPXCHG_M32_R32: return toString<M32, R32>("lock cmpxchg");
+            case Insn::LOCK_CMPXCHG_M64_R64: return toString<M64, R64>("lock cmpxchg");
             case Insn::SET_RM8: return toString<Cond, RM8>("set");
             case Insn::JMP_RM32: return toString<RM32>("jmp");
             case Insn::JMP_RM64: return toString<RM64>("jmp");

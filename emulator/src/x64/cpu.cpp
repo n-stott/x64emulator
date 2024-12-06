@@ -3097,22 +3097,22 @@ namespace x64 {
     void Cpu::execLockCmpxchgM8R8(const X64Instruction& ins) {
         const auto& src1 = ins.op0<M8>();
         const auto& src2 = ins.op1<R8>();
-        execCmpxchg8Impl(resolve(src1), get(src2));
+        execLockCmpxchg8Impl(resolve(src1), get(src2));
     }
     void Cpu::execLockCmpxchgM16R16(const X64Instruction& ins) {
         const auto& src1 = ins.op0<M16>();
         const auto& src2 = ins.op1<R16>();
-        execCmpxchg16Impl(resolve(src1), get(src2));
+        execLockCmpxchg16Impl(resolve(src1), get(src2));
     }
     void Cpu::execLockCmpxchgM32R32(const X64Instruction& ins) {
         const auto& src1 = ins.op0<M32>();
         const auto& src2 = ins.op1<R32>();
-        execCmpxchg32Impl(resolve(src1), get(src2));
+        execLockCmpxchg32Impl(resolve(src1), get(src2));
     }
     void Cpu::execLockCmpxchgM64R64(const X64Instruction& ins) {
         const auto& src1 = ins.op0<M64>();
         const auto& src2 = ins.op1<R64>();
-        execCmpxchg64Impl(resolve(src1), get(src2));
+        execLockCmpxchg64Impl(resolve(src1), get(src2));
     }
 
     template<typename Dst>
