@@ -60,7 +60,9 @@ int main() {
         mainThread.savedCpuState().regs.rip() = execPage;
         mainThread.savedCpuState().regs.set(R64::RDI, dataPage);
         mainThread.tickInfo().setSlice(0, 15);
-        vm.execute(&mainThread);
+        VerificationScope::run([&]() {
+            vm.execute(&mainThread);
+        }, []() { });
         length = mainThread.savedCpuState().regs.get(R64::RAX);
     }, [&]() {
         errorEncountered = true;

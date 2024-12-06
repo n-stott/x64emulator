@@ -84,9 +84,22 @@ namespace emulator {
 
     extern bool signal_interrupt;
 
+    class Context {
+    public:
+        explicit Context(VM& vm, kernel::Thread* thread) : vm_(&vm) {
+            vm_->contextSwitch(thread);
+        }
+
+        ~Context() {
+            vm_->contextSwitch(nullptr);
+        }
+    private:
+        VM* vm_;
+    };
+
     void VM::execute(kernel::Thread* thread) {
         if(!thread) return;
-        contextSwitch(thread);
+        Context context(*this, thread);
         kernel::Thread::TickInfo& tickInfo = thread->tickInfo();
         BBlock* currentBasicBlock = nullptr;
         BBlock* nextBasicBlock = fetchBasicBlock();
@@ -117,7 +130,6 @@ namespace emulator {
             }
         }
         assert(!!currentThread_);
-        contextSwitch(nullptr);
     }
 
     VM::BBlock* VM::fetchBasicBlock() {
