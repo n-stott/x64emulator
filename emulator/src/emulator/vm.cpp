@@ -162,7 +162,7 @@ namespace emulator {
         BBlock* nextBasicBlock = fetchBasicBlock();
         while(!tickInfo.isStopAsked()) {
             verify(!signal_interrupt);
-            verify(!!nextBasicBlock);
+            verify(!!nextBasicBlock, "No nextBasicBlock");
             std::swap(currentBasicBlock, nextBasicBlock);
             verify(!!currentBasicBlock);
             cpu_.exec(currentBasicBlock->cpuBasicBlock);
@@ -170,12 +170,19 @@ namespace emulator {
                 (void)ins;
                 tickInfo.tick();
             }
-            if(currentBasicBlock->cachedDestination && currentBasicBlock->cachedDestination->start() == cpu_.regs_.rip()) {
-                nextBasicBlock = currentBasicBlock->cachedDestination;
+            bool foundNextBlock = false;
+            for(size_t i = 0; i < currentBasicBlock->cachedDestinations.size(); ++i) {
+                if(!currentBasicBlock->cachedDestinations[i]) continue;
+                if(currentBasicBlock->cachedDestinations[i]->start() != cpu_.regs_.rip()) continue;
+                nextBasicBlock = currentBasicBlock->cachedDestinations[i];
+                std::swap(currentBasicBlock->cachedDestinations[i], currentBasicBlock->cachedDestinations[0]);
                 ++blockCacheHits_;
-            } else {
+                foundNextBlock = true;
+                break;
+            }
+            if(!foundNextBlock) {
                 nextBasicBlock = fetchBasicBlock();
-                currentBasicBlock->cachedDestination = nextBasicBlock;
+                currentBasicBlock->cachedDestinations.back() = nextBasicBlock;
                 ++blockCacheMisses_;
             }
         }

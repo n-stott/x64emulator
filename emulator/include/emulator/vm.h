@@ -102,7 +102,7 @@ namespace emulator {
 
         struct BBlock {
             x64::Cpu::BasicBlock cpuBasicBlock;
-            BBlock* cachedDestination { nullptr };
+            std::array<BBlock*, 2> cachedDestinations {{ nullptr, nullptr }};
 
             std::optional<u64> start() const {
                 if(cpuBasicBlock.instructions.empty()) return {};
