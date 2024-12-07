@@ -35,13 +35,16 @@ namespace kernel {
                 {
                     std::unique_lock lock(schedulerMutex_);
                     schedulerHasRunnableThread_.wait(lock, [&]{
-                        return this->hasRunnableThread()  // we want to run an available thread
+                        return !kernel_.hasPanicked()     // something bad happened
+                            || this->hasRunnableThread()  // we want to run an available thread
                             || this->allThreadsDead()     // we need to exit because all threads are dead
                             || this->hasSleepingThread()  // we need to exit to test the sleep condition
                             || this->allThreadsBlocked(); // we have a deadlock :(
                     });
 
-                    assert(hasRunnableThread() || allThreadsDead() || this->hasSleepingThread() || allThreadsBlocked());
+                    assert(kernel_.hasPanicked() || hasRunnableThread() || allThreadsDead() || this->hasSleepingThread() || allThreadsBlocked());
+                    if(kernel_.hasPanicked()) break;
+
                     threadToRun = pickNext();
                 }
 
