@@ -283,6 +283,9 @@ namespace x64 {
 
     template<typename T, Size s>
     T Mmu::read(SPtr<s> ptr) const {
+#ifdef MULTIPROCESSING
+        verify(!syscallInProgress_, "Cannot read from mmu during syscall");
+#endif
         static_assert(sizeof(T) == pointerSize(s));
         u64 address = ptr.address();
         const u8* dataPtr = getReadPtr(address);
@@ -315,6 +318,9 @@ namespace x64 {
 
     template<typename T, Size s>
     void Mmu::write(SPtr<s> ptr, T value) {
+#ifdef MULTIPROCESSING
+        verify(!syscallInProgress_, "Cannot write to mmu during syscall");
+#endif
         static_assert(sizeof(T) == pointerSize(s));
         u64 address = ptr.address();
 #ifdef MULTIPROCESSING
@@ -326,7 +332,7 @@ namespace x64 {
 #endif
         u8* dataPtr = getWritePtr(address);
         verify(!!dataPtr, [&]() {
-            fmt::print("Read lookup for {:#x} is null\n", address);
+            fmt::print("Write lookup for {:#x} is null\n", address);
         });
         ::memcpy(dataPtr, &value, sizeof(T));
 #if DEBUG_MMU
@@ -566,6 +572,9 @@ namespace x64 {
     }
 
     u64 Mmu::brk(u64 address) {
+#ifdef MULTIPROCESSING
+        SyscallGuard guard(*this);
+#endif
         Region* region = findRegion("heap");
         verify(!!region, "brk: program has no heap");
         if(region->contains(address)) return address;

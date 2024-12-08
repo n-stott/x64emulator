@@ -264,6 +264,23 @@ namespace x64 {
         u64 firstUnlookupdableAddress_ { 0 };
         std::vector<MunmapCallback*> callbacks_;
 
+#ifdef MULTIPROCESSING
+        std::atomic<bool> syscallInProgress_ { false };
+        class SyscallGuard {
+        public:
+            SyscallGuard(Mmu& mmu) : mmu_(&mmu) {
+                mmu_->syscallInProgress_ = true;
+            }
+
+            ~SyscallGuard() {
+                mmu_->syscallInProgress_ = false;
+            }
+
+        private:
+            Mmu* mmu_;
+        };
+#endif
+
         void fillRegionLookup(Region* region);
         void invalidateRegionLookup(Region* region);
 
