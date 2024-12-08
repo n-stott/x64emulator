@@ -107,7 +107,15 @@ add_test(NAME threadlocal2 COMMAND ${CMAKE_BINARY_DIR}/emulator/emulator test_th
 add_executable(test_thread_scaling src/test_thread_scaling.cpp)
 target_compile_options(test_thread_scaling PUBLIC ${CC_OPTIONS})
 target_link_libraries(test_thread_scaling PUBLIC pthread)
+if(MULTIPROCESSING)
+    target_compile_definitions(test_thread_scaling PUBLIC MULTIPROCESSING=1)
+endif(MULTIPROCESSING)
 add_test(NAME thread_scaling COMMAND ${CMAKE_BINARY_DIR}/emulator/emulator test_thread_scaling)
+
+add_executable(test_thread_wait src/test_thread_wait.cpp)
+target_compile_options(test_thread_wait PUBLIC ${CC_OPTIONS})
+target_link_libraries(test_thread_wait PUBLIC pthread)
+add_test(NAME thread_wait COMMAND ${CMAKE_BINARY_DIR}/emulator/emulator test_thread_wait)
 
 add_executable(test_atomic src/test_atomic.cpp)
 target_compile_options(test_atomic PUBLIC ${CC_OPTIONS})
