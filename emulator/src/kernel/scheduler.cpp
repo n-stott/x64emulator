@@ -22,7 +22,7 @@ namespace kernel {
     void Scheduler::syncThreadTimeSlice(Thread* thread) {
         verify(!!thread);
         std::unique_lock lock(schedulerMutex_);
-        currentTime_ = std::max(currentTime_, currentTime_ + thread->tickInfo().timeElapsedThisSlice());
+        currentTime_ = std::max(currentTime_, thread->tickInfo().currentTime());
     }
 
     void Scheduler::runOnWorkerThread(int id) {
