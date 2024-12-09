@@ -93,6 +93,7 @@ namespace host {
                            | 1 << 9  // SSE3 extension
                            | 1 << 19 // SSE4.1
                            | 1 << 20 // SSE4.2
+                           | 1 << 25 // aes
                            | 1 << 26 // xsave
                            | 1 << 27 // xsave by os
                            | 1 << 28 // AVX
