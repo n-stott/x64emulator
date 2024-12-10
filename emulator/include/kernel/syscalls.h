@@ -307,6 +307,8 @@ namespace kernel {
         int clock_nanosleep(clockid_t clockid, int flags, x64::Ptr request, x64::Ptr remain);
         // 0xe7
         u64 exit_group(int status);
+        // 0xe9
+        int epoll_ctl(int epfd, int op, int fd, x64::Ptr event);
         // 0xea
         int tgkill(int tgid, int tid, int sig);
         // 0xed

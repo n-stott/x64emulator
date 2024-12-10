@@ -181,6 +181,18 @@ namespace kernel {
         return flags & ~(EPOLL_CLOEXEC);
     }
 
+    bool Host::EpollCtlOp::isAdd(int op) {
+        return op == EPOLL_CTL_ADD;
+    }
+
+    bool Host::EpollCtlOp::isMod(int op) {
+        return op == EPOLL_CTL_MOD;
+    }
+
+    bool Host::EpollCtlOp::isDel(int op) {
+        return op == EPOLL_CTL_DEL;
+    }
+
     bool Host::SocketType::isCloseOnExec(int type) {
         return type & SOCK_CLOEXEC;
     }

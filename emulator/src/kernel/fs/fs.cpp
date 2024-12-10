@@ -756,6 +756,24 @@ namespace kernel {
         return insertNode(std::move(epoll), accessMode, statusFlags, closeOnExec);
     }
 
+    int FS::epoll_ctl(FD epfd, int op, FD fd, u32 events, u64 data) {
+        OpenFileDescription* openFileDescription = findOpenFileDescription(epfd);
+        if(!openFileDescription) return -EBADF;
+        if(!openFileDescription->file()->isEpoll()) return -EBADF;
+        Epoll* epoll = static_cast<Epoll*>(openFileDescription->file());
+        if(Host::EpollCtlOp::isAdd(op)) {
+            auto ret = epoll->addEntry(fd.fd, events, data);
+            return ret.errorOr(0);
+        } else if(Host::EpollCtlOp::isMod(op)) {
+            auto ret = epoll->changeEntry(fd.fd, events, data);
+            return ret.errorOr(0);
+        } else {
+            verify(Host::EpollCtlOp::isDel(op), "Unknown epoll_ctl op");
+            auto ret = epoll->deleteEntry(fd.fd);
+            return ret.errorOr(0);
+        }
+    }
+
     FS::FD FS::socket(int domain, int type, int protocol) {
         auto socket = Socket::tryCreate(this, domain, type, protocol);
         // TODO: return the actual value of errno

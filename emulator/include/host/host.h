@@ -101,6 +101,12 @@ namespace kernel {
             static bool isOther(int flags);
         };
 
+        struct EpollCtlOp {
+            static bool isAdd(int op);
+            static bool isMod(int op);
+            static bool isDel(int op);
+        };
+
         struct SocketType {
             static bool isCloseOnExec(int type);
             static bool isNonBlock(int type);

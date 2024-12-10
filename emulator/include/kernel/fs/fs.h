@@ -145,6 +145,7 @@ namespace kernel {
 
         FD eventfd2(unsigned int initval, int flags);
         FD epoll_create1(int flags);
+        int epoll_ctl(FD epfd, int op, FD fd, u32 events, u64 data);
 
         FD socket(int domain, int type, int protocol);
         int connect(FD sockfd, const Buffer& buffer);

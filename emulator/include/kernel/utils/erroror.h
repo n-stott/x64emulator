@@ -1,6 +1,7 @@
 #ifndef ERROROR_H
 #define ERROROR_H
 
+#include <optional>
 #include <type_traits>
 #include <variant>
 
@@ -31,6 +32,23 @@ namespace kernel {
 
     private:
         std::variant<int, Value> data_;
+    };
+
+    template<>
+    class ErrnoOr<void> {
+    public:
+        explicit ErrnoOr(int err) : err_(err) { }
+
+        bool isError() const {
+            return !!err_;
+        }
+
+        int errorOr(int value) const {
+            return err_.value_or(value);
+        }
+
+    private:
+        std::optional<int> err_;
     };
 
     class Buffer;

@@ -141,6 +141,7 @@ namespace kernel {
             case 0xe5: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::clock_getres, regs));
             case 0xe6: return threadRegs.set(x64::R64::RAX, invoke_syscall_4(&Sys::clock_nanosleep, regs));
             case 0xe7: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::exit_group, regs));
+            case 0xe9: return threadRegs.set(x64::R64::RAX, invoke_syscall_4(&Sys::epoll_ctl, regs));
             case 0xea: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::tgkill, regs));
             case 0xed: return threadRegs.set(x64::R64::RAX, invoke_syscall_6(&Sys::mbind, regs));
             case 0xfd: return threadRegs.set(x64::R64::RAX, invoke_syscall_0(&Sys::inotify_init, regs));
@@ -1078,6 +1079,20 @@ namespace kernel {
         if(logSyscalls_) print("Sys::exit_group(status={})\n", status);
         kernel_.scheduler().terminateAll(status);
         return (u64)status;
+    }
+
+    int Sys::epoll_ctl(int epfd, int op, int fd, x64::Ptr event) {
+        verify(!!event, "Null event in epoll_ctl not supported");
+        struct EpollEvent {
+            i32 event;
+            u64 data;
+        };
+        EpollEvent ee = mmu_.readFromMmu<EpollEvent>(event);
+        int ret = kernel_.fs().epoll_ctl(FS::FD{epfd}, op, FS::FD{fd}, ee.event, ee.data);
+        if(logSyscalls_) {
+            print("Sys::epoll_ctl(epfd={}, op={}, fd={}, event={:#x})\n", epfd, op, fd, event.address(), ret);
+        }
+        return ret;
     }
 
     int Sys::tgkill(int tgid, int tid, int sig) {
