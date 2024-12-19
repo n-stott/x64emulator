@@ -122,6 +122,11 @@ namespace kernel {
                 if(ret < 0) return ErrnoOrBuffer(-errno);
                 return ErrnoOrBuffer(Buffer{});
             }
+            case FIONBIO: {
+                int ret = ::ioctl(hostFd_.value(), FIONBIO, nullptr);
+                if(ret < 0) return ErrnoOrBuffer(-errno);
+                return ErrnoOrBuffer(Buffer{});
+            }
             case TIOCGWINSZ: {
                 verify(buffer.size() == sizeof(struct winsize));
                 int ret = ::ioctl(hostFd_.value(), TIOCGWINSZ, buffer.data());

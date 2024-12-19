@@ -474,6 +474,7 @@ namespace kernel {
             case TCSETS: return sizeof(termios);
             case FIOCLEX:
             case FIONCLEX: return 0;
+            case FIONBIO: return 0;
             case TIOCGWINSZ: 
             case TIOCSWINSZ: return sizeof(winsize);
             case TCSETSW: return sizeof(termios);
