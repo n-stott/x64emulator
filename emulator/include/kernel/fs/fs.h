@@ -1,6 +1,7 @@
 #ifndef FS_H
 #define FS_H
 
+#include "kernel/fs/ioctl.h"
 #include "kernel/utils/buffer.h"
 #include "kernel/utils/erroror.h"
 #include "bitflags.h"
@@ -135,8 +136,8 @@ namespace kernel {
 
         ErrnoOrBuffer getdents64(FD fd, size_t count);
         int fcntl(FD fd, int cmd, int arg);
-        ErrnoOrBuffer ioctl(FD fd, unsigned long request, const Buffer& buffer);
-        ErrnoOrBuffer ioctlWithBufferSizeGuess(FD fd, unsigned long request, const Buffer& buffer);
+
+        ErrnoOrBuffer ioctl(FD fd, Ioctl request, const Buffer& buffer);
 
         int flock(FD fd, int operation);
 

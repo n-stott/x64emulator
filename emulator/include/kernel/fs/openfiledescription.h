@@ -86,6 +86,8 @@ namespace kernel {
             return newoffset;
         }
 
+        ErrnoOrBuffer ioctl(Ioctl request, const Buffer& buffer);
+
         std::string toString() const {
             return file_->className();
         }

@@ -2,6 +2,7 @@
 #define FILE_H
 
 #include "kernel/fs/fsobject.h"
+#include "kernel/fs/ioctl.h"
 #include "kernel/utils/buffer.h"
 #include "kernel/utils/erroror.h"
 #include <sys/types.h>
@@ -78,8 +79,7 @@ namespace kernel {
         // or empty otherwise
         virtual std::optional<int> fcntl(int cmd, int arg) = 0;
 
-        virtual ErrnoOrBuffer ioctl(unsigned long request, const Buffer& buffer) = 0;
-        virtual ErrnoOrBuffer ioctlWithBufferSizeGuess(unsigned long request, const Buffer& buffer);
+        virtual ErrnoOrBuffer ioctl(OpenFileDescription&, Ioctl request, const Buffer& buffer) = 0;
 
         virtual std::string className() const = 0;
 

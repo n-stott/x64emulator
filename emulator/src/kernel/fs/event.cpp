@@ -83,8 +83,8 @@ namespace kernel {
         return -ENOTSUP;
     }
 
-    ErrnoOrBuffer Event::ioctl(unsigned long request, const Buffer&) {
-        verify(false, fmt::format("ioctl(request={}) not implemented on event", request));
+    ErrnoOrBuffer Event::ioctl(OpenFileDescription&, Ioctl request, const Buffer&) {
+        verify(false, fmt::format("ioctl(request={}) not implemented on event", (int)request));
         return ErrnoOrBuffer(-ENOTSUP);
     }
 

@@ -191,8 +191,8 @@ namespace kernel {
         return -EINVAL;
     }
 
-    ErrnoOrBuffer ShadowFile::ioctl(unsigned long request, const Buffer&) {
-        verify(false, [&]() { fmt::print("ShadowFile::ioctl({:#x}) not implemented", request); });
+    ErrnoOrBuffer ShadowFile::ioctl(OpenFileDescription&, Ioctl request, const Buffer&) {
+        verify(false, [&]() { fmt::print("ShadowFile::ioctl({:#x}) not implemented", (int)request); });
         return ErrnoOrBuffer(-ENOTSUP);
     }
 

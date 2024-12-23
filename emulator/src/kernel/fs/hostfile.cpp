@@ -145,9 +145,9 @@ namespace kernel {
         return Host::fcntl(Host::FD{hostFd_}, cmd, arg);
     }
 
-    ErrnoOrBuffer HostFile::ioctl(unsigned long request, const Buffer& inputBuffer) {
+    ErrnoOrBuffer HostFile::ioctl(OpenFileDescription&, Ioctl request, const Buffer& inputBuffer) {
         switch(request) {
-            case TCGETS: {
+            case Ioctl::tcgets: {
                 struct termios ts;
                 int ret = ::ioctl(hostFd_, TCGETS, &ts);
                 if(ret < 0) return ErrnoOrBuffer(-errno);
@@ -156,17 +156,17 @@ namespace kernel {
                 std::memcpy(buffer.data(), &ts, sizeof(ts));
                 return ErrnoOrBuffer(Buffer{std::move(buffer)});
             }
-            case FIOCLEX: {
+            case Ioctl::fioclex: {
                 int ret = ::ioctl(hostFd_, FIOCLEX, nullptr);
                 if(ret < 0) return ErrnoOrBuffer(-errno);
                 return ErrnoOrBuffer(Buffer{});
             }
-            case FIONCLEX: {
+            case Ioctl::fionclex: {
                 int ret = ::ioctl(hostFd_, FIONCLEX, nullptr);
                 if(ret < 0) return ErrnoOrBuffer(-errno);
                 return ErrnoOrBuffer(Buffer{});
             }
-            case TIOCGWINSZ: {
+            case Ioctl::tiocgwinsz: {
                 struct winsize ws;
                 int ret = ::ioctl(hostFd_, TIOCGWINSZ, &ws);
                 if(ret < 0) return ErrnoOrBuffer(-errno);
@@ -175,14 +175,14 @@ namespace kernel {
                 std::memcpy(buffer.data(), &ws, sizeof(ws));
                 return ErrnoOrBuffer(Buffer{std::move(buffer)});
             }
-            case TIOCSWINSZ: {
+            case Ioctl::tiocswinsz: {
                 struct winsize ws;
                 std::memcpy(&ws, inputBuffer.data(), sizeof(ws));
                 int ret = ::ioctl(hostFd_, TIOCSWINSZ, &ws);
                 if(ret < 0) return ErrnoOrBuffer(-errno);
                 return ErrnoOrBuffer(Buffer{});
             }
-            case TCSETSW: {
+            case Ioctl::tcsetsw: {
                 struct termios ts;
                 std::memcpy(&ts, inputBuffer.data(), sizeof(ts));
                 int ret = ::ioctl(hostFd_, TCSETSW, &ts);
@@ -192,7 +192,7 @@ namespace kernel {
             default: break;
         }
         verify(false, [&]() {
-            fmt::print("implement ioctl {:#x} on HostFile\n", request);
+            fmt::print("implement ioctl {:#x} on HostFile\n", (int)request);
         });
         return ErrnoOrBuffer(-ENOTSUP);
     }

@@ -33,9 +33,4 @@ namespace kernel {
         return ErrnoOrBuffer(-ENOTSUP);
     }
 
-    ErrnoOrBuffer File::ioctlWithBufferSizeGuess(unsigned long request, const Buffer&) {
-        verify(false, fmt::format("File::ioctlWithBufferSizeGuess(request={:#x}) not implemented for file type {}\n", request, className()));
-        return ErrnoOrBuffer(-ENOTSUP);
-    }
-
 }

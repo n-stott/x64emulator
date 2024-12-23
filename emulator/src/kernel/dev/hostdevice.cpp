@@ -104,7 +104,7 @@ namespace kernel {
         return Host::fcntl(Host::FD{hostFd_}, cmd, arg);
     }
 
-    ErrnoOrBuffer HostDevice::ioctl(unsigned long, const Buffer&) {
+    ErrnoOrBuffer HostDevice::ioctl(OpenFileDescription&, Ioctl, const Buffer&) {
         verify(false, "HostDevice::ioctl not implemented");
         return ErrnoOrBuffer(-ENOTSUP);
     }

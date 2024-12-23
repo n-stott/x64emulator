@@ -109,8 +109,8 @@ namespace kernel {
         return -ENOTSUP;
     }
 
-    ErrnoOrBuffer Directory::ioctl(unsigned long request, const Buffer&) {
-        verify(false, fmt::format("ioctl(request={}) not implemented on directory", request));
+    ErrnoOrBuffer Directory::ioctl(OpenFileDescription&, Ioctl request, const Buffer&) {
+        verify(false, fmt::format("ioctl(request={}) not implemented on directory", (int)request));
         return ErrnoOrBuffer(-ENOTSUP);
     }
 

@@ -249,8 +249,8 @@ namespace kernel {
         return ErrnoOrBuffer(-ENOTSUP);
     }
 
-    ErrnoOrBuffer Socket::ioctl(unsigned long request, const Buffer&) {
-        verify(false, fmt::format("ioctl(request={}) not implemented on socket", request));
+    ErrnoOrBuffer Socket::ioctl(OpenFileDescription&, Ioctl request, const Buffer&) {
+        verify(false, fmt::format("ioctl(request={}) not implemented on socket", (int)request));
         return ErrnoOrBuffer(-ENOTSUP);
     }
     

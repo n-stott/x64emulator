@@ -114,8 +114,8 @@ namespace kernel {
         return {};
     }
 
-    ErrnoOrBuffer PipeEndpoint::ioctl(unsigned long request, const Buffer&) {
-        verify(false, fmt::format("ioctl(request={}) not implemented on PipeEndpoint", request));
+    ErrnoOrBuffer PipeEndpoint::ioctl(OpenFileDescription&, Ioctl request, const Buffer&) {
+        verify(false, fmt::format("ioctl(request={}) not implemented on PipeEndpoint", (int)request));
         return ErrnoOrBuffer(-ENOTSUP);
     }
 

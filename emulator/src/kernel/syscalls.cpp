@@ -397,7 +397,21 @@ namespace kernel {
         std::vector<u8> buf(bufferSize.value(), 0x0);
         Buffer buffer(std::move(buf));
         mmu_.copyFromMmu(buffer.data(), argp, buffer.size());
-        auto errnoOrBuffer = kernel_.fs().ioctl(FS::FD{fd}, request, buffer);
+
+        auto fsrequest = [](unsigned long hostRequest) -> std::optional<Ioctl> {
+            if(Host::Ioctl::isFIOCLEX(hostRequest)) return Ioctl::fioclex;
+            if(Host::Ioctl::isFIONCLEX(hostRequest)) return Ioctl::fionclex;
+            if(Host::Ioctl::isFIONBIO(hostRequest)) return Ioctl::fionbio;
+            if(Host::Ioctl::isTCGETS(hostRequest)) return Ioctl::tcgets;
+            if(Host::Ioctl::isTCSETS(hostRequest)) return Ioctl::tcsets;
+            if(Host::Ioctl::isTCSETSW(hostRequest)) return Ioctl::tcsetsw;
+            if(Host::Ioctl::isTIOCGWINSZ(hostRequest)) return Ioctl::tiocgwinsz;
+            if(Host::Ioctl::isTIOCSWINSZ(hostRequest)) return Ioctl::tiocswinsz;
+            if(Host::Ioctl::isTIOCGPGRP(hostRequest)) return Ioctl::tiocgpgrp;
+            return {};
+        }(request);
+        verify(!!fsrequest, "Unknown request");
+        auto errnoOrBuffer = kernel_.fs().ioctl(FS::FD{fd}, fsrequest.value(), buffer);
         if(logSyscalls_) {
             print("Sys::ioctl(fd={}, request={}, argp={:#x}) = {}\n",
                         fd, Host::ioctlName(request), argp.address(),

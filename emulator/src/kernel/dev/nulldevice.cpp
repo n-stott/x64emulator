@@ -52,7 +52,7 @@ namespace kernel {
         return -ENOTSUP;
     }
 
-    ErrnoOrBuffer NullDevice::ioctl(unsigned long, const Buffer&) {
+    ErrnoOrBuffer NullDevice::ioctl(OpenFileDescription&, Ioctl, const Buffer&) {
         return ErrnoOrBuffer(-ENOTTY);
     }
 }

@@ -113,13 +113,13 @@ namespace kernel {
         return -ENOTSUP;
     }
 
-    ErrnoOrBuffer ShadowDevice::ioctl(unsigned long request, const Buffer& inputBuffer) {
+    ErrnoOrBuffer ShadowDevice::ioctl(OpenFileDescription&, Ioctl request, const Buffer& inputBuffer) {
         if(!hostFd_) {
             verify(false, "ShadowDevice without host backer is not implemented");
             return ErrnoOrBuffer(-ENOTSUP);
         }
         switch(request) {
-            case TCGETS: {
+            case Ioctl::tcgets: {
                 struct termios ts;
                 int ret = ::ioctl(hostFd_.value(), TCGETS, &ts);
                 if(ret < 0) return ErrnoOrBuffer(-errno);
@@ -128,7 +128,7 @@ namespace kernel {
                 std::memcpy(buffer.data(), &ts, sizeof(ts));
                 return ErrnoOrBuffer(Buffer{std::move(buffer)});
             }
-            case TIOCGPGRP: {
+            case Ioctl::tiocgpgrp: {
                 assert(inputBuffer.size() == sizeof(pid_t));
                 pid_t pid;
                 std::memcpy(&pid, inputBuffer.data(), sizeof(pid));
@@ -138,31 +138,8 @@ namespace kernel {
             }
             default: break;
         }
-        verify(false, fmt::format("ShadowDevice::ioctl({:#x}) not implemented", request));
+        verify(false, fmt::format("ShadowDevice::ioctl({:#x}) not implemented", (int)request));
         return ErrnoOrBuffer(-ENOTSUP);
-    }
-
-    ErrnoOrBuffer ShadowDevice::ioctlWithBufferSizeGuess(unsigned long request, const Buffer& inputBuffer) {
-        if(!hostFd_) {
-            verify(false, "ShadowDevice without host backer is not implemented");
-            return ErrnoOrBuffer(-ENOTSUP);
-        }
-        auto guessedSize = Host::tryGuessIoctlBufferSize(Host::FD{hostFd_.value()}, request, inputBuffer.data(), inputBuffer.size());
-        if(!guessedSize) {
-            verify(false, "Unable to guess size");
-            return ErrnoOrBuffer(-ENOTSUP);
-        } else {
-            fmt::print("Guessed size={} (max={})\n", guessedSize.value(), inputBuffer.size());
-            ssize_t sizeOrErrno = guessedSize.value();
-            if(sizeOrErrno < 0) {
-                return ErrnoOrBuffer((int)sizeOrErrno);
-            } else {
-                std::vector<u8> buffer(sizeOrErrno);
-                int ret = ::ioctl(hostFd_.value(), request, buffer.data());
-                verify(ret == 0, "ioctl succeeded during guess, it should succeed now ?");
-                return ErrnoOrBuffer(Buffer(std::move(buffer)));
-            }
-        }
     }
 
 }

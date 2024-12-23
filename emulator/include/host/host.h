@@ -154,6 +154,18 @@ namespace kernel {
 
         static CloneFlags fromCloneFlags(unsigned long flags);
 
+        struct Ioctl {
+            static bool isFIOCLEX(unsigned long request);
+            static bool isFIONCLEX(unsigned long request);
+            static bool isTCGETS(unsigned long request);
+            static bool isTCSETS(unsigned long request);
+            static bool isTCSETSW(unsigned long request);
+            static bool isFIONBIO(unsigned long request);
+            static bool isTIOCGWINSZ(unsigned long request);
+            static bool isTIOCSWINSZ(unsigned long request);
+            static bool isTIOCGPGRP(unsigned long request);
+        };
+
         static FD cwdfd();
 
         static size_t iovecRequiredBufferSize();

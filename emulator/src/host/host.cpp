@@ -249,6 +249,34 @@ namespace kernel {
         return cloneFlags;
     }
 
+    bool Host::Ioctl::isFIOCLEX(unsigned long request) {
+        return request == FIOCLEX;
+    }
+    bool Host::Ioctl::isFIONCLEX(unsigned long request) {
+        return request == FIONCLEX;
+    }
+    bool Host::Ioctl::isFIONBIO(unsigned long request) {
+        return request == FIONBIO;
+    }
+    bool Host::Ioctl::isTCGETS(unsigned long request) {
+        return request == TCGETS;
+    }
+    bool Host::Ioctl::isTCSETS(unsigned long request) {
+        return request == TCSETS;
+    }
+    bool Host::Ioctl::isTCSETSW(unsigned long request) {
+        return request == TCSETSW;
+    }
+    bool Host::Ioctl::isTIOCGWINSZ(unsigned long request) {
+        return request == TIOCGWINSZ;
+    }
+    bool Host::Ioctl::isTIOCSWINSZ(unsigned long request) {
+        return request == TIOCSWINSZ;
+    }
+    bool Host::Ioctl::isTIOCGPGRP(unsigned long request) {
+        return request == TIOCGPGRP;
+    }
+
     Host::FD Host::cwdfd() {
         return FD{AT_FDCWD};
     }
@@ -375,9 +403,12 @@ namespace kernel {
 
     std::string Host::ioctlName(unsigned long request) {
         switch(request) {
-            case TCGETS: return "TCGETS";
             case FIOCLEX: return "FIOCLEX";
             case FIONCLEX: return "FIONCLEX";
+            case FIONBIO: return "FIONBIO";
+            case TCGETS: return "TCGETS";
+            case TCSETS: return "TCSETS";
+            case TCSETSW: return "TCSETSW";
             case TIOCGWINSZ: return "TIOCGWINSZ";
             case TIOCSWINSZ: return "TIOCSWINSZ";
             case TIOCGPGRP: return "TIOCGPGRP";
@@ -474,7 +505,7 @@ namespace kernel {
             case TCSETS: return sizeof(termios);
             case FIOCLEX:
             case FIONCLEX: return 0;
-            case FIONBIO: return 0;
+            case FIONBIO: return sizeof(int);
             case TIOCGWINSZ: 
             case TIOCSWINSZ: return sizeof(winsize);
             case TCSETSW: return sizeof(termios);

@@ -37,7 +37,7 @@ namespace kernel {
         off_t lseek(OpenFileDescription&, off_t offset, int whence) override;
         
         std::optional<int> fcntl(int cmd, int arg) override;
-        ErrnoOrBuffer ioctl(unsigned long request, const Buffer& buffer) override;
+        ErrnoOrBuffer ioctl(OpenFileDescription&, Ioctl request, const Buffer& buffer) override;
 
         std::string className() const override {
             return fmt::format("Tty(realfd={})", hostFd_.value_or(-1));

@@ -58,7 +58,7 @@ namespace kernel {
         ErrnoOrBuffer stat() override;
         ErrnoOrBuffer statfs() override;
 
-        ErrnoOrBuffer ioctl(unsigned long request, const Buffer& buffer) override;
+        ErrnoOrBuffer ioctl(OpenFileDescription&, Ioctl request, const Buffer& buffer) override;
         
         ErrnoOrBuffer getdents64(size_t count) override;
 

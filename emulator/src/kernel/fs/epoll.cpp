@@ -42,8 +42,8 @@ namespace kernel {
         return -ENOTSUP;
     }
 
-    ErrnoOrBuffer Epoll::ioctl(unsigned long request, const Buffer&) {
-        verify(false, fmt::format("ioctl(request={}) not implemented on epoll", request));
+    ErrnoOrBuffer Epoll::ioctl(OpenFileDescription&, Ioctl request, const Buffer&) {
+        verify(false, fmt::format("ioctl(request={}) not implemented on epoll", (int)request));
         return ErrnoOrBuffer(-ENOTSUP);
     }
 
