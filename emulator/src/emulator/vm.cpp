@@ -325,7 +325,7 @@ namespace emulator {
             fmt::print("Disassembly of {:#x}:{:#x} provided no instructions", address, end);
         });
         verify(section.end == section.instructions.back().nextAddress());
-        section.extractBasicBlocks();
+        section.trim();
         
         auto newSection = std::make_unique<ExecutableSection>(std::move(section));
         const auto* sectionPtr = newSection.get();
@@ -438,10 +438,15 @@ namespace emulator {
         }
     }
 
-    std::vector<VM::BasicBlock> VM::ExecutableSection::extractBasicBlocks() {
+    void VM::ExecutableSection::trim() {
         // Assume that the first instruction is a basic block entry instruction
         // This is probably wrong, because we may not have disassembled the last bit of the previous section.
-        std::vector<BasicBlock> basicBlocks;
+        struct BasicBlock {
+            const x64::X64Instruction* instructions;
+            u32 size;
+        };
+
+        std::optional<BasicBlock> lastBasicBlock;
 
         // Build up the basic block until we reach a branch
         const auto* begin = instructions.data();
@@ -451,7 +456,7 @@ namespace emulator {
             if(!it->isBranch()) continue;
             if(it+1 != end) {
                 ++it;
-                basicBlocks.push_back(BasicBlock { begin, (u32)(it-begin) });
+                lastBasicBlock = BasicBlock { begin, (u32)(it-begin) };
                 begin = it;
             } else {
                 break;
@@ -461,13 +466,10 @@ namespace emulator {
         // Try and trim excess instructions from the end
         // We will probably disassemble them again, but they will be put in the
         // correct basic block then.
-        if(!basicBlocks.empty()) {
+        if(!!lastBasicBlock) {
             auto packedInstructions = std::distance((const x64::X64Instruction*)instructions.data(), begin);
             instructions.erase(instructions.begin() + packedInstructions, instructions.end());
-            const auto& lastBlock = basicBlocks.back();
-            this->end = lastBlock.instructions[lastBlock.size-1].nextAddress();
+            this->end = lastBasicBlock->instructions[lastBasicBlock->size-1].nextAddress();
         }
-
-        return basicBlocks;
     }
 }

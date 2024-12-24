@@ -48,18 +48,13 @@ namespace emulator {
         void syncThread();
         void enterSyscall();
 
-        struct BasicBlock {
-            const x64::X64Instruction* instructions;
-            u32 size;
-        };
-
         struct ExecutableSection {
             u64 begin;
             u64 end;
             std::vector<x64::X64Instruction> instructions;
             std::string filename;
 
-            std::vector<BasicBlock> extractBasicBlocks();
+            void trim();
         };
 
         struct InstructionPosition {
