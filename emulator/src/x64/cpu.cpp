@@ -328,6 +328,8 @@ namespace x64 {
     DEFINE_STANDALONE(PUSH_RM64, execPushRM64)
     DEFINE_STANDALONE(POP_R32, execPopR32)
     DEFINE_STANDALONE(POP_R64, execPopR64)
+    DEFINE_STANDALONE(POP_M32, execPopM32)
+    DEFINE_STANDALONE(POP_M64, execPopM64)
     DEFINE_STANDALONE(PUSHFQ, execPushfq)
     DEFINE_STANDALONE(POPFQ, execPopfq)
     DEFINE_STANDALONE(CALLDIRECT, execCallDirect)
@@ -907,6 +909,8 @@ namespace x64 {
         STANDALONE_NAME(PUSH_RM64),
         STANDALONE_NAME(POP_R32),
         STANDALONE_NAME(POP_R64),
+        STANDALONE_NAME(POP_M32),
+        STANDALONE_NAME(POP_M64),
         STANDALONE_NAME(PUSHFQ),
         STANDALONE_NAME(POPFQ),
         STANDALONE_NAME(CALLDIRECT),
@@ -2253,6 +2257,16 @@ namespace x64 {
     void Cpu::execPopR64(const X64Instruction& ins) {
         const auto& dst = ins.op0<R64>();
         set(dst, pop64());
+    }
+
+    void Cpu::execPopM32(const X64Instruction& ins) {
+        const auto& dst = ins.op0<M32>();
+        set(resolve(dst), pop32());
+    }
+
+    void Cpu::execPopM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<M64>();
+        set(resolve(dst), pop64());
     }
 
     void Cpu::execPushfq(const X64Instruction&) {

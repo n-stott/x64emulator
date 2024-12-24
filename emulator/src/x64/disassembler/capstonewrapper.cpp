@@ -295,8 +295,12 @@ namespace x64 {
         const cs_x86_op& src = x86detail.operands[0];
         auto r32 = asRegister32(src);
         auto r64 = asRegister64(src);
+        auto m32 = asMemory32(src);
+        auto m64 = asMemory64(src);
         if(r32) return X64Instruction::make<Insn::POP_R32>(insn.address, insn.size, r32.value());
         if(r64) return X64Instruction::make<Insn::POP_R64>(insn.address, insn.size, r64.value());
+        if(m32) return X64Instruction::make<Insn::POP_M32>(insn.address, insn.size, m32.value());
+        if(m64) return X64Instruction::make<Insn::POP_M64>(insn.address, insn.size, m64.value());
         return make_failed(insn);
     }
 

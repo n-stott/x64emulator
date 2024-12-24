@@ -357,6 +357,8 @@ namespace x64 {
 
         void execPopR32(const X64Instruction&);
         void execPopR64(const X64Instruction&);
+        void execPopM32(const X64Instruction&);
+        void execPopM64(const X64Instruction&);
 
         void execPushfq(const X64Instruction&);
         void execPopfq(const X64Instruction&);

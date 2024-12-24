@@ -172,6 +172,8 @@ namespace x64 {
         PUSH_RM64,
         POP_R32,
         POP_R64,
+        POP_M32,
+        POP_M64,
         PUSHFQ,
         POPFQ,
         CALLDIRECT,
