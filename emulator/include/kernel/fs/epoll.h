@@ -44,6 +44,13 @@ namespace kernel {
         ErrnoOr<void> changeEntry(i32 fd, u32 event, u64 data);
         ErrnoOr<void> deleteEntry(i32 fd);
 
+        template<typename Func>
+        void forEachEntryInInterestList(Func&& func) {
+            for(const auto& entry : interestList_) {
+                func(entry.fd, entry.event, entry.data);
+            }
+        }
+
     private:
         struct Entry {
             i32 fd;

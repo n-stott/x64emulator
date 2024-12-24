@@ -141,6 +141,7 @@ namespace kernel {
             case 0xe5: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::clock_getres, regs));
             case 0xe6: return threadRegs.set(x64::R64::RAX, invoke_syscall_4(&Sys::clock_nanosleep, regs));
             case 0xe7: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::exit_group, regs));
+            case 0xe8: return threadRegs.set(x64::R64::RAX, invoke_syscall_4(&Sys::epoll_wait, regs));
             case 0xe9: return threadRegs.set(x64::R64::RAX, invoke_syscall_4(&Sys::epoll_ctl, regs));
             case 0xea: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::tgkill, regs));
             case 0xed: return threadRegs.set(x64::R64::RAX, invoke_syscall_6(&Sys::mbind, regs));
@@ -1078,16 +1079,49 @@ namespace kernel {
         return (u64)status;
     }
 
+    struct [[gnu::packed]] EpollEvent {
+        u32 event;
+        u64 data;
+    };
+
+    int Sys::epoll_wait(int epfd, x64::Ptr events, int maxevents, int timeout) {
+        if(!events) return -EFAULT;
+        if(maxevents <= 0) return -EINVAL;
+        if(timeout == 0) {
+            std::vector<FS::EpollEvent> epollEvents;
+            int ret = kernel_.fs().epollWaitImmediate(FS::FD{epfd}, &epollEvents);
+            if(ret >= 0) {
+                epollEvents.resize(std::min((size_t)maxevents, epollEvents.size()));
+                ret = (int)epollEvents.size();
+                std::vector<EpollEvent> eventsForMemory;
+                for(const auto& e : epollEvents) {
+                    eventsForMemory.push_back(EpollEvent {
+                        e.events.toUnderlying(),
+                        e.data,
+                    });
+                }
+                mmu_.writeToMmu<EpollEvent>(events, eventsForMemory);
+            }
+            if(logSyscalls_) {
+                print("Sys::epoll_wait(epfd={}, events={:#x}, maxevents={}, timeout={})\n", epfd, events.address(), maxevents, timeout, ret);
+            }
+            return ret;
+        } else {
+            // int ret = kernel_.fs().epoll_wait(FS::FD{epfd}, events, maxevents, timeout);
+            kernel_.scheduler().epoll_wait(currentThread_, epfd, events, maxevents, timeout);
+            if(logSyscalls_) {
+                print("Sys::epoll_wait(epfd={}, events={:#x}, maxevents={}, timeout={}) = pending\n", epfd, events.address(), maxevents, timeout);
+            }
+            return 0;
+        }
+    }
+
     int Sys::epoll_ctl(int epfd, int op, int fd, x64::Ptr event) {
         verify(!!event, "Null event in epoll_ctl not supported");
-        struct EpollEvent {
-            i32 event;
-            u64 data;
-        };
         EpollEvent ee = mmu_.readFromMmu<EpollEvent>(event);
-        int ret = kernel_.fs().epoll_ctl(FS::FD{epfd}, op, FS::FD{fd}, ee.event, ee.data);
+        int ret = kernel_.fs().epoll_ctl(FS::FD{epfd}, op, FS::FD{fd}, BitFlags<FS::EpollEventType>::fromIntegerType(ee.event), ee.data);
         if(logSyscalls_) {
-            print("Sys::epoll_ctl(epfd={}, op={}, fd={}, event={:#x})\n", epfd, op, fd, event.address(), ret);
+            print("Sys::epoll_ctl(epfd={}, op={}, fd={}, event=[event={:#x}, data={}]) = {}\n", epfd, op, fd, ee.event, ee.data, ret);
         }
         return ret;
     }

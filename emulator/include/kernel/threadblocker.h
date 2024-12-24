@@ -79,6 +79,25 @@ namespace kernel {
         std::optional<PreciseTime> timeLimit_;
     };
 
+    class EpollWaitBlocker {
+    public:
+        EpollWaitBlocker(Thread* thread, x64::Mmu& mmu, Timers& timers, int epfd, x64::Ptr events, size_t maxevents, int timeoutInMs);
+        
+        [[nodiscard]] bool tryUnblock(FS& fs);
+        [[nodiscard]] bool hasTimeout() const { return !!timeLimit_; }
+
+        std::string toString() const;
+
+    private:
+        Thread* thread_;
+        x64::Mmu* mmu_;
+        Timers* timers_;
+        int epfd_;
+        x64::Ptr events_;
+        size_t maxevents_;
+        std::optional<PreciseTime> timeLimit_;
+    };
+
     class SleepBlocker {
     public:
         SleepBlocker(Thread* thread, Timer* timer, PreciseTime targetTime)

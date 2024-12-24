@@ -144,9 +144,23 @@ namespace kernel {
         int fallocate(FD fd, int mode, off_t offset, off_t len);
         int ftruncate(FD fd, off_t length);
 
+        enum class EpollEventType : u32 {
+            NONE = 0x0,
+            CAN_READ = 0x1,
+            CAN_WRITE = 0x2,
+            HANGUP = 0x4,
+        };
+
+        struct EpollEvent {
+            BitFlags<EpollEventType> events;
+            u64 data;
+        };
+
         FD eventfd2(unsigned int initval, int flags);
         FD epoll_create1(int flags);
-        int epoll_ctl(FD epfd, int op, FD fd, u32 events, u64 data);
+        int epoll_ctl(FD epfd, int op, FD fd, BitFlags<EpollEventType> events, u64 data);
+        int epollWaitImmediate(FD epfd, std::vector<EpollEvent>* events);
+        void doEpollWait(FD epfd, std::vector<EpollEvent>* events);
 
         FD socket(int domain, int type, int protocol);
         int connect(FD sockfd, const Buffer& buffer);

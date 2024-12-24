@@ -189,6 +189,70 @@ namespace kernel {
         return fmt::format("thread {}:{} selecting on {} fds {}", pid, tid, nfds_, timeoutString);
     }
 
+    EpollWaitBlocker::EpollWaitBlocker(Thread* thread, x64::Mmu& mmu, Timers& timers, int epfd, x64::Ptr events, size_t maxevents, int timeoutInMs)
+        : thread_(thread), mmu_(&mmu), timers_(&timers), epfd_(epfd), events_(events), maxevents_(maxevents) {
+        if(timeoutInMs > 0) {
+            Timer* timer = timers_->getOrTryCreate(0); // get any timer
+            verify(!!timer);
+            verify(timeoutInMs >= 0);
+            PreciseTime now = timer->now();
+            u64 timeoutInNs = (u64)timeoutInMs*1'000'000;
+            timeLimit_ = now + TimeDifference::fromNanoSeconds(timeoutInNs);
+        }
+    }
+
+    struct [[gnu::packed]] EpollEvent {
+        u32 event;
+        u64 data;
+    };
+
+    bool EpollWaitBlocker::tryUnblock(FS& fs) {
+        std::vector<FS::EpollEvent> epollEvents;
+        fs.doEpollWait(FS::FD{epfd_}, &epollEvents);
+        epollEvents.resize(std::min(maxevents_, epollEvents.size()));
+        bool timeout = false;
+        if(!!timeLimit_) {
+            Timer* timer = timers_->get(0); // get the same timer as in the ctor
+            verify(!!timer);
+            PreciseTime now = timer->now();
+            timeout |= (now > timeLimit_);
+        }
+        if(!epollEvents.empty()) {
+            std::vector<EpollEvent> eventsForMemory;
+            for(const auto& e : epollEvents) {
+                eventsForMemory.push_back(EpollEvent {
+                    e.events.toUnderlying(),
+                    e.data,
+                });
+            }
+            mmu_->writeToMmu(events_, eventsForMemory);
+            thread_->savedCpuState().regs.set(x64::R64::RAX, epollEvents.size());
+            thread_->setState(Thread::THREAD_STATE::RUNNABLE);
+            return true;
+        } else if (timeout) {
+            thread_->savedCpuState().regs.set(x64::R64::RAX, 0);
+            thread_->setState(Thread::THREAD_STATE::RUNNABLE);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    std::string EpollWaitBlocker::toString() const {
+        int pid = thread_->description().pid;
+        int tid = thread_->description().tid;
+        std::stringstream ss;
+        ss << "{...}";
+        std::string pollfdsString = ss.str();
+        std::string timeoutString;
+        if(!!timeLimit_) {
+            timeoutString = fmt::format("with timeout at {}s{}ns", timeLimit_->seconds, timeLimit_->nanoseconds);
+        } else {
+            timeoutString = "without timeout";
+        }
+        return fmt::format("thread {}:{} epoll-waiting {}", pid, tid, timeoutString);
+    }
+
     bool SleepBlocker::tryUnblock(Timers& timers) {
         Timer* timer = timers.getOrTryCreate(timer_->id());
         verify(!!timer, "Sleeping on null timer");

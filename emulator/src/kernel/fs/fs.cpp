@@ -748,22 +748,70 @@ namespace kernel {
         return insertNode(std::move(epoll), accessMode, statusFlags, closeOnExec);
     }
 
-    int FS::epoll_ctl(FD epfd, int op, FD fd, u32 events, u64 data) {
+    int FS::epoll_ctl(FD epfd, int op, FD fd, BitFlags<EpollEventType> events, u64 data) {
         OpenFileDescription* openFileDescription = findOpenFileDescription(epfd);
         if(!openFileDescription) return -EBADF;
         if(!openFileDescription->file()->isEpoll()) return -EBADF;
         Epoll* epoll = static_cast<Epoll*>(openFileDescription->file());
         if(Host::EpollCtlOp::isAdd(op)) {
-            auto ret = epoll->addEntry(fd.fd, events, data);
+            events.add(EpollEventType::HANGUP);
+            auto ret = epoll->addEntry(fd.fd, events.toUnderlying(), data);
             return ret.errorOr(0);
         } else if(Host::EpollCtlOp::isMod(op)) {
-            auto ret = epoll->changeEntry(fd.fd, events, data);
+            auto ret = epoll->changeEntry(fd.fd, events.toUnderlying(), data);
             return ret.errorOr(0);
         } else {
             verify(Host::EpollCtlOp::isDel(op), "Unknown epoll_ctl op");
             auto ret = epoll->deleteEntry(fd.fd);
             return ret.errorOr(0);
         }
+    }
+
+    int FS::epollWaitImmediate(FD epfd, std::vector<EpollEvent>* events) {
+        OpenFileDescription* openFileDescription = findOpenFileDescription(epfd);
+        if(!openFileDescription) return -EBADF;
+        if(!openFileDescription->file()->isEpoll()) return -EBADF;
+        doEpollWait(epfd, events);
+        return (int)events->size();
+    }
+
+    void FS::doEpollWait(FD epfd, std::vector<EpollEvent>* events) {
+        verify(!!events);
+        OpenFileDescription* openFileDescription = findOpenFileDescription(epfd);
+        verify(!!openFileDescription, "No open file description for epoll wait");
+        verify(openFileDescription->file()->isEpoll(), "Cannot perform epoll wait on non-epoll instance");
+        Epoll* instance = static_cast<Epoll*>(openFileDescription->file());
+        instance->forEachEntryInInterestList([&](i32 fd, u32 ev, u64 data) {
+            OpenFileDescription* openFileDescription = findOpenFileDescription(FD{fd});
+            if(!openFileDescription) {
+                events->push_back(EpollEvent{
+                    BitFlags<EpollEventType>{EpollEventType::HANGUP},
+                    0,
+                });
+                return;
+            }
+            File* file = openFileDescription->file();
+            verify(file->isPollable(), [&]() { fmt::print("fd={} is not pollable\n", fd); });
+
+            BitFlags<EpollEventType> eventTypes = BitFlags<EpollEventType>::fromIntegerType(ev);
+            bool testRead = eventTypes.test(EpollEventType::CAN_READ);
+            bool testWrite = eventTypes.test(EpollEventType::CAN_WRITE);
+
+            BitFlags<EpollEventType> untestedFlags = eventTypes;
+            untestedFlags.remove(EpollEventType::CAN_READ);
+            untestedFlags.remove(EpollEventType::CAN_WRITE);
+            untestedFlags.remove(EpollEventType::HANGUP);
+            verify(!untestedFlags.any(), "Unexpected event in epoll-wait");
+
+            BitFlags<EpollEventType> outputEvents;
+            if(testRead && file->canRead())   outputEvents.add(EpollEventType::CAN_READ);
+            if(testWrite && file->canWrite()) outputEvents.add(EpollEventType::CAN_WRITE);
+
+            events->push_back(EpollEvent{
+                outputEvents,
+                data,
+            });
+        });
     }
 
     FS::FD FS::socket(int domain, int type, int protocol) {
