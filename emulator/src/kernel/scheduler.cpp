@@ -80,6 +80,7 @@ namespace kernel {
                     syncThreadTimeSlice(threadToRun);
 
                     if(threadToRun->state() == Thread::THREAD_STATE::IN_SYSCALL) {
+                        emulator::VM::MmuCallback callback(&mmu_, &vm);
                         kernel_.timers().updateAll(currentTime_);
                         kernel_.sys().syscall(threadToRun);
                         threadToRun->exitSyscall();

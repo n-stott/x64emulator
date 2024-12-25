@@ -214,17 +214,19 @@ namespace x64 {
         const Region* findAddress(u64 address) const;
 
         static constexpr u64 PAGE_SIZE = 0x1000;
-        class MunmapCallback {
+        
+        class Callback {
         public:
-            virtual ~MunmapCallback() = default;
-            virtual void onMunmap(u64 base, u64 length) = 0;
+            virtual ~Callback() = default;
+            virtual void on_mprotect(u64 base, u64 length, BitFlags<PROT> prot) = 0;
+            virtual void on_munmap(u64 base, u64 length) = 0;
         };
 
-        void addCallback(MunmapCallback* callback) {
+        void addCallback(Callback* callback) {
             callbacks_.push_back(callback);
         }
 
-        void removeCallback(MunmapCallback* callback) {
+        void removeCallback(Callback* callback) {
             callbacks_.erase(std::remove(callbacks_.begin(), callbacks_.end(), callback), callbacks_.end());
         }
 
@@ -262,7 +264,7 @@ namespace x64 {
         std::vector<const u8*> readablePageLookup_;
         std::vector<u8*> writablePageLookup_;
         u64 firstUnlookupdableAddress_ { 0 };
-        std::vector<MunmapCallback*> callbacks_;
+        std::vector<Callback*> callbacks_;
 
 #ifdef MULTIPROCESSING
         std::atomic<bool> syscallInProgress_ { false };

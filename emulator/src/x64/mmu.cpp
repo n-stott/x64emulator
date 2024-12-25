@@ -122,7 +122,7 @@ namespace x64 {
             [[maybe_unused]] auto regionLeftToDie = takeRegion(regionPtr->base(), regionPtr->size());
         }
         tryMergeRegions();
-        for(auto* callback : callbacks_) callback->onMunmap(address, length);
+        for(auto* callback : callbacks_) callback->on_munmap(address, length);
         return 0;
     }
 
@@ -148,6 +148,7 @@ namespace x64 {
             updatePageLookup(regionPtr.get(), previousProt);
         }
         tryMergeRegions();
+        for(auto* callback : callbacks_) callback->on_mprotect(address, length, prot);
         return 0;
     }
 

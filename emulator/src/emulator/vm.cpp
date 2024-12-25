@@ -438,6 +438,79 @@ namespace emulator {
         }
     }
 
+    VM::MmuCallback::MmuCallback(x64::Mmu* mmu, VM* vm) : mmu_(mmu), vm_(vm) {
+        if(!!mmu_) mmu_->addCallback(this);
+    }
+
+    VM::MmuCallback::~MmuCallback() {
+        if(!!mmu_) mmu_->removeCallback(this);
+    }
+
+    void VM::MmuCallback::on_mprotect(u64 base, u64 length, BitFlags<x64::PROT> prot) {
+        if(prot.test(x64::PROT::EXEC)) return;
+        std::vector<u64> keysToErase;
+        for(const auto& kv : vm_->basicBlocks_) {
+            const auto* bb = kv.second.get();
+            verify(bb->start() == kv.first);
+            auto addressInRange = [&](u64 address) {
+                return base <= address && address < base + length;
+            };
+            if(bb->start() && addressInRange(bb->start().value())) {
+                keysToErase.push_back(bb->start().value());
+            }
+            const auto* bb1 = bb->cachedDestinations[0];
+            if(bb1) {
+                if(bb1->start() && addressInRange(bb1->start().value())) {
+                    keysToErase.push_back(bb1->start().value());
+                }
+            }
+            const auto* bb2 = bb->cachedDestinations[0];
+            if(bb2) {
+                if(bb2->start() && addressInRange(bb2->start().value())) {
+                    keysToErase.push_back(bb2->start().value());
+                }
+            }
+        }
+        for(const auto& key : keysToErase) vm_->basicBlocks_.erase(key);
+        
+        vm_->executableSections_.erase(std::remove_if(vm_->executableSections_.begin(), vm_->executableSections_.end(), [&](const auto& section) {
+            return (base <= section->begin && section->begin < base + length)
+                || (base < section->end && section->end <= base + length);
+        }), vm_->executableSections_.end());
+    }
+
+    void VM::MmuCallback::on_munmap(u64 base, u64 length) {
+        std::vector<u64> keysToErase;
+        for(const auto& kv : vm_->basicBlocks_) {
+            const auto* bb = kv.second.get();
+            verify(bb->start() == kv.first);
+            auto addressInRange = [&](u64 address) {
+                return base <= address && address < base + length;
+            };
+            if(bb->start() && addressInRange(bb->start().value())) {
+                keysToErase.push_back(bb->start().value());
+            }
+            const auto* bb1 = bb->cachedDestinations[0];
+            if(bb1) {
+                if(bb1->start() && addressInRange(bb1->start().value())) {
+                    keysToErase.push_back(bb1->start().value());
+                }
+            }
+            const auto* bb2 = bb->cachedDestinations[0];
+            if(bb2) {
+                if(bb2->start() && addressInRange(bb2->start().value())) {
+                    keysToErase.push_back(bb2->start().value());
+                }
+            }
+        }
+        for(const auto& key : keysToErase) vm_->basicBlocks_.erase(key);
+        
+        vm_->executableSections_.erase(std::remove_if(vm_->executableSections_.begin(), vm_->executableSections_.end(), [&](const auto& section) {
+            return (base <= section->begin && section->begin < base + length)
+                || (base < section->end && section->end <= base + length);
+        }), vm_->executableSections_.end());
+    }
+
     void VM::ExecutableSection::trim() {
         // Assume that the first instruction is a basic block entry instruction
         // This is probably wrong, because we may not have disassembled the last bit of the previous section.

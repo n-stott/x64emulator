@@ -32,6 +32,17 @@ namespace emulator {
 
         void tryRetrieveSymbols(const std::vector<u64>& addresses, std::unordered_map<u64, std::string>* addressesToSymbols) const;
 
+        class MmuCallback : public x64::Mmu::Callback {
+        public:
+            MmuCallback(x64::Mmu* mmu, VM* vm);
+            ~MmuCallback();
+            void on_mprotect(u64 base, u64 length, BitFlags<x64::PROT> prot) override;
+            void on_munmap(u64 base, u64 length) override;
+        private:
+            x64::Mmu* mmu_ { nullptr };
+            VM* vm_ { nullptr };
+        };
+
     private:
         friend class x64::Cpu;
         friend class kernel::Sys;
