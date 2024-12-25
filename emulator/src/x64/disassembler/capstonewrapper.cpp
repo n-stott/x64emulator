@@ -3667,6 +3667,10 @@ namespace x64 {
         return X64Instruction::make<Insn::FWAIT>(insn.address, insn.size);
     }
 
+    static X64Instruction makePause(const cs_insn& insn) {
+        return X64Instruction::make<Insn::PAUSE>(insn.address, insn.size);
+    }
+
     static X64Instruction makeRdpkru(u64 address) {
         return X64Instruction::make<Insn::RDPKRU>(address, 0);
     }
@@ -4021,6 +4025,7 @@ namespace x64 {
             case X86_INS_FXSAVE: return makeFxsave(insn);
             case X86_INS_FXRSTOR: return makeFxrstor(insn);
             case X86_INS_WAIT: return makeFwait(insn);
+            case X86_INS_PAUSE: return makePause(insn);
             default: return make_failed(insn);
         }
         // if(name == "rep") return makeRepStringop(opbytes, address, operands);

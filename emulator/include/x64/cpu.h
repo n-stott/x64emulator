@@ -882,6 +882,8 @@ namespace x64 {
 
         void execRdsspd(const X64Instruction&);
 
+        void execPause(const X64Instruction&);
+
         void execUnimplemented(const X64Instruction&);
 
     };

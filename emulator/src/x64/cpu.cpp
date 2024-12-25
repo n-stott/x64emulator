@@ -747,6 +747,7 @@ namespace x64 {
     DEFINE_STANDALONE(RDPKRU, execRdpkru)
     DEFINE_STANDALONE(WRPKRU, execWrpkru)
     DEFINE_STANDALONE(RDSSPD, execRdsspd)
+    DEFINE_STANDALONE(PAUSE, execPause)
     DEFINE_STANDALONE(UNKNOWN, execUnknown)
 
     const std::array<Cpu::ExecPtr, (size_t)Insn::UNKNOWN+1> Cpu::execFunctions_ {{
@@ -1330,6 +1331,7 @@ namespace x64 {
         STANDALONE_NAME(RDPKRU),
         STANDALONE_NAME(WRPKRU),
         STANDALONE_NAME(RDSSPD),
+        STANDALONE_NAME(PAUSE),
         STANDALONE_NAME(UNKNOWN),
     }};
 
@@ -5189,6 +5191,10 @@ namespace x64 {
     }
 
     void Cpu::execRdsspd(const X64Instruction&) {
+        // this is a nop
+    }
+
+    void Cpu::execPause(const X64Instruction&) {
         // this is a nop
     }
 

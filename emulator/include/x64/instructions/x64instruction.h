@@ -591,6 +591,7 @@ namespace x64 {
         RDPKRU,
         WRPKRU,
         RDSSPD,
+        PAUSE,
         UNKNOWN, // must be last
     };
 

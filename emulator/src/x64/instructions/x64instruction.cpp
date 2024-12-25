@@ -887,6 +887,7 @@ namespace utils {
             case Insn::RDPKRU: return toString("rdpkru");
             case Insn::WRPKRU: return toString("wrpkru");
             case Insn::RDSSPD: return toString("rdsspd");
+            case Insn::PAUSE: return toString("pause");
         }
         assert(false);
         return "unreachable";
