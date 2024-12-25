@@ -36,7 +36,7 @@ namespace emulator {
         public:
             MmuCallback(x64::Mmu* mmu, VM* vm);
             ~MmuCallback();
-            void on_mprotect(u64 base, u64 length, BitFlags<x64::PROT> prot) override;
+            void on_mprotect(u64 base, u64 length, BitFlags<x64::PROT> protBefore, BitFlags<x64::PROT> protAfter) override;
             void on_munmap(u64 base, u64 length) override;
         private:
             x64::Mmu* mmu_ { nullptr };

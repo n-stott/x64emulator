@@ -446,8 +446,9 @@ namespace emulator {
         if(!!mmu_) mmu_->removeCallback(this);
     }
 
-    void VM::MmuCallback::on_mprotect(u64 base, u64 length, BitFlags<x64::PROT> prot) {
-        if(prot.test(x64::PROT::EXEC)) return;
+    void VM::MmuCallback::on_mprotect(u64 base, u64 length, BitFlags<x64::PROT> protBefore, BitFlags<x64::PROT> protAfter) {
+        if(!protBefore.test(x64::PROT::EXEC)) return; // if we were not executable, no need to perform removal
+        if(protAfter.test(x64::PROT::EXEC)) return; // if we are remaining executable, no need to perform removal
         std::vector<u64> keysToErase;
         for(const auto& kv : vm_->basicBlocks_) {
             const auto* bb = kv.second.get();

@@ -314,7 +314,9 @@ namespace kernel {
             }
             data.errorOrWith<int>([&](const Buffer& buffer) {
                 BitFlags<x64::PROT> saved = mmu_.prot(base);
-                mmu_.mprotect(base, length, BitFlags<x64::PROT>{x64::PROT::WRITE});
+                BitFlags<x64::PROT> savedAndWriteable = saved;
+                savedAndWriteable.add(x64::PROT::WRITE);
+                mmu_.mprotect(base, length, savedAndWriteable);
                 mmu_.copyToMmu(x64::Ptr8{base}, buffer.data(), buffer.size());
                 mmu_.mprotect(base, length, saved);
                 auto filename = kernel_.fs().filename(FS::FD{fd});

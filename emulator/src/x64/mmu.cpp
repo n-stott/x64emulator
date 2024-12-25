@@ -146,9 +146,9 @@ namespace x64 {
             auto previousProt = regionPtr->prot();
             regionPtr->setProtection(prot);
             updatePageLookup(regionPtr.get(), previousProt);
+            for(auto* callback : callbacks_) callback->on_mprotect(regionPtr->base(), regionPtr->size(), previousProt, prot);
         }
         tryMergeRegions();
-        for(auto* callback : callbacks_) callback->on_mprotect(address, length, prot);
         return 0;
     }
 

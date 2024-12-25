@@ -218,7 +218,7 @@ namespace x64 {
         class Callback {
         public:
             virtual ~Callback() = default;
-            virtual void on_mprotect(u64 base, u64 length, BitFlags<PROT> prot) = 0;
+            virtual void on_mprotect(u64 base, u64 length, BitFlags<PROT> protBefore, BitFlags<PROT> protAfter) = 0;
             virtual void on_munmap(u64 base, u64 length) = 0;
         };
 
