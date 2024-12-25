@@ -829,6 +829,8 @@ namespace utils {
             case Insn::PADDW_RSSE_RMSSE: return toString<RSSE, RMSSE>("paddw");
             case Insn::PADDD_RSSE_RMSSE: return toString<RSSE, RMSSE>("paddd");
             case Insn::PADDQ_RSSE_RMSSE: return toString<RSSE, RMSSE>("paddq");
+            case Insn::PADDSB_RSSE_RMSSE: return toString<RSSE, RMSSE>("paddsb");
+            case Insn::PADDSW_RSSE_RMSSE: return toString<RSSE, RMSSE>("paddsw");
             case Insn::PADDUSB_RSSE_RMSSE: return toString<RSSE, RMSSE>("paddusb");
             case Insn::PADDUSW_RSSE_RMSSE: return toString<RSSE, RMSSE>("paddusw");
             case Insn::PSUBB_RSSE_RMSSE: return toString<RSSE, RMSSE>("psubb");

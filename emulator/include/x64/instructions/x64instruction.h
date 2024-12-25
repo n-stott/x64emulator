@@ -533,6 +533,8 @@ namespace x64 {
         PADDW_RSSE_RMSSE,
         PADDD_RSSE_RMSSE,
         PADDQ_RSSE_RMSSE,
+        PADDSB_RSSE_RMSSE,
+        PADDSW_RSSE_RMSSE,
         PADDUSB_RSSE_RMSSE,
         PADDUSW_RSSE_RMSSE,
         PSUBB_RSSE_RMSSE,

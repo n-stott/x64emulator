@@ -1361,6 +1361,31 @@ namespace x64 {
     u128 CpuImpl::paddd(u128 dst, u128 src) { return padd<u32>(dst, src); }
     u128 CpuImpl::paddq(u128 dst, u128 src) { return padd<u64>(dst, src); }
 
+    template<typename I, typename J>
+    u128 padds(u128 dst, u128 src) {
+        static_assert(sizeof(J) == 2*sizeof(I));
+        constexpr int N = sizeof(u128)/sizeof(I);
+        std::array<I, N> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        std::memcpy(DST.data(), &dst, sizeof(u128));
+
+        std::array<I, N> SRC;
+        static_assert(sizeof(SRC) == sizeof(u128));
+        std::memcpy(SRC.data(), &src, sizeof(u128));
+
+        for(size_t i = 0; i < N; ++i) {
+            J s = (J)DST[i] + (J)SRC[i];
+            if(s > (J)std::numeric_limits<I>::max()) s = (J)std::numeric_limits<I>::max();
+            if(s < (J)std::numeric_limits<I>::min()) s = (J)std::numeric_limits<I>::min();
+            DST[i] = (I)s;
+        }
+        std::memcpy(&dst, DST.data(), sizeof(u128));
+        return dst;
+    }
+
+    u128 CpuImpl::paddsb(u128 dst, u128 src) { return padds<i8, i16>(dst, src); }
+    u128 CpuImpl::paddsw(u128 dst, u128 src) { return padds<i16, i32>(dst, src); }
+
     template<typename U, typename V>
     u128 paddus(u128 dst, u128 src) {
         static_assert(sizeof(V) == 2*sizeof(U));

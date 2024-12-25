@@ -919,6 +919,13 @@ namespace x64 {
         return checkCall<u128>(&CpuImpl::paddq, &NativeCpuImpl::paddq, dst, src);
     }
 
+    u128 CheckedCpuImpl::paddsb(u128 dst, u128 src) {
+        return checkCall<u128>(&CpuImpl::paddsb, &NativeCpuImpl::paddsb, dst, src);
+    }
+    u128 CheckedCpuImpl::paddsw(u128 dst, u128 src) {
+        return checkCall<u128>(&CpuImpl::paddsw, &NativeCpuImpl::paddsw, dst, src);
+    }
+
     u128 CheckedCpuImpl::paddusb(u128 dst, u128 src) {
         return checkCall<u128>(&CpuImpl::paddusb, &NativeCpuImpl::paddusb, dst, src);
     }

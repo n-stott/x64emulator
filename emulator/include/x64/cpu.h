@@ -805,6 +805,8 @@ namespace x64 {
         void execPaddwRSSERMSSE(const X64Instruction&);
         void execPadddRSSERMSSE(const X64Instruction&);
         void execPaddqRSSERMSSE(const X64Instruction&);
+        void execPaddsbRSSERMSSE(const X64Instruction&);
+        void execPaddswRSSERMSSE(const X64Instruction&);
         void execPaddusbRSSERMSSE(const X64Instruction&);
         void execPadduswRSSERMSSE(const X64Instruction&);
 

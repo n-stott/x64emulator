@@ -689,6 +689,8 @@ namespace x64 {
     DEFINE_STANDALONE(PADDW_RSSE_RMSSE, execPaddwRSSERMSSE)
     DEFINE_STANDALONE(PADDD_RSSE_RMSSE, execPadddRSSERMSSE)
     DEFINE_STANDALONE(PADDQ_RSSE_RMSSE, execPaddqRSSERMSSE)
+    DEFINE_STANDALONE(PADDSB_RSSE_RMSSE, execPaddsbRSSERMSSE)
+    DEFINE_STANDALONE(PADDSW_RSSE_RMSSE, execPaddswRSSERMSSE)
     DEFINE_STANDALONE(PADDUSB_RSSE_RMSSE, execPaddusbRSSERMSSE)
     DEFINE_STANDALONE(PADDUSW_RSSE_RMSSE, execPadduswRSSERMSSE)
     DEFINE_STANDALONE(PSUBB_RSSE_RMSSE, execPsubbRSSERMSSE)
@@ -1270,6 +1272,8 @@ namespace x64 {
         STANDALONE_NAME(PADDW_RSSE_RMSSE),
         STANDALONE_NAME(PADDD_RSSE_RMSSE),
         STANDALONE_NAME(PADDQ_RSSE_RMSSE),
+        STANDALONE_NAME(PADDSB_RSSE_RMSSE),
+        STANDALONE_NAME(PADDSW_RSSE_RMSSE),
         STANDALONE_NAME(PADDUSB_RSSE_RMSSE),
         STANDALONE_NAME(PADDUSW_RSSE_RMSSE),
         STANDALONE_NAME(PSUBB_RSSE_RMSSE),
@@ -4734,6 +4738,20 @@ namespace x64 {
         const auto& dst = ins.op0<RSSE>();
         const auto& src = ins.op1<RMSSE>();
         u128 res = Impl::paddq(get(dst), get(src));
+        set(dst, res);
+    }
+
+    void Cpu::execPaddsbRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        u128 res = Impl::paddsb(get(dst), get(src));
+        set(dst, res);
+    }
+
+    void Cpu::execPaddswRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        u128 res = Impl::paddsw(get(dst), get(src));
         set(dst, res);
     }
 
