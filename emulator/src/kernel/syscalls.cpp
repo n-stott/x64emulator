@@ -107,6 +107,7 @@ namespace kernel {
             case 0x5f: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::umask, regs));
             case 0x60: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::gettimeofday, regs));
             case 0x63: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::sysinfo, regs));
+            case 0x64: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::times, regs));
             case 0x66: return threadRegs.set(x64::R64::RAX, invoke_syscall_0(&Sys::getuid, regs));
             case 0x68: return threadRegs.set(x64::R64::RAX, invoke_syscall_0(&Sys::getgid, regs));
             case 0x6b: return threadRegs.set(x64::R64::RAX, invoke_syscall_0(&Sys::geteuid, regs));
@@ -940,6 +941,15 @@ namespace kernel {
             mmu_.copyToMmu(info, buffer.data(), buffer.size());
             return 0;
         });
+    }
+
+    clock_t Sys::times(x64::Ptr buf) {
+        if(logSyscalls_) {
+            print("Sys::times(buf={:#x}) = {}\n",
+                        buf.address(), -ENOTSUP);
+        }
+        warn("times not implemented");
+        return -ENOTSUP;
     }
 
     int Sys::getuid() { // NOLINT(readability-convert-member-functions-to-static)

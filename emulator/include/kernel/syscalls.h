@@ -239,6 +239,8 @@ namespace kernel {
         int gettimeofday(x64::Ptr tv, x64::Ptr tz);
         // 0x63
         int sysinfo(x64::Ptr info);
+        // 0x64
+        clock_t times(x64::Ptr buf);
         // 0x66
         int getuid();
         // 0x68
