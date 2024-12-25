@@ -1751,7 +1751,13 @@ namespace x64 {
         const cs_x86_op& dst = x86detail.operands[0];
         const cs_x86_op& src = x86detail.operands[1];
         auto rm64dst = asRM64(dst);
+        auto m64src = asMemory64(src);
         auto imm = asImmediate(src);
+        if(rm64dst && m64src) {
+            if(rm64dst->isReg) {
+                return X64Instruction::make<Insn::MOV_R64_M64>(insn.address, insn.size, rm64dst->reg, m64src.value());
+            }
+        }
         if(rm64dst && imm) {
             if(rm64dst->isReg)
                 return X64Instruction::make<Insn::MOV_R64_IMM>(insn.address, insn.size, rm64dst->reg, imm.value());
