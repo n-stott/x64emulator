@@ -630,6 +630,8 @@ namespace x64 {
     DEFINE_STANDALONE(CVTSS2SD_RSSE_M32, execCvtss2sdRSSEM32)
     DEFINE_STANDALONE(CVTSD2SS_RSSE_RSSE, execCvtsd2ssRSSERSSE)
     DEFINE_STANDALONE(CVTSD2SS_RSSE_M64, execCvtsd2ssRSSEM64)
+    DEFINE_STANDALONE(CVTSS2SI_R64_RSSE, execCvtss2siR64RSSE)
+    DEFINE_STANDALONE(CVTSS2SI_R64_M32, execCvtss2siR64M32)
     DEFINE_STANDALONE(CVTSD2SI_R64_RSSE, execCvtsd2siR64RSSE)
     DEFINE_STANDALONE(CVTSD2SI_R64_M64, execCvtsd2siR64M64)
     DEFINE_STANDALONE(CVTTPS2DQ_RSSE_RMSSE, execCvttps2dqRSSERMSSE)
@@ -1214,6 +1216,8 @@ namespace x64 {
         STANDALONE_NAME(CVTSS2SD_RSSE_M32),
         STANDALONE_NAME(CVTSD2SS_RSSE_RSSE),
         STANDALONE_NAME(CVTSD2SS_RSSE_M64),
+        STANDALONE_NAME(CVTSS2SI_R64_RSSE),
+        STANDALONE_NAME(CVTSS2SI_R64_M32),
         STANDALONE_NAME(CVTSD2SI_R64_RSSE),
         STANDALONE_NAME(CVTSD2SI_R64_M64),
         STANDALONE_NAME(CVTTPS2DQ_RSSE_RMSSE),
@@ -4307,6 +4311,18 @@ namespace x64 {
         const auto& src = ins.op1<M32>();
         u128 res = Impl::cvtss2sd(get(dst), zeroExtend<u128, u32>(get(resolve(src))));
         set(dst, res);
+    }
+
+    void Cpu::execCvtss2siR64RSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<R64>();
+        const auto& src = ins.op1<RSSE>();
+        set(dst, Impl::cvtss2si64(narrow<u32, u64>(get(src).lo), simdRoundingMode()));
+    }
+
+    void Cpu::execCvtss2siR64M32(const X64Instruction& ins) {
+        const auto& dst = ins.op0<R64>();
+        const auto& src = ins.op1<M32>();
+        set(dst, Impl::cvtss2si64(get(resolve(src)), simdRoundingMode()));
     }
 
     void Cpu::execCvtsd2siR64RSSE(const X64Instruction& ins) {

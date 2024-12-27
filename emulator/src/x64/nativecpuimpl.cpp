@@ -1732,6 +1732,12 @@ namespace x64 {
         return nativeRes;
     }
 
+    u64 NativeCpuImpl::cvtss2si64(u32 src, [[maybe_unused]] SIMD_ROUNDING rounding) {
+        u64 nativeRes = 0;
+        asm volatile("cvtss2si %1, %0" : "+r"(nativeRes) : "m"(src));
+        return nativeRes;
+    }
+
     u64 NativeCpuImpl::cvtsd2si64(u64 src, [[maybe_unused]] SIMD_ROUNDING rounding) {
         u64 nativeRes = 0;
         asm volatile("cvtsd2si %1, %0" : "+r"(nativeRes) : "m"(src));

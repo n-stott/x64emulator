@@ -26,6 +26,10 @@ inline bool operator==(u128 a, u128 b) {
 using f32 = float;
 using f64 = double;
 
+struct F32 {
+    static i64 round64(f32 val);
+};
+
 struct F64 {
     static i64 round(f64 val);
 };
