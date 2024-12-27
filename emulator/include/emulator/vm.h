@@ -90,12 +90,12 @@ namespace emulator {
             x64::Cpu::BasicBlock cpuBasicBlock;
             std::array<BBlock*, 2> cachedDestinations {{ nullptr, nullptr }};
 
-            std::optional<u64> start() const {
-                if(cpuBasicBlock.instructions.empty()) return {};
+            u64 start() const {
+                verify(!cpuBasicBlock.instructions.empty(), "Basic block is empty");
                 return cpuBasicBlock.instructions[0].first.address();
             }
-            std::optional<u64> end() const {
-                if(cpuBasicBlock.instructions.empty()) return {};
+            u64 end() const {
+                verify(!cpuBasicBlock.instructions.empty(), "Basic block is empty");
                 return cpuBasicBlock.instructions.back().first.nextAddress();
             }
         };

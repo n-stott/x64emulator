@@ -190,6 +190,7 @@ namespace emulator {
                 fmt::print("did not find bb exit branch for bb starting at {:#x}\n", startAddress);
             });
             x64::Cpu::BasicBlock cpuBb = cpu_.createBasicBlock(blockInstructions.data(), blockInstructions.size());
+            verify(!cpuBb.instructions.empty(), "Cannot create empty basic block");
             std::unique_ptr<BBlock> bblock = std::make_unique<BBlock>();
             bblock->cpuBasicBlock = std::move(cpuBb);
             auto ret = basicBlocks_.emplace(startAddress, std::move(bblock));
@@ -450,26 +451,22 @@ namespace emulator {
         if(!protBefore.test(x64::PROT::EXEC)) return; // if we were not executable, no need to perform removal
         if(protAfter.test(x64::PROT::EXEC)) return; // if we are remaining executable, no need to perform removal
         std::vector<u64> keysToErase;
-        for(const auto& kv : vm_->basicBlocks_) {
-            const auto* bb = kv.second.get();
+        for(auto& kv : vm_->basicBlocks_) {
+            auto* bb = kv.second.get();
             verify(bb->start() == kv.first);
             auto addressInRange = [&](u64 address) {
                 return base <= address && address < base + length;
             };
-            if(bb->start() && addressInRange(bb->start().value())) {
-                keysToErase.push_back(bb->start().value());
+            if(addressInRange(bb->start())) {
+                keysToErase.push_back(bb->start());
             }
             const auto* bb1 = bb->cachedDestinations[0];
-            if(bb1) {
-                if(bb1->start() && addressInRange(bb1->start().value())) {
-                    keysToErase.push_back(bb1->start().value());
-                }
+            if(bb1 && addressInRange(bb1->start())) {
+                bb->cachedDestinations[0] = nullptr;
             }
-            const auto* bb2 = bb->cachedDestinations[0];
-            if(bb2) {
-                if(bb2->start() && addressInRange(bb2->start().value())) {
-                    keysToErase.push_back(bb2->start().value());
-                }
+            const auto* bb2 = bb->cachedDestinations[1];
+            if(bb2 && addressInRange(bb2->start())) {
+                bb->cachedDestinations[1] = nullptr;
             }
         }
         for(const auto& key : keysToErase) vm_->basicBlocks_.erase(key);
@@ -482,26 +479,22 @@ namespace emulator {
 
     void VM::MmuCallback::on_munmap(u64 base, u64 length) {
         std::vector<u64> keysToErase;
-        for(const auto& kv : vm_->basicBlocks_) {
-            const auto* bb = kv.second.get();
+        for(auto& kv : vm_->basicBlocks_) {
+            auto* bb = kv.second.get();
             verify(bb->start() == kv.first);
             auto addressInRange = [&](u64 address) {
                 return base <= address && address < base + length;
             };
-            if(bb->start() && addressInRange(bb->start().value())) {
-                keysToErase.push_back(bb->start().value());
+            if(addressInRange(bb->start())) {
+                keysToErase.push_back(bb->start());
             }
-            const auto* bb1 = bb->cachedDestinations[0];
-            if(bb1) {
-                if(bb1->start() && addressInRange(bb1->start().value())) {
-                    keysToErase.push_back(bb1->start().value());
-                }
+            const auto* bb0 = bb->cachedDestinations[0];
+            if(bb0 && addressInRange(bb0->start())) {
+                bb->cachedDestinations[0] = nullptr;
             }
-            const auto* bb2 = bb->cachedDestinations[0];
-            if(bb2) {
-                if(bb2->start() && addressInRange(bb2->start().value())) {
-                    keysToErase.push_back(bb2->start().value());
-                }
+            const auto* bb1 = bb->cachedDestinations[1];
+            if(bb1 && addressInRange(bb1->start())) {
+                bb->cachedDestinations[1] = nullptr;
             }
         }
         for(const auto& key : keysToErase) vm_->basicBlocks_.erase(key);
