@@ -1440,6 +1440,52 @@ namespace x64 {
     u128 CpuImpl::psubd(u128 dst, u128 src) { return psub<u32>(dst, src); }
     u128 CpuImpl::psubq(u128 dst, u128 src) { return psub<u64>(dst, src); }
 
+    template<typename I, typename J>
+    u128 psubs(u128 dst, u128 src) {
+        static_assert(sizeof(J) == 2*sizeof(I));
+        constexpr int N = sizeof(u128)/sizeof(I);
+        std::array<I, N> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        std::memcpy(DST.data(), &dst, sizeof(u128));
+
+        std::array<I, N> SRC;
+        static_assert(sizeof(SRC) == sizeof(u128));
+        std::memcpy(SRC.data(), &src, sizeof(u128));
+
+        for(size_t i = 0; i < N; ++i) {
+            J s = (J)DST[i] - (J)SRC[i];
+            if(s > (J)std::numeric_limits<I>::max()) s = (J)std::numeric_limits<I>::max();
+            if(s < (J)std::numeric_limits<I>::min()) s = (J)std::numeric_limits<I>::min();
+            DST[i] = (I)s;
+        }
+        std::memcpy(&dst, DST.data(), sizeof(u128));
+        return dst;
+    }
+
+    u128 CpuImpl::psubsb(u128 dst, u128 src) { return psubs<i8, i16>(dst, src); }
+    u128 CpuImpl::psubsw(u128 dst, u128 src) { return psubs<i16, i32>(dst, src); }
+
+    template<typename U>
+    u128 psubus(u128 dst, u128 src) {
+        constexpr int N = sizeof(u128)/sizeof(U);
+        std::array<U, N> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        std::memcpy(DST.data(), &dst, sizeof(u128));
+
+        std::array<U, N> SRC;
+        static_assert(sizeof(SRC) == sizeof(u128));
+        std::memcpy(SRC.data(), &src, sizeof(u128));
+
+        for(size_t i = 0; i < N; ++i) {
+            DST[i] = (DST[i] >= SRC[i]) ? (DST[i] - SRC[i]) : 0;
+        }
+        std::memcpy(&dst, DST.data(), sizeof(u128));
+        return dst;
+    }
+
+    u128 CpuImpl::psubusb(u128 dst, u128 src) { return psubus<u8>(dst, src); }
+    u128 CpuImpl::psubusw(u128 dst, u128 src) { return psubus<u16>(dst, src); }
+
     u128 CpuImpl::pmulhuw(u128 dst, u128 src) {
         std::array<u16, 8> DST;
         static_assert(sizeof(DST) == sizeof(u128));

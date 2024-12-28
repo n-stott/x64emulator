@@ -699,6 +699,10 @@ namespace x64 {
     DEFINE_STANDALONE(PSUBW_RSSE_RMSSE, execPsubwRSSERMSSE)
     DEFINE_STANDALONE(PSUBD_RSSE_RMSSE, execPsubdRSSERMSSE)
     DEFINE_STANDALONE(PSUBQ_RSSE_RMSSE, execPsubqRSSERMSSE)
+    DEFINE_STANDALONE(PSUBSB_RSSE_RMSSE, execPsubsbRSSERMSSE)
+    DEFINE_STANDALONE(PSUBSW_RSSE_RMSSE, execPsubswRSSERMSSE)
+    DEFINE_STANDALONE(PSUBUSB_RSSE_RMSSE, execPsubusbRSSERMSSE)
+    DEFINE_STANDALONE(PSUBUSW_RSSE_RMSSE, execPsubuswRSSERMSSE)
     DEFINE_STANDALONE(PMULHUW_RSSE_RMSSE, execPmulhuwRSSERMSSE)
     DEFINE_STANDALONE(PMULHW_RSSE_RMSSE, execPmulhwRSSERMSSE)
     DEFINE_STANDALONE(PMULLW_RSSE_RMSSE, execPmullwRSSERMSSE)
@@ -1285,6 +1289,10 @@ namespace x64 {
         STANDALONE_NAME(PSUBW_RSSE_RMSSE),
         STANDALONE_NAME(PSUBD_RSSE_RMSSE),
         STANDALONE_NAME(PSUBQ_RSSE_RMSSE),
+        STANDALONE_NAME(PSUBSB_RSSE_RMSSE),
+        STANDALONE_NAME(PSUBSW_RSSE_RMSSE),
+        STANDALONE_NAME(PSUBUSB_RSSE_RMSSE),
+        STANDALONE_NAME(PSUBUSW_RSSE_RMSSE),
         STANDALONE_NAME(PMULHUW_RSSE_RMSSE),
         STANDALONE_NAME(PMULHW_RSSE_RMSSE),
         STANDALONE_NAME(PMULLW_RSSE_RMSSE),
@@ -4812,6 +4820,34 @@ namespace x64 {
         const auto& dst = ins.op0<RSSE>();
         const auto& src = ins.op1<RMSSE>();
         u128 res = Impl::psubq(get(dst), get(src));
+        set(dst, res);
+    }
+
+    void Cpu::execPsubsbRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        u128 res = Impl::psubsb(get(dst), get(src));
+        set(dst, res);
+    }
+
+    void Cpu::execPsubswRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        u128 res = Impl::psubsw(get(dst), get(src));
+        set(dst, res);
+    }
+
+    void Cpu::execPsubusbRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        u128 res = Impl::psubusb(get(dst), get(src));
+        set(dst, res);
+    }
+
+    void Cpu::execPsubuswRSSERMSSE(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RSSE>();
+        const auto& src = ins.op1<RMSSE>();
+        u128 res = Impl::psubusw(get(dst), get(src));
         set(dst, res);
     }
 

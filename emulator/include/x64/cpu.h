@@ -817,6 +817,10 @@ namespace x64 {
         void execPsubwRSSERMSSE(const X64Instruction&);
         void execPsubdRSSERMSSE(const X64Instruction&);
         void execPsubqRSSERMSSE(const X64Instruction&);
+        void execPsubsbRSSERMSSE(const X64Instruction&);
+        void execPsubswRSSERMSSE(const X64Instruction&);
+        void execPsubusbRSSERMSSE(const X64Instruction&);
+        void execPsubuswRSSERMSSE(const X64Instruction&);
 
         void execPmulhuwRSSERMSSE(const X64Instruction&);
         void execPmulhwRSSERMSSE(const X64Instruction&);
