@@ -239,10 +239,10 @@ namespace emulator {
         }
         if(instruction.isSSE()) {
             std::string sseDump = fmt::format( "xmm0={:16x} {:16x} xmm1={:16x} {:16x} xmm2={:16x} {:16x} xmm3={:16x} {:16x}",
-                                                cpu_.get(x64::RSSE::XMM0).hi, cpu_.get(x64::RSSE::XMM0).lo,
-                                                cpu_.get(x64::RSSE::XMM1).hi, cpu_.get(x64::RSSE::XMM1).lo,
-                                                cpu_.get(x64::RSSE::XMM2).hi, cpu_.get(x64::RSSE::XMM2).lo,
-                                                cpu_.get(x64::RSSE::XMM3).hi, cpu_.get(x64::RSSE::XMM3).lo);
+                                                cpu_.get(x64::XMM::XMM0).hi, cpu_.get(x64::XMM::XMM0).lo,
+                                                cpu_.get(x64::XMM::XMM1).hi, cpu_.get(x64::XMM::XMM1).lo,
+                                                cpu_.get(x64::XMM::XMM2).hi, cpu_.get(x64::XMM::XMM2).lo,
+                                                cpu_.get(x64::XMM::XMM3).hi, cpu_.get(x64::XMM::XMM3).lo);
             fmt::print(stderr, "{:86} {}\n", "", sseDump);
         }
     }

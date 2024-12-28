@@ -112,7 +112,7 @@ namespace x64 {
         ZERO,
     };
 
-    enum class RSSE : u8 {
+    enum class XMM : u8 {
         XMM0,
         XMM1,
         XMM2,
@@ -189,7 +189,7 @@ namespace x64 {
         DWORD,
         QWORD,
         TWORD,
-        XMMWORD,
+        XWORD,
         FPUENV,
     };
 
@@ -200,7 +200,7 @@ namespace x64 {
             case Size::DWORD: return 4;
             case Size::QWORD: return 8;
             case Size::TWORD: return 10;
-            case Size::XMMWORD: return 16;
+            case Size::XWORD: return 16;
             case Size::FPUENV: return 28;
         }
         return 0;
@@ -260,7 +260,7 @@ namespace x64 {
     template<> struct Unsigned<Size::WORD> { using type = u16; };
     template<> struct Unsigned<Size::DWORD> { using type = u32; };
     template<> struct Unsigned<Size::QWORD> { using type = u64; };
-    template<> struct Unsigned<Size::XMMWORD> { using type = u128; };
+    template<> struct Unsigned<Size::XWORD> { using type = u128; };
 
     template<Size size>
     struct Register;
@@ -269,7 +269,7 @@ namespace x64 {
     template<> struct Register<Size::WORD> { using value = R16; };
     template<> struct Register<Size::DWORD> { using value = R32; };
     template<> struct Register<Size::QWORD> { using value = R64; };
-    template<> struct Register<Size::XMMWORD> { using value = RSSE; };
+    template<> struct Register<Size::XWORD> { using value = XMM; };
 
 
     template<Size size>
@@ -284,7 +284,7 @@ namespace x64 {
     using Ptr32 = SPtr<Size::DWORD>;
     using Ptr64 = SPtr<Size::QWORD>;
     using Ptr80 = SPtr<Size::TWORD>;
-    using Ptr128 = SPtr<Size::XMMWORD>;
+    using Ptr128 = SPtr<Size::XWORD>;
     using Ptr224 = SPtr<Size::FPUENV>;
 
     template<Size size>
@@ -308,8 +308,8 @@ namespace x64 {
 
     using M80 = M<Size::TWORD>;
 
-    using MSSE = M<Size::XMMWORD>;
-    using RMSSE = RM<Size::XMMWORD>;
+    using M128 = M<Size::XWORD>;
+    using XMMM128 = RM<Size::XWORD>;
 
     using M224 = M<Size::FPUENV>;
 }

@@ -90,7 +90,7 @@ namespace x64 {
         u16 get(R16 reg) const { return regs_.get(reg); }
         u32 get(R32 reg) const { return regs_.get(reg); }
         u64 get(R64 reg) const { return regs_.get(reg); }
-        Xmm get(RSSE reg) const { return regs_.get(reg); }
+        Xmm get(XMM reg) const { return regs_.get(reg); }
 
         template<typename T>
         T  get(Imm value) const;
@@ -114,7 +114,7 @@ namespace x64 {
         void set(R16 reg, u16 value) { regs_.set(reg, value); }
         void set(R32 reg, u32 value) { regs_.set(reg, value); }
         void set(R64 reg, u64 value) { regs_.set(reg, value); }
-        void set(RSSE reg, Xmm value) { regs_.set(reg, value); }
+        void set(XMM reg, Xmm value) { regs_.set(reg, value); }
 
         void set(Ptr8 ptr, u8 value);
         void set(Ptr16 ptr, u16 value);
@@ -329,10 +329,10 @@ namespace x64 {
         template<Size size>
         void execMovMImm(const X64Instruction&);
 
-        void execMovaRSSEMSSE(const X64Instruction&);
-        void execMovaMSSERSSE(const X64Instruction&);
-        void execMovuRSSEMSSE(const X64Instruction&);
-        void execMovuMSSERSSE(const X64Instruction&);
+        void execMovaXMMM128(const X64Instruction&);
+        void execMovaM128XMM(const X64Instruction&);
+        void execMovuXMMM128(const X64Instruction&);
+        void execMovuM128XMM(const X64Instruction&);
 
         void execMovsxR16RM8(const X64Instruction&);
         void execMovsxR32RM8(const X64Instruction&);
@@ -586,17 +586,17 @@ namespace x64 {
         void execPopcntR32RM32(const X64Instruction&);
         void execPopcntR64RM64(const X64Instruction&);
 
-        void execPxorRSSERMSSE(const X64Instruction&);
+        void execPxorXMMXMMM128(const X64Instruction&);
 
-        void execMovapsRMSSERMSSE(const X64Instruction&);
+        void execMovapsXMMM128XMMM128(const X64Instruction&);
 
-        void execMovdRSSERM32(const X64Instruction&);
-        void execMovdRM32RSSE(const X64Instruction&);
-        void execMovdRSSERM64(const X64Instruction&);
-        void execMovdRM64RSSE(const X64Instruction&);
+        void execMovdXMMRM32(const X64Instruction&);
+        void execMovdRM32XMM(const X64Instruction&);
+        void execMovdXMMRM64(const X64Instruction&);
+        void execMovdRM64XMM(const X64Instruction&);
 
-        void execMovqRSSERM64(const X64Instruction&);
-        void execMovqRM64RSSE(const X64Instruction&);
+        void execMovqXMMRM64(const X64Instruction&);
+        void execMovqRM64XMM(const X64Instruction&);
 
         void execFldz(const X64Instruction&);
         void execFld1(const X64Instruction&);
@@ -645,234 +645,234 @@ namespace x64 {
 
         void execEmms(const X64Instruction&);
 
-        void execMovssRSSEM32(const X64Instruction&);
-        void execMovssM32RSSE(const X64Instruction&);
+        void execMovssXMMM32(const X64Instruction&);
+        void execMovssM32XMM(const X64Instruction&);
 
-        void execMovsdRSSEM64(const X64Instruction&);
-        void execMovsdM64RSSE(const X64Instruction&);
-        void execMovsdRSSERSSE(const X64Instruction&);
+        void execMovsdXMMM64(const X64Instruction&);
+        void execMovsdM64XMM(const X64Instruction&);
+        void execMovsdXMMXMM(const X64Instruction&);
 
-        void execAddpsRSSERMSSE(const X64Instruction&);
-        void execAddpdRSSERMSSE(const X64Instruction&);
-        void execAddssRSSERSSE(const X64Instruction&);
-        void execAddssRSSEM32(const X64Instruction&);
-        void execAddsdRSSERSSE(const X64Instruction&);
-        void execAddsdRSSEM64(const X64Instruction&);
+        void execAddpsXMMXMMM128(const X64Instruction&);
+        void execAddpdXMMXMMM128(const X64Instruction&);
+        void execAddssXMMXMM(const X64Instruction&);
+        void execAddssXMMM32(const X64Instruction&);
+        void execAddsdXMMXMM(const X64Instruction&);
+        void execAddsdXMMM64(const X64Instruction&);
 
-        void execSubpsRSSERMSSE(const X64Instruction&);
-        void execSubpdRSSERMSSE(const X64Instruction&);
-        void execSubssRSSERSSE(const X64Instruction&);
-        void execSubssRSSEM32(const X64Instruction&);
-        void execSubsdRSSERSSE(const X64Instruction&);
-        void execSubsdRSSEM64(const X64Instruction&);
+        void execSubpsXMMXMMM128(const X64Instruction&);
+        void execSubpdXMMXMMM128(const X64Instruction&);
+        void execSubssXMMXMM(const X64Instruction&);
+        void execSubssXMMM32(const X64Instruction&);
+        void execSubsdXMMXMM(const X64Instruction&);
+        void execSubsdXMMM64(const X64Instruction&);
 
-        void execMulpsRSSERMSSE(const X64Instruction&);
-        void execMulpdRSSERMSSE(const X64Instruction&);
-        void execMulssRSSERSSE(const X64Instruction&);
-        void execMulssRSSEM32(const X64Instruction&);
-        void execMulsdRSSERSSE(const X64Instruction&);
-        void execMulsdRSSEM64(const X64Instruction&);
+        void execMulpsXMMXMMM128(const X64Instruction&);
+        void execMulpdXMMXMMM128(const X64Instruction&);
+        void execMulssXMMXMM(const X64Instruction&);
+        void execMulssXMMM32(const X64Instruction&);
+        void execMulsdXMMXMM(const X64Instruction&);
+        void execMulsdXMMM64(const X64Instruction&);
 
-        void execDivpsRSSERMSSE(const X64Instruction&);
-        void execDivpdRSSERMSSE(const X64Instruction&);
-        void execDivssRSSERSSE(const X64Instruction&);
-        void execDivssRSSEM32(const X64Instruction&);
-        void execDivsdRSSERSSE(const X64Instruction&);
-        void execDivsdRSSEM64(const X64Instruction&);
+        void execDivpsXMMXMMM128(const X64Instruction&);
+        void execDivpdXMMXMMM128(const X64Instruction&);
+        void execDivssXMMXMM(const X64Instruction&);
+        void execDivssXMMM32(const X64Instruction&);
+        void execDivsdXMMXMM(const X64Instruction&);
+        void execDivsdXMMM64(const X64Instruction&);
 
-        void execSqrtssRSSERSSE(const X64Instruction&);
-        void execSqrtssRSSEM32(const X64Instruction&);
-        void execSqrtsdRSSERSSE(const X64Instruction&);
-        void execSqrtsdRSSEM64(const X64Instruction&);
+        void execSqrtssXMMXMM(const X64Instruction&);
+        void execSqrtssXMMM32(const X64Instruction&);
+        void execSqrtsdXMMXMM(const X64Instruction&);
+        void execSqrtsdXMMM64(const X64Instruction&);
 
-        void execComissRSSERSSE(const X64Instruction&);
-        void execComissRSSEM32(const X64Instruction&);
-        void execComisdRSSERSSE(const X64Instruction&);
-        void execComisdRSSEM64(const X64Instruction&);
-        void execUcomissRSSERSSE(const X64Instruction&);
-        void execUcomissRSSEM32(const X64Instruction&);
-        void execUcomisdRSSERSSE(const X64Instruction&);
-        void execUcomisdRSSEM64(const X64Instruction&);
+        void execComissXMMXMM(const X64Instruction&);
+        void execComissXMMM32(const X64Instruction&);
+        void execComisdXMMXMM(const X64Instruction&);
+        void execComisdXMMM64(const X64Instruction&);
+        void execUcomissXMMXMM(const X64Instruction&);
+        void execUcomissXMMM32(const X64Instruction&);
+        void execUcomisdXMMXMM(const X64Instruction&);
+        void execUcomisdXMMM64(const X64Instruction&);
 
-        void execMaxssRSSERSSE(const X64Instruction&);
-        void execMaxssRSSEM32(const X64Instruction&);
-        void execMaxsdRSSERSSE(const X64Instruction&);
-        void execMaxsdRSSEM64(const X64Instruction&);
+        void execMaxssXMMXMM(const X64Instruction&);
+        void execMaxssXMMM32(const X64Instruction&);
+        void execMaxsdXMMXMM(const X64Instruction&);
+        void execMaxsdXMMM64(const X64Instruction&);
 
-        void execMinssRSSERSSE(const X64Instruction&);
-        void execMinssRSSEM32(const X64Instruction&);
-        void execMinsdRSSERSSE(const X64Instruction&);
-        void execMinsdRSSEM64(const X64Instruction&);
+        void execMinssXMMXMM(const X64Instruction&);
+        void execMinssXMMM32(const X64Instruction&);
+        void execMinsdXMMXMM(const X64Instruction&);
+        void execMinsdXMMM64(const X64Instruction&);
 
-        void execMaxpsRSSERMSSE(const X64Instruction&);
-        void execMaxpdRSSERMSSE(const X64Instruction&);
+        void execMaxpsXMMXMMM128(const X64Instruction&);
+        void execMaxpdXMMXMMM128(const X64Instruction&);
 
-        void execMinpsRSSERMSSE(const X64Instruction&);
-        void execMinpdRSSERMSSE(const X64Instruction&);
+        void execMinpsXMMXMMM128(const X64Instruction&);
+        void execMinpdXMMXMMM128(const X64Instruction&);
 
-        void execCmpssRSSERSSE(const X64Instruction&);
-        void execCmpssRSSEM32(const X64Instruction&);
-        void execCmpsdRSSERSSE(const X64Instruction&);
-        void execCmpsdRSSEM64(const X64Instruction&);
-        void execCmppsRSSERMSSE(const X64Instruction&);
-        void execCmppdRSSERMSSE(const X64Instruction&);
+        void execCmpssXMMXMM(const X64Instruction&);
+        void execCmpssXMMM32(const X64Instruction&);
+        void execCmpsdXMMXMM(const X64Instruction&);
+        void execCmpsdXMMM64(const X64Instruction&);
+        void execCmppsXMMXMMM128(const X64Instruction&);
+        void execCmppdXMMXMMM128(const X64Instruction&);
 
-        void execCvtsi2ssRSSERM32(const X64Instruction&);
-        void execCvtsi2ssRSSERM64(const X64Instruction&);
-        void execCvtsi2sdRSSERM32(const X64Instruction&);
-        void execCvtsi2sdRSSERM64(const X64Instruction&);
+        void execCvtsi2ssXMMRM32(const X64Instruction&);
+        void execCvtsi2ssXMMRM64(const X64Instruction&);
+        void execCvtsi2sdXMMRM32(const X64Instruction&);
+        void execCvtsi2sdXMMRM64(const X64Instruction&);
 
-        void execCvtss2sdRSSERSSE(const X64Instruction&);
-        void execCvtss2sdRSSEM32(const X64Instruction&);
+        void execCvtss2sdXMMXMM(const X64Instruction&);
+        void execCvtss2sdXMMM32(const X64Instruction&);
 
-        void execCvtss2siR64RSSE(const X64Instruction&);
+        void execCvtss2siR64XMM(const X64Instruction&);
         void execCvtss2siR64M32(const X64Instruction&);
 
-        void execCvtsd2siR64RSSE(const X64Instruction&);
+        void execCvtsd2siR64XMM(const X64Instruction&);
         void execCvtsd2siR64M64(const X64Instruction&);
 
-        void execCvtsd2ssRSSERSSE(const X64Instruction&);
-        void execCvtsd2ssRSSEM64(const X64Instruction&);
+        void execCvtsd2ssXMMXMM(const X64Instruction&);
+        void execCvtsd2ssXMMM64(const X64Instruction&);
 
-        void execCvttps2dqRSSERMSSE(const X64Instruction&);
+        void execCvttps2dqXMMXMMM128(const X64Instruction&);
 
-        void execCvttss2siR32RSSE(const X64Instruction&);
+        void execCvttss2siR32XMM(const X64Instruction&);
         void execCvttss2siR32M32(const X64Instruction&);
-        void execCvttss2siR64RSSE(const X64Instruction&);
+        void execCvttss2siR64XMM(const X64Instruction&);
         void execCvttss2siR64M32(const X64Instruction&);
 
-        void execCvttsd2siR32RSSE(const X64Instruction&);
+        void execCvttsd2siR32XMM(const X64Instruction&);
         void execCvttsd2siR32M64(const X64Instruction&);
-        void execCvttsd2siR64RSSE(const X64Instruction&);
+        void execCvttsd2siR64XMM(const X64Instruction&);
         void execCvttsd2siR64M64(const X64Instruction&);
 
-        void execCvtdq2psRSSERMSSE(const X64Instruction&);
-        void execCvtdq2pdRSSERSSE(const X64Instruction&);
-        void execCvtdq2pdRSSEM64(const X64Instruction&);
+        void execCvtdq2psXMMXMMM128(const X64Instruction&);
+        void execCvtdq2pdXMMXMM(const X64Instruction&);
+        void execCvtdq2pdXMMM64(const X64Instruction&);
 
-        void execCvtps2dqRSSERMSSE(const X64Instruction&);
+        void execCvtps2dqXMMXMMM128(const X64Instruction&);
 
         void execStmxcsrM32(const X64Instruction&);
         void execLdmxcsrM32(const X64Instruction&);
 
-        void execPandRSSERMSSE(const X64Instruction&);
-        void execPandnRSSERMSSE(const X64Instruction&);
-        void execPorRSSERMSSE(const X64Instruction&);
+        void execPandXMMXMMM128(const X64Instruction&);
+        void execPandnXMMXMMM128(const X64Instruction&);
+        void execPorXMMXMMM128(const X64Instruction&);
 
-        void execAndpdRSSERMSSE(const X64Instruction&);
-        void execAndnpdRSSERMSSE(const X64Instruction&);
-        void execOrpdRSSERMSSE(const X64Instruction&);
-        void execXorpdRSSERMSSE(const X64Instruction&);
+        void execAndpdXMMXMMM128(const X64Instruction&);
+        void execAndnpdXMMXMMM128(const X64Instruction&);
+        void execOrpdXMMXMMM128(const X64Instruction&);
+        void execXorpdXMMXMMM128(const X64Instruction&);
 
-        void execShufpsRSSERMSSEImm(const X64Instruction&);
-        void execShufpdRSSERMSSEImm(const X64Instruction&);
+        void execShufpsXMMXMMM128Imm(const X64Instruction&);
+        void execShufpdXMMXMMM128Imm(const X64Instruction&);
 
-        void execMovlpsRSSEM64(const X64Instruction&);
-        void execMovlpsM64RSSE(const X64Instruction&);
-        void execMovhpsRSSEM64(const X64Instruction&);
-        void execMovhpsM64RSSE(const X64Instruction&);
-        void execMovhlpsRSSERSSE(const X64Instruction&);
-        void execMovlhpsRSSERSSE(const X64Instruction&);
+        void execMovlpsXMMM64(const X64Instruction&);
+        void execMovlpsM64XMM(const X64Instruction&);
+        void execMovhpsXMMM64(const X64Instruction&);
+        void execMovhpsM64XMM(const X64Instruction&);
+        void execMovhlpsXMMXMM(const X64Instruction&);
+        void execMovlhpsXMMXMM(const X64Instruction&);
 
-        void execPinsrwRSSER32Imm(const X64Instruction&);
-        void execPinsrwRSSEM16Imm(const X64Instruction&);
+        void execPinsrwXMMR32Imm(const X64Instruction&);
+        void execPinsrwXMMM16Imm(const X64Instruction&);
 
-        void execPunpcklbwRSSERMSSE(const X64Instruction&);
-        void execPunpcklwdRSSERMSSE(const X64Instruction&);
-        void execPunpckldqRSSERMSSE(const X64Instruction&);
-        void execPunpcklqdqRSSERMSSE(const X64Instruction&);
+        void execPunpcklbwXMMXMMM128(const X64Instruction&);
+        void execPunpcklwdXMMXMMM128(const X64Instruction&);
+        void execPunpckldqXMMXMMM128(const X64Instruction&);
+        void execPunpcklqdqXMMXMMM128(const X64Instruction&);
 
-        void execPunpckhbwRSSERMSSE(const X64Instruction&);
-        void execPunpckhwdRSSERMSSE(const X64Instruction&);
-        void execPunpckhdqRSSERMSSE(const X64Instruction&);
-        void execPunpckhqdqRSSERMSSE(const X64Instruction&);
+        void execPunpckhbwXMMXMMM128(const X64Instruction&);
+        void execPunpckhwdXMMXMMM128(const X64Instruction&);
+        void execPunpckhdqXMMXMMM128(const X64Instruction&);
+        void execPunpckhqdqXMMXMMM128(const X64Instruction&);
 
-        void execPshufbRSSERMSSE(const X64Instruction&);
-        void execPshuflwRSSERMSSEImm(const X64Instruction&);
-        void execPshufhwRSSERMSSEImm(const X64Instruction&);
-        void execPshufdRSSERMSSEImm(const X64Instruction&);
+        void execPshufbXMMXMMM128(const X64Instruction&);
+        void execPshuflwXMMXMMM128Imm(const X64Instruction&);
+        void execPshufhwXMMXMMM128Imm(const X64Instruction&);
+        void execPshufdXMMXMMM128Imm(const X64Instruction&);
 
-        void execPcmpeqbRSSERMSSE(const X64Instruction&);
-        void execPcmpeqwRSSERMSSE(const X64Instruction&);
-        void execPcmpeqdRSSERMSSE(const X64Instruction&);
-        void execPcmpeqqRSSERMSSE(const X64Instruction&);
+        void execPcmpeqbXMMXMMM128(const X64Instruction&);
+        void execPcmpeqwXMMXMMM128(const X64Instruction&);
+        void execPcmpeqdXMMXMMM128(const X64Instruction&);
+        void execPcmpeqqXMMXMMM128(const X64Instruction&);
 
-        void execPcmpgtbRSSERMSSE(const X64Instruction&);
-        void execPcmpgtwRSSERMSSE(const X64Instruction&);
-        void execPcmpgtdRSSERMSSE(const X64Instruction&);
-        void execPcmpgtqRSSERMSSE(const X64Instruction&);
+        void execPcmpgtbXMMXMMM128(const X64Instruction&);
+        void execPcmpgtwXMMXMMM128(const X64Instruction&);
+        void execPcmpgtdXMMXMMM128(const X64Instruction&);
+        void execPcmpgtqXMMXMMM128(const X64Instruction&);
 
-        void execPmovmskbR32RSSE(const X64Instruction&);
+        void execPmovmskbR32XMM(const X64Instruction&);
 
-        void execPaddbRSSERMSSE(const X64Instruction&);
-        void execPaddwRSSERMSSE(const X64Instruction&);
-        void execPadddRSSERMSSE(const X64Instruction&);
-        void execPaddqRSSERMSSE(const X64Instruction&);
-        void execPaddsbRSSERMSSE(const X64Instruction&);
-        void execPaddswRSSERMSSE(const X64Instruction&);
-        void execPaddusbRSSERMSSE(const X64Instruction&);
-        void execPadduswRSSERMSSE(const X64Instruction&);
+        void execPaddbXMMXMMM128(const X64Instruction&);
+        void execPaddwXMMXMMM128(const X64Instruction&);
+        void execPadddXMMXMMM128(const X64Instruction&);
+        void execPaddqXMMXMMM128(const X64Instruction&);
+        void execPaddsbXMMXMMM128(const X64Instruction&);
+        void execPaddswXMMXMMM128(const X64Instruction&);
+        void execPaddusbXMMXMMM128(const X64Instruction&);
+        void execPadduswXMMXMMM128(const X64Instruction&);
 
-        void execPsubbRSSERMSSE(const X64Instruction&);
-        void execPsubwRSSERMSSE(const X64Instruction&);
-        void execPsubdRSSERMSSE(const X64Instruction&);
-        void execPsubqRSSERMSSE(const X64Instruction&);
-        void execPsubsbRSSERMSSE(const X64Instruction&);
-        void execPsubswRSSERMSSE(const X64Instruction&);
-        void execPsubusbRSSERMSSE(const X64Instruction&);
-        void execPsubuswRSSERMSSE(const X64Instruction&);
+        void execPsubbXMMXMMM128(const X64Instruction&);
+        void execPsubwXMMXMMM128(const X64Instruction&);
+        void execPsubdXMMXMMM128(const X64Instruction&);
+        void execPsubqXMMXMMM128(const X64Instruction&);
+        void execPsubsbXMMXMMM128(const X64Instruction&);
+        void execPsubswXMMXMMM128(const X64Instruction&);
+        void execPsubusbXMMXMMM128(const X64Instruction&);
+        void execPsubuswXMMXMMM128(const X64Instruction&);
 
-        void execPmulhuwRSSERMSSE(const X64Instruction&);
-        void execPmulhwRSSERMSSE(const X64Instruction&);
-        void execPmullwRSSERMSSE(const X64Instruction&);
-        void execPmuludqRSSERMSSE(const X64Instruction&);
-        void execPmaddwdRSSERMSSE(const X64Instruction&);
+        void execPmulhuwXMMXMMM128(const X64Instruction&);
+        void execPmulhwXMMXMMM128(const X64Instruction&);
+        void execPmullwXMMXMMM128(const X64Instruction&);
+        void execPmuludqXMMXMMM128(const X64Instruction&);
+        void execPmaddwdXMMXMMM128(const X64Instruction&);
 
-        void execPsadbwRSSERMSSE(const X64Instruction&);
-        void execPavgbRSSERMSSE(const X64Instruction&);
-        void execPavgwRSSERMSSE(const X64Instruction&);
+        void execPsadbwXMMXMMM128(const X64Instruction&);
+        void execPavgbXMMXMMM128(const X64Instruction&);
+        void execPavgwXMMXMMM128(const X64Instruction&);
 
-        void execPmaxubRSSERMSSE(const X64Instruction&);
-        void execPminubRSSERMSSE(const X64Instruction&);
+        void execPmaxubXMMXMMM128(const X64Instruction&);
+        void execPminubXMMXMMM128(const X64Instruction&);
 
-        void execPtestRSSERMSSE(const X64Instruction&);
+        void execPtestXMMXMMM128(const X64Instruction&);
 
-        void execPsrawRSSEImm(const X64Instruction&);
-        void execPsradRSSEImm(const X64Instruction&);
-        void execPsraqRSSEImm(const X64Instruction&);
+        void execPsrawXMMImm(const X64Instruction&);
+        void execPsradXMMImm(const X64Instruction&);
+        void execPsraqXMMImm(const X64Instruction&);
 
-        void execPsllwRSSEImm(const X64Instruction&);
-        void execPsllwRSSERMSSE(const X64Instruction&);
-        void execPslldRSSEImm(const X64Instruction&);
-        void execPslldRSSERMSSE(const X64Instruction&);
-        void execPsllqRSSEImm(const X64Instruction&);
-        void execPsllqRSSERMSSE(const X64Instruction&);
-        void execPsrlwRSSEImm(const X64Instruction&);
-        void execPsrlwRSSERMSSE(const X64Instruction&);
-        void execPsrldRSSEImm(const X64Instruction&);
-        void execPsrldRSSERMSSE(const X64Instruction&);
-        void execPsrlqRSSEImm(const X64Instruction&);
-        void execPsrlqRSSERMSSE(const X64Instruction&);
+        void execPsllwXMMImm(const X64Instruction&);
+        void execPsllwXMMXMMM128(const X64Instruction&);
+        void execPslldXMMImm(const X64Instruction&);
+        void execPslldXMMXMMM128(const X64Instruction&);
+        void execPsllqXMMImm(const X64Instruction&);
+        void execPsllqXMMXMMM128(const X64Instruction&);
+        void execPsrlwXMMImm(const X64Instruction&);
+        void execPsrlwXMMXMMM128(const X64Instruction&);
+        void execPsrldXMMImm(const X64Instruction&);
+        void execPsrldXMMXMMM128(const X64Instruction&);
+        void execPsrlqXMMImm(const X64Instruction&);
+        void execPsrlqXMMXMMM128(const X64Instruction&);
 
-        void execPslldqRSSEImm(const X64Instruction&);
-        void execPsrldqRSSEImm(const X64Instruction&);
+        void execPslldqXMMImm(const X64Instruction&);
+        void execPsrldqXMMImm(const X64Instruction&);
         
-        void execPcmpistriRSSERMSSEImm(const X64Instruction&);
+        void execPcmpistriXMMXMMM128Imm(const X64Instruction&);
 
-        void execPackuswbRSSERMSSE(const X64Instruction&);
-        void execPackusdwRSSERMSSE(const X64Instruction&);
-        void execPacksswbRSSERMSSE(const X64Instruction&);
-        void execPackssdwRSSERMSSE(const X64Instruction&);
+        void execPackuswbXMMXMMM128(const X64Instruction&);
+        void execPackusdwXMMXMMM128(const X64Instruction&);
+        void execPacksswbXMMXMMM128(const X64Instruction&);
+        void execPackssdwXMMXMMM128(const X64Instruction&);
 
-        void execUnpckhpsRSSERMSSE(const X64Instruction&);
-        void execUnpckhpdRSSERMSSE(const X64Instruction&);
-        void execUnpcklpsRSSERMSSE(const X64Instruction&);
-        void execUnpcklpdRSSERMSSE(const X64Instruction&);
+        void execUnpckhpsXMMXMMM128(const X64Instruction&);
+        void execUnpckhpdXMMXMMM128(const X64Instruction&);
+        void execUnpcklpsXMMXMMM128(const X64Instruction&);
+        void execUnpcklpdXMMXMMM128(const X64Instruction&);
 
-        void execMovmskpsR32RSSE(const X64Instruction&);
-        void execMovmskpsR64RSSE(const X64Instruction&);
-        void execMovmskpdR32RSSE(const X64Instruction&);
-        void execMovmskpdR64RSSE(const X64Instruction&);
+        void execMovmskpsR32XMM(const X64Instruction&);
+        void execMovmskpsR64XMM(const X64Instruction&);
+        void execMovmskpdR32XMM(const X64Instruction&);
+        void execMovmskpdR64XMM(const X64Instruction&);
         
         void execRdtsc(const X64Instruction&);
 

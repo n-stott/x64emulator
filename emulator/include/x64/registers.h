@@ -61,7 +61,7 @@ namespace x64 {
             return gpr_[(u8)reg];
         }
 
-        Xmm get(RSSE reg) const {
+        Xmm get(XMM reg) const {
             return xmm_[(u8)reg];
         }
     
@@ -105,7 +105,7 @@ namespace x64 {
             gpr_[(u8)reg] = value;
         }
 
-        void set(RSSE reg, Xmm value) {
+        void set(XMM reg, Xmm value) {
             xmm_[(u8)reg] = value;
         }
 
