@@ -10,6 +10,7 @@ namespace x64 {
     class Registers {
     private:
         std::array<u64, 18> gpr_;
+        std::array<Mmx, 8> mmx_;
         std::array<Xmm, 16> xmm_;
 
     public:
@@ -61,6 +62,10 @@ namespace x64 {
             return gpr_[(u8)reg];
         }
 
+        u64 get(MMX reg) const {
+            return mmx_[(u8)reg];
+        }
+
         Xmm get(XMM reg) const {
             return xmm_[(u8)reg];
         }
@@ -103,6 +108,10 @@ namespace x64 {
         void set(R64 reg, u64 value) {
             assert(reg != R64::ZERO);
             gpr_[(u8)reg] = value;
+        }
+
+        void set(MMX reg, Mmx value) {
+            mmx_[(u8)reg] = value;
         }
 
         void set(XMM reg, Xmm value) {

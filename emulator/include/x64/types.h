@@ -112,6 +112,17 @@ namespace x64 {
         ZERO,
     };
 
+    enum class MMX : u8 {
+        MM0,
+        MM1,
+        MM2,
+        MM3,
+        MM4,
+        MM5,
+        MM6,
+        MM7,
+    };
+
     enum class XMM : u8 {
         XMM0,
         XMM1,
@@ -307,6 +318,18 @@ namespace x64 {
     using RM64 = RM<Size::QWORD>;
 
     using M80 = M<Size::TWORD>;
+
+    struct MMXM32 {
+        bool isReg;
+        MMX reg;
+        M32 mem;
+    };
+
+    struct MMXM64 {
+        bool isReg;
+        MMX reg;
+        M64 mem;
+    };
 
     using M128 = M<Size::XWORD>;
     using XMMM128 = RM<Size::XWORD>;

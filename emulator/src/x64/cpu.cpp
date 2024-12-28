@@ -304,6 +304,7 @@ namespace x64 {
     DEFINE_STANDALONE(MOV_M64_R64, execMovMR<Size::QWORD>)
     DEFINE_STANDALONE(MOV_R64_IMM, execMovRImm<Size::QWORD>)
     DEFINE_STANDALONE(MOV_M64_IMM, execMovMImm<Size::QWORD>)
+    DEFINE_STANDALONE(MOV_MMX_MMX, execMovMMXMMX)
     DEFINE_STANDALONE(MOV_XMM_XMM, execMovRR<Size::XWORD>)
     DEFINE_STANDALONE(MOV_ALIGNED_XMM_M128, execMovaXMMM128)
     DEFINE_STANDALONE(MOV_ALIGNED_M128_XMM, execMovaM128XMM)
@@ -516,12 +517,17 @@ namespace x64 {
     DEFINE_STANDALONE(POPCNT_R16_RM16, execPopcntR16RM16)
     DEFINE_STANDALONE(POPCNT_R32_RM32, execPopcntR32RM32)
     DEFINE_STANDALONE(POPCNT_R64_RM64, execPopcntR64RM64)
-    DEFINE_STANDALONE(PXOR_XMM_XMMM128, execPxorXMMXMMM128)
     DEFINE_STANDALONE(MOVAPS_XMMM128_XMMM128, execMovapsXMMM128XMMM128)
+    DEFINE_STANDALONE(MOVD_MMX_RM32, execMovdMMXRM32)
+    DEFINE_STANDALONE(MOVD_RM32_MMX, execMovdRM32MMX)
+    DEFINE_STANDALONE(MOVD_MMX_RM64, execMovdMMXRM64)
+    DEFINE_STANDALONE(MOVD_RM64_MMX, execMovdRM64MMX)
     DEFINE_STANDALONE(MOVD_XMM_RM32, execMovdXMMRM32)
     DEFINE_STANDALONE(MOVD_RM32_XMM, execMovdRM32XMM)
     DEFINE_STANDALONE(MOVD_XMM_RM64, execMovdXMMRM64)
     DEFINE_STANDALONE(MOVD_RM64_XMM, execMovdRM64XMM)
+    DEFINE_STANDALONE(MOVQ_MMX_RM64, execMovqMMXRM64)
+    DEFINE_STANDALONE(MOVQ_RM64_MMX, execMovqRM64MMX)
     DEFINE_STANDALONE(MOVQ_XMM_RM64, execMovqXMMRM64)
     DEFINE_STANDALONE(MOVQ_RM64_XMM, execMovqRM64XMM)
     DEFINE_STANDALONE(FLDZ, execFldz)
@@ -649,9 +655,14 @@ namespace x64 {
     DEFINE_STANDALONE(CVTPS2DQ_XMM_XMMM128, execCvtps2dqXMMXMMM128)
     DEFINE_STANDALONE(STMXCSR_M32, execStmxcsrM32)
     DEFINE_STANDALONE(LDMXCSR_M32, execLdmxcsrM32)
+    DEFINE_STANDALONE(PAND_MMX_MMXM64, execPandMMXMMXM64)
+    DEFINE_STANDALONE(PANDN_MMX_MMXM64, execPandnMMXMMXM64)
+    DEFINE_STANDALONE(POR_MMX_MMXM64, execPorMMXMMXM64)
+    DEFINE_STANDALONE(PXOR_MMX_MMXM64, execPxorMMXMMXM64)
     DEFINE_STANDALONE(PAND_XMM_XMMM128, execPandXMMXMMM128)
     DEFINE_STANDALONE(PANDN_XMM_XMMM128, execPandnXMMXMMM128)
     DEFINE_STANDALONE(POR_XMM_XMMM128, execPorXMMXMMM128)
+    DEFINE_STANDALONE(PXOR_XMM_XMMM128, execPxorXMMXMMM128)
     DEFINE_STANDALONE(ANDPD_XMM_XMMM128, execAndpdXMMXMMM128)
     DEFINE_STANDALONE(ANDNPD_XMM_XMMM128, execAndnpdXMMXMMM128)
     DEFINE_STANDALONE(ORPD_XMM_XMMM128, execOrpdXMMXMMM128)
@@ -666,10 +677,16 @@ namespace x64 {
     DEFINE_STANDALONE(MOVLHPS_XMM_XMM, execMovlhpsXMMXMM)
     DEFINE_STANDALONE(PINSRW_XMM_R32_IMM, execPinsrwXMMR32Imm)
     DEFINE_STANDALONE(PINSRW_XMM_M16_IMM, execPinsrwXMMM16Imm)
+    DEFINE_STANDALONE(PUNPCKLBW_MMX_MMXM32, execPunpcklbwMMXMMXM32)
+    DEFINE_STANDALONE(PUNPCKLWD_MMX_MMXM32, execPunpcklwdMMXMMXM32)
+    DEFINE_STANDALONE(PUNPCKLDQ_MMX_MMXM32, execPunpckldqMMXMMXM32)
     DEFINE_STANDALONE(PUNPCKLBW_XMM_XMMM128, execPunpcklbwXMMXMMM128)
     DEFINE_STANDALONE(PUNPCKLWD_XMM_XMMM128, execPunpcklwdXMMXMMM128)
     DEFINE_STANDALONE(PUNPCKLDQ_XMM_XMMM128, execPunpckldqXMMXMMM128)
     DEFINE_STANDALONE(PUNPCKLQDQ_XMM_XMMM128, execPunpcklqdqXMMXMMM128)
+    DEFINE_STANDALONE(PUNPCKHBW_MMX_MMXM32, execPunpckhbwMMXMMXM32)
+    DEFINE_STANDALONE(PUNPCKHWD_MMX_MMXM32, execPunpckhwdMMXMMXM32)
+    DEFINE_STANDALONE(PUNPCKHDQ_MMX_MMXM32, execPunpckhdqMMXMMXM32)
     DEFINE_STANDALONE(PUNPCKHBW_XMM_XMMM128, execPunpckhbwXMMXMMM128)
     DEFINE_STANDALONE(PUNPCKHWD_XMM_XMMM128, execPunpckhwdXMMXMMM128)
     DEFINE_STANDALONE(PUNPCKHDQ_XMM_XMMM128, execPunpckhdqXMMXMMM128)
@@ -708,7 +725,10 @@ namespace x64 {
     DEFINE_STANDALONE(PMULLW_XMM_XMMM128, execPmullwXMMXMMM128)
     DEFINE_STANDALONE(PMULUDQ_XMM_XMMM128, execPmuludqXMMXMMM128)
     DEFINE_STANDALONE(PMADDWD_XMM_XMMM128, execPmaddwdXMMXMMM128)
+    DEFINE_STANDALONE(PSADBW_MMX_MMXM64, execPsadbwMMXMMXM64)
     DEFINE_STANDALONE(PSADBW_XMM_XMMM128, execPsadbwXMMXMMM128)
+    DEFINE_STANDALONE(PAVGB_MMX_MMXM64, execPavgbMMXMMXM64)
+    DEFINE_STANDALONE(PAVGW_MMX_MMXM64, execPavgwMMXMMXM64)
     DEFINE_STANDALONE(PAVGB_XMM_XMMM128, execPavgbXMMXMMM128)
     DEFINE_STANDALONE(PAVGW_XMM_XMMM128, execPavgwXMMXMMM128)
     DEFINE_STANDALONE(PMAXUB_XMM_XMMM128, execPmaxubXMMXMMM128)
@@ -717,6 +737,18 @@ namespace x64 {
     DEFINE_STANDALONE(PSRAW_XMM_IMM, execPsrawXMMImm)
     DEFINE_STANDALONE(PSRAD_XMM_IMM, execPsradXMMImm)
     DEFINE_STANDALONE(PSRAQ_XMM_IMM, execPsraqXMMImm)
+    DEFINE_STANDALONE(PSLLW_MMX_IMM, execPsllwMMXImm)
+    DEFINE_STANDALONE(PSLLW_MMX_MMXM64, execPsllwMMXMMXM64)
+    DEFINE_STANDALONE(PSLLD_MMX_IMM, execPslldMMXImm)
+    DEFINE_STANDALONE(PSLLD_MMX_MMXM64, execPslldMMXMMXM64)
+    DEFINE_STANDALONE(PSLLQ_MMX_IMM, execPsllqMMXImm)
+    DEFINE_STANDALONE(PSLLQ_MMX_MMXM64, execPsllqMMXMMXM64)
+    DEFINE_STANDALONE(PSRLW_MMX_IMM, execPsrlwMMXImm)
+    DEFINE_STANDALONE(PSRLW_MMX_MMXM64, execPsrlwMMXMMXM64)
+    DEFINE_STANDALONE(PSRLD_MMX_IMM, execPsrldMMXImm)
+    DEFINE_STANDALONE(PSRLD_MMX_MMXM64, execPsrldMMXMMXM64)
+    DEFINE_STANDALONE(PSRLQ_MMX_IMM, execPsrlqMMXImm)
+    DEFINE_STANDALONE(PSRLQ_MMX_MMXM64, execPsrlqMMXMMXM64)
     DEFINE_STANDALONE(PSLLW_XMM_IMM, execPsllwXMMImm)
     DEFINE_STANDALONE(PSLLW_XMM_XMMM128, execPsllwXMMXMMM128)
     DEFINE_STANDALONE(PSLLD_XMM_IMM, execPslldXMMImm)
@@ -894,6 +926,7 @@ namespace x64 {
         STANDALONE_NAME(MOV_M64_R64),
         STANDALONE_NAME(MOV_R64_IMM),
         STANDALONE_NAME(MOV_M64_IMM),
+        STANDALONE_NAME(MOV_MMX_MMX),
         STANDALONE_NAME(MOV_XMM_XMM),
         STANDALONE_NAME(MOV_ALIGNED_XMM_M128),
         STANDALONE_NAME(MOV_ALIGNED_M128_XMM),
@@ -1106,12 +1139,17 @@ namespace x64 {
         STANDALONE_NAME(POPCNT_R16_RM16),
         STANDALONE_NAME(POPCNT_R32_RM32),
         STANDALONE_NAME(POPCNT_R64_RM64),
-        STANDALONE_NAME(PXOR_XMM_XMMM128),
         STANDALONE_NAME(MOVAPS_XMMM128_XMMM128),
+        STANDALONE_NAME(MOVD_MMX_RM32),
+        STANDALONE_NAME(MOVD_RM32_MMX),
+        STANDALONE_NAME(MOVD_MMX_RM64),
+        STANDALONE_NAME(MOVD_RM64_MMX),
         STANDALONE_NAME(MOVD_XMM_RM32),
         STANDALONE_NAME(MOVD_RM32_XMM),
         STANDALONE_NAME(MOVD_XMM_RM64),
         STANDALONE_NAME(MOVD_RM64_XMM),
+        STANDALONE_NAME(MOVQ_MMX_RM64),
+        STANDALONE_NAME(MOVQ_RM64_MMX),
         STANDALONE_NAME(MOVQ_XMM_RM64),
         STANDALONE_NAME(MOVQ_RM64_XMM),
         STANDALONE_NAME(FLDZ),
@@ -1239,9 +1277,14 @@ namespace x64 {
         STANDALONE_NAME(CVTPS2DQ_XMM_XMMM128),
         STANDALONE_NAME(STMXCSR_M32),
         STANDALONE_NAME(LDMXCSR_M32),
+        STANDALONE_NAME(PAND_MMX_MMXM64),
+        STANDALONE_NAME(PANDN_MMX_MMXM64),
+        STANDALONE_NAME(POR_MMX_MMXM64),
+        STANDALONE_NAME(PXOR_MMX_MMXM64),
         STANDALONE_NAME(PAND_XMM_XMMM128),
         STANDALONE_NAME(PANDN_XMM_XMMM128),
         STANDALONE_NAME(POR_XMM_XMMM128),
+        STANDALONE_NAME(PXOR_XMM_XMMM128),
         STANDALONE_NAME(ANDPD_XMM_XMMM128),
         STANDALONE_NAME(ANDNPD_XMM_XMMM128),
         STANDALONE_NAME(ORPD_XMM_XMMM128),
@@ -1256,10 +1299,16 @@ namespace x64 {
         STANDALONE_NAME(MOVLHPS_XMM_XMM),
         STANDALONE_NAME(PINSRW_XMM_R32_IMM),
         STANDALONE_NAME(PINSRW_XMM_M16_IMM),
+        STANDALONE_NAME(PUNPCKLBW_MMX_MMXM32),
+        STANDALONE_NAME(PUNPCKLWD_MMX_MMXM32),
+        STANDALONE_NAME(PUNPCKLDQ_MMX_MMXM32),
         STANDALONE_NAME(PUNPCKLBW_XMM_XMMM128),
         STANDALONE_NAME(PUNPCKLWD_XMM_XMMM128),
         STANDALONE_NAME(PUNPCKLDQ_XMM_XMMM128),
         STANDALONE_NAME(PUNPCKLQDQ_XMM_XMMM128),
+        STANDALONE_NAME(PUNPCKHBW_MMX_MMXM32),
+        STANDALONE_NAME(PUNPCKHWD_MMX_MMXM32),
+        STANDALONE_NAME(PUNPCKHDQ_MMX_MMXM32),
         STANDALONE_NAME(PUNPCKHBW_XMM_XMMM128),
         STANDALONE_NAME(PUNPCKHWD_XMM_XMMM128),
         STANDALONE_NAME(PUNPCKHDQ_XMM_XMMM128),
@@ -1298,7 +1347,10 @@ namespace x64 {
         STANDALONE_NAME(PMULLW_XMM_XMMM128),
         STANDALONE_NAME(PMULUDQ_XMM_XMMM128),
         STANDALONE_NAME(PMADDWD_XMM_XMMM128),
+        STANDALONE_NAME(PSADBW_MMX_MMXM64),
         STANDALONE_NAME(PSADBW_XMM_XMMM128),
+        STANDALONE_NAME(PAVGB_MMX_MMXM64),
+        STANDALONE_NAME(PAVGW_MMX_MMXM64),
         STANDALONE_NAME(PAVGB_XMM_XMMM128),
         STANDALONE_NAME(PAVGW_XMM_XMMM128),
         STANDALONE_NAME(PMAXUB_XMM_XMMM128),
@@ -1307,6 +1359,18 @@ namespace x64 {
         STANDALONE_NAME(PSRAW_XMM_IMM),
         STANDALONE_NAME(PSRAD_XMM_IMM),
         STANDALONE_NAME(PSRAQ_XMM_IMM),
+        STANDALONE_NAME(PSLLW_MMX_IMM),
+        STANDALONE_NAME(PSLLW_MMX_MMXM64),
+        STANDALONE_NAME(PSLLD_MMX_IMM),
+        STANDALONE_NAME(PSLLD_MMX_MMXM64),
+        STANDALONE_NAME(PSLLQ_MMX_IMM),
+        STANDALONE_NAME(PSLLQ_MMX_MMXM64),
+        STANDALONE_NAME(PSRLW_MMX_IMM),
+        STANDALONE_NAME(PSRLW_MMX_MMXM64),
+        STANDALONE_NAME(PSRLD_MMX_IMM),
+        STANDALONE_NAME(PSRLD_MMX_MMXM64),
+        STANDALONE_NAME(PSRLQ_MMX_IMM),
+        STANDALONE_NAME(PSRLQ_MMX_MMXM64),
         STANDALONE_NAME(PSLLW_XMM_IMM),
         STANDALONE_NAME(PSLLW_XMM_XMMM128),
         STANDALONE_NAME(PSLLD_XMM_IMM),
@@ -2088,6 +2152,7 @@ namespace x64 {
 
     template<typename T, typename U> T zeroExtend(const U& val);
     template<> u32 zeroExtend(const u16& val) { return (u32)val; }
+    template<> u64 zeroExtend(const u32& val) { return (u64)val; }
     template<> Xmm zeroExtend(const u32& val) { return Xmm{ val, 0 }; }
     template<> Xmm zeroExtend(const u64& val) { return Xmm{ val, 0 }; }
 
@@ -2100,6 +2165,12 @@ namespace x64 {
     void Cpu::execMovRR(const X64Instruction& ins) {
         const auto& dst = ins.op0<R<size>>();
         const auto& src = ins.op1<R<size>>();
+        set(dst, get(src));
+    }
+
+    void Cpu::execMovMMXMMX(const X64Instruction& ins) {
+        const auto& dst = ins.op0<MMX>();
+        const auto& src = ins.op1<MMX>();
         set(dst, get(src));
     }
 
@@ -3610,19 +3681,30 @@ namespace x64 {
         set(dst, Impl::popcnt64(get(src), &flags_));
     }
 
-    void Cpu::execPxorXMMXMMM128(const X64Instruction& ins) {
-        const auto& dst = ins.op0<XMM>();
-        const auto& src = ins.op1<XMMM128>();
-        u128 dstValue = get(dst);
-        u128 srcValue = get(src);
-        dstValue.lo = dstValue.lo ^ srcValue.lo;
-        dstValue.hi = dstValue.hi ^ srcValue.hi;
-        set(dst, dstValue);
-    }
-
     void Cpu::execMovapsXMMM128XMMM128(const X64Instruction& ins) {
         const auto& dst = ins.op0<XMMM128>();
         const auto& src = ins.op1<XMMM128>();
+        set(dst, get(src));
+    }
+
+    void Cpu::execMovdMMXRM32(const X64Instruction& ins) {
+        const auto& dst = ins.op0<MMX>();
+        const auto& src = ins.op1<RM32>();
+        set(dst, zeroExtend<u64, u32>(get(src)));
+    }
+    void Cpu::execMovdRM32MMX(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RM32>();
+        const auto& src = ins.op1<MMX>();
+        set(dst, narrow<u32, u64>(get(src)));
+    }
+    void Cpu::execMovdMMXRM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<MMX>();
+        const auto& src = ins.op1<RM64>();
+        set(dst, get(src));
+    }
+    void Cpu::execMovdRM64MMX(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RM64>();
+        const auto& src = ins.op1<MMX>();
         set(dst, get(src));
     }
 
@@ -3647,6 +3729,16 @@ namespace x64 {
         set(dst, narrow<u64, Xmm>(get(src)));
     }
 
+    void Cpu::execMovqMMXRM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<MMX>();
+        const auto& src = ins.op1<RM64>();
+        set(dst, get(src));
+    }
+    void Cpu::execMovqRM64MMX(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RM64>();
+        const auto& src = ins.op1<MMX>();
+        set(dst, get(src));
+    }
     void Cpu::execMovqXMMRM64(const X64Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<RM64>();
@@ -4437,6 +4529,42 @@ namespace x64 {
         mxcsr_ = SimdControlStatus::fromDoubleWord(get(resolve(src)));
     }
 
+    void Cpu::execPandMMXMMXM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<MMX>();
+        const auto& src = ins.op1<MMXM64>();
+        u64 dstValue = get(dst);
+        u64 srcValue = get(src);
+        dstValue = dstValue & srcValue;
+        set(dst, dstValue);
+    }
+
+    void Cpu::execPandnMMXMMXM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<MMX>();
+        const auto& src = ins.op1<MMXM64>();
+        u64 dstValue = get(dst);
+        u64 srcValue = get(src);
+        dstValue = (~dstValue) & srcValue;
+        set(dst, dstValue);
+    }
+
+    void Cpu::execPorMMXMMXM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<MMX>();
+        const auto& src = ins.op1<MMXM64>();
+        u64 dstValue = get(dst);
+        u64 srcValue = get(src);
+        dstValue = dstValue | srcValue;
+        set(dst, dstValue);
+    }
+
+    void Cpu::execPxorMMXMMXM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<MMX>();
+        const auto& src = ins.op1<MMXM64>();
+        u64 dstValue = get(dst);
+        u64 srcValue = get(src);
+        dstValue = dstValue ^ srcValue;
+        set(dst, dstValue);
+    }
+
     void Cpu::execPandXMMXMMM128(const X64Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
@@ -4464,6 +4592,16 @@ namespace x64 {
         u128 srcValue = get(src);
         dstValue.lo = dstValue.lo | srcValue.lo;
         dstValue.hi = dstValue.hi | srcValue.hi;
+        set(dst, dstValue);
+    }
+
+    void Cpu::execPxorXMMXMMM128(const X64Instruction& ins) {
+        const auto& dst = ins.op0<XMM>();
+        const auto& src = ins.op1<XMMM128>();
+        u128 dstValue = get(dst);
+        u128 srcValue = get(src);
+        dstValue.lo = dstValue.lo ^ srcValue.lo;
+        dstValue.hi = dstValue.hi ^ srcValue.hi;
         set(dst, dstValue);
     }
 
@@ -4589,24 +4727,45 @@ namespace x64 {
         set(dst, res);
     }
 
+    void Cpu::execPunpcklbwMMXMMXM32(const X64Instruction& ins) {
+        const auto& dst = ins.op0<MMX>();
+        const auto& src = ins.op1<MMXM32>();
+        u64 res = Impl::punpcklbw64(get(dst), get(src));
+        set(dst, res);
+    }
+
+    void Cpu::execPunpcklwdMMXMMXM32(const X64Instruction& ins) {
+        const auto& dst = ins.op0<MMX>();
+        const auto& src = ins.op1<MMXM32>();
+        u64 res = Impl::punpcklwd64(get(dst), get(src));
+        set(dst, res);
+    }
+
+    void Cpu::execPunpckldqMMXMMXM32(const X64Instruction& ins) {
+        const auto& dst = ins.op0<MMX>();
+        const auto& src = ins.op1<MMXM32>();
+        u64 res = Impl::punpckldq64(get(dst), get(src));
+        set(dst, res);
+    }
+
     void Cpu::execPunpcklbwXMMXMMM128(const X64Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
-        u128 res = Impl::punpcklbw(get(dst), get(src));
+        u128 res = Impl::punpcklbw128(get(dst), get(src));
         set(dst, res);
     }
 
     void Cpu::execPunpcklwdXMMXMMM128(const X64Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
-        u128 res = Impl::punpcklwd(get(dst), get(src));
+        u128 res = Impl::punpcklwd128(get(dst), get(src));
         set(dst, res);
     }
 
     void Cpu::execPunpckldqXMMXMMM128(const X64Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
-        u128 res = Impl::punpckldq(get(dst), get(src));
+        u128 res = Impl::punpckldq128(get(dst), get(src));
         set(dst, res);
     }
 
@@ -4617,24 +4776,45 @@ namespace x64 {
         set(dst, res);
     }
 
+    void Cpu::execPunpckhbwMMXMMXM32(const X64Instruction& ins) {
+        const auto& dst = ins.op0<MMX>();
+        const auto& src = ins.op1<MMXM32>();
+        u64 res = Impl::punpckhbw64(get(dst), get(src));
+        set(dst, res);
+    }
+
+    void Cpu::execPunpckhwdMMXMMXM32(const X64Instruction& ins) {
+        const auto& dst = ins.op0<MMX>();
+        const auto& src = ins.op1<MMXM32>();
+        u64 res = Impl::punpckhwd64(get(dst), get(src));
+        set(dst, res);
+    }
+
+    void Cpu::execPunpckhdqMMXMMXM32(const X64Instruction& ins) {
+        const auto& dst = ins.op0<MMX>();
+        const auto& src = ins.op1<MMXM32>();
+        u64 res = Impl::punpckhdq64(get(dst), get(src));
+        set(dst, res);
+    }
+
     void Cpu::execPunpckhbwXMMXMMM128(const X64Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
-        u128 res = Impl::punpckhbw(get(dst), get(src));
+        u128 res = Impl::punpckhbw128(get(dst), get(src));
         set(dst, res);
     }
 
     void Cpu::execPunpckhwdXMMXMMM128(const X64Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
-        u128 res = Impl::punpckhwd(get(dst), get(src));
+        u128 res = Impl::punpckhwd128(get(dst), get(src));
         set(dst, res);
     }
 
     void Cpu::execPunpckhdqXMMXMMM128(const X64Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
-        u128 res = Impl::punpckhdq(get(dst), get(src));
+        u128 res = Impl::punpckhdq128(get(dst), get(src));
         set(dst, res);
     }
 
@@ -4886,24 +5066,45 @@ namespace x64 {
         set(dst, res);
     }
 
+    void Cpu::execPsadbwMMXMMXM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<MMX>();
+        const auto& src = ins.op1<MMXM64>();
+        u64 res = Impl::psadbw64(get(dst), get(src));
+        set(dst, res);
+    }
+
     void Cpu::execPsadbwXMMXMMM128(const X64Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
-        u128 res = Impl::psadbw(get(dst), get(src));
+        u128 res = Impl::psadbw128(get(dst), get(src));
+        set(dst, res);
+    }
+
+    void Cpu::execPavgbMMXMMXM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<MMX>();
+        const auto& src = ins.op1<MMXM64>();
+        u64 res = Impl::pavgb64(get(dst), get(src));
+        set(dst, res);
+    }
+
+    void Cpu::execPavgwMMXMMXM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<MMX>();
+        const auto& src = ins.op1<MMXM64>();
+        u64 res = Impl::pavgw64(get(dst), get(src));
         set(dst, res);
     }
 
     void Cpu::execPavgbXMMXMMM128(const X64Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
-        u128 res = Impl::pavgb(get(dst), get(src));
+        u128 res = Impl::pavgb128(get(dst), get(src));
         set(dst, res);
     }
 
     void Cpu::execPavgwXMMXMMM128(const X64Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
-        u128 res = Impl::pavgw(get(dst), get(src));
+        u128 res = Impl::pavgw128(get(dst), get(src));
         set(dst, res);
     }
 
@@ -4945,6 +5146,82 @@ namespace x64 {
         set(dst, Impl::psraq(get(dst), get<u8>(src)));
     }
 
+    static u8 shiftFromU64(u64 count) {
+        return (u8)std::min((u64)255, count);
+    }
+
+    void Cpu::execPsllwMMXImm(const X64Instruction& ins) {
+        const auto& dst = ins.op0<MMX>();
+        const auto& src = ins.op1<Imm>();
+        set(dst, Impl::psllw64(get(dst), get<u8>(src)));
+    }
+    void Cpu::execPsllwMMXMMXM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<MMX>();
+        const auto& src = ins.op1<MMXM64>();
+        auto shift = shiftFromU64(get(src));
+        set(dst, Impl::psllw64(get(dst), shift));
+    }
+
+    void Cpu::execPslldMMXImm(const X64Instruction& ins) {
+        const auto& dst = ins.op0<MMX>();
+        const auto& src = ins.op1<Imm>();
+        set(dst, Impl::pslld64(get(dst), get<u8>(src)));
+    }
+    void Cpu::execPslldMMXMMXM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<MMX>();
+        const auto& src = ins.op1<MMXM64>();
+        auto shift = shiftFromU64(get(src));
+        set(dst, Impl::pslld64(get(dst), shift));
+    }
+
+    void Cpu::execPsllqMMXImm(const X64Instruction& ins) {
+        const auto& dst = ins.op0<MMX>();
+        const auto& src = ins.op1<Imm>();
+        set(dst, Impl::psllq64(get(dst), get<u8>(src)));
+    }
+    void Cpu::execPsllqMMXMMXM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<MMX>();
+        const auto& src = ins.op1<MMXM64>();
+        auto shift = shiftFromU64(get(src));
+        set(dst, Impl::psllq64(get(dst), shift));
+    }
+
+    void Cpu::execPsrlwMMXImm(const X64Instruction& ins) {
+        const auto& dst = ins.op0<MMX>();
+        const auto& src = ins.op1<Imm>();
+        set(dst, Impl::psrlw64(get(dst), get<u8>(src)));
+    }
+    void Cpu::execPsrlwMMXMMXM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<MMX>();
+        const auto& src = ins.op1<MMXM64>();
+        auto shift = shiftFromU64(get(src));
+        set(dst, Impl::psrlw64(get(dst), shift));
+    }
+
+    void Cpu::execPsrldMMXImm(const X64Instruction& ins) {
+        const auto& dst = ins.op0<MMX>();
+        const auto& src = ins.op1<Imm>();
+        set(dst, Impl::psrld64(get(dst), get<u8>(src)));
+    }
+    void Cpu::execPsrldMMXMMXM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<MMX>();
+        const auto& src = ins.op1<MMXM64>();
+        auto shift = shiftFromU64(get(src));
+        set(dst, Impl::psrld64(get(dst), shift));
+    }
+
+    void Cpu::execPsrlqMMXImm(const X64Instruction& ins) {
+        const auto& dst = ins.op0<MMX>();
+        const auto& src = ins.op1<Imm>();
+        set(dst, Impl::psrlq64(get(dst), get<u8>(src)));
+    }
+    void Cpu::execPsrlqMMXMMXM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<MMX>();
+        const auto& src = ins.op1<MMXM64>();
+        auto shift = shiftFromU64(get(src));
+        set(dst, Impl::psrlq64(get(dst), shift));
+    }
+
     static u8 shiftFromU128(u128 count) {
         if(count.hi > 0) {
             return 255;
@@ -4956,73 +5233,73 @@ namespace x64 {
     void Cpu::execPsllwXMMImm(const X64Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<Imm>();
-        set(dst, Impl::psllw(get(dst), get<u8>(src)));
+        set(dst, Impl::psllw128(get(dst), get<u8>(src)));
     }
     void Cpu::execPsllwXMMXMMM128(const X64Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         auto shift = shiftFromU128(get(src));
-        set(dst, Impl::psllw(get(dst), shift));
+        set(dst, Impl::psllw128(get(dst), shift));
     }
 
     void Cpu::execPslldXMMImm(const X64Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<Imm>();
-        set(dst, Impl::pslld(get(dst), get<u8>(src)));
+        set(dst, Impl::pslld128(get(dst), get<u8>(src)));
     }
     void Cpu::execPslldXMMXMMM128(const X64Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         auto shift = shiftFromU128(get(src));
-        set(dst, Impl::pslld(get(dst), shift));
+        set(dst, Impl::pslld128(get(dst), shift));
     }
 
     void Cpu::execPsllqXMMImm(const X64Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<Imm>();
-        set(dst, Impl::psllq(get(dst), get<u8>(src)));
+        set(dst, Impl::psllq128(get(dst), get<u8>(src)));
     }
     void Cpu::execPsllqXMMXMMM128(const X64Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         auto shift = shiftFromU128(get(src));
-        set(dst, Impl::psllq(get(dst), shift));
+        set(dst, Impl::psllq128(get(dst), shift));
     }
 
     void Cpu::execPsrlwXMMImm(const X64Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<Imm>();
-        set(dst, Impl::psrlw(get(dst), get<u8>(src)));
+        set(dst, Impl::psrlw128(get(dst), get<u8>(src)));
     }
     void Cpu::execPsrlwXMMXMMM128(const X64Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         auto shift = shiftFromU128(get(src));
-        set(dst, Impl::psrlw(get(dst), shift));
+        set(dst, Impl::psrlw128(get(dst), shift));
     }
 
     void Cpu::execPsrldXMMImm(const X64Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<Imm>();
-        set(dst, Impl::psrld(get(dst), get<u8>(src)));
+        set(dst, Impl::psrld128(get(dst), get<u8>(src)));
     }
     void Cpu::execPsrldXMMXMMM128(const X64Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         auto shift = shiftFromU128(get(src));
-        set(dst, Impl::psrld(get(dst), shift));
+        set(dst, Impl::psrld128(get(dst), shift));
     }
 
     void Cpu::execPsrlqXMMImm(const X64Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<Imm>();
-        set(dst, Impl::psrlq(get(dst), get<u8>(src)));
+        set(dst, Impl::psrlq128(get(dst), get<u8>(src)));
     }
     void Cpu::execPsrlqXMMXMMM128(const X64Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         auto shift = shiftFromU128(get(src));
-        set(dst, Impl::psrlq(get(dst), shift));
+        set(dst, Impl::psrlq128(get(dst), shift));
     }
 
     void Cpu::execPslldqXMMImm(const X64Instruction& ins) {

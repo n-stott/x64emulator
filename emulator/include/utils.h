@@ -13,6 +13,8 @@ using i16 = int16_t;
 using i32 = int32_t;
 using i64 = int64_t;
 
+using Mmx = u64;
+
 struct Xmm {
     u64 lo;
     u64 hi;

@@ -114,6 +114,20 @@ namespace utils {
         return "";
     }
 
+    inline std::string toString(const MMX& reg) {
+        switch(reg) {
+            case MMX::MM0: return "mm0";
+            case MMX::MM1: return "mm1";
+            case MMX::MM2: return "mm2";
+            case MMX::MM3: return "mm3";
+            case MMX::MM4: return "mm4";
+            case MMX::MM5: return "mm5";
+            case MMX::MM6: return "mm6";
+            case MMX::MM7: return "mm7";
+        }
+        return "";
+    }
+
     inline std::string toString(const XMM& reg) {
         switch(reg) {
             case XMM::XMM0: return "xmm0";
@@ -282,6 +296,16 @@ namespace utils {
         if(rm.isReg) return toString(rm.reg);
         return toString(rm.mem);
     }
+
+    inline std::string toString(const MMXM32& rm) {
+        if(rm.isReg) return toString(rm.reg);
+        return toString(rm.mem);
+    }
+
+    inline std::string toString(const MMXM64& rm) {
+        if(rm.isReg) return toString(rm.reg);
+        return toString(rm.mem);
+    }
     }
     
     std::string X64Instruction::toString(const char* mnemonic) const {
@@ -443,6 +467,7 @@ namespace utils {
             case Insn::MOV_M64_R64: return toString<M64, R64>("mov");
             case Insn::MOV_R64_IMM: return toString<R64, Imm>("mov");
             case Insn::MOV_M64_IMM: return toString<M64, Imm>("mov");
+            case Insn::MOV_MMX_MMX: return toString<MMX, MMX>("mov");
             case Insn::MOV_XMM_XMM: return toString<XMM, XMM>("mov");
             case Insn::MOV_ALIGNED_XMM_M128: return toString<XMM, M128>("mova");
             case Insn::MOV_ALIGNED_M128_XMM: return toString<M128, XMM>("mova");
@@ -656,12 +681,17 @@ namespace utils {
             case Insn::POPCNT_R16_RM16: return toString<R16, RM16>("popcnt");
             case Insn::POPCNT_R32_RM32: return toString<R32, RM32>("popcnt");
             case Insn::POPCNT_R64_RM64: return toString<R64, RM64>("popcnt");
-            case Insn::PXOR_XMM_XMMM128: return toString<XMM, XMMM128>("pxor");
             case Insn::MOVAPS_XMMM128_XMMM128: return toString<XMMM128, XMMM128>("movaps");
+            case Insn::MOVD_MMX_RM32: return toString<MMX, RM32>("movd");
+            case Insn::MOVD_RM32_MMX: return toString<RM32, MMX>("movd");
+            case Insn::MOVD_MMX_RM64: return toString<MMX, RM64>("movd");
+            case Insn::MOVD_RM64_MMX: return toString<RM64, MMX>("movd");
             case Insn::MOVD_XMM_RM32: return toString<XMM, RM32>("movd");
             case Insn::MOVD_RM32_XMM: return toString<RM32, XMM>("movd");
             case Insn::MOVD_XMM_RM64: return toString<XMM, RM64>("movd");
             case Insn::MOVD_RM64_XMM: return toString<RM64, XMM>("movd");
+            case Insn::MOVQ_MMX_RM64: return toString<MMX, RM64>("movq");
+            case Insn::MOVQ_RM64_MMX: return toString<RM64, MMX>("movq");
             case Insn::MOVQ_XMM_RM64: return toString<XMM, RM64>("movq");
             case Insn::MOVQ_RM64_XMM: return toString<RM64, XMM>("movq");
             case Insn::FLDZ: return toString("fldz");
@@ -789,9 +819,14 @@ namespace utils {
             case Insn::CVTPS2DQ_XMM_XMMM128: return toString<XMM, M64>("cvtps2dq");
             case Insn::STMXCSR_M32: return toString<M32>("stmxcsr");
             case Insn::LDMXCSR_M32: return toString<M32>("ldmxcsr");
+            case Insn::PAND_MMX_MMXM64: return toString<MMX, MMXM64>("pand");
+            case Insn::PANDN_MMX_MMXM64: return toString<MMX, MMXM64>("pandn");
+            case Insn::POR_MMX_MMXM64: return toString<MMX, MMXM64>("por");
+            case Insn::PXOR_MMX_MMXM64: return toString<MMX, MMXM64>("pxor");
             case Insn::PAND_XMM_XMMM128: return toString<XMM, XMMM128>("pand");
             case Insn::PANDN_XMM_XMMM128: return toString<XMM, XMMM128>("pandn");
             case Insn::POR_XMM_XMMM128: return toString<XMM, XMMM128>("por");
+            case Insn::PXOR_XMM_XMMM128: return toString<XMM, XMMM128>("pxor");
             case Insn::ANDPD_XMM_XMMM128: return toString<XMM, XMMM128>("andpd");
             case Insn::ANDNPD_XMM_XMMM128: return toString<XMM, XMMM128>("andnpd");
             case Insn::ORPD_XMM_XMMM128: return toString<XMM, XMMM128>("orpd");
@@ -806,10 +841,16 @@ namespace utils {
             case Insn::MOVLHPS_XMM_XMM: return toString<XMM, XMM>("movlhps");
             case Insn::PINSRW_XMM_R32_IMM: return toString<XMM, R32, Imm>("pinsrw");
             case Insn::PINSRW_XMM_M16_IMM: return toString<XMM, M16, Imm>("pinsrw");
+            case Insn::PUNPCKLBW_MMX_MMXM32: return toString<MMX, MMXM32>("punpcklbw");
+            case Insn::PUNPCKLWD_MMX_MMXM32: return toString<MMX, MMXM32>("punpcklwd");
+            case Insn::PUNPCKLDQ_MMX_MMXM32: return toString<MMX, MMXM32>("punpckldq");
             case Insn::PUNPCKLBW_XMM_XMMM128: return toString<XMM, XMMM128>("punpcklbw");
             case Insn::PUNPCKLWD_XMM_XMMM128: return toString<XMM, XMMM128>("punpcklwd");
             case Insn::PUNPCKLDQ_XMM_XMMM128: return toString<XMM, XMMM128>("punpckldq");
             case Insn::PUNPCKLQDQ_XMM_XMMM128: return toString<XMM, XMMM128>("punpcklqdq");
+            case Insn::PUNPCKHBW_MMX_MMXM32: return toString<MMX, MMXM32>("punpckhbw");
+            case Insn::PUNPCKHWD_MMX_MMXM32: return toString<MMX, MMXM32>("punpckhwd");
+            case Insn::PUNPCKHDQ_MMX_MMXM32: return toString<MMX, MMXM32>("punpckhdq");
             case Insn::PUNPCKHBW_XMM_XMMM128: return toString<XMM, XMMM128>("punpckhbw");
             case Insn::PUNPCKHWD_XMM_XMMM128: return toString<XMM, XMMM128>("punpckhwd");
             case Insn::PUNPCKHDQ_XMM_XMMM128: return toString<XMM, XMMM128>("punpckhdq");
@@ -848,7 +889,10 @@ namespace utils {
             case Insn::PMULLW_XMM_XMMM128: return toString<XMM, XMMM128>("pmullw");
             case Insn::PMULUDQ_XMM_XMMM128: return toString<XMM, XMMM128>("pmuludq");
             case Insn::PMADDWD_XMM_XMMM128: return toString<XMM, XMMM128>("pmaddwd");
+            case Insn::PSADBW_MMX_MMXM64: return toString<MMX, MMXM64>("psadbw");
             case Insn::PSADBW_XMM_XMMM128: return toString<XMM, XMMM128>("psadbw");
+            case Insn::PAVGB_MMX_MMXM64: return toString<MMX, MMXM64>("pavgb");
+            case Insn::PAVGW_MMX_MMXM64: return toString<MMX, MMXM64>("pavgw");
             case Insn::PAVGB_XMM_XMMM128: return toString<XMM, XMMM128>("pavgb");
             case Insn::PAVGW_XMM_XMMM128: return toString<XMM, XMMM128>("pavgw");
             case Insn::PMAXUB_XMM_XMMM128: return toString<XMM, XMMM128>("pmaxub");
@@ -857,6 +901,18 @@ namespace utils {
             case Insn::PSRAW_XMM_IMM: return toString<XMM, Imm>("psraw");
             case Insn::PSRAD_XMM_IMM: return toString<XMM, Imm>("psrad");
             case Insn::PSRAQ_XMM_IMM: return toString<XMM, Imm>("psraq");
+            case Insn::PSLLW_MMX_IMM: return toString<MMX, Imm>("psllw");
+            case Insn::PSLLW_MMX_MMXM64: return toString<MMX, MMXM64>("psllw");
+            case Insn::PSLLD_MMX_IMM: return toString<MMX, Imm>("pslld");
+            case Insn::PSLLD_MMX_MMXM64: return toString<MMX, MMXM64>("pslld");
+            case Insn::PSLLQ_MMX_IMM: return toString<MMX, Imm>("psllq");
+            case Insn::PSLLQ_MMX_MMXM64: return toString<MMX, MMXM64>("psllq");
+            case Insn::PSRLW_MMX_IMM: return toString<MMX, Imm>("psrlw");
+            case Insn::PSRLW_MMX_MMXM64: return toString<MMX, MMXM64>("psrlw");
+            case Insn::PSRLD_MMX_IMM: return toString<MMX, Imm>("psrld");
+            case Insn::PSRLD_MMX_MMXM64: return toString<MMX, MMXM64>("psrld");
+            case Insn::PSRLQ_MMX_IMM: return toString<MMX, Imm>("psrlq");
+            case Insn::PSRLQ_MMX_MMXM64: return toString<MMX, MMXM64>("psrlq");
             case Insn::PSLLW_XMM_IMM: return toString<XMM, Imm>("psllw");
             case Insn::PSLLW_XMM_XMMM128: return toString<XMM, XMMM128>("psllw");
             case Insn::PSLLD_XMM_IMM: return toString<XMM, Imm>("pslld");

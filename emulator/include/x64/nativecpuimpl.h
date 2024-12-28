@@ -231,14 +231,20 @@ namespace x64 {
         [[nodiscard]] static u128 pinsrw16(u128 dst, u16 src, u8 order);
         [[nodiscard]] static u128 pinsrw32(u128 dst, u32 src, u8 order);
 
-        [[nodiscard]] static u128 punpcklbw(u128 dst, u128 src);
-        [[nodiscard]] static u128 punpcklwd(u128 dst, u128 src);
-        [[nodiscard]] static u128 punpckldq(u128 dst, u128 src);
+        [[nodiscard]] static u64 punpcklbw64(u64 dst, u64 src);
+        [[nodiscard]] static u64 punpcklwd64(u64 dst, u64 src);
+        [[nodiscard]] static u64 punpckldq64(u64 dst, u64 src);
+        [[nodiscard]] static u128 punpcklbw128(u128 dst, u128 src);
+        [[nodiscard]] static u128 punpcklwd128(u128 dst, u128 src);
+        [[nodiscard]] static u128 punpckldq128(u128 dst, u128 src);
         [[nodiscard]] static u128 punpcklqdq(u128 dst, u128 src);
 
-        [[nodiscard]] static u128 punpckhbw(u128 dst, u128 src);
-        [[nodiscard]] static u128 punpckhwd(u128 dst, u128 src);
-        [[nodiscard]] static u128 punpckhdq(u128 dst, u128 src);
+        [[nodiscard]] static u64 punpckhbw64(u64 dst, u64 src);
+        [[nodiscard]] static u64 punpckhwd64(u64 dst, u64 src);
+        [[nodiscard]] static u64 punpckhdq64(u64 dst, u64 src);
+        [[nodiscard]] static u128 punpckhbw128(u128 dst, u128 src);
+        [[nodiscard]] static u128 punpckhwd128(u128 dst, u128 src);
+        [[nodiscard]] static u128 punpckhdq128(u128 dst, u128 src);
         [[nodiscard]] static u128 punpckhqdq(u128 dst, u128 src);
 
         [[nodiscard]] static u128 pshufb(u128 dst, u128 src);
@@ -281,9 +287,13 @@ namespace x64 {
         [[nodiscard]] static u128 pmuludq(u128 dst, u128 src);
         [[nodiscard]] static u128 pmaddwd(u128 dst, u128 src);
 
-        [[nodiscard]] static u128 psadbw(u128 dst, u128 src);
-        [[nodiscard]] static u128 pavgb(u128 dst, u128 src);
-        [[nodiscard]] static u128 pavgw(u128 dst, u128 src);
+        [[nodiscard]] static u64 psadbw64(u64 dst, u64 src);
+        [[nodiscard]] static u128 psadbw128(u128 dst, u128 src);
+
+        [[nodiscard]] static u64 pavgb64(u64 dst, u64 src);
+        [[nodiscard]] static u64 pavgw64(u64 dst, u64 src);
+        [[nodiscard]] static u128 pavgb128(u128 dst, u128 src);
+        [[nodiscard]] static u128 pavgw128(u128 dst, u128 src);
 
         [[nodiscard]] static u128 pmaxub(u128 dst, u128 src);
         [[nodiscard]] static u128 pminub(u128 dst, u128 src);
@@ -294,12 +304,19 @@ namespace x64 {
         [[nodiscard]] static u128 psrad(u128 dst, u8 src);
         [[nodiscard]] static u128 psraq(u128 dst, u8 src);
 
-        [[nodiscard]] static u128 psllw(u128 dst, u8 src);
-        [[nodiscard]] static u128 pslld(u128 dst, u8 src);
-        [[nodiscard]] static u128 psllq(u128 dst, u8 src);
-        [[nodiscard]] static u128 psrlw(u128 dst, u8 src);
-        [[nodiscard]] static u128 psrld(u128 dst, u8 src);
-        [[nodiscard]] static u128 psrlq(u128 dst, u8 src);
+        [[nodiscard]] static u64 psllw64(u64 dst, u8 src);
+        [[nodiscard]] static u64 pslld64(u64 dst, u8 src);
+        [[nodiscard]] static u64 psllq64(u64 dst, u8 src);
+        [[nodiscard]] static u64 psrlw64(u64 dst, u8 src);
+        [[nodiscard]] static u64 psrld64(u64 dst, u8 src);
+        [[nodiscard]] static u64 psrlq64(u64 dst, u8 src);
+
+        [[nodiscard]] static u128 psllw128(u128 dst, u8 src);
+        [[nodiscard]] static u128 pslld128(u128 dst, u8 src);
+        [[nodiscard]] static u128 psllq128(u128 dst, u8 src);
+        [[nodiscard]] static u128 psrlw128(u128 dst, u8 src);
+        [[nodiscard]] static u128 psrld128(u128 dst, u8 src);
+        [[nodiscard]] static u128 psrlq128(u128 dst, u8 src);
 
         [[nodiscard]] static u128 pslldq(u128 dst, u8 src);
         [[nodiscard]] static u128 psrldq(u128 dst, u8 src);

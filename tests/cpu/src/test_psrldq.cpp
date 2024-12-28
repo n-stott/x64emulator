@@ -5272,17 +5272,17 @@ int main() {
         u128 virtualRes;
         u128 realRes;
 
-        virtualRes = x64::CpuImpl::psrlw(testCase.first, testCase.second);
+        virtualRes = x64::CpuImpl::psrlw128(testCase.first, testCase.second);
         realRes = srlw(testCase.first, testCase.second);
         if(virtualRes.lo != realRes.lo) return 1;
         if(virtualRes.hi != realRes.hi) return 1;
 
-        virtualRes = x64::CpuImpl::psrld(testCase.first, testCase.second);
+        virtualRes = x64::CpuImpl::psrld128(testCase.first, testCase.second);
         realRes = srld(testCase.first, testCase.second);
         if(virtualRes.lo != realRes.lo) return 1;
         if(virtualRes.hi != realRes.hi) return 1;
 
-        virtualRes = x64::CpuImpl::psrlq(testCase.first, testCase.second);
+        virtualRes = x64::CpuImpl::psrlq128(testCase.first, testCase.second);
         realRes = srlq(testCase.first, testCase.second);
         if(virtualRes.lo != realRes.lo) return 1;
         if(virtualRes.hi != realRes.hi) return 1;

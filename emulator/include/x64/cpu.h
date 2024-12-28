@@ -90,6 +90,7 @@ namespace x64 {
         u16 get(R16 reg) const { return regs_.get(reg); }
         u32 get(R32 reg) const { return regs_.get(reg); }
         u64 get(R64 reg) const { return regs_.get(reg); }
+        u64 get(MMX reg) const { return regs_.get(reg); }
         Xmm get(XMM reg) const { return regs_.get(reg); }
 
         template<typename T>
@@ -114,6 +115,7 @@ namespace x64 {
         void set(R16 reg, u16 value) { regs_.set(reg, value); }
         void set(R32 reg, u32 value) { regs_.set(reg, value); }
         void set(R64 reg, u64 value) { regs_.set(reg, value); }
+        void set(MMX reg, u64 value) { regs_.set(reg, value); }
         void set(XMM reg, Xmm value) { regs_.set(reg, value); }
 
         void set(Ptr8 ptr, u8 value);
@@ -131,6 +133,18 @@ namespace x64 {
         
         template<Size size>
         inline void set(const RM<size>& rm, U<size> value) {
+            return rm.isReg ? set(rm.reg, value) : set(resolve(rm.mem), value);
+        }
+
+        inline u64 get(const MMXM32& rm) const {
+            return rm.isReg ? get(rm.reg) : get(resolve(rm.mem));
+        }
+
+        inline u64 get(const MMXM64& rm) const {
+            return rm.isReg ? get(rm.reg) : get(resolve(rm.mem));
+        }
+        
+        inline void set(const MMXM64& rm, u64 value) {
             return rm.isReg ? set(rm.reg, value) : set(resolve(rm.mem), value);
         }
 
@@ -316,6 +330,8 @@ namespace x64 {
 
         template<Size size>
         void execMovRR(const X64Instruction&);
+
+        void execMovMMXMMX(const X64Instruction&);
 
         template<Size size>
         void execMovRM(const X64Instruction&);
@@ -586,15 +602,20 @@ namespace x64 {
         void execPopcntR32RM32(const X64Instruction&);
         void execPopcntR64RM64(const X64Instruction&);
 
-        void execPxorXMMXMMM128(const X64Instruction&);
-
         void execMovapsXMMM128XMMM128(const X64Instruction&);
+
+        void execMovdMMXRM32(const X64Instruction&);
+        void execMovdRM32MMX(const X64Instruction&);
+        void execMovdMMXRM64(const X64Instruction&);
+        void execMovdRM64MMX(const X64Instruction&);
 
         void execMovdXMMRM32(const X64Instruction&);
         void execMovdRM32XMM(const X64Instruction&);
         void execMovdXMMRM64(const X64Instruction&);
         void execMovdRM64XMM(const X64Instruction&);
 
+        void execMovqMMXRM64(const X64Instruction&);
+        void execMovqRM64MMX(const X64Instruction&);
         void execMovqXMMRM64(const X64Instruction&);
         void execMovqRM64XMM(const X64Instruction&);
 
@@ -755,9 +776,15 @@ namespace x64 {
         void execStmxcsrM32(const X64Instruction&);
         void execLdmxcsrM32(const X64Instruction&);
 
+        void execPandMMXMMXM64(const X64Instruction&);
+        void execPandnMMXMMXM64(const X64Instruction&);
+        void execPorMMXMMXM64(const X64Instruction&);
+        void execPxorMMXMMXM64(const X64Instruction&);
+
         void execPandXMMXMMM128(const X64Instruction&);
         void execPandnXMMXMMM128(const X64Instruction&);
         void execPorXMMXMMM128(const X64Instruction&);
+        void execPxorXMMXMMM128(const X64Instruction&);
 
         void execAndpdXMMXMMM128(const X64Instruction&);
         void execAndnpdXMMXMMM128(const X64Instruction&);
@@ -777,11 +804,17 @@ namespace x64 {
         void execPinsrwXMMR32Imm(const X64Instruction&);
         void execPinsrwXMMM16Imm(const X64Instruction&);
 
+        void execPunpcklbwMMXMMXM32(const X64Instruction&);
+        void execPunpcklwdMMXMMXM32(const X64Instruction&);
+        void execPunpckldqMMXMMXM32(const X64Instruction&);
         void execPunpcklbwXMMXMMM128(const X64Instruction&);
         void execPunpcklwdXMMXMMM128(const X64Instruction&);
         void execPunpckldqXMMXMMM128(const X64Instruction&);
         void execPunpcklqdqXMMXMMM128(const X64Instruction&);
 
+        void execPunpckhbwMMXMMXM32(const X64Instruction&);
+        void execPunpckhwdMMXMMXM32(const X64Instruction&);
+        void execPunpckhdqMMXMMXM32(const X64Instruction&);
         void execPunpckhbwXMMXMMM128(const X64Instruction&);
         void execPunpckhwdXMMXMMM128(const X64Instruction&);
         void execPunpckhdqXMMXMMM128(const X64Instruction&);
@@ -828,7 +861,11 @@ namespace x64 {
         void execPmuludqXMMXMMM128(const X64Instruction&);
         void execPmaddwdXMMXMMM128(const X64Instruction&);
 
+        void execPsadbwMMXMMXM64(const X64Instruction&);
         void execPsadbwXMMXMMM128(const X64Instruction&);
+
+        void execPavgbMMXMMXM64(const X64Instruction&);
+        void execPavgwMMXMMXM64(const X64Instruction&);
         void execPavgbXMMXMMM128(const X64Instruction&);
         void execPavgwXMMXMMM128(const X64Instruction&);
 
@@ -840,6 +877,19 @@ namespace x64 {
         void execPsrawXMMImm(const X64Instruction&);
         void execPsradXMMImm(const X64Instruction&);
         void execPsraqXMMImm(const X64Instruction&);
+
+        void execPsllwMMXImm(const X64Instruction&);
+        void execPsllwMMXMMXM64(const X64Instruction&);
+        void execPslldMMXImm(const X64Instruction&);
+        void execPslldMMXMMXM64(const X64Instruction&);
+        void execPsllqMMXImm(const X64Instruction&);
+        void execPsllqMMXMMXM64(const X64Instruction&);
+        void execPsrlwMMXImm(const X64Instruction&);
+        void execPsrlwMMXMMXM64(const X64Instruction&);
+        void execPsrldMMXImm(const X64Instruction&);
+        void execPsrldMMXMMXM64(const X64Instruction&);
+        void execPsrlqMMXImm(const X64Instruction&);
+        void execPsrlqMMXMMXM64(const X64Instruction&);
 
         void execPsllwXMMImm(const X64Instruction&);
         void execPsllwXMMXMMM128(const X64Instruction&);

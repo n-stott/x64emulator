@@ -1842,19 +1842,37 @@ namespace x64 {
         return NativeCpuImpl::pinsrw16(dst, (u16)src, order);
     }
 
-    u128 NativeCpuImpl::punpcklbw(u128 dst, u128 src) {
+    u64 NativeCpuImpl::punpcklbw64(u64 dst, u64 src) {
+        u64 nativeRes = dst;
+        asm volatile("punpcklbw %1, %0" : "+y"(nativeRes) : "y"(src));
+        return nativeRes;
+    }
+
+    u64 NativeCpuImpl::punpcklwd64(u64 dst, u64 src) {
+        u64 nativeRes = dst;
+        asm volatile("punpcklwd %1, %0" : "+y"(nativeRes) : "y"(src));
+        return nativeRes;
+    }
+
+    u64 NativeCpuImpl::punpckldq64(u64 dst, u64 src) {
+        u64 nativeRes = dst;
+        asm volatile("punpckldq %1, %0" : "+y"(nativeRes) : "y"(src));
+        return nativeRes;
+    }
+
+    u128 NativeCpuImpl::punpcklbw128(u128 dst, u128 src) {
         u128 nativeRes = dst;
         asm volatile("punpcklbw %1, %0" : "+x"(nativeRes) : "x"(src));
         return nativeRes;
     }
 
-    u128 NativeCpuImpl::punpcklwd(u128 dst, u128 src) {
+    u128 NativeCpuImpl::punpcklwd128(u128 dst, u128 src) {
         u128 nativeRes = dst;
         asm volatile("punpcklwd %1, %0" : "+x"(nativeRes) : "x"(src));
         return nativeRes;
     }
 
-    u128 NativeCpuImpl::punpckldq(u128 dst, u128 src) {
+    u128 NativeCpuImpl::punpckldq128(u128 dst, u128 src) {
         u128 nativeRes = dst;
         asm volatile("punpckldq %1, %0" : "+x"(nativeRes) : "x"(src));
         return nativeRes;
@@ -1866,19 +1884,37 @@ namespace x64 {
         return nativeRes;
     }
 
-    u128 NativeCpuImpl::punpckhbw(u128 dst, u128 src) {
+    u64 NativeCpuImpl::punpckhbw64(u64 dst, u64 src) {
+        u64 nativeRes = dst;
+        asm volatile("punpckhbw %1, %0" : "+y"(nativeRes) : "y"(src));
+        return nativeRes;
+    }
+
+    u64 NativeCpuImpl::punpckhwd64(u64 dst, u64 src) {
+        u64 nativeRes = dst;
+        asm volatile("punpckhwd %1, %0" : "+y"(nativeRes) : "y"(src));
+        return nativeRes;
+    }
+
+    u64 NativeCpuImpl::punpckhdq64(u64 dst, u64 src) {
+        u64 nativeRes = dst;
+        asm volatile("punpckhdq %1, %0" : "+y"(nativeRes) : "y"(src));
+        return nativeRes;
+    }
+
+    u128 NativeCpuImpl::punpckhbw128(u128 dst, u128 src) {
         u128 nativeRes = dst;
         asm volatile("punpckhbw %1, %0" : "+x"(nativeRes) : "x"(src));
         return nativeRes;
     }
 
-    u128 NativeCpuImpl::punpckhwd(u128 dst, u128 src) {
+    u128 NativeCpuImpl::punpckhwd128(u128 dst, u128 src) {
         u128 nativeRes = dst;
         asm volatile("punpckhwd %1, %0" : "+x"(nativeRes) : "x"(src));
         return nativeRes;
     }
 
-    u128 NativeCpuImpl::punpckhdq(u128 dst, u128 src) {
+    u128 NativeCpuImpl::punpckhdq128(u128 dst, u128 src) {
         u128 nativeRes = dst;
         asm volatile("punpckhdq %1, %0" : "+x"(nativeRes) : "x"(src));
         return nativeRes;
@@ -2111,19 +2147,37 @@ namespace x64 {
         return nativeRes;
     }
 
-    u128 NativeCpuImpl::psadbw(u128 dst, u128 src) {
+    u64 NativeCpuImpl::psadbw64(u64 dst, u64 src) {
+        u64 nativeRes = dst;
+        asm volatile("psadbw %1, %0" : "+y"(nativeRes) : "y"(src));
+        return nativeRes;
+    }
+
+    u128 NativeCpuImpl::psadbw128(u128 dst, u128 src) {
         u128 nativeRes = dst;
         asm volatile("psadbw %1, %0" : "+x"(nativeRes) : "x"(src));
         return nativeRes;
     }
     
-    u128 NativeCpuImpl::pavgb(u128 dst, u128 src) {
+    u64 NativeCpuImpl::pavgb64(u64 dst, u64 src) {
+        u64 nativeRes = dst;
+        asm volatile("pavgb %1, %0" : "+y"(nativeRes) : "y"(src));
+        return nativeRes;
+    }
+    
+    u64 NativeCpuImpl::pavgw64(u64 dst, u64 src) {
+        u64 nativeRes = dst;
+        asm volatile("pavgw %1, %0" : "+y"(nativeRes) : "y"(src));
+        return nativeRes;
+    }
+    
+    u128 NativeCpuImpl::pavgb128(u128 dst, u128 src) {
         u128 nativeRes = dst;
         asm volatile("pavgb %1, %0" : "+x"(nativeRes) : "x"(src));
         return nativeRes;
     }
     
-    u128 NativeCpuImpl::pavgw(u128 dst, u128 src) {
+    u128 NativeCpuImpl::pavgw128(u128 dst, u128 src) {
         u128 nativeRes = dst;
         asm volatile("pavgw %1, %0" : "+x"(nativeRes) : "x"(src));
         return nativeRes;
@@ -2195,7 +2249,126 @@ namespace x64 {
 
     // NOLINTBEGIN(readability-function-size)
     template<typename U>
-    static u128 psll(u128 dst, u8 src) {
+    static u64 psll64(u64 dst, u8 src) {
+
+        auto sllw = [=](u64 src, u8 imm) -> u64 {
+            auto nativesll = [](__m64 src, u8 imm) -> __m64 {
+                u8 order = imm;
+                CALL_1_WITH_IMM8(_mm_slli_pi16, src);
+            };
+            __m64 msrc;
+            std::memcpy(&msrc, &src, sizeof(msrc));
+            __m64 res = nativesll(msrc, imm);
+            u64 realRes;
+            std::memcpy(&realRes, &res, sizeof(realRes));
+            return realRes;
+        };
+
+        auto slld = [=](u64 src, u8 imm) -> u64 {
+            auto nativesll = [](__m64 src, u8 imm) -> __m64 {
+                u8 order = imm;
+                CALL_1_WITH_IMM8(_mm_slli_pi32, src);
+            };
+            __m64 msrc;
+            std::memcpy(&msrc, &src, sizeof(msrc));
+            __m64 res = nativesll(msrc, imm);
+            u64 realRes;
+            std::memcpy(&realRes, &res, sizeof(realRes));
+            return realRes;
+        };
+
+        auto sllq = [=](u64 src, u8 imm) -> u64 {
+            auto nativesll = [](__m64 src, u8 imm) -> __m64 {
+                u8 order = imm;
+                CALL_1_WITH_IMM8(_mm_slli_si64, src);
+            };
+            __m64 msrc;
+            std::memcpy(&msrc, &src, sizeof(msrc));
+            __m64 res = nativesll(msrc, imm);
+            u64 realRes;
+            std::memcpy(&realRes, &res, sizeof(realRes));
+            return realRes;
+        };
+
+        u64 nativeRes;
+        if constexpr(std::is_same_v<U, u16>) {
+            nativeRes = sllw(dst, src);
+        } else if constexpr(std::is_same_v<U, u32>) {
+            nativeRes = slld(dst, src);
+        } else if constexpr(std::is_same_v<U, u64>) {
+            nativeRes = sllq(dst, src);
+        }
+        return nativeRes;
+    }
+    // NOLINTEND(readability-function-size)
+
+    u64 NativeCpuImpl::psllw64(u64 dst, u8 src) { return psll64<u16>(dst, src); }
+    u64 NativeCpuImpl::pslld64(u64 dst, u8 src) { return psll64<u32>(dst, src); }
+    u64 NativeCpuImpl::psllq64(u64 dst, u8 src) { return psll64<u64>(dst, src); }
+
+
+    // NOLINTBEGIN(readability-function-size)
+    template<typename U>
+    static u64 psrl64(u64 dst, u8 src) {
+
+        auto srlw = [=](u64 src, u8 imm) -> u64 {
+            auto nativesrl = [](__m64 src, u8 imm) -> __m64 {
+                u8 order = imm;
+                CALL_1_WITH_IMM8(_mm_srli_pi16, src);
+            };
+            __m64 msrc;
+            std::memcpy(&msrc, &src, sizeof(msrc));
+            __m64 res = nativesrl(msrc, imm);
+            u64 realRes;
+            std::memcpy(&realRes, &res, sizeof(realRes));
+            return realRes;
+        };
+
+        auto srld = [=](u64 src, u8 imm) -> u64 {
+            auto nativesrl = [](__m64 src, u8 imm) -> __m64 {
+                u8 order = imm;
+                CALL_1_WITH_IMM8(_mm_srli_pi32, src);
+            };
+            __m64 msrc;
+            std::memcpy(&msrc, &src, sizeof(msrc));
+            __m64 res = nativesrl(msrc, imm);
+            u64 realRes;
+            std::memcpy(&realRes, &res, sizeof(realRes));
+            return realRes;
+        };
+
+        auto srlq = [=](u64 src, u8 imm) -> u64 {
+            auto nativesrl = [](__m64 src, u8 imm) -> __m64 {
+                u8 order = imm;
+                CALL_1_WITH_IMM8(_mm_srli_si64, src);
+            };
+            __m64 msrc;
+            std::memcpy(&msrc, &src, sizeof(msrc));
+            __m64 res = nativesrl(msrc, imm);
+            u64 realRes;
+            std::memcpy(&realRes, &res, sizeof(realRes));
+            return realRes;
+        };
+
+        u64 nativeRes;
+        if constexpr(std::is_same_v<U, u16>) {
+            nativeRes = srlw(dst, src);
+        } else if constexpr(std::is_same_v<U, u32>) {
+            nativeRes = srld(dst, src);
+        } else if constexpr(std::is_same_v<U, u64>) {
+            nativeRes = srlq(dst, src);
+        }
+        return nativeRes;
+    }
+    // NOLINTEND(readability-function-size)
+
+    u64 NativeCpuImpl::psrlw64(u64 dst, u8 src) { return psrl64<u16>(dst, src); }
+    u64 NativeCpuImpl::psrld64(u64 dst, u8 src) { return psrl64<u32>(dst, src); }
+    u64 NativeCpuImpl::psrlq64(u64 dst, u8 src) { return psrl64<u64>(dst, src); }
+
+    // NOLINTBEGIN(readability-function-size)
+    template<typename U>
+    static u128 psll128(u128 dst, u8 src) {
 
         auto sllw = [=](u128 src, u8 imm) -> u128 {
             auto nativesll = [](__m128i src, u8 imm) -> __m128i {
@@ -2248,14 +2421,14 @@ namespace x64 {
     }
     // NOLINTEND(readability-function-size)
 
-    u128 NativeCpuImpl::psllw(u128 dst, u8 src) { return psll<u16>(dst, src); }
-    u128 NativeCpuImpl::pslld(u128 dst, u8 src) { return psll<u32>(dst, src); }
-    u128 NativeCpuImpl::psllq(u128 dst, u8 src) { return psll<u64>(dst, src); }
+    u128 NativeCpuImpl::psllw128(u128 dst, u8 src) { return psll128<u16>(dst, src); }
+    u128 NativeCpuImpl::pslld128(u128 dst, u8 src) { return psll128<u32>(dst, src); }
+    u128 NativeCpuImpl::psllq128(u128 dst, u8 src) { return psll128<u64>(dst, src); }
 
 
     // NOLINTBEGIN(readability-function-size)
     template<typename U>
-    static u128 psrl(u128 dst, u8 src) {
+    static u128 psrl128(u128 dst, u8 src) {
 
         auto srlw = [=](u128 src, u8 imm) -> u128 {
             auto nativesrl = [](__m128i src, u8 imm) -> __m128i {
@@ -2308,9 +2481,9 @@ namespace x64 {
     }
     // NOLINTEND(readability-function-size)
 
-    u128 NativeCpuImpl::psrlw(u128 dst, u8 src) { return psrl<u16>(dst, src); }
-    u128 NativeCpuImpl::psrld(u128 dst, u8 src) { return psrl<u32>(dst, src); }
-    u128 NativeCpuImpl::psrlq(u128 dst, u8 src) { return psrl<u64>(dst, src); }
+    u128 NativeCpuImpl::psrlw128(u128 dst, u8 src) { return psrl128<u16>(dst, src); }
+    u128 NativeCpuImpl::psrld128(u128 dst, u8 src) { return psrl128<u32>(dst, src); }
+    u128 NativeCpuImpl::psrlq128(u128 dst, u8 src) { return psrl128<u64>(dst, src); }
 
     u128 NativeCpuImpl::pslldq(u128 dst, u8 src) {
         auto slldq = [=](u128 src, u8 imm) -> u128 {
