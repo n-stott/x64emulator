@@ -2022,7 +2022,103 @@ namespace x64 {
     }
 
     template<typename U>
-    u128 padd(u128 dst, u128 src) {
+    u64 padd64(u64 dst, u64 src) {
+        u64 nativeRes = dst;
+        if constexpr(std::is_same_v<U, u8>) {
+            asm volatile("paddb %1, %0" : "+y"(nativeRes) : "y"(src));
+        } else if constexpr(std::is_same_v<U, u16>) {
+            asm volatile("paddw %1, %0" : "+y"(nativeRes) : "y"(src));
+        } else if constexpr(std::is_same_v<U, u32>) {
+            asm volatile("paddd %1, %0" : "+y"(nativeRes) : "y"(src));
+        } else {
+            asm volatile("paddq %1, %0" : "+y"(nativeRes) : "y"(src));
+        }
+        return nativeRes;
+    }
+
+    u64 NativeCpuImpl::paddb64(u64 dst, u64 src) { return padd64<u8>(dst, src); }
+    u64 NativeCpuImpl::paddw64(u64 dst, u64 src) { return padd64<u16>(dst, src); }
+    u64 NativeCpuImpl::paddd64(u64 dst, u64 src) { return padd64<u32>(dst, src); }
+    u64 NativeCpuImpl::paddq64(u64 dst, u64 src) { return padd64<u64>(dst, src); }
+
+    template<typename U>
+    u64 padds64(u64 dst, u64 src) {
+        u64 nativeRes = dst;
+        if constexpr(std::is_same_v<U, u8>) {
+            asm volatile("paddsb %1, %0" : "+y"(nativeRes) : "y"(src));
+        } else {
+            asm volatile("paddsw %1, %0" : "+y"(nativeRes) : "y"(src));
+        }
+        return nativeRes;
+    }
+
+    u64 NativeCpuImpl::paddsb64(u64 dst, u64 src) { return padds64<u8>(dst, src); }
+    u64 NativeCpuImpl::paddsw64(u64 dst, u64 src) { return padds64<u16>(dst, src); }
+
+    template<typename U>
+    u64 paddus64(u64 dst, u64 src) {
+        u64 nativeRes = dst;
+        if constexpr(std::is_same_v<U, u8>) {
+            asm volatile("paddusb %1, %0" : "+y"(nativeRes) : "y"(src));
+        } else {
+            asm volatile("paddusw %1, %0" : "+y"(nativeRes) : "y"(src));
+        }
+        return nativeRes;
+    }
+
+    u64 NativeCpuImpl::paddusb64(u64 dst, u64 src) { return paddus64<u8>(dst, src); }
+    u64 NativeCpuImpl::paddusw64(u64 dst, u64 src) { return paddus64<u16>(dst, src); }
+
+    template<typename U>
+    u64 psub64(u64 dst, u64 src) {
+        u64 nativeRes = dst;
+        if constexpr(std::is_same_v<U, u8>) {
+            asm volatile("psubb %1, %0" : "+y"(nativeRes) : "y"(src));
+        } else if constexpr(std::is_same_v<U, u16>) {
+            asm volatile("psubw %1, %0" : "+y"(nativeRes) : "y"(src));
+        } else if constexpr(std::is_same_v<U, u32>) {
+            asm volatile("psubd %1, %0" : "+y"(nativeRes) : "y"(src));
+        } else {
+            asm volatile("psubq %1, %0" : "+y"(nativeRes) : "y"(src));
+        }
+        return nativeRes;
+    }
+
+    u64 NativeCpuImpl::psubb64(u64 dst, u64 src) { return psub64<u8>(dst, src); }
+    u64 NativeCpuImpl::psubw64(u64 dst, u64 src) { return psub64<u16>(dst, src); }
+    u64 NativeCpuImpl::psubd64(u64 dst, u64 src) { return psub64<u32>(dst, src); }
+    u64 NativeCpuImpl::psubq64(u64 dst, u64 src) { return psub64<u64>(dst, src); }
+
+    template<typename U>
+    u64 psubs64(u64 dst, u64 src) {
+        u64 nativeRes = dst;
+        if constexpr(std::is_same_v<U, u8>) {
+            asm volatile("psubsb %1, %0" : "+y"(nativeRes) : "y"(src));
+        } else {
+            asm volatile("psubsw %1, %0" : "+y"(nativeRes) : "y"(src));
+        }
+        return nativeRes;
+    }
+
+    u64 NativeCpuImpl::psubsb64(u64 dst, u64 src) { return psubs64<u8>(dst, src); }
+    u64 NativeCpuImpl::psubsw64(u64 dst, u64 src) { return psubs64<u16>(dst, src); }
+
+    template<typename U>
+    u64 psubus64(u64 dst, u64 src) {
+        u64 nativeRes = dst;
+        if constexpr(std::is_same_v<U, u8>) {
+            asm volatile("psubusb %1, %0" : "+y"(nativeRes) : "y"(src));
+        } else {
+            asm volatile("psubusw %1, %0" : "+y"(nativeRes) : "y"(src));
+        }
+        return nativeRes;
+    }
+
+    u64 NativeCpuImpl::psubusb64(u64 dst, u64 src) { return psubus64<u8>(dst, src); }
+    u64 NativeCpuImpl::psubusw64(u64 dst, u64 src) { return psubus64<u16>(dst, src); }
+
+    template<typename U>
+    u128 padd128(u128 dst, u128 src) {
         u128 nativeRes = dst;
         if constexpr(std::is_same_v<U, u8>) {
             asm volatile("paddb %1, %0" : "+x"(nativeRes) : "x"(src));
@@ -2036,13 +2132,13 @@ namespace x64 {
         return nativeRes;
     }
 
-    u128 NativeCpuImpl::paddb(u128 dst, u128 src) { return padd<u8>(dst, src); }
-    u128 NativeCpuImpl::paddw(u128 dst, u128 src) { return padd<u16>(dst, src); }
-    u128 NativeCpuImpl::paddd(u128 dst, u128 src) { return padd<u32>(dst, src); }
-    u128 NativeCpuImpl::paddq(u128 dst, u128 src) { return padd<u64>(dst, src); }
+    u128 NativeCpuImpl::paddb128(u128 dst, u128 src) { return padd128<u8>(dst, src); }
+    u128 NativeCpuImpl::paddw128(u128 dst, u128 src) { return padd128<u16>(dst, src); }
+    u128 NativeCpuImpl::paddd128(u128 dst, u128 src) { return padd128<u32>(dst, src); }
+    u128 NativeCpuImpl::paddq128(u128 dst, u128 src) { return padd128<u64>(dst, src); }
 
     template<typename U>
-    u128 padds(u128 dst, u128 src) {
+    u128 padds128(u128 dst, u128 src) {
         u128 nativeRes = dst;
         if constexpr(std::is_same_v<U, u8>) {
             asm volatile("paddsb %1, %0" : "+x"(nativeRes) : "x"(src));
@@ -2052,11 +2148,11 @@ namespace x64 {
         return nativeRes;
     }
 
-    u128 NativeCpuImpl::paddsb(u128 dst, u128 src) { return padds<u8>(dst, src); }
-    u128 NativeCpuImpl::paddsw(u128 dst, u128 src) { return padds<u16>(dst, src); }
+    u128 NativeCpuImpl::paddsb128(u128 dst, u128 src) { return padds128<u8>(dst, src); }
+    u128 NativeCpuImpl::paddsw128(u128 dst, u128 src) { return padds128<u16>(dst, src); }
 
     template<typename U>
-    u128 paddus(u128 dst, u128 src) {
+    u128 paddus128(u128 dst, u128 src) {
         u128 nativeRes = dst;
         if constexpr(std::is_same_v<U, u8>) {
             asm volatile("paddusb %1, %0" : "+x"(nativeRes) : "x"(src));
@@ -2066,11 +2162,11 @@ namespace x64 {
         return nativeRes;
     }
 
-    u128 NativeCpuImpl::paddusb(u128 dst, u128 src) { return paddus<u8>(dst, src); }
-    u128 NativeCpuImpl::paddusw(u128 dst, u128 src) { return paddus<u16>(dst, src); }
+    u128 NativeCpuImpl::paddusb128(u128 dst, u128 src) { return paddus128<u8>(dst, src); }
+    u128 NativeCpuImpl::paddusw128(u128 dst, u128 src) { return paddus128<u16>(dst, src); }
 
     template<typename U>
-    u128 psub(u128 dst, u128 src) {
+    u128 psub128(u128 dst, u128 src) {
         u128 nativeRes = dst;
         if constexpr(std::is_same_v<U, u8>) {
             asm volatile("psubb %1, %0" : "+x"(nativeRes) : "x"(src));
@@ -2084,13 +2180,13 @@ namespace x64 {
         return nativeRes;
     }
 
-    u128 NativeCpuImpl::psubb(u128 dst, u128 src) { return psub<u8>(dst, src); }
-    u128 NativeCpuImpl::psubw(u128 dst, u128 src) { return psub<u16>(dst, src); }
-    u128 NativeCpuImpl::psubd(u128 dst, u128 src) { return psub<u32>(dst, src); }
-    u128 NativeCpuImpl::psubq(u128 dst, u128 src) { return psub<u64>(dst, src); }
+    u128 NativeCpuImpl::psubb128(u128 dst, u128 src) { return psub128<u8>(dst, src); }
+    u128 NativeCpuImpl::psubw128(u128 dst, u128 src) { return psub128<u16>(dst, src); }
+    u128 NativeCpuImpl::psubd128(u128 dst, u128 src) { return psub128<u32>(dst, src); }
+    u128 NativeCpuImpl::psubq128(u128 dst, u128 src) { return psub128<u64>(dst, src); }
 
     template<typename U>
-    u128 psubs(u128 dst, u128 src) {
+    u128 psubs128(u128 dst, u128 src) {
         u128 nativeRes = dst;
         if constexpr(std::is_same_v<U, u8>) {
             asm volatile("psubsb %1, %0" : "+x"(nativeRes) : "x"(src));
@@ -2100,11 +2196,11 @@ namespace x64 {
         return nativeRes;
     }
 
-    u128 NativeCpuImpl::psubsb(u128 dst, u128 src) { return psubs<u8>(dst, src); }
-    u128 NativeCpuImpl::psubsw(u128 dst, u128 src) { return psubs<u16>(dst, src); }
+    u128 NativeCpuImpl::psubsb128(u128 dst, u128 src) { return psubs128<u8>(dst, src); }
+    u128 NativeCpuImpl::psubsw128(u128 dst, u128 src) { return psubs128<u16>(dst, src); }
 
     template<typename U>
-    u128 psubus(u128 dst, u128 src) {
+    u128 psubus128(u128 dst, u128 src) {
         u128 nativeRes = dst;
         if constexpr(std::is_same_v<U, u8>) {
             asm volatile("psubusb %1, %0" : "+x"(nativeRes) : "x"(src));
@@ -2114,8 +2210,8 @@ namespace x64 {
         return nativeRes;
     }
 
-    u128 NativeCpuImpl::psubusb(u128 dst, u128 src) { return psubus<u8>(dst, src); }
-    u128 NativeCpuImpl::psubusw(u128 dst, u128 src) { return psubus<u16>(dst, src); }
+    u128 NativeCpuImpl::psubusb128(u128 dst, u128 src) { return psubus128<u8>(dst, src); }
+    u128 NativeCpuImpl::psubusw128(u128 dst, u128 src) { return psubus128<u16>(dst, src); }
 
     u128 NativeCpuImpl::pmulhuw(u128 dst, u128 src) {
         u128 nativeRes = dst;

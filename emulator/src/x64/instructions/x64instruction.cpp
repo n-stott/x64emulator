@@ -469,6 +469,7 @@ namespace utils {
             case Insn::MOV_M64_IMM: return toString<M64, Imm>("mov");
             case Insn::MOV_MMX_MMX: return toString<MMX, MMX>("mov");
             case Insn::MOV_XMM_XMM: return toString<XMM, XMM>("mov");
+            case Insn::MOVQ2DQ_XMM_MM: return toString<XMM, MMX>("movq2dq");
             case Insn::MOV_ALIGNED_XMM_M128: return toString<XMM, M128>("mova");
             case Insn::MOV_ALIGNED_M128_XMM: return toString<M128, XMM>("mova");
             case Insn::MOV_UNALIGNED_XMM_M128: return toString<XMM, M128>("movu");
@@ -868,6 +869,14 @@ namespace utils {
             case Insn::PCMPGTD_XMM_XMMM128: return toString<XMM, XMMM128>("pcmpgtd");
             case Insn::PCMPGTQ_XMM_XMMM128: return toString<XMM, XMMM128>("pcmpgtq");
             case Insn::PMOVMSKB_R32_XMM: return toString<R32, XMM>("pmovmskb");
+            case Insn::PADDB_MMX_MMXM64: return toString<MMX, MMXM64>("psubb");
+            case Insn::PADDW_MMX_MMXM64: return toString<MMX, MMXM64>("psubw");
+            case Insn::PADDD_MMX_MMXM64: return toString<MMX, MMXM64>("psubd");
+            case Insn::PADDQ_MMX_MMXM64: return toString<MMX, MMXM64>("psubq");
+            case Insn::PADDSB_MMX_MMXM64: return toString<MMX, MMXM64>("psubsb");
+            case Insn::PADDSW_MMX_MMXM64: return toString<MMX, MMXM64>("psubsw");
+            case Insn::PADDUSB_MMX_MMXM64: return toString<MMX, MMXM64>("psubusb");
+            case Insn::PADDUSW_MMX_MMXM64: return toString<MMX, MMXM64>("psubusw");
             case Insn::PADDB_XMM_XMMM128: return toString<XMM, XMMM128>("paddb");
             case Insn::PADDW_XMM_XMMM128: return toString<XMM, XMMM128>("paddw");
             case Insn::PADDD_XMM_XMMM128: return toString<XMM, XMMM128>("paddd");
@@ -876,6 +885,14 @@ namespace utils {
             case Insn::PADDSW_XMM_XMMM128: return toString<XMM, XMMM128>("paddsw");
             case Insn::PADDUSB_XMM_XMMM128: return toString<XMM, XMMM128>("paddusb");
             case Insn::PADDUSW_XMM_XMMM128: return toString<XMM, XMMM128>("paddusw");
+            case Insn::PSUBB_MMX_MMXM64: return toString<MMX, MMXM64>("psubb");
+            case Insn::PSUBW_MMX_MMXM64: return toString<MMX, MMXM64>("psubw");
+            case Insn::PSUBD_MMX_MMXM64: return toString<MMX, MMXM64>("psubd");
+            case Insn::PSUBQ_MMX_MMXM64: return toString<MMX, MMXM64>("psubq");
+            case Insn::PSUBSB_MMX_MMXM64: return toString<MMX, MMXM64>("psubsb");
+            case Insn::PSUBSW_MMX_MMXM64: return toString<MMX, MMXM64>("psubsw");
+            case Insn::PSUBUSB_MMX_MMXM64: return toString<MMX, MMXM64>("psubusb");
+            case Insn::PSUBUSW_MMX_MMXM64: return toString<MMX, MMXM64>("psubusw");
             case Insn::PSUBB_XMM_XMMM128: return toString<XMM, XMMM128>("psubb");
             case Insn::PSUBW_XMM_XMMM128: return toString<XMM, XMMM128>("psubw");
             case Insn::PSUBD_XMM_XMMM128: return toString<XMM, XMMM128>("psubd");

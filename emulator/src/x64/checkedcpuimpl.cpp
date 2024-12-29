@@ -934,58 +934,112 @@ namespace x64 {
         return checkCall<u16>(&CpuImpl::pmovmskb, &NativeCpuImpl::pmovmskb, src);
     }
 
-    u128 CheckedCpuImpl::paddb(u128 dst, u128 src) {
-        return checkCall<u128>(&CpuImpl::paddb, &NativeCpuImpl::paddb, dst, src);
+    u64 CheckedCpuImpl::paddb64(u64 dst, u64 src) {
+        return checkCall<u64>(&CpuImpl::paddb64, &NativeCpuImpl::paddb64, dst, src);
     }
-    u128 CheckedCpuImpl::paddw(u128 dst, u128 src) {
-        return checkCall<u128>(&CpuImpl::paddw, &NativeCpuImpl::paddw, dst, src);
+    u64 CheckedCpuImpl::paddw64(u64 dst, u64 src) {
+        return checkCall<u64>(&CpuImpl::paddw64, &NativeCpuImpl::paddw64, dst, src);
     }
-    u128 CheckedCpuImpl::paddd(u128 dst, u128 src) {
-        return checkCall<u128>(&CpuImpl::paddd, &NativeCpuImpl::paddd, dst, src);
+    u64 CheckedCpuImpl::paddd64(u64 dst, u64 src) {
+        return checkCall<u64>(&CpuImpl::paddd64, &NativeCpuImpl::paddd64, dst, src);
     }
-    u128 CheckedCpuImpl::paddq(u128 dst, u128 src) {
-        return checkCall<u128>(&CpuImpl::paddq, &NativeCpuImpl::paddq, dst, src);
-    }
-
-    u128 CheckedCpuImpl::paddsb(u128 dst, u128 src) {
-        return checkCall<u128>(&CpuImpl::paddsb, &NativeCpuImpl::paddsb, dst, src);
-    }
-    u128 CheckedCpuImpl::paddsw(u128 dst, u128 src) {
-        return checkCall<u128>(&CpuImpl::paddsw, &NativeCpuImpl::paddsw, dst, src);
+    u64 CheckedCpuImpl::paddq64(u64 dst, u64 src) {
+        return checkCall<u64>(&CpuImpl::paddq64, &NativeCpuImpl::paddq64, dst, src);
     }
 
-    u128 CheckedCpuImpl::paddusb(u128 dst, u128 src) {
-        return checkCall<u128>(&CpuImpl::paddusb, &NativeCpuImpl::paddusb, dst, src);
+    u64 CheckedCpuImpl::paddsb64(u64 dst, u64 src) {
+        return checkCall<u64>(&CpuImpl::paddsb64, &NativeCpuImpl::paddsb64, dst, src);
     }
-    u128 CheckedCpuImpl::paddusw(u128 dst, u128 src) {
-        return checkCall<u128>(&CpuImpl::paddusw, &NativeCpuImpl::paddusw, dst, src);
-    }
-
-    u128 CheckedCpuImpl::psubb(u128 dst, u128 src) {
-        return checkCall<u128>(&CpuImpl::psubb, &NativeCpuImpl::psubb, dst, src);
-    }
-    u128 CheckedCpuImpl::psubw(u128 dst, u128 src) {
-        return checkCall<u128>(&CpuImpl::psubw, &NativeCpuImpl::psubw, dst, src);
-    }
-    u128 CheckedCpuImpl::psubd(u128 dst, u128 src) {
-        return checkCall<u128>(&CpuImpl::psubd, &NativeCpuImpl::psubd, dst, src);
-    }
-    u128 CheckedCpuImpl::psubq(u128 dst, u128 src) {
-        return checkCall<u128>(&CpuImpl::psubq, &NativeCpuImpl::psubq, dst, src);
+    u64 CheckedCpuImpl::paddsw64(u64 dst, u64 src) {
+        return checkCall<u64>(&CpuImpl::paddsw64, &NativeCpuImpl::paddsw64, dst, src);
     }
 
-    u128 CheckedCpuImpl::psubsb(u128 dst, u128 src) {
-        return checkCall<u128>(&CpuImpl::psubsb, &NativeCpuImpl::psubsb, dst, src);
+    u64 CheckedCpuImpl::paddusb64(u64 dst, u64 src) {
+        return checkCall<u64>(&CpuImpl::paddusb64, &NativeCpuImpl::paddusb64, dst, src);
     }
-    u128 CheckedCpuImpl::psubsw(u128 dst, u128 src) {
-        return checkCall<u128>(&CpuImpl::psubsw, &NativeCpuImpl::psubsw, dst, src);
+    u64 CheckedCpuImpl::paddusw64(u64 dst, u64 src) {
+        return checkCall<u64>(&CpuImpl::paddusw64, &NativeCpuImpl::paddusw64, dst, src);
     }
 
-    u128 CheckedCpuImpl::psubusb(u128 dst, u128 src) {
-        return checkCall<u128>(&CpuImpl::psubusb, &NativeCpuImpl::psubusb, dst, src);
+    u64 CheckedCpuImpl::psubb64(u64 dst, u64 src) {
+        return checkCall<u64>(&CpuImpl::psubb64, &NativeCpuImpl::psubb64, dst, src);
     }
-    u128 CheckedCpuImpl::psubusw(u128 dst, u128 src) {
-        return checkCall<u128>(&CpuImpl::psubusw, &NativeCpuImpl::psubusw, dst, src);
+    u64 CheckedCpuImpl::psubw64(u64 dst, u64 src) {
+        return checkCall<u64>(&CpuImpl::psubw64, &NativeCpuImpl::psubw64, dst, src);
+    }
+    u64 CheckedCpuImpl::psubd64(u64 dst, u64 src) {
+        return checkCall<u64>(&CpuImpl::psubd64, &NativeCpuImpl::psubd64, dst, src);
+    }
+    u64 CheckedCpuImpl::psubq64(u64 dst, u64 src) {
+        return checkCall<u64>(&CpuImpl::psubq64, &NativeCpuImpl::psubq64, dst, src);
+    }
+
+    u64 CheckedCpuImpl::psubsb64(u64 dst, u64 src) {
+        return checkCall<u64>(&CpuImpl::psubsb64, &NativeCpuImpl::psubsb64, dst, src);
+    }
+    u64 CheckedCpuImpl::psubsw64(u64 dst, u64 src) {
+        return checkCall<u64>(&CpuImpl::psubsw64, &NativeCpuImpl::psubsw64, dst, src);
+    }
+
+    u64 CheckedCpuImpl::psubusb64(u64 dst, u64 src) {
+        return checkCall<u64>(&CpuImpl::psubusb64, &NativeCpuImpl::psubusb64, dst, src);
+    }
+    u64 CheckedCpuImpl::psubusw64(u64 dst, u64 src) {
+        return checkCall<u64>(&CpuImpl::psubusw64, &NativeCpuImpl::psubusw64, dst, src);
+    }
+
+    u128 CheckedCpuImpl::paddb128(u128 dst, u128 src) {
+        return checkCall<u128>(&CpuImpl::paddb128, &NativeCpuImpl::paddb128, dst, src);
+    }
+    u128 CheckedCpuImpl::paddw128(u128 dst, u128 src) {
+        return checkCall<u128>(&CpuImpl::paddw128, &NativeCpuImpl::paddw128, dst, src);
+    }
+    u128 CheckedCpuImpl::paddd128(u128 dst, u128 src) {
+        return checkCall<u128>(&CpuImpl::paddd128, &NativeCpuImpl::paddd128, dst, src);
+    }
+    u128 CheckedCpuImpl::paddq128(u128 dst, u128 src) {
+        return checkCall<u128>(&CpuImpl::paddq128, &NativeCpuImpl::paddq128, dst, src);
+    }
+
+    u128 CheckedCpuImpl::paddsb128(u128 dst, u128 src) {
+        return checkCall<u128>(&CpuImpl::paddsb128, &NativeCpuImpl::paddsb128, dst, src);
+    }
+    u128 CheckedCpuImpl::paddsw128(u128 dst, u128 src) {
+        return checkCall<u128>(&CpuImpl::paddsw128, &NativeCpuImpl::paddsw128, dst, src);
+    }
+
+    u128 CheckedCpuImpl::paddusb128(u128 dst, u128 src) {
+        return checkCall<u128>(&CpuImpl::paddusb128, &NativeCpuImpl::paddusb128, dst, src);
+    }
+    u128 CheckedCpuImpl::paddusw128(u128 dst, u128 src) {
+        return checkCall<u128>(&CpuImpl::paddusw128, &NativeCpuImpl::paddusw128, dst, src);
+    }
+
+    u128 CheckedCpuImpl::psubb128(u128 dst, u128 src) {
+        return checkCall<u128>(&CpuImpl::psubb128, &NativeCpuImpl::psubb128, dst, src);
+    }
+    u128 CheckedCpuImpl::psubw128(u128 dst, u128 src) {
+        return checkCall<u128>(&CpuImpl::psubw128, &NativeCpuImpl::psubw128, dst, src);
+    }
+    u128 CheckedCpuImpl::psubd128(u128 dst, u128 src) {
+        return checkCall<u128>(&CpuImpl::psubd128, &NativeCpuImpl::psubd128, dst, src);
+    }
+    u128 CheckedCpuImpl::psubq128(u128 dst, u128 src) {
+        return checkCall<u128>(&CpuImpl::psubq128, &NativeCpuImpl::psubq128, dst, src);
+    }
+
+    u128 CheckedCpuImpl::psubsb128(u128 dst, u128 src) {
+        return checkCall<u128>(&CpuImpl::psubsb128, &NativeCpuImpl::psubsb128, dst, src);
+    }
+    u128 CheckedCpuImpl::psubsw128(u128 dst, u128 src) {
+        return checkCall<u128>(&CpuImpl::psubsw128, &NativeCpuImpl::psubsw128, dst, src);
+    }
+
+    u128 CheckedCpuImpl::psubusb128(u128 dst, u128 src) {
+        return checkCall<u128>(&CpuImpl::psubusb128, &NativeCpuImpl::psubusb128, dst, src);
+    }
+    u128 CheckedCpuImpl::psubusw128(u128 dst, u128 src) {
+        return checkCall<u128>(&CpuImpl::psubusw128, &NativeCpuImpl::psubusw128, dst, src);
     }
 
     u128 CheckedCpuImpl::pmulhuw(u128 dst, u128 src) {

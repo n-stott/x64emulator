@@ -1454,7 +1454,148 @@ namespace x64 {
     }
 
     template<typename U>
-    u128 padd(u128 dst, u128 src) {
+    u64 padd64(u64 dst, u64 src) {
+        constexpr int N = sizeof(u64)/sizeof(U);
+        std::array<U, N> DST;
+        static_assert(sizeof(DST) == sizeof(u64));
+        std::memcpy(DST.data(), &dst, sizeof(u64));
+
+        std::array<U, N> SRC;
+        static_assert(sizeof(SRC) == sizeof(u64));
+        std::memcpy(SRC.data(), &src, sizeof(u64));
+
+        for(size_t i = 0; i < N; ++i) {
+            DST[i] += SRC[i];
+        }
+        std::memcpy(&dst, DST.data(), sizeof(u64));
+        return dst;
+    }
+
+    u64 CpuImpl::paddb64(u64 dst, u64 src) { return padd64<u8>(dst, src); }
+    u64 CpuImpl::paddw64(u64 dst, u64 src) { return padd64<u16>(dst, src); }
+    u64 CpuImpl::paddd64(u64 dst, u64 src) { return padd64<u32>(dst, src); }
+    u64 CpuImpl::paddq64(u64 dst, u64 src) { return padd64<u64>(dst, src); }
+
+    template<typename I, typename J>
+    u64 padds64(u64 dst, u64 src) {
+        static_assert(sizeof(J) == 2*sizeof(I));
+        constexpr int N = sizeof(u64)/sizeof(I);
+        std::array<I, N> DST;
+        static_assert(sizeof(DST) == sizeof(u64));
+        std::memcpy(DST.data(), &dst, sizeof(u64));
+
+        std::array<I, N> SRC;
+        static_assert(sizeof(SRC) == sizeof(u64));
+        std::memcpy(SRC.data(), &src, sizeof(u64));
+
+        for(size_t i = 0; i < N; ++i) {
+            J s = (J)DST[i] + (J)SRC[i];
+            if(s > (J)std::numeric_limits<I>::max()) s = (J)std::numeric_limits<I>::max();
+            if(s < (J)std::numeric_limits<I>::min()) s = (J)std::numeric_limits<I>::min();
+            DST[i] = (I)s;
+        }
+        std::memcpy(&dst, DST.data(), sizeof(u64));
+        return dst;
+    }
+
+    u64 CpuImpl::paddsb64(u64 dst, u64 src) { return padds64<i8, i16>(dst, src); }
+    u64 CpuImpl::paddsw64(u64 dst, u64 src) { return padds64<i16, i32>(dst, src); }
+
+    template<typename U, typename V>
+    u64 paddus64(u64 dst, u64 src) {
+        static_assert(sizeof(V) == 2*sizeof(U));
+        constexpr int N = sizeof(u64)/sizeof(U);
+        std::array<U, N> DST;
+        static_assert(sizeof(DST) == sizeof(u64));
+        std::memcpy(DST.data(), &dst, sizeof(u64));
+
+        std::array<U, N> SRC;
+        static_assert(sizeof(SRC) == sizeof(u64));
+        std::memcpy(SRC.data(), &src, sizeof(u64));
+
+        for(size_t i = 0; i < N; ++i) {
+            V s = (V)DST[i] + (V)SRC[i];
+            if(s > (V)std::numeric_limits<U>::max()) s = (V)std::numeric_limits<U>::max();
+            DST[i] = (U)s;
+        }
+        std::memcpy(&dst, DST.data(), sizeof(u64));
+        return dst;
+    }
+
+    u64 CpuImpl::paddusb64(u64 dst, u64 src) { return paddus64<u8, u16>(dst, src); }
+    u64 CpuImpl::paddusw64(u64 dst, u64 src) { return paddus64<u16, u32>(dst, src); }
+
+    template<typename U>
+    u64 psub64(u64 dst, u64 src) {
+        constexpr int N = sizeof(u64)/sizeof(U);
+        std::array<U, N> DST;
+        static_assert(sizeof(DST) == sizeof(u64));
+        std::memcpy(DST.data(), &dst, sizeof(u64));
+
+        std::array<U, N> SRC;
+        static_assert(sizeof(SRC) == sizeof(u64));
+        std::memcpy(SRC.data(), &src, sizeof(u64));
+
+        for(size_t i = 0; i < N; ++i) {
+            DST[i] -= SRC[i];
+        }
+        std::memcpy(&dst, DST.data(), sizeof(u64));
+        return dst;
+    }
+
+    u64 CpuImpl::psubb64(u64 dst, u64 src) { return psub64<u8>(dst, src); }
+    u64 CpuImpl::psubw64(u64 dst, u64 src) { return psub64<u16>(dst, src); }
+    u64 CpuImpl::psubd64(u64 dst, u64 src) { return psub64<u32>(dst, src); }
+    u64 CpuImpl::psubq64(u64 dst, u64 src) { return psub64<u64>(dst, src); }
+
+    template<typename I, typename J>
+    u64 psubs64(u64 dst, u64 src) {
+        static_assert(sizeof(J) == 2*sizeof(I));
+        constexpr int N = sizeof(u64)/sizeof(I);
+        std::array<I, N> DST;
+        static_assert(sizeof(DST) == sizeof(u64));
+        std::memcpy(DST.data(), &dst, sizeof(u64));
+
+        std::array<I, N> SRC;
+        static_assert(sizeof(SRC) == sizeof(u64));
+        std::memcpy(SRC.data(), &src, sizeof(u64));
+
+        for(size_t i = 0; i < N; ++i) {
+            J s = (J)DST[i] - (J)SRC[i];
+            if(s > (J)std::numeric_limits<I>::max()) s = (J)std::numeric_limits<I>::max();
+            if(s < (J)std::numeric_limits<I>::min()) s = (J)std::numeric_limits<I>::min();
+            DST[i] = (I)s;
+        }
+        std::memcpy(&dst, DST.data(), sizeof(u64));
+        return dst;
+    }
+
+    u64 CpuImpl::psubsb64(u64 dst, u64 src) { return psubs64<i8, i16>(dst, src); }
+    u64 CpuImpl::psubsw64(u64 dst, u64 src) { return psubs64<i16, i32>(dst, src); }
+
+    template<typename U>
+    u64 psubus64(u64 dst, u64 src) {
+        constexpr int N = sizeof(u64)/sizeof(U);
+        std::array<U, N> DST;
+        static_assert(sizeof(DST) == sizeof(u64));
+        std::memcpy(DST.data(), &dst, sizeof(u64));
+
+        std::array<U, N> SRC;
+        static_assert(sizeof(SRC) == sizeof(u64));
+        std::memcpy(SRC.data(), &src, sizeof(u64));
+
+        for(size_t i = 0; i < N; ++i) {
+            DST[i] = (DST[i] >= SRC[i]) ? (DST[i] - SRC[i]) : 0;
+        }
+        std::memcpy(&dst, DST.data(), sizeof(u64));
+        return dst;
+    }
+
+    u64 CpuImpl::psubusb64(u64 dst, u64 src) { return psubus64<u8>(dst, src); }
+    u64 CpuImpl::psubusw64(u64 dst, u64 src) { return psubus64<u16>(dst, src); }
+
+    template<typename U>
+    u128 padd128(u128 dst, u128 src) {
         constexpr int N = sizeof(u128)/sizeof(U);
         std::array<U, N> DST;
         static_assert(sizeof(DST) == sizeof(u128));
@@ -1471,13 +1612,13 @@ namespace x64 {
         return dst;
     }
 
-    u128 CpuImpl::paddb(u128 dst, u128 src) { return padd<u8>(dst, src); }
-    u128 CpuImpl::paddw(u128 dst, u128 src) { return padd<u16>(dst, src); }
-    u128 CpuImpl::paddd(u128 dst, u128 src) { return padd<u32>(dst, src); }
-    u128 CpuImpl::paddq(u128 dst, u128 src) { return padd<u64>(dst, src); }
+    u128 CpuImpl::paddb128(u128 dst, u128 src) { return padd128<u8>(dst, src); }
+    u128 CpuImpl::paddw128(u128 dst, u128 src) { return padd128<u16>(dst, src); }
+    u128 CpuImpl::paddd128(u128 dst, u128 src) { return padd128<u32>(dst, src); }
+    u128 CpuImpl::paddq128(u128 dst, u128 src) { return padd128<u64>(dst, src); }
 
     template<typename I, typename J>
-    u128 padds(u128 dst, u128 src) {
+    u128 padds128(u128 dst, u128 src) {
         static_assert(sizeof(J) == 2*sizeof(I));
         constexpr int N = sizeof(u128)/sizeof(I);
         std::array<I, N> DST;
@@ -1498,11 +1639,11 @@ namespace x64 {
         return dst;
     }
 
-    u128 CpuImpl::paddsb(u128 dst, u128 src) { return padds<i8, i16>(dst, src); }
-    u128 CpuImpl::paddsw(u128 dst, u128 src) { return padds<i16, i32>(dst, src); }
+    u128 CpuImpl::paddsb128(u128 dst, u128 src) { return padds128<i8, i16>(dst, src); }
+    u128 CpuImpl::paddsw128(u128 dst, u128 src) { return padds128<i16, i32>(dst, src); }
 
     template<typename U, typename V>
-    u128 paddus(u128 dst, u128 src) {
+    u128 paddus128(u128 dst, u128 src) {
         static_assert(sizeof(V) == 2*sizeof(U));
         constexpr int N = sizeof(u128)/sizeof(U);
         std::array<U, N> DST;
@@ -1522,11 +1663,11 @@ namespace x64 {
         return dst;
     }
 
-    u128 CpuImpl::paddusb(u128 dst, u128 src) { return paddus<u8, u16>(dst, src); }
-    u128 CpuImpl::paddusw(u128 dst, u128 src) { return paddus<u16, u32>(dst, src); }
+    u128 CpuImpl::paddusb128(u128 dst, u128 src) { return paddus128<u8, u16>(dst, src); }
+    u128 CpuImpl::paddusw128(u128 dst, u128 src) { return paddus128<u16, u32>(dst, src); }
 
     template<typename U>
-    u128 psub(u128 dst, u128 src) {
+    u128 psub128(u128 dst, u128 src) {
         constexpr int N = sizeof(u128)/sizeof(U);
         std::array<U, N> DST;
         static_assert(sizeof(DST) == sizeof(u128));
@@ -1543,13 +1684,13 @@ namespace x64 {
         return dst;
     }
 
-    u128 CpuImpl::psubb(u128 dst, u128 src) { return psub<u8>(dst, src); }
-    u128 CpuImpl::psubw(u128 dst, u128 src) { return psub<u16>(dst, src); }
-    u128 CpuImpl::psubd(u128 dst, u128 src) { return psub<u32>(dst, src); }
-    u128 CpuImpl::psubq(u128 dst, u128 src) { return psub<u64>(dst, src); }
+    u128 CpuImpl::psubb128(u128 dst, u128 src) { return psub128<u8>(dst, src); }
+    u128 CpuImpl::psubw128(u128 dst, u128 src) { return psub128<u16>(dst, src); }
+    u128 CpuImpl::psubd128(u128 dst, u128 src) { return psub128<u32>(dst, src); }
+    u128 CpuImpl::psubq128(u128 dst, u128 src) { return psub128<u64>(dst, src); }
 
     template<typename I, typename J>
-    u128 psubs(u128 dst, u128 src) {
+    u128 psubs128(u128 dst, u128 src) {
         static_assert(sizeof(J) == 2*sizeof(I));
         constexpr int N = sizeof(u128)/sizeof(I);
         std::array<I, N> DST;
@@ -1570,11 +1711,11 @@ namespace x64 {
         return dst;
     }
 
-    u128 CpuImpl::psubsb(u128 dst, u128 src) { return psubs<i8, i16>(dst, src); }
-    u128 CpuImpl::psubsw(u128 dst, u128 src) { return psubs<i16, i32>(dst, src); }
+    u128 CpuImpl::psubsb128(u128 dst, u128 src) { return psubs128<i8, i16>(dst, src); }
+    u128 CpuImpl::psubsw128(u128 dst, u128 src) { return psubs128<i16, i32>(dst, src); }
 
     template<typename U>
-    u128 psubus(u128 dst, u128 src) {
+    u128 psubus128(u128 dst, u128 src) {
         constexpr int N = sizeof(u128)/sizeof(U);
         std::array<U, N> DST;
         static_assert(sizeof(DST) == sizeof(u128));
@@ -1591,8 +1732,8 @@ namespace x64 {
         return dst;
     }
 
-    u128 CpuImpl::psubusb(u128 dst, u128 src) { return psubus<u8>(dst, src); }
-    u128 CpuImpl::psubusw(u128 dst, u128 src) { return psubus<u16>(dst, src); }
+    u128 CpuImpl::psubusb128(u128 dst, u128 src) { return psubus128<u8>(dst, src); }
+    u128 CpuImpl::psubusw128(u128 dst, u128 src) { return psubus128<u16>(dst, src); }
 
     u128 CpuImpl::pmulhuw(u128 dst, u128 src) {
         std::array<u16, 8> DST;

@@ -306,6 +306,7 @@ namespace x64 {
     DEFINE_STANDALONE(MOV_M64_IMM, execMovMImm<Size::QWORD>)
     DEFINE_STANDALONE(MOV_MMX_MMX, execMovMMXMMX)
     DEFINE_STANDALONE(MOV_XMM_XMM, execMovRR<Size::XWORD>)
+    DEFINE_STANDALONE(MOVQ2DQ_XMM_MM, execMovq2dq)
     DEFINE_STANDALONE(MOV_ALIGNED_XMM_M128, execMovaXMMM128)
     DEFINE_STANDALONE(MOV_ALIGNED_M128_XMM, execMovaM128XMM)
     DEFINE_STANDALONE(MOV_UNALIGNED_XMM_M128, execMovuXMMM128)
@@ -704,6 +705,14 @@ namespace x64 {
     DEFINE_STANDALONE(PCMPGTD_XMM_XMMM128, execPcmpgtdXMMXMMM128)
     DEFINE_STANDALONE(PCMPGTQ_XMM_XMMM128, execPcmpgtqXMMXMMM128)
     DEFINE_STANDALONE(PMOVMSKB_R32_XMM, execPmovmskbR32XMM)
+    DEFINE_STANDALONE(PADDB_MMX_MMXM64, execPaddbMMXMMXM64)
+    DEFINE_STANDALONE(PADDW_MMX_MMXM64, execPaddwMMXMMXM64)
+    DEFINE_STANDALONE(PADDD_MMX_MMXM64, execPadddMMXMMXM64)
+    DEFINE_STANDALONE(PADDQ_MMX_MMXM64, execPaddqMMXMMXM64)
+    DEFINE_STANDALONE(PADDSB_MMX_MMXM64, execPaddsbMMXMMXM64)
+    DEFINE_STANDALONE(PADDSW_MMX_MMXM64, execPaddswMMXMMXM64)
+    DEFINE_STANDALONE(PADDUSB_MMX_MMXM64, execPaddusbMMXMMXM64)
+    DEFINE_STANDALONE(PADDUSW_MMX_MMXM64, execPadduswMMXMMXM64)
     DEFINE_STANDALONE(PADDB_XMM_XMMM128, execPaddbXMMXMMM128)
     DEFINE_STANDALONE(PADDW_XMM_XMMM128, execPaddwXMMXMMM128)
     DEFINE_STANDALONE(PADDD_XMM_XMMM128, execPadddXMMXMMM128)
@@ -712,6 +721,14 @@ namespace x64 {
     DEFINE_STANDALONE(PADDSW_XMM_XMMM128, execPaddswXMMXMMM128)
     DEFINE_STANDALONE(PADDUSB_XMM_XMMM128, execPaddusbXMMXMMM128)
     DEFINE_STANDALONE(PADDUSW_XMM_XMMM128, execPadduswXMMXMMM128)
+    DEFINE_STANDALONE(PSUBB_MMX_MMXM64, execPsubbMMXMMXM64)
+    DEFINE_STANDALONE(PSUBW_MMX_MMXM64, execPsubwMMXMMXM64)
+    DEFINE_STANDALONE(PSUBD_MMX_MMXM64, execPsubdMMXMMXM64)
+    DEFINE_STANDALONE(PSUBQ_MMX_MMXM64, execPsubqMMXMMXM64)
+    DEFINE_STANDALONE(PSUBSB_MMX_MMXM64, execPsubsbMMXMMXM64)
+    DEFINE_STANDALONE(PSUBSW_MMX_MMXM64, execPsubswMMXMMXM64)
+    DEFINE_STANDALONE(PSUBUSB_MMX_MMXM64, execPsubusbMMXMMXM64)
+    DEFINE_STANDALONE(PSUBUSW_MMX_MMXM64, execPsubuswMMXMMXM64)
     DEFINE_STANDALONE(PSUBB_XMM_XMMM128, execPsubbXMMXMMM128)
     DEFINE_STANDALONE(PSUBW_XMM_XMMM128, execPsubwXMMXMMM128)
     DEFINE_STANDALONE(PSUBD_XMM_XMMM128, execPsubdXMMXMMM128)
@@ -928,6 +945,7 @@ namespace x64 {
         STANDALONE_NAME(MOV_M64_IMM),
         STANDALONE_NAME(MOV_MMX_MMX),
         STANDALONE_NAME(MOV_XMM_XMM),
+        STANDALONE_NAME(MOVQ2DQ_XMM_MM),
         STANDALONE_NAME(MOV_ALIGNED_XMM_M128),
         STANDALONE_NAME(MOV_ALIGNED_M128_XMM),
         STANDALONE_NAME(MOV_UNALIGNED_XMM_M128),
@@ -1326,6 +1344,14 @@ namespace x64 {
         STANDALONE_NAME(PCMPGTD_XMM_XMMM128),
         STANDALONE_NAME(PCMPGTQ_XMM_XMMM128),
         STANDALONE_NAME(PMOVMSKB_R32_XMM),
+        STANDALONE_NAME(PADDB_MMX_MMXM64),
+        STANDALONE_NAME(PADDW_MMX_MMXM64),
+        STANDALONE_NAME(PADDD_MMX_MMXM64),
+        STANDALONE_NAME(PADDQ_MMX_MMXM64),
+        STANDALONE_NAME(PADDSB_MMX_MMXM64),
+        STANDALONE_NAME(PADDSW_MMX_MMXM64),
+        STANDALONE_NAME(PADDUSB_MMX_MMXM64),
+        STANDALONE_NAME(PADDUSW_MMX_MMXM64),
         STANDALONE_NAME(PADDB_XMM_XMMM128),
         STANDALONE_NAME(PADDW_XMM_XMMM128),
         STANDALONE_NAME(PADDD_XMM_XMMM128),
@@ -1334,6 +1360,14 @@ namespace x64 {
         STANDALONE_NAME(PADDSW_XMM_XMMM128),
         STANDALONE_NAME(PADDUSB_XMM_XMMM128),
         STANDALONE_NAME(PADDUSW_XMM_XMMM128),
+        STANDALONE_NAME(PSUBB_MMX_MMXM64),
+        STANDALONE_NAME(PSUBW_MMX_MMXM64),
+        STANDALONE_NAME(PSUBD_MMX_MMXM64),
+        STANDALONE_NAME(PSUBQ_MMX_MMXM64),
+        STANDALONE_NAME(PSUBSB_MMX_MMXM64),
+        STANDALONE_NAME(PSUBSW_MMX_MMXM64),
+        STANDALONE_NAME(PSUBUSB_MMX_MMXM64),
+        STANDALONE_NAME(PSUBUSW_MMX_MMXM64),
         STANDALONE_NAME(PSUBB_XMM_XMMM128),
         STANDALONE_NAME(PSUBW_XMM_XMMM128),
         STANDALONE_NAME(PSUBD_XMM_XMMM128),
@@ -2204,6 +2238,14 @@ namespace x64 {
 
     static bool is128bitAligned(Ptr128 ptr) {
         return ptr.address() % 16 == 0;
+    }
+
+    void Cpu::execMovq2dq(const X64Instruction& ins) {
+        const auto& dst = ins.op0<XMM>();
+        const auto& src = ins.op1<MMX>();
+        u64 srcValue = get(src);
+        u128 dstValue { srcValue, 0 };
+        set(dst, dstValue);
     }
 
     void Cpu::execMovaXMMM128(const X64Instruction& ins) {
@@ -4919,115 +4961,227 @@ namespace x64 {
         set(dst, zeroExtend<u32, u16>(res));
     }
 
+    void Cpu::execPaddbMMXMMXM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<MMX>();
+        const auto& src = ins.op1<MMXM64>();
+        u64 res = Impl::paddb64(get(dst), get(src));
+        set(dst, res);
+    }
+
+    void Cpu::execPaddwMMXMMXM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<MMX>();
+        const auto& src = ins.op1<MMXM64>();
+        u64 res = Impl::paddw64(get(dst), get(src));
+        set(dst, res);
+    }
+
+    void Cpu::execPadddMMXMMXM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<MMX>();
+        const auto& src = ins.op1<MMXM64>();
+        u64 res = Impl::paddd64(get(dst), get(src));
+        set(dst, res);
+    }
+
+    void Cpu::execPaddqMMXMMXM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<MMX>();
+        const auto& src = ins.op1<MMXM64>();
+        u64 res = Impl::paddq64(get(dst), get(src));
+        set(dst, res);
+    }
+
+    void Cpu::execPaddsbMMXMMXM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<MMX>();
+        const auto& src = ins.op1<MMXM64>();
+        u64 res = Impl::paddsb64(get(dst), get(src));
+        set(dst, res);
+    }
+
+    void Cpu::execPaddswMMXMMXM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<MMX>();
+        const auto& src = ins.op1<MMXM64>();
+        u64 res = Impl::paddsw64(get(dst), get(src));
+        set(dst, res);
+    }
+
+    void Cpu::execPaddusbMMXMMXM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<MMX>();
+        const auto& src = ins.op1<MMXM64>();
+        u64 res = Impl::paddusb64(get(dst), get(src));
+        set(dst, res);
+    }
+
+    void Cpu::execPadduswMMXMMXM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<MMX>();
+        const auto& src = ins.op1<MMXM64>();
+        u64 res = Impl::paddusw64(get(dst), get(src));
+        set(dst, res);
+    }
+
     void Cpu::execPaddbXMMXMMM128(const X64Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
-        u128 res = Impl::paddb(get(dst), get(src));
+        u128 res = Impl::paddb128(get(dst), get(src));
         set(dst, res);
     }
 
     void Cpu::execPaddwXMMXMMM128(const X64Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
-        u128 res = Impl::paddw(get(dst), get(src));
+        u128 res = Impl::paddw128(get(dst), get(src));
         set(dst, res);
     }
 
     void Cpu::execPadddXMMXMMM128(const X64Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
-        u128 res = Impl::paddd(get(dst), get(src));
+        u128 res = Impl::paddd128(get(dst), get(src));
         set(dst, res);
     }
 
     void Cpu::execPaddqXMMXMMM128(const X64Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
-        u128 res = Impl::paddq(get(dst), get(src));
+        u128 res = Impl::paddq128(get(dst), get(src));
         set(dst, res);
     }
 
     void Cpu::execPaddsbXMMXMMM128(const X64Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
-        u128 res = Impl::paddsb(get(dst), get(src));
+        u128 res = Impl::paddsb128(get(dst), get(src));
         set(dst, res);
     }
 
     void Cpu::execPaddswXMMXMMM128(const X64Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
-        u128 res = Impl::paddsw(get(dst), get(src));
+        u128 res = Impl::paddsw128(get(dst), get(src));
         set(dst, res);
     }
 
     void Cpu::execPaddusbXMMXMMM128(const X64Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
-        u128 res = Impl::paddusb(get(dst), get(src));
+        u128 res = Impl::paddusb128(get(dst), get(src));
         set(dst, res);
     }
 
     void Cpu::execPadduswXMMXMMM128(const X64Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
-        u128 res = Impl::paddusw(get(dst), get(src));
+        u128 res = Impl::paddusw128(get(dst), get(src));
+        set(dst, res);
+    }
+
+    void Cpu::execPsubbMMXMMXM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<MMX>();
+        const auto& src = ins.op1<MMXM64>();
+        u64 res = Impl::psubb64(get(dst), get(src));
+        set(dst, res);
+    }
+
+    void Cpu::execPsubwMMXMMXM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<MMX>();
+        const auto& src = ins.op1<MMXM64>();
+        u64 res = Impl::psubw64(get(dst), get(src));
+        set(dst, res);
+    }
+
+    void Cpu::execPsubdMMXMMXM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<MMX>();
+        const auto& src = ins.op1<MMXM64>();
+        u64 res = Impl::psubd64(get(dst), get(src));
+        set(dst, res);
+    }
+
+    void Cpu::execPsubqMMXMMXM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<MMX>();
+        const auto& src = ins.op1<MMXM64>();
+        u64 res = Impl::psubq64(get(dst), get(src));
+        set(dst, res);
+    }
+
+    void Cpu::execPsubsbMMXMMXM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<MMX>();
+        const auto& src = ins.op1<MMXM64>();
+        u64 res = Impl::psubsb64(get(dst), get(src));
+        set(dst, res);
+    }
+
+    void Cpu::execPsubswMMXMMXM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<MMX>();
+        const auto& src = ins.op1<MMXM64>();
+        u64 res = Impl::psubsw64(get(dst), get(src));
+        set(dst, res);
+    }
+
+    void Cpu::execPsubusbMMXMMXM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<MMX>();
+        const auto& src = ins.op1<MMXM64>();
+        u64 res = Impl::psubusb64(get(dst), get(src));
+        set(dst, res);
+    }
+
+    void Cpu::execPsubuswMMXMMXM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<MMX>();
+        const auto& src = ins.op1<MMXM64>();
+        u64 res = Impl::psubusw64(get(dst), get(src));
         set(dst, res);
     }
 
     void Cpu::execPsubbXMMXMMM128(const X64Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
-        u128 res = Impl::psubb(get(dst), get(src));
+        u128 res = Impl::psubb128(get(dst), get(src));
         set(dst, res);
     }
 
     void Cpu::execPsubwXMMXMMM128(const X64Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
-        u128 res = Impl::psubw(get(dst), get(src));
+        u128 res = Impl::psubw128(get(dst), get(src));
         set(dst, res);
     }
 
     void Cpu::execPsubdXMMXMMM128(const X64Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
-        u128 res = Impl::psubd(get(dst), get(src));
+        u128 res = Impl::psubd128(get(dst), get(src));
         set(dst, res);
     }
 
     void Cpu::execPsubqXMMXMMM128(const X64Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
-        u128 res = Impl::psubq(get(dst), get(src));
+        u128 res = Impl::psubq128(get(dst), get(src));
         set(dst, res);
     }
 
     void Cpu::execPsubsbXMMXMMM128(const X64Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
-        u128 res = Impl::psubsb(get(dst), get(src));
+        u128 res = Impl::psubsb128(get(dst), get(src));
         set(dst, res);
     }
 
     void Cpu::execPsubswXMMXMMM128(const X64Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
-        u128 res = Impl::psubsw(get(dst), get(src));
+        u128 res = Impl::psubsw128(get(dst), get(src));
         set(dst, res);
     }
 
     void Cpu::execPsubusbXMMXMMM128(const X64Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
-        u128 res = Impl::psubusb(get(dst), get(src));
+        u128 res = Impl::psubusb128(get(dst), get(src));
         set(dst, res);
     }
 
     void Cpu::execPsubuswXMMXMMM128(const X64Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
-        u128 res = Impl::psubusw(get(dst), get(src));
+        u128 res = Impl::psubusw128(get(dst), get(src));
         set(dst, res);
     }
 

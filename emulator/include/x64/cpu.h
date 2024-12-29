@@ -345,6 +345,8 @@ namespace x64 {
         template<Size size>
         void execMovMImm(const X64Instruction&);
 
+        void execMovq2dq(const X64Instruction&);
+
         void execMovaXMMM128(const X64Instruction&);
         void execMovaM128XMM(const X64Instruction&);
         void execMovuXMMM128(const X64Instruction&);
@@ -837,6 +839,15 @@ namespace x64 {
 
         void execPmovmskbR32XMM(const X64Instruction&);
 
+        void execPaddbMMXMMXM64(const X64Instruction&);
+        void execPaddwMMXMMXM64(const X64Instruction&);
+        void execPadddMMXMMXM64(const X64Instruction&);
+        void execPaddqMMXMMXM64(const X64Instruction&);
+        void execPaddsbMMXMMXM64(const X64Instruction&);
+        void execPaddswMMXMMXM64(const X64Instruction&);
+        void execPaddusbMMXMMXM64(const X64Instruction&);
+        void execPadduswMMXMMXM64(const X64Instruction&);
+
         void execPaddbXMMXMMM128(const X64Instruction&);
         void execPaddwXMMXMMM128(const X64Instruction&);
         void execPadddXMMXMMM128(const X64Instruction&);
@@ -845,6 +856,15 @@ namespace x64 {
         void execPaddswXMMXMMM128(const X64Instruction&);
         void execPaddusbXMMXMMM128(const X64Instruction&);
         void execPadduswXMMXMMM128(const X64Instruction&);
+
+        void execPsubbMMXMMXM64(const X64Instruction&);
+        void execPsubwMMXMMXM64(const X64Instruction&);
+        void execPsubdMMXMMXM64(const X64Instruction&);
+        void execPsubqMMXMMXM64(const X64Instruction&);
+        void execPsubsbMMXMMXM64(const X64Instruction&);
+        void execPsubswMMXMMXM64(const X64Instruction&);
+        void execPsubusbMMXMMXM64(const X64Instruction&);
+        void execPsubuswMMXMMXM64(const X64Instruction&);
 
         void execPsubbXMMXMMM128(const X64Instruction&);
         void execPsubwXMMXMMM128(const X64Instruction&);
