@@ -3206,8 +3206,11 @@ namespace x64 {
         assert(x86detail.op_count == 2);
         const cs_x86_op& dst = x86detail.operands[0];
         const cs_x86_op& src = x86detail.operands[1];
+        auto mmxdst = asMMX(dst);
         auto rssedst = asRegister128(dst);
+        auto mmxm64src = asMMXM64(src);
         auto rmssesrc = asRM128(src);
+        if(mmxdst && mmxm64src) return X64Instruction::make<Insn::PCMPEQB_MMX_MMXM64>(insn.address, insn.size, mmxdst.value(), mmxm64src.value());
         if(rssedst && rmssesrc) return X64Instruction::make<Insn::PCMPEQB_XMM_XMMM128>(insn.address, insn.size, rssedst.value(), rmssesrc.value());
         return make_failed(insn);
     }
@@ -3217,8 +3220,11 @@ namespace x64 {
         assert(x86detail.op_count == 2);
         const cs_x86_op& dst = x86detail.operands[0];
         const cs_x86_op& src = x86detail.operands[1];
+        auto mmxdst = asMMX(dst);
         auto rssedst = asRegister128(dst);
+        auto mmxm64src = asMMXM64(src);
         auto rmssesrc = asRM128(src);
+        if(mmxdst && mmxm64src) return X64Instruction::make<Insn::PCMPEQW_MMX_MMXM64>(insn.address, insn.size, mmxdst.value(), mmxm64src.value());
         if(rssedst && rmssesrc) return X64Instruction::make<Insn::PCMPEQW_XMM_XMMM128>(insn.address, insn.size, rssedst.value(), rmssesrc.value());
         return make_failed(insn);
     }
@@ -3228,8 +3234,11 @@ namespace x64 {
         assert(x86detail.op_count == 2);
         const cs_x86_op& dst = x86detail.operands[0];
         const cs_x86_op& src = x86detail.operands[1];
+        auto mmxdst = asMMX(dst);
         auto rssedst = asRegister128(dst);
+        auto mmxm64src = asMMXM64(src);
         auto rmssesrc = asRM128(src);
+        if(mmxdst && mmxm64src) return X64Instruction::make<Insn::PCMPEQD_MMX_MMXM64>(insn.address, insn.size, mmxdst.value(), mmxm64src.value());
         if(rssedst && rmssesrc) return X64Instruction::make<Insn::PCMPEQD_XMM_XMMM128>(insn.address, insn.size, rssedst.value(), rmssesrc.value());
         return make_failed(insn);
     }
@@ -3250,8 +3259,11 @@ namespace x64 {
         assert(x86detail.op_count == 2);
         const cs_x86_op& dst = x86detail.operands[0];
         const cs_x86_op& src = x86detail.operands[1];
+        auto mmxdst = asMMX(dst);
         auto rssedst = asRegister128(dst);
+        auto mmxm64src = asMMXM64(src);
         auto rmssesrc = asRM128(src);
+        if(mmxdst && mmxm64src) return X64Instruction::make<Insn::PCMPGTB_MMX_MMXM64>(insn.address, insn.size, mmxdst.value(), mmxm64src.value());
         if(rssedst && rmssesrc) return X64Instruction::make<Insn::PCMPGTB_XMM_XMMM128>(insn.address, insn.size, rssedst.value(), rmssesrc.value());
         return make_failed(insn);
     }
@@ -3261,8 +3273,11 @@ namespace x64 {
         assert(x86detail.op_count == 2);
         const cs_x86_op& dst = x86detail.operands[0];
         const cs_x86_op& src = x86detail.operands[1];
+        auto mmxdst = asMMX(dst);
         auto rssedst = asRegister128(dst);
+        auto mmxm64src = asMMXM64(src);
         auto rmssesrc = asRM128(src);
+        if(mmxdst && mmxm64src) return X64Instruction::make<Insn::PCMPGTW_MMX_MMXM64>(insn.address, insn.size, mmxdst.value(), mmxm64src.value());
         if(rssedst && rmssesrc) return X64Instruction::make<Insn::PCMPGTW_XMM_XMMM128>(insn.address, insn.size, rssedst.value(), rmssesrc.value());
         return make_failed(insn);
     }
@@ -3272,8 +3287,11 @@ namespace x64 {
         assert(x86detail.op_count == 2);
         const cs_x86_op& dst = x86detail.operands[0];
         const cs_x86_op& src = x86detail.operands[1];
+        auto mmxdst = asMMX(dst);
         auto rssedst = asRegister128(dst);
+        auto mmxm64src = asMMXM64(src);
         auto rmssesrc = asRM128(src);
+        if(mmxdst && mmxm64src) return X64Instruction::make<Insn::PCMPGTD_MMX_MMXM64>(insn.address, insn.size, mmxdst.value(), mmxm64src.value());
         if(rssedst && rmssesrc) return X64Instruction::make<Insn::PCMPGTD_XMM_XMMM128>(insn.address, insn.size, rssedst.value(), rmssesrc.value());
         return make_failed(insn);
     }
@@ -3529,8 +3547,11 @@ namespace x64 {
         assert(x86detail.op_count == 2);
         const cs_x86_op& dst = x86detail.operands[0];
         const cs_x86_op& src = x86detail.operands[1];
+        auto mmxdst = asMMX(dst);
         auto rssedst = asRegister128(dst);
+        auto mmxm64src = asMMXM64(src);
         auto rmssesrc = asRM128(src);
+        if(mmxdst && mmxm64src) return X64Instruction::make<Insn::PMULHUW_MMX_MMXM64>(insn.address, insn.size, mmxdst.value(), mmxm64src.value());
         if(rssedst && rmssesrc) return X64Instruction::make<Insn::PMULHUW_XMM_XMMM128>(insn.address, insn.size, rssedst.value(), rmssesrc.value());
         return make_failed(insn);
     }
@@ -3540,8 +3561,11 @@ namespace x64 {
         assert(x86detail.op_count == 2);
         const cs_x86_op& dst = x86detail.operands[0];
         const cs_x86_op& src = x86detail.operands[1];
+        auto mmxdst = asMMX(dst);
         auto rssedst = asRegister128(dst);
+        auto mmxm64src = asMMXM64(src);
         auto rmssesrc = asRM128(src);
+        if(mmxdst && mmxm64src) return X64Instruction::make<Insn::PMULHW_MMX_MMXM64>(insn.address, insn.size, mmxdst.value(), mmxm64src.value());
         if(rssedst && rmssesrc) return X64Instruction::make<Insn::PMULHW_XMM_XMMM128>(insn.address, insn.size, rssedst.value(), rmssesrc.value());
         return make_failed(insn);
     }
@@ -3551,8 +3575,11 @@ namespace x64 {
         assert(x86detail.op_count == 2);
         const cs_x86_op& dst = x86detail.operands[0];
         const cs_x86_op& src = x86detail.operands[1];
+        auto mmxdst = asMMX(dst);
         auto rssedst = asRegister128(dst);
+        auto mmxm64src = asMMXM64(src);
         auto rmssesrc = asRM128(src);
+        if(mmxdst && mmxm64src) return X64Instruction::make<Insn::PMULLW_MMX_MMXM64>(insn.address, insn.size, mmxdst.value(), mmxm64src.value());
         if(rssedst && rmssesrc) return X64Instruction::make<Insn::PMULLW_XMM_XMMM128>(insn.address, insn.size, rssedst.value(), rmssesrc.value());
         return make_failed(insn);
     }
@@ -3562,8 +3589,11 @@ namespace x64 {
         assert(x86detail.op_count == 2);
         const cs_x86_op& dst = x86detail.operands[0];
         const cs_x86_op& src = x86detail.operands[1];
+        auto mmxdst = asMMX(dst);
         auto rssedst = asRegister128(dst);
+        auto mmxm64src = asMMXM64(src);
         auto rmssesrc = asRM128(src);
+        if(mmxdst && mmxm64src) return X64Instruction::make<Insn::PMULUDQ_MMX_MMXM64>(insn.address, insn.size, mmxdst.value(), mmxm64src.value());
         if(rssedst && rmssesrc) return X64Instruction::make<Insn::PMULUDQ_XMM_XMMM128>(insn.address, insn.size, rssedst.value(), rmssesrc.value());
         return make_failed(insn);
     }
@@ -3573,8 +3603,11 @@ namespace x64 {
         assert(x86detail.op_count == 2);
         const cs_x86_op& dst = x86detail.operands[0];
         const cs_x86_op& src = x86detail.operands[1];
+        auto mmxdst = asMMX(dst);
         auto rssedst = asRegister128(dst);
+        auto mmxm64src = asMMXM64(src);
         auto rmssesrc = asRM128(src);
+        if(mmxdst && mmxm64src) return X64Instruction::make<Insn::PMADDWD_MMX_MMXM64>(insn.address, insn.size, mmxdst.value(), mmxm64src.value());
         if(rssedst && rmssesrc) return X64Instruction::make<Insn::PMADDWD_XMM_XMMM128>(insn.address, insn.size, rssedst.value(), rmssesrc.value());
         return make_failed(insn);
     }
@@ -3626,8 +3659,11 @@ namespace x64 {
         assert(x86detail.op_count == 2);
         const cs_x86_op& dst = x86detail.operands[0];
         const cs_x86_op& src = x86detail.operands[1];
+        auto mmxdst = asMMX(dst);
         auto rssedst = asRegister128(dst);
+        auto mmxm64src = asMMXM64(src);
         auto rmssesrc = asRM128(src);
+        if(mmxdst && mmxm64src) return X64Instruction::make<Insn::PMINUB_MMX_MMXM64>(insn.address, insn.size, mmxdst.value(), mmxm64src.value());
         if(rssedst && rmssesrc) return X64Instruction::make<Insn::PMINUB_XMM_XMMM128>(insn.address, insn.size, rssedst.value(), rmssesrc.value());
         return make_failed(insn);
     }
@@ -3637,8 +3673,11 @@ namespace x64 {
         assert(x86detail.op_count == 2);
         const cs_x86_op& dst = x86detail.operands[0];
         const cs_x86_op& src = x86detail.operands[1];
+        auto mmxdst = asMMX(dst);
         auto rssedst = asRegister128(dst);
+        auto mmxm64src = asMMXM64(src);
         auto rmssesrc = asRM128(src);
+        if(mmxdst && mmxm64src) return X64Instruction::make<Insn::PMAXUB_MMX_MMXM64>(insn.address, insn.size, mmxdst.value(), mmxm64src.value());
         if(rssedst && rmssesrc) return X64Instruction::make<Insn::PMAXUB_XMM_XMMM128>(insn.address, insn.size, rssedst.value(), rmssesrc.value());
         return make_failed(insn);
     }
@@ -3855,8 +3894,11 @@ namespace x64 {
         assert(x86detail.op_count == 2);
         const cs_x86_op& dst = x86detail.operands[0];
         const cs_x86_op& src = x86detail.operands[1];
+        auto mmxdst = asMMX(dst);
         auto rssedst = asRegister128(dst);
+        auto mmxm64src = asMMXM64(src);
         auto rmssesrc = asRM128(src);
+        if(mmxdst && mmxm64src) return X64Instruction::make<Insn::PACKSSDW_MMX_MMXM64>(insn.address, insn.size, mmxdst.value(), mmxm64src.value());
         if(rssedst && rmssesrc) return X64Instruction::make<Insn::PACKSSDW_XMM_XMMM128>(insn.address, insn.size, rssedst.value(), rmssesrc.value());
         return make_failed(insn);
     }

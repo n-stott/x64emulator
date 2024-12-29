@@ -829,10 +829,18 @@ namespace x64 {
         void execPshufhwXMMXMMM128Imm(const X64Instruction&);
         void execPshufdXMMXMMM128Imm(const X64Instruction&);
 
+        void execPcmpeqbMMXMMXM64(const X64Instruction&);
+        void execPcmpeqwMMXMMXM64(const X64Instruction&);
+        void execPcmpeqdMMXMMXM64(const X64Instruction&);
+
         void execPcmpeqbXMMXMMM128(const X64Instruction&);
         void execPcmpeqwXMMXMMM128(const X64Instruction&);
         void execPcmpeqdXMMXMMM128(const X64Instruction&);
         void execPcmpeqqXMMXMMM128(const X64Instruction&);
+
+        void execPcmpgtbMMXMMXM64(const X64Instruction&);
+        void execPcmpgtwMMXMMXM64(const X64Instruction&);
+        void execPcmpgtdMMXMMXM64(const X64Instruction&);
 
         void execPcmpgtbXMMXMMM128(const X64Instruction&);
         void execPcmpgtwXMMXMMM128(const X64Instruction&);
@@ -877,10 +885,17 @@ namespace x64 {
         void execPsubusbXMMXMMM128(const X64Instruction&);
         void execPsubuswXMMXMMM128(const X64Instruction&);
 
+        void execPmulhuwMMXMMXM64(const X64Instruction&);
+        void execPmulhwMMXMMXM64(const X64Instruction&);
+        void execPmullwMMXMMXM64(const X64Instruction&);
+        void execPmuludqMMXMMXM64(const X64Instruction&);
+
         void execPmulhuwXMMXMMM128(const X64Instruction&);
         void execPmulhwXMMXMMM128(const X64Instruction&);
         void execPmullwXMMXMMM128(const X64Instruction&);
         void execPmuludqXMMXMMM128(const X64Instruction&);
+
+        void execPmaddwdMMXMMXM64(const X64Instruction&);
         void execPmaddwdXMMXMMM128(const X64Instruction&);
 
         void execPsadbwMMXMMXM64(const X64Instruction&);
@@ -891,7 +906,9 @@ namespace x64 {
         void execPavgbXMMXMMM128(const X64Instruction&);
         void execPavgwXMMXMMM128(const X64Instruction&);
 
+        void execPmaxubMMXMMXM64(const X64Instruction&);
         void execPmaxubXMMXMMM128(const X64Instruction&);
+        void execPminubMMXMMXM64(const X64Instruction&);
         void execPminubXMMXMMM128(const X64Instruction&);
 
         void execPtestXMMXMMM128(const X64Instruction&);
@@ -937,6 +954,7 @@ namespace x64 {
 
         void execPackuswbMMXMMXM64(const X64Instruction&);
         void execPacksswbMMXMMXM64(const X64Instruction&);
+        void execPackssdwMMXMMXM64(const X64Instruction&);
 
         void execPackuswbXMMXMMM128(const X64Instruction&);
         void execPackusdwXMMXMMM128(const X64Instruction&);

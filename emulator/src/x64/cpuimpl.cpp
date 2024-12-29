@@ -1435,7 +1435,29 @@ namespace x64 {
 
 
     template<typename I>
-    static u128 pcmpeq(u128 dst, u128 src) {
+    static u64 pcmpeq64(u64 dst, u64 src) {
+        constexpr u32 N = sizeof(u64)/sizeof(I);
+        std::array<I, N> DST;
+        static_assert(sizeof(DST) == sizeof(u64));
+        std::memcpy(DST.data(), &dst, sizeof(u64));
+
+        std::array<I, N> SRC;
+        static_assert(sizeof(SRC) == sizeof(u64));
+        std::memcpy(SRC.data(), &src, sizeof(u64));
+
+        for(size_t i = 0; i < N; ++i) {
+            DST[i] = (DST[i] == SRC[i] ? -1 : 0);
+        }
+        std::memcpy(&dst, DST.data(), sizeof(u64));
+        return dst;
+    }
+
+    u64 CpuImpl::pcmpeqb64(u64 dst, u64 src) { return pcmpeq64<i8>(dst, src); }
+    u64 CpuImpl::pcmpeqw64(u64 dst, u64 src) { return pcmpeq64<i16>(dst, src); }
+    u64 CpuImpl::pcmpeqd64(u64 dst, u64 src) { return pcmpeq64<i32>(dst, src); }
+
+    template<typename I>
+    static u128 pcmpeq128(u128 dst, u128 src) {
         constexpr u32 N = sizeof(u128)/sizeof(I);
         std::array<I, N> DST;
         static_assert(sizeof(DST) == sizeof(u128));
@@ -1452,13 +1474,35 @@ namespace x64 {
         return dst;
     }
 
-    u128 CpuImpl::pcmpeqb(u128 dst, u128 src) { return pcmpeq<i8>(dst, src); }
-    u128 CpuImpl::pcmpeqw(u128 dst, u128 src) { return pcmpeq<i16>(dst, src); }
-    u128 CpuImpl::pcmpeqd(u128 dst, u128 src) { return pcmpeq<i32>(dst, src); }
-    u128 CpuImpl::pcmpeqq(u128 dst, u128 src) { return pcmpeq<i64>(dst, src); }
+    u128 CpuImpl::pcmpeqb128(u128 dst, u128 src) { return pcmpeq128<i8>(dst, src); }
+    u128 CpuImpl::pcmpeqw128(u128 dst, u128 src) { return pcmpeq128<i16>(dst, src); }
+    u128 CpuImpl::pcmpeqd128(u128 dst, u128 src) { return pcmpeq128<i32>(dst, src); }
+    u128 CpuImpl::pcmpeqq128(u128 dst, u128 src) { return pcmpeq128<i64>(dst, src); }
 
     template<typename I>
-    static u128 pcmpgt(u128 dst, u128 src) {
+    static u64 pcmpgt64(u64 dst, u64 src) {
+        constexpr u32 N = sizeof(u64)/sizeof(I);
+        std::array<I, N> DST;
+        static_assert(sizeof(DST) == sizeof(u64));
+        std::memcpy(DST.data(), &dst, sizeof(u64));
+
+        std::array<I, N> SRC;
+        static_assert(sizeof(SRC) == sizeof(u64));
+        std::memcpy(SRC.data(), &src, sizeof(u64));
+
+        for(size_t i = 0; i < N; ++i) {
+            DST[i] = (DST[i] > SRC[i] ? -1 : 0);
+        }
+        std::memcpy(&dst, DST.data(), sizeof(u64));
+        return dst;
+    }
+
+    u64 CpuImpl::pcmpgtb64(u64 dst, u64 src) { return pcmpgt64<i8>(dst, src); }
+    u64 CpuImpl::pcmpgtw64(u64 dst, u64 src) { return pcmpgt64<i16>(dst, src); }
+    u64 CpuImpl::pcmpgtd64(u64 dst, u64 src) { return pcmpgt64<i32>(dst, src); }
+
+    template<typename I>
+    static u128 pcmpgt128(u128 dst, u128 src) {
         constexpr u32 N = sizeof(u128)/sizeof(I);
         std::array<I, N> DST;
         static_assert(sizeof(DST) == sizeof(u128));
@@ -1475,10 +1519,10 @@ namespace x64 {
         return dst;
     }
 
-    u128 CpuImpl::pcmpgtb(u128 dst, u128 src) { return pcmpgt<i8>(dst, src); }
-    u128 CpuImpl::pcmpgtw(u128 dst, u128 src) { return pcmpgt<i16>(dst, src); }
-    u128 CpuImpl::pcmpgtd(u128 dst, u128 src) { return pcmpgt<i32>(dst, src); }
-    u128 CpuImpl::pcmpgtq(u128 dst, u128 src) { return pcmpgt<i64>(dst, src); }
+    u128 CpuImpl::pcmpgtb128(u128 dst, u128 src) { return pcmpgt128<i8>(dst, src); }
+    u128 CpuImpl::pcmpgtw128(u128 dst, u128 src) { return pcmpgt128<i16>(dst, src); }
+    u128 CpuImpl::pcmpgtd128(u128 dst, u128 src) { return pcmpgt128<i32>(dst, src); }
+    u128 CpuImpl::pcmpgtq128(u128 dst, u128 src) { return pcmpgt128<i64>(dst, src); }
 
     u16 CpuImpl::pmovmskb(u128 src) {
         std::array<u8, 16> SRC;
@@ -1774,7 +1818,84 @@ namespace x64 {
     u128 CpuImpl::psubusb128(u128 dst, u128 src) { return psubus128<u8>(dst, src); }
     u128 CpuImpl::psubusw128(u128 dst, u128 src) { return psubus128<u16>(dst, src); }
 
-    u128 CpuImpl::pmulhuw(u128 dst, u128 src) {
+    u64 CpuImpl::pmulhuw64(u64 dst, u64 src) {
+        std::array<u16, 4> DST;
+        static_assert(sizeof(DST) == sizeof(u64));
+        std::memcpy(DST.data(), &dst, sizeof(u64));
+
+        std::array<u16, 4> SRC;
+        static_assert(sizeof(SRC) == sizeof(u64));
+        std::memcpy(SRC.data(), &src, sizeof(u64));
+
+        for(size_t i = 0; i < 4; ++i) {
+            u32 prod = (u32)DST[i] * (u32)SRC[i];
+            u16 res[2];
+            std::memcpy(&res, &prod, sizeof(res));
+            DST[i] = res[1];
+        }
+        std::memcpy(&dst, DST.data(), sizeof(u64));
+        return dst;
+    }
+
+    u64 CpuImpl::pmulhw64(u64 dst, u64 src) {
+        std::array<i16, 4> DST;
+        static_assert(sizeof(DST) == sizeof(u64));
+        std::memcpy(DST.data(), &dst, sizeof(u64));
+
+        std::array<i16, 4> SRC;
+        static_assert(sizeof(SRC) == sizeof(u64));
+        std::memcpy(SRC.data(), &src, sizeof(u64));
+
+        for(size_t i = 0; i < 4; ++i) {
+            i32 prod = (i32)DST[i] * (i32)SRC[i];
+            i16 res[2];
+            std::memcpy(&res, &prod, sizeof(res));
+            DST[i] = res[1];
+        }
+        std::memcpy(&dst, DST.data(), sizeof(u64));
+        return dst;
+    }
+
+    u64 CpuImpl::pmullw64(u64 dst, u64 src) {
+        std::array<i16, 4> DST;
+        static_assert(sizeof(DST) == sizeof(u64));
+        std::memcpy(DST.data(), &dst, sizeof(u64));
+
+        std::array<i16, 4> SRC;
+        static_assert(sizeof(SRC) == sizeof(u64));
+        std::memcpy(SRC.data(), &src, sizeof(u64));
+
+        for(size_t i = 0; i < 4; ++i) {
+            i32 prod = (i32)DST[i] * (i32)SRC[i];
+            i16 res[2];
+            std::memcpy(&res, &prod, sizeof(res));
+            DST[i] = res[0];
+        }
+        std::memcpy(&dst, DST.data(), sizeof(u64));
+        return dst;
+    }
+
+    u64 CpuImpl::pmuludq64(u64 dst, u64 src) {
+        std::array<u32, 2> DST;
+        static_assert(sizeof(DST) == sizeof(u64));
+        std::memcpy(DST.data(), &dst, sizeof(u64));
+
+        std::array<u32, 2> SRC;
+        static_assert(sizeof(SRC) == sizeof(u64));
+        std::memcpy(SRC.data(), &src, sizeof(u64));
+
+        for(size_t i = 0; i < 1; ++i) {
+            u64 prod = (u64)DST[2*i] * (u64)SRC[2*i];
+            u32 res[2];
+            std::memcpy(&res, &prod, sizeof(res));
+            DST[2*i+0] = res[0];
+            DST[2*i+1] = res[1];
+        }
+        std::memcpy(&dst, DST.data(), sizeof(u64));
+        return dst;
+    }
+
+    u128 CpuImpl::pmulhuw128(u128 dst, u128 src) {
         std::array<u16, 8> DST;
         static_assert(sizeof(DST) == sizeof(u128));
         std::memcpy(DST.data(), &dst, sizeof(u128));
@@ -1793,7 +1914,7 @@ namespace x64 {
         return dst;
     }
 
-    u128 CpuImpl::pmulhw(u128 dst, u128 src) {
+    u128 CpuImpl::pmulhw128(u128 dst, u128 src) {
         std::array<i16, 8> DST;
         static_assert(sizeof(DST) == sizeof(u128));
         std::memcpy(DST.data(), &dst, sizeof(u128));
@@ -1812,7 +1933,7 @@ namespace x64 {
         return dst;
     }
 
-    u128 CpuImpl::pmullw(u128 dst, u128 src) {
+    u128 CpuImpl::pmullw128(u128 dst, u128 src) {
         std::array<i16, 8> DST;
         static_assert(sizeof(DST) == sizeof(u128));
         std::memcpy(DST.data(), &dst, sizeof(u128));
@@ -1831,7 +1952,7 @@ namespace x64 {
         return dst;
     }
 
-    u128 CpuImpl::pmuludq(u128 dst, u128 src) {
+    u128 CpuImpl::pmuludq128(u128 dst, u128 src) {
         std::array<u32, 4> DST;
         static_assert(sizeof(DST) == sizeof(u128));
         std::memcpy(DST.data(), &dst, sizeof(u128));
@@ -1851,7 +1972,27 @@ namespace x64 {
         return dst;
     }
 
-    u128 CpuImpl::pmaddwd(u128 dst, u128 src) {
+    u64 CpuImpl::pmaddwd64(u64 dst, u64 src) {
+        std::array<i16, 4> DST;
+        static_assert(sizeof(DST) == sizeof(u64));
+        std::memcpy(DST.data(), &dst, sizeof(u64));
+
+        std::array<i16, 4> SRC;
+        static_assert(sizeof(SRC) == sizeof(u64));
+        std::memcpy(SRC.data(), &src, sizeof(u64));
+
+        std::array<i32, 2> TMP;
+
+        for(size_t i = 0; i < 2; ++i) {
+            TMP[i] = (i32)DST[2*i] * (i32)SRC[2*i];
+            TMP[i] += (i32)DST[2*i+1] * (i32)SRC[2*i+1];
+        }
+
+        std::memcpy(&dst, TMP.data(), sizeof(u64));
+        return dst;
+    }
+
+    u128 CpuImpl::pmaddwd128(u128 dst, u128 src) {
         std::array<i16, 8> DST;
         static_assert(sizeof(DST) == sizeof(u128));
         std::memcpy(DST.data(), &dst, sizeof(u128));
@@ -1992,7 +2133,23 @@ namespace x64 {
         return dst;
     }
 
-    u128 CpuImpl::pmaxub(u128 dst, u128 src) {
+    u64 CpuImpl::pmaxub64(u64 dst, u64 src) {
+        std::array<u8, 8> DST;
+        static_assert(sizeof(DST) == sizeof(u64));
+        std::memcpy(DST.data(), &dst, sizeof(u64));
+
+        std::array<u8, 8> SRC;
+        static_assert(sizeof(SRC) == sizeof(u64));
+        std::memcpy(SRC.data(), &src, sizeof(u64));
+
+        for(size_t i = 0; i < 8; ++i) {
+            DST[i] = std::max(DST[i], SRC[i]);
+        }
+        std::memcpy(&dst, DST.data(), sizeof(u64));
+        return dst;
+    }
+
+    u128 CpuImpl::pmaxub128(u128 dst, u128 src) {
         std::array<u8, 16> DST;
         static_assert(sizeof(DST) == sizeof(u128));
         std::memcpy(DST.data(), &dst, sizeof(u128));
@@ -2008,7 +2165,23 @@ namespace x64 {
         return dst;
     }
 
-    u128 CpuImpl::pminub(u128 dst, u128 src) {
+    u64 CpuImpl::pminub64(u64 dst, u64 src) {
+        std::array<u8, 8> DST;
+        static_assert(sizeof(DST) == sizeof(u64));
+        std::memcpy(DST.data(), &dst, sizeof(u64));
+
+        std::array<u8, 8> SRC;
+        static_assert(sizeof(SRC) == sizeof(u64));
+        std::memcpy(SRC.data(), &src, sizeof(u64));
+
+        for(size_t i = 0; i < 8; ++i) {
+            DST[i] = std::min(DST[i], SRC[i]);
+        }
+        std::memcpy(&dst, DST.data(), sizeof(u64));
+        return dst;
+    }
+
+    u128 CpuImpl::pminub128(u128 dst, u128 src) {
         std::array<u8, 16> DST;
         static_assert(sizeof(DST) == sizeof(u128));
         std::memcpy(DST.data(), &dst, sizeof(u128));
@@ -2247,6 +2420,10 @@ namespace x64 {
 
     u64 CpuImpl::packsswb64(u64 dst, u64 src) {
         return pack64<i8, i16>(dst, src);
+    }
+
+    u64 CpuImpl::packssdw64(u64 dst, u64 src) {
+        return pack64<i16, i32>(dst, src);
     }
 
     template<typename DST_T, typename SRC_T>

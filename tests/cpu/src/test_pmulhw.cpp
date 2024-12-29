@@ -16,7 +16,7 @@ void testA() {
         0xc5a2c5a2c5a2c5a2,
         0xc5a2c5a2c5a2c5a2
     };
-    (void)x64::CheckedCpuImpl::pmulhw(dst, src);
+    (void)x64::CheckedCpuImpl::pmulhw128(dst, src);
 }
 
 int main() {

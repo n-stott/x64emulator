@@ -1994,9 +1994,25 @@ namespace x64 {
         return nativeRes;
     }
 
+    template<typename I>
+    static u64 pcmpeq64(u64 dst, u64 src) {
+        u64 nativeRes = dst;
+        if constexpr(std::is_same_v<I, i8>) {
+            asm volatile("pcmpeqb %1, %0" : "+y"(nativeRes) : "y"(src));
+        } else if constexpr(std::is_same_v<I, i16>) {
+            asm volatile("pcmpeqw %1, %0" : "+y"(nativeRes) : "y"(src));
+        } else if constexpr(std::is_same_v<I, i32>) {
+            asm volatile("pcmpeqd %1, %0" : "+y"(nativeRes) : "y"(src));
+        }
+        return nativeRes;
+    }
+
+    u64 NativeCpuImpl::pcmpeqb64(u64 dst, u64 src) { return pcmpeq64<i8>(dst, src); }
+    u64 NativeCpuImpl::pcmpeqw64(u64 dst, u64 src) { return pcmpeq64<i16>(dst, src); }
+    u64 NativeCpuImpl::pcmpeqd64(u64 dst, u64 src) { return pcmpeq64<i32>(dst, src); }
 
     template<typename I>
-    static u128 pcmpeq(u128 dst, u128 src) {
+    static u128 pcmpeq128(u128 dst, u128 src) {
         u128 nativeRes = dst;
         if constexpr(std::is_same_v<I, i8>) {
             asm volatile("pcmpeqb %1, %0" : "+x"(nativeRes) : "x"(src));
@@ -2010,13 +2026,30 @@ namespace x64 {
         return nativeRes;
     }
 
-    u128 NativeCpuImpl::pcmpeqb(u128 dst, u128 src) { return pcmpeq<i8>(dst, src); }
-    u128 NativeCpuImpl::pcmpeqw(u128 dst, u128 src) { return pcmpeq<i16>(dst, src); }
-    u128 NativeCpuImpl::pcmpeqd(u128 dst, u128 src) { return pcmpeq<i32>(dst, src); }
-    u128 NativeCpuImpl::pcmpeqq(u128 dst, u128 src) { return pcmpeq<i64>(dst, src); }
+    u128 NativeCpuImpl::pcmpeqb128(u128 dst, u128 src) { return pcmpeq128<i8>(dst, src); }
+    u128 NativeCpuImpl::pcmpeqw128(u128 dst, u128 src) { return pcmpeq128<i16>(dst, src); }
+    u128 NativeCpuImpl::pcmpeqd128(u128 dst, u128 src) { return pcmpeq128<i32>(dst, src); }
+    u128 NativeCpuImpl::pcmpeqq128(u128 dst, u128 src) { return pcmpeq128<i64>(dst, src); }
 
     template<typename I>
-    static u128 pcmpgt(u128 dst, u128 src) {
+    static u64 pcmpgt64(u64 dst, u64 src) {
+        u64 nativeRes = dst;
+        if constexpr(std::is_same_v<I, i8>) {
+            asm volatile("pcmpgtb %1, %0" : "+y"(nativeRes) : "y"(src));
+        } else if constexpr(std::is_same_v<I, i16>) {
+            asm volatile("pcmpgtw %1, %0" : "+y"(nativeRes) : "y"(src));
+        } else if constexpr(std::is_same_v<I, i32>) {
+            asm volatile("pcmpgtd %1, %0" : "+y"(nativeRes) : "y"(src));
+        }
+        return nativeRes;
+    }
+
+    u64 NativeCpuImpl::pcmpgtb64(u64 dst, u64 src) { return pcmpgt64<i8>(dst, src); }
+    u64 NativeCpuImpl::pcmpgtw64(u64 dst, u64 src) { return pcmpgt64<i16>(dst, src); }
+    u64 NativeCpuImpl::pcmpgtd64(u64 dst, u64 src) { return pcmpgt64<i32>(dst, src); }
+
+    template<typename I>
+    static u128 pcmpgt128(u128 dst, u128 src) {
         u128 nativeRes = dst;
         if constexpr(std::is_same_v<I, i8>) {
             asm volatile("pcmpgtb %1, %0" : "+x"(nativeRes) : "x"(src));
@@ -2030,10 +2063,10 @@ namespace x64 {
         return nativeRes;
     }
 
-    u128 NativeCpuImpl::pcmpgtb(u128 dst, u128 src) { return pcmpgt<i8>(dst, src); }
-    u128 NativeCpuImpl::pcmpgtw(u128 dst, u128 src) { return pcmpgt<i16>(dst, src); }
-    u128 NativeCpuImpl::pcmpgtd(u128 dst, u128 src) { return pcmpgt<i32>(dst, src); }
-    u128 NativeCpuImpl::pcmpgtq(u128 dst, u128 src) { return pcmpgt<i64>(dst, src); }
+    u128 NativeCpuImpl::pcmpgtb128(u128 dst, u128 src) { return pcmpgt128<i8>(dst, src); }
+    u128 NativeCpuImpl::pcmpgtw128(u128 dst, u128 src) { return pcmpgt128<i16>(dst, src); }
+    u128 NativeCpuImpl::pcmpgtd128(u128 dst, u128 src) { return pcmpgt128<i32>(dst, src); }
+    u128 NativeCpuImpl::pcmpgtq128(u128 dst, u128 src) { return pcmpgt128<i64>(dst, src); }
 
     u16 NativeCpuImpl::pmovmskb(u128 src) {
         u64 nativeRes = 0;
@@ -2233,31 +2266,61 @@ namespace x64 {
     u128 NativeCpuImpl::psubusb128(u128 dst, u128 src) { return psubus128<u8>(dst, src); }
     u128 NativeCpuImpl::psubusw128(u128 dst, u128 src) { return psubus128<u16>(dst, src); }
 
-    u128 NativeCpuImpl::pmulhuw(u128 dst, u128 src) {
+    u64 NativeCpuImpl::pmulhuw64(u64 dst, u64 src) {
+        u64 nativeRes = dst;
+        asm volatile("pmulhuw %1, %0" : "+y"(nativeRes) : "y"(src));
+        return nativeRes;
+    }
+
+    u64 NativeCpuImpl::pmulhw64(u64 dst, u64 src) {
+        u64 nativeRes = dst;
+        asm volatile("pmulhw %1, %0" : "+y"(nativeRes) : "y"(src));
+        return nativeRes;
+    }
+
+    u64 NativeCpuImpl::pmullw64(u64 dst, u64 src) {
+        u64 nativeRes = dst;
+        asm volatile("pmullw %1, %0" : "+y"(nativeRes) : "y"(src));
+        return nativeRes;
+    }
+
+    u64 NativeCpuImpl::pmuludq64(u64 dst, u64 src) {
+        u64 nativeRes = dst;
+        asm volatile("pmuludq %1, %0" : "+y"(nativeRes) : "y"(src));
+        return nativeRes;
+    }
+
+    u128 NativeCpuImpl::pmulhuw128(u128 dst, u128 src) {
         u128 nativeRes = dst;
         asm volatile("pmulhuw %1, %0" : "+x"(nativeRes) : "x"(src));
         return nativeRes;
     }
 
-    u128 NativeCpuImpl::pmulhw(u128 dst, u128 src) {
+    u128 NativeCpuImpl::pmulhw128(u128 dst, u128 src) {
         u128 nativeRes = dst;
         asm volatile("pmulhw %1, %0" : "+x"(nativeRes) : "x"(src));
         return nativeRes;
     }
 
-    u128 NativeCpuImpl::pmullw(u128 dst, u128 src) {
+    u128 NativeCpuImpl::pmullw128(u128 dst, u128 src) {
         u128 nativeRes = dst;
         asm volatile("pmullw %1, %0" : "+x"(nativeRes) : "x"(src));
         return nativeRes;
     }
 
-    u128 NativeCpuImpl::pmuludq(u128 dst, u128 src) {
+    u128 NativeCpuImpl::pmuludq128(u128 dst, u128 src) {
         u128 nativeRes = dst;
         asm volatile("pmuludq %1, %0" : "+x"(nativeRes) : "x"(src));
         return nativeRes;
     }
 
-    u128 NativeCpuImpl::pmaddwd(u128 dst, u128 src) {
+    u64 NativeCpuImpl::pmaddwd64(u64 dst, u64 src) {
+        u64 nativeRes = dst;
+        asm volatile("pmaddwd %1, %0" : "+y"(nativeRes) : "y"(src));
+        return nativeRes;
+    }
+
+    u128 NativeCpuImpl::pmaddwd128(u128 dst, u128 src) {
         u128 nativeRes = dst;
         asm volatile("pmaddwd %1, %0" : "+x"(nativeRes) : "x"(src));
         return nativeRes;
@@ -2299,13 +2362,25 @@ namespace x64 {
         return nativeRes;
     }
 
-    u128 NativeCpuImpl::pmaxub(u128 dst, u128 src) {
+    u64 NativeCpuImpl::pmaxub64(u64 dst, u64 src) {
+        u64 nativeRes = dst;
+        asm volatile("pmaxub %1, %0" : "+y"(nativeRes) : "y"(src));
+        return nativeRes;
+    }
+
+    u128 NativeCpuImpl::pmaxub128(u128 dst, u128 src) {
         u128 nativeRes = dst;
         asm volatile("pmaxub %1, %0" : "+x"(nativeRes) : "x"(src));
         return nativeRes;
     }
 
-    u128 NativeCpuImpl::pminub(u128 dst, u128 src) {
+    u64 NativeCpuImpl::pminub64(u64 dst, u64 src) {
+        u64 nativeRes = dst;
+        asm volatile("pminub %1, %0" : "+y"(nativeRes) : "y"(src));
+        return nativeRes;
+    }
+
+    u128 NativeCpuImpl::pminub128(u128 dst, u128 src) {
         u128 nativeRes = dst;
         asm volatile("pminub %1, %0" : "+x"(nativeRes) : "x"(src));
         return nativeRes;
@@ -2694,6 +2769,12 @@ namespace x64 {
     u64 NativeCpuImpl::packsswb64(u64 dst, u64 src) {
         u64 nativeRes = dst;
         asm volatile("packsswb %1, %0" : "+y"(nativeRes) : "y"(src));
+        return nativeRes;
+    }
+
+    u64 NativeCpuImpl::packssdw64(u64 dst, u64 src) {
+        u64 nativeRes = dst;
+        asm volatile("packssdw %1, %0" : "+y"(nativeRes) : "y"(src));
         return nativeRes;
     }
 
