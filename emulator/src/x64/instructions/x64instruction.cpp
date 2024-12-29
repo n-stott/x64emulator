@@ -856,7 +856,9 @@ namespace utils {
             case Insn::PUNPCKHWD_XMM_XMMM128: return toString<XMM, XMMM128>("punpckhwd");
             case Insn::PUNPCKHDQ_XMM_XMMM128: return toString<XMM, XMMM128>("punpckhdq");
             case Insn::PUNPCKHQDQ_XMM_XMMM128: return toString<XMM, XMMM128>("punpckhqdq");
+            case Insn::PSHUFB_MMX_MMXM64: return toString<MMX, MMXM64>("pshufb");
             case Insn::PSHUFB_XMM_XMMM128: return toString<XMM, XMMM128>("pshufb");
+            case Insn::PSHUFW_MMX_MMXM64_IMM: return toString<MMX, MMXM64, Imm>("pshufw");
             case Insn::PSHUFLW_XMM_XMMM128_IMM: return toString<XMM, XMMM128, Imm>("pshuflw");
             case Insn::PSHUFHW_XMM_XMMM128_IMM: return toString<XMM, XMMM128, Imm>("pshufhw");
             case Insn::PSHUFD_XMM_XMMM128_IMM: return toString<XMM, XMMM128, Imm>("pshufd");
@@ -915,6 +917,9 @@ namespace utils {
             case Insn::PMAXUB_XMM_XMMM128: return toString<XMM, XMMM128>("pmaxub");
             case Insn::PMINUB_XMM_XMMM128: return toString<XMM, XMMM128>("pminub");
             case Insn::PTEST_XMM_XMMM128: return toString<XMM, XMMM128>("ptest");
+            case Insn::PSRAW_MMX_IMM: return toString<MMX, Imm>("psraw");
+            case Insn::PSRAD_MMX_IMM: return toString<MMX, Imm>("psrad");
+            case Insn::PSRAQ_MMX_IMM: return toString<MMX, Imm>("psraq");
             case Insn::PSRAW_XMM_IMM: return toString<XMM, Imm>("psraw");
             case Insn::PSRAD_XMM_IMM: return toString<XMM, Imm>("psrad");
             case Insn::PSRAQ_XMM_IMM: return toString<XMM, Imm>("psraq");
@@ -945,6 +950,8 @@ namespace utils {
             case Insn::PSLLDQ_XMM_IMM: return toString<XMM, Imm>("pslldq");
             case Insn::PSRLDQ_XMM_IMM: return toString<XMM, Imm>("psrldq");
             case Insn::PCMPISTRI_XMM_XMMM128_IMM: return toString<XMM, XMMM128, Imm>("pcmpistri");
+            case Insn::PACKUSWB_MMX_MMXM64: return toString<MMX, MMXM64>("packuswb");
+            case Insn::PACKSSWB_MMX_MMXM64: return toString<MMX, MMXM64>("packsswb");
             case Insn::PACKUSWB_XMM_XMMM128: return toString<XMM, XMMM128>("packuswb");
             case Insn::PACKUSDW_XMM_XMMM128: return toString<XMM, XMMM128>("packusdw");
             case Insn::PACKSSWB_XMM_XMMM128: return toString<XMM, XMMM128>("packsswb");

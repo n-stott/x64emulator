@@ -1313,7 +1313,29 @@ namespace x64 {
         return dst;
     }
 
-    u128 CpuImpl::pshufb(u128 dst, u128 src) {
+    u64 CpuImpl::pshufb64(u64 dst, u64 src) {
+        std::array<u8, 8> DST;
+        static_assert(sizeof(DST) == sizeof(u64));
+        std::memcpy(DST.data(), &dst, sizeof(u64));
+        std::array<u8, 8> TMP = DST;
+
+        std::array<u8, 8> SRC;
+        static_assert(sizeof(SRC) == sizeof(u64));
+        std::memcpy(SRC.data(), &src, sizeof(u64));
+
+        for(unsigned int i = 0; i < 8; ++i) {
+            if((SRC[i] & 0x80) == 0) {
+                DST[i] = 0x0;
+            } else {
+                DST[i] = TMP[SRC[i] & 0x0F];
+            }
+        }
+
+        std::memcpy(&dst, DST.data(), sizeof(u64));
+        return dst;
+    }
+
+    u128 CpuImpl::pshufb128(u128 dst, u128 src) {
         std::array<u8, 16> DST;
         static_assert(sizeof(DST) == sizeof(u128));
         std::memcpy(DST.data(), &dst, sizeof(u128));
@@ -1323,7 +1345,7 @@ namespace x64 {
         static_assert(sizeof(SRC) == sizeof(u128));
         std::memcpy(SRC.data(), &src, sizeof(u128));
 
-        for(unsigned int i = 0; i < 15; ++i) {
+        for(unsigned int i = 0; i < 16; ++i) {
             if((SRC[i] & 0x80) == 0) {
                 DST[i] = 0x0;
             } else {
@@ -1332,6 +1354,23 @@ namespace x64 {
         }
 
         std::memcpy(&dst, DST.data(), sizeof(u128));
+        return dst;
+    }
+
+    u64 CpuImpl::pshufw(u64 src, u8 order) {
+        std::array<u16, 4> SRC;
+        static_assert(sizeof(SRC) == sizeof(u64));
+        std::memcpy(SRC.data(), &src, sizeof(u64));
+
+        std::array<u16, 4> DST;
+        static_assert(sizeof(DST) == sizeof(u64));
+        DST[0] = SRC[(order >> 0) & 0x3];
+        DST[1] = SRC[(order >> 2) & 0x3];
+        DST[2] = SRC[(order >> 4) & 0x3];
+        DST[3] = SRC[(order >> 6) & 0x3];
+
+        u64 dst;
+        std::memcpy(&dst, DST.data(), sizeof(u64));
         return dst;
     }
 
@@ -1991,7 +2030,25 @@ namespace x64 {
     }
 
     template<typename I>
-    static u128 psra(u128 dst, u8 src) {
+    static u64 psra64(u64 dst, u8 src) {
+        constexpr u32 N = sizeof(u64)/sizeof(I);
+        std::array<I, N> DST;
+        static_assert(sizeof(DST) == sizeof(u64));
+        std::memcpy(DST.data(), &dst, sizeof(u64));
+
+        for(size_t i = 0; i < N; ++i) {
+            DST[i] = (I)(DST[i] >> (I)src);
+        }
+        std::memcpy(&dst, DST.data(), sizeof(u64));
+        return dst;
+    }
+
+    u64 CpuImpl::psraw64(u64 dst, u8 src) { return psra64<i16>(dst, src); }
+    u64 CpuImpl::psrad64(u64 dst, u8 src) { return psra64<i32>(dst, src); }
+    u64 CpuImpl::psraq64(u64 dst, u8 src) { return psra64<i64>(dst, src); }
+
+    template<typename I>
+    static u128 psra128(u128 dst, u8 src) {
         constexpr u32 N = sizeof(u128)/sizeof(I);
         std::array<I, N> DST;
         static_assert(sizeof(DST) == sizeof(u128));
@@ -2004,9 +2061,9 @@ namespace x64 {
         return dst;
     }
 
-    u128 CpuImpl::psraw(u128 dst, u8 src) { return psra<i16>(dst, src); }
-    u128 CpuImpl::psrad(u128 dst, u8 src) { return psra<i32>(dst, src); }
-    u128 CpuImpl::psraq(u128 dst, u8 src) { return psra<i64>(dst, src); }
+    u128 CpuImpl::psraw128(u128 dst, u8 src) { return psra128<i16>(dst, src); }
+    u128 CpuImpl::psrad128(u128 dst, u8 src) { return psra128<i32>(dst, src); }
+    u128 CpuImpl::psraq128(u128 dst, u8 src) { return psra128<i64>(dst, src); }
 
     template<typename U>
     static u64 psll64(u64 dst, u8 src) {
@@ -2154,9 +2211,46 @@ namespace x64 {
         return 0;
     }
 
+    template<typename DST_T, typename SRC_T>
+    static u64 pack64(u64 dst, u64 src) {
+        static_assert(sizeof(SRC_T) == 2*sizeof(DST_T));
+        auto saturate = [](SRC_T val) -> DST_T {
+            static constexpr SRC_T l = (SRC_T)std::numeric_limits<DST_T>::min(); // NOLINT(bugprone-signed-char-misuse, cert-str34-c)
+            static constexpr SRC_T u = (SRC_T)std::numeric_limits<DST_T>::max(); // NOLINT(bugprone-signed-char-misuse, cert-str34-c)
+            return (DST_T)std::max(std::min(val, u), l);
+        };
+
+        constexpr size_t N = sizeof(u64)/sizeof(SRC_T);
+        std::array<SRC_T, N> DST;
+        static_assert(sizeof(DST) == sizeof(u64));
+        std::memcpy(DST.data(), &dst, sizeof(u64));
+
+        std::array<SRC_T, N> SRC;
+        static_assert(sizeof(SRC) == sizeof(u64));
+        std::memcpy(SRC.data(), &src, sizeof(u64));
+
+        std::array<DST_T, 2*N> RES;
+        static_assert(sizeof(RES) == sizeof(u64));
+
+        for(size_t i = 0; i < N; ++i) {
+            RES[0+i] = saturate(DST[i]);
+            RES[N+i] = saturate(SRC[i]);
+        }
+        u64 res;
+        std::memcpy(&res, RES.data(), sizeof(u64));
+        return res;
+    }
+    
+    u64 CpuImpl::packuswb64(u64 dst, u64 src) {
+        return pack64<u8, i16>(dst, src);
+    }
+
+    u64 CpuImpl::packsswb64(u64 dst, u64 src) {
+        return pack64<i8, i16>(dst, src);
+    }
 
     template<typename DST_T, typename SRC_T>
-    static u128 pack(u128 dst, u128 src) {
+    static u128 pack128(u128 dst, u128 src) {
         static_assert(sizeof(SRC_T) == 2*sizeof(DST_T));
         auto saturate = [](SRC_T val) -> DST_T {
             static constexpr SRC_T l = (SRC_T)std::numeric_limits<DST_T>::min(); // NOLINT(bugprone-signed-char-misuse, cert-str34-c)
@@ -2185,20 +2279,20 @@ namespace x64 {
         return res;
     }
     
-    u128 CpuImpl::packuswb(u128 dst, u128 src) {
-        return pack<u8, i16>(dst, src);
+    u128 CpuImpl::packuswb128(u128 dst, u128 src) {
+        return pack128<u8, i16>(dst, src);
     }
 
-    u128 CpuImpl::packusdw(u128 dst, u128 src) {
-        return pack<u16, i32>(dst, src);
+    u128 CpuImpl::packusdw128(u128 dst, u128 src) {
+        return pack128<u16, i32>(dst, src);
     }
 
-    u128 CpuImpl::packsswb(u128 dst, u128 src) {
-        return pack<i8, i16>(dst, src);
+    u128 CpuImpl::packsswb128(u128 dst, u128 src) {
+        return pack128<i8, i16>(dst, src);
     }
 
-    u128 CpuImpl::packssdw(u128 dst, u128 src) {
-        return pack<i16, i32>(dst, src);
+    u128 CpuImpl::packssdw128(u128 dst, u128 src) {
+        return pack128<i16, i32>(dst, src);
     }
 
 

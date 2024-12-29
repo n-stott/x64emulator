@@ -247,7 +247,9 @@ namespace x64 {
         [[nodiscard]] static u128 punpckhdq128(u128 dst, u128 src);
         [[nodiscard]] static u128 punpckhqdq(u128 dst, u128 src);
 
-        [[nodiscard]] static u128 pshufb(u128 dst, u128 src);
+        [[nodiscard]] static u64 pshufb64(u64 dst, u64 src);
+        [[nodiscard]] static u128 pshufb128(u128 dst, u128 src);
+        [[nodiscard]] static u64 pshufw(u64 src, u8 order);
         [[nodiscard]] static u128 pshuflw(u128 src, u8 order);
         [[nodiscard]] static u128 pshufhw(u128 src, u8 order);
         [[nodiscard]] static u128 pshufd(u128 src, u8 order);
@@ -318,9 +320,12 @@ namespace x64 {
 
         static void ptest(u128 dst, u128 src, Flags* flags);
 
-        [[nodiscard]] static u128 psraw(u128 dst, u8 src);
-        [[nodiscard]] static u128 psrad(u128 dst, u8 src);
-        [[nodiscard]] static u128 psraq(u128 dst, u8 src);
+        [[nodiscard]] static u64 psraw64(u64 dst, u8 src);
+        [[nodiscard]] static u64 psrad64(u64 dst, u8 src);
+        [[nodiscard]] static u64 psraq64(u64 dst, u8 src);
+        [[nodiscard]] static u128 psraw128(u128 dst, u8 src);
+        [[nodiscard]] static u128 psrad128(u128 dst, u8 src);
+        [[nodiscard]] static u128 psraq128(u128 dst, u8 src);
 
         [[nodiscard]] static u64 psllw64(u64 dst, u8 src);
         [[nodiscard]] static u64 pslld64(u64 dst, u8 src);
@@ -341,10 +346,12 @@ namespace x64 {
         
         [[nodiscard]] static u32 pcmpistri(u128 dst, u128 src, u8 control, Flags* flags);
 
-        [[nodiscard]] static u128 packuswb(u128 dst, u128 src);
-        [[nodiscard]] static u128 packusdw(u128 dst, u128 src);
-        [[nodiscard]] static u128 packsswb(u128 dst, u128 src);
-        [[nodiscard]] static u128 packssdw(u128 dst, u128 src);
+        [[nodiscard]] static u64 packuswb64(u64 dst, u64 src);
+        [[nodiscard]] static u64 packsswb64(u64 dst, u64 src);
+        [[nodiscard]] static u128 packuswb128(u128 dst, u128 src);
+        [[nodiscard]] static u128 packusdw128(u128 dst, u128 src);
+        [[nodiscard]] static u128 packsswb128(u128 dst, u128 src);
+        [[nodiscard]] static u128 packssdw128(u128 dst, u128 src);
 
         [[nodiscard]] static u128 unpckhps(u128 dst, u128 src);
         [[nodiscard]] static u128 unpckhpd(u128 dst, u128 src);
