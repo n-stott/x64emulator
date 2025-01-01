@@ -118,7 +118,13 @@ namespace x64 {
             xmm_[(u8)reg] = value;
         }
 
-        u64 resolve(Encoding enc) const {
+        u32 resolve(Encoding32 enc) const {
+            return get(enc.base)
+                    + enc.scale * get(enc.index)
+                    + (u32)enc.displacement;
+        }
+
+        u64 resolve(Encoding64 enc) const {
             return get(enc.base)
                     + enc.scale * get(enc.index)
                     + (u64)enc.displacement;

@@ -253,7 +253,31 @@ namespace utils {
         __builtin_unreachable();
     }
 
-    inline std::string toString(const Encoding& enc) {
+    inline std::string toString(const Encoding32& enc) {
+        if(enc.base != R32::EIZ) {
+            if(enc.index != R32::EIZ) {
+                if(enc.displacement != 0) {
+                    return fmt::format("[{}+{}*{}{:+#x}]", toString(enc.base), toString(enc.index), enc.scale, enc.displacement);
+                } else {
+                    return fmt::format("[{}+{}*{}]", toString(enc.base), toString(enc.index), enc.scale);
+                }
+            } else {
+                if(enc.displacement != 0) {
+                    return fmt::format("[{}{:+#x}]", toString(enc.base), enc.displacement);
+                } else {
+                    return fmt::format("[{}]", toString(enc.base));
+                }
+            }
+        } else {
+            if(enc.index != R32::EIZ) {
+                return fmt::format("[{}*{}{:+#x}]", toString(enc.index), enc.scale, enc.displacement);
+            } else {
+                return fmt::format("{:#x}", enc.displacement);
+            }
+        }
+    }
+
+    inline std::string toString(const Encoding64& enc) {
         if(enc.base != R64::ZERO) {
             if(enc.index != R64::ZERO) {
                 if(enc.displacement != 0) {
@@ -486,8 +510,10 @@ namespace utils {
             case Insn::MOVZX_R64_RM8:  return toString<R64, RM8>("movzx");
             case Insn::MOVZX_R64_RM16: return toString<R64, RM16>("movzx");
             case Insn::MOVZX_R64_RM32: return toString<R64, RM32>("movzx");
-            case Insn::LEA_R32_ENCODING: return toString<R32, Encoding>("lea");
-            case Insn::LEA_R64_ENCODING: return toString<R64, Encoding>("lea");
+            case Insn::LEA_R32_ENCODING32: return toString<R32, Encoding32>("lea");
+            case Insn::LEA_R64_ENCODING32: return toString<R64, Encoding32>("lea");
+            case Insn::LEA_R32_ENCODING64: return toString<R32, Encoding64>("lea");
+            case Insn::LEA_R64_ENCODING64: return toString<R64, Encoding64>("lea");
             case Insn::PUSH_IMM: return toString<Imm>("push");
             case Insn::PUSH_RM32: return toString<RM32>("push");
             case Insn::PUSH_RM64: return toString<RM64>("push");

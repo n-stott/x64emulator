@@ -187,7 +187,14 @@ namespace x64 {
         ORD,
     };
 
-    struct Encoding {
+    struct Encoding32 {
+        R32 base;
+        R32 index;
+        u8 scale;
+        i32 displacement;
+    };
+
+    struct Encoding64 {
         R64 base;
         R64 index;
         u8 scale;
@@ -220,7 +227,7 @@ namespace x64 {
     template<Size size>
     struct M {
         Segment segment;
-        Encoding encoding;
+        Encoding64 encoding;
     };
 
     template<Size size>

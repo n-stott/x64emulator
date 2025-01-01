@@ -227,11 +227,21 @@ namespace x64 {
         return {};
     }
 
-    std::optional<Encoding> asEncoding(const cs_x86_op& operand) {
+    std::optional<Encoding32> asEncoding32(const cs_x86_op& operand) {
+        if(operand.type != X86_OP_MEM) return {};
+        auto base = asRegister32(operand.mem.base);
+        auto index = asRegister32(operand.mem.index);
+        return Encoding32{base.value_or(R32::EIZ),
+                        index.value_or(R32::EIZ),
+                        (u8)operand.mem.scale,
+                        (i32)operand.mem.disp};
+    }
+
+    std::optional<Encoding64> asEncoding64(const cs_x86_op& operand) {
         if(operand.type != X86_OP_MEM) return {};
         auto base = asRegister64(operand.mem.base);
         auto index = asRegister64(operand.mem.index);
-        return Encoding{base.value_or(R64::ZERO),
+        return Encoding64{base.value_or(R64::ZERO),
                         index.value_or(R64::ZERO),
                         (u8)operand.mem.scale,
                         (i32)operand.mem.disp};
@@ -243,7 +253,7 @@ namespace x64 {
         if(operand.size != pointerSize(size)) return {};
         auto segment = asSegment(operand.mem.segment);
         if(!segment) return {};
-        auto enc = asEncoding(operand);
+        auto enc = asEncoding64(operand);
         if(!enc) return {};
         return M<size>{segment.value(), enc.value()};
     }
@@ -476,11 +486,18 @@ namespace x64 {
         assert(x86detail.op_count == 2);
         const cs_x86_op& dst = x86detail.operands[0];
         const cs_x86_op& src = x86detail.operands[1];
+        bool addrSizeOverride = (x86detail.prefix[3] == X86_PREFIX_ADDRSIZE);
         auto r32dst = asRegister32(dst);
         auto r64dst = asRegister64(dst);
-        auto encSrc = asEncoding(src);
-        if(r32dst && encSrc) return X64Instruction::make<Insn::LEA_R32_ENCODING>(insn.address, insn.size, r32dst.value(), encSrc.value());
-        if(r64dst && encSrc) return X64Instruction::make<Insn::LEA_R64_ENCODING>(insn.address, insn.size, r64dst.value(), encSrc.value());
+        if(addrSizeOverride) {
+            auto enc32Src = asEncoding32(src);
+            if(r32dst && enc32Src) return X64Instruction::make<Insn::LEA_R32_ENCODING32>(insn.address, insn.size, r32dst.value(), enc32Src.value());
+            if(r64dst && enc32Src) return X64Instruction::make<Insn::LEA_R64_ENCODING32>(insn.address, insn.size, r64dst.value(), enc32Src.value());
+        } else {
+            auto enc64Src = asEncoding64(src);
+            if(r32dst && enc64Src) return X64Instruction::make<Insn::LEA_R32_ENCODING64>(insn.address, insn.size, r32dst.value(), enc64Src.value());
+            if(r64dst && enc64Src) return X64Instruction::make<Insn::LEA_R64_ENCODING64>(insn.address, insn.size, r64dst.value(), enc64Src.value());
+        }
         return make_failed(insn);
     }
 

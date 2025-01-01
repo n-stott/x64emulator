@@ -104,7 +104,8 @@ namespace x64 {
         Xmm get(Ptr128 ptr) const;
         Xmm getUnaligned(Ptr128 ptr) const;
 
-        u64 resolve(Encoding addr) const { return regs_.resolve(addr); }
+        u32 resolve(Encoding32 addr) const { return regs_.resolve(addr); }
+        u64 resolve(Encoding64 addr) const { return regs_.resolve(addr); }
 
         template<Size size>
         SPtr<size> resolve(M<size> addr) const {
@@ -366,8 +367,10 @@ namespace x64 {
         void execMovzxR64RM16(const X64Instruction&);
         void execMovzxR64RM32(const X64Instruction&);
 
-        void execLeaR32Encoding(const X64Instruction&);
-        void execLeaR64Encoding(const X64Instruction&);
+        void execLeaR32Encoding32(const X64Instruction&);
+        void execLeaR64Encoding32(const X64Instruction&);
+        void execLeaR32Encoding64(const X64Instruction&);
+        void execLeaR64Encoding64(const X64Instruction&);
 
         void execPushImm(const X64Instruction&);
         void execPushRM32(const X64Instruction&);

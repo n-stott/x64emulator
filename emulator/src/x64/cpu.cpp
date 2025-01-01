@@ -323,8 +323,10 @@ namespace x64 {
     DEFINE_STANDALONE(MOVZX_R64_RM8, execMovzxR64RM8)
     DEFINE_STANDALONE(MOVZX_R64_RM16, execMovzxR64RM16)
     DEFINE_STANDALONE(MOVZX_R64_RM32, execMovzxR64RM32)
-    DEFINE_STANDALONE(LEA_R32_ENCODING, execLeaR32Encoding)
-    DEFINE_STANDALONE(LEA_R64_ENCODING, execLeaR64Encoding)
+    DEFINE_STANDALONE(LEA_R32_ENCODING32, execLeaR32Encoding32)
+    DEFINE_STANDALONE(LEA_R64_ENCODING32, execLeaR64Encoding32)
+    DEFINE_STANDALONE(LEA_R32_ENCODING64, execLeaR32Encoding64)
+    DEFINE_STANDALONE(LEA_R64_ENCODING64, execLeaR64Encoding64)
     DEFINE_STANDALONE(PUSH_IMM, execPushImm)
     DEFINE_STANDALONE(PUSH_RM32, execPushRM32)
     DEFINE_STANDALONE(PUSH_RM64, execPushRM64)
@@ -983,8 +985,10 @@ namespace x64 {
         STANDALONE_NAME(MOVZX_R64_RM8),
         STANDALONE_NAME(MOVZX_R64_RM16),
         STANDALONE_NAME(MOVZX_R64_RM32),
-        STANDALONE_NAME(LEA_R32_ENCODING),
-        STANDALONE_NAME(LEA_R64_ENCODING),
+        STANDALONE_NAME(LEA_R32_ENCODING32),
+        STANDALONE_NAME(LEA_R64_ENCODING32),
+        STANDALONE_NAME(LEA_R32_ENCODING64),
+        STANDALONE_NAME(LEA_R64_ENCODING64),
         STANDALONE_NAME(PUSH_IMM),
         STANDALONE_NAME(PUSH_RM32),
         STANDALONE_NAME(PUSH_RM64),
@@ -2398,14 +2402,24 @@ namespace x64 {
         set(dst, (u64)get(src));
     }
 
-    void Cpu::execLeaR32Encoding(const X64Instruction& ins) {
+    void Cpu::execLeaR32Encoding32(const X64Instruction& ins) {
         const auto& dst = ins.op0<R32>();
-        const auto& src = ins.op1<Encoding>();
+        const auto& src = ins.op1<Encoding32>();
+        set(dst, resolve(src));
+    }
+    void Cpu::execLeaR64Encoding32(const X64Instruction& ins) {
+        const auto& dst = ins.op0<R64>();
+        const auto& src = ins.op1<Encoding32>();
+        set(dst, zeroExtend<u64, u32>(resolve(src)));
+    }
+    void Cpu::execLeaR32Encoding64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<R32>();
+        const auto& src = ins.op1<Encoding64>();
         set(dst, narrow<u32, u64>(resolve(src)));
     }
-    void Cpu::execLeaR64Encoding(const X64Instruction& ins) {
+    void Cpu::execLeaR64Encoding64(const X64Instruction& ins) {
         const auto& dst = ins.op0<R64>();
-        const auto& src = ins.op1<Encoding>();
+        const auto& src = ins.op1<Encoding64>();
         set(dst, resolve(src));
     }
 
