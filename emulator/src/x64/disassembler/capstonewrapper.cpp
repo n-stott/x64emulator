@@ -1889,8 +1889,8 @@ namespace x64 {
         if(mmxdst && rm64src) return X64Instruction::make<Insn::MOVQ_MMX_RM64>(insn.address, insn.size, mmxdst.value(), rm64src.value());
         if(rm64dst && rssesrc) return X64Instruction::make<Insn::MOVQ_RM64_XMM>(insn.address, insn.size, rm64dst.value(), rssesrc.value());
         if(rssedst && rm64src) return X64Instruction::make<Insn::MOVQ_XMM_RM64>(insn.address, insn.size, rssedst.value(), rm64src.value());
-        if(mmxdst && mmxdst) return X64Instruction::make<Insn::MOV_MMX_MMX>(insn.address, insn.size, mmxdst.value(), mmxdst.value());
-        if(rssedst && rssedst) return X64Instruction::make<Insn::MOV_XMM_XMM>(insn.address, insn.size, rssedst.value(), rssedst.value());
+        if(mmxdst && mmxsrc) return X64Instruction::make<Insn::MOV_MMX_MMX>(insn.address, insn.size, mmxdst.value(), mmxsrc.value());
+        if(rssedst && rssesrc) return X64Instruction::make<Insn::MOV_XMM_XMM>(insn.address, insn.size, rssedst.value(), rssesrc.value());
         return make_failed(insn);
     }
 

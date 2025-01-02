@@ -85,6 +85,7 @@ namespace utils {
             case R32::R13D: return "r13d";
             case R32::R14D: return "r14d";
             case R32::R15D: return "r15d";
+            case R32::EIP: return "eip";
             case R32::EIZ: return "eiz";
         }
         return "";

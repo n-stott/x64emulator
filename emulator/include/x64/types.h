@@ -88,6 +88,7 @@ namespace x64 {
         R13D,
         R14D,
         R15D,
+        EIP,
         EIZ,
     };
 
