@@ -876,9 +876,9 @@ namespace utils {
             case Insn::PUNPCKLWD_XMM_XMMM128: return toString<XMM, XMMM128>("punpcklwd");
             case Insn::PUNPCKLDQ_XMM_XMMM128: return toString<XMM, XMMM128>("punpckldq");
             case Insn::PUNPCKLQDQ_XMM_XMMM128: return toString<XMM, XMMM128>("punpcklqdq");
-            case Insn::PUNPCKHBW_MMX_MMXM32: return toString<MMX, MMXM32>("punpckhbw");
-            case Insn::PUNPCKHWD_MMX_MMXM32: return toString<MMX, MMXM32>("punpckhwd");
-            case Insn::PUNPCKHDQ_MMX_MMXM32: return toString<MMX, MMXM32>("punpckhdq");
+            case Insn::PUNPCKHBW_MMX_MMXM64: return toString<MMX, MMXM64>("punpckhbw");
+            case Insn::PUNPCKHWD_MMX_MMXM64: return toString<MMX, MMXM64>("punpckhwd");
+            case Insn::PUNPCKHDQ_MMX_MMXM64: return toString<MMX, MMXM64>("punpckhdq");
             case Insn::PUNPCKHBW_XMM_XMMM128: return toString<XMM, XMMM128>("punpckhbw");
             case Insn::PUNPCKHWD_XMM_XMMM128: return toString<XMM, XMMM128>("punpckhwd");
             case Insn::PUNPCKHDQ_XMM_XMMM128: return toString<XMM, XMMM128>("punpckhdq");

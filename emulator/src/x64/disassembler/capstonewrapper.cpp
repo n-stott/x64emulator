@@ -3078,19 +3078,11 @@ namespace x64 {
         const cs_x86_op& dst = x86detail.operands[0];
         const cs_x86_op& src = x86detail.operands[1];
         auto mmxdst = asMMX(dst);
-        auto mmxm32src = asMMXM32(src);
         auto rssedst = asRegister128(dst);
+        auto mmxm64src = asMMXM64(src);
         auto rmssesrc = asRM128(src);
         // capstone bug
-        auto mmxm64src = asMMXM64(src);
-        if(mmxm64src) {
-            if(mmxm64src->isReg) {
-                mmxm32src = MMXM32{true, mmxm64src->reg, M32{}};
-            } else {
-                mmxm32src = MMXM32{false, {}, M32{mmxm64src->mem.segment, mmxm64src->mem.encoding}};
-            }
-        }
-        if(mmxdst && mmxm32src) return X64Instruction::make<Insn::PUNPCKHBW_MMX_MMXM32>(insn.address, insn.size, mmxdst.value(), mmxm32src.value());
+        if(mmxdst && mmxm64src) return X64Instruction::make<Insn::PUNPCKHBW_MMX_MMXM64>(insn.address, insn.size, mmxdst.value(), mmxm64src.value());
         if(rssedst && rmssesrc) return X64Instruction::make<Insn::PUNPCKHBW_XMM_XMMM128>(insn.address, insn.size, rssedst.value(), rmssesrc.value());
         return make_failed(insn);
     }
@@ -3101,19 +3093,11 @@ namespace x64 {
         const cs_x86_op& dst = x86detail.operands[0];
         const cs_x86_op& src = x86detail.operands[1];
         auto mmxdst = asMMX(dst);
-        auto mmxm32src = asMMXM32(src);
         auto rssedst = asRegister128(dst);
+        auto mmxm64src = asMMXM64(src);
         auto rmssesrc = asRM128(src);
         // capstone bug
-        auto mmxm64src = asMMXM64(src);
-        if(mmxm64src) {
-            if(mmxm64src->isReg) {
-                mmxm32src = MMXM32{true, mmxm64src->reg, M32{}};
-            } else {
-                mmxm32src = MMXM32{false, {}, M32{mmxm64src->mem.segment, mmxm64src->mem.encoding}};
-            }
-        }
-        if(mmxdst && mmxm32src) return X64Instruction::make<Insn::PUNPCKHWD_MMX_MMXM32>(insn.address, insn.size, mmxdst.value(), mmxm32src.value());
+        if(mmxdst && mmxm64src) return X64Instruction::make<Insn::PUNPCKHWD_MMX_MMXM64>(insn.address, insn.size, mmxdst.value(), mmxm64src.value());
         if(rssedst && rmssesrc) return X64Instruction::make<Insn::PUNPCKHWD_XMM_XMMM128>(insn.address, insn.size, rssedst.value(), rmssesrc.value());
         return make_failed(insn);
     }
@@ -3124,19 +3108,10 @@ namespace x64 {
         const cs_x86_op& dst = x86detail.operands[0];
         const cs_x86_op& src = x86detail.operands[1];
         auto mmxdst = asMMX(dst);
-        auto mmxm32src = asMMXM32(src);
         auto rssedst = asRegister128(dst);
-        auto rmssesrc = asRM128(src);
-        // capstone bug
         auto mmxm64src = asMMXM64(src);
-        if(mmxm64src) {
-            if(mmxm64src->isReg) {
-                mmxm32src = MMXM32{true, mmxm64src->reg, M32{}};
-            } else {
-                mmxm32src = MMXM32{false, {}, M32{mmxm64src->mem.segment, mmxm64src->mem.encoding}};
-            }
-        }
-        if(mmxdst && mmxm32src) return X64Instruction::make<Insn::PUNPCKHDQ_MMX_MMXM32>(insn.address, insn.size, mmxdst.value(), mmxm32src.value());
+        auto rmssesrc = asRM128(src);
+        if(mmxdst && mmxm64src) return X64Instruction::make<Insn::PUNPCKHDQ_MMX_MMXM64>(insn.address, insn.size, mmxdst.value(), mmxm64src.value());
         if(rssedst && rmssesrc) return X64Instruction::make<Insn::PUNPCKHDQ_XMM_XMMM128>(insn.address, insn.size, rssedst.value(), rmssesrc.value());
         return make_failed(insn);
     }

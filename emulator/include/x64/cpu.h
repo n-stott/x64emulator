@@ -817,9 +817,9 @@ namespace x64 {
         void execPunpckldqXMMXMMM128(const X64Instruction&);
         void execPunpcklqdqXMMXMMM128(const X64Instruction&);
 
-        void execPunpckhbwMMXMMXM32(const X64Instruction&);
-        void execPunpckhwdMMXMMXM32(const X64Instruction&);
-        void execPunpckhdqMMXMMXM32(const X64Instruction&);
+        void execPunpckhbwMMXMMXM64(const X64Instruction&);
+        void execPunpckhwdMMXMMXM64(const X64Instruction&);
+        void execPunpckhdqMMXMMXM64(const X64Instruction&);
         void execPunpckhbwXMMXMMM128(const X64Instruction&);
         void execPunpckhwdXMMXMMM128(const X64Instruction&);
         void execPunpckhdqXMMXMMM128(const X64Instruction&);

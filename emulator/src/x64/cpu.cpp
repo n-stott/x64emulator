@@ -687,9 +687,9 @@ namespace x64 {
     DEFINE_STANDALONE(PUNPCKLWD_XMM_XMMM128, execPunpcklwdXMMXMMM128)
     DEFINE_STANDALONE(PUNPCKLDQ_XMM_XMMM128, execPunpckldqXMMXMMM128)
     DEFINE_STANDALONE(PUNPCKLQDQ_XMM_XMMM128, execPunpcklqdqXMMXMMM128)
-    DEFINE_STANDALONE(PUNPCKHBW_MMX_MMXM32, execPunpckhbwMMXMMXM32)
-    DEFINE_STANDALONE(PUNPCKHWD_MMX_MMXM32, execPunpckhwdMMXMMXM32)
-    DEFINE_STANDALONE(PUNPCKHDQ_MMX_MMXM32, execPunpckhdqMMXMMXM32)
+    DEFINE_STANDALONE(PUNPCKHBW_MMX_MMXM64, execPunpckhbwMMXMMXM64)
+    DEFINE_STANDALONE(PUNPCKHWD_MMX_MMXM64, execPunpckhwdMMXMMXM64)
+    DEFINE_STANDALONE(PUNPCKHDQ_MMX_MMXM64, execPunpckhdqMMXMMXM64)
     DEFINE_STANDALONE(PUNPCKHBW_XMM_XMMM128, execPunpckhbwXMMXMMM128)
     DEFINE_STANDALONE(PUNPCKHWD_XMM_XMMM128, execPunpckhwdXMMXMMM128)
     DEFINE_STANDALONE(PUNPCKHDQ_XMM_XMMM128, execPunpckhdqXMMXMMM128)
@@ -1349,9 +1349,9 @@ namespace x64 {
         STANDALONE_NAME(PUNPCKLWD_XMM_XMMM128),
         STANDALONE_NAME(PUNPCKLDQ_XMM_XMMM128),
         STANDALONE_NAME(PUNPCKLQDQ_XMM_XMMM128),
-        STANDALONE_NAME(PUNPCKHBW_MMX_MMXM32),
-        STANDALONE_NAME(PUNPCKHWD_MMX_MMXM32),
-        STANDALONE_NAME(PUNPCKHDQ_MMX_MMXM32),
+        STANDALONE_NAME(PUNPCKHBW_MMX_MMXM64),
+        STANDALONE_NAME(PUNPCKHWD_MMX_MMXM64),
+        STANDALONE_NAME(PUNPCKHDQ_MMX_MMXM64),
         STANDALONE_NAME(PUNPCKHBW_XMM_XMMM128),
         STANDALONE_NAME(PUNPCKHWD_XMM_XMMM128),
         STANDALONE_NAME(PUNPCKHDQ_XMM_XMMM128),
@@ -4874,23 +4874,23 @@ namespace x64 {
         set(dst, res);
     }
 
-    void Cpu::execPunpckhbwMMXMMXM32(const X64Instruction& ins) {
+    void Cpu::execPunpckhbwMMXMMXM64(const X64Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
-        const auto& src = ins.op1<MMXM32>();
+        const auto& src = ins.op1<MMXM64>();
         u64 res = Impl::punpckhbw64(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPunpckhwdMMXMMXM32(const X64Instruction& ins) {
+    void Cpu::execPunpckhwdMMXMMXM64(const X64Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
-        const auto& src = ins.op1<MMXM32>();
+        const auto& src = ins.op1<MMXM64>();
         u64 res = Impl::punpckhwd64(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPunpckhdqMMXMMXM32(const X64Instruction& ins) {
+    void Cpu::execPunpckhdqMMXMMXM64(const X64Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
-        const auto& src = ins.op1<MMXM32>();
+        const auto& src = ins.op1<MMXM64>();
         u64 res = Impl::punpckhdq64(get(dst), get(src));
         set(dst, res);
     }
