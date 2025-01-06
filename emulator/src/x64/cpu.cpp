@@ -23,11 +23,17 @@ namespace x64 {
     // using Impl = NativeCpuImpl;
 #endif
 
-    Cpu::Cpu(emulator::VM* vm, Mmu* mmu) :
-            vm_(vm),
-            mmu_(mmu) {
-        verify(!!vm_);
-        verify(!!mmu_);
+    Cpu::Cpu(Mmu& mmu) :
+            mmu_(&mmu) {
+        
+    }
+
+    void Cpu::addCallback(Callback* callback) {
+        callbacks_.push_back(callback);
+    }
+
+    void Cpu::removeCallback(Callback* callback) {
+        callbacks_.erase(std::remove(callbacks_.begin(), callbacks_.end(), callback), callbacks_.end());
     }
 
     void Cpu::setSegmentBase(Segment segment, u64 base) {
@@ -2472,7 +2478,7 @@ namespace x64 {
     void Cpu::execCallDirect(const X64Instruction& ins) {
         u64 address =  ins.op0<u64>();
         push64(regs_.rip());
-        vm_->notifyCall(address);
+        for(auto* callback : callbacks_) callback->onCall(address);
         regs_.rip() = address;
     }
 
@@ -2480,7 +2486,7 @@ namespace x64 {
         const auto& src = ins.op0<RM32>();
         u64 address = get(src);
         push64(regs_.rip());
-        vm_->notifyCall(address);
+        for(auto* callback : callbacks_) callback->onCall(address);
         regs_.rip() = address;
     }
 
@@ -2488,20 +2494,20 @@ namespace x64 {
         const auto& src = ins.op0<RM64>();
         u64 address = get(src);
         push64(regs_.rip());
-        vm_->notifyCall(address);
+        for(auto* callback : callbacks_) callback->onCall(address);
         regs_.rip() = address;
     }
 
     void Cpu::execRet(const X64Instruction&) {
         regs_.rip() = pop64();
-        vm_->notifyRet();
+        for(auto* callback : callbacks_) callback->onRet();
     }
 
     void Cpu::execRetImm(const X64Instruction& ins) {
         const auto& src = ins.op0<Imm>();
         regs_.rip() = pop64();
         regs_.rsp() += get<u64>(src);
-        vm_->notifyRet();
+        for(auto* callback : callbacks_) callback->onRet();
     }
 
     void Cpu::execLeave(const X64Instruction&) {
@@ -5760,7 +5766,7 @@ namespace x64 {
     }
 
     void Cpu::execSyscall(const X64Instruction&) {
-        vm_->enterSyscall();
+        for(auto* callback : callbacks_) callback->onSyscall();
     }
 
     void Cpu::execRdtsc(const X64Instruction&) {

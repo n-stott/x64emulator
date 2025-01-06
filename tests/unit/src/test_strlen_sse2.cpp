@@ -23,7 +23,6 @@ int main() {
         mmu.copyToMmu(Ptr8{dataPage}, (const u8*)string.data(), string.size());
 
         std::vector<X64Instruction> instructions {
-            X64Instruction::make<Insn::MOV_R64_IMM>(0, 1, R64::RDI, Imm{dataPage}),
             X64Instruction::make<Insn::PXOR_XMM_XMMM128>(1, 1, XMM::XMM0, XMMM128{true, XMM::XMM0, {}}),
             X64Instruction::make<Insn::PXOR_XMM_XMMM128>(2, 1, XMM::XMM1, XMMM128{true, XMM::XMM1, {}}),
             X64Instruction::make<Insn::PXOR_XMM_XMMM128>(3, 1, XMM::XMM2, XMMM128{true, XMM::XMM2, {}}),
@@ -38,8 +37,9 @@ int main() {
             X64Instruction::make<Insn::BSF_R32_R32>(12, 1, R32::EAX, R32::EDX)
         };
 
-        emulator::VM vm(mmu, kernel);
-        Cpu cpu(&vm, &mmu);
+        Cpu cpu(mmu);
+        emulator::VM vm(cpu, mmu, kernel);
+        cpu.set(R64::RDI, dataPage);
         for(const auto& ins : instructions) {
             cpu.exec(ins);
         }

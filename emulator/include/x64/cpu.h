@@ -14,7 +14,6 @@ namespace emulator {
 
 namespace kernel {
     class Sys;
-    class Thread;
 }
 
 namespace x64 {
@@ -23,7 +22,29 @@ namespace x64 {
 
     class Cpu {
     public:
-        Cpu(emulator::VM* vm, Mmu* mmu);
+        explicit Cpu(Mmu& mmu);
+
+        class Callback {
+        public:
+            virtual ~Callback() = default;
+            virtual void onSyscall() = 0;
+            virtual void onCall(u64 address) = 0;
+            virtual void onRet() = 0;
+        };
+
+        void addCallback(Callback* callback);
+        void removeCallback(Callback* callback);
+
+        void exec(const X64Instruction&);
+
+        using ExecPtr = void(*)(Cpu&, const X64Instruction&);
+        struct BasicBlock {
+            std::vector<std::pair<X64Instruction, ExecPtr>> instructions;
+        };
+
+        BasicBlock createBasicBlock(const X64Instruction*, size_t) const;
+
+        void exec(const BasicBlock&);
         
         void setSegmentBase(Segment segment, u64 base);
         u64 getSegmentBase(Segment segment) const;
@@ -35,17 +56,26 @@ namespace x64 {
         u64 get(MMX reg) const { return regs_.get(reg); }
         Xmm get(XMM reg) const { return regs_.get(reg); }
 
+        void set(R8 reg, u8 value) { regs_.set(reg, value); }
+        void set(R16 reg, u16 value) { regs_.set(reg, value); }
+        void set(R32 reg, u32 value) { regs_.set(reg, value); }
+        void set(R64 reg, u64 value) { regs_.set(reg, value); }
+        void set(MMX reg, u64 value) { regs_.set(reg, value); }
+        void set(XMM reg, Xmm value) { regs_.set(reg, value); }
+
+        
     private:
         friend class emulator::VM;
         friend class kernel::Sys;
-        
-        emulator::VM* vm_;
+
         Mmu* mmu_;
         Flags flags_;
         Registers regs_;
         X87Fpu x87fpu_;
         SimdControlStatus mxcsr_;
         std::array<u64, 8> segmentBase_ {{ 0, 0, 0, 0, 0, 0, 0, 0 }};
+
+        std::vector<Callback*> callbacks_;
 
         struct FPUState {
             u16 fcw;
@@ -112,13 +142,6 @@ namespace x64 {
             return SPtr<size>{getSegmentBase(addr.segment) + resolve(addr.encoding)};
         }
 
-        void set(R8 reg, u8 value) { regs_.set(reg, value); }
-        void set(R16 reg, u16 value) { regs_.set(reg, value); }
-        void set(R32 reg, u32 value) { regs_.set(reg, value); }
-        void set(R64 reg, u64 value) { regs_.set(reg, value); }
-        void set(MMX reg, u64 value) { regs_.set(reg, value); }
-        void set(XMM reg, Xmm value) { regs_.set(reg, value); }
-
         void set(Ptr8 ptr, u8 value);
         void set(Ptr16 ptr, u16 value);
         void set(Ptr32 ptr, u32 value);
@@ -178,21 +201,9 @@ namespace x64 {
         void execLockCmpxchg32Impl(Ptr32 dst, u32 src);
         void execLockCmpxchg64Impl(Ptr64 dst, u64 src);
 
-        using ExecPtr = void(*)(Cpu&, const X64Instruction&);
-
         static const std::array<ExecPtr, (size_t)Insn::UNKNOWN+1> execFunctions_;
 
     public:
-        void exec(const X64Instruction&);
-
-        struct BasicBlock {
-            std::vector<std::pair<X64Instruction, ExecPtr>> instructions;
-        };
-
-        BasicBlock createBasicBlock(const X64Instruction*, size_t) const;
-
-        void exec(const BasicBlock&);
-
         void execAddRM8RM8(const X64Instruction&);
         void execAddRM8Imm(const X64Instruction&);
         void execAddRM16RM16(const X64Instruction&);

@@ -18,7 +18,7 @@ namespace emulator {
 
     class VM {
     public:
-        explicit VM(x64::Mmu& mmu, kernel::Kernel& kernel);
+        explicit VM(x64::Cpu& cpu, x64::Mmu& mmu, kernel::Kernel& kernel);
         ~VM();
 
         void crash();
@@ -40,6 +40,18 @@ namespace emulator {
             void on_munmap(u64 base, u64 length) override;
         private:
             x64::Mmu* mmu_ { nullptr };
+            VM* vm_ { nullptr };
+        };
+
+        class CpuCallback : public x64::Cpu::Callback {
+        public:
+            CpuCallback(x64::Cpu* cpu, VM* vm);
+            ~CpuCallback();
+            void onSyscall() override;
+            void onCall(u64 address) override;
+            void onRet() override;
+        private:
+            x64::Cpu* cpu_ { nullptr };
             VM* vm_ { nullptr };
         };
 
@@ -77,9 +89,9 @@ namespace emulator {
         std::string callName(const x64::X64Instruction& instruction) const;
         std::string calledFunctionName(u64 address) const;
 
+        x64::Cpu& cpu_;
         x64::Mmu& mmu_;
         kernel::Kernel& kernel_;
-        x64::Cpu cpu_;
 
         mutable std::vector<std::unique_ptr<ExecutableSection>> executableSections_;
         bool hasCrashed_ = false;

@@ -10,7 +10,7 @@
 
 namespace emulator {
 
-    VM::VM(x64::Mmu& mmu, kernel::Kernel& kernel) : mmu_(mmu), kernel_(kernel), cpu_(this, &mmu_) { }
+    VM::VM(x64::Cpu& cpu, x64::Mmu& mmu, kernel::Kernel& kernel) : cpu_(cpu), mmu_(mmu), kernel_(kernel) { }
 
     VM::~VM() {
 #ifdef VM_BASICBLOCK_TELEMETRY
@@ -148,6 +148,7 @@ namespace emulator {
             }
         };
 
+        CpuCallback callback(&cpu_, this);
         while(!tickInfo.isStopAsked()) {
             verify(!signal_interrupt);
             std::swap(currentBasicBlock, nextBasicBlock);
@@ -382,7 +383,7 @@ namespace emulator {
         // NOLINTBEGIN(clang-analyzer-core.CallAndMessage)
         const x64::X64Instruction& jmpInsn = pos.section->instructions[pos.index];
         if(jmpInsn.insn() == x64::Insn::JMP_RM64) {
-            x64::Cpu cpu(const_cast<VM*>(this), &mmu_);
+            x64::Cpu cpu(mmu_);
             cpu.regs_.rip() = jmpInsn.nextAddress(); // add instruction size offset
             x64::RM64 rm64 = jmpInsn.op0<x64::RM64>();
             auto dst = cpu.get(rm64);
@@ -475,6 +476,26 @@ namespace emulator {
             return (base <= section->begin && section->begin < base + length)
                 || (base < section->end && section->end <= base + length);
         }), vm_->executableSections_.end());
+    }
+
+    VM::CpuCallback::CpuCallback(x64::Cpu* cpu, VM* vm) : cpu_(cpu), vm_(vm) {
+        if(!!cpu_) cpu_->addCallback(this);
+    }
+
+    VM::CpuCallback::~CpuCallback() {
+        if(!!cpu_) cpu_->removeCallback(this);
+    }
+
+    void VM::CpuCallback::onSyscall() {
+        if(!!vm_) vm_->enterSyscall();
+    }
+
+    void VM::CpuCallback::onCall(u64 address) {
+        if(!!vm_) vm_->notifyCall(address);
+    }
+
+    void VM::CpuCallback::onRet() {
+        if(!!vm_) vm_->notifyRet();
     }
 
     void VM::ExecutableSection::trim() {
