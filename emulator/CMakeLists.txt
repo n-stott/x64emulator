@@ -113,6 +113,8 @@ if(MULTIPROCESSING)
     target_compile_definitions(x64emulator PUBLIC MULTIPROCESSING=1)
 endif(MULTIPROCESSING)
 
+# set_property(TARGET x64emulator PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+
 # target_compile_options(x64emulator PUBLIC -fsanitize=address,undefined)
 # target_link_libraries(x64emulator PUBLIC asan ubsan)
 
