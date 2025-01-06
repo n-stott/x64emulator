@@ -28,6 +28,13 @@ namespace x64 {
         void setSegmentBase(Segment segment, u64 base);
         u64 getSegmentBase(Segment segment) const;
 
+        u8  get(R8 reg) const  { return regs_.get(reg); }
+        u16 get(R16 reg) const { return regs_.get(reg); }
+        u32 get(R32 reg) const { return regs_.get(reg); }
+        u64 get(R64 reg) const { return regs_.get(reg); }
+        u64 get(MMX reg) const { return regs_.get(reg); }
+        Xmm get(XMM reg) const { return regs_.get(reg); }
+
     private:
         friend class emulator::VM;
         friend class kernel::Sys;
@@ -85,13 +92,6 @@ namespace x64 {
 
         FPU_ROUNDING fpuRoundingMode() const;
         SIMD_ROUNDING simdRoundingMode() const;
-
-        u8  get(R8 reg) const  { return regs_.get(reg); }
-        u16 get(R16 reg) const { return regs_.get(reg); }
-        u32 get(R32 reg) const { return regs_.get(reg); }
-        u64 get(R64 reg) const { return regs_.get(reg); }
-        u64 get(MMX reg) const { return regs_.get(reg); }
-        Xmm get(XMM reg) const { return regs_.get(reg); }
 
         template<typename T>
         T  get(Imm value) const;
