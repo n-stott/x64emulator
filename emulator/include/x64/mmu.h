@@ -213,6 +213,8 @@ namespace x64 {
 
         const Region* findAddress(u64 address) const;
 
+        std::vector<u8> mincore(u64 address, u64 length) const;
+
         static constexpr u64 PAGE_SIZE = 0x1000;
         
         class Callback {

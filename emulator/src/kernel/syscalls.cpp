@@ -71,6 +71,7 @@ namespace kernel {
             case 0x17: return threadRegs.set(x64::R64::RAX, invoke_syscall_5(&Sys::select, regs));
             case 0x18: return threadRegs.set(x64::R64::RAX, invoke_syscall_0(&Sys::sched_yield, regs));
             case 0x19: return threadRegs.set(x64::R64::RAX, invoke_syscall_5(&Sys::mremap, regs));
+            case 0x1b: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::mincore, regs));
             case 0x1c: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::madvise, regs));
             case 0x1d: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::shmget, regs));
             case 0x20: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::dup, regs));
@@ -85,6 +86,7 @@ namespace kernel {
             case 0x2f: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::recvmsg, regs));
             case 0x30: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::shutdown, regs));
             case 0x31: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::bind, regs));
+            case 0x32: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::listen, regs));
             case 0x33: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::getsockname, regs));
             case 0x34: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::getpeername, regs));
             case 0x36: return threadRegs.set(x64::R64::RAX, invoke_syscall_5(&Sys::setsockopt, regs));
@@ -599,6 +601,16 @@ namespace kernel {
         }
         warn(fmt::format("mremap not implemented"));
         return x64::Ptr{(u64)-ENOTSUP};
+    }
+
+    int Sys::mincore(x64::Ptr addr, size_t length, x64::Ptr8 vec) {
+        auto res = mmu_.mincore(addr.address(), length);
+        mmu_.copyToMmu(vec, res.data(), res.size());
+        if(logSyscalls_) {
+            print("Sys::mincore(addr={:#x}, length={:#x}, vec={:#x}) = {}\n",
+                                    addr.address(), length, vec.address(), 0);
+        }
+        return 0;
     }
 
     int Sys::madvise(x64::Ptr addr, size_t length, int advice) {
@@ -1442,6 +1454,14 @@ namespace kernel {
                         sockfd, addr.address(), addrlen, rc);
         }
         return rc;
+    }
+
+    int Sys::listen(int sockfd, int backlog) {
+        if(logSyscalls_) {
+            print("Sys::listen(sockfd={}, backlog={}) = {}\n", sockfd, backlog, -ENOTSUP);
+        }
+        warn(fmt::format("listen not implemented"));
+        return -ENOTSUP;
     }
 
     ssize_t Sys::getdents64(int fd, x64::Ptr dirp, size_t count) {

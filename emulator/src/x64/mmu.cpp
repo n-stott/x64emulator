@@ -246,6 +246,19 @@ namespace x64 {
         return regionLookup_[address / PAGE_SIZE];
     }
 
+    std::vector<u8> Mmu::mincore(u64 address, u64 length) const {
+        verify(isPageAligned(address), "address must be aligned in mincore");
+        length = pageRoundUp(length);
+        u64 vecsize = length / PAGE_SIZE;
+        std::vector<u8> res;
+        res.reserve(vecsize);
+        for(u64 addr = address; addr < address + length; addr += PAGE_SIZE) {
+            const auto* region = findAddress(addr);
+            res.push_back(!!region);
+        }
+        return res;
+    }
+
     Mmu::Region* Mmu::findRegion(const char* name) {
         for(const auto& ptr : regions_) {
             if(ptr->name() == name) return ptr.get();
