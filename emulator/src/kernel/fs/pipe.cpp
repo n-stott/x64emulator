@@ -91,7 +91,6 @@ namespace kernel {
     }
 
     off_t PipeEndpoint::lseek(OpenFileDescription&, off_t, int) {
-        verify(false, "lseek not implemented on PipeEndpoint");
         return -ESPIPE;
     }
 
