@@ -769,11 +769,13 @@ namespace x64 {
     DEFINE_STANDALONE(PMINUB_XMM_XMMM128, execPminubXMMXMMM128)
     DEFINE_STANDALONE(PTEST_XMM_XMMM128, execPtestXMMXMMM128)
     DEFINE_STANDALONE(PSRAW_MMX_IMM, execPsrawMMXImm)
+    DEFINE_STANDALONE(PSRAW_MMX_MMXM64, execPsrawMMXMMXM64)
     DEFINE_STANDALONE(PSRAD_MMX_IMM, execPsradMMXImm)
-    DEFINE_STANDALONE(PSRAQ_MMX_IMM, execPsraqMMXImm)
+    DEFINE_STANDALONE(PSRAD_MMX_MMXM64, execPsradMMXMMXM64)
     DEFINE_STANDALONE(PSRAW_XMM_IMM, execPsrawXMMImm)
+    DEFINE_STANDALONE(PSRAW_XMM_XMMM128, execPsrawXMMXMMM128)
     DEFINE_STANDALONE(PSRAD_XMM_IMM, execPsradXMMImm)
-    DEFINE_STANDALONE(PSRAQ_XMM_IMM, execPsraqXMMImm)
+    DEFINE_STANDALONE(PSRAD_XMM_XMMM128, execPsradXMMXMMM128)
     DEFINE_STANDALONE(PSLLW_MMX_IMM, execPsllwMMXImm)
     DEFINE_STANDALONE(PSLLW_MMX_MMXM64, execPsllwMMXMMXM64)
     DEFINE_STANDALONE(PSLLD_MMX_IMM, execPslldMMXImm)
@@ -1431,11 +1433,13 @@ namespace x64 {
         STANDALONE_NAME(PMINUB_XMM_XMMM128),
         STANDALONE_NAME(PTEST_XMM_XMMM128),
         STANDALONE_NAME(PSRAW_MMX_IMM),
+        STANDALONE_NAME(PSRAW_MMX_MMXM64),
         STANDALONE_NAME(PSRAD_MMX_IMM),
-        STANDALONE_NAME(PSRAQ_MMX_IMM),
+        STANDALONE_NAME(PSRAD_MMX_MMXM64),
         STANDALONE_NAME(PSRAW_XMM_IMM),
+        STANDALONE_NAME(PSRAW_XMM_XMMM128),
         STANDALONE_NAME(PSRAD_XMM_IMM),
-        STANDALONE_NAME(PSRAQ_XMM_IMM),
+        STANDALONE_NAME(PSRAD_XMM_XMMM128),
         STANDALONE_NAME(PSLLW_MMX_IMM),
         STANDALONE_NAME(PSLLW_MMX_MMXM64),
         STANDALONE_NAME(PSLLD_MMX_IMM),
@@ -5449,17 +5453,21 @@ namespace x64 {
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::psraw64(get(dst), get<u8>(src)));
     }
+    void Cpu::execPsrawMMXMMXM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<MMX>();
+        const auto& src = ins.op1<MMXM64>();
+        set(dst, Impl::psraw64(get(dst), (u8)get(src)));
+    }
 
     void Cpu::execPsradMMXImm(const X64Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::psrad64(get(dst), get<u8>(src)));
     }
-
-    void Cpu::execPsraqMMXImm(const X64Instruction& ins) {
+    void Cpu::execPsradMMXMMXM64(const X64Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
-        const auto& src = ins.op1<Imm>();
-        set(dst, Impl::psraq64(get(dst), get<u8>(src)));
+        const auto& src = ins.op1<MMXM64>();
+        set(dst, Impl::psrad64(get(dst), (u8)get(src)));
     }
 
     void Cpu::execPsrawXMMImm(const X64Instruction& ins) {
@@ -5467,17 +5475,21 @@ namespace x64 {
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::psraw128(get(dst), get<u8>(src)));
     }
+    void Cpu::execPsrawXMMXMMM128(const X64Instruction& ins) {
+        const auto& dst = ins.op0<XMM>();
+        const auto& src = ins.op1<XMMM128>();
+        set(dst, Impl::psraw128(get(dst), (u8)get(src).lo));
+    }
 
     void Cpu::execPsradXMMImm(const X64Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::psrad128(get(dst), get<u8>(src)));
     }
-
-    void Cpu::execPsraqXMMImm(const X64Instruction& ins) {
+    void Cpu::execPsradXMMXMMM128(const X64Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
-        const auto& src = ins.op1<Imm>();
-        set(dst, Impl::psraq128(get(dst), get<u8>(src)));
+        const auto& src = ins.op1<XMMM128>();
+        set(dst, Impl::psrad128(get(dst), (u8)get(src).lo));
     }
 
     static u8 shiftFromU64(u64 count) {

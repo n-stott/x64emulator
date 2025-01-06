@@ -2218,7 +2218,6 @@ namespace x64 {
 
     u64 CpuImpl::psraw64(u64 dst, u8 src) { return psra64<i16>(dst, src); }
     u64 CpuImpl::psrad64(u64 dst, u8 src) { return psra64<i32>(dst, src); }
-    u64 CpuImpl::psraq64(u64 dst, u8 src) { return psra64<i64>(dst, src); }
 
     template<typename I>
     static u128 psra128(u128 dst, u8 src) {
@@ -2236,7 +2235,6 @@ namespace x64 {
 
     u128 CpuImpl::psraw128(u128 dst, u8 src) { return psra128<i16>(dst, src); }
     u128 CpuImpl::psrad128(u128 dst, u8 src) { return psra128<i32>(dst, src); }
-    u128 CpuImpl::psraq128(u128 dst, u8 src) { return psra128<i64>(dst, src); }
 
     template<typename U>
     static u64 psll64(u64 dst, u8 src) {

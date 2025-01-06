@@ -340,10 +340,8 @@ namespace x64 {
 
         [[nodiscard]] static u64 psraw64(u64 dst, u8 src);
         [[nodiscard]] static u64 psrad64(u64 dst, u8 src);
-        [[nodiscard]] static u64 psraq64(u64 dst, u8 src);
         [[nodiscard]] static u128 psraw128(u128 dst, u8 src);
         [[nodiscard]] static u128 psrad128(u128 dst, u8 src);
-        [[nodiscard]] static u128 psraq128(u128 dst, u8 src);
 
         [[nodiscard]] static u64 psllw64(u64 dst, u8 src);
         [[nodiscard]] static u64 pslld64(u64 dst, u8 src);

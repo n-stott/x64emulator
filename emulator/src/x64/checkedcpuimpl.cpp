@@ -1160,18 +1160,12 @@ namespace x64 {
     u64 CheckedCpuImpl::psrad64(u64 dst, u8 src) {
         return checkCall<u64>(&CpuImpl::psrad64, &NativeCpuImpl::psrad64, dst, src);
     }
-    u64 CheckedCpuImpl::psraq64(u64 dst, u8 src) {
-        return checkCall<u64>(&CpuImpl::psraq64, &NativeCpuImpl::psraq64, dst, src);
-    }
 
     u128 CheckedCpuImpl::psraw128(u128 dst, u8 src) {
         return checkCall<u128>(&CpuImpl::psraw128, &NativeCpuImpl::psraw128, dst, src);
     }
     u128 CheckedCpuImpl::psrad128(u128 dst, u8 src) {
         return checkCall<u128>(&CpuImpl::psrad128, &NativeCpuImpl::psrad128, dst, src);
-    }
-    u128 CheckedCpuImpl::psraq128(u128 dst, u8 src) {
-        return checkCall<u128>(&CpuImpl::psraq128, &NativeCpuImpl::psraq128, dst, src);
     }
 
     u64 CheckedCpuImpl::psllw64(u64 dst, u8 src) {

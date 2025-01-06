@@ -958,11 +958,13 @@ namespace utils {
             case Insn::PMINUB_XMM_XMMM128: return toString<XMM, XMMM128>("pminub");
             case Insn::PTEST_XMM_XMMM128: return toString<XMM, XMMM128>("ptest");
             case Insn::PSRAW_MMX_IMM: return toString<MMX, Imm>("psraw");
+            case Insn::PSRAW_MMX_MMXM64: return toString<MMX, MMXM64>("psraw");
             case Insn::PSRAD_MMX_IMM: return toString<MMX, Imm>("psrad");
-            case Insn::PSRAQ_MMX_IMM: return toString<MMX, Imm>("psraq");
+            case Insn::PSRAD_MMX_MMXM64: return toString<MMX, MMXM64>("psrad");
             case Insn::PSRAW_XMM_IMM: return toString<XMM, Imm>("psraw");
+            case Insn::PSRAW_XMM_XMMM128: return toString<XMM, XMMM128>("psraw");
             case Insn::PSRAD_XMM_IMM: return toString<XMM, Imm>("psrad");
-            case Insn::PSRAQ_XMM_IMM: return toString<XMM, Imm>("psraq");
+            case Insn::PSRAD_XMM_XMMM128: return toString<XMM, XMMM128>("psrad");
             case Insn::PSLLW_MMX_IMM: return toString<MMX, Imm>("psllw");
             case Insn::PSLLW_MMX_MMXM64: return toString<MMX, MMXM64>("psllw");
             case Insn::PSLLD_MMX_IMM: return toString<MMX, Imm>("pslld");

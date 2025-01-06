@@ -2428,15 +2428,12 @@ namespace x64 {
             nativeRes = sraw(dst, src);
         } else if constexpr(std::is_same_v<I, i32>) {
             nativeRes = srad(dst, src);
-        } else if constexpr(std::is_same_v<I, i64>) {
-            throw std::logic_error{"psraq does not exist"};
         }
         return nativeRes;
     }
 
     u64 NativeCpuImpl::psraw64(u64 dst, u8 src) { return psra64<i16>(dst, src); }
     u64 NativeCpuImpl::psrad64(u64 dst, u8 src) { return psra64<i32>(dst, src); }
-    u64 NativeCpuImpl::psraq64(u64 dst, u8 src) { return psra64<i64>(dst, src); }
 
     template<typename I>
     static u128 psra128(u128 dst, u8 src) {
@@ -2472,15 +2469,12 @@ namespace x64 {
             nativeRes = sraw(dst, src);
         } else if constexpr(std::is_same_v<I, i32>) {
             nativeRes = srad(dst, src);
-        } else if constexpr(std::is_same_v<I, i64>) {
-            throw std::logic_error{"psraq does not exist"};
         }
         return nativeRes;
     }
 
     u128 NativeCpuImpl::psraw128(u128 dst, u8 src) { return psra128<i16>(dst, src); }
     u128 NativeCpuImpl::psrad128(u128 dst, u8 src) { return psra128<i32>(dst, src); }
-    u128 NativeCpuImpl::psraq128(u128 dst, u8 src) { return psra128<i64>(dst, src); }
 
     // NOLINTBEGIN(readability-function-size)
     template<typename U>

@@ -917,12 +917,14 @@ namespace x64 {
         void execPtestXMMXMMM128(const X64Instruction&);
 
         void execPsrawMMXImm(const X64Instruction&);
+        void execPsrawMMXMMXM64(const X64Instruction&);
         void execPsradMMXImm(const X64Instruction&);
-        void execPsraqMMXImm(const X64Instruction&);
+        void execPsradMMXMMXM64(const X64Instruction&);
 
         void execPsrawXMMImm(const X64Instruction&);
+        void execPsrawXMMXMMM128(const X64Instruction&);
         void execPsradXMMImm(const X64Instruction&);
-        void execPsraqXMMImm(const X64Instruction&);
+        void execPsradXMMXMMM128(const X64Instruction&);
 
         void execPsllwMMXImm(const X64Instruction&);
         void execPsllwMMXMMXM64(const X64Instruction&);
