@@ -41,8 +41,7 @@ namespace kernel {
         ErrnoOrBuffer statfs() override;
         
         std::optional<int> fcntl(int cmd, int arg) override;
-        ErrnoOrBuffer ioctl(unsigned long request, const Buffer& buffer) override;
-        ErrnoOrBuffer ioctlWithBufferSizeGuess(unsigned long request, const Buffer& inputBuffer) override;
+        ErrnoOrBuffer ioctl(OpenFileDescription&, Ioctl request, const Buffer& buffer) override;
 
         std::string className() const override {
             return fmt::format("ShadowDevice(realfd={})", hostFd_.value_or(-1));

@@ -88,6 +88,7 @@ namespace x64 {
         R13D,
         R14D,
         R15D,
+        EIP,
         EIZ,
     };
 
@@ -112,7 +113,18 @@ namespace x64 {
         ZERO,
     };
 
-    enum class RSSE : u8 {
+    enum class MMX : u8 {
+        MM0,
+        MM1,
+        MM2,
+        MM3,
+        MM4,
+        MM5,
+        MM6,
+        MM7,
+    };
+
+    enum class XMM : u8 {
         XMM0,
         XMM1,
         XMM2,
@@ -176,7 +188,14 @@ namespace x64 {
         ORD,
     };
 
-    struct Encoding {
+    struct Encoding32 {
+        R32 base;
+        R32 index;
+        u8 scale;
+        i32 displacement;
+    };
+
+    struct Encoding64 {
         R64 base;
         R64 index;
         u8 scale;
@@ -189,7 +208,7 @@ namespace x64 {
         DWORD,
         QWORD,
         TWORD,
-        XMMWORD,
+        XWORD,
         FPUENV,
     };
 
@@ -200,7 +219,7 @@ namespace x64 {
             case Size::DWORD: return 4;
             case Size::QWORD: return 8;
             case Size::TWORD: return 10;
-            case Size::XMMWORD: return 16;
+            case Size::XWORD: return 16;
             case Size::FPUENV: return 28;
         }
         return 0;
@@ -209,7 +228,7 @@ namespace x64 {
     template<Size size>
     struct M {
         Segment segment;
-        Encoding encoding;
+        Encoding64 encoding;
     };
 
     template<Size size>
@@ -260,7 +279,7 @@ namespace x64 {
     template<> struct Unsigned<Size::WORD> { using type = u16; };
     template<> struct Unsigned<Size::DWORD> { using type = u32; };
     template<> struct Unsigned<Size::QWORD> { using type = u64; };
-    template<> struct Unsigned<Size::XMMWORD> { using type = u128; };
+    template<> struct Unsigned<Size::XWORD> { using type = u128; };
 
     template<Size size>
     struct Register;
@@ -269,7 +288,7 @@ namespace x64 {
     template<> struct Register<Size::WORD> { using value = R16; };
     template<> struct Register<Size::DWORD> { using value = R32; };
     template<> struct Register<Size::QWORD> { using value = R64; };
-    template<> struct Register<Size::XMMWORD> { using value = RSSE; };
+    template<> struct Register<Size::XWORD> { using value = XMM; };
 
 
     template<Size size>
@@ -284,7 +303,7 @@ namespace x64 {
     using Ptr32 = SPtr<Size::DWORD>;
     using Ptr64 = SPtr<Size::QWORD>;
     using Ptr80 = SPtr<Size::TWORD>;
-    using Ptr128 = SPtr<Size::XMMWORD>;
+    using Ptr128 = SPtr<Size::XWORD>;
     using Ptr224 = SPtr<Size::FPUENV>;
 
     template<Size size>
@@ -308,8 +327,20 @@ namespace x64 {
 
     using M80 = M<Size::TWORD>;
 
-    using MSSE = M<Size::XMMWORD>;
-    using RMSSE = RM<Size::XMMWORD>;
+    struct MMXM32 {
+        bool isReg;
+        MMX reg;
+        M32 mem;
+    };
+
+    struct MMXM64 {
+        bool isReg;
+        MMX reg;
+        M64 mem;
+    };
+
+    using M128 = M<Size::XWORD>;
+    using XMMM128 = RM<Size::XWORD>;
 
     using M224 = M<Size::FPUENV>;
 }

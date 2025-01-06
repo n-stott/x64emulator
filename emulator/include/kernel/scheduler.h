@@ -48,6 +48,7 @@ namespace kernel {
 
         void poll(Thread* thread, x64::Ptr fds, size_t nfds, int timeout);
         void select(Thread* thread, int nfds, x64::Ptr readfds, x64::Ptr writefds, x64::Ptr exceptfds, x64::Ptr timeout);
+        void epoll_wait(Thread* thread, int epfd, x64::Ptr events, size_t maxevents, int timeout);
 
         void dumpThreadSummary() const;
         void dumpBlockerSummary() const;
@@ -86,6 +87,7 @@ namespace kernel {
         std::vector<FutexBlocker> futexBlockers_;
         std::vector<PollBlocker> pollBlockers_;
         std::vector<SelectBlocker> selectBlockers_;
+        std::vector<EpollWaitBlocker> epollWaitBlockers_;
         std::vector<SleepBlocker> sleepBlockers_;
         
         std::mutex schedulerMutex_;

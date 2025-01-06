@@ -6,6 +6,7 @@
 #include "x64/mmu.h"
 #include "utils.h"
 #include <deque>
+#include <string>
 #include <unordered_map>
 
 namespace kernel {
@@ -18,13 +19,10 @@ namespace emulator {
     class VM {
     public:
         explicit VM(x64::Mmu& mmu, kernel::Kernel& kernel);
+        ~VM();
 
         void crash();
         bool hasCrashed() const { return hasCrashed_; }
-        
-        void setLogInstructions(bool);
-        bool logInstructions() const;
-        void setLogInstructionsAfter(unsigned long long);
 
         void contextSwitch(kernel::Thread* newThread);
 
@@ -34,24 +32,32 @@ namespace emulator {
 
         void tryRetrieveSymbols(const std::vector<u64>& addresses, std::unordered_map<u64, std::string>* addressesToSymbols) const;
 
+        class MmuCallback : public x64::Mmu::Callback {
+        public:
+            MmuCallback(x64::Mmu* mmu, VM* vm);
+            ~MmuCallback();
+            void on_mprotect(u64 base, u64 length, BitFlags<x64::PROT> protBefore, BitFlags<x64::PROT> protAfter) override;
+            void on_munmap(u64 base, u64 length) override;
+        private:
+            x64::Mmu* mmu_ { nullptr };
+            VM* vm_ { nullptr };
+        };
+
     private:
         friend class x64::Cpu;
         friend class kernel::Sys;
 
-        const x64::X64Instruction& fetchInstruction();
         void log(size_t ticks, const x64::X64Instruction& instruction) const;
 
+        struct BBlock;
+
+        BBlock* fetchBasicBlock();
+
         void notifyCall(u64 address);
-        void notifyRet(u64 address);
-        void notifyJmp(u64 address);
+        void notifyRet();
 
         void syncThread();
         void enterSyscall();
-
-        struct BasicBlock {
-            const x64::X64Instruction* instructions;
-            u32 size;
-        };
 
         struct ExecutableSection {
             u64 begin;
@@ -59,7 +65,7 @@ namespace emulator {
             std::vector<x64::X64Instruction> instructions;
             std::string filename;
 
-            std::vector<BasicBlock> extractBasicBlocks();
+            void trim();
         };
 
         struct InstructionPosition {
@@ -68,7 +74,6 @@ namespace emulator {
         };
 
         InstructionPosition findSectionWithAddress(u64 address, const ExecutableSection* sectionHint = nullptr) const;
-        void updateExecutionPoint(u64 address);
         std::string callName(const x64::X64Instruction& instruction) const;
         std::string calledFunctionName(u64 address) const;
 
@@ -78,21 +83,30 @@ namespace emulator {
 
         mutable std::vector<std::unique_ptr<ExecutableSection>> executableSections_;
         bool hasCrashed_ = false;
-        bool logInstructions_ = false;
-        unsigned long long nbTicksBeforeLoggingInstructions_ { 0 };
-
-        struct ExecutionPoint {
-            const ExecutableSection* section { nullptr };
-            const x64::X64Instruction* sectionBegin { nullptr };
-            const x64::X64Instruction* sectionEnd { nullptr };
-            const x64::X64Instruction* nextInstruction { nullptr };
-        };
 
         kernel::Thread* currentThread_ { nullptr };
-        ExecutionPoint currentThreadExecutionPoint_;
 
-        std::unordered_map<u64, ExecutionPoint> callCache_;
-        std::unordered_map<u64, ExecutionPoint> jmpCache_;
+        struct BBlock {
+            x64::Cpu::BasicBlock cpuBasicBlock;
+            std::array<BBlock*, 2> cachedDestinations {{ nullptr, nullptr }};
+
+            u64 start() const {
+                verify(!cpuBasicBlock.instructions.empty(), "Basic block is empty");
+                return cpuBasicBlock.instructions[0].first.address();
+            }
+            u64 end() const {
+                verify(!cpuBasicBlock.instructions.empty(), "Basic block is empty");
+                return cpuBasicBlock.instructions.back().first.nextAddress();
+            }
+        };
+
+        std::unordered_map<u64, std::unique_ptr<BBlock>> basicBlocks_;
+
+#ifdef VM_BASICBLOCK_TELEMETRY
+        u64 blockCacheHits_ { 0 };
+        u64 blockCacheMisses_ { 0 };
+        std::unordered_map<u64, u64> basicBlockCount_;
+#endif
 
         mutable SymbolProvider symbolProvider_;
         mutable std::unordered_map<u64, std::string> functionNameCache_;

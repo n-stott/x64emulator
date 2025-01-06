@@ -101,7 +101,7 @@ namespace x64 {
         });
         length = pageRoundUp(length);
 
-        u64 baseAddress = (address != 0) ? address : firstFitPageAligned(length);
+        u64 baseAddress = flags.test(MAP::FIXED) ? address : firstFitPageAligned(length);
         std::unique_ptr<Region> region = makeRegion(baseAddress, length, prot);
         region->setRequiresMemsetToZero();
         if(flags.test(MAP::FIXED)) {
@@ -130,7 +130,7 @@ namespace x64 {
             [[maybe_unused]] auto regionLeftToDie = takeRegion(regionPtr->base(), regionPtr->size());
         }
         tryMergeRegions();
-        for(auto* callback : callbacks_) callback->onMunmap(address, length);
+        for(auto* callback : callbacks_) callback->on_munmap(address, length);
         return 0;
     }
 
@@ -151,8 +151,10 @@ namespace x64 {
         split(address+length);
         for(auto& regionPtr : regions_) {
             if(!regionPtr->intersectsRange(address, address+length)) continue;
+            auto previousProt = regionPtr->prot();
             regionPtr->setProtection(prot);
             applyRegionProtection(regionPtr.get(), regionPtr->prot());
+            for(auto* callback : callbacks_) callback->on_mprotect(regionPtr->base(), regionPtr->size(), previousProt, prot);
         }
         tryMergeRegions();
         return 0;
@@ -230,6 +232,19 @@ namespace x64 {
         return regionLookup_[address / PAGE_SIZE];
     }
 
+    std::vector<u8> Mmu::mincore(u64 address, u64 length) const {
+        verify(isPageAligned(address), "address must be aligned in mincore");
+        length = pageRoundUp(length);
+        u64 vecsize = length / PAGE_SIZE;
+        std::vector<u8> res;
+        res.reserve(vecsize);
+        for(u64 addr = address; addr < address + length; addr += PAGE_SIZE) {
+            const auto* region = findAddress(addr);
+            res.push_back(!!region);
+        }
+        return res;
+    }
+
     Mmu::Region* Mmu::findRegion(const char* name) {
         for(const auto& ptr : regions_) {
             if(ptr->name() == name) return ptr.get();
@@ -272,6 +287,9 @@ namespace x64 {
 
     template<typename T, Size s>
     T Mmu::read(SPtr<s> ptr) const {
+#ifdef MULTIPROCESSING
+        verify(!syscallInProgress_, "Cannot read from mmu during syscall");
+#endif
         static_assert(sizeof(T) == pointerSize(s));
         u64 address = ptr.address();
         const u8* dataPtr = getReadPtr(address);
@@ -286,6 +304,9 @@ namespace x64 {
 
     template<typename T, Size s>
     void Mmu::write(SPtr<s> ptr, T value) {
+#ifdef MULTIPROCESSING
+        verify(!syscallInProgress_, "Cannot write to mmu during syscall");
+#endif
         static_assert(sizeof(T) == pointerSize(s));
         u64 address = ptr.address();
         u8* dataPtr = getWritePtr(address);
@@ -475,6 +496,9 @@ namespace x64 {
     }
 
     u64 Mmu::brk(u64 address) {
+#ifdef MULTIPROCESSING
+        SyscallGuard guard(*this);
+#endif
         Region* region = findRegion("heap");
         verify(!!region, "brk: program has no heap");
         if(region->contains(address)) return address;

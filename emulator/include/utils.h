@@ -13,6 +13,8 @@ using i16 = int16_t;
 using i32 = int32_t;
 using i64 = int64_t;
 
+using Mmx = u64;
+
 struct Xmm {
     u64 lo;
     u64 hi;
@@ -25,6 +27,10 @@ inline bool operator==(u128 a, u128 b) {
 
 using f32 = float;
 using f64 = double;
+
+struct F32 {
+    static i64 round64(f32 val);
+};
 
 struct F64 {
     static i64 round(f64 val);

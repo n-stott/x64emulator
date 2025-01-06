@@ -80,6 +80,10 @@ namespace kernel {
         return ErrnoOrBuffer(Buffer{std::move(buf)});
     }
 
+    void Tty::advanceInternalOffset(off_t) {
+        // nothing to do here
+    }
+
     off_t Tty::lseek(OpenFileDescription&, off_t, int) {
         return -ESPIPE;
     }
@@ -89,54 +93,59 @@ namespace kernel {
         return -ENOTSUP;
     }
 
-    ErrnoOrBuffer Tty::ioctl(unsigned long request, const Buffer& inputBuffer) {
+    ErrnoOrBuffer Tty::ioctl(OpenFileDescription&, Ioctl request, const Buffer& inputBuffer) {
         if(!hostFd_) {
             verify(false, "ShadowDevice without host backer is not implemented");
             return ErrnoOrBuffer(-ENOTSUP);
         }
         Buffer buffer(inputBuffer);
         switch(request) {
-            case TCGETS: {
+            case Ioctl::tcgets: {
                 verify(buffer.size() == sizeof(struct termios));
                 int ret = ::ioctl(hostFd_.value(), TCGETS, buffer.data());
                 if(ret < 0) return ErrnoOrBuffer(-errno);
                 return ErrnoOrBuffer(std::move(buffer));
             }
-            case TCSETS: {
+            case Ioctl::tcsets: {
                 verify(buffer.size() == sizeof(struct termios));
                 int ret = ::ioctl(hostFd_.value(), TCSETS, buffer.data());
                 if(ret < 0) return ErrnoOrBuffer(-errno);
                 return ErrnoOrBuffer(std::move(buffer));
             }
-            case FIOCLEX: {
+            case Ioctl::fioclex: {
                 int ret = ::ioctl(hostFd_.value(), FIOCLEX, nullptr);
                 if(ret < 0) return ErrnoOrBuffer(-errno);
                 return ErrnoOrBuffer(Buffer{});
             }
-            case FIONCLEX: {
+            case Ioctl::fionclex: {
                 int ret = ::ioctl(hostFd_.value(), FIONCLEX, nullptr);
                 if(ret < 0) return ErrnoOrBuffer(-errno);
                 return ErrnoOrBuffer(Buffer{});
             }
-            case TIOCGWINSZ: {
+            case Ioctl::fionbio: {
+                int ret = ::ioctl(hostFd_.value(), FIONBIO, buffer.data());
+                if(ret < 0) return ErrnoOrBuffer(-errno);
+                return ErrnoOrBuffer(std::move(buffer));
+            }
+            case Ioctl::tiocgwinsz: {
                 verify(buffer.size() == sizeof(struct winsize));
                 int ret = ::ioctl(hostFd_.value(), TIOCGWINSZ, buffer.data());
                 if(ret < 0) return ErrnoOrBuffer(-errno);
                 return ErrnoOrBuffer(std::move(buffer));
             }
-            case TIOCSWINSZ: {
+            case Ioctl::tiocswinsz: {
                 verify(buffer.size() == sizeof(struct winsize));
                 int ret = ::ioctl(hostFd_.value(), TIOCSWINSZ, buffer.data());
                 if(ret < 0) return ErrnoOrBuffer(-errno);
                 return ErrnoOrBuffer(std::move(buffer));
             }
-            case TCSETSW: {
+            case Ioctl::tcsetsw: {
                 verify(buffer.size() == sizeof(struct termios));
                 int ret = ::ioctl(hostFd_.value(), TCSETSW, buffer.data());
                 if(ret < 0) return ErrnoOrBuffer(-errno);
                 return ErrnoOrBuffer(std::move(buffer));
             }
-            case TIOCGPGRP: {
+            case Ioctl::tiocgpgrp: {
                 verify(buffer.size() == sizeof(pid_t));
                 int ret = ::ioctl(hostFd_.value(), TIOCGPGRP, buffer.data());
                 if(ret < 0) return ErrnoOrBuffer(-errno);
@@ -144,7 +153,7 @@ namespace kernel {
             }
             default: break;
         }
-        verify(false, fmt::format("Tty::ioctl({:#x}) not implemented", request));
+        verify(false, fmt::format("Tty::ioctl({:#x}) not implemented", (int)request));
         return ErrnoOrBuffer(-ENOTSUP);
     }
 

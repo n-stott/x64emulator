@@ -169,8 +169,8 @@ namespace kernel {
         return flags & EFD_NONBLOCK;
     }
 
-    bool Host::Eventfd2Flags::isOther(int flags) {
-        return flags & ~(EFD_CLOEXEC | EFD_NONBLOCK);
+    bool Host::Eventfd2Flags::isSemaphore(int flags) {
+        return flags & EFD_SEMAPHORE;
     }
 
     bool Host::EpollFlags::isCloseOnExec(int flags) {
@@ -179,6 +179,18 @@ namespace kernel {
 
     bool Host::EpollFlags::isOther(int flags) {
         return flags & ~(EPOLL_CLOEXEC);
+    }
+
+    bool Host::EpollCtlOp::isAdd(int op) {
+        return op == EPOLL_CTL_ADD;
+    }
+
+    bool Host::EpollCtlOp::isMod(int op) {
+        return op == EPOLL_CTL_MOD;
+    }
+
+    bool Host::EpollCtlOp::isDel(int op) {
+        return op == EPOLL_CTL_DEL;
     }
 
     bool Host::SocketType::isCloseOnExec(int type) {
@@ -235,6 +247,34 @@ namespace kernel {
         cloneFlags.cloneVm = flags & CLONE_VM;
         cloneFlags.cloneVfork = flags & CLONE_VFORK;
         return cloneFlags;
+    }
+
+    bool Host::Ioctl::isFIOCLEX(unsigned long request) {
+        return request == FIOCLEX;
+    }
+    bool Host::Ioctl::isFIONCLEX(unsigned long request) {
+        return request == FIONCLEX;
+    }
+    bool Host::Ioctl::isFIONBIO(unsigned long request) {
+        return request == FIONBIO;
+    }
+    bool Host::Ioctl::isTCGETS(unsigned long request) {
+        return request == TCGETS;
+    }
+    bool Host::Ioctl::isTCSETS(unsigned long request) {
+        return request == TCSETS;
+    }
+    bool Host::Ioctl::isTCSETSW(unsigned long request) {
+        return request == TCSETSW;
+    }
+    bool Host::Ioctl::isTIOCGWINSZ(unsigned long request) {
+        return request == TIOCGWINSZ;
+    }
+    bool Host::Ioctl::isTIOCSWINSZ(unsigned long request) {
+        return request == TIOCSWINSZ;
+    }
+    bool Host::Ioctl::isTIOCGPGRP(unsigned long request) {
+        return request == TIOCGPGRP;
     }
 
     Host::FD Host::cwdfd() {
@@ -363,9 +403,12 @@ namespace kernel {
 
     std::string Host::ioctlName(unsigned long request) {
         switch(request) {
-            case TCGETS: return "TCGETS";
             case FIOCLEX: return "FIOCLEX";
             case FIONCLEX: return "FIONCLEX";
+            case FIONBIO: return "FIONBIO";
+            case TCGETS: return "TCGETS";
+            case TCSETS: return "TCSETS";
+            case TCSETSW: return "TCSETSW";
             case TIOCGWINSZ: return "TIOCGWINSZ";
             case TIOCSWINSZ: return "TIOCSWINSZ";
             case TIOCGPGRP: return "TIOCGPGRP";
@@ -462,6 +505,7 @@ namespace kernel {
             case TCSETS: return sizeof(termios);
             case FIOCLEX:
             case FIONCLEX: return 0;
+            case FIONBIO: return sizeof(int);
             case TIOCGWINSZ: 
             case TIOCSWINSZ: return sizeof(winsize);
             case TCSETSW: return sizeof(termios);

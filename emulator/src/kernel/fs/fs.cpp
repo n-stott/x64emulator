@@ -16,6 +16,7 @@
 #include "verify.h"
 #include <fmt/core.h>
 #include <fmt/color.h>
+#include <fmt/ranges.h>
 #include <algorithm>
 #include <fcntl.h>
 #include <sys/poll.h>
@@ -181,6 +182,7 @@ namespace kernel {
 
     File* FS::tryGetFile(const Path& path) {
         Directory* dir = root();
+        if(path.isRoot()) return dir;
         for(const std::string& component : path.componentsExceptLast()) {
             dir = dir->tryGetSubDirectory(component);
             if(!dir) return nullptr;
@@ -597,10 +599,13 @@ namespace kernel {
         if(!openFileDescription) return -EBADF;
         std::optional<int> emulatedRet;
         // If we can do it in FS alone, do it here
+        // and check if we need to do it on the file as well
+        bool callFcntlOnFile = true;
         switch(cmd) {
             case F_DUPFD: {
                 FD newfd = dup(fd);
                 emulatedRet = newfd.fd;
+                callFcntlOnFile = false;
                 break;
             }
             case F_DUPFD_CLOEXEC: {
@@ -609,6 +614,7 @@ namespace kernel {
                 verify(!!newNode);
                 newNode->closeOnExec = true;
                 emulatedRet = newfd.fd;
+                callFcntlOnFile = false;
                 break;
             }
             case F_GETFD: {
@@ -629,6 +635,7 @@ namespace kernel {
         // If the open file description is sufficient, do it there
             case F_GETFL: {
                 emulatedRet = assembleAccessModeAndFileStatusFlags(openFileDescription->accessMode(), openFileDescription->statusFlags());
+                callFcntlOnFile = false;
                 break;
             }
             case F_SETFL: {
@@ -646,34 +653,30 @@ namespace kernel {
             default: break;
         }
         // Otherwise, go ask the file.
-        // Note: we have to go here anyway, so the information makes it to the host when relevant
-        File* file = openFileDescription->file();
-        std::optional<int> fileRet = file->fcntl(cmd, arg);
+        // Note: we may have to go here, so the information makes it to the host when relevant
+        std::optional<int> fileRet;
+        if(callFcntlOnFile) {
+            File* file = openFileDescription->file();
+            fileRet = file->fcntl(cmd, arg);
+        }
         if(!!emulatedRet) {
             if(!!fileRet && emulatedRet != fileRet) {
                 warn(fmt::format("Emulation of fcntl failed : emulated = {}  file = {}\n"
                                  "    Note: this may be due to O_LARGEFILE (32768)",
                     emulatedRet.value(), fileRet.value()));
+                verify(false);
             }
             return emulatedRet.value();
         } else {
-            assert(!!fileRet);
+            verify(!!fileRet);
             return fileRet.value();
         }
     }
 
-    ErrnoOrBuffer FS::ioctl(FD fd, unsigned long request, const Buffer& buffer) {
+    ErrnoOrBuffer FS::ioctl(FD fd, Ioctl request, const Buffer& buffer) {
         OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
         if(!openFileDescription) return ErrnoOrBuffer(-EBADF);
-        File* file = openFileDescription->file();
-        return file->ioctl(request, buffer);
-    }
-
-    ErrnoOrBuffer FS::ioctlWithBufferSizeGuess(FD fd, unsigned long request, const Buffer& buffer) {
-        OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
-        if(!openFileDescription) return ErrnoOrBuffer(-EBADF);
-        File* file = openFileDescription->file();
-        return file->ioctlWithBufferSizeGuess(request, buffer);
+        return openFileDescription->ioctl(request, buffer);
     }
 
     int FS::flock(FD fd, int operation) {
@@ -725,7 +728,7 @@ namespace kernel {
     }
 
     FS::FD FS::eventfd2(unsigned int initval, int flags) {
-        verify(!Host::Eventfd2Flags::isOther(flags), "only closeOnExec and nonBlock are allowed on eventfd2");
+        verify(!Host::Eventfd2Flags::isSemaphore(flags), "only closeOnExec and nonBlock are allowed on eventfd2");
         std::unique_ptr<Event> event = Event::tryCreate(this, initval, flags);
         verify(!!event, "Unable to create event");
         BitFlags<AccessMode> accessMode { AccessMode::READ, AccessMode::WRITE };
@@ -743,6 +746,72 @@ namespace kernel {
         BitFlags<StatusFlags> statusFlags { };
         bool closeOnExec = Host::EpollFlags::isCloseOnExec(flags);
         return insertNode(std::move(epoll), accessMode, statusFlags, closeOnExec);
+    }
+
+    int FS::epoll_ctl(FD epfd, int op, FD fd, BitFlags<EpollEventType> events, u64 data) {
+        OpenFileDescription* openFileDescription = findOpenFileDescription(epfd);
+        if(!openFileDescription) return -EBADF;
+        if(!openFileDescription->file()->isEpoll()) return -EBADF;
+        Epoll* epoll = static_cast<Epoll*>(openFileDescription->file());
+        if(Host::EpollCtlOp::isAdd(op)) {
+            events.add(EpollEventType::HANGUP);
+            auto ret = epoll->addEntry(fd.fd, events.toUnderlying(), data);
+            return ret.errorOr(0);
+        } else if(Host::EpollCtlOp::isMod(op)) {
+            auto ret = epoll->changeEntry(fd.fd, events.toUnderlying(), data);
+            return ret.errorOr(0);
+        } else {
+            verify(Host::EpollCtlOp::isDel(op), "Unknown epoll_ctl op");
+            auto ret = epoll->deleteEntry(fd.fd);
+            return ret.errorOr(0);
+        }
+    }
+
+    int FS::epollWaitImmediate(FD epfd, std::vector<EpollEvent>* events) {
+        OpenFileDescription* openFileDescription = findOpenFileDescription(epfd);
+        if(!openFileDescription) return -EBADF;
+        if(!openFileDescription->file()->isEpoll()) return -EBADF;
+        doEpollWait(epfd, events);
+        return (int)events->size();
+    }
+
+    void FS::doEpollWait(FD epfd, std::vector<EpollEvent>* events) {
+        verify(!!events);
+        OpenFileDescription* openFileDescription = findOpenFileDescription(epfd);
+        verify(!!openFileDescription, "No open file description for epoll wait");
+        verify(openFileDescription->file()->isEpoll(), "Cannot perform epoll wait on non-epoll instance");
+        Epoll* instance = static_cast<Epoll*>(openFileDescription->file());
+        instance->forEachEntryInInterestList([&](i32 fd, u32 ev, u64 data) {
+            OpenFileDescription* openFileDescription = findOpenFileDescription(FD{fd});
+            if(!openFileDescription) {
+                events->push_back(EpollEvent{
+                    BitFlags<EpollEventType>{EpollEventType::HANGUP},
+                    0,
+                });
+                return;
+            }
+            File* file = openFileDescription->file();
+            verify(file->isPollable(), [&]() { fmt::print("fd={} is not pollable\n", fd); });
+
+            BitFlags<EpollEventType> eventTypes = BitFlags<EpollEventType>::fromIntegerType(ev);
+            bool testRead = eventTypes.test(EpollEventType::CAN_READ);
+            bool testWrite = eventTypes.test(EpollEventType::CAN_WRITE);
+
+            BitFlags<EpollEventType> untestedFlags = eventTypes;
+            untestedFlags.remove(EpollEventType::CAN_READ);
+            untestedFlags.remove(EpollEventType::CAN_WRITE);
+            untestedFlags.remove(EpollEventType::HANGUP);
+            verify(!untestedFlags.any(), "Unexpected event in epoll-wait");
+
+            BitFlags<EpollEventType> outputEvents;
+            if(testRead && file->canRead())   outputEvents.add(EpollEventType::CAN_READ);
+            if(testWrite && file->canWrite()) outputEvents.add(EpollEventType::CAN_WRITE);
+
+            events->push_back(EpollEvent{
+                outputEvents,
+                data,
+            });
+        });
     }
 
     FS::FD FS::socket(int domain, int type, int protocol) {
@@ -823,8 +892,6 @@ namespace kernel {
             }
             File* file = openFileDescription->file();
             verify(file->isPollable(), [&]() { fmt::print("fd={} is not pollable\n", rfd.fd); });
-            auto hostFd = file->hostFileDescriptor();
-            verify(hostFd.has_value(), [&]() { fmt::print("fd={} has no host-equivalent fd\n", rfd.fd); });
 
             bool testRead = ((rfd.events & PollEvent::CAN_READ) == PollEvent::CAN_READ);
             bool testWrite = ((rfd.events & PollEvent::CAN_WRITE) == PollEvent::CAN_WRITE);
@@ -873,8 +940,6 @@ namespace kernel {
 
             File* file = openFileDescription->file();
             verify(file->isPollable(), [&]() { fmt::print("fd={} is not pollable\n", fd); });
-            auto hostFd = file->hostFileDescriptor();
-            verify(hostFd.has_value(), [&]() { fmt::print("fd={} has no host-equivalent fd\n", fd); });
 
             if(testRead && file->canRead())   selectData->readfds.set(fd);
             if(testWrite && file->canWrite()) selectData->writefds.set(fd);

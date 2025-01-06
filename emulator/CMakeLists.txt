@@ -20,6 +20,7 @@ add_library(x64cpu STATIC
     src/host/hostinstructions.cpp
     src/x64/checkedcpuimpl.cpp
     src/x64/cpuimpl.cpp
+    src/x64/flags.cpp
     src/x64/nativecpuimpl.cpp
     src/x64/simd.cpp
     src/x64/x87.cpp
@@ -34,6 +35,13 @@ elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
 endif()
 target_compile_options(x64cpu PUBLIC -frounding-math)
 target_include_directories(x64cpu PUBLIC include)
+target_link_libraries(x64cpu PUBLIC fmt::fmt-header-only)
+target_compile_options(x64cpu PUBLIC
+    -DFMT_HEADER_ONLY
+    -DFMT_USE_FLOAT=0
+    -DFMT_USE_DOUBLE=0
+    -DFMT_USE_LONG_DOUBLE=0
+)
 
 
 add_library(x64emulator STATIC
@@ -56,6 +64,7 @@ add_library(x64emulator STATIC
     src/kernel/fs/hostdirectory.cpp
     src/kernel/fs/hostfile.cpp
     src/kernel/fs/localsocket.cpp
+    src/kernel/fs/openfiledescription.cpp
     src/kernel/fs/path.cpp
     src/kernel/fs/pipe.cpp
     src/kernel/fs/shadowdirectory.cpp
@@ -72,6 +81,7 @@ add_library(x64emulator STATIC
     src/x64/cpu.cpp
     src/x64/cpuimpl.cpp
     src/x64/checkedcpuimpl.cpp
+    src/x64/flags.cpp
     src/x64/nativecpuimpl.cpp
     src/x64/mmu.cpp
     src/x64/registers.cpp
@@ -104,16 +114,18 @@ if(MULTIPROCESSING)
     target_compile_definitions(x64emulator PUBLIC MULTIPROCESSING=1)
 endif(MULTIPROCESSING)
 
+# set_property(TARGET x64emulator PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+
 # target_compile_options(x64emulator PUBLIC -fsanitize=address,undefined)
 # target_link_libraries(x64emulator PUBLIC asan ubsan)
 
-IF(CMAKE_BUILD_TYPE MATCHES Debug)
-    set_target_properties(x64emulator PROPERTIES CXX_CLANG_TIDY
-        clang-tidy-18;
-        --use-color;
-        -header-filter=${CMAKE_CURRENT_SOURCE_DIR}/include
-    )
-ENDIF(CMAKE_BUILD_TYPE MATCHES Debug)
+# IF(CMAKE_BUILD_TYPE MATCHES Debug)
+#     set_target_properties(x64emulator PROPERTIES CXX_CLANG_TIDY
+#         clang-tidy-18;
+#         --use-color;
+#         -header-filter=${CMAKE_CURRENT_SOURCE_DIR}/include
+#     )
+# ENDIF(CMAKE_BUILD_TYPE MATCHES Debug)
 
 add_executable(emulator
     src/main.cpp

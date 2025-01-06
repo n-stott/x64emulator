@@ -4,15 +4,15 @@
 #include "x64/types.h"
 #include <array>
 #include <cassert>
+#include <string>
 
 namespace x64 {
 
     class Registers {
     private:
         std::array<u64, 18> gpr_;
+        std::array<Mmx, 8> mmx_;
         std::array<Xmm, 16> xmm_;
-
-        u32 eiz_ { 0 };
 
     public:
         Registers();
@@ -56,14 +56,18 @@ namespace x64 {
         }
 
         u32 get(R32 reg) const {
-            return (reg == R32::EIZ) ? eiz_ : (u32)gpr_[(u8)reg];
+            return (u32)gpr_[(u8)reg];
         }
 
         u64 get(R64 reg) const {
             return gpr_[(u8)reg];
         }
 
-        Xmm get(RSSE reg) const {
+        u64 get(MMX reg) const {
+            return mmx_[(u8)reg];
+        }
+
+        Xmm get(XMM reg) const {
             return xmm_[(u8)reg];
         }
     
@@ -98,26 +102,36 @@ namespace x64 {
         }
         
         void set(R32 reg, u32 value) {
-            if(reg == R32::EIZ) {
-                eiz_ = value;
-            } else {
-                gpr_[(u8)reg] = value;
-            }
-        }
-
-        void set(R64 reg, u64 value) {
+            assert(reg != R32::EIZ);
             gpr_[(u8)reg] = value;
         }
 
-        void set(RSSE reg, Xmm value) {
+        void set(R64 reg, u64 value) {
+            assert(reg != R64::ZERO);
+            gpr_[(u8)reg] = value;
+        }
+
+        void set(MMX reg, Mmx value) {
+            mmx_[(u8)reg] = value;
+        }
+
+        void set(XMM reg, Xmm value) {
             xmm_[(u8)reg] = value;
         }
 
-        u64 resolve(Encoding enc) const {
+        u32 resolve(Encoding32 enc) const {
+            return get(enc.base)
+                    + enc.scale * get(enc.index)
+                    + (u32)enc.displacement;
+        }
+
+        u64 resolve(Encoding64 enc) const {
             return get(enc.base)
                     + enc.scale * get(enc.index)
                     + (u64)enc.displacement;
         }
+
+        std::string toString(bool gprs, bool mmx, bool sse) const;
 
     };
 

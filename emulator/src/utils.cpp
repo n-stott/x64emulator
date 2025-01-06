@@ -6,6 +6,13 @@
 // LOL, std::round does not take rounding mode into account.
 // It rounds away from 0 for midpoints, instead of towards even.
 // We let the host do this work instead.
+i64 F32::round64(f32 val) {
+    return host::roundWithoutTruncation(val);
+}
+
+// LOL, std::round does not take rounding mode into account.
+// It rounds away from 0 for midpoints, instead of towards even.
+// We let the host do this work instead.
 i64 F64::round(f64 val) {
     return host::roundWithoutTruncation(val);
 }

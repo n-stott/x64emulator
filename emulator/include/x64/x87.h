@@ -4,6 +4,7 @@
 #include "x64/types.h"
 #include "utils.h"
 #include <array>
+#include <string>
 
 namespace x64 {
 
@@ -61,6 +62,8 @@ namespace x64 {
         const X87Status& status() const { return status_; }
         X87Tag& tag() { return tag_; }
         const X87Tag& tag() const { return tag_; }
+
+        std::string toString() const;
 
     private:
         void incrTop();

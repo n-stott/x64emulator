@@ -22,7 +22,7 @@ namespace kernel {
     void Scheduler::syncThreadTimeSlice(Thread* thread) {
         verify(!!thread);
         std::unique_lock lock(schedulerMutex_);
-        currentTime_ = std::max(currentTime_, currentTime_ + thread->tickInfo().timeElapsedThisSlice());
+        currentTime_ = std::max(currentTime_, thread->tickInfo().currentTime());
     }
 
     void Scheduler::runOnWorkerThread(int id) {
@@ -35,13 +35,16 @@ namespace kernel {
                 {
                     std::unique_lock lock(schedulerMutex_);
                     schedulerHasRunnableThread_.wait(lock, [&]{
-                        return this->hasRunnableThread()  // we want to run an available thread
+                        return !kernel_.hasPanicked()     // something bad happened
+                            || this->hasRunnableThread()  // we want to run an available thread
                             || this->allThreadsDead()     // we need to exit because all threads are dead
                             || this->hasSleepingThread()  // we need to exit to test the sleep condition
                             || this->allThreadsBlocked(); // we have a deadlock :(
                     });
 
-                    assert(hasRunnableThread() || allThreadsDead() || this->hasSleepingThread() || allThreadsBlocked());
+                    assert(kernel_.hasPanicked() || hasRunnableThread() || allThreadsDead() || this->hasSleepingThread() || allThreadsBlocked());
+                    if(kernel_.hasPanicked()) break;
+
                     threadToRun = pickNext();
                 }
 
@@ -52,6 +55,7 @@ namespace kernel {
                     bool needsToWaitForNewThreads = !sleepBlockers_.empty()
                             || std::any_of(pollBlockers_.begin(), pollBlockers_.end(), [](const PollBlocker& blocker) { return blocker.hasTimeout(); })
                             || std::any_of(selectBlockers_.begin(), selectBlockers_.end(), [](const SelectBlocker& blocker) { return blocker.hasTimeout(); })
+                            || std::any_of(epollWaitBlockers_.begin(), epollWaitBlockers_.end(), [](const EpollWaitBlocker& blocker) { return blocker.hasTimeout(); })
                             || std::any_of(futexBlockers_.begin(), futexBlockers_.end(), [](const FutexBlocker& blocker) { return blocker.hasTimeout(); });
                     if(needsToWaitForNewThreads) {
                         // If we need some time to pass, actually advance in time
@@ -76,6 +80,7 @@ namespace kernel {
                     syncThreadTimeSlice(threadToRun);
 
                     if(threadToRun->state() == Thread::THREAD_STATE::IN_SYSCALL) {
+                        emulator::VM::MmuCallback callback(&mmu_, &vm);
                         kernel_.timers().updateAll(currentTime_);
                         kernel_.sys().syscall(threadToRun);
                         threadToRun->exitSyscall();
@@ -112,7 +117,7 @@ namespace kernel {
             });
             vm.tryRetrieveSymbols(addresses, &addressToSymbol_);
         }
-        // If we have packined, we retrieve the callstacks
+        // If we have panicked, we retrieve the callstacks
         if(kernel_.hasPanicked()) {
             std::unique_lock lock(schedulerMutex_);
             // we get the relevant addresses
@@ -263,6 +268,17 @@ namespace kernel {
             });
         }), selectBlockers_.end());
 
+        std::vector<EpollWaitBlocker*> removableEpollWaitBlockers;
+        for(EpollWaitBlocker& blocker : epollWaitBlockers_) {
+            bool canUnblock = blocker.tryUnblock(kernel_.fs());
+            if(canUnblock) removableEpollWaitBlockers.push_back(&blocker);
+        }
+        epollWaitBlockers_.erase(std::remove_if(epollWaitBlockers_.begin(), epollWaitBlockers_.end(), [&](const EpollWaitBlocker& blocker) {
+            return std::any_of(removableEpollWaitBlockers.begin(), removableEpollWaitBlockers.end(), [&](EpollWaitBlocker* compareBlocker) {
+                return &blocker == compareBlocker;
+            });
+        }), epollWaitBlockers_.end());
+
         std::vector<FutexBlocker*> removableFutexBlockers;
         for(FutexBlocker& blocker : futexBlockers_) {
             bool canUnblock = blocker.tryUnblock(x64::Ptr32{0});
@@ -351,6 +367,12 @@ namespace kernel {
         thread->yield();
     }
 
+    void Scheduler::epoll_wait(Thread* thread, int epfd, x64::Ptr events, size_t maxevents, int timeout) {
+        epollWaitBlockers_.push_back(EpollWaitBlocker(thread, mmu_, kernel_.timers(), epfd, events, maxevents, timeout));
+        thread->setState(Thread::THREAD_STATE::BLOCKED);
+        thread->yield();
+    }
+
     void Scheduler::dumpThreadSummary() const {
         forEachThread([&](const Thread& thread) {
             fmt::print("Thread #{} : {}\n", thread.description().tid, thread.toString());
@@ -374,6 +396,10 @@ namespace kernel {
         }
         fmt::print("Select blockers :\n");
         for(const SelectBlocker& blocker : selectBlockers_) {
+            fmt::print("  {}\n", blocker.toString());
+        }
+        fmt::print("Epoll-wait blockers :\n");
+        for(const EpollWaitBlocker& blocker : epollWaitBlockers_) {
             fmt::print("  {}\n", blocker.toString());
         }
         fmt::print("Sleep blockers :\n");

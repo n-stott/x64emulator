@@ -86,8 +86,11 @@ namespace kernel {
         return pipe_->write(openFileDescription, buf, size);
     }
 
+    void PipeEndpoint::advanceInternalOffset(off_t) {
+        // nothing to do here
+    }
+
     off_t PipeEndpoint::lseek(OpenFileDescription&, off_t, int) {
-        verify(false, "lseek not implemented on PipeEndpoint");
         return -ESPIPE;
     }
 
@@ -110,8 +113,8 @@ namespace kernel {
         return {};
     }
 
-    ErrnoOrBuffer PipeEndpoint::ioctl(unsigned long request, const Buffer&) {
-        verify(false, fmt::format("ioctl(request={}) not implemented on PipeEndpoint", request));
+    ErrnoOrBuffer PipeEndpoint::ioctl(OpenFileDescription&, Ioctl request, const Buffer&) {
+        verify(false, fmt::format("ioctl(request={}) not implemented on PipeEndpoint", (int)request));
         return ErrnoOrBuffer(-ENOTSUP);
     }
 

@@ -71,6 +71,7 @@ namespace kernel {
             case 0x17: return threadRegs.set(x64::R64::RAX, invoke_syscall_5(&Sys::select, regs));
             case 0x18: return threadRegs.set(x64::R64::RAX, invoke_syscall_0(&Sys::sched_yield, regs));
             case 0x19: return threadRegs.set(x64::R64::RAX, invoke_syscall_5(&Sys::mremap, regs));
+            case 0x1b: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::mincore, regs));
             case 0x1c: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::madvise, regs));
             case 0x1d: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::shmget, regs));
             case 0x20: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::dup, regs));
@@ -85,6 +86,7 @@ namespace kernel {
             case 0x2f: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::recvmsg, regs));
             case 0x30: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::shutdown, regs));
             case 0x31: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::bind, regs));
+            case 0x32: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::listen, regs));
             case 0x33: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::getsockname, regs));
             case 0x34: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::getpeername, regs));
             case 0x36: return threadRegs.set(x64::R64::RAX, invoke_syscall_5(&Sys::setsockopt, regs));
@@ -107,6 +109,7 @@ namespace kernel {
             case 0x5f: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::umask, regs));
             case 0x60: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::gettimeofday, regs));
             case 0x63: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::sysinfo, regs));
+            case 0x64: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::times, regs));
             case 0x66: return threadRegs.set(x64::R64::RAX, invoke_syscall_0(&Sys::getuid, regs));
             case 0x68: return threadRegs.set(x64::R64::RAX, invoke_syscall_0(&Sys::getgid, regs));
             case 0x6b: return threadRegs.set(x64::R64::RAX, invoke_syscall_0(&Sys::geteuid, regs));
@@ -141,6 +144,8 @@ namespace kernel {
             case 0xe5: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::clock_getres, regs));
             case 0xe6: return threadRegs.set(x64::R64::RAX, invoke_syscall_4(&Sys::clock_nanosleep, regs));
             case 0xe7: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::exit_group, regs));
+            case 0xe8: return threadRegs.set(x64::R64::RAX, invoke_syscall_4(&Sys::epoll_wait, regs));
+            case 0xe9: return threadRegs.set(x64::R64::RAX, invoke_syscall_4(&Sys::epoll_ctl, regs));
             case 0xea: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::tgkill, regs));
             case 0xed: return threadRegs.set(x64::R64::RAX, invoke_syscall_6(&Sys::mbind, regs));
             case 0xfd: return threadRegs.set(x64::R64::RAX, invoke_syscall_0(&Sys::inotify_init, regs));
@@ -254,8 +259,14 @@ namespace kernel {
         if(timeout == 0) {
             auto errnoOrBufferAndReturnValue = kernel_.fs().pollImmediate(pollfds);
             if(logSyscalls_) {
-                print("Sys::poll(fds={:#x}, nfds={}, timeout={}) = {}\n",
-                            fds.address(), nfds, timeout, errnoOrBufferAndReturnValue.errorOr(0));
+                std::vector<std::string> allfds;
+                for(const auto& pfd : pollfds) allfds.push_back(fmt::format("[fd={}, events={}]", pfd.fd, (int)pfd.events));
+                auto fdsString = fmt::format("{}", fmt::join(allfds, ", "));
+                print("Sys::poll(fds={:#x}, nfds={} (fds={}), timeout={}) = {}\n",
+                            fds.address(), nfds, fdsString, timeout, errnoOrBufferAndReturnValue.errorOr(0));
+                for(const auto& pd : pollfds) {
+                    fmt::print("  fd={}  events={}, revents={}\n", pd.fd, (int)pd.events, (int)pd.revents);
+                }
             }
             return errnoOrBufferAndReturnValue.errorOrWith<int>([&](const auto& bufferAndRetVal) {
                 mmu_.copyToMmu(fds, bufferAndRetVal.buffer.data(), bufferAndRetVal.buffer.size());
@@ -263,8 +274,11 @@ namespace kernel {
             });
         } else {
             if(logSyscalls_) {
-                print("Sys::poll(fds={:#x}, nfds={}, timeout={}) = pending\n",
-                            fds.address(), nfds, timeout);
+                std::vector<std::string> allfds;
+                for(const auto& pfd : pollfds) allfds.push_back(fmt::format("[fd={}, events={}]", pfd.fd, (int)pfd.events));
+                auto fdsString = fmt::format("{}", fmt::join(allfds, ", "));
+                print("Sys::poll(fds={:#x}, nfds={} (fds={}), timeout={}) = pending\n",
+                            fds.address(), nfds, fdsString, timeout);
             }
             kernel_.scheduler().poll(currentThread_, fds, nfds, timeout);
         }
@@ -303,7 +317,9 @@ namespace kernel {
             }
             data.errorOrWith<int>([&](const Buffer& buffer) {
                 BitFlags<x64::PROT> saved = mmu_.prot(base);
-                mmu_.mprotect(base, length, BitFlags<x64::PROT>{x64::PROT::WRITE});
+                BitFlags<x64::PROT> savedAndWriteable = saved;
+                savedAndWriteable.add(x64::PROT::WRITE);
+                mmu_.mprotect(base, length, savedAndWriteable);
                 mmu_.copyToMmu(x64::Ptr8{base}, buffer.data(), buffer.size());
                 mmu_.mprotect(base, length, saved);
                 auto filename = kernel_.fs().filename(FS::FD{fd});
@@ -380,41 +396,38 @@ namespace kernel {
     int Sys::ioctl(int fd, unsigned long request, x64::Ptr argp) {
         // We need to ask the host for the expected buffer size behind argp.
         auto bufferSize = Host::ioctlRequiredBufferSize(request);
-        if(!!bufferSize) {
-            std::vector<u8> buf(bufferSize.value(), 0x0);
-            Buffer buffer(std::move(buf));
-            mmu_.copyFromMmu(buffer.data(), argp, buffer.size());
-            auto errnoOrBuffer = kernel_.fs().ioctl(FS::FD{fd}, request, buffer);
-            if(logSyscalls_) {
-                print("Sys::ioctl(fd={}, request={}, argp={:#x}) = {}\n",
-                            fd, Host::ioctlName(request), argp.address(),
-                            errnoOrBuffer.errorOrWith<ssize_t>([](const auto& buf) { return (ssize_t)buf.size(); }));
-            }
-            return errnoOrBuffer.errorOrWith<int>([&](const auto& buffer) {
-                // The buffer returned by ioctl is empty when nothing needs to be written back.
-                mmu_.copyToMmu(argp, buffer.data(), buffer.size());
-                return 0;
-            });
-        } else {
-            const x64::Mmu::Region* regionPtr = static_cast<const x64::Mmu&>(mmu_).findAddress(argp.address());
-            verify(!!regionPtr, "Unable to find region for ioctl");
-            // read no more than 1 page
-            const size_t bufferSize = std::min(x64::Mmu::PAGE_SIZE, regionPtr->end() - argp.address());
-            std::vector<u8> buf(bufferSize);
-            Buffer buffer(std::move(buf));
-            mmu_.copyFromMmu(buffer.data(), argp, buffer.size());
-            auto errnoOrBuffer = kernel_.fs().ioctlWithBufferSizeGuess(FS::FD{fd}, request, buffer);
-            if(logSyscalls_) {
-                print("Sys::ioctl(fd={}, request={}, argp={:#x}) = {}\n",
-                            fd, Host::ioctlName(request), argp.address(),
-                            errnoOrBuffer.errorOrWith<ssize_t>([](const auto& buf) { return (ssize_t)buf.size(); }));
-            }
-            return errnoOrBuffer.errorOrWith<int>([&](const auto& buffer) {
-                // The buffer returned by ioctl is empty when nothing needs to be written back.
-                mmu_.copyToMmu(argp, buffer.data(), buffer.size());
-                return 0;
-            });
+        if(!bufferSize) {
+            warn(fmt::format("Unknown ioctl {:#x}. Returning -EINVAL", request));
+            return -EINVAL;
+        };
+        std::vector<u8> buf(bufferSize.value(), 0x0);
+        Buffer buffer(std::move(buf));
+        mmu_.copyFromMmu(buffer.data(), argp, buffer.size());
+
+        auto fsrequest = [](unsigned long hostRequest) -> std::optional<Ioctl> {
+            if(Host::Ioctl::isFIOCLEX(hostRequest)) return Ioctl::fioclex;
+            if(Host::Ioctl::isFIONCLEX(hostRequest)) return Ioctl::fionclex;
+            if(Host::Ioctl::isFIONBIO(hostRequest)) return Ioctl::fionbio;
+            if(Host::Ioctl::isTCGETS(hostRequest)) return Ioctl::tcgets;
+            if(Host::Ioctl::isTCSETS(hostRequest)) return Ioctl::tcsets;
+            if(Host::Ioctl::isTCSETSW(hostRequest)) return Ioctl::tcsetsw;
+            if(Host::Ioctl::isTIOCGWINSZ(hostRequest)) return Ioctl::tiocgwinsz;
+            if(Host::Ioctl::isTIOCSWINSZ(hostRequest)) return Ioctl::tiocswinsz;
+            if(Host::Ioctl::isTIOCGPGRP(hostRequest)) return Ioctl::tiocgpgrp;
+            return {};
+        }(request);
+        verify(!!fsrequest, "Unknown request");
+        auto errnoOrBuffer = kernel_.fs().ioctl(FS::FD{fd}, fsrequest.value(), buffer);
+        if(logSyscalls_) {
+            print("Sys::ioctl(fd={}, request={}, argp={:#x}) = {}\n",
+                        fd, Host::ioctlName(request), argp.address(),
+                        errnoOrBuffer.errorOrWith<ssize_t>([](const auto& buf) { return (ssize_t)buf.size(); }));
         }
+        return errnoOrBuffer.errorOrWith<int>([&](const auto& buffer) {
+            // The buffer returned by ioctl is empty when nothing needs to be written back.
+            mmu_.copyToMmu(argp, buffer.data(), buffer.size());
+            return 0;
+        });
     }
 
     ssize_t Sys::pread64(int fd, x64::Ptr buf, size_t count, off_t offset) {
@@ -588,6 +601,16 @@ namespace kernel {
         }
         warn(fmt::format("mremap not implemented"));
         return x64::Ptr{(u64)-ENOTSUP};
+    }
+
+    int Sys::mincore(x64::Ptr addr, size_t length, x64::Ptr8 vec) {
+        auto res = mmu_.mincore(addr.address(), length);
+        mmu_.copyToMmu(vec, res.data(), res.size());
+        if(logSyscalls_) {
+            print("Sys::mincore(addr={:#x}, length={:#x}, vec={:#x}) = {}\n",
+                                    addr.address(), length, vec.address(), 0);
+        }
+        return 0;
     }
 
     int Sys::madvise(x64::Ptr addr, size_t length, int advice) {
@@ -932,6 +955,15 @@ namespace kernel {
         });
     }
 
+    clock_t Sys::times(x64::Ptr buf) {
+        if(logSyscalls_) {
+            print("Sys::times(buf={:#x}) = {}\n",
+                        buf.address(), -ENOTSUP);
+        }
+        warn("times not implemented");
+        return -ENOTSUP;
+    }
+
     int Sys::getuid() { // NOLINT(readability-convert-member-functions-to-static)
         return Host::getuid();
     }
@@ -1069,6 +1101,53 @@ namespace kernel {
         if(logSyscalls_) print("Sys::exit_group(status={})\n", status);
         kernel_.scheduler().terminateAll(status);
         return (u64)status;
+    }
+
+    struct [[gnu::packed]] EpollEvent {
+        u32 event;
+        u64 data;
+    };
+
+    int Sys::epoll_wait(int epfd, x64::Ptr events, int maxevents, int timeout) {
+        if(!events) return -EFAULT;
+        if(maxevents <= 0) return -EINVAL;
+        if(timeout == 0) {
+            std::vector<FS::EpollEvent> epollEvents;
+            int ret = kernel_.fs().epollWaitImmediate(FS::FD{epfd}, &epollEvents);
+            if(ret >= 0) {
+                epollEvents.resize(std::min((size_t)maxevents, epollEvents.size()));
+                ret = (int)epollEvents.size();
+                std::vector<EpollEvent> eventsForMemory;
+                for(const auto& e : epollEvents) {
+                    eventsForMemory.push_back(EpollEvent {
+                        e.events.toUnderlying(),
+                        e.data,
+                    });
+                }
+                mmu_.writeToMmu<EpollEvent>(events, eventsForMemory);
+            }
+            if(logSyscalls_) {
+                print("Sys::epoll_wait(epfd={}, events={:#x}, maxevents={}, timeout={})\n", epfd, events.address(), maxevents, timeout, ret);
+            }
+            return ret;
+        } else {
+            // int ret = kernel_.fs().epoll_wait(FS::FD{epfd}, events, maxevents, timeout);
+            kernel_.scheduler().epoll_wait(currentThread_, epfd, events, maxevents, timeout);
+            if(logSyscalls_) {
+                print("Sys::epoll_wait(epfd={}, events={:#x}, maxevents={}, timeout={}) = pending\n", epfd, events.address(), maxevents, timeout);
+            }
+            return 0;
+        }
+    }
+
+    int Sys::epoll_ctl(int epfd, int op, int fd, x64::Ptr event) {
+        verify(!!event, "Null event in epoll_ctl not supported");
+        EpollEvent ee = mmu_.readFromMmu<EpollEvent>(event);
+        int ret = kernel_.fs().epoll_ctl(FS::FD{epfd}, op, FS::FD{fd}, BitFlags<FS::EpollEventType>::fromIntegerType(ee.event), ee.data);
+        if(logSyscalls_) {
+            print("Sys::epoll_ctl(epfd={}, op={}, fd={}, event=[event={:#x}, data={}]) = {}\n", epfd, op, fd, ee.event, ee.data, ret);
+        }
+        return ret;
     }
 
     int Sys::tgkill(int tgid, int tid, int sig) {
@@ -1375,6 +1454,14 @@ namespace kernel {
                         sockfd, addr.address(), addrlen, rc);
         }
         return rc;
+    }
+
+    int Sys::listen(int sockfd, int backlog) {
+        if(logSyscalls_) {
+            print("Sys::listen(sockfd={}, backlog={}) = {}\n", sockfd, backlog, -ENOTSUP);
+        }
+        warn(fmt::format("listen not implemented"));
+        return -ENOTSUP;
     }
 
     ssize_t Sys::getdents64(int fd, x64::Ptr dirp, size_t count) {

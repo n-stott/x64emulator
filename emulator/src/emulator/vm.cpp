@@ -5,22 +5,38 @@
 #include "x64/registers.h"
 #include "kernel/thread.h"
 #include <algorithm>
+#include <numeric>
 #include <optional>
 
 namespace emulator {
 
     VM::VM(x64::Mmu& mmu, kernel::Kernel& kernel) : mmu_(mmu), kernel_(kernel), cpu_(this, &mmu_) { }
-    
-    void VM::setLogInstructions(bool logInstructions) {
-        logInstructions_ = logInstructions;
-    }
 
-    bool VM::logInstructions() const {
-        return logInstructions_;
-    }
+    VM::~VM() {
+#ifdef VM_BASICBLOCK_TELEMETRY
+        fmt::print("blockCacheHits  :{}\n", blockCacheHits_);
+        fmt::print("blockCacheMisses:{}\n", blockCacheMisses_);
 
-    void VM::setLogInstructionsAfter(unsigned long long nbTicks) {
-        nbTicksBeforeLoggingInstructions_ = nbTicks;
+        fmt::print("Executed {} different basic blocks\n", basicBlockCount_.size());
+        std::vector<std::pair<u64, u64>> cb(basicBlockCount_.begin(), basicBlockCount_.end());
+        std::sort(cb.begin(), cb.end(), [](const auto& a, const auto& b) {
+            if(a.second > b.second) return true;
+            if(a.second < b.second) return false;
+            return a.first < b.first;
+        });
+        fmt::print("Most executed basic blocks:\n");
+        for(size_t i = 0; i < std::min((size_t)10, cb.size()); ++i) {
+            u64 address = cb[i].first;
+            const auto* region = ((const x64::Mmu&)mmu_).findAddress(address);
+            fmt::print("{:#16x} : {} ({})\n", address, cb[i].second, region->name());
+
+            const auto& bb = basicBlocks_[address];
+            for(const auto& ins : bb->cpuBasicBlock.instructions) {
+                fmt::print("      {:#12x} {}\n", ins.first.address(), ins.first.toString());
+            }
+
+        }
+#endif
     }
 
     void VM::crash() {
@@ -31,25 +47,22 @@ namespace emulator {
                             currentThread_->description().pid,
                             currentThread_->description().tid,
                             currentThread_->tickInfo().current());
-            std::vector<BasicBlock> basicBlocks = ((ExecutableSection*)currentThreadExecutionPoint_.section)->extractBasicBlocks();
             u64 rip = currentThread_->savedCpuState().regs.rip();
-            fmt::print("Looking for basic block in {:#x}:{:#x} with rip={:#x}\n", currentThreadExecutionPoint_.section->begin, currentThreadExecutionPoint_.section->end, rip);
-            bool foundBasicBlock = false;
-            for(const auto& bb : basicBlocks) {
-                if(bb.size == 0) continue;
-                if(rip < bb.instructions[0].address()) continue;
-                if(rip > bb.instructions[bb.size-1].address()) continue;
-                foundBasicBlock = true;
-                for(size_t i = 0; i < bb.size; ++i) {
-                    const auto& ins = bb.instructions[i];
-                    if(ins.nextAddress() == rip) {
-                        fmt::print("  ==> {:#12x} {}\n", ins.address(), ins.toString());
+            for(const auto& p : basicBlocks_) {
+                auto start = p.second->start();
+                auto end = p.second->end();
+                if(!start || !end) continue;
+                if(rip < start || rip > end) continue;
+                const auto& bb = p.second->cpuBasicBlock;
+                for(const auto& ins : bb.instructions) {
+                    if(ins.first.nextAddress() == rip) {
+                        fmt::print("  ==> {:#12x} {}\n", ins.first.address(), ins.first.toString());
                     } else {
-                        fmt::print("      {:#12x} {}\n", ins.address(), ins.toString());
+                        fmt::print("      {:#12x} {}\n", ins.first.address(), ins.first.toString());
                     }
                 }
+                break;
             }
-            verify(foundBasicBlock, "Could not find the basic block");
         }
     }
 
@@ -81,7 +94,6 @@ namespace emulator {
             cpu_.x87fpu_ = currentThreadState.x87fpu;
             cpu_.mxcsr_ = currentThreadState.mxcsr;
             cpu_.setSegmentBase(x64::Segment::FS, currentThreadState.fsBase);
-            notifyJmp(cpu_.regs_.rip()); // no need to cache the destination here
         } else {
             currentThread_ = nullptr;
             cpu_.flags_ = x64::Flags{};
@@ -94,58 +106,104 @@ namespace emulator {
 
     extern bool signal_interrupt;
 
+    class Context {
+    public:
+        explicit Context(VM& vm, kernel::Thread* thread) : vm_(&vm) {
+            vm_->contextSwitch(thread);
+        }
+
+        ~Context() {
+            vm_->contextSwitch(nullptr);
+        }
+    private:
+        VM* vm_;
+    };
+
     void VM::execute(kernel::Thread* thread) {
         if(!thread) return;
-        contextSwitch(thread);
-        if(logInstructions()) {
-            kernel::Thread::TickInfo& tickInfo = thread->tickInfo();
-            while(!tickInfo.isStopAsked()) {
-                verify(!signal_interrupt);
-                const x64::X64Instruction& instruction = fetchInstruction();
-                log(tickInfo.current(), instruction);
-                tickInfo.tick();
-                cpu_.exec(instruction);
+        Context context(*this, thread);
+        kernel::Thread::TickInfo& tickInfo = thread->tickInfo();
+        BBlock* currentBasicBlock = nullptr;
+        BBlock* nextBasicBlock = fetchBasicBlock();
+
+        auto findNextBasicBlock = [&]() {
+            bool foundNextBlock = false;
+            for(size_t i = 0; i < currentBasicBlock->cachedDestinations.size(); ++i) {
+                if(!currentBasicBlock->cachedDestinations[i]) continue;
+                if(currentBasicBlock->cachedDestinations[i]->start() != cpu_.regs_.rip()) continue;
+                nextBasicBlock = currentBasicBlock->cachedDestinations[i];
+                std::swap(currentBasicBlock->cachedDestinations[i], currentBasicBlock->cachedDestinations[0]);
+#ifdef VM_BASICBLOCK_TELEMETRY
+                ++blockCacheHits_;
+#endif
+                foundNextBlock = true;
+                break;
             }
-        } else {
-            kernel::Thread::TickInfo& tickInfo = thread->tickInfo();
-            while(!tickInfo.isStopAsked()) {
-                verify(!signal_interrupt);
-                const x64::X64Instruction& instruction = fetchInstruction();
-                tickInfo.tick();
-                cpu_.exec(instruction);
+            if(!foundNextBlock) {
+                nextBasicBlock = fetchBasicBlock();
+                currentBasicBlock->cachedDestinations.back() = nextBasicBlock;
+#ifdef VM_BASICBLOCK_TELEMETRY
+                ++blockCacheMisses_;
+#endif
             }
+        };
+
+        while(!tickInfo.isStopAsked()) {
+            verify(!signal_interrupt);
+            std::swap(currentBasicBlock, nextBasicBlock);
+#ifdef VM_BASICBLOCK_TELEMETRY
+            ++basicBlockCount_[currentBasicBlock->start().value_or(0)];
+#endif
+            cpu_.exec(currentBasicBlock->cpuBasicBlock);
+            tickInfo.tick(currentBasicBlock->cpuBasicBlock.instructions.size());
+            findNextBasicBlock();
         }
         assert(!!currentThread_);
-        contextSwitch(nullptr);
     }
 
-    const x64::X64Instruction& VM::fetchInstruction() {
-        if (currentThreadExecutionPoint_.nextInstruction >= currentThreadExecutionPoint_.sectionEnd) {
-            updateExecutionPoint(cpu_.regs_.rip());
+    VM::BBlock* VM::fetchBasicBlock() {
+        u64 startAddress = cpu_.regs_.rip();
+        auto it = basicBlocks_.find(startAddress);
+        if(it != basicBlocks_.end()) {
+            return it->second.get();
+        } else {
+            std::vector<x64::X64Instruction> blockInstructions;
+            u64 address = startAddress;
+            while(true) {
+                auto pos = findSectionWithAddress(address, nullptr);
+                const x64::X64Instruction* it = pos.section->instructions.data() + pos.index;
+                const x64::X64Instruction* end = pos.section->instructions.data() + pos.section->instructions.size();
+                bool foundBranch = false;
+                while(it != end) {
+                    blockInstructions.push_back(*it);
+                    address = it->nextAddress();
+                    if(it->isBranch()) {
+                        foundBranch = true;
+                        break;
+                    } else {
+                        ++it;
+                    }
+                }
+                if(foundBranch) break;
+            }
+            verify(!blockInstructions.empty() && blockInstructions.back().isBranch(), [&]() {
+                fmt::print("did not find bb exit branch for bb starting at {:#x}\n", startAddress);
+            });
+            x64::Cpu::BasicBlock cpuBb = cpu_.createBasicBlock(blockInstructions.data(), blockInstructions.size());
+            verify(!cpuBb.instructions.empty(), "Cannot create empty basic block");
+            std::unique_ptr<BBlock> bblock = std::make_unique<BBlock>();
+            bblock->cpuBasicBlock = std::move(cpuBb);
+            auto ret = basicBlocks_.emplace(startAddress, std::move(bblock));
+            return ret.first->second.get();
         }
-        verify(currentThreadExecutionPoint_.nextInstruction < currentThreadExecutionPoint_.sectionEnd);
-        const x64::X64Instruction& instruction = *currentThreadExecutionPoint_.nextInstruction;
-        cpu_.regs_.rip() = instruction.nextAddress();
-        ++currentThreadExecutionPoint_.nextInstruction;
-        return instruction;
     }
 
     void VM::log(size_t ticks, const x64::X64Instruction& instruction) const {
-        if(ticks < nbTicksBeforeLoggingInstructions_) return;
-        std::string eflags = fmt::format("flags = [{}{}{}{}{}]", (cpu_.flags_.carry ? 'C' : ' '),
-                                                            (cpu_.flags_.zero ? 'Z' : ' '), 
-                                                            (cpu_.flags_.overflow ? 'O' : ' '), 
-                                                            (cpu_.flags_.sign ? 'S' : ' '),
-                                                            (cpu_.flags_.parity ? 'P' : ' '));
-        std::string registerDump = fmt::format( "rip={:0>8x} "
-                                                "rax={:0>8x} rbx={:0>8x} rcx={:0>8x} rdx={:0>8x} "
-                                                "rsi={:0>8x} rdi={:0>8x} rbp={:0>8x} rsp={:0>8x} ",
-                                                cpu_.regs_.rip(),
-                                                cpu_.regs_.get(x64::R64::RAX), cpu_.regs_.get(x64::R64::RBX), cpu_.regs_.get(x64::R64::RCX), cpu_.regs_.get(x64::R64::RDX),
-                                                cpu_.regs_.get(x64::R64::RSI), cpu_.regs_.get(x64::R64::RDI), cpu_.regs_.get(x64::R64::RBP), cpu_.regs_.get(x64::R64::RSP));
+        std::string eflags = cpu_.flags_.toString();
+        std::string registerDump = cpu_.regs_.toString(true, false, false);
         std::string indent = fmt::format("{:{}}", "", 2*currentThread_->callstack().size());
         std::string mnemonic = fmt::format("{}|{}", indent, instruction.toString());
-        fmt::print(stderr, "{:10} {:55}{:20} {}\n", ticks, mnemonic, eflags, registerDump);
+        fmt::print(stderr, "{:10} {:55} flags = {:20} {}\n", ticks, mnemonic, eflags, registerDump);
         if(instruction.isCall()) {
             fmt::print(stderr, "{:10} {}[call {}({:#x}, {:#x}, {:#x}, {:#x}, {:#x}, {:#x})]\n", ticks, indent, callName(instruction),
                 cpu_.regs_.get(x64::R64::RDI),
@@ -156,99 +214,18 @@ namespace emulator {
                 cpu_.regs_.get(x64::R64::R9));
         }
         if(instruction.isX87()) {
-            std::string x87dump = fmt::format( "st0={} st1={} st2={} st3={} "
-                                                    "st4={} st5={} st6={} st7={} top={}",
-                                                    f80::toLongDouble(cpu_.x87fpu_.st(x64::ST::ST0)),
-                                                    f80::toLongDouble(cpu_.x87fpu_.st(x64::ST::ST1)),
-                                                    f80::toLongDouble(cpu_.x87fpu_.st(x64::ST::ST2)),
-                                                    f80::toLongDouble(cpu_.x87fpu_.st(x64::ST::ST3)),
-                                                    f80::toLongDouble(cpu_.x87fpu_.st(x64::ST::ST4)),
-                                                    f80::toLongDouble(cpu_.x87fpu_.st(x64::ST::ST5)),
-                                                    f80::toLongDouble(cpu_.x87fpu_.st(x64::ST::ST6)),
-                                                    f80::toLongDouble(cpu_.x87fpu_.st(x64::ST::ST7)),
-                                                    (int)cpu_.x87fpu_.top()
-                                                    );
+            std::string x87dump = cpu_.x87fpu_.toString();
             fmt::print(stderr, "{:86} {}\n", "", x87dump);
-        }
-        if(instruction.isSSE()) {
-            std::string sseDump = fmt::format( "xmm0={:16x} {:16x} xmm1={:16x} {:16x} xmm2={:16x} {:16x} xmm3={:16x} {:16x}",
-                                                cpu_.get(x64::RSSE::XMM0).hi, cpu_.get(x64::RSSE::XMM0).lo,
-                                                cpu_.get(x64::RSSE::XMM1).hi, cpu_.get(x64::RSSE::XMM1).lo,
-                                                cpu_.get(x64::RSSE::XMM2).hi, cpu_.get(x64::RSSE::XMM2).lo,
-                                                cpu_.get(x64::RSSE::XMM3).hi, cpu_.get(x64::RSSE::XMM3).lo);
-            fmt::print(stderr, "{:86} {}\n", "", sseDump);
         }
     }
 
     void VM::notifyCall(u64 address) {
         currentThread_->stats().functionCalls++;
-        // currentThread_->stats().calls.push_back(kernel::Thread::Stats::FunctionCall{
-        //     currentThread_->tickInfo().ticksFromStart,
-        //     currentThread_->callstack().size(),
-        //     address,
-        //     calledFunctionName(address),
-        // });
-        ExecutionPoint cp;
-        auto cachedValue = callCache_.find(address);
-        if(cachedValue != callCache_.end()) {
-            cp = cachedValue->second;
-        } else {
-            // NOLINTBEGIN(clang-analyzer-core.CallAndMessage)
-            InstructionPosition pos = findSectionWithAddress(address, currentThreadExecutionPoint_.section);
-            verify(!!pos.section, [=]() {
-                fmt::print("Unable to find section containing address {:#x}\n", address);
-            });
-            verify(pos.index != (size_t)(-1));
-            cp = ExecutionPoint{
-                                pos.section,
-                                pos.section->instructions.data(),
-                                pos.section->instructions.data() + pos.section->instructions.size(),
-                                pos.section->instructions.data() + pos.index
-                            };
-            callCache_.insert(std::make_pair(address, cp));
-            // NOLINTEND(clang-analyzer-core.CallAndMessage)
-        }
-        currentThreadExecutionPoint_ = cp;
         currentThread_->pushCallstack(cpu_.get(x64::R64::RIP), address);
     }
 
-    void VM::notifyRet(u64 address) {
+    void VM::notifyRet() {
         currentThread_->popCallstack();
-        notifyJmp(address);
-    }
-
-    void VM::notifyJmp(u64 address) {
-        ExecutionPoint cp;
-        auto cachedValue = jmpCache_.find(address);
-        if(cachedValue != jmpCache_.end()) {
-            cp = cachedValue->second;
-        } else {
-            InstructionPosition pos = findSectionWithAddress(address, currentThreadExecutionPoint_.section);
-            verify(!!pos.section && pos.index != (size_t)(-1), [&]() {
-                fmt::print("Unable to find jmp destination {:#x}\n", address);
-            });
-            cp = ExecutionPoint{
-                                pos.section,
-                                pos.section->instructions.data(),
-                                pos.section->instructions.data() + pos.section->instructions.size(),
-                                pos.section->instructions.data() + pos.index
-                            };
-            jmpCache_.insert(std::make_pair(address, cp));
-        }
-        currentThreadExecutionPoint_ = cp;
-    }
-
-    void VM::updateExecutionPoint(u64 address) {
-        InstructionPosition pos = findSectionWithAddress(address, nullptr);
-        verify(!!pos.section && pos.index != (size_t)(-1), [&]() {
-            fmt::print("Unable to find executable address {:#x}\n", address);
-        });
-        currentThreadExecutionPoint_ = ExecutionPoint{
-                            pos.section,
-                            pos.section->instructions.data(),
-                            pos.section->instructions.data() + pos.section->instructions.size(),
-                            pos.section->instructions.data() + pos.index
-                        };
     }
 
     VM::InstructionPosition VM::findSectionWithAddress(u64 address, const ExecutableSection* sectionHint) const {
@@ -321,6 +298,7 @@ namespace emulator {
             fmt::print("Disassembly of {:#x}:{:#x} provided no instructions", address, end);
         });
         verify(section.end == section.instructions.back().nextAddress());
+        section.trim();
         
         auto newSection = std::make_unique<ExecutableSection>(std::move(section));
         const auto* sectionPtr = newSection.get();
@@ -433,10 +411,81 @@ namespace emulator {
         }
     }
 
-    std::vector<VM::BasicBlock> VM::ExecutableSection::extractBasicBlocks() {
+    VM::MmuCallback::MmuCallback(x64::Mmu* mmu, VM* vm) : mmu_(mmu), vm_(vm) {
+        if(!!mmu_) mmu_->addCallback(this);
+    }
+
+    VM::MmuCallback::~MmuCallback() {
+        if(!!mmu_) mmu_->removeCallback(this);
+    }
+
+    void VM::MmuCallback::on_mprotect(u64 base, u64 length, BitFlags<x64::PROT> protBefore, BitFlags<x64::PROT> protAfter) {
+        if(!protBefore.test(x64::PROT::EXEC)) return; // if we were not executable, no need to perform removal
+        if(protAfter.test(x64::PROT::EXEC)) return; // if we are remaining executable, no need to perform removal
+        std::vector<u64> keysToErase;
+        for(auto& kv : vm_->basicBlocks_) {
+            auto* bb = kv.second.get();
+            verify(bb->start() == kv.first);
+            auto addressInRange = [&](u64 address) {
+                return base <= address && address < base + length;
+            };
+            if(addressInRange(bb->start())) {
+                keysToErase.push_back(bb->start());
+            }
+            const auto* bb1 = bb->cachedDestinations[0];
+            if(bb1 && addressInRange(bb1->start())) {
+                bb->cachedDestinations[0] = nullptr;
+            }
+            const auto* bb2 = bb->cachedDestinations[1];
+            if(bb2 && addressInRange(bb2->start())) {
+                bb->cachedDestinations[1] = nullptr;
+            }
+        }
+        for(const auto& key : keysToErase) vm_->basicBlocks_.erase(key);
+        
+        vm_->executableSections_.erase(std::remove_if(vm_->executableSections_.begin(), vm_->executableSections_.end(), [&](const auto& section) {
+            return (base <= section->begin && section->begin < base + length)
+                || (base < section->end && section->end <= base + length);
+        }), vm_->executableSections_.end());
+    }
+
+    void VM::MmuCallback::on_munmap(u64 base, u64 length) {
+        std::vector<u64> keysToErase;
+        for(auto& kv : vm_->basicBlocks_) {
+            auto* bb = kv.second.get();
+            verify(bb->start() == kv.first);
+            auto addressInRange = [&](u64 address) {
+                return base <= address && address < base + length;
+            };
+            if(addressInRange(bb->start())) {
+                keysToErase.push_back(bb->start());
+            }
+            const auto* bb0 = bb->cachedDestinations[0];
+            if(bb0 && addressInRange(bb0->start())) {
+                bb->cachedDestinations[0] = nullptr;
+            }
+            const auto* bb1 = bb->cachedDestinations[1];
+            if(bb1 && addressInRange(bb1->start())) {
+                bb->cachedDestinations[1] = nullptr;
+            }
+        }
+        for(const auto& key : keysToErase) vm_->basicBlocks_.erase(key);
+        
+        vm_->executableSections_.erase(std::remove_if(vm_->executableSections_.begin(), vm_->executableSections_.end(), [&](const auto& section) {
+            return (base <= section->begin && section->begin < base + length)
+                || (base < section->end && section->end <= base + length);
+        }), vm_->executableSections_.end());
+    }
+
+    void VM::ExecutableSection::trim() {
         // Assume that the first instruction is a basic block entry instruction
         // This is probably wrong, because we may not have disassembled the last bit of the previous section.
-        std::vector<BasicBlock> basicBlocks;
+        struct BasicBlock {
+            const x64::X64Instruction* instructions;
+            u32 size;
+        };
+
+        std::optional<BasicBlock> lastBasicBlock;
 
         // Build up the basic block until we reach a branch
         const auto* begin = instructions.data();
@@ -446,7 +495,7 @@ namespace emulator {
             if(!it->isBranch()) continue;
             if(it+1 != end) {
                 ++it;
-                basicBlocks.push_back(BasicBlock { begin, (u32)(it-begin) });
+                lastBasicBlock = BasicBlock { begin, (u32)(it-begin) };
                 begin = it;
             } else {
                 break;
@@ -456,13 +505,10 @@ namespace emulator {
         // Try and trim excess instructions from the end
         // We will probably disassemble them again, but they will be put in the
         // correct basic block then.
-        if(!basicBlocks.empty()) {
+        if(!!lastBasicBlock) {
             auto packedInstructions = std::distance((const x64::X64Instruction*)instructions.data(), begin);
             instructions.erase(instructions.begin() + packedInstructions, instructions.end());
-            const auto& lastBlock = basicBlocks.back();
-            this->end = lastBlock.instructions[lastBlock.size-1].nextAddress();
+            this->end = lastBasicBlock->instructions[lastBasicBlock->size-1].nextAddress();
         }
-
-        return basicBlocks;
     }
 }

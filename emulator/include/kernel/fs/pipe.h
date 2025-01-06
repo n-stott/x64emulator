@@ -62,13 +62,14 @@ namespace kernel {
         ErrnoOrBuffer read(OpenFileDescription&, size_t) override;
         ssize_t write(OpenFileDescription&, const u8*, size_t) override;
 
+        void advanceInternalOffset(off_t) override;
         off_t lseek(OpenFileDescription&, off_t offset, int whence) override;
 
         ErrnoOrBuffer stat() override;
         ErrnoOrBuffer statfs() override;
         
         std::optional<int> fcntl(int cmd, int arg) override;
-        ErrnoOrBuffer ioctl(unsigned long request, const Buffer& buffer) override;
+        ErrnoOrBuffer ioctl(OpenFileDescription&, Ioctl request, const Buffer& buffer) override;
         
         ErrnoOrBuffer getdents64(size_t count) override;
 

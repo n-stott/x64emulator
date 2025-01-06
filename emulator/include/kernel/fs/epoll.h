@@ -30,7 +30,7 @@ namespace kernel {
         ErrnoOrBuffer statfs() override;
         
         std::optional<int> fcntl(int cmd, int arg) override;
-        ErrnoOrBuffer ioctl(unsigned long request, const Buffer& buffer) override;
+        ErrnoOrBuffer ioctl(OpenFileDescription&, Ioctl request, const Buffer& buffer) override;
         
         ErrnoOrBuffer getdents64(size_t count) override;
 
@@ -40,7 +40,25 @@ namespace kernel {
             return "Epoll";
         }
 
+        ErrnoOr<void> addEntry(i32 fd, u32 event, u64 data);
+        ErrnoOr<void> changeEntry(i32 fd, u32 event, u64 data);
+        ErrnoOr<void> deleteEntry(i32 fd);
+
+        template<typename Func>
+        void forEachEntryInInterestList(Func&& func) {
+            for(const auto& entry : interestList_) {
+                func(entry.fd, entry.event, entry.data);
+            }
+        }
+
     private:
+        struct Entry {
+            i32 fd;
+            u32 event;
+            u64 data;
+        };
+
+        std::vector<Entry> interestList_;
         int flags_;
     };
 

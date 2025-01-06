@@ -86,8 +86,7 @@ namespace kernel {
     }
 
     void ShadowFile::append() {
-        verify(false, "ShadowFile::append() not implemented");
-        (void)data_;
+        isAppending_ = true;
     }
 
     ErrnoOrBuffer ShadowFile::read(OpenFileDescription& openFileDescription, size_t count) {
@@ -103,6 +102,7 @@ namespace kernel {
 
     ssize_t ShadowFile::write(OpenFileDescription& openFileDescription, const u8* buf, size_t count) {
         if(!isWritable()) return -EINVAL;
+        if(isAppending_) openFileDescription.lseek(0, SEEK_END);
         off_t offset = openFileDescription.offset();
         if(offset < 0) return -EINVAL;
         if((size_t)offset + count > data_.size()) {
@@ -141,8 +141,12 @@ namespace kernel {
     }
 
     ErrnoOrBuffer ShadowFile::statfs() {
-        verify(false, "implement statfs on ShadowFile");
+        warn("ShadowFile::statfs not implemented");
         return ErrnoOrBuffer(-ENOTSUP);
+    }
+
+    void ShadowFile::advanceInternalOffset(off_t) {
+        // nothing to do here
     }
 
     off_t ShadowFile::lseek(OpenFileDescription& openFileDescription, off_t offset, int whence) {
@@ -187,8 +191,8 @@ namespace kernel {
         return -EINVAL;
     }
 
-    ErrnoOrBuffer ShadowFile::ioctl(unsigned long request, const Buffer&) {
-        verify(false, [&]() { fmt::print("ShadowFile::ioctl({:#x}) not implemented", request); });
+    ErrnoOrBuffer ShadowFile::ioctl(OpenFileDescription&, Ioctl request, const Buffer&) {
+        verify(false, [&]() { fmt::print("ShadowFile::ioctl({:#x}) not implemented", (int)request); });
         return ErrnoOrBuffer(-ENOTSUP);
     }
 

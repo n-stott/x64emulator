@@ -93,12 +93,18 @@ namespace kernel {
         struct Eventfd2Flags {
             static bool isCloseOnExec(int flags);
             static bool isNonBlock(int flags);
-            static bool isOther(int flags);
+            static bool isSemaphore(int flags);
         };
 
         struct EpollFlags {
             static bool isCloseOnExec(int flags);
             static bool isOther(int flags);
+        };
+
+        struct EpollCtlOp {
+            static bool isAdd(int op);
+            static bool isMod(int op);
+            static bool isDel(int op);
         };
 
         struct SocketType {
@@ -147,6 +153,18 @@ namespace kernel {
         };
 
         static CloneFlags fromCloneFlags(unsigned long flags);
+
+        struct Ioctl {
+            static bool isFIOCLEX(unsigned long request);
+            static bool isFIONCLEX(unsigned long request);
+            static bool isTCGETS(unsigned long request);
+            static bool isTCSETS(unsigned long request);
+            static bool isTCSETSW(unsigned long request);
+            static bool isFIONBIO(unsigned long request);
+            static bool isTIOCGWINSZ(unsigned long request);
+            static bool isTIOCSWINSZ(unsigned long request);
+            static bool isTIOCGPGRP(unsigned long request);
+        };
 
         static FD cwdfd();
 

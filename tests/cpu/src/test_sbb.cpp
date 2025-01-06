@@ -41,13 +41,13 @@ int compareSbb8(u8 lhs, u8 rhs, bool carry) {
     && virtFlags.zero == nativeFlags.zero
     && virtFlags.overflow == nativeFlags.overflow
     && virtFlags.sign == nativeFlags.sign
-    && virtFlags.parity == nativeFlags.parity) return 0;
+    && virtFlags.parity() == nativeFlags.parity()) return 0;
 
     fmt::print(stderr, "sbb8 {:#x} {:#x} carry={} failed\n", lhs, rhs, carry);
     fmt::print(stderr, "native : diff={:#x} carry={} zero={} overflow={} sign={} parity={}\n",
-                        nativeDiff, nativeFlags.carry, nativeFlags.zero, nativeFlags.overflow, nativeFlags.sign, nativeFlags.parity);
+                        nativeDiff, nativeFlags.carry, nativeFlags.zero, nativeFlags.overflow, nativeFlags.sign, nativeFlags.parity());
     fmt::print(stderr, "virtual: diff={:#x} carry={} zero={} overflow={} sign={} parity={}\n",
-                        virtDiff, virtFlags.carry, virtFlags.zero, virtFlags.overflow, virtFlags.sign, virtFlags.parity);
+                        virtDiff, virtFlags.carry, virtFlags.zero, virtFlags.overflow, virtFlags.sign, virtFlags.parity());
     return 1;
 }
 
@@ -88,13 +88,13 @@ int compareSbb64(u64 lhs, u64 rhs, bool carry) {
     && virtFlags.zero == nativeFlags.zero
     && virtFlags.overflow == nativeFlags.overflow
     && virtFlags.sign == nativeFlags.sign
-    && virtFlags.parity == nativeFlags.parity) return 0;
+    && virtFlags.parity() == nativeFlags.parity()) return 0;
 
     fmt::print(stderr, "sbb64 {:#x} {:#x} carry={} failed\n", lhs, rhs, carry);
     fmt::print(stderr, "native : diff={:#x} carry={} zero={} overflow={} sign={} parity={}\n",
-                        nativeDiff, nativeFlags.carry, nativeFlags.zero, nativeFlags.overflow, nativeFlags.sign, nativeFlags.parity);
+                        nativeDiff, nativeFlags.carry, nativeFlags.zero, nativeFlags.overflow, nativeFlags.sign, nativeFlags.parity());
     fmt::print(stderr, "virtual: diff={:#x} carry={} zero={} overflow={} sign={} parity={}\n",
-                        virtDiff, virtFlags.carry, virtFlags.zero, virtFlags.overflow, virtFlags.sign, virtFlags.parity);
+                        virtDiff, virtFlags.carry, virtFlags.zero, virtFlags.overflow, virtFlags.sign, virtFlags.parity());
     return 1;
 }
 

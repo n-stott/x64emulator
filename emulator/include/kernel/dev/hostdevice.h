@@ -30,13 +30,14 @@ namespace kernel {
         ErrnoOrBuffer read(OpenFileDescription&, size_t count) override;
         ssize_t write(OpenFileDescription&, const u8* buf, size_t count) override;
 
+        void advanceInternalOffset(off_t) override;
         off_t lseek(OpenFileDescription&, off_t offset, int whence) override;
 
         ErrnoOrBuffer stat() override;
         ErrnoOrBuffer statfs() override;
         
         std::optional<int> fcntl(int cmd, int arg) override;
-        ErrnoOrBuffer ioctl(unsigned long request, const Buffer& buffer) override;
+        ErrnoOrBuffer ioctl(OpenFileDescription&, Ioctl request, const Buffer& buffer) override;
 
         std::string className() const override {
             return fmt::format("HostDevice(realfd={})", hostFd_);

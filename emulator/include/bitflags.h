@@ -23,6 +23,10 @@ public:
         return flags;
     }
 
+    underlying_t toUnderlying() const {
+        return flags_;
+    }
+
     explicit BitFlags() {
         flags_ = underlying_t { 0 };
     }

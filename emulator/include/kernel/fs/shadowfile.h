@@ -35,6 +35,7 @@ namespace kernel {
         ErrnoOrBuffer read(OpenFileDescription&, size_t count) override;
         ssize_t write(OpenFileDescription&, const u8* buf, size_t count) override;
 
+        void advanceInternalOffset(off_t offset) override;
         off_t lseek(OpenFileDescription&, off_t offset, int whence) override;
 
         ErrnoOrBuffer stat() override;
@@ -42,7 +43,7 @@ namespace kernel {
 
         ErrnoOrBuffer getdents64(size_t count) override;
         std::optional<int> fcntl(int cmd, int arg) override;
-        ErrnoOrBuffer ioctl(unsigned long request, const Buffer& buffer) override;
+        ErrnoOrBuffer ioctl(OpenFileDescription&, Ioctl request, const Buffer& buffer) override;
 
         int fallocate(int mode, off_t offset, off_t len);
         
@@ -60,6 +61,7 @@ namespace kernel {
         std::unique_ptr<ShadowFileHostData> hostData_;
         std::vector<u8> data_;
         bool writable_ { false };
+        bool isAppending_ { false };
     };
 
 }

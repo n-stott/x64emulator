@@ -74,7 +74,7 @@ namespace kernel {
             u64 start = x64::Mmu::pageRoundDown(elfOffset + header.virtualAddress());
             u64 end = x64::Mmu::pageRoundUp(elfOffset + header.virtualAddress() + header.sizeInMemory());
             u64 nonExecSectionSize = end-start;
-            u64 nonExecSectionBase = mmu->mmap(start, nonExecSectionSize, BitFlags<x64::PROT>{x64::PROT::WRITE}, BitFlags<x64::MAP>{x64::MAP::PRIVATE, x64::MAP::ANONYMOUS});
+            u64 nonExecSectionBase = mmu->mmap(start, nonExecSectionSize, BitFlags<x64::PROT>{x64::PROT::WRITE}, BitFlags<x64::MAP>{x64::MAP::PRIVATE, x64::MAP::ANONYMOUS, x64::MAP::FIXED});
 
             const u8* data = elf64->dataAtOffset(header.offset(), header.sizeInFile());
             mmu->copyToMmu(x64::Ptr8{nonExecSectionBase + header.virtualAddress() % x64::Mmu::PAGE_SIZE}, data, header.sizeInFile()); // Mmu regions are 0 initialized
@@ -139,13 +139,13 @@ namespace kernel {
         // stack
         const u64 desiredStackBase = 0x10000000;
         const u64 stackSize = 256*x64::Mmu::PAGE_SIZE;
-        u64 stackBase = mmu->mmap(desiredStackBase, stackSize, BitFlags<x64::PROT>{x64::PROT::READ, x64::PROT::WRITE}, BitFlags<x64::MAP>{x64::MAP::PRIVATE, x64::MAP::ANONYMOUS});
+        u64 stackBase = mmu->mmap(desiredStackBase, stackSize, BitFlags<x64::PROT>{x64::PROT::READ, x64::PROT::WRITE}, BitFlags<x64::MAP>{x64::MAP::PRIVATE, x64::MAP::ANONYMOUS, x64::MAP::FIXED});
         mmu->setRegionName(stackBase, "stack");
 
         // heap
         const u64 desiredHeapBase = stackBase + stackSize + x64::Mmu::PAGE_SIZE;
         const u64 heapSize = 64*x64::Mmu::PAGE_SIZE;
-        u64 heapBase = mmu->mmap(desiredHeapBase, heapSize, BitFlags<x64::PROT>{x64::PROT::READ, x64::PROT::WRITE}, BitFlags<x64::MAP>{x64::MAP::PRIVATE, x64::MAP::ANONYMOUS});
+        u64 heapBase = mmu->mmap(desiredHeapBase, heapSize, BitFlags<x64::PROT>{x64::PROT::READ, x64::PROT::WRITE}, BitFlags<x64::MAP>{x64::MAP::PRIVATE, x64::MAP::ANONYMOUS, x64::MAP::FIXED});
         mmu->setRegionName(heapBase, "heap");
 
         return stackBase + stackSize;

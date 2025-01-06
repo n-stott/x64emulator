@@ -1,6 +1,7 @@
 #ifndef FS_H
 #define FS_H
 
+#include "kernel/fs/ioctl.h"
 #include "kernel/utils/buffer.h"
 #include "kernel/utils/erroror.h"
 #include "bitflags.h"
@@ -135,16 +136,31 @@ namespace kernel {
 
         ErrnoOrBuffer getdents64(FD fd, size_t count);
         int fcntl(FD fd, int cmd, int arg);
-        ErrnoOrBuffer ioctl(FD fd, unsigned long request, const Buffer& buffer);
-        ErrnoOrBuffer ioctlWithBufferSizeGuess(FD fd, unsigned long request, const Buffer& buffer);
+
+        ErrnoOrBuffer ioctl(FD fd, Ioctl request, const Buffer& buffer);
 
         int flock(FD fd, int operation);
 
         int fallocate(FD fd, int mode, off_t offset, off_t len);
         int ftruncate(FD fd, off_t length);
 
+        enum class EpollEventType : u32 {
+            NONE = 0x0,
+            CAN_READ = 0x1,
+            CAN_WRITE = 0x2,
+            HANGUP = 0x4,
+        };
+
+        struct EpollEvent {
+            BitFlags<EpollEventType> events;
+            u64 data;
+        };
+
         FD eventfd2(unsigned int initval, int flags);
         FD epoll_create1(int flags);
+        int epoll_ctl(FD epfd, int op, FD fd, BitFlags<EpollEventType> events, u64 data);
+        int epollWaitImmediate(FD epfd, std::vector<EpollEvent>* events);
+        void doEpollWait(FD epfd, std::vector<EpollEvent>* events);
 
         FD socket(int domain, int type, int protocol);
         int connect(FD sockfd, const Buffer& buffer);

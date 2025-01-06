@@ -1,23 +1,19 @@
 #include "kernel/fs/event.h"
+#include "kernel/fs/openfiledescription.h"
 #include "verify.h"
 #include <sys/errno.h>
-#include <sys/eventfd.h>
 #include <sys/poll.h>
 
 namespace kernel {
 
     std::unique_ptr<Event> Event::tryCreate(FS* fs, unsigned int initval, int flags) {
-        int fd = ::eventfd(initval, flags);
-        if(fd < 0) return {};
-        return std::unique_ptr<Event>(new Event(fs, initval, flags, fd));
+        return std::unique_ptr<Event>(new Event(fs, initval, flags));
     }
 
-    Event::Event(FS* fs, unsigned int initval, int flags, int hostFd) :
+    Event::Event(FS* fs, unsigned int initval, int flags) :
             File(fs),
             counter_(initval),
-            flags_(flags),
-            hostFd_(hostFd) {
-        (void)counter_;
+            flags_(flags) {
         (void)flags_;
     }
 
@@ -26,30 +22,28 @@ namespace kernel {
     }
 
     bool Event::canRead() const {
-        struct pollfd pfd;
-        pfd.fd = hostFd_;
-        pfd.events = POLLIN;
-        pfd.revents = 0;
-        int timeout = 0; // return immediately
-        int ret = ::poll(&pfd, 1, timeout);
-        if(ret < 0) return false;
-        return !!(pfd.revents & POLLIN);
+        return counter_ > 0;
     }
 
     bool Event::canWrite() const {
-        struct pollfd pfd;
-        pfd.fd = hostFd_;
-        pfd.events = POLLOUT;
-        pfd.revents = 0;
-        int timeout = 0; // return immediately
-        int ret = ::poll(&pfd, 1, timeout);
-        if(ret < 0) return false;
-        return !!(pfd.revents & POLLOUT);
+        return counter_ < (u64)(-2);
     }
     
-    ErrnoOrBuffer Event::read(OpenFileDescription&, size_t) {
-        verify(false, "Event::read not implemented");
-        return ErrnoOrBuffer(-ENOTSUP);
+    ErrnoOrBuffer Event::read(OpenFileDescription& openFileDescription, size_t size) {
+        if(size < 8) return ErrnoOrBuffer(-EINVAL);
+        if(counter_ == 0) {
+            if(openFileDescription.statusFlags().test(FS::StatusFlags::NONBLOCK)) {
+                return ErrnoOrBuffer(-EAGAIN);
+            } else {
+                verify(false, "Blocking is Event::read not supported");
+                return ErrnoOrBuffer(-ENOTSUP);
+            }
+        } else {
+            Buffer buffer(counter_);
+            verify(buffer.size() == 8);
+            counter_ = 0;
+            return ErrnoOrBuffer(std::move(buffer));
+        }
     }
     
     ssize_t Event::write(OpenFileDescription&, const u8* buf, size_t size) {
@@ -60,6 +54,10 @@ namespace kernel {
         verify(value < (u64)(-2) - counter_);
         counter_ += value;
         return sizeof(value);
+    }
+
+    void Event::advanceInternalOffset(off_t) {
+        // nothing to do
     }
 
     off_t Event::lseek(OpenFileDescription&, off_t, int) {
@@ -85,8 +83,8 @@ namespace kernel {
         return -ENOTSUP;
     }
 
-    ErrnoOrBuffer Event::ioctl(unsigned long request, const Buffer&) {
-        verify(false, fmt::format("ioctl(request={}) not implemented on event", request));
+    ErrnoOrBuffer Event::ioctl(OpenFileDescription&, Ioctl request, const Buffer&) {
+        verify(false, fmt::format("ioctl(request={}) not implemented on event", (int)request));
         return ErrnoOrBuffer(-ENOTSUP);
     }
 

@@ -49,6 +49,7 @@ namespace kernel {
             ErrnoOrBuffer errnoOrBuffer = file_->read(*this, count);
             errnoOrBuffer.errorOrWith<int>([&](const Buffer& buf) {
                 offset_ += buf.size();
+                file_->advanceInternalOffset(buf.size());
                 return 0;
             });
             return errnoOrBuffer;
@@ -58,6 +59,7 @@ namespace kernel {
             ssize_t nbytes = file_->write(*this, buf, count);
             if(nbytes < 0) return nbytes;
             offset_ += nbytes;
+            file_->advanceInternalOffset(nbytes);
             return nbytes;
         }
 
@@ -83,6 +85,8 @@ namespace kernel {
             offset_ = newoffset;
             return newoffset;
         }
+
+        ErrnoOrBuffer ioctl(Ioctl request, const Buffer& buffer);
 
         std::string toString() const {
             return file_->className();

@@ -167,6 +167,8 @@ namespace kernel {
         int sched_yield();
         // 0x19
         x64::Ptr mremap(x64::Ptr old_address, size_t old_size, size_t new_size, int flags, x64::Ptr new_address);
+        // 0x1b
+        int mincore(x64::Ptr addr, size_t length, x64::Ptr8 vec);
         // 0x1c
         int madvise(x64::Ptr addr, size_t length, int advice);
         // 0x1d
@@ -195,6 +197,8 @@ namespace kernel {
         int shutdown(int sockfd, int how);
         // 0x31
         int bind(int sockfd, x64::Ptr addr, socklen_t addrlen);
+        // 0x32
+        int listen(int sockfd, int backlog);
         // 0x33
         int getsockname(int sockfd, x64::Ptr addr, x64::Ptr32 addrlen);
         // 0x34
@@ -239,6 +243,8 @@ namespace kernel {
         int gettimeofday(x64::Ptr tv, x64::Ptr tz);
         // 0x63
         int sysinfo(x64::Ptr info);
+        // 0x64
+        clock_t times(x64::Ptr buf);
         // 0x66
         int getuid();
         // 0x68
@@ -307,6 +313,10 @@ namespace kernel {
         int clock_nanosleep(clockid_t clockid, int flags, x64::Ptr request, x64::Ptr remain);
         // 0xe7
         u64 exit_group(int status);
+        // 0xe8
+        int epoll_wait(int epfd, x64::Ptr events, int maxevents, int timeout);
+        // 0xe9
+        int epoll_ctl(int epfd, int op, int fd, x64::Ptr event);
         // 0xea
         int tgkill(int tgid, int tid, int sig);
         // 0xed

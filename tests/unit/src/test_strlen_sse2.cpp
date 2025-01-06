@@ -56,12 +56,13 @@ int main() {
         mmu.copyToMmu(Ptr8{dataPage}, (const u8*)string.data(), string.size());
 
         emulator::VM vm(mmu, kernel);
-        vm.setLogInstructions(true);
         kernel::Thread mainThread(0, 0);
         mainThread.savedCpuState().regs.rip() = execPage;
         mainThread.savedCpuState().regs.set(R64::RDI, dataPage);
         mainThread.tickInfo().setSlice(0, 15);
-        vm.execute(&mainThread);
+        VerificationScope::run([&]() {
+            vm.execute(&mainThread);
+        }, []() { });
         length = mainThread.savedCpuState().regs.get(R64::RAX);
     }, [&]() {
         errorEncountered = true;

@@ -1,5 +1,6 @@
 #include "kernel/fs/epoll.h"
 #include "verify.h"
+#include <algorithm>
 #include <sys/errno.h>
 
 namespace kernel {
@@ -41,9 +42,43 @@ namespace kernel {
         return -ENOTSUP;
     }
 
-    ErrnoOrBuffer Epoll::ioctl(unsigned long request, const Buffer&) {
-        verify(false, fmt::format("ioctl(request={}) not implemented on epoll", request));
+    ErrnoOrBuffer Epoll::ioctl(OpenFileDescription&, Ioctl request, const Buffer&) {
+        verify(false, fmt::format("ioctl(request={}) not implemented on epoll", (int)request));
         return ErrnoOrBuffer(-ENOTSUP);
     }
+
+
+    ErrnoOr<void> Epoll::addEntry(i32 fd, u32 event, u64 data) {
+        verify(std::none_of(interestList_.begin(), interestList_.end(), [&](const Entry& entry) {
+            return entry.fd == fd;
+        }), "Epoll::addEntry: fd already exists in interest list");
+        interestList_.push_back(Entry{
+            fd,
+            event,
+            data,
+        });
+        return ErrnoOr<void>({});
+    }
+
+    ErrnoOr<void> Epoll::changeEntry(i32 fd, u32 event, u64 data) {
+        auto it = std::find_if(interestList_.begin(), interestList_.end(), [&](const Entry& entry) {
+            return entry.fd == fd;
+        });
+        verify(it != interestList_.end(), "Epoll:;changeEntry: fd not present in interest list");
+        it->event = event;
+        it->data = data;
+        return ErrnoOr<void>({});
+    }
+
+    ErrnoOr<void> Epoll::deleteEntry(i32 fd) {
+        verify(std::any_of(interestList_.begin(), interestList_.end(), [&](const Entry& entry) {
+            return entry.fd == fd;
+        }), "Epoll::deleteEntry: fd not present in interest list");
+        interestList_.erase(std::remove_if(interestList_.begin(), interestList_.end(), [&](const Entry& entry) {
+            return entry.fd == fd;
+        }), interestList_.end());
+        return ErrnoOr<void>({});
+    }
+
 
 }
