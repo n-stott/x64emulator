@@ -199,20 +199,11 @@ namespace emulator {
     }
 
     void VM::log(size_t ticks, const x64::X64Instruction& instruction) const {
-        std::string eflags = fmt::format("flags = [{}{}{}{}{}]", (cpu_.flags_.carry ? 'C' : ' '),
-                                                            (cpu_.flags_.zero ? 'Z' : ' '), 
-                                                            (cpu_.flags_.overflow ? 'O' : ' '), 
-                                                            (cpu_.flags_.sign ? 'S' : ' '),
-                                                            (cpu_.flags_.parity() ? 'P' : ' '));
-        std::string registerDump = fmt::format( "rip={:0>8x} "
-                                                "rax={:0>8x} rbx={:0>8x} rcx={:0>8x} rdx={:0>8x} "
-                                                "rsi={:0>8x} rdi={:0>8x} rbp={:0>8x} rsp={:0>8x} ",
-                                                cpu_.regs_.rip(),
-                                                cpu_.regs_.get(x64::R64::RAX), cpu_.regs_.get(x64::R64::RBX), cpu_.regs_.get(x64::R64::RCX), cpu_.regs_.get(x64::R64::RDX),
-                                                cpu_.regs_.get(x64::R64::RSI), cpu_.regs_.get(x64::R64::RDI), cpu_.regs_.get(x64::R64::RBP), cpu_.regs_.get(x64::R64::RSP));
+        std::string eflags = cpu_.flags_.toString();
+        std::string registerDump = cpu_.regs_.toString(true, false, false);
         std::string indent = fmt::format("{:{}}", "", 2*currentThread_->callstack().size());
         std::string mnemonic = fmt::format("{}|{}", indent, instruction.toString());
-        fmt::print(stderr, "{:10} {:55}{:20} {}\n", ticks, mnemonic, eflags, registerDump);
+        fmt::print(stderr, "{:10} {:55} flags = {:20} {}\n", ticks, mnemonic, eflags, registerDump);
         if(instruction.isCall()) {
             fmt::print(stderr, "{:10} {}[call {}({:#x}, {:#x}, {:#x}, {:#x}, {:#x}, {:#x})]\n", ticks, indent, callName(instruction),
                 cpu_.regs_.get(x64::R64::RDI),
@@ -223,27 +214,8 @@ namespace emulator {
                 cpu_.regs_.get(x64::R64::R9));
         }
         if(instruction.isX87()) {
-            std::string x87dump = fmt::format( "st0={} st1={} st2={} st3={} "
-                                                    "st4={} st5={} st6={} st7={} top={}",
-                                                    f80::toLongDouble(cpu_.x87fpu_.st(x64::ST::ST0)),
-                                                    f80::toLongDouble(cpu_.x87fpu_.st(x64::ST::ST1)),
-                                                    f80::toLongDouble(cpu_.x87fpu_.st(x64::ST::ST2)),
-                                                    f80::toLongDouble(cpu_.x87fpu_.st(x64::ST::ST3)),
-                                                    f80::toLongDouble(cpu_.x87fpu_.st(x64::ST::ST4)),
-                                                    f80::toLongDouble(cpu_.x87fpu_.st(x64::ST::ST5)),
-                                                    f80::toLongDouble(cpu_.x87fpu_.st(x64::ST::ST6)),
-                                                    f80::toLongDouble(cpu_.x87fpu_.st(x64::ST::ST7)),
-                                                    (int)cpu_.x87fpu_.top()
-                                                    );
+            std::string x87dump = cpu_.x87fpu_.toString();
             fmt::print(stderr, "{:86} {}\n", "", x87dump);
-        }
-        if(instruction.isSSE()) {
-            std::string sseDump = fmt::format( "xmm0={:16x} {:16x} xmm1={:16x} {:16x} xmm2={:16x} {:16x} xmm3={:16x} {:16x}",
-                                                cpu_.get(x64::XMM::XMM0).hi, cpu_.get(x64::XMM::XMM0).lo,
-                                                cpu_.get(x64::XMM::XMM1).hi, cpu_.get(x64::XMM::XMM1).lo,
-                                                cpu_.get(x64::XMM::XMM2).hi, cpu_.get(x64::XMM::XMM2).lo,
-                                                cpu_.get(x64::XMM::XMM3).hi, cpu_.get(x64::XMM::XMM3).lo);
-            fmt::print(stderr, "{:86} {}\n", "", sseDump);
         }
     }
 

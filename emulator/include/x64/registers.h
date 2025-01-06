@@ -4,6 +4,7 @@
 #include "x64/types.h"
 #include <array>
 #include <cassert>
+#include <string>
 
 namespace x64 {
 
@@ -129,6 +130,8 @@ namespace x64 {
                     + enc.scale * get(enc.index)
                     + (u64)enc.displacement;
         }
+
+        std::string toString(bool gprs, bool mmx, bool sse) const;
 
     };
 

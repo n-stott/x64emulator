@@ -20,6 +20,7 @@ add_library(x64cpu STATIC
     src/host/hostinstructions.cpp
     src/x64/checkedcpuimpl.cpp
     src/x64/cpuimpl.cpp
+    src/x64/flags.cpp
     src/x64/nativecpuimpl.cpp
     src/x64/simd.cpp
     src/x64/x87.cpp
@@ -34,6 +35,13 @@ elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
 endif()
 target_compile_options(x64cpu PUBLIC -frounding-math)
 target_include_directories(x64cpu PUBLIC include)
+target_link_libraries(x64cpu PUBLIC fmt::fmt-header-only)
+target_compile_options(x64cpu PUBLIC
+    -DFMT_HEADER_ONLY
+    -DFMT_USE_FLOAT=0
+    -DFMT_USE_DOUBLE=0
+    -DFMT_USE_LONG_DOUBLE=0
+)
 
 
 add_library(x64emulator STATIC
@@ -72,6 +80,7 @@ add_library(x64emulator STATIC
     src/x64/cpu.cpp
     src/x64/cpuimpl.cpp
     src/x64/checkedcpuimpl.cpp
+    src/x64/flags.cpp
     src/x64/nativecpuimpl.cpp
     src/x64/mmu.cpp
     src/x64/registers.cpp

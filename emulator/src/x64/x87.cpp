@@ -1,4 +1,5 @@
 #include "x64/x87.h"
+#include <fmt/format.h>
 
 namespace x64 {
 
@@ -80,6 +81,20 @@ namespace x64 {
 
     X87Tag X87Tag::fromWord(u16 tw) {
         return X87Tag{tw};
+    }
+
+    std::string X87Fpu::toString() const {
+        return fmt::format( "st0={} st1={} st2={} st3={} "
+                            "st4={} st5={} st6={} st7={} top={}",
+                            f80::toLongDouble(st(x64::ST::ST0)),
+                            f80::toLongDouble(st(x64::ST::ST1)),
+                            f80::toLongDouble(st(x64::ST::ST2)),
+                            f80::toLongDouble(st(x64::ST::ST3)),
+                            f80::toLongDouble(st(x64::ST::ST4)),
+                            f80::toLongDouble(st(x64::ST::ST5)),
+                            f80::toLongDouble(st(x64::ST::ST6)),
+                            f80::toLongDouble(st(x64::ST::ST7)),
+                            (int)top());
     }
 
 }

@@ -3,6 +3,7 @@
 
 #include "x64/types.h"
 #include <optional>
+#include <string>
 
 namespace x64 {
 
@@ -55,6 +56,8 @@ namespace x64 {
             rflags |= (overflow ? OVERFLOW_MASK : 0);
             return rflags;
         }
+
+        std::string toString() const;
 
     private:
         mutable std::optional<u8> awaitingParity_;
