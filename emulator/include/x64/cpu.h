@@ -8,14 +8,6 @@
 #include "x64/instructions/x64instruction.h"
 #include <vector>
 
-namespace emulator {
-    class VM;
-}
-
-namespace kernel {
-    class Sys;
-}
-
 namespace x64 {
 
     class Mmu;
@@ -123,8 +115,6 @@ namespace x64 {
         void load(const State&);
         
     private:
-        friend class kernel::Sys;
-
         Mmu* mmu_;
         Flags flags_;
         Registers regs_;

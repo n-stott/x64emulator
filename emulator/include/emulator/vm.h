@@ -56,9 +56,6 @@ namespace emulator {
         };
 
     private:
-        friend class x64::Cpu;
-        friend class kernel::Sys;
-
         void log(size_t ticks, const x64::X64Instruction& instruction) const;
 
         struct BBlock;
@@ -122,8 +119,6 @@ namespace emulator {
 
         mutable SymbolProvider symbolProvider_;
         mutable std::unordered_map<u64, std::string> functionNameCache_;
-
-        friend class MunmapCallback;
     };
 
 }
