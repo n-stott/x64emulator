@@ -44,6 +44,23 @@ namespace x64 {
         return segmentBase_[(u8)segment];
     }
 
+    void Cpu::save(Cpu::State* state) const {
+        if(!state) return;
+        state->flags = flags_;
+        state->regs = regs_;
+        state->x87fpu = x87fpu_;
+        state->mxcsr = mxcsr_;
+        state->segmentBase = segmentBase_;
+    }
+
+    void Cpu::load(const State& state) {
+        flags_ = state.flags;
+        regs_ = state.regs;
+        x87fpu_ = state.x87fpu;
+        mxcsr_ = state.mxcsr;
+        segmentBase_ = state.segmentBase;
+    }
+
     template<typename T>
     T Cpu::get(Imm value) const {
         // assert((u64)(T)value.immediate == value.immediate);

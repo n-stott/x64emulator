@@ -63,9 +63,66 @@ namespace x64 {
         void set(MMX reg, u64 value) { regs_.set(reg, value); }
         void set(XMM reg, Xmm value) { regs_.set(reg, value); }
 
+
+        u8  get(Ptr8 ptr) const;
+        u16 get(Ptr16 ptr) const;
+        u32 get(Ptr32 ptr) const;
+        u64 get(Ptr64 ptr) const;
+        f80 get(Ptr80 ptr) const;
+        Xmm get(Ptr128 ptr) const;
+        Xmm getUnaligned(Ptr128 ptr) const;
+
+        void set(Ptr8 ptr, u8 value);
+        void set(Ptr16 ptr, u16 value);
+        void set(Ptr32 ptr, u32 value);
+        void set(Ptr64 ptr, u64 value);
+        void set(Ptr80 ptr, f80 value);
+        void set(Ptr128 ptr, Xmm value);
+        void setUnaligned(Ptr128 ptr, Xmm value);
+
+        template<Size size>
+        inline U<size> get(const RM<size>& rm) const {
+            return rm.isReg ? get(rm.reg) : get(resolve(rm.mem));
+        }
+        
+        template<Size size>
+        inline void set(const RM<size>& rm, U<size> value) {
+            return rm.isReg ? set(rm.reg, value) : set(resolve(rm.mem), value);
+        }
+
+        inline u64 get(const MMXM32& rm) const {
+            return rm.isReg ? get(rm.reg) : get(resolve(rm.mem));
+        }
+
+        inline u64 get(const MMXM64& rm) const {
+            return rm.isReg ? get(rm.reg) : get(resolve(rm.mem));
+        }
+        
+        inline void set(const MMXM64& rm, u64 value) {
+            return rm.isReg ? set(rm.reg, value) : set(resolve(rm.mem), value);
+        }
+
+        void push8(u8 value);
+        void push16(u16 value);
+        void push32(u32 value);
+        void push64(u64 value);
+        u8 pop8();
+        u16 pop16();
+        u32 pop32();
+        u64 pop64();
+
+        struct State {
+            Flags flags;
+            Registers regs;
+            X87Fpu x87fpu;
+            SimdControlStatus mxcsr;
+            std::array<u64, 8> segmentBase {{ 0, 0, 0, 0, 0, 0, 0, 0 }};
+        };
+
+        void save(State*) const;
+        void load(const State&);
         
     private:
-        friend class emulator::VM;
         friend class kernel::Sys;
 
         Mmu* mmu_;
@@ -126,14 +183,6 @@ namespace x64 {
         template<typename T>
         T  get(Imm value) const;
 
-        u8  get(Ptr8 ptr) const;
-        u16 get(Ptr16 ptr) const;
-        u32 get(Ptr32 ptr) const;
-        u64 get(Ptr64 ptr) const;
-        f80 get(Ptr80 ptr) const;
-        Xmm get(Ptr128 ptr) const;
-        Xmm getUnaligned(Ptr128 ptr) const;
-
         u32 resolve(Encoding32 addr) const { return regs_.resolve(addr); }
         u64 resolve(Encoding64 addr) const { return regs_.resolve(addr); }
 
@@ -141,45 +190,6 @@ namespace x64 {
         SPtr<size> resolve(M<size> addr) const {
             return SPtr<size>{getSegmentBase(addr.segment) + resolve(addr.encoding)};
         }
-
-        void set(Ptr8 ptr, u8 value);
-        void set(Ptr16 ptr, u16 value);
-        void set(Ptr32 ptr, u32 value);
-        void set(Ptr64 ptr, u64 value);
-        void set(Ptr80 ptr, f80 value);
-        void set(Ptr128 ptr, Xmm value);
-        void setUnaligned(Ptr128 ptr, Xmm value);
-
-        template<Size size>
-        inline U<size> get(const RM<size>& rm) const {
-            return rm.isReg ? get(rm.reg) : get(resolve(rm.mem));
-        }
-        
-        template<Size size>
-        inline void set(const RM<size>& rm, U<size> value) {
-            return rm.isReg ? set(rm.reg, value) : set(resolve(rm.mem), value);
-        }
-
-        inline u64 get(const MMXM32& rm) const {
-            return rm.isReg ? get(rm.reg) : get(resolve(rm.mem));
-        }
-
-        inline u64 get(const MMXM64& rm) const {
-            return rm.isReg ? get(rm.reg) : get(resolve(rm.mem));
-        }
-        
-        inline void set(const MMXM64& rm, u64 value) {
-            return rm.isReg ? set(rm.reg, value) : set(resolve(rm.mem), value);
-        }
-
-        void push8(u8 value);
-        void push16(u16 value);
-        void push32(u32 value);
-        void push64(u64 value);
-        u8 pop8();
-        u16 pop16();
-        u32 pop32();
-        u64 pop64();
 
         template<typename Dst>
         void execSet(Cond cond, Dst dst);
