@@ -28,7 +28,8 @@ namespace kernel {
     void Scheduler::runOnWorkerThread(int id) {
         (void)id;
         bool didShowCrashMessage = false;
-        emulator::VM vm(mmu_, kernel_);
+        x64::Cpu cpu(mmu_);
+        emulator::VM vm(cpu, mmu_, kernel_);
         while(!emulator::signal_interrupt) {
             try {
                 Thread* threadToRun = nullptr;

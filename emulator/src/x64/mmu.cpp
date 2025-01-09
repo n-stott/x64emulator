@@ -126,7 +126,6 @@ namespace x64 {
             }
         }
         for(Region* regionPtr : regionsToRemove) {
-            verify(!regionPtr->prot().test(PROT::EXEC), "Cannot unmap exec region");
             [[maybe_unused]] auto regionLeftToDie = takeRegion(regionPtr->base(), regionPtr->size());
         }
         tryMergeRegions();

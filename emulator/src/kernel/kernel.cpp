@@ -226,7 +226,8 @@ namespace kernel {
     Thread* Kernel::exec(const std::string& programFilePath,
                          const std::vector<std::string>& arguments,
                          const std::vector<std::string>& environmentVariables) {
-        emulator::VM vm(mmu_, *this);
+        x64::Cpu cpu(mmu_);
+        emulator::VM vm(cpu, mmu_, *this);
         Auxiliary aux;
 
         auto entrypointOrInterpreterPath = loadElf(&mmu_, &aux, programFilePath, true);

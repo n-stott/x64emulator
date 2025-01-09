@@ -10,7 +10,7 @@
 
 namespace emulator {
 
-    VM::VM(x64::Mmu& mmu, kernel::Kernel& kernel) : mmu_(mmu), kernel_(kernel), cpu_(this, &mmu_) { }
+    VM::VM(x64::Cpu& cpu, x64::Mmu& mmu, kernel::Kernel& kernel) : cpu_(cpu), mmu_(mmu), kernel_(kernel) { }
 
     VM::~VM() {
 #ifdef VM_BASICBLOCK_TELEMETRY
@@ -69,11 +69,13 @@ namespace emulator {
     void VM::syncThread() {
         if(!!currentThread_) {
             kernel::Thread::SavedCpuState& state = currentThread_->savedCpuState();
-            state.flags = cpu_.flags_;
-            state.regs = cpu_.regs_;
-            state.x87fpu = cpu_.x87fpu_;
-            state.mxcsr = cpu_.mxcsr_;
-            state.fsBase = cpu_.getSegmentBase(x64::Segment::FS);
+            x64::Cpu::State cpuState;
+            cpu_.save(&cpuState);
+            state.flags = cpuState.flags;
+            state.regs = cpuState.regs;
+            state.x87fpu = cpuState.x87fpu;
+            state.mxcsr = cpuState.mxcsr;
+            state.fsBase = cpuState.segmentBase[(u8)x64::Segment::FS];
         }
     }
 
@@ -89,18 +91,19 @@ namespace emulator {
             // we now install the new thread
             currentThread_ = newThread;
             kernel::Thread::SavedCpuState& currentThreadState = currentThread_->savedCpuState();
-            cpu_.flags_ = currentThreadState.flags;
-            cpu_.regs_ = currentThreadState.regs;
-            cpu_.x87fpu_ = currentThreadState.x87fpu;
-            cpu_.mxcsr_ = currentThreadState.mxcsr;
-            cpu_.setSegmentBase(x64::Segment::FS, currentThreadState.fsBase);
+
+            x64::Cpu::State cpuState;
+            cpu_.save(&cpuState);
+            cpuState.flags = currentThreadState.flags;
+            cpuState.regs = currentThreadState.regs;
+            cpuState.x87fpu = currentThreadState.x87fpu;
+            cpuState.mxcsr = currentThreadState.mxcsr;
+            cpuState.segmentBase[(u8)x64::Segment::FS] = currentThreadState.fsBase;
+            cpu_.load(cpuState);
         } else {
             currentThread_ = nullptr;
-            cpu_.flags_ = x64::Flags{};
-            cpu_.regs_ = x64::Registers{};
-            cpu_.x87fpu_ = x64::X87Fpu{};
-            cpu_.mxcsr_ = x64::SimdControlStatus{};
-            cpu_.setSegmentBase(x64::Segment::FS, (u64)0);
+            x64::Cpu::State cpuState {};
+            cpu_.load(cpuState);
         }
     }
 
@@ -130,7 +133,7 @@ namespace emulator {
             bool foundNextBlock = false;
             for(size_t i = 0; i < currentBasicBlock->cachedDestinations.size(); ++i) {
                 if(!currentBasicBlock->cachedDestinations[i]) continue;
-                if(currentBasicBlock->cachedDestinations[i]->start() != cpu_.regs_.rip()) continue;
+                if(currentBasicBlock->cachedDestinations[i]->start() != cpu_.get(x64::R64::RIP)) continue;
                 nextBasicBlock = currentBasicBlock->cachedDestinations[i];
                 std::swap(currentBasicBlock->cachedDestinations[i], currentBasicBlock->cachedDestinations[0]);
 #ifdef VM_BASICBLOCK_TELEMETRY
@@ -148,6 +151,7 @@ namespace emulator {
             }
         };
 
+        CpuCallback callback(&cpu_, this);
         while(!tickInfo.isStopAsked()) {
             verify(!signal_interrupt);
             std::swap(currentBasicBlock, nextBasicBlock);
@@ -162,7 +166,7 @@ namespace emulator {
     }
 
     VM::BBlock* VM::fetchBasicBlock() {
-        u64 startAddress = cpu_.regs_.rip();
+        u64 startAddress = cpu_.get(x64::R64::RIP);
         auto it = basicBlocks_.find(startAddress);
         if(it != basicBlocks_.end()) {
             return it->second.get();
@@ -199,22 +203,24 @@ namespace emulator {
     }
 
     void VM::log(size_t ticks, const x64::X64Instruction& instruction) const {
-        std::string eflags = cpu_.flags_.toString();
-        std::string registerDump = cpu_.regs_.toString(true, false, false);
+        x64::Cpu::State state;
+        cpu_.save(&state);
+        std::string eflags = state.flags.toString();
+        std::string registerDump = state.regs.toString(true, false, false);
         std::string indent = fmt::format("{:{}}", "", 2*currentThread_->callstack().size());
         std::string mnemonic = fmt::format("{}|{}", indent, instruction.toString());
         fmt::print(stderr, "{:10} {:55} flags = {:20} {}\n", ticks, mnemonic, eflags, registerDump);
         if(instruction.isCall()) {
             fmt::print(stderr, "{:10} {}[call {}({:#x}, {:#x}, {:#x}, {:#x}, {:#x}, {:#x})]\n", ticks, indent, callName(instruction),
-                cpu_.regs_.get(x64::R64::RDI),
-                cpu_.regs_.get(x64::R64::RSI),
-                cpu_.regs_.get(x64::R64::RDX),
-                cpu_.regs_.get(x64::R64::RCX),
-                cpu_.regs_.get(x64::R64::R8),
-                cpu_.regs_.get(x64::R64::R9));
+                cpu_.get(x64::R64::RDI),
+                cpu_.get(x64::R64::RSI),
+                cpu_.get(x64::R64::RDX),
+                cpu_.get(x64::R64::RCX),
+                cpu_.get(x64::R64::R8),
+                cpu_.get(x64::R64::R9));
         }
         if(instruction.isX87()) {
-            std::string x87dump = cpu_.x87fpu_.toString();
+            std::string x87dump = state.x87fpu.toString();
             fmt::print(stderr, "{:86} {}\n", "", x87dump);
         }
     }
@@ -382,8 +388,8 @@ namespace emulator {
         // NOLINTBEGIN(clang-analyzer-core.CallAndMessage)
         const x64::X64Instruction& jmpInsn = pos.section->instructions[pos.index];
         if(jmpInsn.insn() == x64::Insn::JMP_RM64) {
-            x64::Cpu cpu(const_cast<VM*>(this), &mmu_);
-            cpu.regs_.rip() = jmpInsn.nextAddress(); // add instruction size offset
+            x64::Cpu cpu(mmu_);
+            cpu.set(x64::R64::RIP, jmpInsn.nextAddress()); // add instruction size offset
             x64::RM64 rm64 = jmpInsn.op0<x64::RM64>();
             auto dst = cpu.get(rm64);
             auto symbolsAtAddress = symbolProvider_.lookupSymbol(dst);
@@ -475,6 +481,26 @@ namespace emulator {
             return (base <= section->begin && section->begin < base + length)
                 || (base < section->end && section->end <= base + length);
         }), vm_->executableSections_.end());
+    }
+
+    VM::CpuCallback::CpuCallback(x64::Cpu* cpu, VM* vm) : cpu_(cpu), vm_(vm) {
+        if(!!cpu_) cpu_->addCallback(this);
+    }
+
+    VM::CpuCallback::~CpuCallback() {
+        if(!!cpu_) cpu_->removeCallback(this);
+    }
+
+    void VM::CpuCallback::onSyscall() {
+        if(!!vm_) vm_->enterSyscall();
+    }
+
+    void VM::CpuCallback::onCall(u64 address) {
+        if(!!vm_) vm_->notifyCall(address);
+    }
+
+    void VM::CpuCallback::onRet() {
+        if(!!vm_) vm_->notifyRet();
     }
 
     void VM::ExecutableSection::trim() {

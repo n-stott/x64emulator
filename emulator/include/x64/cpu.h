@@ -8,37 +8,121 @@
 #include "x64/instructions/x64instruction.h"
 #include <vector>
 
-namespace emulator {
-    class VM;
-}
-
-namespace kernel {
-    class Sys;
-    class Thread;
-}
-
 namespace x64 {
 
     class Mmu;
 
     class Cpu {
     public:
-        Cpu(emulator::VM* vm, Mmu* mmu);
+        explicit Cpu(Mmu& mmu);
+
+        class Callback {
+        public:
+            virtual ~Callback() = default;
+            virtual void onSyscall() = 0;
+            virtual void onCall(u64 address) = 0;
+            virtual void onRet() = 0;
+        };
+
+        void addCallback(Callback* callback);
+        void removeCallback(Callback* callback);
+
+        void exec(const X64Instruction&);
+
+        using ExecPtr = void(*)(Cpu&, const X64Instruction&);
+        struct BasicBlock {
+            std::vector<std::pair<X64Instruction, ExecPtr>> instructions;
+        };
+
+        BasicBlock createBasicBlock(const X64Instruction*, size_t) const;
+
+        void exec(const BasicBlock&);
         
         void setSegmentBase(Segment segment, u64 base);
         u64 getSegmentBase(Segment segment) const;
 
-    private:
-        friend class emulator::VM;
-        friend class kernel::Sys;
+        u8  get(R8 reg) const  { return regs_.get(reg); }
+        u16 get(R16 reg) const { return regs_.get(reg); }
+        u32 get(R32 reg) const { return regs_.get(reg); }
+        u64 get(R64 reg) const { return regs_.get(reg); }
+        u64 get(MMX reg) const { return regs_.get(reg); }
+        Xmm get(XMM reg) const { return regs_.get(reg); }
+
+        void set(R8 reg, u8 value) { regs_.set(reg, value); }
+        void set(R16 reg, u16 value) { regs_.set(reg, value); }
+        void set(R32 reg, u32 value) { regs_.set(reg, value); }
+        void set(R64 reg, u64 value) { regs_.set(reg, value); }
+        void set(MMX reg, u64 value) { regs_.set(reg, value); }
+        void set(XMM reg, Xmm value) { regs_.set(reg, value); }
+
+
+        u8  get(Ptr8 ptr) const;
+        u16 get(Ptr16 ptr) const;
+        u32 get(Ptr32 ptr) const;
+        u64 get(Ptr64 ptr) const;
+        f80 get(Ptr80 ptr) const;
+        Xmm get(Ptr128 ptr) const;
+        Xmm getUnaligned(Ptr128 ptr) const;
+
+        void set(Ptr8 ptr, u8 value);
+        void set(Ptr16 ptr, u16 value);
+        void set(Ptr32 ptr, u32 value);
+        void set(Ptr64 ptr, u64 value);
+        void set(Ptr80 ptr, f80 value);
+        void set(Ptr128 ptr, Xmm value);
+        void setUnaligned(Ptr128 ptr, Xmm value);
+
+        template<Size size>
+        inline U<size> get(const RM<size>& rm) const {
+            return rm.isReg ? get(rm.reg) : get(resolve(rm.mem));
+        }
         
-        emulator::VM* vm_;
+        template<Size size>
+        inline void set(const RM<size>& rm, U<size> value) {
+            return rm.isReg ? set(rm.reg, value) : set(resolve(rm.mem), value);
+        }
+
+        inline u64 get(const MMXM32& rm) const {
+            return rm.isReg ? get(rm.reg) : get(resolve(rm.mem));
+        }
+
+        inline u64 get(const MMXM64& rm) const {
+            return rm.isReg ? get(rm.reg) : get(resolve(rm.mem));
+        }
+        
+        inline void set(const MMXM64& rm, u64 value) {
+            return rm.isReg ? set(rm.reg, value) : set(resolve(rm.mem), value);
+        }
+
+        void push8(u8 value);
+        void push16(u16 value);
+        void push32(u32 value);
+        void push64(u64 value);
+        u8 pop8();
+        u16 pop16();
+        u32 pop32();
+        u64 pop64();
+
+        struct State {
+            Flags flags;
+            Registers regs;
+            X87Fpu x87fpu;
+            SimdControlStatus mxcsr;
+            std::array<u64, 8> segmentBase {{ 0, 0, 0, 0, 0, 0, 0, 0 }};
+        };
+
+        void save(State*) const;
+        void load(const State&);
+        
+    private:
         Mmu* mmu_;
         Flags flags_;
         Registers regs_;
         X87Fpu x87fpu_;
         SimdControlStatus mxcsr_;
         std::array<u64, 8> segmentBase_ {{ 0, 0, 0, 0, 0, 0, 0, 0 }};
+
+        std::vector<Callback*> callbacks_;
 
         struct FPUState {
             u16 fcw;
@@ -86,23 +170,8 @@ namespace x64 {
         FPU_ROUNDING fpuRoundingMode() const;
         SIMD_ROUNDING simdRoundingMode() const;
 
-        u8  get(R8 reg) const  { return regs_.get(reg); }
-        u16 get(R16 reg) const { return regs_.get(reg); }
-        u32 get(R32 reg) const { return regs_.get(reg); }
-        u64 get(R64 reg) const { return regs_.get(reg); }
-        u64 get(MMX reg) const { return regs_.get(reg); }
-        Xmm get(XMM reg) const { return regs_.get(reg); }
-
         template<typename T>
         T  get(Imm value) const;
-
-        u8  get(Ptr8 ptr) const;
-        u16 get(Ptr16 ptr) const;
-        u32 get(Ptr32 ptr) const;
-        u64 get(Ptr64 ptr) const;
-        f80 get(Ptr80 ptr) const;
-        Xmm get(Ptr128 ptr) const;
-        Xmm getUnaligned(Ptr128 ptr) const;
 
         u32 resolve(Encoding32 addr) const { return regs_.resolve(addr); }
         u64 resolve(Encoding64 addr) const { return regs_.resolve(addr); }
@@ -111,52 +180,6 @@ namespace x64 {
         SPtr<size> resolve(M<size> addr) const {
             return SPtr<size>{getSegmentBase(addr.segment) + resolve(addr.encoding)};
         }
-
-        void set(R8 reg, u8 value) { regs_.set(reg, value); }
-        void set(R16 reg, u16 value) { regs_.set(reg, value); }
-        void set(R32 reg, u32 value) { regs_.set(reg, value); }
-        void set(R64 reg, u64 value) { regs_.set(reg, value); }
-        void set(MMX reg, u64 value) { regs_.set(reg, value); }
-        void set(XMM reg, Xmm value) { regs_.set(reg, value); }
-
-        void set(Ptr8 ptr, u8 value);
-        void set(Ptr16 ptr, u16 value);
-        void set(Ptr32 ptr, u32 value);
-        void set(Ptr64 ptr, u64 value);
-        void set(Ptr80 ptr, f80 value);
-        void set(Ptr128 ptr, Xmm value);
-        void setUnaligned(Ptr128 ptr, Xmm value);
-
-        template<Size size>
-        inline U<size> get(const RM<size>& rm) const {
-            return rm.isReg ? get(rm.reg) : get(resolve(rm.mem));
-        }
-        
-        template<Size size>
-        inline void set(const RM<size>& rm, U<size> value) {
-            return rm.isReg ? set(rm.reg, value) : set(resolve(rm.mem), value);
-        }
-
-        inline u64 get(const MMXM32& rm) const {
-            return rm.isReg ? get(rm.reg) : get(resolve(rm.mem));
-        }
-
-        inline u64 get(const MMXM64& rm) const {
-            return rm.isReg ? get(rm.reg) : get(resolve(rm.mem));
-        }
-        
-        inline void set(const MMXM64& rm, u64 value) {
-            return rm.isReg ? set(rm.reg, value) : set(resolve(rm.mem), value);
-        }
-
-        void push8(u8 value);
-        void push16(u16 value);
-        void push32(u32 value);
-        void push64(u64 value);
-        u8 pop8();
-        u16 pop16();
-        u32 pop32();
-        u64 pop64();
 
         template<typename Dst>
         void execSet(Cond cond, Dst dst);
@@ -178,21 +201,9 @@ namespace x64 {
         void execLockCmpxchg32Impl(Ptr32 dst, u32 src);
         void execLockCmpxchg64Impl(Ptr64 dst, u64 src);
 
-        using ExecPtr = void(*)(Cpu&, const X64Instruction&);
-
         static const std::array<ExecPtr, (size_t)Insn::UNKNOWN+1> execFunctions_;
 
     public:
-        void exec(const X64Instruction&);
-
-        struct BasicBlock {
-            std::vector<std::pair<X64Instruction, ExecPtr>> instructions;
-        };
-
-        BasicBlock createBasicBlock(const X64Instruction*, size_t) const;
-
-        void exec(const BasicBlock&);
-
         void execAddRM8RM8(const X64Instruction&);
         void execAddRM8Imm(const X64Instruction&);
         void execAddRM16RM16(const X64Instruction&);
