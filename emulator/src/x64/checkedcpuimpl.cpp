@@ -895,8 +895,8 @@ namespace x64 {
         return checkCall<u128>(&CpuImpl::pshufb128, &NativeCpuImpl::pshufb128, dst, src);
     }
 
-    u64 CheckedCpuImpl::pshufw(u64 dst, u8 order) {
-        return checkCall<u64>(&CpuImpl::pshufw, &NativeCpuImpl::pshufw, dst, order);
+    u64 CheckedCpuImpl::pshufw(u64 src, u8 order) {
+        return checkCall<u64>(&CpuImpl::pshufw, &NativeCpuImpl::pshufw, src, order);
     }
 
     u128 CheckedCpuImpl::pshuflw(u128 src, u8 order) {
