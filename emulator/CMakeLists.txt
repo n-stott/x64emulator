@@ -18,6 +18,7 @@ target_link_libraries(elf-reader PUBLIC fmt::fmt-header-only)
 
 add_library(x64cpu STATIC
     src/host/hostinstructions.cpp
+    src/host/hostmemory.cpp
     src/x64/checkedcpuimpl.cpp
     src/x64/cpu.cpp
     src/x64/cpuimpl.cpp
