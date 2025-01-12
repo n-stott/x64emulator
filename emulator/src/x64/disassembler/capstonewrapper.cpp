@@ -2672,9 +2672,12 @@ namespace x64 {
         assert(x86detail.op_count == 2);
         const cs_x86_op& dst = x86detail.operands[0];
         const cs_x86_op& src = x86detail.operands[1];
+        auto r32dst = asRegister32(dst);
         auto r64dst = asRegister64(dst);
         auto rssesrc = asRegister128(src);
         auto m32src = asMemory32(src);
+        if(r32dst && rssesrc) return X64Instruction::make<Insn::CVTSS2SI_R32_XMM>(insn.address, insn.size, r32dst.value(), rssesrc.value());
+        if(r32dst && m32src) return X64Instruction::make<Insn::CVTSS2SI_R32_M32>(insn.address, insn.size, r32dst.value(), m32src.value());
         if(r64dst && rssesrc) return X64Instruction::make<Insn::CVTSS2SI_R64_XMM>(insn.address, insn.size, r64dst.value(), rssesrc.value());
         if(r64dst && m32src) return X64Instruction::make<Insn::CVTSS2SI_R64_M32>(insn.address, insn.size, r64dst.value(), m32src.value());
         return make_failed(insn);

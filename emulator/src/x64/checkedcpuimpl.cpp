@@ -779,6 +779,10 @@ namespace x64 {
         return checkCall<u128>(&CpuImpl::cvtsd2ss, &NativeCpuImpl::cvtsd2ss, dst, src);
     }
 
+    u32 CheckedCpuImpl::cvtss2si32(u32 src, SIMD_ROUNDING rounding) {
+        return checkCall<u32>(&CpuImpl::cvtss2si32, &NativeCpuImpl::cvtss2si32, src, rounding);
+    }
+
     u64 CheckedCpuImpl::cvtss2si64(u32 src, SIMD_ROUNDING rounding) {
         return checkCall<u64>(&CpuImpl::cvtss2si64, &NativeCpuImpl::cvtss2si64, src, rounding);
     }

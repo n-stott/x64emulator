@@ -2,7 +2,13 @@
 
 namespace host {
     
-    i64 roundWithoutTruncation(f32 src) {
+    i32 roundWithoutTruncation32(f32 src) {
+        i32 res = 0;
+        asm volatile("cvtss2si %1, %0" : "+r"(res) : "m"(src));
+        return res;
+    }
+    
+    i64 roundWithoutTruncation64(f32 src) {
         i64 res = 0;
         asm volatile("cvtss2si %1, %0" : "+r"(res) : "m"(src));
         return res;

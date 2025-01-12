@@ -969,6 +969,13 @@ namespace x64 {
         return r;
     }
 
+    u32 CpuImpl::cvtss2si32(u32 src, SIMD_ROUNDING) {
+        float f;
+        std::memcpy(&f, &src, sizeof(f));
+        i32 rounded = F32::round32(f);
+        return (u32)rounded;
+    }
+
     u64 CpuImpl::cvtss2si64(u32 src, SIMD_ROUNDING) {
         float f;
         std::memcpy(&f, &src, sizeof(f));

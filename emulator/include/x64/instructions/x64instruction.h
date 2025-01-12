@@ -484,6 +484,8 @@ namespace x64 {
         CVTSS2SD_XMM_M32,
         CVTSD2SS_XMM_XMM,
         CVTSD2SS_XMM_M64,
+        CVTSS2SI_R32_XMM,
+        CVTSS2SI_R32_M32,
         CVTSS2SI_R64_XMM,
         CVTSS2SI_R64_M32,
         CVTSD2SI_R64_XMM,
