@@ -1052,10 +1052,24 @@ namespace x64 {
                 case SIMD_ROUNDING::DOWN:
                 case SIMD_ROUNDING::UP:
                 case SIMD_ROUNDING::ZERO:
-                    throw std::logic_error{"unimplemented case in cvttps2dq"};
+                    throw std::logic_error{"unimplemented case in cvtps2dq"};
             }
             return (i32)s;
         });
+    }
+
+    u128 CpuImpl::cvtpd2ps(u128 src, SIMD_ROUNDING rounding) {
+        if(rounding != SIMD_ROUNDING::NEAREST) throw std::logic_error{"unimplemented case in cvtd2ps"};
+        std::array<double, 2> SRC;
+        std::memcpy(SRC.data(), &src, sizeof(u128));
+        
+        std::array<float, 2> RES;
+        RES[0] = (float)SRC[0];
+        RES[1] = (float)SRC[1];
+
+        u128 res { 0, 0 };
+        std::memcpy(&res.lo, RES.data(), sizeof(u64));
+        return res;
     }
 
     u128 CpuImpl::shufps(u128 dst, u128 src, u8 order) {

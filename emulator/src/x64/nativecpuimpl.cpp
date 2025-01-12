@@ -1798,6 +1798,12 @@ namespace x64 {
         return nativeRes;
     }
 
+    u128 NativeCpuImpl::cvtpd2ps(u128 src, [[maybe_unused]] SIMD_ROUNDING rounding) {
+        u128 nativeRes;
+        asm volatile("cvtpd2ps %1, %0" : "=x"(nativeRes) : "x"(src));
+        return nativeRes;
+    }
+
     u128 NativeCpuImpl::shufps(u128 dst, u128 src, u8 order) {
         __m128 a;
         __m128 b;

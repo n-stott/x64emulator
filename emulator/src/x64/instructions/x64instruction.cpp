@@ -846,6 +846,7 @@ namespace utils {
             case Insn::CVTDQ2PD_XMM_M64: return toString<XMM, M64>("cvtdq2pd");
             case Insn::CVTDQ2PS_XMM_XMMM128: return toString<XMM, M64>("cvtdq2ps");
             case Insn::CVTPS2DQ_XMM_XMMM128: return toString<XMM, M64>("cvtps2dq");
+            case Insn::CVTPD2PS_XMM_XMMM128: return toString<XMM, XMMM128>("cvtpd2ps");
             case Insn::STMXCSR_M32: return toString<M32>("stmxcsr");
             case Insn::LDMXCSR_M32: return toString<M32>("ldmxcsr");
             case Insn::PAND_MMX_MMXM64: return toString<MMX, MMXM64>("pand");
