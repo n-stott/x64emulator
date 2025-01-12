@@ -354,6 +354,83 @@ namespace kernel {
         return nbWoken;
     }
 
+    u32 Scheduler::wakeOp(x64::Ptr32 uaddr, u32 val, x64::Ptr32 uaddr2, u32 val2, u32 val3) {
+        struct FutexOp {
+            enum OP : u8 {
+                SET = 0,
+                ADD = 1,
+                OR = 2,
+                ANDN = 3,
+                XOR = 4,
+            } op;
+            enum CMP : u8 {
+                EQ = 0,  /* if (oldval == cmparg) wake */
+                NE = 1,  /* if (oldval != cmparg) wake */
+                LT = 2,  /* if (oldval < cmparg) wake */
+                LE = 3,  /* if (oldval <= cmparg) wake */
+                GT = 4,  /* if (oldval > cmparg) wake */
+                GE = 5,  /* if (oldval >= cmparg) wake */
+            } cmp;
+            u16 oparg;
+            u16 cmparg;
+        };
+
+        auto futexOp = [](u32 val3) -> FutexOp {
+            FutexOp op;
+            op.op = (FutexOp::OP)((val3 >> 28) & 0xF);
+            op.cmp = (FutexOp::CMP)((val3 >> 24) & 0xF);
+            op.oparg = (val3 >> 12) & 0xFFF;
+            if(op.op & 8) {
+                op.oparg = (1 << op.oparg);
+                op.op = (FutexOp::OP)((u8)op.op & 0x7);
+            }
+            op.cmparg = val3 & 0xFFF;
+            return op;
+        }(val3);
+
+        // The FUTEX_WAKE_OP operation is equivalent to executing the following code atomically and totally ordered with respect to other futex
+        // operations on any of the two supplied futex words:
+
+        // uint32_t oldval = *(uint32_t *) uaddr2;
+        u32 oldval = mmu_.read32(uaddr2);
+
+        // *(uint32_t *) uaddr2 = oldval op oparg;
+        u32 newval = [](u32 oldval, FutexOp::OP op, u16 arg) -> u32 {
+            switch(op) {
+                case FutexOp::OP::SET: return arg;
+                case FutexOp::OP::ADD: return oldval + arg;
+                case FutexOp::OP::OR: return oldval | arg;
+                case FutexOp::OP::ANDN: return oldval & (~arg);
+                case FutexOp::OP::XOR: return oldval ^ arg;
+            }
+            verify(false, "invalid operation");
+            return 0;
+        }(oldval, futexOp.op, futexOp.oparg);
+        mmu_.write32(uaddr2, newval);
+
+        // futex(uaddr, FUTEX_WAKE, val, 0, 0, 0);
+        u32 nbWoken = wake(uaddr, val);
+
+        // if (oldval cmp cmparg)
+        //     futex(uaddr2, FUTEX_WAKE, val2, 0, 0, 0);
+        bool cmp = [](u32 oldval, FutexOp::CMP cmp, u16 cmparg) -> bool {
+            switch(cmp) {
+                case FutexOp::CMP::EQ: return oldval == cmparg;
+                case FutexOp::CMP::NE: return oldval != cmparg;
+                case FutexOp::CMP::LT: return oldval < cmparg;
+                case FutexOp::CMP::LE: return oldval <= cmparg;
+                case FutexOp::CMP::GT: return oldval > cmparg;
+                case FutexOp::CMP::GE: return oldval >= cmparg;
+            }
+            verify(false, "Invalid comparison");
+            return false;
+        }(oldval, futexOp.cmp, futexOp.cmparg);
+        if(cmp) {
+            nbWoken += wake(uaddr2, val2);
+        }
+        return nbWoken;
+    }
+
     void Scheduler::poll(Thread* thread, x64::Ptr fds, size_t nfds, int timeout) {
         verify(timeout != 0, "poll with zero timeout should not reach the scheduler");
         pollBlockers_.push_back(PollBlocker(thread, mmu_, kernel_.timers(), fds, nfds, timeout));

@@ -1247,6 +1247,12 @@ namespace kernel {
             u32 nbWoken = kernel_.scheduler().wake(uaddr, val);
             return onExit(nbWoken);
         }
+        if(unmaskedOp == 5) {
+            // wake_op
+            u32 val2 = (u32)timeout.address();
+            u32 nbWoken = kernel_.scheduler().wakeOp(uaddr, val, uaddr2, val2, val3);
+            return onExit(nbWoken);
+        }
         if(unmaskedOp == 7) {
             warn("futex_unlock_pi returns bogus ENOSYS value");
             return onExit(-ENOSYS);

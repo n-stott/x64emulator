@@ -45,6 +45,7 @@ namespace kernel {
         void wait(Thread* thread, x64::Ptr32 wordPtr, u32 expected, x64::Ptr relativeTimeout);
         void waitBitset(Thread* thread, x64::Ptr32 wordPtr, u32 expected, x64::Ptr absoluteTimeout);
         u32 wake(x64::Ptr32 wordPtr, u32 nbWaiters);
+        u32 wakeOp(x64::Ptr32 uaddr, u32 val, x64::Ptr32 uaddr2, u32 val2, u32 val3);
 
         void poll(Thread* thread, x64::Ptr fds, size_t nfds, int timeout);
         void select(Thread* thread, int nfds, x64::Ptr readfds, x64::Ptr writefds, x64::Ptr exceptfds, x64::Ptr timeout);
