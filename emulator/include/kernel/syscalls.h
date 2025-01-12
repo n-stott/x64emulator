@@ -211,6 +211,8 @@ namespace kernel {
         long clone(unsigned long flags, x64::Ptr stack, x64::Ptr32 parent_tid, x64::Ptr32 child_tid, unsigned long tls);
         // 0x3c
         int exit(int status);
+        // 0x3e
+        int kill(pid_t pid, int sig);
         // 0x3f
         int uname(x64::Ptr buf);
         // 0x48

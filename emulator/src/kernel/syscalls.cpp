@@ -93,6 +93,7 @@ namespace kernel {
             case 0x37: return threadRegs.set(x64::R64::RAX, invoke_syscall_5(&Sys::getsockopt, regs));
             case 0x38: return threadRegs.set(x64::R64::RAX, invoke_syscall_5(&Sys::clone, regs));
             case 0x3c: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::exit, regs));
+            case 0x3e: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::kill, regs));
             case 0x3f: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::uname, regs));
             case 0x48: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::fcntl, regs));
             case 0x49: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::flock, regs));
@@ -798,6 +799,14 @@ namespace kernel {
         }
         kernel_.scheduler().terminate(currentThread_, status);
         return status;
+    }
+
+    int Sys::kill(pid_t pid, int sig) {
+        if(logSyscalls_) {
+            print("Sys::kill(pid={}, sig={}) = {}\n", pid, sig, -ENOTSUP);
+        }
+        warn(fmt::format("kill not implemented"));
+        return -ENOTSUP;
     }
 
     int Sys::uname(x64::Ptr buf) {
