@@ -418,6 +418,7 @@ namespace x64 {
         EMMS,
         MOVSS_XMM_M32,
         MOVSS_M32_XMM,
+        MOVSS_XMM_XMM,
         MOVSD_XMM_M64,
         MOVSD_M64_XMM,
         MOVSD_XMM_XMM,

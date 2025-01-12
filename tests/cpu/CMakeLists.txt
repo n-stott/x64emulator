@@ -5,6 +5,13 @@ set(CMAKE_CXX_STANDARD 17)
 set(CC_OPTIONS -g -O0 -DDEBUG -fpic)
 set(LD_OPTIONS)
 
+add_executable(test_cpu_movss src/test_movss.cpp)
+target_compile_options(test_cpu_movss PUBLIC ${CC_OPTIONS})
+target_include_directories(test_cpu_movss PUBLIC include ${CMAKE_SOURCE_DIR}/emulator/include)
+target_link_libraries(test_cpu_movss PUBLIC x64cpu)
+target_link_options(test_cpu_movss PUBLIC ${LD_OPTIONS})
+add_test(NAME movss COMMAND test_cpu_movss)
+
 add_executable(test_cpu_cvtps2dq src/test_cvtps2dq.cpp)
 target_compile_options(test_cpu_cvtps2dq PUBLIC ${CC_OPTIONS})
 target_include_directories(test_cpu_cvtps2dq PUBLIC include ${CMAKE_SOURCE_DIR}/emulator/include)

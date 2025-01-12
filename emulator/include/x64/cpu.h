@@ -684,6 +684,7 @@ namespace x64 {
 
         void execMovssXMMM32(const X64Instruction&);
         void execMovssM32XMM(const X64Instruction&);
+        void execMovssXMMXMM(const X64Instruction&);
 
         void execMovsdXMMM64(const X64Instruction&);
         void execMovsdM64XMM(const X64Instruction&);

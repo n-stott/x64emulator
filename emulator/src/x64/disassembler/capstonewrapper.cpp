@@ -2164,6 +2164,7 @@ namespace x64 {
         auto m32src = asMemory32(src);
         if(m32dst && rssesrc) return X64Instruction::make<Insn::MOVSS_M32_XMM>(insn.address, insn.size, m32dst.value(), rssesrc.value());
         if(rssedst && m32src) return X64Instruction::make<Insn::MOVSS_XMM_M32>(insn.address, insn.size, rssedst.value(), m32src.value());
+        if(rssedst && rssesrc) return X64Instruction::make<Insn::MOVSS_XMM_XMM>(insn.address, insn.size, rssedst.value(), rssesrc.value());
         return make_failed(insn);
     }
 

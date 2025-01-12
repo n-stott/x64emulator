@@ -720,6 +720,17 @@ namespace x64 {
         return res;
     }
 
+    u128 CpuImpl::movss(u128 dst, u128 src) {
+        std::array<u32, 4> DST;
+        std::array<u32, 4> SRC;
+        std::memcpy(DST.data(), &dst, sizeof(dst));
+        std::memcpy(SRC.data(), &src, sizeof(src));
+        DST[0] = SRC[0];
+        u128 res;
+        std::memcpy(&res, DST.data(), sizeof(res));
+        return res;
+    }
+
     u128 CpuImpl::addps(u128 dst, u128 src, SIMD_ROUNDING) { return packedOp<float, float>(dst, src, [](auto d, auto s) { return d + s; }); }
     u128 CpuImpl::addpd(u128 dst, u128 src, SIMD_ROUNDING) { return packedOp<double, double>(dst, src, [](auto d, auto s) { return d + s; }); }
 

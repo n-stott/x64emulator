@@ -156,6 +156,8 @@ namespace x64 {
         [[nodiscard]] static u32 popcnt32(u32 src, Flags* flags);
         [[nodiscard]] static u64 popcnt64(u64 src, Flags* flags);
 
+        [[nodiscard]] static u128 movss(u128 dst, u128 src);
+
         [[nodiscard]] static u128 addps(u128 dst, u128 src, SIMD_ROUNDING);
         [[nodiscard]] static u128 addpd(u128 dst, u128 src, SIMD_ROUNDING);
 
