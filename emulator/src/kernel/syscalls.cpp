@@ -1118,6 +1118,7 @@ namespace kernel {
                 epollEvents.resize(std::min((size_t)maxevents, epollEvents.size()));
                 ret = (int)epollEvents.size();
                 std::vector<EpollEvent> eventsForMemory;
+                eventsForMemory.reserve(epollEvents.size());
                 for(const auto& e : epollEvents) {
                     eventsForMemory.push_back(EpollEvent {
                         e.events.toUnderlying(),

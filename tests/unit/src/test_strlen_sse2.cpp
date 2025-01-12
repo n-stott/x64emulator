@@ -1,6 +1,5 @@
-#include "emulator/vm.h"
-#include "kernel/kernel.h"
-#include "kernel/thread.h"
+#include "x64/cpu.h"
+#include "x64/mmu.h"
 #include "verify.h"
 #include "fmt/core.h"
 #include <vector>
@@ -12,7 +11,6 @@ std::vector<char> string {{
 int main() {
     using namespace x64;
     Mmu mmu;
-    kernel::Kernel kernel(mmu);
 
     u64 length = 0;
 
@@ -38,7 +36,6 @@ int main() {
         };
 
         Cpu cpu(mmu);
-        emulator::VM vm(cpu, mmu, kernel);
         cpu.set(R64::RDI, dataPage);
         for(const auto& ins : instructions) {
             cpu.exec(ins);
