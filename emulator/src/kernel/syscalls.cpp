@@ -107,6 +107,7 @@ namespace kernel {
             case 0x57: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::unlink, regs));
             case 0x59: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::readlink, regs));
             case 0x5a: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::chmod, regs));
+            case 0x5b: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::fchmod, regs));
             case 0x5c: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::chown, regs));
             case 0x5f: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::umask, regs));
             case 0x60: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::gettimeofday, regs));
@@ -154,6 +155,7 @@ namespace kernel {
             case 0xfe: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::inotify_add_watch, regs));
             case 0x101: return threadRegs.set(x64::R64::RAX, invoke_syscall_4(&Sys::openat, regs));
             case 0x106: return threadRegs.set(x64::R64::RAX, invoke_syscall_4(&Sys::fstatat64, regs));
+            case 0x109: return threadRegs.set(x64::R64::RAX, invoke_syscall_5(&Sys::linkat, regs));
             case 0x10b: return threadRegs.set(x64::R64::RAX, invoke_syscall_4(&Sys::readlinkat, regs));
             case 0x10d: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::faccessat, regs));
             case 0x10e: return threadRegs.set(x64::R64::RAX, invoke_syscall_6(&Sys::pselect6, regs));
@@ -927,6 +929,14 @@ namespace kernel {
         return -ENOTSUP;
     }
 
+    int Sys::fchmod(int fd, mode_t mode) {
+        if(logSyscalls_) {
+            print("Sys::fchmod(fd={}, mode={}) = {}\n", fd, mode, -ENOTSUP);
+        }
+        warn("fchmod not implemented");
+        return -ENOTSUP;
+    }
+
     int Sys::chown(x64::Ptr pathname, uid_t owner, gid_t group) {
         if(logSyscalls_) {
             std::string path = mmu_.readString(pathname);
@@ -1611,6 +1621,15 @@ namespace kernel {
             mmu_.copyToMmu(statbuf, buffer.data(), buffer.size());
             return 0;
         });
+    }
+
+    int Sys::linkat(int olddirfd, x64::Ptr oldpath, int newdirfd, x64::Ptr newpath, int flags) {
+        if(logSyscalls_) {
+            print("Sys::linkat(olddirfd={}, oldpath={:#x}, newdirfd={:#x}, newpath={:#x}, flags={}) = {}\n",
+                olddirfd, oldpath.address(), newdirfd, newpath.address(), flags, -ENOTSUP);
+        }
+        warn(fmt::format("linkat not implemented"));
+        return -ENOTSUP;
     }
 
     ssize_t Sys::readlinkat(int dirfd, x64::Ptr pathname, x64::Ptr buf, size_t bufsiz) {

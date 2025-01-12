@@ -239,6 +239,8 @@ namespace kernel {
         ssize_t readlink(x64::Ptr pathname, x64::Ptr buf, size_t bufsiz);
         // 0x5a
         int chmod(x64::Ptr pathname, mode_t mode);
+        // 0x5b
+        int fchmod(int fd, mode_t mode);
         // 0x5c
         int chown(x64::Ptr pathname, uid_t owner, gid_t group);
         // 0x5f
@@ -333,6 +335,8 @@ namespace kernel {
         int openat(int dirfd, x64::Ptr pathname, int flags, mode_t mode);
         // 0x106
         int fstatat64(int dirfd, x64::Ptr pathname, x64::Ptr statbuf, int flags);
+        // 0x109
+        int linkat(int olddirfd, x64::Ptr oldpath, int newdirfd, x64::Ptr newpath, int flags);
         // 0x10b
         ssize_t readlinkat(int dirfd, x64::Ptr pathname, x64::Ptr buf, size_t bufsiz);
         // 0x10d

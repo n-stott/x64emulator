@@ -145,6 +145,11 @@ namespace kernel {
         return ErrnoOrBuffer(-ENOTSUP);
     }
 
+    ErrnoOrBuffer ShadowFile::statx(unsigned int mask) {
+        warn(fmt::format("ShadowFile::statx(mask={:#x}) not implemented", mask));
+        return ErrnoOrBuffer(-ENOTSUP);
+    }
+
     void ShadowFile::advanceInternalOffset(off_t) {
         // nothing to do here
     }
