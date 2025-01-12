@@ -2158,6 +2158,38 @@ namespace x64 {
         return dst;
     }
 
+    u64 CpuImpl::pmaxsw64(u64 dst, u64 src) {
+        std::array<i16, 4> DST;
+        static_assert(sizeof(DST) == sizeof(u64));
+        std::memcpy(DST.data(), &dst, sizeof(u64));
+
+        std::array<i16, 4> SRC;
+        static_assert(sizeof(SRC) == sizeof(u64));
+        std::memcpy(SRC.data(), &src, sizeof(u64));
+
+        for(size_t i = 0; i < 4; ++i) {
+            DST[i] = std::max(DST[i], SRC[i]);
+        }
+        std::memcpy(&dst, DST.data(), sizeof(u64));
+        return dst;
+    }
+
+    u128 CpuImpl::pmaxsw128(u128 dst, u128 src) {
+        std::array<i16, 8> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        std::memcpy(DST.data(), &dst, sizeof(u128));
+
+        std::array<i16, 8> SRC;
+        static_assert(sizeof(SRC) == sizeof(u128));
+        std::memcpy(SRC.data(), &src, sizeof(u128));
+
+        for(size_t i = 0; i < 8; ++i) {
+            DST[i] = std::max(DST[i], SRC[i]);
+        }
+        std::memcpy(&dst, DST.data(), sizeof(u128));
+        return dst;
+    }
+
     u64 CpuImpl::pmaxub64(u64 dst, u64 src) {
         std::array<u8, 8> DST;
         static_assert(sizeof(DST) == sizeof(u64));
@@ -2185,6 +2217,38 @@ namespace x64 {
 
         for(size_t i = 0; i < 16; ++i) {
             DST[i] = std::max(DST[i], SRC[i]);
+        }
+        std::memcpy(&dst, DST.data(), sizeof(u128));
+        return dst;
+    }
+
+    u64 CpuImpl::pminsw64(u64 dst, u64 src) {
+        std::array<i16, 4> DST;
+        static_assert(sizeof(DST) == sizeof(u64));
+        std::memcpy(DST.data(), &dst, sizeof(u64));
+
+        std::array<i16, 4> SRC;
+        static_assert(sizeof(SRC) == sizeof(u64));
+        std::memcpy(SRC.data(), &src, sizeof(u64));
+
+        for(size_t i = 0; i < 4; ++i) {
+            DST[i] = std::min(DST[i], SRC[i]);
+        }
+        std::memcpy(&dst, DST.data(), sizeof(u64));
+        return dst;
+    }
+
+    u128 CpuImpl::pminsw128(u128 dst, u128 src) {
+        std::array<i16, 8> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        std::memcpy(DST.data(), &dst, sizeof(u128));
+
+        std::array<i16, 8> SRC;
+        static_assert(sizeof(SRC) == sizeof(u128));
+        std::memcpy(SRC.data(), &src, sizeof(u128));
+
+        for(size_t i = 0; i < 8; ++i) {
+            DST[i] = std::min(DST[i], SRC[i]);
         }
         std::memcpy(&dst, DST.data(), sizeof(u128));
         return dst;

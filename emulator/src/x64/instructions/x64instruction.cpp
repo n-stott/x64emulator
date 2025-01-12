@@ -954,8 +954,12 @@ namespace utils {
             case Insn::PAVGW_MMX_MMXM64: return toString<MMX, MMXM64>("pavgw");
             case Insn::PAVGB_XMM_XMMM128: return toString<XMM, XMMM128>("pavgb");
             case Insn::PAVGW_XMM_XMMM128: return toString<XMM, XMMM128>("pavgw");
+            case Insn::PMAXSW_MMX_MMXM64: return toString<MMX, MMXM64>("pmaxsw");
+            case Insn::PMAXSW_XMM_XMMM128: return toString<XMM, XMMM128>("pmaxsw");
             case Insn::PMAXUB_MMX_MMXM64: return toString<MMX, MMXM64>("pmaxub");
             case Insn::PMAXUB_XMM_XMMM128: return toString<XMM, XMMM128>("pmaxub");
+            case Insn::PMINSW_MMX_MMXM64: return toString<MMX, MMXM64>("pminsw");
+            case Insn::PMINSW_XMM_XMMM128: return toString<XMM, XMMM128>("pminsw");
             case Insn::PMINUB_MMX_MMXM64: return toString<MMX, MMXM64>("pminub");
             case Insn::PMINUB_XMM_XMMM128: return toString<XMM, XMMM128>("pminub");
             case Insn::PTEST_XMM_XMMM128: return toString<XMM, XMMM128>("ptest");

@@ -2374,6 +2374,18 @@ namespace x64 {
         return nativeRes;
     }
 
+    u64 NativeCpuImpl::pmaxsw64(u64 dst, u64 src) {
+        u64 nativeRes = dst;
+        asm volatile("pmaxsw %1, %0" : "+y"(nativeRes) : "y"(src));
+        return nativeRes;
+    }
+
+    u128 NativeCpuImpl::pmaxsw128(u128 dst, u128 src) {
+        u128 nativeRes = dst;
+        asm volatile("pmaxsw %1, %0" : "+x"(nativeRes) : "x"(src));
+        return nativeRes;
+    }
+
     u64 NativeCpuImpl::pmaxub64(u64 dst, u64 src) {
         u64 nativeRes = dst;
         asm volatile("pmaxub %1, %0" : "+y"(nativeRes) : "y"(src));
@@ -2383,6 +2395,18 @@ namespace x64 {
     u128 NativeCpuImpl::pmaxub128(u128 dst, u128 src) {
         u128 nativeRes = dst;
         asm volatile("pmaxub %1, %0" : "+x"(nativeRes) : "x"(src));
+        return nativeRes;
+    }
+
+    u64 NativeCpuImpl::pminsw64(u64 dst, u64 src) {
+        u64 nativeRes = dst;
+        asm volatile("pminsw %1, %0" : "+y"(nativeRes) : "y"(src));
+        return nativeRes;
+    }
+
+    u128 NativeCpuImpl::pminsw128(u128 dst, u128 src) {
+        u128 nativeRes = dst;
+        asm volatile("pminsw %1, %0" : "+x"(nativeRes) : "x"(src));
         return nativeRes;
     }
 

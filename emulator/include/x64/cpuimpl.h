@@ -335,8 +335,13 @@ namespace x64 {
         [[nodiscard]] static u128 pavgb128(u128 dst, u128 src);
         [[nodiscard]] static u128 pavgw128(u128 dst, u128 src);
 
+        [[nodiscard]] static u64 pmaxsw64(u64 dst, u64 src);
+        [[nodiscard]] static u128 pmaxsw128(u128 dst, u128 src);
         [[nodiscard]] static u64 pmaxub64(u64 dst, u64 src);
         [[nodiscard]] static u128 pmaxub128(u128 dst, u128 src);
+
+        [[nodiscard]] static u64 pminsw64(u64 dst, u64 src);
+        [[nodiscard]] static u128 pminsw128(u128 dst, u128 src);
         [[nodiscard]] static u64 pminub64(u64 dst, u64 src);
         [[nodiscard]] static u128 pminub128(u128 dst, u128 src);
 

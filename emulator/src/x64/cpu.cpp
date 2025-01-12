@@ -788,8 +788,12 @@ namespace x64 {
     DEFINE_STANDALONE(PAVGW_MMX_MMXM64, execPavgwMMXMMXM64)
     DEFINE_STANDALONE(PAVGB_XMM_XMMM128, execPavgbXMMXMMM128)
     DEFINE_STANDALONE(PAVGW_XMM_XMMM128, execPavgwXMMXMMM128)
+    DEFINE_STANDALONE(PMAXSW_MMX_MMXM64, execPmaxswMMXMMXM64)
+    DEFINE_STANDALONE(PMAXSW_XMM_XMMM128, execPmaxswXMMXMMM128)
     DEFINE_STANDALONE(PMAXUB_MMX_MMXM64, execPmaxubMMXMMXM64)
     DEFINE_STANDALONE(PMAXUB_XMM_XMMM128, execPmaxubXMMXMMM128)
+    DEFINE_STANDALONE(PMINSW_MMX_MMXM64, execPminswMMXMMXM64)
+    DEFINE_STANDALONE(PMINSW_XMM_XMMM128, execPminswXMMXMMM128)
     DEFINE_STANDALONE(PMINUB_MMX_MMXM64, execPminubMMXMMXM64)
     DEFINE_STANDALONE(PMINUB_XMM_XMMM128, execPminubXMMXMMM128)
     DEFINE_STANDALONE(PTEST_XMM_XMMM128, execPtestXMMXMMM128)
@@ -1454,8 +1458,12 @@ namespace x64 {
         STANDALONE_NAME(PAVGW_MMX_MMXM64),
         STANDALONE_NAME(PAVGB_XMM_XMMM128),
         STANDALONE_NAME(PAVGW_XMM_XMMM128),
+        STANDALONE_NAME(PMAXSW_MMX_MMXM64),
+        STANDALONE_NAME(PMAXSW_XMM_XMMM128),
         STANDALONE_NAME(PMAXUB_MMX_MMXM64),
         STANDALONE_NAME(PMAXUB_XMM_XMMM128),
+        STANDALONE_NAME(PMINSW_MMX_MMXM64),
+        STANDALONE_NAME(PMINSW_XMM_XMMM128),
         STANDALONE_NAME(PMINUB_MMX_MMXM64),
         STANDALONE_NAME(PMINUB_XMM_XMMM128),
         STANDALONE_NAME(PTEST_XMM_XMMM128),
@@ -5452,6 +5460,20 @@ namespace x64 {
         set(dst, res);
     }
 
+    void Cpu::execPmaxswMMXMMXM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<MMX>();
+        const auto& src = ins.op1<MMXM64>();
+        u64 res = Impl::pmaxsw64(get(dst), get(src));
+        set(dst, res);
+    }
+
+    void Cpu::execPmaxswXMMXMMM128(const X64Instruction& ins) {
+        const auto& dst = ins.op0<XMM>();
+        const auto& src = ins.op1<XMMM128>();
+        u128 res = Impl::pmaxsw128(get(dst), get(src));
+        set(dst, res);
+    }
+
     void Cpu::execPmaxubMMXMMXM64(const X64Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM64>();
@@ -5463,6 +5485,20 @@ namespace x64 {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         u128 res = Impl::pmaxub128(get(dst), get(src));
+        set(dst, res);
+    }
+
+    void Cpu::execPminswMMXMMXM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<MMX>();
+        const auto& src = ins.op1<MMXM64>();
+        u64 res = Impl::pminsw64(get(dst), get(src));
+        set(dst, res);
+    }
+
+    void Cpu::execPminswXMMXMMM128(const X64Instruction& ins) {
+        const auto& dst = ins.op0<XMM>();
+        const auto& src = ins.op1<XMMM128>();
+        u128 res = Impl::pminsw128(get(dst), get(src));
         set(dst, res);
     }
 
