@@ -763,6 +763,7 @@ namespace utils {
             case Insn::EMMS: return toString("emms");
             case Insn::MOVSS_XMM_M32: return toString<XMM, M32>("movss");
             case Insn::MOVSS_M32_XMM: return toString<M32, XMM>("movss");
+            case Insn::MOVSS_XMM_XMM: return toString<XMM, XMM>("movss");
             case Insn::MOVSD_XMM_M64: return toString<XMM, M64>("movsd");
             case Insn::MOVSD_M64_XMM: return toString<M64, XMM>("movsd");
             case Insn::MOVSD_XMM_XMM: return toString<XMM, XMM>("movsd");

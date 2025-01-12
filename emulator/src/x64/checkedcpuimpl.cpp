@@ -623,6 +623,10 @@ namespace x64 {
         return checkCallWithFpu<f80>(&CpuImpl::frndint, &NativeCpuImpl::frndint, &noFpuComparison, fpu, dst);
     }
 
+    u128 CheckedCpuImpl::movss(u128 dst, u128 src) {
+        return checkCall<u128>(&CpuImpl::movss, &NativeCpuImpl::movss, dst, src);
+    }
+
     u128 CheckedCpuImpl::addps(u128 dst, u128 src, SIMD_ROUNDING rounding) {
         return checkCall<u128>(&CpuImpl::addps, &NativeCpuImpl::addps, dst, src, rounding);
     }

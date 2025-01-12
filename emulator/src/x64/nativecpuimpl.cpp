@@ -1340,6 +1340,12 @@ namespace x64 {
         return nativeRes;
     }
 
+    u128 NativeCpuImpl::movss(u128 dst, u128 src) {
+        u128 nativeRes = dst;
+        asm volatile("movss %1, %0" : "+x"(nativeRes) : "x"(src));
+        return nativeRes;
+    }
+
     u128 NativeCpuImpl::addps(u128 dst, u128 src, [[maybe_unused]] SIMD_ROUNDING rounding) {
         u128 nativeRes = dst;
         asm volatile("addps %1, %0" : "+x"(nativeRes) : "x"(src));

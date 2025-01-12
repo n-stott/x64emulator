@@ -597,6 +597,7 @@ namespace x64 {
     DEFINE_STANDALONE(EMMS, execEmms)
     DEFINE_STANDALONE(MOVSS_XMM_M32, execMovssXMMM32)
     DEFINE_STANDALONE(MOVSS_M32_XMM, execMovssM32XMM)
+    DEFINE_STANDALONE(MOVSS_XMM_XMM, execMovssXMMXMM)
     DEFINE_STANDALONE(MOVSD_XMM_M64, execMovsdXMMM64)
     DEFINE_STANDALONE(MOVSD_M64_XMM, execMovsdM64XMM)
     DEFINE_STANDALONE(MOVSD_XMM_XMM, execMovsdXMMXMM)
@@ -1261,6 +1262,7 @@ namespace x64 {
         STANDALONE_NAME(EMMS),
         STANDALONE_NAME(MOVSS_XMM_M32),
         STANDALONE_NAME(MOVSS_M32_XMM),
+        STANDALONE_NAME(MOVSS_XMM_XMM),
         STANDALONE_NAME(MOVSD_XMM_M64),
         STANDALONE_NAME(MOVSD_M64_XMM),
         STANDALONE_NAME(MOVSD_XMM_XMM),
@@ -4121,6 +4123,11 @@ namespace x64 {
         const auto& dst = ins.op0<M32>();
         const auto& src = ins.op1<XMM>();
         set(resolve(dst), narrow<u32, Xmm>(get(src)));
+    }
+    void Cpu::execMovssXMMXMM(const X64Instruction& ins) {
+        const auto& dst = ins.op0<XMM>();
+        const auto& src = ins.op1<XMM>();
+        set(dst, Impl::movss(get(dst), get(src)));
     }
 
     void Cpu::execMovsdXMMM64(const X64Instruction& ins) {
