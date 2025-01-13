@@ -7,7 +7,8 @@ namespace host {
 
     i32 roundWithoutTruncation32(f32 src);
     i64 roundWithoutTruncation64(f32 src);
-    i64 roundWithoutTruncation(f64 src);
+    i32 roundWithoutTruncation32(f64 src);
+    i64 roundWithoutTruncation64(f64 src);
     f80 round(f80);
 
     template<typename U>

@@ -768,6 +768,8 @@ namespace x64 {
         void execCvtss2siR64XMM(const X64Instruction&);
         void execCvtss2siR64M32(const X64Instruction&);
 
+        void execCvtsd2siR32XMM(const X64Instruction&);
+        void execCvtsd2siR32M64(const X64Instruction&);
         void execCvtsd2siR64XMM(const X64Instruction&);
         void execCvtsd2siR64M64(const X64Instruction&);
 

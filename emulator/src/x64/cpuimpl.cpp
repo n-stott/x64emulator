@@ -983,10 +983,17 @@ namespace x64 {
         return (u64)rounded;
     }
 
+    u32 CpuImpl::cvtsd2si32(u64 src, SIMD_ROUNDING) {
+        double d;
+        std::memcpy(&d, &src, sizeof(d));
+        i32 rounded = F64::round32(d);
+        return (u64)rounded;
+    }
+
     u64 CpuImpl::cvtsd2si64(u64 src, SIMD_ROUNDING) {
         double d;
         std::memcpy(&d, &src, sizeof(d));
-        i64 rounded = F64::round(d);
+        i64 rounded = F64::round64(d);
         return (u64)rounded;
     }
 

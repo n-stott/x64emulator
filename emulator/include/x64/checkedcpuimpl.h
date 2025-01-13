@@ -213,6 +213,7 @@ namespace x64 {
 
         [[nodiscard]] static u32 cvtss2si32(u32 src, SIMD_ROUNDING);
         [[nodiscard]] static u64 cvtss2si64(u32 src, SIMD_ROUNDING);
+        [[nodiscard]] static u32 cvtsd2si32(u64 src, SIMD_ROUNDING);
         [[nodiscard]] static u64 cvtsd2si64(u64 src, SIMD_ROUNDING);
 
         [[nodiscard]] static u128 cvttps2dq(u128 src);

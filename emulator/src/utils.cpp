@@ -20,8 +20,15 @@ i64 F32::round64(f32 val) {
 // LOL, std::round does not take rounding mode into account.
 // It rounds away from 0 for midpoints, instead of towards even.
 // We let the host do this work instead.
-i64 F64::round(f64 val) {
-    return host::roundWithoutTruncation(val);
+i32 F64::round32(f64 val) {
+    return host::roundWithoutTruncation32(val);
+}
+
+// LOL, std::round does not take rounding mode into account.
+// It rounds away from 0 for midpoints, instead of towards even.
+// We let the host do this work instead.
+i64 F64::round64(f64 val) {
+    return host::roundWithoutTruncation64(val);
 }
 
 F80 F80::fromLongDouble(long double d) {

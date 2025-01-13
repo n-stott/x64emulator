@@ -34,7 +34,8 @@ struct F32 {
 };
 
 struct F64 {
-    static i64 round(f64 val);
+    static i32 round32(f64 val);
+    static i64 round64(f64 val);
 };
 
 struct F80 {

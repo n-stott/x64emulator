@@ -831,6 +831,8 @@ namespace utils {
             case Insn::CVTSS2SI_R64_M32:  return toString<R64, M32>("cvtss2si");
             case Insn::CVTSS2SD_XMM_XMM: return toString<XMM, XMM>("cvtss2sd");
             case Insn::CVTSS2SD_XMM_M32: return toString<XMM, M32>("cvtss2sd");
+            case Insn::CVTSD2SI_R32_XMM: return toString<R64, XMM>("cvtsd2si");
+            case Insn::CVTSD2SI_R32_M64: return toString<R64, M64>("cvtsd2si");
             case Insn::CVTSD2SI_R64_XMM: return toString<R64, XMM>("cvtsd2si");
             case Insn::CVTSD2SI_R64_M64: return toString<R64, M64>("cvtsd2si");
             case Insn::CVTSD2SS_XMM_XMM: return toString<XMM, XMM>("cvtsd2ss");
