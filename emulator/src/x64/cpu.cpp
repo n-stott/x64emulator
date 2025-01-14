@@ -6,7 +6,6 @@
 // #include "x64/nativecpuimpl.h"
 #endif
 #include "x64/mmu.h"
-#include "emulator/vm.h"
 #include "host/hostinstructions.h"
 #include "verify.h"
 #include <fmt/core.h>
