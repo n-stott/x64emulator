@@ -96,8 +96,16 @@ namespace emulator {
         kernel::Thread* currentThread_ { nullptr };
 
         struct BBlock {
+            static constexpr size_t CACHE_SIZE = 3;
+
+            BBlock() {
+                std::fill(next.begin(), next.end(), nullptr);
+                std::fill(nextCount.begin(), nextCount.end(), 0);
+            }
+
             x64::Cpu::BasicBlock cpuBasicBlock;
-            std::array<BBlock*, 2> cachedDestinations {{ nullptr, nullptr }};
+            std::array<BBlock*, CACHE_SIZE> next;
+            std::array<u64, CACHE_SIZE> nextCount;
 
             u64 start() const {
                 verify(!cpuBasicBlock.instructions.empty(), "Basic block is empty");
@@ -114,7 +122,9 @@ namespace emulator {
 #ifdef VM_BASICBLOCK_TELEMETRY
         u64 blockCacheHits_ { 0 };
         u64 blockCacheMisses_ { 0 };
+        u64 mapAccesses_ { 0 };
         std::unordered_map<u64, u64> basicBlockCount_;
+        std::unordered_map<u64, u64> basicBlockCacheMissCount_;
 #endif
 
         mutable SymbolProvider symbolProvider_;

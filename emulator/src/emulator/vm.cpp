@@ -16,6 +16,7 @@ namespace emulator {
 #ifdef VM_BASICBLOCK_TELEMETRY
         fmt::print("blockCacheHits  :{}\n", blockCacheHits_);
         fmt::print("blockCacheMisses:{}\n", blockCacheMisses_);
+        fmt::print("blockMapAccesses:{}\n", mapAccesses_);
 
         fmt::print("Executed {} different basic blocks\n", basicBlockCount_.size());
         std::vector<std::pair<u64, u64>> cb(basicBlockCount_.begin(), basicBlockCount_.end());
@@ -35,6 +36,27 @@ namespace emulator {
                 fmt::print("      {:#12x} {}\n", ins.first.address(), ins.first.toString());
             }
 
+        }
+
+        cb = std::vector<std::pair<u64, u64>> (basicBlockCacheMissCount_.begin(), basicBlockCacheMissCount_.end());
+        std::sort(cb.begin(), cb.end(), [](const auto& a, const auto& b) {
+            if(a.second > b.second) return true;
+            if(a.second < b.second) return false;
+            return a.first < b.first;
+        });
+        fmt::print("Basic blocks with most misses:\n");
+        for(size_t i = 0; i < std::min((size_t)10, cb.size()); ++i) {
+            u64 address = cb[i].first;
+            const auto* region = ((const x64::Mmu&)mmu_).findAddress(address);
+            fmt::print("{:#16x} : {} ({})\n", address, cb[i].second, region->name());
+
+            const auto& bb = basicBlocks_[address];
+            for(size_t c = 0; c < BBlock::CACHE_SIZE; ++c) {
+                fmt::print("  Next {} : count={}\n", c, bb->nextCount[c]);
+            }
+            for(const auto& ins : bb->cpuBasicBlock.instructions) {
+                fmt::print("      {:#12x} {}\n", ins.first.address(), ins.first.toString());
+            }
         }
 #endif
     }
@@ -131,11 +153,20 @@ namespace emulator {
 
         auto findNextBasicBlock = [&]() {
             bool foundNextBlock = false;
-            for(size_t i = 0; i < currentBasicBlock->cachedDestinations.size(); ++i) {
-                if(!currentBasicBlock->cachedDestinations[i]) continue;
-                if(currentBasicBlock->cachedDestinations[i]->start() != cpu_.get(x64::R64::RIP)) continue;
-                nextBasicBlock = currentBasicBlock->cachedDestinations[i];
-                std::swap(currentBasicBlock->cachedDestinations[i], currentBasicBlock->cachedDestinations[0]);
+            u64 rip = cpu_.get(x64::R64::RIP);
+            size_t firstAvailableSlot = BBlock::CACHE_SIZE-1;
+            for(size_t i = 0; i < currentBasicBlock->next.size(); ++i) {
+                if(!currentBasicBlock->next[i]) {
+                    firstAvailableSlot = i;
+                    break;
+                }
+                if(currentBasicBlock->next[i]->start() != rip) continue;
+                nextBasicBlock = currentBasicBlock->next[i];
+                ++currentBasicBlock->nextCount[i];
+                if(i > 0 && currentBasicBlock->nextCount[i] > currentBasicBlock->nextCount[i-1]) {
+                    std::swap(currentBasicBlock->next[i], currentBasicBlock->next[i-1]);
+                    std::swap(currentBasicBlock->nextCount[i], currentBasicBlock->nextCount[i-1]);
+                }
 #ifdef VM_BASICBLOCK_TELEMETRY
                 ++blockCacheHits_;
 #endif
@@ -144,9 +175,12 @@ namespace emulator {
             }
             if(!foundNextBlock) {
                 nextBasicBlock = fetchBasicBlock();
-                currentBasicBlock->cachedDestinations.back() = nextBasicBlock;
+                verify(!!nextBasicBlock);
+                currentBasicBlock->next[firstAvailableSlot] = nextBasicBlock;
+                currentBasicBlock->nextCount[firstAvailableSlot] = 1;
 #ifdef VM_BASICBLOCK_TELEMETRY
                 ++blockCacheMisses_;
+                ++basicBlockCacheMissCount_[currentBasicBlock->start()];
 #endif
             }
         };
@@ -156,7 +190,7 @@ namespace emulator {
             verify(!signal_interrupt);
             std::swap(currentBasicBlock, nextBasicBlock);
 #ifdef VM_BASICBLOCK_TELEMETRY
-            ++basicBlockCount_[currentBasicBlock->start().value_or(0)];
+            ++basicBlockCount_[currentBasicBlock->start()];
 #endif
             cpu_.exec(currentBasicBlock->cpuBasicBlock);
             tickInfo.tick(currentBasicBlock->cpuBasicBlock.instructions.size());
@@ -167,6 +201,9 @@ namespace emulator {
 
     VM::BBlock* VM::fetchBasicBlock() {
         u64 startAddress = cpu_.get(x64::R64::RIP);
+#ifdef VM_BASICBLOCK_TELEMETRY
+        ++mapAccesses_;
+#endif
         auto it = basicBlocks_.find(startAddress);
         if(it != basicBlocks_.end()) {
             return it->second.get();
@@ -438,13 +475,12 @@ namespace emulator {
             if(addressInRange(bb->start())) {
                 keysToErase.push_back(bb->start());
             }
-            const auto* bb1 = bb->cachedDestinations[0];
-            if(bb1 && addressInRange(bb1->start())) {
-                bb->cachedDestinations[0] = nullptr;
-            }
-            const auto* bb2 = bb->cachedDestinations[1];
-            if(bb2 && addressInRange(bb2->start())) {
-                bb->cachedDestinations[1] = nullptr;
+            for(size_t i = 0; i < bb->next.size(); ++i) {
+                const auto* bb1 = bb->next[i];
+                if(bb1 && addressInRange(bb1->start())) {
+                    bb->next[i] = nullptr;
+                    bb->nextCount[i] = 0;
+                }
             }
         }
         for(const auto& key : keysToErase) vm_->basicBlocks_.erase(key);
@@ -466,13 +502,12 @@ namespace emulator {
             if(addressInRange(bb->start())) {
                 keysToErase.push_back(bb->start());
             }
-            const auto* bb0 = bb->cachedDestinations[0];
-            if(bb0 && addressInRange(bb0->start())) {
-                bb->cachedDestinations[0] = nullptr;
-            }
-            const auto* bb1 = bb->cachedDestinations[1];
-            if(bb1 && addressInRange(bb1->start())) {
-                bb->cachedDestinations[1] = nullptr;
+            for(size_t i = 0; i < bb->next.size(); ++i) {
+                const auto* bb1 = bb->next[i];
+                if(bb1 && addressInRange(bb1->start())) {
+                    bb->next[i] = nullptr;
+                    bb->nextCount[i] = 0;
+                }
             }
         }
         for(const auto& key : keysToErase) vm_->basicBlocks_.erase(key);
