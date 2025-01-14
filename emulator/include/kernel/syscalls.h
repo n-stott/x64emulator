@@ -327,6 +327,8 @@ namespace kernel {
         int tgkill(int tgid, int tid, int sig);
         // 0xed
         int mbind(unsigned long start, unsigned long len, unsigned long mode, x64::Ptr64 nmask, unsigned long maxnode, unsigned flags);
+        // 0xf7
+        int waitid(int idtype, id_t id, x64::Ptr infop, int options, x64::Ptr rusage);
         // 0xfd
         int inotify_init();
         // 0xfe

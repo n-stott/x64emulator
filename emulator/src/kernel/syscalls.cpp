@@ -151,6 +151,7 @@ namespace kernel {
             case 0xe9: return threadRegs.set(x64::R64::RAX, invoke_syscall_4(&Sys::epoll_ctl, regs));
             case 0xea: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::tgkill, regs));
             case 0xed: return threadRegs.set(x64::R64::RAX, invoke_syscall_6(&Sys::mbind, regs));
+            case 0xf7: return threadRegs.set(x64::R64::RAX, invoke_syscall_5(&Sys::waitid, regs));
             case 0xfd: return threadRegs.set(x64::R64::RAX, invoke_syscall_0(&Sys::inotify_init, regs));
             case 0xfe: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::inotify_add_watch, regs));
             case 0x101: return threadRegs.set(x64::R64::RAX, invoke_syscall_4(&Sys::openat, regs));
@@ -1188,6 +1189,15 @@ namespace kernel {
             print("Sys::mbind(start={}, len={}, mode={}, nmask={:#x}, maxnode={}, flags={})\n", start, len, mode, nmask.address(), maxnode, flags);
         }
         warn(fmt::format("mbind not implemented"));
+        return -ENOTSUP;
+    }
+
+    int Sys::waitid(int idtype, id_t id, x64::Ptr infop, int options, x64::Ptr rusage) {
+        if(logSyscalls_) {
+            print("Sys::waitid(idtype={}, id={}, infop={:#x}, options={}, rusage={:#x}) = {}\n",
+                    idtype, id, infop.address(), options, rusage.address(), -ENOTSUP);
+        }
+        warn(fmt::format("waitid not implemented"));
         return -ENOTSUP;
     }
 
