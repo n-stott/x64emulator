@@ -211,6 +211,8 @@ namespace kernel {
         long clone(unsigned long flags, x64::Ptr stack, x64::Ptr32 parent_tid, x64::Ptr32 child_tid, unsigned long tls);
         // 0x3c
         int exit(int status);
+        // 0x3e
+        int kill(pid_t pid, int sig);
         // 0x3f
         int uname(x64::Ptr buf);
         // 0x48
@@ -219,6 +221,8 @@ namespace kernel {
         int flock(int fd, int operation);
         // 0x4a
         int fsync(int fd);
+        // 0x4b
+        int fdatasync(int fd);
         // 0x4d
         int ftruncate(int fd, off_t length);
         // 0x4f
@@ -235,6 +239,8 @@ namespace kernel {
         ssize_t readlink(x64::Ptr pathname, x64::Ptr buf, size_t bufsiz);
         // 0x5a
         int chmod(x64::Ptr pathname, mode_t mode);
+        // 0x5b
+        int fchmod(int fd, mode_t mode);
         // 0x5c
         int chown(x64::Ptr pathname, uid_t owner, gid_t group);
         // 0x5f
@@ -321,6 +327,8 @@ namespace kernel {
         int tgkill(int tgid, int tid, int sig);
         // 0xed
         int mbind(unsigned long start, unsigned long len, unsigned long mode, x64::Ptr64 nmask, unsigned long maxnode, unsigned flags);
+        // 0xf7
+        int waitid(int idtype, id_t id, x64::Ptr infop, int options, x64::Ptr rusage);
         // 0xfd
         int inotify_init();
         // 0xfe
@@ -329,6 +337,8 @@ namespace kernel {
         int openat(int dirfd, x64::Ptr pathname, int flags, mode_t mode);
         // 0x106
         int fstatat64(int dirfd, x64::Ptr pathname, x64::Ptr statbuf, int flags);
+        // 0x109
+        int linkat(int olddirfd, x64::Ptr oldpath, int newdirfd, x64::Ptr newpath, int flags);
         // 0x10b
         ssize_t readlinkat(int dirfd, x64::Ptr pathname, x64::Ptr buf, size_t bufsiz);
         // 0x10d

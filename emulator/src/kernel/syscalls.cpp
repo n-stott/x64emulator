@@ -93,10 +93,12 @@ namespace kernel {
             case 0x37: return threadRegs.set(x64::R64::RAX, invoke_syscall_5(&Sys::getsockopt, regs));
             case 0x38: return threadRegs.set(x64::R64::RAX, invoke_syscall_5(&Sys::clone, regs));
             case 0x3c: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::exit, regs));
+            case 0x3e: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::kill, regs));
             case 0x3f: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::uname, regs));
             case 0x48: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::fcntl, regs));
             case 0x49: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::flock, regs));
             case 0x4a: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::fsync, regs));
+            case 0x4b: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::fdatasync, regs));
             case 0x4d: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::ftruncate, regs));
             case 0x4f: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::getcwd, regs));
             case 0x50: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::chdir, regs));
@@ -105,6 +107,7 @@ namespace kernel {
             case 0x57: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::unlink, regs));
             case 0x59: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::readlink, regs));
             case 0x5a: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::chmod, regs));
+            case 0x5b: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::fchmod, regs));
             case 0x5c: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::chown, regs));
             case 0x5f: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::umask, regs));
             case 0x60: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::gettimeofday, regs));
@@ -148,10 +151,12 @@ namespace kernel {
             case 0xe9: return threadRegs.set(x64::R64::RAX, invoke_syscall_4(&Sys::epoll_ctl, regs));
             case 0xea: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::tgkill, regs));
             case 0xed: return threadRegs.set(x64::R64::RAX, invoke_syscall_6(&Sys::mbind, regs));
+            case 0xf7: return threadRegs.set(x64::R64::RAX, invoke_syscall_5(&Sys::waitid, regs));
             case 0xfd: return threadRegs.set(x64::R64::RAX, invoke_syscall_0(&Sys::inotify_init, regs));
             case 0xfe: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::inotify_add_watch, regs));
             case 0x101: return threadRegs.set(x64::R64::RAX, invoke_syscall_4(&Sys::openat, regs));
             case 0x106: return threadRegs.set(x64::R64::RAX, invoke_syscall_4(&Sys::fstatat64, regs));
+            case 0x109: return threadRegs.set(x64::R64::RAX, invoke_syscall_5(&Sys::linkat, regs));
             case 0x10b: return threadRegs.set(x64::R64::RAX, invoke_syscall_4(&Sys::readlinkat, regs));
             case 0x10d: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::faccessat, regs));
             case 0x10e: return threadRegs.set(x64::R64::RAX, invoke_syscall_6(&Sys::pselect6, regs));
@@ -800,6 +805,14 @@ namespace kernel {
         return status;
     }
 
+    int Sys::kill(pid_t pid, int sig) {
+        if(logSyscalls_) {
+            print("Sys::kill(pid={}, sig={}) = {}\n", pid, sig, -ENOTSUP);
+        }
+        warn(fmt::format("kill not implemented"));
+        return -ENOTSUP;
+    }
+
     int Sys::uname(x64::Ptr buf) {
         ErrnoOrBuffer errnoOrBuffer = Host::uname();
         if(logSyscalls_) {
@@ -827,6 +840,12 @@ namespace kernel {
     int Sys::fsync(int fd) {
         if(logSyscalls_) print("Sys::fsync(fd={}) = {}\n", fd, -ENOTSUP);
         warn(fmt::format("fsync not implemented"));
+        return -ENOTSUP;
+    }
+
+    int Sys::fdatasync(int fd) {
+        if(logSyscalls_) print("Sys::fdatasync(fd={}) = {}\n", fd, -ENOTSUP);
+        warn(fmt::format("fdatasync not implemented"));
         return -ENOTSUP;
     }
 
@@ -908,6 +927,14 @@ namespace kernel {
                         path, mode, -ENOTSUP);
         }
         warn("chmod not implemented");
+        return -ENOTSUP;
+    }
+
+    int Sys::fchmod(int fd, mode_t mode) {
+        if(logSyscalls_) {
+            print("Sys::fchmod(fd={}, mode={}) = {}\n", fd, mode, -ENOTSUP);
+        }
+        warn("fchmod not implemented");
         return -ENOTSUP;
     }
 
@@ -1165,6 +1192,15 @@ namespace kernel {
         return -ENOTSUP;
     }
 
+    int Sys::waitid(int idtype, id_t id, x64::Ptr infop, int options, x64::Ptr rusage) {
+        if(logSyscalls_) {
+            print("Sys::waitid(idtype={}, id={}, infop={:#x}, options={}, rusage={:#x}) = {}\n",
+                    idtype, id, infop.address(), options, rusage.address(), -ENOTSUP);
+        }
+        warn(fmt::format("waitid not implemented"));
+        return -ENOTSUP;
+    }
+
     int Sys::inotify_init() {
         if(logSyscalls_) print("Sys::inotify_init() = {}\n", -ENOTSUP);
         warn(fmt::format("inotify_init not implemented"));
@@ -1245,6 +1281,12 @@ namespace kernel {
         if(unmaskedOp == 1) {
             // wake
             u32 nbWoken = kernel_.scheduler().wake(uaddr, val);
+            return onExit(nbWoken);
+        }
+        if(unmaskedOp == 5) {
+            // wake_op
+            u32 val2 = (u32)timeout.address();
+            u32 nbWoken = kernel_.scheduler().wakeOp(uaddr, val, uaddr2, val2, val3);
             return onExit(nbWoken);
         }
         if(unmaskedOp == 7) {
@@ -1589,6 +1631,15 @@ namespace kernel {
             mmu_.copyToMmu(statbuf, buffer.data(), buffer.size());
             return 0;
         });
+    }
+
+    int Sys::linkat(int olddirfd, x64::Ptr oldpath, int newdirfd, x64::Ptr newpath, int flags) {
+        if(logSyscalls_) {
+            print("Sys::linkat(olddirfd={}, oldpath={:#x}, newdirfd={:#x}, newpath={:#x}, flags={}) = {}\n",
+                olddirfd, oldpath.address(), newdirfd, newpath.address(), flags, -ENOTSUP);
+        }
+        warn(fmt::format("linkat not implemented"));
+        return -ENOTSUP;
     }
 
     ssize_t Sys::readlinkat(int dirfd, x64::Ptr pathname, x64::Ptr buf, size_t bufsiz) {

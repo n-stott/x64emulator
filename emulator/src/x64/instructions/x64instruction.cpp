@@ -825,10 +825,14 @@ namespace utils {
             case Insn::CVTSI2SS_XMM_RM64: return toString<XMM, RM64>("cvtsi2ss");
             case Insn::CVTSI2SD_XMM_RM32: return toString<XMM, RM32>("cvtsi2sd");
             case Insn::CVTSI2SD_XMM_RM64: return toString<XMM, RM64>("cvtsi2sd");
+            case Insn::CVTSS2SI_R32_XMM: return toString<R32, XMM>("cvtss2si");
+            case Insn::CVTSS2SI_R32_M32:  return toString<R32, M32>("cvtss2si");
             case Insn::CVTSS2SI_R64_XMM: return toString<R64, XMM>("cvtss2si");
             case Insn::CVTSS2SI_R64_M32:  return toString<R64, M32>("cvtss2si");
             case Insn::CVTSS2SD_XMM_XMM: return toString<XMM, XMM>("cvtss2sd");
             case Insn::CVTSS2SD_XMM_M32: return toString<XMM, M32>("cvtss2sd");
+            case Insn::CVTSD2SI_R32_XMM: return toString<R64, XMM>("cvtsd2si");
+            case Insn::CVTSD2SI_R32_M64: return toString<R64, M64>("cvtsd2si");
             case Insn::CVTSD2SI_R64_XMM: return toString<R64, XMM>("cvtsd2si");
             case Insn::CVTSD2SI_R64_M64: return toString<R64, M64>("cvtsd2si");
             case Insn::CVTSD2SS_XMM_XMM: return toString<XMM, XMM>("cvtsd2ss");
@@ -846,6 +850,7 @@ namespace utils {
             case Insn::CVTDQ2PD_XMM_M64: return toString<XMM, M64>("cvtdq2pd");
             case Insn::CVTDQ2PS_XMM_XMMM128: return toString<XMM, M64>("cvtdq2ps");
             case Insn::CVTPS2DQ_XMM_XMMM128: return toString<XMM, M64>("cvtps2dq");
+            case Insn::CVTPD2PS_XMM_XMMM128: return toString<XMM, XMMM128>("cvtpd2ps");
             case Insn::STMXCSR_M32: return toString<M32>("stmxcsr");
             case Insn::LDMXCSR_M32: return toString<M32>("ldmxcsr");
             case Insn::PAND_MMX_MMXM64: return toString<MMX, MMXM64>("pand");
@@ -953,8 +958,12 @@ namespace utils {
             case Insn::PAVGW_MMX_MMXM64: return toString<MMX, MMXM64>("pavgw");
             case Insn::PAVGB_XMM_XMMM128: return toString<XMM, XMMM128>("pavgb");
             case Insn::PAVGW_XMM_XMMM128: return toString<XMM, XMMM128>("pavgw");
+            case Insn::PMAXSW_MMX_MMXM64: return toString<MMX, MMXM64>("pmaxsw");
+            case Insn::PMAXSW_XMM_XMMM128: return toString<XMM, XMMM128>("pmaxsw");
             case Insn::PMAXUB_MMX_MMXM64: return toString<MMX, MMXM64>("pmaxub");
             case Insn::PMAXUB_XMM_XMMM128: return toString<XMM, XMMM128>("pmaxub");
+            case Insn::PMINSW_MMX_MMXM64: return toString<MMX, MMXM64>("pminsw");
+            case Insn::PMINSW_XMM_XMMM128: return toString<XMM, XMMM128>("pminsw");
             case Insn::PMINUB_MMX_MMXM64: return toString<MMX, MMXM64>("pminub");
             case Insn::PMINUB_XMM_XMMM128: return toString<XMM, XMMM128>("pminub");
             case Insn::PTEST_XMM_XMMM128: return toString<XMM, XMMM128>("ptest");

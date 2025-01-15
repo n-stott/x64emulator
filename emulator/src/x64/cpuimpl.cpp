@@ -969,6 +969,13 @@ namespace x64 {
         return r;
     }
 
+    u32 CpuImpl::cvtss2si32(u32 src, SIMD_ROUNDING) {
+        float f;
+        std::memcpy(&f, &src, sizeof(f));
+        i32 rounded = F32::round32(f);
+        return (u32)rounded;
+    }
+
     u64 CpuImpl::cvtss2si64(u32 src, SIMD_ROUNDING) {
         float f;
         std::memcpy(&f, &src, sizeof(f));
@@ -976,10 +983,17 @@ namespace x64 {
         return (u64)rounded;
     }
 
+    u32 CpuImpl::cvtsd2si32(u64 src, SIMD_ROUNDING) {
+        double d;
+        std::memcpy(&d, &src, sizeof(d));
+        i32 rounded = F64::round32(d);
+        return (u64)rounded;
+    }
+
     u64 CpuImpl::cvtsd2si64(u64 src, SIMD_ROUNDING) {
         double d;
         std::memcpy(&d, &src, sizeof(d));
-        i64 rounded = F64::round(d);
+        i64 rounded = F64::round64(d);
         return (u64)rounded;
     }
 
@@ -1052,10 +1066,24 @@ namespace x64 {
                 case SIMD_ROUNDING::DOWN:
                 case SIMD_ROUNDING::UP:
                 case SIMD_ROUNDING::ZERO:
-                    throw std::logic_error{"unimplemented case in cvttps2dq"};
+                    throw std::logic_error{"unimplemented case in cvtps2dq"};
             }
             return (i32)s;
         });
+    }
+
+    u128 CpuImpl::cvtpd2ps(u128 src, SIMD_ROUNDING rounding) {
+        if(rounding != SIMD_ROUNDING::NEAREST) throw std::logic_error{"unimplemented case in cvtd2ps"};
+        std::array<double, 2> SRC;
+        std::memcpy(SRC.data(), &src, sizeof(u128));
+        
+        std::array<float, 2> RES;
+        RES[0] = (float)SRC[0];
+        RES[1] = (float)SRC[1];
+
+        u128 res { 0, 0 };
+        std::memcpy(&res.lo, RES.data(), sizeof(u64));
+        return res;
     }
 
     u128 CpuImpl::shufps(u128 dst, u128 src, u8 order) {
@@ -2144,6 +2172,38 @@ namespace x64 {
         return dst;
     }
 
+    u64 CpuImpl::pmaxsw64(u64 dst, u64 src) {
+        std::array<i16, 4> DST;
+        static_assert(sizeof(DST) == sizeof(u64));
+        std::memcpy(DST.data(), &dst, sizeof(u64));
+
+        std::array<i16, 4> SRC;
+        static_assert(sizeof(SRC) == sizeof(u64));
+        std::memcpy(SRC.data(), &src, sizeof(u64));
+
+        for(size_t i = 0; i < 4; ++i) {
+            DST[i] = std::max(DST[i], SRC[i]);
+        }
+        std::memcpy(&dst, DST.data(), sizeof(u64));
+        return dst;
+    }
+
+    u128 CpuImpl::pmaxsw128(u128 dst, u128 src) {
+        std::array<i16, 8> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        std::memcpy(DST.data(), &dst, sizeof(u128));
+
+        std::array<i16, 8> SRC;
+        static_assert(sizeof(SRC) == sizeof(u128));
+        std::memcpy(SRC.data(), &src, sizeof(u128));
+
+        for(size_t i = 0; i < 8; ++i) {
+            DST[i] = std::max(DST[i], SRC[i]);
+        }
+        std::memcpy(&dst, DST.data(), sizeof(u128));
+        return dst;
+    }
+
     u64 CpuImpl::pmaxub64(u64 dst, u64 src) {
         std::array<u8, 8> DST;
         static_assert(sizeof(DST) == sizeof(u64));
@@ -2171,6 +2231,38 @@ namespace x64 {
 
         for(size_t i = 0; i < 16; ++i) {
             DST[i] = std::max(DST[i], SRC[i]);
+        }
+        std::memcpy(&dst, DST.data(), sizeof(u128));
+        return dst;
+    }
+
+    u64 CpuImpl::pminsw64(u64 dst, u64 src) {
+        std::array<i16, 4> DST;
+        static_assert(sizeof(DST) == sizeof(u64));
+        std::memcpy(DST.data(), &dst, sizeof(u64));
+
+        std::array<i16, 4> SRC;
+        static_assert(sizeof(SRC) == sizeof(u64));
+        std::memcpy(SRC.data(), &src, sizeof(u64));
+
+        for(size_t i = 0; i < 4; ++i) {
+            DST[i] = std::min(DST[i], SRC[i]);
+        }
+        std::memcpy(&dst, DST.data(), sizeof(u64));
+        return dst;
+    }
+
+    u128 CpuImpl::pminsw128(u128 dst, u128 src) {
+        std::array<i16, 8> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        std::memcpy(DST.data(), &dst, sizeof(u128));
+
+        std::array<i16, 8> SRC;
+        static_assert(sizeof(SRC) == sizeof(u128));
+        std::memcpy(SRC.data(), &src, sizeof(u128));
+
+        for(size_t i = 0; i < 8; ++i) {
+            DST[i] = std::min(DST[i], SRC[i]);
         }
         std::memcpy(&dst, DST.data(), sizeof(u128));
         return dst;

@@ -763,9 +763,13 @@ namespace x64 {
         void execCvtss2sdXMMXMM(const X64Instruction&);
         void execCvtss2sdXMMM32(const X64Instruction&);
 
+        void execCvtss2siR32XMM(const X64Instruction&);
+        void execCvtss2siR32M32(const X64Instruction&);
         void execCvtss2siR64XMM(const X64Instruction&);
         void execCvtss2siR64M32(const X64Instruction&);
 
+        void execCvtsd2siR32XMM(const X64Instruction&);
+        void execCvtsd2siR32M64(const X64Instruction&);
         void execCvtsd2siR64XMM(const X64Instruction&);
         void execCvtsd2siR64M64(const X64Instruction&);
 
@@ -789,6 +793,8 @@ namespace x64 {
         void execCvtdq2pdXMMM64(const X64Instruction&);
 
         void execCvtps2dqXMMXMMM128(const X64Instruction&);
+
+        void execCvtpd2psXMMXMMM128(const X64Instruction&);
 
         void execStmxcsrM32(const X64Instruction&);
         void execLdmxcsrM32(const X64Instruction&);
@@ -921,8 +927,13 @@ namespace x64 {
         void execPavgbXMMXMMM128(const X64Instruction&);
         void execPavgwXMMXMMM128(const X64Instruction&);
 
+        void execPmaxswMMXMMXM64(const X64Instruction&);
+        void execPmaxswXMMXMMM128(const X64Instruction&);
         void execPmaxubMMXMMXM64(const X64Instruction&);
         void execPmaxubXMMXMMM128(const X64Instruction&);
+
+        void execPminswMMXMMXM64(const X64Instruction&);
+        void execPminswXMMXMMM128(const X64Instruction&);
         void execPminubMMXMMXM64(const X64Instruction&);
         void execPminubXMMXMMM128(const X64Instruction&);
 

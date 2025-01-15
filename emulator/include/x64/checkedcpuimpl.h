@@ -211,7 +211,9 @@ namespace x64 {
         [[nodiscard]] static u128 cvtss2sd(u128 dst, u128 src);
         [[nodiscard]] static u128 cvtsd2ss(u128 dst, u128 src);
 
+        [[nodiscard]] static u32 cvtss2si32(u32 src, SIMD_ROUNDING);
         [[nodiscard]] static u64 cvtss2si64(u32 src, SIMD_ROUNDING);
+        [[nodiscard]] static u32 cvtsd2si32(u64 src, SIMD_ROUNDING);
         [[nodiscard]] static u64 cvtsd2si64(u64 src, SIMD_ROUNDING);
 
         [[nodiscard]] static u128 cvttps2dq(u128 src);
@@ -226,6 +228,8 @@ namespace x64 {
         [[nodiscard]] static u128 cvtdq2pd(u128 src);
 
         [[nodiscard]] static u128 cvtps2dq(u128 src, SIMD_ROUNDING);
+
+        [[nodiscard]] static u128 cvtpd2ps(u128 src, SIMD_ROUNDING);
 
         [[nodiscard]] static u128 shufps(u128 dst, u128 src, u8 order);
         [[nodiscard]] static u128 shufpd(u128 dst, u128 src, u8 order);
@@ -335,8 +339,13 @@ namespace x64 {
         [[nodiscard]] static u128 pavgb128(u128 dst, u128 src);
         [[nodiscard]] static u128 pavgw128(u128 dst, u128 src);
 
+        [[nodiscard]] static u64 pmaxsw64(u64 dst, u64 src);
+        [[nodiscard]] static u128 pmaxsw128(u128 dst, u128 src);
         [[nodiscard]] static u64 pmaxub64(u64 dst, u64 src);
         [[nodiscard]] static u128 pmaxub128(u128 dst, u128 src);
+
+        [[nodiscard]] static u64 pminsw64(u64 dst, u64 src);
+        [[nodiscard]] static u128 pminsw128(u128 dst, u128 src);
         [[nodiscard]] static u64 pminub64(u64 dst, u64 src);
         [[nodiscard]] static u128 pminub128(u128 dst, u128 src);
 

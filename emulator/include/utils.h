@@ -29,11 +29,13 @@ using f32 = float;
 using f64 = double;
 
 struct F32 {
+    static i32 round32(f32 val);
     static i64 round64(f32 val);
 };
 
 struct F64 {
-    static i64 round(f64 val);
+    static i32 round32(f64 val);
+    static i64 round64(f64 val);
 };
 
 struct F80 {

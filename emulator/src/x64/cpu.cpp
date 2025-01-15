@@ -6,7 +6,6 @@
 // #include "x64/nativecpuimpl.h"
 #endif
 #include "x64/mmu.h"
-#include "emulator/vm.h"
 #include "host/hostinstructions.h"
 #include "verify.h"
 #include <fmt/core.h>
@@ -663,8 +662,12 @@ namespace x64 {
     DEFINE_STANDALONE(CVTSS2SD_XMM_M32, execCvtss2sdXMMM32)
     DEFINE_STANDALONE(CVTSD2SS_XMM_XMM, execCvtsd2ssXMMXMM)
     DEFINE_STANDALONE(CVTSD2SS_XMM_M64, execCvtsd2ssXMMM64)
+    DEFINE_STANDALONE(CVTSS2SI_R32_XMM, execCvtss2siR32XMM)
+    DEFINE_STANDALONE(CVTSS2SI_R32_M32, execCvtss2siR32M32)
     DEFINE_STANDALONE(CVTSS2SI_R64_XMM, execCvtss2siR64XMM)
     DEFINE_STANDALONE(CVTSS2SI_R64_M32, execCvtss2siR64M32)
+    DEFINE_STANDALONE(CVTSD2SI_R32_XMM, execCvtsd2siR32XMM)
+    DEFINE_STANDALONE(CVTSD2SI_R32_M64, execCvtsd2siR32M64)
     DEFINE_STANDALONE(CVTSD2SI_R64_XMM, execCvtsd2siR64XMM)
     DEFINE_STANDALONE(CVTSD2SI_R64_M64, execCvtsd2siR64M64)
     DEFINE_STANDALONE(CVTTPS2DQ_XMM_XMMM128, execCvttps2dqXMMXMMM128)
@@ -680,6 +683,7 @@ namespace x64 {
     DEFINE_STANDALONE(CVTDQ2PS_XMM_XMMM128, execCvtdq2psXMMXMMM128)
     DEFINE_STANDALONE(CVTDQ2PD_XMM_M64, execCvtdq2pdXMMM64)
     DEFINE_STANDALONE(CVTPS2DQ_XMM_XMMM128, execCvtps2dqXMMXMMM128)
+    DEFINE_STANDALONE(CVTPD2PS_XMM_XMMM128, execCvtpd2psXMMXMMM128)
     DEFINE_STANDALONE(STMXCSR_M32, execStmxcsrM32)
     DEFINE_STANDALONE(LDMXCSR_M32, execLdmxcsrM32)
     DEFINE_STANDALONE(PAND_MMX_MMXM64, execPandMMXMMXM64)
@@ -787,8 +791,12 @@ namespace x64 {
     DEFINE_STANDALONE(PAVGW_MMX_MMXM64, execPavgwMMXMMXM64)
     DEFINE_STANDALONE(PAVGB_XMM_XMMM128, execPavgbXMMXMMM128)
     DEFINE_STANDALONE(PAVGW_XMM_XMMM128, execPavgwXMMXMMM128)
+    DEFINE_STANDALONE(PMAXSW_MMX_MMXM64, execPmaxswMMXMMXM64)
+    DEFINE_STANDALONE(PMAXSW_XMM_XMMM128, execPmaxswXMMXMMM128)
     DEFINE_STANDALONE(PMAXUB_MMX_MMXM64, execPmaxubMMXMMXM64)
     DEFINE_STANDALONE(PMAXUB_XMM_XMMM128, execPmaxubXMMXMMM128)
+    DEFINE_STANDALONE(PMINSW_MMX_MMXM64, execPminswMMXMMXM64)
+    DEFINE_STANDALONE(PMINSW_XMM_XMMM128, execPminswXMMXMMM128)
     DEFINE_STANDALONE(PMINUB_MMX_MMXM64, execPminubMMXMMXM64)
     DEFINE_STANDALONE(PMINUB_XMM_XMMM128, execPminubXMMXMMM128)
     DEFINE_STANDALONE(PTEST_XMM_XMMM128, execPtestXMMXMMM128)
@@ -1328,8 +1336,12 @@ namespace x64 {
         STANDALONE_NAME(CVTSS2SD_XMM_M32),
         STANDALONE_NAME(CVTSD2SS_XMM_XMM),
         STANDALONE_NAME(CVTSD2SS_XMM_M64),
+        STANDALONE_NAME(CVTSS2SI_R32_XMM),
+        STANDALONE_NAME(CVTSS2SI_R32_M32),
         STANDALONE_NAME(CVTSS2SI_R64_XMM),
         STANDALONE_NAME(CVTSS2SI_R64_M32),
+        STANDALONE_NAME(CVTSD2SI_R32_XMM),
+        STANDALONE_NAME(CVTSD2SI_R32_M64),
         STANDALONE_NAME(CVTSD2SI_R64_XMM),
         STANDALONE_NAME(CVTSD2SI_R64_M64),
         STANDALONE_NAME(CVTTPS2DQ_XMM_XMMM128),
@@ -1345,6 +1357,7 @@ namespace x64 {
         STANDALONE_NAME(CVTDQ2PS_XMM_XMMM128),
         STANDALONE_NAME(CVTDQ2PD_XMM_M64),
         STANDALONE_NAME(CVTPS2DQ_XMM_XMMM128),
+        STANDALONE_NAME(CVTPD2PS_XMM_XMMM128),
         STANDALONE_NAME(STMXCSR_M32),
         STANDALONE_NAME(LDMXCSR_M32),
         STANDALONE_NAME(PAND_MMX_MMXM64),
@@ -1452,8 +1465,12 @@ namespace x64 {
         STANDALONE_NAME(PAVGW_MMX_MMXM64),
         STANDALONE_NAME(PAVGB_XMM_XMMM128),
         STANDALONE_NAME(PAVGW_XMM_XMMM128),
+        STANDALONE_NAME(PMAXSW_MMX_MMXM64),
+        STANDALONE_NAME(PMAXSW_XMM_XMMM128),
         STANDALONE_NAME(PMAXUB_MMX_MMXM64),
         STANDALONE_NAME(PMAXUB_XMM_XMMM128),
+        STANDALONE_NAME(PMINSW_MMX_MMXM64),
+        STANDALONE_NAME(PMINSW_XMM_XMMM128),
         STANDALONE_NAME(PMINUB_MMX_MMXM64),
         STANDALONE_NAME(PMINUB_XMM_XMMM128),
         STANDALONE_NAME(PTEST_XMM_XMMM128),
@@ -4545,6 +4562,18 @@ namespace x64 {
         set(dst, res);
     }
 
+    void Cpu::execCvtss2siR32XMM(const X64Instruction& ins) {
+        const auto& dst = ins.op0<R32>();
+        const auto& src = ins.op1<XMM>();
+        set(dst, Impl::cvtss2si32(narrow<u32, u64>(get(src).lo), simdRoundingMode()));
+    }
+
+    void Cpu::execCvtss2siR32M32(const X64Instruction& ins) {
+        const auto& dst = ins.op0<R32>();
+        const auto& src = ins.op1<M32>();
+        set(dst, Impl::cvtss2si32(get(resolve(src)), simdRoundingMode()));
+    }
+
     void Cpu::execCvtss2siR64XMM(const X64Instruction& ins) {
         const auto& dst = ins.op0<R64>();
         const auto& src = ins.op1<XMM>();
@@ -4555,6 +4584,18 @@ namespace x64 {
         const auto& dst = ins.op0<R64>();
         const auto& src = ins.op1<M32>();
         set(dst, Impl::cvtss2si64(get(resolve(src)), simdRoundingMode()));
+    }
+
+    void Cpu::execCvtsd2siR32XMM(const X64Instruction& ins) {
+        const auto& dst = ins.op0<R32>();
+        const auto& src = ins.op1<XMM>();
+        set(dst, Impl::cvtsd2si32(get(src).lo, simdRoundingMode()));
+    }
+
+    void Cpu::execCvtsd2siR32M64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<R32>();
+        const auto& src = ins.op1<M64>();
+        set(dst, Impl::cvtsd2si32(get(resolve(src)), simdRoundingMode()));
     }
 
     void Cpu::execCvtsd2siR64XMM(const X64Instruction& ins) {
@@ -4650,6 +4691,12 @@ namespace x64 {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         set(dst, Impl::cvtps2dq(get(src), simdRoundingMode()));
+    }
+
+    void Cpu::execCvtpd2psXMMXMMM128(const X64Instruction& ins) {
+        const auto& dst = ins.op0<XMM>();
+        const auto& src = ins.op1<XMMM128>();
+        set(dst, Impl::cvtpd2ps(get(src), simdRoundingMode()));
     }
 
     void Cpu::execStmxcsrM32(const X64Instruction& ins) {
@@ -5444,6 +5491,20 @@ namespace x64 {
         set(dst, res);
     }
 
+    void Cpu::execPmaxswMMXMMXM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<MMX>();
+        const auto& src = ins.op1<MMXM64>();
+        u64 res = Impl::pmaxsw64(get(dst), get(src));
+        set(dst, res);
+    }
+
+    void Cpu::execPmaxswXMMXMMM128(const X64Instruction& ins) {
+        const auto& dst = ins.op0<XMM>();
+        const auto& src = ins.op1<XMMM128>();
+        u128 res = Impl::pmaxsw128(get(dst), get(src));
+        set(dst, res);
+    }
+
     void Cpu::execPmaxubMMXMMXM64(const X64Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM64>();
@@ -5455,6 +5516,20 @@ namespace x64 {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         u128 res = Impl::pmaxub128(get(dst), get(src));
+        set(dst, res);
+    }
+
+    void Cpu::execPminswMMXMMXM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<MMX>();
+        const auto& src = ins.op1<MMXM64>();
+        u64 res = Impl::pminsw64(get(dst), get(src));
+        set(dst, res);
+    }
+
+    void Cpu::execPminswXMMXMMM128(const X64Instruction& ins) {
+        const auto& dst = ins.op0<XMM>();
+        const auto& src = ins.op1<XMMM128>();
+        u128 res = Impl::pminsw128(get(dst), get(src));
         set(dst, res);
     }
 

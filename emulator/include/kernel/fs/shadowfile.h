@@ -40,6 +40,7 @@ namespace kernel {
 
         ErrnoOrBuffer stat() override;
         ErrnoOrBuffer statfs() override;
+        ErrnoOrBuffer statx(unsigned int mask) override;
 
         ErrnoOrBuffer getdents64(size_t count) override;
         std::optional<int> fcntl(int cmd, int arg) override;

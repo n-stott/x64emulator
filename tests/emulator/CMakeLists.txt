@@ -88,6 +88,7 @@ create_simple_test(big_memcpy)
 create_simple_test(ioctl)
 create_simple_test(jit)
 create_simple_test(repnzscas)
+create_simple_test(random_call)
 
 add_executable(test_trivial_c src/test_trivial.c)
 target_compile_options(test_trivial_c PUBLIC ${CC_OPTIONS})
