@@ -14,6 +14,7 @@ namespace host {
             WRITE = (1 << 1),
         };
 
+        static u8* getVirtualMemoryRange(u64 size);
         static u8* getLowestPossibleVirtualMemoryRange(u64 size);
         static void releaseVirtualMemoryRange(u8* base, u64 size);
 

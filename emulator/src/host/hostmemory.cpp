@@ -5,6 +5,12 @@
 
 namespace host {
 
+    u8* HostMemory::getVirtualMemoryRange(u64 size) {
+        u8* ptr = (u8*)::mmap(nullptr, size, PROT_NONE, MAP_ANONYMOUS|MAP_PRIVATE, 0, 0);
+        if(ptr == (u8*)MAP_FAILED) throw std::logic_error{"Unable to get virtual memory range"};
+        return ptr;
+    }
+
     u8* HostMemory::getLowestPossibleVirtualMemoryRange(u64 size) {
         for(u64 base = 0x1000; base < 0x100'000; base += 0x1000) {
             u8* ptr = (u8*)::mmap((void*)base, size, PROT_NONE, MAP_ANONYMOUS|MAP_PRIVATE|MAP_FIXED|MAP_FIXED_NOREPLACE, 0, 0);

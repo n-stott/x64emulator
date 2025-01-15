@@ -192,12 +192,12 @@ namespace x64 {
     }
 
     Mmu::Mmu() {
-        memoryBase_ = 0x0; // nullptr maps to 0 !
-        memorySize_ = 1024 * 1024 * 1024;
-        startOfMappedMemory_ = host::HostMemory::getLowestPossibleVirtualMemoryRange(memorySize_);
+        memorySize_ = 4ull * 1024ull * 1024ull * 1024ull;
+        startOfMappedMemory_ = host::HostMemory::getVirtualMemoryRange(memorySize_);
+        memoryBase_ = startOfMappedMemory_; // nullptr does not map to 0 !
         
         // Make range below non-readable and non-writable
-        std::unique_ptr<Region> nullpage = makeRegion(0, (u64)startOfMappedMemory_, BitFlags<PROT>{PROT::NONE});
+        std::unique_ptr<Region> nullpage = makeRegion(0, (u64)16*PAGE_SIZE, BitFlags<PROT>{PROT::NONE});
         nullpage->setName("nullpage");
         addRegion(std::move(nullpage));
     }
@@ -214,11 +214,11 @@ namespace x64 {
     }
 
     const u8* Mmu::getReadPtr(u64 address) const {
-        return (const u8*)address;
+        return memoryBase_ + address;
     }
 
     u8* Mmu::getWritePtr(u64 address) {
-        return (u8*)address;
+        return memoryBase_ +address;
     }
 
     Mmu::Region* Mmu::findAddress(u64 address) {
