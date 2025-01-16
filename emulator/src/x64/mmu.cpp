@@ -210,7 +210,7 @@ namespace x64 {
 
     Mmu::Mmu() {
         // Make first page non-readable and non-writable
-        std::unique_ptr<Region> nullpage = makeRegion(0, PAGE_SIZE, BitFlags<PROT>{PROT::NONE});
+        std::unique_ptr<Region> nullpage = makeRegion(0, 16*PAGE_SIZE, BitFlags<PROT>{PROT::NONE});
         nullpage->setName("nullpage");
         addRegion(std::move(nullpage));
     }
