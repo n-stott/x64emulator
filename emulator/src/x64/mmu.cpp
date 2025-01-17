@@ -553,11 +553,13 @@ namespace x64 {
 
     void Mmu::applyRegionProtection(Mmu::Region* region, BitFlags<PROT> prot) {
         u8* ptr = getPointerToRegion(region);
-        host::HostMemory::protectVirtualMemoryRange(ptr, region->size(), toHostProtection(prot));
-        if(region->requiresMemsetToZero() && region->prot().test(PROT::WRITE)) {
+        if(region->requiresMemsetToZero()) {
+            // Find a way to delay (or avoid) this ?
+            host::HostMemory::protectVirtualMemoryRange(ptr, region->size(), toHostProtection(PROT::WRITE));
             std::memset(ptr, 0, region->size());
             region->didMemsetToZero();
         }
+        host::HostMemory::protectVirtualMemoryRange(ptr, region->size(), toHostProtection(prot));
     }
 
     void Mmu::fillRegionLookup(Region* region) {
