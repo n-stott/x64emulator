@@ -420,7 +420,8 @@ namespace x64 {
     U rol(U val, u8 count, Flags* flags) {
         constexpr u8 size = sizeof(U)*8;
         count = (count & (size == 64 ? 0x3F : 0x1F)) % size;
-        U res = (U)(val << count) | (U)(val >> (size-count));
+        U res = val;
+        if(count) res = (U)(val << count) | (U)(val >> (size-count));
         if(count) {
             flags->carry = res & 0x1;
         }
