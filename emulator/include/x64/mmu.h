@@ -148,21 +148,49 @@ namespace x64 {
             }
         }
 
-        u8 read8(Ptr8 ptr) const;
-        u16 read16(Ptr16 ptr) const;
-        u32 read32(Ptr32 ptr) const;
-        u64 read64(Ptr64 ptr) const;
-        f80 read80(Ptr80 ptr) const;
-        u128 read128(Ptr128 ptr) const;
-        u128 readUnaligned128(Ptr128 ptr) const;
+        u8 read8(Ptr8 ptr) const {
+            return read<u8>(ptr);
+        }
+        u16 read16(Ptr16 ptr) const {
+            return read<u16>(ptr);
+        }
+        u32 read32(Ptr32 ptr) const {
+            return read<u32>(ptr);
+        }
+        u64 read64(Ptr64 ptr) const {
+            return read<u64>(ptr);
+        }
+        f80 read80(Ptr80 ptr) const {
+            return read<f80>(ptr);
+        }
+        u128 read128(Ptr128 ptr) const {
+            return read<u128>(ptr);
+        }
+        u128 readUnaligned128(Ptr128 ptr) const {
+            return read<u128>(ptr);
+        }
 
-        void write8(Ptr8 ptr, u8 value);
-        void write16(Ptr16 ptr, u16 value);
-        void write32(Ptr32 ptr, u32 value);
-        void write64(Ptr64 ptr, u64 value);
-        void write80(Ptr80 ptr, f80 value);
-        void write128(Ptr128 ptr, u128 value);
-        void writeUnaligned128(Ptr128 ptr, u128 value);
+        void write8(Ptr8 ptr, u8 value) {
+            write(ptr, value);
+        }
+        void write16(Ptr16 ptr, u16 value) {
+            write(ptr, value);
+        }
+        void write32(Ptr32 ptr, u32 value) {
+            write(ptr, value);
+        }
+        void write64(Ptr64 ptr, u64 value) {
+            write(ptr, value);
+        }
+        void write80(Ptr80 ptr, f80 value) {
+            write(ptr, value);
+        }
+        void write128(Ptr128 ptr, u128 value) {
+            write(ptr, value);
+        }
+        void writeUnaligned128(Ptr128 ptr, u128 value) {
+            write(ptr, value);
+        }
 
         void dumpRegions() const;
     
@@ -195,14 +223,50 @@ namespace x64 {
     private:
 
         template<typename T, Size s>
-        T read(SPtr<s> ptr) const;
+        T read(SPtr<s> ptr) const {
+#ifdef MULTIPROCESSING
+            verify(!syscallInProgress_, "Cannot read from mmu during syscall");
+#endif
+            static_assert(sizeof(T) == pointerSize(s));
+            u64 address = ptr.address();
+            const u8* dataPtr = getReadPtr(address);
+            T value;
+            ::memcpy(&value, dataPtr, sizeof(T));
+            return value;
+        }
 
         template<typename T, Size s>
-        void write(SPtr<s> ptr, T value);
+        void write(SPtr<s> ptr, T value) {
+#ifdef MULTIPROCESSING
+            verify(!syscallInProgress_, "Cannot write to mmu during syscall");
+#endif
+            static_assert(sizeof(T) == pointerSize(s));
+            u64 address = ptr.address();
+            u8* dataPtr = getWritePtr(address);
+            ::memcpy(dataPtr, &value, sizeof(T));
+        }
 
-        const u8* getReadPtr(u64 address) const;
-        u8* getWritePtr(u64 address);
+        const u8* getReadPtr(u64 address) const {
+#ifdef CHECK_MMU_PROT
+            const Region* regionPtr = findAddress(address);
+            verify(!!regionPtr, [&]() {
+                fmt::print("No region containing {:#x}\n", address);
+            });
+            verify(region->prot().test(PROT::READ), "Region is not readable");
+#endif
+            return memoryBase_ + address;
+        }
 
+        u8* getWritePtr(u64 address) {
+#ifdef CHECK_MMU_PROT
+            const Region* regionPtr = findAddress(address);
+            verify(!!regionPtr, [&]() {
+                fmt::print("No region containing {:#x}\n", address);
+            });
+            verify(region->prot().test(PROT::WRITE), "Region is not writable");
+#endif
+            return memoryBase_ +address;
+        }
         std::unique_ptr<Region> makeRegion(u64 base, u64 size, BitFlags<PROT> prot);
         
         Region* addRegion(std::unique_ptr<Region> region);

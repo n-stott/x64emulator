@@ -5,8 +5,6 @@
 #include <cassert>
 #include <cstring>
 
-#define DEBUG_MMU 0
-
 namespace x64 {
 
     [[maybe_unused]] static BitFlags<host::HostMemory::Protection> toHostProtection(BitFlags<PROT> prot) {
@@ -214,14 +212,6 @@ namespace x64 {
         return region->prot();
     }
 
-    const u8* Mmu::getReadPtr(u64 address) const {
-        return memoryBase_ + address;
-    }
-
-    u8* Mmu::getWritePtr(u64 address) {
-        return memoryBase_ +address;
-    }
-
     Mmu::Region* Mmu::findAddress(u64 address) {
         if(address >= firstUnlookupdableAddress_) return nullptr;
         return regionLookup_[address / PAGE_SIZE];
@@ -283,82 +273,6 @@ namespace x64 {
             break;
         }
         return region;
-    }
-
-    template<typename T, Size s>
-    T Mmu::read(SPtr<s> ptr) const {
-#ifdef MULTIPROCESSING
-        verify(!syscallInProgress_, "Cannot read from mmu during syscall");
-#endif
-        static_assert(sizeof(T) == pointerSize(s));
-        u64 address = ptr.address();
-        const u8* dataPtr = getReadPtr(address);
-        T value;
-        ::memcpy(&value, dataPtr, sizeof(T));
-#if DEBUG_MMU
-        if constexpr(std::is_integral_v<T>)
-            fmt::print(stderr, "Read {:#x} from address {:#x}\n", value, address);
-#endif
-        return value;
-    }
-
-    template<typename T, Size s>
-    void Mmu::write(SPtr<s> ptr, T value) {
-#ifdef MULTIPROCESSING
-        verify(!syscallInProgress_, "Cannot write to mmu during syscall");
-#endif
-        static_assert(sizeof(T) == pointerSize(s));
-        u64 address = ptr.address();
-        u8* dataPtr = getWritePtr(address);
-        ::memcpy(dataPtr, &value, sizeof(T));
-#if DEBUG_MMU
-        if constexpr(std::is_integral_v<T>)
-            fmt::print(stderr, "Wrote {:#x} to address {:#x}\n", value, address);
-#endif
-    }
-
-    u8 Mmu::read8(Ptr8 ptr) const {
-        return read<u8>(ptr);
-    }
-    u16 Mmu::read16(Ptr16 ptr) const {
-        return read<u16>(ptr);
-    }
-    u32 Mmu::read32(Ptr32 ptr) const {
-        return read<u32>(ptr);
-    }
-    u64 Mmu::read64(Ptr64 ptr) const {
-        return read<u64>(ptr);
-    }
-    f80 Mmu::read80(Ptr80 ptr) const {
-        return read<f80>(ptr);
-    }
-    u128 Mmu::read128(Ptr128 ptr) const {
-        return read<u128>(ptr);
-    }
-    u128 Mmu::readUnaligned128(Ptr128 ptr) const {
-        return read<u128>(ptr);
-    }
-
-    void Mmu::write8(Ptr8 ptr, u8 value) {
-        write(ptr, value);
-    }
-    void Mmu::write16(Ptr16 ptr, u16 value) {
-        write(ptr, value);
-    }
-    void Mmu::write32(Ptr32 ptr, u32 value) {
-        write(ptr, value);
-    }
-    void Mmu::write64(Ptr64 ptr, u64 value) {
-        write(ptr, value);
-    }
-    void Mmu::write80(Ptr80 ptr, f80 value) {
-        write(ptr, value);
-    }
-    void Mmu::write128(Ptr128 ptr, u128 value) {
-        write(ptr, value);
-    }
-    void Mmu::writeUnaligned128(Ptr128 ptr, u128 value) {
-        write(ptr, value);
     }
 
     void Mmu::dumpRegions() const {
