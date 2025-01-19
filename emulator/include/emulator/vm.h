@@ -97,9 +97,13 @@ namespace emulator {
 
         class BBlock {
         public:
-            BBlock() {
+            explicit BBlock(x64::Cpu::BasicBlock cpuBasicBlock) : cpuBasicBlock_(std::move(cpuBasicBlock)) {
                 std::fill(next_.begin(), next_.end(), nullptr);
                 std::fill(nextCount_.begin(), nextCount_.end(), 0);
+            }
+
+            const x64::Cpu::BasicBlock& basicBlock() const {
+                return cpuBasicBlock_;
             }
 
             u64 start() const {
@@ -165,11 +169,9 @@ namespace emulator {
                 successors_.clear();
             }
 
-            static constexpr size_t CACHE_SIZE = 3;
-
-        public:
-            x64::Cpu::BasicBlock cpuBasicBlock_;
         private:
+            static constexpr size_t CACHE_SIZE = 3;
+            x64::Cpu::BasicBlock cpuBasicBlock_;
             std::array<BBlock*, CACHE_SIZE> next_;
             std::array<u64, CACHE_SIZE> nextCount_;
             std::vector<BBlock*> successors_;
