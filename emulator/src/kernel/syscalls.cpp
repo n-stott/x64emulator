@@ -324,9 +324,10 @@ namespace kernel {
                 BitFlags<x64::PROT> saved = mmu_.prot(base);
                 BitFlags<x64::PROT> savedAndWriteable = saved;
                 savedAndWriteable.add(x64::PROT::WRITE);
-                mmu_.mprotect(base, length, savedAndWriteable);
+                savedAndWriteable.remove(x64::PROT::EXEC);
+                verify(mmu_.mprotect(base, length, savedAndWriteable) >= 0, "mprotect failed");
                 mmu_.copyToMmu(x64::Ptr8{base}, buffer.data(), buffer.size());
-                mmu_.mprotect(base, length, saved);
+                verify(mmu_.mprotect(base, length, saved) >= 0, "mprotect failed");
                 auto filename = kernel_.fs().filename(FS::FD{fd});
                 mmu_.setRegionName(base, filename);
                 return 0;
