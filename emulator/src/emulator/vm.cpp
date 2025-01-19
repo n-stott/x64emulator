@@ -75,7 +75,7 @@ namespace emulator {
                 auto end = bb->end();
                 if(!start || !end) continue;
                 if(rip < start || rip > end) continue;
-                for(const auto& ins : bb->cpuBasicBlock.instructions) {
+                for(const auto& ins : bb->cpuBasicBlock_.instructions) {
                     if(ins.first.nextAddress() == rip) {
                         fmt::print("  ==> {:#12x} {}\n", ins.first.address(), ins.first.toString());
                     } else {
@@ -150,38 +150,19 @@ namespace emulator {
         BBlock* currentBasicBlock = nullptr;
         BBlock* nextBasicBlock = fetchBasicBlock();
 
-        auto findNextBasicBlock = [&]() {
-            bool foundNextBlock = false;
+        auto findNextBasicBlock = [&]() -> BBlock* {
             u64 rip = cpu_.get(x64::R64::RIP);
-            size_t firstAvailableSlot = BBlock::CACHE_SIZE-1;
-            for(size_t i = 0; i < currentBasicBlock->next.size(); ++i) {
-                if(!currentBasicBlock->next[i]) {
-                    firstAvailableSlot = i;
-                    break;
-                }
-                if(currentBasicBlock->next[i]->start() != rip) continue;
-                nextBasicBlock = currentBasicBlock->next[i];
-                ++currentBasicBlock->nextCount[i];
-                if(i > 0 && currentBasicBlock->nextCount[i] > currentBasicBlock->nextCount[i-1]) {
-                    std::swap(currentBasicBlock->next[i], currentBasicBlock->next[i-1]);
-                    std::swap(currentBasicBlock->nextCount[i], currentBasicBlock->nextCount[i-1]);
-                }
-#ifdef VM_BASICBLOCK_TELEMETRY
-                ++blockCacheHits_;
-#endif
-                foundNextBlock = true;
-                break;
-            }
-            if(!foundNextBlock) {
-                nextBasicBlock = fetchBasicBlock();
-                verify(!!nextBasicBlock);
-                currentBasicBlock->next[firstAvailableSlot] = nextBasicBlock;
-                currentBasicBlock->nextCount[firstAvailableSlot] = 1;
+            BBlock* next = currentBasicBlock->findNext(rip);
+            if(!next) {
+                next = fetchBasicBlock();
+                verify(!!next);
+                currentBasicBlock->link(next);
 #ifdef VM_BASICBLOCK_TELEMETRY
                 ++blockCacheMisses_;
                 ++basicBlockCacheMissCount_[currentBasicBlock->start()];
 #endif
             }
+            return next;
         };
 
         CpuCallback callback(&cpu_, this);
@@ -191,9 +172,10 @@ namespace emulator {
 #ifdef VM_BASICBLOCK_TELEMETRY
             ++basicBlockCount_[currentBasicBlock->start()];
 #endif
-            cpu_.exec(currentBasicBlock->cpuBasicBlock);
-            tickInfo.tick(currentBasicBlock->cpuBasicBlock.instructions.size());
-            findNextBasicBlock();
+            verify(currentBasicBlock->start() == cpu_.get(x64::R64::RIP));
+            cpu_.exec(currentBasicBlock->cpuBasicBlock_);
+            tickInfo.tick(currentBasicBlock->cpuBasicBlock_.instructions.size());
+            nextBasicBlock = findNextBasicBlock();
         }
         assert(!!currentThread_);
     }
@@ -232,7 +214,7 @@ namespace emulator {
             x64::Cpu::BasicBlock cpuBb = cpu_.createBasicBlock(blockInstructions.data(), blockInstructions.size());
             verify(!cpuBb.instructions.empty(), "Cannot create empty basic block");
             std::unique_ptr<BBlock> bblock = std::make_unique<BBlock>();
-            bblock->cpuBasicBlock = std::move(cpuBb);
+            bblock->cpuBasicBlock_ = std::move(cpuBb);
             BBlock* bblockPtr = bblock.get();
             auto insertPosition = std::lower_bound(basicBlocks_.begin(), basicBlocks_.end(), startAddress, [](const auto& bb, u64 startAddress) {
                 return bb->start() < startAddress;
@@ -477,11 +459,11 @@ namespace emulator {
             if(addressInRange(bb->start())) {
                 keysToErase.push_back(bb->start());
             }
-            for(size_t i = 0; i < bb->next.size(); ++i) {
-                const auto* bb1 = bb->next[i];
+            for(size_t i = 0; i < bb->next_.size(); ++i) {
+                const auto* bb1 = bb->next_[i];
                 if(bb1 && addressInRange(bb1->start())) {
-                    bb->next[i] = nullptr;
-                    bb->nextCount[i] = 0;
+                    bb->next_[i] = nullptr;
+                    bb->nextCount_[i] = 0;
                 }
             }
         }
@@ -506,11 +488,11 @@ namespace emulator {
             if(addressInRange(bb->start())) {
                 keysToErase.push_back(bb->start());
             }
-            for(size_t i = 0; i < bb->next.size(); ++i) {
-                const auto* bb1 = bb->next[i];
+            for(size_t i = 0; i < bb->next_.size(); ++i) {
+                const auto* bb1 = bb->next_[i];
                 if(bb1 && addressInRange(bb1->start())) {
-                    bb->next[i] = nullptr;
-                    bb->nextCount[i] = 0;
+                    bb->next_[i] = nullptr;
+                    bb->nextCount_[i] = 0;
                 }
             }
         }

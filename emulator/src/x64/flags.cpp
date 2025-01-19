@@ -3,7 +3,7 @@
 namespace x64 {
 
     std::string Flags::toString() const {
-        std::string eflags = "[    ]";
+        std::string eflags = "[     ]";
         if(carry)    eflags[1] = 'C';
         if(zero)     eflags[2] = 'Z';
         if(overflow) eflags[3] = 'O';

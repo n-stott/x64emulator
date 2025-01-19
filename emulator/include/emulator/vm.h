@@ -95,26 +95,57 @@ namespace emulator {
 
         kernel::Thread* currentThread_ { nullptr };
 
-        struct BBlock {
-            static constexpr size_t CACHE_SIZE = 3;
-
+        class BBlock {
+        public:
             BBlock() {
-                std::fill(next.begin(), next.end(), nullptr);
-                std::fill(nextCount.begin(), nextCount.end(), 0);
+                std::fill(next_.begin(), next_.end(), nullptr);
+                std::fill(nextCount_.begin(), nextCount_.end(), 0);
             }
-
-            x64::Cpu::BasicBlock cpuBasicBlock;
-            std::array<BBlock*, CACHE_SIZE> next;
-            std::array<u64, CACHE_SIZE> nextCount;
 
             u64 start() const {
-                verify(!cpuBasicBlock.instructions.empty(), "Basic block is empty");
-                return cpuBasicBlock.instructions[0].first.address();
+                verify(!cpuBasicBlock_.instructions.empty(), "Basic block is empty");
+                return cpuBasicBlock_.instructions[0].first.address();
             }
             u64 end() const {
-                verify(!cpuBasicBlock.instructions.empty(), "Basic block is empty");
-                return cpuBasicBlock.instructions.back().first.nextAddress();
+                verify(!cpuBasicBlock_.instructions.empty(), "Basic block is empty");
+                return cpuBasicBlock_.instructions.back().first.nextAddress();
             }
+
+            BBlock* findNext(u64 address) {
+                for(size_t i = 0; i < next_.size(); ++i) {
+                    if(!next_[i]) return nullptr;
+                    if(next_[i]->start() != address) continue;
+                    BBlock* result = next_[i];
+                    ++nextCount_[i];
+                    if(i > 0 && nextCount_[i] > nextCount_[i-1]) {
+                        std::swap(next_[i], next_[i-1]);
+                        std::swap(nextCount_[i], nextCount_[i-1]);
+                    }
+    #ifdef VM_BASICBLOCK_TELEMETRY
+                    ++blockCacheHits_;
+    #endif
+                    return result;
+                }
+                return nullptr;
+            }
+
+            void link(BBlock* other) {
+                size_t firstAvailableSlot = BBlock::CACHE_SIZE-1;
+                for(size_t i = 0; i < next_.size(); ++i) {
+                    if(!next_[i]) {
+                        firstAvailableSlot = i;
+                        break;
+                    }
+                }
+                next_[firstAvailableSlot] = other;
+                nextCount_[firstAvailableSlot] = 1;
+            }
+
+            static constexpr size_t CACHE_SIZE = 3;
+
+            x64::Cpu::BasicBlock cpuBasicBlock_;
+            std::array<BBlock*, CACHE_SIZE> next_;
+            std::array<u64, CACHE_SIZE> nextCount_;
         };
 
         std::vector<std::unique_ptr<BBlock>> basicBlocks_;
