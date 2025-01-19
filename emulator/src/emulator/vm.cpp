@@ -70,13 +70,12 @@ namespace emulator {
                             currentThread_->description().tid,
                             currentThread_->tickInfo().current());
             u64 rip = currentThread_->savedCpuState().regs.rip();
-            for(const auto& p : basicBlocks_) {
-                auto start = p.second->start();
-                auto end = p.second->end();
+            for(const auto& bb : basicBlocks_) {
+                auto start = bb->start();
+                auto end = bb->end();
                 if(!start || !end) continue;
                 if(rip < start || rip > end) continue;
-                const auto& bb = p.second->cpuBasicBlock;
-                for(const auto& ins : bb.instructions) {
+                for(const auto& ins : bb->cpuBasicBlock_.instructions) {
                     if(ins.first.nextAddress() == rip) {
                         fmt::print("  ==> {:#12x} {}\n", ins.first.address(), ins.first.toString());
                     } else {
@@ -151,38 +150,19 @@ namespace emulator {
         BBlock* currentBasicBlock = nullptr;
         BBlock* nextBasicBlock = fetchBasicBlock();
 
-        auto findNextBasicBlock = [&]() {
-            bool foundNextBlock = false;
+        auto findNextBasicBlock = [&]() -> BBlock* {
             u64 rip = cpu_.get(x64::R64::RIP);
-            size_t firstAvailableSlot = BBlock::CACHE_SIZE-1;
-            for(size_t i = 0; i < currentBasicBlock->next.size(); ++i) {
-                if(!currentBasicBlock->next[i]) {
-                    firstAvailableSlot = i;
-                    break;
-                }
-                if(currentBasicBlock->next[i]->start() != rip) continue;
-                nextBasicBlock = currentBasicBlock->next[i];
-                ++currentBasicBlock->nextCount[i];
-                if(i > 0 && currentBasicBlock->nextCount[i] > currentBasicBlock->nextCount[i-1]) {
-                    std::swap(currentBasicBlock->next[i], currentBasicBlock->next[i-1]);
-                    std::swap(currentBasicBlock->nextCount[i], currentBasicBlock->nextCount[i-1]);
-                }
-#ifdef VM_BASICBLOCK_TELEMETRY
-                ++blockCacheHits_;
-#endif
-                foundNextBlock = true;
-                break;
-            }
-            if(!foundNextBlock) {
-                nextBasicBlock = fetchBasicBlock();
-                verify(!!nextBasicBlock);
-                currentBasicBlock->next[firstAvailableSlot] = nextBasicBlock;
-                currentBasicBlock->nextCount[firstAvailableSlot] = 1;
+            BBlock* next = currentBasicBlock->findNext(rip);
+            if(!next) {
+                next = fetchBasicBlock();
+                verify(!!next);
+                currentBasicBlock->addSuccessor(next);
 #ifdef VM_BASICBLOCK_TELEMETRY
                 ++blockCacheMisses_;
                 ++basicBlockCacheMissCount_[currentBasicBlock->start()];
 #endif
             }
+            return next;
         };
 
         CpuCallback callback(&cpu_, this);
@@ -192,9 +172,10 @@ namespace emulator {
 #ifdef VM_BASICBLOCK_TELEMETRY
             ++basicBlockCount_[currentBasicBlock->start()];
 #endif
-            cpu_.exec(currentBasicBlock->cpuBasicBlock);
-            tickInfo.tick(currentBasicBlock->cpuBasicBlock.instructions.size());
-            findNextBasicBlock();
+            verify(currentBasicBlock->start() == cpu_.get(x64::R64::RIP));
+            cpu_.exec(currentBasicBlock->cpuBasicBlock_);
+            tickInfo.tick(currentBasicBlock->cpuBasicBlock_.instructions.size());
+            nextBasicBlock = findNextBasicBlock();
         }
         assert(!!currentThread_);
     }
@@ -204,9 +185,9 @@ namespace emulator {
 #ifdef VM_BASICBLOCK_TELEMETRY
         ++mapAccesses_;
 #endif
-        auto it = basicBlocks_.find(startAddress);
-        if(it != basicBlocks_.end()) {
-            return it->second.get();
+        auto it = basicBlocksByAddress_.find(startAddress);
+        if(it != basicBlocksByAddress_.end()) {
+            return it->second;
         } else {
             std::vector<x64::X64Instruction> blockInstructions;
             u64 address = startAddress;
@@ -233,9 +214,14 @@ namespace emulator {
             x64::Cpu::BasicBlock cpuBb = cpu_.createBasicBlock(blockInstructions.data(), blockInstructions.size());
             verify(!cpuBb.instructions.empty(), "Cannot create empty basic block");
             std::unique_ptr<BBlock> bblock = std::make_unique<BBlock>();
-            bblock->cpuBasicBlock = std::move(cpuBb);
-            auto ret = basicBlocks_.emplace(startAddress, std::move(bblock));
-            return ret.first->second.get();
+            bblock->cpuBasicBlock_ = std::move(cpuBb);
+            BBlock* bblockPtr = bblock.get();
+            auto insertPosition = std::lower_bound(basicBlocks_.begin(), basicBlocks_.end(), startAddress, [](const auto& bb, u64 startAddress) {
+                return bb->start() < startAddress;
+            });
+            basicBlocks_.insert(insertPosition, std::move(bblock));
+            basicBlocksByAddress_[startAddress] = bblockPtr;
+            return bblockPtr;
         }
     }
 
@@ -465,25 +451,17 @@ namespace emulator {
     void VM::MmuCallback::on_mprotect(u64 base, u64 length, BitFlags<x64::PROT> protBefore, BitFlags<x64::PROT> protAfter) {
         if(!protBefore.test(x64::PROT::EXEC)) return; // if we were not executable, no need to perform removal
         if(protAfter.test(x64::PROT::EXEC)) return; // if we are remaining executable, no need to perform removal
-        std::vector<u64> keysToErase;
-        for(auto& kv : vm_->basicBlocks_) {
-            auto* bb = kv.second.get();
-            verify(bb->start() == kv.first);
-            auto addressInRange = [&](u64 address) {
-                return base <= address && address < base + length;
-            };
-            if(addressInRange(bb->start())) {
-                keysToErase.push_back(bb->start());
-            }
-            for(size_t i = 0; i < bb->next.size(); ++i) {
-                const auto* bb1 = bb->next[i];
-                if(bb1 && addressInRange(bb1->start())) {
-                    bb->next[i] = nullptr;
-                    bb->nextCount[i] = 0;
-                }
-            }
+        auto begin = std::lower_bound(vm_->basicBlocks_.begin(), vm_->basicBlocks_.end(), base, [](const auto& bb, u64 address) {
+            return bb->start() < address;
+        });
+        auto end = std::upper_bound(vm_->basicBlocks_.begin(), vm_->basicBlocks_.end(), base+length, [](u64 address, const auto& bb) {
+            return address < bb->end();
+        });
+        for(auto it = begin; it != end; ++it) {
+            vm_->basicBlocksByAddress_.erase((*it)->start());
+            it->get()->removeFromCaches();
         }
-        for(const auto& key : keysToErase) vm_->basicBlocks_.erase(key);
+        vm_->basicBlocks_.erase(begin, end);
         
         vm_->executableSections_.erase(std::remove_if(vm_->executableSections_.begin(), vm_->executableSections_.end(), [&](const auto& section) {
             return (base <= section->begin && section->begin < base + length)
@@ -492,25 +470,17 @@ namespace emulator {
     }
 
     void VM::MmuCallback::on_munmap(u64 base, u64 length) {
-        std::vector<u64> keysToErase;
-        for(auto& kv : vm_->basicBlocks_) {
-            auto* bb = kv.second.get();
-            verify(bb->start() == kv.first);
-            auto addressInRange = [&](u64 address) {
-                return base <= address && address < base + length;
-            };
-            if(addressInRange(bb->start())) {
-                keysToErase.push_back(bb->start());
-            }
-            for(size_t i = 0; i < bb->next.size(); ++i) {
-                const auto* bb1 = bb->next[i];
-                if(bb1 && addressInRange(bb1->start())) {
-                    bb->next[i] = nullptr;
-                    bb->nextCount[i] = 0;
-                }
-            }
+        auto begin = std::lower_bound(vm_->basicBlocks_.begin(), vm_->basicBlocks_.end(), base, [](const auto& bb, u64 address) {
+            return bb->start() < address;
+        });
+        auto end = std::upper_bound(vm_->basicBlocks_.begin(), vm_->basicBlocks_.end(), base+length, [](u64 address, const auto& bb) {
+            return address < bb->end();
+        });
+        for(auto it = begin; it != end; ++it) {
+            vm_->basicBlocksByAddress_.erase((*it)->start());
+            it->get()->removeFromCaches();
         }
-        for(const auto& key : keysToErase) vm_->basicBlocks_.erase(key);
+        vm_->basicBlocks_.erase(begin, end);
         
         vm_->executableSections_.erase(std::remove_if(vm_->executableSections_.begin(), vm_->executableSections_.end(), [&](const auto& section) {
             return (base <= section->begin && section->begin < base + length)

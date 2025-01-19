@@ -135,6 +135,7 @@ namespace x64 {
 
     int Mmu::mprotect(u64 address, u64 length, BitFlags<PROT> prot) {
         verify(address % PAGE_SIZE == 0, "mprotect with non-page_size aligned address not supported");
+        if(prot.test(PROT::EXEC) && prot.test(PROT::WRITE)) return -EACCES;
         length = pageRoundUp(length);
         {
             // Check that all impacted regions are contiguous, i.e. we don't mprotect a hole
@@ -196,7 +197,7 @@ namespace x64 {
         startOfMappedMemory_ = host::HostMemory::getVirtualMemoryRange(memorySize_);
         memoryBase_ = startOfMappedMemory_; // nullptr does not map to 0 !
         
-        // Make range below non-readable and non-writable
+        // Make first pages non-readable and non-writable
         std::unique_ptr<Region> nullpage = makeRegion(0, (u64)16*PAGE_SIZE, BitFlags<PROT>{PROT::NONE});
         nullpage->setName("nullpage");
         addRegion(std::move(nullpage));

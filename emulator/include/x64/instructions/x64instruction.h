@@ -698,9 +698,9 @@ namespace x64 {
     public:
 
         struct Operands {
-            ArgBuffer op0;
-            ArgBuffer op1;
-            ArgBuffer op2;
+            alignas(u64) ArgBuffer op0;
+            alignas(u64) ArgBuffer op1;
+            alignas(u64) ArgBuffer op2;
         };
 
         template<Insn insn, typename... Args>

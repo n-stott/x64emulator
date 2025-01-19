@@ -121,7 +121,7 @@ endif(MULTIPROCESSING)
 
 # set_property(TARGET x64emulator PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
 
-# target_compile_options(x64emulator PUBLIC -fsanitize=address,undefined)
+# target_compile_options(x64emulator PUBLIC -fsanitize=address,undefined -fno-sanitize-recover=all)
 # target_link_libraries(x64emulator PUBLIC asan ubsan)
 
 # IF(CMAKE_BUILD_TYPE MATCHES Debug)
@@ -145,7 +145,7 @@ endif()
 target_include_directories(emulator PUBLIC include)
 target_link_libraries(emulator PUBLIC x64emulator fmt::fmt-header-only)
 
-# target_compile_options(emulator PUBLIC -fsanitize=address,undefined)
+# target_compile_options(emulator PUBLIC -fsanitize=address,undefined -fno-sanitize-recover=all)
 # target_link_libraries(emulator PUBLIC asan ubsan)
 
 if(MULTIPROCESSING)

@@ -15,7 +15,7 @@ namespace kernel {
         template<typename T>
         explicit Buffer(std::vector<T> buf) {
             data_.resize(buf.size()*sizeof(T));
-            std::memcpy(data_.data(), buf.data(), buf.size()*sizeof(T));
+            if(!buf.empty()) std::memcpy(data_.data(), buf.data(), buf.size()*sizeof(T));
         }
 
         template<typename T>
