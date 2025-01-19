@@ -70,13 +70,12 @@ namespace emulator {
                             currentThread_->description().tid,
                             currentThread_->tickInfo().current());
             u64 rip = currentThread_->savedCpuState().regs.rip();
-            for(const auto& p : basicBlocks_) {
-                auto start = p.second->start();
-                auto end = p.second->end();
+            for(const auto& bb : basicBlocks_) {
+                auto start = bb->start();
+                auto end = bb->end();
                 if(!start || !end) continue;
                 if(rip < start || rip > end) continue;
-                const auto& bb = p.second->cpuBasicBlock;
-                for(const auto& ins : bb.instructions) {
+                for(const auto& ins : bb->cpuBasicBlock.instructions) {
                     if(ins.first.nextAddress() == rip) {
                         fmt::print("  ==> {:#12x} {}\n", ins.first.address(), ins.first.toString());
                     } else {
@@ -204,9 +203,9 @@ namespace emulator {
 #ifdef VM_BASICBLOCK_TELEMETRY
         ++mapAccesses_;
 #endif
-        auto it = basicBlocks_.find(startAddress);
-        if(it != basicBlocks_.end()) {
-            return it->second.get();
+        auto it = basicBlocksByAddress_.find(startAddress);
+        if(it != basicBlocksByAddress_.end()) {
+            return it->second;
         } else {
             std::vector<x64::X64Instruction> blockInstructions;
             u64 address = startAddress;
@@ -234,8 +233,13 @@ namespace emulator {
             verify(!cpuBb.instructions.empty(), "Cannot create empty basic block");
             std::unique_ptr<BBlock> bblock = std::make_unique<BBlock>();
             bblock->cpuBasicBlock = std::move(cpuBb);
-            auto ret = basicBlocks_.emplace(startAddress, std::move(bblock));
-            return ret.first->second.get();
+            BBlock* bblockPtr = bblock.get();
+            auto insertPosition = std::lower_bound(basicBlocks_.begin(), basicBlocks_.end(), startAddress, [](const auto& bb, u64 startAddress) {
+                return bb->start() < startAddress;
+            });
+            basicBlocks_.insert(insertPosition, std::move(bblock));
+            basicBlocksByAddress_[startAddress] = bblockPtr;
+            return bblockPtr;
         }
     }
 
@@ -466,9 +470,7 @@ namespace emulator {
         if(!protBefore.test(x64::PROT::EXEC)) return; // if we were not executable, no need to perform removal
         if(protAfter.test(x64::PROT::EXEC)) return; // if we are remaining executable, no need to perform removal
         std::vector<u64> keysToErase;
-        for(auto& kv : vm_->basicBlocks_) {
-            auto* bb = kv.second.get();
-            verify(bb->start() == kv.first);
+        for(auto& bb : vm_->basicBlocks_) {
             auto addressInRange = [&](u64 address) {
                 return base <= address && address < base + length;
             };
@@ -483,7 +485,11 @@ namespace emulator {
                 }
             }
         }
-        for(const auto& key : keysToErase) vm_->basicBlocks_.erase(key);
+        for(const auto& key : keysToErase) vm_->basicBlocksByAddress_.erase(key);
+
+        vm_->basicBlocks_.erase(std::remove_if(vm_->basicBlocks_.begin(), vm_->basicBlocks_.end(), [&](const auto& bb) {
+            return base <= bb->start() && bb->end() < base + length;
+        }), vm_->basicBlocks_.end());
         
         vm_->executableSections_.erase(std::remove_if(vm_->executableSections_.begin(), vm_->executableSections_.end(), [&](const auto& section) {
             return (base <= section->begin && section->begin < base + length)
@@ -493,9 +499,7 @@ namespace emulator {
 
     void VM::MmuCallback::on_munmap(u64 base, u64 length) {
         std::vector<u64> keysToErase;
-        for(auto& kv : vm_->basicBlocks_) {
-            auto* bb = kv.second.get();
-            verify(bb->start() == kv.first);
+        for(auto& bb : vm_->basicBlocks_) {
             auto addressInRange = [&](u64 address) {
                 return base <= address && address < base + length;
             };
@@ -510,7 +514,11 @@ namespace emulator {
                 }
             }
         }
-        for(const auto& key : keysToErase) vm_->basicBlocks_.erase(key);
+        for(const auto& key : keysToErase) vm_->basicBlocksByAddress_.erase(key);
+
+        vm_->basicBlocks_.erase(std::remove_if(vm_->basicBlocks_.begin(), vm_->basicBlocks_.end(), [&](const auto& bb) {
+            return base <= bb->start() && bb->end() < base + length;
+        }), vm_->basicBlocks_.end());
         
         vm_->executableSections_.erase(std::remove_if(vm_->executableSections_.begin(), vm_->executableSections_.end(), [&](const auto& section) {
             return (base <= section->begin && section->begin < base + length)

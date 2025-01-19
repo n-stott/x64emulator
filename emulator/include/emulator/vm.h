@@ -117,7 +117,8 @@ namespace emulator {
             }
         };
 
-        std::unordered_map<u64, std::unique_ptr<BBlock>> basicBlocks_;
+        std::vector<std::unique_ptr<BBlock>> basicBlocks_;
+        std::unordered_map<u64, BBlock*> basicBlocksByAddress_;
 
 #ifdef VM_BASICBLOCK_TELEMETRY
         u64 blockCacheHits_ { 0 };
