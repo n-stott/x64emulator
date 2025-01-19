@@ -70,8 +70,14 @@ namespace elf {
         static_assert(std::is_same_v<SymbolEntryType, SymbolTableEntry32>
                    || std::is_same_v<SymbolEntryType, SymbolTableEntry64>);
     public:
-        const SymbolEntryType* begin() const { return begin_; }
-        const SymbolEntryType* end() const { return end_; }
+        template<typename Func>
+        void forEachValue(Func&& func) {
+            for(auto* it = begin_; it != end_; ++it) {
+                SymbolEntryType entry;
+                memcpy(&entry, it, sizeof(entry));
+                func(entry);
+            }
+        }
 
         size_t size() const;
         const SymbolEntryType& operator[](size_t sidx) const;

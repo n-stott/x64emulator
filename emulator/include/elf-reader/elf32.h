@@ -375,7 +375,9 @@ namespace elf {
         auto table = symbolTable();
         auto strTable = stringTable();
         if(!table) return;
-        for(const auto& entry : table.value()) callback(&strTable.value(), entry);
+        table->forEachValue([&](const auto& entry) {
+            callback(&strTable.value(), entry);
+        });
     }
 
     inline void Elf32::forAllDynamicSymbols(std::function<void(const StringTable*, const SymbolTableEntry32&)>&& callback) const {
@@ -383,7 +385,9 @@ namespace elf {
         auto dynTable = dynamicSymbolTable();
         auto dynstrTable = dynamicStringTable();
         if(!dynTable) return;
-        for(const auto& entry : dynTable.value()) callback(&dynstrTable.value(), entry);
+        dynTable->forEachValue([&](const auto& entry) {
+            callback(&dynstrTable.value(), entry);
+        });
     }
 
     inline void Elf32::forAllRelocations(std::function<void(const RelocationEntry32&)>&& callback) const {
