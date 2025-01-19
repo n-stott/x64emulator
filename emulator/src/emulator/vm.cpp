@@ -156,7 +156,7 @@ namespace emulator {
             if(!next) {
                 next = fetchBasicBlock();
                 verify(!!next);
-                currentBasicBlock->link(next);
+                currentBasicBlock->addSuccessor(next);
 #ifdef VM_BASICBLOCK_TELEMETRY
                 ++blockCacheMisses_;
                 ++basicBlockCacheMissCount_[currentBasicBlock->start()];
@@ -451,21 +451,17 @@ namespace emulator {
     void VM::MmuCallback::on_mprotect(u64 base, u64 length, BitFlags<x64::PROT> protBefore, BitFlags<x64::PROT> protAfter) {
         if(!protBefore.test(x64::PROT::EXEC)) return; // if we were not executable, no need to perform removal
         if(protAfter.test(x64::PROT::EXEC)) return; // if we are remaining executable, no need to perform removal
-        std::vector<u64> keysToErase;
-        for(auto& bb : vm_->basicBlocks_) {
-            auto addressInRange = [&](u64 address) {
-                return base <= address && address < base + length;
-            };
-            if(addressInRange(bb->start())) {
-                keysToErase.push_back(bb->start());
-                for(auto* prev : bb->blocksLinkingToThis_) prev->unlink(bb.get());
-            }
+        auto begin = std::lower_bound(vm_->basicBlocks_.begin(), vm_->basicBlocks_.end(), base, [](const auto& bb, u64 address) {
+            return bb->start() < address;
+        });
+        auto end = std::upper_bound(vm_->basicBlocks_.begin(), vm_->basicBlocks_.end(), base+length, [](u64 address, const auto& bb) {
+            return address < bb->end();
+        });
+        for(auto it = begin; it != end; ++it) {
+            vm_->basicBlocksByAddress_.erase((*it)->start());
+            it->get()->removeFromCaches();
         }
-        for(const auto& key : keysToErase) vm_->basicBlocksByAddress_.erase(key);
-
-        vm_->basicBlocks_.erase(std::remove_if(vm_->basicBlocks_.begin(), vm_->basicBlocks_.end(), [&](const auto& bb) {
-            return base <= bb->start() && bb->end() < base + length;
-        }), vm_->basicBlocks_.end());
+        vm_->basicBlocks_.erase(begin, end);
         
         vm_->executableSections_.erase(std::remove_if(vm_->executableSections_.begin(), vm_->executableSections_.end(), [&](const auto& section) {
             return (base <= section->begin && section->begin < base + length)
@@ -474,21 +470,17 @@ namespace emulator {
     }
 
     void VM::MmuCallback::on_munmap(u64 base, u64 length) {
-        std::vector<u64> keysToErase;
-        for(auto& bb : vm_->basicBlocks_) {
-            auto addressInRange = [&](u64 address) {
-                return base <= address && address < base + length;
-            };
-            if(addressInRange(bb->start())) {
-                keysToErase.push_back(bb->start());
-                for(auto* prev : bb->blocksLinkingToThis_) prev->unlink(bb.get());
-            }
+        auto begin = std::lower_bound(vm_->basicBlocks_.begin(), vm_->basicBlocks_.end(), base, [](const auto& bb, u64 address) {
+            return bb->start() < address;
+        });
+        auto end = std::upper_bound(vm_->basicBlocks_.begin(), vm_->basicBlocks_.end(), base+length, [](u64 address, const auto& bb) {
+            return address < bb->end();
+        });
+        for(auto it = begin; it != end; ++it) {
+            vm_->basicBlocksByAddress_.erase((*it)->start());
+            it->get()->removeFromCaches();
         }
-        for(const auto& key : keysToErase) vm_->basicBlocksByAddress_.erase(key);
-
-        vm_->basicBlocks_.erase(std::remove_if(vm_->basicBlocks_.begin(), vm_->basicBlocks_.end(), [&](const auto& bb) {
-            return base <= bb->start() && bb->end() < base + length;
-        }), vm_->basicBlocks_.end());
+        vm_->basicBlocks_.erase(begin, end);
         
         vm_->executableSections_.erase(std::remove_if(vm_->executableSections_.begin(), vm_->executableSections_.end(), [&](const auto& section) {
             return (base <= section->begin && section->begin < base + length)

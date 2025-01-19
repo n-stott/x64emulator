@@ -129,7 +129,7 @@ namespace emulator {
                 return nullptr;
             }
 
-            void link(BBlock* other) {
+            void addSuccessor(BBlock* other) {
                 size_t firstAvailableSlot = BBlock::CACHE_SIZE-1;
                 for(size_t i = 0; i < next_.size(); ++i) {
                     if(!next_[i]) {
@@ -139,10 +139,15 @@ namespace emulator {
                 }
                 next_[firstAvailableSlot] = other;
                 nextCount_[firstAvailableSlot] = 1;
-                other->blocksLinkingToThis_.push_back(this);
+                successors_.push_back(other);
+                other->predecessors_.push_back(this);
             }
 
-            void unlink(BBlock* other) {
+            void removePredecessor(BBlock* other) {
+                predecessors_.erase(std::remove(predecessors_.begin(), predecessors_.end(), other), predecessors_.end());
+            }
+
+            void removeSucessor(BBlock* other) {
                 for(size_t i = 0; i < next_.size(); ++i) {
                     const auto* bb1 = next_[i];
                     if(bb1 == other) {
@@ -150,14 +155,25 @@ namespace emulator {
                         nextCount_[i] = 0;
                     }
                 }
+                successors_.erase(std::remove(successors_.begin(), successors_.end(), other), successors_.end());
+            }
+
+            void removeFromCaches() {
+                for(auto* prev : predecessors_) prev->removeSucessor(this);
+                predecessors_.clear();
+                for(BBlock* successor : successors_) successor->removePredecessor(this);
+                successors_.clear();
             }
 
             static constexpr size_t CACHE_SIZE = 3;
 
+        public:
             x64::Cpu::BasicBlock cpuBasicBlock_;
+        private:
             std::array<BBlock*, CACHE_SIZE> next_;
             std::array<u64, CACHE_SIZE> nextCount_;
-            std::vector<BBlock*> blocksLinkingToThis_;
+            std::vector<BBlock*> successors_;
+            std::vector<BBlock*> predecessors_;
         };
 
         std::vector<std::unique_ptr<BBlock>> basicBlocks_;
