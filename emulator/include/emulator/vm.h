@@ -139,6 +139,17 @@ namespace emulator {
                 }
                 next_[firstAvailableSlot] = other;
                 nextCount_[firstAvailableSlot] = 1;
+                other->blocksLinkingToThis_.push_back(this);
+            }
+
+            void unlink(BBlock* other) {
+                for(size_t i = 0; i < next_.size(); ++i) {
+                    const auto* bb1 = next_[i];
+                    if(bb1 == other) {
+                        next_[i] = nullptr;
+                        nextCount_[i] = 0;
+                    }
+                }
             }
 
             static constexpr size_t CACHE_SIZE = 3;
@@ -146,6 +157,7 @@ namespace emulator {
             x64::Cpu::BasicBlock cpuBasicBlock_;
             std::array<BBlock*, CACHE_SIZE> next_;
             std::array<u64, CACHE_SIZE> nextCount_;
+            std::vector<BBlock*> blocksLinkingToThis_;
         };
 
         std::vector<std::unique_ptr<BBlock>> basicBlocks_;

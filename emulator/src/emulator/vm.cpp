@@ -458,13 +458,7 @@ namespace emulator {
             };
             if(addressInRange(bb->start())) {
                 keysToErase.push_back(bb->start());
-            }
-            for(size_t i = 0; i < bb->next_.size(); ++i) {
-                const auto* bb1 = bb->next_[i];
-                if(bb1 && addressInRange(bb1->start())) {
-                    bb->next_[i] = nullptr;
-                    bb->nextCount_[i] = 0;
-                }
+                for(auto* prev : bb->blocksLinkingToThis_) prev->unlink(bb.get());
             }
         }
         for(const auto& key : keysToErase) vm_->basicBlocksByAddress_.erase(key);
@@ -487,13 +481,7 @@ namespace emulator {
             };
             if(addressInRange(bb->start())) {
                 keysToErase.push_back(bb->start());
-            }
-            for(size_t i = 0; i < bb->next_.size(); ++i) {
-                const auto* bb1 = bb->next_[i];
-                if(bb1 && addressInRange(bb1->start())) {
-                    bb->next_[i] = nullptr;
-                    bb->nextCount_[i] = 0;
-                }
+                for(auto* prev : bb->blocksLinkingToThis_) prev->unlink(bb.get());
             }
         }
         for(const auto& key : keysToErase) vm_->basicBlocksByAddress_.erase(key);
