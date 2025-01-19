@@ -75,7 +75,7 @@ namespace emulator {
                 auto end = bb->end();
                 if(!start || !end) continue;
                 if(rip < start || rip > end) continue;
-                for(const auto& ins : bb->cpuBasicBlock_.instructions) {
+                for(const auto& ins : bb->basicBlock().instructions) {
                     if(ins.first.nextAddress() == rip) {
                         fmt::print("  ==> {:#12x} {}\n", ins.first.address(), ins.first.toString());
                     } else {
@@ -173,8 +173,8 @@ namespace emulator {
             ++basicBlockCount_[currentBasicBlock->start()];
 #endif
             verify(currentBasicBlock->start() == cpu_.get(x64::R64::RIP));
-            cpu_.exec(currentBasicBlock->cpuBasicBlock_);
-            tickInfo.tick(currentBasicBlock->cpuBasicBlock_.instructions.size());
+            cpu_.exec(currentBasicBlock->basicBlock());
+            tickInfo.tick(currentBasicBlock->basicBlock().instructions.size());
             nextBasicBlock = findNextBasicBlock();
         }
         assert(!!currentThread_);
@@ -213,8 +213,7 @@ namespace emulator {
             });
             x64::Cpu::BasicBlock cpuBb = cpu_.createBasicBlock(blockInstructions.data(), blockInstructions.size());
             verify(!cpuBb.instructions.empty(), "Cannot create empty basic block");
-            std::unique_ptr<BBlock> bblock = std::make_unique<BBlock>();
-            bblock->cpuBasicBlock_ = std::move(cpuBb);
+            std::unique_ptr<BBlock> bblock = std::make_unique<BBlock>(std::move(cpuBb));
             BBlock* bblockPtr = bblock.get();
             auto insertPosition = std::lower_bound(basicBlocks_.begin(), basicBlocks_.end(), startAddress, [](const auto& bb, u64 startAddress) {
                 return bb->start() < startAddress;
