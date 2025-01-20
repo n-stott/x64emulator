@@ -47,6 +47,8 @@ namespace kernel {
         [[nodiscard]] bool tryUnblock(FS& fs);
         [[nodiscard]] bool hasTimeout() const { return !!timeLimit_; }
 
+        Thread* thread() const { return thread_; }
+
         std::string toString() const;
 
     private:
@@ -64,6 +66,8 @@ namespace kernel {
         
         [[nodiscard]] bool tryUnblock(FS& fs);
         [[nodiscard]] bool hasTimeout() const { return !!timeLimit_; }
+
+        Thread* thread() const { return thread_; }
 
         std::string toString() const;
 
@@ -86,6 +90,8 @@ namespace kernel {
         [[nodiscard]] bool tryUnblock(FS& fs);
         [[nodiscard]] bool hasTimeout() const { return !!timeLimit_; }
 
+        Thread* thread() const { return thread_; }
+
         std::string toString() const;
 
     private:
@@ -104,6 +110,8 @@ namespace kernel {
             : thread_(thread), timer_(timer), targetTime_(targetTime) { }
 
         [[nodiscard]] bool tryUnblock(Timers& timers);
+
+        Thread* thread() const { return thread_; }
 
         std::string toString() const;
 

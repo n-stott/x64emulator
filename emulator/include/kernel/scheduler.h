@@ -65,7 +65,7 @@ namespace kernel {
     private:
         void runOnWorkerThread(int id);
         void runUserspace(emulator::VM& vm, Thread* thread);
-        void runSyscall(emulator::VM& vm, Thread* thread);
+        void runKernel(emulator::VM& vm, Thread* thread);
 
         struct ThreadOrCommand {
             enum COMMAND {
@@ -78,7 +78,6 @@ namespace kernel {
         };
 
         ThreadOrCommand tryPickNext();
-        void tryWakeUpThreads();
         void tryUnblockThreads();
         
         bool hasRunnableThread() const;

@@ -7,14 +7,14 @@ namespace kernel {
         std::string res;
         res += fmt::format("{}:{}  ", description_.pid, description_.tid);
         switch(state_) {
-            case THREAD_STATE::RUNNABLE:   { res += "runnable  "; break; }
-            case THREAD_STATE::RUNNING:    { res += "running   "; break; }
-            case THREAD_STATE::BLOCKED:    { res += "blocked   "; break; }
-            case THREAD_STATE::IN_SYSCALL: { res += "in syscall"; break; }
-            case THREAD_STATE::SLEEPING:   { res += "sleeping  "; break; }
-            case THREAD_STATE::DEAD:       { res += "dead      "; break; }
+            case STATE::RUNNABLE:   { res += "runnable  "; break; }
+            case STATE::RUNNING:    { res += "running   "; break; }
+            case STATE::BLOCKED:    { res += "blocked   "; break; }
+            case STATE::SLEEPING:   { res += "sleeping  "; break; }
+            case STATE::DEAD:       { res += "dead      "; break; }
         }
-        res += fmt::format("exit={}  ", exitStatus_);
+        res += fmt::format("exit={:2}  ", exitStatus_);
+        res += fmt::format("  {:10} instructions", tickInfo_.nbInstructions());
         return res;
     }
 

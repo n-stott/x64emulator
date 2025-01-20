@@ -30,13 +30,17 @@ namespace kernel {
             int tid { 0xfeed };
         };
         
-        enum class THREAD_STATE {
+        enum class STATE {
             RUNNABLE,
             RUNNING,
             BLOCKED,
-            IN_SYSCALL,
             SLEEPING,
             DEAD,
+        };
+
+        enum class RING {
+            KERNEL,
+            USERSPACE,
         };
 
         struct SavedCpuState {
@@ -81,8 +85,10 @@ namespace kernel {
 
         const Description& description() const { return description_; }
 
-        THREAD_STATE state() const { return state_; }
-        void setState(THREAD_STATE newState) { state_ = newState; }
+        STATE state() const { return state_; }
+        void setState(STATE newState) { state_ = newState; }
+
+        RING ring() const { return ring_; }
 
         TickInfo& tickInfo() { return tickInfo_; }
         const TickInfo& tickInfo() const { return tickInfo_; }
@@ -90,13 +96,11 @@ namespace kernel {
 
         void enterSyscall() {
             yield();
-            setState(THREAD_STATE::IN_SYSCALL);
+            ring_ = RING::KERNEL;
         }
 
         void exitSyscall() {
-            if(state() == THREAD_STATE::IN_SYSCALL) {
-                setState(THREAD_STATE::RUNNING);
-            }
+            ring_ = RING::USERSPACE;
         }
 
         SavedCpuState& savedCpuState() { return savedCpuState_; }
@@ -193,7 +197,8 @@ namespace kernel {
         void dumpStackTrace(const std::unordered_map<u64, std::string>& addressToSymbol) const;
 
     private:
-        THREAD_STATE state_ { THREAD_STATE::RUNNABLE };
+        STATE state_ { STATE::RUNNABLE };
+        RING ring_ { RING::USERSPACE };
         Description description_;
         SavedCpuState savedCpuState_;
         x64::Ptr32 setChildTid_ { 0 };
