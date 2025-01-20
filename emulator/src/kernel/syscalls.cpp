@@ -22,7 +22,7 @@ namespace kernel {
 
     template<typename... Args>
     void Sys::print(const char* format, Args... args) const {
-        fmt::print("[{}:{}@{:#12x}] ", currentThread_->description().pid, currentThread_->description().tid, currentThread_->tickInfo().current());
+        fmt::print("[{}:{}@{:#12x}] ", currentThread_->description().pid, currentThread_->description().tid, currentThread_->tickInfo().nbInstructions());
         fmt::print(format, args...);
         [[maybe_unused]]int ret = fflush(stdout);
     }

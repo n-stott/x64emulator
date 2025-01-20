@@ -8,6 +8,7 @@
 #include "x64/x87.h"
 #include "x64/types.h"
 #include "utils.h"
+#include "verify.h"
 #include <cstddef>
 #include <deque>
 #include <string>
@@ -47,42 +48,34 @@ namespace kernel {
         };
 
         class TickInfo {
-            size_t current_ { 0 };
-            size_t end_ { 0 };
-            size_t savedEnd_ { 0 };
-            size_t start_ { 0 };
-            size_t totalExceptCurrentSlice_ { 0 };
+            u64 waitTime_ { 0 };
+            u64 nbInstructions_ { 0 };
+            u64 instructionLimit_ { 0 };
 
         public:
             bool isStopAsked() const {
-                return current_ >= end_;
+                return nbInstructions_ >= instructionLimit_;
             }
 
-            size_t total() const {
-                return totalExceptCurrentSlice_ + (current_ - start_);
+            u64 nbInstructions() const { return nbInstructions_; }
+            u64 ns() const { return waitTime_ + nbInstructions_; }
+
+            void tick(u64 count) {
+                nbInstructions_ += count;
             }
 
-            void tick() { ++current_; }
-            void tick(u64 count) { current_ += count; }
-            size_t current() const { return current_; }
-            TimeDifference timeElapsedThisSlice() const { return TimeDifference::fromNanoSeconds(current_ - start_); }
-            PreciseTime currentTime() const { return PreciseTime{} + TimeDifference::fromNanoSeconds(current_); }
-            void setSlice(size_t start, size_t end) {
-                totalExceptCurrentSlice_ += current_ - start_;
-                start_ = start;
-                current_ = start;
-                end_ = end;
+            PreciseTime currentTime() const {
+                return PreciseTime{} + TimeDifference::fromNanoSeconds(ns());
             }
 
-            void yield() { end_ = current_; }
-            
-            void enterSyscall() {
-                savedEnd_ = end_;
-                end_ = current_;
+            void setSlice(u64 current, u64 sliceDuration) {
+                verify(current >= waitTime_ + nbInstructions_);
+                waitTime_ = current - nbInstructions_;
+                instructionLimit_ = nbInstructions_ + sliceDuration;
             }
 
-            void exitSyscall() {
-                end_ = savedEnd_;
+            void yield() {
+                instructionLimit_ = nbInstructions_;
             }
         };
 
@@ -96,13 +89,12 @@ namespace kernel {
         void yield() { tickInfo_.yield(); }
 
         void enterSyscall() {
-            tickInfo_.enterSyscall();
+            yield();
             setState(THREAD_STATE::IN_SYSCALL);
         }
 
         void exitSyscall() {
             if(state() == THREAD_STATE::IN_SYSCALL) {
-                tickInfo_.exitSyscall();
                 setState(THREAD_STATE::RUNNING);
             }
         }
@@ -161,21 +153,21 @@ namespace kernel {
         };
 
         void didSyscall(u64 syscallNumber) {
-            syscallEvents_.push_back(SyscallEvent{tickInfo_.current(), syscallNumber});
+            syscallEvents_.push_back(SyscallEvent{tickInfo_.ns(), syscallNumber});
         }
 
         void pushCallstack(u64 from, u64 to) {
             callpoint_.push_back(from);
             callstack_.push_back(to);
             if(isProfiling_) {
-                callEvents_.push_back(CallEvent{tickInfo_.current(), to});
+                callEvents_.push_back(CallEvent{tickInfo_.ns(), to});
             }
         }
 
         u64 popCallstack() {
             u64 address = callstack_.back();
             if(isProfiling_) {
-                retEvents_.push_back(RetEvent{tickInfo_.current()});
+                retEvents_.push_back(RetEvent{tickInfo_.ns()});
             }
             callstack_.pop_back();
             callpoint_.pop_back();

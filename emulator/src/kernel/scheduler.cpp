@@ -72,7 +72,7 @@ namespace kernel {
                 }
 
                 threadToRun->setState(Thread::THREAD_STATE::RUNNING);
-                threadToRun->tickInfo().setSlice(currentTime_.count(), currentTime_.count() + DEFAULT_TIME_SLICE);
+                threadToRun->tickInfo().setSlice(currentTime_.count(), DEFAULT_TIME_SLICE);
 
                 while(!threadToRun->tickInfo().isStopAsked()) {
                     verify(threadToRun->state() == Thread::THREAD_STATE::RUNNING);
@@ -454,7 +454,7 @@ namespace kernel {
     void Scheduler::dumpThreadSummary() const {
         forEachThread([&](const Thread& thread) {
             fmt::print("Thread #{} : {}\n", thread.description().tid, thread.toString());
-            fmt::print("    instructions   {:<10} \n", thread.tickInfo().total());
+            fmt::print("    instructions   {:<10} \n", thread.tickInfo().nbInstructions());
             fmt::print("    syscalls       {:<10} \n", thread.stats().syscalls);
             fmt::print("    function calls {:<10} \n", thread.stats().functionCalls);
             thread.dumpRegisters();

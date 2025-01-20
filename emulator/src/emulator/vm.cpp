@@ -68,7 +68,7 @@ namespace emulator {
             fmt::print("Crash in thread {}:{} after {} instructions\n",
                             currentThread_->description().pid,
                             currentThread_->description().tid,
-                            currentThread_->tickInfo().current());
+                            currentThread_->tickInfo().nbInstructions());
             u64 rip = currentThread_->savedCpuState().regs.rip();
             for(const auto& bb : basicBlocks_) {
                 auto start = bb->start();
