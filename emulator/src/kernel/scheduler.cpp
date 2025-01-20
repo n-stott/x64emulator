@@ -42,27 +42,11 @@ namespace kernel {
                 verify(!!threadOrCommand.thread);
                 Thread* threadToRun = threadOrCommand.thread;
 
-                threadToRun->setState(Thread::THREAD_STATE::RUNNING);
-                threadToRun->tickInfo().setSlice(currentTime_.count(), DEFAULT_TIME_SLICE);
-
-                while(!threadToRun->tickInfo().isStopAsked()) {
-                    verify(threadToRun->state() == Thread::THREAD_STATE::RUNNING);
-                    syncThreadTimeSlice(threadToRun);
-                    vm.execute(threadToRun);
-                    syncThreadTimeSlice(threadToRun);
-
-                    if(threadToRun->state() == Thread::THREAD_STATE::IN_SYSCALL) {
-                        emulator::VM::MmuCallback callback(&mmu_, &vm);
-                        kernel_.timers().updateAll(currentTime_);
-                        kernel_.sys().syscall(threadToRun);
-                        threadToRun->exitSyscall();
-                    }
+                if(threadToRun->state() == Thread::THREAD_STATE::IN_SYSCALL) {
+                    runSyscall(vm, threadToRun);
+                } else {
+                    runUserspace(vm, threadToRun);
                 }
-                if(threadToRun->state() == Thread::THREAD_STATE::RUNNING)
-                    threadToRun->setState(Thread::THREAD_STATE::RUNNABLE);
-                
-                syncThreadTimeSlice(threadToRun);
-
             } catch(...) {
                 kernel_.panic();
                 vm.crash();
@@ -101,6 +85,30 @@ namespace kernel {
             });
             vm.tryRetrieveSymbols(addresses, &addressToSymbol_);
         }
+    }
+
+    void Scheduler::runUserspace(emulator::VM& vm, Thread* thread) {
+        verify(thread->state() == Thread::THREAD_STATE::RUNNABLE);
+        thread->setState(Thread::THREAD_STATE::RUNNING);
+        thread->tickInfo().setSlice(currentTime_.count(), DEFAULT_TIME_SLICE);
+
+        while(!thread->tickInfo().isStopAsked()) {
+            verify(thread->state() == Thread::THREAD_STATE::RUNNING);
+            syncThreadTimeSlice(thread);
+            vm.execute(thread);
+            syncThreadTimeSlice(thread);
+        }
+        if(thread->state() == Thread::THREAD_STATE::RUNNING)
+            thread->setState(Thread::THREAD_STATE::RUNNABLE);
+    }
+
+    void Scheduler::runSyscall(emulator::VM& vm, Thread* thread) {
+        verify(thread->state() == Thread::THREAD_STATE::IN_SYSCALL);
+        emulator::VM::MmuCallback callback(&mmu_, &vm);
+        kernel_.timers().updateAll(currentTime_);
+        kernel_.sys().syscall(thread);
+        if(thread->state() == Thread::THREAD_STATE::IN_SYSCALL)
+            thread->setState(Thread::THREAD_STATE::RUNNABLE);
     }
 
     void Scheduler::run() {
@@ -211,8 +219,14 @@ namespace kernel {
                 nullptr,
             };
         }
+
+        // First we look for a thread trying to perform a syscall
+        Thread* threadToRun = findThread(Thread::THREAD_STATE::IN_SYSCALL);
         
-        Thread* threadToRun = findThread(Thread::THREAD_STATE::RUNNABLE);
+        // If there are none, we look for a thread that is runnable
+        if(!threadToRun) threadToRun = findThread(Thread::THREAD_STATE::RUNNABLE);
+
+        // If there still isn't any, we may need to wait
         if(!threadToRun) {
             bool needsToWaitForNewThreads = !sleepBlockers_.empty()
                     || std::any_of(pollBlockers_.begin(), pollBlockers_.end(), [](const PollBlocker& blocker) { return blocker.hasTimeout(); })

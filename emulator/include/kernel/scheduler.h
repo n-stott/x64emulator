@@ -16,6 +16,10 @@ namespace x64 {
     class Mmu;
 }
 
+namespace emulator {
+    class VM;
+}
+
 namespace profiling {
     class ProfilingData;
 }
@@ -60,11 +64,13 @@ namespace kernel {
 
     private:
         void runOnWorkerThread(int id);
+        void runUserspace(emulator::VM& vm, Thread* thread);
+        void runSyscall(emulator::VM& vm, Thread* thread);
 
         struct ThreadOrCommand {
             enum COMMAND {
                 RUN,   // run the thread
-                WAIT,  // no thread, wait for a while
+                WAIT,  // no thread to run, wait for a while
                 EXIT,  // no more threads to run, stop running
                 ABORT, // error encountered
             } command;
