@@ -32,44 +32,15 @@ namespace kernel {
         emulator::VM vm(cpu, mmu_, kernel_);
         while(!emulator::signal_interrupt) {
             try {
-                Thread* threadToRun = nullptr;
-                {
-                    std::unique_lock lock(schedulerMutex_);
-                    schedulerHasRunnableThread_.wait(lock, [&]{
-                        return !kernel_.hasPanicked()     // something bad happened
-                            || this->hasRunnableThread()  // we want to run an available thread
-                            || this->allThreadsDead()     // we need to exit because all threads are dead
-                            || this->hasSleepingThread()  // we need to exit to test the sleep condition
-                            || this->allThreadsBlocked(); // we have a deadlock :(
-                    });
+                ThreadOrCommand threadOrCommand = tryPickNext();
+                if(threadOrCommand.command == ThreadOrCommand::ABORT
+                || threadOrCommand.command == ThreadOrCommand::EXIT) break;
 
-                    assert(kernel_.hasPanicked() || hasRunnableThread() || allThreadsDead() || this->hasSleepingThread() || allThreadsBlocked());
-                    if(kernel_.hasPanicked()) break;
+                if(threadOrCommand.command == ThreadOrCommand::WAIT) continue;
 
-                    threadToRun = pickNext();
-                }
-
-                if(!threadToRun) {
-                    // No more thread alive
-                    if(allAliveThreads_.empty()) break;
-
-                    bool needsToWaitForNewThreads = !sleepBlockers_.empty()
-                            || std::any_of(pollBlockers_.begin(), pollBlockers_.end(), [](const PollBlocker& blocker) { return blocker.hasTimeout(); })
-                            || std::any_of(selectBlockers_.begin(), selectBlockers_.end(), [](const SelectBlocker& blocker) { return blocker.hasTimeout(); })
-                            || std::any_of(epollWaitBlockers_.begin(), epollWaitBlockers_.end(), [](const EpollWaitBlocker& blocker) { return blocker.hasTimeout(); })
-                            || std::any_of(futexBlockers_.begin(), futexBlockers_.end(), [](const FutexBlocker& blocker) { return blocker.hasTimeout(); });
-                    if(needsToWaitForNewThreads) {
-                        // If we need some time to pass, actually advance in time
-                        // Note: we actually need to honor the wait time. The host may need some time to give an answer.
-                        std::this_thread::sleep_for(std::chrono::milliseconds{1});
-                        std::unique_lock lock(schedulerMutex_);
-                        currentTime_ = std::max(currentTime_, currentTime_ + TimeDifference::fromNanoSeconds(1'000'000 )); // 1ms
-                    } else {
-                        // Otherwise, just wait a bit
-                        std::this_thread::sleep_for(std::chrono::milliseconds{1});
-                    }
-                    continue;
-                }
+                verify(threadOrCommand.command == ThreadOrCommand::RUN);
+                verify(!!threadOrCommand.thread);
+                Thread* threadToRun = threadOrCommand.thread;
 
                 threadToRun->setState(Thread::THREAD_STATE::RUNNING);
                 threadToRun->tickInfo().setSlice(currentTime_.count(), DEFAULT_TIME_SLICE);
@@ -185,7 +156,24 @@ namespace kernel {
         });
     }
 
-    Thread* Scheduler::pickNext() {
+    Scheduler::ThreadOrCommand Scheduler::tryPickNext() {
+        std::unique_lock lock(schedulerMutex_);
+        schedulerHasRunnableThread_.wait(lock, [&]{
+            return !kernel_.hasPanicked()     // something bad happened
+                || this->hasRunnableThread()  // we want to run an available thread
+                || this->allThreadsDead()     // we need to exit because all threads are dead
+                || this->hasSleepingThread()  // we need to exit to test the sleep condition
+                || this->allThreadsBlocked(); // we have a deadlock :(
+        });
+
+        assert(kernel_.hasPanicked() || hasRunnableThread() || allThreadsDead() || this->hasSleepingThread() || allThreadsBlocked());
+        if(kernel_.hasPanicked()) {
+            return ThreadOrCommand {
+                ThreadOrCommand::ABORT,
+                nullptr,
+            };
+        }
+
         tryWakeUpThreads();
         tryUnblockThreads();
         auto findThread = [&](Thread::THREAD_STATE state) -> Thread* {
@@ -218,17 +206,39 @@ namespace kernel {
 
         if(allAliveThreads_.empty()) {
             schedulerHasRunnableThread_.notify_all();
-            return nullptr;
+            return ThreadOrCommand {
+                ThreadOrCommand::EXIT,
+                nullptr,
+            };
         }
         
         Thread* threadToRun = findThread(Thread::THREAD_STATE::RUNNABLE);
-        if(!threadToRun) return nullptr;
+        if(!threadToRun) {
+            bool needsToWaitForNewThreads = !sleepBlockers_.empty()
+                    || std::any_of(pollBlockers_.begin(), pollBlockers_.end(), [](const PollBlocker& blocker) { return blocker.hasTimeout(); })
+                    || std::any_of(selectBlockers_.begin(), selectBlockers_.end(), [](const SelectBlocker& blocker) { return blocker.hasTimeout(); })
+                    || std::any_of(epollWaitBlockers_.begin(), epollWaitBlockers_.end(), [](const EpollWaitBlocker& blocker) { return blocker.hasTimeout(); })
+                    || std::any_of(futexBlockers_.begin(), futexBlockers_.end(), [](const FutexBlocker& blocker) { return blocker.hasTimeout(); });
+            if(needsToWaitForNewThreads) {
+                // If we need some time to pass, actually advance in time
+                currentTime_ = std::max(currentTime_, currentTime_ + TimeDifference::fromNanoSeconds(1'000'000 )); // 1ms
+            }
+            // Note: we actually need to honor the wait time. The host may need some time to give an answer.
+            std::this_thread::sleep_for(std::chrono::milliseconds{1});
+            return ThreadOrCommand {
+                ThreadOrCommand::WAIT,
+                nullptr,
+            };
+        }
 
         std::stable_partition(allAliveThreads_.begin(), allAliveThreads_.end(), [=](Thread* thread) -> bool {
             return thread != threadToRun;
         });
         assert(allAliveThreads_.back() == threadToRun);
-        return threadToRun;
+        return ThreadOrCommand {
+            ThreadOrCommand::RUN,
+            threadToRun,
+        };
     }
 
     void Scheduler::tryWakeUpThreads() {

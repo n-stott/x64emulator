@@ -60,7 +60,18 @@ namespace kernel {
 
     private:
         void runOnWorkerThread(int id);
-        Thread* pickNext();
+
+        struct ThreadOrCommand {
+            enum COMMAND {
+                RUN,   // run the thread
+                WAIT,  // no thread, wait for a while
+                EXIT,  // no more threads to run, stop running
+                ABORT, // error encountered
+            } command;
+            Thread* thread { nullptr };
+        };
+
+        ThreadOrCommand tryPickNext();
         void tryWakeUpThreads();
         void tryUnblockThreads();
         
