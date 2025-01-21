@@ -84,10 +84,13 @@ namespace kernel {
         };
 
         ThreadOrCommand tryPickNext(const Worker&);
+        void stopRunningThread(Thread* thread);
+        
         void tryUnblockThreads();
+        void block(Thread*);
+        void unblock(Thread*);
         
         bool hasRunnableThread(bool canRunSyscalls) const;
-        bool hasSleepingThread() const;
         bool allThreadsBlocked() const;
         bool allThreadsDead() const;
 
@@ -105,7 +108,9 @@ namespace kernel {
 
         std::vector<std::unique_ptr<Thread>> threads_;
 
-        std::deque<Thread*> allAliveThreads_;
+        std::deque<Thread*> runningThreads_;
+        std::deque<Thread*> runnableThreads_;
+        std::deque<Thread*> blockedThreads_;
 
         std::vector<FutexBlocker> futexBlockers_;
         std::vector<PollBlocker> pollBlockers_;

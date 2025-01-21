@@ -29,14 +29,6 @@ namespace kernel {
             int pid { 0xface };
             int tid { 0xfeed };
         };
-        
-        enum class STATE {
-            RUNNABLE,
-            RUNNING,
-            BLOCKED,
-            SLEEPING,
-            DEAD,
-        };
 
         enum class RING {
             KERNEL,
@@ -84,9 +76,6 @@ namespace kernel {
         };
 
         const Description& description() const { return description_; }
-
-        STATE state() const { return state_; }
-        void setState(STATE newState) { state_ = newState; }
 
         RING ring() const { return ring_; }
 
@@ -197,7 +186,6 @@ namespace kernel {
         void dumpStackTrace(const std::unordered_map<u64, std::string>& addressToSymbol) const;
 
     private:
-        STATE state_ { STATE::RUNNABLE };
         RING ring_ { RING::USERSPACE };
         Description description_;
         SavedCpuState savedCpuState_;

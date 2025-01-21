@@ -6,13 +6,6 @@ namespace kernel {
     std::string Thread::toString() const {
         std::string res;
         res += fmt::format("{}:{}  ", description_.pid, description_.tid);
-        switch(state_) {
-            case STATE::RUNNABLE:   { res += "runnable  "; break; }
-            case STATE::RUNNING:    { res += "running   "; break; }
-            case STATE::BLOCKED:    { res += "blocked   "; break; }
-            case STATE::SLEEPING:   { res += "sleeping  "; break; }
-            case STATE::DEAD:       { res += "dead      "; break; }
-        }
         res += fmt::format("exit={:2}  ", exitStatus_);
         res += fmt::format("  {:10} instructions", tickInfo_.nbInstructions());
         return res;
