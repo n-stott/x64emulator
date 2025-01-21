@@ -3,6 +3,7 @@
 
 #include "kernel/threadblocker.h"
 #include "kernel/timers.h"
+#include "kernel/utils/mutexprotected.h"
 #include "x64/types.h"
 #include "utils.h"
 #include <condition_variable>
@@ -108,9 +109,14 @@ namespace kernel {
 
         std::vector<std::unique_ptr<Thread>> threads_;
 
-        std::deque<Thread*> runningThreads_;
-        std::deque<Thread*> runnableThreads_;
-        std::deque<Thread*> blockedThreads_;
+        struct ThreadQueues {
+            std::deque<Thread*> running;
+            std::deque<Thread*> runnable;
+            std::deque<Thread*> blocked;
+        };
+
+        MutexProtected<ThreadQueues> threadQueues_;
+
 
         std::vector<FutexBlocker> futexBlockers_;
         std::vector<PollBlocker> pollBlockers_;
