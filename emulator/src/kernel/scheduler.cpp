@@ -25,14 +25,13 @@ namespace kernel {
         currentTime_ = std::max(currentTime_, thread->tickInfo().currentTime());
     }
 
-    void Scheduler::runOnWorkerThread(int id) {
-        (void)id;
+    void Scheduler::runOnWorkerThread(Worker worker) {
         bool didShowCrashMessage = false;
         x64::Cpu cpu(mmu_);
         emulator::VM vm(cpu, mmu_, kernel_);
         while(!emulator::signal_interrupt) {
             try {
-                ThreadOrCommand threadOrCommand = tryPickNext();
+                ThreadOrCommand threadOrCommand = tryPickNext(worker);
                 if(threadOrCommand.command == ThreadOrCommand::ABORT
                 || threadOrCommand.command == ThreadOrCommand::EXIT) break;
 
@@ -117,13 +116,13 @@ namespace kernel {
     void Scheduler::run() {
 #ifdef MULTIPROCESSING
         std::vector<std::thread> workerThreads;
-        workerThreads.emplace_back(std::bind(&Scheduler::runOnWorkerThread, this, 0));
-        workerThreads.emplace_back(std::bind(&Scheduler::runOnWorkerThread, this, 1));
+        workerThreads.emplace_back(std::bind(&Scheduler::runOnWorkerThread, this, Worker{0}));
+        workerThreads.emplace_back(std::bind(&Scheduler::runOnWorkerThread, this, Worker{1}));
         for(std::thread& workerThread : workerThreads) {
             workerThread.join();
         }
 #else
-        runOnWorkerThread(0);
+        runOnWorkerThread(Worker{});
 #endif
     }
 
@@ -160,24 +159,31 @@ namespace kernel {
         });
     }
 
-    bool Scheduler::hasRunnableThread() const {
-        return std::any_of(allAliveThreads_.begin(), allAliveThreads_.end(), [](Thread* thread) {
+    bool Scheduler::hasRunnableThread(bool canRunSyscalls) const {
+        return std::any_of(allAliveThreads_.begin(), allAliveThreads_.end(), [=](Thread* thread) {
             assert(!!thread);
-            return thread->state() == Thread::STATE::RUNNABLE;
+            if(thread->state() != Thread::STATE::RUNNABLE) return false;
+            if(thread->ring() == Thread::RING::KERNEL && !canRunSyscalls) return false;
+            return true;
         });
     }
 
-    Scheduler::ThreadOrCommand Scheduler::tryPickNext() {
+    Scheduler::ThreadOrCommand Scheduler::tryPickNext(const Worker& worker) {
         std::unique_lock lock(schedulerMutex_);
         schedulerHasRunnableThread_.wait(lock, [&]{
             return !kernel_.hasPanicked()     // something bad happened
-                || this->hasRunnableThread()  // we want to run an available thread
+                || this->hasRunnableThread(worker.canRunSyscalls())  // we want to run an available thread
                 || this->allThreadsDead()     // we need to exit because all threads are dead
                 || this->hasSleepingThread()  // we need to exit to test the sleep condition
                 || this->allThreadsBlocked(); // we have a deadlock :(
         });
 
-        assert(kernel_.hasPanicked() || hasRunnableThread() || allThreadsDead() || this->hasSleepingThread() || allThreadsBlocked());
+        assert(kernel_.hasPanicked()
+            || hasRunnableThread(worker.canRunSyscalls())
+            || allThreadsDead()
+            || this->hasSleepingThread()
+            || allThreadsBlocked());
+
         if(kernel_.hasPanicked()) {
             return ThreadOrCommand {
                 ThreadOrCommand::ABORT,
@@ -217,7 +223,10 @@ namespace kernel {
         auto findThread = [&](Thread::STATE state, Thread::RING ring) -> Thread* {
             auto it = std::find_if(allAliveThreads_.begin(), allAliveThreads_.end(), [=](Thread* thread) {
                 assert(!!thread);
-                return thread->state() == state && thread->ring() == ring;
+                if(thread->state() != state) return false;
+                if(thread->ring() != ring) return false;
+                if(ring == Thread::RING::KERNEL && !worker.canRunSyscalls()) return false;
+                return true;
             });
             if(it == allAliveThreads_.end()) return nullptr;
             return *it;

@@ -63,7 +63,13 @@ namespace kernel {
         PreciseTime kernelTime() const { return currentTime_; }
 
     private:
-        void runOnWorkerThread(int id);
+
+        struct Worker {
+            int id { 0 };
+            bool canRunSyscalls() const { return id == 0; };
+        };
+
+        void runOnWorkerThread(Worker worker);
         void runUserspace(emulator::VM& vm, Thread* thread);
         void runKernel(emulator::VM& vm, Thread* thread);
 
@@ -77,10 +83,10 @@ namespace kernel {
             Thread* thread { nullptr };
         };
 
-        ThreadOrCommand tryPickNext();
+        ThreadOrCommand tryPickNext(const Worker&);
         void tryUnblockThreads();
         
-        bool hasRunnableThread() const;
+        bool hasRunnableThread(bool canRunSyscalls) const;
         bool hasSleepingThread() const;
         bool allThreadsBlocked() const;
         bool allThreadsDead() const;
