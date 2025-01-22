@@ -134,34 +134,26 @@ namespace kernel {
     void Scheduler::addThread(std::unique_ptr<Thread> thread) {
         Thread* ptr = thread.get();
         threads_.push_back(std::move(thread));
-        threadQueues_.with([=](ThreadQueues& queues) {
-            queues.runnable.push_back(ptr);
-        });
+        runnableThreads_.push_back(ptr);
         schedulerHasRunnableThread_.notify_one();
     }
 
     bool Scheduler::allThreadsDead() const {
-        return threadQueues_.with([](const ThreadQueues& queues) -> bool {
-            return queues.running.empty()
-                && queues.runnable.empty()
-                && queues.blocked.empty();
-        });
+        return runningThreads_.empty()
+            && runnableThreads_.empty()
+            && blockedThreads_.empty();
     }
 
     bool Scheduler::allThreadsBlocked() const {
-        return threadQueues_.with([](const ThreadQueues& queues) -> bool {
-            return queues.running.empty()
-                && queues.runnable.empty();
-        });
+        return runningThreads_.empty()
+            && runnableThreads_.empty();
     }
 
     bool Scheduler::hasRunnableThread(bool canRunSyscalls) const {
-        return threadQueues_.with([=](const ThreadQueues& queues) -> bool {
-            return std::any_of(queues.runnable.begin(), queues.runnable.end(), [=](Thread* thread) {
-                assert(!!thread);
-                if(thread->ring() == Thread::RING::KERNEL && !canRunSyscalls) return false;
-                return true;
-            });
+        return std::any_of(runnableThreads_.begin(), runnableThreads_.end(), [=](Thread* thread) {
+            assert(!!thread);
+            if(thread->ring() == Thread::RING::KERNEL && !canRunSyscalls) return false;
+            return true;
         });
     }
 
@@ -189,15 +181,13 @@ namespace kernel {
         tryUnblockThreads();
 
         // All threads are blocked and are waiting on a mutex without a timeout
-        bool deadlock = threadQueues_.with([&](const ThreadQueues& queues) {
-            return  queues.running.empty()
-                && queues.runnable.empty()
-                && !queues.blocked.empty()
-                && std::all_of(queues.blocked.begin(), queues.blocked.end(), [&](Thread* thread) {
+        bool deadlock = runningThreads_.empty()
+                && runnableThreads_.empty()
+                && !blockedThreads_.empty()
+                && std::all_of(blockedThreads_.begin(), blockedThreads_.end(), [&](Thread* thread) {
                     return std::any_of(futexBlockers_.begin(), futexBlockers_.end(), [=](const FutexBlocker& blocker) {
                             return blocker.thread() == thread && !blocker.hasTimeout();
                     });
-            });
         });
         verify(!deadlock, [&]() {
             fmt::print("DEADLOCK !\n");
@@ -219,15 +209,13 @@ namespace kernel {
         }
         
         auto findRunnableThread = [&](Thread::RING ring) -> Thread* {
-            return threadQueues_.with([&](const ThreadQueues& queues) -> Thread* {
-                for(Thread* thread : queues.runnable) {
-                    assert(!!thread);
-                    if(thread->ring() != ring) continue;
-                    if(ring == Thread::RING::KERNEL && !worker.canRunSyscalls()) continue;
-                    return thread;
-                }
-                return nullptr;
-            });
+            for(Thread* thread : runnableThreads_) {
+                assert(!!thread);
+                if(thread->ring() != ring) continue;
+                if(ring == Thread::RING::KERNEL && !worker.canRunSyscalls()) continue;
+                return thread;
+            }
+            return nullptr;
         };
 
         // First we look for a thread trying to perform a syscall
@@ -254,12 +242,10 @@ namespace kernel {
             };
         }
 
-        threadQueues_.with([=](ThreadQueues& queues) {
-            auto it = std::find(queues.runnable.begin(), queues.runnable.end(), threadToRun);
-            verify(it != queues.runnable.end());
-            queues.runnable.erase(it);
-            queues.running.push_back(threadToRun);
-        });
+        auto it = std::find(runnableThreads_.begin(), runnableThreads_.end(), threadToRun);
+        verify(it != runnableThreads_.end());
+        runnableThreads_.erase(it);
+        runningThreads_.push_back(threadToRun);
 
         return ThreadOrCommand {
             ThreadOrCommand::RUN,
@@ -269,13 +255,11 @@ namespace kernel {
 
     void Scheduler::stopRunningThread(Thread* thread) {
         std::unique_lock lock(schedulerMutex_);
-        threadQueues_.with([=](ThreadQueues& queues) {
-            auto it = std::find(queues.running.begin(), queues.running.end(), thread);
-            if(it != queues.running.end()) {
-                queues.running.erase(it);
-                queues.runnable.push_back(thread);
-            }
-        });
+        auto it = std::find(runningThreads_.begin(), runningThreads_.end(), thread);
+        if(it != runningThreads_.end()) {
+            runningThreads_.erase(it);
+            runnableThreads_.push_back(thread);
+        }
     }
 
     void Scheduler::tryUnblockThreads() {
@@ -353,29 +337,23 @@ namespace kernel {
     }
 
     void Scheduler::block(Thread* thread) {
-        threadQueues_.with([=](ThreadQueues& queues) {
-            queues.running.erase(std::remove(queues.running.begin(), queues.running.end(), thread), queues.running.end());
-            queues.runnable.erase(std::remove(queues.runnable.begin(), queues.runnable.end(), thread), queues.runnable.end());
-            queues.blocked.push_back(thread);
-        });
+        runningThreads_.erase(std::remove(runningThreads_.begin(), runningThreads_.end(), thread), runningThreads_.end());
+        runnableThreads_.erase(std::remove(runnableThreads_.begin(), runnableThreads_.end(), thread), runnableThreads_.end());
+        blockedThreads_.push_back(thread);
     }
 
     void Scheduler::unblock(Thread* thread) {
-        threadQueues_.with([=](ThreadQueues& queues) {
-            auto it = std::find(queues.blocked.begin(), queues.blocked.end(), thread);
-            verify(it != queues.blocked.end());
-            queues.blocked.erase(it);
-            queues.runnable.push_back(thread);
-        });
+        auto it = std::find(blockedThreads_.begin(), blockedThreads_.end(), thread);
+        verify(it != blockedThreads_.end());
+        blockedThreads_.erase(it);
+        runnableThreads_.push_back(thread);
     }
 
     void Scheduler::terminateAll(int status) {
         std::vector<Thread*> allThreads;
-        threadQueues_.with([&](ThreadQueues& queues) {
-            allThreads.insert(allThreads.end(), queues.running.begin(), queues.running.end());
-            allThreads.insert(allThreads.end(), queues.runnable.begin(), queues.runnable.end());
-            allThreads.insert(allThreads.end(), queues.blocked.begin(), queues.blocked.end());
-        });
+        allThreads.insert(allThreads.end(), runningThreads_.begin(), runningThreads_.end());
+        allThreads.insert(allThreads.end(), runnableThreads_.begin(), runnableThreads_.end());
+        allThreads.insert(allThreads.end(), blockedThreads_.begin(), blockedThreads_.end());
         for(Thread* t : allThreads) terminate(t, status);
     }
 
@@ -403,11 +381,9 @@ namespace kernel {
             mmu_.write32(thread->clearChildTid(), 0);
             wake(thread->clearChildTid(), 1);
         }
-        threadQueues_.with([&](ThreadQueues& queues) {
-            queues.running.erase(std::remove(queues.running.begin(), queues.running.end(), thread), queues.running.end());
-            queues.runnable.erase(std::remove(queues.runnable.begin(), queues.runnable.end(), thread), queues.runnable.end());
-            queues.blocked.erase(std::remove(queues.blocked.begin(), queues.blocked.end(), thread), queues.blocked.end());
-        });
+        runningThreads_.erase(std::remove(runningThreads_.begin(), runningThreads_.end(), thread), runningThreads_.end());
+        runnableThreads_.erase(std::remove(runnableThreads_.begin(), runnableThreads_.end(), thread), runnableThreads_.end());
+        blockedThreads_.erase(std::remove(blockedThreads_.begin(), blockedThreads_.end(), thread), blockedThreads_.end());
     }
 
     void Scheduler::kill([[maybe_unused]] int signal) {
