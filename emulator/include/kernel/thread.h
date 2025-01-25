@@ -30,11 +30,6 @@ namespace kernel {
             int tid { 0xfeed };
         };
 
-        enum class RING {
-            KERNEL,
-            USERSPACE,
-        };
-
         struct SavedCpuState {
             x64::Flags flags;
             x64::Registers regs;
@@ -77,7 +72,8 @@ namespace kernel {
 
         const Description& description() const { return description_; }
 
-        RING ring() const { return ring_; }
+        bool requestsSyscall() const { return requestsSyscall_; }
+        void resetSyscallRequest() { requestsSyscall_ = false; }
 
         TickInfo& tickInfo() { return tickInfo_; }
         const TickInfo& tickInfo() const { return tickInfo_; }
@@ -85,11 +81,7 @@ namespace kernel {
 
         void enterSyscall() {
             yield();
-            ring_ = RING::KERNEL;
-        }
-
-        void exitSyscall() {
-            ring_ = RING::USERSPACE;
+            requestsSyscall_ = true;
         }
 
         SavedCpuState& savedCpuState() { return savedCpuState_; }
@@ -186,7 +178,6 @@ namespace kernel {
         void dumpStackTrace(const std::unordered_map<u64, std::string>& addressToSymbol) const;
 
     private:
-        RING ring_ { RING::USERSPACE };
         Description description_;
         SavedCpuState savedCpuState_;
         x64::Ptr32 setChildTid_ { 0 };
@@ -197,6 +188,8 @@ namespace kernel {
 
         TickInfo tickInfo_;
         int exitStatus_ { -1 };
+
+        bool requestsSyscall_ { false };
 
         Stats stats_;
 

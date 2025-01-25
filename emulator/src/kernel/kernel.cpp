@@ -261,6 +261,7 @@ namespace kernel {
 
     void Kernel::panic() {
         hasPanicked_ = true;
+        scheduler_.panic();
     }
 
     void Kernel::dumpPanicInfo() const {
