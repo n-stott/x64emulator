@@ -96,12 +96,10 @@ namespace kernel {
         ScopeGuard guard([&]() {
             std::unique_lock lock(schedulerMutex_);
             stopRunningThread(thread, worker, lock);
+            lock.unlock();
+            schedulerHasRunnableThread_.notify_one();
         });
-        ScopeGuard userspaceGuard([&]() {
-            --inUserspace_;
-        });
-        ++inUserspace_;
-        // verify(inUserspace_ <= 1);
+        // fmt::print(stderr, "{}: run thread {}\n", worker.id, thread->description().tid);
         thread->tickInfo().setSlice(currentTime_.count(), DEFAULT_TIME_SLICE);
 
         ScopeGuard timeGuard([&]() {
@@ -111,16 +109,16 @@ namespace kernel {
         while(!thread->tickInfo().isStopAsked()) {
             syncThreadTimeSlice(thread);
             vm.execute(thread);
-            verifyNotRunnable(thread);
         }
+        // fmt::print(stderr, "{}: stop thread {}\n", worker.id, thread->description().tid);
     }
 
     void Scheduler::runKernel(const Worker& worker, emulator::VM& vm, Thread* thread) {
-        verifyNotInKernel();
         std::unique_lock lock(schedulerMutex_);
-        verifyNotInUserspace();
         ScopeGuard guard([&]() {
             stopRunningThread(thread, worker, lock);
+            lock.unlock();
+            schedulerHasRunnableThread_.notify_all();
         });
         ScopeGuard kernelGuard([&]() {
             inKernel_ = false;
@@ -135,21 +133,6 @@ namespace kernel {
     void Scheduler::verifyInKernel() {
         if(!inKernel_) schedulerHasRunnableThread_.notify_all();
         verify(inKernel_, "We should be in the kernel");
-    }
-
-    void Scheduler::verifyNotInKernel() {
-        if(inKernel_) schedulerHasRunnableThread_.notify_all();
-        verify(!inKernel_, "We should NOT be in the kernel");
-    }
-
-    void Scheduler::verifyNotInUserspace() {
-        if(inUserspace_ > 0) schedulerHasRunnableThread_.notify_all();
-        verify(inUserspace_ == 0, "We should NOT be in userspace");
-    }
-
-    void Scheduler::verifyNotRunnable(Thread* thread) {
-        std::unique_lock lock(schedulerMutex_);
-        verify(std::find(runnableThreads_.begin(), runnableThreads_.end(), thread) == runnableThreads_.end());
     }
 
     void Scheduler::run() {
@@ -182,7 +165,6 @@ namespace kernel {
         Thread* ptr = thread.get();
         threads_.push_back(std::move(thread));
         runnableThreads_.push_back(ptr);
-        schedulerHasRunnableThread_.notify_one();
     }
 
     bool Scheduler::allThreadsDead() const {
@@ -219,7 +201,7 @@ namespace kernel {
                 return nbUserspaceRunnable > 0;
             }
         } else {
-            if(nbKernelRunning > 0) {
+            if(nbKernelRunning > 0 || nbKernelRunnable > 0) {
                 return false;
             } else {
                 return nbUserspaceRunnable > 0;
@@ -349,7 +331,6 @@ namespace kernel {
         if(it != runningJobs_.end()) {
             runningJobs_.erase(it);
             runnableThreads_.push_back(thread);
-            schedulerHasRunnableThread_.notify_one();
         }
     }
 
@@ -441,7 +422,6 @@ namespace kernel {
         }), runningJobs_.end());
         runnableThreads_.erase(std::remove(runnableThreads_.begin(), runnableThreads_.end(), thread), runnableThreads_.end());
         blockedThreads_.push_back(thread);
-        schedulerHasRunnableThread_.notify_one();
     }
 
     void Scheduler::unblock(Thread* thread, std::unique_lock<std::mutex>* lock) {
@@ -450,7 +430,6 @@ namespace kernel {
         verify(it != blockedThreads_.end());
         blockedThreads_.erase(it);
         runnableThreads_.push_back(thread);
-        schedulerHasRunnableThread_.notify_one();
     }
 
     void Scheduler::terminateAll(int status) {

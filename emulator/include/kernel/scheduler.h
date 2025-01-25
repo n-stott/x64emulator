@@ -127,11 +127,6 @@ namespace kernel {
         // Verify that this is true when we cannot hold the lock explicitly
         std::atomic<bool> inKernel_ { false };
         void verifyInKernel();
-        void verifyNotInKernel();
-        std::atomic<unsigned int> inUserspace_ { 0 };
-        void verifyNotInUserspace();
-
-        void verifyNotRunnable(Thread* thread);
 
         std::vector<std::unique_ptr<Thread>> threads_;
 
