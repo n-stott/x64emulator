@@ -5,6 +5,7 @@
 #include "kernel/timers.h"
 #include "x64/types.h"
 #include "utils.h"
+#include <atomic>
 #include <condition_variable>
 #include <deque>
 #include <functional>
@@ -14,6 +15,10 @@
 
 namespace x64 {
     class Mmu;
+}
+
+namespace emulator {
+    class VM;
 }
 
 namespace profiling {
@@ -58,14 +63,48 @@ namespace kernel {
 
         PreciseTime kernelTime() const { return currentTime_; }
 
+        void panic();
+
     private:
-        void runOnWorkerThread(int id);
-        Thread* pickNext();
-        void tryWakeUpThreads();
-        void tryUnblockThreads();
+
+        struct Worker {
+            int id { 0 };
+            bool canRunSyscalls() const { return id == 0; };
+        };
+
+        enum class RING {
+            KERNEL,
+            USERSPACE,
+        };
+
+        struct Job {
+            Thread* thread { nullptr };
+            RING ring { RING::USERSPACE };
+        };
+
+        void runOnWorkerThread(Worker worker);
+        void runUserspace(const Worker& worker, emulator::VM& vm, Thread* thread);
+        void runKernel(const Worker& worker, emulator::VM& vm, Thread* thread);
+
+        struct JobOrCommand {
+            enum COMMAND {
+                RUN,   // run the job
+                AGAIN, // try again
+                WAIT,  // no thread to run, wait for a while
+                EXIT,  // no more jobs to run, stop running
+                ABORT, // error encountered
+            } command;
+            Job job;
+        };
+
+        JobOrCommand tryPickNext(const Worker&);
+        void stopRunningThread(Thread* thread, const Worker&, std::unique_lock<std::mutex>&);
         
-        bool hasRunnableThread() const;
-        bool hasSleepingThread() const;
+        bool tryUnblockThreads(std::unique_lock<std::mutex>&);
+        void block(Thread*);
+        void unblock(Thread*, std::unique_lock<std::mutex>* lock = nullptr);
+        
+        bool hasRunnableThread(bool canRunSyscalls) const;
         bool allThreadsBlocked() const;
         bool allThreadsDead() const;
 
@@ -81,9 +120,19 @@ namespace kernel {
         x64::Mmu& mmu_;
         Kernel& kernel_;
 
+        // Any operation of the member variables below MUST be protected
+        // by taking a lock on this mutex.
+        std::mutex schedulerMutex_;
+
+        // Verify that this is true when we cannot hold the lock explicitly
+        std::atomic<bool> inKernel_ { false };
+        void verifyInKernel();
+
         std::vector<std::unique_ptr<Thread>> threads_;
 
-        std::deque<Thread*> allAliveThreads_;
+        std::deque<Job> runningJobs_;
+        std::deque<Thread*> runnableThreads_;
+        std::deque<Thread*> blockedThreads_;
 
         std::vector<FutexBlocker> futexBlockers_;
         std::vector<PollBlocker> pollBlockers_;
@@ -91,7 +140,6 @@ namespace kernel {
         std::vector<EpollWaitBlocker> epollWaitBlockers_;
         std::vector<SleepBlocker> sleepBlockers_;
         
-        std::mutex schedulerMutex_;
         std::condition_variable schedulerHasRunnableThread_;
 
         std::unordered_map<u64, std::string> addressToSymbol_;

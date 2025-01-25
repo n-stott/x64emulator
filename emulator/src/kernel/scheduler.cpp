@@ -3,6 +3,7 @@
 #include "kernel/thread.h"
 #include "emulator/symbolprovider.h"
 #include "emulator/vm.h"
+#include "scopeguard.h"
 #include "profilingdata.h"
 #include "verify.h"
 #include "x64/mmu.h"
@@ -25,72 +26,31 @@ namespace kernel {
         currentTime_ = std::max(currentTime_, thread->tickInfo().currentTime());
     }
 
-    void Scheduler::runOnWorkerThread(int id) {
-        (void)id;
+    void Scheduler::runOnWorkerThread(Worker worker) {
         bool didShowCrashMessage = false;
         x64::Cpu cpu(mmu_);
         emulator::VM vm(cpu, mmu_, kernel_);
         while(!emulator::signal_interrupt) {
             try {
-                Thread* threadToRun = nullptr;
-                {
-                    std::unique_lock lock(schedulerMutex_);
-                    schedulerHasRunnableThread_.wait(lock, [&]{
-                        return !kernel_.hasPanicked()     // something bad happened
-                            || this->hasRunnableThread()  // we want to run an available thread
-                            || this->allThreadsDead()     // we need to exit because all threads are dead
-                            || this->hasSleepingThread()  // we need to exit to test the sleep condition
-                            || this->allThreadsBlocked(); // we have a deadlock :(
-                    });
+                JobOrCommand jobOrCommand = tryPickNext(worker);
+                if(jobOrCommand.command == JobOrCommand::ABORT
+                || jobOrCommand.command == JobOrCommand::EXIT) break;
 
-                    assert(kernel_.hasPanicked() || hasRunnableThread() || allThreadsDead() || this->hasSleepingThread() || allThreadsBlocked());
-                    if(kernel_.hasPanicked()) break;
+                if(jobOrCommand.command == JobOrCommand::AGAIN) continue;
 
-                    threadToRun = pickNext();
-                }
-
-                if(!threadToRun) {
-                    // No more thread alive
-                    if(allAliveThreads_.empty()) break;
-
-                    bool needsToWaitForNewThreads = !sleepBlockers_.empty()
-                            || std::any_of(pollBlockers_.begin(), pollBlockers_.end(), [](const PollBlocker& blocker) { return blocker.hasTimeout(); })
-                            || std::any_of(selectBlockers_.begin(), selectBlockers_.end(), [](const SelectBlocker& blocker) { return blocker.hasTimeout(); })
-                            || std::any_of(epollWaitBlockers_.begin(), epollWaitBlockers_.end(), [](const EpollWaitBlocker& blocker) { return blocker.hasTimeout(); })
-                            || std::any_of(futexBlockers_.begin(), futexBlockers_.end(), [](const FutexBlocker& blocker) { return blocker.hasTimeout(); });
-                    if(needsToWaitForNewThreads) {
-                        // If we need some time to pass, actually advance in time
-                        // Note: we actually need to honor the wait time. The host may need some time to give an answer.
-                        std::this_thread::sleep_for(std::chrono::milliseconds{1});
-                        std::unique_lock lock(schedulerMutex_);
-                        currentTime_ = std::max(currentTime_, currentTime_ + TimeDifference::fromNanoSeconds(1'000'000 )); // 1ms
-                    } else {
-                        // Otherwise, just wait a bit
-                        std::this_thread::sleep_for(std::chrono::milliseconds{1});
-                    }
+                if(jobOrCommand.command == JobOrCommand::WAIT) {
+                    std::this_thread::sleep_for(std::chrono::milliseconds{1});
                     continue;
                 }
 
-                threadToRun->setState(Thread::THREAD_STATE::RUNNING);
-                threadToRun->tickInfo().setSlice(currentTime_.count(), currentTime_.count() + DEFAULT_TIME_SLICE);
+                verify(jobOrCommand.command == JobOrCommand::RUN);
+                Job job = jobOrCommand.job;
 
-                while(!threadToRun->tickInfo().isStopAsked()) {
-                    verify(threadToRun->state() == Thread::THREAD_STATE::RUNNING);
-                    syncThreadTimeSlice(threadToRun);
-                    vm.execute(threadToRun);
-                    syncThreadTimeSlice(threadToRun);
-
-                    if(threadToRun->state() == Thread::THREAD_STATE::IN_SYSCALL) {
-                        emulator::VM::MmuCallback callback(&mmu_, &vm);
-                        kernel_.timers().updateAll(currentTime_);
-                        kernel_.sys().syscall(threadToRun);
-                        threadToRun->exitSyscall();
-                    }
+                if(job.ring == RING::KERNEL) {
+                    runKernel(worker, vm, job.thread);
+                } else {
+                    runUserspace(worker, vm, job.thread);
                 }
-                if(threadToRun->state() == Thread::THREAD_STATE::RUNNING)
-                    threadToRun->setState(Thread::THREAD_STATE::RUNNABLE);
-                
-                syncThreadTimeSlice(threadToRun);
 
             } catch(...) {
                 kernel_.panic();
@@ -132,16 +92,59 @@ namespace kernel {
         }
     }
 
+    void Scheduler::runUserspace(const Worker& worker, emulator::VM& vm, Thread* thread) {
+        ScopeGuard guard([&]() {
+            std::unique_lock lock(schedulerMutex_);
+            stopRunningThread(thread, worker, lock);
+            lock.unlock();
+            schedulerHasRunnableThread_.notify_one();
+        });
+        // fmt::print(stderr, "{}: run thread {}\n", worker.id, thread->description().tid);
+        thread->tickInfo().setSlice(currentTime_.count(), DEFAULT_TIME_SLICE);
+
+        ScopeGuard timeGuard([&]() {
+            syncThreadTimeSlice(thread);
+        });
+
+        while(!thread->tickInfo().isStopAsked()) {
+            syncThreadTimeSlice(thread);
+            vm.execute(thread);
+        }
+        // fmt::print(stderr, "{}: stop thread {}\n", worker.id, thread->description().tid);
+    }
+
+    void Scheduler::runKernel(const Worker& worker, emulator::VM& vm, Thread* thread) {
+        std::unique_lock lock(schedulerMutex_);
+        ScopeGuard guard([&]() {
+            stopRunningThread(thread, worker, lock);
+            lock.unlock();
+            schedulerHasRunnableThread_.notify_all();
+        });
+        ScopeGuard kernelGuard([&]() {
+            inKernel_ = false;
+        });
+        inKernel_ = true;
+        emulator::VM::MmuCallback callback(&mmu_, &vm);
+        kernel_.timers().updateAll(currentTime_);
+        kernel_.sys().syscall(thread);
+        thread->resetSyscallRequest();
+    }
+
+    void Scheduler::verifyInKernel() {
+        if(!inKernel_) schedulerHasRunnableThread_.notify_all();
+        verify(inKernel_, "We should be in the kernel");
+    }
+
     void Scheduler::run() {
 #ifdef MULTIPROCESSING
         std::vector<std::thread> workerThreads;
-        workerThreads.emplace_back(std::bind(&Scheduler::runOnWorkerThread, this, 0));
-        workerThreads.emplace_back(std::bind(&Scheduler::runOnWorkerThread, this, 1));
+        workerThreads.emplace_back(std::bind(&Scheduler::runOnWorkerThread, this, Worker{0}));
+        workerThreads.emplace_back(std::bind(&Scheduler::runOnWorkerThread, this, Worker{1}));
         for(std::thread& workerThread : workerThreads) {
             workerThread.join();
         }
 #else
-        runOnWorkerThread(0);
+        runOnWorkerThread(Worker{});
 #endif
     }
 
@@ -156,52 +159,91 @@ namespace kernel {
     }
 
     void Scheduler::addThread(std::unique_ptr<Thread> thread) {
+        // TODO: support this verification.
+        // This is not possible right now because exec exists outside of the scheduling loop
+        // verifyInKernel();
         Thread* ptr = thread.get();
         threads_.push_back(std::move(thread));
-        allAliveThreads_.push_back(ptr);
-        schedulerHasRunnableThread_.notify_one();
+        runnableThreads_.push_back(ptr);
     }
 
     bool Scheduler::allThreadsDead() const {
-        return !allAliveThreads_.empty();
-    }
-
-    bool Scheduler::hasSleepingThread() const {
-        return std::all_of(allAliveThreads_.begin(), allAliveThreads_.end(), [](Thread* thread) {
-            return thread->state() == Thread::THREAD_STATE::SLEEPING;
-        });
+        return runningJobs_.empty()
+            && runnableThreads_.empty()
+            && blockedThreads_.empty();
     }
 
     bool Scheduler::allThreadsBlocked() const {
-        return std::all_of(allAliveThreads_.begin(), allAliveThreads_.end(), [](Thread* thread) {
-            return thread->state() == Thread::THREAD_STATE::BLOCKED;
-        });
+        return runningJobs_.empty()
+            && runnableThreads_.empty();
     }
 
-    bool Scheduler::hasRunnableThread() const {
-        return std::any_of(allAliveThreads_.begin(), allAliveThreads_.end(), [](Thread* thread) {
-            assert(!!thread);
-            return thread->state() == Thread::THREAD_STATE::RUNNABLE;
-        });
+    bool Scheduler::hasRunnableThread(bool canRunSyscalls) const {
+        auto isUserspaceJob = [](Job job) { return job.ring == RING::USERSPACE; };
+        auto isKernelJob = [](Job job) { return job.ring == RING::KERNEL; };
+
+        size_t nbUserspaceRunning = std::count_if(runningJobs_.begin(), runningJobs_.end(), isUserspaceJob);
+        size_t nbKernelRunning = std::count_if(runningJobs_.begin(), runningJobs_.end(), isKernelJob);
+
+        auto isUserspaceThread = [](const Thread* thread) { return !thread->requestsSyscall(); };
+        auto isKernelThread = [](const Thread* thread) { return thread->requestsSyscall(); };
+
+        size_t nbUserspaceRunnable = std::count_if(runnableThreads_.begin(), runnableThreads_.end(), isUserspaceThread);
+        size_t nbKernelRunnable = std::count_if(runnableThreads_.begin(), runnableThreads_.end(), isKernelThread);
+
+        if(canRunSyscalls) {
+            if(nbKernelRunning > 0) {
+                fmt::print(stderr, "HOW CAN WE HAVE 2 KERNEL THREADS RUNNING ???\n");
+            }
+            if(nbKernelRunnable > 0) {
+                return nbUserspaceRunning == 0;
+            } else {
+                return nbUserspaceRunnable > 0;
+            }
+        } else {
+            if(nbKernelRunning > 0 || nbKernelRunnable > 0) {
+                return false;
+            } else {
+                return nbUserspaceRunnable > 0;
+            }
+        }
     }
 
-    Thread* Scheduler::pickNext() {
-        tryWakeUpThreads();
-        tryUnblockThreads();
-        auto findThread = [&](Thread::THREAD_STATE state) -> Thread* {
-            auto it = std::find_if(allAliveThreads_.begin(), allAliveThreads_.end(), [=](Thread* thread) {
-                assert(!!thread);
-                return thread->state() == state;
-            });
-            if(it == allAliveThreads_.end()) return nullptr;
-            return *it;
-        };
+    Scheduler::JobOrCommand Scheduler::tryPickNext(const Worker& worker) {
+        std::unique_lock lock(schedulerMutex_);
+        schedulerHasRunnableThread_.wait(lock, [&]{
+            return kernel_.hasPanicked()     // something bad happened
+                || this->hasRunnableThread(worker.canRunSyscalls())  // we want to run an available thread
+                || this->allThreadsDead()     // we need to exit because all threads are dead
+                || this->allThreadsBlocked(); // we need to check unblocking conditions
+        });
+
+        assert(kernel_.hasPanicked()
+            || hasRunnableThread(worker.canRunSyscalls())
+            || allThreadsDead()
+            || allThreadsBlocked());
+
+        if(kernel_.hasPanicked()) {
+            return JobOrCommand {
+                JobOrCommand::ABORT,
+                Job {},
+            };
+        }
+
+        bool didUnblock = tryUnblockThreads(lock);
+        if(didUnblock) {
+            return JobOrCommand {
+                JobOrCommand::AGAIN,
+                Job {},
+            };
+        }
 
         // All threads are blocked and are waiting on a mutex without a timeout
-        bool deadlock = !allAliveThreads_.empty()
-                && std::all_of(allAliveThreads_.begin(), allAliveThreads_.end(), [&](Thread* thread) {
-                    return thread->state() == Thread::THREAD_STATE::BLOCKED
-                        && std::any_of(futexBlockers_.begin(), futexBlockers_.end(), [=](const FutexBlocker& blocker) {
+        bool deadlock = runningJobs_.empty()
+                && runnableThreads_.empty()
+                && !blockedThreads_.empty()
+                && std::all_of(blockedThreads_.begin(), blockedThreads_.end(), [&](Thread* thread) {
+                    return std::any_of(futexBlockers_.begin(), futexBlockers_.end(), [=](const FutexBlocker& blocker) {
                             return blocker.thread() == thread && !blocker.hasTimeout();
                     });
         });
@@ -216,41 +258,109 @@ namespace kernel {
             }
         });
 
-        if(allAliveThreads_.empty()) {
+        if(allThreadsDead()) {
             schedulerHasRunnableThread_.notify_all();
-            return nullptr;
+            return JobOrCommand {
+                JobOrCommand::EXIT,
+                Job {},
+            };
         }
         
-        Thread* threadToRun = findThread(Thread::THREAD_STATE::RUNNABLE);
-        if(!threadToRun) return nullptr;
+        auto findKernelThread = [&]() -> Thread* {
+            if(!worker.canRunSyscalls()) return nullptr;
+            for(Thread* thread : runnableThreads_) {
+                if(thread->requestsSyscall()) return thread;
+            }
+            return nullptr;
+        };
+        
+        auto findUserspaceThread = [&]() -> Thread* {
+            for(Thread* thread : runnableThreads_) {
+                if(thread->requestsSyscall()) continue;
+                return thread;
+            }
+            return nullptr;
+        };
 
-        std::stable_partition(allAliveThreads_.begin(), allAliveThreads_.end(), [=](Thread* thread) -> bool {
-            return thread != threadToRun;
-        });
-        assert(allAliveThreads_.back() == threadToRun);
-        return threadToRun;
+        // First we look for a thread trying to perform a syscall
+        Thread* threadToRun = findKernelThread();
+        
+        // If there are none, we look for a thread that is runnable
+        if(!threadToRun) threadToRun = findUserspaceThread();
+
+        // If there still isn't any, we may need to wait
+        if(!threadToRun) {
+            bool needsToWaitForNewThreads = !sleepBlockers_.empty()
+                    || std::any_of(pollBlockers_.begin(), pollBlockers_.end(), [](const PollBlocker& blocker) { return blocker.hasTimeout(); })
+                    || std::any_of(selectBlockers_.begin(), selectBlockers_.end(), [](const SelectBlocker& blocker) { return blocker.hasTimeout(); })
+                    || std::any_of(epollWaitBlockers_.begin(), epollWaitBlockers_.end(), [](const EpollWaitBlocker& blocker) { return blocker.hasTimeout(); })
+                    || std::any_of(futexBlockers_.begin(), futexBlockers_.end(), [](const FutexBlocker& blocker) { return blocker.hasTimeout(); });
+            if(needsToWaitForNewThreads) {
+                // If we need some time to pass, actually advance in time
+                currentTime_ = std::max(currentTime_, currentTime_ + TimeDifference::fromNanoSeconds(1'000'000 )); // 1ms
+            }
+            // Note: we actually need to honor the wait time. The host may need some time to give an answer.
+            return JobOrCommand {
+                JobOrCommand::WAIT,
+                nullptr,
+            };
+        }
+
+        RING ring = threadToRun->requestsSyscall() ? RING::KERNEL : RING::USERSPACE;
+        Job job {
+            threadToRun,
+            ring,
+        };
+
+        auto it = std::find(runnableThreads_.begin(), runnableThreads_.end(), threadToRun);
+        verify(it != runnableThreads_.end());
+        runnableThreads_.erase(it);
+        runningJobs_.push_back(job);
+
+        return JobOrCommand {
+            JobOrCommand::RUN,
+            job
+        };
     }
 
-    void Scheduler::tryWakeUpThreads() {
+    void Scheduler::stopRunningThread(Thread* thread, const Worker& worker, std::unique_lock<std::mutex>&) {
+        (void)worker;
+        auto it = std::find_if(runningJobs_.begin(), runningJobs_.end(), [=](const Job& job) {
+            return job.thread == thread;
+        });
+        if(it != runningJobs_.end()) {
+            runningJobs_.erase(it);
+            runnableThreads_.push_back(thread);
+        }
+    }
+
+    bool Scheduler::tryUnblockThreads(std::unique_lock<std::mutex>& lock) {
+        bool didUnblock = false;
         kernel_.timers().updateAll(currentTime_);
         std::vector<SleepBlocker*> removableBlockers;
         for(SleepBlocker& blocker : sleepBlockers_) {
             bool canUnblock = blocker.tryUnblock(kernel_.timers());
-            if(canUnblock) removableBlockers.push_back(&blocker);
+            if(canUnblock) {
+                unblock(blocker.thread(), &lock);
+                removableBlockers.push_back(&blocker);
+                didUnblock = true;
+            }
         }
         sleepBlockers_.erase(std::remove_if(sleepBlockers_.begin(), sleepBlockers_.end(), [&](const SleepBlocker& blocker) {
             return std::any_of(removableBlockers.begin(), removableBlockers.end(), [&](SleepBlocker* compareBlocker) {
                 return &blocker == compareBlocker;
             });
         }), sleepBlockers_.end());
-    }
 
-    void Scheduler::tryUnblockThreads() {
         kernel_.timers().updateAll(currentTime_);
         std::vector<PollBlocker*> removablePollBlockers;
         for(PollBlocker& blocker : pollBlockers_) {
             bool canUnblock = blocker.tryUnblock(kernel_.fs());
-            if(canUnblock) removablePollBlockers.push_back(&blocker);
+            if(canUnblock) {
+                unblock(blocker.thread(), &lock);
+                removablePollBlockers.push_back(&blocker);
+                didUnblock = true;
+            }
         }
         pollBlockers_.erase(std::remove_if(pollBlockers_.begin(), pollBlockers_.end(), [&](const PollBlocker& blocker) {
             return std::any_of(removablePollBlockers.begin(), removablePollBlockers.end(), [&](PollBlocker* compareBlocker) {
@@ -261,7 +371,11 @@ namespace kernel {
         std::vector<SelectBlocker*> removableSelectBlockers;
         for(SelectBlocker& blocker : selectBlockers_) {
             bool canUnblock = blocker.tryUnblock(kernel_.fs());
-            if(canUnblock) removableSelectBlockers.push_back(&blocker);
+            if(canUnblock) {
+                unblock(blocker.thread(), &lock);
+                removableSelectBlockers.push_back(&blocker);
+                didUnblock = true;
+            }
         }
         selectBlockers_.erase(std::remove_if(selectBlockers_.begin(), selectBlockers_.end(), [&](const SelectBlocker& blocker) {
             return std::any_of(removableSelectBlockers.begin(), removableSelectBlockers.end(), [&](SelectBlocker* compareBlocker) {
@@ -272,7 +386,11 @@ namespace kernel {
         std::vector<EpollWaitBlocker*> removableEpollWaitBlockers;
         for(EpollWaitBlocker& blocker : epollWaitBlockers_) {
             bool canUnblock = blocker.tryUnblock(kernel_.fs());
-            if(canUnblock) removableEpollWaitBlockers.push_back(&blocker);
+            if(canUnblock) {
+                unblock(blocker.thread(), &lock);
+                removableEpollWaitBlockers.push_back(&blocker);
+                didUnblock = true;
+            }
         }
         epollWaitBlockers_.erase(std::remove_if(epollWaitBlockers_.begin(), epollWaitBlockers_.end(), [&](const EpollWaitBlocker& blocker) {
             return std::any_of(removableEpollWaitBlockers.begin(), removableEpollWaitBlockers.end(), [&](EpollWaitBlocker* compareBlocker) {
@@ -283,65 +401,113 @@ namespace kernel {
         std::vector<FutexBlocker*> removableFutexBlockers;
         for(FutexBlocker& blocker : futexBlockers_) {
             bool canUnblock = blocker.tryUnblock(x64::Ptr32{0});
-            if(canUnblock) removableFutexBlockers.push_back(&blocker);
+            if(canUnblock) {
+                unblock(blocker.thread(), &lock);
+                removableFutexBlockers.push_back(&blocker);
+                didUnblock = true;
+            }
         }
         futexBlockers_.erase(std::remove_if(futexBlockers_.begin(), futexBlockers_.end(), [&](const FutexBlocker& blocker) {
             return std::any_of(removableFutexBlockers.begin(), removableFutexBlockers.end(), [&](FutexBlocker* compareBlocker) {
                 return &blocker == compareBlocker;
             });
         }), futexBlockers_.end());
+        return didUnblock;
+    }
+
+    void Scheduler::block(Thread* thread) {
+        verifyInKernel();
+        runningJobs_.erase(std::remove_if(runningJobs_.begin(), runningJobs_.end(), [=](const Job& job) {
+            return job.thread == thread;
+        }), runningJobs_.end());
+        runnableThreads_.erase(std::remove(runnableThreads_.begin(), runnableThreads_.end(), thread), runnableThreads_.end());
+        blockedThreads_.push_back(thread);
+    }
+
+    void Scheduler::unblock(Thread* thread, std::unique_lock<std::mutex>* lock) {
+        if(!lock) verifyInKernel();
+        auto it = std::find(blockedThreads_.begin(), blockedThreads_.end(), thread);
+        verify(it != blockedThreads_.end());
+        blockedThreads_.erase(it);
+        runnableThreads_.push_back(thread);
     }
 
     void Scheduler::terminateAll(int status) {
-        std::vector<Thread*> allThreads(allAliveThreads_.begin(), allAliveThreads_.end());
+        verifyInKernel();
+        std::vector<Thread*> allThreads;
+        allThreads.reserve(runningJobs_.size());
+        for(Job job : runningJobs_) allThreads.push_back(job.thread);
+        allThreads.insert(allThreads.end(), runnableThreads_.begin(), runnableThreads_.end());
+        allThreads.insert(allThreads.end(), blockedThreads_.begin(), blockedThreads_.end());
         for(Thread* t : allThreads) terminate(t, status);
     }
 
     void Scheduler::terminate(Thread* thread, int status) {
-        assert(thread->state() != Thread::THREAD_STATE::DEAD);
+        verifyInKernel();
         thread->yield();
-        thread->setState(Thread::THREAD_STATE::DEAD);
         thread->setExitStatus(status);
 
         futexBlockers_.erase(std::remove_if(futexBlockers_.begin(), futexBlockers_.end(), [=](const FutexBlocker& blocker) {
             return blocker.thread() == thread;
         }), futexBlockers_.end());
+        pollBlockers_.erase(std::remove_if(pollBlockers_.begin(), pollBlockers_.end(), [=](const PollBlocker& blocker) {
+            return blocker.thread() == thread;
+        }), pollBlockers_.end());
+        selectBlockers_.erase(std::remove_if(selectBlockers_.begin(), selectBlockers_.end(), [=](const SelectBlocker& blocker) {
+            return blocker.thread() == thread;
+        }), selectBlockers_.end());
+        epollWaitBlockers_.erase(std::remove_if(epollWaitBlockers_.begin(), epollWaitBlockers_.end(), [=](const EpollWaitBlocker& blocker) {
+            return blocker.thread() == thread;
+        }), epollWaitBlockers_.end());
+        sleepBlockers_.erase(std::remove_if(sleepBlockers_.begin(), sleepBlockers_.end(), [=](const SleepBlocker& blocker) {
+            return blocker.thread() == thread;
+        }), sleepBlockers_.end());
 
         if(!!thread->clearChildTid()) {
             mmu_.write32(thread->clearChildTid(), 0);
             wake(thread->clearChildTid(), 1);
         }
-        allAliveThreads_.erase(std::remove(allAliveThreads_.begin(), allAliveThreads_.end(), thread), allAliveThreads_.end());
+        runningJobs_.erase(std::remove_if(runningJobs_.begin(), runningJobs_.end(), [=](const Job& job) {
+            return job.thread == thread;
+        }), runningJobs_.end());
+        runnableThreads_.erase(std::remove(runnableThreads_.begin(), runnableThreads_.end(), thread), runnableThreads_.end());
+        blockedThreads_.erase(std::remove(blockedThreads_.begin(), blockedThreads_.end(), thread), blockedThreads_.end());
     }
 
     void Scheduler::kill([[maybe_unused]] int signal) {
+        std::unique_lock lock(schedulerMutex_);
         terminateAll(516);
     }
 
     void Scheduler::sleep(Thread* thread, Timer* timer, PreciseTime targetTime) {
+        verifyInKernel();
         sleepBlockers_.push_back(SleepBlocker(thread, timer, targetTime));
-        thread->setState(Thread::THREAD_STATE::SLEEPING);
+        block(thread);
         thread->yield();
     }
 
     void Scheduler::wait(Thread* thread, x64::Ptr32 wordPtr, u32 expected, x64::Ptr relativeTimeout) {
+        verifyInKernel();
         futexBlockers_.push_back(FutexBlocker::withRelativeTimeout(thread, mmu_, kernel_.timers(), wordPtr, expected, relativeTimeout));
-        thread->setState(Thread::THREAD_STATE::BLOCKED);
+        block(thread);
         thread->yield();
     }
 
     void Scheduler::waitBitset(Thread* thread, x64::Ptr32 wordPtr, u32 expected, x64::Ptr absoluteTimeout) {
+        verifyInKernel();
         futexBlockers_.push_back(FutexBlocker::withAbsoluteTimeout(thread, mmu_, kernel_.timers(), wordPtr, expected, absoluteTimeout));
-        thread->setState(Thread::THREAD_STATE::BLOCKED);
+        block(thread);
         thread->yield();
     }
 
     u32 Scheduler::wake(x64::Ptr32 wordPtr, u32 nbWaiters) {
+        verifyInKernel();
         u32 nbWoken = 0;
         std::vector<FutexBlocker*> removableBlockers;
         for(auto& blocker : futexBlockers_) {
             bool canUnblock = blocker.tryUnblock(wordPtr);
             if(!canUnblock) continue;
+            unblock(blocker.thread());
             removableBlockers.push_back(&blocker);
             ++nbWoken;
             if(nbWoken >= nbWaiters) break;
@@ -355,6 +521,7 @@ namespace kernel {
     }
 
     u32 Scheduler::wakeOp(x64::Ptr32 uaddr, u32 val, x64::Ptr32 uaddr2, u32 val2, u32 val3) {
+        verifyInKernel();
         struct FutexOp {
             enum OP : u8 {
                 SET = 0,
@@ -432,29 +599,32 @@ namespace kernel {
     }
 
     void Scheduler::poll(Thread* thread, x64::Ptr fds, size_t nfds, int timeout) {
+        verifyInKernel();
         verify(timeout != 0, "poll with zero timeout should not reach the scheduler");
         pollBlockers_.push_back(PollBlocker(thread, mmu_, kernel_.timers(), fds, nfds, timeout));
-        thread->setState(Thread::THREAD_STATE::BLOCKED);
+        block(thread);
         thread->yield();
     }
 
     void Scheduler::select(Thread* thread, int nfds, x64::Ptr readfds, x64::Ptr writefds, x64::Ptr exceptfds, x64::Ptr timeout) {
+        verifyInKernel();
         // verify(!timeout || (timeout->seconds + timeout->nanoseconds > 0), "select with zero timeout should not reach the scheduler");
         selectBlockers_.push_back(SelectBlocker(thread, mmu_, kernel_.timers(), nfds, readfds, writefds, exceptfds, timeout));
-        thread->setState(Thread::THREAD_STATE::BLOCKED);
+        block(thread);
         thread->yield();
     }
 
     void Scheduler::epoll_wait(Thread* thread, int epfd, x64::Ptr events, size_t maxevents, int timeout) {
+        verifyInKernel();
         epollWaitBlockers_.push_back(EpollWaitBlocker(thread, mmu_, kernel_.timers(), epfd, events, maxevents, timeout));
-        thread->setState(Thread::THREAD_STATE::BLOCKED);
+        block(thread);
         thread->yield();
     }
 
     void Scheduler::dumpThreadSummary() const {
         forEachThread([&](const Thread& thread) {
             fmt::print("Thread #{} : {}\n", thread.description().tid, thread.toString());
-            fmt::print("    instructions   {:<10} \n", thread.tickInfo().total());
+            fmt::print("    instructions   {:<10} \n", thread.tickInfo().nbInstructions());
             fmt::print("    syscalls       {:<10} \n", thread.stats().syscalls);
             fmt::print("    function calls {:<10} \n", thread.stats().functionCalls);
             thread.dumpRegisters();
@@ -504,5 +674,9 @@ namespace kernel {
         for(const auto& kv : addressToSymbol_) {
             profilingData->addSymbol(kv.first, kv.second);
         }
+    }
+
+    void Scheduler::panic() {
+        schedulerHasRunnableThread_.notify_all();
     }
 }

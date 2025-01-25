@@ -45,7 +45,6 @@ namespace kernel {
             PreciseTime now = timer->now();
             if(now > timeLimit_) {
                 thread_->savedCpuState().regs.set(x64::R64::RAX, -ETIMEDOUT);
-                thread_->setState(Thread::THREAD_STATE::RUNNABLE);
                 return true;
             }
         }
@@ -55,7 +54,6 @@ namespace kernel {
             return false;
         } else {
             thread_->savedCpuState().regs.set(x64::R64::RAX, 0);
-            thread_->setState(Thread::THREAD_STATE::RUNNABLE);
             return true;
         }
     }
@@ -105,11 +103,9 @@ namespace kernel {
         if(nzrevents > 0) {
             mmu_->writeToMmu(pollfds_, pollfds);
             thread_->savedCpuState().regs.set(x64::R64::RAX, nzrevents);
-            thread_->setState(Thread::THREAD_STATE::RUNNABLE);
             return true;
         } else if (timeout) {
             thread_->savedCpuState().regs.set(x64::R64::RAX, 0);
-            thread_->setState(Thread::THREAD_STATE::RUNNABLE);
             return true;
         } else {
             return false;
@@ -173,7 +169,6 @@ namespace kernel {
         if(!!exceptfds_) mmu_->copyToMmu(exceptfds_, (const u8*)&selectData.exceptfds, sizeof(selectData.exceptfds));
         if(ret >= 0) ret = (int)nzevents;
         thread_->savedCpuState().regs.set(x64::R64::RAX, ret);
-        thread_->setState(Thread::THREAD_STATE::RUNNABLE);
         return true;
     }
 
@@ -228,11 +223,9 @@ namespace kernel {
             }
             mmu_->writeToMmu(events_, eventsForMemory);
             thread_->savedCpuState().regs.set(x64::R64::RAX, epollEvents.size());
-            thread_->setState(Thread::THREAD_STATE::RUNNABLE);
             return true;
         } else if (timeout) {
             thread_->savedCpuState().regs.set(x64::R64::RAX, 0);
-            thread_->setState(Thread::THREAD_STATE::RUNNABLE);
             return true;
         } else {
             return false;
@@ -261,7 +254,6 @@ namespace kernel {
         PreciseTime now = timer_->now();
         if(now < targetTime_) return false;
         thread_->savedCpuState().regs.set(x64::R64::RAX, 0);
-        thread_->setState(Thread::THREAD_STATE::RUNNABLE);
         return true;
     }
 
