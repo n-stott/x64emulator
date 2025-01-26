@@ -6,6 +6,7 @@
 #include "x64/mmu.h"
 #include "utils.h"
 #include <deque>
+#include <unordered_set>
 #include <string>
 #include <unordered_map>
 
@@ -143,12 +144,12 @@ namespace emulator {
                 }
                 next_[firstAvailableSlot] = other;
                 nextCount_[firstAvailableSlot] = 1;
-                successors_.push_back(other);
-                other->predecessors_.push_back(this);
+                successors_.insert(other);
+                other->predecessors_.insert(this);
             }
 
             void removePredecessor(BBlock* other) {
-                predecessors_.erase(std::remove(predecessors_.begin(), predecessors_.end(), other), predecessors_.end());
+                predecessors_.erase(other);
             }
 
             void removeSucessor(BBlock* other) {
@@ -159,7 +160,7 @@ namespace emulator {
                         nextCount_[i] = 0;
                     }
                 }
-                successors_.erase(std::remove(successors_.begin(), successors_.end(), other), successors_.end());
+                successors_.erase(other);
             }
 
             void removeFromCaches() {
@@ -169,13 +170,17 @@ namespace emulator {
                 successors_.clear();
             }
 
+            size_t size() const {
+                return successors_.size() + predecessors_.size();
+            }
+
         private:
             static constexpr size_t CACHE_SIZE = 3;
             x64::Cpu::BasicBlock cpuBasicBlock_;
             std::array<BBlock*, CACHE_SIZE> next_;
             std::array<u64, CACHE_SIZE> nextCount_;
-            std::vector<BBlock*> successors_;
-            std::vector<BBlock*> predecessors_;
+            std::unordered_set<BBlock*> successors_;
+            std::unordered_set<BBlock*> predecessors_;
         };
 
         std::vector<std::unique_ptr<BBlock>> basicBlocks_;
