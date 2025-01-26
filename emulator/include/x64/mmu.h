@@ -132,19 +132,19 @@ namespace x64 {
             if constexpr(s == Size::BYTE) {
                 u8 oldValue = read8(ptr);
                 u8 newValue = modify(oldValue);
-                write8(ptr, newValue);
+                write(ptr, newValue, locker);
             } else if constexpr(s == Size::WORD) {
                 u16 oldValue = read16(ptr);
                 u16 newValue = modify(oldValue);
-                write16(ptr, newValue);
+                write(ptr, newValue, locker);
             } else if constexpr(s == Size::DWORD) {
                 u32 oldValue = read32(ptr);
                 u32 newValue = modify(oldValue);
-                write32(ptr, newValue);
+                write(ptr, newValue, locker);
             } else if constexpr(s == Size::QWORD) {
                 u64 oldValue = read64(ptr);
                 u64 newValue = modify(oldValue);
-                write64(ptr, newValue);
+                write(ptr, newValue, locker);
             }
         }
 
@@ -243,6 +243,27 @@ namespace x64 {
             static_assert(sizeof(T) == pointerSize(s));
             u64 address = ptr.address();
             u8* dataPtr = getWritePtr(address);
+#ifdef MULTIPROCESSING
+            Region* region = findAddress(address);
+            SpinlockLocker locker(region->lock());
+#endif
+            ::memcpy(dataPtr, &value, sizeof(T));
+        }
+
+        template<typename T, Size s>
+        void write(SPtr<s> ptr, T value, SpinlockLocker& locker) {
+#ifdef MULTIPROCESSING
+            verify(!syscallInProgress_, "Cannot write to mmu during syscall");
+#endif
+            static_assert(sizeof(T) == pointerSize(s));
+            u64 address = ptr.address();
+            u8* dataPtr = getWritePtr(address);
+#ifdef MULTIPROCESSING
+            Region* region = findAddress(address);
+            verify(locker.holdsLock(region->lock()));
+#else
+            (void)locker;
+#endif
             ::memcpy(dataPtr, &value, sizeof(T));
         }
 
