@@ -125,9 +125,9 @@ namespace x64 {
         }
         for(Region* regionPtr : regionsToRemove) {
             [[maybe_unused]] auto regionLeftToDie = takeRegion(regionPtr->base(), regionPtr->size());
+            for(auto* callback : callbacks_) callback->on_munmap(regionPtr->base(), regionPtr->size(), regionPtr->prot());
         }
         tryMergeRegions();
-        for(auto* callback : callbacks_) callback->on_munmap(address, length);
         return 0;
     }
 

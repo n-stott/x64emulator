@@ -38,7 +38,7 @@ namespace emulator {
             MmuCallback(x64::Mmu* mmu, VM* vm);
             ~MmuCallback();
             void on_mprotect(u64 base, u64 length, BitFlags<x64::PROT> protBefore, BitFlags<x64::PROT> protAfter) override;
-            void on_munmap(u64 base, u64 length) override;
+            void on_munmap(u64 base, u64 length, BitFlags<x64::PROT> prot) override;
         private:
             x64::Mmu* mmu_ { nullptr };
             VM* vm_ { nullptr };
@@ -126,9 +126,6 @@ namespace emulator {
                         std::swap(next_[i], next_[i-1]);
                         std::swap(nextCount_[i], nextCount_[i-1]);
                     }
-    #ifdef VM_BASICBLOCK_TELEMETRY
-                    ++blockCacheHits_;
-    #endif
                     return result;
                 }
                 return nullptr;
@@ -190,6 +187,8 @@ namespace emulator {
         u64 blockCacheHits_ { 0 };
         u64 blockCacheMisses_ { 0 };
         u64 mapAccesses_ { 0 };
+        u64 mapHit_ { 0 };
+        u64 mapMiss_ { 0 };
         std::unordered_map<u64, u64> basicBlockCount_;
         std::unordered_map<u64, u64> basicBlockCacheMissCount_;
 #endif

@@ -1073,4 +1073,17 @@ namespace utils {
         }
     }
 
+    bool X64Instruction::isFixedDestinationJump() const {
+        switch(insn()) {
+            case Insn::JMP_U32:
+            case Insn::JE:
+            case Insn::JNE:
+            case Insn::JCC:
+            case Insn::CALLDIRECT:
+                return true;
+            default:
+                return false;
+        }
+    }
+
 }

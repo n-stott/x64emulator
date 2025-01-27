@@ -14,50 +14,14 @@ namespace emulator {
 
     VM::~VM() {
 #ifdef VM_BASICBLOCK_TELEMETRY
+        fmt::print("basicBlocksByAddress_.size={}\n", basicBlocksByAddress_.size());
         fmt::print("blockCacheHits  :{}\n", blockCacheHits_);
         fmt::print("blockCacheMisses:{}\n", blockCacheMisses_);
         fmt::print("blockMapAccesses:{}\n", mapAccesses_);
+        fmt::print("blockMapHits:{}\n", mapHit_);
+        fmt::print("blockMapMisses:{}\n", mapMiss_);
 
         fmt::print("Executed {} different basic blocks\n", basicBlockCount_.size());
-        std::vector<std::pair<u64, u64>> cb(basicBlockCount_.begin(), basicBlockCount_.end());
-        std::sort(cb.begin(), cb.end(), [](const auto& a, const auto& b) {
-            if(a.second > b.second) return true;
-            if(a.second < b.second) return false;
-            return a.first < b.first;
-        });
-        fmt::print("Most executed basic blocks:\n");
-        for(size_t i = 0; i < std::min((size_t)10, cb.size()); ++i) {
-            u64 address = cb[i].first;
-            const auto* region = ((const x64::Mmu&)mmu_).findAddress(address);
-            fmt::print("{:#16x} : {} ({})\n", address, cb[i].second, region->name());
-
-            const auto& bb = basicBlocks_[address];
-            for(const auto& ins : bb->cpuBasicBlock.instructions) {
-                fmt::print("      {:#12x} {}\n", ins.first.address(), ins.first.toString());
-            }
-
-        }
-
-        cb = std::vector<std::pair<u64, u64>> (basicBlockCacheMissCount_.begin(), basicBlockCacheMissCount_.end());
-        std::sort(cb.begin(), cb.end(), [](const auto& a, const auto& b) {
-            if(a.second > b.second) return true;
-            if(a.second < b.second) return false;
-            return a.first < b.first;
-        });
-        fmt::print("Basic blocks with most misses:\n");
-        for(size_t i = 0; i < std::min((size_t)10, cb.size()); ++i) {
-            u64 address = cb[i].first;
-            const auto* region = ((const x64::Mmu&)mmu_).findAddress(address);
-            fmt::print("{:#16x} : {} ({})\n", address, cb[i].second, region->name());
-
-            const auto& bb = basicBlocks_[address];
-            for(size_t c = 0; c < BBlock::CACHE_SIZE; ++c) {
-                fmt::print("  Next {} : count={}\n", c, bb->nextCount[c]);
-            }
-            for(const auto& ins : bb->cpuBasicBlock.instructions) {
-                fmt::print("      {:#12x} {}\n", ins.first.address(), ins.first.toString());
-            }
-        }
 #endif
     }
 
@@ -156,10 +120,16 @@ namespace emulator {
             if(!next) {
                 next = fetchBasicBlock();
                 verify(!!next);
-                currentBasicBlock->addSuccessor(next);
+                if(currentBasicBlock->basicBlock().endsWithFixedDestinationJump()) {
+                    currentBasicBlock->addSuccessor(next);
+                }
 #ifdef VM_BASICBLOCK_TELEMETRY
                 ++blockCacheMisses_;
                 ++basicBlockCacheMissCount_[currentBasicBlock->start()];
+#endif
+            } else {
+#ifdef VM_BASICBLOCK_TELEMETRY
+                ++blockCacheHits_;
 #endif
             }
             return next;
@@ -187,8 +157,14 @@ namespace emulator {
 #endif
         auto it = basicBlocksByAddress_.find(startAddress);
         if(it != basicBlocksByAddress_.end()) {
+#ifdef VM_BASICBLOCK_TELEMETRY
+            ++mapHit_;
+#endif
             return it->second;
         } else {
+#ifdef VM_BASICBLOCK_TELEMETRY
+            ++mapMiss_;
+#endif
             std::vector<x64::X64Instruction> blockInstructions;
             u64 address = startAddress;
             while(true) {
@@ -215,10 +191,7 @@ namespace emulator {
             verify(!cpuBb.instructions.empty(), "Cannot create empty basic block");
             std::unique_ptr<BBlock> bblock = std::make_unique<BBlock>(std::move(cpuBb));
             BBlock* bblockPtr = bblock.get();
-            auto insertPosition = std::lower_bound(basicBlocks_.begin(), basicBlocks_.end(), startAddress, [](const auto& bb, u64 startAddress) {
-                return bb->start() < startAddress;
-            });
-            basicBlocks_.insert(insertPosition, std::move(bblock));
+            basicBlocks_.push_back(std::move(bblock));
             basicBlocksByAddress_[startAddress] = bblockPtr;
             return bblockPtr;
         }
@@ -450,17 +423,15 @@ namespace emulator {
     void VM::MmuCallback::on_mprotect(u64 base, u64 length, BitFlags<x64::PROT> protBefore, BitFlags<x64::PROT> protAfter) {
         if(!protBefore.test(x64::PROT::EXEC)) return; // if we were not executable, no need to perform removal
         if(protAfter.test(x64::PROT::EXEC)) return; // if we are remaining executable, no need to perform removal
-        auto begin = std::lower_bound(vm_->basicBlocks_.begin(), vm_->basicBlocks_.end(), base, [](const auto& bb, u64 address) {
-            return bb->start() < address;
+        auto mid = std::partition(vm_->basicBlocks_.begin(), vm_->basicBlocks_.end(), [&](const auto& bb) {
+            return base <= bb->start() && bb->end() <= base+length;
         });
-        auto end = std::upper_bound(vm_->basicBlocks_.begin(), vm_->basicBlocks_.end(), base+length, [](u64 address, const auto& bb) {
-            return address < bb->end();
-        });
-        for(auto it = begin; it != end; ++it) {
-            vm_->basicBlocksByAddress_.erase((*it)->start());
-            it->get()->removeFromCaches();
+        for(auto it = mid; it != vm_->basicBlocks_.end(); ++it) {
+            VM::BBlock* bb = it->get();
+            vm_->basicBlocksByAddress_.erase(bb->start());
+            bb->removeFromCaches();
         }
-        vm_->basicBlocks_.erase(begin, end);
+        vm_->basicBlocks_.erase(mid, vm_->basicBlocks_.end());
         
         vm_->executableSections_.erase(std::remove_if(vm_->executableSections_.begin(), vm_->executableSections_.end(), [&](const auto& section) {
             return (base <= section->begin && section->begin < base + length)
@@ -468,7 +439,14 @@ namespace emulator {
         }), vm_->executableSections_.end());
     }
 
-    void VM::MmuCallback::on_munmap(u64 base, u64 length) {
+    void VM::MmuCallback::on_munmap(u64 base, u64 length, BitFlags<x64::PROT> prot) {
+        if(!prot.test(x64::PROT::EXEC)) return;
+        auto compareBlocks = [](const auto& a, const auto& b) {
+            return a->start() < b->start();
+        };
+        if(!std::is_sorted(vm_->basicBlocks_.begin(), vm_->basicBlocks_.end(), compareBlocks)) {
+            std::sort(vm_->basicBlocks_.begin(), vm_->basicBlocks_.end(), compareBlocks);
+        }
         auto begin = std::lower_bound(vm_->basicBlocks_.begin(), vm_->basicBlocks_.end(), base, [](const auto& bb, u64 address) {
             return bb->start() < address;
         });
