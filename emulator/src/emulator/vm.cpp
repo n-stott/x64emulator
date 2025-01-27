@@ -14,50 +14,14 @@ namespace emulator {
 
     VM::~VM() {
 #ifdef VM_BASICBLOCK_TELEMETRY
+        fmt::print("basicBlocksByAddress_.size={}\n", basicBlocksByAddress_.size());
         fmt::print("blockCacheHits  :{}\n", blockCacheHits_);
         fmt::print("blockCacheMisses:{}\n", blockCacheMisses_);
         fmt::print("blockMapAccesses:{}\n", mapAccesses_);
+        fmt::print("blockMapHits:{}\n", mapHit_);
+        fmt::print("blockMapMisses:{}\n", mapMiss_);
 
         fmt::print("Executed {} different basic blocks\n", basicBlockCount_.size());
-        std::vector<std::pair<u64, u64>> cb(basicBlockCount_.begin(), basicBlockCount_.end());
-        std::sort(cb.begin(), cb.end(), [](const auto& a, const auto& b) {
-            if(a.second > b.second) return true;
-            if(a.second < b.second) return false;
-            return a.first < b.first;
-        });
-        fmt::print("Most executed basic blocks:\n");
-        for(size_t i = 0; i < std::min((size_t)10, cb.size()); ++i) {
-            u64 address = cb[i].first;
-            const auto* region = ((const x64::Mmu&)mmu_).findAddress(address);
-            fmt::print("{:#16x} : {} ({})\n", address, cb[i].second, region->name());
-
-            const auto& bb = basicBlocks_[address];
-            for(const auto& ins : bb->cpuBasicBlock.instructions) {
-                fmt::print("      {:#12x} {}\n", ins.first.address(), ins.first.toString());
-            }
-
-        }
-
-        cb = std::vector<std::pair<u64, u64>> (basicBlockCacheMissCount_.begin(), basicBlockCacheMissCount_.end());
-        std::sort(cb.begin(), cb.end(), [](const auto& a, const auto& b) {
-            if(a.second > b.second) return true;
-            if(a.second < b.second) return false;
-            return a.first < b.first;
-        });
-        fmt::print("Basic blocks with most misses:\n");
-        for(size_t i = 0; i < std::min((size_t)10, cb.size()); ++i) {
-            u64 address = cb[i].first;
-            const auto* region = ((const x64::Mmu&)mmu_).findAddress(address);
-            fmt::print("{:#16x} : {} ({})\n", address, cb[i].second, region->name());
-
-            const auto& bb = basicBlocks_[address];
-            for(size_t c = 0; c < BBlock::CACHE_SIZE; ++c) {
-                fmt::print("  Next {} : count={}\n", c, bb->nextCount[c]);
-            }
-            for(const auto& ins : bb->cpuBasicBlock.instructions) {
-                fmt::print("      {:#12x} {}\n", ins.first.address(), ins.first.toString());
-            }
-        }
 #endif
     }
 
@@ -163,6 +127,10 @@ namespace emulator {
                 ++blockCacheMisses_;
                 ++basicBlockCacheMissCount_[currentBasicBlock->start()];
 #endif
+            } else {
+#ifdef VM_BASICBLOCK_TELEMETRY
+                ++blockCacheHits_;
+#endif
             }
             return next;
         };
@@ -189,8 +157,14 @@ namespace emulator {
 #endif
         auto it = basicBlocksByAddress_.find(startAddress);
         if(it != basicBlocksByAddress_.end()) {
+#ifdef VM_BASICBLOCK_TELEMETRY
+            ++mapHit_;
+#endif
             return it->second;
         } else {
+#ifdef VM_BASICBLOCK_TELEMETRY
+            ++mapMiss_;
+#endif
             std::vector<x64::X64Instruction> blockInstructions;
             u64 address = startAddress;
             while(true) {
