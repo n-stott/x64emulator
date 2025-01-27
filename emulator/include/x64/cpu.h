@@ -32,6 +32,10 @@ namespace x64 {
         using ExecPtr = void(*)(Cpu&, const X64Instruction&);
         struct BasicBlock {
             std::vector<std::pair<X64Instruction, ExecPtr>> instructions;
+
+            bool endsWithFixedDestinationJump() const {
+                return instructions.back().first.isFixedDestinationJump();
+            }
         };
 
         BasicBlock createBasicBlock(const X64Instruction*, size_t) const;

@@ -156,7 +156,9 @@ namespace emulator {
             if(!next) {
                 next = fetchBasicBlock();
                 verify(!!next);
-                currentBasicBlock->addSuccessor(next);
+                if(currentBasicBlock->basicBlock().endsWithFixedDestinationJump()) {
+                    currentBasicBlock->addSuccessor(next);
+                }
 #ifdef VM_BASICBLOCK_TELEMETRY
                 ++blockCacheMisses_;
                 ++basicBlockCacheMissCount_[currentBasicBlock->start()];
