@@ -90,6 +90,12 @@ create_simple_test(jit)
 create_simple_test(repnzscas)
 create_simple_test(random_call)
 
+add_executable(test_abort src/test_abort.cpp)
+target_compile_options(test_abort PUBLIC ${CC_OPTIONS})
+target_link_libraries(test_abort PUBLIC pthread)
+add_test(NAME abort COMMAND ${CMAKE_BINARY_DIR}/emulator/emulator test_abort)
+set_tests_properties(abort PROPERTIES WILL_FAIL TRUE)
+
 add_executable(test_trivial_c src/test_trivial.c)
 target_compile_options(test_trivial_c PUBLIC ${CC_OPTIONS})
 target_link_options(test_trivial_c PUBLIC ${LD_OPTIONS} -static)
