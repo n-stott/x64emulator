@@ -89,6 +89,8 @@ create_simple_test(ioctl)
 create_simple_test(jit)
 create_simple_test(repnzscas)
 create_simple_test(random_call)
+create_simple_test(fact)
+create_simple_test(ack)
 
 add_executable(test_abort src/test_abort.cpp)
 target_compile_options(test_abort PUBLIC ${CC_OPTIONS})
