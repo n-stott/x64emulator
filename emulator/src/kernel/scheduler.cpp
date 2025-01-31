@@ -475,7 +475,6 @@ namespace kernel {
     }
 
     void Scheduler::kill([[maybe_unused]] int signal) {
-        std::unique_lock lock(schedulerMutex_);
         terminateAll(516);
     }
 
