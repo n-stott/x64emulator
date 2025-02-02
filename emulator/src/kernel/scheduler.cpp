@@ -20,10 +20,14 @@ namespace kernel {
     Scheduler::~Scheduler() = default;
 
 
-    void Scheduler::syncThreadTimeSlice(Thread* thread) {
+    void Scheduler::syncThreadTimeSlice(Thread* thread, std::unique_lock<std::mutex>* lockPtr) {
         verify(!!thread);
-        std::unique_lock lock(schedulerMutex_);
-        currentTime_ = std::max(currentTime_, thread->tickInfo().currentTime());
+        if(!!lockPtr) {
+            currentTime_ = std::max(currentTime_, thread->tickInfo().currentTime());
+        } else {
+            std::unique_lock lock(schedulerMutex_);
+            currentTime_ = std::max(currentTime_, thread->tickInfo().currentTime());
+        }
     }
 
     void Scheduler::runOnWorkerThread(Worker worker) {
@@ -96,18 +100,15 @@ namespace kernel {
         ScopeGuard guard([&]() {
             std::unique_lock lock(schedulerMutex_);
             stopRunningThread(thread, worker, lock);
+            syncThreadTimeSlice(thread, &lock);
             lock.unlock();
-            schedulerHasRunnableThread_.notify_one();
+            schedulerHasRunnableThread_.notify_all();
         });
         // fmt::print(stderr, "{}: run thread {}\n", worker.id, thread->description().tid);
         thread->tickInfo().setSlice(currentTime_.count(), DEFAULT_TIME_SLICE);
 
-        ScopeGuard timeGuard([&]() {
-            syncThreadTimeSlice(thread);
-        });
-
         while(!thread->tickInfo().isStopAsked()) {
-            syncThreadTimeSlice(thread);
+            syncThreadTimeSlice(thread, nullptr);
             vm.execute(thread);
         }
         // fmt::print(stderr, "{}: stop thread {}\n", worker.id, thread->description().tid);
@@ -117,11 +118,9 @@ namespace kernel {
         std::unique_lock lock(schedulerMutex_);
         ScopeGuard guard([&]() {
             stopRunningThread(thread, worker, lock);
+            inKernel_ = false;
             lock.unlock();
             schedulerHasRunnableThread_.notify_all();
-        });
-        ScopeGuard kernelGuard([&]() {
-            inKernel_ = false;
         });
         inKernel_ = true;
         emulator::VM::MmuCallback callback(&mmu_, &vm);

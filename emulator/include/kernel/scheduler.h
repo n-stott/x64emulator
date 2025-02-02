@@ -108,7 +108,7 @@ namespace kernel {
         bool allThreadsBlocked() const;
         bool allThreadsDead() const;
 
-        void syncThreadTimeSlice(Thread* thread);
+        void syncThreadTimeSlice(Thread* thread, std::unique_lock<std::mutex>* lockPtr);
 
         template<typename Func>
         void forEachThread(Func&& func) const {
