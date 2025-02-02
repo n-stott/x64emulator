@@ -268,7 +268,7 @@ namespace x64 {
         }
 
         const u8* getReadPtr(u64 address) const {
-#ifdef CHECK_MMU_PROT
+#ifdef MMU_CHECK_PROT
             const Region* regionPtr = findAddress(address);
             verify(!!regionPtr, [&]() {
                 fmt::print("No region containing {:#x}\n", address);
@@ -279,7 +279,7 @@ namespace x64 {
         }
 
         u8* getWritePtr(u64 address) {
-#ifdef CHECK_MMU_PROT
+#ifdef MMU_CHECK_PROT
             const Region* regionPtr = findAddress(address);
             verify(!!regionPtr, [&]() {
                 fmt::print("No region containing {:#x}\n", address);
