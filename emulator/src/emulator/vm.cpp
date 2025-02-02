@@ -424,7 +424,7 @@ namespace emulator {
         if(!protBefore.test(x64::PROT::EXEC)) return; // if we were not executable, no need to perform removal
         if(protAfter.test(x64::PROT::EXEC)) return; // if we are remaining executable, no need to perform removal
         auto mid = std::partition(vm_->basicBlocks_.begin(), vm_->basicBlocks_.end(), [&](const auto& bb) {
-            return base <= bb->start() && bb->end() <= base+length;
+            return bb->end() <= base || bb->start() >= base+length;
         });
         for(auto it = mid; it != vm_->basicBlocks_.end(); ++it) {
             VM::BBlock* bb = it->get();
