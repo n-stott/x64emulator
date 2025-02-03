@@ -268,23 +268,23 @@ namespace x64 {
         }
 
         const u8* getReadPtr(u64 address) const {
-#ifdef MMU_CHECK_PROT
+#ifndef MMU_NO_CHECK_PROT
             const Region* regionPtr = findAddress(address);
             verify(!!regionPtr, [&]() {
                 fmt::print("No region containing {:#x}\n", address);
             });
-            verify(region->prot().test(PROT::READ), "Region is not readable");
+            verify(regionPtr->prot().test(PROT::READ), "Region is not readable");
 #endif
             return memoryBase_ + address;
         }
 
         u8* getWritePtr(u64 address) {
-#ifdef MMU_CHECK_PROT
+#ifndef MMU_NO_CHECK_PROT
             const Region* regionPtr = findAddress(address);
             verify(!!regionPtr, [&]() {
                 fmt::print("No region containing {:#x}\n", address);
             });
-            verify(region->prot().test(PROT::WRITE), "Region is not writable");
+            verify(regionPtr->prot().test(PROT::WRITE), "Region is not writable");
 #endif
             return memoryBase_ +address;
         }
