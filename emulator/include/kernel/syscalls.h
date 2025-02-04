@@ -247,6 +247,8 @@ namespace kernel {
         int umask(int mask);
         // 0x60
         int gettimeofday(x64::Ptr tv, x64::Ptr tz);
+        // 0x62
+        int getrusage(int who, x64::Ptr usage);
         // 0x63
         int sysinfo(x64::Ptr info);
         // 0x64
