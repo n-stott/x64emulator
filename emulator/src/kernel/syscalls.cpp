@@ -111,6 +111,7 @@ namespace kernel {
             case 0x5c: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::chown, regs));
             case 0x5f: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::umask, regs));
             case 0x60: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::gettimeofday, regs));
+            case 0x62: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::getrusage, regs));
             case 0x63: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::sysinfo, regs));
             case 0x64: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::times, regs));
             case 0x66: return threadRegs.set(x64::R64::RAX, invoke_syscall_0(&Sys::getuid, regs));
@@ -969,6 +970,15 @@ namespace kernel {
         if(!!tv) mmu_.copyToMmu(tv, timevalBuffer.data(), timevalBuffer.size());
         if(!!tz) mmu_.copyToMmu(tv, timezoneBuffer.data(), timezoneBuffer.size());
         return 0;
+    }
+
+    int Sys::getrusage(int who, x64::Ptr usage) {
+        if(logSyscalls_) {
+            print("Sys::getrusage(who={}, usage={:#x}) = {}\n",
+                        who, usage.address(), -ENOTSUP);
+        }
+        warn("getrusage not implemented");
+        return -ENOTSUP;
     }
 
     int Sys::sysinfo(x64::Ptr info) {
