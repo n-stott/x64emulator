@@ -111,12 +111,12 @@ namespace emulator {
         if(!thread) return;
         Context context(*this, thread);
         kernel::Thread::TickInfo& tickInfo = thread->tickInfo();
-        BBlock* currentBasicBlock = nullptr;
-        BBlock* nextBasicBlock = fetchBasicBlock();
+        BasicBlock* currentBasicBlock = nullptr;
+        BasicBlock* nextBasicBlock = fetchBasicBlock();
 
-        auto findNextBasicBlock = [&]() -> BBlock* {
+        auto findNextBasicBlock = [&]() -> BasicBlock* {
             u64 rip = cpu_.get(x64::R64::RIP);
-            BBlock* next = currentBasicBlock->findNext(rip);
+            BasicBlock* next = currentBasicBlock->findNext(rip);
             if(!next) {
                 next = fetchBasicBlock();
                 verify(!!next);
@@ -143,6 +143,7 @@ namespace emulator {
             ++basicBlockCount_[currentBasicBlock->start()];
 #endif
             verify(currentBasicBlock->start() == cpu_.get(x64::R64::RIP));
+            currentBasicBlock->onCall();
             cpu_.exec(currentBasicBlock->basicBlock());
             tickInfo.tick(currentBasicBlock->basicBlock().instructions.size());
             nextBasicBlock = findNextBasicBlock();
@@ -150,7 +151,7 @@ namespace emulator {
         assert(!!currentThread_);
     }
 
-    VM::BBlock* VM::fetchBasicBlock() {
+    BasicBlock* VM::fetchBasicBlock() {
         u64 startAddress = cpu_.get(x64::R64::RIP);
 #ifdef VM_BASICBLOCK_TELEMETRY
         ++mapAccesses_;
@@ -187,10 +188,10 @@ namespace emulator {
             verify(!blockInstructions.empty() && blockInstructions.back().isBranch(), [&]() {
                 fmt::print("did not find bb exit branch for bb starting at {:#x}\n", startAddress);
             });
-            x64::Cpu::BasicBlock cpuBb = cpu_.createBasicBlock(blockInstructions.data(), blockInstructions.size());
+            x64::BasicBlock cpuBb = cpu_.createBasicBlock(blockInstructions.data(), blockInstructions.size());
             verify(!cpuBb.instructions.empty(), "Cannot create empty basic block");
-            std::unique_ptr<BBlock> bblock = std::make_unique<BBlock>(std::move(cpuBb));
-            BBlock* bblockPtr = bblock.get();
+            std::unique_ptr<BasicBlock> bblock = std::make_unique<BasicBlock>(std::move(cpuBb));
+            BasicBlock* bblockPtr = bblock.get();
             basicBlocks_.push_back(std::move(bblock));
             basicBlocksByAddress_[startAddress] = bblockPtr;
             return bblockPtr;
@@ -427,7 +428,7 @@ namespace emulator {
             return bb->end() <= base || bb->start() >= base+length;
         });
         for(auto it = mid; it != vm_->basicBlocks_.end(); ++it) {
-            VM::BBlock* bb = it->get();
+            BasicBlock* bb = it->get();
             vm_->basicBlocksByAddress_.erase(bb->start());
             bb->removeFromCaches();
         }
@@ -517,6 +518,91 @@ namespace emulator {
             auto packedInstructions = std::distance((const x64::X64Instruction*)instructions.data(), begin);
             instructions.erase(instructions.begin() + packedInstructions, instructions.end());
             this->end = lastBasicBlock->instructions[lastBasicBlock->size-1].nextAddress();
+        }
+    }
+
+    BasicBlock::BasicBlock(x64::BasicBlock cpuBasicBlock) : cpuBasicBlock_(std::move(cpuBasicBlock)) {
+        std::fill(next_.begin(), next_.end(), nullptr);
+        std::fill(nextCount_.begin(), nextCount_.end(), 0);
+    }
+
+    BasicBlock::~BasicBlock() {
+        if(calls_ >= 1'000) fmt::print("{}\n", calls_);
+    }
+
+    u64 BasicBlock::start() const {
+        verify(!cpuBasicBlock_.instructions.empty(), "Basic block is empty");
+        return cpuBasicBlock_.instructions[0].first.address();
+    }
+
+    u64 BasicBlock::end() const {
+        verify(!cpuBasicBlock_.instructions.empty(), "Basic block is empty");
+        return cpuBasicBlock_.instructions.back().first.nextAddress();
+    }
+
+    BasicBlock* BasicBlock::findNext(u64 address) {
+        for(size_t i = 0; i < next_.size(); ++i) {
+            if(!next_[i]) return nullptr;
+            if(next_[i]->start() != address) continue;
+            BasicBlock* result = next_[i];
+            ++nextCount_[i];
+            if(i > 0 && nextCount_[i] > nextCount_[i-1]) {
+                std::swap(next_[i], next_[i-1]);
+                std::swap(nextCount_[i], nextCount_[i-1]);
+            }
+            return result;
+        }
+        return nullptr;
+    }
+
+    void BasicBlock::addSuccessor(BasicBlock* other) {
+        size_t firstAvailableSlot = BasicBlock::CACHE_SIZE-1;
+        bool foundSlot = false;
+        for(size_t i = 0; i < next_.size(); ++i) {
+            if(!next_[i]) {
+                firstAvailableSlot = i;
+                foundSlot = true;
+                break;
+            }
+        }
+        verify(foundSlot);
+        next_[firstAvailableSlot] = other;
+        nextCount_[firstAvailableSlot] = 1;
+        successors_.insert(other);
+        other->predecessors_.insert(this);
+    }
+
+    void BasicBlock::removePredecessor(BasicBlock* other) {
+        predecessors_.erase(other);
+    }
+
+    void BasicBlock::removeSucessor(BasicBlock* other) {
+        for(size_t i = 0; i < next_.size(); ++i) {
+            const auto* bb1 = next_[i];
+            if(bb1 == other) {
+                next_[i] = nullptr;
+                nextCount_[i] = 0;
+            }
+        }
+        successors_.erase(other);
+    }
+
+    void BasicBlock::removeFromCaches() {
+        for(auto* prev : predecessors_) prev->removeSucessor(this);
+        predecessors_.clear();
+        for(BasicBlock* successor : successors_) successor->removePredecessor(this);
+        successors_.clear();
+    }
+
+    size_t BasicBlock::size() const {
+        return successors_.size() + predecessors_.size();
+    }
+
+    void BasicBlock::onCall() {
+        ++calls_;
+        if(calls_ >= 10024 && !compilationAttempted_) {
+            jitBasicBlock_ = x64::Compiler::tryCompile(cpuBasicBlock_);
+            compilationAttempted_ = true;
         }
     }
 }

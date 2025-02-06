@@ -11,6 +11,17 @@
 namespace x64 {
 
     class Mmu;
+    class Cpu;
+
+    using CpuExecPtr = void(*)(Cpu&, const X64Instruction&);
+
+    struct BasicBlock {
+        std::vector<std::pair<X64Instruction, CpuExecPtr>> instructions;
+
+        bool endsWithFixedDestinationJump() const {
+            return instructions.back().first.isFixedDestinationJump();
+        }
+    };
 
     class Cpu {
     public:
@@ -28,15 +39,6 @@ namespace x64 {
         void removeCallback(Callback* callback);
 
         void exec(const X64Instruction&);
-
-        using ExecPtr = void(*)(Cpu&, const X64Instruction&);
-        struct BasicBlock {
-            std::vector<std::pair<X64Instruction, ExecPtr>> instructions;
-
-            bool endsWithFixedDestinationJump() const {
-                return instructions.back().first.isFixedDestinationJump();
-            }
-        };
 
         BasicBlock createBasicBlock(const X64Instruction*, size_t) const;
 
@@ -205,7 +207,7 @@ namespace x64 {
         void execLockCmpxchg32Impl(Ptr32 dst, u32 src);
         void execLockCmpxchg64Impl(Ptr64 dst, u64 src);
 
-        static const std::array<ExecPtr, (size_t)Insn::UNKNOWN+1> execFunctions_;
+        static const std::array<CpuExecPtr, (size_t)Insn::UNKNOWN+1> execFunctions_;
 
     public:
         void execAddRM8RM8(const X64Instruction&);

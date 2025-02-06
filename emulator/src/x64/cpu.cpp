@@ -862,7 +862,7 @@ namespace x64 {
     DEFINE_STANDALONE(PAUSE, execPause)
     DEFINE_STANDALONE(UNKNOWN, execUnknown)
 
-    const std::array<Cpu::ExecPtr, (size_t)Insn::UNKNOWN+1> Cpu::execFunctions_ {{
+    const std::array<CpuExecPtr, (size_t)Insn::UNKNOWN+1> Cpu::execFunctions_ {{
         STANDALONE_NAME(ADD_RM8_RM8),
         STANDALONE_NAME(ADD_RM8_IMM),
         STANDALONE_NAME(ADD_RM16_RM16),
@@ -1541,8 +1541,8 @@ namespace x64 {
         return execFunctions_[(size_t)insn.insn()](*this, insn);
     }
 
-    Cpu::BasicBlock Cpu::createBasicBlock(const X64Instruction* instructions, size_t count) const {
-        Cpu::BasicBlock bb;
+    BasicBlock Cpu::createBasicBlock(const X64Instruction* instructions, size_t count) const {
+        BasicBlock bb;
         bb.instructions.reserve(count);
         for(size_t i = 0; i < count; ++i) {
             bb.instructions.push_back(std::make_pair(instructions[i], execFunctions_[(size_t)instructions[i].insn()]));

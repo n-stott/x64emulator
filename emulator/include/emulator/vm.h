@@ -2,6 +2,7 @@
 #define VM_H
 
 #include "emulator/symbolprovider.h"
+#include "x64/compiler/compiler.h"
 #include "x64/cpu.h"
 #include "x64/mmu.h"
 #include "utils.h"
@@ -10,12 +11,54 @@
 #include <string>
 #include <unordered_map>
 
+namespace jit {
+    struct BasicBlock;
+}
+
 namespace kernel {
     class Kernel;
     class Thread;
 }
 
+namespace x64 {
+    struct BasicBlock;
+}
+
 namespace emulator {
+
+    class BasicBlock {
+    public:
+        explicit BasicBlock(x64::BasicBlock cpuBasicBlock);
+        ~BasicBlock();
+
+        const x64::BasicBlock& basicBlock() const { return cpuBasicBlock_; }
+
+        u64 start() const;
+        u64 end() const;
+
+        BasicBlock* findNext(u64 address);
+
+        void addSuccessor(BasicBlock* other);
+        void removeFromCaches();
+
+        size_t size() const;
+        void onCall();
+
+    private:
+        void removePredecessor(BasicBlock* other);
+        void removeSucessor(BasicBlock* other);
+
+        static constexpr size_t CACHE_SIZE = 2;
+        x64::BasicBlock cpuBasicBlock_;
+        std::array<BasicBlock*, CACHE_SIZE> next_;
+        std::array<u64, CACHE_SIZE> nextCount_;
+        std::unordered_set<BasicBlock*> successors_;
+        std::unordered_set<BasicBlock*> predecessors_;
+        u64 calls_ { 0 };
+
+        std::optional<x64::NativeBasicBlock> jitBasicBlock_;
+        bool compilationAttempted_ { false };
+    };
 
     class VM {
     public:
@@ -59,9 +102,7 @@ namespace emulator {
     private:
         void log(size_t ticks, const x64::X64Instruction& instruction) const;
 
-        struct BBlock;
-
-        BBlock* fetchBasicBlock();
+        BasicBlock* fetchBasicBlock();
 
         void notifyCall(u64 address);
         void notifyRet();
@@ -96,92 +137,8 @@ namespace emulator {
 
         kernel::Thread* currentThread_ { nullptr };
 
-        class BBlock {
-        public:
-            explicit BBlock(x64::Cpu::BasicBlock cpuBasicBlock) : cpuBasicBlock_(std::move(cpuBasicBlock)) {
-                std::fill(next_.begin(), next_.end(), nullptr);
-                std::fill(nextCount_.begin(), nextCount_.end(), 0);
-            }
-
-            const x64::Cpu::BasicBlock& basicBlock() const {
-                return cpuBasicBlock_;
-            }
-
-            u64 start() const {
-                verify(!cpuBasicBlock_.instructions.empty(), "Basic block is empty");
-                return cpuBasicBlock_.instructions[0].first.address();
-            }
-            u64 end() const {
-                verify(!cpuBasicBlock_.instructions.empty(), "Basic block is empty");
-                return cpuBasicBlock_.instructions.back().first.nextAddress();
-            }
-
-            BBlock* findNext(u64 address) {
-                for(size_t i = 0; i < next_.size(); ++i) {
-                    if(!next_[i]) return nullptr;
-                    if(next_[i]->start() != address) continue;
-                    BBlock* result = next_[i];
-                    ++nextCount_[i];
-                    if(i > 0 && nextCount_[i] > nextCount_[i-1]) {
-                        std::swap(next_[i], next_[i-1]);
-                        std::swap(nextCount_[i], nextCount_[i-1]);
-                    }
-                    return result;
-                }
-                return nullptr;
-            }
-
-            void addSuccessor(BBlock* other) {
-                size_t firstAvailableSlot = BBlock::CACHE_SIZE-1;
-                for(size_t i = 0; i < next_.size(); ++i) {
-                    if(!next_[i]) {
-                        firstAvailableSlot = i;
-                        break;
-                    }
-                }
-                next_[firstAvailableSlot] = other;
-                nextCount_[firstAvailableSlot] = 1;
-                successors_.insert(other);
-                other->predecessors_.insert(this);
-            }
-
-            void removePredecessor(BBlock* other) {
-                predecessors_.erase(other);
-            }
-
-            void removeSucessor(BBlock* other) {
-                for(size_t i = 0; i < next_.size(); ++i) {
-                    const auto* bb1 = next_[i];
-                    if(bb1 == other) {
-                        next_[i] = nullptr;
-                        nextCount_[i] = 0;
-                    }
-                }
-                successors_.erase(other);
-            }
-
-            void removeFromCaches() {
-                for(auto* prev : predecessors_) prev->removeSucessor(this);
-                predecessors_.clear();
-                for(BBlock* successor : successors_) successor->removePredecessor(this);
-                successors_.clear();
-            }
-
-            size_t size() const {
-                return successors_.size() + predecessors_.size();
-            }
-
-        private:
-            static constexpr size_t CACHE_SIZE = 3;
-            x64::Cpu::BasicBlock cpuBasicBlock_;
-            std::array<BBlock*, CACHE_SIZE> next_;
-            std::array<u64, CACHE_SIZE> nextCount_;
-            std::unordered_set<BBlock*> successors_;
-            std::unordered_set<BBlock*> predecessors_;
-        };
-
-        std::vector<std::unique_ptr<BBlock>> basicBlocks_;
-        std::unordered_map<u64, BBlock*> basicBlocksByAddress_;
+        std::vector<std::unique_ptr<BasicBlock>> basicBlocks_;
+        std::unordered_map<u64, BasicBlock*> basicBlocksByAddress_;
 
 #ifdef VM_BASICBLOCK_TELEMETRY
         u64 blockCacheHits_ { 0 };

@@ -2,12 +2,19 @@
 #define TYPES_H
 
 #include "utils.h"
+#include <cassert>
 #include <cstddef>
+#include <limits>
 
 namespace x64 {
 
     struct Imm {
         u64 immediate;
+
+        template<typename T>
+        T as() const {
+            return (T)immediate;
+        }
     };
 
     template<typename I>
