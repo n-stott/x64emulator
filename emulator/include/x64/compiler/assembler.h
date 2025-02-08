@@ -18,7 +18,9 @@ namespace x64 {
         void mov(const M32& dst, R32 src);
         void mov(R64 dst, const M64& src);
         void mov(const M64& dst, R64 src);
+        void add(R64 dst, R64 src);
         void add(R64 dst, i32 imm);
+        void sub(R64 dst, i32 imm);
         void cmp(R32 lhs, R32 rhs);
         void cmp(R32 dst, i32 imm);
         void cmp(R64 lhs, R64 rhs);
@@ -26,6 +28,9 @@ namespace x64 {
         void test(R32 lhs, R32 rhs);
         void test(R64 lhs, R64 rhs);
         void and_(R32 dst, i32 imm);
+
+        void xor_(R32 dst, R32 src);
+        void xor_(R64 dst, R64 src);
 
         void lea(R64, const M64&);
 
