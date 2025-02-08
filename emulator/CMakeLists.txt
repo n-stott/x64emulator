@@ -38,7 +38,7 @@ if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
 elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
     target_compile_options(x64cpu PUBLIC -Wno-uninitialized)
 endif()
-target_compile_options(x64cpu PUBLIC -frounding-math)
+target_compile_options(x64cpu PUBLIC -frounding-math -fno-omit-frame-pointer)
 target_include_directories(x64cpu PUBLIC include)
 target_link_libraries(x64cpu PUBLIC fmt::fmt-header-only)
 target_compile_options(x64cpu PUBLIC
@@ -103,7 +103,7 @@ if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
 elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
     target_compile_options(x64emulator PUBLIC -Wno-uninitialized)
 endif()
-target_compile_options(x64emulator PUBLIC -frounding-math)
+target_compile_options(x64emulator PUBLIC -frounding-math -fno-omit-frame-pointer)
 target_compile_options(x64emulator PUBLIC
     -DFMT_HEADER_ONLY
     -DFMT_USE_FLOAT=0

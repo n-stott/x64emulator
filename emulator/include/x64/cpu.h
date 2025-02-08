@@ -5,6 +5,7 @@
 #include "x64/flags.h"
 #include "x64/simd.h"
 #include "x64/x87.h"
+#include "x64/instructions/basicblock.h"
 #include "x64/instructions/x64instruction.h"
 #include <vector>
 
@@ -12,16 +13,6 @@ namespace x64 {
 
     class Mmu;
     class Cpu;
-
-    using CpuExecPtr = void(*)(Cpu&, const X64Instruction&);
-
-    struct BasicBlock {
-        std::vector<std::pair<X64Instruction, CpuExecPtr>> instructions;
-
-        bool endsWithFixedDestinationJump() const {
-            return instructions.back().first.isFixedDestinationJump();
-        }
-    };
 
     class Cpu {
     public:
@@ -43,6 +34,7 @@ namespace x64 {
         BasicBlock createBasicBlock(const X64Instruction*, size_t) const;
 
         void exec(const BasicBlock&);
+        void exec(NativeExecPtr bb);
         
         void setSegmentBase(Segment segment, u64 base);
         u64 getSegmentBase(Segment segment) const;

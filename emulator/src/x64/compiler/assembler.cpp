@@ -57,7 +57,7 @@ namespace x64 {
 
     void Assembler::mov(R64 dst, u64 imm) {
         // fmt::print("{}\n", X64Instruction::make(0x0, Insn::MOV_R64_IMM, 1, dst, imm).toString());
-        write8((u8)(0x48 | (((u8)dst >= 8) ? 4 : 0)));
+        write8((u8)(0x48 | (((u8)dst >= 8) ? 1 : 0)));
         write8((u8)(0xb8 + encodeRegister(dst)));
         write64(imm);
     }
@@ -158,12 +158,12 @@ namespace x64 {
     void Assembler::add(R64 dst, i32 imm) {
         // fmt::print("{}\n", X64Instruction::make(0x0, Insn::ADD_RM64_IMM, 1, RM64{true, dst, {}}, imm).toString());
         if((i8)imm == imm) {
-            write8((u8)(0x48 | (((u8)dst >= 8) ? 4 : 0)));
+            write8((u8)(0x48 | (((u8)dst >= 8) ? 1 : 0)));
             write8((u8)(0x83));
             write8((u8)(0b11000000 | (0b000 << 3) | encodeRegister(dst)));
             write8((i8)imm);
         } else {
-            write8((u8)(0x48 | (((u8)dst >= 8) ? 4 : 0)));
+            write8((u8)(0x48 | (((u8)dst >= 8) ? 1 : 0)));
             write8((u8)(0x81));
             write8((u8)(0b11000000 | (0b000 << 3) | encodeRegister(dst)));
             write32(imm);
@@ -173,12 +173,12 @@ namespace x64 {
     void Assembler::cmp(R64 dst, i32 imm) {
         // fmt::print("{}\n", X64Instruction::make(0x0, Insn::CMP_RM64_IMM, 1, RM64{true, dst, {}}, imm).toString());
         if((i8)imm == imm) {
-            write8((u8)(0x48 | (((u8)dst >= 8) ? 4 : 0)));
+            write8((u8)(0x48 | (((u8)dst >= 8) ? 1 : 0)));
             write8((u8)(0x83));
             write8((u8)(0b11000000 | (0b111 << 3) | encodeRegister(dst)));
             write8((i8)imm);
         } else {
-            write8((u8)(0x48 | (((u8)dst >= 8) ? 4 : 0)));
+            write8((u8)(0x48 | (((u8)dst >= 8) ? 1 : 0)));
             write8((u8)(0x81));
             write8((u8)(0b11000000 | (0b111 << 3) | encodeRegister(dst)));
             write32(imm);

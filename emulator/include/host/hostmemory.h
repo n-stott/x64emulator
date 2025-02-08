@@ -12,6 +12,7 @@ namespace host {
             NONE  = 0,
             READ  = (1 << 0),
             WRITE = (1 << 1),
+            EXEC  = (1 << 2),
         };
 
         static u8* getVirtualMemoryRange(u64 size);

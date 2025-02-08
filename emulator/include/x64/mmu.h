@@ -89,6 +89,8 @@ namespace x64 {
 
         void setRegionName(u64 address, std::string name);
 
+        u8* base() { return memoryBase_; }
+
         Ptr8 copyToMmu(Ptr8 dst, const u8* src, size_t n);
         u8* copyFromMmu(u8* dst, Ptr8 src, size_t n) const;
 

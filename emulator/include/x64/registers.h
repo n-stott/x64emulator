@@ -17,6 +17,8 @@ namespace x64 {
     public:
         Registers();
 
+        u64* gprs() { return gpr_.data(); }
+
         u64 rbp() const { return gpr_[(u8)R64::RBP]; }
         u64 rsp() const { return gpr_[(u8)R64::RSP]; }
         u64 rip() const { return gpr_[(u8)R64::RIP]; }

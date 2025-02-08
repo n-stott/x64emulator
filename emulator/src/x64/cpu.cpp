@@ -1557,6 +1557,12 @@ namespace x64 {
         }
     }
 
+    void Cpu::exec(NativeExecPtr bb) {
+        u64 rflags = flags_.toRflags();
+        bb(regs_.gprs(), mmu_->base(), &rflags);
+        flags_ = Flags::fromRflags(rflags);
+    }
+
     void Cpu::execAddRM8RM8(const X64Instruction& ins) {
         const auto& dst = ins.op0<RM8>();
         const auto& src = ins.op1<RM8>();

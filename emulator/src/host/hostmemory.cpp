@@ -37,6 +37,7 @@ namespace host {
         int prot = PROT_NONE;
         if(protection.test(Protection::READ)) prot |= PROT_READ;
         if(protection.test(Protection::WRITE)) prot |= PROT_WRITE;
+        if(protection.test(Protection::EXEC)) prot |= PROT_EXEC;
         if(::mprotect(base, size, prot) < 0) {
             perror("mprotect");
             throw std::logic_error{"Unable to protect virtual memory range"};

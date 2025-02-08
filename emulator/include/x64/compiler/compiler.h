@@ -3,6 +3,7 @@
 
 #include "x64/types.h"
 #include "x64/compiler/assembler.h"
+#include "x64/instructions/basicblock.h"
 #include "utils.h"
 #include <optional>
 #include <vector>
@@ -11,12 +12,6 @@ namespace x64 {
 
     struct BasicBlock;
     class X64Instruction;
-
-    struct NativeBasicBlock {
-        std::vector<u8> nativecode;
-
-        using ExecPtr = void(*)(u64* registers, u8* memory, u64* rflags);
-    };
 
     class Compiler {
     public:

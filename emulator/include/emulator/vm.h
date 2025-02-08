@@ -26,12 +26,15 @@ namespace x64 {
 
 namespace emulator {
 
+    class VM;
+
     class BasicBlock {
     public:
         explicit BasicBlock(x64::BasicBlock cpuBasicBlock);
         ~BasicBlock();
 
         const x64::BasicBlock& basicBlock() const { return cpuBasicBlock_; }
+        const u8* nativeBasicBlock() const { return nativeBasicBlock_; }
 
         u64 start() const;
         u64 end() const;
@@ -42,7 +45,7 @@ namespace emulator {
         void removeFromCaches();
 
         size_t size() const;
-        void onCall();
+        void onCall(VM&);
 
     private:
         void removePredecessor(BasicBlock* other);
@@ -56,7 +59,8 @@ namespace emulator {
         std::unordered_set<BasicBlock*> predecessors_;
         u64 calls_ { 0 };
 
-        std::optional<x64::NativeBasicBlock> jitBasicBlock_;
+        const u8* nativeBasicBlock_ { nullptr };
+        size_t nativeBasicBlockSize_ { 0 };
         bool compilationAttempted_ { false };
     };
 
@@ -73,6 +77,8 @@ namespace emulator {
         void execute(kernel::Thread* thread);
 
         void push64(u64 value);
+
+        const u8* tryMakeNative(const u8* code, size_t size);
 
         void tryRetrieveSymbols(const std::vector<u64>& addresses, std::unordered_map<u64, std::string>* addressesToSymbols) const;
 
@@ -152,6 +158,22 @@ namespace emulator {
 
         mutable SymbolProvider symbolProvider_;
         mutable std::unordered_map<u64, std::string> functionNameCache_;
+
+        class NativeCodeStorage {
+            u64 capacity_;
+            u64 size_;
+            u8* executableMemory_;
+
+            NativeCodeStorage(const NativeCodeStorage&) = delete;
+            NativeCodeStorage(NativeCodeStorage&&) = delete;
+
+        public:
+            explicit NativeCodeStorage(u64 capacity);
+            ~NativeCodeStorage();
+
+            const u8* tryMakeNative(const u8* code, size_t size);
+
+        } nativeCodeStorage_;
     };
 
 }

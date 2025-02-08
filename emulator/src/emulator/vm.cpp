@@ -4,13 +4,20 @@
 #include "x64/mmu.h"
 #include "x64/registers.h"
 #include "kernel/thread.h"
+#include "host/hostmemory.h"
 #include <algorithm>
 #include <numeric>
 #include <optional>
 
 namespace emulator {
 
-    VM::VM(x64::Cpu& cpu, x64::Mmu& mmu, kernel::Kernel& kernel) : cpu_(cpu), mmu_(mmu), kernel_(kernel) { }
+    VM::VM(x64::Cpu& cpu, x64::Mmu& mmu, kernel::Kernel& kernel) :
+            cpu_(cpu),
+            mmu_(mmu),
+            kernel_(kernel),
+            nativeCodeStorage_(1024*1024) {
+        
+    }
 
     VM::~VM() {
 #ifdef VM_BASICBLOCK_TELEMETRY
@@ -143,8 +150,12 @@ namespace emulator {
             ++basicBlockCount_[currentBasicBlock->start()];
 #endif
             verify(currentBasicBlock->start() == cpu_.get(x64::R64::RIP));
-            currentBasicBlock->onCall();
-            cpu_.exec(currentBasicBlock->basicBlock());
+            currentBasicBlock->onCall(*this);
+            if(currentBasicBlock->nativeBasicBlock()) {
+                cpu_.exec((x64::NativeExecPtr)currentBasicBlock->nativeBasicBlock());
+            } else {
+                cpu_.exec(currentBasicBlock->basicBlock());
+            }
             tickInfo.tick(currentBasicBlock->basicBlock().instructions.size());
             nextBasicBlock = findNextBasicBlock();
         }
@@ -598,11 +609,42 @@ namespace emulator {
         return successors_.size() + predecessors_.size();
     }
 
-    void BasicBlock::onCall() {
+    const u8* VM::tryMakeNative(const u8* code, size_t size) {
+        return nativeCodeStorage_.tryMakeNative(code, size);
+    }
+
+    void BasicBlock::onCall(VM& vm) {
         ++calls_;
         if(calls_ >= 10024 && !compilationAttempted_) {
-            jitBasicBlock_ = x64::Compiler::tryCompile(cpuBasicBlock_);
+            auto jitBasicBlock = x64::Compiler::tryCompile(cpuBasicBlock_);
+            if(!!jitBasicBlock) {
+                nativeBasicBlock_ = vm.tryMakeNative(jitBasicBlock->nativecode.data(), jitBasicBlock->nativecode.size());
+            }
+            if(!!nativeBasicBlock_) {
+                nativeBasicBlockSize_ = jitBasicBlock->nativecode.size();
+            }
             compilationAttempted_ = true;
         }
+    }
+
+    VM::NativeCodeStorage::NativeCodeStorage(u64 capacity) : capacity_(capacity), size_(0) {
+        executableMemory_ = host::HostMemory::getVirtualMemoryRange(capacity);
+        BitFlags<host::HostMemory::Protection> protection;
+        protection.add(host::HostMemory::Protection::READ);
+        protection.add(host::HostMemory::Protection::WRITE);
+        protection.add(host::HostMemory::Protection::EXEC);
+        host::HostMemory::protectVirtualMemoryRange(executableMemory_, capacity, protection);
+    }
+
+    VM::NativeCodeStorage::~NativeCodeStorage() {
+        host::HostMemory::releaseVirtualMemoryRange(executableMemory_, capacity_);
+    }
+
+    const u8* VM::NativeCodeStorage::tryMakeNative(const u8* code, size_t size) {
+        if(size_ + size > capacity_) return nullptr;
+        u8* codePtr = executableMemory_ + size_;
+        std::memcpy(codePtr, code, size);
+        size_ += size;
+        return codePtr;
     }
 }
