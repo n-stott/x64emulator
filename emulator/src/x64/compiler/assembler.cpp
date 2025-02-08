@@ -6,6 +6,10 @@
 
 namespace x64 {
 
+    u8 encodeRegister(R32 reg) {
+        return ((u8)reg) & 0x7;
+    }
+
     u8 encodeRegister(R64 reg) {
         return ((u8)reg) & 0x7;
     }
@@ -48,23 +52,117 @@ namespace x64 {
         code_.push_back((u8)((value >> 56) & 0xFF));
     }
 
+    void Assembler::mov(R32 dst, R32 src) {
+        write8((u8)(0x40 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src >= 8) ? 1 : 0)));
+        write8((u8)(0x8b));
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | (encodeRegister(src))));
+    }
+
     void Assembler::mov(R64 dst, R64 src) {
-        // fmt::print("{}\n", X64Instruction::make(0x0, Insn::MOV_R64_R64, 1, dst, src).toString());
         write8((u8)(0x48 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src >= 8) ? 1 : 0)));
         write8((u8)(0x8b));
         write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | (encodeRegister(src))));
     }
 
     void Assembler::mov(R64 dst, u64 imm) {
-        // fmt::print("{}\n", X64Instruction::make(0x0, Insn::MOV_R64_IMM, 1, dst, imm).toString());
         write8((u8)(0x48 | (((u8)dst >= 8) ? 1 : 0)));
         write8((u8)(0xb8 + encodeRegister(dst)));
         write64(imm);
     }
 
+    void Assembler::mov(R32 dst, const M32& src) {
+        verify(src.encoding.base != R64::RSP, "rsp as base requires an SIB byte");
+        if(src.encoding.index == R64::ZERO) {
+            if(src.encoding.displacement == 0) {
+                verify(src.encoding.base != R64::RBP, "rbp as base without displacement requires an SIB byte");
+                write8((u8)(0x40 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src.encoding.base >= 8) ? 1 : 0)));
+                write8((u8)(0x8b));
+                write8((u8)(0b00000000 | (encodeRegister(dst) << 3) | (encodeRegister(src.encoding.base))));
+            } else if((i8)src.encoding.displacement == src.encoding.displacement) {
+                write8((u8)(0x40 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src.encoding.base >= 8) ? 1 : 0)));
+                write8((u8)(0x8b));
+                write8((u8)(0b01000000 | (encodeRegister(dst) << 3) | (encodeRegister(src.encoding.base))));
+                write8((i8)src.encoding.displacement);
+            } else {
+                write8((u8)(0x40 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src.encoding.base >= 8) ? 1 : 0)));
+                write8((u8)(0x8b));
+                write8((u8)(0b10000000 | (encodeRegister(dst) << 3) | (encodeRegister(src.encoding.base))));
+                write32(src.encoding.displacement);
+            }
+        } else {
+            if((i8)src.encoding.displacement == src.encoding.displacement) {
+                write8((u8)(0x40
+                         | (((u8)dst >= 8) ? 4 : 0)
+                         | (((u8)src.encoding.index >= 8) ? 2 : 0)
+                         | (((u8)src.encoding.base >= 8) ? 1 : 0)));
+                write8((u8)(0x8b));
+                write8((u8)(0b01000000 | (encodeRegister(dst) << 3) | 0b100));
+                write8((u8)(encodeScale(src.encoding.scale) << 6
+                         | (encodeRegister(src.encoding.index) << 3)
+                         | (encodeRegister(src.encoding.base))));
+                write8((i8)src.encoding.displacement);
+            } else {
+                write8((u8)(0x40
+                         | (((u8)dst >= 8) ? 4 : 0)
+                         | (((u8)src.encoding.index >= 8) ? 2 : 0)
+                         | (((u8)src.encoding.base >= 8) ? 1 : 0)));
+                write8((u8)(0x8b));
+                write8((u8)(0b10000000 | (encodeRegister(dst) << 3) | 0b100));
+                write8((u8)(encodeScale(src.encoding.scale) << 6
+                         | (encodeRegister(src.encoding.index) << 3)
+                         | (encodeRegister(src.encoding.base))));
+                write32(src.encoding.displacement);
+            }
+        }
+    }
+
+    void Assembler::mov(const M32& dst, R32 src) {
+        if(dst.encoding.index == R64::ZERO) {
+            if(dst.encoding.displacement == 0) {
+                verify(dst.encoding.base != R64::RBP, "rbp as base without displacement requires an SIB byte");
+                write8((u8)(0x40 | (((u8)src >= 8) ? 4 : 0) | (((u8)dst.encoding.base >= 8) ? 1 : 0)));
+                write8((u8)(0x89));
+                write8((u8)(0b00000000 | (encodeRegister(src) << 3) | (encodeRegister(dst.encoding.base))));
+            } else if((i8)dst.encoding.displacement == dst.encoding.displacement) {
+                write8((u8)(0x40 | (((u8)src >= 8) ? 4 : 0) | (((u8)dst.encoding.base >= 8) ? 1 : 0)));
+                write8((u8)(0x89));
+                write8((u8)(0b01000000 | (encodeRegister(src) << 3) | (encodeRegister(dst.encoding.base))));
+                write8((i8)dst.encoding.displacement);
+            } else {
+                write8((u8)(0x40 | (((u8)src >= 8) ? 4 : 0) | (((u8)dst.encoding.base >= 8) ? 1 : 0)));
+                write8((u8)(0x89));
+                write8((u8)(0b10000000 | (encodeRegister(src) << 3) | (encodeRegister(dst.encoding.base))));
+                write32(dst.encoding.displacement);
+            }
+        } else {
+            if((i8)dst.encoding.displacement == dst.encoding.displacement) {
+                write8((u8)(0x40
+                         | (((u8)src >= 8) ? 4 : 0)
+                         | (((u8)dst.encoding.index >= 8) ? 2 : 0)
+                         | (((u8)dst.encoding.base >= 8) ? 1 : 0)));
+                write8((u8)(0x89));
+                write8((u8)(0b01000000 | (encodeRegister(src) << 3) | 0b100));
+                write8((u8)(encodeScale(dst.encoding.scale) << 6
+                         | (encodeRegister(dst.encoding.index) << 3)
+                         | (encodeRegister(dst.encoding.base))));
+                write8((i8)dst.encoding.displacement);
+            } else {
+                write8((u8)(0x40
+                         | (((u8)src >= 8) ? 4 : 0)
+                         | (((u8)dst.encoding.index >= 8) ? 2 : 0)
+                         | (((u8)dst.encoding.base >= 8) ? 1 : 0)));
+                write8((u8)(0x89));
+                write8((u8)(0b10000000 | (encodeRegister(src) << 3) | 0b100));
+                write8((u8)(encodeScale(dst.encoding.scale) << 6
+                         | (encodeRegister(dst.encoding.index) << 3)
+                         | (encodeRegister(dst.encoding.base))));
+                write32(dst.encoding.displacement);
+            }
+        }
+    }
+
     void Assembler::mov(R64 dst, const M64& src) {
         verify(src.encoding.base != R64::RSP, "rsp as base requires an SIB byte");
-        // fmt::print("{}\n", X64Instruction::make(0x0, Insn::MOV_R64_M64, 1, dst, src).toString());
         if(src.encoding.index == R64::ZERO) {
             if(src.encoding.displacement == 0) {
                 verify(src.encoding.base != R64::RBP, "rbp as base without displacement requires an SIB byte");
@@ -110,7 +208,6 @@ namespace x64 {
     }
 
     void Assembler::mov(const M64& dst, R64 src) {
-        // fmt::print("{}\n", X64Instruction::make(0x0, Insn::MOV_M64_R64, 1, dst, src).toString());
         if(dst.encoding.index == R64::ZERO) {
             if(dst.encoding.displacement == 0) {
                 verify(dst.encoding.base != R64::RBP, "rbp as base without displacement requires an SIB byte");
@@ -156,7 +253,6 @@ namespace x64 {
     }
 
     void Assembler::add(R64 dst, i32 imm) {
-        // fmt::print("{}\n", X64Instruction::make(0x0, Insn::ADD_RM64_IMM, 1, RM64{true, dst, {}}, imm).toString());
         if((i8)imm == imm) {
             write8((u8)(0x48 | (((u8)dst >= 8) ? 1 : 0)));
             write8((u8)(0x83));
@@ -171,7 +267,6 @@ namespace x64 {
     }
 
     void Assembler::cmp(R64 dst, i32 imm) {
-        // fmt::print("{}\n", X64Instruction::make(0x0, Insn::CMP_RM64_IMM, 1, RM64{true, dst, {}}, imm).toString());
         if((i8)imm == imm) {
             write8((u8)(0x48 | (((u8)dst >= 8) ? 1 : 0)));
             write8((u8)(0x83));
@@ -183,6 +278,12 @@ namespace x64 {
             write8((u8)(0b11000000 | (0b111 << 3) | encodeRegister(dst)));
             write32(imm);
         }
+    }
+
+    void Assembler::test(R64 lhs, R64 rhs) {
+        write8((u8)(0x48 | (((u8)rhs >= 8) ? 4 : 0) | (((u8)lhs >= 8) ? 1 : 0)));
+        write8((u8)(0x85));
+        write8((u8)(0b11000000 | (encodeRegister(rhs) << 3) | (encodeRegister(lhs))));
     }
 
     void Assembler::push64(const M64& src) {
@@ -231,6 +332,11 @@ namespace x64 {
             case Cond::E: {
                 write8(0x0F);
                 write8(0x84);
+                break;
+            }
+            case Cond::NE: {
+                write8(0x0F);
+                write8(0x85);
                 break;
             }
             default: verify(false, "jcc not implemented for that condition"); break;

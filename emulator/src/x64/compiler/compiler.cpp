@@ -23,17 +23,21 @@ namespace x64 {
         // fmt::print("Compilation success !\n");
         std::vector<u8> code = compiler.assembler_.code();
         // fwrite(code.data(), 1, code.size(), stderr);
+        // return {};
         return NativeBasicBlock{std::move(code)};
     }
 
     bool Compiler::tryCompile(const X64Instruction& ins) {
         if(!tryAdvanceInstructionPointer(ins.nextAddress())) return false;
         switch(ins.insn()) {
+            case Insn::MOV_R32_R32: return tryCompileMovR32R32(ins.op0<R32>(), ins.op1<R32>());
             case Insn::MOV_R64_M64: return tryCompileMovR64M64(ins.op0<R64>(), ins.op1<M64>());
             case Insn::MOV_M64_R64: return tryCompileMovM64R64(ins.op0<M64>(), ins.op1<R64>());
             case Insn::ADD_RM64_IMM: return tryCompileAddRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
             case Insn::CMP_RM64_IMM: return tryCompileCmpRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
+            case Insn::JE: return tryCompileJe(ins.op0<u64>());
             case Insn::JNE: return tryCompileJne(ins.op0<u64>());
+            case Insn::TEST_RM64_R64: return tryCompileTestRM64R64(ins.op0<RM64>(), ins.op1<R64>());
             default: break;
         }
         return false;
@@ -56,8 +60,15 @@ namespace x64 {
         return true;
     }
 
+    bool Compiler::tryCompileMovR32R32(R32 dst, R32 src) {
+        // read from the source
+        readReg32(Reg::GPR0, src);
+        // write to the destination
+        writeReg32(dst, Reg::GPR0);
+        return true;
+    }
+
     bool Compiler::tryCompileMovR64M64(R64 dst, const M64& src) {
-        using namespace x64;
         if(src.segment != Segment::CS && src.segment != Segment::UNK) return false;
         if(src.encoding.index != R64::ZERO) return false;
         // read the base
@@ -70,7 +81,6 @@ namespace x64 {
     }
 
     bool Compiler::tryCompileMovM64R64(const M64& dst, R64 src) {
-        using namespace x64;
         if(dst.segment != Segment::CS && dst.segment != Segment::UNK) return false;
         if(dst.encoding.index != R64::ZERO) return false;
         // read the base
@@ -84,7 +94,6 @@ namespace x64 {
 
     bool Compiler::tryCompileAddRM64Imm(const RM64& dst, Imm src) {
         if(!dst.isReg) return false;
-        using namespace x64;
         // read the register
         readReg64(Reg::GPR0, dst.reg);
         // add the immediate
@@ -96,7 +105,6 @@ namespace x64 {
 
     bool Compiler::tryCompileCmpRM64Imm(const RM64& dst, Imm src) {
         if(!dst.isReg) return false;
-        using namespace x64;
         // read the register
         readReg64(Reg::GPR0, dst.reg);
         // compare to the immediate
@@ -104,9 +112,22 @@ namespace x64 {
         return true;
     }
 
-    bool Compiler::tryCompileJne(u64 dst) {
-        using namespace x64;
+    bool Compiler::tryCompileJe(u64 dst) {
+        // create labels and test the condition
+        auto noBranchCase = assembler_.label();
+        assembler_.jumpCondition(Cond::NE, &noBranchCase); // jump if the opposite condition is true
 
+        // load the immediate
+        loadImm64(Reg::GPR0, dst);
+        // change the instruction pointer
+        writeReg64(R64::RIP, Reg::GPR0);
+
+        // if we don't need to jump
+        assembler_.putLabel(noBranchCase);
+        return true;
+    }
+
+    bool Compiler::tryCompileJne(u64 dst) {
         // create labels and test the condition
         auto noBranchCase = assembler_.label();
         assembler_.jumpCondition(Cond::E, &noBranchCase); // jump if the opposite condition is true
@@ -121,6 +142,30 @@ namespace x64 {
         return true;
     }
 
+    bool Compiler::tryCompileTestRM64R64(const RM64& lhs, R64 rhs) {
+        if(!lhs.isReg) return false;
+
+        // load the lhs
+        readReg64(Reg::GPR0, lhs.reg);
+        // load the rhs
+        readReg64(Reg::GPR1, rhs);
+        // do the test
+        assembler_.test(get(Reg::GPR0), get(Reg::GPR1));
+        return true;
+    }
+
+
+    R32 Compiler::get32(Compiler::Reg reg) {
+        switch(reg) {
+            case Reg::GPR0: return R32::R8D;
+            case Reg::GPR1: return R32::R9D;
+            case Reg::REG_BASE: return R32::EDI;
+            case Reg::MEM_BASE: return R32::ESI;
+            case Reg::FLAGS_BASE: return R32::EDX;
+        }
+        assert(false);
+        __builtin_unreachable();
+    }
 
     R64 Compiler::get(Compiler::Reg reg) {
         switch(reg) {
@@ -132,6 +177,10 @@ namespace x64 {
         }
         assert(false);
         __builtin_unreachable();
+    }
+
+    i32 registerOffset(R32 reg) {
+        return 8*(i32)reg;
     }
 
     i32 registerOffset(R64 reg) {
@@ -150,6 +199,18 @@ namespace x64 {
         };
     }
 
+    M32 make32(R64 base, i32 disp) {
+        return M32 {
+            Segment::CS,
+            Encoding64 {
+                base,
+                R64::ZERO,
+                1,
+                disp,
+            },
+        };
+    }
+
     M64 make64(R64 base, i32 disp) {
         return M64 {
             Segment::CS,
@@ -160,6 +221,18 @@ namespace x64 {
                 disp,
             },
         };
+    }
+
+    void Compiler::readReg32(Reg dst, R32 src) {
+        R32 d = get32(dst);
+        M32 s = make32(get(Reg::REG_BASE), registerOffset(src));
+        assembler_.mov(d, s);
+    }
+
+    void Compiler::writeReg32(R32 dst, Reg src) {
+        M32 d = make32(get(Reg::REG_BASE), registerOffset(dst));
+        R32 s = get32(src);
+        assembler_.mov(d, s);
     }
 
     void Compiler::readReg64(Reg dst, R64 src) {

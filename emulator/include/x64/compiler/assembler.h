@@ -11,12 +11,16 @@ namespace x64 {
     public:
         const std::vector<u8>& code() const { return code_; }
 
+        void mov(R32 dst, R32 src);
         void mov(R64 dst, R64 src);
         void mov(R64 dst, u64 imm);
+        void mov(R32 dst, const M32& src);
+        void mov(const M32& dst, R32 src);
         void mov(R64 dst, const M64& src);
         void mov(const M64& dst, R64 src);
         void add(R64 dst, i32 imm);
         void cmp(R64 dst, i32 imm);
+        void test(R64 lhs, R64 rhs);
 
         void push64(const M64& src);
         void pop64(const M64& dst);

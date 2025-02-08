@@ -537,10 +537,6 @@ namespace emulator {
         std::fill(nextCount_.begin(), nextCount_.end(), 0);
     }
 
-    BasicBlock::~BasicBlock() {
-        if(calls_ >= 1'000) fmt::print("{}\n", calls_);
-    }
-
     u64 BasicBlock::start() const {
         verify(!cpuBasicBlock_.instructions.empty(), "Basic block is empty");
         return cpuBasicBlock_.instructions[0].first.address();
@@ -615,7 +611,7 @@ namespace emulator {
 
     void BasicBlock::onCall(VM& vm) {
         ++calls_;
-        if(calls_ >= 10024 && !compilationAttempted_) {
+        if(calls_ >= 1024 && !compilationAttempted_) {
             auto jitBasicBlock = x64::Compiler::tryCompile(cpuBasicBlock_);
             if(!!jitBasicBlock) {
                 nativeBasicBlock_ = vm.tryMakeNative(jitBasicBlock->nativecode.data(), jitBasicBlock->nativecode.size());

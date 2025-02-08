@@ -31,7 +31,6 @@ namespace emulator {
     class BasicBlock {
     public:
         explicit BasicBlock(x64::BasicBlock cpuBasicBlock);
-        ~BasicBlock();
 
         const x64::BasicBlock& basicBlock() const { return cpuBasicBlock_; }
         const u8* nativeBasicBlock() const { return nativeBasicBlock_; }
@@ -46,6 +45,8 @@ namespace emulator {
 
         size_t size() const;
         void onCall(VM&);
+
+        u64 calls() const { return calls_; }
 
     private:
         void removePredecessor(BasicBlock* other);

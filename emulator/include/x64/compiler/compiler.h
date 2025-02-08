@@ -25,11 +25,15 @@ namespace x64 {
 
         bool tryAdvanceInstructionPointer(u64 nextAddress);
 
+        bool tryCompileMovR32R32(R32, R32);
+
         bool tryCompileMovR64M64(R64, const M64&);
         bool tryCompileMovM64R64(const M64&, R64);
         bool tryCompileAddRM64Imm(const RM64&, Imm);
         bool tryCompileCmpRM64Imm(const RM64&, Imm);
+        bool tryCompileJe(u64 dst);
         bool tryCompileJne(u64 dst);
+        bool tryCompileTestRM64R64(const RM64&, R64);
 
         enum class Reg {
             GPR0,
@@ -40,6 +44,7 @@ namespace x64 {
             FLAGS_BASE,
         };
 
+        static R32 get32(Reg);
         static R64 get(Reg);
 
         struct Mem {
@@ -49,6 +54,8 @@ namespace x64 {
 
         Assembler assembler_;
 
+        void readReg32(Reg dst, R32 src);
+        void writeReg32(R32 dst, Reg src);
         void readReg64(Reg dst, R64 src);
         void writeReg64(R64 dst, Reg src);
         void readMem64(Reg dst, const Mem& address);
