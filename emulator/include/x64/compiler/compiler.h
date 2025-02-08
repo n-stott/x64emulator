@@ -40,6 +40,7 @@ namespace x64 {
         bool tryCompileCmpRM64Imm(const RM64&, Imm);
         bool tryCompileJe(u64 dst);
         bool tryCompileJne(u64 dst);
+        bool tryCompileJcc(Cond, u64 dst);
         bool tryCompileJmp(u64 dst);
         bool tryCompileTestRM32R32(const RM32&, R32);
         bool tryCompileTestRM64R64(const RM64&, R64);

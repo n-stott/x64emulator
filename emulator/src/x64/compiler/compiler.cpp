@@ -48,6 +48,7 @@ namespace x64 {
             case Insn::CMP_RM64_IMM: return tryCompileCmpRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
             case Insn::JE: return tryCompileJe(ins.op0<u64>());
             case Insn::JNE: return tryCompileJne(ins.op0<u64>());
+            case Insn::JCC: return tryCompileJcc(ins.op0<Cond>(), ins.op1<u64>());
             case Insn::JMP_U32: return tryCompileJmp(ins.op0<u32>());
             case Insn::TEST_RM32_R32: return tryCompileTestRM32R32(ins.op0<RM32>(), ins.op1<R32>());
             case Insn::TEST_RM64_R64: return tryCompileTestRM64R64(ins.op0<RM64>(), ins.op1<R64>());
@@ -238,6 +239,47 @@ namespace x64 {
         // create labels and test the condition
         auto noBranchCase = assembler_.label();
         assembler_.jumpCondition(Cond::E, &noBranchCase); // jump if the opposite condition is true
+
+        // load the immediate
+        loadImm64(Reg::GPR0, dst);
+        // change the instruction pointer
+        writeReg64(R64::RIP, Reg::GPR0);
+
+        // if we don't need to jump
+        assembler_.putLabel(noBranchCase);
+        return true;
+    }
+
+    bool Compiler::tryCompileJcc(Cond condition, u64 dst) {
+        // create labels and test the condition
+        auto noBranchCase = assembler_.label();
+        Cond reverseCondition = [](Cond condition) -> Cond {
+            switch(condition) {
+                case Cond::A: return Cond::BE;
+                case Cond::AE: return Cond::B;
+                case Cond::B: return Cond::NB;
+                case Cond::BE: return Cond::NBE;
+                case Cond::E: return Cond::NE;
+                case Cond::G: return Cond::LE;
+                case Cond::GE: return Cond::L;
+                case Cond::L: return Cond::GE;
+                case Cond::LE: return Cond::G;
+                case Cond::NB: return Cond::B;
+                case Cond::NBE: return Cond::BE;
+                case Cond::NE: return Cond::E;
+                case Cond::NO: return Cond::O;
+                case Cond::NP: return Cond::P;
+                case Cond::NS: return Cond::S;
+                case Cond::NU: return Cond::U;
+                case Cond::O: return Cond::NO;
+                case Cond::P: return Cond::NP;
+                case Cond::S: return Cond::NS;
+                case Cond::U: return Cond::NU;
+            }
+            assert(false);
+            __builtin_unreachable();
+        }(condition);
+        assembler_.jumpCondition(reverseCondition, &noBranchCase); // jump if the opposite condition is true
 
         // load the immediate
         loadImm64(Reg::GPR0, dst);

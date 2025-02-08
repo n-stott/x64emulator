@@ -465,17 +465,24 @@ namespace x64 {
     }
 
     void Assembler::jumpCondition(Cond cond, Label* label) {
+        write8(0x0F);
         switch(cond) {
-            case Cond::E: {
-                write8(0x0F);
-                write8(0x84);
-                break;
-            }
-            case Cond::NE: {
-                write8(0x0F);
-                write8(0x85);
-                break;
-            }
+            case Cond::B:  write8(0x82); break;
+            case Cond::NB:
+            case Cond::AE: write8(0x83); break;
+            case Cond::E:  write8(0x84); break;
+            case Cond::NE: write8(0x85); break;
+            case Cond::BE: write8(0x86); break;
+            case Cond::NBE:
+            case Cond::A:  write8(0x87); break;
+            case Cond::S:  write8(0x88); break;
+            case Cond::NS: write8(0x89); break;
+            case Cond::P:  write8(0x8A); break;
+            case Cond::NP: write8(0x8B); break;
+            case Cond::L:  write8(0x8C); break;
+            case Cond::GE: write8(0x8D); break;
+            case Cond::LE: write8(0x8E); break;
+            case Cond::G:  write8(0x8F); break;
             default: verify(false, "jcc not implemented for that condition"); break;
         }
         label->jumpsToMe.push_back(code_.size());
