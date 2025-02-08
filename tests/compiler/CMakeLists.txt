@@ -18,3 +18,10 @@ target_include_directories(test_compiler_test PUBLIC include ${CMAKE_SOURCE_DIR}
 target_link_libraries(test_compiler_test PUBLIC x64cpu x64emulator)
 target_link_options(test_compiler_test PUBLIC ${LD_OPTIONS})
 add_test(NAME compiler_test COMMAND test_compiler_test)
+
+add_executable(test_compiler_and src/test_and.cpp)
+target_compile_options(test_compiler_and PUBLIC ${CC_OPTIONS})
+target_include_directories(test_compiler_and PUBLIC include ${CMAKE_SOURCE_DIR}/emulator/include)
+target_link_libraries(test_compiler_and PUBLIC x64cpu x64emulator)
+target_link_options(test_compiler_and PUBLIC ${LD_OPTIONS})
+add_test(NAME compiler_and COMMAND test_compiler_and)

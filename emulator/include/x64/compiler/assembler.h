@@ -21,6 +21,7 @@ namespace x64 {
         void add(R64 dst, i32 imm);
         void cmp(R64 dst, i32 imm);
         void test(R64 lhs, R64 rhs);
+        void and_(R32 dst, i32 imm);
 
         void push64(const M64& src);
         void pop64(const M64& dst);

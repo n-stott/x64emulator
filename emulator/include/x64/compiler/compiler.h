@@ -34,6 +34,7 @@ namespace x64 {
         bool tryCompileJe(u64 dst);
         bool tryCompileJne(u64 dst);
         bool tryCompileTestRM64R64(const RM64&, R64);
+        bool tryCompileAndRM32Imm(const RM32&, Imm);
 
         enum class Reg {
             GPR0,

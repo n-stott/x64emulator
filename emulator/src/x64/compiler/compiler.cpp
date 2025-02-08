@@ -38,6 +38,7 @@ namespace x64 {
             case Insn::JE: return tryCompileJe(ins.op0<u64>());
             case Insn::JNE: return tryCompileJne(ins.op0<u64>());
             case Insn::TEST_RM64_R64: return tryCompileTestRM64R64(ins.op0<RM64>(), ins.op1<R64>());
+            case Insn::AND_RM32_IMM: return tryCompileAndRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
             default: break;
         }
         return false;
@@ -144,13 +145,23 @@ namespace x64 {
 
     bool Compiler::tryCompileTestRM64R64(const RM64& lhs, R64 rhs) {
         if(!lhs.isReg) return false;
-
         // load the lhs
         readReg64(Reg::GPR0, lhs.reg);
         // load the rhs
         readReg64(Reg::GPR1, rhs);
         // do the test
         assembler_.test(get(Reg::GPR0), get(Reg::GPR1));
+        return true;
+    }
+
+    bool Compiler::tryCompileAndRM32Imm(const RM32& dst, Imm imm) {
+        if(!dst.isReg) return false;
+        // load the value
+        readReg32(Reg::GPR0, dst.reg);
+        // do the and
+        assembler_.and_(get32(Reg::GPR0), imm.as<i32>());
+        // write the value back
+        writeReg32(dst.reg, Reg::GPR0);
         return true;
     }
 

@@ -286,6 +286,13 @@ namespace x64 {
         write8((u8)(0b11000000 | (encodeRegister(rhs) << 3) | (encodeRegister(lhs))));
     }
 
+    void Assembler::and_(R32 dst, i32 imm) {
+        if((u8)dst >= 8) write8((u8)(0x40 | (((u8)dst >= 8) ? 1 : 0) ));
+        write8((u8)0x81);
+        write8((u8)(0b11000000 | (0b100 << 3) | encodeRegister(dst)));
+        write32(imm);
+    }
+
     void Assembler::push64(const M64& src) {
         verify(src.encoding.index == R64::ZERO);
         verify(src.encoding.displacement == 0);
