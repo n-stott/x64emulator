@@ -19,7 +19,7 @@ void testAnd32(R32 dst, i32 imm) {
     verify(dissrc.as<i32>() == imm);
 }
 
-void testTest64() {
+void testAnd32() {
     std::array<R32, 16> regs {{
         R32::EAX,
         R32::ECX,
@@ -65,7 +65,7 @@ void testTest64() {
 
 int main() {
     try {
-        testTest64();
+        testAnd32();
     } catch(...) {
         return 1;
     }

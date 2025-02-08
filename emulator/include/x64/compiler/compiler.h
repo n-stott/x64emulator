@@ -15,7 +15,7 @@ namespace x64 {
 
     class Compiler {
     public:
-        static std::optional<NativeBasicBlock> tryCompile(const BasicBlock&);
+        static std::optional<NativeBasicBlock> tryCompile(const BasicBlock&, bool diagnose = false);
 
     private:
         bool tryCompile(const X64Instruction&);
@@ -26,15 +26,22 @@ namespace x64 {
         bool tryAdvanceInstructionPointer(u64 nextAddress);
 
         bool tryCompileMovR32R32(R32, R32);
-
+        bool tryCompileMovR32M32(R32, const M32&);
+        bool tryCompileMovM32R32(const M32&, R32);
+        bool tryCompileMovR64R64(R64, R64);
         bool tryCompileMovR64M64(R64, const M64&);
         bool tryCompileMovM64R64(const M64&, R64);
         bool tryCompileAddRM64Imm(const RM64&, Imm);
+        bool tryCompileCmpRM32RM32(const RM32&, const RM32&);
+        bool tryCompileCmpRM32Imm(const RM32&, Imm);
+        bool tryCompileCmpRM64RM64(const RM64&, const RM64&);
         bool tryCompileCmpRM64Imm(const RM64&, Imm);
         bool tryCompileJe(u64 dst);
         bool tryCompileJne(u64 dst);
+        bool tryCompileTestRM32R32(const RM32&, R32);
         bool tryCompileTestRM64R64(const RM64&, R64);
         bool tryCompileAndRM32Imm(const RM32&, Imm);
+        bool tryCompilePushRM64(const RM64&);
 
         enum class Reg {
             GPR0,
@@ -57,12 +64,17 @@ namespace x64 {
 
         void readReg32(Reg dst, R32 src);
         void writeReg32(R32 dst, Reg src);
+        void readMem32(Reg dst, const Mem& address);
+        void writeMem32(const Mem& address, Reg src);
         void readReg64(Reg dst, R64 src);
         void writeReg64(R64 dst, Reg src);
         void readMem64(Reg dst, const Mem& address);
         void writeMem64(const Mem& address, Reg src);
         void addImm32(Reg dst, i32 imm);
-        void cmpImm32(Reg dst, i32 imm);
+        void cmp32(Reg lhs, Reg rhs);
+        void cmp64(Reg lhs, Reg rhs);
+        void cmp32Imm32(Reg dst, i32 imm);
+        void cmp64Imm32(Reg dst, i32 imm);
         void loadImm64(Reg dst, u64 imm);
         void storeFlags();
         void loadFlags();
