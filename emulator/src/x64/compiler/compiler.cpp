@@ -70,6 +70,7 @@ namespace x64 {
             case Insn::XOR_RM32_RM32: return tryCompileXorRM32RM32(ins.op0<RM32>(), ins.op1<RM32>());
             case Insn::XOR_RM64_RM64: return tryCompileXorRM64RM64(ins.op0<RM64>(), ins.op1<RM64>());
             case Insn::PUSH_RM64: return tryCompilePushRM64(ins.op0<RM64>());
+            case Insn::POP_R64: return tryCompilePopR64(ins.op0<R64>());
             case Insn::LEA_R64_ENCODING64: return tryCompileLeaR64Enc64(ins.op0<R64>(), ins.op1<Encoding64>());
             case Insn::NOP: return tryCompileNop();
             default: break;
@@ -568,6 +569,20 @@ namespace x64 {
         writeReg64(R64::RSP, Reg::GPR1);
         // write to the stack
         writeMem64(Mem{Reg::GPR1, 0}, Reg::GPR0);
+        return true;
+    }
+
+    bool Compiler::tryCompilePopR64(const R64& dst) {
+        // load rsp
+        readReg64(Reg::GPR1, R64::RSP);
+        // read from the stack
+        readMem64(Reg::GPR0, Mem{Reg::GPR1, 0});
+        // write to the register
+        writeReg64(dst, Reg::GPR0);
+        // increment rsp
+        assembler_.lea(get(Reg::GPR1), make64(get(Reg::GPR1), +8));
+        // write rsp back
+        writeReg64(R64::RSP, Reg::GPR1);
         return true;
     }
 
