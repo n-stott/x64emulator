@@ -31,6 +31,8 @@ namespace x64 {
         bool tryCompileMovR64R64(R64, R64);
         bool tryCompileMovR64M64(R64, const M64&);
         bool tryCompileMovM64R64(const M64&, R64);
+        bool tryCompileAddRM32RM32(const RM32&, const RM32&);
+        bool tryCompileAddRM32Imm(const RM32&, Imm);
         bool tryCompileAddRM64RM64(const RM64&, const RM64&);
         bool tryCompileAddRM64Imm(const RM64&, Imm);
         bool tryCompileSubRM64Imm(const RM64&, Imm);
@@ -48,6 +50,7 @@ namespace x64 {
         bool tryCompilePushRM64(const RM64&);
         bool tryCompileXorRM32RM32(const RM32&, const RM32&);
         bool tryCompileXorRM64RM64(const RM64&, const RM64&);
+        bool tryCompileLeaR64Enc64(R64, const Encoding64&);
 
         enum class Reg {
             GPR0,
@@ -76,6 +79,8 @@ namespace x64 {
         void writeReg64(R64 dst, Reg src);
         void readMem64(Reg dst, const Mem& address);
         void writeMem64(const Mem& address, Reg src);
+        void add32(Reg dst, Reg src);
+        void add32Imm32(Reg dst, i32 imm);
         void add64(Reg dst, Reg src);
         void add64Imm32(Reg dst, i32 imm);
         void sub64Imm32(Reg dst, i32 imm);
