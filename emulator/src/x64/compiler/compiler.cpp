@@ -33,9 +33,11 @@ namespace x64 {
     bool Compiler::tryCompile(const X64Instruction& ins) {
         if(!tryAdvanceInstructionPointer(ins.nextAddress())) return false;
         switch(ins.insn()) {
+            case Insn::MOV_R32_IMM: return tryCompileMovR32Imm(ins.op0<R32>(), ins.op1<Imm>());
             case Insn::MOV_R32_R32: return tryCompileMovR32R32(ins.op0<R32>(), ins.op1<R32>());
             case Insn::MOV_R32_M32: return tryCompileMovR32M32(ins.op0<R32>(), ins.op1<M32>());
             case Insn::MOV_M32_R32: return tryCompileMovM32R32(ins.op0<M32>(), ins.op1<R32>());
+            case Insn::MOV_R64_IMM: return tryCompileMovR64Imm(ins.op0<R64>(), ins.op1<Imm>());
             case Insn::MOV_R64_R64: return tryCompileMovR64R64(ins.op0<R64>(), ins.op1<R64>());
             case Insn::MOV_R64_M64: return tryCompileMovR64M64(ins.op0<R64>(), ins.op1<M64>());
             case Insn::MOV_M64_R64: return tryCompileMovM64R64(ins.op0<M64>(), ins.op1<R64>());
@@ -86,6 +88,14 @@ namespace x64 {
         return true;
     }
 
+    bool Compiler::tryCompileMovR32Imm(R32 dst, Imm imm) {
+        // load the immedate
+        loadImm64(Reg::GPR0, imm.as<i32>());
+        // write to the destination
+        writeReg32(dst, Reg::GPR0);
+        return true;
+    }
+
     bool Compiler::tryCompileMovR32R32(R32 dst, R32 src) {
         // read from the source
         readReg32(Reg::GPR0, src);
@@ -115,6 +125,14 @@ namespace x64 {
         readReg32(Reg::GPR1, src);
         // write the value to memory
         writeMem32(Mem{Reg::GPR0, dst.encoding.displacement}, Reg::GPR1);
+        return true;
+    }
+
+    bool Compiler::tryCompileMovR64Imm(R64 dst, Imm imm) {
+        // load the immedate
+        loadImm64(Reg::GPR0, imm.as<u64>());
+        // write to the destination
+        writeReg64(dst, Reg::GPR0);
         return true;
     }
 
