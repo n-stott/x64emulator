@@ -35,10 +35,12 @@ namespace x64 {
         if(!tryAdvanceInstructionPointer(ins.nextAddress())) return false;
         switch(ins.insn()) {
             case Insn::MOV_R32_IMM: return tryCompileMovR32Imm(ins.op0<R32>(), ins.op1<Imm>());
+            case Insn::MOV_M32_IMM: return tryCompileMovM32Imm(ins.op0<M32>(), ins.op1<Imm>());
             case Insn::MOV_R32_R32: return tryCompileMovR32R32(ins.op0<R32>(), ins.op1<R32>());
             case Insn::MOV_R32_M32: return tryCompileMovR32M32(ins.op0<R32>(), ins.op1<M32>());
             case Insn::MOV_M32_R32: return tryCompileMovM32R32(ins.op0<M32>(), ins.op1<R32>());
             case Insn::MOV_R64_IMM: return tryCompileMovR64Imm(ins.op0<R64>(), ins.op1<Imm>());
+            case Insn::MOV_M64_IMM: return tryCompileMovM64Imm(ins.op0<M64>(), ins.op1<Imm>());
             case Insn::MOV_R64_R64: return tryCompileMovR64R64(ins.op0<R64>(), ins.op1<R64>());
             case Insn::MOV_R64_M64: return tryCompileMovR64M64(ins.op0<R64>(), ins.op1<M64>());
             case Insn::MOV_M64_R64: return tryCompileMovM64R64(ins.op0<M64>(), ins.op1<R64>());
@@ -98,10 +100,20 @@ namespace x64 {
     }
 
     bool Compiler::tryCompileMovR32Imm(R32 dst, Imm imm) {
-        // load the immedate
+        // load the immediate
         loadImm64(Reg::GPR0, imm.as<i32>());
         // write to the destination
         writeReg32(dst, Reg::GPR0);
+        return true;
+    }
+
+    bool Compiler::tryCompileMovM32Imm(const M32& dst, Imm imm) {
+        // load the immediate
+        loadImm64(Reg::GPR0, imm.as<i32>());
+        // get the destination address
+        Mem addr = getAddress(Reg::MEM_ADDR, Reg::GPR1, dst);
+        // write to the destination
+        writeMem32(addr, Reg::GPR0);
         return true;
     }
 
@@ -142,6 +154,16 @@ namespace x64 {
         loadImm64(Reg::GPR0, imm.as<u64>());
         // write to the destination
         writeReg64(dst, Reg::GPR0);
+        return true;
+    }
+
+    bool Compiler::tryCompileMovM64Imm(const M64& dst, Imm imm) {
+        // load the immediate
+        loadImm64(Reg::GPR0, imm.as<i32>());
+        // get the destination address
+        Mem addr = getAddress(Reg::MEM_ADDR, Reg::GPR1, dst);
+        // write to the destination
+        writeMem64(addr, Reg::GPR0);
         return true;
     }
 
