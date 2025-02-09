@@ -59,6 +59,7 @@ namespace x64 {
         enum class Reg {
             GPR0,
             GPR1,
+            MEM_ADDR,
 
             REG_BASE,
             MEM_BASE,
@@ -73,6 +74,13 @@ namespace x64 {
             i32 offset;
         };
 
+        struct MemBISD {
+            Reg base;
+            Reg index;
+            u8 scale;
+            i32 offset;
+        };
+
         Assembler assembler_;
 
         void readReg32(Reg dst, R32 src);
@@ -83,6 +91,7 @@ namespace x64 {
         void writeReg64(R64 dst, Reg src);
         void readMem64(Reg dst, const Mem& address);
         void writeMem64(const Mem& address, Reg src);
+        Mem getAddress(Reg dst, Reg tmp, const M64& mem);
         void add32(Reg dst, Reg src);
         void add32Imm32(Reg dst, i32 imm);
         void add64(Reg dst, Reg src);
