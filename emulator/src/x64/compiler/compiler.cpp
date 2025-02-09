@@ -110,6 +110,7 @@ namespace x64 {
     }
 
     bool Compiler::tryCompileMovM32Imm(const M32& dst, Imm imm) {
+        if(dst.segment != Segment::CS && dst.segment != Segment::UNK) return false;
         // load the immediate
         loadImm64(Reg::GPR0, imm.as<i32>());
         // get the destination address
@@ -160,6 +161,7 @@ namespace x64 {
     }
 
     bool Compiler::tryCompileMovM64Imm(const M64& dst, Imm imm) {
+        if(dst.segment != Segment::CS && dst.segment != Segment::UNK) return false;
         // load the immediate
         loadImm64(Reg::GPR0, imm.as<i32>());
         // get the destination address
