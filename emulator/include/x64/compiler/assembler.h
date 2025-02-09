@@ -33,6 +33,7 @@ namespace x64 {
         void test(R32 lhs, R32 rhs);
         void test(R64 lhs, R64 rhs);
         void and_(R32 dst, i32 imm);
+        void and_(R64 dst, i32 imm);
 
         void xor_(R32 dst, R32 src);
         void xor_(R64 dst, R64 src);

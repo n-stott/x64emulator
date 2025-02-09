@@ -50,6 +50,7 @@ namespace x64 {
         bool tryCompileTestRM32R32(const RM32&, R32);
         bool tryCompileTestRM64R64(const RM64&, R64);
         bool tryCompileAndRM32Imm(const RM32&, Imm);
+        bool tryCompileAndRM64Imm(const RM64&, Imm);
         bool tryCompilePushRM64(const RM64&);
         bool tryCompileXorRM32RM32(const RM32&, const RM32&);
         bool tryCompileXorRM64RM64(const RM64&, const RM64&);

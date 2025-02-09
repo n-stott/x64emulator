@@ -58,6 +58,7 @@ namespace x64 {
             case Insn::TEST_RM32_R32: return tryCompileTestRM32R32(ins.op0<RM32>(), ins.op1<R32>());
             case Insn::TEST_RM64_R64: return tryCompileTestRM64R64(ins.op0<RM64>(), ins.op1<R64>());
             case Insn::AND_RM32_IMM: return tryCompileAndRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
+            case Insn::AND_RM64_IMM: return tryCompileAndRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
             case Insn::PUSH_RM64: return tryCompilePushRM64(ins.op0<RM64>());
             case Insn::XOR_RM32_RM32: return tryCompileXorRM32RM32(ins.op0<RM32>(), ins.op1<RM32>());
             case Insn::XOR_RM64_RM64: return tryCompileXorRM64RM64(ins.op0<RM64>(), ins.op1<RM64>());
@@ -449,6 +450,17 @@ namespace x64 {
         assembler_.and_(get32(Reg::GPR0), imm.as<i32>());
         // write the value back
         writeReg32(dst.reg, Reg::GPR0);
+        return true;
+    }
+
+    bool Compiler::tryCompileAndRM64Imm(const RM64& dst, Imm imm) {
+        if(!dst.isReg) return false;
+        // load the value
+        readReg64(Reg::GPR0, dst.reg);
+        // do the and
+        assembler_.and_(get(Reg::GPR0), imm.as<i32>());
+        // write the value back
+        writeReg64(dst.reg, Reg::GPR0);
         return true;
     }
 
