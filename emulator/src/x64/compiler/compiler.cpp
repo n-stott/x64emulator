@@ -43,6 +43,9 @@ namespace x64 {
             case Insn::ADD_RM32_IMM: return tryCompileAddRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
             case Insn::ADD_RM64_RM64: return tryCompileAddRM64RM64(ins.op0<RM64>(), ins.op1<RM64>());
             case Insn::ADD_RM64_IMM: return tryCompileAddRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
+            case Insn::SUB_RM32_RM32: return tryCompileSubRM32RM32(ins.op0<RM32>(), ins.op1<RM32>());
+            case Insn::SUB_RM32_IMM: return tryCompileSubRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
+            case Insn::SUB_RM64_RM64: return tryCompileSubRM64RM64(ins.op0<RM64>(), ins.op1<RM64>());
             case Insn::SUB_RM64_IMM: return tryCompileSubRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
             case Insn::CMP_RM32_RM32: return tryCompileCmpRM32RM32(ins.op0<RM32>(), ins.op1<RM32>());
             case Insn::CMP_RM32_IMM: return tryCompileCmpRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
@@ -59,6 +62,7 @@ namespace x64 {
             case Insn::XOR_RM32_RM32: return tryCompileXorRM32RM32(ins.op0<RM32>(), ins.op1<RM32>());
             case Insn::XOR_RM64_RM64: return tryCompileXorRM64RM64(ins.op0<RM64>(), ins.op1<RM64>());
             case Insn::LEA_R64_ENCODING64: return tryCompileLeaR64Enc64(ins.op0<R64>(), ins.op1<Encoding64>());
+            case Insn::NOP: return tryCompileNop();
             default: break;
         }
         return false;
@@ -191,6 +195,45 @@ namespace x64 {
         // add the immediate
         add64Imm32(Reg::GPR0, src.as<i32>());
         // write back to the register
+        writeReg64(dst.reg, Reg::GPR0);
+        return true;
+    }
+
+    bool Compiler::tryCompileSubRM32RM32(const RM32& dst, const RM32& src) {
+        if(!dst.isReg) return false;
+        if(!src.isReg) return false;
+        // read the dst
+        readReg32(Reg::GPR0, dst.reg);
+        // read the src
+        readReg32(Reg::GPR1, src.reg);
+        // add them
+        sub32(Reg::GPR0, Reg::GPR1);
+        // write back dst
+        writeReg32(dst.reg, Reg::GPR0);
+        return true;
+    }
+
+    bool Compiler::tryCompileSubRM32Imm(const RM32& dst, Imm src) {
+        if(!dst.isReg) return false;
+        // read the register
+        readReg32(Reg::GPR0, dst.reg);
+        // add the immediate
+        sub32Imm32(Reg::GPR0, src.as<i32>());
+        // write back to the register
+        writeReg32(dst.reg, Reg::GPR0);
+        return true;
+    }
+
+    bool Compiler::tryCompileSubRM64RM64(const RM64& dst, const RM64& src) {
+        if(!dst.isReg) return false;
+        if(!src.isReg) return false;
+        // read the dst
+        readReg64(Reg::GPR0, dst.reg);
+        // read the src
+        readReg64(Reg::GPR1, src.reg);
+        // add them
+        sub64(Reg::GPR0, Reg::GPR1);
+        // write back dst
         writeReg64(dst.reg, Reg::GPR0);
         return true;
     }
@@ -405,6 +448,10 @@ namespace x64 {
         return true;
     }
 
+    bool Compiler::tryCompileNop() {
+        return true;
+    }
+
 
     R32 Compiler::get32(Compiler::Reg reg) {
         switch(reg) {
@@ -555,6 +602,23 @@ namespace x64 {
     void Compiler::add64Imm32(Reg dst, i32 imm) {
         R64 d = get(dst);
         assembler_.add(d, imm);
+    }
+
+    void Compiler::sub32(Reg dst, Reg src) {
+        R32 d = get32(dst);
+        R32 s = get32(src);
+        assembler_.sub(d, s);
+    }
+
+    void Compiler::sub32Imm32(Reg dst, i32 imm) {
+        R32 d = get32(dst);
+        assembler_.sub(d, imm);
+    }
+
+    void Compiler::sub64(Reg dst, Reg src) {
+        R64 d = get(dst);
+        R64 s = get(src);
+        assembler_.sub(d, s);
     }
 
     void Compiler::sub64Imm32(Reg dst, i32 imm) {

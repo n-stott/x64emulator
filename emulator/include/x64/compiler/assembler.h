@@ -22,6 +22,9 @@ namespace x64 {
         void add(R32 dst, i32 imm);
         void add(R64 dst, R64 src);
         void add(R64 dst, i32 imm);
+        void sub(R32 dst, R32 src);
+        void sub(R32 dst, i32 imm);
+        void sub(R64 dst, R64 src);
         void sub(R64 dst, i32 imm);
         void cmp(R32 lhs, R32 rhs);
         void cmp(R32 dst, i32 imm);
