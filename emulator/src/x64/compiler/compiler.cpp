@@ -71,7 +71,9 @@ namespace x64 {
             case Insn::TEST_RM64_R64: return tryCompileTestRM64R64(ins.op0<RM64>(), ins.op1<R64>());
             case Insn::AND_RM32_IMM: return tryCompileAndRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
             case Insn::AND_RM64_IMM: return tryCompileAndRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
+            case Insn::OR_RM32_RM32: return tryCompileOrRM32RM32(ins.op0<RM32>(), ins.op1<RM32>());
             case Insn::OR_RM32_IMM: return tryCompileOrRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
+            case Insn::OR_RM64_RM64: return tryCompileOrRM64RM64(ins.op0<RM64>(), ins.op1<RM64>());
             case Insn::OR_RM64_IMM: return tryCompileOrRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
             case Insn::XOR_RM32_RM32: return tryCompileXorRM32RM32(ins.op0<RM32>(), ins.op1<RM32>());
             case Insn::XOR_RM64_RM64: return tryCompileXorRM64RM64(ins.op0<RM64>(), ins.op1<RM64>());
@@ -620,12 +622,40 @@ namespace x64 {
         return true;
     }
 
+    bool Compiler::tryCompileOrRM32RM32(const RM32& dst, const RM32& src) {
+        if(!dst.isReg) return false;
+        if(!src.isReg) return false;
+        // load the dst value
+        readReg32(Reg::GPR0, dst.reg);
+        // load the src value
+        readReg32(Reg::GPR1, src.reg);
+        // do the or
+        assembler_.or_(get32(Reg::GPR0), get32(Reg::GPR1));
+        // write the value back
+        writeReg32(dst.reg, Reg::GPR0);
+        return true;
+    }
+
     bool Compiler::tryCompileOrRM64Imm(const RM64& dst, Imm imm) {
         if(!dst.isReg) return false;
         // load the value
         readReg64(Reg::GPR0, dst.reg);
         // do the or
         assembler_.or_(get(Reg::GPR0), imm.as<i32>());
+        // write the value back
+        writeReg64(dst.reg, Reg::GPR0);
+        return true;
+    }
+
+    bool Compiler::tryCompileOrRM64RM64(const RM64& dst, const RM64& src) {
+        if(!dst.isReg) return false;
+        if(!src.isReg) return false;
+        // load the dst value
+        readReg64(Reg::GPR0, dst.reg);
+        // load the src value
+        readReg64(Reg::GPR1, src.reg);
+        // do the or
+        assembler_.or_(get(Reg::GPR0), get(Reg::GPR1));
         // write the value back
         writeReg64(dst.reg, Reg::GPR0);
         return true;

@@ -33,6 +33,13 @@ target_link_libraries(test_compiler_lea PUBLIC x64cpu x64emulator)
 target_link_options(test_compiler_lea PUBLIC ${LD_OPTIONS})
 add_test(NAME compiler_lea COMMAND test_compiler_lea)
 
+add_executable(test_compiler_or src/test_or.cpp)
+target_compile_options(test_compiler_or PUBLIC ${CC_OPTIONS})
+target_include_directories(test_compiler_or PUBLIC include ${CMAKE_SOURCE_DIR}/emulator/include)
+target_link_libraries(test_compiler_or PUBLIC x64cpu x64emulator)
+target_link_options(test_compiler_or PUBLIC ${LD_OPTIONS})
+add_test(NAME compiler_or COMMAND test_compiler_or)
+
 add_executable(test_compiler_xor src/test_xor.cpp)
 target_compile_options(test_compiler_xor PUBLIC ${CC_OPTIONS})
 target_include_directories(test_compiler_xor PUBLIC include ${CMAKE_SOURCE_DIR}/emulator/include)
