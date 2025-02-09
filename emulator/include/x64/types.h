@@ -37,14 +37,10 @@ namespace x64 {
     };
 
     enum class R8 : u8 {
-        AH,
         AL,
-        BH,
-        BL,
-        CH,
-        CL,
-        DH,
         DL,
+        CL,
+        BL,
         SPL,
         BPL,
         SIL,
@@ -57,6 +53,10 @@ namespace x64 {
         R13B,
         R14B,
         R15B,
+        AH,
+        DH,
+        CH,
+        BH,
     };
 
     enum class R16 : u8 {

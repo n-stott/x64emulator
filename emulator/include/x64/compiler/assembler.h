@@ -11,6 +11,7 @@ namespace x64 {
     public:
         const std::vector<u8>& code() const { return code_; }
 
+        void mov(R8 dst, const M8& src);
         void mov(R32 dst, R32 src);
         void mov(R64 dst, R64 src);
         void mov(R64 dst, u64 imm);
@@ -18,6 +19,7 @@ namespace x64 {
         void mov(const M32& dst, R32 src);
         void mov(R64 dst, const M64& src);
         void mov(const M64& dst, R64 src);
+        void movzx(R32 dst, R8 src);
         void add(R32 dst, R32 src);
         void add(R32 dst, i32 imm);
         void add(R64 dst, R64 src);

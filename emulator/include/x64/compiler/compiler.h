@@ -33,6 +33,7 @@ namespace x64 {
         bool tryCompileMovR64R64(R64, R64);
         bool tryCompileMovR64M64(R64, const M64&);
         bool tryCompileMovM64R64(const M64&, R64);
+        bool tryCompileMovzxR32RM8(R32, const RM8&);
         bool tryCompileAddRM32RM32(const RM32&, const RM32&);
         bool tryCompileAddRM32Imm(const RM32&, Imm);
         bool tryCompileAddRM64RM64(const RM64&, const RM64&);
@@ -76,6 +77,7 @@ namespace x64 {
             FLAGS_BASE,
         };
 
+        static R8 get8(Reg);
         static R32 get32(Reg);
         static R64 get(Reg);
 
@@ -93,6 +95,8 @@ namespace x64 {
 
         Assembler assembler_;
 
+        void readReg8(Reg dst, R8 src);
+        void readMem8(Reg dst, const Mem& address);
         void readReg32(Reg dst, R32 src);
         void writeReg32(R32 dst, Reg src);
         void readMem32(Reg dst, const Mem& address);
@@ -101,7 +105,10 @@ namespace x64 {
         void writeReg64(R64 dst, Reg src);
         void readMem64(Reg dst, const Mem& address);
         void writeMem64(const Mem& address, Reg src);
-        Mem getAddress(Reg dst, Reg tmp, const M64& mem);
+
+        template<Size size>
+        Mem getAddress(Reg dst, Reg tmp, const M<size>& mem);
+
         void add32(Reg dst, Reg src);
         void add32Imm32(Reg dst, i32 imm);
         void add64(Reg dst, Reg src);
