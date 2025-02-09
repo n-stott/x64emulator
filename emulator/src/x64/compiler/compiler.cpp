@@ -53,6 +53,10 @@ namespace x64 {
             case Insn::CMP_RM32_IMM: return tryCompileCmpRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
             case Insn::CMP_RM64_RM64: return tryCompileCmpRM64RM64(ins.op0<RM64>(), ins.op1<RM64>());
             case Insn::CMP_RM64_IMM: return tryCompileCmpRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
+            case Insn::SHL_RM32_IMM: return tryCompileShlRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
+            case Insn::SHL_RM64_IMM: return tryCompileShlRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
+            case Insn::SHR_RM32_IMM: return tryCompileShrRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
+            case Insn::SHR_RM64_IMM: return tryCompileShrRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
             case Insn::JE: return tryCompileJe(ins.op0<u64>());
             case Insn::JNE: return tryCompileJne(ins.op0<u64>());
             case Insn::JCC: return tryCompileJcc(ins.op0<Cond>(), ins.op1<u64>());
@@ -356,6 +360,50 @@ namespace x64 {
         readReg64(Reg::GPR0, lhs.reg);
         // compare to the immediate
         cmp64Imm32(Reg::GPR0, rhs.as<i32>());
+        return true;
+    }
+
+    bool Compiler::tryCompileShlRM32Imm(const RM32& lhs, Imm rhs) {
+        if(!lhs.isReg) return false;
+        // read the register
+        readReg32(Reg::GPR0, lhs.reg);
+        // do the shift
+        assembler_.shl(get32(Reg::GPR0), rhs.as<u8>());
+        // write the value back
+        writeReg32(lhs.reg, Reg::GPR0);
+        return true;
+    }
+
+    bool Compiler::tryCompileShlRM64Imm(const RM64& lhs, Imm rhs) {
+        if(!lhs.isReg) return false;
+        // read the register
+        readReg64(Reg::GPR0, lhs.reg);
+        // do the shift
+        assembler_.shl(get(Reg::GPR0), rhs.as<u8>());
+        // write the value back
+        writeReg64(lhs.reg, Reg::GPR0);
+        return true;
+    }
+
+    bool Compiler::tryCompileShrRM32Imm(const RM32& lhs, Imm rhs) {
+        if(!lhs.isReg) return false;
+        // read the register
+        readReg32(Reg::GPR0, lhs.reg);
+        // do the shift
+        assembler_.shr(get32(Reg::GPR0), rhs.as<u8>());
+        // write the value back
+        writeReg32(lhs.reg, Reg::GPR0);
+        return true;
+    }
+
+    bool Compiler::tryCompileShrRM64Imm(const RM64& lhs, Imm rhs) {
+        if(!lhs.isReg) return false;
+        // read the register
+        readReg64(Reg::GPR0, lhs.reg);
+        // do the shift
+        assembler_.shr(get(Reg::GPR0), rhs.as<u8>());
+        // write the value back
+        writeReg64(lhs.reg, Reg::GPR0);
         return true;
     }
 

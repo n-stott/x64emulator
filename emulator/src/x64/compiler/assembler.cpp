@@ -372,6 +372,38 @@ namespace x64 {
         }
     }
 
+    void Assembler::shl(R32 lhs, u8 imm) {
+        if((u8)lhs >= 8) {
+            write8((u8)(0x40 | (((u8)lhs >= 8) ? 1 : 0)));
+        }
+        write8(0xc1);
+        write8((u8)(0b11000000 | (0b100 << 3) | encodeRegister(lhs)));
+        write8((i8)imm);
+    }
+
+    void Assembler::shl(R64 lhs, u8 imm) {
+        write8((u8)(0x48 | (((u8)lhs >= 8) ? 1 : 0)));
+        write8(0xc1);
+        write8((u8)(0b11000000 | (0b100 << 3) | encodeRegister(lhs)));
+        write8((i8)imm);
+    }
+
+    void Assembler::shr(R32 lhs, u8 imm) {
+        if((u8)lhs >= 8) {
+            write8((u8)(0x40 | (((u8)lhs >= 8) ? 1 : 0)));
+        }
+        write8(0xc1);
+        write8((u8)(0b11000000 | (0b101 << 3) | encodeRegister(lhs)));
+        write8((i8)imm);
+    }
+
+    void Assembler::shr(R64 lhs, u8 imm) {
+        write8((u8)(0x48 | (((u8)lhs >= 8) ? 1 : 0)));
+        write8(0xc1);
+        write8((u8)(0b11000000 | (0b101 << 3) | encodeRegister(lhs)));
+        write8((i8)imm);
+    }
+
     void Assembler::test(R32 lhs, R32 rhs) {
         if((u8)rhs >= 8 || (u8)lhs >= 8) {
             write8((u8)(0x40 | (((u8)rhs >= 8) ? 4 : 0) | (((u8)lhs >= 8) ? 1 : 0)));

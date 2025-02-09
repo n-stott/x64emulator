@@ -163,7 +163,7 @@ void testSub64() {
 int main() {
     try {
         testSub32();
-        // testSub64();
+        testSub64();
     } catch(...) {
         return 1;
     }

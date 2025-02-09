@@ -30,6 +30,10 @@ namespace x64 {
         void cmp(R32 dst, i32 imm);
         void cmp(R64 lhs, R64 rhs);
         void cmp(R64 dst, i32 imm);
+        void shl(R32 lhs, u8 imm);
+        void shl(R64 lhs, u8 imm);
+        void shr(R32 lhs, u8 imm);
+        void shr(R64 lhs, u8 imm);
         void test(R32 lhs, R32 rhs);
         void test(R64 lhs, R64 rhs);
         void and_(R32 dst, i32 imm);
