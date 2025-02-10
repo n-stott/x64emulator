@@ -130,6 +130,12 @@ namespace x64 {
         void loadImm64(Reg dst, u64 imm);
         void storeFlags();
         void loadFlags();
+
+        template<typename Func>
+        bool forRM32RM32(const RM32& dst, const RM32& src, Func&& func, bool writeResultBack = true);
+        
+        template<typename Func>
+        bool forRM64RM64(const RM64& dst, const RM64& src, Func&& func, bool writeResultBack = true);
     };
 
 }
