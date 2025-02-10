@@ -38,8 +38,8 @@ namespace x64 {
 
     enum class R8 : u8 {
         AL,
-        DL,
         CL,
+        DL,
         BL,
         SPL,
         BPL,

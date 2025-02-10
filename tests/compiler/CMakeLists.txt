@@ -74,3 +74,17 @@ target_include_directories(test_compiler_shr PUBLIC include ${CMAKE_SOURCE_DIR}/
 target_link_libraries(test_compiler_shr PUBLIC x64cpu x64emulator)
 target_link_options(test_compiler_shr PUBLIC ${LD_OPTIONS})
 add_test(NAME compiler_shr COMMAND test_compiler_shr)
+
+add_executable(test_compiler_scenario_01 src/test_scenario_01.cpp)
+target_compile_options(test_compiler_scenario_01 PUBLIC ${CC_OPTIONS})
+target_include_directories(test_compiler_scenario_01 PUBLIC include ${CMAKE_SOURCE_DIR}/emulator/include)
+target_link_libraries(test_compiler_scenario_01 PUBLIC x64cpu x64emulator)
+target_link_options(test_compiler_scenario_01 PUBLIC ${LD_OPTIONS})
+add_test(NAME compiler_scenario_01 COMMAND test_compiler_scenario_01)
+
+add_executable(test_compiler_scenario_02 src/test_scenario_02.cpp)
+target_compile_options(test_compiler_scenario_02 PUBLIC ${CC_OPTIONS})
+target_include_directories(test_compiler_scenario_02 PUBLIC include ${CMAKE_SOURCE_DIR}/emulator/include)
+target_link_libraries(test_compiler_scenario_02 PUBLIC x64cpu x64emulator)
+target_link_options(test_compiler_scenario_02 PUBLIC ${LD_OPTIONS})
+add_test(NAME compiler_scenario_02 COMMAND test_compiler_scenario_02)

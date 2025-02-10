@@ -105,7 +105,7 @@ namespace x64 {
 
     bool Compiler::tryCompileMovR32Imm(R32 dst, Imm imm) {
         // load the immediate
-        loadImm64(Reg::GPR0, imm.as<i32>());
+        loadImm64(Reg::GPR0, (u32)imm.as<i32>());
         // write to the destination
         writeReg32(dst, Reg::GPR0);
         return true;
