@@ -72,6 +72,7 @@ namespace x64 {
             case Insn::TEST_RM8_IMM: return tryCompileTestRM8Imm(ins.op0<RM8>(), ins.op1<Imm>());
             case Insn::TEST_RM32_R32: return tryCompileTestRM32R32(ins.op0<RM32>(), ins.op1<R32>());
             case Insn::TEST_RM64_R64: return tryCompileTestRM64R64(ins.op0<RM64>(), ins.op1<R64>());
+            case Insn::AND_RM32_RM32: return tryCompileAndRM32RM32(ins.op0<RM32>(), ins.op1<RM32>());
             case Insn::AND_RM32_IMM: return tryCompileAndRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
             case Insn::AND_RM64_IMM: return tryCompileAndRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
             case Insn::OR_RM32_RM32: return tryCompileOrRM32RM32(ins.op0<RM32>(), ins.op1<RM32>());
@@ -108,13 +109,12 @@ namespace x64 {
 
     bool Compiler::tryCompileMovM8R8(const M8& dst, R8 src) {
         if(dst.segment != Segment::CS && dst.segment != Segment::UNK) return false;
-        if(dst.encoding.index != R64::ZERO) return false;
-        // read the base
-        readReg64(Reg::GPR0, dst.encoding.base);
         // read the value of the register
-        readReg8(Reg::GPR1, src);
-        // write the value to memory
-        writeMem8(Mem{Reg::GPR0, dst.encoding.displacement}, Reg::GPR1);
+        readReg8(Reg::GPR0, src);
+        // get the destination address
+        Mem addr = getAddress(Reg::MEM_ADDR, Reg::GPR1, dst);
+        // write to the destination
+        writeMem8(addr, Reg::GPR0);
         return true;
     }
 
@@ -485,6 +485,12 @@ namespace x64 {
         // do the test
         assembler_.test(get(Reg::GPR0), get(Reg::GPR1));
         return true;
+    }
+
+    bool Compiler::tryCompileAndRM32RM32(const RM32& dst, const RM32& src) {
+        return forRM32RM32(dst, src, [&](Reg dst, Reg src) {
+            assembler_.and_(get32(dst), get32(src));
+        });
     }
 
     bool Compiler::tryCompileAndRM32Imm(const RM32& dst, Imm imm) {
