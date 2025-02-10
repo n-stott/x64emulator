@@ -530,6 +530,7 @@ namespace x64 {
     }
 
     M64 make64(R64 base, i32 disp);
+    M64 make64(R64 base, R64 index, u8 scale, i32 disp);
 
     bool Compiler::tryCompilePushRM64(const RM64& src) {
         if(!src.isReg) return false;
@@ -573,9 +574,9 @@ namespace x64 {
     }
 
     bool Compiler::tryCompileLeaR64Enc64(R64 dst, const Encoding64& address) {
-        if(address.index != R64::ZERO) return false;
         readReg64(Reg::GPR0, address.base);
-        assembler_.lea(get(Reg::GPR0), make64(get(Reg::GPR0), address.displacement));
+        readReg64(Reg::GPR1, address.index);
+        assembler_.lea(get(Reg::GPR0), make64(get(Reg::GPR0), get(Reg::GPR1), address.scale, address.displacement));
         writeReg64(dst, Reg::GPR0);
         return true;
     }
