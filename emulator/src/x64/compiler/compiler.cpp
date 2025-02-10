@@ -34,6 +34,7 @@ namespace x64 {
     bool Compiler::tryCompile(const X64Instruction& ins) {
         if(!tryAdvanceInstructionPointer(ins.nextAddress())) return false;
         switch(ins.insn()) {
+            case Insn::MOV_M8_R8: return tryCompileMovM8R8(ins.op0<M8>(), ins.op1<R8>());
             case Insn::MOV_R32_IMM: return tryCompileMovR32Imm(ins.op0<R32>(), ins.op1<Imm>());
             case Insn::MOV_M32_IMM: return tryCompileMovM32Imm(ins.op0<M32>(), ins.op1<Imm>());
             case Insn::MOV_R32_R32: return tryCompileMovR32R32(ins.op0<R32>(), ins.op1<R32>());
@@ -100,6 +101,18 @@ namespace x64 {
         loadImm64(Reg::GPR0, nextAddress);
         // write to the RIP register
         writeReg64(R64::RIP, Reg::GPR0);
+        return true;
+    }
+
+    bool Compiler::tryCompileMovM8R8(const M8& dst, R8 src) {
+        if(dst.segment != Segment::CS && dst.segment != Segment::UNK) return false;
+        if(dst.encoding.index != R64::ZERO) return false;
+        // read the base
+        readReg64(Reg::GPR0, dst.encoding.base);
+        // read the value of the register
+        readReg8(Reg::GPR1, src);
+        // write the value to memory
+        writeMem8(Mem{Reg::GPR0, dst.encoding.displacement}, Reg::GPR1);
         return true;
     }
 
@@ -702,6 +715,12 @@ namespace x64 {
     void Compiler::writeReg64(R64 dst, Reg src) {
         M64 d = make64(get(Reg::REG_BASE), registerOffset(dst));
         R64 s = get(src);
+        assembler_.mov(d, s);
+    }
+
+    void Compiler::writeMem8(const Mem& address, Reg src) {
+        M8 d = make8(get(Reg::MEM_BASE), get(address.base), 1, address.offset);
+        R8 s = get8(src);
         assembler_.mov(d, s);
     }
 

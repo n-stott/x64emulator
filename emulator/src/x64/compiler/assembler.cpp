@@ -103,6 +103,51 @@ namespace x64 {
         }
     }
 
+    void Assembler::mov(const M8& dst, R8 src) {
+        if(dst.encoding.index == R64::ZERO) {
+            if(dst.encoding.displacement == 0) {
+                verify(dst.encoding.base != R64::RBP, "rbp as base without displacement requires an SIB byte");
+                write8((u8)(0x40 | (((u8)src >= 8) ? 4 : 0) | (((u8)dst.encoding.base >= 8) ? 1 : 0)));
+                write8((u8)(0x88));
+                write8((u8)(0b00000000 | (encodeRegister(src) << 3) | (encodeRegister(dst.encoding.base))));
+            } else if((i8)dst.encoding.displacement == dst.encoding.displacement) {
+                write8((u8)(0x40 | (((u8)src >= 8) ? 4 : 0) | (((u8)dst.encoding.base >= 8) ? 1 : 0)));
+                write8((u8)(0x88));
+                write8((u8)(0b01000000 | (encodeRegister(src) << 3) | (encodeRegister(dst.encoding.base))));
+                write8((i8)dst.encoding.displacement);
+            } else {
+                write8((u8)(0x40 | (((u8)src >= 8) ? 4 : 0) | (((u8)dst.encoding.base >= 8) ? 1 : 0)));
+                write8((u8)(0x88));
+                write8((u8)(0b10000000 | (encodeRegister(src) << 3) | (encodeRegister(dst.encoding.base))));
+                write32(dst.encoding.displacement);
+            }
+        } else {
+            if((i8)dst.encoding.displacement == dst.encoding.displacement) {
+                write8((u8)(0x40
+                         | (((u8)src >= 8) ? 4 : 0)
+                         | (((u8)dst.encoding.index >= 8) ? 2 : 0)
+                         | (((u8)dst.encoding.base >= 8) ? 1 : 0)));
+                write8((u8)(0x88));
+                write8((u8)(0b01000000 | (encodeRegister(src) << 3) | 0b100));
+                write8((u8)(encodeScale(dst.encoding.scale) << 6
+                         | (encodeRegister(dst.encoding.index) << 3)
+                         | (encodeRegister(dst.encoding.base))));
+                write8((i8)dst.encoding.displacement);
+            } else {
+                write8((u8)(0x40
+                         | (((u8)src >= 8) ? 4 : 0)
+                         | (((u8)dst.encoding.index >= 8) ? 2 : 0)
+                         | (((u8)dst.encoding.base >= 8) ? 1 : 0)));
+                write8((u8)(0x88));
+                write8((u8)(0b10000000 | (encodeRegister(src) << 3) | 0b100));
+                write8((u8)(encodeScale(dst.encoding.scale) << 6
+                         | (encodeRegister(dst.encoding.index) << 3)
+                         | (encodeRegister(dst.encoding.base))));
+                write32(dst.encoding.displacement);
+            }
+        }
+    }
+
     void Assembler::mov(R32 dst, R32 src) {
         write8((u8)(0x40 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src >= 8) ? 1 : 0)));
         write8((u8)(0x8b));

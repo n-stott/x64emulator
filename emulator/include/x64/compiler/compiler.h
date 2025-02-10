@@ -25,6 +25,7 @@ namespace x64 {
 
         bool tryAdvanceInstructionPointer(u64 nextAddress);
 
+        bool tryCompileMovM8R8(const M8&, R8);
         bool tryCompileMovR32Imm(R32, Imm);
         bool tryCompileMovM32Imm(const M32&, Imm);
         bool tryCompileMovR32R32(R32, R32);
@@ -103,6 +104,7 @@ namespace x64 {
 
         void readReg8(Reg dst, R8 src);
         void readMem8(Reg dst, const Mem& address);
+        void writeMem8(const Mem& address, Reg src);
         void readReg32(Reg dst, R32 src);
         void writeReg32(R32 dst, Reg src);
         void readMem32(Reg dst, const Mem& address);
