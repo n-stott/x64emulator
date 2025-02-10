@@ -60,6 +60,7 @@ namespace x64 {
         bool tryCompileJne(u64 dst);
         bool tryCompileJcc(Cond, u64 dst);
         bool tryCompileJmp(u64 dst);
+        bool tryCompileTestRM8Imm(const RM8&, Imm);
         bool tryCompileTestRM32R32(const RM32&, R32);
         bool tryCompileTestRM64R64(const RM64&, R64);
         bool tryCompileAndRM32Imm(const RM32&, Imm);
@@ -104,6 +105,7 @@ namespace x64 {
         Assembler assembler_;
 
         void readReg8(Reg dst, R8 src);
+        void writeReg8(R8 dst, Reg src);
         void readMem8(Reg dst, const Mem& address);
         void writeMem8(const Mem& address, Reg src);
         void readReg32(Reg dst, R32 src);
@@ -133,6 +135,12 @@ namespace x64 {
         void loadImm64(Reg dst, u64 imm);
         void storeFlags();
         void loadFlags();
+
+        template<typename Func>
+        bool forRM8Imm(const RM8& dst, Imm imm, Func&& func, bool writeResultBack = true);
+
+        template<typename Func>
+        bool forRM8RM8(const RM8& dst, const RM8& src, Func&& func, bool writeResultBack = true);
 
         template<typename Func>
         bool forRM32Imm(const RM32& dst, Imm imm, Func&& func, bool writeResultBack = true);

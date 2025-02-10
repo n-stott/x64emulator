@@ -69,6 +69,7 @@ namespace x64 {
             case Insn::JNE: return tryCompileJne(ins.op0<u64>());
             case Insn::JCC: return tryCompileJcc(ins.op0<Cond>(), ins.op1<u64>());
             case Insn::JMP_U32: return tryCompileJmp(ins.op0<u32>());
+            case Insn::TEST_RM8_IMM: return tryCompileTestRM8Imm(ins.op0<RM8>(), ins.op1<Imm>());
             case Insn::TEST_RM32_R32: return tryCompileTestRM32R32(ins.op0<RM32>(), ins.op1<R32>());
             case Insn::TEST_RM64_R64: return tryCompileTestRM64R64(ins.op0<RM64>(), ins.op1<R64>());
             case Insn::AND_RM32_IMM: return tryCompileAndRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
@@ -458,6 +459,12 @@ namespace x64 {
         return true;
     }
 
+    bool Compiler::tryCompileTestRM8Imm(const RM8& lhs, Imm rhs) {
+        return forRM8Imm(lhs, rhs, [&](Reg dst, Imm src) {
+            assembler_.test(get8(dst), src.as<u8>());
+        }, false);
+    }
+
     bool Compiler::tryCompileTestRM32R32(const RM32& lhs, R32 rhs) {
         if(!lhs.isReg) return false;
         // load the lhs
@@ -714,6 +721,12 @@ namespace x64 {
         assembler_.mov(d, s);
     }
 
+    void Compiler::writeReg8(R8 dst, Reg src) {
+        M8 d = make8(get(Reg::REG_BASE), registerOffset(dst));
+        R8 s = get8(src);
+        assembler_.mov(d, s);
+    }
+
     void Compiler::readMem8(Reg dst, const Mem& address) {
         R8 d = get8(dst);
         M8 s = make8(get(Reg::MEM_BASE), get(address.base), 1, address.offset);
@@ -884,6 +897,92 @@ namespace x64 {
         M64 s = make64(get(Reg::FLAGS_BASE), 0);
         assembler_.push64(s);
         assembler_.popf();
+    }
+
+    template<typename Func>
+    bool Compiler::forRM8Imm(const RM8& dst, Imm imm, Func&& func, bool writeResultBack) {
+        if(dst.isReg) {
+            // read the register
+            readReg8(Reg::GPR0, dst.reg);
+            // add the immediate
+            func(Reg::GPR0, imm);
+            if(writeResultBack) {
+                // write back to the register
+                writeReg8(dst.reg, Reg::GPR0);
+            }
+            return true;
+        } else {
+            // fetch address
+            const M8& mem = dst.mem;
+            if(mem.segment != Segment::CS && mem.segment != Segment::UNK) return false;
+            if(mem.encoding.index == R64::RIP) return false;
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, Reg::GPR0, mem);
+            // read the value at the address
+            readMem8(Reg::GPR0, addr);
+            // add the immediate
+            func(Reg::GPR0, imm);
+            if(writeResultBack) {
+                // write back to the register
+                writeMem8(addr, Reg::GPR0);
+            }
+            return true;
+        }
+    }
+
+    template<typename Func>
+    bool Compiler::forRM8RM8(const RM8& dst, const RM8& src, Func&& func, bool writeResultBack) {
+        if(dst.isReg && src.isReg) {
+            // read the dst
+            readReg8(Reg::GPR0, dst.reg);
+            // read the src
+            readReg8(Reg::GPR1, src.reg);
+            // perform the binary op
+            func(Reg::GPR0, Reg::GPR1);
+            if(writeResultBack) {
+                // write back dst
+                writeReg8(dst.reg, Reg::GPR0);
+            }
+            return true;
+        } else if(!dst.isReg && src.isReg) {
+            // fetch dst address
+            const M8& mem = dst.mem;
+            if(mem.segment != Segment::CS && mem.segment != Segment::UNK) return false;
+            if(mem.encoding.index == R64::RIP) return false;
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, Reg::GPR0, mem);
+            // read the dst value at the address
+            readMem8(Reg::GPR0, addr);
+            // read the src
+            readReg8(Reg::GPR1, src.reg);
+            // perform the binary op
+            func(Reg::GPR0, Reg::GPR1);
+            if(writeResultBack) {
+                // write back to the register
+                writeMem8(addr, Reg::GPR0);
+            }
+            return true;
+        } else if(dst.isReg && !src.isReg) {
+            // fetch src address
+            const M8& mem = src.mem;
+            if(mem.segment != Segment::CS && mem.segment != Segment::UNK) return false;
+            if(mem.encoding.index == R64::RIP) return false;
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, Reg::GPR0, mem);
+            // read the dst value at the address
+            readMem8(Reg::GPR1, addr);
+            // read the dst
+            readReg8(Reg::GPR0, dst.reg);
+            // perform the binary op
+            func(Reg::GPR0, Reg::GPR1);
+            if(writeResultBack) {
+                // write back to the register
+                writeReg8(dst.reg, Reg::GPR0);
+            }
+            return true;
+        } else {
+            return false;
+        }
     }
 
     template<typename Func>
