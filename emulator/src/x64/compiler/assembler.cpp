@@ -358,6 +358,12 @@ namespace x64 {
         write8((u8)(0b11000000 | (encodeRegister(src) << 3) | (encodeRegister(dst))));
     }
 
+    void Assembler::movsx(R64 dst, R32 src) {
+        write8((u8)(0x48 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src >= 8) ? 1 : 0)));
+        write8(0x63);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | (encodeRegister(src))));
+    }
+
     void Assembler::add(R32 dst, R32 src) {
         write8((u8)(0x40 | (((u8)src >= 8) ? 4 : 0) | (((u8)dst >= 8) ? 1 : 0)));
         write8((u8)(0x01));

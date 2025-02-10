@@ -46,6 +46,7 @@ namespace x64 {
             case Insn::MOV_R64_M64: return tryCompileMovR64M64(ins.op0<R64>(), ins.op1<M64>());
             case Insn::MOV_M64_R64: return tryCompileMovM64R64(ins.op0<M64>(), ins.op1<R64>());
             case Insn::MOVZX_R32_RM8: return tryCompileMovzxR32RM8(ins.op0<R32>(), ins.op1<RM8>());
+            case Insn::MOVSX_R64_RM32: return tryCompileMovsxR64RM32(ins.op0<R64>(), ins.op1<RM32>());
             case Insn::ADD_RM32_RM32: return tryCompileAddRM32RM32(ins.op0<RM32>(), ins.op1<RM32>());
             case Insn::ADD_RM32_IMM: return tryCompileAddRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
             case Insn::ADD_RM64_RM64: return tryCompileAddRM64RM64(ins.op0<RM64>(), ins.op1<RM64>());
@@ -240,6 +241,32 @@ namespace x64 {
             assembler_.movzx(get32(Reg::GPR0), get8(Reg::GPR0));
             // write to the destination
             writeReg32(dst, Reg::GPR0);
+            return true;
+        }
+    }
+
+    bool Compiler::tryCompileMovsxR64RM32(R64 dst, const RM32& src) {
+        if(src.isReg) {
+            // read the src register
+            readReg32(Reg::GPR0, src.reg);
+            // do the zero-extending mov
+            assembler_.movsx(get(Reg::GPR0), get32(Reg::GPR0));
+            // write to the destination
+            writeReg64(dst, Reg::GPR0);
+            return true;
+        } else {
+            // fetch src address
+            const M32& mem = src.mem;
+            if(mem.segment != Segment::CS && mem.segment != Segment::UNK) return false;
+            if(mem.encoding.index == R64::RIP) return false;
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, Reg::GPR0, mem);
+            // read the src value at the address
+            readMem32(Reg::GPR0, addr);
+            // do the zero-extending mov
+            assembler_.movsx(get(Reg::GPR0), get32(Reg::GPR0));
+            // write to the destination
+            writeReg64(dst, Reg::GPR0);
             return true;
         }
     }
