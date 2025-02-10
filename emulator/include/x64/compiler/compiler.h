@@ -132,7 +132,13 @@ namespace x64 {
         void loadFlags();
 
         template<typename Func>
+        bool forRM32Imm(const RM32& dst, Imm imm, Func&& func, bool writeResultBack = true);
+
+        template<typename Func>
         bool forRM32RM32(const RM32& dst, const RM32& src, Func&& func, bool writeResultBack = true);
+        
+        template<typename Func>
+        bool forRM64Imm(const RM64& dst, Imm imm, Func&& func, bool writeResultBack = true);
         
         template<typename Func>
         bool forRM64RM64(const RM64& dst, const RM64& src, Func&& func, bool writeResultBack = true);

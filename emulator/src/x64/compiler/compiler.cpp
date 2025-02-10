@@ -238,14 +238,9 @@ namespace x64 {
     }
 
     bool Compiler::tryCompileAddRM32Imm(const RM32& dst, Imm src) {
-        if(!dst.isReg) return false;
-        // read the register
-        readReg32(Reg::GPR0, dst.reg);
-        // add the immediate
-        add32Imm32(Reg::GPR0, src.as<i32>());
-        // write back to the register
-        writeReg32(dst.reg, Reg::GPR0);
-        return true;
+        return forRM32Imm(dst, src, [&](Reg dst, Imm imm) {
+            add32Imm32(dst, imm.as<i32>());
+        });
     }
 
     bool Compiler::tryCompileAddRM64RM64(const RM64& dst, const RM64& src) {
@@ -255,29 +250,9 @@ namespace x64 {
     }
 
     bool Compiler::tryCompileAddRM64Imm(const RM64& dst, Imm src) {
-        if(dst.isReg) {
-            // read the register
-            readReg64(Reg::GPR0, dst.reg);
-            // add the immediate
-            add64Imm32(Reg::GPR0, src.as<i32>());
-            // write back to the register
-            writeReg64(dst.reg, Reg::GPR0);
-            return true;
-        } else {
-            // fetch address
-            const M64& mem = dst.mem;
-            if(mem.segment != Segment::CS && mem.segment != Segment::UNK) return false;
-            if(mem.encoding.index == R64::RIP) return false;
-            // get the address
-            Mem addr = getAddress(Reg::MEM_ADDR, Reg::GPR0, mem);
-            // read the value at the address
-            readMem64(Reg::GPR0, addr);
-            // add the immediate
-            add64Imm32(Reg::GPR0, src.as<i32>());
-            // write back to the register
-            writeMem64(addr, Reg::GPR0);
-            return true;
-        }
+        return forRM64Imm(dst, src, [&](Reg dst, Imm imm) {
+            add64Imm32(dst, imm.as<i32>());
+        });
     }
 
     bool Compiler::tryCompileSubRM32RM32(const RM32& dst, const RM32& src) {
@@ -287,14 +262,9 @@ namespace x64 {
     }
 
     bool Compiler::tryCompileSubRM32Imm(const RM32& dst, Imm src) {
-        if(!dst.isReg) return false;
-        // read the register
-        readReg32(Reg::GPR0, dst.reg);
-        // add the immediate
-        sub32Imm32(Reg::GPR0, src.as<i32>());
-        // write back to the register
-        writeReg32(dst.reg, Reg::GPR0);
-        return true;
+        return forRM32Imm(dst, src, [&](Reg dst, Imm imm) {
+            sub32Imm32(dst, imm.as<i32>());
+        });
     }
 
     bool Compiler::tryCompileSubRM64RM64(const RM64& dst, const RM64& src) {
@@ -304,14 +274,9 @@ namespace x64 {
     }
 
     bool Compiler::tryCompileSubRM64Imm(const RM64& dst, Imm src) {
-        if(!dst.isReg) return false;
-        // read the register
-        readReg64(Reg::GPR0, dst.reg);
-        // add the immediate
-        sub64Imm32(Reg::GPR0, src.as<i32>());
-        // write back to the register
-        writeReg64(dst.reg, Reg::GPR0);
-        return true;
+        return forRM64Imm(dst, src, [&](Reg dst, Imm imm) {
+            sub64Imm32(dst, imm.as<i32>());
+        });
     }
 
     bool Compiler::tryCompileCmpRM32RM32(const RM32& lhs, const RM32& rhs) {
@@ -321,12 +286,9 @@ namespace x64 {
     }
 
     bool Compiler::tryCompileCmpRM32Imm(const RM32& lhs, Imm rhs) {
-        if(!lhs.isReg) return false;
-        // read the register
-        readReg32(Reg::GPR0, lhs.reg);
-        // compare to the immediate
-        cmp32Imm32(Reg::GPR0, rhs.as<i32>());
-        return true;
+        return forRM32Imm(lhs, rhs, [&](Reg dst, Imm imm) {
+            cmp32Imm32(dst, imm.as<i32>());
+        }, false);
     }
 
     bool Compiler::tryCompileCmpRM64RM64(const RM64& lhs, const RM64& rhs) {
@@ -336,78 +298,45 @@ namespace x64 {
     }
 
     bool Compiler::tryCompileCmpRM64Imm(const RM64& lhs, Imm rhs) {
-        if(!lhs.isReg) return false;
-        // read the register
-        readReg64(Reg::GPR0, lhs.reg);
-        // compare to the immediate
-        cmp64Imm32(Reg::GPR0, rhs.as<i32>());
-        return true;
+        return forRM64Imm(lhs, rhs, [&](Reg dst, Imm imm) {
+            cmp64Imm32(dst, imm.as<i32>());
+        }, false);
     }
 
     bool Compiler::tryCompileShlRM32Imm(const RM32& lhs, Imm rhs) {
-        if(!lhs.isReg) return false;
-        // read the register
-        readReg32(Reg::GPR0, lhs.reg);
-        // do the shift
-        assembler_.shl(get32(Reg::GPR0), rhs.as<u8>());
-        // write the value back
-        writeReg32(lhs.reg, Reg::GPR0);
-        return true;
+        return forRM32Imm(lhs, rhs, [&](Reg dst, Imm imm) {
+            assembler_.shl(get32(dst), imm.as<u8>());
+        });
     }
 
     bool Compiler::tryCompileShlRM64Imm(const RM64& lhs, Imm rhs) {
-        if(!lhs.isReg) return false;
-        // read the register
-        readReg64(Reg::GPR0, lhs.reg);
-        // do the shift
-        assembler_.shl(get(Reg::GPR0), rhs.as<u8>());
-        // write the value back
-        writeReg64(lhs.reg, Reg::GPR0);
-        return true;
+        return forRM64Imm(lhs, rhs, [&](Reg dst, Imm imm) {
+            assembler_.shl(get(dst), imm.as<u8>());
+        });
     }
 
     bool Compiler::tryCompileShrRM32Imm(const RM32& lhs, Imm rhs) {
-        if(!lhs.isReg) return false;
-        // read the register
-        readReg32(Reg::GPR0, lhs.reg);
-        // do the shift
-        assembler_.shr(get32(Reg::GPR0), rhs.as<u8>());
-        // write the value back
-        writeReg32(lhs.reg, Reg::GPR0);
-        return true;
+        return forRM32Imm(lhs, rhs, [&](Reg dst, Imm imm) {
+            assembler_.shr(get32(dst), imm.as<u8>());
+        });
     }
 
     bool Compiler::tryCompileShrRM64Imm(const RM64& lhs, Imm rhs) {
-        if(!lhs.isReg) return false;
-        // read the register
-        readReg64(Reg::GPR0, lhs.reg);
-        // do the shift
-        assembler_.shr(get(Reg::GPR0), rhs.as<u8>());
-        // write the value back
-        writeReg64(lhs.reg, Reg::GPR0);
-        return true;
+        return forRM64Imm(lhs, rhs, [&](Reg dst, Imm imm) {
+            assembler_.shr(get(dst), imm.as<u8>());
+        });
     }
 
     bool Compiler::tryCompileSarRM32Imm(const RM32& lhs, Imm rhs) {
-        if(!lhs.isReg) return false;
-        // read the register
-        readReg32(Reg::GPR0, lhs.reg);
-        // do the shift
-        assembler_.sar(get32(Reg::GPR0), rhs.as<u8>());
-        // write the value back
-        writeReg32(lhs.reg, Reg::GPR0);
-        return true;
+        return forRM32Imm(lhs, rhs, [&](Reg dst, Imm imm) {
+            assembler_.sar(get32(dst), imm.as<u8>());
+        });
     }
 
     bool Compiler::tryCompileSarRM64Imm(const RM64& lhs, Imm rhs) {
-        if(!lhs.isReg) return false;
-        // read the register
-        readReg64(Reg::GPR0, lhs.reg);
-        // do the shift
-        assembler_.sar(get(Reg::GPR0), rhs.as<u8>());
-        // write the value back
-        writeReg64(lhs.reg, Reg::GPR0);
-        return true;
+        return forRM64Imm(lhs, rhs, [&](Reg dst, Imm imm) {
+            assembler_.sar(get(dst), imm.as<u8>());
+        });
     }
 
     bool Compiler::tryCompileJe(u64 dst) {
@@ -512,36 +441,21 @@ namespace x64 {
     }
 
     bool Compiler::tryCompileAndRM32Imm(const RM32& dst, Imm imm) {
-        if(!dst.isReg) return false;
-        // load the value
-        readReg32(Reg::GPR0, dst.reg);
-        // do the and
-        assembler_.and_(get32(Reg::GPR0), imm.as<i32>());
-        // write the value back
-        writeReg32(dst.reg, Reg::GPR0);
-        return true;
+        return forRM32Imm(dst, imm, [&](Reg dst, Imm imm) {
+            assembler_.and_(get32(dst), imm.as<i32>());
+        });
     }
 
     bool Compiler::tryCompileAndRM64Imm(const RM64& dst, Imm imm) {
-        if(!dst.isReg) return false;
-        // load the value
-        readReg64(Reg::GPR0, dst.reg);
-        // do the and
-        assembler_.and_(get(Reg::GPR0), imm.as<i32>());
-        // write the value back
-        writeReg64(dst.reg, Reg::GPR0);
-        return true;
+        return forRM64Imm(dst, imm, [&](Reg dst, Imm imm) {
+            assembler_.and_(get(dst), imm.as<i32>());
+        });
     }
 
     bool Compiler::tryCompileOrRM32Imm(const RM32& dst, Imm imm) {
-        if(!dst.isReg) return false;
-        // load the value
-        readReg32(Reg::GPR0, dst.reg);
-        // do the or
-        assembler_.or_(get32(Reg::GPR0), imm.as<i32>());
-        // write the value back
-        writeReg32(dst.reg, Reg::GPR0);
-        return true;
+        return forRM32Imm(dst, imm, [&](Reg dst, Imm imm) {
+            assembler_.or_(get32(dst), imm.as<i32>());
+        });
     }
 
     bool Compiler::tryCompileOrRM32RM32(const RM32& dst, const RM32& src) {
@@ -551,14 +465,9 @@ namespace x64 {
     }
 
     bool Compiler::tryCompileOrRM64Imm(const RM64& dst, Imm imm) {
-        if(!dst.isReg) return false;
-        // load the value
-        readReg64(Reg::GPR0, dst.reg);
-        // do the or
-        assembler_.or_(get(Reg::GPR0), imm.as<i32>());
-        // write the value back
-        writeReg64(dst.reg, Reg::GPR0);
-        return true;
+        return forRM64Imm(dst, imm, [&](Reg dst, Imm imm) {
+            assembler_.or_(get(dst), imm.as<i32>());
+        });
     }
 
     bool Compiler::tryCompileOrRM64RM64(const RM64& dst, const RM64& src) {
@@ -932,6 +841,37 @@ namespace x64 {
     }
 
     template<typename Func>
+    bool Compiler::forRM32Imm(const RM32& dst, Imm imm, Func&& func, bool writeResultBack) {
+        if(dst.isReg) {
+            // read the register
+            readReg32(Reg::GPR0, dst.reg);
+            // add the immediate
+            func(Reg::GPR0, imm);
+            if(writeResultBack) {
+                // write back to the register
+                writeReg32(dst.reg, Reg::GPR0);
+            }
+            return true;
+        } else {
+            // fetch address
+            const M32& mem = dst.mem;
+            if(mem.segment != Segment::CS && mem.segment != Segment::UNK) return false;
+            if(mem.encoding.index == R64::RIP) return false;
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, Reg::GPR0, mem);
+            // read the value at the address
+            readMem32(Reg::GPR0, addr);
+            // add the immediate
+            func(Reg::GPR0, imm);
+            if(writeResultBack) {
+                // write back to the register
+                writeMem32(addr, Reg::GPR0);
+            }
+            return true;
+        }
+    }
+
+    template<typename Func>
     bool Compiler::forRM32RM32(const RM32& dst, const RM32& src, Func&& func, bool writeResultBack) {
         if(dst.isReg && src.isReg) {
             // read the dst
@@ -983,6 +923,37 @@ namespace x64 {
             return true;
         } else {
             return false;
+        }
+    }
+
+    template<typename Func>
+    bool Compiler::forRM64Imm(const RM64& dst, Imm imm, Func&& func, bool writeResultBack) {
+        if(dst.isReg) {
+            // read the register
+            readReg64(Reg::GPR0, dst.reg);
+            // add the immediate
+            func(Reg::GPR0, imm);
+            if(writeResultBack) {
+                // write back to the register
+                writeReg64(dst.reg, Reg::GPR0);
+            }
+            return true;
+        } else {
+            // fetch address
+            const M64& mem = dst.mem;
+            if(mem.segment != Segment::CS && mem.segment != Segment::UNK) return false;
+            if(mem.encoding.index == R64::RIP) return false;
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, Reg::GPR0, mem);
+            // read the value at the address
+            readMem64(Reg::GPR0, addr);
+            // add the immediate
+            func(Reg::GPR0, imm);
+            if(writeResultBack) {
+                // write back to the register
+                writeMem64(addr, Reg::GPR0);
+            }
+            return true;
         }
     }
 
