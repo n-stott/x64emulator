@@ -630,12 +630,12 @@ namespace x64 {
             return 8*(i32)reg;
         } else {
             verify(reg == R8::AH
-                || reg == R8::DH
                 || reg == R8::CH
+                || reg == R8::DH
                 || reg == R8::BH);
             if(reg == R8::AH) return 8*0+1;
-            if(reg == R8::DH) return 8*1+1;
-            if(reg == R8::CH) return 8*2+1;
+            if(reg == R8::CH) return 8*1+1;
+            if(reg == R8::DH) return 8*2+1;
             if(reg == R8::BH) return 8*3+1;
             assert(false);
             __builtin_unreachable();

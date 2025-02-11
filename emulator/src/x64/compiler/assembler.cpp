@@ -541,6 +541,7 @@ namespace x64 {
     }
 
     void Assembler::test(R8 lhs, u8 imm) {
+        verify(lhs == R8::R8B || lhs == R8::R9B);
         if((u8)lhs >= 8) {
             write8((u8)(0x40 | (((u8)lhs >= 8) ? 1 : 0)));
         }

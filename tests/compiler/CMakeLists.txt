@@ -89,6 +89,13 @@ target_link_libraries(test_compiler_scenario_02 PUBLIC x64cpu x64emulator)
 target_link_options(test_compiler_scenario_02 PUBLIC ${LD_OPTIONS})
 add_test(NAME compiler_scenario_02 COMMAND test_compiler_scenario_02)
 
+add_executable(test_compiler_scenario_03 src/test_scenario_03.cpp)
+target_compile_options(test_compiler_scenario_03 PUBLIC ${CC_OPTIONS})
+target_include_directories(test_compiler_scenario_03 PUBLIC include ${CMAKE_SOURCE_DIR}/emulator/include)
+target_link_libraries(test_compiler_scenario_03 PUBLIC x64cpu x64emulator)
+target_link_options(test_compiler_scenario_03 PUBLIC ${LD_OPTIONS})
+add_test(NAME compiler_scenario_03 COMMAND test_compiler_scenario_03)
+
 add_executable(test_compiler_movsx src/test_movsx.cpp)
 target_compile_options(test_compiler_movsx PUBLIC ${CC_OPTIONS})
 target_include_directories(test_compiler_movsx PUBLIC include ${CMAKE_SOURCE_DIR}/emulator/include)

@@ -54,8 +54,8 @@ namespace x64 {
         R14B,
         R15B,
         AH,
-        DH,
         CH,
+        DH,
         BH,
     };
 
