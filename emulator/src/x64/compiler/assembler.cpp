@@ -663,6 +663,12 @@ namespace x64 {
         write32(imm);
     }
 
+    void Assembler::and_(R64 dst, R64 src) {
+        write8((u8)(0x48 | (((u8)src >= 8) ? 4 : 0) | (((u8)dst >= 8) ? 1 : 0) ));
+        write8((u8)0x21);
+        write8((u8)(0b11000000 | (encodeRegister(src) << 3) | encodeRegister(dst)));
+    }
+
     void Assembler::and_(R64 dst, i32 imm) {
         write8((u8)(0x48 | (((u8)dst >= 8) ? 1 : 0) ));
         write8((u8)0x81);
