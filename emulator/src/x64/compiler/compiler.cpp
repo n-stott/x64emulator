@@ -69,6 +69,7 @@ namespace x64 {
             case Insn::JNE: return tryCompileJne(ins.op0<u64>());
             case Insn::JCC: return tryCompileJcc(ins.op0<Cond>(), ins.op1<u64>());
             case Insn::JMP_U32: return tryCompileJmp(ins.op0<u32>());
+            case Insn::TEST_RM8_R8: return tryCompileTestRM8R8(ins.op0<RM8>(), ins.op1<R8>());
             case Insn::TEST_RM8_IMM: return tryCompileTestRM8Imm(ins.op0<RM8>(), ins.op1<Imm>());
             case Insn::TEST_RM32_R32: return tryCompileTestRM32R32(ins.op0<RM32>(), ins.op1<R32>());
             case Insn::TEST_RM64_R64: return tryCompileTestRM64R64(ins.op0<RM64>(), ins.op1<R64>());
@@ -456,6 +457,13 @@ namespace x64 {
         return true;
     }
 
+    bool Compiler::tryCompileTestRM8R8(const RM8& lhs, R8 rhs) {
+        RM8 r { true, rhs, {}};
+        return forRM8RM8(lhs, r, [&](Reg dst, Reg src) {
+            assembler_.test(get8(dst), get8(src));
+        }, false);
+    }
+
     bool Compiler::tryCompileTestRM8Imm(const RM8& lhs, Imm rhs) {
         return forRM8Imm(lhs, rhs, [&](Reg dst, Imm src) {
             assembler_.test(get8(dst), src.as<u8>());
@@ -463,25 +471,17 @@ namespace x64 {
     }
 
     bool Compiler::tryCompileTestRM32R32(const RM32& lhs, R32 rhs) {
-        if(!lhs.isReg) return false;
-        // load the lhs
-        readReg32(Reg::GPR0, lhs.reg);
-        // load the rhs
-        readReg32(Reg::GPR1, rhs);
-        // do the test
-        assembler_.test(get32(Reg::GPR0), get32(Reg::GPR1));
-        return true;
+        RM32 r { true, rhs, {}};
+        return forRM32RM32(lhs, r, [&](Reg dst, Reg src) {
+            assembler_.test(get32(dst), get32(src));
+        }, false);
     }
 
     bool Compiler::tryCompileTestRM64R64(const RM64& lhs, R64 rhs) {
-        if(!lhs.isReg) return false;
-        // load the lhs
-        readReg64(Reg::GPR0, lhs.reg);
-        // load the rhs
-        readReg64(Reg::GPR1, rhs);
-        // do the test
-        assembler_.test(get(Reg::GPR0), get(Reg::GPR1));
-        return true;
+        RM64 r { true, rhs, {}};
+        return forRM64RM64(lhs, r, [&](Reg dst, Reg src) {
+            assembler_.test(get(dst), get(src));
+        }, false);
     }
 
     bool Compiler::tryCompileAndRM32RM32(const RM32& dst, const RM32& src) {
