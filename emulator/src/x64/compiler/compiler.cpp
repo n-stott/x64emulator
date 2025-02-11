@@ -46,6 +46,7 @@ namespace x64 {
             case Insn::MOV_R64_M64: return tryCompileMovR64M64(ins.op0<R64>(), ins.op1<M64>());
             case Insn::MOV_M64_R64: return tryCompileMovM64R64(ins.op0<M64>(), ins.op1<R64>());
             case Insn::MOVZX_R32_RM8: return tryCompileMovzxR32RM8(ins.op0<R32>(), ins.op1<RM8>());
+            case Insn::MOVZX_R32_RM16: return tryCompileMovzxR32RM16(ins.op0<R32>(), ins.op1<RM16>());
             case Insn::MOVZX_R64_RM8: return tryCompileMovzxR64RM8(ins.op0<R64>(), ins.op1<RM8>());
             case Insn::MOVSX_R64_RM32: return tryCompileMovsxR64RM32(ins.op0<R64>(), ins.op1<RM32>());
             case Insn::ADD_RM32_RM32: return tryCompileAddRM32RM32(ins.op0<RM32>(), ins.op1<RM32>());
@@ -247,6 +248,32 @@ namespace x64 {
             readMem8(Reg::GPR0, addr);
             // do the zero-extending mov
             assembler_.movzx(get32(Reg::GPR0), get8(Reg::GPR0));
+            // write to the destination
+            writeReg32(dst, Reg::GPR0);
+            return true;
+        }
+    }
+
+    bool Compiler::tryCompileMovzxR32RM16(R32 dst, const RM16& src) {
+        if(src.isReg) {
+            // read the src register
+            readReg16(Reg::GPR0, src.reg);
+            // do the zero-extending mov
+            assembler_.movzx(get32(Reg::GPR0), get16(Reg::GPR0));
+            // write to the destination
+            writeReg32(dst, Reg::GPR0);
+            return true;
+        } else {
+            // fetch src address
+            const M16& mem = src.mem;
+            if(mem.segment != Segment::CS && mem.segment != Segment::UNK) return false;
+            if(mem.encoding.index == R64::RIP) return false;
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, Reg::GPR0, mem);
+            // read the src value at the address
+            readMem16(Reg::GPR0, addr);
+            // do the zero-extending mov
+            assembler_.movzx(get32(Reg::GPR0), get16(Reg::GPR0));
             // write to the destination
             writeReg32(dst, Reg::GPR0);
             return true;
@@ -730,6 +757,19 @@ namespace x64 {
         __builtin_unreachable();
     }
 
+    R16 Compiler::get16(Compiler::Reg reg) {
+        switch(reg) {
+            case Reg::GPR0: return R16::R8W;
+            case Reg::GPR1: return R16::R9W;
+            case Reg::MEM_ADDR: return R16::R10W;
+            case Reg::REG_BASE: return R16::DI;
+            case Reg::MEM_BASE: return R16::SI;
+            case Reg::FLAGS_BASE: return R16::DX;
+        }
+        assert(false);
+        __builtin_unreachable();
+    }
+
     R32 Compiler::get32(Compiler::Reg reg) {
         switch(reg) {
             case Reg::GPR0: return R32::R8D;
@@ -773,6 +813,10 @@ namespace x64 {
         }
     }
 
+    i32 registerOffset(R16 reg) {
+        return 8*(i32)reg;
+    }
+
     i32 registerOffset(R32 reg) {
         return 8*(i32)reg;
     }
@@ -783,6 +827,18 @@ namespace x64 {
 
     M8 make8(R64 base, R64 index, u8 scale, i32 disp) {
         return M8 {
+            Segment::CS,
+            Encoding64 {
+                base,
+                index,
+                scale,
+                disp,
+            },
+        };
+    }
+
+    M16 make16(R64 base, R64 index, u8 scale, i32 disp) {
+        return M16 {
             Segment::CS,
             Encoding64 {
                 base,
@@ -829,6 +885,18 @@ namespace x64 {
         };
     }
 
+    M16 make16(R64 base, i32 disp) {
+        return M16 {
+            Segment::CS,
+            Encoding64 {
+                base,
+                R64::ZERO,
+                1,
+                disp,
+            },
+        };
+    }
+
     M32 make32(R64 base, i32 disp) {
         return M32 {
             Segment::CS,
@@ -865,9 +933,15 @@ namespace x64 {
         assembler_.mov(d, s);
     }
 
-    void Compiler::readMem8(Reg dst, const Mem& address) {
-        R8 d = get8(dst);
-        M8 s = make8(get(Reg::MEM_BASE), get(address.base), 1, address.offset);
+    void Compiler::readReg16(Reg dst, R16 src) {
+        R16 d = get16(dst);
+        M16 s = make16(get(Reg::REG_BASE), registerOffset(src));
+        assembler_.mov(d, s);
+    }
+
+    void Compiler::writeReg16(R16 dst, Reg src) {
+        M16 d = make16(get(Reg::REG_BASE), registerOffset(dst));
+        R16 s = get16(src);
         assembler_.mov(d, s);
     }
 
@@ -896,9 +970,27 @@ namespace x64 {
         assembler_.mov(d, s);
     }
 
+    void Compiler::readMem8(Reg dst, const Mem& address) {
+        R8 d = get8(dst);
+        M8 s = make8(get(Reg::MEM_BASE), get(address.base), 1, address.offset);
+        assembler_.mov(d, s);
+    }
+
     void Compiler::writeMem8(const Mem& address, Reg src) {
         M8 d = make8(get(Reg::MEM_BASE), get(address.base), 1, address.offset);
         R8 s = get8(src);
+        assembler_.mov(d, s);
+    }
+
+    void Compiler::readMem16(Reg dst, const Mem& address) {
+        R16 d = get16(dst);
+        M16 s = make16(get(Reg::MEM_BASE), get(address.base), 1, address.offset);
+        assembler_.mov(d, s);
+    }
+
+    void Compiler::writeMem16(const Mem& address, Reg src) {
+        M16 d = make16(get(Reg::MEM_BASE), get(address.base), 1, address.offset);
+        R16 s = get16(src);
         assembler_.mov(d, s);
     }
 

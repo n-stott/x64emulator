@@ -4,6 +4,46 @@
 
 using namespace x64;
 
+void testMov16(R16 dst, R16 src) {
+    Assembler assembler;
+    assembler.mov(dst, src);
+    std::vector<u8> code = assembler.code();
+    auto disassembly = CapstoneWrapper::disassembleRange(code.data(), code.size(), 0x0);
+    verify(disassembly.instructions.size() == 1);
+    const auto& ins = disassembly.instructions[0];
+    verify(ins.insn() == Insn::MOV_R16_R16);
+    R16 disdst = ins.op0<R16>();
+    R16 dissrc = ins.op1<R16>();
+    verify(disdst == dst);
+    verify(dissrc == src);
+}
+
+void testMov16() {
+    std::array<R16, 16> regs {{
+        R16::AX,
+        R16::CX,
+        R16::DX,
+        R16::BX,
+        R16::SP,
+        R16::BP,
+        R16::SI,
+        R16::DI,
+        R16::R8W,
+        R16::R9W,
+        R16::R10W,
+        R16::R11W,
+        R16::R12W,
+        R16::R13W,
+        R16::R14W,
+        R16::R15W,
+    }};
+    for(auto dst : regs) {
+        for(auto src : regs) {
+            testMov16(dst, src);
+        }
+    }
+}
+
 void testMov32(R32 dst, R32 src) {
     Assembler assembler;
     assembler.mov(dst, src);
