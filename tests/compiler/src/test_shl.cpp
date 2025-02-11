@@ -4,21 +4,20 @@
 
 using namespace x64;
 
-// void testShl32(R32 dst, R32 src) {
-//     Assembler assembler;
-//     assembler.shl(dst, src);
-//     std::vector<u8> code = assembler.code();
-//     auto disassembly = CapstoneWrapper::disassembleRange(code.data(), code.size(), 0x0);
-//     verify(disassembly.instructions.size() == 1);
-//     const auto& ins = disassembly.instructions[0];
-//     verify(ins.insn() == Insn::SHL_RM32_RM32);
-//     RM32 disdst = ins.op0<RM32>();
-//     RM32 dissrc = ins.op1<RM32>();
-//     verify(disdst.isReg);
-//     verify(dissrc.isReg);
-//     verify(disdst.reg == dst);
-//     verify(dissrc.reg == src);
-// }
+void testShl32(R32 dst) {
+    Assembler assembler;
+    assembler.shl_cl(dst);
+    std::vector<u8> code = assembler.code();
+    auto disassembly = CapstoneWrapper::disassembleRange(code.data(), code.size(), 0x0);
+    verify(disassembly.instructions.size() == 1);
+    const auto& ins = disassembly.instructions[0];
+    verify(ins.insn() == Insn::SHL_RM32_R8);
+    RM32 disdst = ins.op0<RM32>();
+    R8 dissrc = ins.op1<R8>();
+    verify(disdst.isReg);
+    verify(disdst.reg == dst);
+    verify(dissrc == R8::CL);
+}
 
 void testShl32(R32 dst, u8 imm) {
     Assembler assembler;
@@ -67,30 +66,27 @@ void testShl32() {
         31,
     }};
     for(auto dst : regs) {
-        // for(auto src : regs) {
-        //     testShl32(dst, src);
-        // }
+        testShl32(dst);
         for(auto imm : imms) {
             testShl32(dst, imm);
         }
     }
 }
 
-// void testShl64(R64 dst, R64 src) {
-//     Assembler assembler;
-//     assembler.shl(dst, src);
-//     std::vector<u8> code = assembler.code();
-//     auto disassembly = CapstoneWrapper::disassembleRange(code.data(), code.size(), 0x0);
-//     verify(disassembly.instructions.size() == 1);
-//     const auto& ins = disassembly.instructions[0];
-//     verify(ins.insn() == Insn::SHL_RM64_RM64);
-//     RM64 disdst = ins.op0<RM64>();
-//     RM64 dissrc = ins.op1<RM64>();
-//     verify(disdst.isReg);
-//     verify(dissrc.isReg);
-//     verify(disdst.reg == dst);
-//     verify(dissrc.reg == src);
-// }
+void testShl64(R64 dst) {
+    Assembler assembler;
+    assembler.shl_cl(dst);
+    std::vector<u8> code = assembler.code();
+    auto disassembly = CapstoneWrapper::disassembleRange(code.data(), code.size(), 0x0);
+    verify(disassembly.instructions.size() == 1);
+    const auto& ins = disassembly.instructions[0];
+    verify(ins.insn() == Insn::SHL_RM64_R8);
+    RM64 disdst = ins.op0<RM64>();
+    R8 dissrc = ins.op1<R8>();
+    verify(disdst.isReg);
+    verify(disdst.reg == dst);
+    verify(dissrc == R8::CL);
+}
 
 void testShl64(R64 dst, u8 imm) {
     Assembler assembler;
@@ -144,9 +140,7 @@ void testShl64() {
         63,
     }};
     for(auto dst : regs) {
-        // for(auto src : regs) {
-        //     testShl64(dst, src);
-        // }
+        testShl64(dst);
         for(auto imm : imms) {
             testShl64(dst, imm);
         }

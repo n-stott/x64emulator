@@ -148,6 +148,12 @@ namespace x64 {
         }
     }
 
+    void Assembler::mov(R8 dst, R8 src) {
+        write8((u8)(0x40 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src >= 8) ? 1 : 0)));
+        write8((u8)(0x8a));
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | (encodeRegister(src))));
+    }
+
     void Assembler::mov(R32 dst, R32 src) {
         write8((u8)(0x40 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src >= 8) ? 1 : 0)));
         write8((u8)(0x8b));
@@ -484,6 +490,26 @@ namespace x64 {
         }
     }
 
+    void Assembler::shl_cl(R32 lhs) {
+        if((u8)lhs >= 8) {
+            write8((u8)(0x40 | (((u8)lhs >= 8) ? 1 : 0)));
+        }
+        write8(0xd3);
+        write8((u8)(0b11000000 | (0b100 << 3) | encodeRegister(lhs)));
+    }
+
+    void Assembler::shl(R32 lhs, R8 rhs) {
+        verify(lhs == R32::R8D || lhs == R32::R9D);
+        verify(rhs == R8::R8B || rhs == R8::R9B);
+        // set cl
+        push64(R64::RCX);
+        mov(R8::CL, rhs);
+        // do the shift
+        shl_cl(lhs);
+        // restore cl
+        pop64(R64::RCX);
+    }
+
     void Assembler::shl(R32 lhs, u8 imm) {
         if((u8)lhs >= 8) {
             write8((u8)(0x40 | (((u8)lhs >= 8) ? 1 : 0)));
@@ -493,11 +519,49 @@ namespace x64 {
         write8((i8)imm);
     }
 
+    void Assembler::shl_cl(R64 lhs) {
+        write8((u8)(0x48 | (((u8)lhs >= 8) ? 1 : 0)));
+        write8(0xd3);
+        write8((u8)(0b11000000 | (0b100 << 3) | encodeRegister(lhs)));
+    }
+
+    void Assembler::shl(R64 lhs, R8 rhs) {
+        verify(lhs == R64::R8 || lhs == R64::R9);
+        verify(rhs == R8::R8B || rhs == R8::R9B);
+        // set cl
+        push64(R64::RCX);
+        mov(R8::CL, rhs);
+        // do the shift
+        shl_cl(lhs);
+        // restore cl
+        pop64(R64::RCX);
+    }
+
     void Assembler::shl(R64 lhs, u8 imm) {
         write8((u8)(0x48 | (((u8)lhs >= 8) ? 1 : 0)));
         write8(0xc1);
         write8((u8)(0b11000000 | (0b100 << 3) | encodeRegister(lhs)));
         write8((i8)imm);
+    }
+
+    void Assembler::shr_cl(R32 lhs) {
+        if((u8)lhs >= 8) {
+            write8((u8)(0x40 | (((u8)lhs >= 8) ? 1 : 0)));
+        }
+        write8(0xd3);
+        write8((u8)(0b11000000 | (0b101 << 3) | encodeRegister(lhs)));
+    }
+
+    void Assembler::shr(R32 lhs, R8 rhs) {
+        verify(lhs == R32::R8D || lhs == R32::R9D);
+        verify(rhs == R8::R8B || rhs == R8::R9B);
+        // set cl
+        push64(R64::RCX);
+        mov(R8::CL, rhs);
+        // do the shift
+        shr_cl(lhs);
+        // restore cl
+        pop64(R64::RCX);
     }
 
     void Assembler::shr(R32 lhs, u8 imm) {
@@ -507,6 +571,24 @@ namespace x64 {
         write8(0xc1);
         write8((u8)(0b11000000 | (0b101 << 3) | encodeRegister(lhs)));
         write8((i8)imm);
+    }
+
+    void Assembler::shr_cl(R64 lhs) {
+        write8((u8)(0x48 | (((u8)lhs >= 8) ? 1 : 0)));
+        write8(0xd3);
+        write8((u8)(0b11000000 | (0b101 << 3) | encodeRegister(lhs)));
+    }
+
+    void Assembler::shr(R64 lhs, R8 rhs) {
+        verify(lhs == R64::R8 || lhs == R64::R9);
+        verify(rhs == R8::R8B || rhs == R8::R9B);
+        // set cl
+        push64(R64::RCX);
+        mov(R8::CL, rhs);
+        // do the shift
+        shr_cl(lhs);
+        // restore cl
+        pop64(R64::RCX);
     }
 
     void Assembler::shr(R64 lhs, u8 imm) {

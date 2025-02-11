@@ -59,9 +59,13 @@ namespace x64 {
             case Insn::CMP_RM32_IMM: return tryCompileCmpRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
             case Insn::CMP_RM64_RM64: return tryCompileCmpRM64RM64(ins.op0<RM64>(), ins.op1<RM64>());
             case Insn::CMP_RM64_IMM: return tryCompileCmpRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
+            case Insn::SHL_RM32_R8: return tryCompileShlRM32R8(ins.op0<RM32>(), ins.op1<R8>());
             case Insn::SHL_RM32_IMM: return tryCompileShlRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
+            case Insn::SHL_RM64_R8: return tryCompileShlRM64R8(ins.op0<RM64>(), ins.op1<R8>());
             case Insn::SHL_RM64_IMM: return tryCompileShlRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
+            case Insn::SHR_RM32_R8: return tryCompileShrRM32R8(ins.op0<RM32>(), ins.op1<R8>());
             case Insn::SHR_RM32_IMM: return tryCompileShrRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
+            case Insn::SHR_RM64_R8: return tryCompileShrRM64R8(ins.op0<RM64>(), ins.op1<R8>());
             case Insn::SHR_RM64_IMM: return tryCompileShrRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
             case Insn::SAR_RM32_IMM: return tryCompileSarRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
             case Insn::SAR_RM64_IMM: return tryCompileSarRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
@@ -343,9 +347,21 @@ namespace x64 {
         }, false);
     }
 
+    bool Compiler::tryCompileShlRM32R8(const RM32& lhs, R8 rhs) {
+        return forRM32R8(lhs, rhs, [&](Reg dst, Reg src) {
+            assembler_.shl(get32(dst), get8(src));
+        });
+    }
+
     bool Compiler::tryCompileShlRM32Imm(const RM32& lhs, Imm rhs) {
         return forRM32Imm(lhs, rhs, [&](Reg dst, Imm imm) {
             assembler_.shl(get32(dst), imm.as<u8>());
+        });
+    }
+
+    bool Compiler::tryCompileShlRM64R8(const RM64& lhs, R8 rhs) {
+        return forRM64R8(lhs, rhs, [&](Reg dst, Reg src) {
+            assembler_.shl(get(dst), get8(src));
         });
     }
 
@@ -355,9 +371,21 @@ namespace x64 {
         });
     }
 
+    bool Compiler::tryCompileShrRM32R8(const RM32& lhs, R8 rhs) {
+        return forRM32R8(lhs, rhs, [&](Reg dst, Reg src) {
+            assembler_.shr(get32(dst), get8(src));
+        });
+    }
+
     bool Compiler::tryCompileShrRM32Imm(const RM32& lhs, Imm rhs) {
         return forRM32Imm(lhs, rhs, [&](Reg dst, Imm imm) {
             assembler_.shr(get32(dst), imm.as<u8>());
+        });
+    }
+
+    bool Compiler::tryCompileShrRM64R8(const RM64& lhs, R8 rhs) {
+        return forRM64R8(lhs, rhs, [&](Reg dst, Reg src) {
+            assembler_.shr(get(dst), get8(src));
         });
     }
 
@@ -1008,6 +1036,41 @@ namespace x64 {
     }
 
     template<typename Func>
+    bool Compiler::forRM32R8(const RM32& dst, R8 src, Func&& func, bool writeResultBack) {
+        if(dst.isReg) {
+            // read the dst register
+            readReg32(Reg::GPR0, dst.reg);
+            // read the src register
+            readReg8(Reg::GPR1, src);
+            // do the op
+            func(Reg::GPR0, Reg::GPR1);
+            if(writeResultBack) {
+                // write back to the register
+                writeReg32(dst.reg, Reg::GPR0);
+            }
+            return true;
+        } else {
+            // fetch address
+            const M32& mem = dst.mem;
+            if(mem.segment != Segment::CS && mem.segment != Segment::UNK) return false;
+            if(mem.encoding.index == R64::RIP) return false;
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, Reg::GPR0, mem);
+            // read the value at the address
+            readMem32(Reg::GPR0, addr);
+            // read the src register
+            readReg8(Reg::GPR1, src);
+            // do the op
+            func(Reg::GPR0, Reg::GPR1);
+            if(writeResultBack) {
+                // write back to the register
+                writeMem32(addr, Reg::GPR0);
+            }
+            return true;
+        }
+    }
+
+    template<typename Func>
     bool Compiler::forRM32Imm(const RM32& dst, Imm imm, Func&& func, bool writeResultBack) {
         if(dst.isReg) {
             // read the register
@@ -1090,6 +1153,41 @@ namespace x64 {
             return true;
         } else {
             return false;
+        }
+    }
+
+    template<typename Func>
+    bool Compiler::forRM64R8(const RM64& dst, R8 src, Func&& func, bool writeResultBack) {
+        if(dst.isReg) {
+            // read the dst register
+            readReg64(Reg::GPR0, dst.reg);
+            // read the src register
+            readReg8(Reg::GPR1, src);
+            // do the op
+            func(Reg::GPR0, Reg::GPR1);
+            if(writeResultBack) {
+                // write back to the register
+                writeReg64(dst.reg, Reg::GPR0);
+            }
+            return true;
+        } else {
+            // fetch address
+            const M64& mem = dst.mem;
+            if(mem.segment != Segment::CS && mem.segment != Segment::UNK) return false;
+            if(mem.encoding.index == R64::RIP) return false;
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, Reg::GPR0, mem);
+            // read the value at the address
+            readMem64(Reg::GPR0, addr);
+            // read the src register
+            readReg8(Reg::GPR1, src);
+            // do the op
+            func(Reg::GPR0, Reg::GPR1);
+            if(writeResultBack) {
+                // write back to the register
+                writeMem64(addr, Reg::GPR0);
+            }
+            return true;
         }
     }
 

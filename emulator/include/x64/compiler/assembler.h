@@ -11,11 +11,12 @@ namespace x64 {
     public:
         const std::vector<u8>& code() const { return code_; }
 
-        void mov(R8 dst, const M8& src);
-        void mov(const M8& dst, R8 src);
+        void mov(R8 dst, R8 src);
         void mov(R32 dst, R32 src);
         void mov(R64 dst, R64 src);
         void mov(R64 dst, u64 imm);
+        void mov(R8 dst, const M8& src);
+        void mov(const M8& dst, R8 src);
         void mov(R32 dst, const M32& src);
         void mov(const M32& dst, R32 src);
         void mov(R64 dst, const M64& src);
@@ -34,11 +35,21 @@ namespace x64 {
         void cmp(R32 dst, i32 imm);
         void cmp(R64 lhs, R64 rhs);
         void cmp(R64 dst, i32 imm);
+        void shl_cl(R32 lhs);
+        void shl(R32 lhs, R8 rhs);
         void shl(R32 lhs, u8 imm);
+        void shl_cl(R64 lhs);
+        void shl(R64 lhs, R8 rhs);
         void shl(R64 lhs, u8 imm);
+        void shr_cl(R32 lhs);
+        void shr(R32 lhs, R8 rhs);
         void shr(R32 lhs, u8 imm);
+        void shr_cl(R64 lhs);
+        void shr(R64 lhs, R8 rhs);
         void shr(R64 lhs, u8 imm);
+        void sar(R32 lhs, R8 rhs);
         void sar(R32 lhs, u8 imm);
+        void sar(R64 lhs, R8 rhs);
         void sar(R64 lhs, u8 imm);
         void test(R8 lhs, R8 rhs);
         void test(R8 lhs, u8 imm);
