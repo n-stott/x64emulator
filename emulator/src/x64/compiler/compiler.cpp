@@ -83,6 +83,7 @@ namespace x64 {
             case Insn::XOR_RM64_RM64: return tryCompileXorRM64RM64(ins.op0<RM64>(), ins.op1<RM64>());
             case Insn::PUSH_RM64: return tryCompilePushRM64(ins.op0<RM64>());
             case Insn::POP_R64: return tryCompilePopR64(ins.op0<R64>());
+            case Insn::LEA_R32_ENCODING64: return tryCompileLeaR32Enc64(ins.op0<R32>(), ins.op1<Encoding64>());
             case Insn::LEA_R64_ENCODING64: return tryCompileLeaR64Enc64(ins.op0<R64>(), ins.op1<Encoding64>());
             case Insn::NOP: return tryCompileNop();
             default: break;
@@ -567,6 +568,14 @@ namespace x64 {
         return forRM64RM64(dst, src, [&](Reg dst, Reg src) {
             assembler_.xor_(get(dst), get(src));
         });
+    }
+
+    bool Compiler::tryCompileLeaR32Enc64(R32 dst, const Encoding64& address) {
+        readReg64(Reg::GPR0, address.base);
+        readReg64(Reg::GPR1, address.index);
+        assembler_.lea(get(Reg::GPR0), make64(get(Reg::GPR0), get(Reg::GPR1), address.scale, address.displacement));
+        writeReg32(dst, Reg::GPR0);
+        return true;
     }
 
     bool Compiler::tryCompileLeaR64Enc64(R64 dst, const Encoding64& address) {
