@@ -720,6 +720,20 @@ namespace x64 {
         write8((u8)(0b11000000 | (encodeRegister(src) << 3) | encodeRegister(dst)));
     }
 
+    void Assembler::not_(R32 dst) {
+        if((u8)dst >= 8) {
+            write8((u8)(0x40 | (((u8)dst >= 8) ? 1 : 0) ));
+        }
+        write8((u8)0xf7);
+        write8((u8)(0b11000000 | (0b010 << 3) | encodeRegister(dst)));
+    }
+
+    void Assembler::not_(R64 dst) {
+        write8((u8)(0x48 | (((u8)dst >= 8) ? 1 : 0) ));
+        write8((u8)0xf7);
+        write8((u8)(0b11000000 | (0b010 << 3) | encodeRegister(dst)));
+    }
+
     void Assembler::lea(R32 dst, const M64& src) {
         verify(src.encoding.base != R64::RSP, "rsp as base requires an SIB byte");
         verify(src.encoding.base != R64::R12, "r12 as base requires an SIB byte");

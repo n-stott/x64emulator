@@ -65,6 +65,8 @@ namespace x64 {
         void or_(R64 dst, i32 imm);
         void xor_(R32 dst, R32 src);
         void xor_(R64 dst, R64 src);
+        void not_(R32 dst);
+        void not_(R64 dst);
 
         void lea(R32, const M64&);
         void lea(R64, const M64&);
