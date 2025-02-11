@@ -57,6 +57,8 @@ namespace x64 {
             case Insn::SUB_RM32_IMM: return tryCompileSubRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
             case Insn::SUB_RM64_RM64: return tryCompileSubRM64RM64(ins.op0<RM64>(), ins.op1<RM64>());
             case Insn::SUB_RM64_IMM: return tryCompileSubRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
+            case Insn::CMP_RM8_RM8: return tryCompileCmpRM8RM8(ins.op0<RM8>(), ins.op1<RM8>());
+            case Insn::CMP_RM8_IMM: return tryCompileCmpRM8Imm(ins.op0<RM8>(), ins.op1<Imm>());
             case Insn::CMP_RM32_RM32: return tryCompileCmpRM32RM32(ins.op0<RM32>(), ins.op1<RM32>());
             case Insn::CMP_RM32_IMM: return tryCompileCmpRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
             case Insn::CMP_RM64_RM64: return tryCompileCmpRM64RM64(ins.op0<RM64>(), ins.op1<RM64>());
@@ -378,6 +380,18 @@ namespace x64 {
         return forRM64Imm(dst, src, [&](Reg dst, Imm imm) {
             sub64Imm32(dst, imm.as<i32>());
         });
+    }
+
+    bool Compiler::tryCompileCmpRM8RM8(const RM8& lhs, const RM8& rhs) {
+        return forRM8RM8(lhs, rhs, [&](Reg dst, Reg src) {
+            cmp8(dst, src);
+        }, false);
+    }
+
+    bool Compiler::tryCompileCmpRM8Imm(const RM8& lhs, Imm rhs) {
+        return forRM8Imm(lhs, rhs, [&](Reg dst, Imm imm) {
+            cmp8Imm8(dst, imm.as<i8>());
+        }, false);
     }
 
     bool Compiler::tryCompileCmpRM32RM32(const RM32& lhs, const RM32& rhs) {
@@ -1090,6 +1104,12 @@ namespace x64 {
         assembler_.sub(d, imm);
     }
 
+    void Compiler::cmp8(Reg lhs, Reg rhs) {
+        R8 l = get8(lhs);
+        R8 r = get8(rhs);
+        assembler_.cmp(l, r);
+    }
+
     void Compiler::cmp32(Reg lhs, Reg rhs) {
         R32 l = get32(lhs);
         R32 r = get32(rhs);
@@ -1100,6 +1120,11 @@ namespace x64 {
         R64 l = get(lhs);
         R64 r = get(rhs);
         assembler_.cmp(l, r);
+    }
+
+    void Compiler::cmp8Imm8(Reg dst, i8 imm) {
+        R8 d = get8(dst);
+        assembler_.cmp(d, imm);
     }
 
     void Compiler::cmp32Imm32(Reg dst, i32 imm) {

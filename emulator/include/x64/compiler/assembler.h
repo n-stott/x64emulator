@@ -36,6 +36,8 @@ namespace x64 {
         void sub(R32 dst, i32 imm);
         void sub(R64 dst, R64 src);
         void sub(R64 dst, i32 imm);
+        void cmp(R8 lhs, R8 rhs);
+        void cmp(R8 dst, i8 imm);
         void cmp(R32 lhs, R32 rhs);
         void cmp(R32 dst, i32 imm);
         void cmp(R64 lhs, R64 rhs);
