@@ -87,6 +87,7 @@ namespace x64 {
             case Insn::LEA_R32_ENCODING64: return tryCompileLeaR32Enc64(ins.op0<R32>(), ins.op1<Encoding64>());
             case Insn::LEA_R64_ENCODING64: return tryCompileLeaR64Enc64(ins.op0<R64>(), ins.op1<Encoding64>());
             case Insn::NOP: return tryCompileNop();
+            case Insn::SET_RM8: return tryCompileSetRM8(ins.op0<Cond>(), ins.op1<RM8>());
             default: break;
         }
         return false;
@@ -573,7 +574,7 @@ namespace x64 {
     bool Compiler::tryCompileLeaR32Enc64(R32 dst, const Encoding64& address) {
         readReg64(Reg::GPR0, address.base);
         readReg64(Reg::GPR1, address.index);
-        assembler_.lea(get(Reg::GPR0), make64(get(Reg::GPR0), get(Reg::GPR1), address.scale, address.displacement));
+        assembler_.lea(get32(Reg::GPR0), make64(get(Reg::GPR0), get(Reg::GPR1), address.scale, address.displacement));
         writeReg32(dst, Reg::GPR0);
         return true;
     }
@@ -587,6 +588,15 @@ namespace x64 {
     }
 
     bool Compiler::tryCompileNop() {
+        return true;
+    }
+
+    bool Compiler::tryCompileSetRM8(Cond cond, const RM8& dst) {
+        if(!dst.isReg) return false;
+        // set the condition
+        assembler_.set(cond, get8(Reg::GPR0));
+        // copy the condition
+        writeReg8(dst.reg, Reg::GPR0);
         return true;
     }
 

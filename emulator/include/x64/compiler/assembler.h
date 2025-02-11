@@ -54,6 +54,7 @@ namespace x64 {
         void xor_(R32 dst, R32 src);
         void xor_(R64 dst, R64 src);
 
+        void lea(R32, const M64&);
         void lea(R64, const M64&);
 
         void push64(R64 src);
@@ -64,6 +65,8 @@ namespace x64 {
 
         void pushf();
         void popf();
+
+        void set(Cond, R8);
 
         struct Label {
             size_t positionInCode { (size_t)(-1) };

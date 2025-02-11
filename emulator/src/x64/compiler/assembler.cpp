@@ -632,6 +632,56 @@ namespace x64 {
         write8((u8)(0b11000000 | (encodeRegister(src) << 3) | encodeRegister(dst)));
     }
 
+    void Assembler::lea(R32 dst, const M64& src) {
+        verify(src.encoding.base != R64::RSP, "rsp as base requires an SIB byte");
+        verify(src.encoding.base != R64::R12, "r12 as base requires an SIB byte");
+        verify(dst != R32::ESP, "esp as base requires an SIB byte");
+        verify(dst != R32::R12D, "r12d as base requires an SIB byte");
+        if(src.encoding.index == R64::ZERO) {
+            if(src.encoding.displacement == 0) {
+                verify(src.encoding.base != R64::RBP, "rbp as base without displacement requires an SIB byte");
+                verify(src.encoding.base != R64::R13, "r13 as base without displacement requires an SIB byte");
+                write8((u8)(0x40 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src.encoding.base >= 8) ? 1 : 0)));
+                write8((u8)(0x8d));
+                write8((u8)(0b00000000 | (encodeRegister(dst) << 3) | (encodeRegister(src.encoding.base))));
+            } else if((i8)src.encoding.displacement == src.encoding.displacement) {
+                write8((u8)(0x40 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src.encoding.base >= 8) ? 1 : 0)));
+                write8((u8)(0x8d));
+                write8((u8)(0b01000000 | (encodeRegister(dst) << 3) | (encodeRegister(src.encoding.base))));
+                write8((i8)src.encoding.displacement);
+            } else {
+                write8((u8)(0x40 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src.encoding.base >= 8) ? 1 : 0)));
+                write8((u8)(0x8d));
+                write8((u8)(0b10000000 | (encodeRegister(dst) << 3) | (encodeRegister(src.encoding.base))));
+                write32(src.encoding.displacement);
+            }
+        } else {
+            if((i8)src.encoding.displacement == src.encoding.displacement) {
+                write8((u8)(0x40
+                         | (((u8)dst >= 8) ? 4 : 0)
+                         | (((u8)src.encoding.index >= 8) ? 2 : 0)
+                         | (((u8)src.encoding.base >= 8) ? 1 : 0)));
+                write8((u8)(0x8d));
+                write8((u8)(0b01000000 | (encodeRegister(dst) << 3) | 0b100));
+                write8((u8)(encodeScale(src.encoding.scale) << 6
+                         | (encodeRegister(src.encoding.index) << 3)
+                         | (encodeRegister(src.encoding.base))));
+                write8((i8)src.encoding.displacement);
+            } else {
+                write8((u8)(0x48
+                         | (((u8)dst >= 8) ? 4 : 0)
+                         | (((u8)src.encoding.index >= 8) ? 2 : 0)
+                         | (((u8)src.encoding.base >= 8) ? 1 : 0)));
+                write8((u8)(0x8d));
+                write8((u8)(0b10000000 | (encodeRegister(dst) << 3) | 0b100));
+                write8((u8)(encodeScale(src.encoding.scale) << 6
+                         | (encodeRegister(src.encoding.index) << 3)
+                         | (encodeRegister(src.encoding.base))));
+                write32(src.encoding.displacement);
+            }
+        }
+    }
+
     void Assembler::lea(R64 dst, const M64& src) {
         verify(src.encoding.base != R64::RSP, "rsp as base requires an SIB byte");
         verify(src.encoding.base != R64::R12, "r12 as base requires an SIB byte");
@@ -718,6 +768,33 @@ namespace x64 {
 
     Assembler::Label Assembler::label() const {
         return {};
+    }
+
+    void Assembler::set(Cond cond, R8 dst) {
+        if((u8)dst >= 8) {
+            write8((u8)(0x40 | (((u8)dst >= 8) ? 1 : 0) ));
+        }
+        write8(0x0F);
+        switch(cond) {
+            case Cond::B:  write8(0x92); break;
+            case Cond::NB:
+            case Cond::AE: write8(0x93); break;
+            case Cond::E:  write8(0x94); break;
+            case Cond::NE: write8(0x95); break;
+            case Cond::BE: write8(0x96); break;
+            case Cond::NBE:
+            case Cond::A:  write8(0x97); break;
+            case Cond::S:  write8(0x98); break;
+            case Cond::NS: write8(0x99); break;
+            case Cond::P:  write8(0x9A); break;
+            case Cond::NP: write8(0x9B); break;
+            case Cond::L:  write8(0x9C); break;
+            case Cond::GE: write8(0x9D); break;
+            case Cond::LE: write8(0x9E); break;
+            case Cond::G:  write8(0x9F); break;
+            default: verify(false, "jcc not implemented for that condition"); break;
+        }
+        write8((u8)(0b11000000 | encodeRegister(dst)));
     }
 
     void Assembler::putLabel(const Label& label) {
