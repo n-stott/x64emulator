@@ -147,11 +147,10 @@ namespace x64 {
 
     bool Compiler::tryCompileMovR32M32(R32 dst, const M32& src) {
         if(src.segment != Segment::CS && src.segment != Segment::UNK) return false;
-        if(src.encoding.index != R64::ZERO) return false;
-        // read the base
-        readReg64(Reg::GPR0, src.encoding.base);
+        // get the source address
+        Mem addr = getAddress(Reg::MEM_ADDR, Reg::GPR1, src);
         // read memory at that address
-        readMem32(Reg::GPR0, Mem{Reg::GPR0, src.encoding.displacement});
+        readMem32(Reg::GPR0, addr);
         // write to the destination register
         writeReg32(dst, Reg::GPR0);
         return true;
@@ -159,13 +158,12 @@ namespace x64 {
 
     bool Compiler::tryCompileMovM32R32(const M32& dst, R32 src) {
         if(dst.segment != Segment::CS && dst.segment != Segment::UNK) return false;
-        if(dst.encoding.index != R64::ZERO) return false;
-        // read the base
-        readReg64(Reg::GPR0, dst.encoding.base);
+        // get the destination address
+        Mem addr = getAddress(Reg::MEM_ADDR, Reg::GPR1, dst);
         // read the value of the register
-        readReg32(Reg::GPR1, src);
+        readReg32(Reg::GPR0, src);
         // write the value to memory
-        writeMem32(Mem{Reg::GPR0, dst.encoding.displacement}, Reg::GPR1);
+        writeMem32(addr, Reg::GPR0);
         return true;
     }
 
@@ -198,11 +196,10 @@ namespace x64 {
 
     bool Compiler::tryCompileMovR64M64(R64 dst, const M64& src) {
         if(src.segment != Segment::CS && src.segment != Segment::UNK) return false;
-        if(src.encoding.index != R64::ZERO) return false;
-        // read the base
-        readReg64(Reg::GPR0, src.encoding.base);
+        // get the source address
+        Mem addr = getAddress(Reg::MEM_ADDR, Reg::GPR1, src);
         // read memory at that address
-        readMem64(Reg::GPR0, Mem{Reg::GPR0, src.encoding.displacement});
+        readMem64(Reg::GPR0, addr);
         // write to the destination register
         writeReg64(dst, Reg::GPR0);
         return true;
@@ -210,13 +207,12 @@ namespace x64 {
 
     bool Compiler::tryCompileMovM64R64(const M64& dst, R64 src) {
         if(dst.segment != Segment::CS && dst.segment != Segment::UNK) return false;
-        if(dst.encoding.index != R64::ZERO) return false;
-        // read the base
-        readReg64(Reg::GPR0, dst.encoding.base);
+        // get the destination address
+        Mem addr = getAddress(Reg::MEM_ADDR, Reg::GPR1, dst);
         // read the value of the register
-        readReg64(Reg::GPR1, src);
+        readReg64(Reg::GPR0, src);
         // write the value to memory
-        writeMem64(Mem{Reg::GPR0, dst.encoding.displacement}, Reg::GPR1);
+        writeMem64(addr, Reg::GPR0);
         return true;
     }
 
