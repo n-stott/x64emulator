@@ -70,6 +70,9 @@ namespace emulator {
         explicit VM(x64::Cpu& cpu, x64::Mmu& mmu, kernel::Kernel& kernel);
         ~VM();
 
+        void setEnableJit(bool enable);
+        bool jitEnabled() const { return jitEnabled_; }
+
         void crash();
         bool hasCrashed() const { return hasCrashed_; }
 
@@ -175,6 +178,7 @@ namespace emulator {
             const u8* tryMakeNative(const u8* code, size_t size);
 
         } nativeCodeStorage_;
+        bool jitEnabled_ { false };
     };
 
 }

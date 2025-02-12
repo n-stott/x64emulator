@@ -37,6 +37,7 @@ int main(int argc, char* argv[], char* envp[]) {
     emulator::Emulator emulator;
     emulator.setLogSyscalls(false);
     emulator.setProfiling(false);
+    emulator.setEnableJit(true);
     bool ok = emulator.run(programPath, arguments, environmentVariables);
 
     return !ok;

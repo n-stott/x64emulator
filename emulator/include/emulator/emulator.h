@@ -15,10 +15,12 @@ namespace emulator {
 
         void setLogSyscalls(bool);
         void setProfiling(bool);
+        void setEnableJit(bool);
 
     private:
         bool logSyscalls_ { false };
         bool isProfiling_ { false };
+        bool enableJit_ { false };
     };
 
 }

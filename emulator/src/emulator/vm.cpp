@@ -32,6 +32,10 @@ namespace emulator {
 #endif
     }
 
+    void VM::setEnableJit(bool enable) {
+        jitEnabled_ = enable;
+    }
+
     void VM::crash() {
         hasCrashed_ = true;
         syncThread();
@@ -611,7 +615,7 @@ namespace emulator {
 
     void BasicBlock::onCall(VM& vm) {
         ++calls_;
-        if(calls_ >= 1024 && !compilationAttempted_) {
+        if(vm.jitEnabled() && calls_ >= 1024 && !compilationAttempted_) {
             auto jitBasicBlock = x64::Compiler::tryCompile(cpuBasicBlock_);
             if(!!jitBasicBlock) {
                 nativeBasicBlock_ = vm.tryMakeNative(jitBasicBlock->nativecode.data(), jitBasicBlock->nativecode.size());

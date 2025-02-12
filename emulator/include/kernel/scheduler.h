@@ -35,6 +35,8 @@ namespace kernel {
         explicit Scheduler(x64::Mmu& mmu, Kernel& kernel);
         ~Scheduler();
 
+        void setEnableJit(bool enableJit);
+
         void run();
 
         std::unique_ptr<Thread> allocateThread(int pid);
@@ -69,6 +71,7 @@ namespace kernel {
 
         struct Worker {
             int id { 0 };
+            bool enableJit { false };
             bool canRunSyscalls() const { return id == 0; };
         };
 
@@ -119,6 +122,8 @@ namespace kernel {
 
         x64::Mmu& mmu_;
         Kernel& kernel_;
+
+        bool enableJit_ { false };
 
         // Any operation of the member variables below MUST be protected
         // by taking a lock on this mutex.

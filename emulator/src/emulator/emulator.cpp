@@ -25,12 +25,17 @@ namespace emulator {
         isProfiling_ = isProfiling;
     }
 
+    void Emulator::setEnableJit(bool enableJit) {
+        enableJit_ = enableJit;
+    }
+
     bool Emulator::run(const std::string& programFilePath, const std::vector<std::string>& arguments, const std::vector<std::string>& environmentVariables) const {
         x64::Mmu mmu;
         kernel::Kernel kernel(mmu);
         
         kernel.setLogSyscalls(logSyscalls_);
         kernel.setProfiling(isProfiling_);
+        kernel.setEnableJit(enableJit_);
 
         bool ok = true;
         

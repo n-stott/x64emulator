@@ -26,6 +26,7 @@ namespace kernel {
 
         void setLogSyscalls(bool logSyscalls) { sys_.setLogSyscalls(logSyscalls); }
         void setProfiling(bool isProfiling) { isProfiling_ = isProfiling; }
+        void setEnableJit(bool enableJit) { scheduler_.setEnableJit(enableJit); }
 
         bool isProfiling() const { return isProfiling_; }
 
