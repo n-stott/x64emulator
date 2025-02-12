@@ -813,6 +813,16 @@ namespace x64 {
         write8((u8)(0b11000000 | (encodeRegister(rhs) << 3) | (encodeRegister(lhs))));
     }
 
+    void Assembler::test(R32 lhs, u32 imm) {
+        verify(lhs == R32::R8D || lhs == R32::R9D);
+        if((u8)lhs >= 8) {
+            write8((u8)(0x40 | (((u8)lhs >= 8) ? 1 : 0)));
+        }
+        write8((u8)(0xF7));
+        write8((u8)(0b11000000 | (0b000 << 3) | (encodeRegister(lhs))));
+        write32(imm);
+    }
+
     void Assembler::test(R64 lhs, R64 rhs) {
         write8((u8)(0x48 | (((u8)rhs >= 8) ? 4 : 0) | (((u8)lhs >= 8) ? 1 : 0)));
         write8((u8)(0x85));

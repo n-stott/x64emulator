@@ -80,6 +80,7 @@ namespace x64 {
             case Insn::TEST_RM8_R8: return tryCompileTestRM8R8(ins.op0<RM8>(), ins.op1<R8>());
             case Insn::TEST_RM8_IMM: return tryCompileTestRM8Imm(ins.op0<RM8>(), ins.op1<Imm>());
             case Insn::TEST_RM32_R32: return tryCompileTestRM32R32(ins.op0<RM32>(), ins.op1<R32>());
+            case Insn::TEST_RM32_IMM: return tryCompileTestRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
             case Insn::TEST_RM64_R64: return tryCompileTestRM64R64(ins.op0<RM64>(), ins.op1<R64>());
             case Insn::AND_RM32_RM32: return tryCompileAndRM32RM32(ins.op0<RM32>(), ins.op1<RM32>());
             case Insn::AND_RM32_IMM: return tryCompileAndRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
@@ -599,6 +600,12 @@ namespace x64 {
         RM32 r { true, rhs, {}};
         return forRM32RM32(lhs, r, [&](Reg dst, Reg src) {
             assembler_.test(get32(dst), get32(src));
+        }, false);
+    }
+
+    bool Compiler::tryCompileTestRM32Imm(const RM32& lhs, Imm rhs) {
+        return forRM32Imm(lhs, rhs, [&](Reg dst, Imm src) {
+            assembler_.test(get32(dst), src.as<i32>());
         }, false);
     }
 
