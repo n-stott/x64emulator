@@ -145,7 +145,7 @@ elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
     target_compile_options(emulator PUBLIC -Wno-uninitialized)
 endif()
 target_include_directories(emulator PUBLIC include)
-target_link_libraries(emulator PUBLIC x64emulator fmt::fmt-header-only)
+target_link_libraries(emulator PUBLIC x64emulator fmt::fmt-header-only argparse)
 
 # target_compile_options(emulator PUBLIC -fsanitize=address,undefined -fno-sanitize-recover=all)
 # target_link_libraries(emulator PUBLIC asan ubsan)

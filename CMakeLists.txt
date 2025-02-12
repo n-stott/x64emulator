@@ -20,6 +20,12 @@ FetchContent_MakeAvailable(fmt)
 FetchContent_Declare(json URL https://github.com/nlohmann/json/releases/download/v3.11.3/json.tar.xz)
 FetchContent_MakeAvailable(json)
 
+FetchContent_Declare(
+    argparse
+    GIT_REPOSITORY https://github.com/p-ranav/argparse.git
+)
+FetchContent_MakeAvailable(argparse)
+
 add_subdirectory(profiling)
 add_subdirectory(emulator)
 add_subdirectory(profileviewer)
