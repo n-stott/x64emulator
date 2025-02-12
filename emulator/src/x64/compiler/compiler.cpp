@@ -770,7 +770,7 @@ namespace x64 {
             // perform the op
             assembler_.not_(get(Reg::GPR0));
             // write back to the register
-            writeMem32(addr, Reg::GPR0);
+            writeMem64(addr, Reg::GPR0);
             return true;
         } 
     }
