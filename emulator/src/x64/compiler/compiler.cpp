@@ -776,18 +776,30 @@ namespace x64 {
     }
 
     bool Compiler::tryCompileLeaR32Enc64(R32 dst, const Encoding64& address) {
-        readReg64(Reg::GPR0, address.base);
-        readReg64(Reg::GPR1, address.index);
-        assembler_.lea(get32(Reg::GPR0), make64(get(Reg::GPR0), get(Reg::GPR1), address.scale, address.displacement));
-        writeReg32(dst, Reg::GPR0);
+        if(address.index == R64::ZERO) {
+            readReg64(Reg::GPR0, address.base);
+            assembler_.lea(get32(Reg::GPR0), make64(get(Reg::GPR0), address.displacement));
+            writeReg32(dst, Reg::GPR0);
+        } else {
+            readReg64(Reg::GPR0, address.base);
+            readReg64(Reg::GPR1, address.index);
+            assembler_.lea(get32(Reg::GPR0), make64(get(Reg::GPR0), get(Reg::GPR1), address.scale, address.displacement));
+            writeReg32(dst, Reg::GPR0);
+        }
         return true;
     }
 
     bool Compiler::tryCompileLeaR64Enc64(R64 dst, const Encoding64& address) {
-        readReg64(Reg::GPR0, address.base);
-        readReg64(Reg::GPR1, address.index);
-        assembler_.lea(get(Reg::GPR0), make64(get(Reg::GPR0), get(Reg::GPR1), address.scale, address.displacement));
-        writeReg64(dst, Reg::GPR0);
+        if(address.index == R64::ZERO) {
+            readReg64(Reg::GPR0, address.base);
+            assembler_.lea(get(Reg::GPR0), make64(get(Reg::GPR0), address.displacement));
+            writeReg64(dst, Reg::GPR0);
+        } else {
+            readReg64(Reg::GPR0, address.base);
+            readReg64(Reg::GPR1, address.index);
+            assembler_.lea(get(Reg::GPR0), make64(get(Reg::GPR0), get(Reg::GPR1), address.scale, address.displacement));
+            writeReg64(dst, Reg::GPR0);
+        }
         return true;
     }
 
