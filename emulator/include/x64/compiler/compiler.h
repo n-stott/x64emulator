@@ -82,6 +82,7 @@ namespace x64 {
         bool tryCompileOrRM32Imm(const RM32&, Imm);
         bool tryCompileOrRM64RM64(const RM64&, const RM64&);
         bool tryCompileOrRM64Imm(const RM64&, Imm);
+        bool tryCompileXorRM16RM16(const RM16&, const RM16&);
         bool tryCompileXorRM32RM32(const RM32&, const RM32&);
         bool tryCompileXorRM64RM64(const RM64&, const RM64&);
         bool tryCompileNotRM32(const RM32&);
@@ -167,6 +168,9 @@ namespace x64 {
 
         template<typename Func>
         bool forRM8RM8(const RM8& dst, const RM8& src, Func&& func, bool writeResultBack = true);
+
+        template<typename Func>
+        bool forRM16RM16(const RM16& dst, const RM16& src, Func&& func, bool writeResultBack = true);
 
         template<typename Func>
         bool forRM32R8(const RM32& dst, R8 src, Func&& func, bool writeResultBack = true);

@@ -87,6 +87,7 @@ namespace x64 {
             case Insn::OR_RM32_IMM: return tryCompileOrRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
             case Insn::OR_RM64_RM64: return tryCompileOrRM64RM64(ins.op0<RM64>(), ins.op1<RM64>());
             case Insn::OR_RM64_IMM: return tryCompileOrRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
+            case Insn::XOR_RM16_RM16: return tryCompileXorRM16RM16(ins.op0<RM16>(), ins.op1<RM16>());
             case Insn::XOR_RM32_RM32: return tryCompileXorRM32RM32(ins.op0<RM32>(), ins.op1<RM32>());
             case Insn::XOR_RM64_RM64: return tryCompileXorRM64RM64(ins.op0<RM64>(), ins.op1<RM64>());
             case Insn::NOT_RM32: return tryCompileNotRM32(ins.op0<RM32>());
@@ -674,6 +675,12 @@ namespace x64 {
         return true;
     }
 
+    bool Compiler::tryCompileXorRM16RM16(const RM16& dst, const RM16& src) {
+        return forRM16RM16(dst, src, [&](Reg dst, Reg src) {
+            assembler_.xor_(get16(dst), get16(src));
+        });
+    }
+
     bool Compiler::tryCompileXorRM32RM32(const RM32& dst, const RM32& src) {
         return forRM32RM32(dst, src, [&](Reg dst, Reg src) {
             assembler_.xor_(get32(dst), get32(src));
@@ -1255,6 +1262,61 @@ namespace x64 {
             if(writeResultBack) {
                 // write back to the register
                 writeReg8(dst.reg, Reg::GPR0);
+            }
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    template<typename Func>
+    bool Compiler::forRM16RM16(const RM16& dst, const RM16& src, Func&& func, bool writeResultBack) {
+        if(dst.isReg && src.isReg) {
+            // read the dst
+            readReg16(Reg::GPR0, dst.reg);
+            // read the src
+            readReg16(Reg::GPR1, src.reg);
+            // perform the binary op
+            func(Reg::GPR0, Reg::GPR1);
+            if(writeResultBack) {
+                // write back dst
+                writeReg16(dst.reg, Reg::GPR0);
+            }
+            return true;
+        } else if(!dst.isReg && src.isReg) {
+            // fetch dst address
+            const M16& mem = dst.mem;
+            if(mem.segment != Segment::CS && mem.segment != Segment::UNK) return false;
+            if(mem.encoding.index == R64::RIP) return false;
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, Reg::GPR0, mem);
+            // read the dst value at the address
+            readMem16(Reg::GPR0, addr);
+            // read the src
+            readReg16(Reg::GPR1, src.reg);
+            // perform the binary op
+            func(Reg::GPR0, Reg::GPR1);
+            if(writeResultBack) {
+                // write back to the register
+                writeMem16(addr, Reg::GPR0);
+            }
+            return true;
+        } else if(dst.isReg && !src.isReg) {
+            // fetch src address
+            const M16& mem = src.mem;
+            if(mem.segment != Segment::CS && mem.segment != Segment::UNK) return false;
+            if(mem.encoding.index == R64::RIP) return false;
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, Reg::GPR0, mem);
+            // read the dst value at the address
+            readMem16(Reg::GPR1, addr);
+            // read the dst
+            readReg16(Reg::GPR0, dst.reg);
+            // perform the binary op
+            func(Reg::GPR0, Reg::GPR1);
+            if(writeResultBack) {
+                // write back to the register
+                writeReg16(dst.reg, Reg::GPR0);
             }
             return true;
         } else {
