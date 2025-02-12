@@ -1075,11 +1075,11 @@ namespace x64 {
 
     void Assembler::bsr(R32 dst, R32 src) {
         if((u8)dst >= 8 || (u8)src >= 8) {
-            write8((u8)(0x40 | (((u8)src >= 8) ? 4 : 0) | (((u8)dst >= 8) ? 1 : 0) ));
+            write8((u8)(0x40 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src >= 8) ? 1 : 0) ));
         }
         write8((u8)0x0f);
         write8((u8)0xbd);
-        write8((u8)(0b11000000 | (encodeRegister(src) << 3) | encodeRegister(dst)));
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
     }
 
     void Assembler::set(Cond cond, R8 dst) {

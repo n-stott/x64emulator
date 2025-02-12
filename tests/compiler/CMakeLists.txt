@@ -116,3 +116,10 @@ target_include_directories(test_compiler_cmov PUBLIC include ${CMAKE_SOURCE_DIR}
 target_link_libraries(test_compiler_cmov PUBLIC x64cpu x64emulator)
 target_link_options(test_compiler_cmov PUBLIC ${LD_OPTIONS})
 add_test(NAME compiler_cmov COMMAND test_compiler_cmov)
+
+add_executable(test_compiler_bsr src/test_bsr.cpp)
+target_compile_options(test_compiler_bsr PUBLIC ${CC_OPTIONS})
+target_include_directories(test_compiler_bsr PUBLIC include ${CMAKE_SOURCE_DIR}/emulator/include)
+target_link_libraries(test_compiler_bsr PUBLIC x64cpu x64emulator)
+target_link_options(test_compiler_bsr PUBLIC ${LD_OPTIONS})
+add_test(NAME compiler_bsr COMMAND test_compiler_bsr)
