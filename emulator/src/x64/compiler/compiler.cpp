@@ -100,6 +100,7 @@ namespace x64 {
             case Insn::LEA_R32_ENCODING64: return tryCompileLeaR32Enc64(ins.op0<R32>(), ins.op1<Encoding64>());
             case Insn::LEA_R64_ENCODING64: return tryCompileLeaR64Enc64(ins.op0<R64>(), ins.op1<Encoding64>());
             case Insn::NOP: return tryCompileNop();
+            case Insn::BSR_R32_R32: return tryCompileBsrR32R32(ins.op0<R32>(), ins.op1<R32>());
             case Insn::SET_RM8: return tryCompileSetRM8(ins.op0<Cond>(), ins.op1<RM8>());
             default: break;
         }
@@ -783,6 +784,14 @@ namespace x64 {
     }
 
     bool Compiler::tryCompileNop() {
+        return true;
+    }
+
+    bool Compiler::tryCompileBsrR32R32(R32 dst, R32 src) {
+        readReg32(Reg::GPR0, dst);
+        readReg32(Reg::GPR1, src);
+        assembler_.bsr(get32(Reg::GPR0), get32(Reg::GPR1));
+        writeReg32(dst, Reg::GPR0);
         return true;
     }
 

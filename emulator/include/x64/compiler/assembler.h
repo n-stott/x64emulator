@@ -93,6 +93,8 @@ namespace x64 {
         void pushf();
         void popf();
 
+        void bsr(R32 dst, R32 src);
+
         void set(Cond, R8);
 
         struct Label {
