@@ -9,17 +9,12 @@ namespace x64 {
     std::optional<NativeBasicBlock> Compiler::tryCompile(const BasicBlock& basicBlock, bool diagnose) {
         if(!basicBlock.endsWithFixedDestinationJump()) return {};
 
-        // fmt::print("Compile block:\n");
-        // for(const auto& blockIns : basicBlock.instructions) {
-        //     fmt::print("  {}\n", blockIns.first.toString());
-        // }
-
         Compiler compiler;
         compiler.addEntry();
         for(const auto& blockIns : basicBlock.instructions) {
             const X64Instruction& ins = blockIns.first;
             if(!compiler.tryCompile(ins)) {
-                if(diagnose) fmt::print("Compilation failed: {}\n", ins.toString());
+                if(diagnose) fmt::print("Compilation of block failed: {}\n", ins.toString());
                 return {};
             }
         }
@@ -27,6 +22,7 @@ namespace x64 {
         // fmt::print("Compilation success !\n");
         std::vector<u8> code = compiler.assembler_.code();
         // fwrite(code.data(), 1, code.size(), stderr);
+        // fmt::print("{:#x}\n",basicBlock.instructions.front().first.address());
         // return {};
         return NativeBasicBlock{std::move(code)};
     }
@@ -125,11 +121,11 @@ namespace x64 {
 
     bool Compiler::tryCompileMovM8R8(const M8& dst, R8 src) {
         if(dst.segment != Segment::CS && dst.segment != Segment::UNK) return false;
-        // read the value of the register
+        // read the value of the source register
         readReg8(Reg::GPR0, src);
         // get the destination address
         Mem addr = getAddress(Reg::MEM_ADDR, Reg::GPR1, dst);
-        // write to the destination
+        // write to the destination address
         writeMem8(addr, Reg::GPR0);
         return true;
     }
@@ -137,7 +133,7 @@ namespace x64 {
     bool Compiler::tryCompileMovR32Imm(R32 dst, Imm imm) {
         // load the immediate
         loadImm64(Reg::GPR0, (u32)imm.as<i32>());
-        // write to the destination
+        // write to the destination register
         writeReg32(dst, Reg::GPR0);
         return true;
     }
@@ -148,15 +144,15 @@ namespace x64 {
         loadImm64(Reg::GPR0, imm.as<i32>());
         // get the destination address
         Mem addr = getAddress(Reg::MEM_ADDR, Reg::GPR1, dst);
-        // write to the destination
+        // write to the destination address
         writeMem32(addr, Reg::GPR0);
         return true;
     }
 
     bool Compiler::tryCompileMovR32R32(R32 dst, R32 src) {
-        // read from the source
+        // read from the source register
         readReg32(Reg::GPR0, src);
-        // write to the destination
+        // write to the destination register
         writeReg32(dst, Reg::GPR0);
         return true;
     }
@@ -178,7 +174,7 @@ namespace x64 {
         Mem addr = getAddress(Reg::MEM_ADDR, Reg::GPR1, dst);
         // read the value of the register
         readReg32(Reg::GPR0, src);
-        // write the value to memory
+        // write the value the destination address
         writeMem32(addr, Reg::GPR0);
         return true;
     }
@@ -186,7 +182,7 @@ namespace x64 {
     bool Compiler::tryCompileMovR64Imm(R64 dst, Imm imm) {
         // load the immedate
         loadImm64(Reg::GPR0, imm.as<u64>());
-        // write to the destination
+        // write to the destination register
         writeReg64(dst, Reg::GPR0);
         return true;
     }
@@ -197,15 +193,15 @@ namespace x64 {
         loadImm64(Reg::GPR0, imm.as<i32>());
         // get the destination address
         Mem addr = getAddress(Reg::MEM_ADDR, Reg::GPR1, dst);
-        // write to the destination
+        // write to the destination address
         writeMem64(addr, Reg::GPR0);
         return true;
     }
 
     bool Compiler::tryCompileMovR64R64(R64 dst, R64 src) {
-        // read from the source
+        // read from the source register
         readReg64(Reg::GPR0, src);
-        // write to the destination
+        // write to the destination register
         writeReg64(dst, Reg::GPR0);
         return true;
     }
@@ -238,7 +234,7 @@ namespace x64 {
             readReg8(Reg::GPR0, src.reg);
             // do the zero-extending mov
             assembler_.movzx(get32(Reg::GPR0), get8(Reg::GPR0));
-            // write to the destination
+            // write to the destination register
             writeReg32(dst, Reg::GPR0);
             return true;
         } else {
@@ -252,7 +248,7 @@ namespace x64 {
             readMem8(Reg::GPR0, addr);
             // do the zero-extending mov
             assembler_.movzx(get32(Reg::GPR0), get8(Reg::GPR0));
-            // write to the destination
+            // write to the destination register
             writeReg32(dst, Reg::GPR0);
             return true;
         }
@@ -264,7 +260,7 @@ namespace x64 {
             readReg16(Reg::GPR0, src.reg);
             // do the zero-extending mov
             assembler_.movzx(get32(Reg::GPR0), get16(Reg::GPR0));
-            // write to the destination
+            // write to the destination register
             writeReg32(dst, Reg::GPR0);
             return true;
         } else {
@@ -278,7 +274,7 @@ namespace x64 {
             readMem16(Reg::GPR0, addr);
             // do the zero-extending mov
             assembler_.movzx(get32(Reg::GPR0), get16(Reg::GPR0));
-            // write to the destination
+            // write to the destination register
             writeReg32(dst, Reg::GPR0);
             return true;
         }
@@ -290,7 +286,7 @@ namespace x64 {
             readReg8(Reg::GPR0, src.reg);
             // do the zero-extending mov
             assembler_.movzx(get(Reg::GPR0), get8(Reg::GPR0));
-            // write to the destination
+            // write to the destination register
             writeReg64(dst, Reg::GPR0);
             return true;
         } else {
@@ -304,7 +300,7 @@ namespace x64 {
             readMem8(Reg::GPR0, addr);
             // do the zero-extending mov
             assembler_.movzx(get(Reg::GPR0), get8(Reg::GPR0));
-            // write to the destination
+            // write to the destination register
             writeReg64(dst, Reg::GPR0);
             return true;
         }
@@ -316,7 +312,7 @@ namespace x64 {
             readReg32(Reg::GPR0, src.reg);
             // do the zero-extending mov
             assembler_.movsx(get(Reg::GPR0), get32(Reg::GPR0));
-            // write to the destination
+            // write to the destination register
             writeReg64(dst, Reg::GPR0);
             return true;
         } else {
@@ -328,9 +324,9 @@ namespace x64 {
             Mem addr = getAddress(Reg::MEM_ADDR, Reg::GPR0, mem);
             // read the src value at the address
             readMem32(Reg::GPR0, addr);
-            // do the zero-extending mov
+            // do the sign-extending mov
             assembler_.movsx(get(Reg::GPR0), get32(Reg::GPR0));
-            // write to the destination
+            // write to the destination register
             writeReg64(dst, Reg::GPR0);
             return true;
         }
@@ -692,11 +688,11 @@ namespace x64 {
 
     bool Compiler::tryCompileNotRM32(const RM32& dst) {
         if(dst.isReg) {
-            // read the dst
+            // read the destination register
             readReg32(Reg::GPR0, dst.reg);
             // perform the op
             assembler_.not_(get32(Reg::GPR0));
-            // write back dst
+            // write back to destination register
             writeReg32(dst.reg, Reg::GPR0);
             return true;
         } else {
@@ -718,11 +714,11 @@ namespace x64 {
 
     bool Compiler::tryCompileNotRM64(const RM64& dst) {
         if(dst.isReg) {
-            // read the dst
+            // read the destination register
             readReg64(Reg::GPR0, dst.reg);
             // perform the op
             assembler_.not_(get(Reg::GPR0));
-            // write back dst
+            // write back to the destination register
             writeReg64(dst.reg, Reg::GPR0);
             return true;
         } else {
@@ -1185,7 +1181,7 @@ namespace x64 {
         if(dst.isReg) {
             // read the register
             readReg8(Reg::GPR0, dst.reg);
-            // add the immediate
+            // perform the binary op
             func(Reg::GPR0, imm);
             if(writeResultBack) {
                 // write back to the register
@@ -1201,7 +1197,7 @@ namespace x64 {
             Mem addr = getAddress(Reg::MEM_ADDR, Reg::GPR0, mem);
             // read the value at the address
             readMem8(Reg::GPR0, addr);
-            // add the immediate
+            // perform the binary op
             func(Reg::GPR0, imm);
             if(writeResultBack) {
                 // write back to the register
@@ -1306,7 +1302,7 @@ namespace x64 {
         if(dst.isReg) {
             // read the register
             readReg32(Reg::GPR0, dst.reg);
-            // add the immediate
+            // perform the binary op
             func(Reg::GPR0, imm);
             if(writeResultBack) {
                 // write back to the register
@@ -1322,7 +1318,7 @@ namespace x64 {
             Mem addr = getAddress(Reg::MEM_ADDR, Reg::GPR0, mem);
             // read the value at the address
             readMem32(Reg::GPR0, addr);
-            // add the immediate
+            // perform the binary op
             func(Reg::GPR0, imm);
             if(writeResultBack) {
                 // write back to the register
@@ -1427,7 +1423,7 @@ namespace x64 {
         if(dst.isReg) {
             // read the register
             readReg64(Reg::GPR0, dst.reg);
-            // add the immediate
+            // perform the binary op
             func(Reg::GPR0, imm);
             if(writeResultBack) {
                 // write back to the register
@@ -1443,7 +1439,7 @@ namespace x64 {
             Mem addr = getAddress(Reg::MEM_ADDR, Reg::GPR0, mem);
             // read the value at the address
             readMem64(Reg::GPR0, addr);
-            // add the immediate
+            // perform the binary op
             func(Reg::GPR0, imm);
             if(writeResultBack) {
                 // write back to the register
