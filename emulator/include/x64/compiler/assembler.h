@@ -97,6 +97,7 @@ namespace x64 {
         void bsr(R32 dst, R32 src);
 
         void set(Cond, R8);
+        void cmov(Cond, R32, R32);
 
         struct Label {
             size_t positionInCode { (size_t)(-1) };

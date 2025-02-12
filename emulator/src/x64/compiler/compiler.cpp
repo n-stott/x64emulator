@@ -103,6 +103,7 @@ namespace x64 {
             case Insn::NOP: return tryCompileNop();
             case Insn::BSR_R32_R32: return tryCompileBsrR32R32(ins.op0<R32>(), ins.op1<R32>());
             case Insn::SET_RM8: return tryCompileSetRM8(ins.op0<Cond>(), ins.op1<RM8>());
+            case Insn::CMOV_R32_RM32: return tryCompileCmovR32RM32(ins.op0<Cond>(), ins.op1<R32>(), ins.op2<RM32>());
             default: break;
         }
         return false;
@@ -809,6 +810,13 @@ namespace x64 {
         // copy the condition
         writeReg8(dst.reg, Reg::GPR0);
         return true;
+    }
+
+    bool Compiler::tryCompileCmovR32RM32(Cond cond, R32 dst, const RM32& src) {
+        RM32 d {true, dst, {}};
+        return forRM32RM32(d, src, [&](Reg dst, Reg src) {
+            assembler_.cmov(cond, get32(dst), get32(src));
+        }, true);
     }
 
 

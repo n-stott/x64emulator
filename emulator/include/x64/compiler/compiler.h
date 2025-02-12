@@ -98,6 +98,7 @@ namespace x64 {
         bool tryCompileNop();
         bool tryCompileBsrR32R32(R32, R32);
         bool tryCompileSetRM8(Cond, const RM8&);
+        bool tryCompileCmovR32RM32(Cond, R32, const RM32&);
 
         enum class Reg {
             GPR0,
