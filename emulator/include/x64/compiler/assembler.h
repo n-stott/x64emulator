@@ -58,6 +58,8 @@ namespace x64 {
         void sar(R32 lhs, u8 imm);
         void sar(R64 lhs, R8 rhs);
         void sar(R64 lhs, u8 imm);
+        void imul(R32 dst, R32 src);
+        void imul(R64 dst, R64 src);
         void test(R8 lhs, R8 rhs);
         void test(R8 lhs, u8 imm);
         void test(R32 lhs, R32 rhs);

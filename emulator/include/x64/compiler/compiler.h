@@ -64,6 +64,8 @@ namespace x64 {
         bool tryCompileShrRM64Imm(const RM64&, Imm);
         bool tryCompileSarRM32Imm(const RM32&, Imm);
         bool tryCompileSarRM64Imm(const RM64&, Imm);
+        bool tryCompileImulR32RM32(R32, const RM32&);
+        bool tryCompileImulR64RM64(R64, const RM64&);
         bool tryCompileJe(u64 dst);
         bool tryCompileJne(u64 dst);
         bool tryCompileJcc(Cond, u64 dst);
@@ -154,6 +156,8 @@ namespace x64 {
         void cmp8Imm8(Reg dst, i8 imm);
         void cmp32Imm32(Reg dst, i32 imm);
         void cmp64Imm32(Reg dst, i32 imm);
+        void imul32(Reg dst, Reg src);
+        void imul64(Reg dst, Reg src);
         void loadImm64(Reg dst, u64 imm);
         void storeFlags();
         void loadFlags();

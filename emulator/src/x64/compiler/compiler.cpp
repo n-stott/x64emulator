@@ -73,6 +73,8 @@ namespace x64 {
             case Insn::SHR_RM64_IMM: return tryCompileShrRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
             case Insn::SAR_RM32_IMM: return tryCompileSarRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
             case Insn::SAR_RM64_IMM: return tryCompileSarRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
+            case Insn::IMUL2_R32_RM32: return tryCompileImulR32RM32(ins.op0<R32>(), ins.op1<RM32>());
+            case Insn::IMUL2_R64_RM64: return tryCompileImulR64RM64(ins.op0<R64>(), ins.op1<RM64>());
             case Insn::JE: return tryCompileJe(ins.op0<u64>());
             case Insn::JNE: return tryCompileJne(ins.op0<u64>());
             case Insn::JCC: return tryCompileJcc(ins.op0<Cond>(), ins.op1<u64>());
@@ -475,6 +477,18 @@ namespace x64 {
     bool Compiler::tryCompileSarRM64Imm(const RM64& lhs, Imm rhs) {
         return forRM64Imm(lhs, rhs, [&](Reg dst, Imm imm) {
             assembler_.sar(get(dst), imm.as<u8>());
+        });
+    }
+
+    bool Compiler::tryCompileImulR32RM32(R32 dst, const RM32& src) {
+        return forRM32RM32(RM32{true, dst, {}}, src, [&](Reg dst, Reg src) {
+            imul32(dst, src);
+        });
+    }
+
+    bool Compiler::tryCompileImulR64RM64(R64 dst, const RM64& src) {
+        return forRM64RM64(RM64{true, dst, {}}, src, [&](Reg dst, Reg src) {
+            imul64(dst, src);
         });
     }
 
@@ -1135,6 +1149,18 @@ namespace x64 {
     void Compiler::cmp64Imm32(Reg dst, i32 imm) {
         R64 d = get(dst);
         assembler_.cmp(d, imm);
+    }
+
+    void Compiler::imul32(Reg dst, Reg src) {
+        R32 d = get32(dst);
+        R32 s = get32(src);
+        assembler_.imul(d, s);
+    }
+
+    void Compiler::imul64(Reg dst, Reg src) {
+        R64 d = get(dst);
+        R64 s = get(src);
+        assembler_.imul(d, s);
     }
 
     void Compiler::loadImm64(Reg dst, u64 imm) {

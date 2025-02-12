@@ -102,3 +102,10 @@ target_include_directories(test_compiler_movsx PUBLIC include ${CMAKE_SOURCE_DIR
 target_link_libraries(test_compiler_movsx PUBLIC x64cpu x64emulator)
 target_link_options(test_compiler_movsx PUBLIC ${LD_OPTIONS})
 add_test(NAME compiler_movsx COMMAND test_compiler_movsx)
+
+add_executable(test_compiler_imul src/test_imul.cpp)
+target_compile_options(test_compiler_imul PUBLIC ${CC_OPTIONS})
+target_include_directories(test_compiler_imul PUBLIC include ${CMAKE_SOURCE_DIR}/emulator/include)
+target_link_libraries(test_compiler_imul PUBLIC x64cpu x64emulator)
+target_link_options(test_compiler_imul PUBLIC ${LD_OPTIONS})
+add_test(NAME compiler_imul COMMAND test_compiler_imul)
