@@ -92,6 +92,7 @@ namespace x64 {
             case Insn::OR_RM64_IMM: return tryCompileOrRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
             case Insn::XOR_RM16_RM16: return tryCompileXorRM16RM16(ins.op0<RM16>(), ins.op1<RM16>());
             case Insn::XOR_RM32_RM32: return tryCompileXorRM32RM32(ins.op0<RM32>(), ins.op1<RM32>());
+            case Insn::XOR_RM32_IMM: return tryCompileXorRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
             case Insn::XOR_RM64_RM64: return tryCompileXorRM64RM64(ins.op0<RM64>(), ins.op1<RM64>());
             case Insn::NOT_RM32: return tryCompileNotRM32(ins.op0<RM32>());
             case Insn::NOT_RM64: return tryCompileNotRM64(ins.op0<RM64>());
@@ -706,6 +707,12 @@ namespace x64 {
     bool Compiler::tryCompileXorRM32RM32(const RM32& dst, const RM32& src) {
         return forRM32RM32(dst, src, [&](Reg dst, Reg src) {
             assembler_.xor_(get32(dst), get32(src));
+        });
+    }
+
+    bool Compiler::tryCompileXorRM32Imm(const RM32& dst, Imm imm) {
+        return forRM32Imm(dst, imm, [&](Reg dst, Imm imm) {
+            assembler_.xor_(get32(dst), imm.as<i32>());
         });
     }
 
