@@ -50,6 +50,8 @@ namespace x64 {
         bool tryCompileSubRM64Imm(const RM64&, Imm);
         bool tryCompileCmpRM8RM8(const RM8&, const RM8&);
         bool tryCompileCmpRM8Imm(const RM8&, Imm);
+        bool tryCompileCmpRM16RM16(const RM16&, const RM16&);
+        bool tryCompileCmpRM16Imm(const RM16&, Imm);
         bool tryCompileCmpRM32RM32(const RM32&, const RM32&);
         bool tryCompileCmpRM32Imm(const RM32&, Imm);
         bool tryCompileCmpRM64RM64(const RM64&, const RM64&);
@@ -152,9 +154,11 @@ namespace x64 {
         void sub64(Reg dst, Reg src);
         void sub64Imm32(Reg dst, i32 imm);
         void cmp8(Reg lhs, Reg rhs);
+        void cmp16(Reg lhs, Reg rhs);
         void cmp32(Reg lhs, Reg rhs);
         void cmp64(Reg lhs, Reg rhs);
         void cmp8Imm8(Reg dst, i8 imm);
+        void cmp16Imm16(Reg dst, i16 imm);
         void cmp32Imm32(Reg dst, i32 imm);
         void cmp64Imm32(Reg dst, i32 imm);
         void imul32(Reg dst, Reg src);
@@ -168,6 +172,9 @@ namespace x64 {
 
         template<typename Func>
         bool forRM8RM8(const RM8& dst, const RM8& src, Func&& func, bool writeResultBack = true);
+
+        template<typename Func>
+        bool forRM16Imm(const RM16& dst, Imm imm, Func&& func, bool writeResultBack = true);
 
         template<typename Func>
         bool forRM16RM16(const RM16& dst, const RM16& src, Func&& func, bool writeResultBack = true);

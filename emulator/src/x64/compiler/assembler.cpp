@@ -585,6 +585,28 @@ namespace x64 {
         write8((i8)imm);
     }
 
+    void Assembler::cmp(R16 lhs, R16 rhs) {
+        write8(0x66);
+        write8((u8)(0x40 | (((u8)rhs >= 8) ? 4 : 0) | (((u8)lhs >= 8) ? 1 : 0)));
+        write8((u8)(0x39));
+        write8((u8)(0b11000000 | (encodeRegister(rhs) << 3) | (encodeRegister(lhs))));
+    }
+
+    void Assembler::cmp(R16 dst, i16 imm) {
+        write8(0x66);
+        if((i8)imm == imm) {
+            write8((u8)(0x40 | (((u8)dst >= 8) ? 1 : 0)));
+            write8((u8)(0x83));
+            write8((u8)(0b11000000 | (0b111 << 3) | encodeRegister(dst)));
+            write8((i8)imm);
+        } else {
+            write8((u8)(0x40 | (((u8)dst >= 8) ? 1 : 0)));
+            write8((u8)(0x81));
+            write8((u8)(0b11000000 | (0b111 << 3) | encodeRegister(dst)));
+            write16(imm);
+        }
+    }
+
     void Assembler::cmp(R32 lhs, R32 rhs) {
         write8((u8)(0x40 | (((u8)rhs >= 8) ? 4 : 0) | (((u8)lhs >= 8) ? 1 : 0)));
         write8((u8)(0x39));

@@ -55,6 +55,8 @@ namespace x64 {
             case Insn::SUB_RM64_IMM: return tryCompileSubRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
             case Insn::CMP_RM8_RM8: return tryCompileCmpRM8RM8(ins.op0<RM8>(), ins.op1<RM8>());
             case Insn::CMP_RM8_IMM: return tryCompileCmpRM8Imm(ins.op0<RM8>(), ins.op1<Imm>());
+            case Insn::CMP_RM16_RM16: return tryCompileCmpRM16RM16(ins.op0<RM16>(), ins.op1<RM16>());
+            case Insn::CMP_RM16_IMM: return tryCompileCmpRM16Imm(ins.op0<RM16>(), ins.op1<Imm>());
             case Insn::CMP_RM32_RM32: return tryCompileCmpRM32RM32(ins.op0<RM32>(), ins.op1<RM32>());
             case Insn::CMP_RM32_IMM: return tryCompileCmpRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
             case Insn::CMP_RM64_RM64: return tryCompileCmpRM64RM64(ins.op0<RM64>(), ins.op1<RM64>());
@@ -390,6 +392,18 @@ namespace x64 {
     bool Compiler::tryCompileCmpRM8Imm(const RM8& lhs, Imm rhs) {
         return forRM8Imm(lhs, rhs, [&](Reg dst, Imm imm) {
             cmp8Imm8(dst, imm.as<i8>());
+        }, false);
+    }
+
+    bool Compiler::tryCompileCmpRM16RM16(const RM16& lhs, const RM16& rhs) {
+        return forRM16RM16(lhs, rhs, [&](Reg dst, Reg src) {
+            cmp16(dst, src);
+        }, false);
+    }
+
+    bool Compiler::tryCompileCmpRM16Imm(const RM16& lhs, Imm rhs) {
+        return forRM16Imm(lhs, rhs, [&](Reg dst, Imm imm) {
+            cmp16Imm16(dst, imm.as<i16>());
         }, false);
     }
 
@@ -1127,6 +1141,12 @@ namespace x64 {
         assembler_.cmp(l, r);
     }
 
+    void Compiler::cmp16(Reg lhs, Reg rhs) {
+        R16 l = get16(lhs);
+        R16 r = get16(rhs);
+        assembler_.cmp(l, r);
+    }
+
     void Compiler::cmp32(Reg lhs, Reg rhs) {
         R32 l = get32(lhs);
         R32 r = get32(rhs);
@@ -1141,6 +1161,11 @@ namespace x64 {
 
     void Compiler::cmp8Imm8(Reg dst, i8 imm) {
         R8 d = get8(dst);
+        assembler_.cmp(d, imm);
+    }
+
+    void Compiler::cmp16Imm16(Reg dst, i16 imm) {
+        R16 d = get16(dst);
         assembler_.cmp(d, imm);
     }
 
@@ -1266,6 +1291,37 @@ namespace x64 {
             return true;
         } else {
             return false;
+        }
+    }
+
+    template<typename Func>
+    bool Compiler::forRM16Imm(const RM16& dst, Imm imm, Func&& func, bool writeResultBack) {
+        if(dst.isReg) {
+            // read the register
+            readReg16(Reg::GPR0, dst.reg);
+            // perform the binary op
+            func(Reg::GPR0, imm);
+            if(writeResultBack) {
+                // write back to the register
+                writeReg16(dst.reg, Reg::GPR0);
+            }
+            return true;
+        } else {
+            // fetch address
+            const M16& mem = dst.mem;
+            if(mem.segment != Segment::CS && mem.segment != Segment::UNK) return false;
+            if(mem.encoding.index == R64::RIP) return false;
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, Reg::GPR0, mem);
+            // read the value at the address
+            readMem16(Reg::GPR0, addr);
+            // perform the binary op
+            func(Reg::GPR0, imm);
+            if(writeResultBack) {
+                // write back to the register
+                writeMem16(addr, Reg::GPR0);
+            }
+            return true;
         }
     }
 
