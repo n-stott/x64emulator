@@ -204,7 +204,7 @@ namespace emulator {
             verify(currentBasicBlock->start() == cpu_.get(x64::R64::RIP));
             currentBasicBlock->onCall(*this);
             if(currentBasicBlock->nativeBasicBlock()) {
-                cpu_.exec((x64::NativeExecPtr)currentBasicBlock->nativeBasicBlock());
+                cpu_.exec((x64::NativeExecPtr)currentBasicBlock->nativeBasicBlock(), tickInfo.ticks());
             } else {
                 cpu_.exec(currentBasicBlock->basicBlock());
             }

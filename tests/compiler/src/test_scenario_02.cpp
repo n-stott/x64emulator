@@ -17,6 +17,8 @@ int main(int argc, char**) {
 
     cpu.set(R64::RIP, 0x0);
 
+    u64 ticks { 0 };
+
     if(argc != 1) {
         cpu.exec(bb);
     } else {
@@ -29,7 +31,7 @@ int main(int argc, char**) {
         void* ptr = ::mmap(nullptr, 0x1000, PROT_EXEC|PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_PRIVATE, 0, 0);
         if(ptr == (void*)MAP_FAILED) return 1;
         ::memcpy(ptr, nativebb->nativecode.data(), nativebb->nativecode.size());
-        cpu.exec((NativeExecPtr)ptr);
+        cpu.exec((NativeExecPtr)ptr, &ticks);
     }
 
     fmt::print("{:#x}\n", cpu.get(R64::RAX));

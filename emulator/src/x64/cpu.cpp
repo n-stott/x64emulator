@@ -1557,9 +1557,9 @@ namespace x64 {
         }
     }
 
-    void Cpu::exec(NativeExecPtr bb) {
+    void Cpu::exec(NativeExecPtr bb, u64* ticks) {
         u64 rflags = flags_.toRflags();
-        bb(regs_.gprs(), mmu_->base(), &rflags);
+        bb(regs_.gprs(), mmu_->base(), &rflags, ticks);
         flags_ = Flags::fromRflags(rflags);
     }
 

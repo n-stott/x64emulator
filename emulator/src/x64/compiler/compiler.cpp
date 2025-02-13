@@ -845,6 +845,7 @@ namespace x64 {
             case Reg::REG_BASE: return R8::DIL;
             case Reg::MEM_BASE: return R8::SIL;
             case Reg::FLAGS_BASE: return R8::DL;
+            case Reg::TIME_BASE: return R8::CL;
         }
         assert(false);
         __builtin_unreachable();
@@ -858,6 +859,7 @@ namespace x64 {
             case Reg::REG_BASE: return R16::DI;
             case Reg::MEM_BASE: return R16::SI;
             case Reg::FLAGS_BASE: return R16::DX;
+            case Reg::TIME_BASE: return R16::CX;
         }
         assert(false);
         __builtin_unreachable();
@@ -871,6 +873,7 @@ namespace x64 {
             case Reg::REG_BASE: return R32::EDI;
             case Reg::MEM_BASE: return R32::ESI;
             case Reg::FLAGS_BASE: return R32::EDX;
+            case Reg::TIME_BASE: return R32::ECX;
         }
         assert(false);
         __builtin_unreachable();
@@ -884,6 +887,7 @@ namespace x64 {
             case Reg::REG_BASE: return R64::RDI;
             case Reg::MEM_BASE: return R64::RSI;
             case Reg::FLAGS_BASE: return R64::RDX;
+            case Reg::TIME_BASE: return R64::RCX;
         }
         assert(false);
         __builtin_unreachable();

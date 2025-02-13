@@ -34,7 +34,7 @@ namespace x64 {
         BasicBlock createBasicBlock(const X64Instruction*, size_t) const;
 
         void exec(const BasicBlock&);
-        void exec(NativeExecPtr bb);
+        void exec(NativeExecPtr bb, u64* ticks);
         
         void setSegmentBase(Segment segment, u64 base);
         u64 getSegmentBase(Segment segment) const;

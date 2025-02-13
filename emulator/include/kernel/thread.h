@@ -55,6 +55,8 @@ namespace kernel {
                 nbInstructions_ += count;
             }
 
+            u64* ticks() { return &nbInstructions_; }
+
             PreciseTime currentTime() const {
                 return PreciseTime{} + TimeDifference::fromNanoSeconds(ns());
             }

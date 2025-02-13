@@ -108,6 +108,7 @@ namespace x64 {
             REG_BASE,
             MEM_BASE,
             FLAGS_BASE,
+            TIME_BASE,
         };
 
         static R8 get8(Reg);
