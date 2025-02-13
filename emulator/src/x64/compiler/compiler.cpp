@@ -3,6 +3,7 @@
 #include "x64/cpu.h"
 #include "verify.h"
 #include <fmt/format.h>
+#include <algorithm>
 
 namespace x64 {
 
@@ -19,11 +20,15 @@ namespace x64 {
             }
         }
         compiler.addExit();
-        // fmt::print("Compilation success !\n");
+#ifdef COMPILER_DEBUG
+        fmt::print("Compile block:\n");
+        for(const auto& blockIns : basicBlock.instructions) {
+            fmt::print("  {:#8x} {}\n", blockIns.first.address(), blockIns.first.toString());
+        }
+        fmt::print("Compilation success !\n");
+        fwrite(code.data(), 1, code.size(), stderr);
+#endif
         std::vector<u8> code = compiler.assembler_.code();
-        // fwrite(code.data(), 1, code.size(), stderr);
-        // fmt::print("{:#x}\n",basicBlock.instructions.front().first.address());
-        // return {};
         return NativeBasicBlock{std::move(code)};
     }
 

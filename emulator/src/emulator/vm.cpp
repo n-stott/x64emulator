@@ -29,6 +29,55 @@ namespace emulator {
 
         fmt::print("Executed {} different basic blocks\n", basicBlockCount_.size());
 #endif
+#ifdef VM_JIT_TELEMETRY
+        std::vector<BasicBlock*> blocks;
+        std::vector<BasicBlock*> jittedBlocks;
+        blocks.reserve(basicBlocks_.size());
+        size_t jitted = 0;
+        u64 emulatedInstructions = 0;
+        u64 jittedInstructions = 0;
+        u64 jitCandidateInstructions = 0;
+        for(const auto& bb : basicBlocks_) {
+            if(bb->nativeBasicBlock() != nullptr) {
+                jitted += 1;
+                jittedBlocks.push_back(bb.get());
+                jittedInstructions += bb->basicBlock().instructions.size() * bb->calls();
+            } else {
+                emulatedInstructions += bb->basicBlock().instructions.size() * bb->calls();
+                if(bb->calls() < 1024) continue;
+                if(!bb->basicBlock().endsWithFixedDestinationJump()) continue;
+                blocks.push_back(bb.get());
+                jitCandidateInstructions += bb->basicBlock().instructions.size() * bb->calls();
+                
+            }
+        }
+        std::sort(blocks.begin(), blocks.end(), [](const auto* a, const auto* b) {
+            return a->calls() > b->calls();
+        });
+        fmt::print("{} / candidate {} blocks jitted ({} total). {} / {} instructions jitted ({}% of all, {}% of candidates)\n",
+                jitted, blocks.size()+jitted,
+                basicBlocks_.size(),
+                jittedInstructions, emulatedInstructions+jittedInstructions,
+                100*jittedInstructions/(1+emulatedInstructions+jittedInstructions),
+                100*jittedInstructions/(1+jitCandidateInstructions+jittedInstructions));
+        // for(auto* bb : jittedBlocks) {
+        //     fmt::print("  Calls: {}. Jitted: {}. Size: {}\n", bb->calls(), !!bb->nativeBasicBlock(), bb->basicBlock().instructions.size());
+        //     for(const auto& ins : bb->basicBlock().instructions) {
+        //         fmt::print("      {:#12x} {}\n", ins.first.address(), ins.first.toString());
+        //     }
+        //     [[maybe_unused]] auto jitBasicBlock = x64::Compiler::tryCompile(bb->basicBlock(), true);
+        // }
+        // return;
+        const size_t topCount = 0;
+        if(blocks.size() >= topCount) blocks.resize(topCount);
+        for(auto* bb : blocks) {
+            fmt::print("  Calls: {}. Jitted: {}. Size: {}\n", bb->calls(), !!bb->nativeBasicBlock(), bb->basicBlock().instructions.size());
+            for(const auto& ins : bb->basicBlock().instructions) {
+                fmt::print("      {:#12x} {}\n", ins.first.address(), ins.first.toString());
+            }
+            [[maybe_unused]] auto jitBasicBlock = x64::Compiler::tryCompile(bb->basicBlock(), true);
+        }
+#endif
     }
 
     void VM::setEnableJit(bool enable) {
