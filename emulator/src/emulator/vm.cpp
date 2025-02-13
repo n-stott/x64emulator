@@ -14,8 +14,7 @@ namespace emulator {
     VM::VM(x64::Cpu& cpu, x64::Mmu& mmu, kernel::Kernel& kernel) :
             cpu_(cpu),
             mmu_(mmu),
-            kernel_(kernel),
-            nativeCodeStorage_(1024*1024) {
+            kernel_(kernel) {
         
     }
 
@@ -446,6 +445,7 @@ namespace emulator {
             BasicBlock* bb = it->get();
             vm_->basicBlocksByAddress_.erase(bb->start());
             bb->removeFromCaches();
+            bb->freeNativeBlock(*vm_);
         }
         vm_->basicBlocks_.erase(mid, vm_->basicBlocks_.end());
         
@@ -470,8 +470,10 @@ namespace emulator {
             return address < bb->end();
         });
         for(auto it = begin; it != end; ++it) {
-            vm_->basicBlocksByAddress_.erase((*it)->start());
-            it->get()->removeFromCaches();
+            BasicBlock* bb = it->get();
+            vm_->basicBlocksByAddress_.erase(bb->start());
+            bb->removeFromCaches();
+            bb->freeNativeBlock(*vm_);
         }
         vm_->basicBlocks_.erase(begin, end);
         
@@ -605,12 +607,23 @@ namespace emulator {
         successors_.clear();
     }
 
+    void BasicBlock::freeNativeBlock(VM& vm) {
+        vm.freeNative(nativeBasicBlock_);
+    }
+
     size_t BasicBlock::size() const {
         return successors_.size() + predecessors_.size();
     }
 
-    const u8* VM::tryMakeNative(const u8* code, size_t size) {
-        return nativeCodeStorage_.tryMakeNative(code, size);
+    MemoryBlock VM::tryMakeNative(const u8* code, size_t size) {
+        auto block = allocator_.allocate((u32)size);
+        if(!block) return MemoryBlock{};
+        std::memcpy(block->ptr, code, size);
+        return block.value();
+    }
+
+    void VM::freeNative(MemoryBlock block) {
+        allocator_.free(block);
     }
 
     void BasicBlock::onCall(VM& vm) {
@@ -620,31 +633,7 @@ namespace emulator {
             if(!!jitBasicBlock) {
                 nativeBasicBlock_ = vm.tryMakeNative(jitBasicBlock->nativecode.data(), jitBasicBlock->nativecode.size());
             }
-            if(!!nativeBasicBlock_) {
-                nativeBasicBlockSize_ = jitBasicBlock->nativecode.size();
-            }
             compilationAttempted_ = true;
         }
-    }
-
-    VM::NativeCodeStorage::NativeCodeStorage(u64 capacity) : capacity_(capacity), size_(0) {
-        executableMemory_ = host::HostMemory::getVirtualMemoryRange(capacity);
-        BitFlags<host::HostMemory::Protection> protection;
-        protection.add(host::HostMemory::Protection::READ);
-        protection.add(host::HostMemory::Protection::WRITE);
-        protection.add(host::HostMemory::Protection::EXEC);
-        host::HostMemory::protectVirtualMemoryRange(executableMemory_, capacity, protection);
-    }
-
-    VM::NativeCodeStorage::~NativeCodeStorage() {
-        host::HostMemory::releaseVirtualMemoryRange(executableMemory_, capacity_);
-    }
-
-    const u8* VM::NativeCodeStorage::tryMakeNative(const u8* code, size_t size) {
-        if(size_ + size > capacity_) return nullptr;
-        u8* codePtr = executableMemory_ + size_;
-        std::memcpy(codePtr, code, size);
-        size_ += size;
-        return codePtr;
     }
 }

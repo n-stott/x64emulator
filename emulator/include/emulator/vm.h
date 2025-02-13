@@ -2,6 +2,7 @@
 #define VM_H
 
 #include "emulator/symbolprovider.h"
+#include "emulator/executablememoryallocator.h"
 #include "x64/compiler/compiler.h"
 #include "x64/cpu.h"
 #include "x64/mmu.h"
@@ -33,7 +34,7 @@ namespace emulator {
         explicit BasicBlock(x64::BasicBlock cpuBasicBlock);
 
         const x64::BasicBlock& basicBlock() const { return cpuBasicBlock_; }
-        const u8* nativeBasicBlock() const { return nativeBasicBlock_; }
+        const u8* nativeBasicBlock() const { return nativeBasicBlock_.ptr; }
 
         u64 start() const;
         u64 end() const;
@@ -42,6 +43,7 @@ namespace emulator {
 
         void addSuccessor(BasicBlock* other);
         void removeFromCaches();
+        void freeNativeBlock(VM&);
 
         size_t size() const;
         void onCall(VM&);
@@ -60,8 +62,7 @@ namespace emulator {
         std::unordered_set<BasicBlock*> predecessors_;
         u64 calls_ { 0 };
 
-        const u8* nativeBasicBlock_ { nullptr };
-        size_t nativeBasicBlockSize_ { 0 };
+        MemoryBlock nativeBasicBlock_;
         bool compilationAttempted_ { false };
     };
 
@@ -82,7 +83,8 @@ namespace emulator {
 
         void push64(u64 value);
 
-        const u8* tryMakeNative(const u8* code, size_t size);
+        MemoryBlock tryMakeNative(const u8* code, size_t size);
+        void freeNative(MemoryBlock);
 
         void tryRetrieveSymbols(const std::vector<u64>& addresses, std::unordered_map<u64, std::string>* addressesToSymbols) const;
 
@@ -163,21 +165,8 @@ namespace emulator {
         mutable SymbolProvider symbolProvider_;
         mutable std::unordered_map<u64, std::string> functionNameCache_;
 
-        class NativeCodeStorage {
-            u64 capacity_;
-            u64 size_;
-            u8* executableMemory_;
+        ExecutableMemoryAllocator allocator_;
 
-            NativeCodeStorage(const NativeCodeStorage&) = delete;
-            NativeCodeStorage(NativeCodeStorage&&) = delete;
-
-        public:
-            explicit NativeCodeStorage(u64 capacity);
-            ~NativeCodeStorage();
-
-            const u8* tryMakeNative(const u8* code, size_t size);
-
-        } nativeCodeStorage_;
         bool jitEnabled_ { false };
     };
 

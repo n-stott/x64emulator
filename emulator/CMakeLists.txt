@@ -51,6 +51,7 @@ target_compile_options(x64cpu PUBLIC
 
 add_library(x64emulator STATIC
     src/emulator/emulator.cpp
+    src/emulator/executablememoryallocator.cpp
     src/emulator/symbolprovider.cpp
     src/emulator/vm.cpp
     src/host/host.cpp
