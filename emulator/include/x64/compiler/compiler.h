@@ -21,6 +21,7 @@ namespace x64 {
         bool tryCompile(const X64Instruction&);
 
         void addEntry();
+        void prepareExit(u32 nbInstructionsInBlock);
         void addExit();
 
         bool tryAdvanceInstructionPointer(u64 nextAddress);
@@ -146,6 +147,8 @@ namespace x64 {
         void writeReg64(R64 dst, Reg src);
         void readMem64(Reg dst, const Mem& address);
         void writeMem64(const Mem& address, Reg src);
+
+        void addTime(u32 amount);
 
         template<Size size>
         Mem getAddress(Reg dst, Reg tmp, const M<size>& mem);

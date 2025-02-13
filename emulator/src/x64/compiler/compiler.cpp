@@ -12,14 +12,20 @@ namespace x64 {
 
         Compiler compiler;
         compiler.addEntry();
-        for(const auto& blockIns : basicBlock.instructions) {
-            const X64Instruction& ins = blockIns.first;
+        for(size_t i = 0; i < basicBlock.instructions.size(); ++i) {
+            const X64Instruction& ins = basicBlock.instructions[i].first;
+            if(i+1 == basicBlock.instructions.size()) {
+                // Just before the last instruction is where we are sure to still be on the execution path
+                // Update everything here (e.g. number of ticks)
+                compiler.prepareExit((u32)basicBlock.instructions.size());
+            }
             if(!compiler.tryCompile(ins)) {
                 if(diagnose) fmt::print("Compilation of block failed: {}\n", ins.toString());
                 return {};
             }
         }
         compiler.addExit();
+        std::vector<u8> code = compiler.assembler_.code();
 #ifdef COMPILER_DEBUG
         fmt::print("Compile block:\n");
         for(const auto& blockIns : basicBlock.instructions) {
@@ -28,7 +34,6 @@ namespace x64 {
         fmt::print("Compilation success !\n");
         fwrite(code.data(), 1, code.size(), stderr);
 #endif
-        std::vector<u8> code = compiler.assembler_.code();
         return NativeBasicBlock{std::move(code)};
     }
 
@@ -116,6 +121,10 @@ namespace x64 {
 
     void Compiler::addEntry() {
         loadFlags();
+    }
+
+    void Compiler::prepareExit(u32 nbInstructionsInBlock) {
+        addTime(nbInstructionsInBlock);
     }
 
     void Compiler::addExit() {
@@ -1113,6 +1122,14 @@ namespace x64 {
         M64 d = make64(get(Reg::MEM_BASE), get(address.base), 1, address.offset);
         R64 s = get(src);
         assembler_.mov(d, s);
+    }
+
+    void Compiler::addTime(u32 amount) {
+        M64 d = make64(get(Reg::TIME_BASE), 0);
+        assembler_.mov(get(Reg::GPR0), d);
+        M64 a = make64(get(Reg::GPR0), amount);
+        assembler_.lea(get(Reg::GPR0), a);
+        assembler_.mov(d, get(Reg::GPR0));
     }
 
     template<Size size>

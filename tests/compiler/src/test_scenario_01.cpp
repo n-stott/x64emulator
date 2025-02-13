@@ -31,6 +31,10 @@ int main(int argc, char**) {
         if(ptr == (void*)MAP_FAILED) return 1;
         ::memcpy(ptr, nativebb->nativecode.data(), nativebb->nativecode.size());
         cpu.exec((NativeExecPtr)ptr, &ticks);
+        if(ticks != 2) {
+            printf("ticks = %d\n", (int)ticks);
+            return 1;
+        }
     }
 
     if(cpu.get(R64::RAX) != 0x58) return 1;

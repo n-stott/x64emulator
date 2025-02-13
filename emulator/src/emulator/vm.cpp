@@ -204,11 +204,18 @@ namespace emulator {
             verify(currentBasicBlock->start() == cpu_.get(x64::R64::RIP));
             currentBasicBlock->onCall(*this);
             if(currentBasicBlock->nativeBasicBlock()) {
+#ifndef NDEBUG
+                u64 savedTicks = *tickInfo.ticks();
+#endif
                 cpu_.exec((x64::NativeExecPtr)currentBasicBlock->nativeBasicBlock(), tickInfo.ticks());
+#ifndef NDEBUG
+                u64 nextTicks = *tickInfo.ticks();
+                assert(nextTicks == savedTicks+currentBasicBlock->basicBlock().instructions.size());
+#endif
             } else {
                 cpu_.exec(currentBasicBlock->basicBlock());
+                tickInfo.tick(currentBasicBlock->basicBlock().instructions.size());
             }
-            tickInfo.tick(currentBasicBlock->basicBlock().instructions.size());
             nextBasicBlock = findNextBasicBlock();
         }
         assert(!!currentThread_);
