@@ -20,9 +20,18 @@ namespace x64 {
     private:
         bool tryCompile(const X64Instruction&);
 
+        struct ReplaceableJumps {
+            std::optional<size_t> offsetOfReplaceableJumpToContinuingBlock;
+            std::optional<size_t> offsetOfReplaceableJumpToConditionalBlock;
+        };
+
+        std::optional<ReplaceableJumps> tryCompileLastInstruction(const X64Instruction&);
+
         void addEntry();
         void prepareExit(u32 nbInstructionsInBlock);
         void addExit();
+
+        size_t currentOffset() const { return assembler_.code().size(); }
 
         bool tryAdvanceInstructionPointer(u64 nextAddress);
 
@@ -69,10 +78,6 @@ namespace x64 {
         bool tryCompileSarRM64Imm(const RM64&, Imm);
         bool tryCompileImulR32RM32(R32, const RM32&);
         bool tryCompileImulR64RM64(R64, const RM64&);
-        bool tryCompileJe(u64 dst);
-        bool tryCompileJne(u64 dst);
-        bool tryCompileJcc(Cond, u64 dst);
-        bool tryCompileJmp(u64 dst);
         bool tryCompileTestRM8R8(const RM8&, R8);
         bool tryCompileTestRM8Imm(const RM8&, Imm);
         bool tryCompileTestRM32R32(const RM32&, R32);
@@ -100,6 +105,11 @@ namespace x64 {
         bool tryCompileBsrR32R32(R32, R32);
         bool tryCompileSetRM8(Cond, const RM8&);
         bool tryCompileCmovR32RM32(Cond, R32, const RM32&);
+
+        std::optional<ReplaceableJumps> tryCompileJe(u64 dst);
+        std::optional<ReplaceableJumps> tryCompileJne(u64 dst);
+        std::optional<ReplaceableJumps> tryCompileJcc(Cond, u64 dst);
+        std::optional<ReplaceableJumps> tryCompileJmp(u64 dst);
 
         enum class Reg {
             GPR0,

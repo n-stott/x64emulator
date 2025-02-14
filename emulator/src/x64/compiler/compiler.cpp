@@ -29,7 +29,8 @@ namespace x64 {
 
         // Then, try compiling the last instruction
         const X64Instruction& lastInstruction = basicBlock.instructions.back().first;
-        if(!compiler.tryCompile(lastInstruction)) return {};
+        auto jumps = compiler.tryCompileLastInstruction(lastInstruction);
+        if(!jumps) return {};
 
         // Finally, add the exit code for when we need to return execution to the emulator
         compiler.addExit();
@@ -42,7 +43,11 @@ namespace x64 {
         fmt::print("Compilation success !\n");
         fwrite(code.data(), 1, code.size(), stderr);
 #endif
-        return NativeBasicBlock{std::move(code)};
+        return NativeBasicBlock{
+            std::move(code),
+            jumps->offsetOfReplaceableJumpToContinuingBlock,
+            jumps->offsetOfReplaceableJumpToConditionalBlock,
+        };
     }
 
     bool Compiler::tryCompile(const X64Instruction& ins) {
@@ -91,10 +96,6 @@ namespace x64 {
             case Insn::SAR_RM64_IMM: return tryCompileSarRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
             case Insn::IMUL2_R32_RM32: return tryCompileImulR32RM32(ins.op0<R32>(), ins.op1<RM32>());
             case Insn::IMUL2_R64_RM64: return tryCompileImulR64RM64(ins.op0<R64>(), ins.op1<RM64>());
-            case Insn::JE: return tryCompileJe(ins.op0<u64>());
-            case Insn::JNE: return tryCompileJne(ins.op0<u64>());
-            case Insn::JCC: return tryCompileJcc(ins.op0<Cond>(), ins.op1<u64>());
-            case Insn::JMP_U32: return tryCompileJmp(ins.op0<u32>());
             case Insn::TEST_RM8_R8: return tryCompileTestRM8R8(ins.op0<RM8>(), ins.op1<R8>());
             case Insn::TEST_RM8_IMM: return tryCompileTestRM8Imm(ins.op0<RM8>(), ins.op1<Imm>());
             case Insn::TEST_RM32_R32: return tryCompileTestRM32R32(ins.op0<RM32>(), ins.op1<R32>());
@@ -125,6 +126,18 @@ namespace x64 {
             default: break;
         }
         return false;
+    }
+
+    std::optional<Compiler::ReplaceableJumps> Compiler::tryCompileLastInstruction(const X64Instruction& ins) {
+        if(!tryAdvanceInstructionPointer(ins.nextAddress())) return {};
+        switch(ins.insn()) {
+            case Insn::JE: return tryCompileJe(ins.op0<u64>());
+            case Insn::JNE: return tryCompileJne(ins.op0<u64>());
+            case Insn::JCC: return tryCompileJcc(ins.op0<Cond>(), ins.op1<u64>());
+            case Insn::JMP_U32: return tryCompileJmp(ins.op0<u32>());
+            default: break;
+        }
+        return {};
     }
 
     void Compiler::addEntry() {
@@ -529,11 +542,11 @@ namespace x64 {
         });
     }
 
-    bool Compiler::tryCompileJe(u64 dst) {
+    std::optional<Compiler::ReplaceableJumps> Compiler::tryCompileJe(u64 dst) {
         return tryCompileJcc(Cond::E, dst);
     }
 
-    bool Compiler::tryCompileJne(u64 dst) {
+    std::optional<Compiler::ReplaceableJumps> Compiler::tryCompileJne(u64 dst) {
         return tryCompileJcc(Cond::NE, dst);
     }
 
@@ -564,7 +577,7 @@ namespace x64 {
         __builtin_unreachable();
     }
 
-    bool Compiler::tryCompileJcc(Cond condition, u64 dst) {
+    std::optional<Compiler::ReplaceableJumps> Compiler::tryCompileJcc(Cond condition, u64 dst) {
         // create labels and test the condition
         auto noBranchCase = assembler_.label();
         Cond reverseCondition = getReverseCondition(condition);
@@ -576,17 +589,23 @@ namespace x64 {
 
         // INSERT NOPs HERE TO BE REPLACED WITH THE JMP
         auto dummyCode = jmpCode(0x0, Reg::GPR0);
+        size_t offsetOfReplaceableJumpToConditionalBlock = currentOffset();
         assembler_.nops(dummyCode.size());
 
         // if we don't need to jump
         assembler_.putLabel(noBranchCase);
 
         // INSERT NOPs HERE TO BE REPLACED WITH THE JMP
+        size_t offsetOfReplaceableJumpToContinuingBlock = currentOffset();
         assembler_.nops(dummyCode.size());
-        return true;
+
+        return ReplaceableJumps {
+            offsetOfReplaceableJumpToContinuingBlock,
+            offsetOfReplaceableJumpToConditionalBlock,
+        };
     }
 
-    bool Compiler::tryCompileJmp(u64 dst) {
+    std::optional<Compiler::ReplaceableJumps> Compiler::tryCompileJmp(u64 dst) {
         // load the immediate
         loadImm64(Reg::GPR0, dst);
         // change the instruction pointer
@@ -594,8 +613,13 @@ namespace x64 {
 
         // INSERT NOPs HERE TO BE REPLACED WITH THE JMP
         auto dummyCode = jmpCode(0x0, Reg::GPR0);
+        size_t offsetOfReplaceableJumpToContinuingBlock = currentOffset();
         assembler_.nops(dummyCode.size());
-        return true;
+
+        return ReplaceableJumps {
+            offsetOfReplaceableJumpToContinuingBlock,
+            {},
+        };
     }
 
     bool Compiler::tryCompileTestRM8R8(const RM8& lhs, R8 rhs) {

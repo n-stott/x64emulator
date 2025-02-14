@@ -2,6 +2,7 @@
 #define BASICBLOCK_H
 
 #include "x64/instructions/x64instruction.h"
+#include <optional>
 #include <vector>
 
 namespace x64 {
@@ -21,6 +22,8 @@ namespace x64 {
 
     struct NativeBasicBlock {
         std::vector<u8> nativecode;
+        std::optional<size_t> offsetOfReplaceableJumpToContinuingBlock;
+        std::optional<size_t> offsetOfReplaceableJumpToConditionalBlock;
     };
 
 }
