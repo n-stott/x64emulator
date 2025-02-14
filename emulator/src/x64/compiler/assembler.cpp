@@ -1,5 +1,6 @@
 #include "x64/compiler/assembler.h"
 #include "x64/instructions/x64instruction.h"
+#include "host/hostinstructions.h"
 #include "verify.h"
 #include <string>
 #include <fmt/format.h>
@@ -1174,8 +1175,42 @@ namespace x64 {
         write32(0x87654321);
     }
 
+    void Assembler::jump(R64 dst) {
+        if((u8)dst >= 8) {
+            write8((u8)(0x40 | (((u8)dst >= 8) ? 1 : 0) ));
+        }
+        write8(0xff);
+        write8((u8)(0b11000000 | (0b100 << 3) | encodeRegister(dst)));
+    }
+
     void Assembler::ret() {
         write8(0xc3);
+    }
+
+    void Assembler::nop() {
+        write8(0x90);
+    }
+
+    void Assembler::nops(size_t count) {
+        if(host::hasMultibyteNop()) {
+            while(count > 0) {
+                if(count >= 8) {
+                    write64(0x0000000000841F0F);
+                    count -= 8;
+                } else if(count >= 4) {
+                    write32(0x00401F0F);
+                    count -= 4;
+                } else if(count >= 2) {
+                    write16(0x9066);
+                    count -= 2;
+                } else {
+                    nop();
+                    count -= 1;
+                }
+            }
+        } else {
+            for(size_t i = 0; i < count; ++i) nop();
+        }
     }
 
 }

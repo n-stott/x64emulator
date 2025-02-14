@@ -108,8 +108,12 @@ namespace x64 {
         void putLabel(const Label&);
 
         void jumpCondition(Cond, Label* label);
+        void jump(R64);
 
         void ret();
+
+        void nop();
+        void nops(size_t count);
 
     private:
         void write8(u8 value);

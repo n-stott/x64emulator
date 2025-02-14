@@ -150,6 +150,8 @@ namespace x64 {
 
         void addTime(u32 amount);
 
+        std::vector<u8> jmpCode(u64 dst, Reg tmp) const;
+
         template<Size size>
         Mem getAddress(Reg dst, Reg tmp, const M<size>& mem);
 

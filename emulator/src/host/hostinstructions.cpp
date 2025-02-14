@@ -133,6 +133,12 @@ namespace host {
         return s;
     }
 
+    bool hasMultibyteNop() {
+        CPUID id = cpuid(0x1, 0x0);
+        u8 familyId = (id.a >> 8) & 0xF;
+        return familyId == 0b0110 || familyId == 0b1111;
+    }
+
     XGETBV xgetbv(u32 c) {
         XGETBV s;
         asm volatile("mov %0, %%ecx" :: "r"(c));

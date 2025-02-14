@@ -11,19 +11,27 @@ namespace x64 {
         if(!basicBlock.endsWithFixedDestinationJump()) return {};
 
         Compiler compiler;
+        // Add the entrypoint code for when we are entering jitted code from the emulator
         compiler.addEntry();
-        for(size_t i = 0; i < basicBlock.instructions.size(); ++i) {
+
+        // Then, try compiling all non-terminating instructions.
+        for(size_t i = 0; i+1 < basicBlock.instructions.size(); ++i) {
             const X64Instruction& ins = basicBlock.instructions[i].first;
-            if(i+1 == basicBlock.instructions.size()) {
-                // Just before the last instruction is where we are sure to still be on the execution path
-                // Update everything here (e.g. number of ticks)
-                compiler.prepareExit((u32)basicBlock.instructions.size());
-            }
             if(!compiler.tryCompile(ins)) {
                 if(diagnose) fmt::print("Compilation of block failed: {}\n", ins.toString());
                 return {};
             }
         }
+
+        // Then, just before the last instruction is where we are sure to still be on the execution path
+        // Update everything here (e.g. number of ticks)
+        compiler.prepareExit((u32)basicBlock.instructions.size());
+
+        // Then, try compiling the last instruction
+        const X64Instruction& lastInstruction = basicBlock.instructions.back().first;
+        if(!compiler.tryCompile(lastInstruction)) return {};
+
+        // Finally, add the exit code for when we need to return execution to the emulator
         compiler.addExit();
         std::vector<u8> code = compiler.assembler_.code();
 #ifdef COMPILER_DEBUG
@@ -522,73 +530,59 @@ namespace x64 {
     }
 
     bool Compiler::tryCompileJe(u64 dst) {
-        // create labels and test the condition
-        auto noBranchCase = assembler_.label();
-        assembler_.jumpCondition(Cond::NE, &noBranchCase); // jump if the opposite condition is true
-
-        // load the immediate
-        loadImm64(Reg::GPR0, dst);
-        // change the instruction pointer
-        writeReg64(R64::RIP, Reg::GPR0);
-
-        // if we don't need to jump
-        assembler_.putLabel(noBranchCase);
-        return true;
+        return tryCompileJcc(Cond::E, dst);
     }
 
     bool Compiler::tryCompileJne(u64 dst) {
-        // create labels and test the condition
-        auto noBranchCase = assembler_.label();
-        assembler_.jumpCondition(Cond::E, &noBranchCase); // jump if the opposite condition is true
+        return tryCompileJcc(Cond::NE, dst);
+    }
 
-        // load the immediate
-        loadImm64(Reg::GPR0, dst);
-        // change the instruction pointer
-        writeReg64(R64::RIP, Reg::GPR0);
-
-        // if we don't need to jump
-        assembler_.putLabel(noBranchCase);
-        return true;
+    static Cond getReverseCondition(Cond condition) {
+        switch(condition) {
+            case Cond::A: return Cond::BE;
+            case Cond::AE: return Cond::B;
+            case Cond::B: return Cond::NB;
+            case Cond::BE: return Cond::NBE;
+            case Cond::E: return Cond::NE;
+            case Cond::G: return Cond::LE;
+            case Cond::GE: return Cond::L;
+            case Cond::L: return Cond::GE;
+            case Cond::LE: return Cond::G;
+            case Cond::NB: return Cond::B;
+            case Cond::NBE: return Cond::BE;
+            case Cond::NE: return Cond::E;
+            case Cond::NO: return Cond::O;
+            case Cond::NP: return Cond::P;
+            case Cond::NS: return Cond::S;
+            case Cond::NU: return Cond::U;
+            case Cond::O: return Cond::NO;
+            case Cond::P: return Cond::NP;
+            case Cond::S: return Cond::NS;
+            case Cond::U: return Cond::NU;
+        }
+        assert(false);
+        __builtin_unreachable();
     }
 
     bool Compiler::tryCompileJcc(Cond condition, u64 dst) {
         // create labels and test the condition
         auto noBranchCase = assembler_.label();
-        Cond reverseCondition = [](Cond condition) -> Cond {
-            switch(condition) {
-                case Cond::A: return Cond::BE;
-                case Cond::AE: return Cond::B;
-                case Cond::B: return Cond::NB;
-                case Cond::BE: return Cond::NBE;
-                case Cond::E: return Cond::NE;
-                case Cond::G: return Cond::LE;
-                case Cond::GE: return Cond::L;
-                case Cond::L: return Cond::GE;
-                case Cond::LE: return Cond::G;
-                case Cond::NB: return Cond::B;
-                case Cond::NBE: return Cond::BE;
-                case Cond::NE: return Cond::E;
-                case Cond::NO: return Cond::O;
-                case Cond::NP: return Cond::P;
-                case Cond::NS: return Cond::S;
-                case Cond::NU: return Cond::U;
-                case Cond::O: return Cond::NO;
-                case Cond::P: return Cond::NP;
-                case Cond::S: return Cond::NS;
-                case Cond::U: return Cond::NU;
-            }
-            assert(false);
-            __builtin_unreachable();
-        }(condition);
+        Cond reverseCondition = getReverseCondition(condition);
         assembler_.jumpCondition(reverseCondition, &noBranchCase); // jump if the opposite condition is true
 
-        // load the immediate
-        loadImm64(Reg::GPR0, dst);
         // change the instruction pointer
+        loadImm64(Reg::GPR0, dst);
         writeReg64(R64::RIP, Reg::GPR0);
+
+        // INSERT NOPs HERE TO BE REPLACED WITH THE JMP
+        auto dummyCode = jmpCode(0x0, Reg::GPR0);
+        assembler_.nops(dummyCode.size());
 
         // if we don't need to jump
         assembler_.putLabel(noBranchCase);
+
+        // INSERT NOPs HERE TO BE REPLACED WITH THE JMP
+        assembler_.nops(dummyCode.size());
         return true;
     }
 
@@ -597,6 +591,10 @@ namespace x64 {
         loadImm64(Reg::GPR0, dst);
         // change the instruction pointer
         writeReg64(R64::RIP, Reg::GPR0);
+
+        // INSERT NOPs HERE TO BE REPLACED WITH THE JMP
+        auto dummyCode = jmpCode(0x0, Reg::GPR0);
+        assembler_.nops(dummyCode.size());
         return true;
     }
 
@@ -1130,6 +1128,13 @@ namespace x64 {
         M64 a = make64(get(Reg::GPR0), amount);
         assembler_.lea(get(Reg::GPR0), a);
         assembler_.mov(d, get(Reg::GPR0));
+    }
+
+    std::vector<u8> Compiler::jmpCode(u64 dst, Reg tmp) const {
+        Assembler assembler;
+        assembler.mov(get(tmp), dst);
+        assembler.jump(get(tmp));
+        return assembler.code();
     }
 
     template<Size size>

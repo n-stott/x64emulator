@@ -37,6 +37,8 @@ namespace host {
     };
     CPUID cpuid(u32 a, u32 c);
 
+    bool hasMultibyteNop();
+
     struct XGETBV {
         u32 a, d;
     };
