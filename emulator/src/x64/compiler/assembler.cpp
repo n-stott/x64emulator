@@ -1175,6 +1175,12 @@ namespace x64 {
         write32(0x87654321);
     }
 
+    void Assembler::jump(Label* label) {
+        write8(0xe9);
+        label->jumpsToMe.push_back(code_.size());
+        write32(0x87654321);
+    }
+
     void Assembler::jump(R64 dst) {
         if((u8)dst >= 8) {
             write8((u8)(0x40 | (((u8)dst >= 8) ? 1 : 0) ));

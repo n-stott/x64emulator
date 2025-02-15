@@ -3,7 +3,6 @@
 
 #include "emulator/symbolprovider.h"
 #include "emulator/executablememoryallocator.h"
-#include "x64/compiler/compiler.h"
 #include "x64/cpu.h"
 #include "x64/mmu.h"
 #include "utils.h"
@@ -47,6 +46,7 @@ namespace emulator {
 
         size_t size() const;
         void onCall(VM&);
+        void tryPatch();
 
         u64 calls() const { return calls_; }
 
@@ -64,6 +64,13 @@ namespace emulator {
 
         MemoryBlock nativeBasicBlock_;
         bool compilationAttempted_ { false };
+
+        struct PendingPatches {
+            std::optional<size_t> offsetOfReplaceableJumpToContinuingBlock;
+            std::optional<size_t> offsetOfReplaceableJumpToConditionalBlock;
+        };
+        std::optional<PendingPatches> pendingPatches_;
+        size_t entrypointSize_ { 0 };
     };
 
     class VM {
@@ -121,6 +128,7 @@ namespace emulator {
 
         void syncThread();
         void enterSyscall();
+        void tryPatchNativeBasicBlocks();
 
         struct ExecutableSection {
             u64 begin;

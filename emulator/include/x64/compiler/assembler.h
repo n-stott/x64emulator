@@ -108,6 +108,7 @@ namespace x64 {
         void putLabel(const Label&);
 
         void jumpCondition(Cond, Label* label);
+        void jump(Label* label);
         void jump(R64);
 
         void ret();

@@ -17,6 +17,8 @@ namespace x64 {
     public:
         static std::optional<NativeBasicBlock> tryCompile(const BasicBlock&, bool diagnose = false);
 
+        static std::vector<u8> compileJumpTo(u64 address);
+
     private:
         bool tryCompile(const X64Instruction&);
 

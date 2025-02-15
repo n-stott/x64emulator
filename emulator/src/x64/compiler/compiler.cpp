@@ -14,6 +14,8 @@ namespace x64 {
         // Add the entrypoint code for when we are entering jitted code from the emulator
         compiler.addEntry();
 
+        size_t entrypointSize = compiler.currentOffset();
+
         // Then, try compiling all non-terminating instructions.
         for(size_t i = 0; i+1 < basicBlock.instructions.size(); ++i) {
             const X64Instruction& ins = basicBlock.instructions[i].first;
@@ -45,9 +47,15 @@ namespace x64 {
 #endif
         return NativeBasicBlock{
             std::move(code),
+            entrypointSize,
             jumps->offsetOfReplaceableJumpToContinuingBlock,
             jumps->offsetOfReplaceableJumpToConditionalBlock,
         };
+    }
+
+    std::vector<u8> Compiler::compileJumpTo(u64 address) {
+        Compiler compiler;
+        return compiler.jmpCode(address, Reg::GPR0);
     }
 
     bool Compiler::tryCompile(const X64Instruction& ins) {
@@ -592,12 +600,17 @@ namespace x64 {
         size_t offsetOfReplaceableJumpToConditionalBlock = currentOffset();
         assembler_.nops(dummyCode.size());
 
+        auto skipToExit = assembler_.label();
+        assembler_.jump(&skipToExit);
+
         // if we don't need to jump
         assembler_.putLabel(noBranchCase);
 
         // INSERT NOPs HERE TO BE REPLACED WITH THE JMP
         size_t offsetOfReplaceableJumpToContinuingBlock = currentOffset();
         assembler_.nops(dummyCode.size());
+
+        assembler_.putLabel(skipToExit);
 
         return ReplaceableJumps {
             offsetOfReplaceableJumpToContinuingBlock,

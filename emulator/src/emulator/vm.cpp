@@ -1,5 +1,6 @@
 #include "emulator/vm.h"
 #include "verify.h"
+#include "x64/compiler/compiler.h"
 #include "x64/disassembler/capstonewrapper.h"
 #include "x64/mmu.h"
 #include "x64/registers.h"
@@ -169,17 +170,19 @@ namespace emulator {
     void VM::execute(kernel::Thread* thread) {
         if(!thread) return;
         Context context(*this, thread);
+        tryPatchNativeBasicBlocks();
         kernel::Thread::TickInfo& tickInfo = thread->tickInfo();
         BasicBlock* currentBasicBlock = nullptr;
         BasicBlock* nextBasicBlock = fetchBasicBlock();
 
         auto findNextBasicBlock = [&]() -> BasicBlock* {
             u64 rip = cpu_.get(x64::R64::RIP);
-            BasicBlock* next = currentBasicBlock->findNext(rip);
+            BasicBlock* next = nullptr;
+            if(!!currentBasicBlock) next = currentBasicBlock->findNext(rip);
             if(!next) {
                 next = fetchBasicBlock();
                 verify(!!next);
-                if(currentBasicBlock->basicBlock().endsWithFixedDestinationJump()) {
+                if(!!currentBasicBlock && currentBasicBlock->basicBlock().endsWithFixedDestinationJump()) {
                     currentBasicBlock->addSuccessor(next);
                 }
 #ifdef VM_BASICBLOCK_TELEMETRY
@@ -204,14 +207,10 @@ namespace emulator {
             verify(currentBasicBlock->start() == cpu_.get(x64::R64::RIP));
             currentBasicBlock->onCall(*this);
             if(currentBasicBlock->nativeBasicBlock()) {
-#ifndef NDEBUG
-                u64 savedTicks = *tickInfo.ticks();
-#endif
+                u64 expectedTicksIfOnlyOneBlock = *tickInfo.ticks() + currentBasicBlock->basicBlock().instructions.size();
                 cpu_.exec((x64::NativeExecPtr)currentBasicBlock->nativeBasicBlock(), tickInfo.ticks());
-#ifndef NDEBUG
                 u64 nextTicks = *tickInfo.ticks();
-                assert(nextTicks == savedTicks+currentBasicBlock->basicBlock().instructions.size());
-#endif
+                if(nextTicks != expectedTicksIfOnlyOneBlock) currentBasicBlock = nullptr;
             } else {
                 cpu_.exec(currentBasicBlock->basicBlock());
                 tickInfo.tick(currentBasicBlock->basicBlock().instructions.size());
@@ -688,8 +687,57 @@ namespace emulator {
             auto jitBasicBlock = x64::Compiler::tryCompile(cpuBasicBlock_);
             if(!!jitBasicBlock) {
                 nativeBasicBlock_ = vm.tryMakeNative(jitBasicBlock->nativecode.data(), jitBasicBlock->nativecode.size());
+                pendingPatches_ = PendingPatches {
+                    jitBasicBlock->offsetOfReplaceableJumpToContinuingBlock,
+                    jitBasicBlock->offsetOfReplaceableJumpToConditionalBlock,
+                };
+                entrypointSize_ = jitBasicBlock->entrypointSize;
             }
             compilationAttempted_ = true;
         }
+    }
+
+    void VM::tryPatchNativeBasicBlocks() {
+        for(auto& bb : basicBlocks_) {
+            bb->tryPatch();
+        }
+    }
+
+    void BasicBlock::tryPatch() {
+        if(!pendingPatches_) return;
+        u64 continuingBlockAddress = end();
+        if(!!pendingPatches_->offsetOfReplaceableJumpToConditionalBlock) {
+            auto tryPatchConditionalWith = [&](const BasicBlock* next) {
+                if(!next) return;
+                if(next->start() == continuingBlockAddress) return;
+                if(!next->nativeBasicBlock_.ptr) return;
+                size_t offset = pendingPatches_->offsetOfReplaceableJumpToConditionalBlock.value();
+                u8* replacementLocation = nativeBasicBlock_.ptr + offset;
+                const u8* jumpLocation = next->nativeBasicBlock_.ptr + next->entrypointSize_;
+                auto replacementCode = x64::Compiler::compileJumpTo((u64)jumpLocation);
+                memcpy(replacementLocation, replacementCode.data(), replacementCode.size());
+                pendingPatches_->offsetOfReplaceableJumpToConditionalBlock.reset();
+            };
+            tryPatchConditionalWith(next_[0]);
+            tryPatchConditionalWith(next_[1]);
+        }
+        if(!!pendingPatches_->offsetOfReplaceableJumpToContinuingBlock) {
+            auto tryPatchContinuingWith = [&](const BasicBlock* next) {
+                if(!next) return;
+                if(next->start() != continuingBlockAddress) return;
+                if(!next->nativeBasicBlock_.ptr) return;
+                size_t offset = pendingPatches_->offsetOfReplaceableJumpToContinuingBlock.value();
+                u8* replacementLocation = nativeBasicBlock_.ptr + offset;
+                const u8* jumpLocation = next->nativeBasicBlock_.ptr + next->entrypointSize_;
+                auto replacementCode = x64::Compiler::compileJumpTo((u64)jumpLocation);
+                memcpy(replacementLocation, replacementCode.data(), replacementCode.size());
+                pendingPatches_->offsetOfReplaceableJumpToContinuingBlock.reset();
+            };
+            tryPatchContinuingWith(next_[0]);
+            tryPatchContinuingWith(next_[1]);
+        }
+        if(!pendingPatches_->offsetOfReplaceableJumpToContinuingBlock
+        && !pendingPatches_->offsetOfReplaceableJumpToConditionalBlock)
+            pendingPatches_.reset();
     }
 }

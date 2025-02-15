@@ -22,6 +22,7 @@ namespace x64 {
 
     struct NativeBasicBlock {
         std::vector<u8> nativecode;
+        size_t entrypointSize { 0 };
         std::optional<size_t> offsetOfReplaceableJumpToContinuingBlock;
         std::optional<size_t> offsetOfReplaceableJumpToConditionalBlock;
     };
