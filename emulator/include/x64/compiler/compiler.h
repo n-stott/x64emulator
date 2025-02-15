@@ -51,6 +51,8 @@ namespace x64 {
         bool tryCompileMovzxR32RM8(R32, const RM8&);
         bool tryCompileMovzxR32RM16(R32, const RM16&);
         bool tryCompileMovzxR64RM8(R64, const RM8&);
+        bool tryCompileMovsxR64RM8(R64, const RM8&);
+        bool tryCompileMovsxR64RM16(R64, const RM16&);
         bool tryCompileMovsxR64RM32(R64, const RM32&);
         bool tryCompileAddRM32RM32(const RM32&, const RM32&);
         bool tryCompileAddRM32Imm(const RM32&, Imm);
