@@ -81,6 +81,8 @@ namespace emulator {
         void setEnableJit(bool enable);
         bool jitEnabled() const { return jitEnabled_; }
 
+        void setEnableJitChaining(bool enable);
+
         void crash();
         bool hasCrashed() const { return hasCrashed_; }
 
@@ -176,6 +178,7 @@ namespace emulator {
         ExecutableMemoryAllocator allocator_;
 
         bool jitEnabled_ { false };
+        bool jitChainingEnabled_ { false };
     };
 
 }

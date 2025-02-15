@@ -29,6 +29,10 @@ namespace emulator {
         enableJit_ = enableJit;
     }
 
+    void Emulator::setEnableJitChaining(bool enableJitChaining) {
+        enableJitChaining_ = enableJitChaining;
+    }
+
     bool Emulator::run(const std::string& programFilePath, const std::vector<std::string>& arguments, const std::vector<std::string>& environmentVariables) const {
         x64::Mmu mmu;
         kernel::Kernel kernel(mmu);
@@ -36,6 +40,7 @@ namespace emulator {
         kernel.setLogSyscalls(logSyscalls_);
         kernel.setProfiling(isProfiling_);
         kernel.setEnableJit(enableJit_);
+        kernel.setEnableJitChaining(enableJitChaining_);
 
         bool ok = true;
         

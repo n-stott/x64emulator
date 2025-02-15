@@ -36,6 +36,7 @@ namespace kernel {
         ~Scheduler();
 
         void setEnableJit(bool enableJit);
+        void setEnableJitChaining(bool enableJitChaining);
 
         void run();
 
@@ -72,6 +73,7 @@ namespace kernel {
         struct Worker {
             int id { 0 };
             bool enableJit { false };
+            bool enableJitChaining { false };
             bool canRunSyscalls() const { return id == 0; };
         };
 
@@ -124,6 +126,7 @@ namespace kernel {
         Kernel& kernel_;
 
         bool enableJit_ { false };
+        bool enableJitChaining_ { false };
 
         // Any operation of the member variables below MUST be protected
         // by taking a lock on this mutex.

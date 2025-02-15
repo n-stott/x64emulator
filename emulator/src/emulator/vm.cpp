@@ -85,6 +85,10 @@ namespace emulator {
         jitEnabled_ = enable;
     }
 
+    void VM::setEnableJitChaining(bool enable) {
+        jitChainingEnabled_ = enable;
+    }
+
     void VM::crash() {
         hasCrashed_ = true;
         syncThread();
@@ -698,6 +702,7 @@ namespace emulator {
     }
 
     void VM::tryPatchNativeBasicBlocks() {
+        if(!jitChainingEnabled_) return;
         for(auto& bb : basicBlocks_) {
             bb->tryPatch();
         }

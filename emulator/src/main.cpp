@@ -33,6 +33,11 @@ int main(int argc, char* argv[], char* envp[]) {
            .default_value(false)
            .implicit_value(true);
 
+    parser.add_argument("--nojitchaining")
+           .help("disable chaining blocks in the JIT")
+           .default_value(false)
+           .implicit_value(true);
+
     parser.add_argument("command")
            .remaining();
 
@@ -74,6 +79,7 @@ int main(int argc, char* argv[], char* envp[]) {
     emulator.setLogSyscalls(parser["--syscalls"] == true);
     emulator.setProfiling(parser["--profile"] == true);
     emulator.setEnableJit(parser["--nojit"] == false);
+    emulator.setEnableJitChaining(parser["--nojitchaining"] == false);
     bool ok = emulator.run(programPath, arguments, environmentVariables);
 
     return !ok;

@@ -16,11 +16,13 @@ namespace emulator {
         void setLogSyscalls(bool);
         void setProfiling(bool);
         void setEnableJit(bool);
+        void setEnableJitChaining(bool);
 
     private:
         bool logSyscalls_ { false };
         bool isProfiling_ { false };
         bool enableJit_ { false };
+        bool enableJitChaining_ { false };
     };
 
 }
