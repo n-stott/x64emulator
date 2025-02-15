@@ -130,6 +130,10 @@ namespace x64 {
             TIME_BASE,
         };
 
+        struct TmpReg {
+            Reg reg;
+        };
+
         static R8 get8(Reg);
         static R16 get16(Reg);
         static R32 get32(Reg);
@@ -168,10 +172,10 @@ namespace x64 {
 
         void addTime(u32 amount);
 
-        std::vector<u8> jmpCode(u64 dst, Reg tmp) const;
+        std::vector<u8> jmpCode(u64 dst, TmpReg tmp) const;
 
         template<Size size>
-        Mem getAddress(Reg dst, Reg tmp, const M<size>& mem);
+        Mem getAddress(Reg dst, TmpReg tmp, const M<size>& mem);
 
         void add32(Reg dst, Reg src);
         void add32Imm32(Reg dst, i32 imm);
