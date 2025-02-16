@@ -8,8 +8,6 @@
 namespace x64 {
 
     std::optional<NativeBasicBlock> Compiler::tryCompile(const BasicBlock& basicBlock, bool diagnose) {
-        if(!basicBlock.endsWithFixedDestinationJump()) return {};
-
         Compiler compiler;
         // Add the entrypoint code for when we are entering jitted code from the emulator
         compiler.addEntry();
@@ -32,7 +30,10 @@ namespace x64 {
         // Then, try compiling the last instruction
         const X64Instruction& lastInstruction = basicBlock.instructions.back().first;
         auto jumps = compiler.tryCompileLastInstruction(lastInstruction);
-        if(!jumps) return {};
+        if(!jumps) {
+            if(diagnose) fmt::print("Compilation of block failed: {}\n", lastInstruction.toString());
+            return {};
+        }
 
         // Finally, add the exit code for when we need to return execution to the emulator
         compiler.addExit();
@@ -145,6 +146,8 @@ namespace x64 {
     std::optional<Compiler::ReplaceableJumps> Compiler::tryCompileLastInstruction(const X64Instruction& ins) {
         if(!tryAdvanceInstructionPointer(ins.nextAddress())) return {};
         switch(ins.insn()) {
+            case Insn::CALLDIRECT: return tryCompileCall(ins.op0<u64>());
+            case Insn::RET: return tryCompileRet();
             case Insn::JE: return tryCompileJe(ins.op0<u64>());
             case Insn::JNE: return tryCompileJne(ins.op0<u64>());
             case Insn::JCC: return tryCompileJcc(ins.op0<Cond>(), ins.op1<u64>());
@@ -606,6 +609,39 @@ namespace x64 {
         return forRM64RM64(RM64{true, dst, {}}, src, [&](Reg dst, Reg src) {
             imul64(dst, src);
         });
+    }
+
+    std::optional<Compiler::ReplaceableJumps> Compiler::tryCompileCall(u64 dst) {
+        // Push the instruction pointer
+        readReg64(Reg::GPR0, R64::RIP);
+        push64(Reg::GPR0, TmpReg{Reg::GPR1});
+
+        // Call cpu callbacks
+        // warn("Need to call cpu callbacks in Compiler::tryCompileCall");
+
+        // Set the instruction pointer
+        loadImm64(Reg::GPR0, dst);
+        writeReg64(R64::RIP, Reg::GPR0);
+        
+        return ReplaceableJumps {
+            {},
+            {},
+        };
+    }
+
+    std::optional<Compiler::ReplaceableJumps> Compiler::tryCompileRet() {
+        // return {};
+        // Pop the instruction pointer
+        pop64(Reg::GPR0, TmpReg{Reg::GPR1});
+        writeReg64(R64::RIP, Reg::GPR0);
+
+        // Call cpu callbacks
+        // warn("Need to call cpu callbacks in Compiler::tryCompileRet");
+        
+        return ReplaceableJumps {
+            {},
+            {},
+        };
     }
 
     std::optional<Compiler::ReplaceableJumps> Compiler::tryCompileJe(u64 dst) {
@@ -1440,6 +1476,30 @@ namespace x64 {
         M64 s = make64(get(Reg::FLAGS_BASE), 0);
         assembler_.push64(s);
         assembler_.popf();
+    }
+
+    void Compiler::push64(Reg src, TmpReg tmp) {
+        verify(src != tmp.reg);
+        // load rsp
+        readReg64(tmp.reg, R64::RSP);
+        // decrement rsp
+        assembler_.lea(get(tmp.reg), make64(get(tmp.reg), -8));
+        // write rsp back
+        writeReg64(R64::RSP, tmp.reg);
+        // write to the stack
+        writeMem64(Mem{tmp.reg, 0}, src);
+    }
+
+    void Compiler::pop64(Reg dst, TmpReg tmp) {
+        verify(dst != tmp.reg);
+        // load rsp
+        readReg64(tmp.reg, R64::RSP);
+        // read from the stack
+        readMem64(dst, Mem{tmp.reg, 0});
+        // increment rsp
+        assembler_.lea(get(tmp.reg), make64(get(tmp.reg), +8));
+        // write rsp back
+        writeReg64(R64::RSP, tmp.reg);
     }
 
     template<typename Func>

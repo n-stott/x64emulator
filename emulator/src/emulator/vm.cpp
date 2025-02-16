@@ -296,11 +296,15 @@ namespace emulator {
 
     void VM::notifyCall(u64 address) {
         currentThread_->stats().functionCalls++;
-        currentThread_->pushCallstack(cpu_.get(x64::R64::RIP), address);
+        if(!jitEnabled()) {
+            currentThread_->pushCallstack(cpu_.get(x64::R64::RIP), address);
+        }
     }
 
     void VM::notifyRet() {
-        currentThread_->popCallstack();
+        if(!jitEnabled()) {
+            currentThread_->popCallstack();
+        }
     }
 
     VM::InstructionPosition VM::findSectionWithAddress(u64 address, const ExecutableSection* sectionHint) const {
@@ -702,6 +706,7 @@ namespace emulator {
     }
 
     void VM::tryPatchNativeBasicBlocks() {
+        if(!jitEnabled_) return;
         if(!jitChainingEnabled_) return;
         for(auto& bb : basicBlocks_) {
             bb->tryPatch();

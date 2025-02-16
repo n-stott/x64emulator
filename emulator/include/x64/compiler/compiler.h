@@ -114,6 +114,8 @@ namespace x64 {
         bool tryCompileSetRM8(Cond, const RM8&);
         bool tryCompileCmovR32RM32(Cond, R32, const RM32&);
 
+        std::optional<ReplaceableJumps> tryCompileCall(u64 dst);
+        std::optional<ReplaceableJumps> tryCompileRet();
         std::optional<ReplaceableJumps> tryCompileJe(u64 dst);
         std::optional<ReplaceableJumps> tryCompileJne(u64 dst);
         std::optional<ReplaceableJumps> tryCompileJcc(Cond, u64 dst);
@@ -198,6 +200,8 @@ namespace x64 {
         void loadImm64(Reg dst, u64 imm);
         void storeFlags();
         void loadFlags();
+        void push64(Reg src, TmpReg tmp);
+        void pop64(Reg dst, TmpReg tmp);
 
         template<typename Func>
         bool forRM8Imm(const RM8& dst, Imm imm, Func&& func, bool writeResultBack = true);
