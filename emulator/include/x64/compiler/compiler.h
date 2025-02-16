@@ -114,6 +114,7 @@ namespace x64 {
         bool tryCompileCdqe();
         bool tryCompileCdq();
         bool tryCompileCqo();
+        bool tryCompilePushImm(Imm);
         bool tryCompilePushRM64(const RM64&);
         bool tryCompilePopR64(const R64&);
         bool tryCompileLeaR32Enc64(R32, const Encoding64&);

@@ -139,6 +139,7 @@ namespace x64 {
             case Insn::CDQE: return tryCompileCdqe();
             case Insn::CDQ: return tryCompileCdq();
             case Insn::CQO: return tryCompileCqo();
+            case Insn::PUSH_IMM: return tryCompilePushImm(ins.op0<Imm>());
             case Insn::PUSH_RM64: return tryCompilePushRM64(ins.op0<RM64>());
             case Insn::POP_R64: return tryCompilePopR64(ins.op0<R64>());
             case Insn::LEA_R32_ENCODING64: return tryCompileLeaR32Enc64(ins.op0<R32>(), ins.op1<Encoding64>());
@@ -897,6 +898,20 @@ namespace x64 {
 
     M64 make64(R64 base, i32 disp);
     M64 make64(R64 base, R64 index, u8 scale, i32 disp);
+
+    bool Compiler::tryCompilePushImm(Imm imm) {
+        // load the value
+        loadImm64(Reg::GPR0, imm.as<u32>());
+        // load rsp
+        readReg64(Reg::GPR1, R64::RSP);
+        // decrement rsp
+        assembler_.lea(get(Reg::GPR1), make64(get(Reg::GPR1), -8));
+        // write rsp back
+        writeReg64(R64::RSP, Reg::GPR1);
+        // write to the stack
+        writeMem64(Mem{Reg::GPR1, 0}, Reg::GPR0);
+        return true;
+    }
 
     bool Compiler::tryCompilePushRM64(const RM64& src) {
         if(src.isReg) {
