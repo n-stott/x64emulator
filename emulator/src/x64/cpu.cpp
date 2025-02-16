@@ -1559,7 +1559,13 @@ namespace x64 {
 
     void Cpu::exec(NativeExecPtr bb, u64* ticks) {
         u64 rflags = flags_.toRflags();
-        bb(regs_.gprs(), mmu_->base(), &rflags, ticks);
+        NativeArguments arguments {
+            regs_.gprs(),
+            mmu_->base(),
+            &rflags,
+            ticks,
+        };
+        bb(&arguments);
         flags_ = Flags::fromRflags(rflags);
     }
 

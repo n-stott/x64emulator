@@ -173,6 +173,7 @@ namespace x64 {
     }
 
     void Compiler::addEntry() {
+        loadArguments();
         loadFlags();
     }
 
@@ -1273,10 +1274,8 @@ namespace x64 {
             case Reg::GPR0: return R8::R8B;
             case Reg::GPR1: return R8::R9B;
             case Reg::MEM_ADDR: return R8::R10B;
-            case Reg::REG_BASE: return R8::DIL;
-            case Reg::MEM_BASE: return R8::SIL;
-            case Reg::FLAGS_BASE: return R8::DL;
-            case Reg::TIME_BASE: return R8::CL;
+            case Reg::REG_BASE: return R8::SIL;
+            case Reg::MEM_BASE: return R8::CL;
         }
         assert(false);
         __builtin_unreachable();
@@ -1287,10 +1286,8 @@ namespace x64 {
             case Reg::GPR0: return R16::R8W;
             case Reg::GPR1: return R16::R9W;
             case Reg::MEM_ADDR: return R16::R10W;
-            case Reg::REG_BASE: return R16::DI;
-            case Reg::MEM_BASE: return R16::SI;
-            case Reg::FLAGS_BASE: return R16::DX;
-            case Reg::TIME_BASE: return R16::CX;
+            case Reg::REG_BASE: return R16::SI;
+            case Reg::MEM_BASE: return R16::CX;
         }
         assert(false);
         __builtin_unreachable();
@@ -1301,10 +1298,8 @@ namespace x64 {
             case Reg::GPR0: return R32::R8D;
             case Reg::GPR1: return R32::R9D;
             case Reg::MEM_ADDR: return R32::R10D;
-            case Reg::REG_BASE: return R32::EDI;
-            case Reg::MEM_BASE: return R32::ESI;
-            case Reg::FLAGS_BASE: return R32::EDX;
-            case Reg::TIME_BASE: return R32::ECX;
+            case Reg::REG_BASE: return R32::ESI;
+            case Reg::MEM_BASE: return R32::ECX;
         }
         assert(false);
         __builtin_unreachable();
@@ -1315,10 +1310,8 @@ namespace x64 {
             case Reg::GPR0: return R64::R8;
             case Reg::GPR1: return R64::R9;
             case Reg::MEM_ADDR: return R64::R10;
-            case Reg::REG_BASE: return R64::RDI;
-            case Reg::MEM_BASE: return R64::RSI;
-            case Reg::FLAGS_BASE: return R64::RDX;
-            case Reg::TIME_BASE: return R64::RCX;
+            case Reg::REG_BASE: return R64::RSI;
+            case Reg::MEM_BASE: return R64::RCX;
         }
         assert(false);
         __builtin_unreachable();
@@ -1547,11 +1540,14 @@ namespace x64 {
     }
 
     void Compiler::addTime(u32 amount) {
-        M64 d = make64(get(Reg::TIME_BASE), 0);
-        assembler_.mov(get(Reg::GPR0), d);
+        static_assert(offsetof(NativeArguments, ticks) == 0x18);
+        M64 ticksPtr = make64(R64::RDI,  0x18);
+        assembler_.mov(get(Reg::GPR1), ticksPtr);
+        M64 ticks = make64(get(Reg::GPR1), 0);
+        assembler_.mov(get(Reg::GPR0), ticks);
         M64 a = make64(get(Reg::GPR0), amount);
         assembler_.lea(get(Reg::GPR0), a);
-        assembler_.mov(d, get(Reg::GPR0));
+        assembler_.mov(ticks, get(Reg::GPR0));
     }
 
     std::vector<u8> Compiler::jmpCode(u64 dst, TmpReg tmp) const {
@@ -1694,15 +1690,32 @@ namespace x64 {
         assembler_.mov(d, imm);
     }
 
+    void Compiler::loadArguments() {
+        static_assert(offsetof(NativeArguments, gprs)   == 0x0);
+        static_assert(offsetof(NativeArguments, memory) == 0x8);
+        M64 gprs = make64(R64::RDI,   0x0);
+        M64 memory = make64(R64::RDI, 0x8);
+        assembler_.mov(get(Reg::MEM_BASE), memory);
+        assembler_.mov(get(Reg::REG_BASE), gprs);
+    }
+
     void Compiler::storeFlags() {
+        static_assert(offsetof(NativeArguments, rflags) == 0x10);
         assembler_.pushf();
-        M64 d = make64(get(Reg::FLAGS_BASE), 0);
-        assembler_.pop64(d);
+        assembler_.pop64(get(Reg::GPR0));
+        M64 rflagsPtr = make64(R64::RDI, 0x10);
+        assembler_.mov(get(Reg::GPR1), rflagsPtr);
+        M64 rflags = make64(get(Reg::GPR1), 0);
+        assembler_.mov(rflags, get(Reg::GPR0));
     }
 
     void Compiler::loadFlags() {
-        M64 s = make64(get(Reg::FLAGS_BASE), 0);
-        assembler_.push64(s);
+        static_assert(offsetof(NativeArguments, rflags) == 0x10);
+        M64 rflagsPtr = make64(R64::RDI, 0x10);
+        assembler_.mov(get(Reg::GPR1), rflagsPtr);
+        M64 rflags = make64(get(Reg::GPR1), 0);
+        assembler_.mov(get(Reg::GPR0), rflags);
+        assembler_.push64(get(Reg::GPR0));
         assembler_.popf();
     }
 

@@ -143,8 +143,6 @@ namespace x64 {
 
             REG_BASE,
             MEM_BASE,
-            FLAGS_BASE,
-            TIME_BASE,
         };
 
         struct TmpReg {
@@ -213,6 +211,7 @@ namespace x64 {
         void imul32(Reg dst, Reg src);
         void imul64(Reg dst, Reg src);
         void loadImm64(Reg dst, u64 imm);
+        void loadArguments();
         void storeFlags();
         void loadFlags();
         void push64(Reg src, TmpReg tmp);
