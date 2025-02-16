@@ -52,6 +52,9 @@ namespace x64 {
         void shl_cl(R64 lhs);
         void shl(R64 lhs, R8 rhs);
         void shl(R64 lhs, u8 imm);
+        void shr_cl(R8 lhs);
+        void shr(R8 lhs, R8 rhs);
+        void shr(R8 lhs, u8 imm);
         void shr_cl(R32 lhs);
         void shr(R32 lhs, R8 rhs);
         void shr(R32 lhs, u8 imm);
@@ -112,6 +115,7 @@ namespace x64 {
 
         void set(Cond, R8);
         void cmov(Cond, R32, R32);
+        void cmov(Cond, R64, R64);
 
         struct Label {
             size_t positionInCode { (size_t)(-1) };

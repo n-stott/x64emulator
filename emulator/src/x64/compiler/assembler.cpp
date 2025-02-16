@@ -726,6 +726,35 @@ namespace x64 {
         write8((u8)(0b11000000 | (0b101 << 3) | encodeRegister(lhs)));
     }
 
+    void Assembler::shr_cl(R8 lhs) {
+        if((u8)lhs >= 8) {
+            write8((u8)(0x40 | (((u8)lhs >= 8) ? 1 : 0)));
+        }
+        write8(0xd2);
+        write8((u8)(0b11000000 | (0b101 << 3) | encodeRegister(lhs)));
+    }
+
+    void Assembler::shr(R8 lhs, R8 rhs) {
+        verify(lhs == R8::R8B || lhs == R8::R9B);
+        verify(rhs == R8::R8B || rhs == R8::R9B);
+        // set cl
+        push64(R64::RCX);
+        mov(R8::CL, rhs);
+        // do the shift
+        shr_cl(lhs);
+        // restore cl
+        pop64(R64::RCX);
+    }
+
+    void Assembler::shr(R8 lhs, u8 imm) {
+        if((u8)lhs >= 8) {
+            write8((u8)(0x40 | (((u8)lhs >= 8) ? 1 : 0)));
+        }
+        write8(0xc0);
+        write8((u8)(0b11000000 | (0b101 << 3) | encodeRegister(lhs)));
+        write8((i8)imm);
+    }
+
     void Assembler::shr(R32 lhs, R8 rhs) {
         verify(lhs == R32::R8D || lhs == R32::R9D);
         verify(rhs == R8::R8B || rhs == R8::R9B);
@@ -1232,6 +1261,31 @@ namespace x64 {
         if((u8)dst >= 8 || (u8)src >= 8) {
             write8((u8)(0x40 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src >= 8) ? 1 : 0) ));
         }
+        write8(0x0F);
+        switch(cond) {
+            case Cond::B:  write8(0x42); break;
+            case Cond::NB:
+            case Cond::AE: write8(0x43); break;
+            case Cond::E:  write8(0x44); break;
+            case Cond::NE: write8(0x45); break;
+            case Cond::BE: write8(0x46); break;
+            case Cond::NBE:
+            case Cond::A:  write8(0x47); break;
+            case Cond::S:  write8(0x48); break;
+            case Cond::NS: write8(0x49); break;
+            case Cond::P:  write8(0x4A); break;
+            case Cond::NP: write8(0x4B); break;
+            case Cond::L:  write8(0x4C); break;
+            case Cond::GE: write8(0x4D); break;
+            case Cond::LE: write8(0x4E); break;
+            case Cond::G:  write8(0x4F); break;
+            default: verify(false, "set not implemented for that condition"); break;
+        }
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
+    void Assembler::cmov(Cond cond, R64 dst, R64 src) {
+        write8((u8)(0x48 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src >= 8) ? 1 : 0) ));
         write8(0x0F);
         switch(cond) {
             case Cond::B:  write8(0x42); break;

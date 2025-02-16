@@ -99,6 +99,8 @@ namespace x64 {
             case Insn::SHL_RM32_IMM: return tryCompileShlRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
             case Insn::SHL_RM64_R8: return tryCompileShlRM64R8(ins.op0<RM64>(), ins.op1<R8>());
             case Insn::SHL_RM64_IMM: return tryCompileShlRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
+            case Insn::SHR_RM8_R8: return tryCompileShrRM8R8(ins.op0<RM8>(), ins.op1<R8>());
+            case Insn::SHR_RM8_IMM: return tryCompileShrRM8Imm(ins.op0<RM8>(), ins.op1<Imm>());
             case Insn::SHR_RM32_R8: return tryCompileShrRM32R8(ins.op0<RM32>(), ins.op1<R8>());
             case Insn::SHR_RM32_IMM: return tryCompileShrRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
             case Insn::SHR_RM64_R8: return tryCompileShrRM64R8(ins.op0<RM64>(), ins.op1<R8>());
@@ -145,6 +147,7 @@ namespace x64 {
             case Insn::BSR_R32_R32: return tryCompileBsrR32R32(ins.op0<R32>(), ins.op1<R32>());
             case Insn::SET_RM8: return tryCompileSetRM8(ins.op0<Cond>(), ins.op1<RM8>());
             case Insn::CMOV_R32_RM32: return tryCompileCmovR32RM32(ins.op0<Cond>(), ins.op1<R32>(), ins.op2<RM32>());
+            case Insn::CMOV_R64_RM64: return tryCompileCmovR64RM64(ins.op0<Cond>(), ins.op1<R64>(), ins.op2<RM64>());
             default: break;
         }
         return false;
@@ -570,6 +573,18 @@ namespace x64 {
         });
     }
 
+    bool Compiler::tryCompileShrRM8R8(const RM8& lhs, R8 rhs) {
+        return forRM8RM8(lhs, RM8{true, rhs, {}}, [&](Reg dst, Reg src) {
+            assembler_.shr(get8(dst), get8(src));
+        });
+    }
+
+    bool Compiler::tryCompileShrRM8Imm(const RM8& lhs, Imm rhs) {
+        return forRM8Imm(lhs, rhs, [&](Reg dst, Imm imm) {
+            assembler_.shr(get8(dst), imm.as<u8>());
+        });
+    }
+
     bool Compiler::tryCompileShrRM32R8(const RM32& lhs, R8 rhs) {
         return forRM32R8(lhs, rhs, [&](Reg dst, Reg src) {
             assembler_.shr(get32(dst), get8(src));
@@ -884,18 +899,37 @@ namespace x64 {
     M64 make64(R64 base, R64 index, u8 scale, i32 disp);
 
     bool Compiler::tryCompilePushRM64(const RM64& src) {
-        if(!src.isReg) return false;
-        // load the value
-        readReg64(Reg::GPR0, src.reg);
-        // load rsp
-        readReg64(Reg::GPR1, R64::RSP);
-        // decrement rsp
-        assembler_.lea(get(Reg::GPR1), make64(get(Reg::GPR1), -8));
-        // write rsp back
-        writeReg64(R64::RSP, Reg::GPR1);
-        // write to the stack
-        writeMem64(Mem{Reg::GPR1, 0}, Reg::GPR0);
-        return true;
+        if(src.isReg) {
+            // load the value
+            readReg64(Reg::GPR0, src.reg);
+            // load rsp
+            readReg64(Reg::GPR1, R64::RSP);
+            // decrement rsp
+            assembler_.lea(get(Reg::GPR1), make64(get(Reg::GPR1), -8));
+            // write rsp back
+            writeReg64(R64::RSP, Reg::GPR1);
+            // write to the stack
+            writeMem64(Mem{Reg::GPR1, 0}, Reg::GPR0);
+            return true;
+        } else {
+            // fetch src address
+            const M64& mem = src.mem;
+            if(mem.segment != Segment::CS && mem.segment != Segment::UNK) return false;
+            if(mem.encoding.index == R64::RIP) return false;
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the src value at the address
+            readMem64(Reg::GPR0, addr);
+            // load rsp
+            readReg64(Reg::GPR1, R64::RSP);
+            // decrement rsp
+            assembler_.lea(get(Reg::GPR1), make64(get(Reg::GPR1), -8));
+            // write rsp back
+            writeReg64(R64::RSP, Reg::GPR1);
+            // write to the stack
+            writeMem64(Mem{Reg::GPR1, 0}, Reg::GPR0);
+            return true;
+        }
     }
 
     bool Compiler::tryCompilePopR64(const R64& dst) {
@@ -1134,6 +1168,13 @@ namespace x64 {
         RM32 d {true, dst, {}};
         return forRM32RM32(d, src, [&](Reg dst, Reg src) {
             assembler_.cmov(cond, get32(dst), get32(src));
+        }, true);
+    }
+
+    bool Compiler::tryCompileCmovR64RM64(Cond cond, R64 dst, const RM64& src) {
+        RM64 d {true, dst, {}};
+        return forRM64RM64(d, src, [&](Reg dst, Reg src) {
+            assembler_.cmov(cond, get(dst), get(src));
         }, true);
     }
 

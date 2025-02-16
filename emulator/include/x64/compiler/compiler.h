@@ -74,6 +74,8 @@ namespace x64 {
         bool tryCompileShlRM32Imm(const RM32&, Imm);
         bool tryCompileShlRM64R8(const RM64&, R8);
         bool tryCompileShlRM64Imm(const RM64&, Imm);
+        bool tryCompileShrRM8R8(const RM8&, R8);
+        bool tryCompileShrRM8Imm(const RM8&, Imm);
         bool tryCompileShrRM32R8(const RM32&, R8);
         bool tryCompileShrRM32Imm(const RM32&, Imm);
         bool tryCompileShrRM64R8(const RM64&, R8);
@@ -120,6 +122,7 @@ namespace x64 {
         bool tryCompileBsrR32R32(R32, R32);
         bool tryCompileSetRM8(Cond, const RM8&);
         bool tryCompileCmovR32RM32(Cond, R32, const RM32&);
+        bool tryCompileCmovR64RM64(Cond, R64, const RM64&);
 
         std::optional<ReplaceableJumps> tryCompileCall(u64 dst);
         std::optional<ReplaceableJumps> tryCompileRet();
