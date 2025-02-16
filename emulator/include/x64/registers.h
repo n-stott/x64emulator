@@ -12,12 +12,13 @@ namespace x64 {
     private:
         std::array<u64, 18> gpr_;
         std::array<Mmx, 8> mmx_;
-        std::array<Xmm, 16> xmm_;
+        alignas(16) std::array<Xmm, 16> xmm_;
 
     public:
         Registers();
 
         u64* gprs() { return gpr_.data(); }
+        Xmm* xmms() { return xmm_.data(); }
 
         u64 rbp() const { return gpr_[(u8)R64::RBP]; }
         u64 rsp() const { return gpr_[(u8)R64::RSP]; }

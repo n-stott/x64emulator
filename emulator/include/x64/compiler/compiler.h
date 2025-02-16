@@ -142,6 +142,7 @@ namespace x64 {
             MEM_ADDR,
 
             REG_BASE,
+            XMM_BASE,
             MEM_BASE,
         };
 

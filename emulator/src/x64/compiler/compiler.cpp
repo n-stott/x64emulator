@@ -1275,6 +1275,7 @@ namespace x64 {
             case Reg::GPR1: return R8::R9B;
             case Reg::MEM_ADDR: return R8::R10B;
             case Reg::REG_BASE: return R8::SIL;
+            case Reg::XMM_BASE: return R8::DL;
             case Reg::MEM_BASE: return R8::CL;
         }
         assert(false);
@@ -1287,6 +1288,7 @@ namespace x64 {
             case Reg::GPR1: return R16::R9W;
             case Reg::MEM_ADDR: return R16::R10W;
             case Reg::REG_BASE: return R16::SI;
+            case Reg::XMM_BASE: return R16::DX;
             case Reg::MEM_BASE: return R16::CX;
         }
         assert(false);
@@ -1299,6 +1301,7 @@ namespace x64 {
             case Reg::GPR1: return R32::R9D;
             case Reg::MEM_ADDR: return R32::R10D;
             case Reg::REG_BASE: return R32::ESI;
+            case Reg::XMM_BASE: return R32::EDX;
             case Reg::MEM_BASE: return R32::ECX;
         }
         assert(false);
@@ -1311,6 +1314,7 @@ namespace x64 {
             case Reg::GPR1: return R64::R9;
             case Reg::MEM_ADDR: return R64::R10;
             case Reg::REG_BASE: return R64::RSI;
+            case Reg::XMM_BASE: return R64::RDX;
             case Reg::MEM_BASE: return R64::RCX;
         }
         assert(false);
@@ -1540,8 +1544,9 @@ namespace x64 {
     }
 
     void Compiler::addTime(u32 amount) {
-        static_assert(offsetof(NativeArguments, ticks) == 0x18);
-        M64 ticksPtr = make64(R64::RDI,  0x18);
+        constexpr size_t TICKS_OFFSET = offsetof(NativeArguments, ticks);
+        static_assert(TICKS_OFFSET == 0x20);
+        M64 ticksPtr = make64(R64::RDI, TICKS_OFFSET);
         assembler_.mov(get(Reg::GPR1), ticksPtr);
         M64 ticks = make64(get(Reg::GPR1), 0);
         assembler_.mov(get(Reg::GPR0), ticks);
@@ -1691,27 +1696,35 @@ namespace x64 {
     }
 
     void Compiler::loadArguments() {
-        static_assert(offsetof(NativeArguments, gprs)   == 0x0);
-        static_assert(offsetof(NativeArguments, memory) == 0x8);
-        M64 gprs = make64(R64::RDI,   0x0);
-        M64 memory = make64(R64::RDI, 0x8);
+        constexpr size_t GPRS_OFFSET = offsetof(NativeArguments, gprs);
+        static_assert(GPRS_OFFSET   == 0x00);
+        constexpr size_t XMMS_OFFSET = offsetof(NativeArguments, xmms);
+        static_assert(XMMS_OFFSET   == 0x08);
+        constexpr size_t MEMORY_OFFSET = offsetof(NativeArguments, memory);
+        static_assert(MEMORY_OFFSET == 0x10);
+        M64 gprs = make64(R64::RDI,   0x00);
+        M64 xmms = make64(R64::RDI,   0x08);
+        M64 memory = make64(R64::RDI, 0x10);
         assembler_.mov(get(Reg::MEM_BASE), memory);
+        assembler_.mov(get(Reg::XMM_BASE), xmms);
         assembler_.mov(get(Reg::REG_BASE), gprs);
     }
 
     void Compiler::storeFlags() {
-        static_assert(offsetof(NativeArguments, rflags) == 0x10);
+        constexpr size_t FLAGS_OFFSET = offsetof(NativeArguments, rflags);
+        static_assert(FLAGS_OFFSET == 0x18);
         assembler_.pushf();
         assembler_.pop64(get(Reg::GPR0));
-        M64 rflagsPtr = make64(R64::RDI, 0x10);
+        M64 rflagsPtr = make64(R64::RDI, FLAGS_OFFSET);
         assembler_.mov(get(Reg::GPR1), rflagsPtr);
         M64 rflags = make64(get(Reg::GPR1), 0);
         assembler_.mov(rflags, get(Reg::GPR0));
     }
 
     void Compiler::loadFlags() {
-        static_assert(offsetof(NativeArguments, rflags) == 0x10);
-        M64 rflagsPtr = make64(R64::RDI, 0x10);
+        constexpr size_t FLAGS_OFFSET = offsetof(NativeArguments, rflags);
+        static_assert(FLAGS_OFFSET == 0x18);
+        M64 rflagsPtr = make64(R64::RDI, FLAGS_OFFSET);
         assembler_.mov(get(Reg::GPR1), rflagsPtr);
         M64 rflags = make64(get(Reg::GPR1), 0);
         assembler_.mov(get(Reg::GPR0), rflags);
