@@ -96,6 +96,13 @@ target_link_libraries(test_compiler_scenario_03 PUBLIC x64cpu x64emulator)
 target_link_options(test_compiler_scenario_03 PUBLIC ${LD_OPTIONS})
 add_test(NAME compiler_scenario_03 COMMAND test_compiler_scenario_03)
 
+add_executable(test_compiler_scenario_04 src/test_scenario_04.cpp)
+target_compile_options(test_compiler_scenario_04 PUBLIC ${CC_OPTIONS})
+target_include_directories(test_compiler_scenario_04 PUBLIC include ${CMAKE_SOURCE_DIR}/emulator/include)
+target_link_libraries(test_compiler_scenario_04 PUBLIC x64cpu x64emulator)
+target_link_options(test_compiler_scenario_04 PUBLIC ${LD_OPTIONS})
+add_test(NAME compiler_scenario_04 COMMAND test_compiler_scenario_04)
+
 add_executable(test_compiler_movsx src/test_movsx.cpp)
 target_compile_options(test_compiler_movsx PUBLIC ${CC_OPTIONS})
 target_include_directories(test_compiler_movsx PUBLIC include ${CMAKE_SOURCE_DIR}/emulator/include)
@@ -109,6 +116,13 @@ target_include_directories(test_compiler_imul PUBLIC include ${CMAKE_SOURCE_DIR}
 target_link_libraries(test_compiler_imul PUBLIC x64cpu x64emulator)
 target_link_options(test_compiler_imul PUBLIC ${LD_OPTIONS})
 add_test(NAME compiler_imul COMMAND test_compiler_imul)
+
+add_executable(test_compiler_mul src/test_mul.cpp)
+target_compile_options(test_compiler_mul PUBLIC ${CC_OPTIONS})
+target_include_directories(test_compiler_mul PUBLIC include ${CMAKE_SOURCE_DIR}/emulator/include)
+target_link_libraries(test_compiler_mul PUBLIC x64cpu x64emulator)
+target_link_options(test_compiler_mul PUBLIC ${LD_OPTIONS})
+add_test(NAME compiler_mul COMMAND test_compiler_mul)
 
 add_executable(test_compiler_cmov src/test_cmov.cpp)
 target_compile_options(test_compiler_cmov PUBLIC ${CC_OPTIONS})
