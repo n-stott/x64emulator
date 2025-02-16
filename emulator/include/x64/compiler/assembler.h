@@ -88,6 +88,7 @@ namespace x64 {
         void or_(R32 dst, i32 imm);
         void or_(R64 dst, R64 src);
         void or_(R64 dst, i32 imm);
+        void xor_(R8 dst, R8 src);
         void xor_(R16 dst, R16 src);
         void xor_(R32 dst, R32 src);
         void xor_(R32 dst, i32 imm);

@@ -1021,6 +1021,16 @@ namespace x64 {
         write32(imm);
     }
 
+    void Assembler::xor_(R8 dst, R8 src) {
+        verify(dst == R8::R8B || dst == R8::R9B);
+        verify(src == R8::R8B || src == R8::R9B);
+        if((u8)dst >= 8 || (u8)src >= 8) {
+            write8((u8)(0x40 | (((u8)src >= 8) ? 4 : 0) | (((u8)dst >= 8) ? 1 : 0) ));
+        }
+        write8((u8)0x30);
+        write8((u8)(0b11000000 | (encodeRegister(src) << 3) | encodeRegister(dst)));
+    }
+
     void Assembler::xor_(R16 dst, R16 src) {
         write8(0x66);
         if((u8)dst >= 8 || (u8)src >= 8) {

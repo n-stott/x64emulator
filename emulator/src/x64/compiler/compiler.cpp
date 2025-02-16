@@ -130,6 +130,7 @@ namespace x64 {
             case Insn::OR_RM32_IMM: return tryCompileOrRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
             case Insn::OR_RM64_RM64: return tryCompileOrRM64RM64(ins.op0<RM64>(), ins.op1<RM64>());
             case Insn::OR_RM64_IMM: return tryCompileOrRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
+            case Insn::XOR_RM8_RM8: return tryCompileXorRM8RM8(ins.op0<RM8>(), ins.op1<RM8>());
             case Insn::XOR_RM16_RM16: return tryCompileXorRM16RM16(ins.op0<RM16>(), ins.op1<RM16>());
             case Insn::XOR_RM32_RM32: return tryCompileXorRM32RM32(ins.op0<RM32>(), ins.op1<RM32>());
             case Insn::XOR_RM32_IMM: return tryCompileXorRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
@@ -999,6 +1000,12 @@ namespace x64 {
         // write to the register
         writeReg64(dst, Reg::GPR0);
         return true;
+    }
+
+    bool Compiler::tryCompileXorRM8RM8(const RM8& dst, const RM8& src) {
+        return forRM8RM8(dst, src, [&](Reg dst, Reg src) {
+            assembler_.xor_(get8(dst), get8(src));
+        });
     }
 
     bool Compiler::tryCompileXorRM16RM16(const RM16& dst, const RM16& src) {
