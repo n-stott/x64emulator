@@ -986,6 +986,20 @@ namespace x64 {
         write8((u8)(0b11000000 | (0b011 << 3) | encodeRegister(dst)));
     }
 
+    void Assembler::cdqe() {
+        write8(0x48);
+        write8(0x98);
+    }
+
+    void Assembler::cdq() {
+        write8(0x99);
+    }
+
+    void Assembler::cqo() {
+        write8(0x48);
+        write8(0x99);
+    }
+
     void Assembler::lea(R32 dst, const M64& src) {
         verify(src.encoding.base != R64::RSP, "rsp as base requires an SIB byte");
         verify(src.encoding.base != R64::R12, "r12 as base requires an SIB byte");

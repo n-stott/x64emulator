@@ -88,6 +88,10 @@ namespace x64 {
         void neg(R32 dst);
         void neg(R64 dst);
 
+        void cdqe();
+        void cdq();
+        void cqo();
+
         void lea(R32, const M64&);
         void lea(R64, const M64&);
 

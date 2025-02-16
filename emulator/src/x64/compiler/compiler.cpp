@@ -130,6 +130,9 @@ namespace x64 {
             case Insn::NOT_RM64: return tryCompileNotRM64(ins.op0<RM64>());
             case Insn::NEG_RM32: return tryCompileNegRM32(ins.op0<RM32>());
             case Insn::NEG_RM64: return tryCompileNegRM64(ins.op0<RM64>());
+            case Insn::CDQE: return tryCompileCdqe();
+            case Insn::CDQ: return tryCompileCdq();
+            case Insn::CQO: return tryCompileCqo();
             case Insn::PUSH_RM64: return tryCompilePushRM64(ins.op0<RM64>());
             case Insn::POP_R64: return tryCompilePopR64(ins.op0<R64>());
             case Insn::LEA_R32_ENCODING64: return tryCompileLeaR32Enc64(ins.op0<R32>(), ins.op1<Encoding64>());
@@ -981,6 +984,47 @@ namespace x64 {
             writeMem64(addr, Reg::GPR0);
             return true;
         } 
+    }
+
+    bool Compiler::tryCompileCdqe() {
+        assembler_.push64(R64::RAX);
+        readReg64(Reg::GPR0, R64::RAX);
+        assembler_.mov(R64::RAX, get(Reg::GPR0));
+        assembler_.cdqe();
+        assembler_.mov(get(Reg::GPR0), R64::RAX);
+        writeReg64(R64::RAX, Reg::GPR0);
+        assembler_.pop64(R64::RAX);
+        return true;
+    }
+
+    bool Compiler::tryCompileCdq() {
+        assembler_.push64(R64::RAX);
+        assembler_.push64(R64::RDX);
+        readReg64(Reg::GPR0, R64::RAX);
+        assembler_.mov(R64::RAX, get(Reg::GPR0));
+        assembler_.cdq();
+        assembler_.mov(get(Reg::GPR0), R64::RAX);
+        writeReg64(R64::RAX, Reg::GPR0);
+        assembler_.mov(get(Reg::GPR1), R64::RDX);
+        writeReg64(R64::RDX, Reg::GPR1);
+        assembler_.pop64(R64::RDX);
+        assembler_.pop64(R64::RAX);
+        return true;
+    }
+
+    bool Compiler::tryCompileCqo() {
+        assembler_.push64(R64::RAX);
+        assembler_.push64(R64::RDX);
+        readReg64(Reg::GPR0, R64::RAX);
+        assembler_.mov(R64::RAX, get(Reg::GPR0));
+        assembler_.cqo();
+        assembler_.mov(get(Reg::GPR0), R64::RAX);
+        writeReg64(R64::RAX, Reg::GPR0);
+        assembler_.mov(get(Reg::GPR1), R64::RDX);
+        writeReg64(R64::RDX, Reg::GPR1);
+        assembler_.pop64(R64::RDX);
+        assembler_.pop64(R64::RAX);
+        return true;
     }
 
     bool Compiler::tryCompileLeaR32Enc64(R32 dst, const Encoding64& address) {
