@@ -71,6 +71,8 @@ namespace x64 {
         void mul(R64 src);
         void imul(R32 dst, R32 src);
         void imul(R64 dst, R64 src);
+        void div(R32 src);
+        void div(R64 src);
         void test(R8 lhs, R8 rhs);
         void test(R8 lhs, u8 imm);
         void test(R16 lhs, R16 rhs);

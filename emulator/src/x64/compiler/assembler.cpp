@@ -885,6 +885,20 @@ namespace x64 {
         write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | (encodeRegister(src))));
     }
 
+    void Assembler::div(R32 src) {
+        if((u8)src >= 8) {
+            write8((u8)(0x40 | (((u8)src >= 8) ? 1 : 0)));
+        }
+        write8(0xf7);
+        write8((u8)(0b11000000 | (0b110 << 3) | (encodeRegister(src))));
+    }
+
+    void Assembler::div(R64 src) {
+        write8((u8)(0x48 | (((u8)src >= 8) ? 1 : 0)));
+        write8(0xf7);
+        write8((u8)(0b11000000 | (0b110 << 3) | (encodeRegister(src))));
+    }
+
     void Assembler::test(R8 lhs, R8 rhs) {
         if((u8)rhs >= 8 || (u8)lhs >= 8) {
             write8((u8)(0x40 | (((u8)rhs >= 8) ? 4 : 0) | (((u8)lhs >= 8) ? 1 : 0)));
