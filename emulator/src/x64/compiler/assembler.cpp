@@ -851,7 +851,7 @@ namespace x64 {
         if((u8)lhs >= 8) {
             write8((u8)(0x40 | (((u8)lhs >= 8) ? 1 : 0)));
         }
-        write8((u8)(0xF6));
+        write8((u8)(0xF7));
         write8((u8)(0b11000000 | (0b000 << 3) | (encodeRegister(lhs))));
         write16(imm);
     }
@@ -1167,6 +1167,8 @@ namespace x64 {
         }
         write8(0x0F);
         switch(cond) {
+            case Cond::O:  write8(0x90); break;
+            case Cond::NO: write8(0x91); break;
             case Cond::B:  write8(0x92); break;
             case Cond::NB:
             case Cond::AE: write8(0x93); break;
@@ -1231,6 +1233,8 @@ namespace x64 {
     void Assembler::jumpCondition(Cond cond, Label* label) {
         write8(0x0F);
         switch(cond) {
+            case Cond::O:  write8(0x80); break;
+            case Cond::NO: write8(0x81); break;
             case Cond::B:  write8(0x82); break;
             case Cond::NB:
             case Cond::AE: write8(0x83); break;
