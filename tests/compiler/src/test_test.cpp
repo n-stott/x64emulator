@@ -4,6 +4,47 @@
 
 using namespace x64;
 
+void testTest16(R16 dst, R16 src) {
+    Assembler assembler;
+    assembler.test(dst, src);
+    std::vector<u8> code = assembler.code();
+    auto disassembly = CapstoneWrapper::disassembleRange(code.data(), code.size(), 0x0);
+    verify(disassembly.instructions.size() == 1);
+    const auto& ins = disassembly.instructions[0];
+    verify(ins.insn() == Insn::TEST_RM16_R16);
+    RM16 disdst = ins.op0<RM16>();
+    R16 dissrc = ins.op1<R16>();
+    verify(disdst.isReg);
+    verify(disdst.reg == dst);
+    verify(dissrc == src);
+}
+
+void testTest16() {
+    std::array<R16, 16> regs {{
+        R16::AX,
+        R16::CX,
+        R16::DX,
+        R16::BX,
+        R16::SP,
+        R16::BP,
+        R16::SI,
+        R16::DI,
+        R16::R8W,
+        R16::R9W,
+        R16::R10W,
+        R16::R11W,
+        R16::R12W,
+        R16::R13W,
+        R16::R14W,
+        R16::R15W,
+    }};
+    for(auto dst : regs) {
+        for(auto src : regs) {
+            testTest16(dst, src);
+        }
+    }
+}
+
 void testTest64(R64 dst, R64 src) {
     Assembler assembler;
     assembler.test(dst, src);
@@ -47,6 +88,7 @@ void testTest64() {
 
 int main() {
     try {
+        testTest16();
         testTest64();
     } catch(...) {
         return 1;

@@ -841,7 +841,7 @@ namespace x64 {
         if((u8)rhs >= 8 || (u8)lhs >= 8) {
             write8((u8)(0x40 | (((u8)rhs >= 8) ? 4 : 0) | (((u8)lhs >= 8) ? 1 : 0)));
         }
-        write8((u8)(0x84));
+        write8((u8)(0x85));
         write8((u8)(0b11000000 | (encodeRegister(rhs) << 3) | (encodeRegister(lhs))));
     }
 
