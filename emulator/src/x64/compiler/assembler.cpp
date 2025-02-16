@@ -1091,6 +1091,12 @@ namespace x64 {
         write8((u8)(0b11000000 | (0b011 << 3) | encodeRegister(dst)));
     }
 
+    void Assembler::dec(R64 dst) {
+        write8((u8)(0x48 | (((u8)dst >= 8) ? 1 : 0) ));
+        write8((u8)0xff);
+        write8((u8)(0b11000000 | (0b001 << 3) | encodeRegister(dst)));
+    }
+
     void Assembler::cdqe() {
         write8(0x48);
         write8(0x98);

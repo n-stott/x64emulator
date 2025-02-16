@@ -97,6 +97,7 @@ namespace x64 {
         void not_(R64 dst);
         void neg(R32 dst);
         void neg(R64 dst);
+        void dec(R64 dst);
 
         void cdqe();
         void cdq();
