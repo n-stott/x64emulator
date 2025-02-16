@@ -810,12 +810,12 @@ namespace x64 {
         readReg64(Reg::GPR1, R64::RSP);
         // read from the stack
         readMem64(Reg::GPR0, Mem{Reg::GPR1, 0});
-        // write to the register
-        writeReg64(dst, Reg::GPR0);
         // increment rsp
         assembler_.lea(get(Reg::GPR1), make64(get(Reg::GPR1), +8));
         // write rsp back
         writeReg64(R64::RSP, Reg::GPR1);
+        // write to the register
+        writeReg64(dst, Reg::GPR0);
         return true;
     }
 
