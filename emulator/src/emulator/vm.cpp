@@ -10,6 +10,8 @@
 #include <numeric>
 #include <optional>
 
+#define JIT_THRESHOLD 1024
+
 namespace emulator {
 
     VM::VM(x64::Cpu& cpu, x64::Mmu& mmu, kernel::Kernel& kernel) :
@@ -45,7 +47,7 @@ namespace emulator {
                 jittedInstructions += bb->basicBlock().instructions.size() * bb->calls();
             } else {
                 emulatedInstructions += bb->basicBlock().instructions.size() * bb->calls();
-                if(bb->calls() < 1024) continue;
+                if(bb->calls() < JIT_THRESHOLD) continue;
                 if(!bb->basicBlock().endsWithFixedDestinationJump()) continue;
                 blocks.push_back(bb.get());
                 jitCandidateInstructions += bb->basicBlock().instructions.size() * bb->calls();
@@ -691,7 +693,7 @@ namespace emulator {
 
     void BasicBlock::onCall(VM& vm) {
         ++calls_;
-        if(vm.jitEnabled() && calls_ >= 1024 && !compilationAttempted_) {
+        if(vm.jitEnabled() && calls_ >= JIT_THRESHOLD && !compilationAttempted_) {
             auto jitBasicBlock = x64::Compiler::tryCompile(cpuBasicBlock_);
             if(!!jitBasicBlock) {
                 nativeBasicBlock_ = vm.tryMakeNative(jitBasicBlock->nativecode.data(), jitBasicBlock->nativecode.size());
