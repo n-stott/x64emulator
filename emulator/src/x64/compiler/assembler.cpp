@@ -772,6 +772,26 @@ namespace x64 {
         write8((i8)imm);
     }
 
+    void Assembler::sar_cl(R32 lhs) {
+        if((u8)lhs >= 8) {
+            write8((u8)(0x40 | (((u8)lhs >= 8) ? 1 : 0)));
+        }
+        write8(0xd3);
+        write8((u8)(0b11000000 | (0b111 << 3) | encodeRegister(lhs)));
+    }
+
+    void Assembler::sar(R32 lhs, R8 rhs) {
+        verify(lhs == R32::R8D || lhs == R32::R9D);
+        verify(rhs == R8::R8B || rhs == R8::R9B);
+        // set cl
+        push64(R64::RCX);
+        mov(R8::CL, rhs);
+        // do the shift
+        sar_cl(lhs);
+        // restore cl
+        pop64(R64::RCX);
+    }
+
     void Assembler::sar(R32 lhs, u8 imm) {
         if((u8)lhs >= 8) {
             write8((u8)(0x40 | (((u8)lhs >= 8) ? 1 : 0)));
@@ -779,6 +799,24 @@ namespace x64 {
         write8(0xc1);
         write8((u8)(0b11000000 | (0b111 << 3) | encodeRegister(lhs)));
         write8((i8)imm);
+    }
+
+    void Assembler::sar_cl(R64 lhs) {
+        write8((u8)(0x48 | (((u8)lhs >= 8) ? 1 : 0)));
+        write8(0xd3);
+        write8((u8)(0b11000000 | (0b111 << 3) | encodeRegister(lhs)));
+    }
+
+    void Assembler::sar(R64 lhs, R8 rhs) {
+        verify(lhs == R64::R8 || lhs == R64::R9);
+        verify(rhs == R8::R8B || rhs == R8::R9B);
+        // set cl
+        push64(R64::RCX);
+        mov(R8::CL, rhs);
+        // do the shift
+        sar_cl(lhs);
+        // restore cl
+        pop64(R64::RCX);
     }
 
     void Assembler::sar(R64 lhs, u8 imm) {
