@@ -105,6 +105,8 @@ namespace x64 {
             case Insn::SHR_RM64_IMM: return tryCompileShrRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
             case Insn::SAR_RM32_IMM: return tryCompileSarRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
             case Insn::SAR_RM64_IMM: return tryCompileSarRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
+            case Insn::MUL_RM32: return tryCompileMulRM32(ins.op0<RM32>());
+            case Insn::MUL_RM64: return tryCompileMulRM64(ins.op0<RM64>());
             case Insn::IMUL2_R32_RM32: return tryCompileImulR32RM32(ins.op0<R32>(), ins.op1<RM32>());
             case Insn::IMUL2_R64_RM64: return tryCompileImulR64RM64(ins.op0<R64>(), ins.op1<RM64>());
             case Insn::TEST_RM8_R8: return tryCompileTestRM8R8(ins.op0<RM8>(), ins.op1<R8>());
@@ -600,6 +602,44 @@ namespace x64 {
         return forRM64Imm(lhs, rhs, [&](Reg dst, Imm imm) {
             assembler_.sar(get(dst), imm.as<u8>());
         });
+    }
+
+    bool Compiler::tryCompileMulRM32(const RM32& src) {
+        if(!src.isReg) return false;
+        assembler_.push64(R64::RAX);
+        assembler_.push64(R64::RDX);
+        readReg64(Reg::GPR0, R64::RAX);
+        assembler_.mov(R32::EAX, get32(Reg::GPR0));
+        readReg64(Reg::GPR0, R64::RDX);
+        assembler_.mov(R32::EDX, get32(Reg::GPR0));
+        readReg32(Reg::GPR1, src.reg);
+        assembler_.mul(get32(Reg::GPR1));
+        assembler_.mov(get32(Reg::GPR0), R32::EAX);
+        writeReg32(R32::EAX, Reg::GPR0);
+        assembler_.mov(get32(Reg::GPR0), R32::EDX);
+        writeReg32(R32::EDX, Reg::GPR0);
+        assembler_.pop64(R64::RDX);
+        assembler_.pop64(R64::RAX);
+        return true;
+    }
+
+    bool Compiler::tryCompileMulRM64(const RM64& src) {
+        if(!src.isReg) return false;
+        assembler_.push64(R64::RAX);
+        assembler_.push64(R64::RDX);
+        readReg64(Reg::GPR0, R64::RAX);
+        assembler_.mov(R64::RAX, get(Reg::GPR0));
+        readReg64(Reg::GPR0, R64::RDX);
+        assembler_.mov(R64::RDX, get(Reg::GPR0));
+        readReg64(Reg::GPR1, src.reg);
+        assembler_.mul(get(Reg::GPR1));
+        assembler_.mov(get(Reg::GPR0), R64::RAX);
+        writeReg64(R64::RAX, Reg::GPR0);
+        assembler_.mov(get(Reg::GPR0), R64::RDX);
+        writeReg64(R64::RDX, Reg::GPR0);
+        assembler_.pop64(R64::RDX);
+        assembler_.pop64(R64::RAX);
+        return true;
     }
 
     bool Compiler::tryCompileImulR32RM32(R32 dst, const RM32& src) {
