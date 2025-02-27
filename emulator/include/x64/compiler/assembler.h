@@ -121,6 +121,27 @@ namespace x64 {
         void cmov(Cond, R32, R32);
         void cmov(Cond, R64, R64);
 
+        // sse
+        void mov(XMM, XMM);
+        void mova(XMM, const M128&);
+        void mova(const M128&, XMM);
+        void movu(XMM, const M128&);
+        void movq(XMM, R64);
+        void movlps(XMM, M64);
+        void movhps(XMM, M64);
+        void pmovmskb(R32, XMM);
+
+        void pxor(XMM, XMM);
+
+        void psubb(XMM, XMM);
+        void psubw(XMM, XMM);
+        void psubd(XMM, XMM);
+
+        void pcmpeqb(XMM, XMM);
+        void pcmpeqw(XMM, XMM);
+        void pcmpeqd(XMM, XMM);
+
+        // exits
         struct Label {
             size_t positionInCode { (size_t)(-1) };
             std::vector<size_t> jumpsToMe;

@@ -129,6 +129,26 @@ namespace x64 {
         bool tryCompileCmovR32RM32(Cond, R32, const RM32&);
         bool tryCompileCmovR64RM64(Cond, R64, const RM64&);
 
+        // sse
+        bool tryCompileMovXmmXmm(XMM, XMM);
+        bool tryCompileMovqXmmRM64(XMM, const RM64&);
+        bool tryCompileMovuXmmM128(XMM, const M128&);
+        bool tryCompileMovlpsXmmM64(XMM, const M64&);
+        bool tryCompileMovhpsXmmM64(XMM, const M64&);
+        bool tryCompilePmovmskbR32Xmm(R32, XMM);
+
+        bool tryCompilePxorXmmXmmM128(XMM, const XMMM128&);
+
+        bool tryCompilePsubbXmmXmmM128(XMM, const XMMM128&);
+        bool tryCompilePsubwXmmXmmM128(XMM, const XMMM128&);
+        bool tryCompilePsubdXmmXmmM128(XMM, const XMMM128&);
+
+        bool tryCompilePcmpeqbXmmXmmM128(XMM, const XMMM128&);
+        bool tryCompilePcmpeqwXmmXmmM128(XMM, const XMMM128&);
+        bool tryCompilePcmpeqdXmmXmmM128(XMM, const XMMM128&);
+
+
+        // exits
         std::optional<ReplaceableJumps> tryCompileCall(u64 dst);
         std::optional<ReplaceableJumps> tryCompileRet();
         std::optional<ReplaceableJumps> tryCompileJe(u64 dst);
@@ -167,6 +187,13 @@ namespace x64 {
             i32 offset;
         };
 
+        enum class Reg128 {
+            GPR0,
+            GPR1,
+        };
+
+        static XMM get(Reg128);
+
         Assembler assembler_;
 
         void readReg8(Reg dst, R8 src);
@@ -185,6 +212,9 @@ namespace x64 {
         void writeReg64(R64 dst, Reg src);
         void readMem64(Reg dst, const Mem& address);
         void writeMem64(const Mem& address, Reg src);
+
+        void readReg128(Reg128 dst, XMM src);
+        void writeReg128(XMM dst, Reg128 src);
 
         void addTime(u32 amount);
 
