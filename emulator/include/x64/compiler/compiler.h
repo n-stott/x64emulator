@@ -133,19 +133,47 @@ namespace x64 {
         bool tryCompileMovXmmXmm(XMM, XMM);
         bool tryCompileMovqXmmRM64(XMM, const RM64&);
         bool tryCompileMovuXmmM128(XMM, const M128&);
+        bool tryCompileMovaM128Xmm(const M128&, XMM);
         bool tryCompileMovlpsXmmM64(XMM, const M64&);
         bool tryCompileMovhpsXmmM64(XMM, const M64&);
         bool tryCompilePmovmskbR32Xmm(R32, XMM);
 
         bool tryCompilePxorXmmXmmM128(XMM, const XMMM128&);
 
+        bool tryCompilePaddbXmmXmmM128(XMM, const XMMM128&);
+        bool tryCompilePaddwXmmXmmM128(XMM, const XMMM128&);
+        bool tryCompilePadddXmmXmmM128(XMM, const XMMM128&);
+        bool tryCompilePaddqXmmXmmM128(XMM, const XMMM128&);
+
         bool tryCompilePsubbXmmXmmM128(XMM, const XMMM128&);
         bool tryCompilePsubwXmmXmmM128(XMM, const XMMM128&);
         bool tryCompilePsubdXmmXmmM128(XMM, const XMMM128&);
 
+        bool tryCompilePmaddwdXmmXmmM128(XMM, const XMMM128&);
+        bool tryCompilePmulhwXmmXmmM128(XMM, const XMMM128&);
+        bool tryCompilePmullwXmmXmmM128(XMM, const XMMM128&);
+
         bool tryCompilePcmpeqbXmmXmmM128(XMM, const XMMM128&);
         bool tryCompilePcmpeqwXmmXmmM128(XMM, const XMMM128&);
         bool tryCompilePcmpeqdXmmXmmM128(XMM, const XMMM128&);
+
+        bool tryCompilePsrlwXmmImm(XMM, Imm);
+        bool tryCompilePsrldXmmImm(XMM, Imm);
+        bool tryCompilePsrlqXmmImm(XMM, Imm);
+
+        bool tryCompilePunpcklbwXmmXmmM128(XMM, const XMMM128&);
+        bool tryCompilePunpcklwdXmmXmmM128(XMM, const XMMM128&);
+        bool tryCompilePunpckldqXmmXmmM128(XMM, const XMMM128&);
+        bool tryCompilePunpcklqdqXmmXmmM128(XMM, const XMMM128&);
+        bool tryCompilePunpckhbwXmmXmmM128(XMM, const XMMM128&);
+        bool tryCompilePunpckhwdXmmXmmM128(XMM, const XMMM128&);
+        bool tryCompilePunpckhdqXmmXmmM128(XMM, const XMMM128&);
+        bool tryCompilePunpckhqdqXmmXmmM128(XMM, const XMMM128&);
+
+        bool tryCompilePacksswbXmmXmmM128(XMM, const XMMM128&);
+        bool tryCompilePackssdwXmmXmmM128(XMM, const XMMM128&);
+        bool tryCompilePackuswbXmmXmmM128(XMM, const XMMM128&);
+        bool tryCompilePackusdwXmmXmmM128(XMM, const XMMM128&);
 
 
         // exits

@@ -133,13 +133,40 @@ namespace x64 {
 
         void pxor(XMM, XMM);
 
+        void paddb(XMM, XMM);
+        void paddw(XMM, XMM);
+        void paddd(XMM, XMM);
+        void paddq(XMM, XMM);
+
         void psubb(XMM, XMM);
         void psubw(XMM, XMM);
         void psubd(XMM, XMM);
 
+        void pmaddwd(XMM, XMM);
+        void pmulhw(XMM, XMM);
+        void pmullw(XMM, XMM);
+
         void pcmpeqb(XMM, XMM);
         void pcmpeqw(XMM, XMM);
         void pcmpeqd(XMM, XMM);
+
+        void psrlw(XMM, u8);
+        void psrld(XMM, u8);
+        void psrlq(XMM, u8);
+
+        void punpcklbw(XMM, XMM);
+        void punpcklwd(XMM, XMM);
+        void punpckldq(XMM, XMM);
+        void punpcklqdq(XMM, XMM);
+        void punpckhbw(XMM, XMM);
+        void punpckhwd(XMM, XMM);
+        void punpckhdq(XMM, XMM);
+        void punpckhqdq(XMM, XMM);
+
+        void packsswb(XMM, XMM);
+        void packssdw(XMM, XMM);
+        void packuswb(XMM, XMM);
+        void packusdw(XMM, XMM);
 
         // exits
         struct Label {

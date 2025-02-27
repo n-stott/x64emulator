@@ -1673,6 +1673,46 @@ namespace x64 {
         write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
     }
 
+    void Assembler::paddb(XMM dst, XMM src) {
+        write8(0x66);
+        if((u8)dst >= 8 || (u8)src >= 8) {
+            write8((u8)(0x40 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src >= 8) ? 1 : 0) ));
+        }
+        write8((u8)0x0f);
+        write8((u8)0xfc);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
+    void Assembler::paddw(XMM dst, XMM src) {
+        write8(0x66);
+        if((u8)dst >= 8 || (u8)src >= 8) {
+            write8((u8)(0x40 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src >= 8) ? 1 : 0) ));
+        }
+        write8((u8)0x0f);
+        write8((u8)0xfd);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
+    void Assembler::paddd(XMM dst, XMM src) {
+        write8(0x66);
+        if((u8)dst >= 8 || (u8)src >= 8) {
+            write8((u8)(0x40 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src >= 8) ? 1 : 0) ));
+        }
+        write8((u8)0x0f);
+        write8((u8)0xfe);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
+    void Assembler::paddq(XMM dst, XMM src) {
+        write8(0x66);
+        if((u8)dst >= 8 || (u8)src >= 8) {
+            write8((u8)(0x40 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src >= 8) ? 1 : 0) ));
+        }
+        write8((u8)0x0f);
+        write8((u8)0xd4);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
     void Assembler::psubb(XMM dst, XMM src) {
         write8(0x66);
         if((u8)dst >= 8 || (u8)src >= 8) {
@@ -1700,6 +1740,36 @@ namespace x64 {
         }
         write8((u8)0x0f);
         write8((u8)0xfa);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
+    void Assembler::pmaddwd(XMM dst, XMM src) {
+        write8(0x66);
+        if((u8)dst >= 8 || (u8)src >= 8) {
+            write8((u8)(0x40 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src >= 8) ? 1 : 0) ));
+        }
+        write8((u8)0x0f);
+        write8((u8)0xf5);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
+    void Assembler::pmulhw(XMM dst, XMM src) {
+        write8(0x66);
+        if((u8)dst >= 8 || (u8)src >= 8) {
+            write8((u8)(0x40 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src >= 8) ? 1 : 0) ));
+        }
+        write8((u8)0x0f);
+        write8((u8)0xe5);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
+    void Assembler::pmullw(XMM dst, XMM src) {
+        write8(0x66);
+        if((u8)dst >= 8 || (u8)src >= 8) {
+            write8((u8)(0x40 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src >= 8) ? 1 : 0) ));
+        }
+        write8((u8)0x0f);
+        write8((u8)0xd5);
         write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
     }
 
@@ -1732,6 +1802,162 @@ namespace x64 {
         write8((u8)0x76);
         write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
     }
+
+    void Assembler::psrlw(XMM dst, u8 imm) {
+        write8(0x66);
+        if((u8)dst >= 8) {
+            write8((u8)(0x40 | (((u8)dst >= 8) ? 1 : 0)));
+        }
+        write8((u8)0x0f);
+        write8((u8)0x71);
+        write8((u8)(0b11000000 | (0b010 << 3) | encodeRegister(dst)));
+        write8(imm);
+    }
+
+    void Assembler::psrld(XMM dst, u8 imm) {
+        write8(0x66);
+        if((u8)dst >= 8) {
+            write8((u8)(0x40 | (((u8)dst >= 8) ? 1 : 0)));
+        }
+        write8((u8)0x0f);
+        write8((u8)0x72);
+        write8((u8)(0b11000000 | (0b010 << 3) | encodeRegister(dst)));
+        write8(imm);
+    }
+
+    void Assembler::psrlq(XMM dst, u8 imm) {
+        write8(0x66);
+        if((u8)dst >= 8) {
+            write8((u8)(0x40 | (((u8)dst >= 8) ? 1 : 0)));
+        }
+        write8((u8)0x0f);
+        write8((u8)0x73);
+        write8((u8)(0b11000000 | (0b010 << 3) | encodeRegister(dst)));
+        write8(imm);
+    }
+
+    void Assembler::punpcklbw(XMM dst, XMM src) {
+        write8(0x66);
+        if((u8)dst >= 8 || (u8)src >= 8) {
+            write8((u8)(0x40 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src >= 8) ? 1 : 0) ));
+        }
+        write8((u8)0x0f);
+        write8((u8)0x60);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
+    void Assembler::punpcklwd(XMM dst, XMM src) {
+        write8(0x66);
+        if((u8)dst >= 8 || (u8)src >= 8) {
+            write8((u8)(0x40 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src >= 8) ? 1 : 0) ));
+        }
+        write8((u8)0x0f);
+        write8((u8)0x61);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
+    void Assembler::punpckldq(XMM dst, XMM src) {
+        write8(0x66);
+        if((u8)dst >= 8 || (u8)src >= 8) {
+            write8((u8)(0x40 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src >= 8) ? 1 : 0) ));
+        }
+        write8((u8)0x0f);
+        write8((u8)0x62);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
+    void Assembler::punpcklqdq(XMM dst, XMM src) {
+        write8(0x66);
+        if((u8)dst >= 8 || (u8)src >= 8) {
+            write8((u8)(0x40 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src >= 8) ? 1 : 0) ));
+        }
+        write8((u8)0x0f);
+        write8((u8)0x6c);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
+    void Assembler::punpckhbw(XMM dst, XMM src) {
+        write8(0x66);
+        if((u8)dst >= 8 || (u8)src >= 8) {
+            write8((u8)(0x40 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src >= 8) ? 1 : 0) ));
+        }
+        write8((u8)0x0f);
+        write8((u8)0x68);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
+    void Assembler::punpckhwd(XMM dst, XMM src) {
+        write8(0x66);
+        if((u8)dst >= 8 || (u8)src >= 8) {
+            write8((u8)(0x40 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src >= 8) ? 1 : 0) ));
+        }
+        write8((u8)0x0f);
+        write8((u8)0x69);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
+    void Assembler::punpckhdq(XMM dst, XMM src) {
+        write8(0x66);
+        if((u8)dst >= 8 || (u8)src >= 8) {
+            write8((u8)(0x40 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src >= 8) ? 1 : 0) ));
+        }
+        write8((u8)0x0f);
+        write8((u8)0x6a);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
+    void Assembler::punpckhqdq(XMM dst, XMM src) {
+        write8(0x66);
+        if((u8)dst >= 8 || (u8)src >= 8) {
+            write8((u8)(0x40 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src >= 8) ? 1 : 0) ));
+        }
+        write8((u8)0x0f);
+        write8((u8)0x6d);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
+    void Assembler::packsswb(XMM dst, XMM src) {
+        write8(0x66);
+        if((u8)dst >= 8 || (u8)src >= 8) {
+            write8((u8)(0x40 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src >= 8) ? 1 : 0) ));
+        }
+        write8((u8)0x0f);
+        write8((u8)0x63);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
+    void Assembler::packssdw(XMM dst, XMM src) {
+        write8(0x66);
+        if((u8)dst >= 8 || (u8)src >= 8) {
+            write8((u8)(0x40 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src >= 8) ? 1 : 0) ));
+        }
+        write8((u8)0x0f);
+        write8((u8)0x6b);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
+    void Assembler::packuswb(XMM dst, XMM src) {
+        write8(0x66);
+        if((u8)dst >= 8 || (u8)src >= 8) {
+            write8((u8)(0x40 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src >= 8) ? 1 : 0) ));
+        }
+        write8((u8)0x0f);
+        write8((u8)0x67);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
+    void Assembler::packusdw(XMM dst, XMM src) {
+        write8(0x66);
+        if((u8)dst >= 8 || (u8)src >= 8) {
+            write8((u8)(0x40 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src >= 8) ? 1 : 0) ));
+        }
+        write8((u8)0x0f);
+        write8((u8)0x38);
+        write8((u8)0x2b);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
+
 
     void Assembler::putLabel(const Label& label) {
         // patch all jumps
