@@ -38,6 +38,7 @@ namespace x64 {
         bool tryAdvanceInstructionPointer(u64 nextAddress);
 
         bool tryCompileMovM8R8(const M8&, R8);
+        bool tryCompileMovM8Imm(const M8&, Imm);
         bool tryCompileMovR32Imm(R32, Imm);
         bool tryCompileMovM32Imm(const M32&, Imm);
         bool tryCompileMovR32R32(R32, R32);
@@ -127,6 +128,8 @@ namespace x64 {
         bool tryCompileLeaR32Enc64(R32, const Encoding64&);
         bool tryCompileLeaR64Enc64(R64, const Encoding64&);
         bool tryCompileNop();
+        bool tryCompileBsfR32R32(R32, R32);
+        bool tryCompileBsfR64R64(R64, R64);
         bool tryCompileBsrR32R32(R32, R32);
         bool tryCompileSetRM8(Cond, const RM8&);
         bool tryCompileCmovR32RM32(Cond, R32, const RM32&);
@@ -158,6 +161,8 @@ namespace x64 {
         bool tryCompilePmaddwdMmxMmxM64(MMX, const MMXM64&);
         bool tryCompilePmulhwMmxMmxM64(MMX, const MMXM64&);
         bool tryCompilePmullwMmxMmxM64(MMX, const MMXM64&);
+        bool tryCompilePavgbMmxMmxM64(MMX, const MMXM64&);
+        bool tryCompilePavgwMmxMmxM64(MMX, const MMXM64&);
             
         bool tryCompilePcmpeqbMmxMmxM64(MMX, const MMXM64&);
         bool tryCompilePcmpeqwMmxMmxM64(MMX, const MMXM64&);
@@ -186,12 +191,16 @@ namespace x64 {
         bool tryCompileMovXmmXmm(XMM, XMM);
         bool tryCompileMovqXmmRM64(XMM, const RM64&);
         bool tryCompileMovqRM64Xmm(const RM64&, XMM);
+        bool tryCompileMovuM128Xmm(const M128&, XMM);
         bool tryCompileMovuXmmM128(XMM, const M128&);
         bool tryCompileMovaM128Xmm(const M128&, XMM);
+        bool tryCompileMovaXmmM128(XMM, const M128&);
         bool tryCompileMovlpsXmmM64(XMM, const M64&);
         bool tryCompileMovhpsXmmM64(XMM, const M64&);
         bool tryCompilePmovmskbR32Xmm(R32, XMM);
 
+        bool tryCompilePandXmmXmmM128(XMM, const XMMM128&);
+        bool tryCompilePorXmmXmmM128(XMM, const XMMM128&);
         bool tryCompilePxorXmmXmmM128(XMM, const XMMM128&);
 
         bool tryCompilePaddbXmmXmmM128(XMM, const XMMM128&);
@@ -208,6 +217,8 @@ namespace x64 {
         bool tryCompilePmaddwdXmmXmmM128(XMM, const XMMM128&);
         bool tryCompilePmulhwXmmXmmM128(XMM, const XMMM128&);
         bool tryCompilePmullwXmmXmmM128(XMM, const XMMM128&);
+        bool tryCompilePavgbXmmXmmM128(XMM, const XMMM128&);
+        bool tryCompilePavgwXmmXmmM128(XMM, const XMMM128&);
 
         bool tryCompilePcmpeqbXmmXmmM128(XMM, const XMMM128&);
         bool tryCompilePcmpeqwXmmXmmM128(XMM, const XMMM128&);
@@ -241,6 +252,10 @@ namespace x64 {
         std::optional<ReplaceableJumps> tryCompileJne(u64 dst);
         std::optional<ReplaceableJumps> tryCompileJcc(Cond, u64 dst);
         std::optional<ReplaceableJumps> tryCompileJmp(u64 dst);
+
+        // non-patchable exits
+        std::optional<ReplaceableJumps> tryCompileCall(const RM64&);
+        std::optional<ReplaceableJumps> tryCompileJmp(const RM64&);
 
         enum class Reg {
             GPR0,
@@ -342,6 +357,7 @@ namespace x64 {
         void cmp64Imm32(Reg dst, i32 imm);
         void imul32(Reg dst, Reg src);
         void imul64(Reg dst, Reg src);
+        void loadImm8(Reg dst, u8 imm);
         void loadImm64(Reg dst, u64 imm);
         void loadArguments();
         void storeFlags();

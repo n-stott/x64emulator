@@ -12,6 +12,7 @@ namespace x64 {
         const std::vector<u8>& code() const { return code_; }
 
         void mov(R8 dst, R8 src);
+        void mov(R8 dst, u8 imm);
         void mov(R16 dst, R16 src);
         void mov(R32 dst, R32 src);
         void mov(R64 dst, R64 src);
@@ -118,6 +119,8 @@ namespace x64 {
         void pushf();
         void popf();
 
+        void bsf(R32 dst, R32 src);
+        void bsf(R64 dst, R64 src);
         void bsr(R32 dst, R32 src);
 
         void set(Cond, R8);
@@ -151,6 +154,8 @@ namespace x64 {
         void pmaddwd(MMX, MMX);
         void pmulhw(MMX, MMX);
         void pmullw(MMX, MMX);
+        void pavgb(MMX, MMX);
+        void pavgw(MMX, MMX);
 
         void pcmpeqb(MMX, MMX);
         void pcmpeqw(MMX, MMX);
@@ -188,6 +193,8 @@ namespace x64 {
         void movhps(XMM, M64);
         void pmovmskb(R32, XMM);
 
+        void pand(XMM, XMM);
+        void por(XMM, XMM);
         void pxor(XMM, XMM);
 
         void paddb(XMM, XMM);
@@ -204,6 +211,8 @@ namespace x64 {
         void pmaddwd(XMM, XMM);
         void pmulhw(XMM, XMM);
         void pmullw(XMM, XMM);
+        void pavgb(XMM, XMM);
+        void pavgw(XMM, XMM);
 
         void pcmpeqb(XMM, XMM);
         void pcmpeqw(XMM, XMM);
