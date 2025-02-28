@@ -702,17 +702,25 @@ namespace emulator {
                     jitBasicBlock->offsetOfReplaceableJumpToConditionalBlock,
                 };
                 entrypointSize_ = jitBasicBlock->entrypointSize;
+                vm.makePatchable(this);
             }
             compilationAttempted_ = true;
         }
     }
 
-    void VM::tryPatchNativeBasicBlocks() {
+    void VM::makePatchable(BasicBlock* bb) {
+        patchableBasicBlocks_.insert(bb);
+        visitPatchables_ = true;
+    }
+
+    __attribute__((noinline)) void VM::tryPatchNativeBasicBlocks() {
         if(!jitEnabled_) return;
         if(!jitChainingEnabled_) return;
-        for(auto& bb : basicBlocks_) {
+        if(!visitPatchables_) return;
+        for(auto* bb : patchableBasicBlocks_) {
             bb->tryPatch();
         }
+        visitPatchables_ = false;
     }
 
     void BasicBlock::tryPatch() {

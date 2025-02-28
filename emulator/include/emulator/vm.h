@@ -95,6 +95,8 @@ namespace emulator {
         MemoryBlock tryMakeNative(const u8* code, size_t size);
         void freeNative(MemoryBlock);
 
+        void makePatchable(BasicBlock* bb);
+
         void tryRetrieveSymbols(const std::vector<u64>& addresses, std::unordered_map<u64, std::string>* addressesToSymbols) const;
 
         class MmuCallback : public x64::Mmu::Callback {
@@ -161,6 +163,8 @@ namespace emulator {
 
         std::vector<std::unique_ptr<BasicBlock>> basicBlocks_;
         std::unordered_map<u64, BasicBlock*> basicBlocksByAddress_;
+        std::unordered_set<BasicBlock*> patchableBasicBlocks_;
+        bool visitPatchables_ { false };
 
 #ifdef VM_BASICBLOCK_TELEMETRY
         u64 blockCacheHits_ { 0 };
