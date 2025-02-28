@@ -121,12 +121,66 @@ namespace x64 {
         void cmov(Cond, R32, R32);
         void cmov(Cond, R64, R64);
 
+        // mmx
+        void mov(MMX, MMX);
+        void movd(MMX, const M32&);
+        void movd(const M32&, MMX);
+        void movq(MMX, const M64&);
+        void movq(const M64&, MMX);
+
+        void pand(MMX, MMX);
+        void por(MMX, MMX);
+        void pxor(MMX, MMX);
+
+        void paddb(MMX, MMX);
+        void paddw(MMX, MMX);
+        void paddd(MMX, MMX);
+        void paddq(MMX, MMX);
+        void paddsb(MMX, MMX);
+        void paddsw(MMX, MMX);
+
+        void psubb(MMX, MMX);
+        void psubw(MMX, MMX);
+        void psubd(MMX, MMX);
+        void psubsb(MMX, MMX);
+        void psubsw(MMX, MMX);
+
+        void pmaddwd(MMX, MMX);
+        void pmulhw(MMX, MMX);
+        void pmullw(MMX, MMX);
+
+        void pcmpeqb(MMX, MMX);
+        void pcmpeqw(MMX, MMX);
+        void pcmpeqd(MMX, MMX);
+
+        void psllw(MMX, u8);
+        void pslld(MMX, u8);
+        void psllq(MMX, u8);
+        void psrlw(MMX, u8);
+        void psrld(MMX, u8);
+        void psrlq(MMX, u8);
+        void psraw(MMX, u8);
+        void psrad(MMX, u8);
+
+        void punpcklbw(MMX, MMX);
+        void punpcklwd(MMX, MMX);
+        void punpckldq(MMX, MMX);
+        void punpckhbw(MMX, MMX);
+        void punpckhwd(MMX, MMX);
+        void punpckhdq(MMX, MMX);
+
+        void packsswb(MMX, MMX);
+        void packssdw(MMX, MMX);
+        void packuswb(MMX, MMX);
+
         // sse
         void mov(XMM, XMM);
         void mova(XMM, const M128&);
         void mova(const M128&, XMM);
         void movu(XMM, const M128&);
+        void movu(const M128&, XMM);
         void movq(XMM, R64);
+        void movq(R64, XMM);
         void movlps(XMM, M64);
         void movhps(XMM, M64);
         void pmovmskb(R32, XMM);
@@ -137,6 +191,8 @@ namespace x64 {
         void paddw(XMM, XMM);
         void paddd(XMM, XMM);
         void paddq(XMM, XMM);
+        void paddsb(XMM, XMM);
+        void paddsw(XMM, XMM);
 
         void psubb(XMM, XMM);
         void psubw(XMM, XMM);
@@ -153,6 +209,8 @@ namespace x64 {
         void psrlw(XMM, u8);
         void psrld(XMM, u8);
         void psrlq(XMM, u8);
+        void psraw(XMM, u8);
+        void psrad(XMM, u8);
 
         void punpcklbw(XMM, XMM);
         void punpcklwd(XMM, XMM);

@@ -1561,6 +1561,7 @@ namespace x64 {
         u64 rflags = flags_.toRflags();
         NativeArguments arguments {
             regs_.gprs(),
+            regs_.mmxs(),
             regs_.xmms(),
             mmu_->base(),
             &rflags,

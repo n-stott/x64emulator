@@ -129,9 +129,60 @@ namespace x64 {
         bool tryCompileCmovR32RM32(Cond, R32, const RM32&);
         bool tryCompileCmovR64RM64(Cond, R64, const RM64&);
 
+        // mmx
+        bool tryCompileMovMmxMmx(MMX, MMX);
+        bool tryCompileMovdMmxRM32(MMX, const RM32&);
+        bool tryCompileMovdRM32Mmx(const RM32&, MMX);
+        bool tryCompileMovqMmxRM64(MMX, const RM64&);
+        bool tryCompileMovqRM64Mmx(const RM64&, MMX);
+
+        bool tryCompilePandMmxMmxM64(MMX, const MMXM64&);
+        bool tryCompilePorMmxMmxM64(MMX, const MMXM64&);
+        bool tryCompilePxorMmxMmxM64(MMX, const MMXM64&);
+
+        bool tryCompilePaddbMmxMmxM64(MMX, const MMXM64&);
+        bool tryCompilePaddwMmxMmxM64(MMX, const MMXM64&);
+        bool tryCompilePadddMmxMmxM64(MMX, const MMXM64&);
+        bool tryCompilePaddqMmxMmxM64(MMX, const MMXM64&);
+        bool tryCompilePaddsbMmxMmxM64(MMX, const MMXM64&);
+        bool tryCompilePaddswMmxMmxM64(MMX, const MMXM64&);
+        bool tryCompilePsubbMmxMmxM64(MMX, const MMXM64&);
+        bool tryCompilePsubwMmxMmxM64(MMX, const MMXM64&);
+        bool tryCompilePsubdMmxMmxM64(MMX, const MMXM64&);
+        bool tryCompilePsubsbMmxMmxM64(MMX, const MMXM64&);
+        bool tryCompilePsubswMmxMmxM64(MMX, const MMXM64&);
+
+        bool tryCompilePmaddwdMmxMmxM64(MMX, const MMXM64&);
+        bool tryCompilePmulhwMmxMmxM64(MMX, const MMXM64&);
+        bool tryCompilePmullwMmxMmxM64(MMX, const MMXM64&);
+            
+        bool tryCompilePcmpeqbMmxMmxM64(MMX, const MMXM64&);
+        bool tryCompilePcmpeqwMmxMmxM64(MMX, const MMXM64&);
+        bool tryCompilePcmpeqdMmxMmxM64(MMX, const MMXM64&);
+        bool tryCompilePsllwMmxImm(MMX, Imm);
+        bool tryCompilePslldMmxImm(MMX, Imm);
+        bool tryCompilePsllqMmxImm(MMX, Imm);
+        bool tryCompilePsrlwMmxImm(MMX, Imm);
+        bool tryCompilePsrldMmxImm(MMX, Imm);
+        bool tryCompilePsrlqMmxImm(MMX, Imm);
+        bool tryCompilePsrawMmxImm(MMX, Imm);
+        bool tryCompilePsradMmxImm(MMX, Imm);
+
+        bool tryCompilePunpcklbwMmxMmxM32(MMX, const MMXM32&);
+        bool tryCompilePunpcklwdMmxMmxM32(MMX, const MMXM32&);
+        bool tryCompilePunpckldqMmxMmxM32(MMX, const MMXM32&);
+        bool tryCompilePunpckhbwMmxMmxM64(MMX, const MMXM64&);
+        bool tryCompilePunpckhwdMmxMmxM64(MMX, const MMXM64&);
+        bool tryCompilePunpckhdqMmxMmxM64(MMX, const MMXM64&);
+            
+        bool tryCompilePacksswbMmxMmxM64(MMX, const MMXM64&);
+        bool tryCompilePackssdwMmxMmxM64(MMX, const MMXM64&);
+        bool tryCompilePackuswbMmxMmxM64(MMX, const MMXM64&);
+
         // sse
         bool tryCompileMovXmmXmm(XMM, XMM);
         bool tryCompileMovqXmmRM64(XMM, const RM64&);
+        bool tryCompileMovqRM64Xmm(const RM64&, XMM);
         bool tryCompileMovuXmmM128(XMM, const M128&);
         bool tryCompileMovaM128Xmm(const M128&, XMM);
         bool tryCompileMovlpsXmmM64(XMM, const M64&);
@@ -144,6 +195,8 @@ namespace x64 {
         bool tryCompilePaddwXmmXmmM128(XMM, const XMMM128&);
         bool tryCompilePadddXmmXmmM128(XMM, const XMMM128&);
         bool tryCompilePaddqXmmXmmM128(XMM, const XMMM128&);
+        bool tryCompilePaddsbXmmXmmM128(XMM, const XMMM128&);
+        bool tryCompilePaddswXmmXmmM128(XMM, const XMMM128&);
 
         bool tryCompilePsubbXmmXmmM128(XMM, const XMMM128&);
         bool tryCompilePsubwXmmXmmM128(XMM, const XMMM128&);
@@ -160,6 +213,8 @@ namespace x64 {
         bool tryCompilePsrlwXmmImm(XMM, Imm);
         bool tryCompilePsrldXmmImm(XMM, Imm);
         bool tryCompilePsrlqXmmImm(XMM, Imm);
+        bool tryCompilePsrawXmmImm(XMM, Imm);
+        bool tryCompilePsradXmmImm(XMM, Imm);
 
         bool tryCompilePunpcklbwXmmXmmM128(XMM, const XMMM128&);
         bool tryCompilePunpcklwdXmmXmmM128(XMM, const XMMM128&);
@@ -190,6 +245,7 @@ namespace x64 {
             MEM_ADDR,
 
             REG_BASE,
+            MMX_BASE,
             XMM_BASE,
             MEM_BASE,
         };
@@ -214,6 +270,13 @@ namespace x64 {
             u8 scale;
             i32 offset;
         };
+
+        enum class RegMM {
+            GPR0,
+            GPR1,
+        };
+
+        static MMX get(RegMM);
 
         enum class Reg128 {
             GPR0,
@@ -241,8 +304,15 @@ namespace x64 {
         void readMem64(Reg dst, const Mem& address);
         void writeMem64(const Mem& address, Reg src);
 
+        void readRegMM(RegMM dst, MMX src);
+        void writeRegMM(MMX dst, RegMM src);
+        void readMemMM(RegMM dst, const Mem& address);
+        void writeMemMM(const Mem& address, RegMM src);
+
         void readReg128(Reg128 dst, XMM src);
         void writeReg128(XMM dst, Reg128 src);
+        void readMem128(Reg128 dst, const Mem& address);
+        void writeMem128(const Mem& address, Reg128 src);
 
         void addTime(u32 amount);
 
@@ -305,6 +375,12 @@ namespace x64 {
         
         template<typename Func>
         bool forRM64RM64(const RM64& dst, const RM64& src, Func&& func, bool writeResultBack = true);
+
+        template<typename Func>
+        bool forMmxMmxM64(MMX dst, const MMXM64& src, Func&& func, bool writeResultBack = true);
+
+        template<typename Func>
+        bool forXmmXmmM128(XMM dst, const XMMM128& src, Func&& func, bool writeResultBack = true);
     };
 
 }

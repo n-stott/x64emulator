@@ -13,6 +13,7 @@ namespace x64 {
 
     struct NativeArguments {
         u64* gprs;
+        u64* mmxs;
         Xmm* xmms;
         u8* memory;
         u64* rflags;

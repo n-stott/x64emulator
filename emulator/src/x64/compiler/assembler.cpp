@@ -1360,6 +1360,493 @@ namespace x64 {
         write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
     }
 
+
+
+
+    u8 encodeRegister(MMX reg) {
+        return ((u8)reg) & 0x7;
+    }
+
+    void Assembler::mov(MMX dst, MMX src) {
+        write8((u8)0x0f);
+        write8((u8)0x7f);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
+    void Assembler::movd(MMX dst, const M32& src) {
+        verify(src.encoding.index != R64::RSP, "rsp not allowed as index");
+        verify(src.encoding.index != R64::R12, "r12 not allowed as index");
+        if(src.encoding.index == R64::ZERO) {
+            if(src.encoding.base != R64::RSP && src.encoding.base != R64::R12) {
+                if(src.encoding.displacement == 0 && src.encoding.base != R64::RBP && src.encoding.base != R64::R13) {
+                    write8((u8)(0x40 | (((u8)src.encoding.base >= 8) ? 1 : 0)));
+                    write8((u8)(0x0f));
+                    write8((u8)(0x6e));
+                    write8((u8)(0b00000000 | (encodeRegister(dst) << 3) | (encodeRegister(src.encoding.base))));
+                } else if((i8)src.encoding.displacement == src.encoding.displacement) {
+                    write8((u8)(0x40 | (((u8)src.encoding.base >= 8) ? 1 : 0)));
+                    write8((u8)(0x0f));
+                    write8((u8)(0x6e));
+                    write8((u8)(0b01000000 | (encodeRegister(dst) << 3) | (encodeRegister(src.encoding.base))));
+                    write8((i8)src.encoding.displacement);
+                } else {
+                    write8((u8)(0x40 | (((u8)src.encoding.base >= 8) ? 1 : 0)));
+                    write8((u8)(0x0f));
+                    write8((u8)(0x6e));
+                    write8((u8)(0b10000000 | (encodeRegister(dst) << 3) | (encodeRegister(src.encoding.base))));
+                    write32(src.encoding.displacement);
+                }
+            } else {
+                if(src.encoding.displacement == 0) {
+                    write8((u8)(0x40 | (((u8)src.encoding.base >= 8) ? 1 : 0)));
+                    write8((u8)(0x0f));
+                    write8((u8)(0x6e));
+                    write8((u8)(0b00000000 | (encodeRegister(dst) << 3) | (encodeRegister(src.encoding.base))));
+                    write8((u8)(0b00000000 | (0b100 << 3) | (encodeRegister(src.encoding.base))));
+                } else if((i8)src.encoding.displacement == src.encoding.displacement) {
+                    write8((u8)(0x40 | (((u8)src.encoding.base >= 8) ? 1 : 0)));
+                    write8((u8)(0x0f));
+                    write8((u8)(0x6e));
+                    write8((u8)(0b01000000 | (encodeRegister(dst) << 3) | (encodeRegister(src.encoding.base))));
+                    write8((u8)(0b00000000 | (0b100 << 3) | (encodeRegister(src.encoding.base))));
+                    write8((i8)src.encoding.displacement);
+                } else {
+                    write8((u8)(0x40 | (((u8)src.encoding.base >= 8) ? 1 : 0)));
+                    write8((u8)(0x0f));
+                    write8((u8)(0x6e));
+                    write8((u8)(0b10000000 | (encodeRegister(dst) << 3) | (encodeRegister(src.encoding.base))));
+                    write8((u8)(0b00000000 | (0b100 << 3) | (encodeRegister(src.encoding.base))));
+                    write32(src.encoding.displacement);
+                }
+            }
+        } else {
+            if((i8)src.encoding.displacement == src.encoding.displacement) {
+                write8((u8)(0x40
+                        | (((u8)src.encoding.index >= 8) ? 2 : 0)
+                        | (((u8)src.encoding.base >= 8) ? 1 : 0)));
+                write8((u8)(0x0f));
+                write8((u8)(0x6e));
+                write8((u8)(0b01000000 | (encodeRegister(dst) << 3) | 0b100));
+                write8((u8)(encodeScale(src.encoding.scale) << 6
+                        | (encodeRegister(src.encoding.index) << 3)
+                        | (encodeRegister(src.encoding.base))));
+                write8((i8)src.encoding.displacement);
+            } else {
+                write8((u8)(0x40
+                        | (((u8)src.encoding.index >= 8) ? 2 : 0)
+                        | (((u8)src.encoding.base >= 8) ? 1 : 0)));
+                write8((u8)(0x0f));
+                write8((u8)(0x6e));
+                write8((u8)(0b10000000 | (encodeRegister(dst) << 3) | 0b100));
+                write8((u8)(encodeScale(src.encoding.scale) << 6
+                        | (encodeRegister(src.encoding.index) << 3)
+                        | (encodeRegister(src.encoding.base))));
+                write32(src.encoding.displacement);
+            }
+        }
+    }
+
+    void Assembler::movd(const M32& dst, MMX src) {
+        if(dst.encoding.index == R64::ZERO) {
+            if(dst.encoding.displacement == 0) {
+                verify(dst.encoding.base != R64::RBP, "rbp as base without displacement requires an SIB byte");
+                write8((u8)(0x40 | (((u8)dst.encoding.base >= 8) ? 1 : 0)));
+                write8((u8)(0x0f));
+                write8((u8)(0x7e));
+                write8((u8)(0b00000000 | (encodeRegister(src) << 3) | (encodeRegister(dst.encoding.base))));
+            } else if((i8)dst.encoding.displacement == dst.encoding.displacement) {
+                write8((u8)(0x40 | (((u8)dst.encoding.base >= 8) ? 1 : 0)));
+                write8((u8)(0x0f));
+                write8((u8)(0x7e));
+                write8((u8)(0b01000000 | (encodeRegister(src) << 3) | (encodeRegister(dst.encoding.base))));
+                write8((i8)dst.encoding.displacement);
+            } else {
+                write8((u8)(0x40 | (((u8)dst.encoding.base >= 8) ? 1 : 0)));
+                write8((u8)(0x0f));
+                write8((u8)(0x7e));
+                write8((u8)(0b10000000 | (encodeRegister(src) << 3) | (encodeRegister(dst.encoding.base))));
+                write32(dst.encoding.displacement);
+            }
+        } else {
+            if((i8)dst.encoding.displacement == dst.encoding.displacement) {
+                write8((u8)(0x40
+                         | (((u8)dst.encoding.index >= 8) ? 2 : 0)
+                         | (((u8)dst.encoding.base >= 8) ? 1 : 0)));
+                write8((u8)(0x0f));
+                write8((u8)(0x7e));
+                write8((u8)(0b01000000 | (encodeRegister(src) << 3) | 0b100));
+                write8((u8)(encodeScale(dst.encoding.scale) << 6
+                         | (encodeRegister(dst.encoding.index) << 3)
+                         | (encodeRegister(dst.encoding.base))));
+                write8((i8)dst.encoding.displacement);
+            } else {
+                write8((u8)(0x40
+                         | (((u8)dst.encoding.index >= 8) ? 2 : 0)
+                         | (((u8)dst.encoding.base >= 8) ? 1 : 0)));
+                write8((u8)(0x0f));
+                write8((u8)(0x7e));
+                write8((u8)(0b10000000 | (encodeRegister(src) << 3) | 0b100));
+                write8((u8)(encodeScale(dst.encoding.scale) << 6
+                         | (encodeRegister(dst.encoding.index) << 3)
+                         | (encodeRegister(dst.encoding.base))));
+                write32(dst.encoding.displacement);
+            }
+        }
+    }
+
+    void Assembler::movq(MMX dst, const M64& src) {
+        verify(src.encoding.index != R64::RSP, "rsp not allowed as index");
+        verify(src.encoding.index != R64::R12, "r12 not allowed as index");
+        if(src.encoding.index == R64::ZERO) {
+            if(src.encoding.base != R64::RSP && src.encoding.base != R64::R12) {
+                if(src.encoding.displacement == 0 && src.encoding.base != R64::RBP && src.encoding.base != R64::R13) {
+                    write8((u8)(0x48 | (((u8)src.encoding.base >= 8) ? 1 : 0)));
+                    write8((u8)(0x0f));
+                    write8((u8)(0x6e));
+                    write8((u8)(0b00000000 | (encodeRegister(dst) << 3) | (encodeRegister(src.encoding.base))));
+                } else if((i8)src.encoding.displacement == src.encoding.displacement) {
+                    write8((u8)(0x48 | (((u8)src.encoding.base >= 8) ? 1 : 0)));
+                    write8((u8)(0x0f));
+                    write8((u8)(0x6e));
+                    write8((u8)(0b01000000 | (encodeRegister(dst) << 3) | (encodeRegister(src.encoding.base))));
+                    write8((i8)src.encoding.displacement);
+                } else {
+                    write8((u8)(0x48 | (((u8)src.encoding.base >= 8) ? 1 : 0)));
+                    write8((u8)(0x0f));
+                    write8((u8)(0x6e));
+                    write8((u8)(0b10000000 | (encodeRegister(dst) << 3) | (encodeRegister(src.encoding.base))));
+                    write32(src.encoding.displacement);
+                }
+            } else {
+                if(src.encoding.displacement == 0) {
+                    write8((u8)(0x48 | (((u8)src.encoding.base >= 8) ? 1 : 0)));
+                    write8((u8)(0x0f));
+                    write8((u8)(0x6e));
+                    write8((u8)(0b00000000 | (encodeRegister(dst) << 3) | (encodeRegister(src.encoding.base))));
+                    write8((u8)(0b00000000 | (0b100 << 3) | (encodeRegister(src.encoding.base))));
+                } else if((i8)src.encoding.displacement == src.encoding.displacement) {
+                    write8((u8)(0x48 | (((u8)src.encoding.base >= 8) ? 1 : 0)));
+                    write8((u8)(0x0f));
+                    write8((u8)(0x6e));
+                    write8((u8)(0b01000000 | (encodeRegister(dst) << 3) | (encodeRegister(src.encoding.base))));
+                    write8((u8)(0b00000000 | (0b100 << 3) | (encodeRegister(src.encoding.base))));
+                    write8((i8)src.encoding.displacement);
+                } else {
+                    write8((u8)(0x48 | (((u8)src.encoding.base >= 8) ? 1 : 0)));
+                    write8((u8)(0x0f));
+                    write8((u8)(0x6e));
+                    write8((u8)(0b10000000 | (encodeRegister(dst) << 3) | (encodeRegister(src.encoding.base))));
+                    write8((u8)(0b00000000 | (0b100 << 3) | (encodeRegister(src.encoding.base))));
+                    write32(src.encoding.displacement);
+                }
+            }
+        } else {
+            if((i8)src.encoding.displacement == src.encoding.displacement) {
+                write8((u8)(0x48
+                        | (((u8)src.encoding.index >= 8) ? 2 : 0)
+                        | (((u8)src.encoding.base >= 8) ? 1 : 0)));
+                write8((u8)(0x0f));
+                write8((u8)(0x6e));
+                write8((u8)(0b01000000 | (encodeRegister(dst) << 3) | 0b100));
+                write8((u8)(encodeScale(src.encoding.scale) << 6
+                        | (encodeRegister(src.encoding.index) << 3)
+                        | (encodeRegister(src.encoding.base))));
+                write8((i8)src.encoding.displacement);
+            } else {
+                write8((u8)(0x48
+                        | (((u8)src.encoding.index >= 8) ? 2 : 0)
+                        | (((u8)src.encoding.base >= 8) ? 1 : 0)));
+                write8((u8)(0x0f));
+                write8((u8)(0x6e));
+                write8((u8)(0b10000000 | (encodeRegister(dst) << 3) | 0b100));
+                write8((u8)(encodeScale(src.encoding.scale) << 6
+                        | (encodeRegister(src.encoding.index) << 3)
+                        | (encodeRegister(src.encoding.base))));
+                write32(src.encoding.displacement);
+            }
+        }
+    }
+
+    void Assembler::movq(const M64& dst, MMX src) {
+        if(dst.encoding.index == R64::ZERO) {
+            if(dst.encoding.displacement == 0) {
+                verify(dst.encoding.base != R64::RBP, "rbp as base without displacement requires an SIB byte");
+                write8((u8)(0x48 | (((u8)dst.encoding.base >= 8) ? 1 : 0)));
+                write8((u8)(0x0f));
+                write8((u8)(0x7e));
+                write8((u8)(0b00000000 | (encodeRegister(src) << 3) | (encodeRegister(dst.encoding.base))));
+            } else if((i8)dst.encoding.displacement == dst.encoding.displacement) {
+                write8((u8)(0x48 | (((u8)dst.encoding.base >= 8) ? 1 : 0)));
+                write8((u8)(0x0f));
+                write8((u8)(0x7e));
+                write8((u8)(0b01000000 | (encodeRegister(src) << 3) | (encodeRegister(dst.encoding.base))));
+                write8((i8)dst.encoding.displacement);
+            } else {
+                write8((u8)(0x48 | (((u8)dst.encoding.base >= 8) ? 1 : 0)));
+                write8((u8)(0x0f));
+                write8((u8)(0x7e));
+                write8((u8)(0b10000000 | (encodeRegister(src) << 3) | (encodeRegister(dst.encoding.base))));
+                write32(dst.encoding.displacement);
+            }
+        } else {
+            if((i8)dst.encoding.displacement == dst.encoding.displacement) {
+                write8((u8)(0x48
+                         | (((u8)dst.encoding.index >= 8) ? 2 : 0)
+                         | (((u8)dst.encoding.base >= 8) ? 1 : 0)));
+                write8((u8)(0x0f));
+                write8((u8)(0x7e));
+                write8((u8)(0b01000000 | (encodeRegister(src) << 3) | 0b100));
+                write8((u8)(encodeScale(dst.encoding.scale) << 6
+                         | (encodeRegister(dst.encoding.index) << 3)
+                         | (encodeRegister(dst.encoding.base))));
+                write8((i8)dst.encoding.displacement);
+            } else {
+                write8((u8)(0x48
+                         | (((u8)dst.encoding.index >= 8) ? 2 : 0)
+                         | (((u8)dst.encoding.base >= 8) ? 1 : 0)));
+                write8((u8)(0x0f));
+                write8((u8)(0x7e));
+                write8((u8)(0b10000000 | (encodeRegister(src) << 3) | 0b100));
+                write8((u8)(encodeScale(dst.encoding.scale) << 6
+                         | (encodeRegister(dst.encoding.index) << 3)
+                         | (encodeRegister(dst.encoding.base))));
+                write32(dst.encoding.displacement);
+            }
+        }
+    }
+
+    void Assembler::pand(MMX dst, MMX src) {
+        write8((u8)0x0f);
+        write8((u8)0xdb);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
+    void Assembler::por(MMX dst, MMX src) {
+        write8((u8)0x0f);
+        write8((u8)0xeb);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
+    void Assembler::pxor(MMX dst, MMX src) {
+        write8((u8)0x0f);
+        write8((u8)0xef);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
+    void Assembler::paddb(MMX dst, MMX src) {
+        write8((u8)0x0f);
+        write8((u8)0xfc);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
+    void Assembler::paddw(MMX dst, MMX src) {
+        write8((u8)0x0f);
+        write8((u8)0xfd);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
+    void Assembler::paddd(MMX dst, MMX src) {
+        write8((u8)0x0f);
+        write8((u8)0xfe);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
+    void Assembler::paddq(MMX dst, MMX src) {
+        write8((u8)0x0f);
+        write8((u8)0xd4);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
+    void Assembler::paddsb(MMX dst, MMX src) {
+        write8((u8)0x0f);
+        write8((u8)0xec);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
+    void Assembler::paddsw(MMX dst, MMX src) {
+        write8((u8)0x0f);
+        write8((u8)0xed);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
+    void Assembler::psubb(MMX dst, MMX src) {
+        write8((u8)0x0f);
+        write8((u8)0xf8);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
+    void Assembler::psubw(MMX dst, MMX src) {
+        write8((u8)0x0f);
+        write8((u8)0xf9);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
+    void Assembler::psubd(MMX dst, MMX src) {
+        write8((u8)0x0f);
+        write8((u8)0xfa);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
+    void Assembler::psubsb(MMX dst, MMX src) {
+        write8((u8)0x0f);
+        write8((u8)0xe8);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
+    void Assembler::psubsw(MMX dst, MMX src) {
+        write8((u8)0x0f);
+        write8((u8)0xe9);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
+    void Assembler::pmaddwd(MMX dst, MMX src) {
+        write8((u8)0x0f);
+        write8((u8)0xf5);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
+    void Assembler::pmulhw(MMX dst, MMX src) {
+        write8((u8)0x0f);
+        write8((u8)0xe5);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
+    void Assembler::pmullw(MMX dst, MMX src) {
+        write8((u8)0x0f);
+        write8((u8)0xd5);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
+    void Assembler::pcmpeqb(MMX dst, MMX src) {
+        write8((u8)0x0f);
+        write8((u8)0x74);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
+    void Assembler::pcmpeqw(MMX dst, MMX src) {
+        write8((u8)0x0f);
+        write8((u8)0x75);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
+    void Assembler::pcmpeqd(MMX dst, MMX src) {
+        write8((u8)0x0f);
+        write8((u8)0x76);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
+    void Assembler::psllw(MMX dst, u8 imm) {
+        write8((u8)0x0f);
+        write8((u8)0x71);
+        write8((u8)(0b11000000 | (0b110 << 3) | encodeRegister(dst)));
+        write8(imm);
+    }
+
+    void Assembler::pslld(MMX dst, u8 imm) {
+        write8((u8)0x0f);
+        write8((u8)0x72);
+        write8((u8)(0b11000000 | (0b110 << 3) | encodeRegister(dst)));
+        write8(imm);
+    }
+
+    void Assembler::psllq(MMX dst, u8 imm) {
+        write8((u8)0x0f);
+        write8((u8)0x73);
+        write8((u8)(0b11000000 | (0b110 << 3) | encodeRegister(dst)));
+        write8(imm);
+    }
+
+    void Assembler::psrlw(MMX dst, u8 imm) {
+        write8((u8)0x0f);
+        write8((u8)0x71);
+        write8((u8)(0b11000000 | (0b010 << 3) | encodeRegister(dst)));
+        write8(imm);
+    }
+
+    void Assembler::psrld(MMX dst, u8 imm) {
+        write8((u8)0x0f);
+        write8((u8)0x72);
+        write8((u8)(0b11000000 | (0b010 << 3) | encodeRegister(dst)));
+        write8(imm);
+    }
+
+    void Assembler::psrlq(MMX dst, u8 imm) {
+        write8((u8)0x0f);
+        write8((u8)0x73);
+        write8((u8)(0b11000000 | (0b010 << 3) | encodeRegister(dst)));
+        write8(imm);
+    }
+
+    void Assembler::psraw(MMX dst, u8 imm) {
+        write8((u8)0x0f);
+        write8((u8)0x71);
+        write8((u8)(0b11000000 | (0b100 << 3) | encodeRegister(dst)));
+        write8(imm);
+    }
+
+    void Assembler::psrad(MMX dst, u8 imm) {
+        write8((u8)0x0f);
+        write8((u8)0x72);
+        write8((u8)(0b11000000 | (0b100 << 3) | encodeRegister(dst)));
+        write8(imm);
+    }
+
+    void Assembler::punpcklbw(MMX dst, MMX src) {
+        write8((u8)0x0f);
+        write8((u8)0x60);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
+    void Assembler::punpcklwd(MMX dst, MMX src) {
+        write8((u8)0x0f);
+        write8((u8)0x61);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
+    void Assembler::punpckldq(MMX dst, MMX src) {
+        write8((u8)0x0f);
+        write8((u8)0x62);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
+    void Assembler::punpckhbw(MMX dst, MMX src) {
+        write8((u8)0x0f);
+        write8((u8)0x68);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
+    void Assembler::punpckhwd(MMX dst, MMX src) {
+        write8((u8)0x0f);
+        write8((u8)0x69);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
+    void Assembler::punpckhdq(MMX dst, MMX src) {
+        write8((u8)0x0f);
+        write8((u8)0x6a);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
+    void Assembler::packsswb(MMX dst, MMX src) {
+        write8((u8)0x0f);
+        write8((u8)0x63);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
+    void Assembler::packssdw(MMX dst, MMX src) {
+        write8((u8)0x0f);
+        write8((u8)0x6b);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
+    void Assembler::packuswb(MMX dst, MMX src) {
+        write8((u8)0x0f);
+        write8((u8)0x67);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
+
+
     u8 encodeRegister(XMM reg) {
         return ((u8)reg) & 0x7;
     }
@@ -1543,11 +2030,74 @@ namespace x64 {
         }
     }
 
+    void Assembler::movu(const M128& dst, XMM src) {
+        if(dst.encoding.index == R64::ZERO) {
+            if(dst.encoding.displacement == 0) {
+                verify(dst.encoding.base != R64::RBP, "rbp as base without displacement requires an SIB byte");
+                write8(0xf3);
+                write8((u8)(0x40 | (((u8)src >= 8) ? 4 : 0) | (((u8)dst.encoding.base >= 8) ? 1 : 0)));
+                write8(0x0f);
+                write8(0x7f);
+                write8((u8)(0b00000000 | (encodeRegister(src) << 3) | (encodeRegister(dst.encoding.base))));
+            } else if((i8)dst.encoding.displacement == dst.encoding.displacement) {
+                write8(0xf3);
+                write8((u8)(0x40 | (((u8)src >= 8) ? 4 : 0) | (((u8)dst.encoding.base >= 8) ? 1 : 0)));
+                write8(0x0f);
+                write8(0x7f);
+                write8((u8)(0b01000000 | (encodeRegister(src) << 3) | (encodeRegister(dst.encoding.base))));
+                write8((i8)dst.encoding.displacement);
+            } else {
+                write8(0xf3);
+                write8((u8)(0x40 | (((u8)src >= 8) ? 4 : 0) | (((u8)dst.encoding.base >= 8) ? 1 : 0)));
+                write8(0x0f);
+                write8(0x7f);
+                write8((u8)(0b10000000 | (encodeRegister(src) << 3) | (encodeRegister(dst.encoding.base))));
+                write32(dst.encoding.displacement);
+            }
+        } else {
+            if((i8)dst.encoding.displacement == dst.encoding.displacement) {
+                write8(0xf3);
+                write8((u8)(0x40
+                         | (((u8)src >= 8) ? 4 : 0)
+                         | (((u8)dst.encoding.index >= 8) ? 2 : 0)
+                         | (((u8)dst.encoding.base >= 8) ? 1 : 0)));
+                write8(0x0f);
+                write8(0x7f);
+                write8((u8)(0b01000000 | (encodeRegister(src) << 3) | 0b100));
+                write8((u8)(encodeScale(dst.encoding.scale) << 6
+                         | (encodeRegister(dst.encoding.index) << 3)
+                         | (encodeRegister(dst.encoding.base))));
+                write8((i8)dst.encoding.displacement);
+            } else {
+                write8(0xf3);
+                write8((u8)(0x40
+                         | (((u8)src >= 8) ? 4 : 0)
+                         | (((u8)dst.encoding.index >= 8) ? 2 : 0)
+                         | (((u8)dst.encoding.base >= 8) ? 1 : 0)));
+                write8(0x0f);
+                write8(0x7f);
+                write8((u8)(0b10000000 | (encodeRegister(src) << 3) | 0b100));
+                write8((u8)(encodeScale(dst.encoding.scale) << 6
+                         | (encodeRegister(dst.encoding.index) << 3)
+                         | (encodeRegister(dst.encoding.base))));
+                write32(dst.encoding.displacement);
+            }
+        }
+    }
+
     void Assembler::movq(XMM dst, R64 src) {
         write8(0x66);
         write8((u8)(0x48 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src >= 8) ? 1 : 0) ));
         write8(0x0f);
         write8(0x6e);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
+    void Assembler::movq(R64 dst, XMM src) {
+        write8(0x66);
+        write8((u8)(0x48 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src >= 8) ? 1 : 0) ));
+        write8(0x0f);
+        write8(0x7e);
         write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
     }
 
@@ -1713,6 +2263,26 @@ namespace x64 {
         write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
     }
 
+    void Assembler::paddsb(XMM dst, XMM src) {
+        write8(0x66);
+        if((u8)dst >= 8 || (u8)src >= 8) {
+            write8((u8)(0x40 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src >= 8) ? 1 : 0) ));
+        }
+        write8((u8)0x0f);
+        write8((u8)0xec);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
+    void Assembler::paddsw(XMM dst, XMM src) {
+        write8(0x66);
+        if((u8)dst >= 8 || (u8)src >= 8) {
+            write8((u8)(0x40 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src >= 8) ? 1 : 0) ));
+        }
+        write8((u8)0x0f);
+        write8((u8)0xed);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
     void Assembler::psubb(XMM dst, XMM src) {
         write8(0x66);
         if((u8)dst >= 8 || (u8)src >= 8) {
@@ -1833,6 +2403,28 @@ namespace x64 {
         write8((u8)0x0f);
         write8((u8)0x73);
         write8((u8)(0b11000000 | (0b010 << 3) | encodeRegister(dst)));
+        write8(imm);
+    }
+
+    void Assembler::psraw(XMM dst, u8 imm) {
+        write8(0x66);
+        if((u8)dst >= 8) {
+            write8((u8)(0x40 | (((u8)dst >= 8) ? 1 : 0)));
+        }
+        write8((u8)0x0f);
+        write8((u8)0x71);
+        write8((u8)(0b11000000 | (0b100 << 3) | encodeRegister(dst)));
+        write8(imm);
+    }
+
+    void Assembler::psrad(XMM dst, u8 imm) {
+        write8(0x66);
+        if((u8)dst >= 8) {
+            write8((u8)(0x40 | (((u8)dst >= 8) ? 1 : 0)));
+        }
+        write8((u8)0x0f);
+        write8((u8)0x72);
+        write8((u8)(0b11000000 | (0b100 << 3) | encodeRegister(dst)));
         write8(imm);
     }
 
