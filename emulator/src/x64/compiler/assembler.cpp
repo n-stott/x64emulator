@@ -1112,6 +1112,28 @@ namespace x64 {
         write8((u8)(0b11000000 | (0b011 << 3) | encodeRegister(dst)));
     }
 
+    void Assembler::inc(R32 dst) {
+        if((u8)dst >= 8) {
+            write8((u8)(0x40 | (((u8)dst >= 8) ? 1 : 0) ));
+        }
+        write8((u8)0xff);
+        write8((u8)(0b11000000 | (0b000 << 3) | encodeRegister(dst)));
+    }
+
+    void Assembler::inc(R64 dst) {
+        write8((u8)(0x48 | (((u8)dst >= 8) ? 1 : 0) ));
+        write8((u8)0xff);
+        write8((u8)(0b11000000 | (0b000 << 3) | encodeRegister(dst)));
+    }
+
+    void Assembler::dec(R32 dst) {
+        if((u8)dst >= 8) {
+            write8((u8)(0x40 | (((u8)dst >= 8) ? 1 : 0) ));
+        }
+        write8((u8)0xff);
+        write8((u8)(0b11000000 | (0b001 << 3) | encodeRegister(dst)));
+    }
+
     void Assembler::dec(R64 dst) {
         write8((u8)(0x48 | (((u8)dst >= 8) ? 1 : 0) ));
         write8((u8)0xff);

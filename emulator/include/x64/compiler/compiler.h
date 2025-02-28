@@ -114,6 +114,9 @@ namespace x64 {
         bool tryCompileNotRM64(const RM64&);
         bool tryCompileNegRM32(const RM32&);
         bool tryCompileNegRM64(const RM64&);
+        bool tryCompileIncRM32(const RM32&);
+        bool tryCompileIncRM64(const RM64&);
+        bool tryCompileDecRM32(const RM32&);
         bool tryCompileDecRM64(const RM64&);
         bool tryCompileCdqe();
         bool tryCompileCdq();

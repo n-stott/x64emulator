@@ -139,6 +139,9 @@ namespace x64 {
             case Insn::NOT_RM64: return tryCompileNotRM64(ins.op0<RM64>());
             case Insn::NEG_RM32: return tryCompileNegRM32(ins.op0<RM32>());
             case Insn::NEG_RM64: return tryCompileNegRM64(ins.op0<RM64>());
+            case Insn::INC_RM32: return tryCompileIncRM32(ins.op0<RM32>());
+            case Insn::INC_RM64: return tryCompileIncRM64(ins.op0<RM64>());
+            case Insn::DEC_RM32: return tryCompileDecRM32(ins.op0<RM32>());
             case Insn::DEC_RM64: return tryCompileDecRM64(ins.op0<RM64>());
             case Insn::CDQE: return tryCompileCdqe();
             case Insn::CDQ: return tryCompileCdq();
@@ -1234,6 +1237,84 @@ namespace x64 {
             assembler_.neg(get(Reg::GPR0));
             // write back to the register
             writeMem64(addr, Reg::GPR0);
+            return true;
+        } 
+    }
+
+    bool Compiler::tryCompileIncRM32(const RM32& dst) {
+        if(dst.isReg) {
+            // read the destination register
+            readReg32(Reg::GPR0, dst.reg);
+            // perform the op
+            assembler_.inc(get32(Reg::GPR0));
+            // write back to the destination register
+            writeReg32(dst.reg, Reg::GPR0);
+            return true;
+        } else {
+            // fetch dst address
+            const M32& mem = dst.mem;
+            if(mem.segment != Segment::CS && mem.segment != Segment::UNK) return false;
+            if(mem.encoding.index == R64::RIP) return false;
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the dst value at the address
+            readMem32(Reg::GPR0, addr);
+            // perform the op
+            assembler_.inc(get32(Reg::GPR0));
+            // write back to the register
+            writeMem32(addr, Reg::GPR0);
+            return true;
+        } 
+    }
+
+    bool Compiler::tryCompileIncRM64(const RM64& dst) {
+        if(dst.isReg) {
+            // read the destination register
+            readReg64(Reg::GPR0, dst.reg);
+            // perform the op
+            assembler_.inc(get(Reg::GPR0));
+            // write back to the destination register
+            writeReg64(dst.reg, Reg::GPR0);
+            return true;
+        } else {
+            // fetch dst address
+            const M64& mem = dst.mem;
+            if(mem.segment != Segment::CS && mem.segment != Segment::UNK) return false;
+            if(mem.encoding.index == R64::RIP) return false;
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the dst value at the address
+            readMem64(Reg::GPR0, addr);
+            // perform the op
+            assembler_.inc(get(Reg::GPR0));
+            // write back to the register
+            writeMem64(addr, Reg::GPR0);
+            return true;
+        } 
+    }
+
+    bool Compiler::tryCompileDecRM32(const RM32& dst) {
+        if(dst.isReg) {
+            // read the destination register
+            readReg32(Reg::GPR0, dst.reg);
+            // perform the op
+            assembler_.dec(get32(Reg::GPR0));
+            // write back to the destination register
+            writeReg32(dst.reg, Reg::GPR0);
+            return true;
+        } else {
+            // fetch dst address
+            const M32& mem = dst.mem;
+            if(mem.segment != Segment::CS && mem.segment != Segment::UNK) return false;
+            if(mem.encoding.index == R64::RIP) return false;
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the dst value at the address
+            readMem32(Reg::GPR0, addr);
+            // perform the op
+            assembler_.dec(get32(Reg::GPR0));
+            // write back to the register
+            writeMem32(addr, Reg::GPR0);
             return true;
         } 
     }
