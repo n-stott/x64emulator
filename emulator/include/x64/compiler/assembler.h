@@ -245,6 +245,31 @@ namespace x64 {
         void packuswb(XMM, XMM);
         void packusdw(XMM, XMM);
 
+        void addss(XMM, XMM);
+        void subss(XMM, XMM);
+        void mulss(XMM, XMM);
+        void divss(XMM, XMM);
+        void comiss(XMM, XMM);
+
+        void addsd(XMM, XMM);
+        void subsd(XMM, XMM);
+        void mulsd(XMM, XMM);
+        void divsd(XMM, XMM);
+        void comisd(XMM, XMM);
+
+        void addps(XMM, XMM);
+        void subps(XMM, XMM);
+        void mulps(XMM, XMM);
+        void divps(XMM, XMM);
+
+        void addpd(XMM, XMM);
+        void subpd(XMM, XMM);
+        void mulpd(XMM, XMM);
+        void divpd(XMM, XMM);
+
+        void shufps(XMM, XMM, u8);
+        void shufpd(XMM, XMM, u8);
+
         // exits
         struct Label {
             size_t positionInCode { (size_t)(-1) };

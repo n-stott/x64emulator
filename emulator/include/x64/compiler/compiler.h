@@ -251,6 +251,31 @@ namespace x64 {
         bool tryCompilePackuswbXmmXmmM128(XMM, const XMMM128&);
         bool tryCompilePackusdwXmmXmmM128(XMM, const XMMM128&);
 
+        bool tryCompileAddssXmmXmm(XMM, XMM);
+        bool tryCompileSubssXmmXmm(XMM, XMM);
+        bool tryCompileMulssXmmXmm(XMM, XMM);
+        bool tryCompileDivssXmmXmm(XMM, XMM);
+        bool tryCompileComissXmmXmm(XMM, XMM);
+
+        bool tryCompileAddsdXmmXmm(XMM, XMM);
+        bool tryCompileSubsdXmmXmm(XMM, XMM);
+        bool tryCompileMulsdXmmXmm(XMM, XMM);
+        bool tryCompileDivsdXmmXmm(XMM, XMM);
+        bool tryCompileComisdXmmXmm(XMM, XMM);
+
+        bool tryCompileAddpsXmmXmm(XMM, const XMMM128&);
+        bool tryCompileSubpsXmmXmm(XMM, const XMMM128&);
+        bool tryCompileMulpsXmmXmm(XMM, const XMMM128&);
+        bool tryCompileDivpsXmmXmm(XMM, const XMMM128&);
+
+        bool tryCompileAddpdXmmXmm(XMM, const XMMM128&);
+        bool tryCompileSubpdXmmXmm(XMM, const XMMM128&);
+        bool tryCompileMulpdXmmXmm(XMM, const XMMM128&);
+        bool tryCompileDivpdXmmXmm(XMM, const XMMM128&);
+
+        bool tryCompileShufpsXmmXmmImm(XMM, XMM, Imm);
+        bool tryCompileShufpdXmmXmmImm(XMM, XMM, Imm);
+
 
         // exits
         std::optional<ReplaceableJumps> tryCompileCall(u64 dst);
