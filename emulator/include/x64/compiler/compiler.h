@@ -224,11 +224,18 @@ namespace x64 {
         bool tryCompilePcmpeqwXmmXmmM128(XMM, const XMMM128&);
         bool tryCompilePcmpeqdXmmXmmM128(XMM, const XMMM128&);
 
+        bool tryCompilePsllwXmmImm(XMM, Imm);
+        bool tryCompilePslldXmmImm(XMM, Imm);
+        bool tryCompilePsllqXmmImm(XMM, Imm);
+        bool tryCompilePslldqXmmImm(XMM, Imm);
         bool tryCompilePsrlwXmmImm(XMM, Imm);
         bool tryCompilePsrldXmmImm(XMM, Imm);
         bool tryCompilePsrlqXmmImm(XMM, Imm);
+        bool tryCompilePsrldqXmmImm(XMM, Imm);
         bool tryCompilePsrawXmmImm(XMM, Imm);
         bool tryCompilePsradXmmImm(XMM, Imm);
+
+        bool tryCompilePshufdXmmXmmM128Imm(XMM, const XMMM128&, Imm);
 
         bool tryCompilePunpcklbwXmmXmmM128(XMM, const XMMM128&);
         bool tryCompilePunpcklwdXmmXmmM128(XMM, const XMMM128&);

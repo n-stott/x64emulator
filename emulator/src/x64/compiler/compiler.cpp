@@ -245,11 +245,18 @@ namespace x64 {
             case Insn::PCMPEQB_XMM_XMMM128: return tryCompilePcmpeqbXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
             case Insn::PCMPEQW_XMM_XMMM128: return tryCompilePcmpeqwXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
             case Insn::PCMPEQD_XMM_XMMM128: return tryCompilePcmpeqdXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PSLLW_XMM_IMM: return tryCompilePsllwXmmImm(ins.op0<XMM>(), ins.op1<Imm>());
+            case Insn::PSLLD_XMM_IMM: return tryCompilePslldXmmImm(ins.op0<XMM>(), ins.op1<Imm>());
+            case Insn::PSLLQ_XMM_IMM: return tryCompilePsllqXmmImm(ins.op0<XMM>(), ins.op1<Imm>());
+            case Insn::PSLLDQ_XMM_IMM: return tryCompilePslldqXmmImm(ins.op0<XMM>(), ins.op1<Imm>());
             case Insn::PSRLW_XMM_IMM: return tryCompilePsrlwXmmImm(ins.op0<XMM>(), ins.op1<Imm>());
             case Insn::PSRLD_XMM_IMM: return tryCompilePsrldXmmImm(ins.op0<XMM>(), ins.op1<Imm>());
             case Insn::PSRLQ_XMM_IMM: return tryCompilePsrlqXmmImm(ins.op0<XMM>(), ins.op1<Imm>());
+            case Insn::PSRLDQ_XMM_IMM: return tryCompilePsrldqXmmImm(ins.op0<XMM>(), ins.op1<Imm>());
             case Insn::PSRAW_XMM_IMM: return tryCompilePsrawXmmImm(ins.op0<XMM>(), ins.op1<Imm>());
             case Insn::PSRAD_XMM_IMM: return tryCompilePsradXmmImm(ins.op0<XMM>(), ins.op1<Imm>());
+
+            case Insn::PSHUFD_XMM_XMMM128_IMM: return tryCompilePshufdXmmXmmM128Imm(ins.op0<XMM>(), ins.op1<XMMM128>(), ins.op2<Imm>());
 
             case Insn::PUNPCKLBW_XMM_XMMM128: return tryCompilePunpcklbwXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
             case Insn::PUNPCKLWD_XMM_XMMM128: return tryCompilePunpcklwdXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
@@ -2081,66 +2088,45 @@ namespace x64 {
     }
 
     bool Compiler::tryCompilePandXmmXmmM128(XMM dst, const XMMM128& src) {
-        if(!src.isReg) return false;
-        readReg128(Reg128::GPR0, dst);
-        readReg128(Reg128::GPR1, src.reg);
-        assembler_.pand(get(Reg128::GPR0), get(Reg128::GPR1));
-        writeReg128(dst, Reg128::GPR0);
-        return true;
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            assembler_.pand(get(dst), get(src));
+        });
     }
 
     bool Compiler::tryCompilePorXmmXmmM128(XMM dst, const XMMM128& src) {
-        if(!src.isReg) return false;
-        readReg128(Reg128::GPR0, dst);
-        readReg128(Reg128::GPR1, src.reg);
-        assembler_.por(get(Reg128::GPR0), get(Reg128::GPR1));
-        writeReg128(dst, Reg128::GPR0);
-        return true;
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            assembler_.por(get(dst), get(src));
+        });
     }
 
     bool Compiler::tryCompilePxorXmmXmmM128(XMM dst, const XMMM128& src) {
-        if(!src.isReg) return false;
-        readReg128(Reg128::GPR0, dst);
-        readReg128(Reg128::GPR1, src.reg);
-        assembler_.pxor(get(Reg128::GPR0), get(Reg128::GPR1));
-        writeReg128(dst, Reg128::GPR0);
-        return true;
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            assembler_.pxor(get(dst), get(src));
+        });
     }
 
     bool Compiler::tryCompilePaddbXmmXmmM128(XMM dst, const XMMM128& src) {
-        if(!src.isReg) return false;
-        readReg128(Reg128::GPR0, dst);
-        readReg128(Reg128::GPR1, src.reg);
-        assembler_.paddb(get(Reg128::GPR0), get(Reg128::GPR1));
-        writeReg128(dst, Reg128::GPR0);
-        return true;
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            assembler_.paddb(get(dst), get(src));
+        });
     }
 
     bool Compiler::tryCompilePaddwXmmXmmM128(XMM dst, const XMMM128& src) {
-        if(!src.isReg) return false;
-        readReg128(Reg128::GPR0, dst);
-        readReg128(Reg128::GPR1, src.reg);
-        assembler_.paddw(get(Reg128::GPR0), get(Reg128::GPR1));
-        writeReg128(dst, Reg128::GPR0);
-        return true;
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            assembler_.paddw(get(dst), get(src));
+        });
     }
 
     bool Compiler::tryCompilePadddXmmXmmM128(XMM dst, const XMMM128& src) {
-        if(!src.isReg) return false;
-        readReg128(Reg128::GPR0, dst);
-        readReg128(Reg128::GPR1, src.reg);
-        assembler_.paddd(get(Reg128::GPR0), get(Reg128::GPR1));
-        writeReg128(dst, Reg128::GPR0);
-        return true;
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            assembler_.paddd(get(dst), get(src));
+        });
     }
 
     bool Compiler::tryCompilePaddqXmmXmmM128(XMM dst, const XMMM128& src) {
-        if(!src.isReg) return false;
-        readReg128(Reg128::GPR0, dst);
-        readReg128(Reg128::GPR1, src.reg);
-        assembler_.paddq(get(Reg128::GPR0), get(Reg128::GPR1));
-        writeReg128(dst, Reg128::GPR0);
-        return true;
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            assembler_.paddq(get(dst), get(src));
+        });
     }
 
     bool Compiler::tryCompilePaddsbXmmXmmM128(XMM dst, const XMMM128& src) {
@@ -2156,39 +2142,27 @@ namespace x64 {
     }
 
     bool Compiler::tryCompilePsubbXmmXmmM128(XMM dst, const XMMM128& src) {
-        if(!src.isReg) return false;
-        readReg128(Reg128::GPR0, dst);
-        readReg128(Reg128::GPR1, src.reg);
-        assembler_.psubb(get(Reg128::GPR0), get(Reg128::GPR1));
-        writeReg128(dst, Reg128::GPR0);
-        return true;
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            assembler_.psubb(get(dst), get(src));
+        });
     }
 
     bool Compiler::tryCompilePsubwXmmXmmM128(XMM dst, const XMMM128& src) {
-        if(!src.isReg) return false;
-        readReg128(Reg128::GPR0, dst);
-        readReg128(Reg128::GPR1, src.reg);
-        assembler_.psubw(get(Reg128::GPR0), get(Reg128::GPR1));
-        writeReg128(dst, Reg128::GPR0);
-        return true;
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            assembler_.psubw(get(dst), get(src));
+        });
     }
 
     bool Compiler::tryCompilePsubdXmmXmmM128(XMM dst, const XMMM128& src) {
-        if(!src.isReg) return false;
-        readReg128(Reg128::GPR0, dst);
-        readReg128(Reg128::GPR1, src.reg);
-        assembler_.psubd(get(Reg128::GPR0), get(Reg128::GPR1));
-        writeReg128(dst, Reg128::GPR0);
-        return true;
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            assembler_.psubd(get(dst), get(src));
+        });
     }
 
     bool Compiler::tryCompilePmaddwdXmmXmmM128(XMM dst, const XMMM128& src) {
-        if(!src.isReg) return false;
-        readReg128(Reg128::GPR0, dst);
-        readReg128(Reg128::GPR1, src.reg);
-        assembler_.pmaddwd(get(Reg128::GPR0), get(Reg128::GPR1));
-        writeReg128(dst, Reg128::GPR0);
-        return true;
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            assembler_.pmaddwd(get(dst), get(src));
+        });
     }
 
     bool Compiler::tryCompilePmulhwXmmXmmM128(XMM dst, const XMMM128& src) {
@@ -2242,6 +2216,34 @@ namespace x64 {
         return true;
     }
 
+    bool Compiler::tryCompilePsllwXmmImm(XMM dst, Imm imm) {
+        readReg128(Reg128::GPR0, dst);
+        assembler_.psllw(get(Reg128::GPR0), imm.as<u8>());
+        writeReg128(dst, Reg128::GPR0);
+        return true;
+    }
+
+    bool Compiler::tryCompilePslldXmmImm(XMM dst, Imm imm) {
+        readReg128(Reg128::GPR0, dst);
+        assembler_.pslld(get(Reg128::GPR0), imm.as<u8>());
+        writeReg128(dst, Reg128::GPR0);
+        return true;
+    }
+
+    bool Compiler::tryCompilePsllqXmmImm(XMM dst, Imm imm) {
+        readReg128(Reg128::GPR0, dst);
+        assembler_.psllq(get(Reg128::GPR0), imm.as<u8>());
+        writeReg128(dst, Reg128::GPR0);
+        return true;
+    }
+
+    bool Compiler::tryCompilePslldqXmmImm(XMM dst, Imm imm) {
+        readReg128(Reg128::GPR0, dst);
+        assembler_.pslldq(get(Reg128::GPR0), imm.as<u8>());
+        writeReg128(dst, Reg128::GPR0);
+        return true;
+    }
+
     bool Compiler::tryCompilePsrlwXmmImm(XMM dst, Imm imm) {
         readReg128(Reg128::GPR0, dst);
         assembler_.psrlw(get(Reg128::GPR0), imm.as<u8>());
@@ -2263,6 +2265,13 @@ namespace x64 {
         return true;
     }
 
+    bool Compiler::tryCompilePsrldqXmmImm(XMM dst, Imm imm) {
+        readReg128(Reg128::GPR0, dst);
+        assembler_.psrldq(get(Reg128::GPR0), imm.as<u8>());
+        writeReg128(dst, Reg128::GPR0);
+        return true;
+    }
+
     bool Compiler::tryCompilePsrawXmmImm(XMM dst, Imm imm) {
         readReg128(Reg128::GPR0, dst);
         assembler_.psraw(get(Reg128::GPR0), imm.as<u8>());
@@ -2275,6 +2284,12 @@ namespace x64 {
         assembler_.psrad(get(Reg128::GPR0), imm.as<u8>());
         writeReg128(dst, Reg128::GPR0);
         return true;
+    }
+
+    bool Compiler::tryCompilePshufdXmmXmmM128Imm(XMM dst, const XMMM128& src, Imm imm) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            assembler_.pshufd(get(dst), get(src), imm.as<u8>());
+        });
     }
 
     bool Compiler::tryCompilePunpcklbwXmmXmmM128(XMM dst, const XMMM128& src) {

@@ -2473,6 +2473,50 @@ namespace x64 {
         write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
     }
 
+    void Assembler::psllw(XMM dst, u8 imm) {
+        write8(0x66);
+        if((u8)dst >= 8) {
+            write8((u8)(0x40 | (((u8)dst >= 8) ? 1 : 0)));
+        }
+        write8((u8)0x0f);
+        write8((u8)0x71);
+        write8((u8)(0b11000000 | (0b110 << 3) | encodeRegister(dst)));
+        write8(imm);
+    }
+
+    void Assembler::pslld(XMM dst, u8 imm) {
+        write8(0x66);
+        if((u8)dst >= 8) {
+            write8((u8)(0x40 | (((u8)dst >= 8) ? 1 : 0)));
+        }
+        write8((u8)0x0f);
+        write8((u8)0x72);
+        write8((u8)(0b11000000 | (0b110 << 3) | encodeRegister(dst)));
+        write8(imm);
+    }
+
+    void Assembler::psllq(XMM dst, u8 imm) {
+        write8(0x66);
+        if((u8)dst >= 8) {
+            write8((u8)(0x40 | (((u8)dst >= 8) ? 1 : 0)));
+        }
+        write8((u8)0x0f);
+        write8((u8)0x73);
+        write8((u8)(0b11000000 | (0b110 << 3) | encodeRegister(dst)));
+        write8(imm);
+    }
+
+    void Assembler::pslldq(XMM dst, u8 imm) {
+        write8(0x66);
+        if((u8)dst >= 8) {
+            write8((u8)(0x40 | (((u8)dst >= 8) ? 1 : 0)));
+        }
+        write8((u8)0x0f);
+        write8((u8)0x73);
+        write8((u8)(0b11000000 | (0b111 << 3) | encodeRegister(dst)));
+        write8(imm);
+    }
+
     void Assembler::psrlw(XMM dst, u8 imm) {
         write8(0x66);
         if((u8)dst >= 8) {
@@ -2506,6 +2550,17 @@ namespace x64 {
         write8(imm);
     }
 
+    void Assembler::psrldq(XMM dst, u8 imm) {
+        write8(0x66);
+        if((u8)dst >= 8) {
+            write8((u8)(0x40 | (((u8)dst >= 8) ? 1 : 0)));
+        }
+        write8((u8)0x0f);
+        write8((u8)0x73);
+        write8((u8)(0b11000000 | (0b011 << 3) | encodeRegister(dst)));
+        write8(imm);
+    }
+
     void Assembler::psraw(XMM dst, u8 imm) {
         write8(0x66);
         if((u8)dst >= 8) {
@@ -2525,6 +2580,17 @@ namespace x64 {
         write8((u8)0x0f);
         write8((u8)0x72);
         write8((u8)(0b11000000 | (0b100 << 3) | encodeRegister(dst)));
+        write8(imm);
+    }
+
+    void Assembler::pshufd(XMM dst, XMM src, u8 imm) {
+        write8(0x66);
+        if((u8)dst >= 8 || (u8)src >= 8) {
+            write8((u8)(0x40 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src >= 8) ? 1 : 0) ));
+        }
+        write8((u8)0x0f);
+        write8((u8)0x70);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
         write8(imm);
     }
 

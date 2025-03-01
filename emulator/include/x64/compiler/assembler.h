@@ -218,11 +218,18 @@ namespace x64 {
         void pcmpeqw(XMM, XMM);
         void pcmpeqd(XMM, XMM);
 
+        void psllw(XMM, u8);
+        void pslld(XMM, u8);
+        void psllq(XMM, u8);
+        void pslldq(XMM, u8);
         void psrlw(XMM, u8);
         void psrld(XMM, u8);
         void psrlq(XMM, u8);
+        void psrldq(XMM, u8);
         void psraw(XMM, u8);
         void psrad(XMM, u8);
+
+        void pshufd(XMM, XMM, u8);
 
         void punpcklbw(XMM, XMM);
         void punpcklwd(XMM, XMM);
