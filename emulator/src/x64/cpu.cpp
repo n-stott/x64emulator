@@ -1566,6 +1566,7 @@ namespace x64 {
             mmu_->base(),
             &rflags,
             ticks,
+            getSegmentBase(Segment::FS),
         };
         bb(&arguments);
         flags_ = Flags::fromRflags(rflags);

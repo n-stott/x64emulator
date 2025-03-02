@@ -18,6 +18,7 @@ namespace x64 {
         u8* memory;
         u64* rflags;
         u64* ticks;
+        u64 fsbase;
     };
 
     using NativeExecPtr = void(*)(NativeArguments*);

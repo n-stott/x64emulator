@@ -371,6 +371,7 @@ namespace x64 {
         void writeMem128(const Mem& address, Reg128 src);
 
         void addTime(u32 amount);
+        void readFsBase(Reg dst);
 
         std::vector<u8> jmpCode(u64 dst, TmpReg tmp) const;
 
