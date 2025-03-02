@@ -28,6 +28,8 @@ namespace x64 {
         void movzx(R32 dst, R8 src);
         void movzx(R32 dst, R16 src);
         void movzx(R64 dst, R8 src);
+        void movsx(R32 dst, R8 src);
+        void movsx(R32 dst, R16 src);
         void movsx(R64 dst, R8 src);
         void movsx(R64 dst, R16 src);
         void movsx(R64 dst, R32 src);
@@ -102,6 +104,10 @@ namespace x64 {
         void inc(R64 dst);
         void dec(R32 dst);
         void dec(R64 dst);
+        void xchg(R8 dst, R8 src);
+        void xchg(R16 dst, R16 src);
+        void xchg(R32 dst, R32 src);
+        void xchg(R64 dst, R64 src);
 
         void cdqe();
         void cdq();

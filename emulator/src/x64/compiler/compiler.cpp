@@ -77,6 +77,8 @@ namespace x64 {
             case Insn::MOVZX_R32_RM8: return tryCompileMovzxR32RM8(ins.op0<R32>(), ins.op1<RM8>());
             case Insn::MOVZX_R32_RM16: return tryCompileMovzxR32RM16(ins.op0<R32>(), ins.op1<RM16>());
             case Insn::MOVZX_R64_RM8: return tryCompileMovzxR64RM8(ins.op0<R64>(), ins.op1<RM8>());
+            case Insn::MOVSX_R32_RM8: return tryCompileMovsxR32RM8(ins.op0<R32>(), ins.op1<RM8>());
+            case Insn::MOVSX_R32_RM16: return tryCompileMovsxR32RM16(ins.op0<R32>(), ins.op1<RM16>());
             case Insn::MOVSX_R64_RM8: return tryCompileMovsxR64RM8(ins.op0<R64>(), ins.op1<RM8>());
             case Insn::MOVSX_R64_RM16: return tryCompileMovsxR64RM16(ins.op0<R64>(), ins.op1<RM16>());
             case Insn::MOVSX_R64_RM32: return tryCompileMovsxR64RM32(ins.op0<R64>(), ins.op1<RM32>());
@@ -144,6 +146,10 @@ namespace x64 {
             case Insn::INC_RM64: return tryCompileIncRM64(ins.op0<RM64>());
             case Insn::DEC_RM32: return tryCompileDecRM32(ins.op0<RM32>());
             case Insn::DEC_RM64: return tryCompileDecRM64(ins.op0<RM64>());
+            case Insn::XCHG_RM8_R8: return tryCompileXchgRM8R8(ins.op0<RM8>(), ins.op1<R8>());
+            case Insn::XCHG_RM16_R16: return tryCompileXchgRM16R16(ins.op0<RM16>(), ins.op1<R16>());
+            case Insn::XCHG_RM32_R32: return tryCompileXchgRM32R32(ins.op0<RM32>(), ins.op1<R32>());
+            case Insn::XCHG_RM64_R64: return tryCompileXchgRM64R64(ins.op0<RM64>(), ins.op1<R64>());
             case Insn::CDQE: return tryCompileCdqe();
             case Insn::CDQ: return tryCompileCdq();
             case Insn::CQO: return tryCompileCqo();
@@ -559,6 +565,58 @@ namespace x64 {
             assembler_.movsx(get(Reg::GPR0), get8(Reg::GPR0));
             // write to the destination register
             writeReg64(dst, Reg::GPR0);
+            return true;
+        }
+    }
+
+    bool Compiler::tryCompileMovsxR32RM16(R32 dst, const RM16& src) {
+        if(src.isReg) {
+            // read the src register
+            readReg16(Reg::GPR0, src.reg);
+            // do the zero-extending mov
+            assembler_.movsx(get32(Reg::GPR0), get16(Reg::GPR0));
+            // write to the destination register
+            writeReg32(dst, Reg::GPR0);
+            return true;
+        } else {
+            // fetch src address
+            const M16& mem = src.mem;
+            if(mem.segment != Segment::CS && mem.segment != Segment::UNK) return false;
+            if(mem.encoding.index == R64::RIP) return false;
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the src value at the address
+            readMem16(Reg::GPR0, addr);
+            // do the zero-extending mov
+            assembler_.movsx(get32(Reg::GPR0), get16(Reg::GPR0));
+            // write to the destination register
+            writeReg32(dst, Reg::GPR0);
+            return true;
+        }
+    }
+
+    bool Compiler::tryCompileMovsxR32RM8(R32 dst, const RM8& src) {
+        if(src.isReg) {
+            // read the src register
+            readReg8(Reg::GPR0, src.reg);
+            // do the zero-extending mov
+            assembler_.movsx(get32(Reg::GPR0), get8(Reg::GPR0));
+            // write to the destination register
+            writeReg32(dst, Reg::GPR0);
+            return true;
+        } else {
+            // fetch src address
+            const M8& mem = src.mem;
+            if(mem.segment != Segment::CS && mem.segment != Segment::UNK) return false;
+            if(mem.encoding.index == R64::RIP) return false;
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the src value at the address
+            readMem8(Reg::GPR0, addr);
+            // do the zero-extending mov
+            assembler_.movsx(get32(Reg::GPR0), get8(Reg::GPR0));
+            // write to the destination register
+            writeReg32(dst, Reg::GPR0);
             return true;
         }
     }
@@ -1467,6 +1525,134 @@ namespace x64 {
             writeMem64(addr, Reg::GPR0);
             return true;
         } 
+    }
+
+    bool Compiler::tryCompileXchgRM8R8(RM8 dst, R8 src) {
+        if(dst.isReg) {
+            // read the dst register
+            readReg8(Reg::GPR0, dst.reg);
+            // read the src register
+            readReg8(Reg::GPR1, src);
+            // perform the op
+            assembler_.xchg(get8(Reg::GPR0), get8(Reg::GPR1));
+            // write back to the destination register
+            writeReg8(dst.reg, Reg::GPR0);
+            writeReg8(src, Reg::GPR1);
+            return true;
+        } else {
+            // fetch dst address
+            const M8& mem = dst.mem;
+            if(mem.segment != Segment::CS && mem.segment != Segment::UNK) return false;
+            if(mem.encoding.index == R64::RIP) return false;
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the dst value at the address
+            readMem8(Reg::GPR0, addr);
+            // read the src register
+            readReg8(Reg::GPR1, src);
+            // perform the op
+            assembler_.xchg(get8(Reg::GPR0), get8(Reg::GPR1));
+            // write back to the register
+            writeMem8(addr, Reg::GPR0);
+            writeReg8(src, Reg::GPR1);
+            return true;
+        }
+    }
+
+    bool Compiler::tryCompileXchgRM16R16(RM16 dst, R16 src) {
+        if(dst.isReg) {
+            // read the dst register
+            readReg16(Reg::GPR0, dst.reg);
+            // read the src register
+            readReg16(Reg::GPR1, src);
+            // perform the op
+            assembler_.xchg(get16(Reg::GPR0), get16(Reg::GPR1));
+            // write back to the destination register
+            writeReg16(dst.reg, Reg::GPR0);
+            writeReg16(src, Reg::GPR1);
+            return true;
+        } else {
+            // fetch dst address
+            const M16& mem = dst.mem;
+            if(mem.segment != Segment::CS && mem.segment != Segment::UNK) return false;
+            if(mem.encoding.index == R64::RIP) return false;
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the dst value at the address
+            readMem16(Reg::GPR0, addr);
+            // read the src register
+            readReg16(Reg::GPR1, src);
+            // perform the op
+            assembler_.xchg(get16(Reg::GPR0), get16(Reg::GPR1));
+            // write back to the register
+            writeMem16(addr, Reg::GPR0);
+            writeReg16(src, Reg::GPR1);
+            return true;
+        }
+    }
+
+    bool Compiler::tryCompileXchgRM32R32(RM32 dst, R32 src) {
+        if(dst.isReg) {
+            // read the dst register
+            readReg32(Reg::GPR0, dst.reg);
+            // read the src register
+            readReg32(Reg::GPR1, src);
+            // perform the op
+            assembler_.xchg(get32(Reg::GPR0), get32(Reg::GPR1));
+            // write back to the destination register
+            writeReg32(dst.reg, Reg::GPR0);
+            writeReg32(src, Reg::GPR1);
+            return true;
+        } else {
+            // fetch dst address
+            const M32& mem = dst.mem;
+            if(mem.segment != Segment::CS && mem.segment != Segment::UNK) return false;
+            if(mem.encoding.index == R64::RIP) return false;
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the dst value at the address
+            readMem32(Reg::GPR0, addr);
+            // read the src register
+            readReg32(Reg::GPR1, src);
+            // perform the op
+            assembler_.xchg(get32(Reg::GPR0), get32(Reg::GPR1));
+            // write back to the register
+            writeMem32(addr, Reg::GPR0);
+            writeReg32(src, Reg::GPR1);
+            return true;
+        }
+    }
+
+    bool Compiler::tryCompileXchgRM64R64(RM64 dst, R64 src) {
+        if(dst.isReg) {
+            // read the dst register
+            readReg64(Reg::GPR0, dst.reg);
+            // read the src register
+            readReg64(Reg::GPR1, src);
+            // perform the op
+            assembler_.xchg(get(Reg::GPR0), get(Reg::GPR1));
+            // write back to the destination register
+            writeReg64(dst.reg, Reg::GPR0);
+            writeReg64(src, Reg::GPR1);
+            return true;
+        } else {
+            // fetch dst address
+            const M64& mem = dst.mem;
+            if(mem.segment != Segment::CS && mem.segment != Segment::UNK) return false;
+            if(mem.encoding.index == R64::RIP) return false;
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the dst value at the address
+            readMem64(Reg::GPR0, addr);
+            // read the src register
+            readReg64(Reg::GPR1, src);
+            // perform the op
+            assembler_.xchg(get(Reg::GPR0), get(Reg::GPR1));
+            // write back to the register
+            writeMem64(addr, Reg::GPR0);
+            writeReg64(src, Reg::GPR1);
+            return true;
+        }
     }
 
     bool Compiler::tryCompileCdqe() {

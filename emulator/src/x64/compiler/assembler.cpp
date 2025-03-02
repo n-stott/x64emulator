@@ -516,6 +516,22 @@ namespace x64 {
         write8((u8)(0b11000000 | (encodeRegister(src) << 3) | (encodeRegister(dst))));
     }
 
+    void Assembler::movsx(R32 dst, R8 src) {
+        verify(src == R8::R8B || src == R8::R9B);
+        write8((u8)(0x40 | (((u8)src >= 8) ? 4 : 0) | (((u8)dst >= 8) ? 1 : 0)));
+        write8(0x0f);
+        write8(0xbe);
+        write8((u8)(0b11000000 | (encodeRegister(src) << 3) | (encodeRegister(dst))));
+    }
+
+    void Assembler::movsx(R32 dst, R16 src) {
+        verify(src == R16::R8W || src == R16::R9W);
+        write8((u8)(0x40 | (((u8)src >= 8) ? 4 : 0) | (((u8)dst >= 8) ? 1 : 0)));
+        write8(0x0f);
+        write8(0xbf);
+        write8((u8)(0b11000000 | (encodeRegister(src) << 3) | (encodeRegister(dst))));
+    }
+
     void Assembler::movsx(R64 dst, R8 src) {
         verify(src == R8::R8B || src == R8::R9B);
         write8((u8)(0x48 | (((u8)src >= 8) ? 4 : 0) | (((u8)dst >= 8) ? 1 : 0)));
@@ -1146,6 +1162,37 @@ namespace x64 {
         write8((u8)(0x48 | (((u8)dst >= 8) ? 1 : 0) ));
         write8((u8)0xff);
         write8((u8)(0b11000000 | (0b001 << 3) | encodeRegister(dst)));
+    }
+
+    void Assembler::xchg(R8 dst, R8 src) {
+        if((u8)dst >= 8 || (u8)src >= 8) {
+            write8((u8)(0x40 | (((u8)src >= 8) ? 4 : 0) | (((u8)dst >= 8) ? 1 : 0) ));
+        }
+        write8((u8)0x86);
+        write8((u8)(0b11000000 | (encodeRegister(src) << 3) | encodeRegister(dst)));
+    }
+
+    void Assembler::xchg(R16 dst, R16 src) {
+        write8(0x66);
+        if((u8)dst >= 8 || (u8)src >= 8) {
+            write8((u8)(0x40 | (((u8)src >= 8) ? 4 : 0) | (((u8)dst >= 8) ? 1 : 0) ));
+        }
+        write8((u8)0x87);
+        write8((u8)(0b11000000 | (encodeRegister(src) << 3) | encodeRegister(dst)));
+    }
+
+    void Assembler::xchg(R32 dst, R32 src) {
+        if((u8)dst >= 8 || (u8)src >= 8) {
+            write8((u8)(0x40 | (((u8)src >= 8) ? 4 : 0) | (((u8)dst >= 8) ? 1 : 0) ));
+        }
+        write8((u8)0x87);
+        write8((u8)(0b11000000 | (encodeRegister(src) << 3) | encodeRegister(dst)));
+    }
+
+    void Assembler::xchg(R64 dst, R64 src) {
+        write8((u8)(0x48 | (((u8)src >= 8) ? 4 : 0) | (((u8)dst >= 8) ? 1 : 0) ));
+        write8((u8)0x87);
+        write8((u8)(0b11000000 | (encodeRegister(src) << 3) | encodeRegister(dst)));
     }
 
     void Assembler::cdqe() {
