@@ -47,6 +47,10 @@ namespace x64 {
         void sub(R32 dst, i32 imm);
         void sub(R64 dst, R64 src);
         void sub(R64 dst, i32 imm);
+        void sbb(R32 dst, R32 src);
+        void sbb(R32 dst, i32 imm);
+        void sbb(R64 dst, R64 src);
+        void sbb(R64 dst, i32 imm);
         void cmp(R8 lhs, R8 rhs);
         void cmp(R8 dst, i8 imm);
         void cmp(R16 lhs, R16 rhs);
@@ -124,6 +128,7 @@ namespace x64 {
         void cdq();
         void cqo();
 
+        void lea(R32, const M32&);
         void lea(R32, const M64&);
         void lea(R64, const M64&);
 

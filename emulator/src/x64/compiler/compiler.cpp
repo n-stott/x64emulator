@@ -99,6 +99,10 @@ namespace x64 {
             case Insn::SUB_RM32_IMM: return tryCompileSubRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
             case Insn::SUB_RM64_RM64: return tryCompileSubRM64RM64(ins.op0<RM64>(), ins.op1<RM64>());
             case Insn::SUB_RM64_IMM: return tryCompileSubRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
+            case Insn::SBB_RM32_RM32: return tryCompileSbbRM32RM32(ins.op0<RM32>(), ins.op1<RM32>());
+            case Insn::SBB_RM32_IMM: return tryCompileSbbRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
+            case Insn::SBB_RM64_RM64: return tryCompileSbbRM64RM64(ins.op0<RM64>(), ins.op1<RM64>());
+            case Insn::SBB_RM64_IMM: return tryCompileSbbRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
             case Insn::CMP_RM8_RM8: return tryCompileCmpRM8RM8(ins.op0<RM8>(), ins.op1<RM8>());
             case Insn::CMP_RM8_IMM: return tryCompileCmpRM8Imm(ins.op0<RM8>(), ins.op1<Imm>());
             case Insn::CMP_RM16_RM16: return tryCompileCmpRM16RM16(ins.op0<RM16>(), ins.op1<RM16>());
@@ -170,6 +174,7 @@ namespace x64 {
             case Insn::PUSH_IMM: return tryCompilePushImm(ins.op0<Imm>());
             case Insn::PUSH_RM64: return tryCompilePushRM64(ins.op0<RM64>());
             case Insn::POP_R64: return tryCompilePopR64(ins.op0<R64>());
+            case Insn::LEA_R32_ENCODING32: return tryCompileLeaR32Enc32(ins.op0<R32>(), ins.op1<Encoding32>());
             case Insn::LEA_R32_ENCODING64: return tryCompileLeaR32Enc64(ins.op0<R32>(), ins.op1<Encoding64>());
             case Insn::LEA_R64_ENCODING64: return tryCompileLeaR64Enc64(ins.op0<R64>(), ins.op1<Encoding64>());
             case Insn::NOP: return tryCompileNop();
@@ -796,6 +801,30 @@ namespace x64 {
     bool Compiler::tryCompileSubRM64Imm(const RM64& dst, Imm src) {
         return forRM64Imm(dst, src, [&](Reg dst, Imm imm) {
             sub64Imm32(dst, imm.as<i32>());
+        });
+    }
+
+    bool Compiler::tryCompileSbbRM32RM32(const RM32& dst, const RM32& src) {
+        return forRM32RM32(dst, src, [&](Reg dst, Reg src) {
+            sbb32(dst, src);
+        });
+    }
+
+    bool Compiler::tryCompileSbbRM32Imm(const RM32& dst, Imm src) {
+        return forRM32Imm(dst, src, [&](Reg dst, Imm imm) {
+            sbb32Imm32(dst, imm.as<i32>());
+        });
+    }
+
+    bool Compiler::tryCompileSbbRM64RM64(const RM64& dst, const RM64& src) {
+        return forRM64RM64(dst, src, [&](Reg dst, Reg src) {
+            sbb64(dst, src);
+        });
+    }
+
+    bool Compiler::tryCompileSbbRM64Imm(const RM64& dst, Imm src) {
+        return forRM64Imm(dst, src, [&](Reg dst, Imm imm) {
+            sbb64Imm32(dst, imm.as<i32>());
         });
     }
 
@@ -1827,6 +1856,20 @@ namespace x64 {
         writeReg64(R64::RDX, Reg::GPR1);
         assembler_.pop64(R64::RDX);
         assembler_.pop64(R64::RAX);
+        return true;
+    }
+
+    bool Compiler::tryCompileLeaR32Enc32(R32 dst, const Encoding32& address) {
+        if(address.index == R32::EIZ) {
+            readReg32(Reg::GPR0, address.base);
+            assembler_.lea(get32(Reg::GPR0), make32(get(Reg::GPR0), address.displacement));
+            writeReg32(dst, Reg::GPR0);
+        } else {
+            readReg32(Reg::GPR0, address.base);
+            readReg32(Reg::GPR1, address.index);
+            assembler_.lea(get32(Reg::GPR0), make32(get(Reg::GPR0), get(Reg::GPR1), address.scale, address.displacement));
+            writeReg32(dst, Reg::GPR0);
+        }
         return true;
     }
 
@@ -3409,6 +3452,28 @@ namespace x64 {
     void Compiler::sub64Imm32(Reg dst, i32 imm) {
         R64 d = get(dst);
         assembler_.sub(d, imm);
+    }
+
+    void Compiler::sbb32(Reg dst, Reg src) {
+        R32 d = get32(dst);
+        R32 s = get32(src);
+        assembler_.sbb(d, s);
+    }
+
+    void Compiler::sbb32Imm32(Reg dst, i32 imm) {
+        R32 d = get32(dst);
+        assembler_.sbb(d, imm);
+    }
+
+    void Compiler::sbb64(Reg dst, Reg src) {
+        R64 d = get(dst);
+        R64 s = get(src);
+        assembler_.sbb(d, s);
+    }
+
+    void Compiler::sbb64Imm32(Reg dst, i32 imm) {
+        R64 d = get(dst);
+        assembler_.sbb(d, imm);
     }
 
     void Compiler::cmp8(Reg lhs, Reg rhs) {

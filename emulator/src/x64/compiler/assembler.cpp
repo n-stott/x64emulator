@@ -703,6 +703,46 @@ namespace x64 {
         }
     }
 
+    void Assembler::sbb(R32 dst, R32 src) {
+        write8((u8)(0x40 | (((u8)src >= 8) ? 4 : 0) | (((u8)dst >= 8) ? 1 : 0)));
+        write8((u8)(0x19));
+        write8((u8)(0b11000000 | (encodeRegister(src) << 3) | (encodeRegister(dst))));
+    }
+
+    void Assembler::sbb(R32 dst, i32 imm) {
+        if((i8)imm == imm) {
+            write8((u8)(0x40 | (((u8)dst >= 8) ? 1 : 0)));
+            write8((u8)(0x83));
+            write8((u8)(0b11000000 | (0b011 << 3) | encodeRegister(dst)));
+            write8((i8)imm);
+        } else {
+            write8((u8)(0x40 | (((u8)dst >= 8) ? 1 : 0)));
+            write8((u8)(0x81));
+            write8((u8)(0b11000000 | (0b011 << 3) | encodeRegister(dst)));
+            write32(imm);
+        }
+    }
+
+    void Assembler::sbb(R64 dst, R64 src) {
+        write8((u8)(0x48 | (((u8)src >= 8) ? 4 : 0) | (((u8)dst >= 8) ? 1 : 0)));
+        write8((u8)(0x19));
+        write8((u8)(0b11000000 | (encodeRegister(src) << 3) | (encodeRegister(dst))));
+    }
+
+    void Assembler::sbb(R64 dst, i32 imm) {
+        if((i8)imm == imm) {
+            write8((u8)(0x48 | (((u8)dst >= 8) ? 1 : 0)));
+            write8((u8)(0x83));
+            write8((u8)(0b11000000 | (0b011 << 3) | encodeRegister(dst)));
+            write8((i8)imm);
+        } else {
+            write8((u8)(0x48 | (((u8)dst >= 8) ? 1 : 0)));
+            write8((u8)(0x81));
+            write8((u8)(0b11000000 | (0b011 << 3) | encodeRegister(dst)));
+            write32(imm);
+        }
+    }
+
     void Assembler::cmp(R8 lhs, R8 rhs) {
         write8((u8)(0x40 | (((u8)rhs >= 8) ? 4 : 0) | (((u8)lhs >= 8) ? 1 : 0)));
         write8((u8)(0x38));
@@ -1311,6 +1351,56 @@ namespace x64 {
     void Assembler::cqo() {
         write8(0x48);
         write8(0x99);
+    }
+
+    void Assembler::lea(R32 dst, const M32& src) {
+        verify(src.encoding.base != R64::RSP, "rsp as base requires an SIB byte");
+        verify(src.encoding.base != R64::R12, "r12 as base requires an SIB byte");
+        verify(dst != R32::ESP, "esp as base requires an SIB byte");
+        verify(dst != R32::R12D, "r12d as base requires an SIB byte");
+        if(src.encoding.index == R64::ZERO) {
+            if(src.encoding.displacement == 0) {
+                verify(src.encoding.base != R64::RBP, "rbp as base without displacement requires an SIB byte");
+                verify(src.encoding.base != R64::R13, "r13 as base without displacement requires an SIB byte");
+                write8((u8)(0x40 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src.encoding.base >= 8) ? 1 : 0)));
+                write8((u8)(0x8d));
+                write8((u8)(0b00000000 | (encodeRegister(dst) << 3) | (encodeRegister(src.encoding.base))));
+            } else if((i8)src.encoding.displacement == src.encoding.displacement) {
+                write8((u8)(0x40 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src.encoding.base >= 8) ? 1 : 0)));
+                write8((u8)(0x8d));
+                write8((u8)(0b01000000 | (encodeRegister(dst) << 3) | (encodeRegister(src.encoding.base))));
+                write8((i8)src.encoding.displacement);
+            } else {
+                write8((u8)(0x40 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src.encoding.base >= 8) ? 1 : 0)));
+                write8((u8)(0x8d));
+                write8((u8)(0b10000000 | (encodeRegister(dst) << 3) | (encodeRegister(src.encoding.base))));
+                write32(src.encoding.displacement);
+            }
+        } else {
+            if((i8)src.encoding.displacement == src.encoding.displacement) {
+                write8((u8)(0x40
+                         | (((u8)dst >= 8) ? 4 : 0)
+                         | (((u8)src.encoding.index >= 8) ? 2 : 0)
+                         | (((u8)src.encoding.base >= 8) ? 1 : 0)));
+                write8((u8)(0x8d));
+                write8((u8)(0b01000000 | (encodeRegister(dst) << 3) | 0b100));
+                write8((u8)(encodeScale(src.encoding.scale) << 6
+                         | (encodeRegister(src.encoding.index) << 3)
+                         | (encodeRegister(src.encoding.base))));
+                write8((i8)src.encoding.displacement);
+            } else {
+                write8((u8)(0x48
+                         | (((u8)dst >= 8) ? 4 : 0)
+                         | (((u8)src.encoding.index >= 8) ? 2 : 0)
+                         | (((u8)src.encoding.base >= 8) ? 1 : 0)));
+                write8((u8)(0x8d));
+                write8((u8)(0b10000000 | (encodeRegister(dst) << 3) | 0b100));
+                write8((u8)(encodeScale(src.encoding.scale) << 6
+                         | (encodeRegister(src.encoding.index) << 3)
+                         | (encodeRegister(src.encoding.base))));
+                write32(src.encoding.displacement);
+            }
+        }
     }
 
     void Assembler::lea(R32 dst, const M64& src) {
