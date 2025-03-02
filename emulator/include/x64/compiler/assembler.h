@@ -14,7 +14,9 @@ namespace x64 {
         void mov(R8 dst, R8 src);
         void mov(R8 dst, u8 imm);
         void mov(R16 dst, R16 src);
+        void mov(R16 dst, u16 imm);
         void mov(R32 dst, R32 src);
+        void mov(R32 dst, u32 imm);
         void mov(R64 dst, R64 src);
         void mov(R64 dst, u64 imm);
         void mov(R8 dst, const M8& src);
@@ -33,6 +35,10 @@ namespace x64 {
         void movsx(R64 dst, R8 src);
         void movsx(R64 dst, R16 src);
         void movsx(R64 dst, R32 src);
+        void add(R8 dst, R8 src);
+        void add(R8 dst, i8 imm);
+        void add(R16 dst, R16 src);
+        void add(R16 dst, i16 imm);
         void add(R32 dst, R32 src);
         void add(R32 dst, i32 imm);
         void add(R64 dst, R64 src);
@@ -70,12 +76,16 @@ namespace x64 {
         void sar_cl(R64 lhs);
         void sar(R64 lhs, R8 rhs);
         void sar(R64 lhs, u8 imm);
+        void rol(R64 lhs, u8 imm);
+        void ror(R64 lhs, u8 imm);
         void mul(R32 src);
         void mul(R64 src);
         void imul(R32 dst, R32 src);
         void imul(R64 dst, R64 src);
         void div(R32 src);
         void div(R64 src);
+        void idiv(R32 src);
+        void idiv(R64 src);
         void test(R8 lhs, R8 rhs);
         void test(R8 lhs, u8 imm);
         void test(R16 lhs, R16 rhs);
@@ -83,6 +93,7 @@ namespace x64 {
         void test(R32 lhs, R32 rhs);
         void test(R32 lhs, u32 imm);
         void test(R64 lhs, R64 rhs);
+        void test(R64 lhs, u32 imm);
         void and_(R32 dst, R32 src);
         void and_(R32 dst, i32 imm);
         void and_(R64 dst, R64 src);

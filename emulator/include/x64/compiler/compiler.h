@@ -39,6 +39,11 @@ namespace x64 {
 
         bool tryCompileMovM8R8(const M8&, R8);
         bool tryCompileMovM8Imm(const M8&, Imm);
+        bool tryCompileMovR16Imm(R16, Imm);
+        bool tryCompileMovM16Imm(const M16&, Imm);
+        bool tryCompileMovR16R16(R16, R16);
+        bool tryCompileMovR16M16(R16, const M16&);
+        bool tryCompileMovM16R16(const M16&, R16);
         bool tryCompileMovR32Imm(R32, Imm);
         bool tryCompileMovM32Imm(const M32&, Imm);
         bool tryCompileMovR32R32(R32, R32);
@@ -57,6 +62,10 @@ namespace x64 {
         bool tryCompileMovsxR64RM8(R64, const RM8&);
         bool tryCompileMovsxR64RM16(R64, const RM16&);
         bool tryCompileMovsxR64RM32(R64, const RM32&);
+        bool tryCompileAddRM8RM8(const RM8&, const RM8&);
+        bool tryCompileAddRM8Imm(const RM8&, Imm);
+        bool tryCompileAddRM16RM16(const RM16&, const RM16&);
+        bool tryCompileAddRM16Imm(const RM16&, Imm);
         bool tryCompileAddRM32RM32(const RM32&, const RM32&);
         bool tryCompileAddRM32Imm(const RM32&, Imm);
         bool tryCompileAddRM64RM64(const RM64&, const RM64&);
@@ -87,12 +96,16 @@ namespace x64 {
         bool tryCompileSarRM32Imm(const RM32&, Imm);
         bool tryCompileSarRM64R8(const RM64&, R8);
         bool tryCompileSarRM64Imm(const RM64&, Imm);
+        bool tryCompileRolRM64Imm(const RM64&, Imm);
+        bool tryCompileRorRM64Imm(const RM64&, Imm);
         bool tryCompileMulRM32(const RM32&);
         bool tryCompileMulRM64(const RM64&);
         bool tryCompileImulR32RM32(R32, const RM32&);
         bool tryCompileImulR64RM64(R64, const RM64&);
         bool tryCompileDivRM32(const RM32&);
         bool tryCompileDivRM64(const RM64&);
+        bool tryCompileIdivRM32(const RM32&);
+        bool tryCompileIdivRM64(const RM64&);
         bool tryCompileTestRM8R8(const RM8&, R8);
         bool tryCompileTestRM8Imm(const RM8&, Imm);
         bool tryCompileTestRM16R16(const RM16&, R16);
@@ -100,6 +113,7 @@ namespace x64 {
         bool tryCompileTestRM32R32(const RM32&, R32);
         bool tryCompileTestRM32Imm(const RM32&, Imm);
         bool tryCompileTestRM64R64(const RM64&, R64);
+        bool tryCompileTestRM64Imm(const RM64&, Imm);
         bool tryCompileAndRM32RM32(const RM32&, const RM32&);
         bool tryCompileAndRM32Imm(const RM32&, Imm);
         bool tryCompileAndRM64RM64(const RM64&, const RM64&);
@@ -378,6 +392,10 @@ namespace x64 {
         template<Size size>
         Mem getAddress(Reg dst, TmpReg tmp, const M<size>& mem);
 
+        void add8(Reg dst, Reg src);
+        void add8Imm8(Reg dst, i8 imm);
+        void add16(Reg dst, Reg src);
+        void add16Imm16(Reg dst, i16 imm);
         void add32(Reg dst, Reg src);
         void add32Imm32(Reg dst, i32 imm);
         void add64(Reg dst, Reg src);
@@ -397,6 +415,8 @@ namespace x64 {
         void imul32(Reg dst, Reg src);
         void imul64(Reg dst, Reg src);
         void loadImm8(Reg dst, u8 imm);
+        void loadImm16(Reg dst, u16 imm);
+        void loadImm32(Reg dst, u32 imm);
         void loadImm64(Reg dst, u64 imm);
         void loadArguments();
         void storeFlags();
