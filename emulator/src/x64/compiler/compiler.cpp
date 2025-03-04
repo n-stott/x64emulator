@@ -18,7 +18,7 @@ namespace x64 {
         for(size_t i = 0; i+1 < basicBlock.instructions.size(); ++i) {
             const X64Instruction& ins = basicBlock.instructions[i].first;
             if(!compiler.tryCompile(ins)) {
-                if(diagnose) fmt::print("Compilation of block failed: {}\n", ins.toString());
+                if(diagnose) fmt::print("Compilation of block failed: {} ({}/{})\n", ins.toString(), i, basicBlock.instructions.size());
                 return {};
             }
         }
@@ -31,7 +31,7 @@ namespace x64 {
         const X64Instruction& lastInstruction = basicBlock.instructions.back().first;
         auto jumps = compiler.tryCompileLastInstruction(lastInstruction);
         if(!jumps) {
-            if(diagnose) fmt::print("Compilation of block failed: {}\n", lastInstruction.toString());
+            if(diagnose) fmt::print("Compilation of block failed: {} ({}/{})\n", lastInstruction.toString(), basicBlock.instructions.size(), basicBlock.instructions.size());
             return {};
         }
 

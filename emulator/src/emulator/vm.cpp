@@ -193,7 +193,7 @@ namespace emulator {
                 }
 #ifdef VM_BASICBLOCK_TELEMETRY
                 ++blockCacheMisses_;
-                ++basicBlockCacheMissCount_[currentBasicBlock->start()];
+                if(!!currentBasicBlock) ++basicBlockCacheMissCount_[currentBasicBlock->start()];
 #endif
             } else {
 #ifdef VM_BASICBLOCK_TELEMETRY
