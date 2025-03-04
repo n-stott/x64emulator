@@ -209,6 +209,11 @@ namespace x64 {
         void mova(const M128&, XMM);
         void movu(XMM, const M128&);
         void movu(const M128&, XMM);
+        void movd(XMM, R32);
+        void movd(XMM, const M32&);
+        void movd(R32, XMM);
+        void movd(const M32&, XMM);
+        void movsd(XMM, const M64&);
         void movq(XMM, R64);
         void movq(R64, XMM);
         void movlps(XMM, M64);

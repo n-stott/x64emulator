@@ -244,6 +244,9 @@ namespace x64 {
             case Insn::MOV_UNALIGNED_XMM_M128: return tryCompileMovuXmmM128(ins.op0<XMM>(), ins.op1<M128>());
             case Insn::MOV_ALIGNED_M128_XMM: return tryCompileMovaM128Xmm(ins.op0<M128>(), ins.op1<XMM>());
             case Insn::MOV_ALIGNED_XMM_M128: return tryCompileMovaXmmM128(ins.op0<XMM>(), ins.op1<M128>());
+            case Insn::MOVD_XMM_RM32: return tryCompileMovdXmmRM32(ins.op0<XMM>(), ins.op1<RM32>());
+            case Insn::MOVD_RM32_XMM: return tryCompileMovdRM32Xmm(ins.op0<RM32>(), ins.op1<XMM>());
+            case Insn::MOVSD_XMM_M64: return tryCompileMovsdXmmM64(ins.op0<XMM>(), ins.op1<M64>());
             case Insn::MOVLPS_XMM_M64: return tryCompileMovlpsXmmM64(ins.op0<XMM>(), ins.op1<M64>());
             case Insn::MOVHPS_XMM_M64: return tryCompileMovhpsXmmM64(ins.op0<XMM>(), ins.op1<M64>());
             case Insn::PMOVMSKB_R32_XMM: return tryCompilePmovmskbR32Xmm(ins.op0<R32>(), ins.op1<XMM>());
@@ -306,6 +309,7 @@ namespace x64 {
             case Insn::ADDSD_XMM_XMM: return tryCompileAddsdXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
             case Insn::SUBSD_XMM_XMM: return tryCompileSubsdXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
             case Insn::MULSD_XMM_XMM: return tryCompileMulsdXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
+            case Insn::MULSD_XMM_M64: return tryCompileMulsdXmmM64(ins.op0<XMM>(), ins.op1<M64>());
             case Insn::DIVSD_XMM_XMM: return tryCompileDivsdXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
             case Insn::COMISD_XMM_XMM: return tryCompileComisdXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
 
@@ -2023,39 +2027,27 @@ namespace x64 {
     }
 
     bool Compiler::tryCompilePandMmxMmxM64(MMX dst, const MMXM64& src) {
-        if(!src.isReg) return false;
-        readRegMM(RegMM::GPR0, dst);
-        readRegMM(RegMM::GPR1, src.reg);
-        assembler_.pand(get(RegMM::GPR0), get(RegMM::GPR1));
-        writeRegMM(dst, RegMM::GPR0);
-        return true;
+        return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
+            assembler_.pand(get(dst), get(src));
+        });
     }
 
     bool Compiler::tryCompilePorMmxMmxM64(MMX dst, const MMXM64& src) {
-        if(!src.isReg) return false;
-        readRegMM(RegMM::GPR0, dst);
-        readRegMM(RegMM::GPR1, src.reg);
-        assembler_.por(get(RegMM::GPR0), get(RegMM::GPR1));
-        writeRegMM(dst, RegMM::GPR0);
-        return true;
+        return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
+            assembler_.por(get(dst), get(src));
+        });
     }
 
     bool Compiler::tryCompilePxorMmxMmxM64(MMX dst, const MMXM64& src) {
-        if(!src.isReg) return false;
-        readRegMM(RegMM::GPR0, dst);
-        readRegMM(RegMM::GPR1, src.reg);
-        assembler_.pxor(get(RegMM::GPR0), get(RegMM::GPR1));
-        writeRegMM(dst, RegMM::GPR0);
-        return true;
+        return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
+            assembler_.pxor(get(dst), get(src));
+        });
     }
 
     bool Compiler::tryCompilePaddbMmxMmxM64(MMX dst, const MMXM64& src) {
-        if(!src.isReg) return false;
-        readRegMM(RegMM::GPR0, dst);
-        readRegMM(RegMM::GPR1, src.reg);
-        assembler_.paddb(get(RegMM::GPR0), get(RegMM::GPR1));
-        writeRegMM(dst, RegMM::GPR0);
-        return true;
+        return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
+            assembler_.paddb(get(dst), get(src));
+        });
     }
 
     bool Compiler::tryCompilePaddwMmxMmxM64(MMX dst, const MMXM64& src) {
@@ -2432,6 +2424,65 @@ namespace x64 {
         Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src);
         // do the read
         assembler_.mova(get(Reg128::GPR0), make128(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
+        // write the value to the register
+        writeReg128(dst, Reg128::GPR0);
+        return true;
+    }
+
+    bool Compiler::tryCompileMovdXmmRM32(XMM dst, const RM32& src) {
+        if(src.isReg) {
+            // read src register
+            readReg32(Reg::GPR0, src.reg);
+            // do the read
+            assembler_.movd(get(Reg128::GPR0), get32(Reg::GPR0));
+            // write the value to the register
+            writeReg128(dst, Reg128::GPR0);
+            return true;
+        } else {
+            // fetch src address
+            if(src.mem.segment != Segment::CS && src.mem.segment != Segment::UNK) return false;
+            if(src.mem.encoding.index == R64::RIP) return false;
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src.mem);
+            // do the read
+            assembler_.movd(get(Reg128::GPR0), make32(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
+            // write the value to the register
+            writeReg128(dst, Reg128::GPR0);
+            return true;
+        }
+    }
+
+    bool Compiler::tryCompileMovdRM32Xmm(const RM32& dst, XMM src) {
+        if(dst.isReg) {
+            // read src register
+            readReg128(Reg128::GPR0, src);
+            // do the write
+            assembler_.movd(get32(Reg::GPR0), get(Reg128::GPR0));
+            // write the value to the register
+            writeReg32(dst.reg, Reg::GPR0);
+            return true;
+        } else {
+            // fetch dst address
+            if(dst.mem.segment != Segment::CS && dst.mem.segment != Segment::UNK) return false;
+            if(dst.mem.encoding.index == R64::RIP) return false;
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, dst.mem);
+            // read the value from the src register
+            readReg128(Reg128::GPR0, src);
+            // do the read
+            assembler_.movd(make32(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset), get(Reg128::GPR0));
+            return true;
+        }
+    }
+
+    bool Compiler::tryCompileMovsdXmmM64(XMM dst, const M64& src) {
+        // fetch src address
+        if(src.segment != Segment::CS && src.segment != Segment::UNK) return false;
+        if(src.encoding.index == R64::RIP) return false;
+        // get the address
+        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src);
+        // do the read
+        assembler_.movsd(get(Reg128::GPR0), make64(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
         // write the value to the register
         writeReg128(dst, Reg128::GPR0);
         return true;
@@ -2846,6 +2897,19 @@ namespace x64 {
     bool Compiler::tryCompileMulsdXmmXmm(XMM dst, XMM src) {
         readReg128(Reg128::GPR0, dst);
         readReg128(Reg128::GPR1, src);
+        assembler_.mulsd(get(Reg128::GPR0), get(Reg128::GPR1));
+        writeReg128(dst, Reg128::GPR0);
+        return true;
+    }
+
+    bool Compiler::tryCompileMulsdXmmM64(XMM dst, const M64& src) {
+        // fetch src address
+        if(src.segment != Segment::CS && src.segment != Segment::UNK) return false;
+        if(src.encoding.index == R64::RIP) return false;
+        // get the address
+        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src);
+        readReg128(Reg128::GPR0, dst);
+        assembler_.movsd(get(Reg128::GPR1), make64(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
         assembler_.mulsd(get(Reg128::GPR0), get(Reg128::GPR1));
         writeReg128(dst, Reg128::GPR0);
         return true;
