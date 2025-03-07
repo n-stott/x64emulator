@@ -168,6 +168,8 @@ namespace x64 {
             case Insn::XCHG_RM16_R16: return tryCompileXchgRM16R16(ins.op0<RM16>(), ins.op1<R16>());
             case Insn::XCHG_RM32_R32: return tryCompileXchgRM32R32(ins.op0<RM32>(), ins.op1<R32>());
             case Insn::XCHG_RM64_R64: return tryCompileXchgRM64R64(ins.op0<RM64>(), ins.op1<R64>());
+            case Insn::CMPXCHG_RM32_R32: return tryCompileCmpxchgRM32R32(ins.op0<RM32>(), ins.op1<R32>());
+            case Insn::CMPXCHG_RM64_R64: return tryCompileCmpxchgRM64R64(ins.op0<RM64>(), ins.op1<R64>());
             case Insn::CDQE: return tryCompileCdqe();
             case Insn::CDQ: return tryCompileCdq();
             case Insn::CQO: return tryCompileCqo();
@@ -247,6 +249,7 @@ namespace x64 {
             case Insn::MOVD_XMM_RM32: return tryCompileMovdXmmRM32(ins.op0<XMM>(), ins.op1<RM32>());
             case Insn::MOVD_RM32_XMM: return tryCompileMovdRM32Xmm(ins.op0<RM32>(), ins.op1<XMM>());
             case Insn::MOVSD_XMM_M64: return tryCompileMovsdXmmM64(ins.op0<XMM>(), ins.op1<M64>());
+            case Insn::MOVSD_M64_XMM: return tryCompileMovsdM64Xmm(ins.op0<M64>(), ins.op1<XMM>());
             case Insn::MOVLPS_XMM_M64: return tryCompileMovlpsXmmM64(ins.op0<XMM>(), ins.op1<M64>());
             case Insn::MOVHPS_XMM_M64: return tryCompileMovhpsXmmM64(ins.op0<XMM>(), ins.op1<M64>());
             case Insn::PMOVMSKB_R32_XMM: return tryCompilePmovmskbR32Xmm(ins.op0<R32>(), ins.op1<XMM>());
@@ -1823,6 +1826,70 @@ namespace x64 {
         }
     }
 
+    bool Compiler::tryCompileCmpxchgRM32R32(RM32 dst, R32 src) {
+        if(dst.isReg) {
+            // read the dst register
+            readReg32(Reg::GPR0, dst.reg);
+            // read the src register
+            readReg32(Reg::GPR1, src);
+            // perform the op
+            assembler_.cmpxchg(get32(Reg::GPR0), get32(Reg::GPR1));
+            // write back to the destination register
+            writeReg32(dst.reg, Reg::GPR0);
+            writeReg32(src, Reg::GPR1);
+            return true;
+        } else {
+            // fetch dst address
+            const M32& mem = dst.mem;
+            if(mem.segment != Segment::CS && mem.segment != Segment::UNK) return false;
+            if(mem.encoding.index == R64::RIP) return false;
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the dst value at the address
+            readMem32(Reg::GPR0, addr);
+            // read the src register
+            readReg32(Reg::GPR1, src);
+            // perform the op
+            assembler_.cmpxchg(get32(Reg::GPR0), get32(Reg::GPR1));
+            // write back to the register
+            writeMem32(addr, Reg::GPR0);
+            writeReg32(src, Reg::GPR1);
+            return true;
+        }
+    }
+
+    bool Compiler::tryCompileCmpxchgRM64R64(RM64 dst, R64 src) {
+        if(dst.isReg) {
+            // read the dst register
+            readReg64(Reg::GPR0, dst.reg);
+            // read the src register
+            readReg64(Reg::GPR1, src);
+            // perform the op
+            assembler_.cmpxchg(get(Reg::GPR0), get(Reg::GPR1));
+            // write back to the destination register
+            writeReg64(dst.reg, Reg::GPR0);
+            writeReg64(src, Reg::GPR1);
+            return true;
+        } else {
+            // fetch dst address
+            const M64& mem = dst.mem;
+            if(mem.segment != Segment::CS && mem.segment != Segment::UNK) return false;
+            if(mem.encoding.index == R64::RIP) return false;
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the dst value at the address
+            readMem64(Reg::GPR0, addr);
+            // read the src register
+            readReg64(Reg::GPR1, src);
+            // perform the op
+            assembler_.cmpxchg(get(Reg::GPR0), get(Reg::GPR1));
+            // write back to the register
+            writeMem64(addr, Reg::GPR0);
+            writeReg64(src, Reg::GPR1);
+            return true;
+        }
+    }
+
     bool Compiler::tryCompileCdqe() {
         assembler_.push64(R64::RAX);
         readReg64(Reg::GPR0, R64::RAX);
@@ -2486,6 +2553,19 @@ namespace x64 {
         assembler_.movsd(get(Reg128::GPR0), make64(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
         // write the value to the register
         writeReg128(dst, Reg128::GPR0);
+        return true;
+    }
+
+    bool Compiler::tryCompileMovsdM64Xmm(const M64& dst, XMM src) {
+        // fetch dst address
+        if(dst.segment != Segment::CS && dst.segment != Segment::UNK) return false;
+        if(dst.encoding.index == R64::RIP) return false;
+        // get the address
+        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, dst);
+        // do the read
+        readReg128(Reg128::GPR0, src);
+        // write the value to the register
+        assembler_.movsd(make64(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset), get(Reg128::GPR0));
         return true;
     }
 
@@ -3707,7 +3787,6 @@ namespace x64 {
         } else {
             // fetch address
             const M8& mem = dst.mem;
-            if(mem.segment != Segment::CS && mem.segment != Segment::UNK) return false;
             if(mem.encoding.index == R64::RIP) return false;
             // get the address
             Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
@@ -3740,7 +3819,6 @@ namespace x64 {
         } else if(!dst.isReg && src.isReg) {
             // fetch dst address
             const M8& mem = dst.mem;
-            if(mem.segment != Segment::CS && mem.segment != Segment::UNK) return false;
             if(mem.encoding.index == R64::RIP) return false;
             // get the address
             Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
@@ -3758,7 +3836,6 @@ namespace x64 {
         } else if(dst.isReg && !src.isReg) {
             // fetch src address
             const M8& mem = src.mem;
-            if(mem.segment != Segment::CS && mem.segment != Segment::UNK) return false;
             if(mem.encoding.index == R64::RIP) return false;
             // get the address
             Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
@@ -3793,7 +3870,6 @@ namespace x64 {
         } else {
             // fetch address
             const M16& mem = dst.mem;
-            if(mem.segment != Segment::CS && mem.segment != Segment::UNK) return false;
             if(mem.encoding.index == R64::RIP) return false;
             // get the address
             Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
@@ -3826,7 +3902,6 @@ namespace x64 {
         } else if(!dst.isReg && src.isReg) {
             // fetch dst address
             const M16& mem = dst.mem;
-            if(mem.segment != Segment::CS && mem.segment != Segment::UNK) return false;
             if(mem.encoding.index == R64::RIP) return false;
             // get the address
             Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
@@ -3844,7 +3919,6 @@ namespace x64 {
         } else if(dst.isReg && !src.isReg) {
             // fetch src address
             const M16& mem = src.mem;
-            if(mem.segment != Segment::CS && mem.segment != Segment::UNK) return false;
             if(mem.encoding.index == R64::RIP) return false;
             // get the address
             Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
@@ -3881,7 +3955,6 @@ namespace x64 {
         } else {
             // fetch address
             const M32& mem = dst.mem;
-            if(mem.segment != Segment::CS && mem.segment != Segment::UNK) return false;
             if(mem.encoding.index == R64::RIP) return false;
             // get the address
             Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
@@ -3914,7 +3987,6 @@ namespace x64 {
         } else {
             // fetch address
             const M32& mem = dst.mem;
-            if(mem.segment != Segment::CS && mem.segment != Segment::UNK) return false;
             if(mem.encoding.index == R64::RIP) return false;
             // get the address
             Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
@@ -3947,7 +4019,6 @@ namespace x64 {
         } else if(!dst.isReg && src.isReg) {
             // fetch dst address
             const M32& mem = dst.mem;
-            if(mem.segment != Segment::CS && mem.segment != Segment::UNK) return false;
             if(mem.encoding.index == R64::RIP) return false;
             // get the address
             Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
@@ -3965,7 +4036,6 @@ namespace x64 {
         } else if(dst.isReg && !src.isReg) {
             // fetch src address
             const M32& mem = src.mem;
-            if(mem.segment != Segment::CS && mem.segment != Segment::UNK) return false;
             if(mem.encoding.index == R64::RIP) return false;
             // get the address
             Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
@@ -4002,7 +4072,6 @@ namespace x64 {
         } else {
             // fetch address
             const M64& mem = dst.mem;
-            if(mem.segment != Segment::CS && mem.segment != Segment::UNK) return false;
             if(mem.encoding.index == R64::RIP) return false;
             // get the address
             Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
@@ -4035,7 +4104,6 @@ namespace x64 {
         } else {
             // fetch address
             const M64& mem = dst.mem;
-            if(mem.segment != Segment::CS && mem.segment != Segment::UNK) return false;
             if(mem.encoding.index == R64::RIP) return false;
             // get the address
             Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);

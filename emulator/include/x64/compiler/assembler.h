@@ -123,6 +123,8 @@ namespace x64 {
         void xchg(R16 dst, R16 src);
         void xchg(R32 dst, R32 src);
         void xchg(R64 dst, R64 src);
+        void cmpxchg(R32 dst, R32 src);
+        void cmpxchg(R64 dst, R64 src);
 
         void cdqe();
         void cdq();
@@ -214,6 +216,7 @@ namespace x64 {
         void movd(R32, XMM);
         void movd(const M32&, XMM);
         void movsd(XMM, const M64&);
+        void movsd(const M64&, XMM);
         void movq(XMM, R64);
         void movq(R64, XMM);
         void movlps(XMM, M64);

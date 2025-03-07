@@ -143,6 +143,8 @@ namespace x64 {
         bool tryCompileXchgRM16R16(RM16, R16);
         bool tryCompileXchgRM32R32(RM32, R32);
         bool tryCompileXchgRM64R64(RM64, R64);
+        bool tryCompileCmpxchgRM32R32(RM32, R32);
+        bool tryCompileCmpxchgRM64R64(RM64, R64);
         bool tryCompileCdqe();
         bool tryCompileCdq();
         bool tryCompileCqo();
@@ -223,6 +225,7 @@ namespace x64 {
         bool tryCompileMovdXmmRM32(XMM, const RM32&);
         bool tryCompileMovdRM32Xmm(const RM32&, XMM);
         bool tryCompileMovsdXmmM64(XMM, const M64&);
+        bool tryCompileMovsdM64Xmm(const M64&, XMM);
         bool tryCompileMovlpsXmmM64(XMM, const M64&);
         bool tryCompileMovhpsXmmM64(XMM, const M64&);
         bool tryCompilePmovmskbR32Xmm(R32, XMM);

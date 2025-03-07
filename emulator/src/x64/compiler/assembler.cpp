@@ -1339,6 +1339,22 @@ namespace x64 {
         write8((u8)(0b11000000 | (encodeRegister(src) << 3) | encodeRegister(dst)));
     }
 
+    void Assembler::cmpxchg(R32 dst, R32 src) {
+        if((u8)dst >= 8 || (u8)src >= 8) {
+            write8((u8)(0x40 | (((u8)src >= 8) ? 4 : 0) | (((u8)dst >= 8) ? 1 : 0) ));
+        }
+        write8((u8)0x0f);
+        write8((u8)0xb1);
+        write8((u8)(0b11000000 | (encodeRegister(src) << 3) | encodeRegister(dst)));
+    }
+
+    void Assembler::cmpxchg(R64 dst, R64 src) {
+        write8((u8)(0x48 | (((u8)src >= 8) ? 4 : 0) | (((u8)dst >= 8) ? 1 : 0) ));
+        write8((u8)0x0f);
+        write8((u8)0xb1);
+        write8((u8)(0b11000000 | (encodeRegister(src) << 3) | encodeRegister(dst)));
+    }
+
     void Assembler::cdqe() {
         write8(0x48);
         write8(0x98);
@@ -2570,6 +2586,62 @@ namespace x64 {
                          | (encodeRegister(src.encoding.index) << 3)
                          | (encodeRegister(src.encoding.base))));
                 write32(src.encoding.displacement);
+            }
+        }
+    }
+
+    void Assembler::movsd(const M64& dst, XMM src) {
+        verify(dst.encoding.base != R64::RSP, "rsp as base requires an SIB byte");
+        if(dst.encoding.index == R64::ZERO) {
+            if(dst.encoding.displacement == 0) {
+                verify(dst.encoding.base != R64::RBP, "rbp as base without displacement requires an SIB byte");
+                write8(0xf2);
+                write8((u8)(0x40 | (((u8)src >= 8) ? 4 : 0) | (((u8)dst.encoding.base >= 8) ? 1 : 0)));
+                write8(0x0f);
+                write8(0x11);
+                write8((u8)(0b00000000 | (encodeRegister(src) << 3) | (encodeRegister(dst.encoding.base))));
+            } else if((i8)dst.encoding.displacement == dst.encoding.displacement) {
+                write8(0xf2);
+                write8((u8)(0x40 | (((u8)src >= 8) ? 4 : 0) | (((u8)dst.encoding.base >= 8) ? 1 : 0)));
+                write8(0x0f);
+                write8(0x11);
+                write8((u8)(0b01000000 | (encodeRegister(src) << 3) | (encodeRegister(dst.encoding.base))));
+                write8((i8)dst.encoding.displacement);
+            } else {
+                write8(0xf2);
+                write8((u8)(0x40 | (((u8)src >= 8) ? 4 : 0) | (((u8)dst.encoding.base >= 8) ? 1 : 0)));
+                write8(0x0f);
+                write8(0x11);
+                write8((u8)(0b10000000 | (encodeRegister(src) << 3) | (encodeRegister(dst.encoding.base))));
+                write32(dst.encoding.displacement);
+            }
+        } else {
+            if((i8)dst.encoding.displacement == dst.encoding.displacement) {
+                write8(0xf2);
+                write8((u8)(0x40
+                         | (((u8)src >= 8) ? 4 : 0)
+                         | (((u8)dst.encoding.index >= 8) ? 2 : 0)
+                         | (((u8)dst.encoding.base >= 8) ? 1 : 0)));
+                write8(0x0f);
+                write8(0x11);
+                write8((u8)(0b01000000 | (encodeRegister(src) << 3) | 0b100));
+                write8((u8)(encodeScale(dst.encoding.scale) << 6
+                         | (encodeRegister(dst.encoding.index) << 3)
+                         | (encodeRegister(dst.encoding.base))));
+                write8((i8)dst.encoding.displacement);
+            } else {
+                write8(0xf2);
+                write8((u8)(0x40
+                         | (((u8)src >= 8) ? 4 : 0)
+                         | (((u8)dst.encoding.index >= 8) ? 2 : 0)
+                         | (((u8)dst.encoding.base >= 8) ? 1 : 0)));
+                write8(0x0f);
+                write8(0x11);
+                write8((u8)(0b10000000 | (encodeRegister(src) << 3) | 0b100));
+                write8((u8)(encodeScale(dst.encoding.scale) << 6
+                         | (encodeRegister(dst.encoding.index) << 3)
+                         | (encodeRegister(dst.encoding.base))));
+                write32(dst.encoding.displacement);
             }
         }
     }
