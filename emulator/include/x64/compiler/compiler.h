@@ -104,8 +104,12 @@ namespace x64 {
         bool tryCompileRorRM64Imm(const RM64&, Imm);
         bool tryCompileMulRM32(const RM32&);
         bool tryCompileMulRM64(const RM64&);
+        bool tryCompileImulR16RM16(R16, const RM16&);
         bool tryCompileImulR32RM32(R32, const RM32&);
         bool tryCompileImulR64RM64(R64, const RM64&);
+        bool tryCompileImulR16RM16Imm(R16, const RM16&, Imm);
+        bool tryCompileImulR32RM32Imm(R32, const RM32&, Imm);
+        bool tryCompileImulR64RM64Imm(R64, const RM64&, Imm);
         bool tryCompileDivRM32(const RM32&);
         bool tryCompileDivRM64(const RM64&);
         bool tryCompileIdivRM32(const RM32&);
@@ -429,8 +433,12 @@ namespace x64 {
         void cmp16Imm16(Reg dst, i16 imm);
         void cmp32Imm32(Reg dst, i32 imm);
         void cmp64Imm32(Reg dst, i32 imm);
+        void imul16(Reg dst, Reg src);
         void imul32(Reg dst, Reg src);
         void imul64(Reg dst, Reg src);
+        void imul16(Reg dst, Reg src, u16 imm);
+        void imul32(Reg dst, Reg src, u32 imm);
+        void imul64(Reg dst, Reg src, u32 imm);
         void loadImm8(Reg dst, u8 imm);
         void loadImm16(Reg dst, u16 imm);
         void loadImm32(Reg dst, u32 imm);

@@ -1037,6 +1037,16 @@ namespace x64 {
         write8((u8)(0b11000000 | (0b100 << 3) | (encodeRegister(src))));
     }
 
+    void Assembler::imul(R16 dst, R16 src) {
+        write8(0x66);
+        if((u8)src >= 8 || (u8)dst >= 8) {
+            write8((u8)(0x40 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src >= 8) ? 1 : 0)));
+        }
+        write8(0x0f);
+        write8(0xaf);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | (encodeRegister(src))));
+    }
+
     void Assembler::imul(R32 dst, R32 src) {
         if((u8)src >= 8 || (u8)dst >= 8) {
             write8((u8)(0x40 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src >= 8) ? 1 : 0)));
@@ -1051,6 +1061,32 @@ namespace x64 {
         write8(0x0f);
         write8(0xaf);
         write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | (encodeRegister(src))));
+    }
+
+    void Assembler::imul(R16 dst, R16 src, u16 imm) {
+        write8(0x66);
+        if((u8)src >= 8 || (u8)dst >= 8) {
+            write8((u8)(0x40 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src >= 8) ? 1 : 0)));
+        }
+        write8(0x69);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | (encodeRegister(src))));
+        write16(imm);
+    }
+
+    void Assembler::imul(R32 dst, R32 src, u32 imm) {
+        if((u8)src >= 8 || (u8)dst >= 8) {
+            write8((u8)(0x40 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src >= 8) ? 1 : 0)));
+        }
+        write8(0x69);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | (encodeRegister(src))));
+        write32(imm);
+    }
+
+    void Assembler::imul(R64 dst, R64 src, u32 imm) {
+        write8((u8)(0x48 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src >= 8) ? 1 : 0)));
+        write8(0x69);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | (encodeRegister(src))));
+        write32(imm);
     }
 
     void Assembler::div(R32 src) {
