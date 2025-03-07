@@ -237,14 +237,21 @@ namespace x64 {
         void paddq(XMM, XMM);
         void paddsb(XMM, XMM);
         void paddsw(XMM, XMM);
+        void paddusb(XMM, XMM);
+        void paddusw(XMM, XMM);
 
         void psubb(XMM, XMM);
         void psubw(XMM, XMM);
         void psubd(XMM, XMM);
+        void psubsb(XMM, XMM);
+        void psubsw(XMM, XMM);
+        void psubusb(XMM, XMM);
+        void psubusw(XMM, XMM);
 
         void pmaddwd(XMM, XMM);
         void pmulhw(XMM, XMM);
         void pmullw(XMM, XMM);
+        void pmulhuw(XMM, XMM);
         void pavgb(XMM, XMM);
         void pavgw(XMM, XMM);
 

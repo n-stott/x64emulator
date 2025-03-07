@@ -267,13 +267,20 @@ namespace x64 {
             case Insn::PADDQ_XMM_XMMM128: return tryCompilePaddqXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
             case Insn::PADDSB_XMM_XMMM128: return tryCompilePaddsbXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
             case Insn::PADDSW_XMM_XMMM128: return tryCompilePaddswXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PADDUSB_XMM_XMMM128: return tryCompilePaddusbXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PADDUSW_XMM_XMMM128: return tryCompilePadduswXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
             case Insn::PSUBB_XMM_XMMM128: return tryCompilePsubbXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
             case Insn::PSUBW_XMM_XMMM128: return tryCompilePsubwXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
             case Insn::PSUBD_XMM_XMMM128: return tryCompilePsubdXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PSUBSB_XMM_XMMM128: return tryCompilePsubsbXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PSUBSW_XMM_XMMM128: return tryCompilePsubswXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PSUBUSB_XMM_XMMM128: return tryCompilePsubusbXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PSUBUSW_XMM_XMMM128: return tryCompilePsubuswXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
 
             case Insn::PMADDWD_XMM_XMMM128: return tryCompilePmaddwdXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
             case Insn::PMULHW_XMM_XMMM128: return tryCompilePmulhwXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
             case Insn::PMULLW_XMM_XMMM128: return tryCompilePmullwXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PMULHUW_XMM_XMMM128: return tryCompilePmulhuwXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
             case Insn::PAVGB_XMM_XMMM128: return tryCompilePavgbXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
             case Insn::PAVGW_XMM_XMMM128: return tryCompilePavgwXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
             
@@ -2689,6 +2696,18 @@ namespace x64 {
         });
     }
 
+    bool Compiler::tryCompilePaddusbXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            assembler_.paddusb(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePadduswXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            assembler_.paddusw(get(dst), get(src));
+        });
+    }
+
     bool Compiler::tryCompilePsubbXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
             assembler_.psubb(get(dst), get(src));
@@ -2707,6 +2726,30 @@ namespace x64 {
         });
     }
 
+    bool Compiler::tryCompilePsubsbXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            assembler_.psubsb(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePsubswXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            assembler_.psubsw(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePsubusbXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            assembler_.psubusb(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePsubuswXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            assembler_.psubusw(get(dst), get(src));
+        });
+    }
+
     bool Compiler::tryCompilePmaddwdXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
             assembler_.pmaddwd(get(dst), get(src));
@@ -2722,6 +2765,12 @@ namespace x64 {
     bool Compiler::tryCompilePmullwXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
             assembler_.pmullw(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePmulhuwXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            assembler_.pmulhuw(get(dst), get(src));
         });
     }
 
