@@ -78,7 +78,7 @@ namespace emulator {
             for(const auto& ins : bb->basicBlock().instructions) {
                 fmt::print("      {:#12x} {}\n", ins.first.address(), ins.first.toString());
             }
-            [[maybe_unused]] auto jitBasicBlock = x64::Compiler::tryCompile(bb->basicBlock(), true);
+            [[maybe_unused]] auto jitBasicBlock = x64::Compiler::tryCompile(bb->basicBlock(), {}, true);
         }
 #endif
     }
@@ -213,10 +213,7 @@ namespace emulator {
             verify(currentBasicBlock->start() == cpu_.get(x64::R64::RIP));
             currentBasicBlock->onCall(*this);
             if(currentBasicBlock->nativeBasicBlock()) {
-                u64 expectedTicksIfOnlyOneBlock = *tickInfo.ticks() + currentBasicBlock->basicBlock().instructions.size();
-                cpu_.exec((x64::NativeExecPtr)currentBasicBlock->nativeBasicBlock(), tickInfo.ticks());
-                u64 nextTicks = *tickInfo.ticks();
-                if(nextTicks != expectedTicksIfOnlyOneBlock) currentBasicBlock = nullptr;
+                cpu_.exec((x64::NativeExecPtr)currentBasicBlock->nativeBasicBlock(), tickInfo.ticks(), &currentBasicBlock);
             } else {
                 cpu_.exec(currentBasicBlock->basicBlock());
                 tickInfo.tick(currentBasicBlock->basicBlock().instructions.size());
@@ -694,7 +691,7 @@ namespace emulator {
     void BasicBlock::onCall(VM& vm) {
         ++calls_;
         if(vm.jitEnabled() && calls_ >= JIT_THRESHOLD && !compilationAttempted_) {
-            auto jitBasicBlock = x64::Compiler::tryCompile(cpuBasicBlock_);
+            auto jitBasicBlock = x64::Compiler::tryCompile(cpuBasicBlock_, this);
             if(!!jitBasicBlock) {
                 nativeBasicBlock_ = vm.tryMakeNative(jitBasicBlock->nativecode.data(), jitBasicBlock->nativecode.size());
                 pendingPatches_ = PendingPatches {

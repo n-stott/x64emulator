@@ -17,8 +17,9 @@ namespace x64 {
         Xmm* xmms;
         u8* memory;
         u64* rflags;
-        u64* ticks;
         u64 fsbase;
+        u64* ticks;
+        void* basicBlockPtr;
     };
 
     using NativeExecPtr = void(*)(NativeArguments*);

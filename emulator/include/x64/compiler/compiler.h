@@ -15,7 +15,7 @@ namespace x64 {
 
     class Compiler {
     public:
-        static std::optional<NativeBasicBlock> tryCompile(const BasicBlock&, bool diagnose = false);
+        static std::optional<NativeBasicBlock> tryCompile(const BasicBlock&, std::optional<void*> basicBlockPtr = std::nullopt, bool diagnose = false);
 
         static std::vector<u8> compileJumpTo(u64 address);
 
@@ -31,7 +31,7 @@ namespace x64 {
 
         void addEntry();
         void prepareExit(u32 nbInstructionsInBlock);
-        void addExit();
+        void addExit(u64 basicBlockPtr);
 
         size_t currentOffset() const { return assembler_.code().size(); }
 
@@ -395,6 +395,7 @@ namespace x64 {
 
         void addTime(u32 amount);
         void readFsBase(Reg dst);
+        void writeBasicBlockPtr(u64 basicBlockPtr);
 
         std::vector<u8> jmpCode(u64 dst, TmpReg tmp) const;
 

@@ -84,6 +84,7 @@ int main(int argc, char**) {
     cpu.set(MMX::MM7, 0xabcdabcddcbadcba);
 
     u64 ticks { 0 };
+    u64 basicBlockPtr { 0 };
 
     if(argc != 1) {
         cpu.exec(bb);
@@ -97,7 +98,7 @@ int main(int argc, char**) {
         void* ptr = ::mmap(nullptr, 0x1000, PROT_EXEC|PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_PRIVATE, 0, 0);
         if(ptr == (void*)MAP_FAILED) return 1;
         ::memcpy(ptr, nativebb->nativecode.data(), nativebb->nativecode.size());
-        cpu.exec((NativeExecPtr)ptr, &ticks);
+        cpu.exec((NativeExecPtr)ptr, &ticks, &basicBlockPtr);
     }
 
     fmt::print("MM0={:x}\n", cpu.get(MMX::MM0));

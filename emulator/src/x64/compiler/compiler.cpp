@@ -7,7 +7,7 @@
 
 namespace x64 {
 
-    std::optional<NativeBasicBlock> Compiler::tryCompile(const BasicBlock& basicBlock, bool diagnose) {
+    std::optional<NativeBasicBlock> Compiler::tryCompile(const BasicBlock& basicBlock, std::optional<void*> basicBlockPtr, bool diagnose) {
         Compiler compiler;
         // Add the entrypoint code for when we are entering jitted code from the emulator
         compiler.addEntry();
@@ -36,7 +36,7 @@ namespace x64 {
         }
 
         // Finally, add the exit code for when we need to return execution to the emulator
-        compiler.addExit();
+        compiler.addExit((u64)basicBlockPtr.value_or(nullptr));
         std::vector<u8> code = compiler.assembler_.code();
 #ifdef COMPILER_DEBUG
         fmt::print("Compile block:\n");
@@ -355,8 +355,9 @@ namespace x64 {
         addTime(nbInstructionsInBlock);
     }
 
-    void Compiler::addExit() {
+    void Compiler::addExit(u64 basicBlockPtr) {
         storeFlags();
+        writeBasicBlockPtr(basicBlockPtr);
         assembler_.ret();
     }
 
@@ -3375,7 +3376,7 @@ namespace x64 {
 
     void Compiler::addTime(u32 amount) {
         constexpr size_t TICKS_OFFSET = offsetof(NativeArguments, ticks);
-        static_assert(TICKS_OFFSET == 0x28);
+        static_assert(TICKS_OFFSET == 0x30);
         M64 ticksPtr = make64(R64::RDI, TICKS_OFFSET);
         assembler_.mov(get(Reg::GPR1), ticksPtr);
         M64 ticks = make64(get(Reg::GPR1), 0);
@@ -3387,9 +3388,19 @@ namespace x64 {
 
     void Compiler::readFsBase(Reg dst) {
         constexpr size_t FS_BASE = offsetof(NativeArguments, fsbase);
-        static_assert(FS_BASE == 0x30);
+        static_assert(FS_BASE == 0x28);
         M64 fsbasePtr = make64(R64::RDI, FS_BASE);
         assembler_.mov(get(dst), fsbasePtr);
+    }
+
+    void Compiler::writeBasicBlockPtr(u64 basicBlockPtr) {
+        constexpr size_t BBPTR_OFFSET = offsetof(NativeArguments, basicBlockPtr);
+        static_assert(BBPTR_OFFSET == 0x38);
+        M64 bbPtrPtr = make64(R64::RDI, BBPTR_OFFSET);
+        assembler_.mov(get(Reg::GPR1), bbPtrPtr);
+        M64 bbPtr = make64(get(Reg::GPR1), 0);
+        loadImm64(Reg::GPR0, basicBlockPtr);
+        assembler_.mov(bbPtr, get(Reg::GPR0));
     }
 
     std::vector<u8> Compiler::jmpCode(u64 dst, TmpReg tmp) const {
