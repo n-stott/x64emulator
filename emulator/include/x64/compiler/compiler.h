@@ -37,8 +37,11 @@ namespace x64 {
 
         bool tryAdvanceInstructionPointer(u64 nextAddress);
 
-        bool tryCompileMovM8R8(const M8&, R8);
+        bool tryCompileMovR8Imm(R8, Imm);
         bool tryCompileMovM8Imm(const M8&, Imm);
+        bool tryCompileMovR8R8(R8, R8);
+        bool tryCompileMovR8M8(R8, const M8&);
+        bool tryCompileMovM8R8(const M8&, R8);
         bool tryCompileMovR16Imm(R16, Imm);
         bool tryCompileMovM16Imm(const M16&, Imm);
         bool tryCompileMovR16R16(R16, R16);

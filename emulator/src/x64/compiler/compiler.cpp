@@ -62,8 +62,11 @@ namespace x64 {
     bool Compiler::tryCompile(const X64Instruction& ins) {
         if(!tryAdvanceInstructionPointer(ins.nextAddress())) return false;
         switch(ins.insn()) {
-            case Insn::MOV_M8_R8: return tryCompileMovM8R8(ins.op0<M8>(), ins.op1<R8>());
+            case Insn::MOV_R8_IMM: return tryCompileMovR8Imm(ins.op0<R8>(), ins.op1<Imm>());
             case Insn::MOV_M8_IMM: return tryCompileMovM8Imm(ins.op0<M8>(), ins.op1<Imm>());
+            case Insn::MOV_R8_R8: return tryCompileMovR8R8(ins.op0<R8>(), ins.op1<R8>());
+            case Insn::MOV_R8_M8: return tryCompileMovR8M8(ins.op0<R8>(), ins.op1<M8>());
+            case Insn::MOV_M8_R8: return tryCompileMovM8R8(ins.op0<M8>(), ins.op1<R8>());
             case Insn::MOV_R16_IMM: return tryCompileMovR16Imm(ins.op0<R16>(), ins.op1<Imm>());
             case Insn::MOV_M16_IMM: return tryCompileMovM16Imm(ins.op0<M16>(), ins.op1<Imm>());
             case Insn::MOV_R16_R16: return tryCompileMovR16R16(ins.op0<R16>(), ins.op1<R16>());
@@ -386,14 +389,11 @@ namespace x64 {
         return true;
     }
 
-    bool Compiler::tryCompileMovM8R8(const M8& dst, R8 src) {
-        if(dst.segment != Segment::CS && dst.segment != Segment::UNK) return false;
-        // read the value of the source register
-        readReg8(Reg::GPR0, src);
-        // get the destination address
-        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR1}, dst);
-        // write to the destination address
-        writeMem8(addr, Reg::GPR0);
+    bool Compiler::tryCompileMovR8Imm(R8 dst, Imm imm) {
+        // load the immediate
+        loadImm8(Reg::GPR0, imm.as<u8>());
+        // write to the destination register
+        writeReg8(dst, Reg::GPR0);
         return true;
     }
 
@@ -401,6 +401,35 @@ namespace x64 {
         if(dst.segment != Segment::CS && dst.segment != Segment::UNK) return false;
         // load the immediate
         loadImm8(Reg::GPR0, imm.as<u8>());
+        // get the destination address
+        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR1}, dst);
+        // write to the destination address
+        writeMem8(addr, Reg::GPR0);
+        return true;
+    }
+
+    bool Compiler::tryCompileMovR8R8(R8 dst, R8 src) {
+        // read from the source register
+        readReg8(Reg::GPR0, src);
+        // write to the destination register
+        writeReg8(dst, Reg::GPR0);
+        return true;
+    }
+
+    bool Compiler::tryCompileMovR8M8(R8 dst, const M8& src) {
+        // get the source address
+        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR1}, src);
+        // read memory at that address
+        readMem8(Reg::GPR0, addr);
+        // write to the destination register
+        writeReg8(dst, Reg::GPR0);
+        return true;
+    }
+
+    bool Compiler::tryCompileMovM8R8(const M8& dst, R8 src) {
+        if(dst.segment != Segment::CS && dst.segment != Segment::UNK) return false;
+        // read the value of the source register
+        readReg8(Reg::GPR0, src);
         // get the destination address
         Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR1}, dst);
         // write to the destination address
