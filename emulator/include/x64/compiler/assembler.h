@@ -225,6 +225,7 @@ namespace x64 {
         void movq(R64, XMM);
         void movlps(XMM, M64);
         void movhps(XMM, M64);
+        void movhlps(XMM, XMM);
         void pmovmskb(R32, XMM);
 
         void pand(XMM, XMM);
@@ -274,6 +275,7 @@ namespace x64 {
         void psrad(XMM, u8);
 
         void pshufd(XMM, XMM, u8);
+        void pshuflw(XMM, XMM, u8);
 
         void punpcklbw(XMM, XMM);
         void punpcklwd(XMM, XMM);

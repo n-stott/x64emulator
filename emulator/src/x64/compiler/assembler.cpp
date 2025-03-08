@@ -2800,6 +2800,15 @@ namespace x64 {
         }
     }
 
+    void Assembler::movhlps(XMM dst, XMM src) {
+        if((u8)dst >= 8 || (u8)src >= 8) {
+            write8((u8)(0x40 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src >= 8) ? 1 : 0) ));
+        }
+        write8((u8)0x0f);
+        write8((u8)0x12);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
     void Assembler::pmovmskb(R32 dst, XMM src) {
         write8(0x66);
         if((u8)dst >= 8 || (u8)src >= 8) {
@@ -3222,6 +3231,17 @@ namespace x64 {
 
     void Assembler::pshufd(XMM dst, XMM src, u8 imm) {
         write8(0x66);
+        if((u8)dst >= 8 || (u8)src >= 8) {
+            write8((u8)(0x40 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src >= 8) ? 1 : 0) ));
+        }
+        write8((u8)0x0f);
+        write8((u8)0x70);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+        write8(imm);
+    }
+
+    void Assembler::pshuflw(XMM dst, XMM src, u8 imm) {
+        write8(0xf2);
         if((u8)dst >= 8 || (u8)src >= 8) {
             write8((u8)(0x40 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src >= 8) ? 1 : 0) ));
         }

@@ -235,6 +235,7 @@ namespace x64 {
         bool tryCompileMovsdM64Xmm(const M64&, XMM);
         bool tryCompileMovlpsXmmM64(XMM, const M64&);
         bool tryCompileMovhpsXmmM64(XMM, const M64&);
+        bool tryCompileMovhlpsXmmXmm(XMM, XMM);
         bool tryCompilePmovmskbR32Xmm(R32, XMM);
 
         bool tryCompilePandXmmXmmM128(XMM, const XMMM128&);
@@ -284,6 +285,7 @@ namespace x64 {
         bool tryCompilePsradXmmImm(XMM, Imm);
 
         bool tryCompilePshufdXmmXmmM128Imm(XMM, const XMMM128&, Imm);
+        bool tryCompilePshuflwXmmXmmM128Imm(XMM, const XMMM128&, Imm);
 
         bool tryCompilePunpcklbwXmmXmmM128(XMM, const XMMM128&);
         bool tryCompilePunpcklwdXmmXmmM128(XMM, const XMMM128&);
@@ -496,6 +498,9 @@ namespace x64 {
         
         template<typename Func>
         bool forRM64RM64(const RM64& dst, const RM64& src, Func&& func, bool writeResultBack = true);
+
+        template<typename Func>
+        bool forMmxMmxM32(MMX dst, const MMXM32& src, Func&& func, bool writeResultBack = true);
 
         template<typename Func>
         bool forMmxMmxM64(MMX dst, const MMXM64& src, Func&& func, bool writeResultBack = true);
