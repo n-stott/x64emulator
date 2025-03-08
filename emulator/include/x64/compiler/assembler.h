@@ -309,6 +309,7 @@ namespace x64 {
         void mulsd(XMM, XMM);
         void divsd(XMM, XMM);
         void comisd(XMM, XMM);
+        void ucomisd(XMM, XMM);
         void maxsd(XMM, XMM);
         void minsd(XMM, XMM);
         void cvtsi2sd32(XMM, R32);
@@ -323,6 +324,10 @@ namespace x64 {
         void subpd(XMM, XMM);
         void mulpd(XMM, XMM);
         void divpd(XMM, XMM);
+        void andpd(XMM, XMM);
+        void andnpd(XMM, XMM);
+        void orpd(XMM, XMM);
+        void xorpd(XMM, XMM);
 
         void shufps(XMM, XMM, u8);
         void shufpd(XMM, XMM, u8);

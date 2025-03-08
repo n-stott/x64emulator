@@ -337,24 +337,33 @@ namespace x64 {
             case Insn::ADDSD_XMM_XMM: return tryCompileAddsdXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
             case Insn::ADDSD_XMM_M64: return tryCompileAddsdXmmM64(ins.op0<XMM>(), ins.op1<M64>());
             case Insn::SUBSD_XMM_XMM: return tryCompileSubsdXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
+            case Insn::SUBSD_XMM_M64: return tryCompileSubsdXmmM64(ins.op0<XMM>(), ins.op1<M64>());
             case Insn::MULSD_XMM_XMM: return tryCompileMulsdXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
             case Insn::MULSD_XMM_M64: return tryCompileMulsdXmmM64(ins.op0<XMM>(), ins.op1<M64>());
             case Insn::DIVSD_XMM_XMM: return tryCompileDivsdXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
+            case Insn::DIVSD_XMM_M64: return tryCompileDivsdXmmM64(ins.op0<XMM>(), ins.op1<M64>());
             case Insn::COMISD_XMM_XMM: return tryCompileComisdXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
+            case Insn::COMISD_XMM_M64: return tryCompileComisdXmmM64(ins.op0<XMM>(), ins.op1<M64>());
+            case Insn::UCOMISD_XMM_XMM: return tryCompileUcomisdXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
+            case Insn::UCOMISD_XMM_M64: return tryCompileUcomisdXmmM64(ins.op0<XMM>(), ins.op1<M64>());
             case Insn::MAXSD_XMM_XMM: return tryCompileMaxsdXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
             case Insn::MINSD_XMM_XMM: return tryCompileMinsdXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
             case Insn::CVTSI2SD_XMM_RM32: return tryCompileCvtsi2sdXmmRM32(ins.op0<XMM>(), ins.op1<RM32>());
             case Insn::CVTSI2SD_XMM_RM64: return tryCompileCvtsi2sdXmmRM64(ins.op0<XMM>(), ins.op1<RM64>());
 
-            case Insn::ADDPS_XMM_XMMM128: return tryCompileAddpsXmmXmm(ins.op0<XMM>(), ins.op1<XMMM128>());
-            case Insn::SUBPS_XMM_XMMM128: return tryCompileSubpsXmmXmm(ins.op0<XMM>(), ins.op1<XMMM128>());
-            case Insn::MULPS_XMM_XMMM128: return tryCompileMulpsXmmXmm(ins.op0<XMM>(), ins.op1<XMMM128>());
-            case Insn::DIVPS_XMM_XMMM128: return tryCompileDivpsXmmXmm(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::ADDPS_XMM_XMMM128: return tryCompileAddpsXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::SUBPS_XMM_XMMM128: return tryCompileSubpsXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::MULPS_XMM_XMMM128: return tryCompileMulpsXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::DIVPS_XMM_XMMM128: return tryCompileDivpsXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
             
-            case Insn::ADDPD_XMM_XMMM128: return tryCompileAddpdXmmXmm(ins.op0<XMM>(), ins.op1<XMMM128>());
-            case Insn::SUBPD_XMM_XMMM128: return tryCompileSubpdXmmXmm(ins.op0<XMM>(), ins.op1<XMMM128>());
-            case Insn::MULPD_XMM_XMMM128: return tryCompileMulpdXmmXmm(ins.op0<XMM>(), ins.op1<XMMM128>());
-            case Insn::DIVPD_XMM_XMMM128: return tryCompileDivpdXmmXmm(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::ADDPD_XMM_XMMM128: return tryCompileAddpdXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::SUBPD_XMM_XMMM128: return tryCompileSubpdXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::MULPD_XMM_XMMM128: return tryCompileMulpdXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::DIVPD_XMM_XMMM128: return tryCompileDivpdXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::ANDPD_XMM_XMMM128: return tryCompileAndpdXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::ANDNPD_XMM_XMMM128: return tryCompileAndnpdXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::ORPD_XMM_XMMM128: return tryCompileOrpdXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::XORPD_XMM_XMMM128: return tryCompileXorpdXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
 
             case Insn::SHUFPS_XMM_XMMM128_IMM: return tryCompileShufpsXmmXmmImm(ins.op0<XMM>(), ins.op1<XMM>(), ins.op2<Imm>());
             case Insn::SHUFPD_XMM_XMMM128_IMM: return tryCompileShufpdXmmXmmImm(ins.op0<XMM>(), ins.op1<XMM>(), ins.op2<Imm>());
@@ -3148,6 +3157,19 @@ namespace x64 {
         return true;
     }
 
+    bool Compiler::tryCompileSubsdXmmM64(XMM dst, const M64& src) {
+        // fetch src address
+        if(src.segment != Segment::CS && src.segment != Segment::UNK) return false;
+        if(src.encoding.index == R64::RIP) return false;
+        // get the address
+        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src);
+        readReg128(Reg128::GPR0, dst);
+        assembler_.movsd(get(Reg128::GPR1), make64(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
+        assembler_.subsd(get(Reg128::GPR0), get(Reg128::GPR1));
+        writeReg128(dst, Reg128::GPR0);
+        return true;
+    }
+
     bool Compiler::tryCompileMulsdXmmXmm(XMM dst, XMM src) {
         readReg128(Reg128::GPR0, dst);
         readReg128(Reg128::GPR1, src);
@@ -3177,10 +3199,56 @@ namespace x64 {
         return true;
     }
 
+    bool Compiler::tryCompileDivsdXmmM64(XMM dst, const M64& src) {
+        // fetch src address
+        if(src.segment != Segment::CS && src.segment != Segment::UNK) return false;
+        if(src.encoding.index == R64::RIP) return false;
+        // get the address
+        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src);
+        readReg128(Reg128::GPR0, dst);
+        assembler_.movsd(get(Reg128::GPR1), make64(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
+        assembler_.divsd(get(Reg128::GPR0), get(Reg128::GPR1));
+        writeReg128(dst, Reg128::GPR0);
+        return true;
+    }
+
     bool Compiler::tryCompileComisdXmmXmm(XMM dst, XMM src) {
         readReg128(Reg128::GPR0, dst);
         readReg128(Reg128::GPR1, src);
         assembler_.comisd(get(Reg128::GPR0), get(Reg128::GPR1));
+        return true;
+    }
+
+    bool Compiler::tryCompileComisdXmmM64(XMM dst, const M64& src) {
+        // fetch src address
+        if(src.segment != Segment::CS && src.segment != Segment::UNK) return false;
+        if(src.encoding.index == R64::RIP) return false;
+        // get the address
+        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src);
+        readReg128(Reg128::GPR0, dst);
+        assembler_.movsd(get(Reg128::GPR1), make64(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
+        assembler_.comisd(get(Reg128::GPR0), get(Reg128::GPR1));
+        writeReg128(dst, Reg128::GPR0);
+        return true;
+    }
+
+    bool Compiler::tryCompileUcomisdXmmXmm(XMM dst, XMM src) {
+        readReg128(Reg128::GPR0, dst);
+        readReg128(Reg128::GPR1, src);
+        assembler_.ucomisd(get(Reg128::GPR0), get(Reg128::GPR1));
+        return true;
+    }
+
+    bool Compiler::tryCompileUcomisdXmmM64(XMM dst, const M64& src) {
+        // fetch src address
+        if(src.segment != Segment::CS && src.segment != Segment::UNK) return false;
+        if(src.encoding.index == R64::RIP) return false;
+        // get the address
+        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src);
+        readReg128(Reg128::GPR0, dst);
+        assembler_.movsd(get(Reg128::GPR1), make64(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
+        assembler_.ucomisd(get(Reg128::GPR0), get(Reg128::GPR1));
+        writeReg128(dst, Reg128::GPR0);
         return true;
     }
 
@@ -3238,52 +3306,76 @@ namespace x64 {
         }
     }
 
-    bool Compiler::tryCompileAddpsXmmXmm(XMM dst, const XMMM128& src) {
+    bool Compiler::tryCompileAddpsXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
             assembler_.addps(get(dst), get(src));
         });
     }
 
-    bool Compiler::tryCompileSubpsXmmXmm(XMM dst, const XMMM128& src) {
+    bool Compiler::tryCompileSubpsXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
             assembler_.subps(get(dst), get(src));
         });
     }
 
-    bool Compiler::tryCompileMulpsXmmXmm(XMM dst, const XMMM128& src) {
+    bool Compiler::tryCompileMulpsXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
             assembler_.mulps(get(dst), get(src));
         });
     }
 
-    bool Compiler::tryCompileDivpsXmmXmm(XMM dst, const XMMM128& src) {
+    bool Compiler::tryCompileDivpsXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
             assembler_.divps(get(dst), get(src));
         });
     }
 
 
-    bool Compiler::tryCompileAddpdXmmXmm(XMM dst, const XMMM128& src) {
+    bool Compiler::tryCompileAddpdXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
             assembler_.addpd(get(dst), get(src));
         });
     }
 
-    bool Compiler::tryCompileSubpdXmmXmm(XMM dst, const XMMM128& src) {
+    bool Compiler::tryCompileSubpdXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
             assembler_.subpd(get(dst), get(src));
         });
     }
 
-    bool Compiler::tryCompileMulpdXmmXmm(XMM dst, const XMMM128& src) {
+    bool Compiler::tryCompileMulpdXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
             assembler_.mulpd(get(dst), get(src));
         });
     }
 
-    bool Compiler::tryCompileDivpdXmmXmm(XMM dst, const XMMM128& src) {
+    bool Compiler::tryCompileDivpdXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
             assembler_.divpd(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompileAndpdXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            assembler_.andpd(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompileAndnpdXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            assembler_.andnpd(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompileOrpdXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            assembler_.orpd(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompileXorpdXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            assembler_.xorpd(get(dst), get(src));
         });
     }
 

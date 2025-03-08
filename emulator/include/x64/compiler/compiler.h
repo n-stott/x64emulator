@@ -316,24 +316,33 @@ namespace x64 {
         bool tryCompileAddsdXmmXmm(XMM, XMM);
         bool tryCompileAddsdXmmM64(XMM, const M64&);
         bool tryCompileSubsdXmmXmm(XMM, XMM);
+        bool tryCompileSubsdXmmM64(XMM, const M64&);
         bool tryCompileMulsdXmmXmm(XMM, XMM);
         bool tryCompileMulsdXmmM64(XMM, const M64&);
         bool tryCompileDivsdXmmXmm(XMM, XMM);
+        bool tryCompileDivsdXmmM64(XMM, const M64&);
         bool tryCompileComisdXmmXmm(XMM, XMM);
+        bool tryCompileComisdXmmM64(XMM, const M64&);
+        bool tryCompileUcomisdXmmXmm(XMM, XMM);
+        bool tryCompileUcomisdXmmM64(XMM, const M64&);
         bool tryCompileMaxsdXmmXmm(XMM, XMM);
         bool tryCompileMinsdXmmXmm(XMM, XMM);
         bool tryCompileCvtsi2sdXmmRM32(XMM, const RM32&);
         bool tryCompileCvtsi2sdXmmRM64(XMM, const RM64&);
 
-        bool tryCompileAddpsXmmXmm(XMM, const XMMM128&);
-        bool tryCompileSubpsXmmXmm(XMM, const XMMM128&);
-        bool tryCompileMulpsXmmXmm(XMM, const XMMM128&);
-        bool tryCompileDivpsXmmXmm(XMM, const XMMM128&);
+        bool tryCompileAddpsXmmXmmM128(XMM, const XMMM128&);
+        bool tryCompileSubpsXmmXmmM128(XMM, const XMMM128&);
+        bool tryCompileMulpsXmmXmmM128(XMM, const XMMM128&);
+        bool tryCompileDivpsXmmXmmM128(XMM, const XMMM128&);
 
-        bool tryCompileAddpdXmmXmm(XMM, const XMMM128&);
-        bool tryCompileSubpdXmmXmm(XMM, const XMMM128&);
-        bool tryCompileMulpdXmmXmm(XMM, const XMMM128&);
-        bool tryCompileDivpdXmmXmm(XMM, const XMMM128&);
+        bool tryCompileAddpdXmmXmmM128(XMM, const XMMM128&);
+        bool tryCompileSubpdXmmXmmM128(XMM, const XMMM128&);
+        bool tryCompileMulpdXmmXmmM128(XMM, const XMMM128&);
+        bool tryCompileDivpdXmmXmmM128(XMM, const XMMM128&);
+        bool tryCompileAndpdXmmXmmM128(XMM, const XMMM128&);
+        bool tryCompileAndnpdXmmXmmM128(XMM, const XMMM128&);
+        bool tryCompileOrpdXmmXmmM128(XMM, const XMMM128&);
+        bool tryCompileXorpdXmmXmmM128(XMM, const XMMM128&);
 
         bool tryCompileShufpsXmmXmmImm(XMM, XMM, Imm);
         bool tryCompileShufpdXmmXmmImm(XMM, XMM, Imm);
