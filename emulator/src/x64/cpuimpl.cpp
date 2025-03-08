@@ -1062,7 +1062,7 @@ namespace x64 {
         return packedOp<i32, float>(src, src, [=](auto, auto s) {
             switch(rounding) {
                 case SIMD_ROUNDING::NEAREST: {
-                    return (i32)std::round(s);
+                    return F32::round32(s);
                 }
                 case SIMD_ROUNDING::DOWN:
                 case SIMD_ROUNDING::UP:
