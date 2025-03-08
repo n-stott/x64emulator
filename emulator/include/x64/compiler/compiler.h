@@ -99,6 +99,8 @@ namespace x64 {
         bool tryCompileShrRM32Imm(const RM32&, Imm);
         bool tryCompileShrRM64R8(const RM64&, R8);
         bool tryCompileShrRM64Imm(const RM64&, Imm);
+        bool tryCompileSarRM16R8(const RM16&, R8);
+        bool tryCompileSarRM16Imm(const RM16&, Imm);
         bool tryCompileSarRM32R8(const RM32&, R8);
         bool tryCompileSarRM32Imm(const RM32&, Imm);
         bool tryCompileSarRM64R8(const RM64&, R8);
@@ -478,6 +480,9 @@ namespace x64 {
 
         template<typename Func>
         bool forRM8RM8(const RM8& dst, const RM8& src, Func&& func, bool writeResultBack = true);
+
+        template<typename Func>
+        bool forRM16R8(const RM16& dst, R8 src, Func&& func, bool writeResultBack = true);
 
         template<typename Func>
         bool forRM16Imm(const RM16& dst, Imm imm, Func&& func, bool writeResultBack = true);

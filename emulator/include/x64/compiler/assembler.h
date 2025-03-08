@@ -74,6 +74,9 @@ namespace x64 {
         void shr_cl(R64 lhs);
         void shr(R64 lhs, R8 rhs);
         void shr(R64 lhs, u8 imm);
+        void sar_cl(R16 lhs);
+        void sar(R16 lhs, R8 rhs);
+        void sar(R16 lhs, u8 imm);
         void sar_cl(R32 lhs);
         void sar(R32 lhs, R8 rhs);
         void sar(R32 lhs, u8 imm);

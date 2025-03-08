@@ -955,6 +955,37 @@ namespace x64 {
         write8((i8)imm);
     }
 
+    void Assembler::sar_cl(R16 lhs) {
+        write8(0x66);
+        if((u8)lhs >= 8) {
+            write8((u8)(0x40 | (((u8)lhs >= 8) ? 1 : 0)));
+        }
+        write8(0xd3);
+        write8((u8)(0b11000000 | (0b111 << 3) | encodeRegister(lhs)));
+    }
+
+    void Assembler::sar(R16 lhs, R8 rhs) {
+        verify(lhs == R16::R8W || lhs == R16::R9W);
+        verify(rhs == R8::R8B || rhs == R8::R9B);
+        // set cl
+        push64(R64::RCX);
+        mov(R8::CL, rhs);
+        // do the shift
+        sar_cl(lhs);
+        // restore cl
+        pop64(R64::RCX);
+    }
+
+    void Assembler::sar(R16 lhs, u8 imm) {
+        write8(0x66);
+        if((u8)lhs >= 8) {
+            write8((u8)(0x40 | (((u8)lhs >= 8) ? 1 : 0)));
+        }
+        write8(0xc1);
+        write8((u8)(0b11000000 | (0b111 << 3) | encodeRegister(lhs)));
+        write8((i8)imm);
+    }
+
     void Assembler::sar_cl(R32 lhs) {
         if((u8)lhs >= 8) {
             write8((u8)(0x40 | (((u8)lhs >= 8) ? 1 : 0)));

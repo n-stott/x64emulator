@@ -124,6 +124,8 @@ namespace x64 {
             case Insn::SHR_RM32_IMM: return tryCompileShrRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
             case Insn::SHR_RM64_R8: return tryCompileShrRM64R8(ins.op0<RM64>(), ins.op1<R8>());
             case Insn::SHR_RM64_IMM: return tryCompileShrRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
+            case Insn::SAR_RM16_R8: return tryCompileSarRM16R8(ins.op0<RM16>(), ins.op1<R8>());
+            case Insn::SAR_RM16_IMM: return tryCompileSarRM16Imm(ins.op0<RM16>(), ins.op1<Imm>());
             case Insn::SAR_RM32_R8: return tryCompileSarRM32R8(ins.op0<RM32>(), ins.op1<R8>());
             case Insn::SAR_RM32_IMM: return tryCompileSarRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
             case Insn::SAR_RM64_R8: return tryCompileSarRM64R8(ins.op0<RM64>(), ins.op1<R8>());
@@ -995,6 +997,18 @@ namespace x64 {
     bool Compiler::tryCompileShrRM64Imm(const RM64& lhs, Imm rhs) {
         return forRM64Imm(lhs, rhs, [&](Reg dst, Imm imm) {
             assembler_.shr(get(dst), imm.as<u8>());
+        });
+    }
+
+    bool Compiler::tryCompileSarRM16R8(const RM16& lhs, R8 rhs) {
+        return forRM16R8(lhs, rhs, [&](Reg dst, Reg src) {
+            assembler_.sar(get16(dst), get8(src));
+        });
+    }
+
+    bool Compiler::tryCompileSarRM16Imm(const RM16& lhs, Imm rhs) {
+        return forRM16Imm(lhs, rhs, [&](Reg dst, Imm imm) {
+            assembler_.sar(get16(dst), imm.as<u8>());
         });
     }
 
@@ -4089,6 +4103,40 @@ namespace x64 {
             return true;
         } else {
             return false;
+        }
+    }
+
+    template<typename Func>
+    bool Compiler::forRM16R8(const RM16& dst, R8 src, Func&& func, bool writeResultBack) {
+        if(dst.isReg) {
+            // read the dst register
+            readReg16(Reg::GPR0, dst.reg);
+            // read the src register
+            readReg8(Reg::GPR1, src);
+            // do the op
+            func(Reg::GPR0, Reg::GPR1);
+            if(writeResultBack) {
+                // write back to the register
+                writeReg16(dst.reg, Reg::GPR0);
+            }
+            return true;
+        } else {
+            // fetch address
+            const M16& mem = dst.mem;
+            if(mem.encoding.index == R64::RIP) return false;
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the value at the address
+            readMem16(Reg::GPR0, addr);
+            // read the src register
+            readReg8(Reg::GPR1, src);
+            // do the op
+            func(Reg::GPR0, Reg::GPR1);
+            if(writeResultBack) {
+                // write back to the register
+                writeMem16(addr, Reg::GPR0);
+            }
+            return true;
         }
     }
 
