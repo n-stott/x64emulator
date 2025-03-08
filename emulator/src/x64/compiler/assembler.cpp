@@ -2199,6 +2199,19 @@ namespace x64 {
         write8(imm);
     }
 
+    void Assembler::pshufb(MMX dst, MMX src) {
+        write8((u8)0x0f);
+        write8((u8)0x38);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
+    void Assembler::pshufw(MMX dst, MMX src, u8 imm) {
+        write8((u8)0x0f);
+        write8((u8)0x70);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+        write8(imm);
+    }
+
     void Assembler::punpcklbw(MMX dst, MMX src) {
         write8((u8)0x0f);
         write8((u8)0x60);
@@ -3513,6 +3526,16 @@ namespace x64 {
         }
         write8((u8)0x0f);
         write8((u8)0x5e);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
+    void Assembler::cmpsd(XMM dst, XMM src) {
+        write8(0xf2);
+        if((u8)dst >= 8 || (u8)src >= 8) {
+            write8((u8)(0x40 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src >= 8) ? 1 : 0) ));
+        }
+        write8((u8)0x0f);
+        write8((u8)0xc2);
         write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
     }
 

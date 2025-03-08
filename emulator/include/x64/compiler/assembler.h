@@ -205,6 +205,9 @@ namespace x64 {
         void psraw(MMX, u8);
         void psrad(MMX, u8);
 
+        void pshufb(MMX, MMX);
+        void pshufw(MMX, MMX, u8);
+
         void punpcklbw(MMX, MMX);
         void punpcklwd(MMX, MMX);
         void punpckldq(MMX, MMX);
@@ -308,6 +311,7 @@ namespace x64 {
         void subsd(XMM, XMM);
         void mulsd(XMM, XMM);
         void divsd(XMM, XMM);
+        void cmpsd(XMM, XMM);
         void comisd(XMM, XMM);
         void ucomisd(XMM, XMM);
         void maxsd(XMM, XMM);

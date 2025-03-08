@@ -216,6 +216,9 @@ namespace x64 {
         bool tryCompilePsrawMmxImm(MMX, Imm);
         bool tryCompilePsradMmxImm(MMX, Imm);
 
+        bool tryCompilePshufbMmxMmxM64(MMX, const MMXM64&);
+        bool tryCompilePshufwMmxMmxM64(MMX, const MMXM64&, Imm);
+
         bool tryCompilePunpcklbwMmxMmxM32(MMX, const MMXM32&);
         bool tryCompilePunpcklwdMmxMmxM32(MMX, const MMXM32&);
         bool tryCompilePunpckldqMmxMmxM32(MMX, const MMXM32&);
@@ -321,6 +324,8 @@ namespace x64 {
         bool tryCompileMulsdXmmM64(XMM, const M64&);
         bool tryCompileDivsdXmmXmm(XMM, XMM);
         bool tryCompileDivsdXmmM64(XMM, const M64&);
+        bool tryCompileCmpsdXmmXmm(XMM, XMM);
+        bool tryCompileCmpsdXmmM64(XMM, const M64&);
         bool tryCompileComisdXmmXmm(XMM, XMM);
         bool tryCompileComisdXmmM64(XMM, const M64&);
         bool tryCompileUcomisdXmmXmm(XMM, XMM);
