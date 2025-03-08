@@ -91,6 +91,8 @@ namespace x64 {
 
         u8* base() { return memoryBase_; }
 
+        void copyBytes(Ptr8 dst, Ptr8 src, size_t count);
+
         Ptr8 copyToMmu(Ptr8 dst, const u8* src, size_t n);
         u8* copyFromMmu(u8* dst, Ptr8 src, size_t n) const;
 

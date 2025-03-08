@@ -3544,14 +3544,10 @@ namespace x64 {
         Ptr8 dptr = resolve(dst);
         Ptr8 sptr = resolve(src);
         verify(flags_.direction == 0);
-        while(counter) {
-            u8 val = mmu_->read8(sptr);
-            mmu_->write8(dptr, val);
-            ++sptr;
-            ++dptr;
-            --counter;
-        }
-        set(R32::ECX, counter);
+        mmu_->copyBytes(dptr, sptr, counter);
+        sptr += counter;
+        dptr += counter;
+        set(R32::ECX, 0);
         set(R64::RSI, sptr.address());
         set(R64::RDI, dptr.address());
     }

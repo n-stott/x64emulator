@@ -356,6 +356,11 @@ namespace x64 {
         return ((address + PAGE_SIZE - 1) / PAGE_SIZE) * PAGE_SIZE;
     }
 
+    void Mmu::copyBytes(Ptr8 dst, Ptr8 src, size_t count) {
+        u8* dstPtr = getWritePtr(dst.address());
+        const u8* srcPtr = getReadPtr(src.address());
+        ::memcpy(dstPtr, srcPtr, count);
+    }
 
     Ptr8 Mmu::copyToMmu(Ptr8 dst, const u8* src, size_t n) {
         if(n == 0) return dst;
