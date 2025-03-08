@@ -327,6 +327,7 @@ namespace x64 {
             case Insn::COMISS_XMM_XMM: return tryCompileComissXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
 
             case Insn::ADDSD_XMM_XMM: return tryCompileAddsdXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
+            case Insn::ADDSD_XMM_M64: return tryCompileAddsdXmmM64(ins.op0<XMM>(), ins.op1<M64>());
             case Insn::SUBSD_XMM_XMM: return tryCompileSubsdXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
             case Insn::MULSD_XMM_XMM: return tryCompileMulsdXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
             case Insn::MULSD_XMM_M64: return tryCompileMulsdXmmM64(ins.op0<XMM>(), ins.op1<M64>());
@@ -3112,6 +3113,19 @@ namespace x64 {
     bool Compiler::tryCompileAddsdXmmXmm(XMM dst, XMM src) {
         readReg128(Reg128::GPR0, dst);
         readReg128(Reg128::GPR1, src);
+        assembler_.addsd(get(Reg128::GPR0), get(Reg128::GPR1));
+        writeReg128(dst, Reg128::GPR0);
+        return true;
+    }
+
+    bool Compiler::tryCompileAddsdXmmM64(XMM dst, const M64& src) {
+        // fetch src address
+        if(src.segment != Segment::CS && src.segment != Segment::UNK) return false;
+        if(src.encoding.index == R64::RIP) return false;
+        // get the address
+        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src);
+        readReg128(Reg128::GPR0, dst);
+        assembler_.movsd(get(Reg128::GPR1), make64(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
         assembler_.addsd(get(Reg128::GPR0), get(Reg128::GPR1));
         writeReg128(dst, Reg128::GPR0);
         return true;

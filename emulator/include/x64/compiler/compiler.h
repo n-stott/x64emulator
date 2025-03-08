@@ -306,6 +306,7 @@ namespace x64 {
         bool tryCompileComissXmmXmm(XMM, XMM);
 
         bool tryCompileAddsdXmmXmm(XMM, XMM);
+        bool tryCompileAddsdXmmM64(XMM, const M64&);
         bool tryCompileSubsdXmmXmm(XMM, XMM);
         bool tryCompileMulsdXmmXmm(XMM, XMM);
         bool tryCompileMulsdXmmM64(XMM, const M64&);
