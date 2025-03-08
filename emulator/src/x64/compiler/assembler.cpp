@@ -1040,6 +1040,24 @@ namespace x64 {
         write8((i8)imm);
     }
 
+    void Assembler::rol(R32 lhs, u8 imm) {
+        if((u8)lhs >= 8) {
+            write8((u8)(0x40 | (((u8)lhs >= 8) ? 1 : 0)));
+        }
+        write8(0xc1);
+        write8((u8)(0b11000000 | (0b000 << 3) | encodeRegister(lhs)));
+        write8((i8)imm);
+    }
+
+    void Assembler::ror(R32 lhs, u8 imm) {
+        if((u8)lhs >= 8) {
+            write8((u8)(0x40 | (((u8)lhs >= 8) ? 1 : 0)));
+        }
+        write8(0xc1);
+        write8((u8)(0b11000000 | (0b001 << 3) | encodeRegister(lhs)));
+        write8((i8)imm);
+    }
+
     void Assembler::rol(R64 lhs, u8 imm) {
         write8((u8)(0x48 | (((u8)lhs >= 8) ? 1 : 0)));
         write8(0xc1);

@@ -83,6 +83,8 @@ namespace x64 {
         void sar_cl(R64 lhs);
         void sar(R64 lhs, R8 rhs);
         void sar(R64 lhs, u8 imm);
+        void rol(R32 lhs, u8 imm);
+        void ror(R32 lhs, u8 imm);
         void rol(R64 lhs, u8 imm);
         void ror(R64 lhs, u8 imm);
         void mul(R32 src);

@@ -130,6 +130,8 @@ namespace x64 {
             case Insn::SAR_RM32_IMM: return tryCompileSarRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
             case Insn::SAR_RM64_R8: return tryCompileSarRM64R8(ins.op0<RM64>(), ins.op1<R8>());
             case Insn::SAR_RM64_IMM: return tryCompileSarRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
+            case Insn::ROL_RM32_IMM: return tryCompileRolRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
+            case Insn::ROR_RM32_IMM: return tryCompileRorRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
             case Insn::ROL_RM64_IMM: return tryCompileRolRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
             case Insn::ROR_RM64_IMM: return tryCompileRorRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
             case Insn::MUL_RM32: return tryCompileMulRM32(ins.op0<RM32>());
@@ -185,6 +187,7 @@ namespace x64 {
             case Insn::PUSH_IMM: return tryCompilePushImm(ins.op0<Imm>());
             case Insn::PUSH_RM64: return tryCompilePushRM64(ins.op0<RM64>());
             case Insn::POP_R64: return tryCompilePopR64(ins.op0<R64>());
+            case Insn::LEAVE: return tryCompileLeave();
             case Insn::LEA_R32_ENCODING32: return tryCompileLeaR32Enc32(ins.op0<R32>(), ins.op1<Encoding32>());
             case Insn::LEA_R32_ENCODING64: return tryCompileLeaR32Enc64(ins.op0<R32>(), ins.op1<Encoding64>());
             case Insn::LEA_R64_ENCODING64: return tryCompileLeaR64Enc64(ins.op0<R64>(), ins.op1<Encoding64>());
@@ -1052,6 +1055,18 @@ namespace x64 {
         });
     }
 
+    bool Compiler::tryCompileRolRM32Imm(const RM32& lhs, Imm rhs) {
+        return forRM32Imm(lhs, rhs, [&](Reg dst, Imm imm) {
+            assembler_.rol(get32(dst), imm.as<u8>());
+        });
+    }
+
+    bool Compiler::tryCompileRorRM32Imm(const RM32& lhs, Imm rhs) {
+        return forRM32Imm(lhs, rhs, [&](Reg dst, Imm imm) {
+            assembler_.ror(get32(dst), imm.as<u8>());
+        });
+    }
+
     bool Compiler::tryCompileRolRM64Imm(const RM64& lhs, Imm rhs) {
         return forRM64Imm(lhs, rhs, [&](Reg dst, Imm imm) {
             assembler_.rol(get(dst), imm.as<u8>());
@@ -1552,6 +1567,12 @@ namespace x64 {
             writeMem64(Mem{Reg::GPR1, 0}, Reg::GPR0);
             return true;
         }
+    }
+
+    bool Compiler::tryCompileLeave() {
+        readReg64(Reg::GPR0, R64::RBP);
+        writeReg64(R64::RSP, Reg::GPR0);
+        return tryCompilePopR64(R64::RBP);
     }
 
     bool Compiler::tryCompilePopR64(const R64& dst) {
