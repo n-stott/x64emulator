@@ -3757,6 +3757,35 @@ namespace x64 {
         write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
     }
 
+    void Assembler::cvtps2dq(XMM dst, XMM src) {
+        write8(0x66);
+        if((u8)dst >= 8 || (u8)src >= 8) {
+            write8((u8)(0x40 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src >= 8) ? 1 : 0) ));
+        }
+        write8((u8)0x0f);
+        write8((u8)0x5b);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
+    void Assembler::cvttps2dq(XMM dst, XMM src) {
+        write8(0xf3);
+        if((u8)dst >= 8 || (u8)src >= 8) {
+            write8((u8)(0x40 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src >= 8) ? 1 : 0) ));
+        }
+        write8((u8)0x0f);
+        write8((u8)0x5b);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
+    void Assembler::cvtdq2ps(XMM dst, XMM src) {
+        if((u8)dst >= 8 || (u8)src >= 8) {
+            write8((u8)(0x40 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src >= 8) ? 1 : 0) ));
+        }
+        write8((u8)0x0f);
+        write8((u8)0x5b);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
     void Assembler::addpd(XMM dst, XMM src) {
         write8(0x66);
         if((u8)dst >= 8 || (u8)src >= 8) {

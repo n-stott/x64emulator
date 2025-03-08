@@ -336,6 +336,9 @@ namespace x64 {
         void subps(XMM, XMM);
         void mulps(XMM, XMM);
         void divps(XMM, XMM);
+        void cvtps2dq(XMM, XMM);
+        void cvttps2dq(XMM, XMM);
+        void cvtdq2ps(XMM, XMM);
 
         void addpd(XMM, XMM);
         void subpd(XMM, XMM);
