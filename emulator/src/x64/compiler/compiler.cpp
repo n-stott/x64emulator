@@ -1866,6 +1866,10 @@ namespace x64 {
 
     bool Compiler::tryCompileCmpxchgRM32R32(RM32 dst, R32 src) {
         if(dst.isReg) {
+            // save rax and set it
+            assembler_.push64(R64::RAX);
+            readReg64(Reg::GPR0, R64::RAX);
+            assembler_.mov(R64::RAX, get(Reg::GPR0));
             // read the dst register
             readReg32(Reg::GPR0, dst.reg);
             // read the src register
@@ -1875,12 +1879,20 @@ namespace x64 {
             // write back to the destination register
             writeReg32(dst.reg, Reg::GPR0);
             writeReg32(src, Reg::GPR1);
+            // set rax and restore rax
+            assembler_.mov(get(Reg::GPR0), R64::RAX);
+            writeReg64(R64::RAX, Reg::GPR0);
+            assembler_.pop64(R64::RAX);
             return true;
         } else {
             // fetch dst address
             const M32& mem = dst.mem;
             if(mem.segment != Segment::CS && mem.segment != Segment::UNK) return false;
             if(mem.encoding.index == R64::RIP) return false;
+            // save rax and set it
+            assembler_.push64(R64::RAX);
+            readReg64(Reg::GPR0, R64::RAX);
+            assembler_.mov(R64::RAX, get(Reg::GPR0));
             // get the address
             Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
             // read the dst value at the address
@@ -1892,12 +1904,20 @@ namespace x64 {
             // write back to the register
             writeMem32(addr, Reg::GPR0);
             writeReg32(src, Reg::GPR1);
+            // set rax and restore rax
+            assembler_.mov(get(Reg::GPR0), R64::RAX);
+            writeReg64(R64::RAX, Reg::GPR0);
+            assembler_.pop64(R64::RAX);
             return true;
         }
     }
 
     bool Compiler::tryCompileCmpxchgRM64R64(RM64 dst, R64 src) {
         if(dst.isReg) {
+            // save rax and set it
+            assembler_.push64(R64::RAX);
+            readReg64(Reg::GPR0, R64::RAX);
+            assembler_.mov(R64::RAX, get(Reg::GPR0));
             // read the dst register
             readReg64(Reg::GPR0, dst.reg);
             // read the src register
@@ -1907,12 +1927,20 @@ namespace x64 {
             // write back to the destination register
             writeReg64(dst.reg, Reg::GPR0);
             writeReg64(src, Reg::GPR1);
+            // set rax and restore rax
+            assembler_.mov(get(Reg::GPR0), R64::RAX);
+            writeReg64(R64::RAX, Reg::GPR0);
+            assembler_.pop64(R64::RAX);
             return true;
         } else {
             // fetch dst address
             const M64& mem = dst.mem;
             if(mem.segment != Segment::CS && mem.segment != Segment::UNK) return false;
             if(mem.encoding.index == R64::RIP) return false;
+            // save rax and set it
+            assembler_.push64(R64::RAX);
+            readReg64(Reg::GPR0, R64::RAX);
+            assembler_.mov(R64::RAX, get(Reg::GPR0));
             // get the address
             Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
             // read the dst value at the address
@@ -1924,6 +1952,10 @@ namespace x64 {
             // write back to the register
             writeMem64(addr, Reg::GPR0);
             writeReg64(src, Reg::GPR1);
+            // set rax and restore rax
+            assembler_.mov(get(Reg::GPR0), R64::RAX);
+            writeReg64(R64::RAX, Reg::GPR0);
+            assembler_.pop64(R64::RAX);
             return true;
         }
     }
