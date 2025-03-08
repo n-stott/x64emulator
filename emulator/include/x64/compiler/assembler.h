@@ -302,6 +302,8 @@ namespace x64 {
         void comisd(XMM, XMM);
         void maxsd(XMM, XMM);
         void minsd(XMM, XMM);
+        void cvtsi2sd32(XMM, R32);
+        void cvtsi2sd64(XMM, R64);
 
         void addps(XMM, XMM);
         void subps(XMM, XMM);

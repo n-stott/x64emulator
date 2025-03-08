@@ -335,6 +335,8 @@ namespace x64 {
             case Insn::COMISD_XMM_XMM: return tryCompileComisdXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
             case Insn::MAXSD_XMM_XMM: return tryCompileMaxsdXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
             case Insn::MINSD_XMM_XMM: return tryCompileMinsdXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
+            case Insn::CVTSI2SD_XMM_RM32: return tryCompileCvtsi2sdXmmRM32(ins.op0<XMM>(), ins.op1<RM32>());
+            case Insn::CVTSI2SD_XMM_RM64: return tryCompileCvtsi2sdXmmRM64(ins.op0<XMM>(), ins.op1<RM64>());
 
             case Insn::ADDPS_XMM_XMMM128: return tryCompileAddpsXmmXmm(ins.op0<XMM>(), ins.op1<XMMM128>());
             case Insn::SUBPS_XMM_XMMM128: return tryCompileSubpsXmmXmm(ins.op0<XMM>(), ins.op1<XMMM128>());
@@ -3189,6 +3191,46 @@ namespace x64 {
         readReg128(Reg128::GPR1, src);
         assembler_.minsd(get(Reg128::GPR0), get(Reg128::GPR1));
         return true;
+    }
+
+    bool Compiler::tryCompileCvtsi2sdXmmRM32(XMM dst, const RM32& src) {
+        if(src.isReg) {
+            // get the src value
+            readReg32(Reg::GPR1, src.reg);
+            assembler_.cvtsi2sd32(get(Reg128::GPR0), get32(Reg::GPR1));
+            writeReg128(dst, Reg128::GPR0);
+            return true;
+        } else {
+            // fetch src address
+            if(src.mem.segment != Segment::CS && src.mem.segment != Segment::UNK) return false;
+            if(src.mem.encoding.index == R64::RIP) return false;
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src.mem);
+            readMem32(Reg::GPR1, addr);
+            assembler_.cvtsi2sd32(get(Reg128::GPR0), get32(Reg::GPR1));
+            writeReg128(dst, Reg128::GPR0);
+            return true;
+        }
+    }
+
+    bool Compiler::tryCompileCvtsi2sdXmmRM64(XMM dst, const RM64& src) {
+        if(src.isReg) {
+            // get the src value
+            readReg64(Reg::GPR1, src.reg);
+            assembler_.cvtsi2sd64(get(Reg128::GPR0), get(Reg::GPR1));
+            writeReg128(dst, Reg128::GPR0);
+            return true;
+        } else {
+            // fetch src address
+            if(src.mem.segment != Segment::CS && src.mem.segment != Segment::UNK) return false;
+            if(src.mem.encoding.index == R64::RIP) return false;
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src.mem);
+            readMem64(Reg::GPR1, addr);
+            assembler_.cvtsi2sd64(get(Reg128::GPR0), get(Reg::GPR1));
+            writeReg128(dst, Reg128::GPR0);
+            return true;
+        }
     }
 
     bool Compiler::tryCompileAddpsXmmXmm(XMM dst, const XMMM128& src) {

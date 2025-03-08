@@ -314,6 +314,8 @@ namespace x64 {
         bool tryCompileComisdXmmXmm(XMM, XMM);
         bool tryCompileMaxsdXmmXmm(XMM, XMM);
         bool tryCompileMinsdXmmXmm(XMM, XMM);
+        bool tryCompileCvtsi2sdXmmRM32(XMM, const RM32&);
+        bool tryCompileCvtsi2sdXmmRM64(XMM, const RM64&);
 
         bool tryCompileAddpsXmmXmm(XMM, const XMMM128&);
         bool tryCompileSubpsXmmXmm(XMM, const XMMM128&);
