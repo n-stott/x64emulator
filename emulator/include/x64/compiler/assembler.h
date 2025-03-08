@@ -228,6 +228,7 @@ namespace x64 {
         void pmovmskb(R32, XMM);
 
         void pand(XMM, XMM);
+        void pandn(XMM, XMM);
         void por(XMM, XMM);
         void pxor(XMM, XMM);
 
@@ -254,6 +255,8 @@ namespace x64 {
         void pmulhuw(XMM, XMM);
         void pavgb(XMM, XMM);
         void pavgw(XMM, XMM);
+        void pmaxub(XMM, XMM);
+        void pminub(XMM, XMM);
 
         void pcmpeqb(XMM, XMM);
         void pcmpeqw(XMM, XMM);
