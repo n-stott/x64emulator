@@ -286,13 +286,22 @@ namespace x64 {
         bool tryCompilePcmpeqbXmmXmmM128(XMM, const XMMM128&);
         bool tryCompilePcmpeqwXmmXmmM128(XMM, const XMMM128&);
         bool tryCompilePcmpeqdXmmXmmM128(XMM, const XMMM128&);
+        bool tryCompilePcmpgtbXmmXmmM128(XMM, const XMMM128&);
+        bool tryCompilePcmpgtwXmmXmmM128(XMM, const XMMM128&);
+        bool tryCompilePcmpgtdXmmXmmM128(XMM, const XMMM128&);
 
+        bool tryCompilePsllwXmmXmmM128(XMM, const XMMM128&);
         bool tryCompilePsllwXmmImm(XMM, Imm);
+        bool tryCompilePslldXmmXmmM128(XMM, const XMMM128&);
         bool tryCompilePslldXmmImm(XMM, Imm);
+        bool tryCompilePsllqXmmXmmM128(XMM, const XMMM128&);
         bool tryCompilePsllqXmmImm(XMM, Imm);
         bool tryCompilePslldqXmmImm(XMM, Imm);
+        bool tryCompilePsrlwXmmXmmM128(XMM, const XMMM128&);
         bool tryCompilePsrlwXmmImm(XMM, Imm);
+        bool tryCompilePsrldXmmXmmM128(XMM, const XMMM128&);
         bool tryCompilePsrldXmmImm(XMM, Imm);
+        bool tryCompilePsrlqXmmXmmM128(XMM, const XMMM128&);
         bool tryCompilePsrlqXmmImm(XMM, Imm);
         bool tryCompilePsrldqXmmImm(XMM, Imm);
         bool tryCompilePsrawXmmImm(XMM, Imm);

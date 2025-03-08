@@ -3218,6 +3218,46 @@ namespace x64 {
         write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
     }
 
+    void Assembler::pcmpgtb(XMM dst, XMM src) {
+        write8(0x66);
+        if((u8)dst >= 8 || (u8)src >= 8) {
+            write8((u8)(0x40 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src >= 8) ? 1 : 0) ));
+        }
+        write8((u8)0x0f);
+        write8((u8)0x64);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
+    void Assembler::pcmpgtw(XMM dst, XMM src) {
+        write8(0x66);
+        if((u8)dst >= 8 || (u8)src >= 8) {
+            write8((u8)(0x40 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src >= 8) ? 1 : 0) ));
+        }
+        write8((u8)0x0f);
+        write8((u8)0x65);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
+    void Assembler::pcmpgtd(XMM dst, XMM src) {
+        write8(0x66);
+        if((u8)dst >= 8 || (u8)src >= 8) {
+            write8((u8)(0x40 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src >= 8) ? 1 : 0) ));
+        }
+        write8((u8)0x0f);
+        write8((u8)0x66);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
+    void Assembler::psllw(XMM dst, XMM src) {
+        write8(0x66);
+        if((u8)dst >= 8 || (u8)src >= 8) {
+            write8((u8)(0x40 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src >= 8) ? 1 : 0) ));
+        }
+        write8((u8)0x0f);
+        write8((u8)0xf1);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
     void Assembler::psllw(XMM dst, u8 imm) {
         write8(0x66);
         if((u8)dst >= 8) {
@@ -3229,6 +3269,16 @@ namespace x64 {
         write8(imm);
     }
 
+    void Assembler::pslld(XMM dst, XMM src) {
+        write8(0x66);
+        if((u8)dst >= 8 || (u8)src >= 8) {
+            write8((u8)(0x40 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src >= 8) ? 1 : 0) ));
+        }
+        write8((u8)0x0f);
+        write8((u8)0xf2);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
     void Assembler::pslld(XMM dst, u8 imm) {
         write8(0x66);
         if((u8)dst >= 8) {
@@ -3238,6 +3288,16 @@ namespace x64 {
         write8((u8)0x72);
         write8((u8)(0b11000000 | (0b110 << 3) | encodeRegister(dst)));
         write8(imm);
+    }
+
+    void Assembler::psllq(XMM dst, XMM src) {
+        write8(0x66);
+        if((u8)dst >= 8 || (u8)src >= 8) {
+            write8((u8)(0x40 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src >= 8) ? 1 : 0) ));
+        }
+        write8((u8)0x0f);
+        write8((u8)0xf3);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
     }
 
     void Assembler::psllq(XMM dst, u8 imm) {
@@ -3262,6 +3322,16 @@ namespace x64 {
         write8(imm);
     }
 
+    void Assembler::psrlw(XMM dst, XMM src) {
+        write8(0x66);
+        if((u8)dst >= 8 || (u8)src >= 8) {
+            write8((u8)(0x40 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src >= 8) ? 1 : 0) ));
+        }
+        write8((u8)0x0f);
+        write8((u8)0xd1);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
     void Assembler::psrlw(XMM dst, u8 imm) {
         write8(0x66);
         if((u8)dst >= 8) {
@@ -3273,6 +3343,16 @@ namespace x64 {
         write8(imm);
     }
 
+    void Assembler::psrld(XMM dst, XMM src) {
+        write8(0x66);
+        if((u8)dst >= 8 || (u8)src >= 8) {
+            write8((u8)(0x40 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src >= 8) ? 1 : 0) ));
+        }
+        write8((u8)0x0f);
+        write8((u8)0xd2);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
     void Assembler::psrld(XMM dst, u8 imm) {
         write8(0x66);
         if((u8)dst >= 8) {
@@ -3282,6 +3362,16 @@ namespace x64 {
         write8((u8)0x72);
         write8((u8)(0b11000000 | (0b010 << 3) | encodeRegister(dst)));
         write8(imm);
+    }
+
+    void Assembler::psrlq(XMM dst, XMM src) {
+        write8(0x66);
+        if((u8)dst >= 8 || (u8)src >= 8) {
+            write8((u8)(0x40 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src >= 8) ? 1 : 0) ));
+        }
+        write8((u8)0x0f);
+        write8((u8)0xd3);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
     }
 
     void Assembler::psrlq(XMM dst, u8 imm) {

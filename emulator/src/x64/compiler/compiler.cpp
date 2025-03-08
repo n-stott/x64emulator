@@ -308,12 +308,21 @@ namespace x64 {
             case Insn::PCMPEQB_XMM_XMMM128: return tryCompilePcmpeqbXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
             case Insn::PCMPEQW_XMM_XMMM128: return tryCompilePcmpeqwXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
             case Insn::PCMPEQD_XMM_XMMM128: return tryCompilePcmpeqdXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PCMPGTB_XMM_XMMM128: return tryCompilePcmpgtbXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PCMPGTW_XMM_XMMM128: return tryCompilePcmpgtwXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PCMPGTD_XMM_XMMM128: return tryCompilePcmpgtdXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PSLLW_XMM_XMMM128: return tryCompilePsllwXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
             case Insn::PSLLW_XMM_IMM: return tryCompilePsllwXmmImm(ins.op0<XMM>(), ins.op1<Imm>());
+            case Insn::PSLLD_XMM_XMMM128: return tryCompilePslldXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
             case Insn::PSLLD_XMM_IMM: return tryCompilePslldXmmImm(ins.op0<XMM>(), ins.op1<Imm>());
+            case Insn::PSLLQ_XMM_XMMM128: return tryCompilePsllqXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
             case Insn::PSLLQ_XMM_IMM: return tryCompilePsllqXmmImm(ins.op0<XMM>(), ins.op1<Imm>());
             case Insn::PSLLDQ_XMM_IMM: return tryCompilePslldqXmmImm(ins.op0<XMM>(), ins.op1<Imm>());
+            case Insn::PSRLW_XMM_XMMM128: return tryCompilePsrlwXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
             case Insn::PSRLW_XMM_IMM: return tryCompilePsrlwXmmImm(ins.op0<XMM>(), ins.op1<Imm>());
+            case Insn::PSRLD_XMM_XMMM128: return tryCompilePsrldXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
             case Insn::PSRLD_XMM_IMM: return tryCompilePsrldXmmImm(ins.op0<XMM>(), ins.op1<Imm>());
+            case Insn::PSRLQ_XMM_XMMM128: return tryCompilePsrlqXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
             case Insn::PSRLQ_XMM_IMM: return tryCompilePsrlqXmmImm(ins.op0<XMM>(), ins.op1<Imm>());
             case Insn::PSRLDQ_XMM_IMM: return tryCompilePsrldqXmmImm(ins.op0<XMM>(), ins.op1<Imm>());
             case Insn::PSRAW_XMM_IMM: return tryCompilePsrawXmmImm(ins.op0<XMM>(), ins.op1<Imm>());
@@ -2977,6 +2986,30 @@ namespace x64 {
         });
     }
 
+    bool Compiler::tryCompilePcmpgtbXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            assembler_.pcmpgtb(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePcmpgtwXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            assembler_.pcmpgtw(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePcmpgtdXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            assembler_.pcmpgtd(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePsllwXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            assembler_.psllw(get(dst), get(src));
+        });
+    }
+
     bool Compiler::tryCompilePsllwXmmImm(XMM dst, Imm imm) {
         readReg128(Reg128::GPR0, dst);
         assembler_.psllw(get(Reg128::GPR0), imm.as<u8>());
@@ -2984,11 +3017,23 @@ namespace x64 {
         return true;
     }
 
+    bool Compiler::tryCompilePslldXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            assembler_.pslld(get(dst), get(src));
+        });
+    }
+
     bool Compiler::tryCompilePslldXmmImm(XMM dst, Imm imm) {
         readReg128(Reg128::GPR0, dst);
         assembler_.pslld(get(Reg128::GPR0), imm.as<u8>());
         writeReg128(dst, Reg128::GPR0);
         return true;
+    }
+
+    bool Compiler::tryCompilePsllqXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            assembler_.psllq(get(dst), get(src));
+        });
     }
 
     bool Compiler::tryCompilePsllqXmmImm(XMM dst, Imm imm) {
@@ -3005,6 +3050,12 @@ namespace x64 {
         return true;
     }
 
+    bool Compiler::tryCompilePsrlwXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            assembler_.psrlw(get(dst), get(src));
+        });
+    }
+
     bool Compiler::tryCompilePsrlwXmmImm(XMM dst, Imm imm) {
         readReg128(Reg128::GPR0, dst);
         assembler_.psrlw(get(Reg128::GPR0), imm.as<u8>());
@@ -3012,11 +3063,23 @@ namespace x64 {
         return true;
     }
 
+    bool Compiler::tryCompilePsrldXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            assembler_.psrld(get(dst), get(src));
+        });
+    }
+
     bool Compiler::tryCompilePsrldXmmImm(XMM dst, Imm imm) {
         readReg128(Reg128::GPR0, dst);
         assembler_.psrld(get(Reg128::GPR0), imm.as<u8>());
         writeReg128(dst, Reg128::GPR0);
         return true;
+    }
+
+    bool Compiler::tryCompilePsrlqXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            assembler_.psrlq(get(dst), get(src));
+        });
     }
 
     bool Compiler::tryCompilePsrlqXmmImm(XMM dst, Imm imm) {

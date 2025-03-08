@@ -276,13 +276,22 @@ namespace x64 {
         void pcmpeqb(XMM, XMM);
         void pcmpeqw(XMM, XMM);
         void pcmpeqd(XMM, XMM);
+        void pcmpgtb(XMM, XMM);
+        void pcmpgtw(XMM, XMM);
+        void pcmpgtd(XMM, XMM);
 
+        void psllw(XMM, XMM);
         void psllw(XMM, u8);
+        void pslld(XMM, XMM);
         void pslld(XMM, u8);
+        void psllq(XMM, XMM);
         void psllq(XMM, u8);
         void pslldq(XMM, u8);
+        void psrlw(XMM, XMM);
         void psrlw(XMM, u8);
+        void psrld(XMM, XMM);
         void psrld(XMM, u8);
+        void psrlq(XMM, XMM);
         void psrlq(XMM, u8);
         void psrldq(XMM, u8);
         void psraw(XMM, u8);
