@@ -195,6 +195,8 @@ namespace x64 {
             case Insn::SET_RM8: return tryCompileSetRM8(ins.op0<Cond>(), ins.op1<RM8>());
             case Insn::CMOV_R32_RM32: return tryCompileCmovR32RM32(ins.op0<Cond>(), ins.op1<R32>(), ins.op2<RM32>());
             case Insn::CMOV_R64_RM64: return tryCompileCmovR64RM64(ins.op0<Cond>(), ins.op1<R64>(), ins.op2<RM64>());
+            case Insn::BSWAP_R32: return tryCompileBswapR32(ins.op0<R32>());
+            case Insn::BSWAP_R64: return tryCompileBswapR64(ins.op0<R64>());
 
             // MMX
             case Insn::MOV_MMX_MMX: return tryCompileMovMmxMmx(ins.op0<MMX>(), ins.op1<MMX>());
@@ -2160,6 +2162,20 @@ namespace x64 {
         return forRM64RM64(d, src, [&](Reg dst, Reg src) {
             assembler_.cmov(cond, get(dst), get(src));
         }, true);
+    }
+
+    bool Compiler::tryCompileBswapR32(R32 dst) {
+        readReg32(Reg::GPR0, dst);
+        assembler_.bswap(get32(Reg::GPR0));
+        writeReg32(dst, Reg::GPR0);
+        return true;
+    }
+
+    bool Compiler::tryCompileBswapR64(R64 dst) {
+        readReg64(Reg::GPR0, dst);
+        assembler_.bswap(get(Reg::GPR0));
+        writeReg64(dst, Reg::GPR0);
+        return true;
     }
 
     bool Compiler::tryCompileMovMmxMmx(MMX dst, MMX src) {

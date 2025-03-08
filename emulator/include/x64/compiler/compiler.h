@@ -170,6 +170,8 @@ namespace x64 {
         bool tryCompileSetRM8(Cond, const RM8&);
         bool tryCompileCmovR32RM32(Cond, R32, const RM32&);
         bool tryCompileCmovR64RM64(Cond, R64, const RM64&);
+        bool tryCompileBswapR32(R32 dst);
+        bool tryCompileBswapR64(R64 dst);
 
         // mmx
         bool tryCompileMovMmxMmx(MMX, MMX);

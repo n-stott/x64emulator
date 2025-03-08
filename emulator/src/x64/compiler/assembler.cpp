@@ -1732,6 +1732,19 @@ namespace x64 {
         write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
     }
 
+    void Assembler::bswap(R32 dst) {
+        if((u8)dst >= 8) {
+            write8((u8)(0x40 | (((u8)dst >= 8) ? 1 : 0)));
+        }
+        write8(0x0f);
+        write8(0xc8 + encodeRegister(dst));
+    }
+
+    void Assembler::bswap(R64 dst) {
+        write8((u8)(0x48 | (((u8)dst >= 8) ? 1 : 0)));
+        write8(0x0f);
+        write8(0xc8 + encodeRegister(dst));
+    }
 
 
 

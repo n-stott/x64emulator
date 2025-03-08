@@ -157,6 +157,8 @@ namespace x64 {
         void set(Cond, R8);
         void cmov(Cond, R32, R32);
         void cmov(Cond, R64, R64);
+        void bswap(R32);
+        void bswap(R64);
 
         // mmx
         void mov(MMX, MMX);
