@@ -2040,6 +2040,18 @@ namespace x64 {
         write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
     }
 
+    void Assembler::psubusb(MMX dst, MMX src) {
+        write8((u8)0x0f);
+        write8((u8)0xd8);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
+    void Assembler::psubusw(MMX dst, MMX src) {
+        write8((u8)0x0f);
+        write8((u8)0xd9);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
     void Assembler::pmaddwd(MMX dst, MMX src) {
         write8((u8)0x0f);
         write8((u8)0xf5);
@@ -2067,6 +2079,18 @@ namespace x64 {
     void Assembler::pavgw(MMX dst, MMX src) {
         write8((u8)0x0f);
         write8((u8)0xe3);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
+    void Assembler::pmaxub(MMX dst, MMX src) {
+        write8((u8)0x0f);
+        write8((u8)0xde);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
+    void Assembler::pminub(MMX dst, MMX src) {
+        write8((u8)0x0f);
+        write8((u8)0xda);
         write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
     }
 

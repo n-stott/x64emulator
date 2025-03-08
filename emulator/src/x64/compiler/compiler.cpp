@@ -215,12 +215,16 @@ namespace x64 {
             case Insn::PSUBD_MMX_MMXM64: return tryCompilePsubdMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
             case Insn::PSUBSB_MMX_MMXM64: return tryCompilePsubsbMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
             case Insn::PSUBSW_MMX_MMXM64: return tryCompilePsubswMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
+            case Insn::PSUBUSB_MMX_MMXM64: return tryCompilePsubusbMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
+            case Insn::PSUBUSW_MMX_MMXM64: return tryCompilePsubuswMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
 
             case Insn::PMADDWD_MMX_MMXM64: return tryCompilePmaddwdMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
             case Insn::PMULHW_MMX_MMXM64: return tryCompilePmulhwMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
             case Insn::PMULLW_MMX_MMXM64: return tryCompilePmullwMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
             case Insn::PAVGB_MMX_MMXM64: return tryCompilePavgbMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
             case Insn::PAVGW_MMX_MMXM64: return tryCompilePavgwMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
+            case Insn::PMAXUB_MMX_MMXM64: return tryCompilePmaxubMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
+            case Insn::PMINUB_MMX_MMXM64: return tryCompilePminubMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
             
             case Insn::PCMPEQB_MMX_MMXM64: return tryCompilePcmpeqbMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
             case Insn::PCMPEQW_MMX_MMXM64: return tryCompilePcmpeqwMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
@@ -2136,13 +2140,14 @@ namespace x64 {
         return true;
     }
 
+    i32 registerOffset(R32 reg);
+
     bool Compiler::tryCompileMovdMmxRM32(MMX dst, const RM32& src) {
         if(src.isReg) {
-            return false;
-            // M32 s = make32(get(Reg::REG_BASE), R32::ZERO, 1, registerOffset(src.reg));
-            // assembler_.mov(get(RegMM::GPR0), s);
-            // writeRegMM(dst, RegMM::GPR0);
-            // return true;
+            M32 s = make32(get(Reg::REG_BASE), R64::ZERO, 1, registerOffset(src.reg));
+            assembler_.movd(get(RegMM::GPR0), s);
+            writeRegMM(dst, RegMM::GPR0);
+            return true;
         } else {
             Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src.mem);
             M32 s = make32(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset);
@@ -2255,12 +2260,9 @@ namespace x64 {
     }
 
     bool Compiler::tryCompilePsubbMmxMmxM64(MMX dst, const MMXM64& src) {
-        if(!src.isReg) return false;
-        readRegMM(RegMM::GPR0, dst);
-        readRegMM(RegMM::GPR1, src.reg);
-        assembler_.psubb(get(RegMM::GPR0), get(RegMM::GPR1));
-        writeRegMM(dst, RegMM::GPR0);
-        return true;
+        return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
+            assembler_.psubb(get(dst), get(src));
+        });
     }
 
     bool Compiler::tryCompilePsubwMmxMmxM64(MMX dst, const MMXM64& src) {
@@ -2270,21 +2272,15 @@ namespace x64 {
     }
 
     bool Compiler::tryCompilePsubdMmxMmxM64(MMX dst, const MMXM64& src) {
-        if(!src.isReg) return false;
-        readRegMM(RegMM::GPR0, dst);
-        readRegMM(RegMM::GPR1, src.reg);
-        assembler_.psubd(get(RegMM::GPR0), get(RegMM::GPR1));
-        writeRegMM(dst, RegMM::GPR0);
-        return true;
+        return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
+            assembler_.psubd(get(dst), get(src));
+        });
     }
 
     bool Compiler::tryCompilePsubsbMmxMmxM64(MMX dst, const MMXM64& src) {
-        if(!src.isReg) return false;
-        readRegMM(RegMM::GPR0, dst);
-        readRegMM(RegMM::GPR1, src.reg);
-        assembler_.psubsb(get(RegMM::GPR0), get(RegMM::GPR1));
-        writeRegMM(dst, RegMM::GPR0);
-        return true;
+        return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
+            assembler_.psubsb(get(dst), get(src));
+        });
     }
 
     bool Compiler::tryCompilePsubswMmxMmxM64(MMX dst, const MMXM64& src) {
@@ -2293,13 +2289,22 @@ namespace x64 {
         });
     }
 
+    bool Compiler::tryCompilePsubusbMmxMmxM64(MMX dst, const MMXM64& src) {
+        return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
+            assembler_.psubusb(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePsubuswMmxMmxM64(MMX dst, const MMXM64& src) {
+        return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
+            assembler_.psubusw(get(dst), get(src));
+        });
+    }
+
     bool Compiler::tryCompilePmaddwdMmxMmxM64(MMX dst, const MMXM64& src) {
-        if(!src.isReg) return false;
-        readRegMM(RegMM::GPR0, dst);
-        readRegMM(RegMM::GPR1, src.reg);
-        assembler_.pmaddwd(get(RegMM::GPR0), get(RegMM::GPR1));
-        writeRegMM(dst, RegMM::GPR0);
-        return true;
+        return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
+            assembler_.pmaddwd(get(dst), get(src));
+        });
     }
 
     bool Compiler::tryCompilePmulhwMmxMmxM64(MMX dst, const MMXM64& src) {
@@ -2323,6 +2328,18 @@ namespace x64 {
     bool Compiler::tryCompilePavgwMmxMmxM64(MMX dst, const MMXM64& src) {
         return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
             assembler_.pavgw(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePmaxubMmxMmxM64(MMX dst, const MMXM64& src) {
+        return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
+            assembler_.pmaxub(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePminubMmxMmxM64(MMX dst, const MMXM64& src) {
+        return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
+            assembler_.pminub(get(dst), get(src));
         });
     }
 

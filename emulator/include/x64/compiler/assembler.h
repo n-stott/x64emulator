@@ -178,12 +178,16 @@ namespace x64 {
         void psubd(MMX, MMX);
         void psubsb(MMX, MMX);
         void psubsw(MMX, MMX);
+        void psubusb(MMX, MMX);
+        void psubusw(MMX, MMX);
 
         void pmaddwd(MMX, MMX);
         void pmulhw(MMX, MMX);
         void pmullw(MMX, MMX);
         void pavgb(MMX, MMX);
         void pavgw(MMX, MMX);
+        void pmaxub(MMX, MMX);
+        void pminub(MMX, MMX);
 
         void pcmpeqb(MMX, MMX);
         void pcmpeqw(MMX, MMX);

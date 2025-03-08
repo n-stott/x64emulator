@@ -191,12 +191,16 @@ namespace x64 {
         bool tryCompilePsubdMmxMmxM64(MMX, const MMXM64&);
         bool tryCompilePsubsbMmxMmxM64(MMX, const MMXM64&);
         bool tryCompilePsubswMmxMmxM64(MMX, const MMXM64&);
+        bool tryCompilePsubusbMmxMmxM64(MMX, const MMXM64&);
+        bool tryCompilePsubuswMmxMmxM64(MMX, const MMXM64&);
 
         bool tryCompilePmaddwdMmxMmxM64(MMX, const MMXM64&);
         bool tryCompilePmulhwMmxMmxM64(MMX, const MMXM64&);
         bool tryCompilePmullwMmxMmxM64(MMX, const MMXM64&);
         bool tryCompilePavgbMmxMmxM64(MMX, const MMXM64&);
         bool tryCompilePavgwMmxMmxM64(MMX, const MMXM64&);
+        bool tryCompilePmaxubMmxMmxM64(MMX, const MMXM64&);
+        bool tryCompilePminubMmxMmxM64(MMX, const MMXM64&);
             
         bool tryCompilePcmpeqbMmxMmxM64(MMX, const MMXM64&);
         bool tryCompilePcmpeqwMmxMmxM64(MMX, const MMXM64&);
