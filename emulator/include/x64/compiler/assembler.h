@@ -300,6 +300,8 @@ namespace x64 {
         void mulsd(XMM, XMM);
         void divsd(XMM, XMM);
         void comisd(XMM, XMM);
+        void maxsd(XMM, XMM);
+        void minsd(XMM, XMM);
 
         void addps(XMM, XMM);
         void subps(XMM, XMM);

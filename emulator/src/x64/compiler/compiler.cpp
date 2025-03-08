@@ -333,6 +333,8 @@ namespace x64 {
             case Insn::MULSD_XMM_M64: return tryCompileMulsdXmmM64(ins.op0<XMM>(), ins.op1<M64>());
             case Insn::DIVSD_XMM_XMM: return tryCompileDivsdXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
             case Insn::COMISD_XMM_XMM: return tryCompileComisdXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
+            case Insn::MAXSD_XMM_XMM: return tryCompileMaxsdXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
+            case Insn::MINSD_XMM_XMM: return tryCompileMinsdXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
 
             case Insn::ADDPS_XMM_XMMM128: return tryCompileAddpsXmmXmm(ins.op0<XMM>(), ins.op1<XMMM128>());
             case Insn::SUBPS_XMM_XMMM128: return tryCompileSubpsXmmXmm(ins.op0<XMM>(), ins.op1<XMMM128>());
@@ -3172,6 +3174,20 @@ namespace x64 {
         readReg128(Reg128::GPR0, dst);
         readReg128(Reg128::GPR1, src);
         assembler_.comisd(get(Reg128::GPR0), get(Reg128::GPR1));
+        return true;
+    }
+
+    bool Compiler::tryCompileMaxsdXmmXmm(XMM dst, XMM src) {
+        readReg128(Reg128::GPR0, dst);
+        readReg128(Reg128::GPR1, src);
+        assembler_.maxsd(get(Reg128::GPR0), get(Reg128::GPR1));
+        return true;
+    }
+
+    bool Compiler::tryCompileMinsdXmmXmm(XMM dst, XMM src) {
+        readReg128(Reg128::GPR0, dst);
+        readReg128(Reg128::GPR1, src);
+        assembler_.minsd(get(Reg128::GPR0), get(Reg128::GPR1));
         return true;
     }
 
