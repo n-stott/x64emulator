@@ -387,8 +387,8 @@ namespace x64 {
             case Insn::ORPD_XMM_XMMM128: return tryCompileOrpdXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
             case Insn::XORPD_XMM_XMMM128: return tryCompileXorpdXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
 
-            case Insn::SHUFPS_XMM_XMMM128_IMM: return tryCompileShufpsXmmXmmImm(ins.op0<XMM>(), ins.op1<XMM>(), ins.op2<Imm>());
-            case Insn::SHUFPD_XMM_XMMM128_IMM: return tryCompileShufpdXmmXmmImm(ins.op0<XMM>(), ins.op1<XMM>(), ins.op2<Imm>());
+            case Insn::SHUFPS_XMM_XMMM128_IMM: return tryCompileShufpsXmmXmmM128Imm(ins.op0<XMM>(), ins.op1<XMMM128>(), ins.op2<Imm>());
+            case Insn::SHUFPD_XMM_XMMM128_IMM: return tryCompileShufpdXmmXmmM128Imm(ins.op0<XMM>(), ins.op1<XMMM128>(), ins.op2<Imm>());
             default: break;
         }
         return false;
@@ -3539,20 +3539,16 @@ namespace x64 {
     }
 
 
-    bool Compiler::tryCompileShufpsXmmXmmImm(XMM dst, XMM src, Imm imm) {
-        readReg128(Reg128::GPR0, dst);
-        readReg128(Reg128::GPR1, src);
-        assembler_.shufps(get(Reg128::GPR0), get(Reg128::GPR1), imm.as<u8>());
-        writeReg128(dst, Reg128::GPR0);
-        return true;
+    bool Compiler::tryCompileShufpsXmmXmmM128Imm(XMM dst, const XMMM128& src, Imm imm) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            assembler_.shufps(get(dst), get(src), imm.as<u8>());
+        });
     }
 
-    bool Compiler::tryCompileShufpdXmmXmmImm(XMM dst, XMM src, Imm imm) {
-        readReg128(Reg128::GPR0, dst);
-        readReg128(Reg128::GPR1, src);
-        assembler_.shufpd(get(Reg128::GPR0), get(Reg128::GPR1), imm.as<u8>());
-        writeReg128(dst, Reg128::GPR0);
-        return true;
+    bool Compiler::tryCompileShufpdXmmXmmM128Imm(XMM dst, const XMMM128& src, Imm imm) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            assembler_.shufpd(get(dst), get(src), imm.as<u8>());
+        });
     }
 
 

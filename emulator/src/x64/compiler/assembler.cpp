@@ -3868,7 +3868,6 @@ namespace x64 {
 
 
     void Assembler::shufps(XMM dst, XMM src, u8 imm) {
-        write8(0x66);
         if((u8)dst >= 8 || (u8)src >= 8) {
             write8((u8)(0x40 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src >= 8) ? 1 : 0) ));
         }

@@ -366,8 +366,8 @@ namespace x64 {
         bool tryCompileOrpdXmmXmmM128(XMM, const XMMM128&);
         bool tryCompileXorpdXmmXmmM128(XMM, const XMMM128&);
 
-        bool tryCompileShufpsXmmXmmImm(XMM, XMM, Imm);
-        bool tryCompileShufpdXmmXmmImm(XMM, XMM, Imm);
+        bool tryCompileShufpsXmmXmmM128Imm(XMM, const XMMM128&, Imm);
+        bool tryCompileShufpdXmmXmmM128Imm(XMM, const XMMM128&, Imm);
 
 
         // exits
