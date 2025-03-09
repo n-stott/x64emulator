@@ -307,6 +307,7 @@ namespace x64 {
 
         void pshufd(XMM, XMM, u8);
         void pshuflw(XMM, XMM, u8);
+        void pshufhw(XMM, XMM, u8);
 
         void punpcklbw(XMM, XMM);
         void punpcklwd(XMM, XMM);
