@@ -169,6 +169,7 @@ namespace x64 {
         void cmov(Cond, R64, R64);
         void bswap(R32);
         void bswap(R64);
+        void bt(R32, R32);
 
         // mmx
         void mov(MMX, MMX);

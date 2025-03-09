@@ -1840,6 +1840,15 @@ namespace x64 {
         write8(0xc8 + encodeRegister(dst));
     }
 
+    void Assembler::bt(R32 dst, R32 src) {
+        if((u8)src >= 8 || (u8)dst >= 8) {
+            write8((u8)(0x40 | (((u8)src >= 8) ? 4 : 0) | (((u8)dst >= 8) ? 1 : 0) ));
+        }
+        write8((u8)0x0f);
+        write8((u8)0xa3);
+        write8((u8)(0b11000000 | (encodeRegister(src) << 3) | encodeRegister(dst)));
+    }
+
 
 
     u8 encodeRegister(MMX reg) {
