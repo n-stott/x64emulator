@@ -336,6 +336,8 @@ namespace x64 {
         void mulss(XMM, XMM);
         void divss(XMM, XMM);
         void comiss(XMM, XMM);
+        void cvtsi2ss(XMM, R32);
+        void cvtsi2ss(XMM, R64);
 
         void addsd(XMM, XMM);
         void subsd(XMM, XMM);
