@@ -130,6 +130,8 @@ namespace x64 {
             case Insn::SAR_RM32_IMM: return tryCompileSarRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
             case Insn::SAR_RM64_R8: return tryCompileSarRM64R8(ins.op0<RM64>(), ins.op1<R8>());
             case Insn::SAR_RM64_IMM: return tryCompileSarRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
+            case Insn::ROL_RM16_R8: return tryCompileRolRM16R8(ins.op0<RM16>(), ins.op1<R8>());
+            case Insn::ROL_RM16_IMM: return tryCompileRolRM16Imm(ins.op0<RM16>(), ins.op1<Imm>());
             case Insn::ROL_RM32_R8: return tryCompileRolRM32R8(ins.op0<RM32>(), ins.op1<R8>());
             case Insn::ROL_RM32_IMM: return tryCompileRolRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
             case Insn::ROR_RM32_R8: return tryCompileRorRM32R8(ins.op0<RM32>(), ins.op1<R8>());
@@ -1087,9 +1089,21 @@ namespace x64 {
         });
     }
 
+    bool Compiler::tryCompileRolRM16R8(const RM16& lhs, R8 rhs) {
+        return forRM16R8(lhs, rhs, [&](Reg dst, Reg src) {
+            assembler_.rol(get16(dst), get8(src));
+        });
+    }
+
+    bool Compiler::tryCompileRolRM16Imm(const RM16& lhs, Imm rhs) {
+        return forRM16Imm(lhs, rhs, [&](Reg dst, Imm imm) {
+            assembler_.rol(get16(dst), imm.as<u8>());
+        });
+    }
+
     bool Compiler::tryCompileRolRM32R8(const RM32& lhs, R8 rhs) {
         return forRM32R8(lhs, rhs, [&](Reg dst, Reg src) {
-            assembler_.rol(get(dst), get8(src));
+            assembler_.rol(get32(dst), get8(src));
         });
     }
 
@@ -1101,7 +1115,7 @@ namespace x64 {
 
     bool Compiler::tryCompileRorRM32R8(const RM32& lhs, R8 rhs) {
         return forRM32R8(lhs, rhs, [&](Reg dst, Reg src) {
-            assembler_.ror(get(dst), get8(src));
+            assembler_.ror(get32(dst), get8(src));
         });
     }
 
