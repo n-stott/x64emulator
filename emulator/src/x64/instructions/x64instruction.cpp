@@ -807,8 +807,8 @@ namespace utils {
             case Insn::CMPSS_XMM_M32: return toString<XMM, M32>("cmpss");
             case Insn::CMPSD_XMM_XMM: return toString<XMM, XMM>("cmpsd");
             case Insn::CMPSD_XMM_M64: return toString<XMM, M64>("cmpsd");
-            case Insn::CMPPS_XMM_XMMM128: return toString<XMM, XMMM128>("cmpps");
-            case Insn::CMPPD_XMM_XMMM128: return toString<XMM, XMMM128>("cmppd");
+            case Insn::CMPPS_XMM_XMMM128: return toString<XMM, XMMM128, FCond>("cmpps");
+            case Insn::CMPPD_XMM_XMMM128: return toString<XMM, XMMM128, FCond>("cmppd");
             case Insn::MAXSS_XMM_XMM: return toString<XMM, XMM>("maxss");
             case Insn::MAXSS_XMM_M32: return toString<XMM, M32>("maxss");
             case Insn::MAXSD_XMM_XMM: return toString<XMM, XMM>("maxsd");
@@ -848,8 +848,8 @@ namespace utils {
             case Insn::CVTTSD2SI_R64_M64: return toString<R64, M64>("cvttsd2si");
             case Insn::CVTDQ2PD_XMM_XMM: return toString<XMM, XMM>("cvtdq2pd");
             case Insn::CVTDQ2PD_XMM_M64: return toString<XMM, M64>("cvtdq2pd");
-            case Insn::CVTDQ2PS_XMM_XMMM128: return toString<XMM, M64>("cvtdq2ps");
-            case Insn::CVTPS2DQ_XMM_XMMM128: return toString<XMM, M64>("cvtps2dq");
+            case Insn::CVTDQ2PS_XMM_XMMM128: return toString<XMM, XMMM128>("cvtdq2ps");
+            case Insn::CVTPS2DQ_XMM_XMMM128: return toString<XMM, XMMM128>("cvtps2dq");
             case Insn::CVTPD2PS_XMM_XMMM128: return toString<XMM, XMMM128>("cvtpd2ps");
             case Insn::STMXCSR_M32: return toString<M32>("stmxcsr");
             case Insn::LDMXCSR_M32: return toString<M32>("ldmxcsr");

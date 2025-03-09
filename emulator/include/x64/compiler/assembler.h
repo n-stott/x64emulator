@@ -268,6 +268,7 @@ namespace x64 {
         void pmulhw(XMM, XMM);
         void pmullw(XMM, XMM);
         void pmulhuw(XMM, XMM);
+        void pmuludq(XMM, XMM);
         void pavgb(XMM, XMM);
         void pavgw(XMM, XMM);
         void pmaxub(XMM, XMM);
@@ -336,6 +337,7 @@ namespace x64 {
         void subps(XMM, XMM);
         void mulps(XMM, XMM);
         void divps(XMM, XMM);
+        void cmpps(XMM, XMM, u8);
         void cvtps2dq(XMM, XMM);
         void cvttps2dq(XMM, XMM);
         void cvtdq2ps(XMM, XMM);
