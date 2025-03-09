@@ -105,9 +105,13 @@ namespace x64 {
         bool tryCompileSarRM32Imm(const RM32&, Imm);
         bool tryCompileSarRM64R8(const RM64&, R8);
         bool tryCompileSarRM64Imm(const RM64&, Imm);
+        bool tryCompileRolRM32R8(const RM32&, R8);
         bool tryCompileRolRM32Imm(const RM32&, Imm);
+        bool tryCompileRorRM32R8(const RM32&, R8);
         bool tryCompileRorRM32Imm(const RM32&, Imm);
+        bool tryCompileRolRM64R8(const RM64&, R8);
         bool tryCompileRolRM64Imm(const RM64&, Imm);
+        bool tryCompileRorRM64R8(const RM64&, R8);
         bool tryCompileRorRM64Imm(const RM64&, Imm);
         bool tryCompileMulRM32(const RM32&);
         bool tryCompileMulRM64(const RM64&);
