@@ -179,6 +179,8 @@ namespace x64 {
         void paddq(MMX, MMX);
         void paddsb(MMX, MMX);
         void paddsw(MMX, MMX);
+        void paddusb(MMX, MMX);
+        void paddusw(MMX, MMX);
 
         void psubb(MMX, MMX);
         void psubw(MMX, MMX);
@@ -189,6 +191,7 @@ namespace x64 {
         void psubusw(MMX, MMX);
 
         void pmaddwd(MMX, MMX);
+        void psadbw(MMX, MMX);
         void pmulhw(MMX, MMX);
         void pmullw(MMX, MMX);
         void pavgb(MMX, MMX);
@@ -206,7 +209,9 @@ namespace x64 {
         void psrlw(MMX, u8);
         void psrld(MMX, u8);
         void psrlq(MMX, u8);
+        void psraw(MMX, MMX);
         void psraw(MMX, u8);
+        void psrad(MMX, MMX);
         void psrad(MMX, u8);
 
         void pshufb(MMX, MMX);
@@ -295,7 +300,9 @@ namespace x64 {
         void psrlq(XMM, XMM);
         void psrlq(XMM, u8);
         void psrldq(XMM, u8);
+        void psraw(XMM, XMM);
         void psraw(XMM, u8);
+        void psrad(XMM, XMM);
         void psrad(XMM, u8);
 
         void pshufd(XMM, XMM, u8);

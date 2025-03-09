@@ -217,6 +217,8 @@ namespace x64 {
             case Insn::PADDQ_MMX_MMXM64: return tryCompilePaddqMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
             case Insn::PADDSB_MMX_MMXM64: return tryCompilePaddsbMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
             case Insn::PADDSW_MMX_MMXM64: return tryCompilePaddswMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
+            case Insn::PADDUSB_MMX_MMXM64: return tryCompilePaddusbMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
+            case Insn::PADDUSW_MMX_MMXM64: return tryCompilePadduswMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
             case Insn::PSUBB_MMX_MMXM64: return tryCompilePsubbMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
             case Insn::PSUBW_MMX_MMXM64: return tryCompilePsubwMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
             case Insn::PSUBD_MMX_MMXM64: return tryCompilePsubdMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
@@ -226,6 +228,7 @@ namespace x64 {
             case Insn::PSUBUSW_MMX_MMXM64: return tryCompilePsubuswMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
 
             case Insn::PMADDWD_MMX_MMXM64: return tryCompilePmaddwdMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
+            case Insn::PSADBW_MMX_MMXM64: return tryCompilePsadbwMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
             case Insn::PMULHW_MMX_MMXM64: return tryCompilePmulhwMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
             case Insn::PMULLW_MMX_MMXM64: return tryCompilePmullwMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
             case Insn::PAVGB_MMX_MMXM64: return tryCompilePavgbMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
@@ -242,7 +245,9 @@ namespace x64 {
             case Insn::PSRLW_MMX_IMM: return tryCompilePsrlwMmxImm(ins.op0<MMX>(), ins.op1<Imm>());
             case Insn::PSRLD_MMX_IMM: return tryCompilePsrldMmxImm(ins.op0<MMX>(), ins.op1<Imm>());
             case Insn::PSRLQ_MMX_IMM: return tryCompilePsrlqMmxImm(ins.op0<MMX>(), ins.op1<Imm>());
+            case Insn::PSRAW_MMX_MMXM64: return tryCompilePsrawMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
             case Insn::PSRAW_MMX_IMM: return tryCompilePsrawMmxImm(ins.op0<MMX>(), ins.op1<Imm>());
+            case Insn::PSRAD_MMX_MMXM64: return tryCompilePsradMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
             case Insn::PSRAD_MMX_IMM: return tryCompilePsradMmxImm(ins.op0<MMX>(), ins.op1<Imm>());
 
             case Insn::PSHUFB_MMX_MMXM64: return tryCompilePshufbMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
@@ -326,7 +331,9 @@ namespace x64 {
             case Insn::PSRLQ_XMM_XMMM128: return tryCompilePsrlqXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
             case Insn::PSRLQ_XMM_IMM: return tryCompilePsrlqXmmImm(ins.op0<XMM>(), ins.op1<Imm>());
             case Insn::PSRLDQ_XMM_IMM: return tryCompilePsrldqXmmImm(ins.op0<XMM>(), ins.op1<Imm>());
+            case Insn::PSRAW_XMM_XMMM128: return tryCompilePsrawXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
             case Insn::PSRAW_XMM_IMM: return tryCompilePsrawXmmImm(ins.op0<XMM>(), ins.op1<Imm>());
+            case Insn::PSRAD_XMM_XMMM128: return tryCompilePsradXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
             case Insn::PSRAD_XMM_IMM: return tryCompilePsradXmmImm(ins.op0<XMM>(), ins.op1<Imm>());
 
             case Insn::PSHUFD_XMM_XMMM128_IMM: return tryCompilePshufdXmmXmmM128Imm(ins.op0<XMM>(), ins.op1<XMMM128>(), ins.op2<Imm>());
@@ -1168,79 +1175,187 @@ namespace x64 {
     }
 
     bool Compiler::tryCompileDivRM32(const RM32& src) {
-        if(!src.isReg) return false;
-        assembler_.push64(R64::RAX);
-        assembler_.push64(R64::RDX);
-        readReg64(Reg::GPR0, R64::RAX);
-        assembler_.mov(R32::EAX, get32(Reg::GPR0));
-        readReg64(Reg::GPR0, R64::RDX);
-        assembler_.mov(R32::EDX, get32(Reg::GPR0));
-        readReg32(Reg::GPR1, src.reg);
-        assembler_.div(get32(Reg::GPR1));
-        assembler_.mov(get32(Reg::GPR0), R32::EAX);
-        writeReg32(R32::EAX, Reg::GPR0);
-        assembler_.mov(get32(Reg::GPR0), R32::EDX);
-        writeReg32(R32::EDX, Reg::GPR0);
-        assembler_.pop64(R64::RDX);
-        assembler_.pop64(R64::RAX);
-        return true;
+        if(src.isReg) {
+            assembler_.push64(R64::RAX);
+            assembler_.push64(R64::RDX);
+            readReg64(Reg::GPR0, R64::RAX);
+            assembler_.mov(R32::EAX, get32(Reg::GPR0));
+            readReg64(Reg::GPR0, R64::RDX);
+            assembler_.mov(R32::EDX, get32(Reg::GPR0));
+
+            // read the src value
+            readReg32(Reg::GPR1, src.reg);
+
+            assembler_.div(get32(Reg::GPR1));
+            assembler_.mov(get32(Reg::GPR0), R32::EAX);
+            writeReg32(R32::EAX, Reg::GPR0);
+            assembler_.mov(get32(Reg::GPR0), R32::EDX);
+            writeReg32(R32::EDX, Reg::GPR0);
+            assembler_.pop64(R64::RDX);
+            assembler_.pop64(R64::RAX);
+            return true;
+        } else {
+            assembler_.push64(R64::RAX);
+            assembler_.push64(R64::RDX);
+            readReg64(Reg::GPR0, R64::RAX);
+            assembler_.mov(R32::EAX, get32(Reg::GPR0));
+            readReg64(Reg::GPR0, R64::RDX);
+            assembler_.mov(R32::EDX, get32(Reg::GPR0));
+
+            // fetch src address
+            const M32& mem = src.mem;
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the src value at the address
+            readMem32(Reg::GPR1, addr);
+
+            assembler_.div(get32(Reg::GPR1));
+            assembler_.mov(get32(Reg::GPR0), R32::EAX);
+            writeReg32(R32::EAX, Reg::GPR0);
+            assembler_.mov(get32(Reg::GPR0), R32::EDX);
+            writeReg32(R32::EDX, Reg::GPR0);
+            assembler_.pop64(R64::RDX);
+            assembler_.pop64(R64::RAX);
+            return true;
+        }
     }
 
     bool Compiler::tryCompileDivRM64(const RM64& src) {
-        if(!src.isReg) return false;
-        assembler_.push64(R64::RAX);
-        assembler_.push64(R64::RDX);
-        readReg64(Reg::GPR0, R64::RAX);
-        assembler_.mov(R64::RAX, get(Reg::GPR0));
-        readReg64(Reg::GPR0, R64::RDX);
-        assembler_.mov(R64::RDX, get(Reg::GPR0));
-        readReg64(Reg::GPR1, src.reg);
-        assembler_.div(get(Reg::GPR1));
-        assembler_.mov(get(Reg::GPR0), R64::RAX);
-        writeReg64(R64::RAX, Reg::GPR0);
-        assembler_.mov(get(Reg::GPR0), R64::RDX);
-        writeReg64(R64::RDX, Reg::GPR0);
-        assembler_.pop64(R64::RDX);
-        assembler_.pop64(R64::RAX);
-        return true;
+        if(src.isReg) {
+            assembler_.push64(R64::RAX);
+            assembler_.push64(R64::RDX);
+            readReg64(Reg::GPR0, R64::RAX);
+            assembler_.mov(R64::RAX, get(Reg::GPR0));
+            readReg64(Reg::GPR0, R64::RDX);
+            assembler_.mov(R64::RDX, get(Reg::GPR0));
+
+            // read src value
+            readReg64(Reg::GPR1, src.reg);
+
+            assembler_.div(get(Reg::GPR1));
+            assembler_.mov(get(Reg::GPR0), R64::RAX);
+            writeReg64(R64::RAX, Reg::GPR0);
+            assembler_.mov(get(Reg::GPR0), R64::RDX);
+            writeReg64(R64::RDX, Reg::GPR0);
+            assembler_.pop64(R64::RDX);
+            assembler_.pop64(R64::RAX);
+            return true;
+        } else {
+            assembler_.push64(R64::RAX);
+            assembler_.push64(R64::RDX);
+            readReg64(Reg::GPR0, R64::RAX);
+            assembler_.mov(R64::RAX, get(Reg::GPR0));
+            readReg64(Reg::GPR0, R64::RDX);
+            assembler_.mov(R64::RDX, get(Reg::GPR0));
+
+            // fetch src address
+            const M64& mem = src.mem;
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the src value at the address
+            readMem64(Reg::GPR1, addr);
+
+            assembler_.div(get(Reg::GPR1));
+            assembler_.mov(get(Reg::GPR0), R64::RAX);
+            writeReg64(R64::RAX, Reg::GPR0);
+            assembler_.mov(get(Reg::GPR0), R64::RDX);
+            writeReg64(R64::RDX, Reg::GPR0);
+            assembler_.pop64(R64::RDX);
+            assembler_.pop64(R64::RAX);
+            return true;
+        }
     }
 
     bool Compiler::tryCompileIdivRM32(const RM32& src) {
-        if(!src.isReg) return false;
-        assembler_.push64(R64::RAX);
-        assembler_.push64(R64::RDX);
-        readReg64(Reg::GPR0, R64::RAX);
-        assembler_.mov(R32::EAX, get32(Reg::GPR0));
-        readReg64(Reg::GPR0, R64::RDX);
-        assembler_.mov(R32::EDX, get32(Reg::GPR0));
-        readReg32(Reg::GPR1, src.reg);
-        assembler_.idiv(get32(Reg::GPR1));
-        assembler_.mov(get32(Reg::GPR0), R32::EAX);
-        writeReg32(R32::EAX, Reg::GPR0);
-        assembler_.mov(get32(Reg::GPR0), R32::EDX);
-        writeReg32(R32::EDX, Reg::GPR0);
-        assembler_.pop64(R64::RDX);
-        assembler_.pop64(R64::RAX);
-        return true;
+        if(src.isReg) {
+            assembler_.push64(R64::RAX);
+            assembler_.push64(R64::RDX);
+            readReg64(Reg::GPR0, R64::RAX);
+            assembler_.mov(R32::EAX, get32(Reg::GPR0));
+            readReg64(Reg::GPR0, R64::RDX);
+            assembler_.mov(R32::EDX, get32(Reg::GPR0));
+
+            // read src value
+            readReg32(Reg::GPR1, src.reg);
+
+            assembler_.idiv(get32(Reg::GPR1));
+            assembler_.mov(get32(Reg::GPR0), R32::EAX);
+            writeReg32(R32::EAX, Reg::GPR0);
+            assembler_.mov(get32(Reg::GPR0), R32::EDX);
+            writeReg32(R32::EDX, Reg::GPR0);
+            assembler_.pop64(R64::RDX);
+            assembler_.pop64(R64::RAX);
+            return true;
+        } else {
+            assembler_.push64(R64::RAX);
+            assembler_.push64(R64::RDX);
+            readReg64(Reg::GPR0, R64::RAX);
+            assembler_.mov(R32::EAX, get32(Reg::GPR0));
+            readReg64(Reg::GPR0, R64::RDX);
+            assembler_.mov(R32::EDX, get32(Reg::GPR0));
+
+            // fetch src address
+            const M32& mem = src.mem;
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the src value at the address
+            readMem32(Reg::GPR1, addr);
+
+            assembler_.idiv(get32(Reg::GPR1));
+            assembler_.mov(get32(Reg::GPR0), R32::EAX);
+            writeReg32(R32::EAX, Reg::GPR0);
+            assembler_.mov(get32(Reg::GPR0), R32::EDX);
+            writeReg32(R32::EDX, Reg::GPR0);
+            assembler_.pop64(R64::RDX);
+            assembler_.pop64(R64::RAX);
+            return true;
+        }
     }
 
     bool Compiler::tryCompileIdivRM64(const RM64& src) {
-        if(!src.isReg) return false;
-        assembler_.push64(R64::RAX);
-        assembler_.push64(R64::RDX);
-        readReg64(Reg::GPR0, R64::RAX);
-        assembler_.mov(R64::RAX, get(Reg::GPR0));
-        readReg64(Reg::GPR0, R64::RDX);
-        assembler_.mov(R64::RDX, get(Reg::GPR0));
-        readReg64(Reg::GPR1, src.reg);
-        assembler_.idiv(get(Reg::GPR1));
-        assembler_.mov(get(Reg::GPR0), R64::RAX);
-        writeReg64(R64::RAX, Reg::GPR0);
-        assembler_.mov(get(Reg::GPR0), R64::RDX);
-        writeReg64(R64::RDX, Reg::GPR0);
-        assembler_.pop64(R64::RDX);
-        assembler_.pop64(R64::RAX);
-        return true;
+        if(src.isReg) {
+            assembler_.push64(R64::RAX);
+            assembler_.push64(R64::RDX);
+            readReg64(Reg::GPR0, R64::RAX);
+            assembler_.mov(R64::RAX, get(Reg::GPR0));
+            readReg64(Reg::GPR0, R64::RDX);
+            assembler_.mov(R64::RDX, get(Reg::GPR0));
+
+            // read src value
+            readReg64(Reg::GPR1, src.reg);
+
+            assembler_.idiv(get(Reg::GPR1));
+            assembler_.mov(get(Reg::GPR0), R64::RAX);
+            writeReg64(R64::RAX, Reg::GPR0);
+            assembler_.mov(get(Reg::GPR0), R64::RDX);
+            writeReg64(R64::RDX, Reg::GPR0);
+            assembler_.pop64(R64::RDX);
+            assembler_.pop64(R64::RAX);
+            return true;
+        } else {
+            assembler_.push64(R64::RAX);
+            assembler_.push64(R64::RDX);
+            readReg64(Reg::GPR0, R64::RAX);
+            assembler_.mov(R64::RAX, get(Reg::GPR0));
+            readReg64(Reg::GPR0, R64::RDX);
+            assembler_.mov(R64::RDX, get(Reg::GPR0));
+
+            // fetch src address
+            const M64& mem = src.mem;
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the src value at the address
+            readMem64(Reg::GPR1, addr);
+
+            assembler_.idiv(get(Reg::GPR1));
+            assembler_.mov(get(Reg::GPR0), R64::RAX);
+            writeReg64(R64::RAX, Reg::GPR0);
+            assembler_.mov(get(Reg::GPR0), R64::RDX);
+            writeReg64(R64::RDX, Reg::GPR0);
+            assembler_.pop64(R64::RDX);
+            assembler_.pop64(R64::RAX);
+            return true;
+        }
     }
 
     std::optional<Compiler::ReplaceableJumps> Compiler::tryCompileCall(u64 dst) {
@@ -2338,6 +2453,18 @@ namespace x64 {
         });
     }
 
+    bool Compiler::tryCompilePaddusbMmxMmxM64(MMX dst, const MMXM64& src) {
+        return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
+            assembler_.paddusb(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePadduswMmxMmxM64(MMX dst, const MMXM64& src) {
+        return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
+            assembler_.paddusw(get(dst), get(src));
+        });
+    }
+
     bool Compiler::tryCompilePsubbMmxMmxM64(MMX dst, const MMXM64& src) {
         return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
             assembler_.psubb(get(dst), get(src));
@@ -2383,6 +2510,12 @@ namespace x64 {
     bool Compiler::tryCompilePmaddwdMmxMmxM64(MMX dst, const MMXM64& src) {
         return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
             assembler_.pmaddwd(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePsadbwMmxMmxM64(MMX dst, const MMXM64& src) {
+        return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
+            assembler_.psadbw(get(dst), get(src));
         });
     }
 
@@ -2491,11 +2624,23 @@ namespace x64 {
         return true;
     }
 
+    bool Compiler::tryCompilePsrawMmxMmxM64(MMX dst, const MMXM64& src) {
+        return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
+            assembler_.psraw(get(dst), get(src));
+        });
+    }
+
     bool Compiler::tryCompilePsrawMmxImm(MMX dst, Imm imm) {
         readRegMM(RegMM::GPR0, dst);
         assembler_.psraw(get(RegMM::GPR0), imm.as<u8>());
         writeRegMM(dst, RegMM::GPR0);
         return true;
+    }
+
+    bool Compiler::tryCompilePsradMmxMmxM64(MMX dst, const MMXM64& src) {
+        return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
+            assembler_.psrad(get(dst), get(src));
+        });
     }
 
     bool Compiler::tryCompilePsradMmxImm(MMX dst, Imm imm) {
@@ -3107,11 +3252,23 @@ namespace x64 {
         return true;
     }
 
+    bool Compiler::tryCompilePsrawXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            assembler_.psraw(get(dst), get(src));
+        });
+    }
+
     bool Compiler::tryCompilePsrawXmmImm(XMM dst, Imm imm) {
         readReg128(Reg128::GPR0, dst);
         assembler_.psraw(get(Reg128::GPR0), imm.as<u8>());
         writeReg128(dst, Reg128::GPR0);
         return true;
+    }
+
+    bool Compiler::tryCompilePsradXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            assembler_.psrad(get(dst), get(src));
+        });
     }
 
     bool Compiler::tryCompilePsradXmmImm(XMM dst, Imm imm) {
