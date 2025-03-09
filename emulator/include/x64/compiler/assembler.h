@@ -252,6 +252,7 @@ namespace x64 {
         void movq(R64, XMM);
         void movlps(XMM, M64);
         void movhps(XMM, M64);
+        void movhps(M64, XMM);
         void movhlps(XMM, XMM);
         void pmovmskb(R32, XMM);
 
@@ -350,6 +351,8 @@ namespace x64 {
         void minsd(XMM, XMM);
         void cvtsi2sd32(XMM, R32);
         void cvtsi2sd64(XMM, R64);
+        void cvttsd2si32(R32, XMM);
+        void cvttsd2si64(R64, XMM);
 
         void addps(XMM, XMM);
         void subps(XMM, XMM);

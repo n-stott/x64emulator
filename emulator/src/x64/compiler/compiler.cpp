@@ -282,6 +282,7 @@ namespace x64 {
             case Insn::MOVSD_M64_XMM: return tryCompileMovsdM64Xmm(ins.op0<M64>(), ins.op1<XMM>());
             case Insn::MOVLPS_XMM_M64: return tryCompileMovlpsXmmM64(ins.op0<XMM>(), ins.op1<M64>());
             case Insn::MOVHPS_XMM_M64: return tryCompileMovhpsXmmM64(ins.op0<XMM>(), ins.op1<M64>());
+            case Insn::MOVHPS_M64_XMM: return tryCompileMovhpsM64Xmm(ins.op0<M64>(), ins.op1<XMM>());
             case Insn::MOVHLPS_XMM_XMM: return tryCompileMovhlpsXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
             case Insn::PMOVMSKB_R32_XMM: return tryCompilePmovmskbR32Xmm(ins.op0<R32>(), ins.op1<XMM>());
             
@@ -384,6 +385,8 @@ namespace x64 {
             case Insn::MINSD_XMM_XMM: return tryCompileMinsdXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
             case Insn::CVTSI2SD_XMM_RM32: return tryCompileCvtsi2sdXmmRM32(ins.op0<XMM>(), ins.op1<RM32>());
             case Insn::CVTSI2SD_XMM_RM64: return tryCompileCvtsi2sdXmmRM64(ins.op0<XMM>(), ins.op1<RM64>());
+            case Insn::CVTTSD2SI_R32_XMM: return tryCompileCvttsd2siR32Xmm(ins.op0<R32>(), ins.op1<XMM>());
+            case Insn::CVTTSD2SI_R64_XMM: return tryCompileCvttsd2siR64Xmm(ins.op0<R64>(), ins.op1<XMM>());
 
             case Insn::ADDPS_XMM_XMMM128: return tryCompileAddpsXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
             case Insn::SUBPS_XMM_XMMM128: return tryCompileSubpsXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
@@ -2964,10 +2967,23 @@ namespace x64 {
         Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src);
         // read the dst register
         readReg128(Reg128::GPR0, dst);
-        // do the mov into the low part
+        // do the mov into the high part
         assembler_.movhps(get(Reg128::GPR0), make64(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
         // write the value back to the register
         writeReg128(dst, Reg128::GPR0);
+        return true;
+    }
+
+    bool Compiler::tryCompileMovhpsM64Xmm(const M64& dst, XMM src) {
+        // fetch dst address
+        if(dst.segment != Segment::CS && dst.segment != Segment::UNK) return false;
+        if(dst.encoding.index == R64::RIP) return false;
+        // get the address
+        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, dst);
+        // read the src register
+        readReg128(Reg128::GPR0, src);
+        // do the mov from the high part
+        assembler_.movhps(make64(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset), get(Reg128::GPR0));
         return true;
     }
 
@@ -3687,6 +3703,22 @@ namespace x64 {
             writeReg128(dst, Reg128::GPR0);
             return true;
         }
+    }
+
+    bool Compiler::tryCompileCvttsd2siR32Xmm(R32 dst, XMM src) {
+        // get the src value
+        readReg128(Reg128::GPR0, src);
+        assembler_.cvttsd2si32(get32(Reg::GPR1), get(Reg128::GPR0));
+        writeReg32(dst, Reg::GPR1);
+        return true;
+    }
+
+    bool Compiler::tryCompileCvttsd2siR64Xmm(R64 dst, XMM src) {
+        // get the src value
+        readReg128(Reg128::GPR0, src);
+        assembler_.cvttsd2si64(get(Reg::GPR1), get(Reg128::GPR0));
+        writeReg64(dst, Reg::GPR1);
+        return true;
     }
 
     bool Compiler::tryCompileAddpsXmmXmmM128(XMM dst, const XMMM128& src) {
