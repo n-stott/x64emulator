@@ -351,7 +351,7 @@ namespace x64 {
         void subsd(XMM, XMM);
         void mulsd(XMM, XMM);
         void divsd(XMM, XMM);
-        void cmpsd(XMM, XMM);
+        void cmpsd(XMM, XMM, u8 imm);
         void comisd(XMM, XMM);
         void ucomisd(XMM, XMM);
         void maxsd(XMM, XMM);

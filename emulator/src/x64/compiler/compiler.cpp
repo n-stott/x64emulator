@@ -381,8 +381,8 @@ namespace x64 {
             case Insn::MULSD_XMM_M64: return tryCompileMulsdXmmM64(ins.op0<XMM>(), ins.op1<M64>());
             case Insn::DIVSD_XMM_XMM: return tryCompileDivsdXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
             case Insn::DIVSD_XMM_M64: return tryCompileDivsdXmmM64(ins.op0<XMM>(), ins.op1<M64>());
-            case Insn::CMPSD_XMM_XMM: return tryCompileCmpsdXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
-            case Insn::CMPSD_XMM_M64: return tryCompileCmpsdXmmM64(ins.op0<XMM>(), ins.op1<M64>());
+            case Insn::CMPSD_XMM_XMM: return tryCompileCmpsdXmmXmmFcond(ins.op0<XMM>(), ins.op1<XMM>(), ins.op2<FCond>());
+            case Insn::CMPSD_XMM_M64: return tryCompileCmpsdXmmM64Fcond(ins.op0<XMM>(), ins.op1<M64>(), ins.op2<FCond>());
             case Insn::COMISD_XMM_XMM: return tryCompileComisdXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
             case Insn::COMISD_XMM_M64: return tryCompileComisdXmmM64(ins.op0<XMM>(), ins.op1<M64>());
             case Insn::UCOMISD_XMM_XMM: return tryCompileUcomisdXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
@@ -3633,15 +3633,24 @@ namespace x64 {
         return true;
     }
 
-    bool Compiler::tryCompileCmpsdXmmXmm(XMM dst, XMM src) {
+    static_assert((u8)FCond::EQ == 0);
+    static_assert((u8)FCond::LT == 1);
+    static_assert((u8)FCond::LE == 2);
+    static_assert((u8)FCond::UNORD == 3);
+    static_assert((u8)FCond::NEQ == 4);
+    static_assert((u8)FCond::NLT == 5);
+    static_assert((u8)FCond::NLE == 6);
+    static_assert((u8)FCond::ORD == 7);
+
+    bool Compiler::tryCompileCmpsdXmmXmmFcond(XMM dst, XMM src, FCond cond) {
         readReg128(Reg128::GPR0, dst);
         readReg128(Reg128::GPR1, src);
-        assembler_.cmpsd(get(Reg128::GPR0), get(Reg128::GPR1));
+        assembler_.cmpsd(get(Reg128::GPR0), get(Reg128::GPR1), (u8)cond);
         writeReg128(dst, Reg128::GPR0);
         return true;
     }
 
-    bool Compiler::tryCompileCmpsdXmmM64(XMM dst, const M64& src) {
+    bool Compiler::tryCompileCmpsdXmmM64Fcond(XMM dst, const M64& src, FCond cond) {
         // fetch src address
         if(src.segment != Segment::CS && src.segment != Segment::UNK) return false;
         if(src.encoding.index == R64::RIP) return false;
@@ -3649,7 +3658,7 @@ namespace x64 {
         Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src);
         readReg128(Reg128::GPR0, dst);
         assembler_.movsd(get(Reg128::GPR1), make64(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
-        assembler_.cmpsd(get(Reg128::GPR0), get(Reg128::GPR1));
+        assembler_.cmpsd(get(Reg128::GPR0), get(Reg128::GPR1), (u8)cond);
         writeReg128(dst, Reg128::GPR0);
         return true;
     }
@@ -3690,7 +3699,6 @@ namespace x64 {
         readReg128(Reg128::GPR0, dst);
         assembler_.movsd(get(Reg128::GPR1), make64(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
         assembler_.ucomisd(get(Reg128::GPR0), get(Reg128::GPR1));
-        writeReg128(dst, Reg128::GPR0);
         return true;
     }
 
@@ -3714,6 +3722,7 @@ namespace x64 {
         if(src.isReg) {
             // get the src value
             readReg32(Reg::GPR1, src.reg);
+            readReg128(Reg128::GPR0, dst);
             assembler_.cvtsi2sd32(get(Reg128::GPR0), get32(Reg::GPR1));
             writeReg128(dst, Reg128::GPR0);
             return true;
@@ -3724,6 +3733,7 @@ namespace x64 {
             // get the address
             Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src.mem);
             readMem32(Reg::GPR1, addr);
+            readReg128(Reg128::GPR0, dst);
             assembler_.cvtsi2sd32(get(Reg128::GPR0), get32(Reg::GPR1));
             writeReg128(dst, Reg128::GPR0);
             return true;
@@ -3734,6 +3744,7 @@ namespace x64 {
         if(src.isReg) {
             // get the src value
             readReg64(Reg::GPR1, src.reg);
+            readReg128(Reg128::GPR0, dst);
             assembler_.cvtsi2sd64(get(Reg128::GPR0), get(Reg::GPR1));
             writeReg128(dst, Reg128::GPR0);
             return true;
@@ -3744,6 +3755,7 @@ namespace x64 {
             // get the address
             Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src.mem);
             readMem64(Reg::GPR1, addr);
+            readReg128(Reg128::GPR0, dst);
             assembler_.cvtsi2sd64(get(Reg128::GPR0), get(Reg::GPR1));
             writeReg128(dst, Reg128::GPR0);
             return true;

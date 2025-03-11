@@ -803,10 +803,10 @@ namespace utils {
             case Insn::UCOMISS_XMM_M32: return toString<XMM, M32>("ucomiss");
             case Insn::UCOMISD_XMM_XMM: return toString<XMM, XMM>("ucomisd");
             case Insn::UCOMISD_XMM_M64: return toString<XMM, M64>("ucomisd");
-            case Insn::CMPSS_XMM_XMM: return toString<XMM, XMM>("cmpss");
-            case Insn::CMPSS_XMM_M32: return toString<XMM, M32>("cmpss");
-            case Insn::CMPSD_XMM_XMM: return toString<XMM, XMM>("cmpsd");
-            case Insn::CMPSD_XMM_M64: return toString<XMM, M64>("cmpsd");
+            case Insn::CMPSS_XMM_XMM: return toString<XMM, XMM, FCond>("cmpss");
+            case Insn::CMPSS_XMM_M32: return toString<XMM, M32, FCond>("cmpss");
+            case Insn::CMPSD_XMM_XMM: return toString<XMM, XMM, FCond>("cmpsd");
+            case Insn::CMPSD_XMM_M64: return toString<XMM, M64, FCond>("cmpsd");
             case Insn::CMPPS_XMM_XMMM128: return toString<XMM, XMMM128, FCond>("cmpps");
             case Insn::CMPPD_XMM_XMMM128: return toString<XMM, XMMM128, FCond>("cmppd");
             case Insn::MAXSS_XMM_XMM: return toString<XMM, XMM>("maxss");
