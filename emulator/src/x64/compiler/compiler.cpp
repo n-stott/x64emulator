@@ -194,6 +194,8 @@ namespace x64 {
             case Insn::XCHG_RM64_R64: return tryCompileXchgRM64R64(ins.op0<RM64>(), ins.op1<R64>());
             case Insn::CMPXCHG_RM32_R32: return tryCompileCmpxchgRM32R32(ins.op0<RM32>(), ins.op1<R32>());
             case Insn::CMPXCHG_RM64_R64: return tryCompileCmpxchgRM64R64(ins.op0<RM64>(), ins.op1<R64>());
+            case Insn::LOCK_CMPXCHG_M32_R32: return tryCompileLockCmpxchgM32R32(ins.op0<M32>(), ins.op1<R32>());
+            case Insn::LOCK_CMPXCHG_M64_R64: return tryCompileLockCmpxchgM64R64(ins.op0<M64>(), ins.op1<R64>());
             case Insn::CDQE: return tryCompileCdqe();
             case Insn::CDQ: return tryCompileCdq();
             case Insn::CQO: return tryCompileCqo();
@@ -2058,7 +2060,7 @@ namespace x64 {
         } 
     }
 
-    bool Compiler::tryCompileXchgRM8R8(RM8 dst, R8 src) {
+    bool Compiler::tryCompileXchgRM8R8(const RM8& dst, R8 src) {
         if(dst.isReg) {
             // read the dst register
             readReg8(Reg::GPR0, dst.reg);
@@ -2090,7 +2092,7 @@ namespace x64 {
         }
     }
 
-    bool Compiler::tryCompileXchgRM16R16(RM16 dst, R16 src) {
+    bool Compiler::tryCompileXchgRM16R16(const RM16& dst, R16 src) {
         if(dst.isReg) {
             // read the dst register
             readReg16(Reg::GPR0, dst.reg);
@@ -2122,7 +2124,7 @@ namespace x64 {
         }
     }
 
-    bool Compiler::tryCompileXchgRM32R32(RM32 dst, R32 src) {
+    bool Compiler::tryCompileXchgRM32R32(const RM32& dst, R32 src) {
         if(dst.isReg) {
             // read the dst register
             readReg32(Reg::GPR0, dst.reg);
@@ -2154,7 +2156,7 @@ namespace x64 {
         }
     }
 
-    bool Compiler::tryCompileXchgRM64R64(RM64 dst, R64 src) {
+    bool Compiler::tryCompileXchgRM64R64(const RM64& dst, R64 src) {
         if(dst.isReg) {
             // read the dst register
             readReg64(Reg::GPR0, dst.reg);
@@ -2186,7 +2188,7 @@ namespace x64 {
         }
     }
 
-    bool Compiler::tryCompileCmpxchgRM32R32(RM32 dst, R32 src) {
+    bool Compiler::tryCompileCmpxchgRM32R32(const RM32& dst, R32 src) {
         if(dst.isReg) {
             // save rax and set it
             assembler_.push64(R64::RAX);
@@ -2234,7 +2236,7 @@ namespace x64 {
         }
     }
 
-    bool Compiler::tryCompileCmpxchgRM64R64(RM64 dst, R64 src) {
+    bool Compiler::tryCompileCmpxchgRM64R64(const RM64& dst, R64 src) {
         if(dst.isReg) {
             // save rax and set it
             assembler_.push64(R64::RAX);
@@ -2280,6 +2282,52 @@ namespace x64 {
             assembler_.pop64(R64::RAX);
             return true;
         }
+    }
+
+    bool Compiler::tryCompileLockCmpxchgM32R32(const M32& dst, R32 src) {
+        // fetch dst address
+        if(dst.encoding.index == R64::RIP) return false;
+        // save rax and set it
+        assembler_.push64(R64::RAX);
+        readReg64(Reg::GPR0, R64::RAX);
+        assembler_.mov(R64::RAX, get(Reg::GPR0));
+        // get the address
+        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, dst);
+        M32 d = make32(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset);
+        // read the src register
+        readReg32(Reg::GPR1, src);
+        // perform the op
+        assembler_.lockcmpxchg(d, get32(Reg::GPR1));
+        // write back to the register
+        writeReg32(src, Reg::GPR1);
+        // set rax and restore rax
+        assembler_.mov(get(Reg::GPR0), R64::RAX);
+        writeReg64(R64::RAX, Reg::GPR0);
+        assembler_.pop64(R64::RAX);
+        return true;
+    }
+
+    bool Compiler::tryCompileLockCmpxchgM64R64(const M64& dst, R64 src) {
+        // fetch dst address
+        if(dst.encoding.index == R64::RIP) return false;
+        // save rax and set it
+        assembler_.push64(R64::RAX);
+        readReg64(Reg::GPR0, R64::RAX);
+        assembler_.mov(R64::RAX, get(Reg::GPR0));
+        // get the address
+        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, dst);
+        M64 d = make64(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset);
+        // read the src register
+        readReg64(Reg::GPR1, src);
+        // perform the lock cmpxchg
+        assembler_.lockcmpxchg(d, get(Reg::GPR1));
+        // write back to the register
+        writeReg64(src, Reg::GPR1);
+        // set rax and restore rax
+        assembler_.mov(get(Reg::GPR0), R64::RAX);
+        writeReg64(R64::RAX, Reg::GPR0);
+        assembler_.pop64(R64::RAX);
+        return true;
     }
 
     bool Compiler::tryCompileCdqe() {

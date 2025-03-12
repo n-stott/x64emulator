@@ -153,6 +153,9 @@ namespace x64 {
         void cmpxchg(R32 dst, R32 src);
         void cmpxchg(R64 dst, R64 src);
 
+        void lockcmpxchg(const M32& dst, R32 src);
+        void lockcmpxchg(const M64& dst, R64 src);
+
         void cdqe();
         void cdq();
         void cqo();
