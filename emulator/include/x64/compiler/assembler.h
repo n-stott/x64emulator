@@ -118,6 +118,8 @@ namespace x64 {
         void test(R32 lhs, u32 imm);
         void test(R64 lhs, R64 rhs);
         void test(R64 lhs, u32 imm);
+        void and_(R8 dst, R8 src);
+        void and_(R8 dst, i8 imm);
         void and_(R16 dst, R16 src);
         void and_(R16 dst, i16 imm);
         void and_(R32 dst, R32 src);
