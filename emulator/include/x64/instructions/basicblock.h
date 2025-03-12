@@ -17,6 +17,7 @@ namespace x64 {
         Xmm* xmms;
         u8* memory;
         u64* rflags;
+        const u32* mxcsr;
         u64 fsbase;
         u64* ticks;
         void* basicBlockPtr;

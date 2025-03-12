@@ -1561,12 +1561,14 @@ namespace x64 {
         assert(!!ticks);
         assert(!!basicBlockPtr);
         u64 rflags = flags_.toRflags();
+        u32 mxcsr = mxcsr_.asDoubleWord();
         NativeArguments arguments {
             regs_.gprs(),
             regs_.mmxs(),
             regs_.xmms(),
             mmu_->base(),
             &rflags,
+            &mxcsr,
             getSegmentBase(Segment::FS),
             ticks,
             basicBlockPtr,

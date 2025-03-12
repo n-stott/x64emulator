@@ -399,6 +399,8 @@ namespace x64 {
         bool tryCompileShufpsXmmXmmM128Imm(XMM, const XMMM128&, Imm);
         bool tryCompileShufpdXmmXmmM128Imm(XMM, const XMMM128&, Imm);
 
+        bool tryCompileStmxcsrM32(const M32&);
+
 
         // exits
         std::optional<ReplaceableJumps> tryCompileCall(u64 dst);
@@ -531,8 +533,9 @@ namespace x64 {
         void loadImm32(Reg dst, u32 imm);
         void loadImm64(Reg dst, u64 imm);
         void loadArguments();
-        void storeFlags();
-        void loadFlags();
+        void loadFlagsFromEmulator();
+        void storeFlagsToEmulator();
+        void loadMxcsrFromEmulator(Reg dst);
         void push64(Reg src, TmpReg tmp);
         void pop64(Reg dst, TmpReg tmp);
 

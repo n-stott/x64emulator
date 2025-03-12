@@ -418,6 +418,8 @@ namespace x64 {
 
             case Insn::SHUFPS_XMM_XMMM128_IMM: return tryCompileShufpsXmmXmmM128Imm(ins.op0<XMM>(), ins.op1<XMMM128>(), ins.op2<Imm>());
             case Insn::SHUFPD_XMM_XMMM128_IMM: return tryCompileShufpdXmmXmmM128Imm(ins.op0<XMM>(), ins.op1<XMMM128>(), ins.op2<Imm>());
+
+            case Insn::STMXCSR_M32: return tryCompileStmxcsrM32(ins.op0<M32>());
             default: break;
         }
         return false;
@@ -441,7 +443,7 @@ namespace x64 {
 
     void Compiler::addEntry() {
         loadArguments();
-        loadFlags();
+        loadFlagsFromEmulator();
     }
 
     void Compiler::prepareExit(u32 nbInstructionsInBlock) {
@@ -449,7 +451,7 @@ namespace x64 {
     }
 
     void Compiler::addExit(u64 basicBlockPtr) {
-        storeFlags();
+        storeFlagsToEmulator();
         writeBasicBlockPtr(basicBlockPtr);
         assembler_.ret();
     }
@@ -3925,6 +3927,17 @@ namespace x64 {
         });
     }
 
+    bool Compiler::tryCompileStmxcsrM32(const M32& dst) {
+        // fetch dst address
+        if(dst.segment != Segment::CS && dst.segment != Segment::UNK) return false;
+        if(dst.encoding.index == R64::RIP) return false;
+        // get the address
+        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, dst);
+        loadMxcsrFromEmulator(Reg::GPR1);
+        writeMem32(addr, Reg::GPR1);
+        return true;
+    }
+
 
     R8 Compiler::get8(Compiler::Reg reg) {
         switch(reg) {
@@ -4304,7 +4317,7 @@ namespace x64 {
 
     void Compiler::addTime(u32 amount) {
         constexpr size_t TICKS_OFFSET = offsetof(NativeArguments, ticks);
-        static_assert(TICKS_OFFSET == 0x30);
+        static_assert(TICKS_OFFSET == 0x38);
         M64 ticksPtr = make64(R64::RDI, TICKS_OFFSET);
         assembler_.mov(get(Reg::GPR1), ticksPtr);
         M64 ticks = make64(get(Reg::GPR1), 0);
@@ -4316,14 +4329,14 @@ namespace x64 {
 
     void Compiler::readFsBase(Reg dst) {
         constexpr size_t FS_BASE = offsetof(NativeArguments, fsbase);
-        static_assert(FS_BASE == 0x28);
+        static_assert(FS_BASE == 0x30);
         M64 fsbasePtr = make64(R64::RDI, FS_BASE);
         assembler_.mov(get(dst), fsbasePtr);
     }
 
     void Compiler::writeBasicBlockPtr(u64 basicBlockPtr) {
         constexpr size_t BBPTR_OFFSET = offsetof(NativeArguments, basicBlockPtr);
-        static_assert(BBPTR_OFFSET == 0x38);
+        static_assert(BBPTR_OFFSET == 0x40);
         M64 bbPtrPtr = make64(R64::RDI, BBPTR_OFFSET);
         assembler_.mov(get(Reg::GPR1), bbPtrPtr);
         M64 bbPtr = make64(get(Reg::GPR1), 0);
@@ -4598,7 +4611,7 @@ namespace x64 {
         assembler_.mov(get(Reg::REG_BASE), gprs);
     }
 
-    void Compiler::storeFlags() {
+    void Compiler::storeFlagsToEmulator() {
         constexpr size_t FLAGS_OFFSET = offsetof(NativeArguments, rflags);
         static_assert(FLAGS_OFFSET == 0x20);
         assembler_.pushf();
@@ -4609,7 +4622,7 @@ namespace x64 {
         assembler_.mov(rflags, get(Reg::GPR0));
     }
 
-    void Compiler::loadFlags() {
+    void Compiler::loadFlagsFromEmulator() {
         constexpr size_t FLAGS_OFFSET = offsetof(NativeArguments, rflags);
         static_assert(FLAGS_OFFSET == 0x20);
         M64 rflagsPtr = make64(R64::RDI, FLAGS_OFFSET);
@@ -4618,6 +4631,15 @@ namespace x64 {
         assembler_.mov(get(Reg::GPR0), rflags);
         assembler_.push64(get(Reg::GPR0));
         assembler_.popf();
+    }
+
+    void Compiler::loadMxcsrFromEmulator(Reg dst) {
+        constexpr size_t MXCSR_OFFSET = offsetof(NativeArguments, mxcsr);
+        static_assert(MXCSR_OFFSET == 0x28);
+        M64 mxcsrPtr = make64(R64::RDI, MXCSR_OFFSET);
+        assembler_.mov(get(dst), mxcsrPtr);
+        M32 mxcsr = make32(get(dst), 0);
+        assembler_.mov(get32(dst), mxcsr);
     }
 
     void Compiler::push64(Reg src, TmpReg tmp) {
