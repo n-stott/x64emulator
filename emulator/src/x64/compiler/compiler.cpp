@@ -171,7 +171,9 @@ namespace x64 {
             case Insn::OR_RM64_RM64: return tryCompileOrRM64RM64(ins.op0<RM64>(), ins.op1<RM64>());
             case Insn::OR_RM64_IMM: return tryCompileOrRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
             case Insn::XOR_RM8_RM8: return tryCompileXorRM8RM8(ins.op0<RM8>(), ins.op1<RM8>());
+            case Insn::XOR_RM8_IMM: return tryCompileXorRM8Imm(ins.op0<RM8>(), ins.op1<Imm>());
             case Insn::XOR_RM16_RM16: return tryCompileXorRM16RM16(ins.op0<RM16>(), ins.op1<RM16>());
+            case Insn::XOR_RM16_IMM: return tryCompileXorRM16Imm(ins.op0<RM16>(), ins.op1<Imm>());
             case Insn::XOR_RM32_RM32: return tryCompileXorRM32RM32(ins.op0<RM32>(), ins.op1<RM32>());
             case Insn::XOR_RM32_IMM: return tryCompileXorRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
             case Insn::XOR_RM64_RM64: return tryCompileXorRM64RM64(ins.op0<RM64>(), ins.op1<RM64>());
@@ -210,6 +212,8 @@ namespace x64 {
             case Insn::BSWAP_R32: return tryCompileBswapR32(ins.op0<R32>());
             case Insn::BSWAP_R64: return tryCompileBswapR64(ins.op0<R64>());
             case Insn::BT_RM32_R32: return tryCompileBtRM32R32(ins.op0<RM32>(), ins.op1<R32>());
+            case Insn::BTR_RM64_R64: return tryCompileBtrRM64R64(ins.op0<RM64>(), ins.op1<R64>());
+            case Insn::BTR_RM64_IMM: return tryCompileBtrRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
 
             // MMX
             case Insn::MOV_MMX_MMX: return tryCompileMovMmxMmx(ins.op0<MMX>(), ins.op1<MMX>());
@@ -1788,9 +1792,21 @@ namespace x64 {
         });
     }
 
+    bool Compiler::tryCompileXorRM8Imm(const RM8& dst, Imm imm) {
+        return forRM8Imm(dst, imm, [&](Reg dst, Imm imm) {
+            assembler_.xor_(get8(dst), imm.as<i8>());
+        });
+    }
+
     bool Compiler::tryCompileXorRM16RM16(const RM16& dst, const RM16& src) {
         return forRM16RM16(dst, src, [&](Reg dst, Reg src) {
             assembler_.xor_(get16(dst), get16(src));
+        });
+    }
+
+    bool Compiler::tryCompileXorRM16Imm(const RM16& dst, Imm imm) {
+        return forRM16Imm(dst, imm, [&](Reg dst, Imm imm) {
+            assembler_.xor_(get16(dst), imm.as<i16>());
         });
     }
 
@@ -2403,6 +2419,19 @@ namespace x64 {
         return forRM32RM32(dst, s, [&](Reg dst, Reg src) {
             assembler_.bt(get32(dst), get32(src));
         }, false);
+    }
+
+    bool Compiler::tryCompileBtrRM64R64(const RM64& dst, R64 src) {
+        RM64 s {true, src, {}};
+        return forRM64RM64(dst, s, [&](Reg dst, Reg src) {
+            assembler_.btr(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompileBtrRM64Imm(const RM64& dst, Imm imm) {
+        return forRM64Imm(dst, imm, [&](Reg dst, Imm imm) {
+            assembler_.btr(get(dst), imm.as<u8>());
+        });
     }
 
     bool Compiler::tryCompileMovMmxMmx(MMX dst, MMX src) {

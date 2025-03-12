@@ -129,7 +129,9 @@ namespace x64 {
         void or_(R64 dst, R64 src);
         void or_(R64 dst, i32 imm);
         void xor_(R8 dst, R8 src);
+        void xor_(R8 dst, i8 imm);
         void xor_(R16 dst, R16 src);
+        void xor_(R16 dst, i16 imm);
         void xor_(R32 dst, R32 src);
         void xor_(R32 dst, i32 imm);
         void xor_(R64 dst, R64 src);
@@ -176,6 +178,8 @@ namespace x64 {
         void bswap(R32);
         void bswap(R64);
         void bt(R32, R32);
+        void btr(R64, R64);
+        void btr(R64, u8);
 
         // mmx
         void mov(MMX, MMX);
