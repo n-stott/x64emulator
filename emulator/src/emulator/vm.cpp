@@ -48,14 +48,13 @@ namespace emulator {
             } else {
                 emulatedInstructions += bb->basicBlock().instructions.size() * bb->calls();
                 if(bb->calls() < JIT_THRESHOLD) continue;
-                if(!bb->basicBlock().endsWithFixedDestinationJump()) continue;
                 blocks.push_back(bb.get());
                 jitCandidateInstructions += bb->basicBlock().instructions.size() * bb->calls();
                 
             }
         }
         std::sort(blocks.begin(), blocks.end(), [](const auto* a, const auto* b) {
-            return a->calls() > b->calls();
+            return a->calls() * a->basicBlock().instructions.size() > b->calls() * b->basicBlock().instructions.size();
         });
         fmt::print("{} / candidate {} blocks jitted ({} total). {} / {} instructions jitted ({}% of all, {}% of candidates)\n",
                 jitted, blocks.size()+jitted,
@@ -71,13 +70,14 @@ namespace emulator {
         //     [[maybe_unused]] auto jitBasicBlock = x64::Compiler::tryCompile(bb->basicBlock(), true);
         // }
         // return;
-        const size_t topCount = 0;
+        const size_t topCount = 100;
         if(blocks.size() >= topCount) blocks.resize(topCount);
         for(auto* bb : blocks) {
             fmt::print("  Calls: {}. Jitted: {}. Size: {}\n", bb->calls(), !!bb->nativeBasicBlock(), bb->basicBlock().instructions.size());
             for(const auto& ins : bb->basicBlock().instructions) {
                 fmt::print("      {:#12x} {}\n", ins.first.address(), ins.first.toString());
             }
+            fmt::print("{} calls ", bb->calls());
             [[maybe_unused]] auto jitBasicBlock = x64::Compiler::tryCompile(bb->basicBlock(), {}, true);
         }
 #endif
