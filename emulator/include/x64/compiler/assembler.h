@@ -144,6 +144,8 @@ namespace x64 {
         void neg(R64 dst);
         void inc(R32 dst);
         void inc(R64 dst);
+        void dec(R8 dst);
+        void dec(R16 dst);
         void dec(R32 dst);
         void dec(R64 dst);
         void xchg(R8 dst, R8 src);

@@ -186,6 +186,8 @@ namespace x64 {
             case Insn::NEG_RM64: return tryCompileNegRM64(ins.op0<RM64>());
             case Insn::INC_RM32: return tryCompileIncRM32(ins.op0<RM32>());
             case Insn::INC_RM64: return tryCompileIncRM64(ins.op0<RM64>());
+            case Insn::DEC_RM8: return tryCompileDecRM8(ins.op0<RM8>());
+            case Insn::DEC_RM16: return tryCompileDecRM16(ins.op0<RM16>());
             case Insn::DEC_RM32: return tryCompileDecRM32(ins.op0<RM32>());
             case Insn::DEC_RM64: return tryCompileDecRM64(ins.op0<RM64>());
             case Insn::XCHG_RM8_R8: return tryCompileXchgRM8R8(ins.op0<RM8>(), ins.op1<R8>());
@@ -2004,6 +2006,58 @@ namespace x64 {
             assembler_.inc(get(Reg::GPR0));
             // write back to the register
             writeMem64(addr, Reg::GPR0);
+            return true;
+        } 
+    }
+
+    bool Compiler::tryCompileDecRM8(const RM8& dst) {
+        if(dst.isReg) {
+            // read the destination register
+            readReg8(Reg::GPR0, dst.reg);
+            // perform the op
+            assembler_.dec(get8(Reg::GPR0));
+            // write back to the destination register
+            writeReg8(dst.reg, Reg::GPR0);
+            return true;
+        } else {
+            // fetch dst address
+            const M8& mem = dst.mem;
+            if(mem.segment != Segment::CS && mem.segment != Segment::UNK) return false;
+            if(mem.encoding.index == R64::RIP) return false;
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the dst value at the address
+            readMem8(Reg::GPR0, addr);
+            // perform the op
+            assembler_.dec(get8(Reg::GPR0));
+            // write back to the register
+            writeMem8(addr, Reg::GPR0);
+            return true;
+        } 
+    }
+
+    bool Compiler::tryCompileDecRM16(const RM16& dst) {
+        if(dst.isReg) {
+            // read the destination register
+            readReg16(Reg::GPR0, dst.reg);
+            // perform the op
+            assembler_.dec(get16(Reg::GPR0));
+            // write back to the destination register
+            writeReg16(dst.reg, Reg::GPR0);
+            return true;
+        } else {
+            // fetch dst address
+            const M16& mem = dst.mem;
+            if(mem.segment != Segment::CS && mem.segment != Segment::UNK) return false;
+            if(mem.encoding.index == R64::RIP) return false;
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the dst value at the address
+            readMem16(Reg::GPR0, addr);
+            // perform the op
+            assembler_.dec(get16(Reg::GPR0));
+            // write back to the register
+            writeMem16(addr, Reg::GPR0);
             return true;
         } 
     }
