@@ -14,6 +14,18 @@ namespace x64 {
 
         size_t entrypointSize = compiler.currentOffset();
 
+#ifdef COMPILER_DEBUG
+    std::vector<Insn> must {{
+        
+    }};
+
+    for(Insn insn : must) {
+        if(std::none_of(basicBlock.instructions.begin(), basicBlock.instructions.end(), [=](const auto& ins) {
+            return ins.first.insn() == insn;
+        })) return {};
+    }
+#endif
+
         // Then, try compiling all non-terminating instructions.
         for(size_t i = 0; i+1 < basicBlock.instructions.size(); ++i) {
             const X64Instruction& ins = basicBlock.instructions[i].first;
