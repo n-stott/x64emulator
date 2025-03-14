@@ -359,7 +359,7 @@ namespace x64 {
     void Mmu::copyBytes(Ptr8 dst, Ptr8 src, size_t count) {
         u8* dstPtr = getWritePtr(dst.address());
         const u8* srcPtr = getReadPtr(src.address());
-        ::memcpy(dstPtr, srcPtr, count);
+        ::memmove(dstPtr, srcPtr, count);
     }
 
     Ptr8 Mmu::copyToMmu(Ptr8 dst, const u8* src, size_t n) {
