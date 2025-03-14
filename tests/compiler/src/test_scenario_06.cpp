@@ -64,12 +64,12 @@ int main(int argc, char**) {
         // punpcklwd mm0,mm1
         X64Instruction::make(0xb, Insn::PUNPCKLWD_MMX_MMXM32, 1, MMX::MM0, MMXM32{true, MMX::MM1, {}}),
         // punpckhwd mm2,mm1
-        X64Instruction::make(0xb, Insn::PUNPCKHWD_MMX_MMXM64, 1, MMX::MM2, MMXM32{true, MMX::MM1, {}}),
+        X64Instruction::make(0xb, Insn::PUNPCKHWD_MMX_MMXM64, 1, MMX::MM2, MMXM64{true, MMX::MM1, {}}),
         // punpcklwd mm5,mm6
         X64Instruction::make(0xb, Insn::PUNPCKLWD_MMX_MMXM32, 1, MMX::MM5, MMXM32{true, MMX::MM6, {}}),
         // punpckhwd mm3,mm6
-        X64Instruction::make(0xb, Insn::PUNPCKHWD_MMX_MMXM64, 1, MMX::MM3, MMXM32{true, MMX::MM6, {}}),
-        X64Instruction::make(0xc, Insn::JMP_U32, 1, 0x0),
+        X64Instruction::make(0xb, Insn::PUNPCKHWD_MMX_MMXM64, 1, MMX::MM3, MMXM64{true, MMX::MM6, {}}),
+        X64Instruction::make(0xc, Insn::JMP_U32, 1, (u32)0x0),
     }};
 
     auto bb = cpu.createBasicBlock(instructions.data(), instructions.size());

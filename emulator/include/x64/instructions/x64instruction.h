@@ -3,6 +3,7 @@
 
 #include "x64/types.h"
 #include <array>
+#include <atomic>
 #include <cassert>
 #include <cstring>
 #include <string>
@@ -732,6 +733,7 @@ namespace x64 {
             static_assert(std::is_trivially_constructible_v<T>);
             static_assert(sizeof(T) <= sizeof(ArgBuffer));
             assert(nbOperands_ >= 1);
+            assert(typeId<std::remove_reference_t<T>>() == (operandTypeMask_ & 0xFF));
             return *reinterpret_cast<const T*>(&operands_.op0);
         }
 
@@ -740,6 +742,7 @@ namespace x64 {
             static_assert(std::is_trivially_constructible_v<T>);
             static_assert(sizeof(T) <= sizeof(ArgBuffer));
             assert(nbOperands_ >= 2);
+            assert(typeId<std::remove_reference_t<T>>() == ((operandTypeMask_ >> 8) & 0xFF));
             return *reinterpret_cast<const T*>(&operands_.op1);
         }
 
@@ -748,6 +751,7 @@ namespace x64 {
             static_assert(std::is_trivially_constructible_v<T>);
             static_assert(sizeof(T) <= sizeof(ArgBuffer));
             assert(nbOperands_ >= 3);
+            assert(typeId<std::remove_reference_t<T>>() == ((operandTypeMask_ >> 16) & 0xFF));
             return *reinterpret_cast<const T*>(&operands_.op2);
         }
 
@@ -775,9 +779,13 @@ namespace x64 {
 
     private:
 
+#ifndef NDEBUG
+        X64Instruction(u64 address, Insn insn, u16 sizeInBytes, u8 nbOperands, const ArgBuffer& op0, const ArgBuffer& op1, const ArgBuffer& op2, u64 operandTypeMask) :
+            address_(address), nextAddress_(address+sizeInBytes), insn_(insn), nbOperands_(nbOperands & 0x3), lock_(0), operands_{op0, op1, op2}, operandTypeMask_(operandTypeMask) {} 
+#else
         X64Instruction(u64 address, Insn insn, u16 sizeInBytes, u8 nbOperands, const ArgBuffer& op0, const ArgBuffer& op1, const ArgBuffer& op2) :
             address_(address), nextAddress_(address+sizeInBytes), insn_(insn), nbOperands_(nbOperands & 0x3), lock_(0), operands_{op0, op1, op2} {} 
-
+#endif
 
         template<typename Arg0, typename Arg1, typename Arg2>
         static X64Instruction make(u64 address, Insn insn, u16 sizeInBytes, u8 nbOperands, Arg0&& arg0, Arg1&& arg1, Arg2&& arg2) {
@@ -796,7 +804,12 @@ namespace x64 {
             ArgBuffer buf2;
             std::memset(&buf2, 0, sizeof(buf2));
             std::memcpy(&buf2, &arg2, sizeof(arg2));
+#ifndef NDEBUG
+            u64 operandTypeMask = typeMask<Arg0, Arg1, Arg2>();
+            return X64Instruction(address, insn, sizeInBytes, nbOperands, buf0, buf1, buf2, operandTypeMask);
+#else
             return X64Instruction(address, insn, sizeInBytes, nbOperands, buf0, buf1, buf2);
+#endif
         }
 
         std::string toString(const char* mnemonic) const;
@@ -816,6 +829,31 @@ namespace x64 {
         u8 nbOperands_ : 2;
         u8 lock_ : 1;
         Operands operands_;
+
+#ifndef NDEBUG
+        u64 operandTypeMask_;
+
+        static std::atomic<u8> operandTypeId_;
+
+        static u8 allocateId() {
+            return operandTypeId_.fetch_add(1);
+        }
+
+        template<typename T>
+        static u8 typeId() {
+            static_assert(std::is_object_v<T>);
+            static_assert(!std::is_const_v<T>);
+            static u8 id = allocateId();
+            return id;
+        }
+
+        template<typename T0, typename T1, typename T2>
+        static u64 typeMask() {
+            return ((u64)typeId<std::remove_reference_t<T2>>()) << 16
+                | ((u64)typeId<std::remove_reference_t<T1>>()) << 8
+                | ((u64)typeId<std::remove_reference_t<T0>>()) << 0;
+        }
+#endif
     };
 }
 

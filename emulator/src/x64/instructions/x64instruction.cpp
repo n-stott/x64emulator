@@ -2,6 +2,11 @@
 #include <fmt/core.h>
 
 namespace x64 {
+
+#ifndef NDEBUG
+    std::atomic<u8> X64Instruction::operandTypeId_ { 0 };
+#endif
+
 namespace utils {
 
     using namespace x64;

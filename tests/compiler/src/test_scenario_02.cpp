@@ -10,7 +10,7 @@ int main(int argc, char**) {
 
     std::array<X64Instruction, 2> instructions {{
         X64Instruction::make(0x0, Insn::MOV_R32_IMM, 1, R32::EAX, Imm{0xffffffff}),
-        X64Instruction::make(0x1, Insn::JMP_U32, 1, Imm{0x0}),
+        X64Instruction::make(0x1, Insn::JMP_U32, 1, (u32)0x0),
     }};
 
     auto bb = cpu.createBasicBlock(instructions.data(), instructions.size());

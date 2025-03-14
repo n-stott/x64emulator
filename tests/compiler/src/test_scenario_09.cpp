@@ -34,7 +34,7 @@ int main(int argc, char**) {
         // mov       DWORD PTR [rcx],eax
         // mov       eax,0x1
         // jmp 0
-        X64Instruction::make(0xb, Insn::JMP_U32, 1, 0x0),
+        X64Instruction::make(0xb, Insn::JMP_U32, 1, (u32)0x0),
     }};
 
     auto bb = cpu.createBasicBlock(instructions.data(), instructions.size());
