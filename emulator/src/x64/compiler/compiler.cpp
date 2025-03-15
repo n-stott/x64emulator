@@ -210,6 +210,7 @@ namespace x64 {
             case Insn::CMPXCHG_RM64_R64: return tryCompileCmpxchgRM64R64(ins.op0<RM64>(), ins.op1<R64>());
             case Insn::LOCK_CMPXCHG_M32_R32: return tryCompileLockCmpxchgM32R32(ins.op0<M32>(), ins.op1<R32>());
             case Insn::LOCK_CMPXCHG_M64_R64: return tryCompileLockCmpxchgM64R64(ins.op0<M64>(), ins.op1<R64>());
+            case Insn::CWDE: return tryCompileCwde();
             case Insn::CDQE: return tryCompileCdqe();
             case Insn::CDQ: return tryCompileCdq();
             case Insn::CQO: return tryCompileCqo();
@@ -230,6 +231,7 @@ namespace x64 {
             case Insn::BSWAP_R32: return tryCompileBswapR32(ins.op0<R32>());
             case Insn::BSWAP_R64: return tryCompileBswapR64(ins.op0<R64>());
             case Insn::BT_RM32_R32: return tryCompileBtRM32R32(ins.op0<RM32>(), ins.op1<R32>());
+            case Insn::BT_RM64_R64: return tryCompileBtRM64R64(ins.op0<RM64>(), ins.op1<R64>());
             case Insn::BTR_RM64_R64: return tryCompileBtrRM64R64(ins.op0<RM64>(), ins.op1<R64>());
             case Insn::BTR_RM64_IMM: return tryCompileBtrRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
 
@@ -2401,6 +2403,17 @@ namespace x64 {
         return true;
     }
 
+    bool Compiler::tryCompileCwde() {
+        assembler_.push64(R64::RAX);
+        readReg64(Reg::GPR0, R64::RAX);
+        assembler_.mov(R64::RAX, get(Reg::GPR0));
+        assembler_.cwde();
+        assembler_.mov(get(Reg::GPR0), R64::RAX);
+        writeReg64(R64::RAX, Reg::GPR0);
+        assembler_.pop64(R64::RAX);
+        return true;
+    }
+
     bool Compiler::tryCompileCdqe() {
         assembler_.push64(R64::RAX);
         readReg64(Reg::GPR0, R64::RAX);
@@ -2513,12 +2526,9 @@ namespace x64 {
     }
 
     bool Compiler::tryCompileSetRM8(Cond cond, const RM8& dst) {
-        if(!dst.isReg) return false;
-        // set the condition
-        assembler_.set(cond, get8(Reg::GPR0));
-        // copy the condition
-        writeReg8(dst.reg, Reg::GPR0);
-        return true;
+        return forRM8Imm(dst, Imm{}, [&](Reg dst, Imm) {
+            assembler_.set(cond, get8(dst));
+        });
     }
 
     bool Compiler::tryCompileCmovR32RM32(Cond cond, R32 dst, const RM32& src) {
@@ -2553,6 +2563,13 @@ namespace x64 {
         RM32 s {true, src, {}};
         return forRM32RM32(dst, s, [&](Reg dst, Reg src) {
             assembler_.bt(get32(dst), get32(src));
+        }, false);
+    }
+
+    bool Compiler::tryCompileBtRM64R64(const RM64& dst, R64 src) {
+        RM64 s {true, src, {}};
+        return forRM64RM64(dst, s, [&](Reg dst, Reg src) {
+            assembler_.bt(get(dst), get(src));
         }, false);
     }
 

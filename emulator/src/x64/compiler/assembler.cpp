@@ -1737,6 +1737,10 @@ namespace x64 {
         }
     }
 
+    void Assembler::cwde() {
+        write8(0x98);
+    }
+
     void Assembler::cdqe() {
         write8(0x48);
         write8(0x98);
@@ -2065,6 +2069,13 @@ namespace x64 {
         if((u8)src >= 8 || (u8)dst >= 8) {
             write8((u8)(0x40 | (((u8)src >= 8) ? 4 : 0) | (((u8)dst >= 8) ? 1 : 0) ));
         }
+        write8((u8)0x0f);
+        write8((u8)0xa3);
+        write8((u8)(0b11000000 | (encodeRegister(src) << 3) | encodeRegister(dst)));
+    }
+
+    void Assembler::bt(R64 dst, R64 src) {
+        write8((u8)(0x48 | (((u8)src >= 8) ? 4 : 0) | (((u8)dst >= 8) ? 1 : 0) ));
         write8((u8)0x0f);
         write8((u8)0xa3);
         write8((u8)(0b11000000 | (encodeRegister(src) << 3) | encodeRegister(dst)));

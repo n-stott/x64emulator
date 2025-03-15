@@ -158,6 +158,7 @@ namespace x64 {
         void lockcmpxchg(const M32& dst, R32 src);
         void lockcmpxchg(const M64& dst, R64 src);
 
+        void cwde();
         void cdqe();
         void cdq();
         void cqo();
@@ -185,6 +186,7 @@ namespace x64 {
         void bswap(R32);
         void bswap(R64);
         void bt(R32, R32);
+        void bt(R64, R64);
         void btr(R64, R64);
         void btr(R64, u8);
 
