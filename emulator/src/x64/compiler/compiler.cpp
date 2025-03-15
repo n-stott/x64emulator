@@ -1445,10 +1445,15 @@ namespace x64 {
         // Set the instruction pointer
         loadImm64(Reg::GPR0, dst);
         writeReg64(R64::RIP, Reg::GPR0);
+
+        // INSERT NOPs HERE TO BE REPLACED WITH THE JMP
+        auto dummyCode = jmpCode(0x0, TmpReg{Reg::GPR0});
+        size_t offsetOfReplaceableJumpToConditionalBlock = currentOffset();
+        assembler_.nops(dummyCode.size());
         
         return ReplaceableJumps {
             {},
-            {},
+            offsetOfReplaceableJumpToConditionalBlock,
         };
     }
 
@@ -1543,12 +1548,12 @@ namespace x64 {
 
         // INSERT NOPs HERE TO BE REPLACED WITH THE JMP
         auto dummyCode = jmpCode(0x0, TmpReg{Reg::GPR0});
-        size_t offsetOfReplaceableJumpToContinuingBlock = currentOffset();
+        size_t offsetOfReplaceableJumpToConditionalBlock = currentOffset();
         assembler_.nops(dummyCode.size());
 
         return ReplaceableJumps {
-            offsetOfReplaceableJumpToContinuingBlock,
             {},
+            offsetOfReplaceableJumpToConditionalBlock,
         };
     }
 
