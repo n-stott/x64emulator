@@ -1749,13 +1749,17 @@ namespace x64 {
         const cs_x86_op& src = x86detail.operands[1];
         auto m8src = asMemory8(src);
         auto m8dst = asMemory8(dst);
+        auto m16src = asMemory16(src);
+        auto m16dst = asMemory16(dst);
         auto m64src = asMemory64(src);
         auto m64dst = asMemory64(dst);
         if(prefixByte == 0) {
             if(m8dst && m8src) return X64Instruction::make<Insn::MOVS_M8_M8>(insn.address, insn.size, m8dst.value(), m8src.value());
+            if(m16dst && m16src) return X64Instruction::make<Insn::MOVS_M16_M16>(insn.address, insn.size, m16dst.value(), m16src.value());
             if(m64dst && m64src) return X64Instruction::make<Insn::MOVS_M64_M64>(insn.address, insn.size, m64dst.value(), m64src.value());
         } else if((x86_prefix)prefixByte == X86_PREFIX_REP) {
             if(m8dst && m8src) return X64Instruction::make<Insn::REP_MOVS_M8_M8>(insn.address, insn.size, m8dst.value(), m8src.value());
+            if(m16dst && m16src) return X64Instruction::make<Insn::REP_MOVS_M16_M16>(insn.address, insn.size, m16dst.value(), m16src.value());
             if(m64dst && m64src) return X64Instruction::make<Insn::REP_MOVS_M64_M64>(insn.address, insn.size, m64dst.value(), m64src.value());
         }
         return make_failed(insn);
@@ -4329,6 +4333,7 @@ namespace x64 {
             case X86_INS_CMPSD:
             case X86_INS_CMPSQ: return makeCmps(insn);
             case X86_INS_MOVSB:
+            case X86_INS_MOVSW:
             case X86_INS_MOVSQ: return makeMovs(insn);
             case X86_INS_PAND: return makePand(insn);
             case X86_INS_PANDN: return makePandn(insn);

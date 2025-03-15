@@ -519,8 +519,10 @@ namespace x64 {
     DEFINE_STANDALONE(CLD, execCld)
     DEFINE_STANDALONE(STD, execStd)
     DEFINE_STANDALONE(MOVS_M8_M8, execMovsM8M8)
+    DEFINE_STANDALONE(MOVS_M16_M16, execMovsM16M16)
     DEFINE_STANDALONE(MOVS_M64_M64, execMovsM64M64)
     DEFINE_STANDALONE(REP_MOVS_M8_M8, execRepMovsM8M8)
+    DEFINE_STANDALONE(REP_MOVS_M16_M16, execRepMovsM16M16)
     DEFINE_STANDALONE(REP_MOVS_M32_M32, execRepMovsM32M32)
     DEFINE_STANDALONE(REP_MOVS_M64_M64, execRepMovsM64M64)
     DEFINE_STANDALONE(REP_CMPS_M8_M8, execRepCmpsM8M8)
@@ -1193,8 +1195,10 @@ namespace x64 {
         STANDALONE_NAME(CLD),
         STANDALONE_NAME(STD),
         STANDALONE_NAME(MOVS_M8_M8),
+        STANDALONE_NAME(MOVS_M16_M16),
         STANDALONE_NAME(MOVS_M64_M64),
         STANDALONE_NAME(REP_MOVS_M8_M8),
+        STANDALONE_NAME(REP_MOVS_M16_M16),
         STANDALONE_NAME(REP_MOVS_M32_M32),
         STANDALONE_NAME(REP_MOVS_M64_M64),
         STANDALONE_NAME(REP_CMPS_M8_M8),
@@ -3554,6 +3558,25 @@ namespace x64 {
         set(R64::RDI, dptr.address());
     }
 
+    void Cpu::execRepMovsM16M16(const X64Instruction& ins) {
+        const auto& dst = ins.op0<M16>();
+        const auto& src = ins.op1<M16>();
+        u16 counter = get(R32::ECX);
+        Ptr16 dptr = resolve(dst);
+        Ptr16 sptr = resolve(src);
+        verify(flags_.direction == 0);
+        while(counter) {
+            u16 val = mmu_->read16(sptr);
+            mmu_->write16(dptr, val);
+            ++sptr;
+            ++dptr;
+            --counter;
+        }
+        set(R32::ECX, counter);
+        set(R64::RSI, sptr.address());
+        set(R64::RDI, dptr.address());
+    }
+
     void Cpu::execRepMovsM32M32(const X64Instruction& ins) {
         const auto& dst = ins.op0<M32>();
         const auto& src = ins.op1<M32>();
@@ -3581,6 +3604,20 @@ namespace x64 {
         verify(flags_.direction == 0);
         u8 val = mmu_->read8(sptr);
         mmu_->write8(dptr, val);
+        ++sptr;
+        ++dptr;
+        set(R64::RSI, sptr.address());
+        set(R64::RDI, dptr.address());
+    }
+
+    void Cpu::execMovsM16M16(const X64Instruction& ins) {
+        const auto& dst = ins.op0<M16>();
+        const auto& src = ins.op1<M16>();
+        Ptr16 dptr = resolve(dst);
+        Ptr16 sptr = resolve(src);
+        verify(flags_.direction == 0);
+        u16 val = mmu_->read16(sptr);
+        mmu_->write16(dptr, val);
         ++sptr;
         ++dptr;
         set(R64::RSI, sptr.address());
