@@ -70,6 +70,7 @@ namespace emulator {
         //     [[maybe_unused]] auto jitBasicBlock = x64::Compiler::tryCompile(bb->basicBlock(), true);
         // }
         // return;
+        fmt::print("Jitted code was exited {} times ({} of which are avoidable)\n", jitExits_, avoidableExits_);
         const size_t topCount = 100;
         if(blocks.size() >= topCount) blocks.resize(topCount);
         for(auto* bb : blocks) {
@@ -176,7 +177,6 @@ namespace emulator {
     void VM::execute(kernel::Thread* thread) {
         if(!thread) return;
         Context context(*this, thread);
-        tryPatchNativeBasicBlocks();
         kernel::Thread::TickInfo& tickInfo = thread->tickInfo();
         BasicBlock* currentBasicBlock = nullptr;
         BasicBlock* nextBasicBlock = fetchBasicBlock();
@@ -214,11 +214,18 @@ namespace emulator {
             currentBasicBlock->onCall(*this);
             if(currentBasicBlock->nativeBasicBlock()) {
                 cpu_.exec((x64::NativeExecPtr)currentBasicBlock->nativeBasicBlock(), tickInfo.ticks(), &currentBasicBlock);
+                ++jitExits_;
             } else {
                 cpu_.exec(currentBasicBlock->basicBlock());
                 tickInfo.tick(currentBasicBlock->basicBlock().instructions.size());
             }
             nextBasicBlock = findNextBasicBlock();
+            if(!!currentBasicBlock->nativeBasicBlock()
+            && currentBasicBlock->basicBlock().endsWithFixedDestinationJump()
+            && !!nextBasicBlock->nativeBasicBlock()) {
+                if(jitChainingEnabled()) currentBasicBlock->tryPatch();
+                ++avoidableExits_;
+            }
         }
         assert(!!currentThread_);
     }
@@ -690,7 +697,13 @@ namespace emulator {
 
     void BasicBlock::onCall(VM& vm) {
         ++calls_;
-        if(vm.jitEnabled() && calls_ >= JIT_THRESHOLD && !compilationAttempted_) {
+        if(!vm.jitEnabled()) return;
+        tryCompile(vm, JIT_THRESHOLD);
+    }
+
+    void BasicBlock::tryCompile(VM& vm, u64 callLimit) {
+        if(calls_ < callLimit) return;
+        if(!compilationAttempted_) {
             auto jitBasicBlock = x64::Compiler::tryCompile(cpuBasicBlock_, this);
             if(!!jitBasicBlock) {
                 nativeBasicBlock_ = vm.tryMakeNative(jitBasicBlock->nativecode.data(), jitBasicBlock->nativecode.size());
@@ -699,25 +712,17 @@ namespace emulator {
                     jitBasicBlock->offsetOfReplaceableJumpToConditionalBlock,
                 };
                 entrypointSize_ = jitBasicBlock->entrypointSize;
-                vm.makePatchable(this);
+                if(vm.jitChainingEnabled()) {
+                    tryPatch();
+                    for(BasicBlock* prev : predecessors_) {
+                        prev->tryPatch();
+                    }
+                }
             }
             compilationAttempted_ = true;
+            if(!!next_[0]) next_[0]->tryCompile(vm, 0);
+            if(!!next_[1]) next_[1]->tryCompile(vm, 0);
         }
-    }
-
-    void VM::makePatchable(BasicBlock* bb) {
-        patchableBasicBlocks_.insert(bb);
-        visitPatchables_ = true;
-    }
-
-    __attribute__((noinline)) void VM::tryPatchNativeBasicBlocks() {
-        if(!jitEnabled_) return;
-        if(!jitChainingEnabled_) return;
-        if(!visitPatchables_) return;
-        for(auto* bb : patchableBasicBlocks_) {
-            bb->tryPatch();
-        }
-        visitPatchables_ = false;
     }
 
     void BasicBlock::tryPatch() {

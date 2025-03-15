@@ -46,9 +46,11 @@ namespace emulator {
 
         size_t size() const;
         void onCall(VM&);
+        void tryCompile(VM&, u64 callLimit);
         void tryPatch();
 
         u64 calls() const { return calls_; }
+        bool hasPendingPatches() const { return !!pendingPatches_; }
 
     private:
         void removePredecessor(BasicBlock* other);
@@ -82,6 +84,7 @@ namespace emulator {
         bool jitEnabled() const { return jitEnabled_; }
 
         void setEnableJitChaining(bool enable);
+        bool jitChainingEnabled() const { return jitChainingEnabled_; }
 
         void crash();
         bool hasCrashed() const { return hasCrashed_; }
@@ -94,8 +97,6 @@ namespace emulator {
 
         MemoryBlock tryMakeNative(const u8* code, size_t size);
         void freeNative(MemoryBlock);
-
-        void makePatchable(BasicBlock* bb);
 
         void tryRetrieveSymbols(const std::vector<u64>& addresses, std::unordered_map<u64, std::string>* addressesToSymbols) const;
 
@@ -132,7 +133,6 @@ namespace emulator {
 
         void syncThread();
         void enterSyscall();
-        void tryPatchNativeBasicBlocks();
 
         struct ExecutableSection {
             u64 begin;
@@ -163,8 +163,8 @@ namespace emulator {
 
         std::vector<std::unique_ptr<BasicBlock>> basicBlocks_;
         std::unordered_map<u64, BasicBlock*> basicBlocksByAddress_;
-        std::unordered_set<BasicBlock*> patchableBasicBlocks_;
-        bool visitPatchables_ { false };
+        u64 jitExits_ { 0 };
+        u64 avoidableExits_ { 0 };
 
 #ifdef VM_BASICBLOCK_TELEMETRY
         u64 blockCacheHits_ { 0 };
