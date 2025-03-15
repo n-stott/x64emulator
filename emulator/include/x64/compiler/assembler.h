@@ -68,6 +68,9 @@ namespace x64 {
         void shr_cl(R8 lhs);
         void shr(R8 lhs, R8 rhs);
         void shr(R8 lhs, u8 imm);
+        void shr_cl(R16 lhs);
+        void shr(R16 lhs, R8 rhs);
+        void shr(R16 lhs, u8 imm);
         void shr_cl(R32 lhs);
         void shr(R32 lhs, R8 rhs);
         void shr(R32 lhs, u8 imm);
@@ -140,6 +143,8 @@ namespace x64 {
         void xor_(R64 dst, i32 imm);
         void not_(R32 dst);
         void not_(R64 dst);
+        void neg(R8 dst);
+        void neg(R16 dst);
         void neg(R32 dst);
         void neg(R64 dst);
         void inc(R32 dst);

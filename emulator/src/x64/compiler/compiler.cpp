@@ -132,6 +132,8 @@ namespace x64 {
             case Insn::SHL_RM64_IMM: return tryCompileShlRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
             case Insn::SHR_RM8_R8: return tryCompileShrRM8R8(ins.op0<RM8>(), ins.op1<R8>());
             case Insn::SHR_RM8_IMM: return tryCompileShrRM8Imm(ins.op0<RM8>(), ins.op1<Imm>());
+            case Insn::SHR_RM16_R8: return tryCompileShrRM16R8(ins.op0<RM16>(), ins.op1<R8>());
+            case Insn::SHR_RM16_IMM: return tryCompileShrRM16Imm(ins.op0<RM16>(), ins.op1<Imm>());
             case Insn::SHR_RM32_R8: return tryCompileShrRM32R8(ins.op0<RM32>(), ins.op1<R8>());
             case Insn::SHR_RM32_IMM: return tryCompileShrRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
             case Insn::SHR_RM64_R8: return tryCompileShrRM64R8(ins.op0<RM64>(), ins.op1<R8>());
@@ -194,6 +196,8 @@ namespace x64 {
             case Insn::XOR_RM64_IMM: return tryCompileXorRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
             case Insn::NOT_RM32: return tryCompileNotRM32(ins.op0<RM32>());
             case Insn::NOT_RM64: return tryCompileNotRM64(ins.op0<RM64>());
+            case Insn::NEG_RM8: return tryCompileNegRM8(ins.op0<RM8>());
+            case Insn::NEG_RM16: return tryCompileNegRM16(ins.op0<RM16>());
             case Insn::NEG_RM32: return tryCompileNegRM32(ins.op0<RM32>());
             case Insn::NEG_RM64: return tryCompileNegRM64(ins.op0<RM64>());
             case Insn::INC_RM32: return tryCompileIncRM32(ins.op0<RM32>());
@@ -1056,6 +1060,18 @@ namespace x64 {
     bool Compiler::tryCompileShrRM8Imm(const RM8& lhs, Imm rhs) {
         return forRM8Imm(lhs, rhs, [&](Reg dst, Imm imm) {
             assembler_.shr(get8(dst), imm.as<u8>());
+        });
+    }
+
+    bool Compiler::tryCompileShrRM16R8(const RM16& lhs, R8 rhs) {
+        return forRM16R8(lhs, rhs, [&](Reg dst, Reg src) {
+            assembler_.shr(get16(dst), get8(src));
+        });
+    }
+
+    bool Compiler::tryCompileShrRM16Imm(const RM16& lhs, Imm rhs) {
+        return forRM16Imm(lhs, rhs, [&](Reg dst, Imm imm) {
+            assembler_.shr(get16(dst), imm.as<u8>());
         });
     }
 
@@ -1926,56 +1942,28 @@ namespace x64 {
         } 
     }
 
+    bool Compiler::tryCompileNegRM8(const RM8& dst) {
+        return forRM8Imm(dst, Imm{}, [&](Reg dst, Imm) {
+            assembler_.neg(get8(dst));
+        });
+    }
+
+    bool Compiler::tryCompileNegRM16(const RM16& dst) {
+        return forRM16Imm(dst, Imm{}, [&](Reg dst, Imm) {
+            assembler_.neg(get16(dst));
+        });
+    }
+
     bool Compiler::tryCompileNegRM32(const RM32& dst) {
-        if(dst.isReg) {
-            // read the destination register
-            readReg32(Reg::GPR0, dst.reg);
-            // perform the op
-            assembler_.neg(get32(Reg::GPR0));
-            // write back to destination register
-            writeReg32(dst.reg, Reg::GPR0);
-            return true;
-        } else {
-            // fetch dst address
-            const M32& mem = dst.mem;
-            if(mem.segment != Segment::CS && mem.segment != Segment::UNK) return false;
-            if(mem.encoding.index == R64::RIP) return false;
-            // get the address
-            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
-            // read the dst value at the address
-            readMem32(Reg::GPR0, addr);
-            // perform the op
-            assembler_.neg(get32(Reg::GPR0));
-            // write back to the register
-            writeMem32(addr, Reg::GPR0);
-            return true;
-        } 
+        return forRM32Imm(dst, Imm{}, [&](Reg dst, Imm) {
+            assembler_.neg(get32(dst));
+        });
     }
 
     bool Compiler::tryCompileNegRM64(const RM64& dst) {
-        if(dst.isReg) {
-            // read the destination register
-            readReg64(Reg::GPR0, dst.reg);
-            // perform the op
-            assembler_.neg(get(Reg::GPR0));
-            // write back to the destination register
-            writeReg64(dst.reg, Reg::GPR0);
-            return true;
-        } else {
-            // fetch dst address
-            const M64& mem = dst.mem;
-            if(mem.segment != Segment::CS && mem.segment != Segment::UNK) return false;
-            if(mem.encoding.index == R64::RIP) return false;
-            // get the address
-            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
-            // read the dst value at the address
-            readMem64(Reg::GPR0, addr);
-            // perform the op
-            assembler_.neg(get(Reg::GPR0));
-            // write back to the register
-            writeMem64(addr, Reg::GPR0);
-            return true;
-        } 
+        return forRM64Imm(dst, Imm{}, [&](Reg dst, Imm) {
+            assembler_.neg(get(dst));
+        });
     }
 
     bool Compiler::tryCompileIncRM32(const RM32& dst) {
