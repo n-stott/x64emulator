@@ -190,6 +190,8 @@ namespace x64 {
         void btr(R64, R64);
         void btr(R64, u8);
 
+        void repstos32();
+
         // mmx
         void mov(MMX, MMX);
         void movd(MMX, const M32&);

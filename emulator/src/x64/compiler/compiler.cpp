@@ -234,6 +234,7 @@ namespace x64 {
             case Insn::BT_RM64_R64: return tryCompileBtRM64R64(ins.op0<RM64>(), ins.op1<R64>());
             case Insn::BTR_RM64_R64: return tryCompileBtrRM64R64(ins.op0<RM64>(), ins.op1<R64>());
             case Insn::BTR_RM64_IMM: return tryCompileBtrRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
+            case Insn::REP_STOS_M32_R32: return tryCompileRepStosM32R32(ins.op0<M32>(), ins.op1<R32>());
 
             // MMX
             case Insn::MOV_MMX_MMX: return tryCompileMovMmxMmx(ins.op0<MMX>(), ins.op1<MMX>());
@@ -2584,6 +2585,39 @@ namespace x64 {
         return forRM64Imm(dst, imm, [&](Reg dst, Imm imm) {
             assembler_.btr(get(dst), imm.as<u8>());
         });
+    }
+
+    bool Compiler::tryCompileRepStosM32R32(const M32& dst, R32 src) {
+        if(dst.encoding.base != R64::RDI) return false;
+        if(src != R32::EAX) return false;
+        // save rdi, rcx and rax
+        assembler_.push64(R64::RDI);
+        assembler_.push64(R64::RCX);
+        assembler_.push64(R64::RAX);
+
+        // get the dst address
+        readReg64(Reg::GPR0, R64::RDI);
+        assembler_.lea(R64::RDI, make64(get(Reg::MEM_BASE), get(Reg::GPR0), 1, 0));
+
+        // get the src value
+        readReg32(Reg::GPR0, R32::EAX);
+        assembler_.mov(R32::EAX, get32(Reg::GPR0));
+
+        // set the counter
+        readReg32(Reg::GPR0, R32::ECX);
+        assembler_.mov(R32::ECX, get32(Reg::GPR0));
+
+        assembler_.repstos32();
+
+        // write back the dst address
+        assembler_.mov(get(Reg::GPR0), R64::RDI);
+        writeReg64(R64::RDI, Reg::GPR0);
+
+        // restore rax, rcx and rdi
+        assembler_.pop64(R64::RAX);
+        assembler_.pop64(R64::RCX);
+        assembler_.pop64(R64::RDI);
+        return true;
     }
 
     bool Compiler::tryCompileMovMmxMmx(MMX dst, MMX src) {

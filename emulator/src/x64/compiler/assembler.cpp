@@ -2096,7 +2096,10 @@ namespace x64 {
         write8(imm);
     }
 
-
+    void Assembler::repstos32() {
+        write8(0xf3);
+        write8(0xab);
+    }
 
     u8 encodeRegister(MMX reg) {
         return ((u8)reg) & 0x7;
