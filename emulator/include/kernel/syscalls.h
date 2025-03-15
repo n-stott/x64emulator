@@ -173,6 +173,10 @@ namespace kernel {
         int madvise(x64::Ptr addr, size_t length, int advice);
         // 0x1d
         int shmget(key_t key, size_t size, int shmflg);
+        // 0x1e
+        x64::Ptr shmat(int shmid, x64::Ptr shmaddr, int shmflg);
+        // 0x1f
+        int shmctl(int shmid, int cmd, x64::Ptr buf);
         // 0x20
         int dup(int oldfd);
         // 0x21

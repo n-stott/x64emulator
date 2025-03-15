@@ -74,6 +74,8 @@ namespace kernel {
             case 0x1b: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::mincore, regs));
             case 0x1c: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::madvise, regs));
             case 0x1d: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::shmget, regs));
+            case 0x1e: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::shmat, regs));
+            case 0x1f: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::shmctl, regs));
             case 0x20: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::dup, regs));
             case 0x21: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::dup2, regs));
             case 0x26: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::setitimer, regs));
@@ -643,6 +645,22 @@ namespace kernel {
             print("Sys::shmget(key={}, size={:#x}, shmflg={:#x}) = {}\n", key, size, shmflg, -ENOTSUP);
         }
         warn(fmt::format("shmget not implemented"));
+        return -ENOTSUP;
+    }
+
+    x64::Ptr Sys::shmat(int shmid, x64::Ptr shmaddr, int shmflg) {
+        if(logSyscalls_) {
+            print("Sys::shmat(shmid={}, shmaddr={:#x}, shmflg={:#x}) = {}\n", shmid, shmaddr.address(), shmflg, -ENOTSUP);
+        }
+        warn(fmt::format("shmat not implemented"));
+        return x64::Ptr{(u64)(-ENOTSUP)};
+    }
+
+    int Sys::shmctl(int shmid, int cmd, x64::Ptr buf) {
+        if(logSyscalls_) {
+            print("Sys::shmctl(shmid={}, cmd={:#x}, buf={:#x}) = {}\n", shmid, cmd, buf.address(), -ENOTSUP);
+        }
+        warn(fmt::format("shmctl not implemented"));
         return -ENOTSUP;
     }
 
