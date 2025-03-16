@@ -330,6 +330,7 @@ namespace x64 {
             case Insn::MOVHPS_M64_XMM: return tryCompileMovhpsM64Xmm(ins.op0<M64>(), ins.op1<XMM>());
             case Insn::MOVHLPS_XMM_XMM: return tryCompileMovhlpsXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
             case Insn::PMOVMSKB_R32_XMM: return tryCompilePmovmskbR32Xmm(ins.op0<R32>(), ins.op1<XMM>());
+            case Insn::MOVQ2DQ_XMM_MM: return tryCompileMovq2qdXMMMMX(ins.op0<XMM>(), ins.op1<MMX>());
             
             case Insn::PAND_XMM_XMMM128: return tryCompilePandXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
             case Insn::PANDN_XMM_XMMM128: return tryCompilePandnXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
@@ -3371,6 +3372,13 @@ namespace x64 {
         readReg32(Reg::GPR0, dst);
         assembler_.pmovmskb(get32(Reg::GPR0), get(Reg128::GPR0));
         writeReg32(dst, Reg::GPR0);
+        return true;
+    }
+
+    bool Compiler::tryCompileMovq2qdXMMMMX(XMM dst, MMX src) {
+        readRegMM(RegMM::GPR0, src);
+        assembler_.movq2dq(get(Reg128::GPR0), get(RegMM::GPR0));
+        writeReg128(dst, Reg128::GPR0);
         return true;
     }
 

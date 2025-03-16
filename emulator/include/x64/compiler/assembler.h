@@ -292,6 +292,7 @@ namespace x64 {
         void movhps(M64, XMM);
         void movhlps(XMM, XMM);
         void pmovmskb(R32, XMM);
+        void movq2dq(XMM, MMX);
 
         void pand(XMM, XMM);
         void pandn(XMM, XMM);

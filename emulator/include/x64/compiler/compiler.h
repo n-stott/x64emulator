@@ -296,6 +296,7 @@ namespace x64 {
         bool tryCompileMovhpsM64Xmm(const M64&, XMM);
         bool tryCompileMovhlpsXmmXmm(XMM, XMM);
         bool tryCompilePmovmskbR32Xmm(R32, XMM);
+        bool tryCompileMovq2qdXMMMMX(XMM, MMX);
 
         bool tryCompilePandXmmXmmM128(XMM, const XMMM128&);
         bool tryCompilePandnXmmXmmM128(XMM, const XMMM128&);
