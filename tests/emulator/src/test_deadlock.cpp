@@ -12,8 +12,11 @@ int main() {
     std::thread t1([&]() {
         std::unique_lock l1(m1);
         wasteTime();
+        sched_yield();
         wasteTime();
+        sched_yield();
         wasteTime();
+        sched_yield();
         wasteTime();
         std::unique_lock l2(m2);
     });
@@ -21,8 +24,11 @@ int main() {
     std::thread t2([&]() {
         std::unique_lock l2(m2);
         wasteTime();
+        sched_yield();
         wasteTime();
+        sched_yield();
         wasteTime();
+        sched_yield();
         wasteTime();
         std::unique_lock l1(m1);
     });
