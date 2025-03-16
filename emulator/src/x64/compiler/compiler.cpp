@@ -2731,9 +2731,14 @@ namespace x64 {
 
         assembler_.repstos32();
 
-        // write back the dst address
-        assembler_.mov(get(Reg::GPR0), R64::RDI);
+        // write back the dst address (address+4*counter)
+        readReg64(Reg::GPR0, R64::RDI);
+        assembler_.lea(get(Reg::GPR0), make64(get(Reg::GPR0), R64::RCX, 4, 0));
         writeReg64(R64::RDI, Reg::GPR0);
+
+        // write back the counter (is 0)
+        assembler_.xor_(get(Reg::GPR0), get(Reg::GPR0));
+        writeReg64(R64::RCX, Reg::GPR0);
 
         // restore rax, rcx and rdi
         assembler_.pop64(R64::RAX);
@@ -2764,9 +2769,14 @@ namespace x64 {
 
         assembler_.repstos64();
 
-        // write back the dst address
-        assembler_.mov(get(Reg::GPR0), R64::RDI);
+        // write back the dst address (address+4*counter)
+        readReg64(Reg::GPR0, R64::RDI);
+        assembler_.lea(get(Reg::GPR0), make64(get(Reg::GPR0), R64::RCX, 4, 0));
         writeReg64(R64::RDI, Reg::GPR0);
+
+        // write back the counter (is 0)
+        assembler_.xor_(get(Reg::GPR0), get(Reg::GPR0));
+        writeReg64(R64::RCX, Reg::GPR0);
 
         // restore rax, rcx and rdi
         assembler_.pop64(R64::RAX);
