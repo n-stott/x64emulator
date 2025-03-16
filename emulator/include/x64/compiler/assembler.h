@@ -184,6 +184,7 @@ namespace x64 {
         void bsf(R32 dst, R32 src);
         void bsf(R64 dst, R64 src);
         void bsr(R32 dst, R32 src);
+        void tzcnt(R32 dst, R32 src);
 
         void set(Cond, R8);
         void cmov(Cond, R32, R32);

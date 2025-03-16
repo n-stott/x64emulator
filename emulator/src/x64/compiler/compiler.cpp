@@ -229,6 +229,7 @@ namespace x64 {
             case Insn::BSF_R32_R32: return tryCompileBsfR32R32(ins.op0<R32>(), ins.op1<R32>());
             case Insn::BSF_R64_R64: return tryCompileBsfR64R64(ins.op0<R64>(), ins.op1<R64>());
             case Insn::BSR_R32_R32: return tryCompileBsrR32R32(ins.op0<R32>(), ins.op1<R32>());
+            case Insn::TZCNT_R32_RM32: return tryCompileTzcntR32RM32(ins.op0<R32>(), ins.op1<RM32>());
             case Insn::SET_RM8: return tryCompileSetRM8(ins.op0<Cond>(), ins.op1<RM8>());
             case Insn::CMOV_R32_RM32: return tryCompileCmovR32RM32(ins.op0<Cond>(), ins.op1<R32>(), ins.op2<RM32>());
             case Insn::CMOV_R64_RM64: return tryCompileCmovR64RM64(ins.op0<Cond>(), ins.op1<R64>(), ins.op2<RM64>());
@@ -2512,6 +2513,12 @@ namespace x64 {
         assembler_.bsr(get32(Reg::GPR0), get32(Reg::GPR1));
         writeReg32(dst, Reg::GPR0);
         return true;
+    }
+
+    bool Compiler::tryCompileTzcntR32RM32(R32 dst, const RM32& src) {
+        return forRM32RM32(RM32{true, dst, {}}, src, [&](Reg dst, Reg src) {
+            assembler_.tzcnt(get32(dst), get32(src));
+        });
     }
 
     bool Compiler::tryCompileSetRM8(Cond cond, const RM8& dst) {

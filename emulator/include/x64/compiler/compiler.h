@@ -192,6 +192,7 @@ namespace x64 {
         bool tryCompileBsfR32R32(R32, R32);
         bool tryCompileBsfR64R64(R64, R64);
         bool tryCompileBsrR32R32(R32, R32);
+        bool tryCompileTzcntR32RM32(R32, const RM32&);
         bool tryCompileSetRM8(Cond, const RM8&);
         bool tryCompileCmovR32RM32(Cond, R32, const RM32&);
         bool tryCompileCmovR64RM64(Cond, R64, const RM64&);
