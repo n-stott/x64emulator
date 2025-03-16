@@ -182,6 +182,10 @@ namespace x64 {
             case Insn::AND_RM32_IMM: return tryCompileAndRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
             case Insn::AND_RM64_RM64: return tryCompileAndRM64RM64(ins.op0<RM64>(), ins.op1<RM64>());
             case Insn::AND_RM64_IMM: return tryCompileAndRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
+            case Insn::OR_RM8_RM8: return tryCompileOrRM8RM8(ins.op0<RM8>(), ins.op1<RM8>());
+            case Insn::OR_RM8_IMM: return tryCompileOrRM8Imm(ins.op0<RM8>(), ins.op1<Imm>());
+            case Insn::OR_RM16_RM16: return tryCompileOrRM16RM16(ins.op0<RM16>(), ins.op1<RM16>());
+            case Insn::OR_RM16_IMM: return tryCompileOrRM16Imm(ins.op0<RM16>(), ins.op1<Imm>());
             case Insn::OR_RM32_RM32: return tryCompileOrRM32RM32(ins.op0<RM32>(), ins.op1<RM32>());
             case Insn::OR_RM32_IMM: return tryCompileOrRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
             case Insn::OR_RM64_RM64: return tryCompileOrRM64RM64(ins.op0<RM64>(), ins.op1<RM64>());
@@ -1742,6 +1746,30 @@ namespace x64 {
     bool Compiler::tryCompileAndRM64Imm(const RM64& dst, Imm imm) {
         return forRM64Imm(dst, imm, [&](Reg dst, Imm imm) {
             assembler_.and_(get(dst), imm.as<i32>());
+        });
+    }
+
+    bool Compiler::tryCompileOrRM8Imm(const RM8& dst, Imm imm) {
+        return forRM8Imm(dst, imm, [&](Reg dst, Imm imm) {
+            assembler_.or_(get8(dst), imm.as<i8>());
+        });
+    }
+
+    bool Compiler::tryCompileOrRM8RM8(const RM8& dst, const RM8& src) {
+        return forRM8RM8(dst, src, [&](Reg dst, Reg src) {
+            assembler_.or_(get8(dst), get8(src));
+        });
+    }
+
+    bool Compiler::tryCompileOrRM16Imm(const RM16& dst, Imm imm) {
+        return forRM16Imm(dst, imm, [&](Reg dst, Imm imm) {
+            assembler_.or_(get16(dst), imm.as<i16>());
+        });
+    }
+
+    bool Compiler::tryCompileOrRM16RM16(const RM16& dst, const RM16& src) {
+        return forRM16RM16(dst, src, [&](Reg dst, Reg src) {
+            assembler_.or_(get16(dst), get16(src));
         });
     }
 

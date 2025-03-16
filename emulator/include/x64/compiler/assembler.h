@@ -129,6 +129,10 @@ namespace x64 {
         void and_(R32 dst, i32 imm);
         void and_(R64 dst, R64 src);
         void and_(R64 dst, i32 imm);
+        void or_(R8 dst, R8 src);
+        void or_(R8 dst, i8 imm);
+        void or_(R16 dst, R16 src);
+        void or_(R16 dst, i16 imm);
         void or_(R32 dst, R32 src);
         void or_(R32 dst, i32 imm);
         void or_(R64 dst, R64 src);

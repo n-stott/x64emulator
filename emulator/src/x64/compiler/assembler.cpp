@@ -1439,6 +1439,44 @@ namespace x64 {
         write32(imm);
     }
 
+    void Assembler::or_(R8 dst, R8 src) {
+        write8(0x66);
+        if((u8)dst >= 8 || (u8)src >= 8) {
+            write8((u8)(0x40 | (((u8)src >= 8) ? 4 : 0) | (((u8)dst >= 8) ? 1 : 0) ));
+        }
+        write8((u8)0x08);
+        write8((u8)(0b11000000 | (encodeRegister(src) << 3) | encodeRegister(dst)));
+    }
+
+    void Assembler::or_(R8 dst, i8 imm) {
+        write8(0x66);
+        if((u8)dst >= 8) {
+            write8((u8)(0x40 | (((u8)dst >= 8) ? 1 : 0) ));
+        }
+        write8((u8)0x80);
+        write8((u8)(0b11000000 | (0b001 << 3) | encodeRegister(dst)));
+        write8(imm);
+    }
+
+    void Assembler::or_(R16 dst, R16 src) {
+        write8(0x66);
+        if((u8)dst >= 8 || (u8)src >= 8) {
+            write8((u8)(0x40 | (((u8)src >= 8) ? 4 : 0) | (((u8)dst >= 8) ? 1 : 0) ));
+        }
+        write8((u8)0x09);
+        write8((u8)(0b11000000 | (encodeRegister(src) << 3) | encodeRegister(dst)));
+    }
+
+    void Assembler::or_(R16 dst, i16 imm) {
+        write8(0x66);
+        if((u8)dst >= 8) {
+            write8((u8)(0x40 | (((u8)dst >= 8) ? 1 : 0) ));
+        }
+        write8((u8)0x81);
+        write8((u8)(0b11000000 | (0b001 << 3) | encodeRegister(dst)));
+        write16(imm);
+    }
+
     void Assembler::or_(R32 dst, R32 src) {
         if((u8)dst >= 8 || (u8)src >= 8) {
             write8((u8)(0x40 | (((u8)src >= 8) ? 4 : 0) | (((u8)dst >= 8) ? 1 : 0) ));
