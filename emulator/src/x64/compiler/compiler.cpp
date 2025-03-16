@@ -2810,11 +2810,10 @@ namespace x64 {
 
     bool Compiler::tryCompileMovdRM32Mmx(const RM32& dst, MMX src) {
         if(dst.isReg) {
-            return false;
-            // M32 s = make32(get(Reg::REG_BASE), R32::ZERO, 1, registerOffset(src.reg));
-            // assembler_.mov(get(RegMM::GPR0), s);
-            // writeRegMM(dst, RegMM::GPR0);
-            // return true;
+            readRegMM(RegMM::GPR0, src);
+            assembler_.movd(get32(Reg::GPR0), get(RegMM::GPR0));
+            writeReg32(dst.reg, Reg::GPR0);
+            return true;
         } else {
             readRegMM(RegMM::GPR0, src);
             Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, dst.mem);

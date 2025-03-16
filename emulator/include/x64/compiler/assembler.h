@@ -212,6 +212,7 @@ namespace x64 {
 
         // mmx
         void mov(MMX, MMX);
+        void movd(R32, MMX);
         void movd(MMX, const M32&);
         void movd(const M32&, MMX);
         void movq(MMX, const M64&);
