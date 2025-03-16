@@ -97,6 +97,7 @@ namespace x64 {
             case Insn::MOVZX_R32_RM8: return tryCompileMovzxR32RM8(ins.op0<R32>(), ins.op1<RM8>());
             case Insn::MOVZX_R32_RM16: return tryCompileMovzxR32RM16(ins.op0<R32>(), ins.op1<RM16>());
             case Insn::MOVZX_R64_RM8: return tryCompileMovzxR64RM8(ins.op0<R64>(), ins.op1<RM8>());
+            case Insn::MOVZX_R64_RM16: return tryCompileMovzxR64RM16(ins.op0<R64>(), ins.op1<RM16>());
             case Insn::MOVSX_R32_RM8: return tryCompileMovsxR32RM8(ins.op0<R32>(), ins.op1<RM8>());
             case Insn::MOVSX_R32_RM16: return tryCompileMovsxR32RM16(ins.op0<R32>(), ins.op1<RM16>());
             case Insn::MOVSX_R64_RM8: return tryCompileMovsxR64RM8(ins.op0<R64>(), ins.op1<RM8>());
@@ -759,6 +760,32 @@ namespace x64 {
             readMem8(Reg::GPR0, addr);
             // do the zero-extending mov
             assembler_.movzx(get(Reg::GPR0), get8(Reg::GPR0));
+            // write to the destination register
+            writeReg64(dst, Reg::GPR0);
+            return true;
+        }
+    }
+
+    bool Compiler::tryCompileMovzxR64RM16(R64 dst, const RM16& src) {
+        if(src.isReg) {
+            // read the src register
+            readReg16(Reg::GPR0, src.reg);
+            // do the zero-extending mov
+            assembler_.movzx(get(Reg::GPR0), get16(Reg::GPR0));
+            // write to the destination register
+            writeReg64(dst, Reg::GPR0);
+            return true;
+        } else {
+            // fetch src address
+            const M16& mem = src.mem;
+            if(mem.segment != Segment::CS && mem.segment != Segment::UNK) return false;
+            if(mem.encoding.index == R64::RIP) return false;
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the src value at the address
+            readMem16(Reg::GPR0, addr);
+            // do the zero-extending mov
+            assembler_.movzx(get(Reg::GPR0), get16(Reg::GPR0));
             // write to the destination register
             writeReg64(dst, Reg::GPR0);
             return true;

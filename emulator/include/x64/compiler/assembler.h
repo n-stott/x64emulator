@@ -30,6 +30,7 @@ namespace x64 {
         void movzx(R32 dst, R8 src);
         void movzx(R32 dst, R16 src);
         void movzx(R64 dst, R8 src);
+        void movzx(R64 dst, R16 src);
         void movsx(R32 dst, R8 src);
         void movsx(R32 dst, R16 src);
         void movsx(R64 dst, R8 src);
