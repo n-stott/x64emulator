@@ -1,10 +1,13 @@
 #ifndef NATIVECPUIMPL_H
 #define NATIVECPUIMPL_H
 
+#include "utils.h"
+
+#ifdef GCC_COMPILER
+
 #include "x64/flags.h"
 #include "x64/simd.h"
 #include "x64/x87.h"
-#include "utils.h"
 
 namespace x64 {
 
@@ -404,5 +407,16 @@ namespace x64 {
     };
 
 }
+
+#else
+
+#include "x64/cpuimpl.h"
+
+namespace x64 {
+    using NativeCpuImpl = CpuImpl;
+
+}
+
+#endif
 
 #endif

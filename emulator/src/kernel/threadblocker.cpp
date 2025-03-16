@@ -44,7 +44,7 @@ namespace kernel {
             verify(!!timer);
             PreciseTime now = timer->now();
             if(now > timeLimit_) {
-                thread_->savedCpuState().regs.set(x64::R64::RAX, -ETIMEDOUT);
+                thread_->savedCpuState().regs.set(x64::R64::RAX, (u64)(-ETIMEDOUT));
                 return true;
             }
         }
@@ -168,7 +168,7 @@ namespace kernel {
         if(!!writefds_) mmu_->copyToMmu(writefds_, (const u8*)&selectData.writefds, sizeof(selectData.writefds));
         if(!!exceptfds_) mmu_->copyToMmu(exceptfds_, (const u8*)&selectData.exceptfds, sizeof(selectData.exceptfds));
         if(ret >= 0) ret = (int)nzevents;
-        thread_->savedCpuState().regs.set(x64::R64::RAX, ret);
+        thread_->savedCpuState().regs.set(x64::R64::RAX, (u64)ret);
         return true;
     }
 

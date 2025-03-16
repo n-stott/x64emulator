@@ -75,7 +75,7 @@ namespace kernel {
         Thread* thread_;
         x64::Mmu* mmu_;
         Timers* timers_;
-        size_t nfds_;
+        int nfds_;
         x64::Ptr readfds_;
         x64::Ptr writefds_;
         x64::Ptr exceptfds_;

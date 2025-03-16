@@ -133,7 +133,7 @@ namespace kernel {
             st.st_rdev = 0; // dummy value
             st.st_size = (off_t)data_.size();
             st.st_blksize = 0x200; // dummy value
-            st.st_blocks = (__blkcnt_t)((data_.size() + st.st_blksize - 1) / st.st_blksize);
+            st.st_blocks = (__blkcnt_t)((data_.size() + 0x200 - 1) / 0x200);
 
             Buffer buf(st);
             return ErrnoOrBuffer(std::move(buf));

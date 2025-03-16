@@ -14,10 +14,9 @@
 
 namespace emulator {
 
-    VM::VM(x64::Cpu& cpu, x64::Mmu& mmu, kernel::Kernel& kernel) :
+    VM::VM(x64::Cpu& cpu, x64::Mmu& mmu) :
             cpu_(cpu),
-            mmu_(mmu),
-            kernel_(kernel) {
+            mmu_(mmu) {
         
     }
 

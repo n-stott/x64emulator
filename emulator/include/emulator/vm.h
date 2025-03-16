@@ -77,7 +77,7 @@ namespace emulator {
 
     class VM {
     public:
-        explicit VM(x64::Cpu& cpu, x64::Mmu& mmu, kernel::Kernel& kernel);
+        explicit VM(x64::Cpu& cpu, x64::Mmu& mmu);
         ~VM();
 
         void setEnableJit(bool enable);
@@ -154,7 +154,6 @@ namespace emulator {
 
         x64::Cpu& cpu_;
         x64::Mmu& mmu_;
-        kernel::Kernel& kernel_;
 
         mutable std::vector<std::unique_ptr<ExecutableSection>> executableSections_;
         bool hasCrashed_ = false;

@@ -40,7 +40,7 @@ namespace kernel {
     void Scheduler::runOnWorkerThread(Worker worker) {
         bool didShowCrashMessage = false;
         x64::Cpu cpu(mmu_);
-        emulator::VM vm(cpu, mmu_, kernel_);
+        emulator::VM vm(cpu, mmu_);
         vm.setEnableJit(worker.enableJit);
         vm.setEnableJitChaining(worker.enableJitChaining);
         while(!emulator::signal_interrupt) {
@@ -190,14 +190,14 @@ namespace kernel {
         auto isUserspaceJob = [](Job job) { return job.ring == RING::USERSPACE; };
         auto isKernelJob = [](Job job) { return job.ring == RING::KERNEL; };
 
-        size_t nbUserspaceRunning = std::count_if(runningJobs_.begin(), runningJobs_.end(), isUserspaceJob);
-        size_t nbKernelRunning = std::count_if(runningJobs_.begin(), runningJobs_.end(), isKernelJob);
+        size_t nbUserspaceRunning = (size_t)std::count_if(runningJobs_.begin(), runningJobs_.end(), isUserspaceJob);
+        size_t nbKernelRunning = (size_t)std::count_if(runningJobs_.begin(), runningJobs_.end(), isKernelJob);
 
         auto isUserspaceThread = [](const Thread* thread) { return !thread->requestsSyscall(); };
         auto isKernelThread = [](const Thread* thread) { return thread->requestsSyscall(); };
 
-        size_t nbUserspaceRunnable = std::count_if(runnableThreads_.begin(), runnableThreads_.end(), isUserspaceThread);
-        size_t nbKernelRunnable = std::count_if(runnableThreads_.begin(), runnableThreads_.end(), isKernelThread);
+        size_t nbUserspaceRunnable = (size_t)std::count_if(runnableThreads_.begin(), runnableThreads_.end(), isUserspaceThread);
+        size_t nbKernelRunnable = (size_t)std::count_if(runnableThreads_.begin(), runnableThreads_.end(), isKernelThread);
 
         if(canRunSyscalls) {
             if(nbKernelRunning > 0) {
@@ -555,7 +555,7 @@ namespace kernel {
             op.cmp = (FutexOp::CMP)((val3 >> 24) & 0xF);
             op.oparg = (val3 >> 12) & 0xFFF;
             if(op.op & 8) {
-                op.oparg = (1 << op.oparg);
+                op.oparg = (u16)(1 << (int)op.oparg);
                 op.op = (FutexOp::OP)((u8)op.op & 0x7);
             }
             op.cmparg = val3 & 0xFFF;

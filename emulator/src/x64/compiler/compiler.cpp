@@ -617,7 +617,7 @@ namespace x64 {
 
     bool Compiler::tryCompileMovM32Imm(const M32& dst, Imm imm) {
         // load the immediate
-        loadImm64(Reg::GPR0, imm.as<i32>());
+        loadImm64(Reg::GPR0, (u64)imm.as<i32>());
         // get the destination address
         Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR1}, dst);
         // write to the destination address
@@ -663,7 +663,7 @@ namespace x64 {
 
     bool Compiler::tryCompileMovM64Imm(const M64& dst, Imm imm) {
         // load the immediate
-        loadImm64(Reg::GPR0, imm.as<i32>());
+        loadImm64(Reg::GPR0, (u64)imm.as<i32>());
         // get the destination address
         Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR1}, dst);
         // write to the destination address
@@ -1791,7 +1791,7 @@ namespace x64 {
 
     bool Compiler::tryCompileTestRM32Imm(const RM32& lhs, Imm rhs) {
         return forRM32Imm(lhs, rhs, [&](Reg dst, Imm src) {
-            assembler_.test(get32(dst), src.as<i32>());
+            assembler_.test(get32(dst), (u32)src.as<i32>());
         }, false);
     }
 
@@ -4790,7 +4790,7 @@ namespace x64 {
         assembler_.mov(get(Reg::GPR1), ticksPtr);
         M64 ticks = make64(get(Reg::GPR1), 0);
         assembler_.mov(get(Reg::GPR0), ticks);
-        M64 a = make64(get(Reg::GPR0), amount);
+        M64 a = make64(get(Reg::GPR0), (i32)amount);
         assembler_.lea(get(Reg::GPR0), a);
         assembler_.mov(ticks, get(Reg::GPR0));
     }

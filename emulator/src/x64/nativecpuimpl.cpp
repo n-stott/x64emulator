@@ -1,3 +1,5 @@
+#ifdef GCC_COMPILER
+
 #include "x64/nativecpuimpl.h"
 #include <cassert>
 #include <cstring>
@@ -5,15 +7,6 @@
 #include <emmintrin.h>
 #include <limits>
 
-#if (defined(__GNUG__) && !defined(__clang__))
-#define GCC_COMPILER 1
-#else
-#define CLANG_COMPILER 1
-#endif
-
-#ifndef GCC_COMPILER
-#error "NativeCpuImpl only supported for gcc currently"
-#endif
 
 #define COMPLAIN_ON_NON_CHECK 1
 #if COMPLAIN_ON_NON_CHECK
@@ -2892,3 +2885,5 @@ namespace x64 {
         return nativeRes;
     }
 }
+
+#endif
