@@ -292,6 +292,8 @@ namespace x64 {
         bool tryCompileMovaXmmM128(XMM, const M128&);
         bool tryCompileMovdXmmRM32(XMM, const RM32&);
         bool tryCompileMovdRM32Xmm(const RM32&, XMM);
+        bool tryCompileMovssXmmM32(XMM, const M32&);
+        bool tryCompileMovssM32Xmm(const M32&, XMM);
         bool tryCompileMovsdXmmM64(XMM, const M64&);
         bool tryCompileMovsdM64Xmm(const M64&, XMM);
         bool tryCompileMovlpsXmmM64(XMM, const M64&);
@@ -378,9 +380,13 @@ namespace x64 {
         bool tryCompilePackusdwXmmXmmM128(XMM, const XMMM128&);
 
         bool tryCompileAddssXmmXmm(XMM, XMM);
+        bool tryCompileAddssXmmM32(XMM, const M32&);
         bool tryCompileSubssXmmXmm(XMM, XMM);
+        bool tryCompileSubssXmmM32(XMM, const M32&);
         bool tryCompileMulssXmmXmm(XMM, XMM);
+        bool tryCompileMulssXmmM32(XMM, const M32&);
         bool tryCompileDivssXmmXmm(XMM, XMM);
+        bool tryCompileDivssXmmM32(XMM, const M32&);
         bool tryCompileComissXmmXmm(XMM, XMM);
         bool tryCompileCvtsi2ssXmmRM32(XMM, const RM32&);
         bool tryCompileCvtsi2ssXmmRM64(XMM, const RM64&);
@@ -411,6 +417,7 @@ namespace x64 {
         bool tryCompileSubpsXmmXmmM128(XMM, const XMMM128&);
         bool tryCompileMulpsXmmXmmM128(XMM, const XMMM128&);
         bool tryCompileDivpsXmmXmmM128(XMM, const XMMM128&);
+        bool tryCompileMinpsXmmXmmM128(XMM, const XMMM128&);
         bool tryCompileCmppsXmmXmmM128Fcond(XMM, const XMMM128&, FCond);
         bool tryCompileCvtps2dqXmmXmmM128(XMM, const XMMM128&);
         bool tryCompileCvttps2dqXmmXmmM128(XMM, const XMMM128&);

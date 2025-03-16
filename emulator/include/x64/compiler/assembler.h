@@ -287,6 +287,8 @@ namespace x64 {
         void movd(XMM, const M32&);
         void movd(R32, XMM);
         void movd(const M32&, XMM);
+        void movss(XMM, const M32&);
+        void movss(const M32&, XMM);
         void movsd(XMM, const M64&);
         void movsd(const M64&, XMM);
         void movq(XMM, R64);
@@ -401,6 +403,7 @@ namespace x64 {
         void subps(XMM, XMM);
         void mulps(XMM, XMM);
         void divps(XMM, XMM);
+        void minps(XMM, XMM);
         void cmpps(XMM, XMM, u8);
         void cvtps2dq(XMM, XMM);
         void cvttps2dq(XMM, XMM);
