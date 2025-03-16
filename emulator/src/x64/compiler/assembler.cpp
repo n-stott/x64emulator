@@ -2206,8 +2206,29 @@ namespace x64 {
         write8(imm);
     }
 
+    void Assembler::bts(R64 dst, R64 src) {
+        write8((u8)(0x48 | (((u8)src >= 8) ? 4 : 0) | (((u8)dst >= 8) ? 1 : 0) ));
+        write8((u8)0x0f);
+        write8((u8)0xab);
+        write8((u8)(0b11000000 | (encodeRegister(src) << 3) | encodeRegister(dst)));
+    }
+
+    void Assembler::bts(R64 dst, u8 imm) {
+        write8((u8)(0x48 | (((u8)dst >= 8) ? 1 : 0) ));
+        write8((u8)0x0f);
+        write8((u8)0xba);
+        write8((u8)(0b11000000 | (0b101 << 3) | encodeRegister(dst)));
+        write8(imm);
+    }
+
     void Assembler::repstos32() {
         write8(0xf3);
+        write8(0xab);
+    }
+
+    void Assembler::repstos64() {
+        write8(0xf3);
+        write8(0x48);
         write8(0xab);
     }
 

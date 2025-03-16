@@ -208,8 +208,11 @@ namespace x64 {
         bool tryCompileBtRM64R64(const RM64&, R64);
         bool tryCompileBtrRM64R64(const RM64&, R64);
         bool tryCompileBtrRM64Imm(const RM64&, Imm);
+        bool tryCompileBtsRM64R64(const RM64&, R64);
+        bool tryCompileBtsRM64Imm(const RM64&, Imm);
 
         bool tryCompileRepStosM32R32(const M32&, R32);
+        bool tryCompileRepStosM64R64(const M64&, R64);
 
         // mmx
         bool tryCompileMovMmxMmx(MMX, MMX);

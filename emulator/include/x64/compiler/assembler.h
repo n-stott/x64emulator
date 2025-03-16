@@ -201,8 +201,11 @@ namespace x64 {
         void bt(R64, R64);
         void btr(R64, R64);
         void btr(R64, u8);
+        void bts(R64, R64);
+        void bts(R64, u8);
 
         void repstos32();
+        void repstos64();
 
         // mmx
         void mov(MMX, MMX);
