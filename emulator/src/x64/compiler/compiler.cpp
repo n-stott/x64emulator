@@ -428,6 +428,7 @@ namespace x64 {
             case Insn::UCOMISD_XMM_M64: return tryCompileUcomisdXmmM64(ins.op0<XMM>(), ins.op1<M64>());
             case Insn::MAXSD_XMM_XMM: return tryCompileMaxsdXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
             case Insn::MINSD_XMM_XMM: return tryCompileMinsdXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
+            case Insn::SQRTSD_XMM_XMM: return tryCompileSqrtsdXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
             case Insn::CVTSI2SD_XMM_RM32: return tryCompileCvtsi2sdXmmRM32(ins.op0<XMM>(), ins.op1<RM32>());
             case Insn::CVTSI2SD_XMM_RM64: return tryCompileCvtsi2sdXmmRM64(ins.op0<XMM>(), ins.op1<RM64>());
             case Insn::CVTTSD2SI_R32_XMM: return tryCompileCvttsd2siR32Xmm(ins.op0<R32>(), ins.op1<XMM>());
@@ -4041,6 +4042,14 @@ namespace x64 {
         readReg128(Reg128::GPR0, dst);
         readReg128(Reg128::GPR1, src);
         assembler_.minsd(get(Reg128::GPR0), get(Reg128::GPR1));
+        writeReg128(dst, Reg128::GPR0);
+        return true;
+    }
+
+    bool Compiler::tryCompileSqrtsdXmmXmm(XMM dst, XMM src) {
+        readReg128(Reg128::GPR0, dst);
+        readReg128(Reg128::GPR1, src);
+        assembler_.sqrtsd(get(Reg128::GPR0), get(Reg128::GPR1));
         writeReg128(dst, Reg128::GPR0);
         return true;
     }
