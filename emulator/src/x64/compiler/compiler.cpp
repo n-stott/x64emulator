@@ -111,6 +111,8 @@ namespace x64 {
             case Insn::ADD_RM32_IMM: return tryCompileAddRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
             case Insn::ADD_RM64_RM64: return tryCompileAddRM64RM64(ins.op0<RM64>(), ins.op1<RM64>());
             case Insn::ADD_RM64_IMM: return tryCompileAddRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
+            case Insn::ADC_RM32_RM32: return tryCompileAdcRM32RM32(ins.op0<RM32>(), ins.op1<RM32>());
+            case Insn::ADC_RM32_IMM: return tryCompileAdcRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
             case Insn::SUB_RM32_RM32: return tryCompileSubRM32RM32(ins.op0<RM32>(), ins.op1<RM32>());
             case Insn::SUB_RM32_IMM: return tryCompileSubRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
             case Insn::SUB_RM64_RM64: return tryCompileSubRM64RM64(ins.op0<RM64>(), ins.op1<RM64>());
@@ -967,6 +969,18 @@ namespace x64 {
     bool Compiler::tryCompileAddRM64Imm(const RM64& dst, Imm src) {
         return forRM64Imm(dst, src, [&](Reg dst, Imm imm) {
             add64Imm32(dst, imm.as<i32>());
+        });
+    }
+
+    bool Compiler::tryCompileAdcRM32RM32(const RM32& dst, const RM32& src) {
+        return forRM32RM32(dst, src, [&](Reg dst, Reg src) {
+            adc32(dst, src);
+        });
+    }
+
+    bool Compiler::tryCompileAdcRM32Imm(const RM32& dst, Imm src) {
+        return forRM32Imm(dst, src, [&](Reg dst, Imm imm) {
+            adc32Imm32(dst, imm.as<i32>());
         });
     }
 
@@ -4786,6 +4800,17 @@ namespace x64 {
     void Compiler::add64Imm32(Reg dst, i32 imm) {
         R64 d = get(dst);
         assembler_.add(d, imm);
+    }
+
+    void Compiler::adc32(Reg dst, Reg src) {
+        R32 d = get32(dst);
+        R32 s = get32(src);
+        assembler_.adc(d, s);
+    }
+
+    void Compiler::adc32Imm32(Reg dst, i32 imm) {
+        R32 d = get32(dst);
+        assembler_.adc(d, imm);
     }
 
     void Compiler::sub32(Reg dst, Reg src) {

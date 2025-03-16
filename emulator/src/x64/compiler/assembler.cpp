@@ -671,6 +671,32 @@ namespace x64 {
         }
     }
 
+    void Assembler::adc(R32 dst, R32 src) {
+        if(((u8)src >= 8) || ((u8)dst >= 8)) {
+            write8((u8)(0x40 | (((u8)src >= 8) ? 4 : 0) | (((u8)dst >= 8) ? 1 : 0)));
+        }
+        write8((u8)(0x11));
+        write8((u8)(0b11000000 | (encodeRegister(src) << 3) | (encodeRegister(dst))));
+    }
+
+    void Assembler::adc(R32 dst, i32 imm) {
+        if((i8)imm == imm) {
+            if((u8)dst >= 8) {
+                write8((u8)(0x40 | (((u8)dst >= 8) ? 1 : 0)));
+            }
+            write8((u8)(0x83));
+            write8((u8)(0b11000000 | (0b010 << 3) | encodeRegister(dst)));
+            write8((i8)imm);
+        } else {
+            if((u8)dst >= 8) {
+                write8((u8)(0x40 | (((u8)dst >= 8) ? 1 : 0)));
+            }
+            write8((u8)(0x81));
+            write8((u8)(0b11000000 | (0b010 << 3) | encodeRegister(dst)));
+            write32(imm);
+        }
+    }
+
     void Assembler::sub(R32 dst, R32 src) {
         write8((u8)(0x40 | (((u8)src >= 8) ? 4 : 0) | (((u8)dst >= 8) ? 1 : 0)));
         write8((u8)(0x29));
