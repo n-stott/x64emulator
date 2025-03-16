@@ -1224,6 +1224,20 @@ namespace x64 {
         write8((u8)(0b11000000 | (0b100 << 3) | (encodeRegister(src))));
     }
 
+    void Assembler::imul(R32 src) {
+        if((u8)src >= 8) {
+            write8((u8)(0x40 | (((u8)src >= 8) ? 1 : 0)));
+        }
+        write8(0xf7);
+        write8((u8)(0b11000000 | (0b101 << 3) | (encodeRegister(src))));
+    }
+
+    void Assembler::imul(R64 src) {
+        write8((u8)(0x48 | (((u8)src >= 8) ? 1 : 0)));
+        write8(0xf7);
+        write8((u8)(0b11000000 | (0b101 << 3) | (encodeRegister(src))));
+    }
+
     void Assembler::imul(R16 dst, R16 src) {
         write8(0x66);
         if((u8)src >= 8 || (u8)dst >= 8) {

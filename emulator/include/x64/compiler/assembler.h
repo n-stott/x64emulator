@@ -103,6 +103,8 @@ namespace x64 {
         void ror(R64 lhs, u8 imm);
         void mul(R32 src);
         void mul(R64 src);
+        void imul(R32 src);
+        void imul(R64 src);
         void imul(R16 dst, R16 src);
         void imul(R32 dst, R32 src);
         void imul(R64 dst, R64 src);
