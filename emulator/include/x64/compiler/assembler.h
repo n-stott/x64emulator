@@ -50,6 +50,8 @@ namespace x64 {
         void sub(R32 dst, i32 imm);
         void sub(R64 dst, R64 src);
         void sub(R64 dst, i32 imm);
+        void sbb(R8 dst, R8 src);
+        void sbb(R8 dst, i8 imm);
         void sbb(R32 dst, R32 src);
         void sbb(R32 dst, i32 imm);
         void sbb(R64 dst, R64 src);

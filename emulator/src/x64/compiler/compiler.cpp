@@ -117,6 +117,8 @@ namespace x64 {
             case Insn::SUB_RM32_IMM: return tryCompileSubRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
             case Insn::SUB_RM64_RM64: return tryCompileSubRM64RM64(ins.op0<RM64>(), ins.op1<RM64>());
             case Insn::SUB_RM64_IMM: return tryCompileSubRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
+            case Insn::SBB_RM8_RM8: return tryCompileSbbRM8RM8(ins.op0<RM8>(), ins.op1<RM8>());
+            case Insn::SBB_RM8_IMM: return tryCompileSbbRM8Imm(ins.op0<RM8>(), ins.op1<Imm>());
             case Insn::SBB_RM32_RM32: return tryCompileSbbRM32RM32(ins.op0<RM32>(), ins.op1<RM32>());
             case Insn::SBB_RM32_IMM: return tryCompileSbbRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
             case Insn::SBB_RM64_RM64: return tryCompileSbbRM64RM64(ins.op0<RM64>(), ins.op1<RM64>());
@@ -1012,6 +1014,18 @@ namespace x64 {
     bool Compiler::tryCompileSubRM64Imm(const RM64& dst, Imm src) {
         return forRM64Imm(dst, src, [&](Reg dst, Imm imm) {
             sub64Imm32(dst, imm.as<i32>());
+        });
+    }
+
+    bool Compiler::tryCompileSbbRM8RM8(const RM8& dst, const RM8& src) {
+        return forRM8RM8(dst, src, [&](Reg dst, Reg src) {
+            sbb8(dst, src);
+        });
+    }
+
+    bool Compiler::tryCompileSbbRM8Imm(const RM8& dst, Imm src) {
+        return forRM8Imm(dst, src, [&](Reg dst, Imm imm) {
+            sbb8Imm8(dst, imm.as<i8>());
         });
     }
 
@@ -4933,6 +4947,17 @@ namespace x64 {
     void Compiler::sub64Imm32(Reg dst, i32 imm) {
         R64 d = get(dst);
         assembler_.sub(d, imm);
+    }
+
+    void Compiler::sbb8(Reg dst, Reg src) {
+        R8 d = get8(dst);
+        R8 s = get8(src);
+        assembler_.sbb(d, s);
+    }
+
+    void Compiler::sbb8Imm8(Reg dst, i8 imm) {
+        R8 d = get8(dst);
+        assembler_.sbb(d, imm);
     }
 
     void Compiler::sbb32(Reg dst, Reg src) {

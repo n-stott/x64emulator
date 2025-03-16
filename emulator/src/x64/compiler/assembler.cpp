@@ -737,6 +737,19 @@ namespace x64 {
         }
     }
 
+    void Assembler::sbb(R8 dst, R8 src) {
+        write8((u8)(0x40 | (((u8)src >= 8) ? 4 : 0) | (((u8)dst >= 8) ? 1 : 0)));
+        write8((u8)(0x18));
+        write8((u8)(0b11000000 | (encodeRegister(src) << 3) | (encodeRegister(dst))));
+    }
+
+    void Assembler::sbb(R8 dst, i8 imm) {
+        write8((u8)(0x40 | (((u8)dst >= 8) ? 1 : 0)));
+        write8((u8)(0x80));
+        write8((u8)(0b11000000 | (0b011 << 3) | encodeRegister(dst)));
+        write8((i8)imm);
+    }
+
     void Assembler::sbb(R32 dst, R32 src) {
         write8((u8)(0x40 | (((u8)src >= 8) ? 4 : 0) | (((u8)dst >= 8) ? 1 : 0)));
         write8((u8)(0x19));
