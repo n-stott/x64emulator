@@ -1189,7 +1189,7 @@ namespace kernel {
             return ret;
         } else {
             // int ret = kernel_.fs().epoll_wait(FS::FD{epfd}, events, maxevents, timeout);
-            kernel_.scheduler().epoll_wait(currentThread_, epfd, events, maxevents, timeout);
+            kernel_.scheduler().epoll_wait(currentThread_, epfd, events, (size_t)maxevents, timeout);
             if(logSyscalls_) {
                 print("Sys::epoll_wait(epfd={}, events={:#x}, maxevents={}, timeout={}) = pending\n", epfd, events.address(), maxevents, timeout);
             }
@@ -1725,7 +1725,7 @@ namespace kernel {
     int Sys::ppoll(x64::Ptr fds, int nfds, x64::Ptr tmo_p, x64::Ptr sigmask, size_t sigsetsize) {
         verify(!sigmask, "Sys::ppoll does not support non-null sigmask");
         assert(sizeof(FS::PollData) == Host::pollRequiredBufferSize(1));
-        std::vector<FS::PollData> pollfds = mmu_.readFromMmu<FS::PollData>(fds, nfds);
+        std::vector<FS::PollData> pollfds = mmu_.readFromMmu<FS::PollData>(fds, (size_t)nfds);
         Timer* timer = kernel_.timers().getOrTryCreate(0);
         verify(!!timer);
         auto timeoutDuration = timer->readRelativeTimespec(mmu_, tmo_p);
@@ -1737,7 +1737,7 @@ namespace kernel {
             print("Sys::ppoll(fds={:#x}, nfds={}, timeout={:#x}, sigmask={:#x}, sigsetsize={}) = pending\n",
                         fds.address(), nfds, tmo_p.address(), sigmask.address(), sigsetsize);
         }
-        kernel_.scheduler().poll(currentThread_, fds, nfds, timeoutInMs);
+        kernel_.scheduler().poll(currentThread_, fds, (size_t)nfds, timeoutInMs);
         return 0;
     }
 

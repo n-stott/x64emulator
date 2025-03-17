@@ -590,12 +590,12 @@ namespace utils {
             case Insn::SAR_RM32_IMM: return toString<RM32, Imm>("sar");
             case Insn::SAR_RM64_R8: return toString<RM64, R8>("sar");
             case Insn::SAR_RM64_IMM: return toString<RM64, Imm>("sar");
-            case Insn::SARX_R32_RM32_R32: return toString<RM32, R32, Imm>("sarx");
-            case Insn::SARX_R64_RM64_R64: return toString<RM64, R64, R8>("sarx");
-            case Insn::SHLX_R32_RM32_R32: return toString<RM64, R64, Imm>("shlx");
-            case Insn::SHLX_R64_RM64_R64: return toString<RM32, R32, Imm>("shlx");
-            case Insn::SHRX_R32_RM32_R32: return toString<RM64, R64, R8>("shrx");
-            case Insn::SHRX_R64_RM64_R64: return toString<RM64, R64, Imm>("shrx");
+            case Insn::SARX_R32_RM32_R32: return toString<RM32, R32, R32>("sarx");
+            case Insn::SARX_R64_RM64_R64: return toString<RM64, R64, R64>("sarx");
+            case Insn::SHLX_R32_RM32_R32: return toString<RM32, R32, R32>("shlx");
+            case Insn::SHLX_R64_RM64_R64: return toString<RM64, R64, R64>("shlx");
+            case Insn::SHRX_R32_RM32_R32: return toString<RM32, R32, R32>("shrx");
+            case Insn::SHRX_R64_RM64_R64: return toString<RM64, R64, R64>("shrx");
             case Insn::ROL_RM8_R8: return toString<RM8, R8>("rol");
             case Insn::ROL_RM8_IMM: return toString<RM8, Imm>("rol");
             case Insn::ROL_RM16_R8: return toString<RM16, R8>("rol");

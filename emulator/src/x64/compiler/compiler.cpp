@@ -97,6 +97,7 @@ namespace x64 {
             case Insn::MOVZX_R32_RM8: return tryCompileMovzxR32RM8(ins.op0<R32>(), ins.op1<RM8>());
             case Insn::MOVZX_R32_RM16: return tryCompileMovzxR32RM16(ins.op0<R32>(), ins.op1<RM16>());
             case Insn::MOVZX_R64_RM8: return tryCompileMovzxR64RM8(ins.op0<R64>(), ins.op1<RM8>());
+            case Insn::MOVZX_R64_RM16: return tryCompileMovzxR64RM16(ins.op0<R64>(), ins.op1<RM16>());
             case Insn::MOVSX_R32_RM8: return tryCompileMovsxR32RM8(ins.op0<R32>(), ins.op1<RM8>());
             case Insn::MOVSX_R32_RM16: return tryCompileMovsxR32RM16(ins.op0<R32>(), ins.op1<RM16>());
             case Insn::MOVSX_R64_RM8: return tryCompileMovsxR64RM8(ins.op0<R64>(), ins.op1<RM8>());
@@ -110,10 +111,14 @@ namespace x64 {
             case Insn::ADD_RM32_IMM: return tryCompileAddRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
             case Insn::ADD_RM64_RM64: return tryCompileAddRM64RM64(ins.op0<RM64>(), ins.op1<RM64>());
             case Insn::ADD_RM64_IMM: return tryCompileAddRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
+            case Insn::ADC_RM32_RM32: return tryCompileAdcRM32RM32(ins.op0<RM32>(), ins.op1<RM32>());
+            case Insn::ADC_RM32_IMM: return tryCompileAdcRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
             case Insn::SUB_RM32_RM32: return tryCompileSubRM32RM32(ins.op0<RM32>(), ins.op1<RM32>());
             case Insn::SUB_RM32_IMM: return tryCompileSubRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
             case Insn::SUB_RM64_RM64: return tryCompileSubRM64RM64(ins.op0<RM64>(), ins.op1<RM64>());
             case Insn::SUB_RM64_IMM: return tryCompileSubRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
+            case Insn::SBB_RM8_RM8: return tryCompileSbbRM8RM8(ins.op0<RM8>(), ins.op1<RM8>());
+            case Insn::SBB_RM8_IMM: return tryCompileSbbRM8Imm(ins.op0<RM8>(), ins.op1<Imm>());
             case Insn::SBB_RM32_RM32: return tryCompileSbbRM32RM32(ins.op0<RM32>(), ins.op1<RM32>());
             case Insn::SBB_RM32_IMM: return tryCompileSbbRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
             case Insn::SBB_RM64_RM64: return tryCompileSbbRM64RM64(ins.op0<RM64>(), ins.op1<RM64>());
@@ -132,6 +137,8 @@ namespace x64 {
             case Insn::SHL_RM64_IMM: return tryCompileShlRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
             case Insn::SHR_RM8_R8: return tryCompileShrRM8R8(ins.op0<RM8>(), ins.op1<R8>());
             case Insn::SHR_RM8_IMM: return tryCompileShrRM8Imm(ins.op0<RM8>(), ins.op1<Imm>());
+            case Insn::SHR_RM16_R8: return tryCompileShrRM16R8(ins.op0<RM16>(), ins.op1<R8>());
+            case Insn::SHR_RM16_IMM: return tryCompileShrRM16Imm(ins.op0<RM16>(), ins.op1<Imm>());
             case Insn::SHR_RM32_R8: return tryCompileShrRM32R8(ins.op0<RM32>(), ins.op1<R8>());
             case Insn::SHR_RM32_IMM: return tryCompileShrRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
             case Insn::SHR_RM64_R8: return tryCompileShrRM64R8(ins.op0<RM64>(), ins.op1<R8>());
@@ -154,6 +161,8 @@ namespace x64 {
             case Insn::ROR_RM64_IMM: return tryCompileRorRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
             case Insn::MUL_RM32: return tryCompileMulRM32(ins.op0<RM32>());
             case Insn::MUL_RM64: return tryCompileMulRM64(ins.op0<RM64>());
+            case Insn::IMUL1_RM32: return tryCompileImulRM32(ins.op0<RM32>());
+            case Insn::IMUL1_RM64: return tryCompileImulRM64(ins.op0<RM64>());
             case Insn::IMUL2_R16_RM16: return tryCompileImulR16RM16(ins.op0<R16>(), ins.op1<RM16>());
             case Insn::IMUL2_R32_RM32: return tryCompileImulR32RM32(ins.op0<R32>(), ins.op1<RM32>());
             case Insn::IMUL2_R64_RM64: return tryCompileImulR64RM64(ins.op0<R64>(), ins.op1<RM64>());
@@ -180,6 +189,10 @@ namespace x64 {
             case Insn::AND_RM32_IMM: return tryCompileAndRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
             case Insn::AND_RM64_RM64: return tryCompileAndRM64RM64(ins.op0<RM64>(), ins.op1<RM64>());
             case Insn::AND_RM64_IMM: return tryCompileAndRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
+            case Insn::OR_RM8_RM8: return tryCompileOrRM8RM8(ins.op0<RM8>(), ins.op1<RM8>());
+            case Insn::OR_RM8_IMM: return tryCompileOrRM8Imm(ins.op0<RM8>(), ins.op1<Imm>());
+            case Insn::OR_RM16_RM16: return tryCompileOrRM16RM16(ins.op0<RM16>(), ins.op1<RM16>());
+            case Insn::OR_RM16_IMM: return tryCompileOrRM16Imm(ins.op0<RM16>(), ins.op1<Imm>());
             case Insn::OR_RM32_RM32: return tryCompileOrRM32RM32(ins.op0<RM32>(), ins.op1<RM32>());
             case Insn::OR_RM32_IMM: return tryCompileOrRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
             case Insn::OR_RM64_RM64: return tryCompileOrRM64RM64(ins.op0<RM64>(), ins.op1<RM64>());
@@ -194,6 +207,8 @@ namespace x64 {
             case Insn::XOR_RM64_IMM: return tryCompileXorRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
             case Insn::NOT_RM32: return tryCompileNotRM32(ins.op0<RM32>());
             case Insn::NOT_RM64: return tryCompileNotRM64(ins.op0<RM64>());
+            case Insn::NEG_RM8: return tryCompileNegRM8(ins.op0<RM8>());
+            case Insn::NEG_RM16: return tryCompileNegRM16(ins.op0<RM16>());
             case Insn::NEG_RM32: return tryCompileNegRM32(ins.op0<RM32>());
             case Insn::NEG_RM64: return tryCompileNegRM64(ins.op0<RM64>());
             case Insn::INC_RM32: return tryCompileIncRM32(ins.op0<RM32>());
@@ -210,6 +225,7 @@ namespace x64 {
             case Insn::CMPXCHG_RM64_R64: return tryCompileCmpxchgRM64R64(ins.op0<RM64>(), ins.op1<R64>());
             case Insn::LOCK_CMPXCHG_M32_R32: return tryCompileLockCmpxchgM32R32(ins.op0<M32>(), ins.op1<R32>());
             case Insn::LOCK_CMPXCHG_M64_R64: return tryCompileLockCmpxchgM64R64(ins.op0<M64>(), ins.op1<R64>());
+            case Insn::CWDE: return tryCompileCwde();
             case Insn::CDQE: return tryCompileCdqe();
             case Insn::CDQ: return tryCompileCdq();
             case Insn::CQO: return tryCompileCqo();
@@ -224,14 +240,20 @@ namespace x64 {
             case Insn::BSF_R32_R32: return tryCompileBsfR32R32(ins.op0<R32>(), ins.op1<R32>());
             case Insn::BSF_R64_R64: return tryCompileBsfR64R64(ins.op0<R64>(), ins.op1<R64>());
             case Insn::BSR_R32_R32: return tryCompileBsrR32R32(ins.op0<R32>(), ins.op1<R32>());
+            case Insn::TZCNT_R32_RM32: return tryCompileTzcntR32RM32(ins.op0<R32>(), ins.op1<RM32>());
             case Insn::SET_RM8: return tryCompileSetRM8(ins.op0<Cond>(), ins.op1<RM8>());
             case Insn::CMOV_R32_RM32: return tryCompileCmovR32RM32(ins.op0<Cond>(), ins.op1<R32>(), ins.op2<RM32>());
             case Insn::CMOV_R64_RM64: return tryCompileCmovR64RM64(ins.op0<Cond>(), ins.op1<R64>(), ins.op2<RM64>());
             case Insn::BSWAP_R32: return tryCompileBswapR32(ins.op0<R32>());
             case Insn::BSWAP_R64: return tryCompileBswapR64(ins.op0<R64>());
             case Insn::BT_RM32_R32: return tryCompileBtRM32R32(ins.op0<RM32>(), ins.op1<R32>());
+            case Insn::BT_RM64_R64: return tryCompileBtRM64R64(ins.op0<RM64>(), ins.op1<R64>());
             case Insn::BTR_RM64_R64: return tryCompileBtrRM64R64(ins.op0<RM64>(), ins.op1<R64>());
             case Insn::BTR_RM64_IMM: return tryCompileBtrRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
+            case Insn::BTS_RM64_R64: return tryCompileBtsRM64R64(ins.op0<RM64>(), ins.op1<R64>());
+            case Insn::BTS_RM64_IMM: return tryCompileBtsRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
+            case Insn::REP_STOS_M32_R32: return tryCompileRepStosM32R32(ins.op0<M32>(), ins.op1<R32>());
+            case Insn::REP_STOS_M64_R64: return tryCompileRepStosM64R64(ins.op0<M64>(), ins.op1<R64>());
 
             // MMX
             case Insn::MOV_MMX_MMX: return tryCompileMovMmxMmx(ins.op0<MMX>(), ins.op1<MMX>());
@@ -306,6 +328,8 @@ namespace x64 {
             case Insn::MOV_ALIGNED_XMM_M128: return tryCompileMovaXmmM128(ins.op0<XMM>(), ins.op1<M128>());
             case Insn::MOVD_XMM_RM32: return tryCompileMovdXmmRM32(ins.op0<XMM>(), ins.op1<RM32>());
             case Insn::MOVD_RM32_XMM: return tryCompileMovdRM32Xmm(ins.op0<RM32>(), ins.op1<XMM>());
+            case Insn::MOVSS_XMM_M32: return tryCompileMovssXmmM32(ins.op0<XMM>(), ins.op1<M32>());
+            case Insn::MOVSS_M32_XMM: return tryCompileMovssM32Xmm(ins.op0<M32>(), ins.op1<XMM>());
             case Insn::MOVSD_XMM_M64: return tryCompileMovsdXmmM64(ins.op0<XMM>(), ins.op1<M64>());
             case Insn::MOVSD_M64_XMM: return tryCompileMovsdM64Xmm(ins.op0<M64>(), ins.op1<XMM>());
             case Insn::MOVLPS_XMM_M64: return tryCompileMovlpsXmmM64(ins.op0<XMM>(), ins.op1<M64>());
@@ -313,6 +337,7 @@ namespace x64 {
             case Insn::MOVHPS_M64_XMM: return tryCompileMovhpsM64Xmm(ins.op0<M64>(), ins.op1<XMM>());
             case Insn::MOVHLPS_XMM_XMM: return tryCompileMovhlpsXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
             case Insn::PMOVMSKB_R32_XMM: return tryCompilePmovmskbR32Xmm(ins.op0<R32>(), ins.op1<XMM>());
+            case Insn::MOVQ2DQ_XMM_MM: return tryCompileMovq2qdXMMMMX(ins.op0<XMM>(), ins.op1<MMX>());
             
             case Insn::PAND_XMM_XMMM128: return tryCompilePandXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
             case Insn::PANDN_XMM_XMMM128: return tryCompilePandnXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
@@ -388,9 +413,13 @@ namespace x64 {
             case Insn::PACKUSDW_XMM_XMMM128: return tryCompilePackusdwXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
 
             case Insn::ADDSS_XMM_XMM: return tryCompileAddssXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
+            case Insn::ADDSS_XMM_M32: return tryCompileAddssXmmM32(ins.op0<XMM>(), ins.op1<M32>());
             case Insn::SUBSS_XMM_XMM: return tryCompileSubssXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
+            case Insn::SUBSS_XMM_M32: return tryCompileSubssXmmM32(ins.op0<XMM>(), ins.op1<M32>());
             case Insn::MULSS_XMM_XMM: return tryCompileMulssXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
+            case Insn::MULSS_XMM_M32: return tryCompileMulssXmmM32(ins.op0<XMM>(), ins.op1<M32>());
             case Insn::DIVSS_XMM_XMM: return tryCompileDivssXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
+            case Insn::DIVSS_XMM_M32: return tryCompileDivssXmmM32(ins.op0<XMM>(), ins.op1<M32>());
             case Insn::COMISS_XMM_XMM: return tryCompileComissXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
             case Insn::CVTSI2SS_XMM_RM32: return tryCompileCvtsi2ssXmmRM32(ins.op0<XMM>(), ins.op1<RM32>());
             case Insn::CVTSI2SS_XMM_RM64: return tryCompileCvtsi2ssXmmRM64(ins.op0<XMM>(), ins.op1<RM64>());
@@ -411,6 +440,7 @@ namespace x64 {
             case Insn::UCOMISD_XMM_M64: return tryCompileUcomisdXmmM64(ins.op0<XMM>(), ins.op1<M64>());
             case Insn::MAXSD_XMM_XMM: return tryCompileMaxsdXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
             case Insn::MINSD_XMM_XMM: return tryCompileMinsdXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
+            case Insn::SQRTSD_XMM_XMM: return tryCompileSqrtsdXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
             case Insn::CVTSI2SD_XMM_RM32: return tryCompileCvtsi2sdXmmRM32(ins.op0<XMM>(), ins.op1<RM32>());
             case Insn::CVTSI2SD_XMM_RM64: return tryCompileCvtsi2sdXmmRM64(ins.op0<XMM>(), ins.op1<RM64>());
             case Insn::CVTTSD2SI_R32_XMM: return tryCompileCvttsd2siR32Xmm(ins.op0<R32>(), ins.op1<XMM>());
@@ -420,6 +450,7 @@ namespace x64 {
             case Insn::SUBPS_XMM_XMMM128: return tryCompileSubpsXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
             case Insn::MULPS_XMM_XMMM128: return tryCompileMulpsXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
             case Insn::DIVPS_XMM_XMMM128: return tryCompileDivpsXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::MINPS_XMM_XMMM128: return tryCompileMinpsXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
             case Insn::CMPPS_XMM_XMMM128: return tryCompileCmppsXmmXmmM128Fcond(ins.op0<XMM>(), ins.op1<XMMM128>(), ins.op2<FCond>());
             case Insn::CVTPS2DQ_XMM_XMMM128: return tryCompileCvtps2dqXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
             case Insn::CVTTPS2DQ_XMM_XMMM128: return tryCompileCvttps2dqXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
@@ -586,7 +617,7 @@ namespace x64 {
 
     bool Compiler::tryCompileMovM32Imm(const M32& dst, Imm imm) {
         // load the immediate
-        loadImm64(Reg::GPR0, imm.as<i32>());
+        loadImm64(Reg::GPR0, (u64)imm.as<i32>());
         // get the destination address
         Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR1}, dst);
         // write to the destination address
@@ -632,7 +663,7 @@ namespace x64 {
 
     bool Compiler::tryCompileMovM64Imm(const M64& dst, Imm imm) {
         // load the immediate
-        loadImm64(Reg::GPR0, imm.as<i32>());
+        loadImm64(Reg::GPR0, (u64)imm.as<i32>());
         // get the destination address
         Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR1}, dst);
         // write to the destination address
@@ -740,6 +771,32 @@ namespace x64 {
             readMem8(Reg::GPR0, addr);
             // do the zero-extending mov
             assembler_.movzx(get(Reg::GPR0), get8(Reg::GPR0));
+            // write to the destination register
+            writeReg64(dst, Reg::GPR0);
+            return true;
+        }
+    }
+
+    bool Compiler::tryCompileMovzxR64RM16(R64 dst, const RM16& src) {
+        if(src.isReg) {
+            // read the src register
+            readReg16(Reg::GPR0, src.reg);
+            // do the zero-extending mov
+            assembler_.movzx(get(Reg::GPR0), get16(Reg::GPR0));
+            // write to the destination register
+            writeReg64(dst, Reg::GPR0);
+            return true;
+        } else {
+            // fetch src address
+            const M16& mem = src.mem;
+            if(mem.segment != Segment::CS && mem.segment != Segment::UNK) return false;
+            if(mem.encoding.index == R64::RIP) return false;
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the src value at the address
+            readMem16(Reg::GPR0, addr);
+            // do the zero-extending mov
+            assembler_.movzx(get(Reg::GPR0), get16(Reg::GPR0));
             // write to the destination register
             writeReg64(dst, Reg::GPR0);
             return true;
@@ -924,6 +981,18 @@ namespace x64 {
         });
     }
 
+    bool Compiler::tryCompileAdcRM32RM32(const RM32& dst, const RM32& src) {
+        return forRM32RM32(dst, src, [&](Reg dst, Reg src) {
+            adc32(dst, src);
+        });
+    }
+
+    bool Compiler::tryCompileAdcRM32Imm(const RM32& dst, Imm src) {
+        return forRM32Imm(dst, src, [&](Reg dst, Imm imm) {
+            adc32Imm32(dst, imm.as<i32>());
+        });
+    }
+
     bool Compiler::tryCompileSubRM32RM32(const RM32& dst, const RM32& src) {
         return forRM32RM32(dst, src, [&](Reg dst, Reg src) {
             sub32(dst, src);
@@ -945,6 +1014,18 @@ namespace x64 {
     bool Compiler::tryCompileSubRM64Imm(const RM64& dst, Imm src) {
         return forRM64Imm(dst, src, [&](Reg dst, Imm imm) {
             sub64Imm32(dst, imm.as<i32>());
+        });
+    }
+
+    bool Compiler::tryCompileSbbRM8RM8(const RM8& dst, const RM8& src) {
+        return forRM8RM8(dst, src, [&](Reg dst, Reg src) {
+            sbb8(dst, src);
+        });
+    }
+
+    bool Compiler::tryCompileSbbRM8Imm(const RM8& dst, Imm src) {
+        return forRM8Imm(dst, src, [&](Reg dst, Imm imm) {
+            sbb8Imm8(dst, imm.as<i8>());
         });
     }
 
@@ -1053,6 +1134,18 @@ namespace x64 {
     bool Compiler::tryCompileShrRM8Imm(const RM8& lhs, Imm rhs) {
         return forRM8Imm(lhs, rhs, [&](Reg dst, Imm imm) {
             assembler_.shr(get8(dst), imm.as<u8>());
+        });
+    }
+
+    bool Compiler::tryCompileShrRM16R8(const RM16& lhs, R8 rhs) {
+        return forRM16R8(lhs, rhs, [&](Reg dst, Reg src) {
+            assembler_.shr(get16(dst), get8(src));
+        });
+    }
+
+    bool Compiler::tryCompileShrRM16Imm(const RM16& lhs, Imm rhs) {
+        return forRM16Imm(lhs, rhs, [&](Reg dst, Imm imm) {
+            assembler_.shr(get16(dst), imm.as<u8>());
         });
     }
 
@@ -1205,6 +1298,44 @@ namespace x64 {
         assembler_.mov(R64::RDX, get(Reg::GPR0));
         readReg64(Reg::GPR1, src.reg);
         assembler_.mul(get(Reg::GPR1));
+        assembler_.mov(get(Reg::GPR0), R64::RAX);
+        writeReg64(R64::RAX, Reg::GPR0);
+        assembler_.mov(get(Reg::GPR0), R64::RDX);
+        writeReg64(R64::RDX, Reg::GPR0);
+        assembler_.pop64(R64::RDX);
+        assembler_.pop64(R64::RAX);
+        return true;
+    }
+
+    bool Compiler::tryCompileImulRM32(const RM32& src) {
+        if(!src.isReg) return false;
+        assembler_.push64(R64::RAX);
+        assembler_.push64(R64::RDX);
+        readReg64(Reg::GPR0, R64::RAX);
+        assembler_.mov(R32::EAX, get32(Reg::GPR0));
+        readReg64(Reg::GPR0, R64::RDX);
+        assembler_.mov(R32::EDX, get32(Reg::GPR0));
+        readReg32(Reg::GPR1, src.reg);
+        assembler_.imul(get32(Reg::GPR1));
+        assembler_.mov(get32(Reg::GPR0), R32::EAX);
+        writeReg32(R32::EAX, Reg::GPR0);
+        assembler_.mov(get32(Reg::GPR0), R32::EDX);
+        writeReg32(R32::EDX, Reg::GPR0);
+        assembler_.pop64(R64::RDX);
+        assembler_.pop64(R64::RAX);
+        return true;
+    }
+
+    bool Compiler::tryCompileImulRM64(const RM64& src) {
+        if(!src.isReg) return false;
+        assembler_.push64(R64::RAX);
+        assembler_.push64(R64::RDX);
+        readReg64(Reg::GPR0, R64::RAX);
+        assembler_.mov(R64::RAX, get(Reg::GPR0));
+        readReg64(Reg::GPR0, R64::RDX);
+        assembler_.mov(R64::RDX, get(Reg::GPR0));
+        readReg64(Reg::GPR1, src.reg);
+        assembler_.imul(get(Reg::GPR1));
         assembler_.mov(get(Reg::GPR0), R64::RAX);
         writeReg64(R64::RAX, Reg::GPR0);
         assembler_.mov(get(Reg::GPR0), R64::RDX);
@@ -1660,7 +1791,7 @@ namespace x64 {
 
     bool Compiler::tryCompileTestRM32Imm(const RM32& lhs, Imm rhs) {
         return forRM32Imm(lhs, rhs, [&](Reg dst, Imm src) {
-            assembler_.test(get32(dst), src.as<i32>());
+            assembler_.test(get32(dst), (u32)src.as<i32>());
         }, false);
     }
 
@@ -1722,6 +1853,30 @@ namespace x64 {
     bool Compiler::tryCompileAndRM64Imm(const RM64& dst, Imm imm) {
         return forRM64Imm(dst, imm, [&](Reg dst, Imm imm) {
             assembler_.and_(get(dst), imm.as<i32>());
+        });
+    }
+
+    bool Compiler::tryCompileOrRM8Imm(const RM8& dst, Imm imm) {
+        return forRM8Imm(dst, imm, [&](Reg dst, Imm imm) {
+            assembler_.or_(get8(dst), imm.as<i8>());
+        });
+    }
+
+    bool Compiler::tryCompileOrRM8RM8(const RM8& dst, const RM8& src) {
+        return forRM8RM8(dst, src, [&](Reg dst, Reg src) {
+            assembler_.or_(get8(dst), get8(src));
+        });
+    }
+
+    bool Compiler::tryCompileOrRM16Imm(const RM16& dst, Imm imm) {
+        return forRM16Imm(dst, imm, [&](Reg dst, Imm imm) {
+            assembler_.or_(get16(dst), imm.as<i16>());
+        });
+    }
+
+    bool Compiler::tryCompileOrRM16RM16(const RM16& dst, const RM16& src) {
+        return forRM16RM16(dst, src, [&](Reg dst, Reg src) {
+            assembler_.or_(get16(dst), get16(src));
         });
     }
 
@@ -1923,56 +2078,28 @@ namespace x64 {
         } 
     }
 
+    bool Compiler::tryCompileNegRM8(const RM8& dst) {
+        return forRM8Imm(dst, Imm{}, [&](Reg dst, Imm) {
+            assembler_.neg(get8(dst));
+        });
+    }
+
+    bool Compiler::tryCompileNegRM16(const RM16& dst) {
+        return forRM16Imm(dst, Imm{}, [&](Reg dst, Imm) {
+            assembler_.neg(get16(dst));
+        });
+    }
+
     bool Compiler::tryCompileNegRM32(const RM32& dst) {
-        if(dst.isReg) {
-            // read the destination register
-            readReg32(Reg::GPR0, dst.reg);
-            // perform the op
-            assembler_.neg(get32(Reg::GPR0));
-            // write back to destination register
-            writeReg32(dst.reg, Reg::GPR0);
-            return true;
-        } else {
-            // fetch dst address
-            const M32& mem = dst.mem;
-            if(mem.segment != Segment::CS && mem.segment != Segment::UNK) return false;
-            if(mem.encoding.index == R64::RIP) return false;
-            // get the address
-            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
-            // read the dst value at the address
-            readMem32(Reg::GPR0, addr);
-            // perform the op
-            assembler_.neg(get32(Reg::GPR0));
-            // write back to the register
-            writeMem32(addr, Reg::GPR0);
-            return true;
-        } 
+        return forRM32Imm(dst, Imm{}, [&](Reg dst, Imm) {
+            assembler_.neg(get32(dst));
+        });
     }
 
     bool Compiler::tryCompileNegRM64(const RM64& dst) {
-        if(dst.isReg) {
-            // read the destination register
-            readReg64(Reg::GPR0, dst.reg);
-            // perform the op
-            assembler_.neg(get(Reg::GPR0));
-            // write back to the destination register
-            writeReg64(dst.reg, Reg::GPR0);
-            return true;
-        } else {
-            // fetch dst address
-            const M64& mem = dst.mem;
-            if(mem.segment != Segment::CS && mem.segment != Segment::UNK) return false;
-            if(mem.encoding.index == R64::RIP) return false;
-            // get the address
-            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
-            // read the dst value at the address
-            readMem64(Reg::GPR0, addr);
-            // perform the op
-            assembler_.neg(get(Reg::GPR0));
-            // write back to the register
-            writeMem64(addr, Reg::GPR0);
-            return true;
-        } 
+        return forRM64Imm(dst, Imm{}, [&](Reg dst, Imm) {
+            assembler_.neg(get(dst));
+        });
     }
 
     bool Compiler::tryCompileIncRM32(const RM32& dst) {
@@ -2401,6 +2528,17 @@ namespace x64 {
         return true;
     }
 
+    bool Compiler::tryCompileCwde() {
+        assembler_.push64(R64::RAX);
+        readReg64(Reg::GPR0, R64::RAX);
+        assembler_.mov(R64::RAX, get(Reg::GPR0));
+        assembler_.cwde();
+        assembler_.mov(get(Reg::GPR0), R64::RAX);
+        writeReg64(R64::RAX, Reg::GPR0);
+        assembler_.pop64(R64::RAX);
+        return true;
+    }
+
     bool Compiler::tryCompileCdqe() {
         assembler_.push64(R64::RAX);
         readReg64(Reg::GPR0, R64::RAX);
@@ -2512,13 +2650,16 @@ namespace x64 {
         return true;
     }
 
+    bool Compiler::tryCompileTzcntR32RM32(R32 dst, const RM32& src) {
+        return forRM32RM32(RM32{true, dst, {}}, src, [&](Reg dst, Reg src) {
+            assembler_.tzcnt(get32(dst), get32(src));
+        });
+    }
+
     bool Compiler::tryCompileSetRM8(Cond cond, const RM8& dst) {
-        if(!dst.isReg) return false;
-        // set the condition
-        assembler_.set(cond, get8(Reg::GPR0));
-        // copy the condition
-        writeReg8(dst.reg, Reg::GPR0);
-        return true;
+        return forRM8Imm(dst, Imm{}, [&](Reg dst, Imm) {
+            assembler_.set(cond, get8(dst));
+        });
     }
 
     bool Compiler::tryCompileCmovR32RM32(Cond cond, R32 dst, const RM32& src) {
@@ -2556,6 +2697,13 @@ namespace x64 {
         }, false);
     }
 
+    bool Compiler::tryCompileBtRM64R64(const RM64& dst, R64 src) {
+        RM64 s {true, src, {}};
+        return forRM64RM64(dst, s, [&](Reg dst, Reg src) {
+            assembler_.bt(get(dst), get(src));
+        }, false);
+    }
+
     bool Compiler::tryCompileBtrRM64R64(const RM64& dst, R64 src) {
         RM64 s {true, src, {}};
         return forRM64RM64(dst, s, [&](Reg dst, Reg src) {
@@ -2567,6 +2715,95 @@ namespace x64 {
         return forRM64Imm(dst, imm, [&](Reg dst, Imm imm) {
             assembler_.btr(get(dst), imm.as<u8>());
         });
+    }
+
+    bool Compiler::tryCompileBtsRM64R64(const RM64& dst, R64 src) {
+        RM64 s {true, src, {}};
+        return forRM64RM64(dst, s, [&](Reg dst, Reg src) {
+            assembler_.bts(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompileBtsRM64Imm(const RM64& dst, Imm imm) {
+        return forRM64Imm(dst, imm, [&](Reg dst, Imm imm) {
+            assembler_.bts(get(dst), imm.as<u8>());
+        });
+    }
+
+    bool Compiler::tryCompileRepStosM32R32(const M32& dst, R32 src) {
+        if(dst.encoding.base != R64::RDI) return false;
+        if(src != R32::EAX) return false;
+        // save rdi, rcx and rax
+        assembler_.push64(R64::RDI);
+        assembler_.push64(R64::RCX);
+        assembler_.push64(R64::RAX);
+
+        // get the dst address
+        readReg64(Reg::GPR0, R64::RDI);
+        assembler_.lea(R64::RDI, make64(get(Reg::MEM_BASE), get(Reg::GPR0), 1, 0));
+
+        // get the src value
+        readReg32(Reg::GPR0, R32::EAX);
+        assembler_.mov(R32::EAX, get32(Reg::GPR0));
+
+        // set the counter
+        readReg32(Reg::GPR0, R32::ECX);
+        assembler_.mov(R32::ECX, get32(Reg::GPR0));
+
+        assembler_.repstos32();
+
+        // write back the dst address (address+4*counter)
+        readReg64(Reg::GPR0, R64::RDI);
+        assembler_.lea(get(Reg::GPR0), make64(get(Reg::GPR0), R64::RCX, 4, 0));
+        writeReg64(R64::RDI, Reg::GPR0);
+
+        // write back the counter (is 0)
+        assembler_.xor_(get(Reg::GPR0), get(Reg::GPR0));
+        writeReg64(R64::RCX, Reg::GPR0);
+
+        // restore rax, rcx and rdi
+        assembler_.pop64(R64::RAX);
+        assembler_.pop64(R64::RCX);
+        assembler_.pop64(R64::RDI);
+        return true;
+    }
+
+    bool Compiler::tryCompileRepStosM64R64(const M64& dst, R64 src) {
+        if(dst.encoding.base != R64::RDI) return false;
+        if(src != R64::RAX) return false;
+        // save rdi, rcx and rax
+        assembler_.push64(R64::RDI);
+        assembler_.push64(R64::RCX);
+        assembler_.push64(R64::RAX);
+
+        // get the dst address
+        readReg64(Reg::GPR0, R64::RDI);
+        assembler_.lea(R64::RDI, make64(get(Reg::MEM_BASE), get(Reg::GPR0), 1, 0));
+
+        // get the src value
+        readReg64(Reg::GPR0, R64::RAX);
+        assembler_.mov(R64::RAX, get(Reg::GPR0));
+
+        // set the counter
+        readReg64(Reg::GPR0, R64::RCX);
+        assembler_.mov(R64::RCX, get(Reg::GPR0));
+
+        assembler_.repstos64();
+
+        // write back the dst address (address+4*counter)
+        readReg64(Reg::GPR0, R64::RDI);
+        assembler_.lea(get(Reg::GPR0), make64(get(Reg::GPR0), R64::RCX, 4, 0));
+        writeReg64(R64::RDI, Reg::GPR0);
+
+        // write back the counter (is 0)
+        assembler_.xor_(get(Reg::GPR0), get(Reg::GPR0));
+        writeReg64(R64::RCX, Reg::GPR0);
+
+        // restore rax, rcx and rdi
+        assembler_.pop64(R64::RAX);
+        assembler_.pop64(R64::RCX);
+        assembler_.pop64(R64::RDI);
+        return true;
     }
 
     bool Compiler::tryCompileMovMmxMmx(MMX dst, MMX src) {
@@ -2594,11 +2831,10 @@ namespace x64 {
 
     bool Compiler::tryCompileMovdRM32Mmx(const RM32& dst, MMX src) {
         if(dst.isReg) {
-            return false;
-            // M32 s = make32(get(Reg::REG_BASE), R32::ZERO, 1, registerOffset(src.reg));
-            // assembler_.mov(get(RegMM::GPR0), s);
-            // writeRegMM(dst, RegMM::GPR0);
-            // return true;
+            readRegMM(RegMM::GPR0, src);
+            assembler_.movd(get32(Reg::GPR0), get(RegMM::GPR0));
+            writeReg32(dst.reg, Reg::GPR0);
+            return true;
         } else {
             readRegMM(RegMM::GPR0, src);
             Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, dst.mem);
@@ -3125,6 +3361,32 @@ namespace x64 {
         }
     }
 
+    bool Compiler::tryCompileMovssXmmM32(XMM dst, const M32& src) {
+        // fetch src address
+        if(src.segment != Segment::CS && src.segment != Segment::UNK) return false;
+        if(src.encoding.index == R64::RIP) return false;
+        // get the address
+        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src);
+        // do the read
+        assembler_.movss(get(Reg128::GPR0), make32(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
+        // write the value to the register
+        writeReg128(dst, Reg128::GPR0);
+        return true;
+    }
+
+    bool Compiler::tryCompileMovssM32Xmm(const M32& dst, XMM src) {
+        // fetch dst address
+        if(dst.segment != Segment::CS && dst.segment != Segment::UNK) return false;
+        if(dst.encoding.index == R64::RIP) return false;
+        // get the address
+        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, dst);
+        // do the read
+        readReg128(Reg128::GPR0, src);
+        // write the value to the register
+        assembler_.movss(make32(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset), get(Reg128::GPR0));
+        return true;
+    }
+
     bool Compiler::tryCompileMovsdXmmM64(XMM dst, const M64& src) {
         // fetch src address
         if(src.segment != Segment::CS && src.segment != Segment::UNK) return false;
@@ -3207,6 +3469,13 @@ namespace x64 {
         readReg32(Reg::GPR0, dst);
         assembler_.pmovmskb(get32(Reg::GPR0), get(Reg128::GPR0));
         writeReg32(dst, Reg::GPR0);
+        return true;
+    }
+
+    bool Compiler::tryCompileMovq2qdXMMMMX(XMM dst, MMX src) {
+        readRegMM(RegMM::GPR0, src);
+        assembler_.movq2dq(get(Reg128::GPR0), get(RegMM::GPR0));
+        writeReg128(dst, Reg128::GPR0);
         return true;
     }
 
@@ -3642,9 +3911,35 @@ namespace x64 {
         return true;
     }
 
+    bool Compiler::tryCompileAddssXmmM32(XMM dst, const M32& src) {
+        // fetch src address
+        if(src.segment != Segment::CS && src.segment != Segment::UNK) return false;
+        if(src.encoding.index == R64::RIP) return false;
+        // get the address
+        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src);
+        readReg128(Reg128::GPR0, dst);
+        assembler_.movss(get(Reg128::GPR1), make32(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
+        assembler_.addss(get(Reg128::GPR0), get(Reg128::GPR1));
+        writeReg128(dst, Reg128::GPR0);
+        return true;
+    }
+
     bool Compiler::tryCompileSubssXmmXmm(XMM dst, XMM src) {
         readReg128(Reg128::GPR0, dst);
         readReg128(Reg128::GPR1, src);
+        assembler_.subss(get(Reg128::GPR0), get(Reg128::GPR1));
+        writeReg128(dst, Reg128::GPR0);
+        return true;
+    }
+
+    bool Compiler::tryCompileSubssXmmM32(XMM dst, const M32& src) {
+        // fetch src address
+        if(src.segment != Segment::CS && src.segment != Segment::UNK) return false;
+        if(src.encoding.index == R64::RIP) return false;
+        // get the address
+        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src);
+        readReg128(Reg128::GPR0, dst);
+        assembler_.movss(get(Reg128::GPR1), make32(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
         assembler_.subss(get(Reg128::GPR0), get(Reg128::GPR1));
         writeReg128(dst, Reg128::GPR0);
         return true;
@@ -3658,9 +3953,35 @@ namespace x64 {
         return true;
     }
 
+    bool Compiler::tryCompileMulssXmmM32(XMM dst, const M32& src) {
+        // fetch src address
+        if(src.segment != Segment::CS && src.segment != Segment::UNK) return false;
+        if(src.encoding.index == R64::RIP) return false;
+        // get the address
+        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src);
+        readReg128(Reg128::GPR0, dst);
+        assembler_.movss(get(Reg128::GPR1), make32(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
+        assembler_.mulss(get(Reg128::GPR0), get(Reg128::GPR1));
+        writeReg128(dst, Reg128::GPR0);
+        return true;
+    }
+
     bool Compiler::tryCompileDivssXmmXmm(XMM dst, XMM src) {
         readReg128(Reg128::GPR0, dst);
         readReg128(Reg128::GPR1, src);
+        assembler_.divss(get(Reg128::GPR0), get(Reg128::GPR1));
+        writeReg128(dst, Reg128::GPR0);
+        return true;
+    }
+
+    bool Compiler::tryCompileDivssXmmM32(XMM dst, const M32& src) {
+        // fetch src address
+        if(src.segment != Segment::CS && src.segment != Segment::UNK) return false;
+        if(src.encoding.index == R64::RIP) return false;
+        // get the address
+        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src);
+        readReg128(Reg128::GPR0, dst);
+        assembler_.movss(get(Reg128::GPR1), make32(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
         assembler_.divss(get(Reg128::GPR0), get(Reg128::GPR1));
         writeReg128(dst, Reg128::GPR0);
         return true;
@@ -3882,6 +4203,14 @@ namespace x64 {
         return true;
     }
 
+    bool Compiler::tryCompileSqrtsdXmmXmm(XMM dst, XMM src) {
+        readReg128(Reg128::GPR0, dst);
+        readReg128(Reg128::GPR1, src);
+        assembler_.sqrtsd(get(Reg128::GPR0), get(Reg128::GPR1));
+        writeReg128(dst, Reg128::GPR0);
+        return true;
+    }
+
     bool Compiler::tryCompileCvtsi2sdXmmRM32(XMM dst, const RM32& src) {
         if(src.isReg) {
             // get the src value
@@ -3963,6 +4292,12 @@ namespace x64 {
     bool Compiler::tryCompileDivpsXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
             assembler_.divps(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompileMinpsXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            assembler_.minps(get(dst), get(src));
         });
     }
 
@@ -4455,7 +4790,7 @@ namespace x64 {
         assembler_.mov(get(Reg::GPR1), ticksPtr);
         M64 ticks = make64(get(Reg::GPR1), 0);
         assembler_.mov(get(Reg::GPR0), ticks);
-        M64 a = make64(get(Reg::GPR0), amount);
+        M64 a = make64(get(Reg::GPR0), (i32)amount);
         assembler_.lea(get(Reg::GPR0), a);
         assembler_.mov(ticks, get(Reg::GPR0));
     }
@@ -4581,6 +4916,17 @@ namespace x64 {
         assembler_.add(d, imm);
     }
 
+    void Compiler::adc32(Reg dst, Reg src) {
+        R32 d = get32(dst);
+        R32 s = get32(src);
+        assembler_.adc(d, s);
+    }
+
+    void Compiler::adc32Imm32(Reg dst, i32 imm) {
+        R32 d = get32(dst);
+        assembler_.adc(d, imm);
+    }
+
     void Compiler::sub32(Reg dst, Reg src) {
         R32 d = get32(dst);
         R32 s = get32(src);
@@ -4601,6 +4947,17 @@ namespace x64 {
     void Compiler::sub64Imm32(Reg dst, i32 imm) {
         R64 d = get(dst);
         assembler_.sub(d, imm);
+    }
+
+    void Compiler::sbb8(Reg dst, Reg src) {
+        R8 d = get8(dst);
+        R8 s = get8(src);
+        assembler_.sbb(d, s);
+    }
+
+    void Compiler::sbb8Imm8(Reg dst, i8 imm) {
+        R8 d = get8(dst);
+        assembler_.sbb(d, imm);
     }
 
     void Compiler::sbb32(Reg dst, Reg src) {

@@ -3561,7 +3561,7 @@ namespace x64 {
     void Cpu::execRepMovsM16M16(const X64Instruction& ins) {
         const auto& dst = ins.op0<M16>();
         const auto& src = ins.op1<M16>();
-        u16 counter = get(R32::ECX);
+        u32 counter = get(R32::ECX);
         Ptr16 dptr = resolve(dst);
         Ptr16 sptr = resolve(src);
         verify(flags_.direction == 0);

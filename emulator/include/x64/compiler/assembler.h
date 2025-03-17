@@ -30,6 +30,7 @@ namespace x64 {
         void movzx(R32 dst, R8 src);
         void movzx(R32 dst, R16 src);
         void movzx(R64 dst, R8 src);
+        void movzx(R64 dst, R16 src);
         void movsx(R32 dst, R8 src);
         void movsx(R32 dst, R16 src);
         void movsx(R64 dst, R8 src);
@@ -43,10 +44,14 @@ namespace x64 {
         void add(R32 dst, i32 imm);
         void add(R64 dst, R64 src);
         void add(R64 dst, i32 imm);
+        void adc(R32 dst, R32 src);
+        void adc(R32 dst, i32 imm);
         void sub(R32 dst, R32 src);
         void sub(R32 dst, i32 imm);
         void sub(R64 dst, R64 src);
         void sub(R64 dst, i32 imm);
+        void sbb(R8 dst, R8 src);
+        void sbb(R8 dst, i8 imm);
         void sbb(R32 dst, R32 src);
         void sbb(R32 dst, i32 imm);
         void sbb(R64 dst, R64 src);
@@ -68,6 +73,9 @@ namespace x64 {
         void shr_cl(R8 lhs);
         void shr(R8 lhs, R8 rhs);
         void shr(R8 lhs, u8 imm);
+        void shr_cl(R16 lhs);
+        void shr(R16 lhs, R8 rhs);
+        void shr(R16 lhs, u8 imm);
         void shr_cl(R32 lhs);
         void shr(R32 lhs, R8 rhs);
         void shr(R32 lhs, u8 imm);
@@ -100,6 +108,8 @@ namespace x64 {
         void ror(R64 lhs, u8 imm);
         void mul(R32 src);
         void mul(R64 src);
+        void imul(R32 src);
+        void imul(R64 src);
         void imul(R16 dst, R16 src);
         void imul(R32 dst, R32 src);
         void imul(R64 dst, R64 src);
@@ -126,6 +136,10 @@ namespace x64 {
         void and_(R32 dst, i32 imm);
         void and_(R64 dst, R64 src);
         void and_(R64 dst, i32 imm);
+        void or_(R8 dst, R8 src);
+        void or_(R8 dst, i8 imm);
+        void or_(R16 dst, R16 src);
+        void or_(R16 dst, i16 imm);
         void or_(R32 dst, R32 src);
         void or_(R32 dst, i32 imm);
         void or_(R64 dst, R64 src);
@@ -140,6 +154,8 @@ namespace x64 {
         void xor_(R64 dst, i32 imm);
         void not_(R32 dst);
         void not_(R64 dst);
+        void neg(R8 dst);
+        void neg(R16 dst);
         void neg(R32 dst);
         void neg(R64 dst);
         void inc(R32 dst);
@@ -158,6 +174,7 @@ namespace x64 {
         void lockcmpxchg(const M32& dst, R32 src);
         void lockcmpxchg(const M64& dst, R64 src);
 
+        void cwde();
         void cdqe();
         void cdq();
         void cqo();
@@ -178,6 +195,7 @@ namespace x64 {
         void bsf(R32 dst, R32 src);
         void bsf(R64 dst, R64 src);
         void bsr(R32 dst, R32 src);
+        void tzcnt(R32 dst, R32 src);
 
         void set(Cond, R8);
         void cmov(Cond, R32, R32);
@@ -185,11 +203,18 @@ namespace x64 {
         void bswap(R32);
         void bswap(R64);
         void bt(R32, R32);
+        void bt(R64, R64);
         void btr(R64, R64);
         void btr(R64, u8);
+        void bts(R64, R64);
+        void bts(R64, u8);
+
+        void repstos32();
+        void repstos64();
 
         // mmx
         void mov(MMX, MMX);
+        void movd(R32, MMX);
         void movd(MMX, const M32&);
         void movd(const M32&, MMX);
         void movq(MMX, const M64&);
@@ -264,6 +289,8 @@ namespace x64 {
         void movd(XMM, const M32&);
         void movd(R32, XMM);
         void movd(const M32&, XMM);
+        void movss(XMM, const M32&);
+        void movss(const M32&, XMM);
         void movsd(XMM, const M64&);
         void movsd(const M64&, XMM);
         void movq(XMM, R64);
@@ -273,6 +300,7 @@ namespace x64 {
         void movhps(M64, XMM);
         void movhlps(XMM, XMM);
         void pmovmskb(R32, XMM);
+        void movq2dq(XMM, MMX);
 
         void pand(XMM, XMM);
         void pandn(XMM, XMM);
@@ -367,6 +395,7 @@ namespace x64 {
         void ucomisd(XMM, XMM);
         void maxsd(XMM, XMM);
         void minsd(XMM, XMM);
+        void sqrtsd(XMM, XMM);
         void cvtsi2sd32(XMM, R32);
         void cvtsi2sd64(XMM, R64);
         void cvttsd2si32(R32, XMM);
@@ -376,6 +405,7 @@ namespace x64 {
         void subps(XMM, XMM);
         void mulps(XMM, XMM);
         void divps(XMM, XMM);
+        void minps(XMM, XMM);
         void cmpps(XMM, XMM, u8);
         void cvtps2dq(XMM, XMM);
         void cvttps2dq(XMM, XMM);

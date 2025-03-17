@@ -926,7 +926,7 @@ namespace kernel {
 
     int FS::selectImmediate(SelectData* selectData) {
         if(!selectData) return 0;
-        for(int fd = 0; fd < selectData->nfds; ++fd) {
+        for(size_t fd = 0; fd < (size_t)selectData->nfds; ++fd) {
             bool testRead = selectData->readfds.test(fd);
             bool testWrite = selectData->writefds.test(fd);
             if(!testRead && !testWrite) continue;
@@ -935,7 +935,7 @@ namespace kernel {
             selectData->writefds.reset(fd);
 
             // check that all fds are pollable and have a host-side fd
-            OpenFileDescription* openFileDescription = findOpenFileDescription(FD{fd});
+            OpenFileDescription* openFileDescription = findOpenFileDescription(FD{(i32)fd});
             if(!openFileDescription) return -EBADF;
 
             File* file = openFileDescription->file();

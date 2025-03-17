@@ -60,6 +60,7 @@ namespace x64 {
         bool tryCompileMovzxR32RM8(R32, const RM8&);
         bool tryCompileMovzxR32RM16(R32, const RM16&);
         bool tryCompileMovzxR64RM8(R64, const RM8&);
+        bool tryCompileMovzxR64RM16(R64, const RM16&);
         bool tryCompileMovsxR32RM8(R32, const RM8&);
         bool tryCompileMovsxR32RM16(R32, const RM16&);
         bool tryCompileMovsxR64RM8(R64, const RM8&);
@@ -73,10 +74,14 @@ namespace x64 {
         bool tryCompileAddRM32Imm(const RM32&, Imm);
         bool tryCompileAddRM64RM64(const RM64&, const RM64&);
         bool tryCompileAddRM64Imm(const RM64&, Imm);
+        bool tryCompileAdcRM32RM32(const RM32&, const RM32&);
+        bool tryCompileAdcRM32Imm(const RM32&, Imm);
         bool tryCompileSubRM32RM32(const RM32&, const RM32&);
         bool tryCompileSubRM32Imm(const RM32&, Imm);
         bool tryCompileSubRM64RM64(const RM64&, const RM64&);
         bool tryCompileSubRM64Imm(const RM64&, Imm);
+        bool tryCompileSbbRM8RM8(const RM8&, const RM8&);
+        bool tryCompileSbbRM8Imm(const RM8&, Imm);
         bool tryCompileSbbRM32RM32(const RM32&, const RM32&);
         bool tryCompileSbbRM32Imm(const RM32&, Imm);
         bool tryCompileSbbRM64RM64(const RM64&, const RM64&);
@@ -95,6 +100,8 @@ namespace x64 {
         bool tryCompileShlRM64Imm(const RM64&, Imm);
         bool tryCompileShrRM8R8(const RM8&, R8);
         bool tryCompileShrRM8Imm(const RM8&, Imm);
+        bool tryCompileShrRM16R8(const RM16&, R8);
+        bool tryCompileShrRM16Imm(const RM16&, Imm);
         bool tryCompileShrRM32R8(const RM32&, R8);
         bool tryCompileShrRM32Imm(const RM32&, Imm);
         bool tryCompileShrRM64R8(const RM64&, R8);
@@ -117,6 +124,8 @@ namespace x64 {
         bool tryCompileRorRM64Imm(const RM64&, Imm);
         bool tryCompileMulRM32(const RM32&);
         bool tryCompileMulRM64(const RM64&);
+        bool tryCompileImulRM32(const RM32&);
+        bool tryCompileImulRM64(const RM64&);
         bool tryCompileImulR16RM16(R16, const RM16&);
         bool tryCompileImulR32RM32(R32, const RM32&);
         bool tryCompileImulR64RM64(R64, const RM64&);
@@ -143,6 +152,10 @@ namespace x64 {
         bool tryCompileAndRM32Imm(const RM32&, Imm);
         bool tryCompileAndRM64RM64(const RM64&, const RM64&);
         bool tryCompileAndRM64Imm(const RM64&, Imm);
+        bool tryCompileOrRM8RM8(const RM8&, const RM8&);
+        bool tryCompileOrRM8Imm(const RM8&, Imm);
+        bool tryCompileOrRM16RM16(const RM16&, const RM16&);
+        bool tryCompileOrRM16Imm(const RM16&, Imm);
         bool tryCompileOrRM32RM32(const RM32&, const RM32&);
         bool tryCompileOrRM32Imm(const RM32&, Imm);
         bool tryCompileOrRM64RM64(const RM64&, const RM64&);
@@ -157,6 +170,8 @@ namespace x64 {
         bool tryCompileXorRM64Imm(const RM64&, Imm);
         bool tryCompileNotRM32(const RM32&);
         bool tryCompileNotRM64(const RM64&);
+        bool tryCompileNegRM8(const RM8&);
+        bool tryCompileNegRM16(const RM16&);
         bool tryCompileNegRM32(const RM32&);
         bool tryCompileNegRM64(const RM64&);
         bool tryCompileIncRM32(const RM32&);
@@ -173,6 +188,7 @@ namespace x64 {
         bool tryCompileCmpxchgRM64R64(const RM64&, R64);
         bool tryCompileLockCmpxchgM32R32(const M32&, R32);
         bool tryCompileLockCmpxchgM64R64(const M64&, R64);
+        bool tryCompileCwde();
         bool tryCompileCdqe();
         bool tryCompileCdq();
         bool tryCompileCqo();
@@ -187,14 +203,21 @@ namespace x64 {
         bool tryCompileBsfR32R32(R32, R32);
         bool tryCompileBsfR64R64(R64, R64);
         bool tryCompileBsrR32R32(R32, R32);
+        bool tryCompileTzcntR32RM32(R32, const RM32&);
         bool tryCompileSetRM8(Cond, const RM8&);
         bool tryCompileCmovR32RM32(Cond, R32, const RM32&);
         bool tryCompileCmovR64RM64(Cond, R64, const RM64&);
         bool tryCompileBswapR32(R32 dst);
         bool tryCompileBswapR64(R64 dst);
         bool tryCompileBtRM32R32(const RM32&, R32);
+        bool tryCompileBtRM64R64(const RM64&, R64);
         bool tryCompileBtrRM64R64(const RM64&, R64);
         bool tryCompileBtrRM64Imm(const RM64&, Imm);
+        bool tryCompileBtsRM64R64(const RM64&, R64);
+        bool tryCompileBtsRM64Imm(const RM64&, Imm);
+
+        bool tryCompileRepStosM32R32(const M32&, R32);
+        bool tryCompileRepStosM64R64(const M64&, R64);
 
         // mmx
         bool tryCompileMovMmxMmx(MMX, MMX);
@@ -271,6 +294,8 @@ namespace x64 {
         bool tryCompileMovaXmmM128(XMM, const M128&);
         bool tryCompileMovdXmmRM32(XMM, const RM32&);
         bool tryCompileMovdRM32Xmm(const RM32&, XMM);
+        bool tryCompileMovssXmmM32(XMM, const M32&);
+        bool tryCompileMovssM32Xmm(const M32&, XMM);
         bool tryCompileMovsdXmmM64(XMM, const M64&);
         bool tryCompileMovsdM64Xmm(const M64&, XMM);
         bool tryCompileMovlpsXmmM64(XMM, const M64&);
@@ -278,6 +303,7 @@ namespace x64 {
         bool tryCompileMovhpsM64Xmm(const M64&, XMM);
         bool tryCompileMovhlpsXmmXmm(XMM, XMM);
         bool tryCompilePmovmskbR32Xmm(R32, XMM);
+        bool tryCompileMovq2qdXMMMMX(XMM, MMX);
 
         bool tryCompilePandXmmXmmM128(XMM, const XMMM128&);
         bool tryCompilePandnXmmXmmM128(XMM, const XMMM128&);
@@ -356,9 +382,13 @@ namespace x64 {
         bool tryCompilePackusdwXmmXmmM128(XMM, const XMMM128&);
 
         bool tryCompileAddssXmmXmm(XMM, XMM);
+        bool tryCompileAddssXmmM32(XMM, const M32&);
         bool tryCompileSubssXmmXmm(XMM, XMM);
+        bool tryCompileSubssXmmM32(XMM, const M32&);
         bool tryCompileMulssXmmXmm(XMM, XMM);
+        bool tryCompileMulssXmmM32(XMM, const M32&);
         bool tryCompileDivssXmmXmm(XMM, XMM);
+        bool tryCompileDivssXmmM32(XMM, const M32&);
         bool tryCompileComissXmmXmm(XMM, XMM);
         bool tryCompileCvtsi2ssXmmRM32(XMM, const RM32&);
         bool tryCompileCvtsi2ssXmmRM64(XMM, const RM64&);
@@ -379,6 +409,7 @@ namespace x64 {
         bool tryCompileUcomisdXmmM64(XMM, const M64&);
         bool tryCompileMaxsdXmmXmm(XMM, XMM);
         bool tryCompileMinsdXmmXmm(XMM, XMM);
+        bool tryCompileSqrtsdXmmXmm(XMM, XMM);
         bool tryCompileCvtsi2sdXmmRM32(XMM, const RM32&);
         bool tryCompileCvtsi2sdXmmRM64(XMM, const RM64&);
         bool tryCompileCvttsd2siR32Xmm(R32, XMM);
@@ -388,6 +419,7 @@ namespace x64 {
         bool tryCompileSubpsXmmXmmM128(XMM, const XMMM128&);
         bool tryCompileMulpsXmmXmmM128(XMM, const XMMM128&);
         bool tryCompileDivpsXmmXmmM128(XMM, const XMMM128&);
+        bool tryCompileMinpsXmmXmmM128(XMM, const XMMM128&);
         bool tryCompileCmppsXmmXmmM128Fcond(XMM, const XMMM128&, FCond);
         bool tryCompileCvtps2dqXmmXmmM128(XMM, const XMMM128&);
         bool tryCompileCvttps2dqXmmXmmM128(XMM, const XMMM128&);
@@ -512,10 +544,14 @@ namespace x64 {
         void add32Imm32(Reg dst, i32 imm);
         void add64(Reg dst, Reg src);
         void add64Imm32(Reg dst, i32 imm);
+        void adc32(Reg dst, Reg src);
+        void adc32Imm32(Reg dst, i32 imm);
         void sub32(Reg dst, Reg src);
         void sub32Imm32(Reg dst, i32 imm);
         void sub64(Reg dst, Reg src);
         void sub64Imm32(Reg dst, i32 imm);
+        void sbb8(Reg dst, Reg src);
+        void sbb8Imm8(Reg dst, i8 imm);
         void sbb32(Reg dst, Reg src);
         void sbb32Imm32(Reg dst, i32 imm);
         void sbb64(Reg dst, Reg src);

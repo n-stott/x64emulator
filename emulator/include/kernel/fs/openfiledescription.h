@@ -49,7 +49,7 @@ namespace kernel {
             ErrnoOrBuffer errnoOrBuffer = file_->read(*this, count);
             errnoOrBuffer.errorOrWith<int>([&](const Buffer& buf) {
                 offset_ += buf.size();
-                file_->advanceInternalOffset(buf.size());
+                file_->advanceInternalOffset((off_t)buf.size());
                 return 0;
             });
             return errnoOrBuffer;

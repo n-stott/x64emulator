@@ -227,7 +227,7 @@ namespace kernel {
                          const std::vector<std::string>& arguments,
                          const std::vector<std::string>& environmentVariables) {
         x64::Cpu cpu(mmu_);
-        emulator::VM vm(cpu, mmu_, *this);
+        emulator::VM vm(cpu, mmu_);
         Auxiliary aux;
 
         auto entrypointOrInterpreterPath = loadElf(&mmu_, &aux, programFilePath, true);
