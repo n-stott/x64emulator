@@ -113,8 +113,10 @@ target_compile_options(x64emulator PUBLIC
 )
 target_include_directories(x64emulator PUBLIC include)
 target_include_directories(x64emulator PUBLIC ${CMAKE_SOURCE_DIR}/profiling/include)
+target_include_directories(x64emulator PUBLIC ${capstone_SOURCE_DIR}/include)
+target_link_directories(x64emulator PUBLIC ${capstone_BINARY_DIR})
 target_link_libraries(x64emulator PUBLIC
-    ${CAPSTONE_LIBRARIES}
+    capstone
     fmt::fmt-header-only
     profiling
 )
