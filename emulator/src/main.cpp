@@ -80,7 +80,11 @@ int main(int argc, char* argv[], char* envp[]) {
     emulator.setProfiling(parser["--profile"] == true);
     emulator.setEnableJit(parser["--nojit"] == false);
     emulator.setEnableJitChaining(parser["--nojitchaining"] == false);
-    bool ok = emulator.run(programPath, arguments, environmentVariables);
+    try {
+        bool ok = emulator.run(programPath, arguments, environmentVariables);
+        return !ok;
+    } catch(...) {
 
-    return !ok;
+    }
+    return 0;
 }
