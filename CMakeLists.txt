@@ -4,10 +4,6 @@ set(CMAKE_CXX_STANDARD 17)
 
 option(MULTIPROCESSING "MULTIPROCESSING" OFF)
 
-include(FindPkgConfig)
-pkg_check_modules (CAPSTONE REQUIRED capstone)
-
-
 include(FetchContent)
 set(FETCHCONTENT_UPDATES_DISCONNECTED ON)
 FetchContent_Declare(
@@ -25,6 +21,13 @@ FetchContent_Declare(
     GIT_REPOSITORY https://github.com/p-ranav/argparse.git
 )
 FetchContent_MakeAvailable(argparse)
+
+FetchContent_Declare(
+    capstone
+    GIT_REPOSITORY https://github.com/capstone-engine/capstone.git
+    GIT_TAG        4.0
+)
+FetchContent_MakeAvailable(capstone)
 
 add_subdirectory(profiling)
 add_subdirectory(emulator)
