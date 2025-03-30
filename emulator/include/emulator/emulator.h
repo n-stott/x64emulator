@@ -17,12 +17,14 @@ namespace emulator {
         void setProfiling(bool);
         void setEnableJit(bool);
         void setEnableJitChaining(bool);
+        void setOptimizationLevel(int);
 
     private:
         bool logSyscalls_ { false };
         bool isProfiling_ { false };
         bool enableJit_ { false };
         bool enableJitChaining_ { false };
+        int optimizationLevel_ { 1 };
     };
 
 }

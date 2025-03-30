@@ -120,6 +120,81 @@ namespace x64 {
         ZERO,
     };
 
+    inline R64 containingRegister(R8 reg) {
+        switch(reg) {
+            case R8::AL: return R64::RAX;
+            case R8::CL: return R64::RCX;
+            case R8::DL: return R64::RDX;
+            case R8::BL: return R64::RBX;
+            case R8::SPL: return R64::RSP;
+            case R8::BPL: return R64::RBP;
+            case R8::SIL: return R64::RSI;
+            case R8::DIL: return R64::RDI;
+            case R8::R8B: return R64::R8;
+            case R8::R9B: return R64::R9;
+            case R8::R10B: return R64::R10;
+            case R8::R11B: return R64::R11;
+            case R8::R12B: return R64::R12;
+            case R8::R13B: return R64::R13;
+            case R8::R14B: return R64::R14;
+            case R8::R15B: return R64::R15;
+            case R8::AH: return R64::RAX;
+            case R8::CH: return R64::RCX;
+            case R8::DH: return R64::RDX;
+            case R8::BH: return R64::RBX;
+        }
+        assert(false);
+        __builtin_unreachable();
+    }
+
+    inline R64 containingRegister(R16 reg) {
+        switch(reg) {
+            case R16::AX: return R64::RAX;
+            case R16::CX: return R64::RCX;
+            case R16::DX: return R64::RDX;
+            case R16::BX: return R64::RBX;
+            case R16::SP: return R64::RSP;
+            case R16::BP: return R64::RBP;
+            case R16::SI: return R64::RSI;
+            case R16::DI: return R64::RDI;
+            case R16::R8W: return R64::R8;
+            case R16::R9W: return R64::R9;
+            case R16::R10W: return R64::R10;
+            case R16::R11W: return R64::R11;
+            case R16::R12W: return R64::R12;
+            case R16::R13W: return R64::R13;
+            case R16::R14W: return R64::R14;
+            case R16::R15W: return R64::R15;
+        }
+        assert(false);
+        __builtin_unreachable();
+    }
+
+    inline R64 containingRegister(R32 reg) {
+        switch(reg) {
+            case R32::EAX: return R64::RAX;
+            case R32::ECX: return R64::RCX;
+            case R32::EDX: return R64::RDX;
+            case R32::EBX: return R64::RBX;
+            case R32::ESP: return R64::RSP;
+            case R32::EBP: return R64::RBP;
+            case R32::ESI: return R64::RSI;
+            case R32::EDI: return R64::RDI;
+            case R32::R8D: return R64::R8;
+            case R32::R9D: return R64::R9;
+            case R32::R10D: return R64::R10;
+            case R32::R11D: return R64::R11;
+            case R32::R12D: return R64::R12;
+            case R32::R13D: return R64::R13;
+            case R32::R14D: return R64::R14;
+            case R32::R15D: return R64::R15;
+            case R32::EIP: return R64::RIP;
+            case R32::EIZ: return R64::ZERO;
+        }
+        assert(false);
+        __builtin_unreachable();
+    }
+
     enum class MMX : u8 {
         MM0,
         MM1,
@@ -350,6 +425,15 @@ namespace x64 {
     using XMMM128 = RM<Size::XWORD>;
 
     using M224 = M<Size::FPUENV>;
+
+    template<Size size>
+    bool operator==(const M<size>& a, const M<size>& b) {
+        return a.segment == b.segment
+            && a.encoding.base == b.encoding.base
+            && a.encoding.displacement == b.encoding.displacement
+            && a.encoding.index == b.encoding.index
+            && a.encoding.scale == b.encoding.scale;
+    }
 }
 
 #endif

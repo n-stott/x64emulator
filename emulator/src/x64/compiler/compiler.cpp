@@ -1,69 +1,99 @@
 #include "x64/compiler/compiler.h"
 #include "x64/compiler/assembler.h"
+#include "x64/compiler/codegenerator.h"
+#include "x64/compiler/irgenerator.h"
+#include "x64/compiler/optimizer.h"
 #include "x64/cpu.h"
 #include "verify.h"
 #include <fmt/format.h>
 #include <algorithm>
+#include <memory>
 
 namespace x64 {
 
-    std::optional<NativeBasicBlock> Compiler::tryCompile(const BasicBlock& basicBlock, std::optional<void*> basicBlockPtr, bool diagnose) {
-        Compiler compiler;
-        // Add the entrypoint code for when we are entering jitted code from the emulator
-        compiler.addEntry();
-
-        size_t entrypointSize = compiler.currentOffset();
-
-#ifdef COMPILER_DEBUG
-    std::vector<Insn> must {{
-        
-    }};
-
-    for(Insn insn : must) {
-        if(std::none_of(basicBlock.instructions.begin(), basicBlock.instructions.end(), [=](const auto& ins) {
-            return ins.first.insn() == insn;
-        })) return {};
+    Compiler::Compiler() {
+        generator_ = std::make_unique<ir::IrGenerator>();
     }
-#endif
 
-        // Then, try compiling all non-terminating instructions.
-        for(size_t i = 0; i+1 < basicBlock.instructions.size(); ++i) {
-            const X64Instruction& ins = basicBlock.instructions[i].first;
-            if(!compiler.tryCompile(ins)) {
-                if(diagnose) fmt::print("Compilation of block failed: {} ({}/{})\n", ins.toString(), i, basicBlock.instructions.size());
-                return {};
-            }
+    Compiler::~Compiler() = default;
+
+    std::optional<ir::IR> Compiler::tryCompileIR(const BasicBlock& basicBlock, int optimizationLevel, std::optional<void*> basicBlockPtr, bool diagnose) {
+#ifdef COMPILER_DEBUG
+    // std::vector<Insn> must {{
+    //     Insn::MOV_ALIGNED_M128_XMM   
+    // }};
+
+    // for(Insn insn : must) {
+    //     if(std::none_of(basicBlock.instructions.begin(), basicBlock.instructions.end(), [=](const auto& ins) {
+    //         return ins.first.insn() == insn;
+    //     })) return {};
+    // }
+#endif
+        // Add the entrypoint code for when we are entering jitted code from the emulator
+        auto entryCode = Compiler::jitEntry();
+        if(!entryCode) return {};
+
+        entryCode->jitHeaderSize = entryCode->instructions.size();
+
+        // Try compiling all non-terminating instructions.
+        auto body = Compiler::basicBlockBody(basicBlock, diagnose);
+        if(!body) return {};
+
+        ir::Optimizer optimizer;
+        if(optimizationLevel >= 1) {
+            
         }
+        optimizer.optimize(body.value());
 
         // Then, just before the last instruction is where we are sure to still be on the execution path
         // Update everything here (e.g. number of ticks)
-        compiler.prepareExit((u32)basicBlock.instructions.size());
+        auto exitPreparation = Compiler::prepareExit((u32)basicBlock.instructions.size());
+        if(!exitPreparation) return {};
 
         // Then, try compiling the last instruction
-        const X64Instruction& lastInstruction = basicBlock.instructions.back().first;
-        auto jumps = compiler.tryCompileLastInstruction(lastInstruction);
-        if(!jumps) {
-            if(diagnose) fmt::print("Compilation of block failed: {} ({}/{})\n", lastInstruction.toString(), basicBlock.instructions.size(), basicBlock.instructions.size());
-            return {};
-        }
+        auto basicBlockExit = Compiler::basicBlockExit(basicBlock, diagnose);
+        if(!basicBlockExit) return {};
 
         // Finally, add the exit code for when we need to return execution to the emulator
-        compiler.addExit((u64)basicBlockPtr.value_or(nullptr));
-        std::vector<u8> code = compiler.assembler_.code();
+        auto exitCode = Compiler::jitExit((u64)basicBlockPtr.value_or(nullptr));
+        if(!exitCode) return {};
+        
+        ir::IR wholeIr;
+        wholeIr.add(entryCode.value())
+               .add(body.value())
+               .add(exitPreparation.value())
+               .add(basicBlockExit.value())
+               .add(exitCode.value());
+        return wholeIr;
+    }
+
+    std::optional<NativeBasicBlock> Compiler::tryCompile(const BasicBlock& basicBlock, int optimizationLevel, std::optional<void*> basicBlockPtr, bool diagnose) {
+        auto wholeIr = tryCompileIR(basicBlock, optimizationLevel, basicBlockPtr, diagnose);
+        if(!wholeIr) return {};
+        auto bb = CodeGenerator::tryGenerate(wholeIr.value());
+        
+        if(false && !bb) {
+            for(size_t i = 0; i < wholeIr->instructions.size(); ++i) {
+                for(size_t j = 0; j < wholeIr->labels.size(); ++j) {
+                    if(wholeIr->labels[j] == i) fmt::print("Label {}:\n", j);
+                }
+                const auto& ins = wholeIr->instructions[i];
+                fmt::print("{}\n", ins.toString());
+            }
+            fmt::print("\n");
+            std::abort();
+        }
+        if(!bb) return {};
+        
 #ifdef COMPILER_DEBUG
         fmt::print("Compile block:\n");
         for(const auto& blockIns : basicBlock.instructions) {
             fmt::print("  {:#8x} {}\n", blockIns.first.address(), blockIns.first.toString());
         }
         fmt::print("Compilation success !\n");
-        fwrite(code.data(), 1, code.size(), stderr);
+        fwrite(bb->nativecode.data(), 1, bb->nativecode.size(), stderr);
 #endif
-        return NativeBasicBlock{
-            std::move(code),
-            entrypointSize,
-            jumps->offsetOfReplaceableJumpToContinuingBlock,
-            jumps->offsetOfReplaceableJumpToConditionalBlock,
-        };
+        return bb;
     }
 
     std::vector<u8> Compiler::compileJumpTo(u64 address) {
@@ -474,7 +504,7 @@ namespace x64 {
         return false;
     }
 
-    std::optional<Compiler::ReplaceableJumps> Compiler::tryCompileLastInstruction(const X64Instruction& ins) {
+    bool Compiler::tryCompileLastInstruction(const X64Instruction& ins) {
         if(!tryAdvanceInstructionPointer(ins.nextAddress())) return {};
         switch(ins.insn()) {
             case Insn::CALLDIRECT: return tryCompileCall(ins.op0<u64>());
@@ -490,19 +520,48 @@ namespace x64 {
         return {};
     }
 
-    void Compiler::addEntry() {
-        loadArguments();
-        loadFlagsFromEmulator();
+    std::optional<ir::IR> Compiler::jitEntry() {
+        Compiler compiler;
+        compiler.loadArguments();
+        compiler.loadFlagsFromEmulator();
+        return compiler.generator_->generateIR();
     }
 
-    void Compiler::prepareExit(u32 nbInstructionsInBlock) {
-        addTime(nbInstructionsInBlock);
+    std::optional<ir::IR> Compiler::basicBlockBody(const BasicBlock& basicBlock, bool diagnose) {
+        Compiler compiler;
+        for(size_t i = 0; i+1 < basicBlock.instructions.size(); ++i) {
+            const X64Instruction& ins = basicBlock.instructions[i].first;
+            if(!compiler.tryCompile(ins)) {
+                if(diagnose) fmt::print("Compilation of block failed: {} ({}/{})\n", ins.toString(), i, basicBlock.instructions.size());
+                return {};
+            }
+        }
+        return compiler.generator_->generateIR();
     }
 
-    void Compiler::addExit(u64 basicBlockPtr) {
-        storeFlagsToEmulator();
-        writeBasicBlockPtr(basicBlockPtr);
-        assembler_.ret();
+    std::optional<ir::IR> Compiler::prepareExit(u32 nbInstructionsInBlock) {
+        Compiler compiler;
+        compiler.addTime(nbInstructionsInBlock);
+        return compiler.generator_->generateIR();
+    }
+
+    std::optional<ir::IR> Compiler::basicBlockExit(const BasicBlock& basicBlock, bool diagnose) {
+        Compiler compiler;
+        const X64Instruction& lastInstruction = basicBlock.instructions.back().first;
+        auto jumps = compiler.tryCompileLastInstruction(lastInstruction);
+        if(!jumps) {
+            if(diagnose) fmt::print("Compilation of block failed: {} ({}/{})\n", lastInstruction.toString(), basicBlock.instructions.size(), basicBlock.instructions.size());
+            return {};
+        }
+        return compiler.generator_->generateIR();
+    }
+
+    std::optional<ir::IR> Compiler::jitExit(u64 basicBlockPtr) {
+        Compiler compiler;
+        compiler.storeFlagsToEmulator();
+        compiler.writeBasicBlockPtr(basicBlockPtr);
+        compiler.generator_->ret();
+        return compiler.generator_->generateIR();
     }
 
     bool Compiler::tryAdvanceInstructionPointer(u64 nextAddress) {
@@ -704,7 +763,7 @@ namespace x64 {
             // read the src register
             readReg8(Reg::GPR0, src.reg);
             // do the zero-extending mov
-            assembler_.movzx(get32(Reg::GPR0), get8(Reg::GPR0));
+            generator_->movzx(get32(Reg::GPR0), get8(Reg::GPR0));
             // write to the destination register
             writeReg32(dst, Reg::GPR0);
             return true;
@@ -718,7 +777,7 @@ namespace x64 {
             // read the src value at the address
             readMem8(Reg::GPR0, addr);
             // do the zero-extending mov
-            assembler_.movzx(get32(Reg::GPR0), get8(Reg::GPR0));
+            generator_->movzx(get32(Reg::GPR0), get8(Reg::GPR0));
             // write to the destination register
             writeReg32(dst, Reg::GPR0);
             return true;
@@ -730,7 +789,7 @@ namespace x64 {
             // read the src register
             readReg16(Reg::GPR0, src.reg);
             // do the zero-extending mov
-            assembler_.movzx(get32(Reg::GPR0), get16(Reg::GPR0));
+            generator_->movzx(get32(Reg::GPR0), get16(Reg::GPR0));
             // write to the destination register
             writeReg32(dst, Reg::GPR0);
             return true;
@@ -744,7 +803,7 @@ namespace x64 {
             // read the src value at the address
             readMem16(Reg::GPR0, addr);
             // do the zero-extending mov
-            assembler_.movzx(get32(Reg::GPR0), get16(Reg::GPR0));
+            generator_->movzx(get32(Reg::GPR0), get16(Reg::GPR0));
             // write to the destination register
             writeReg32(dst, Reg::GPR0);
             return true;
@@ -756,7 +815,7 @@ namespace x64 {
             // read the src register
             readReg8(Reg::GPR0, src.reg);
             // do the zero-extending mov
-            assembler_.movzx(get(Reg::GPR0), get8(Reg::GPR0));
+            generator_->movzx(get(Reg::GPR0), get8(Reg::GPR0));
             // write to the destination register
             writeReg64(dst, Reg::GPR0);
             return true;
@@ -770,7 +829,7 @@ namespace x64 {
             // read the src value at the address
             readMem8(Reg::GPR0, addr);
             // do the zero-extending mov
-            assembler_.movzx(get(Reg::GPR0), get8(Reg::GPR0));
+            generator_->movzx(get(Reg::GPR0), get8(Reg::GPR0));
             // write to the destination register
             writeReg64(dst, Reg::GPR0);
             return true;
@@ -782,7 +841,7 @@ namespace x64 {
             // read the src register
             readReg16(Reg::GPR0, src.reg);
             // do the zero-extending mov
-            assembler_.movzx(get(Reg::GPR0), get16(Reg::GPR0));
+            generator_->movzx(get(Reg::GPR0), get16(Reg::GPR0));
             // write to the destination register
             writeReg64(dst, Reg::GPR0);
             return true;
@@ -796,7 +855,7 @@ namespace x64 {
             // read the src value at the address
             readMem16(Reg::GPR0, addr);
             // do the zero-extending mov
-            assembler_.movzx(get(Reg::GPR0), get16(Reg::GPR0));
+            generator_->movzx(get(Reg::GPR0), get16(Reg::GPR0));
             // write to the destination register
             writeReg64(dst, Reg::GPR0);
             return true;
@@ -808,7 +867,7 @@ namespace x64 {
             // read the src register
             readReg8(Reg::GPR0, src.reg);
             // do the zero-extending mov
-            assembler_.movsx(get(Reg::GPR0), get8(Reg::GPR0));
+            generator_->movsx(get(Reg::GPR0), get8(Reg::GPR0));
             // write to the destination register
             writeReg64(dst, Reg::GPR0);
             return true;
@@ -822,7 +881,7 @@ namespace x64 {
             // read the src value at the address
             readMem8(Reg::GPR0, addr);
             // do the zero-extending mov
-            assembler_.movsx(get(Reg::GPR0), get8(Reg::GPR0));
+            generator_->movsx(get(Reg::GPR0), get8(Reg::GPR0));
             // write to the destination register
             writeReg64(dst, Reg::GPR0);
             return true;
@@ -834,7 +893,7 @@ namespace x64 {
             // read the src register
             readReg16(Reg::GPR0, src.reg);
             // do the zero-extending mov
-            assembler_.movsx(get32(Reg::GPR0), get16(Reg::GPR0));
+            generator_->movsx(get32(Reg::GPR0), get16(Reg::GPR0));
             // write to the destination register
             writeReg32(dst, Reg::GPR0);
             return true;
@@ -848,7 +907,7 @@ namespace x64 {
             // read the src value at the address
             readMem16(Reg::GPR0, addr);
             // do the zero-extending mov
-            assembler_.movsx(get32(Reg::GPR0), get16(Reg::GPR0));
+            generator_->movsx(get32(Reg::GPR0), get16(Reg::GPR0));
             // write to the destination register
             writeReg32(dst, Reg::GPR0);
             return true;
@@ -860,7 +919,7 @@ namespace x64 {
             // read the src register
             readReg8(Reg::GPR0, src.reg);
             // do the zero-extending mov
-            assembler_.movsx(get32(Reg::GPR0), get8(Reg::GPR0));
+            generator_->movsx(get32(Reg::GPR0), get8(Reg::GPR0));
             // write to the destination register
             writeReg32(dst, Reg::GPR0);
             return true;
@@ -874,7 +933,7 @@ namespace x64 {
             // read the src value at the address
             readMem8(Reg::GPR0, addr);
             // do the zero-extending mov
-            assembler_.movsx(get32(Reg::GPR0), get8(Reg::GPR0));
+            generator_->movsx(get32(Reg::GPR0), get8(Reg::GPR0));
             // write to the destination register
             writeReg32(dst, Reg::GPR0);
             return true;
@@ -886,7 +945,7 @@ namespace x64 {
             // read the src register
             readReg16(Reg::GPR0, src.reg);
             // do the zero-extending mov
-            assembler_.movsx(get(Reg::GPR0), get16(Reg::GPR0));
+            generator_->movsx(get(Reg::GPR0), get16(Reg::GPR0));
             // write to the destination register
             writeReg64(dst, Reg::GPR0);
             return true;
@@ -900,7 +959,7 @@ namespace x64 {
             // read the src value at the address
             readMem16(Reg::GPR0, addr);
             // do the zero-extending mov
-            assembler_.movsx(get(Reg::GPR0), get16(Reg::GPR0));
+            generator_->movsx(get(Reg::GPR0), get16(Reg::GPR0));
             // write to the destination register
             writeReg64(dst, Reg::GPR0);
             return true;
@@ -912,7 +971,7 @@ namespace x64 {
             // read the src register
             readReg32(Reg::GPR0, src.reg);
             // do the zero-extending mov
-            assembler_.movsx(get(Reg::GPR0), get32(Reg::GPR0));
+            generator_->movsx(get(Reg::GPR0), get32(Reg::GPR0));
             // write to the destination register
             writeReg64(dst, Reg::GPR0);
             return true;
@@ -926,7 +985,7 @@ namespace x64 {
             // read the src value at the address
             readMem32(Reg::GPR0, addr);
             // do the sign-extending mov
-            assembler_.movsx(get(Reg::GPR0), get32(Reg::GPR0));
+            generator_->movsx(get(Reg::GPR0), get32(Reg::GPR0));
             // write to the destination register
             writeReg64(dst, Reg::GPR0);
             return true;
@@ -1103,245 +1162,245 @@ namespace x64 {
 
     bool Compiler::tryCompileShlRM32R8(const RM32& lhs, R8 rhs) {
         return forRM32R8(lhs, rhs, [&](Reg dst, Reg src) {
-            assembler_.shl(get32(dst), get8(src));
+            generator_->shl(get32(dst), get8(src));
         });
     }
 
     bool Compiler::tryCompileShlRM32Imm(const RM32& lhs, Imm rhs) {
         return forRM32Imm(lhs, rhs, [&](Reg dst, Imm imm) {
-            assembler_.shl(get32(dst), imm.as<u8>());
+            generator_->shl(get32(dst), imm.as<u8>());
         });
     }
 
     bool Compiler::tryCompileShlRM64R8(const RM64& lhs, R8 rhs) {
         return forRM64R8(lhs, rhs, [&](Reg dst, Reg src) {
-            assembler_.shl(get(dst), get8(src));
+            generator_->shl(get(dst), get8(src));
         });
     }
 
     bool Compiler::tryCompileShlRM64Imm(const RM64& lhs, Imm rhs) {
         return forRM64Imm(lhs, rhs, [&](Reg dst, Imm imm) {
-            assembler_.shl(get(dst), imm.as<u8>());
+            generator_->shl(get(dst), imm.as<u8>());
         });
     }
 
     bool Compiler::tryCompileShrRM8R8(const RM8& lhs, R8 rhs) {
         return forRM8RM8(lhs, RM8{true, rhs, {}}, [&](Reg dst, Reg src) {
-            assembler_.shr(get8(dst), get8(src));
+            generator_->shr(get8(dst), get8(src));
         });
     }
 
     bool Compiler::tryCompileShrRM8Imm(const RM8& lhs, Imm rhs) {
         return forRM8Imm(lhs, rhs, [&](Reg dst, Imm imm) {
-            assembler_.shr(get8(dst), imm.as<u8>());
+            generator_->shr(get8(dst), imm.as<u8>());
         });
     }
 
     bool Compiler::tryCompileShrRM16R8(const RM16& lhs, R8 rhs) {
         return forRM16R8(lhs, rhs, [&](Reg dst, Reg src) {
-            assembler_.shr(get16(dst), get8(src));
+            generator_->shr(get16(dst), get8(src));
         });
     }
 
     bool Compiler::tryCompileShrRM16Imm(const RM16& lhs, Imm rhs) {
         return forRM16Imm(lhs, rhs, [&](Reg dst, Imm imm) {
-            assembler_.shr(get16(dst), imm.as<u8>());
+            generator_->shr(get16(dst), imm.as<u8>());
         });
     }
 
     bool Compiler::tryCompileShrRM32R8(const RM32& lhs, R8 rhs) {
         return forRM32R8(lhs, rhs, [&](Reg dst, Reg src) {
-            assembler_.shr(get32(dst), get8(src));
+            generator_->shr(get32(dst), get8(src));
         });
     }
 
     bool Compiler::tryCompileShrRM32Imm(const RM32& lhs, Imm rhs) {
         return forRM32Imm(lhs, rhs, [&](Reg dst, Imm imm) {
-            assembler_.shr(get32(dst), imm.as<u8>());
+            generator_->shr(get32(dst), imm.as<u8>());
         });
     }
 
     bool Compiler::tryCompileShrRM64R8(const RM64& lhs, R8 rhs) {
         return forRM64R8(lhs, rhs, [&](Reg dst, Reg src) {
-            assembler_.shr(get(dst), get8(src));
+            generator_->shr(get(dst), get8(src));
         });
     }
 
     bool Compiler::tryCompileShrRM64Imm(const RM64& lhs, Imm rhs) {
         return forRM64Imm(lhs, rhs, [&](Reg dst, Imm imm) {
-            assembler_.shr(get(dst), imm.as<u8>());
+            generator_->shr(get(dst), imm.as<u8>());
         });
     }
 
     bool Compiler::tryCompileSarRM16R8(const RM16& lhs, R8 rhs) {
         return forRM16R8(lhs, rhs, [&](Reg dst, Reg src) {
-            assembler_.sar(get16(dst), get8(src));
+            generator_->sar(get16(dst), get8(src));
         });
     }
 
     bool Compiler::tryCompileSarRM16Imm(const RM16& lhs, Imm rhs) {
         return forRM16Imm(lhs, rhs, [&](Reg dst, Imm imm) {
-            assembler_.sar(get16(dst), imm.as<u8>());
+            generator_->sar(get16(dst), imm.as<u8>());
         });
     }
 
     bool Compiler::tryCompileSarRM32R8(const RM32& lhs, R8 rhs) {
         return forRM32R8(lhs, rhs, [&](Reg dst, Reg src) {
-            assembler_.sar(get32(dst), get8(src));
+            generator_->sar(get32(dst), get8(src));
         });
     }
 
     bool Compiler::tryCompileSarRM32Imm(const RM32& lhs, Imm rhs) {
         return forRM32Imm(lhs, rhs, [&](Reg dst, Imm imm) {
-            assembler_.sar(get32(dst), imm.as<u8>());
+            generator_->sar(get32(dst), imm.as<u8>());
         });
     }
 
     bool Compiler::tryCompileSarRM64R8(const RM64& lhs, R8 rhs) {
         return forRM64R8(lhs, rhs, [&](Reg dst, Reg src) {
-            assembler_.sar(get(dst), get8(src));
+            generator_->sar(get(dst), get8(src));
         });
     }
 
     bool Compiler::tryCompileSarRM64Imm(const RM64& lhs, Imm rhs) {
         return forRM64Imm(lhs, rhs, [&](Reg dst, Imm imm) {
-            assembler_.sar(get(dst), imm.as<u8>());
+            generator_->sar(get(dst), imm.as<u8>());
         });
     }
 
     bool Compiler::tryCompileRolRM16R8(const RM16& lhs, R8 rhs) {
         return forRM16R8(lhs, rhs, [&](Reg dst, Reg src) {
-            assembler_.rol(get16(dst), get8(src));
+            generator_->rol(get16(dst), get8(src));
         });
     }
 
     bool Compiler::tryCompileRolRM16Imm(const RM16& lhs, Imm rhs) {
         return forRM16Imm(lhs, rhs, [&](Reg dst, Imm imm) {
-            assembler_.rol(get16(dst), imm.as<u8>());
+            generator_->rol(get16(dst), imm.as<u8>());
         });
     }
 
     bool Compiler::tryCompileRolRM32R8(const RM32& lhs, R8 rhs) {
         return forRM32R8(lhs, rhs, [&](Reg dst, Reg src) {
-            assembler_.rol(get32(dst), get8(src));
+            generator_->rol(get32(dst), get8(src));
         });
     }
 
     bool Compiler::tryCompileRolRM32Imm(const RM32& lhs, Imm rhs) {
         return forRM32Imm(lhs, rhs, [&](Reg dst, Imm imm) {
-            assembler_.rol(get32(dst), imm.as<u8>());
+            generator_->rol(get32(dst), imm.as<u8>());
         });
     }
 
     bool Compiler::tryCompileRorRM32R8(const RM32& lhs, R8 rhs) {
         return forRM32R8(lhs, rhs, [&](Reg dst, Reg src) {
-            assembler_.ror(get32(dst), get8(src));
+            generator_->ror(get32(dst), get8(src));
         });
     }
 
     bool Compiler::tryCompileRorRM32Imm(const RM32& lhs, Imm rhs) {
         return forRM32Imm(lhs, rhs, [&](Reg dst, Imm imm) {
-            assembler_.ror(get32(dst), imm.as<u8>());
+            generator_->ror(get32(dst), imm.as<u8>());
         });
     }
 
     bool Compiler::tryCompileRolRM64R8(const RM64& lhs, R8 rhs) {
         return forRM64R8(lhs, rhs, [&](Reg dst, Reg src) {
-            assembler_.rol(get(dst), get8(src));
+            generator_->rol(get(dst), get8(src));
         });
     }
 
     bool Compiler::tryCompileRolRM64Imm(const RM64& lhs, Imm rhs) {
         return forRM64Imm(lhs, rhs, [&](Reg dst, Imm imm) {
-            assembler_.rol(get(dst), imm.as<u8>());
+            generator_->rol(get(dst), imm.as<u8>());
         });
     }
 
     bool Compiler::tryCompileRorRM64R8(const RM64& lhs, R8 rhs) {
         return forRM64R8(lhs, rhs, [&](Reg dst, Reg src) {
-            assembler_.ror(get(dst), get8(src));
+            generator_->ror(get(dst), get8(src));
         });
     }
 
     bool Compiler::tryCompileRorRM64Imm(const RM64& lhs, Imm rhs) {
         return forRM64Imm(lhs, rhs, [&](Reg dst, Imm imm) {
-            assembler_.ror(get(dst), imm.as<u8>());
+            generator_->ror(get(dst), imm.as<u8>());
         });
     }
 
     bool Compiler::tryCompileMulRM32(const RM32& src) {
         if(!src.isReg) return false;
-        assembler_.push64(R64::RAX);
-        assembler_.push64(R64::RDX);
+        generator_->push64(R64::RAX);
+        generator_->push64(R64::RDX);
         readReg64(Reg::GPR0, R64::RAX);
-        assembler_.mov(R32::EAX, get32(Reg::GPR0));
+        generator_->mov(R32::EAX, get32(Reg::GPR0));
         readReg64(Reg::GPR0, R64::RDX);
-        assembler_.mov(R32::EDX, get32(Reg::GPR0));
+        generator_->mov(R32::EDX, get32(Reg::GPR0));
         readReg32(Reg::GPR1, src.reg);
-        assembler_.mul(get32(Reg::GPR1));
-        assembler_.mov(get32(Reg::GPR0), R32::EAX);
+        generator_->mul(get32(Reg::GPR1));
+        generator_->mov(get32(Reg::GPR0), R32::EAX);
         writeReg32(R32::EAX, Reg::GPR0);
-        assembler_.mov(get32(Reg::GPR0), R32::EDX);
+        generator_->mov(get32(Reg::GPR0), R32::EDX);
         writeReg32(R32::EDX, Reg::GPR0);
-        assembler_.pop64(R64::RDX);
-        assembler_.pop64(R64::RAX);
+        generator_->pop64(R64::RDX);
+        generator_->pop64(R64::RAX);
         return true;
     }
 
     bool Compiler::tryCompileMulRM64(const RM64& src) {
         if(!src.isReg) return false;
-        assembler_.push64(R64::RAX);
-        assembler_.push64(R64::RDX);
+        generator_->push64(R64::RAX);
+        generator_->push64(R64::RDX);
         readReg64(Reg::GPR0, R64::RAX);
-        assembler_.mov(R64::RAX, get(Reg::GPR0));
+        generator_->mov(R64::RAX, get(Reg::GPR0));
         readReg64(Reg::GPR0, R64::RDX);
-        assembler_.mov(R64::RDX, get(Reg::GPR0));
+        generator_->mov(R64::RDX, get(Reg::GPR0));
         readReg64(Reg::GPR1, src.reg);
-        assembler_.mul(get(Reg::GPR1));
-        assembler_.mov(get(Reg::GPR0), R64::RAX);
+        generator_->mul(get(Reg::GPR1));
+        generator_->mov(get(Reg::GPR0), R64::RAX);
         writeReg64(R64::RAX, Reg::GPR0);
-        assembler_.mov(get(Reg::GPR0), R64::RDX);
+        generator_->mov(get(Reg::GPR0), R64::RDX);
         writeReg64(R64::RDX, Reg::GPR0);
-        assembler_.pop64(R64::RDX);
-        assembler_.pop64(R64::RAX);
+        generator_->pop64(R64::RDX);
+        generator_->pop64(R64::RAX);
         return true;
     }
 
     bool Compiler::tryCompileImulRM32(const RM32& src) {
         if(!src.isReg) return false;
-        assembler_.push64(R64::RAX);
-        assembler_.push64(R64::RDX);
+        generator_->push64(R64::RAX);
+        generator_->push64(R64::RDX);
         readReg64(Reg::GPR0, R64::RAX);
-        assembler_.mov(R32::EAX, get32(Reg::GPR0));
+        generator_->mov(R32::EAX, get32(Reg::GPR0));
         readReg64(Reg::GPR0, R64::RDX);
-        assembler_.mov(R32::EDX, get32(Reg::GPR0));
+        generator_->mov(R32::EDX, get32(Reg::GPR0));
         readReg32(Reg::GPR1, src.reg);
-        assembler_.imul(get32(Reg::GPR1));
-        assembler_.mov(get32(Reg::GPR0), R32::EAX);
+        generator_->imul(get32(Reg::GPR1));
+        generator_->mov(get32(Reg::GPR0), R32::EAX);
         writeReg32(R32::EAX, Reg::GPR0);
-        assembler_.mov(get32(Reg::GPR0), R32::EDX);
+        generator_->mov(get32(Reg::GPR0), R32::EDX);
         writeReg32(R32::EDX, Reg::GPR0);
-        assembler_.pop64(R64::RDX);
-        assembler_.pop64(R64::RAX);
+        generator_->pop64(R64::RDX);
+        generator_->pop64(R64::RAX);
         return true;
     }
 
     bool Compiler::tryCompileImulRM64(const RM64& src) {
         if(!src.isReg) return false;
-        assembler_.push64(R64::RAX);
-        assembler_.push64(R64::RDX);
+        generator_->push64(R64::RAX);
+        generator_->push64(R64::RDX);
         readReg64(Reg::GPR0, R64::RAX);
-        assembler_.mov(R64::RAX, get(Reg::GPR0));
+        generator_->mov(R64::RAX, get(Reg::GPR0));
         readReg64(Reg::GPR0, R64::RDX);
-        assembler_.mov(R64::RDX, get(Reg::GPR0));
+        generator_->mov(R64::RDX, get(Reg::GPR0));
         readReg64(Reg::GPR1, src.reg);
-        assembler_.imul(get(Reg::GPR1));
-        assembler_.mov(get(Reg::GPR0), R64::RAX);
+        generator_->imul(get(Reg::GPR1));
+        generator_->mov(get(Reg::GPR0), R64::RAX);
         writeReg64(R64::RAX, Reg::GPR0);
-        assembler_.mov(get(Reg::GPR0), R64::RDX);
+        generator_->mov(get(Reg::GPR0), R64::RDX);
         writeReg64(R64::RDX, Reg::GPR0);
-        assembler_.pop64(R64::RDX);
-        assembler_.pop64(R64::RAX);
+        generator_->pop64(R64::RDX);
+        generator_->pop64(R64::RAX);
         return true;
     }
 
@@ -1383,31 +1442,31 @@ namespace x64 {
 
     bool Compiler::tryCompileDivRM32(const RM32& src) {
         if(src.isReg) {
-            assembler_.push64(R64::RAX);
-            assembler_.push64(R64::RDX);
+            generator_->push64(R64::RAX);
+            generator_->push64(R64::RDX);
             readReg64(Reg::GPR0, R64::RAX);
-            assembler_.mov(R32::EAX, get32(Reg::GPR0));
+            generator_->mov(R32::EAX, get32(Reg::GPR0));
             readReg64(Reg::GPR0, R64::RDX);
-            assembler_.mov(R32::EDX, get32(Reg::GPR0));
+            generator_->mov(R32::EDX, get32(Reg::GPR0));
 
             // read the src value
             readReg32(Reg::GPR1, src.reg);
 
-            assembler_.div(get32(Reg::GPR1));
-            assembler_.mov(get32(Reg::GPR0), R32::EAX);
+            generator_->div(get32(Reg::GPR1));
+            generator_->mov(get32(Reg::GPR0), R32::EAX);
             writeReg32(R32::EAX, Reg::GPR0);
-            assembler_.mov(get32(Reg::GPR0), R32::EDX);
+            generator_->mov(get32(Reg::GPR0), R32::EDX);
             writeReg32(R32::EDX, Reg::GPR0);
-            assembler_.pop64(R64::RDX);
-            assembler_.pop64(R64::RAX);
+            generator_->pop64(R64::RDX);
+            generator_->pop64(R64::RAX);
             return true;
         } else {
-            assembler_.push64(R64::RAX);
-            assembler_.push64(R64::RDX);
+            generator_->push64(R64::RAX);
+            generator_->push64(R64::RDX);
             readReg64(Reg::GPR0, R64::RAX);
-            assembler_.mov(R32::EAX, get32(Reg::GPR0));
+            generator_->mov(R32::EAX, get32(Reg::GPR0));
             readReg64(Reg::GPR0, R64::RDX);
-            assembler_.mov(R32::EDX, get32(Reg::GPR0));
+            generator_->mov(R32::EDX, get32(Reg::GPR0));
 
             // fetch src address
             const M32& mem = src.mem;
@@ -1416,44 +1475,44 @@ namespace x64 {
             // read the src value at the address
             readMem32(Reg::GPR1, addr);
 
-            assembler_.div(get32(Reg::GPR1));
-            assembler_.mov(get32(Reg::GPR0), R32::EAX);
+            generator_->div(get32(Reg::GPR1));
+            generator_->mov(get32(Reg::GPR0), R32::EAX);
             writeReg32(R32::EAX, Reg::GPR0);
-            assembler_.mov(get32(Reg::GPR0), R32::EDX);
+            generator_->mov(get32(Reg::GPR0), R32::EDX);
             writeReg32(R32::EDX, Reg::GPR0);
-            assembler_.pop64(R64::RDX);
-            assembler_.pop64(R64::RAX);
+            generator_->pop64(R64::RDX);
+            generator_->pop64(R64::RAX);
             return true;
         }
     }
 
     bool Compiler::tryCompileDivRM64(const RM64& src) {
         if(src.isReg) {
-            assembler_.push64(R64::RAX);
-            assembler_.push64(R64::RDX);
+            generator_->push64(R64::RAX);
+            generator_->push64(R64::RDX);
             readReg64(Reg::GPR0, R64::RAX);
-            assembler_.mov(R64::RAX, get(Reg::GPR0));
+            generator_->mov(R64::RAX, get(Reg::GPR0));
             readReg64(Reg::GPR0, R64::RDX);
-            assembler_.mov(R64::RDX, get(Reg::GPR0));
+            generator_->mov(R64::RDX, get(Reg::GPR0));
 
             // read src value
             readReg64(Reg::GPR1, src.reg);
 
-            assembler_.div(get(Reg::GPR1));
-            assembler_.mov(get(Reg::GPR0), R64::RAX);
+            generator_->div(get(Reg::GPR1));
+            generator_->mov(get(Reg::GPR0), R64::RAX);
             writeReg64(R64::RAX, Reg::GPR0);
-            assembler_.mov(get(Reg::GPR0), R64::RDX);
+            generator_->mov(get(Reg::GPR0), R64::RDX);
             writeReg64(R64::RDX, Reg::GPR0);
-            assembler_.pop64(R64::RDX);
-            assembler_.pop64(R64::RAX);
+            generator_->pop64(R64::RDX);
+            generator_->pop64(R64::RAX);
             return true;
         } else {
-            assembler_.push64(R64::RAX);
-            assembler_.push64(R64::RDX);
+            generator_->push64(R64::RAX);
+            generator_->push64(R64::RDX);
             readReg64(Reg::GPR0, R64::RAX);
-            assembler_.mov(R64::RAX, get(Reg::GPR0));
+            generator_->mov(R64::RAX, get(Reg::GPR0));
             readReg64(Reg::GPR0, R64::RDX);
-            assembler_.mov(R64::RDX, get(Reg::GPR0));
+            generator_->mov(R64::RDX, get(Reg::GPR0));
 
             // fetch src address
             const M64& mem = src.mem;
@@ -1462,44 +1521,44 @@ namespace x64 {
             // read the src value at the address
             readMem64(Reg::GPR1, addr);
 
-            assembler_.div(get(Reg::GPR1));
-            assembler_.mov(get(Reg::GPR0), R64::RAX);
+            generator_->div(get(Reg::GPR1));
+            generator_->mov(get(Reg::GPR0), R64::RAX);
             writeReg64(R64::RAX, Reg::GPR0);
-            assembler_.mov(get(Reg::GPR0), R64::RDX);
+            generator_->mov(get(Reg::GPR0), R64::RDX);
             writeReg64(R64::RDX, Reg::GPR0);
-            assembler_.pop64(R64::RDX);
-            assembler_.pop64(R64::RAX);
+            generator_->pop64(R64::RDX);
+            generator_->pop64(R64::RAX);
             return true;
         }
     }
 
     bool Compiler::tryCompileIdivRM32(const RM32& src) {
         if(src.isReg) {
-            assembler_.push64(R64::RAX);
-            assembler_.push64(R64::RDX);
+            generator_->push64(R64::RAX);
+            generator_->push64(R64::RDX);
             readReg64(Reg::GPR0, R64::RAX);
-            assembler_.mov(R32::EAX, get32(Reg::GPR0));
+            generator_->mov(R32::EAX, get32(Reg::GPR0));
             readReg64(Reg::GPR0, R64::RDX);
-            assembler_.mov(R32::EDX, get32(Reg::GPR0));
+            generator_->mov(R32::EDX, get32(Reg::GPR0));
 
             // read src value
             readReg32(Reg::GPR1, src.reg);
 
-            assembler_.idiv(get32(Reg::GPR1));
-            assembler_.mov(get32(Reg::GPR0), R32::EAX);
+            generator_->idiv(get32(Reg::GPR1));
+            generator_->mov(get32(Reg::GPR0), R32::EAX);
             writeReg32(R32::EAX, Reg::GPR0);
-            assembler_.mov(get32(Reg::GPR0), R32::EDX);
+            generator_->mov(get32(Reg::GPR0), R32::EDX);
             writeReg32(R32::EDX, Reg::GPR0);
-            assembler_.pop64(R64::RDX);
-            assembler_.pop64(R64::RAX);
+            generator_->pop64(R64::RDX);
+            generator_->pop64(R64::RAX);
             return true;
         } else {
-            assembler_.push64(R64::RAX);
-            assembler_.push64(R64::RDX);
+            generator_->push64(R64::RAX);
+            generator_->push64(R64::RDX);
             readReg64(Reg::GPR0, R64::RAX);
-            assembler_.mov(R32::EAX, get32(Reg::GPR0));
+            generator_->mov(R32::EAX, get32(Reg::GPR0));
             readReg64(Reg::GPR0, R64::RDX);
-            assembler_.mov(R32::EDX, get32(Reg::GPR0));
+            generator_->mov(R32::EDX, get32(Reg::GPR0));
 
             // fetch src address
             const M32& mem = src.mem;
@@ -1508,44 +1567,44 @@ namespace x64 {
             // read the src value at the address
             readMem32(Reg::GPR1, addr);
 
-            assembler_.idiv(get32(Reg::GPR1));
-            assembler_.mov(get32(Reg::GPR0), R32::EAX);
+            generator_->idiv(get32(Reg::GPR1));
+            generator_->mov(get32(Reg::GPR0), R32::EAX);
             writeReg32(R32::EAX, Reg::GPR0);
-            assembler_.mov(get32(Reg::GPR0), R32::EDX);
+            generator_->mov(get32(Reg::GPR0), R32::EDX);
             writeReg32(R32::EDX, Reg::GPR0);
-            assembler_.pop64(R64::RDX);
-            assembler_.pop64(R64::RAX);
+            generator_->pop64(R64::RDX);
+            generator_->pop64(R64::RAX);
             return true;
         }
     }
 
     bool Compiler::tryCompileIdivRM64(const RM64& src) {
         if(src.isReg) {
-            assembler_.push64(R64::RAX);
-            assembler_.push64(R64::RDX);
+            generator_->push64(R64::RAX);
+            generator_->push64(R64::RDX);
             readReg64(Reg::GPR0, R64::RAX);
-            assembler_.mov(R64::RAX, get(Reg::GPR0));
+            generator_->mov(R64::RAX, get(Reg::GPR0));
             readReg64(Reg::GPR0, R64::RDX);
-            assembler_.mov(R64::RDX, get(Reg::GPR0));
+            generator_->mov(R64::RDX, get(Reg::GPR0));
 
             // read src value
             readReg64(Reg::GPR1, src.reg);
 
-            assembler_.idiv(get(Reg::GPR1));
-            assembler_.mov(get(Reg::GPR0), R64::RAX);
+            generator_->idiv(get(Reg::GPR1));
+            generator_->mov(get(Reg::GPR0), R64::RAX);
             writeReg64(R64::RAX, Reg::GPR0);
-            assembler_.mov(get(Reg::GPR0), R64::RDX);
+            generator_->mov(get(Reg::GPR0), R64::RDX);
             writeReg64(R64::RDX, Reg::GPR0);
-            assembler_.pop64(R64::RDX);
-            assembler_.pop64(R64::RAX);
+            generator_->pop64(R64::RDX);
+            generator_->pop64(R64::RAX);
             return true;
         } else {
-            assembler_.push64(R64::RAX);
-            assembler_.push64(R64::RDX);
+            generator_->push64(R64::RAX);
+            generator_->push64(R64::RDX);
             readReg64(Reg::GPR0, R64::RAX);
-            assembler_.mov(R64::RAX, get(Reg::GPR0));
+            generator_->mov(R64::RAX, get(Reg::GPR0));
             readReg64(Reg::GPR0, R64::RDX);
-            assembler_.mov(R64::RDX, get(Reg::GPR0));
+            generator_->mov(R64::RDX, get(Reg::GPR0));
 
             // fetch src address
             const M64& mem = src.mem;
@@ -1554,18 +1613,18 @@ namespace x64 {
             // read the src value at the address
             readMem64(Reg::GPR1, addr);
 
-            assembler_.idiv(get(Reg::GPR1));
-            assembler_.mov(get(Reg::GPR0), R64::RAX);
+            generator_->idiv(get(Reg::GPR1));
+            generator_->mov(get(Reg::GPR0), R64::RAX);
             writeReg64(R64::RAX, Reg::GPR0);
-            assembler_.mov(get(Reg::GPR0), R64::RDX);
+            generator_->mov(get(Reg::GPR0), R64::RDX);
             writeReg64(R64::RDX, Reg::GPR0);
-            assembler_.pop64(R64::RDX);
-            assembler_.pop64(R64::RAX);
+            generator_->pop64(R64::RDX);
+            generator_->pop64(R64::RAX);
             return true;
         }
     }
 
-    std::optional<Compiler::ReplaceableJumps> Compiler::tryCompileCall(u64 dst) {
+    bool Compiler::tryCompileCall(u64 dst) {
         // Push the instruction pointer
         readReg64(Reg::GPR0, R64::RIP);
         push64(Reg::GPR0, TmpReg{Reg::GPR1});
@@ -1578,17 +1637,14 @@ namespace x64 {
         writeReg64(R64::RIP, Reg::GPR0);
 
         // INSERT NOPs HERE TO BE REPLACED WITH THE JMP
+        generator_->reportJump(ir::IrGenerator::JumpKind::OTHER_BLOCk);
         auto dummyCode = jmpCode(0x0, TmpReg{Reg::GPR0});
-        size_t offsetOfReplaceableJumpToConditionalBlock = currentOffset();
-        assembler_.nops(dummyCode.size());
-        
-        return ReplaceableJumps {
-            {},
-            offsetOfReplaceableJumpToConditionalBlock,
-        };
+        generator_->nops(dummyCode.size());
+
+        return true;
     }
 
-    std::optional<Compiler::ReplaceableJumps> Compiler::tryCompileRet() {
+    bool Compiler::tryCompileRet() {
         // return {};
         // Pop the instruction pointer
         pop64(Reg::GPR0, TmpReg{Reg::GPR1});
@@ -1597,17 +1653,14 @@ namespace x64 {
         // Call cpu callbacks
         // warn("Need to call cpu callbacks in Compiler::tryCompileRet");
         
-        return ReplaceableJumps {
-            {},
-            {},
-        };
+        return true;
     }
 
-    std::optional<Compiler::ReplaceableJumps> Compiler::tryCompileJe(u64 dst) {
+    bool Compiler::tryCompileJe(u64 dst) {
         return tryCompileJcc(Cond::E, dst);
     }
 
-    std::optional<Compiler::ReplaceableJumps> Compiler::tryCompileJne(u64 dst) {
+    bool Compiler::tryCompileJne(u64 dst) {
         return tryCompileJcc(Cond::NE, dst);
     }
 
@@ -1638,57 +1691,51 @@ namespace x64 {
         __builtin_unreachable();
     }
 
-    std::optional<Compiler::ReplaceableJumps> Compiler::tryCompileJcc(Cond condition, u64 dst) {
+    bool Compiler::tryCompileJcc(Cond condition, u64 dst) {
         // create labels and test the condition
-        auto noBranchCase = assembler_.label();
+        auto noBranchCase = generator_->label();
         Cond reverseCondition = getReverseCondition(condition);
-        assembler_.jumpCondition(reverseCondition, &noBranchCase); // jump if the opposite condition is true
+        generator_->jumpCondition(reverseCondition, &noBranchCase); // jump if the opposite condition is true
 
         // change the instruction pointer
         loadImm64(Reg::GPR0, dst);
         writeReg64(R64::RIP, Reg::GPR0);
 
         // INSERT NOPs HERE TO BE REPLACED WITH THE JMP
+        generator_->reportJump(ir::IrGenerator::JumpKind::OTHER_BLOCk);
         auto dummyCode = jmpCode(0x0, TmpReg{Reg::GPR0});
-        size_t offsetOfReplaceableJumpToConditionalBlock = currentOffset();
-        assembler_.nops(dummyCode.size());
+        generator_->nops(dummyCode.size());
 
-        auto skipToExit = assembler_.label();
-        assembler_.jump(&skipToExit);
+        auto skipToExit = generator_->label();
+        generator_->jump(&skipToExit);
 
         // if we don't need to jump
-        assembler_.putLabel(noBranchCase);
+        generator_->putLabel(noBranchCase);
 
         // INSERT NOPs HERE TO BE REPLACED WITH THE JMP
-        size_t offsetOfReplaceableJumpToContinuingBlock = currentOffset();
-        assembler_.nops(dummyCode.size());
+        generator_->reportJump(ir::IrGenerator::JumpKind::NEXT_BLOCK);
+        generator_->nops(dummyCode.size());
 
-        assembler_.putLabel(skipToExit);
+        generator_->putLabel(skipToExit);
 
-        return ReplaceableJumps {
-            offsetOfReplaceableJumpToContinuingBlock,
-            offsetOfReplaceableJumpToConditionalBlock,
-        };
+        return true;
     }
 
-    std::optional<Compiler::ReplaceableJumps> Compiler::tryCompileJmp(u64 dst) {
+    bool Compiler::tryCompileJmp(u64 dst) {
         // load the immediate
         loadImm64(Reg::GPR0, dst);
         // change the instruction pointer
         writeReg64(R64::RIP, Reg::GPR0);
 
         // INSERT NOPs HERE TO BE REPLACED WITH THE JMP
+        generator_->reportJump(ir::IrGenerator::JumpKind::OTHER_BLOCk);
         auto dummyCode = jmpCode(0x0, TmpReg{Reg::GPR0});
-        size_t offsetOfReplaceableJumpToConditionalBlock = currentOffset();
-        assembler_.nops(dummyCode.size());
+        generator_->nops(dummyCode.size());
 
-        return ReplaceableJumps {
-            {},
-            offsetOfReplaceableJumpToConditionalBlock,
-        };
+        return true;
     }
 
-    std::optional<Compiler::ReplaceableJumps> Compiler::tryCompileCall(const RM64& dst) {
+    bool Compiler::tryCompileCall(const RM64& dst) {
         // Push the instruction pointer
         readReg64(Reg::GPR0, R64::RIP);
         push64(Reg::GPR0, TmpReg{Reg::GPR1});
@@ -1702,10 +1749,7 @@ namespace x64 {
             // change the instruction pointer
             writeReg64(R64::RIP, Reg::GPR0);
 
-            return ReplaceableJumps {
-                {},
-                {},
-            };
+            return true;
         } else {
             // fetch address
             const M64& mem = dst.mem;
@@ -1719,24 +1763,18 @@ namespace x64 {
             // change the instruction pointer
             writeReg64(R64::RIP, Reg::GPR0);
 
-            return ReplaceableJumps {
-                {},
-                {},
-            };
+            return true;
         }
     }
 
-    std::optional<Compiler::ReplaceableJumps> Compiler::tryCompileJmp(const RM64& dst) {
+    bool Compiler::tryCompileJmp(const RM64& dst) {
         if(dst.isReg) {
             // read the register
             readReg64(Reg::GPR0, dst.reg);
             // change the instruction pointer
             writeReg64(R64::RIP, Reg::GPR0);
 
-            return ReplaceableJumps {
-                {},
-                {},
-            };
+            return true;
         } else {
             // fetch address
             const M64& mem = dst.mem;
@@ -1749,158 +1787,155 @@ namespace x64 {
             // change the instruction pointer
             writeReg64(R64::RIP, Reg::GPR0);
 
-            return ReplaceableJumps {
-                {},
-                {},
-            };
+            return true;
         }
     }
 
     bool Compiler::tryCompileTestRM8R8(const RM8& lhs, R8 rhs) {
         RM8 r { true, rhs, {}};
         return forRM8RM8(lhs, r, [&](Reg dst, Reg src) {
-            assembler_.test(get8(dst), get8(src));
+            generator_->test(get8(dst), get8(src));
         }, false);
     }
 
     bool Compiler::tryCompileTestRM8Imm(const RM8& lhs, Imm rhs) {
         return forRM8Imm(lhs, rhs, [&](Reg dst, Imm src) {
-            assembler_.test(get8(dst), src.as<u8>());
+            generator_->test(get8(dst), src.as<u8>());
         }, false);
     }
 
     bool Compiler::tryCompileTestRM16R16(const RM16& lhs, R16 rhs) {
         RM16 r { true, rhs, {}};
         return forRM16RM16(lhs, r, [&](Reg dst, Reg src) {
-            assembler_.test(get16(dst), get16(src));
+            generator_->test(get16(dst), get16(src));
         }, false);
     }
 
     bool Compiler::tryCompileTestRM16Imm(const RM16& lhs, Imm rhs) {
         return forRM16Imm(lhs, rhs, [&](Reg dst, Imm src) {
-            assembler_.test(get16(dst), src.as<u16>());
+            generator_->test(get16(dst), src.as<u16>());
         }, false);
     }
 
     bool Compiler::tryCompileTestRM32R32(const RM32& lhs, R32 rhs) {
         RM32 r { true, rhs, {}};
         return forRM32RM32(lhs, r, [&](Reg dst, Reg src) {
-            assembler_.test(get32(dst), get32(src));
+            generator_->test(get32(dst), get32(src));
         }, false);
     }
 
     bool Compiler::tryCompileTestRM32Imm(const RM32& lhs, Imm rhs) {
         return forRM32Imm(lhs, rhs, [&](Reg dst, Imm src) {
-            assembler_.test(get32(dst), (u32)src.as<i32>());
+            generator_->test(get32(dst), (u32)src.as<i32>());
         }, false);
     }
 
     bool Compiler::tryCompileTestRM64R64(const RM64& lhs, R64 rhs) {
         RM64 r { true, rhs, {}};
         return forRM64RM64(lhs, r, [&](Reg dst, Reg src) {
-            assembler_.test(get(dst), get(src));
+            generator_->test(get(dst), get(src));
         }, false);
     }
 
     bool Compiler::tryCompileTestRM64Imm(const RM64& lhs, Imm rhs) {
         return forRM64Imm(lhs, rhs, [&](Reg dst, Imm src) {
-            assembler_.test(get(dst), src.as<u32>());
+            generator_->test(get(dst), src.as<u32>());
         }, false);
     }
 
     bool Compiler::tryCompileAndRM8RM8(const RM8& dst, const RM8& src) {
         return forRM8RM8(dst, src, [&](Reg dst, Reg src) {
-            assembler_.and_(get8(dst), get8(src));
+            generator_->and_(get8(dst), get8(src));
         });
     }
 
     bool Compiler::tryCompileAndRM8Imm(const RM8& dst, Imm imm) {
         return forRM8Imm(dst, imm, [&](Reg dst, Imm imm) {
-            assembler_.and_(get8(dst), imm.as<i8>());
+            generator_->and_(get8(dst), imm.as<i8>());
         });
     }
 
     bool Compiler::tryCompileAndRM16RM16(const RM16& dst, const RM16& src) {
         return forRM16RM16(dst, src, [&](Reg dst, Reg src) {
-            assembler_.and_(get16(dst), get16(src));
+            generator_->and_(get16(dst), get16(src));
         });
     }
 
     bool Compiler::tryCompileAndRM16Imm(const RM16& dst, Imm imm) {
         return forRM16Imm(dst, imm, [&](Reg dst, Imm imm) {
-            assembler_.and_(get16(dst), imm.as<i16>());
+            generator_->and_(get16(dst), imm.as<i16>());
         });
     }
 
     bool Compiler::tryCompileAndRM32RM32(const RM32& dst, const RM32& src) {
         return forRM32RM32(dst, src, [&](Reg dst, Reg src) {
-            assembler_.and_(get32(dst), get32(src));
+            generator_->and_(get32(dst), get32(src));
         });
     }
 
     bool Compiler::tryCompileAndRM32Imm(const RM32& dst, Imm imm) {
         return forRM32Imm(dst, imm, [&](Reg dst, Imm imm) {
-            assembler_.and_(get32(dst), imm.as<i32>());
+            generator_->and_(get32(dst), imm.as<i32>());
         });
     }
 
     bool Compiler::tryCompileAndRM64RM64(const RM64& dst, const RM64& src) {
         return forRM64RM64(dst, src, [&](Reg dst, Reg src) {
-            assembler_.and_(get(dst), get(src));
+            generator_->and_(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompileAndRM64Imm(const RM64& dst, Imm imm) {
         return forRM64Imm(dst, imm, [&](Reg dst, Imm imm) {
-            assembler_.and_(get(dst), imm.as<i32>());
+            generator_->and_(get(dst), imm.as<i32>());
         });
     }
 
     bool Compiler::tryCompileOrRM8Imm(const RM8& dst, Imm imm) {
         return forRM8Imm(dst, imm, [&](Reg dst, Imm imm) {
-            assembler_.or_(get8(dst), imm.as<i8>());
+            generator_->or_(get8(dst), imm.as<i8>());
         });
     }
 
     bool Compiler::tryCompileOrRM8RM8(const RM8& dst, const RM8& src) {
         return forRM8RM8(dst, src, [&](Reg dst, Reg src) {
-            assembler_.or_(get8(dst), get8(src));
+            generator_->or_(get8(dst), get8(src));
         });
     }
 
     bool Compiler::tryCompileOrRM16Imm(const RM16& dst, Imm imm) {
         return forRM16Imm(dst, imm, [&](Reg dst, Imm imm) {
-            assembler_.or_(get16(dst), imm.as<i16>());
+            generator_->or_(get16(dst), imm.as<i16>());
         });
     }
 
     bool Compiler::tryCompileOrRM16RM16(const RM16& dst, const RM16& src) {
         return forRM16RM16(dst, src, [&](Reg dst, Reg src) {
-            assembler_.or_(get16(dst), get16(src));
+            generator_->or_(get16(dst), get16(src));
         });
     }
 
     bool Compiler::tryCompileOrRM32Imm(const RM32& dst, Imm imm) {
         return forRM32Imm(dst, imm, [&](Reg dst, Imm imm) {
-            assembler_.or_(get32(dst), imm.as<i32>());
+            generator_->or_(get32(dst), imm.as<i32>());
         });
     }
 
     bool Compiler::tryCompileOrRM32RM32(const RM32& dst, const RM32& src) {
         return forRM32RM32(dst, src, [&](Reg dst, Reg src) {
-            assembler_.or_(get32(dst), get32(src));
+            generator_->or_(get32(dst), get32(src));
         });
     }
 
     bool Compiler::tryCompileOrRM64Imm(const RM64& dst, Imm imm) {
         return forRM64Imm(dst, imm, [&](Reg dst, Imm imm) {
-            assembler_.or_(get(dst), imm.as<i32>());
+            generator_->or_(get(dst), imm.as<i32>());
         });
     }
 
     bool Compiler::tryCompileOrRM64RM64(const RM64& dst, const RM64& src) {
         return forRM64RM64(dst, src, [&](Reg dst, Reg src) {
-            assembler_.or_(get(dst), get(src));
+            generator_->or_(get(dst), get(src));
         });
     }
 
@@ -1916,7 +1951,7 @@ namespace x64 {
         // load rsp
         readReg64(Reg::GPR1, R64::RSP);
         // decrement rsp
-        assembler_.lea(get(Reg::GPR1), make64(get(Reg::GPR1), -8));
+        generator_->lea(get(Reg::GPR1), make64(get(Reg::GPR1), -8));
         // write rsp back
         writeReg64(R64::RSP, Reg::GPR1);
         // write to the stack
@@ -1931,7 +1966,7 @@ namespace x64 {
             // load rsp
             readReg64(Reg::GPR1, R64::RSP);
             // decrement rsp
-            assembler_.lea(get(Reg::GPR1), make64(get(Reg::GPR1), -8));
+            generator_->lea(get(Reg::GPR1), make64(get(Reg::GPR1), -8));
             // write rsp back
             writeReg64(R64::RSP, Reg::GPR1);
             // write to the stack
@@ -1949,7 +1984,7 @@ namespace x64 {
             // load rsp
             readReg64(Reg::GPR1, R64::RSP);
             // decrement rsp
-            assembler_.lea(get(Reg::GPR1), make64(get(Reg::GPR1), -8));
+            generator_->lea(get(Reg::GPR1), make64(get(Reg::GPR1), -8));
             // write rsp back
             writeReg64(R64::RSP, Reg::GPR1);
             // write to the stack
@@ -1970,7 +2005,7 @@ namespace x64 {
         // read from the stack
         readMem64(Reg::GPR0, Mem{Reg::GPR1, 0});
         // increment rsp
-        assembler_.lea(get(Reg::GPR1), make64(get(Reg::GPR1), +8));
+        generator_->lea(get(Reg::GPR1), make64(get(Reg::GPR1), +8));
         // write rsp back
         writeReg64(R64::RSP, Reg::GPR1);
         // write to the register
@@ -1980,49 +2015,49 @@ namespace x64 {
 
     bool Compiler::tryCompileXorRM8RM8(const RM8& dst, const RM8& src) {
         return forRM8RM8(dst, src, [&](Reg dst, Reg src) {
-            assembler_.xor_(get8(dst), get8(src));
+            generator_->xor_(get8(dst), get8(src));
         });
     }
 
     bool Compiler::tryCompileXorRM8Imm(const RM8& dst, Imm imm) {
         return forRM8Imm(dst, imm, [&](Reg dst, Imm imm) {
-            assembler_.xor_(get8(dst), imm.as<i8>());
+            generator_->xor_(get8(dst), imm.as<i8>());
         });
     }
 
     bool Compiler::tryCompileXorRM16RM16(const RM16& dst, const RM16& src) {
         return forRM16RM16(dst, src, [&](Reg dst, Reg src) {
-            assembler_.xor_(get16(dst), get16(src));
+            generator_->xor_(get16(dst), get16(src));
         });
     }
 
     bool Compiler::tryCompileXorRM16Imm(const RM16& dst, Imm imm) {
         return forRM16Imm(dst, imm, [&](Reg dst, Imm imm) {
-            assembler_.xor_(get16(dst), imm.as<i16>());
+            generator_->xor_(get16(dst), imm.as<i16>());
         });
     }
 
     bool Compiler::tryCompileXorRM32RM32(const RM32& dst, const RM32& src) {
         return forRM32RM32(dst, src, [&](Reg dst, Reg src) {
-            assembler_.xor_(get32(dst), get32(src));
+            generator_->xor_(get32(dst), get32(src));
         });
     }
 
     bool Compiler::tryCompileXorRM32Imm(const RM32& dst, Imm imm) {
         return forRM32Imm(dst, imm, [&](Reg dst, Imm imm) {
-            assembler_.xor_(get32(dst), imm.as<i32>());
+            generator_->xor_(get32(dst), imm.as<i32>());
         });
     }
 
     bool Compiler::tryCompileXorRM64RM64(const RM64& dst, const RM64& src) {
         return forRM64RM64(dst, src, [&](Reg dst, Reg src) {
-            assembler_.xor_(get(dst), get(src));
+            generator_->xor_(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompileXorRM64Imm(const RM64& dst, Imm imm) {
         return forRM64Imm(dst, imm, [&](Reg dst, Imm imm) {
-            assembler_.xor_(get(dst), imm.as<i32>());
+            generator_->xor_(get(dst), imm.as<i32>());
         });
     }
 
@@ -2031,7 +2066,7 @@ namespace x64 {
             // read the destination register
             readReg32(Reg::GPR0, dst.reg);
             // perform the op
-            assembler_.not_(get32(Reg::GPR0));
+            generator_->not_(get32(Reg::GPR0));
             // write back to destination register
             writeReg32(dst.reg, Reg::GPR0);
             return true;
@@ -2045,7 +2080,7 @@ namespace x64 {
             // read the dst value at the address
             readMem32(Reg::GPR0, addr);
             // perform the op
-            assembler_.not_(get32(Reg::GPR0));
+            generator_->not_(get32(Reg::GPR0));
             // write back to the register
             writeMem32(addr, Reg::GPR0);
             return true;
@@ -2057,7 +2092,7 @@ namespace x64 {
             // read the destination register
             readReg64(Reg::GPR0, dst.reg);
             // perform the op
-            assembler_.not_(get(Reg::GPR0));
+            generator_->not_(get(Reg::GPR0));
             // write back to the destination register
             writeReg64(dst.reg, Reg::GPR0);
             return true;
@@ -2071,7 +2106,7 @@ namespace x64 {
             // read the dst value at the address
             readMem64(Reg::GPR0, addr);
             // perform the op
-            assembler_.not_(get(Reg::GPR0));
+            generator_->not_(get(Reg::GPR0));
             // write back to the register
             writeMem64(addr, Reg::GPR0);
             return true;
@@ -2080,25 +2115,25 @@ namespace x64 {
 
     bool Compiler::tryCompileNegRM8(const RM8& dst) {
         return forRM8Imm(dst, Imm{}, [&](Reg dst, Imm) {
-            assembler_.neg(get8(dst));
+            generator_->neg(get8(dst));
         });
     }
 
     bool Compiler::tryCompileNegRM16(const RM16& dst) {
         return forRM16Imm(dst, Imm{}, [&](Reg dst, Imm) {
-            assembler_.neg(get16(dst));
+            generator_->neg(get16(dst));
         });
     }
 
     bool Compiler::tryCompileNegRM32(const RM32& dst) {
         return forRM32Imm(dst, Imm{}, [&](Reg dst, Imm) {
-            assembler_.neg(get32(dst));
+            generator_->neg(get32(dst));
         });
     }
 
     bool Compiler::tryCompileNegRM64(const RM64& dst) {
         return forRM64Imm(dst, Imm{}, [&](Reg dst, Imm) {
-            assembler_.neg(get(dst));
+            generator_->neg(get(dst));
         });
     }
 
@@ -2107,7 +2142,7 @@ namespace x64 {
             // read the destination register
             readReg32(Reg::GPR0, dst.reg);
             // perform the op
-            assembler_.inc(get32(Reg::GPR0));
+            generator_->inc(get32(Reg::GPR0));
             // write back to the destination register
             writeReg32(dst.reg, Reg::GPR0);
             return true;
@@ -2121,7 +2156,7 @@ namespace x64 {
             // read the dst value at the address
             readMem32(Reg::GPR0, addr);
             // perform the op
-            assembler_.inc(get32(Reg::GPR0));
+            generator_->inc(get32(Reg::GPR0));
             // write back to the register
             writeMem32(addr, Reg::GPR0);
             return true;
@@ -2133,7 +2168,7 @@ namespace x64 {
             // read the destination register
             readReg64(Reg::GPR0, dst.reg);
             // perform the op
-            assembler_.inc(get(Reg::GPR0));
+            generator_->inc(get(Reg::GPR0));
             // write back to the destination register
             writeReg64(dst.reg, Reg::GPR0);
             return true;
@@ -2147,7 +2182,7 @@ namespace x64 {
             // read the dst value at the address
             readMem64(Reg::GPR0, addr);
             // perform the op
-            assembler_.inc(get(Reg::GPR0));
+            generator_->inc(get(Reg::GPR0));
             // write back to the register
             writeMem64(addr, Reg::GPR0);
             return true;
@@ -2159,7 +2194,7 @@ namespace x64 {
             // read the destination register
             readReg8(Reg::GPR0, dst.reg);
             // perform the op
-            assembler_.dec(get8(Reg::GPR0));
+            generator_->dec(get8(Reg::GPR0));
             // write back to the destination register
             writeReg8(dst.reg, Reg::GPR0);
             return true;
@@ -2173,7 +2208,7 @@ namespace x64 {
             // read the dst value at the address
             readMem8(Reg::GPR0, addr);
             // perform the op
-            assembler_.dec(get8(Reg::GPR0));
+            generator_->dec(get8(Reg::GPR0));
             // write back to the register
             writeMem8(addr, Reg::GPR0);
             return true;
@@ -2185,7 +2220,7 @@ namespace x64 {
             // read the destination register
             readReg16(Reg::GPR0, dst.reg);
             // perform the op
-            assembler_.dec(get16(Reg::GPR0));
+            generator_->dec(get16(Reg::GPR0));
             // write back to the destination register
             writeReg16(dst.reg, Reg::GPR0);
             return true;
@@ -2199,7 +2234,7 @@ namespace x64 {
             // read the dst value at the address
             readMem16(Reg::GPR0, addr);
             // perform the op
-            assembler_.dec(get16(Reg::GPR0));
+            generator_->dec(get16(Reg::GPR0));
             // write back to the register
             writeMem16(addr, Reg::GPR0);
             return true;
@@ -2211,7 +2246,7 @@ namespace x64 {
             // read the destination register
             readReg32(Reg::GPR0, dst.reg);
             // perform the op
-            assembler_.dec(get32(Reg::GPR0));
+            generator_->dec(get32(Reg::GPR0));
             // write back to the destination register
             writeReg32(dst.reg, Reg::GPR0);
             return true;
@@ -2225,7 +2260,7 @@ namespace x64 {
             // read the dst value at the address
             readMem32(Reg::GPR0, addr);
             // perform the op
-            assembler_.dec(get32(Reg::GPR0));
+            generator_->dec(get32(Reg::GPR0));
             // write back to the register
             writeMem32(addr, Reg::GPR0);
             return true;
@@ -2237,7 +2272,7 @@ namespace x64 {
             // read the destination register
             readReg64(Reg::GPR0, dst.reg);
             // perform the op
-            assembler_.dec(get(Reg::GPR0));
+            generator_->dec(get(Reg::GPR0));
             // write back to the destination register
             writeReg64(dst.reg, Reg::GPR0);
             return true;
@@ -2251,7 +2286,7 @@ namespace x64 {
             // read the dst value at the address
             readMem64(Reg::GPR0, addr);
             // perform the op
-            assembler_.dec(get(Reg::GPR0));
+            generator_->dec(get(Reg::GPR0));
             // write back to the register
             writeMem64(addr, Reg::GPR0);
             return true;
@@ -2265,7 +2300,7 @@ namespace x64 {
             // read the src register
             readReg8(Reg::GPR1, src);
             // perform the op
-            assembler_.xchg(get8(Reg::GPR0), get8(Reg::GPR1));
+            generator_->xchg(get8(Reg::GPR0), get8(Reg::GPR1));
             // write back to the destination register
             writeReg8(dst.reg, Reg::GPR0);
             writeReg8(src, Reg::GPR1);
@@ -2282,7 +2317,7 @@ namespace x64 {
             // read the src register
             readReg8(Reg::GPR1, src);
             // perform the op
-            assembler_.xchg(get8(Reg::GPR0), get8(Reg::GPR1));
+            generator_->xchg(get8(Reg::GPR0), get8(Reg::GPR1));
             // write back to the register
             writeMem8(addr, Reg::GPR0);
             writeReg8(src, Reg::GPR1);
@@ -2297,7 +2332,7 @@ namespace x64 {
             // read the src register
             readReg16(Reg::GPR1, src);
             // perform the op
-            assembler_.xchg(get16(Reg::GPR0), get16(Reg::GPR1));
+            generator_->xchg(get16(Reg::GPR0), get16(Reg::GPR1));
             // write back to the destination register
             writeReg16(dst.reg, Reg::GPR0);
             writeReg16(src, Reg::GPR1);
@@ -2314,7 +2349,7 @@ namespace x64 {
             // read the src register
             readReg16(Reg::GPR1, src);
             // perform the op
-            assembler_.xchg(get16(Reg::GPR0), get16(Reg::GPR1));
+            generator_->xchg(get16(Reg::GPR0), get16(Reg::GPR1));
             // write back to the register
             writeMem16(addr, Reg::GPR0);
             writeReg16(src, Reg::GPR1);
@@ -2329,7 +2364,7 @@ namespace x64 {
             // read the src register
             readReg32(Reg::GPR1, src);
             // perform the op
-            assembler_.xchg(get32(Reg::GPR0), get32(Reg::GPR1));
+            generator_->xchg(get32(Reg::GPR0), get32(Reg::GPR1));
             // write back to the destination register
             writeReg32(dst.reg, Reg::GPR0);
             writeReg32(src, Reg::GPR1);
@@ -2346,7 +2381,7 @@ namespace x64 {
             // read the src register
             readReg32(Reg::GPR1, src);
             // perform the op
-            assembler_.xchg(get32(Reg::GPR0), get32(Reg::GPR1));
+            generator_->xchg(get32(Reg::GPR0), get32(Reg::GPR1));
             // write back to the register
             writeMem32(addr, Reg::GPR0);
             writeReg32(src, Reg::GPR1);
@@ -2361,7 +2396,7 @@ namespace x64 {
             // read the src register
             readReg64(Reg::GPR1, src);
             // perform the op
-            assembler_.xchg(get(Reg::GPR0), get(Reg::GPR1));
+            generator_->xchg(get(Reg::GPR0), get(Reg::GPR1));
             // write back to the destination register
             writeReg64(dst.reg, Reg::GPR0);
             writeReg64(src, Reg::GPR1);
@@ -2378,7 +2413,7 @@ namespace x64 {
             // read the src register
             readReg64(Reg::GPR1, src);
             // perform the op
-            assembler_.xchg(get(Reg::GPR0), get(Reg::GPR1));
+            generator_->xchg(get(Reg::GPR0), get(Reg::GPR1));
             // write back to the register
             writeMem64(addr, Reg::GPR0);
             writeReg64(src, Reg::GPR1);
@@ -2389,22 +2424,22 @@ namespace x64 {
     bool Compiler::tryCompileCmpxchgRM32R32(const RM32& dst, R32 src) {
         if(dst.isReg) {
             // save rax and set it
-            assembler_.push64(R64::RAX);
+            generator_->push64(R64::RAX);
             readReg64(Reg::GPR0, R64::RAX);
-            assembler_.mov(R64::RAX, get(Reg::GPR0));
+            generator_->mov(R64::RAX, get(Reg::GPR0));
             // read the dst register
             readReg32(Reg::GPR0, dst.reg);
             // read the src register
             readReg32(Reg::GPR1, src);
             // perform the op
-            assembler_.cmpxchg(get32(Reg::GPR0), get32(Reg::GPR1));
+            generator_->cmpxchg(get32(Reg::GPR0), get32(Reg::GPR1));
             // write back to the destination register
             writeReg32(dst.reg, Reg::GPR0);
             writeReg32(src, Reg::GPR1);
             // set rax and restore rax
-            assembler_.mov(get(Reg::GPR0), R64::RAX);
+            generator_->mov(get(Reg::GPR0), R64::RAX);
             writeReg64(R64::RAX, Reg::GPR0);
-            assembler_.pop64(R64::RAX);
+            generator_->pop64(R64::RAX);
             return true;
         } else {
             // fetch dst address
@@ -2412,9 +2447,9 @@ namespace x64 {
             if(mem.segment != Segment::CS && mem.segment != Segment::UNK) return false;
             if(mem.encoding.index == R64::RIP) return false;
             // save rax and set it
-            assembler_.push64(R64::RAX);
+            generator_->push64(R64::RAX);
             readReg64(Reg::GPR0, R64::RAX);
-            assembler_.mov(R64::RAX, get(Reg::GPR0));
+            generator_->mov(R64::RAX, get(Reg::GPR0));
             // get the address
             Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
             // read the dst value at the address
@@ -2422,14 +2457,14 @@ namespace x64 {
             // read the src register
             readReg32(Reg::GPR1, src);
             // perform the op
-            assembler_.cmpxchg(get32(Reg::GPR0), get32(Reg::GPR1));
+            generator_->cmpxchg(get32(Reg::GPR0), get32(Reg::GPR1));
             // write back to the register
             writeMem32(addr, Reg::GPR0);
             writeReg32(src, Reg::GPR1);
             // set rax and restore rax
-            assembler_.mov(get(Reg::GPR0), R64::RAX);
+            generator_->mov(get(Reg::GPR0), R64::RAX);
             writeReg64(R64::RAX, Reg::GPR0);
-            assembler_.pop64(R64::RAX);
+            generator_->pop64(R64::RAX);
             return true;
         }
     }
@@ -2437,22 +2472,22 @@ namespace x64 {
     bool Compiler::tryCompileCmpxchgRM64R64(const RM64& dst, R64 src) {
         if(dst.isReg) {
             // save rax and set it
-            assembler_.push64(R64::RAX);
+            generator_->push64(R64::RAX);
             readReg64(Reg::GPR0, R64::RAX);
-            assembler_.mov(R64::RAX, get(Reg::GPR0));
+            generator_->mov(R64::RAX, get(Reg::GPR0));
             // read the dst register
             readReg64(Reg::GPR0, dst.reg);
             // read the src register
             readReg64(Reg::GPR1, src);
             // perform the op
-            assembler_.cmpxchg(get(Reg::GPR0), get(Reg::GPR1));
+            generator_->cmpxchg(get(Reg::GPR0), get(Reg::GPR1));
             // write back to the destination register
             writeReg64(dst.reg, Reg::GPR0);
             writeReg64(src, Reg::GPR1);
             // set rax and restore rax
-            assembler_.mov(get(Reg::GPR0), R64::RAX);
+            generator_->mov(get(Reg::GPR0), R64::RAX);
             writeReg64(R64::RAX, Reg::GPR0);
-            assembler_.pop64(R64::RAX);
+            generator_->pop64(R64::RAX);
             return true;
         } else {
             // fetch dst address
@@ -2460,9 +2495,9 @@ namespace x64 {
             if(mem.segment != Segment::CS && mem.segment != Segment::UNK) return false;
             if(mem.encoding.index == R64::RIP) return false;
             // save rax and set it
-            assembler_.push64(R64::RAX);
+            generator_->push64(R64::RAX);
             readReg64(Reg::GPR0, R64::RAX);
-            assembler_.mov(R64::RAX, get(Reg::GPR0));
+            generator_->mov(R64::RAX, get(Reg::GPR0));
             // get the address
             Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
             // read the dst value at the address
@@ -2470,14 +2505,14 @@ namespace x64 {
             // read the src register
             readReg64(Reg::GPR1, src);
             // perform the op
-            assembler_.cmpxchg(get(Reg::GPR0), get(Reg::GPR1));
+            generator_->cmpxchg(get(Reg::GPR0), get(Reg::GPR1));
             // write back to the register
             writeMem64(addr, Reg::GPR0);
             writeReg64(src, Reg::GPR1);
             // set rax and restore rax
-            assembler_.mov(get(Reg::GPR0), R64::RAX);
+            generator_->mov(get(Reg::GPR0), R64::RAX);
             writeReg64(R64::RAX, Reg::GPR0);
-            assembler_.pop64(R64::RAX);
+            generator_->pop64(R64::RAX);
             return true;
         }
     }
@@ -2486,22 +2521,22 @@ namespace x64 {
         // fetch dst address
         if(dst.encoding.index == R64::RIP) return false;
         // save rax and set it
-        assembler_.push64(R64::RAX);
+        generator_->push64(R64::RAX);
         readReg64(Reg::GPR0, R64::RAX);
-        assembler_.mov(R64::RAX, get(Reg::GPR0));
+        generator_->mov(R64::RAX, get(Reg::GPR0));
         // get the address
         Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, dst);
         M32 d = make32(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset);
         // read the src register
         readReg32(Reg::GPR1, src);
         // perform the op
-        assembler_.lockcmpxchg(d, get32(Reg::GPR1));
+        generator_->lockcmpxchg(d, get32(Reg::GPR1));
         // write back to the register
         writeReg32(src, Reg::GPR1);
         // set rax and restore rax
-        assembler_.mov(get(Reg::GPR0), R64::RAX);
+        generator_->mov(get(Reg::GPR0), R64::RAX);
         writeReg64(R64::RAX, Reg::GPR0);
-        assembler_.pop64(R64::RAX);
+        generator_->pop64(R64::RAX);
         return true;
     }
 
@@ -2509,86 +2544,86 @@ namespace x64 {
         // fetch dst address
         if(dst.encoding.index == R64::RIP) return false;
         // save rax and set it
-        assembler_.push64(R64::RAX);
+        generator_->push64(R64::RAX);
         readReg64(Reg::GPR0, R64::RAX);
-        assembler_.mov(R64::RAX, get(Reg::GPR0));
+        generator_->mov(R64::RAX, get(Reg::GPR0));
         // get the address
         Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, dst);
         M64 d = make64(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset);
         // read the src register
         readReg64(Reg::GPR1, src);
         // perform the lock cmpxchg
-        assembler_.lockcmpxchg(d, get(Reg::GPR1));
+        generator_->lockcmpxchg(d, get(Reg::GPR1));
         // write back to the register
         writeReg64(src, Reg::GPR1);
         // set rax and restore rax
-        assembler_.mov(get(Reg::GPR0), R64::RAX);
+        generator_->mov(get(Reg::GPR0), R64::RAX);
         writeReg64(R64::RAX, Reg::GPR0);
-        assembler_.pop64(R64::RAX);
+        generator_->pop64(R64::RAX);
         return true;
     }
 
     bool Compiler::tryCompileCwde() {
-        assembler_.push64(R64::RAX);
+        generator_->push64(R64::RAX);
         readReg64(Reg::GPR0, R64::RAX);
-        assembler_.mov(R64::RAX, get(Reg::GPR0));
-        assembler_.cwde();
-        assembler_.mov(get(Reg::GPR0), R64::RAX);
+        generator_->mov(R64::RAX, get(Reg::GPR0));
+        generator_->cwde();
+        generator_->mov(get(Reg::GPR0), R64::RAX);
         writeReg64(R64::RAX, Reg::GPR0);
-        assembler_.pop64(R64::RAX);
+        generator_->pop64(R64::RAX);
         return true;
     }
 
     bool Compiler::tryCompileCdqe() {
-        assembler_.push64(R64::RAX);
+        generator_->push64(R64::RAX);
         readReg64(Reg::GPR0, R64::RAX);
-        assembler_.mov(R64::RAX, get(Reg::GPR0));
-        assembler_.cdqe();
-        assembler_.mov(get(Reg::GPR0), R64::RAX);
+        generator_->mov(R64::RAX, get(Reg::GPR0));
+        generator_->cdqe();
+        generator_->mov(get(Reg::GPR0), R64::RAX);
         writeReg64(R64::RAX, Reg::GPR0);
-        assembler_.pop64(R64::RAX);
+        generator_->pop64(R64::RAX);
         return true;
     }
 
     bool Compiler::tryCompileCdq() {
-        assembler_.push64(R64::RAX);
-        assembler_.push64(R64::RDX);
+        generator_->push64(R64::RAX);
+        generator_->push64(R64::RDX);
         readReg64(Reg::GPR0, R64::RAX);
-        assembler_.mov(R64::RAX, get(Reg::GPR0));
-        assembler_.cdq();
-        assembler_.mov(get(Reg::GPR0), R64::RAX);
+        generator_->mov(R64::RAX, get(Reg::GPR0));
+        generator_->cdq();
+        generator_->mov(get(Reg::GPR0), R64::RAX);
         writeReg64(R64::RAX, Reg::GPR0);
-        assembler_.mov(get(Reg::GPR1), R64::RDX);
+        generator_->mov(get(Reg::GPR1), R64::RDX);
         writeReg64(R64::RDX, Reg::GPR1);
-        assembler_.pop64(R64::RDX);
-        assembler_.pop64(R64::RAX);
+        generator_->pop64(R64::RDX);
+        generator_->pop64(R64::RAX);
         return true;
     }
 
     bool Compiler::tryCompileCqo() {
-        assembler_.push64(R64::RAX);
-        assembler_.push64(R64::RDX);
+        generator_->push64(R64::RAX);
+        generator_->push64(R64::RDX);
         readReg64(Reg::GPR0, R64::RAX);
-        assembler_.mov(R64::RAX, get(Reg::GPR0));
-        assembler_.cqo();
-        assembler_.mov(get(Reg::GPR0), R64::RAX);
+        generator_->mov(R64::RAX, get(Reg::GPR0));
+        generator_->cqo();
+        generator_->mov(get(Reg::GPR0), R64::RAX);
         writeReg64(R64::RAX, Reg::GPR0);
-        assembler_.mov(get(Reg::GPR1), R64::RDX);
+        generator_->mov(get(Reg::GPR1), R64::RDX);
         writeReg64(R64::RDX, Reg::GPR1);
-        assembler_.pop64(R64::RDX);
-        assembler_.pop64(R64::RAX);
+        generator_->pop64(R64::RDX);
+        generator_->pop64(R64::RAX);
         return true;
     }
 
     bool Compiler::tryCompileLeaR32Enc32(R32 dst, const Encoding32& address) {
         if(address.index == R32::EIZ) {
             readReg32(Reg::GPR0, address.base);
-            assembler_.lea(get32(Reg::GPR0), make32(get(Reg::GPR0), address.displacement));
+            generator_->lea(get32(Reg::GPR0), make32(get(Reg::GPR0), address.displacement));
             writeReg32(dst, Reg::GPR0);
         } else {
             readReg32(Reg::GPR0, address.base);
             readReg32(Reg::GPR1, address.index);
-            assembler_.lea(get32(Reg::GPR0), make32(get(Reg::GPR0), get(Reg::GPR1), address.scale, address.displacement));
+            generator_->lea(get32(Reg::GPR0), make32(get(Reg::GPR0), get(Reg::GPR1), address.scale, address.displacement));
             writeReg32(dst, Reg::GPR0);
         }
         return true;
@@ -2597,12 +2632,12 @@ namespace x64 {
     bool Compiler::tryCompileLeaR32Enc64(R32 dst, const Encoding64& address) {
         if(address.index == R64::ZERO) {
             readReg64(Reg::GPR0, address.base);
-            assembler_.lea(get32(Reg::GPR0), make64(get(Reg::GPR0), address.displacement));
+            generator_->lea(get32(Reg::GPR0), make64(get(Reg::GPR0), address.displacement));
             writeReg32(dst, Reg::GPR0);
         } else {
             readReg64(Reg::GPR0, address.base);
             readReg64(Reg::GPR1, address.index);
-            assembler_.lea(get32(Reg::GPR0), make64(get(Reg::GPR0), get(Reg::GPR1), address.scale, address.displacement));
+            generator_->lea(get32(Reg::GPR0), make64(get(Reg::GPR0), get(Reg::GPR1), address.scale, address.displacement));
             writeReg32(dst, Reg::GPR0);
         }
         return true;
@@ -2611,12 +2646,12 @@ namespace x64 {
     bool Compiler::tryCompileLeaR64Enc64(R64 dst, const Encoding64& address) {
         if(address.index == R64::ZERO) {
             readReg64(Reg::GPR0, address.base);
-            assembler_.lea(get(Reg::GPR0), make64(get(Reg::GPR0), address.displacement));
+            generator_->lea(get(Reg::GPR0), make64(get(Reg::GPR0), address.displacement));
             writeReg64(dst, Reg::GPR0);
         } else {
             readReg64(Reg::GPR0, address.base);
             readReg64(Reg::GPR1, address.index);
-            assembler_.lea(get(Reg::GPR0), make64(get(Reg::GPR0), get(Reg::GPR1), address.scale, address.displacement));
+            generator_->lea(get(Reg::GPR0), make64(get(Reg::GPR0), get(Reg::GPR1), address.scale, address.displacement));
             writeReg64(dst, Reg::GPR0);
         }
         return true;
@@ -2629,7 +2664,7 @@ namespace x64 {
     bool Compiler::tryCompileBsfR32R32(R32 dst, R32 src) {
         readReg32(Reg::GPR0, dst);
         readReg32(Reg::GPR1, src);
-        assembler_.bsf(get32(Reg::GPR0), get32(Reg::GPR1));
+        generator_->bsf(get32(Reg::GPR0), get32(Reg::GPR1));
         writeReg32(dst, Reg::GPR0);
         return true;
     }
@@ -2637,7 +2672,7 @@ namespace x64 {
     bool Compiler::tryCompileBsfR64R64(R64 dst, R64 src) {
         readReg64(Reg::GPR0, dst);
         readReg64(Reg::GPR1, src);
-        assembler_.bsf(get(Reg::GPR0), get(Reg::GPR1));
+        generator_->bsf(get(Reg::GPR0), get(Reg::GPR1));
         writeReg64(dst, Reg::GPR0);
         return true;
     }
@@ -2645,47 +2680,47 @@ namespace x64 {
     bool Compiler::tryCompileBsrR32R32(R32 dst, R32 src) {
         readReg32(Reg::GPR0, dst);
         readReg32(Reg::GPR1, src);
-        assembler_.bsr(get32(Reg::GPR0), get32(Reg::GPR1));
+        generator_->bsr(get32(Reg::GPR0), get32(Reg::GPR1));
         writeReg32(dst, Reg::GPR0);
         return true;
     }
 
     bool Compiler::tryCompileTzcntR32RM32(R32 dst, const RM32& src) {
         return forRM32RM32(RM32{true, dst, {}}, src, [&](Reg dst, Reg src) {
-            assembler_.tzcnt(get32(dst), get32(src));
+            generator_->tzcnt(get32(dst), get32(src));
         });
     }
 
     bool Compiler::tryCompileSetRM8(Cond cond, const RM8& dst) {
         return forRM8Imm(dst, Imm{}, [&](Reg dst, Imm) {
-            assembler_.set(cond, get8(dst));
+            generator_->set(cond, get8(dst));
         });
     }
 
     bool Compiler::tryCompileCmovR32RM32(Cond cond, R32 dst, const RM32& src) {
         RM32 d {true, dst, {}};
         return forRM32RM32(d, src, [&](Reg dst, Reg src) {
-            assembler_.cmov(cond, get32(dst), get32(src));
+            generator_->cmov(cond, get32(dst), get32(src));
         }, true);
     }
 
     bool Compiler::tryCompileCmovR64RM64(Cond cond, R64 dst, const RM64& src) {
         RM64 d {true, dst, {}};
         return forRM64RM64(d, src, [&](Reg dst, Reg src) {
-            assembler_.cmov(cond, get(dst), get(src));
+            generator_->cmov(cond, get(dst), get(src));
         }, true);
     }
 
     bool Compiler::tryCompileBswapR32(R32 dst) {
         readReg32(Reg::GPR0, dst);
-        assembler_.bswap(get32(Reg::GPR0));
+        generator_->bswap(get32(Reg::GPR0));
         writeReg32(dst, Reg::GPR0);
         return true;
     }
 
     bool Compiler::tryCompileBswapR64(R64 dst) {
         readReg64(Reg::GPR0, dst);
-        assembler_.bswap(get(Reg::GPR0));
+        generator_->bswap(get(Reg::GPR0));
         writeReg64(dst, Reg::GPR0);
         return true;
     }
@@ -2693,40 +2728,40 @@ namespace x64 {
     bool Compiler::tryCompileBtRM32R32(const RM32& dst, R32 src) {
         RM32 s {true, src, {}};
         return forRM32RM32(dst, s, [&](Reg dst, Reg src) {
-            assembler_.bt(get32(dst), get32(src));
+            generator_->bt(get32(dst), get32(src));
         }, false);
     }
 
     bool Compiler::tryCompileBtRM64R64(const RM64& dst, R64 src) {
         RM64 s {true, src, {}};
         return forRM64RM64(dst, s, [&](Reg dst, Reg src) {
-            assembler_.bt(get(dst), get(src));
+            generator_->bt(get(dst), get(src));
         }, false);
     }
 
     bool Compiler::tryCompileBtrRM64R64(const RM64& dst, R64 src) {
         RM64 s {true, src, {}};
         return forRM64RM64(dst, s, [&](Reg dst, Reg src) {
-            assembler_.btr(get(dst), get(src));
+            generator_->btr(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompileBtrRM64Imm(const RM64& dst, Imm imm) {
         return forRM64Imm(dst, imm, [&](Reg dst, Imm imm) {
-            assembler_.btr(get(dst), imm.as<u8>());
+            generator_->btr(get(dst), imm.as<u8>());
         });
     }
 
     bool Compiler::tryCompileBtsRM64R64(const RM64& dst, R64 src) {
         RM64 s {true, src, {}};
         return forRM64RM64(dst, s, [&](Reg dst, Reg src) {
-            assembler_.bts(get(dst), get(src));
+            generator_->bts(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompileBtsRM64Imm(const RM64& dst, Imm imm) {
         return forRM64Imm(dst, imm, [&](Reg dst, Imm imm) {
-            assembler_.bts(get(dst), imm.as<u8>());
+            generator_->bts(get(dst), imm.as<u8>());
         });
     }
 
@@ -2734,37 +2769,37 @@ namespace x64 {
         if(dst.encoding.base != R64::RDI) return false;
         if(src != R32::EAX) return false;
         // save rdi, rcx and rax
-        assembler_.push64(R64::RDI);
-        assembler_.push64(R64::RCX);
-        assembler_.push64(R64::RAX);
+        generator_->push64(R64::RDI);
+        generator_->push64(R64::RCX);
+        generator_->push64(R64::RAX);
 
         // get the dst address
         readReg64(Reg::GPR0, R64::RDI);
-        assembler_.lea(R64::RDI, make64(get(Reg::MEM_BASE), get(Reg::GPR0), 1, 0));
+        generator_->lea(R64::RDI, make64(get(Reg::MEM_BASE), get(Reg::GPR0), 1, 0));
 
         // get the src value
         readReg32(Reg::GPR0, R32::EAX);
-        assembler_.mov(R32::EAX, get32(Reg::GPR0));
+        generator_->mov(R32::EAX, get32(Reg::GPR0));
 
         // set the counter
         readReg32(Reg::GPR0, R32::ECX);
-        assembler_.mov(R32::ECX, get32(Reg::GPR0));
+        generator_->mov(R32::ECX, get32(Reg::GPR0));
 
-        assembler_.repstos32();
+        generator_->repstos32();
 
         // write back the dst address (address+4*counter)
         readReg64(Reg::GPR0, R64::RDI);
-        assembler_.lea(get(Reg::GPR0), make64(get(Reg::GPR0), R64::RCX, 4, 0));
+        generator_->lea(get(Reg::GPR0), make64(get(Reg::GPR0), R64::RCX, 4, 0));
         writeReg64(R64::RDI, Reg::GPR0);
 
         // write back the counter (is 0)
-        assembler_.xor_(get(Reg::GPR0), get(Reg::GPR0));
+        generator_->xor_(get(Reg::GPR0), get(Reg::GPR0));
         writeReg64(R64::RCX, Reg::GPR0);
 
         // restore rax, rcx and rdi
-        assembler_.pop64(R64::RAX);
-        assembler_.pop64(R64::RCX);
-        assembler_.pop64(R64::RDI);
+        generator_->pop64(R64::RAX);
+        generator_->pop64(R64::RCX);
+        generator_->pop64(R64::RDI);
         return true;
     }
 
@@ -2772,37 +2807,37 @@ namespace x64 {
         if(dst.encoding.base != R64::RDI) return false;
         if(src != R64::RAX) return false;
         // save rdi, rcx and rax
-        assembler_.push64(R64::RDI);
-        assembler_.push64(R64::RCX);
-        assembler_.push64(R64::RAX);
+        generator_->push64(R64::RDI);
+        generator_->push64(R64::RCX);
+        generator_->push64(R64::RAX);
 
         // get the dst address
         readReg64(Reg::GPR0, R64::RDI);
-        assembler_.lea(R64::RDI, make64(get(Reg::MEM_BASE), get(Reg::GPR0), 1, 0));
+        generator_->lea(R64::RDI, make64(get(Reg::MEM_BASE), get(Reg::GPR0), 1, 0));
 
         // get the src value
         readReg64(Reg::GPR0, R64::RAX);
-        assembler_.mov(R64::RAX, get(Reg::GPR0));
+        generator_->mov(R64::RAX, get(Reg::GPR0));
 
         // set the counter
         readReg64(Reg::GPR0, R64::RCX);
-        assembler_.mov(R64::RCX, get(Reg::GPR0));
+        generator_->mov(R64::RCX, get(Reg::GPR0));
 
-        assembler_.repstos64();
+        generator_->repstos64();
 
         // write back the dst address (address+4*counter)
         readReg64(Reg::GPR0, R64::RDI);
-        assembler_.lea(get(Reg::GPR0), make64(get(Reg::GPR0), R64::RCX, 4, 0));
+        generator_->lea(get(Reg::GPR0), make64(get(Reg::GPR0), R64::RCX, 4, 0));
         writeReg64(R64::RDI, Reg::GPR0);
 
         // write back the counter (is 0)
-        assembler_.xor_(get(Reg::GPR0), get(Reg::GPR0));
+        generator_->xor_(get(Reg::GPR0), get(Reg::GPR0));
         writeReg64(R64::RCX, Reg::GPR0);
 
         // restore rax, rcx and rdi
-        assembler_.pop64(R64::RAX);
-        assembler_.pop64(R64::RCX);
-        assembler_.pop64(R64::RDI);
+        generator_->pop64(R64::RAX);
+        generator_->pop64(R64::RCX);
+        generator_->pop64(R64::RDI);
         return true;
     }
 
@@ -2817,13 +2852,13 @@ namespace x64 {
     bool Compiler::tryCompileMovdMmxRM32(MMX dst, const RM32& src) {
         if(src.isReg) {
             M32 s = make32(get(Reg::REG_BASE), R64::ZERO, 1, registerOffset(src.reg));
-            assembler_.movd(get(RegMM::GPR0), s);
+            generator_->movd(get(RegMM::GPR0), s);
             writeRegMM(dst, RegMM::GPR0);
             return true;
         } else {
             Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src.mem);
             M32 s = make32(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset);
-            assembler_.movd(get(RegMM::GPR0), s);
+            generator_->movd(get(RegMM::GPR0), s);
             writeRegMM(dst, RegMM::GPR0);
             return true;
         }
@@ -2832,14 +2867,14 @@ namespace x64 {
     bool Compiler::tryCompileMovdRM32Mmx(const RM32& dst, MMX src) {
         if(dst.isReg) {
             readRegMM(RegMM::GPR0, src);
-            assembler_.movd(get32(Reg::GPR0), get(RegMM::GPR0));
+            generator_->movd(get32(Reg::GPR0), get(RegMM::GPR0));
             writeReg32(dst.reg, Reg::GPR0);
             return true;
         } else {
             readRegMM(RegMM::GPR0, src);
             Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, dst.mem);
             M32 d = make32(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset);
-            assembler_.movd(d, get(RegMM::GPR0));
+            generator_->movd(d, get(RegMM::GPR0));
             return true;
         }
     }
@@ -2848,13 +2883,13 @@ namespace x64 {
         if(src.isReg) {
             return false;
             // M64 s = make64(get(Reg::REG_BASE), R64::ZERO, 1, registerOffset(src.reg));
-            // assembler_.mov(get(RegMM::GPR0), s);
+            // generator_->mov(get(RegMM::GPR0), s);
             // writeRegMM(dst, RegMM::GPR0);
             // return true;
         } else {
             Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src.mem);
             M64 s = make64(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset);
-            assembler_.movq(get(RegMM::GPR0), s);
+            generator_->movq(get(RegMM::GPR0), s);
             writeRegMM(dst, RegMM::GPR0);
             return true;
         }
@@ -2864,171 +2899,171 @@ namespace x64 {
         if(dst.isReg) {
             return false;
             // M64 s = make64(get(Reg::REG_BASE), R64::ZERO, 1, registerOffset(src.reg));
-            // assembler_.mov(get(RegMM::GPR0), s);
+            // generator_->mov(get(RegMM::GPR0), s);
             // writeRegMM(dst, RegMM::GPR0);
             // return true;
         } else {
             readRegMM(RegMM::GPR0, src);
             Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, dst.mem);
             M64 d = make64(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset);
-            assembler_.movq(d, get(RegMM::GPR0));
+            generator_->movq(d, get(RegMM::GPR0));
             return true;
         }
     }
 
     bool Compiler::tryCompilePandMmxMmxM64(MMX dst, const MMXM64& src) {
         return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
-            assembler_.pand(get(dst), get(src));
+            generator_->pand(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePorMmxMmxM64(MMX dst, const MMXM64& src) {
         return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
-            assembler_.por(get(dst), get(src));
+            generator_->por(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePxorMmxMmxM64(MMX dst, const MMXM64& src) {
         return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
-            assembler_.pxor(get(dst), get(src));
+            generator_->pxor(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePaddbMmxMmxM64(MMX dst, const MMXM64& src) {
         return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
-            assembler_.paddb(get(dst), get(src));
+            generator_->paddb(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePaddwMmxMmxM64(MMX dst, const MMXM64& src) {
         return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
-            assembler_.paddw(get(dst), get(src));
+            generator_->paddw(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePadddMmxMmxM64(MMX dst, const MMXM64& src) {
         return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
-            assembler_.paddd(get(dst), get(src));
+            generator_->paddd(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePaddqMmxMmxM64(MMX dst, const MMXM64& src) {
         return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
-            assembler_.paddq(get(dst), get(src));
+            generator_->paddq(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePaddsbMmxMmxM64(MMX dst, const MMXM64& src) {
         return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
-            assembler_.paddsb(get(dst), get(src));
+            generator_->paddsb(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePaddswMmxMmxM64(MMX dst, const MMXM64& src) {
         return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
-            assembler_.paddsw(get(dst), get(src));
+            generator_->paddsw(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePaddusbMmxMmxM64(MMX dst, const MMXM64& src) {
         return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
-            assembler_.paddusb(get(dst), get(src));
+            generator_->paddusb(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePadduswMmxMmxM64(MMX dst, const MMXM64& src) {
         return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
-            assembler_.paddusw(get(dst), get(src));
+            generator_->paddusw(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePsubbMmxMmxM64(MMX dst, const MMXM64& src) {
         return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
-            assembler_.psubb(get(dst), get(src));
+            generator_->psubb(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePsubwMmxMmxM64(MMX dst, const MMXM64& src) {
         return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
-            assembler_.psubw(get(dst), get(src));
+            generator_->psubw(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePsubdMmxMmxM64(MMX dst, const MMXM64& src) {
         return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
-            assembler_.psubd(get(dst), get(src));
+            generator_->psubd(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePsubsbMmxMmxM64(MMX dst, const MMXM64& src) {
         return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
-            assembler_.psubsb(get(dst), get(src));
+            generator_->psubsb(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePsubswMmxMmxM64(MMX dst, const MMXM64& src) {
         return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
-            assembler_.psubsw(get(dst), get(src));
+            generator_->psubsw(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePsubusbMmxMmxM64(MMX dst, const MMXM64& src) {
         return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
-            assembler_.psubusb(get(dst), get(src));
+            generator_->psubusb(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePsubuswMmxMmxM64(MMX dst, const MMXM64& src) {
         return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
-            assembler_.psubusw(get(dst), get(src));
+            generator_->psubusw(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePmaddwdMmxMmxM64(MMX dst, const MMXM64& src) {
         return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
-            assembler_.pmaddwd(get(dst), get(src));
+            generator_->pmaddwd(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePsadbwMmxMmxM64(MMX dst, const MMXM64& src) {
         return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
-            assembler_.psadbw(get(dst), get(src));
+            generator_->psadbw(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePmulhwMmxMmxM64(MMX dst, const MMXM64& src) {
         return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
-            assembler_.pmulhw(get(dst), get(src));
+            generator_->pmulhw(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePmullwMmxMmxM64(MMX dst, const MMXM64& src) {
         return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
-            assembler_.pmullw(get(dst), get(src));
+            generator_->pmullw(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePavgbMmxMmxM64(MMX dst, const MMXM64& src) {
         return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
-            assembler_.pavgb(get(dst), get(src));
+            generator_->pavgb(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePavgwMmxMmxM64(MMX dst, const MMXM64& src) {
         return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
-            assembler_.pavgw(get(dst), get(src));
+            generator_->pavgw(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePmaxubMmxMmxM64(MMX dst, const MMXM64& src) {
         return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
-            assembler_.pmaxub(get(dst), get(src));
+            generator_->pmaxub(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePminubMmxMmxM64(MMX dst, const MMXM64& src) {
         return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
-            assembler_.pminub(get(dst), get(src));
+            generator_->pminub(get(dst), get(src));
         });
     }
 
@@ -3036,7 +3071,7 @@ namespace x64 {
         if(!src.isReg) return false;
         readRegMM(RegMM::GPR0, dst);
         readRegMM(RegMM::GPR1, src.reg);
-        assembler_.pcmpeqb(get(RegMM::GPR0), get(RegMM::GPR1));
+        generator_->pcmpeqb(get(RegMM::GPR0), get(RegMM::GPR1));
         writeRegMM(dst, RegMM::GPR0);
         return true;
     }
@@ -3045,7 +3080,7 @@ namespace x64 {
         if(!src.isReg) return false;
         readRegMM(RegMM::GPR0, dst);
         readRegMM(RegMM::GPR1, src.reg);
-        assembler_.pcmpeqw(get(RegMM::GPR0), get(RegMM::GPR1));
+        generator_->pcmpeqw(get(RegMM::GPR0), get(RegMM::GPR1));
         writeRegMM(dst, RegMM::GPR0);
         return true;
     }
@@ -3054,124 +3089,124 @@ namespace x64 {
         if(!src.isReg) return false;
         readRegMM(RegMM::GPR0, dst);
         readRegMM(RegMM::GPR1, src.reg);
-        assembler_.pcmpeqd(get(RegMM::GPR0), get(RegMM::GPR1));
+        generator_->pcmpeqd(get(RegMM::GPR0), get(RegMM::GPR1));
         writeRegMM(dst, RegMM::GPR0);
         return true;
     }
 
     bool Compiler::tryCompilePsllwMmxImm(MMX dst, Imm imm) {
         readRegMM(RegMM::GPR0, dst);
-        assembler_.psllw(get(RegMM::GPR0), imm.as<u8>());
+        generator_->psllw(get(RegMM::GPR0), imm.as<u8>());
         writeRegMM(dst, RegMM::GPR0);
         return true;
     }
 
     bool Compiler::tryCompilePslldMmxImm(MMX dst, Imm imm) {
         readRegMM(RegMM::GPR0, dst);
-        assembler_.pslld(get(RegMM::GPR0), imm.as<u8>());
+        generator_->pslld(get(RegMM::GPR0), imm.as<u8>());
         writeRegMM(dst, RegMM::GPR0);
         return true;
     }
 
     bool Compiler::tryCompilePsllqMmxImm(MMX dst, Imm imm) {
         readRegMM(RegMM::GPR0, dst);
-        assembler_.psllq(get(RegMM::GPR0), imm.as<u8>());
+        generator_->psllq(get(RegMM::GPR0), imm.as<u8>());
         writeRegMM(dst, RegMM::GPR0);
         return true;
     }
 
     bool Compiler::tryCompilePsrlwMmxImm(MMX dst, Imm imm) {
         readRegMM(RegMM::GPR0, dst);
-        assembler_.psrlw(get(RegMM::GPR0), imm.as<u8>());
+        generator_->psrlw(get(RegMM::GPR0), imm.as<u8>());
         writeRegMM(dst, RegMM::GPR0);
         return true;
     }
 
     bool Compiler::tryCompilePsrldMmxImm(MMX dst, Imm imm) {
         readRegMM(RegMM::GPR0, dst);
-        assembler_.psrld(get(RegMM::GPR0), imm.as<u8>());
+        generator_->psrld(get(RegMM::GPR0), imm.as<u8>());
         writeRegMM(dst, RegMM::GPR0);
         return true;
     }
 
     bool Compiler::tryCompilePsrlqMmxImm(MMX dst, Imm imm) {
         readRegMM(RegMM::GPR0, dst);
-        assembler_.psrlq(get(RegMM::GPR0), imm.as<u8>());
+        generator_->psrlq(get(RegMM::GPR0), imm.as<u8>());
         writeRegMM(dst, RegMM::GPR0);
         return true;
     }
 
     bool Compiler::tryCompilePsrawMmxMmxM64(MMX dst, const MMXM64& src) {
         return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
-            assembler_.psraw(get(dst), get(src));
+            generator_->psraw(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePsrawMmxImm(MMX dst, Imm imm) {
         readRegMM(RegMM::GPR0, dst);
-        assembler_.psraw(get(RegMM::GPR0), imm.as<u8>());
+        generator_->psraw(get(RegMM::GPR0), imm.as<u8>());
         writeRegMM(dst, RegMM::GPR0);
         return true;
     }
 
     bool Compiler::tryCompilePsradMmxMmxM64(MMX dst, const MMXM64& src) {
         return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
-            assembler_.psrad(get(dst), get(src));
+            generator_->psrad(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePsradMmxImm(MMX dst, Imm imm) {
         readRegMM(RegMM::GPR0, dst);
-        assembler_.psrad(get(RegMM::GPR0), imm.as<u8>());
+        generator_->psrad(get(RegMM::GPR0), imm.as<u8>());
         writeRegMM(dst, RegMM::GPR0);
         return true;
     }
 
     bool Compiler::tryCompilePshufbMmxMmxM64(MMX dst, const MMXM64& src) {
         return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
-            assembler_.pshufb(get(dst), get(src));
+            generator_->pshufb(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePshufwMmxMmxM64(MMX dst, const MMXM64& src, Imm imm) {
         return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
-            assembler_.pshufw(get(dst), get(src), imm.as<u8>());
+            generator_->pshufw(get(dst), get(src), imm.as<u8>());
         });
     }
 
     bool Compiler::tryCompilePunpcklbwMmxMmxM32(MMX dst, const MMXM32& src) {
         return forMmxMmxM32(dst, src, [&](RegMM dst, RegMM src) {
-            assembler_.punpcklbw(get(dst), get(src));
+            generator_->punpcklbw(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePunpcklwdMmxMmxM32(MMX dst, const MMXM32& src) {
         return forMmxMmxM32(dst, src, [&](RegMM dst, RegMM src) {
-            assembler_.punpcklwd(get(dst), get(src));
+            generator_->punpcklwd(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePunpckldqMmxMmxM32(MMX dst, const MMXM32& src) {
         return forMmxMmxM32(dst, src, [&](RegMM dst, RegMM src) {
-            assembler_.punpckldq(get(dst), get(src));
+            generator_->punpckldq(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePunpckhbwMmxMmxM64(MMX dst, const MMXM64& src) {
         return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
-            assembler_.punpckhbw(get(dst), get(src));
+            generator_->punpckhbw(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePunpckhwdMmxMmxM64(MMX dst, const MMXM64& src) {
         return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
-            assembler_.punpckhwd(get(dst), get(src));
+            generator_->punpckhwd(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePunpckhdqMmxMmxM64(MMX dst, const MMXM64& src) {
         return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
-            assembler_.punpckhdq(get(dst), get(src));
+            generator_->punpckhdq(get(dst), get(src));
         });
     }
 
@@ -3179,7 +3214,7 @@ namespace x64 {
         if(!src.isReg) return false;
         readRegMM(RegMM::GPR0, dst);
         readRegMM(RegMM::GPR1, src.reg);
-        assembler_.packsswb(get(RegMM::GPR0), get(RegMM::GPR1));
+        generator_->packsswb(get(RegMM::GPR0), get(RegMM::GPR1));
         writeRegMM(dst, RegMM::GPR0);
         return true;
     }
@@ -3188,7 +3223,7 @@ namespace x64 {
         if(!src.isReg) return false;
         readRegMM(RegMM::GPR0, dst);
         readRegMM(RegMM::GPR1, src.reg);
-        assembler_.packssdw(get(RegMM::GPR0), get(RegMM::GPR1));
+        generator_->packssdw(get(RegMM::GPR0), get(RegMM::GPR1));
         writeRegMM(dst, RegMM::GPR0);
         return true;
     }
@@ -3197,7 +3232,7 @@ namespace x64 {
         if(!src.isReg) return false;
         readRegMM(RegMM::GPR0, dst);
         readRegMM(RegMM::GPR1, src.reg);
-        assembler_.packuswb(get(RegMM::GPR0), get(RegMM::GPR1));
+        generator_->packuswb(get(RegMM::GPR0), get(RegMM::GPR1));
         writeRegMM(dst, RegMM::GPR0);
         return true;
     }
@@ -3214,7 +3249,7 @@ namespace x64 {
             // read the src register
             readReg64(Reg::GPR0, src.reg);
             // mov into 128-bit reg
-            assembler_.movq(get(Reg128::GPR0), get(Reg::GPR0));
+            generator_->movq(get(Reg128::GPR0), get(Reg::GPR0));
             // write to the destination register
             writeReg128(dst, Reg128::GPR0);
             return true;
@@ -3228,7 +3263,7 @@ namespace x64 {
             // read the src value at the address
             readMem64(Reg::GPR0, addr);
             // mov into 128-bit reg
-            assembler_.movq(get(Reg128::GPR0), get(Reg::GPR0));
+            generator_->movq(get(Reg128::GPR0), get(Reg::GPR0));
             // write to the destination register
             writeReg128(dst, Reg128::GPR0);
             return true;
@@ -3240,7 +3275,7 @@ namespace x64 {
             // read the src register
             readReg128(Reg128::GPR0, src);
             // mov into 128-bit reg
-            assembler_.movq(get(Reg::GPR0), get(Reg128::GPR0));
+            generator_->movq(get(Reg::GPR0), get(Reg128::GPR0));
             // write to the destination register
             writeReg64(dst.reg, Reg::GPR0);
             return true;
@@ -3254,7 +3289,7 @@ namespace x64 {
             // read the src value
             readReg128(Reg128::GPR0, src);
             // mov into 64-bit reg
-            assembler_.movq(get(Reg::GPR0), get(Reg128::GPR0));
+            generator_->movq(get(Reg::GPR0), get(Reg128::GPR0));
             // write to the destination address
             writeMem64(addr, Reg::GPR0);
             return true;
@@ -3272,7 +3307,7 @@ namespace x64 {
         // get the address
         Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, dst);
         // do the write
-        assembler_.movu(make128(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset), get(Reg128::GPR0));
+        generator_->movu(make128(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset), get(Reg128::GPR0));
         return true;
     }
 
@@ -3283,7 +3318,7 @@ namespace x64 {
         // get the address
         Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src);
         // do the read
-        assembler_.movu(get(Reg128::GPR0), make128(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
+        generator_->movu(get(Reg128::GPR0), make128(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
         // write the value to the register
         writeReg128(dst, Reg128::GPR0);
         return true;
@@ -3298,7 +3333,7 @@ namespace x64 {
         // get the address
         Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, dst);
         // do the write
-        assembler_.mova(make128(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset), get(Reg128::GPR0));
+        generator_->mova(make128(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset), get(Reg128::GPR0));
         return true;
     }
 
@@ -3309,7 +3344,7 @@ namespace x64 {
         // get the address
         Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src);
         // do the read
-        assembler_.mova(get(Reg128::GPR0), make128(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
+        generator_->mova(get(Reg128::GPR0), make128(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
         // write the value to the register
         writeReg128(dst, Reg128::GPR0);
         return true;
@@ -3320,7 +3355,7 @@ namespace x64 {
             // read src register
             readReg32(Reg::GPR0, src.reg);
             // do the read
-            assembler_.movd(get(Reg128::GPR0), get32(Reg::GPR0));
+            generator_->movd(get(Reg128::GPR0), get32(Reg::GPR0));
             // write the value to the register
             writeReg128(dst, Reg128::GPR0);
             return true;
@@ -3331,7 +3366,7 @@ namespace x64 {
             // get the address
             Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src.mem);
             // do the read
-            assembler_.movd(get(Reg128::GPR0), make32(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
+            generator_->movd(get(Reg128::GPR0), make32(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
             // write the value to the register
             writeReg128(dst, Reg128::GPR0);
             return true;
@@ -3343,7 +3378,7 @@ namespace x64 {
             // read src register
             readReg128(Reg128::GPR0, src);
             // do the write
-            assembler_.movd(get32(Reg::GPR0), get(Reg128::GPR0));
+            generator_->movd(get32(Reg::GPR0), get(Reg128::GPR0));
             // write the value to the register
             writeReg32(dst.reg, Reg::GPR0);
             return true;
@@ -3356,7 +3391,7 @@ namespace x64 {
             // read the value from the src register
             readReg128(Reg128::GPR0, src);
             // do the read
-            assembler_.movd(make32(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset), get(Reg128::GPR0));
+            generator_->movd(make32(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset), get(Reg128::GPR0));
             return true;
         }
     }
@@ -3368,7 +3403,7 @@ namespace x64 {
         // get the address
         Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src);
         // do the read
-        assembler_.movss(get(Reg128::GPR0), make32(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
+        generator_->movss(get(Reg128::GPR0), make32(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
         // write the value to the register
         writeReg128(dst, Reg128::GPR0);
         return true;
@@ -3383,7 +3418,7 @@ namespace x64 {
         // do the read
         readReg128(Reg128::GPR0, src);
         // write the value to the register
-        assembler_.movss(make32(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset), get(Reg128::GPR0));
+        generator_->movss(make32(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset), get(Reg128::GPR0));
         return true;
     }
 
@@ -3394,7 +3429,7 @@ namespace x64 {
         // get the address
         Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src);
         // do the read
-        assembler_.movsd(get(Reg128::GPR0), make64(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
+        generator_->movsd(get(Reg128::GPR0), make64(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
         // write the value to the register
         writeReg128(dst, Reg128::GPR0);
         return true;
@@ -3409,7 +3444,7 @@ namespace x64 {
         // do the read
         readReg128(Reg128::GPR0, src);
         // write the value to the register
-        assembler_.movsd(make64(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset), get(Reg128::GPR0));
+        generator_->movsd(make64(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset), get(Reg128::GPR0));
         return true;
     }
 
@@ -3422,7 +3457,7 @@ namespace x64 {
         // read the dst register
         readReg128(Reg128::GPR0, dst);
         // do the mov into the low part
-        assembler_.movlps(get(Reg128::GPR0), make64(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
+        generator_->movlps(get(Reg128::GPR0), make64(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
         // write the value back to the register
         writeReg128(dst, Reg128::GPR0);
         return true;
@@ -3437,7 +3472,7 @@ namespace x64 {
         // read the dst register
         readReg128(Reg128::GPR0, dst);
         // do the mov into the high part
-        assembler_.movhps(get(Reg128::GPR0), make64(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
+        generator_->movhps(get(Reg128::GPR0), make64(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
         // write the value back to the register
         writeReg128(dst, Reg128::GPR0);
         return true;
@@ -3452,14 +3487,14 @@ namespace x64 {
         // read the src register
         readReg128(Reg128::GPR0, src);
         // do the mov from the high part
-        assembler_.movhps(make64(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset), get(Reg128::GPR0));
+        generator_->movhps(make64(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset), get(Reg128::GPR0));
         return true;
     }
 
     bool Compiler::tryCompileMovhlpsXmmXmm(XMM dst, XMM src) {
         readReg128(Reg128::GPR0, dst);
         readReg128(Reg128::GPR1, src);
-        assembler_.movhlps(get(Reg128::GPR0), get(Reg128::GPR1));
+        generator_->movhlps(get(Reg128::GPR0), get(Reg128::GPR1));
         writeReg128(dst, Reg128::GPR0);
         return true;
     }
@@ -3467,403 +3502,403 @@ namespace x64 {
     bool Compiler::tryCompilePmovmskbR32Xmm(R32 dst, XMM src) {
         readReg128(Reg128::GPR0, src);
         readReg32(Reg::GPR0, dst);
-        assembler_.pmovmskb(get32(Reg::GPR0), get(Reg128::GPR0));
+        generator_->pmovmskb(get32(Reg::GPR0), get(Reg128::GPR0));
         writeReg32(dst, Reg::GPR0);
         return true;
     }
 
     bool Compiler::tryCompileMovq2qdXMMMMX(XMM dst, MMX src) {
         readRegMM(RegMM::GPR0, src);
-        assembler_.movq2dq(get(Reg128::GPR0), get(RegMM::GPR0));
+        generator_->movq2dq(get(Reg128::GPR0), get(RegMM::GPR0));
         writeReg128(dst, Reg128::GPR0);
         return true;
     }
 
     bool Compiler::tryCompilePandXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.pand(get(dst), get(src));
+            generator_->pand(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePandnXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.pandn(get(dst), get(src));
+            generator_->pandn(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePorXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.por(get(dst), get(src));
+            generator_->por(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePxorXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.pxor(get(dst), get(src));
+            generator_->pxor(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePaddbXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.paddb(get(dst), get(src));
+            generator_->paddb(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePaddwXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.paddw(get(dst), get(src));
+            generator_->paddw(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePadddXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.paddd(get(dst), get(src));
+            generator_->paddd(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePaddqXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.paddq(get(dst), get(src));
+            generator_->paddq(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePaddsbXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.paddsb(get(dst), get(src));
+            generator_->paddsb(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePaddswXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.paddsw(get(dst), get(src));
+            generator_->paddsw(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePaddusbXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.paddusb(get(dst), get(src));
+            generator_->paddusb(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePadduswXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.paddusw(get(dst), get(src));
+            generator_->paddusw(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePsubbXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.psubb(get(dst), get(src));
+            generator_->psubb(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePsubwXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.psubw(get(dst), get(src));
+            generator_->psubw(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePsubdXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.psubd(get(dst), get(src));
+            generator_->psubd(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePsubsbXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.psubsb(get(dst), get(src));
+            generator_->psubsb(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePsubswXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.psubsw(get(dst), get(src));
+            generator_->psubsw(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePsubusbXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.psubusb(get(dst), get(src));
+            generator_->psubusb(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePsubuswXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.psubusw(get(dst), get(src));
+            generator_->psubusw(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePmaddwdXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.pmaddwd(get(dst), get(src));
+            generator_->pmaddwd(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePmulhwXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.pmulhw(get(dst), get(src));
+            generator_->pmulhw(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePmullwXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.pmullw(get(dst), get(src));
+            generator_->pmullw(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePmulhuwXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.pmulhuw(get(dst), get(src));
+            generator_->pmulhuw(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePmuludqXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.pmuludq(get(dst), get(src));
+            generator_->pmuludq(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePavgbXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.pavgb(get(dst), get(src));
+            generator_->pavgb(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePavgwXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.pavgw(get(dst), get(src));
+            generator_->pavgw(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePmaxubXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.pmaxub(get(dst), get(src));
+            generator_->pmaxub(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePminubXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.pminub(get(dst), get(src));
+            generator_->pminub(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePcmpeqbXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.pcmpeqb(get(dst), get(src));
+            generator_->pcmpeqb(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePcmpeqwXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.pcmpeqw(get(dst), get(src));
+            generator_->pcmpeqw(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePcmpeqdXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.pcmpeqd(get(dst), get(src));
+            generator_->pcmpeqd(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePcmpgtbXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.pcmpgtb(get(dst), get(src));
+            generator_->pcmpgtb(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePcmpgtwXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.pcmpgtw(get(dst), get(src));
+            generator_->pcmpgtw(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePcmpgtdXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.pcmpgtd(get(dst), get(src));
+            generator_->pcmpgtd(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePsllwXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.psllw(get(dst), get(src));
+            generator_->psllw(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePsllwXmmImm(XMM dst, Imm imm) {
         readReg128(Reg128::GPR0, dst);
-        assembler_.psllw(get(Reg128::GPR0), imm.as<u8>());
+        generator_->psllw(get(Reg128::GPR0), imm.as<u8>());
         writeReg128(dst, Reg128::GPR0);
         return true;
     }
 
     bool Compiler::tryCompilePslldXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.pslld(get(dst), get(src));
+            generator_->pslld(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePslldXmmImm(XMM dst, Imm imm) {
         readReg128(Reg128::GPR0, dst);
-        assembler_.pslld(get(Reg128::GPR0), imm.as<u8>());
+        generator_->pslld(get(Reg128::GPR0), imm.as<u8>());
         writeReg128(dst, Reg128::GPR0);
         return true;
     }
 
     bool Compiler::tryCompilePsllqXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.psllq(get(dst), get(src));
+            generator_->psllq(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePsllqXmmImm(XMM dst, Imm imm) {
         readReg128(Reg128::GPR0, dst);
-        assembler_.psllq(get(Reg128::GPR0), imm.as<u8>());
+        generator_->psllq(get(Reg128::GPR0), imm.as<u8>());
         writeReg128(dst, Reg128::GPR0);
         return true;
     }
 
     bool Compiler::tryCompilePslldqXmmImm(XMM dst, Imm imm) {
         readReg128(Reg128::GPR0, dst);
-        assembler_.pslldq(get(Reg128::GPR0), imm.as<u8>());
+        generator_->pslldq(get(Reg128::GPR0), imm.as<u8>());
         writeReg128(dst, Reg128::GPR0);
         return true;
     }
 
     bool Compiler::tryCompilePsrlwXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.psrlw(get(dst), get(src));
+            generator_->psrlw(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePsrlwXmmImm(XMM dst, Imm imm) {
         readReg128(Reg128::GPR0, dst);
-        assembler_.psrlw(get(Reg128::GPR0), imm.as<u8>());
+        generator_->psrlw(get(Reg128::GPR0), imm.as<u8>());
         writeReg128(dst, Reg128::GPR0);
         return true;
     }
 
     bool Compiler::tryCompilePsrldXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.psrld(get(dst), get(src));
+            generator_->psrld(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePsrldXmmImm(XMM dst, Imm imm) {
         readReg128(Reg128::GPR0, dst);
-        assembler_.psrld(get(Reg128::GPR0), imm.as<u8>());
+        generator_->psrld(get(Reg128::GPR0), imm.as<u8>());
         writeReg128(dst, Reg128::GPR0);
         return true;
     }
 
     bool Compiler::tryCompilePsrlqXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.psrlq(get(dst), get(src));
+            generator_->psrlq(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePsrlqXmmImm(XMM dst, Imm imm) {
         readReg128(Reg128::GPR0, dst);
-        assembler_.psrlq(get(Reg128::GPR0), imm.as<u8>());
+        generator_->psrlq(get(Reg128::GPR0), imm.as<u8>());
         writeReg128(dst, Reg128::GPR0);
         return true;
     }
 
     bool Compiler::tryCompilePsrldqXmmImm(XMM dst, Imm imm) {
         readReg128(Reg128::GPR0, dst);
-        assembler_.psrldq(get(Reg128::GPR0), imm.as<u8>());
+        generator_->psrldq(get(Reg128::GPR0), imm.as<u8>());
         writeReg128(dst, Reg128::GPR0);
         return true;
     }
 
     bool Compiler::tryCompilePsrawXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.psraw(get(dst), get(src));
+            generator_->psraw(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePsrawXmmImm(XMM dst, Imm imm) {
         readReg128(Reg128::GPR0, dst);
-        assembler_.psraw(get(Reg128::GPR0), imm.as<u8>());
+        generator_->psraw(get(Reg128::GPR0), imm.as<u8>());
         writeReg128(dst, Reg128::GPR0);
         return true;
     }
 
     bool Compiler::tryCompilePsradXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.psrad(get(dst), get(src));
+            generator_->psrad(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePsradXmmImm(XMM dst, Imm imm) {
         readReg128(Reg128::GPR0, dst);
-        assembler_.psrad(get(Reg128::GPR0), imm.as<u8>());
+        generator_->psrad(get(Reg128::GPR0), imm.as<u8>());
         writeReg128(dst, Reg128::GPR0);
         return true;
     }
 
     bool Compiler::tryCompilePshufdXmmXmmM128Imm(XMM dst, const XMMM128& src, Imm imm) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.pshufd(get(dst), get(src), imm.as<u8>());
+            generator_->pshufd(get(dst), get(src), imm.as<u8>());
         });
     }
 
     bool Compiler::tryCompilePshuflwXmmXmmM128Imm(XMM dst, const XMMM128& src, Imm imm) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.pshuflw(get(dst), get(src), imm.as<u8>());
+            generator_->pshuflw(get(dst), get(src), imm.as<u8>());
         });
     }
 
     bool Compiler::tryCompilePshufhwXmmXmmM128Imm(XMM dst, const XMMM128& src, Imm imm) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.pshufhw(get(dst), get(src), imm.as<u8>());
+            generator_->pshufhw(get(dst), get(src), imm.as<u8>());
         });
     }
 
     bool Compiler::tryCompilePunpcklbwXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.punpcklbw(get(dst), get(src));
+            generator_->punpcklbw(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePunpcklwdXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.punpcklwd(get(dst), get(src));
+            generator_->punpcklwd(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePunpckldqXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.punpckldq(get(dst), get(src));
+            generator_->punpckldq(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePunpcklqdqXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.punpcklqdq(get(dst), get(src));
+            generator_->punpcklqdq(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePunpckhbwXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.punpckhbw(get(dst), get(src));
+            generator_->punpckhbw(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePunpckhwdXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.punpckhwd(get(dst), get(src));
+            generator_->punpckhwd(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePunpckhdqXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.punpckhdq(get(dst), get(src));
+            generator_->punpckhdq(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompilePunpckhqdqXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.punpckhqdq(get(dst), get(src));
+            generator_->punpckhqdq(get(dst), get(src));
         });
     }
 
@@ -3871,7 +3906,7 @@ namespace x64 {
         if(!src.isReg) return false;
         readReg128(Reg128::GPR0, dst);
         readReg128(Reg128::GPR1, src.reg);
-        assembler_.packsswb(get(Reg128::GPR0), get(Reg128::GPR1));
+        generator_->packsswb(get(Reg128::GPR0), get(Reg128::GPR1));
         writeReg128(dst, Reg128::GPR0);
         return true;
     }
@@ -3880,7 +3915,7 @@ namespace x64 {
         if(!src.isReg) return false;
         readReg128(Reg128::GPR0, dst);
         readReg128(Reg128::GPR1, src.reg);
-        assembler_.packssdw(get(Reg128::GPR0), get(Reg128::GPR1));
+        generator_->packssdw(get(Reg128::GPR0), get(Reg128::GPR1));
         writeReg128(dst, Reg128::GPR0);
         return true;
     }
@@ -3889,7 +3924,7 @@ namespace x64 {
         if(!src.isReg) return false;
         readReg128(Reg128::GPR0, dst);
         readReg128(Reg128::GPR1, src.reg);
-        assembler_.packuswb(get(Reg128::GPR0), get(Reg128::GPR1));
+        generator_->packuswb(get(Reg128::GPR0), get(Reg128::GPR1));
         writeReg128(dst, Reg128::GPR0);
         return true;
     }
@@ -3898,7 +3933,7 @@ namespace x64 {
         if(!src.isReg) return false;
         readReg128(Reg128::GPR0, dst);
         readReg128(Reg128::GPR1, src.reg);
-        assembler_.packusdw(get(Reg128::GPR0), get(Reg128::GPR1));
+        generator_->packusdw(get(Reg128::GPR0), get(Reg128::GPR1));
         writeReg128(dst, Reg128::GPR0);
         return true;
     }
@@ -3906,7 +3941,7 @@ namespace x64 {
     bool Compiler::tryCompileAddssXmmXmm(XMM dst, XMM src) {
         readReg128(Reg128::GPR0, dst);
         readReg128(Reg128::GPR1, src);
-        assembler_.addss(get(Reg128::GPR0), get(Reg128::GPR1));
+        generator_->addss(get(Reg128::GPR0), get(Reg128::GPR1));
         writeReg128(dst, Reg128::GPR0);
         return true;
     }
@@ -3918,8 +3953,8 @@ namespace x64 {
         // get the address
         Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src);
         readReg128(Reg128::GPR0, dst);
-        assembler_.movss(get(Reg128::GPR1), make32(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
-        assembler_.addss(get(Reg128::GPR0), get(Reg128::GPR1));
+        generator_->movss(get(Reg128::GPR1), make32(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
+        generator_->addss(get(Reg128::GPR0), get(Reg128::GPR1));
         writeReg128(dst, Reg128::GPR0);
         return true;
     }
@@ -3927,7 +3962,7 @@ namespace x64 {
     bool Compiler::tryCompileSubssXmmXmm(XMM dst, XMM src) {
         readReg128(Reg128::GPR0, dst);
         readReg128(Reg128::GPR1, src);
-        assembler_.subss(get(Reg128::GPR0), get(Reg128::GPR1));
+        generator_->subss(get(Reg128::GPR0), get(Reg128::GPR1));
         writeReg128(dst, Reg128::GPR0);
         return true;
     }
@@ -3939,8 +3974,8 @@ namespace x64 {
         // get the address
         Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src);
         readReg128(Reg128::GPR0, dst);
-        assembler_.movss(get(Reg128::GPR1), make32(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
-        assembler_.subss(get(Reg128::GPR0), get(Reg128::GPR1));
+        generator_->movss(get(Reg128::GPR1), make32(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
+        generator_->subss(get(Reg128::GPR0), get(Reg128::GPR1));
         writeReg128(dst, Reg128::GPR0);
         return true;
     }
@@ -3948,7 +3983,7 @@ namespace x64 {
     bool Compiler::tryCompileMulssXmmXmm(XMM dst, XMM src) {
         readReg128(Reg128::GPR0, dst);
         readReg128(Reg128::GPR1, src);
-        assembler_.mulss(get(Reg128::GPR0), get(Reg128::GPR1));
+        generator_->mulss(get(Reg128::GPR0), get(Reg128::GPR1));
         writeReg128(dst, Reg128::GPR0);
         return true;
     }
@@ -3960,8 +3995,8 @@ namespace x64 {
         // get the address
         Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src);
         readReg128(Reg128::GPR0, dst);
-        assembler_.movss(get(Reg128::GPR1), make32(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
-        assembler_.mulss(get(Reg128::GPR0), get(Reg128::GPR1));
+        generator_->movss(get(Reg128::GPR1), make32(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
+        generator_->mulss(get(Reg128::GPR0), get(Reg128::GPR1));
         writeReg128(dst, Reg128::GPR0);
         return true;
     }
@@ -3969,7 +4004,7 @@ namespace x64 {
     bool Compiler::tryCompileDivssXmmXmm(XMM dst, XMM src) {
         readReg128(Reg128::GPR0, dst);
         readReg128(Reg128::GPR1, src);
-        assembler_.divss(get(Reg128::GPR0), get(Reg128::GPR1));
+        generator_->divss(get(Reg128::GPR0), get(Reg128::GPR1));
         writeReg128(dst, Reg128::GPR0);
         return true;
     }
@@ -3981,8 +4016,8 @@ namespace x64 {
         // get the address
         Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src);
         readReg128(Reg128::GPR0, dst);
-        assembler_.movss(get(Reg128::GPR1), make32(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
-        assembler_.divss(get(Reg128::GPR0), get(Reg128::GPR1));
+        generator_->movss(get(Reg128::GPR1), make32(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
+        generator_->divss(get(Reg128::GPR0), get(Reg128::GPR1));
         writeReg128(dst, Reg128::GPR0);
         return true;
     }
@@ -3990,7 +4025,7 @@ namespace x64 {
     bool Compiler::tryCompileComissXmmXmm(XMM dst, XMM src) {
         readReg128(Reg128::GPR0, dst);
         readReg128(Reg128::GPR1, src);
-        assembler_.comiss(get(Reg128::GPR0), get(Reg128::GPR1));
+        generator_->comiss(get(Reg128::GPR0), get(Reg128::GPR1));
         return true;
     }
 
@@ -3998,7 +4033,7 @@ namespace x64 {
         if(src.isReg) {
             // get the src value
             readReg32(Reg::GPR1, src.reg);
-            assembler_.cvtsi2ss(get(Reg128::GPR0), get32(Reg::GPR1));
+            generator_->cvtsi2ss(get(Reg128::GPR0), get32(Reg::GPR1));
             writeReg128(dst, Reg128::GPR0);
             return true;
         } else {
@@ -4008,7 +4043,7 @@ namespace x64 {
             // get the address
             Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src.mem);
             readMem32(Reg::GPR1, addr);
-            assembler_.cvtsi2ss(get(Reg128::GPR0), get32(Reg::GPR1));
+            generator_->cvtsi2ss(get(Reg128::GPR0), get32(Reg::GPR1));
             writeReg128(dst, Reg128::GPR0);
             return true;
         }
@@ -4018,7 +4053,7 @@ namespace x64 {
         if(src.isReg) {
             // get the src value
             readReg64(Reg::GPR1, src.reg);
-            assembler_.cvtsi2ss(get(Reg128::GPR0), get(Reg::GPR1));
+            generator_->cvtsi2ss(get(Reg128::GPR0), get(Reg::GPR1));
             writeReg128(dst, Reg128::GPR0);
             return true;
         } else {
@@ -4028,7 +4063,7 @@ namespace x64 {
             // get the address
             Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src.mem);
             readMem64(Reg::GPR1, addr);
-            assembler_.cvtsi2ss(get(Reg128::GPR0), get(Reg::GPR1));
+            generator_->cvtsi2ss(get(Reg128::GPR0), get(Reg::GPR1));
             writeReg128(dst, Reg128::GPR0);
             return true;
         }
@@ -4037,7 +4072,7 @@ namespace x64 {
     bool Compiler::tryCompileAddsdXmmXmm(XMM dst, XMM src) {
         readReg128(Reg128::GPR0, dst);
         readReg128(Reg128::GPR1, src);
-        assembler_.addsd(get(Reg128::GPR0), get(Reg128::GPR1));
+        generator_->addsd(get(Reg128::GPR0), get(Reg128::GPR1));
         writeReg128(dst, Reg128::GPR0);
         return true;
     }
@@ -4049,8 +4084,8 @@ namespace x64 {
         // get the address
         Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src);
         readReg128(Reg128::GPR0, dst);
-        assembler_.movsd(get(Reg128::GPR1), make64(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
-        assembler_.addsd(get(Reg128::GPR0), get(Reg128::GPR1));
+        generator_->movsd(get(Reg128::GPR1), make64(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
+        generator_->addsd(get(Reg128::GPR0), get(Reg128::GPR1));
         writeReg128(dst, Reg128::GPR0);
         return true;
     }
@@ -4058,7 +4093,7 @@ namespace x64 {
     bool Compiler::tryCompileSubsdXmmXmm(XMM dst, XMM src) {
         readReg128(Reg128::GPR0, dst);
         readReg128(Reg128::GPR1, src);
-        assembler_.subsd(get(Reg128::GPR0), get(Reg128::GPR1));
+        generator_->subsd(get(Reg128::GPR0), get(Reg128::GPR1));
         writeReg128(dst, Reg128::GPR0);
         return true;
     }
@@ -4070,8 +4105,8 @@ namespace x64 {
         // get the address
         Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src);
         readReg128(Reg128::GPR0, dst);
-        assembler_.movsd(get(Reg128::GPR1), make64(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
-        assembler_.subsd(get(Reg128::GPR0), get(Reg128::GPR1));
+        generator_->movsd(get(Reg128::GPR1), make64(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
+        generator_->subsd(get(Reg128::GPR0), get(Reg128::GPR1));
         writeReg128(dst, Reg128::GPR0);
         return true;
     }
@@ -4079,7 +4114,7 @@ namespace x64 {
     bool Compiler::tryCompileMulsdXmmXmm(XMM dst, XMM src) {
         readReg128(Reg128::GPR0, dst);
         readReg128(Reg128::GPR1, src);
-        assembler_.mulsd(get(Reg128::GPR0), get(Reg128::GPR1));
+        generator_->mulsd(get(Reg128::GPR0), get(Reg128::GPR1));
         writeReg128(dst, Reg128::GPR0);
         return true;
     }
@@ -4091,8 +4126,8 @@ namespace x64 {
         // get the address
         Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src);
         readReg128(Reg128::GPR0, dst);
-        assembler_.movsd(get(Reg128::GPR1), make64(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
-        assembler_.mulsd(get(Reg128::GPR0), get(Reg128::GPR1));
+        generator_->movsd(get(Reg128::GPR1), make64(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
+        generator_->mulsd(get(Reg128::GPR0), get(Reg128::GPR1));
         writeReg128(dst, Reg128::GPR0);
         return true;
     }
@@ -4100,7 +4135,7 @@ namespace x64 {
     bool Compiler::tryCompileDivsdXmmXmm(XMM dst, XMM src) {
         readReg128(Reg128::GPR0, dst);
         readReg128(Reg128::GPR1, src);
-        assembler_.divsd(get(Reg128::GPR0), get(Reg128::GPR1));
+        generator_->divsd(get(Reg128::GPR0), get(Reg128::GPR1));
         writeReg128(dst, Reg128::GPR0);
         return true;
     }
@@ -4112,8 +4147,8 @@ namespace x64 {
         // get the address
         Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src);
         readReg128(Reg128::GPR0, dst);
-        assembler_.movsd(get(Reg128::GPR1), make64(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
-        assembler_.divsd(get(Reg128::GPR0), get(Reg128::GPR1));
+        generator_->movsd(get(Reg128::GPR1), make64(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
+        generator_->divsd(get(Reg128::GPR0), get(Reg128::GPR1));
         writeReg128(dst, Reg128::GPR0);
         return true;
     }
@@ -4130,7 +4165,7 @@ namespace x64 {
     bool Compiler::tryCompileCmpsdXmmXmmFcond(XMM dst, XMM src, FCond cond) {
         readReg128(Reg128::GPR0, dst);
         readReg128(Reg128::GPR1, src);
-        assembler_.cmpsd(get(Reg128::GPR0), get(Reg128::GPR1), (u8)cond);
+        generator_->cmpsd(get(Reg128::GPR0), get(Reg128::GPR1), cond);
         writeReg128(dst, Reg128::GPR0);
         return true;
     }
@@ -4142,8 +4177,8 @@ namespace x64 {
         // get the address
         Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src);
         readReg128(Reg128::GPR0, dst);
-        assembler_.movsd(get(Reg128::GPR1), make64(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
-        assembler_.cmpsd(get(Reg128::GPR0), get(Reg128::GPR1), (u8)cond);
+        generator_->movsd(get(Reg128::GPR1), make64(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
+        generator_->cmpsd(get(Reg128::GPR0), get(Reg128::GPR1), cond);
         writeReg128(dst, Reg128::GPR0);
         return true;
     }
@@ -4151,7 +4186,7 @@ namespace x64 {
     bool Compiler::tryCompileComisdXmmXmm(XMM dst, XMM src) {
         readReg128(Reg128::GPR0, dst);
         readReg128(Reg128::GPR1, src);
-        assembler_.comisd(get(Reg128::GPR0), get(Reg128::GPR1));
+        generator_->comisd(get(Reg128::GPR0), get(Reg128::GPR1));
         return true;
     }
 
@@ -4162,8 +4197,8 @@ namespace x64 {
         // get the address
         Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src);
         readReg128(Reg128::GPR0, dst);
-        assembler_.movsd(get(Reg128::GPR1), make64(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
-        assembler_.comisd(get(Reg128::GPR0), get(Reg128::GPR1));
+        generator_->movsd(get(Reg128::GPR1), make64(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
+        generator_->comisd(get(Reg128::GPR0), get(Reg128::GPR1));
         writeReg128(dst, Reg128::GPR0);
         return true;
     }
@@ -4171,7 +4206,7 @@ namespace x64 {
     bool Compiler::tryCompileUcomisdXmmXmm(XMM dst, XMM src) {
         readReg128(Reg128::GPR0, dst);
         readReg128(Reg128::GPR1, src);
-        assembler_.ucomisd(get(Reg128::GPR0), get(Reg128::GPR1));
+        generator_->ucomisd(get(Reg128::GPR0), get(Reg128::GPR1));
         return true;
     }
 
@@ -4182,15 +4217,15 @@ namespace x64 {
         // get the address
         Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src);
         readReg128(Reg128::GPR0, dst);
-        assembler_.movsd(get(Reg128::GPR1), make64(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
-        assembler_.ucomisd(get(Reg128::GPR0), get(Reg128::GPR1));
+        generator_->movsd(get(Reg128::GPR1), make64(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
+        generator_->ucomisd(get(Reg128::GPR0), get(Reg128::GPR1));
         return true;
     }
 
     bool Compiler::tryCompileMaxsdXmmXmm(XMM dst, XMM src) {
         readReg128(Reg128::GPR0, dst);
         readReg128(Reg128::GPR1, src);
-        assembler_.maxsd(get(Reg128::GPR0), get(Reg128::GPR1));
+        generator_->maxsd(get(Reg128::GPR0), get(Reg128::GPR1));
         writeReg128(dst, Reg128::GPR0);
         return true;
     }
@@ -4198,7 +4233,7 @@ namespace x64 {
     bool Compiler::tryCompileMinsdXmmXmm(XMM dst, XMM src) {
         readReg128(Reg128::GPR0, dst);
         readReg128(Reg128::GPR1, src);
-        assembler_.minsd(get(Reg128::GPR0), get(Reg128::GPR1));
+        generator_->minsd(get(Reg128::GPR0), get(Reg128::GPR1));
         writeReg128(dst, Reg128::GPR0);
         return true;
     }
@@ -4206,7 +4241,7 @@ namespace x64 {
     bool Compiler::tryCompileSqrtsdXmmXmm(XMM dst, XMM src) {
         readReg128(Reg128::GPR0, dst);
         readReg128(Reg128::GPR1, src);
-        assembler_.sqrtsd(get(Reg128::GPR0), get(Reg128::GPR1));
+        generator_->sqrtsd(get(Reg128::GPR0), get(Reg128::GPR1));
         writeReg128(dst, Reg128::GPR0);
         return true;
     }
@@ -4216,7 +4251,7 @@ namespace x64 {
             // get the src value
             readReg32(Reg::GPR1, src.reg);
             readReg128(Reg128::GPR0, dst);
-            assembler_.cvtsi2sd32(get(Reg128::GPR0), get32(Reg::GPR1));
+            generator_->cvtsi2sd32(get(Reg128::GPR0), get32(Reg::GPR1));
             writeReg128(dst, Reg128::GPR0);
             return true;
         } else {
@@ -4227,7 +4262,7 @@ namespace x64 {
             Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src.mem);
             readMem32(Reg::GPR1, addr);
             readReg128(Reg128::GPR0, dst);
-            assembler_.cvtsi2sd32(get(Reg128::GPR0), get32(Reg::GPR1));
+            generator_->cvtsi2sd32(get(Reg128::GPR0), get32(Reg::GPR1));
             writeReg128(dst, Reg128::GPR0);
             return true;
         }
@@ -4238,7 +4273,7 @@ namespace x64 {
             // get the src value
             readReg64(Reg::GPR1, src.reg);
             readReg128(Reg128::GPR0, dst);
-            assembler_.cvtsi2sd64(get(Reg128::GPR0), get(Reg::GPR1));
+            generator_->cvtsi2sd64(get(Reg128::GPR0), get(Reg::GPR1));
             writeReg128(dst, Reg128::GPR0);
             return true;
         } else {
@@ -4249,7 +4284,7 @@ namespace x64 {
             Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src.mem);
             readMem64(Reg::GPR1, addr);
             readReg128(Reg128::GPR0, dst);
-            assembler_.cvtsi2sd64(get(Reg128::GPR0), get(Reg::GPR1));
+            generator_->cvtsi2sd64(get(Reg128::GPR0), get(Reg::GPR1));
             writeReg128(dst, Reg128::GPR0);
             return true;
         }
@@ -4258,7 +4293,7 @@ namespace x64 {
     bool Compiler::tryCompileCvttsd2siR32Xmm(R32 dst, XMM src) {
         // get the src value
         readReg128(Reg128::GPR0, src);
-        assembler_.cvttsd2si32(get32(Reg::GPR1), get(Reg128::GPR0));
+        generator_->cvttsd2si32(get32(Reg::GPR1), get(Reg128::GPR0));
         writeReg32(dst, Reg::GPR1);
         return true;
     }
@@ -4266,38 +4301,38 @@ namespace x64 {
     bool Compiler::tryCompileCvttsd2siR64Xmm(R64 dst, XMM src) {
         // get the src value
         readReg128(Reg128::GPR0, src);
-        assembler_.cvttsd2si64(get(Reg::GPR1), get(Reg128::GPR0));
+        generator_->cvttsd2si64(get(Reg::GPR1), get(Reg128::GPR0));
         writeReg64(dst, Reg::GPR1);
         return true;
     }
 
     bool Compiler::tryCompileAddpsXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.addps(get(dst), get(src));
+            generator_->addps(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompileSubpsXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.subps(get(dst), get(src));
+            generator_->subps(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompileMulpsXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.mulps(get(dst), get(src));
+            generator_->mulps(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompileDivpsXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.divps(get(dst), get(src));
+            generator_->divps(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompileMinpsXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.minps(get(dst), get(src));
+            generator_->minps(get(dst), get(src));
         });
     }
 
@@ -4311,87 +4346,87 @@ namespace x64 {
             static_assert((u8)FCond::NLT == 5);
             static_assert((u8)FCond::NLE == 6);
             static_assert((u8)FCond::ORD == 7);
-            assembler_.cmpps(get(dst), get(src), (u8)cond);
+            generator_->cmpps(get(dst), get(src), cond);
         });
     }
 
     bool Compiler::tryCompileCvtps2dqXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.cvtps2dq(get(dst), get(src));
+            generator_->cvtps2dq(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompileCvttps2dqXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.cvttps2dq(get(dst), get(src));
+            generator_->cvttps2dq(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompileCvtdq2psXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.cvtdq2ps(get(dst), get(src));
+            generator_->cvtdq2ps(get(dst), get(src));
         });
     }
 
 
     bool Compiler::tryCompileAddpdXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.addpd(get(dst), get(src));
+            generator_->addpd(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompileSubpdXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.subpd(get(dst), get(src));
+            generator_->subpd(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompileMulpdXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.mulpd(get(dst), get(src));
+            generator_->mulpd(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompileDivpdXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.divpd(get(dst), get(src));
+            generator_->divpd(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompileAndpdXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.andpd(get(dst), get(src));
+            generator_->andpd(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompileAndnpdXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.andnpd(get(dst), get(src));
+            generator_->andnpd(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompileOrpdXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.orpd(get(dst), get(src));
+            generator_->orpd(get(dst), get(src));
         });
     }
 
     bool Compiler::tryCompileXorpdXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.xorpd(get(dst), get(src));
+            generator_->xorpd(get(dst), get(src));
         });
     }
 
 
     bool Compiler::tryCompileShufpsXmmXmmM128Imm(XMM dst, const XMMM128& src, Imm imm) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.shufps(get(dst), get(src), imm.as<u8>());
+            generator_->shufps(get(dst), get(src), imm.as<u8>());
         });
     }
 
     bool Compiler::tryCompileShufpdXmmXmmM128Imm(XMM dst, const XMMM128& src, Imm imm) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
-            assembler_.shufpd(get(dst), get(src), imm.as<u8>());
+            generator_->shufpd(get(dst), get(src), imm.as<u8>());
         });
     }
 
@@ -4591,98 +4626,98 @@ namespace x64 {
     void Compiler::readReg8(Reg dst, R8 src) {
         R8 d = get8(dst);
         M8 s = make8(get(Reg::REG_BASE), registerOffset(src));
-        assembler_.mov(d, s);
+        generator_->mov(d, s);
     }
 
     void Compiler::writeReg8(R8 dst, Reg src) {
         M8 d = make8(get(Reg::REG_BASE), registerOffset(dst));
         R8 s = get8(src);
-        assembler_.mov(d, s);
+        generator_->mov(d, s);
     }
 
     void Compiler::readReg16(Reg dst, R16 src) {
         R16 d = get16(dst);
         M16 s = make16(get(Reg::REG_BASE), registerOffset(src));
-        assembler_.mov(d, s);
+        generator_->mov(d, s);
     }
 
     void Compiler::writeReg16(R16 dst, Reg src) {
         M16 d = make16(get(Reg::REG_BASE), registerOffset(dst));
         R16 s = get16(src);
-        assembler_.mov(d, s);
+        generator_->mov(d, s);
     }
 
     void Compiler::readReg32(Reg dst, R32 src) {
         R32 d = get32(dst);
         M32 s = make32(get(Reg::REG_BASE), registerOffset(src));
-        assembler_.mov(d, s);
+        generator_->mov(d, s);
     }
 
     void Compiler::writeReg32(R32 dst, Reg src) {
         // we need to zero extend the value, so we write the full 64 bit register
         M64 d = make64(get(Reg::REG_BASE), registerOffset(dst));
         R64 s = get(src);
-        assembler_.mov(d, s);
+        generator_->mov(d, s);
     }
 
     void Compiler::readReg64(Reg dst, R64 src) {
         R64 d = get(dst);
         M64 s = make64(get(Reg::REG_BASE), registerOffset(src));
-        assembler_.mov(d, s);
+        generator_->mov(d, s);
     }
 
     void Compiler::writeReg64(R64 dst, Reg src) {
         M64 d = make64(get(Reg::REG_BASE), registerOffset(dst));
         R64 s = get(src);
-        assembler_.mov(d, s);
+        generator_->mov(d, s);
     }
 
     void Compiler::readMem8(Reg dst, const Mem& address) {
         R8 d = get8(dst);
         M8 s = make8(get(Reg::MEM_BASE), get(address.base), 1, address.offset);
-        assembler_.mov(d, s);
+        generator_->mov(d, s);
     }
 
     void Compiler::writeMem8(const Mem& address, Reg src) {
         M8 d = make8(get(Reg::MEM_BASE), get(address.base), 1, address.offset);
         R8 s = get8(src);
-        assembler_.mov(d, s);
+        generator_->mov(d, s);
     }
 
     void Compiler::readMem16(Reg dst, const Mem& address) {
         R16 d = get16(dst);
         M16 s = make16(get(Reg::MEM_BASE), get(address.base), 1, address.offset);
-        assembler_.mov(d, s);
+        generator_->mov(d, s);
     }
 
     void Compiler::writeMem16(const Mem& address, Reg src) {
         M16 d = make16(get(Reg::MEM_BASE), get(address.base), 1, address.offset);
         R16 s = get16(src);
-        assembler_.mov(d, s);
+        generator_->mov(d, s);
     }
 
     void Compiler::readMem32(Reg dst, const Mem& address) {
         R32 d = get32(dst);
         M32 s = make32(get(Reg::MEM_BASE), get(address.base), 1, address.offset);
-        assembler_.mov(d, s);
+        generator_->mov(d, s);
     }
 
     void Compiler::writeMem32(const Mem& address, Reg src) {
         M32 d = make32(get(Reg::MEM_BASE), get(address.base), 1, address.offset);
         R32 s = get32(src);
-        assembler_.mov(d, s);
+        generator_->mov(d, s);
     }
 
     void Compiler::readMem64(Reg dst, const Mem& address) {
         R64 d = get(dst);
         M64 s = make64(get(Reg::MEM_BASE), get(address.base), 1, address.offset);
-        assembler_.mov(d, s);
+        generator_->mov(d, s);
     }
 
     void Compiler::writeMem64(const Mem& address, Reg src) {
         M64 d = make64(get(Reg::MEM_BASE), get(address.base), 1, address.offset);
         R64 s = get(src);
-        assembler_.mov(d, s);
+        generator_->mov(d, s);
     }
 
     MMX Compiler::get(RegMM reg) {
@@ -4738,78 +4773,78 @@ namespace x64 {
     void Compiler::readRegMM(RegMM dst, MMX src) {
         MMX d = get(dst);
         M64 s = make64(get(Reg::MMX_BASE), registerOffset(src));
-        assembler_.movq(d, s);
+        generator_->movq(d, s);
     }
 
     void Compiler::writeRegMM(MMX dst, RegMM src) {
         M64 d = make64(get(Reg::MMX_BASE), registerOffset(dst));
         MMX s = get(src);
-        assembler_.movq(d, s);
+        generator_->movq(d, s);
     }
 
     void Compiler::readMemMM(RegMM dst, const Mem& address) {
         MMX d = get(dst);
         M64 s = make64(get(Reg::MEM_BASE), get(address.base), 1, address.offset);
-        assembler_.movq(d, s);
+        generator_->movq(d, s);
     }
 
     void Compiler::writeMemMM(const Mem& address, RegMM src) {
         M64 d = make64(get(Reg::MEM_BASE), get(address.base), 1, address.offset);
         MMX s = get(src);
-        assembler_.movq(d, s);
+        generator_->movq(d, s);
     }
 
     void Compiler::readReg128(Reg128 dst, XMM src) {
         XMM d = get(dst);
         M128 s = make128(get(Reg::XMM_BASE), registerOffset(src));
-        assembler_.mova(d, s);
+        generator_->mova(d, s);
     }
 
     void Compiler::writeReg128(XMM dst, Reg128 src) {
         M128 d = make128(get(Reg::XMM_BASE), registerOffset(dst));
         XMM s = get(src);
-        assembler_.mova(d, s);
+        generator_->mova(d, s);
     }
 
     void Compiler::readMem128(Reg128 dst, const Mem& address) {
         XMM d = get(dst);
         M128 s = make128(get(Reg::MEM_BASE), get(address.base), 1, address.offset);
-        assembler_.movu(d, s);
+        generator_->movu(d, s);
     }
 
     void Compiler::writeMem128(const Mem& address, Reg128 src) {
         M128 d = make128(get(Reg::MEM_BASE), get(address.base), 1, address.offset);
         XMM s = get(src);
-        assembler_.movu(d, s);
+        generator_->movu(d, s);
     }
 
     void Compiler::addTime(u32 amount) {
         constexpr size_t TICKS_OFFSET = offsetof(NativeArguments, ticks);
         static_assert(TICKS_OFFSET == 0x38);
         M64 ticksPtr = make64(R64::RDI, TICKS_OFFSET);
-        assembler_.mov(get(Reg::GPR1), ticksPtr);
+        generator_->mov(get(Reg::GPR1), ticksPtr);
         M64 ticks = make64(get(Reg::GPR1), 0);
-        assembler_.mov(get(Reg::GPR0), ticks);
+        generator_->mov(get(Reg::GPR0), ticks);
         M64 a = make64(get(Reg::GPR0), (i32)amount);
-        assembler_.lea(get(Reg::GPR0), a);
-        assembler_.mov(ticks, get(Reg::GPR0));
+        generator_->lea(get(Reg::GPR0), a);
+        generator_->mov(ticks, get(Reg::GPR0));
     }
 
     void Compiler::readFsBase(Reg dst) {
         constexpr size_t FS_BASE = offsetof(NativeArguments, fsbase);
         static_assert(FS_BASE == 0x30);
         M64 fsbasePtr = make64(R64::RDI, FS_BASE);
-        assembler_.mov(get(dst), fsbasePtr);
+        generator_->mov(get(dst), fsbasePtr);
     }
 
     void Compiler::writeBasicBlockPtr(u64 basicBlockPtr) {
         constexpr size_t BBPTR_OFFSET = offsetof(NativeArguments, basicBlockPtr);
         static_assert(BBPTR_OFFSET == 0x40);
         M64 bbPtrPtr = make64(R64::RDI, BBPTR_OFFSET);
-        assembler_.mov(get(Reg::GPR1), bbPtrPtr);
+        generator_->mov(get(Reg::GPR1), bbPtrPtr);
         M64 bbPtr = make64(get(Reg::GPR1), 0);
         loadImm64(Reg::GPR0, basicBlockPtr);
-        assembler_.mov(bbPtr, get(Reg::GPR0));
+        generator_->mov(bbPtr, get(Reg::GPR0));
     }
 
     std::vector<u8> Compiler::jmpCode(u64 dst, TmpReg tmp) const {
@@ -4836,7 +4871,7 @@ namespace x64 {
                 readReg64(tmp.reg, mem.encoding.base);
                 // get the address
                 MemBISD encodedAddress{dst, tmp.reg, 1, mem.encoding.displacement};
-                assembler_.lea(get(dst), M64 {
+                generator_->lea(get(dst), M64 {
                     Segment::UNK,
                     Encoding64 {
                         get(encodedAddress.base),
@@ -4859,7 +4894,7 @@ namespace x64 {
             readReg64(tmp.reg, mem.encoding.index);
             // get the address
             MemBISD encodedAddress{dst, tmp.reg, mem.encoding.scale, mem.encoding.displacement};
-            assembler_.lea(get(dst), M64 {
+            generator_->lea(get(dst), M64 {
                 Segment::UNK,
                 Encoding64 {
                     get(encodedAddress.base),
@@ -4875,211 +4910,211 @@ namespace x64 {
     void Compiler::add8(Reg dst, Reg src) {
         R8 d = get8(dst);
         R8 s = get8(src);
-        assembler_.add(d, s);
+        generator_->add(d, s);
     }
 
     void Compiler::add8Imm8(Reg dst, i8 imm) {
         R8 d = get8(dst);
-        assembler_.add(d, imm);
+        generator_->add(d, imm);
     }
 
     void Compiler::add16(Reg dst, Reg src) {
         R16 d = get16(dst);
         R16 s = get16(src);
-        assembler_.add(d, s);
+        generator_->add(d, s);
     }
 
     void Compiler::add16Imm16(Reg dst, i16 imm) {
         R16 d = get16(dst);
-        assembler_.add(d, imm);
+        generator_->add(d, imm);
     }
 
     void Compiler::add32(Reg dst, Reg src) {
         R32 d = get32(dst);
         R32 s = get32(src);
-        assembler_.add(d, s);
+        generator_->add(d, s);
     }
 
     void Compiler::add32Imm32(Reg dst, i32 imm) {
         R32 d = get32(dst);
-        assembler_.add(d, imm);
+        generator_->add(d, imm);
     }
 
     void Compiler::add64(Reg dst, Reg src) {
         R64 d = get(dst);
         R64 s = get(src);
-        assembler_.add(d, s);
+        generator_->add(d, s);
     }
 
     void Compiler::add64Imm32(Reg dst, i32 imm) {
         R64 d = get(dst);
-        assembler_.add(d, imm);
+        generator_->add(d, imm);
     }
 
     void Compiler::adc32(Reg dst, Reg src) {
         R32 d = get32(dst);
         R32 s = get32(src);
-        assembler_.adc(d, s);
+        generator_->adc(d, s);
     }
 
     void Compiler::adc32Imm32(Reg dst, i32 imm) {
         R32 d = get32(dst);
-        assembler_.adc(d, imm);
+        generator_->adc(d, imm);
     }
 
     void Compiler::sub32(Reg dst, Reg src) {
         R32 d = get32(dst);
         R32 s = get32(src);
-        assembler_.sub(d, s);
+        generator_->sub(d, s);
     }
 
     void Compiler::sub32Imm32(Reg dst, i32 imm) {
         R32 d = get32(dst);
-        assembler_.sub(d, imm);
+        generator_->sub(d, imm);
     }
 
     void Compiler::sub64(Reg dst, Reg src) {
         R64 d = get(dst);
         R64 s = get(src);
-        assembler_.sub(d, s);
+        generator_->sub(d, s);
     }
 
     void Compiler::sub64Imm32(Reg dst, i32 imm) {
         R64 d = get(dst);
-        assembler_.sub(d, imm);
+        generator_->sub(d, imm);
     }
 
     void Compiler::sbb8(Reg dst, Reg src) {
         R8 d = get8(dst);
         R8 s = get8(src);
-        assembler_.sbb(d, s);
+        generator_->sbb(d, s);
     }
 
     void Compiler::sbb8Imm8(Reg dst, i8 imm) {
         R8 d = get8(dst);
-        assembler_.sbb(d, imm);
+        generator_->sbb(d, imm);
     }
 
     void Compiler::sbb32(Reg dst, Reg src) {
         R32 d = get32(dst);
         R32 s = get32(src);
-        assembler_.sbb(d, s);
+        generator_->sbb(d, s);
     }
 
     void Compiler::sbb32Imm32(Reg dst, i32 imm) {
         R32 d = get32(dst);
-        assembler_.sbb(d, imm);
+        generator_->sbb(d, imm);
     }
 
     void Compiler::sbb64(Reg dst, Reg src) {
         R64 d = get(dst);
         R64 s = get(src);
-        assembler_.sbb(d, s);
+        generator_->sbb(d, s);
     }
 
     void Compiler::sbb64Imm32(Reg dst, i32 imm) {
         R64 d = get(dst);
-        assembler_.sbb(d, imm);
+        generator_->sbb(d, imm);
     }
 
     void Compiler::cmp8(Reg lhs, Reg rhs) {
         R8 l = get8(lhs);
         R8 r = get8(rhs);
-        assembler_.cmp(l, r);
+        generator_->cmp(l, r);
     }
 
     void Compiler::cmp16(Reg lhs, Reg rhs) {
         R16 l = get16(lhs);
         R16 r = get16(rhs);
-        assembler_.cmp(l, r);
+        generator_->cmp(l, r);
     }
 
     void Compiler::cmp32(Reg lhs, Reg rhs) {
         R32 l = get32(lhs);
         R32 r = get32(rhs);
-        assembler_.cmp(l, r);
+        generator_->cmp(l, r);
     }
 
     void Compiler::cmp64(Reg lhs, Reg rhs) {
         R64 l = get(lhs);
         R64 r = get(rhs);
-        assembler_.cmp(l, r);
+        generator_->cmp(l, r);
     }
 
     void Compiler::cmp8Imm8(Reg dst, i8 imm) {
         R8 d = get8(dst);
-        assembler_.cmp(d, imm);
+        generator_->cmp(d, imm);
     }
 
     void Compiler::cmp16Imm16(Reg dst, i16 imm) {
         R16 d = get16(dst);
-        assembler_.cmp(d, imm);
+        generator_->cmp(d, imm);
     }
 
     void Compiler::cmp32Imm32(Reg dst, i32 imm) {
         R32 d = get32(dst);
-        assembler_.cmp(d, imm);
+        generator_->cmp(d, imm);
     }
 
     void Compiler::cmp64Imm32(Reg dst, i32 imm) {
         R64 d = get(dst);
-        assembler_.cmp(d, imm);
+        generator_->cmp(d, imm);
     }
 
     void Compiler::imul16(Reg dst, Reg src) {
         R16 d = get16(dst);
         R16 s = get16(src);
-        assembler_.imul(d, s);
+        generator_->imul(d, s);
     }
 
     void Compiler::imul32(Reg dst, Reg src) {
         R32 d = get32(dst);
         R32 s = get32(src);
-        assembler_.imul(d, s);
+        generator_->imul(d, s);
     }
 
     void Compiler::imul64(Reg dst, Reg src) {
         R64 d = get(dst);
         R64 s = get(src);
-        assembler_.imul(d, s);
+        generator_->imul(d, s);
     }
 
     void Compiler::imul16(Reg dst, Reg src, u16 imm) {
         R16 d = get16(dst);
         R16 s = get16(src);
-        assembler_.imul(d, s, imm);
+        generator_->imul(d, s, imm);
     }
 
     void Compiler::imul32(Reg dst, Reg src, u32 imm) {
         R32 d = get32(dst);
         R32 s = get32(src);
-        assembler_.imul(d, s, imm);
+        generator_->imul(d, s, imm);
     }
 
     void Compiler::imul64(Reg dst, Reg src, u32 imm) {
         R64 d = get(dst);
         R64 s = get(src);
-        assembler_.imul(d, s, imm);
+        generator_->imul(d, s, imm);
     }
 
     void Compiler::loadImm8(Reg dst, u8 imm) {
         R8 d = get8(dst);
-        assembler_.mov(d, imm);
+        generator_->mov(d, imm);
     }
 
     void Compiler::loadImm16(Reg dst, u16 imm) {
         R16 d = get16(dst);
-        assembler_.mov(d, imm);
+        generator_->mov(d, imm);
     }
 
     void Compiler::loadImm32(Reg dst, u32 imm) {
         R32 d = get32(dst);
-        assembler_.mov(d, imm);
+        generator_->mov(d, imm);
     }
 
     void Compiler::loadImm64(Reg dst, u64 imm) {
         R64 d = get(dst);
-        assembler_.mov(d, imm);
+        generator_->mov(d, imm);
     }
 
     void Compiler::loadArguments() {
@@ -5095,41 +5130,41 @@ namespace x64 {
         M64 mmxs = make64(R64::RDI,   MMXS_OFFSET);
         M64 xmms = make64(R64::RDI,   XMMS_OFFSET);
         M64 memory = make64(R64::RDI, MEMORY_OFFSET);
-        assembler_.mov(get(Reg::MEM_BASE), memory);
-        assembler_.mov(get(Reg::MMX_BASE), mmxs);
-        assembler_.mov(get(Reg::XMM_BASE), xmms);
-        assembler_.mov(get(Reg::REG_BASE), gprs);
+        generator_->mov(get(Reg::MEM_BASE), memory);
+        generator_->mov(get(Reg::MMX_BASE), mmxs);
+        generator_->mov(get(Reg::XMM_BASE), xmms);
+        generator_->mov(get(Reg::REG_BASE), gprs);
     }
 
     void Compiler::storeFlagsToEmulator() {
         constexpr size_t FLAGS_OFFSET = offsetof(NativeArguments, rflags);
         static_assert(FLAGS_OFFSET == 0x20);
-        assembler_.pushf();
-        assembler_.pop64(get(Reg::GPR0));
+        generator_->pushf();
+        generator_->pop64(get(Reg::GPR0));
         M64 rflagsPtr = make64(R64::RDI, FLAGS_OFFSET);
-        assembler_.mov(get(Reg::GPR1), rflagsPtr);
+        generator_->mov(get(Reg::GPR1), rflagsPtr);
         M64 rflags = make64(get(Reg::GPR1), 0);
-        assembler_.mov(rflags, get(Reg::GPR0));
+        generator_->mov(rflags, get(Reg::GPR0));
     }
 
     void Compiler::loadFlagsFromEmulator() {
         constexpr size_t FLAGS_OFFSET = offsetof(NativeArguments, rflags);
         static_assert(FLAGS_OFFSET == 0x20);
         M64 rflagsPtr = make64(R64::RDI, FLAGS_OFFSET);
-        assembler_.mov(get(Reg::GPR1), rflagsPtr);
+        generator_->mov(get(Reg::GPR1), rflagsPtr);
         M64 rflags = make64(get(Reg::GPR1), 0);
-        assembler_.mov(get(Reg::GPR0), rflags);
-        assembler_.push64(get(Reg::GPR0));
-        assembler_.popf();
+        generator_->mov(get(Reg::GPR0), rflags);
+        generator_->push64(get(Reg::GPR0));
+        generator_->popf();
     }
 
     void Compiler::loadMxcsrFromEmulator(Reg dst) {
         constexpr size_t MXCSR_OFFSET = offsetof(NativeArguments, mxcsr);
         static_assert(MXCSR_OFFSET == 0x28);
         M64 mxcsrPtr = make64(R64::RDI, MXCSR_OFFSET);
-        assembler_.mov(get(dst), mxcsrPtr);
+        generator_->mov(get(dst), mxcsrPtr);
         M32 mxcsr = make32(get(dst), 0);
-        assembler_.mov(get32(dst), mxcsr);
+        generator_->mov(get32(dst), mxcsr);
     }
 
     void Compiler::push64(Reg src, TmpReg tmp) {
@@ -5137,7 +5172,7 @@ namespace x64 {
         // load rsp
         readReg64(tmp.reg, R64::RSP);
         // decrement rsp
-        assembler_.lea(get(tmp.reg), make64(get(tmp.reg), -8));
+        generator_->lea(get(tmp.reg), make64(get(tmp.reg), -8));
         // write rsp back
         writeReg64(R64::RSP, tmp.reg);
         // write to the stack
@@ -5151,7 +5186,7 @@ namespace x64 {
         // read from the stack
         readMem64(dst, Mem{tmp.reg, 0});
         // increment rsp
-        assembler_.lea(get(tmp.reg), make64(get(tmp.reg), +8));
+        generator_->lea(get(tmp.reg), make64(get(tmp.reg), +8));
         // write rsp back
         writeReg64(R64::RSP, tmp.reg);
     }
@@ -5612,7 +5647,7 @@ namespace x64 {
             // get the address
             Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR1}, mem);
             // read the value at the address
-            assembler_.movd(get(RegMM::GPR1), make32(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
+            generator_->movd(get(RegMM::GPR1), make32(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
             // do the op
             func(RegMM::GPR0, RegMM::GPR1);
             if(writeResultBack) {

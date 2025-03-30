@@ -83,7 +83,11 @@ add_library(x64emulator STATIC
     src/kernel/threadblocker.cpp
     src/kernel/timers.cpp
     src/x64/compiler/assembler.cpp
+    src/x64/compiler/codegenerator.cpp
     src/x64/compiler/compiler.cpp
+    src/x64/compiler/ir.cpp
+    src/x64/compiler/irgenerator.cpp
+    src/x64/compiler/optimizer.cpp
     src/x64/disassembler/capstonewrapper.cpp
     src/x64/instructions/x64instruction.cpp
     src/x64/cpu.cpp

@@ -28,6 +28,7 @@ namespace kernel {
         void setProfiling(bool isProfiling) { isProfiling_ = isProfiling; }
         void setEnableJit(bool enableJit) { scheduler_.setEnableJit(enableJit); }
         void setEnableJitChaining(bool enableJitChaining) { scheduler_.setEnableJitChaining(enableJitChaining); }
+        void setOptimizationLevel(int level) { scheduler_.setOptimizationLevel(level); }
 
         bool isProfiling() const { return isProfiling_; }
 

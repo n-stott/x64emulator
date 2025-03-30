@@ -27,6 +27,10 @@ namespace kernel {
         enableJitChaining_ = enableJitChaining;
     }
 
+    void Scheduler::setOptimizationLevel(int level) {
+        optimizationLevel_ = level;
+    }
+
     void Scheduler::syncThreadTimeSlice(Thread* thread, std::unique_lock<std::mutex>* lockPtr) {
         verify(!!thread);
         if(!!lockPtr) {
@@ -43,6 +47,7 @@ namespace kernel {
         emulator::VM vm(cpu, mmu_);
         vm.setEnableJit(worker.enableJit);
         vm.setEnableJitChaining(worker.enableJitChaining);
+        vm.setOptimizationLevel(worker.optimizationLevel);
         while(!emulator::signal_interrupt) {
             try {
                 JobOrCommand jobOrCommand = tryPickNext(worker);
@@ -146,13 +151,13 @@ namespace kernel {
     void Scheduler::run() {
 #ifdef MULTIPROCESSING
         std::vector<std::thread> workerThreads;
-        workerThreads.emplace_back(std::bind(&Scheduler::runOnWorkerThread, this, Worker{0, enableJit_, enableJitChaining_}));
-        workerThreads.emplace_back(std::bind(&Scheduler::runOnWorkerThread, this, Worker{1, enableJit_, enableJitChaining_}));
+        workerThreads.emplace_back(std::bind(&Scheduler::runOnWorkerThread, this, Worker{0, enableJit_, enableJitChaining_, optimizationLevel_}));
+        workerThreads.emplace_back(std::bind(&Scheduler::runOnWorkerThread, this, Worker{1, enableJit_, enableJitChaining_, optimizationLevel_}));
         for(std::thread& workerThread : workerThreads) {
             workerThread.join();
         }
 #else
-        runOnWorkerThread(Worker{0, enableJit_, enableJitChaining_});
+        runOnWorkerThread(Worker{0, enableJit_, enableJitChaining_, optimizationLevel_});
 #endif
     }
 

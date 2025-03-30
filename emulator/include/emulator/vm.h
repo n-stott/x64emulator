@@ -86,6 +86,9 @@ namespace emulator {
         void setEnableJitChaining(bool enable);
         bool jitChainingEnabled() const { return jitChainingEnabled_; }
 
+        void setOptimizationLevel(int level);
+        int optimizationLevel() const { return optimizationLevel_; }
+
         void crash();
         bool hasCrashed() const { return hasCrashed_; }
 
@@ -182,6 +185,7 @@ namespace emulator {
 
         bool jitEnabled_ { false };
         bool jitChainingEnabled_ { false };
+        int optimizationLevel_ { 0 };
     };
 
 }

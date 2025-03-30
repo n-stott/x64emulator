@@ -4,7 +4,9 @@
 #include "x64/types.h"
 #include "x64/compiler/assembler.h"
 #include "x64/instructions/basicblock.h"
+#include "x64/compiler/ir.h"
 #include "utils.h"
+#include <memory>
 #include <optional>
 #include <vector>
 
@@ -12,28 +14,30 @@ namespace x64 {
 
     struct BasicBlock;
     class X64Instruction;
+    namespace ir {
+        class IrGenerator;
+    }
 
     class Compiler {
     public:
-        static std::optional<NativeBasicBlock> tryCompile(const BasicBlock&, std::optional<void*> basicBlockPtr = std::nullopt, bool diagnose = false);
+        static std::optional<ir::IR> tryCompileIR(const BasicBlock&, int optimizationLevel = 0, std::optional<void*> basicBlockPtr = std::nullopt, bool diagnose = false);
+        static std::optional<NativeBasicBlock> tryCompile(const BasicBlock&, int optimizationLevel = 0, std::optional<void*> basicBlockPtr = std::nullopt, bool diagnose = false);
 
         static std::vector<u8> compileJumpTo(u64 address);
 
     private:
+        Compiler();
+        ~Compiler();
+
         bool tryCompile(const X64Instruction&);
 
-        struct ReplaceableJumps {
-            std::optional<size_t> offsetOfReplaceableJumpToContinuingBlock;
-            std::optional<size_t> offsetOfReplaceableJumpToConditionalBlock;
-        };
+        bool tryCompileLastInstruction(const X64Instruction&);
 
-        std::optional<ReplaceableJumps> tryCompileLastInstruction(const X64Instruction&);
-
-        void addEntry();
-        void prepareExit(u32 nbInstructionsInBlock);
-        void addExit(u64 basicBlockPtr);
-
-        size_t currentOffset() const { return assembler_.code().size(); }
+        static std::optional<ir::IR> jitEntry();
+        static std::optional<ir::IR> basicBlockBody(const BasicBlock&, bool diagnose);
+        static std::optional<ir::IR> prepareExit(u32 nbInstructionsInBlock);
+        static std::optional<ir::IR> basicBlockExit(const BasicBlock&, bool diagnose);
+        static std::optional<ir::IR> jitExit(u64 basicBlockPtr);
 
         bool tryAdvanceInstructionPointer(u64 nextAddress);
 
@@ -441,16 +445,16 @@ namespace x64 {
 
 
         // exits
-        std::optional<ReplaceableJumps> tryCompileCall(u64 dst);
-        std::optional<ReplaceableJumps> tryCompileRet();
-        std::optional<ReplaceableJumps> tryCompileJe(u64 dst);
-        std::optional<ReplaceableJumps> tryCompileJne(u64 dst);
-        std::optional<ReplaceableJumps> tryCompileJcc(Cond, u64 dst);
-        std::optional<ReplaceableJumps> tryCompileJmp(u64 dst);
+        bool tryCompileCall(u64 dst);
+        bool tryCompileRet();
+        bool tryCompileJe(u64 dst);
+        bool tryCompileJne(u64 dst);
+        bool tryCompileJcc(Cond, u64 dst);
+        bool tryCompileJmp(u64 dst);
 
         // non-patchable exits
-        std::optional<ReplaceableJumps> tryCompileCall(const RM64&);
-        std::optional<ReplaceableJumps> tryCompileJmp(const RM64&);
+        bool tryCompileCall(const RM64&);
+        bool tryCompileJmp(const RM64&);
 
         enum class Reg {
             GPR0,
@@ -498,7 +502,7 @@ namespace x64 {
 
         static XMM get(Reg128);
 
-        Assembler assembler_;
+        std::unique_ptr<ir::IrGenerator> generator_;
 
         void readReg8(Reg dst, R8 src);
         void writeReg8(R8 dst, Reg src);

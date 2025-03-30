@@ -61,13 +61,18 @@ namespace emulator {
                 jittedInstructions, emulatedInstructions+jittedInstructions,
                 100*jittedInstructions/(1+emulatedInstructions+jittedInstructions),
                 100*jittedInstructions/(1+jitCandidateInstructions+jittedInstructions));
-        // for(auto* bb : jittedBlocks) {
-        //     fmt::print("  Calls: {}. Jitted: {}. Size: {}\n", bb->calls(), !!bb->nativeBasicBlock(), bb->basicBlock().instructions.size());
-        //     for(const auto& ins : bb->basicBlock().instructions) {
-        //         fmt::print("      {:#12x} {}\n", ins.first.address(), ins.first.toString());
-        //     }
-        //     [[maybe_unused]] auto jitBasicBlock = x64::Compiler::tryCompile(bb->basicBlock(), true);
-        // }
+        for(auto* bb : jittedBlocks) {
+            fmt::print("  Calls: {}. Jitted: {}. Size: {}\n", bb->calls(), !!bb->nativeBasicBlock(), bb->basicBlock().instructions.size());
+            for(const auto& ins : bb->basicBlock().instructions) {
+                fmt::print("      {:#12x} {}\n", ins.first.address(), ins.first.toString());
+            }
+            auto ir = x64::Compiler::tryCompileIR(bb->basicBlock(), {}, false);
+            assert(!!ir);
+            fmt::print("    Generated IR:\n");
+            for(const auto& ins : ir->instructions) {
+                fmt::print("      {}\n", ins.toString());
+            }
+        }
         // return;
         fmt::print("Jitted code was exited {} times ({} of which are avoidable)\n", jitExits_, avoidableExits_);
         const size_t topCount = 100;
@@ -89,6 +94,10 @@ namespace emulator {
 
     void VM::setEnableJitChaining(bool enable) {
         jitChainingEnabled_ = enable;
+    }
+
+    void VM::setOptimizationLevel(int level) {
+        optimizationLevel_ = std::max(level, 0);
     }
 
     void VM::crash() {
@@ -703,7 +712,7 @@ namespace emulator {
     void BasicBlock::tryCompile(VM& vm, u64 callLimit) {
         if(calls_ < callLimit) return;
         if(!compilationAttempted_) {
-            auto jitBasicBlock = x64::Compiler::tryCompile(cpuBasicBlock_, this);
+            auto jitBasicBlock = x64::Compiler::tryCompile(cpuBasicBlock_, vm.optimizationLevel(), this);
             if(!!jitBasicBlock) {
                 nativeBasicBlock_ = vm.tryMakeNative(jitBasicBlock->nativecode.data(), jitBasicBlock->nativecode.size());
                 pendingPatches_ = PendingPatches {

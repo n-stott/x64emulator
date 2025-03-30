@@ -33,6 +33,10 @@ namespace emulator {
         enableJitChaining_ = enableJitChaining;
     }
 
+    void Emulator::setOptimizationLevel(int level) {
+        optimizationLevel_ = level;
+    }
+
     bool Emulator::run(const std::string& programFilePath, const std::vector<std::string>& arguments, const std::vector<std::string>& environmentVariables) const {
         x64::Mmu mmu;
         kernel::Kernel kernel(mmu);
@@ -41,6 +45,7 @@ namespace emulator {
         kernel.setProfiling(isProfiling_);
         kernel.setEnableJit(enableJit_);
         kernel.setEnableJitChaining(enableJitChaining_);
+        kernel.setOptimizationLevel(optimizationLevel_);
 
         bool ok = true;
         

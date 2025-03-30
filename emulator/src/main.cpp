@@ -38,6 +38,17 @@ int main(int argc, char* argv[], char* envp[]) {
            .default_value(false)
            .implicit_value(true);
 
+    parser.add_argument("-O0")
+            .help("JIT optimization level 0")
+            .default_value(false)
+            .implicit_value(true)
+            .nargs(0);
+    parser.add_argument("-O1")
+            .help("JIT optimization level 1")
+            .default_value(false)
+            .implicit_value(true)
+            .nargs(0);
+
     parser.add_argument("command")
            .remaining();
 
@@ -80,6 +91,12 @@ int main(int argc, char* argv[], char* envp[]) {
     emulator.setProfiling(parser["--profile"] == true);
     emulator.setEnableJit(parser["--nojit"] == false);
     emulator.setEnableJitChaining(parser["--nojitchaining"] == false);
+    if(parser["-O0"] == true) {
+        emulator.setOptimizationLevel(0);
+    }
+    if(parser["-O1"] == true) {
+        emulator.setOptimizationLevel(1);
+    }
     try {
         bool ok = emulator.run(programPath, arguments, environmentVariables);
         return !ok;

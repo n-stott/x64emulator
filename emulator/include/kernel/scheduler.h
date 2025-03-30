@@ -37,6 +37,7 @@ namespace kernel {
 
         void setEnableJit(bool enableJit);
         void setEnableJitChaining(bool enableJitChaining);
+        void setOptimizationLevel(int level);
 
         void run();
 
@@ -74,6 +75,7 @@ namespace kernel {
             int id { 0 };
             bool enableJit { false };
             bool enableJitChaining { false };
+            int optimizationLevel { 0 };
             bool canRunSyscalls() const { return id == 0; };
         };
 
@@ -127,6 +129,7 @@ namespace kernel {
 
         bool enableJit_ { false };
         bool enableJitChaining_ { false };
+        int optimizationLevel_ { 0 };
 
         // Any operation of the member variables below MUST be protected
         // by taking a lock on this mutex.
