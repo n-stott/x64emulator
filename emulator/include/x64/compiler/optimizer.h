@@ -30,6 +30,10 @@ namespace x64::ir {
     class DeadCodeElimination : public OptimizationPass {
         bool optimize(IR*) override;
     };
+
+    class ImmediateReadBackElimination : public OptimizationPass {
+        bool optimize(IR*) override;
+    };
 }
 
 #endif

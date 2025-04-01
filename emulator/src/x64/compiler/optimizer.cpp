@@ -290,4 +290,26 @@ namespace x64::ir {
         }
     }
 
+    bool ImmediateReadBackElimination::optimize(IR* ir) {
+        if(!ir) return false;
+
+        std::vector<size_t> removableInstructions;
+        for(size_t i = 1; i < ir->instructions.size(); ++i) {
+            const auto& prev = ir->instructions[i-1];
+            const auto& curr = ir->instructions[i];
+            if(prev.op() != Op::MOV) continue;
+            if(curr.op() != Op::MOV) continue;
+            if(prev.in1() != curr.out()) continue;
+            if(prev.out() != curr.in1()) continue;
+            // curr is doing the opposite mov of prev, so it is useless
+            removableInstructions.push_back(i);
+        }
+        if(removableInstructions.empty()) {
+            return false;
+        } else {
+            ir->removeInstructions(removableInstructions);
+            return true;
+        }
+    }
+
 }
