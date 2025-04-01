@@ -26,6 +26,10 @@ namespace x64::ir {
     private:
         std::vector<std::unique_ptr<OptimizationPass>> passes_;
     };
+    
+    class DeadCodeElimination : public OptimizationPass {
+        bool optimize(IR*) override;
+    };
 }
 
 #endif

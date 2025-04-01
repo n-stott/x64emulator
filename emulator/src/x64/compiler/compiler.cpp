@@ -41,7 +41,7 @@ namespace x64 {
 
         ir::Optimizer optimizer;
         if(optimizationLevel >= 1) {
-            
+            optimizer.addPass<ir::DeadCodeElimination>();
         }
         optimizer.optimize(body.value());
 
