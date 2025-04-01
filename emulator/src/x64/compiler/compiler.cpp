@@ -43,6 +43,7 @@ namespace x64 {
         if(optimizationLevel >= 1) {
             optimizer.addPass<ir::DeadCodeElimination>();
             optimizer.addPass<ir::ImmediateReadBackElimination>();
+            optimizer.addPass<ir::DelayedReadBackElimination>();
         }
         optimizer.optimize(body.value());
 

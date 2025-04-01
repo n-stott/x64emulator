@@ -53,18 +53,20 @@ namespace x64::ir {
             return !(*this == other);
         }
 
+        bool readsFrom(R64 reg) const;
+
         std::string toString() const;
 
-        private:
+    private:
         struct Void {
             bool operator==(const Void&) const { return true; }
         };
         std::variant<Void,
-                        u8, u16, u32, u64,
-                        R8, R16, R32, R64,
-                        M8, M16, M32, M64,
-                        MMX, XMM, M128,
-                        LabelIndex> value_;
+                    u8, u16, u32, u64,
+                    R8, R16, R32, R64,
+                    M8, M16, M32, M64,
+                    MMX, XMM, M128,
+                    LabelIndex> value_;
     };
 
     enum class Op {
@@ -276,6 +278,11 @@ namespace x64::ir {
         }
 
         std::string toString() const;
+
+        bool readsFrom(R64 reg) const;
+        bool writesTo(R64 reg) const;
+
+        static bool canCommute(const Instruction& a, const Instruction& b);
 
     private:
         Op op_;

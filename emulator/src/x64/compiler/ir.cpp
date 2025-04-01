@@ -43,6 +43,19 @@ namespace x64::ir {
         return "NO VALUE";
     }
 
+    bool Operand::readsFrom(R64 reg) const {
+        if(auto asR8 = as<R8>()) { return reg == containingRegister(*asR8); }
+        if(auto asR16 = as<R16>()) { return reg == containingRegister(*asR16); }
+        if(auto asR32 = as<R32>()) { return reg == containingRegister(*asR32); }
+        if(auto asR64 = as<R64>()) { return reg == asR64; }
+        if(auto asM8 = as<M8>()) { return reg == asM8->encoding.base || reg == asM8->encoding.index; }
+        if(auto asM16 = as<M16>()) { return reg == asM16->encoding.base || reg == asM16->encoding.index; }
+        if(auto asM32 = as<M32>()) { return reg == asM32->encoding.base || reg == asM32->encoding.index; }
+        if(auto asM64 = as<M64>()) { return reg == asM64->encoding.base || reg == asM64->encoding.index; }
+        if(auto asM128 = as<M128>()) { return reg == asM128->encoding.base || reg == asM128->encoding.index; }
+        return false;
+    }
+
     std::string toString(Op op) {
         switch(op) {
             case Op::MOV: return "mov";
@@ -303,5 +316,71 @@ namespace x64::ir {
         };
 
         for(size_t position : positions) removeInstruction(position);
+    }
+
+    bool Instruction::readsFrom(R64 reg) const {
+        if(in1_.readsFrom(reg)) return true;
+        if(in2_.readsFrom(reg)) return true;
+        if(std::find(impactedRegisters_.begin(), impactedRegisters_.end(), reg) != impactedRegisters_.end()) return true;
+        return false;
+    }
+
+    bool Instruction::writesTo(R64 reg) const {
+        return out_ == reg
+            || std::find(impactedRegisters_.begin(), impactedRegisters_.end(), reg) != impactedRegisters_.end();
+    }
+
+    bool Instruction::canCommute(const Instruction& a, const Instruction& b) {
+        // let's not trust instructions other than movs to commute
+        if(a.op() != Op::MOV) return false;
+        if(b.op() != Op::MOV) return false;
+
+        // only deal with 64bit registers and addresses
+        auto dstAReg = a.out().as<R64>();
+        auto dstAMem = a.out().as<M64>();
+        auto srcAReg = a.in1().as<R64>();
+        auto srcAMem = a.in1().as<M64>();
+        if(!dstAReg && !dstAMem) return false;
+        if(!srcAReg && !srcAMem) return false;
+        auto dstBReg = b.out().as<R64>();
+        auto dstBMem = b.out().as<M64>();
+        auto srcBReg = b.in1().as<R64>();
+        auto srcBMem = b.in1().as<M64>();
+        if(!dstBReg && !dstBMem) return false;
+        if(!srcBReg && !srcBMem) return false;
+
+        // only deal with reg to mem and mem to reg movs
+        if(dstAReg && srcAReg) return false;
+        if(dstBReg && srcBReg) return false;
+        
+        assert(dstAReg || srcAReg);
+        assert(dstBReg || srcBReg);
+        assert(dstAMem || srcAMem);
+        assert(dstBMem || srcBMem);
+
+        R64 regA = !!dstAReg ? dstAReg.value() : srcAReg.value();
+        R64 regB = !!dstBReg ? dstBReg.value() : srcBReg.value();
+        M64 memA = !!dstAMem ? dstAMem.value() : srcAMem.value();
+        M64 memB = !!dstBMem ? dstBMem.value() : srcBMem.value();
+
+        // can't commute if they read from/write to each other
+        if(regA == regB) return false;
+        if(memA == memB) return false;
+        if(memA.encoding.base == regB || memA.encoding.index == regB) return false;
+        if(memB.encoding.base == regA || memB.encoding.index == regA) return false;
+
+        // don't trust unaligned read/writes
+        if(memA.encoding.index != R64::ZERO && memA.encoding.scale < 4) return false;
+        if(memA.encoding.displacement % 4 != 0) return false;
+        if(memB.encoding.index != R64::ZERO && memB.encoding.scale < 4) return false;
+        if(memB.encoding.displacement % 4 != 0) return false;
+
+        // don't trust read/write to the same base with non-zero index
+        // in the jit, the base is always rsi (for registers) or rcx (for memory)
+        // if the read/write both go to the memory (the only one where we can generated an index),
+        // we should not trust that they commute when an index is used in one of them
+        if(memA.encoding.base == memB.encoding.base && (memA.encoding.index != R64::ZERO || memB.encoding.index != R64::ZERO)) return false;
+
+        return true;
     }
 }

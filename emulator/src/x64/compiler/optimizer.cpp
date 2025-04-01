@@ -253,14 +253,6 @@ namespace x64::ir {
         std::vector<LiveAddresses> liveAddresses;
         computeLiveRegistersAndAddresses(*ir, &liveRegisters, &liveAddresses);
 
-        // fmt::print("Optimizing !\n");
-        // for(size_t i = 0; i < ir->instructions.size(); ++i) {
-        //     std::vector<std::string> addresses;
-        //     for(const M64& m : liveAddresses[i].addresses) addresses.push_back(x64::utils::toString(m));
-        //     fmt::print("                      Live: {}\n", fmt::join(addresses, ", "));
-        //     fmt::print("  {}\n", ir->instructions[i].toString());
-        // }
-
         std::vector<size_t> removableInstructions;
 
         for(size_t i = ir->instructions.size(); i --> 0;) {
@@ -303,6 +295,36 @@ namespace x64::ir {
             if(prev.out() != curr.in1()) continue;
             // curr is doing the opposite mov of prev, so it is useless
             removableInstructions.push_back(i);
+        }
+        if(removableInstructions.empty()) {
+            return false;
+        } else {
+            ir->removeInstructions(removableInstructions);
+            return true;
+        }
+    }
+
+    bool DelayedReadBackElimination::optimize(IR* ir) {
+        if(!ir) return false;
+
+        std::vector<size_t> removableInstructions;
+        for(size_t i = 0; i < ir->instructions.size(); ++i) {
+            const auto& curr = ir->instructions[i];
+            if(curr.op() != Op::MOV) continue;
+            for(size_t j = i+1; j < ir->instructions.size(); ++j) {
+                const auto& next = ir->instructions[j];
+                if(next.op() == Op::MOV
+                        && next.in1() == curr.out()
+                        && next.out() == curr.in1()) {
+                    removableInstructions.push_back(j);
+                    i = j+1;
+                    break;
+                } else if(Instruction::canCommute(curr, next)) {
+                    continue;
+                } else {
+                    break;
+                }
+            }
         }
         if(removableInstructions.empty()) {
             return false;

@@ -34,6 +34,10 @@ namespace x64::ir {
     class ImmediateReadBackElimination : public OptimizationPass {
         bool optimize(IR*) override;
     };
+
+    class DelayedReadBackElimination : public OptimizationPass {
+        bool optimize(IR*) override;
+    };
 }
 
 #endif
