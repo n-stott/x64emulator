@@ -61,21 +61,25 @@ namespace emulator {
                 jittedInstructions, emulatedInstructions+jittedInstructions,
                 100*jittedInstructions/(1+emulatedInstructions+jittedInstructions),
                 100*jittedInstructions/(1+jitCandidateInstructions+jittedInstructions));
+        std::sort(jittedBlocks.begin(), jittedBlocks.end(), [](const auto* a, const auto* b) {
+            return a->calls() * a->basicBlock().instructions.size() > b->calls() * b->basicBlock().instructions.size();
+        });
+        const size_t topCount = 20;
+        if(jittedBlocks.size() >= topCount) jittedBlocks.resize(topCount);
         for(auto* bb : jittedBlocks) {
             fmt::print("  Calls: {}. Jitted: {}. Size: {}\n", bb->calls(), !!bb->nativeBasicBlock(), bb->basicBlock().instructions.size());
             for(const auto& ins : bb->basicBlock().instructions) {
                 fmt::print("      {:#12x} {}\n", ins.first.address(), ins.first.toString());
             }
-            auto ir = x64::Compiler::tryCompileIR(bb->basicBlock(), {}, false);
+            auto ir = x64::Compiler::tryCompileIR(bb->basicBlock(), 1, {}, false);
             assert(!!ir);
             fmt::print("    Generated IR:\n");
             for(const auto& ins : ir->instructions) {
                 fmt::print("      {}\n", ins.toString());
             }
         }
-        // return;
+        return;
         fmt::print("Jitted code was exited {} times ({} of which are avoidable)\n", jitExits_, avoidableExits_);
-        const size_t topCount = 100;
         if(blocks.size() >= topCount) blocks.resize(topCount);
         for(auto* bb : blocks) {
             fmt::print("  Calls: {}. Jitted: {}. Size: {}\n", bb->calls(), !!bb->nativeBasicBlock(), bb->basicBlock().instructions.size());
@@ -83,7 +87,7 @@ namespace emulator {
                 fmt::print("      {:#12x} {}\n", ins.first.address(), ins.first.toString());
             }
             fmt::print("{} calls ", bb->calls());
-            [[maybe_unused]] auto jitBasicBlock = x64::Compiler::tryCompile(bb->basicBlock(), {}, true);
+            [[maybe_unused]] auto jitBasicBlock = x64::Compiler::tryCompile(bb->basicBlock(), 1, {}, true);
         }
 #endif
     }
