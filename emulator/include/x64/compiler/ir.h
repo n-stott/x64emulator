@@ -20,22 +20,22 @@ namespace x64::ir {
     class Operand {
     public:
         Operand() = default;
-        Operand(u8 op) : value_(op) { }
-        Operand(u16 op) : value_(op) { }
-        Operand(u32 op) : value_(op) { }
-        Operand(u64 op) : value_(op) { }
-        Operand(R8 op) : value_(op) { }
-        Operand(R16 op) : value_(op) { }
-        Operand(R32 op) : value_(op) { }
-        Operand(R64 op) : value_(op) { }
-        Operand(M8 op) : value_(op) { }
-        Operand(M16 op) : value_(op) { }
-        Operand(M32 op) : value_(op) { }
-        Operand(M64 op) : value_(op) { }
-        Operand(MMX op) : value_(op) { }
-        Operand(XMM op) : value_(op) { }
-        Operand(M128 op) : value_(op) { }
-        Operand(LabelIndex op) : value_(op) { }
+        explicit Operand(u8 op) : value_(op) { }
+        explicit Operand(u16 op) : value_(op) { }
+        explicit Operand(u32 op) : value_(op) { }
+        explicit Operand(u64 op) : value_(op) { }
+        explicit Operand(R8 op) : value_(op) { }
+        explicit Operand(R16 op) : value_(op) { }
+        explicit Operand(R32 op) : value_(op) { }
+        explicit Operand(R64 op) : value_(op) { }
+        explicit Operand(M8 op) : value_(op) { }
+        explicit Operand(M16 op) : value_(op) { }
+        explicit Operand(M32 op) : value_(op) { }
+        explicit Operand(M64 op) : value_(op) { }
+        explicit Operand(MMX op) : value_(op) { }
+        explicit Operand(XMM op) : value_(op) { }
+        explicit Operand(M128 op) : value_(op) { }
+        explicit Operand(LabelIndex op) : value_(op) { }
 
         template<typename T>
         std::optional<T> as() const {

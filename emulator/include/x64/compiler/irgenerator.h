@@ -438,7 +438,7 @@ namespace x64::ir {
     private:
         template<typename ...Args>
         Instruction& emit(Op op, Args&& ...args) {
-            return instructions_.emplace_back(Instruction(op, args...));
+            return instructions_.emplace_back(Instruction(op, Operand{args}...));
         }
 
         std::vector<Instruction> instructions_;
