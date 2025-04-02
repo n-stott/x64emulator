@@ -1798,10 +1798,13 @@ namespace x64 {
                     assert(mmxdst == ins.in1().as<MMX>());
                     auto r128dst = ins.out().as<XMM>();
                     assert(r128dst == ins.in1().as<XMM>());
+                    auto r128src = ins.in2().as<XMM>();
                     auto imm8src = ins.in2().as<u8>();
 
                     if(mmxdst && imm8src) {
                         assembler.pslld(mmxdst.value(), imm8src.value());
+                    } else if(r128dst && r128src) {
+                        assembler.pslld(r128dst.value(), r128src.value());
                     } else if(r128dst && imm8src) {
                         assembler.pslld(r128dst.value(), imm8src.value());
                     } else {
@@ -1903,10 +1906,13 @@ namespace x64 {
                     assert(mmxdst == ins.in1().as<MMX>());
                     auto r128dst = ins.out().as<XMM>();
                     assert(r128dst == ins.in1().as<XMM>());
+                    auto r128src = ins.in2().as<XMM>();
                     auto imm8src = ins.in2().as<u8>();
 
                     if(mmxdst && imm8src) {
                         assembler.psraw(mmxdst.value(), imm8src.value());
+                    } else if(r128dst && r128src) {
+                        assembler.psraw(r128dst.value(), r128src.value());
                     } else if(r128dst && imm8src) {
                         assembler.psraw(r128dst.value(), imm8src.value());
                     } else {
@@ -1919,10 +1925,13 @@ namespace x64 {
                     assert(mmxdst == ins.in1().as<MMX>());
                     auto r128dst = ins.out().as<XMM>();
                     assert(r128dst == ins.in1().as<XMM>());
+                    auto r128src = ins.in2().as<XMM>();
                     auto imm8src = ins.in2().as<u8>();
 
                     if(mmxdst && imm8src) {
                         assembler.psrad(mmxdst.value(), imm8src.value());
+                    } else if(r128dst && r128src) {
+                        assembler.psrad(r128dst.value(), r128src.value());
                     } else if(r128dst && imm8src) {
                         assembler.psrad(r128dst.value(), imm8src.value());
                     } else {
