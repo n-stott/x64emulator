@@ -1906,10 +1906,13 @@ namespace x64 {
                     assert(mmxdst == ins.in1().as<MMX>());
                     auto r128dst = ins.out().as<XMM>();
                     assert(r128dst == ins.in1().as<XMM>());
+                    auto mmxsrc = ins.in2().as<MMX>();
                     auto r128src = ins.in2().as<XMM>();
                     auto imm8src = ins.in2().as<u8>();
 
-                    if(mmxdst && imm8src) {
+                    if(mmxdst && mmxsrc) {
+                        assembler.psraw(mmxdst.value(), mmxsrc.value());
+                    } else if(mmxdst && imm8src) {
                         assembler.psraw(mmxdst.value(), imm8src.value());
                     } else if(r128dst && r128src) {
                         assembler.psraw(r128dst.value(), r128src.value());
