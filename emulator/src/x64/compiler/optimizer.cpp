@@ -90,18 +90,17 @@ namespace x64::ir {
             liveRegisters[i] = liveRegisters[i+1];
             liveAddresses[i] = liveAddresses[i+1];
 
-            auto markAllAddressesAsAlive = [&]() {
-                for(const M64& address : allAddresses.addresses) {
-                    liveAddresses[i].add(address);
-                }
-            };
-
             auto markAllAddressesInvolvingRegisterAsAlive = [&](R64 reg) {
                 for(const M64& address : allAddresses.addresses) {
                     if(address.encoding.base == reg || address.encoding.index == reg) {
                         liveAddresses[i].add(address);
                     }
                 }
+            };
+
+            auto markAllAddressesInvolvingRegistersAsAlive = [&](const Encoding64& enc) {
+                markAllAddressesInvolvingRegisterAsAlive(enc.base);
+                if(enc.index != R64::ZERO) markAllAddressesInvolvingRegisterAsAlive(enc.index);
             };
 
             if(auto r8out = ins.out().as<R8>()) {
@@ -162,13 +161,13 @@ namespace x64::ir {
                 liveAddresses[i].add(M64{m8in1->segment, m8in1->encoding});
                 liveRegisters[i].add(m8in1->encoding.base);
                 liveRegisters[i].add(m8in1->encoding.index);
-                markAllAddressesAsAlive();
+                markAllAddressesInvolvingRegistersAsAlive(m8in1->encoding);
             }
             if(auto m8in2 = ins.in2().as<M8>()) {
                 liveAddresses[i].add(M64{m8in2->segment, m8in2->encoding});
                 liveRegisters[i].add(m8in2->encoding.base);
                 liveRegisters[i].add(m8in2->encoding.index);
-                markAllAddressesAsAlive();
+                markAllAddressesInvolvingRegistersAsAlive(m8in2->encoding);
             }
             if(auto m16out = ins.out().as<M16>()) {
                 // liveAddresses[i].remove(M64{m16out->segment, m16out->encoding});
@@ -179,13 +178,13 @@ namespace x64::ir {
                 liveAddresses[i].add(M64{m16in1->segment, m16in1->encoding});
                 liveRegisters[i].add(m16in1->encoding.base);
                 liveRegisters[i].add(m16in1->encoding.index);
-                markAllAddressesAsAlive();
+                markAllAddressesInvolvingRegistersAsAlive(m16in1->encoding);
             }
             if(auto m16in2 = ins.in2().as<M16>()) {
                 liveAddresses[i].add(M64{m16in2->segment, m16in2->encoding});
                 liveRegisters[i].add(m16in2->encoding.base);
                 liveRegisters[i].add(m16in2->encoding.index);
-                markAllAddressesAsAlive();
+                markAllAddressesInvolvingRegistersAsAlive(m16in2->encoding);
             }
             if(auto m32out = ins.out().as<M32>()) {
                 // liveAddresses[i].remove(M64{m32out->segment, m32out->encoding});
@@ -196,13 +195,13 @@ namespace x64::ir {
                 liveAddresses[i].add(M64{m32in1->segment, m32in1->encoding});
                 liveRegisters[i].add(m32in1->encoding.base);
                 liveRegisters[i].add(m32in1->encoding.index);
-                markAllAddressesAsAlive();
+                markAllAddressesInvolvingRegistersAsAlive(m32in1->encoding);
             }
             if(auto m32in2 = ins.in2().as<M32>()) {
                 liveAddresses[i].add(M64{m32in2->segment, m32in2->encoding});
                 liveRegisters[i].add(m32in2->encoding.base);
                 liveRegisters[i].add(m32in2->encoding.index);
-                markAllAddressesAsAlive();
+                markAllAddressesInvolvingRegistersAsAlive(m32in2->encoding);
             }
             if(auto m64out = ins.out().as<M64>()) {
                 liveAddresses[i].remove(m64out.value());
@@ -228,13 +227,13 @@ namespace x64::ir {
                 liveAddresses[i].add(M64{m128in1->segment, m128in1->encoding});
                 liveRegisters[i].add(m128in1->encoding.base);
                 liveRegisters[i].add(m128in1->encoding.index);
-                markAllAddressesAsAlive();
+                markAllAddressesInvolvingRegistersAsAlive(m128in1->encoding);
             }
             if(auto m128in2 = ins.in2().as<M128>()) {
                 liveAddresses[i].add(M64{m128in2->segment, m128in2->encoding});
                 liveRegisters[i].add(m128in2->encoding.base);
                 liveRegisters[i].add(m128in2->encoding.index);
-                markAllAddressesAsAlive();
+                markAllAddressesInvolvingRegistersAsAlive(m128in2->encoding);
             }
             liveRegisters[i].add(R64::RSP);
             liveRegisters[i].add(R64::RAX);
