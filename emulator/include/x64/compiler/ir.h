@@ -282,6 +282,8 @@ namespace x64::ir {
         bool readsFrom(R64 reg) const;
         bool writesTo(R64 reg) const;
 
+        bool mayWriteTo(const M64& mem) const;
+
         static bool canCommute(const Instruction& a, const Instruction& b);
 
     private:

@@ -38,6 +38,10 @@ namespace x64::ir {
     class DelayedReadBackElimination : public OptimizationPass {
         bool optimize(IR*) override;
     };
+
+    class DuplicateInstructionElimination : public OptimizationPass {
+        bool optimize(IR*) override;
+    };
 }
 
 #endif

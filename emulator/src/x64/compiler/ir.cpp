@@ -330,6 +330,65 @@ namespace x64::ir {
             || std::find(impactedRegisters_.begin(), impactedRegisters_.end(), reg) != impactedRegisters_.end();
     }
 
+    bool Instruction::mayWriteTo(const M64& mem) const {
+        // don't trust non-movs
+        if(op() != Op::MOV) return true;
+
+        // don't trust memory locations in fs segment (essentially)
+        if(mem.segment != Segment::CS && mem.segment != Segment::UNK) return true;
+
+        auto m8dst = out().as<M8>();
+        auto m16dst = out().as<M16>();
+        auto m32dst = out().as<M32>();
+        auto m64dst = out().as<M64>();
+        auto m128dst = out().as<M128>();
+
+        // it's ok if the destination is not memory
+        if(!m8dst && !m16dst && !m32dst && !m64dst && !m128dst) return false;
+
+        Encoding64 dst;
+        if(m8dst) {
+            // don't trust the fs segment
+            if(m8dst->segment != Segment::CS && m8dst->segment != Segment::UNK) return true;
+            dst = m8dst->encoding;
+        }
+        if(m16dst) {
+            // don't trust the fs segment
+            if(m16dst->segment != Segment::CS && m16dst->segment != Segment::UNK) return true;
+            dst = m16dst->encoding;
+        }
+        if(m32dst) {
+            // don't trust the fs segment
+            if(m32dst->segment != Segment::CS && m32dst->segment != Segment::UNK) return true;
+            dst = m32dst->encoding;
+        }
+        if(m64dst) {
+            // don't trust the fs segment
+            if(m64dst->segment != Segment::CS && m64dst->segment != Segment::UNK) return true;
+            dst = m64dst->encoding;
+        }
+        if(m128dst) {
+            // don't trust the fs segment
+            if(m128dst->segment != Segment::CS && m128dst->segment != Segment::UNK) return true;
+            dst = m128dst->encoding;
+        }
+
+        // in the jit, a different base means addresses cannot clash
+        if(dst.base != mem.encoding.base) return false;
+        
+        // if there is an index, we cannot say anything
+        if(dst.index != R64::ZERO || mem.encoding.index != R64::ZERO) return true;
+
+        // don't look at unaligned reads/writes
+        if(dst.displacement % 4 != 0 || mem.encoding.displacement % 4 != 0) return true;
+        
+        // if the displacements do not match, addresses cannot clash
+        if(dst.displacement != mem.encoding.displacement) return false;
+
+        // otherwise, don't take risks
+        return true;
+    }
+
     bool Instruction::canCommute(const Instruction& a, const Instruction& b) {
         // let's not trust instructions other than movs to commute
         if(a.op() != Op::MOV) return false;
@@ -362,6 +421,10 @@ namespace x64::ir {
         R64 regB = !!dstBReg ? dstBReg.value() : srcBReg.value();
         M64 memA = !!dstAMem ? dstAMem.value() : srcAMem.value();
         M64 memB = !!dstBMem ? dstBMem.value() : srcBMem.value();
+
+        // don't trust fs segment (essentially)
+        if(memA.segment != Segment::CS && memA.segment != Segment::UNK) return false;
+        if(memB.segment != Segment::CS && memB.segment != Segment::UNK) return false;
 
         // can't commute if they read from/write to each other
         if(regA == regB) return false;

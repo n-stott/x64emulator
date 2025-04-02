@@ -334,4 +334,52 @@ namespace x64::ir {
         }
     }
 
+    bool DuplicateInstructionElimination::optimize(IR* ir) {
+        if(!ir) return false;
+
+        std::vector<size_t> removableInstructions;
+        for(size_t i = 0; i < ir->instructions.size(); ++i) {
+            const auto& curr = ir->instructions[i];
+            // don't trust any other instruction than movs for now
+            if(curr.op() != Op::MOV) continue;
+            // only eliminate duplicate writes to registers
+            auto dstReg = curr.out().as<R64>();
+            if(!dstReg) continue;
+            // don't optimize register-register movs (yet)
+            auto srcMem = curr.in1().as<M64>();
+            if(!srcMem) continue;
+
+            // look ahead for a duplicate mov
+            for(size_t j = i+1; j < ir->instructions.size(); ++j) {
+                const auto& next = ir->instructions[j];
+                // abort if we encounter something that is not a mov
+                if(next.op() != Op::MOV) break;
+                // remove the next duplicate only
+                if(next.out() == curr.out() && next.in1() == curr.in1()) {
+                    removableInstructions.push_back(j);
+                    i = j+1;
+                    break;
+                }
+                bool writesToDst = next.writesTo(*dstReg);
+                bool writesToMemBase = next.writesTo(srcMem->encoding.base);
+                bool writesToMemIndex = next.writesTo(srcMem->encoding.index);
+                bool mayWriteToSrc = next.mayWriteTo(*srcMem);
+                // if the mov impacts the src or dst, we need to abort
+                if(writesToDst || writesToMemBase || writesToMemIndex || mayWriteToSrc) {
+                    break;
+                } else {
+                    // otherwise, continue
+                    continue;
+                }
+            }
+        }
+
+        if(removableInstructions.empty()) {
+            return false;
+        } else {
+            ir->removeInstructions(removableInstructions);
+            return true;
+        }
+    }
+
 }

@@ -44,6 +44,7 @@ namespace x64 {
             optimizer.addPass<ir::DeadCodeElimination>();
             optimizer.addPass<ir::ImmediateReadBackElimination>();
             optimizer.addPass<ir::DelayedReadBackElimination>();
+            optimizer.addPass<ir::DuplicateInstructionElimination>();
         }
         optimizer.optimize(body.value());
 
