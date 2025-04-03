@@ -25,17 +25,18 @@ namespace x64::ir {
         // }
     }
 
+    template<typename Register>
     class LiveRegisters {
     public:
-        bool contains(R64 reg) const {
+        bool contains(Register reg) const {
             return registers_.test((u32)reg);
         }
         
-        void add(R64 reg) {
+        void add(Register reg) {
             registers_.set((u32)reg);
         }
         
-        void remove(R64 reg) {
+        void remove(Register reg) {
             registers_.reset((u32)reg);
         }
 
@@ -60,16 +61,19 @@ namespace x64::ir {
         }
     };
 
-    void computeLiveRegistersAndAddresses(const IR& ir, std::vector<LiveRegisters>* registers, std::vector<LiveAddresses>* addresses) {
-        assert(!!registers);
+    void computeLiveRegistersAndAddresses(const IR& ir, std::vector<LiveRegisters<R64>>* gprs, std::vector<LiveRegisters<XMM>>* xmms, std::vector<LiveAddresses>* addresses) {
+        assert(!!gprs);
+        assert(!!xmms);
         assert(!!addresses);
-        std::vector<LiveRegisters> liveRegisters;
+        std::vector<LiveRegisters<R64>> liveGprs;
+        std::vector<LiveRegisters<XMM>> liveXmms;
         std::vector<LiveAddresses> liveAddresses;
-        std::swap(liveRegisters, *registers);
+        std::swap(liveGprs, *gprs);
+        std::swap(liveXmms, *xmms);
         std::swap(liveAddresses, *addresses);
 
         // RSP, RAX and RDX are always live, no other register is live
-        std::vector<R64> alwaysLiveRegisters {
+        std::vector<R64> alwaysLiveGprs {
             R64::RSP,
             R64::RAX,
             R64::RDX,
@@ -82,16 +86,18 @@ namespace x64::ir {
             if(m64out) allAddresses.add(m64out.value());
         }
 
-        liveRegisters.resize(ir.instructions.size()+1);
-        for(R64 alwaysLive : alwaysLiveRegisters) {
-            liveRegisters.back().add(alwaysLive);
+        liveGprs.resize(ir.instructions.size()+1);
+        for(R64 alwaysLive : alwaysLiveGprs) {
+            liveGprs.back().add(alwaysLive);
         }
+        liveXmms.resize(ir.instructions.size()+1);
         liveAddresses.resize(ir.instructions.size()+1);
         liveAddresses.back() = allAddresses;
 
         for(size_t i = ir.instructions.size(); i --> 0;) {
             const auto& ins = ir.instructions[i];
-            liveRegisters[i] = liveRegisters[i+1];
+            liveGprs[i] = liveGprs[i+1];
+            liveXmms[i] = liveXmms[i+1];
             liveAddresses[i] = liveAddresses[i+1];
 
             auto markAllAddressesInvolvingRegisterAsAlive = [&](R64 reg) {
@@ -111,33 +117,35 @@ namespace x64::ir {
                 using T = std::decay_t<decltype(arg)>;
 
                 if constexpr(std::is_same_v<T, R8>) {
-                    liveRegisters[i].remove(containingRegister(arg));
+                    liveGprs[i].remove(containingRegister(arg));
                     markAllAddressesInvolvingRegisterAsAlive(containingRegister(arg));
                 } else if constexpr(std::is_same_v<T, R16>) {
-                    liveRegisters[i].remove(containingRegister(arg));
+                    liveGprs[i].remove(containingRegister(arg));
                     markAllAddressesInvolvingRegisterAsAlive(containingRegister(arg));
                 } else if constexpr(std::is_same_v<T, R32>) {
-                    liveRegisters[i].remove(containingRegister(arg));
+                    liveGprs[i].remove(containingRegister(arg));
                     markAllAddressesInvolvingRegisterAsAlive(containingRegister(arg));
                 } else if constexpr(std::is_same_v<T, R64>) {
-                    liveRegisters[i].remove(arg);
+                    liveGprs[i].remove(arg);
                     markAllAddressesInvolvingRegisterAsAlive(arg);
+                } else if constexpr(std::is_same_v<T, XMM>) {
+                    liveXmms[i].remove(arg);
                 } else if constexpr(std::is_same_v<T, M8>) {
-                    liveRegisters[i].add(arg.encoding.base);
-                    liveRegisters[i].add(arg.encoding.index);
+                    liveGprs[i].add(arg.encoding.base);
+                    liveGprs[i].add(arg.encoding.index);
                 } else if constexpr(std::is_same_v<T, M16>) {
-                    liveRegisters[i].add(arg.encoding.base);
-                    liveRegisters[i].add(arg.encoding.index);
+                    liveGprs[i].add(arg.encoding.base);
+                    liveGprs[i].add(arg.encoding.index);
                 } else if constexpr(std::is_same_v<T, M32>) {
-                    liveRegisters[i].add(arg.encoding.base);
-                    liveRegisters[i].add(arg.encoding.index);
+                    liveGprs[i].add(arg.encoding.base);
+                    liveGprs[i].add(arg.encoding.index);
                 } else if constexpr(std::is_same_v<T, M64>) {
                     liveAddresses[i].remove(arg);
-                    liveRegisters[i].add(arg.encoding.base);
-                    liveRegisters[i].add(arg.encoding.index);
+                    liveGprs[i].add(arg.encoding.base);
+                    liveGprs[i].add(arg.encoding.index);
                 } else if constexpr(std::is_same_v<T, M128>) {
-                    liveRegisters[i].add(arg.encoding.base);
-                    liveRegisters[i].add(arg.encoding.index);
+                    liveGprs[i].add(arg.encoding.base);
+                    liveGprs[i].add(arg.encoding.index);
                 } else {
                     // do nothing
                 }
@@ -147,40 +155,42 @@ namespace x64::ir {
                 using T = std::decay_t<decltype(arg)>;
 
                 if constexpr(std::is_same_v<T, R8>) {
-                    liveRegisters[i].add(containingRegister(arg));
+                    liveGprs[i].add(containingRegister(arg));
                     markAllAddressesInvolvingRegisterAsAlive(containingRegister(arg));
                 } else if constexpr(std::is_same_v<T, R16>) {
-                    liveRegisters[i].add(containingRegister(arg));
+                    liveGprs[i].add(containingRegister(arg));
                     markAllAddressesInvolvingRegisterAsAlive(containingRegister(arg));
                 } else if constexpr(std::is_same_v<T, R32>) {
-                    liveRegisters[i].add(containingRegister(arg));
+                    liveGprs[i].add(containingRegister(arg));
                     markAllAddressesInvolvingRegisterAsAlive(containingRegister(arg));
                 } else if constexpr(std::is_same_v<T, R64>) {
-                    liveRegisters[i].add(arg);
+                    liveGprs[i].add(arg);
                     markAllAddressesInvolvingRegisterAsAlive(arg);
+                } else if constexpr(std::is_same_v<T, XMM>) {
+                    liveXmms[i].add(arg);
                 } else if constexpr(std::is_same_v<T, M8>) {
                     liveAddresses[i].add(M64{arg.segment, arg.encoding});
-                    liveRegisters[i].add(arg.encoding.base);
-                    liveRegisters[i].add(arg.encoding.index);
+                    liveGprs[i].add(arg.encoding.base);
+                    liveGprs[i].add(arg.encoding.index);
                     markAllAddressesInvolvingRegistersAsAlive(arg.encoding);
                 } else if constexpr(std::is_same_v<T, M16>) {
                     liveAddresses[i].add(M64{arg.segment, arg.encoding});
-                    liveRegisters[i].add(arg.encoding.base);
-                    liveRegisters[i].add(arg.encoding.index);
+                    liveGprs[i].add(arg.encoding.base);
+                    liveGprs[i].add(arg.encoding.index);
                     markAllAddressesInvolvingRegistersAsAlive(arg.encoding);
                 } else if constexpr(std::is_same_v<T, M32>) {
                     liveAddresses[i].add(M64{arg.segment, arg.encoding});
-                    liveRegisters[i].add(arg.encoding.base);
-                    liveRegisters[i].add(arg.encoding.index);
+                    liveGprs[i].add(arg.encoding.base);
+                    liveGprs[i].add(arg.encoding.index);
                     markAllAddressesInvolvingRegistersAsAlive(arg.encoding);
                 } else if constexpr(std::is_same_v<T, M64>) {
                     liveAddresses[i].add(arg);
-                    liveRegisters[i].add(arg.encoding.base);
-                    liveRegisters[i].add(arg.encoding.index);
+                    liveGprs[i].add(arg.encoding.base);
+                    liveGprs[i].add(arg.encoding.index);
                 } else if constexpr(std::is_same_v<T, M128>) {
                     liveAddresses[i].add(M64{arg.segment, arg.encoding});
-                    liveRegisters[i].add(arg.encoding.base);
-                    liveRegisters[i].add(arg.encoding.index);
+                    liveGprs[i].add(arg.encoding.base);
+                    liveGprs[i].add(arg.encoding.index);
                     markAllAddressesInvolvingRegistersAsAlive(arg.encoding);
                 } else {
                     // do nothing
@@ -191,22 +201,24 @@ namespace x64::ir {
             ins.in1().visit(visit_in);
             ins.in2().visit(visit_in);
 
-            liveRegisters[i].add(R64::RSP);
-            liveRegisters[i].add(R64::RAX);
-            liveRegisters[i].add(R64::RDX);
-            for(R64 reg : ins.impactedRegisters()) liveRegisters[i].add(reg);
-            for(R64 reg : alwaysLiveRegisters) liveRegisters[i].add(reg);
+            liveGprs[i].add(R64::RSP);
+            liveGprs[i].add(R64::RAX);
+            liveGprs[i].add(R64::RDX);
+            for(R64 reg : ins.impactedRegisters()) liveGprs[i].add(reg);
+            for(R64 reg : alwaysLiveGprs) liveGprs[i].add(reg);
         }
 
-        std::swap(liveRegisters, *registers);
+        std::swap(liveGprs, *gprs);
+        std::swap(liveXmms, *xmms);
         std::swap(liveAddresses, *addresses);
     }
 
     bool DeadCodeElimination::optimize(IR* ir) {
         if(!ir) return false;
-        std::vector<LiveRegisters> liveRegisters;
+        std::vector<LiveRegisters<R64>> liveGprs;
+        std::vector<LiveRegisters<XMM>> liveXmms;
         std::vector<LiveAddresses> liveAddresses;
-        computeLiveRegistersAndAddresses(*ir, &liveRegisters, &liveAddresses);
+        computeLiveRegistersAndAddresses(*ir, &liveGprs, &liveXmms, &liveAddresses);
 
         std::vector<size_t> removableInstructions;
 
@@ -215,12 +227,16 @@ namespace x64::ir {
             if(ins.canModifyFlags()) continue;
             bool skipInstruction = false;
             for(R64 impactedReg : ins.impactedRegisters()) {
-                skipInstruction |= liveRegisters[i+1].contains(impactedReg);
+                skipInstruction |= liveGprs[i+1].contains(impactedReg);
             }
             if(skipInstruction) continue;
             auto r64out = ins.out().as<R64>();
             if(!!r64out) {
-                if(liveRegisters[i+1].contains(r64out.value())) continue;
+                if(liveGprs[i+1].contains(r64out.value())) continue;
+                removableInstructions.push_back(i);
+            }
+            if(auto r128out = ins.out().as<XMM>()) {
+                if(liveXmms[i+1].contains(r128out.value())) continue;
                 removableInstructions.push_back(i);
             }
             auto m64out = ins.out().as<M64>();
