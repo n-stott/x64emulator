@@ -278,19 +278,26 @@ namespace x64::ir {
     bool DelayedReadBackElimination::optimize(IR* ir) {
         if(!ir) return false;
 
+        auto isMov = [](Op op) {
+            return op == Op::MOV
+                || op == Op::MOVA;
+        };
+
         std::vector<size_t> removableInstructions;
         for(size_t i = 0; i < ir->instructions.size(); ++i) {
             const auto& curr = ir->instructions[i];
-            if(curr.op() != Op::MOV) continue;
+            if(!isMov(curr.op())) continue;
             for(size_t j = i+1; j < ir->instructions.size(); ++j) {
                 const auto& next = ir->instructions[j];
-                if(next.op() == Op::MOV
+                if(isMov(next.op())
                         && next.in1() == curr.out()
                         && next.out() == curr.in1()) {
                     removableInstructions.push_back(j);
                     i = j+1;
                     break;
-                } else if(Instruction::canCommute(curr, next)) {
+                } else if(Instruction::canMovsCommute(curr, next)) {
+                    continue;
+                } else if(Instruction::canMovasCommute(curr, next)) {
                     continue;
                 } else {
                     break;

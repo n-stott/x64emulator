@@ -289,7 +289,8 @@ namespace x64::ir {
 
         bool mayWriteTo(const M64& mem) const;
 
-        static bool canCommute(const Instruction& a, const Instruction& b);
+        static bool canMovsCommute(const Instruction& a, const Instruction& b);
+        static bool canMovasCommute(const Instruction& a, const Instruction& b);
 
     private:
         Op op_;

@@ -395,8 +395,7 @@ namespace x64::ir {
         return true;
     }
 
-    bool Instruction::canCommute(const Instruction& a, const Instruction& b) {
-        // let's not trust instructions other than movs to commute
+    bool Instruction::canMovsCommute(const Instruction& a, const Instruction& b) {
         if(a.op() != Op::MOV) return false;
         if(b.op() != Op::MOV) return false;
 
@@ -439,10 +438,65 @@ namespace x64::ir {
         if(memB.encoding.base == regA || memB.encoding.index == regA) return false;
 
         // don't trust unaligned read/writes
-        if(memA.encoding.index != R64::ZERO && memA.encoding.scale < 4) return false;
-        if(memA.encoding.displacement % 4 != 0) return false;
-        if(memB.encoding.index != R64::ZERO && memB.encoding.scale < 4) return false;
-        if(memB.encoding.displacement % 4 != 0) return false;
+        if(memA.encoding.index != R64::ZERO && memA.encoding.scale < 8) return false;
+        if(memA.encoding.displacement % 8 != 0) return false;
+        if(memB.encoding.index != R64::ZERO && memB.encoding.scale < 8) return false;
+        if(memB.encoding.displacement % 8 != 0) return false;
+
+        // don't trust read/write to the same base with non-zero index
+        // in the jit, the base is always rsi (for registers) or rcx (for memory)
+        // if the read/write both go to the memory (the only one where we can generated an index),
+        // we should not trust that they commute when an index is used in one of them
+        if(memA.encoding.base == memB.encoding.base && (memA.encoding.index != R64::ZERO || memB.encoding.index != R64::ZERO)) return false;
+
+        return true;
+    }
+
+    bool Instruction::canMovasCommute(const Instruction& a, const Instruction& b) {
+        if(a.op() != Op::MOVA) return false;
+        if(b.op() != Op::MOVA) return false;
+
+        // only deal with XMM registers and 128bit addresses
+        auto dstAReg = a.out().as<XMM>();
+        auto dstAMem = a.out().as<M128>();
+        auto srcAReg = a.in1().as<XMM>();
+        auto srcAMem = a.in1().as<M128>();
+        if(!dstAReg && !dstAMem) return false;
+        if(!srcAReg && !srcAMem) return false;
+        auto dstBReg = b.out().as<XMM>();
+        auto dstBMem = b.out().as<M128>();
+        auto srcBReg = b.in1().as<XMM>();
+        auto srcBMem = b.in1().as<M128>();
+        if(!dstBReg && !dstBMem) return false;
+        if(!srcBReg && !srcBMem) return false;
+
+        // only deal with reg to mem and mem to reg movs
+        if(dstAReg && srcAReg) return false;
+        if(dstBReg && srcBReg) return false;
+        
+        assert(dstAReg || srcAReg);
+        assert(dstBReg || srcBReg);
+        assert(dstAMem || srcAMem);
+        assert(dstBMem || srcBMem);
+
+        XMM regA = !!dstAReg ? dstAReg.value() : srcAReg.value();
+        XMM regB = !!dstBReg ? dstBReg.value() : srcBReg.value();
+        M128 memA = !!dstAMem ? dstAMem.value() : srcAMem.value();
+        M128 memB = !!dstBMem ? dstBMem.value() : srcBMem.value();
+
+        // don't trust fs segment (essentially)
+        if(memA.segment != Segment::CS && memA.segment != Segment::UNK) return false;
+        if(memB.segment != Segment::CS && memB.segment != Segment::UNK) return false;
+
+        // can't commute if they read from/write to each other
+        if(regA == regB) return false;
+        if(memA == memB) return false;
+
+        // don't trust unaligned read/writes
+        if(memA.encoding.index != R64::ZERO) return false;
+        if(memA.encoding.displacement % 16 != 0) return false;
+        if(memB.encoding.index != R64::ZERO) return false;
+        if(memB.encoding.displacement % 16 != 0) return false;
 
         // don't trust read/write to the same base with non-zero index
         // in the jit, the base is always rsi (for registers) or rcx (for memory)
