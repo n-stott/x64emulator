@@ -1,5 +1,6 @@
 #include "x64/compiler/optimizer.h"
 #include "x64/tostring.h"
+#include "bitmask.h"
 #include <algorithm>
 #include <fmt/format.h>
 #include <fmt/ranges.h>
@@ -24,21 +25,22 @@ namespace x64::ir {
         // }
     }
 
-    struct LiveRegisters {
-        std::vector<R64> registers;
-
-        bool contains(const R64& reg) const {
-            return std::find(registers.begin(), registers.end(), reg) != registers.end();
+    class LiveRegisters {
+    public:
+        bool contains(R64 reg) const {
+            return registers_.test((u32)reg);
+        }
+        
+        void add(R64 reg) {
+            registers_.set((u32)reg);
+        }
+        
+        void remove(R64 reg) {
+            registers_.reset((u32)reg);
         }
 
-        void add(const R64& reg) {
-            if(contains(reg)) return;
-            registers.push_back(reg);
-        }
-
-        void remove(const R64& reg) {
-            registers.erase(std::remove(registers.begin(), registers.end(), reg), registers.end());
-        }
+    private:
+        BitMask<3> registers_;
     };
 
     struct LiveAddresses {
@@ -81,7 +83,9 @@ namespace x64::ir {
         }
 
         liveRegisters.resize(ir.instructions.size()+1);
-        liveRegisters.back() = LiveRegisters{alwaysLiveRegisters};
+        for(R64 alwaysLive : alwaysLiveRegisters) {
+            liveRegisters.back().add(alwaysLive);
+        }
         liveAddresses.resize(ir.instructions.size()+1);
         liveAddresses.back() = allAddresses;
 
@@ -103,138 +107,90 @@ namespace x64::ir {
                 if(enc.index != R64::ZERO) markAllAddressesInvolvingRegisterAsAlive(enc.index);
             };
 
-            if(auto r8out = ins.out().as<R8>()) {
-                liveRegisters[i].remove(containingRegister(r8out.value()));
-                markAllAddressesInvolvingRegisterAsAlive(containingRegister(r8out.value()));
-            }
-            if(auto r8in1 = ins.in1().as<R8>()) {
-                liveRegisters[i].add(containingRegister(r8in1.value()));
-                markAllAddressesInvolvingRegisterAsAlive(containingRegister(r8in1.value()));
-            }
-            if(auto r8in2 = ins.in2().as<R8>()) {
-                liveRegisters[i].add(containingRegister(r8in2.value()));
-                markAllAddressesInvolvingRegisterAsAlive(containingRegister(r8in2.value()));
-            }
-            if(auto r16out = ins.out().as<R16>()) {
-                liveRegisters[i].remove(containingRegister(r16out.value()));
-                markAllAddressesInvolvingRegisterAsAlive(containingRegister(r16out.value()));
-            }
-            if(auto r16in1 = ins.in1().as<R16>()) {
-                liveRegisters[i].add(containingRegister(r16in1.value()));
-                markAllAddressesInvolvingRegisterAsAlive(containingRegister(r16in1.value()));
-            }
-            if(auto r16in2 = ins.in2().as<R16>()) {
-                liveRegisters[i].add(containingRegister(r16in2.value()));
-                markAllAddressesInvolvingRegisterAsAlive(containingRegister(r16in2.value()));
-            }
-            if(auto r32out = ins.out().as<R32>()) {
-                liveRegisters[i].remove(containingRegister(r32out.value()));
-                markAllAddressesInvolvingRegisterAsAlive(containingRegister(r32out.value()));
-            }
-            if(auto r32in1 = ins.in1().as<R32>()) {
-                liveRegisters[i].add(containingRegister(r32in1.value()));
-                markAllAddressesInvolvingRegisterAsAlive(containingRegister(r32in1.value()));
-            }
-            if(auto r32in2 = ins.in2().as<R32>()) {
-                liveRegisters[i].add(containingRegister(r32in2.value()));
-                markAllAddressesInvolvingRegisterAsAlive(containingRegister(r32in2.value()));
-            }
-            if(auto r64out = ins.out().as<R64>()) {
-                liveRegisters[i].remove(r64out.value());
-                markAllAddressesInvolvingRegisterAsAlive(r64out.value());
-            }
-            if(auto r64in1 = ins.in1().as<R64>()) {
-                liveRegisters[i].add(r64in1.value());
-                markAllAddressesInvolvingRegisterAsAlive(r64in1.value());
-            }
-            if(auto r64in2 = ins.in2().as<R64>()) {
-                liveRegisters[i].add(r64in2.value());
-                markAllAddressesInvolvingRegisterAsAlive(r64in2.value());
-            }
+            auto visit_out = [&](auto&& arg) -> void {
+                using T = std::decay_t<decltype(arg)>;
 
-            if(auto m8out = ins.out().as<M8>()) {
-                // liveAddresses[i].remove(M64{m8out->segment, m8out->encoding});
-                liveRegisters[i].add(m8out->encoding.base);
-                liveRegisters[i].add(m8out->encoding.index);
-            }
-            if(auto m8in1 = ins.in1().as<M8>()) {
-                liveAddresses[i].add(M64{m8in1->segment, m8in1->encoding});
-                liveRegisters[i].add(m8in1->encoding.base);
-                liveRegisters[i].add(m8in1->encoding.index);
-                markAllAddressesInvolvingRegistersAsAlive(m8in1->encoding);
-            }
-            if(auto m8in2 = ins.in2().as<M8>()) {
-                liveAddresses[i].add(M64{m8in2->segment, m8in2->encoding});
-                liveRegisters[i].add(m8in2->encoding.base);
-                liveRegisters[i].add(m8in2->encoding.index);
-                markAllAddressesInvolvingRegistersAsAlive(m8in2->encoding);
-            }
-            if(auto m16out = ins.out().as<M16>()) {
-                // liveAddresses[i].remove(M64{m16out->segment, m16out->encoding});
-                liveRegisters[i].add(m16out->encoding.base);
-                liveRegisters[i].add(m16out->encoding.index);
-            }
-            if(auto m16in1 = ins.in1().as<M16>()) {
-                liveAddresses[i].add(M64{m16in1->segment, m16in1->encoding});
-                liveRegisters[i].add(m16in1->encoding.base);
-                liveRegisters[i].add(m16in1->encoding.index);
-                markAllAddressesInvolvingRegistersAsAlive(m16in1->encoding);
-            }
-            if(auto m16in2 = ins.in2().as<M16>()) {
-                liveAddresses[i].add(M64{m16in2->segment, m16in2->encoding});
-                liveRegisters[i].add(m16in2->encoding.base);
-                liveRegisters[i].add(m16in2->encoding.index);
-                markAllAddressesInvolvingRegistersAsAlive(m16in2->encoding);
-            }
-            if(auto m32out = ins.out().as<M32>()) {
-                // liveAddresses[i].remove(M64{m32out->segment, m32out->encoding});
-                liveRegisters[i].add(m32out->encoding.base);
-                liveRegisters[i].add(m32out->encoding.index);
-            }
-            if(auto m32in1 = ins.in1().as<M32>()) {
-                liveAddresses[i].add(M64{m32in1->segment, m32in1->encoding});
-                liveRegisters[i].add(m32in1->encoding.base);
-                liveRegisters[i].add(m32in1->encoding.index);
-                markAllAddressesInvolvingRegistersAsAlive(m32in1->encoding);
-            }
-            if(auto m32in2 = ins.in2().as<M32>()) {
-                liveAddresses[i].add(M64{m32in2->segment, m32in2->encoding});
-                liveRegisters[i].add(m32in2->encoding.base);
-                liveRegisters[i].add(m32in2->encoding.index);
-                markAllAddressesInvolvingRegistersAsAlive(m32in2->encoding);
-            }
-            if(auto m64out = ins.out().as<M64>()) {
-                liveAddresses[i].remove(m64out.value());
-                liveRegisters[i].add(m64out->encoding.base);
-                liveRegisters[i].add(m64out->encoding.index);
-            }
-            if(auto m64in1 = ins.in1().as<M64>()) {
-                liveAddresses[i].add(m64in1.value());
-                liveRegisters[i].add(m64in1->encoding.base);
-                liveRegisters[i].add(m64in1->encoding.index);
-            }
-            if(auto m64in2 = ins.in2().as<M64>()) {
-                liveAddresses[i].add(m64in2.value());
-                liveRegisters[i].add(m64in2->encoding.base);
-                liveRegisters[i].add(m64in2->encoding.index);
-            }
-            if(auto m128out = ins.out().as<M128>()) {
-                // liveAddresses[i].remove(M64{m128out->segment, m128out->encoding});
-                liveRegisters[i].add(m128out->encoding.base);
-                liveRegisters[i].add(m128out->encoding.index);
-            }
-            if(auto m128in1 = ins.in1().as<M128>()) {
-                liveAddresses[i].add(M64{m128in1->segment, m128in1->encoding});
-                liveRegisters[i].add(m128in1->encoding.base);
-                liveRegisters[i].add(m128in1->encoding.index);
-                markAllAddressesInvolvingRegistersAsAlive(m128in1->encoding);
-            }
-            if(auto m128in2 = ins.in2().as<M128>()) {
-                liveAddresses[i].add(M64{m128in2->segment, m128in2->encoding});
-                liveRegisters[i].add(m128in2->encoding.base);
-                liveRegisters[i].add(m128in2->encoding.index);
-                markAllAddressesInvolvingRegistersAsAlive(m128in2->encoding);
-            }
+                if constexpr(std::is_same_v<T, R8>) {
+                    liveRegisters[i].remove(containingRegister(arg));
+                    markAllAddressesInvolvingRegisterAsAlive(containingRegister(arg));
+                } else if constexpr(std::is_same_v<T, R16>) {
+                    liveRegisters[i].remove(containingRegister(arg));
+                    markAllAddressesInvolvingRegisterAsAlive(containingRegister(arg));
+                } else if constexpr(std::is_same_v<T, R32>) {
+                    liveRegisters[i].remove(containingRegister(arg));
+                    markAllAddressesInvolvingRegisterAsAlive(containingRegister(arg));
+                } else if constexpr(std::is_same_v<T, R64>) {
+                    liveRegisters[i].remove(arg);
+                    markAllAddressesInvolvingRegisterAsAlive(arg);
+                } else if constexpr(std::is_same_v<T, M8>) {
+                    liveRegisters[i].add(arg.encoding.base);
+                    liveRegisters[i].add(arg.encoding.index);
+                } else if constexpr(std::is_same_v<T, M16>) {
+                    liveRegisters[i].add(arg.encoding.base);
+                    liveRegisters[i].add(arg.encoding.index);
+                } else if constexpr(std::is_same_v<T, M32>) {
+                    liveRegisters[i].add(arg.encoding.base);
+                    liveRegisters[i].add(arg.encoding.index);
+                } else if constexpr(std::is_same_v<T, M64>) {
+                    liveAddresses[i].remove(arg);
+                    liveRegisters[i].add(arg.encoding.base);
+                    liveRegisters[i].add(arg.encoding.index);
+                } else if constexpr(std::is_same_v<T, M128>) {
+                    liveRegisters[i].add(arg.encoding.base);
+                    liveRegisters[i].add(arg.encoding.index);
+                } else {
+                    // do nothing
+                }
+            };
+
+            auto visit_in = [&](auto&& arg) -> void {
+                using T = std::decay_t<decltype(arg)>;
+
+                if constexpr(std::is_same_v<T, R8>) {
+                    liveRegisters[i].add(containingRegister(arg));
+                    markAllAddressesInvolvingRegisterAsAlive(containingRegister(arg));
+                } else if constexpr(std::is_same_v<T, R16>) {
+                    liveRegisters[i].add(containingRegister(arg));
+                    markAllAddressesInvolvingRegisterAsAlive(containingRegister(arg));
+                } else if constexpr(std::is_same_v<T, R32>) {
+                    liveRegisters[i].add(containingRegister(arg));
+                    markAllAddressesInvolvingRegisterAsAlive(containingRegister(arg));
+                } else if constexpr(std::is_same_v<T, R64>) {
+                    liveRegisters[i].add(arg);
+                    markAllAddressesInvolvingRegisterAsAlive(arg);
+                } else if constexpr(std::is_same_v<T, M8>) {
+                    liveAddresses[i].add(M64{arg.segment, arg.encoding});
+                    liveRegisters[i].add(arg.encoding.base);
+                    liveRegisters[i].add(arg.encoding.index);
+                    markAllAddressesInvolvingRegistersAsAlive(arg.encoding);
+                } else if constexpr(std::is_same_v<T, M16>) {
+                    liveAddresses[i].add(M64{arg.segment, arg.encoding});
+                    liveRegisters[i].add(arg.encoding.base);
+                    liveRegisters[i].add(arg.encoding.index);
+                    markAllAddressesInvolvingRegistersAsAlive(arg.encoding);
+                } else if constexpr(std::is_same_v<T, M32>) {
+                    liveAddresses[i].add(M64{arg.segment, arg.encoding});
+                    liveRegisters[i].add(arg.encoding.base);
+                    liveRegisters[i].add(arg.encoding.index);
+                    markAllAddressesInvolvingRegistersAsAlive(arg.encoding);
+                } else if constexpr(std::is_same_v<T, M64>) {
+                    liveAddresses[i].add(arg);
+                    liveRegisters[i].add(arg.encoding.base);
+                    liveRegisters[i].add(arg.encoding.index);
+                } else if constexpr(std::is_same_v<T, M128>) {
+                    liveAddresses[i].add(M64{arg.segment, arg.encoding});
+                    liveRegisters[i].add(arg.encoding.base);
+                    liveRegisters[i].add(arg.encoding.index);
+                    markAllAddressesInvolvingRegistersAsAlive(arg.encoding);
+                } else {
+                    // do nothing
+                }
+            };
+
+            ins.out().visit(visit_out);
+            ins.in1().visit(visit_in);
+            ins.in2().visit(visit_in);
+
             liveRegisters[i].add(R64::RSP);
             liveRegisters[i].add(R64::RAX);
             liveRegisters[i].add(R64::RDX);

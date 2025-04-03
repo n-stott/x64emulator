@@ -46,6 +46,11 @@ namespace x64::ir {
             }
         }
 
+        template<typename Visitor>
+        void visit(Visitor&& visitor) const {
+            std::visit(visitor, value_);
+        }
+
         bool operator==(const Operand& other) const {
             return value_ == other.value_;
         }
