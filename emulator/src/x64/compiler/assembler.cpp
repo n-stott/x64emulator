@@ -3455,7 +3455,7 @@ namespace x64 {
 
     void Assembler::movq(R64 dst, XMM src) {
         write8(0x66);
-        write8((u8)(0x48 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src >= 8) ? 1 : 0) ));
+        write8((u8)(0x48 | (((u8)src >= 8) ? 4 : 0) | (((u8)dst >= 8) ? 1 : 0) ));
         write8(0x0f);
         write8(0x7e);
         write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));

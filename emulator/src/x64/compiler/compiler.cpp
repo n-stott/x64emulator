@@ -4738,8 +4738,47 @@ namespace x64 {
 
     XMM Compiler::get(Reg128 reg) {
         switch(reg) {
-            case Reg128::GPR0: return XMM::XMM8;
-            case Reg128::GPR1: return XMM::XMM9;
+            case Reg128::GPR0: return XMM::XMM0;
+            case Reg128::GPR1: return XMM::XMM1;
+            case Reg128::GPR2: return XMM::XMM2;
+            case Reg128::GPR3: return XMM::XMM3;
+            case Reg128::GPR4: return XMM::XMM4;
+            case Reg128::GPR5: return XMM::XMM5;
+            case Reg128::GPR6: return XMM::XMM6;
+            case Reg128::GPR7: return XMM::XMM7;
+            case Reg128::GPR8: return XMM::XMM8;
+            case Reg128::GPR9: return XMM::XMM9;
+            case Reg128::GPR10: return XMM::XMM10;
+            case Reg128::GPR11: return XMM::XMM11;
+            case Reg128::GPR12: return XMM::XMM12;
+            case Reg128::GPR13: return XMM::XMM13;
+            case Reg128::GPR14: return XMM::XMM14;
+            case Reg128::GPR15: return XMM::XMM15;
+            default: break;
+        }
+        assert(false);
+        __builtin_unreachable();
+    }
+
+    Compiler::Reg128 Compiler::toGpr(XMM reg) {
+        switch(reg) {
+            case XMM::XMM0: return Reg128::GPR0;
+            case XMM::XMM1: return Reg128::GPR1;
+            case XMM::XMM2: return Reg128::GPR2;
+            case XMM::XMM3: return Reg128::GPR3;
+            case XMM::XMM4: return Reg128::GPR4;
+            case XMM::XMM5: return Reg128::GPR5;
+            case XMM::XMM6: return Reg128::GPR6;
+            case XMM::XMM7: return Reg128::GPR7;
+            case XMM::XMM8: return Reg128::GPR8;
+            case XMM::XMM9: return Reg128::GPR9;
+            case XMM::XMM10: return Reg128::GPR10;
+            case XMM::XMM11: return Reg128::GPR11;
+            case XMM::XMM12: return Reg128::GPR12;
+            case XMM::XMM13: return Reg128::GPR13;
+            case XMM::XMM14: return Reg128::GPR14;
+            case XMM::XMM15: return Reg128::GPR15;
+            default: break;
         }
         assert(false);
         __builtin_unreachable();
@@ -5700,14 +5739,14 @@ namespace x64 {
     bool Compiler::forXmmXmmM128(XMM dst, const XMMM128& src, Func&& func, bool writeResultBack) {
         if(src.isReg) {
             // read the dst register
-            readReg128(Reg128::GPR0, dst);
+            readReg128(toGpr(dst), dst);
             // read the src register
-            readReg128(Reg128::GPR1, src.reg);
+            readReg128((toGpr(src.reg)), src.reg);
             // do the op
-            func(Reg128::GPR0, Reg128::GPR1);
+            func(toGpr(dst), toGpr(src.reg));
             if(writeResultBack) {
                 // write back to the register
-                writeReg128(dst, Reg128::GPR0);
+                writeReg128(dst, toGpr(dst));
             }
             return true;
         } else {

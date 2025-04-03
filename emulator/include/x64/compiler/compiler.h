@@ -498,9 +498,24 @@ namespace x64 {
         enum class Reg128 {
             GPR0,
             GPR1,
+            GPR2,
+            GPR3,
+            GPR4,
+            GPR5,
+            GPR6,
+            GPR7,
+            GPR8,
+            GPR9,
+            GPR10,
+            GPR11,
+            GPR12,
+            GPR13,
+            GPR14,
+            GPR15,
         };
 
         static XMM get(Reg128);
+        static Reg128 toGpr(XMM);
 
         std::unique_ptr<ir::IrGenerator> generator_;
 
