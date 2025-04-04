@@ -8,10 +8,7 @@
 
 namespace x64::ir {
 
-    class OptimizationPass {
-    public:
-        virtual bool optimize(IR*) = 0;
-    };
+    class OptimizationPass;
 
     class Optimizer {
     public:
@@ -21,26 +18,39 @@ namespace x64::ir {
             passes_.push_back(std::make_unique<Pass>());
         }
 
-        void optimize(IR& ir);
+        struct Stats {
+            u32 removedInstructions { 0 };
+            u32 deadCode { 0 };
+            u32 immediateReadback { 0 };
+            u32 delayedReadback { 0 };
+            u32 duplicateInstruction { 0 };
+        };
+
+        void optimize(IR& ir, Stats* stats = nullptr);
 
     private:
         std::vector<std::unique_ptr<OptimizationPass>> passes_;
     };
     
+    class OptimizationPass {
+    public:
+        virtual bool optimize(IR*, Optimizer::Stats*) = 0;
+    };
+    
     class DeadCodeElimination : public OptimizationPass {
-        bool optimize(IR*) override;
+        bool optimize(IR*, Optimizer::Stats*) override;
     };
 
     class ImmediateReadBackElimination : public OptimizationPass {
-        bool optimize(IR*) override;
+        bool optimize(IR*, Optimizer::Stats*) override;
     };
 
     class DelayedReadBackElimination : public OptimizationPass {
-        bool optimize(IR*) override;
+        bool optimize(IR*, Optimizer::Stats*) override;
     };
 
     class DuplicateInstructionElimination : public OptimizationPass {
-        bool optimize(IR*) override;
+        bool optimize(IR*, Optimizer::Stats*) override;
     };
 }
 

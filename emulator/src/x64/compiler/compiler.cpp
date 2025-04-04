@@ -46,7 +46,8 @@ namespace x64 {
             optimizer.addPass<ir::DelayedReadBackElimination>();
             optimizer.addPass<ir::DuplicateInstructionElimination>();
         }
-        optimizer.optimize(body.value());
+        ir::Optimizer::Stats stats;
+        optimizer.optimize(body.value(), &stats);
 
         // Then, just before the last instruction is where we are sure to still be on the execution path
         // Update everything here (e.g. number of ticks)

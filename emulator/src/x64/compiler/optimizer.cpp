@@ -7,22 +7,26 @@
 
 namespace x64::ir {
 
-    void Optimizer::optimize(IR& ir) {
+    void Optimizer::optimize(IR& ir, Stats* stats) {
         // fmt::print("Before: {}\n", ir.instructions.size());
         // for(const auto& ins : ir.instructions) {
         //     fmt::print("  {}\n", ins.toString());
         // }
+        size_t sizeBefore = ir.instructions.size();
         while(true) {
             bool didSomething = false;
             for(const auto& pass : passes_) {
-                didSomething |= pass->optimize(&ir);
+                didSomething |= pass->optimize(&ir, stats);
             }
             if(!didSomething) break;
         }
+        size_t sizeAfter = ir.instructions.size();
+        if(!!stats) stats->removedInstructions += (u32)(sizeBefore - sizeAfter);
         // fmt::print("After: {}\n", ir.instructions.size());
         // for(const auto& ins : ir.instructions) {
         //     fmt::print("  {}\n", ins.toString());
         // }
+        // std::fflush(stdout);
     }
 
     template<typename Register>
@@ -283,7 +287,7 @@ namespace x64::ir {
         std::swap(liveAddresses128, *addresses128);
     }
 
-    bool DeadCodeElimination::optimize(IR* ir) {
+    bool DeadCodeElimination::optimize(IR* ir, Optimizer::Stats* stats) {
         if(!ir) return false;
         std::vector<LiveRegisters<R64>> liveGprs;
         std::vector<LiveRegisters<XMM>> liveXmms;
@@ -322,11 +326,12 @@ namespace x64::ir {
             return false;
         } else {
             ir->removeInstructions(removableInstructions);
+            if(!!stats) stats->deadCode += (u32)removableInstructions.size();
             return true;
         }
     }
 
-    bool ImmediateReadBackElimination::optimize(IR* ir) {
+    bool ImmediateReadBackElimination::optimize(IR* ir, Optimizer::Stats* stats) {
         if(!ir) return false;
 
         std::vector<size_t> removableInstructions;
@@ -344,11 +349,12 @@ namespace x64::ir {
             return false;
         } else {
             ir->removeInstructions(removableInstructions);
+            if(!!stats) stats->immediateReadback += (u32)removableInstructions.size();
             return true;
         }
     }
 
-    bool DelayedReadBackElimination::optimize(IR* ir) {
+    bool DelayedReadBackElimination::optimize(IR* ir, Optimizer::Stats* stats) {
         if(!ir) return false;
 
         auto isMov = [](Op op) {
@@ -379,11 +385,12 @@ namespace x64::ir {
             return false;
         } else {
             ir->removeInstructions(removableInstructions);
+            if(!!stats) stats->delayedReadback += (u32)removableInstructions.size();
             return true;
         }
     }
 
-    bool DuplicateInstructionElimination::optimize(IR* ir) {
+    bool DuplicateInstructionElimination::optimize(IR* ir, Optimizer::Stats* stats) {
         if(!ir) return false;
 
         std::vector<size_t> removableInstructions;
