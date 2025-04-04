@@ -166,6 +166,9 @@ namespace emulator {
         std::vector<std::unique_ptr<BasicBlock>> basicBlocks_;
         std::unordered_map<u64, BasicBlock*> basicBlocksByAddress_;
         u64 jitExits_ { 0 };
+        u64 jitExitRet_ { 0 };
+        u64 jitExitCallRM64_ { 0 };
+        u64 jitExitJmpRM64_ { 0 };
         u64 avoidableExits_ { 0 };
 
 #ifdef VM_BASICBLOCK_TELEMETRY

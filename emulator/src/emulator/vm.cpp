@@ -32,6 +32,11 @@ namespace emulator {
         fmt::print("Executed {} different basic blocks\n", basicBlockCount_.size());
 #endif
 #ifdef VM_JIT_TELEMETRY
+        fmt::print("Jitted code was exited {} times ({} of which are avoidable)\n", jitExits_, avoidableExits_);
+        fmt::print("  ret  exits: {}\n", jitExitRet_);
+        fmt::print("  jmp  exits: {}\n", jitExitJmpRM64_);
+        fmt::print("  call exits: {}\n", jitExitCallRM64_);
+        // return;
         std::vector<BasicBlock*> blocks;
         std::vector<BasicBlock*> jittedBlocks;
         blocks.reserve(basicBlocks_.size());
@@ -79,7 +84,6 @@ namespace emulator {
             }
         }
         return;
-        fmt::print("Jitted code was exited {} times ({} of which are avoidable)\n", jitExits_, avoidableExits_);
         if(blocks.size() >= topCount) blocks.resize(topCount);
         for(auto* bb : blocks) {
             fmt::print("  Calls: {}. Jitted: {}. Size: {}\n", bb->calls(), !!bb->nativeBasicBlock(), bb->basicBlock().instructions.size());
@@ -227,6 +231,9 @@ namespace emulator {
             if(currentBasicBlock->nativeBasicBlock()) {
                 cpu_.exec((x64::NativeExecPtr)currentBasicBlock->nativeBasicBlock(), tickInfo.ticks(), &currentBasicBlock);
                 ++jitExits_;
+                jitExitRet_ += (currentBasicBlock->basicBlock().instructions.back().first.insn() == x64::Insn::RET);
+                jitExitCallRM64_ += (currentBasicBlock->basicBlock().instructions.back().first.insn() == x64::Insn::CALLINDIRECT_RM64);
+                jitExitJmpRM64_ += (currentBasicBlock->basicBlock().instructions.back().first.insn() == x64::Insn::JMP_RM64);
             } else {
                 cpu_.exec(currentBasicBlock->basicBlock());
                 tickInfo.tick(currentBasicBlock->basicBlock().instructions.size());
