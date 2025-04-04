@@ -2642,8 +2642,9 @@ namespace x64 {
                 }
                 case ir::Op::SHUFPS: {
                     auto r128dst = ins.out().as<XMM>();
-                    auto r128src = ins.in1().as<XMM>();
-                    auto imm8src = ins.in2().as<u8>();
+                    assert(r128dst == ins.in1().as<XMM>());
+                    auto r128src = ins.in2().as<XMM>();
+                    auto imm8src = ins.in3().as<u8>();
 
                     if(r128dst && r128src && imm8src) {
                         assembler.shufps(r128dst.value(), r128src.value(), imm8src.value());
@@ -2654,8 +2655,9 @@ namespace x64 {
                 }
                 case ir::Op::SHUFPD: {
                     auto r128dst = ins.out().as<XMM>();
-                    auto r128src = ins.in1().as<XMM>();
-                    auto imm8src = ins.in2().as<u8>();
+                    assert(r128dst == ins.in1().as<XMM>());
+                    auto r128src = ins.in2().as<XMM>();
+                    auto imm8src = ins.in3().as<u8>();
 
                     if(r128dst && r128src && imm8src) {
                         assembler.shufpd(r128dst.value(), r128src.value(), imm8src.value());

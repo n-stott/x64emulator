@@ -484,13 +484,13 @@ namespace x64::ir {
         M128 memA = !!dstAMem ? dstAMem.value() : srcAMem.value();
         M128 memB = !!dstBMem ? dstBMem.value() : srcBMem.value();
 
-        // don't trust fs segment (essentially)
-        if(memA.segment != Segment::CS && memA.segment != Segment::UNK) return false;
-        if(memB.segment != Segment::CS && memB.segment != Segment::UNK) return false;
-
         // can't commute if they read from/write to each other
         if(regA == regB) return false;
         if(memA == memB) return false;
+
+        // don't trust fs segment (essentially)
+        if(memA.segment != Segment::CS && memA.segment != Segment::UNK) return false;
+        if(memB.segment != Segment::CS && memB.segment != Segment::UNK) return false;
 
         // don't trust unaligned read/writes
         if(memA.encoding.index != R64::ZERO) return false;
@@ -503,6 +503,45 @@ namespace x64::ir {
         // if the read/write both go to the memory (the only one where we can generated an index),
         // we should not trust that they commute when an index is used in one of them
         if(memA.encoding.base == memB.encoding.base && (memA.encoding.index != R64::ZERO || memB.encoding.index != R64::ZERO)) return false;
+
+        return true;
+    }
+
+    bool Operand::impacts(const Operand& other) const {
+        if(auto v = as<Void>()) return false;
+        if(auto ov = other.as<Void>()) return false;
+        if(auto mem128 = as<M128>()) {
+            if(auto oxmm = other.as<XMM>()) {
+                return false;
+            } else {
+                return true;
+            }
+        }
+        if(auto xmm = as<XMM>()) {
+            if(auto oxmm = other.as<XMM>()) {
+                return xmm.value() == oxmm.value();
+            } else {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    bool Instruction::canCommute(const Instruction& a, const Instruction& b) {
+        // Complicated cases have dedicated path
+        if(canMovsCommute(a, b)) return true;
+        if(canMovasCommute(a, b)) return true;
+
+        // if both can modify the flags, we don't take the risk
+        if(a.canModifyFlags() && b.canModifyFlags()) return false;
+
+        if(a.out().impacts(b.in1())) return false;
+        if(a.out().impacts(b.in2())) return false;
+        if(a.out().impacts(b.in3())) return false;
+
+        if(b.out().impacts(a.in1())) return false;
+        if(b.out().impacts(a.in2())) return false;
+        if(b.out().impacts(a.in3())) return false;
 
         return true;
     }

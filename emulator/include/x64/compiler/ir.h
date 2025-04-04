@@ -58,6 +58,8 @@ namespace x64::ir {
             return !(*this == other);
         }
 
+        bool impacts(const Operand& other) const;
+
         bool readsFrom(R64 reg) const;
 
         std::string toString() const;
@@ -251,11 +253,13 @@ namespace x64::ir {
         Instruction(Op op, Operand out) : op_(op), out_(out) { }
         Instruction(Op op, Operand out, Operand in1) : op_(op), out_(out), in1_(in1) { }
         Instruction(Op op, Operand out, Operand in1, Operand in2) : op_(op), out_(out), in1_(in1), in2_(in2) { }
+        Instruction(Op op, Operand out, Operand in1, Operand in2, Operand in3) : op_(op), out_(out), in1_(in1), in2_(in2), in3_(in3) { }
         Op op() const { return op_; }
 
         const Operand& out() const { return out_; }
         const Operand& in1() const { return in1_; }
         const Operand& in2() const { return in2_; }
+        const Operand& in3() const { return in3_; }
 
         std::optional<Cond> condition() const { return condition_; }
         std::optional<FCond> fcondition() const { return fcondition_; }
@@ -292,11 +296,14 @@ namespace x64::ir {
         static bool canMovsCommute(const Instruction& a, const Instruction& b);
         static bool canMovasCommute(const Instruction& a, const Instruction& b);
 
+        static bool canCommute(const Instruction& a, const Instruction& b);
+
     private:
         Op op_;
         Operand out_;
         Operand in1_;
         Operand in2_;
+        Operand in3_;
         std::optional<Cond> condition_;
         std::optional<FCond> fcondition_;
         std::vector<R64> impactedRegisters_;

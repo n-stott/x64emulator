@@ -1,5 +1,6 @@
 add_subdirectory(compiler)
 add_subdirectory(cpu)
+add_subdirectory(optimizer)
 add_subdirectory(unit)
 add_subdirectory(emulator)
 if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/apps)

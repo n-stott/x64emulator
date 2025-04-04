@@ -434,8 +434,8 @@ namespace x64::ir {
     void IrGenerator::orpd(XMM dst, XMM src) { emit(Op::ORPD, dst, dst, src); }
     void IrGenerator::xorpd(XMM dst, XMM src) { emit(Op::XORPD, dst, dst, src); }
 
-    void IrGenerator::shufps(XMM dst, XMM src, u8 imm) { emit(Op::SHUFPS, dst, src, imm); }
-    void IrGenerator::shufpd(XMM dst, XMM src, u8 imm) { emit(Op::SHUFPD, dst, src, imm); }
+    void IrGenerator::shufps(XMM dst, XMM src, u8 imm) { emit(Op::SHUFPS, dst, dst, src, imm); }
+    void IrGenerator::shufpd(XMM dst, XMM src, u8 imm) { emit(Op::SHUFPD, dst, dst, src, imm); }
 
     IrGenerator::Label IrGenerator::label() const {
         return {};
