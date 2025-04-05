@@ -4205,6 +4205,7 @@ namespace x64 {
             case X86_INS_CDQE: return makeCdqe(insn);
             case X86_INS_BSWAP: return makeBswap(insn);
             case X86_INS_PXOR: return makePxor(insn);
+            case X86_INS_MOVNTQ:
             case X86_INS_MOVD: return makeMovd(insn);
             case X86_INS_MOVQ: return makeMovq(insn);
             case X86_INS_FLDZ: return makeFldz(insn);
