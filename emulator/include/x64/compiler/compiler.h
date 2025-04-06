@@ -370,6 +370,8 @@ namespace x64 {
         bool tryCompilePshufdXmmXmmM128Imm(XMM, const XMMM128&, Imm);
         bool tryCompilePshuflwXmmXmmM128Imm(XMM, const XMMM128&, Imm);
         bool tryCompilePshufhwXmmXmmM128Imm(XMM, const XMMM128&, Imm);
+        bool tryCompilePinsrwXmmR32Imm(XMM, const R32&, Imm);
+        bool tryCompilePinsrwXmmM16Imm(XMM, const M16&, Imm);
 
         bool tryCompilePunpcklbwXmmXmmM128(XMM, const XMMM128&);
         bool tryCompilePunpcklwdXmmXmmM128(XMM, const XMMM128&);

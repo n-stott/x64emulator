@@ -2002,6 +2002,19 @@ namespace x64 {
                     }
                     break;
                 }
+                case ir::Op::PINSRW: {
+                    auto r128dst = ins.out().as<XMM>();
+                    assert(r128dst == ins.in1().as<XMM>());
+                    auto r32src1 = ins.in2().as<R32>();
+                    auto imm8src2 = ins.in3().as<u8>();
+
+                    if(r128dst && r32src1 && imm8src2) {
+                        assembler.pinsrw(r128dst.value(), r32src1.value(), imm8src2.value());
+                    } else {
+                        return fail();
+                    }
+                    break;
+                }
                 case ir::Op::PUNPCKLBW: {
                     auto mmxdst = ins.out().as<MMX>();
                     assert(mmxdst == ins.in1().as<MMX>());

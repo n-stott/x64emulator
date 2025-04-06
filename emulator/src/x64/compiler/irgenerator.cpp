@@ -377,6 +377,7 @@ namespace x64::ir {
     void IrGenerator::pshufd(XMM dst, XMM src, u8 imm) { emit(Op::PSHUFD, dst, src, imm); }
     void IrGenerator::pshuflw(XMM dst, XMM src, u8 imm) { emit(Op::PSHUFLW, dst, src, imm); }
     void IrGenerator::pshufhw(XMM dst, XMM src, u8 imm) { emit(Op::PSHUFHW, dst, src, imm); }
+    void IrGenerator::pinsrw(XMM dst, R32 src, u8 imm) { emit(Op::PINSRW, dst, dst, src, imm); }
 
     void IrGenerator::punpcklbw(XMM dst, XMM src) { emit(Op::PUNPCKLBW, dst, dst, src); }
     void IrGenerator::punpcklwd(XMM dst, XMM src) { emit(Op::PUNPCKLWD, dst, dst, src); }

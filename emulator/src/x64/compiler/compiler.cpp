@@ -431,6 +431,8 @@ namespace x64 {
             case Insn::PSHUFD_XMM_XMMM128_IMM: return tryCompilePshufdXmmXmmM128Imm(ins.op0<XMM>(), ins.op1<XMMM128>(), ins.op2<Imm>());
             case Insn::PSHUFLW_XMM_XMMM128_IMM: return tryCompilePshuflwXmmXmmM128Imm(ins.op0<XMM>(), ins.op1<XMMM128>(), ins.op2<Imm>());
             case Insn::PSHUFHW_XMM_XMMM128_IMM: return tryCompilePshufhwXmmXmmM128Imm(ins.op0<XMM>(), ins.op1<XMMM128>(), ins.op2<Imm>());
+            case Insn::PINSRW_XMM_R32_IMM: return tryCompilePinsrwXmmR32Imm(ins.op0<XMM>(), ins.op1<R32>(), ins.op2<Imm>());
+            case Insn::PINSRW_XMM_M16_IMM: return tryCompilePinsrwXmmM16Imm(ins.op0<XMM>(), ins.op1<M16>(), ins.op2<Imm>());
 
             case Insn::PUNPCKLBW_XMM_XMMM128: return tryCompilePunpcklbwXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
             case Insn::PUNPCKLWD_XMM_XMMM128: return tryCompilePunpcklwdXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
@@ -3856,6 +3858,28 @@ namespace x64 {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
             generator_->pshufhw(get(dst), get(src), imm.as<u8>());
         });
+    }
+
+    bool Compiler::tryCompilePinsrwXmmR32Imm(XMM dst, const R32& src, Imm imm) {
+        readReg128(toGpr(dst), dst);
+        readReg32(Reg::GPR0, src);
+        generator_->pinsrw(get(toGpr(dst)), get32(Reg::GPR0), imm.as<u8>());
+        writeReg128(dst, toGpr(dst));
+        return true;
+    }
+
+    bool Compiler::tryCompilePinsrwXmmM16Imm(XMM dst, const M16& src, Imm imm) {
+        // fetch src address
+        if(src.segment != Segment::CS && src.segment != Segment::UNK) return false;
+        if(src.encoding.index == R64::RIP) return false;
+        // get the address
+        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src);
+        // read the src value at the address
+        readMem16(Reg::GPR0, addr);
+        readReg128(toGpr(dst), dst);
+        generator_->pinsrw(get(toGpr(dst)), get32(Reg::GPR0), imm.as<u8>());
+        writeReg128(dst, toGpr(dst));
+        return true;
     }
 
     bool Compiler::tryCompilePunpcklbwXmmXmmM128(XMM dst, const XMMM128& src) {

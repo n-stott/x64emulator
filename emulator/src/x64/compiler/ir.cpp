@@ -172,6 +172,7 @@ namespace x64::ir {
             case Op::PSHUFD: return "pshufd";
             case Op::PSHUFLW: return "pshuflw";
             case Op::PSHUFHW: return "pshufhw";
+            case Op::PINSRW: return "pinsrw";
             case Op::PUNPCKLBW: return "punpcklbw";
             case Op::PUNPCKLWD: return "punpcklwd";
             case Op::PUNPCKLDQ: return "punpckldq";
@@ -228,11 +229,12 @@ namespace x64::ir {
     }
 
     std::string Instruction::toString() const {
-        return fmt::format("{} {}, {}, {}   {} {}",
+        return fmt::format("{} {}, {}, {}, {}   {} {}",
             x64::ir::toString(op_),
             out_.toString(),
             in1_.toString(),
             in2_.toString(),
+            in3_.toString(),
             condition_.has_value() ? utils::toString(condition_.value()) : "",
             fcondition_.has_value() ? utils::toString(fcondition_.value()) : "");
     }
