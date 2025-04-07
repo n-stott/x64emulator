@@ -69,22 +69,21 @@ namespace x64::ir {
     using LiveAddresses64 = LiveAddresses<M64>;
     using LiveAddresses128 = LiveAddresses<M128>;
 
-    void computeLiveRegistersAndAddresses(const IR& ir,
-                                          std::vector<LiveRegisters<R64>>* gprs,
-                                          std::vector<LiveRegisters<XMM>>* xmms,
-                                          std::vector<LiveAddresses64>* addresses64,
-                                          std::vector<LiveAddresses128>* addresses128) {
-        assert(!!gprs);
-        assert(!!xmms);
-        assert(!!addresses64);
-        std::vector<LiveRegisters<R64>> liveGprs;
-        std::vector<LiveRegisters<XMM>> liveXmms;
-        std::vector<LiveAddresses64> liveAddresses64;
-        std::vector<LiveAddresses128> liveAddresses128;
-        std::swap(liveGprs, *gprs);
-        std::swap(liveXmms, *xmms);
-        std::swap(liveAddresses64, *addresses64);
-        std::swap(liveAddresses128, *addresses128);
+    struct LivenessAnalysis {
+        std::vector<BitMask<3>> gprs;
+        std::vector<BitMask<3>> xmms;
+
+        std::vector<M64> allAddresses64;
+        std::vector<BitMask<16>> addresses64;
+
+        std::vector<M128> allAddresses128;
+        std::vector<BitMask<16>> addresses128;
+    };
+
+    void computeLiveRegistersAndAddresses(const IR& ir, LivenessAnalysis* analysis) {
+        assert(!!analysis);
+        LivenessAnalysis a;
+        std::swap(a, *analysis);
 
         // RSP, RAX and RDX are always live, no other register is live
         std::vector<R64> alwaysLiveGprs {
@@ -94,57 +93,94 @@ namespace x64::ir {
         };
 
         // All addresses written to are live at the end of the block
-        LiveAddresses64 allAddresses64;
-        LiveAddresses128 allAddresses128;
         for(const auto& ins : ir.instructions) {
             if(auto m64out = ins.out().as<M64>()) {
-                allAddresses64.add(m64out.value());
+                a.allAddresses64.push_back(m64out.value());
             }
             if(auto m128out = ins.out().as<M128>()) {
-                allAddresses128.add(m128out.value());
+                a.allAddresses128.push_back(m128out.value());
             }
         }
+        // static_assert(sizeof(M64) == 12);
+        // static_assert(sizeof(M128) == 12);
+        // std::sort(a.allAddresses64.begin(), a.allAddresses64.end(), [](const M64& a, const M64& b) {
+        //     std::array<uint32_t, 3> sa;
+        //     memcpy(sa.data(), &a, sizeof(a));
+        //     std::array<uint32_t, 3> sb;
+        //     memcpy(sb.data(), &b, sizeof(b));
+        //     return std::lexicographical_compare(sa.begin(), sa.end(), sb.begin(), sb.end());
+        // });
+        // std::sort(a.allAddresses128.begin(), a.allAddresses128.end(), [](const M128& a, const M128& b) {
+        //     std::array<uint32_t, 3> sa;
+        //     memcpy(sa.data(), &a, sizeof(a));
+        //     std::array<uint32_t, 3> sb;
+        //     memcpy(sb.data(), &b, sizeof(b));
+        //     return std::lexicographical_compare(sa.begin(), sa.end(), sb.begin(), sb.end());
+        // });
+        // a.allAddresses64.erase(std::unique(a.allAddresses64.begin(), a.allAddresses64.end()), a.allAddresses64.end());
+        // a.allAddresses128.erase(std::unique(a.allAddresses128.begin(), a.allAddresses128.end()), a.allAddresses128.end());
 
-        liveGprs.resize(ir.instructions.size()+1);
+        auto address64Index = [&](const M64& address) -> std::optional<u32> {
+            auto it = std::find(a.allAddresses64.begin(), a.allAddresses64.end(), address);
+            if(it == a.allAddresses64.end()) {
+                return {};
+            } else {
+                return (u32)std::distance(a.allAddresses64.begin(), it);
+            }
+        };
+
+        auto address128Index = [&](const M128& address) -> std::optional<u32> {
+            auto it = std::find(a.allAddresses128.begin(), a.allAddresses128.end(), address);
+            if(it == a.allAddresses128.end()) {
+                return {};
+            } else {
+                return (u32)std::distance(a.allAddresses128.begin(), it);
+            }
+        };
+
+        a.gprs.resize(ir.instructions.size()+1);
         for(R64 alwaysLive : alwaysLiveGprs) {
-            liveGprs.back().add(alwaysLive);
+            a.gprs.back().set((u32)alwaysLive);
         }
-        liveXmms.resize(ir.instructions.size()+1);
-        liveAddresses64.resize(ir.instructions.size()+1);
-        liveAddresses64.back() = allAddresses64;
-        liveAddresses128.resize(ir.instructions.size()+1);
-        liveAddresses128.back() = allAddresses128;
+        a.xmms.resize(ir.instructions.size()+1);
+
+        a.addresses64.resize(ir.instructions.size()+1, (u32)a.allAddresses64.size());
+        a.addresses64.back().setAll();
+        a.addresses128.resize(ir.instructions.size()+1, (u32)a.allAddresses128.size());
+        a.addresses128.back().setAll();
 
         for(size_t i = ir.instructions.size(); i --> 0;) {
             const auto& ins = ir.instructions[i];
-            liveGprs[i] = liveGprs[i+1];
-            liveXmms[i] = liveXmms[i+1];
-            liveAddresses64[i] = liveAddresses64[i+1];
-            liveAddresses128[i] = liveAddresses128[i+1];
+            a.gprs[i] = a.gprs[i+1];
+            a.xmms[i] = a.xmms[i+1];
+            a.addresses64[i] = a.addresses64[i+1];
+            a.addresses128[i] = a.addresses128[i+1];
 
             auto markAllAddressesInvolvingRegisterAsAlive = [&](R64 reg) {
-                for(const M64& address : allAddresses64.addresses) {
+                for(size_t k = 0; k < a.allAddresses64.size(); ++k) {
+                    const M64& address = a.allAddresses64[k];
                     if(address.encoding.base == reg || address.encoding.index == reg) {
-                        liveAddresses64[i].add(address);
+                        a.addresses64[i].set((u32)k);
                     }
                 }
-                for(const M128& address : allAddresses128.addresses) {
+                for(size_t k = 0; k < a.allAddresses128.size(); ++k) {
+                    const M128& address = a.allAddresses128[k];
                     if(address.encoding.base == reg || address.encoding.index == reg) {
-                        liveAddresses128[i].add(address);
+                        a.addresses128[i].set((u32)k);
                     }
                 }
             };
 
             auto markAllAddressesClashingWithEncodingAsAlive = [&](Size size, const Encoding64& enc) {
-
-                for(const M64& address : allAddresses64.addresses) {
+                for(size_t k = 0; k < a.allAddresses64.size(); ++k) {
+                    const M64& address = a.allAddresses64[k];
                     if(address.encoding.base != enc.base) {
                         // different base => cannot clash in the jit
                         continue;
                     }
                     if(address.encoding.index != R64::ZERO || enc.index != R64::ZERO) {
                         // don't take a risk when an index is involved
-                        liveAddresses64[i].add(address);
+                        a.addresses64[i].set((u32)k);
                     } else {
                         // same base and no index: compare displacements
                         i32 al = address.encoding.displacement;
@@ -153,19 +189,20 @@ namespace x64::ir {
                         i32 eu = enc.displacement + pointerSize(size);
                         if(std::max(al, el) < std::min(au, eu)) {
                             // non empty intersection: address is live!
-                            liveAddresses64[i].add(address);
+                            a.addresses64[i].set((u32)k);
                         }
                     }
                 }
 
-                for(const M128& address : allAddresses128.addresses) {
+                for(size_t k = 0; k < a.allAddresses128.size(); ++k) {
+                    const M128& address = a.allAddresses128[k];
                     if(address.encoding.base != enc.base) {
                         // different base => cannot clash in the jit
                         continue;
                     }
                     if(address.encoding.index != R64::ZERO || enc.index != R64::ZERO) {
                         // don't take a risk when an index is involved
-                        liveAddresses128[i].add(address);
+                        a.addresses128[i].set((u32)k);
                     } else {
                         // same base and no index: compare displacements
                         i32 al = address.encoding.displacement;
@@ -174,7 +211,7 @@ namespace x64::ir {
                         i32 eu = enc.displacement + pointerSize(size);
                         if(std::max(al, el) < std::min(au, eu)) {
                             // non empty intersection: address is live!
-                            liveAddresses128[i].add(address);
+                            a.addresses128[i].set((u32)k);
                         }
                     }
                 }
@@ -184,36 +221,40 @@ namespace x64::ir {
                 using T = std::decay_t<decltype(arg)>;
 
                 if constexpr(std::is_same_v<T, R8>) {
-                    liveGprs[i].remove(containingRegister(arg));
+                    a.gprs[i].reset((u32)containingRegister(arg));
                     markAllAddressesInvolvingRegisterAsAlive(containingRegister(arg));
                 } else if constexpr(std::is_same_v<T, R16>) {
-                    liveGprs[i].remove(containingRegister(arg));
+                    a.gprs[i].reset((u32)containingRegister(arg));
                     markAllAddressesInvolvingRegisterAsAlive(containingRegister(arg));
                 } else if constexpr(std::is_same_v<T, R32>) {
-                    liveGprs[i].remove(containingRegister(arg));
+                    a.gprs[i].reset((u32)containingRegister(arg));
                     markAllAddressesInvolvingRegisterAsAlive(containingRegister(arg));
                 } else if constexpr(std::is_same_v<T, R64>) {
-                    liveGprs[i].remove(arg);
+                    a.gprs[i].reset((u32)arg);
                     markAllAddressesInvolvingRegisterAsAlive(arg);
                 } else if constexpr(std::is_same_v<T, XMM>) {
-                    liveXmms[i].remove(arg);
+                    a.xmms[i].reset((u32)arg);
                 } else if constexpr(std::is_same_v<T, M8>) {
-                    liveGprs[i].add(arg.encoding.base);
-                    liveGprs[i].add(arg.encoding.index);
+                    a.gprs[i].set((u32)arg.encoding.base);
+                    a.gprs[i].set((u32)arg.encoding.index);
                 } else if constexpr(std::is_same_v<T, M16>) {
-                    liveGprs[i].add(arg.encoding.base);
-                    liveGprs[i].add(arg.encoding.index);
+                    a.gprs[i].set((u32)arg.encoding.base);
+                    a.gprs[i].set((u32)arg.encoding.index);
                 } else if constexpr(std::is_same_v<T, M32>) {
-                    liveGprs[i].add(arg.encoding.base);
-                    liveGprs[i].add(arg.encoding.index);
+                    a.gprs[i].set((u32)arg.encoding.base);
+                    a.gprs[i].set((u32)arg.encoding.index);
                 } else if constexpr(std::is_same_v<T, M64>) {
-                    liveAddresses64[i].remove(arg);
-                    liveGprs[i].add(arg.encoding.base);
-                    liveGprs[i].add(arg.encoding.index);
+                    if(auto index = address64Index(arg)) {
+                        a.addresses64[i].reset(index.value());
+                    }
+                    a.gprs[i].set((u32)arg.encoding.base);
+                    a.gprs[i].set((u32)arg.encoding.index);
                 } else if constexpr(std::is_same_v<T, M128>) {
-                    liveAddresses128[i].remove(arg);
-                    liveGprs[i].add(arg.encoding.base);
-                    liveGprs[i].add(arg.encoding.index);
+                    if(auto index = address128Index(arg)) {
+                        a.addresses128[i].reset(index.value());
+                    }
+                    a.gprs[i].set((u32)arg.encoding.base);
+                    a.gprs[i].set((u32)arg.encoding.index);
                 } else {
                     // do nothing
                 }
@@ -223,47 +264,67 @@ namespace x64::ir {
                 using T = std::decay_t<decltype(arg)>;
 
                 if constexpr(std::is_same_v<T, R8>) {
-                    liveGprs[i].add(containingRegister(arg));
+                    a.gprs[i].set((u32)containingRegister(arg));
                     markAllAddressesInvolvingRegisterAsAlive(containingRegister(arg));
                 } else if constexpr(std::is_same_v<T, R16>) {
-                    liveGprs[i].add(containingRegister(arg));
+                    a.gprs[i].set((u32)containingRegister(arg));
                     markAllAddressesInvolvingRegisterAsAlive(containingRegister(arg));
                 } else if constexpr(std::is_same_v<T, R32>) {
-                    liveGprs[i].add(containingRegister(arg));
+                    a.gprs[i].set((u32)containingRegister(arg));
                     markAllAddressesInvolvingRegisterAsAlive(containingRegister(arg));
                 } else if constexpr(std::is_same_v<T, R64>) {
-                    liveGprs[i].add(arg);
+                    a.gprs[i].set((u32)arg);
                     markAllAddressesInvolvingRegisterAsAlive(arg);
                 } else if constexpr(std::is_same_v<T, XMM>) {
-                    liveXmms[i].add(arg);
+                    a.xmms[i].set((u32)arg);
                 } else if constexpr(std::is_same_v<T, M8>) {
-                    liveAddresses64[i].add(M64{arg.segment, arg.encoding});
-                    liveAddresses128[i].add(M128{arg.segment, arg.encoding});
-                    liveGprs[i].add(arg.encoding.base);
-                    liveGprs[i].add(arg.encoding.index);
+                    if(auto index = address64Index(M64{arg.segment, arg.encoding})) {
+                        a.addresses64[i].set(index.value());
+                    }
+                    if(auto index = address128Index(M128{arg.segment, arg.encoding})) {
+                        a.addresses128[i].set(index.value());
+                    }
+                    a.gprs[i].set((u32)arg.encoding.base);
+                    a.gprs[i].set((u32)arg.encoding.index);
                     markAllAddressesClashingWithEncodingAsAlive(Size::BYTE, arg.encoding);
                 } else if constexpr(std::is_same_v<T, M16>) {
-                    liveAddresses64[i].add(M64{arg.segment, arg.encoding});
-                    liveAddresses128[i].add(M128{arg.segment, arg.encoding});
-                    liveGprs[i].add(arg.encoding.base);
-                    liveGprs[i].add(arg.encoding.index);
+                    if(auto index = address64Index(M64{arg.segment, arg.encoding})) {
+                        a.addresses64[i].set(index.value());
+                    }
+                    if(auto index = address128Index(M128{arg.segment, arg.encoding})) {
+                        a.addresses128[i].set(index.value());
+                    }
+                    a.gprs[i].set((u32)arg.encoding.base);
+                    a.gprs[i].set((u32)arg.encoding.index);
                     markAllAddressesClashingWithEncodingAsAlive(Size::WORD, arg.encoding);
                 } else if constexpr(std::is_same_v<T, M32>) {
-                    liveAddresses64[i].add(M64{arg.segment, arg.encoding});
-                    liveAddresses128[i].add(M128{arg.segment, arg.encoding});
-                    liveGprs[i].add(arg.encoding.base);
-                    liveGprs[i].add(arg.encoding.index);
+                    if(auto index = address64Index(M64{arg.segment, arg.encoding})) {
+                        a.addresses64[i].set(index.value());
+                    }
+                    if(auto index = address128Index(M128{arg.segment, arg.encoding})) {
+                        a.addresses128[i].set(index.value());
+                    }
+                    a.gprs[i].set((u32)arg.encoding.base);
+                    a.gprs[i].set((u32)arg.encoding.index);
                     markAllAddressesClashingWithEncodingAsAlive(Size::DWORD, arg.encoding);
                 } else if constexpr(std::is_same_v<T, M64>) {
-                    liveAddresses64[i].add(M64{arg.segment, arg.encoding});
-                    liveAddresses128[i].add(M128{arg.segment, arg.encoding});
-                    liveGprs[i].add(arg.encoding.base);
-                    liveGprs[i].add(arg.encoding.index);
+                    if(auto index = address64Index(M64{arg.segment, arg.encoding})) {
+                        a.addresses64[i].set(index.value());
+                    }
+                    if(auto index = address128Index(M128{arg.segment, arg.encoding})) {
+                        a.addresses128[i].set(index.value());
+                    }
+                    a.gprs[i].set((u32)arg.encoding.base);
+                    a.gprs[i].set((u32)arg.encoding.index);
                 } else if constexpr(std::is_same_v<T, M128>) {
-                    liveAddresses64[i].add(M64{arg.segment, arg.encoding});
-                    liveAddresses128[i].add(M128{arg.segment, arg.encoding});
-                    liveGprs[i].add(arg.encoding.base);
-                    liveGprs[i].add(arg.encoding.index);
+                    if(auto index = address64Index(M64{arg.segment, arg.encoding})) {
+                        a.addresses64[i].set(index.value());
+                    }
+                    if(auto index = address128Index(M128{arg.segment, arg.encoding})) {
+                        a.addresses128[i].set(index.value());
+                    }
+                    a.gprs[i].set((u32)arg.encoding.base);
+                    a.gprs[i].set((u32)arg.encoding.index);
                     markAllAddressesClashingWithEncodingAsAlive(Size::XWORD, arg.encoding);
                 } else {
                     // do nothing
@@ -274,51 +335,61 @@ namespace x64::ir {
             ins.in1().visit(visit_in);
             ins.in2().visit(visit_in);
 
-            liveGprs[i].add(R64::RSP);
-            liveGprs[i].add(R64::RAX);
-            liveGprs[i].add(R64::RDX);
-            for(R64 reg : ins.impactedRegisters()) liveGprs[i].add(reg);
-            for(R64 reg : alwaysLiveGprs) liveGprs[i].add(reg);
+            a.gprs[i].set((u32)R64::RSP);
+            a.gprs[i].set((u32)R64::RAX);
+            a.gprs[i].set((u32)R64::RDX);
+            ins.forEachImpactedRegister([&](R64 reg) {
+                a.gprs[i].set((u32)reg);
+            });
+            for(R64 reg : alwaysLiveGprs) a.gprs[i].set((u32)reg);
         }
 
-        std::swap(liveGprs, *gprs);
-        std::swap(liveXmms, *xmms);
-        std::swap(liveAddresses64, *addresses64);
-        std::swap(liveAddresses128, *addresses128);
+        std::swap(a, *analysis);
     }
 
     bool DeadCodeElimination::optimize(IR* ir, Optimizer::Stats* stats) {
         if(!ir) return false;
-        std::vector<LiveRegisters<R64>> liveGprs;
-        std::vector<LiveRegisters<XMM>> liveXmms;
-        std::vector<LiveAddresses64> liveAddresses64;
-        std::vector<LiveAddresses128> liveAddresses128;
-        computeLiveRegistersAndAddresses(*ir, &liveGprs, &liveXmms, &liveAddresses64, &liveAddresses128);
+        LivenessAnalysis analysis;
+        computeLiveRegistersAndAddresses(*ir, &analysis);
 
         std::vector<size_t> removableInstructions;
+
+        auto address64Index = [&](const M64& address) -> u32 {
+            auto it = std::find(analysis.allAddresses64.begin(), analysis.allAddresses64.end(), address);
+            assert(it != analysis.allAddresses64.end());
+            return (u32)std::distance(analysis.allAddresses64.begin(), it);
+        };
+
+        auto address128Index = [&](const M128& address) -> u32 {
+            auto it = std::find(analysis.allAddresses128.begin(), analysis.allAddresses128.end(), address);
+            assert(it != analysis.allAddresses128.end());
+            return (u32)std::distance(analysis.allAddresses128.begin(), it);
+        };
 
         for(size_t i = ir->instructions.size(); i --> 0;) {
             const auto& ins = ir->instructions[i];
             if(ins.canModifyFlags()) continue;
             bool skipInstruction = false;
-            for(R64 impactedReg : ins.impactedRegisters()) {
-                skipInstruction |= liveGprs[i+1].contains(impactedReg);
-            }
+            ins.forEachImpactedRegister([&](R64 impactedReg) {
+                skipInstruction |= analysis.gprs[i+1].test((u32)impactedReg);
+            });
             if(skipInstruction) continue;
             if(auto r64out = ins.out().as<R64>()) {
-                if(liveGprs[i+1].contains(r64out.value())) continue;
+                if(analysis.gprs[i+1].test((u32)r64out.value())) continue;
                 removableInstructions.push_back(i);
             }
             if(auto r128out = ins.out().as<XMM>()) {
-                if(liveXmms[i+1].contains(r128out.value())) continue;
+                if(analysis.xmms[i+1].test((u32)r128out.value())) continue;
                 removableInstructions.push_back(i);
             }
             if(auto m64out = ins.out().as<M64>()) {
-                if(liveAddresses64[i+1].contains(m64out.value())) continue;
+                u32 index = address64Index(m64out.value());
+                if(analysis.addresses64[i+1].test(index)) continue;
                 removableInstructions.push_back(i);
             }
             if(auto m128out = ins.out().as<M128>()) {
-                if(liveAddresses128[i+1].contains(m128out.value())) continue;
+                u32 index = address128Index(m128out.value());
+                if(analysis.addresses128[i+1].test(index)) continue;
                 removableInstructions.push_back(i);
             }
         }

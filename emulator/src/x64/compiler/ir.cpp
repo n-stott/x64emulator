@@ -325,16 +325,16 @@ namespace x64::ir {
     bool Instruction::readsFrom(R64 reg) const {
         if(in1_.readsFrom(reg)) return true;
         if(in2_.readsFrom(reg)) return true;
-        if(std::find(impactedRegisters_.begin(), impactedRegisters_.end(), reg) != impactedRegisters_.end()) return true;
+        if(impactedRegisters64_.test((u32)reg)) return true;
         return false;
     }
 
     bool Instruction::writesTo(R64 reg) const {
-        if(auto r8 = out_.as<R8>(); reg == containingRegister(*r8)) return true;
-        if(auto r16 = out_.as<R16>(); reg == containingRegister(*r16)) return true;
-        if(auto r32 = out_.as<R32>(); reg == containingRegister(*r32)) return true;
-        if(auto r64 = out_.as<R64>(); reg == *r64) return true;
-        if(std::find(impactedRegisters_.begin(), impactedRegisters_.end(), reg) != impactedRegisters_.end()) return true;
+        if(auto r8 = out_.as<R8>(); !!r8 && reg == containingRegister(*r8)) return true;
+        if(auto r16 = out_.as<R16>(); !!r16 && reg == containingRegister(*r16)) return true;
+        if(auto r32 = out_.as<R32>(); !!r32 && reg == containingRegister(*r32)) return true;
+        if(auto r64 = out_.as<R64>(); !!r64 && reg == *r64) return true;
+        if(impactedRegisters64_.test((u32)reg)) return true;
         return false;
     }
 

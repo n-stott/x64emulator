@@ -3,6 +3,7 @@
 
 #include "utils.h"
 #include <cassert>
+#include <cstdlib>
 #include <cstring>
 
 template<int InlineBytes>
@@ -52,12 +53,39 @@ public:
         return *this;
     }
 
+    BitMask(BitMask&& other) {
+        data_ = other.data_;
+        size_ = other.size_;
+        std::memset(&other.data_.stackBuffer, 0, sizeof(other.data_.stackBuffer));
+        other.size_ = 0;
+    }
+
+    BitMask& operator=(BitMask&& other) {
+        if(this != &other) {
+            data_ = other.data_;
+            size_ = other.size_;
+            std::memset(&other.data_.stackBuffer, 0, sizeof(other.data_.stackBuffer));
+            other.size_ = 0;
+        }
+        return *this;
+    }
+
 
     void reset() {
         if(size_ <= 8*InlineBytes) {
             std::memset(&data_.stackBuffer, 0, InlineBytes);
         } else {
-            std::memset(data_.heapBuffer, 0, InlineBytes);
+            u32 nbBytes = (size_ + 7) / 8;
+            std::memset(data_.heapBuffer, 0, nbBytes);
+        }
+    }
+
+    void setAll() {
+        if(size_ <= 8*InlineBytes) {
+            std::memset(&data_.stackBuffer, 0xff, InlineBytes);
+        } else {
+            u32 nbBytes = (size_ + 7) / 8;
+            std::memset(data_.heapBuffer, 0xff, nbBytes);
         }
     }
 
@@ -95,9 +123,6 @@ public:
     }
 
 private:
-    BitMask(BitMask&&) = delete;
-    BitMask&& operator=(BitMask&&) = delete;
-
     union {
         u8 stackBuffer[InlineBytes];
         u8* heapBuffer;

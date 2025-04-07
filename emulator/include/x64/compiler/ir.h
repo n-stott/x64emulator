@@ -2,6 +2,7 @@
 #define IR_H
 
 #include "x64/types.h"
+#include "bitmask.h"
 #include "utils.h"
 #include <cassert>
 #include <optional>
@@ -264,7 +265,14 @@ namespace x64::ir {
 
         std::optional<Cond> condition() const { return condition_; }
         std::optional<FCond> fcondition() const { return fcondition_; }
-        const std::vector<R64>& impactedRegisters() const { return impactedRegisters_; }
+
+        template<typename Func>
+        void forEachImpactedRegister(Func&& func) const {
+            for(u32 i = 0; i <= (u32)R64::ZERO; ++i) {
+                if(impactedRegisters64_.test(i)) func((R64)i);
+            }
+        }
+
         bool canModifyFlags() const;
 
         Instruction& addCond(Cond cond) {
@@ -283,7 +291,7 @@ namespace x64::ir {
         }
 
         Instruction& addImpactedRegister(R64 reg) {
-            impactedRegisters_.push_back(reg);
+            impactedRegisters64_.set((u32)reg);
             return *this;
         }
 
@@ -307,7 +315,7 @@ namespace x64::ir {
         Operand in3_;
         std::optional<Cond> condition_;
         std::optional<FCond> fcondition_;
-        std::vector<R64> impactedRegisters_;
+        BitMask<4> impactedRegisters64_;
     };
 
     struct IR {
