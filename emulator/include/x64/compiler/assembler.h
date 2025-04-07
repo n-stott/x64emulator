@@ -437,6 +437,7 @@ namespace x64 {
         void jump(Label* label);
         void jump(R64);
 
+        void call(R64 src);
         void ret();
 
         void nop();

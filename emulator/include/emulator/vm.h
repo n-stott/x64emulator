@@ -72,7 +72,6 @@ namespace emulator {
             std::optional<size_t> offsetOfReplaceableJumpToConditionalBlock;
         };
         std::optional<PendingPatches> pendingPatches_;
-        size_t entrypointSize_ { 0 };
     };
 
     class VM {
@@ -98,6 +97,7 @@ namespace emulator {
 
         void push64(u64 value);
 
+        void tryCreateJitTrampoline();
         MemoryBlock tryMakeNative(const u8* code, size_t size);
         void freeNative(MemoryBlock);
 
@@ -185,6 +185,8 @@ namespace emulator {
         mutable std::unordered_map<u64, std::string> functionNameCache_;
 
         ExecutableMemoryAllocator allocator_;
+        std::optional<MemoryBlock> jitTrampoline_;
+        bool jitTrampolineCompilationAttempted_ { false };
 
         bool jitEnabled_ { false };
         bool jitChainingEnabled_ { false };

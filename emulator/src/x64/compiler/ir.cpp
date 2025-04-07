@@ -109,6 +109,7 @@ namespace x64::ir {
             case Op::JCC: return "jcc";
             case Op::JMP: return "jmp";
             case Op::JMP_IND: return "jmp_ind";
+            case Op::CALL: return "call";
             case Op::RET: return "ret";
             case Op::NOP_N: return "nop_n";
             case Op::MOVA: return "mova";
@@ -281,10 +282,6 @@ namespace x64::ir {
         for(size_t label : other.labels) {
             labels.push_back(instructions.size() + label);
         }
-        if(other.jitHeaderSize) {
-            verify(!jitHeaderSize, "Cannot merge blocks with headers");
-            jitHeaderSize = instructions.size() + other.jitHeaderSize.value();
-        }
         if(other.jumpToNext) {
             verify(!jumpToNext, "Cannot merge blocks with jumps");
             jumpToNext = instructions.size() + other.jumpToNext.value();
@@ -306,9 +303,6 @@ namespace x64::ir {
         auto removeInstruction = [&](size_t position) {
             for(size_t& label : labels) {
                 if(label > position) --label;
-            }
-            if(jitHeaderSize && jitHeaderSize.value() > position) {
-                --jitHeaderSize.value();
             }
             if(jumpToNext && jumpToNext.value() > position) {
                 --jumpToNext.value();

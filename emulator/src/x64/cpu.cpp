@@ -1561,7 +1561,7 @@ namespace x64 {
         }
     }
 
-    void Cpu::exec(NativeExecPtr bb, u64* ticks, void* basicBlockPtr) {
+    void Cpu::exec(NativeExecPtr bb, u64* ticks, void* basicBlockPtr, const u8* executableMemory) {
         assert(!!ticks);
         assert(!!basicBlockPtr);
         u64 rflags = flags_.toRflags();
@@ -1576,6 +1576,7 @@ namespace x64 {
             getSegmentBase(Segment::FS),
             ticks,
             basicBlockPtr,
+            executableMemory,
         };
         bb(&arguments);
         flags_ = Flags::fromRflags(rflags);

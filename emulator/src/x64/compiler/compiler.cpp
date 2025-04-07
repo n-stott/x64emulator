@@ -29,12 +29,6 @@ namespace x64 {
     //     })) return {};
     // }
 #endif
-        // Add the entrypoint code for when we are entering jitted code from the emulator
-        auto entryCode = Compiler::jitEntry();
-        if(!entryCode) return {};
-
-        entryCode->jitHeaderSize = entryCode->instructions.size();
-
         // Try compiling all non-terminating instructions.
         auto body = Compiler::basicBlockBody(basicBlock, diagnose);
         if(!body) return {};
@@ -51,23 +45,17 @@ namespace x64 {
 
         // Then, just before the last instruction is where we are sure to still be on the execution path
         // Update everything here (e.g. number of ticks)
-        auto exitPreparation = Compiler::prepareExit((u32)basicBlock.instructions.size());
+        auto exitPreparation = Compiler::prepareExit((u32)basicBlock.instructions.size(), (u64)basicBlockPtr.value_or(nullptr));
         if(!exitPreparation) return {};
 
         // Then, try compiling the last instruction
         auto basicBlockExit = Compiler::basicBlockExit(basicBlock, diagnose);
         if(!basicBlockExit) return {};
-
-        // Finally, add the exit code for when we need to return execution to the emulator
-        auto exitCode = Compiler::jitExit((u64)basicBlockPtr.value_or(nullptr));
-        if(!exitCode) return {};
         
         ir::IR wholeIr;
-        wholeIr.add(entryCode.value())
-               .add(body.value())
+        wholeIr.add(body.value())
                .add(exitPreparation.value())
-               .add(basicBlockExit.value())
-               .add(exitCode.value());
+               .add(basicBlockExit.value());
         return wholeIr;
     }
 
@@ -97,6 +85,23 @@ namespace x64 {
         fmt::print("Compilation success !\n");
         fwrite(bb->nativecode.data(), 1, bb->nativecode.size(), stderr);
 #endif
+        return bb;
+    }
+
+    std::optional<NativeBasicBlock> Compiler::tryCompileJitTrampoline() {
+        // Add the entrypoint code for when we are entering jitted code from the emulator
+        auto entryCode = Compiler::jitEntry();
+        if(!entryCode) return {};
+
+        // Finally, add the exit code for when we need to return execution to the emulator
+        auto exitCode = Compiler::jitExit();
+        if(!exitCode) return {};
+
+        ir::IR trampolineIr;
+        trampolineIr.add(entryCode.value())
+               .add(exitCode.value());
+
+        auto bb = CodeGenerator::tryGenerate(trampolineIr);
         return bb;
     }
 
@@ -530,6 +535,7 @@ namespace x64 {
         Compiler compiler;
         compiler.loadArguments();
         compiler.loadFlagsFromEmulator();
+        compiler.callNativeBasicBlock();
         return compiler.generator_->generateIR();
     }
 
@@ -545,9 +551,10 @@ namespace x64 {
         return compiler.generator_->generateIR();
     }
 
-    std::optional<ir::IR> Compiler::prepareExit(u32 nbInstructionsInBlock) {
+    std::optional<ir::IR> Compiler::prepareExit(u32 nbInstructionsInBlock, u64 basicBlockPtr) {
         Compiler compiler;
         compiler.addTime(nbInstructionsInBlock);
+        compiler.writeBasicBlockPtr(basicBlockPtr);
         return compiler.generator_->generateIR();
     }
 
@@ -559,13 +566,13 @@ namespace x64 {
             if(diagnose) fmt::print("Compilation of block failed: {} ({}/{})\n", lastInstruction.toString(), basicBlock.instructions.size(), basicBlock.instructions.size());
             return {};
         }
+        compiler.generator_->ret(); // exit the native code of this basic block
         return compiler.generator_->generateIR();
     }
 
-    std::optional<ir::IR> Compiler::jitExit(u64 basicBlockPtr) {
+    std::optional<ir::IR> Compiler::jitExit() {
         Compiler compiler;
         compiler.storeFlagsToEmulator();
-        compiler.writeBasicBlockPtr(basicBlockPtr);
         compiler.generator_->ret();
         return compiler.generator_->generateIR();
     }
@@ -5223,6 +5230,14 @@ namespace x64 {
         generator_->mov(get(Reg::GPR0), rflags);
         generator_->push64(get(Reg::GPR0));
         generator_->popf();
+    }
+
+    void Compiler::callNativeBasicBlock() {
+        constexpr size_t EXEC_MEM_OFFSET = offsetof(NativeArguments, executableMemory);
+        static_assert(EXEC_MEM_OFFSET == 0x48);
+        M64 execMemPtrPtr = make64(R64::RDI, EXEC_MEM_OFFSET);
+        generator_->mov(get(Reg::GPR0), execMemPtrPtr);
+        generator_->call(get(Reg::GPR0));
     }
 
     void Compiler::loadMxcsrFromEmulator(Reg dst) {

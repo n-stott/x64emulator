@@ -11,7 +11,6 @@ namespace x64 {
 
     std::optional<NativeBasicBlock> CodeGenerator::tryGenerate(const ir::IR& ir) {
         Assembler assembler;
-        size_t entrypointSize = 0;
         std::optional<size_t> offsetOfReplaceableJumpToContinuingBlock;
         std::optional<size_t> offsetOfReplaceableJumpToConditionalBlock;
         std::deque<Assembler::Label> labels(ir.labels.size());
@@ -20,9 +19,6 @@ namespace x64 {
                 if(ir.labels[l] == i) {
                     assembler.putLabel(labels[l]);
                 }
-            }
-            if(ir.jitHeaderSize == i) {
-                entrypointSize = assembler.code().size();
             }
             if(ir.jumpToNext == i) {
                 offsetOfReplaceableJumpToContinuingBlock = assembler.code().size();
@@ -1055,6 +1051,15 @@ namespace x64 {
                 case ir::Op::JMP_IND: {
                     auto dst = ins.in1().as<R64>();
                     assembler.jump(dst.value());
+                    break;
+                }
+                case ir::Op::CALL: {
+                    auto src = ins.in1().as<R64>();
+                    if(src) {
+                        assembler.call(src.value());
+                    } else {
+                        return fail();
+                    }
                     break;
                 }
                 case ir::Op::RET: {
@@ -2684,7 +2689,6 @@ namespace x64 {
 
         return NativeBasicBlock{
             assembler.code(),
-            entrypointSize,
             offsetOfReplaceableJumpToContinuingBlock,
             offsetOfReplaceableJumpToConditionalBlock,
         };

@@ -22,7 +22,6 @@ namespace x64::ir {
         return IR {
             instructions_,
             std::move(labels),
-            {},
             jumpToNext,
             jumpToOther,
         };
@@ -465,6 +464,7 @@ namespace x64::ir {
         emit(Op::JMP_IND, Operand{}, dst);
     }
 
+    void IrGenerator::call(R64 reg) { emit(Op::CALL, Operand{}, reg); }
     void IrGenerator::ret() { emit(Op::RET); }
 
     void IrGenerator::nop() { emit(Op::NOP_N, Operand{}, (u32)1); }

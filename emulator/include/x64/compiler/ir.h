@@ -130,6 +130,7 @@ namespace x64::ir {
         JCC,
         JMP,
         JMP_IND,
+        CALL,
         RET,
 
         NOP_N,
@@ -321,7 +322,6 @@ namespace x64::ir {
     struct IR {
         std::vector<ir::Instruction> instructions;
         std::vector<size_t> labels;
-        std::optional<size_t> jitHeaderSize;
         std::optional<size_t> jumpToNext;
         std::optional<size_t> jumpToOther;
 

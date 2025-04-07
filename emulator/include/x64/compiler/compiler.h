@@ -23,6 +23,8 @@ namespace x64 {
         static std::optional<ir::IR> tryCompileIR(const BasicBlock&, int optimizationLevel = 0, std::optional<void*> basicBlockPtr = std::nullopt, bool diagnose = false);
         static std::optional<NativeBasicBlock> tryCompile(const BasicBlock&, int optimizationLevel = 0, std::optional<void*> basicBlockPtr = std::nullopt, bool diagnose = false);
 
+        static std::optional<NativeBasicBlock> tryCompileJitTrampoline();
+
         static std::vector<u8> compileJumpTo(u64 address);
 
     private:
@@ -35,9 +37,9 @@ namespace x64 {
 
         static std::optional<ir::IR> jitEntry();
         static std::optional<ir::IR> basicBlockBody(const BasicBlock&, bool diagnose);
-        static std::optional<ir::IR> prepareExit(u32 nbInstructionsInBlock);
+        static std::optional<ir::IR> prepareExit(u32 nbInstructionsInBlock, u64 basicBlockPtr);
         static std::optional<ir::IR> basicBlockExit(const BasicBlock&, bool diagnose);
-        static std::optional<ir::IR> jitExit(u64 basicBlockPtr);
+        static std::optional<ir::IR> jitExit();
 
         bool tryAdvanceInstructionPointer(u64 nextAddress);
 
@@ -597,6 +599,7 @@ namespace x64 {
         void loadImm64(Reg dst, u64 imm);
         void loadArguments();
         void loadFlagsFromEmulator();
+        void callNativeBasicBlock();
         void storeFlagsToEmulator();
         void loadMxcsrFromEmulator(Reg dst);
         void push64(Reg src, TmpReg tmp);

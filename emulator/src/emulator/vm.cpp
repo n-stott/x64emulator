@@ -229,7 +229,8 @@ namespace emulator {
             verify(currentBasicBlock->start() == cpu_.get(x64::R64::RIP));
             currentBasicBlock->onCall(*this);
             if(currentBasicBlock->nativeBasicBlock()) {
-                cpu_.exec((x64::NativeExecPtr)currentBasicBlock->nativeBasicBlock(), tickInfo.ticks(), &currentBasicBlock);
+                verify(!!jitTrampoline_);
+                cpu_.exec((x64::NativeExecPtr)jitTrampoline_->ptr, tickInfo.ticks(), &currentBasicBlock, currentBasicBlock->nativeBasicBlock());
                 ++jitExits_;
                 jitExitRet_ += (currentBasicBlock->basicBlock().instructions.back().first.insn() == x64::Insn::RET);
                 jitExitCallRM64_ += (currentBasicBlock->basicBlock().instructions.back().first.insn() == x64::Insn::CALLINDIRECT_RM64);
@@ -703,6 +704,18 @@ namespace emulator {
         return successors_.size() + predecessors_.size();
     }
 
+    void VM::tryCreateJitTrampoline() {
+        if(!!jitTrampoline_) return;
+        if(jitTrampolineCompilationAttempted_) return;
+        jitTrampolineCompilationAttempted_ = true;
+        auto jitBlock = x64::Compiler::tryCompileJitTrampoline();
+        if(!jitBlock) return;
+        auto memoryBlock = allocator_.allocate((u32)jitBlock->nativecode.size());
+        if(!memoryBlock) return;
+        std::memcpy(memoryBlock->ptr, jitBlock->nativecode.data(), jitBlock->nativecode.size());
+        jitTrampoline_ = memoryBlock;
+    }
+
     MemoryBlock VM::tryMakeNative(const u8* code, size_t size) {
         auto block = allocator_.allocate((u32)size);
         if(!block) return MemoryBlock{};
@@ -723,6 +736,7 @@ namespace emulator {
     void BasicBlock::tryCompile(VM& vm, u64 callLimit) {
         if(calls_ < callLimit) return;
         if(!compilationAttempted_) {
+            vm.tryCreateJitTrampoline();
             auto jitBasicBlock = x64::Compiler::tryCompile(cpuBasicBlock_, vm.optimizationLevel(), this);
             if(!!jitBasicBlock) {
                 nativeBasicBlock_ = vm.tryMakeNative(jitBasicBlock->nativecode.data(), jitBasicBlock->nativecode.size());
@@ -730,7 +744,6 @@ namespace emulator {
                     jitBasicBlock->offsetOfReplaceableJumpToContinuingBlock,
                     jitBasicBlock->offsetOfReplaceableJumpToConditionalBlock,
                 };
-                entrypointSize_ = jitBasicBlock->entrypointSize;
                 if(vm.jitChainingEnabled()) {
                     tryPatch();
                     for(BasicBlock* prev : predecessors_) {
@@ -754,7 +767,7 @@ namespace emulator {
                 if(!next->nativeBasicBlock_.ptr) return;
                 size_t offset = pendingPatches_->offsetOfReplaceableJumpToConditionalBlock.value();
                 u8* replacementLocation = nativeBasicBlock_.ptr + offset;
-                const u8* jumpLocation = next->nativeBasicBlock_.ptr + next->entrypointSize_;
+                const u8* jumpLocation = next->nativeBasicBlock_.ptr;
                 auto replacementCode = x64::Compiler::compileJumpTo((u64)jumpLocation);
                 memcpy(replacementLocation, replacementCode.data(), replacementCode.size());
                 pendingPatches_->offsetOfReplaceableJumpToConditionalBlock.reset();
@@ -769,7 +782,7 @@ namespace emulator {
                 if(!next->nativeBasicBlock_.ptr) return;
                 size_t offset = pendingPatches_->offsetOfReplaceableJumpToContinuingBlock.value();
                 u8* replacementLocation = nativeBasicBlock_.ptr + offset;
-                const u8* jumpLocation = next->nativeBasicBlock_.ptr + next->entrypointSize_;
+                const u8* jumpLocation = next->nativeBasicBlock_.ptr;
                 auto replacementCode = x64::Compiler::compileJumpTo((u64)jumpLocation);
                 memcpy(replacementLocation, replacementCode.data(), replacementCode.size());
                 pendingPatches_->offsetOfReplaceableJumpToContinuingBlock.reset();

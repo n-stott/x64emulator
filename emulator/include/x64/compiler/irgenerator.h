@@ -425,6 +425,7 @@ namespace x64::ir {
         void jump(Label* label);
         void jump(R64);
 
+        void call(R64 reg);
         void ret();
 
         void nop();

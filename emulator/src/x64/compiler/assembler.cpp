@@ -4784,6 +4784,14 @@ namespace x64 {
         write8((u8)(0b11000000 | (0b100 << 3) | encodeRegister(dst)));
     }
 
+    void Assembler::call(R64 src) {
+        if((u8)src >= 8) {
+            write8((u8)(0x40 | (((u8)src >= 8) ? 1 : 0) ));
+        }
+        write8(0xff);
+        write8((u8)(0b11000000 | (0b010 << 3) | encodeRegister(src)));
+    }
+
     void Assembler::ret() {
         write8(0xc3);
     }
