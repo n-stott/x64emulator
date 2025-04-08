@@ -230,7 +230,7 @@ namespace emulator {
             currentBasicBlock->onCall(*this);
             if(currentBasicBlock->nativeBasicBlock()) {
                 verify(!!jitTrampoline_);
-                cpu_.exec((x64::NativeExecPtr)jitTrampoline_->ptr, tickInfo.ticks(), &currentBasicBlock, currentBasicBlock->nativeBasicBlock());
+                cpu_.exec((x64::NativeExecPtr)jitTrampoline_->ptr, (x64::NativeExecPtr)currentBasicBlock->nativeBasicBlock(), tickInfo.ticks(), &currentBasicBlock);
                 ++jitExits_;
                 jitExitRet_ += (currentBasicBlock->basicBlock().instructions.back().first.insn() == x64::Insn::RET);
                 jitExitCallRM64_ += (currentBasicBlock->basicBlock().instructions.back().first.insn() == x64::Insn::CALLINDIRECT_RM64);

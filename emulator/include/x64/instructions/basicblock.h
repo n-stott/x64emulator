@@ -21,7 +21,7 @@ namespace x64 {
         u64 fsbase;
         u64* ticks;
         void* basicBlockPtr;
-        const u8* executableMemory;
+        const void* executableMemory;
     };
 
     using NativeExecPtr = void(*)(NativeArguments*);

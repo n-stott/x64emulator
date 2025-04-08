@@ -37,7 +37,7 @@ int main(int argc, char**) {
         void* bbptr = ::mmap(nullptr, 0x1000, PROT_EXEC|PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_PRIVATE, 0, 0);
         if(bbptr == (void*)MAP_FAILED) return 1;
         ::memcpy(bbptr, nativebb->nativecode.data(), nativebb->nativecode.size());
-        cpu.exec((NativeExecPtr)trptr, &ticks, &basicBlockPtr, (const u8*)bbptr);
+        cpu.exec((NativeExecPtr)trptr, (NativeExecPtr)bbptr, &ticks, &basicBlockPtr);
     }
 
     fmt::print("XMM0={:x} {:x}\n", cpu.get(XMM::XMM0).hi, cpu.get(XMM::XMM0).lo);
