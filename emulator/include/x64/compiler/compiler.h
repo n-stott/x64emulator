@@ -597,10 +597,10 @@ namespace x64 {
         void loadImm16(Reg dst, u16 imm);
         void loadImm32(Reg dst, u32 imm);
         void loadImm64(Reg dst, u64 imm);
-        void loadArguments();
-        void loadFlagsFromEmulator();
-        void callNativeBasicBlock();
-        void storeFlagsToEmulator();
+        void loadArguments(TmpReg tmp);
+        void loadFlagsFromEmulator(TmpReg tmp);
+        void callNativeBasicBlock(TmpReg tmp);
+        void storeFlagsToEmulator(TmpReg tmp);
         void loadMxcsrFromEmulator(Reg dst);
         void push64(Reg src, TmpReg tmp);
         void pop64(Reg dst, TmpReg tmp);

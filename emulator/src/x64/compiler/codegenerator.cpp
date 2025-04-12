@@ -861,10 +861,14 @@ namespace x64 {
                 }
                 case ir::Op::PUSH: {
                     auto m64dst = ins.out().as<M64>();
+                    auto m64src = ins.in1().as<M64>();
                     auto r64src = ins.in1().as<R64>();
                     if(m64dst && r64src) {
                         assert(m64dst == STACK_PTR);
                         assembler.push64(r64src.value());
+                    } else if(m64dst && m64src) {
+                        assert(m64dst == STACK_PTR);
+                        assembler.push64(m64src.value());
                     } else {
                         return fail();
                     }
@@ -872,10 +876,14 @@ namespace x64 {
                 }
                 case ir::Op::POP: {
                     auto r64dst = ins.out().as<R64>();
+                    auto m64dst = ins.out().as<M64>();
                     auto m64src = ins.in1().as<M64>();
                     if(r64dst && m64src) {
                         assert(m64src == STACK_PTR);
                         assembler.pop64(r64dst.value());
+                    } else if(m64dst && m64src) {
+                        assert(m64src == STACK_PTR);
+                        assembler.pop64(m64dst.value());
                     } else {
                         return fail();
                     }

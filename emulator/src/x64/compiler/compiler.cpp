@@ -11,6 +11,12 @@
 
 namespace x64 {
 
+    M32 make32(R64 base, i32 disp);
+    M32 make32(R64 base, R64 index, u8 scale, i32 disp);
+
+    M64 make64(R64 base, i32 disp);
+    M64 make64(R64 base, R64 index, u8 scale, i32 disp);
+
     Compiler::Compiler() {
         generator_ = std::make_unique<ir::IrGenerator>();
     }
@@ -533,9 +539,9 @@ namespace x64 {
 
     std::optional<ir::IR> Compiler::jitEntry() {
         Compiler compiler;
-        compiler.loadArguments();
-        compiler.loadFlagsFromEmulator();
-        compiler.callNativeBasicBlock();
+        compiler.loadArguments(TmpReg{Reg::GPR1});
+        compiler.loadFlagsFromEmulator(TmpReg{Reg::GPR1});
+        compiler.callNativeBasicBlock(TmpReg{Reg::GPR1});
         return compiler.generator_->generateIR();
     }
 
@@ -572,7 +578,7 @@ namespace x64 {
 
     std::optional<ir::IR> Compiler::jitExit() {
         Compiler compiler;
-        compiler.storeFlagsToEmulator();
+        compiler.storeFlagsToEmulator(TmpReg{Reg::GPR1});
         compiler.generator_->ret();
         return compiler.generator_->generateIR();
     }
@@ -1951,12 +1957,6 @@ namespace x64 {
             generator_->or_(get(dst), get(src));
         });
     }
-
-    M32 make32(R64 base, i32 disp);
-    M32 make32(R64 base, R64 index, u8 scale, i32 disp);
-
-    M64 make64(R64 base, i32 disp);
-    M64 make64(R64 base, R64 index, u8 scale, i32 disp);
 
     bool Compiler::tryCompilePushImm(Imm imm) {
         // load the value
@@ -5191,7 +5191,7 @@ namespace x64 {
         generator_->mov(d, imm);
     }
 
-    void Compiler::loadArguments() {
+    void Compiler::loadArguments(TmpReg) {
         constexpr size_t GPRS_OFFSET = offsetof(NativeArguments, gprs);
         static_assert(GPRS_OFFSET   == 0x00);
         constexpr size_t MMXS_OFFSET = offsetof(NativeArguments, mmxs);
@@ -5210,34 +5210,32 @@ namespace x64 {
         generator_->mov(get(Reg::REG_BASE), gprs);
     }
 
-    void Compiler::storeFlagsToEmulator() {
+    void Compiler::storeFlagsToEmulator(TmpReg tmp) {
         constexpr size_t FLAGS_OFFSET = offsetof(NativeArguments, rflags);
         static_assert(FLAGS_OFFSET == 0x20);
-        generator_->pushf();
-        generator_->pop64(get(Reg::GPR0));
         M64 rflagsPtr = make64(R64::RDI, FLAGS_OFFSET);
-        generator_->mov(get(Reg::GPR1), rflagsPtr);
-        M64 rflags = make64(get(Reg::GPR1), 0);
-        generator_->mov(rflags, get(Reg::GPR0));
+        generator_->mov(get(tmp.reg), rflagsPtr);
+        M64 rflags = make64(get(tmp.reg), 0);
+        generator_->pushf();
+        generator_->pop64(rflags);
     }
 
-    void Compiler::loadFlagsFromEmulator() {
+    void Compiler::loadFlagsFromEmulator(TmpReg tmp) {
         constexpr size_t FLAGS_OFFSET = offsetof(NativeArguments, rflags);
         static_assert(FLAGS_OFFSET == 0x20);
         M64 rflagsPtr = make64(R64::RDI, FLAGS_OFFSET);
-        generator_->mov(get(Reg::GPR1), rflagsPtr);
-        M64 rflags = make64(get(Reg::GPR1), 0);
-        generator_->mov(get(Reg::GPR0), rflags);
-        generator_->push64(get(Reg::GPR0));
+        generator_->mov(get(tmp.reg), rflagsPtr);
+        M64 rflags = make64(get(tmp.reg), 0);
+        generator_->push64(rflags);
         generator_->popf();
     }
 
-    void Compiler::callNativeBasicBlock() {
-        constexpr size_t EXEC_MEM_OFFSET = offsetof(NativeArguments, executableMemory);
+    void Compiler::callNativeBasicBlock(TmpReg tmp) {
+        constexpr size_t EXEC_MEM_OFFSET = offsetof(NativeArguments, nativeBasicBlock);
         static_assert(EXEC_MEM_OFFSET == 0x48);
         M64 execMemPtrPtr = make64(R64::RDI, EXEC_MEM_OFFSET);
-        generator_->mov(get(Reg::GPR0), execMemPtrPtr);
-        generator_->call(get(Reg::GPR0));
+        generator_->mov(get(tmp.reg), execMemPtrPtr);
+        generator_->call(get(tmp.reg));
     }
 
     void Compiler::loadMxcsrFromEmulator(Reg dst) {
