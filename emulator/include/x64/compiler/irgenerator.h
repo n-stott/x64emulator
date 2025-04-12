@@ -4,6 +4,7 @@
 #include "x64/instructions/x64instruction.h"
 #include "x64/instructions/basicblock.h"
 #include "x64/compiler/ir.h"
+#include <deque>
 #include <memory>
 #include <optional>
 #include <vector>
@@ -415,11 +416,14 @@ namespace x64::ir {
 
         // exits
         struct Label {
+            u32 labelIndex;
+            u32 labelPosition;
             std::vector<size_t> jumpsToMe;
         };
 
-        Label label() const;
-        void putLabel(const Label&);
+        Label& label();
+        void putLabel(Label&);
+        void closeLabel(const Label&);
 
         void jumpCondition(Cond, Label* label);
         void jump(Label* label);
@@ -444,7 +448,7 @@ namespace x64::ir {
         }
 
         std::vector<Instruction> instructions_;
-        std::vector<std::pair<size_t, Label>> labels_;
+        std::deque<Label> labels_;
         std::vector<std::pair<size_t, JumpKind>> jumpKinds_;
     };
 

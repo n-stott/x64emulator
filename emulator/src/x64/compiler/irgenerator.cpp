@@ -6,7 +6,10 @@ namespace x64::ir {
     IR IrGenerator::generateIR() {
         std::vector<size_t> labels;
         labels.reserve(labels_.size());
-        for(const auto& entry : labels_) labels.push_back(entry.first);
+        for(const auto& entry : labels_) {
+            closeLabel(entry);
+            labels.push_back(entry.labelPosition);
+        }
         std::optional<size_t> jumpToNext;
         std::optional<size_t> jumpToOther;
         for(const auto& p : jumpKinds_) {
@@ -437,17 +440,25 @@ namespace x64::ir {
     void IrGenerator::shufps(XMM dst, XMM src, u8 imm) { emit(Op::SHUFPS, dst, dst, src, imm); }
     void IrGenerator::shufpd(XMM dst, XMM src, u8 imm) { emit(Op::SHUFPD, dst, dst, src, imm); }
 
-    IrGenerator::Label IrGenerator::label() const {
-        return {};
+    IrGenerator::Label& IrGenerator::label() {
+        Label newLabel {
+            (u32)labels_.size(),
+            (u32)(-1),
+            {},
+        };
+        labels_.push_back(newLabel);
+        return labels_.back();
     }
 
-    void IrGenerator::putLabel(const Label& label) {
-        LabelIndex labelIndex { (u32)labels_.size() };
+    void IrGenerator::putLabel(Label& label) {
+        label.labelPosition = (u32)instructions_.size();
+    }
+
+    void IrGenerator::closeLabel(const Label& label) {
         for(size_t jumpPosition : label.jumpsToMe) {
             assert(jumpPosition < instructions_.size());
-            instructions_[jumpPosition].setLabelIndex(labelIndex);
+            instructions_[jumpPosition].setLabelIndex(LabelIndex{label.labelIndex});
         }
-        labels_.push_back(std::make_pair(instructions_.size(), label));
     }
 
     void IrGenerator::jumpCondition(Cond cond, Label* label) {

@@ -1706,7 +1706,7 @@ namespace x64 {
 
     bool Compiler::tryCompileJcc(Cond condition, u64 dst) {
         // create labels and test the condition
-        auto noBranchCase = generator_->label();
+        auto& noBranchCase = generator_->label();
         Cond reverseCondition = getReverseCondition(condition);
         generator_->jumpCondition(reverseCondition, &noBranchCase); // jump if the opposite condition is true
 
@@ -1719,7 +1719,7 @@ namespace x64 {
         auto dummyCode = jmpCode(0x0, TmpReg{Reg::GPR0});
         generator_->nops(dummyCode.size());
 
-        auto skipToExit = generator_->label();
+        auto& skipToExit = generator_->label();
         generator_->jump(&skipToExit);
 
         // if we don't need to jump
