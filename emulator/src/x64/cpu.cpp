@@ -1577,6 +1577,7 @@ namespace x64 {
             ticks,
             basicBlockPtr,
             (const void*)nativeBasicBlock,
+            nullptr,
         };
         jitEntrypoint(&arguments);
         flags_ = Flags::fromRflags(rflags);

@@ -56,12 +56,31 @@ namespace emulator {
         void removePredecessor(BasicBlock* other);
         void removeSucessor(BasicBlock* other);
 
-        static constexpr size_t CACHE_SIZE = 2;
         x64::BasicBlock cpuBasicBlock_;
-        std::array<BasicBlock*, CACHE_SIZE> next_;
-        std::array<u64, CACHE_SIZE> nextCount_;
-        std::unordered_set<BasicBlock*> successors_;
-        std::unordered_set<BasicBlock*> predecessors_;
+
+        struct FixedDestinationInfo {
+            static constexpr size_t CACHE_SIZE = 2;
+            std::array<BasicBlock*, CACHE_SIZE> next;
+            std::array<u64, CACHE_SIZE> nextCount;
+
+            BasicBlock* findNext(u64 address);
+            void addSuccessor(BasicBlock* other);
+            void removeSuccessor(BasicBlock* other);
+        } fixedDestinationInfo_;
+
+        struct VariableDestinationInfo {
+            x64::BlockLookupTable table;
+            std::vector<BasicBlock*> next;
+            std::vector<u64> nextStart;
+            std::vector<u64> nextCount;
+
+            void addSuccessor(BasicBlock* other);
+            void removeSuccessor(BasicBlock* other);
+        } variableDestinationInfo_;
+
+        bool endsWithFixedDestinationJump_ { false };
+        std::unordered_map<u64, BasicBlock*> successors_;
+        std::unordered_map<u64, BasicBlock*> predecessors_;
         u64 calls_ { 0 };
 
         MemoryBlock nativeBasicBlock_;
@@ -72,6 +91,14 @@ namespace emulator {
             std::optional<size_t> offsetOfReplaceableJumpToConditionalBlock;
         };
         std::optional<PendingPatches> pendingPatches_;
+
+        friend class BasicBlockTest;
+    };
+
+    class BasicBlockTest {
+        static_assert(sizeof(BasicBlock::cpuBasicBlock_) == 0x18);
+        static_assert(sizeof(BasicBlock::fixedDestinationInfo_) == 0x20);
+        static_assert(offsetof(BasicBlock, variableDestinationInfo_) == x64::BLOCK_LOOKUP_TABLE_OFFSET);
     };
 
     class VM {

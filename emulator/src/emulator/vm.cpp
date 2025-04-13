@@ -204,7 +204,7 @@ namespace emulator {
             if(!next) {
                 next = fetchBasicBlock();
                 verify(!!next);
-                if(!!currentBasicBlock && currentBasicBlock->basicBlock().endsWithFixedDestinationJump()) {
+                if(!!currentBasicBlock) {
                     currentBasicBlock->addSuccessor(next);
                 }
 #ifdef VM_BASICBLOCK_TELEMETRY
@@ -628,8 +628,9 @@ namespace emulator {
     }
 
     BasicBlock::BasicBlock(x64::BasicBlock cpuBasicBlock) : cpuBasicBlock_(std::move(cpuBasicBlock)) {
-        std::fill(next_.begin(), next_.end(), nullptr);
-        std::fill(nextCount_.begin(), nextCount_.end(), 0);
+        endsWithFixedDestinationJump_ = cpuBasicBlock_.endsWithFixedDestinationJump();
+        std::fill(fixedDestinationInfo_.next.begin(), fixedDestinationInfo_.next.end(), nullptr);
+        std::fill(fixedDestinationInfo_.nextCount.begin(), fixedDestinationInfo_.nextCount.end(), 0);
     }
 
     u64 BasicBlock::start() const {
@@ -643,56 +644,106 @@ namespace emulator {
     }
 
     BasicBlock* BasicBlock::findNext(u64 address) {
-        for(size_t i = 0; i < next_.size(); ++i) {
-            if(!next_[i]) return nullptr;
-            if(next_[i]->start() != address) continue;
-            BasicBlock* result = next_[i];
-            ++nextCount_[i];
-            if(i > 0 && nextCount_[i] > nextCount_[i-1]) {
-                std::swap(next_[i], next_[i-1]);
-                std::swap(nextCount_[i], nextCount_[i-1]);
+        if(endsWithFixedDestinationJump_) {
+            return fixedDestinationInfo_.findNext(address);
+        } else {
+            auto it = successors_.find(address);
+            if(it != successors_.end()) {
+                return it->second;
+            } else {
+                return nullptr;
+            }
+        }
+    }
+
+    BasicBlock* BasicBlock::FixedDestinationInfo::findNext(u64 address) {
+        for(size_t i = 0; i < next.size(); ++i) {
+            if(!next[i]) return nullptr;
+            if(next[i]->start() != address) continue;
+            BasicBlock* result = next[i];
+            ++nextCount[i];
+            if(i > 0 && nextCount[i] > nextCount[i-1]) {
+                std::swap(next[i], next[i-1]);
+                std::swap(nextCount[i], nextCount[i-1]);
             }
             return result;
         }
         return nullptr;
     }
 
-    void BasicBlock::addSuccessor(BasicBlock* other) {
-        size_t firstAvailableSlot = BasicBlock::CACHE_SIZE-1;
+    void BasicBlock::FixedDestinationInfo::addSuccessor(BasicBlock* other) {
+        size_t firstAvailableSlot = next.size()-1;
         bool foundSlot = false;
-        for(size_t i = 0; i < next_.size(); ++i) {
-            if(!next_[i]) {
+        for(size_t i = 0; i < next.size(); ++i) {
+            if(!next[i]) {
                 firstAvailableSlot = i;
                 foundSlot = true;
                 break;
             }
         }
         verify(foundSlot);
-        next_[firstAvailableSlot] = other;
-        nextCount_[firstAvailableSlot] = 1;
-        successors_.insert(other);
-        other->predecessors_.insert(this);
+        next[firstAvailableSlot] = other;
+        nextCount[firstAvailableSlot] = 1;
+    }
+
+    void BasicBlock::VariableDestinationInfo::addSuccessor(BasicBlock* other) {
+        next.push_back(other);
+        nextStart.push_back(other->start());
+        nextCount.push_back(1);
+        table.size += 1;
+        table.addresses = nextStart.data();
+        table.blocks = (const void**)next.data();
+        table.hitCounts = nextCount.data();
+    }
+
+    void BasicBlock::addSuccessor(BasicBlock* other) {
+        if(endsWithFixedDestinationJump_) {
+            fixedDestinationInfo_.addSuccessor(other);
+        }
+        auto res = successors_.insert(std::make_pair(other->start(), other));
+        if(res.second && !endsWithFixedDestinationJump_) {
+            variableDestinationInfo_.addSuccessor(other);
+        }
+        other->predecessors_.insert(std::make_pair(start(), this));
     }
 
     void BasicBlock::removePredecessor(BasicBlock* other) {
-        predecessors_.erase(other);
+        predecessors_.erase(other->start());
+    }
+
+    void BasicBlock::FixedDestinationInfo::removeSuccessor(BasicBlock* other) {
+        for(size_t i = 0; i < next.size(); ++i) {
+            const auto* bb1 = next[i];
+            if(bb1 == other) {
+                next[i] = nullptr;
+                nextCount[i] = 0;
+            }
+        }
+    }
+
+    void BasicBlock::VariableDestinationInfo::removeSuccessor(BasicBlock*) {
+        next.clear();
+        nextStart.clear();
+        nextCount.clear();
+        table.size = 0;
+        table.addresses = nextStart.data();
+        table.blocks = (const void**)next.data();
+        table.hitCounts = nextCount.data();
     }
 
     void BasicBlock::removeSucessor(BasicBlock* other) {
-        for(size_t i = 0; i < next_.size(); ++i) {
-            const auto* bb1 = next_[i];
-            if(bb1 == other) {
-                next_[i] = nullptr;
-                nextCount_[i] = 0;
-            }
+        if(endsWithFixedDestinationJump_) {
+            fixedDestinationInfo_.removeSuccessor(other);
+        } else {
+
         }
-        successors_.erase(other);
+        successors_.erase(other->start());
     }
 
     void BasicBlock::removeFromCaches() {
-        for(auto* prev : predecessors_) prev->removeSucessor(this);
+        for(auto prev : predecessors_) prev.second->removeSucessor(this);
         predecessors_.clear();
-        for(BasicBlock* successor : successors_) successor->removePredecessor(this);
+        for(auto succ : successors_) succ.second->removePredecessor(this);
         successors_.clear();
     }
 
@@ -746,14 +797,14 @@ namespace emulator {
                 };
                 if(vm.jitChainingEnabled()) {
                     tryPatch();
-                    for(BasicBlock* prev : predecessors_) {
-                        prev->tryPatch();
+                    for(auto prev : predecessors_) {
+                        prev.second->tryPatch();
                     }
                 }
             }
             compilationAttempted_ = true;
-            if(!!next_[0]) next_[0]->tryCompile(vm, 0);
-            if(!!next_[1]) next_[1]->tryCompile(vm, 0);
+            if(!!fixedDestinationInfo_.next[0]) fixedDestinationInfo_.next[0]->tryCompile(vm, 0);
+            if(!!fixedDestinationInfo_.next[1]) fixedDestinationInfo_.next[1]->tryCompile(vm, 0);
         }
     }
 
@@ -772,8 +823,8 @@ namespace emulator {
                 memcpy(replacementLocation, replacementCode.data(), replacementCode.size());
                 pendingPatches_->offsetOfReplaceableJumpToConditionalBlock.reset();
             };
-            tryPatchConditionalWith(next_[0]);
-            tryPatchConditionalWith(next_[1]);
+            tryPatchConditionalWith(fixedDestinationInfo_.next[0]);
+            tryPatchConditionalWith(fixedDestinationInfo_.next[1]);
         }
         if(!!pendingPatches_->offsetOfReplaceableJumpToContinuingBlock) {
             auto tryPatchContinuingWith = [&](const BasicBlock* next) {
@@ -787,8 +838,8 @@ namespace emulator {
                 memcpy(replacementLocation, replacementCode.data(), replacementCode.size());
                 pendingPatches_->offsetOfReplaceableJumpToContinuingBlock.reset();
             };
-            tryPatchContinuingWith(next_[0]);
-            tryPatchContinuingWith(next_[1]);
+            tryPatchContinuingWith(fixedDestinationInfo_.next[0]);
+            tryPatchContinuingWith(fixedDestinationInfo_.next[1]);
         }
         if(!pendingPatches_->offsetOfReplaceableJumpToContinuingBlock
         && !pendingPatches_->offsetOfReplaceableJumpToConditionalBlock)

@@ -107,8 +107,93 @@ namespace x64 {
         trampolineIr.add(entryCode.value())
                .add(exitCode.value());
 
-        auto bb = CodeGenerator::tryGenerate(trampolineIr);
-        return bb;
+        auto code = CodeGenerator::tryGenerate(trampolineIr);
+        return code;
+    }
+
+    std::optional<NativeBasicBlock> Compiler::tryCompileBlockLookup() {
+        Compiler compiler;
+
+        // save R13, R14 and R15
+        compiler.generator_->push64(R64::R13);
+        compiler.generator_->push64(R64::R14);
+        compiler.generator_->push64(R64::R15);
+
+        // load the table ptr into R13
+        constexpr size_t LOOKUP_TABLE_OFFSET = offsetof(NativeArguments, lookupTable);
+        static_assert(LOOKUP_TABLE_OFFSET == 0x50);
+        M64 tablePtrPtr = make64(R64::R13, LOOKUP_TABLE_OFFSET);
+        compiler.generator_->mov(R64::R13, tablePtrPtr);
+        M64 tablePtr = make64(R64::R13, 0);
+        const R64 TABLE_BASE = R64::R13;
+        compiler.generator_->mov(TABLE_BASE, tablePtr);
+
+        // load the lookup address into R14
+        compiler.readReg64(Reg::GPR0, R64::RIP);
+        const R64 SEARCHED_ADDRESS = R64::R14;
+        compiler.generator_->mov(SEARCHED_ADDRESS, get(Reg::GPR0));
+
+        // load the size of the table into R15
+        R64 TABLE_SIZE = R64::R15;
+        compiler.generator_->mov(TABLE_SIZE, make64(TABLE_BASE, 0));
+
+        // zero the counter (in GPR1)
+        R64 COUNTER = get(Reg::GPR1);
+        compiler.generator_->xor_(COUNTER, COUNTER);
+
+        ir::IrGenerator::Label& loopBody = compiler.generator_->label();
+        ir::IrGenerator::Label& nextLoop = compiler.generator_->label();
+        ir::IrGenerator::Label& exit = compiler.generator_->label();
+
+        // LOOP BODY
+        compiler.generator_->putLabel(loopBody);
+
+        // if the counter is equal to the table size, fail the lookup
+        compiler.generator_->cmp(COUNTER, TABLE_SIZE);
+        compiler.generator_->xor_(get(Reg::GPR0), get(Reg::GPR0));
+        compiler.generator_->jumpCondition(x64::Cond::E, &exit);
+
+        // load the address of the currently looked-at entry in the table
+        constexpr size_t ADDRESS_LOOKUP_OFFSET = offsetof(BlockLookupTable, addresses);
+        static_assert(ADDRESS_LOOKUP_OFFSET == 0x08);
+        compiler.generator_->mov(get(Reg::GPR0), make64(TABLE_BASE, ADDRESS_LOOKUP_OFFSET));
+        compiler.generator_->mov(get(Reg::GPR0), make64(get(Reg::GPR0), get(Reg::GPR1), 8, 0));
+
+        // if it's not the address that we look for, go to the next loop iteration
+        compiler.generator_->cmp(get(Reg::GPR0), SEARCHED_ADDRESS);
+        compiler.generator_->jumpCondition(x64::Cond::NE, &nextLoop);
+
+        // if it is, load the basic block address and succeed
+        constexpr size_t BASICBLOCK_LOOKUP_OFFSET = offsetof(BlockLookupTable, blocks);
+        static_assert(BASICBLOCK_LOOKUP_OFFSET == 0x10);
+        compiler.generator_->mov(get(Reg::GPR0), make64(TABLE_BASE, BASICBLOCK_LOOKUP_OFFSET));
+        compiler.generator_->mov(get(Reg::GPR0), make64(get(Reg::GPR0), get(Reg::GPR1), 8, 0));
+        compiler.generator_->jump(&exit);
+
+
+        // NEXT LOOP
+        compiler.generator_->putLabel(nextLoop);
+        
+        // increment the counter
+        compiler.generator_->inc(COUNTER);
+        compiler.generator_->jump(&loopBody);
+
+
+        // EXIT
+        compiler.generator_->putLabel(exit);
+        
+        // GPR0 contains the pointer to the block
+
+        // restore R15, R14 and R13
+        compiler.generator_->pop64(R64::R15);
+        compiler.generator_->pop64(R64::R14);
+        compiler.generator_->pop64(R64::R13);
+
+        compiler.generator_->ret();
+
+        ir::IR lookupIr = compiler.generator_->generateIR();
+        auto code = CodeGenerator::tryGenerate(lookupIr);
+        return code;
     }
 
     std::vector<u8> Compiler::compileJumpTo(u64 address) {

@@ -24,6 +24,7 @@ namespace x64 {
         static std::optional<NativeBasicBlock> tryCompile(const BasicBlock&, int optimizationLevel = 0, std::optional<void*> basicBlockPtr = std::nullopt, bool diagnose = false);
 
         static std::optional<NativeBasicBlock> tryCompileJitTrampoline();
+        static std::optional<NativeBasicBlock> tryCompileBlockLookup();
 
         static std::vector<u8> compileJumpTo(u64 address);
 
