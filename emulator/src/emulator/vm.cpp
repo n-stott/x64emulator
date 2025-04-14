@@ -749,7 +749,7 @@ namespace emulator {
         if(endsWithFixedDestinationJump_) {
             fixedDestinationInfo_.removeSuccessor(other);
         } else {
-
+            variableDestinationInfo_.removeSuccessor(other);
         }
         successors_.erase(other->start());
     }
