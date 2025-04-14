@@ -201,8 +201,11 @@ namespace emulator {
         std::unordered_map<u64, BasicBlock*> basicBlocksByAddress_;
         u64 jitExits_ { 0 };
         u64 jitExitRet_ { 0 };
+        std::unordered_set<u64> distinctJitExitRet_;
         u64 jitExitCallRM64_ { 0 };
+        std::unordered_set<u64> distinctJitExitCallRM64_;
         u64 jitExitJmpRM64_ { 0 };
+        std::unordered_set<u64> distinctJitExitJmpRM64_;
         u64 avoidableExits_ { 0 };
 
 #ifdef VM_BASICBLOCK_TELEMETRY

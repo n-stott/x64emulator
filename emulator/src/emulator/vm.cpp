@@ -33,10 +33,10 @@ namespace emulator {
 #endif
 #ifdef VM_JIT_TELEMETRY
         fmt::print("Jitted code was exited {} times ({} of which are avoidable)\n", jitExits_, avoidableExits_);
-        fmt::print("  ret  exits: {}\n", jitExitRet_);
-        fmt::print("  jmp  exits: {}\n", jitExitJmpRM64_);
-        fmt::print("  call exits: {}\n", jitExitCallRM64_);
-        // return;
+        fmt::print("  ret  exits: {} ({} distinct)\n", jitExitRet_, distinctJitExitRet_.size());
+        fmt::print("  jmp  exits: {} ({} distinct)\n", jitExitJmpRM64_, distinctJitExitCallRM64_.size());
+        fmt::print("  call exits: {} ({} distinct)\n", jitExitCallRM64_, distinctJitExitJmpRM64_.size());
+        return;
         std::vector<BasicBlock*> blocks;
         std::vector<BasicBlock*> jittedBlocks;
         blocks.reserve(basicBlocks_.size());
