@@ -123,6 +123,7 @@ namespace host {
             // Pretend that we do not have
             u32 mask = (u32)(1 << 5  // AVX2
                            | 1 << 16 // AVX512-f
+                           | 1 << 18 // RDSEED
                             );
             s.b = s.b & (~mask);
             // Pretend that we do not have
