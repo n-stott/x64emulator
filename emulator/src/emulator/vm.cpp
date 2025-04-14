@@ -819,6 +819,9 @@ namespace emulator {
             compilationAttempted_ = true;
             if(!!fixedDestinationInfo_.next[0]) fixedDestinationInfo_.next[0]->tryCompile(vm, 0);
             if(!!fixedDestinationInfo_.next[1]) fixedDestinationInfo_.next[1]->tryCompile(vm, 0);
+            for(size_t i = 0; i < variableDestinationInfo_.table.size; ++i) {
+                ((BasicBlock*)variableDestinationInfo_.table.blocks[i])->tryCompile(vm, 0);
+            }
         }
     }
 
