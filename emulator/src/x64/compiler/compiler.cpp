@@ -35,34 +35,39 @@ namespace x64 {
     //     })) return {};
     // }
 #endif
-        // Try compiling all non-terminating instructions.
-        auto body = Compiler::basicBlockBody(basicBlock, diagnose);
-        if(!body) return {};
+        try {
+            // Try compiling all non-terminating instructions.
+            auto body = Compiler::basicBlockBody(basicBlock, diagnose);
+            if(!body) return {};
 
-        ir::Optimizer optimizer;
-        if(optimizationLevel >= 1) {
-            optimizer.addPass<ir::DeadCodeElimination>();
-            optimizer.addPass<ir::ImmediateReadBackElimination>();
-            optimizer.addPass<ir::DelayedReadBackElimination>();
-            optimizer.addPass<ir::DuplicateInstructionElimination>();
+            ir::Optimizer optimizer;
+            if(optimizationLevel >= 1) {
+                optimizer.addPass<ir::DeadCodeElimination>();
+                optimizer.addPass<ir::ImmediateReadBackElimination>();
+                optimizer.addPass<ir::DelayedReadBackElimination>();
+                optimizer.addPass<ir::DuplicateInstructionElimination>();
+            }
+            ir::Optimizer::Stats stats;
+            optimizer.optimize(body.value(), &stats);
+
+            // Then, just before the last instruction is where we are sure to still be on the execution path
+            // Update everything here (e.g. number of ticks)
+            auto exitPreparation = Compiler::prepareExit((u32)basicBlock.instructions.size(), (u64)basicBlockPtr.value_or(nullptr));
+            if(!exitPreparation) return {};
+
+            // Then, try compiling the last instruction
+            auto basicBlockExit = Compiler::basicBlockExit(basicBlock, diagnose);
+            if(!basicBlockExit) return {};
+            
+            ir::IR wholeIr;
+            wholeIr.add(body.value())
+                .add(exitPreparation.value())
+                .add(basicBlockExit.value());
+            return wholeIr;
+        } catch(std::exception& e) {
+            warn(fmt::format("Error while compiling: {}", e.what()));
+            return {};
         }
-        ir::Optimizer::Stats stats;
-        optimizer.optimize(body.value(), &stats);
-
-        // Then, just before the last instruction is where we are sure to still be on the execution path
-        // Update everything here (e.g. number of ticks)
-        auto exitPreparation = Compiler::prepareExit((u32)basicBlock.instructions.size(), (u64)basicBlockPtr.value_or(nullptr));
-        if(!exitPreparation) return {};
-
-        // Then, try compiling the last instruction
-        auto basicBlockExit = Compiler::basicBlockExit(basicBlock, diagnose);
-        if(!basicBlockExit) return {};
-        
-        ir::IR wholeIr;
-        wholeIr.add(body.value())
-               .add(exitPreparation.value())
-               .add(basicBlockExit.value());
-        return wholeIr;
     }
 
     std::optional<NativeBasicBlock> Compiler::tryCompile(const BasicBlock& basicBlock, int optimizationLevel, std::optional<void*> basicBlockPtr, bool diagnose) {
