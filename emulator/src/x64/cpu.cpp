@@ -1576,8 +1576,7 @@ namespace x64 {
             getSegmentBase(Segment::FS),
             ticks,
             basicBlockPtr,
-            (const void*)nativeBasicBlock,
-            nullptr,
+            (const void*)nativeBasicBlock
         };
         jitEntrypoint(&arguments);
         flags_ = Flags::fromRflags(rflags);

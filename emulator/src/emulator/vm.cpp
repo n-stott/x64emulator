@@ -230,11 +230,25 @@ namespace emulator {
             currentBasicBlock->onCall(*this);
             if(currentBasicBlock->nativeBasicBlock()) {
                 verify(!!jitTrampoline_);
-                cpu_.exec((x64::NativeExecPtr)jitTrampoline_->ptr, (x64::NativeExecPtr)currentBasicBlock->nativeBasicBlock(), tickInfo.ticks(), &currentBasicBlock);
+                cpu_.exec((x64::NativeExecPtr)jitTrampoline_->ptr,
+                          (x64::NativeExecPtr)currentBasicBlock->nativeBasicBlock(),
+                          tickInfo.ticks(),
+                          &currentBasicBlock);
                 ++jitExits_;
-                jitExitRet_ += (currentBasicBlock->basicBlock().instructions.back().first.insn() == x64::Insn::RET);
-                jitExitCallRM64_ += (currentBasicBlock->basicBlock().instructions.back().first.insn() == x64::Insn::CALLINDIRECT_RM64);
-                jitExitJmpRM64_ += (currentBasicBlock->basicBlock().instructions.back().first.insn() == x64::Insn::JMP_RM64);
+#ifdef VM_JIT_TELEMETRY
+                if(currentBasicBlock->basicBlock().instructions.back().first.insn() == x64::Insn::RET) {
+                    jitExitRet_ += 1;
+                    distinctJitExitRet_.insert(cpu_.get(x64::R64::RIP));
+                }
+                if(currentBasicBlock->basicBlock().instructions.back().first.insn() == x64::Insn::CALLINDIRECT_RM64) {
+                    jitExitCallRM64_ += 1;
+                    distinctJitExitCallRM64_.insert(cpu_.get(x64::R64::RIP));
+                }
+                if(currentBasicBlock->basicBlock().instructions.back().first.insn() == x64::Insn::JMP_RM64) {
+                    jitExitJmpRM64_ += 1;
+                    distinctJitExitJmpRM64_.insert(cpu_.get(x64::R64::RIP));
+                }
+#endif
             } else {
                 cpu_.exec(currentBasicBlock->basicBlock());
                 tickInfo.tick(currentBasicBlock->basicBlock().instructions.size());

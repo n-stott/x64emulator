@@ -24,7 +24,6 @@ namespace x64 {
         static std::optional<NativeBasicBlock> tryCompile(const BasicBlock&, int optimizationLevel = 0, std::optional<void*> basicBlockPtr = std::nullopt, bool diagnose = false);
 
         static std::optional<NativeBasicBlock> tryCompileJitTrampoline();
-        static std::optional<NativeBasicBlock> tryCompileBlockLookup();
 
         static std::vector<u8> compileJumpTo(u64 address);
 
@@ -605,6 +604,8 @@ namespace x64 {
         void loadMxcsrFromEmulator(Reg dst);
         void push64(Reg src, TmpReg tmp);
         void pop64(Reg dst, TmpReg tmp);
+
+        void tryCompileBlockLookup();
 
         template<typename Func>
         bool forRM8Imm(const RM8& dst, Imm imm, Func&& func, bool writeResultBack = true);

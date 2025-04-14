@@ -111,89 +111,100 @@ namespace x64 {
         return code;
     }
 
-    std::optional<NativeBasicBlock> Compiler::tryCompileBlockLookup() {
-        Compiler compiler;
-
+    void Compiler::tryCompileBlockLookup() {
         // save R13, R14 and R15
-        compiler.generator_->push64(R64::R13);
-        compiler.generator_->push64(R64::R14);
-        compiler.generator_->push64(R64::R15);
+        generator_->push64(R64::R13);
+        generator_->push64(R64::R14);
+        generator_->push64(R64::R15);
 
         // load the table ptr into R13
-        constexpr size_t LOOKUP_TABLE_OFFSET = offsetof(NativeArguments, lookupTable);
-        static_assert(LOOKUP_TABLE_OFFSET == 0x50);
-        M64 tablePtrPtr = make64(R64::R13, LOOKUP_TABLE_OFFSET);
-        compiler.generator_->mov(R64::R13, tablePtrPtr);
-        M64 tablePtr = make64(R64::R13, 0);
+        // 1- load the ptr to the basic block ptr
+        constexpr size_t BBPTR_OFFSET = offsetof(NativeArguments, basicBlockPtr);
+        static_assert(BBPTR_OFFSET == 0x40);
+        M64 bbPtrPtr = make64(R64::RDI, BBPTR_OFFSET);
+        generator_->mov(R64::R13, bbPtrPtr);
+        M64 bbPtr = make64(R64::R13, 0);
+        generator_->mov(R64::R13, bbPtr);
+        // 2- load the ptr to the lookup table
+        M64 tablePtr = make64(R64::R13, BLOCK_LOOKUP_TABLE_OFFSET);
+        generator_->lea(R64::R13, tablePtr);
         const R64 TABLE_BASE = R64::R13;
-        compiler.generator_->mov(TABLE_BASE, tablePtr);
 
         // load the lookup address into R14
-        compiler.readReg64(Reg::GPR0, R64::RIP);
+        readReg64(Reg::GPR0, R64::RIP);
         const R64 SEARCHED_ADDRESS = R64::R14;
-        compiler.generator_->mov(SEARCHED_ADDRESS, get(Reg::GPR0));
+        generator_->mov(SEARCHED_ADDRESS, get(Reg::GPR0));
 
         // load the size of the table into R15
         R64 TABLE_SIZE = R64::R15;
-        compiler.generator_->mov(TABLE_SIZE, make64(TABLE_BASE, 0));
+        generator_->mov(TABLE_SIZE, make64(TABLE_BASE, 0));
 
         // zero the counter (in GPR1)
         R64 COUNTER = get(Reg::GPR1);
-        compiler.generator_->xor_(COUNTER, COUNTER);
+        generator_->xor_(COUNTER, COUNTER);
 
-        ir::IrGenerator::Label& loopBody = compiler.generator_->label();
-        ir::IrGenerator::Label& nextLoop = compiler.generator_->label();
-        ir::IrGenerator::Label& exit = compiler.generator_->label();
+        ir::IrGenerator::Label& loopBody = generator_->label();
+        ir::IrGenerator::Label& nextLoop = generator_->label();
+        ir::IrGenerator::Label& fail = generator_->label();
+        ir::IrGenerator::Label& exit = generator_->label();
 
         // LOOP BODY
-        compiler.generator_->putLabel(loopBody);
+        generator_->putLabel(loopBody);
 
         // if the counter is equal to the table size, fail the lookup
-        compiler.generator_->cmp(COUNTER, TABLE_SIZE);
-        compiler.generator_->xor_(get(Reg::GPR0), get(Reg::GPR0));
-        compiler.generator_->jumpCondition(x64::Cond::E, &exit);
+        generator_->cmp(COUNTER, TABLE_SIZE);
+        generator_->jumpCondition(x64::Cond::E, &fail);
 
         // load the address of the currently looked-at entry in the table
         constexpr size_t ADDRESS_LOOKUP_OFFSET = offsetof(BlockLookupTable, addresses);
         static_assert(ADDRESS_LOOKUP_OFFSET == 0x08);
-        compiler.generator_->mov(get(Reg::GPR0), make64(TABLE_BASE, ADDRESS_LOOKUP_OFFSET));
-        compiler.generator_->mov(get(Reg::GPR0), make64(get(Reg::GPR0), get(Reg::GPR1), 8, 0));
+        generator_->mov(get(Reg::GPR0), make64(TABLE_BASE, ADDRESS_LOOKUP_OFFSET));
+        generator_->mov(get(Reg::GPR0), make64(get(Reg::GPR0), get(Reg::GPR1), 8, 0));
 
         // if it's not the address that we look for, go to the next loop iteration
-        compiler.generator_->cmp(get(Reg::GPR0), SEARCHED_ADDRESS);
-        compiler.generator_->jumpCondition(x64::Cond::NE, &nextLoop);
+        generator_->cmp(get(Reg::GPR0), SEARCHED_ADDRESS);
+        generator_->jumpCondition(x64::Cond::NE, &nextLoop);
 
         // if it is, load the basic block address and succeed
         constexpr size_t BASICBLOCK_LOOKUP_OFFSET = offsetof(BlockLookupTable, blocks);
         static_assert(BASICBLOCK_LOOKUP_OFFSET == 0x10);
-        compiler.generator_->mov(get(Reg::GPR0), make64(TABLE_BASE, BASICBLOCK_LOOKUP_OFFSET));
-        compiler.generator_->mov(get(Reg::GPR0), make64(get(Reg::GPR0), get(Reg::GPR1), 8, 0));
-        compiler.generator_->jump(&exit);
+        generator_->mov(get(Reg::GPR0), make64(TABLE_BASE, BASICBLOCK_LOOKUP_OFFSET));
+        generator_->mov(get(Reg::GPR1), make64(get(Reg::GPR0), get(Reg::GPR1), 8, 0));
+
+        // GPR1 now holds the pointer to the emulator::BasicBlock
+
+        generator_->mov(get(Reg::GPR0), make64(get(Reg::GPR1), NATIVE_BLOCK_OFFSET));
+
+        // GPR0 how holds the pointer to the native basic block
+
+        generator_->test(get(Reg::GPR0), get(Reg::GPR0));
+        generator_->jumpCondition(x64::Cond::E, &fail);
+        generator_->jump(&exit);
 
 
         // NEXT LOOP
-        compiler.generator_->putLabel(nextLoop);
+        generator_->putLabel(nextLoop);
         
         // increment the counter
-        compiler.generator_->inc(COUNTER);
-        compiler.generator_->jump(&loopBody);
+        generator_->inc(COUNTER);
+        generator_->jump(&loopBody);
 
+        // FAIL
+        generator_->putLabel(fail);
+
+        // store nullptr
+        generator_->xor_(get(Reg::GPR0), get(Reg::GPR0));
+        // fallthrough to exit
 
         // EXIT
-        compiler.generator_->putLabel(exit);
+        generator_->putLabel(exit);
         
         // GPR0 contains the pointer to the block
 
         // restore R15, R14 and R13
-        compiler.generator_->pop64(R64::R15);
-        compiler.generator_->pop64(R64::R14);
-        compiler.generator_->pop64(R64::R13);
-
-        compiler.generator_->ret();
-
-        ir::IR lookupIr = compiler.generator_->generateIR();
-        auto code = CodeGenerator::tryGenerate(lookupIr);
-        return code;
+        generator_->pop64(R64::R15);
+        generator_->pop64(R64::R14);
+        generator_->pop64(R64::R13);
     }
 
     std::vector<u8> Compiler::compileJumpTo(u64 address) {
@@ -1872,13 +1883,12 @@ namespace x64 {
     }
 
     bool Compiler::tryCompileJmp(const RM64& dst) {
+        // Write RIP
         if(dst.isReg) {
             // read the register
             readReg64(Reg::GPR0, dst.reg);
             // change the instruction pointer
             writeReg64(R64::RIP, Reg::GPR0);
-
-            return true;
         } else {
             // fetch address
             const M64& mem = dst.mem;
@@ -1890,9 +1900,28 @@ namespace x64 {
             readMem64(Reg::GPR0, addr);
             // change the instruction pointer
             writeReg64(R64::RIP, Reg::GPR0);
-
-            return true;
         }
+
+        storeFlagsToEmulator(TmpReg{Reg::GPR1});
+        tryCompileBlockLookup();
+
+        generator_->test(get(Reg::GPR0), get(Reg::GPR0));
+        ir::IrGenerator::Label& lookupFail = generator_->label();
+        generator_->jumpCondition(x64::Cond::E, &lookupFail);
+
+        // if we succeed lookup:
+        // restore flags
+        loadFlagsFromEmulator(TmpReg{Reg::GPR1});
+        // jump !
+        generator_->jump(get(Reg::GPR0));
+
+        generator_->putLabel(lookupFail);
+        // if we fail lookup
+        // restore flags
+        loadFlagsFromEmulator(TmpReg{Reg::GPR1});
+        // keep going and we will exit the JIT
+
+        return true;
     }
 
     bool Compiler::tryCompileTestRM8R8(const RM8& lhs, R8 rhs) {

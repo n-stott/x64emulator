@@ -24,6 +24,10 @@ namespace x64 {
     // OF emulator::BasicBlock CHANGES AS WELL
     static constexpr size_t BLOCK_LOOKUP_TABLE_OFFSET = 0x38;
 
+    // DO NOT CHANGE THIS VALUE UNLESS THE LAYOUT
+    // OF emulator::BasicBlock CHANGES AS WELL
+    static constexpr size_t NATIVE_BLOCK_OFFSET = 0xa0;
+
     // DO NOT MODIFY THIS STRUCT
     // WITHOUT CHANGING THE JIT AS WELL !!
     struct NativeArguments {
@@ -37,7 +41,6 @@ namespace x64 {
         u64* ticks;
         void* basicBlockPtr;
         const void* nativeBasicBlock;
-        BlockLookupTable* lookupTable;
     };
 
     using NativeExecPtr = void(*)(NativeArguments*);

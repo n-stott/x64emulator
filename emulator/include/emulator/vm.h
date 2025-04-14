@@ -77,14 +77,14 @@ namespace emulator {
             void addSuccessor(BasicBlock* other);
             void removeSuccessor(BasicBlock* other);
         } variableDestinationInfo_;
+        
+        MemoryBlock nativeBasicBlock_;
+        bool compilationAttempted_ { false };
 
         bool endsWithFixedDestinationJump_ { false };
         std::unordered_map<u64, BasicBlock*> successors_;
         std::unordered_map<u64, BasicBlock*> predecessors_;
         u64 calls_ { 0 };
-
-        MemoryBlock nativeBasicBlock_;
-        bool compilationAttempted_ { false };
 
         struct PendingPatches {
             std::optional<size_t> offsetOfReplaceableJumpToContinuingBlock;
@@ -98,7 +98,14 @@ namespace emulator {
     class BasicBlockTest {
         static_assert(sizeof(BasicBlock::cpuBasicBlock_) == 0x18);
         static_assert(sizeof(BasicBlock::fixedDestinationInfo_) == 0x20);
+
         static_assert(offsetof(BasicBlock, variableDestinationInfo_) == x64::BLOCK_LOOKUP_TABLE_OFFSET);
+        static_assert(offsetof(BasicBlock::VariableDestinationInfo, table) == 0);
+
+        static_assert(sizeof(BasicBlock::variableDestinationInfo_) == 0x68);
+
+        static_assert(offsetof(BasicBlock, nativeBasicBlock_) == x64::NATIVE_BLOCK_OFFSET);
+        static_assert(offsetof(MemoryBlock, ptr) == 0);
     };
 
     class VM {
