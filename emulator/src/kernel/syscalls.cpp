@@ -929,6 +929,9 @@ namespace kernel {
 
     ssize_t Sys::readlink(x64::Ptr pathname, x64::Ptr buf, size_t bufsiz) {
         std::string path = mmu_.readString(pathname);
+        if(path.substr(0, 5) == "/proc") {
+            warn(fmt::format("Reading from /proc/ is dangerous ! (readlink {})", path));
+        }
         auto errnoOrBuffer = Host::readlink(path, bufsiz);
         if(logSyscalls_) {
             print("Sys::readlink(path={}, buf={:#x}, size={}) = {:#x}\n",
