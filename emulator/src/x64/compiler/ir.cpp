@@ -269,6 +269,7 @@ namespace x64::ir {
             case Op::BT:
             case Op::BTR:
             case Op::BTS:
+            case Op::COMISS:
             case Op::COMISD:
             case Op::UCOMISD:
                 return true;
