@@ -3,12 +3,14 @@
 
 #include "x64/types.h"
 #include "utils.h"
+#include <deque>
 #include <vector>
 
 namespace x64 {
 
     class Assembler {
     public:
+        void patchJumps();
         const std::vector<u8>& code() const { return code_; }
 
         void mov(R8 dst, R8 src);
@@ -426,12 +428,15 @@ namespace x64 {
 
         // exits
         struct Label {
+            explicit Label(Assembler&);
+            size_t labelIndex { 0 };
             size_t positionInCode { (size_t)(-1) };
             std::vector<size_t> jumpsToMe;
         };
 
-        Label label() const;
-        void putLabel(const Label&);
+        Label& label();
+        void putLabel(Label&);
+        void closeLabel(const Label&);
 
         void jumpCondition(Cond, Label* label);
         void jump(Label* label);
@@ -450,6 +455,7 @@ namespace x64 {
         void write64(u64 value);
 
         std::vector<u8> code_;
+        std::deque<Label> labels_;
 
     };
 

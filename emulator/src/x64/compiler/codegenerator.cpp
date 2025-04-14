@@ -13,11 +13,16 @@ namespace x64 {
         Assembler assembler;
         std::optional<size_t> offsetOfReplaceableJumpToContinuingBlock;
         std::optional<size_t> offsetOfReplaceableJumpToConditionalBlock;
-        std::deque<Assembler::Label> labels(ir.labels.size());
+        std::vector<Assembler::Label*> labels;
+        for(size_t l = 0; l < ir.labels.size(); ++l) {
+            Assembler::Label& label = assembler.label();
+            assert(label.labelIndex == l);
+            labels.push_back(&label);
+        }
         for(size_t i = 0; i < ir.instructions.size(); ++i) {
             for(size_t l = 0; l < ir.labels.size(); ++l) {
                 if(ir.labels[l] == i) {
-                    assembler.putLabel(labels[l]);
+                    assembler.putLabel(*labels[l]);
                 }
             }
             if(ir.jumpToNext == i) {
@@ -1047,13 +1052,13 @@ namespace x64 {
                     assert(ins.condition().has_value());
                     auto label = ins.in1().as<ir::LabelIndex>();
                     assert(label.has_value());
-                    assembler.jumpCondition(ins.condition().value(), &labels[label->index]);
+                    assembler.jumpCondition(ins.condition().value(), labels[label->index]);
                     break;
                 }
                 case ir::Op::JMP: {
                     auto label = ins.in1().as<ir::LabelIndex>();
                     assert(label.has_value());
-                    assembler.jump(&labels[label->index]);
+                    assembler.jump(labels[label->index]);
                     break;
                 }
                 case ir::Op::JMP_IND: {
@@ -2694,6 +2699,8 @@ namespace x64 {
                 }
             }
         }
+
+        assembler.patchJumps();
 
         return NativeBasicBlock{
             assembler.code(),

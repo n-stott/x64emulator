@@ -2086,8 +2086,29 @@ namespace x64 {
         write8(0x9d);
     }
 
-    Assembler::Label Assembler::label() const {
-        return {};
+    Assembler::Label::Label(Assembler&) {
+
+    }
+
+    Assembler::Label& Assembler::label() {
+        Label newLabel(*this);
+        newLabel.labelIndex = labels_.size();
+        labels_.push_back(newLabel);
+        return labels_.back();
+    }
+
+    void Assembler::putLabel(Label& label) {
+        label.positionInCode = code_.size();
+    }
+
+    void Assembler::closeLabel(const Label& label) {
+        for(size_t jumpPosition : label.jumpsToMe) {
+            i32 offset = (i32)(label.positionInCode - jumpPosition-4);
+            code_[jumpPosition+0] = (u8)((offset >> 0) & 0xFF);
+            code_[jumpPosition+1] = (u8)((offset >> 8) & 0xFF);
+            code_[jumpPosition+2] = (u8)((offset >> 16) & 0xFF);
+            code_[jumpPosition+3] = (u8)((offset >> 24) & 0xFF);
+        }
     }
 
     void Assembler::bsf(R32 dst, R32 src) {
@@ -4729,18 +4750,11 @@ namespace x64 {
         write8((u8)imm);
     }
 
-
-    void Assembler::putLabel(const Label& label) {
-        // patch all jumps
-        size_t labelPosition = code_.size();
-        for(size_t jumpPosition : label.jumpsToMe) {
-            assert(jumpPosition+4 <= labelPosition);
-            i32 offset = (i32)(labelPosition - jumpPosition-4);
-            code_[jumpPosition+0] = (u8)((offset >> 0) & 0xFF);
-            code_[jumpPosition+1] = (u8)((offset >> 8) & 0xFF);
-            code_[jumpPosition+2] = (u8)((offset >> 16) & 0xFF);
-            code_[jumpPosition+3] = (u8)((offset >> 24) & 0xFF);
+    void Assembler::patchJumps() {
+        for(const Label& label : labels_) {
+            closeLabel(label);
         }
+        labels_.clear();
     }
 
     void Assembler::jumpCondition(Cond cond, Label* label) {
