@@ -94,6 +94,15 @@ namespace x64 {
             fmt::print("  {:#8x} {}\n", blockIns.first.address(), blockIns.first.toString());
         }
         fmt::print("Compilation success !\n");
+        fmt::print("IR:\n");
+        size_t pos = 0;
+        for(const auto& ins : wholeIr->instructions) {
+            for(size_t l = 0; l < wholeIr->labels.size(); ++l) {
+                if(wholeIr->labels[l] == pos) fmt::print("     Label {}\n", l);
+            }
+            fmt::print("  {:3} {}\n", pos, ins.toString());
+            ++pos;
+        }
         fwrite(bb->nativecode.data(), 1, bb->nativecode.size(), stderr);
 #endif
         return bb;
