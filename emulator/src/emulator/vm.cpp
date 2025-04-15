@@ -826,6 +826,7 @@ namespace emulator {
     }
 
     void BasicBlock::tryPatch() {
+        if(!nativeBasicBlock()) return;
         if(!pendingPatches_) return;
         u64 continuingBlockAddress = end();
         if(!!pendingPatches_->offsetOfReplaceableJumpToConditionalBlock) {
