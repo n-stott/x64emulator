@@ -2923,18 +2923,18 @@ namespace x64 {
         generator_->mov(R32::EAX, get32(Reg::GPR0));
 
         // set the counter
-        readReg32(Reg::GPR0, R32::ECX);
-        generator_->mov(R32::ECX, get32(Reg::GPR0));
+        readReg64(Reg::GPR1, R64::RCX);
+        generator_->mov(R32::ECX, get32(Reg::GPR1));
 
         generator_->repstos32();
 
         // write back the dst address (address+4*counter)
         readReg64(Reg::GPR0, R64::RDI);
-        generator_->lea(get(Reg::GPR0), make64(get(Reg::GPR0), R64::RCX, 4, 0));
+        generator_->lea(get(Reg::GPR0), make64(get(Reg::GPR0), get(Reg::GPR1), 4, 0));
         writeReg64(R64::RDI, Reg::GPR0);
 
         // write back the counter (is 0)
-        generator_->xor_(get(Reg::GPR0), get(Reg::GPR0));
+        generator_->mov(get(Reg::GPR0), (u64)0); // cannot use xor: we must not change the flags
         writeReg64(R64::RCX, Reg::GPR0);
 
         // restore rax, rcx and rdi
@@ -2961,18 +2961,18 @@ namespace x64 {
         generator_->mov(R64::RAX, get(Reg::GPR0));
 
         // set the counter
-        readReg64(Reg::GPR0, R64::RCX);
-        generator_->mov(R64::RCX, get(Reg::GPR0));
+        readReg64(Reg::GPR1, R64::RCX);
+        generator_->mov(R64::RCX, get(Reg::GPR1));
 
         generator_->repstos64();
 
         // write back the dst address (address+4*counter)
         readReg64(Reg::GPR0, R64::RDI);
-        generator_->lea(get(Reg::GPR0), make64(get(Reg::GPR0), R64::RCX, 4, 0));
+        generator_->lea(get(Reg::GPR0), make64(get(Reg::GPR0), get(Reg::GPR1), 4, 0));
         writeReg64(R64::RDI, Reg::GPR0);
 
         // write back the counter (is 0)
-        generator_->xor_(get(Reg::GPR0), get(Reg::GPR0));
+        generator_->mov(get(Reg::GPR0), (u64)0); // cannot use xor: we must not change the flags
         writeReg64(R64::RCX, Reg::GPR0);
 
         // restore rax, rcx and rdi

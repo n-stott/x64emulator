@@ -227,8 +227,16 @@ namespace x64::ir {
     void IrGenerator::bts(R64 dst, R64 src) { emit(Op::BTS, dst, dst, src); }
     void IrGenerator::bts(R64 dst, u8 src) { emit(Op::BTS, dst, dst, src); }
 
-    void IrGenerator::repstos32() { emit(Op::REPSTOS32).addImpactedRegister(R64::RDI).addImpactedRegister(R64::RSI); }
-    void IrGenerator::repstos64() { emit(Op::REPSTOS64).addImpactedRegister(R64::RDI).addImpactedRegister(R64::RSI); }
+    void IrGenerator::repstos32() {
+        emit(Op::REPSTOS32).addImpactedRegister(R64::RDI)
+                           .addImpactedRegister(R64::RAX)
+                           .addImpactedRegister(R64::RCX);
+    }
+    void IrGenerator::repstos64() {
+        emit(Op::REPSTOS64).addImpactedRegister(R64::RDI)
+                           .addImpactedRegister(R64::RAX)
+                           .addImpactedRegister(R64::RCX);
+    }
 
     void IrGenerator::mov(MMX dst, MMX src) { emit(Op::MOV, dst, src); }
     void IrGenerator::movd(R32 dst, MMX src) { emit(Op::MOV, dst, src); }
