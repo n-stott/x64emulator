@@ -1,4 +1,5 @@
 #include "kernel/fs/fs.h"
+#include "kernel/fs/procfs.h"
 #include "kernel/dev/hostdevice.h"
 #include "kernel/dev/shadowdevice.h"
 #include "kernel/dev/tty.h"
@@ -61,6 +62,29 @@ namespace kernel {
         auto cwdPath = Path::tryCreate(cwdpathname);
         verify(!!cwdPath);
         currentWorkDirectory_ = ensureCompletePath(*cwdPath); // NOLINT(clang-analyzer-core.CallAndMessage)
+    }
+
+    void FS::resetProcFS(int pid, const std::string& programFilePath) {
+        // only open files are stdin, stdout and stderr
+        verify(openFiles_.size() == 3);
+
+        // create a proc fs
+        procfs_ = ProcFS::tryCreateAndAdd(this, root_.get(), "/proc");
+        verify(!!procfs_, "Unable to create procFS");
+
+        // create directory for that pid
+        Directory* piddir = procfs_->tryAddShadowDirectory(fmt::format("{}", pid));
+        verify(!!piddir, fmt::format("Unable to create /proc/{}", pid));
+
+        // create symlink to that directory
+        auto* selfsymlink = ShadowSymlink::tryCreateAndAdd(this, procfs_, "self", fmt::format("/proc/{}", pid));
+        verify(!!selfsymlink, "Unable to create /proc/self");
+
+        std::string absoluteProgramPath = toAbsolutePathname(programFilePath);
+
+        // add symlink /proc/{pid}/exe to the executable path
+        auto* exesymlink = ShadowSymlink::tryCreateAndAdd(this, piddir, "exe", absoluteProgramPath);
+        verify(!!exesymlink, "Unable to create /proc/{pid}/exe");
     }
 
     FS::~FS() = default;

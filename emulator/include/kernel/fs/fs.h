@@ -28,6 +28,8 @@ namespace kernel {
         FS();
         ~FS();
 
+        void resetProcFS(int pid, const std::string& programFilePath);
+
         // Careful with this !
         // O_RDWR in linux is 2, not 3
         enum class AccessMode {
@@ -243,6 +245,7 @@ namespace kernel {
 
         std::unique_ptr<Directory> root_;
         Tty* tty_ { nullptr };
+        ProcFS* procfs_ { nullptr };
         std::vector<std::unique_ptr<File>> orphanFiles_;
         std::vector<std::unique_ptr<Pipe>> pipes_;
         Directory* currentWorkDirectory_ { nullptr };

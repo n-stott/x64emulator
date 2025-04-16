@@ -256,6 +256,9 @@ namespace kernel {
         pushProgramArguments(&mmu_, &vm, programFilePath, arguments, environmentVariables, aux);
         vm.contextSwitch(nullptr);
 
+        // Setup procFS for this process
+        fs_.resetProcFS(Host::getpid(), programFilePath);
+
         return mainThreadPtr;
     }
 
