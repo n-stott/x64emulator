@@ -710,6 +710,8 @@ namespace x64 {
     DEFINE_STANDALONE(MOVLHPS_XMM_XMM, execMovlhpsXMMXMM)
     DEFINE_STANDALONE(PINSRW_XMM_R32_IMM, execPinsrwXMMR32Imm)
     DEFINE_STANDALONE(PINSRW_XMM_M16_IMM, execPinsrwXMMM16Imm)
+    DEFINE_STANDALONE(PEXTRW_R32_XMM_IMM, execPextrwR32XMMImm)
+    DEFINE_STANDALONE(PEXTRW_M16_XMM_IMM, execPextrwM16XMMImm)
     DEFINE_STANDALONE(PUNPCKLBW_MMX_MMXM32, execPunpcklbwMMXMMXM32)
     DEFINE_STANDALONE(PUNPCKLWD_MMX_MMXM32, execPunpcklwdMMXMMXM32)
     DEFINE_STANDALONE(PUNPCKLDQ_MMX_MMXM32, execPunpckldqMMXMMXM32)
@@ -1386,6 +1388,8 @@ namespace x64 {
         STANDALONE_NAME(MOVLHPS_XMM_XMM),
         STANDALONE_NAME(PINSRW_XMM_R32_IMM),
         STANDALONE_NAME(PINSRW_XMM_M16_IMM),
+        STANDALONE_NAME(PEXTRW_R32_XMM_IMM),
+        STANDALONE_NAME(PEXTRW_M16_XMM_IMM),
         STANDALONE_NAME(PUNPCKLBW_MMX_MMXM32),
         STANDALONE_NAME(PUNPCKLWD_MMX_MMXM32),
         STANDALONE_NAME(PUNPCKLDQ_MMX_MMXM32),
@@ -4958,6 +4962,22 @@ namespace x64 {
         const auto& pos = ins.op2<Imm>();
         u128 res = Impl::pinsrw16(get(dst), get(resolve(src)), get<u8>(pos));
         set(dst, res);
+    }
+
+    void Cpu::execPextrwR32XMMImm(const X64Instruction& ins) {
+        const auto& dst = ins.op1<R32>();
+        const auto& src = ins.op0<XMM>();
+        const auto& pos = ins.op2<Imm>();
+        u32 res = Impl::pextrw32(get(src), get<u8>(pos));
+        set(dst, res);
+    }
+
+    void Cpu::execPextrwM16XMMImm(const X64Instruction& ins) {
+        const auto& dst = ins.op1<M16>();
+        const auto& src = ins.op0<XMM>();
+        const auto& pos = ins.op2<Imm>();
+        u16 res = Impl::pextrw16(get(src), get<u8>(pos));
+        set(resolve(dst), res);
     }
 
     void Cpu::execPunpcklbwMMXMMXM32(const X64Instruction& ins) {

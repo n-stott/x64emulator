@@ -552,6 +552,8 @@ namespace x64 {
             case Insn::MOVLHPS_XMM_XMM: return toString<XMM, XMM>("movlhps");
             case Insn::PINSRW_XMM_R32_IMM: return toString<XMM, R32, Imm>("pinsrw");
             case Insn::PINSRW_XMM_M16_IMM: return toString<XMM, M16, Imm>("pinsrw");
+            case Insn::PEXTRW_R32_XMM_IMM: return toString<R32, XMM, Imm>("pextrw");
+            case Insn::PEXTRW_M16_XMM_IMM: return toString<M16, XMM, Imm>("pextrw");
             case Insn::PUNPCKLBW_MMX_MMXM32: return toString<MMX, MMXM32>("punpcklbw");
             case Insn::PUNPCKLWD_MMX_MMXM32: return toString<MMX, MMXM32>("punpcklwd");
             case Insn::PUNPCKLDQ_MMX_MMXM32: return toString<MMX, MMXM32>("punpckldq");

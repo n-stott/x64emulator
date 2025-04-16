@@ -1859,6 +1859,23 @@ namespace x64 {
         return NativeCpuImpl::pinsrw16(dst, (u16)src, order);
     }
 
+    u16 NativeCpuImpl::pextrw16(u128 src, u8 order) {
+        auto native = [=](__m128i d, u16 s) -> __m128i {
+            CALL_2_WITH_IMM3(_mm_extract_epi16, d, s);
+        };
+
+        __m128i d;
+        static_assert(sizeof(d) == sizeof(dst));
+        memcpy(&d, &dst, sizeof(dst));
+        assert(order < 8);
+        int r = native(d, src);
+        return (u16)r;
+    }
+
+    u32 NativeCpuImpl::pextrw32(u128 src, u8 order) {
+        return NativeCpuImpl::pextrw16(src, order);
+    }
+
     u64 NativeCpuImpl::punpcklbw64(u64 dst, u64 src) {
         u64 nativeRes = dst;
         asm volatile("punpcklbw %1, %0" : "+y"(nativeRes) : "y"(src));

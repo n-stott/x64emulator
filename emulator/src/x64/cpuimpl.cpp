@@ -1126,6 +1126,18 @@ namespace x64 {
         return pinsrw16(dst, (u16)src, order);
     }
 
+    u16 CpuImpl::pextrw16(u128 src, u8 order) {
+        order = order & 0x7;
+        std::array<u16, 8> SRC;
+        static_assert(sizeof(SRC) == sizeof(u128));
+        std::memcpy(SRC.data(), &src, sizeof(u128));
+        return SRC[order];
+    }
+
+    u32 CpuImpl::pextrw32(u128 src, u8 order) {
+        return pextrw16(src, order);
+    }
+
     u64 CpuImpl::punpcklbw64(u64 dst, u64 src) {
         std::array<u8, 8> DST;
         static_assert(sizeof(DST) == sizeof(u64));

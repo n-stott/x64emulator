@@ -3014,6 +3014,21 @@ namespace x64 {
         return make_failed(insn);
     }
 
+    static X64Instruction makePextrw(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 3);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        const cs_x86_op& pos = x86detail.operands[2];
+        auto r32dst = asRegister32(dst);
+        auto m16dst = asMemory16(dst);
+        auto rssesrc = asRegister128(src);
+        auto imm = asImmediate(pos);
+        if(r32dst && rssesrc && imm) return X64Instruction::make<Insn::PEXTRW_R32_XMM_IMM>(insn.address, insn.size, r32dst.value(), rssesrc.value(), imm.value());
+        if(m16dst && rssesrc && imm) return X64Instruction::make<Insn::PEXTRW_M16_XMM_IMM>(insn.address, insn.size, m16dst.value(), rssesrc.value(), imm.value());
+        return make_failed(insn);
+    }
+
     static X64Instruction makePunpcklbw(const cs_insn& insn) {
         const auto& x86detail = insn.detail->x86;
         assert(x86detail.op_count == 2);
@@ -4094,6 +4109,7 @@ namespace x64 {
             case X86_INS_MOVUPS:
             case X86_INS_MOVUPD: return makeMovupd(insn);
             case X86_INS_MOVNTDQ:
+            case X86_INS_MOVNTPS:
             case X86_INS_MOVDQA:
             case X86_INS_MOVAPS:
             case X86_INS_MOVAPD: return makeMovapd(insn);
@@ -4356,6 +4372,7 @@ namespace x64 {
             case X86_INS_MOVHLPS: return makeMovhlps(insn);
             case X86_INS_MOVLHPS: return makeMovlhps(insn);
             case X86_INS_PINSRW: return makePinsrw(insn);
+            case X86_INS_PEXTRW: return makePextrw(insn);
             case X86_INS_PUNPCKLBW: return makePunpcklbw(insn);
             case X86_INS_PUNPCKLWD: return makePunpcklwd(insn);
             case X86_INS_PUNPCKLDQ: return makePunpckldq(insn);

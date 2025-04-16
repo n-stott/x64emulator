@@ -826,6 +826,8 @@ namespace x64 {
 
         void execPinsrwXMMR32Imm(const X64Instruction&);
         void execPinsrwXMMM16Imm(const X64Instruction&);
+        void execPextrwR32XMMImm(const X64Instruction&);
+        void execPextrwM16XMMImm(const X64Instruction&);
 
         void execPunpcklbwMMXMMXM32(const X64Instruction&);
         void execPunpcklwdMMXMMXM32(const X64Instruction&);

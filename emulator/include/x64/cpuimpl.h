@@ -236,6 +236,8 @@ namespace x64 {
 
         [[nodiscard]] static u128 pinsrw16(u128 dst, u16 src, u8 order);
         [[nodiscard]] static u128 pinsrw32(u128 dst, u32 src, u8 order);
+        [[nodiscard]] static u16 pextrw16(u128 src, u8 order);
+        [[nodiscard]] static u32 pextrw32(u128 src, u8 order);
 
         [[nodiscard]] static u64 punpcklbw64(u64 dst, u64 src);
         [[nodiscard]] static u64 punpcklwd64(u64 dst, u64 src);
