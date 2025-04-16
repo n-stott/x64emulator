@@ -100,6 +100,10 @@ namespace kernel {
             robustListSize_ = len;
         }
 
+        void setName(const std::string& name) {
+            name_ = name;
+        }
+
         std::string toString() const;
 
         struct Stats {
@@ -187,6 +191,8 @@ namespace kernel {
 
         x64::Ptr robustListHead_ { 0 };
         size_t robustListSize_ { 0 };
+
+        std::string name_;
 
         TickInfo tickInfo_;
         int exitStatus_ { -1 };

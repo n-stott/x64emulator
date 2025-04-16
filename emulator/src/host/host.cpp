@@ -13,6 +13,7 @@
 #include <sys/eventfd.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
+#include <sys/prctl.h>
 #include <sys/resource.h>
 #include <sys/time.h>
 #include <sys/types.h>
@@ -52,7 +53,7 @@ namespace kernel {
         return advice == MADV_DONTNEED;
     }
 
-    bool Host::Prctl::isSetFS(int code) {
+    bool Host::ArchPrctl::isSetFS(int code) {
         return code == ARCH_SET_FS;
     }
 
@@ -275,6 +276,10 @@ namespace kernel {
     }
     bool Host::Ioctl::isTIOCGPGRP(unsigned long request) {
         return request == TIOCGPGRP;
+    }
+
+    bool Host::Prctl::isSetName(int option) {
+        return option == PR_SET_NAME;
     }
 
     Host::FD Host::cwdfd() {

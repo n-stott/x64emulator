@@ -29,7 +29,7 @@ namespace kernel {
             static bool isDontNeed(int advice);
         };
 
-        struct Prctl {
+        struct ArchPrctl {
             static bool isSetFS(int code);
         };
 
@@ -164,6 +164,10 @@ namespace kernel {
             static bool isTIOCGWINSZ(unsigned long request);
             static bool isTIOCSWINSZ(unsigned long request);
             static bool isTIOCGPGRP(unsigned long request);
+        };
+
+        struct Prctl {
+            static bool isSetName(int option);
         };
 
         static FD cwdfd();

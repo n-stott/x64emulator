@@ -1608,15 +1608,26 @@ namespace kernel {
     }
 
     int Sys::prctl(int option, unsigned long arg2, unsigned long arg3, unsigned long arg4, unsigned long arg5) {
-        if(logSyscalls_) {
-            print("Sys::prctl(option={}, arg2={}, arg3={}, arg4={}, arg5={}) = {}\n", option, arg2, arg3, arg4, arg5, -ENOTSUP);
+        int ret = -ENOTSUP;
+        bool isSetName = Host::Prctl::isSetName(option);
+        if(isSetName) {
+            x64::Ptr8 ptr { arg2 };
+            std::string threadName = mmu_.readString(ptr);
+            if(threadName.size() >= 15) threadName.resize(15);
+            currentThread_->setName(threadName);
+            ret = 0;
         }
-        warn(fmt::format("prctl not implemented"));
+        if(logSyscalls_) {
+            print("Sys::prctl(option={}, arg2={}, arg3={}, arg4={}, arg5={}) = {}\n", option, arg2, arg3, arg4, arg5, ret);
+        }
+        if(ret == -ENOTSUP) {
+            warn(fmt::format("prctl not implemented"));
+        }
         return -ENOTSUP;
     }
 
     int Sys::arch_prctl(int code, x64::Ptr addr) {
-        bool isSetFS = Host::Prctl::isSetFS(code);
+        bool isSetFS = Host::ArchPrctl::isSetFS(code);
         if(logSyscalls_) print("Sys::arch_prctl(code={}, addr={:#x}) = {}\n", code, addr.address(), isSetFS ? 0 : -EINVAL);
         if(!isSetFS) return -EINVAL;
         verify(!!currentThread_);
