@@ -1,0 +1,42 @@
+#include "kernel/fs/shadowsymlink.h"
+#include "kernel/fs/directory.h"
+#include "kernel/fs/fs.h"
+#include "kernel/fs/path.h"
+#include "scopeguard.h"
+#include "verify.h"
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
+namespace kernel {
+
+    File* ShadowSymlink::tryCreateAndAdd(FS* fs, Directory* parent, const std::string& name, const std::string& link) {
+        std::string pathname;
+        if(!parent || parent == fs->root()) {
+            pathname = name;
+        } else {
+            pathname = (parent->path() + "/" + name);
+        }
+
+        std::string absolutePathname = fs->toAbsolutePathname(pathname);
+        auto path = Path::tryCreate(absolutePathname);
+        verify(!!path, "Unable to create path");
+        Directory* containingDirectory = fs->ensurePathExceptLast(*path);
+
+        auto shadowSymlink = std::unique_ptr<ShadowSymlink>(new ShadowSymlink(fs, containingDirectory, path->last(), link));
+        return containingDirectory->addFile(std::move(shadowSymlink));
+    }
+
+    void ShadowSymlink::close() {
+        verify(false, "ShadowSymlink::close not implemented");
+    }
+
+    bool ShadowSymlink::keepAfterClose() const {
+        return true;
+    }
+
+    std::optional<int> ShadowSymlink::hostFileDescriptor() const {
+        return {};
+    }
+
+}

@@ -8,10 +8,13 @@
 #include "kernel/fs/regularfile.h"
 #include "kernel/fs/hostdirectory.h"
 #include "kernel/fs/hostfile.h"
+#include "kernel/fs/hostsymlink.h"
 #include "kernel/fs/path.h"
 #include "kernel/fs/pipe.h"
 #include "kernel/fs/shadowfile.h"
+#include "kernel/fs/shadowsymlink.h"
 #include "kernel/fs/socket.h"
+#include "kernel/fs/symlink.h"
 #include "host/host.h"
 #include "verify.h"
 #include <fmt/core.h>
@@ -24,14 +27,13 @@
 
 namespace kernel {
 
-    FS::FS(Kernel& kernel) : kernel_(kernel) {
+    FS::FS() {
         root_ = HostDirectory::tryCreateRoot(this);
         verify(!!root_, "Unable to create root directory");
         findCurrentWorkDirectory();
         tty_ = Tty::tryCreateAndAdd(this, root_.get(), "/dev/tty");
         createStandardStreams();
     }
-    
 
     void FS::createStandardStreams() {
         BitFlags<AccessMode> accessMode { AccessMode::READ, AccessMode::WRITE };
@@ -166,7 +168,16 @@ namespace kernel {
                 dir = subdir;
                 continue;
             }
-            // Then try to get it on the host
+            // If it's a symlink instead, resolve it
+            File* file = dir->tryGetEntry(component);
+            if(!!file && file->isSymlink()) {
+                auto* target = resolveSymlink(*static_cast<const Symlink*>(file));
+                if(!target) return nullptr;
+                if(!target->isDirectory()) return nullptr;
+                dir = static_cast<Directory*>(target);
+                continue;
+            }
+            // Then try to get it on the host (if possible)
             Directory* hostSubdir = dir->tryAddHostDirectory(component);
             if(!!hostSubdir) {
                 dir = hostSubdir;
@@ -180,12 +191,36 @@ namespace kernel {
         return dir;
     }
 
+    File* FS::resolveSymlink(const Symlink& symlink, u32 maxLinks) {
+        verify(maxLinks == 0, "Add support for recursive symlink resolution");
+        const std::string& targetPathname = symlink.link();
+        if(targetPathname.empty()) return nullptr;
+        verify(targetPathname[0] == '/', "Only absolute symlinks can be resolved");
+        auto targetPath = Path::tryCreate(targetPathname);
+        verify(!!targetPath, "Unable to create symlink's target path");
+        return tryGetFile(*targetPath);
+    }
+
     File* FS::tryGetFile(const Path& path) {
         Directory* dir = root();
         if(path.isRoot()) return dir;
         for(const std::string& component : path.componentsExceptLast()) {
-            dir = dir->tryGetSubDirectory(component);
-            if(!dir) return nullptr;
+            Directory* subdir = dir->tryGetSubDirectory(component);
+            if(!!subdir) {
+                dir = subdir;
+                continue;
+            } else {
+                // maybe we have a symlink
+                File* file = dir->tryGetEntry(component);
+                if(!!file && file->isSymlink()) {
+                    auto* target = resolveSymlink(*static_cast<const Symlink*>(file));
+                    if(!target) return nullptr;
+                    if(!target->isDirectory()) return nullptr;
+                    dir = static_cast<Directory*>(target);
+                    continue;
+                }
+            }
+            return nullptr;
         }
         File* file = dir->tryGetEntry(path.last());
         return file;
@@ -380,6 +415,23 @@ namespace kernel {
             // let the file die  here
         }
         return 0;
+    }
+
+    ErrnoOrBuffer FS::readlink(const std::string& pathname, size_t bufferSize) {
+        auto absolutePathname = toAbsolutePathname(pathname);
+        auto path = Path::tryCreate(absolutePathname);
+        verify(!!path, "Unable to create path");
+        File* file = tryGetFile(*path);
+        if(!!file) {
+            if(!file->isSymlink()) return ErrnoOrBuffer(-EINVAL);
+            Symlink* symlink = static_cast<Symlink*>(file);
+            return symlink->readlink(bufferSize);
+        } else {
+            auto* symlink = HostSymlink::tryCreateAndAdd(this, root_.get(), absolutePathname);
+            if(!symlink) return ErrnoOrBuffer(-EINVAL);
+            verify(symlink->isSymlink());
+            return static_cast<Symlink*>(symlink)->readlink(bufferSize);
+        }
     }
 
     int FS::access(const std::string& pathname, int mode) const {

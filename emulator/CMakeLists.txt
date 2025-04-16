@@ -69,13 +69,16 @@ add_library(x64emulator STATIC
     src/kernel/fs/fs.cpp
     src/kernel/fs/hostdirectory.cpp
     src/kernel/fs/hostfile.cpp
+    src/kernel/fs/hostsymlink.cpp
     src/kernel/fs/localsocket.cpp
     src/kernel/fs/openfiledescription.cpp
     src/kernel/fs/path.cpp
     src/kernel/fs/pipe.cpp
     src/kernel/fs/shadowdirectory.cpp
     src/kernel/fs/shadowfile.cpp
+    src/kernel/fs/shadowsymlink.cpp
     src/kernel/fs/socket.cpp
+    src/kernel/fs/symlink.cpp
     src/kernel/kernel.cpp
     src/kernel/scheduler.cpp
     src/kernel/syscalls.cpp

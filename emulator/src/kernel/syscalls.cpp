@@ -929,13 +929,14 @@ namespace kernel {
 
     ssize_t Sys::readlink(x64::Ptr pathname, x64::Ptr buf, size_t bufsiz) {
         std::string path = mmu_.readString(pathname);
-        if(path.substr(0, 5) == "/proc") {
-            warn(fmt::format("Reading from /proc/ is dangerous ! (readlink {})", path));
-        }
-        auto errnoOrBuffer = Host::readlink(path, bufsiz);
+        auto errnoOrBuffer = kernel_.fs().readlink(path, bufsiz);
         if(logSyscalls_) {
             print("Sys::readlink(path={}, buf={:#x}, size={}) = {:#x}\n",
-                        path, buf.address(), bufsiz, errnoOrBuffer.errorOrWith<ssize_t>([](const auto& buffer) { return (ssize_t)buffer.size(); }));
+                        path, buf.address(), bufsiz, errnoOrBuffer.errorOrWith<ssize_t>([](const auto& buffer) {
+                            std::string link((const char*)buffer.data(), buffer.size());
+                            fmt::print("  link={}\n", link);
+                            return (ssize_t)buffer.size();
+                        }));
         }
         return errnoOrBuffer.errorOrWith<ssize_t>([&](const auto& buffer) {
             mmu_.copyToMmu(buf, buffer.data(), buffer.size());

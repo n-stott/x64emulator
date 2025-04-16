@@ -16,15 +16,16 @@ namespace kernel {
 
     class Directory;
     class File;
-    class Kernel;
     class OpenFileDescription;
     class Path;
     class Pipe;
     class Tty;
+    class ProcFS;
+    class Symlink;
 
     class FS {
     public:
-        explicit FS(Kernel& kernel);
+        FS();
         ~FS();
 
         // Careful with this !
@@ -87,8 +88,6 @@ namespace kernel {
             bool operator!=(FD other) const { return fd != other.fd; }
         };
 
-        Kernel& kernel() { return kernel_; }
-
         Directory* root() { return root_.get(); }
         Directory* cwd() { return currentWorkDirectory_; }
 
@@ -111,6 +110,8 @@ namespace kernel {
         int mkdir(const std::string& pathname);
         int rename(const std::string& oldname, const std::string& newname);
         int unlink(const std::string& pathname);
+
+        ErrnoOrBuffer readlink(const std::string& pathname, size_t bufferSize);
 
         int access(const std::string& pathname, int mode) const;
         int faccessat(FD dirfd, const std::string& pathname, int mode) const;
@@ -222,14 +223,16 @@ namespace kernel {
         std::unique_ptr<File> tryTakeFile(const Path& path);
         Directory* ensurePathImpl(Span<const std::string> components);
 
+        File* resolveSymlink(const Symlink&, u32 maxLinks = 0);
+
         struct OpenNode {
             FD fd { -1 };
             OpenFileDescription* openFiledescription;
             bool closeOnExec { false };
         };
 
-        void createStandardStreams();
         void findCurrentWorkDirectory();
+        void createStandardStreams();
         FD insertNode(std::unique_ptr<File> file, BitFlags<AccessMode>, BitFlags<StatusFlags>, bool closeOnExec);
         FD allocateFd();
 
@@ -238,7 +241,6 @@ namespace kernel {
 
         static int assembleAccessModeAndFileStatusFlags(BitFlags<AccessMode>, BitFlags<StatusFlags>);
 
-        Kernel& kernel_;
         std::unique_ptr<Directory> root_;
         Tty* tty_ { nullptr };
         std::vector<std::unique_ptr<File>> orphanFiles_;

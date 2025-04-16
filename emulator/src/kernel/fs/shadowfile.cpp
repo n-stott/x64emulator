@@ -50,6 +50,7 @@ namespace kernel {
                 // not a regular file or a symbolic link
                 return {};
             }
+            verify(fileType != S_IFLNK, "Support for shadow symlinks needed");
             
             // create data vector
             std::vector<u8> data((size_t)st.st_size, 0x0);
