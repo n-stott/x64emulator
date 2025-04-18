@@ -187,6 +187,7 @@ namespace kernel {
 
         struct Fstatat {
             static bool isEmptyPath(int flags);
+            static bool isNoAutomount(int flags);
             static bool isSymlinkNofollow(int flags);
         };
 

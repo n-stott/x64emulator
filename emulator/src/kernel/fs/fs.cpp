@@ -219,10 +219,10 @@ namespace kernel {
         verify(targetPathname[0] == '/', "Only absolute symlinks can be resolved");
         auto targetPath = Path::tryCreate(targetPathname);
         verify(!!targetPath, "Unable to create symlink's target path");
-        return tryGetFile(*targetPath);
+        return tryGetFile(*targetPath, FollowSymlink::YES);
     }
 
-    File* FS::tryGetFile(const Path& path) {
+    File* FS::tryGetFile(const Path& path, FollowSymlink followSymlink) {
         Directory* dir = root();
         if(path.isRoot()) return dir;
         for(const std::string& component : path.componentsExceptLast()) {
@@ -230,7 +230,7 @@ namespace kernel {
             if(!!subdir) {
                 dir = subdir;
                 continue;
-            } else {
+            } else if(followSymlink == FollowSymlink::YES) {
                 // maybe we have a symlink
                 File* file = dir->tryGetEntry(component);
                 if(!!file && file->isSymlink()) {
@@ -290,7 +290,7 @@ namespace kernel {
             return fd;
         };
         
-        File* file = tryGetFile(*path);
+        File* file = tryGetFile(*path, FollowSymlink::YES);
         if(!!file) {
             FD fd = openNode(file);
             file->open();
@@ -426,7 +426,7 @@ namespace kernel {
     int FS::unlink(const std::string& pathname) {
         auto path = Path::tryCreate(toAbsolutePathname(pathname));
         if(!path) return -ENOENT;
-        File* filePtr = tryGetFile(*path);
+        File* filePtr = tryGetFile(*path, FollowSymlink::YES);
         if(!filePtr) return -ENOENT;
         if(filePtr->refCount() > 0) {
             filePtr->setDeleteAfterClose();
@@ -441,7 +441,7 @@ namespace kernel {
         auto absolutePathname = toAbsolutePathname(pathname);
         auto path = Path::tryCreate(absolutePathname);
         verify(!!path, "Unable to create path");
-        File* file = tryGetFile(*path);
+        File* file = tryGetFile(*path, FollowSymlink::YES);
         if(!!file) {
             if(!file->isSymlink()) return ErrnoOrBuffer(-EINVAL);
             Symlink* symlink = static_cast<Symlink*>(file);
@@ -559,7 +559,7 @@ namespace kernel {
         auto absolutePathname = toAbsolutePathname(pathname);
         auto path = Path::tryCreate(absolutePathname);
         if(!!path) {
-            File* file = tryGetFile(*path);
+            File* file = tryGetFile(*path, FollowSymlink::YES);
             if(!!file) return file->stat();
         }
         return Host::stat(pathname);
@@ -589,7 +589,7 @@ namespace kernel {
             // If pathname begins with a slash, then it is an absolute pathname that identifies the target file. In this case, dirfd is ignored.
             auto path = Path::tryCreate(pathname);
             verify(!!path, "Unable to create path");
-            File* file = tryGetFile(*path);
+            File* file = tryGetFile(*path, FollowSymlink::YES);
             if(!!file) {
                 return file->statx(mask);    
             } else {
@@ -621,11 +621,22 @@ namespace kernel {
         if(Host::Fstatat::isEmptyPath(flags)) {
             return fstat(dirfd);
         }
-        verify(dirfd.fd == Host::cwdfd().fd, "dirfd is not cwd");
-        auto path = Path::tryCreate(pathname);
+        Directory* dir = cwd();
+        if(dirfd.fd != Host::cwdfd().fd) {
+            OpenFileDescription* ofd = findOpenFileDescription(dirfd);
+            if(!ofd) return ErrnoOrBuffer(-EBADF);
+            File* file = ofd->file();
+            if(!file) return ErrnoOrBuffer(-EBADF);
+            if(!file->isDirectory()) return ErrnoOrBuffer(-ENOTDIR);
+            dir = static_cast<Directory*>(file);
+        }
+        auto path = Path::tryJoin(dir->path(), pathname);
         if(!!path) {
-            verify(false, "implement fstatat in FS");
-            return ErrnoOrBuffer(-ENOTSUP);
+            verify(!Host::Fstatat::isNoAutomount(flags), "no automount not supported");
+            FollowSymlink followSymlink = Host::Fstatat::isSymlinkNofollow(flags) ? FollowSymlink::YES : FollowSymlink::NO;
+            File* file = tryGetFile(*path, followSymlink);
+            if(!file) return ErrnoOrBuffer(-ENOENT);
+            return file->stat();
         } else {
             return Host::fstatat64(Host::cwdfd(), pathname, flags);
         }
@@ -791,7 +802,7 @@ namespace kernel {
     int FS::truncate(const std::string& pathname, off_t length) {
         auto path = Path::tryCreate(pathname);
         verify(!!path, "Unable to build path");
-        File* file = tryGetFile(*path);
+        File* file = tryGetFile(*path, FollowSymlink::YES);
         if(!file) return -ENOENT;
         verify(file->isRegularFile(), "truncate not implemented on non-regular files");
         verify(file->isShadow(), "truncate not implemented on non-shadow files");

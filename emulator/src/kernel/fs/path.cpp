@@ -25,6 +25,10 @@ namespace kernel {
         return std::unique_ptr<Path>(new Path(std::move(components)));
     }
 
+    std::unique_ptr<Path> Path::tryJoin(const std::string& prefix, const std::string& suffix) {
+        return tryCreate(prefix + "/" + suffix);
+    }
+
     Path::Path(std::vector<std::string> components) : components_(std::move(components)) {
 
     }

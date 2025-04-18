@@ -222,7 +222,12 @@ namespace kernel {
         void dumpSummary() const;
 
     private:
-        File* tryGetFile(const Path& path);
+        enum class FollowSymlink {
+            NO,
+            YES,
+        };
+
+        File* tryGetFile(const Path& path, FollowSymlink);
         std::unique_ptr<File> tryTakeFile(const Path& path);
         Directory* ensurePathImpl(Span<const std::string> components);
 

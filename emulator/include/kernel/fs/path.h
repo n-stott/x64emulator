@@ -13,6 +13,8 @@ namespace kernel {
     public:
         static std::unique_ptr<Path> tryCreate(std::string pathname);
 
+        static std::unique_ptr<Path> tryJoin(const std::string& prefix, const std::string& suffix);
+
         Span<const std::string> components() const {
             const std::string* data = components_.data();
             size_t size = components_.size();

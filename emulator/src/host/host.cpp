@@ -302,6 +302,10 @@ namespace kernel {
         return flags & AT_EMPTY_PATH;
     }
 
+    bool Host::Fstatat::isNoAutomount(int flags) {
+        return flags & AT_NO_AUTOMOUNT;
+    }
+
     bool Host::Fstatat::isSymlinkNofollow(int flags) {
         return flags & AT_SYMLINK_NOFOLLOW;
     }
