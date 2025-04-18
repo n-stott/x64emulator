@@ -86,10 +86,6 @@ namespace kernel {
         data_.resize(length, 0x0);
     }
 
-    void ShadowFile::append() {
-        isAppending_ = true;
-    }
-
     ErrnoOrBuffer ShadowFile::read(OpenFileDescription& openFileDescription, size_t count) {
         if(!isReadable()) return ErrnoOrBuffer{-EINVAL};
         off_t offset = openFileDescription.offset();
@@ -103,7 +99,7 @@ namespace kernel {
 
     ssize_t ShadowFile::write(OpenFileDescription& openFileDescription, const u8* buf, size_t count) {
         if(!isWritable()) return -EINVAL;
-        if(isAppending_) openFileDescription.lseek(0, SEEK_END);
+        if(openFileDescription.statusFlags().test(FS::StatusFlags::APPEND)) openFileDescription.lseek(0, SEEK_END);
         off_t offset = openFileDescription.offset();
         if(offset < 0) return -EINVAL;
         if((size_t)offset + count > data_.size()) {
@@ -167,10 +163,6 @@ namespace kernel {
             return -EINVAL;
         }
         if(baseOffset + offset < 0) return -EINVAL;
-        if((size_t)(baseOffset + offset) > data_.size()) {
-            verify(false, "Seeking beyond file size not implemented in ShadowFile");
-            return -EINVAL;
-        }
         return baseOffset + offset;
     }
 

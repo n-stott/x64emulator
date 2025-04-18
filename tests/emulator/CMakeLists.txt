@@ -92,6 +92,7 @@ create_simple_test(repnzscas)
 create_simple_test(random_call)
 create_simple_test(fact)
 create_simple_test(ack)
+create_simple_test(lseek)
 
 add_executable(test_abort src/test_abort.cpp)
 target_compile_options(test_abort PUBLIC ${CC_OPTIONS})

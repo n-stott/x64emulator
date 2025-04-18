@@ -347,7 +347,6 @@ namespace kernel {
             auto* shadowFile = ShadowFile::tryCreateAndAdd(this, root_.get(), absolutePathname, createIfNotFound);
             if(!!shadowFile) {
                 if(creationFlags.test(CreationFlags::TRUNC)) shadowFile->truncate(0);
-                if(statusFlags.test(StatusFlags::APPEND)) shadowFile->append();
                 shadowFile->setWritable(accessMode.test(AccessMode::WRITE));
                 
                 // create and add the node to the filesystem

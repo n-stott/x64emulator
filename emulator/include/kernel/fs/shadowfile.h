@@ -49,7 +49,6 @@ namespace kernel {
         int fallocate(int mode, off_t offset, off_t len);
         
         void truncate(size_t length);
-        void append();
         void setWritable(bool writable) { writable_ = writable; }
 
         std::string className() const override {
@@ -62,7 +61,6 @@ namespace kernel {
         std::unique_ptr<ShadowFileHostData> hostData_;
         std::vector<u8> data_;
         bool writable_ { false };
-        bool isAppending_ { false };
     };
 
 }
