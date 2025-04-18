@@ -227,6 +227,8 @@ namespace kernel {
         int fsync(int fd);
         // 0x4b
         int fdatasync(int fd);
+        // 0x4c
+        int truncate(x64::Ptr8 path, off_t length);
         // 0x4d
         int ftruncate(int fd, off_t length);
         // 0x4f

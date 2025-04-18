@@ -792,6 +792,18 @@ namespace kernel {
         return shadowFile->fallocate(mode, offset, len);
     }
 
+    int FS::truncate(const std::string& pathname, off_t length) {
+        auto path = Path::tryCreate(pathname);
+        verify(!!path, "Unable to build path");
+        File* file = tryGetFile(*path);
+        if(!file) return -ENOENT;
+        verify(file->isRegularFile(), "truncate not implemented on non-regular files");
+        verify(file->isShadow(), "truncate not implemented on non-shadow files");
+        ShadowFile* shadowFile = static_cast<ShadowFile*>(file);
+        shadowFile->truncate((size_t)length);
+        return 0;
+    }
+
     int FS::ftruncate(FD fd, off_t length) {
         OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
         if(!openFileDescription) return -EBADF;

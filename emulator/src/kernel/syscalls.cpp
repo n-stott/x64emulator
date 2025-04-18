@@ -101,6 +101,7 @@ namespace kernel {
             case 0x49: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::flock, regs));
             case 0x4a: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::fsync, regs));
             case 0x4b: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::fdatasync, regs));
+            case 0x4c: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::truncate, regs));
             case 0x4d: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::ftruncate, regs));
             case 0x4f: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::getcwd, regs));
             case 0x50: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::chdir, regs));
@@ -867,6 +868,13 @@ namespace kernel {
         if(logSyscalls_) print("Sys::fdatasync(fd={}) = {}\n", fd, -ENOTSUP);
         warn(fmt::format("fdatasync not implemented"));
         return -ENOTSUP;
+    }
+
+    int Sys::truncate(x64::Ptr8 path, off_t length) {
+        auto pathname = mmu_.readString(path);
+        int ret = kernel_.fs().truncate(pathname, length);
+        if(logSyscalls_) print("Sys::truncate(path={}, length={}) = {}\n", pathname, length, ret);
+        return ret;
     }
 
     int Sys::ftruncate(int fd, off_t length) {
