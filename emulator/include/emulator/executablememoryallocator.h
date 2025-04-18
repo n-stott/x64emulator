@@ -46,9 +46,6 @@ namespace emulator {
 
         std::list<MemRange> ranges_;
         std::list<MemoryBlock> freeBlocks_;
-
-        static constexpr u32 MAX_RANGES = 0x100;
-        
     };
 
 }

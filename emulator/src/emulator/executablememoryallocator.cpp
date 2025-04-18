@@ -26,7 +26,6 @@ namespace emulator {
         }
 
         // finally try creating a new range
-        if(ranges_.size() >= MAX_RANGES) return {};
         auto& newRange = ranges_.emplace_back();
         return newRange.tryAllocate(requestedSize);
     }
