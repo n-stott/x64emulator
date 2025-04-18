@@ -4965,16 +4965,16 @@ namespace x64 {
     }
 
     void Cpu::execPextrwR32XMMImm(const X64Instruction& ins) {
-        const auto& dst = ins.op1<R32>();
-        const auto& src = ins.op0<XMM>();
+        const auto& dst = ins.op0<R32>();
+        const auto& src = ins.op1<XMM>();
         const auto& pos = ins.op2<Imm>();
         u32 res = Impl::pextrw32(get(src), get<u8>(pos));
         set(dst, res);
     }
 
     void Cpu::execPextrwM16XMMImm(const X64Instruction& ins) {
-        const auto& dst = ins.op1<M16>();
-        const auto& src = ins.op0<XMM>();
+        const auto& dst = ins.op0<M16>();
+        const auto& src = ins.op1<XMM>();
         const auto& pos = ins.op2<Imm>();
         u16 res = Impl::pextrw16(get(src), get<u8>(pos));
         set(resolve(dst), res);
