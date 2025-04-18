@@ -22,9 +22,6 @@
 #include <fmt/color.h>
 #include <fmt/ranges.h>
 #include <algorithm>
-#include <fcntl.h>
-#include <sys/poll.h>
-#include <sys/file.h>
 
 namespace kernel {
 
@@ -621,7 +618,7 @@ namespace kernel {
     }
 
     ErrnoOrBuffer FS::fstatat64(FD dirfd, const std::string& pathname, int flags) {
-        if(flags == AT_EMPTY_PATH) {
+        if(Host::Fstatat::isEmptyPath(flags)) {
             return fstat(dirfd);
         }
         verify(dirfd.fd == Host::cwdfd().fd, "dirfd is not cwd");
@@ -676,14 +673,14 @@ namespace kernel {
         // If we can do it in FS alone, do it here
         // and check if we need to do it on the file as well
         bool callFcntlOnFile = true;
-        switch(cmd) {
-            case F_DUPFD: {
+        switch(Host::Fcntl::toCommand(cmd)) {
+            case Host::Fcntl::DUPFD: {
                 FD newfd = dup(fd);
                 emulatedRet = newfd.fd;
                 callFcntlOnFile = false;
                 break;
             }
-            case F_DUPFD_CLOEXEC: {
+            case Host::Fcntl::DUPFD_CLOEXEC: {
                 FD newfd = dup(fd);
                 OpenNode* newNode = findOpenNode(newfd);
                 verify(!!newNode);
@@ -692,13 +689,13 @@ namespace kernel {
                 callFcntlOnFile = false;
                 break;
             }
-            case F_GETFD: {
+            case Host::Fcntl::GETFD: {
                 OpenNode* node = findOpenNode(fd);
                 verify(!!node);
-                emulatedRet = node->closeOnExec ? FD_CLOEXEC : 0;
+                emulatedRet = node->closeOnExec ? Host::Fcntl::fdCloExec() : 0;
                 break;
             }
-            case F_SETFD: {
+            case Host::Fcntl::SETFD: {
                 OpenNode* node = findOpenNode(fd);
                 verify(!!node);
                 bool currentFlag = node->closeOnExec;
@@ -708,12 +705,12 @@ namespace kernel {
                 break;
             }
         // If the open file description is sufficient, do it there
-            case F_GETFL: {
+            case Host::Fcntl::GETFL: {
                 emulatedRet = assembleAccessModeAndFileStatusFlags(openFileDescription->accessMode(), openFileDescription->statusFlags());
                 callFcntlOnFile = false;
                 break;
             }
-            case F_SETFL: {
+            case Host::Fcntl::SETFL: {
                 verify(!Host::Open::isAppending(arg), "changing append flag is not supported");
                 auto currentFlags = openFileDescription->statusFlags();
                 if(Host::Open::isNonBlock(arg) && !currentFlags.test(StatusFlags::NONBLOCK)) {
@@ -757,10 +754,10 @@ namespace kernel {
     int FS::flock(FD fd, int operation) {
         OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
         if(!openFileDescription) return -EBADF;
-        bool lockShared = (operation & LOCK_SH);
-        bool lockExclusively = (operation & LOCK_EX);
-        bool unlock = (operation & LOCK_UN);
-        bool nonBlocking = (operation & LOCK_NB);
+        bool lockShared = Host::Lock::isShared(operation);
+        bool lockExclusively = Host::Lock::isExclusive(operation);
+        bool unlock = Host::Lock::isUnlock(operation);
+        bool nonBlocking = Host::Lock::isNonBlocking(operation);
         OpenFileDescription::Blocking blocking
                 = nonBlocking ? OpenFileDescription::Blocking::NO
                               : OpenFileDescription::Blocking::YES;

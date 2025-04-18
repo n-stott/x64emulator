@@ -94,20 +94,20 @@ namespace kernel {
         return flag & O_NONBLOCK;
     }
 
-    bool Host::Fcntl::isGetFd(int cmd) {
-        return cmd == F_GETFD;
+    Host::Fcntl::Command Host::Fcntl::toCommand(int cmd) {
+        switch(cmd) {
+            case F_DUPFD: return Command::DUPFD;
+            case F_DUPFD_CLOEXEC: return Command::DUPFD_CLOEXEC;
+            case F_GETFD: return Command::GETFD;
+            case F_SETFD: return Command::SETFD;
+            case F_GETFL: return Command::GETFL;
+            case F_SETFL: return Command::SETFL;
+            default: return Command::UNSUPPORTED;
+        }
     }
 
-    bool Host::Fcntl::isSetFd(int cmd) {
-        return cmd == F_SETFD;
-    }
-
-    bool Host::Fcntl::isGetFl(int cmd) {
-        return cmd == F_GETFL;
-    }
-
-    bool Host::Fcntl::isSetFl(int cmd) {
-        return cmd == F_SETFL;
+    int Host::Fcntl::fdCloExec() {
+        return FD_CLOEXEC;
     }
 
     bool Host::Mode::isUserReadable(unsigned int mode) {
@@ -280,6 +280,30 @@ namespace kernel {
 
     bool Host::Prctl::isSetName(int option) {
         return option == PR_SET_NAME;
+    }
+
+    bool Host::Lock::isShared(int operation) {
+        return operation & LOCK_SH;
+    }
+
+    bool Host::Lock::isExclusive(int operation) {
+        return operation & LOCK_EX;
+    }
+
+    bool Host::Lock::isUnlock(int operation) {
+        return operation & LOCK_UN;
+    }
+
+    bool Host::Lock::isNonBlocking(int operation) {
+        return operation & LOCK_NB;
+    }
+
+    bool Host::Fstatat::isEmptyPath(int flags) {
+        return flags & AT_EMPTY_PATH;
+    }
+
+    bool Host::Fstatat::isSymlinkNofollow(int flags) {
+        return flags & AT_SYMLINK_NOFOLLOW;
     }
 
     Host::FD Host::cwdfd() {

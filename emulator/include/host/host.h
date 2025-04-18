@@ -62,10 +62,18 @@ namespace kernel {
         };
 
         struct Fcntl {
-            static bool isGetFd(int cmd);
-            static bool isSetFd(int cmd);
-            static bool isGetFl(int cmd);
-            static bool isSetFl(int cmd);
+            enum Command {
+                DUPFD,
+                DUPFD_CLOEXEC,
+                GETFD,
+                SETFD,
+                GETFL,
+                SETFL,
+                UNSUPPORTED,
+            };
+
+            static Command toCommand(int cmd);
+            static int fdCloExec();
         };
 
         struct Mode {
@@ -168,6 +176,18 @@ namespace kernel {
 
         struct Prctl {
             static bool isSetName(int option);
+        };
+
+        struct Lock {
+            static bool isShared(int operation);
+            static bool isExclusive(int operation);
+            static bool isUnlock(int operation);
+            static bool isNonBlocking(int operation);
+        };
+
+        struct Fstatat {
+            static bool isEmptyPath(int flags);
+            static bool isSymlinkNofollow(int flags);
         };
 
         static FD cwdfd();
