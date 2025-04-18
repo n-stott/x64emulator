@@ -763,6 +763,7 @@ namespace emulator {
 
     void BasicBlock::freeNativeBlock(VM& vm) {
         vm.freeNative(nativeBasicBlock_);
+        nativeBasicBlock_ = MemoryBlock{};
     }
 
     size_t BasicBlock::size() const {
