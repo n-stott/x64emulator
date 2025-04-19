@@ -408,6 +408,7 @@ namespace x64::ir {
     void IrGenerator::mulss(XMM dst, XMM src) { emit(Op::MULSS, dst, dst, src); }
     void IrGenerator::divss(XMM dst, XMM src) { emit(Op::DIVSS, dst, dst, src); }
     void IrGenerator::comiss(XMM dst, XMM src) { emit(Op::COMISS, dst, dst, src); }
+    void IrGenerator::cvtss2sd(XMM dst, XMM src) { emit(Op::CVTSS2SD, dst, dst, src); }
     void IrGenerator::cvtsi2ss(XMM dst, R32 src) { emit(Op::CVTSI2SS, dst, dst, src); }
     void IrGenerator::cvtsi2ss(XMM dst, R64 src) { emit(Op::CVTSI2SS, dst, dst, src); }
 
@@ -421,6 +422,7 @@ namespace x64::ir {
     void IrGenerator::maxsd(XMM dst, XMM src) { emit(Op::MAXSD, dst, dst, src); }
     void IrGenerator::minsd(XMM dst, XMM src) { emit(Op::MINSD, dst, dst, src); }
     void IrGenerator::sqrtsd(XMM dst, XMM src) { emit(Op::SQRTSD, dst, dst, src); }
+    void IrGenerator::cvtsd2ss(XMM dst, XMM src) { emit(Op::CVTSD2SS, dst, dst, src); }
     void IrGenerator::cvtsi2sd32(XMM dst, R32 src) { emit(Op::CVTSI2SD32, dst, dst, src); }
     void IrGenerator::cvtsi2sd64(XMM dst, R64 src) { emit(Op::CVTSI2SD64, dst, dst, src); }
     void IrGenerator::cvttsd2si32(R32 dst, XMM src) { emit(Op::CVTTSD2SI32, dst, dst, src); }

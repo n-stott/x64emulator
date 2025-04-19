@@ -2282,6 +2282,18 @@ namespace x64 {
                     }
                     break;
                 }
+                case ir::Op::CVTSS2SD: {
+                    auto r128dst = ins.out().as<XMM>();
+                    assert(r128dst == ins.in1().as<XMM>());
+                    auto r128src2 = ins.in2().as<XMM>();
+
+                    if(r128dst && r128src2) {
+                        assembler.cvtss2sd(r128dst.value(), r128src2.value());
+                    } else {
+                        return fail();
+                    }
+                    break;
+                }
                 case ir::Op::CVTSI2SS: {
                     auto r128dst = ins.out().as<XMM>();
                     assert(r128dst == ins.in1().as<XMM>());
@@ -2413,6 +2425,18 @@ namespace x64 {
 
                     if(r128dst && r128src2) {
                         assembler.sqrtsd(r128dst.value(), r128src2.value());
+                    } else {
+                        return fail();
+                    }
+                    break;
+                }
+                case ir::Op::CVTSD2SS: {
+                    auto r128dst = ins.out().as<XMM>();
+                    assert(r128dst == ins.in1().as<XMM>());
+                    auto r128src2 = ins.in2().as<XMM>();
+
+                    if(r128dst && r128src2) {
+                        assembler.cvtsd2ss(r128dst.value(), r128src2.value());
                     } else {
                         return fail();
                     }

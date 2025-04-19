@@ -191,6 +191,7 @@ namespace x64::ir {
             case Op::MULSS: return "mulss";
             case Op::DIVSS: return "divss";
             case Op::COMISS: return "comiss";
+            case Op::CVTSS2SD: return "cvtss2sd";
             case Op::CVTSI2SS: return "cvtsi2ss";
             case Op::ADDSD: return "addsd";
             case Op::SUBSD: return "subsd";
@@ -202,6 +203,7 @@ namespace x64::ir {
             case Op::MAXSD: return "maxsd";
             case Op::MINSD: return "minsd";
             case Op::SQRTSD: return "sqrtsd";
+            case Op::CVTSD2SS: return "cvtsd2ss";
             case Op::CVTSI2SD32: return "cvtsi2sd32";
             case Op::CVTSI2SD64: return "cvtsi2sd64";
             case Op::CVTTSD2SI32: return "cvttsd2si32";

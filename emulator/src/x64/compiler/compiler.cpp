@@ -578,6 +578,8 @@ namespace x64 {
             case Insn::DIVSS_XMM_XMM: return tryCompileDivssXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
             case Insn::DIVSS_XMM_M32: return tryCompileDivssXmmM32(ins.op0<XMM>(), ins.op1<M32>());
             case Insn::COMISS_XMM_XMM: return tryCompileComissXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
+            case Insn::CVTSS2SD_XMM_XMM: return tryCompileCvtss2sdXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
+            case Insn::CVTSS2SD_XMM_M32: return tryCompileCvtss2sdXmmM32(ins.op0<XMM>(), ins.op1<M32>());
             case Insn::CVTSI2SS_XMM_RM32: return tryCompileCvtsi2ssXmmRM32(ins.op0<XMM>(), ins.op1<RM32>());
             case Insn::CVTSI2SS_XMM_RM64: return tryCompileCvtsi2ssXmmRM64(ins.op0<XMM>(), ins.op1<RM64>());
 
@@ -598,6 +600,8 @@ namespace x64 {
             case Insn::MAXSD_XMM_XMM: return tryCompileMaxsdXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
             case Insn::MINSD_XMM_XMM: return tryCompileMinsdXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
             case Insn::SQRTSD_XMM_XMM: return tryCompileSqrtsdXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
+            case Insn::CVTSD2SS_XMM_XMM: return tryCompileCvtsd2ssXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
+            case Insn::CVTSD2SS_XMM_M64: return tryCompileCvtsd2ssXmmM64(ins.op0<XMM>(), ins.op1<M64>());
             case Insn::CVTSI2SD_XMM_RM32: return tryCompileCvtsi2sdXmmRM32(ins.op0<XMM>(), ins.op1<RM32>());
             case Insn::CVTSI2SD_XMM_RM64: return tryCompileCvtsi2sdXmmRM64(ins.op0<XMM>(), ins.op1<RM64>());
             case Insn::CVTTSD2SI_R32_XMM: return tryCompileCvttsd2siR32Xmm(ins.op0<R32>(), ins.op1<XMM>());
@@ -4192,6 +4196,27 @@ namespace x64 {
         return true;
     }
 
+    bool Compiler::tryCompileCvtss2sdXmmXmm(XMM dst, XMM src) {
+        readReg128(Reg128::GPR0, dst);
+        readReg128(Reg128::GPR1, src);
+        generator_->cvtss2sd(get(Reg128::GPR0), get(Reg128::GPR1));
+        writeReg128(dst, Reg128::GPR0);
+        return true;
+    }
+
+    bool Compiler::tryCompileCvtss2sdXmmM32(XMM dst, const M32& src) {
+        // fetch src address
+        if(src.segment != Segment::CS && src.segment != Segment::UNK) return false;
+        if(src.encoding.index == R64::RIP) return false;
+        // get the address
+        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src);
+        readReg128(Reg128::GPR0, dst);
+        generator_->movss(get(Reg128::GPR1), make32(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
+        generator_->cvtss2sd(get(Reg128::GPR0), get(Reg128::GPR1));
+        writeReg128(dst, Reg128::GPR0);
+        return true;
+    }
+
     bool Compiler::tryCompileCvtsi2ssXmmRM32(XMM dst, const RM32& src) {
         if(src.isReg) {
             // get the src value
@@ -4405,6 +4430,26 @@ namespace x64 {
         readReg128(Reg128::GPR0, dst);
         readReg128(Reg128::GPR1, src);
         generator_->sqrtsd(get(Reg128::GPR0), get(Reg128::GPR1));
+        writeReg128(dst, Reg128::GPR0);
+        return true;
+    }
+
+    bool Compiler::tryCompileCvtsd2ssXmmXmm(XMM dst, XMM src) {
+        readReg128(Reg128::GPR0, dst);
+        readReg128(Reg128::GPR1, src);
+        generator_->cvtsd2ss(get(Reg128::GPR0), get(Reg128::GPR1));
+        return true;
+    }
+
+    bool Compiler::tryCompileCvtsd2ssXmmM64(XMM dst, const M64& src) {
+        // fetch src address
+        if(src.segment != Segment::CS && src.segment != Segment::UNK) return false;
+        if(src.encoding.index == R64::RIP) return false;
+        // get the address
+        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src);
+        readReg128(Reg128::GPR0, dst);
+        generator_->movsd(get(Reg128::GPR1), make64(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
+        generator_->cvtsd2ss(get(Reg128::GPR0), get(Reg128::GPR1));
         writeReg128(dst, Reg128::GPR0);
         return true;
     }

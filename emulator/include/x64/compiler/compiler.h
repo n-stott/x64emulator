@@ -398,6 +398,8 @@ namespace x64 {
         bool tryCompileDivssXmmXmm(XMM, XMM);
         bool tryCompileDivssXmmM32(XMM, const M32&);
         bool tryCompileComissXmmXmm(XMM, XMM);
+        bool tryCompileCvtss2sdXmmXmm(XMM, XMM);
+        bool tryCompileCvtss2sdXmmM32(XMM, const M32&);
         bool tryCompileCvtsi2ssXmmRM32(XMM, const RM32&);
         bool tryCompileCvtsi2ssXmmRM64(XMM, const RM64&);
 
@@ -418,6 +420,8 @@ namespace x64 {
         bool tryCompileMaxsdXmmXmm(XMM, XMM);
         bool tryCompileMinsdXmmXmm(XMM, XMM);
         bool tryCompileSqrtsdXmmXmm(XMM, XMM);
+        bool tryCompileCvtsd2ssXmmXmm(XMM, XMM);
+        bool tryCompileCvtsd2ssXmmM64(XMM, const M64&);
         bool tryCompileCvtsi2sdXmmRM32(XMM, const RM32&);
         bool tryCompileCvtsi2sdXmmRM64(XMM, const RM64&);
         bool tryCompileCvttsd2siR32Xmm(R32, XMM);

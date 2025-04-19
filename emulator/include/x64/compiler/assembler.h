@@ -386,6 +386,7 @@ namespace x64 {
         void mulss(XMM, XMM);
         void divss(XMM, XMM);
         void comiss(XMM, XMM);
+        void cvtss2sd(XMM, XMM);
         void cvtsi2ss(XMM, R32);
         void cvtsi2ss(XMM, R64);
 
@@ -399,6 +400,7 @@ namespace x64 {
         void maxsd(XMM, XMM);
         void minsd(XMM, XMM);
         void sqrtsd(XMM, XMM);
+        void cvtsd2ss(XMM, XMM);
         void cvtsi2sd32(XMM, R32);
         void cvtsi2sd64(XMM, R64);
         void cvttsd2si32(R32, XMM);
