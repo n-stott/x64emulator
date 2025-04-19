@@ -286,7 +286,8 @@ namespace x64 {
             std::string file;
             u64 base;
             u64 end;
-            u64 data;
+            u64 dataStart;
+            u64 dataEnd;
             std::string prot;
         };
         std::vector<DumpInfo> dumpInfos;
@@ -297,6 +298,7 @@ namespace x64 {
                 ptr->base(),
                 ptr->end(),
                 (u64)getPointerToRegion(ptr.get()),
+                (u64)(getPointerToRegion(ptr.get())+ptr->size()),
                 protectionToString(ptr->prot())
             });
         }
@@ -306,7 +308,8 @@ namespace x64 {
 
         fmt::print("Memory regions:\n");
         for(const auto& info : dumpInfos) {
-            fmt::print("    {:>#10x} - {:<#10x} {:#20x} {} {:>20}\n", info.base, info.end, info.data, info.prot, info.file);
+            fmt::print("    {:>#10x} - {:<#10x} {:#20x}-{:#20x} {} {:>20}\n",
+                info.base, info.end, info.dataStart, info.dataEnd, info.prot, info.file);
         }
 
         size_t memoryConsumptionInBytes = 0;
@@ -360,6 +363,11 @@ namespace x64 {
     void Mmu::copyBytes(Ptr8 dst, Ptr8 src, size_t count) {
         u8* dstPtr = getWritePtr(dst.address());
         const u8* srcPtr = getReadPtr(src.address());
+        // incomplete but probably sufficient check that the whole regions exist
+        if(count > 0) {
+            // getWritePtr(dst.address()+count-1);
+            getReadPtr(src.address()+count-1);
+        }
         ::memmove(dstPtr, srcPtr, count);
     }
 
