@@ -13,6 +13,7 @@ namespace x64 {
         bool sign { false };
         bool overflow { false };
         bool direction { false };
+        bool identification { true };
 
         bool matches(Cond condition) const;
 
@@ -36,6 +37,7 @@ namespace x64 {
         static constexpr u64 ZERO_MASK = 0x40;
         static constexpr u64 SIGN_MASK = 0x80;
         static constexpr u64 OVERFLOW_MASK = 0x800;
+        static constexpr u64 IDENTIFICATION_MASK = 0x200000;
 
         static Flags fromRflags(u64 rflags) {
             Flags flags;
@@ -44,6 +46,7 @@ namespace x64 {
             flags.zero = rflags & ZERO_MASK;
             flags.sign = rflags & SIGN_MASK;
             flags.overflow = rflags & OVERFLOW_MASK;
+            flags.identification = rflags & IDENTIFICATION_MASK;
             return flags;
         }
 
@@ -54,6 +57,7 @@ namespace x64 {
             rflags |= (zero ? ZERO_MASK : 0);
             rflags |= (sign ? SIGN_MASK : 0);
             rflags |= (overflow ? OVERFLOW_MASK : 0);
+            rflags |= (identification ? IDENTIFICATION_MASK : 0);
             return rflags;
         }
 
