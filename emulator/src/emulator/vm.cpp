@@ -36,7 +36,7 @@ namespace emulator {
         fmt::print("  ret  exits: {} ({} distinct)\n", jitExitRet_, distinctJitExitRet_.size());
         fmt::print("  jmp  exits: {} ({} distinct)\n", jitExitJmpRM64_, distinctJitExitCallRM64_.size());
         fmt::print("  call exits: {} ({} distinct)\n", jitExitCallRM64_, distinctJitExitJmpRM64_.size());
-        return;
+        // return;
         std::vector<BasicBlock*> blocks;
         std::vector<BasicBlock*> jittedBlocks;
         blocks.reserve(basicBlocks_.size());
@@ -72,7 +72,9 @@ namespace emulator {
         const size_t topCount = 20;
         if(jittedBlocks.size() >= topCount) jittedBlocks.resize(topCount);
         for(auto* bb : jittedBlocks) {
-            fmt::print("  Calls: {}. Jitted: {}. Size: {}\n", bb->calls(), !!bb->nativeBasicBlock(), bb->basicBlock().instructions.size());
+            const auto* region = ((const x64::Mmu&)mmu_).findAddress(bb->start());
+            fmt::print("  Calls: {}. Jitted: {}. Size: {}. Source: {}\n",
+                bb->calls(), !!bb->nativeBasicBlock(), bb->basicBlock().instructions.size(), region->name());
             for(const auto& ins : bb->basicBlock().instructions) {
                 fmt::print("      {:#12x} {}\n", ins.first.address(), ins.first.toString());
             }
@@ -83,15 +85,17 @@ namespace emulator {
                 fmt::print("      {}\n", ins.toString());
             }
         }
-        return;
+        // return;
         if(blocks.size() >= topCount) blocks.resize(topCount);
         for(auto* bb : blocks) {
-            fmt::print("  Calls: {}. Jitted: {}. Size: {}\n", bb->calls(), !!bb->nativeBasicBlock(), bb->basicBlock().instructions.size());
+            const auto* region = ((const x64::Mmu&)mmu_).findAddress(bb->start());
+            fmt::print("  Calls: {}. Jitted: {}. Size: {}. Source: {}\n",
+                bb->calls(), !!bb->nativeBasicBlock(), bb->basicBlock().instructions.size(), region->name());
             for(const auto& ins : bb->basicBlock().instructions) {
                 fmt::print("      {:#12x} {}\n", ins.first.address(), ins.first.toString());
             }
-            fmt::print("{} calls ", bb->calls());
-            [[maybe_unused]] auto jitBasicBlock = x64::Compiler::tryCompile(bb->basicBlock(), 1, {}, true);
+            // fmt::print("{} calls ", bb->calls());
+            // [[maybe_unused]] auto jitBasicBlock = x64::Compiler::tryCompile(bb->basicBlock(), 1, {}, true);
         }
 #endif
     }
