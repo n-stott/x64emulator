@@ -4678,6 +4678,7 @@ namespace x64 {
     }
 
     void Assembler::subpd(XMM dst, XMM src) {
+        write8(0x66);
         if((u8)dst >= 8 || (u8)src >= 8) {
             write8((u8)(0x40 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src >= 8) ? 1 : 0) ));
         }
