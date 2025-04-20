@@ -230,8 +230,8 @@ namespace kernel {
             if(!!subdir) {
                 dir = subdir;
                 continue;
-            } else if(followSymlink == FollowSymlink::YES) {
-                // maybe we have a symlink
+            } else {
+                // maybe we have an intermediate symlink
                 File* file = dir->tryGetEntry(component);
                 if(!!file && file->isSymlink()) {
                     auto* target = resolveSymlink(*static_cast<const Symlink*>(file));
@@ -244,6 +244,9 @@ namespace kernel {
             return nullptr;
         }
         File* file = dir->tryGetEntry(path.last());
+        if(!!file && file->isSymlink() && followSymlink == FollowSymlink::YES) {
+            return resolveSymlink(*static_cast<const Symlink*>(file));
+        }
         return file;
     }
 
@@ -441,7 +444,7 @@ namespace kernel {
         auto absolutePathname = toAbsolutePathname(pathname);
         auto path = Path::tryCreate(absolutePathname);
         verify(!!path, "Unable to create path");
-        File* file = tryGetFile(*path, FollowSymlink::YES);
+        File* file = tryGetFile(*path, FollowSymlink::NO);
         if(!!file) {
             if(!file->isSymlink()) return ErrnoOrBuffer(-EINVAL);
             Symlink* symlink = static_cast<Symlink*>(file);
@@ -589,7 +592,8 @@ namespace kernel {
             // If pathname begins with a slash, then it is an absolute pathname that identifies the target file. In this case, dirfd is ignored.
             auto path = Path::tryCreate(pathname);
             verify(!!path, "Unable to create path");
-            File* file = tryGetFile(*path, FollowSymlink::YES);
+            FollowSymlink followSymlink = Host::Fstatat::isSymlinkNofollow(flags) ? FollowSymlink::YES : FollowSymlink::NO;
+            File* file = tryGetFile(*path, followSymlink);
             if(!!file) {
                 return file->statx(mask);    
             } else {
