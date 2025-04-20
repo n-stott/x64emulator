@@ -91,6 +91,7 @@ namespace kernel {
             case 0x32: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::listen, regs));
             case 0x33: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::getsockname, regs));
             case 0x34: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::getpeername, regs));
+            case 0x35: return threadRegs.set(x64::R64::RAX, invoke_syscall_4(&Sys::socketpair, regs));
             case 0x36: return threadRegs.set(x64::R64::RAX, invoke_syscall_5(&Sys::setsockopt, regs));
             case 0x37: return threadRegs.set(x64::R64::RAX, invoke_syscall_5(&Sys::getsockopt, regs));
             case 0x38: return threadRegs.set(x64::R64::RAX, invoke_syscall_5(&Sys::clone, regs));
@@ -732,6 +733,16 @@ namespace kernel {
             mmu_.write32(addrlen, (u32)buffer.size());
             return 0;
         });
+    }
+
+    int Sys::socketpair(int domain, int type, int protocol, x64::Ptr32 sv) {
+        if(logSyscalls_) {
+            std::vector<int> svs = mmu_.readFromMmu<int>(x64::Ptr8{sv.address()}, 2);
+            print("Sys::socketpair(domain={}, type={}, protocol={}, sv=[{},{}]) = {}\n",
+                domain, type, protocol, svs[0], svs[1], -ENOTSUP);
+        }
+        warn(fmt::format("socketpair not implemented"));
+        return -ENOTSUP;
     }
 
     int Sys::setsockopt(int sockfd, int level, int optname, x64::Ptr optval, socklen_t optlen) {

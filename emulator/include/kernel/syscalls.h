@@ -207,6 +207,8 @@ namespace kernel {
         int getsockname(int sockfd, x64::Ptr addr, x64::Ptr32 addrlen);
         // 0x34
         int getpeername(int sockfd, x64::Ptr addr, x64::Ptr32 addrlen);
+        // 0x35
+        int socketpair(int domain, int type, int protocol, x64::Ptr32 sv);
         // 0x36
         int setsockopt(int sockfd, int level, int optname, x64::Ptr optval, socklen_t optlen);
         // 0x37
