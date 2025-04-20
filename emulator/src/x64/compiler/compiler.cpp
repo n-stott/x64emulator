@@ -674,6 +674,7 @@ namespace x64 {
     std::optional<ir::IR> Compiler::prepareExit(u32 nbInstructionsInBlock, u64 basicBlockPtr) {
         Compiler compiler;
         compiler.addTime(nbInstructionsInBlock);
+        compiler.incrementCalls();
         compiler.writeBasicBlockPtr(basicBlockPtr);
         return compiler.generator_->generateIR();
     }
@@ -5075,6 +5076,22 @@ namespace x64 {
         M64 a = make64(get(Reg::GPR0), (i32)amount);
         generator_->lea(get(Reg::GPR0), a);
         generator_->mov(ticks, get(Reg::GPR0));
+    }
+
+    void Compiler::incrementCalls() {
+        constexpr size_t BBPTR_OFFSET = offsetof(NativeArguments, basicBlockPtr);
+        static_assert(BBPTR_OFFSET == 0x40);
+        M64 bbPtrPtr = make64(R64::RDI, BBPTR_OFFSET);
+        generator_->mov(get(Reg::GPR0), bbPtrPtr);
+        M64 bbPtr = make64(get(Reg::GPR0), 0);
+        generator_->mov(get(Reg::GPR0), bbPtr);
+        M64 callsPtr = make64(get(Reg::GPR0), CALLS_OFFSET);
+        // read the calls
+        generator_->mov(get(Reg::GPR1), callsPtr);
+        // increment
+        generator_->lea(get(Reg::GPR1), make64(get(Reg::GPR1), 1));
+        // write back
+        generator_->mov(callsPtr, get(Reg::GPR1));
     }
 
     void Compiler::readFsBase(Reg dst) {

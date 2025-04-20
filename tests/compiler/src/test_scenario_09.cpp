@@ -54,7 +54,9 @@ int main(int argc, char**) {
     fmt::print("XMM4={:x} {:x}\n", cpu.get(XMM::XMM4).hi, cpu.get(XMM::XMM4).lo);
 
     u64 ticks { 0 };
-    u64 basicBlockPtr { 0 };
+    std::array<u64, 0x100> basicBlockData;
+    std::fill(basicBlockData.begin(), basicBlockData.end(), 0);
+    void* basicBlockPtr = &basicBlockData;
 
     if(argc != 1) {
         cpu.exec(bb);

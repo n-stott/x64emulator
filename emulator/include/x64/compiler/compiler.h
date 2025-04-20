@@ -555,6 +555,7 @@ namespace x64 {
         void writeMem128(const Mem& address, Reg128 src);
 
         void addTime(u32 amount);
+        void incrementCalls();
         void readFsBase(Reg dst);
         void writeBasicBlockPtr(u64 basicBlockPtr);
 

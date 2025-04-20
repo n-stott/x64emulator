@@ -28,6 +28,10 @@ namespace x64 {
     // OF emulator::BasicBlock CHANGES AS WELL
     static constexpr size_t NATIVE_BLOCK_OFFSET = 0xa0;
 
+    // DO NOT CHANGE THIS VALUE UNLESS THE LAYOUT
+    // OF emulator::BasicBlock CHANGES AS WELL
+    static constexpr size_t CALLS_OFFSET = 0xb8;
+
     // DO NOT MODIFY THIS STRUCT
     // WITHOUT CHANGING THE JIT AS WELL !!
     struct NativeArguments {

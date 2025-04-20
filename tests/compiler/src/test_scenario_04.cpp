@@ -52,7 +52,9 @@ int main(int argc, char**) {
     cpu.push64(cpu.get(R64::RBX));
 
     u64 ticks { 0 };
-    u64 basicBlockPtr { 0 };
+    std::array<u64, 0x100> basicBlockData;
+    std::fill(basicBlockData.begin(), basicBlockData.end(), 0);
+    void* basicBlockPtr = &basicBlockData;
 
     if(argc != 1) {
         cpu.exec(bb);
