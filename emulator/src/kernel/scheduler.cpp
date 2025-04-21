@@ -1,5 +1,6 @@
 #include "kernel/kernel.h"
 #include "kernel/scheduler.h"
+#include "kernel/syscalls.h"
 #include "kernel/thread.h"
 #include "emulator/symbolprovider.h"
 #include "emulator/vm.h"

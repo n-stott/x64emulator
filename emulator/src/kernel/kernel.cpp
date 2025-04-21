@@ -1,7 +1,12 @@
 #include "kernel/kernel.h"
+#include "kernel/fs/fs.h"
+#include "kernel/scheduler.h"
+#include "kernel/syscalls.h"
+#include "kernel/timers.h"
 #include "kernel/auxiliaryvector.h"
 #include "kernel/thread.h"
 #include "host/host.h"
+#include "x64/mmu.h"
 #include "verify.h"
 #include "emulator/vm.h"
 #include "elf-reader/elf-reader.h"
@@ -9,6 +14,39 @@
 #include <variant>
 
 namespace kernel {
+
+    Kernel::Kernel(x64::Mmu& mmu) : mmu_(mmu) {
+        fs_ = std::make_unique<FS>();
+        scheduler_ = std::make_unique<Scheduler>(mmu_, *this);
+        sys_ = std::make_unique<Sys>(*this, mmu_);
+        timers_ = std::make_unique<Timers>();
+    }
+
+    Kernel::~Kernel() = default;
+
+    void Kernel::setLogSyscalls(bool logSyscalls) {
+        assert(!!sys_);
+        sys_->setLogSyscalls(logSyscalls);
+    }
+
+    void Kernel::setProfiling(bool isProfiling) {
+        isProfiling_ = isProfiling;
+    }
+
+    void Kernel::setEnableJit(bool enableJit) {
+        assert(!!scheduler_);
+        scheduler_->setEnableJit(enableJit);
+    }
+
+    void Kernel::setEnableJitChaining(bool enableJitChaining) {
+        assert(!!scheduler_);
+        scheduler_->setEnableJitChaining(enableJitChaining);
+    }
+
+    void Kernel::setOptimizationLevel(int level) {
+        assert(!!scheduler_);
+        scheduler_->setOptimizationLevel(level);
+    }
 
     struct Auxiliary {
         u64 elfOffset;
@@ -245,32 +283,32 @@ namespace kernel {
 
         u64 stackTop = setupMemory(&mmu_, &aux);
 
-        std::unique_ptr<Thread> mainThread = scheduler_.allocateThread(Host::getpid());
+        std::unique_ptr<Thread> mainThread = scheduler_->allocateThread(Host::getpid());
         Thread::SavedCpuState& cpuState = mainThread->savedCpuState();
         cpuState.regs.rip() = entrypoint;
         cpuState.regs.rsp() = (stackTop & 0xFFFFFFFFFFFFFF00); // stack needs to be 16-byte aligned
         Thread* mainThreadPtr = mainThread.get();
-        scheduler_.addThread(std::move(mainThread));
+        scheduler_->addThread(std::move(mainThread));
 
         vm.contextSwitch(mainThreadPtr);
         pushProgramArguments(&mmu_, &vm, programFilePath, arguments, environmentVariables, aux);
         vm.contextSwitch(nullptr);
 
         // Setup procFS for this process
-        fs_.resetProcFS(Host::getpid(), programFilePath);
+        fs_->resetProcFS(Host::getpid(), programFilePath);
 
         return mainThreadPtr;
     }
 
     void Kernel::panic() {
         hasPanicked_ = true;
-        scheduler_.panic();
+        scheduler_->panic();
     }
 
     void Kernel::dumpPanicInfo() const {
-        scheduler_.dumpThreadSummary();
-        scheduler_.dumpBlockerSummary();
+        scheduler_->dumpThreadSummary();
+        scheduler_->dumpBlockerSummary();
         mmu_.dumpRegions();
-        fs_.dumpSummary();
+        fs_->dumpSummary();
     }
 }

@@ -1,6 +1,8 @@
 #include "emulator/emulator.h"
 #include "kernel/kernel.h"
+#include "kernel/scheduler.h"
 #include "kernel/thread.h"
+#include "x64/mmu.h"
 #include "verify.h"
 #include "profilingdata.h"
 #include <fmt/core.h>
