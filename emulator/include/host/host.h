@@ -191,6 +191,26 @@ namespace kernel {
             static bool isSymlinkNofollow(int flags);
         };
 
+        struct ShmGet {
+            static bool isIpcPrivate(key_t key);
+
+            static int getModePermissions(int shmflg);
+            static bool isIpcCreate(int shmflg);
+            static bool isIpcExcl(int shmflg);
+        };
+
+        struct ShmAt {
+            static bool isReadOnly(int shmflg);
+            static bool isExecute(int shmflg);
+            static bool isRemap(int shmflg);
+        };
+
+        struct ShmCtl {
+            static bool isStat(int cmd);
+            static bool isSet(int cmd);
+            static bool isRmid(int cmd);
+        };
+
         static FD cwdfd();
 
         static size_t iovecRequiredBufferSize();

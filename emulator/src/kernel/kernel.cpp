@@ -1,5 +1,6 @@
 #include "kernel/kernel.h"
 #include "kernel/fs/fs.h"
+#include "kernel/shm/sharedmemory.h"
 #include "kernel/scheduler.h"
 #include "kernel/syscalls.h"
 #include "kernel/timers.h"
@@ -17,6 +18,7 @@ namespace kernel {
 
     Kernel::Kernel(x64::Mmu& mmu) : mmu_(mmu) {
         fs_ = std::make_unique<FS>();
+        shm_ = std::make_unique<SharedMemory>(mmu_);
         scheduler_ = std::make_unique<Scheduler>(mmu_, *this);
         sys_ = std::make_unique<Sys>(*this, mmu_);
         timers_ = std::make_unique<Timers>();

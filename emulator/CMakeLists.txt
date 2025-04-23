@@ -80,6 +80,8 @@ add_library(x64emulator STATIC
     src/kernel/fs/shadowsymlink.cpp
     src/kernel/fs/socket.cpp
     src/kernel/fs/symlink.cpp
+    src/kernel/shm/sharedmemory.cpp
+    src/kernel/shm/sharedmemorysegment.cpp
     src/kernel/kernel.cpp
     src/kernel/scheduler.cpp
     src/kernel/syscalls.cpp

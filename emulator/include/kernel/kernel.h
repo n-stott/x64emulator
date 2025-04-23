@@ -15,6 +15,7 @@ namespace kernel {
     class Thread;
     class FS;
     class Scheduler;
+    class SharedMemory;
     class Sys;
     class Timers;
 
@@ -45,6 +46,10 @@ namespace kernel {
             assert(!!fs_);
             return *fs_;
         }
+        SharedMemory& shm() {
+            assert(!!shm_);
+            return *shm_;
+        }
         Scheduler& scheduler() {
             assert(!!scheduler_);
             return *scheduler_;
@@ -65,6 +70,7 @@ namespace kernel {
     private:
         x64::Mmu& mmu_;
         std::unique_ptr<FS> fs_;
+        std::unique_ptr<SharedMemory> shm_;
         std::unique_ptr<Scheduler> scheduler_;
         std::unique_ptr<Sys> sys_;
         std::unique_ptr<Timers> timers_;

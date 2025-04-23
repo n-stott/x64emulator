@@ -1,4 +1,5 @@
 #include "kernel/fs/fs.h"
+#include "kernel/shm/sharedmemory.h"
 #include "kernel/kernel.h"
 #include "kernel/syscalls.h"
 #include "kernel/scheduler.h"
@@ -98,6 +99,7 @@ namespace kernel {
             case 0x3c: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::exit, regs));
             case 0x3e: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::kill, regs));
             case 0x3f: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::uname, regs));
+            case 0x43: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::shmdt, regs));
             case 0x48: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::fcntl, regs));
             case 0x49: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::flock, regs));
             case 0x4a: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::fsync, regs));
@@ -644,6 +646,26 @@ namespace kernel {
 
     int Sys::shmget(key_t key, size_t size, int shmflg) {
         int ret = -ENOTSUP;
+        if(kernel_.isShmEnabled()) {
+            bool isIpcPrivate = Host::ShmGet::isIpcPrivate(key);
+            int mode = Host::ShmGet::getModePermissions(shmflg);
+            bool isIpcCreate = Host::ShmGet::isIpcCreate(shmflg);
+            bool isIpcExcl = Host::ShmGet::isIpcExcl(shmflg);
+
+            BitFlags<SharedMemory::GetFlags> flags;
+            if(isIpcCreate) flags.add(SharedMemory::GetFlags::CREATE);
+            if(isIpcExcl) flags.add(SharedMemory::GetFlags::EXCL);
+
+            auto errnoOrId = kernel_.shm().get(
+                isIpcPrivate ? SharedMemory::IPC_PRIVATE : SharedMemory::Key{key},
+                size,
+                mode,
+                flags);
+
+            ret = errnoOrId.errorOrWith<int>([&](const SharedMemory::Id& id) {
+                return id.value;
+            });
+        }
         if(kernel_.logSyscalls()) {
             print("Sys::shmget(key={}, size={:#x}, shmflg={:#x}) = {}\n", key, size, shmflg, ret);
         }
@@ -652,6 +674,16 @@ namespace kernel {
 
     x64::Ptr Sys::shmat(int shmid, x64::Ptr shmaddr, int shmflg) {
         u64 ret = (u64)-ENOTSUP;
+        if(kernel_.isShmEnabled()) {
+            BitFlags<SharedMemory::AtFlags> flags;
+            if(Host::ShmAt::isReadOnly(shmflg)) flags.add(SharedMemory::AtFlags::READ_ONLY);
+            if(Host::ShmAt::isExecute(shmflg)) flags.add(SharedMemory::AtFlags::EXEC);
+            if(Host::ShmAt::isRemap(shmflg)) flags.add(SharedMemory::AtFlags::REMAP);
+            auto errnoOrAddr = kernel_.shm().attach(SharedMemory::Id{shmid}, shmaddr.address(), flags);
+            ret = errnoOrAddr.errorOrWith<u64>([&](u64 addr) {
+                return addr;
+            });
+        }
         if(kernel_.logSyscalls()) {
             print("Sys::shmat(shmid={}, shmaddr={:#x}, shmflg={:#x}) = {}\n", shmid, shmaddr.address(), shmflg, ret);
         }
@@ -660,6 +692,11 @@ namespace kernel {
 
     int Sys::shmctl(int shmid, int cmd, x64::Ptr buf) {
         int ret = -ENOTSUP;
+        if(kernel_.isShmEnabled()) {
+            if(Host::ShmCtl::isRmid(cmd)) {
+                ret = kernel_.shm().rmid(SharedMemory::Id{shmid});
+            }
+        }
         if(kernel_.logSyscalls()) {
             print("Sys::shmctl(shmid={}, cmd={:#x}, buf={:#x}) = {}\n", shmid, cmd, buf.address(), ret);
         }
@@ -855,6 +892,15 @@ namespace kernel {
             mmu_.copyToMmu(buf, buffer.data(), buffer.size());
             return 0;
         });
+    }
+
+    int Sys::shmdt(x64::Ptr shmaddr) {
+        if(!kernel_.isShmEnabled()) return -ENOTSUP;
+        int ret = kernel_.shm().detach(shmaddr.address());
+        if(kernel_.logSyscalls()) {
+            print("Sys::shmdt({:#x}) = {}\n", shmaddr.address(), ret);
+        }
+        return ret;
     }
 
     int Sys::fcntl(int fd, int cmd, int arg) {

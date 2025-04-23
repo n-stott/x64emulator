@@ -17,6 +17,7 @@
 #include <sys/resource.h>
 #include <sys/time.h>
 #include <sys/types.h>
+#include <sys/shm.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/sysinfo.h>
@@ -308,6 +309,46 @@ namespace kernel {
 
     bool Host::Fstatat::isSymlinkNofollow(int flags) {
         return flags & AT_SYMLINK_NOFOLLOW;
+    }
+
+    bool Host::ShmGet::isIpcPrivate(key_t key) {
+        return key == IPC_PRIVATE;
+    }
+
+    int Host::ShmGet::getModePermissions(int shmflg) {
+        return shmflg & 0777;
+    }
+
+    bool Host::ShmGet::isIpcCreate(int shmflg) {
+        return shmflg & IPC_CREAT;
+    }
+
+    bool Host::ShmGet::isIpcExcl(int shmflg) {
+        return shmflg & IPC_EXCL;
+    }
+
+    bool Host::ShmAt::isReadOnly(int shmflg) {
+        return shmflg & SHM_RDONLY;
+    }
+
+    bool Host::ShmAt::isExecute(int shmflg) {
+        return shmflg & SHM_EXEC;
+    }
+
+    bool Host::ShmAt::isRemap(int shmflg) {
+        return shmflg & SHM_REMAP;
+    }
+
+    bool Host::ShmCtl::isStat(int cmd) {
+        return cmd == IPC_STAT;
+    }
+
+    bool Host::ShmCtl::isSet(int cmd) {
+        return cmd == IPC_SET;
+    }
+
+    bool Host::ShmCtl::isRmid(int cmd) {
+        return cmd == IPC_RMID;
     }
 
     Host::FD Host::cwdfd() {

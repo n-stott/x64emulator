@@ -219,6 +219,8 @@ namespace kernel {
         int kill(pid_t pid, int sig);
         // 0x3f
         int uname(x64::Ptr buf);
+        // 0x43
+        int shmdt(x64::Ptr shmaddr);
         // 0x48
         int fcntl(int fd, int cmd, int arg);
         // 0x49
