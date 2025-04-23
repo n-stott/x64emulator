@@ -20,18 +20,6 @@ namespace kernel {
     Scheduler::Scheduler(x64::Mmu& mmu, Kernel& kernel) : mmu_(mmu), kernel_(kernel) { }
     Scheduler::~Scheduler() = default;
 
-    void Scheduler::setEnableJit(bool enableJit) {
-        enableJit_ = enableJit;
-    }
-
-    void Scheduler::setEnableJitChaining(bool enableJitChaining) {
-        enableJitChaining_ = enableJitChaining;
-    }
-
-    void Scheduler::setOptimizationLevel(int level) {
-        optimizationLevel_ = level;
-    }
-
     void Scheduler::syncThreadTimeSlice(Thread* thread, std::unique_lock<std::mutex>* lockPtr) {
         verify(!!thread);
         if(!!lockPtr) {
@@ -152,13 +140,13 @@ namespace kernel {
     void Scheduler::run() {
 #ifdef MULTIPROCESSING
         std::vector<std::thread> workerThreads;
-        workerThreads.emplace_back(std::bind(&Scheduler::runOnWorkerThread, this, Worker{0, enableJit_, enableJitChaining_, optimizationLevel_}));
-        workerThreads.emplace_back(std::bind(&Scheduler::runOnWorkerThread, this, Worker{1, enableJit_, enableJitChaining_, optimizationLevel_}));
+        workerThreads.emplace_back(std::bind(&Scheduler::runOnWorkerThread, this, Worker{0, kernel_.isJitEnabled(), kernel_.isJitChainingEnabled(), kernel_.optimizationLevel()}));
+        workerThreads.emplace_back(std::bind(&Scheduler::runOnWorkerThread, this, Worker{1, kernel_.isJitEnabled(), kernel_.isJitChainingEnabled(), kernel_.optimizationLevel()}));
         for(std::thread& workerThread : workerThreads) {
             workerThread.join();
         }
 #else
-        runOnWorkerThread(Worker{0, enableJit_, enableJitChaining_, optimizationLevel_});
+        runOnWorkerThread(Worker{0, kernel_.isJitEnabled(), kernel_.isJitChainingEnabled(), kernel_.optimizationLevel()});
 #endif
     }
 

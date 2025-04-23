@@ -25,8 +25,7 @@ namespace kernel {
     Kernel::~Kernel() = default;
 
     void Kernel::setLogSyscalls(bool logSyscalls) {
-        assert(!!sys_);
-        sys_->setLogSyscalls(logSyscalls);
+        logSyscalls_ = logSyscalls;
     }
 
     void Kernel::setProfiling(bool isProfiling) {
@@ -34,18 +33,19 @@ namespace kernel {
     }
 
     void Kernel::setEnableJit(bool enableJit) {
-        assert(!!scheduler_);
-        scheduler_->setEnableJit(enableJit);
+        enableJit_ = enableJit;
     }
 
     void Kernel::setEnableJitChaining(bool enableJitChaining) {
-        assert(!!scheduler_);
-        scheduler_->setEnableJitChaining(enableJitChaining);
+        enableJitChaining_ = enableJitChaining;
     }
 
     void Kernel::setOptimizationLevel(int level) {
-        assert(!!scheduler_);
-        scheduler_->setOptimizationLevel(level);
+        optimizationLevel_ = level;
+    }
+
+    void Kernel::setEnableShm(bool enableShm) {
+        enableShm_ = enableShm;
     }
 
     struct Auxiliary {

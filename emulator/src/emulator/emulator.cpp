@@ -39,6 +39,10 @@ namespace emulator {
         optimizationLevel_ = level;
     }
 
+    void Emulator::setEnableShm(bool enableShm) {
+        enableShm_ = enableShm;
+    }
+
     bool Emulator::run(const std::string& programFilePath, const std::vector<std::string>& arguments, const std::vector<std::string>& environmentVariables) const {
         x64::Mmu mmu;
         kernel::Kernel kernel(mmu);
@@ -48,6 +52,7 @@ namespace emulator {
         kernel.setEnableJit(enableJit_);
         kernel.setEnableJitChaining(enableJitChaining_);
         kernel.setOptimizationLevel(optimizationLevel_);
+        kernel.setEnableShm(enableShm_);
 
         bool ok = true;
         

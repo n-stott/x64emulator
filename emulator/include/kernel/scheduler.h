@@ -35,10 +35,6 @@ namespace kernel {
         explicit Scheduler(x64::Mmu& mmu, Kernel& kernel);
         ~Scheduler();
 
-        void setEnableJit(bool enableJit);
-        void setEnableJitChaining(bool enableJitChaining);
-        void setOptimizationLevel(int level);
-
         void run();
 
         std::unique_ptr<Thread> allocateThread(int pid);
@@ -126,10 +122,6 @@ namespace kernel {
 
         x64::Mmu& mmu_;
         Kernel& kernel_;
-
-        bool enableJit_ { false };
-        bool enableJitChaining_ { false };
-        int optimizationLevel_ { 0 };
 
         // Any operation of the member variables below MUST be protected
         // by taking a lock on this mutex.

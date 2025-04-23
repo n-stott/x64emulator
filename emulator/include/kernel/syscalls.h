@@ -25,8 +25,6 @@ namespace kernel {
     public:
         Sys(Kernel& kernel, x64::Mmu& mmu);
 
-        void setLogSyscalls(bool logSyscalls) { logSyscalls_ = logSyscalls; }
-
         void syscall(Thread* thread);
 
     private:
@@ -399,7 +397,6 @@ namespace kernel {
         x64::Mmu& mmu_;
         std::mutex mutex_;
         Thread* currentThread_ { nullptr };
-        bool logSyscalls_ { false };
     };
 
 }

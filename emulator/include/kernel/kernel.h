@@ -27,13 +27,19 @@ namespace kernel {
                      const std::vector<std::string>& arguments,
                      const std::vector<std::string>& environmentVariables);
 
-        void setLogSyscalls(bool logSyscalls);
         void setProfiling(bool isProfiling);
+        void setLogSyscalls(bool logSyscalls);
         void setEnableJit(bool enableJit);
         void setEnableJitChaining(bool enableJitChaining);
         void setOptimizationLevel(int level);
+        void setEnableShm(bool enableShm);
 
         bool isProfiling() const { return isProfiling_; }
+        bool logSyscalls() const { return logSyscalls_; }
+        bool isJitEnabled() const { return enableJit_; }
+        bool isJitChainingEnabled() const { return enableJitChaining_; }
+        int optimizationLevel() const { return optimizationLevel_; }
+        bool isShmEnabled() const { return enableShm_; }
 
         FS& fs() {
             assert(!!fs_);
@@ -62,8 +68,14 @@ namespace kernel {
         std::unique_ptr<Scheduler> scheduler_;
         std::unique_ptr<Sys> sys_;
         std::unique_ptr<Timers> timers_;
-        bool isProfiling_ { false };
         bool hasPanicked_ { false };
+
+        bool logSyscalls_ { false };
+        bool isProfiling_ { false };
+        bool enableJit_ { false };
+        bool enableJitChaining_ { false };
+        int optimizationLevel_ { 0 };
+        bool enableShm_ { false };
 
     };
 
