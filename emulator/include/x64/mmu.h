@@ -300,7 +300,6 @@ namespace x64 {
         std::unique_ptr<Region> takeRegion(const char* name);
 
         void split(u64 address);
-        void tryMergeRegions();
 
         u8* getPointerToRegion(Region*);
         const u8* getPointerToRegion(const Region*) const;

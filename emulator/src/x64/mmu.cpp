@@ -108,7 +108,6 @@ namespace x64 {
         } else {
             addRegion(std::move(region));
         }
-        tryMergeRegions();
         return baseAddress;
     }
 
@@ -128,7 +127,6 @@ namespace x64 {
             [[maybe_unused]] auto regionLeftToDie = takeRegion(regionPtr->base(), regionPtr->size());
             for(auto* callback : callbacks_) callback->on_munmap(regionPtr->base(), regionPtr->size(), regionPtr->prot());
         }
-        tryMergeRegions();
         return 0;
     }
 
@@ -155,7 +153,6 @@ namespace x64 {
             applyRegionProtection(regionPtr.get(), regionPtr->prot());
             for(auto* callback : callbacks_) callback->on_mprotect(regionPtr->base(), regionPtr->size(), previousProt, prot);
         }
-        tryMergeRegions();
         return 0;
     }
 
@@ -444,28 +441,6 @@ namespace x64 {
         u64 newBrk = heap->end();
         addRegion(std::move(heap));
         return newBrk;
-    }
-
-    void Mmu::tryMergeRegions() {
-        checkRegionsAreSorted();
-        size_t regionIndex = 1;
-        while(regionIndex < regions_.size()) {
-            Region* a = regions_[regionIndex-1].get();
-            Region* b = regions_[regionIndex].get();
-            ++regionIndex;
-            verify(!!a);
-            verify(!!b);
-            if(a->end() != b->base()) continue;
-            if(a->prot() != b->prot()) continue;
-            if(a->name() != b->name()) continue;
-            // commit to the merge
-            auto regionA = takeRegion(a->base(), a->size());
-            auto regionB = takeRegion(b->base(), b->size());
-            regionA->append(std::move(regionB));
-            addRegion(std::move(regionA));
-        }
-        regions_.erase(std::remove(regions_.begin(), regions_.end(), nullptr), regions_.end());
-        checkRegionsAreSorted();
     }
 
     u8* Mmu::getPointerToRegion(Region* region) {
