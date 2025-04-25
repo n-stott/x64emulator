@@ -595,7 +595,7 @@ namespace kernel {
             FollowSymlink followSymlink = Host::Fstatat::isSymlinkNofollow(flags) ? FollowSymlink::YES : FollowSymlink::NO;
             File* file = tryGetFile(*path, followSymlink);
             if(!!file) {
-                return file->statx(mask);    
+                return file->statx(mask);
             } else {
                 // if we don't know the file, delegating to the host is probably fine
                 return Host::statx(Host::cwdfd(), pathname, flags, mask);
@@ -605,7 +605,17 @@ namespace kernel {
                 // A relative pathname
                 // If pathname is a string that begins with a character other than a slash and dirfd is AT_FDCWD, then pathname is a relative pathname
                 // that is interpreted relative to the process's current working directory.
-                verify(false, "implement cwd-based relative path lookup in statx");
+                verify(!!cwd());
+                auto path = Path::tryJoin(cwd()->path(), pathname);
+                verify(!!path, "Unable to create path");
+                FollowSymlink followSymlink = Host::Fstatat::isSymlinkNofollow(flags) ? FollowSymlink::YES : FollowSymlink::NO;
+                File* file = tryGetFile(*path, followSymlink);
+                if(!!file) {
+                    return file->statx(mask);
+                } else {
+                    // if we don't know the file, delegating to the host is probably fine
+                    return Host::statx(Host::cwdfd(), pathname, flags, mask);
+                }
             } else {
                 // A directory-relative pathname
                 // If pathname is a string that begins with a character other than a slash and dirfd is a file descriptor that refers to a directory,
@@ -1015,7 +1025,7 @@ namespace kernel {
                 fmt::print("Polling on non-existing open file description for fd={}\n", pollfd.fd);
             });
             File* file = openFileDescription->file();
-            verify(file->isPollable(), fmt::format("Attempting to poll non-pollable file with fd={}", fd.fd));
+            verify(file->isPollable(), [&]() { fmt::print("Attempting to poll non-pollable file with fd={}\n", fd.fd); });
             bool testRead = (pollfd.events & PollEvent::CAN_READ) == PollEvent::CAN_READ;
             bool testWrite = (pollfd.events & PollEvent::CAN_WRITE) == PollEvent::CAN_WRITE;
             if(testRead && file->canRead())   pollfd.revents = pollfd.revents | PollEvent::CAN_READ;
