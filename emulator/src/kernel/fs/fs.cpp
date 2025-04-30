@@ -474,6 +474,8 @@ namespace kernel {
     FS::FD FS::memfd_create(const std::string& name, unsigned int flags) {
         verify(!Host::MemfdFlags::isOther(flags), "Allow (and ignore) cloexec and allow_sealing");
         auto shadowFile = ShadowFile::tryCreate(this, name);
+        if(!shadowFile) return FS::FD{-ENOMEM};
+        shadowFile->setDeleteAfterClose();
         BitFlags<AccessMode> accessMode { AccessMode::READ, AccessMode::WRITE };
         BitFlags<StatusFlags> statusFlags { };
         return insertNode(std::move(shadowFile), accessMode, statusFlags, Host::MemfdFlags::isCloseOnExec(flags));
@@ -678,8 +680,9 @@ namespace kernel {
         file->unref();
         if(file->refCount() == 0) {
             file->close();
-            if(!file->keepAfterClose())
+            if(!file->keepAfterClose() || file->deleteAfterClose()) {
                 unlink(file->path());
+            }
         }
         return 0;
     }
