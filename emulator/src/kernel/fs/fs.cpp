@@ -1010,8 +1010,7 @@ namespace kernel {
             if(testRead && file->canRead())   rfd.revents = rfd.revents | PollEvent::CAN_READ;
             if(testWrite && file->canWrite()) rfd.revents = rfd.revents | PollEvent::CAN_WRITE;
         }
-        warn("pollImmediate, errors not checked");
-        int ret = 0; // TODO check errors
+        int ret = 0;
         BufferAndReturnValue<int> bufferAndRetVal {
             Buffer{std::move(rfds)},
             ret,
