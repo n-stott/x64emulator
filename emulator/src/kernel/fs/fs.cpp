@@ -441,6 +441,7 @@ namespace kernel {
     }
 
     ErrnoOrBuffer FS::readlink(const std::string& pathname, size_t bufferSize) {
+        if(pathname.empty()) return ErrnoOrBuffer(-ENOENT);
         auto absolutePathname = toAbsolutePathname(pathname);
         auto path = Path::tryCreate(absolutePathname);
         verify(!!path, "Unable to create path");
