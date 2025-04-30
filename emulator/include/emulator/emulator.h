@@ -19,6 +19,7 @@ namespace emulator {
         void setEnableJitChaining(bool);
         void setOptimizationLevel(int);
         void setEnableShm(bool);
+        void setNbCores(int nbCores);
 
     private:
         bool logSyscalls_ { false };
@@ -27,6 +28,7 @@ namespace emulator {
         bool enableJitChaining_ { false };
         int optimizationLevel_ { 1 };
         bool enableShm_ { false };
+        int nbCores_ { 1 };
     };
 
 }

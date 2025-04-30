@@ -50,6 +50,10 @@ namespace kernel {
         enableShm_ = enableShm;
     }
 
+    void Kernel::setNbCores(int nbCores) {
+        nbCores_ = nbCores;
+    }
+
     struct Auxiliary {
         u64 elfOffset;
         u64 entrypoint;

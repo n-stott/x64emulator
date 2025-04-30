@@ -140,8 +140,10 @@ namespace kernel {
     void Scheduler::run() {
 #ifdef MULTIPROCESSING
         std::vector<std::thread> workerThreads;
-        workerThreads.emplace_back(std::bind(&Scheduler::runOnWorkerThread, this, Worker{0, kernel_.isJitEnabled(), kernel_.isJitChainingEnabled(), kernel_.optimizationLevel()}));
-        workerThreads.emplace_back(std::bind(&Scheduler::runOnWorkerThread, this, Worker{1, kernel_.isJitEnabled(), kernel_.isJitChainingEnabled(), kernel_.optimizationLevel()}));
+        workerThreads.reserve(kernel_.nbCores());
+        for(int i = 0; i < kernel_.nbCores(); ++i) {
+            workerThreads.emplace_back(std::bind(&Scheduler::runOnWorkerThread, this, Worker{i, kernel_.isJitEnabled(), kernel_.isJitChainingEnabled(), kernel_.optimizationLevel()}));
+        }
         for(std::thread& workerThread : workerThreads) {
             workerThread.join();
         }

@@ -43,6 +43,10 @@ namespace emulator {
         enableShm_ = enableShm;
     }
 
+    void Emulator::setNbCores(int nbCores) {
+        nbCores_ = nbCores;
+    }
+
     bool Emulator::run(const std::string& programFilePath, const std::vector<std::string>& arguments, const std::vector<std::string>& environmentVariables) const {
         x64::Mmu mmu;
         kernel::Kernel kernel(mmu);
@@ -53,6 +57,7 @@ namespace emulator {
         kernel.setEnableJitChaining(enableJitChaining_);
         kernel.setOptimizationLevel(optimizationLevel_);
         kernel.setEnableShm(enableShm_);
+        kernel.setNbCores(nbCores_);
 
         bool ok = true;
         

@@ -55,6 +55,11 @@ int main(int argc, char* argv[], char* envp[]) {
             .implicit_value(true)
             .nargs(0);
 
+    parser.add_argument("-j")
+            .help("Number of cores")
+            .default_value<int>(1)
+            .scan<'i', int>();
+
     parser.add_argument("command")
            .remaining();
 
@@ -92,25 +97,26 @@ int main(int argc, char* argv[], char* envp[]) {
 
     SignalHandler<SIGINT> sigintHandler(&crashHandler);
 
-    emulator::Emulator emulator;
-    emulator.setLogSyscalls(parser["--syscalls"] == true);
-    emulator.setProfiling(parser["--profile"] == true);
-    emulator.setEnableJit(parser["--nojit"] == false);
-    emulator.setEnableJitChaining(parser["--nojitchaining"] == false);
-    if(parser["-O0"] == true) {
-        emulator.setOptimizationLevel(0);
-    }
-    if(parser["-O1"] == true) {
-        emulator.setOptimizationLevel(1);
-    }
-    if(parser["--shm"] == true) {
-        emulator.setEnableShm(true);
-    }
     try {
+        emulator::Emulator emulator;
+        emulator.setLogSyscalls(parser["--syscalls"] == true);
+        emulator.setProfiling(parser["--profile"] == true);
+        emulator.setEnableJit(parser["--nojit"] == false);
+        emulator.setEnableJitChaining(parser["--nojitchaining"] == false);
+        if(parser["-O0"] == true) {
+            emulator.setOptimizationLevel(0);
+        }
+        if(parser["-O1"] == true) {
+            emulator.setOptimizationLevel(1);
+        }
+        if(parser["--shm"] == true) {
+            emulator.setEnableShm(true);
+        }
+        emulator.setNbCores(parser.get<int>("-j"));
         bool ok = emulator.run(programPath, arguments, environmentVariables);
         return !ok;
-    } catch(...) {
-
+    } catch(std::exception& e) {
+        std::cout << e.what() << std::endl;
     }
     return 0;
 }

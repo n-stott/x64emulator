@@ -34,6 +34,7 @@ namespace kernel {
         void setEnableJitChaining(bool enableJitChaining);
         void setOptimizationLevel(int level);
         void setEnableShm(bool enableShm);
+        void setNbCores(int nbCores);
 
         bool isProfiling() const { return isProfiling_; }
         bool logSyscalls() const { return logSyscalls_; }
@@ -41,6 +42,7 @@ namespace kernel {
         bool isJitChainingEnabled() const { return enableJitChaining_; }
         int optimizationLevel() const { return optimizationLevel_; }
         bool isShmEnabled() const { return enableShm_; }
+        int nbCores() const { return nbCores_; }
 
         FS& fs() {
             assert(!!fs_);
@@ -82,6 +84,7 @@ namespace kernel {
         bool enableJitChaining_ { false };
         int optimizationLevel_ { 0 };
         bool enableShm_ { false };
+        int nbCores_ { 1 };
 
     };
 
