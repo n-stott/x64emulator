@@ -649,6 +649,7 @@ namespace emulator {
         endsWithFixedDestinationJump_ = cpuBasicBlock_.endsWithFixedDestinationJump();
         std::fill(fixedDestinationInfo_.next.begin(), fixedDestinationInfo_.next.end(), nullptr);
         std::fill(fixedDestinationInfo_.nextCount.begin(), fixedDestinationInfo_.nextCount.end(), 0);
+        callsForCompilation_ = JIT_THRESHOLD;
     }
 
     u64 BasicBlock::start() const {
@@ -800,11 +801,14 @@ namespace emulator {
     void BasicBlock::onCall(VM& vm) {
         ++calls_;
         if(!vm.jitEnabled()) return;
-        tryCompile(vm, JIT_THRESHOLD);
+        tryCompile(vm, vm.compilationQueue());
     }
 
-    void BasicBlock::tryCompile(VM& vm, u64 callLimit) {
-        if(calls_ < callLimit) return;
+    void BasicBlock::tryCompile(VM& vm, CompilationQueue& queue) {
+        if(calls_ < callsForCompilation_) {
+            callsForCompilation_ /= 2;
+            return;
+        }
         if(!compilationAttempted_) {
             vm.tryCreateJitTrampoline();
             auto jitBasicBlock = x64::Compiler::tryCompile(cpuBasicBlock_, vm.optimizationLevel(), this);
@@ -822,10 +826,10 @@ namespace emulator {
                 }
             }
             compilationAttempted_ = true;
-            if(!!fixedDestinationInfo_.next[0]) fixedDestinationInfo_.next[0]->tryCompile(vm, 0);
-            if(!!fixedDestinationInfo_.next[1]) fixedDestinationInfo_.next[1]->tryCompile(vm, 0);
-            for(size_t i = 0; i < variableDestinationInfo_.table.size; ++i) {
-                ((BasicBlock*)variableDestinationInfo_.table.blocks[i])->tryCompile(vm, 0);
+            if(!!fixedDestinationInfo_.next[0]) queue.push(fixedDestinationInfo_.next[0]);
+            if(!!fixedDestinationInfo_.next[1]) queue.push(fixedDestinationInfo_.next[1]);
+            for(BasicBlock* next : variableDestinationInfo_.next) {
+                queue.push(next);
             }
         }
     }

@@ -27,6 +27,7 @@ namespace x64 {
 namespace emulator {
 
     class VM;
+    class CompilationQueue;
 
     class BasicBlock {
     public:
@@ -46,7 +47,7 @@ namespace emulator {
 
         size_t size() const;
         void onCall(VM&);
-        void tryCompile(VM&, u64 callLimit);
+        void tryCompile(VM&, CompilationQueue&);
         void tryPatch();
 
         u64 calls() const { return calls_; }
@@ -82,6 +83,7 @@ namespace emulator {
         bool compilationAttempted_ { false };
 
         u64 calls_ { 0 };
+        u64 callsForCompilation_ { 0 };
 
         bool endsWithFixedDestinationJump_ { false };
         std::unordered_map<u64, BasicBlock*> successors_;
@@ -111,6 +113,27 @@ namespace emulator {
         static_assert(offsetof(BasicBlock, calls_) == x64::CALLS_OFFSET);
     };
 
+
+    class CompilationQueue {
+    public:
+        void process(VM& vm, BasicBlock* bb) {
+            queue_.clear();
+            queue_.push_back(bb);
+            while(!queue_.empty()) {
+                bb = queue_.front();
+                queue_.pop_front();
+                bb->tryCompile(vm, *this);
+            }
+        }
+
+        void push(BasicBlock* bb) {
+            queue_.push_back(bb);
+        }
+
+    private:
+        std::deque<BasicBlock*> queue_;
+    };
+
     class VM {
     public:
         explicit VM(x64::Cpu& cpu, x64::Mmu& mmu);
@@ -137,6 +160,7 @@ namespace emulator {
         void tryCreateJitTrampoline();
         MemoryBlock tryMakeNative(const u8* code, size_t size);
         void freeNative(MemoryBlock);
+        CompilationQueue& compilationQueue() { return compilationQueue_; }
 
         void tryRetrieveSymbols(const std::vector<u64>& addresses, std::unordered_map<u64, std::string>* addressesToSymbols) const;
 
@@ -231,6 +255,8 @@ namespace emulator {
         bool jitEnabled_ { false };
         bool jitChainingEnabled_ { false };
         int optimizationLevel_ { 0 };
+
+        CompilationQueue compilationQueue_;
     };
 
 }
