@@ -410,6 +410,10 @@ namespace kernel {
         // We need to ask the host for the expected buffer size behind argp.
         auto bufferSize = Host::ioctlRequiredBufferSize(request);
         if(!bufferSize) {
+            if(kernel_.logSyscalls()) {
+                print("Sys::ioctl(fd={}, request={}, argp={:#x}) = {}\n",
+                            fd, Host::ioctlName(request), argp.address(), -EINVAL);
+            }
             warn(fmt::format("Unknown ioctl {:#x}. Returning -EINVAL", request));
             return -EINVAL;
         };
@@ -1628,7 +1632,7 @@ namespace kernel {
             print("Sys::posix_fadvise(fd={}, offset={}, len={}, advise={}) = {}\n",
                                     fd, offset, len, advice, 0);
         }
-        warn(fmt::format("posix_fadvise not implemented - returning bogus 0"));
+        warn(fmt::format("posix_fadvise(advice={}) not implemented - returning bogus 0", advice));
         return 0;
     }
 
