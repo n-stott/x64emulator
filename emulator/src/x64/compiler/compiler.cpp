@@ -19,6 +19,13 @@ namespace x64 {
 
     Compiler::Compiler() {
         generator_ = std::make_unique<ir::IrGenerator>();
+        optimizer_ = std::make_unique<ir::Optimizer>();
+        optimizer_->addPass<ir::DeadCodeElimination>();
+        optimizer_->addPass<ir::ImmediateReadBackElimination>();
+        optimizer_->addPass<ir::DelayedReadBackElimination>();
+        optimizer_->addPass<ir::DuplicateInstructionElimination>();
+        codeGenerator_ = std::make_unique<CodeGenerator>();
+        assembler_ = std::make_unique<Assembler>();
     }
 
     Compiler::~Compiler() = default;
@@ -37,22 +44,17 @@ namespace x64 {
 #endif
         try {
             // Try compiling all non-terminating instructions.
-            auto body = Compiler::basicBlockBody(basicBlock, diagnose);
+            auto body = basicBlockBody(basicBlock, diagnose);
             if(!body) return {};
 
-            ir::Optimizer optimizer;
             if(optimizationLevel >= 1) {
-                optimizer.addPass<ir::DeadCodeElimination>();
-                optimizer.addPass<ir::ImmediateReadBackElimination>();
-                optimizer.addPass<ir::DelayedReadBackElimination>();
-                optimizer.addPass<ir::DuplicateInstructionElimination>();
+                ir::Optimizer::Stats stats;
+                optimizer_->optimize(body.value(), &stats);
             }
-            ir::Optimizer::Stats stats;
-            optimizer.optimize(body.value(), &stats);
 
             // Then, just before the last instruction is where we are sure to still be on the execution path
             // Update everything here (e.g. number of ticks)
-            auto exitPreparation = Compiler::prepareExit((u32)basicBlock.instructions.size(), (u64)basicBlockPtr.value_or(nullptr));
+            auto exitPreparation = prepareExit((u32)basicBlock.instructions.size(), (u64)basicBlockPtr.value_or(nullptr));
             if(!exitPreparation) return {};
 
             // Then, try compiling the last instruction
@@ -73,7 +75,7 @@ namespace x64 {
     std::optional<NativeBasicBlock> Compiler::tryCompile(const BasicBlock& basicBlock, int optimizationLevel, std::optional<void*> basicBlockPtr, bool diagnose) {
         auto wholeIr = tryCompileIR(basicBlock, optimizationLevel, basicBlockPtr, diagnose);
         if(!wholeIr) return {};
-        auto bb = CodeGenerator::tryGenerate(wholeIr.value());
+        auto bb = codeGenerator_->tryGenerate(wholeIr.value());
         
         if(false && !bb) {
             for(size_t i = 0; i < wholeIr->instructions.size(); ++i) {
@@ -110,18 +112,18 @@ namespace x64 {
 
     std::optional<NativeBasicBlock> Compiler::tryCompileJitTrampoline() {
         // Add the entrypoint code for when we are entering jitted code from the emulator
-        auto entryCode = Compiler::jitEntry();
+        auto entryCode = jitEntry();
         if(!entryCode) return {};
 
         // Finally, add the exit code for when we need to return execution to the emulator
-        auto exitCode = Compiler::jitExit();
+        auto exitCode = jitExit();
         if(!exitCode) return {};
 
         ir::IR trampolineIr;
         trampolineIr.add(entryCode.value())
                .add(exitCode.value());
 
-        auto code = CodeGenerator::tryGenerate(trampolineIr);
+        auto code = codeGenerator_->tryGenerate(trampolineIr);
         return code;
     }
 
@@ -222,8 +224,7 @@ namespace x64 {
     }
 
     std::vector<u8> Compiler::compileJumpTo(u64 address) {
-        Compiler compiler;
-        return compiler.jmpCode(address, TmpReg{Reg::GPR0});
+        return jmpCode(address, TmpReg{Reg::GPR0});
     }
 
     bool Compiler::tryCompile(const X64Instruction& ins) {
@@ -652,50 +653,50 @@ namespace x64 {
     }
 
     std::optional<ir::IR> Compiler::jitEntry() {
-        Compiler compiler;
-        compiler.loadArguments(TmpReg{Reg::GPR1});
-        compiler.loadFlagsFromEmulator(TmpReg{Reg::GPR1});
-        compiler.callNativeBasicBlock(TmpReg{Reg::GPR1});
-        return compiler.generator_->generateIR();
+        generator_->clear();
+        loadArguments(TmpReg{Reg::GPR1});
+        loadFlagsFromEmulator(TmpReg{Reg::GPR1});
+        callNativeBasicBlock(TmpReg{Reg::GPR1});
+        return generator_->generateIR();
     }
 
     std::optional<ir::IR> Compiler::basicBlockBody(const BasicBlock& basicBlock, bool diagnose) {
-        Compiler compiler;
+        generator_->clear();
         for(size_t i = 0; i+1 < basicBlock.instructions.size(); ++i) {
             const X64Instruction& ins = basicBlock.instructions[i].first;
-            if(!compiler.tryCompile(ins)) {
+            if(!tryCompile(ins)) {
                 if(diagnose) fmt::print("Compilation of block failed: {} ({}/{})\n", ins.toString(), i, basicBlock.instructions.size());
                 return {};
             }
         }
-        return compiler.generator_->generateIR();
+        return generator_->generateIR();
     }
 
     std::optional<ir::IR> Compiler::prepareExit(u32 nbInstructionsInBlock, u64 basicBlockPtr) {
-        Compiler compiler;
-        compiler.addTime(nbInstructionsInBlock);
-        compiler.incrementCalls();
-        compiler.writeBasicBlockPtr(basicBlockPtr);
-        return compiler.generator_->generateIR();
+        generator_->clear();
+        addTime(nbInstructionsInBlock);
+        incrementCalls();
+        writeBasicBlockPtr(basicBlockPtr);
+        return generator_->generateIR();
     }
 
     std::optional<ir::IR> Compiler::basicBlockExit(const BasicBlock& basicBlock, bool diagnose) {
-        Compiler compiler;
+        generator_->clear();
         const X64Instruction& lastInstruction = basicBlock.instructions.back().first;
-        auto jumps = compiler.tryCompileLastInstruction(lastInstruction);
+        auto jumps = tryCompileLastInstruction(lastInstruction);
         if(!jumps) {
             if(diagnose) fmt::print("Compilation of block failed: {} ({}/{})\n", lastInstruction.toString(), basicBlock.instructions.size(), basicBlock.instructions.size());
             return {};
         }
-        compiler.generator_->ret(); // exit the native code of this basic block
-        return compiler.generator_->generateIR();
+        generator_->ret(); // exit the native code of this basic block
+        return generator_->generateIR();
     }
 
     std::optional<ir::IR> Compiler::jitExit() {
-        Compiler compiler;
-        compiler.storeFlagsToEmulator(TmpReg{Reg::GPR1});
-        compiler.generator_->ret();
-        return compiler.generator_->generateIR();
+        generator_->clear();
+        storeFlagsToEmulator(TmpReg{Reg::GPR1});
+        generator_->ret();
+        return generator_->generateIR();
     }
 
     bool Compiler::tryAdvanceInstructionPointer(u64 nextAddress) {
@@ -5112,11 +5113,11 @@ namespace x64 {
         generator_->mov(bbPtr, get(Reg::GPR0));
     }
 
-    std::vector<u8> Compiler::jmpCode(u64 dst, TmpReg tmp) const {
-        Assembler assembler;
-        assembler.mov(get(tmp.reg), dst);
-        assembler.jump(get(tmp.reg));
-        return assembler.code();
+    std::vector<u8> Compiler::jmpCode(u64 dst, TmpReg tmp) {
+        assembler_->clear();
+        assembler_->mov(get(tmp.reg), dst);
+        assembler_->jump(get(tmp.reg));
+        return assembler_->code();
     }
 
     template<Size size>

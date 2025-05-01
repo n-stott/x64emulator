@@ -8,7 +8,8 @@ void testShufps(XMM dst, XMM src, u8 imm) {
     Assembler assembler;
     assembler.shufps(dst, src, imm);
     std::vector<u8> code = assembler.code();
-    auto disassembly = CapstoneWrapper::disassembleRange(code.data(), code.size(), 0x0);
+    CapstoneWrapper disassembler;
+    auto disassembly = disassembler.disassembleRange(code.data(), code.size(), 0x0);
     verify(disassembly.instructions.size() == 1);
     const auto& ins = disassembly.instructions[0];
     verify(ins.insn() == Insn::SHUFPS_XMM_XMMM128_IMM);

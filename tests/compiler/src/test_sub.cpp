@@ -8,7 +8,8 @@ void testSub32(R32 dst, R32 src) {
     Assembler assembler;
     assembler.sub(dst, src);
     std::vector<u8> code = assembler.code();
-    auto disassembly = CapstoneWrapper::disassembleRange(code.data(), code.size(), 0x0);
+    CapstoneWrapper disassembler;
+    auto disassembly = disassembler.disassembleRange(code.data(), code.size(), 0x0);
     verify(disassembly.instructions.size() == 1);
     const auto& ins = disassembly.instructions[0];
     verify(ins.insn() == Insn::SUB_RM32_RM32);
@@ -24,7 +25,8 @@ void testSub32(R32 dst, i32 imm) {
     Assembler assembler;
     assembler.sub(dst, imm);
     std::vector<u8> code = assembler.code();
-    auto disassembly = CapstoneWrapper::disassembleRange(code.data(), code.size(), 0x0);
+    CapstoneWrapper disassembler;
+    auto disassembly = disassembler.disassembleRange(code.data(), code.size(), 0x0);
     verify(disassembly.instructions.size() == 1);
     const auto& ins = disassembly.instructions[0];
     verify(ins.insn() == Insn::SUB_RM32_IMM);
@@ -86,7 +88,8 @@ void testSub64(R64 dst, R64 src) {
     Assembler assembler;
     assembler.sub(dst, src);
     std::vector<u8> code = assembler.code();
-    auto disassembly = CapstoneWrapper::disassembleRange(code.data(), code.size(), 0x0);
+    CapstoneWrapper disassembler;
+    auto disassembly = disassembler.disassembleRange(code.data(), code.size(), 0x0);
     verify(disassembly.instructions.size() == 1);
     const auto& ins = disassembly.instructions[0];
     verify(ins.insn() == Insn::SUB_RM64_RM64);
@@ -102,7 +105,8 @@ void testSub64(R64 dst, i32 imm) {
     Assembler assembler;
     assembler.sub(dst, imm);
     std::vector<u8> code = assembler.code();
-    auto disassembly = CapstoneWrapper::disassembleRange(code.data(), code.size(), 0x0);
+    CapstoneWrapper disassembler;
+    auto disassembly = disassembler.disassembleRange(code.data(), code.size(), 0x0);
     verify(disassembly.instructions.size() == 1);
     const auto& ins = disassembly.instructions[0];
     verify(ins.insn() == Insn::SUB_RM64_IMM);

@@ -17,7 +17,8 @@ namespace emulator {
     VM::VM(x64::Cpu& cpu, x64::Mmu& mmu) :
             cpu_(cpu),
             mmu_(mmu) {
-        
+        disassembler_ = std::make_unique<x64::CapstoneWrapper>();
+        compiler_ = std::make_unique<x64::Compiler>();
     }
 
     VM::~VM() {
@@ -261,7 +262,7 @@ namespace emulator {
             if(!!currentBasicBlock->nativeBasicBlock()
             && currentBasicBlock->basicBlock().endsWithFixedDestinationJump()
             && !!nextBasicBlock->nativeBasicBlock()) {
-                if(jitChainingEnabled()) currentBasicBlock->tryPatch();
+                if(jitChainingEnabled()) currentBasicBlock->tryPatch(*this);
                 ++avoidableExits_;
             }
         }
@@ -409,7 +410,7 @@ namespace emulator {
         std::vector<u8> disassemblyData;
         disassemblyData.resize(end-address, 0x0);
         mmu_.copyFromMmu(disassemblyData.data(), x64::Ptr8{address}, end-address);
-        x64::CapstoneWrapper::DisassemblyResult result = x64::CapstoneWrapper::disassembleRange(disassemblyData.data(), disassemblyData.size(), address);
+        x64::CapstoneWrapper::DisassemblyResult result = disassembler_->disassembleRange(disassemblyData.data(), disassemblyData.size(), address);
 
         // Finally, create the new executable region
         ExecutableSection section;
@@ -779,7 +780,7 @@ namespace emulator {
         if(!!jitTrampoline_) return;
         if(jitTrampolineCompilationAttempted_) return;
         jitTrampolineCompilationAttempted_ = true;
-        auto jitBlock = x64::Compiler::tryCompileJitTrampoline();
+        auto jitBlock = compiler_->tryCompileJitTrampoline();
         if(!jitBlock) return;
         auto memoryBlock = allocator_.allocate((u32)jitBlock->nativecode.size());
         if(!memoryBlock) return;
@@ -811,7 +812,8 @@ namespace emulator {
         }
         if(!compilationAttempted_) {
             vm.tryCreateJitTrampoline();
-            auto jitBasicBlock = x64::Compiler::tryCompile(cpuBasicBlock_, vm.optimizationLevel(), this);
+            verify(!!vm.compiler(), "We have no compiler");
+            auto jitBasicBlock = vm.compiler()->tryCompile(cpuBasicBlock_, vm.optimizationLevel(), this);
             if(!!jitBasicBlock) {
                 nativeBasicBlock_ = vm.tryMakeNative(jitBasicBlock->nativecode.data(), jitBasicBlock->nativecode.size());
                 pendingPatches_ = PendingPatches {
@@ -819,9 +821,9 @@ namespace emulator {
                     jitBasicBlock->offsetOfReplaceableJumpToConditionalBlock,
                 };
                 if(vm.jitChainingEnabled()) {
-                    tryPatch();
+                    tryPatch(vm);
                     for(auto prev : predecessors_) {
-                        prev.second->tryPatch();
+                        prev.second->tryPatch(vm);
                     }
                 }
             }
@@ -834,7 +836,7 @@ namespace emulator {
         }
     }
 
-    void BasicBlock::tryPatch() {
+    void BasicBlock::tryPatch(VM& vm) {
         if(!nativeBasicBlock()) return;
         if(!pendingPatches_) return;
         u64 continuingBlockAddress = end();
@@ -846,7 +848,7 @@ namespace emulator {
                 size_t offset = pendingPatches_->offsetOfReplaceableJumpToConditionalBlock.value();
                 u8* replacementLocation = nativeBasicBlock_.ptr + offset;
                 const u8* jumpLocation = next->nativeBasicBlock_.ptr;
-                auto replacementCode = x64::Compiler::compileJumpTo((u64)jumpLocation);
+                auto replacementCode = vm.compiler()->compileJumpTo((u64)jumpLocation);
                 memcpy(replacementLocation, replacementCode.data(), replacementCode.size());
                 pendingPatches_->offsetOfReplaceableJumpToConditionalBlock.reset();
             };
@@ -861,7 +863,7 @@ namespace emulator {
                 size_t offset = pendingPatches_->offsetOfReplaceableJumpToContinuingBlock.value();
                 u8* replacementLocation = nativeBasicBlock_.ptr + offset;
                 const u8* jumpLocation = next->nativeBasicBlock_.ptr;
-                auto replacementCode = x64::Compiler::compileJumpTo((u64)jumpLocation);
+                auto replacementCode = vm.compiler()->compileJumpTo((u64)jumpLocation);
                 memcpy(replacementLocation, replacementCode.data(), replacementCode.size());
                 pendingPatches_->offsetOfReplaceableJumpToContinuingBlock.reset();
             };

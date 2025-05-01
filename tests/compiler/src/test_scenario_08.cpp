@@ -16,13 +16,15 @@ int main(int, char**) {
 
     auto bb = cpu.createBasicBlock(instructions.data(), instructions.size());
 
-    auto nativebb = Compiler::tryCompile(bb);
+    Compiler compiler;
+    auto nativebb = compiler.tryCompile(bb);
     if(!nativebb) {
         fmt::print(stderr, "failed to compile\n");
         return 1;
     }
-    
-    auto disassembly = CapstoneWrapper::disassembleRange(nativebb->nativecode.data(), nativebb->nativecode.size(), 0x0);
+
+    CapstoneWrapper disassembler;
+    auto disassembly = disassembler.disassembleRange(nativebb->nativecode.data(), nativebb->nativecode.size(), 0x0);
     fmt::print("{} instructions\n", disassembly.instructions.size());
 
     return 0;

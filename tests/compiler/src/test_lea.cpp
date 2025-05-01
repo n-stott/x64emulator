@@ -8,7 +8,8 @@ void testLea64(R64 dst, const M64& src) {
     Assembler assembler;
     assembler.lea(dst, src);
     std::vector<u8> code = assembler.code();
-    auto disassembly = CapstoneWrapper::disassembleRange(code.data(), code.size(), 0x0);
+    CapstoneWrapper disassembler;
+    auto disassembly = disassembler.disassembleRange(code.data(), code.size(), 0x0);
     verify(disassembly.instructions.size() == 1);
     const auto& ins = disassembly.instructions[0];
     verify(ins.insn() == Insn::LEA_R64_ENCODING64);

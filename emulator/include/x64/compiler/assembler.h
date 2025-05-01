@@ -10,6 +10,9 @@ namespace x64 {
 
     class Assembler {
     public:
+        ~Assembler();
+        void clear();
+
         void patchJumps();
         const std::vector<u8>& code() const { return code_; }
 

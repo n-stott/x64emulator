@@ -24,7 +24,8 @@ int main() {
 
     assert(insn[0].id == X86_INS_LEA);
 
-    auto result = x64::CapstoneWrapper::disassembleRange(codeBegin, codeSize, codeAddress);
+    x64::CapstoneWrapper disassembler;
+    auto result = disassembler.disassembleRange(codeBegin, codeSize, codeAddress);
     assert(result.instructions.size() == 1);
     auto ins = result.instructions[0];
     assert(ins.insn() == x64::Insn::LEA_R32_ENCODING32);

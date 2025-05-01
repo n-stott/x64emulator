@@ -3,6 +3,12 @@
 
 namespace x64::ir {
 
+    void IrGenerator::clear() {
+        instructions_.clear();
+        labels_.clear();
+        jumpKinds_.clear();
+    }
+
     IR IrGenerator::generateIR() {
         std::vector<size_t> labels;
         labels.reserve(labels_.size());

@@ -14,6 +14,7 @@ namespace x64::ir {
     class IrGenerator {
     public:
         IR generateIR();
+        void clear();
 
         void mov(R8 dst, R8 src);
         void mov(R8 dst, u8 imm);

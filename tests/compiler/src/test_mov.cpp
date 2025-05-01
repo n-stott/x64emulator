@@ -8,7 +8,8 @@ void testMov16(R16 dst, R16 src) {
     Assembler assembler;
     assembler.mov(dst, src);
     std::vector<u8> code = assembler.code();
-    auto disassembly = CapstoneWrapper::disassembleRange(code.data(), code.size(), 0x0);
+    CapstoneWrapper disassembler;
+    auto disassembly = disassembler.disassembleRange(code.data(), code.size(), 0x0);
     verify(disassembly.instructions.size() == 1);
     const auto& ins = disassembly.instructions[0];
     verify(ins.insn() == Insn::MOV_R16_R16);
@@ -48,7 +49,8 @@ void testMov32(R32 dst, R32 src) {
     Assembler assembler;
     assembler.mov(dst, src);
     std::vector<u8> code = assembler.code();
-    auto disassembly = CapstoneWrapper::disassembleRange(code.data(), code.size(), 0x0);
+    CapstoneWrapper disassembler;
+    auto disassembly = disassembler.disassembleRange(code.data(), code.size(), 0x0);
     verify(disassembly.instructions.size() == 1);
     const auto& ins = disassembly.instructions[0];
     verify(ins.insn() == Insn::MOV_R32_R32);
@@ -88,7 +90,8 @@ void testMov64(R64 dst, R64 src) {
     Assembler assembler;
     assembler.mov(dst, src);
     std::vector<u8> code = assembler.code();
-    auto disassembly = CapstoneWrapper::disassembleRange(code.data(), code.size(), 0x0);
+    CapstoneWrapper disassembler;
+    auto disassembly = disassembler.disassembleRange(code.data(), code.size(), 0x0);
     verify(disassembly.instructions.size() == 1);
     const auto& ins = disassembly.instructions[0];
     verify(ins.insn() == Insn::MOV_R64_R64);
@@ -100,7 +103,8 @@ void testMov64(R64 dst, const M64& src) {
     Assembler assembler;
     assembler.mov(dst, src);
     std::vector<u8> code = assembler.code();
-    auto disassembly = CapstoneWrapper::disassembleRange(code.data(), code.size(), 0x0);
+    CapstoneWrapper disassembler;
+    auto disassembly = disassembler.disassembleRange(code.data(), code.size(), 0x0);
     verify(disassembly.instructions.size() == 1);
     const auto& ins = disassembly.instructions[0];
     verify(ins.insn() == Insn::MOV_R64_M64);
@@ -175,7 +179,8 @@ void testMov128(XMM dst, XMM src) {
     Assembler assembler;
     assembler.mov(dst, src);
     std::vector<u8> code = assembler.code();
-    auto disassembly = CapstoneWrapper::disassembleRange(code.data(), code.size(), 0x0);
+    CapstoneWrapper disassembler;
+    auto disassembly = disassembler.disassembleRange(code.data(), code.size(), 0x0);
     verify(disassembly.instructions.size() == 1);
     const auto& ins = disassembly.instructions[0];
     verify(ins.insn() == Insn::MOV_XMM_XMM);

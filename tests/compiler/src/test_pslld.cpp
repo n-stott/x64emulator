@@ -8,7 +8,8 @@ void testPslld(XMM dst, XMM src) {
     Assembler assembler;
     assembler.pslld(dst, src);
     std::vector<u8> code = assembler.code();
-    auto disassembly = CapstoneWrapper::disassembleRange(code.data(), code.size(), 0x0);
+    CapstoneWrapper disassembler;
+    auto disassembly = disassembler.disassembleRange(code.data(), code.size(), 0x0);
     verify(disassembly.instructions.size() == 1);
     const auto& ins = disassembly.instructions[0];
     verify(ins.insn() == Insn::PSLLD_XMM_XMMM128);
@@ -23,7 +24,8 @@ void testPslld(XMM dst, u8 imm) {
     Assembler assembler;
     assembler.pslld(dst, imm);
     std::vector<u8> code = assembler.code();
-    auto disassembly = CapstoneWrapper::disassembleRange(code.data(), code.size(), 0x0);
+    CapstoneWrapper disassembler;
+    auto disassembly = disassembler.disassembleRange(code.data(), code.size(), 0x0);
     verify(disassembly.instructions.size() == 1);
     const auto& ins = disassembly.instructions[0];
     verify(ins.insn() == Insn::PSLLD_XMM_IMM);

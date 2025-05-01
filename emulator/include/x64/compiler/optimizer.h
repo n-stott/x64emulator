@@ -9,6 +9,7 @@
 namespace x64::ir {
 
     class OptimizationPass;
+    class LivenessAnalysis;
 
     class Optimizer {
     public:
@@ -34,11 +35,18 @@ namespace x64::ir {
     
     class OptimizationPass {
     public:
+        virtual ~OptimizationPass() = default;
         virtual bool optimize(IR*, Optimizer::Stats*) = 0;
     };
     
     class DeadCodeElimination : public OptimizationPass {
+    public:
+        DeadCodeElimination();
+        ~DeadCodeElimination();
         bool optimize(IR*, Optimizer::Stats*) override;
+
+    private:
+        std::unique_ptr<LivenessAnalysis> analysis_;
     };
 
     class ImmediateReadBackElimination : public OptimizationPass {

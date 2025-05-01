@@ -8,7 +8,8 @@ void testBsr32(R32 dst, R32 src) {
     Assembler assembler;
     assembler.bsr(dst, src);
     std::vector<u8> code = assembler.code();
-    auto disassembly = CapstoneWrapper::disassembleRange(code.data(), code.size(), 0x0);
+    CapstoneWrapper disassembler;
+    auto disassembly = disassembler.disassembleRange(code.data(), code.size(), 0x0);
     verify(disassembly.instructions.size() == 1);
     const auto& ins = disassembly.instructions[0];
     verify(ins.insn() == Insn::BSR_R32_R32);
@@ -22,7 +23,8 @@ void testBsr32(R32 dst, R32 src) {
 //     Assembler assembler;
 //     assembler.Bsr(dst, imm);
 //     std::vector<u8> code = assembler.code();
-//     auto disassembly = CapstoneWrapper::disassembleRange(code.data(), code.size(), 0x0);
+//     CapstoneWrapper disassembler;
+//     auto disassembly = disassembler.disassembleRange(code.data(), code.size(), 0x0);
 //     verify(disassembly.instructions.size() == 1);
 //     const auto& ins = disassembly.instructions[0];
 //     verify(ins.insn() == Insn::Bsr_RM32_IMM);

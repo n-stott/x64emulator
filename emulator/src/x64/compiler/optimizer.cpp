@@ -78,19 +78,29 @@ namespace x64::ir {
 
         std::vector<M128> allAddresses128;
         std::vector<BitMask<16>> addresses128;
+
+        void clear() {
+            gprs.clear();
+            xmms.clear();
+            allAddresses64.clear();
+            addresses64.clear();
+            allAddresses128.clear();
+            addresses128.clear();
+        }
     };
 
     void computeLiveRegistersAndAddresses(const IR& ir, LivenessAnalysis* analysis) {
         assert(!!analysis);
         LivenessAnalysis a;
         std::swap(a, *analysis);
+        a.clear();
 
         // RSP, RAX and RDX are always live, no other register is live
-        std::vector<R64> alwaysLiveGprs {
+        std::array<R64, 3> alwaysLiveGprs {{
             R64::RSP,
             R64::RAX,
             R64::RDX,
-        };
+        }};
 
         // All addresses written to are live at the end of the block
         for(const auto& ins : ir.instructions) {
@@ -144,8 +154,10 @@ namespace x64::ir {
         }
         a.xmms.resize(ir.instructions.size()+1);
 
+        a.addresses64.clear();
         a.addresses64.resize(ir.instructions.size()+1, (u32)a.allAddresses64.size());
         a.addresses64.back().setAll();
+        a.addresses128.clear();
         a.addresses128.resize(ir.instructions.size()+1, (u32)a.allAddresses128.size());
         a.addresses128.back().setAll();
 
@@ -347,23 +359,26 @@ namespace x64::ir {
         std::swap(a, *analysis);
     }
 
+    DeadCodeElimination::DeadCodeElimination() = default;
+    DeadCodeElimination::~DeadCodeElimination() = default;
+
     bool DeadCodeElimination::optimize(IR* ir, Optimizer::Stats* stats) {
         if(!ir) return false;
-        LivenessAnalysis analysis;
-        computeLiveRegistersAndAddresses(*ir, &analysis);
+        if(!analysis_) analysis_ = std::make_unique<LivenessAnalysis>();
+        computeLiveRegistersAndAddresses(*ir, analysis_.get());
 
         std::vector<size_t> removableInstructions;
 
         auto address64Index = [&](const M64& address) -> u32 {
-            auto it = std::find(analysis.allAddresses64.begin(), analysis.allAddresses64.end(), address);
-            assert(it != analysis.allAddresses64.end());
-            return (u32)std::distance(analysis.allAddresses64.begin(), it);
+            auto it = std::find(analysis_->allAddresses64.begin(), analysis_->allAddresses64.end(), address);
+            assert(it != analysis_->allAddresses64.end());
+            return (u32)std::distance(analysis_->allAddresses64.begin(), it);
         };
 
         auto address128Index = [&](const M128& address) -> u32 {
-            auto it = std::find(analysis.allAddresses128.begin(), analysis.allAddresses128.end(), address);
-            assert(it != analysis.allAddresses128.end());
-            return (u32)std::distance(analysis.allAddresses128.begin(), it);
+            auto it = std::find(analysis_->allAddresses128.begin(), analysis_->allAddresses128.end(), address);
+            assert(it != analysis_->allAddresses128.end());
+            return (u32)std::distance(analysis_->allAddresses128.begin(), it);
         };
 
         for(size_t i = ir->instructions.size(); i --> 0;) {
@@ -371,25 +386,25 @@ namespace x64::ir {
             if(ins.canModifyFlags()) continue;
             bool skipInstruction = false;
             ins.forEachImpactedRegister([&](R64 impactedReg) {
-                skipInstruction |= analysis.gprs[i+1].test((u32)impactedReg);
+                skipInstruction |= analysis_->gprs[i+1].test((u32)impactedReg);
             });
             if(skipInstruction) continue;
             if(auto r64out = ins.out().as<R64>()) {
-                if(analysis.gprs[i+1].test((u32)r64out.value())) continue;
+                if(analysis_->gprs[i+1].test((u32)r64out.value())) continue;
                 removableInstructions.push_back(i);
             }
             if(auto r128out = ins.out().as<XMM>()) {
-                if(analysis.xmms[i+1].test((u32)r128out.value())) continue;
+                if(analysis_->xmms[i+1].test((u32)r128out.value())) continue;
                 removableInstructions.push_back(i);
             }
             if(auto m64out = ins.out().as<M64>()) {
                 u32 index = address64Index(m64out.value());
-                if(analysis.addresses64[i+1].test(index)) continue;
+                if(analysis_->addresses64[i+1].test(index)) continue;
                 removableInstructions.push_back(i);
             }
             if(auto m128out = ins.out().as<M128>()) {
                 u32 index = address128Index(m128out.value());
-                if(analysis.addresses128[i+1].test(index)) continue;
+                if(analysis_->addresses128[i+1].test(index)) continue;
                 removableInstructions.push_back(i);
             }
         }

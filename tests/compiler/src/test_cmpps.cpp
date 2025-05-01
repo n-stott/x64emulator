@@ -8,7 +8,8 @@ void testCmpps(XMM dst, XMM src, FCond cond) {
     Assembler assembler;
     assembler.cmpps(dst, src, (u8)cond);
     std::vector<u8> code = assembler.code();
-    auto disassembly = CapstoneWrapper::disassembleRange(code.data(), code.size(), 0x0);
+    CapstoneWrapper disassembler;
+    auto disassembly = disassembler.disassembleRange(code.data(), code.size(), 0x0);
     verify(disassembly.instructions.size() == 1);
     const auto& ins = disassembly.instructions[0];
     verify(ins.insn() == Insn::CMPPS_XMM_XMMM128);

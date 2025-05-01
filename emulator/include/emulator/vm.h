@@ -22,6 +22,8 @@ namespace kernel {
 
 namespace x64 {
     struct BasicBlock;
+    class CapstoneWrapper;
+    class Compiler;
 }
 
 namespace emulator {
@@ -48,7 +50,7 @@ namespace emulator {
         size_t size() const;
         void onCall(VM&);
         void tryCompile(VM&, CompilationQueue&);
-        void tryPatch();
+        void tryPatch(VM&);
 
         u64 calls() const { return calls_; }
         bool hasPendingPatches() const { return !!pendingPatches_; }
@@ -160,6 +162,7 @@ namespace emulator {
         void tryCreateJitTrampoline();
         MemoryBlock tryMakeNative(const u8* code, size_t size);
         void freeNative(MemoryBlock);
+        x64::Compiler* compiler() const { return compiler_.get(); }
         CompilationQueue& compilationQueue() { return compilationQueue_; }
 
         void tryRetrieveSymbols(const std::vector<u64>& addresses, std::unordered_map<u64, std::string>* addressesToSymbols) const;
@@ -256,6 +259,8 @@ namespace emulator {
         bool jitChainingEnabled_ { false };
         int optimizationLevel_ { 0 };
 
+        std::unique_ptr<x64::CapstoneWrapper> disassembler_;
+        std::unique_ptr<x64::Compiler> compiler_;
         CompilationQueue compilationQueue_;
     };
 

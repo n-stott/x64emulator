@@ -16,30 +16,33 @@ namespace x64 {
     class X64Instruction;
     namespace ir {
         class IrGenerator;
+        class Optimizer;
     }
+    class CodeGenerator;
+    class Assembler;
 
     class Compiler {
     public:
-        static std::optional<ir::IR> tryCompileIR(const BasicBlock&, int optimizationLevel = 0, std::optional<void*> basicBlockPtr = std::nullopt, bool diagnose = false);
-        static std::optional<NativeBasicBlock> tryCompile(const BasicBlock&, int optimizationLevel = 0, std::optional<void*> basicBlockPtr = std::nullopt, bool diagnose = false);
-
-        static std::optional<NativeBasicBlock> tryCompileJitTrampoline();
-
-        static std::vector<u8> compileJumpTo(u64 address);
-
-    private:
         Compiler();
         ~Compiler();
 
+        std::optional<ir::IR> tryCompileIR(const BasicBlock&, int optimizationLevel = 0, std::optional<void*> basicBlockPtr = std::nullopt, bool diagnose = false);
+        std::optional<NativeBasicBlock> tryCompile(const BasicBlock&, int optimizationLevel = 0, std::optional<void*> basicBlockPtr = std::nullopt, bool diagnose = false);
+
+        std::optional<NativeBasicBlock> tryCompileJitTrampoline();
+
+        std::vector<u8> compileJumpTo(u64 address);
+
+    private:
         bool tryCompile(const X64Instruction&);
 
         bool tryCompileLastInstruction(const X64Instruction&);
 
-        static std::optional<ir::IR> jitEntry();
-        static std::optional<ir::IR> basicBlockBody(const BasicBlock&, bool diagnose);
-        static std::optional<ir::IR> prepareExit(u32 nbInstructionsInBlock, u64 basicBlockPtr);
-        static std::optional<ir::IR> basicBlockExit(const BasicBlock&, bool diagnose);
-        static std::optional<ir::IR> jitExit();
+        std::optional<ir::IR> jitEntry();
+        std::optional<ir::IR> basicBlockBody(const BasicBlock&, bool diagnose);
+        std::optional<ir::IR> prepareExit(u32 nbInstructionsInBlock, u64 basicBlockPtr);
+        std::optional<ir::IR> basicBlockExit(const BasicBlock&, bool diagnose);
+        std::optional<ir::IR> jitExit();
 
         bool tryAdvanceInstructionPointer(u64 nextAddress);
 
@@ -526,6 +529,9 @@ namespace x64 {
         static Reg128 toGpr(XMM);
 
         std::unique_ptr<ir::IrGenerator> generator_;
+        std::unique_ptr<ir::Optimizer> optimizer_;
+        std::unique_ptr<CodeGenerator> codeGenerator_;
+        std::unique_ptr<Assembler> assembler_;
 
         void readReg8(Reg dst, R8 src);
         void writeReg8(R8 dst, Reg src);
@@ -559,7 +565,7 @@ namespace x64 {
         void readFsBase(Reg dst);
         void writeBasicBlockPtr(u64 basicBlockPtr);
 
-        std::vector<u8> jmpCode(u64 dst, TmpReg tmp) const;
+        std::vector<u8> jmpCode(u64 dst, TmpReg tmp);
 
         template<Size size>
         Mem getAddress(Reg dst, TmpReg tmp, const M<size>& mem);

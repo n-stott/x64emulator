@@ -91,9 +91,10 @@ int main(int argc, char**) {
     if(argc != 1) {
         cpu.exec(bb);
     } else {
-        auto trampoline = Compiler::tryCompileJitTrampoline();
+        Compiler compiler;
+        auto trampoline = compiler.tryCompileJitTrampoline();
         if(!trampoline) return 1;
-        auto nativebb = Compiler::tryCompile(bb);
+        auto nativebb = compiler.tryCompile(bb);
         if(!nativebb) return 1;
 
         void* trptr = ::mmap(nullptr, 0x1000, PROT_EXEC|PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_PRIVATE, 0, 0);

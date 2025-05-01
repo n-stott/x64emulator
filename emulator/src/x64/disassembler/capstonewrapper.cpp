@@ -4468,9 +4468,6 @@ namespace x64 {
     }
 
     CapstoneWrapper::DisassemblyResult CapstoneWrapper::disassembleRange(const u8* begin, size_t size, u64 address) {
-        std::vector<X64Instruction> instructions;
-        instructions.reserve(size/2); // some initial capacity
-
         csh handle;
         if(cs_open(CS_ARCH_X86, CS_MODE_64, &handle) != CS_ERR_OK) return {};
         if(cs_option(handle, CS_OPT_DETAIL, CS_OPT_ON) != CS_ERR_OK) return {};
@@ -4480,18 +4477,20 @@ namespace x64 {
         uint64_t codeAddress = address;
         static_assert(sizeof(uint64_t) == sizeof(u64), "");
 
+        instructions_.clear();
+
         cs_insn* insn = cs_malloc(handle);
         while(codeSize != 0) {
             while(cs_disasm_iter(handle, &codeBegin, &codeSize, &codeAddress, insn)) {
                 auto x86insn = make(*insn);
-                instructions.push_back(x86insn);
+                instructions_.push_back(x86insn);
             }
             if(codeSize != 0) {
                 if(codeSize >= 3) {
                     if(codeBegin[0] == 0xf
                     && codeBegin[1] == 0x1
                     && codeBegin[2] == 0xee) {
-                        instructions.push_back(makeRdpkru(codeAddress));
+                        instructions_.push_back(makeRdpkru(codeAddress));
                         codeAddress += 3;
                         codeBegin += 3;
                         codeSize -= 3;
@@ -4500,7 +4499,7 @@ namespace x64 {
                     if(codeBegin[0] == 0xf
                     && codeBegin[1] == 0x1
                     && codeBegin[2] == 0xef) {
-                        instructions.push_back(makeWrpkru(codeAddress));
+                        instructions_.push_back(makeWrpkru(codeAddress));
                         codeAddress += 3;
                         codeBegin += 3;
                         codeSize -= 3;
@@ -4513,7 +4512,7 @@ namespace x64 {
                     && codeBegin[2] == 0x0f
                     && codeBegin[3] == 0x1e
                     && codeBegin[4] == 0xc8) {
-                        instructions.push_back(makeRdsspd(codeAddress));
+                        instructions_.push_back(makeRdsspd(codeAddress));
                         codeAddress += 5;
                         codeBegin += 5;
                         codeSize -= 5;
@@ -4526,10 +4525,8 @@ namespace x64 {
         cs_free(insn, 1);
         cs_close(&handle);
 
-        instructions.shrink_to_fit();
-
         DisassemblyResult result;
-        result.instructions = std::move(instructions);
+        result.instructions = std::vector(instructions_.begin(), instructions_.end());
         result.next = codeBegin;
         result.nextAddress = codeAddress;
         result.remainingSize = codeSize;

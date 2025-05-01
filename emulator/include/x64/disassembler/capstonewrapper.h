@@ -16,7 +16,10 @@ namespace x64 {
             u64 nextAddress;
         };
 
-        static DisassemblyResult disassembleRange(const u8* begin, size_t size, u64 address);
+        DisassemblyResult disassembleRange(const u8* begin, size_t size, u64 address);
+
+    private:
+        std::vector<X64Instruction> instructions_;
     };
 }
 

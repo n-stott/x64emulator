@@ -35,6 +35,13 @@ namespace x64 {
         __builtin_unreachable();
     }
 
+    Assembler::~Assembler() = default;
+
+    void Assembler::clear() {
+        code_.clear();
+        labels_.clear();
+    }
+
     void Assembler::write8(u8 value) {
         code_.push_back(value);
     }
