@@ -2094,7 +2094,7 @@ namespace x64 {
 
     bool Compiler::tryCompilePushImm(Imm imm) {
         // load the value
-        loadImm64(Reg::GPR0, imm.as<u32>());
+        loadImm64(Reg::GPR0, imm.as<i32>());
         // load rsp
         readReg64(Reg::GPR1, R64::RSP);
         // decrement rsp

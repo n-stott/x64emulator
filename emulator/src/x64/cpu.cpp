@@ -124,17 +124,17 @@ namespace x64 {
 
     void Cpu::push8(u8 value) {
         regs_.rsp() -= 8;
-        mmu_->write64(Ptr64{regs_.rsp()}, (u64)value);
+        mmu_->write64(Ptr64{regs_.rsp()}, (u64)(i64)(i8)value);
     }
 
     void Cpu::push16(u16 value) {
         regs_.rsp() -= 8;
-        mmu_->write64(Ptr64{regs_.rsp()}, (u64)value);
+        mmu_->write64(Ptr64{regs_.rsp()}, (u64)(i64)(i16)value);
     }
 
     void Cpu::push32(u32 value) {
         regs_.rsp() -= 8;
-        mmu_->write64(Ptr64{regs_.rsp()}, (u64)value);
+        mmu_->write64(Ptr64{regs_.rsp()}, (u64)(i64)(i32)value);
     }
 
     void Cpu::push64(u64 value) {

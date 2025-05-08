@@ -174,3 +174,11 @@ target_include_directories(test_cpu_sse_strcmp PUBLIC include ${CMAKE_SOURCE_DIR
 target_link_libraries(test_cpu_sse_strcmp PUBLIC x64cpu fmt::fmt-header-only)
 target_link_options(test_cpu_sse_strcmp PUBLIC ${LD_OPTIONS})
 add_test(NAME sse_strcmp COMMAND test_cpu_sse_strcmp)
+
+add_executable(test_push src/test_push.cpp)
+target_compile_options(test_push PUBLIC ${CC_OPTIONS})
+target_compile_options(test_push PUBLIC -frounding-math)
+target_include_directories(test_push PUBLIC include ${CMAKE_SOURCE_DIR}/emulator/include)
+target_link_libraries(test_push PUBLIC x64cpu fmt::fmt-header-only)
+target_link_options(test_push PUBLIC ${LD_OPTIONS})
+add_test(NAME push COMMAND test_push)
