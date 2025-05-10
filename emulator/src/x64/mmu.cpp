@@ -188,8 +188,10 @@ namespace x64 {
         return std::unique_ptr<Region>(new Region(base, size, prot));
     }
 
-    Mmu::Mmu() {
-        memorySize_ = 4ull * 1024ull * 1024ull * 1024ull;
+    Mmu::Mmu() : Mmu(4ull * 1024ull) { }
+
+    Mmu::Mmu(unsigned int virtualMemoryInMB) {
+        memorySize_ = (unsigned long long)virtualMemoryInMB * 1024ull * 1024ull;
         startOfMappedMemory_ = host::HostMemory::getVirtualMemoryRange(memorySize_);
         memoryBase_ = startOfMappedMemory_; // nullptr does not map to 0 !
         

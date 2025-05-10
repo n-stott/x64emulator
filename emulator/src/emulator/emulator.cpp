@@ -47,8 +47,12 @@ namespace emulator {
         nbCores_ = nbCores;
     }
 
+    void Emulator::setVirtualMemoryAmount(unsigned int virtualMemoryInMB) {
+        virtualMemoryInMB_ = virtualMemoryInMB;
+    }
+
     bool Emulator::run(const std::string& programFilePath, const std::vector<std::string>& arguments, const std::vector<std::string>& environmentVariables) const {
-        x64::Mmu mmu;
+        x64::Mmu mmu(virtualMemoryInMB_);
         kernel::Kernel kernel(mmu);
         
         kernel.setLogSyscalls(logSyscalls_);

@@ -80,6 +80,7 @@ namespace x64 {
 
     public:
         Mmu();
+        explicit Mmu(unsigned int virtualMemoryInMB);
         ~Mmu();
 
         u64 mmap(u64 address, u64 length, BitFlags<PROT> prot, BitFlags<MAP> flags);

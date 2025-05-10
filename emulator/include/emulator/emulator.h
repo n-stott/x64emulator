@@ -20,6 +20,7 @@ namespace emulator {
         void setOptimizationLevel(int);
         void setEnableShm(bool);
         void setNbCores(int nbCores);
+        void setVirtualMemoryAmount(unsigned int virtualMemoryInMB);
 
     private:
         bool logSyscalls_ { false };
@@ -29,6 +30,7 @@ namespace emulator {
         int optimizationLevel_ { 1 };
         bool enableShm_ { false };
         int nbCores_ { 1 };
+        unsigned int virtualMemoryInMB_ { 4096};
     };
 
 }

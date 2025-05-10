@@ -60,6 +60,11 @@ int main(int argc, char* argv[], char* envp[]) {
             .default_value<int>(1)
             .scan<'i', int>();
 
+    parser.add_argument("--mem")
+            .help("Amount of virtual memory (in MB)")
+            .default_value<unsigned int>(4096)
+            .scan<'u', unsigned int>();
+
     parser.add_argument("command")
            .remaining();
 
@@ -113,6 +118,7 @@ int main(int argc, char* argv[], char* envp[]) {
             emulator.setEnableShm(true);
         }
         emulator.setNbCores(parser.get<int>("-j"));
+        emulator.setVirtualMemoryAmount(parser.get<unsigned int>("--mem"));
         bool ok = emulator.run(programPath, arguments, environmentVariables);
         return !ok;
     } catch(std::exception& e) {
