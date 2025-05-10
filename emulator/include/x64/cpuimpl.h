@@ -185,6 +185,9 @@ namespace x64 {
         static void comiss(u128 dst, u128 src, SIMD_ROUNDING, Flags* flags);
         static void comisd(u128 dst, u128 src, SIMD_ROUNDING, Flags* flags);
 
+        [[nodiscard]] static u128 sqrtps(u128 dst, u128 src, SIMD_ROUNDING);
+        [[nodiscard]] static u128 sqrtpd(u128 dst, u128 src, SIMD_ROUNDING);
+
         [[nodiscard]] static u128 sqrtss(u128 dst, u128 src, SIMD_ROUNDING);
         [[nodiscard]] static u128 sqrtsd(u128 dst, u128 src, SIMD_ROUNDING);
 

@@ -825,6 +825,14 @@ namespace x64 {
         flags->sign = false;
     }
 
+    u128 CpuImpl::sqrtps(u128 dst, u128 src, SIMD_ROUNDING) {
+        return packedOp<float, float>(dst, src, [](auto, auto s) { return std::sqrt(s); });
+    }
+    
+    u128 CpuImpl::sqrtpd(u128 dst, u128 src, SIMD_ROUNDING) {
+        return packedOp<double, double>(dst, src, [](auto, auto s) { return std::sqrt(s); });
+    }
+
     u128 CpuImpl::sqrtss(u128 dst, u128 src, SIMD_ROUNDING) {
         static_assert(sizeof(u32) == sizeof(float));
         float s;

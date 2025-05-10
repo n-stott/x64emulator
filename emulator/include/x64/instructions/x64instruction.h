@@ -445,6 +445,8 @@ namespace x64 {
         MULSD_XMM_M64,
         DIVPS_XMM_XMMM128,
         DIVPD_XMM_XMMM128,
+        SQRTPS_XMM_XMMM128,
+        SQRTPD_XMM_XMMM128,
         DIVSS_XMM_XMM,
         DIVSS_XMM_M32,
         DIVSD_XMM_XMM,

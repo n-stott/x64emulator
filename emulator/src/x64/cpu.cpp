@@ -622,6 +622,8 @@ namespace x64 {
     DEFINE_STANDALONE(MULSD_XMM_M64, execMulsdXMMM64)
     DEFINE_STANDALONE(DIVPS_XMM_XMMM128, execDivpsXMMXMMM128)
     DEFINE_STANDALONE(DIVPD_XMM_XMMM128, execDivpdXMMXMMM128)
+    DEFINE_STANDALONE(SQRTPS_XMM_XMMM128, execSqrtpsXMMXMMM128)
+    DEFINE_STANDALONE(SQRTPD_XMM_XMMM128, execSqrtpdXMMXMMM128)
     DEFINE_STANDALONE(DIVSS_XMM_XMM, execDivssXMMXMM)
     DEFINE_STANDALONE(DIVSS_XMM_M32, execDivssXMMM32)
     DEFINE_STANDALONE(DIVSD_XMM_XMM, execDivsdXMMXMM)
@@ -1300,6 +1302,8 @@ namespace x64 {
         STANDALONE_NAME(MULSD_XMM_M64),
         STANDALONE_NAME(DIVPS_XMM_XMMM128),
         STANDALONE_NAME(DIVPD_XMM_XMMM128),
+        STANDALONE_NAME(SQRTPS_XMM_XMMM128),
+        STANDALONE_NAME(SQRTPD_XMM_XMMM128),
         STANDALONE_NAME(DIVSS_XMM_XMM),
         STANDALONE_NAME(DIVSS_XMM_M32),
         STANDALONE_NAME(DIVSD_XMM_XMM),
@@ -4389,6 +4393,20 @@ namespace x64 {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<M64>();
         u128 res = Impl::divsd(get(dst), zeroExtend<Xmm, u64>(get(resolve(src))), simdRoundingMode());
+        set(dst, res);
+    }
+
+    void Cpu::execSqrtpsXMMXMMM128(const X64Instruction& ins) {
+        const auto& dst = ins.op0<XMM>();
+        const auto& src = ins.op1<XMMM128>();
+        u128 res = Impl::sqrtps(get(dst), get(src), simdRoundingMode());
+        set(dst, res);
+    }
+
+    void Cpu::execSqrtpdXMMXMMM128(const X64Instruction& ins) {
+        const auto& dst = ins.op0<XMM>();
+        const auto& src = ins.op1<XMMM128>();
+        u128 res = Impl::sqrtpd(get(dst), get(src), simdRoundingMode());
         set(dst, res);
     }
 

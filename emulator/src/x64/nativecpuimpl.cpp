@@ -1499,6 +1499,18 @@ namespace x64 {
         return nativeRes;
     }
 
+    u128 NativeCpuImpl::sqrtps(u128 dst, u128 src, [[maybe_unused]] SIMD_ROUNDING rounding) {
+        u128 nativeRes = dst;
+        asm volatile("sqrtps %1, %0" : "+x"(nativeRes) : "x"(src));
+        return nativeRes;
+    }
+
+    u128 NativeCpuImpl::sqrtpd(u128 dst, u128 src, [[maybe_unused]] SIMD_ROUNDING rounding) {
+        u128 nativeRes = dst;
+        asm volatile("sqrtpd %1, %0" : "+x"(nativeRes) : "x"(src));
+        return nativeRes;
+    }
+
     u128 NativeCpuImpl::sqrtss(u128 dst, u128 src, [[maybe_unused]] SIMD_ROUNDING rounding) {
         u128 nativeRes = dst;
         asm volatile("sqrtss %1, %0" : "+x"(nativeRes) : "x"(src));

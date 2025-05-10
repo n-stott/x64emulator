@@ -2288,6 +2288,28 @@ namespace x64 {
         return make_failed(insn);
     }
 
+    static X64Instruction makeSqrtps(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto rmssesrc = asRM128(src);
+        if(rssedst && rmssesrc) return X64Instruction::make<Insn::SQRTPS_XMM_XMMM128>(insn.address, insn.size, rssedst.value(), rmssesrc.value());
+        return make_failed(insn);
+    }
+
+    static X64Instruction makeSqrtpd(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto rmssesrc = asRM128(src);
+        if(rssedst && rmssesrc) return X64Instruction::make<Insn::SQRTPD_XMM_XMMM128>(insn.address, insn.size, rssedst.value(), rmssesrc.value());
+        return make_failed(insn);
+    }
+
     static X64Instruction makeAddss(const cs_insn& insn) {
         const auto& x86detail = insn.detail->x86;
         assert(x86detail.op_count == 2);
@@ -4266,6 +4288,8 @@ namespace x64 {
             case X86_INS_MULPD: return makeMulpd(insn);
             case X86_INS_DIVPS: return makeDivps(insn);
             case X86_INS_DIVPD: return makeDivpd(insn);
+            case X86_INS_SQRTPS: return makeSqrtps(insn);
+            case X86_INS_SQRTPD: return makeSqrtpd(insn);
             case X86_INS_ADDSS: return makeAddss(insn);
             case X86_INS_ADDSD: return makeAddsd(insn);
             case X86_INS_SUBSS: return makeSubss(insn);

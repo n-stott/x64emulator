@@ -464,6 +464,8 @@ namespace x64 {
             case Insn::MULSD_XMM_M64: return toString<XMM, M64>("mulsd");
             case Insn::DIVPS_XMM_XMMM128: return toString<XMM, XMMM128>("divps");
             case Insn::DIVPD_XMM_XMMM128: return toString<XMM, XMMM128>("divpd");
+            case Insn::SQRTPS_XMM_XMMM128: return toString<XMM, XMMM128>("sqrtps");
+            case Insn::SQRTPD_XMM_XMMM128: return toString<XMM, XMMM128>("sqrtpd");
             case Insn::DIVSS_XMM_XMM: return toString<XMM, XMM>("divss");
             case Insn::DIVSS_XMM_M32: return toString<XMM, M32>("divss");
             case Insn::DIVSD_XMM_XMM: return toString<XMM, XMM>("divsd");
