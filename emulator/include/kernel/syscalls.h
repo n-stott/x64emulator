@@ -251,6 +251,8 @@ namespace kernel {
         int fchmod(int fd, mode_t mode);
         // 0x5c
         int chown(x64::Ptr pathname, uid_t owner, gid_t group);
+        // 0x5d
+        int fchown(int fd, uid_t owner, gid_t group);
         // 0x5f
         int umask(int mask);
         // 0x60
@@ -279,6 +281,8 @@ namespace kernel {
         int getresuid(x64::Ptr32 ruid, x64::Ptr32 euid, x64::Ptr32 suid);
         // 0x78
         int getresgid(x64::Ptr32 rgid, x64::Ptr32 egid, x64::Ptr32 sgid);
+        // 0x80
+        int rt_sigtimedwait(x64::Ptr set, x64::Ptr info, x64::Ptr timeout);
         // 0x83
         int sigaltstack(x64::Ptr ss, x64::Ptr old_ss);
         // 0x84
@@ -347,6 +351,8 @@ namespace kernel {
         int openat(int dirfd, x64::Ptr pathname, int flags, mode_t mode);
         // 0x106
         int fstatat64(int dirfd, x64::Ptr pathname, x64::Ptr statbuf, int flags);
+        // 0x107
+        int unlinkat(int dirfd, x64::Ptr pathname, int flags);
         // 0x109
         int linkat(int olddirfd, x64::Ptr oldpath, int newdirfd, x64::Ptr newpath, int flags);
         // 0x10b

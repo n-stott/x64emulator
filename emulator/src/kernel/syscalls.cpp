@@ -115,6 +115,7 @@ namespace kernel {
             case 0x5a: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::chmod, regs));
             case 0x5b: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::fchmod, regs));
             case 0x5c: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::chown, regs));
+            case 0x5d: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::fchown, regs));
             case 0x5f: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::umask, regs));
             case 0x60: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::gettimeofday, regs));
             case 0x62: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::getrusage, regs));
@@ -129,6 +130,7 @@ namespace kernel {
             case 0x73: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::getgroups, regs));
             case 0x76: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::getresuid, regs));
             case 0x78: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::getresgid, regs));
+            case 0x80: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::rt_sigtimedwait, regs));
             case 0x83: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::sigaltstack, regs));
             case 0x84: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::utime, regs));
             case 0x89: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::statfs, regs));
@@ -163,6 +165,7 @@ namespace kernel {
             case 0xfe: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::inotify_add_watch, regs));
             case 0x101: return threadRegs.set(x64::R64::RAX, invoke_syscall_4(&Sys::openat, regs));
             case 0x106: return threadRegs.set(x64::R64::RAX, invoke_syscall_4(&Sys::fstatat64, regs));
+            case 0x107: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::unlinkat, regs));
             case 0x109: return threadRegs.set(x64::R64::RAX, invoke_syscall_5(&Sys::linkat, regs));
             case 0x10b: return threadRegs.set(x64::R64::RAX, invoke_syscall_4(&Sys::readlinkat, regs));
             case 0x10d: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::faccessat, regs));
@@ -1041,6 +1044,15 @@ namespace kernel {
         return -ENOTSUP;
     }
 
+    int Sys::fchown(int fd, uid_t owner, gid_t group) {
+        if(kernel_.logSyscalls()) {
+            print("Sys::fchown(fd={}, owner={}, group={}) = {}\n",
+                        fd, owner, group, -ENOTSUP);
+        }
+        warn("chown not implemented");
+        return -ENOTSUP;
+    }
+
     int Sys::umask(int mask) {
         if(kernel_.logSyscalls()) {
             print("Sys::umask(mask={}) = {}\n",
@@ -1145,6 +1157,14 @@ namespace kernel {
         mmu_.write32(egid, (u32)creds.egid);
         mmu_.write32(sgid, (u32)creds.sgid);
         return 0;
+    }
+
+    int Sys::rt_sigtimedwait(x64::Ptr set, x64::Ptr info, x64::Ptr timeout) {
+        if(kernel_.logSyscalls()) {
+            print("Sys::rt_sigtimedwait(set={:#x}, info={:#x}, timeout={:#x}) = {})\n", set.address(), info.address(), timeout.address(), -ENOTSUP);
+        }
+        warn("rt_sigtimedwait not implemented");
+        return -ENOTSUP;
     }
 
     int Sys::sigaltstack(x64::Ptr ss, x64::Ptr old_ss) {
@@ -1744,6 +1764,16 @@ namespace kernel {
             mmu_.copyToMmu(statbuf, buffer.data(), buffer.size());
             return 0;
         });
+    }
+
+    int Sys::unlinkat(int dirfd, x64::Ptr pathname, int flags) {
+        if(kernel_.logSyscalls()) {
+            std::string path = mmu_.readString(pathname);
+            print("Sys::unlinkat(dirfd={}, path={}, flags={}) = {}\n",
+                        dirfd, path, flags, -ENOTSUP);
+        }
+        warn("unlinkat not implemented");
+        return -ENOTSUP;
     }
 
     int Sys::linkat(int olddirfd, x64::Ptr oldpath, int newdirfd, x64::Ptr newpath, int flags) {
