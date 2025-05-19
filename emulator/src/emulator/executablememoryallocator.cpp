@@ -26,7 +26,12 @@ namespace emulator {
         }
 
         // finally try creating a new range
-        auto& newRange = ranges_.emplace_back();
+        auto ptr = MemRange::tryCreate();
+
+        // if we can't create one, fail
+        if(!ptr) return {};
+
+        auto& newRange = ranges_.emplace_back(std::move(*ptr));
         return newRange.tryAllocate(requestedSize);
     }
 
@@ -34,17 +39,28 @@ namespace emulator {
         if(!!block.ptr && block.size > 0) freeBlocks_.push_back(block);
     }
 
-    ExecutableMemoryAllocator::MemRange::MemRange() {
-        base_ = host::HostMemory::getVirtualMemoryRange(SIZE);
+    std::unique_ptr<ExecutableMemoryAllocator::MemRange> ExecutableMemoryAllocator::MemRange::tryCreate() {
+        u8* base = host::HostMemory::tryGetVirtualMemoryRange(SIZE);
+        if(!base) return {};
         BitFlags<host::HostMemory::Protection> protection;
         protection.add(host::HostMemory::Protection::READ);
         protection.add(host::HostMemory::Protection::WRITE);
         protection.add(host::HostMemory::Protection::EXEC);
-        host::HostMemory::protectVirtualMemoryRange(base_, SIZE, protection);
+        bool success = host::HostMemory::tryProtectVirtualMemoryRange(base, SIZE, protection);
+        if(!success) return {};
+        return std::unique_ptr<MemRange>(new MemRange(base));
     }
 
     ExecutableMemoryAllocator::MemRange::~MemRange() {
-        host::HostMemory::releaseVirtualMemoryRange(base_, SIZE);
+        if(!base_) return;
+        bool success = host::HostMemory::tryReleaseVirtualMemoryRange(base_, SIZE);
+        verify(success, "could not release virtual memory range");
+    }
+
+    ExecutableMemoryAllocator::MemRange::MemRange(MemRange&& other) {
+        base_ = other.base_;
+        firstAvailableChunk_ = other.firstAvailableChunk_;
+        other.base_ = nullptr;
     }
 
     std::optional<MemoryBlock> ExecutableMemoryAllocator::MemRange::tryAllocate(u32 requestedSize) {

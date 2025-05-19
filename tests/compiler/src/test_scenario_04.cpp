@@ -5,8 +5,9 @@
 
 int main(int argc, char**) {
     using namespace x64;
-    Mmu mmu;
-    Cpu cpu(mmu);
+    auto mmu = Mmu::tryCreate(1);
+    if(!mmu) return 1;
+    Cpu cpu(*mmu);
 
     std::array<X64Instruction, 11> instructions {{
         X64Instruction::make(0x0, Insn::NOP, 1),
@@ -24,9 +25,9 @@ int main(int argc, char**) {
 
     auto bb = cpu.createBasicBlock(instructions.data(), instructions.size());
 
-    u64 stack1Top = mmu.mmap(0, 0x1000, BitFlags<x64::PROT>{x64::PROT::READ, x64::PROT::WRITE}, BitFlags<x64::MAP>{x64::MAP::PRIVATE, x64::MAP::ANONYMOUS})
+    u64 stack1Top = mmu->mmap(0, 0x1000, BitFlags<x64::PROT>{x64::PROT::READ, x64::PROT::WRITE}, BitFlags<x64::MAP>{x64::MAP::PRIVATE, x64::MAP::ANONYMOUS})
                     + 0x1000;
-    u64 stack2Top = mmu.mmap(0, 0x1000, BitFlags<x64::PROT>{x64::PROT::READ, x64::PROT::WRITE}, BitFlags<x64::MAP>{x64::MAP::PRIVATE, x64::MAP::ANONYMOUS})
+    u64 stack2Top = mmu->mmap(0, 0x1000, BitFlags<x64::PROT>{x64::PROT::READ, x64::PROT::WRITE}, BitFlags<x64::MAP>{x64::MAP::PRIVATE, x64::MAP::ANONYMOUS})
                     + 0x1000;
 
     cpu.set(R64::RBX, 0xb);

@@ -79,8 +79,7 @@ namespace x64 {
         };
 
     public:
-        Mmu();
-        explicit Mmu(unsigned int virtualMemoryInMB);
+        static std::unique_ptr<Mmu> tryCreate(u32 virtualMemoryInMB);
         ~Mmu();
 
         u64 mmap(u64 address, u64 length, BitFlags<PROT> prot, BitFlags<MAP> flags);
@@ -226,6 +225,7 @@ namespace x64 {
         }
 
     private:
+        explicit Mmu(u8* memoryBase, u64 memorySize);
 
         template<typename T, Size s>
         T read(SPtr<s> ptr) const {
@@ -335,7 +335,6 @@ namespace x64 {
 #endif
 
         u8* memoryBase_ { nullptr };
-        u8* startOfMappedMemory_ { nullptr };
         u64 memorySize_ { 0 };
         u64 topOfReserved_ = 0;
 

@@ -4,10 +4,11 @@
 
 int emulated() {
     using namespace x64;
-    Mmu mmu;
-    Cpu cpu(mmu);
+    auto mmu = Mmu::tryCreate(1);
+    if(!mmu) return 1;
+    Cpu cpu(*mmu);
 
-    u64 stack = mmu.mmap(0x0, 0x1000, BitFlags<PROT>(PROT::READ, PROT::WRITE), BitFlags<MAP>(MAP::ANONYMOUS, MAP::PRIVATE));
+    u64 stack = mmu->mmap(0x0, 0x1000, BitFlags<PROT>(PROT::READ, PROT::WRITE), BitFlags<MAP>(MAP::ANONYMOUS, MAP::PRIVATE));
     if(stack == (u64)-1) {
         puts("mmap failed");
         return 1;
@@ -77,7 +78,7 @@ int native() {
 
 // int emulatedStackSize16() {
 //     using namespace x64;
-//     Mmu mmu;
+//     auto mmu = Mmu::tryCreate(1);
 //     Cpu cpu(mmu);
 
 //     u64 stack = mmu.mmap(0x0, 0x1000, BitFlags<PROT>(PROT::READ, PROT::WRITE), BitFlags<MAP>(MAP::ANONYMOUS, MAP::PRIVATE));

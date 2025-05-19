@@ -15,11 +15,9 @@ namespace host {
             EXEC  = (1 << 2),
         };
 
-        static u8* getVirtualMemoryRange(u64 size);
-        static u8* getLowestPossibleVirtualMemoryRange(u64 size);
-        static void releaseVirtualMemoryRange(u8* base, u64 size);
-
-        static void protectVirtualMemoryRange(u8* base, u64 size, BitFlags<Protection> protection);
+        [[nodiscard]] static u8* tryGetVirtualMemoryRange(u64 size);
+        [[nodiscard]] static bool tryReleaseVirtualMemoryRange(u8* base, u64 size);
+        [[nodiscard]] static bool tryProtectVirtualMemoryRange(u8* base, u64 size, BitFlags<Protection> protection);
 
     };
 

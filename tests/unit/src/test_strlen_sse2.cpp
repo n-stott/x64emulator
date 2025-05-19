@@ -10,15 +10,16 @@ std::vector<char> string {{
 
 int main() {
     using namespace x64;
-    Mmu mmu;
+    auto mmu = Mmu::tryCreate(1);
+    if(!mmu) return 1;
 
     u64 length = 0;
 
     bool errorEncountered = false;
 
     VerificationScope::run([&]() {
-        u64 dataPage = mmu.mmap(0, Mmu::PAGE_SIZE, BitFlags<PROT>{PROT::READ, PROT::WRITE}, BitFlags<MAP>{MAP::PRIVATE, MAP::ANONYMOUS});
-        mmu.copyToMmu(Ptr8{dataPage}, (const u8*)string.data(), string.size());
+        u64 dataPage = mmu->mmap(0, Mmu::PAGE_SIZE, BitFlags<PROT>{PROT::READ, PROT::WRITE}, BitFlags<MAP>{MAP::PRIVATE, MAP::ANONYMOUS});
+        mmu->copyToMmu(Ptr8{dataPage}, (const u8*)string.data(), string.size());
 
         std::vector<X64Instruction> instructions {
             X64Instruction::make<Insn::PXOR_XMM_XMMM128>(1, 1, XMM::XMM0, XMMM128{true, XMM::XMM0, {}}),
@@ -35,7 +36,7 @@ int main() {
             X64Instruction::make<Insn::BSF_R32_R32>(12, 1, R32::EAX, R32::EDX)
         };
 
-        Cpu cpu(mmu);
+        Cpu cpu(*mmu);
         cpu.set(R64::RDI, dataPage);
         for(const auto& ins : instructions) {
             cpu.exec(ins);

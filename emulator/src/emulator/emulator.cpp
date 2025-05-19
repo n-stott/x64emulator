@@ -52,8 +52,9 @@ namespace emulator {
     }
 
     bool Emulator::run(const std::string& programFilePath, const std::vector<std::string>& arguments, const std::vector<std::string>& environmentVariables) const {
-        x64::Mmu mmu(virtualMemoryInMB_);
-        kernel::Kernel kernel(mmu);
+        auto mmu = x64::Mmu::tryCreate(virtualMemoryInMB_);
+        verify(!!mmu, "unable to create mmu");
+        kernel::Kernel kernel(*mmu);
         
         kernel.setLogSyscalls(logSyscalls_);
         kernel.setProfiling(isProfiling_);

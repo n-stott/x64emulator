@@ -5,8 +5,9 @@
 
 int main(int argc, char**) {
     using namespace x64;
-    Mmu mmu;
-    Cpu cpu(mmu);
+    auto mmu = Mmu::tryCreate(1);
+    if(!mmu) return 1;
+    Cpu cpu(*mmu);
 
     std::array<X64Instruction, 2> instructions {{
         // shufps xmm0, xmm0, 0xff

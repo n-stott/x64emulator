@@ -3,6 +3,7 @@
 
 #include "utils.h"
 #include <list>
+#include <memory>
 #include <optional>
 
 namespace emulator {
@@ -24,8 +25,10 @@ namespace emulator {
 
         class MemRange {
         public:
-            MemRange();
+            static std::unique_ptr<MemRange> tryCreate();
             ~MemRange();
+            MemRange(MemRange&&);
+            MemRange& operator=(MemRange&&);
 
             std::optional<MemoryBlock> tryAllocate(u32 requestedSize);
             u32 usedChunks() const { return firstAvailableChunk_; }
@@ -38,9 +41,8 @@ namespace emulator {
             u8* base_ { nullptr };
             u32 firstAvailableChunk_ { 0 };
 
-            MemRange(MemRange&&) = delete;
+            explicit MemRange(u8* base) : base_(base) { }
             MemRange(const MemRange&) = delete;
-            MemRange& operator=(MemRange&&) = delete;
             MemRange& operator=(const MemRange&) = delete;
         };
 

@@ -188,13 +188,14 @@ namespace x64 {
         return std::unique_ptr<Region>(new Region(base, size, prot));
     }
 
-    Mmu::Mmu() : Mmu(4ull * 1024ull) { }
+    std::unique_ptr<Mmu> Mmu::tryCreate(u32 virtualMemoryInMB) {
+        u64 size = (u64)virtualMemoryInMB * 1024ull * 1024ull;
+        u8* base = host::HostMemory::tryGetVirtualMemoryRange(size);
+        if(!base) return {};
+        return std::unique_ptr<Mmu>(new Mmu(base, size));
+    }
 
-    Mmu::Mmu(unsigned int virtualMemoryInMB) {
-        memorySize_ = (unsigned long long)virtualMemoryInMB * 1024ull * 1024ull;
-        startOfMappedMemory_ = host::HostMemory::getVirtualMemoryRange(memorySize_);
-        memoryBase_ = startOfMappedMemory_; // nullptr does not map to 0 !
-        
+    Mmu::Mmu(u8* memoryBase, u64 memorySize) : memoryBase_(memoryBase), memorySize_(memorySize) {
         // Make first pages non-readable and non-writable
         std::unique_ptr<Region> nullpage = makeRegion(0, (u64)16*PAGE_SIZE, BitFlags<PROT>{PROT::NONE});
         nullpage->setName("nullpage");
@@ -203,7 +204,9 @@ namespace x64 {
 
     Mmu::~Mmu() {
         for(auto& region : regions_) region->deactivate();
-        host::HostMemory::releaseVirtualMemoryRange(memoryBase_, memorySize_);
+        if(!host::HostMemory::tryReleaseVirtualMemoryRange(memoryBase_, memorySize_)) {
+            verify(false, "Unable to release mmu's virtual memory range");
+        }
     }
 
     BitFlags<PROT> Mmu::prot(u64 address) const {
@@ -461,11 +464,13 @@ namespace x64 {
         u8* ptr = getPointerToRegion(region);
         if(region->requiresMemsetToZero()) {
             // Find a way to delay (or avoid) this ?
-            host::HostMemory::protectVirtualMemoryRange(ptr, region->size(), toHostProtection(PROT::WRITE));
+            bool didProtect = host::HostMemory::tryProtectVirtualMemoryRange(ptr, region->size(), toHostProtection(PROT::WRITE));
+            verify(didProtect, "Unable to make memory writable");
             std::memset(ptr, 0, region->size());
             region->didMemsetToZero();
         }
-        host::HostMemory::protectVirtualMemoryRange(ptr, region->size(), toHostProtection(prot));
+        bool didProtect = host::HostMemory::tryProtectVirtualMemoryRange(ptr, region->size(), toHostProtection(prot));
+        verify(didProtect, "Unable to set memory protection");
     }
 
     void Mmu::fillRegionLookup(Region* region) {
