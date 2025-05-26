@@ -595,7 +595,7 @@ namespace kernel {
             // If pathname begins with a slash, then it is an absolute pathname that identifies the target file. In this case, dirfd is ignored.
             auto path = Path::tryCreate(pathname);
             verify(!!path, "Unable to create path");
-            FollowSymlink followSymlink = Host::Fstatat::isSymlinkNofollow(flags) ? FollowSymlink::YES : FollowSymlink::NO;
+            FollowSymlink followSymlink = Host::Fstatat::isSymlinkNofollow(flags) ? FollowSymlink::NO : FollowSymlink::YES;
             File* file = tryGetFile(*path, followSymlink);
             if(!!file) {
                 return file->statx(mask);
