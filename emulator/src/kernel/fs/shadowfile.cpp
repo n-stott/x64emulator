@@ -143,7 +143,7 @@ namespace kernel {
     }
 
     ErrnoOrBuffer ShadowFile::statx(unsigned int mask) {
-        warn(fmt::format("ShadowFile::statx(mask={:#x}) not implemented", mask));
+        warn(fmt::format("ShadowFile::statx(path={}, mask={:#x}) not implemented", path(), mask));
         return ErrnoOrBuffer(-ENOTSUP);
     }
 

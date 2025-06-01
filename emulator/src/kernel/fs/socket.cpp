@@ -29,9 +29,15 @@ namespace kernel {
             return domain == AF_NETLINK; // add other valid domains here
         };
         if(!validateDomain(domain)) {
-            verify(false, [&]() {
-                fmt::print("Unsupported socket domain {}\n", domain);
-            });
+            warn(fmt::format("Unsupported socket domain {}\n", domain));
+            return {};
+        }
+        auto validateType = [](int type) -> bool {
+            if((type & 0xF) == SOCK_RAW) return false;
+            return true;
+        };
+        if(!validateType(type)) {
+            warn(fmt::format("Unsupported socket type {}\n", type));
             return {};
         }
         int fd = ::socket(domain, type, protocol);
