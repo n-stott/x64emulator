@@ -81,8 +81,7 @@ namespace kernel {
     }
 
     ErrnoOrBuffer HostDevice::stat() {
-        verify(false, "HostDevice::stat not implemented");
-        return ErrnoOrBuffer(-ENOTSUP);
+        return Host::stat(path());
     }
 
     ErrnoOrBuffer HostDevice::statfs() {
