@@ -135,7 +135,7 @@ namespace x64 {
 
         // load the table ptr into R13
         // 1- load the ptr to the basic block ptr
-        constexpr size_t BBPTR_OFFSET = offsetof(NativeArguments, basicBlockPtr);
+        constexpr size_t BBPTR_OFFSET = offsetof(NativeArguments, currentlyExecutingBasicBlockPtr);
         static_assert(BBPTR_OFFSET == 0x40);
         M64 bbPtrPtr = make64(R64::RDI, BBPTR_OFFSET);
         generator_->mov(R64::R13, bbPtrPtr);
@@ -5081,7 +5081,7 @@ namespace x64 {
     }
 
     void Compiler::incrementCalls() {
-        constexpr size_t BBPTR_OFFSET = offsetof(NativeArguments, basicBlockPtr);
+        constexpr size_t BBPTR_OFFSET = offsetof(NativeArguments, currentlyExecutingBasicBlockPtr);
         static_assert(BBPTR_OFFSET == 0x40);
         M64 bbPtrPtr = make64(R64::RDI, BBPTR_OFFSET);
         generator_->mov(get(Reg::GPR0), bbPtrPtr);
@@ -5104,7 +5104,7 @@ namespace x64 {
     }
 
     void Compiler::writeBasicBlockPtr(u64 basicBlockPtr) {
-        constexpr size_t BBPTR_OFFSET = offsetof(NativeArguments, basicBlockPtr);
+        constexpr size_t BBPTR_OFFSET = offsetof(NativeArguments, currentlyExecutingBasicBlockPtr);
         static_assert(BBPTR_OFFSET == 0x40);
         M64 bbPtrPtr = make64(R64::RDI, BBPTR_OFFSET);
         generator_->mov(get(Reg::GPR1), bbPtrPtr);
@@ -5423,7 +5423,7 @@ namespace x64 {
     }
 
     void Compiler::callNativeBasicBlock(TmpReg tmp) {
-        constexpr size_t EXEC_MEM_OFFSET = offsetof(NativeArguments, nativeBasicBlock);
+        constexpr size_t EXEC_MEM_OFFSET = offsetof(NativeArguments, executableCode);
         static_assert(EXEC_MEM_OFFSET == 0x48);
         M64 execMemPtrPtr = make64(R64::RDI, EXEC_MEM_OFFSET);
         generator_->mov(get(tmp.reg), execMemPtrPtr);

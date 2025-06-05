@@ -22,15 +22,15 @@ namespace x64 {
 
     // DO NOT CHANGE THIS VALUE UNLESS THE LAYOUT
     // OF emulator::BasicBlock CHANGES AS WELL
-    static constexpr size_t BLOCK_LOOKUP_TABLE_OFFSET = 0x38;
+    static constexpr size_t NATIVE_BLOCK_OFFSET = 0x18 + 0x0;
 
     // DO NOT CHANGE THIS VALUE UNLESS THE LAYOUT
     // OF emulator::BasicBlock CHANGES AS WELL
-    static constexpr size_t NATIVE_BLOCK_OFFSET = 0xa0;
+    static constexpr size_t BLOCK_LOOKUP_TABLE_OFFSET = 0x18 + 0x18;
 
     // DO NOT CHANGE THIS VALUE UNLESS THE LAYOUT
     // OF emulator::BasicBlock CHANGES AS WELL
-    static constexpr size_t CALLS_OFFSET = 0xb8;
+    static constexpr size_t CALLS_OFFSET = 0x18 + 0x38;
 
     // DO NOT MODIFY THIS STRUCT
     // WITHOUT CHANGING THE JIT AS WELL !!
@@ -43,8 +43,8 @@ namespace x64 {
         const u32* mxcsr;
         u64 fsbase;
         u64* ticks;
-        void* basicBlockPtr;
-        const void* nativeBasicBlock;
+        void** currentlyExecutingBasicBlockPtr;
+        const void* executableCode;
     };
 
     using NativeExecPtr = void(*)(NativeArguments*);

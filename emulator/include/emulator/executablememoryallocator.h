@@ -8,9 +8,12 @@
 
 namespace emulator {
 
+    class ExecutableMemoryAllocator;
+
     struct MemoryBlock {
         u8* ptr { nullptr };
         u32 size { 0 };
+        ExecutableMemoryAllocator* allocator { nullptr };
     };
 
     class ExecutableMemoryAllocator {
@@ -30,7 +33,7 @@ namespace emulator {
             MemRange(MemRange&&);
             MemRange& operator=(MemRange&&);
 
-            std::optional<MemoryBlock> tryAllocate(u32 requestedSize);
+            std::optional<MemoryBlock> tryAllocate(u32 requestedSize, ExecutableMemoryAllocator* allocator);
             u32 usedChunks() const { return firstAvailableChunk_; }
 
         private:

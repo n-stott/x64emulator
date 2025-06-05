@@ -21,7 +21,7 @@ namespace emulator {
 
         // look for a spot in an existing range
         for(auto& range : ranges_) {
-            auto block = range.tryAllocate(requestedSize);
+            auto block = range.tryAllocate(requestedSize, this);
             if(!!block) return block;
         }
 
@@ -32,7 +32,7 @@ namespace emulator {
         if(!ptr) return {};
 
         auto& newRange = ranges_.emplace_back(std::move(*ptr));
-        return newRange.tryAllocate(requestedSize);
+        return newRange.tryAllocate(requestedSize, this);
     }
 
     void ExecutableMemoryAllocator::free(MemoryBlock block) {
@@ -63,12 +63,13 @@ namespace emulator {
         other.base_ = nullptr;
     }
 
-    std::optional<MemoryBlock> ExecutableMemoryAllocator::MemRange::tryAllocate(u32 requestedSize) {
+    std::optional<MemoryBlock> ExecutableMemoryAllocator::MemRange::tryAllocate(u32 requestedSize, ExecutableMemoryAllocator* allocator) {
         u32 sizeInChunks = (requestedSize + CHUNK_SIZE -1) / CHUNK_SIZE;
         if(firstAvailableChunk_ + sizeInChunks > NB_CHUNKS) return {};
         MemoryBlock block {
             base_ + firstAvailableChunk_*CHUNK_SIZE,
             sizeInChunks*CHUNK_SIZE,
+            allocator,
         };
         firstAvailableChunk_ += sizeInChunks;
         return block;

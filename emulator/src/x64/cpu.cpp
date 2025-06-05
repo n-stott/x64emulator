@@ -1569,9 +1569,10 @@ namespace x64 {
         }
     }
 
-    void Cpu::exec(NativeExecPtr jitEntrypoint, NativeExecPtr nativeBasicBlock, u64* ticks, void* basicBlockPtr) {
+    void Cpu::exec(NativeExecPtr jitEntrypoint, NativeExecPtr nativeBasicBlock, u64* ticks, void** currentlyExecutingBasicBlockPtr) {
         assert(!!ticks);
-        assert(!!basicBlockPtr);
+        assert(!!currentlyExecutingBasicBlockPtr);
+        assert(!!nativeBasicBlock);
         u64 rflags = flags_.toRflags();
         u32 mxcsr = mxcsr_.asDoubleWord();
         NativeArguments arguments {
@@ -1583,7 +1584,7 @@ namespace x64 {
             &mxcsr,
             getSegmentBase(Segment::FS),
             ticks,
-            basicBlockPtr,
+            currentlyExecutingBasicBlockPtr,
             (const void*)nativeBasicBlock
         };
         jitEntrypoint(&arguments);

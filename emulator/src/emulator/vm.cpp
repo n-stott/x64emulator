@@ -233,12 +233,12 @@ namespace emulator {
 #endif
             verify(currentBasicBlock->start() == cpu_.get(x64::R64::RIP));
             currentBasicBlock->onCall(*this);
-            if(currentBasicBlock->nativeBasicBlock()) {
+            if(currentBasicBlock->nativeCode()) {
                 verify(!!jitTrampoline_);
                 cpu_.exec((x64::NativeExecPtr)jitTrampoline_->ptr,
-                          (x64::NativeExecPtr)currentBasicBlock->nativeBasicBlock(),
+                          (x64::NativeExecPtr)currentBasicBlock->nativeCode(),
                           tickInfo.ticks(),
-                          &currentBasicBlock);
+                          (void**)&currentBasicBlock);
                 ++jitExits_;
 #ifdef VM_JIT_TELEMETRY
                 if(currentBasicBlock->basicBlock().instructions.back().first.insn() == x64::Insn::RET) {
@@ -259,9 +259,9 @@ namespace emulator {
                 tickInfo.tick(currentBasicBlock->basicBlock().instructions.size());
             }
             nextBasicBlock = findNextBasicBlock();
-            if(!!currentBasicBlock->nativeBasicBlock()
+            if(!!currentBasicBlock->jitBasicBlock()
             && currentBasicBlock->basicBlock().endsWithFixedDestinationJump()
-            && !!nextBasicBlock->nativeBasicBlock()) {
+            && !!nextBasicBlock->jitBasicBlock()) {
                 if(jitChainingEnabled()) currentBasicBlock->tryPatch(*this);
                 ++avoidableExits_;
             }
@@ -553,7 +553,6 @@ namespace emulator {
             BasicBlock* bb = it->get();
             vm_->basicBlocksByAddress_.erase(bb->start());
             bb->removeFromCaches();
-            bb->freeNativeBlock(*vm_);
         }
         vm_->basicBlocks_.erase(mid, vm_->basicBlocks_.end());
         
@@ -581,7 +580,6 @@ namespace emulator {
             BasicBlock* bb = it->get();
             vm_->basicBlocksByAddress_.erase(bb->start());
             bb->removeFromCaches();
-            bb->freeNativeBlock(*vm_);
         }
         vm_->basicBlocks_.erase(begin, end);
         
@@ -710,10 +708,22 @@ namespace emulator {
         next.push_back(other);
         nextStart.push_back(other->start());
         nextCount.push_back(1);
-        table.size += 1;
-        table.addresses = nextStart.data();
-        table.blocks = (const void**)next.data();
-        table.hitCounts = nextCount.data();
+    }
+
+    void BasicBlock::syncBlockLookupTable() {
+        if(!jitBasicBlock_) return;
+        jitBasicBlock_->syncBlockLookupTable(
+                variableDestinationInfo_.next.size(),
+                variableDestinationInfo_.nextStart.data(),
+                (const BasicBlock**)variableDestinationInfo_.next.data(),
+                variableDestinationInfo_.nextCount.data());
+    }
+
+    void JitBasicBlock::syncBlockLookupTable(u64 size, const u64* addresses, const BasicBlock** blocks, u64* hitCounts) {
+        variableDestinationTable_.size = size;
+        variableDestinationTable_.addresses = addresses;
+        variableDestinationTable_.blocks = (const void**)blocks;
+        variableDestinationTable_.hitCounts = hitCounts;
     }
 
     void BasicBlock::addSuccessor(BasicBlock* other) {
@@ -723,6 +733,7 @@ namespace emulator {
         auto res = successors_.insert(std::make_pair(other->start(), other));
         if(res.second && !endsWithFixedDestinationJump_) {
             variableDestinationInfo_.addSuccessor(other);
+            syncBlockLookupTable();
         }
         other->predecessors_.insert(std::make_pair(start(), this));
     }
@@ -745,10 +756,6 @@ namespace emulator {
         next.clear();
         nextStart.clear();
         nextCount.clear();
-        table.size = 0;
-        table.addresses = nextStart.data();
-        table.blocks = (const void**)next.data();
-        table.hitCounts = nextCount.data();
     }
 
     void BasicBlock::removeSucessor(BasicBlock* other) {
@@ -756,6 +763,7 @@ namespace emulator {
             fixedDestinationInfo_.removeSuccessor(other);
         } else {
             variableDestinationInfo_.removeSuccessor(other);
+            syncBlockLookupTable();
         }
         successors_.erase(other->start());
     }
@@ -765,11 +773,7 @@ namespace emulator {
         predecessors_.clear();
         for(auto succ : successors_) succ.second->removePredecessor(this);
         successors_.clear();
-    }
-
-    void BasicBlock::freeNativeBlock(VM& vm) {
-        vm.freeNative(nativeBasicBlock_);
-        nativeBasicBlock_ = MemoryBlock{};
+        jitBasicBlock_.reset();
     }
 
     size_t BasicBlock::size() const {
@@ -813,13 +817,10 @@ namespace emulator {
         if(!compilationAttempted_) {
             vm.tryCreateJitTrampoline();
             verify(!!vm.compiler(), "We have no compiler");
-            auto jitBasicBlock = vm.compiler()->tryCompile(cpuBasicBlock_, vm.optimizationLevel(), this);
-            if(!!jitBasicBlock) {
-                nativeBasicBlock_ = vm.tryMakeNative(jitBasicBlock->nativecode.data(), jitBasicBlock->nativecode.size());
-                pendingPatches_ = PendingPatches {
-                    jitBasicBlock->offsetOfReplaceableJumpToContinuingBlock,
-                    jitBasicBlock->offsetOfReplaceableJumpToConditionalBlock,
-                };
+
+            JitBasicBlock::tryCreateInplace(&jitBasicBlock_, cpuBasicBlock_, this, vm.compiler(), vm.optimizationLevel(), vm.allocator());
+
+            if(!!jitBasicBlock_) {
                 if(vm.jitChainingEnabled()) {
                     tryPatch(vm);
                     for(auto prev : predecessors_) {
@@ -837,41 +838,69 @@ namespace emulator {
     }
 
     void BasicBlock::tryPatch(VM& vm) {
-        if(!nativeBasicBlock()) return;
-        if(!pendingPatches_) return;
+        if(!jitBasicBlock_) return;
+        if(!jitBasicBlock_->needsPatching()) return;
         u64 continuingBlockAddress = end();
-        if(!!pendingPatches_->offsetOfReplaceableJumpToConditionalBlock) {
-            auto tryPatchConditionalWith = [&](const BasicBlock* next) {
-                if(!next) return;
-                if(next->start() == continuingBlockAddress) return;
-                if(!next->nativeBasicBlock_.ptr) return;
-                size_t offset = pendingPatches_->offsetOfReplaceableJumpToConditionalBlock.value();
-                u8* replacementLocation = nativeBasicBlock_.ptr + offset;
-                const u8* jumpLocation = next->nativeBasicBlock_.ptr;
-                auto replacementCode = vm.compiler()->compileJumpTo((u64)jumpLocation);
-                memcpy(replacementLocation, replacementCode.data(), replacementCode.size());
-                pendingPatches_->offsetOfReplaceableJumpToConditionalBlock.reset();
-            };
-            tryPatchConditionalWith(fixedDestinationInfo_.next[0]);
-            tryPatchConditionalWith(fixedDestinationInfo_.next[1]);
+
+        auto tryPatch = [&](const BasicBlock* next) {
+            if(!next) return;
+            if(!next->nativeCode()) return;
+            jitBasicBlock_->forAllPendingPatches(next->start() == continuingBlockAddress, [&](std::optional<size_t>* pendingPatch) {
+                jitBasicBlock_->tryPatch(pendingPatch, next, vm.compiler());
+            });
+        };
+        tryPatch(fixedDestinationInfo_.next[0]);
+        tryPatch(fixedDestinationInfo_.next[1]);
+    }
+
+    void JitBasicBlock::tryCreateInplace(Optional<JitBasicBlock>* dst, const x64::BasicBlock& bb, BasicBlock* currentBb, x64::Compiler* compiler, int optimizationLevel, ExecutableMemoryAllocator* allocator) {
+        assert(!!dst);
+        assert(!!compiler);
+        assert(!!allocator);
+        dst->emplace();
+        auto nativeBasicBlock = compiler->tryCompile(bb, optimizationLevel, currentBb);
+        if(!nativeBasicBlock) {
+            dst->reset();
+            return;
         }
-        if(!!pendingPatches_->offsetOfReplaceableJumpToContinuingBlock) {
-            auto tryPatchContinuingWith = [&](const BasicBlock* next) {
-                if(!next) return;
-                if(next->start() != continuingBlockAddress) return;
-                if(!next->nativeBasicBlock_.ptr) return;
-                size_t offset = pendingPatches_->offsetOfReplaceableJumpToContinuingBlock.value();
-                u8* replacementLocation = nativeBasicBlock_.ptr + offset;
-                const u8* jumpLocation = next->nativeBasicBlock_.ptr;
-                auto replacementCode = vm.compiler()->compileJumpTo((u64)jumpLocation);
-                memcpy(replacementLocation, replacementCode.data(), replacementCode.size());
-                pendingPatches_->offsetOfReplaceableJumpToContinuingBlock.reset();
-            };
-            tryPatchContinuingWith(fixedDestinationInfo_.next[0]);
-            tryPatchContinuingWith(fixedDestinationInfo_.next[1]);
+
+        auto executableMemory = allocator->allocate((u32)nativeBasicBlock->nativecode.size());
+        if(!executableMemory) {
+            dst->reset();
+            return;
         }
-        if(!pendingPatches_->offsetOfReplaceableJumpToContinuingBlock
-        && !pendingPatches_->offsetOfReplaceableJumpToConditionalBlock)
-            pendingPatches_.reset();
+
+        std::memcpy(executableMemory->ptr, nativeBasicBlock->nativecode.data(), nativeBasicBlock->nativecode.size());
+
+        (*dst)->setExecutableMemory(executableMemory.value());
+        
+        if(!!nativeBasicBlock->offsetOfReplaceableJumpToContinuingBlock) {
+            (*dst)->setPendingPatchToContinuingBlock(nativeBasicBlock->offsetOfReplaceableJumpToContinuingBlock.value());
+        }
+        if(!!nativeBasicBlock->offsetOfReplaceableJumpToConditionalBlock) {
+            (*dst)->setPendingPatchToConditionalBlock(nativeBasicBlock->offsetOfReplaceableJumpToConditionalBlock.value());
+        }
+    }
+
+    JitBasicBlock::JitBasicBlock() {
+        
+    }
+
+    JitBasicBlock::~JitBasicBlock() {
+        if(!!executableMemory_.allocator) {
+            executableMemory_.allocator->free(executableMemory_);
+        }
+    }
+
+    void JitBasicBlock::tryPatch(std::optional<size_t>* pendingPatch, const BasicBlock* next, x64::Compiler* compiler) {
+        assert(!!pendingPatch);
+        assert(!!next);
+        assert(!!compiler);
+        size_t offset = pendingPatch->value();
+        u8* replacementLocation = mutableExecutableMemory() + offset;
+        const u8* jumpLocation = next->nativeCode();
+        auto replacementCode = compiler->compileJumpTo((u64)jumpLocation);
+        memcpy(replacementLocation, replacementCode.data(), replacementCode.size());
+        pendingPatch->reset();
     }
 }
