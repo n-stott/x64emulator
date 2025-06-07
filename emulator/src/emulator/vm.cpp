@@ -233,10 +233,10 @@ namespace emulator {
 #endif
             verify(currentBasicBlock->start() == cpu_.get(x64::R64::RIP));
             currentBasicBlock->onCall(*this);
-            if(currentBasicBlock->nativeCode()) {
+            if(currentBasicBlock->jitBasicBlock()) {
                 verify(!!jitTrampoline_);
                 cpu_.exec((x64::NativeExecPtr)jitTrampoline_->ptr,
-                          (x64::NativeExecPtr)currentBasicBlock->nativeCode(),
+                          (x64::NativeExecPtr)currentBasicBlock->jitBasicBlock()->executableMemory(),
                           tickInfo.ticks(),
                           (void**)&currentBasicBlock);
                 ++jitExits_;
@@ -842,11 +842,11 @@ namespace emulator {
         if(!jitBasicBlock_->needsPatching()) return;
         u64 continuingBlockAddress = end();
 
-        auto tryPatch = [&](const BasicBlock* next) {
+        auto tryPatch = [&](BasicBlock* next) {
             if(!next) return;
-            if(!next->nativeCode()) return;
+            if(!next->jitBasicBlock()) return;
             jitBasicBlock_->forAllPendingPatches(next->start() == continuingBlockAddress, [&](std::optional<size_t>* pendingPatch) {
-                jitBasicBlock_->tryPatch(pendingPatch, next, vm.compiler());
+                jitBasicBlock_->tryPatch(pendingPatch, next->jitBasicBlock(), vm.compiler());
             });
         };
         tryPatch(fixedDestinationInfo_.next[0]);
@@ -892,13 +892,13 @@ namespace emulator {
         }
     }
 
-    void JitBasicBlock::tryPatch(std::optional<size_t>* pendingPatch, const BasicBlock* next, x64::Compiler* compiler) {
+    void JitBasicBlock::tryPatch(std::optional<size_t>* pendingPatch, const JitBasicBlock* next, x64::Compiler* compiler) {
         assert(!!pendingPatch);
         assert(!!next);
         assert(!!compiler);
         size_t offset = pendingPatch->value();
         u8* replacementLocation = mutableExecutableMemory() + offset;
-        const u8* jumpLocation = next->nativeCode();
+        const u8* jumpLocation = next->executableMemory();
         auto replacementCode = compiler->compileJumpTo((u64)jumpLocation);
         memcpy(replacementLocation, replacementCode.data(), replacementCode.size());
         pendingPatch->reset();

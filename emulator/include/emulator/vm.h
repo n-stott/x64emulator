@@ -97,13 +97,9 @@ namespace emulator {
             return executableMemory_.ptr;
         }
 
-        u8* mutableExecutableMemory() {
-            return executableMemory_.ptr;
-        }
-
         void syncBlockLookupTable(u64 size, const u64* addresses, const BasicBlock** blocks, u64* hitCounts);
 
-        void tryPatch(std::optional<size_t>* pendingPatch, const BasicBlock* next, x64::Compiler* compiler);
+        void tryPatch(std::optional<size_t>* pendingPatch, const JitBasicBlock* next, x64::Compiler* compiler);
 
         template<typename Functor>
         void forAllPendingPatches(bool continuing, Functor&& functor) {
@@ -133,6 +129,10 @@ namespace emulator {
             pendingPatches_.offsetOfReplaceableJumpToContinuingBlock = offset;
         }
 
+        u8* mutableExecutableMemory() {
+            return executableMemory_.ptr;
+        }
+
         MemoryBlock executableMemory_;
 
         x64::BlockLookupTable variableDestinationTable_;
@@ -156,11 +156,6 @@ namespace emulator {
         JitBasicBlock* jitBasicBlock() {
             if(!jitBasicBlock_) return nullptr;
             return jitBasicBlock_.ptr();
-        }
-
-        const u8* nativeCode() const {
-            if(!jitBasicBlock_) return nullptr;
-            return jitBasicBlock_->executableMemory();
         }
 
         u64 start() const;
@@ -205,11 +200,6 @@ namespace emulator {
         } variableDestinationInfo_;
 
         void syncBlockLookupTable();
-        
-        u8* mutableNativeBasicBlock() {
-            if(!!jitBasicBlock_) return nullptr;
-            return jitBasicBlock_->mutableExecutableMemory();
-        }
         
         bool compilationAttempted_ { false };
 
