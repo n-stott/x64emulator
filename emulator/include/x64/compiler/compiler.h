@@ -26,8 +26,8 @@ namespace x64 {
         Compiler();
         ~Compiler();
 
-        std::optional<ir::IR> tryCompileIR(const BasicBlock&, int optimizationLevel = 0, std::optional<void*> basicBlockPtr = std::nullopt, bool diagnose = false);
-        std::optional<NativeBasicBlock> tryCompile(const BasicBlock&, int optimizationLevel = 0, std::optional<void*> basicBlockPtr = std::nullopt, bool diagnose = false);
+        std::optional<ir::IR> tryCompileIR(const BasicBlock&, int optimizationLevel = 0, const void* basicBlockPtr = nullptr, const void* jitBasicBlockPtr = nullptr, bool diagnose = false);
+        std::optional<NativeBasicBlock> tryCompile(const BasicBlock&, int optimizationLevel = 0, const void* basicBlockPtr = nullptr, const void* jitBasicBlockPtr = nullptr, bool diagnose = false);
 
         std::optional<NativeBasicBlock> tryCompileJitTrampoline();
 
@@ -40,7 +40,7 @@ namespace x64 {
 
         std::optional<ir::IR> jitEntry();
         std::optional<ir::IR> basicBlockBody(const BasicBlock&, bool diagnose);
-        std::optional<ir::IR> prepareExit(u32 nbInstructionsInBlock, u64 basicBlockPtr);
+        std::optional<ir::IR> prepareExit(u32 nbInstructionsInBlock, u64 basicBlockPtr, u64 jitBasicBlockPtr);
         std::optional<ir::IR> basicBlockExit(const BasicBlock&, bool diagnose);
         std::optional<ir::IR> jitExit();
 
@@ -564,6 +564,7 @@ namespace x64 {
         void incrementCalls();
         void readFsBase(Reg dst);
         void writeBasicBlockPtr(u64 basicBlockPtr);
+        void writeJitBasicBlockPtr(u64 jitBasicBlockPtr);
 
         std::vector<u8> jmpCode(u64 dst, TmpReg tmp);
 

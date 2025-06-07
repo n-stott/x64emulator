@@ -44,6 +44,7 @@ namespace x64 {
         u64 fsbase;
         u64* ticks;
         void** currentlyExecutingBasicBlockPtr;
+        const void* currentlyExecutingJitBasicBlock;
         const void* executableCode;
     };
 

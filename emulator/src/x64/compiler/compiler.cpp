@@ -30,7 +30,7 @@ namespace x64 {
 
     Compiler::~Compiler() = default;
 
-    std::optional<ir::IR> Compiler::tryCompileIR(const BasicBlock& basicBlock, int optimizationLevel, std::optional<void*> basicBlockPtr, bool diagnose) {
+    std::optional<ir::IR> Compiler::tryCompileIR(const BasicBlock& basicBlock, int optimizationLevel, const void* basicBlockPtr, const void* jitBasicBlockPtr, bool diagnose) {
 #ifdef COMPILER_DEBUG
     // std::vector<Insn> must {{
     //     Insn::MOV_ALIGNED_M128_XMM   
@@ -54,7 +54,7 @@ namespace x64 {
 
             // Then, just before the last instruction is where we are sure to still be on the execution path
             // Update everything here (e.g. number of ticks)
-            auto exitPreparation = prepareExit((u32)basicBlock.instructions.size(), (u64)basicBlockPtr.value_or(nullptr));
+            auto exitPreparation = prepareExit((u32)basicBlock.instructions.size(), (u64)basicBlockPtr, (u64)jitBasicBlockPtr);
             if(!exitPreparation) return {};
 
             // Then, try compiling the last instruction
@@ -72,8 +72,8 @@ namespace x64 {
         }
     }
 
-    std::optional<NativeBasicBlock> Compiler::tryCompile(const BasicBlock& basicBlock, int optimizationLevel, std::optional<void*> basicBlockPtr, bool diagnose) {
-        auto wholeIr = tryCompileIR(basicBlock, optimizationLevel, basicBlockPtr, diagnose);
+    std::optional<NativeBasicBlock> Compiler::tryCompile(const BasicBlock& basicBlock, int optimizationLevel, const void* basicBlockPtr, const void* jitBasicBlockPtr, bool diagnose) {
+        auto wholeIr = tryCompileIR(basicBlock, optimizationLevel, basicBlockPtr, jitBasicBlockPtr, diagnose);
         if(!wholeIr) return {};
         auto bb = codeGenerator_->tryGenerate(wholeIr.value());
         
@@ -672,11 +672,12 @@ namespace x64 {
         return generator_->generateIR();
     }
 
-    std::optional<ir::IR> Compiler::prepareExit(u32 nbInstructionsInBlock, u64 basicBlockPtr) {
+    std::optional<ir::IR> Compiler::prepareExit(u32 nbInstructionsInBlock, u64 basicBlockPtr, u64 jitBasicBlockPtr) {
         generator_->clear();
         addTime(nbInstructionsInBlock);
         incrementCalls();
         writeBasicBlockPtr(basicBlockPtr);
+        writeJitBasicBlockPtr(jitBasicBlockPtr);
         return generator_->generateIR();
     }
 
@@ -5113,6 +5114,14 @@ namespace x64 {
         generator_->mov(bbPtr, get(Reg::GPR0));
     }
 
+    void Compiler::writeJitBasicBlockPtr(u64 jitBasicBlockPtr) {
+        constexpr size_t JITBBPTR_OFFSET = offsetof(NativeArguments, currentlyExecutingJitBasicBlock);
+        static_assert(JITBBPTR_OFFSET == 0x48);
+        M64 bbPtr = make64(R64::RDI, JITBBPTR_OFFSET);
+        loadImm64(Reg::GPR0, jitBasicBlockPtr);
+        generator_->mov(bbPtr, get(Reg::GPR0));
+    }
+
     std::vector<u8> Compiler::jmpCode(u64 dst, TmpReg tmp) {
         assembler_->clear();
         assembler_->mov(get(tmp.reg), dst);
@@ -5424,7 +5433,7 @@ namespace x64 {
 
     void Compiler::callNativeBasicBlock(TmpReg tmp) {
         constexpr size_t EXEC_MEM_OFFSET = offsetof(NativeArguments, executableCode);
-        static_assert(EXEC_MEM_OFFSET == 0x48);
+        static_assert(EXEC_MEM_OFFSET == 0x50);
         M64 execMemPtrPtr = make64(R64::RDI, EXEC_MEM_OFFSET);
         generator_->mov(get(tmp.reg), execMemPtrPtr);
         generator_->call(get(tmp.reg));

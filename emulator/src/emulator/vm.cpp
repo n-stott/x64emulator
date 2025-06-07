@@ -238,7 +238,8 @@ namespace emulator {
                 cpu_.exec((x64::NativeExecPtr)jitTrampoline_->ptr,
                           (x64::NativeExecPtr)currentBasicBlock->jitBasicBlock()->executableMemory(),
                           tickInfo.ticks(),
-                          (void**)&currentBasicBlock);
+                          (void**)&currentBasicBlock,
+                          currentBasicBlock->jitBasicBlock());
                 ++jitExits_;
 #ifdef VM_JIT_TELEMETRY
                 if(currentBasicBlock->basicBlock().instructions.back().first.insn() == x64::Insn::RET) {
@@ -858,7 +859,7 @@ namespace emulator {
         assert(!!compiler);
         assert(!!allocator);
         dst->emplace();
-        auto nativeBasicBlock = compiler->tryCompile(bb, optimizationLevel, currentBb);
+        auto nativeBasicBlock = compiler->tryCompile(bb, optimizationLevel, currentBb, (void*)dst);
         if(!nativeBasicBlock) {
             dst->reset();
             return;

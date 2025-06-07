@@ -1569,7 +1569,8 @@ namespace x64 {
         }
     }
 
-    void Cpu::exec(NativeExecPtr jitEntrypoint, NativeExecPtr nativeBasicBlock, u64* ticks, void** currentlyExecutingBasicBlockPtr) {
+    void Cpu::exec(NativeExecPtr jitEntrypoint, NativeExecPtr nativeBasicBlock, u64* ticks,
+            void** currentlyExecutingBasicBlockPtr, const void* currentlyExecutingJitBasicBlock) {
         assert(!!ticks);
         assert(!!currentlyExecutingBasicBlockPtr);
         assert(!!nativeBasicBlock);
@@ -1585,6 +1586,7 @@ namespace x64 {
             getSegmentBase(Segment::FS),
             ticks,
             currentlyExecutingBasicBlockPtr,
+            currentlyExecutingJitBasicBlock,
             (const void*)nativeBasicBlock
         };
         jitEntrypoint(&arguments);

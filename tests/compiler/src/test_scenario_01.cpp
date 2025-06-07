@@ -25,6 +25,9 @@ int main(int argc, char**) {
     std::fill(basicBlockData.begin(), basicBlockData.end(), 0);
     void* basicBlockPtr = &basicBlockData;
     
+    std::array<u64, 0x100> jitBasicBlockData;
+    std::fill(jitBasicBlockData.begin(), jitBasicBlockData.end(), 0);
+
     if(argc != 1) {
         cpu.exec(bb);
     } else {
@@ -41,7 +44,7 @@ int main(int argc, char**) {
         void* bbptr = ::mmap(nullptr, 0x1000, PROT_EXEC|PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_PRIVATE, 0, 0);
         if(bbptr == (void*)MAP_FAILED) return 1;
         ::memcpy(bbptr, nativebb->nativecode.data(), nativebb->nativecode.size());
-        cpu.exec((NativeExecPtr)trptr, (NativeExecPtr)bbptr, &ticks, &basicBlockPtr);
+        cpu.exec((NativeExecPtr)trptr, (NativeExecPtr)bbptr, &ticks, &basicBlockPtr, &jitBasicBlockData);
         if(ticks != 2) {
             printf("ticks = %d\n", (int)ticks);
             return 1;
