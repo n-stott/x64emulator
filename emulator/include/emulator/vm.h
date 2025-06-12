@@ -97,7 +97,7 @@ namespace emulator {
             return executableMemory_.ptr;
         }
 
-        void syncBlockLookupTable(u64 size, const u64* addresses, const BasicBlock** blocks, u64* hitCounts);
+        void syncBlockLookupTable(u64 size, const u64* addresses, const JitBasicBlock** blocks, u64* hitCounts);
 
         void tryPatch(std::optional<size_t>* pendingPatch, const JitBasicBlock* next, x64::Compiler* compiler);
 
@@ -192,6 +192,7 @@ namespace emulator {
 
         struct VariableDestinationInfo {
             std::vector<BasicBlock*> next;
+            std::vector<JitBasicBlock*> nextJit;
             std::vector<u64> nextStart;
             std::vector<u64> nextCount;
 
@@ -216,15 +217,15 @@ namespace emulator {
     class BasicBlockTest {
         static_assert(sizeof(BasicBlock::cpuBasicBlock_) == 0x18);
         static_assert(sizeof(BasicBlock::fixedDestinationInfo_) == 0x20);
-        static_assert(sizeof(BasicBlock::variableDestinationInfo_) == 0x48);
+        static_assert(sizeof(BasicBlock::variableDestinationInfo_) == 0x60);
 
         static_assert(offsetof(BasicBlock, jitBasicBlock_) == 0x18);
         static_assert(Optional<JitBasicBlock>::VALUE_OFFSET == 0);
         
-        static_assert(offsetof(BasicBlock, jitBasicBlock_) + offsetof(JitBasicBlock, executableMemory_) == x64::NATIVE_BLOCK_OFFSET);
+        static_assert(offsetof(JitBasicBlock, executableMemory_) == x64::NATIVE_BLOCK_OFFSET);
         static_assert(offsetof(MemoryBlock, ptr) == 0);
-        static_assert(offsetof(BasicBlock, jitBasicBlock_) + offsetof(JitBasicBlock, variableDestinationTable_) == x64::BLOCK_LOOKUP_TABLE_OFFSET);
-        static_assert(offsetof(BasicBlock, jitBasicBlock_) + offsetof(JitBasicBlock, calls_) == x64::CALLS_OFFSET);
+        static_assert(offsetof(JitBasicBlock, variableDestinationTable_) == x64::BLOCK_LOOKUP_TABLE_OFFSET);
+        static_assert(offsetof(JitBasicBlock, calls_) == x64::CALLS_OFFSET);
     };
 
 

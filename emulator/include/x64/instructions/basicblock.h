@@ -22,15 +22,15 @@ namespace x64 {
 
     // DO NOT CHANGE THIS VALUE UNLESS THE LAYOUT
     // OF emulator::BasicBlock CHANGES AS WELL
-    static constexpr size_t NATIVE_BLOCK_OFFSET = 0x18 + 0x0;
+    static constexpr size_t NATIVE_BLOCK_OFFSET = 0x0;
 
     // DO NOT CHANGE THIS VALUE UNLESS THE LAYOUT
     // OF emulator::BasicBlock CHANGES AS WELL
-    static constexpr size_t BLOCK_LOOKUP_TABLE_OFFSET = 0x18 + 0x18;
+    static constexpr size_t BLOCK_LOOKUP_TABLE_OFFSET = 0x18;
 
     // DO NOT CHANGE THIS VALUE UNLESS THE LAYOUT
     // OF emulator::BasicBlock CHANGES AS WELL
-    static constexpr size_t CALLS_OFFSET = 0x18 + 0x38;
+    static constexpr size_t CALLS_OFFSET = 0x38;
 
     // DO NOT MODIFY THIS STRUCT
     // WITHOUT CHANGING THE JIT AS WELL !!

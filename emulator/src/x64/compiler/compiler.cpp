@@ -135,11 +135,9 @@ namespace x64 {
 
         // load the table ptr into R13
         // 1- load the ptr to the basic block ptr
-        constexpr size_t BBPTR_OFFSET = offsetof(NativeArguments, currentlyExecutingBasicBlockPtr);
-        static_assert(BBPTR_OFFSET == 0x40);
-        M64 bbPtrPtr = make64(R64::RDI, BBPTR_OFFSET);
-        generator_->mov(R64::R13, bbPtrPtr);
-        M64 bbPtr = make64(R64::R13, 0);
+        constexpr size_t BBPTR_OFFSET = offsetof(NativeArguments, currentlyExecutingJitBasicBlock);
+        static_assert(BBPTR_OFFSET == 0x48);
+        M64 bbPtr = make64(R64::RDI, BBPTR_OFFSET);
         generator_->mov(R64::R13, bbPtr);
         // 2- load the ptr to the lookup table
         M64 tablePtr = make64(R64::R13, BLOCK_LOOKUP_TABLE_OFFSET);
@@ -187,7 +185,9 @@ namespace x64 {
         generator_->mov(get(Reg::GPR0), make64(TABLE_BASE, BASICBLOCK_LOOKUP_OFFSET));
         generator_->mov(get(Reg::GPR1), make64(get(Reg::GPR0), get(Reg::GPR1), 8, 0));
 
-        // GPR1 now holds the pointer to the emulator::BasicBlock
+        // GPR1 now holds the pointer to the emulator::JitBasicBlock
+        generator_->test(get(Reg::GPR1), get(Reg::GPR1));
+        generator_->jumpCondition(x64::Cond::E, &fail);
 
         generator_->mov(get(Reg::GPR0), make64(get(Reg::GPR1), NATIVE_BLOCK_OFFSET));
 
@@ -5082,11 +5082,9 @@ namespace x64 {
     }
 
     void Compiler::incrementCalls() {
-        constexpr size_t BBPTR_OFFSET = offsetof(NativeArguments, currentlyExecutingBasicBlockPtr);
-        static_assert(BBPTR_OFFSET == 0x40);
-        M64 bbPtrPtr = make64(R64::RDI, BBPTR_OFFSET);
-        generator_->mov(get(Reg::GPR0), bbPtrPtr);
-        M64 bbPtr = make64(get(Reg::GPR0), 0);
+        constexpr size_t BBPTR_OFFSET = offsetof(NativeArguments, currentlyExecutingJitBasicBlock);
+        static_assert(BBPTR_OFFSET == 0x48);
+        M64 bbPtr = make64(R64::RDI, BBPTR_OFFSET);
         generator_->mov(get(Reg::GPR0), bbPtr);
         M64 callsPtr = make64(get(Reg::GPR0), CALLS_OFFSET);
         // read the calls

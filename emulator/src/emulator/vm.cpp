@@ -46,7 +46,7 @@ namespace emulator {
         u64 jittedInstructions = 0;
         u64 jitCandidateInstructions = 0;
         for(const auto& bb : basicBlocks_) {
-            if(bb->nativeBasicBlock() != nullptr) {
+            if(bb->jitBasicBlock() != nullptr) {
                 jitted += 1;
                 jittedBlocks.push_back(bb.get());
                 jittedInstructions += bb->basicBlock().instructions.size() * bb->calls();
@@ -75,11 +75,11 @@ namespace emulator {
         for(auto* bb : jittedBlocks) {
             const auto* region = ((const x64::Mmu&)mmu_).findAddress(bb->start());
             fmt::print("  Calls: {}. Jitted: {}. Size: {}. Source: {}\n",
-                bb->calls(), !!bb->nativeBasicBlock(), bb->basicBlock().instructions.size(), region->name());
+                bb->calls(), !!bb->jitBasicBlock(), bb->basicBlock().instructions.size(), region->name());
             for(const auto& ins : bb->basicBlock().instructions) {
                 fmt::print("      {:#12x} {}\n", ins.first.address(), ins.first.toString());
             }
-            auto ir = x64::Compiler::tryCompileIR(bb->basicBlock(), 1, {}, false);
+            auto ir = compiler_->tryCompileIR(bb->basicBlock(), 1, nullptr, nullptr, false);
             assert(!!ir);
             fmt::print("    Generated IR:\n");
             for(const auto& ins : ir->instructions) {
@@ -91,7 +91,7 @@ namespace emulator {
         for(auto* bb : blocks) {
             const auto* region = ((const x64::Mmu&)mmu_).findAddress(bb->start());
             fmt::print("  Calls: {}. Jitted: {}. Size: {}. Source: {}\n",
-                bb->calls(), !!bb->nativeBasicBlock(), bb->basicBlock().instructions.size(), region->name());
+                bb->calls(), !!bb->jitBasicBlock(), bb->basicBlock().instructions.size(), region->name());
             for(const auto& ins : bb->basicBlock().instructions) {
                 fmt::print("      {:#12x} {}\n", ins.first.address(), ins.first.toString());
             }
@@ -707,20 +707,24 @@ namespace emulator {
 
     void BasicBlock::VariableDestinationInfo::addSuccessor(BasicBlock* other) {
         next.push_back(other);
+        nextJit.push_back(other->jitBasicBlock());
         nextStart.push_back(other->start());
         nextCount.push_back(1);
     }
 
     void BasicBlock::syncBlockLookupTable() {
         if(!jitBasicBlock_) return;
+        for(size_t i = 0; i < variableDestinationInfo_.next.size(); ++i) {
+            variableDestinationInfo_.nextJit[i] = variableDestinationInfo_.next[i]->jitBasicBlock();
+        }
         jitBasicBlock_->syncBlockLookupTable(
-                variableDestinationInfo_.next.size(),
+                variableDestinationInfo_.nextJit.size(),
                 variableDestinationInfo_.nextStart.data(),
-                (const BasicBlock**)variableDestinationInfo_.next.data(),
+                (const JitBasicBlock**)variableDestinationInfo_.nextJit.data(),
                 variableDestinationInfo_.nextCount.data());
     }
 
-    void JitBasicBlock::syncBlockLookupTable(u64 size, const u64* addresses, const BasicBlock** blocks, u64* hitCounts) {
+    void JitBasicBlock::syncBlockLookupTable(u64 size, const u64* addresses, const JitBasicBlock** blocks, u64* hitCounts) {
         variableDestinationTable_.size = size;
         variableDestinationTable_.addresses = addresses;
         variableDestinationTable_.blocks = (const void**)blocks;
@@ -755,6 +759,7 @@ namespace emulator {
 
     void BasicBlock::VariableDestinationInfo::removeSuccessor(BasicBlock*) {
         next.clear();
+        nextJit.clear();
         nextStart.clear();
         nextCount.clear();
     }
@@ -840,18 +845,20 @@ namespace emulator {
 
     void BasicBlock::tryPatch(VM& vm) {
         if(!jitBasicBlock_) return;
-        if(!jitBasicBlock_->needsPatching()) return;
-        u64 continuingBlockAddress = end();
+        if(jitBasicBlock_->needsPatching()) {
+            u64 continuingBlockAddress = end();
 
-        auto tryPatch = [&](BasicBlock* next) {
-            if(!next) return;
-            if(!next->jitBasicBlock()) return;
-            jitBasicBlock_->forAllPendingPatches(next->start() == continuingBlockAddress, [&](std::optional<size_t>* pendingPatch) {
-                jitBasicBlock_->tryPatch(pendingPatch, next->jitBasicBlock(), vm.compiler());
-            });
-        };
-        tryPatch(fixedDestinationInfo_.next[0]);
-        tryPatch(fixedDestinationInfo_.next[1]);
+            auto tryPatch = [&](BasicBlock* next) {
+                if(!next) return;
+                if(!next->jitBasicBlock()) return;
+                jitBasicBlock_->forAllPendingPatches(next->start() == continuingBlockAddress, [&](std::optional<size_t>* pendingPatch) {
+                    jitBasicBlock_->tryPatch(pendingPatch, next->jitBasicBlock(), vm.compiler());
+                });
+            };
+            tryPatch(fixedDestinationInfo_.next[0]);
+            tryPatch(fixedDestinationInfo_.next[1]);
+        }
+        syncBlockLookupTable();
     }
 
     void JitBasicBlock::tryCreateInplace(Optional<JitBasicBlock>* dst, const x64::BasicBlock& bb, BasicBlock* currentBb, x64::Compiler* compiler, int optimizationLevel, ExecutableMemoryAllocator* allocator) {
