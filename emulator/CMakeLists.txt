@@ -93,6 +93,7 @@ add_library(x64emulator STATIC
     src/x64/compiler/compiler.cpp
     src/x64/compiler/ir.cpp
     src/x64/compiler/irgenerator.cpp
+    src/x64/compiler/jit.cpp
     src/x64/compiler/optimizer.cpp
     src/x64/disassembler/capstonewrapper.cpp
     src/x64/instructions/x64instruction.cpp

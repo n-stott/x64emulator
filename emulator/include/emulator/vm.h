@@ -3,6 +3,7 @@
 
 #include "emulator/symbolprovider.h"
 #include "emulator/executablememoryallocator.h"
+#include "x64/compiler/jit.h"
 #include "x64/cpu.h"
 #include "x64/mmu.h"
 #include "utils.h"
@@ -24,6 +25,8 @@ namespace x64 {
     struct BasicBlock;
     class CapstoneWrapper;
     class Compiler;
+    class JitBasicBlock;
+    class Jit;
 }
 
 namespace emulator {
@@ -31,119 +34,6 @@ namespace emulator {
     class VM;
     class CompilationQueue;
     class BasicBlock;
-
-    template<typename T>
-    class Optional {
-        static_assert(std::is_default_constructible_v<T>);
-    public:
-        static constexpr size_t VALUE_OFFSET = 0;
-
-        operator bool() const {
-            return present_;
-        }
-
-        T* ptr() {
-            if(!present_) return nullptr;
-            return &value_;
-        }
-
-        T* operator->() {
-            if(!present_) return nullptr;
-            return &value_;
-        }
-
-        const T* operator->() const {
-            if(!present_) return nullptr;
-            return &value_;
-        }
-
-        void reset() {
-            present_ = false;
-            value_.~T();
-            new(&value_)T();
-        }
-
-        void emplace() {
-            value_.~T();
-            new(&value_)T();
-            present_ = true;
-        }
-        
-    private:
-        T value_ {};
-        bool present_ { false };
-        friend class OptionalTests;
-    };
-
-    struct OptionalTests {
-        static_assert(offsetof(Optional<u32>, value_) == Optional<u32>::VALUE_OFFSET);
-        static_assert(offsetof(Optional<u64>, value_) == Optional<u64>::VALUE_OFFSET);
-    };
-
-    class JitBasicBlock {
-        friend class BasicBlockTest;
-    public:
-        static void tryCreateInplace(Optional<JitBasicBlock>* dst, const x64::BasicBlock& bb, BasicBlock* currentBb, x64::Compiler* compiler, int optimizationLevel, ExecutableMemoryAllocator* allocator);
-
-        JitBasicBlock();
-        ~JitBasicBlock();
-
-        bool needsPatching() const {
-            return !!pendingPatches_.offsetOfReplaceableJumpToConditionalBlock
-                || !!pendingPatches_.offsetOfReplaceableJumpToContinuingBlock;
-        }
-
-        const u8* executableMemory() const {
-            return executableMemory_.ptr;
-        }
-
-        void syncBlockLookupTable(u64 size, const u64* addresses, const JitBasicBlock** blocks, u64* hitCounts);
-
-        void tryPatch(std::optional<size_t>* pendingPatch, const JitBasicBlock* next, x64::Compiler* compiler);
-
-        template<typename Functor>
-        void forAllPendingPatches(bool continuing, Functor&& functor) {
-            if(continuing && !!pendingPatches_.offsetOfReplaceableJumpToContinuingBlock) {
-                functor(&pendingPatches_.offsetOfReplaceableJumpToContinuingBlock);
-            }
-            if(!continuing && !!pendingPatches_.offsetOfReplaceableJumpToConditionalBlock) {
-                functor(&pendingPatches_.offsetOfReplaceableJumpToConditionalBlock);
-            }
-        }
-
-    private:
-        JitBasicBlock(const JitBasicBlock&) = delete;
-        JitBasicBlock(JitBasicBlock&&) = delete;
-
-        void setExecutableMemory(MemoryBlock executableMemory) {
-            executableMemory_ = executableMemory;
-        }
-
-        void setPendingPatchToConditionalBlock(size_t offset) {
-            assert(!pendingPatches_.offsetOfReplaceableJumpToConditionalBlock);
-            pendingPatches_.offsetOfReplaceableJumpToConditionalBlock = offset;
-        }
-
-        void setPendingPatchToContinuingBlock(size_t offset) {
-            assert(!pendingPatches_.offsetOfReplaceableJumpToContinuingBlock);
-            pendingPatches_.offsetOfReplaceableJumpToContinuingBlock = offset;
-        }
-
-        u8* mutableExecutableMemory() {
-            return executableMemory_.ptr;
-        }
-
-        MemoryBlock executableMemory_;
-
-        x64::BlockLookupTable variableDestinationTable_;
-
-        u64 calls_ { 0 };
-
-        struct PendingPatches {
-            std::optional<size_t> offsetOfReplaceableJumpToContinuingBlock;
-            std::optional<size_t> offsetOfReplaceableJumpToConditionalBlock;
-        } pendingPatches_;
-    };
 
     class BasicBlock {
     public:
@@ -153,9 +43,8 @@ namespace emulator {
             return cpuBasicBlock_;
         }
 
-        JitBasicBlock* jitBasicBlock() {
-            if(!jitBasicBlock_) return nullptr;
-            return jitBasicBlock_.ptr();
+        x64::JitBasicBlock* jitBasicBlock() {
+            return jitBasicBlock_;
         }
 
         u64 start() const;
@@ -168,8 +57,10 @@ namespace emulator {
 
         size_t size() const;
         void onCall(VM&);
-        void tryCompile(VM&, CompilationQueue&);
-        void tryPatch(VM&);
+        void onCpuCall();
+        void onJitCall();
+        void tryCompile(x64::Jit&, CompilationQueue&, int optimizationLevel);
+        void tryPatch(x64::Jit&);
 
         u64 calls() const { return calls_; }
 
@@ -178,7 +69,7 @@ namespace emulator {
         void removeSucessor(BasicBlock* other);
 
         x64::BasicBlock cpuBasicBlock_;
-        Optional<JitBasicBlock> jitBasicBlock_;
+        x64::JitBasicBlock* jitBasicBlock_ { nullptr };
 
         struct FixedDestinationInfo {
             static constexpr size_t CACHE_SIZE = 2;
@@ -192,7 +83,7 @@ namespace emulator {
 
         struct VariableDestinationInfo {
             std::vector<BasicBlock*> next;
-            std::vector<JitBasicBlock*> nextJit;
+            std::vector<x64::JitBasicBlock*> nextJit;
             std::vector<u64> nextStart;
             std::vector<u64> nextCount;
 
@@ -220,33 +111,26 @@ namespace emulator {
         static_assert(sizeof(BasicBlock::variableDestinationInfo_) == 0x60);
 
         static_assert(offsetof(BasicBlock, jitBasicBlock_) == 0x18);
-        static_assert(Optional<JitBasicBlock>::VALUE_OFFSET == 0);
-        
-        static_assert(offsetof(JitBasicBlock, executableMemory_) == x64::NATIVE_BLOCK_OFFSET);
-        static_assert(offsetof(MemoryBlock, ptr) == 0);
-        static_assert(offsetof(JitBasicBlock, variableDestinationTable_) == x64::BLOCK_LOOKUP_TABLE_OFFSET);
-        static_assert(offsetof(JitBasicBlock, calls_) == x64::CALLS_OFFSET);
     };
-
 
     class CompilationQueue {
     public:
-        void process(VM& vm, BasicBlock* bb) {
+        void process(x64::Jit& jit, emulator::BasicBlock* bb, int optimizationLevel) {
             queue_.clear();
             queue_.push_back(bb);
             while(!queue_.empty()) {
                 bb = queue_.front();
                 queue_.pop_front();
-                bb->tryCompile(vm, *this);
+                bb->tryCompile(jit, *this, optimizationLevel);
             }
         }
 
-        void push(BasicBlock* bb) {
+        void push(emulator::BasicBlock* bb) {
             queue_.push_back(bb);
         }
 
     private:
-        std::deque<BasicBlock*> queue_;
+        std::deque<emulator::BasicBlock*> queue_;
     };
 
     class VM {
@@ -258,12 +142,13 @@ namespace emulator {
         bool jitEnabled() const { return jitEnabled_; }
 
         void setEnableJitChaining(bool enable);
-        bool jitChainingEnabled() const { return jitChainingEnabled_; }
+        bool jitChainingEnabled() const;
 
         void setOptimizationLevel(int level);
         int optimizationLevel() const { return optimizationLevel_; }
 
-        ExecutableMemoryAllocator* allocator() { return &allocator_; }
+        x64::Jit* jit() { return jit_.get(); }
+        CompilationQueue& compilationQueue() { return compilationQueue_; }
 
         void crash();
         bool hasCrashed() const { return hasCrashed_; }
@@ -273,12 +158,6 @@ namespace emulator {
         void execute(kernel::Thread* thread);
 
         void push64(u64 value);
-
-        void tryCreateJitTrampoline();
-        MemoryBlock tryMakeNative(const u8* code, size_t size);
-        void freeNative(MemoryBlock);
-        x64::Compiler* compiler() const { return compiler_.get(); }
-        CompilationQueue& compilationQueue() { return compilationQueue_; }
 
         void tryRetrieveSymbols(const std::vector<u64>& addresses, std::unordered_map<u64, std::string>* addressesToSymbols) const;
 
@@ -366,16 +245,11 @@ namespace emulator {
         mutable SymbolProvider symbolProvider_;
         mutable std::unordered_map<u64, std::string> functionNameCache_;
 
-        ExecutableMemoryAllocator allocator_;
-        std::optional<MemoryBlock> jitTrampoline_;
-        bool jitTrampolineCompilationAttempted_ { false };
-
         bool jitEnabled_ { false };
-        bool jitChainingEnabled_ { false };
         int optimizationLevel_ { 0 };
 
         std::unique_ptr<x64::CapstoneWrapper> disassembler_;
-        std::unique_ptr<x64::Compiler> compiler_;
+        std::unique_ptr<x64::Jit> jit_;
         CompilationQueue compilationQueue_;
     };
 

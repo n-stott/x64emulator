@@ -18,7 +18,6 @@ namespace emulator {
             cpu_(cpu),
             mmu_(mmu) {
         disassembler_ = std::make_unique<x64::CapstoneWrapper>();
-        compiler_ = std::make_unique<x64::Compiler>();
     }
 
     VM::~VM() {
@@ -103,10 +102,20 @@ namespace emulator {
 
     void VM::setEnableJit(bool enable) {
         jitEnabled_ = enable;
+        if(!jitEnabled_) {
+            jit_.reset();
+        } else {
+            if(!jit_) jit_ = x64::Jit::tryCreate();
+        }
     }
 
     void VM::setEnableJitChaining(bool enable) {
-        jitChainingEnabled_ = enable;
+        if(!!jit_) jit_->setEnableJitChaining(enable);
+    }
+
+    bool VM::jitChainingEnabled() const {
+        if(!!jit_) return jit_->jitChainingEnabled();
+        return false;
     }
 
     void VM::setOptimizationLevel(int level) {
@@ -234,8 +243,8 @@ namespace emulator {
             verify(currentBasicBlock->start() == cpu_.get(x64::R64::RIP));
             currentBasicBlock->onCall(*this);
             if(currentBasicBlock->jitBasicBlock()) {
-                verify(!!jitTrampoline_);
-                cpu_.exec((x64::NativeExecPtr)jitTrampoline_->ptr,
+                currentBasicBlock->onJitCall();
+                jit_->exec(&cpu_, &mmu_,
                           (x64::NativeExecPtr)currentBasicBlock->jitBasicBlock()->executableMemory(),
                           tickInfo.ticks(),
                           (void**)&currentBasicBlock,
@@ -256,14 +265,16 @@ namespace emulator {
                 }
 #endif
             } else {
+                currentBasicBlock->onCpuCall();
                 cpu_.exec(currentBasicBlock->basicBlock());
                 tickInfo.tick(currentBasicBlock->basicBlock().instructions.size());
             }
             nextBasicBlock = findNextBasicBlock();
-            if(!!currentBasicBlock->jitBasicBlock()
+            if(!!jit_
+            && !!currentBasicBlock->jitBasicBlock()
             && currentBasicBlock->basicBlock().endsWithFixedDestinationJump()
             && !!nextBasicBlock->jitBasicBlock()) {
-                if(jitChainingEnabled()) currentBasicBlock->tryPatch(*this);
+                if(jitChainingEnabled()) currentBasicBlock->tryPatch(*jit_);
                 ++avoidableExits_;
             }
         }
@@ -720,15 +731,8 @@ namespace emulator {
         jitBasicBlock_->syncBlockLookupTable(
                 variableDestinationInfo_.nextJit.size(),
                 variableDestinationInfo_.nextStart.data(),
-                (const JitBasicBlock**)variableDestinationInfo_.nextJit.data(),
+                (const x64::JitBasicBlock**)variableDestinationInfo_.nextJit.data(),
                 variableDestinationInfo_.nextCount.data());
-    }
-
-    void JitBasicBlock::syncBlockLookupTable(u64 size, const u64* addresses, const JitBasicBlock** blocks, u64* hitCounts) {
-        variableDestinationTable_.size = size;
-        variableDestinationTable_.addresses = addresses;
-        variableDestinationTable_.blocks = (const void**)blocks;
-        variableDestinationTable_.hitCounts = hitCounts;
     }
 
     void BasicBlock::addSuccessor(BasicBlock* other) {
@@ -779,58 +783,39 @@ namespace emulator {
         predecessors_.clear();
         for(auto succ : successors_) succ.second->removePredecessor(this);
         successors_.clear();
-        jitBasicBlock_.reset();
+        jitBasicBlock_ = nullptr;
     }
 
     size_t BasicBlock::size() const {
         return successors_.size() + predecessors_.size();
     }
 
-    void VM::tryCreateJitTrampoline() {
-        if(!!jitTrampoline_) return;
-        if(jitTrampolineCompilationAttempted_) return;
-        jitTrampolineCompilationAttempted_ = true;
-        auto jitBlock = compiler_->tryCompileJitTrampoline();
-        if(!jitBlock) return;
-        auto memoryBlock = allocator_.allocate((u32)jitBlock->nativecode.size());
-        if(!memoryBlock) return;
-        std::memcpy(memoryBlock->ptr, jitBlock->nativecode.data(), jitBlock->nativecode.size());
-        jitTrampoline_ = memoryBlock;
-    }
-
-    MemoryBlock VM::tryMakeNative(const u8* code, size_t size) {
-        auto block = allocator_.allocate((u32)size);
-        if(!block) return MemoryBlock{};
-        std::memcpy(block->ptr, code, size);
-        return block.value();
-    }
-
-    void VM::freeNative(MemoryBlock block) {
-        allocator_.free(block);
-    }
-
     void BasicBlock::onCall(VM& vm) {
-        ++calls_;
-        if(!vm.jitEnabled()) return;
-        tryCompile(vm, vm.compilationQueue());
+        if(!vm.jit()) return;
+        vm.compilationQueue().process(*vm.jit(), this, vm.optimizationLevel());
     }
 
-    void BasicBlock::tryCompile(VM& vm, CompilationQueue& queue) {
+    void BasicBlock::onCpuCall() {
+        ++calls_;
+    }
+
+    void BasicBlock::onJitCall() {
+        // Nothing yet
+    }
+
+    void BasicBlock::tryCompile(x64::Jit& jit, CompilationQueue& queue, int optimizationLevel) {
         if(calls_ < callsForCompilation_) {
             callsForCompilation_ /= 2;
             return;
         }
         if(!compilationAttempted_) {
-            vm.tryCreateJitTrampoline();
-            verify(!!vm.compiler(), "We have no compiler");
-
-            JitBasicBlock::tryCreateInplace(&jitBasicBlock_, cpuBasicBlock_, this, vm.compiler(), vm.optimizationLevel(), vm.allocator());
+            jitBasicBlock_ = jit.tryCompile(cpuBasicBlock_, this, optimizationLevel);
 
             if(!!jitBasicBlock_) {
-                if(vm.jitChainingEnabled()) {
-                    tryPatch(vm);
+                if(jit.jitChainingEnabled()) {
+                    tryPatch(jit);
                     for(auto prev : predecessors_) {
-                        prev.second->tryPatch(vm);
+                        prev.second->tryPatch(jit);
                     }
                 }
             }
@@ -843,7 +828,7 @@ namespace emulator {
         }
     }
 
-    void BasicBlock::tryPatch(VM& vm) {
+    void BasicBlock::tryPatch(x64::Jit& jit) {
         if(!jitBasicBlock_) return;
         if(jitBasicBlock_->needsPatching()) {
             u64 continuingBlockAddress = end();
@@ -852,63 +837,12 @@ namespace emulator {
                 if(!next) return;
                 if(!next->jitBasicBlock()) return;
                 jitBasicBlock_->forAllPendingPatches(next->start() == continuingBlockAddress, [&](std::optional<size_t>* pendingPatch) {
-                    jitBasicBlock_->tryPatch(pendingPatch, next->jitBasicBlock(), vm.compiler());
+                    jitBasicBlock_->tryPatch(pendingPatch, next->jitBasicBlock(), jit.compiler());
                 });
             };
             tryPatch(fixedDestinationInfo_.next[0]);
             tryPatch(fixedDestinationInfo_.next[1]);
         }
         syncBlockLookupTable();
-    }
-
-    void JitBasicBlock::tryCreateInplace(Optional<JitBasicBlock>* dst, const x64::BasicBlock& bb, BasicBlock* currentBb, x64::Compiler* compiler, int optimizationLevel, ExecutableMemoryAllocator* allocator) {
-        assert(!!dst);
-        assert(!!compiler);
-        assert(!!allocator);
-        dst->emplace();
-        auto nativeBasicBlock = compiler->tryCompile(bb, optimizationLevel, currentBb, (void*)dst);
-        if(!nativeBasicBlock) {
-            dst->reset();
-            return;
-        }
-
-        auto executableMemory = allocator->allocate((u32)nativeBasicBlock->nativecode.size());
-        if(!executableMemory) {
-            dst->reset();
-            return;
-        }
-
-        std::memcpy(executableMemory->ptr, nativeBasicBlock->nativecode.data(), nativeBasicBlock->nativecode.size());
-
-        (*dst)->setExecutableMemory(executableMemory.value());
-        
-        if(!!nativeBasicBlock->offsetOfReplaceableJumpToContinuingBlock) {
-            (*dst)->setPendingPatchToContinuingBlock(nativeBasicBlock->offsetOfReplaceableJumpToContinuingBlock.value());
-        }
-        if(!!nativeBasicBlock->offsetOfReplaceableJumpToConditionalBlock) {
-            (*dst)->setPendingPatchToConditionalBlock(nativeBasicBlock->offsetOfReplaceableJumpToConditionalBlock.value());
-        }
-    }
-
-    JitBasicBlock::JitBasicBlock() {
-        
-    }
-
-    JitBasicBlock::~JitBasicBlock() {
-        if(!!executableMemory_.allocator) {
-            executableMemory_.allocator->free(executableMemory_);
-        }
-    }
-
-    void JitBasicBlock::tryPatch(std::optional<size_t>* pendingPatch, const JitBasicBlock* next, x64::Compiler* compiler) {
-        assert(!!pendingPatch);
-        assert(!!next);
-        assert(!!compiler);
-        size_t offset = pendingPatch->value();
-        u8* replacementLocation = mutableExecutableMemory() + offset;
-        const u8* jumpLocation = next->executableMemory();
-        auto replacementCode = compiler->compileJumpTo((u64)jumpLocation);
-        memcpy(replacementLocation, replacementCode.data(), replacementCode.size());
-        pendingPatch->reset();
     }
 }

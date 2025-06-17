@@ -111,8 +111,10 @@ namespace x64 {
 
         void save(State*) const;
         void load(const State&);
+
         
     private:
+        friend class Jit;
         Mmu* mmu_;
         Flags flags_;
         Registers regs_;
