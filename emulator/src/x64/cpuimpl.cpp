@@ -1120,6 +1120,20 @@ namespace x64 {
         return res;
     }
 
+    u64 CpuImpl::pinsrw16(u64 dst, u16 src, u8 order) {
+        order = order & 0x3;
+        std::array<u16, 4> DST;
+        static_assert(sizeof(DST) == sizeof(u64));
+        std::memcpy(DST.data(), &dst, sizeof(u64));
+        DST[order] = src;
+        std::memcpy(&dst, DST.data(), sizeof(u64));
+        return dst;
+    }
+
+    u64 CpuImpl::pinsrw32(u64 dst, u32 src, u8 order) {
+        return pinsrw16(dst, (u16)src, order);
+    }
+
     u128 CpuImpl::pinsrw16(u128 dst, u16 src, u8 order) {
         order = order & 0x7;
         std::array<u16, 8> DST;

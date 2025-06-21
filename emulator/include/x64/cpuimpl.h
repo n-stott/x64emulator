@@ -237,6 +237,8 @@ namespace x64 {
         [[nodiscard]] static u128 shufps(u128 dst, u128 src, u8 order);
         [[nodiscard]] static u128 shufpd(u128 dst, u128 src, u8 order);
 
+        [[nodiscard]] static u64 pinsrw16(u64 dst, u16 src, u8 order);
+        [[nodiscard]] static u64 pinsrw32(u64 dst, u32 src, u8 order);
         [[nodiscard]] static u128 pinsrw16(u128 dst, u16 src, u8 order);
         [[nodiscard]] static u128 pinsrw32(u128 dst, u32 src, u8 order);
         [[nodiscard]] static u16 pextrw16(u128 src, u8 order);

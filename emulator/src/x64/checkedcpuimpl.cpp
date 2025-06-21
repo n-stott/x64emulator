@@ -847,12 +847,24 @@ namespace x64 {
         return checkCall<u128>(&CpuImpl::shufpd, &NativeCpuImpl::shufpd, dst, src, order);
     }
 
+    u64 CheckedCpuImpl::pinsrw16(u64 dst, u16 src, u8 order) {
+        using signature = u64(*)(u64, u16, u8);
+        return checkCall<u64>(static_cast<signature>(&CpuImpl::pinsrw16), static_cast<signature>(&NativeCpuImpl::pinsrw16), dst, src, order);
+    }
+
+    u64 CheckedCpuImpl::pinsrw32(u64 dst, u32 src, u8 order) {
+        using signature = u64(*)(u64, u32, u8);
+        return checkCall<u64>(static_cast<signature>(&CpuImpl::pinsrw32), static_cast<signature>(&NativeCpuImpl::pinsrw32), dst, src, order);
+    }
+
     u128 CheckedCpuImpl::pinsrw16(u128 dst, u16 src, u8 order) {
-        return checkCall<u128>(&CpuImpl::pinsrw16, &NativeCpuImpl::pinsrw16, dst, src, order);
+        using signature = u128(*)(u128, u16, u8);
+        return checkCall<u128>(static_cast<signature>(&CpuImpl::pinsrw16), static_cast<signature>(&NativeCpuImpl::pinsrw16), dst, src, order);
     }
 
     u128 CheckedCpuImpl::pinsrw32(u128 dst, u32 src, u8 order) {
-        return checkCall<u128>(&CpuImpl::pinsrw32, &NativeCpuImpl::pinsrw32, dst, src, order);
+        using signature = u128(*)(u128, u32, u8);
+        return checkCall<u128>(static_cast<signature>(&CpuImpl::pinsrw32), static_cast<signature>(&NativeCpuImpl::pinsrw32), dst, src, order);
     }
 
     u16 CheckedCpuImpl::pextrw16(u128 src, u8 order) {

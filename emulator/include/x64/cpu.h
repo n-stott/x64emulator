@@ -356,6 +356,7 @@ namespace x64 {
         void execMovMImm(const X64Instruction&);
 
         void execMovq2dq(const X64Instruction&);
+        void execMovdq2q(const X64Instruction&);
 
         void execMovaXMMM128(const X64Instruction&);
         void execMovaM128XMM(const X64Instruction&);
@@ -825,6 +826,9 @@ namespace x64 {
         void execMovhpsM64XMM(const X64Instruction&);
         void execMovhlpsXMMXMM(const X64Instruction&);
         void execMovlhpsXMMXMM(const X64Instruction&);
+
+        void execPinsrwMMXR32Imm(const X64Instruction&);
+        void execPinsrwMMXM16Imm(const X64Instruction&);
 
         void execPinsrwXMMR32Imm(const X64Instruction&);
         void execPinsrwXMMM16Imm(const X64Instruction&);

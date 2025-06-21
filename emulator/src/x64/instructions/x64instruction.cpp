@@ -170,6 +170,7 @@ namespace x64 {
             case Insn::MOV_MMX_MMX: return toString<MMX, MMX>("mov");
             case Insn::MOV_XMM_XMM: return toString<XMM, XMM>("mov");
             case Insn::MOVQ2DQ_XMM_MM: return toString<XMM, MMX>("movq2dq");
+            case Insn::MOVDQ2Q_MM_XMM: return toString<MMX, XMM>("movdq2q");
             case Insn::MOV_ALIGNED_XMM_M128: return toString<XMM, M128>("mova");
             case Insn::MOV_ALIGNED_M128_XMM: return toString<M128, XMM>("mova");
             case Insn::MOV_UNALIGNED_XMM_M128: return toString<XMM, M128>("movu");
@@ -552,6 +553,8 @@ namespace x64 {
             case Insn::MOVHPS_M64_XMM: return toString<M64, XMM>("movhps");
             case Insn::MOVHLPS_XMM_XMM: return toString<XMM, XMM>("movhlps");
             case Insn::MOVLHPS_XMM_XMM: return toString<XMM, XMM>("movlhps");
+            case Insn::PINSRW_MMX_R32_IMM: return toString<MMX, R32, Imm>("pinsrw");
+            case Insn::PINSRW_MMX_M16_IMM: return toString<MMX, M16, Imm>("pinsrw");
             case Insn::PINSRW_XMM_R32_IMM: return toString<XMM, R32, Imm>("pinsrw");
             case Insn::PINSRW_XMM_M16_IMM: return toString<XMM, M16, Imm>("pinsrw");
             case Insn::PEXTRW_R32_XMM_IMM: return toString<R32, XMM, Imm>("pextrw");

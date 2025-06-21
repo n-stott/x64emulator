@@ -329,6 +329,7 @@ namespace x64 {
     DEFINE_STANDALONE(MOV_MMX_MMX, execMovMMXMMX)
     DEFINE_STANDALONE(MOV_XMM_XMM, execMovRR<Size::XWORD>)
     DEFINE_STANDALONE(MOVQ2DQ_XMM_MM, execMovq2dq)
+    DEFINE_STANDALONE(MOVDQ2Q_MM_XMM, execMovdq2q)
     DEFINE_STANDALONE(MOV_ALIGNED_XMM_M128, execMovaXMMM128)
     DEFINE_STANDALONE(MOV_ALIGNED_M128_XMM, execMovaM128XMM)
     DEFINE_STANDALONE(MOV_UNALIGNED_XMM_M128, execMovuXMMM128)
@@ -710,6 +711,8 @@ namespace x64 {
     DEFINE_STANDALONE(MOVHPS_M64_XMM, execMovhpsM64XMM)
     DEFINE_STANDALONE(MOVHLPS_XMM_XMM, execMovhlpsXMMXMM)
     DEFINE_STANDALONE(MOVLHPS_XMM_XMM, execMovlhpsXMMXMM)
+    DEFINE_STANDALONE(PINSRW_MMX_R32_IMM, execPinsrwMMXR32Imm)
+    DEFINE_STANDALONE(PINSRW_MMX_M16_IMM, execPinsrwMMXM16Imm)
     DEFINE_STANDALONE(PINSRW_XMM_R32_IMM, execPinsrwXMMR32Imm)
     DEFINE_STANDALONE(PINSRW_XMM_M16_IMM, execPinsrwXMMM16Imm)
     DEFINE_STANDALONE(PEXTRW_R32_XMM_IMM, execPextrwR32XMMImm)
@@ -1009,6 +1012,7 @@ namespace x64 {
         STANDALONE_NAME(MOV_MMX_MMX),
         STANDALONE_NAME(MOV_XMM_XMM),
         STANDALONE_NAME(MOVQ2DQ_XMM_MM),
+        STANDALONE_NAME(MOVDQ2Q_MM_XMM),
         STANDALONE_NAME(MOV_ALIGNED_XMM_M128),
         STANDALONE_NAME(MOV_ALIGNED_M128_XMM),
         STANDALONE_NAME(MOV_UNALIGNED_XMM_M128),
@@ -1390,6 +1394,8 @@ namespace x64 {
         STANDALONE_NAME(MOVHPS_M64_XMM),
         STANDALONE_NAME(MOVHLPS_XMM_XMM),
         STANDALONE_NAME(MOVLHPS_XMM_XMM),
+        STANDALONE_NAME(PINSRW_MMX_R32_IMM),
+        STANDALONE_NAME(PINSRW_MMX_M16_IMM),
         STANDALONE_NAME(PINSRW_XMM_R32_IMM),
         STANDALONE_NAME(PINSRW_XMM_M16_IMM),
         STANDALONE_NAME(PEXTRW_R32_XMM_IMM),
@@ -2370,6 +2376,14 @@ namespace x64 {
         const auto& src = ins.op1<MMX>();
         u64 srcValue = get(src);
         u128 dstValue { srcValue, 0 };
+        set(dst, dstValue);
+    }
+
+    void Cpu::execMovdq2q(const X64Instruction& ins) {
+        const auto& dst = ins.op0<MMX>();
+        const auto& src = ins.op1<XMM>();
+        u128 srcValue = get(src);
+        u64 dstValue = srcValue.lo;
         set(dst, dstValue);
     }
 
@@ -4964,6 +4978,22 @@ namespace x64 {
         u128 srcValue = get(src);
         dstValue.hi = srcValue.lo;
         set(dst, dstValue);
+    }
+
+    void Cpu::execPinsrwMMXR32Imm(const X64Instruction& ins) {
+        const auto& dst = ins.op0<MMX>();
+        const auto& src = ins.op1<R32>();
+        const auto& pos = ins.op2<Imm>();
+        u64 res = Impl::pinsrw32(get(dst), get(src), get<u8>(pos));
+        set(dst, res);
+    }
+
+    void Cpu::execPinsrwMMXM16Imm(const X64Instruction& ins) {
+        const auto& dst = ins.op0<MMX>();
+        const auto& src = ins.op1<M16>();
+        const auto& pos = ins.op2<Imm>();
+        u64 res = Impl::pinsrw16(get(dst), get(resolve(src)), get<u8>(pos));
+        set(dst, res);
     }
 
     void Cpu::execPinsrwXMMR32Imm(const X64Instruction& ins) {

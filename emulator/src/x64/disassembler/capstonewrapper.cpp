@@ -430,6 +430,17 @@ namespace x64 {
         return make_failed(insn);
     }
 
+    static X64Instruction makeMovdq2q(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto mmxdst = asMMX(dst);
+        auto rssesrc = asRegister128(src);
+        if(mmxdst && rssesrc) return X64Instruction::make<Insn::MOVDQ2Q_MM_XMM>(insn.address, insn.size, mmxdst.value(), rssesrc.value());
+        return make_failed(insn);
+    }
+
     static X64Instruction makeMovsx(const cs_insn& insn) {
         const auto& x86detail = insn.detail->x86;
         assert(x86detail.op_count == 2);
@@ -3027,10 +3038,13 @@ namespace x64 {
         const cs_x86_op& dst = x86detail.operands[0];
         const cs_x86_op& src = x86detail.operands[1];
         const cs_x86_op& pos = x86detail.operands[2];
+        auto mmxdst = asMMX(dst);
         auto rssedst = asRegister128(dst);
         auto r32src = asRegister32(src);
         auto m16src = asMemory16(src);
         auto imm = asImmediate(pos);
+        if(mmxdst && r32src && imm) return X64Instruction::make<Insn::PINSRW_MMX_R32_IMM>(insn.address, insn.size, mmxdst.value(), r32src.value(), imm.value());
+        if(mmxdst && m16src && imm) return X64Instruction::make<Insn::PINSRW_MMX_M16_IMM>(insn.address, insn.size, mmxdst.value(), m16src.value(), imm.value());
         if(rssedst && r32src && imm) return X64Instruction::make<Insn::PINSRW_XMM_R32_IMM>(insn.address, insn.size, rssedst.value(), r32src.value(), imm.value());
         if(rssedst && m16src && imm) return X64Instruction::make<Insn::PINSRW_XMM_M16_IMM>(insn.address, insn.size, rssedst.value(), m16src.value(), imm.value());
         return make_failed(insn);
@@ -4126,6 +4140,7 @@ namespace x64 {
             case X86_INS_POPFQ: return makePopfq(insn);
             case X86_INS_MOV: return makeMov(insn);
             case X86_INS_MOVQ2DQ: return makeMovq2dq(insn);
+            case X86_INS_MOVDQ2Q: return makeMovdq2q(insn);
             case X86_INS_MOVABS: return makeMovabs(insn);
             case X86_INS_MOVDQU:
             case X86_INS_MOVUPS:
