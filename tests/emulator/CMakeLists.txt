@@ -94,6 +94,7 @@ create_simple_test(random_call)
 create_simple_test(fact)
 create_simple_test(ack)
 create_simple_test(lseek)
+create_simple_test(longjmp)
 
 add_executable(test_abort src/test_abort.cpp)
 target_compile_options(test_abort PUBLIC ${CC_OPTIONS})
