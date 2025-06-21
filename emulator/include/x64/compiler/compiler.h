@@ -1,10 +1,9 @@
 #ifndef COMPILER_H
 #define COMPILER_H
 
-#include "x64/types.h"
-#include "x64/compiler/assembler.h"
 #include "x64/instructions/basicblock.h"
 #include "x64/compiler/ir.h"
+#include "x64/types.h"
 #include "utils.h"
 #include <memory>
 #include <optional>

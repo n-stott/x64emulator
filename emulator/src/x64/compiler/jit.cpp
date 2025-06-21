@@ -14,6 +14,7 @@ namespace x64 {
 
     Jit::Jit() {
         compiler_ = std::make_unique<x64::Compiler>();
+        std::fill(callstack_.begin(), callstack_.end(), nullptr);
     }
 
     Jit::~Jit() = default;
@@ -55,6 +56,8 @@ namespace x64 {
             &mxcsr,
             cpu->segmentBase_[(int)Segment::FS],
             ticks,
+            (void**)callstack_.data(),
+            &callstackSize_,
             currentlyExecutingBasicBlockPtr,
             currentlyExecutingJitBasicBlock,
             (const void*)nativeBasicBlock
@@ -64,7 +67,15 @@ namespace x64 {
         cpu->flags_ = Flags::fromRflags(rflags);
     }
 
+    void Jit::notifyCall() {
+        // assert(callstackSize_+2 < callstack_.size());
+        // callstack_[callstackSize_++] = nullptr;
+    }
 
+    void Jit::notifyRet() {
+        // assert(callstackSize_ > 0);
+        // callstack_[callstackSize_--] = nullptr;
+    }
 
     JitBasicBlock::JitBasicBlock() = default;
 

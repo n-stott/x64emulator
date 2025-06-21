@@ -1569,30 +1569,6 @@ namespace x64 {
         }
     }
 
-    void Cpu::exec(NativeExecPtr jitEntrypoint, NativeExecPtr nativeBasicBlock, u64* ticks,
-            void** currentlyExecutingBasicBlockPtr, const void* currentlyExecutingJitBasicBlock) {
-        assert(!!ticks);
-        assert(!!currentlyExecutingBasicBlockPtr);
-        assert(!!nativeBasicBlock);
-        u64 rflags = flags_.toRflags();
-        u32 mxcsr = mxcsr_.asDoubleWord();
-        NativeArguments arguments {
-            regs_.gprs(),
-            regs_.mmxs(),
-            regs_.xmms(),
-            mmu_->base(),
-            &rflags,
-            &mxcsr,
-            getSegmentBase(Segment::FS),
-            ticks,
-            currentlyExecutingBasicBlockPtr,
-            currentlyExecutingJitBasicBlock,
-            (const void*)nativeBasicBlock
-        };
-        jitEntrypoint(&arguments);
-        flags_ = Flags::fromRflags(rflags);
-    }
-
     void Cpu::execAddRM8RM8(const X64Instruction& ins) {
         const auto& dst = ins.op0<RM8>();
         const auto& src = ins.op1<RM8>();

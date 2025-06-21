@@ -21,6 +21,47 @@ namespace x64 {
     class Jit;
     struct BasicBlock;
 
+    // DO NOT MODIFY THIS STRUCT
+    // WITHOUT CHANGING THE JIT AS WELL !!
+    struct BlockLookupTable {
+        u64 size { 0 };
+        const u64* addresses { nullptr };
+        const void** blocks { nullptr };
+        u64* hitCounts { nullptr };
+    };
+
+    // DO NOT CHANGE THIS VALUE UNLESS THE LAYOUT
+    // OF emulator::BasicBlock CHANGES AS WELL
+    static constexpr size_t NATIVE_BLOCK_OFFSET = 0x0;
+
+    // DO NOT CHANGE THIS VALUE UNLESS THE LAYOUT
+    // OF emulator::BasicBlock CHANGES AS WELL
+    static constexpr size_t BLOCK_LOOKUP_TABLE_OFFSET = 0x18;
+
+    // DO NOT CHANGE THIS VALUE UNLESS THE LAYOUT
+    // OF emulator::BasicBlock CHANGES AS WELL
+    static constexpr size_t CALLS_OFFSET = 0x38;
+
+    // DO NOT MODIFY THIS STRUCT
+    // WITHOUT CHANGING THE JIT AS WELL !!
+    struct NativeArguments {
+        u64* gprs;
+        u64* mmxs;
+        Xmm* xmms;
+        u8* memory;
+        u64* rflags;
+        const u32* mxcsr;
+        u64 fsbase;
+        u64* ticks;
+        void** callstack;
+        u64* callstackSize;
+        void** currentlyExecutingBasicBlockPtr;
+        const void* currentlyExecutingJitBasicBlock;
+        const void* executableCode;
+    };
+
+    using NativeExecPtr = void(*)(NativeArguments*);
+
     class JitBasicBlock {
         friend class BasicBlockTest;
     public:
@@ -84,6 +125,8 @@ namespace x64 {
             std::optional<size_t> offsetOfReplaceableJumpToContinuingBlock;
             std::optional<size_t> offsetOfReplaceableJumpToConditionalBlock;
         } pendingPatches_;
+
+
     };
 
     class BasicBlockTest {
@@ -109,6 +152,9 @@ namespace x64 {
             void** currentlyExecutingBasicBlockPtr, const void* currentlyExecutingJitBasicBlock);
             
         x64::Compiler* compiler() { return compiler_.get(); }
+
+        void notifyCall();
+        void notifyRet();
             
     private:
         Jit();
@@ -121,6 +167,9 @@ namespace x64 {
 
         std::vector<std::unique_ptr<JitBasicBlock>> blocks_;
         bool jitChainingEnabled_ { false };
+
+        std::array<JitBasicBlock*, 0x1000> callstack_;
+        u64 callstackSize_ { 0 };
     };
 
 }

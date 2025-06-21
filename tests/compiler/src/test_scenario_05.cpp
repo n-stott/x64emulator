@@ -1,6 +1,7 @@
 #include "x64/cpu.h"
 #include "x64/mmu.h"
 #include "x64/compiler/compiler.h"
+#include "x64/compiler/jit.h"
 #include <sys/mman.h>
 
 int main(int argc, char**) {
@@ -30,19 +31,15 @@ int main(int argc, char**) {
         cpu.exec(bb);
     } else {
         Compiler compiler;
-        auto trampoline = compiler.tryCompileJitTrampoline();
-        if(!trampoline) return 1;
         auto nativebb = compiler.tryCompile(bb);
         if(!nativebb) return 1;
-
-        void* trptr = ::mmap(nullptr, 0x1000, PROT_EXEC|PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_PRIVATE, 0, 0);
-        if(trptr == (void*)MAP_FAILED) return 1;
-        ::memcpy(trptr, trampoline->nativecode.data(), trampoline->nativecode.size());
 
         void* bbptr = ::mmap(nullptr, 0x1000, PROT_EXEC|PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_PRIVATE, 0, 0);
         if(bbptr == (void*)MAP_FAILED) return 1;
         ::memcpy(bbptr, nativebb->nativecode.data(), nativebb->nativecode.size());
-        cpu.exec((NativeExecPtr)trptr, (NativeExecPtr)bbptr, &ticks, &basicBlockPtr, &jitBasicBlockData);
+
+        auto jit = Jit::tryCreate();
+        jit->exec(&cpu, mmu.get(), (NativeExecPtr)bbptr, &ticks, &basicBlockPtr, &jitBasicBlockData);
     }
 
     fmt::print("XMM::XMM0={:x} {:x}\n", cpu.get(XMM::XMM0).hi, cpu.get(XMM::XMM0).lo);

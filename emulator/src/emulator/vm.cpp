@@ -353,14 +353,18 @@ namespace emulator {
 
     void VM::notifyCall(u64 address) {
         currentThread_->stats().functionCalls++;
-        if(!jitEnabled()) {
+        if(!jit_) {
             currentThread_->pushCallstack(cpu_.get(x64::R64::RIP), address);
+        } else {
+            jit_->notifyCall();
         }
     }
 
     void VM::notifyRet() {
-        if(!jitEnabled()) {
+        if(!jit_) {
             currentThread_->popCallstack();
+        } else {
+            jit_->notifyRet();
         }
     }
 
