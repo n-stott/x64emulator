@@ -567,6 +567,7 @@ namespace x64 {
         void execJe(const X64Instruction&);
         void execJne(const X64Instruction&);
         void execJcc(const X64Instruction&);
+        void execJrcxz(const X64Instruction&);
 
         void execBsrR16R16(const X64Instruction&);
         void execBsrR16M16(const X64Instruction&);

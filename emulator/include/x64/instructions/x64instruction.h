@@ -328,6 +328,7 @@ namespace x64 {
         JE,
         JNE,
         JCC,
+        JRCXZ,
         BSR_R16_R16,
         BSR_R16_M16,
         BSR_R32_R32,

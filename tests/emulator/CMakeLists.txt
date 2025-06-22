@@ -105,6 +105,12 @@ target_compile_options(test_trivial_c PUBLIC ${CC_OPTIONS})
 target_link_options(test_trivial_c PUBLIC ${LD_OPTIONS} -static)
 add_test(NAME trivial_c COMMAND ${CMAKE_BINARY_DIR}/emulator/emulator test_trivial_c)
 
+add_executable(test_mpfr_c src/test_mpfr.c)
+target_compile_options(test_mpfr_c PUBLIC ${CC_OPTIONS})
+target_link_libraries(test_mpfr_c PUBLIC mpfr gmp)
+target_link_options(test_mpfr_c PUBLIC ${LD_OPTIONS} -static)
+add_test(NAME mpfr_c COMMAND ${CMAKE_BINARY_DIR}/emulator/emulator test_mpfr_c)
+
 create_test_with_library(unordered_map fmt::fmt-header-only)
 create_test_with_library(programargs fmt::fmt-header-only)
 create_test_with_library(fmt_print fmt::fmt-header-only)

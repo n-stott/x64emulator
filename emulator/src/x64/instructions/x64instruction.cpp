@@ -347,6 +347,7 @@ namespace x64 {
             case Insn::JE: return toString<u64>("je");
             case Insn::JNE: return toString<u64>("jne");
             case Insn::JCC: return toString<Cond, u64>("jcc");
+            case Insn::JRCXZ: return toString<u64>("jrcxz");
             case Insn::BSR_R16_R16: return toString<R16, R16>("bsr");
             case Insn::BSR_R16_M16: return toString<R16, M16>("bsr");
             case Insn::BSR_R32_R32: return toString<R32, R32>("bsr");
@@ -747,6 +748,7 @@ namespace x64 {
             case Insn::JE:
             case Insn::JNE:
             case Insn::JCC:
+            case Insn::JRCXZ:
             case Insn::CALLDIRECT:
             case Insn::CALLINDIRECT_RM32:
             case Insn::CALLINDIRECT_RM64:
@@ -763,6 +765,7 @@ namespace x64 {
             case Insn::JE:
             case Insn::JNE:
             case Insn::JCC:
+            case Insn::JRCXZ:
             case Insn::CALLDIRECT:
                 return true;
             default:

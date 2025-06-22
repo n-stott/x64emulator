@@ -505,6 +505,7 @@ namespace x64 {
     DEFINE_STANDALONE(JE, execJe)
     DEFINE_STANDALONE(JNE, execJne)
     DEFINE_STANDALONE(JCC, execJcc)
+    DEFINE_STANDALONE(JRCXZ, execJrcxz)
     DEFINE_STANDALONE(BSR_R16_R16, execBsrR16R16)
     DEFINE_STANDALONE(BSR_R16_M16, execBsrR16M16)
     DEFINE_STANDALONE(BSR_R32_R32, execBsrR32R32)
@@ -1188,6 +1189,7 @@ namespace x64 {
         STANDALONE_NAME(JE),
         STANDALONE_NAME(JNE),
         STANDALONE_NAME(JCC),
+        STANDALONE_NAME(JRCXZ),
         STANDALONE_NAME(BSR_R16_R16),
         STANDALONE_NAME(BSR_R16_M16),
         STANDALONE_NAME(BSR_R32_R32),
@@ -3457,6 +3459,13 @@ namespace x64 {
         if(flags_.matches(cond)) {
             u64 dst = ins.op1<u64>();
             regs_.rip() = dst;
+        }
+    }
+
+    void Cpu::execJrcxz(const X64Instruction& ins) {
+        if(regs_.get(R64::RCX) == 0) {
+            const auto& imm = ins.op0<u64>();
+            regs_.rip() = imm;
         }
     }
 

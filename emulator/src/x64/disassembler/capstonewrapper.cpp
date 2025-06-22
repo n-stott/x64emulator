@@ -1625,6 +1625,15 @@ namespace x64 {
         return make_failed(insn);
     }
 
+    static X64Instruction makeJrcxz(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 1);
+        const cs_x86_op& dst = x86detail.operands[0];
+        auto imm = asImmediate(dst);
+        if(imm) return X64Instruction::make<Insn::JRCXZ>(insn.address, insn.size, imm->immediate);
+        return make_failed(insn);
+    }
+
     static X64Instruction makeBsr(const cs_insn& insn) {
         const auto& x86detail = insn.detail->x86;
         assert(x86detail.op_count == 2);
@@ -4238,6 +4247,7 @@ namespace x64 {
             case X86_INS_JNO: return makeJcc(Cond::NO, insn);
             case X86_INS_JP: return makeJcc(Cond::P, insn);
             case X86_INS_JNP: return makeJcc(Cond::NP, insn);
+            case X86_INS_JRCXZ: return makeJrcxz(insn);
             case X86_INS_BSR: return makeBsr(insn);
             case X86_INS_BSF: return makeBsf(insn);
             case X86_INS_CMOVA: return makeCmov<Cond::A>(insn);
