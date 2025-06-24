@@ -474,6 +474,24 @@ namespace x64 {
         void execShrxR32RM32R32(const X64Instruction&);
         void execShrxR64RM64R64(const X64Instruction&);
 
+        void execRclRM8R8(const X64Instruction&);
+        void execRclRM8Imm(const X64Instruction&);
+        void execRclRM16R8(const X64Instruction&);
+        void execRclRM16Imm(const X64Instruction&);
+        void execRclRM32R8(const X64Instruction&);
+        void execRclRM32Imm(const X64Instruction&);
+        void execRclRM64R8(const X64Instruction&);
+        void execRclRM64Imm(const X64Instruction&);
+
+        void execRcrRM8R8(const X64Instruction&);
+        void execRcrRM8Imm(const X64Instruction&);
+        void execRcrRM16R8(const X64Instruction&);
+        void execRcrRM16Imm(const X64Instruction&);
+        void execRcrRM32R8(const X64Instruction&);
+        void execRcrRM32Imm(const X64Instruction&);
+        void execRcrRM64R8(const X64Instruction&);
+        void execRcrRM64Imm(const X64Instruction&);
+
         void execRolRM8R8(const X64Instruction&);
         void execRolRM8Imm(const X64Instruction&);
         void execRolRM16R8(const X64Instruction&);

@@ -435,6 +435,32 @@ namespace x64 {
         if(count == 1) assert(a.overflow == b.overflow);
     }
  
+    u8 CheckedCpuImpl::rcl8(u8 val, u8 count, Flags* flags) {
+        return checkCallShift<u8>(&CpuImpl::rcl8, &NativeCpuImpl::rcl8, &sameFlagsRotate<u8>, flags, val, count);
+    }
+    u16 CheckedCpuImpl::rcl16(u16 val, u8 count, Flags* flags) {
+        return checkCallShift<u16>(&CpuImpl::rcl16, &NativeCpuImpl::rcl16, &sameFlagsRotate<u16>, flags, val, count);
+    }
+    u32 CheckedCpuImpl::rcl32(u32 val, u8 count, Flags* flags) {
+        return checkCallShift<u32>(&CpuImpl::rcl32, &NativeCpuImpl::rcl32, &sameFlagsRotate<u32>, flags, val, count);
+    }
+    u64 CheckedCpuImpl::rcl64(u64 val, u8 count, Flags* flags) {
+        return checkCallShift<u64>(&CpuImpl::rcl64, &NativeCpuImpl::rcl64, &sameFlagsRotate<u64>, flags, val, count);
+    }
+ 
+    u8 CheckedCpuImpl::rcr8(u8 val, u8 count, Flags* flags) {
+        return checkCallShift<u8>(&CpuImpl::rcr8, &NativeCpuImpl::rcr8, &sameFlagsRotate<u8>, flags, val, count);
+    }
+    u16 CheckedCpuImpl::rcr16(u16 val, u8 count, Flags* flags) {
+        return checkCallShift<u16>(&CpuImpl::rcr16, &NativeCpuImpl::rcr16, &sameFlagsRotate<u16>, flags, val, count);
+    }
+    u32 CheckedCpuImpl::rcr32(u32 val, u8 count, Flags* flags) {
+        return checkCallShift<u32>(&CpuImpl::rcr32, &NativeCpuImpl::rcr32, &sameFlagsRotate<u32>, flags, val, count);
+    }
+    u64 CheckedCpuImpl::rcr64(u64 val, u8 count, Flags* flags) {
+        return checkCallShift<u64>(&CpuImpl::rcr64, &NativeCpuImpl::rcr64, &sameFlagsRotate<u64>, flags, val, count);
+    }
+ 
     u8 CheckedCpuImpl::rol8(u8 val, u8 count, Flags* flags) {
         return checkCallShift<u8>(&CpuImpl::rol8, &NativeCpuImpl::rol8, &sameFlagsRotate<u8>, flags, val, count);
     }

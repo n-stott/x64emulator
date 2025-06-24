@@ -417,6 +417,54 @@ namespace x64 {
     u64 CpuImpl::sar64(u64 dst, u64 src, Flags* flags) { return sar<u64>(dst, src, flags); }
 
     template<typename U>
+    U rcl(U val, u8 count, Flags* flags) {
+        constexpr u8 size = sizeof(U)*8;
+        u8 tmpcount = (count & (size == 64 ? 0x3F : 0x1F)) % (size+1);
+        U res = val;
+        bool cf = flags->carry;
+        while(tmpcount != 0) {
+            bool tmpcf = (res & (U)((U)1 << (size-1)));
+            res = (U)(2*(U)res+(U)cf);
+            cf = tmpcf;
+            --tmpcount;
+        }
+        flags->carry = cf;
+        if(count == 1) {
+            flags->overflow = (res >> (size-1)) ^ flags->carry;
+        }
+        return res;
+    }
+ 
+    u8 CpuImpl::rcl8(u8 val, u8 count, Flags* flags) { return rcl<u8>(val, count, flags); }
+    u16 CpuImpl::rcl16(u16 val, u8 count, Flags* flags) { return rcl<u16>(val, count, flags); }
+    u32 CpuImpl::rcl32(u32 val, u8 count, Flags* flags) { return rcl<u32>(val, count, flags); }
+    u64 CpuImpl::rcl64(u64 val, u8 count, Flags* flags) { return rcl<u64>(val, count, flags); }
+ 
+    template<typename U>
+    U rcr(U val, u8 count, Flags* flags) {
+        constexpr u8 size = sizeof(U)*8;
+        if(count == 1) {
+            flags->overflow = (val & (U)((U)1 << (size-1))) ^ flags->carry;
+        }
+        u8 tmpcount = (count & (size == 64 ? 0x3F : 0x1F)) % (size+1);
+        U res = val;
+        bool cf = flags->carry;
+        while(tmpcount != 0) {
+            bool tmpcf = (res & (U)1);
+            res = (U)((U)res/2 | (U)((U)cf << (size-1)));
+            cf = tmpcf;
+            --tmpcount;
+        }
+        flags->carry = cf;
+        return res;
+    }
+ 
+    u8 CpuImpl::rcr8(u8 val, u8 count, Flags* flags) { return rcr<u8>(val, count, flags); }
+    u16 CpuImpl::rcr16(u16 val, u8 count, Flags* flags) { return rcr<u16>(val, count, flags); }
+    u32 CpuImpl::rcr32(u32 val, u8 count, Flags* flags) { return rcr<u32>(val, count, flags); }
+    u64 CpuImpl::rcr64(u64 val, u8 count, Flags* flags) { return rcr<u64>(val, count, flags); }
+
+    template<typename U>
     U rol(U val, u8 count, Flags* flags) {
         constexpr u8 size = sizeof(U)*8;
         count = (count & (size == 64 ? 0x3F : 0x1F)) % size;

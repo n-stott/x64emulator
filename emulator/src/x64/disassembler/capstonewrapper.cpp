@@ -1291,6 +1291,50 @@ namespace x64 {
         return make_failed(insn);
     }
 
+    static X64Instruction makeRcl(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto rm8dst = asRM8(dst);
+        auto rm16dst = asRM16(dst);
+        auto rm32dst = asRM32(dst);
+        auto rm64dst = asRM64(dst);
+        auto r8src = asRegister8(src);
+        auto immsrc = asImmediate(src);
+        if(rm8dst && r8src) return X64Instruction::make<Insn::RCL_RM8_R8>(insn.address, insn.size, rm8dst.value(), r8src.value());
+        if(rm8dst && immsrc) return X64Instruction::make<Insn::RCL_RM8_IMM>(insn.address, insn.size, rm8dst.value(), immsrc.value());
+        if(rm16dst && r8src) return X64Instruction::make<Insn::RCL_RM16_R8>(insn.address, insn.size, rm16dst.value(), r8src.value());
+        if(rm16dst && immsrc) return X64Instruction::make<Insn::RCL_RM16_IMM>(insn.address, insn.size, rm16dst.value(), immsrc.value());
+        if(rm32dst && r8src) return X64Instruction::make<Insn::RCL_RM32_R8>(insn.address, insn.size, rm32dst.value(), r8src.value());
+        if(rm32dst && immsrc) return X64Instruction::make<Insn::RCL_RM32_IMM>(insn.address, insn.size, rm32dst.value(), immsrc.value());
+        if(rm64dst && r8src) return X64Instruction::make<Insn::RCL_RM64_R8>(insn.address, insn.size, rm64dst.value(), r8src.value());
+        if(rm64dst && immsrc) return X64Instruction::make<Insn::RCL_RM64_IMM>(insn.address, insn.size, rm64dst.value(), immsrc.value());
+        return make_failed(insn);
+    }
+
+    static X64Instruction makeRcr(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto rm8dst = asRM8(dst);
+        auto rm16dst = asRM16(dst);
+        auto rm32dst = asRM32(dst);
+        auto rm64dst = asRM64(dst);
+        auto r8src = asRegister8(src);
+        auto immsrc = asImmediate(src);
+        if(rm8dst && r8src) return X64Instruction::make<Insn::RCR_RM8_R8>(insn.address, insn.size, rm8dst.value(), r8src.value());
+        if(rm8dst && immsrc) return X64Instruction::make<Insn::RCR_RM8_IMM>(insn.address, insn.size, rm8dst.value(), immsrc.value());
+        if(rm16dst && r8src) return X64Instruction::make<Insn::RCR_RM16_R8>(insn.address, insn.size, rm16dst.value(), r8src.value());
+        if(rm16dst && immsrc) return X64Instruction::make<Insn::RCR_RM16_IMM>(insn.address, insn.size, rm16dst.value(), immsrc.value());
+        if(rm32dst && r8src) return X64Instruction::make<Insn::RCR_RM32_R8>(insn.address, insn.size, rm32dst.value(), r8src.value());
+        if(rm32dst && immsrc) return X64Instruction::make<Insn::RCR_RM32_IMM>(insn.address, insn.size, rm32dst.value(), immsrc.value());
+        if(rm64dst && r8src) return X64Instruction::make<Insn::RCR_RM64_R8>(insn.address, insn.size, rm64dst.value(), r8src.value());
+        if(rm64dst && immsrc) return X64Instruction::make<Insn::RCR_RM64_IMM>(insn.address, insn.size, rm64dst.value(), immsrc.value());
+        return make_failed(insn);
+    }
+
     static X64Instruction makeRol(const cs_insn& insn) {
         const auto& x86detail = insn.detail->x86;
         assert(x86detail.op_count == 2);
@@ -4203,6 +4247,8 @@ namespace x64 {
             case X86_INS_SARX: return makeSarx(insn);
             case X86_INS_SHLX: return makeShlx(insn);
             case X86_INS_SHRX: return makeShrx(insn);
+            case X86_INS_RCL: return makeRcl(insn);
+            case X86_INS_RCR: return makeRcr(insn);
             case X86_INS_ROL: return makeRol(insn);
             case X86_INS_ROR: return makeRor(insn);
             case X86_INS_TZCNT: return makeTzcnt(insn);

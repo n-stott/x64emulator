@@ -1031,6 +1031,41 @@ namespace x64 {
     u64 NativeCpuImpl::sar64(u64 dst, u64 src, Flags* flags) { return sar<u64>(dst, src, flags); }
 
     template<typename U>
+    U rcl(U val, u8 count, Flags* flags) {
+        U nativeRes = val;
+        BEGIN_RFLAGS_SCOPE
+            SET_RFLAGS(*flags);
+            asm volatile("mov %0, %%cl" :: "r"(count));
+            asm volatile("rcl %%cl, %0" : "+r" (nativeRes));
+            GET_RFLAGS(flags);
+        END_RFLAGS_SCOPE
+        return nativeRes;
+    }
+    
+ 
+    u8 NativeCpuImpl::rcl8(u8 val, u8 count, Flags* flags) { return rcl<u8>(val, count, flags); }
+    u16 NativeCpuImpl::rcl16(u16 val, u8 count, Flags* flags) { return rcl<u16>(val, count, flags); }
+    u32 NativeCpuImpl::rcl32(u32 val, u8 count, Flags* flags) { return rcl<u32>(val, count, flags); }
+    u64 NativeCpuImpl::rcl64(u64 val, u8 count, Flags* flags) { return rcl<u64>(val, count, flags); }
+ 
+    template<typename U>
+    U rcr(U val, u8 count, Flags* flags) {
+        U nativeRes = val;
+        BEGIN_RFLAGS_SCOPE
+            SET_RFLAGS(*flags);
+            asm volatile("mov %0, %%cl" :: "r"(count));
+            asm volatile("rcr %%cl, %0" : "+r" (nativeRes));
+            GET_RFLAGS(flags);
+        END_RFLAGS_SCOPE
+        return nativeRes;
+    }
+ 
+    u8 NativeCpuImpl::rcr8(u8 val, u8 count, Flags* flags) { return rcr<u8>(val, count, flags); }
+    u16 NativeCpuImpl::rcr16(u16 val, u8 count, Flags* flags) { return rcr<u16>(val, count, flags); }
+    u32 NativeCpuImpl::rcr32(u32 val, u8 count, Flags* flags) { return rcr<u32>(val, count, flags); }
+    u64 NativeCpuImpl::rcr64(u64 val, u8 count, Flags* flags) { return rcr<u64>(val, count, flags); }
+
+    template<typename U>
     U rol(U val, u8 count, Flags* flags) {
         U nativeRes = val;
         BEGIN_RFLAGS_SCOPE
