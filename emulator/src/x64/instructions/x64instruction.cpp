@@ -170,6 +170,7 @@ namespace x64 {
             case Insn::MOV_MMX_MMX: return toString<MMX, MMX>("mov");
             case Insn::MOV_XMM_XMM: return toString<XMM, XMM>("mov");
             case Insn::MOVQ2DQ_XMM_MM: return toString<XMM, MMX>("movq2dq");
+            case Insn::MOVDQ2Q_MM_XMM: return toString<MMX, XMM>("movdq2q");
             case Insn::MOV_ALIGNED_XMM_M128: return toString<XMM, M128>("mova");
             case Insn::MOV_ALIGNED_M128_XMM: return toString<M128, XMM>("mova");
             case Insn::MOV_UNALIGNED_XMM_M128: return toString<XMM, M128>("movu");
@@ -266,6 +267,22 @@ namespace x64 {
             case Insn::SHLX_R64_RM64_R64: return toString<RM64, R64, R64>("shlx");
             case Insn::SHRX_R32_RM32_R32: return toString<RM32, R32, R32>("shrx");
             case Insn::SHRX_R64_RM64_R64: return toString<RM64, R64, R64>("shrx");
+            case Insn::RCL_RM8_R8: return toString<RM8, R8>("rcl");
+            case Insn::RCL_RM8_IMM: return toString<RM8, Imm>("rcl");
+            case Insn::RCL_RM16_R8: return toString<RM16, R8>("rcl");
+            case Insn::RCL_RM16_IMM: return toString<RM16, Imm>("rcl");
+            case Insn::RCL_RM32_R8: return toString<RM32, R8>("rcl");
+            case Insn::RCL_RM32_IMM: return toString<RM32, Imm>("rcl");
+            case Insn::RCL_RM64_R8: return toString<RM64, R8>("rcl");
+            case Insn::RCL_RM64_IMM: return toString<RM64, Imm>("rcl");
+            case Insn::RCR_RM8_R8: return toString<RM8, R8>("rcr");
+            case Insn::RCR_RM8_IMM: return toString<RM8, Imm>("rcr");
+            case Insn::RCR_RM16_R8: return toString<RM16, R8>("rcr");
+            case Insn::RCR_RM16_IMM: return toString<RM16, Imm>("rcr");
+            case Insn::RCR_RM32_R8: return toString<RM32, R8>("rcr");
+            case Insn::RCR_RM32_IMM: return toString<RM32, Imm>("rcr");
+            case Insn::RCR_RM64_R8: return toString<RM64, R8>("rcr");
+            case Insn::RCR_RM64_IMM: return toString<RM64, Imm>("rcr");
             case Insn::ROL_RM8_R8: return toString<RM8, R8>("rol");
             case Insn::ROL_RM8_IMM: return toString<RM8, Imm>("rol");
             case Insn::ROL_RM16_R8: return toString<RM16, R8>("rol");
@@ -346,6 +363,7 @@ namespace x64 {
             case Insn::JE: return toString<u64>("je");
             case Insn::JNE: return toString<u64>("jne");
             case Insn::JCC: return toString<Cond, u64>("jcc");
+            case Insn::JRCXZ: return toString<u64>("jrcxz");
             case Insn::BSR_R16_R16: return toString<R16, R16>("bsr");
             case Insn::BSR_R16_M16: return toString<R16, M16>("bsr");
             case Insn::BSR_R32_R32: return toString<R32, R32>("bsr");
@@ -552,6 +570,8 @@ namespace x64 {
             case Insn::MOVHPS_M64_XMM: return toString<M64, XMM>("movhps");
             case Insn::MOVHLPS_XMM_XMM: return toString<XMM, XMM>("movhlps");
             case Insn::MOVLHPS_XMM_XMM: return toString<XMM, XMM>("movlhps");
+            case Insn::PINSRW_MMX_R32_IMM: return toString<MMX, R32, Imm>("pinsrw");
+            case Insn::PINSRW_MMX_M16_IMM: return toString<MMX, M16, Imm>("pinsrw");
             case Insn::PINSRW_XMM_R32_IMM: return toString<XMM, R32, Imm>("pinsrw");
             case Insn::PINSRW_XMM_M16_IMM: return toString<XMM, M16, Imm>("pinsrw");
             case Insn::PEXTRW_R32_XMM_IMM: return toString<R32, XMM, Imm>("pextrw");
@@ -744,6 +764,7 @@ namespace x64 {
             case Insn::JE:
             case Insn::JNE:
             case Insn::JCC:
+            case Insn::JRCXZ:
             case Insn::CALLDIRECT:
             case Insn::CALLINDIRECT_RM32:
             case Insn::CALLINDIRECT_RM64:
@@ -760,6 +781,7 @@ namespace x64 {
             case Insn::JE:
             case Insn::JNE:
             case Insn::JCC:
+            case Insn::JRCXZ:
             case Insn::CALLDIRECT:
                 return true;
             default:

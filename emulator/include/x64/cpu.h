@@ -357,6 +357,7 @@ namespace x64 {
         void execMovMImm(const X64Instruction&);
 
         void execMovq2dq(const X64Instruction&);
+        void execMovdq2q(const X64Instruction&);
 
         void execMovaXMMM128(const X64Instruction&);
         void execMovaM128XMM(const X64Instruction&);
@@ -474,6 +475,24 @@ namespace x64 {
         void execShrxR32RM32R32(const X64Instruction&);
         void execShrxR64RM64R64(const X64Instruction&);
 
+        void execRclRM8R8(const X64Instruction&);
+        void execRclRM8Imm(const X64Instruction&);
+        void execRclRM16R8(const X64Instruction&);
+        void execRclRM16Imm(const X64Instruction&);
+        void execRclRM32R8(const X64Instruction&);
+        void execRclRM32Imm(const X64Instruction&);
+        void execRclRM64R8(const X64Instruction&);
+        void execRclRM64Imm(const X64Instruction&);
+
+        void execRcrRM8R8(const X64Instruction&);
+        void execRcrRM8Imm(const X64Instruction&);
+        void execRcrRM16R8(const X64Instruction&);
+        void execRcrRM16Imm(const X64Instruction&);
+        void execRcrRM32R8(const X64Instruction&);
+        void execRcrRM32Imm(const X64Instruction&);
+        void execRcrRM64R8(const X64Instruction&);
+        void execRcrRM64Imm(const X64Instruction&);
+
         void execRolRM8R8(const X64Instruction&);
         void execRolRM8Imm(const X64Instruction&);
         void execRolRM16R8(const X64Instruction&);
@@ -567,6 +586,7 @@ namespace x64 {
         void execJe(const X64Instruction&);
         void execJne(const X64Instruction&);
         void execJcc(const X64Instruction&);
+        void execJrcxz(const X64Instruction&);
 
         void execBsrR16R16(const X64Instruction&);
         void execBsrR16M16(const X64Instruction&);
@@ -826,6 +846,9 @@ namespace x64 {
         void execMovhpsM64XMM(const X64Instruction&);
         void execMovhlpsXMMXMM(const X64Instruction&);
         void execMovlhpsXMMXMM(const X64Instruction&);
+
+        void execPinsrwMMXR32Imm(const X64Instruction&);
+        void execPinsrwMMXM16Imm(const X64Instruction&);
 
         void execPinsrwXMMR32Imm(const X64Instruction&);
         void execPinsrwXMMM16Imm(const X64Instruction&);

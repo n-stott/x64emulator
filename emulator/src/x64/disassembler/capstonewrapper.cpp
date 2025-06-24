@@ -430,6 +430,17 @@ namespace x64 {
         return make_failed(insn);
     }
 
+    static X64Instruction makeMovdq2q(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto mmxdst = asMMX(dst);
+        auto rssesrc = asRegister128(src);
+        if(mmxdst && rssesrc) return X64Instruction::make<Insn::MOVDQ2Q_MM_XMM>(insn.address, insn.size, mmxdst.value(), rssesrc.value());
+        return make_failed(insn);
+    }
+
     static X64Instruction makeMovsx(const cs_insn& insn) {
         const auto& x86detail = insn.detail->x86;
         assert(x86detail.op_count == 2);
@@ -1280,6 +1291,50 @@ namespace x64 {
         return make_failed(insn);
     }
 
+    static X64Instruction makeRcl(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto rm8dst = asRM8(dst);
+        auto rm16dst = asRM16(dst);
+        auto rm32dst = asRM32(dst);
+        auto rm64dst = asRM64(dst);
+        auto r8src = asRegister8(src);
+        auto immsrc = asImmediate(src);
+        if(rm8dst && r8src) return X64Instruction::make<Insn::RCL_RM8_R8>(insn.address, insn.size, rm8dst.value(), r8src.value());
+        if(rm8dst && immsrc) return X64Instruction::make<Insn::RCL_RM8_IMM>(insn.address, insn.size, rm8dst.value(), immsrc.value());
+        if(rm16dst && r8src) return X64Instruction::make<Insn::RCL_RM16_R8>(insn.address, insn.size, rm16dst.value(), r8src.value());
+        if(rm16dst && immsrc) return X64Instruction::make<Insn::RCL_RM16_IMM>(insn.address, insn.size, rm16dst.value(), immsrc.value());
+        if(rm32dst && r8src) return X64Instruction::make<Insn::RCL_RM32_R8>(insn.address, insn.size, rm32dst.value(), r8src.value());
+        if(rm32dst && immsrc) return X64Instruction::make<Insn::RCL_RM32_IMM>(insn.address, insn.size, rm32dst.value(), immsrc.value());
+        if(rm64dst && r8src) return X64Instruction::make<Insn::RCL_RM64_R8>(insn.address, insn.size, rm64dst.value(), r8src.value());
+        if(rm64dst && immsrc) return X64Instruction::make<Insn::RCL_RM64_IMM>(insn.address, insn.size, rm64dst.value(), immsrc.value());
+        return make_failed(insn);
+    }
+
+    static X64Instruction makeRcr(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 2);
+        const cs_x86_op& dst = x86detail.operands[0];
+        const cs_x86_op& src = x86detail.operands[1];
+        auto rm8dst = asRM8(dst);
+        auto rm16dst = asRM16(dst);
+        auto rm32dst = asRM32(dst);
+        auto rm64dst = asRM64(dst);
+        auto r8src = asRegister8(src);
+        auto immsrc = asImmediate(src);
+        if(rm8dst && r8src) return X64Instruction::make<Insn::RCR_RM8_R8>(insn.address, insn.size, rm8dst.value(), r8src.value());
+        if(rm8dst && immsrc) return X64Instruction::make<Insn::RCR_RM8_IMM>(insn.address, insn.size, rm8dst.value(), immsrc.value());
+        if(rm16dst && r8src) return X64Instruction::make<Insn::RCR_RM16_R8>(insn.address, insn.size, rm16dst.value(), r8src.value());
+        if(rm16dst && immsrc) return X64Instruction::make<Insn::RCR_RM16_IMM>(insn.address, insn.size, rm16dst.value(), immsrc.value());
+        if(rm32dst && r8src) return X64Instruction::make<Insn::RCR_RM32_R8>(insn.address, insn.size, rm32dst.value(), r8src.value());
+        if(rm32dst && immsrc) return X64Instruction::make<Insn::RCR_RM32_IMM>(insn.address, insn.size, rm32dst.value(), immsrc.value());
+        if(rm64dst && r8src) return X64Instruction::make<Insn::RCR_RM64_R8>(insn.address, insn.size, rm64dst.value(), r8src.value());
+        if(rm64dst && immsrc) return X64Instruction::make<Insn::RCR_RM64_IMM>(insn.address, insn.size, rm64dst.value(), immsrc.value());
+        return make_failed(insn);
+    }
+
     static X64Instruction makeRol(const cs_insn& insn) {
         const auto& x86detail = insn.detail->x86;
         assert(x86detail.op_count == 2);
@@ -1611,6 +1666,15 @@ namespace x64 {
                 return X64Instruction::make<Insn::JCC>(insn.address, insn.size, cond, imm->immediate);
             }
         }
+        return make_failed(insn);
+    }
+
+    static X64Instruction makeJrcxz(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 1);
+        const cs_x86_op& dst = x86detail.operands[0];
+        auto imm = asImmediate(dst);
+        if(imm) return X64Instruction::make<Insn::JRCXZ>(insn.address, insn.size, imm->immediate);
         return make_failed(insn);
     }
 
@@ -3027,10 +3091,13 @@ namespace x64 {
         const cs_x86_op& dst = x86detail.operands[0];
         const cs_x86_op& src = x86detail.operands[1];
         const cs_x86_op& pos = x86detail.operands[2];
+        auto mmxdst = asMMX(dst);
         auto rssedst = asRegister128(dst);
         auto r32src = asRegister32(src);
         auto m16src = asMemory16(src);
         auto imm = asImmediate(pos);
+        if(mmxdst && r32src && imm) return X64Instruction::make<Insn::PINSRW_MMX_R32_IMM>(insn.address, insn.size, mmxdst.value(), r32src.value(), imm.value());
+        if(mmxdst && m16src && imm) return X64Instruction::make<Insn::PINSRW_MMX_M16_IMM>(insn.address, insn.size, mmxdst.value(), m16src.value(), imm.value());
         if(rssedst && r32src && imm) return X64Instruction::make<Insn::PINSRW_XMM_R32_IMM>(insn.address, insn.size, rssedst.value(), r32src.value(), imm.value());
         if(rssedst && m16src && imm) return X64Instruction::make<Insn::PINSRW_XMM_M16_IMM>(insn.address, insn.size, rssedst.value(), m16src.value(), imm.value());
         return make_failed(insn);
@@ -4126,6 +4193,7 @@ namespace x64 {
             case X86_INS_POPFQ: return makePopfq(insn);
             case X86_INS_MOV: return makeMov(insn);
             case X86_INS_MOVQ2DQ: return makeMovq2dq(insn);
+            case X86_INS_MOVDQ2Q: return makeMovdq2q(insn);
             case X86_INS_MOVABS: return makeMovabs(insn);
             case X86_INS_MOVDQU:
             case X86_INS_MOVUPS:
@@ -4179,6 +4247,8 @@ namespace x64 {
             case X86_INS_SARX: return makeSarx(insn);
             case X86_INS_SHLX: return makeShlx(insn);
             case X86_INS_SHRX: return makeShrx(insn);
+            case X86_INS_RCL: return makeRcl(insn);
+            case X86_INS_RCR: return makeRcr(insn);
             case X86_INS_ROL: return makeRol(insn);
             case X86_INS_ROR: return makeRor(insn);
             case X86_INS_TZCNT: return makeTzcnt(insn);
@@ -4223,6 +4293,7 @@ namespace x64 {
             case X86_INS_JNO: return makeJcc(Cond::NO, insn);
             case X86_INS_JP: return makeJcc(Cond::P, insn);
             case X86_INS_JNP: return makeJcc(Cond::NP, insn);
+            case X86_INS_JRCXZ: return makeJrcxz(insn);
             case X86_INS_BSR: return makeBsr(insn);
             case X86_INS_BSF: return makeBsf(insn);
             case X86_INS_CMOVA: return makeCmov<Cond::A>(insn);

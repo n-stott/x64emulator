@@ -329,6 +329,7 @@ namespace x64 {
     DEFINE_STANDALONE(MOV_MMX_MMX, execMovMMXMMX)
     DEFINE_STANDALONE(MOV_XMM_XMM, execMovRR<Size::XWORD>)
     DEFINE_STANDALONE(MOVQ2DQ_XMM_MM, execMovq2dq)
+    DEFINE_STANDALONE(MOVDQ2Q_MM_XMM, execMovdq2q)
     DEFINE_STANDALONE(MOV_ALIGNED_XMM_M128, execMovaXMMM128)
     DEFINE_STANDALONE(MOV_ALIGNED_M128_XMM, execMovaM128XMM)
     DEFINE_STANDALONE(MOV_UNALIGNED_XMM_M128, execMovuXMMM128)
@@ -424,6 +425,22 @@ namespace x64 {
     DEFINE_STANDALONE(SHLX_R64_RM64_R64, execShlxR64RM64R64)
     DEFINE_STANDALONE(SHRX_R32_RM32_R32, execShrxR32RM32R32)
     DEFINE_STANDALONE(SHRX_R64_RM64_R64, execShrxR64RM64R64)
+    DEFINE_STANDALONE(RCL_RM8_R8, execRolRM8R8)
+    DEFINE_STANDALONE(RCL_RM8_IMM, execRolRM8Imm)
+    DEFINE_STANDALONE(RCL_RM16_R8, execRolRM16R8)
+    DEFINE_STANDALONE(RCL_RM16_IMM, execRolRM16Imm)
+    DEFINE_STANDALONE(RCL_RM32_R8, execRolRM32R8)
+    DEFINE_STANDALONE(RCL_RM32_IMM, execRolRM32Imm)
+    DEFINE_STANDALONE(RCL_RM64_R8, execRolRM64R8)
+    DEFINE_STANDALONE(RCL_RM64_IMM, execRolRM64Imm)
+    DEFINE_STANDALONE(RCR_RM8_R8, execRorRM8R8)
+    DEFINE_STANDALONE(RCR_RM8_IMM, execRorRM8Imm)
+    DEFINE_STANDALONE(RCR_RM16_R8, execRorRM16R8)
+    DEFINE_STANDALONE(RCR_RM16_IMM, execRorRM16Imm)
+    DEFINE_STANDALONE(RCR_RM32_R8, execRorRM32R8)
+    DEFINE_STANDALONE(RCR_RM32_IMM, execRorRM32Imm)
+    DEFINE_STANDALONE(RCR_RM64_R8, execRorRM64R8)
+    DEFINE_STANDALONE(RCR_RM64_IMM, execRorRM64Imm)
     DEFINE_STANDALONE(ROL_RM8_R8, execRolRM8R8)
     DEFINE_STANDALONE(ROL_RM8_IMM, execRolRM8Imm)
     DEFINE_STANDALONE(ROL_RM16_R8, execRolRM16R8)
@@ -504,6 +521,7 @@ namespace x64 {
     DEFINE_STANDALONE(JE, execJe)
     DEFINE_STANDALONE(JNE, execJne)
     DEFINE_STANDALONE(JCC, execJcc)
+    DEFINE_STANDALONE(JRCXZ, execJrcxz)
     DEFINE_STANDALONE(BSR_R16_R16, execBsrR16R16)
     DEFINE_STANDALONE(BSR_R16_M16, execBsrR16M16)
     DEFINE_STANDALONE(BSR_R32_R32, execBsrR32R32)
@@ -710,6 +728,8 @@ namespace x64 {
     DEFINE_STANDALONE(MOVHPS_M64_XMM, execMovhpsM64XMM)
     DEFINE_STANDALONE(MOVHLPS_XMM_XMM, execMovhlpsXMMXMM)
     DEFINE_STANDALONE(MOVLHPS_XMM_XMM, execMovlhpsXMMXMM)
+    DEFINE_STANDALONE(PINSRW_MMX_R32_IMM, execPinsrwMMXR32Imm)
+    DEFINE_STANDALONE(PINSRW_MMX_M16_IMM, execPinsrwMMXM16Imm)
     DEFINE_STANDALONE(PINSRW_XMM_R32_IMM, execPinsrwXMMR32Imm)
     DEFINE_STANDALONE(PINSRW_XMM_M16_IMM, execPinsrwXMMM16Imm)
     DEFINE_STANDALONE(PEXTRW_R32_XMM_IMM, execPextrwR32XMMImm)
@@ -1009,6 +1029,7 @@ namespace x64 {
         STANDALONE_NAME(MOV_MMX_MMX),
         STANDALONE_NAME(MOV_XMM_XMM),
         STANDALONE_NAME(MOVQ2DQ_XMM_MM),
+        STANDALONE_NAME(MOVDQ2Q_MM_XMM),
         STANDALONE_NAME(MOV_ALIGNED_XMM_M128),
         STANDALONE_NAME(MOV_ALIGNED_M128_XMM),
         STANDALONE_NAME(MOV_UNALIGNED_XMM_M128),
@@ -1104,6 +1125,22 @@ namespace x64 {
         STANDALONE_NAME(SHLX_R64_RM64_R64),
         STANDALONE_NAME(SHRX_R32_RM32_R32),
         STANDALONE_NAME(SHRX_R64_RM64_R64),
+        STANDALONE_NAME(RCL_RM8_R8),
+        STANDALONE_NAME(RCL_RM8_IMM),
+        STANDALONE_NAME(RCL_RM16_R8),
+        STANDALONE_NAME(RCL_RM16_IMM),
+        STANDALONE_NAME(RCL_RM32_R8),
+        STANDALONE_NAME(RCL_RM32_IMM),
+        STANDALONE_NAME(RCL_RM64_R8),
+        STANDALONE_NAME(RCL_RM64_IMM),
+        STANDALONE_NAME(RCR_RM8_R8),
+        STANDALONE_NAME(RCR_RM8_IMM),
+        STANDALONE_NAME(RCR_RM16_R8),
+        STANDALONE_NAME(RCR_RM16_IMM),
+        STANDALONE_NAME(RCR_RM32_R8),
+        STANDALONE_NAME(RCR_RM32_IMM),
+        STANDALONE_NAME(RCR_RM64_R8),
+        STANDALONE_NAME(RCR_RM64_IMM),
         STANDALONE_NAME(ROL_RM8_R8),
         STANDALONE_NAME(ROL_RM8_IMM),
         STANDALONE_NAME(ROL_RM16_R8),
@@ -1184,6 +1221,7 @@ namespace x64 {
         STANDALONE_NAME(JE),
         STANDALONE_NAME(JNE),
         STANDALONE_NAME(JCC),
+        STANDALONE_NAME(JRCXZ),
         STANDALONE_NAME(BSR_R16_R16),
         STANDALONE_NAME(BSR_R16_M16),
         STANDALONE_NAME(BSR_R32_R32),
@@ -1390,6 +1428,8 @@ namespace x64 {
         STANDALONE_NAME(MOVHPS_M64_XMM),
         STANDALONE_NAME(MOVHLPS_XMM_XMM),
         STANDALONE_NAME(MOVLHPS_XMM_XMM),
+        STANDALONE_NAME(PINSRW_MMX_R32_IMM),
+        STANDALONE_NAME(PINSRW_MMX_M16_IMM),
         STANDALONE_NAME(PINSRW_XMM_R32_IMM),
         STANDALONE_NAME(PINSRW_XMM_M16_IMM),
         STANDALONE_NAME(PEXTRW_R32_XMM_IMM),
@@ -2352,6 +2392,14 @@ namespace x64 {
         set(dst, dstValue);
     }
 
+    void Cpu::execMovdq2q(const X64Instruction& ins) {
+        const auto& dst = ins.op0<MMX>();
+        const auto& src = ins.op1<XMM>();
+        u128 srcValue = get(src);
+        u64 dstValue = srcValue.lo;
+        set(dst, dstValue);
+    }
+
     void Cpu::execMovaXMMM128(const X64Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<M128>();
@@ -2883,6 +2931,88 @@ namespace x64 {
         const auto& count = ins.op2<R64>();
         Flags flags;
         set(dst, Impl::shr64(get(src), get(count), &flags));
+    }
+
+    void Cpu::execRclRM8R8(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RM8>();
+        const auto& src = ins.op1<R8>();
+        set(dst, Impl::rcl8(get(dst), get(src), &flags_));
+    }
+    void Cpu::execRclRM8Imm(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RM8>();
+        const auto& src = ins.op1<Imm>();
+        set(dst, Impl::rcl8(get(dst), get<u8>(src), &flags_));
+    }
+    void Cpu::execRclRM16R8(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RM16>();
+        const auto& src = ins.op1<R8>();
+        set(dst, Impl::rcl16(get(dst), get(src), &flags_));
+    }
+    void Cpu::execRclRM16Imm(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RM16>();
+        const auto& src = ins.op1<Imm>();
+        set(dst, Impl::rcl16(get(dst), get<u8>(src), &flags_));
+    }
+    void Cpu::execRclRM32R8(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RM32>();
+        const auto& src = ins.op1<R8>();
+        set(dst, Impl::rcl32(get(dst), get(src), &flags_));
+    }
+    void Cpu::execRclRM32Imm(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RM32>();
+        const auto& src = ins.op1<Imm>();
+        set(dst, Impl::rcl32(get(dst), get<u8>(src), &flags_));
+    }
+    void Cpu::execRclRM64R8(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RM64>();
+        const auto& src = ins.op1<R8>();
+        set(dst, Impl::rcl64(get(dst), get(src), &flags_));
+    }
+    void Cpu::execRclRM64Imm(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RM64>();
+        const auto& src = ins.op1<Imm>();
+        set(dst, Impl::rcl64(get(dst), get<u8>(src), &flags_));
+    }
+
+    void Cpu::execRcrRM8R8(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RM8>();
+        const auto& src = ins.op1<R8>();
+        set(dst, Impl::rcr8(get(dst), get(src), &flags_));
+    }
+    void Cpu::execRcrRM8Imm(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RM8>();
+        const auto& src = ins.op1<Imm>();
+        set(dst, Impl::rcr8(get(dst), get<u8>(src), &flags_));
+    }
+    void Cpu::execRcrRM16R8(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RM16>();
+        const auto& src = ins.op1<R8>();
+        set(dst, Impl::rcr16(get(dst), get(src), &flags_));
+    }
+    void Cpu::execRcrRM16Imm(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RM16>();
+        const auto& src = ins.op1<Imm>();
+        set(dst, Impl::rcr16(get(dst), get<u8>(src), &flags_));
+    }
+    void Cpu::execRcrRM32R8(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RM32>();
+        const auto& src = ins.op1<R8>();
+        set(dst, Impl::rcr32(get(dst), get(src), &flags_));
+    }
+    void Cpu::execRcrRM32Imm(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RM32>();
+        const auto& src = ins.op1<Imm>();
+        set(dst, Impl::rcr32(get(dst), get<u8>(src), &flags_));
+    }
+    void Cpu::execRcrRM64R8(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RM64>();
+        const auto& src = ins.op1<R8>();
+        set(dst, Impl::rcr64(get(dst), get(src), &flags_));
+    }
+    void Cpu::execRcrRM64Imm(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RM64>();
+        const auto& src = ins.op1<Imm>();
+        set(dst, Impl::rcr64(get(dst), get<u8>(src), &flags_));
     }
 
     void Cpu::execRolRM8R8(const X64Instruction& ins) {
@@ -3422,6 +3552,13 @@ namespace x64 {
         if(flags_.matches(cond)) {
             u64 dst = ins.op1<u64>();
             regs_.rip() = dst;
+        }
+    }
+
+    void Cpu::execJrcxz(const X64Instruction& ins) {
+        if(regs_.get(R64::RCX) == 0) {
+            const auto& imm = ins.op0<u64>();
+            regs_.rip() = imm;
         }
     }
 
@@ -4943,6 +5080,22 @@ namespace x64 {
         u128 srcValue = get(src);
         dstValue.hi = srcValue.lo;
         set(dst, dstValue);
+    }
+
+    void Cpu::execPinsrwMMXR32Imm(const X64Instruction& ins) {
+        const auto& dst = ins.op0<MMX>();
+        const auto& src = ins.op1<R32>();
+        const auto& pos = ins.op2<Imm>();
+        u64 res = Impl::pinsrw32(get(dst), get(src), get<u8>(pos));
+        set(dst, res);
+    }
+
+    void Cpu::execPinsrwMMXM16Imm(const X64Instruction& ins) {
+        const auto& dst = ins.op0<MMX>();
+        const auto& src = ins.op1<M16>();
+        const auto& pos = ins.op2<Imm>();
+        u64 res = Impl::pinsrw16(get(dst), get(resolve(src)), get<u8>(pos));
+        set(dst, res);
     }
 
     void Cpu::execPinsrwXMMR32Imm(const X64Instruction& ins) {
