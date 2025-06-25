@@ -93,6 +93,8 @@ namespace x64 {
             }
         }
 
+        u64 calls() const { return calls_; }
+
     private:
         JitBasicBlock(const JitBasicBlock&) = delete;
         JitBasicBlock(JitBasicBlock&&) = delete;

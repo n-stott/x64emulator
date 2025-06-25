@@ -62,7 +62,7 @@ namespace emulator {
         void tryCompile(x64::Jit&, CompilationQueue&, int optimizationLevel);
         void tryPatch(x64::Jit&);
 
-        u64 calls() const { return calls_; }
+        u64 calls() const { return calls_ + (!!jitBasicBlock_ ? jitBasicBlock_->calls() : 0); }
 
     private:
         void removePredecessor(BasicBlock* other);
