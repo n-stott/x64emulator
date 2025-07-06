@@ -45,7 +45,7 @@ public:
 private:
     T value_ {};
     bool present_ { false };
-    friend class OptionalTests;
+    friend struct OptionalTests;
 };
 
 struct OptionalTests {

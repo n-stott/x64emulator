@@ -4,7 +4,7 @@
 jmp_buf my_jump_buffer;
 
 void foo(int status) {
-    printf("foo(%d) called\n");
+    printf("foo(%d) called\n", status);
     longjmp(my_jump_buffer, status+1);
 }
 
