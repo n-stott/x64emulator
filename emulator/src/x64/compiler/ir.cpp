@@ -313,7 +313,7 @@ namespace x64::ir {
             if(jumpToOther && jumpToOther.value() > position) {
                 --jumpToOther.value();
             }
-            instructions.erase(instructions.begin() + position);
+            instructions.erase(instructions.begin() + (ssize_t)position);
         };
 
         for(size_t position : positions) removeInstruction(position);

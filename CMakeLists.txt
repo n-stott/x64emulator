@@ -29,6 +29,14 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(capstone)
 
+if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
+    add_compile_definitions(GCC_COMPILER=1)
+elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
+    add_compile_definitions(CLANG_COMPILER=1)
+elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "MSVC")
+    add_compile_definitions(MSVC_COMPILER=1)
+endif()
+
 add_subdirectory(profiling)
 add_subdirectory(emulator)
 add_subdirectory(profileviewer)

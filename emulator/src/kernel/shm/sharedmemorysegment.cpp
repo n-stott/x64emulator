@@ -19,6 +19,7 @@ namespace kernel {
             mode_(mode),
             size_(size) {
         // we are good !
+        (void)mode_;
     }
 
     SharedMemorySegment::~SharedMemorySegment() {

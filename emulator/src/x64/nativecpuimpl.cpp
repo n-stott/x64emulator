@@ -14,6 +14,19 @@
 #endif
 
 
+#define CALL_1_WITH_IMM3(f, a) \
+    switch(order) { \
+        case 0x00: return f(a, 0x00); \
+        case 0x01: return f(a, 0x01); \
+        case 0x02: return f(a, 0x02); \
+        case 0x03: return f(a, 0x03); \
+        case 0x04: return f(a, 0x04); \
+        case 0x05: return f(a, 0x05); \
+        case 0x06: return f(a, 0x06); \
+        case 0x07: return f(a, 0x07); \
+        default: __builtin_unreachable(); \
+    }
+
 #define CALL_1_WITH_IMM8(f, a) \
     switch(order) { \
         case 0x00: return f(a, 0x00); \
@@ -274,6 +287,16 @@
         case 0xff: return f(a, 0xff); \
         default: __builtin_unreachable(); \
     }
+
+#define CALL_2_WITH_IMM2(f, a, b) \
+    switch(order) { \
+        case 0x00: return f(a, b, 0x00); \
+        case 0x01: return f(a, b, 0x01); \
+        case 0x02: return f(a, b, 0x02); \
+        case 0x03: return f(a, b, 0x03); \
+        default: __builtin_unreachable(); \
+    }
+
 #define CALL_2_WITH_IMM3(f, a, b) \
     switch(order) { \
         case 0x00: return f(a, b, 0x00); \
@@ -1888,8 +1911,8 @@ namespace x64 {
     }
 
     u64 NativeCpuImpl::pinsrw16(u64 dst, u16 src, u8 order) {
-        auto native = [=](__m64 d, u16 s) -> __m128i {
-            CALL_2_WITH_IMM3(_mm_insert_pi16, d, s);
+        auto native = [=](__m64 d, u16 s) -> __m64 {
+            CALL_2_WITH_IMM2(_mm_insert_pi16, d, s);
         };
 
         __m64 d;
@@ -1926,15 +1949,15 @@ namespace x64 {
     }
 
     u16 NativeCpuImpl::pextrw16(u128 src, u8 order) {
-        auto native = [=](__m128i d, u16 s) -> __m128i {
-            CALL_2_WITH_IMM3(_mm_extract_epi16, d, s);
+        auto native = [=](__m128i s) -> int {
+            CALL_1_WITH_IMM3(_mm_extract_epi16, s);
         };
 
-        __m128i d;
-        static_assert(sizeof(d) == sizeof(dst));
-        memcpy(&d, &dst, sizeof(dst));
+        __m128i s;
+        static_assert(sizeof(s) == sizeof(src));
+        memcpy(&s, &src, sizeof(src));
         assert(order < 8);
-        int r = native(d, src);
+        int r = native(s);
         return (u16)r;
     }
 
