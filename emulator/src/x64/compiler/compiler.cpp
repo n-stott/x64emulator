@@ -2094,7 +2094,7 @@ namespace x64 {
 
     bool Compiler::tryCompilePushImm(Imm imm) {
         // load the value
-        loadImm64(Reg::GPR0, imm.as<i32>());
+        loadImm64(Reg::GPR0, (u64)imm.as<i32>());
         // load rsp
         readReg64(Reg::GPR1, R64::RSP);
         // decrement rsp
@@ -5181,7 +5181,7 @@ namespace x64 {
 
     void Compiler::add8Imm8(Reg dst, i8 imm) {
         R8 d = get8(dst);
-        generator_->add(d, imm);
+        generator_->add(d, (u8)imm);
     }
 
     void Compiler::add16(Reg dst, Reg src) {
@@ -5192,7 +5192,7 @@ namespace x64 {
 
     void Compiler::add16Imm16(Reg dst, i16 imm) {
         R16 d = get16(dst);
-        generator_->add(d, imm);
+        generator_->add(d, (u16)imm);
     }
 
     void Compiler::add32(Reg dst, Reg src) {
@@ -5203,7 +5203,7 @@ namespace x64 {
 
     void Compiler::add32Imm32(Reg dst, i32 imm) {
         R32 d = get32(dst);
-        generator_->add(d, imm);
+        generator_->add(d, (u32)imm);
     }
 
     void Compiler::add64(Reg dst, Reg src) {
@@ -5214,7 +5214,7 @@ namespace x64 {
 
     void Compiler::add64Imm32(Reg dst, i32 imm) {
         R64 d = get(dst);
-        generator_->add(d, imm);
+        generator_->add(d, (u32)imm);
     }
 
     void Compiler::adc32(Reg dst, Reg src) {
@@ -5225,7 +5225,7 @@ namespace x64 {
 
     void Compiler::adc32Imm32(Reg dst, i32 imm) {
         R32 d = get32(dst);
-        generator_->adc(d, imm);
+        generator_->adc(d, (u32)imm);
     }
 
     void Compiler::sub32(Reg dst, Reg src) {
@@ -5236,7 +5236,7 @@ namespace x64 {
 
     void Compiler::sub32Imm32(Reg dst, i32 imm) {
         R32 d = get32(dst);
-        generator_->sub(d, imm);
+        generator_->sub(d, (u32)imm);
     }
 
     void Compiler::sub64(Reg dst, Reg src) {
@@ -5247,7 +5247,7 @@ namespace x64 {
 
     void Compiler::sub64Imm32(Reg dst, i32 imm) {
         R64 d = get(dst);
-        generator_->sub(d, imm);
+        generator_->sub(d, (u32)imm);
     }
 
     void Compiler::sbb8(Reg dst, Reg src) {
@@ -5258,7 +5258,7 @@ namespace x64 {
 
     void Compiler::sbb8Imm8(Reg dst, i8 imm) {
         R8 d = get8(dst);
-        generator_->sbb(d, imm);
+        generator_->sbb(d, (u8)imm);
     }
 
     void Compiler::sbb32(Reg dst, Reg src) {
@@ -5269,7 +5269,7 @@ namespace x64 {
 
     void Compiler::sbb32Imm32(Reg dst, i32 imm) {
         R32 d = get32(dst);
-        generator_->sbb(d, imm);
+        generator_->sbb(d, (u32)imm);
     }
 
     void Compiler::sbb64(Reg dst, Reg src) {
@@ -5280,7 +5280,7 @@ namespace x64 {
 
     void Compiler::sbb64Imm32(Reg dst, i32 imm) {
         R64 d = get(dst);
-        generator_->sbb(d, imm);
+        generator_->sbb(d, (u32)imm);
     }
 
     void Compiler::cmp8(Reg lhs, Reg rhs) {
@@ -5309,22 +5309,22 @@ namespace x64 {
 
     void Compiler::cmp8Imm8(Reg dst, i8 imm) {
         R8 d = get8(dst);
-        generator_->cmp(d, imm);
+        generator_->cmp(d, (u8)imm);
     }
 
     void Compiler::cmp16Imm16(Reg dst, i16 imm) {
         R16 d = get16(dst);
-        generator_->cmp(d, imm);
+        generator_->cmp(d, (u16)imm);
     }
 
     void Compiler::cmp32Imm32(Reg dst, i32 imm) {
         R32 d = get32(dst);
-        generator_->cmp(d, imm);
+        generator_->cmp(d, (u32)imm);
     }
 
     void Compiler::cmp64Imm32(Reg dst, i32 imm) {
         R64 d = get(dst);
-        generator_->cmp(d, imm);
+        generator_->cmp(d, (u32)imm);
     }
 
     void Compiler::imul16(Reg dst, Reg src) {

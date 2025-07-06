@@ -25,6 +25,10 @@ namespace x64::ir {
         explicit Operand(u16 op) : value_(op) { }
         explicit Operand(u32 op) : value_(op) { }
         explicit Operand(u64 op) : value_(op) { }
+        explicit Operand(i8 op) : Operand((u8)op) { }
+        explicit Operand(i16 op) : Operand((u16)op) { }
+        explicit Operand(i32 op) : Operand((u32)op) { }
+        explicit Operand(i64 op) : Operand((u64)op) { }
         explicit Operand(R8 op) : value_(op) { }
         explicit Operand(R16 op) : value_(op) { }
         explicit Operand(R32 op) : value_(op) { }
@@ -38,10 +42,20 @@ namespace x64::ir {
         explicit Operand(M128 op) : value_(op) { }
         explicit Operand(LabelIndex op) : value_(op) { }
 
+        template<typename TT>
+        struct is_arithmetic : std::is_integral<TT> { };
+
+        template <bool b, class T> struct as_unsigned_detail { using type = T; };
+        template <class T> struct as_unsigned_detail<true, T> { using type = std::make_unsigned_t<T>; };
+
+        template<typename T>
+        using as_unsigned = as_unsigned_detail<is_arithmetic<T>::value, T>;
+
         template<typename T>
         std::optional<T> as() const {
-            if(std::holds_alternative<T>(value_)) {
-                return std::get<T>(value_);
+            using U = typename as_unsigned<T>::type;
+            if(std::holds_alternative<U>(value_)) {
+                return (T)std::get<U>(value_);
             } else {
                 return {};
             }

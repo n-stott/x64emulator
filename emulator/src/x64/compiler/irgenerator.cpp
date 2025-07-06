@@ -151,29 +151,29 @@ namespace x64::ir {
     void IrGenerator::test(R64 lhs, u32 rhs) { emit(Op::TEST, Operand{}, lhs, rhs); }
 
     void IrGenerator::and_(R8 dst, R8 src) { emit(Op::AND, dst, dst, src); }
-    void IrGenerator::and_(R8 dst, u8 src) { emit(Op::AND, dst, dst, src); }
+    void IrGenerator::and_(R8 dst, i8 src) { emit(Op::AND, dst, dst, src); }
     void IrGenerator::and_(R16 dst, R16 src) { emit(Op::AND, dst, dst, src); }
-    void IrGenerator::and_(R16 dst, u16 src) { emit(Op::AND, dst, dst, src); }
+    void IrGenerator::and_(R16 dst, i16 src) { emit(Op::AND, dst, dst, src); }
     void IrGenerator::and_(R32 dst, R32 src) { emit(Op::AND, dst, dst, src); }
-    void IrGenerator::and_(R32 dst, u32 src) { emit(Op::AND, dst, dst, src); }
+    void IrGenerator::and_(R32 dst, i32 src) { emit(Op::AND, dst, dst, src); }
     void IrGenerator::and_(R64 dst, R64 src) { emit(Op::AND, dst, dst, src); }
-    void IrGenerator::and_(R64 dst, u32 src) { emit(Op::AND, dst, dst, src); }
+    void IrGenerator::and_(R64 dst, i32 src) { emit(Op::AND, dst, dst, src); }
     void IrGenerator::or_(R8 dst, R8 src) { emit(Op::OR, dst, dst, src); }
-    void IrGenerator::or_(R8 dst, u8 src) { emit(Op::OR, dst, dst, src); }
+    void IrGenerator::or_(R8 dst, i8 src) { emit(Op::OR, dst, dst, src); }
     void IrGenerator::or_(R16 dst, R16 src) { emit(Op::OR, dst, dst, src); }
-    void IrGenerator::or_(R16 dst, u16 src) { emit(Op::OR, dst, dst, src); }
+    void IrGenerator::or_(R16 dst, i16 src) { emit(Op::OR, dst, dst, src); }
     void IrGenerator::or_(R32 dst, R32 src) { emit(Op::OR, dst, dst, src); }
-    void IrGenerator::or_(R32 dst, u32 src) { emit(Op::OR, dst, dst, src); }
+    void IrGenerator::or_(R32 dst, i32 src) { emit(Op::OR, dst, dst, src); }
     void IrGenerator::or_(R64 dst, R64 src) { emit(Op::OR, dst, dst, src); }
-    void IrGenerator::or_(R64 dst, u32 src) { emit(Op::OR, dst, dst, src); }
+    void IrGenerator::or_(R64 dst, i32 src) { emit(Op::OR, dst, dst, src); }
     void IrGenerator::xor_(R8 dst, R8 src) { emit(Op::XOR, dst, dst, src); }
-    void IrGenerator::xor_(R8 dst, u8 src) { emit(Op::XOR, dst, dst, src); }
+    void IrGenerator::xor_(R8 dst, i8 src) { emit(Op::XOR, dst, dst, src); }
     void IrGenerator::xor_(R16 dst, R16 src) { emit(Op::XOR, dst, dst, src); }
-    void IrGenerator::xor_(R16 dst, u16 src) { emit(Op::XOR, dst, dst, src); }
+    void IrGenerator::xor_(R16 dst, i16 src) { emit(Op::XOR, dst, dst, src); }
     void IrGenerator::xor_(R32 dst, R32 src) { emit(Op::XOR, dst, dst, src); }
-    void IrGenerator::xor_(R32 dst, u32 src) { emit(Op::XOR, dst, dst, src); }
+    void IrGenerator::xor_(R32 dst, i32 src) { emit(Op::XOR, dst, dst, src); }
     void IrGenerator::xor_(R64 dst, R64 src) { emit(Op::XOR, dst, dst, src); }
-    void IrGenerator::xor_(R64 dst, u32 src) { emit(Op::XOR, dst, dst, src); }
+    void IrGenerator::xor_(R64 dst, i32 src) { emit(Op::XOR, dst, dst, src); }
     void IrGenerator::not_(R32 dst) { emit(Op::NOT, dst, dst); }
     void IrGenerator::not_(R64 dst) { emit(Op::NOT, dst, dst); }
 

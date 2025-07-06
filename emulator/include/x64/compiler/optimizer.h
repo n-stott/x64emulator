@@ -9,7 +9,7 @@
 namespace x64::ir {
 
     class OptimizationPass;
-    class LivenessAnalysis;
+    struct LivenessAnalysis;
 
     class Optimizer {
     public:

@@ -3,7 +3,6 @@
 #include "x64/checkedcpuimpl.h"
 #else
 #include "x64/cpuimpl.h"
-// #include "x64/nativecpuimpl.h"
 #endif
 #include "x64/mmu.h"
 #include "host/hostinstructions.h"
@@ -19,7 +18,6 @@ namespace x64 {
     using Impl = CheckedCpuImpl;
 #else
     using Impl = CpuImpl;
-    // using Impl = NativeCpuImpl;
 #endif
 
     Cpu::Cpu(Mmu& mmu) :
@@ -4282,7 +4280,7 @@ namespace x64 {
 
     void Cpu::execFcmovST(const X64Instruction& ins) {
         const auto& cond = ins.op0<Cond>();
-        const auto& src = ins.op0<ST>();
+        const auto& src = ins.op1<ST>();
         if(flags_.matches(cond)) {
             x87fpu_.set(ST::ST0, x87fpu_.st(src));
         }

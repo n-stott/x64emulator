@@ -229,14 +229,17 @@ namespace emulator {
 
         std::vector<std::unique_ptr<BasicBlock>> basicBlocks_;
         std::unordered_map<u64, BasicBlock*> basicBlocksByAddress_;
+
         u64 jitExits_ { 0 };
+        u64 avoidableExits_ { 0 };
+#ifdef VM_JIT_TELEMETRY
         u64 jitExitRet_ { 0 };
         std::unordered_set<u64> distinctJitExitRet_;
         u64 jitExitCallRM64_ { 0 };
         std::unordered_set<u64> distinctJitExitCallRM64_;
         u64 jitExitJmpRM64_ { 0 };
         std::unordered_set<u64> distinctJitExitJmpRM64_;
-        u64 avoidableExits_ { 0 };
+#endif
 
 #ifdef VM_BASICBLOCK_TELEMETRY
         u64 blockCacheHits_ { 0 };

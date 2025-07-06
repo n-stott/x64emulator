@@ -13,7 +13,9 @@ namespace x64 {
 
     CodeGenerator::~CodeGenerator() = default;
 
+#ifndef NDEBUG
     static constexpr M64 STACK_PTR = M64{Segment::UNK, Encoding64{R64::RSP, R64::ZERO, 0, 0}};
+#endif
 
     std::optional<NativeBasicBlock> CodeGenerator::tryGenerate(const ir::IR& ir) {
         assembler_->clear();
@@ -171,9 +173,9 @@ namespace x64 {
                     auto r32src2 = ins.in2().as<R32>();
                     auto r64src2 = ins.in2().as<R64>();
 
-                    auto imm8src2 = ins.in2().as<u8>();
-                    auto imm16src2 = ins.in2().as<u16>();
-                    auto imm32src2 = ins.in2().as<u32>();
+                    auto imm8src2 = ins.in2().as<i8>();
+                    auto imm16src2 = ins.in2().as<i16>();
+                    auto imm32src2 = ins.in2().as<i32>();
 
                     if(r8dst && r8src2) {
                         assembler_->add(r8dst.value(), r8src2.value());
@@ -200,7 +202,7 @@ namespace x64 {
                     auto r32dst = ins.out().as<R32>();
                     assert(r32dst == ins.in1().as<R32>());
                     auto r32src2 = ins.in2().as<R32>();
-                    auto imm32src2 = ins.in2().as<u32>();
+                    auto imm32src2 = ins.in2().as<i32>();
 
                     if(r32dst && r32src2) {
                         assembler_->adc(r32dst.value(), r32src2.value());
@@ -221,7 +223,7 @@ namespace x64 {
                     auto r32src2 = ins.in2().as<R32>();
                     auto r64src2 = ins.in2().as<R64>();
 
-                    auto imm32src2 = ins.in2().as<u32>();
+                    auto imm32src2 = ins.in2().as<i32>();
 
                     if(r32dst && r32src2) {
                         assembler_->sub(r32dst.value(), r32src2.value());
@@ -249,8 +251,8 @@ namespace x64 {
                     auto r32src2 = ins.in2().as<R32>();
                     auto r64src2 = ins.in2().as<R64>();
 
-                    auto imm8src2 = ins.in2().as<u8>();
-                    auto imm32src2 = ins.in2().as<u32>();
+                    auto imm8src2 = ins.in2().as<i8>();
+                    auto imm32src2 = ins.in2().as<i32>();
 
                     if(r8dst && r8src2) {
                         assembler_->sbb(r8dst.value(), r8src2.value());
@@ -280,9 +282,9 @@ namespace x64 {
                     auto r32rhs = ins.in2().as<R32>();
                     auto r64rhs = ins.in2().as<R64>();
 
-                    auto imm8rhs = ins.in2().as<u8>();
-                    auto imm16rhs = ins.in2().as<u16>();
-                    auto imm32rhs = ins.in2().as<u32>();
+                    auto imm8rhs = ins.in2().as<i8>();
+                    auto imm16rhs = ins.in2().as<i16>();
+                    auto imm32rhs = ins.in2().as<i32>();
 
                     if(r8lhs && r8rhs) {
                         assembler_->cmp(r8lhs.value(), r8rhs.value());
@@ -589,9 +591,9 @@ namespace x64 {
                     auto r32src2 = ins.in2().as<R32>();
                     auto r64src2 = ins.in2().as<R64>();
 
-                    auto imm8src2 = ins.in2().as<u8>();
-                    auto imm16src2 = ins.in2().as<u16>();
-                    auto imm32src2 = ins.in2().as<u32>();
+                    auto imm8src2 = ins.in2().as<i8>();
+                    auto imm16src2 = ins.in2().as<i16>();
+                    auto imm32src2 = ins.in2().as<i32>();
 
                     if(r8dst && r8src2) {
                         assembler_->and_(r8dst.value(), r8src2.value());
@@ -630,9 +632,9 @@ namespace x64 {
                     auto r32src2 = ins.in2().as<R32>();
                     auto r64src2 = ins.in2().as<R64>();
 
-                    auto imm8src2 = ins.in2().as<u8>();
-                    auto imm16src2 = ins.in2().as<u16>();
-                    auto imm32src2 = ins.in2().as<u32>();
+                    auto imm8src2 = ins.in2().as<i8>();
+                    auto imm16src2 = ins.in2().as<i16>();
+                    auto imm32src2 = ins.in2().as<i32>();
 
                     if(r8dst && r8src2) {
                         assembler_->or_(r8dst.value(), r8src2.value());
@@ -671,9 +673,9 @@ namespace x64 {
                     auto r32src2 = ins.in2().as<R32>();
                     auto r64src2 = ins.in2().as<R64>();
 
-                    auto imm8src2 = ins.in2().as<u8>();
-                    auto imm16src2 = ins.in2().as<u16>();
-                    auto imm32src2 = ins.in2().as<u32>();
+                    auto imm8src2 = ins.in2().as<i8>();
+                    auto imm16src2 = ins.in2().as<i16>();
+                    auto imm32src2 = ins.in2().as<i32>();
 
                     if(r8dst && r8src2) {
                         assembler_->xor_(r8dst.value(), r8src2.value());
