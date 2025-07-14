@@ -68,11 +68,13 @@ namespace x64 {
     }
 
     void Jit::notifyCall() {
+        ++callstackSize_;
         // assert(callstackSize_+2 < callstack_.size());
         // callstack_[callstackSize_++] = nullptr;
     }
 
     void Jit::notifyRet() {
+        --callstackSize_;
         // assert(callstackSize_ > 0);
         // callstack_[callstackSize_--] = nullptr;
     }

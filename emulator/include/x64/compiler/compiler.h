@@ -566,6 +566,8 @@ namespace x64 {
         void writeJitBasicBlockPtr(u64 jitBasicBlockPtr);
 
         std::vector<u8> jmpCode(u64 dst, TmpReg tmp);
+        std::vector<u8> pushCallstackCode(u64 dst, TmpReg tmp1, TmpReg tmp2);
+        std::vector<u8> popCallstackCode(TmpReg tmp1, TmpReg tmp2);
 
         template<Size size>
         Mem getAddress(Reg dst, TmpReg tmp, const M<size>& mem);

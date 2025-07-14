@@ -23,6 +23,8 @@ namespace x64 {
         std::vector<u8> nativecode;
         std::optional<size_t> offsetOfReplaceableJumpToContinuingBlock;
         std::optional<size_t> offsetOfReplaceableJumpToConditionalBlock;
+        std::optional<size_t> offsetOfReplaceableCallstackPush;
+        std::optional<size_t> offsetOfReplaceableCallstackPop;
     };
 
 }

@@ -294,6 +294,14 @@ namespace x64::ir {
             verify(!jumpToOther, "Cannot merge blocks with jumps");
             jumpToOther = instructions.size() + other.jumpToOther.value();
         }
+        if(other.pushCallstack) {
+            verify(!pushCallstack, "Cannot merge blocks with push to callstack");
+            pushCallstack = instructions.size() + other.pushCallstack.value();
+        }
+        if(other.popCallstack) {
+            verify(!popCallstack, "Cannot merge blocks with pop from callstack");
+            popCallstack = instructions.size() + other.popCallstack.value();
+        }
         instructions.insert(instructions.end(), other.instructions.begin(), other.instructions.end());
         return *this;
     }

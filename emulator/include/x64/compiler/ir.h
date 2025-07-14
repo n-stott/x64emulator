@@ -341,6 +341,8 @@ namespace x64::ir {
         std::vector<size_t> labels;
         std::optional<size_t> jumpToNext;
         std::optional<size_t> jumpToOther;
+        std::optional<size_t> pushCallstack;
+        std::optional<size_t> popCallstack;
 
         IR& add(const IR& other);
 

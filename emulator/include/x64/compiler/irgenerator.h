@@ -445,6 +445,9 @@ namespace x64::ir {
         };
         void reportJump(JumpKind);
 
+        void reportPushCallstack();
+        void reportPopCallstack();
+
     private:
         template<typename ...Args>
         Instruction& emit(Op op, Args&& ...args) {
@@ -454,6 +457,8 @@ namespace x64::ir {
         std::vector<Instruction> instructions_;
         std::deque<Label> labels_;
         std::vector<std::pair<size_t, JumpKind>> jumpKinds_;
+        std::optional<size_t> pushCallstacks_;
+        std::optional<size_t> popCallstacks_;
     };
 
 }

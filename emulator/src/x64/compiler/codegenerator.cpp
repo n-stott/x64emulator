@@ -21,6 +21,8 @@ namespace x64 {
         assembler_->clear();
         std::optional<size_t> offsetOfReplaceableJumpToContinuingBlock;
         std::optional<size_t> offsetOfReplaceableJumpToConditionalBlock;
+        std::optional<size_t> offsetOfReplaceableCallstackPush;
+        std::optional<size_t> offsetOfReplaceableCallstackPop;
         std::vector<Assembler::Label*> labels;
         for(size_t l = 0; l < ir.labels.size(); ++l) {
             Assembler::Label& label = assembler_->label();
@@ -38,6 +40,12 @@ namespace x64 {
             }
             if(ir.jumpToOther == i) {
                 offsetOfReplaceableJumpToConditionalBlock = assembler_->code().size();
+            }
+            if(ir.pushCallstack == i) {
+                offsetOfReplaceableCallstackPush = assembler_->code().size();
+            }
+            if(ir.popCallstack == i) {
+                offsetOfReplaceableCallstackPop = assembler_->code().size();
             }
             const ir::Instruction& ins = ir.instructions[i];
             auto fail = [&]() {
@@ -2744,6 +2752,8 @@ namespace x64 {
             assembler_->code(),
             offsetOfReplaceableJumpToContinuingBlock,
             offsetOfReplaceableJumpToConditionalBlock,
+            offsetOfReplaceableCallstackPush,
+            offsetOfReplaceableCallstackPop,
         };
     }
 }
