@@ -367,8 +367,6 @@ namespace x64::ir {
         if(!analysis_) analysis_ = std::make_unique<LivenessAnalysis>();
         computeLiveRegistersAndAddresses(*ir, analysis_.get());
 
-        std::vector<size_t> removableInstructions;
-
         auto address64Index = [&](const M64& address) -> u32 {
             auto it = std::find(analysis_->allAddresses64.begin(), analysis_->allAddresses64.end(), address);
             assert(it != analysis_->allAddresses64.end());
@@ -381,6 +379,7 @@ namespace x64::ir {
             return (u32)std::distance(analysis_->allAddresses128.begin(), it);
         };
 
+        removableInstructions_.clear();
         for(size_t i = ir->instructions.size(); i --> 0;) {
             const auto& ins = ir->instructions[i];
             if(ins.canModifyFlags()) continue;
@@ -391,28 +390,28 @@ namespace x64::ir {
             if(skipInstruction) continue;
             if(auto r64out = ins.out().as<R64>()) {
                 if(analysis_->gprs[i+1].test((u32)r64out.value())) continue;
-                removableInstructions.push_back(i);
+                removableInstructions_.push_back(i);
             }
             if(auto r128out = ins.out().as<XMM>()) {
                 if(analysis_->xmms[i+1].test((u32)r128out.value())) continue;
-                removableInstructions.push_back(i);
+                removableInstructions_.push_back(i);
             }
             if(auto m64out = ins.out().as<M64>()) {
                 u32 index = address64Index(m64out.value());
                 if(analysis_->addresses64[i+1].test(index)) continue;
-                removableInstructions.push_back(i);
+                removableInstructions_.push_back(i);
             }
             if(auto m128out = ins.out().as<M128>()) {
                 u32 index = address128Index(m128out.value());
                 if(analysis_->addresses128[i+1].test(index)) continue;
-                removableInstructions.push_back(i);
+                removableInstructions_.push_back(i);
             }
         }
-        if(removableInstructions.empty()) {
+        if(removableInstructions_.empty()) {
             return false;
         } else {
-            ir->removeInstructions(removableInstructions);
-            if(!!stats) stats->deadCode += (u32)removableInstructions.size();
+            ir->removeInstructions(removableInstructions_);
+            if(!!stats) stats->deadCode += (u32)removableInstructions_.size();
             return true;
         }
     }
@@ -420,7 +419,7 @@ namespace x64::ir {
     bool ImmediateReadBackElimination::optimize(IR* ir, Optimizer::Stats* stats) {
         if(!ir) return false;
 
-        std::vector<size_t> removableInstructions;
+        removableInstructions_.clear();
         for(size_t i = 1; i < ir->instructions.size(); ++i) {
             const auto& prev = ir->instructions[i-1];
             const auto& curr = ir->instructions[i];
@@ -429,13 +428,13 @@ namespace x64::ir {
             if(prev.in1() != curr.out()) continue;
             if(prev.out() != curr.in1()) continue;
             // curr is doing the opposite mov of prev, so it is useless
-            removableInstructions.push_back(i);
+            removableInstructions_.push_back(i);
         }
-        if(removableInstructions.empty()) {
+        if(removableInstructions_.empty()) {
             return false;
         } else {
-            ir->removeInstructions(removableInstructions);
-            if(!!stats) stats->immediateReadback += (u32)removableInstructions.size();
+            ir->removeInstructions(removableInstructions_);
+            if(!!stats) stats->immediateReadback += (u32)removableInstructions_.size();
             return true;
         }
     }
@@ -448,7 +447,7 @@ namespace x64::ir {
                 || op == Op::MOVA;
         };
 
-        std::vector<size_t> removableInstructions;
+        removableInstructions_.clear();
         for(size_t i = 0; i < ir->instructions.size(); ++i) {
             const auto& curr = ir->instructions[i];
             if(!isMov(curr.op())) continue;
@@ -457,7 +456,7 @@ namespace x64::ir {
                 if(isMov(next.op())
                         && next.in1() == curr.out()
                         && next.out() == curr.in1()) {
-                    removableInstructions.push_back(j);
+                    removableInstructions_.push_back(j);
                     i = j+1;
                     break;
                 } else if(Instruction::canCommute(curr, next)) {
@@ -467,11 +466,11 @@ namespace x64::ir {
                 }
             }
         }
-        if(removableInstructions.empty()) {
+        if(removableInstructions_.empty()) {
             return false;
         } else {
-            ir->removeInstructions(removableInstructions);
-            if(!!stats) stats->delayedReadback += (u32)removableInstructions.size();
+            ir->removeInstructions(removableInstructions_);
+            if(!!stats) stats->delayedReadback += (u32)removableInstructions_.size();
             return true;
         }
     }
@@ -479,7 +478,7 @@ namespace x64::ir {
     bool DuplicateInstructionElimination::optimize(IR* ir, Optimizer::Stats* stats) {
         if(!ir) return false;
 
-        std::vector<size_t> removableInstructions;
+        removableInstructions_.clear();
         for(size_t i = 0; i < ir->instructions.size(); ++i) {
             const auto& curr = ir->instructions[i];
             // don't trust any other instruction than movs for now
@@ -498,7 +497,7 @@ namespace x64::ir {
                 if(next.op() != Op::MOV) break;
                 // remove the next duplicate only
                 if(next.out() == curr.out() && next.in1() == curr.in1()) {
-                    removableInstructions.push_back(j);
+                    removableInstructions_.push_back(j);
                     i = j+1;
                     break;
                 }
@@ -516,11 +515,11 @@ namespace x64::ir {
             }
         }
 
-        if(removableInstructions.empty()) {
+        if(removableInstructions_.empty()) {
             return false;
         } else {
-            ir->removeInstructions(removableInstructions);
-            if(!!stats) stats->duplicateInstruction += (u32)removableInstructions.size();
+            ir->removeInstructions(removableInstructions_);
+            if(!!stats) stats->duplicateInstruction += (u32)removableInstructions_.size();
             return true;
         }
     }

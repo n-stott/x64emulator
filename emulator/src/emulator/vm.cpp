@@ -296,7 +296,7 @@ namespace emulator {
 #ifdef VM_BASICBLOCK_TELEMETRY
             ++mapMiss_;
 #endif
-            std::vector<x64::X64Instruction> blockInstructions;
+            blockInstructions_.clear();
             u64 address = startAddress;
             while(true) {
                 auto pos = findSectionWithAddress(address, nullptr);
@@ -304,7 +304,7 @@ namespace emulator {
                 const x64::X64Instruction* end = pos.section->instructions.data() + pos.section->instructions.size();
                 bool foundBranch = false;
                 while(it != end) {
-                    blockInstructions.push_back(*it);
+                    blockInstructions_.push_back(*it);
                     address = it->nextAddress();
                     if(it->isBranch()) {
                         foundBranch = true;
@@ -315,10 +315,10 @@ namespace emulator {
                 }
                 if(foundBranch) break;
             }
-            verify(!blockInstructions.empty() && blockInstructions.back().isBranch(), [&]() {
+            verify(!blockInstructions_.empty() && blockInstructions_.back().isBranch(), [&]() {
                 fmt::print("did not find bb exit branch for bb starting at {:#x}\n", startAddress);
             });
-            x64::BasicBlock cpuBb = cpu_.createBasicBlock(blockInstructions.data(), blockInstructions.size());
+            x64::BasicBlock cpuBb = cpu_.createBasicBlock(blockInstructions_.data(), blockInstructions_.size());
             verify(!cpuBb.instructions.empty(), "Cannot create empty basic block");
             std::unique_ptr<BasicBlock> bblock = std::make_unique<BasicBlock>(std::move(cpuBb));
             BasicBlock* bblockPtr = bblock.get();

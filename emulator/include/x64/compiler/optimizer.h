@@ -47,18 +47,25 @@ namespace x64::ir {
 
     private:
         std::unique_ptr<LivenessAnalysis> analysis_;
+        std::vector<size_t> removableInstructions_;
     };
 
     class ImmediateReadBackElimination : public OptimizationPass {
         bool optimize(IR*, Optimizer::Stats*) override;
+    private:
+        std::vector<size_t> removableInstructions_;
     };
 
     class DelayedReadBackElimination : public OptimizationPass {
         bool optimize(IR*, Optimizer::Stats*) override;
+    private:
+        std::vector<size_t> removableInstructions_;
     };
 
     class DuplicateInstructionElimination : public OptimizationPass {
         bool optimize(IR*, Optimizer::Stats*) override;
+    private:
+        std::vector<size_t> removableInstructions_;
     };
 }
 

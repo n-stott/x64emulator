@@ -119,8 +119,8 @@ namespace emulator {
             queue_.clear();
             queue_.push_back(bb);
             while(!queue_.empty()) {
-                bb = queue_.front();
-                queue_.pop_front();
+                bb = queue_.back();
+                queue_.pop_back();
                 bb->tryCompile(jit, *this, optimizationLevel);
             }
         }
@@ -130,7 +130,7 @@ namespace emulator {
         }
 
     private:
-        std::deque<emulator::BasicBlock*> queue_;
+        std::vector<emulator::BasicBlock*> queue_;
     };
 
     class VM {
@@ -244,6 +244,8 @@ namespace emulator {
         std::unordered_map<u64, u64> basicBlockCount_;
         std::unordered_map<u64, u64> basicBlockCacheMissCount_;
 #endif
+
+        std::vector<x64::X64Instruction> blockInstructions_;
 
         mutable SymbolProvider symbolProvider_;
         mutable std::unordered_map<u64, std::string> functionNameCache_;
