@@ -452,6 +452,8 @@ namespace x64 {
 
         void nop();
         void nops(size_t count);
+        void ud();
+        void uds(size_t count);
 
     private:
         void write8(u8 value);

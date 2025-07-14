@@ -112,6 +112,7 @@ namespace x64::ir {
             case Op::CALL: return "call";
             case Op::RET: return "ret";
             case Op::NOP_N: return "nop_n";
+            case Op::UD_N: return "ud_n";
             case Op::MOVA: return "mova";
             case Op::MOVU: return "movu";
             case Op::MOVD: return "movd";

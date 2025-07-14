@@ -148,6 +148,7 @@ namespace x64::ir {
         RET,
 
         NOP_N,
+        UD_N,
 
         MOVA,
         MOVU,

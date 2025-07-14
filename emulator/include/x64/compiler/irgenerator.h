@@ -437,6 +437,7 @@ namespace x64::ir {
 
         void nop();
         void nops(size_t count);
+        void uds(size_t count);
 
         enum class JumpKind {
             NEXT_BLOCK,

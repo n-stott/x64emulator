@@ -4863,4 +4863,21 @@ namespace x64 {
         }
     }
 
+    void Assembler::ud() {
+        write16(0x0b0f);
+    }
+
+    void Assembler::uds(size_t count) {
+        assert(count >= 2);
+        while(count > 0) {
+            if(count >= 2) {
+                ud();
+                count -= 2;
+            } else {
+                nop();
+                count -= 1;
+            }
+        }
+    }
+
 }

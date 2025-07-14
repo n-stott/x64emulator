@@ -496,6 +496,7 @@ namespace x64::ir {
 
     void IrGenerator::nop() { emit(Op::NOP_N, Operand{}, (u32)1); }
     void IrGenerator::nops(size_t count) { emit(Op::NOP_N, Operand{}, (u32)count); }
+    void IrGenerator::uds(size_t count) { emit(Op::UD_N, Operand{}, (u32)count); }
 
     void IrGenerator::reportJump(JumpKind jumpKind) {
         jumpKinds_.push_back(std::make_pair(instructions_.size(), jumpKind));

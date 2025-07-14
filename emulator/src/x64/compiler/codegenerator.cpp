@@ -1093,6 +1093,12 @@ namespace x64 {
                     assembler_->nops(count.value());
                     break;
                 }
+                case ir::Op::UD_N: {
+                    auto count = ins.in1().as<u32>();
+                    assert(!!count);
+                    assembler_->uds(count.value());
+                    break;
+                }
                 case ir::Op::MOVA: {
                     auto r128dst = ins.out().as<XMM>();
                     auto m128dst = ins.out().as<M128>();
