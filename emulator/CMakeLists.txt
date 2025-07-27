@@ -57,7 +57,6 @@ add_library(x64emulator STATIC
     src/host/host.cpp
     src/host/hostinstructions.cpp
     src/host/hostmemory.cpp
-    src/kernel/auxiliaryvector.cpp
     src/kernel/linux/dev/hostdevice.cpp
     src/kernel/linux/dev/nulldevice.cpp
     src/kernel/linux/dev/shadowdevice.cpp
@@ -82,9 +81,10 @@ add_library(x64emulator STATIC
     src/kernel/linux/fs/symlink.cpp
     src/kernel/linux/shm/sharedmemory.cpp
     src/kernel/linux/shm/sharedmemorysegment.cpp
-    src/kernel/kernel.cpp
+    src/kernel/linux/auxiliaryvector.cpp
+    src/kernel/linux/kernel.cpp
+    src/kernel/linux/syscalls.cpp
     src/kernel/scheduler.cpp
-    src/kernel/syscalls.cpp
     src/kernel/thread.cpp
     src/kernel/threadblocker.cpp
     src/kernel/timers.cpp

@@ -1,4 +1,4 @@
-#include "kernel/auxiliaryvector.h"
+#include "kernel/linux/auxiliaryvector.h"
 #include "host/host.h"
 #include "utils.h"
 #include <cassert>

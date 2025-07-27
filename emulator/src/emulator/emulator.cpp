@@ -1,5 +1,5 @@
 #include "emulator/emulator.h"
-#include "kernel/kernel.h"
+#include "kernel/linux/kernel.h"
 #include "kernel/scheduler.h"
 #include "kernel/thread.h"
 #include "x64/mmu.h"
