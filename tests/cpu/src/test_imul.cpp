@@ -31,9 +31,19 @@ void testC() {
     (void)x64::CheckedCpuImpl::imul64(src1, src2, &flags);
 }
 
+
+void testD() {
+    u64 src1 = 0x28;
+    u64 src2 = 0xc000000000000000ull;
+    
+    x64::Flags flags;
+    (void)x64::CheckedCpuImpl::imul64(src1, src2, &flags);
+}
+
 int main() {
     testA();
     testB();
     testC();
+    testD();
     return 0;
 }

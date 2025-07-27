@@ -182,7 +182,7 @@ namespace x64 {
 
         // apply the sign !
         if(s1negative != s2negative) {
-            upper = ~upper;
+            upper = ~upper + (lower == 0);
             lower = -lower;
         }
 
