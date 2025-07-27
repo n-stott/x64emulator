@@ -1,5 +1,5 @@
-#include "kernel/fs/procfs.h"
-#include "kernel/fs/fs.h"
+#include "kernel/linux/fs/procfs.h"
+#include "kernel/linux/fs/fs.h"
 
 using namespace kernel;
 

@@ -1,5 +1,5 @@
-#include "kernel/fs/fs.h"
-#include "kernel/shm/sharedmemory.h"
+#include "kernel/linux/fs/fs.h"
+#include "kernel/linux/shm/sharedmemory.h"
 #include "kernel/kernel.h"
 #include "kernel/syscalls.h"
 #include "kernel/scheduler.h"

@@ -58,30 +58,30 @@ add_library(x64emulator STATIC
     src/host/hostinstructions.cpp
     src/host/hostmemory.cpp
     src/kernel/auxiliaryvector.cpp
-    src/kernel/dev/hostdevice.cpp
-    src/kernel/dev/nulldevice.cpp
-    src/kernel/dev/shadowdevice.cpp
-    src/kernel/dev/tty.cpp
-    src/kernel/fs/directory.cpp
-    src/kernel/fs/epoll.cpp
-    src/kernel/fs/event.cpp
-    src/kernel/fs/file.cpp
-    src/kernel/fs/fs.cpp
-    src/kernel/fs/hostdirectory.cpp
-    src/kernel/fs/hostfile.cpp
-    src/kernel/fs/hostsymlink.cpp
-    src/kernel/fs/localsocket.cpp
-    src/kernel/fs/openfiledescription.cpp
-    src/kernel/fs/path.cpp
-    src/kernel/fs/pipe.cpp
-    src/kernel/fs/procfs.cpp
-    src/kernel/fs/shadowdirectory.cpp
-    src/kernel/fs/shadowfile.cpp
-    src/kernel/fs/shadowsymlink.cpp
-    src/kernel/fs/socket.cpp
-    src/kernel/fs/symlink.cpp
-    src/kernel/shm/sharedmemory.cpp
-    src/kernel/shm/sharedmemorysegment.cpp
+    src/kernel/linux/dev/hostdevice.cpp
+    src/kernel/linux/dev/nulldevice.cpp
+    src/kernel/linux/dev/shadowdevice.cpp
+    src/kernel/linux/dev/tty.cpp
+    src/kernel/linux/fs/directory.cpp
+    src/kernel/linux/fs/epoll.cpp
+    src/kernel/linux/fs/event.cpp
+    src/kernel/linux/fs/file.cpp
+    src/kernel/linux/fs/fs.cpp
+    src/kernel/linux/fs/hostdirectory.cpp
+    src/kernel/linux/fs/hostfile.cpp
+    src/kernel/linux/fs/hostsymlink.cpp
+    src/kernel/linux/fs/localsocket.cpp
+    src/kernel/linux/fs/openfiledescription.cpp
+    src/kernel/linux/fs/path.cpp
+    src/kernel/linux/fs/pipe.cpp
+    src/kernel/linux/fs/procfs.cpp
+    src/kernel/linux/fs/shadowdirectory.cpp
+    src/kernel/linux/fs/shadowfile.cpp
+    src/kernel/linux/fs/shadowsymlink.cpp
+    src/kernel/linux/fs/socket.cpp
+    src/kernel/linux/fs/symlink.cpp
+    src/kernel/linux/shm/sharedmemory.cpp
+    src/kernel/linux/shm/sharedmemorysegment.cpp
     src/kernel/kernel.cpp
     src/kernel/scheduler.cpp
     src/kernel/syscalls.cpp
