@@ -2,6 +2,7 @@
 #include "kernel/linux/fs/fs.h"
 
 using namespace kernel;
+using namespace kernel::gnulinux;
 
 int main() {
     FS fs;

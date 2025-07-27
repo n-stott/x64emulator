@@ -1,7 +1,7 @@
 #include "kernel/linux/fs/path.h"
 #include "verify.h"
 
-namespace kernel {
+namespace kernel::gnulinux {
 
     std::unique_ptr<Path> Path::tryCreate(std::string pathname) {
         verify(!pathname.empty(), "Cannot create path from empty pathname");

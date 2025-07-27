@@ -4,10 +4,9 @@
 #include <cassert>
 #include <vector>
 
-namespace kernel {
+namespace kernel::gnulinux {
 
     AuxiliaryVector& AuxiliaryVector::add(u64 type) {
-        using namespace kernel;
         auto typeAndValue = Host::getauxval((Host::AUX_TYPE)type);
         if(!!typeAndValue) {
             data_.push_back(typeAndValue->type);
@@ -17,7 +16,6 @@ namespace kernel {
     }
 
     AuxiliaryVector& AuxiliaryVector::add(u64 type, u64 value) {
-        using namespace kernel;
         auto typeAndValue = Host::getauxval((Host::AUX_TYPE)type);
         if(!!typeAndValue) {
             data_.push_back(typeAndValue->type);
@@ -27,7 +25,6 @@ namespace kernel {
     }
 
     std::vector<u64> AuxiliaryVector::create() {
-        using namespace kernel;
         std::vector<u64> res = data_;
         auto nil = Host::getauxval(Host::AUX_TYPE::NIL);
         assert(!!nil);

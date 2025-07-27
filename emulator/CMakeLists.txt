@@ -84,9 +84,9 @@ add_library(x64emulator STATIC
     src/kernel/linux/auxiliaryvector.cpp
     src/kernel/linux/kernel.cpp
     src/kernel/linux/syscalls.cpp
-    src/kernel/scheduler.cpp
-    src/kernel/thread.cpp
-    src/kernel/threadblocker.cpp
+    src/kernel/linux/scheduler.cpp
+    src/kernel/linux/thread.cpp
+    src/kernel/linux/threadblocker.cpp
     src/kernel/timers.cpp
     src/x64/compiler/assembler.cpp
     src/x64/compiler/codegenerator.cpp

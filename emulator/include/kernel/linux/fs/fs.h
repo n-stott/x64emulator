@@ -12,7 +12,7 @@
 #include <string>
 #include <vector>
 
-namespace kernel {
+namespace kernel::gnulinux {
 
     class Directory;
     class File;

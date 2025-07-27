@@ -8,7 +8,7 @@
 #include <optional>
 #include <sys/types.h>
 
-namespace kernel {
+namespace kernel::gnulinux {
 
     class FS;
 

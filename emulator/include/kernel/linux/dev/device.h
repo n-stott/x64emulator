@@ -8,7 +8,7 @@
 #include <cassert>
 #include <sys/types.h>
 
-namespace kernel {
+namespace kernel::gnulinux {
 
     class Device : public File {
     public:

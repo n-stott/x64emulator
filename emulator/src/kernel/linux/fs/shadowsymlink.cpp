@@ -8,7 +8,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-namespace kernel {
+namespace kernel::gnulinux {
 
     File* ShadowSymlink::tryCreateAndAdd(FS* fs, Directory* parent, const std::string& name, const std::string& link) {
         std::string pathname;

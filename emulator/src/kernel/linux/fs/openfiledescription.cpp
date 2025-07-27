@@ -1,6 +1,6 @@
 #include "kernel/linux/fs/openfiledescription.h"
 
-namespace kernel {
+namespace kernel::gnulinux {
 
     ErrnoOrBuffer OpenFileDescription::ioctl(Ioctl request, const Buffer& buffer) {
         if(request == Ioctl::fionbio) {

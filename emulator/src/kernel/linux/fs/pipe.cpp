@@ -5,7 +5,7 @@
 #include <algorithm>
 #include <sys/errno.h>
 
-namespace kernel {
+namespace kernel::gnulinux {
 
     std::unique_ptr<Pipe> Pipe::tryCreate(FS* fs, int flags) {
         return std::unique_ptr<Pipe>(new Pipe(fs, flags));

@@ -1,12 +1,12 @@
-#include "kernel/threadblocker.h"
-#include "kernel/thread.h"
+#include "kernel/linux/threadblocker.h"
+#include "kernel/linux/thread.h"
 #include "kernel/linux/fs/fs.h"
 #include "x64/mmu.h"
 #include <fmt/core.h>
 #include <algorithm>
 #include <sstream>
 
-namespace kernel {
+namespace kernel::gnulinux {
 
     FutexBlocker FutexBlocker::withAbsoluteTimeout(Thread* thread, x64::Mmu& mmu, Timers& timers, x64::Ptr32 wordPtr, u32 expected, x64::Ptr timeout) {
         return FutexBlocker(thread, mmu, timers, wordPtr, expected, timeout, true);

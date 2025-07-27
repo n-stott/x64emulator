@@ -3,7 +3,7 @@
 #include <fmt/ranges.h>
 #include <sys/socket.h>
 
-namespace kernel {
+namespace kernel::gnulinux {
 
     LocalSocket::LocalSocket(FS* fs, int fd, int domain, int type, int protocol) : Socket(fs, fd, domain, type, protocol) { }
 

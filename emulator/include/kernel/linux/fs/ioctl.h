@@ -1,7 +1,7 @@
 #ifndef IOCTL_H
 #define IOCTL_H
 
-namespace kernel {
+namespace kernel::gnulinux {
 
     enum class Ioctl {
         fioclex,

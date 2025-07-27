@@ -11,7 +11,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 
-namespace kernel {
+namespace kernel::gnulinux {
 
     struct ShadowFileHostData {
         struct stat st;

@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-namespace kernel {
+namespace kernel::gnulinux {
 
     std::string File::path() const {
         std::vector<const Directory*> rdir;

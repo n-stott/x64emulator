@@ -8,7 +8,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-namespace kernel {
+namespace kernel::gnulinux {
 
     File* HostSymlink::tryCreateAndAdd(FS* fs, Directory* parent, const std::string& name) {
         std::string pathname;

@@ -2,7 +2,7 @@
 #include "kernel/linux/fs/fs.h"
 #include "kernel/linux/fs/path.h"
 
-namespace kernel {
+namespace kernel::gnulinux {
 
     ProcFS* ProcFS::tryCreateAndAdd(FS* fs, Directory* parent, const std::string& name) {
         std::string pathname;

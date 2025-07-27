@@ -4,7 +4,7 @@
 #include "host/host.h"
 #include "verify.h"
 
-namespace kernel {
+namespace kernel::gnulinux {
 
     std::unique_ptr<ShadowDirectory> ShadowDirectory::tryCreate(FS* fs, Directory* parent, const std::string& name) {
         std::string pathname;

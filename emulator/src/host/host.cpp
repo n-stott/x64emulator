@@ -29,7 +29,7 @@
 #include <time.h>
 #include <unistd.h>
 
-namespace kernel {
+namespace kernel::gnulinux {
 
     Host::Host() = default;
     Host::~Host() = default; // NOLINT(performance-trivially-destructible)

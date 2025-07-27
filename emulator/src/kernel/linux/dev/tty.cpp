@@ -9,7 +9,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-namespace kernel {
+namespace kernel::gnulinux {
 
     Tty* Tty::tryCreateAndAdd(FS* fs, Directory* parent, const std::string& name) {
         std::string pathname;

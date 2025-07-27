@@ -3,7 +3,7 @@
 
 #include "kernel/linux/fs/file.h"
 
-namespace kernel {
+namespace kernel::gnulinux {
 
     class Symlink : public File {
     public:

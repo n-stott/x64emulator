@@ -7,7 +7,7 @@
 #include <string>
 #include <vector>
 
-namespace kernel {
+namespace kernel::gnulinux {
 
     class Path {
     public:

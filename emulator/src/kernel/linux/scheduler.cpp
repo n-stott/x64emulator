@@ -1,7 +1,7 @@
-#include "kernel/scheduler.h"
+#include "kernel/linux/scheduler.h"
 #include "kernel/linux/kernel.h"
 #include "kernel/linux/syscalls.h"
-#include "kernel/thread.h"
+#include "kernel/linux/thread.h"
 #include "emulator/symbolprovider.h"
 #include "emulator/vm.h"
 #include "scopeguard.h"
@@ -15,7 +15,7 @@ namespace emulator {
     extern bool signal_interrupt;
 }
 
-namespace kernel {
+namespace kernel::gnulinux {
 
     Scheduler::Scheduler(x64::Mmu& mmu, Kernel& kernel) : mmu_(mmu), kernel_(kernel) { }
     Scheduler::~Scheduler() = default;

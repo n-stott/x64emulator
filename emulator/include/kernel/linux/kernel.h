@@ -11,13 +11,16 @@ namespace x64 {
 }
 
 namespace kernel {
+    class Timers;
+}
 
-    class Thread;
+namespace kernel::gnulinux {
+
     class FS;
     class Scheduler;
     class SharedMemory;
     class Sys;
-    class Timers;
+    class Thread;
 
     class Kernel {
     public:

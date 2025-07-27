@@ -1,7 +1,7 @@
-#include "kernel/thread.h"
+#include "kernel/linux/thread.h"
 #include <fmt/core.h>
 
-namespace kernel {
+namespace kernel::gnulinux {
 
     std::string Thread::toString() const {
         std::string res;

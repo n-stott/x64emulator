@@ -8,7 +8,7 @@
 #include <sys/types.h>
 #include <string>
 
-namespace kernel {
+namespace kernel::gnulinux {
 
     class Directory;
     class OpenFileDescription;

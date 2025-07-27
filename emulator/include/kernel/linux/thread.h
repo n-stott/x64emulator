@@ -15,7 +15,7 @@
 #include <unordered_map>
 #include <vector>
 
-namespace kernel {
+namespace kernel::gnulinux {
 
     class Thread {
     public:

@@ -4,7 +4,7 @@
 #include "kernel/linux/fs/symlink.h"
 #include <fmt/format.h>
 
-namespace kernel {
+namespace kernel::gnulinux {
 
     class HostSymlink : public Symlink {
     public:

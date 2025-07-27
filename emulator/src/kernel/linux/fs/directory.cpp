@@ -6,7 +6,7 @@
 #include <stack>
 #include <dirent.h>
 
-namespace kernel {
+namespace kernel::gnulinux {
 
     File* Directory::tryGetEntry(const std::string& name) {
         for(auto& entry : entries_) {

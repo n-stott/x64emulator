@@ -5,7 +5,7 @@
 #include <algorithm>
 #include <errno.h>
 
-namespace kernel {
+namespace kernel::gnulinux {
 
     SharedMemory::SharedMemory(x64::Mmu& mmu) : mmu_(mmu) { }
 

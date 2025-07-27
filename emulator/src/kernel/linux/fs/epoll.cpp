@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <sys/errno.h>
 
-namespace kernel {
+namespace kernel::gnulinux {
 
     void Epoll::close() {
         (void)flags_;

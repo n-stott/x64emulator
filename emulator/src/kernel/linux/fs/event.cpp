@@ -4,7 +4,7 @@
 #include <sys/errno.h>
 #include <sys/poll.h>
 
-namespace kernel {
+namespace kernel::gnulinux {
 
     std::unique_ptr<Event> Event::tryCreate(FS* fs, unsigned int initval, int flags) {
         return std::unique_ptr<Event>(new Event(fs, initval, flags));

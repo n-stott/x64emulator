@@ -14,7 +14,7 @@
 #include <sys/vfs.h>
 #include <unistd.h>
 
-namespace kernel {
+namespace kernel::gnulinux {
 
     File* HostFile::tryCreateAndAdd(FS* fs, Directory* parent, const std::string& name, BitFlags<FS::AccessMode> accessMode, bool closeOnExec) {
         std::string pathname;

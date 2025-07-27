@@ -23,7 +23,7 @@
 #include <fmt/ranges.h>
 #include <algorithm>
 
-namespace kernel {
+namespace kernel::gnulinux {
 
     FS::FS() {
         root_ = HostDirectory::tryCreateRoot(this);

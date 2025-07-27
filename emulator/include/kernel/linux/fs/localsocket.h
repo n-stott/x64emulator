@@ -7,7 +7,7 @@
 #include <fmt/core.h>
 #include <memory> 
 
-namespace kernel {
+namespace kernel::gnulinux {
 
     class LocalSocket : public Socket {
     public:

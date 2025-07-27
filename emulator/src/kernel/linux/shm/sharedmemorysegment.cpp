@@ -4,7 +4,7 @@
 #include <sys/shm.h>
 
 
-namespace kernel {
+namespace kernel::gnulinux {
 
     std::unique_ptr<SharedMemorySegment> SharedMemorySegment::tryCreate(x64::Mmu& mmu, int mode, size_t size) {
         if(mode & (~0777)) return {};

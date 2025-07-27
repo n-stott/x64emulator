@@ -1,9 +1,9 @@
 #include "kernel/linux/fs/fs.h"
 #include "kernel/linux/shm/sharedmemory.h"
 #include "kernel/linux/kernel.h"
+#include "kernel/linux/scheduler.h"
 #include "kernel/linux/syscalls.h"
-#include "kernel/scheduler.h"
-#include "kernel/thread.h"
+#include "kernel/linux/thread.h"
 #include "host/host.h"
 #include "scopeguard.h"
 #include "verify.h"
@@ -14,7 +14,7 @@
 #include <numeric>
 #include <sys/socket.h>
 
-namespace kernel {
+namespace kernel::gnulinux {
 
     Sys::Sys(Kernel& kernel, x64::Mmu& mmu) :
         kernel_(kernel),

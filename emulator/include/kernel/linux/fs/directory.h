@@ -7,7 +7,7 @@
 #include <memory>
 #include <sys/types.h>
 
-namespace kernel {
+namespace kernel::gnulinux {
 
     class Directory : public File {
     public:

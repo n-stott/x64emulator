@@ -3,7 +3,7 @@
 
 #include "kernel/linux/fs/directory.h"
 
-namespace kernel {
+namespace kernel::gnulinux {
 
     class ProcFS : public Directory {
     public:

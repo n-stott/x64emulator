@@ -4,7 +4,7 @@
 #include "kernel/linux/fs/file.h"
 #include <memory>
 
-namespace kernel {
+namespace kernel::gnulinux {
 
     class Event : public File {
     public:

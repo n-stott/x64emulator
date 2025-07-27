@@ -1,7 +1,7 @@
 #include "kernel/linux/fs/symlink.h"
 #include "verify.h"
 
-namespace kernel {
+namespace kernel::gnulinux {
 
     ErrnoOrBuffer Symlink::readlink(size_t bufferSize) {
         if(bufferSize == 0) return ErrnoOrBuffer(-EINVAL);

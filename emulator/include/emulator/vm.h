@@ -16,7 +16,7 @@ namespace jit {
     struct BasicBlock;
 }
 
-namespace kernel {
+namespace kernel::gnulinux {
     class Kernel;
     class Thread;
 }
@@ -153,9 +153,9 @@ namespace emulator {
         void crash();
         bool hasCrashed() const { return hasCrashed_; }
 
-        void contextSwitch(kernel::Thread* newThread);
+        void contextSwitch(kernel::gnulinux::Thread* newThread);
 
-        void execute(kernel::Thread* thread);
+        void execute(kernel::gnulinux::Thread* thread);
 
         void push64(u64 value);
 
@@ -219,7 +219,7 @@ namespace emulator {
         mutable std::vector<std::unique_ptr<ExecutableSection>> executableSections_;
         bool hasCrashed_ = false;
 
-        kernel::Thread* currentThread_ { nullptr };
+        kernel::gnulinux::Thread* currentThread_ { nullptr };
 
         std::vector<std::unique_ptr<BasicBlock>> basicBlocks_;
         std::unordered_map<u64, BasicBlock*> basicBlocksByAddress_;

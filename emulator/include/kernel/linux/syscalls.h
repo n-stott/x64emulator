@@ -16,10 +16,13 @@ namespace x64 {
 }
 
 namespace kernel {
-    class Host;
-    class Kernel;
     class Scheduler;
     class Thread;
+}
+
+namespace kernel::gnulinux {
+    class Host;
+    class Kernel;
 
     class Sys {
     public:

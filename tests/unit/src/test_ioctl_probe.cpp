@@ -7,7 +7,7 @@
 int main() {
     std::array<u8, 36> buf;
     std::fill(buf.begin(), buf.end(), 0);
-    std::optional<ssize_t> size = kernel::Host::tryGuessIoctlBufferSize(kernel::Host::FD{STDIN_FILENO}, TIOCGWINSZ, buf.data(), buf.size());
+    std::optional<ssize_t> size = kernel::gnulinux::Host::tryGuessIoctlBufferSize(kernel::gnulinux::Host::FD{STDIN_FILENO}, TIOCGWINSZ, buf.data(), buf.size());
 
     if(!size) {
         printf("Unable to find size\n");

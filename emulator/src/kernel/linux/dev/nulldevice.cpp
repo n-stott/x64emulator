@@ -4,7 +4,7 @@
 #include "scopeguard.h"
 #include "verify.h"
 
-namespace kernel {
+namespace kernel::gnulinux {
 
     File* NullDevice::tryCreateAndAdd(FS* fs, Directory* parent, const std::string& name) {
         std::string pathname;

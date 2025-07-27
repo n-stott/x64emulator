@@ -6,7 +6,7 @@
 #include <memory>
 #include <vector>
 
-namespace kernel {
+namespace kernel::gnulinux {
 
     enum class PipeSide {
         READ,

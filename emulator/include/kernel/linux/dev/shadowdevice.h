@@ -8,7 +8,7 @@
 #include <optional>
 #include <string>
 
-namespace kernel {
+namespace kernel::gnulinux {
 
     class Directory;
 

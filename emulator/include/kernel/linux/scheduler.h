@@ -1,7 +1,7 @@
 #ifndef SCHEDULER_H
 #define SCHEDULER_H
 
-#include "kernel/threadblocker.h"
+#include "kernel/linux/threadblocker.h"
 #include "kernel/timers.h"
 #include "x64/types.h"
 #include "utils.h"
@@ -25,7 +25,7 @@ namespace profiling {
     class ProfilingData;
 }
 
-namespace kernel {
+namespace kernel::gnulinux {
 
     class Kernel;
     class Thread;

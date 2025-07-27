@@ -11,7 +11,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-namespace kernel {
+namespace kernel::gnulinux {
 
     std::vector<std::string> ShadowDevice::allAllowedDevices_ { // NOLINT(cert-err58-cpp)
         "/dev/null",

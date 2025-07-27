@@ -3,9 +3,9 @@
 #include "kernel/linux/auxiliaryvector.h"
 #include "kernel/linux/fs/fs.h"
 #include "kernel/linux/shm/sharedmemory.h"
-#include "kernel/scheduler.h"
+#include "kernel/linux/scheduler.h"
+#include "kernel/linux/thread.h"
 #include "kernel/timers.h"
-#include "kernel/thread.h"
 #include "host/host.h"
 #include "x64/mmu.h"
 #include "verify.h"
@@ -14,14 +14,14 @@
 #include <numeric>
 #include <variant>
 
-namespace kernel {
+namespace kernel::gnulinux {
 
     Kernel::Kernel(x64::Mmu& mmu) : mmu_(mmu) {
         fs_ = std::make_unique<FS>();
         shm_ = std::make_unique<SharedMemory>(mmu_);
         scheduler_ = std::make_unique<Scheduler>(mmu_, *this);
         sys_ = std::make_unique<Sys>(*this, mmu_);
-        timers_ = std::make_unique<Timers>();
+        timers_ = std::make_unique<kernel::Timers>();
     }
 
     Kernel::~Kernel() = default;

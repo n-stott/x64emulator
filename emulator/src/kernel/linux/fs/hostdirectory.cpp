@@ -9,7 +9,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-namespace kernel {
+namespace kernel::gnulinux {
 
     std::unique_ptr<HostDirectory> HostDirectory::tryCreateRoot(FS* fs) {
         return std::unique_ptr<HostDirectory>(new HostDirectory(fs, nullptr, ""));

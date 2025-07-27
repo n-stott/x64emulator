@@ -8,7 +8,7 @@
 #include <sys/socket.h>
 #include <sys/stat.h>
 
-namespace kernel {
+namespace kernel::gnulinux {
 
     Socket::Socket(FS* fs, int fd, int domain, int type, int protocol) :
             File(fs),

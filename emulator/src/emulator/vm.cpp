@@ -4,7 +4,7 @@
 #include "x64/disassembler/capstonewrapper.h"
 #include "x64/mmu.h"
 #include "x64/registers.h"
-#include "kernel/thread.h"
+#include "kernel/linux/thread.h"
 #include "host/hostmemory.h"
 #include <algorithm>
 #include <numeric>
@@ -150,7 +150,7 @@ namespace emulator {
 
     void VM::syncThread() {
         if(!!currentThread_) {
-            kernel::Thread::SavedCpuState& state = currentThread_->savedCpuState();
+            kernel::gnulinux::Thread::SavedCpuState& state = currentThread_->savedCpuState();
             x64::Cpu::State cpuState;
             cpu_.save(&cpuState);
             state.flags = cpuState.flags;
@@ -167,12 +167,12 @@ namespace emulator {
         }
     }
 
-    void VM::contextSwitch(kernel::Thread* newThread) {
+    void VM::contextSwitch(kernel::gnulinux::Thread* newThread) {
         syncThread(); // if we have a current thread, save the registers to that thread.
         if(!!newThread) {
             // we now install the new thread
             currentThread_ = newThread;
-            kernel::Thread::SavedCpuState& currentThreadState = currentThread_->savedCpuState();
+            kernel::gnulinux::Thread::SavedCpuState& currentThreadState = currentThread_->savedCpuState();
 
             x64::Cpu::State cpuState;
             cpu_.save(&cpuState);
@@ -193,7 +193,7 @@ namespace emulator {
 
     class Context {
     public:
-        explicit Context(VM& vm, kernel::Thread* thread) : vm_(&vm) {
+        explicit Context(VM& vm, kernel::gnulinux::Thread* thread) : vm_(&vm) {
             vm_->contextSwitch(thread);
         }
 
@@ -204,10 +204,10 @@ namespace emulator {
         VM* vm_;
     };
 
-    void VM::execute(kernel::Thread* thread) {
+    void VM::execute(kernel::gnulinux::Thread* thread) {
         if(!thread) return;
         Context context(*this, thread);
-        kernel::Thread::TickInfo& tickInfo = thread->tickInfo();
+        kernel::gnulinux::Thread::TickInfo& tickInfo = thread->tickInfo();
         BasicBlock* currentBasicBlock = nullptr;
         BasicBlock* nextBasicBlock = fetchBasicBlock();
 

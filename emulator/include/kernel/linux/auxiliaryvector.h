@@ -4,7 +4,7 @@
 #include "utils.h"
 #include <vector>
 
-namespace kernel {
+namespace kernel::gnulinux {
 
     class AuxiliaryVector {
     public:

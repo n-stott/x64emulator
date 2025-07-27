@@ -6,7 +6,7 @@
 #include "bitflags.h"
 #include "verify.h"
 
-namespace kernel {
+namespace kernel::gnulinux {
 
     class File;
 

@@ -6,7 +6,7 @@
 #include "utils.h"
 #include <cassert>
 
-namespace kernel {
+namespace kernel::gnulinux {
 
     class RegularFile : public File {
     public:

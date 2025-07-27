@@ -1,7 +1,7 @@
 #include "emulator/emulator.h"
 #include "kernel/linux/kernel.h"
-#include "kernel/scheduler.h"
-#include "kernel/thread.h"
+#include "kernel/linux/scheduler.h"
+#include "kernel/linux/thread.h"
 #include "x64/mmu.h"
 #include "verify.h"
 #include "profilingdata.h"
@@ -54,7 +54,7 @@ namespace emulator {
     bool Emulator::run(const std::string& programFilePath, const std::vector<std::string>& arguments, const std::vector<std::string>& environmentVariables) const {
         auto mmu = x64::Mmu::tryCreate(virtualMemoryInMB_);
         verify(!!mmu, "unable to create mmu");
-        kernel::Kernel kernel(*mmu);
+        kernel::gnulinux::Kernel kernel(*mmu);
         
         kernel.setLogSyscalls(logSyscalls_);
         kernel.setProfiling(isProfiling_);
@@ -67,7 +67,7 @@ namespace emulator {
         bool ok = true;
         
         VerificationScope::run([&]() {
-            kernel::Thread* mainThread = kernel.exec(programFilePath, arguments, environmentVariables);
+            kernel::gnulinux::Thread* mainThread = kernel.exec(programFilePath, arguments, environmentVariables);
             kernel.scheduler().run();
             fmt::print("Emulator completed execution\n");
             ok &= (mainThread->exitStatus() == 0);

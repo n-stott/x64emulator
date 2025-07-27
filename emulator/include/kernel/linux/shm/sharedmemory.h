@@ -13,7 +13,7 @@ namespace x64 {
     class Mmu;
 }
 
-namespace kernel {
+namespace kernel::gnulinux {
 
     class SharedMemorySegment;
 
