@@ -4,7 +4,7 @@
 #include "x64/disassembler/capstonewrapper.h"
 #include "x64/mmu.h"
 #include "x64/registers.h"
-#include "kernel/linux/thread.h"
+#include "kernel/threadbase.h"
 #include "host/hostmemory.h"
 #include <algorithm>
 #include <numeric>
@@ -129,7 +129,7 @@ namespace emulator {
             fmt::print("Crash in thread {}:{} after {} instructions\n",
                             currentThread_->description().pid,
                             currentThread_->description().tid,
-                            currentThread_->tickInfo().nbInstructions());
+                            currentThread_->time().nbInstructions());
             u64 rip = currentThread_->savedCpuState().regs.rip();
             for(const auto& bb : basicBlocks_) {
                 auto start = bb->start();
@@ -150,7 +150,7 @@ namespace emulator {
 
     void VM::syncThread() {
         if(!!currentThread_) {
-            kernel::gnulinux::Thread::SavedCpuState& state = currentThread_->savedCpuState();
+            kernel::ThreadBase::SavedCpuState& state = currentThread_->savedCpuState();
             x64::Cpu::State cpuState;
             cpu_.save(&cpuState);
             state.flags = cpuState.flags;
@@ -167,12 +167,12 @@ namespace emulator {
         }
     }
 
-    void VM::contextSwitch(kernel::gnulinux::Thread* newThread) {
+    void VM::contextSwitch(kernel::ThreadBase* newThread) {
         syncThread(); // if we have a current thread, save the registers to that thread.
         if(!!newThread) {
             // we now install the new thread
             currentThread_ = newThread;
-            kernel::gnulinux::Thread::SavedCpuState& currentThreadState = currentThread_->savedCpuState();
+            kernel::ThreadBase::SavedCpuState& currentThreadState = currentThread_->savedCpuState();
 
             x64::Cpu::State cpuState;
             cpu_.save(&cpuState);
@@ -193,7 +193,7 @@ namespace emulator {
 
     class Context {
     public:
-        explicit Context(VM& vm, kernel::gnulinux::Thread* thread) : vm_(&vm) {
+        explicit Context(VM& vm, kernel::ThreadBase* thread) : vm_(&vm) {
             vm_->contextSwitch(thread);
         }
 
@@ -204,10 +204,10 @@ namespace emulator {
         VM* vm_;
     };
 
-    void VM::execute(kernel::gnulinux::Thread* thread) {
+    void VM::execute(kernel::ThreadBase* thread) {
         if(!thread) return;
         Context context(*this, thread);
-        kernel::gnulinux::Thread::TickInfo& tickInfo = thread->tickInfo();
+        kernel::ThreadTime& time = thread->time();
         BasicBlock* currentBasicBlock = nullptr;
         BasicBlock* nextBasicBlock = fetchBasicBlock();
 
@@ -234,7 +234,7 @@ namespace emulator {
         };
 
         CpuCallback callback(&cpu_, this);
-        while(!tickInfo.isStopAsked()) {
+        while(!time.isStopAsked()) {
             verify(!signal_interrupt);
             std::swap(currentBasicBlock, nextBasicBlock);
 #ifdef VM_BASICBLOCK_TELEMETRY
@@ -246,7 +246,7 @@ namespace emulator {
                 currentBasicBlock->onJitCall();
                 jit_->exec(&cpu_, &mmu_,
                           (x64::NativeExecPtr)currentBasicBlock->jitBasicBlock()->executableMemory(),
-                          tickInfo.ticks(),
+                          time.ticks(),
                           (void**)&currentBasicBlock,
                           currentBasicBlock->jitBasicBlock());
                 ++jitExits_;
@@ -267,7 +267,7 @@ namespace emulator {
             } else {
                 currentBasicBlock->onCpuCall();
                 cpu_.exec(currentBasicBlock->basicBlock());
-                tickInfo.tick(currentBasicBlock->basicBlock().instructions.size());
+                time.tick(currentBasicBlock->basicBlock().instructions.size());
             }
             nextBasicBlock = findNextBasicBlock();
             if(!!jit_

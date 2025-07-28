@@ -23,10 +23,10 @@ namespace kernel::gnulinux {
     void Scheduler::syncThreadTimeSlice(Thread* thread, std::unique_lock<std::mutex>* lockPtr) {
         verify(!!thread);
         if(!!lockPtr) {
-            currentTime_ = std::max(currentTime_, thread->tickInfo().currentTime());
+            currentTime_ = std::max(currentTime_, thread->time().currentTime());
         } else {
             std::unique_lock lock(schedulerMutex_);
-            currentTime_ = std::max(currentTime_, thread->tickInfo().currentTime());
+            currentTime_ = std::max(currentTime_, thread->time().currentTime());
         }
     }
 
@@ -108,9 +108,9 @@ namespace kernel::gnulinux {
             schedulerHasRunnableThread_.notify_all();
         });
         // fmt::print(stderr, "{}: run thread {}\n", worker.id, thread->description().tid);
-        thread->tickInfo().setSlice(currentTime_.count(), DEFAULT_TIME_SLICE);
+        thread->time().setSlice(currentTime_.count(), DEFAULT_TIME_SLICE);
 
-        while(!thread->tickInfo().isStopAsked()) {
+        while(!thread->time().isStopAsked()) {
             syncThreadTimeSlice(thread, nullptr);
             vm.execute(thread);
         }
@@ -627,7 +627,7 @@ namespace kernel::gnulinux {
     void Scheduler::dumpThreadSummary() const {
         forEachThread([&](const Thread& thread) {
             fmt::print("Thread #{} : {}\n", thread.description().tid, thread.toString());
-            fmt::print("    instructions   {:<10} \n", thread.tickInfo().nbInstructions());
+            fmt::print("    instructions   {:<10} \n", thread.time().nbInstructions());
             fmt::print("    syscalls       {:<10} \n", thread.stats().syscalls);
             fmt::print("    function calls {:<10} \n", thread.stats().functionCalls);
             thread.dumpRegisters();
