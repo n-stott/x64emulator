@@ -9,7 +9,6 @@
 #include "host/host.h"
 #include "x64/mmu.h"
 #include "verify.h"
-#include "emulator/vm.h"
 #include "elf-reader/elf-reader.h"
 #include <numeric>
 #include <variant>
@@ -195,7 +194,7 @@ namespace kernel::gnulinux {
         return stackBase + stackSize;
     }
 
-    static void pushProgramArguments(x64::Mmu* mmu, emulator::VM* vm, const std::string& programFilePath, const std::vector<std::string>& arguments, const std::vector<std::string>& environmentVariables, const Auxiliary& auxiliary) {
+    static void pushProgramArguments(x64::Mmu* mmu, x64::Registers* regs, const std::string& programFilePath, const std::vector<std::string>& arguments, const std::vector<std::string>& environmentVariables, const Auxiliary& auxiliary) {
         size_t requiredSize = programFilePath.size()+1;
         requiredSize = std::accumulate(arguments.begin(), arguments.end(), requiredSize, [](size_t size, const std::string& arg) {
             return size + arg.size() + 1;
@@ -255,23 +254,26 @@ namespace kernel::gnulinux {
                 .add((u64)Host::AUX_TYPE::SECURE);
         std::vector<u64> data = auxvec.create();
 
+        auto push64 = [&](u64 value) {
+            regs->rsp() -= 8;
+            mmu->write64(x64::Ptr64{regs->rsp()}, value);
+        };
+
         size_t nbElementsOnStack = data.size() + argumentPositions.size() + 1;
-        if(nbElementsOnStack % 2 == 1) vm->push64(0);
+        if(nbElementsOnStack % 2 == 1) push64(0);
         for(auto rit = data.rbegin(); rit != data.rend(); ++rit) {
-            vm->push64(*rit);
+            push64(*rit);
         }
         
         for(auto it = argumentPositions.rbegin(); it != argumentPositions.rend(); ++it) {
-            vm->push64(*it);
+            push64(*it);
         }
-        vm->push64(arguments.size()+1);
+        push64(arguments.size()+1);
     }
 
     Thread* Kernel::exec(const std::string& programFilePath,
                          const std::vector<std::string>& arguments,
                          const std::vector<std::string>& environmentVariables) {
-        x64::Cpu cpu(mmu_);
-        emulator::VM vm(cpu, mmu_);
         Auxiliary aux;
 
         auto entrypointOrInterpreterPath = loadElf(&mmu_, &aux, programFilePath, true);
@@ -293,12 +295,11 @@ namespace kernel::gnulinux {
         Thread::SavedCpuState& cpuState = mainThread->savedCpuState();
         cpuState.regs.rip() = entrypoint;
         cpuState.regs.rsp() = (stackTop & 0xFFFFFFFFFFFFFF00); // stack needs to be 16-byte aligned
+        
+        pushProgramArguments(&mmu_, &cpuState.regs, programFilePath, arguments, environmentVariables, aux);
+
         Thread* mainThreadPtr = mainThread.get();
         scheduler_->addThread(std::move(mainThread));
-
-        vm.contextSwitch(mainThreadPtr);
-        pushProgramArguments(&mmu_, &vm, programFilePath, arguments, environmentVariables, aux);
-        vm.contextSwitch(nullptr);
 
         // Setup procFS for this process
         fs_->resetProcFS(Host::getpid(), programFilePath);
