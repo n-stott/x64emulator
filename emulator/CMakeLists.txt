@@ -53,7 +53,6 @@ target_link_libraries(x64cpu PUBLIC fmt::fmt-header-only)
 
 add_library(x64emulator STATIC
     src/emulator/emulator.cpp
-    src/emulator/executablememoryallocator.cpp
     src/emulator/symbolprovider.cpp
     src/emulator/vm.cpp
     src/emulator/vmthread.cpp
@@ -93,6 +92,7 @@ add_library(x64emulator STATIC
     src/x64/compiler/assembler.cpp
     src/x64/compiler/codegenerator.cpp
     src/x64/compiler/compiler.cpp
+    src/x64/compiler/executablememoryallocator.cpp
     src/x64/compiler/ir.cpp
     src/x64/compiler/irgenerator.cpp
     src/x64/compiler/jit.cpp

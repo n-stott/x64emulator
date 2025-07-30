@@ -88,7 +88,7 @@ namespace x64 {
         }
     }
 
-    std::unique_ptr<JitBasicBlock> JitBasicBlock::tryCreate(const x64::BasicBlock& bb, const void* currentBb, x64::Compiler* compiler, int optimizationLevel, emulator::ExecutableMemoryAllocator* allocator) {
+    std::unique_ptr<JitBasicBlock> JitBasicBlock::tryCreate(const x64::BasicBlock& bb, const void* currentBb, x64::Compiler* compiler, int optimizationLevel, ExecutableMemoryAllocator* allocator) {
         assert(!!compiler);
         assert(!!allocator);
         auto dst = std::make_unique<JitBasicBlock>();

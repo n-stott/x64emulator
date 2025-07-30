@@ -1,9 +1,9 @@
-#include "emulator/executablememoryallocator.h"
+#include "x64/compiler/executablememoryallocator.h"
 #include "host/hostmemory.h"
 #include "verify.h"
 #include <algorithm>
 
-namespace emulator {
+namespace x64 {
 
     ExecutableMemoryAllocator::ExecutableMemoryAllocator() = default;
     ExecutableMemoryAllocator::~ExecutableMemoryAllocator() = default;

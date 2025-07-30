@@ -6,7 +6,7 @@
 #include <memory>
 #include <optional>
 
-namespace emulator {
+namespace x64 {
 
     class ExecutableMemoryAllocator;
 

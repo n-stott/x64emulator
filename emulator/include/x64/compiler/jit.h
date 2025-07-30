@@ -1,7 +1,7 @@
 #ifndef JIT_H
 #define JIT_H
 
-#include "emulator/executablememoryallocator.h"
+#include "x64/compiler/executablememoryallocator.h"
 #include "x64/instructions/basicblock.h"
 #include "optional.h"
 #include <cassert>
@@ -9,10 +9,6 @@
 #include <deque>
 #include <optional>
 #include <vector>
-
-namespace emulator {
-    class BasicBlock;
-}
 
 namespace x64 {
     class Cpu;
@@ -65,7 +61,7 @@ namespace x64 {
     class JitBasicBlock {
         friend class BasicBlockTest;
     public:
-        static std::unique_ptr<JitBasicBlock> tryCreate(const x64::BasicBlock& bb, const void* currentBb, x64::Compiler* compiler, int optimizationLevel, emulator::ExecutableMemoryAllocator* allocator);
+        static std::unique_ptr<JitBasicBlock> tryCreate(const x64::BasicBlock& bb, const void* currentBb, x64::Compiler* compiler, int optimizationLevel, ExecutableMemoryAllocator* allocator);
 
         JitBasicBlock();
         ~JitBasicBlock();
@@ -99,7 +95,7 @@ namespace x64 {
         JitBasicBlock(const JitBasicBlock&) = delete;
         JitBasicBlock(JitBasicBlock&&) = delete;
 
-        void setExecutableMemory(emulator::MemoryBlock executableMemory) {
+        void setExecutableMemory(MemoryBlock executableMemory) {
             executableMemory_ = executableMemory;
         }
 
@@ -117,7 +113,7 @@ namespace x64 {
             return executableMemory_.ptr;
         }
 
-        emulator::MemoryBlock executableMemory_;
+        MemoryBlock executableMemory_;
 
         x64::BlockLookupTable variableDestinationTable_;
 
@@ -135,7 +131,7 @@ namespace x64 {
         static_assert(Optional<JitBasicBlock>::VALUE_OFFSET == 0);
         
         static_assert(offsetof(JitBasicBlock, executableMemory_) == x64::NATIVE_BLOCK_OFFSET);
-        static_assert(offsetof(emulator::MemoryBlock, ptr) == 0);
+        static_assert(offsetof(MemoryBlock, ptr) == 0);
         static_assert(offsetof(JitBasicBlock, variableDestinationTable_) == x64::BLOCK_LOOKUP_TABLE_OFFSET);
         static_assert(offsetof(JitBasicBlock, calls_) == x64::CALLS_OFFSET);
     };
@@ -162,8 +158,8 @@ namespace x64 {
         Jit();
         void tryCreateJitTrampoline();
 
-        emulator::ExecutableMemoryAllocator allocator_;
-        std::optional<emulator::MemoryBlock> jitTrampoline_;
+        ExecutableMemoryAllocator allocator_;
+        std::optional<MemoryBlock> jitTrampoline_;
 
         std::unique_ptr<x64::Compiler> compiler_;
 
