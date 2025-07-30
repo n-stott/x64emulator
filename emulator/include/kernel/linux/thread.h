@@ -12,7 +12,18 @@ namespace kernel::gnulinux {
 
     class Thread : public emulator::VMThread {
     public:
-        Thread(int pid, int tid) : emulator::VMThread(pid, tid) { }
+        Thread(int pid, int tid) : description_{pid, tid} { }
+
+        std::string id() const override {
+            return fmt::format("{}:{}", description().pid, description().tid);
+        }
+
+        struct Description {
+            int pid { 0xface };
+            int tid { 0xfeed };
+        };
+
+        const Description& description() const { return description_; }
 
         int exitStatus() const { return exitStatus_; }
         void setExitStatus(int status) { exitStatus_ = status; }
@@ -33,6 +44,8 @@ namespace kernel::gnulinux {
         std::string toString() const;
 
     private:
+        Description description_;
+
         x64::Ptr32 setChildTid_ { 0 };
         x64::Ptr32 clearChildTid_ { 0 };
 

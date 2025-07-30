@@ -126,9 +126,8 @@ namespace emulator {
         hasCrashed_ = true;
         syncThread();
         if(!!currentThread_) {
-            fmt::print("Crash in thread {}:{} after {} instructions\n",
-                            currentThread_->description().pid,
-                            currentThread_->description().tid,
+            fmt::print("Crash in thread {} after {} instructions\n",
+                            currentThread_->id(),
                             currentThread_->time().nbInstructions());
             u64 rip = currentThread_->savedCpuState().regs.rip();
             for(const auto& bb : basicBlocks_) {

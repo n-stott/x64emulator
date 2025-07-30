@@ -133,13 +133,10 @@ namespace emulator {
     class VMThread : public ThreadProfileData,
                      public ThreadCallstackData {
     public:
-        VMThread(int pid, int tid) : description_{pid, tid} { }
+        VMThread() = default;
         virtual ~VMThread() = default;
 
-        struct Description {
-            int pid { 0xface };
-            int tid { 0xfeed };
-        };
+        virtual std::string id() const = 0;
 
         struct SavedCpuState {
             x64::Flags flags;
@@ -160,8 +157,6 @@ namespace emulator {
             };
             std::deque<FunctionCall> calls;
         };
-
-        const Description& description() const { return description_; }
 
         ThreadTime& time() { return time_; }
         const ThreadTime& time() const { return time_; }
@@ -198,13 +193,11 @@ namespace emulator {
         void dumpStackTrace(const std::unordered_map<u64, std::string>& addressToSymbol) const;
 
     protected:
-        Description description_;
         SavedCpuState savedCpuState_;
         ThreadTime time_;
+        Stats stats_;
 
         bool requestsSyscall_ { false };
-
-        Stats stats_;
     };
 
 }
