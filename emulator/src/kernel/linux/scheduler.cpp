@@ -23,10 +23,12 @@ namespace kernel::gnulinux {
     void Scheduler::syncThreadTimeSlice(Thread* thread, std::unique_lock<std::mutex>* lockPtr) {
         verify(!!thread);
         if(!!lockPtr) {
-            currentTime_ = std::max(currentTime_, thread->time().currentTime());
+            PreciseTime threadTime = PreciseTime{} + TimeDifference::fromNanoSeconds(thread->time().ns());
+            currentTime_ = std::max(currentTime_, threadTime);
         } else {
             std::unique_lock lock(schedulerMutex_);
-            currentTime_ = std::max(currentTime_, thread->time().currentTime());
+            PreciseTime threadTime = PreciseTime{} + TimeDifference::fromNanoSeconds(thread->time().ns());
+            currentTime_ = std::max(currentTime_, threadTime);
         }
     }
 

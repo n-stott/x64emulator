@@ -1,10 +1,10 @@
 #include "emulator/vm.h"
+#include "emulator/vmthread.h"
 #include "verify.h"
 #include "x64/compiler/compiler.h"
 #include "x64/disassembler/capstonewrapper.h"
 #include "x64/mmu.h"
 #include "x64/registers.h"
-#include "kernel/threadbase.h"
 #include "host/hostmemory.h"
 #include <algorithm>
 #include <numeric>
@@ -150,7 +150,7 @@ namespace emulator {
 
     void VM::syncThread() {
         if(!!currentThread_) {
-            kernel::ThreadBase::SavedCpuState& state = currentThread_->savedCpuState();
+            VMThread::SavedCpuState& state = currentThread_->savedCpuState();
             x64::Cpu::State cpuState;
             cpu_.save(&cpuState);
             state.flags = cpuState.flags;
@@ -167,12 +167,12 @@ namespace emulator {
         }
     }
 
-    void VM::contextSwitch(kernel::ThreadBase* newThread) {
+    void VM::contextSwitch(VMThread* newThread) {
         syncThread(); // if we have a current thread, save the registers to that thread.
         if(!!newThread) {
             // we now install the new thread
             currentThread_ = newThread;
-            kernel::ThreadBase::SavedCpuState& currentThreadState = currentThread_->savedCpuState();
+            VMThread::SavedCpuState& currentThreadState = currentThread_->savedCpuState();
 
             x64::Cpu::State cpuState;
             cpu_.save(&cpuState);
@@ -193,7 +193,7 @@ namespace emulator {
 
     class Context {
     public:
-        explicit Context(VM& vm, kernel::ThreadBase* thread) : vm_(&vm) {
+        explicit Context(VM& vm, VMThread* thread) : vm_(&vm) {
             vm_->contextSwitch(thread);
         }
 
@@ -204,10 +204,10 @@ namespace emulator {
         VM* vm_;
     };
 
-    void VM::execute(kernel::ThreadBase* thread) {
+    void VM::execute(VMThread* thread) {
         if(!thread) return;
         Context context(*this, thread);
-        kernel::ThreadTime& time = thread->time();
+        ThreadTime& time = thread->time();
         BasicBlock* currentBasicBlock = nullptr;
         BasicBlock* nextBasicBlock = fetchBasicBlock();
 

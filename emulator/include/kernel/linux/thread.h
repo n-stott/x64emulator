@@ -1,7 +1,7 @@
 #ifndef THREAD_H
 #define THREAD_H
 
-#include "kernel/threadbase.h"
+#include "emulator/vmthread.h"
 #include "utils.h"
 #include "verify.h"
 #include <cstddef>
@@ -10,9 +10,9 @@
 
 namespace kernel::gnulinux {
 
-    class Thread : public kernel::ThreadBase {
+    class Thread : public emulator::VMThread {
     public:
-        Thread(int pid, int tid) : ThreadBase(pid, tid) { }
+        Thread(int pid, int tid) : emulator::VMThread(pid, tid) { }
 
         int exitStatus() const { return exitStatus_; }
         void setExitStatus(int status) { exitStatus_ = status; }

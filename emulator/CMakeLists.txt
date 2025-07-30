@@ -56,6 +56,7 @@ add_library(x64emulator STATIC
     src/emulator/executablememoryallocator.cpp
     src/emulator/symbolprovider.cpp
     src/emulator/vm.cpp
+    src/emulator/vmthread.cpp
     src/host/host.cpp
     src/host/hostmemory.cpp
     src/kernel/linux/dev/hostdevice.cpp
@@ -89,7 +90,6 @@ add_library(x64emulator STATIC
     src/kernel/linux/thread.cpp
     src/kernel/linux/threadblocker.cpp
     src/kernel/timers.cpp
-    src/kernel/threadbase.cpp
     src/x64/compiler/assembler.cpp
     src/x64/compiler/codegenerator.cpp
     src/x64/compiler/compiler.cpp

@@ -1,7 +1,6 @@
-#ifndef THREADBASE_H
-#define THREADBASE_H
+#ifndef VMTHREAD_H
+#define VMTHREAD_H
 
-#include "kernel/timers.h"
 #include "x64/registers.h"
 #include "x64/flags.h"
 #include "x64/simd.h"
@@ -12,7 +11,7 @@
 #include <string>
 #include <unordered_map>
 
-namespace kernel {
+namespace emulator {
 
     class ThreadProfileData {
     public:
@@ -120,10 +119,6 @@ namespace kernel {
 
         u64* ticks() { return &nbInstructions_; }
 
-        PreciseTime currentTime() const {
-            return PreciseTime{} + TimeDifference::fromNanoSeconds(ns());
-        }
-
         void setSlice(u64 current, u64 sliceDuration) {
             verify(current >= waitTime_ + nbInstructions_);
             waitTime_ = current - nbInstructions_;
@@ -135,11 +130,11 @@ namespace kernel {
         }
     };
 
-    class ThreadBase : public ThreadProfileData,
-                       public ThreadCallstackData {
+    class VMThread : public ThreadProfileData,
+                     public ThreadCallstackData {
     public:
-        ThreadBase(int pid, int tid) : description_{pid, tid} { }
-        virtual ~ThreadBase() = default;
+        VMThread(int pid, int tid) : description_{pid, tid} { }
+        virtual ~VMThread() = default;
 
         struct Description {
             int pid { 0xface };

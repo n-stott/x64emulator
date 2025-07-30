@@ -1,8 +1,8 @@
-#include "kernel/threadbase.h"
+#include "emulator/vmthread.h"
 
-namespace kernel {
+namespace emulator {
 
-    void ThreadBase::dumpRegisters() const {
+    void VMThread::dumpRegisters() const {
         fmt::print("Registers:\n");
         const auto& regs = savedCpuState_.regs;
         fmt::print("    rip {:>#18x}\n",
@@ -34,7 +34,7 @@ namespace kernel {
             regs.get(x64::XMM::XMM14).hi, regs.get(x64::XMM::XMM14).lo, regs.get(x64::XMM::XMM15).hi, regs.get(x64::XMM::XMM15).lo);
     }
 
-    void ThreadBase::dumpStackTrace(const std::unordered_map<u64, std::string>& addressToSymbol) const {
+    void VMThread::dumpStackTrace(const std::unordered_map<u64, std::string>& addressToSymbol) const {
         size_t frameId = 0;
         auto callstackBegin = callstack().rbegin();
         auto callstackEnd = callstack().rend();

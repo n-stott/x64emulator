@@ -2,7 +2,7 @@
 #define VM_H
 
 #include "emulator/symbolprovider.h"
-#include "emulator/executablememoryallocator.h"
+#include "emulator/vmthread.h"
 #include "x64/compiler/jit.h"
 #include "x64/cpu.h"
 #include "x64/mmu.h"
@@ -11,14 +11,6 @@
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
-
-namespace jit {
-    struct BasicBlock;
-}
-
-namespace kernel {
-    class ThreadBase;
-}
 
 namespace x64 {
     struct BasicBlock;
@@ -32,7 +24,6 @@ namespace emulator {
 
     class VM;
     class CompilationQueue;
-    class BasicBlock;
 
     class BasicBlock {
     public:
@@ -152,9 +143,8 @@ namespace emulator {
         void crash();
         bool hasCrashed() const { return hasCrashed_; }
 
-        void contextSwitch(kernel::ThreadBase* newThread);
-
-        void execute(kernel::ThreadBase* thread);
+        void contextSwitch(VMThread* newThread);
+        void execute(VMThread* thread);
 
         void push64(u64 value);
 
@@ -218,7 +208,7 @@ namespace emulator {
         mutable std::vector<std::unique_ptr<ExecutableSection>> executableSections_;
         bool hasCrashed_ = false;
 
-        kernel::ThreadBase* currentThread_ { nullptr };
+        VMThread* currentThread_ { nullptr };
 
         std::vector<std::unique_ptr<BasicBlock>> basicBlocks_;
         std::unordered_map<u64, BasicBlock*> basicBlocksByAddress_;
