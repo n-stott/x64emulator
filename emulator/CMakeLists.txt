@@ -15,6 +15,21 @@ endif()
 target_include_directories(elf-reader PUBLIC include)
 target_link_libraries(elf-reader PUBLIC fmt::fmt-header-only)
 
+if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
+    set(COMPILE_OPTIONS
+        -Wall -Wextra -Wpedantic -pedantic -Wconversion -Werror -Wimplicit-fallthrough
+        -Wno-braced-scalar-init -Wno-missing-braces -Wno-maybe-uninitialized -Wno-stringop-overflow
+        -frounding-math -fno-omit-frame-pointer
+        -DFMT_HEADER_ONLY -DFMT_USE_FLOAT=0 -DFMT_USE_DOUBLE=0 -DFMT_USE_LONG_DOUBLE=0
+    )
+elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
+    set(COMPILE_OPTIONS
+        -Wall -Wextra -Wpedantic -pedantic -Wconversion -Werror -Wimplicit-fallthrough
+        -Wno-braced-scalar-init -Wno-missing-braces -Wno-uninitialized -Wno-nested-anon-types
+        -frounding-math -fno-omit-frame-pointer
+        -DFMT_HEADER_ONLY -DFMT_USE_FLOAT=0 -DFMT_USE_DOUBLE=0 -DFMT_USE_LONG_DOUBLE=0
+    )
+endif()
 
 add_library(x64cpu STATIC
     src/host/hostinstructions.cpp
@@ -31,22 +46,9 @@ add_library(x64cpu STATIC
     src/x64/x87.cpp
     src/utils.cpp
 )
-target_compile_options(x64cpu PUBLIC -Wall -Wextra -Wpedantic -pedantic -Wconversion -Werror -Wimplicit-fallthrough)
-target_compile_options(x64cpu PUBLIC -Wno-braced-scalar-init -Wno-missing-braces)
-if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
-    target_compile_options(x64cpu PUBLIC -Wno-maybe-uninitialized -Wno-stringop-overflow)
-elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
-    target_compile_options(x64cpu PUBLIC -Wno-uninitialized -g)
-endif()
-target_compile_options(x64cpu PUBLIC -frounding-math -fno-omit-frame-pointer)
+target_compile_options(x64cpu PUBLIC ${COMPILE_OPTIONS})
 target_include_directories(x64cpu PUBLIC include)
 target_link_libraries(x64cpu PUBLIC fmt::fmt-header-only)
-target_compile_options(x64cpu PUBLIC
-    -DFMT_HEADER_ONLY
-    -DFMT_USE_FLOAT=0
-    -DFMT_USE_DOUBLE=0
-    -DFMT_USE_LONG_DOUBLE=0
-)
 
 
 add_library(x64emulator STATIC
@@ -55,7 +57,6 @@ add_library(x64emulator STATIC
     src/emulator/symbolprovider.cpp
     src/emulator/vm.cpp
     src/host/host.cpp
-    src/host/hostinstructions.cpp
     src/host/hostmemory.cpp
     src/kernel/linux/dev/hostdevice.cpp
     src/kernel/linux/dev/nulldevice.cpp
@@ -97,46 +98,23 @@ add_library(x64emulator STATIC
     src/x64/compiler/jit.cpp
     src/x64/compiler/optimizer.cpp
     src/x64/disassembler/capstonewrapper.cpp
-    src/x64/instructions/x64instruction.cpp
-    src/x64/cpu.cpp
-    src/x64/cpuimpl.cpp
-    src/x64/checkedcpuimpl.cpp
-    src/x64/flags.cpp
-    src/x64/nativecpuimpl.cpp
-    src/x64/mmu.cpp
-    src/x64/registers.cpp
-    src/x64/simd.cpp
-    src/x64/x87.cpp
-    src/utils.cpp
 )
-target_compile_options(x64emulator PUBLIC -Wall -Wextra -Wpedantic -pedantic -Wconversion -Werror -Wimplicit-fallthrough)
-target_compile_options(x64emulator PUBLIC -Wno-braced-scalar-init -Wno-missing-braces)
-if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
-    target_compile_options(x64emulator PUBLIC -Wno-maybe-uninitialized -Wno-stringop-overflow)
-elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
-    target_compile_options(x64emulator PUBLIC -Wno-uninitialized -Wno-nested-anon-types -g)
-endif()
-target_compile_options(x64emulator PUBLIC -frounding-math -fno-omit-frame-pointer)
-target_compile_options(x64emulator PUBLIC
-    -DFMT_HEADER_ONLY
-    -DFMT_USE_FLOAT=0
-    -DFMT_USE_DOUBLE=0
-    -DFMT_USE_LONG_DOUBLE=0
+target_compile_options(x64emulator PUBLIC ${COMPILE_OPTIONS})
+target_include_directories(x64emulator PUBLIC
+    include
+    ${CMAKE_SOURCE_DIR}/profiling/include
+    ${capstone_SOURCE_DIR}/include
 )
-target_include_directories(x64emulator PUBLIC include)
-target_include_directories(x64emulator PUBLIC ${CMAKE_SOURCE_DIR}/profiling/include)
-target_include_directories(x64emulator PUBLIC ${capstone_SOURCE_DIR}/include)
 target_link_directories(x64emulator PUBLIC ${capstone_BINARY_DIR})
 target_link_libraries(x64emulator PUBLIC
-    capstone
-    fmt::fmt-header-only
+    x64cpu
     profiling
+    fmt::fmt-header-only
+    capstone
 )
 if(MULTIPROCESSING)
     target_compile_definitions(x64emulator PUBLIC MULTIPROCESSING=1)
 endif(MULTIPROCESSING)
-
-# set_property(TARGET x64emulator PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
 
 # target_compile_options(x64emulator PUBLIC -fsanitize=address,undefined -fno-sanitize-recover=all)
 # target_link_libraries(x64emulator PUBLIC asan ubsan)
@@ -152,15 +130,13 @@ endif(MULTIPROCESSING)
 add_executable(emulator
     src/main.cpp
 )
-target_compile_options(emulator PUBLIC -Wall -Wextra -Wpedantic -pedantic -Wconversion -Werror -Wimplicit-fallthrough)
-target_compile_options(emulator PUBLIC -Wno-braced-scalar-init -Wno-missing-braces)
-if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
-    target_compile_options(emulator PUBLIC -Wno-maybe-uninitialized -Wno-stringop-overflow)
-elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
-    target_compile_options(emulator PUBLIC -Wno-uninitialized -g)
-endif()
+target_compile_options(emulator PUBLIC ${COMPILE_OPTIONS})
 target_include_directories(emulator PUBLIC include)
-target_link_libraries(emulator PUBLIC x64emulator fmt::fmt-header-only argparse)
+target_link_libraries(emulator PUBLIC
+    x64emulator
+    fmt::fmt-header-only
+    argparse
+)
 
 # target_compile_options(emulator PUBLIC -fsanitize=address,undefined -fno-sanitize-recover=all)
 # target_link_libraries(emulator PUBLIC asan ubsan)
