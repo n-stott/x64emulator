@@ -31,7 +31,9 @@ elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
     )
 endif()
 
-add_library(x64cpu STATIC
+set(LIB_KIND STATIC)
+
+add_library(x64cpu ${LIB_KIND}
     src/host/hostinstructions.cpp
     src/host/hostmemory.cpp
     src/x64/checkedcpuimpl.cpp
@@ -51,13 +53,35 @@ target_include_directories(x64cpu PUBLIC include)
 target_link_libraries(x64cpu PUBLIC fmt::fmt-header-only)
 
 
-add_library(x64emulator STATIC
+add_library(x64jit ${LIB_KIND}
+    src/x64/compiler/assembler.cpp
+    src/x64/compiler/codegenerator.cpp
+    src/x64/compiler/compiler.cpp
+    src/x64/compiler/executablememoryallocator.cpp
+    src/x64/compiler/ir.cpp
+    src/x64/compiler/irgenerator.cpp
+    src/x64/compiler/jit.cpp
+    src/x64/compiler/optimizer.cpp
+    src/x64/disassembler/capstonewrapper.cpp
+)
+target_compile_options(x64jit PUBLIC ${COMPILE_OPTIONS})
+target_include_directories(x64jit PUBLIC
+    include
+    ${capstone_SOURCE_DIR}/include
+)
+target_link_libraries(x64jit PUBLIC
+    x64cpu
+    fmt::fmt-header-only
+    capstone
+)
+
+
+add_library(x64emulator ${LIB_KIND}
     src/emulator/emulator.cpp
     src/emulator/symbolprovider.cpp
     src/emulator/vm.cpp
     src/emulator/vmthread.cpp
     src/host/host.cpp
-    src/host/hostmemory.cpp
     src/kernel/linux/dev/hostdevice.cpp
     src/kernel/linux/dev/nulldevice.cpp
     src/kernel/linux/dev/shadowdevice.cpp
@@ -89,28 +113,18 @@ add_library(x64emulator STATIC
     src/kernel/linux/thread.cpp
     src/kernel/linux/threadblocker.cpp
     src/kernel/timers.cpp
-    src/x64/compiler/assembler.cpp
-    src/x64/compiler/codegenerator.cpp
-    src/x64/compiler/compiler.cpp
-    src/x64/compiler/executablememoryallocator.cpp
-    src/x64/compiler/ir.cpp
-    src/x64/compiler/irgenerator.cpp
-    src/x64/compiler/jit.cpp
-    src/x64/compiler/optimizer.cpp
-    src/x64/disassembler/capstonewrapper.cpp
 )
 target_compile_options(x64emulator PUBLIC ${COMPILE_OPTIONS})
 target_include_directories(x64emulator PUBLIC
     include
     ${CMAKE_SOURCE_DIR}/profiling/include
-    ${capstone_SOURCE_DIR}/include
 )
 target_link_directories(x64emulator PUBLIC ${capstone_BINARY_DIR})
 target_link_libraries(x64emulator PUBLIC
     x64cpu
+    x64jit
     profiling
     fmt::fmt-header-only
-    capstone
 )
 if(MULTIPROCESSING)
     target_compile_definitions(x64emulator PUBLIC MULTIPROCESSING=1)
