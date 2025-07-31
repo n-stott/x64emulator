@@ -46,7 +46,7 @@ add_library(x64cpu ${LIB_KIND}
     src/x64/simd.cpp
     src/x64/instructions/x64instruction.cpp
     src/x64/x87.cpp
-    src/utils.cpp
+    src/x64/types.cpp
 )
 target_compile_options(x64cpu PUBLIC ${COMPILE_OPTIONS})
 target_include_directories(x64cpu PUBLIC include)

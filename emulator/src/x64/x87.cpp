@@ -4,7 +4,7 @@
 namespace x64 {
 
     X87Fpu::X87Fpu() {
-        std::fill(stack_.begin(), stack_.end(), f80::fromLongDouble(0));
+        std::fill(stack_.begin(), stack_.end(), F80::fromLongDouble(0));
     }
 
     void X87Fpu::push(f80 val) {
@@ -86,14 +86,14 @@ namespace x64 {
     std::string X87Fpu::toString() const {
         return fmt::format( "st0={} st1={} st2={} st3={} "
                             "st4={} st5={} st6={} st7={} top={}",
-                            f80::toLongDouble(st(x64::ST::ST0)),
-                            f80::toLongDouble(st(x64::ST::ST1)),
-                            f80::toLongDouble(st(x64::ST::ST2)),
-                            f80::toLongDouble(st(x64::ST::ST3)),
-                            f80::toLongDouble(st(x64::ST::ST4)),
-                            f80::toLongDouble(st(x64::ST::ST5)),
-                            f80::toLongDouble(st(x64::ST::ST6)),
-                            f80::toLongDouble(st(x64::ST::ST7)),
+                            F80::toLongDouble(st(x64::ST::ST0)),
+                            F80::toLongDouble(st(x64::ST::ST1)),
+                            F80::toLongDouble(st(x64::ST::ST2)),
+                            F80::toLongDouble(st(x64::ST::ST3)),
+                            F80::toLongDouble(st(x64::ST::ST4)),
+                            F80::toLongDouble(st(x64::ST::ST5)),
+                            F80::toLongDouble(st(x64::ST::ST6)),
+                            F80::toLongDouble(st(x64::ST::ST7)),
                             (int)top());
     }
 

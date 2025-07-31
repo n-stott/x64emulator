@@ -4070,19 +4070,19 @@ namespace x64 {
         set(dst, narrow<u64, Xmm>(get(src)));
     }
 
-    void Cpu::execFldz(const X64Instruction&) { x87fpu_.push(f80::fromLongDouble(0.0)); }
-    void Cpu::execFld1(const X64Instruction&) { x87fpu_.push(f80::fromLongDouble(1.0)); }
+    void Cpu::execFldz(const X64Instruction&) { x87fpu_.push(F80::fromLongDouble(0.0)); }
+    void Cpu::execFld1(const X64Instruction&) { x87fpu_.push(F80::fromLongDouble(1.0)); }
     void Cpu::execFldST(const X64Instruction& ins) {
         const auto& src = ins.op0<ST>();
         x87fpu_.push(x87fpu_.st(src));
     }
     void Cpu::execFldM32(const X64Instruction& ins) {
         const auto& src = ins.op0<M32>();
-        x87fpu_.push(f80::bitcastFromU32(get(resolve(src))));
+        x87fpu_.push(F80::bitcastFromU32(get(resolve(src))));
     }
     void Cpu::execFldM64(const X64Instruction& ins) {
         const auto& src = ins.op0<M64>();
-        x87fpu_.push(f80::bitcastFromU64(get(resolve(src))));
+        x87fpu_.push(F80::bitcastFromU64(get(resolve(src))));
     }
     void Cpu::execFldM80(const X64Instruction& ins) {
         const auto& src = ins.op0<M80>();
@@ -4091,15 +4091,15 @@ namespace x64 {
 
     void Cpu::execFildM16(const X64Instruction& ins) {
         const auto& src = ins.op0<M16>();
-        x87fpu_.push(f80::castFromI16((i16)get(resolve(src))));
+        x87fpu_.push(F80::castFromI16((i16)get(resolve(src))));
     }
     void Cpu::execFildM32(const X64Instruction& ins) {
         const auto& src = ins.op0<M32>();
-        x87fpu_.push(f80::castFromI32((i32)get(resolve(src))));
+        x87fpu_.push(F80::castFromI32((i32)get(resolve(src))));
     }
     void Cpu::execFildM64(const X64Instruction& ins) {
         const auto& src = ins.op0<M64>();
-        x87fpu_.push(f80::castFromI64((i64)get(resolve(src))));
+        x87fpu_.push(F80::castFromI64((i64)get(resolve(src))));
     }
 
     void Cpu::execFstpST(const X64Instruction& ins) {
@@ -4109,12 +4109,12 @@ namespace x64 {
     }
     void Cpu::execFstpM32(const X64Instruction& ins) {
         const auto& dst = ins.op0<M32>();
-        set(resolve(dst), f80::bitcastToU32(x87fpu_.st(ST::ST0)));
+        set(resolve(dst), F80::bitcastToU32(x87fpu_.st(ST::ST0)));
         x87fpu_.pop();
     }
     void Cpu::execFstpM64(const X64Instruction& ins) {
         const auto& dst = ins.op0<M64>();
-        set(resolve(dst), f80::bitcastToU64(x87fpu_.st(ST::ST0)));
+        set(resolve(dst), F80::bitcastToU64(x87fpu_.st(ST::ST0)));
         x87fpu_.pop();
     }
     void Cpu::execFstpM80(const X64Instruction& ins) {
@@ -4125,17 +4125,17 @@ namespace x64 {
 
     void Cpu::execFistpM16(const X64Instruction& ins) {
         const auto& dst = ins.op0<M16>();
-        set(resolve(dst), (u16)f80::castToI16(x87fpu_.st(ST::ST0)));
+        set(resolve(dst), (u16)F80::castToI16(x87fpu_.st(ST::ST0)));
         x87fpu_.pop();
     }
     void Cpu::execFistpM32(const X64Instruction& ins) {
         const auto& dst = ins.op0<M32>();
-        set(resolve(dst), (u32)f80::castToI32(x87fpu_.st(ST::ST0)));
+        set(resolve(dst), (u32)F80::castToI32(x87fpu_.st(ST::ST0)));
         x87fpu_.pop();
     }
     void Cpu::execFistpM64(const X64Instruction& ins) {
         const auto& dst = ins.op0<M64>();
-        set(resolve(dst), (u64)f80::castToI64(x87fpu_.st(ST::ST0)));
+        set(resolve(dst), (u64)F80::castToI64(x87fpu_.st(ST::ST0)));
         x87fpu_.pop();
     }
 
@@ -4174,14 +4174,14 @@ namespace x64 {
     void Cpu::execFmul1M32(const X64Instruction& ins) {
         const auto& src = ins.op0<M32>();
         f80 topValue = x87fpu_.st(ST::ST0);
-        f80 srcValue = f80::bitcastFromU32(get(resolve(src)));
+        f80 srcValue = F80::bitcastFromU32(get(resolve(src)));
         x87fpu_.set(ST::ST0, Impl::fmul(topValue, srcValue, &x87fpu_));
     }
 
     void Cpu::execFmul1M64(const X64Instruction& ins) {
         const auto& src = ins.op0<M64>();
         f80 topValue = x87fpu_.st(ST::ST0);
-        f80 srcValue = f80::bitcastFromU64(get(resolve(src)));
+        f80 srcValue = F80::bitcastFromU64(get(resolve(src)));
         x87fpu_.set(ST::ST0, Impl::fmul(topValue, srcValue, &x87fpu_));
     }
 
@@ -4197,7 +4197,7 @@ namespace x64 {
         auto dst = ST::ST0;
         f80 dstValue = x87fpu_.st(dst);
         const auto& src = ins.op0<M32>();
-        f80 srcValue = f80::bitcastFromU32(get(resolve(src)));
+        f80 srcValue = F80::bitcastFromU32(get(resolve(src)));
         x87fpu_.set(dst, Impl::fdiv(dstValue, srcValue, &x87fpu_));
     }
 
@@ -4224,7 +4224,7 @@ namespace x64 {
         f80 dstValue = x87fpu_.st(dst);
         const auto& src = ins.op0<M32>();
         Ptr32 srcPtr = resolve(src);
-        f80 srcValue = f80::bitcastFromU32(get(srcPtr));
+        f80 srcValue = F80::bitcastFromU32(get(srcPtr));
         x87fpu_.set(dst, Impl::fdiv(srcValue, dstValue, &x87fpu_));
     }
 

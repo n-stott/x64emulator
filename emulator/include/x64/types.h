@@ -434,6 +434,39 @@ namespace x64 {
             && a.encoding.index == b.encoding.index
             && a.encoding.scale == b.encoding.scale;
     }
+
+    using Mmx = u64;
+    using Xmm = u128;
+
+    struct F32 {
+        static i32 round32(f32 val);
+        static i64 round64(f32 val);
+    };
+
+    struct F64 {
+        static i32 round32(f64 val);
+        static i64 round64(f64 val);
+    };
+
+    struct F80 {
+        static f80 fromLongDouble(long double d);
+        static long double toLongDouble(f80 f);
+        static f80 bitcastFromU32(u32 val);
+        static f80 bitcastFromU64(u64 val);
+        static u32 bitcastToU32(f80 val);
+        static u64 bitcastToU64(f80 val);
+        static f80 castFromI16(i16 val);
+        static f80 castFromI32(i32 val);
+        static f80 castFromI64(i64 val);
+        static i16 castToI16(f80 val);
+        static i32 castToI32(f80 val);
+        static i64 castToI64(f80 val);
+
+        static f80 roundNearest(f80 val);
+        static f80 roundDown(f80 val);
+        static f80 roundUp(f80 val);
+        static f80 roundZero(f80 val);
+    };
 }
 
 #endif

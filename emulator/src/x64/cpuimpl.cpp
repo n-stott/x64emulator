@@ -683,36 +683,36 @@ namespace x64 {
     u64 CpuImpl::bsf64(u64 val, Flags* flags) { return bsf<u64>(val, flags); }
 
     f80 CpuImpl::fadd(f80 dst, f80 src, X87Fpu*) {
-        long double d = f80::toLongDouble(dst);
-        long double s = f80::toLongDouble(src);
+        long double d = F80::toLongDouble(dst);
+        long double s = F80::toLongDouble(src);
         long double r = d+s;
-        return f80::fromLongDouble(r);
+        return F80::fromLongDouble(r);
     }
 
     f80 CpuImpl::fsub(f80 dst, f80 src, X87Fpu*) {
-        long double d = f80::toLongDouble(dst);
-        long double s = f80::toLongDouble(src);
+        long double d = F80::toLongDouble(dst);
+        long double s = F80::toLongDouble(src);
         long double r = d-s;
-        return f80::fromLongDouble(r);
+        return F80::fromLongDouble(r);
     }
 
     f80 CpuImpl::fmul(f80 dst, f80 src, X87Fpu*) {
-        long double d = f80::toLongDouble(dst);
-        long double s = f80::toLongDouble(src);
+        long double d = F80::toLongDouble(dst);
+        long double s = F80::toLongDouble(src);
         long double r = d*s;
-        return f80::fromLongDouble(r);
+        return F80::fromLongDouble(r);
     }
 
     f80 CpuImpl::fdiv(f80 dst, f80 src, X87Fpu*) {
-        long double d = f80::toLongDouble(dst);
-        long double s = f80::toLongDouble(src);
+        long double d = F80::toLongDouble(dst);
+        long double s = F80::toLongDouble(src);
         long double r = d/s;
-        return f80::fromLongDouble(r);
+        return F80::fromLongDouble(r);
     }
 
     void CpuImpl::fcomi(f80 dst, f80 src, X87Fpu* x87fpu, Flags* flags) {
-        long double d = f80::toLongDouble(dst);
-        long double s = f80::toLongDouble(src);
+        long double d = F80::toLongDouble(dst);
+        long double s = F80::toLongDouble(src);
         if(d > s) {
             flags->zero = 0;
             flags->setParity(false);
@@ -744,10 +744,10 @@ namespace x64 {
     f80 CpuImpl::frndint(f80 dst, X87Fpu* x87fpu) {
         using RoundingFunction = f80(*)(f80);
         std::array<RoundingFunction, 4> rounding {{
-            &f80::roundNearest,
-            &f80::roundDown,
-            &f80::roundUp,
-            &f80::roundZero
+            &F80::roundNearest,
+            &F80::roundDown,
+            &F80::roundUp,
+            &F80::roundZero
         }};
         return rounding[(u16)x87fpu->control().rc](dst);
     }

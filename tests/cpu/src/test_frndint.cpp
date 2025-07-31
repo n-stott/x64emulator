@@ -1,5 +1,5 @@
 #include "x64/cpuimpl.h"
-#include "utils.h"
+#include "x64/types.h"
 #include "fmt/core.h"
 #include <vector>
 
@@ -27,8 +27,8 @@ long double runFrndint(long double x, x64::FPU_ROUNDING rounding) {
 long double runFrndintVirtual(long double x, x64::FPU_ROUNDING rounding) {
     x64::X87Fpu fpu;
     fpu.control().rc = rounding;
-    f80 r = x64::CpuImpl::frndint(f80::fromLongDouble(x), &fpu);
-    return f80::toLongDouble(r);
+    f80 r = x64::CpuImpl::frndint(x64::F80::fromLongDouble(x), &fpu);
+    return x64::F80::toLongDouble(r);
 }
 
 int compareFrndint(long double x, x64::FPU_ROUNDING rounding) {

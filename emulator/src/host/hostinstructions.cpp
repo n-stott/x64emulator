@@ -27,7 +27,10 @@ namespace host {
     }
 
     f80 round(f80 val) {
-        long double x = f80::toLongDouble(val);
+        long double x;
+        static_assert(sizeof(val) <= sizeof(x), "");
+        memset(&x, 0, sizeof(x));
+        memcpy(&x, &val, sizeof(val));
 
         // save rounding mode
         unsigned short cw { 0 };
@@ -42,7 +45,8 @@ namespace host {
                         : "=m"(x)
                         : "m" (nearest), "m"(x), "m"(cw));
 
-        return f80::fromLongDouble(x);
+        memcpy(&val, &x, sizeof(val));
+        return val;
     }
 
     IdivResult<u32> idiv32(u32 upperDividend, u32 lowerDividend, u32 divisor) {
