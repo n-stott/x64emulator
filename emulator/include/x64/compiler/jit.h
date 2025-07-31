@@ -3,7 +3,6 @@
 
 #include "x64/compiler/executablememoryallocator.h"
 #include "x64/instructions/basicblock.h"
-#include "optional.h"
 #include <cassert>
 #include <cstddef>
 #include <deque>
@@ -128,8 +127,6 @@ namespace x64 {
     };
 
     class BasicBlockTest {
-        static_assert(Optional<JitBasicBlock>::VALUE_OFFSET == 0);
-        
         static_assert(offsetof(JitBasicBlock, executableMemory_) == x64::NATIVE_BLOCK_OFFSET);
         static_assert(offsetof(MemoryBlock, ptr) == 0);
         static_assert(offsetof(JitBasicBlock, variableDestinationTable_) == x64::BLOCK_LOOKUP_TABLE_OFFSET);
