@@ -51,6 +51,9 @@ add_library(x64cpu ${LIB_KIND}
 target_compile_options(x64cpu PUBLIC ${COMPILE_OPTIONS})
 target_include_directories(x64cpu PUBLIC include)
 target_link_libraries(x64cpu PUBLIC fmt::fmt-header-only)
+if(MULTIPROCESSING)
+    target_compile_definitions(x64cpu PUBLIC MULTIPROCESSING=1)
+endif(MULTIPROCESSING)
 
 
 add_library(x64jit ${LIB_KIND}
@@ -74,6 +77,9 @@ target_link_libraries(x64jit PUBLIC
     fmt::fmt-header-only
     capstone
 )
+if(MULTIPROCESSING)
+    target_compile_definitions(x64jit PUBLIC MULTIPROCESSING=1)
+endif(MULTIPROCESSING)
 
 
 add_library(x64emulator ${LIB_KIND}
@@ -156,6 +162,6 @@ target_link_libraries(emulator PUBLIC
 # target_link_libraries(emulator PUBLIC asan ubsan)
 
 if(MULTIPROCESSING)
-    target_compile_definitions(x64emulator PUBLIC MULTIPROCESSING=1)
+    target_compile_definitions(emulator PUBLIC MULTIPROCESSING=1)
     target_link_libraries(emulator PUBLIC pthread)
 endif(MULTIPROCESSING)
