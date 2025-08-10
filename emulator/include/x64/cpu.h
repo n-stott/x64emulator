@@ -577,11 +577,13 @@ namespace x64 {
         void execCmpxchgRM16R16(const X64Instruction&);
         void execCmpxchgRM32R32(const X64Instruction&);
         void execCmpxchgRM64R64(const X64Instruction&);
+        void execCmpxchg16BM128(const X64Instruction&);
 
         void execLockCmpxchgM8R8(const X64Instruction&);
         void execLockCmpxchgM16R16(const X64Instruction&);
         void execLockCmpxchgM32R32(const X64Instruction&);
         void execLockCmpxchgM64R64(const X64Instruction&);
+        void execLockCmpxchg16BM128(const X64Instruction&);
 
         void execSetRM8(const X64Instruction&);
 

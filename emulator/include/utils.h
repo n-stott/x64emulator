@@ -22,6 +22,10 @@ inline bool operator==(u128 a, u128 b) {
     return a.lo == b.lo && a.hi == b.hi;
 }
 
+inline bool operator!=(u128 a, u128 b) {
+    return !(a == b);
+}
+
 using f32 = float;
 using f64 = double;
 

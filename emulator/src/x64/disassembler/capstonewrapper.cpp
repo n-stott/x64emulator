@@ -1639,6 +1639,22 @@ namespace x64 {
         return make_failed(insn);
     }
 
+    static X64Instruction makeCmpxchg16b(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 1);
+        const cs_x86_op& dst = x86detail.operands[0];
+        auto m128dst = asMemory128(dst);
+        bool lock = (insn.detail->x86.prefix[0] == X86_PREFIX_LOCK);
+        if(m128dst) {
+            if(!lock) {
+                return X64Instruction::make<Insn::CMPXCHG16B_M128>(insn.address, insn.size, m128dst.value());
+            } else {
+                return X64Instruction::make<Insn::LOCK_CMPXCHG16B_M128>(insn.address, insn.size, m128dst.value());
+            }
+        }
+        return make_failed(insn);
+    }
+
     static X64Instruction makeJmp(const cs_insn& insn) {
         const auto& x86detail = insn.detail->x86;
         assert(x86detail.op_count == 1);
@@ -4276,6 +4292,7 @@ namespace x64 {
             case X86_INS_TEST: return makeTest(insn);
             case X86_INS_CMP: return makeCmp(insn);
             case X86_INS_CMPXCHG: return makeCmpxchg(insn);
+            case X86_INS_CMPXCHG16B: return makeCmpxchg16b(insn);
             case X86_INS_JMP: return makeJmp(insn);
             case X86_INS_JNE: return makeJcc(Cond::NE, insn);
             case X86_INS_JE: return makeJcc(Cond::E, insn);

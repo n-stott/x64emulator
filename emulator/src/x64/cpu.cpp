@@ -508,10 +508,12 @@ namespace x64 {
     DEFINE_STANDALONE(CMPXCHG_RM16_R16, execCmpxchgRM16R16)
     DEFINE_STANDALONE(CMPXCHG_RM32_R32, execCmpxchgRM32R32)
     DEFINE_STANDALONE(CMPXCHG_RM64_R64, execCmpxchgRM64R64)
+    DEFINE_STANDALONE(CMPXCHG16B_M128, execCmpxchg16BM128)
     DEFINE_STANDALONE(LOCK_CMPXCHG_M8_R8, execLockCmpxchgM8R8)
     DEFINE_STANDALONE(LOCK_CMPXCHG_M16_R16, execLockCmpxchgM16R16)
     DEFINE_STANDALONE(LOCK_CMPXCHG_M32_R32, execLockCmpxchgM32R32)
     DEFINE_STANDALONE(LOCK_CMPXCHG_M64_R64, execLockCmpxchgM64R64)
+    DEFINE_STANDALONE(LOCK_CMPXCHG16B_M128, execLockCmpxchg16BM128)
     DEFINE_STANDALONE(SET_RM8, execSetRM8)
     DEFINE_STANDALONE(JMP_RM32, execJmpRM32)
     DEFINE_STANDALONE(JMP_RM64, execJmpRM64)
@@ -1208,10 +1210,12 @@ namespace x64 {
         STANDALONE_NAME(CMPXCHG_RM16_R16),
         STANDALONE_NAME(CMPXCHG_RM32_R32),
         STANDALONE_NAME(CMPXCHG_RM64_R64),
+        STANDALONE_NAME(CMPXCHG16B_M128),
         STANDALONE_NAME(LOCK_CMPXCHG_M8_R8),
         STANDALONE_NAME(LOCK_CMPXCHG_M16_R16),
         STANDALONE_NAME(LOCK_CMPXCHG_M32_R32),
         STANDALONE_NAME(LOCK_CMPXCHG_M64_R64),
+        STANDALONE_NAME(LOCK_CMPXCHG16B_M128),
         STANDALONE_NAME(SET_RM8),
         STANDALONE_NAME(JMP_RM32),
         STANDALONE_NAME(JMP_RM64),
@@ -3525,6 +3529,21 @@ namespace x64 {
         const auto& src2 = ins.op1<R64>();
         execCmpxchg64Impl(src1, get(src2));
     }
+    void Cpu::execCmpxchg16BM128(const X64Instruction& ins) {
+        const auto& dst = ins.op0<M128>();
+
+        u128 regs { get(R64::RAX), get(R64::RDX) };
+        u128 dest = get(resolve(dst));
+        if(dest == regs) {
+            flags_.zero = true;
+            u128 newValue { get(R64::RBX), get(R64::RCX) };
+            set(resolve(dst), newValue);
+        } else {
+            flags_.zero = false;
+            set(R64::RAX, dest.lo);
+            set(R64::RDX, dest.hi);
+        }
+    }
 
     void Cpu::execLockCmpxchgM8R8(const X64Instruction& ins) {
         const auto& src1 = ins.op0<M8>();
@@ -3545,6 +3564,21 @@ namespace x64 {
         const auto& src1 = ins.op0<M64>();
         const auto& src2 = ins.op1<R64>();
         execLockCmpxchg64Impl(resolve(src1), get(src2));
+    }
+    void Cpu::execLockCmpxchg16BM128(const X64Instruction& ins) {
+        const auto& dst = ins.op0<M128>();
+        auto ptr = resolve(dst);
+        mmu_->withExclusiveRegion(ptr, [&](u128 oldVvalue) -> u128 {
+            u128 regs { get(R64::RAX), get(R64::RDX) };
+            if(oldVvalue == regs) {
+                flags_.zero = true;
+                return u128 { get(R64::RBX), get(R64::RCX) };
+            } else {
+                flags_.zero = false;
+                set(R64::RAX, oldVvalue.lo);
+                set(R64::RDX, oldVvalue.hi);
+            }
+        });
     }
 
     template<typename Dst>
