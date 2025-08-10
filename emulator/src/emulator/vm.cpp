@@ -21,6 +21,9 @@ namespace emulator {
     }
 
     VM::~VM() {
+#ifdef VM_ATOMIC_TELEMETRY
+        fmt::print("VM executed {} atomics\n", atomics_);
+#endif
 #ifdef VM_BASICBLOCK_TELEMETRY
         fmt::print("basicBlocksByAddress_.size={}\n", basicBlocksByAddress_.size());
         fmt::print("blockCacheHits  :{}\n", blockCacheHits_);
@@ -163,6 +166,13 @@ namespace emulator {
     void VM::enterSyscall() {
         if(!!currentThread_) {
             currentThread_->enterSyscall();
+        }
+    }
+
+    void VM::enterAtomic() {
+        ++atomics_;
+        if(!!currentThread_) {
+            currentThread_->enterAtomic();
         }
     }
 
@@ -614,6 +624,10 @@ namespace emulator {
 
     void VM::CpuCallback::onSyscall() {
         if(!!vm_) vm_->enterSyscall();
+    }
+
+    void VM::CpuCallback::onAtomic() {
+        if(!!vm_) vm_->enterAtomic();
     }
 
     void VM::CpuCallback::onCall(u64 address) {

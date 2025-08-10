@@ -1649,6 +1649,7 @@ namespace x64 {
     }
 
     void Cpu::execLockAddM8RM8(const X64Instruction& ins) {
+        notifyAtomic();
         const auto& dst = ins.op0<M8>();
         const auto& src = ins.op1<RM8>();
         mmu_->withExclusiveRegion(resolve(dst), [&](u8 oldValue) {
@@ -1656,6 +1657,7 @@ namespace x64 {
         });
     }
     void Cpu::execLockAddM8Imm(const X64Instruction& ins) {
+        notifyAtomic();
         const auto& dst = ins.op0<M8>();
         const auto& src = ins.op1<Imm>();
         mmu_->withExclusiveRegion(resolve(dst), [&](u8 oldValue) {
@@ -1663,6 +1665,7 @@ namespace x64 {
         });
     }
     void Cpu::execLockAddM16RM16(const X64Instruction& ins) {
+        notifyAtomic();
         const auto& dst = ins.op0<M16>();
         const auto& src = ins.op1<RM16>();
         mmu_->withExclusiveRegion(resolve(dst), [&](u16 oldValue) {
@@ -1670,6 +1673,7 @@ namespace x64 {
         });
     }
     void Cpu::execLockAddM16Imm(const X64Instruction& ins) {
+        notifyAtomic();
         const auto& dst = ins.op0<M16>();
         const auto& src = ins.op1<Imm>();
         mmu_->withExclusiveRegion(resolve(dst), [&](u16 oldValue) {
@@ -1677,6 +1681,7 @@ namespace x64 {
         });
     }
     void Cpu::execLockAddM32RM32(const X64Instruction& ins) {
+        notifyAtomic();
         const auto& dst = ins.op0<M32>();
         const auto& src = ins.op1<RM32>();
         mmu_->withExclusiveRegion(resolve(dst), [&](u32 oldValue) {
@@ -1684,6 +1689,7 @@ namespace x64 {
         });
     }
     void Cpu::execLockAddM32Imm(const X64Instruction& ins) {
+        notifyAtomic();
         const auto& dst = ins.op0<M32>();
         const auto& src = ins.op1<Imm>();
         mmu_->withExclusiveRegion(resolve(dst), [&](u32 oldValue) {
@@ -1691,6 +1697,7 @@ namespace x64 {
         });
     }
     void Cpu::execLockAddM64RM64(const X64Instruction& ins) {
+        notifyAtomic();
         const auto& dst = ins.op0<M64>();
         const auto& src = ins.op1<RM64>();
         mmu_->withExclusiveRegion(resolve(dst), [&](u64 oldValue) {
@@ -1698,6 +1705,7 @@ namespace x64 {
         });
     }
     void Cpu::execLockAddM64Imm(const X64Instruction& ins) {
+        notifyAtomic();
         const auto& dst = ins.op0<M64>();
         const auto& src = ins.op1<Imm>();
         mmu_->withExclusiveRegion(resolve(dst), [&](u64 oldValue) {
@@ -1788,6 +1796,7 @@ namespace x64 {
     }
 
     void Cpu::execLockSubM8RM8(const X64Instruction& ins) {
+        notifyAtomic();
         const auto& dst = ins.op0<M8>();
         const auto& src = ins.op1<RM8>();
         mmu_->withExclusiveRegion(resolve(dst), [&](u8 oldValue) {
@@ -1795,6 +1804,7 @@ namespace x64 {
         });
     }
     void Cpu::execLockSubM8Imm(const X64Instruction& ins) {
+        notifyAtomic();
         const auto& dst = ins.op0<M8>();
         const auto& src = ins.op1<Imm>();
         mmu_->withExclusiveRegion(resolve(dst), [&](u8 oldValue) {
@@ -1802,6 +1812,7 @@ namespace x64 {
         });
     }
     void Cpu::execLockSubM16RM16(const X64Instruction& ins) {
+        notifyAtomic();
         const auto& dst = ins.op0<M16>();
         const auto& src = ins.op1<RM16>();
         mmu_->withExclusiveRegion(resolve(dst), [&](u16 oldValue) {
@@ -1809,6 +1820,7 @@ namespace x64 {
         });
     }
     void Cpu::execLockSubM16Imm(const X64Instruction& ins) {
+        notifyAtomic();
         const auto& dst = ins.op0<M16>();
         const auto& src = ins.op1<Imm>();
         mmu_->withExclusiveRegion(resolve(dst), [&](u16 oldValue) {
@@ -1816,6 +1828,7 @@ namespace x64 {
         });
     }
     void Cpu::execLockSubM32RM32(const X64Instruction& ins) {
+        notifyAtomic();
         const auto& dst = ins.op0<M32>();
         const auto& src = ins.op1<RM32>();
         mmu_->withExclusiveRegion(resolve(dst), [&](u32 oldValue) {
@@ -1823,6 +1836,7 @@ namespace x64 {
         });
     }
     void Cpu::execLockSubM32Imm(const X64Instruction& ins) {
+        notifyAtomic();
         const auto& dst = ins.op0<M32>();
         const auto& src = ins.op1<Imm>();
         mmu_->withExclusiveRegion(resolve(dst), [&](u32 oldValue) {
@@ -1830,6 +1844,7 @@ namespace x64 {
         });
     }
     void Cpu::execLockSubM64RM64(const X64Instruction& ins) {
+        notifyAtomic();
         const auto& dst = ins.op0<M64>();
         const auto& src = ins.op1<RM64>();
         mmu_->withExclusiveRegion(resolve(dst), [&](u64 oldValue) {
@@ -1837,6 +1852,7 @@ namespace x64 {
         });
     }
     void Cpu::execLockSubM64Imm(const X64Instruction& ins) {
+        notifyAtomic();
         const auto& dst = ins.op0<M64>();
         const auto& src = ins.op1<Imm>();
         mmu_->withExclusiveRegion(resolve(dst), [&](u64 oldValue) {
@@ -2112,6 +2128,7 @@ namespace x64 {
     }
 
     void Cpu::execLockOrM8RM8(const X64Instruction& ins) {
+        notifyAtomic();
         const auto& dst = ins.op0<M8>();
         const auto& src = ins.op1<RM8>();
         mmu_->withExclusiveRegion(resolve(dst), [&](u8 oldValue) {
@@ -2119,6 +2136,7 @@ namespace x64 {
         });
     }
     void Cpu::execLockOrM8Imm(const X64Instruction& ins) {
+        notifyAtomic();
         const auto& dst = ins.op0<M8>();
         const auto& src = ins.op1<Imm>();
         mmu_->withExclusiveRegion(resolve(dst), [&](u8 oldValue) {
@@ -2126,6 +2144,7 @@ namespace x64 {
         });
     }
     void Cpu::execLockOrM16RM16(const X64Instruction& ins) {
+        notifyAtomic();
         const auto& dst = ins.op0<M16>();
         const auto& src = ins.op1<RM16>();
         mmu_->withExclusiveRegion(resolve(dst), [&](u16 oldValue) {
@@ -2133,6 +2152,7 @@ namespace x64 {
         });
     }
     void Cpu::execLockOrM16Imm(const X64Instruction& ins) {
+        notifyAtomic();
         const auto& dst = ins.op0<M16>();
         const auto& src = ins.op1<Imm>();
         mmu_->withExclusiveRegion(resolve(dst), [&](u16 oldValue) {
@@ -2140,6 +2160,7 @@ namespace x64 {
         });
     }
     void Cpu::execLockOrM32RM32(const X64Instruction& ins) {
+        notifyAtomic();
         const auto& dst = ins.op0<M32>();
         const auto& src = ins.op1<RM32>();
         mmu_->withExclusiveRegion(resolve(dst), [&](u32 oldValue) {
@@ -2147,6 +2168,7 @@ namespace x64 {
         });
     }
     void Cpu::execLockOrM32Imm(const X64Instruction& ins) {
+        notifyAtomic();
         const auto& dst = ins.op0<M32>();
         const auto& src = ins.op1<Imm>();
         mmu_->withExclusiveRegion(resolve(dst), [&](u32 oldValue) {
@@ -2154,6 +2176,7 @@ namespace x64 {
         });
     }
     void Cpu::execLockOrM64RM64(const X64Instruction& ins) {
+        notifyAtomic();
         const auto& dst = ins.op0<M64>();
         const auto& src = ins.op1<RM64>();
         mmu_->withExclusiveRegion(resolve(dst), [&](u64 oldValue) {
@@ -2161,6 +2184,7 @@ namespace x64 {
         });
     }
     void Cpu::execLockOrM64Imm(const X64Instruction& ins) {
+        notifyAtomic();
         const auto& dst = ins.op0<M64>();
         const auto& src = ins.op1<Imm>();
         mmu_->withExclusiveRegion(resolve(dst), [&](u64 oldValue) {
@@ -2288,6 +2312,7 @@ namespace x64 {
     }
 
     void Cpu::execLockXaddM16R16(const X64Instruction& ins) {
+        notifyAtomic();
         const auto& dst = ins.op0<M16>();
         const auto& src = ins.op1<R16>();
         Ptr16 address = resolve(dst);
@@ -2299,6 +2324,7 @@ namespace x64 {
         });
     }
     void Cpu::execLockXaddM32R32(const X64Instruction& ins) {
+        notifyAtomic();
         const auto& dst = ins.op0<M32>();
         const auto& src = ins.op1<R32>();
         Ptr32 address = resolve(dst);
@@ -2310,6 +2336,7 @@ namespace x64 {
         });
     }
     void Cpu::execLockXaddM64R64(const X64Instruction& ins) {
+        notifyAtomic();
         const auto& dst = ins.op0<M64>();
         const auto& src = ins.op1<R64>();
         Ptr64 address = resolve(dst);
@@ -2649,24 +2676,28 @@ namespace x64 {
     }
 
     void Cpu::execLockIncM8(const X64Instruction& ins) {
+        notifyAtomic();
         const auto& dst = ins.op0<M8>();
         mmu_->withExclusiveRegion(resolve(dst), [&](u8 oldValue) {
             return Impl::inc8(oldValue, &flags_);
         });
     }
     void Cpu::execLockIncM16(const X64Instruction& ins) {
+        notifyAtomic();
         const auto& dst = ins.op0<M16>();
         mmu_->withExclusiveRegion(resolve(dst), [&](u16 oldValue) {
             return Impl::inc16(oldValue, &flags_);
         });
     }
     void Cpu::execLockIncM32(const X64Instruction& ins) {
+        notifyAtomic();
         const auto& dst = ins.op0<M32>();
         mmu_->withExclusiveRegion(resolve(dst), [&](u32 oldValue) {
             return Impl::inc32(oldValue, &flags_);
         });
     }
     void Cpu::execLockIncM64(const X64Instruction& ins) {
+        notifyAtomic();
         const auto& dst = ins.op0<M64>();
         mmu_->withExclusiveRegion(resolve(dst), [&](u64 oldValue) {
             return Impl::inc64(oldValue, &flags_);
@@ -2691,24 +2722,28 @@ namespace x64 {
     }
 
     void Cpu::execLockDecM8(const X64Instruction& ins) {
+        notifyAtomic();
         const auto& dst = ins.op0<M8>();
         mmu_->withExclusiveRegion(resolve(dst), [&](u8 oldValue) {
             return Impl::dec8(oldValue, &flags_);
         });
     }
     void Cpu::execLockDecM16(const X64Instruction& ins) {
+        notifyAtomic();
         const auto& dst = ins.op0<M16>();
         mmu_->withExclusiveRegion(resolve(dst), [&](u16 oldValue) {
             return Impl::dec16(oldValue, &flags_);
         });
     }
     void Cpu::execLockDecM32(const X64Instruction& ins) {
+        notifyAtomic();
         const auto& dst = ins.op0<M32>();
         mmu_->withExclusiveRegion(resolve(dst), [&](u32 oldValue) {
             return Impl::dec32(oldValue, &flags_);
         });
     }
     void Cpu::execLockDecM64(const X64Instruction& ins) {
+        notifyAtomic();
         const auto& dst = ins.op0<M64>();
         mmu_->withExclusiveRegion(resolve(dst), [&](u64 oldValue) {
             return Impl::dec64(oldValue, &flags_);
@@ -3236,6 +3271,7 @@ namespace x64 {
     }
 
     void Cpu::execLockBtsM16R16(const X64Instruction& ins) {
+        notifyAtomic();
         const auto& dst = ins.op0<M16>();
         const auto& bit = ins.op1<R16>();
         mmu_->withExclusiveRegion(resolve(dst), [&](u16 oldValue) {
@@ -3243,6 +3279,7 @@ namespace x64 {
         });
     }
     void Cpu::execLockBtsM16Imm(const X64Instruction& ins) {
+        notifyAtomic();
         const auto& dst = ins.op0<M16>();
         const auto& bit = ins.op1<Imm>();
         mmu_->withExclusiveRegion(resolve(dst), [&](u16 oldValue) {
@@ -3250,6 +3287,7 @@ namespace x64 {
         });
     }
     void Cpu::execLockBtsM32R32(const X64Instruction& ins) {
+        notifyAtomic();
         const auto& dst = ins.op0<M32>();
         const auto& bit = ins.op1<R32>();
         mmu_->withExclusiveRegion(resolve(dst), [&](u32 oldValue) {
@@ -3257,6 +3295,7 @@ namespace x64 {
         });
     }
     void Cpu::execLockBtsM32Imm(const X64Instruction& ins) {
+        notifyAtomic();
         const auto& dst = ins.op0<M32>();
         const auto& bit = ins.op1<Imm>();
         mmu_->withExclusiveRegion(resolve(dst), [&](u32 oldValue) {
@@ -3264,6 +3303,7 @@ namespace x64 {
         });
     }
     void Cpu::execLockBtsM64R64(const X64Instruction& ins) {
+        notifyAtomic();
         const auto& dst = ins.op0<M64>();
         const auto& bit = ins.op1<R64>();
         mmu_->withExclusiveRegion(resolve(dst), [&](u64 oldValue) {
@@ -3271,6 +3311,7 @@ namespace x64 {
         });
     }
     void Cpu::execLockBtsM64Imm(const X64Instruction& ins) {
+        notifyAtomic();
         const auto& dst = ins.op0<M64>();
         const auto& bit = ins.op1<Imm>();
         mmu_->withExclusiveRegion(resolve(dst), [&](u64 oldValue) {
@@ -3409,6 +3450,7 @@ namespace x64 {
     }
 
     void Cpu::execLockCmpxchg8Impl(Ptr8 dst, u8 src) {
+        notifyAtomic();
         u8 eax = get(R8::AL);
         mmu_->withExclusiveRegion(dst, [&](u8 oldValue) {
             Impl::cmpxchg8(eax, oldValue, &flags_);
@@ -3422,6 +3464,7 @@ namespace x64 {
     }
 
     void Cpu::execLockCmpxchg16Impl(Ptr16 dst, u16 src) {
+        notifyAtomic();
         u16 eax = get(R16::AX);
         mmu_->withExclusiveRegion(dst, [&](u16 oldValue) {
             Impl::cmpxchg16(eax, oldValue, &flags_);
@@ -3435,6 +3478,7 @@ namespace x64 {
     }
 
     void Cpu::execLockCmpxchg32Impl(Ptr32 dst, u32 src) {
+        notifyAtomic();
         u32 eax = get(R32::EAX);
         mmu_->withExclusiveRegion(dst, [&](u32 oldValue) {
             Impl::cmpxchg32(eax, oldValue, &flags_);
@@ -3448,6 +3492,7 @@ namespace x64 {
     }
 
     void Cpu::execLockCmpxchg64Impl(Ptr64 dst, u64 src) {
+        notifyAtomic();
         u64 eax = get(R64::RAX);
         mmu_->withExclusiveRegion(dst, [&](u64 oldValue) {
             Impl::cmpxchg64(eax, oldValue, &flags_);

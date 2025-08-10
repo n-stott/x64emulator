@@ -22,6 +22,7 @@ namespace x64 {
         public:
             virtual ~Callback() = default;
             virtual void onSyscall() = 0;
+            virtual void onAtomic() = 0;
             virtual void onCall(u64 address) = 0;
             virtual void onRet() = 0;
         };
@@ -122,6 +123,10 @@ namespace x64 {
         std::array<u64, 8> segmentBase_ {{ 0, 0, 0, 0, 0, 0, 0, 0 }};
 
         std::vector<Callback*> callbacks_;
+        
+        void notifyAtomic() const {
+            for(auto* callback : callbacks_) callback->onAtomic();
+        }
 
         struct FPUState {
             u16 fcw;

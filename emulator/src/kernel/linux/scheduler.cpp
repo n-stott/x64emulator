@@ -56,9 +56,14 @@ namespace kernel::gnulinux {
                 Job job = jobOrCommand.job;
 
                 if(job.ring == RING::KERNEL) {
+                    assert(job.atomic == ATOMIC::NO);
                     runKernel(worker, vm, job.thread);
                 } else {
-                    runUserspace(worker, vm, job.thread);
+                    if(job.atomic == ATOMIC::NO) {
+                        runUserspace(worker, vm, job.thread);
+                    } else {
+                        runUserspaceAtomic(worker, vm, job.thread);
+                    }
                 }
 
             } catch(...) {
@@ -116,6 +121,25 @@ namespace kernel::gnulinux {
             syncThreadTimeSlice(thread, nullptr);
             vm.execute(thread);
         }
+        // fmt::print(stderr, "{}: stop thread {}\n", worker.id, thread->description().tid);
+    }
+
+    void Scheduler::runUserspaceAtomic(const Worker& worker, emulator::VM& vm, Thread* thread) {
+        std::unique_lock lock(schedulerMutex_);
+        ScopeGuard guard([&]() {
+            stopRunningThread(thread, worker, lock);
+            syncThreadTimeSlice(thread, &lock);
+            lock.unlock();
+            schedulerHasRunnableThread_.notify_all();
+        });
+        // fmt::print(stderr, "{}: run thread {}\n", worker.id, thread->description().tid);
+        thread->time().setSlice(currentTime_.count(), ATOMIC_TIME_SLICE);
+
+        while(!thread->time().isStopAsked()) {
+            syncThreadTimeSlice(thread, &lock);
+            vm.execute(thread);
+        }
+        thread->resetAtomicRequest();
         // fmt::print(stderr, "{}: stop thread {}\n", worker.id, thread->description().tid);
     }
 
@@ -280,9 +304,19 @@ namespace kernel::gnulinux {
             return nullptr;
         };
         
+        auto findAtomicUserspaceThread = [&]() -> Thread* {
+            for(Thread* thread : runnableThreads_) {
+                if(thread->requestsSyscall()) continue;
+                if(!thread->requestsAtomic()) continue;
+                return thread;
+            }
+            return nullptr;
+        };
+        
         auto findUserspaceThread = [&]() -> Thread* {
             for(Thread* thread : runnableThreads_) {
                 if(thread->requestsSyscall()) continue;
+                if(thread->requestsAtomic()) continue;
                 return thread;
             }
             return nullptr;
@@ -291,6 +325,9 @@ namespace kernel::gnulinux {
         // First we look for a thread trying to perform a syscall
         Thread* threadToRun = findKernelThread();
         
+        // If there are none, we look for a userspace thread that want to run alone (atomically)
+        if(!threadToRun) threadToRun = findAtomicUserspaceThread();
+
         // If there are none, we look for a thread that is runnable
         if(!threadToRun) threadToRun = findUserspaceThread();
 
@@ -313,9 +350,12 @@ namespace kernel::gnulinux {
         }
 
         RING ring = threadToRun->requestsSyscall() ? RING::KERNEL : RING::USERSPACE;
+        ATOMIC atomic = threadToRun->requestsAtomic() ? ATOMIC::YES : ATOMIC::NO;
+
         Job job {
             threadToRun,
             ring,
+            atomic,
         };
 
         auto it = std::find(runnableThreads_.begin(), runnableThreads_.end(), threadToRun);

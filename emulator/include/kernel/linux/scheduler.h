@@ -80,13 +80,20 @@ namespace kernel::gnulinux {
             USERSPACE,
         };
 
+        enum class ATOMIC {
+            NO,
+            YES,
+        };
+
         struct Job {
             Thread* thread { nullptr };
             RING ring { RING::USERSPACE };
+            ATOMIC atomic { ATOMIC::NO };
         };
 
         void runOnWorkerThread(Worker worker);
         void runUserspace(const Worker& worker, emulator::VM& vm, Thread* thread);
+        void runUserspaceAtomic(const Worker& worker, emulator::VM& vm, Thread* thread);
         void runKernel(const Worker& worker, emulator::VM& vm, Thread* thread);
 
         struct JobOrCommand {
@@ -148,6 +155,7 @@ namespace kernel::gnulinux {
         std::unordered_map<u64, std::string> addressToSymbol_;
 
         static constexpr size_t DEFAULT_TIME_SLICE = 1'000'000;
+        static constexpr size_t ATOMIC_TIME_SLICE = 100;
         PreciseTime currentTime_ { 0, 0 };
     };
 

@@ -166,6 +166,7 @@ namespace emulator {
             CpuCallback(x64::Cpu* cpu, VM* vm);
             ~CpuCallback();
             void onSyscall() override;
+            void onAtomic() override;
             void onCall(u64 address) override;
             void onRet() override;
         private:
@@ -183,6 +184,7 @@ namespace emulator {
 
         void syncThread();
         void enterSyscall();
+        void enterAtomic();
 
         struct ExecutableSection {
             u64 begin;
@@ -245,6 +247,8 @@ namespace emulator {
         std::unique_ptr<x64::CapstoneWrapper> disassembler_;
         std::unique_ptr<x64::Jit> jit_;
         CompilationQueue compilationQueue_;
+
+        u64 atomics_ { 0 };
     };
 
 }

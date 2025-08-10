@@ -179,6 +179,14 @@ namespace emulator {
             ThreadProfileData::didSyscall(time_.ns(), syscallNumber);
         }
 
+        bool requestsAtomic() const { return requestsAtomic_; }
+        void resetAtomicRequest() { requestsAtomic_ = false; }
+
+        void enterAtomic() {
+            yield();
+            requestsAtomic_ = true;
+        }
+
         void pushCallstack(u64 from, u64 to) {
             ThreadProfileData::pushCallstack(time_.ns(), to);
             ThreadCallstackData::pushCallstack(from, to);
@@ -198,6 +206,7 @@ namespace emulator {
         Stats stats_;
 
         bool requestsSyscall_ { false };
+        bool requestsAtomic_ { false };
     };
 
 }
