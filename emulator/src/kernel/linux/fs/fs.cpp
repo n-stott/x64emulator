@@ -304,7 +304,7 @@ namespace kernel::gnulinux {
         if(canUseHostFile) {
             if(creationFlags.test(CreationFlags::DIRECTORY)) {
                 // open the directory
-                auto hostBackedDirectory = HostDirectory::tryCreate(this, root_.get(), absolutePathname);
+                auto* hostBackedDirectory = HostDirectory::tryCreateAndAdd(this, root_.get(), absolutePathname);
                 if(!hostBackedDirectory) {
                     // TODO: return the actual value of errno
                     return FS::FD{-ENOENT};
@@ -312,14 +312,14 @@ namespace kernel::gnulinux {
                 
                 // create and add the node to the filesystem
                 hostBackedDirectory->open();
-                return insertNode(std::move(hostBackedDirectory), accessMode, statusFlags, closeOnExec);
+                return openNode(hostBackedDirectory);
             } else {
                 // try open the directory
-                auto hostBackedDirectory = HostDirectory::tryCreate(this, root_.get(), absolutePathname);
+                auto* hostBackedDirectory = HostDirectory::tryCreateAndAdd(this, root_.get(), absolutePathname);
                 if(!!hostBackedDirectory) {
                     // create and add the node to the filesystem
                     hostBackedDirectory->open();
-                    return insertNode(std::move(hostBackedDirectory), accessMode, statusFlags, closeOnExec);
+                    return openNode(hostBackedDirectory);
                 }
 
                 // try open the file
@@ -681,11 +681,26 @@ namespace kernel::gnulinux {
         file->unref();
         if(file->refCount() == 0) {
             file->close();
+            if(file->isPipe()) {
+                removeClosedPipes();
+            }
             if(!file->keepAfterClose() || file->deleteAfterClose()) {
                 unlink(file->path());
+                removeFromOrphans(file);
             }
         }
         return 0;
+    }
+
+    void FS::removeFromOrphans(File* file) {
+        auto it = std::remove_if(orphanFiles_.begin(), orphanFiles_.end(),
+                [=](const auto& f) { return f.get() == file; });
+        orphanFiles_.erase(it, orphanFiles_.end());
+    }
+
+    void FS::removeClosedPipes() {
+        pipes_.erase(std::remove_if(pipes_.begin(), pipes_.end(),
+            [](const auto& pipe) { return pipe->isClosed(); }), pipes_.end());
     }
 
     ErrnoOrBuffer FS::getdents64(FD fd, size_t count) {

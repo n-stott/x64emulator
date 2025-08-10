@@ -14,7 +14,7 @@ namespace kernel::gnulinux {
     class HostDirectory : public Directory {
     public:
         static std::unique_ptr<HostDirectory> tryCreateRoot(FS* fs);
-        static std::unique_ptr<HostDirectory> tryCreate(FS* fs, Directory* parent, const std::string& pathname);
+        static HostDirectory* tryCreateAndAdd(FS* fs, Directory* parent, const std::string& pathname);
 
         void open() override;
         void close() override;

@@ -39,11 +39,8 @@ namespace kernel::gnulinux {
         for(auto& entry : entries_) {
             if(entry->name() == name) return nullptr;
         }
-        auto dir = HostDirectory::tryCreate(fs_, this, name);
-        if(!dir) return nullptr;
-        Directory* dirPtr = dir.get();
-        entries_.push_back(std::move(dir));
-        return dirPtr;
+        auto* dir = HostDirectory::tryCreateAndAdd(fs_, this, name);
+        return dir;
     }
 
     Directory* Directory::tryAddShadowDirectory(const std::string& name) {

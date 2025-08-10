@@ -25,6 +25,7 @@ namespace kernel::gnulinux {
         void closedEndpoint(const PipeEndpoint*);
 
         void close() override;
+        bool isClosed() const { return isClosed_; }
         bool keepAfterClose() const override { return false; }
         std::optional<int> hostFileDescriptor() const override { return {}; };
 
@@ -40,6 +41,7 @@ namespace kernel::gnulinux {
         int flags_;
         std::vector<PipeEndpoint*> readEndpoints_;
         std::vector<PipeEndpoint*> writeEndpoints_;
+        bool isClosed_ { false };
     };
 
     class PipeEndpoint : public File {

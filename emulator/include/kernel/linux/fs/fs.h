@@ -244,6 +244,9 @@ namespace kernel::gnulinux {
         FD insertNode(std::unique_ptr<File> file, BitFlags<AccessMode>, BitFlags<StatusFlags>, bool closeOnExec);
         FD allocateFd();
 
+        void removeFromOrphans(File*);
+        void removeClosedPipes();
+
         OpenNode* findOpenNode(FD fd);
         OpenFileDescription* findOpenFileDescription(FD fd);
 

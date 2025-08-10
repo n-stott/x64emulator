@@ -26,11 +26,13 @@ namespace kernel::gnulinux {
     void Pipe::closedEndpoint(const PipeEndpoint* endpoint) {
         readEndpoints_.erase(std::remove(readEndpoints_.begin(), readEndpoints_.end(), endpoint), readEndpoints_.end());
         writeEndpoints_.erase(std::remove(writeEndpoints_.begin(), writeEndpoints_.end(), endpoint), writeEndpoints_.end());
+        if(readEndpoints_.empty() && writeEndpoints_.empty()) close();
     }
 
     void Pipe::close() {
         verify(readEndpoints_.empty(), "cannot close pipe with active read endpoints");
         verify(writeEndpoints_.empty(), "cannot close pipe with active write endpoints");
+        isClosed_ = true;
     }
 
     std::unique_ptr<PipeEndpoint> PipeEndpoint::tryCreate(FS* fs, Pipe* pipe, PipeSide side, int flags) {

@@ -15,7 +15,7 @@ namespace kernel::gnulinux {
         return std::unique_ptr<HostDirectory>(new HostDirectory(fs, nullptr, ""));
     }
 
-    std::unique_ptr<HostDirectory> HostDirectory::tryCreate(FS* fs, Directory* parent, const std::string& name) {
+    HostDirectory* HostDirectory::tryCreateAndAdd(FS* fs, Directory* parent, const std::string& name) {
         std::string pathname;
         if(!parent) {
             pathname = name;
@@ -47,8 +47,10 @@ namespace kernel::gnulinux {
         auto path = Path::tryCreate(absolutePathname);
         verify(!!path, "Unable to create path");
         Directory* containingDirectory = fs->ensurePathExceptLast(*path);
-
-        return std::unique_ptr<HostDirectory>(new HostDirectory(fs, containingDirectory, path->last()));
+        auto dir = std::unique_ptr<HostDirectory>(new HostDirectory(fs, containingDirectory, path->last()));
+        auto dirPtr = dir.get();
+        containingDirectory->addFile(std::move(dir));
+        return dirPtr;
     }
 
     void HostDirectory::open() {
