@@ -301,7 +301,7 @@ namespace kernel::gnulinux {
             fmt::print("DEADLOCK !\n");
             fmt::print("No thread is runnable in queue:\n");
             for(const auto& t : threads_) {
-                fmt::print("  {}\n", t->toString());
+                fmt::print("  {} syscall? : {}  atomic? : {} \n", t->toString(), t->requestsSyscall(), t->requestsAtomic());
             }
             for(const auto& blocker : futexBlockers_) {
                 fmt::print("  {}\n", blocker.toString());
@@ -698,9 +698,27 @@ namespace kernel::gnulinux {
         });
     }
 
+    namespace {
+        template<typename B>
+        class BlockerSorter {
+        public:
+            BlockerSorter(const std::vector<B>& blockers) : blockers_(blockers) {
+                std::sort(blockers_.begin(), blockers_.end(), [](const B& a, const B& b) {
+                    return a.thread()->description().tid < b.thread()->description().tid;
+                });
+            }
+
+            const B* begin() const { return blockers_.data(); }
+            const B* end() const { return blockers_.data() + blockers_.size(); }
+
+        private:
+            std::vector<B> blockers_;
+        };
+    }
+
     void Scheduler::dumpBlockerSummary() const {
         fmt::print("Futex blockers :\n");
-        for(const FutexBlocker& blocker : futexBlockers_) {
+        for(const FutexBlocker& blocker : BlockerSorter{futexBlockers_}) {
             fmt::print("  {}\n", blocker.toString());
         }
         fmt::print("Poll blockers :\n");
