@@ -52,6 +52,12 @@ namespace x64 {
         void set(MMX reg, u64 value) { regs_.set(reg, value); }
         void set(XMM reg, Xmm value) { regs_.set(reg, value); }
 
+        template<Size size>
+        U<size> xchg(R<size> reg, U<size> value) {
+            U<size> regValue = regs_.get(reg);
+            regs_.set(reg, value);
+            return regValue;
+        }
 
         u8  get(Ptr8 ptr) const;
         u16 get(Ptr16 ptr) const;
@@ -68,6 +74,11 @@ namespace x64 {
         void set(Ptr80 ptr, f80 value);
         void set(Ptr128 ptr, Xmm value);
         void setUnaligned(Ptr128 ptr, Xmm value);
+
+        u8  xchg(Ptr8 ptr, u8 value);
+        u16 xchg(Ptr16 ptr, u16 value);
+        u32 xchg(Ptr32 ptr, u32 value);
+        u64 xchg(Ptr64 ptr, u64 value);
 
         template<Size size>
         inline U<size> get(const RM<size>& rm) const {
@@ -89,6 +100,11 @@ namespace x64 {
         
         inline void set(const MMXM64& rm, u64 value) {
             return rm.isReg ? set(rm.reg, value) : set(resolve(rm.mem), value);
+        }
+        
+        template<Size size>
+        inline U<size> xchg(const RM<size>& rm, U<size> value) {
+            return rm.isReg ? xchg<size>(rm.reg, value) : xchg(resolve(rm.mem), value);
         }
 
         void push8(u8 value);

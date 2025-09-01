@@ -204,3 +204,11 @@ target_include_directories(test_cmpxchg16b PUBLIC include ${CMAKE_SOURCE_DIR}/em
 target_link_libraries(test_cmpxchg16b PUBLIC x64cpu fmt::fmt-header-only)
 target_link_options(test_cmpxchg16b PUBLIC ${LD_OPTIONS})
 add_test(NAME cmpxchg16b COMMAND test_cmpxchg16b)
+
+add_executable(test_xchg src/test_xchg.cpp)
+target_compile_options(test_xchg PUBLIC ${CC_OPTIONS})
+target_compile_options(test_xchg PUBLIC -frounding-math)
+target_include_directories(test_xchg PUBLIC include ${CMAKE_SOURCE_DIR}/emulator/include)
+target_link_libraries(test_xchg PUBLIC x64cpu)
+target_link_options(test_xchg PUBLIC ${LD_OPTIONS})
+add_test(NAME xchg COMMAND test_xchg)

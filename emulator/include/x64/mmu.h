@@ -9,6 +9,7 @@
 #include <fmt/core.h>
 #include <algorithm>
 #include <array>
+#include <atomic>
 #include <cassert>
 #include <deque>
 #include <memory>
@@ -196,6 +197,19 @@ namespace x64 {
             write(ptr, value);
         }
 
+        u8 xchg8(Ptr8 ptr, u8 value) {
+            return xchg(ptr, value);
+        }
+        u16 xchg16(Ptr16 ptr, u16 value) {
+            return xchg(ptr, value);
+        }
+        u32 xchg32(Ptr32 ptr, u32 value) {
+            return xchg(ptr, value);
+        }
+        u64 xchg64(Ptr64 ptr, u64 value) {
+            return xchg(ptr, value);
+        }
+
         void dumpRegions() const;
     
         static u64 pageRoundDown(u64 address);
@@ -270,6 +284,25 @@ namespace x64 {
             (void)locker;
 #endif
             ::memcpy(dataPtr, &value, sizeof(T));
+        }
+
+        template<typename T, Size s>
+        T xchg(SPtr<s> ptr, T value) {
+#ifdef MULTIPROCESSING
+            verify(!syscallInProgress_, "Cannot write to mmu during syscall");
+#endif
+            static_assert(sizeof(T) == pointerSize(s));
+            u64 address = ptr.address();
+            u8* dataPtr = getWritePtr(address);
+#ifdef MULTIPROCESSING
+            Region* region = findAddress(address);
+            SpinlockLocker locker(region->lock());
+#endif
+            verify((u64)dataPtr % alignof(T) == 0, "pointer is not properly aligned in xchg");
+            static_assert(sizeof(std::atomic<T>) == sizeof(T), "size of atomic<T> does not match size of T");
+            std::atomic<T>* aptr = reinterpret_cast<std::atomic<T>*>(dataPtr);
+            value = std::atomic_exchange(aptr, value);
+            return value;
         }
 
         const u8* getReadPtr(u64 address) const {

@@ -120,6 +120,19 @@ namespace x64 {
         mmu_->writeUnaligned128(ptr, value);
     }
 
+    u8 Cpu::xchg(Ptr8 ptr, u8 value) {
+        return mmu_->xchg8(ptr, value);
+    }
+    u16 Cpu::xchg(Ptr16 ptr, u16 value) {
+        return mmu_->xchg16(ptr, value);
+    }
+    u32 Cpu::xchg(Ptr32 ptr, u32 value) {
+        return mmu_->xchg32(ptr, value);
+    }
+    u64 Cpu::xchg(Ptr64 ptr, u64 value) {
+        return mmu_->xchg64(ptr, value);
+    }
+
     void Cpu::push8(u8 value) {
         regs_.rsp() -= 8;
         mmu_->write64(Ptr64{regs_.rsp()}, (u64)(i64)(i8)value);
@@ -2257,33 +2270,29 @@ namespace x64 {
     void Cpu::execXchgRM8R8(const X64Instruction& ins) {
         const auto& dst = ins.op0<RM8>();
         const auto& src = ins.op1<R8>();
-        u8 dstValue = get(dst);
         u8 srcValue = get(src);
-        set(dst, srcValue);
+        u8 dstValue = xchg(dst, srcValue);
         set(src, dstValue);
     }
     void Cpu::execXchgRM16R16(const X64Instruction& ins) {
         const auto& dst = ins.op0<RM16>();
         const auto& src = ins.op1<R16>();
-        u16 dstValue = get(dst);
         u16 srcValue = get(src);
-        set(dst, srcValue);
+        u16 dstValue = xchg(dst, srcValue);
         set(src, dstValue);
     }
     void Cpu::execXchgRM32R32(const X64Instruction& ins) {
         const auto& dst = ins.op0<RM32>();
         const auto& src = ins.op1<R32>();
-        u32 dstValue = get(dst);
         u32 srcValue = get(src);
-        set(dst, srcValue);
+        u32 dstValue = xchg(dst, srcValue);
         set(src, dstValue);
     }
     void Cpu::execXchgRM64R64(const X64Instruction& ins) {
         const auto& dst = ins.op0<RM64>();
         const auto& src = ins.op1<R64>();
-        u64 dstValue = get(dst);
         u64 srcValue = get(src);
-        set(dst, srcValue);
+        u64 dstValue = xchg(dst, srcValue);
         set(src, dstValue);
     }
 
