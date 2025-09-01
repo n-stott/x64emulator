@@ -193,11 +193,11 @@ namespace x64::utils {
     }
 
     inline std::string toString(const u32& count) {
-        return fmt::format("{:x}", count);
+        return fmt::format("{:#x}", count);
     }
 
     inline std::string toString(const u64& count) {
-        return fmt::format("{:x}", count);
+        return fmt::format("{:#x}", count);
     }
 
     inline std::string toString(const Imm& imm) {
