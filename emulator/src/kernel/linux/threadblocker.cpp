@@ -49,13 +49,8 @@ namespace kernel::gnulinux {
             }
         }
         if(ptr != wordPtr_) return false;
-        u32 val = mmu_->read32(ptr);
-        if(val == expected_) {
-            return false;
-        } else {
-            thread_->savedCpuState().regs.set(x64::R64::RAX, 0);
-            return true;
-        }
+        thread_->savedCpuState().regs.set(x64::R64::RAX, 0);
+        return true;
     }
 
     std::string FutexBlocker::toString() const {
