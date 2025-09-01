@@ -7,6 +7,7 @@
 #include "x64/x87.h"
 #include "x64/types.h"
 #include "verify.h"
+#include <atomic>
 #include <deque>
 #include <string>
 #include <unordered_map>
@@ -103,7 +104,7 @@ namespace emulator {
     class ThreadTime {
         u64 waitTime_ { 0 };
         u64 nbInstructions_ { 0 };
-        u64 instructionLimit_ { 0 };
+        std::atomic<u64> instructionLimit_ { 0 };
 
     public:
         bool isStopAsked() const {
