@@ -387,6 +387,7 @@ namespace x64 {
             case Insn::DEC_RM16: return tryCompileDecRM16(ins.op0<RM16>());
             case Insn::DEC_RM32: return tryCompileDecRM32(ins.op0<RM32>());
             case Insn::DEC_RM64: return tryCompileDecRM64(ins.op0<RM64>());
+#ifndef MULTIPROCESSING
             case Insn::XCHG_RM8_R8: return tryCompileXchgRM8R8(ins.op0<RM8>(), ins.op1<R8>());
             case Insn::XCHG_RM16_R16: return tryCompileXchgRM16R16(ins.op0<RM16>(), ins.op1<R16>());
             case Insn::XCHG_RM32_R32: return tryCompileXchgRM32R32(ins.op0<RM32>(), ins.op1<R32>());
@@ -395,6 +396,7 @@ namespace x64 {
             case Insn::CMPXCHG_RM64_R64: return tryCompileCmpxchgRM64R64(ins.op0<RM64>(), ins.op1<R64>());
             case Insn::LOCK_CMPXCHG_M32_R32: return tryCompileLockCmpxchgM32R32(ins.op0<M32>(), ins.op1<R32>());
             case Insn::LOCK_CMPXCHG_M64_R64: return tryCompileLockCmpxchgM64R64(ins.op0<M64>(), ins.op1<R64>());
+#endif
             case Insn::CWDE: return tryCompileCwde();
             case Insn::CDQE: return tryCompileCdqe();
             case Insn::CDQ: return tryCompileCdq();
