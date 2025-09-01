@@ -169,13 +169,6 @@ namespace emulator {
         }
     }
 
-    void VM::enterAtomic() {
-        ++atomics_;
-        if(!!currentThread_) {
-            currentThread_->enterAtomic();
-        }
-    }
-
     void VM::contextSwitch(VMThread* newThread) {
         syncThread(); // if we have a current thread, save the registers to that thread.
         if(!!newThread) {
@@ -624,10 +617,6 @@ namespace emulator {
 
     void VM::CpuCallback::onSyscall() {
         if(!!vm_) vm_->enterSyscall();
-    }
-
-    void VM::CpuCallback::onAtomic() {
-        if(!!vm_) vm_->enterAtomic();
     }
 
     void VM::CpuCallback::onCall(u64 address) {
