@@ -1596,16 +1596,16 @@ namespace x64 {
     }
 
     BasicBlock Cpu::createBasicBlock(const X64Instruction* instructions, size_t count) const {
-        BasicBlock bb;
-        bb.instructions.reserve(count);
+        std::vector<std::pair<X64Instruction, CpuExecPtr>> vec;
+        vec.reserve(count);
         for(size_t i = 0; i < count; ++i) {
-            bb.instructions.push_back(std::make_pair(instructions[i], execFunctions_[(size_t)instructions[i].insn()]));
+            vec.push_back(std::make_pair(instructions[i], execFunctions_[(size_t)instructions[i].insn()]));
         }
-        return bb;
+        return BasicBlock(std::move(vec));
     }
 
     void Cpu::exec(const BasicBlock& bb) {
-        for(const auto& p : bb.instructions) {
+        for(const auto& p : bb.instructions()) {
             set(R64::RIP, p.first.nextAddress());
             p.second(*this, p.first);
         }

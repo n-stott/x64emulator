@@ -54,7 +54,7 @@ namespace x64 {
 
             // Then, just before the last instruction is where we are sure to still be on the execution path
             // Update everything here (e.g. number of ticks)
-            auto exitPreparation = prepareExit((u32)basicBlock.instructions.size(), (u64)basicBlockPtr, (u64)jitBasicBlockPtr);
+            auto exitPreparation = prepareExit((u32)basicBlock.instructions().size(), (u64)basicBlockPtr, (u64)jitBasicBlockPtr);
             if(!exitPreparation) return {};
 
             // Then, try compiling the last instruction
@@ -676,10 +676,11 @@ namespace x64 {
 
     std::optional<ir::IR> Compiler::basicBlockBody(const BasicBlock& basicBlock, bool diagnose) {
         generator_->clear();
-        for(size_t i = 0; i+1 < basicBlock.instructions.size(); ++i) {
-            const X64Instruction& ins = basicBlock.instructions[i].first;
+        const auto& instructions = basicBlock.instructions();
+        for(size_t i = 0; i+1 < instructions.size(); ++i) {
+            const X64Instruction& ins = instructions[i].first;
             if(!tryCompile(ins)) {
-                if(diagnose) fmt::print("Compilation of block failed: {} ({}/{})\n", ins.toString(), i, basicBlock.instructions.size());
+                if(diagnose) fmt::print("Compilation of block failed: {} ({}/{})\n", ins.toString(), i, instructions.size());
                 return {};
             }
         }
@@ -697,10 +698,11 @@ namespace x64 {
 
     std::optional<ir::IR> Compiler::basicBlockExit(const BasicBlock& basicBlock, bool diagnose) {
         generator_->clear();
-        const X64Instruction& lastInstruction = basicBlock.instructions.back().first;
+        const auto& instructions = basicBlock.instructions();
+        const X64Instruction& lastInstruction = instructions.back().first;
         auto jumps = tryCompileLastInstruction(lastInstruction);
         if(!jumps) {
-            if(diagnose) fmt::print("Compilation of block failed: {} ({}/{})\n", lastInstruction.toString(), basicBlock.instructions.size(), basicBlock.instructions.size());
+            if(diagnose) fmt::print("Compilation of block failed: {} ({}/{})\n", lastInstruction.toString(), instructions.size(), instructions.size());
             return {};
         }
         generator_->ret(); // exit the native code of this basic block

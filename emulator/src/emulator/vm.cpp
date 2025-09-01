@@ -138,7 +138,7 @@ namespace emulator {
                 auto end = bb->end();
                 if(!start || !end) continue;
                 if(rip < start || rip > end) continue;
-                for(const auto& ins : bb->basicBlock().instructions) {
+                for(const auto& ins : bb->basicBlock().instructions()) {
                     if(ins.first.nextAddress() == rip) {
                         fmt::print("  ==> {:#12x} {}\n", ins.first.address(), ins.first.toString());
                     } else {
@@ -267,9 +267,15 @@ namespace emulator {
                 }
 #endif
             } else {
+                if(currentBasicBlock->basicBlock().hasAtomicInstruction()) {
+                    if(!thread->requestsAtomic()) {
+                        thread->enterAtomic();
+                        break;
+                    }
+                }
                 currentBasicBlock->onCpuCall();
                 cpu_.exec(currentBasicBlock->basicBlock());
-                time.tick(currentBasicBlock->basicBlock().instructions.size());
+                time.tick(currentBasicBlock->basicBlock().instructions().size());
             }
             nextBasicBlock = findNextBasicBlock();
             if(!!jit_
@@ -321,7 +327,7 @@ namespace emulator {
                 fmt::print("did not find bb exit branch for bb starting at {:#x}\n", startAddress);
             });
             x64::BasicBlock cpuBb = cpu_.createBasicBlock(blockInstructions_.data(), blockInstructions_.size());
-            verify(!cpuBb.instructions.empty(), "Cannot create empty basic block");
+            verify(!cpuBb.instructions().empty(), "Cannot create empty basic block");
             std::unique_ptr<BasicBlock> bblock = std::make_unique<BasicBlock>(std::move(cpuBb));
             BasicBlock* bblockPtr = bblock.get();
             basicBlocks_.push_back(std::move(bblock));
@@ -670,13 +676,13 @@ namespace emulator {
     }
 
     u64 BasicBlock::start() const {
-        verify(!cpuBasicBlock_.instructions.empty(), "Basic block is empty");
-        return cpuBasicBlock_.instructions[0].first.address();
+        verify(!cpuBasicBlock_.instructions().empty(), "Basic block is empty");
+        return cpuBasicBlock_.instructions()[0].first.address();
     }
 
     u64 BasicBlock::end() const {
-        verify(!cpuBasicBlock_.instructions.empty(), "Basic block is empty");
-        return cpuBasicBlock_.instructions.back().first.nextAddress();
+        verify(!cpuBasicBlock_.instructions().empty(), "Basic block is empty");
+        return cpuBasicBlock_.instructions().back().first.nextAddress();
     }
 
     BasicBlock* BasicBlock::findNext(u64 address) {

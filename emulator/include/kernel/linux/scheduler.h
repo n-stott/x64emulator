@@ -73,6 +73,7 @@ namespace kernel::gnulinux {
             bool enableJitChaining { false };
             int optimizationLevel { 0 };
             bool canRunSyscalls() const { return id == 0; };
+            bool canRunAtomic() const { return id == 0; };
         };
 
         enum class RING {
@@ -114,7 +115,7 @@ namespace kernel::gnulinux {
         void block(Thread*);
         void unblock(Thread*, std::unique_lock<std::mutex>* lock = nullptr);
         
-        bool hasRunnableThread(bool canRunSyscalls) const;
+        bool hasRunnableThread(bool canRunSyscalls, bool canRunAtomics) const;
         bool allThreadsBlocked() const;
         bool allThreadsDead() const;
 
@@ -137,6 +138,8 @@ namespace kernel::gnulinux {
         // Verify that this is true when we cannot hold the lock explicitly
         std::atomic<bool> inKernel_ { false };
         void verifyInKernel();
+
+        std::atomic<size_t> numRunningJobs_ { 0 };
 
         std::vector<std::unique_ptr<Thread>> threads_;
 

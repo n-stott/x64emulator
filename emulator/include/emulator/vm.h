@@ -96,11 +96,11 @@ namespace emulator {
     };
 
     class BasicBlockTest {
-        static_assert(sizeof(BasicBlock::cpuBasicBlock_) == 0x18);
+        static_assert(sizeof(BasicBlock::cpuBasicBlock_) == 0x20);
         static_assert(sizeof(BasicBlock::fixedDestinationInfo_) == 0x20);
         static_assert(sizeof(BasicBlock::variableDestinationInfo_) == 0x60);
 
-        static_assert(offsetof(BasicBlock, jitBasicBlock_) == 0x18);
+        static_assert(offsetof(BasicBlock, jitBasicBlock_) == 0x20);
     };
 
     class CompilationQueue {

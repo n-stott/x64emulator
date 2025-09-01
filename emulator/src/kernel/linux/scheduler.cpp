@@ -111,9 +111,11 @@ namespace kernel::gnulinux {
             std::unique_lock lock(schedulerMutex_);
             stopRunningThread(thread, worker, lock);
             syncThreadTimeSlice(thread, &lock);
+            --numRunningJobs_;
             lock.unlock();
             schedulerHasRunnableThread_.notify_all();
         });
+        ++numRunningJobs_;
         // fmt::print(stderr, "{}: run thread {}\n", worker.id, thread->description().tid);
         thread->time().setSlice(currentTime_.count(), DEFAULT_TIME_SLICE);
 
@@ -129,9 +131,12 @@ namespace kernel::gnulinux {
         ScopeGuard guard([&]() {
             stopRunningThread(thread, worker, lock);
             syncThreadTimeSlice(thread, &lock);
+            --numRunningJobs_;
             lock.unlock();
             schedulerHasRunnableThread_.notify_all();
         });
+        verify(numRunningJobs_ == 0, "jobs running while atomic");
+        ++numRunningJobs_;
         // fmt::print(stderr, "{}: run thread {}\n", worker.id, thread->description().tid);
         thread->time().setSlice(currentTime_.count(), ATOMIC_TIME_SLICE);
 
@@ -148,9 +153,12 @@ namespace kernel::gnulinux {
         ScopeGuard guard([&]() {
             stopRunningThread(thread, worker, lock);
             inKernel_ = false;
+            --numRunningJobs_;
             lock.unlock();
             schedulerHasRunnableThread_.notify_all();
         });
+        verify(numRunningJobs_ == 0, "jobs running while in kernel");
+        ++numRunningJobs_;
         inKernel_ = true;
         emulator::VM::MmuCallback callback(&mmu_, &vm);
         kernel_.timers().updateAll(currentTime_);
@@ -208,17 +216,21 @@ namespace kernel::gnulinux {
             && runnableThreads_.empty();
     }
 
-    bool Scheduler::hasRunnableThread(bool canRunSyscalls) const {
-        auto isUserspaceJob = [](Job job) { return job.ring == RING::USERSPACE; };
+    bool Scheduler::hasRunnableThread(bool canRunSyscalls, bool canRunAtomics) const {
+        auto isUserspaceJob = [](Job job) { return job.ring == RING::USERSPACE && job.atomic == ATOMIC::NO; };
+        auto isAtomicJob = [](Job job) { return job.ring == RING::USERSPACE && job.atomic == ATOMIC::YES; };
         auto isKernelJob = [](Job job) { return job.ring == RING::KERNEL; };
 
         size_t nbUserspaceRunning = (size_t)std::count_if(runningJobs_.begin(), runningJobs_.end(), isUserspaceJob);
+        size_t nbAtomicRunning = (size_t)std::count_if(runningJobs_.begin(), runningJobs_.end(), isAtomicJob);
         size_t nbKernelRunning = (size_t)std::count_if(runningJobs_.begin(), runningJobs_.end(), isKernelJob);
 
-        auto isUserspaceThread = [](const Thread* thread) { return !thread->requestsSyscall(); };
+        auto isUserspaceThread = [](const Thread* thread) { return !thread->requestsSyscall() && !thread->requestsAtomic(); };
+        auto isAtomicThread = [](const Thread* thread) { return !thread->requestsSyscall() && thread->requestsAtomic(); };
         auto isKernelThread = [](const Thread* thread) { return thread->requestsSyscall(); };
 
         size_t nbUserspaceRunnable = (size_t)std::count_if(runnableThreads_.begin(), runnableThreads_.end(), isUserspaceThread);
+        size_t nbAtomicRunnable = (size_t)std::count_if(runnableThreads_.begin(), runnableThreads_.end(), isAtomicThread);
         size_t nbKernelRunnable = (size_t)std::count_if(runnableThreads_.begin(), runnableThreads_.end(), isKernelThread);
 
         if(canRunSyscalls) {
@@ -226,16 +238,24 @@ namespace kernel::gnulinux {
                 fmt::print(stderr, "HOW CAN WE HAVE 2 KERNEL THREADS RUNNING ???\n");
             }
             if(nbKernelRunnable > 0) {
-                return nbUserspaceRunning == 0;
-            } else {
-                return nbUserspaceRunnable > 0;
+                return nbUserspaceRunning + nbAtomicRunning == 0;
             }
-        } else {
+        }
+        if(canRunAtomics) {
+            if(nbAtomicRunning > 0) {
+                fmt::print(stderr, "HOW CAN WE HAVE 2 ATOMIC THREADS RUNNING ???\n");
+            }
+            // syscalls have priority
             if(nbKernelRunning > 0 || nbKernelRunnable > 0) {
                 return false;
-            } else {
-                return nbUserspaceRunnable > 0;
+            } else if(nbAtomicRunnable > 0) {
+                return nbUserspaceRunning + nbKernelRunning == 0;
             }
+        }
+        if(nbKernelRunning + nbKernelRunnable + nbAtomicRunning + nbAtomicRunnable > 0) {
+            return false;
+        } else {
+            return nbUserspaceRunnable > 0;
         }
     }
 
@@ -243,13 +263,13 @@ namespace kernel::gnulinux {
         std::unique_lock lock(schedulerMutex_);
         schedulerHasRunnableThread_.wait(lock, [&]{
             return kernel_.hasPanicked()     // something bad happened
-                || this->hasRunnableThread(worker.canRunSyscalls())  // we want to run an available thread
+                || this->hasRunnableThread(worker.canRunSyscalls(), worker.canRunAtomic())  // we want to run an available thread
                 || this->allThreadsDead()     // we need to exit because all threads are dead
                 || this->allThreadsBlocked(); // we need to check unblocking conditions
         });
 
         assert(kernel_.hasPanicked()
-            || hasRunnableThread(worker.canRunSyscalls())
+            || hasRunnableThread(worker.canRunSyscalls(), worker.canRunAtomic())
             || allThreadsDead()
             || allThreadsBlocked());
 
