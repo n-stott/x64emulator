@@ -823,20 +823,37 @@ namespace kernel::gnulinux {
     }
 
     void checkCloneFlags(const Host::CloneFlags& flags) {
-        verify(flags.childClearTid, "Expected cloneFlags.childClearTid == true");
-        verify(!flags.childSetTid, "Expected cloneFlags.childSetTid == false");
-        verify(!flags.clearSignalHandlers, "Expected cloneFlags.clearSignalHandlers == false");
-        verify(flags.cloneSignalHandlers, "Expected cloneFlags.cloneSignalHandlers == true");
-        verify(flags.cloneFiles, "Expected cloneFlags.cloneFiles == true");
-        verify(flags.cloneFs, "Expected cloneFlags.cloneFs == true");
-        verify(!flags.cloneIo, "Expected cloneFlags.cloneIo == false");
-        verify(!flags.cloneParent, "Expected cloneFlags.cloneParent == false");
-        verify(flags.parentSetTid, "Expected cloneFlags.parentSetTid == true");
-        verify(!flags.clonePidFd, "Expected cloneFlags.clonePidFd == false");
-        verify(flags.setTls, "Expected cloneFlags.setTls == true");
-        verify(flags.cloneThread, "Expected cloneFlags.cloneThread == true");
-        verify(flags.cloneVm, "Expected cloneFlags.cloneVm) == true");
-        verify(!flags.cloneVfork, "Expected cloneFlags.cloneVfork) == false");
+        bool expected = flags.childClearTid
+                && !flags.childSetTid
+                && !flags.clearSignalHandlers
+                && flags.cloneSignalHandlers
+                && flags.cloneFiles
+                && flags.cloneFs
+                && !flags.cloneIo
+                && !flags.cloneParent
+                && flags.parentSetTid
+                && !flags.clonePidFd
+                && flags.setTls
+                && flags.cloneThread
+                && flags.cloneVm
+                && !flags.cloneVfork;
+        if(!expected) {
+            if(flags.childClearTid) puts("Expected cloneFlags.childClearTid == true");
+            if(!flags.childSetTid) puts("Expected cloneFlags.childSetTid == false");
+            if(!flags.clearSignalHandlers) puts("Expected cloneFlags.clearSignalHandlers == false");
+            if(flags.cloneSignalHandlers) puts("Expected cloneFlags.cloneSignalHandlers == true");
+            if(flags.cloneFiles) puts("Expected cloneFlags.cloneFiles == true");
+            if(flags.cloneFs) puts("Expected cloneFlags.cloneFs == true");
+            if(!flags.cloneIo) puts("Expected cloneFlags.cloneIo == false");
+            if(!flags.cloneParent) puts("Expected cloneFlags.cloneParent == false");
+            if(flags.parentSetTid) puts("Expected cloneFlags.parentSetTid == true");
+            if(!flags.clonePidFd) puts("Expected cloneFlags.clonePidFd == false");
+            if(flags.setTls) puts("Expected cloneFlags.setTls == true");
+            if(flags.cloneThread) puts("Expected cloneFlags.cloneThread == true");
+            if(flags.cloneVm) puts("Expected cloneFlags.cloneVm) == true");
+            if(!flags.cloneVfork) puts("Expected cloneFlags.cloneVfork) == false");
+            verify(false);
+        }
     }
 
     long Sys::clone(unsigned long flags, x64::Ptr stack, x64::Ptr32 parent_tid, x64::Ptr32 child_tid, unsigned long tls) {
