@@ -119,8 +119,8 @@ int main(int argc, char* argv[], char* envp[]) {
         }
         emulator.setNbCores(parser.get<int>("-j"));
         emulator.setVirtualMemoryAmount(parser.get<unsigned int>("--mem"));
-        bool ok = emulator.run(programPath, arguments, environmentVariables);
-        return !ok;
+        int ret = emulator.run(programPath, arguments, environmentVariables);
+        return ret;
     } catch(std::exception& e) {
         std::cout << e.what() << std::endl;
     }

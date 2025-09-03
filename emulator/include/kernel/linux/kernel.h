@@ -27,9 +27,9 @@ namespace kernel::gnulinux {
         explicit Kernel(x64::Mmu& mmu);
         ~Kernel();
 
-        Thread* exec(const std::string& programFilePath,
-                     const std::vector<std::string>& arguments,
-                     const std::vector<std::string>& environmentVariables);
+        int run(const std::string& programFilePath,
+                const std::vector<std::string>& arguments,
+                const std::vector<std::string>& environmentVariables);
 
         void setProfiling(bool isProfiling);
         void setLogSyscalls(bool logSyscalls);

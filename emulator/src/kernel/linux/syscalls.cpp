@@ -1,5 +1,6 @@
 #include "kernel/linux/fs/fs.h"
 #include "kernel/linux/shm/sharedmemory.h"
+#include "kernel/linux/sys/execve.h"
 #include "kernel/linux/kernel.h"
 #include "kernel/linux/scheduler.h"
 #include "kernel/linux/syscalls.h"
@@ -96,6 +97,7 @@ namespace kernel::gnulinux {
             case 0x36: return threadRegs.set(x64::R64::RAX, invoke_syscall_5(&Sys::setsockopt, regs));
             case 0x37: return threadRegs.set(x64::R64::RAX, invoke_syscall_5(&Sys::getsockopt, regs));
             case 0x38: return threadRegs.set(x64::R64::RAX, invoke_syscall_5(&Sys::clone, regs));
+            case 0x3b: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::execve, regs));
             case 0x3c: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::exit, regs));
             case 0x3e: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::kill, regs));
             case 0x3f: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::uname, regs));
@@ -871,6 +873,15 @@ namespace kernel::gnulinux {
         }
         kernel_.scheduler().addThread(std::move(newThread));
         return ret;
+    }
+
+    int Sys::execve(x64::Ptr pathname, x64::Ptr argv, x64::Ptr envp) {
+        if(kernel_.logSyscalls()) {
+            print("Sys::exec(pathname={:#x}, argv={:#x}, envp={:#x}) = {}\n",
+                        pathname.address(), argv.address(), envp.address(), -ENOTSUP);
+        }
+        warn(fmt::format("exec not implemented"));
+        return -ENOTSUP;
     }
 
     int Sys::exit(int status) {

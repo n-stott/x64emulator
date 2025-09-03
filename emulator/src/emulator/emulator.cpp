@@ -51,7 +51,7 @@ namespace emulator {
         virtualMemoryInMB_ = virtualMemoryInMB;
     }
 
-    bool Emulator::run(const std::string& programFilePath, const std::vector<std::string>& arguments, const std::vector<std::string>& environmentVariables) const {
+    int Emulator::run(const std::string& programFilePath, const std::vector<std::string>& arguments, const std::vector<std::string>& environmentVariables) const {
         auto mmu = x64::Mmu::tryCreate(virtualMemoryInMB_);
         verify(!!mmu, "unable to create mmu");
         kernel::gnulinux::Kernel kernel(*mmu);
@@ -64,18 +64,7 @@ namespace emulator {
         kernel.setEnableShm(enableShm_);
         kernel.setNbCores(nbCores_);
 
-        bool ok = true;
-        
-        VerificationScope::run([&]() {
-            kernel::gnulinux::Thread* mainThread = kernel.exec(programFilePath, arguments, environmentVariables);
-            kernel.scheduler().run();
-            fmt::print("Emulator completed execution\n");
-            ok &= (mainThread->exitStatus() == 0);
-        }, [&]() {
-            fmt::print("Emulator crash\n");
-            kernel.panic();
-            ok = false;
-        });
+        int ret = kernel.run(programFilePath, arguments, environmentVariables);
 
         if(force_graceful_exit) return true;
 
@@ -95,7 +84,7 @@ namespace emulator {
             // profilingData.toBin(outputBinFile);
         }
 
-        return ok;
+        return ret;
     }
 
 }

@@ -110,6 +110,7 @@ add_library(x64emulator ${LIB_KIND}
     src/kernel/linux/fs/shadowsymlink.cpp
     src/kernel/linux/fs/socket.cpp
     src/kernel/linux/fs/symlink.cpp
+    src/kernel/linux/sys/execve.cpp
     src/kernel/linux/shm/sharedmemory.cpp
     src/kernel/linux/shm/sharedmemorysegment.cpp
     src/kernel/linux/auxiliaryvector.cpp
