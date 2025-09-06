@@ -66,16 +66,21 @@ add_library(x64jit ${LIB_KIND}
     src/x64/compiler/jit.cpp
     src/x64/compiler/optimizer.cpp
     src/x64/disassembler/capstonewrapper.cpp
+    src/x64/disassembler/zydiswrapper.cpp
 )
 target_compile_options(x64jit PUBLIC ${COMPILE_OPTIONS})
 target_include_directories(x64jit PUBLIC
     include
     ${capstone_SOURCE_DIR}/include
+    ${zydis_SOURCE_DIR}/include
+    ${zydis_SOURCE_DIR}/dependencies/zycore/include
 )
 target_link_libraries(x64jit PUBLIC
     x64cpu
     fmt::fmt-header-only
-    capstone
+    ${capstone_BINARY_DIR}/libcapstone.a
+    ${zydis_BINARY_DIR}/libZydis.a
+    ${zydis_BINARY_DIR}/zycore/libZycore.a
 )
 if(MULTIPROCESSING)
     target_compile_definitions(x64jit PUBLIC MULTIPROCESSING=1)

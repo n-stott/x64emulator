@@ -29,6 +29,14 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(capstone)
 
+FetchContent_Declare(
+    zydis
+    GIT_REPOSITORY         https://github.com/zyantific/zydis.git
+    GIT_TAG                v4.1.1
+    GIT_SUBMODULES_RECURSE TRUE
+)
+FetchContent_MakeAvailable(zydis)
+
 if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
     add_compile_definitions(GCC_COMPILER=1)
 elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
