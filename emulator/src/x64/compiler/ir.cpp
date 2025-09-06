@@ -349,7 +349,7 @@ namespace x64::ir {
         if(op() != Op::MOV) return true;
 
         // don't trust memory locations in fs segment (essentially)
-        if(mem.segment != Segment::CS && mem.segment != Segment::UNK) return true;
+        if(mem.segment == Segment::FS) return true;
 
         auto m8dst = out().as<M8>();
         auto m16dst = out().as<M16>();
@@ -363,27 +363,27 @@ namespace x64::ir {
         Encoding64 dst;
         if(m8dst) {
             // don't trust the fs segment
-            if(m8dst->segment != Segment::CS && m8dst->segment != Segment::UNK) return true;
+            if(m8dst->segment == Segment::FS) return true;
             dst = m8dst->encoding;
         }
         if(m16dst) {
             // don't trust the fs segment
-            if(m16dst->segment != Segment::CS && m16dst->segment != Segment::UNK) return true;
+            if(m16dst->segment == Segment::FS) return true;
             dst = m16dst->encoding;
         }
         if(m32dst) {
             // don't trust the fs segment
-            if(m32dst->segment != Segment::CS && m32dst->segment != Segment::UNK) return true;
+            if(m32dst->segment == Segment::FS) return true;
             dst = m32dst->encoding;
         }
         if(m64dst) {
             // don't trust the fs segment
-            if(m64dst->segment != Segment::CS && m64dst->segment != Segment::UNK) return true;
+            if(m64dst->segment == Segment::FS) return true;
             dst = m64dst->encoding;
         }
         if(m128dst) {
             // don't trust the fs segment
-            if(m128dst->segment != Segment::CS && m128dst->segment != Segment::UNK) return true;
+            if(m128dst->segment == Segment::FS) return true;
             dst = m128dst->encoding;
         }
 
@@ -436,8 +436,8 @@ namespace x64::ir {
         M64 memB = !!dstBMem ? dstBMem.value() : srcBMem.value();
 
         // don't trust fs segment (essentially)
-        if(memA.segment != Segment::CS && memA.segment != Segment::UNK) return false;
-        if(memB.segment != Segment::CS && memB.segment != Segment::UNK) return false;
+        if(memA.segment == Segment::FS) return false;
+        if(memB.segment == Segment::FS) return false;
 
         // can't commute if they read from/write to each other
         if(regA == regB) return false;
@@ -497,8 +497,8 @@ namespace x64::ir {
         if(memA == memB) return false;
 
         // don't trust fs segment (essentially)
-        if(memA.segment != Segment::CS && memA.segment != Segment::UNK) return false;
-        if(memB.segment != Segment::CS && memB.segment != Segment::UNK) return false;
+        if(memA.segment == Segment::FS) return false;
+        if(memB.segment == Segment::FS) return false;
 
         // don't trust unaligned read/writes
         if(memA.encoding.index != R64::ZERO) return false;
