@@ -1,22 +1,17 @@
 #ifndef CAPSTONEWRAPPER_H
 #define CAPSTONEWRAPPER_H
 
+#include "x64/disassembler/disassembler.h"
 #include "x64/instructions/x64instruction.h"
 #include "x64/types.h"
 #include <vector>
 
 namespace x64 {
 
-    class CapstoneWrapper {
+    class CapstoneWrapper : public Disassembler {
     public:
-        struct DisassemblyResult {
-            std::vector<X64Instruction> instructions;
-            const u8* next;
-            size_t remainingSize;
-            u64 nextAddress;
-        };
 
-        DisassemblyResult disassembleRange(const u8* begin, size_t size, u64 address);
+        DisassemblyResult disassembleRange(const u8* begin, size_t size, u64 address) override;
 
     private:
         std::vector<X64Instruction> instructions_;

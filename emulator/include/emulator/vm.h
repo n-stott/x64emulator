@@ -14,8 +14,8 @@
 
 namespace x64 {
     struct BasicBlock;
-    class CapstoneWrapper;
     class Compiler;
+    class Disassembler;
     class JitBasicBlock;
     class Jit;
 }
@@ -242,7 +242,7 @@ namespace emulator {
         bool jitEnabled_ { false };
         int optimizationLevel_ { 0 };
 
-        std::unique_ptr<x64::CapstoneWrapper> disassembler_;
+        std::unique_ptr<x64::Disassembler> disassembler_;
         std::unique_ptr<x64::Jit> jit_;
         CompilationQueue compilationQueue_;
     };

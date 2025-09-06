@@ -434,7 +434,7 @@ namespace emulator {
         std::vector<u8> disassemblyData;
         disassemblyData.resize(end-address, 0x0);
         mmu_.copyFromMmu(disassemblyData.data(), x64::Ptr8{address}, end-address);
-        x64::CapstoneWrapper::DisassemblyResult result = disassembler_->disassembleRange(disassemblyData.data(), disassemblyData.size(), address);
+        x64::Disassembler::DisassemblyResult result = disassembler_->disassembleRange(disassemblyData.data(), disassemblyData.size(), address);
 
         // Finally, create the new executable region
         ExecutableSection section;
