@@ -165,6 +165,9 @@ namespace x64 {
 
         std::array<JitBasicBlock*, 0x1000> callstack_;
         u64 callstackSize_ { 0 };
+
+        size_t compilationAttempts_ { 0 };
+        size_t failedCompilationAttempts_ { 0 };
     };
 
 }

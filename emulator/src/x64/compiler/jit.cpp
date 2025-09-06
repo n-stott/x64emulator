@@ -17,7 +17,13 @@ namespace x64 {
         std::fill(callstack_.begin(), callstack_.end(), nullptr);
     }
 
-    Jit::~Jit() = default;
+    Jit::~Jit() {
+#ifdef JIT_STATS
+        fmt::println("Jit stats");
+        fmt::println("  {} attempts", compilationAttempts_);
+        fmt::println("  {} failed", failedCompilationAttempts_);
+#endif
+    }
 
     void Jit::tryCreateJitTrampoline() {
         if(!!jitTrampoline_) return;
@@ -30,8 +36,12 @@ namespace x64 {
     }
 
     JitBasicBlock* Jit::tryCompile(const x64::BasicBlock& bb, void* currentBb, int optimizationLevel) {
+        ++compilationAttempts_;
         auto jbb = JitBasicBlock::tryCreate(bb, currentBb, compiler_.get(), optimizationLevel, &allocator_);
-        if(!jbb) return nullptr;
+        if(!jbb) {
+            ++failedCompilationAttempts_;
+            return nullptr;
+        }
         JitBasicBlock* ptr = jbb.get();
         verify(!!jbb->executableMemory());
         blocks_.push_back(std::move(jbb));

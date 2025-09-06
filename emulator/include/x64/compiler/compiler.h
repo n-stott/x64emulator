@@ -25,7 +25,6 @@ namespace x64 {
         Compiler();
         ~Compiler();
 
-        std::optional<ir::IR> tryCompileIR(const BasicBlock&, int optimizationLevel = 0, const void* basicBlockPtr = nullptr, const void* jitBasicBlockPtr = nullptr, bool diagnose = false);
         std::optional<NativeBasicBlock> tryCompile(const BasicBlock&, int optimizationLevel = 0, const void* basicBlockPtr = nullptr, const void* jitBasicBlockPtr = nullptr, bool diagnose = false);
 
         std::optional<NativeBasicBlock> tryCompileJitTrampoline();
@@ -33,6 +32,7 @@ namespace x64 {
         std::vector<u8> compileJumpTo(u64 address);
 
     private:
+        std::optional<ir::IR> tryCompileIR(const BasicBlock&, int optimizationLevel = 0, const void* basicBlockPtr = nullptr, const void* jitBasicBlockPtr = nullptr, bool diagnose = false);
         bool tryCompile(const X64Instruction&);
 
         bool tryCompileLastInstruction(const X64Instruction&);
