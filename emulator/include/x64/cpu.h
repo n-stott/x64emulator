@@ -704,8 +704,8 @@ namespace x64 {
         void execFdivrM32(const X64Instruction&);
         void execFdivrpSTST(const X64Instruction&);
 
-        void execFcomiST(const X64Instruction&);
-        void execFucomiST(const X64Instruction&);
+        void execFcomiSTST(const X64Instruction&);
+        void execFucomiSTST(const X64Instruction&);
         void execFrndint(const X64Instruction&);
 
         void execFcmovST(const X64Instruction&);
@@ -1050,8 +1050,8 @@ namespace x64 {
         void execCpuid(const X64Instruction&);
         void execXgetbv(const X64Instruction&);
 
-        void execFxsaveM64(const X64Instruction&);
-        void execFxrstorM64(const X64Instruction&);
+        void execFxsaveM4096(const X64Instruction&);
+        void execFxrstorM4096(const X64Instruction&);
 
         void execFwait(const X64Instruction&);
 

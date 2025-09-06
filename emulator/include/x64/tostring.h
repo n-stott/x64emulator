@@ -226,6 +226,7 @@ namespace x64::utils {
         if constexpr (size == Size::TWORD) return "TWORD";
         if constexpr (size == Size::XWORD) return "XWORD";
         if constexpr (size == Size::FPUENV) return "FPUENV";
+        if constexpr (size == Size::FPUSTATE) return "FPUSTATE";
     }
 
     template<Cond condition>

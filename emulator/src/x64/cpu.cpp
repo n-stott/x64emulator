@@ -616,8 +616,8 @@ namespace x64 {
     DEFINE_STANDALONE(FDIVR_ST_ST, execFdivrSTST)
     DEFINE_STANDALONE(FDIVR_M32, execFdivrM32)
     DEFINE_STANDALONE(FDIVRP_ST_ST, execFdivrpSTST)
-    DEFINE_STANDALONE(FCOMI_ST, execFcomiST)
-    DEFINE_STANDALONE(FUCOMI_ST, execFucomiST)
+    DEFINE_STANDALONE(FCOMI_ST_ST, execFcomiSTST)
+    DEFINE_STANDALONE(FUCOMI_ST_ST, execFucomiSTST)
     DEFINE_STANDALONE(FRNDINT, execFrndint)
     DEFINE_STANDALONE(FCMOV_ST, execFcmovST)
     DEFINE_STANDALONE(FNSTCW_M16, execFnstcwM16)
@@ -892,8 +892,8 @@ namespace x64 {
     DEFINE_STANDALONE(RDTSC, execRdtsc)
     DEFINE_STANDALONE(CPUID, execCpuid)
     DEFINE_STANDALONE(XGETBV, execXgetbv)
-    DEFINE_STANDALONE(FXSAVE_M64, execFxsaveM64)
-    DEFINE_STANDALONE(FXRSTOR_M64, execFxrstorM64)
+    DEFINE_STANDALONE(FXSAVE_M4096, execFxsaveM4096)
+    DEFINE_STANDALONE(FXRSTOR_M4096, execFxrstorM4096)
     DEFINE_STANDALONE(FWAIT, execFwait)
     DEFINE_STANDALONE(RDPKRU, execRdpkru)
     DEFINE_STANDALONE(WRPKRU, execWrpkru)
@@ -1318,8 +1318,8 @@ namespace x64 {
         STANDALONE_NAME(FDIVR_ST_ST),
         STANDALONE_NAME(FDIVR_M32),
         STANDALONE_NAME(FDIVRP_ST_ST),
-        STANDALONE_NAME(FCOMI_ST),
-        STANDALONE_NAME(FUCOMI_ST),
+        STANDALONE_NAME(FCOMI_ST_ST),
+        STANDALONE_NAME(FUCOMI_ST_ST),
         STANDALONE_NAME(FRNDINT),
         STANDALONE_NAME(FCMOV_ST),
         STANDALONE_NAME(FNSTCW_M16),
@@ -1594,8 +1594,8 @@ namespace x64 {
         STANDALONE_NAME(RDTSC),
         STANDALONE_NAME(CPUID),
         STANDALONE_NAME(XGETBV),
-        STANDALONE_NAME(FXSAVE_M64),
-        STANDALONE_NAME(FXRSTOR_M64),
+        STANDALONE_NAME(FXSAVE_M4096),
+        STANDALONE_NAME(FXRSTOR_M4096),
         STANDALONE_NAME(FWAIT),
         STANDALONE_NAME(RDPKRU),
         STANDALONE_NAME(WRPKRU),
@@ -4327,16 +4327,18 @@ namespace x64 {
         x87fpu_.pop();
     }
 
-    void Cpu::execFcomiST(const X64Instruction& ins) {
-        const auto& src = ins.op0<ST>();
-        f80 dstValue = x87fpu_.st(ST::ST0);
+    void Cpu::execFcomiSTST(const X64Instruction& ins) {
+        const auto& dst = ins.op0<ST>();
+        const auto& src = ins.op1<ST>();
+        f80 dstValue = x87fpu_.st(dst);
         f80 srcValue = x87fpu_.st(src);
         Impl::fcomi(dstValue, srcValue, &x87fpu_, &flags_);
     }
 
-    void Cpu::execFucomiST(const X64Instruction& ins) {
-        const auto& src = ins.op0<ST>();
-        f80 dstValue = x87fpu_.st(ST::ST0);
+    void Cpu::execFucomiSTST(const X64Instruction& ins) {
+        const auto& dst = ins.op0<ST>();
+        const auto& src = ins.op1<ST>();
+        f80 dstValue = x87fpu_.st(dst);
         f80 srcValue = x87fpu_.st(src);
         Impl::fucomi(dstValue, srcValue, &x87fpu_, &flags_);
     }
@@ -6273,17 +6275,17 @@ namespace x64 {
         set(XMM::XMM15, s.xmm15);
     }
 
-    void Cpu::execFxsaveM64(const X64Instruction& ins) {
-        const auto& dst = ins.op0<M64>();
-        Ptr64 dstPtr = resolve(dst);
+    void Cpu::execFxsaveM4096(const X64Instruction& ins) {
+        const auto& dst = ins.op0<M4096>();
+        Ptr4096 dstPtr = resolve(dst);
         verify(dstPtr.address() % 16 == 0, "fxsave destination address must be 16-byte aligned");
         FPUState fpuState = getFpuState();
         mmu_->copyToMmu(Ptr8{dstPtr.address()}, (const u8*)&fpuState, sizeof(fpuState));
     }
 
-    void Cpu::execFxrstorM64(const X64Instruction& ins) {
-        const auto& src = ins.op0<M64>();
-        Ptr64 srcPtr = resolve(src);
+    void Cpu::execFxrstorM4096(const X64Instruction& ins) {
+        const auto& src = ins.op0<M4096>();
+        Ptr4096 srcPtr = resolve(src);
         verify(srcPtr.address() % 16 == 0, "fxrstor source address must be 16-byte aligned");
         FPUState fpuState;
         mmu_->copyFromMmu((u8*)&fpuState, Ptr8{srcPtr.address()}, sizeof(fpuState));

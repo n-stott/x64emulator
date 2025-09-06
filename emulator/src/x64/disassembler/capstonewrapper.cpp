@@ -2147,8 +2147,9 @@ namespace x64 {
         const auto& x86detail = insn.detail->x86;
         assert(x86detail.op_count == 1);
         const cs_x86_op& src = x86detail.operands[0];
+        auto stdst = ST::ST0;
         auto stsrc = asST(src);
-        if(stsrc) return X64Instruction::make<Insn::FCOMI_ST>(insn.address, insn.size, stsrc.value());
+        if(stsrc) return X64Instruction::make<Insn::FCOMI_ST_ST>(insn.address, insn.size, stdst, stsrc.value());
         return make_failed(insn);
     }
 
@@ -2156,8 +2157,9 @@ namespace x64 {
         const auto& x86detail = insn.detail->x86;
         assert(x86detail.op_count == 1);
         const cs_x86_op& src = x86detail.operands[0];
+        auto stdst = ST::ST0;
         auto stsrc = asST(src);
-        if(stsrc) return X64Instruction::make<Insn::FUCOMI_ST>(insn.address, insn.size, stsrc.value());
+        if(stsrc) return X64Instruction::make<Insn::FUCOMI_ST_ST>(insn.address, insn.size, stdst, stsrc.value());
         return make_failed(insn);
     }
 
@@ -4168,7 +4170,7 @@ namespace x64 {
         assert(x86detail.op_count == 1);
         const cs_x86_op& dst = x86detail.operands[0];
         auto m64dst = asMemory64(dst);
-        if(m64dst) return X64Instruction::make<Insn::FXSAVE_M64>(insn.address, insn.size, m64dst.value());
+        if(m64dst) return X64Instruction::make<Insn::FXSAVE_M4096>(insn.address, insn.size, M4096{m64dst->segment, m64dst->encoding});
         return make_failed(insn);
     }
 
@@ -4177,7 +4179,7 @@ namespace x64 {
         assert(x86detail.op_count == 1);
         const cs_x86_op& src = x86detail.operands[0];
         auto m64src = asMemory64(src);
-        if(m64src) return X64Instruction::make<Insn::FXRSTOR_M64>(insn.address, insn.size, m64src.value());
+        if(m64src) return X64Instruction::make<Insn::FXRSTOR_M4096>(insn.address, insn.size, M4096{m64src->segment, m64src->encoding});
         return make_failed(insn);
     }
 
@@ -4579,7 +4581,7 @@ namespace x64 {
         return ins;
     }
 
-    CapstoneWrapper::DisassemblyResult CapstoneWrapper::disassembleRange(const u8* begin, size_t size, u64 address) {
+    Disassembler::DisassemblyResult CapstoneWrapper::disassembleRange(const u8* begin, size_t size, u64 address) {
         csh handle;
         if(cs_open(CS_ARCH_X86, CS_MODE_64, &handle) != CS_ERR_OK) return {};
         if(cs_option(handle, CS_OPT_DETAIL, CS_OPT_ON) != CS_ERR_OK) return {};

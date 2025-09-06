@@ -292,9 +292,10 @@ namespace x64 {
         TWORD,
         XWORD,
         FPUENV,
+        FPUSTATE,
     };
 
-    inline constexpr u8 pointerSize(Size size) {
+    inline constexpr u16 pointerSize(Size size) {
         switch(size) {
             case Size::BYTE: return 1;
             case Size::WORD: return 2;
@@ -303,6 +304,7 @@ namespace x64 {
             case Size::TWORD: return 10;
             case Size::XWORD: return 16;
             case Size::FPUENV: return 28;
+            case Size::FPUSTATE: return 512;
         }
         return 0;
     }
@@ -387,6 +389,7 @@ namespace x64 {
     using Ptr80 = SPtr<Size::TWORD>;
     using Ptr128 = SPtr<Size::XWORD>;
     using Ptr224 = SPtr<Size::FPUENV>;
+    using Ptr4096 = SPtr<Size::FPUSTATE>;
 
     template<Size size>
     struct RM {
@@ -425,6 +428,7 @@ namespace x64 {
     using XMMM128 = RM<Size::XWORD>;
 
     using M224 = M<Size::FPUENV>;
+    using M4096 = M<Size::FPUSTATE>;
 
     template<Size size>
     bool operator==(const M<size>& a, const M<size>& b) {

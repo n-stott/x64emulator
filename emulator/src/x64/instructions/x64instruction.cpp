@@ -447,8 +447,8 @@ namespace x64 {
             case Insn::FDIVR_ST_ST: return toString<ST, ST>("fdivr");
             case Insn::FDIVR_M32: return toString<M32>("fdivr");
             case Insn::FDIVRP_ST_ST: return toString<ST, ST>("fdivrp");
-            case Insn::FCOMI_ST: return toString<ST>("fcomi");
-            case Insn::FUCOMI_ST: return toString<ST>("fucomi");
+            case Insn::FCOMI_ST_ST: return toString<ST, ST>("fcomi");
+            case Insn::FUCOMI_ST_ST: return toString<ST, ST>("fucomi");
             case Insn::FRNDINT: return toString("frndint");
             case Insn::FCMOV_ST: return toString<Cond, ST>("fcmov");
             case Insn::FNSTCW_M16: return toString<M16>("fnstcw");
@@ -723,8 +723,8 @@ namespace x64 {
             case Insn::RDTSC: return toString("rdtsc");
             case Insn::CPUID: return toString("cpuid");
             case Insn::XGETBV: return toString("xgetbv");
-            case Insn::FXSAVE_M64: return toString<M64>("fxsave");
-            case Insn::FXRSTOR_M64: return toString<M64>("fxrstor");
+            case Insn::FXSAVE_M4096: return toString<M4096>("fxsave");
+            case Insn::FXRSTOR_M4096: return toString<M4096>("fxrstor");
             case Insn::FWAIT: return toString("fwait");
             case Insn::RDPKRU: return toString("rdpkru");
             case Insn::WRPKRU: return toString("wrpkru");
