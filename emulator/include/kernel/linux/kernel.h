@@ -38,6 +38,7 @@ namespace kernel::gnulinux {
         void setOptimizationLevel(int level);
         void setEnableShm(bool enableShm);
         void setNbCores(int nbCores);
+        void setDisassembler(int disassembler);
 
         bool isProfiling() const { return isProfiling_; }
         bool logSyscalls() const { return logSyscalls_; }
@@ -46,6 +47,7 @@ namespace kernel::gnulinux {
         int optimizationLevel() const { return optimizationLevel_; }
         bool isShmEnabled() const { return enableShm_; }
         int nbCores() const { return nbCores_; }
+        int disassembler() const { return disassembler_; }
 
         FS& fs() {
             assert(!!fs_);
@@ -88,6 +90,7 @@ namespace kernel::gnulinux {
         int optimizationLevel_ { 0 };
         bool enableShm_ { false };
         int nbCores_ { 1 };
+        int disassembler_ { 0 };
 
     };
 

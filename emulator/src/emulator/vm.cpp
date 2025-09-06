@@ -3,6 +3,7 @@
 #include "verify.h"
 #include "x64/compiler/compiler.h"
 #include "x64/disassembler/capstonewrapper.h"
+#include "x64/disassembler/zydiswrapper.h"
 #include "x64/mmu.h"
 #include "x64/registers.h"
 #include "host/hostmemory.h"
@@ -123,6 +124,14 @@ namespace emulator {
 
     void VM::setOptimizationLevel(int level) {
         optimizationLevel_ = std::max(level, 0);
+    }
+
+    void VM::setDisassembler(int disassembler) {
+        if(disassembler == 1) {
+            disassembler_ = std::make_unique<x64::ZydisWrapper>();
+        } else {
+            disassembler_ = std::make_unique<x64::CapstoneWrapper>();
+        }
     }
 
     void VM::crash() {

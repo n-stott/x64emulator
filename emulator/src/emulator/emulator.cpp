@@ -47,6 +47,10 @@ namespace emulator {
         nbCores_ = nbCores;
     }
 
+    void Emulator::setDisassembler(int disassembler) {
+        disassembler_ = disassembler;
+    }
+
     void Emulator::setVirtualMemoryAmount(unsigned int virtualMemoryInMB) {
         virtualMemoryInMB_ = virtualMemoryInMB;
     }
@@ -63,6 +67,7 @@ namespace emulator {
         kernel.setOptimizationLevel(optimizationLevel_);
         kernel.setEnableShm(enableShm_);
         kernel.setNbCores(nbCores_);
+        kernel.setDisassembler(disassembler_);
 
         int ret = kernel.run(programFilePath, arguments, environmentVariables);
 

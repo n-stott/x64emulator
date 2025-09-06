@@ -54,6 +54,10 @@ namespace kernel::gnulinux {
         nbCores_ = nbCores;
     }
 
+    void Kernel::setDisassembler(int disassembler) {
+        disassembler_ = disassembler;
+    }
+
     int Kernel::run(const std::string& programFilePath,
                 const std::vector<std::string>& arguments,
                 const std::vector<std::string>& environmentVariables) {
