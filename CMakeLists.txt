@@ -3,6 +3,7 @@ project(x64)
 set(CMAKE_CXX_STANDARD 17)
 
 option(MULTIPROCESSING "MULTIPROCESSING" OFF)
+option(SSE3 "SSE3" OFF)
 option(SSSE3 "SSSE3" OFF)
 
 include(FetchContent)

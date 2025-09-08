@@ -111,8 +111,11 @@ namespace host {
             // Pretend that we run on cpu 0
             s.b = s.b & 0x00FFFFFF;
             // Pretend that the cpu does not know
-            u32 mask = (u32)(1 << 0  // SSE3
-#ifndef NSSSE3
+            u32 mask = (u32)(0
+#ifndef SSE3
+                           | 1 << 0  // SSE3
+#endif
+#ifndef SSSE3
                            | 1 << 9  // SSE3 extension
 #endif
                            | 1 << 19 // SSE4.1

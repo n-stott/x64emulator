@@ -14,7 +14,21 @@ void testA() {
     (void)x64::CheckedCpuImpl::pmaddubsw128(dst, src);
 }
 
+void testB() {
+    u64 dst = 0x8080808080808080;
+    u64 src = 0x1010101010101010;
+    (void)x64::CheckedCpuImpl::pmaddubsw64(dst, src);
+}
+
+void testC() {
+    u128 dst {0x8080808080808080, 0};
+    u128 src {0x1010101010101010, 0};
+    (void)x64::CheckedCpuImpl::pmaddubsw128(dst, src);
+}
+
 int main() {
     testA();
+    testB();
+    testC();
     return 0;
 }

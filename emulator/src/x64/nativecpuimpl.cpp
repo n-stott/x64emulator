@@ -2996,14 +2996,14 @@ namespace x64 {
 
     u64 NativeCpuImpl::palignr64(u64 dst, u64 src, u8 imm) {
         auto native = [=](__m64 dst, __m64 src) -> __m64 {
-#ifndef NSSSE3
+#ifdef SSSE3
+            u8 order = imm;
+            CALL_2_WITH_IMM8(_mm_alignr_pi8, dst, src);
+#else
             (void)src;
             (void)imm;
             assert(!"palignr64 not defined");
             return dst; // dummy value
-#else
-            u8 order = imm;
-            CALL_2_WITH_IMM8(_mm_alignr_pi8, dst, src);
 #endif
         };
         __m64 mdst;
@@ -3017,14 +3017,14 @@ namespace x64 {
 
     u128 NativeCpuImpl::palignr128(u128 dst, u128 src, u8 imm) {
         auto native = [=](__m128i dst, __m128i src) -> __m128i {
-#ifndef NSSSE3
+#ifdef SSSE3
+            u8 order = imm;
+            CALL_2_WITH_IMM8(_mm_alignr_epi8, dst, src);
+#else
             (void)src;
             (void)imm;
             assert(!"palignr128 not defined");
             return dst; // dummy value
-#else
-            u8 order = imm;
-            CALL_2_WITH_IMM8(_mm_alignr_epi8, dst, src);
 #endif
         };
         __m128i mdst;
@@ -3038,11 +3038,7 @@ namespace x64 {
 
 
     u64 NativeCpuImpl::pmaddubsw64(u64 dst, u64 src) {
-#ifndef NSSSE3
-        (void)src;
-        assert(!"pmaddubsw128 not defined");
-        return dst; // dummy value
-#else
+#ifdef SSSE3
         __m64 mdst;
         __m64 msrc;
         ::memcpy(&mdst, &dst, sizeof(dst));
@@ -3050,15 +3046,15 @@ namespace x64 {
         mdst = _mm_maddubs_pi16(mdst, msrc);
         ::memcpy(&dst, &mdst, sizeof(dst));
         return dst;
+#else
+        (void)src;
+        assert(!"pmaddubsw128 not defined");
+        return dst; // dummy value
 #endif
     }
 
     u128 NativeCpuImpl::pmaddubsw128(u128 dst, u128 src) {
-#ifndef NSSSE3
-        (void)src;
-        assert(!"pmaddubsw128 not defined");
-        return dst; // dummy value
-#else
+#ifdef SSSE3
         __m128i mdst;
         __m128i msrc;
         ::memcpy(&mdst, &dst, sizeof(dst));
@@ -3066,6 +3062,10 @@ namespace x64 {
         mdst = _mm_maddubs_epi16(mdst, msrc);
         ::memcpy(&dst, &mdst, sizeof(dst));
         return dst;
+#else
+        (void)src;
+        assert(!"pmaddubsw128 not defined");
+        return dst; // dummy value
 #endif
     }
 }

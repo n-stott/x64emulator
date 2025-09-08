@@ -2801,7 +2801,7 @@ namespace x64 {
             i16 r = (i16)(rd*rs);
             RES[i] = signSaturatedAdd(l, r);
         }
-        ::memcpy(&dst, &DST, sizeof(dst));
+        ::memcpy(&dst, &RES, sizeof(dst));
         return dst;
     }
 
