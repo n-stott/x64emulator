@@ -5,6 +5,9 @@
 #include <cstring>
 #include <stdexcept>
 #include <emmintrin.h>
+#include <xmmintrin.h>
+#include <pmmintrin.h>
+#include <tmmintrin.h>
 #include <limits>
 
 
@@ -2989,6 +2992,48 @@ namespace x64 {
         u64 nativeRes = 0;
         asm volatile("movmskpd %1, %0" : "+r"(nativeRes) : "x"(src));
         return nativeRes;
+    }
+
+    u64 NativeCpuImpl::palignr64(u64 dst, u64 src, u8 imm) {
+        auto native = [=](__m64 dst, __m64 src) -> __m64 {
+#ifndef NSSSE3
+            (void)src;
+            (void)imm;
+            assert(!"palignr64 not defined");
+            return dst; // dummy value
+#else
+            u8 order = imm;
+            CALL_2_WITH_IMM8(_mm_alignr_pi8, dst, src);
+#endif
+        };
+        __m64 mdst;
+        __m64 msrc;
+        ::memcpy(&mdst, &dst, sizeof(dst));
+        ::memcpy(&msrc, &src, sizeof(src));
+        mdst = native(mdst, msrc);
+        ::memcpy(&dst, &mdst, sizeof(dst));
+        return dst;
+    }
+
+    u128 NativeCpuImpl::palignr128(u128 dst, u128 src, u8 imm) {
+        auto native = [=](__m128i dst, __m128i src) -> __m128i {
+#ifndef NSSSE3
+            (void)src;
+            (void)imm;
+            assert(!"palignr128 not defined");
+            return dst; // dummy value
+#else
+            u8 order = imm;
+            CALL_2_WITH_IMM8(_mm_alignr_epi8, dst, src);
+#endif
+        };
+        __m128i mdst;
+        __m128i msrc;
+        ::memcpy(&mdst, &dst, sizeof(dst));
+        ::memcpy(&msrc, &src, sizeof(src));
+        mdst = native(mdst, msrc);
+        ::memcpy(&dst, &mdst, sizeof(dst));
+        return dst;
     }
 }
 

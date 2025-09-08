@@ -2736,4 +2736,44 @@ namespace x64 {
         return res;
     }
 
+
+    u64 CpuImpl::palignr64(u64 dst, u64 src, u8 imm) {
+        if(imm == 0) return src;
+        if(imm >= 16) return 0;
+        if(imm >= 8) return dst >> (8*(imm-8));
+        u64 lo = src >> (8*imm);
+        u64 hi = dst << (8*(8-imm));
+        return lo | hi;
+    }
+
+    u128 CpuImpl::palignr128(u128 dst, u128 src, u8 imm) {
+        // [  dst.hi  dst.lo  ] [  src.hi  src.lo  ]
+        //    32      24           16      8       0
+        if(imm == 0) return src;
+        if(imm >= 32) return u128{0, 0};
+        if(imm > 24) return u128{dst.hi >> (8*(imm-24)), 0};
+        if(imm == 24) return u128{dst.hi, 0};
+        if(imm > 16) {
+            u64 hi = dst.hi >> (8*(imm-16));
+            u64 lo = (dst.lo >> (8*(imm-16))) | (dst.hi << (8*(24-imm)));
+            return u128{lo, hi};
+        }
+        if(imm == 16) {
+            return dst;
+        }
+        if(imm > 8) {
+            u64 hilo = (dst.lo >> (8*(imm-8)));
+            u64 hihi = (dst.hi << (8*(16-imm)));
+            u64 hi = hilo | hihi;
+            u64 lo = (src.hi >> (8*(imm-8))) | (dst.lo << (8*(16-imm)));
+            return u128{lo, hi};
+        }
+        if(imm == 8) {
+            return u128{src.hi, dst.lo};
+        }
+        u64 hi = (src.hi >> (8*imm)) | (dst.lo << (8*(8-imm)));
+        u64 lo = (src.lo >> (8*imm)) | (src.hi << (8*(8-imm)));
+        return u128{lo, hi};
+    }
+
 }

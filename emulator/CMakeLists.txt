@@ -31,6 +31,16 @@ elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
     )
 endif()
 
+set(COMPILE_DEFINITIONS "")
+if(MULTIPROCESSING)
+    set(COMPILE_DEFINITIONS ${COMPILE_DEFINITIONS} MULTIPROCESSING=1)
+endif(MULTIPROCESSING)
+
+if(SSSE3)
+    set(COMPILE_OPTIONS ${COMPILE_OPTIONS} -mssse3)
+    set(COMPILE_DEFINITIONS ${COMPILE_DEFINITIONS} NSSSE3)
+endif(SSSE3)
+
 set(LIB_KIND STATIC)
 
 add_library(x64cpu ${LIB_KIND}
@@ -51,9 +61,7 @@ add_library(x64cpu ${LIB_KIND}
 target_compile_options(x64cpu PUBLIC ${COMPILE_OPTIONS})
 target_include_directories(x64cpu PUBLIC include)
 target_link_libraries(x64cpu PUBLIC fmt::fmt-header-only)
-if(MULTIPROCESSING)
-    target_compile_definitions(x64cpu PUBLIC MULTIPROCESSING=1)
-endif(MULTIPROCESSING)
+target_compile_definitions(x64cpu PUBLIC ${COMPILE_DEFINITIONS})
 
 
 add_library(x64jit ${LIB_KIND}
@@ -82,9 +90,7 @@ target_link_libraries(x64jit PUBLIC
     ${zydis_BINARY_DIR}/libZydis.a
     ${zydis_BINARY_DIR}/zycore/libZycore.a
 )
-if(MULTIPROCESSING)
-    target_compile_definitions(x64jit PUBLIC MULTIPROCESSING=1)
-endif(MULTIPROCESSING)
+target_compile_definitions(x64cpu PUBLIC ${COMPILE_DEFINITIONS})
 
 
 add_library(x64emulator ${LIB_KIND}
@@ -138,9 +144,7 @@ target_link_libraries(x64emulator PUBLIC
     profiling
     fmt::fmt-header-only
 )
-if(MULTIPROCESSING)
-    target_compile_definitions(x64emulator PUBLIC MULTIPROCESSING=1)
-endif(MULTIPROCESSING)
+target_compile_definitions(x64cpu PUBLIC ${COMPILE_DEFINITIONS})
 
 # target_compile_options(x64emulator PUBLIC -fsanitize=address,undefined -fno-sanitize-recover=all)
 # target_link_libraries(x64emulator PUBLIC asan ubsan)
@@ -166,8 +170,8 @@ target_link_libraries(emulator PUBLIC
 
 # target_compile_options(emulator PUBLIC -fsanitize=address,undefined -fno-sanitize-recover=all)
 # target_link_libraries(emulator PUBLIC asan ubsan)
+target_compile_definitions(x64cpu PUBLIC ${COMPILE_DEFINITIONS})
 
 if(MULTIPROCESSING)
-    target_compile_definitions(emulator PUBLIC MULTIPROCESSING=1)
     target_link_libraries(emulator PUBLIC pthread)
 endif(MULTIPROCESSING)

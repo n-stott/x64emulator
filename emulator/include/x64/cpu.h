@@ -1044,6 +1044,9 @@ namespace x64 {
         void execMovmskpsR64XMM(const X64Instruction&);
         void execMovmskpdR32XMM(const X64Instruction&);
         void execMovmskpdR64XMM(const X64Instruction&);
+
+        void execPalignrMMXMMXM64Imm(const X64Instruction&);
+        void execPalignrXMMXMMM128Imm(const X64Instruction&);
         
         void execRdtsc(const X64Instruction&);
 

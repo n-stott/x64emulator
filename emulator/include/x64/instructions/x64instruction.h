@@ -701,6 +701,11 @@ namespace x64 {
         MOVMSKPS_R64_XMM,
         MOVMSKPD_R32_XMM,
         MOVMSKPD_R64_XMM,
+        // SSE3
+        PALIGNR_MMX_MMXM64_IMM,
+        PALIGNR_XMM_XMMM128_IMM,
+
+        // MISC
         RDTSC,
         CPUID,
         XGETBV,

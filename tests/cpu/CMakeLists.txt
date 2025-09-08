@@ -219,3 +219,11 @@ target_include_directories(test_xchg PUBLIC include ${CMAKE_SOURCE_DIR}/emulator
 target_link_libraries(test_xchg PUBLIC x64cpu)
 target_link_options(test_xchg PUBLIC ${LD_OPTIONS})
 add_test(NAME xchg COMMAND test_xchg)
+
+add_executable(test_palignr src/test_palignr.cpp)
+target_compile_options(test_palignr PUBLIC ${CC_OPTIONS})
+target_compile_options(test_palignr PUBLIC -frounding-math)
+target_include_directories(test_palignr PUBLIC include ${CMAKE_SOURCE_DIR}/emulator/include)
+target_link_libraries(test_palignr PUBLIC x64cpu)
+target_link_options(test_palignr PUBLIC ${LD_OPTIONS})
+add_test(NAME palignr COMMAND test_palignr)

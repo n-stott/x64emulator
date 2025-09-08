@@ -112,7 +112,9 @@ namespace host {
             s.b = s.b & 0x00FFFFFF;
             // Pretend that the cpu does not know
             u32 mask = (u32)(1 << 0  // SSE3
+#ifndef NSSSE3
                            | 1 << 9  // SSE3 extension
+#endif
                            | 1 << 19 // SSE4.1
                            | 1 << 20 // SSE4.2
                            | 1 << 25 // aes
