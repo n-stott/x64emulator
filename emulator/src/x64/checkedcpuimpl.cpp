@@ -1370,7 +1370,16 @@ namespace x64 {
     u64 CheckedCpuImpl::palignr64(u64 dst, u64 src, u8 imm) {
         return checkCall<u64>(&CpuImpl::palignr64, &NativeCpuImpl::palignr64, dst, src, imm);
     }
+
     u128 CheckedCpuImpl::palignr128(u128 dst, u128 src, u8 imm) {
         return checkCall<u128>(&CpuImpl::palignr128, &NativeCpuImpl::palignr128, dst, src, imm);
+    }
+
+    u64 CheckedCpuImpl::pmaddubsw64(u64 dst, u64 src) {
+        return checkCall<u64>(&CpuImpl::pmaddubsw64, &NativeCpuImpl::pmaddubsw64, dst, src);
+    }
+
+    u128 CheckedCpuImpl::pmaddubsw128(u128 dst, u128 src) {
+        return checkCall<u128>(&CpuImpl::pmaddubsw128, &NativeCpuImpl::pmaddubsw128, dst, src);
     }
 }

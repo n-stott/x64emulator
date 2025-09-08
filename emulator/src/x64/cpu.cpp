@@ -891,6 +891,8 @@ namespace x64 {
     DEFINE_STANDALONE(MOVMSKPD_R64_XMM, execMovmskpdR64XMM)
     DEFINE_STANDALONE(PALIGNR_MMX_MMXM64_IMM, execPalignrMMXMMXM64Imm)
     DEFINE_STANDALONE(PALIGNR_XMM_XMMM128_IMM, execPalignrXMMXMMM128Imm)
+    DEFINE_STANDALONE(PMADDUBSW_MMX_MMXM64, execPmaddubswMMXMMXM64)
+    DEFINE_STANDALONE(PMADDUBSW_XMM_XMMM128, execPmaddubswXMMXMMM128)
     DEFINE_STANDALONE(RDTSC, execRdtsc)
     DEFINE_STANDALONE(CPUID, execCpuid)
     DEFINE_STANDALONE(XGETBV, execXgetbv)
@@ -1595,6 +1597,8 @@ namespace x64 {
         STANDALONE_NAME(MOVMSKPD_R64_XMM),
         STANDALONE_NAME(PALIGNR_MMX_MMXM64_IMM),
         STANDALONE_NAME(PALIGNR_XMM_XMMM128_IMM),
+        STANDALONE_NAME(PMADDUBSW_MMX_MMXM64),
+        STANDALONE_NAME(PMADDUBSW_XMM_XMMM128),
         STANDALONE_NAME(RDTSC),
         STANDALONE_NAME(CPUID),
         STANDALONE_NAME(XGETBV),
@@ -6193,6 +6197,18 @@ namespace x64 {
         const auto& src = ins.op1<XMMM128>();
         const auto& imm = ins.op2<Imm>();
         set(dst, Impl::palignr128(get(dst), get(src), get<u8>(imm)));
+    }
+
+    void Cpu::execPmaddubswMMXMMXM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<MMX>();
+        const auto& src = ins.op1<MMXM64>();
+        set(dst, Impl::pmaddubsw64(get(dst), get(src)));
+    }
+
+    void Cpu::execPmaddubswXMMXMMM128(const X64Instruction& ins) {
+        const auto& dst = ins.op0<XMM>();
+        const auto& src = ins.op1<XMMM128>();
+        set(dst, Impl::pmaddubsw128(get(dst), get(src)));
     }
 
     void Cpu::execSyscall(const X64Instruction&) {

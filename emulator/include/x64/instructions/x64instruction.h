@@ -704,6 +704,8 @@ namespace x64 {
         // SSE3
         PALIGNR_MMX_MMXM64_IMM,
         PALIGNR_XMM_XMMM128_IMM,
+        PMADDUBSW_MMX_MMXM64,
+        PMADDUBSW_XMM_XMMM128,
 
         // MISC
         RDTSC,

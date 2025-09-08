@@ -414,6 +414,9 @@ namespace x64 {
         [[nodiscard]] static u64 palignr64(u64 dst, u64 src, u8 imm);
         [[nodiscard]] static u128 palignr128(u128 dst, u128 src, u8 imm);
 
+        [[nodiscard]] static u64 pmaddubsw64(u64 dst, u64 src);
+        [[nodiscard]] static u128 pmaddubsw128(u128 dst, u128 src);
+
         [[nodiscard]] static f80 fadd(f80 dst, f80 src, X87Fpu* fpu);
         [[nodiscard]] static f80 fsub(f80 dst, f80 src, X87Fpu* fpu);
         [[nodiscard]] static f80 fmul(f80 dst, f80 src, X87Fpu* fpu);

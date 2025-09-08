@@ -3035,6 +3035,39 @@ namespace x64 {
         ::memcpy(&dst, &mdst, sizeof(dst));
         return dst;
     }
+
+
+    u64 NativeCpuImpl::pmaddubsw64(u64 dst, u64 src) {
+#ifndef NSSSE3
+        (void)src;
+        assert(!"pmaddubsw128 not defined");
+        return dst; // dummy value
+#else
+        __m64 mdst;
+        __m64 msrc;
+        ::memcpy(&mdst, &dst, sizeof(dst));
+        ::memcpy(&msrc, &src, sizeof(src));
+        mdst = _mm_maddubs_pi16(mdst, msrc);
+        ::memcpy(&dst, &mdst, sizeof(dst));
+        return dst;
+#endif
+    }
+
+    u128 NativeCpuImpl::pmaddubsw128(u128 dst, u128 src) {
+#ifndef NSSSE3
+        (void)src;
+        assert(!"pmaddubsw128 not defined");
+        return dst; // dummy value
+#else
+        __m128i mdst;
+        __m128i msrc;
+        ::memcpy(&mdst, &dst, sizeof(dst));
+        ::memcpy(&msrc, &src, sizeof(src));
+        mdst = _mm_maddubs_epi16(mdst, msrc);
+        ::memcpy(&dst, &mdst, sizeof(dst));
+        return dst;
+#endif
+    }
 }
 
 #endif

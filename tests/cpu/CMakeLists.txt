@@ -227,3 +227,11 @@ target_include_directories(test_palignr PUBLIC include ${CMAKE_SOURCE_DIR}/emula
 target_link_libraries(test_palignr PUBLIC x64cpu)
 target_link_options(test_palignr PUBLIC ${LD_OPTIONS})
 add_test(NAME palignr COMMAND test_palignr)
+
+add_executable(test_pmaddubsw src/test_pmaddubsw.cpp)
+target_compile_options(test_pmaddubsw PUBLIC ${CC_OPTIONS})
+target_compile_options(test_pmaddubsw PUBLIC -frounding-math)
+target_include_directories(test_pmaddubsw PUBLIC include ${CMAKE_SOURCE_DIR}/emulator/include)
+target_link_libraries(test_pmaddubsw PUBLIC x64cpu)
+target_link_options(test_pmaddubsw PUBLIC ${LD_OPTIONS})
+add_test(NAME pmaddubsw COMMAND test_pmaddubsw)

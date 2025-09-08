@@ -4077,6 +4077,19 @@ namespace x64 {
         return make_failed(insn);
     }
 
+    static X64Instruction makePmaddusbw(const ZydisDisassembledInstruction& insn) {
+        assert(insn.info.operand_count_visible == 2);
+        const auto& dst = insn.operands[0];
+        const auto& src = insn.operands[1];
+        auto mmxdst = asMMX(dst);
+        auto rssedst = asRegister128(dst);
+        auto mmxm64src = asMMXM64(src);
+        auto rm128src = asRM128(src);
+        if(mmxdst && mmxm64src) return X64Instruction::make<Insn::PMADDUBSW_MMX_MMXM64>(insn.runtime_address, insn.info.length, mmxdst.value(), mmxm64src.value());
+        if(rssedst && rm128src) return X64Instruction::make<Insn::PMADDUBSW_XMM_XMMM128>(insn.runtime_address, insn.info.length, rssedst.value(), rm128src.value());
+        return make_failed(insn);
+    }
+
     static X64Instruction makeRdtsc(const ZydisDisassembledInstruction& insn) {
         return X64Instruction::make<Insn::RDTSC>(insn.runtime_address, insn.info.length);
     }
@@ -4474,6 +4487,7 @@ namespace x64 {
             case ZYDIS_MNEMONIC_MOVMSKPD: return makeMovmskpd(insn);
             // SSSE 3
             case ZYDIS_MNEMONIC_PALIGNR: return makePalignr(insn);
+            case ZYDIS_MNEMONIC_PMADDUBSW: return makePmaddusbw(insn);
 
             case ZYDIS_MNEMONIC_RDTSC: return makeRdtsc(insn);
             case ZYDIS_MNEMONIC_CPUID: return makeCpuid(insn);

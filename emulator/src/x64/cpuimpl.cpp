@@ -2776,4 +2776,55 @@ namespace x64 {
         return u128{lo, hi};
     }
 
+    static i16 signSaturatedAdd(i16 a, i16 b) {
+        i32 s = (i32)a + (i32)b;
+        s = std::min(s, (i32)std::numeric_limits<i16>::max());
+        s = std::max(s, (i32)std::numeric_limits<i16>::min());
+        return (i16)s;
+    }
+
+    u64 CpuImpl::pmaddubsw64(u64 dst, u64 src) {
+        std::array<i8, 8> DST;
+        std::array<i8, 8> SRC;
+        std::array<i16, 4> RES;
+        static_assert(sizeof(DST) == sizeof(dst));
+        static_assert(sizeof(SRC) == sizeof(src));
+        static_assert(sizeof(RES) == sizeof(dst));
+        ::memcpy(&DST, &dst, sizeof(dst));
+        ::memcpy(&SRC, &src, sizeof(src));
+        for(int i = 0; i < 4; ++i) {
+            i16 ld = (i16)(u16)(u8)DST[2*i+0];
+            i16 ls = (i16)SRC[2*i+0];
+            i16 l = (i16)(ld*ls);
+            i16 rd = (i16)(u16)(u8)DST[2*i+1];
+            i16 rs = (i16)SRC[2*i+1];
+            i16 r = (i16)(rd*rs);
+            RES[i] = signSaturatedAdd(l, r);
+        }
+        ::memcpy(&dst, &DST, sizeof(dst));
+        return dst;
+    }
+
+    u128 CpuImpl::pmaddubsw128(u128 dst, u128 src) {
+        std::array<i8, 16> DST;
+        std::array<i8, 16> SRC;
+        std::array<i16, 8> RES;
+        static_assert(sizeof(DST) == sizeof(dst));
+        static_assert(sizeof(SRC) == sizeof(src));
+        static_assert(sizeof(RES) == sizeof(dst));
+        ::memcpy(&DST, &dst, sizeof(dst));
+        ::memcpy(&SRC, &src, sizeof(src));
+        for(int i = 0; i < 8; ++i) {
+            i16 ld = (i16)(u16)(u8)DST[2*i+0];
+            i16 ls = (i16)SRC[2*i+0];
+            i16 l = (i16)(ld*ls);
+            i16 rd = (i16)(u16)(u8)DST[2*i+1];
+            i16 rs = (i16)SRC[2*i+1];
+            i16 r = (i16)(rd*rs);
+            RES[i] = signSaturatedAdd(l, r);
+        }
+        ::memcpy(&dst, &RES, sizeof(dst));
+        return dst;
+    }
+
 }
