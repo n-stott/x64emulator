@@ -52,17 +52,17 @@ namespace emulator {
             if(bb->jitBasicBlock() != nullptr) {
                 jitted += 1;
                 jittedBlocks.push_back(bb.get());
-                jittedInstructions += bb->basicBlock().instructions.size() * bb->calls();
+                jittedInstructions += bb->basicBlock().instructions().size() * bb->calls();
             } else {
-                emulatedInstructions += bb->basicBlock().instructions.size() * bb->calls();
+                emulatedInstructions += bb->basicBlock().instructions().size() * bb->calls();
                 if(bb->calls() < JIT_THRESHOLD) continue;
                 blocks.push_back(bb.get());
-                jitCandidateInstructions += bb->basicBlock().instructions.size() * bb->calls();
+                jitCandidateInstructions += bb->basicBlock().instructions().size() * bb->calls();
                 
             }
         }
         std::sort(blocks.begin(), blocks.end(), [](const auto* a, const auto* b) {
-            return a->calls() * a->basicBlock().instructions.size() > b->calls() * b->basicBlock().instructions.size();
+            return a->calls() * a->basicBlock().instructions().size() > b->calls() * b->basicBlock().instructions().size();
         });
         fmt::print("{} / candidate {} blocks jitted ({} total). {} / {} instructions jitted ({}% of all, {}% of candidates)\n",
                 jitted, blocks.size()+jitted,
@@ -71,31 +71,31 @@ namespace emulator {
                 100*jittedInstructions/(1+emulatedInstructions+jittedInstructions),
                 100*jittedInstructions/(1+jitCandidateInstructions+jittedInstructions));
         std::sort(jittedBlocks.begin(), jittedBlocks.end(), [](const auto* a, const auto* b) {
-            return a->calls() * a->basicBlock().instructions.size() > b->calls() * b->basicBlock().instructions.size();
+            return a->calls() * a->basicBlock().instructions().size() > b->calls() * b->basicBlock().instructions().size();
         });
         const size_t topCount = 20;
         if(jittedBlocks.size() >= topCount) jittedBlocks.resize(topCount);
-        for(auto* bb : jittedBlocks) {
-            const auto* region = ((const x64::Mmu&)mmu_).findAddress(bb->start());
-            fmt::print("  Calls: {}. Jitted: {}. Size: {}. Source: {}\n",
-                bb->calls(), !!bb->jitBasicBlock(), bb->basicBlock().instructions.size(), region->name());
-            for(const auto& ins : bb->basicBlock().instructions) {
-                fmt::print("      {:#12x} {}\n", ins.first.address(), ins.first.toString());
-            }
-            auto ir = compiler_->tryCompileIR(bb->basicBlock(), 1, nullptr, nullptr, false);
-            assert(!!ir);
-            fmt::print("    Generated IR:\n");
-            for(const auto& ins : ir->instructions) {
-                fmt::print("      {}\n", ins.toString());
-            }
-        }
+        // for(auto* bb : jittedBlocks) {
+        //     const auto* region = ((const x64::Mmu&)mmu_).findAddress(bb->start());
+        //     fmt::print("  Calls: {}. Jitted: {}. Size: {}. Source: {}\n",
+        //         bb->calls(), !!bb->jitBasicBlock(), bb->basicBlock().instructions().size(), region->name());
+        //     for(const auto& ins : bb->basicBlock().instructions()) {
+        //         fmt::print("      {:#12x} {}\n", ins.first.address(), ins.first.toString());
+        //     }
+        //     auto ir = compiler_->tryCompileIR(bb->basicBlock(), 1, nullptr, nullptr, false);
+        //     assert(!!ir);
+        //     fmt::print("    Generated IR:\n");
+        //     for(const auto& ins : ir->instructions) {
+        //         fmt::print("      {}\n", ins.toString());
+        //     }
+        // }
         // return;
         if(blocks.size() >= topCount) blocks.resize(topCount);
         for(auto* bb : blocks) {
             const auto* region = ((const x64::Mmu&)mmu_).findAddress(bb->start());
             fmt::print("  Calls: {}. Jitted: {}. Size: {}. Source: {}\n",
-                bb->calls(), !!bb->jitBasicBlock(), bb->basicBlock().instructions.size(), region->name());
-            for(const auto& ins : bb->basicBlock().instructions) {
+                bb->calls(), !!bb->jitBasicBlock(), bb->basicBlock().instructions().size(), region->name());
+            for(const auto& ins : bb->basicBlock().instructions()) {
                 fmt::print("      {:#12x} {}\n", ins.first.address(), ins.first.toString());
             }
             // fmt::print("{} calls ", bb->calls());
@@ -262,15 +262,15 @@ namespace emulator {
                           currentBasicBlock->jitBasicBlock());
                 ++jitExits_;
 #ifdef VM_JIT_TELEMETRY
-                if(currentBasicBlock->basicBlock().instructions.back().first.insn() == x64::Insn::RET) {
+                if(currentBasicBlock->basicBlock().instructions().back().first.insn() == x64::Insn::RET) {
                     jitExitRet_ += 1;
                     distinctJitExitRet_.insert(cpu_.get(x64::R64::RIP));
                 }
-                if(currentBasicBlock->basicBlock().instructions.back().first.insn() == x64::Insn::CALLINDIRECT_RM64) {
+                if(currentBasicBlock->basicBlock().instructions().back().first.insn() == x64::Insn::CALLINDIRECT_RM64) {
                     jitExitCallRM64_ += 1;
                     distinctJitExitCallRM64_.insert(cpu_.get(x64::R64::RIP));
                 }
-                if(currentBasicBlock->basicBlock().instructions.back().first.insn() == x64::Insn::JMP_RM64) {
+                if(currentBasicBlock->basicBlock().instructions().back().first.insn() == x64::Insn::JMP_RM64) {
                     jitExitJmpRM64_ += 1;
                     distinctJitExitJmpRM64_.insert(cpu_.get(x64::R64::RIP));
                 }
