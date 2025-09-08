@@ -2813,6 +2813,7 @@ namespace x64 {
     void Assembler::pshufb(MMX dst, MMX src) {
         write8((u8)0x0f);
         write8((u8)0x38);
+        write8((u8)0x00);
         write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
     }
 

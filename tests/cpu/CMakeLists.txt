@@ -89,6 +89,13 @@ target_link_libraries(test_cpu_imul PUBLIC x64cpu fmt::fmt-header-only)
 target_link_options(test_cpu_imul PUBLIC ${LD_OPTIONS})
 add_test(NAME imul COMMAND test_cpu_imul)
 
+add_executable(test_cpu_pshufb src/test_pshufb.cpp)
+target_compile_options(test_cpu_pshufb PUBLIC ${CC_OPTIONS})
+target_include_directories(test_cpu_pshufb PUBLIC include ${CMAKE_SOURCE_DIR}/emulator/include)
+target_link_libraries(test_cpu_pshufb PUBLIC x64cpu fmt::fmt-header-only)
+target_link_options(test_cpu_pshufb PUBLIC ${LD_OPTIONS})
+add_test(NAME pshufb COMMAND test_cpu_pshufb)
+
 add_executable(test_cpu_pshufd src/test_pshufd.cpp)
 target_compile_options(test_cpu_pshufd PUBLIC ${CC_OPTIONS})
 target_include_directories(test_cpu_pshufd PUBLIC include ${CMAKE_SOURCE_DIR}/emulator/include)

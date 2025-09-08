@@ -194,6 +194,13 @@ target_link_libraries(test_compiler_pmuludq PUBLIC x64cpu x64jit)
 target_link_options(test_compiler_pmuludq PUBLIC ${LD_OPTIONS})
 add_test(NAME compiler_pmuludq COMMAND test_compiler_pmuludq)
 
+add_executable(test_compiler_pshufb src/test_pshufb.cpp)
+target_compile_options(test_compiler_pshufb PUBLIC ${CC_OPTIONS})
+target_include_directories(test_compiler_pshufb PUBLIC include ${CMAKE_SOURCE_DIR}/emulator/include)
+target_link_libraries(test_compiler_pshufb PUBLIC x64cpu x64jit)
+target_link_options(test_compiler_pshufb PUBLIC ${LD_OPTIONS})
+add_test(NAME compiler_pshufb COMMAND test_compiler_pshufb)
+
 add_executable(test_compiler_pshufd src/test_pshufd.cpp)
 target_compile_options(test_compiler_pshufd PUBLIC ${CC_OPTIONS})
 target_include_directories(test_compiler_pshufd PUBLIC include ${CMAKE_SOURCE_DIR}/emulator/include)
