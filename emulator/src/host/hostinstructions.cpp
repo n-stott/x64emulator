@@ -118,7 +118,9 @@ namespace host {
 #ifndef SSSE3
                            | 1 << 9  // SSE3 extension
 #endif
+#ifndef SSE41
                            | 1 << 19 // SSE4.1
+#endif
                            | 1 << 20 // SSE4.2
                            | 1 << 25 // aes
                            | 1 << 26 // xsave
