@@ -838,20 +838,20 @@ namespace kernel::gnulinux {
                 && flags.cloneVm
                 && !flags.cloneVfork;
         if(!expected) {
-            if(flags.childClearTid) puts("Expected cloneFlags.childClearTid == true");
-            if(!flags.childSetTid) puts("Expected cloneFlags.childSetTid == false");
-            if(!flags.clearSignalHandlers) puts("Expected cloneFlags.clearSignalHandlers == false");
-            if(flags.cloneSignalHandlers) puts("Expected cloneFlags.cloneSignalHandlers == true");
-            if(flags.cloneFiles) puts("Expected cloneFlags.cloneFiles == true");
-            if(flags.cloneFs) puts("Expected cloneFlags.cloneFs == true");
-            if(!flags.cloneIo) puts("Expected cloneFlags.cloneIo == false");
-            if(!flags.cloneParent) puts("Expected cloneFlags.cloneParent == false");
-            if(flags.parentSetTid) puts("Expected cloneFlags.parentSetTid == true");
-            if(!flags.clonePidFd) puts("Expected cloneFlags.clonePidFd == false");
-            if(flags.setTls) puts("Expected cloneFlags.setTls == true");
-            if(flags.cloneThread) puts("Expected cloneFlags.cloneThread == true");
-            if(flags.cloneVm) puts("Expected cloneFlags.cloneVm) == true");
-            if(!flags.cloneVfork) puts("Expected cloneFlags.cloneVfork) == false");
+            if(!flags.childClearTid) puts("Expected cloneFlags.childClearTid == true");
+            if(!!flags.childSetTid) puts("Expected cloneFlags.childSetTid == false");
+            if(!!flags.clearSignalHandlers) puts("Expected cloneFlags.clearSignalHandlers == false");
+            if(!flags.cloneSignalHandlers) puts("Expected cloneFlags.cloneSignalHandlers == true");
+            if(!flags.cloneFiles) puts("Expected cloneFlags.cloneFiles == true");
+            if(!flags.cloneFs) puts("Expected cloneFlags.cloneFs == true");
+            if(!!flags.cloneIo) puts("Expected cloneFlags.cloneIo == false");
+            if(!!flags.cloneParent) puts("Expected cloneFlags.cloneParent == false");
+            if(!flags.parentSetTid) puts("Expected cloneFlags.parentSetTid == true");
+            if(!!flags.clonePidFd) puts("Expected cloneFlags.clonePidFd == false");
+            if(!flags.setTls) puts("Expected cloneFlags.setTls == true");
+            if(!flags.cloneThread) puts("Expected cloneFlags.cloneThread == true");
+            if(!flags.cloneVm) puts("Expected cloneFlags.cloneVm == true");
+            if(!!flags.cloneVfork) puts("Expected cloneFlags.cloneVfork == false");
             verify(false);
         }
     }
@@ -2051,9 +2051,13 @@ namespace kernel::gnulinux {
         // };
         std::vector<u64> args = mmu_.readFromMmu<u64>(uargs, size / sizeof(u64));
         verify(args.size() >= 8);
+        u64 flags { args[0] };
         x64::Ptr32 child_tid { args[2] };
         u64 stackAddress = args[5] + args[6];
         u64 tls = args[7];
+
+        Host::CloneFlags cloneFlags = Host::fromCloneFlags(flags);
+        checkCloneFlags(cloneFlags);
 
         Thread* currentThread = currentThread_;
         std::unique_ptr<Thread> newThread = kernel_.scheduler().allocateThread(currentThread->description().pid);
