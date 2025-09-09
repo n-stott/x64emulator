@@ -4178,6 +4178,7 @@ namespace x64 {
             case ZYDIS_MNEMONIC_LEAVE: return makeLeave(insn);
             case ZYDIS_MNEMONIC_HLT: return makeHalt(insn);
             case ZYDIS_MNEMONIC_NOP:
+            case ZYDIS_MNEMONIC_RDSSPQ:
             case ZYDIS_MNEMONIC_PREFETCHT0:
             case ZYDIS_MNEMONIC_PREFETCHNTA:
             case ZYDIS_MNEMONIC_ENDBR64:
