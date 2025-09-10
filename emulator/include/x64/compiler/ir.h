@@ -265,6 +265,7 @@ namespace x64::ir {
         XORPD,
         SHUFPS,
         SHUFPD,
+        PMADDUSBW,
     };
 
     class Instruction {

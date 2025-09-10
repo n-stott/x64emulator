@@ -418,6 +418,8 @@ namespace x64::ir {
         void shufps(XMM, XMM, u8);
         void shufpd(XMM, XMM, u8);
 
+        void pmaddubsw(XMM, XMM);
+
         // exits
         struct Label {
             u32 labelIndex;

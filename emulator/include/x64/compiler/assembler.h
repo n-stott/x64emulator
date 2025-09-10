@@ -432,6 +432,8 @@ namespace x64 {
         void shufps(XMM, XMM, u8);
         void shufpd(XMM, XMM, u8);
 
+        void pmaddusbw(XMM, XMM);
+
         // exits
         struct Label {
             explicit Label(Assembler&);

@@ -2749,6 +2749,18 @@ namespace x64 {
                     }
                     break;
                 }
+                case ir::Op::PMADDUSBW: {
+                    auto r128dst = ins.out().as<XMM>();
+                    assert(r128dst == ins.in1().as<XMM>());
+                    auto r128src = ins.in2().as<XMM>();
+
+                    if(r128dst && r128src) {
+                        assembler_->pmaddusbw(r128dst.value(), r128src.value());
+                    } else {
+                        return fail();
+                    }
+                    break;
+                }
             }
         }
 
