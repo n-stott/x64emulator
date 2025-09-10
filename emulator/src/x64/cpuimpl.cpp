@@ -1446,7 +1446,7 @@ namespace x64 {
         std::memcpy(SRC.data(), &src, sizeof(u64));
 
         for(unsigned int i = 0; i < 8; ++i) {
-            if((SRC[i] & 0x80) == 1) {
+            if((SRC[i] & 0x80) == 0x80) {
                 DST[i] = 0x0;
             } else {
                 DST[i] = TMP[SRC[i] & 0x0F];
@@ -1468,7 +1468,7 @@ namespace x64 {
         std::memcpy(SRC.data(), &src, sizeof(u128));
 
         for(unsigned int i = 0; i < 16; ++i) {
-            if((SRC[i] & 0x80) == 1) {
+            if((SRC[i] & 0x80) == 0x80) {
                 DST[i] = 0x0;
             } else {
                 DST[i] = TMP[SRC[i] & 0x0F];
