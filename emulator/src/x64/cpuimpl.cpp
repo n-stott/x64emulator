@@ -2747,6 +2747,20 @@ namespace x64 {
         return dst;
     }
 
+    u128 CpuImpl::movddup64(u64 src) {
+        return u128 { src, src };
+    }
+
+    u128 CpuImpl::movddup128(u128 src) {
+        std::array<double, 2> TMP;
+        static_assert(sizeof(src) == sizeof(TMP));
+        ::memcpy(&TMP, &src, sizeof(src));
+        TMP[1] = TMP[0];
+        u128 dst;
+        ::memcpy(&dst, &TMP, sizeof(dst));
+        return dst;
+    }
+
     u64 CpuImpl::palignr64(u64 dst, u64 src, u8 imm) {
         if(imm == 0) return src;
         if(imm >= 16) return 0;

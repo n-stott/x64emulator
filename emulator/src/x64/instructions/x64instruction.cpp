@@ -722,6 +722,8 @@ namespace x64 {
             case Insn::MOVMSKPD_R64_XMM: return toString<R64, XMM>("movmskpd");
             case Insn::LDDQU_XMM_M128: return toString<XMM, M128>("lddqu");
             case Insn::MOVSHDUP_XMM_XMMM128: return toString<XMM, XMMM128>("movshdup");
+            case Insn::MOVDDUP_XMM_XMM: return toString<XMM, XMM>("movddup");
+            case Insn::MOVDDUP_XMM_M64: return toString<XMM, M64>("movddup");
             case Insn::PALIGNR_MMX_MMXM64_IMM: return toString<MMX, MMXM64, Imm>("palignr");
             case Insn::PALIGNR_XMM_XMMM128_IMM: return toString<XMM, XMMM128, Imm>("palignr");
             case Insn::PMADDUBSW_MMX_MMXM64: return toString<MMX, MMXM64>("pmaddubsw");

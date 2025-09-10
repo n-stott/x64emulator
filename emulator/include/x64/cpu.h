@@ -1047,6 +1047,8 @@ namespace x64 {
 
         void execLddquXMMM128(const X64Instruction&);
         void execMovshdupXMMXMMM128(const X64Instruction&);
+        void execMovddupXMMXMM(const X64Instruction&);
+        void execMovddupXMMM64(const X64Instruction&);
 
         void execPalignrMMXMMXM64Imm(const X64Instruction&);
         void execPalignrXMMXMMM128Imm(const X64Instruction&);

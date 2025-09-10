@@ -4082,6 +4082,18 @@ namespace x64 {
         return make_failed(insn);
     }
 
+    static X64Instruction makeMovddup(const ZydisDisassembledInstruction& insn) {
+        assert(insn.info.operand_count_visible == 2);
+        const auto& dst = insn.operands[0];
+        const auto& src = insn.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto rssesrc = asRegister128(src);
+        auto m64src = asMemory64(src);
+        if(rssedst && rssesrc) return X64Instruction::make<Insn::MOVDDUP_XMM_XMM>(insn.runtime_address, insn.info.length, rssedst.value(), rssesrc.value());
+        if(rssedst && m64src) return X64Instruction::make<Insn::MOVDDUP_XMM_M64>(insn.runtime_address, insn.info.length, rssedst.value(), m64src.value());
+        return make_failed(insn);
+    }
+
     static X64Instruction makePalignr(const ZydisDisassembledInstruction& insn) {
         assert(insn.info.operand_count_visible == 3);
         const auto& dst = insn.operands[0];
@@ -4523,6 +4535,7 @@ namespace x64 {
             // SSE 3
             case ZYDIS_MNEMONIC_LDDQU: return makeLddqu(insn);
             case ZYDIS_MNEMONIC_MOVSHDUP: return makeMovshdup(insn);
+            case ZYDIS_MNEMONIC_MOVDDUP: return makeMovddup(insn);
 
             // SSSE 3
             case ZYDIS_MNEMONIC_PALIGNR: return makePalignr(insn);

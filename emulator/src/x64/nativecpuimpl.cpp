@@ -3003,6 +3003,25 @@ namespace x64 {
         return dst;
     }
 
+    u128 NativeCpuImpl::movddup64(u64 src) {
+        __m128d msrc;
+        u128 src2 { src, src };
+        ::memcpy(&msrc, &src2, sizeof(src2));
+        __m128d mdst = _mm_movedup_pd(msrc);
+        u128 dst;
+        ::memcpy(&dst, &mdst, sizeof(dst));
+        return dst;
+    }
+
+    u128 NativeCpuImpl::movddup128(u128 src) {
+        __m128d msrc;
+        ::memcpy(&msrc, &src, sizeof(src));
+        __m128d mdst = _mm_movedup_pd(msrc);
+        u128 dst;
+        ::memcpy(&dst, &mdst, sizeof(dst));
+        return dst;
+    }
+
     u64 NativeCpuImpl::palignr64(u64 dst, u64 src, u8 imm) {
         auto native = [=](__m64 dst, __m64 src) -> __m64 {
 #ifdef SSSE3
