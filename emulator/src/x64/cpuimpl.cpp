@@ -2837,4 +2837,44 @@ namespace x64 {
         return dst;
     }
 
+    u64 CpuImpl::pmulhrsw64(u64 dst, u64 src) {
+        std::array<i16, 4> DST;
+        std::array<i16, 4> SRC;
+        std::array<i16, 4> RES;
+        static_assert(sizeof(DST) == sizeof(dst));
+        static_assert(sizeof(SRC) == sizeof(src));
+        static_assert(sizeof(RES) == sizeof(dst));
+        ::memcpy(&DST, &dst, sizeof(dst));
+        ::memcpy(&SRC, &src, sizeof(src));
+        for(int i = 0; i < 4; ++i) {
+            i32 prod = ((i32)DST[i]) * ((i32)SRC[i]);
+            prod >>= 14;
+            prod += 1;
+            prod >>= 1;
+            RES[i] = (i16)prod;
+        }
+        ::memcpy(&dst, &RES, sizeof(dst));
+        return dst;
+    }
+
+    u128 CpuImpl::pmulhrsw128(u128 dst, u128 src) {
+        std::array<i16, 8> DST;
+        std::array<i16, 8> SRC;
+        std::array<i16, 8> RES;
+        static_assert(sizeof(DST) == sizeof(dst));
+        static_assert(sizeof(SRC) == sizeof(src));
+        static_assert(sizeof(RES) == sizeof(dst));
+        ::memcpy(&DST, &dst, sizeof(dst));
+        ::memcpy(&SRC, &src, sizeof(src));
+        for(int i = 0; i < 8; ++i) {
+            i32 prod = ((i32)DST[i]) * ((i32)SRC[i]);
+            prod >>= 14;
+            prod += 1;
+            prod >>= 1;
+            RES[i] = (i16)prod;
+        }
+        ::memcpy(&dst, &RES, sizeof(dst));
+        return dst;
+    }
+
 }

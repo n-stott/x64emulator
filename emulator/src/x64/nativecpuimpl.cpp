@@ -3077,6 +3077,38 @@ namespace x64 {
         return dst; // dummy value
 #endif
     }
+
+    u64 NativeCpuImpl::pmulhrsw64(u64 dst, u64 src) {
+#ifdef SSSE3
+        __m64 mdst;
+        __m64 msrc;
+        ::memcpy(&mdst, &dst, sizeof(dst));
+        ::memcpy(&msrc, &src, sizeof(src));
+        mdst = _mm_mulhrs_pi16(mdst, msrc);
+        ::memcpy(&dst, &mdst, sizeof(dst));
+        return dst;
+#else
+        (void)src;
+        assert(!"pmulhrsw128 not defined");
+        return dst; // dummy value
+#endif
+    }
+
+    u128 NativeCpuImpl::pmulhrsw128(u128 dst, u128 src) {
+#ifdef SSSE3
+        __m128i mdst;
+        __m128i msrc;
+        ::memcpy(&mdst, &dst, sizeof(dst));
+        ::memcpy(&msrc, &src, sizeof(src));
+        mdst = _mm_mulhrs_epi16(mdst, msrc);
+        ::memcpy(&dst, &mdst, sizeof(dst));
+        return dst;
+#else
+        (void)src;
+        assert(!"pmulhrsw128 not defined");
+        return dst; // dummy value
+#endif
+    }
 }
 
 #endif
