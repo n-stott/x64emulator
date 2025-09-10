@@ -2994,6 +2994,15 @@ namespace x64 {
         return nativeRes;
     }
 
+    u128 NativeCpuImpl::movshdup(u128 src) {
+        __m128 msrc;
+        ::memcpy(&msrc, &src, sizeof(src));
+        __m128 mdst = _mm_movehdup_ps(msrc);
+        u128 dst;
+        ::memcpy(&dst, &mdst, sizeof(dst));
+        return dst;
+    }
+
     u64 NativeCpuImpl::palignr64(u64 dst, u64 src, u8 imm) {
         auto native = [=](__m64 dst, __m64 src) -> __m64 {
 #ifdef SSSE3

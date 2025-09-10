@@ -890,6 +890,7 @@ namespace x64 {
     DEFINE_STANDALONE(MOVMSKPD_R32_XMM, execMovmskpdR32XMM)
     DEFINE_STANDALONE(MOVMSKPD_R64_XMM, execMovmskpdR64XMM)
     DEFINE_STANDALONE(LDDQU_XMM_M128, execLddquXMMM128)
+    DEFINE_STANDALONE(MOVSHDUP_XMM_XMMM128, execMovshdupXMMXMMM128)
     DEFINE_STANDALONE(PALIGNR_MMX_MMXM64_IMM, execPalignrMMXMMXM64Imm)
     DEFINE_STANDALONE(PALIGNR_XMM_XMMM128_IMM, execPalignrXMMXMMM128Imm)
     DEFINE_STANDALONE(PMADDUBSW_MMX_MMXM64, execPmaddubswMMXMMXM64)
@@ -1597,6 +1598,7 @@ namespace x64 {
         STANDALONE_NAME(MOVMSKPD_R32_XMM),
         STANDALONE_NAME(MOVMSKPD_R64_XMM),
         STANDALONE_NAME(LDDQU_XMM_M128),
+        STANDALONE_NAME(MOVSHDUP_XMM_XMMM128),
         STANDALONE_NAME(PALIGNR_MMX_MMXM64_IMM),
         STANDALONE_NAME(PALIGNR_XMM_XMMM128_IMM),
         STANDALONE_NAME(PMADDUBSW_MMX_MMXM64),
@@ -6191,6 +6193,12 @@ namespace x64 {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<M128>();
         set(dst, get(resolve(src)));
+    }
+
+    void Cpu::execMovshdupXMMXMMM128(const X64Instruction& ins) {
+        const auto& dst = ins.op0<XMM>();
+        const auto& src = ins.op1<XMMM128>();
+        set(dst, Impl::movshdup(get(src)));
     }
 
     void Cpu::execPalignrMMXMMXM64Imm(const X64Instruction& ins) {

@@ -2736,6 +2736,16 @@ namespace x64 {
         return res;
     }
 
+    u128 CpuImpl::movshdup(u128 src) {
+        std::array<float, 4> TMP;
+        static_assert(sizeof(src) == sizeof(TMP));
+        ::memcpy(&TMP, &src, sizeof(src));
+        TMP[0] = TMP[1];
+        TMP[2] = TMP[3];
+        u128 dst;
+        ::memcpy(&dst, &TMP, sizeof(dst));
+        return dst;
+    }
 
     u64 CpuImpl::palignr64(u64 dst, u64 src, u8 imm) {
         if(imm == 0) return src;

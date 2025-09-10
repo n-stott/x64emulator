@@ -408,6 +408,8 @@ namespace x64 {
         [[nodiscard]] static u32 movmskpd32(u128 src);
         [[nodiscard]] static u64 movmskpd64(u128 src);
 
+        [[nodiscard]] static u128 movshdup(u128 src);
+
         [[nodiscard]] static u64 palignr64(u64 dst, u64 src, u8 imm);
         [[nodiscard]] static u128 palignr128(u128 dst, u128 src, u8 imm);
 

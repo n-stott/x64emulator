@@ -703,6 +703,7 @@ namespace x64 {
         MOVMSKPD_R64_XMM,
         // SSE3
         LDDQU_XMM_M128,
+        MOVSHDUP_XMM_XMMM128,
 
         // SSSE3
         PALIGNR_MMX_MMXM64_IMM,
