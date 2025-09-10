@@ -462,6 +462,7 @@ namespace x64::ir {
     void IrGenerator::shufpd(XMM dst, XMM src, u8 imm) { emit(Op::SHUFPD, dst, dst, src, imm); }
 
     void IrGenerator::pmaddubsw(XMM dst, XMM src) { emit(Op::PMADDUSBW, dst, dst, src); }
+    void IrGenerator::pmulhrsw(XMM dst, XMM src) { emit(Op::PMULHRSW, dst, dst, src); }
 
     IrGenerator::Label& IrGenerator::label() {
         Label newLabel {

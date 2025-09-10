@@ -433,6 +433,7 @@ namespace x64 {
         void shufpd(XMM, XMM, u8);
 
         void pmaddusbw(XMM, XMM);
+        void pmulhrsw(XMM, XMM);
 
         // exits
         struct Label {
