@@ -98,8 +98,8 @@ namespace emulator {
             for(const auto& ins : bb->basicBlock().instructions()) {
                 fmt::print("      {:#12x} {}\n", ins.first.address(), ins.first.toString());
             }
-            // fmt::print("{} calls ", bb->calls());
-            // [[maybe_unused]] auto jitBasicBlock = x64::Compiler::tryCompile(bb->basicBlock(), 1, {}, true);
+            x64::Compiler compiler;
+            [[maybe_unused]] auto jitBasicBlock = compiler.tryCompile(bb->basicBlock(), 1, {}, {}, true);
         }
 #endif
     }
