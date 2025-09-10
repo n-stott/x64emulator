@@ -1985,7 +1985,7 @@ namespace x64 {
                 case ir::Op::PSHUFB: {
                     auto mmxdst = ins.out().as<MMX>();
                     assert(mmxdst == ins.in1().as<MMX>());
-                    auto mmxsrc2 = ins.in1().as<MMX>();
+                    auto mmxsrc2 = ins.in2().as<MMX>();
 
                     if(mmxdst && mmxsrc2) {
                         assembler_->pshufb(mmxdst.value(), mmxsrc2.value());
