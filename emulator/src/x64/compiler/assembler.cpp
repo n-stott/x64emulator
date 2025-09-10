@@ -4202,6 +4202,17 @@ namespace x64 {
         write8((u8)imm);
     }
 
+    void Assembler::pshufb(XMM dst, XMM src) {
+        write8(0x66);
+        if((u8)dst >= 8 || (u8)src >= 8) {
+            write8((u8)(0x40 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src >= 8) ? 1 : 0) ));
+        }
+        write8((u8)0x0f);
+        write8((u8)0x38);
+        write8((u8)0x00);
+        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+    }
+
     void Assembler::pshufd(XMM dst, XMM src, u8 imm) {
         write8(0x66);
         if((u8)dst >= 8 || (u8)src >= 8) {

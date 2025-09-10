@@ -394,6 +394,7 @@ namespace x64::ir {
     void IrGenerator::psrad(XMM dst, XMM src) { emit(Op::PSRAD, dst, dst, src); }
     void IrGenerator::psrad(XMM dst, u8 src) { emit(Op::PSRAD, dst, dst, src); }
 
+    void IrGenerator::pshufb(XMM dst, XMM src) { emit(Op::PSHUFB, dst, dst, src); }
     void IrGenerator::pshufd(XMM dst, XMM src, u8 imm) { emit(Op::PSHUFD, dst, src, imm); }
     void IrGenerator::pshuflw(XMM dst, XMM src, u8 imm) { emit(Op::PSHUFLW, dst, src, imm); }
     void IrGenerator::pshufhw(XMM dst, XMM src, u8 imm) { emit(Op::PSHUFHW, dst, src, imm); }

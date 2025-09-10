@@ -365,6 +365,7 @@ namespace x64 {
         void psrad(XMM, XMM);
         void psrad(XMM, u8);
 
+        void pshufb(XMM, XMM);
         void pshufd(XMM, XMM, u8);
         void pshuflw(XMM, XMM, u8);
         void pshufhw(XMM, XMM, u8);

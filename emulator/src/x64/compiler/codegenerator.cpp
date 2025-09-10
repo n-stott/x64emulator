@@ -1987,8 +1987,14 @@ namespace x64 {
                     assert(mmxdst == ins.in1().as<MMX>());
                     auto mmxsrc2 = ins.in2().as<MMX>();
 
+                    auto xmmdst = ins.out().as<XMM>();
+                    assert(xmmdst == ins.in1().as<XMM>());
+                    auto xmmsrc2 = ins.in2().as<XMM>();
+
                     if(mmxdst && mmxsrc2) {
                         assembler_->pshufb(mmxdst.value(), mmxsrc2.value());
+                    } else if(xmmdst && xmmsrc2) {
+                        assembler_->pshufb(xmmdst.value(), xmmsrc2.value());
                     } else {
                         return fail();
                     }

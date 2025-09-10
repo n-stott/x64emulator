@@ -566,6 +566,7 @@ namespace x64 {
             case Insn::PSRAD_XMM_XMMM128: return tryCompilePsradXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
             case Insn::PSRAD_XMM_IMM: return tryCompilePsradXmmImm(ins.op0<XMM>(), ins.op1<Imm>());
 
+            case Insn::PSHUFB_XMM_XMMM128: return tryCompilePshufbXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
             case Insn::PSHUFD_XMM_XMMM128_IMM: return tryCompilePshufdXmmXmmM128Imm(ins.op0<XMM>(), ins.op1<XMMM128>(), ins.op2<Imm>());
             case Insn::PSHUFLW_XMM_XMMM128_IMM: return tryCompilePshuflwXmmXmmM128Imm(ins.op0<XMM>(), ins.op1<XMMM128>(), ins.op2<Imm>());
             case Insn::PSHUFHW_XMM_XMMM128_IMM: return tryCompilePshufhwXmmXmmM128Imm(ins.op0<XMM>(), ins.op1<XMMM128>(), ins.op2<Imm>());
@@ -4012,6 +4013,12 @@ namespace x64 {
         generator_->psrad(get(Reg128::GPR0), imm.as<u8>());
         writeReg128(dst, Reg128::GPR0);
         return true;
+    }
+
+    bool Compiler::tryCompilePshufbXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->pshufb(get(dst), get(src));
+        });
     }
 
     bool Compiler::tryCompilePshufdXmmXmmM128Imm(XMM dst, const XMMM128& src, Imm imm) {
