@@ -5,15 +5,15 @@ set(CMAKE_CXX_STANDARD 17)
 add_executable(elf-reader
     src/elf-reader/main.cpp
 )
-target_compile_options(elf-reader PUBLIC -Wall -Wextra -Wpedantic -pedantic -Wconversion -Werror)
+target_compile_options(elf-reader PRIVATE -Wall -Wextra -Wpedantic -pedantic -Wconversion -Werror)
 target_compile_options(elf-reader PUBLIC)
 if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
-    target_compile_options(elf-reader PUBLIC -Wno-maybe-uninitialized -Wno-stringop-overflow)
+    target_compile_options(elf-reader PRIVATE -Wno-maybe-uninitialized -Wno-stringop-overflow)
 elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
-    target_compile_options(elf-reader PUBLIC -Wno-uninitialized)
+    target_compile_options(elf-reader PRIVATE -Wno-uninitialized)
 endif()
-target_include_directories(elf-reader PUBLIC include)
-target_link_libraries(elf-reader PUBLIC fmt::fmt-header-only)
+target_include_directories(elf-reader PRIVATE include)
+target_link_libraries(elf-reader PRIVATE fmt::fmt-header-only)
 
 if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
     set(COMPILE_OPTIONS
@@ -68,10 +68,10 @@ add_library(x64cpu ${LIB_KIND}
     src/x64/x87.cpp
     src/x64/types.cpp
 )
-target_compile_options(x64cpu PUBLIC ${COMPILE_OPTIONS})
-target_include_directories(x64cpu PUBLIC include)
-target_link_libraries(x64cpu PUBLIC fmt::fmt-header-only)
-target_compile_definitions(x64cpu PUBLIC ${COMPILE_DEFINITIONS})
+target_compile_options(x64cpu PRIVATE ${COMPILE_OPTIONS})
+target_include_directories(x64cpu PRIVATE include)
+target_link_libraries(x64cpu PRIVATE fmt::fmt-header-only)
+target_compile_definitions(x64cpu PRIVATE ${COMPILE_DEFINITIONS})
 
 
 add_library(x64jit ${LIB_KIND}
@@ -86,21 +86,26 @@ add_library(x64jit ${LIB_KIND}
     src/x64/disassembler/capstonewrapper.cpp
     src/x64/disassembler/zydiswrapper.cpp
 )
-target_compile_options(x64jit PUBLIC ${COMPILE_OPTIONS})
+target_compile_options(x64jit PRIVATE ${COMPILE_OPTIONS})
 target_include_directories(x64jit PUBLIC
     include
     ${capstone_SOURCE_DIR}/include
     ${zydis_SOURCE_DIR}/include
     ${zydis_SOURCE_DIR}/dependencies/zycore/include
 )
+target_link_directories(x64jit PUBLIC
+    ${capstone_BINARY_DIR}/
+    ${zydis_BINARY_DIR}/
+    ${zydis_BINARY_DIR}/zycore/
+)
 target_link_libraries(x64jit PUBLIC
     x64cpu
     fmt::fmt-header-only
-    ${capstone_BINARY_DIR}/libcapstone.a
-    ${zydis_BINARY_DIR}/libZydis.a
-    ${zydis_BINARY_DIR}/zycore/libZycore.a
+    capstone
+    Zydis
+    Zycore
 )
-target_compile_definitions(x64cpu PUBLIC ${COMPILE_DEFINITIONS})
+target_compile_definitions(x64cpu PRIVATE ${COMPILE_DEFINITIONS})
 
 
 add_library(x64emulator ${LIB_KIND}
@@ -142,22 +147,22 @@ add_library(x64emulator ${LIB_KIND}
     src/kernel/linux/threadblocker.cpp
     src/kernel/timers.cpp
 )
-target_compile_options(x64emulator PUBLIC ${COMPILE_OPTIONS})
+target_compile_options(x64emulator PRIVATE ${COMPILE_OPTIONS})
 target_include_directories(x64emulator PUBLIC
     include
     ${CMAKE_SOURCE_DIR}/profiling/include
 )
-target_link_directories(x64emulator PUBLIC ${capstone_BINARY_DIR})
+target_link_directories(x64emulator PRIVATE ${capstone_BINARY_DIR})
 target_link_libraries(x64emulator PUBLIC
     x64cpu
     x64jit
     profiling
     fmt::fmt-header-only
 )
-target_compile_definitions(x64cpu PUBLIC ${COMPILE_DEFINITIONS})
+target_compile_definitions(x64cpu PRIVATE ${COMPILE_DEFINITIONS})
 
-# target_compile_options(x64emulator PUBLIC -fsanitize=address,undefined -fno-sanitize-recover=all)
-# target_link_libraries(x64emulator PUBLIC asan ubsan)
+# target_compile_options(x64emulator PRIVATE -fsanitize=address,undefined -fno-sanitize-recover=all)
+# target_link_libraries(x64emulator PRIVATE asan ubsan)
 
 # IF(CMAKE_BUILD_TYPE MATCHES Debug)
 #     set_target_properties(x64emulator PROPERTIES CXX_CLANG_TIDY
@@ -170,18 +175,18 @@ target_compile_definitions(x64cpu PUBLIC ${COMPILE_DEFINITIONS})
 add_executable(emulator
     src/main.cpp
 )
-target_compile_options(emulator PUBLIC ${COMPILE_OPTIONS})
-target_include_directories(emulator PUBLIC include)
+target_compile_options(emulator PRIVATE ${COMPILE_OPTIONS})
+target_include_directories(emulator PRIVATE include)
 target_link_libraries(emulator PUBLIC
     x64emulator
     fmt::fmt-header-only
     argparse
 )
 
-# target_compile_options(emulator PUBLIC -fsanitize=address,undefined -fno-sanitize-recover=all)
-# target_link_libraries(emulator PUBLIC asan ubsan)
-target_compile_definitions(x64cpu PUBLIC ${COMPILE_DEFINITIONS})
+# target_compile_options(emulator PRIVATE -fsanitize=address,undefined -fno-sanitize-recover=all)
+# target_link_libraries(emulator PRIVATE asan ubsan)
+target_compile_definitions(x64cpu PRIVATE ${COMPILE_DEFINITIONS})
 
 if(MULTIPROCESSING)
-    target_link_libraries(emulator PUBLIC pthread)
+    target_link_libraries(emulator PRIVATE pthread)
 endif(MULTIPROCESSING)
