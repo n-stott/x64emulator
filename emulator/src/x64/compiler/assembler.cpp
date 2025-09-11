@@ -32,7 +32,7 @@ namespace x64 {
             case 8: return 0b11;
         }
         assert(false);
-        __builtin_unreachable();
+        UNREACHABLE();
     }
 
     Assembler::~Assembler() = default;

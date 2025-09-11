@@ -10,8 +10,14 @@ class BitFlags {
     using underlying_t = std::underlying_type_t<E>;
     underlying_t flags_ { 0 };
 
+    template<class... Args>
+    struct is_valid
+    {
+        static bool constexpr value = (... && std::is_same_v<Args, E>);
+    };
+
     template <typename... U>
-    using is_all_enum_class = std::integral_constant<bool, (... && std::is_same_v<E, U>)>;
+    using is_all_enum_class = std::integral_constant<bool, is_valid<U...>::value>;
 
 public:
 

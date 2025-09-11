@@ -11,7 +11,7 @@
 
 namespace x64 {
 
-    struct BasicBlock;
+    class BasicBlock;
     class X64Instruction;
     namespace ir {
         class IrGenerator;

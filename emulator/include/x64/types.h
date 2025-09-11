@@ -144,7 +144,7 @@ namespace x64 {
             case R8::BH: return R64::RBX;
         }
         assert(false);
-        __builtin_unreachable();
+        UNREACHABLE();
     }
 
     inline R64 containingRegister(R16 reg) {
@@ -167,7 +167,7 @@ namespace x64 {
             case R16::R15W: return R64::R15;
         }
         assert(false);
-        __builtin_unreachable();
+        UNREACHABLE();
     }
 
     inline R64 containingRegister(R32 reg) {
@@ -192,7 +192,7 @@ namespace x64 {
             case R32::EIZ: return R64::ZERO;
         }
         assert(false);
-        __builtin_unreachable();
+        UNREACHABLE();
     }
 
     enum class MMX : u8 {

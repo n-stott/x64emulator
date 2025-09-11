@@ -102,7 +102,7 @@ namespace x64 {
             case Cond::S: return (sign == 1);
             case Cond::U: return (parity() == 1);
         }
-        __builtin_unreachable();
+        UNREACHABLE();
     }
 
 }

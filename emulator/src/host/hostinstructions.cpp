@@ -1,32 +1,56 @@
 #include "host/hostinstructions.h"
 
+#ifdef MSVC_COMPILER
+#include <cstdlib>
+#include <intrin.h>
+#endif
+
 namespace host {
     
     i32 roundWithoutTruncation32(f32 src) {
         i32 res = 0;
+#ifdef MSVC_COMPILER
+        std::abort();
+#else
         asm volatile("cvtss2si %1, %0" : "+r"(res) : "m"(src));
+#endif
         return res;
     }
     
     i64 roundWithoutTruncation64(f32 src) {
         i64 res = 0;
+#ifdef MSVC_COMPILER
+        std::abort();
+#else
         asm volatile("cvtss2si %1, %0" : "+r"(res) : "m"(src));
+#endif
         return res;
     }
     
     i32 roundWithoutTruncation32(f64 src) {
         i32 res = 0;
+#ifdef MSVC_COMPILER
+        std::abort();
+#else
         asm volatile("cvtsd2si %1, %0" : "+r"(res) : "m"(src));
+#endif
         return res;
     }
     
     i64 roundWithoutTruncation64(f64 src) {
         i64 res = 0;
+#ifdef MSVC_COMPILER
+        std::abort();
+#else
         asm volatile("cvtsd2si %1, %0" : "+r"(res) : "m"(src));
+#endif
         return res;
     }
 
     f80 round(f80 val) {
+#ifdef MSVC_COMPILER
+        std::abort();
+#else
         long double x;
         static_assert(sizeof(val) <= sizeof(x), "");
         memset(&x, 0, sizeof(x));
@@ -46,12 +70,16 @@ namespace host {
                         : "m" (nearest), "m"(x), "m"(cw));
 
         memcpy(&val, &x, sizeof(val));
+#endif
         return val;
     }
 
     IdivResult<u32> idiv32(u32 upperDividend, u32 lowerDividend, u32 divisor) {
         u32 quotient;
         u32 remainder;
+#ifdef MSVC_COMPILER
+        std::abort();
+#else
         asm volatile("mov %2, %%edx\n"
                     "mov %3, %%eax\n"
                     "idiv %4\n"
@@ -59,12 +87,16 @@ namespace host {
                     "mov %%eax, %1\n" : "=r"(remainder), "=r"(quotient)
                                     : "r"(upperDividend), "r"(lowerDividend), "r"(divisor)
                                     : "eax", "edx");
+#endif
         return IdivResult<u32>{quotient, remainder};
     }
 
     IdivResult<u64> idiv64(u64 upperDividend, u64 lowerDividend, u64 divisor) {
         u64 quotient;
         u64 remainder;
+#ifdef MSVC_COMPILER
+        std::abort();
+#else
         asm volatile("mov %2, %%rdx\n"
                     "mov %3, %%rax\n"
                     "idiv %4\n"
@@ -72,6 +104,7 @@ namespace host {
                     "mov %%rax, %1\n" : "=r"(remainder), "=r"(quotient)
                                     : "r"(upperDividend), "r"(lowerDividend), "r"(divisor)
                                     : "rax", "rdx");
+#endif
         return IdivResult<u64>{quotient, remainder};
     }
 
@@ -79,6 +112,9 @@ namespace host {
         u64 lower;
         u64 upper;
         u64 rflags;
+#ifdef MSVC_COMPILER
+        std::abort();
+#else
         asm volatile("mov %3, %%rax\n"
                      "imulq %4\n"
                      "mov %%rax, %0\n"
@@ -87,6 +123,7 @@ namespace host {
                      "pop %2" : "=m"(lower), "=m"(upper), "=r"(rflags)
                               : "m"(a), "m"(b)
                               : "cc", "rax", "rdx");
+#endif
 
         static constexpr u64 CARRY_MASK = 0x1;
         static constexpr u64 OVERFLOW_MASK = 0x800;
@@ -98,6 +135,16 @@ namespace host {
 
     CPUID cpuid(u32 a, u32 c) {
         CPUID s;
+#ifdef MSVC_COMPILER
+        int cpuInfo[4] = { 0, 0, 0, 0 };
+        int functionId = (int)a;
+        int subfunctionId = (int)c;
+        __cpuidex(cpuInfo, functionId, subfunctionId);
+        s.a = (u32)cpuInfo[0];
+        s.b = (u32)cpuInfo[1];
+        s.c = (u32)cpuInfo[2];
+        s.d = (u32)cpuInfo[3];
+#else
         s.a = a;
         s.c = c;
         s.b = s.d = 0;
@@ -106,7 +153,7 @@ namespace host {
                     "cpuid\n"
                     "xchgq %%rbx, %q1\n" : "=a" (s.a), "=r" (s.b), "=c" (s.c), "=d" (s.d)
                                         : "0" (a), "2" (c));
-
+#endif
         if(a == 1) {
             // Pretend that we run on cpu 0
             s.b = s.b & 0x00FFFFFF;
@@ -146,8 +193,12 @@ namespace host {
 
     XGETBV xgetbv(u32 c) {
         XGETBV s;
+#ifdef MSVC_COMPILER
+        std::abort();
+#else
         asm volatile("mov %0, %%ecx" :: "r"(c));
         asm volatile("xgetbv" : "=a" (s.a), "=d" (s.d));
+#endif
         return s;
     }
 
