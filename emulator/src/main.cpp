@@ -67,7 +67,7 @@ int main(int argc, char* argv[], char* envp[]) {
 
     parser.add_argument("-D")
             .help("Disassembly library")
-            .default_value<int>(0)
+            .default_value<int>(1)
             .scan<'i', int>();
 
     parser.add_argument("command")
