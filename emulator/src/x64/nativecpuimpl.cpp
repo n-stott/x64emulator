@@ -3065,6 +3065,70 @@ namespace x64 {
     }
 
 
+    u64 NativeCpuImpl::phaddw64(u64 dst, u64 src) {
+#ifdef SSSE3
+        __m64 mdst;
+        __m64 msrc;
+        ::memcpy(&mdst, &dst, sizeof(dst));
+        ::memcpy(&msrc, &src, sizeof(src));
+        mdst = _mm_hadd_pi16(mdst, msrc);
+        ::memcpy(&dst, &mdst, sizeof(dst));
+        return dst;
+#else
+        (void)src;
+        assert(!"phaddw64 not defined");
+        return dst; // dummy value
+#endif
+    }
+
+    u128 NativeCpuImpl::phaddw128(u128 dst, u128 src) {
+#ifdef SSSE3
+        __m128i mdst;
+        __m128i msrc;
+        ::memcpy(&mdst, &dst, sizeof(dst));
+        ::memcpy(&msrc, &src, sizeof(src));
+        mdst = _mm_hadd_epi16(mdst, msrc);
+        ::memcpy(&dst, &mdst, sizeof(dst));
+        return dst;
+#else
+        (void)src;
+        assert(!"phaddw128 not defined");
+        return dst; // dummy value
+#endif
+    }
+
+    u64 NativeCpuImpl::phaddd64(u64 dst, u64 src) {
+#ifdef SSSE3
+        __m64 mdst;
+        __m64 msrc;
+        ::memcpy(&mdst, &dst, sizeof(dst));
+        ::memcpy(&msrc, &src, sizeof(src));
+        mdst = _mm_hadd_pi32(mdst, msrc);
+        ::memcpy(&dst, &mdst, sizeof(dst));
+        return dst;
+#else
+        (void)src;
+        assert(!"phaddd64 not defined");
+        return dst; // dummy value
+#endif
+    }
+
+    u128 NativeCpuImpl::phaddd128(u128 dst, u128 src) {
+#ifdef SSSE3
+        __m128i mdst;
+        __m128i msrc;
+        ::memcpy(&mdst, &dst, sizeof(dst));
+        ::memcpy(&msrc, &src, sizeof(src));
+        mdst = _mm_hadd_epi32(mdst, msrc);
+        ::memcpy(&dst, &mdst, sizeof(dst));
+        return dst;
+#else
+        (void)src;
+        assert(!"phaddd128 not defined");
+        return dst; // dummy value
+#endif
+    }
+
     u64 NativeCpuImpl::pmaddubsw64(u64 dst, u64 src) {
 #ifdef SSSE3
         __m64 mdst;
@@ -3076,7 +3140,7 @@ namespace x64 {
         return dst;
 #else
         (void)src;
-        assert(!"pmaddubsw128 not defined");
+        assert(!"pmaddubsw64 not defined");
         return dst; // dummy value
 #endif
     }
@@ -3108,7 +3172,7 @@ namespace x64 {
         return dst;
 #else
         (void)src;
-        assert(!"pmulhrsw128 not defined");
+        assert(!"pmulhrsw64 not defined");
         return dst; // dummy value
 #endif
     }

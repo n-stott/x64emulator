@@ -418,6 +418,10 @@ namespace x64 {
         [[nodiscard]] static u64 palignr64(u64 dst, u64 src, u8 imm);
         [[nodiscard]] static u128 palignr128(u128 dst, u128 src, u8 imm);
 
+        [[nodiscard]] static u64 phaddw64(u64 dst, u64 src);
+        [[nodiscard]] static u128 phaddw128(u128 dst, u128 src);
+        [[nodiscard]] static u64 phaddd64(u64 dst, u64 src);
+        [[nodiscard]] static u128 phaddd128(u128 dst, u128 src);
         [[nodiscard]] static u64 pmaddubsw64(u64 dst, u64 src);
         [[nodiscard]] static u128 pmaddubsw128(u128 dst, u128 src);
 

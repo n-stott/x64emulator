@@ -895,6 +895,10 @@ namespace x64 {
     DEFINE_STANDALONE(MOVDDUP_XMM_M64, execMovddupXMMM64)
     DEFINE_STANDALONE(PALIGNR_MMX_MMXM64_IMM, execPalignrMMXMMXM64Imm)
     DEFINE_STANDALONE(PALIGNR_XMM_XMMM128_IMM, execPalignrXMMXMMM128Imm)
+    DEFINE_STANDALONE(PHADDW_MMX_MMXM64, execPhaddwMMXMMXM64)
+    DEFINE_STANDALONE(PHADDW_XMM_XMMM128, execPhaddwXMXXMXM128)
+    DEFINE_STANDALONE(PHADDD_MMX_MMXM64, execPhadddMMXMMXM64)
+    DEFINE_STANDALONE(PHADDD_XMM_XMMM128, execPhadddXMXXMXM128)
     DEFINE_STANDALONE(PMADDUBSW_MMX_MMXM64, execPmaddubswMMXMMXM64)
     DEFINE_STANDALONE(PMADDUBSW_XMM_XMMM128, execPmaddubswXMMXMMM128)
     DEFINE_STANDALONE(PMULHRSW_MMX_MMXM64, execPmulhrswMMXMMXM64)
@@ -1607,6 +1611,10 @@ namespace x64 {
         STANDALONE_NAME(MOVDDUP_XMM_M64),
         STANDALONE_NAME(PALIGNR_MMX_MMXM64_IMM),
         STANDALONE_NAME(PALIGNR_XMM_XMMM128_IMM),
+        STANDALONE_NAME(PHADDW_MMX_MMXM64),
+        STANDALONE_NAME(PHADDW_XMM_XMMM128),
+        STANDALONE_NAME(PHADDD_MMX_MMXM64),
+        STANDALONE_NAME(PHADDD_XMM_XMMM128),
         STANDALONE_NAME(PMADDUBSW_MMX_MMXM64),
         STANDALONE_NAME(PMADDUBSW_XMM_XMMM128),
         STANDALONE_NAME(PMULHRSW_MMX_MMXM64),
@@ -6233,6 +6241,30 @@ namespace x64 {
         const auto& src = ins.op1<XMMM128>();
         const auto& imm = ins.op2<Imm>();
         set(dst, Impl::palignr128(get(dst), get(src), get<u8>(imm)));
+    }
+
+    void Cpu::execPhaddwMMXMMXM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<MMX>();
+        const auto& src = ins.op1<MMXM64>();
+        set(dst, Impl::phaddw64(get(dst), get(src)));
+    }
+
+    void Cpu::execPhaddwXMXXMXM128(const X64Instruction& ins) {
+        const auto& dst = ins.op0<XMM>();
+        const auto& src = ins.op1<XMMM128>();
+        set(dst, Impl::phaddw128(get(dst), get(src)));
+    }
+
+    void Cpu::execPhadddMMXMMXM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<MMX>();
+        const auto& src = ins.op1<MMXM64>();
+        set(dst, Impl::phaddd64(get(dst), get(src)));
+    }
+
+    void Cpu::execPhadddXMXXMXM128(const X64Instruction& ins) {
+        const auto& dst = ins.op0<XMM>();
+        const auto& src = ins.op1<XMMM128>();
+        set(dst, Impl::phaddd128(get(dst), get(src)));
     }
 
     void Cpu::execPmaddubswMMXMMXM64(const X64Instruction& ins) {

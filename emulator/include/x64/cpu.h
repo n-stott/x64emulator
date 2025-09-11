@@ -1053,6 +1053,10 @@ namespace x64 {
         void execPalignrMMXMMXM64Imm(const X64Instruction&);
         void execPalignrXMMXMMM128Imm(const X64Instruction&);
 
+        void execPhaddwMMXMMXM64(const X64Instruction&);
+        void execPhaddwXMXXMXM128(const X64Instruction&);
+        void execPhadddMMXMMXM64(const X64Instruction&);
+        void execPhadddXMXXMXM128(const X64Instruction&);
         void execPmaddubswMMXMMXM64(const X64Instruction&);
         void execPmaddubswXMMXMMM128(const X64Instruction&);
 

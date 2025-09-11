@@ -2800,6 +2800,76 @@ namespace x64 {
         return u128{lo, hi};
     }
 
+    u64 CpuImpl::phaddw64(u64 dst, u64 src) {
+        std::array<i16, 4> DST;
+        std::array<i16, 4> SRC;
+        std::array<i16, 4> RES;
+        static_assert(sizeof(DST) == sizeof(dst));
+        static_assert(sizeof(SRC) == sizeof(src));
+        static_assert(sizeof(RES) == sizeof(dst));
+        ::memcpy(&DST, &dst, sizeof(dst));
+        ::memcpy(&SRC, &src, sizeof(src));
+        for(int i = 0; i < 2; ++i) {
+            RES[i] = DST[2*i+0] + DST[2*i+1];
+        }
+        for(int i = 0; i < 2; ++i) {
+            RES[2+i] = SRC[2*i+0] + SRC[2*i+1];
+        }
+        ::memcpy(&dst, &RES, sizeof(dst));
+        return dst;
+    }
+
+    u128 CpuImpl::phaddw128(u128 dst, u128 src) {
+        std::array<i16, 8> DST;
+        std::array<i16, 8> SRC;
+        std::array<i16, 8> RES;
+        static_assert(sizeof(DST) == sizeof(dst));
+        static_assert(sizeof(SRC) == sizeof(src));
+        static_assert(sizeof(RES) == sizeof(dst));
+        ::memcpy(&DST, &dst, sizeof(dst));
+        ::memcpy(&SRC, &src, sizeof(src));
+        for(int i = 0; i < 4; ++i) {
+            RES[i] = DST[2*i+0] + DST[2*i+1];
+        }
+        for(int i = 0; i < 4; ++i) {
+            RES[4+i] = SRC[2*i+0] + SRC[2*i+1];
+        }
+        ::memcpy(&dst, &RES, sizeof(dst));
+        return dst;
+    }
+
+    u64 CpuImpl::phaddd64(u64 dst, u64 src) {
+        std::array<i32, 2> DST;
+        std::array<i32, 2> SRC;
+        std::array<i32, 2> RES;
+        static_assert(sizeof(DST) == sizeof(dst));
+        static_assert(sizeof(SRC) == sizeof(src));
+        static_assert(sizeof(RES) == sizeof(dst));
+        ::memcpy(&DST, &dst, sizeof(dst));
+        ::memcpy(&SRC, &src, sizeof(src));
+        RES[0] = DST[0] + DST[1];
+        RES[1] = SRC[0] + SRC[1];
+        ::memcpy(&dst, &RES, sizeof(dst));
+        return dst;
+    }
+
+    u128 CpuImpl::phaddd128(u128 dst, u128 src) {
+        std::array<i32, 4> DST;
+        std::array<i32, 4> SRC;
+        std::array<i32, 4> RES;
+        static_assert(sizeof(DST) == sizeof(dst));
+        static_assert(sizeof(SRC) == sizeof(src));
+        static_assert(sizeof(RES) == sizeof(dst));
+        ::memcpy(&DST, &dst, sizeof(dst));
+        ::memcpy(&SRC, &src, sizeof(src));
+        RES[0] = DST[0] + DST[1];
+        RES[1] = DST[2] + DST[3];
+        RES[2] = SRC[0] + SRC[1];
+        RES[3] = SRC[2] + SRC[3];
+        ::memcpy(&dst, &RES, sizeof(dst));
+        return dst;
+    }
+
     static i16 signSaturatedAdd(i16 a, i16 b) {
         i32 s = (i32)a + (i32)b;
         s = std::min(s, (i32)std::numeric_limits<i16>::max());
