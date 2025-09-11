@@ -648,6 +648,9 @@ namespace x64 {
             case Insn::SHUFPS_XMM_XMMM128_IMM: return tryCompileShufpsXmmXmmM128Imm(ins.op0<XMM>(), ins.op1<XMMM128>(), ins.op2<Imm>());
             case Insn::SHUFPD_XMM_XMMM128_IMM: return tryCompileShufpdXmmXmmM128Imm(ins.op0<XMM>(), ins.op1<XMMM128>(), ins.op2<Imm>());
 
+            case Insn::LDDQU_XMM_M128: return tryCompileLddquXmmM128(ins.op0<XMM>(), ins.op1<M128>());
+
+            case Insn::PALIGNR_XMM_XMMM128_IMM: return tryCompilePalignrXmmXmmM128Imm(ins.op0<XMM>(), ins.op1<XMMM128>(), ins.op2<Imm>());
             case Insn::PMADDUBSW_XMM_XMMM128: return tryCompilePmaddubswXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
             case Insn::PMULHRSW_XMM_XMMM128: return tryCompilePmulhrswXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
 
@@ -4688,6 +4691,16 @@ namespace x64 {
     bool Compiler::tryCompileShufpdXmmXmmM128Imm(XMM dst, const XMMM128& src, Imm imm) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
             generator_->shufpd(get(dst), get(src), imm.as<u8>());
+        });
+    }
+
+    bool Compiler::tryCompileLddquXmmM128(XMM dst, const M128& src) {
+        return tryCompileMovuXmmM128(dst, src);
+    }
+
+    bool Compiler::tryCompilePalignrXmmXmmM128Imm(XMM dst, const XMMM128& src, Imm imm) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->palignr(get(dst), get(src), imm.as<u8>());
         });
     }
 

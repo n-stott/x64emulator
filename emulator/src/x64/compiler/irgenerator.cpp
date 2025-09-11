@@ -462,6 +462,7 @@ namespace x64::ir {
     void IrGenerator::shufps(XMM dst, XMM src, u8 imm) { emit(Op::SHUFPS, dst, dst, src, imm); }
     void IrGenerator::shufpd(XMM dst, XMM src, u8 imm) { emit(Op::SHUFPD, dst, dst, src, imm); }
 
+    void IrGenerator::palignr(XMM dst, XMM src, u8 imm) { emit(Op::PALIGNR, dst, dst, src, imm); }
     void IrGenerator::pmaddubsw(XMM dst, XMM src) { emit(Op::PMADDUSBW, dst, dst, src); }
     void IrGenerator::pmulhrsw(XMM dst, XMM src) { emit(Op::PMULHRSW, dst, dst, src); }
 

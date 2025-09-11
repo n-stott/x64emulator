@@ -419,6 +419,7 @@ namespace x64::ir {
         void shufps(XMM, XMM, u8);
         void shufpd(XMM, XMM, u8);
 
+        void palignr(XMM, XMM, u8);
         void pmaddubsw(XMM, XMM);
         void pmulhrsw(XMM, XMM);
 

@@ -453,6 +453,9 @@ namespace x64 {
         bool tryCompileShufpsXmmXmmM128Imm(XMM, const XMMM128&, Imm);
         bool tryCompileShufpdXmmXmmM128Imm(XMM, const XMMM128&, Imm);
 
+        bool tryCompileLddquXmmM128(XMM, const M128&);
+
+        bool tryCompilePalignrXmmXmmM128Imm(XMM, const XMMM128&, Imm);
         bool tryCompilePmaddubswXmmXmmM128(XMM, const XMMM128&);
         bool tryCompilePmulhrswXmmXmmM128(XMM, const XMMM128&);
 

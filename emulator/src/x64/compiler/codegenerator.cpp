@@ -2760,6 +2760,19 @@ namespace x64 {
                     }
                     break;
                 }
+                case ir::Op::PALIGNR: {
+                    auto r128dst = ins.out().as<XMM>();
+                    assert(r128dst == ins.in1().as<XMM>());
+                    auto r128src = ins.in2().as<XMM>();
+                    auto imm8src = ins.in3().as<u8>();
+
+                    if(r128dst && r128src && imm8src) {
+                        assembler_->palignr(r128dst.value(), r128src.value(), imm8src.value());
+                    } else {
+                        return fail();
+                    }
+                    break;
+                }
                 case ir::Op::PMADDUSBW: {
                     auto r128dst = ins.out().as<XMM>();
                     assert(r128dst == ins.in1().as<XMM>());
