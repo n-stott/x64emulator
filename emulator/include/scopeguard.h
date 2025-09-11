@@ -2,20 +2,21 @@
 #define SCOPEGUARD_H
 
 #include <functional>
+#include <optional>
 
 template<typename Func>
 class ScopeGuard {
 public:
     ScopeGuard(Func&& func) : func_(func) { }
     ~ScopeGuard() {
-        if(!!func_) func_();
+        if(!!func_) (*func_)();
     }
 
     void disable() {
-        func_ = {};
+        func_.reset();
     }
 private:
-    std::function<void()> func_;
+    std::optional<Func> func_;
 };
 
 #endif
