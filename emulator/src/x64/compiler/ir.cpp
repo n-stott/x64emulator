@@ -122,6 +122,7 @@ namespace x64::ir {
             case Op::MOVLPS: return "movlps";
             case Op::MOVHPS: return "movhps";
             case Op::MOVHLPS: return "movhlps";
+            case Op::MOVLHPS: return "movlhps";
             case Op::PMOVMSKB: return "pmovmskb";
             case Op::MOVQ2DQ: return "movq2dq";
             case Op::PAND: return "pand";

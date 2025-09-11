@@ -159,6 +159,7 @@ namespace x64::ir {
         MOVLPS,
         MOVHPS,
         MOVHLPS,
+        MOVLHPS,
         PMOVMSKB,
         MOVQ2DQ,
         PAND,

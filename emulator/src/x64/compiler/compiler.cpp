@@ -508,6 +508,7 @@ namespace x64 {
             case Insn::MOVHPS_XMM_M64: return tryCompileMovhpsXmmM64(ins.op0<XMM>(), ins.op1<M64>());
             case Insn::MOVHPS_M64_XMM: return tryCompileMovhpsM64Xmm(ins.op0<M64>(), ins.op1<XMM>());
             case Insn::MOVHLPS_XMM_XMM: return tryCompileMovhlpsXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
+            case Insn::MOVLHPS_XMM_XMM: return tryCompileMovlhpsXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
             case Insn::PMOVMSKB_R32_XMM: return tryCompilePmovmskbR32Xmm(ins.op0<R32>(), ins.op1<XMM>());
             case Insn::MOVQ2DQ_XMM_MM: return tryCompileMovq2qdXMMMMX(ins.op0<XMM>(), ins.op1<MMX>());
             
@@ -3677,6 +3678,14 @@ namespace x64 {
         readReg128(Reg128::GPR0, dst);
         readReg128(Reg128::GPR1, src);
         generator_->movhlps(get(Reg128::GPR0), get(Reg128::GPR1));
+        writeReg128(dst, Reg128::GPR0);
+        return true;
+    }
+
+    bool Compiler::tryCompileMovlhpsXmmXmm(XMM dst, XMM src) {
+        readReg128(Reg128::GPR0, dst);
+        readReg128(Reg128::GPR1, src);
+        generator_->movlhps(get(Reg128::GPR0), get(Reg128::GPR1));
         writeReg128(dst, Reg128::GPR0);
         return true;
     }

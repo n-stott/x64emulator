@@ -333,6 +333,7 @@ namespace x64::ir {
     void IrGenerator::movhps(XMM dst, M64 src) { emit(Op::MOVHPS, dst, dst, src); }
     void IrGenerator::movhps(M64 dst, XMM src) { emit(Op::MOVHPS, dst, dst, src); }
     void IrGenerator::movhlps(XMM dst, XMM src) { emit(Op::MOVHLPS, dst, dst, src); }
+    void IrGenerator::movlhps(XMM dst, XMM src) { emit(Op::MOVLHPS, dst, dst, src); }
     void IrGenerator::pmovmskb(R32 dst, XMM src) { emit(Op::PMOVMSKB, dst, src); }
     void IrGenerator::movq2dq(XMM dst, MMX src) { emit(Op::MOVQ2DQ, dst, src); }
 

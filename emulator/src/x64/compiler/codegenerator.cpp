@@ -1235,6 +1235,17 @@ namespace x64 {
                     }
                     break;
                 }
+                case ir::Op::MOVLHPS: {
+                    auto r128dst = ins.out().as<XMM>();
+                    assert(r128dst == ins.in1().as<XMM>());
+                    auto r128src = ins.in2().as<XMM>();
+                    if(r128dst && r128src) {
+                        assembler_->movlhps(r128dst.value(), r128src.value());
+                    } else {
+                        return fail();
+                    }
+                    break;
+                }
                 case ir::Op::PMOVMSKB: {
                     auto r32dst = ins.out().as<R32>();
                     auto r128src1 = ins.in1().as<XMM>();

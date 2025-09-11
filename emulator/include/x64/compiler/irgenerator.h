@@ -290,6 +290,7 @@ namespace x64::ir {
         void movhps(XMM, M64);
         void movhps(M64, XMM);
         void movhlps(XMM, XMM);
+        void movlhps(XMM, XMM);
         void pmovmskb(R32, XMM);
         void movq2dq(XMM, MMX);
 
