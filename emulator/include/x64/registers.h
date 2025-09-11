@@ -52,7 +52,7 @@ namespace x64 {
                 case R8::R14B: return gpr_[(u8)R64::R14] & 0xFF;
                 case R8::R15B: return gpr_[(u8)R64::R15] & 0xFF;
             }
-            __builtin_unreachable();
+            UNREACHABLE();
         }
 
         u16 get(R16 reg) const {
@@ -98,7 +98,7 @@ namespace x64 {
                 case R8::R14B: { gpr_[(u8)R64::R14] = (gpr_[(u8)R64::R14] & 0xFFFFFFFFFFFFFF00) | (value); return; }
                 case R8::R15B: { gpr_[(u8)R64::R15] = (gpr_[(u8)R64::R15] & 0xFFFFFFFFFFFFFF00) | (value); return; }
             }
-            __builtin_unreachable();
+            UNREACHABLE();
         }
         
         void set(R16 reg, u16 value) {

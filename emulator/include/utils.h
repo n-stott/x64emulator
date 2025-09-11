@@ -4,6 +4,12 @@
 #include <cstdint>
 #include <cstring>
 
+#ifdef MSVC_COMPILER
+#define UNREACHABLE() __assume(0)
+#else
+#define UNREACHABLE() __builtin_unreachable()
+#endif
+
 using u8 = uint8_t;
 using u16 = uint16_t;
 using u32 = uint32_t;
@@ -49,6 +55,9 @@ static_assert(sizeof(i64) == 8);
 static_assert(sizeof(f32) == 4);
 static_assert(sizeof(f64) == 8);
 static_assert(sizeof(f80) == 10);
+
+#ifndef MSVC_COMPILER
 static_assert(sizeof(long double) == 16);
+#endif
 
 #endif

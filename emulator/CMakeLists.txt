@@ -5,11 +5,11 @@ set(CMAKE_CXX_STANDARD 17)
 add_executable(elf-reader
     src/elf-reader/main.cpp
 )
-target_compile_options(elf-reader PRIVATE -Wall -Wextra -Wpedantic -pedantic -Wconversion -Werror)
-target_compile_options(elf-reader PUBLIC)
 if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
+    target_compile_options(elf-reader PRIVATE -Wall -Wextra -Wpedantic -pedantic -Wconversion -Werror)
     target_compile_options(elf-reader PRIVATE -Wno-maybe-uninitialized -Wno-stringop-overflow)
 elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
+    target_compile_options(elf-reader PRIVATE -Wall -Wextra -Wpedantic -pedantic -Wconversion -Werror)
     target_compile_options(elf-reader PRIVATE -Wno-uninitialized)
 endif()
 target_include_directories(elf-reader PRIVATE include)
@@ -68,10 +68,19 @@ add_library(x64cpu ${LIB_KIND}
     src/x64/x87.cpp
     src/x64/types.cpp
 )
-target_compile_options(x64cpu PRIVATE ${COMPILE_OPTIONS})
-target_include_directories(x64cpu PRIVATE include)
-target_link_libraries(x64cpu PRIVATE fmt::fmt-header-only)
-target_compile_definitions(x64cpu PRIVATE ${COMPILE_DEFINITIONS})
+target_compile_options(x64cpu PUBLIC ${COMPILE_OPTIONS})
+target_include_directories(x64cpu PUBLIC
+    include
+)
+if(${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
+    target_include_directories(x64cpu PUBLIC
+        ${boost_int128_SOURCE_DIR}/include
+    )
+endif()
+target_link_libraries(x64cpu PUBLIC fmt::fmt-header-only)
+if(MULTIPROCESSING)
+    target_compile_definitions(x64cpu PUBLIC MULTIPROCESSING=1)
+endif(MULTIPROCESSING)
 
 
 add_library(x64jit ${LIB_KIND}

@@ -1859,7 +1859,7 @@ namespace x64 {
             case Cond::U: return Cond::NU;
         }
         assert(false);
-        __builtin_unreachable();
+        UNREACHABLE();
     }
 
     bool Compiler::tryCompileJcc(Cond condition, u64 dst) {
@@ -4739,7 +4739,7 @@ namespace x64 {
             case Reg::MEM_BASE: return R8::CL;
         }
         assert(false);
-        __builtin_unreachable();
+        UNREACHABLE();
     }
 
     R16 Compiler::get16(Compiler::Reg reg) {
@@ -4753,7 +4753,7 @@ namespace x64 {
             case Reg::MEM_BASE: return R16::CX;
         }
         assert(false);
-        __builtin_unreachable();
+        UNREACHABLE();
     }
 
     R32 Compiler::get32(Compiler::Reg reg) {
@@ -4767,7 +4767,7 @@ namespace x64 {
             case Reg::MEM_BASE: return R32::ECX;
         }
         assert(false);
-        __builtin_unreachable();
+        UNREACHABLE();
     }
 
     R64 Compiler::get(Compiler::Reg reg) {
@@ -4781,7 +4781,7 @@ namespace x64 {
             case Reg::MEM_BASE: return R64::RCX;
         }
         assert(false);
-        __builtin_unreachable();
+        UNREACHABLE();
     }
 
     i32 registerOffset(R8 reg) {
@@ -4797,7 +4797,7 @@ namespace x64 {
             if(reg == R8::DH) return 8*2+1;
             if(reg == R8::BH) return 8*3+1;
             assert(false);
-            __builtin_unreachable();
+            UNREACHABLE();
         }
     }
 
@@ -5012,7 +5012,7 @@ namespace x64 {
             case RegMM::GPR1: return MMX::MM1;
         }
         assert(false);
-        __builtin_unreachable();
+        UNREACHABLE();
     }
 
     i32 registerOffset(MMX reg) {
@@ -5040,7 +5040,7 @@ namespace x64 {
             default: break;
         }
         assert(false);
-        __builtin_unreachable();
+        UNREACHABLE();
     }
 
     Compiler::Reg128 Compiler::toGpr(XMM reg) {
@@ -5064,7 +5064,7 @@ namespace x64 {
             default: break;
         }
         assert(false);
-        __builtin_unreachable();
+        UNREACHABLE();
     }
 
     i32 registerOffset(XMM reg) {

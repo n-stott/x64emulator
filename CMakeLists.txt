@@ -40,11 +40,18 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(zydis)
 
-if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
+FetchContent_Declare(
+    boost_int128
+    GIT_REPOSITORY https://github.com/cppalliance/int128.git
+    GIT_TAG        v1.2.0
+)
+FetchContent_MakeAvailable(boost_int128)
+
+if(${CMAKE_CXX_COMPILER_ID} STREQUAL GNU)
     add_compile_definitions(GCC_COMPILER=1)
-elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
+elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL Clang)
     add_compile_definitions(CLANG_COMPILER=1)
-elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "MSVC")
+elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
     add_compile_definitions(MSVC_COMPILER=1)
 endif()
 

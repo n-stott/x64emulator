@@ -10,7 +10,7 @@ namespace x64 {
         std::string mnemonic(insn.mnemonic);
         std::string operands(insn.op_str);
         std::array<char, 16> name;
-        auto* it = std::copy(mnemonic.begin(), mnemonic.end(), name.begin());
+        auto it = std::copy(mnemonic.begin(), mnemonic.end(), name.begin());
         if(it != name.end()) {
             *it++ = ' ';
         }

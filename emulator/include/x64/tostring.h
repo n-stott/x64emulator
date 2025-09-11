@@ -189,7 +189,7 @@ namespace x64::utils {
             case Cond::S:  return "s";
             case Cond::U: return "u";
         }
-        __builtin_unreachable();
+        UNREACHABLE();
     }
 
     inline std::string toString(const u32& count) {
@@ -253,7 +253,7 @@ namespace x64::utils {
         if (condition == FCond::NLE) return "nle";
         if (condition == FCond::ORD) return "ord";
         assert(false && "not reachable");
-        __builtin_unreachable();
+        UNREACHABLE();
     }
 
     inline std::string toString(const Encoding32& enc) {

@@ -1,4 +1,7 @@
 #include "x64/cpuimpl.h"
+#ifdef MSVC_COMPILER
+#include "boost/int128.hpp"
+#endif
 #include <cassert>
 #include <cmath>
 #include <cstring>
@@ -7,12 +10,18 @@
 
 namespace x64 {
 
+#ifdef MSVC_COMPILER
+    using i128 = boost::int128::int128_t;
+#else
+    using i128 = __int128_t;
+#endif
+
     template<typename U, typename I>
     static U add(U dst, U src, Flags* flags) {
         U res = dst + src;
         flags->zero = res == 0;
         flags->carry = (dst > std::numeric_limits<U>::max() - src);
-        I sres = (I)((__int128_t)dst + (__int128_t)src);
+        I sres = (I)((i128)dst + (i128)src);
         flags->overflow = ((I)dst >= 0 && (I)src >= 0 && sres < 0) || ((I)dst < 0 && (I)src < 0 && sres >= 0);
         flags->sign = (sres < 0);
         flags->deferParity((u8)res);
@@ -32,7 +41,7 @@ namespace x64 {
         U res = (U)(dst + src + c);
         flags->zero = res == 0;
         flags->carry = (c == 1 && src == (U)(-1)) || (dst > std::numeric_limits<U>::max() - (U)(src + c));
-        I sres = (I)((__int128_t)dst + (__int128_t)src + (__int128_t)c);
+        I sres = (I)((i128)dst + (i128)src + (i128)c);
         flags->overflow = ((I)dst >= 0 && (I)src >= 0 && sres < 0) || ((I)dst < 0 && (I)src < 0 && sres >= 0);
         flags->sign = (sres < 0);
         flags->deferParity((u8)res);
@@ -49,7 +58,7 @@ namespace x64 {
         U res = dst - src;
         flags->zero = res == 0;
         flags->carry = (dst < src);
-        I sres = (I)((__int128_t)dst - (__int128_t)src);
+        I sres = (I)((i128)dst - (i128)src);
         flags->overflow = ((I)dst >= 0 && (I)src < 0 && sres < 0) || ((I)dst < 0 && (I)src >= 0 && sres >= 0);
         flags->sign = (sres < 0);
         flags->deferParity((u8)res);
@@ -66,8 +75,8 @@ namespace x64 {
         U c = flags->carry;
         U res = dst - (U)(src + c);
         flags->zero = res == 0;
-        flags->carry = (c == 1 && src == (U)(-1)) || (dst < src+c);
-        I sres = (I)((__int128_t)dst - (I)((__int128_t)src + (__int128_t)c));
+        flags->carry = (c == 1 && src == (U)(-1)) || (dst < src + c);
+        I sres = (I)((i128)dst - (I)((i128)src + (i128)c));
         flags->overflow = ((I)dst >= 0 && (I)src < 0 && sres < 0) || ((I)dst < 0 && (I)src >= 0 && sres >= 0);
         flags->sign = (sres < 0);
         flags->deferParity((u8)res);
@@ -220,9 +229,17 @@ namespace x64 {
 
     std::pair<u64, u64> CpuImpl::div64(u64 dividendUpper, u64 dividendLower, u64 divisor) {
         assert(divisor != 0);
+        u64 result = 0;
+        u64 modulus = 0;
+#ifdef MSVC_COMPILER
+        std::abort();
+#else
         __uint128_t dividend = ((__uint128_t)dividendUpper) << 64 | (__uint128_t)dividendLower;
         __uint128_t tmp = dividend / (__uint128_t)divisor;
-        return std::make_pair((u64)tmp, (u64)(dividend % (__uint128_t)divisor));
+        result = (u64)tmp;
+        modulus = (u64)(dividend % (__uint128_t)divisor);
+#endif
+        return std::make_pair(result, modulus);
     }
 
     template<typename U>
@@ -952,7 +969,7 @@ namespace x64 {
             case FCond::ORD:   return mask(d == d && s == s);
         }
         assert(false);
-        __builtin_unreachable();
+        UNREACHABLE();
         // NOLINTEND(misc-redundant-expression)
     }
 

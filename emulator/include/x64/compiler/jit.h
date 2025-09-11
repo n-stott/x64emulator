@@ -14,7 +14,7 @@ namespace x64 {
     class Mmu;
     class Compiler;
     class Jit;
-    struct BasicBlock;
+    class BasicBlock;
 
     // DO NOT MODIFY THIS STRUCT
     // WITHOUT CHANGING THE JIT AS WELL !!
