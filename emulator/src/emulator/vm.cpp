@@ -64,12 +64,12 @@ namespace emulator {
         std::sort(blocks.begin(), blocks.end(), [](const auto* a, const auto* b) {
             return a->calls() * a->basicBlock().instructions().size() > b->calls() * b->basicBlock().instructions().size();
         });
-        fmt::print("{} / candidate {} blocks jitted ({} total). {} / {} instructions jitted ({}% of all, {}% of candidates)\n",
+        fmt::print("{} / candidate {} blocks jitted ({} total). {} / {} instructions jitted ({:.4f}% of all, {:.4f}% of candidates)\n",
                 jitted, blocks.size()+jitted,
                 basicBlocks_.size(),
                 jittedInstructions, emulatedInstructions+jittedInstructions,
-                100*jittedInstructions/(1+emulatedInstructions+jittedInstructions),
-                100*jittedInstructions/(1+jitCandidateInstructions+jittedInstructions));
+                100.0*(double)jittedInstructions/(1.0+(double)emulatedInstructions+(double)jittedInstructions),
+                100.0*(double)jittedInstructions/(1.0+(double)jitCandidateInstructions+(double)jittedInstructions));
         std::sort(jittedBlocks.begin(), jittedBlocks.end(), [](const auto* a, const auto* b) {
             return a->calls() * a->basicBlock().instructions().size() > b->calls() * b->basicBlock().instructions().size();
         });

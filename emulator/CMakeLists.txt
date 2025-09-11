@@ -20,14 +20,14 @@ if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
         -Wall -Wextra -Wpedantic -pedantic -Wconversion -Werror -Wimplicit-fallthrough
         -Wno-braced-scalar-init -Wno-missing-braces -Wno-maybe-uninitialized -Wno-stringop-overflow
         -frounding-math -fno-omit-frame-pointer
-        -DFMT_HEADER_ONLY -DFMT_USE_FLOAT=0 -DFMT_USE_DOUBLE=0 -DFMT_USE_LONG_DOUBLE=0
+        -DFMT_HEADER_ONLY
     )
 elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
     set(COMPILE_OPTIONS
         -Wall -Wextra -Wpedantic -pedantic -Wconversion -Werror -Wimplicit-fallthrough
         -Wno-braced-scalar-init -Wno-missing-braces -Wno-uninitialized -Wno-nested-anon-types
         -frounding-math -fno-omit-frame-pointer
-        -DFMT_HEADER_ONLY -DFMT_USE_FLOAT=0 -DFMT_USE_DOUBLE=0 -DFMT_USE_LONG_DOUBLE=0
+        -DFMT_HEADER_ONLY
     )
 endif()
 
