@@ -2721,7 +2721,7 @@ namespace x64 {
             }
         } else {
             assert(!"invalid operation");
-            __builtin_unreachable();
+            UNREACHABLE();
         }
         // polarity
         u32 intres2 = 0;
@@ -2737,7 +2737,7 @@ namespace x64 {
             }
         } else {
             assert(!"not implemented");
-            __builtin_unreachable();
+            UNREACHABLE();
         }
         // output
         u32 out = 0;
@@ -2754,7 +2754,7 @@ namespace x64 {
             }
         } else {
             assert(!"not implemented");
-            __builtin_unreachable();
+            UNREACHABLE();
         }
         assert(format == SIGNED_BYTE || format == UNSIGNED_BYTE);
         flags->carry = (intres2 != 0);
@@ -2842,7 +2842,7 @@ namespace x64 {
             }
         } else {
             assert(!"invalid operation");
-            __builtin_unreachable();
+            UNREACHABLE();
         }
         // polarity
         u32 intres2 = 0;
@@ -2858,7 +2858,7 @@ namespace x64 {
             }
         } else {
             assert(!"not implemented");
-            __builtin_unreachable();
+            UNREACHABLE();
         }
         // output
         u32 out = 0;
@@ -2875,7 +2875,7 @@ namespace x64 {
             }
         } else {
             assert(!"not implemented");
-            __builtin_unreachable();
+            UNREACHABLE();
         }
         flags->carry = (intres2 != 0);
         flags->overflow = (intres2 & 1);
@@ -2979,7 +2979,7 @@ namespace x64 {
             }
         } else {
             assert(!"invalid operation");
-            __builtin_unreachable();
+            UNREACHABLE();
         }
         // polarity
         u32 intres2 = 0;
@@ -2995,7 +2995,7 @@ namespace x64 {
             }
         } else {
             assert(!"not implemented");
-            __builtin_unreachable();
+            UNREACHABLE();
         }
         // output
         u32 out = 0;
@@ -3012,7 +3012,7 @@ namespace x64 {
             }
         } else {
             assert(!"not implemented");
-            __builtin_unreachable();
+            UNREACHABLE();
         }
         assert(format == SIGNED_BYTE || format == UNSIGNED_BYTE);
         flags->carry = (intres2 != 0);
@@ -3100,7 +3100,7 @@ namespace x64 {
             }
         } else {
             assert(!"invalid operation");
-            __builtin_unreachable();
+            UNREACHABLE();
         }
         // polarity
         u32 intres2 = 0;
@@ -3116,7 +3116,7 @@ namespace x64 {
             }
         } else {
             assert(!"not implemented");
-            __builtin_unreachable();
+            UNREACHABLE();
         }
         // output
         u32 out = 0;
@@ -3133,7 +3133,7 @@ namespace x64 {
             }
         } else {
             assert(!"not implemented");
-            __builtin_unreachable();
+            UNREACHABLE();
         }
         flags->carry = (intres2 != 0);
         flags->overflow = (intres2 & 1);

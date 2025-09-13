@@ -1,14 +1,20 @@
 #include <array>
 #include <cstdint>
 
-__attribute__((noinline)) void f0() { }
-__attribute__((noinline)) void f1() { }
-__attribute__((noinline)) void f2() { }
-__attribute__((noinline)) void f3() { }
-__attribute__((noinline)) void f4() { }
-__attribute__((noinline)) void f5() { }
-__attribute__((noinline)) void f6() { }
-__attribute__((noinline)) void f7() { }
+#ifdef MSVC_COMPILER
+#define NOINLINE __declspec(noinline)
+#else
+#define NOINLINE __attribute__((noinline))
+#endif
+
+NOINLINE void f0() {}
+NOINLINE void f1() {}
+NOINLINE void f2() {}
+NOINLINE void f3() {}
+NOINLINE void f4() {}
+NOINLINE void f5() {}
+NOINLINE void f6() {}
+NOINLINE void f7() { }
 
 int main() {
     using fptr = void(*)();

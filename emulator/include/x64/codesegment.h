@@ -97,11 +97,19 @@ namespace x64 {
     };
 
     class CodeSegmentTest {
+#ifndef MSVC_COMPILER
         static_assert(sizeof(CodeSegment::cpuBasicBlock_) == 0x20);
         static_assert(sizeof(CodeSegment::fixedDestinationInfo_) == 0x20);
         static_assert(sizeof(CodeSegment::variableDestinationInfo_) == 0x60);
 
         static_assert(offsetof(CodeSegment, jitBasicBlock_) == 0x20);
+#else
+        static_assert(sizeof(CodeSegment::cpuBasicBlock_) == 0x28);
+        static_assert(sizeof(CodeSegment::fixedDestinationInfo_) == 0x20);
+        static_assert(sizeof(CodeSegment::variableDestinationInfo_) == 0x80);
+
+        static_assert(offsetof(CodeSegment, jitBasicBlock_) == 0x28);
+#endif
     };
 
     class CompilationQueue {
