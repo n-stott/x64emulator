@@ -2,8 +2,15 @@ cmake_minimum_required(VERSION 3.13)
 project(x64)
 set(CMAKE_CXX_STANDARD 17)
 
-set(CC_OPTIONS -g -O0 -DDEBUG -fpic)
-set(LD_OPTIONS)
+if(${CMAKE_CXX_COMPILER_ID} STREQUAL GNU)
+    set(CC_OPTIONS -g -O0 -DDEBUG -fpic)
+    set(LD_OPTIONS)
+elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL Clang)
+    set(CC_OPTIONS -g -O0 -DDEBUG -fpic)
+    set(LD_OPTIONS)
+elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
+    
+endif()
 
 add_executable(test_cpu_movss src/test_movss.cpp)
 target_compile_options(test_cpu_movss PRIVATE ${CC_OPTIONS})

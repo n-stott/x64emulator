@@ -24,7 +24,7 @@ long long testMaxB() {
 bool testOverflow() {
     long long a = 10ll;
     long long b = 20ll;
-    long long LL_MAX = (long long)(LONG_LONG_MAX);
+    long long LL_MAX = (long long)(LLONG_MAX);
     bool c = (LL_MAX - a <= b);
     if(c) {
         std::puts("10 + 20 overflows");

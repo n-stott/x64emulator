@@ -2,7 +2,13 @@
 #include <cstdio>
 #include <cstring>
 
-__attribute__((noinline)) long long inc(long long x) {
+#ifdef MSVC_COMPILER
+#define NOINLINE __declspec(noinline)
+#else
+#define NOINLINE __attribute__((noinline))
+#endif
+
+NOINLINE long long inc(long long x) {
     return x+1;
 }
 

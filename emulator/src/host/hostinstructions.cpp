@@ -176,9 +176,9 @@ namespace host {
 
     f80 lg2() {
 #ifdef MSVC_COMPILER
+        f80 val{};
         std::abort();
 #else
-        f80 val;
         long double v;
         memset(&v, 0, sizeof(v));
         asm volatile("fldlg2;"

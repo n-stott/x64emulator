@@ -20,5 +20,5 @@ int main() {
     Compiler compiler(CompilerOptions { 3 });
     [[maybe_unused]] auto nativebb = compiler.tryCompile(bb);
     if(!nativebb) return 1;
-    printf("size=%lu\n", nativebb->nativecode.size());
+    printf("size=%zu\n", nativebb->nativecode.size());
 }

@@ -11,6 +11,12 @@
 #define UNREACHABLE() __builtin_unreachable()
 #endif
 
+#ifdef MSVC_COMPILER
+#define NOINLINE __declspec(noinline)
+#else
+#define NOINLINE __attribute__((noinline))
+#endif
+
 using u8 = uint8_t;
 using u16 = uint16_t;
 using u32 = uint32_t;

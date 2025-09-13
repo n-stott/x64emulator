@@ -1,20 +1,25 @@
 #include <numeric>
 #include <cstdio>
 #include <cstring>
-#include <sched.h>
+
+#ifdef MSVC_COMPILER
+#define NOINLINE __declspec(noinline)
+#else
+#define NOINLINE __attribute__((noinline))
+#endif
 
 struct Base {
     virtual long long inc(long long) = 0;    
 };
 
 struct Derived1 : public Base {
-    __attribute__((noinline)) long long inc(long long x) override {
-        return x+1;
+    NOINLINE long long inc(long long x) override {
+        return x + 1;
     }
 };
 
 struct Derived2 : public Base {
-    __attribute__((noinline)) long long inc(long long x) override {
+    NOINLINE long long inc(long long x) override {
         return x+2;
     }
 };
