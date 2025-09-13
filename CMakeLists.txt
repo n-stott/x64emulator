@@ -30,6 +30,7 @@ FetchContent_Declare(
     GIT_REPOSITORY https://github.com/capstone-engine/capstone.git
     GIT_TAG        4.0
 )
+set(CAPSTONE_BUILD_TESTS OFF CACHE BOOL "Disable capstone tests" FORCE)
 FetchContent_MakeAvailable(capstone)
 
 FetchContent_Declare(

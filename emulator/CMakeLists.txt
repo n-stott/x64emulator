@@ -78,9 +78,7 @@ if(${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
     )
 endif()
 target_link_libraries(x64cpu PUBLIC fmt::fmt-header-only)
-if(MULTIPROCESSING)
-    target_compile_definitions(x64cpu PUBLIC MULTIPROCESSING=1)
-endif(MULTIPROCESSING)
+target_compile_definitions(x64cpu PRIVATE ${COMPILE_DEFINITIONS})
 
 
 add_library(x64jit ${LIB_KIND}
@@ -117,84 +115,85 @@ target_link_libraries(x64jit PUBLIC
 target_compile_definitions(x64cpu PRIVATE ${COMPILE_DEFINITIONS})
 
 
-add_library(x64emulator ${LIB_KIND}
-    src/emulator/emulator.cpp
-    src/emulator/symbolprovider.cpp
-    src/emulator/vm.cpp
-    src/emulator/vmthread.cpp
-    src/host/host.cpp
-    src/kernel/linux/dev/hostdevice.cpp
-    src/kernel/linux/dev/nulldevice.cpp
-    src/kernel/linux/dev/shadowdevice.cpp
-    src/kernel/linux/dev/tty.cpp
-    src/kernel/linux/fs/directory.cpp
-    src/kernel/linux/fs/epoll.cpp
-    src/kernel/linux/fs/event.cpp
-    src/kernel/linux/fs/file.cpp
-    src/kernel/linux/fs/fs.cpp
-    src/kernel/linux/fs/hostdirectory.cpp
-    src/kernel/linux/fs/hostfile.cpp
-    src/kernel/linux/fs/hostsymlink.cpp
-    src/kernel/linux/fs/localsocket.cpp
-    src/kernel/linux/fs/openfiledescription.cpp
-    src/kernel/linux/fs/path.cpp
-    src/kernel/linux/fs/pipe.cpp
-    src/kernel/linux/fs/procfs.cpp
-    src/kernel/linux/fs/shadowdirectory.cpp
-    src/kernel/linux/fs/shadowfile.cpp
-    src/kernel/linux/fs/shadowsymlink.cpp
-    src/kernel/linux/fs/socket.cpp
-    src/kernel/linux/fs/symlink.cpp
-    src/kernel/linux/sys/execve.cpp
-    src/kernel/linux/shm/sharedmemory.cpp
-    src/kernel/linux/shm/sharedmemorysegment.cpp
-    src/kernel/linux/auxiliaryvector.cpp
-    src/kernel/linux/kernel.cpp
-    src/kernel/linux/syscalls.cpp
-    src/kernel/linux/scheduler.cpp
-    src/kernel/linux/thread.cpp
-    src/kernel/linux/threadblocker.cpp
-    src/kernel/timers.cpp
-)
-target_compile_options(x64emulator PRIVATE ${COMPILE_OPTIONS})
-target_include_directories(x64emulator PUBLIC
-    include
-    ${CMAKE_SOURCE_DIR}/profiling/include
-)
-target_link_directories(x64emulator PRIVATE ${capstone_BINARY_DIR})
-target_link_libraries(x64emulator PUBLIC
-    x64cpu
-    x64jit
-    profiling
-    fmt::fmt-header-only
-)
-target_compile_definitions(x64cpu PRIVATE ${COMPILE_DEFINITIONS})
+if(NOT ${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
+    add_library(x64emulator ${LIB_KIND}
+        src/emulator/emulator.cpp
+        src/emulator/symbolprovider.cpp
+        src/emulator/vm.cpp
+        src/emulator/vmthread.cpp
+        src/host/host.cpp
+        src/kernel/linux/dev/hostdevice.cpp
+        src/kernel/linux/dev/nulldevice.cpp
+        src/kernel/linux/dev/shadowdevice.cpp
+        src/kernel/linux/dev/tty.cpp
+        src/kernel/linux/fs/directory.cpp
+        src/kernel/linux/fs/epoll.cpp
+        src/kernel/linux/fs/event.cpp
+        src/kernel/linux/fs/file.cpp
+        src/kernel/linux/fs/fs.cpp
+        src/kernel/linux/fs/hostdirectory.cpp
+        src/kernel/linux/fs/hostfile.cpp
+        src/kernel/linux/fs/hostsymlink.cpp
+        src/kernel/linux/fs/localsocket.cpp
+        src/kernel/linux/fs/openfiledescription.cpp
+        src/kernel/linux/fs/path.cpp
+        src/kernel/linux/fs/pipe.cpp
+        src/kernel/linux/fs/procfs.cpp
+        src/kernel/linux/fs/shadowdirectory.cpp
+        src/kernel/linux/fs/shadowfile.cpp
+        src/kernel/linux/fs/shadowsymlink.cpp
+        src/kernel/linux/fs/socket.cpp
+        src/kernel/linux/fs/symlink.cpp
+        src/kernel/linux/sys/execve.cpp
+        src/kernel/linux/shm/sharedmemory.cpp
+        src/kernel/linux/shm/sharedmemorysegment.cpp
+        src/kernel/linux/auxiliaryvector.cpp
+        src/kernel/linux/kernel.cpp
+        src/kernel/linux/syscalls.cpp
+        src/kernel/linux/scheduler.cpp
+        src/kernel/linux/thread.cpp
+        src/kernel/linux/threadblocker.cpp
+        src/kernel/timers.cpp
+    )
+    target_compile_options(x64emulator PRIVATE ${COMPILE_OPTIONS})
+    target_include_directories(x64emulator PUBLIC
+        include
+        ${CMAKE_SOURCE_DIR}/profiling/include
+    )
+    target_link_directories(x64emulator PRIVATE ${capstone_BINARY_DIR})
+    target_link_libraries(x64emulator PUBLIC
+        x64cpu
+        x64jit
+        profiling
+        fmt::fmt-header-only
+    )
+    target_compile_definitions(x64cpu PRIVATE ${COMPILE_DEFINITIONS})
 
-# target_compile_options(x64emulator PRIVATE -fsanitize=address,undefined -fno-sanitize-recover=all)
-# target_link_libraries(x64emulator PRIVATE asan ubsan)
+    # target_compile_options(x64emulator PRIVATE -fsanitize=address,undefined -fno-sanitize-recover=all)
+    # target_link_libraries(x64emulator PRIVATE asan ubsan)
 
-# IF(CMAKE_BUILD_TYPE MATCHES Debug)
-#     set_target_properties(x64emulator PROPERTIES CXX_CLANG_TIDY
-#         clang-tidy-18;
-#         --use-color;
-#         -header-filter=${CMAKE_CURRENT_SOURCE_DIR}/include
-#     )
-# ENDIF(CMAKE_BUILD_TYPE MATCHES Debug)
+    # IF(CMAKE_BUILD_TYPE MATCHES Debug)
+    #     set_target_properties(x64emulator PROPERTIES CXX_CLANG_TIDY
+    #         clang-tidy-18;
+    #         --use-color;
+    #         -header-filter=${CMAKE_CURRENT_SOURCE_DIR}/include
+    #     )
+    # ENDIF(CMAKE_BUILD_TYPE MATCHES Debug)
 
-add_executable(emulator
-    src/main.cpp
-)
-target_compile_options(emulator PRIVATE ${COMPILE_OPTIONS})
-target_include_directories(emulator PRIVATE include)
-target_link_libraries(emulator PUBLIC
-    x64emulator
-    fmt::fmt-header-only
-    argparse
-)
+    add_executable(emulator
+        src/main.cpp
+    )
+    target_compile_options(emulator PRIVATE ${COMPILE_OPTIONS})
+    target_include_directories(emulator PRIVATE include)
+    target_link_libraries(emulator PUBLIC
+        x64emulator
+        fmt::fmt-header-only
+        argparse
+    )
+endif()
 
 # target_compile_options(emulator PRIVATE -fsanitize=address,undefined -fno-sanitize-recover=all)
 # target_link_libraries(emulator PRIVATE asan ubsan)
-target_compile_definitions(x64cpu PRIVATE ${COMPILE_DEFINITIONS})
 
 if(MULTIPROCESSING)
     target_link_libraries(emulator PRIVATE pthread)

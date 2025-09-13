@@ -14,7 +14,7 @@ namespace x64 {
         std::string mnemonic(insn.text, insn.text+len);
         std::array<char, 16> name;
         auto mnmemonic_end = std::min(mnemonic.end(), mnemonic.begin()+16);
-        auto* it = std::copy(mnemonic.begin(), mnmemonic_end, name.begin());
+        auto it = std::copy(mnemonic.begin(), mnmemonic_end, name.begin());
         if(it != name.end()) {
             *it++ = ' ';
         }
