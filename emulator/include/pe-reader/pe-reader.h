@@ -22,7 +22,9 @@ namespace pe {
     private:
         static bool tryCreateDosHeader(const std::vector<char>& bytebuffer, DosHeader* dosHeader);
         static bool tryCreateDosStub(const std::vector<char>& bytebuffer, const DosHeader& dosHeader, DosStub* dosStub);
-        static bool tryCreateImageNtHeaders(const std::vector<char>& bytes, const DosHeader& dosHeader, std::optional<ImageNtHeaders32>* ntHeaders32, std::optional<ImageNtHeaders64>* ntHeaders64);
+        static bool tryCreateImageNtHeaders(const std::vector<char>& bytes, const DosHeader& dosHeader,
+                std::optional<ImageNtHeaders32>* ntHeaders32, std::optional<ImageNtHeaders64>* ntHeaders64,
+                std::vector<SectionHeader>* sectionHeaders);
     };
 
 
@@ -54,17 +56,19 @@ namespace pe {
 
         std::optional<ImageNtHeaders32> ntHeaders32;
         std::optional<ImageNtHeaders64> ntHeaders64;
-        success = tryCreateImageNtHeaders(bytes, dosHeader, &ntHeaders32, &ntHeaders64);
+        std::vector<SectionHeader> sectionHeaders;
+        success = tryCreateImageNtHeaders(bytes, dosHeader, &ntHeaders32, &ntHeaders64, &sectionHeaders);
         if (!success) {
-            fmt::print(stderr, "Invalid nt header\n");
+            fmt::print(stderr, "Invalid nt or section header\n");
             return {};
         }
 
         auto pe = std::make_unique<PE>();
         pe->dosHeader_ = std::move(dosHeader);
         pe->dosStub_= std::move(dosStub);
-        pe->imageNtHeaders32 = std::move(ntHeaders32);
-        pe->imageNtHeaders64 = std::move(ntHeaders64);
+        pe->imageNtHeaders32_ = std::move(ntHeaders32);
+        pe->imageNtHeaders64_ = std::move(ntHeaders64);
+        pe->sectionHeaders_ = std::move(sectionHeaders);
 
         return pe;
     }
@@ -88,9 +92,12 @@ namespace pe {
         return true;
     }
 
-    inline bool PEReader::tryCreateImageNtHeaders(const std::vector<char>& bytes, const DosHeader& dosHeader, std::optional<ImageNtHeaders32>* ntHeaders32, std::optional<ImageNtHeaders64>* ntHeaders64) {
+    inline bool PEReader::tryCreateImageNtHeaders(const std::vector<char>& bytes, const DosHeader& dosHeader,
+                std::optional<ImageNtHeaders32>* ntHeaders32, std::optional<ImageNtHeaders64>* ntHeaders64,
+                std::vector<SectionHeader>* sectionHeaders) {
         if (!ntHeaders32) return false;
         if (!ntHeaders64) return false;
+        if (!sectionHeaders) return false;
         u64 ntHeaderStart = dosHeader.e_lfanew;
         if (bytes.size() < ntHeaderStart) return false;
         const char* data = bytes.data() + ntHeaderStart;
@@ -136,6 +143,13 @@ namespace pe {
         if (std::distance(data, dataEnd) < sizeof(dataDirectory)) return false;
         ::memcpy(&dataDirectory, data, sizeof(dataDirectory));
         data += sizeof(dataDirectory);
+
+        sectionHeaders->resize(fileHeader.numberOfSections);
+        for (size_t i = 0; i < fileHeader.numberOfSections; ++i) {
+            if (std::distance(data, dataEnd) < sizeof(SectionHeader)) return false;
+            ::memcpy(&sectionHeaders->at(i), data, sizeof(SectionHeader));
+            data += sizeof(SectionHeader);
+        }
 
         if (!!content32) {
             *ntHeaders32 = ImageNtHeaders32{
