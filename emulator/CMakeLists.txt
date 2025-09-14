@@ -15,6 +15,20 @@ endif()
 target_include_directories(elf-reader PRIVATE include)
 target_link_libraries(elf-reader PRIVATE fmt::fmt-header-only)
 
+add_executable(pe-reader
+    src/pe-reader/main.cpp
+)
+if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
+    target_compile_options(pe-reader PRIVATE -Wall -Wextra -Wpedantic -pedantic -Wconversion -Werror)
+    target_compile_options(pe-reader PRIVATE -Wno-maybe-uninitialized -Wno-stringop-overflow)
+elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
+    target_compile_options(pe-reader PRIVATE -Wall -Wextra -Wpedantic -pedantic -Wconversion -Werror)
+    target_compile_options(pe-reader PRIVATE -Wno-uninitialized)
+endif()
+target_include_directories(pe-reader PRIVATE include)
+target_link_libraries(pe-reader PRIVATE fmt::fmt-header-only)
+target_compile_definitions(pe-reader PRIVATE ${COMPILE_DEFINITIONS})
+
 if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
     set(COMPILE_OPTIONS
         -Wall -Wextra -Wpedantic -pedantic -Wconversion -Werror -Wimplicit-fallthrough
