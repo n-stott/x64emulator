@@ -1,0 +1,114 @@
+#include "pe-reader/pe-reader.h"
+#include <vector>
+#include <fmt/core.h>
+
+int main(int argc, const char* argv[]) {
+    if (argc != 2) return 1;
+    std::string filename = argv[1];
+
+    //std::string filename = "C:/Users/nikol/source/repos/n-stott/x64emulator/out/build/x64-Release/tests/emulator/test_debug_dynamic_nopie_add.exe";
+
+    auto pe = pe::PEReader::tryCreate(filename);
+    if (!pe) {
+        fmt::print(stderr, "Unable to read PE\n");
+        return 1;
+    }
+
+    pe->print();
+
+    /*
+    if (elf->archClass() == elf::Class::B32) {
+        elf::Elf32* elf32 = dynamic_cast<elf::Elf32*>(elf.get());
+        assert(!!elf32);
+        auto symbolTable = elf32->dynamicSymbolTable();
+        (void)symbolTable;
+        auto stringTable = elf32->stringTable();
+        (void)stringTable;
+        auto dynamicStringTable = elf32->dynamicStringTable();
+
+        elf32->forAllRelocations([&](const elf::RelocationEntry32& relocation) {
+            std::string_view symbol = relocation.symbol(*elf32)->symbol(&dynamicStringTable.value(), *elf32);
+            fmt::print("Relocation offset={:#x} type={:#x} symbol={}\n", relocation.offset(), (u8)relocation.type(), symbol);
+            });
+
+        elf32->forAllRelocationsA([&](const elf::RelocationEntry32A& relocation) {
+            std::string_view symbol = relocation.symbol(*elf32)->symbol(&dynamicStringTable.value(), *elf32);
+            fmt::print("Relocation offset={:#x} type={:#x} symbol={} addend={}\n", relocation.offset(), (u8)relocation.type(), symbol, relocation.r_addend);
+            });
+
+        elf32->forAllSymbols([&](const elf::StringTable* stringTable, const elf::SymbolTableEntry32& entry) {
+            fmt::print("Static  symbol={:30} offset={}\n", entry.symbol(stringTable, *elf32), entry.st_name);
+            });
+
+        elf32->forAllDynamicSymbols([&](const elf::StringTable* dynamicStringTable, const elf::SymbolTableEntry32& entry) {
+            fmt::print("Dynamic symbol={:30} offset={}\n", entry.symbol(dynamicStringTable, *elf32), entry.st_name);
+            });
+    }
+
+    if (elf->archClass() == elf::Class::B64) {
+        elf::Elf64* elf64 = dynamic_cast<elf::Elf64*>(elf.get());
+        assert(!!elf64);
+        auto symbolTable = elf64->dynamicSymbolTable();
+        (void)symbolTable;
+        auto stringTable = elf64->stringTable();
+        (void)stringTable;
+        auto dynamicStringTable = elf64->dynamicStringTable();
+
+        elf64->forAllRelocations([&](const elf::RelocationEntry64& relocation) {
+            std::string_view symbol = relocation.symbol(*elf64)->symbol(&stringTable.value(), *elf64);
+            fmt::print("Relocation offset={:#x} type={:#x} symbol={}\n", relocation.offset(), (u8)relocation.type(), symbol);
+            });
+
+        elf64->forAllRelocationsA([&](const elf::RelocationEntry64A& relocation) {
+            std::string_view symbol = relocation.symbol(*elf64)->symbol(&dynamicStringTable.value(), *elf64);
+            fmt::print("Relocation offset={:#x} type={:#x} symbol={} addend={}\n", relocation.offset(), (u8)relocation.type(), symbol, relocation.r_addend);
+            });
+
+        elf64->forAllSymbols([&](const elf::StringTable* stringTable, const elf::SymbolTableEntry64& entry) {
+            fmt::print("Static  symbol={:30} offset={}\n", entry.symbol(stringTable, *elf64), entry.st_name);
+            });
+
+        elf64->forAllDynamicSymbols([&](const elf::StringTable* dynamicStringTable, const elf::SymbolTableEntry64& entry) {
+            fmt::print("Dynamic symbol={:30} offset={}\n", entry.symbol(dynamicStringTable, *elf64), entry.st_name);
+            });
+
+        auto versions = elf64->symbolVersions();
+        if (!!versions) {
+            int v = 0;
+            versions->forAll([&](u16 version) {
+                fmt::print("{} : {:#x}\n", v, version);
+                ++v;
+                });
+        }
+
+        auto versionDefinitions = elf64->symbolVersionDefinitions();
+        if (!!versionDefinitions && !!dynamicStringTable) {
+            versionDefinitions->forAllDefinitions([&](const elf::Elf64Verdef& def, u32 count, const elf::Elf64Verdaux* aux) {
+                fmt::print("Symbol version={}, count={}, aux entry={}, aux count={}\n", def.vd_version, def.vd_cnt, def.vd_aux / sizeof(elf::Elf64Verdaux), count);
+                for (u32 i = 0; i < count; ++i) {
+                    const elf::Elf64Verdaux& entry = aux[i];
+                    assert(entry.vda_next == sizeof(elf::Elf64Verdaux) || entry.vda_next == 0);
+                    std::string_view name = dynamicStringTable->operator[](entry.vda_name);
+                    fmt::print("  name={}\n", name);
+                }
+                (void)aux;
+                });
+        }
+
+        auto versionRequirements = elf64->symbolVersionRequirements();
+        if (!!versionRequirements && !!dynamicStringTable) {
+            versionRequirements->forAllRequirements([&](const elf::Elf64Verneed& need, u32 count, const elf::Elf64Vernaux* aux) {
+                auto file = dynamicStringTable->operator[](need.vn_file);
+                fmt::print("Symbol version={}, count={}, file={}, aux entry={}, aux count={}\n", need.vn_version, need.vn_cnt, file, need.vn_aux / sizeof(elf::Elf64Vernaux), count);
+                for (u32 i = 0; i < count; ++i) {
+                    const elf::Elf64Vernaux& entry = aux[i];
+                    assert(entry.vna_next == sizeof(elf::Elf64Vernaux) || entry.vna_next == 0);
+                    std::string_view name = dynamicStringTable->operator[](entry.vna_name);
+                    fmt::print("  hash={:#x} flags={:#x} other={:#x} name={}\n", entry.vna_hash, entry.vna_flags, entry.vna_other, name);
+                }
+                (void)aux;
+                });
+        }
+    }
+    */
+}
