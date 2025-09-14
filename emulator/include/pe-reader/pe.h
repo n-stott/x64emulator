@@ -2,6 +2,7 @@
 #define ELF_H
 
 #include "pe-reader/pe-enums.h"
+#include <algorithm>
 #include <array>
 #include <cassert>
 #include <cstddef>
@@ -10,6 +11,17 @@
 #include <string_view>
 #include <type_traits>
 #include <vector>
+
+#ifdef GCC_COMPILER
+#define PACK_BEGIN __attribute__((__packed__))
+#define PACK_END 
+#endif
+
+#ifdef MSVC_COMPILER
+#define PACK_BEGIN __pragma( pack(push, 1) )
+#define PACK_END __pragma( pack(pop))
+#endif
+
 
 namespace pe {
 
@@ -49,13 +61,16 @@ namespace pe {
         u16 sizeOfOptionalHeader;
         u16 characteristics;
     };
+    static_assert(sizeof(ImageFileHeader) == 20);
 
     struct ImageOptionalHeaderInfo {
         u16 magic;
         u8  majorLinkerVersion;
         u8  minorLinkerVersion;
     };
+    static_assert(sizeof(ImageOptionalHeaderInfo) == 4);
 
+    PACK_BEGIN
     struct ImageOptionalHeader32Content {
         u32 sizeOfCode;
         u32 sizeOfInitializedData;
@@ -85,7 +100,10 @@ namespace pe {
         u32 loaderFlags;
         u32 numberOfRvaAndSizes;
     };
+    PACK_END
+    static_assert(sizeof(ImageOptionalHeader32Content) == 92);
 
+    PACK_BEGIN
     struct ImageOptionalHeader64Content {
         u32 sizeOfCode;
         u32 sizeOfInitializedData;
@@ -114,11 +132,14 @@ namespace pe {
         u32 loaderFlags;
         u32 numberOfRvaAndSizes;
     };
+    PACK_END
+    static_assert(sizeof(ImageOptionalHeader64Content) == 108);
 
     struct ImageDataDirectory {
         u32 virtualAddress;
         u32 size;
     };
+    static_assert(sizeof(ImageDataDirectory) == 8);
 
     static constexpr size_t ImageNumberOfDirectoryEntries = 16;
 
@@ -146,27 +167,103 @@ namespace pe {
         ImageOptionalHeader64 optionalHeader;
     };
 
+    static constexpr size_t ImageSizeOfShortName = 8;
+
+    struct SectionHeader {
+        std::array<char, ImageSizeOfShortName> name;
+        union {
+            u32 physicalAddress;
+            u32 virtualSize;
+        } misc;
+        u32 virtualAddress;
+        u32 sizeOfRawData;
+        u32 pointerToRawData;
+        u32 pointerToRelocations;
+        u32 pointerToLinenumbers;
+        u16 numberOfRelocations;
+        u16 numberOfLinenumbers;
+        u32 characteristics;
+
+        std::string nameAsString() const;
+
+
+        bool canBeShared() const;
+        bool canBeExecuted() const;
+        bool canBeRead() const;
+        bool canBeWritten() const;
+    };
+
     class PE {
     public:
-        void print() {
-            if (!!imageNtHeaders32) {
-                fmt::println("32bit PE executable");
-            }
-            if (!!imageNtHeaders64) {
-                fmt::println("64bit PE executable");
-            }
-        }
+        void print();
 
     private:
         friend class PEReader;
 
         DosHeader dosHeader_;
         DosStub dosStub_;
-        std::optional<ImageNtHeaders32> imageNtHeaders32;
-        std::optional<ImageNtHeaders64> imageNtHeaders64;
+        std::optional<ImageNtHeaders32> imageNtHeaders32_;
+        std::optional<ImageNtHeaders64> imageNtHeaders64_;
+        std::vector<SectionHeader> sectionHeaders_;
     };
 
 
+    inline std::string SectionHeader::nameAsString() const {
+        auto it = std::find(name.begin(), name.end(), '\0');
+        if (it != name.end()) {
+            return std::string(name.begin(), it);
+        } else {
+            return std::string(name.begin(), name.end());
+        }
+    }
+
+    inline bool SectionHeader::canBeShared() const {
+        return characteristics & (u32)SectionCharacteristics::MEM_SHARED;
+    }
+
+    inline bool SectionHeader::canBeExecuted() const {
+        return characteristics & (u32)SectionCharacteristics::MEM_EXECUTE;
+    }
+
+    inline bool SectionHeader::canBeRead() const {
+        return characteristics & (u32)SectionCharacteristics::MEM_READ;
+    }
+
+    inline bool SectionHeader::canBeWritten() const {
+        return characteristics & (u32)SectionCharacteristics::MEM_WRITE;
+    }
+
+    inline void PE::print() {
+        if (!!imageNtHeaders32_) {
+            fmt::println("32bit PE executable");
+            fmt::println("Data directories:");
+            for (size_t i = 0; i < ImageNumberOfDirectoryEntries; ++i) {
+                const auto& dd = imageNtHeaders32_->optionalHeader.dataDirectory[i];
+                if (dd.virtualAddress == 0 && dd.size == 0) continue;
+                fmt::println("  {:16} addr={:#8x}  size={:#8x}", directoryEntryName((ImageDirectoryEntry)i), dd.virtualAddress, dd.size);
+            }
+        }
+        if (!!imageNtHeaders64_) {
+            fmt::println("64bit PE executable");
+            fmt::println("Data directories:");
+            for (size_t i = 0; i < ImageNumberOfDirectoryEntries; ++i) {
+                const auto& dd = imageNtHeaders64_->optionalHeader.dataDirectory[i];
+                if (dd.virtualAddress == 0 && dd.size == 0) continue;
+                fmt::println("  {:16} addr={:#8x}  size={:#8x}", directoryEntryName((ImageDirectoryEntry)i), dd.virtualAddress, dd.size);
+            }
+        }
+        fmt::println("{} section headers", sectionHeaders_.size());
+        for (const auto& sh : sectionHeaders_) {
+            fmt::println("  {:8} : {:#8x}-{:#8x} {}{}{}",
+                    sh.nameAsString(),
+                    sh.virtualAddress,
+                    sh.virtualAddress + sh.misc.virtualSize,
+                    sh.canBeRead() ? "R" : "",
+                    sh.canBeWritten() ? "W" : "",
+                    sh.canBeExecuted() ? "X" : "",
+                    sh.canBeShared() ? "S" : "");
+        }
+    }
 }
 
 #endif

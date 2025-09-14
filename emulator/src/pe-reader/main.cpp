@@ -3,10 +3,11 @@
 #include <fmt/core.h>
 
 int main(int argc, const char* argv[]) {
+#if 0
     if (argc != 2) return 1;
     std::string filename = argv[1];
-
-    //std::string filename = "C:/Users/nikol/source/repos/n-stott/x64emulator/out/build/x64-Release/tests/emulator/test_debug_dynamic_nopie_add.exe";
+#endif
+    std::string filename = "C:/Users/nikol/source/repos/n-stott/x64emulator/out/build/x64-Release/tests/emulator/test_debug_dynamic_nopie_add.exe";
 
     auto pe = pe::PEReader::tryCreate(filename);
     if (!pe) {
