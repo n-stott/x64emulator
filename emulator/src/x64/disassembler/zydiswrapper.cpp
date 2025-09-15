@@ -1850,7 +1850,7 @@ namespace x64 {
     }
 
     template<FCond cond>
-    X64Instruction makeCmpsd(const ZydisDisassembledInstruction& insn);
+    static X64Instruction makeCmpsd(const ZydisDisassembledInstruction& insn);
 
     static X64Instruction makeCmps(const ZydisDisassembledInstruction& insn) {
         if(insn.info.operand_count_visible == 0) {
@@ -2074,6 +2074,21 @@ namespace x64 {
         const auto& src = insn.operands[0];
         auto stsrc = asST(src);
         if(stsrc) return X64Instruction::make<Insn::FXCH_ST>(insn.runtime_address, insn.info.length, stsrc.value());
+        return make_failed(insn);
+    }
+
+    static X64Instruction makeFadd(const ZydisDisassembledInstruction& insn) {
+        if(insn.info.operand_count_visible == 1) {
+            const auto& src = insn.operands[0];
+            auto m32src = asMemory32(src);
+            auto m64src = asMemory64(src);
+            if(m32src) {
+                return X64Instruction::make<Insn::FADD_M32>(insn.runtime_address, insn.info.length, m32src.value());
+            }
+            if(m64src) {
+                return X64Instruction::make<Insn::FADD_M64>(insn.runtime_address, insn.info.length, m64src.value());
+            }
+        }
         return make_failed(insn);
     }
 
@@ -4337,6 +4352,7 @@ namespace x64 {
             case ZYDIS_MNEMONIC_FSTP: return makeFstp(insn);
             case ZYDIS_MNEMONIC_FISTP: return makeFistp(insn);
             case ZYDIS_MNEMONIC_FXCH: return makeFxch(insn);
+            case ZYDIS_MNEMONIC_FADD: return makeFadd(insn);
             case ZYDIS_MNEMONIC_FADDP: return makeFaddp(insn);
             case ZYDIS_MNEMONIC_FSUBP: return makeFsubp(insn);
             case ZYDIS_MNEMONIC_FSUBRP: return makeFsubrp(insn);

@@ -605,6 +605,8 @@ namespace x64 {
     DEFINE_STANDALONE(FISTP_M32, execFistpM32)
     DEFINE_STANDALONE(FISTP_M64, execFistpM64)
     DEFINE_STANDALONE(FXCH_ST, execFxchST)
+    DEFINE_STANDALONE(FADD_M32, execFaddM32)
+    DEFINE_STANDALONE(FADD_M64, execFaddM64)
     DEFINE_STANDALONE(FADDP_ST, execFaddpST)
     DEFINE_STANDALONE(FSUBP_ST, execFsubpST)
     DEFINE_STANDALONE(FSUBRP_ST, execFsubrpST)
@@ -1321,6 +1323,8 @@ namespace x64 {
         STANDALONE_NAME(FISTP_M32),
         STANDALONE_NAME(FISTP_M64),
         STANDALONE_NAME(FXCH_ST),
+        STANDALONE_NAME(FADD_M32),
+        STANDALONE_NAME(FADD_M64),
         STANDALONE_NAME(FADDP_ST),
         STANDALONE_NAME(FSUBP_ST),
         STANDALONE_NAME(FSUBRP_ST),
@@ -3606,15 +3610,16 @@ namespace x64 {
         assert(ins.lock());
         const auto& dst = ins.op0<M128>();
         auto ptr = resolve(dst);
-        mmu_->withExclusiveRegion(ptr, [&](u128 oldVvalue) -> u128 {
+        mmu_->withExclusiveRegion(ptr, [&](u128 oldValue) -> u128 {
             u128 regs { get(R64::RAX), get(R64::RDX) };
-            if(oldVvalue == regs) {
+            if(oldValue == regs) {
                 flags_.zero = true;
                 return u128 { get(R64::RBX), get(R64::RCX) };
             } else {
                 flags_.zero = false;
-                set(R64::RAX, oldVvalue.lo);
-                set(R64::RDX, oldVvalue.hi);
+                set(R64::RAX, oldValue.lo);
+                set(R64::RDX, oldValue.hi);
+                return oldValue;
             }
         });
     }
@@ -4262,6 +4267,20 @@ namespace x64 {
         f80 dstValue = x87fpu_.st(ST::ST0);
         x87fpu_.set(src, dstValue);
         x87fpu_.set(ST::ST0, srcValue);
+    }
+
+    void Cpu::execFaddM32(const X64Instruction& ins) {
+        const auto& src = ins.op0<M32>();
+        f80 topValue = x87fpu_.st(ST::ST0);
+        f80 srcValue = F80::bitcastFromU32(get(resolve(src)));
+        x87fpu_.set(ST::ST0, Impl::fadd(topValue, srcValue, &x87fpu_)); // NOLINT(readability-suspicious-call-argument)
+    }
+
+    void Cpu::execFaddM64(const X64Instruction& ins) {
+        const auto& src = ins.op0<M32>();
+        f80 topValue = x87fpu_.st(ST::ST0);
+        f80 srcValue = F80::bitcastFromU64(get(resolve(src)));
+        x87fpu_.set(ST::ST0, Impl::fadd(topValue, srcValue, &x87fpu_)); // NOLINT(readability-suspicious-call-argument)
     }
 
     void Cpu::execFaddpST(const X64Instruction& ins) {

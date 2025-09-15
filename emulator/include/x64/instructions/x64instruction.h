@@ -417,6 +417,8 @@ namespace x64 {
         FISTP_M32,
         FISTP_M64,
         FXCH_ST,
+        FADD_M32,
+        FADD_M64,
         FADDP_ST,
         FSUBP_ST,
         FSUBRP_ST,

@@ -2826,11 +2826,11 @@ namespace x64 {
         static_assert(sizeof(RES) == sizeof(dst));
         ::memcpy(&DST, &dst, sizeof(dst));
         ::memcpy(&SRC, &src, sizeof(src));
-        for(int i = 0; i < 2; ++i) {
-            RES[i] = DST[2*i+0] + DST[2*i+1];
+        for(size_t i = 0; i < 2; ++i) {
+            RES[i] = (i16)(DST[2*i+0] + DST[2*i+1]);
         }
-        for(int i = 0; i < 2; ++i) {
-            RES[2+i] = SRC[2*i+0] + SRC[2*i+1];
+        for(size_t i = 0; i < 2; ++i) {
+            RES[2+i] = (i16)(SRC[2*i+0] + SRC[2*i+1]);
         }
         ::memcpy(&dst, &RES, sizeof(dst));
         return dst;
@@ -2845,11 +2845,11 @@ namespace x64 {
         static_assert(sizeof(RES) == sizeof(dst));
         ::memcpy(&DST, &dst, sizeof(dst));
         ::memcpy(&SRC, &src, sizeof(src));
-        for(int i = 0; i < 4; ++i) {
-            RES[i] = DST[2*i+0] + DST[2*i+1];
+        for(size_t i = 0; i < 4; ++i) {
+            RES[i] = (i16)(DST[2*i+0] + DST[2*i+1]);
         }
-        for(int i = 0; i < 4; ++i) {
-            RES[4+i] = SRC[2*i+0] + SRC[2*i+1];
+        for(size_t i = 0; i < 4; ++i) {
+            RES[4+i] = (i16)(SRC[2*i+0] + SRC[2*i+1]);
         }
         ::memcpy(&dst, &RES, sizeof(dst));
         return dst;
@@ -2903,7 +2903,7 @@ namespace x64 {
         static_assert(sizeof(RES) == sizeof(dst));
         ::memcpy(&DST, &dst, sizeof(dst));
         ::memcpy(&SRC, &src, sizeof(src));
-        for(int i = 0; i < 4; ++i) {
+        for(size_t i = 0; i < 4; ++i) {
             i16 ld = (i16)(u16)(u8)DST[2*i+0];
             i16 ls = (i16)SRC[2*i+0];
             i16 l = (i16)(ld*ls);
@@ -2925,7 +2925,7 @@ namespace x64 {
         static_assert(sizeof(RES) == sizeof(dst));
         ::memcpy(&DST, &dst, sizeof(dst));
         ::memcpy(&SRC, &src, sizeof(src));
-        for(int i = 0; i < 8; ++i) {
+        for(size_t i = 0; i < 8; ++i) {
             i16 ld = (i16)(u16)(u8)DST[2*i+0];
             i16 ls = (i16)SRC[2*i+0];
             i16 l = (i16)(ld*ls);
@@ -2947,7 +2947,7 @@ namespace x64 {
         static_assert(sizeof(RES) == sizeof(dst));
         ::memcpy(&DST, &dst, sizeof(dst));
         ::memcpy(&SRC, &src, sizeof(src));
-        for(int i = 0; i < 4; ++i) {
+        for(size_t i = 0; i < 4; ++i) {
             i32 prod = ((i32)DST[i]) * ((i32)SRC[i]);
             prod >>= 14;
             prod += 1;
@@ -2967,7 +2967,7 @@ namespace x64 {
         static_assert(sizeof(RES) == sizeof(dst));
         ::memcpy(&DST, &dst, sizeof(dst));
         ::memcpy(&SRC, &src, sizeof(src));
-        for(int i = 0; i < 8; ++i) {
+        for(size_t i = 0; i < 8; ++i) {
             i32 prod = ((i32)DST[i]) * ((i32)SRC[i]);
             prod >>= 14;
             prod += 1;

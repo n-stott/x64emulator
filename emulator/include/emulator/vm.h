@@ -13,7 +13,7 @@
 #include <unordered_set>
 
 namespace x64 {
-    struct BasicBlock;
+    class BasicBlock;
     class Compiler;
     class Disassembler;
     class JitBasicBlock;
