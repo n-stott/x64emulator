@@ -266,7 +266,10 @@ namespace x64::ir {
         XORPD,
         SHUFPS,
         SHUFPD,
+        MOVDDUP,
         PALIGNR,
+        PHADDW,
+        PHADDD,
         PMADDUSBW,
         PMULHRSW,
     };

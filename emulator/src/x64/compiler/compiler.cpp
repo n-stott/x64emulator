@@ -649,8 +649,12 @@ namespace x64 {
             case Insn::SHUFPD_XMM_XMMM128_IMM: return tryCompileShufpdXmmXmmM128Imm(ins.op0<XMM>(), ins.op1<XMMM128>(), ins.op2<Imm>());
 
             case Insn::LDDQU_XMM_M128: return tryCompileLddquXmmM128(ins.op0<XMM>(), ins.op1<M128>());
+            case Insn::MOVDDUP_XMM_XMM: return tryCompileMovddupXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
+            case Insn::MOVDDUP_XMM_M64: return tryCompileMovddupXmmM64(ins.op0<XMM>(), ins.op1<M64>());
 
             case Insn::PALIGNR_XMM_XMMM128_IMM: return tryCompilePalignrXmmXmmM128Imm(ins.op0<XMM>(), ins.op1<XMMM128>(), ins.op2<Imm>());
+            case Insn::PHADDW_XMM_XMMM128: return tryCompilePhaddwXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PHADDD_XMM_XMMM128: return tryCompilePhadddXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
             case Insn::PMADDUBSW_XMM_XMMM128: return tryCompilePmaddubswXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
             case Insn::PMULHRSW_XMM_XMMM128: return tryCompilePmulhrswXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
 
@@ -4698,9 +4702,35 @@ namespace x64 {
         return tryCompileMovuXmmM128(dst, src);
     }
 
+    bool Compiler::tryCompileMovddupXmmXmm(XMM dst, XMM src) {
+        readReg128(Reg128::GPR0, dst);
+        readReg128(Reg128::GPR1, src);
+        generator_->movddup(get(Reg128::GPR0), get(Reg128::GPR1));
+        writeReg128(dst, Reg128::GPR0);
+        return true;
+    }
+
+    bool Compiler::tryCompileMovddupXmmM64(XMM dst, const M64& src) {
+        RM64 src2 { false, {}, src };
+        if(!tryCompileMovqXmmRM64(dst, src2)) return false;
+        return tryCompileMovddupXmmXmm(dst, dst);
+    }
+
     bool Compiler::tryCompilePalignrXmmXmmM128Imm(XMM dst, const XMMM128& src, Imm imm) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
             generator_->palignr(get(dst), get(src), imm.as<u8>());
+        });
+    }
+
+    bool Compiler::tryCompilePhaddwXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->phaddw(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePhadddXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->phaddd(get(dst), get(src));
         });
     }
 

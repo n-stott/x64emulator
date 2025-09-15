@@ -229,7 +229,10 @@ namespace x64::ir {
             case Op::XORPD: return "xorpd";
             case Op::SHUFPS: return "shufps";
             case Op::SHUFPD: return "shufpd";
+            case Op::MOVDDUP: return "movddup";
             case Op::PALIGNR: return "palignr";
+            case Op::PHADDW: return "phaddw";
+            case Op::PHADDD: return "phaddd";
             case Op::PMADDUSBW: return "pmaddubsw";
             case Op::PMULHRSW: return "pmulhrsw";
         }

@@ -433,7 +433,11 @@ namespace x64 {
         void shufps(XMM, XMM, u8);
         void shufpd(XMM, XMM, u8);
 
+        void movddup(XMM, XMM);
+
         void palignr(XMM, XMM, u8);
+        void phaddw(XMM, XMM);
+        void phaddd(XMM, XMM);
         void pmaddusbw(XMM, XMM);
         void pmulhrsw(XMM, XMM);
 

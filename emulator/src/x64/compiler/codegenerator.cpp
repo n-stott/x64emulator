@@ -2760,6 +2760,17 @@ namespace x64 {
                     }
                     break;
                 }
+                case ir::Op::MOVDDUP: {
+                    auto r128dst = ins.out().as<XMM>();
+                    auto r128src = ins.in1().as<XMM>();
+
+                    if(r128dst && r128src) {
+                        assembler_->movddup(r128dst.value(), r128src.value());
+                    } else {
+                        return fail();
+                    }
+                    break;
+                }
                 case ir::Op::PALIGNR: {
                     auto r128dst = ins.out().as<XMM>();
                     assert(r128dst == ins.in1().as<XMM>());
@@ -2768,6 +2779,30 @@ namespace x64 {
 
                     if(r128dst && r128src && imm8src) {
                         assembler_->palignr(r128dst.value(), r128src.value(), imm8src.value());
+                    } else {
+                        return fail();
+                    }
+                    break;
+                }
+                case ir::Op::PHADDW: {
+                    auto r128dst = ins.out().as<XMM>();
+                    assert(r128dst == ins.in1().as<XMM>());
+                    auto r128src = ins.in2().as<XMM>();
+
+                    if(r128dst && r128src) {
+                        assembler_->phaddw(r128dst.value(), r128src.value());
+                    } else {
+                        return fail();
+                    }
+                    break;
+                }
+                case ir::Op::PHADDD: {
+                    auto r128dst = ins.out().as<XMM>();
+                    assert(r128dst == ins.in1().as<XMM>());
+                    auto r128src = ins.in2().as<XMM>();
+
+                    if(r128dst && r128src) {
+                        assembler_->phaddd(r128dst.value(), r128src.value());
                     } else {
                         return fail();
                     }
