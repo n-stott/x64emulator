@@ -421,6 +421,11 @@ namespace x64::ir {
 
         void movddup(XMM, XMM);
 
+        void palignr(MMX, MMX, u8);
+        void phaddw(MMX, MMX);
+        void phaddd(MMX, MMX);
+        void pmaddubsw(MMX, MMX);
+
         void palignr(XMM, XMM, u8);
         void phaddw(XMM, XMM);
         void phaddd(XMM, XMM);

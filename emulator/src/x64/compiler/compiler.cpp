@@ -652,6 +652,11 @@ namespace x64 {
             case Insn::MOVDDUP_XMM_XMM: return tryCompileMovddupXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
             case Insn::MOVDDUP_XMM_M64: return tryCompileMovddupXmmM64(ins.op0<XMM>(), ins.op1<M64>());
 
+            case Insn::PALIGNR_MMX_MMXM64_IMM: return tryCompilePalignrMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>(), ins.op2<Imm>());
+            case Insn::PHADDW_MMX_MMXM64: return tryCompilePhaddwMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
+            case Insn::PHADDD_MMX_MMXM64: return tryCompilePhadddMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
+            case Insn::PMADDUBSW_MMX_MMXM64: return tryCompilePmaddubswMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
+
             case Insn::PALIGNR_XMM_XMMM128_IMM: return tryCompilePalignrXmmXmmM128Imm(ins.op0<XMM>(), ins.op1<XMMM128>(), ins.op2<Imm>());
             case Insn::PHADDW_XMM_XMMM128: return tryCompilePhaddwXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
             case Insn::PHADDD_XMM_XMMM128: return tryCompilePhadddXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
@@ -4714,6 +4719,30 @@ namespace x64 {
         RM64 src2 { false, {}, src };
         if(!tryCompileMovqXmmRM64(dst, src2)) return false;
         return tryCompileMovddupXmmXmm(dst, dst);
+    }
+
+    bool Compiler::tryCompilePalignrMmxMmxM64(MMX dst, const MMXM64& src, Imm imm) {
+        return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
+            generator_->palignr(get(dst), get(src), imm.as<u8>());
+        });
+    }
+
+    bool Compiler::tryCompilePhaddwMmxMmxM64(MMX dst, const MMXM64& src) {
+        return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
+            generator_->phaddw(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePhadddMmxMmxM64(MMX dst, const MMXM64& src) {
+        return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
+            generator_->phaddd(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePmaddubswMmxMmxM64(MMX dst, const MMXM64& src) {
+        return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
+            generator_->pmaddubsw(get(dst), get(src));
+        });
     }
 
     bool Compiler::tryCompilePalignrXmmXmmM128Imm(XMM dst, const XMMM128& src, Imm imm) {

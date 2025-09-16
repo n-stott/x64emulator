@@ -2772,12 +2772,17 @@ namespace x64 {
                     break;
                 }
                 case ir::Op::PALIGNR: {
+                    auto mmxdst = ins.out().as<MMX>();
+                    assert(mmxdst == ins.in1().as<MMX>());
+                    auto mmxsrc = ins.in2().as<MMX>();
                     auto r128dst = ins.out().as<XMM>();
                     assert(r128dst == ins.in1().as<XMM>());
                     auto r128src = ins.in2().as<XMM>();
                     auto imm8src = ins.in3().as<u8>();
 
-                    if(r128dst && r128src && imm8src) {
+                    if(mmxdst && mmxsrc && imm8src) {
+                        assembler_->palignr(mmxdst.value(), mmxsrc.value(), imm8src.value());
+                    } else if(r128dst && r128src && imm8src) {
                         assembler_->palignr(r128dst.value(), r128src.value(), imm8src.value());
                     } else {
                         return fail();
@@ -2785,11 +2790,16 @@ namespace x64 {
                     break;
                 }
                 case ir::Op::PHADDW: {
+                    auto mmxdst = ins.out().as<MMX>();
+                    assert(mmxdst == ins.in1().as<MMX>());
+                    auto mmxsrc = ins.in2().as<MMX>();
                     auto r128dst = ins.out().as<XMM>();
                     assert(r128dst == ins.in1().as<XMM>());
                     auto r128src = ins.in2().as<XMM>();
 
-                    if(r128dst && r128src) {
+                    if(mmxdst && mmxsrc) {
+                        assembler_->phaddw(mmxdst.value(), mmxsrc.value());
+                    } else if(r128dst && r128src) {
                         assembler_->phaddw(r128dst.value(), r128src.value());
                     } else {
                         return fail();
@@ -2797,11 +2807,16 @@ namespace x64 {
                     break;
                 }
                 case ir::Op::PHADDD: {
+                    auto mmxdst = ins.out().as<MMX>();
+                    assert(mmxdst == ins.in1().as<MMX>());
+                    auto mmxsrc = ins.in2().as<MMX>();
                     auto r128dst = ins.out().as<XMM>();
                     assert(r128dst == ins.in1().as<XMM>());
                     auto r128src = ins.in2().as<XMM>();
 
-                    if(r128dst && r128src) {
+                    if(mmxdst && mmxsrc) {
+                        assembler_->phaddd(mmxdst.value(), mmxsrc.value());
+                    } else if(r128dst && r128src) {
                         assembler_->phaddd(r128dst.value(), r128src.value());
                     } else {
                         return fail();
@@ -2809,11 +2824,16 @@ namespace x64 {
                     break;
                 }
                 case ir::Op::PMADDUSBW: {
+                    auto mmxdst = ins.out().as<MMX>();
+                    assert(mmxdst == ins.in1().as<MMX>());
+                    auto mmxsrc = ins.in2().as<MMX>();
                     auto r128dst = ins.out().as<XMM>();
                     assert(r128dst == ins.in1().as<XMM>());
                     auto r128src = ins.in2().as<XMM>();
 
-                    if(r128dst && r128src) {
+                    if(mmxdst && mmxsrc) {
+                        assembler_->pmaddusbw(mmxdst.value(), mmxsrc.value());
+                    } else if(r128dst && r128src) {
                         assembler_->pmaddusbw(r128dst.value(), r128src.value());
                     } else {
                         return fail();
