@@ -7,6 +7,7 @@
 #include "x64/mmu.h"
 #include "x64/registers.h"
 #include "host/hostmemory.h"
+#include "scopeguard.h"
 #include <algorithm>
 #include <numeric>
 #include <optional>
@@ -135,7 +136,6 @@ namespace emulator {
     }
 
     void VM::crash() {
-        hasCrashed_ = true;
         syncThread();
         if(!!currentThread_) {
             fmt::print("Crash in thread {} after {} instructions\n",
@@ -202,22 +202,12 @@ namespace emulator {
 
     extern bool signal_interrupt;
 
-    class Context {
-    public:
-        explicit Context(VM& vm, VMThread* thread) : vm_(&vm) {
-            vm_->contextSwitch(thread);
-        }
-
-        ~Context() {
-            vm_->contextSwitch(nullptr);
-        }
-    private:
-        VM* vm_;
-    };
-
     void VM::execute(VMThread* thread) {
         if(!thread) return;
-        Context context(*this, thread);
+        contextSwitch(thread);
+        ScopeGuard onExit([=]() {
+            contextSwitch(nullptr);
+        });
         ThreadTime& time = thread->time();
         BasicBlock* currentBasicBlock = nullptr;
         BasicBlock* nextBasicBlock = fetchBasicBlock();
@@ -554,10 +544,6 @@ namespace emulator {
         // We are not in the PLT either :'(
         // Let's just fail
         return fmt::format("Somewhere in {}", pos.section->filename);
-    }
-
-    void VM::push64(u64 value) {
-        cpu_.push64(value);
     }
 
     void VM::tryRetrieveSymbols(const std::vector<u64>& addresses, std::unordered_map<u64, std::string>* addressesToSymbols) const {

@@ -143,12 +143,8 @@ namespace emulator {
         CompilationQueue& compilationQueue() { return compilationQueue_; }
 
         void crash();
-        bool hasCrashed() const { return hasCrashed_; }
 
-        void contextSwitch(VMThread* newThread);
         void execute(VMThread* thread);
-
-        void push64(u64 value);
 
         void tryRetrieveSymbols(const std::vector<u64>& addresses, std::unordered_map<u64, std::string>* addressesToSymbols) const;
 
@@ -183,6 +179,7 @@ namespace emulator {
         void notifyCall(u64 address);
         void notifyRet();
 
+        void contextSwitch(VMThread* newThread);
         void syncThread();
         void enterSyscall();
 
@@ -208,7 +205,6 @@ namespace emulator {
         x64::Mmu& mmu_;
 
         mutable std::vector<std::unique_ptr<ExecutableSection>> executableSections_;
-        bool hasCrashed_ = false;
 
         VMThread* currentThread_ { nullptr };
 
