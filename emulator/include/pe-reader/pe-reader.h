@@ -22,7 +22,7 @@ namespace pe {
     private:
         static bool tryCreateDosHeader(const std::vector<char>& bytebuffer, DosHeader* dosHeader);
         static bool tryCreateDosStub(const std::vector<char>& bytebuffer, const DosHeader& dosHeader, DosStub* dosStub);
-        static bool tryCreateImageNtHeaders(const std::vector<char>& bytes, const DosHeader& dosHeader,
+        static bool tryCreateImageNtHeaders(const std::vector<char>& bytebuffer, const DosHeader& dosHeader,
                 std::optional<ImageNtHeaders32>* ntHeaders32, std::optional<ImageNtHeaders64>* ntHeaders64,
                 std::vector<SectionHeader>* sectionHeaders);
     };
@@ -69,6 +69,7 @@ namespace pe {
         pe->imageNtHeaders32_ = std::move(ntHeaders32);
         pe->imageNtHeaders64_ = std::move(ntHeaders64);
         pe->sectionHeaders_ = std::move(sectionHeaders);
+        pe->bytes_ = std::move(bytes);
 
         return pe;
     }

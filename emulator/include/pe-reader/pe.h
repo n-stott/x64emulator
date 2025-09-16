@@ -193,9 +193,42 @@ namespace pe {
         bool canBeWritten() const;
     };
 
+    struct ImageImportDescriptor {
+        union {
+            u32 characteristics;
+            u32 originalFirstThunk;
+        };
+        u32 timeDateStamp;
+        u32 forwarderChain;
+        u32 name;
+        u32 firstThunk;
+    };
+
     class PE {
     public:
+        const DosHeader& dosHeader() const { return dosHeader_; }
+        const DosStub& dosStub() const { return dosStub_; }
+        const std::optional<ImageNtHeaders32>& imageNtHeaders32() const { return imageNtHeaders32_; }
+        const std::optional<ImageNtHeaders64>& imageNtHeaders64() const { return imageNtHeaders64_; }
+        const std::vector<SectionHeader>& sectionHeaders() const { return sectionHeaders_; }
+
         void print();
+
+        struct RawDataSpan {
+            const u8* data { nullptr };
+            size_t size{ 0 };
+        };
+
+        std::optional<RawDataSpan> sectionSpan(const SectionHeader& section) {
+            u32 offset = section.pointerToRawData;
+            u32 size = section.sizeOfRawData;
+            if ((size_t)offset > bytes_.size()) return {};
+            if ((size_t)(offset + size) > bytes_.size()) return {};
+            return RawDataSpan{
+                reinterpret_cast<const u8*>(bytes_.data()) + offset,
+                size,
+            };
+        }
 
     private:
         friend class PEReader;
@@ -205,6 +238,8 @@ namespace pe {
         std::optional<ImageNtHeaders32> imageNtHeaders32_;
         std::optional<ImageNtHeaders64> imageNtHeaders64_;
         std::vector<SectionHeader> sectionHeaders_;
+        std::vector<ImageImportDescriptor> importDirectoryTable_;
+        std::vector<char> bytes_;
     };
 
 
@@ -234,7 +269,9 @@ namespace pe {
     }
 
     inline void PE::print() {
+        u64 sectionAlignment = 0;
         if (!!imageNtHeaders32_) {
+            sectionAlignment = imageNtHeaders32_->optionalHeader.content.sectionAlignment;
             fmt::println("32bit PE executable");
             fmt::println("Data directories:");
             for (size_t i = 0; i < ImageNumberOfDirectoryEntries; ++i) {
@@ -244,6 +281,7 @@ namespace pe {
             }
         }
         if (!!imageNtHeaders64_) {
+            sectionAlignment = imageNtHeaders64_->optionalHeader.content.sectionAlignment;
             fmt::println("64bit PE executable");
             fmt::println("Data directories:");
             for (size_t i = 0; i < ImageNumberOfDirectoryEntries; ++i) {
@@ -252,7 +290,7 @@ namespace pe {
                 fmt::println("  {:16} addr={:#8x}  size={:#8x}", directoryEntryName((ImageDirectoryEntry)i), dd.virtualAddress, dd.size);
             }
         }
-        fmt::println("{} section headers", sectionHeaders_.size());
+        fmt::println("{} section headers (section alignment={:#x})", sectionHeaders_.size(), sectionAlignment);
         for (const auto& sh : sectionHeaders_) {
             fmt::println("  {:8} : {:#8x}-{:#8x} {}{}{}",
                     sh.nameAsString(),

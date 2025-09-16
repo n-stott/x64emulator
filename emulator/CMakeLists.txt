@@ -228,3 +228,22 @@ endif()
 if(MULTIPROCESSING)
     target_link_libraries(emulator PRIVATE pthread)
 endif(MULTIPROCESSING)
+
+
+
+add_executable(pe-exec
+    src/pe-reader/pe-exec.cpp
+)
+if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
+    target_compile_options(pe-exec PRIVATE -Wall -Wextra -Wpedantic -pedantic -Wconversion -Werror)
+    target_compile_options(pe-exec PRIVATE -Wno-maybe-uninitialized -Wno-stringop-overflow)
+elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
+    target_compile_options(pe-exec PRIVATE -Wall -Wextra -Wpedantic -pedantic -Wconversion -Werror)
+    target_compile_options(pe-exec PRIVATE -Wno-uninitialized)
+endif()
+target_include_directories(pe-exec PRIVATE include)
+target_link_libraries(pe-exec PRIVATE
+    fmt::fmt-header-only
+    x64cpu
+    x64emulator
+)
