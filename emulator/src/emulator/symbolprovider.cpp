@@ -4,7 +4,9 @@
 #include <fmt/core.h>
 #include <algorithm>
 #include <cassert>
+#ifndef MSVC_COMPILER
 #include <boost/core/demangle.hpp>
+#endif
 
 namespace emulator {
 
@@ -32,7 +34,9 @@ namespace emulator {
         if(it != byAddress_.end()) {
             for(const auto& entry : it->second) {
                 if(!entry->demangledSymbol.empty()) continue;
+#ifndef MSVC_COMPILER
                 entry->demangledSymbol = boost::core::demangle(entry->symbol.c_str());
+#endif
                 entry->demangledSymbol = foldTemplateArguments(entry->demangledSymbol);
             }
             return it->second;

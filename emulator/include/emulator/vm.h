@@ -13,7 +13,7 @@
 #include <unordered_set>
 
 namespace x64 {
-    struct BasicBlock;
+    class BasicBlock;
     class Compiler;
     class Disassembler;
     class JitBasicBlock;
@@ -96,11 +96,19 @@ namespace emulator {
     };
 
     class BasicBlockTest {
+#ifndef MSVC_COMPILER
         static_assert(sizeof(BasicBlock::cpuBasicBlock_) == 0x20);
         static_assert(sizeof(BasicBlock::fixedDestinationInfo_) == 0x20);
         static_assert(sizeof(BasicBlock::variableDestinationInfo_) == 0x60);
 
         static_assert(offsetof(BasicBlock, jitBasicBlock_) == 0x20);
+#else
+        static_assert(sizeof(BasicBlock::cpuBasicBlock_) == 0x28);
+        static_assert(sizeof(BasicBlock::fixedDestinationInfo_) == 0x20);
+        static_assert(sizeof(BasicBlock::variableDestinationInfo_) == 0x80);
+
+        static_assert(offsetof(BasicBlock, jitBasicBlock_) == 0x28);
+#endif
     };
 
     class CompilationQueue {

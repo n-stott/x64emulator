@@ -125,15 +125,31 @@ target_link_libraries(x64jit PUBLIC
     Zydis
     Zycore
 )
-target_compile_definitions(x64cpu PRIVATE ${COMPILE_DEFINITIONS})
+target_compile_definitions(x64jit PRIVATE ${COMPILE_DEFINITIONS})
 
 
-if(NOT ${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
     add_library(x64emulator ${LIB_KIND}
-        src/emulator/emulator.cpp
         src/emulator/symbolprovider.cpp
         src/emulator/vm.cpp
         src/emulator/vmthread.cpp
+)
+target_compile_options(x64emulator PRIVATE ${COMPILE_OPTIONS})
+target_include_directories(x64emulator PUBLIC
+    include
+    ${CMAKE_SOURCE_DIR}/profiling/include
+)
+target_link_libraries(x64emulator PUBLIC
+    x64cpu
+    x64jit
+    profiling
+    fmt::fmt-header-only
+)
+target_compile_definitions(x64jit PRIVATE ${COMPILE_DEFINITIONS})
+
+
+if(NOT ${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
+    add_library(x64linuxkernel ${LIB_KIND}
+        src/emulator/emulator.cpp
         src/host/host.cpp
         src/kernel/linux/dev/hostdevice.cpp
         src/kernel/linux/dev/nulldevice.cpp
@@ -168,25 +184,26 @@ if(NOT ${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
         src/kernel/linux/threadblocker.cpp
         src/kernel/timers.cpp
     )
-    target_compile_options(x64emulator PRIVATE ${COMPILE_OPTIONS})
-    target_include_directories(x64emulator PUBLIC
+    target_compile_options(x64linuxkernel PRIVATE ${COMPILE_OPTIONS})
+    target_include_directories(x64linuxkernel PUBLIC
         include
         ${CMAKE_SOURCE_DIR}/profiling/include
     )
-    target_link_directories(x64emulator PRIVATE ${capstone_BINARY_DIR})
-    target_link_libraries(x64emulator PUBLIC
+    target_link_directories(x64linuxkernel PRIVATE ${capstone_BINARY_DIR})
+    target_link_libraries(x64linuxkernel PUBLIC
         x64cpu
         x64jit
+        x64emulator
         profiling
         fmt::fmt-header-only
     )
     target_compile_definitions(x64cpu PRIVATE ${COMPILE_DEFINITIONS})
 
-    # target_compile_options(x64emulator PRIVATE -fsanitize=address,undefined -fno-sanitize-recover=all)
-    # target_link_libraries(x64emulator PRIVATE asan ubsan)
+    # target_compile_options(x64linuxkernel PRIVATE -fsanitize=address,undefined -fno-sanitize-recover=all)
+    # target_link_libraries(x64linuxkernel PRIVATE asan ubsan)
 
     # IF(CMAKE_BUILD_TYPE MATCHES Debug)
-    #     set_target_properties(x64emulator PROPERTIES CXX_CLANG_TIDY
+    #     set_target_properties(x64linuxkernel PROPERTIES CXX_CLANG_TIDY
     #         clang-tidy-18;
     #         --use-color;
     #         -header-filter=${CMAKE_CURRENT_SOURCE_DIR}/include
@@ -199,7 +216,7 @@ if(NOT ${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
     target_compile_options(emulator PRIVATE ${COMPILE_OPTIONS})
     target_include_directories(emulator PRIVATE include)
     target_link_libraries(emulator PUBLIC
-        x64emulator
+        x64linuxkernel
         fmt::fmt-header-only
         argparse
     )

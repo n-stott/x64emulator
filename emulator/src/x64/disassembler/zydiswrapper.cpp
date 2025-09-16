@@ -13,11 +13,9 @@ namespace x64 {
         size_t len = strlen(insn.text);
         std::string mnemonic(insn.text, insn.text+len);
         std::array<char, 16> name;
-        auto mnmemonic_end = std::min(mnemonic.end(), mnemonic.begin()+16);
-        auto it = std::copy(mnemonic.begin(), mnmemonic_end, name.begin());
-        if(it != name.end()) {
-            *it++ = ' ';
-        }
+        std::fill(name.begin(), name.end(), '\0');
+        if (len > 15) len = 15;
+        ::memcpy(name.data(), mnemonic.c_str(), len);
         return X64Instruction::make<Insn::UNKNOWN>(insn.runtime_address, insn.info.length, name);
     }
 
