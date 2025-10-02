@@ -83,9 +83,9 @@ namespace kernel::gnulinux {
     }
 
     bool PollBlocker::tryUnblock(FS& fs) {
-        std::vector<FS::PollData> pollfds(mmu_->readFromMmu<FS::PollData>(pollfds_, nfds_));
-        fs.doPoll(&pollfds);
-        u64 nzrevents = (u64)std::count_if(pollfds.begin(), pollfds.end(), [](const FS::PollData& data) {
+        mmu_->readFromMmu<FS::PollData>(pollfds_, nfds_, &allpollfds_);
+        fs.doPoll(&allpollfds_);
+        u64 nzrevents = (u64)std::count_if(allpollfds_.begin(), allpollfds_.end(), [](const FS::PollData& data) {
             return data.revents != FS::PollEvent::NONE;
         });
         bool timeout = false;
@@ -96,7 +96,7 @@ namespace kernel::gnulinux {
             timeout |= (now > timeLimit_);
         }
         if(nzrevents > 0) {
-            mmu_->writeToMmu(pollfds_, pollfds);
+            mmu_->writeToMmu(pollfds_, allpollfds_);
             thread_->savedCpuState().regs.set(x64::R64::RAX, nzrevents);
             return true;
         } else if (timeout) {

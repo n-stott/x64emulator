@@ -3,6 +3,7 @@
 
 #include "x64/types.h"
 #include "kernel/timers.h"
+#include "kernel/linux/fs/fs.h"
 #include "utils.h"
 #include <optional>
 #include <string>
@@ -58,6 +59,7 @@ namespace kernel::gnulinux {
         x64::Ptr pollfds_;
         size_t nfds_;
         std::optional<PreciseTime> timeLimit_;
+        std::vector<FS::PollData> allpollfds_; // cached vector
     };
 
     class SelectBlocker {
