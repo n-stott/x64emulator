@@ -916,7 +916,10 @@ namespace x64 {
         void execPcmpgtdXMMXMMM128(const X64Instruction&);
         void execPcmpgtqXMMXMMM128(const X64Instruction&);
 
+        void execPmovmskbR32MMX(const X64Instruction&);
+        void execPmovmskbR64MMX(const X64Instruction&);
         void execPmovmskbR32XMM(const X64Instruction&);
+        void execPmovmskbR64XMM(const X64Instruction&);
 
         void execPaddbMMXMMXM64(const X64Instruction&);
         void execPaddwMMXMMXM64(const X64Instruction&);

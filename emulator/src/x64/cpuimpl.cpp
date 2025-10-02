@@ -1663,7 +1663,19 @@ namespace x64 {
     u128 CpuImpl::pcmpgtd128(u128 dst, u128 src) { return pcmpgt128<i32>(dst, src); }
     u128 CpuImpl::pcmpgtq128(u128 dst, u128 src) { return pcmpgt128<i64>(dst, src); }
 
-    u16 CpuImpl::pmovmskb(u128 src) {
+    u16 CpuImpl::pmovmskb64(u64 src) {
+        std::array<u8, 8> SRC;
+        static_assert(sizeof(SRC) == sizeof(u64));
+        std::memcpy(SRC.data(), &src, sizeof(u64));
+        u16 dst = 0;
+        for(u16 i = 0; i < 8; ++i) {
+            u16 msbi = ((SRC[i] >> 7) & 0x1);
+            dst = (u16)(dst | (msbi << i));
+        }
+        return dst;
+    }
+
+    u16 CpuImpl::pmovmskb128(u128 src) {
         std::array<u8, 16> SRC;
         static_assert(sizeof(SRC) == sizeof(u128));
         std::memcpy(SRC.data(), &src, sizeof(u128));

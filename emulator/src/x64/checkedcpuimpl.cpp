@@ -1028,8 +1028,12 @@ namespace x64 {
         return checkCall<u128>(&CpuImpl::pcmpgtq128, &NativeCpuImpl::pcmpgtq128, dst, src);
     }
 
-    u16 CheckedCpuImpl::pmovmskb(u128 src) {
-        return checkCall<u16>(&CpuImpl::pmovmskb, &NativeCpuImpl::pmovmskb, src);
+    u16 CheckedCpuImpl::pmovmskb64(u64 src) {
+        return checkCall<u16>(&CpuImpl::pmovmskb64, &NativeCpuImpl::pmovmskb64, src);
+    }
+
+    u16 CheckedCpuImpl::pmovmskb128(u128 src) {
+        return checkCall<u16>(&CpuImpl::pmovmskb128, &NativeCpuImpl::pmovmskb128, src);
     }
 
     u64 CheckedCpuImpl::paddb64(u64 dst, u64 src) {

@@ -2194,7 +2194,13 @@ namespace x64 {
     u128 NativeCpuImpl::pcmpgtd128(u128 dst, u128 src) { return pcmpgt128<i32>(dst, src); }
     u128 NativeCpuImpl::pcmpgtq128(u128 dst, u128 src) { return pcmpgt128<i64>(dst, src); }
 
-    u16 NativeCpuImpl::pmovmskb(u128 src) {
+    u16 NativeCpuImpl::pmovmskb64(u64 src) {
+        u64 nativeRes = 0;
+        asm volatile("pmovmskb %1, %0" : "+r"(nativeRes) : "y"(src));
+        return (u16)nativeRes;
+    }
+
+    u16 NativeCpuImpl::pmovmskb128(u128 src) {
         u64 nativeRes = 0;
         asm volatile("pmovmskb %1, %0" : "+r"(nativeRes) : "x"(src));
         return (u16)nativeRes;

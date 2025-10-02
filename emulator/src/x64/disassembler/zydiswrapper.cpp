@@ -3431,8 +3431,13 @@ namespace x64 {
         const auto& dst = insn.operands[0];
         const auto& src = insn.operands[1];
         auto r32dst = asRegister32(dst);
+        auto r64dst = asRegister64(dst);
+        auto rmmxsrc = asMMX(src);
         auto rssesrc = asRegister128(src);
+        if(r32dst && rmmxsrc) return X64Instruction::make<Insn::PMOVMSKB_R32_MMX>(insn.runtime_address, insn.info.length, r32dst.value(), rmmxsrc.value());
+        if(r64dst && rmmxsrc) return X64Instruction::make<Insn::PMOVMSKB_R64_MMX>(insn.runtime_address, insn.info.length, r64dst.value(), rmmxsrc.value());
         if(r32dst && rssesrc) return X64Instruction::make<Insn::PMOVMSKB_R32_XMM>(insn.runtime_address, insn.info.length, r32dst.value(), rssesrc.value());
+        if(r64dst && rssesrc) return X64Instruction::make<Insn::PMOVMSKB_R64_XMM>(insn.runtime_address, insn.info.length, r64dst.value(), rssesrc.value());
         return make_failed(insn);
     }
 

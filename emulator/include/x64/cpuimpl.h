@@ -295,7 +295,8 @@ namespace x64 {
         [[nodiscard]] static u128 pcmpgtd128(u128 dst, u128 src);
         [[nodiscard]] static u128 pcmpgtq128(u128 dst, u128 src);
 
-        [[nodiscard]] static u16 pmovmskb(u128 src);
+        [[nodiscard]] static u16 pmovmskb64(u64 src);
+        [[nodiscard]] static u16 pmovmskb128(u128 src);
 
         [[nodiscard]] static u64 paddb64(u64 dst, u64 src);
         [[nodiscard]] static u64 paddw64(u64 dst, u64 src);

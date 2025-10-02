@@ -32,7 +32,7 @@ u32 strlen_core_virtual(u128 xmm1, u128 xmm2) {
     xmm2 = CpuImpl::pslldq(xmm2, 0xb);
     xmm2 = CpuImpl::pcmpeqb128(xmm2, xmm1);
     xmm2 = CpuImpl::psubb128(xmm2, xmm0);
-    u32 res = CpuImpl::pmovmskb(xmm2);
+    u32 res = CpuImpl::pmovmskb128(xmm2);
     return res;
 }
 

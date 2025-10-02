@@ -783,7 +783,10 @@ namespace x64 {
     DEFINE_STANDALONE(PCMPGTW_XMM_XMMM128, execPcmpgtwXMMXMMM128)
     DEFINE_STANDALONE(PCMPGTD_XMM_XMMM128, execPcmpgtdXMMXMMM128)
     DEFINE_STANDALONE(PCMPGTQ_XMM_XMMM128, execPcmpgtqXMMXMMM128)
+    DEFINE_STANDALONE(PMOVMSKB_R32_MMX, execPmovmskbR32MMX)
+    DEFINE_STANDALONE(PMOVMSKB_R64_MMX, execPmovmskbR64MMX)
     DEFINE_STANDALONE(PMOVMSKB_R32_XMM, execPmovmskbR32XMM)
+    DEFINE_STANDALONE(PMOVMSKB_R64_XMM, execPmovmskbR64XMM)
     DEFINE_STANDALONE(PADDB_MMX_MMXM64, execPaddbMMXMMXM64)
     DEFINE_STANDALONE(PADDW_MMX_MMXM64, execPaddwMMXMMXM64)
     DEFINE_STANDALONE(PADDD_MMX_MMXM64, execPadddMMXMMXM64)
@@ -1501,7 +1504,10 @@ namespace x64 {
         STANDALONE_NAME(PCMPGTW_XMM_XMMM128),
         STANDALONE_NAME(PCMPGTD_XMM_XMMM128),
         STANDALONE_NAME(PCMPGTQ_XMM_XMMM128),
+        STANDALONE_NAME(PMOVMSKB_R32_MMX),
+        STANDALONE_NAME(PMOVMSKB_R64_MMX),
         STANDALONE_NAME(PMOVMSKB_R32_XMM),
+        STANDALONE_NAME(PMOVMSKB_R64_XMM),
         STANDALONE_NAME(PADDB_MMX_MMXM64),
         STANDALONE_NAME(PADDW_MMX_MMXM64),
         STANDALONE_NAME(PADDD_MMX_MMXM64),
@@ -2400,6 +2406,7 @@ namespace x64 {
 
     template<typename T, typename U> T zeroExtend(const U& val);
     template<> u32 zeroExtend(const u16& val) { return (u32)val; }
+    template<> u64 zeroExtend(const u16& val) { return (u64)val; }
     template<> u64 zeroExtend(const u32& val) { return (u64)val; }
     template<> Xmm zeroExtend(const u32& val) { return Xmm{ val, 0 }; }
     template<> Xmm zeroExtend(const u64& val) { return Xmm{ val, 0 }; }
@@ -5508,11 +5515,32 @@ namespace x64 {
         set(dst, res);
     }
 
+    void Cpu::execPmovmskbR32MMX(const X64Instruction& ins) {
+        const auto& dst = ins.op0<R32>();
+        const auto& src = ins.op1<MMX>();
+        u16 res = Impl::pmovmskb64(get(src));
+        set(dst, zeroExtend<u32, u16>(res));
+    }
+
+    void Cpu::execPmovmskbR64MMX(const X64Instruction& ins) {
+        const auto& dst = ins.op0<R64>();
+        const auto& src = ins.op1<MMX>();
+        u16 res = Impl::pmovmskb64(get(src));
+        set(dst, zeroExtend<u64, u16>(res));
+    }
+
     void Cpu::execPmovmskbR32XMM(const X64Instruction& ins) {
         const auto& dst = ins.op0<R32>();
         const auto& src = ins.op1<XMM>();
-        u16 res = Impl::pmovmskb(get(src));
+        u16 res = Impl::pmovmskb128(get(src));
         set(dst, zeroExtend<u32, u16>(res));
+    }
+
+    void Cpu::execPmovmskbR64XMM(const X64Instruction& ins) {
+        const auto& dst = ins.op0<R64>();
+        const auto& src = ins.op1<XMM>();
+        u16 res = Impl::pmovmskb128(get(src));
+        set(dst, zeroExtend<u64, u16>(res));
     }
 
     void Cpu::execPaddbMMXMMXM64(const X64Instruction& ins) {

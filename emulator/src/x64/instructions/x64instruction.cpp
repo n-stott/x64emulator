@@ -614,7 +614,10 @@ namespace x64 {
             case Insn::PCMPGTW_XMM_XMMM128: return toString<XMM, XMMM128>("pcmpgtw");
             case Insn::PCMPGTD_XMM_XMMM128: return toString<XMM, XMMM128>("pcmpgtd");
             case Insn::PCMPGTQ_XMM_XMMM128: return toString<XMM, XMMM128>("pcmpgtq");
+            case Insn::PMOVMSKB_R32_MMX: return toString<R32, MMX>("pmovmskb");
+            case Insn::PMOVMSKB_R64_MMX: return toString<R64, MMX>("pmovmskb");
             case Insn::PMOVMSKB_R32_XMM: return toString<R32, XMM>("pmovmskb");
+            case Insn::PMOVMSKB_R64_XMM: return toString<R64, XMM>("pmovmskb");
             case Insn::PADDB_MMX_MMXM64: return toString<MMX, MMXM64>("psubb");
             case Insn::PADDW_MMX_MMXM64: return toString<MMX, MMXM64>("paddw");
             case Insn::PADDD_MMX_MMXM64: return toString<MMX, MMXM64>("paddd");
