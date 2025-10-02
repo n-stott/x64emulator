@@ -119,9 +119,7 @@ namespace x64 {
         std::vector<Region*> regionsToRemove;
         for(auto& regionPtr : regions_) {
             if(!regionPtr->intersectsRange(address, address+length)) continue;
-            if(regionPtr->base() == address && regionPtr->size() == length) {
-                regionsToRemove.push_back(regionPtr.get());
-            }
+            regionsToRemove.push_back(regionPtr.get());
         }
         for(Region* regionPtr : regionsToRemove) {
             [[maybe_unused]] auto regionLeftToDie = takeRegion(regionPtr->base(), regionPtr->size());

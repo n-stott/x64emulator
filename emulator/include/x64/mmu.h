@@ -229,6 +229,14 @@ namespace x64 {
 
         std::vector<u8> mincore(u64 address, u64 length) const;
 
+        u64 memoryConsumptionInMB() const {
+            u64 cons = 0;
+            for(const auto& ptr : regions_) {
+                cons += ptr->size();
+            }
+            return cons / 1024 / 1024;
+        }
+
         static constexpr u64 PAGE_SIZE = 0x1000;
         
         class Callback {
