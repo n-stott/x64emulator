@@ -82,6 +82,12 @@ if(MULTIPROCESSING)
     target_compile_definitions(x64cpu PUBLIC MULTIPROCESSING=1)
 endif(MULTIPROCESSING)
 
+# set_target_properties(x64cpu PROPERTIES CXX_CLANG_TIDY
+#     clang-tidy-18;
+#     --use-color;
+#     -header-filter=${CMAKE_CURRENT_SOURCE_DIR}/include
+# )
+
 
 add_library(x64jit ${LIB_KIND}
     src/x64/compiler/assembler.cpp
@@ -114,7 +120,14 @@ target_link_libraries(x64jit PUBLIC
     Zydis
     Zycore
 )
-target_compile_definitions(x64cpu PRIVATE ${COMPILE_DEFINITIONS})
+target_compile_definitions(x64jit PRIVATE ${COMPILE_DEFINITIONS})
+
+
+#set_target_properties(x64jit PROPERTIES CXX_CLANG_TIDY
+#    clang-tidy-18;
+#    --use-color;
+#    -header-filter=${CMAKE_CURRENT_SOURCE_DIR}/include
+#)
 
 
 add_library(x64emulator ${LIB_KIND}
