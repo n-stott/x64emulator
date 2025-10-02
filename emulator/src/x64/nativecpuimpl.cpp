@@ -2995,15 +2995,21 @@ namespace x64 {
     }
 
     u128 NativeCpuImpl::movshdup(u128 src) {
+#ifdef SSE3
         __m128 msrc;
         ::memcpy(&msrc, &src, sizeof(src));
         __m128 mdst = _mm_movehdup_ps(msrc);
         u128 dst;
         ::memcpy(&dst, &mdst, sizeof(dst));
         return dst;
+#else
+        assert(!"movshdup not defined");
+        return src; // dummy value
+#endif
     }
 
     u128 NativeCpuImpl::movddup64(u64 src) {
+#ifdef SSE3
         __m128d msrc;
         u128 src2 { src, src };
         ::memcpy(&msrc, &src2, sizeof(src2));
@@ -3011,15 +3017,24 @@ namespace x64 {
         u128 dst;
         ::memcpy(&dst, &mdst, sizeof(dst));
         return dst;
+#else
+        assert(!"movddup64 not defined");
+        return u128{src, src}; // dummy value
+#endif
     }
 
     u128 NativeCpuImpl::movddup128(u128 src) {
+#ifdef SSE3
         __m128d msrc;
         ::memcpy(&msrc, &src, sizeof(src));
         __m128d mdst = _mm_movedup_pd(msrc);
         u128 dst;
         ::memcpy(&dst, &mdst, sizeof(dst));
         return dst;
+#else
+        assert(!"movddup128 not defined");
+        return src; // dummy value
+#endif
     }
 
     u64 NativeCpuImpl::palignr64(u64 dst, u64 src, u8 imm) {
