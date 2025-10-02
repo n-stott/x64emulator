@@ -412,6 +412,8 @@ namespace x64 {
         [[nodiscard]] static u128 movshdup(u128 src);
         [[nodiscard]] static u128 movddup64(u64 src);
         [[nodiscard]] static u128 movddup128(u128 src);
+        [[nodiscard]] static u128 addsubps(u128 dst, u128 src);
+        [[nodiscard]] static u128 addsubpd(u128 dst, u128 src);
 
         [[nodiscard]] static u64 palignr64(u64 dst, u64 src, u8 imm);
         [[nodiscard]] static u128 palignr128(u128 dst, u128 src, u8 imm);

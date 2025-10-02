@@ -3043,6 +3043,38 @@ namespace x64 {
 #endif
     }
 
+    u128 NativeCpuImpl::addsubps(u128 dst, u128 src) {
+#ifdef SSE3
+        __m128 mdst;
+        ::memcpy(&mdst, &dst, sizeof(dst));
+        __m128 msrc;
+        ::memcpy(&msrc, &src, sizeof(src));
+        mdst = _mm_addsub_ps(mdst, msrc);
+        ::memcpy(&dst, &mdst, sizeof(dst));
+        return dst;
+#else
+        (void)dst;
+        assert(!"addsubps not defined");
+        return src; // dummy value
+#endif
+    }
+
+    u128 NativeCpuImpl::addsubpd(u128 dst, u128 src) {
+#ifdef SSE3
+        __m128d mdst;
+        ::memcpy(&mdst, &dst, sizeof(dst));
+        __m128d msrc;
+        ::memcpy(&msrc, &src, sizeof(src));
+        mdst = _mm_addsub_pd(mdst, msrc);
+        ::memcpy(&dst, &mdst, sizeof(dst));
+        return dst;
+#else
+        (void)dst;
+        assert(!"addsubpd not defined");
+        return src; // dummy value
+#endif
+    }
+
     u64 NativeCpuImpl::palignr64(u64 dst, u64 src, u8 imm) {
         auto native = [=](__m64 dst, __m64 src) -> __m64 {
 #ifdef SSSE3

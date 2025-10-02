@@ -1382,6 +1382,14 @@ namespace x64 {
         return checkCall<u128>(&CpuImpl::movddup128, &NativeCpuImpl::movddup128, src);
     }
 
+    u128 CheckedCpuImpl::addsubps(u128 dst, u128 src) {
+        return checkCall<u128>(&CpuImpl::addsubps, &NativeCpuImpl::addsubps, dst, src);
+    }
+
+    u128 CheckedCpuImpl::addsubpd(u128 dst, u128 src) {
+        return checkCall<u128>(&CpuImpl::addsubpd, &NativeCpuImpl::addsubpd, dst, src);
+    }
+
     u64 CheckedCpuImpl::palignr64(u64 dst, u64 src, u8 imm) {
         return checkCall<u64>(&CpuImpl::palignr64, &NativeCpuImpl::palignr64, dst, src, imm);
     }
