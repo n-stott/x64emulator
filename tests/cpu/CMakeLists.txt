@@ -235,3 +235,11 @@ target_include_directories(test_pmaddubsw PRIVATE include ${CMAKE_SOURCE_DIR}/em
 target_link_libraries(test_pmaddubsw PRIVATE x64cpu)
 target_link_options(test_pmaddubsw PRIVATE ${LD_OPTIONS})
 add_test(NAME pmaddubsw COMMAND test_pmaddubsw)
+
+add_executable(test_pabs src/test_pabs.cpp)
+target_compile_options(test_pabs PRIVATE ${CC_OPTIONS})
+target_compile_options(test_pabs PRIVATE -frounding-math)
+target_include_directories(test_pabs PRIVATE include ${CMAKE_SOURCE_DIR}/emulator/include)
+target_link_libraries(test_pabs PRIVATE x64cpu)
+target_link_options(test_pabs PRIVATE ${LD_OPTIONS})
+add_test(NAME pabs COMMAND test_pabs)

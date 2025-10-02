@@ -3018,4 +3018,77 @@ namespace x64 {
         return dst;
     }
 
+    u64 CpuImpl::pabsb64(u64 src) {
+        std::array<u8, 8> TMP;
+        static_assert(sizeof(TMP) == sizeof(src));
+        ::memcpy(TMP.data(), &src, sizeof(src));
+        for(u8& u : TMP) {
+            i16 v = (i16)(i8)u;
+            u = (u8)(v >= 0 ? v : -v);
+        }
+        ::memcpy(&src, TMP.data(), sizeof(src));
+        return src;
+    }
+
+    u64 CpuImpl::pabsw64(u64 src) {
+        std::array<u16, 4> TMP;
+        static_assert(sizeof(TMP) == sizeof(src));
+        ::memcpy(TMP.data(), &src, sizeof(src));
+        for(u16& u : TMP) {
+            i32 v = (i32)(i16)u;
+            u = (u16)(v >= 0 ? v : -v);
+        }
+        ::memcpy(&src, TMP.data(), sizeof(src));
+        return src;
+    }
+
+    u64 CpuImpl::pabsd64(u64 src) {
+        std::array<u32, 2> TMP;
+        static_assert(sizeof(TMP) == sizeof(src));
+        ::memcpy(TMP.data(), &src, sizeof(src));
+        for(u32& u : TMP) {
+            i64 v = (i64)(i32)u;
+            u = (u32)(v >= 0 ? v : -v);
+        }
+        ::memcpy(&src, TMP.data(), sizeof(src));
+        return src;
+    }
+
+    u128 CpuImpl::pabsb128(u128 src) {
+        std::array<u8, 16> TMP;
+        static_assert(sizeof(TMP) == sizeof(src));
+        ::memcpy(TMP.data(), &src, sizeof(src));
+        for(u8& u : TMP) {
+            i16 v = (i16)(i8)u;
+            u = (u8)(v >= 0 ? v : -v);
+        }
+        ::memcpy(&src, TMP.data(), sizeof(src));
+        return src;
+    }
+
+    u128 CpuImpl::pabsw128(u128 src) {
+        std::array<u16, 8> TMP;
+        static_assert(sizeof(TMP) == sizeof(src));
+        ::memcpy(TMP.data(), &src, sizeof(src));
+        for(u16& u : TMP) {
+            i32 v = (i32)(i16)u;
+            u = (u16)(v >= 0 ? v : -v);
+        }
+        ::memcpy(&src, TMP.data(), sizeof(src));
+        return src;
+    }
+
+    u128 CpuImpl::pabsd128(u128 src) {
+        std::array<u32, 4> TMP;
+        static_assert(sizeof(TMP) == sizeof(src));
+        ::memcpy(TMP.data(), &src, sizeof(src));
+        for(u32& u : TMP) {
+            i64 v = (i64)(i32)u;
+            u = (u32)(v >= 0 ? v : -v);
+        }
+        ::memcpy(&src, TMP.data(), sizeof(src));
+        return src;
+    }
+
+
 }

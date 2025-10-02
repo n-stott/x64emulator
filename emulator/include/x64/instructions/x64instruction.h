@@ -726,6 +726,12 @@ namespace x64 {
         PMADDUBSW_XMM_XMMM128,
         PMULHRSW_MMX_MMXM64,
         PMULHRSW_XMM_XMMM128,
+        PABSB_MMX_MMXM64,
+        PABSW_MMX_MMXM64,
+        PABSD_MMX_MMXM64,
+        PABSB_XMM_XMMM128,
+        PABSW_XMM_XMMM128,
+        PABSD_XMM_XMMM128,
 
         // MISC
         RDTSC,

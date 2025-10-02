@@ -3245,6 +3245,73 @@ namespace x64 {
         return dst; // dummy value
 #endif
     }
+
+    u64 NativeCpuImpl::pabsb64(u64 src) {
+#ifdef SSSE3
+        u64 nativeRes = src;
+        asm volatile("pabsb %1, %0" : "+y"(nativeRes) : "y"(src));
+        return nativeRes;
+#else
+        assert(!"pabsb64 not defined");
+        return src; // dummy value
+#endif
+    }
+
+    u64 NativeCpuImpl::pabsw64(u64 src) {
+#ifdef SSSE3
+        u64 nativeRes = src;
+        asm volatile("pabsw %1, %0" : "+y"(nativeRes) : "y"(src));
+        return nativeRes;
+#else
+        assert(!"pabsw64 not defined");
+        return src; // dummy value
+#endif
+    }
+
+    u64 NativeCpuImpl::pabsd64(u64 src) {
+#ifdef SSSE3
+        u64 nativeRes = src;
+        asm volatile("pabsd %1, %0" : "+y"(nativeRes) : "y"(src));
+        return nativeRes;
+#else
+        assert(!"pabsd64 not defined");
+        return src; // dummy value
+#endif
+    }
+
+    u128 NativeCpuImpl::pabsb128(u128 src) {
+#ifdef SSSE3
+        u128 nativeRes = src;
+        asm volatile("pabsb %1, %0" : "+x"(nativeRes) : "x"(src));
+        return nativeRes;
+#else
+        assert(!"pabsb128 not defined");
+        return src; // dummy value
+#endif
+    }
+
+    u128 NativeCpuImpl::pabsw128(u128 src) {
+#ifdef SSSE3
+        u128 nativeRes = src;
+        asm volatile("pabsw %1, %0" : "+x"(nativeRes) : "x"(src));
+        return nativeRes;
+#else
+        assert(!"pabsw128 not defined");
+        return src; // dummy value
+#endif
+    }
+
+    u128 NativeCpuImpl::pabsd128(u128 src) {
+#ifdef SSSE3
+        u128 nativeRes = src;
+        asm volatile("pabsd %1, %0" : "+x"(nativeRes) : "x"(src));
+        return nativeRes;
+#else
+        assert(!"pabsd128 not defined");
+        return src; // dummy value
+#endif
+    }
+
 }
 
 #endif

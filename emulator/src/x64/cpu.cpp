@@ -910,6 +910,12 @@ namespace x64 {
     DEFINE_STANDALONE(PMADDUBSW_XMM_XMMM128, execPmaddubswXMMXMMM128)
     DEFINE_STANDALONE(PMULHRSW_MMX_MMXM64, execPmulhrswMMXMMXM64)
     DEFINE_STANDALONE(PMULHRSW_XMM_XMMM128, execPmulhrswXMMXMMM128)
+    DEFINE_STANDALONE(PABSB_MMX_MMXM64, execPabsbMMXMMXM64)
+    DEFINE_STANDALONE(PABSW_MMX_MMXM64, execPabswMMXMMXM64)
+    DEFINE_STANDALONE(PABSD_MMX_MMXM64, execPabsdMMXMMXM64)
+    DEFINE_STANDALONE(PABSB_XMM_XMMM128, execPabsbXMMXMMM128)
+    DEFINE_STANDALONE(PABSW_XMM_XMMM128, execPabswXMMXMMM128)
+    DEFINE_STANDALONE(PABSD_XMM_XMMM128, execPabsdXMMXMMM128)
     DEFINE_STANDALONE(RDTSC, execRdtsc)
     DEFINE_STANDALONE(CPUID, execCpuid)
     DEFINE_STANDALONE(XGETBV, execXgetbv)
@@ -1633,6 +1639,12 @@ namespace x64 {
         STANDALONE_NAME(PMADDUBSW_XMM_XMMM128),
         STANDALONE_NAME(PMULHRSW_MMX_MMXM64),
         STANDALONE_NAME(PMULHRSW_XMM_XMMM128),
+        STANDALONE_NAME(PABSB_MMX_MMXM64),
+        STANDALONE_NAME(PABSW_MMX_MMXM64),
+        STANDALONE_NAME(PABSD_MMX_MMXM64),
+        STANDALONE_NAME(PABSB_XMM_XMMM128),
+        STANDALONE_NAME(PABSW_XMM_XMMM128),
+        STANDALONE_NAME(PABSD_XMM_XMMM128),
         STANDALONE_NAME(RDTSC),
         STANDALONE_NAME(CPUID),
         STANDALONE_NAME(XGETBV),
@@ -6352,6 +6364,42 @@ namespace x64 {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         set(dst, Impl::pmulhrsw128(get(dst), get(src)));
+    }
+
+    void Cpu::execPabsbMMXMMXM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<MMX>();
+        const auto& src = ins.op1<MMXM64>();
+        set(dst, Impl::pabsb64(get(src)));
+    }
+
+    void Cpu::execPabswMMXMMXM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<MMX>();
+        const auto& src = ins.op1<MMXM64>();
+        set(dst, Impl::pabsw64(get(src)));
+    }
+
+    void Cpu::execPabsdMMXMMXM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<MMX>();
+        const auto& src = ins.op1<MMXM64>();
+        set(dst, Impl::pabsd64(get(src)));
+    }
+
+    void Cpu::execPabsbXMMXMMM128(const X64Instruction& ins) {
+        const auto& dst = ins.op0<XMM>();
+        const auto& src = ins.op1<XMMM128>();
+        set(dst, Impl::pabsb128(get(src)));
+    }
+
+    void Cpu::execPabswXMMXMMM128(const X64Instruction& ins) {
+        const auto& dst = ins.op0<XMM>();
+        const auto& src = ins.op1<XMMM128>();
+        set(dst, Impl::pabsw128(get(src)));
+    }
+
+    void Cpu::execPabsdXMMXMMM128(const X64Instruction& ins) {
+        const auto& dst = ins.op0<XMM>();
+        const auto& src = ins.op1<XMMM128>();
+        set(dst, Impl::pabsd128(get(src)));
     }
 
     void Cpu::execSyscall(const X64Instruction&) {
