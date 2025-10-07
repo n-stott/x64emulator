@@ -769,6 +769,10 @@ namespace x64 {
         return checkCall<u128>(&CpuImpl::sqrtss, &NativeCpuImpl::sqrtss, dst, src, rounding);
     }
 
+    u128 CheckedCpuImpl::rsqrtss(u128 dst, u128 src) {
+        return checkCall<u128>(&CpuImpl::rsqrtss, &NativeCpuImpl::rsqrtss, dst, src);
+    }
+
     u128 CheckedCpuImpl::sqrtsd(u128 dst, u128 src, SIMD_ROUNDING rounding) {
         return checkCall<u128>(&CpuImpl::sqrtsd, &NativeCpuImpl::sqrtsd, dst, src, rounding);
     }

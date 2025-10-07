@@ -916,6 +916,16 @@ namespace x64 {
         return dst;
     }
 
+    u128 CpuImpl::rsqrtss(u128 dst, u128 src) {
+        std::array<float, 4> DST;
+        std::array<float, 4> SRC;
+        ::mempcpy(DST.data(), &dst, sizeof(dst));
+        ::mempcpy(SRC.data(), &src, sizeof(src));
+        DST[0] = 1.0f / std::sqrt(SRC[0]);
+        ::mempcpy(&dst, DST.data(), sizeof(dst));
+        return dst;
+    }
+
     template<typename F>
     F max(F dst, F src) {
         // NOLINTBEGIN(bugprone-branch-clone)

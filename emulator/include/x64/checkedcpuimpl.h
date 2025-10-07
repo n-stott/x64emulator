@@ -210,6 +210,7 @@ namespace x64 {
 
         [[nodiscard]] static u128 sqrtss(u128 dst, u128 src, SIMD_ROUNDING);
         [[nodiscard]] static u128 sqrtsd(u128 dst, u128 src, SIMD_ROUNDING);
+        [[nodiscard]] static u128 rsqrtss(u128 dst, u128 src);
 
         [[nodiscard]] static u128 cmpss(u128 dst, u128 src, FCond cond);
         [[nodiscard]] static u128 cmpsd(u128 dst, u128 src, FCond cond);

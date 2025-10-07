@@ -2568,6 +2568,18 @@ namespace x64 {
         return make_failed(insn);
     }
 
+    static X64Instruction makeRsqrtss(const ZydisDisassembledInstruction& insn) {
+        assert(insn.info.operand_count_visible == 2);
+        const auto& dst = insn.operands[0];
+        const auto& src = insn.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto rssesrc = asRegister128(src);
+        auto m32src = asMemory32(src);
+        if(rssedst && rssesrc) return X64Instruction::make<Insn::RSQRTSS_XMM_XMM>(insn.runtime_address, insn.info.length, rssedst.value(), rssesrc.value());
+        if(rssedst && m32src) return X64Instruction::make<Insn::RSQRTSS_XMM_M32>(insn.runtime_address, insn.info.length, rssedst.value(), m32src.value());
+        return make_failed(insn);
+    }
+
     static X64Instruction makeComiss(const ZydisDisassembledInstruction& insn) {
         assert(insn.info.operand_count_visible == 2);
         const auto& dst = insn.operands[0];
@@ -4464,6 +4476,7 @@ namespace x64 {
             case ZYDIS_MNEMONIC_DIVSD: return makeDivsd(insn);
             case ZYDIS_MNEMONIC_SQRTSS: return makeSqrtss(insn);
             case ZYDIS_MNEMONIC_SQRTSD: return makeSqrtsd(insn);
+            case ZYDIS_MNEMONIC_RSQRTSS: return makeRsqrtss(insn);
             case ZYDIS_MNEMONIC_COMISS: return makeComiss(insn);
             case ZYDIS_MNEMONIC_COMISD: return makeComisd(insn);
             case ZYDIS_MNEMONIC_UCOMISS: return makeUcomiss(insn);

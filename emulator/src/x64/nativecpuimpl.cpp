@@ -1584,6 +1584,12 @@ namespace x64 {
         return nativeRes;
     }
 
+    u128 NativeCpuImpl::rsqrtss(u128 dst, u128 src) {
+        u128 nativeRes = dst;
+        asm volatile("rsqrtss %1, %0" : "+x"(nativeRes) : "x"(src));
+        return nativeRes;
+    }
+
     u128 NativeCpuImpl::cmpss(u128 dst, u128 src, FCond cond) {
         __m128 d;
         __m128 s;

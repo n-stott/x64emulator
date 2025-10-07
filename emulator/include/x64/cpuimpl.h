@@ -200,6 +200,7 @@ namespace x64 {
 
         [[nodiscard]] static u128 sqrtss(u128 dst, u128 src, SIMD_ROUNDING);
         [[nodiscard]] static u128 sqrtsd(u128 dst, u128 src, SIMD_ROUNDING);
+        [[nodiscard]] static u128 rsqrtss(u128 dst, u128 src);
 
         [[nodiscard]] static u128 maxss(u128 dst, u128 src, SIMD_ROUNDING);
         [[nodiscard]] static u128 maxsd(u128 dst, u128 src, SIMD_ROUNDING);
