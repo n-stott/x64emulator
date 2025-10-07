@@ -664,6 +664,7 @@ namespace emulator {
     }
 
     BasicBlock::BasicBlock(x64::BasicBlock cpuBasicBlock) : cpuBasicBlock_(std::move(cpuBasicBlock)) {
+        verify(!cpuBasicBlock_.instructions().empty(), "Basic block is empty");
         endsWithFixedDestinationJump_ = cpuBasicBlock_.endsWithFixedDestinationJump();
         std::fill(fixedDestinationInfo_.next.begin(), fixedDestinationInfo_.next.end(), nullptr);
         std::fill(fixedDestinationInfo_.nextCount.begin(), fixedDestinationInfo_.nextCount.end(), 0);
@@ -671,12 +672,10 @@ namespace emulator {
     }
 
     u64 BasicBlock::start() const {
-        verify(!cpuBasicBlock_.instructions().empty(), "Basic block is empty");
         return cpuBasicBlock_.instructions()[0].first.address();
     }
 
     u64 BasicBlock::end() const {
-        verify(!cpuBasicBlock_.instructions().empty(), "Basic block is empty");
         return cpuBasicBlock_.instructions().back().first.nextAddress();
     }
 
