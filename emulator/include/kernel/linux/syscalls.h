@@ -306,6 +306,8 @@ namespace kernel::gnulinux {
         int sched_getscheduler(pid_t pid);
         // 0x95
         int mlock(x64::Ptr addr, size_t len);
+        // 0x96
+        int munlock(x64::Ptr addr, size_t len);
         // 0x9e
         int prctl(int option, unsigned long arg2, unsigned long arg3, unsigned long arg4, unsigned long arg5);
         // 0x9e
