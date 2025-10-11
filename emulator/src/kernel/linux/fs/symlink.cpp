@@ -55,6 +55,11 @@ namespace kernel::gnulinux {
         return ErrnoOrBuffer(-ENOTSUP);
     }
 
+    ErrnoOrBuffer Symlink::statx(unsigned int) {
+        verify(false, "Symlink::statx not implemented");
+        return ErrnoOrBuffer(-ENOTSUP);
+    }
+
     ErrnoOrBuffer Symlink::getdents64(size_t) {
         verify(false, "Symlink::getdents64 not implemented");
         return ErrnoOrBuffer(-ENOTSUP);

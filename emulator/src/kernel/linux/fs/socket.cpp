@@ -255,6 +255,11 @@ namespace kernel::gnulinux {
         return ErrnoOrBuffer(-ENOTSUP);
     }
 
+    ErrnoOrBuffer Socket::statx(unsigned int) {
+        verify(false, "statx not implemented on socket");
+        return ErrnoOrBuffer(-ENOTSUP);
+    }
+
     ErrnoOrBuffer Socket::ioctl(OpenFileDescription&, Ioctl request, const Buffer&) {
         verify(false, fmt::format("ioctl(request={}) not implemented on socket", (int)request));
         return ErrnoOrBuffer(-ENOTSUP);

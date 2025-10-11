@@ -2,11 +2,9 @@
 #include "kernel/linux/fs/directory.h"
 #include "kernel/linux/fs/fs.h"
 #include "kernel/linux/fs/path.h"
+#include "host/host.h"
 #include "scopeguard.h"
 #include "verify.h"
-#include <fcntl.h>
-#include <sys/stat.h>
-#include <unistd.h>
 
 namespace kernel::gnulinux {
 
@@ -37,6 +35,11 @@ namespace kernel::gnulinux {
 
     std::optional<int> ShadowSymlink::hostFileDescriptor() const {
         return {};
+    }
+
+    ErrnoOrBuffer ShadowSymlink::statx(unsigned int mask) {
+        (void)mask;
+        return ErrnoOrBuffer(-ENOTSUP);
     }
 
 }

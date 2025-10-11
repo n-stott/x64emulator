@@ -105,6 +105,11 @@ namespace kernel::gnulinux {
         verify(false, "statfs not implemented on PipeEndpoint");
         return ErrnoOrBuffer(-ENOTSUP);
     }
+
+    ErrnoOrBuffer PipeEndpoint::statx(unsigned int) {
+        verify(false, "statx not implemented on PipeEndpoint");
+        return ErrnoOrBuffer(-ENOTSUP);
+    }
     
     ErrnoOrBuffer PipeEndpoint::getdents64(size_t) {
         return ErrnoOrBuffer(-ENOTDIR);

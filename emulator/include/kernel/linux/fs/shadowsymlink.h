@@ -16,6 +16,8 @@ namespace kernel::gnulinux {
         bool keepAfterClose() const override;
         std::optional<int> hostFileDescriptor() const override;
 
+        ErrnoOrBuffer statx(unsigned int) override;
+
         std::string className() const override {
             return fmt::format("ShadowSymlink(link={})", link());
         }

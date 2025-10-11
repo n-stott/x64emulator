@@ -2030,6 +2030,9 @@ namespace kernel::gnulinux {
             print("Sys::statx(dirfd={}, path={}, flags={}, mask={}, statxbuf={:#x}) = {}\n",
                         dirfd, path, flags, mask, statxbuf.address(), errnoOrBuffer.errorOr(0));
         }
+        if(errnoOrBuffer.errorOr(0) == -ENOTSUP) {
+            warn(fmt::format("statx not supported on {}", path));
+        }
         return errnoOrBuffer.errorOrWith<int>([&](const auto& buffer) {
             mmu_.copyToMmu(statxbuf, buffer.data(), buffer.size());
             return 0;

@@ -31,6 +31,11 @@ namespace kernel::gnulinux {
         return ErrnoOrBuffer(-ENOTSUP);
     }
 
+    ErrnoOrBuffer ProcFS::statx(unsigned int mask) {
+        verify(false, fmt::format("File::statx(mask={:#x}) not implemented for file type {}\n", mask, className()));
+        return ErrnoOrBuffer(-ENOTSUP);
+    }
+
     ErrnoOrBuffer ProcFS::getdents64(size_t) {
         verify(false, "implement getdents on procfs");
         return ErrnoOrBuffer(-ENOTSUP);

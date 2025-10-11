@@ -73,6 +73,11 @@ namespace kernel::gnulinux {
         verify(false, "statfs not implemented on event");
         return ErrnoOrBuffer(-ENOTSUP);
     }
+
+    ErrnoOrBuffer Event::statx(unsigned int) {
+        verify(false, "statx not implemented on event");
+        return ErrnoOrBuffer(-ENOTSUP);
+    }
     
     ErrnoOrBuffer Event::getdents64(size_t) {
         return ErrnoOrBuffer(-ENOTDIR);

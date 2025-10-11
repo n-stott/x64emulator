@@ -32,6 +32,11 @@ namespace kernel::gnulinux {
         verify(false, "statfs not implemented on epoll");
         return ErrnoOrBuffer(-ENOTSUP);
     }
+
+    ErrnoOrBuffer Epoll::statx(unsigned int) {
+        verify(false, "statx not implemented on epoll");
+        return ErrnoOrBuffer(-ENOTSUP);
+    }
     
     ErrnoOrBuffer Epoll::getdents64(size_t) {
         return ErrnoOrBuffer(-ENOTDIR);

@@ -21,6 +21,7 @@ namespace kernel::gnulinux {
 
         ErrnoOrBuffer stat() override;
         ErrnoOrBuffer statfs() override;
+        ErrnoOrBuffer statx(unsigned int mask) override;
 
         std::string className() const override { return "ShadowDirectory"; }
 

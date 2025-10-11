@@ -42,6 +42,11 @@ namespace kernel::gnulinux {
         return ErrnoOrBuffer(-ENOTSUP);
     }
 
+    ErrnoOrBuffer NullDevice::statx(unsigned int mask) {
+        verify(false, fmt::format("File::statx(mask={:#x}) not implemented for file type {}\n", mask, className()));
+        return ErrnoOrBuffer(-ENOTSUP);
+    }
+
     off_t NullDevice::lseek(OpenFileDescription&, off_t, int) {
         verify(false, "NullDevice::lseek not implemented");
         return -ENOTSUP;

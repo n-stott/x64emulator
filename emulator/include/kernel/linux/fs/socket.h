@@ -57,6 +57,7 @@ namespace kernel::gnulinux {
 
         ErrnoOrBuffer stat() override;
         ErrnoOrBuffer statfs() override;
+        ErrnoOrBuffer statx(unsigned int mask) override;
 
         ErrnoOrBuffer ioctl(OpenFileDescription&, Ioctl request, const Buffer& buffer) override;
         

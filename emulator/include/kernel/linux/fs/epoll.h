@@ -28,6 +28,7 @@ namespace kernel::gnulinux {
 
         ErrnoOrBuffer stat() override;
         ErrnoOrBuffer statfs() override;
+        ErrnoOrBuffer statx(unsigned int) override;
         
         std::optional<int> fcntl(int cmd, int arg) override;
         ErrnoOrBuffer ioctl(OpenFileDescription&, Ioctl request, const Buffer& buffer) override;

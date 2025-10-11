@@ -89,6 +89,11 @@ namespace kernel::gnulinux {
         return ErrnoOrBuffer(-ENOTSUP);
     }
 
+    ErrnoOrBuffer HostDevice::statx(unsigned int mask) {
+        verify(false, fmt::format("File::statx(mask={:#x}) not implemented for file type {}\n", mask, className()));
+        return ErrnoOrBuffer(-ENOTSUP);
+    }
+
     void HostDevice::advanceInternalOffset(off_t offset) {
         off_t ret = ::lseek(hostFd_, offset, SEEK_CUR);
         verify(ret >= 0, "advanceInternalOffset failed in HostDevice");

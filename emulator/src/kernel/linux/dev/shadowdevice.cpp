@@ -103,6 +103,11 @@ namespace kernel::gnulinux {
         return ErrnoOrBuffer(-ENOTSUP);
     }
 
+    ErrnoOrBuffer ShadowDevice::statx(unsigned int) {
+        verify(false, "ShadowDevice::statx not implemented");
+        return ErrnoOrBuffer(-ENOTSUP);
+    }
+
     off_t ShadowDevice::lseek(OpenFileDescription&, off_t, int) {
         verify(false, "ShadowDevice::lseek not implemented");
         return -ENOTSUP;

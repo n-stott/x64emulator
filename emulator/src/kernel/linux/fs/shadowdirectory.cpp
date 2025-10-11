@@ -39,4 +39,9 @@ namespace kernel::gnulinux {
         return errnoOrBuffer;
     }
 
+    ErrnoOrBuffer ShadowDirectory::statx(unsigned int mask) {
+        verify(false, fmt::format("File::statx(mask={:#x}) not implemented for file type {}\n", mask, className()));
+        return ErrnoOrBuffer(-ENOTSUP);
+    }
+
 }
