@@ -484,11 +484,11 @@ namespace x64::ir {
             // don't trust any other instruction than movs for now
             if(curr.op() != Op::MOV) continue;
             // only eliminate duplicate writes to registers
-            auto dstReg = curr.out().as<R64>();
-            if(!dstReg) continue;
+            if(!curr.out().isRegister()) continue;
             // don't optimize register-register movs (yet)
-            auto srcMem = curr.in1().as<M64>();
-            if(!srcMem) continue;
+            if(!curr.in1().isMemory()) continue;
+            auto srcMem = curr.in1().memory();
+            assert(!!srcMem);
 
             // look ahead for a duplicate mov
             for(size_t j = i+1; j < ir->instructions.size(); ++j) {
@@ -501,10 +501,10 @@ namespace x64::ir {
                     i = j+1;
                     break;
                 }
-                bool writesToDst = next.writesTo(*dstReg);
+                bool writesToDst = next.writesTo(curr.out());
                 bool writesToMemBase = next.writesTo(srcMem->encoding.base);
                 bool writesToMemIndex = next.writesTo(srcMem->encoding.index);
-                bool mayWriteToSrc = next.mayWriteTo(*srcMem);
+                bool mayWriteToSrc = next.writesTo(curr.in1());
                 // if the mov impacts the src or dst, we need to abort
                 if(writesToDst || writesToMemBase || writesToMemIndex || mayWriteToSrc) {
                     break;

@@ -195,6 +195,8 @@ namespace x64 {
         UNREACHABLE();
     }
 
+    inline R64 containingRegister(R64 reg) { return reg; }
+
     enum class MMX : u8 {
         MM0,
         MM1,

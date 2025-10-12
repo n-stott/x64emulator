@@ -342,13 +342,26 @@ namespace x64::ir {
         return false;
     }
 
+    bool Instruction::writesTo(const Operand& op) const {
+        if(out_.mayAlias(op)) return true;
+        if(auto reg = op.containingGpr()) {
+            if(impactedRegisters64_.test((u32)reg.value())) return true;
+        }
+        return false;
+    }
+
     bool Instruction::writesTo(R64 reg) const {
-        if(auto r8 = out_.as<R8>(); !!r8 && reg == containingRegister(*r8)) return true;
-        if(auto r16 = out_.as<R16>(); !!r16 && reg == containingRegister(*r16)) return true;
-        if(auto r32 = out_.as<R32>(); !!r32 && reg == containingRegister(*r32)) return true;
-        if(auto r64 = out_.as<R64>(); !!r64 && reg == *r64) return true;
+        if(out_.mayAlias(reg)) return true;
         if(impactedRegisters64_.test((u32)reg)) return true;
         return false;
+    }
+
+    bool Instruction::writesTo(MMX reg) const {
+        return out_.mayAlias(reg);
+    }
+
+    bool Instruction::writesTo(XMM reg) const {
+        return out_.mayAlias(reg);
     }
 
     bool Instruction::mayWriteTo(const M64& mem) const {
@@ -541,6 +554,206 @@ namespace x64::ir {
         }
         return true;
     }
+
+    bool Operand::mayAlias(const Operand& other) const {
+        return std::visit([&](const auto& value) { return this->mayAlias(value); }, other.value_);
+    }
+    
+    bool Operand::mayAlias(const Void&) const { return false; }
+    bool Operand::mayAlias(const u8&) const { return false; }
+    bool Operand::mayAlias(const u16&) const { return false; }
+    bool Operand::mayAlias(const u32&) const { return false; }
+    bool Operand::mayAlias(const u64&) const { return false; }
+
+    bool Operand::mayAlias(const R8& other) const {
+        if(auto r8 = as<R8>()) {
+            return containingRegister(r8.value()) == containingRegister(other);
+        }
+        if(auto r16 = as<R16>()) {
+            return containingRegister(r16.value()) == containingRegister(other);
+        }
+        if(auto r32 = as<R32>()) {
+            return containingRegister(r32.value()) == containingRegister(other);
+        }
+        if(auto r64 = as<R64>()) {
+            return r64 == containingRegister(other);
+        }
+        return false;
+    }
+
+    bool Operand::mayAlias(const R16& other) const {
+        if(auto r8 = as<R8>()) {
+            return containingRegister(r8.value()) == containingRegister(other);
+        }
+        if(auto r16 = as<R16>()) {
+            return containingRegister(r16.value()) == containingRegister(other);
+        }
+        if(auto r32 = as<R32>()) {
+            return containingRegister(r32.value()) == containingRegister(other);
+        }
+        if(auto r64 = as<R64>()) {
+            return r64 == containingRegister(other);
+        }
+        return false;
+    }
+
+    bool Operand::mayAlias(const R32& other) const {
+        if(auto r8 = as<R8>()) {
+            return containingRegister(r8.value()) == containingRegister(other);
+        }
+        if(auto r16 = as<R16>()) {
+            return containingRegister(r16.value()) == containingRegister(other);
+        }
+        if(auto r32 = as<R32>()) {
+            return containingRegister(r32.value()) == containingRegister(other);
+        }
+        if(auto r64 = as<R64>()) {
+            return r64 == containingRegister(other);
+        }
+        return false;
+    }
+
+    bool Operand::mayAlias(const R64& other) const {
+        if(auto r8 = as<R8>()) {
+            return containingRegister(r8.value()) == other;
+        }
+        if(auto r16 = as<R16>()) {
+            return containingRegister(r16.value()) == other;
+        }
+        if(auto r32 = as<R32>()) {
+            return containingRegister(r32.value()) == other;
+        }
+        if(auto r64 = as<R64>()) {
+            return r64 == other;
+        }
+        return false;
+    }
+
+    bool Operand::mayAlias(const MMX& other) const {
+        if(auto mmx = as<MMX>()) {
+            return mmx.value() == other;
+        }
+        return false;
+    }
+
+    bool Operand::mayAlias(const XMM& other) const {
+        if(auto xmm = as<XMM>()) {
+            return xmm.value() == other;
+        }
+        return false;
+    }
+
+    template<Size Size1, Size Size2>
+    static bool addressesMayAlias(const M<Size1>& mem1, const M<Size2>& mem2) {
+        // don't take risks when pointers have different size
+        if(Size1 != Size2) return true;
+
+        // don't trust memory locations in fs segment (essentially)
+        if(mem1.segment == Segment::FS || mem2.segment == Segment::FS) return true;
+
+        const Encoding64& enc1 = mem1.encoding;
+        const Encoding64& enc2 = mem2.encoding;
+
+        // in the jit, a different base means addresses cannot clash
+        if(enc1.base != enc2.base) return false;
+        
+        // if there is an index, we cannot say anything
+        if(enc1.index != R64::ZERO || enc2.index != R64::ZERO) return true;
+
+        // don't look at unaligned reads/writes
+        if(enc1.displacement % 4 != 0 || enc2.displacement % 4 != 0) return true;
+        
+        // if the displacements do not match, addresses cannot clash
+        if(enc1.displacement != enc2.displacement) return false;
+
+        // otherwise, don't take risks
+        return true;
+    }
+
+    bool Operand::mayAlias(const M8& other) const {
+        if(auto m8 = as<M8>()) {
+            return addressesMayAlias(m8.value(), other);
+        }
+        if(auto m16 = as<M16>()) {
+            return addressesMayAlias(m16.value(), other);
+        }
+        if(auto m32 = as<M32>()) {
+            return addressesMayAlias(m32.value(), other);
+        }
+        if(auto m64 = as<M64>()) {
+            return addressesMayAlias(m64.value(), other);
+        }
+        return false;
+    }
+
+    bool Operand::mayAlias(const M16& other) const {
+        if(auto m8 = as<M8>()) {
+            return addressesMayAlias(m8.value(), other);
+        }
+        if(auto m16 = as<M16>()) {
+            return addressesMayAlias(m16.value(), other);
+        }
+        if(auto m32 = as<M32>()) {
+            return addressesMayAlias(m32.value(), other);
+        }
+        if(auto m64 = as<M64>()) {
+            return addressesMayAlias(m64.value(), other);
+        }
+        return false;
+    }
+
+    bool Operand::mayAlias(const M32& other) const {
+        if(auto m8 = as<M8>()) {
+            return addressesMayAlias(m8.value(), other);
+        }
+        if(auto m16 = as<M16>()) {
+            return addressesMayAlias(m16.value(), other);
+        }
+        if(auto m32 = as<M32>()) {
+            return addressesMayAlias(m32.value(), other);
+        }
+        if(auto m64 = as<M64>()) {
+            return addressesMayAlias(m64.value(), other);
+        }
+        return false;
+    }
+
+    bool Operand::mayAlias(const M64& other) const {
+        if(auto m8 = as<M8>()) {
+            return addressesMayAlias(m8.value(), other);
+        }
+        if(auto m16 = as<M16>()) {
+            return addressesMayAlias(m16.value(), other);
+        }
+        if(auto m32 = as<M32>()) {
+            return addressesMayAlias(m32.value(), other);
+        }
+        if(auto m64 = as<M64>()) {
+            return addressesMayAlias(m64.value(), other);
+        }
+        return false;
+    }
+
+    bool Operand::mayAlias(const M128& other) const {
+        if(auto m8 = as<M8>()) {
+            return addressesMayAlias(m8.value(), other);
+        }
+        if(auto m16 = as<M16>()) {
+            return addressesMayAlias(m16.value(), other);
+        }
+        if(auto m32 = as<M32>()) {
+            return addressesMayAlias(m32.value(), other);
+        }
+        if(auto m64 = as<M64>()) {
+            return addressesMayAlias(m64.value(), other);
+        }
+        return false;
+    }
+
+    bool Operand::mayAlias(const LabelIndex&) const {
+        return true;
+    }
+
 
     bool Instruction::canCommute(const Instruction& a, const Instruction& b) {
         // Complicated cases have dedicated path

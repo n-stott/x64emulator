@@ -75,9 +75,61 @@ namespace x64::ir {
 
         bool impacts(const Operand& other) const;
 
+        bool mayAlias(const Operand& other) const;
+        bool mayAlias(const R8& other) const;
+        bool mayAlias(const R16& other) const;
+        bool mayAlias(const R32& other) const;
+        bool mayAlias(const R64& other) const;
+        bool mayAlias(const MMX& other) const;
+        bool mayAlias(const XMM& other) const;
+        bool mayAlias(const M8& other) const;
+        bool mayAlias(const M16& other) const;
+        bool mayAlias(const M32& other) const;
+        bool mayAlias(const M64& other) const;
+        bool mayAlias(const M128& other) const;
+
         bool readsFrom(R64 reg) const;
 
         std::string toString() const;
+
+        bool isRegister() const {
+            return std::holds_alternative<R8>(value_)
+                || std::holds_alternative<R16>(value_)
+                || std::holds_alternative<R32>(value_)
+                || std::holds_alternative<R64>(value_)
+                || std::holds_alternative<MMX>(value_)
+                || std::holds_alternative<XMM>(value_);
+        }
+
+        std::optional<R64> containingGpr() const {
+            if(auto r8 = as<R8>()) return containingRegister(*r8);
+            if(auto r16 = as<R16>()) return containingRegister(*r16);
+            if(auto r32 = as<R32>()) return containingRegister(*r32);
+            if(auto r64 = as<R64>()) return containingRegister(*r64);
+            return {};
+        }
+
+        bool isMemory() const {
+            return std::holds_alternative<M8>(value_)
+                || std::holds_alternative<M16>(value_)
+                || std::holds_alternative<M32>(value_)
+                || std::holds_alternative<M64>(value_)
+                || std::holds_alternative<M128>(value_);
+        }
+
+        struct Memory {
+            Segment segment;
+            Encoding64 encoding;
+        };
+
+        std::optional<Memory> memory() const {
+            if(auto m8 = as<M8>()) return Memory { m8->segment, m8->encoding };
+            if(auto m16 = as<M16>()) return Memory { m16->segment, m16->encoding };
+            if(auto m32 = as<M32>()) return Memory { m32->segment, m32->encoding };
+            if(auto m64 = as<M64>()) return Memory { m64->segment, m64->encoding };
+            if(auto m128 = as<M128>()) return Memory { m128->segment, m128->encoding };
+            return {};
+        }
 
     private:
         struct Void {
@@ -89,6 +141,13 @@ namespace x64::ir {
                     M8, M16, M32, M64,
                     MMX, XMM, M128,
                     LabelIndex> value_;
+
+        bool mayAlias(const Void& other) const;
+        bool mayAlias(const u8& other) const;
+        bool mayAlias(const u16& other) const;
+        bool mayAlias(const u32& other) const;
+        bool mayAlias(const u64& other) const;
+        bool mayAlias(const LabelIndex& other) const;
     };
 
     enum class Op {
@@ -323,7 +382,10 @@ namespace x64::ir {
         std::string toString() const;
 
         bool readsFrom(R64 reg) const;
+        bool writesTo(const Operand& op) const;
         bool writesTo(R64 reg) const;
+        bool writesTo(MMX reg) const;
+        bool writesTo(XMM reg) const;
 
         bool mayWriteTo(const M64& mem) const;
 
