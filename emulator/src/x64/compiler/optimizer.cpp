@@ -71,6 +71,7 @@ namespace x64::ir {
 
     struct LivenessAnalysis {
         std::vector<BitMask<3>> gprs;
+        std::vector<BitMask<3>> mmxs;
         std::vector<BitMask<3>> xmms;
 
         std::vector<M64> allAddresses64;
@@ -82,6 +83,7 @@ namespace x64::ir {
         void clear() {
             gprs.clear();
             xmms.clear();
+            mmxs.clear();
             allAddresses64.clear();
             addresses64.clear();
             allAddresses128.clear();
@@ -152,6 +154,7 @@ namespace x64::ir {
         for(R64 alwaysLive : alwaysLiveGprs) {
             a.gprs.back().set((u32)alwaysLive);
         }
+        a.mmxs.resize(ir.instructions.size()+1);
         a.xmms.resize(ir.instructions.size()+1);
 
         a.addresses64.clear();
@@ -164,6 +167,7 @@ namespace x64::ir {
         for(size_t i = ir.instructions.size(); i --> 0;) {
             const auto& ins = ir.instructions[i];
             a.gprs[i] = a.gprs[i+1];
+            a.mmxs[i] = a.mmxs[i+1];
             a.xmms[i] = a.xmms[i+1];
             a.addresses64[i] = a.addresses64[i+1];
             a.addresses128[i] = a.addresses128[i+1];
@@ -244,6 +248,8 @@ namespace x64::ir {
                 } else if constexpr(std::is_same_v<T, R64>) {
                     a.gprs[i].reset((u32)arg);
                     markAllAddressesInvolvingRegisterAsAlive(arg);
+                } else if constexpr(std::is_same_v<T, MMX>) {
+                    a.mmxs[i].reset((u32)arg);
                 } else if constexpr(std::is_same_v<T, XMM>) {
                     a.xmms[i].reset((u32)arg);
                 } else if constexpr(std::is_same_v<T, M8>) {
@@ -287,6 +293,8 @@ namespace x64::ir {
                 } else if constexpr(std::is_same_v<T, R64>) {
                     a.gprs[i].set((u32)arg);
                     markAllAddressesInvolvingRegisterAsAlive(arg);
+                } else if constexpr(std::is_same_v<T, MMX>) {
+                    a.mmxs[i].set((u32)arg);
                 } else if constexpr(std::is_same_v<T, XMM>) {
                     a.xmms[i].set((u32)arg);
                 } else if constexpr(std::is_same_v<T, M8>) {
@@ -390,6 +398,10 @@ namespace x64::ir {
             if(skipInstruction) continue;
             if(auto r64out = ins.out().as<R64>()) {
                 if(analysis_->gprs[i+1].test((u32)r64out.value())) continue;
+                removableInstructions_.push_back(i);
+            }
+            if(auto rmmxout = ins.out().as<MMX>()) {
+                if(analysis_->mmxs[i+1].test((u32)rmmxout.value())) continue;
                 removableInstructions_.push_back(i);
             }
             if(auto r128out = ins.out().as<XMM>()) {

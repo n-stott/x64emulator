@@ -20,7 +20,6 @@ IR testA() {
 }
 
 IR testB() {
-
     M128 addressA { Segment::UNK, Encoding64 { R64::RDX, R64::ZERO, 1, 0x60 } };
     M128 addressB { Segment::UNK, Encoding64 { R64::RDX, R64::ZERO, 1, 0x70 } };
 
@@ -33,6 +32,32 @@ IR testB() {
     generator.mova(XMM::XMM7, addressB);
     generator.pcmpeqb(XMM::XMM7, XMM::XMM6);
     generator.mova(addressB, XMM::XMM7);
+    IR ir = generator.generateIR();
+    return ir;
+}
+
+IR testC() {
+    M64 addressA { Segment::UNK, Encoding64 { R64::RDX, R64::ZERO, 1, 0x60 } };
+    M64 addressB { Segment::UNK, Encoding64 { R64::RDX, R64::ZERO, 1, 0x68 } };
+
+    IrGenerator generator;
+    generator.movq(MMX::MM0, addressA);
+    generator.movq(addressB, MMX::MM0);
+    generator.movq(MMX::MM0, addressA);
+    IR ir = generator.generateIR();
+    return ir;
+}    
+
+IR testD() {
+    M64 addressA { Segment::UNK, Encoding64 { R64::R11, R64::ZERO, 1, 0x0 } };
+    M64 addressB { Segment::UNK, Encoding64 { R64::R11, R64::ZERO, 1, 0x38 } };
+
+    IrGenerator generator;
+    generator.movq(MMX::MM0, addressA);
+    generator.movq(addressB, MMX::MM0);
+    generator.movq(MMX::MM0, addressA);
+    generator.punpcklbw(MMX::MM0, MMX::MM0);
+    generator.movq(addressA, MMX::MM0);
     IR ir = generator.generateIR();
     return ir;
 }
@@ -50,6 +75,12 @@ Optimizer deadCodeAndDelayedReadback() {
     return optimizer;
 }
 
+Optimizer duplicateInstructionOnly() {
+    Optimizer optimizer;
+    optimizer.addPass<DuplicateInstructionElimination>();
+    return optimizer;
+}
+
 int main() {
     struct IrAndOptimizer {
         IR(*ir)();
@@ -58,6 +89,8 @@ int main() {
     std::vector<IrAndOptimizer> irs {
         IrAndOptimizer{&testA, &deadCodeOnly},
         IrAndOptimizer{&testB, &deadCodeAndDelayedReadback},
+        IrAndOptimizer{&testC, &deadCodeOnly},
+        IrAndOptimizer{&testD, &duplicateInstructionOnly},
     };
     for(auto func : irs) {
         IR ir = func.ir();
