@@ -46,7 +46,7 @@ IR testC() {
     generator.movq(MMX::MM0, addressA);
     IR ir = generator.generateIR();
     return ir;
-}    
+}
 
 IR testD() {
     M64 addressA { Segment::UNK, Encoding64 { R64::R11, R64::ZERO, 1, 0x0 } };
@@ -58,6 +58,20 @@ IR testD() {
     generator.movq(MMX::MM0, addressA);
     generator.punpcklbw(MMX::MM0, MMX::MM0);
     generator.movq(addressA, MMX::MM0);
+    IR ir = generator.generateIR();
+    return ir;
+}
+
+IR testE() {
+    M64 addressA { Segment::UNK, Encoding64 { R64::RSI, R64::ZERO, 1, 0x20 } };
+    M32 addressB { Segment::UNK, Encoding64 { R64::RCX, R64::R10, 1, 0x38 } };
+
+    IrGenerator generator;
+    generator.mov(R32::R8D, 0);
+    generator.mov(R64::R10, addressA);
+    generator.mov(addressB, R32::R8D);
+    generator.mov(R64::R10, addressA);
+    generator.mov(addressB, R32::R8D);
     IR ir = generator.generateIR();
     return ir;
 }
@@ -91,6 +105,7 @@ int main() {
         IrAndOptimizer{&testB, &deadCodeAndDelayedReadback},
         IrAndOptimizer{&testC, &deadCodeOnly},
         IrAndOptimizer{&testD, &duplicateInstructionOnly},
+        IrAndOptimizer{&testE, &duplicateInstructionOnly},
     };
     for(auto func : irs) {
         IR ir = func.ir();

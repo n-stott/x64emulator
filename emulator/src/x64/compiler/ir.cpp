@@ -645,8 +645,6 @@ namespace x64::ir {
 
     template<Size Size1, Size Size2>
     static bool addressesMayAlias(const M<Size1>& mem1, const M<Size2>& mem2) {
-        // don't take risks when pointers have different size
-        if(Size1 != Size2) return true;
 
         // don't trust memory locations in fs segment (essentially)
         if(mem1.segment == Segment::FS || mem2.segment == Segment::FS) return true;
@@ -656,6 +654,9 @@ namespace x64::ir {
 
         // in the jit, a different base means addresses cannot clash
         if(enc1.base != enc2.base) return false;
+
+        // don't take risks when pointers have different size
+        if(Size1 != Size2) return true;
         
         // if there is an index, we cannot say anything
         if(enc1.index != R64::ZERO || enc2.index != R64::ZERO) return true;
