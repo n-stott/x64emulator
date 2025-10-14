@@ -218,6 +218,7 @@ namespace x64::ir {
             case Op::CMPPS: return "cmpps";
             case Op::CVTPS2DQ: return "cvtps2dq";
             case Op::CVTTPS2DQ: return "cvttps2dq";
+            case Op::CVTTPD2DQ: return "cvttpd2dq";
             case Op::CVTDQ2PS: return "cvtdq2ps";
             case Op::ADDPD: return "addpd";
             case Op::SUBPD: return "subpd";

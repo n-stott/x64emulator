@@ -822,6 +822,7 @@ namespace x64 {
         void execCvtsd2ssXMMM64(const X64Instruction&);
 
         void execCvttps2dqXMMXMMM128(const X64Instruction&);
+        void execCvttpd2dqXMMXMMM128(const X64Instruction&);
 
         void execCvttss2siR32XMM(const X64Instruction&);
         void execCvttss2siR32M32(const X64Instruction&);

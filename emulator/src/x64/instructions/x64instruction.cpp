@@ -541,6 +541,7 @@ namespace x64 {
             case Insn::CVTSD2SS_XMM_XMM: return toString<XMM, XMM>("cvtsd2ss");
             case Insn::CVTSD2SS_XMM_M64: return toString<XMM, M64>("cvtsd2ss");
             case Insn::CVTTPS2DQ_XMM_XMMM128: return toString<XMM, XMMM128>("cvttps2dq");
+            case Insn::CVTTPD2DQ_XMM_XMMM128: return toString<XMM, XMMM128>("cvttpd2dq");
             case Insn::CVTTSS2SI_R32_XMM: return toString<R32, XMM>("cvttss2si");
             case Insn::CVTTSS2SI_R32_M32: return toString<R32, M32>("cvttss2si");
             case Insn::CVTTSS2SI_R64_XMM: return toString<R64, XMM>("cvttss2si");

@@ -837,6 +837,10 @@ namespace x64 {
         return checkCall<u128>(&CpuImpl::cvttps2dq, &NativeCpuImpl::cvttps2dq, src);
     }
 
+    u128 CheckedCpuImpl::cvttpd2dq(u128 src) {
+        return checkCall<u128>(&CpuImpl::cvttpd2dq, &NativeCpuImpl::cvttpd2dq, src);
+    }
+
     u32 CheckedCpuImpl::cvttss2si32(u128 src) {
         return checkCall<u32>(&CpuImpl::cvttss2si32, &NativeCpuImpl::cvttss2si32, src);
     }

@@ -1840,6 +1840,12 @@ namespace x64 {
         return nativeRes;
     }
 
+    u128 NativeCpuImpl::cvttpd2dq(u128 src) {
+        u128 nativeRes;
+        asm volatile("cvttpd2dq %1, %0" : "+x"(nativeRes) : "x"(src));
+        return nativeRes;
+    }
+
     u32 NativeCpuImpl::cvttss2si32(u128 src) {
         u32 nativeRes = 0;
         asm volatile("cvttss2si %1, %0" : "=r"(nativeRes) : "x"(src));

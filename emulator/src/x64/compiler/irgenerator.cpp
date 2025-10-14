@@ -449,6 +449,7 @@ namespace x64::ir {
     void IrGenerator::cmpps(XMM dst, XMM src, FCond cond) { emit(Op::CMPPS, dst, dst, src).addFCond(cond); }
     void IrGenerator::cvtps2dq(XMM dst, XMM src) { emit(Op::CVTPS2DQ, dst, dst, src); }
     void IrGenerator::cvttps2dq(XMM dst, XMM src) { emit(Op::CVTTPS2DQ, dst, dst, src); }
+    void IrGenerator::cvttpd2dq(XMM dst, XMM src) { emit(Op::CVTTPD2DQ, dst, dst, src); }
     void IrGenerator::cvtdq2ps(XMM dst, XMM src) { emit(Op::CVTDQ2PS, dst, dst, src); }
 
     void IrGenerator::addpd(XMM dst, XMM src) { emit(Op::ADDPD, dst, dst, src); }

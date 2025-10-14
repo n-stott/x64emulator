@@ -314,6 +314,7 @@ namespace x64::ir {
         CMPPS,
         CVTPS2DQ,
         CVTTPS2DQ,
+        CVTTPD2DQ,
         CVTDQ2PS,
         ADDPD,
         SUBPD,

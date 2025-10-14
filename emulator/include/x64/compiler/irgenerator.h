@@ -406,6 +406,7 @@ namespace x64::ir {
         void cmpps(XMM, XMM, FCond);
         void cvtps2dq(XMM, XMM);
         void cvttps2dq(XMM, XMM);
+        void cvttpd2dq(XMM, XMM);
         void cvtdq2ps(XMM, XMM);
 
         void addpd(XMM, XMM);

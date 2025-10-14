@@ -2628,6 +2628,18 @@ namespace x64 {
                     }
                     break;
                 }
+                case ir::Op::CVTTPD2DQ: {
+                    auto r128dst = ins.out().as<XMM>();
+                    assert(r128dst == ins.in1().as<XMM>());
+                    auto r128src2 = ins.in2().as<XMM>();
+
+                    if(r128dst && r128src2) {
+                        assembler_->cvttpd2dq(r128dst.value(), r128src2.value());
+                    } else {
+                        return fail();
+                    }
+                    break;
+                }
                 case ir::Op::CVTDQ2PS: {
                     auto r128dst = ins.out().as<XMM>();
                     assert(r128dst == ins.in1().as<XMM>());

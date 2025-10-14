@@ -2868,6 +2868,16 @@ namespace x64 {
         if(rssedst && rmssesrc) return X64Instruction::make<Insn::CVTTPS2DQ_XMM_XMMM128>(insn.runtime_address, insn.info.length, rssedst.value(), rmssesrc.value());
         return make_failed(insn);
     }
+
+    static X64Instruction makeCvttpd2dq(const ZydisDisassembledInstruction& insn) {
+        assert(insn.info.operand_count_visible == 2);
+        const auto& dst = insn.operands[0];
+        const auto& src = insn.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto rmssesrc = asRM128(src);
+        if(rssedst && rmssesrc) return X64Instruction::make<Insn::CVTTPD2DQ_XMM_XMMM128>(insn.runtime_address, insn.info.length, rssedst.value(), rmssesrc.value());
+        return make_failed(insn);
+    }
     
     static X64Instruction makeCvttss2si(const ZydisDisassembledInstruction& insn) {
         assert(insn.info.operand_count_visible == 2);
@@ -4531,6 +4541,7 @@ namespace x64 {
             case ZYDIS_MNEMONIC_CVTSD2SI: return makeCvtsd2si(insn);
             case ZYDIS_MNEMONIC_CVTSD2SS: return makeCvtsd2ss(insn);
             case ZYDIS_MNEMONIC_CVTTPS2DQ: return makeCvttps2dq(insn);
+            case ZYDIS_MNEMONIC_CVTTPD2DQ: return makeCvttpd2dq(insn);
             case ZYDIS_MNEMONIC_CVTTSS2SI: return makeCvttss2si(insn);
             case ZYDIS_MNEMONIC_CVTTSD2SI: return makeCvttsd2si(insn);
             case ZYDIS_MNEMONIC_CVTDQ2PS: return makeCvtdq2ps(insn);

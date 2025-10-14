@@ -710,6 +710,7 @@ namespace x64 {
     DEFINE_STANDALONE(CVTSD2SI_R64_XMM, execCvtsd2siR64XMM)
     DEFINE_STANDALONE(CVTSD2SI_R64_M64, execCvtsd2siR64M64)
     DEFINE_STANDALONE(CVTTPS2DQ_XMM_XMMM128, execCvttps2dqXMMXMMM128)
+    DEFINE_STANDALONE(CVTTPD2DQ_XMM_XMMM128, execCvttpd2dqXMMXMMM128)
     DEFINE_STANDALONE(CVTTSS2SI_R32_XMM, execCvttss2siR32XMM)
     DEFINE_STANDALONE(CVTTSS2SI_R32_M32, execCvttss2siR32M32)
     DEFINE_STANDALONE(CVTTSS2SI_R64_XMM, execCvttss2siR64XMM)
@@ -1441,6 +1442,7 @@ namespace x64 {
         STANDALONE_NAME(CVTSD2SI_R64_XMM),
         STANDALONE_NAME(CVTSD2SI_R64_M64),
         STANDALONE_NAME(CVTTPS2DQ_XMM_XMMM128),
+        STANDALONE_NAME(CVTTPD2DQ_XMM_XMMM128),
         STANDALONE_NAME(CVTTSS2SI_R32_XMM),
         STANDALONE_NAME(CVTTSS2SI_R32_M32),
         STANDALONE_NAME(CVTTSS2SI_R64_XMM),
@@ -4995,6 +4997,12 @@ namespace x64 {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         set(dst, Impl::cvttps2dq(get(src)));
+    }
+
+    void Cpu::execCvttpd2dqXMMXMMM128(const X64Instruction& ins) {
+        const auto& dst = ins.op0<XMM>();
+        const auto& src = ins.op1<XMMM128>();
+        set(dst, Impl::cvttpd2dq(get(src)));
     }
 
     void Cpu::execCvttss2siR32XMM(const X64Instruction& ins) {
