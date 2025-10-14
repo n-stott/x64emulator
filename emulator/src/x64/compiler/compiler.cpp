@@ -736,10 +736,7 @@ namespace x64 {
     }
 
     bool Compiler::tryAdvanceInstructionPointer(u64 nextAddress) {
-        // load the immediate value
-        loadImm64(Reg::GPR0, nextAddress);
-        // write to the RIP register
-        writeReg64(R64::RIP, Reg::GPR0);
+        writeReg64(R64::RIP, nextAddress, TmpReg{Reg::GPR0});
         return true;
     }
 
@@ -5015,6 +5012,20 @@ namespace x64 {
         M64 d = make64(get(Reg::REG_BASE), registerOffset(dst));
         R64 s = get(src);
         generator_->mov(d, s);
+    }
+
+    void Compiler::writeReg64(R64 dst, u64 imm, TmpReg tmp) {
+        u64 signExtended32bitImm = (u64)(i64)(i32)(u32)imm;
+        if(imm == signExtended32bitImm) {
+            // load the immediate directly
+            M64 d = make64(get(Reg::REG_BASE), registerOffset(dst));
+            generator_->mov(d, (u32)imm);
+        } else {
+            // load the immediate value to an intermediate register
+            loadImm64(tmp.reg, imm);
+            // write to the register
+            writeReg64(dst, tmp.reg);
+        }
     }
 
     void Compiler::readMem8(Reg dst, const Mem& address) {

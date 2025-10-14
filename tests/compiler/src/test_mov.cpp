@@ -214,11 +214,85 @@ void testMov128() {
     }
 }
 
+void testMovM64Imm32(const M64& dst, u32 imm) {
+    Assembler assembler;
+    assembler.mov(dst, imm);
+    std::vector<u8> code = assembler.code();
+    CapstoneWrapper disassembler;
+    auto disassembly = disassembler.disassembleRange(code.data(), code.size(), 0x0);
+    verify(disassembly.instructions.size() == 1);
+    const auto& ins = disassembly.instructions[0];
+    verify(ins.insn() == Insn::MOV_M64_IMM);
+    M64 disdst = ins.op0<M64>();
+    Imm disimm = ins.op1<Imm>();
+    verify(disdst == dst);
+    verify(disimm.as<u32>() == imm);
+}
+
+void testMovM64Imm32() {
+    std::array<R64, 14> bases {{
+        R64::RAX,
+        R64::RCX,
+        R64::RDX,
+        R64::RBX,
+        R64::RSI,
+        R64::RDI,
+        R64::R8,
+        R64::R9,
+        R64::R10,
+        R64::R11,
+        R64::R12,
+        R64::R13,
+        R64::R14,
+        R64::R15,
+    }};
+    std::array<R64, 14> indexes {{
+        R64::RAX,
+        R64::RCX,
+        R64::RDX,
+        R64::RBX,
+        R64::RSI,
+        R64::RDI,
+        R64::R8,
+        R64::R9,
+        R64::R10,
+        R64::R11,
+        R64::R12,
+        R64::R13,
+        R64::R14,
+        R64::R15,
+    }};
+    std::array<u8, 3> scales {{
+        1, 2, 4
+    }};
+    std::array<i32, 8> diss {{
+        0, 1,  2,  4,
+        8, 16, -2, -4
+    }};
+    std::array<u32, 8> imms {{
+        +0, +1, +2, +3,
+        (u32)-1, (u32)-2, (u32)-3, (u32)-4
+    }};
+    for(auto base : bases) {
+        for(auto index : indexes) {
+            for(auto scale : scales) {
+                for(auto dis : diss) {
+                    for(auto imm : imms) {
+                        M64 mem { Segment::UNK, Encoding64{base, index, scale, dis} };
+                        testMovM64Imm32(mem, imm);
+                    }
+                }
+            }
+        }
+    }
+}
+
 int main() {
     try {
         testMov32();
         testMov64();
         testMov128();
+        testMovM64Imm32();
     } catch(...) {
         return 1;
     }

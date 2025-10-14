@@ -99,6 +99,8 @@ namespace x64 {
                         assembler_->mov(r64dst.value(), r64src.value());
                     } else if(m64dst && r64src) {
                         assembler_->mov(m64dst.value(), r64src.value());
+                    } else if(m64dst && imm32src) {
+                        assembler_->mov(m64dst.value(), imm32src.value());
                     } else if(r64dst && m64src) {
                         assembler_->mov(r64dst.value(), m64src.value());
                     } else if(r8dst && imm8src) {

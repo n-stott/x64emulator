@@ -32,6 +32,7 @@ namespace x64 {
         void mov(const M32& dst, R32 src);
         void mov(R64 dst, const M64& src);
         void mov(const M64& dst, R64 src);
+        void mov(const M64& dst, u32 imm);
         void movzx(R32 dst, R8 src);
         void movzx(R32 dst, R16 src);
         void movzx(R64 dst, R8 src);

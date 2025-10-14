@@ -563,6 +563,7 @@ namespace x64 {
         void writeMem32(const Mem& address, Reg src);
         void readReg64(Reg dst, R64 src);
         void writeReg64(R64 dst, Reg src);
+        void writeReg64(R64 dst, u64 imm, TmpReg tmp);
         void readMem64(Reg dst, const Mem& address);
         void writeMem64(const Mem& address, Reg src);
 
