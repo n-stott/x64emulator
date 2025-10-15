@@ -3,9 +3,11 @@
 
 namespace kernel::gnulinux {
 
-    std::unique_ptr<Path> Path::tryCreate(std::string pathname) {
+    std::unique_ptr<Path> Path::tryCreate(std::string pathname, std::string cwd) {
         verify(!pathname.empty(), "Cannot create path from empty pathname");
-        verify(pathname[0] == '/', "Cannot create path from non-absolute pathname");
+        if(pathname[0] != '/') {
+            return tryJoin(cwd, pathname);
+        }
         std::vector<std::string> components;
         size_t pos = 1;
         while(true) {

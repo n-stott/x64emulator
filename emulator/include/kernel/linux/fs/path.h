@@ -11,7 +11,7 @@ namespace kernel::gnulinux {
 
     class Path {
     public:
-        static std::unique_ptr<Path> tryCreate(std::string pathname);
+        static std::unique_ptr<Path> tryCreate(std::string pathname, std::string cwd = "");
 
         static std::unique_ptr<Path> tryJoin(const std::string& prefix, const std::string& suffix);
 

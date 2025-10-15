@@ -407,7 +407,7 @@ namespace kernel::gnulinux {
     }
 
     int FS::mkdir(const std::string& pathname) {
-        auto path = Path::tryCreate(pathname);
+        auto path = Path::tryCreate(pathname, cwd()->path());
         if(!path) return -ENOENT;
         ensureCompletePath(*path);
         return 0;
