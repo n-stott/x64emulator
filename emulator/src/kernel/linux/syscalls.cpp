@@ -149,6 +149,7 @@ namespace kernel::gnulinux {
             case 0xba: return threadRegs.set(x64::R64::RAX, invoke_syscall_0(&Sys::gettid, regs));
             case 0xbf: return threadRegs.set(x64::R64::RAX, invoke_syscall_4(&Sys::getxattr, regs));
             case 0xc0: return threadRegs.set(x64::R64::RAX, invoke_syscall_4(&Sys::lgetxattr, regs));
+            case 0xc2: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::listxattr, regs));
             case 0xc9: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::time, regs));
             case 0xca: return threadRegs.set(x64::R64::RAX, invoke_syscall_6(&Sys::futex, regs));
             case 0xcb: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::sched_setaffinity, regs));
@@ -1411,6 +1412,16 @@ namespace kernel::gnulinux {
             mmu_.copyToMmu(value, buffer.data(), buffer.size());
             return (ssize_t)buffer.size();
         });
+    }
+
+    ssize_t Sys::listxattr(x64::Ptr path, x64::Ptr list, size_t size) {
+        // auto spath = mmu_.readString(path);
+        // auto slist = mmu_.readString(list);
+        if(kernel_.logSyscalls()) {
+            print("Sys::listxattr(path={:#x}, list={:#x}, size={}) = {}\n",
+                                      path.address(), list.address(), size, -ENOTSUP);
+        }
+        return -ENOTSUP;
     }
 
     time_t Sys::time(x64::Ptr tloc) {

@@ -320,6 +320,8 @@ namespace kernel::gnulinux {
         ssize_t getxattr(x64::Ptr path, x64::Ptr name, x64::Ptr value, size_t size);
         // 0xc0
         ssize_t lgetxattr(x64::Ptr path, x64::Ptr name, x64::Ptr value, size_t size);
+        // 0xc2
+        ssize_t listxattr(x64::Ptr path, x64::Ptr list, size_t size);
         // 0xc9
         time_t time(x64::Ptr tloc);
         // 0xca
