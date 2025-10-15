@@ -73,6 +73,7 @@ namespace kernel::gnulinux {
             case 0x17: return threadRegs.set(x64::R64::RAX, invoke_syscall_5(&Sys::select, regs));
             case 0x18: return threadRegs.set(x64::R64::RAX, invoke_syscall_0(&Sys::sched_yield, regs));
             case 0x19: return threadRegs.set(x64::R64::RAX, invoke_syscall_5(&Sys::mremap, regs));
+            case 0x1a: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::msync, regs));
             case 0x1b: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::mincore, regs));
             case 0x1c: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::madvise, regs));
             case 0x1d: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::shmget, regs));
@@ -624,6 +625,15 @@ namespace kernel::gnulinux {
         }
         warn(fmt::format("mremap not implemented"));
         return x64::Ptr{(u64)-ENOTSUP};
+    }
+
+    int Sys::msync(x64::Ptr addr, size_t length, int flags) {
+        if(kernel_.logSyscalls()) {
+            print("Sys::msync(addr={:#x}, length={:#x}, flags={:#x}) = {}\n",
+                                    addr.address(), length, flags, -ENOTSUP);
+        }
+        warn("msync not implemented");
+        return -ENOTSUP;
     }
 
     int Sys::mincore(x64::Ptr addr, size_t length, x64::Ptr8 vec) {

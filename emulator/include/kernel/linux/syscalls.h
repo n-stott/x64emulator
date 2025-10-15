@@ -168,6 +168,8 @@ namespace kernel::gnulinux {
         int sched_yield();
         // 0x19
         x64::Ptr mremap(x64::Ptr old_address, size_t old_size, size_t new_size, int flags, x64::Ptr new_address);
+        // 0x1a
+        int msync(x64::Ptr addr, size_t length, int flags);
         // 0x1b
         int mincore(x64::Ptr addr, size_t length, x64::Ptr8 vec);
         // 0x1c
