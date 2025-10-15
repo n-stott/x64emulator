@@ -87,8 +87,7 @@ namespace kernel::gnulinux {
     }
 
     ErrnoOrBuffer Directory::read(OpenFileDescription&, size_t) {
-        verify(false, "Cannot read from directory");
-        return ErrnoOrBuffer(-EINVAL);
+        return ErrnoOrBuffer(-EISDIR);
     }
 
     ssize_t Directory::write(OpenFileDescription&, const u8*, size_t) {
