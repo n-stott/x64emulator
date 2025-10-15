@@ -932,7 +932,7 @@ namespace x64 {
         // NOLINTBEGIN(misc-redundant-expression)
         if(dst == (F)0.0 && src == (F)0.0) return src;
         else if(dst != dst) return src;
-        else if(src != src) return dst;
+        else if(src != src) return src;
         else if(dst > src) return dst;
         else return src;
         // NOLINTEND(misc-redundant-expression)
@@ -950,7 +950,7 @@ namespace x64 {
         // NOLINTBEGIN(misc-redundant-expression)
         if(dst == (F)0.0 && src == (F)0.0) return src;
         else if(dst != dst) return src;
-        else if(src != src) return dst;
+        else if(src != src) return src;
         else if(dst < src) return dst;
         else return src;
         // NOLINTEND(misc-redundant-expression)

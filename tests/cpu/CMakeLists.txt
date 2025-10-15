@@ -243,3 +243,11 @@ target_include_directories(test_pabs PRIVATE include ${CMAKE_SOURCE_DIR}/emulato
 target_link_libraries(test_pabs PRIVATE x64cpu)
 target_link_options(test_pabs PRIVATE ${LD_OPTIONS})
 add_test(NAME pabs COMMAND test_pabs)
+
+add_executable(test_minpd src/test_minpd.cpp)
+target_compile_options(test_minpd PRIVATE ${CC_OPTIONS})
+target_compile_options(test_minpd PRIVATE -frounding-math)
+target_include_directories(test_minpd PRIVATE include ${CMAKE_SOURCE_DIR}/emulator/include)
+target_link_libraries(test_minpd PRIVATE x64cpu)
+target_link_options(test_minpd PRIVATE ${LD_OPTIONS})
+add_test(NAME minpd COMMAND test_minpd)
