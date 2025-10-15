@@ -12,13 +12,21 @@ namespace x64 {
     static inline X64Instruction make_failed(const ZydisDisassembledInstruction& insn) {
         size_t len = strlen(insn.text);
         std::string mnemonic(insn.text, insn.text+len);
-        std::array<char, 16> name;
-        auto mnmemonic_end = std::min(mnemonic.end(), mnemonic.begin()+16);
-        auto* it = std::copy(mnemonic.begin(), mnmemonic_end, name.begin());
-        if(it != name.end()) {
-            *it++ = ' ';
+        if(len <= 16) {
+            std::array<char, 16> name0;
+            std::fill(name0.begin(), name0.end(), ' ');
+            std::copy(mnemonic.begin(), mnemonic.end(), name0.begin());
+            return X64Instruction::make<Insn::UNKNOWN>(insn.runtime_address, insn.info.length, name0);
+        } else {
+            std::array<char, 16> name0;
+            std::array<char, 16> name1;
+            std::fill(name0.begin(), name0.end(), ' ');
+            std::fill(name1.begin(), name1.end(), ' ');
+            auto mnemonic_end = std::min(mnemonic.end(), mnemonic.begin()+32);
+            std::copy(mnemonic.begin(), mnemonic.begin()+16, name0.begin());
+            std::copy(mnemonic.begin()+16, mnemonic_end, name1.begin());
+            return X64Instruction::make<Insn::UNKNOWN>(insn.runtime_address, insn.info.length, name0, name1);
         }
-        return X64Instruction::make<Insn::UNKNOWN>(insn.runtime_address, insn.info.length, name);
     }
 
     std::optional<Imm> asImmediate(const ZydisDecodedOperand& operand) {
