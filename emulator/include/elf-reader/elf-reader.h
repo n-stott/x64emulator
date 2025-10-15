@@ -41,7 +41,12 @@ namespace elf {
         std::ifstream input(filename, std::ios::in | std::ios::binary);
         if(input.fail()) return {};
         input.seekg(0, std::ios::end);
-        size_t size = (size_t)input.tellg();
+        if(input.fail()) return {};
+        std::streampos pos = input.tellg();
+        if(input.fail()) return {};
+        if(pos < 0) return {};
+        size_t size = (size_t)pos;
+        if(size >= 0x40000000) return {}; // 1GB limit
         bytes.resize(size);
         input.seekg(0, std::ios::beg);
         input.read(&bytes[0], (std::streamsize)bytes.size());
