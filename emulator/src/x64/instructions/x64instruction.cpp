@@ -141,9 +141,11 @@ namespace x64 {
             case Insn::XCHG_RM16_R16: return toString<RM16, R16>("xchg");
             case Insn::XCHG_RM32_R32: return toString<RM32, R32>("xchg");
             case Insn::XCHG_RM64_R64: return toString<RM64, R64>("xchg");
+            case Insn::XADD_RM8_R8: return toString<R8, R8>("xadd");
             case Insn::XADD_RM16_R16: return toString<R16, R16>("xadd");
             case Insn::XADD_RM32_R32: return toString<R32, R32>("xadd");
             case Insn::XADD_RM64_R64: return toString<R64, R64>("xadd");
+            case Insn::LOCK_XADD_M8_R8: return toString<M8, R8>("lock xadd");
             case Insn::LOCK_XADD_M16_R16: return toString<M16, R16>("lock xadd");
             case Insn::LOCK_XADD_M32_R32: return toString<M32, R32>("lock xadd");
             case Insn::LOCK_XADD_M64_R64: return toString<M64, R64>("lock xadd");

@@ -347,10 +347,12 @@ namespace x64 {
         void execXchgRM32R32(const X64Instruction&);
         void execXchgRM64R64(const X64Instruction&);
 
+        void execXaddRM8R8(const X64Instruction&);
         void execXaddRM16R16(const X64Instruction&);
         void execXaddRM32R32(const X64Instruction&);
         void execXaddRM64R64(const X64Instruction&);
 
+        void execLockXaddM8R8(const X64Instruction&);
         void execLockXaddM16R16(const X64Instruction&);
         void execLockXaddM32R32(const X64Instruction&);
         void execLockXaddM64R64(const X64Instruction&);

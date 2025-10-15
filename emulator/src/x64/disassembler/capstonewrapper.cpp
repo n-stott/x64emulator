@@ -974,6 +974,8 @@ namespace x64 {
         assert(x86detail.op_count == 2);
         const cs_x86_op& dst = x86detail.operands[0];
         const cs_x86_op& src = x86detail.operands[1];
+        auto rm8dst = asRM8(dst);
+        auto r8src = asRegister8(src);
         auto rm16dst = asRM16(dst);
         auto r16src = asRegister16(src);
         auto rm32dst = asRM32(dst);
@@ -981,6 +983,13 @@ namespace x64 {
         auto rm64dst = asRM64(dst);
         auto r64src = asRegister64(src);
         bool lock = (insn.detail->x86.prefix[0] == X86_PREFIX_LOCK);
+        if(rm8dst && r8src) {
+            if(!lock) {
+                return X64Instruction::make<Insn::XADD_RM8_R8>(insn.address, insn.size, rm8dst.value(), r8src.value());
+            } else if(!rm8dst->isReg) {
+                return X64Instruction::make<Insn::LOCK_XADD_M8_R8>(insn.address, insn.size, rm8dst->mem, r8src.value());
+            }
+        }
         if(rm16dst && r16src) {
             if(!lock) {
                 return X64Instruction::make<Insn::XADD_RM16_R16>(insn.address, insn.size, rm16dst.value(), r16src.value());

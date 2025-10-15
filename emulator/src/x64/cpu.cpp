@@ -311,9 +311,11 @@ namespace x64 {
     DEFINE_STANDALONE(XCHG_RM16_R16, execXchgRM16R16)
     DEFINE_STANDALONE(XCHG_RM32_R32, execXchgRM32R32)
     DEFINE_STANDALONE(XCHG_RM64_R64, execXchgRM64R64)
+    DEFINE_STANDALONE(XADD_RM8_R8, execXaddRM8R8)
     DEFINE_STANDALONE(XADD_RM16_R16, execXaddRM16R16)
     DEFINE_STANDALONE(XADD_RM32_R32, execXaddRM32R32)
     DEFINE_STANDALONE(XADD_RM64_R64, execXaddRM64R64)
+    DEFINE_STANDALONE(LOCK_XADD_M8_R8, execLockXaddM8R8)
     DEFINE_STANDALONE(LOCK_XADD_M16_R16, execLockXaddM16R16)
     DEFINE_STANDALONE(LOCK_XADD_M32_R32, execLockXaddM32R32)
     DEFINE_STANDALONE(LOCK_XADD_M64_R64, execLockXaddM64R64)
@@ -1043,9 +1045,11 @@ namespace x64 {
         STANDALONE_NAME(XCHG_RM16_R16),
         STANDALONE_NAME(XCHG_RM32_R32),
         STANDALONE_NAME(XCHG_RM64_R64),
+        STANDALONE_NAME(XADD_RM8_R8),
         STANDALONE_NAME(XADD_RM16_R16),
         STANDALONE_NAME(XADD_RM32_R32),
         STANDALONE_NAME(XADD_RM64_R64),
+        STANDALONE_NAME(LOCK_XADD_M8_R8),
         STANDALONE_NAME(LOCK_XADD_M16_R16),
         STANDALONE_NAME(LOCK_XADD_M32_R32),
         STANDALONE_NAME(LOCK_XADD_M64_R64),
@@ -2356,6 +2360,15 @@ namespace x64 {
         set(src, dstValue);
     }
 
+    void Cpu::execXaddRM8R8(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RM8>();
+        const auto& src = ins.op1<R8>();
+        u8 dstValue = get(dst);
+        u8 srcValue = get(src);
+        u8 tmpValue = Impl::add8(dstValue, srcValue, &flags_);
+        set(dst, tmpValue);
+        set(src, dstValue);
+    }
     void Cpu::execXaddRM16R16(const X64Instruction& ins) {
         const auto& dst = ins.op0<RM16>();
         const auto& src = ins.op1<R16>();
@@ -2384,6 +2397,18 @@ namespace x64 {
         set(src, dstValue);
     }
 
+    void Cpu::execLockXaddM8R8(const X64Instruction& ins) {
+        assert(ins.lock());
+        const auto& dst = ins.op0<M8>();
+        const auto& src = ins.op1<R8>();
+        Ptr8 address = resolve(dst);
+        u8 srcValue = get(src);
+        mmu_->withExclusiveRegion(address, [&](u8 oldValue) -> u8 {
+            u8 newValue = Impl::add8(oldValue, srcValue, &flags_);
+            set(src, oldValue);
+            return newValue;
+        });
+    }
     void Cpu::execLockXaddM16R16(const X64Instruction& ins) {
         assert(ins.lock());
         const auto& dst = ins.op0<M16>();

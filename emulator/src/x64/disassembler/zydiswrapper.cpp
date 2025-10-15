@@ -1026,6 +1026,8 @@ namespace x64 {
         assert(insn.info.operand_count_visible == 2);
         const auto& dst = insn.operands[0];
         const auto& src = insn.operands[1];
+        auto rm8dst = asRM8(dst);
+        auto r8src = asRegister8(src);
         auto rm16dst = asRM16(dst);
         auto r16src = asRegister16(src);
         auto rm32dst = asRM32(dst);
@@ -1033,6 +1035,13 @@ namespace x64 {
         auto rm64dst = asRM64(dst);
         auto r64src = asRegister64(src);
         bool lock = (insn.info.attributes & ZYDIS_ATTRIB_HAS_LOCK);
+        if(rm8dst && r8src) {
+            if(!lock) {
+                return X64Instruction::make<Insn::XADD_RM8_R8>(insn.runtime_address, insn.info.length, rm8dst.value(), r8src.value());
+            } else if(!rm8dst->isReg) {
+                return X64Instruction::make<Insn::LOCK_XADD_M8_R8>(insn.runtime_address, insn.info.length, rm8dst->mem, r8src.value());
+            }
+        }
         if(rm16dst && r16src) {
             if(!lock) {
                 return X64Instruction::make<Insn::XADD_RM16_R16>(insn.runtime_address, insn.info.length, rm16dst.value(), r16src.value());
