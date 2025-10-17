@@ -115,4 +115,8 @@ namespace x64 {
         return fromLongDouble(std::trunc(toLongDouble(val)));
     }
 
+    bool F80::sign(f80 val) {
+        return val.val[9] & 0x80;
+    }
+
 }

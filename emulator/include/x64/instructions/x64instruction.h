@@ -442,6 +442,7 @@ namespace x64 {
         FNSTSW_M16,
         FNSTENV_M224,
         FLDENV_M224,
+        FXAM,
         EMMS,
         MOVSS_XMM_M32,
         MOVSS_M32_XMM,

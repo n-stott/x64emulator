@@ -472,6 +472,8 @@ namespace x64 {
         static f80 roundDown(f80 val);
         static f80 roundUp(f80 val);
         static f80 roundZero(f80 val);
+
+        static bool sign(f80 val);
     };
 }
 

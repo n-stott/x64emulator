@@ -28,13 +28,13 @@ namespace x64 {
 
     void X87Fpu::incrTop() {
         u8 nextTop = (status_.top+1);
-        C1_ = (nextTop & 0x8);
+        status_.C1 = (nextTop & 0x8);
         status_.top = nextTop & 0x7;
     }
 
     void X87Fpu::decrTop() {
         u8 nextTop = (status_.top-1);
-        C1_ = (nextTop & 0x8);
+        status_.C1 = (nextTop & 0x8);
         status_.top = nextTop & 0x7;
     }
 
@@ -66,12 +66,22 @@ namespace x64 {
     }
 
     u16 X87Status::asWord() const {
-        return (u16)(top << 11);
+        u16 value = 0;
+        value |= (u16)((int)C0 << 8);
+        value |= (u16)((int)C1 << 9);
+        value |= (u16)((int)C2 << 10);
+        value |= (u16)(top << 11);
+        value |= (u16)((int)C3 << 14);
+        return value;
     }
 
     X87Status X87Status::fromWord(u16 sw) {
         X87Status s;
+        s.C0 = (sw >> 8) & 0x1;
+        s.C1 = (sw >> 9) & 0x1;
+        s.C2 = (sw >> 10) & 0x1;
         s.top = (sw >> 11) & 0x7;
+        s.C3 = (sw >> 14) & 0x1;
         return s;
     }
 
@@ -95,6 +105,14 @@ namespace x64 {
                             F80::toLongDouble(st(x64::ST::ST6)),
                             F80::toLongDouble(st(x64::ST::ST7)),
                             (int)top());
+    }
+
+    void X87Fpu::fxam() {
+        f80 value = st(ST::ST0);
+        status_.C1 = F80::sign(value);
+        status_.C0 = 0;
+        status_.C2 = 0;
+        status_.C3 = 0;
     }
 
 }

@@ -2315,6 +2315,10 @@ namespace x64 {
         return make_failed(insn);
     }
 
+    static X64Instruction makeFxam(const ZydisDisassembledInstruction& insn) {
+        return X64Instruction::make<Insn::FXAM>(insn.runtime_address, insn.info.length);
+    }
+
     static X64Instruction makeEmms(const ZydisDisassembledInstruction& insn) {
 #ifndef NDEBUG
         assert(insn.info.operand_count_visible == 0);
@@ -4480,6 +4484,7 @@ namespace x64 {
             case ZYDIS_MNEMONIC_FNSTSW: return makeFnstsw(insn);
             case ZYDIS_MNEMONIC_FNSTENV: return makeFnstenv(insn);
             case ZYDIS_MNEMONIC_FLDENV: return makeFldenv(insn);
+            case ZYDIS_MNEMONIC_FXAM: return makeFxam(insn);
             case ZYDIS_MNEMONIC_EMMS: return makeEmms(insn);
             case ZYDIS_MNEMONIC_MOVSS: return makeMovss(insn);
             case ZYDIS_MNEMONIC_MOVSD: return makeMovsd(insn);

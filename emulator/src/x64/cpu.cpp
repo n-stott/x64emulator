@@ -630,6 +630,7 @@ namespace x64 {
     DEFINE_STANDALONE(FNSTSW_M16, execFnstswM16)
     DEFINE_STANDALONE(FNSTENV_M224, execFnstenvM224)
     DEFINE_STANDALONE(FLDENV_M224, execFldenvM224)
+    DEFINE_STANDALONE(FXAM, execFxam)
     DEFINE_STANDALONE(EMMS, execEmms)
     DEFINE_STANDALONE(MOVSS_XMM_M32, execMovssXMMM32)
     DEFINE_STANDALONE(MOVSS_M32_XMM, execMovssM32XMM)
@@ -1364,6 +1365,7 @@ namespace x64 {
         STANDALONE_NAME(FNSTSW_M16),
         STANDALONE_NAME(FNSTENV_M224),
         STANDALONE_NAME(FLDENV_M224),
+        STANDALONE_NAME(FXAM),
         STANDALONE_NAME(EMMS),
         STANDALONE_NAME(MOVSS_XMM_M32),
         STANDALONE_NAME(MOVSS_M32_XMM),
@@ -4493,6 +4495,10 @@ namespace x64 {
         x87fpu_.control() = X87Control::fromWord((u16)get(srcPtr++));
         x87fpu_.status() = X87Status::fromWord((u16)get(srcPtr++));
         x87fpu_.tag() = X87Tag::fromWord((u16)get(srcPtr++));
+    }
+
+    void Cpu::execFxam(const X64Instruction&) {
+        x87fpu_.fxam();
     }
 
     void Cpu::execEmms(const X64Instruction&) {

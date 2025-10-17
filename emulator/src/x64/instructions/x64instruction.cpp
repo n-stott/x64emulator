@@ -461,6 +461,7 @@ namespace x64 {
             case Insn::FNSTSW_M16: return toString<M16>("fnstsw");
             case Insn::FNSTENV_M224: return toString<M224>("fnstenv");
             case Insn::FLDENV_M224: return toString<M224>("fldenv");
+            case Insn::FXAM: return toString("fxam");
             case Insn::EMMS: return toString("emms");
             case Insn::MOVSS_XMM_M32: return toString<XMM, M32>("movss");
             case Insn::MOVSS_M32_XMM: return toString<M32, XMM>("movss");

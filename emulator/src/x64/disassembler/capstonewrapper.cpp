@@ -2240,6 +2240,10 @@ namespace x64 {
         return make_failed(insn);
     }
 
+    static X64Instruction makeFxam(const cs_insn& insn) {
+        return X64Instruction::make<Insn::FXAM>(insn.address, insn.size);
+    }
+
     static X64Instruction makeEmms(const cs_insn& insn) {
 #ifndef NDEBUG
         const auto& x86detail = insn.detail->x86;
@@ -4387,6 +4391,7 @@ namespace x64 {
             case X86_INS_FNSTSW: return makeFnstsw(insn);
             case X86_INS_FNSTENV: return makeFnstenv(insn);
             case X86_INS_FLDENV: return makeFldenv(insn);
+            case X86_INS_FXAM: return makeFxam(insn);
             case X86_INS_EMMS: return makeEmms(insn);
             case X86_INS_MOVSS: return makeMovss(insn);
             case X86_INS_MOVSD: return makeMovsd(insn);

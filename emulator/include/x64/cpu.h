@@ -723,6 +723,8 @@ namespace x64 {
         void execFnstenvM224(const X64Instruction&);
         void execFldenvM224(const X64Instruction&);
 
+        void execFxam(const X64Instruction&);
+
         void execEmms(const X64Instruction&);
 
         void execMovssXMMM32(const X64Instruction&);

@@ -33,6 +33,10 @@ namespace x64 {
 
     struct X87Status {
         u8 top { 0 };
+        bool C0 { false };
+        bool C1 { false };
+        bool C2 { false };
+        bool C3 { false };
 
         u16 asWord() const;
         static X87Status fromWord(u16 sw);
@@ -54,7 +58,7 @@ namespace x64 {
         f80 st(ST st) const;
         void set(ST st, f80 val);
         u8 top() const { return status_.top; }
-
+        void fxam();
 
         X87Control& control() { return control_; }
         const X87Control& control() const { return control_; }
@@ -73,10 +77,6 @@ namespace x64 {
         X87Control control_;
         X87Status status_;
         X87Tag tag_;
-        // bool C0_ { false }; // unused
-        bool C1_ { false };
-        // bool C2_ { false }; // unused
-        // bool C3_ { false }; // unused
     };
 
 }
