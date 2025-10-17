@@ -3324,6 +3324,55 @@ namespace x64 {
 #endif
     }
 
+    u128 NativeCpuImpl::pmaxuw(u128 dst, u128 src) {
+#ifdef SSE41
+        u128 nativeRes = dst;
+        asm volatile("pmaxuw %1, %0" : "+x"(nativeRes) : "x"(src));
+        return nativeRes;
+#else
+        assert(!"pmaxuw not defined");
+        (void)dst;
+        return src; // dummy value
+#endif
+    }
+
+    u128 NativeCpuImpl::pmaxud(u128 dst, u128 src) {
+#ifdef SSE41
+        u128 nativeRes = dst;
+        asm volatile("pmaxud %1, %0" : "+x"(nativeRes) : "x"(src));
+        return nativeRes;
+#else
+        assert(!"pmaxud not defined");
+        (void)dst;
+        return src; // dummy value
+#endif
+    }
+
+    u128 NativeCpuImpl::pminuw(u128 dst, u128 src) {
+#ifdef SSE41
+        u128 nativeRes = dst;
+        asm volatile("pminuw %1, %0" : "+x"(nativeRes) : "x"(src));
+        return nativeRes;
+#else
+        assert(!"pminuw not defined");
+        (void)dst;
+        return src; // dummy value
+#endif
+    }
+
+    u128 NativeCpuImpl::pminud(u128 dst, u128 src) {
+#ifdef SSE41
+        u128 nativeRes = dst;
+        asm volatile("pminud %1, %0" : "+x"(nativeRes) : "x"(src));
+        return nativeRes;
+#else
+        assert(!"pminud not defined");
+        (void)dst;
+        return src; // dummy value
+#endif
+    }
+
+
 }
 
 #endif

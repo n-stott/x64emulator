@@ -422,6 +422,7 @@ namespace x64 {
         FADD_M32,
         FADD_M64,
         FADDP_ST,
+        FSUB_ST_ST,
         FSUBP_ST,
         FSUBRP_ST,
         FMUL1_M32,
@@ -738,6 +739,12 @@ namespace x64 {
         PABSB_XMM_XMMM128,
         PABSW_XMM_XMMM128,
         PABSD_XMM_XMMM128,
+
+        // SSE4.1
+        PMAXUW_XMM_XMMM128,
+        PMAXUD_XMM_XMMM128,
+        PMINUW_XMM_XMMM128,
+        PMINUD_XMM_XMMM128,
 
         // MISC
         RDTSC,

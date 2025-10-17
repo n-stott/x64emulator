@@ -441,6 +441,7 @@ namespace x64 {
             case Insn::FADD_M32: return toString<M32>("fadd");
             case Insn::FADD_M64: return toString<M64>("fadd");
             case Insn::FADDP_ST: return toString<ST>("faddp");
+            case Insn::FSUB_ST_ST: return toString<ST>("fsub");
             case Insn::FSUBP_ST: return toString<ST>("fsubp");
             case Insn::FSUBRP_ST: return toString<ST>("fsubrp");
             case Insn::FMUL1_M32: return toString<M32>("fmul1");
@@ -753,6 +754,10 @@ namespace x64 {
             case Insn::PABSB_XMM_XMMM128: return toString<XMM, XMMM128>("pabsb");
             case Insn::PABSW_XMM_XMMM128: return toString<XMM, XMMM128>("pabsw");
             case Insn::PABSD_XMM_XMMM128: return toString<XMM, XMMM128>("pabsd");
+            case Insn::PMAXUW_XMM_XMMM128: return toString<XMM, XMMM128>("pmaxuw");
+            case Insn::PMAXUD_XMM_XMMM128: return toString<XMM, XMMM128>("pmaxud");
+            case Insn::PMINUW_XMM_XMMM128: return toString<XMM, XMMM128>("pminuw");
+            case Insn::PMINUD_XMM_XMMM128: return toString<XMM, XMMM128>("pminud");
             case Insn::RDTSC: return toString("rdtsc");
             case Insn::CPUID: return toString("cpuid");
             case Insn::XGETBV: return toString("xgetbv");

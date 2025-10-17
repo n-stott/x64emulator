@@ -2077,6 +2077,23 @@ namespace x64 {
         return make_failed(insn);
     }
 
+    static X64Instruction makeFsub(const cs_insn& insn) {
+        const auto& x86detail = insn.detail->x86;
+        assert(x86detail.op_count == 1 || x86detail.op_count == 2);
+        if(x86detail.op_count == 1) {
+            const cs_x86_op& src = x86detail.operands[0];
+            auto stsrc = asST(src);
+            if(stsrc) return X64Instruction::make<Insn::FSUB_ST_ST>(insn.address, insn.size, ST::ST0, stsrc.value());
+        } else if(x86detail.op_count == 2) {
+            const cs_x86_op& dst = x86detail.operands[0];
+            const cs_x86_op& src = x86detail.operands[1];
+            auto stdst = asST(dst);
+            auto stsrc = asST(src);
+            if(stdst && stsrc) return X64Instruction::make<Insn::FSUB_ST_ST>(insn.address, insn.size, stdst.value(), stsrc.value());
+        }
+        return make_failed(insn);
+    }
+
     static X64Instruction makeFsubp(const cs_insn& insn) {
         const auto& x86detail = insn.detail->x86;
         assert(x86detail.op_count == 1);
@@ -4368,6 +4385,7 @@ namespace x64 {
             case X86_INS_FISTP: return makeFistp(insn);
             case X86_INS_FXCH: return makeFxch(insn);
             case X86_INS_FADDP: return makeFaddp(insn);
+            case X86_INS_FSUB: return makeFsub(insn);
             case X86_INS_FSUBP: return makeFsubp(insn);
             case X86_INS_FSUBRP: return makeFsubrp(insn);
             case X86_INS_FMUL: return makeFmul(insn);

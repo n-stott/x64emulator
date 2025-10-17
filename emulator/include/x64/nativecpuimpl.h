@@ -440,6 +440,11 @@ namespace x64 {
         [[nodiscard]] static u128 pabsw128(u128 src);
         [[nodiscard]] static u128 pabsd128(u128 src);
 
+        [[nodiscard]] static u128 pmaxuw(u128 dst, u128 src);
+        [[nodiscard]] static u128 pmaxud(u128 dst, u128 src);
+        [[nodiscard]] static u128 pminuw(u128 dst, u128 src);
+        [[nodiscard]] static u128 pminud(u128 dst, u128 src);
+
         [[nodiscard]] static f80 fadd(f80 dst, f80 src, X87Fpu* fpu);
         [[nodiscard]] static f80 fsub(f80 dst, f80 src, X87Fpu* fpu);
         [[nodiscard]] static f80 fmul(f80 dst, f80 src, X87Fpu* fpu);

@@ -610,6 +610,7 @@ namespace x64 {
     DEFINE_STANDALONE(FADD_M32, execFaddM32)
     DEFINE_STANDALONE(FADD_M64, execFaddM64)
     DEFINE_STANDALONE(FADDP_ST, execFaddpST)
+    DEFINE_STANDALONE(FSUB_ST_ST, execFsubSTST)
     DEFINE_STANDALONE(FSUBP_ST, execFsubpST)
     DEFINE_STANDALONE(FSUBRP_ST, execFsubrpST)
     DEFINE_STANDALONE(FMUL1_M32, execFmul1M32)
@@ -922,6 +923,10 @@ namespace x64 {
     DEFINE_STANDALONE(PABSB_XMM_XMMM128, execPabsbXMMXMMM128)
     DEFINE_STANDALONE(PABSW_XMM_XMMM128, execPabswXMMXMMM128)
     DEFINE_STANDALONE(PABSD_XMM_XMMM128, execPabsdXMMXMMM128)
+    DEFINE_STANDALONE(PMAXUW_XMM_XMMM128, execPmaxuwXMMXMMM128)
+    DEFINE_STANDALONE(PMAXUD_XMM_XMMM128, execPmaxudXMMXMMM128)
+    DEFINE_STANDALONE(PMINUW_XMM_XMMM128, execPminuwXMMXMMM128)
+    DEFINE_STANDALONE(PMINUD_XMM_XMMM128, execPminudXMMXMMM128)
     DEFINE_STANDALONE(RDTSC, execRdtsc)
     DEFINE_STANDALONE(CPUID, execCpuid)
     DEFINE_STANDALONE(XGETBV, execXgetbv)
@@ -1345,6 +1350,7 @@ namespace x64 {
         STANDALONE_NAME(FADD_M32),
         STANDALONE_NAME(FADD_M64),
         STANDALONE_NAME(FADDP_ST),
+        STANDALONE_NAME(FSUB_ST_ST),
         STANDALONE_NAME(FSUBP_ST),
         STANDALONE_NAME(FSUBRP_ST),
         STANDALONE_NAME(FMUL1_M32),
@@ -1657,6 +1663,10 @@ namespace x64 {
         STANDALONE_NAME(PABSB_XMM_XMMM128),
         STANDALONE_NAME(PABSW_XMM_XMMM128),
         STANDALONE_NAME(PABSD_XMM_XMMM128),
+        STANDALONE_NAME(PMAXUW_XMM_XMMM128),
+        STANDALONE_NAME(PMAXUD_XMM_XMMM128),
+        STANDALONE_NAME(PMINUW_XMM_XMMM128),
+        STANDALONE_NAME(PMINUD_XMM_XMMM128),
         STANDALONE_NAME(RDTSC),
         STANDALONE_NAME(CPUID),
         STANDALONE_NAME(XGETBV),
@@ -4347,6 +4357,14 @@ namespace x64 {
         x87fpu_.pop();
     }
 
+    void Cpu::execFsubSTST(const X64Instruction& ins) {
+        const auto& dst = ins.op0<ST>();
+        const auto& src = ins.op1<ST>();
+        f80 dstValue = x87fpu_.st(dst);
+        f80 srcValue = x87fpu_.st(src);
+        x87fpu_.set(dst, Impl::fsub(dstValue, srcValue, &x87fpu_)); // NOLINT(readability-suspicious-call-argument)
+    }
+
     void Cpu::execFsubpST(const X64Instruction& ins) {
         const auto& dst = ins.op0<ST>();
         f80 topValue = x87fpu_.st(ST::ST0);
@@ -6457,6 +6475,30 @@ namespace x64 {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         set(dst, Impl::pabsd128(get(src)));
+    }
+
+    void Cpu::execPmaxuwXMMXMMM128(const X64Instruction& ins) {
+        const auto& dst = ins.op0<XMM>();
+        const auto& src = ins.op1<XMMM128>();
+        set(dst, Impl::pmaxuw(get(dst), get(src)));
+    }
+
+    void Cpu::execPmaxudXMMXMMM128(const X64Instruction& ins) {
+        const auto& dst = ins.op0<XMM>();
+        const auto& src = ins.op1<XMMM128>();
+        set(dst, Impl::pmaxud(get(dst), get(src)));
+    }
+
+    void Cpu::execPminuwXMMXMMM128(const X64Instruction& ins) {
+        const auto& dst = ins.op0<XMM>();
+        const auto& src = ins.op1<XMMM128>();
+        set(dst, Impl::pminuw(get(dst), get(src)));
+    }
+
+    void Cpu::execPminudXMMXMMM128(const X64Instruction& ins) {
+        const auto& dst = ins.op0<XMM>();
+        const auto& src = ins.op1<XMMM128>();
+        set(dst, Impl::pminud(get(dst), get(src)));
     }
 
     void Cpu::execSyscall(const X64Instruction&) {

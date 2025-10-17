@@ -1461,4 +1461,20 @@ namespace x64 {
     u128 CheckedCpuImpl::pabsd128(u128 src) {
         return checkCall<u128>(&CpuImpl::pabsd128, &NativeCpuImpl::pabsd128, src);
     }
+
+    u128 CheckedCpuImpl::pmaxuw(u128 dst, u128 src) {
+        return checkCall<u128>(&CpuImpl::pmaxuw, &NativeCpuImpl::pmaxuw, dst, src);
+    }
+
+    u128 CheckedCpuImpl::pmaxud(u128 dst, u128 src) {
+        return checkCall<u128>(&CpuImpl::pmaxud, &NativeCpuImpl::pmaxud, dst, src);
+    }
+
+    u128 CheckedCpuImpl::pminuw(u128 dst, u128 src) {
+        return checkCall<u128>(&CpuImpl::pminuw, &NativeCpuImpl::pminuw, dst, src);
+    }
+
+    u128 CheckedCpuImpl::pminud(u128 dst, u128 src) {
+        return checkCall<u128>(&CpuImpl::pminud, &NativeCpuImpl::pminud, dst, src);
+    }
 }

@@ -697,6 +697,7 @@ namespace x64 {
         void execFaddM32(const X64Instruction&);
         void execFaddM64(const X64Instruction&);
         void execFaddpST(const X64Instruction&);
+        void execFsubSTST(const X64Instruction&);
         void execFsubpST(const X64Instruction&);
         void execFsubrpST(const X64Instruction&);
         void execFmul1M32(const X64Instruction&);
@@ -1083,6 +1084,11 @@ namespace x64 {
         void execPabsbXMMXMMM128(const X64Instruction&);
         void execPabswXMMXMMM128(const X64Instruction&);
         void execPabsdXMMXMMM128(const X64Instruction&);
+
+        void execPmaxuwXMMXMMM128(const X64Instruction&);
+        void execPmaxudXMMXMMM128(const X64Instruction&);
+        void execPminuwXMMXMMM128(const X64Instruction&);
+        void execPminudXMMXMMM128(const X64Instruction&);
         
         void execRdtsc(const X64Instruction&);
 

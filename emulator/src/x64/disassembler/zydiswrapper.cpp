@@ -2122,6 +2122,20 @@ namespace x64 {
         return make_failed(insn);
     }
 
+    static X64Instruction makeFsub(const ZydisDisassembledInstruction& insn) {
+        assert(insn.info.operand_count_visible == 1 || insn.info.operand_count_visible == 2);
+        if(insn.info.operand_count_visible == 2) {
+            const auto& dst = insn.operands[0];
+            const auto& src = insn.operands[1];
+            auto stdst = asST(dst);
+            auto stsrc = asST(src);
+            if(stdst && stsrc) {
+                return X64Instruction::make<Insn::FSUB_ST_ST>(insn.runtime_address, insn.info.length, stdst.value(), stsrc.value());
+            }
+        }
+        return make_failed(insn);
+    }
+
     static X64Instruction makeFsubp(const ZydisDisassembledInstruction& insn) {
         assert(insn.info.operand_count_visible == 2);
         const auto& dst = insn.operands[0];
@@ -4283,6 +4297,46 @@ namespace x64 {
         return make_failed(insn);
     }
 
+    static X64Instruction makePmaxuw(const ZydisDisassembledInstruction& insn) {
+        assert(insn.info.operand_count_visible == 2);
+        const auto& dst = insn.operands[0];
+        const auto& src = insn.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto rm128src = asRM128(src);
+        if(rssedst && rm128src) return X64Instruction::make<Insn::PMAXUW_XMM_XMMM128>(insn.runtime_address, insn.info.length, rssedst.value(), rm128src.value());
+        return make_failed(insn);
+    }
+
+    static X64Instruction makePmaxud(const ZydisDisassembledInstruction& insn) {
+        assert(insn.info.operand_count_visible == 2);
+        const auto& dst = insn.operands[0];
+        const auto& src = insn.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto rm128src = asRM128(src);
+        if(rssedst && rm128src) return X64Instruction::make<Insn::PMAXUD_XMM_XMMM128>(insn.runtime_address, insn.info.length, rssedst.value(), rm128src.value());
+        return make_failed(insn);
+    }
+
+    static X64Instruction makePminuw(const ZydisDisassembledInstruction& insn) {
+        assert(insn.info.operand_count_visible == 2);
+        const auto& dst = insn.operands[0];
+        const auto& src = insn.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto rm128src = asRM128(src);
+        if(rssedst && rm128src) return X64Instruction::make<Insn::PMINUW_XMM_XMMM128>(insn.runtime_address, insn.info.length, rssedst.value(), rm128src.value());
+        return make_failed(insn);
+    }
+
+    static X64Instruction makePminud(const ZydisDisassembledInstruction& insn) {
+        assert(insn.info.operand_count_visible == 2);
+        const auto& dst = insn.operands[0];
+        const auto& src = insn.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto rm128src = asRM128(src);
+        if(rssedst && rm128src) return X64Instruction::make<Insn::PMINUD_XMM_XMMM128>(insn.runtime_address, insn.info.length, rssedst.value(), rm128src.value());
+        return make_failed(insn);
+    }
+
     static X64Instruction makeRdtsc(const ZydisDisassembledInstruction& insn) {
         return X64Instruction::make<Insn::RDTSC>(insn.runtime_address, insn.info.length);
     }
@@ -4461,6 +4515,7 @@ namespace x64 {
             case ZYDIS_MNEMONIC_FXCH: return makeFxch(insn);
             case ZYDIS_MNEMONIC_FADD: return makeFadd(insn);
             case ZYDIS_MNEMONIC_FADDP: return makeFaddp(insn);
+            case ZYDIS_MNEMONIC_FSUB: return makeFsub(insn);
             case ZYDIS_MNEMONIC_FSUBP: return makeFsubp(insn);
             case ZYDIS_MNEMONIC_FSUBRP: return makeFsubrp(insn);
             case ZYDIS_MNEMONIC_FMUL: return makeFmul(insn);
@@ -4700,6 +4755,12 @@ namespace x64 {
             case ZYDIS_MNEMONIC_PABSB: return makePabsb(insn);
             case ZYDIS_MNEMONIC_PABSW: return makePabsw(insn);
             case ZYDIS_MNEMONIC_PABSD: return makePabsd(insn);
+
+            // SSE4.1
+            case ZYDIS_MNEMONIC_PMAXUW: return makePmaxuw(insn);
+            case ZYDIS_MNEMONIC_PMAXUD: return makePmaxud(insn);
+            case ZYDIS_MNEMONIC_PMINUW: return makePminuw(insn);
+            case ZYDIS_MNEMONIC_PMINUD: return makePminud(insn);
 
             case ZYDIS_MNEMONIC_RDTSC: return makeRdtsc(insn);
             case ZYDIS_MNEMONIC_CPUID: return makeCpuid(insn);
