@@ -2557,7 +2557,7 @@ namespace x64 {
     void NativeCpuImpl::ptest(u128 dst, u128 src, Flags* flags) {
         BEGIN_RFLAGS_SCOPE
             SET_RFLAGS(*flags);
-            asm volatile("ptest %0, %1" :: "x"(dst), "x"(src));
+            asm volatile("ptest %1, %0" :: "x"(dst), "x"(src));
             GET_RFLAGS(flags);
         END_RFLAGS_SCOPE
     }
