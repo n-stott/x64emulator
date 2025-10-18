@@ -219,6 +219,40 @@ namespace kernel::gnulinux {
         return flags & AT_EMPTY_PATH;
     }
 
+    bool Host::Statx::wantStatxType(unsigned int mask) { return mask & STATX_TYPE; }
+    bool Host::Statx::wantStatxMode(unsigned int mask) { return mask & STATX_MODE; }
+    bool Host::Statx::wantStatxNlink(unsigned int mask) { return mask & STATX_NLINK; }
+    bool Host::Statx::wantStatxUid(unsigned int mask) { return mask & STATX_UID; }
+    bool Host::Statx::wantStatxGid(unsigned int mask) { return mask & STATX_GID; }
+    bool Host::Statx::wantStatxAtime(unsigned int mask) { return mask & STATX_ATIME; }
+    bool Host::Statx::wantStatxMtime(unsigned int mask) { return mask & STATX_MTIME; }
+    bool Host::Statx::wantStatxCtime(unsigned int mask) { return mask & STATX_CTIME; }
+    bool Host::Statx::wantStatxIno(unsigned int mask) { return mask & STATX_INO; }
+    bool Host::Statx::wantStatxSize(unsigned int mask) { return mask & STATX_SIZE; }
+    bool Host::Statx::wantStatxBlocks(unsigned int mask) { return mask & STATX_BLOCKS; }
+    bool Host::Statx::wantStatxBasicStat(unsigned int mask) { return mask & STATX_BASIC_STATS; }
+    bool Host::Statx::wantStatxBtime(unsigned int mask) { return mask & STATX_BTIME; }
+    bool Host::Statx::wantStatxAll(unsigned int mask) { return mask & STATX_ALL; }
+
+    Buffer Host::StatxBuilder::create() {
+        struct statx sx;
+        if(!!blocksize_) { sx.stx_blksize = *blocksize_; }
+        if(!!attributes_) { sx.stx_attributes = *attributes_; }
+        if(!!nlink_) { sx.stx_nlink = *nlink_; sx.stx_mask |= STATX_NLINK; }
+        if(!!uid_) { sx.stx_uid = *uid_; sx.stx_mask |= STATX_UID; }
+        if(!!gid_) { sx.stx_gid = *gid_; sx.stx_mask |= STATX_GID; }
+        if(!!mode_) { sx.stx_mode = *mode_; sx.stx_mask |= STATX_MODE; }
+        if(!!ino_) { sx.stx_ino = *ino_; sx.stx_mask |= STATX_INO; }
+        if(!!size_) { sx.stx_size = *size_; sx.stx_mask |= STATX_SIZE; }
+        if(!!blocks_) { sx.stx_blocks = *blocks_; sx.stx_mask |= STATX_BLOCKS; }
+        if(!!attributesMask_) { sx.stx_attributes_mask = *attributesMask_; }
+        if(!!rdevMajor_) { sx.stx_rdev_major = *rdevMajor_; }
+        if(!!rdevMinor_) { sx.stx_rdev_minor = *rdevMinor_; }
+        if(!!devMajor_) { sx.stx_dev_major = *devMajor_; }
+        if(!!devMinor_) { sx.stx_dev_minor = *devMinor_; }
+        return Buffer(sx);
+    }
+
     Host::SchedAttr Host::getSchedulerAttributes() {
         Host::SchedAttr attr;
         attr.size = sizeof(Host::SchedAttr);

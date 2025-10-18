@@ -128,6 +128,56 @@ namespace kernel::gnulinux {
 
         struct Statx {
             static bool isAtEmptyPath(int flags);
+            static bool wantStatxType(unsigned int mask);
+            static bool wantStatxMode(unsigned int mask);
+            static bool wantStatxNlink(unsigned int mask);
+            static bool wantStatxUid(unsigned int mask);
+            static bool wantStatxGid(unsigned int mask);
+            static bool wantStatxAtime(unsigned int mask);
+            static bool wantStatxMtime(unsigned int mask);
+            static bool wantStatxCtime(unsigned int mask);
+            static bool wantStatxIno(unsigned int mask);
+            static bool wantStatxSize(unsigned int mask);
+            static bool wantStatxBlocks(unsigned int mask);
+            static bool wantStatxBasicStat(unsigned int mask);
+            static bool wantStatxBtime(unsigned int mask);
+            static bool wantStatxAll(unsigned int mask);
+        };
+
+        class StatxBuilder {
+        public:
+            Buffer create();
+
+            StatxBuilder& addBlocksize(u32 value) { blocksize_ = value; return *this; }
+            StatxBuilder& addAttributes(u64 value) { attributes_ = value; return *this; }
+            StatxBuilder& addNlink(u32 value) { nlink_ = value; return *this; }
+            StatxBuilder& addUid(u32 value) { uid_ = value; return *this; }
+            StatxBuilder& addGid(u32 value) { gid_ = value; return *this; }
+            StatxBuilder& addMode(u16 value) { mode_ = value; return *this; }
+            StatxBuilder& addIno(u64 value) { ino_ = value; return *this; }
+            StatxBuilder& addSize(u64 value) { size_ = value; return *this; }
+            StatxBuilder& addBlocks(u64 value) { blocks_ = value; return *this; }
+            StatxBuilder& addAttributesMask(u64 value) { attributesMask_ = value; return *this; }
+            StatxBuilder& addRdevMajor(u32 value) { rdevMajor_ = value; return *this; }
+            StatxBuilder& addRdevMinor(u32 value) { rdevMinor_ = value; return *this; }
+            StatxBuilder& addDevMajor(u32 value) { devMajor_ = value; return *this; }
+            StatxBuilder& addDevMinor(u32 value) { devMinor_ = value; return *this; }
+
+        private:
+            std::optional<u32> blocksize_;
+            std::optional<u64> attributes_;
+            std::optional<u32> nlink_;
+            std::optional<u32> uid_;
+            std::optional<u32> gid_;
+            std::optional<u16> mode_;
+            std::optional<u64> ino_;
+            std::optional<u64> size_;
+            std::optional<u64> blocks_;
+            std::optional<u64> attributesMask_;
+            std::optional<u32> rdevMajor_;
+            std::optional<u32> rdevMinor_;
+            std::optional<u32> devMajor_;
+            std::optional<u32> devMinor_;
         };
 
         struct SchedAttr {
