@@ -3170,4 +3170,41 @@ namespace x64 {
         return dst;
     }
 
+    u128 CpuImpl::roundss32(u128 dst, u32 src, u8 imm) {
+        (void)src;
+        (void)imm;
+        assert(!"roundss32 not implemented");
+        return dst;
+    }
+
+    u128 CpuImpl::roundss128(u128 dst, u128 src, u8 imm) {
+        (void)src;
+        (void)imm;
+        assert(!"roundss128 not implemented");
+        return dst;
+    }
+
+    u128 CpuImpl::roundsd64(u128 dst, u64 src, u8 imm) {
+        (void)src;
+        (void)imm;
+        assert(!"roundsd64 not implemented");
+        return dst;
+    }
+
+    u128 CpuImpl::roundsd128(u128 dst, u128 src, u8 imm) {
+        std::array<f64, 2> SRC;
+        static_assert(sizeof(SRC) == sizeof(src));
+        ::memcpy(SRC.data(), &src, sizeof(src));
+        f64 value = SRC[0];
+        (void)imm;
+        value = (f64)(i64)value;
+        std::array<f64, 2> DST;
+        static_assert(sizeof(DST) == sizeof(dst));
+        ::memcpy(DST.data(), &dst, sizeof(dst));
+        DST[0] = value;
+        ::memcpy(&dst, DST.data(), sizeof(dst));
+        return dst;
+    }
+
+
 }

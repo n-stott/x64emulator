@@ -8,6 +8,7 @@
 #include <xmmintrin.h>
 #include <pmmintrin.h>
 #include <tmmintrin.h>
+#include <smmintrin.h>
 #include <limits>
 
 
@@ -310,6 +311,27 @@
         case 0x05: return f(a, b, 0x05); \
         case 0x06: return f(a, b, 0x06); \
         case 0x07: return f(a, b, 0x07); \
+        default: __builtin_unreachable(); \
+    }
+
+#define CALL_2_WITH_IMM4(f, a, b) \
+    switch(order) { \
+        case 0x00: return f(a, b, 0x00); \
+        case 0x01: return f(a, b, 0x01); \
+        case 0x02: return f(a, b, 0x02); \
+        case 0x03: return f(a, b, 0x03); \
+        case 0x04: return f(a, b, 0x04); \
+        case 0x05: return f(a, b, 0x05); \
+        case 0x06: return f(a, b, 0x06); \
+        case 0x07: return f(a, b, 0x07); \
+        case 0x08: return f(a, b, 0x08); \
+        case 0x09: return f(a, b, 0x09); \
+        case 0x0a: return f(a, b, 0x0a); \
+        case 0x0b: return f(a, b, 0x0b); \
+        case 0x0c: return f(a, b, 0x0c); \
+        case 0x0d: return f(a, b, 0x0d); \
+        case 0x0e: return f(a, b, 0x0e); \
+        case 0x0f: return f(a, b, 0x0f); \
         default: __builtin_unreachable(); \
     }
 
@@ -3369,6 +3391,75 @@ namespace x64 {
         assert(!"pminud not defined");
         (void)dst;
         return src; // dummy value
+#endif
+    }
+
+    u128 NativeCpuImpl::roundss32(u128 dst, u32 src, u8 imm) {
+#ifdef SSE41
+        assert(!"roundss32 not implemented");
+        (void)src;
+        (void)imm;
+        return dst; // dummy value
+#else
+        assert(!"roundss32 not defined");
+        (void)src;
+        (void)imm;
+        return dst; // dummy value
+#endif
+    }
+
+    u128 NativeCpuImpl::roundss128(u128 dst, u128 src, u8 imm) {
+#ifdef SSE41
+        assert(!"roundss128 not implemented");
+        (void)src;
+        (void)imm;
+        return dst; // dummy value
+#else
+        assert(!"roundss128 not defined");
+        (void)src;
+        (void)imm;
+        return dst; // dummy value
+#endif
+    }
+
+    u128 NativeCpuImpl::roundsd64(u128 dst, u64 src, u8 imm) {
+#ifdef SSE41
+        assert(!"roundsd64 not implemented");
+        (void)src;
+        (void)imm;
+        return dst; // dummy value
+#else
+        assert(!"roundsd64 not defined");
+        (void)src;
+        (void)imm;
+        return dst; // dummy value
+#endif
+    }
+
+    u128 NativeCpuImpl::roundsd128(u128 dst, u128 src, u8 imm) {
+#ifdef SSE41
+        auto round = [=](u128 dst, u128 src, u8 imm) -> u128 {
+            auto nativeround = [](__m128d dst, __m128d src, u8 imm) -> __m128d {
+                u8 order = imm;
+                CALL_2_WITH_IMM4(_mm_round_sd, dst, src);
+            };
+            __m128d mdst;
+            std::memcpy(&mdst, &dst, sizeof(mdst));
+            __m128d msrc;
+            std::memcpy(&msrc, &src, sizeof(msrc));
+            __m128d res = nativeround(mdst, msrc, imm);
+            u128 realRes;
+            std::memcpy(&realRes, &res, sizeof(realRes));
+            return realRes;
+        };
+
+        u128 nativeRes = round(dst, src, imm);
+        return nativeRes;
+#else
+        assert(!"roundsd128 not defined");
+        (void)src;
+        (void)imm;
+        return dst; // dummy value
 #endif
     }
 
