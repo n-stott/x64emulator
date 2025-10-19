@@ -259,3 +259,11 @@ target_include_directories(test_roundss PRIVATE include ${CMAKE_SOURCE_DIR}/emul
 target_link_libraries(test_roundss PRIVATE x64cpu)
 target_link_options(test_roundss PRIVATE ${LD_OPTIONS})
 add_test(NAME roundss COMMAND test_roundss)
+
+add_executable(test_psign src/test_psign.cpp)
+target_compile_options(test_psign PRIVATE ${CC_OPTIONS})
+target_compile_options(test_psign PRIVATE -frounding-math)
+target_include_directories(test_psign PRIVATE include ${CMAKE_SOURCE_DIR}/emulator/include)
+target_link_libraries(test_psign PRIVATE x64cpu)
+target_link_options(test_psign PRIVATE ${LD_OPTIONS})
+add_test(NAME psign COMMAND test_psign)

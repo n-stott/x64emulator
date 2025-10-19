@@ -437,6 +437,13 @@ namespace x64 {
         [[nodiscard]] static u128 pabsw128(u128 src);
         [[nodiscard]] static u128 pabsd128(u128 src);
 
+        [[nodiscard]] static u64 psignb64(u64 dst, u64 src);
+        [[nodiscard]] static u64 psignw64(u64 dst, u64 src);
+        [[nodiscard]] static u64 psignd64(u64 dst, u64 src);
+        [[nodiscard]] static u128 psignb128(u128 dst, u128 src);
+        [[nodiscard]] static u128 psignw128(u128 dst, u128 src);
+        [[nodiscard]] static u128 psignd128(u128 dst, u128 src);
+
         [[nodiscard]] static u128 pmaxuw(u128 dst, u128 src);
         [[nodiscard]] static u128 pmaxud(u128 dst, u128 src);
         [[nodiscard]] static u128 pminuw(u128 dst, u128 src);

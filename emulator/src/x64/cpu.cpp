@@ -923,6 +923,12 @@ namespace x64 {
     DEFINE_STANDALONE(PABSB_XMM_XMMM128, execPabsbXMMXMMM128)
     DEFINE_STANDALONE(PABSW_XMM_XMMM128, execPabswXMMXMMM128)
     DEFINE_STANDALONE(PABSD_XMM_XMMM128, execPabsdXMMXMMM128)
+    DEFINE_STANDALONE(PSIGNB_MMX_MMXM64, execPsignbMMXMMXM64)
+    DEFINE_STANDALONE(PSIGNW_MMX_MMXM64, execPsignwMMXMMXM64)
+    DEFINE_STANDALONE(PSIGND_MMX_MMXM64, execPsigndMMXMMXM64)
+    DEFINE_STANDALONE(PSIGNB_XMM_XMMM128, execPsignbXMMXMMM128)
+    DEFINE_STANDALONE(PSIGNW_XMM_XMMM128, execPsignwXMMXMMM128)
+    DEFINE_STANDALONE(PSIGND_XMM_XMMM128, execPsigndXMMXMMM128)
     DEFINE_STANDALONE(PMAXUW_XMM_XMMM128, execPmaxuwXMMXMMM128)
     DEFINE_STANDALONE(PMAXUD_XMM_XMMM128, execPmaxudXMMXMMM128)
     DEFINE_STANDALONE(PMINUW_XMM_XMMM128, execPminuwXMMXMMM128)
@@ -1668,6 +1674,12 @@ namespace x64 {
         STANDALONE_NAME(PABSB_XMM_XMMM128),
         STANDALONE_NAME(PABSW_XMM_XMMM128),
         STANDALONE_NAME(PABSD_XMM_XMMM128),
+        STANDALONE_NAME(PSIGNB_MMX_MMXM64),
+        STANDALONE_NAME(PSIGNW_MMX_MMXM64),
+        STANDALONE_NAME(PSIGND_MMX_MMXM64),
+        STANDALONE_NAME(PSIGNB_XMM_XMMM128),
+        STANDALONE_NAME(PSIGNW_XMM_XMMM128),
+        STANDALONE_NAME(PSIGND_XMM_XMMM128),
         STANDALONE_NAME(PMAXUW_XMM_XMMM128),
         STANDALONE_NAME(PMAXUD_XMM_XMMM128),
         STANDALONE_NAME(PMINUW_XMM_XMMM128),
@@ -6486,6 +6498,43 @@ namespace x64 {
         const auto& src = ins.op1<XMMM128>();
         set(dst, Impl::pabsd128(get(src)));
     }
+
+    void Cpu::execPsignbMMXMMXM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<MMX>();
+        const auto& src = ins.op1<MMXM64>();
+        set(dst, Impl::psignb64(get(dst), get(src)));
+    }
+
+    void Cpu::execPsignwMMXMMXM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<MMX>();
+        const auto& src = ins.op1<MMXM64>();
+        set(dst, Impl::psignw64(get(dst), get(src)));
+    }
+
+    void Cpu::execPsigndMMXMMXM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<MMX>();
+        const auto& src = ins.op1<MMXM64>();
+        set(dst, Impl::psignd64(get(dst), get(src)));
+    }
+
+    void Cpu::execPsignbXMMXMMM128(const X64Instruction& ins) {
+        const auto& dst = ins.op0<XMM>();
+        const auto& src = ins.op1<XMMM128>();
+        set(dst, Impl::psignb128(get(dst), get(src)));
+    }
+
+    void Cpu::execPsignwXMMXMMM128(const X64Instruction& ins) {
+        const auto& dst = ins.op0<XMM>();
+        const auto& src = ins.op1<XMMM128>();
+        set(dst, Impl::psignw128(get(dst), get(src)));
+    }
+
+    void Cpu::execPsigndXMMXMMM128(const X64Instruction& ins) {
+        const auto& dst = ins.op0<XMM>();
+        const auto& src = ins.op1<XMMM128>();
+        set(dst, Impl::psignd128(get(dst), get(src)));
+    }
+
 
     void Cpu::execPmaxuwXMMXMMM128(const X64Instruction& ins) {
         const auto& dst = ins.op0<XMM>();

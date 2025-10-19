@@ -3346,6 +3346,72 @@ namespace x64 {
 #endif
     }
 
+    u64 NativeCpuImpl::psignb64(u64 dst, u64 src) {
+#ifdef SSSE3
+        u64 nativeRes = dst;
+        asm volatile("psignb %1, %0" : "+y"(nativeRes) : "y"(src));
+        return nativeRes;
+#else
+        assert(!"psignb64 not defined");
+        return src; // dummy value
+#endif
+    }
+
+    u64 NativeCpuImpl::psignw64(u64 dst, u64 src) {
+#ifdef SSSE3
+        u64 nativeRes = dst;
+        asm volatile("psignw %1, %0" : "+y"(nativeRes) : "y"(src));
+        return nativeRes;
+#else
+        assert(!"psignw64 not defined");
+        return src; // dummy value
+#endif
+    }
+
+    u64 NativeCpuImpl::psignd64(u64 dst, u64 src) {
+#ifdef SSSE3
+        u64 nativeRes = dst;
+        asm volatile("psignd %1, %0" : "+y"(nativeRes) : "y"(src));
+        return nativeRes;
+#else
+        assert(!"psignd64 not defined");
+        return src; // dummy value
+#endif
+    }
+
+    u128 NativeCpuImpl::psignb128(u128 dst, u128 src) {
+#ifdef SSSE3
+        u128 nativeRes = dst;
+        asm volatile("psignb %1, %0" : "+x"(nativeRes) : "x"(src));
+        return nativeRes;
+#else
+        assert(!"psignb128 not defined");
+        return src; // dummy value
+#endif
+    }
+
+    u128 NativeCpuImpl::psignw128(u128 dst, u128 src) {
+#ifdef SSSE3
+        u128 nativeRes = dst;
+        asm volatile("psignw %1, %0" : "+x"(nativeRes) : "x"(src));
+        return nativeRes;
+#else
+        assert(!"psignw128 not defined");
+        return src; // dummy value
+#endif
+    }
+
+    u128 NativeCpuImpl::psignd128(u128 dst, u128 src) {
+#ifdef SSSE3
+        u128 nativeRes = dst;
+        asm volatile("psignd %1, %0" : "+x"(nativeRes) : "x"(src));
+        return nativeRes;
+#else
+        assert(!"psignd128 not defined");
+        return src; // dummy value
+#endif
+    }
+
     u128 NativeCpuImpl::pmaxuw(u128 dst, u128 src) {
 #ifdef SSE41
         u128 nativeRes = dst;

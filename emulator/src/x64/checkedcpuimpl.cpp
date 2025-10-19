@@ -1476,6 +1476,30 @@ namespace x64 {
         return checkCall<u128>(&CpuImpl::pabsd128, &NativeCpuImpl::pabsd128, src);
     }
 
+    u64 CheckedCpuImpl::psignb64(u64 dst, u64 src) {
+        return checkCall<u64>(&CpuImpl::psignb64, &NativeCpuImpl::psignb64, dst, src);
+    }
+
+    u64 CheckedCpuImpl::psignw64(u64 dst, u64 src) {
+        return checkCall<u64>(&CpuImpl::psignw64, &NativeCpuImpl::psignw64, dst, src);
+    }
+
+    u64 CheckedCpuImpl::psignd64(u64 dst, u64 src) {
+        return checkCall<u64>(&CpuImpl::psignd64, &NativeCpuImpl::psignd64, dst, src);
+    }
+
+    u128 CheckedCpuImpl::psignb128(u128 dst, u128 src) {
+        return checkCall<u128>(&CpuImpl::psignb128, &NativeCpuImpl::psignb128, dst, src);
+    }
+
+    u128 CheckedCpuImpl::psignw128(u128 dst, u128 src) {
+        return checkCall<u128>(&CpuImpl::psignw128, &NativeCpuImpl::psignw128, dst, src);
+    }
+
+    u128 CheckedCpuImpl::psignd128(u128 dst, u128 src) {
+        return checkCall<u128>(&CpuImpl::psignd128, &NativeCpuImpl::psignd128, dst, src);
+    }
+
     u128 CheckedCpuImpl::pmaxuw(u128 dst, u128 src) {
         return checkCall<u128>(&CpuImpl::pmaxuw, &NativeCpuImpl::pmaxuw, dst, src);
     }

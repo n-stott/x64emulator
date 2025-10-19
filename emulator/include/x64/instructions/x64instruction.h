@@ -739,6 +739,12 @@ namespace x64 {
         PABSB_XMM_XMMM128,
         PABSW_XMM_XMMM128,
         PABSD_XMM_XMMM128,
+        PSIGNB_MMX_MMXM64,
+        PSIGNW_MMX_MMXM64,
+        PSIGND_MMX_MMXM64,
+        PSIGNB_XMM_XMMM128,
+        PSIGNW_XMM_XMMM128,
+        PSIGND_XMM_XMMM128,
 
         // SSE4.1
         PMAXUW_XMM_XMMM128,

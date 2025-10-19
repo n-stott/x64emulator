@@ -1085,6 +1085,13 @@ namespace x64 {
         void execPabswXMMXMMM128(const X64Instruction&);
         void execPabsdXMMXMMM128(const X64Instruction&);
 
+        void execPsignbMMXMMXM64(const X64Instruction&);
+        void execPsignwMMXMMXM64(const X64Instruction&);
+        void execPsigndMMXMMXM64(const X64Instruction&);
+        void execPsignbXMMXMMM128(const X64Instruction&);
+        void execPsignwXMMXMMM128(const X64Instruction&);
+        void execPsigndXMMXMMM128(const X64Instruction&);
+
         void execPmaxuwXMMXMMM128(const X64Instruction&);
         void execPmaxudXMMXMMM128(const X64Instruction&);
         void execPminuwXMMXMMM128(const X64Instruction&);

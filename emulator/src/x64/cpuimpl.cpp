@@ -3106,6 +3106,97 @@ namespace x64 {
         return src;
     }
 
+    template<typename T>
+    static T psign(T d, T s) {
+        if(s < 0) return -d;
+        if(s > 0) return d;
+        return (T)0;
+    }
+
+    u64 CpuImpl::psignb64(u64 dst, u64 src) {
+        std::array<i8, 8> DST;
+        std::array<i8, 8> SRC;
+        static_assert(sizeof(DST) == sizeof(dst));
+        static_assert(sizeof(SRC) == sizeof(src));
+        ::memcpy(DST.data(), &dst, sizeof(dst));
+        ::memcpy(SRC.data(), &src, sizeof(src));
+        for(int i = 0; i < 8; ++i) {
+            DST[i] = psign(DST[i], SRC[i]);
+        }
+        ::memcpy(&dst, DST.data(), sizeof(dst));
+        return dst;
+    }
+
+    u64 CpuImpl::psignw64(u64 dst, u64 src) {
+        std::array<i16, 4> DST;
+        std::array<i16, 4> SRC;
+        static_assert(sizeof(DST) == sizeof(dst));
+        static_assert(sizeof(SRC) == sizeof(src));
+        ::memcpy(DST.data(), &dst, sizeof(dst));
+        ::memcpy(SRC.data(), &src, sizeof(src));
+        for(int i = 0; i < 4; ++i) {
+            DST[i] = psign(DST[i], SRC[i]);
+        }
+        ::memcpy(&dst, DST.data(), sizeof(dst));
+        return dst;
+    }
+
+    u64 CpuImpl::psignd64(u64 dst, u64 src) {
+        std::array<i32, 2> DST;
+        std::array<i32, 2> SRC;
+        static_assert(sizeof(DST) == sizeof(dst));
+        static_assert(sizeof(SRC) == sizeof(src));
+        ::memcpy(DST.data(), &dst, sizeof(dst));
+        ::memcpy(SRC.data(), &src, sizeof(src));
+        for(int i = 0; i < 2; ++i) {
+            DST[i] = psign(DST[i], SRC[i]);
+        }
+        ::memcpy(&dst, DST.data(), sizeof(dst));
+        return dst;
+    }
+
+    u128 CpuImpl::psignb128(u128 dst, u128 src) {
+        std::array<i8, 16> DST;
+        std::array<i8, 16> SRC;
+        static_assert(sizeof(DST) == sizeof(dst));
+        static_assert(sizeof(SRC) == sizeof(src));
+        ::memcpy(DST.data(), &dst, sizeof(dst));
+        ::memcpy(SRC.data(), &src, sizeof(src));
+        for(int i = 0; i < 16; ++i) {
+            DST[i] = psign(DST[i], SRC[i]);
+        }
+        ::memcpy(&dst, DST.data(), sizeof(dst));
+        return dst;
+    }
+
+    u128 CpuImpl::psignw128(u128 dst, u128 src) {
+        std::array<i16, 8> DST;
+        std::array<i16, 8> SRC;
+        static_assert(sizeof(DST) == sizeof(dst));
+        static_assert(sizeof(SRC) == sizeof(src));
+        ::memcpy(DST.data(), &dst, sizeof(dst));
+        ::memcpy(SRC.data(), &src, sizeof(src));
+        for(int i = 0; i < 8; ++i) {
+            DST[i] = psign(DST[i], SRC[i]);
+        }
+        ::memcpy(&dst, DST.data(), sizeof(dst));
+        return dst;
+    }
+
+    u128 CpuImpl::psignd128(u128 dst, u128 src) {
+        std::array<i32, 4> DST;
+        std::array<i32, 4> SRC;
+        static_assert(sizeof(DST) == sizeof(dst));
+        static_assert(sizeof(SRC) == sizeof(src));
+        ::memcpy(DST.data(), &dst, sizeof(dst));
+        ::memcpy(SRC.data(), &src, sizeof(src));
+        for(int i = 0; i < 4; ++i) {
+            DST[i] = psign(DST[i], SRC[i]);
+        }
+        ::memcpy(&dst, DST.data(), sizeof(dst));
+        return dst;
+    }
+
     u128 CpuImpl::pmaxuw(u128 dst, u128 src) {
         std::array<u16, 8> DST;
         static_assert(sizeof(DST) == sizeof(u128));

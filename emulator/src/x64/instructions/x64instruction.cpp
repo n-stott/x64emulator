@@ -754,6 +754,12 @@ namespace x64 {
             case Insn::PABSB_XMM_XMMM128: return toString<XMM, XMMM128>("pabsb");
             case Insn::PABSW_XMM_XMMM128: return toString<XMM, XMMM128>("pabsw");
             case Insn::PABSD_XMM_XMMM128: return toString<XMM, XMMM128>("pabsd");
+            case Insn::PSIGNB_MMX_MMXM64: return toString<MMX, MMXM64>("psignb");
+            case Insn::PSIGNW_MMX_MMXM64: return toString<MMX, MMXM64>("psignw");
+            case Insn::PSIGND_MMX_MMXM64: return toString<MMX, MMXM64>("psignd");
+            case Insn::PSIGNB_XMM_XMMM128: return toString<XMM, XMMM128>("psignb");
+            case Insn::PSIGNW_XMM_XMMM128: return toString<XMM, XMMM128>("psignw");
+            case Insn::PSIGND_XMM_XMMM128: return toString<XMM, XMMM128>("psignd");
             case Insn::PMAXUW_XMM_XMMM128: return toString<XMM, XMMM128>("pmaxuw");
             case Insn::PMAXUD_XMM_XMMM128: return toString<XMM, XMMM128>("pmaxud");
             case Insn::PMINUW_XMM_XMMM128: return toString<XMM, XMMM128>("pminuw");

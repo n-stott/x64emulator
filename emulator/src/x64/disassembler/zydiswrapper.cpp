@@ -4297,6 +4297,45 @@ namespace x64 {
         return make_failed(insn);
     }
 
+    static X64Instruction makePsignb(const ZydisDisassembledInstruction& insn) {
+        assert(insn.info.operand_count_visible == 2);
+        const auto& dst = insn.operands[0];
+        const auto& src = insn.operands[1];
+        auto mmxdst = asMMX(dst);
+        auto rssedst = asRegister128(dst);
+        auto mmxm64src = asMMXM64(src);
+        auto rm128src = asRM128(src);
+        if(mmxdst && mmxm64src) return X64Instruction::make<Insn::PSIGNB_MMX_MMXM64>(insn.runtime_address, insn.info.length, mmxdst.value(), mmxm64src.value());
+        if(rssedst && rm128src) return X64Instruction::make<Insn::PSIGNB_XMM_XMMM128>(insn.runtime_address, insn.info.length, rssedst.value(), rm128src.value());
+        return make_failed(insn);
+    }
+
+    static X64Instruction makePsignw(const ZydisDisassembledInstruction& insn) {
+        assert(insn.info.operand_count_visible == 2);
+        const auto& dst = insn.operands[0];
+        const auto& src = insn.operands[1];
+        auto mmxdst = asMMX(dst);
+        auto rssedst = asRegister128(dst);
+        auto mmxm64src = asMMXM64(src);
+        auto rm128src = asRM128(src);
+        if(mmxdst && mmxm64src) return X64Instruction::make<Insn::PSIGNW_MMX_MMXM64>(insn.runtime_address, insn.info.length, mmxdst.value(), mmxm64src.value());
+        if(rssedst && rm128src) return X64Instruction::make<Insn::PSIGNW_XMM_XMMM128>(insn.runtime_address, insn.info.length, rssedst.value(), rm128src.value());
+        return make_failed(insn);
+    }
+
+    static X64Instruction makePsignd(const ZydisDisassembledInstruction& insn) {
+        assert(insn.info.operand_count_visible == 2);
+        const auto& dst = insn.operands[0];
+        const auto& src = insn.operands[1];
+        auto mmxdst = asMMX(dst);
+        auto rssedst = asRegister128(dst);
+        auto mmxm64src = asMMXM64(src);
+        auto rm128src = asRM128(src);
+        if(mmxdst && mmxm64src) return X64Instruction::make<Insn::PSIGND_MMX_MMXM64>(insn.runtime_address, insn.info.length, mmxdst.value(), mmxm64src.value());
+        if(rssedst && rm128src) return X64Instruction::make<Insn::PSIGND_XMM_XMMM128>(insn.runtime_address, insn.info.length, rssedst.value(), rm128src.value());
+        return make_failed(insn);
+    }
+
     static X64Instruction makePmaxuw(const ZydisDisassembledInstruction& insn) {
         assert(insn.info.operand_count_visible == 2);
         const auto& dst = insn.operands[0];
@@ -4793,6 +4832,9 @@ namespace x64 {
             case ZYDIS_MNEMONIC_PABSB: return makePabsb(insn);
             case ZYDIS_MNEMONIC_PABSW: return makePabsw(insn);
             case ZYDIS_MNEMONIC_PABSD: return makePabsd(insn);
+            case ZYDIS_MNEMONIC_PSIGNB: return makePsignb(insn);
+            case ZYDIS_MNEMONIC_PSIGNW: return makePsignw(insn);
+            case ZYDIS_MNEMONIC_PSIGND: return makePsignd(insn);
 
             // SSE4.1
             case ZYDIS_MNEMONIC_PMAXUW: return makePmaxuw(insn);
