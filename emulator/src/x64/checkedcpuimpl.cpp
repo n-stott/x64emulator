@@ -2,6 +2,7 @@
 #include "x64/cpuimpl.h"
 #include "x64/nativecpuimpl.h"
 #include <cassert>
+#include <cmath>
 #include <cstring>
 #include <stdexcept>
 #include <limits>
@@ -770,7 +771,20 @@ namespace x64 {
     }
 
     u128 CheckedCpuImpl::rsqrtss(u128 dst, u128 src) {
-        return checkCall<u128>(&CpuImpl::rsqrtss, &NativeCpuImpl::rsqrtss, dst, src);
+        u128 emulated = NativeCpuImpl::rsqrtss(dst, src);
+#ifndef NDEBUG
+        u128 native = CpuImpl::rsqrtss(dst, src);
+        f32 native32;
+        f32 emulated32;
+        ::memcpy(&native32, &native, sizeof(native32));
+        ::memcpy(&emulated32, &emulated, sizeof(emulated32));
+        assert(std::isfinite(native32) == std::isfinite(emulated32));
+        if(std::isfinite(native32) && std::isfinite(emulated32)) {
+            f32 absdiff = std::abs(native32 - emulated32);
+            assert(absdiff <= 1.5 * std::max(std::abs(native32), std::abs(emulated32)) / std::pow(2, 12));
+        }
+#endif
+        return emulated;
     }
 
     u128 CheckedCpuImpl::sqrtsd(u128 dst, u128 src, SIMD_ROUNDING rounding) {
