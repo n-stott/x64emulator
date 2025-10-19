@@ -1094,6 +1094,8 @@ namespace x64 {
         void execRoundssXMMM32IMM(const X64Instruction&);
         void execRoundsdXMMXMMIMM(const X64Instruction&);
         void execRoundsdXMMM64IMM(const X64Instruction&);
+
+        void execPmulldXMMXMMM128(const X64Instruction&);
         
         void execRdtsc(const X64Instruction&);
 

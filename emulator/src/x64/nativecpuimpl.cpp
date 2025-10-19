@@ -3394,7 +3394,7 @@ namespace x64 {
 #endif
     }
 
-    u128 NativeCpuImpl::roundss32(u128 dst, u32 src, u8 imm) {
+    u128 NativeCpuImpl::roundss32(u128 dst, u32 src, u8 imm, SIMD_ROUNDING) {
 #ifdef SSE41
         assert(!"roundss32 not implemented");
         (void)src;
@@ -3408,21 +3408,35 @@ namespace x64 {
 #endif
     }
 
-    u128 NativeCpuImpl::roundss128(u128 dst, u128 src, u8 imm) {
+    u128 NativeCpuImpl::roundss128(u128 dst, u128 src, u8 imm, SIMD_ROUNDING) {
 #ifdef SSE41
-        assert(!"roundss128 not implemented");
-        (void)src;
-        (void)imm;
-        return dst; // dummy value
+        assert((imm & 0x4) == 0x0); // mxcsr rounding mode ignored
+        auto round = [=](u128 dst, u128 src, u8 imm) -> u128 {
+            auto nativeround = [](__m128 dst, __m128 src, u8 imm) -> __m128 {
+                u8 order = imm;
+                CALL_2_WITH_IMM4(_mm_round_ss, dst, src);
+            };
+            __m128 mdst;
+            std::memcpy(&mdst, &dst, sizeof(mdst));
+            __m128 msrc;
+            std::memcpy(&msrc, &src, sizeof(msrc));
+            __m128 res = nativeround(mdst, msrc, imm);
+            u128 realRes;
+            std::memcpy(&realRes, &res, sizeof(realRes));
+            return realRes;
+        };
+
+        u128 nativeRes = round(dst, src, imm);
+        return nativeRes;
 #else
-        assert(!"roundss128 not defined");
+        assert(!"roundsd128 not defined");
         (void)src;
         (void)imm;
         return dst; // dummy value
 #endif
     }
 
-    u128 NativeCpuImpl::roundsd64(u128 dst, u64 src, u8 imm) {
+    u128 NativeCpuImpl::roundsd64(u128 dst, u64 src, u8 imm, SIMD_ROUNDING) {
 #ifdef SSE41
         assert(!"roundsd64 not implemented");
         (void)src;
@@ -3436,8 +3450,9 @@ namespace x64 {
 #endif
     }
 
-    u128 NativeCpuImpl::roundsd128(u128 dst, u128 src, u8 imm) {
+    u128 NativeCpuImpl::roundsd128(u128 dst, u128 src, u8 imm, SIMD_ROUNDING) {
 #ifdef SSE41
+        assert((imm & 0x4) == 0x0); // mxcsr rounding mode ignored
         auto round = [=](u128 dst, u128 src, u8 imm) -> u128 {
             auto nativeround = [](__m128d dst, __m128d src, u8 imm) -> __m128d {
                 u8 order = imm;
@@ -3460,6 +3475,18 @@ namespace x64 {
         (void)src;
         (void)imm;
         return dst; // dummy value
+#endif
+    }
+
+    u128 NativeCpuImpl::pmulld(u128 dst, u128 src) {
+#ifdef SSE41
+        u128 nativeRes = dst;
+        asm volatile("pmulld %1, %0" : "+x"(nativeRes) : "x"(src));
+        return nativeRes;
+#else
+        assert(!"pmulld not defined");
+        (void)dst;
+        return src; // dummy value
 #endif
     }
 

@@ -762,6 +762,7 @@ namespace x64 {
             case Insn::ROUNDSS_XMM_M32_IMM: return toString<XMM, M32, Imm>("roundss");
             case Insn::ROUNDSD_XMM_XMM_IMM: return toString<XMM, XMM, Imm>("roundsd");
             case Insn::ROUNDSD_XMM_M64_IMM: return toString<XMM, M64, Imm>("roundsd");
+            case Insn::PMULLD_XMM_XMMM128: return toString<XMM, XMMM128>("pmulld");
             case Insn::RDTSC: return toString("rdtsc");
             case Insn::CPUID: return toString("cpuid");
             case Insn::XGETBV: return toString("xgetbv");

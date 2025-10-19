@@ -931,6 +931,7 @@ namespace x64 {
     DEFINE_STANDALONE(ROUNDSS_XMM_M32_IMM, execRoundssXMMM32IMM)
     DEFINE_STANDALONE(ROUNDSD_XMM_XMM_IMM, execRoundsdXMMXMMIMM)
     DEFINE_STANDALONE(ROUNDSD_XMM_M64_IMM, execRoundsdXMMM64IMM)
+    DEFINE_STANDALONE(PMULLD_XMM_XMMM128, execPmulldXMMXMMM128)
     DEFINE_STANDALONE(RDTSC, execRdtsc)
     DEFINE_STANDALONE(CPUID, execCpuid)
     DEFINE_STANDALONE(XGETBV, execXgetbv)
@@ -1675,6 +1676,7 @@ namespace x64 {
         STANDALONE_NAME(ROUNDSS_XMM_M32_IMM),
         STANDALONE_NAME(ROUNDSD_XMM_XMM_IMM),
         STANDALONE_NAME(ROUNDSD_XMM_M64_IMM),
+        STANDALONE_NAME(PMULLD_XMM_XMMM128),
         STANDALONE_NAME(RDTSC),
         STANDALONE_NAME(CPUID),
         STANDALONE_NAME(XGETBV),
@@ -6513,28 +6515,34 @@ namespace x64 {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMM>();
         const auto& imm = ins.op2<Imm>();
-        set(dst, Impl::roundss128(get(dst), get(src), imm.as<u8>()));
+        set(dst, Impl::roundss128(get(dst), get(src), imm.as<u8>(), simdRoundingMode()));
     }
 
     void Cpu::execRoundssXMMM32IMM(const X64Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<M32>();
         const auto& imm = ins.op2<Imm>();
-        set(dst, Impl::roundss32(get(dst), get(resolve(src)), imm.as<u8>()));
+        set(dst, Impl::roundss32(get(dst), get(resolve(src)), imm.as<u8>(), simdRoundingMode()));
     }
 
     void Cpu::execRoundsdXMMXMMIMM(const X64Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMM>();
         const auto& imm = ins.op2<Imm>();
-        set(dst, Impl::roundsd128(get(dst), get(src), imm.as<u8>()));
+        set(dst, Impl::roundsd128(get(dst), get(src), imm.as<u8>(), simdRoundingMode()));
     }
 
     void Cpu::execRoundsdXMMM64IMM(const X64Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<M64>();
         const auto& imm = ins.op2<Imm>();
-        set(dst, Impl::roundsd64(get(dst), get(resolve(src)), imm.as<u8>()));
+        set(dst, Impl::roundsd64(get(dst), get(resolve(src)), imm.as<u8>(), simdRoundingMode()));
+    }
+
+    void Cpu::execPmulldXMMXMMM128(const X64Instruction& ins) {
+        const auto& dst = ins.op0<XMM>();
+        const auto& src = ins.op1<XMMM128>();
+        set(dst, Impl::pmulld(get(dst), get(src)));
     }
 
     void Cpu::execSyscall(const X64Instruction&) {

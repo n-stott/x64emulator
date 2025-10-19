@@ -251,3 +251,11 @@ target_include_directories(test_minpd PRIVATE include ${CMAKE_SOURCE_DIR}/emulat
 target_link_libraries(test_minpd PRIVATE x64cpu)
 target_link_options(test_minpd PRIVATE ${LD_OPTIONS})
 add_test(NAME minpd COMMAND test_minpd)
+
+add_executable(test_roundss src/test_roundss.cpp)
+target_compile_options(test_roundss PRIVATE ${CC_OPTIONS})
+target_compile_options(test_roundss PRIVATE -frounding-math)
+target_include_directories(test_roundss PRIVATE include ${CMAKE_SOURCE_DIR}/emulator/include)
+target_link_libraries(test_roundss PRIVATE x64cpu)
+target_link_options(test_roundss PRIVATE ${LD_OPTIONS})
+add_test(NAME roundss COMMAND test_roundss)

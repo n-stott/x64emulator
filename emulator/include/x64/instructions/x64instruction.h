@@ -751,6 +751,8 @@ namespace x64 {
         ROUNDSD_XMM_XMM_IMM,
         ROUNDSD_XMM_M64_IMM,
 
+        PMULLD_XMM_XMMM128,
+
         // MISC
         RDTSC,
         CPUID,

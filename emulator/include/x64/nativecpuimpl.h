@@ -445,10 +445,12 @@ namespace x64 {
         [[nodiscard]] static u128 pminuw(u128 dst, u128 src);
         [[nodiscard]] static u128 pminud(u128 dst, u128 src);
 
-        [[nodiscard]] static u128 roundss32(u128 dst, u32 src, u8 imm);
-        [[nodiscard]] static u128 roundss128(u128 dst, u128 src, u8 imm);
-        [[nodiscard]] static u128 roundsd64(u128 dst, u64 src, u8 imm);
-        [[nodiscard]] static u128 roundsd128(u128 dst, u128 src, u8 imm);
+        [[nodiscard]] static u128 roundss32(u128 dst, u32 src, u8 imm, SIMD_ROUNDING);
+        [[nodiscard]] static u128 roundss128(u128 dst, u128 src, u8 imm, SIMD_ROUNDING);
+        [[nodiscard]] static u128 roundsd64(u128 dst, u64 src, u8 imm, SIMD_ROUNDING);
+        [[nodiscard]] static u128 roundsd128(u128 dst, u128 src, u8 imm, SIMD_ROUNDING);
+
+        [[nodiscard]] static u128 pmulld(u128 dst, u128 src);
 
         [[nodiscard]] static f80 fadd(f80 dst, f80 src, X87Fpu* fpu);
         [[nodiscard]] static f80 fsub(f80 dst, f80 src, X87Fpu* fpu);

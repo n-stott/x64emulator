@@ -3170,39 +3170,85 @@ namespace x64 {
         return dst;
     }
 
-    u128 CpuImpl::roundss32(u128 dst, u32 src, u8 imm) {
+    u128 CpuImpl::roundss32(u128 dst, u32 src, u8 imm, SIMD_ROUNDING) {
         (void)src;
         (void)imm;
         assert(!"roundss32 not implemented");
         return dst;
     }
 
-    u128 CpuImpl::roundss128(u128 dst, u128 src, u8 imm) {
-        (void)src;
-        (void)imm;
-        assert(!"roundss128 not implemented");
+    u128 CpuImpl::roundss128(u128 dst, u128 src, u8 imm, SIMD_ROUNDING) {
+        assert((imm & 0x4) == 0x0); // imm holds the rounding info
+        SIMD_ROUNDING rc = (SIMD_ROUNDING)(imm & 0x3);
+        std::array<f32, 4> SRC;
+        static_assert(sizeof(SRC) == sizeof(src));
+        ::memcpy(SRC.data(), &src, sizeof(src));
+        f32 value = SRC[0];
+        if(rc == SIMD_ROUNDING::NEAREST) {
+            value = std::round(value);
+        } else if(rc == SIMD_ROUNDING::DOWN) {
+            value = std::floor(value);
+        } else if(rc == SIMD_ROUNDING::UP) {
+            value = std::ceil(value);
+        } else {
+            assert("rounding to zero not supported");
+        }
+        std::array<f32, 4> DST;
+        static_assert(sizeof(DST) == sizeof(dst));
+        ::memcpy(DST.data(), &dst, sizeof(dst));
+        DST[0] = value;
+        ::memcpy(&dst, DST.data(), sizeof(dst));
         return dst;
     }
 
-    u128 CpuImpl::roundsd64(u128 dst, u64 src, u8 imm) {
+    u128 CpuImpl::roundsd64(u128 dst, u64 src, u8 imm, SIMD_ROUNDING) {
         (void)src;
         (void)imm;
         assert(!"roundsd64 not implemented");
         return dst;
     }
 
-    u128 CpuImpl::roundsd128(u128 dst, u128 src, u8 imm) {
+    u128 CpuImpl::roundsd128(u128 dst, u128 src, u8 imm, SIMD_ROUNDING) {
+        assert((imm & 0x4) == 0x0); // imm holds the rounding info
+        SIMD_ROUNDING rc = (SIMD_ROUNDING)(imm & 0x3);
         std::array<f64, 2> SRC;
         static_assert(sizeof(SRC) == sizeof(src));
         ::memcpy(SRC.data(), &src, sizeof(src));
         f64 value = SRC[0];
-        (void)imm;
-        value = (f64)(i64)value;
+        if(rc == SIMD_ROUNDING::NEAREST) {
+            value = std::round(value);
+        } else if(rc == SIMD_ROUNDING::DOWN) {
+            value = std::floor(value);
+        } else if(rc == SIMD_ROUNDING::UP) {
+            value = std::ceil(value);
+        } else {
+            assert("rounding to zero not supported");
+        }
         std::array<f64, 2> DST;
         static_assert(sizeof(DST) == sizeof(dst));
         ::memcpy(DST.data(), &dst, sizeof(dst));
         DST[0] = value;
         ::memcpy(&dst, DST.data(), sizeof(dst));
+        return dst;
+    }
+
+    u128 CpuImpl::pmulld(u128 dst, u128 src) {
+        std::array<i32, 4> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        std::memcpy(DST.data(), &dst, sizeof(u128));
+
+        std::array<i32, 4> SRC;
+        static_assert(sizeof(SRC) == sizeof(u128));
+        std::memcpy(SRC.data(), &src, sizeof(u128));
+
+        for(size_t i = 0; i < 4; ++i) {
+            i64 res = (i64)(DST[i]) * (i64)SRC[i];
+            std::array<i32, 2> TMP;
+            static_assert(sizeof(TMP) == sizeof(res));
+            std::memcpy(TMP.data(), &res, sizeof(res));
+            DST[i] = TMP[0];
+        }
+        std::memcpy(&dst, DST.data(), sizeof(u128));
         return dst;
     }
 
