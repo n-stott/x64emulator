@@ -1099,14 +1099,14 @@ namespace x64 {
         void execPminuwXMMXMMM128(const X64Instruction&);
         void execPminudXMMXMMM128(const X64Instruction&);
 
-        void execRoundssXMMXMMIMM(const X64Instruction&);
-        void execRoundssXMMM32IMM(const X64Instruction&);
-        void execRoundsdXMMXMMIMM(const X64Instruction&);
-        void execRoundsdXMMM64IMM(const X64Instruction&);
+        void execRoundssXMMXMMImm(const X64Instruction&);
+        void execRoundssXMMM32Imm(const X64Instruction&);
+        void execRoundsdXMMXMMImm(const X64Instruction&);
+        void execRoundsdXMMM64Imm(const X64Instruction&);
 
         void execPmulldXMMXMMM128(const X64Instruction&);
-        void execPextrdRM32XMMIMM(const X64Instruction&);
-        void execPextrqRM64XMMIMM(const X64Instruction&);
+        void execPextrdRM32XMMImm(const X64Instruction&);
+        void execPextrqRM64XMMImm(const X64Instruction&);
 
         void execRdtsc(const X64Instruction&);
 

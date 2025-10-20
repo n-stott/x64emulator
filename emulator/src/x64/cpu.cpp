@@ -935,13 +935,13 @@ namespace x64 {
     DEFINE_STANDALONE(PMAXUD_XMM_XMMM128, execPmaxudXMMXMMM128)
     DEFINE_STANDALONE(PMINUW_XMM_XMMM128, execPminuwXMMXMMM128)
     DEFINE_STANDALONE(PMINUD_XMM_XMMM128, execPminudXMMXMMM128)
-    DEFINE_STANDALONE(ROUNDSS_XMM_XMM_IMM, execRoundssXMMXMMIMM)
-    DEFINE_STANDALONE(ROUNDSS_XMM_M32_IMM, execRoundssXMMM32IMM)
-    DEFINE_STANDALONE(ROUNDSD_XMM_XMM_IMM, execRoundsdXMMXMMIMM)
-    DEFINE_STANDALONE(ROUNDSD_XMM_M64_IMM, execRoundsdXMMM64IMM)
+    DEFINE_STANDALONE(ROUNDSS_XMM_XMM_IMM, execRoundssXMMXMMImm)
+    DEFINE_STANDALONE(ROUNDSS_XMM_M32_IMM, execRoundssXMMM32Imm)
+    DEFINE_STANDALONE(ROUNDSD_XMM_XMM_IMM, execRoundsdXMMXMMImm)
+    DEFINE_STANDALONE(ROUNDSD_XMM_M64_IMM, execRoundsdXMMM64Imm)
     DEFINE_STANDALONE(PMULLD_XMM_XMMM128, execPmulldXMMXMMM128)
-    DEFINE_STANDALONE(PEXTRD_RM32_XMM_IMM, execPextrdRM32XMMIMM)
-    DEFINE_STANDALONE(PEXTRQ_RM64_XMM_IMM, execPextrqRM64XMMIMM)
+    DEFINE_STANDALONE(PEXTRD_RM32_XMM_IMM, execPextrdRM32XMMImm)
+    DEFINE_STANDALONE(PEXTRQ_RM64_XMM_IMM, execPextrqRM64XMMImm)
     DEFINE_STANDALONE(RDTSC, execRdtsc)
     DEFINE_STANDALONE(CPUID, execCpuid)
     DEFINE_STANDALONE(XGETBV, execXgetbv)
@@ -6580,28 +6580,28 @@ namespace x64 {
         set(dst, Impl::pminud(get(dst), get(src)));
     }
 
-    void Cpu::execRoundssXMMXMMIMM(const X64Instruction& ins) {
+    void Cpu::execRoundssXMMXMMImm(const X64Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMM>();
         const auto& imm = ins.op2<Imm>();
         set(dst, Impl::roundss128(get(dst), get(src), imm.as<u8>(), simdRoundingMode()));
     }
 
-    void Cpu::execRoundssXMMM32IMM(const X64Instruction& ins) {
+    void Cpu::execRoundssXMMM32Imm(const X64Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<M32>();
         const auto& imm = ins.op2<Imm>();
         set(dst, Impl::roundss32(get(dst), get(resolve(src)), imm.as<u8>(), simdRoundingMode()));
     }
 
-    void Cpu::execRoundsdXMMXMMIMM(const X64Instruction& ins) {
+    void Cpu::execRoundsdXMMXMMImm(const X64Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMM>();
         const auto& imm = ins.op2<Imm>();
         set(dst, Impl::roundsd128(get(dst), get(src), imm.as<u8>(), simdRoundingMode()));
     }
 
-    void Cpu::execRoundsdXMMM64IMM(const X64Instruction& ins) {
+    void Cpu::execRoundsdXMMM64Imm(const X64Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<M64>();
         const auto& imm = ins.op2<Imm>();
@@ -6614,14 +6614,14 @@ namespace x64 {
         set(dst, Impl::pmulld(get(dst), get(src)));
     }
 
-    void Cpu::execPextrdRM32XMMIMM(const X64Instruction& ins) {
+    void Cpu::execPextrdRM32XMMImm(const X64Instruction& ins) {
         const auto& dst = ins.op0<RM32>();
         const auto& src = ins.op1<XMM>();
         const auto& imm = ins.op2<Imm>();
         set(dst, Impl::pextrd(get(src), get<u8>(imm)));
     }
 
-    void Cpu::execPextrqRM64XMMIMM(const X64Instruction& ins) {
+    void Cpu::execPextrqRM64XMMImm(const X64Instruction& ins) {
         const auto& dst = ins.op0<RM64>();
         const auto& src = ins.op1<XMM>();
         const auto& imm = ins.op2<Imm>();
