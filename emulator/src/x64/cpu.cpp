@@ -907,6 +907,8 @@ namespace x64 {
     DEFINE_STANDALONE(MOVDDUP_XMM_M64, execMovddupXMMM64)
     DEFINE_STANDALONE(ADDSUBPS_XMM_XMMM128, execAddsubpsXMXMMM128)
     DEFINE_STANDALONE(ADDSUBPD_XMM_XMMM128, execAddsubpdXMXMMM128)
+    DEFINE_STANDALONE(HADDPS_XMM_XMMM128, execHaddpsXMXMMM128)
+    DEFINE_STANDALONE(HADDPD_XMM_XMMM128, execHaddpdXMXMMM128)
     DEFINE_STANDALONE(PALIGNR_MMX_MMXM64_IMM, execPalignrMMXMMXM64Imm)
     DEFINE_STANDALONE(PALIGNR_XMM_XMMM128_IMM, execPalignrXMMXMMM128Imm)
     DEFINE_STANDALONE(PHADDW_MMX_MMXM64, execPhaddwMMXMMXM64)
@@ -1658,6 +1660,8 @@ namespace x64 {
         STANDALONE_NAME(MOVDDUP_XMM_M64),
         STANDALONE_NAME(ADDSUBPS_XMM_XMMM128),
         STANDALONE_NAME(ADDSUBPD_XMM_XMMM128),
+        STANDALONE_NAME(HADDPS_XMM_XMMM128),
+        STANDALONE_NAME(HADDPD_XMM_XMMM128),
         STANDALONE_NAME(PALIGNR_MMX_MMXM64_IMM),
         STANDALONE_NAME(PALIGNR_XMM_XMMM128_IMM),
         STANDALONE_NAME(PHADDW_MMX_MMXM64),
@@ -6399,6 +6403,18 @@ namespace x64 {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         set(dst, Impl::addsubpd(get(dst), get(src)));
+    }
+
+    void Cpu::execHaddpsXMXMMM128(const X64Instruction& ins) {
+        const auto& dst = ins.op0<XMM>();
+        const auto& src = ins.op1<XMMM128>();
+        set(dst, Impl::haddps(get(dst), get(src)));
+    }
+
+    void Cpu::execHaddpdXMXMMM128(const X64Instruction& ins) {
+        const auto& dst = ins.op0<XMM>();
+        const auto& src = ins.op1<XMMM128>();
+        set(dst, Impl::haddpd(get(dst), get(src)));
     }
 
     void Cpu::execPalignrMMXMMXM64Imm(const X64Instruction& ins) {

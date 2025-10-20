@@ -721,6 +721,8 @@ namespace x64 {
         MOVDDUP_XMM_M64,
         ADDSUBPS_XMM_XMMM128,
         ADDSUBPD_XMM_XMMM128,
+        HADDPS_XMM_XMMM128,
+        HADDPD_XMM_XMMM128,
 
         // SSSE3
         PALIGNR_MMX_MMXM64_IMM,

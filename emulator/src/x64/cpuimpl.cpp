@@ -2834,6 +2834,36 @@ namespace x64 {
         return dst;
     }
 
+    u128 CpuImpl::haddps(u128 dst, u128 src) {
+        std::array<float, 4> DST;
+        std::array<float, 4> SRC;
+        static_assert(sizeof(dst) == sizeof(DST));
+        static_assert(sizeof(src) == sizeof(SRC));
+        ::memcpy(&DST, &dst, sizeof(dst));
+        ::memcpy(&SRC, &src, sizeof(src));
+        std::array<float, 4> TMP;
+        TMP[0] = DST[0] + DST[1];
+        TMP[1] = DST[2] + DST[3];
+        TMP[2] = SRC[0] + SRC[1];
+        TMP[3] = SRC[2] + SRC[3];
+        ::memcpy(&dst, &TMP, sizeof(dst));
+        return dst;
+    }
+
+    u128 CpuImpl::haddpd(u128 dst, u128 src) {
+        std::array<double, 2> DST;
+        std::array<double, 2> SRC;
+        static_assert(sizeof(dst) == sizeof(DST));
+        static_assert(sizeof(src) == sizeof(SRC));
+        ::memcpy(&DST, &dst, sizeof(dst));
+        ::memcpy(&SRC, &src, sizeof(src));
+        std::array<double, 2> TMP;
+        TMP[0] = DST[0] + DST[1];
+        TMP[1] = SRC[0] + SRC[1];
+        ::memcpy(&dst, &TMP, sizeof(dst));
+        return dst;
+    }
+
     u64 CpuImpl::palignr64(u64 dst, u64 src, u8 imm) {
         if(imm == 0) return src;
         if(imm >= 16) return 0;
