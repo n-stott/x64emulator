@@ -760,6 +760,8 @@ namespace x64 {
         ROUNDSD_XMM_M64_IMM,
 
         PMULLD_XMM_XMMM128,
+        PEXTRD_RM32_XMM_IMM,
+        PEXTRQ_RM64_XMM_IMM,
 
         // MISC
         RDTSC,

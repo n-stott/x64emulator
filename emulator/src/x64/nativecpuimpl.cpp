@@ -18,6 +18,22 @@
 #endif
 
 
+#define CALL_1_WITH_IMM1(f, a) \
+    switch(order) { \
+        case 0x00: return f(a, 0x00); \
+        case 0x01: return f(a, 0x01); \
+        default: __builtin_unreachable(); \
+    }
+
+#define CALL_1_WITH_IMM2(f, a) \
+    switch(order) { \
+        case 0x00: return f(a, 0x00); \
+        case 0x01: return f(a, 0x01); \
+        case 0x02: return f(a, 0x02); \
+        case 0x03: return f(a, 0x03); \
+        default: __builtin_unreachable(); \
+    }
+
 #define CALL_1_WITH_IMM3(f, a) \
     switch(order) { \
         case 0x00: return f(a, 0x00); \
@@ -3585,6 +3601,46 @@ namespace x64 {
         assert(!"pmulld not defined");
         (void)dst;
         return src; // dummy value
+#endif
+    }
+
+    u32 NativeCpuImpl::pextrd(u128 src, u8 order) {
+#ifdef SSE41
+        auto native = [=](__m128i s) -> int {
+            CALL_1_WITH_IMM2(_mm_extract_epi32, s);
+        };
+
+        __m128i s;
+        static_assert(sizeof(s) == sizeof(src));
+        memcpy(&s, &src, sizeof(src));
+        assert(order < 8);
+        int r = native(s);
+        return (u32)r;
+#else
+        assert(!"pextrd not defined");
+        (void)src;
+        (void)order
+        return 0; // dummy value
+#endif
+    }
+
+    u64 NativeCpuImpl::pextrq(u128 src, u8 order) {
+#ifdef SSE41
+        auto native = [=](__m128i s) -> __int64_t {
+            CALL_1_WITH_IMM1(_mm_extract_epi64, s);
+        };
+
+        __m128i s;
+        static_assert(sizeof(s) == sizeof(src));
+        memcpy(&s, &src, sizeof(src));
+        assert(order < 8);
+        __int64_t r = native(s);
+        return (u64)r;
+#else
+        assert(!"pextrd not defined");
+        (void)src;
+        (void)order
+        return 0; // dummy value
 #endif
     }
 

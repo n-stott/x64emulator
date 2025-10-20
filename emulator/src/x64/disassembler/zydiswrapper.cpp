@@ -4434,6 +4434,30 @@ namespace x64 {
         return make_failed(insn);
     }
 
+    static X64Instruction makePextrd(const ZydisDisassembledInstruction& insn) {
+        assert(insn.info.operand_count_visible == 3);
+        const auto& dst = insn.operands[0];
+        const auto& src = insn.operands[1];
+        const auto& pos = insn.operands[2];
+        auto rm32dst = asRM32(dst);
+        auto rssesrc = asRegister128(src);
+        auto imm = asImmediate(pos);
+        if(rm32dst && rssesrc && imm) return X64Instruction::make<Insn::PEXTRD_RM32_XMM_IMM>(insn.runtime_address, insn.info.length, rm32dst.value(), rssesrc.value(), imm.value());
+        return make_failed(insn);
+    }
+
+    static X64Instruction makePextrq(const ZydisDisassembledInstruction& insn) {
+        assert(insn.info.operand_count_visible == 3);
+        const auto& dst = insn.operands[0];
+        const auto& src = insn.operands[1];
+        const auto& pos = insn.operands[2];
+        auto rm64dst = asRM64(dst);
+        auto rssesrc = asRegister128(src);
+        auto imm = asImmediate(pos);
+        if(rm64dst && rssesrc && imm) return X64Instruction::make<Insn::PEXTRQ_RM64_XMM_IMM>(insn.runtime_address, insn.info.length, rm64dst.value(), rssesrc.value(), imm.value());
+        return make_failed(insn);
+    }
+
     static X64Instruction makeRdtsc(const ZydisDisassembledInstruction& insn) {
         return X64Instruction::make<Insn::RDTSC>(insn.runtime_address, insn.info.length);
     }
@@ -4866,6 +4890,8 @@ namespace x64 {
             case ZYDIS_MNEMONIC_ROUNDSS: return makeRoundss(insn);
             case ZYDIS_MNEMONIC_ROUNDSD: return makeRoundsd(insn);
             case ZYDIS_MNEMONIC_PMULLD: return makePmulld(insn);
+            case ZYDIS_MNEMONIC_PEXTRD: return makePextrd(insn);
+            case ZYDIS_MNEMONIC_PEXTRQ: return makePextrq(insn);
 
             case ZYDIS_MNEMONIC_RDTSC: return makeRdtsc(insn);
             case ZYDIS_MNEMONIC_CPUID: return makeCpuid(insn);

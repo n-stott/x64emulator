@@ -3373,5 +3373,21 @@ namespace x64 {
         return dst;
     }
 
+    u32 CpuImpl::pextrd(u128 src, u8 order) {
+        order = order & 0x3;
+        std::array<u32, 4> SRC;
+        static_assert(sizeof(SRC) == sizeof(u128));
+        std::memcpy(SRC.data(), &src, sizeof(u128));
+        return SRC[order];
+    }
+
+    u64 CpuImpl::pextrq(u128 src, u8 order) {
+        order = order & 0x1;
+        std::array<u64, 2> SRC;
+        static_assert(sizeof(SRC) == sizeof(u128));
+        std::memcpy(SRC.data(), &src, sizeof(u128));
+        return SRC[order];
+    }
+
 
 }

@@ -940,6 +940,8 @@ namespace x64 {
     DEFINE_STANDALONE(ROUNDSD_XMM_XMM_IMM, execRoundsdXMMXMMIMM)
     DEFINE_STANDALONE(ROUNDSD_XMM_M64_IMM, execRoundsdXMMM64IMM)
     DEFINE_STANDALONE(PMULLD_XMM_XMMM128, execPmulldXMMXMMM128)
+    DEFINE_STANDALONE(PEXTRD_RM32_XMM_IMM, execPextrdRM32XMMIMM)
+    DEFINE_STANDALONE(PEXTRQ_RM64_XMM_IMM, execPextrqRM64XMMIMM)
     DEFINE_STANDALONE(RDTSC, execRdtsc)
     DEFINE_STANDALONE(CPUID, execCpuid)
     DEFINE_STANDALONE(XGETBV, execXgetbv)
@@ -1693,6 +1695,8 @@ namespace x64 {
         STANDALONE_NAME(ROUNDSD_XMM_XMM_IMM),
         STANDALONE_NAME(ROUNDSD_XMM_M64_IMM),
         STANDALONE_NAME(PMULLD_XMM_XMMM128),
+        STANDALONE_NAME(PEXTRD_RM32_XMM_IMM),
+        STANDALONE_NAME(PEXTRQ_RM64_XMM_IMM),
         STANDALONE_NAME(RDTSC),
         STANDALONE_NAME(CPUID),
         STANDALONE_NAME(XGETBV),
@@ -6608,6 +6612,20 @@ namespace x64 {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         set(dst, Impl::pmulld(get(dst), get(src)));
+    }
+
+    void Cpu::execPextrdRM32XMMIMM(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RM32>();
+        const auto& src = ins.op1<XMM>();
+        const auto& imm = ins.op2<Imm>();
+        set(dst, Impl::pextrd(get(src), get<u8>(imm)));
+    }
+
+    void Cpu::execPextrqRM64XMMIMM(const X64Instruction& ins) {
+        const auto& dst = ins.op0<RM64>();
+        const auto& src = ins.op1<XMM>();
+        const auto& imm = ins.op2<Imm>();
+        set(dst, Impl::pextrq(get(src), get<u8>(imm)));
     }
 
     void Cpu::execSyscall(const X64Instruction&) {
