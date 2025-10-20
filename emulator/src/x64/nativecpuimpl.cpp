@@ -3644,6 +3644,49 @@ namespace x64 {
 #endif
     }
 
+    u32 NativeCpuImpl::extractps(u128 src, u8 order) {
+#ifdef SSE41
+        auto native = [=](__m128 s) -> int {
+            CALL_1_WITH_IMM2(_mm_extract_ps, s);
+        };
+
+        __m128 s;
+        static_assert(sizeof(s) == sizeof(src));
+        memcpy(&s, &src, sizeof(src));
+        assert(order < 8);
+        int r = native(s);
+        return (u32)r;
+#else
+        assert(!"extractps not defined");
+        (void)src;
+        (void)order
+        return 0; // dummy value
+#endif
+    }
+
+    u128 NativeCpuImpl::insertpsReg(u128 dst, u128 src, u8 order) {
+#ifdef SSE41
+        auto native = [=](__m128 d, __m128 s) -> __m128 {
+            CALL_2_WITH_IMM8(_mm_insert_ps, d, s);
+        };
+
+        __m128 d;
+        __m128 s;
+        static_assert(sizeof(d) == sizeof(dst));
+        static_assert(sizeof(s) == sizeof(src));
+        memcpy(&d, &dst, sizeof(dst));
+        memcpy(&s, &src, sizeof(src));
+        __m128 r = native(d, s);
+        memcpy(&dst, &r, sizeof(dst));
+        return dst;
+#else
+        assert(!"insertps not defined");
+        (void)src;
+        (void)order
+        return dst; // dummy value
+#endif
+    }
+
 
 }
 

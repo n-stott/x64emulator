@@ -762,6 +762,8 @@ namespace x64 {
         PMULLD_XMM_XMMM128,
         PEXTRD_RM32_XMM_IMM,
         PEXTRQ_RM64_XMM_IMM,
+        EXTRACTPS_M32_XMM_IMM,
+        INSERTPS_XMM_XMM_IMM,
 
         // MISC
         RDTSC,

@@ -267,3 +267,11 @@ target_include_directories(test_psign PRIVATE include ${CMAKE_SOURCE_DIR}/emulat
 target_link_libraries(test_psign PRIVATE x64cpu)
 target_link_options(test_psign PRIVATE ${LD_OPTIONS})
 add_test(NAME psign COMMAND test_psign)
+
+add_executable(test_insertps src/test_insertps.cpp)
+target_compile_options(test_insertps PRIVATE ${CC_OPTIONS})
+target_compile_options(test_insertps PRIVATE -frounding-math)
+target_include_directories(test_insertps PRIVATE include ${CMAKE_SOURCE_DIR}/emulator/include)
+target_link_libraries(test_insertps PRIVATE x64cpu)
+target_link_options(test_insertps PRIVATE ${LD_OPTIONS})
+add_test(NAME insertps COMMAND test_insertps)

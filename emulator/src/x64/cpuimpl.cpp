@@ -3389,5 +3389,33 @@ namespace x64 {
         return SRC[order];
     }
 
+    u32 CpuImpl::extractps(u128 src, u8 order) {
+        order = order & 0x3;
+        std::array<u32, 4> SRC;
+        static_assert(sizeof(SRC) == sizeof(u128));
+        std::memcpy(SRC.data(), &src, sizeof(u128));
+        return SRC[order];
+    }
+
+    u128 CpuImpl::insertpsReg(u128 dst, u128 src, u8 order) {
+        std::array<u32, 4> DST;
+        std::array<u32, 4> SRC;
+        static_assert(sizeof(DST) == sizeof(u128));
+        static_assert(sizeof(SRC) == sizeof(u128));
+        std::memcpy(DST.data(), &dst, sizeof(u128));
+        std::memcpy(SRC.data(), &src, sizeof(u128));
+        u8 counts = (order >> 6) & 0x3;
+        u8 countd = (order >> 4) & 0x3;
+        u8 zmask = order & 0xF;
+        u32 tmp = SRC[counts];
+        DST[countd] = tmp;
+        if(zmask & 0x1) DST[0] = 0;
+        if(zmask & 0x2) DST[1] = 0;
+        if(zmask & 0x4) DST[2] = 0;
+        if(zmask & 0x8) DST[3] = 0;
+        std::memcpy(&dst, DST.data(), sizeof(u128));
+        return dst;
+    }
+
 
 }

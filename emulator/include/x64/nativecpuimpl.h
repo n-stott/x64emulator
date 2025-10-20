@@ -462,6 +462,8 @@ namespace x64 {
         [[nodiscard]] static u128 pmulld(u128 dst, u128 src);
         [[nodiscard]] static u32 pextrd(u128 src, u8 order);
         [[nodiscard]] static u64 pextrq(u128 src, u8 order);
+        [[nodiscard]] static u32 extractps(u128 src, u8 order);
+        [[nodiscard]] static u128 insertpsReg(u128 dst, u128 src, u8 order);
 
         [[nodiscard]] static f80 fadd(f80 dst, f80 src, X87Fpu* fpu);
         [[nodiscard]] static f80 fsub(f80 dst, f80 src, X87Fpu* fpu);
