@@ -768,6 +768,8 @@ namespace x64 {
         PEXTRQ_RM64_XMM_IMM,
         EXTRACTPS_M32_XMM_IMM,
         INSERTPS_XMM_XMM_IMM,
+        BLENDVPS_XMM_XMMM128,
+        BLENDVPD_XMM_XMMM128,
 
         // MISC
         RDTSC,

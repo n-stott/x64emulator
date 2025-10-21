@@ -3481,5 +3481,39 @@ namespace x64 {
         return dst;
     }
 
+    u128 CpuImpl::blendvps(u128 dst, u128 src, u128 mask) {
+        std::array<u32, 4> DST;
+        std::array<u32, 4> SRC;
+        std::array<u32, 4> MASK;
+        static_assert(sizeof(DST) == sizeof(u128));
+        static_assert(sizeof(SRC) == sizeof(u128));
+        static_assert(sizeof(MASK) == sizeof(u128));
+        std::memcpy(DST.data(), &dst, sizeof(u128));
+        std::memcpy(SRC.data(), &src, sizeof(u128));
+        std::memcpy(MASK.data(), &mask, sizeof(u128));
+        DST[0] = ((MASK[0] & 0x8000000) == 0) ? DST[0] : SRC[0];
+        DST[1] = ((MASK[1] & 0x8000000) == 0) ? DST[1] : SRC[1];
+        DST[2] = ((MASK[2] & 0x8000000) == 0) ? DST[2] : SRC[2];
+        DST[3] = ((MASK[3] & 0x8000000) == 0) ? DST[3] : SRC[3];
+        std::memcpy(&dst, DST.data(), sizeof(u128));
+        return dst;
+    }
+
+    u128 CpuImpl::blendvpd(u128 dst, u128 src, u128 mask) {
+        std::array<u64, 2> DST;
+        std::array<u64, 2> SRC;
+        std::array<u64, 2> MASK;
+        static_assert(sizeof(DST) == sizeof(u128));
+        static_assert(sizeof(SRC) == sizeof(u128));
+        static_assert(sizeof(MASK) == sizeof(u128));
+        std::memcpy(DST.data(), &dst, sizeof(u128));
+        std::memcpy(SRC.data(), &src, sizeof(u128));
+        std::memcpy(MASK.data(), &mask, sizeof(u128));
+        DST[0] = ((MASK[0] & 0x800000000000000) == 0) ? DST[0] : SRC[0];
+        DST[1] = ((MASK[1] & 0x800000000000000) == 0) ? DST[1] : SRC[1];
+        std::memcpy(&dst, DST.data(), sizeof(u128));
+        return dst;
+    }
+
 
 }

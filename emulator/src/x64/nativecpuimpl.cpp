@@ -3667,7 +3667,7 @@ namespace x64 {
 #else
         assert(!"pextrd not defined");
         (void)src;
-        (void)order
+        (void)order;
         return 0; // dummy value
 #endif
     }
@@ -3687,7 +3687,7 @@ namespace x64 {
 #else
         assert(!"pextrd not defined");
         (void)src;
-        (void)order
+        (void)order;
         return 0; // dummy value
 #endif
     }
@@ -3707,7 +3707,7 @@ namespace x64 {
 #else
         assert(!"extractps not defined");
         (void)src;
-        (void)order
+        (void)order;
         return 0; // dummy value
 #endif
     }
@@ -3730,7 +3730,51 @@ namespace x64 {
 #else
         assert(!"insertps not defined");
         (void)src;
-        (void)order
+        (void)order;
+        return dst; // dummy value
+#endif
+    }
+
+    u128 NativeCpuImpl::blendvps(u128 dst, u128 src, u128 mask) {
+#ifdef SSE41
+        __m128 d;
+        __m128 s;
+        __m128 m;
+        static_assert(sizeof(d) == sizeof(dst));
+        static_assert(sizeof(s) == sizeof(src));
+        static_assert(sizeof(m) == sizeof(mask));
+        memcpy(&d, &dst, sizeof(dst));
+        memcpy(&s, &src, sizeof(src));
+        memcpy(&m, &mask, sizeof(mask));
+        d = _mm_blendv_ps(d, s, m);
+        memcpy(&dst, &d, sizeof(dst));
+        return dst;
+#else
+        assert(!"blendvps not defined");
+        (void)src;
+        (void)mask;
+        return dst; // dummy value
+#endif
+    }
+
+    u128 NativeCpuImpl::blendvpd(u128 dst, u128 src, u128 mask) {
+#ifdef SSE41
+        __m128d d;
+        __m128d s;
+        __m128d m;
+        static_assert(sizeof(d) == sizeof(dst));
+        static_assert(sizeof(s) == sizeof(src));
+        static_assert(sizeof(m) == sizeof(mask));
+        memcpy(&d, &dst, sizeof(dst));
+        memcpy(&s, &src, sizeof(src));
+        memcpy(&m, &mask, sizeof(mask));
+        d = _mm_blendv_pd(d, s, m);
+        memcpy(&dst, &d, sizeof(dst));
+        return dst;
+#else
+        assert(!"blendvpd not defined");
+        (void)src;
+        (void)mask;
         return dst; // dummy value
 #endif
     }
