@@ -129,6 +129,13 @@ create_test_with_library(hammer_atomic pthread)
 create_test_with_library(hammer_lock pthread)
 create_test_with_library(mutex pthread)
 
+find_library(LIB_SDL2 SDL2)
+if(LIB_SDL2)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/sound.wav ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
+    create_test_with_library(sdl_audio SDL2)
+    create_test_with_library(sdl_window SDL2)
+endif()
+
 add_executable(test_thread_scaling src/test_thread_scaling.cpp)
 target_compile_options(test_thread_scaling PUBLIC ${CC_OPTIONS})
 target_link_libraries(test_thread_scaling PUBLIC pthread)
