@@ -3401,6 +3401,7 @@ namespace x64 {
         return nativeRes;
 #else
         assert(!"psignb64 not defined");
+        (void)dst;
         return src; // dummy value
 #endif
     }
@@ -3412,6 +3413,7 @@ namespace x64 {
         return nativeRes;
 #else
         assert(!"psignw64 not defined");
+        (void)dst;
         return src; // dummy value
 #endif
     }
@@ -3423,6 +3425,7 @@ namespace x64 {
         return nativeRes;
 #else
         assert(!"psignd64 not defined");
+        (void)dst;
         return src; // dummy value
 #endif
     }
@@ -3434,6 +3437,7 @@ namespace x64 {
         return nativeRes;
 #else
         assert(!"psignb128 not defined");
+        (void)dst;
         return src; // dummy value
 #endif
     }
@@ -3445,6 +3449,7 @@ namespace x64 {
         return nativeRes;
 #else
         assert(!"psignw128 not defined");
+        (void)dst;
         return src; // dummy value
 #endif
     }
@@ -3456,6 +3461,7 @@ namespace x64 {
         return nativeRes;
 #else
         assert(!"psignd128 not defined");
+        (void)dst;
         return src; // dummy value
 #endif
     }
