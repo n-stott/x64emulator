@@ -3508,6 +3508,54 @@ namespace x64 {
 #endif
     }
 
+    u128 NativeCpuImpl::pmaxsb(u128 dst, u128 src) {
+#ifdef SSE41
+        u128 nativeRes = dst;
+        asm volatile("pmaxsb %1, %0" : "+x"(nativeRes) : "x"(src));
+        return nativeRes;
+#else
+        assert(!"pmaxsb not defined");
+        (void)dst;
+        return src; // dummy value
+#endif
+    }
+
+    u128 NativeCpuImpl::pmaxsd(u128 dst, u128 src) {
+#ifdef SSE41
+        u128 nativeRes = dst;
+        asm volatile("pmaxsd %1, %0" : "+x"(nativeRes) : "x"(src));
+        return nativeRes;
+#else
+        assert(!"pmaxsd not defined");
+        (void)dst;
+        return src; // dummy value
+#endif
+    }
+
+    u128 NativeCpuImpl::pminsb(u128 dst, u128 src) {
+#ifdef SSE41
+        u128 nativeRes = dst;
+        asm volatile("pminsb %1, %0" : "+x"(nativeRes) : "x"(src));
+        return nativeRes;
+#else
+        assert(!"pminsb not defined");
+        (void)dst;
+        return src; // dummy value
+#endif
+    }
+
+    u128 NativeCpuImpl::pminsd(u128 dst, u128 src) {
+#ifdef SSE41
+        u128 nativeRes = dst;
+        asm volatile("pminsd %1, %0" : "+x"(nativeRes) : "x"(src));
+        return nativeRes;
+#else
+        assert(!"pminsd not defined");
+        (void)dst;
+        return src; // dummy value
+#endif
+    }
+
     u128 NativeCpuImpl::roundss32(u128 dst, u32 src, u8 imm, SIMD_ROUNDING) {
 #ifdef SSE41
         assert(!"roundss32 not implemented");

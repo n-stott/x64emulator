@@ -1098,6 +1098,10 @@ namespace x64 {
         void execPmaxudXMMXMMM128(const X64Instruction&);
         void execPminuwXMMXMMM128(const X64Instruction&);
         void execPminudXMMXMMM128(const X64Instruction&);
+        void execPmaxsbXMMXMMM128(const X64Instruction&);
+        void execPmaxsdXMMXMMM128(const X64Instruction&);
+        void execPminsbXMMXMMM128(const X64Instruction&);
+        void execPminsdXMMXMMM128(const X64Instruction&);
 
         void execRoundssXMMXMMImm(const X64Instruction&);
         void execRoundssXMMM32Imm(const X64Instruction&);

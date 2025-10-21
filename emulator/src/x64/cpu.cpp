@@ -935,6 +935,10 @@ namespace x64 {
     DEFINE_STANDALONE(PMAXUD_XMM_XMMM128, execPmaxudXMMXMMM128)
     DEFINE_STANDALONE(PMINUW_XMM_XMMM128, execPminuwXMMXMMM128)
     DEFINE_STANDALONE(PMINUD_XMM_XMMM128, execPminudXMMXMMM128)
+    DEFINE_STANDALONE(PMAXSB_XMM_XMMM128, execPmaxsbXMMXMMM128)
+    DEFINE_STANDALONE(PMAXSD_XMM_XMMM128, execPmaxsdXMMXMMM128)
+    DEFINE_STANDALONE(PMINSB_XMM_XMMM128, execPminsbXMMXMMM128)
+    DEFINE_STANDALONE(PMINSD_XMM_XMMM128, execPminsdXMMXMMM128)
     DEFINE_STANDALONE(ROUNDSS_XMM_XMM_IMM, execRoundssXMMXMMImm)
     DEFINE_STANDALONE(ROUNDSS_XMM_M32_IMM, execRoundssXMMM32Imm)
     DEFINE_STANDALONE(ROUNDSD_XMM_XMM_IMM, execRoundsdXMMXMMImm)
@@ -1692,6 +1696,10 @@ namespace x64 {
         STANDALONE_NAME(PMAXUD_XMM_XMMM128),
         STANDALONE_NAME(PMINUW_XMM_XMMM128),
         STANDALONE_NAME(PMINUD_XMM_XMMM128),
+        STANDALONE_NAME(PMAXSB_XMM_XMMM128),
+        STANDALONE_NAME(PMAXSD_XMM_XMMM128),
+        STANDALONE_NAME(PMINSB_XMM_XMMM128),
+        STANDALONE_NAME(PMINSD_XMM_XMMM128),
         STANDALONE_NAME(ROUNDSS_XMM_XMM_IMM),
         STANDALONE_NAME(ROUNDSS_XMM_M32_IMM),
         STANDALONE_NAME(ROUNDSD_XMM_XMM_IMM),
@@ -6582,6 +6590,30 @@ namespace x64 {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         set(dst, Impl::pminud(get(dst), get(src)));
+    }
+
+    void Cpu::execPmaxsbXMMXMMM128(const X64Instruction& ins) {
+        const auto& dst = ins.op0<XMM>();
+        const auto& src = ins.op1<XMMM128>();
+        set(dst, Impl::pmaxsb(get(dst), get(src)));
+    }
+
+    void Cpu::execPmaxsdXMMXMMM128(const X64Instruction& ins) {
+        const auto& dst = ins.op0<XMM>();
+        const auto& src = ins.op1<XMMM128>();
+        set(dst, Impl::pmaxsd(get(dst), get(src)));
+    }
+
+    void Cpu::execPminsbXMMXMMM128(const X64Instruction& ins) {
+        const auto& dst = ins.op0<XMM>();
+        const auto& src = ins.op1<XMMM128>();
+        set(dst, Impl::pminsb(get(dst), get(src)));
+    }
+
+    void Cpu::execPminsdXMMXMMM128(const X64Instruction& ins) {
+        const auto& dst = ins.op0<XMM>();
+        const auto& src = ins.op1<XMMM128>();
+        set(dst, Impl::pminsd(get(dst), get(src)));
     }
 
     void Cpu::execRoundssXMMXMMImm(const X64Instruction& ins) {

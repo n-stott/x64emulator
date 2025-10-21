@@ -1524,6 +1524,22 @@ namespace x64 {
         return checkCall<u128>(&CpuImpl::pminud, &NativeCpuImpl::pminud, dst, src);
     }
 
+    u128 CheckedCpuImpl::pmaxsb(u128 dst, u128 src) {
+        return checkCall<u128>(&CpuImpl::pmaxsb, &NativeCpuImpl::pmaxsb, dst, src);
+    }
+
+    u128 CheckedCpuImpl::pmaxsd(u128 dst, u128 src) {
+        return checkCall<u128>(&CpuImpl::pmaxsd, &NativeCpuImpl::pmaxsd, dst, src);
+    }
+
+    u128 CheckedCpuImpl::pminsb(u128 dst, u128 src) {
+        return checkCall<u128>(&CpuImpl::pminsb, &NativeCpuImpl::pminsb, dst, src);
+    }
+
+    u128 CheckedCpuImpl::pminsd(u128 dst, u128 src) {
+        return checkCall<u128>(&CpuImpl::pminsd, &NativeCpuImpl::pminsd, dst, src);
+    }
+
     u128 CheckedCpuImpl::roundss32(u128 dst, u32 src, u8 imm, SIMD_ROUNDING roundingMode) {
         return checkCall<u128>(&CpuImpl::roundss32, &NativeCpuImpl::roundss32, dst, src, imm, roundingMode);
     }

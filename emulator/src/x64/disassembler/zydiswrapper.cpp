@@ -4396,6 +4396,46 @@ namespace x64 {
         return make_failed(insn);
     }
 
+    static X64Instruction makePmaxsb(const ZydisDisassembledInstruction& insn) {
+        assert(insn.info.operand_count_visible == 2);
+        const auto& dst = insn.operands[0];
+        const auto& src = insn.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto rm128src = asRM128(src);
+        if(rssedst && rm128src) return X64Instruction::make<Insn::PMAXSB_XMM_XMMM128>(insn.runtime_address, insn.info.length, rssedst.value(), rm128src.value());
+        return make_failed(insn);
+    }
+
+    static X64Instruction makePmaxsd(const ZydisDisassembledInstruction& insn) {
+        assert(insn.info.operand_count_visible == 2);
+        const auto& dst = insn.operands[0];
+        const auto& src = insn.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto rm128src = asRM128(src);
+        if(rssedst && rm128src) return X64Instruction::make<Insn::PMAXSD_XMM_XMMM128>(insn.runtime_address, insn.info.length, rssedst.value(), rm128src.value());
+        return make_failed(insn);
+    }
+
+    static X64Instruction makePminsb(const ZydisDisassembledInstruction& insn) {
+        assert(insn.info.operand_count_visible == 2);
+        const auto& dst = insn.operands[0];
+        const auto& src = insn.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto rm128src = asRM128(src);
+        if(rssedst && rm128src) return X64Instruction::make<Insn::PMINSB_XMM_XMMM128>(insn.runtime_address, insn.info.length, rssedst.value(), rm128src.value());
+        return make_failed(insn);
+    }
+
+    static X64Instruction makePminsd(const ZydisDisassembledInstruction& insn) {
+        assert(insn.info.operand_count_visible == 2);
+        const auto& dst = insn.operands[0];
+        const auto& src = insn.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto rm128src = asRM128(src);
+        if(rssedst && rm128src) return X64Instruction::make<Insn::PMINSD_XMM_XMMM128>(insn.runtime_address, insn.info.length, rssedst.value(), rm128src.value());
+        return make_failed(insn);
+    }
+
     static X64Instruction makeRoundss(const ZydisDisassembledInstruction& insn) {
         assert(insn.info.operand_count_visible == 3);
         const auto& dst = insn.operands[0];
@@ -4911,6 +4951,10 @@ namespace x64 {
             case ZYDIS_MNEMONIC_PMAXUD: return makePmaxud(insn);
             case ZYDIS_MNEMONIC_PMINUW: return makePminuw(insn);
             case ZYDIS_MNEMONIC_PMINUD: return makePminud(insn);
+            case ZYDIS_MNEMONIC_PMAXSB: return makePmaxsb(insn);
+            case ZYDIS_MNEMONIC_PMAXSD: return makePmaxsd(insn);
+            case ZYDIS_MNEMONIC_PMINSB: return makePminsb(insn);
+            case ZYDIS_MNEMONIC_PMINSD: return makePminsd(insn);
             case ZYDIS_MNEMONIC_ROUNDSS: return makeRoundss(insn);
             case ZYDIS_MNEMONIC_ROUNDSD: return makeRoundsd(insn);
             case ZYDIS_MNEMONIC_PMULLD: return makePmulld(insn);
