@@ -4498,6 +4498,30 @@ namespace x64 {
         return make_failed(insn);
     }
 
+    static X64Instruction makePinsrd(const ZydisDisassembledInstruction& insn) {
+        assert(insn.info.operand_count_visible == 3);
+        const auto& dst = insn.operands[0];
+        const auto& src = insn.operands[1];
+        const auto& pos = insn.operands[2];
+        auto rssedst = asRegister128(dst);
+        auto rm32src = asRM32(src);
+        auto imm = asImmediate(pos);
+        if(rssedst && rm32src && imm) return X64Instruction::make<Insn::PINSRD_XMM_RM32_IMM>(insn.runtime_address, insn.info.length, rssedst.value(), rm32src.value(), imm.value());
+        return make_failed(insn);
+    }
+
+    static X64Instruction makePinsrq(const ZydisDisassembledInstruction& insn) {
+        assert(insn.info.operand_count_visible == 3);
+        const auto& dst = insn.operands[0];
+        const auto& src = insn.operands[1];
+        const auto& pos = insn.operands[2];
+        auto rssedst = asRegister128(dst);
+        auto rm64src = asRM64(src);
+        auto imm = asImmediate(pos);
+        if(rssedst && rm64src && imm) return X64Instruction::make<Insn::PINSRQ_XMM_RM64_IMM>(insn.runtime_address, insn.info.length, rssedst.value(), rm64src.value(), imm.value());
+        return make_failed(insn);
+    }
+
     static X64Instruction makeExtractps(const ZydisDisassembledInstruction& insn) {
         assert(insn.info.operand_count_visible == 3);
         const auto& dst = insn.operands[0];
@@ -4980,6 +5004,8 @@ namespace x64 {
             case ZYDIS_MNEMONIC_PMULLD: return makePmulld(insn);
             case ZYDIS_MNEMONIC_PEXTRD: return makePextrd(insn);
             case ZYDIS_MNEMONIC_PEXTRQ: return makePextrq(insn);
+            case ZYDIS_MNEMONIC_PINSRD: return makePinsrd(insn);
+            case ZYDIS_MNEMONIC_PINSRQ: return makePinsrq(insn);
             case ZYDIS_MNEMONIC_EXTRACTPS: return makeExtractps(insn);
             case ZYDIS_MNEMONIC_INSERTPS: return makeInsertps(insn);
             case ZYDIS_MNEMONIC_BLENDVPS: return makeBlendvps(insn);

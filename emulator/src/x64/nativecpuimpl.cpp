@@ -308,6 +308,13 @@
         default: __builtin_unreachable(); \
     }
 
+#define CALL_2_WITH_IMM1(f, a, b) \
+    switch(order) { \
+        case 0x00: return f(a, b, 0x00); \
+        case 0x01: return f(a, b, 0x01); \
+        default: __builtin_unreachable(); \
+    }
+
 #define CALL_2_WITH_IMM2(f, a, b) \
     switch(order) { \
         case 0x00: return f(a, b, 0x00); \
@@ -3691,10 +3698,52 @@ namespace x64 {
         __int64_t r = native(s);
         return (u64)r;
 #else
-        assert(!"pextrd not defined");
+        assert(!"pextrq not defined");
         (void)src;
         (void)order;
         return 0; // dummy value
+#endif
+    }
+
+    u128 NativeCpuImpl::pinsrd(u128 dst, u32 src, u8 order) {
+#ifdef SSE41
+        auto native = [=](__m128i d, int s) -> __m128i {
+            CALL_2_WITH_IMM2(_mm_insert_epi32, d, s);
+        };
+
+        __m128i d;
+        static_assert(sizeof(d) == sizeof(dst));
+        memcpy(&d, &dst, sizeof(dst));
+        assert(order < 8);
+        __m128i r = native(d, src);
+        memcpy(&dst, &r, sizeof(dst));
+        return dst;
+#else
+        assert(!"pinsrd not defined");
+        (void)src;
+        (void)order;
+        return dst; // dummy value
+#endif
+    }
+
+    u128 NativeCpuImpl::pinsrq(u128 dst, u64 src, u8 order) {
+#ifdef SSE41
+        auto native = [=](__m128i d, __int64_t s) -> __m128i {
+            CALL_2_WITH_IMM1(_mm_insert_epi64, d, s);
+        };
+
+        __m128i d;
+        static_assert(sizeof(d) == sizeof(dst));
+        memcpy(&d, &dst, sizeof(dst));
+        assert(order < 8);
+        __m128i r = native(d, src);
+        memcpy(&dst, &r, sizeof(dst));
+        return dst;
+#else
+        assert(!"pinsrq not defined");
+        (void)src;
+        (void)order;
+        return dst; // dummy value
 #endif
     }
 

@@ -946,6 +946,8 @@ namespace x64 {
     DEFINE_STANDALONE(PMULLD_XMM_XMMM128, execPmulldXMMXMMM128)
     DEFINE_STANDALONE(PEXTRD_RM32_XMM_IMM, execPextrdRM32XMMImm)
     DEFINE_STANDALONE(PEXTRQ_RM64_XMM_IMM, execPextrqRM64XMMImm)
+    DEFINE_STANDALONE(PINSRD_XMM_RM32_IMM, execPinsrdXMMRM32Imm)
+    DEFINE_STANDALONE(PINSRQ_XMM_RM64_IMM, execPinsrqXMMRM64Imm)
     DEFINE_STANDALONE(EXTRACTPS_M32_XMM_IMM, execExtractpsM32XMMImm)
     DEFINE_STANDALONE(INSERTPS_XMM_XMM_IMM, execInsertpsXMMXMMImm)
     DEFINE_STANDALONE(BLENDVPS_XMM_XMMM128, execBlendvpsXMMXMMM128)
@@ -1709,6 +1711,8 @@ namespace x64 {
         STANDALONE_NAME(PMULLD_XMM_XMMM128),
         STANDALONE_NAME(PEXTRD_RM32_XMM_IMM),
         STANDALONE_NAME(PEXTRQ_RM64_XMM_IMM),
+        STANDALONE_NAME(PINSRD_XMM_RM32_IMM),
+        STANDALONE_NAME(PINSRQ_XMM_RM64_IMM),
         STANDALONE_NAME(EXTRACTPS_M32_XMM_IMM),
         STANDALONE_NAME(INSERTPS_XMM_XMM_IMM),
         STANDALONE_NAME(BLENDVPS_XMM_XMMM128),
@@ -6666,6 +6670,20 @@ namespace x64 {
         const auto& src = ins.op1<XMM>();
         const auto& imm = ins.op2<Imm>();
         set(dst, Impl::pextrq(get(src), get<u8>(imm)));
+    }
+
+    void Cpu::execPinsrdXMMRM32Imm(const X64Instruction& ins) {
+        const auto& dst = ins.op0<XMM>();
+        const auto& src = ins.op1<RM32>();
+        const auto& imm = ins.op2<Imm>();
+        set(dst, Impl::pinsrd(get(dst), get(src), get<u8>(imm)));
+    }
+
+    void Cpu::execPinsrqXMMRM64Imm(const X64Instruction& ins) {
+        const auto& dst = ins.op0<XMM>();
+        const auto& src = ins.op1<RM64>();
+        const auto& imm = ins.op2<Imm>();
+        set(dst, Impl::pinsrq(get(dst), get(src), get<u8>(imm)));
     }
 
     void Cpu::execExtractpsM32XMMImm(const X64Instruction& ins) {

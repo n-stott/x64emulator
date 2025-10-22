@@ -3453,6 +3453,26 @@ namespace x64 {
         return SRC[order];
     }
 
+    u128 CpuImpl::pinsrd(u128 dst, u32 src, u8 order) {
+        order = order & 0x3;
+        std::array<u32, 4> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        std::memcpy(DST.data(), &dst, sizeof(u128));
+        DST[order] = src;
+        std::memcpy(&dst, DST.data(), sizeof(u128));
+        return dst;
+    }
+
+    u128 CpuImpl::pinsrq(u128 dst, u64 src, u8 order) {
+        order = order & 0x1;
+        std::array<u64, 2> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        std::memcpy(DST.data(), &dst, sizeof(u128));
+        DST[order] = src;
+        std::memcpy(&dst, DST.data(), sizeof(u128));
+        return dst;
+    }
+
     u32 CpuImpl::extractps(u128 src, u8 order) {
         order = order & 0x3;
         std::array<u32, 4> SRC;
