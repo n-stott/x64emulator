@@ -3906,6 +3906,28 @@ namespace x64 {
 #endif
     }
 
+    u128 NativeCpuImpl::pblendvb(u128 dst, u128 src, u128 mask) {
+#ifdef SSE41
+        __m128i d;
+        __m128i s;
+        __m128i m;
+        static_assert(sizeof(d) == sizeof(dst));
+        static_assert(sizeof(s) == sizeof(src));
+        static_assert(sizeof(m) == sizeof(mask));
+        memcpy(&d, &dst, sizeof(dst));
+        memcpy(&s, &src, sizeof(src));
+        memcpy(&m, &mask, sizeof(mask));
+        d = _mm_blendv_epi8(d, s, m);
+        memcpy(&dst, &d, sizeof(dst));
+        return dst;
+#else
+        assert(!"pblendvb not defined");
+        (void)src;
+        (void)mask;
+        return dst; // dummy value
+#endif
+    }
+
 
 }
 

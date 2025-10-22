@@ -478,6 +478,7 @@ namespace x64 {
         [[nodiscard]] static u128 insertpsReg(u128 dst, u128 src, u8 order);
         [[nodiscard]] static u128 blendvps(u128 dst, u128 src, u128 mask);
         [[nodiscard]] static u128 blendvpd(u128 dst, u128 src, u128 mask);
+        [[nodiscard]] static u128 pblendvb(u128 dst, u128 src, u128 mask);
 
         [[nodiscard]] static f80 fadd(f80 dst, f80 src, X87Fpu* fpu);
         [[nodiscard]] static f80 fsub(f80 dst, f80 src, X87Fpu* fpu);

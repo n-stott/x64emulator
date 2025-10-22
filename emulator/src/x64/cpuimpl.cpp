@@ -3619,5 +3619,22 @@ namespace x64 {
         return dst;
     }
 
+    u128 CpuImpl::pblendvb(u128 dst, u128 src, u128 mask) {
+        std::array<u8, 16> DST;
+        std::array<u8, 16> SRC;
+        std::array<u8, 16> MASK;
+        static_assert(sizeof(DST) == sizeof(u128));
+        static_assert(sizeof(SRC) == sizeof(u128));
+        static_assert(sizeof(MASK) == sizeof(u128));
+        std::memcpy(DST.data(), &dst, sizeof(u128));
+        std::memcpy(SRC.data(), &src, sizeof(u128));
+        std::memcpy(MASK.data(), &mask, sizeof(u128));
+        for(size_t i = 0; i < 16; ++i) {
+            DST[i] = ((MASK[i] & 0x80) == 0) ? DST[i] : SRC[i];
+        }
+        std::memcpy(&dst, DST.data(), sizeof(u128));
+        return dst;
+    }
+
 
 }

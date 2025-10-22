@@ -1616,4 +1616,8 @@ namespace x64 {
         return checkCall<u128>(&CpuImpl::blendvpd, &NativeCpuImpl::blendvpd, dst, src, mask);
     }
 
+    u128 CheckedCpuImpl::pblendvb(u128 dst, u128 src, u128 mask) {
+        return checkCall<u128>(&CpuImpl::pblendvb, &NativeCpuImpl::pblendvb, dst, src, mask);
+    }
+
 }

@@ -785,6 +785,7 @@ namespace x64 {
         INSERTPS_XMM_XMM_IMM,
         BLENDVPS_XMM_XMMM128,
         BLENDVPD_XMM_XMMM128,
+        PBLENDVB_XMM_XMMM128,
 
         // MISC
         RDTSC,

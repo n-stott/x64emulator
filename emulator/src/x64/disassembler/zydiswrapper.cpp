@@ -4638,6 +4638,16 @@ namespace x64 {
         return make_failed(insn);
     }
 
+    static X64Instruction makePblendvb(const ZydisDisassembledInstruction& insn) {
+        assert(insn.info.operand_count_visible == 2);
+        const auto& dst = insn.operands[0];
+        const auto& src = insn.operands[1];
+        auto rssedst = asRegister128(dst);
+        auto rm128src = asRM128(src);
+        if(rssedst && rm128src) return X64Instruction::make<Insn::PBLENDVB_XMM_XMMM128>(insn.runtime_address, insn.info.length, rssedst.value(), rm128src.value());
+        return make_failed(insn);
+    }
+
     static X64Instruction makeRdtsc(const ZydisDisassembledInstruction& insn) {
         return X64Instruction::make<Insn::RDTSC>(insn.runtime_address, insn.info.length);
     }
@@ -5088,6 +5098,7 @@ namespace x64 {
             case ZYDIS_MNEMONIC_INSERTPS: return makeInsertps(insn);
             case ZYDIS_MNEMONIC_BLENDVPS: return makeBlendvps(insn);
             case ZYDIS_MNEMONIC_BLENDVPD: return makeBlendvpd(insn);
+            case ZYDIS_MNEMONIC_PBLENDVB: return makePblendvb(insn);
 
             case ZYDIS_MNEMONIC_RDTSC: return makeRdtsc(insn);
             case ZYDIS_MNEMONIC_CPUID: return makeCpuid(insn);

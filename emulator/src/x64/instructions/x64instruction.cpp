@@ -795,6 +795,7 @@ namespace x64 {
             case Insn::INSERTPS_XMM_XMM_IMM: return toString<XMM, XMM, Imm>("insertps");
             case Insn::BLENDVPS_XMM_XMMM128: return toString<XMM, XMMM128>("blendvps");
             case Insn::BLENDVPD_XMM_XMMM128: return toString<XMM, XMMM128>("blendvpd");
+            case Insn::PBLENDVB_XMM_XMMM128: return toString<XMM, XMMM128>("pblendvb");
             case Insn::RDTSC: return toString("rdtsc");
             case Insn::CPUID: return toString("cpuid");
             case Insn::XGETBV: return toString("xgetbv");
