@@ -1540,6 +1540,30 @@ namespace x64 {
         return checkCall<u128>(&CpuImpl::pminsd, &NativeCpuImpl::pminsd, dst, src);
     }
 
+    u128 CheckedCpuImpl::pmovzxbw(u64 src) {
+        return checkCall<u128>(&CpuImpl::pmovzxbw, &NativeCpuImpl::pmovzxbw, src);
+    }
+
+    u128 CheckedCpuImpl::pmovzxbd(u32 src) {
+        return checkCall<u128>(&CpuImpl::pmovzxbd, &NativeCpuImpl::pmovzxbd, src);
+    }
+
+    u128 CheckedCpuImpl::pmovzxbq(u16 src) {
+        return checkCall<u128>(&CpuImpl::pmovzxbq, &NativeCpuImpl::pmovzxbq, src);
+    }
+
+    u128 CheckedCpuImpl::pmovzxwd(u64 src) {
+        return checkCall<u128>(&CpuImpl::pmovzxwd, &NativeCpuImpl::pmovzxwd, src);
+    }
+
+    u128 CheckedCpuImpl::pmovzxwq(u32 src) {
+        return checkCall<u128>(&CpuImpl::pmovzxwq, &NativeCpuImpl::pmovzxwq, src);
+    }
+
+    u128 CheckedCpuImpl::pmovzxdq(u64 src) {
+        return checkCall<u128>(&CpuImpl::pmovzxdq, &NativeCpuImpl::pmovzxdq, src);
+    }
+
     u128 CheckedCpuImpl::roundss32(u128 dst, u32 src, u8 imm, SIMD_ROUNDING roundingMode) {
         return checkCall<u128>(&CpuImpl::roundss32, &NativeCpuImpl::roundss32, dst, src, imm, roundingMode);
     }

@@ -1103,6 +1103,19 @@ namespace x64 {
         void execPminsbXMMXMMM128(const X64Instruction&);
         void execPminsdXMMXMMM128(const X64Instruction&);
 
+        void execPmovzxbwXMMXMM(const X64Instruction&);
+        void execPmovzxbdXMMXMM(const X64Instruction&);
+        void execPmovzxbqXMMXMM(const X64Instruction&);
+        void execPmovzxwdXMMXMM(const X64Instruction&);
+        void execPmovzxwqXMMXMM(const X64Instruction&);
+        void execPmovzxdqXMMXMM(const X64Instruction&);
+        void execPmovzxbwXMMM64(const X64Instruction&);
+        void execPmovzxbdXMMM32(const X64Instruction&);
+        void execPmovzxbqXMMM16(const X64Instruction&);
+        void execPmovzxwdXMMM64(const X64Instruction&);
+        void execPmovzxwqXMMM32(const X64Instruction&);
+        void execPmovzxdqXMMM64(const X64Instruction&);
+
         void execRoundssXMMXMMImm(const X64Instruction&);
         void execRoundssXMMM32Imm(const X64Instruction&);
         void execRoundsdXMMXMMImm(const X64Instruction&);

@@ -455,6 +455,13 @@ namespace x64 {
         [[nodiscard]] static u128 pminsb(u128 dst, u128 src);
         [[nodiscard]] static u128 pminsd(u128 dst, u128 src);
 
+        [[nodiscard]] static u128 pmovzxbw(u64 src);
+        [[nodiscard]] static u128 pmovzxbd(u32 src);
+        [[nodiscard]] static u128 pmovzxbq(u16 src);
+        [[nodiscard]] static u128 pmovzxwd(u64 src);
+        [[nodiscard]] static u128 pmovzxwq(u32 src);
+        [[nodiscard]] static u128 pmovzxdq(u64 src);
+
         [[nodiscard]] static u128 roundss32(u128 dst, u32 src, u8 imm, SIMD_ROUNDING);
         [[nodiscard]] static u128 roundss128(u128 dst, u128 src, u8 imm, SIMD_ROUNDING);
         [[nodiscard]] static u128 roundsd64(u128 dst, u64 src, u8 imm, SIMD_ROUNDING);

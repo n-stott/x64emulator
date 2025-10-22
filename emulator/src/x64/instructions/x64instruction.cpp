@@ -770,6 +770,18 @@ namespace x64 {
             case Insn::PMAXSD_XMM_XMMM128: return toString<XMM, XMMM128>("pmaxsd");
             case Insn::PMINSB_XMM_XMMM128: return toString<XMM, XMMM128>("pminsb");
             case Insn::PMINSD_XMM_XMMM128: return toString<XMM, XMMM128>("pminsd");
+            case Insn::PMOVZXBW_XMM_XMM: return toString<XMM, XMM>("pmovzxbw");
+            case Insn::PMOVZXBD_XMM_XMM: return toString<XMM, XMM>("pmovzxbd");
+            case Insn::PMOVZXBQ_XMM_XMM: return toString<XMM, XMM>("pmovzxbq");
+            case Insn::PMOVZXWD_XMM_XMM: return toString<XMM, XMM>("pmovzxwd");
+            case Insn::PMOVZXWQ_XMM_XMM: return toString<XMM, XMM>("pmovzxwq");
+            case Insn::PMOVZXDQ_XMM_XMM: return toString<XMM, XMM>("pmovzxdq");
+            case Insn::PMOVZXBW_XMM_M64: return toString<XMM, M64>("pmovzxbw");
+            case Insn::PMOVZXBD_XMM_M32: return toString<XMM, M32>("pmovzxbd");
+            case Insn::PMOVZXBQ_XMM_M16: return toString<XMM, M16>("pmovzxbq");
+            case Insn::PMOVZXWD_XMM_M64: return toString<XMM, M64>("pmovzxwd");
+            case Insn::PMOVZXWQ_XMM_M32: return toString<XMM, M32>("pmovzxwq");
+            case Insn::PMOVZXDQ_XMM_M64: return toString<XMM, M64>("pmovzxdq");
             case Insn::ROUNDSS_XMM_XMM_IMM: return toString<XMM, XMM, Imm>("roundss");
             case Insn::ROUNDSS_XMM_M32_IMM: return toString<XMM, M32, Imm>("roundss");
             case Insn::ROUNDSD_XMM_XMM_IMM: return toString<XMM, XMM, Imm>("roundsd");

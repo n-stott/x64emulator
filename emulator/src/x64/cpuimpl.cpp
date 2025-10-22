@@ -3355,6 +3355,90 @@ namespace x64 {
         return dst;
     }
 
+    u128 CpuImpl::pmovzxbw(u64 src) {
+        std::array<u8, 8> SRC;
+        static_assert(sizeof(SRC) == sizeof(src));
+        ::memcpy(SRC.data(), &src, sizeof(src));
+        std::array<u16, 8> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        for(size_t i = 0; i < SRC.size(); ++i) {
+            DST[i] = (u16)SRC[i];
+        }
+        u128 dst;
+        ::memcpy(&dst, DST.data(), sizeof(dst));
+        return dst;
+    }
+
+    u128 CpuImpl::pmovzxbd(u32 src) {
+        std::array<u8, 4> SRC;
+        static_assert(sizeof(SRC) == sizeof(src));
+        ::memcpy(SRC.data(), &src, sizeof(src));
+        std::array<u32, 4> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        for(size_t i = 0; i < SRC.size(); ++i) {
+            DST[i] = (u32)SRC[i];
+        }
+        u128 dst;
+        ::memcpy(&dst, DST.data(), sizeof(dst));
+        return dst;
+    }
+
+    u128 CpuImpl::pmovzxbq(u16 src) {
+        std::array<u8, 2> SRC;
+        static_assert(sizeof(SRC) == sizeof(src));
+        ::memcpy(SRC.data(), &src, sizeof(src));
+        std::array<u64, 2> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        for(size_t i = 0; i < SRC.size(); ++i) {
+            DST[i] = (u64)SRC[i];
+        }
+        u128 dst;
+        ::memcpy(&dst, DST.data(), sizeof(dst));
+        return dst;
+    }
+
+    u128 CpuImpl::pmovzxwd(u64 src) {
+        std::array<u16, 4> SRC;
+        static_assert(sizeof(SRC) == sizeof(src));
+        ::memcpy(SRC.data(), &src, sizeof(src));
+        std::array<u32, 4> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        for(size_t i = 0; i < SRC.size(); ++i) {
+            DST[i] = (u32)SRC[i];
+        }
+        u128 dst;
+        ::memcpy(&dst, DST.data(), sizeof(dst));
+        return dst;
+    }
+
+    u128 CpuImpl::pmovzxwq(u32 src) {
+        std::array<u16, 2> SRC;
+        static_assert(sizeof(SRC) == sizeof(src));
+        ::memcpy(SRC.data(), &src, sizeof(src));
+        std::array<u64, 2> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        for(size_t i = 0; i < SRC.size(); ++i) {
+            DST[i] = (u64)SRC[i];
+        }
+        u128 dst;
+        ::memcpy(&dst, DST.data(), sizeof(dst));
+        return dst;
+    }
+
+    u128 CpuImpl::pmovzxdq(u64 src) {
+        std::array<u32, 2> SRC;
+        static_assert(sizeof(SRC) == sizeof(src));
+        ::memcpy(SRC.data(), &src, sizeof(src));
+        std::array<u64, 2> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        for(size_t i = 0; i < SRC.size(); ++i) {
+            DST[i] = (u64)SRC[i];
+        }
+        u128 dst;
+        ::memcpy(&dst, DST.data(), sizeof(dst));
+        return dst;
+    }
+
     u128 CpuImpl::roundss32(u128 dst, u32 src, u8 imm, SIMD_ROUNDING) {
         (void)src;
         (void)imm;

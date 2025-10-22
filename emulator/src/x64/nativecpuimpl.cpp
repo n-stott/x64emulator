@@ -3569,6 +3569,78 @@ namespace x64 {
 #endif
     }
 
+    u128 NativeCpuImpl::pmovzxbw(u64 src) {
+#ifdef SSE41
+        u128 nativeRes;
+        asm volatile("pmovzxbw %1, %0" : "+x"(nativeRes) : "m"(src));
+        return nativeRes;
+#else
+        assert(!"pmovzxbw not defined");
+        (void)src;
+        return u128{0, 0}; // dummy value
+#endif
+    }
+
+    u128 NativeCpuImpl::pmovzxbd(u32 src) {
+#ifdef SSE41
+        u128 nativeRes;
+        asm volatile("pmovzxbd %1, %0" : "+x"(nativeRes) : "m"(src));
+        return nativeRes;
+#else
+        assert(!"pmovzxbd not defined");
+        (void)src;
+        return u128{0, 0}; // dummy value
+#endif
+    }
+
+    u128 NativeCpuImpl::pmovzxbq(u16 src) {
+#ifdef SSE41
+        u128 nativeRes;
+        asm volatile("pmovzxbq %1, %0" : "+x"(nativeRes) : "m"(src));
+        return nativeRes;
+#else
+        assert(!"pmovzxbq not defined");
+        (void)src;
+        return u128{0, 0}; // dummy value
+#endif
+    }
+
+    u128 NativeCpuImpl::pmovzxwd(u64 src) {
+#ifdef SSE41
+        u128 nativeRes;
+        asm volatile("pmovzxwd %1, %0" : "+x"(nativeRes) : "m"(src));
+        return nativeRes;
+#else
+        assert(!"pmovzxwd not defined");
+        (void)src;
+        return u128{0, 0}; // dummy value
+#endif
+    }
+
+    u128 NativeCpuImpl::pmovzxwq(u32 src) {
+#ifdef SSE41
+        u128 nativeRes;
+        asm volatile("pmovzxwq %1, %0" : "+x"(nativeRes) : "m"(src));
+        return nativeRes;
+#else
+        assert(!"pmovzxwq not defined");
+        (void)src;
+        return u128{0, 0}; // dummy value
+#endif
+    }
+
+    u128 NativeCpuImpl::pmovzxdq(u64 src) {
+#ifdef SSE41
+        u128 nativeRes;
+        asm volatile("pmovzxdq %1, %0" : "+x"(nativeRes) : "m"(src));
+        return nativeRes;
+#else
+        assert(!"pmovzxdq not defined");
+        (void)src;
+        return u128{0, 0}; // dummy value
+#endif
+    }
+
     u128 NativeCpuImpl::roundss32(u128 dst, u32 src, u8 imm, SIMD_ROUNDING) {
 #ifdef SSE41
         assert(!"roundss32 not implemented");
