@@ -3636,5 +3636,61 @@ namespace x64 {
         return dst;
     }
 
+    u128 CpuImpl::roundps(u128 src, u8 imm, SIMD_ROUNDING) {
+        assert((imm & 0x4) == 0x0); // imm holds the rounding info
+        SIMD_ROUNDING rc = (SIMD_ROUNDING)(imm & 0x3);
+        std::array<f32, 4> SRC;
+        static_assert(sizeof(SRC) == sizeof(src));
+        ::memcpy(SRC.data(), &src, sizeof(src));
+        auto round = [=](f32 value) -> f32 {
+            if(rc == SIMD_ROUNDING::NEAREST) {
+                return std::round(value);
+            } else if(rc == SIMD_ROUNDING::DOWN) {
+                return std::floor(value);
+            } else if(rc == SIMD_ROUNDING::UP) {
+                return std::ceil(value);
+            } else {
+                assert("rounding to zero not supported");
+                return 0;
+            }
+        };
+        std::array<f32, 4> DST;
+        DST[0] = round(SRC[0]);
+        DST[1] = round(SRC[1]);
+        DST[2] = round(SRC[2]);
+        DST[3] = round(SRC[3]);
+        u128 dst;
+        static_assert(sizeof(DST) == sizeof(dst));
+        ::memcpy(&dst, DST.data(), sizeof(dst));
+        return dst;
+    }
+
+    u128 CpuImpl::roundpd(u128 src, u8 imm, SIMD_ROUNDING) {
+        assert((imm & 0x4) == 0x0); // imm holds the rounding info
+        SIMD_ROUNDING rc = (SIMD_ROUNDING)(imm & 0x3);
+        std::array<f64, 2> SRC;
+        static_assert(sizeof(SRC) == sizeof(src));
+        ::memcpy(SRC.data(), &src, sizeof(src));
+        auto round = [=](f64 value) -> f64 {
+            if(rc == SIMD_ROUNDING::NEAREST) {
+                return std::round(value);
+            } else if(rc == SIMD_ROUNDING::DOWN) {
+                return std::floor(value);
+            } else if(rc == SIMD_ROUNDING::UP) {
+                return std::ceil(value);
+            } else {
+                assert("rounding to zero not supported");
+                return 0;
+            }
+        };
+        std::array<f64, 2> DST;
+        DST[0] = round(SRC[0]);
+        DST[1] = round(SRC[1]);
+        u128 dst;
+        static_assert(sizeof(DST) == sizeof(dst));
+        ::memcpy(&dst, DST.data(), sizeof(dst));
+        return dst;
+    }
+
 
 }

@@ -4536,6 +4536,30 @@ namespace x64 {
         return make_failed(insn);
     }
 
+    static X64Instruction makeRoundps(const ZydisDisassembledInstruction& insn) {
+        assert(insn.info.operand_count_visible == 3);
+        const auto& dst = insn.operands[0];
+        const auto& src = insn.operands[1];
+        const auto& imm = insn.operands[2];
+        auto rssedst = asRegister128(dst);
+        auto rssesrc = asRegister128(src);
+        auto ctl = asImmediate(imm);
+        if(rssedst && rssesrc && ctl) return X64Instruction::make<Insn::ROUNDPS_XMM_XMM_IMM>(insn.runtime_address, insn.info.length, rssedst.value(), rssesrc.value(), ctl.value());
+        return make_failed(insn);
+    }
+
+    static X64Instruction makeRoundpd(const ZydisDisassembledInstruction& insn) {
+        assert(insn.info.operand_count_visible == 3);
+        const auto& dst = insn.operands[0];
+        const auto& src = insn.operands[1];
+        const auto& imm = insn.operands[2];
+        auto rssedst = asRegister128(dst);
+        auto rssesrc = asRegister128(src);
+        auto ctl = asImmediate(imm);
+        if(rssedst && rssesrc && ctl) return X64Instruction::make<Insn::ROUNDPD_XMM_XMM_IMM>(insn.runtime_address, insn.info.length, rssedst.value(), rssesrc.value(), ctl.value());
+        return make_failed(insn);
+    }
+
     static X64Instruction makePmulld(const ZydisDisassembledInstruction& insn) {
         assert(insn.info.operand_count_visible == 2);
         const auto& dst = insn.operands[0];
@@ -5089,6 +5113,8 @@ namespace x64 {
             case ZYDIS_MNEMONIC_PMOVZXDQ: return makePmovzxdq(insn);
             case ZYDIS_MNEMONIC_ROUNDSS: return makeRoundss(insn);
             case ZYDIS_MNEMONIC_ROUNDSD: return makeRoundsd(insn);
+            case ZYDIS_MNEMONIC_ROUNDPS: return makeRoundps(insn);
+            case ZYDIS_MNEMONIC_ROUNDPD: return makeRoundpd(insn);
             case ZYDIS_MNEMONIC_PMULLD: return makePmulld(insn);
             case ZYDIS_MNEMONIC_PEXTRD: return makePextrd(insn);
             case ZYDIS_MNEMONIC_PEXTRQ: return makePextrq(insn);

@@ -775,6 +775,8 @@ namespace x64 {
         ROUNDSS_XMM_M32_IMM,
         ROUNDSD_XMM_XMM_IMM,
         ROUNDSD_XMM_M64_IMM,
+        ROUNDPS_XMM_XMM_IMM,
+        ROUNDPD_XMM_XMM_IMM,
 
         PMULLD_XMM_XMMM128,
         PEXTRD_RM32_XMM_IMM,

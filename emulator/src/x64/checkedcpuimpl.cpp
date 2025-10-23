@@ -1620,4 +1620,12 @@ namespace x64 {
         return checkCall<u128>(&CpuImpl::pblendvb, &NativeCpuImpl::pblendvb, dst, src, mask);
     }
 
+    u128 CheckedCpuImpl::roundps(u128 src, u8 imm, SIMD_ROUNDING roundingMode) {
+        return checkCall<u128>(&CpuImpl::roundps, &NativeCpuImpl::roundps, src, imm, roundingMode);
+    }
+
+    u128 CheckedCpuImpl::roundpd(u128 src, u8 imm, SIMD_ROUNDING roundingMode) {
+        return checkCall<u128>(&CpuImpl::roundpd, &NativeCpuImpl::roundpd, src, imm, roundingMode);
+    }
+
 }

@@ -955,6 +955,8 @@ namespace x64 {
     DEFINE_STANDALONE(ROUNDSS_XMM_M32_IMM, execRoundssXMMM32Imm)
     DEFINE_STANDALONE(ROUNDSD_XMM_XMM_IMM, execRoundsdXMMXMMImm)
     DEFINE_STANDALONE(ROUNDSD_XMM_M64_IMM, execRoundsdXMMM64Imm)
+    DEFINE_STANDALONE(ROUNDPS_XMM_XMM_IMM, execRoundpsXMMXMMImm)
+    DEFINE_STANDALONE(ROUNDPD_XMM_XMM_IMM, execRoundpdXMMXMMImm)
     DEFINE_STANDALONE(PMULLD_XMM_XMMM128, execPmulldXMMXMMM128)
     DEFINE_STANDALONE(PEXTRD_RM32_XMM_IMM, execPextrdRM32XMMImm)
     DEFINE_STANDALONE(PEXTRQ_RM64_XMM_IMM, execPextrqRM64XMMImm)
@@ -1733,6 +1735,8 @@ namespace x64 {
         STANDALONE_NAME(ROUNDSS_XMM_M32_IMM),
         STANDALONE_NAME(ROUNDSD_XMM_XMM_IMM),
         STANDALONE_NAME(ROUNDSD_XMM_M64_IMM),
+        STANDALONE_NAME(ROUNDPS_XMM_XMM_IMM),
+        STANDALONE_NAME(ROUNDPD_XMM_XMM_IMM),
         STANDALONE_NAME(PMULLD_XMM_XMMM128),
         STANDALONE_NAME(PEXTRD_RM32_XMM_IMM),
         STANDALONE_NAME(PEXTRQ_RM64_XMM_IMM),
@@ -6749,6 +6753,20 @@ namespace x64 {
         const auto& src = ins.op1<M64>();
         const auto& imm = ins.op2<Imm>();
         set(dst, Impl::roundsd64(get(dst), get(resolve(src)), imm.as<u8>(), simdRoundingMode()));
+    }
+
+    void Cpu::execRoundpsXMMXMMImm(const X64Instruction& ins) {
+        const auto& dst = ins.op0<XMM>();
+        const auto& src = ins.op1<XMM>();
+        const auto& imm = ins.op2<Imm>();
+        set(dst, Impl::roundps(get(src), imm.as<u8>(), simdRoundingMode()));
+    }
+
+    void Cpu::execRoundpdXMMXMMImm(const X64Instruction& ins) {
+        const auto& dst = ins.op0<XMM>();
+        const auto& src = ins.op1<XMM>();
+        const auto& imm = ins.op2<Imm>();
+        set(dst, Impl::roundpd(get(src), imm.as<u8>(), simdRoundingMode()));
     }
 
     void Cpu::execPmulldXMMXMMM128(const X64Instruction& ins) {

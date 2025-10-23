@@ -466,6 +466,8 @@ namespace x64 {
         [[nodiscard]] static u128 roundss128(u128 dst, u128 src, u8 imm, SIMD_ROUNDING);
         [[nodiscard]] static u128 roundsd64(u128 dst, u64 src, u8 imm, SIMD_ROUNDING);
         [[nodiscard]] static u128 roundsd128(u128 dst, u128 src, u8 imm, SIMD_ROUNDING);
+        [[nodiscard]] static u128 roundps(u128 src, u8 imm, SIMD_ROUNDING);
+        [[nodiscard]] static u128 roundpd(u128 src, u8 imm, SIMD_ROUNDING);
 
         [[nodiscard]] static u128 pmulld(u128 dst, u128 src);
         [[nodiscard]] static u32 pextrd(u128 src, u8 order);

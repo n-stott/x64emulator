@@ -47,6 +47,27 @@
         default: __builtin_unreachable(); \
     }
 
+#define CALL_1_WITH_IMM4(f, a) \
+    switch(order) { \
+        case 0x00: return f(a, 0x00); \
+        case 0x01: return f(a, 0x01); \
+        case 0x02: return f(a, 0x02); \
+        case 0x03: return f(a, 0x03); \
+        case 0x04: return f(a, 0x04); \
+        case 0x05: return f(a, 0x05); \
+        case 0x06: return f(a, 0x06); \
+        case 0x07: return f(a, 0x07); \
+        case 0x08: return f(a, 0x08); \
+        case 0x09: return f(a, 0x09); \
+        case 0x0a: return f(a, 0x0a); \
+        case 0x0b: return f(a, 0x0b); \
+        case 0x0c: return f(a, 0x0c); \
+        case 0x0d: return f(a, 0x0d); \
+        case 0x0e: return f(a, 0x0e); \
+        case 0x0f: return f(a, 0x0f); \
+        default: __builtin_unreachable(); \
+    }
+
 #define CALL_1_WITH_IMM8(f, a) \
     switch(order) { \
         case 0x00: return f(a, 0x00); \
@@ -3676,7 +3697,7 @@ namespace x64 {
         u128 nativeRes = round(dst, src, imm);
         return nativeRes;
 #else
-        assert(!"roundsd128 not defined");
+        assert(!"roundss128 not defined");
         (void)src;
         (void)imm;
         return dst; // dummy value
@@ -3685,12 +3706,12 @@ namespace x64 {
 
     u128 NativeCpuImpl::roundsd64(u128 dst, u64 src, u8 imm, SIMD_ROUNDING) {
 #ifdef SSE41
-        assert(!"roundsd64 not implemented");
+        assert(!"roundss64 not implemented");
         (void)src;
         (void)imm;
         return dst; // dummy value
 #else
-        assert(!"roundsd64 not defined");
+        assert(!"roundss64 not defined");
         (void)src;
         (void)imm;
         return dst; // dummy value
@@ -3928,6 +3949,56 @@ namespace x64 {
 #endif
     }
 
+
+    u128 NativeCpuImpl::roundps(u128 src, u8 imm, SIMD_ROUNDING) {
+#ifdef SSE41
+        assert((imm & 0x4) == 0x0); // mxcsr rounding mode ignored
+        auto round = [=](u128 src, u8 imm) -> u128 {
+            auto nativeround = [](__m128 src, u8 imm) -> __m128 {
+                u8 order = imm;
+                CALL_1_WITH_IMM4(_mm_round_ps, src);
+            };
+            __m128 msrc;
+            std::memcpy(&msrc, &src, sizeof(msrc));
+            __m128 res = nativeround(msrc, imm);
+            u128 realRes;
+            std::memcpy(&realRes, &res, sizeof(realRes));
+            return realRes;
+        };
+
+        u128 nativeRes = round(src, imm);
+        return nativeRes;
+#else
+        assert(!"roundps not defined");
+        (void)imm;
+        return src; // dummy value
+#endif
+    }
+
+    u128 NativeCpuImpl::roundpd(u128 src, u8 imm, SIMD_ROUNDING) {
+#ifdef SSE41
+        assert((imm & 0x4) == 0x0); // mxcsr rounding mode ignored
+        auto round = [=](u128 src, u8 imm) -> u128 {
+            auto nativeround = [](__m128d src, u8 imm) -> __m128d {
+                u8 order = imm;
+                CALL_1_WITH_IMM4(_mm_round_pd, src);
+            };
+            __m128d msrc;
+            std::memcpy(&msrc, &src, sizeof(msrc));
+            __m128d res = nativeround(msrc, imm);
+            u128 realRes;
+            std::memcpy(&realRes, &res, sizeof(realRes));
+            return realRes;
+        };
+
+        u128 nativeRes = round(src, imm);
+        return nativeRes;
+#else
+        assert(!"roundpd not defined");
+        (void)imm;
+        return src; // dummy value
+#endif
+    }
 
 }
 
