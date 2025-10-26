@@ -272,6 +272,7 @@ namespace x64::ir {
         PSHUFLW,
         PSHUFHW,
         PINSRW,
+        PEXTRW,
         PUNPCKLBW,
         PUNPCKLWD,
         PUNPCKLDQ,

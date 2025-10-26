@@ -176,6 +176,7 @@ namespace x64::ir {
             case Op::PSHUFLW: return "pshuflw";
             case Op::PSHUFHW: return "pshufhw";
             case Op::PINSRW: return "pinsrw";
+            case Op::PEXTRW: return "pextrw";
             case Op::PUNPCKLBW: return "punpcklbw";
             case Op::PUNPCKLWD: return "punpcklwd";
             case Op::PUNPCKLDQ: return "punpckldq";

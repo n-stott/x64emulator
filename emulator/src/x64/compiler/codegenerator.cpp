@@ -2074,6 +2074,19 @@ namespace x64 {
                     }
                     break;
                 }
+                case ir::Op::PEXTRW: {
+                    auto r32dst = ins.out().as<R32>();
+                    assert(r32dst == ins.in1().as<R32>());
+                    auto r128src1 = ins.in2().as<XMM>();
+                    auto imm8src2 = ins.in3().as<u8>();
+
+                    if(r32dst && r128src1 && imm8src2) {
+                        assembler_->pextrw(r32dst.value(), r128src1.value(), imm8src2.value());
+                    } else {
+                        return fail();
+                    }
+                    break;
+                }
                 case ir::Op::PUNPCKLBW: {
                     auto mmxdst = ins.out().as<MMX>();
                     assert(mmxdst == ins.in1().as<MMX>());

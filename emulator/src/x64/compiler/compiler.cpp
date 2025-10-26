@@ -573,6 +573,7 @@ namespace x64 {
             case Insn::PSHUFHW_XMM_XMMM128_IMM: return tryCompilePshufhwXmmXmmM128Imm(ins.op0<XMM>(), ins.op1<XMMM128>(), ins.op2<Imm>());
             case Insn::PINSRW_XMM_R32_IMM: return tryCompilePinsrwXmmR32Imm(ins.op0<XMM>(), ins.op1<R32>(), ins.op2<Imm>());
             case Insn::PINSRW_XMM_M16_IMM: return tryCompilePinsrwXmmM16Imm(ins.op0<XMM>(), ins.op1<M16>(), ins.op2<Imm>());
+            case Insn::PEXTRW_M16_XMM_IMM: return tryCompilePextrwM16XmmImm(ins.op0<M16>(), ins.op1<XMM>(), ins.op2<Imm>());
 
             case Insn::PUNPCKLBW_XMM_XMMM128: return tryCompilePunpcklbwXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
             case Insn::PUNPCKLWD_XMM_XMMM128: return tryCompilePunpcklwdXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
@@ -4080,6 +4081,16 @@ namespace x64 {
         readReg128(toGpr(dst), dst);
         generator_->pinsrw(get(toGpr(dst)), get32(Reg::GPR0), imm.as<u8>());
         writeReg128(dst, toGpr(dst));
+        return true;
+    }
+
+    bool Compiler::tryCompilePextrwM16XmmImm(M16 dst, XMM src, Imm imm) {
+        if(dst.segment == Segment::FS) return false;
+        if(dst.encoding.index == R64::RIP) return false;
+        Mem dstAddr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR1}, dst);
+        readReg128(toGpr(src), src);
+        generator_->pextrw(get32(Reg::GPR0), get(toGpr(src)), imm.as<u8>());
+        writeMem16(dstAddr, Reg::GPR0);
         return true;
     }
 
