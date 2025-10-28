@@ -574,6 +574,7 @@ namespace x64 {
             case Insn::PINSRW_XMM_R32_IMM: return tryCompilePinsrwXmmR32Imm(ins.op0<XMM>(), ins.op1<R32>(), ins.op2<Imm>());
             case Insn::PINSRW_XMM_M16_IMM: return tryCompilePinsrwXmmM16Imm(ins.op0<XMM>(), ins.op1<M16>(), ins.op2<Imm>());
             case Insn::PEXTRW_M16_XMM_IMM: return tryCompilePextrwM16XmmImm(ins.op0<M16>(), ins.op1<XMM>(), ins.op2<Imm>());
+            case Insn::PEXTRW_R32_XMM_IMM: return tryCompilePextrwR32XmmImm(ins.op0<R32>(), ins.op1<XMM>(), ins.op2<Imm>());
 
             case Insn::PUNPCKLBW_XMM_XMMM128: return tryCompilePunpcklbwXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
             case Insn::PUNPCKLWD_XMM_XMMM128: return tryCompilePunpcklwdXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
@@ -4095,6 +4096,13 @@ namespace x64 {
         readReg128(toGpr(src), src);
         generator_->pextrw(get32(Reg::GPR0), get(toGpr(src)), imm.as<u8>());
         writeMem16(dstAddr, Reg::GPR0);
+        return true;
+    }
+
+    bool Compiler::tryCompilePextrwR32XmmImm(R32 dst, XMM src, Imm imm) {
+        readReg128(toGpr(src), src);
+        generator_->pextrw(get32(Reg::GPR0), get(toGpr(src)), imm.as<u8>());
+        writeReg32(dst, Reg::GPR0);
         return true;
     }
 
