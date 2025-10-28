@@ -672,6 +672,7 @@ namespace x64 {
 
             case Insn::PMAXSD_XMM_XMMM128: return tryCompilePmaxsdXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
             case Insn::PMINSD_XMM_XMMM128: return tryCompilePminsdXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PMOVZXBW_XMM_XMM: return tryCompilePmovzxbwXMMXMM(ins.op0<XMM>(), ins.op1<XMM>());
             case Insn::PMULLD_XMM_XMMM128: return tryCompilePmulldXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
             case Insn::PEXTRD_RM32_XMM_IMM: return tryCompilePextrdRM32XMMImm(ins.op0<RM32>(), ins.op1<XMM>(), ins.op2<Imm>());
             case Insn::PINSRD_XMM_RM32_IMM: return tryCompilePinsrdRM32XMMImm(ins.op0<XMM>(), ins.op1<RM32>(), ins.op2<Imm>());
@@ -4842,6 +4843,12 @@ namespace x64 {
     bool Compiler::tryCompilePminsdXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
             generator_->pminsd(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePmovzxbwXMMXMM(XMM dst, XMM src) {
+        return forXmmXmmM128(dst, XMMM128{true, src, {}}, [&](Reg128 dst, Reg128 src) {
+            generator_->pmovzxbw(get(dst), get(src));
         });
     }
 

@@ -455,6 +455,7 @@ namespace x64 {
 
         void pmaxsd(XMM, XMM);
         void pminsd(XMM, XMM);
+        void pmovzxbw(XMM, XMM);
         void pmulld(XMM, XMM);
         void pextrd(R32, XMM, u8);
         void pinsrd(XMM, R32, u8);
