@@ -672,6 +672,7 @@ namespace x64 {
 
             case Insn::PMAXSD_XMM_XMMM128: return tryCompilePmaxsdXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
             case Insn::PMINSD_XMM_XMMM128: return tryCompilePminsdXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::BLENDVPS_XMM_XMMM128: return tryCompileBlendvpsXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
 
             case Insn::STMXCSR_M32: return tryCompileStmxcsrM32(ins.op0<M32>());
             default: break;
@@ -4839,6 +4840,21 @@ namespace x64 {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
             generator_->pminsd(get(dst), get(src));
         });
+    }
+
+    bool Compiler::tryCompileBlendvpsXmmXmmM128(XMM dst, const XMMM128& src) {
+        if(!src.isReg) return false;
+        if(dst == XMM::XMM0) return false;
+        if(src.reg == XMM::XMM0) return false;
+        // read the dst register
+        readReg128(toGpr(dst), dst);
+        // read the src register
+        readReg128(toGpr(src.reg), src.reg);
+        // read the xmm0 register
+        readReg128(toGpr(XMM::XMM0), XMM::XMM0);
+        generator_->blendvps(get(toGpr(dst)), get(toGpr(src.reg)));
+        writeReg128(dst, toGpr(dst));
+        return true;
     }
 
     bool Compiler::tryCompileStmxcsrM32(const M32& dst) {

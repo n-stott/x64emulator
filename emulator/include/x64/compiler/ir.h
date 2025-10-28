@@ -337,7 +337,8 @@ namespace x64::ir {
         PMADDUSBW,
         PMULHRSW,
         PMAXSD,
-        PMINSD
+        PMINSD,
+        BLENDVPS,
     };
 
     class Instruction {

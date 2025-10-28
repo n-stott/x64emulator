@@ -441,6 +441,7 @@ namespace x64::ir {
 
         void pmaxsd(XMM, XMM);
         void pminsd(XMM, XMM);
+        void blendvps(XMM, XMM);
 
         // exits
         struct Label {

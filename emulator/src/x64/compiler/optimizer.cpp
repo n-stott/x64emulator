@@ -354,6 +354,7 @@ namespace x64::ir {
             ins.out().visit(visit_out);
             ins.in1().visit(visit_in);
             ins.in2().visit(visit_in);
+            ins.in3().visit(visit_in);
 
             a.gprs[i].set((u32)R64::RSP);
             a.gprs[i].set((u32)R64::RAX);
