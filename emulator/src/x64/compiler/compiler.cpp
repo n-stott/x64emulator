@@ -673,6 +673,8 @@ namespace x64 {
             case Insn::PMAXSD_XMM_XMMM128: return tryCompilePmaxsdXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
             case Insn::PMINSD_XMM_XMMM128: return tryCompilePminsdXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
             case Insn::PMULLD_XMM_XMMM128: return tryCompilePmulldXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PEXTRD_RM32_XMM_IMM: return tryCompilePextrdRM32XMMImm(ins.op0<RM32>(), ins.op1<XMM>(), ins.op2<Imm>());
+            case Insn::PINSRD_XMM_RM32_IMM: return tryCompilePinsrdRM32XMMImm(ins.op0<XMM>(), ins.op1<RM32>(), ins.op2<Imm>());
             case Insn::BLENDVPS_XMM_XMMM128: return tryCompileBlendvpsXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
 
             case Insn::STMXCSR_M32: return tryCompileStmxcsrM32(ins.op0<M32>());
@@ -4847,6 +4849,21 @@ namespace x64 {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
             generator_->pmulld(get(dst), get(src));
         });
+    }
+
+    bool Compiler::tryCompilePextrdRM32XMMImm(const RM32& dst, XMM src, Imm imm) {
+        return forRM32Imm(dst, imm, [&](Reg dst, Imm imm) {
+            readReg128(toGpr(src), src);
+            generator_->pextrd(get32(dst), get(toGpr(src)), imm.as<u8>());
+        });
+    }
+
+    bool Compiler::tryCompilePinsrdRM32XMMImm(XMM dst, const RM32& src, Imm imm) {
+        return forRM32Imm(src, imm, [&](Reg src, Imm imm) {
+            readReg128(toGpr(dst), dst);
+            generator_->pinsrd(get(toGpr(dst)), get32(src), imm.as<u8>());
+            writeReg128(dst, toGpr(dst));
+        }, false);
     }
 
     bool Compiler::tryCompileBlendvpsXmmXmmM128(XMM dst, const XMMM128& src) {

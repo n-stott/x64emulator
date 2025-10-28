@@ -235,3 +235,17 @@ target_include_directories(test_compiler_pinsrw PUBLIC include ${CMAKE_SOURCE_DI
 target_link_libraries(test_compiler_pinsrw PUBLIC x64cpu x64jit)
 target_link_options(test_compiler_pinsrw PUBLIC ${LD_OPTIONS})
 add_test(NAME compiler_pinsrw COMMAND test_compiler_pinsrw)
+
+add_executable(test_compiler_pextrd src/test_pextrd.cpp)
+target_compile_options(test_compiler_pextrd PUBLIC ${CC_OPTIONS})
+target_include_directories(test_compiler_pextrd PUBLIC include ${CMAKE_SOURCE_DIR}/emulator/include)
+target_link_libraries(test_compiler_pextrd PUBLIC x64cpu x64jit)
+target_link_options(test_compiler_pextrd PUBLIC ${LD_OPTIONS})
+add_test(NAME compiler_pextrd COMMAND test_compiler_pextrd)
+
+add_executable(test_compiler_pinsrd src/test_pinsrd.cpp)
+target_compile_options(test_compiler_pinsrd PUBLIC ${CC_OPTIONS})
+target_include_directories(test_compiler_pinsrd PUBLIC include ${CMAKE_SOURCE_DIR}/emulator/include)
+target_link_libraries(test_compiler_pinsrd PUBLIC x64cpu x64jit)
+target_link_options(test_compiler_pinsrd PUBLIC ${LD_OPTIONS})
+add_test(NAME compiler_pinsrd COMMAND test_compiler_pinsrd)

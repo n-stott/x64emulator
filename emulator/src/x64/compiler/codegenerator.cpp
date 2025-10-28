@@ -2955,6 +2955,31 @@ namespace x64 {
                     }
                     break;
                 }
+                case ir::Op::PEXTRD: {
+                    auto r32dst = ins.out().as<R32>();
+                    auto r128src = ins.in1().as<XMM>();
+                    auto imm = ins.in2().as<u8>();
+
+                    if(r32dst && r128src && imm) {
+                        assembler_->pextrd(r32dst.value(), r128src.value(), imm.value());
+                    } else {
+                        return fail();
+                    }
+                    break;
+                }
+                case ir::Op::PINSRD: {
+                    auto r128dst = ins.out().as<XMM>();
+                    assert(r128dst == ins.in1().as<XMM>());
+                    auto r32src = ins.in2().as<R32>();
+                    auto imm = ins.in3().as<u8>();
+
+                    if(r128dst && r32src && imm) {
+                        assembler_->pinsrd(r128dst.value(), r32src.value(), imm.value());
+                    } else {
+                        return fail();
+                    }
+                    break;
+                }
                 case ir::Op::BLENDVPS: {
                     auto r128dst = ins.out().as<XMM>();
                     assert(r128dst == ins.in1().as<XMM>());

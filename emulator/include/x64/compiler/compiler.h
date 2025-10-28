@@ -478,6 +478,8 @@ namespace x64 {
         bool tryCompilePmaxsdXmmXmmM128(XMM, const XMMM128&);
         bool tryCompilePminsdXmmXmmM128(XMM, const XMMM128&);
         bool tryCompilePmulldXmmXmmM128(XMM, const XMMM128&);
+        bool tryCompilePextrdRM32XMMImm(const RM32&, XMM, Imm);
+        bool tryCompilePinsrdRM32XMMImm(XMM, const RM32&, Imm);
         bool tryCompileBlendvpsXmmXmmM128(XMM, const XMMM128&);
 
         bool tryCompileStmxcsrM32(const M32&);
