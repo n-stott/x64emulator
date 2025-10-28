@@ -2868,11 +2868,16 @@ namespace x64 {
                     break;
                 }
                 case ir::Op::PMULHRSW: {
+                    auto mmxdst = ins.out().as<MMX>();
+                    assert(mmxdst == ins.in1().as<MMX>());
+                    auto mmxsrc = ins.in2().as<MMX>();
                     auto r128dst = ins.out().as<XMM>();
                     assert(r128dst == ins.in1().as<XMM>());
                     auto r128src = ins.in2().as<XMM>();
 
-                    if(r128dst && r128src) {
+                    if(mmxdst && mmxsrc) {
+                        assembler_->pmulhrsw(mmxdst.value(), mmxsrc.value());
+                    } else if(r128dst && r128src) {
                         assembler_->pmulhrsw(r128dst.value(), r128src.value());
                     } else {
                         return fail();

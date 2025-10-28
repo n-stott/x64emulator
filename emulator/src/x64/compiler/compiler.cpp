@@ -658,6 +658,7 @@ namespace x64 {
             case Insn::PHADDW_MMX_MMXM64: return tryCompilePhaddwMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
             case Insn::PHADDD_MMX_MMXM64: return tryCompilePhadddMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
             case Insn::PMADDUBSW_MMX_MMXM64: return tryCompilePmaddubswMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
+            case Insn::PMULHRSW_MMX_MMXM64: return tryCompilePmulhrswMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
 
             case Insn::PALIGNR_XMM_XMMM128_IMM: return tryCompilePalignrXmmXmmM128Imm(ins.op0<XMM>(), ins.op1<XMMM128>(), ins.op2<Imm>());
             case Insn::PHADDW_XMM_XMMM128: return tryCompilePhaddwXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
@@ -4757,6 +4758,12 @@ namespace x64 {
     bool Compiler::tryCompilePmaddubswMmxMmxM64(MMX dst, const MMXM64& src) {
         return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
             generator_->pmaddubsw(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePmulhrswMmxMmxM64(MMX dst, const MMXM64& src) {
+        return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
+            generator_->pmulhrsw(get(dst), get(src));
         });
     }
 

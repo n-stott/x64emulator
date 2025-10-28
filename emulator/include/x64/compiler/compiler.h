@@ -463,6 +463,7 @@ namespace x64 {
         bool tryCompilePhaddwMmxMmxM64(MMX, const MMXM64&);
         bool tryCompilePhadddMmxMmxM64(MMX, const MMXM64&);
         bool tryCompilePmaddubswMmxMmxM64(MMX, const MMXM64&);
+        bool tryCompilePmulhrswMmxMmxM64(MMX, const MMXM64&);
 
         bool tryCompilePalignrXmmXmmM128Imm(XMM, const XMMM128&, Imm);
         bool tryCompilePhaddwXmmXmmM128(XMM, const XMMM128&);
