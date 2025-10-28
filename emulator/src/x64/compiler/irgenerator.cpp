@@ -484,6 +484,7 @@ namespace x64::ir {
 
     void IrGenerator::pmaxsd(XMM dst, XMM src) { emit(Op::PMAXSD, dst, dst, src); }
     void IrGenerator::pminsd(XMM dst, XMM src) { emit(Op::PMINSD, dst, dst, src); }
+    void IrGenerator::pmulld(XMM dst, XMM src) { emit(Op::PMULLD, dst, dst, src); }
     void IrGenerator::blendvps(XMM dst, XMM src) { emit(Op::BLENDVPS, dst, dst, src, XMM::XMM0); }
 
     IrGenerator::Label& IrGenerator::label() {

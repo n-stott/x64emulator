@@ -2944,6 +2944,17 @@ namespace x64 {
                     }
                     break;
                 }
+                case ir::Op::PMULLD: {
+                    auto r128dst = ins.out().as<XMM>();
+                    auto r128src = ins.in1().as<XMM>();
+
+                    if(r128dst && r128src) {
+                        assembler_->pmulld(r128dst.value(), r128src.value());
+                    } else {
+                        return fail();
+                    }
+                    break;
+                }
                 case ir::Op::BLENDVPS: {
                     auto r128dst = ins.out().as<XMM>();
                     assert(r128dst == ins.in1().as<XMM>());

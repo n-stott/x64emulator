@@ -672,6 +672,7 @@ namespace x64 {
 
             case Insn::PMAXSD_XMM_XMMM128: return tryCompilePmaxsdXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
             case Insn::PMINSD_XMM_XMMM128: return tryCompilePminsdXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PMULLD_XMM_XMMM128: return tryCompilePmulldXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
             case Insn::BLENDVPS_XMM_XMMM128: return tryCompileBlendvpsXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
 
             case Insn::STMXCSR_M32: return tryCompileStmxcsrM32(ins.op0<M32>());
@@ -4839,6 +4840,12 @@ namespace x64 {
     bool Compiler::tryCompilePminsdXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
             generator_->pminsd(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePmulldXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->pmulld(get(dst), get(src));
         });
     }
 

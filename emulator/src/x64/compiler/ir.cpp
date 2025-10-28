@@ -242,6 +242,7 @@ namespace x64::ir {
             case Op::PMULHRSW: return "pmulhrsw";
             case Op::PMAXSD: return "pmaxsd";
             case Op::PMINSD: return "pminsd";
+            case Op::PMULLD: return "pmulld";
             case Op::BLENDVPS: return "blendvps";
         }
         return "NO OP";

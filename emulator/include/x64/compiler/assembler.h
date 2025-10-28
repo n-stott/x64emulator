@@ -455,6 +455,7 @@ namespace x64 {
 
         void pmaxsd(XMM, XMM);
         void pminsd(XMM, XMM);
+        void pmulld(XMM, XMM);
         void blendvps(XMM, XMM);
 
         // exits
