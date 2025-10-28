@@ -417,7 +417,10 @@ namespace x64 {
         void subps(XMM, XMM);
         void mulps(XMM, XMM);
         void divps(XMM, XMM);
+        void maxps(XMM, XMM);
         void minps(XMM, XMM);
+        void maxpd(XMM, XMM);
+        void minpd(XMM, XMM);
         void cmpps(XMM, XMM, u8);
         void cvtps2dq(XMM, XMM);
         void cvttps2dq(XMM, XMM);

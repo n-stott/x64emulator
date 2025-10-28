@@ -215,7 +215,10 @@ namespace x64::ir {
             case Op::SUBPS: return "subps";
             case Op::MULPS: return "mulps";
             case Op::DIVPS: return "divps";
+            case Op::MAXPS: return "maxps";
             case Op::MINPS: return "minps";
+            case Op::MAXPD: return "maxpd";
+            case Op::MINPD: return "minpd";
             case Op::CMPPS: return "cmpps";
             case Op::CVTPS2DQ: return "cvtps2dq";
             case Op::CVTTPS2DQ: return "cvttps2dq";

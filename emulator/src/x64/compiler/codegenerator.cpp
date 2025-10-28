@@ -2592,6 +2592,18 @@ namespace x64 {
                     }
                     break;
                 }
+                case ir::Op::MAXPS: {
+                    auto r128dst = ins.out().as<XMM>();
+                    assert(r128dst == ins.in1().as<XMM>());
+                    auto r128src2 = ins.in2().as<XMM>();
+
+                    if(r128dst && r128src2) {
+                        assembler_->maxps(r128dst.value(), r128src2.value());
+                    } else {
+                        return fail();
+                    }
+                    break;
+                }
                 case ir::Op::MINPS: {
                     auto r128dst = ins.out().as<XMM>();
                     assert(r128dst == ins.in1().as<XMM>());
@@ -2599,6 +2611,30 @@ namespace x64 {
 
                     if(r128dst && r128src2) {
                         assembler_->minps(r128dst.value(), r128src2.value());
+                    } else {
+                        return fail();
+                    }
+                    break;
+                }
+                case ir::Op::MAXPD: {
+                    auto r128dst = ins.out().as<XMM>();
+                    assert(r128dst == ins.in1().as<XMM>());
+                    auto r128src2 = ins.in2().as<XMM>();
+
+                    if(r128dst && r128src2) {
+                        assembler_->maxpd(r128dst.value(), r128src2.value());
+                    } else {
+                        return fail();
+                    }
+                    break;
+                }
+                case ir::Op::MINPD: {
+                    auto r128dst = ins.out().as<XMM>();
+                    assert(r128dst == ins.in1().as<XMM>());
+                    auto r128src2 = ins.in2().as<XMM>();
+
+                    if(r128dst && r128src2) {
+                        assembler_->minpd(r128dst.value(), r128src2.value());
                     } else {
                         return fail();
                     }

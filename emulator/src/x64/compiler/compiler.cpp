@@ -631,7 +631,10 @@ namespace x64 {
             case Insn::SUBPS_XMM_XMMM128: return tryCompileSubpsXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
             case Insn::MULPS_XMM_XMMM128: return tryCompileMulpsXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
             case Insn::DIVPS_XMM_XMMM128: return tryCompileDivpsXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::MAXPS_XMM_XMMM128: return tryCompileMaxpsXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
             case Insn::MINPS_XMM_XMMM128: return tryCompileMinpsXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::MAXPD_XMM_XMMM128: return tryCompileMaxpdXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::MINPD_XMM_XMMM128: return tryCompileMinpdXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
             case Insn::CMPPS_XMM_XMMM128: return tryCompileCmppsXmmXmmM128Fcond(ins.op0<XMM>(), ins.op1<XMMM128>(), ins.op2<FCond>());
             case Insn::CVTPS2DQ_XMM_XMMM128: return tryCompileCvtps2dqXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
             case Insn::CVTTPS2DQ_XMM_XMMM128: return tryCompileCvttps2dqXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
@@ -4613,9 +4616,27 @@ namespace x64 {
         });
     }
 
+    bool Compiler::tryCompileMaxpsXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->maxps(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompileMaxpdXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->maxpd(get(dst), get(src));
+        });
+    }
+
     bool Compiler::tryCompileMinpsXmmXmmM128(XMM dst, const XMMM128& src) {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
             generator_->minps(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompileMinpdXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->minpd(get(dst), get(src));
         });
     }
 
