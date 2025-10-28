@@ -482,6 +482,9 @@ namespace x64::ir {
     void IrGenerator::pmaddubsw(XMM dst, XMM src) { emit(Op::PMADDUSBW, dst, dst, src); }
     void IrGenerator::pmulhrsw(XMM dst, XMM src) { emit(Op::PMULHRSW, dst, dst, src); }
 
+    void IrGenerator::pmaxsd(XMM dst, XMM src) { emit(Op::PMAXSD, dst, dst, src); }
+    void IrGenerator::pminsd(XMM dst, XMM src) { emit(Op::PMINSD, dst, dst, src); }
+
     IrGenerator::Label& IrGenerator::label() {
         Label newLabel {
             (u32)labels_.size(),

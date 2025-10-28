@@ -453,6 +453,9 @@ namespace x64 {
         void pmaddusbw(XMM, XMM);
         void pmulhrsw(XMM, XMM);
 
+        void pmaxsd(XMM, XMM);
+        void pminsd(XMM, XMM);
+
         // exits
         struct Label {
             explicit Label(Assembler&);

@@ -439,6 +439,9 @@ namespace x64::ir {
         void pmaddubsw(XMM, XMM);
         void pmulhrsw(XMM, XMM);
 
+        void pmaxsd(XMM, XMM);
+        void pminsd(XMM, XMM);
+
         // exits
         struct Label {
             u32 labelIndex;

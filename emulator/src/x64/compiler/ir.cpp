@@ -240,6 +240,8 @@ namespace x64::ir {
             case Op::PHADDD: return "phaddd";
             case Op::PMADDUSBW: return "pmaddubsw";
             case Op::PMULHRSW: return "pmulhrsw";
+            case Op::PMAXSD: return "pmaxsd";
+            case Op::PMINSD: return "pminsd";
         }
         return "NO OP";
     }
