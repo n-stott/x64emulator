@@ -340,6 +340,8 @@ namespace x64::ir {
         PMAXSD,
         PMINSD,
         PMOVZXBW,
+        ROUNDPS,
+        ROUNDPD,
         PMULLD,
         PEXTRD,
         PINSRD,

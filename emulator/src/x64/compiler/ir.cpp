@@ -244,6 +244,8 @@ namespace x64::ir {
             case Op::PMAXSD: return "pmaxsd";
             case Op::PMINSD: return "pminsd";
             case Op::PMOVZXBW: return "pmovzxbw";
+            case Op::ROUNDPS: return "roundps";
+            case Op::ROUNDPD: return "roundpd";
             case Op::PMULLD: return "pmulld";
             case Op::PEXTRD: return "pextrd";
             case Op::PINSRD: return "pinsrd";

@@ -2966,6 +2966,30 @@ namespace x64 {
                     }
                     break;
                 }
+                case ir::Op::ROUNDPS: {
+                    auto r128dst = ins.out().as<XMM>();
+                    auto r128src = ins.in1().as<XMM>();
+                    auto imm8src = ins.in2().as<u8>();
+
+                    if(r128dst && r128src && imm8src) {
+                        assembler_->roundps(r128dst.value(), r128src.value(), imm8src.value());
+                    } else {
+                        return fail();
+                    }
+                    break;
+                }
+                case ir::Op::ROUNDPD: {
+                    auto r128dst = ins.out().as<XMM>();
+                    auto r128src = ins.in1().as<XMM>();
+                    auto imm8src = ins.in2().as<u8>();
+
+                    if(r128dst && r128src && imm8src) {
+                        assembler_->roundpd(r128dst.value(), r128src.value(), imm8src.value());
+                    } else {
+                        return fail();
+                    }
+                    break;
+                }
                 case ir::Op::PMULLD: {
                     auto r128dst = ins.out().as<XMM>();
                     assert(r128dst == ins.in1().as<XMM>());
