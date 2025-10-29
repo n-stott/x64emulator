@@ -382,6 +382,7 @@ namespace x64 {
         CMOV_R16_RM16,
         CMOV_R32_RM32,
         CMOV_R64_RM64,
+        CBW,
         CWDE,
         CDQE,
         BSWAP_R32,

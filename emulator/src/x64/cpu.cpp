@@ -570,6 +570,7 @@ namespace x64 {
     DEFINE_STANDALONE(CMOV_R16_RM16, execCmovR16RM16)
     DEFINE_STANDALONE(CMOV_R32_RM32, execCmovR32RM32)
     DEFINE_STANDALONE(CMOV_R64_RM64, execCmovR64RM64)
+    DEFINE_STANDALONE(CBW, execCbw)
     DEFINE_STANDALONE(CWDE, execCwde)
     DEFINE_STANDALONE(CDQE, execCdqe)
     DEFINE_STANDALONE(BSWAP_R32, execBswapR32)
@@ -1350,6 +1351,7 @@ namespace x64 {
         STANDALONE_NAME(CMOV_R16_RM16),
         STANDALONE_NAME(CMOV_R32_RM32),
         STANDALONE_NAME(CMOV_R64_RM64),
+        STANDALONE_NAME(CBW),
         STANDALONE_NAME(CWDE),
         STANDALONE_NAME(CDQE),
         STANDALONE_NAME(BSWAP_R32),
@@ -4234,6 +4236,10 @@ namespace x64 {
         const auto& dst = ins.op1<R64>();
         const auto& src = ins.op2<RM64>();
         set(dst, get(src));
+    }
+
+    void Cpu::execCbw(const X64Instruction&) {
+        set(R16::AX, (u16)(i16)(i8)get(R8::AL));
     }
 
     void Cpu::execCwde(const X64Instruction&) {

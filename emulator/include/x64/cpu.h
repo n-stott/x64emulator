@@ -649,6 +649,7 @@ namespace x64 {
         void execCmovR32RM32(const X64Instruction&);
         void execCmovR64RM64(const X64Instruction&);
 
+        void execCbw(const X64Instruction&);
         void execCwde(const X64Instruction&);
         void execCdqe(const X64Instruction&);
 

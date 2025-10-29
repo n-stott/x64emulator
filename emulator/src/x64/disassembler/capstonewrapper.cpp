@@ -1872,6 +1872,10 @@ namespace x64 {
         return make_failed(insn);
     }
 
+    static X64Instruction makeCbw(const cs_insn& insn) {
+        return X64Instruction::make<Insn::CBW>(insn.address, insn.size);
+    }
+
     static X64Instruction makeCwde(const cs_insn& insn) {
         return X64Instruction::make<Insn::CWDE>(insn.address, insn.size);
     }
@@ -4370,6 +4374,7 @@ namespace x64 {
             case X86_INS_CMOVNP: return makeCmov<Cond::NP>(insn);
             case X86_INS_CMOVP: return makeCmov<Cond::P>(insn);
             case X86_INS_CMOVS: return makeCmov<Cond::S>(insn);
+            case X86_INS_CBW: return makeCbw(insn);
             case X86_INS_CWDE: return makeCwde(insn);
             case X86_INS_CDQE: return makeCdqe(insn);
             case X86_INS_BSWAP: return makeBswap(insn);

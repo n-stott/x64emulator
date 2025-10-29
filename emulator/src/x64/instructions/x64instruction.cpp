@@ -401,6 +401,7 @@ namespace x64 {
             case Insn::CMOV_R16_RM16: return toString<Cond, R16, RM16>("cmov");
             case Insn::CMOV_R32_RM32: return toString<Cond, R32, RM32>("cmov");
             case Insn::CMOV_R64_RM64: return toString<Cond, R64, RM64>("cmov");
+            case Insn::CBW: return toString("cbw");
             case Insn::CWDE: return toString("cwde");
             case Insn::CDQE: return toString("cdqe");
             case Insn::BSWAP_R32: return toString<R32>("bswap");

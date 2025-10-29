@@ -1960,6 +1960,10 @@ namespace x64 {
         return make_failed(insn);
     }
 
+    static X64Instruction makeCbw(const ZydisDisassembledInstruction& insn) {
+        return X64Instruction::make<Insn::CBW>(insn.runtime_address, insn.info.length);
+    }
+
     static X64Instruction makeCwde(const ZydisDisassembledInstruction& insn) {
         return X64Instruction::make<Insn::CWDE>(insn.runtime_address, insn.info.length);
     }
@@ -4835,6 +4839,7 @@ namespace x64 {
             case ZYDIS_MNEMONIC_CMOVNP: return makeCmov<Cond::NP>(insn);
             case ZYDIS_MNEMONIC_CMOVP: return makeCmov<Cond::P>(insn);
             case ZYDIS_MNEMONIC_CMOVS: return makeCmov<Cond::S>(insn);
+            case ZYDIS_MNEMONIC_CBW: return makeCbw(insn);
             case ZYDIS_MNEMONIC_CWDE: return makeCwde(insn);
             case ZYDIS_MNEMONIC_CDQE: return makeCdqe(insn);
             case ZYDIS_MNEMONIC_BSWAP: return makeBswap(insn);
