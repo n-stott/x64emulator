@@ -369,6 +369,7 @@ namespace x64::ir {
     void IrGenerator::pavgw(XMM dst, XMM src) { emit(Op::PAVGW, dst, dst, src); }
     void IrGenerator::pmaxub(XMM dst, XMM src) { emit(Op::PMAXUB, dst, dst, src); }
     void IrGenerator::pminub(XMM dst, XMM src) { emit(Op::PMINUB, dst, dst, src); }
+    void IrGenerator::ptest(XMM dst, XMM src) { emit(Op::PTEST, Operand{}, dst, src); }
 
     void IrGenerator::pcmpeqb(XMM dst, XMM src) { emit(Op::PCMPEQB, dst, dst, src); }
     void IrGenerator::pcmpeqw(XMM dst, XMM src) { emit(Op::PCMPEQW, dst, dst, src); }

@@ -1743,6 +1743,17 @@ namespace x64 {
                     }
                     break;
                 }
+                case ir::Op::PTEST: {
+                    auto r128src1 = ins.in1().as<XMM>();
+                    auto r128src2 = ins.in2().as<XMM>();
+
+                    if(r128src1 && r128src2) {
+                        assembler_->ptest(r128src1.value(), r128src2.value());
+                    } else {
+                        return fail();
+                    }
+                    break;
+                }
                 case ir::Op::PCMPEQB: {
                     auto mmxdst = ins.out().as<MMX>();
                     assert(mmxdst == ins.in1().as<MMX>());

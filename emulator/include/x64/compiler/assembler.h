@@ -340,6 +340,7 @@ namespace x64 {
         void pavgw(XMM, XMM);
         void pmaxub(XMM, XMM);
         void pminub(XMM, XMM);
+        void ptest(XMM, XMM);
 
         void pcmpeqb(XMM, XMM);
         void pcmpeqw(XMM, XMM);

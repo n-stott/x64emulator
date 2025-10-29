@@ -541,6 +541,7 @@ namespace x64 {
             case Insn::PAVGW_XMM_XMMM128: return tryCompilePavgwXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
             case Insn::PMAXUB_XMM_XMMM128: return tryCompilePmaxubXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
             case Insn::PMINUB_XMM_XMMM128: return tryCompilePminubXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PTEST_XMM_XMMM128: return tryCompilePtestXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
             
             case Insn::PCMPEQB_XMM_XMMM128: return tryCompilePcmpeqbXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
             case Insn::PCMPEQW_XMM_XMMM128: return tryCompilePcmpeqwXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
@@ -3895,6 +3896,12 @@ namespace x64 {
         return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
             generator_->pminub(get(dst), get(src));
         });
+    }
+
+    bool Compiler::tryCompilePtestXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->ptest(get(dst), get(src));
+        }, false);
     }
 
     bool Compiler::tryCompilePcmpeqbXmmXmmM128(XMM dst, const XMMM128& src) {

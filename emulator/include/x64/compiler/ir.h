@@ -250,6 +250,7 @@ namespace x64::ir {
         PAVGW,
         PMAXUB,
         PMINUB,
+        PTEST,
         PCMPEQB,
         PCMPEQW,
         PCMPEQD,

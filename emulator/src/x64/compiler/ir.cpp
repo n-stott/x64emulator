@@ -154,6 +154,7 @@ namespace x64::ir {
             case Op::PAVGW: return "pavgw";
             case Op::PMAXUB: return "pmaxub";
             case Op::PMINUB: return "pminub";
+            case Op::PTEST: return "ptest";
             case Op::PCMPEQB: return "pcmpeqb";
             case Op::PCMPEQW: return "pcmpeqw";
             case Op::PCMPEQD: return "pcmpeqd";

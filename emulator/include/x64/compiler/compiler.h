@@ -345,6 +345,7 @@ namespace x64 {
         bool tryCompilePavgwXmmXmmM128(XMM, const XMMM128&);
         bool tryCompilePmaxubXmmXmmM128(XMM, const XMMM128&);
         bool tryCompilePminubXmmXmmM128(XMM, const XMMM128&);
+        bool tryCompilePtestXmmXmmM128(XMM, const XMMM128&);
 
         bool tryCompilePcmpeqbXmmXmmM128(XMM, const XMMM128&);
         bool tryCompilePcmpeqwXmmXmmM128(XMM, const XMMM128&);
