@@ -38,6 +38,11 @@ int main(int argc, char* argv[], char* envp[]) {
            .default_value(false)
            .implicit_value(true);
 
+    parser.add_argument("--jitstats")
+           .help("dump JIT statistics")
+           .default_value(false)
+           .implicit_value(true);
+
     parser.add_argument("--shm")
             .help("Enable shared memory system")
             .default_value(false)
@@ -113,6 +118,7 @@ int main(int argc, char* argv[], char* envp[]) {
         emulator.setProfiling(parser["--profile"] == true);
         emulator.setEnableJit(parser["--nojit"] == false);
         emulator.setEnableJitChaining(parser["--nojitchaining"] == false);
+        emulator.setEnableJitStats(parser["--jitstats"] == true);
         if(parser["-O0"] == true) {
             emulator.setOptimizationLevel(0);
         }

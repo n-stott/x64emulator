@@ -41,82 +41,13 @@ namespace emulator {
         fmt::print("  ret  exits: {} ({} distinct)\n", jitExitRet_, distinctJitExitRet_.size());
         fmt::print("  jmp  exits: {} ({} distinct)\n", jitExitJmpRM64_, distinctJitExitCallRM64_.size());
         fmt::print("  call exits: {} ({} distinct)\n", jitExitCallRM64_, distinctJitExitJmpRM64_.size());
-        // return;
-        std::vector<BasicBlock*> blocks;
-        std::vector<BasicBlock*> jittedBlocks;
-        blocks.reserve(basicBlocks_.size());
-        size_t jitted = 0;
-        u64 emulatedInstructions = 0;
-        u64 jittedInstructions = 0;
-        u64 jitCandidateInstructions = 0;
-        for(const auto& bb : basicBlocks_) {
-            if(bb->jitBasicBlock() != nullptr) {
-                jitted += 1;
-                jittedBlocks.push_back(bb.get());
-                jittedInstructions += bb->basicBlock().instructions().size() * bb->calls();
-            } else {
-                emulatedInstructions += bb->basicBlock().instructions().size() * bb->calls();
-                if(bb->calls() < JIT_THRESHOLD) continue;
-                blocks.push_back(bb.get());
-                jitCandidateInstructions += bb->basicBlock().instructions().size() * bb->calls();
-                
-            }
-        }
-        fmt::print("{} / candidate {} blocks jitted ({} total). {} / {} instructions jitted ({:.4f}% of all, {:.4f}% of candidates)\n",
-                jitted, blocks.size()+jitted,
-                basicBlocks_.size(),
-                jittedInstructions, emulatedInstructions+jittedInstructions,
-                100.0*(double)jittedInstructions/(1.0+(double)emulatedInstructions+(double)jittedInstructions),
-                100.0*(double)jittedInstructions/(1.0+(double)jitCandidateInstructions+(double)jittedInstructions));
-        const size_t topCount = 10;
-        {
-            std::sort(jittedBlocks.begin(), jittedBlocks.end(), [](const auto* a, const auto* b) {
-                return a->calls() * a->basicBlock().instructions().size() > b->calls() * b->basicBlock().instructions().size();
-            });
-            if(jittedBlocks.size() >= topCount) jittedBlocks.resize(topCount);
-            for(auto* bb : jittedBlocks) {
-                const auto* region = ((const x64::Mmu&)mmu_).findAddress(bb->start());
-                fmt::print("  Calls: {}. Jitted: {}. Size: {}. Source: {}\n",
-                    bb->calls(), !!bb->jitBasicBlock(), bb->basicBlock().instructions().size(), region->name());
-                for(const auto& ins : bb->basicBlock().instructions()) {
-                    fmt::print("      {:#12x} {}\n", ins.first.address(), ins.first.toString());
-                }
-                x64::Compiler compiler;
-                {
-                    auto ir = compiler.tryCompileIR(bb->basicBlock(), 0, nullptr, nullptr, false);
-                    assert(!!ir);
-                    fmt::print("    unoptimized IR: {} instructions\n", ir->instructions.size());
-                    for(const auto& ins : ir->instructions) {
-                        fmt::print("      {}\n", ins.toString());
-                    }
-                }
-                {
-                    auto ir = compiler.tryCompileIR(bb->basicBlock(), 1, nullptr, nullptr, false);
-                    assert(!!ir);
-                    fmt::print("    optimized IR: {} instructions\n", ir->instructions.size());
-                    for(const auto& ins : ir->instructions) {
-                        fmt::print("      {}\n", ins.toString());
-                    }
-                }
-            }
-        }
-        {
-            std::sort(blocks.begin(), blocks.end(), [](const auto* a, const auto* b) {
-                return a->calls() * a->basicBlock().instructions().size() > b->calls() * b->basicBlock().instructions().size();
-            });
-            if(blocks.size() >= topCount) blocks.resize(topCount);
-            for(auto* bb : blocks) {
-                const auto* region = ((const x64::Mmu&)mmu_).findAddress(bb->start());
-                fmt::print("  Calls: {}. Jitted: {}. Size: {}. Source: {}\n",
-                    bb->calls(), !!bb->jitBasicBlock(), bb->basicBlock().instructions().size(), region->name());
-                for(const auto& ins : bb->basicBlock().instructions()) {
-                    fmt::print("      {:#12x} {}\n", ins.first.address(), ins.first.toString());
-                }
-                x64::Compiler compiler;
-                [[maybe_unused]] auto jitBasicBlock = compiler.tryCompile(bb->basicBlock(), 1, {}, {}, true);
-            }
-        }
 #endif
+        if(jitStatsEnabled()) {
+            std::vector<const BasicBlock*> blocks;
+            blocks.resize(basicBlocks_.size(), nullptr);
+            std::transform(basicBlocks_.begin(), basicBlocks_.end(), blocks.begin(), [](auto& p) { return p.get(); });
+            dumpJitTelemetry(blocks);
+        }
     }
 
     void VM::setEnableJit(bool enable) {
@@ -130,6 +61,10 @@ namespace emulator {
 
     void VM::setEnableJitChaining(bool enable) {
         if(!!jit_) jit_->setEnableJitChaining(enable);
+    }
+
+    void VM::setEnableJitStats(bool enable) {
+        jitStatsEnabled_ = enable;
     }
 
     bool VM::jitChainingEnabled() const {
@@ -577,49 +512,70 @@ namespace emulator {
     }
 
     void VM::MmuCallback::on_mprotect(u64 base, u64 length, BitFlags<x64::PROT> protBefore, BitFlags<x64::PROT> protAfter) {
-        if(!protBefore.test(x64::PROT::EXEC)) return; // if we were not executable, no need to perform removal
-        if(protAfter.test(x64::PROT::EXEC)) return; // if we are remaining executable, no need to perform removal
-        auto mid = std::partition(vm_->basicBlocks_.begin(), vm_->basicBlocks_.end(), [&](const auto& bb) {
-            return bb->end() <= base || bb->start() >= base+length;
-        });
-        for(auto it = mid; it != vm_->basicBlocks_.end(); ++it) {
-            BasicBlock* bb = it->get();
-            vm_->basicBlocksByAddress_.erase(bb->start());
-            bb->removeFromCaches();
-        }
-        vm_->basicBlocks_.erase(mid, vm_->basicBlocks_.end());
-        
-        vm_->executableSections_.erase(std::remove_if(vm_->executableSections_.begin(), vm_->executableSections_.end(), [&](const auto& section) {
-            return (base <= section->begin && section->begin < base + length)
-                || (base < section->end && section->end <= base + length);
-        }), vm_->executableSections_.end());
+        vm_->mprotectHandler(base, length, protBefore, protAfter);
     }
 
     void VM::MmuCallback::on_munmap(u64 base, u64 length, BitFlags<x64::PROT> prot) {
+        vm_->munmapHandler(base, length, prot);
+    }
+
+    void VM::mprotectHandler(u64 base, u64 length, BitFlags<x64::PROT> protBefore, BitFlags<x64::PROT> protAfter) {
+        if(!protBefore.test(x64::PROT::EXEC)) return; // if we were not executable, no need to perform removal
+        if(protAfter.test(x64::PROT::EXEC)) return; // if we are remaining executable, no need to perform removal
+        auto mid = std::partition(basicBlocks_.begin(), basicBlocks_.end(), [&](const auto& bb) {
+            return bb->end() <= base || bb->start() >= base+length;
+        });
+        if(jitStatsEnabled()) {
+            std::vector<const BasicBlock*> blocks;
+            blocks.resize(std::distance(mid, basicBlocks_.end()), nullptr);
+            std::transform(mid, basicBlocks_.end(), blocks.begin(), [](auto& p) { return p.get(); });
+            dumpJitTelemetry(blocks);
+        }
+        for(auto it = mid; it != basicBlocks_.end(); ++it) {
+            BasicBlock* bb = it->get();
+            basicBlocksByAddress_.erase(bb->start());
+            bb->removeFromCaches();
+        }
+
+        basicBlocks_.erase(mid, basicBlocks_.end());
+        
+        executableSections_.erase(std::remove_if(executableSections_.begin(), executableSections_.end(), [&](const auto& section) {
+            return (base <= section->begin && section->begin < base + length)
+                || (base < section->end && section->end <= base + length);
+        }), executableSections_.end());
+    }
+
+    void VM::munmapHandler(u64 base, u64 length, BitFlags<x64::PROT> prot) {
         if(!prot.test(x64::PROT::EXEC)) return;
         auto compareBlocks = [](const auto& a, const auto& b) {
             return a->start() < b->start();
         };
-        if(!std::is_sorted(vm_->basicBlocks_.begin(), vm_->basicBlocks_.end(), compareBlocks)) {
-            std::sort(vm_->basicBlocks_.begin(), vm_->basicBlocks_.end(), compareBlocks);
+        if(!std::is_sorted(basicBlocks_.begin(), basicBlocks_.end(), compareBlocks)) {
+            std::sort(basicBlocks_.begin(), basicBlocks_.end(), compareBlocks);
         }
-        auto begin = std::lower_bound(vm_->basicBlocks_.begin(), vm_->basicBlocks_.end(), base, [](const auto& bb, u64 address) {
+        auto begin = std::lower_bound(basicBlocks_.begin(), basicBlocks_.end(), base, [](const auto& bb, u64 address) {
             return bb->start() < address;
         });
-        auto end = std::upper_bound(vm_->basicBlocks_.begin(), vm_->basicBlocks_.end(), base+length, [](u64 address, const auto& bb) {
+        auto end = std::upper_bound(basicBlocks_.begin(), basicBlocks_.end(), base+length, [](u64 address, const auto& bb) {
             return address < bb->end();
         });
+        if(jitStatsEnabled()) {
+            std::vector<const BasicBlock*> blocks;
+            blocks.resize(std::distance(begin, end), nullptr);
+            std::transform(begin, end, blocks.begin(), [](auto& p) { return p.get(); });
+            dumpJitTelemetry(blocks);
+        }
         for(auto it = begin; it != end; ++it) {
             BasicBlock* bb = it->get();
-            vm_->basicBlocksByAddress_.erase(bb->start());
+            basicBlocksByAddress_.erase(bb->start());
             bb->removeFromCaches();
         }
-        vm_->basicBlocks_.erase(begin, end);
+        basicBlocks_.erase(begin, end);
         
-        vm_->executableSections_.erase(std::remove_if(vm_->executableSections_.begin(), vm_->executableSections_.end(), [&](const auto& section) {
+        executableSections_.erase(std::remove_if(executableSections_.begin(), executableSections_.end(), [&](const auto& section) {
             return (base <= section->begin && section->begin < base + length)
                 || (base < section->end && section->end <= base + length);
-        }), vm_->executableSections_.end());
+        }), executableSections_.end());
     }
 
     VM::CpuCallback::CpuCallback(x64::Cpu* cpu, VM* vm) : cpu_(cpu), vm_(vm) {
@@ -864,5 +820,82 @@ namespace emulator {
             tryPatch(fixedDestinationInfo_.next[1]);
         }
         syncBlockLookupTable();
+    }
+
+    void VM::dumpJitTelemetry(const std::vector<const BasicBlock*>& blocks) const {
+        if(blocks.empty()) return;
+        std::vector<const BasicBlock*> jittedBlocks;
+        std::vector<const BasicBlock*> nonjittedBlocks;
+        size_t jitted = 0;
+        u64 emulatedInstructions = 0;
+        u64 jittedInstructions = 0;
+        u64 jitCandidateInstructions = 0;
+        for(const BasicBlock* bb : blocks) {
+            if(bb->jitBasicBlock() != nullptr) {
+                jitted += 1;
+                jittedBlocks.push_back(bb);
+                jittedInstructions += bb->basicBlock().instructions().size() * bb->calls();
+            } else {
+                emulatedInstructions += bb->basicBlock().instructions().size() * bb->calls();
+                if(bb->calls() < JIT_THRESHOLD) continue;
+                nonjittedBlocks.push_back(bb);
+                jitCandidateInstructions += bb->basicBlock().instructions().size() * bb->calls();
+                
+            }
+        }
+        fmt::print("{} / candidate {} blocks jitted ({} total). {} / {} instructions jitted ({:.4f}% of all, {:.4f}% of candidates)\n",
+                jitted, nonjittedBlocks.size()+jitted,
+                blocks.size(),
+                jittedInstructions, emulatedInstructions+jittedInstructions,
+                100.0*(double)jittedInstructions/(1.0+(double)emulatedInstructions+(double)jittedInstructions),
+                100.0*(double)jittedInstructions/(1.0+(double)jitCandidateInstructions+(double)jittedInstructions));
+        const size_t topCount = 50;
+        if(0) {
+            std::sort(jittedBlocks.begin(), jittedBlocks.end(), [](const auto* a, const auto* b) {
+                return a->calls() * a->basicBlock().instructions().size() > b->calls() * b->basicBlock().instructions().size();
+            });
+            if(jittedBlocks.size() >= topCount) jittedBlocks.resize(topCount);
+            for(const auto* bb : jittedBlocks) {
+                const auto* region = ((const x64::Mmu&)mmu_).findAddress(bb->start());
+                fmt::print("  Calls: {}. Jitted: {}. Size: {}. Source: {}\n",
+                    bb->calls(), !!bb->jitBasicBlock(), bb->basicBlock().instructions().size(), !!region ? region->name() : "unknonwn region");
+                for(const auto& ins : bb->basicBlock().instructions()) {
+                    fmt::print("      {:#12x} {}\n", ins.first.address(), ins.first.toString());
+                }
+                x64::Compiler compiler;
+                {
+                    auto ir = compiler.tryCompileIR(bb->basicBlock(), 0, nullptr, nullptr, false);
+                    assert(!!ir);
+                    fmt::print("    unoptimized IR: {} instructions\n", ir->instructions.size());
+                    for(const auto& ins : ir->instructions) {
+                        fmt::print("      {}\n", ins.toString());
+                    }
+                }
+                {
+                    auto ir = compiler.tryCompileIR(bb->basicBlock(), 1, nullptr, nullptr, false);
+                    assert(!!ir);
+                    fmt::print("    optimized IR: {} instructions\n", ir->instructions.size());
+                    for(const auto& ins : ir->instructions) {
+                        fmt::print("      {}\n", ins.toString());
+                    }
+                }
+            }
+        }
+        if(1) {
+            std::sort(nonjittedBlocks.begin(), nonjittedBlocks.end(), [](const auto* a, const auto* b) {
+                return a->calls() * a->basicBlock().instructions().size() > b->calls() * b->basicBlock().instructions().size();
+            });
+            if(nonjittedBlocks.size() >= topCount) nonjittedBlocks.resize(topCount);
+            for(auto* bb : nonjittedBlocks) {
+                const auto* region = ((const x64::Mmu&)mmu_).findAddress(bb->start());
+                fmt::print("  Calls: {}. Jitted: {}. Size: {}. Source: {}\n",
+                    bb->calls(), !!bb->jitBasicBlock(), bb->basicBlock().instructions().size(), !!region ? region->name() : "unknown region");
+                for(const auto& ins : bb->basicBlock().instructions()) {
+                    fmt::print("      {:#12x} {}\n", ins.first.address(), ins.first.toString());
+                }
+                x64::Compiler compiler;
+                [[maybe_unused]] auto jitBasicBlock = compiler.tryCompile(bb->basicBlock(), 1, {}, {}, true);
+            }
+        }
     }
 }

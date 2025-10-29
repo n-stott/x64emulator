@@ -38,6 +38,7 @@ namespace kernel::gnulinux {
         emulator::VM vm(cpu, mmu_);
         vm.setEnableJit(worker.enableJit);
         vm.setEnableJitChaining(worker.enableJitChaining);
+        vm.setEnableJitStats(worker.enableJitStats);
         vm.setOptimizationLevel(worker.optimizationLevel);
         vm.setDisassembler(kernel_.disassembler());
         while(!emulator::signal_interrupt) {
@@ -177,13 +178,13 @@ namespace kernel::gnulinux {
         std::vector<std::thread> workerThreads;
         workerThreads.reserve(kernel_.nbCores());
         for(int i = 0; i < kernel_.nbCores(); ++i) {
-            workerThreads.emplace_back(std::bind(&Scheduler::runOnWorkerThread, this, Worker{i, kernel_.isJitEnabled(), kernel_.isJitChainingEnabled(), kernel_.optimizationLevel()}));
+            workerThreads.emplace_back(std::bind(&Scheduler::runOnWorkerThread, this, Worker{i, kernel_.isJitEnabled(), kernel_.isJitChainingEnabled(), kernel_.jitStatsEnabled(), kernel_.optimizationLevel()}));
         }
         for(std::thread& workerThread : workerThreads) {
             workerThread.join();
         }
 #else
-        runOnWorkerThread(Worker{0, kernel_.isJitEnabled(), kernel_.isJitChainingEnabled(), kernel_.optimizationLevel()});
+        runOnWorkerThread(Worker{0, kernel_.isJitEnabled(), kernel_.isJitChainingEnabled(), kernel_.jitStatsEnabled(), kernel_.optimizationLevel()});
 #endif
     }
 

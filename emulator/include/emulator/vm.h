@@ -33,6 +33,10 @@ namespace emulator {
             return cpuBasicBlock_;
         }
 
+        const x64::JitBasicBlock* jitBasicBlock() const {
+            return jitBasicBlock_;
+        }
+
         x64::JitBasicBlock* jitBasicBlock() {
             return jitBasicBlock_;
         }
@@ -134,6 +138,9 @@ namespace emulator {
         void setEnableJitChaining(bool enable);
         bool jitChainingEnabled() const;
 
+        void setEnableJitStats(bool enable);
+        bool jitStatsEnabled() const { return jitStatsEnabled_; }
+
         void setOptimizationLevel(int level);
         int optimizationLevel() const { return optimizationLevel_; }
 
@@ -201,6 +208,11 @@ namespace emulator {
         std::string callName(const x64::X64Instruction& instruction) const;
         std::string calledFunctionName(u64 address) const;
 
+        void mprotectHandler(u64 base, u64 length, BitFlags<x64::PROT> protBefore, BitFlags<x64::PROT> protAfter);
+        void munmapHandler(u64 base, u64 length, BitFlags<x64::PROT> prot);
+
+        void dumpJitTelemetry(const std::vector<const BasicBlock*>& blocks) const;
+
         x64::Cpu& cpu_;
         x64::Mmu& mmu_;
 
@@ -238,6 +250,7 @@ namespace emulator {
         mutable std::unordered_map<u64, std::string> functionNameCache_;
 
         bool jitEnabled_ { false };
+        bool jitStatsEnabled_ { false };
         int optimizationLevel_ { 0 };
 
         std::unique_ptr<x64::Disassembler> disassembler_;
