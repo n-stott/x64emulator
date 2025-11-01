@@ -1709,7 +1709,6 @@ namespace kernel::gnulinux {
             print("Sys::posix_fadvise(fd={}, offset={}, len={}, advise={}) = {}\n",
                                     fd, offset, len, advice, 0);
         }
-        warn(fmt::format("posix_fadvise(advice={}) not implemented - returning bogus 0", advice));
         return 0;
     }
 
