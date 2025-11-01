@@ -226,6 +226,7 @@ namespace kernel::gnulinux {
 
         struct Prctl {
             static bool isSetName(int option);
+            static bool isCapabilitySetRead(int option);
         };
 
         struct Lock {

@@ -317,6 +317,10 @@ namespace kernel::gnulinux {
         return option == PR_SET_NAME;
     }
 
+    bool Host::Prctl::isCapabilitySetRead(int option) {
+        return option == PR_CAPBSET_READ;
+    }
+
     bool Host::Lock::isShared(int operation) {
         return operation & LOCK_SH;
     }

@@ -1756,19 +1756,22 @@ namespace kernel::gnulinux {
 
     int Sys::prctl(int option, unsigned long arg2, unsigned long arg3, unsigned long arg4, unsigned long arg5) {
         int ret = -ENOTSUP;
-        bool isSetName = Host::Prctl::isSetName(option);
-        if(isSetName) {
+        if(Host::Prctl::isSetName(option)) {
             x64::Ptr8 ptr { arg2 };
             std::string threadName = mmu_.readString(ptr);
             if(threadName.size() >= 15) threadName.resize(15);
             currentThread_->setName(threadName);
             ret = 0;
         }
+        if(Host::Prctl::isCapabilitySetRead(option)) {
+            // No capabilities are allowed
+            ret = 0;
+        }
         if(kernel_.logSyscalls()) {
             print("Sys::prctl(option={}, arg2={}, arg3={}, arg4={}, arg5={}) = {}\n", option, arg2, arg3, arg4, arg5, ret);
         }
         if(ret == -ENOTSUP) {
-            warn(fmt::format("prctl not implemented"));
+            warn(fmt::format("prctl not implemented for this option"));
         }
         return -ENOTSUP;
     }
