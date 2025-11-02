@@ -412,6 +412,9 @@ namespace kernel::gnulinux {
         template<typename... Args>
         void print(const char* format, Args... args) const;
 
+        template<typename... Args>
+        void warn(const char* format, Args... args) const;
+
         Kernel& kernel_;
         x64::Mmu& mmu_;
         std::mutex mutex_;
