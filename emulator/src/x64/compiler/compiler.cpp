@@ -621,6 +621,7 @@ namespace x64 {
             case Insn::UCOMISD_XMM_M64: return tryCompileUcomisdXmmM64(ins.op0<XMM>(), ins.op1<M64>());
             case Insn::MAXSD_XMM_XMM: return tryCompileMaxsdXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
             case Insn::MINSD_XMM_XMM: return tryCompileMinsdXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
+            case Insn::MINSD_XMM_M64: return tryCompileMinsdXmmM64(ins.op0<XMM>(), ins.op1<M64>());
             case Insn::SQRTSD_XMM_XMM: return tryCompileSqrtsdXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
             case Insn::CVTSD2SS_XMM_XMM: return tryCompileCvtsd2ssXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
             case Insn::CVTSD2SS_XMM_M64: return tryCompileCvtsd2ssXmmM64(ins.op0<XMM>(), ins.op1<M64>());
@@ -4520,6 +4521,19 @@ namespace x64 {
     bool Compiler::tryCompileMinsdXmmXmm(XMM dst, XMM src) {
         readReg128(Reg128::GPR0, dst);
         readReg128(Reg128::GPR1, src);
+        generator_->minsd(get(Reg128::GPR0), get(Reg128::GPR1));
+        writeReg128(dst, Reg128::GPR0);
+        return true;
+    }
+
+    bool Compiler::tryCompileMinsdXmmM64(XMM dst, const M64& src) {
+        // fetch src address
+        if(src.segment == Segment::FS) return false;
+        if(src.encoding.index == R64::RIP) return false;
+        // get the address
+        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src);
+        readReg128(Reg128::GPR0, dst);
+        generator_->movsd(get(Reg128::GPR1), make64(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
         generator_->minsd(get(Reg128::GPR0), get(Reg128::GPR1));
         writeReg128(dst, Reg128::GPR0);
         return true;

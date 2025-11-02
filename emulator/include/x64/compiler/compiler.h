@@ -424,6 +424,7 @@ namespace x64 {
         bool tryCompileUcomisdXmmM64(XMM, const M64&);
         bool tryCompileMaxsdXmmXmm(XMM, XMM);
         bool tryCompileMinsdXmmXmm(XMM, XMM);
+        bool tryCompileMinsdXmmM64(XMM, const M64&);
         bool tryCompileSqrtsdXmmXmm(XMM, XMM);
         bool tryCompileCvtsd2ssXmmXmm(XMM, XMM);
         bool tryCompileCvtsd2ssXmmM64(XMM, const M64&);
