@@ -4190,12 +4190,9 @@ namespace x64 {
     }
 
     bool Compiler::tryCompilePackuswbXmmXmmM128(XMM dst, const XMMM128& src) {
-        if(!src.isReg) return false;
-        readReg128(Reg128::GPR0, dst);
-        readReg128(Reg128::GPR1, src.reg);
-        generator_->packuswb(get(Reg128::GPR0), get(Reg128::GPR1));
-        writeReg128(dst, Reg128::GPR0);
-        return true;
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->packuswb(get(dst), get(src));
+        });
     }
 
     bool Compiler::tryCompilePackusdwXmmXmmM128(XMM dst, const XMMM128& src) {
