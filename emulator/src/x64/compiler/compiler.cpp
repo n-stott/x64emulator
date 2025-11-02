@@ -5453,14 +5453,39 @@ namespace x64 {
     Compiler::Mem Compiler::getAddress(Reg dst, TmpReg tmp, const M<size>& mem) {
         assert(dst != tmp.reg);
         if(mem.segment == Segment::FS) {
-            verify(mem.encoding.index == R64::ZERO, "Non-zero index when reading from FS segment");
             if(mem.encoding.base == R64::ZERO) {
                 // set dst to fs-base
                 readFsBase(dst);
+                if(mem.encoding.index != R64::ZERO) {
+                    // add the index, if any
+                    readReg64(tmp.reg, mem.encoding.index);
+                    generator_->lea(get(dst), M64 {
+                        Segment::UNK,
+                        Encoding64 {
+                            get(dst),
+                            get(tmp.reg),
+                            mem.encoding.scale,
+                            0,
+                        }
+                    });
+                }
                 return Mem {dst, mem.encoding.displacement};
             } else {
                 // set dst to fs-base
                 readFsBase(dst);
+                if(mem.encoding.index != R64::ZERO) {
+                    // add the index, if any
+                    readReg64(tmp.reg, mem.encoding.index);
+                    generator_->lea(get(dst), M64 {
+                        Segment::UNK,
+                        Encoding64 {
+                            get(dst),
+                            get(tmp.reg),
+                            mem.encoding.scale,
+                            0,
+                        }
+                    });
+                }
                 // add the base value
                 readReg64(tmp.reg, mem.encoding.base);
                 // get the address
