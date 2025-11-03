@@ -52,6 +52,10 @@ namespace x64::ir {
         void add(R64 dst, u32 imm);
         void adc(R32 dst, R32 src);
         void adc(R32 dst, u32 imm);
+        void sub(R8 dst, R8 src);
+        void sub(R8 dst, u8 imm);
+        void sub(R16 dst, R16 src);
+        void sub(R16 dst, u16 imm);
         void sub(R32 dst, R32 src);
         void sub(R32 dst, u32 imm);
         void sub(R64 dst, R64 src);

@@ -283,6 +283,10 @@ namespace x64 {
             case Insn::ADD_RM64_IMM: return tryCompileAddRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
             case Insn::ADC_RM32_RM32: return tryCompileAdcRM32RM32(ins.op0<RM32>(), ins.op1<RM32>());
             case Insn::ADC_RM32_IMM: return tryCompileAdcRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
+            case Insn::SUB_RM8_RM8: return tryCompileSubRM8RM8(ins.op0<RM8>(), ins.op1<RM8>());
+            case Insn::SUB_RM8_IMM: return tryCompileSubRM8Imm(ins.op0<RM8>(), ins.op1<Imm>());
+            case Insn::SUB_RM16_RM16: return tryCompileSubRM16RM16(ins.op0<RM16>(), ins.op1<RM16>());
+            case Insn::SUB_RM16_IMM: return tryCompileSubRM16Imm(ins.op0<RM16>(), ins.op1<Imm>());
             case Insn::SUB_RM32_RM32: return tryCompileSubRM32RM32(ins.op0<RM32>(), ins.op1<RM32>());
             case Insn::SUB_RM32_IMM: return tryCompileSubRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
             case Insn::SUB_RM64_RM64: return tryCompileSubRM64RM64(ins.op0<RM64>(), ins.op1<RM64>());
@@ -1236,6 +1240,30 @@ namespace x64 {
     bool Compiler::tryCompileAdcRM32Imm(const RM32& dst, Imm src) {
         return forRM32Imm(dst, src, [&](Reg dst, Imm imm) {
             adc32Imm32(dst, imm.as<i32>());
+        });
+    }
+
+    bool Compiler::tryCompileSubRM8RM8(const RM8& dst, const RM8& src) {
+        return forRM8RM8(dst, src, [&](Reg dst, Reg src) {
+            sub8(dst, src);
+        });
+    }
+
+    bool Compiler::tryCompileSubRM8Imm(const RM8& dst, Imm src) {
+        return forRM8Imm(dst, src, [&](Reg dst, Imm imm) {
+            sub8Imm8(dst, imm.as<i8>());
+        });
+    }
+
+    bool Compiler::tryCompileSubRM16RM16(const RM16& dst, const RM16& src) {
+        return forRM16RM16(dst, src, [&](Reg dst, Reg src) {
+            sub16(dst, src);
+        });
+    }
+
+    bool Compiler::tryCompileSubRM16Imm(const RM16& dst, Imm src) {
+        return forRM16Imm(dst, src, [&](Reg dst, Imm imm) {
+            sub16Imm16(dst, imm.as<i16>());
         });
     }
 
@@ -5590,6 +5618,28 @@ namespace x64 {
     void Compiler::adc32Imm32(Reg dst, i32 imm) {
         R32 d = get32(dst);
         generator_->adc(d, (u32)imm);
+    }
+
+    void Compiler::sub8(Reg dst, Reg src) {
+        R8 d = get8(dst);
+        R8 s = get8(src);
+        generator_->sub(d, s);
+    }
+
+    void Compiler::sub8Imm8(Reg dst, i8 imm) {
+        R8 d = get8(dst);
+        generator_->sub(d, (u8)imm);
+    }
+
+    void Compiler::sub16(Reg dst, Reg src) {
+        R16 d = get16(dst);
+        R16 s = get16(src);
+        generator_->sub(d, s);
+    }
+
+    void Compiler::sub16Imm16(Reg dst, i16 imm) {
+        R16 d = get16(dst);
+        generator_->sub(d, (u16)imm);
     }
 
     void Compiler::sub32(Reg dst, Reg src) {

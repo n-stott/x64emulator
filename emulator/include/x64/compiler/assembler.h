@@ -52,6 +52,10 @@ namespace x64 {
         void add(R64 dst, i32 imm);
         void adc(R32 dst, R32 src);
         void adc(R32 dst, i32 imm);
+        void sub(R8 dst, R8 src);
+        void sub(R8 dst, i8 imm);
+        void sub(R16 dst, R16 src);
+        void sub(R16 dst, i16 imm);
         void sub(R32 dst, R32 src);
         void sub(R32 dst, i32 imm);
         void sub(R64 dst, R64 src);

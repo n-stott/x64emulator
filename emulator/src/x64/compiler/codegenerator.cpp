@@ -224,18 +224,34 @@ namespace x64 {
                     break;
                 }
                 case ir::Op::SUB: {
+                    auto r8dst = ins.out().as<R8>();
+                    auto r16dst = ins.out().as<R16>();
                     auto r32dst = ins.out().as<R32>();
                     auto r64dst = ins.out().as<R64>();
 
+                    assert(r8dst == ins.in1().as<R8>());
+                    assert(r16dst == ins.in1().as<R16>());
                     assert(r32dst == ins.in1().as<R32>());
                     assert(r64dst == ins.in1().as<R64>());
 
+                    auto r8src2 = ins.in2().as<R8>();
+                    auto r16src2 = ins.in2().as<R16>();
                     auto r32src2 = ins.in2().as<R32>();
                     auto r64src2 = ins.in2().as<R64>();
 
+                    auto imm8src2 = ins.in2().as<i8>();
+                    auto imm16src2 = ins.in2().as<i16>();
                     auto imm32src2 = ins.in2().as<i32>();
 
-                    if(r32dst && r32src2) {
+                    if(r8dst && r8src2) {
+                        assembler_->sub(r8dst.value(), r8src2.value());
+                    } else if(r8dst && imm8src2) {
+                        assembler_->sub(r8dst.value(), imm8src2.value());
+                    } else if(r16dst && r16src2) {
+                        assembler_->sub(r16dst.value(), r16src2.value());
+                    } else if(r16dst && imm16src2) {
+                        assembler_->sub(r16dst.value(), imm16src2.value());
+                    } else if(r32dst && r32src2) {
                         assembler_->sub(r32dst.value(), r32src2.value());
                     } else if(r32dst && imm32src2) {
                         assembler_->sub(r32dst.value(), imm32src2.value());

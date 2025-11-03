@@ -81,6 +81,10 @@ namespace x64::ir {
     void IrGenerator::adc(R32 dst, R32 src) { emit(Op::ADC, dst, dst, src); }
     void IrGenerator::adc(R32 dst, u32 imm) { emit(Op::ADC, dst, dst, imm); }
 
+    void IrGenerator::sub(R8 dst, R8 src) { emit(Op::SUB, dst, dst, src); }
+    void IrGenerator::sub(R8 dst, u8 imm) { emit(Op::SUB, dst, dst, imm); }
+    void IrGenerator::sub(R16 dst, R16 src) { emit(Op::SUB, dst, dst, src); }
+    void IrGenerator::sub(R16 dst, u16 imm) { emit(Op::SUB, dst, dst, imm); }
     void IrGenerator::sub(R32 dst, R32 src) { emit(Op::SUB, dst, dst, src); }
     void IrGenerator::sub(R32 dst, u32 imm) { emit(Op::SUB, dst, dst, imm); }
     void IrGenerator::sub(R64 dst, R64 src) { emit(Op::SUB, dst, dst, src); }
