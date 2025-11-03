@@ -20,6 +20,9 @@ namespace emulator {
             cpu_(cpu),
             mmu_(mmu) {
         disassembler_ = std::make_unique<x64::CapstoneWrapper>();
+        mmu.forAllRegions([&](const x64::Mmu::Region& region) {
+            basicBlocks_.reserve(region.base(), region.end());
+        });
     }
 
     VM::~VM() {
@@ -44,8 +47,10 @@ namespace emulator {
 #endif
         if(jitStatsEnabled()) {
             std::vector<const BasicBlock*> blocks;
-            blocks.resize(basicBlocks_.size(), nullptr);
-            std::transform(basicBlocks_.begin(), basicBlocks_.end(), blocks.begin(), [](auto& p) { return p.get(); });
+            blocks.reserve(basicBlocks_.size());
+            basicBlocks_.forEach([&](const BasicBlock& bb) {
+                blocks.push_back(&bb);
+            });
             dumpJitTelemetry(blocks);
         }
     }
@@ -254,7 +259,8 @@ namespace emulator {
             verify(!cpuBb.instructions().empty(), "Cannot create empty basic block");
             std::unique_ptr<BasicBlock> bblock = std::make_unique<BasicBlock>(std::move(cpuBb));
             BasicBlock* bblockPtr = bblock.get();
-            basicBlocks_.push_back(std::move(bblock));
+            u64 bbstart = bblock->start();
+            basicBlocks_.add(bbstart, std::move(bblock));
             basicBlocksByAddress_[startAddress] = bblockPtr;
             return bblockPtr;
         }
@@ -487,66 +493,67 @@ namespace emulator {
         if(!!mmu_) mmu_->removeCallback(this);
     }
 
-    void VM::MmuCallback::on_mprotect(u64 base, u64 length, BitFlags<x64::PROT> protBefore, BitFlags<x64::PROT> protAfter) {
-        vm_->mprotectHandler(base, length, protBefore, protAfter);
+    void VM::MmuCallback::onRegionCreation(u64 base, u64 length, BitFlags<x64::PROT> prot) {
+        vm_->handleRegionCreation(base, length, prot);
     }
 
-    void VM::MmuCallback::on_munmap(u64 base, u64 length, BitFlags<x64::PROT> prot) {
-        vm_->munmapHandler(base, length, prot);
+    void VM::MmuCallback::onRegionProtectionChange(u64 base, u64 length, BitFlags<x64::PROT> protBefore, BitFlags<x64::PROT> protAfter) {
+        vm_->handleRegionProtectionChange(base, length, protBefore, protAfter);
     }
 
-    void VM::mprotectHandler(u64 base, u64 length, BitFlags<x64::PROT> protBefore, BitFlags<x64::PROT> protAfter) {
-        if(!protBefore.test(x64::PROT::EXEC)) return; // if we were not executable, no need to perform removal
-        if(protAfter.test(x64::PROT::EXEC)) return; // if we are remaining executable, no need to perform removal
-        auto mid = std::partition(basicBlocks_.begin(), basicBlocks_.end(), [&](const auto& bb) {
-            return bb->end() <= base || bb->start() >= base+length;
-        });
-        if(jitStatsEnabled()) {
-            std::vector<const BasicBlock*> blocks;
-            blocks.resize(std::distance(mid, basicBlocks_.end()), nullptr);
-            std::transform(mid, basicBlocks_.end(), blocks.begin(), [](auto& p) { return p.get(); });
-            dumpJitTelemetry(blocks);
-        }
-        for(auto it = mid; it != basicBlocks_.end(); ++it) {
-            BasicBlock* bb = it->get();
-            basicBlocksByAddress_.erase(bb->start());
-            bb->removeFromCaches();
-        }
-
-        basicBlocks_.erase(mid, basicBlocks_.end());
-        
-        executableSections_.erase(std::remove_if(executableSections_.begin(), executableSections_.end(), [&](const auto& section) {
-            return (base <= section->begin && section->begin < base + length)
-                || (base < section->end && section->end <= base + length);
-        }), executableSections_.end());
+    void VM::MmuCallback::onRegionDestruction(u64 base, u64 length, BitFlags<x64::PROT> prot) {
+        vm_->handleRegionDestruction(base, length, prot);
     }
 
-    void VM::munmapHandler(u64 base, u64 length, BitFlags<x64::PROT> prot) {
+    void VM::handleRegionCreation(u64 base, u64 length, BitFlags<x64::PROT> prot) {
         if(!prot.test(x64::PROT::EXEC)) return;
-        auto compareBlocks = [](const auto& a, const auto& b) {
-            return a->start() < b->start();
-        };
-        if(!std::is_sorted(basicBlocks_.begin(), basicBlocks_.end(), compareBlocks)) {
-            std::sort(basicBlocks_.begin(), basicBlocks_.end(), compareBlocks);
+        basicBlocks_.reserve(base, base+length);
+    }
+
+    void VM::handleRegionProtectionChange(u64 base, u64 length, BitFlags<x64::PROT> protBefore, BitFlags<x64::PROT> protAfter) {
+        // if executable flag didn't change, we don't need to to anything
+        if(protBefore.test(x64::PROT::EXEC) == protAfter.test(x64::PROT::EXEC)) return;
+
+        if(!protAfter.test(x64::PROT::EXEC)) {
+            // if we become non-executable, purge the basic blocks
+            if(jitStatsEnabled()) {
+                std::vector<const BasicBlock*> blocks;
+                basicBlocks_.forEach(base, base+length, [&](const BasicBlock& bb) {
+                    blocks.push_back(&bb);
+                });
+                dumpJitTelemetry(blocks);
+            }
+            basicBlocks_.forEachMutable(base, base+length, [&](BasicBlock& bb) {
+                basicBlocksByAddress_.erase(bb.start());
+                bb.removeFromCaches();
+            });
+            basicBlocks_.remove(base, base+length);
+            
+            executableSections_.erase(std::remove_if(executableSections_.begin(), executableSections_.end(), [&](const auto& section) {
+                return (base <= section->begin && section->begin < base + length)
+                    || (base < section->end && section->end <= base + length);
+            }), executableSections_.end());
+        } else {
+            // if we become executable, reserve basic blocks
+            basicBlocks_.reserve(base, base+length);
         }
-        auto begin = std::lower_bound(basicBlocks_.begin(), basicBlocks_.end(), base, [](const auto& bb, u64 address) {
-            return bb->start() < address;
-        });
-        auto end = std::upper_bound(basicBlocks_.begin(), basicBlocks_.end(), base+length, [](u64 address, const auto& bb) {
-            return address < bb->end();
-        });
+    }
+
+    void VM::handleRegionDestruction(u64 base, u64 length, BitFlags<x64::PROT> prot) {
+        if(!prot.test(x64::PROT::EXEC)) return;
+
         if(jitStatsEnabled()) {
             std::vector<const BasicBlock*> blocks;
-            blocks.resize(std::distance(begin, end), nullptr);
-            std::transform(begin, end, blocks.begin(), [](auto& p) { return p.get(); });
+            basicBlocks_.forEach(base, base+length, [&](const BasicBlock& bb) {
+                blocks.push_back(&bb);
+            });
             dumpJitTelemetry(blocks);
         }
-        for(auto it = begin; it != end; ++it) {
-            BasicBlock* bb = it->get();
-            basicBlocksByAddress_.erase(bb->start());
-            bb->removeFromCaches();
-        }
-        basicBlocks_.erase(begin, end);
+        basicBlocks_.forEachMutable(base, base+length, [&](BasicBlock& bb) {
+            basicBlocksByAddress_.erase(bb.start());
+            bb.removeFromCaches();
+        });
+        basicBlocks_.remove(base, base+length);
         
         executableSections_.erase(std::remove_if(executableSections_.begin(), executableSections_.end(), [&](const auto& section) {
             return (base <= section->begin && section->begin < base + length)

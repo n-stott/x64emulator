@@ -6,6 +6,7 @@
 #include "x64/compiler/jit.h"
 #include "x64/cpu.h"
 #include "x64/mmu.h"
+#include "intervalvector.h"
 #include "utils.h"
 #include <deque>
 #include <string>
@@ -157,8 +158,9 @@ namespace emulator {
         public:
             MmuCallback(x64::Mmu* mmu, VM* vm);
             ~MmuCallback();
-            void on_mprotect(u64 base, u64 length, BitFlags<x64::PROT> protBefore, BitFlags<x64::PROT> protAfter) override;
-            void on_munmap(u64 base, u64 length, BitFlags<x64::PROT> prot) override;
+            void onRegionCreation(u64 base, u64 length, BitFlags<x64::PROT> prot) override;
+            void onRegionProtectionChange(u64 base, u64 length, BitFlags<x64::PROT> protBefore, BitFlags<x64::PROT> protAfter) override;
+            void onRegionDestruction(u64 base, u64 length, BitFlags<x64::PROT> prot) override;
         private:
             x64::Mmu* mmu_ { nullptr };
             VM* vm_ { nullptr };
@@ -206,8 +208,9 @@ namespace emulator {
         std::string callName(const x64::X64Instruction& instruction) const;
         std::string calledFunctionName(u64 address) const;
 
-        void mprotectHandler(u64 base, u64 length, BitFlags<x64::PROT> protBefore, BitFlags<x64::PROT> protAfter);
-        void munmapHandler(u64 base, u64 length, BitFlags<x64::PROT> prot);
+        void handleRegionCreation(u64 base, u64 length, BitFlags<x64::PROT> prot);
+        void handleRegionProtectionChange(u64 base, u64 length, BitFlags<x64::PROT> protBefore, BitFlags<x64::PROT> protAfter);
+        void handleRegionDestruction(u64 base, u64 length, BitFlags<x64::PROT> prot);
 
         void dumpJitTelemetry(const std::vector<const BasicBlock*>& blocks) const;
 
@@ -218,7 +221,7 @@ namespace emulator {
 
         VMThread* currentThread_ { nullptr };
 
-        std::vector<std::unique_ptr<BasicBlock>> basicBlocks_;
+        IntervalVector<BasicBlock> basicBlocks_;
         std::unordered_map<u64, BasicBlock*> basicBlocksByAddress_;
 
         u64 jitExits_ { 0 };

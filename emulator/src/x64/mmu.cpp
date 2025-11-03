@@ -50,6 +50,7 @@ namespace x64 {
         allSlicesEverMmaped_.push_back(std::make_pair(regionPtr->base(), regionPtr->end()));
 #endif
         regions_.insert(insertionPosition, std::move(region));
+        for(auto* callback : callbacks_) callback->onRegionCreation(regionPtr->base(), regionPtr->size(), regionPtr->prot());
         checkRegionsAreSorted();
 
         fillRegionLookup(regionPtr);
@@ -123,7 +124,6 @@ namespace x64 {
         }
         for(Region* regionPtr : regionsToRemove) {
             [[maybe_unused]] auto regionLeftToDie = takeRegion(regionPtr->base(), regionPtr->size());
-            for(auto* callback : callbacks_) callback->on_munmap(regionPtr->base(), regionPtr->size(), regionPtr->prot());
         }
         return 0;
     }
@@ -148,8 +148,8 @@ namespace x64 {
             if(!regionPtr->intersectsRange(address, address+length)) continue;
             auto previousProt = regionPtr->prot();
             regionPtr->setProtection(prot);
+            for(auto* callback : callbacks_) callback->onRegionProtectionChange(regionPtr->base(), regionPtr->size(), previousProt, prot);
             applyRegionProtection(regionPtr.get(), regionPtr->prot());
-            for(auto* callback : callbacks_) callback->on_mprotect(regionPtr->base(), regionPtr->size(), previousProt, prot);
         }
         return 0;
     }
@@ -257,6 +257,7 @@ namespace x64 {
             region->deactivate();
             break;
         }
+        for(auto* callback : callbacks_) callback->onRegionDestruction(region->base(), region->size(), region->prot());
         return region;
     }
 
@@ -273,6 +274,7 @@ namespace x64 {
             region->deactivate();
             break;
         }
+        for(auto* callback : callbacks_) callback->onRegionDestruction(region->base(), region->size(), region->prot());
         return region;
     }
 

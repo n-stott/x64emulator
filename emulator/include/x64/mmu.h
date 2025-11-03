@@ -237,13 +237,19 @@ namespace x64 {
             return cons / 1024 / 1024;
         }
 
+        template<typename Func>
+        void forAllRegions(Func&& func) const {
+            for(const auto& region : regions_) func(*region);
+        }
+
         static constexpr u64 PAGE_SIZE = 0x1000;
         
         class Callback {
         public:
             virtual ~Callback() = default;
-            virtual void on_mprotect(u64 base, u64 length, BitFlags<PROT> protBefore, BitFlags<PROT> protAfter) = 0;
-            virtual void on_munmap(u64 base, u64 length, BitFlags<x64::PROT> prot) = 0;
+            virtual void onRegionCreation(u64 base, u64 length, BitFlags<x64::PROT> prot) = 0;
+            virtual void onRegionProtectionChange(u64 base, u64 length, BitFlags<PROT> protBefore, BitFlags<PROT> protAfter) = 0;
+            virtual void onRegionDestruction(u64 base, u64 length, BitFlags<x64::PROT> prot) = 0;
         };
 
         void addCallback(Callback* callback) {
