@@ -149,8 +149,6 @@ namespace emulator {
         x64::Jit* jit() { return jit_.get(); }
         CompilationQueue& compilationQueue() { return compilationQueue_; }
 
-        void crash();
-
         void execute(VMThread* thread);
 
         void tryRetrieveSymbols(const std::vector<u64>& addresses, std::unordered_map<u64, std::string>* addressesToSymbols) const;

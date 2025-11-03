@@ -84,30 +84,6 @@ namespace emulator {
         }
     }
 
-    void VM::crash() {
-        syncThread();
-        if(!!currentThread_) {
-            fmt::print("Crash in thread {} after {} instructions\n",
-                            currentThread_->id(),
-                            currentThread_->time().nbInstructions());
-            u64 rip = currentThread_->savedCpuState().regs.rip();
-            for(const auto& bb : basicBlocks_) {
-                auto start = bb->start();
-                auto end = bb->end();
-                if(!start || !end) continue;
-                if(rip < start || rip > end) continue;
-                for(const auto& ins : bb->basicBlock().instructions()) {
-                    if(ins.first.nextAddress() == rip) {
-                        fmt::print("  ==> {:#12x} {}\n", ins.first.address(), ins.first.toString());
-                    } else {
-                        fmt::print("      {:#12x} {}\n", ins.first.address(), ins.first.toString());
-                    }
-                }
-                break;
-            }
-        }
-    }
-
     void VM::syncThread() {
         if(!!currentThread_) {
             VMThread::SavedCpuState& state = currentThread_->savedCpuState();

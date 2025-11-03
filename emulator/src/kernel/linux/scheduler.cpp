@@ -70,7 +70,6 @@ namespace kernel::gnulinux {
 
             } catch(...) {
                 kernel_.panic();
-                vm.crash();
                 didShowCrashMessage = true;
                 break;
             }
@@ -78,7 +77,6 @@ namespace kernel::gnulinux {
 
         if(emulator::signal_interrupt && !didShowCrashMessage) {
             kernel_.panic();
-            vm.crash();
         }
 
         // Before the VM dies, we should retrieve the symbols and function names
