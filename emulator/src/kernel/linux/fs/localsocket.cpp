@@ -35,7 +35,7 @@ namespace kernel::gnulinux {
             ControlMessageHeader header;
             memcpy(&header, control.data(), sizeof(header));
             if(header.type == SCM_RIGHTS) {
-                warn(fmt::format("Getting rights with LocalSocket::recvmsg not supported. Overwriting with 0x11111111..."));
+                warn(fmt::format("Getting rights with LocalSocket::recvmsg not supported. Overwriting with 0x33333333..."));
                 memset(control.data() + sizeof(ControlMessageHeader), 0x33, control.size() - sizeof(ControlMessageHeader));
             }
         }
@@ -57,7 +57,7 @@ namespace kernel::gnulinux {
             ControlMessageHeader header;
             memcpy(&header, control.data(), sizeof(header));
             if(header.type == SCM_RIGHTS) {
-                warn(fmt::format("Getting rights with LocalSocket::recvmsg not supported. Overwriting with 0x11111111..."));
+                warn(fmt::format("Getting rights with LocalSocket::recvmsg not supported. Overwriting with 0x33333333..."));
                 memset(control.data() + sizeof(ControlMessageHeader), 0x33, control.size() - sizeof(ControlMessageHeader));
             }
         }

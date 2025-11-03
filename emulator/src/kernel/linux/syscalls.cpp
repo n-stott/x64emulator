@@ -330,7 +330,7 @@ namespace kernel::gnulinux {
         BitFlags<x64::PROT> protFlags = BitFlags<x64::PROT>::fromIntegerType(prot);
 
         if(mmapFlags.test(x64::MAP::SHARED) && protFlags.test(x64::PROT::WRITE)) {
-            warn("Writable and shared mapping not supported. Making mapping private.");
+            warn("mmap: writable and shared mapping not supported. Making mapping private.");
             mmapFlags.remove(x64::MAP::SHARED);
             mmapFlags.add(x64::MAP::PRIVATE);
         }
@@ -341,7 +341,7 @@ namespace kernel::gnulinux {
             ErrnoOrBuffer data = kernel_.fs().pread(FS::FD{fd}, length, offset);
             if(data.isError()) {
                 auto filename = kernel_.fs().filename(FS::FD{fd});
-                warn("Could not mmap file \"{}\" with fd={}", filename, fd);
+                warn("mmap: could not mmap file \"{}\" with fd={}", filename, fd);
                 base = (u64)data.errorOr(0);
             }
             data.errorOrWith<int>([&](const Buffer& buffer) {
