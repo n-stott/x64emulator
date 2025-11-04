@@ -32,15 +32,15 @@ namespace x64 {
 
     std::optional<ir::IR> Compiler::tryCompileIR(const BasicBlock& basicBlock, int optimizationLevel, const void* basicBlockPtr, const void* jitBasicBlockPtr, bool diagnose) {
 #ifdef COMPILER_DEBUG
-    // std::vector<Insn> must {{
-    //     Insn::RET
-    // }};
+    std::vector<Insn> must {{
+        Insn::REP_MOVS_M8_M8
+    }};
 
-    // for(Insn insn : must) {
-    //     if(std::none_of(basicBlock.instructions.begin(), basicBlock.instructions.end(), [=](const auto& ins) {
-    //         return ins.first.insn() == insn;
-    //     })) return {};
-    // }
+    for(Insn insn : must) {
+        if(std::none_of(basicBlock.instructions().begin(), basicBlock.instructions().end(), [=](const auto& ins) {
+            return ins.first.insn() == insn;
+        })) return {};
+    }
 #endif
         try {
             // Try compiling all non-terminating instructions.
@@ -106,7 +106,7 @@ namespace x64 {
         
 #ifdef COMPILER_DEBUG
         fmt::print("Compile block:\n");
-        for(const auto& blockIns : basicBlock.instructions) {
+        for(const auto& blockIns : basicBlock.instructions()) {
             fmt::print("  {:#8x} {}\n", blockIns.first.address(), blockIns.first.toString());
         }
         fmt::print("Compilation success !\n");
