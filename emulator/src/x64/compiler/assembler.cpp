@@ -2385,6 +2385,28 @@ namespace x64 {
         write8(0xab);
     }
 
+    void Assembler::repmovs8() {
+        write8(0xf3);
+        write8(0xa4);
+    }
+
+    void Assembler::repmovs16() {
+        write8(0xf3);
+        write8(0x66);
+        write8(0xa5);
+    }
+
+    void Assembler::repmovs32() {
+        write8(0xf3);
+        write8(0xa5);
+    }
+
+    void Assembler::repmovs64() {
+        write8(0xf3);
+        write8(0x48);
+        write8(0xa5);
+    }
+
     u8 encodeRegister(MMX reg) {
         return ((u8)reg) & 0x7;
     }

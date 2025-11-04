@@ -199,6 +199,10 @@ namespace x64::ir {
         BTS,
         REPSTOS32,
         REPSTOS64,
+        REPMOVS8,
+        REPMOVS16,
+        REPMOVS32,
+        REPMOVS64,
 
         JCC,
         JMP,

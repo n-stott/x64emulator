@@ -263,3 +263,10 @@ target_include_directories(test_compiler_readfs PUBLIC include ${CMAKE_SOURCE_DI
 target_link_libraries(test_compiler_readfs PUBLIC x64cpu x64jit)
 target_link_options(test_compiler_readfs PUBLIC ${LD_OPTIONS})
 add_test(NAME compiler_readfs COMMAND test_compiler_readfs)
+
+add_executable(test_compiler_repmovs src/test_repmovs.cpp)
+target_compile_options(test_compiler_repmovs PUBLIC ${CC_OPTIONS})
+target_include_directories(test_compiler_repmovs PUBLIC include ${CMAKE_SOURCE_DIR}/emulator/include)
+target_link_libraries(test_compiler_repmovs PUBLIC x64cpu x64jit)
+target_link_options(test_compiler_repmovs PUBLIC ${LD_OPTIONS})
+add_test(NAME compiler_repmovs COMMAND test_compiler_repmovs)

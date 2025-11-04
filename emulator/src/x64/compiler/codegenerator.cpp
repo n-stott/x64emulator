@@ -1082,6 +1082,22 @@ namespace x64 {
                     assembler_->repstos64();
                     break;
                 }
+                case ir::Op::REPMOVS8: {
+                    assembler_->repmovs8();
+                    break;
+                }
+                case ir::Op::REPMOVS16: {
+                    assembler_->repmovs16();
+                    break;
+                }
+                case ir::Op::REPMOVS32: {
+                    assembler_->repmovs32();
+                    break;
+                }
+                case ir::Op::REPMOVS64: {
+                    assembler_->repmovs64();
+                    break;
+                }
                 case ir::Op::JCC: {
                     assert(ins.condition().has_value());
                     auto label = ins.in1().as<ir::LabelIndex>();

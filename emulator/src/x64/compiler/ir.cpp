@@ -106,6 +106,10 @@ namespace x64::ir {
             case Op::BTS: return "bts";
             case Op::REPSTOS32: return "repstos32";
             case Op::REPSTOS64: return "repstos64";
+            case Op::REPMOVS8: return "repmovs8";
+            case Op::REPMOVS16: return "repmovs16";
+            case Op::REPMOVS32: return "repmovs32";
+            case Op::REPMOVS64: return "repmovs64";
             case Op::JCC: return "jcc";
             case Op::JMP: return "jmp";
             case Op::JMP_IND: return "jmp_ind";

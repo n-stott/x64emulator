@@ -430,6 +430,10 @@ namespace x64 {
             case Insn::BTS_RM64_IMM: return tryCompileBtsRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
             case Insn::REP_STOS_M32_R32: return tryCompileRepStosM32R32(ins.op0<M32>(), ins.op1<R32>());
             case Insn::REP_STOS_M64_R64: return tryCompileRepStosM64R64(ins.op0<M64>(), ins.op1<R64>());
+            case Insn::REP_MOVS_M8_M8: return tryCompileRepMovsM8M8(ins.op0<M8>(), ins.op1<M8>());
+            case Insn::REP_MOVS_M16_M16: return tryCompileRepMovsM16M16(ins.op0<M16>(), ins.op1<M16>());
+            case Insn::REP_MOVS_M32_M32: return tryCompileRepMovsM32M32(ins.op0<M32>(), ins.op1<M32>());
+            case Insn::REP_MOVS_M64_M64: return tryCompileRepMovsM64M64(ins.op0<M64>(), ins.op1<M64>());
 
             // MMX
             case Insn::MOV_MMX_MMX: return tryCompileMovMmxMmx(ins.op0<MMX>(), ins.op1<MMX>());
@@ -3077,6 +3081,189 @@ namespace x64 {
         generator_->pop64(R64::RAX);
         generator_->pop64(R64::RCX);
         generator_->pop64(R64::RDI);
+        return true;
+    }
+
+    bool Compiler::tryCompileRepMovsM8M8(const M8& dst, const M8& src) {
+        if(dst.encoding.base != R64::RDI) return false;
+        if(src.encoding.base != R64::RSI) return false;
+        // save rdi, rsi and rcx
+        generator_->push64(R64::RDI);
+        generator_->push64(R64::RSI); // CANT USE RSI ??
+        generator_->push64(R64::RCX);
+
+        // get the dst address
+        readReg64(Reg::GPR0, R64::RDI);
+        generator_->lea(R64::RDI, make64(get(Reg::MEM_BASE), get(Reg::GPR0), 1, 0));
+
+        // get the src address
+        readReg64(Reg::GPR0, R64::RSI);
+
+        // set the counter
+        readReg64(Reg::GPR1, R64::RCX);
+
+        // These operations have to be delayed because RSI and RCX are used in the jit
+        generator_->lea(R64::RSI, make64(get(Reg::MEM_BASE), get(Reg::GPR0), 1, 0));
+        generator_->mov(R32::ECX, get32(Reg::GPR1));
+
+        generator_->repmovs8();
+
+        // restore rcx, rsi and rdi immediately
+        generator_->pop64(R64::RCX);
+        generator_->pop64(R64::RSI);
+        generator_->pop64(R64::RDI);
+
+        // write back the dst address (address+counter)
+        readReg64(Reg::GPR0, R64::RDI);
+        generator_->lea(get(Reg::GPR0), make64(get(Reg::GPR0), get(Reg::GPR1), 1, 0));
+        writeReg64(R64::RDI, Reg::GPR0);
+
+        // write back the dst address (address+counter)
+        readReg64(Reg::GPR0, R64::RSI);
+        generator_->lea(get(Reg::GPR0), make64(get(Reg::GPR0), get(Reg::GPR1), 1, 0));
+        writeReg64(R64::RSI, Reg::GPR0);
+
+        // write back the counter (is 0)
+        generator_->mov(get(Reg::GPR0), (u64)0); // cannot use xor: we must not change the flags
+        writeReg64(R64::RCX, Reg::GPR0);
+        return true;
+    }
+
+    bool Compiler::tryCompileRepMovsM16M16(const M16& dst, const M16& src) {
+        if(dst.encoding.base != R64::RDI) return false;
+        if(src.encoding.base != R64::RSI) return false;
+        // save rdi, rsi and rcx
+        generator_->push64(R64::RDI);
+        generator_->push64(R64::RSI);
+        generator_->push64(R64::RCX);
+
+        // get the dst address
+        readReg64(Reg::GPR0, R64::RDI);
+        generator_->lea(R64::RDI, make64(get(Reg::MEM_BASE), get(Reg::GPR0), 1, 0));
+
+        // get the src address
+        readReg64(Reg::GPR0, R64::RSI);
+
+        // set the counter
+        readReg64(Reg::GPR1, R64::RCX);
+
+        // These operations have to be delayed because RSI and RCX are used in the jit
+        generator_->lea(R64::RSI, make64(get(Reg::MEM_BASE), get(Reg::GPR0), 1, 0));
+        generator_->mov(R32::ECX, get32(Reg::GPR1));
+
+        generator_->repmovs16();
+
+        // restore rcx, rsi and rdi immediately
+        generator_->pop64(R64::RCX);
+        generator_->pop64(R64::RSI);
+        generator_->pop64(R64::RDI);
+
+        // write back the dst address (address+2*counter)
+        readReg64(Reg::GPR0, R64::RDI);
+        generator_->lea(get(Reg::GPR0), make64(get(Reg::GPR0), get(Reg::GPR1), 2, 0));
+        writeReg64(R64::RDI, Reg::GPR0);
+
+        // write back the dst address (address+2*counter)
+        readReg64(Reg::GPR0, R64::RSI);
+        generator_->lea(get(Reg::GPR0), make64(get(Reg::GPR0), get(Reg::GPR1), 2, 0));
+        writeReg64(R64::RSI, Reg::GPR0);
+
+        // write back the counter (is 0)
+        generator_->mov(get(Reg::GPR0), (u64)0); // cannot use xor: we must not change the flags
+        writeReg64(R64::RCX, Reg::GPR0);
+        return true;
+    }
+
+    bool Compiler::tryCompileRepMovsM32M32(const M32& dst, const M32& src) {
+        if(dst.encoding.base != R64::RDI) return false;
+        if(src.encoding.base != R64::RSI) return false;
+        // save rdi, rsi and rcx
+        generator_->push64(R64::RDI);
+        generator_->push64(R64::RSI);
+        generator_->push64(R64::RCX);
+
+        // get the dst address
+        readReg64(Reg::GPR0, R64::RDI);
+        generator_->lea(R64::RDI, make64(get(Reg::MEM_BASE), get(Reg::GPR0), 1, 0));
+
+        // get the src address
+        readReg64(Reg::GPR0, R64::RSI);
+
+        // set the counter
+        readReg64(Reg::GPR1, R64::RCX);
+
+        // These operations have to be delayed because RSI and RCX are used in the jit
+        generator_->lea(R64::RSI, make64(get(Reg::MEM_BASE), get(Reg::GPR0), 1, 0));
+        generator_->mov(R32::ECX, get32(Reg::GPR1));
+
+        generator_->repmovs32();
+
+        // restore rcx, rsi and rdi immediately
+        generator_->pop64(R64::RCX);
+        generator_->pop64(R64::RSI);
+        generator_->pop64(R64::RDI);
+
+        // write back the dst address (address+4*counter)
+        readReg64(Reg::GPR0, R64::RDI);
+        generator_->lea(get(Reg::GPR0), make64(get(Reg::GPR0), get(Reg::GPR1), 4, 0));
+        writeReg64(R64::RDI, Reg::GPR0);
+
+        // write back the dst address (address+4*counter)
+        readReg64(Reg::GPR0, R64::RSI);
+        generator_->lea(get(Reg::GPR0), make64(get(Reg::GPR0), get(Reg::GPR1), 4, 0));
+        writeReg64(R64::RSI, Reg::GPR0);
+
+        // write back the counter (is 0)
+        generator_->mov(get(Reg::GPR0), (u64)0); // cannot use xor: we must not change the flags
+        writeReg64(R64::RCX, Reg::GPR0);
+        return true;
+    }
+
+    bool Compiler::tryCompileRepMovsM64M64(const M64& dst, const M64& src) {
+        if(dst.encoding.base != R64::RDI) return false;
+        if(src.encoding.base != R64::RSI) return false;
+        // save rdi, rsi and rcx
+        generator_->push64(R64::RDI);
+        generator_->push64(R64::RSI);
+        generator_->push64(R64::RCX);
+
+        // get the dst address
+        readReg64(Reg::GPR0, R64::RDI);
+        generator_->lea(R64::RDI, make64(get(Reg::MEM_BASE), get(Reg::GPR0), 1, 0));
+
+        // get the src address
+        readReg64(Reg::GPR0, R64::RSI);
+
+        // set the counter
+        readReg64(Reg::GPR1, R64::RCX);
+
+        // These operations have to be delayed because RSI and RCX are used in the jit
+        generator_->lea(R64::RSI, make64(get(Reg::MEM_BASE), get(Reg::GPR0), 1, 0));
+        generator_->mov(R32::ECX, get32(Reg::GPR1));
+
+        generator_->repmovs64();
+
+        // restore rcx, rsi and rdi immediately
+        generator_->pop64(R64::RCX);
+        generator_->pop64(R64::RSI);
+        generator_->pop64(R64::RDI);
+
+        // double the counter
+        generator_->lea(get(Reg::GPR1), make64(get(Reg::GPR1), get(Reg::GPR1), 1, 0));
+
+        // write back the dst address (address+2*4*counter)
+        readReg64(Reg::GPR0, R64::RDI);
+        generator_->lea(get(Reg::GPR0), make64(get(Reg::GPR0), get(Reg::GPR1), 4, 0));
+        writeReg64(R64::RDI, Reg::GPR0);
+
+        // write back the dst address (address+2*4*counter)
+        readReg64(Reg::GPR0, R64::RSI);
+        generator_->lea(get(Reg::GPR0), make64(get(Reg::GPR0), get(Reg::GPR1), 4, 0));
+        writeReg64(R64::RSI, Reg::GPR0);
+
+        // write back the counter (is 0)
+        generator_->mov(get(Reg::GPR0), (u64)0); // cannot use xor: we must not change the flags
+        writeReg64(R64::RCX, Reg::GPR0);
         return true;
     }
 

@@ -207,6 +207,10 @@ namespace x64::ir {
 
         void repstos32();
         void repstos64();
+        void repmovs8();
+        void repmovs16();
+        void repmovs32();
+        void repmovs64();
 
         // mmx
         void mov(MMX, MMX);

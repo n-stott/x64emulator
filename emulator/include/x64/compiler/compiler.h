@@ -230,6 +230,10 @@ namespace x64 {
 
         bool tryCompileRepStosM32R32(const M32&, R32);
         bool tryCompileRepStosM64R64(const M64&, R64);
+        bool tryCompileRepMovsM8M8(const M8&, const M8&);
+        bool tryCompileRepMovsM16M16(const M16&, const M16&);
+        bool tryCompileRepMovsM32M32(const M32&, const M32&);
+        bool tryCompileRepMovsM64M64(const M64&, const M64&);
 
         // mmx
         bool tryCompileMovMmxMmx(MMX, MMX);
