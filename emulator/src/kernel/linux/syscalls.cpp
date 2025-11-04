@@ -607,7 +607,7 @@ namespace kernel::gnulinux {
         if(!!timeoutDuration && timeoutDuration->seconds == 0 && timeoutDuration->nanoseconds == 0) {
             int ret = kernel_.fs().selectImmediate(&selectData);
             if(kernel_.logSyscalls()) {
-                print("Sys::select(nfds={}, readfds=:#x, writefds=:#x, exceptfds=:#x, timeout=:#x) = {}",
+                print("Sys::select(nfds={}, readfds={:#x}, writefds={:#x}, exceptfds={:#x}, timeout={:#x}) = {}",
                             nfds, readfds.address(), writefds.address(), exceptfds.address(), timeout.address(), ret);
             }
             if(ret < 0) return ret;
