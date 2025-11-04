@@ -3068,7 +3068,8 @@ namespace x64 {
 
         generator_->repstos64();
 
-        // write back the dst address (address+4*counter)
+        // write back the dst address (address+8*counter)
+        generator_->lea(get(Reg::GPR1), make64(get(Reg::GPR1), get(Reg::GPR1), 1, 0));
         readReg64(Reg::GPR0, R64::RDI);
         generator_->lea(get(Reg::GPR0), make64(get(Reg::GPR0), get(Reg::GPR1), 4, 0));
         writeReg64(R64::RDI, Reg::GPR0);
