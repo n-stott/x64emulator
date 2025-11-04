@@ -1046,6 +1046,7 @@ namespace kernel::gnulinux {
             verify(file->isPollable(), [&]() { fmt::print("Attempting to poll non-pollable file with fd={}\n", fd.fd); });
             bool testRead = (pollfd.events & PollEvent::CAN_READ) == PollEvent::CAN_READ;
             bool testWrite = (pollfd.events & PollEvent::CAN_WRITE) == PollEvent::CAN_WRITE;
+            pollfd.revents = PollEvent::NONE;
             if(testRead && file->canRead())   pollfd.revents = pollfd.revents | PollEvent::CAN_READ;
             if(testWrite && file->canWrite()) pollfd.revents = pollfd.revents | PollEvent::CAN_WRITE;
         }
