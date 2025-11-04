@@ -789,6 +789,7 @@ namespace x64 {
         BLENDVPS_XMM_XMMM128,
         BLENDVPD_XMM_XMMM128,
         PBLENDVB_XMM_XMMM128,
+        PBLENDW_XMM_XMMM128_IMM,
 
         // MISC
         RDTSC,

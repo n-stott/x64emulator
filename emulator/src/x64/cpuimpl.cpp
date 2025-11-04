@@ -3636,6 +3636,20 @@ namespace x64 {
         return dst;
     }
 
+    u128 CpuImpl::pblendw(u128 dst, u128 src, u8 mask) {
+        std::array<u8, 16> DST;
+        std::array<u8, 16> SRC;
+        static_assert(sizeof(DST) == sizeof(u128));
+        static_assert(sizeof(SRC) == sizeof(u128));
+        std::memcpy(DST.data(), &dst, sizeof(u128));
+        std::memcpy(SRC.data(), &src, sizeof(u128));
+        for(size_t i = 0; i < 16; ++i) {
+            DST[i] = ((mask & (1u << i)) == 0) ? DST[i] : SRC[i];
+        }
+        std::memcpy(&dst, DST.data(), sizeof(u128));
+        return dst;
+    }
+
     u128 CpuImpl::roundps(u128 src, u8 imm, SIMD_ROUNDING) {
         assert((imm & 0x4) == 0x0); // imm holds the rounding info
         SIMD_ROUNDING rc = (SIMD_ROUNDING)(imm & 0x3);

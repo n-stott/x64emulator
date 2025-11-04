@@ -3949,6 +3949,30 @@ namespace x64 {
 #endif
     }
 
+    u128 NativeCpuImpl::pblendw(u128 dst, u128 src, u8 mask) {
+#ifdef SSE41
+        auto native = [=](__m128 d, __m128 s) -> __m128 {
+            u8 order = mask;
+            CALL_2_WITH_IMM8(_mm_insert_ps, d, s);
+        };
+
+        __m128 d;
+        __m128 s;
+        static_assert(sizeof(d) == sizeof(dst));
+        static_assert(sizeof(s) == sizeof(src));
+        memcpy(&d, &dst, sizeof(dst));
+        memcpy(&s, &src, sizeof(src));
+        d = native(d, s);
+        memcpy(&dst, &d, sizeof(dst));
+        return dst;
+#else
+        assert(!"pblendw not defined");
+        (void)src;
+        (void)mask;
+        return dst; // dummy value
+#endif
+    }
+
 
     u128 NativeCpuImpl::roundps(u128 src, u8 imm, SIMD_ROUNDING) {
 #ifdef SSE41

@@ -968,6 +968,7 @@ namespace x64 {
     DEFINE_STANDALONE(BLENDVPS_XMM_XMMM128, execBlendvpsXMMXMMM128)
     DEFINE_STANDALONE(BLENDVPD_XMM_XMMM128, execBlendvpdXMMXMMM128)
     DEFINE_STANDALONE(PBLENDVB_XMM_XMMM128, execPblendvbXMMXMMM128)
+    DEFINE_STANDALONE(PBLENDW_XMM_XMMM128_IMM, execPblendwXMMM128Imm)
     DEFINE_STANDALONE(RDTSC, execRdtsc)
     DEFINE_STANDALONE(CPUID, execCpuid)
     DEFINE_STANDALONE(XGETBV, execXgetbv)
@@ -1749,6 +1750,7 @@ namespace x64 {
         STANDALONE_NAME(BLENDVPS_XMM_XMMM128),
         STANDALONE_NAME(BLENDVPD_XMM_XMMM128),
         STANDALONE_NAME(PBLENDVB_XMM_XMMM128),
+        STANDALONE_NAME(PBLENDW_XMM_XMMM128_IMM),
         STANDALONE_NAME(RDTSC),
         STANDALONE_NAME(CPUID),
         STANDALONE_NAME(XGETBV),
@@ -6839,6 +6841,13 @@ namespace x64 {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         set(dst, Impl::pblendvb(get(dst), get(src), get(XMM::XMM0)));
+    }
+
+    void Cpu::execPblendwXMMM128Imm(const X64Instruction& ins) {
+        const auto& dst = ins.op0<XMM>();
+        const auto& src = ins.op1<XMMM128>();
+        const auto& imm = ins.op2<Imm>();
+        set(dst, Impl::pblendw(get(dst), get(src), get<u8>(imm)));
     }
 
     void Cpu::execSyscall(const X64Instruction&) {

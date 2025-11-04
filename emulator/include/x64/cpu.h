@@ -1134,6 +1134,7 @@ namespace x64 {
         void execBlendvpsXMMXMMM128(const X64Instruction&);
         void execBlendvpdXMMXMMM128(const X64Instruction&);
         void execPblendvbXMMXMMM128(const X64Instruction&);
+        void execPblendwXMMM128Imm(const X64Instruction&);
 
         void execRdtsc(const X64Instruction&);
 
