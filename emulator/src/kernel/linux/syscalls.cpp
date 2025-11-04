@@ -1447,6 +1447,7 @@ namespace kernel::gnulinux {
             switch(futex_op & 0x7f) {
                 case 0: op = "wait"; break;
                 case 1: op = "wake"; break;
+                case 5: op = "wake_op"; break;
                 case 9: op = "wait_bitset"; break;
                 default: op = fmt::format("unknown futex {}", futex_op); break;
             }
