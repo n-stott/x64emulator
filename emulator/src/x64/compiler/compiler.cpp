@@ -664,6 +664,11 @@ namespace x64 {
             case Insn::SHUFPS_XMM_XMMM128_IMM: return tryCompileShufpsXmmXmmM128Imm(ins.op0<XMM>(), ins.op1<XMMM128>(), ins.op2<Imm>());
             case Insn::SHUFPD_XMM_XMMM128_IMM: return tryCompileShufpdXmmXmmM128Imm(ins.op0<XMM>(), ins.op1<XMMM128>(), ins.op2<Imm>());
 
+            case Insn::UNPCKHPS_XMM_XMMM128: return tryCompileUnpckhpsXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::UNPCKHPD_XMM_XMMM128: return tryCompileUnpckhpdXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::UNPCKLPS_XMM_XMMM128: return tryCompileUnpcklpsXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::UNPCKLPD_XMM_XMMM128: return tryCompileUnpcklpdXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+
             case Insn::LDDQU_XMM_M128: return tryCompileLddquXmmM128(ins.op0<XMM>(), ins.op1<M128>());
             case Insn::MOVDDUP_XMM_XMM: return tryCompileMovddupXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
             case Insn::MOVDDUP_XMM_M64: return tryCompileMovddupXmmM64(ins.op0<XMM>(), ins.op1<M64>());
@@ -4991,6 +4996,31 @@ namespace x64 {
             generator_->shufpd(get(dst), get(src), imm.as<u8>());
         });
     }
+
+    bool Compiler::tryCompileUnpckhpsXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->unpckhps(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompileUnpckhpdXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->unpckhpd(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompileUnpcklpsXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->unpcklps(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompileUnpcklpdXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->unpcklpd(get(dst), get(src));
+        });
+    }
+
 
     bool Compiler::tryCompileLddquXmmM128(XMM dst, const M128& src) {
         return tryCompileMovuXmmM128(dst, src);

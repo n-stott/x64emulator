@@ -434,6 +434,11 @@ namespace x64::ir {
         void shufps(XMM, XMM, u8);
         void shufpd(XMM, XMM, u8);
 
+        void unpckhps(XMM, XMM);
+        void unpckhpd(XMM, XMM);
+        void unpcklps(XMM, XMM);
+        void unpcklpd(XMM, XMM);
+
         void movddup(XMM, XMM);
 
         void palignr(MMX, MMX, u8);
