@@ -412,7 +412,8 @@ namespace x64 {
             case Insn::LEA_R32_ENCODING32: return tryCompileLeaR32Enc32(ins.op0<R32>(), ins.op1<Encoding32>());
             case Insn::LEA_R32_ENCODING64: return tryCompileLeaR32Enc64(ins.op0<R32>(), ins.op1<Encoding64>());
             case Insn::LEA_R64_ENCODING64: return tryCompileLeaR64Enc64(ins.op0<R64>(), ins.op1<Encoding64>());
-            case Insn::NOP: return tryCompileNop();
+            case Insn::NOP:
+            case Insn::PAUSE: return tryCompileNop();
             case Insn::BSF_R32_R32: return tryCompileBsfR32R32(ins.op0<R32>(), ins.op1<R32>());
             case Insn::BSF_R64_R64: return tryCompileBsfR64R64(ins.op0<R64>(), ins.op1<R64>());
             case Insn::BSR_R32_R32: return tryCompileBsrR32R32(ins.op0<R32>(), ins.op1<R32>());
