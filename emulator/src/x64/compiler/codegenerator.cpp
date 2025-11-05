@@ -3133,6 +3133,20 @@ namespace x64 {
                     }
                     break;
                 }
+                case ir::Op::PBLENDVB: {
+                    auto r128dst = ins.out().as<XMM>();
+                    assert(r128dst == ins.in1().as<XMM>());
+                    auto r128src = ins.in2().as<XMM>();
+                    auto r128mask = ins.in3().as<XMM>();
+
+                    if(r128dst && r128src && r128mask) {
+                        assert(*r128mask == XMM::XMM0);
+                        assembler_->pblendvb(r128dst.value(), r128src.value());
+                    } else {
+                        return fail();
+                    }
+                    break;
+                }
             }
         }
 

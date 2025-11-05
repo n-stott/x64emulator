@@ -501,6 +501,7 @@ namespace x64 {
         bool tryCompilePextrqRM64XMMImm(const RM64&, XMM, Imm);
         bool tryCompilePinsrdRM32XMMImm(XMM, const RM32&, Imm);
         bool tryCompileBlendvpsXmmXmmM128(XMM, const XMMM128&);
+        bool tryCompilePblendvbXmmXmmM128(XMM, const XMMM128&);
 
         bool tryCompileStmxcsrM32(const M32&);
 

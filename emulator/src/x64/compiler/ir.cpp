@@ -259,6 +259,7 @@ namespace x64::ir {
             case Op::PEXTRQ: return "pextrq";
             case Op::PINSRD: return "pinsrd";
             case Op::BLENDVPS: return "blendvps";
+            case Op::PBLENDVB: return "pblendvb";
         }
         return "NO OP";
     }

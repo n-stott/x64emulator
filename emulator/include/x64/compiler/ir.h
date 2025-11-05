@@ -355,6 +355,7 @@ namespace x64::ir {
         PEXTRQ,
         PINSRD,
         BLENDVPS,
+        PBLENDVB,
     };
 
     class Instruction {

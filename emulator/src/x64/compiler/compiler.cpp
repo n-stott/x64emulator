@@ -695,6 +695,7 @@ namespace x64 {
             case Insn::PEXTRQ_RM64_XMM_IMM: return tryCompilePextrqRM64XMMImm(ins.op0<RM64>(), ins.op1<XMM>(), ins.op2<Imm>());
             case Insn::PINSRD_XMM_RM32_IMM: return tryCompilePinsrdRM32XMMImm(ins.op0<XMM>(), ins.op1<RM32>(), ins.op2<Imm>());
             case Insn::BLENDVPS_XMM_XMMM128: return tryCompileBlendvpsXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PBLENDVB_XMM_XMMM128: return tryCompilePblendvbXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
 
             case Insn::STMXCSR_M32: return tryCompileStmxcsrM32(ins.op0<M32>());
             default: break;
@@ -5170,6 +5171,21 @@ namespace x64 {
         // read the xmm0 register
         readReg128(toGpr(XMM::XMM0), XMM::XMM0);
         generator_->blendvps(get(toGpr(dst)), get(toGpr(src.reg)));
+        writeReg128(dst, toGpr(dst));
+        return true;
+    }
+
+    bool Compiler::tryCompilePblendvbXmmXmmM128(XMM dst, const XMMM128& src) {
+        if(!src.isReg) return false;
+        if(dst == XMM::XMM0) return false;
+        if(src.reg == XMM::XMM0) return false;
+        // read the dst register
+        readReg128(toGpr(dst), dst);
+        // read the src register
+        readReg128(toGpr(src.reg), src.reg);
+        // read the xmm0 register
+        readReg128(toGpr(XMM::XMM0), XMM::XMM0);
+        generator_->pblendvb(get(toGpr(dst)), get(toGpr(src.reg)));
         writeReg128(dst, toGpr(dst));
         return true;
     }
