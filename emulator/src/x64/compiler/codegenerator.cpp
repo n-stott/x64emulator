@@ -3094,6 +3094,18 @@ namespace x64 {
                     }
                     break;
                 }
+                case ir::Op::PEXTRQ: {
+                    auto r64dst = ins.out().as<R64>();
+                    auto r128src = ins.in1().as<XMM>();
+                    auto imm = ins.in2().as<u8>();
+
+                    if(r64dst && r128src && imm) {
+                        assembler_->pextrq(r64dst.value(), r128src.value(), imm.value());
+                    } else {
+                        return fail();
+                    }
+                    break;
+                }
                 case ir::Op::PINSRD: {
                     auto r128dst = ins.out().as<XMM>();
                     assert(r128dst == ins.in1().as<XMM>());

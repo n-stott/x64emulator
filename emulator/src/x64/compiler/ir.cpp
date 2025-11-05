@@ -256,6 +256,7 @@ namespace x64::ir {
             case Op::ROUNDPD: return "roundpd";
             case Op::PMULLD: return "pmulld";
             case Op::PEXTRD: return "pextrd";
+            case Op::PEXTRQ: return "pextrq";
             case Op::PINSRD: return "pinsrd";
             case Op::BLENDVPS: return "blendvps";
         }

@@ -520,6 +520,7 @@ namespace x64::ir {
     void IrGenerator::roundpd(XMM dst, XMM src, u8 imm) { emit(Op::ROUNDPD, dst, src, imm); }
     void IrGenerator::pmulld(XMM dst, XMM src) { emit(Op::PMULLD, dst, dst, src); }
     void IrGenerator::pextrd(R32 dst, XMM src, u8 imm) { emit(Op::PEXTRD, dst, src, imm); }
+    void IrGenerator::pextrq(R64 dst, XMM src, u8 imm) { emit(Op::PEXTRQ, dst, src, imm); }
     void IrGenerator::pinsrd(XMM dst, R32 src, u8 imm) { emit(Op::PINSRD, dst, dst, src, imm); }
     void IrGenerator::blendvps(XMM dst, XMM src) { emit(Op::BLENDVPS, dst, dst, src, XMM::XMM0); }
 

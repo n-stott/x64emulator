@@ -474,6 +474,7 @@ namespace x64 {
         void roundpd(XMM, XMM, u8);
         void pmulld(XMM, XMM);
         void pextrd(R32, XMM, u8);
+        void pextrq(R64, XMM, u8);
         void pinsrd(XMM, R32, u8);
         void blendvps(XMM, XMM);
 

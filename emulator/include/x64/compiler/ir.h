@@ -352,6 +352,7 @@ namespace x64::ir {
         ROUNDPD,
         PMULLD,
         PEXTRD,
+        PEXTRQ,
         PINSRD,
         BLENDVPS,
     };
