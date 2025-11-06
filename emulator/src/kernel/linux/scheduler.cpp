@@ -38,7 +38,7 @@ namespace kernel::gnulinux {
         emulator::VM vm(cpu, mmu_);
         vm.setEnableJit(worker.enableJit);
         vm.setEnableJitChaining(worker.enableJitChaining);
-        vm.setEnableJitStats(worker.enableJitStats);
+        vm.setJitStatsLevel(worker.jitStatsLevel);
         vm.setOptimizationLevel(worker.optimizationLevel);
         vm.setDisassembler(kernel_.disassembler());
         while(!emulator::signal_interrupt) {
@@ -182,7 +182,7 @@ namespace kernel::gnulinux {
             workerThread.join();
         }
 #else
-        runOnWorkerThread(Worker{0, kernel_.isJitEnabled(), kernel_.isJitChainingEnabled(), kernel_.jitStatsEnabled(), kernel_.optimizationLevel()});
+        runOnWorkerThread(Worker{0, kernel_.isJitEnabled(), kernel_.isJitChainingEnabled(), kernel_.jitStatsLevel(), kernel_.optimizationLevel()});
 #endif
     }
 

@@ -42,8 +42,8 @@ namespace kernel::gnulinux {
         enableJitChaining_ = enableJitChaining;
     }
 
-    void Kernel::setEnableJitStats(bool enableJitStats) {
-        enableJitStats_ = enableJitStats;
+    void Kernel::setJitStatsLevel(int jitStatsLevel) {
+        jitStatsLevel_ = jitStatsLevel;
     }
 
     void Kernel::setOptimizationLevel(int level) {

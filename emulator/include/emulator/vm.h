@@ -139,8 +139,8 @@ namespace emulator {
         void setEnableJitChaining(bool enable);
         bool jitChainingEnabled() const;
 
-        void setEnableJitStats(bool enable);
-        bool jitStatsEnabled() const { return jitStatsEnabled_; }
+        void setJitStatsLevel(int level);
+        int jitStatsLevel() const { return jitStatsLevel_; }
 
         void setOptimizationLevel(int level);
         int optimizationLevel() const { return optimizationLevel_; }
@@ -212,6 +212,7 @@ namespace emulator {
         void handleRegionProtectionChange(u64 base, u64 length, BitFlags<x64::PROT> protBefore, BitFlags<x64::PROT> protAfter);
         void handleRegionDestruction(u64 base, u64 length, BitFlags<x64::PROT> prot);
 
+        void updateJitStats(const BasicBlock&);
         void dumpJitTelemetry(const std::vector<const BasicBlock*>& blocks) const;
 
         x64::Cpu& cpu_;
@@ -226,12 +227,12 @@ namespace emulator {
 
         u64 jitExits_ { 0 };
         u64 avoidableExits_ { 0 };
-#ifdef VM_JIT_TELEMETRY
         u64 jitExitRet_ { 0 };
-        std::unordered_set<u64> distinctJitExitRet_;
         u64 jitExitCallRM64_ { 0 };
-        std::unordered_set<u64> distinctJitExitCallRM64_;
         u64 jitExitJmpRM64_ { 0 };
+#ifdef VM_JIT_TELEMETRY
+        std::unordered_set<u64> distinctJitExitRet_;
+        std::unordered_set<u64> distinctJitExitCallRM64_;
         std::unordered_set<u64> distinctJitExitJmpRM64_;
 #endif
 
@@ -251,7 +252,7 @@ namespace emulator {
         mutable std::unordered_map<u64, std::string> functionNameCache_;
 
         bool jitEnabled_ { false };
-        bool jitStatsEnabled_ { false };
+        int jitStatsLevel_ { 0 };
         int optimizationLevel_ { 0 };
 
         std::unique_ptr<x64::Disassembler> disassembler_;

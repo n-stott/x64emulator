@@ -17,7 +17,7 @@ namespace emulator {
         void setProfiling(bool);
         void setEnableJit(bool);
         void setEnableJitChaining(bool);
-        void setEnableJitStats(bool);
+        void setJitStatsLevel(int);
         void setOptimizationLevel(int);
         void setEnableShm(bool);
         void setNbCores(int nbCores);
@@ -29,7 +29,7 @@ namespace emulator {
         bool isProfiling_ { false };
         bool enableJit_ { false };
         bool enableJitChaining_ { false };
-        bool enableJitStats_ { false };
+        int jitStatsLevel_ { 0 };
         int optimizationLevel_ { 1 };
         bool enableShm_ { false };
         int nbCores_ { 1 };
