@@ -182,7 +182,9 @@ namespace x64 {
     }
 
     std::unique_ptr<Mmu::Region> Mmu::makeRegion(u64 base, u64 size, BitFlags<PROT> prot) {
-        verify(base + size <= memorySize_);
+        verify(base + size <= memorySize_, [&]() {
+            fmt::println("Unable to create region at {:#x} size {:#x}, memlimit is {:#x}", base, size, memorySize_);
+        });
         return std::unique_ptr<Region>(new Region(base, size, prot));
     }
 
