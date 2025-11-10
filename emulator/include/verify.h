@@ -43,11 +43,13 @@ struct VerificationScope {
 };
 
 static inline void warn(const char* message) {
-    fmt::print(fg(fmt::color::red), "{}\n", message);
+    fmt::print(fg(fmt::color::red), message);
+    fmt::println("");
 }
 
 static inline void warn(std::string message) {
-    fmt::print(fg(fmt::color::red), "{}\n", std::move(message));
+    fmt::print(fg(fmt::color::red), std::move(message));
+    fmt::println("");
 }
 
 #endif
