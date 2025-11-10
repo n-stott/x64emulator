@@ -663,6 +663,12 @@ namespace kernel::gnulinux {
                                         addr.address(), length, advice, 0);
             }
             return 0;
+        } else if(Host::Madvise::isFree(advice)) {
+            if(kernel_.logSyscalls()) {
+                print("Sys::madvise(addr={:#x}, length={}, advice=FREE) = {}",
+                                        addr.address(), length, advice, 0);
+            }
+            return 0;
         } else {
             int ret = 0;
             if(kernel_.logSyscalls()) {

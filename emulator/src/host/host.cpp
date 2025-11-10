@@ -53,6 +53,10 @@ namespace kernel::gnulinux {
     bool Host::Madvise::isDontNeed(int advice) {
         return advice == MADV_DONTNEED;
     }
+    
+    bool Host::Madvise::isFree(int advice) {
+        return advice == MADV_FREE;
+    }
 
     bool Host::ArchPrctl::isSetFS(int code) {
         return code == ARCH_SET_FS;

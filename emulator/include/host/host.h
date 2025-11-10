@@ -27,6 +27,7 @@ namespace kernel::gnulinux {
 
         struct Madvise {
             static bool isDontNeed(int advice);
+            static bool isFree(int advice);
         };
 
         struct ArchPrctl {
