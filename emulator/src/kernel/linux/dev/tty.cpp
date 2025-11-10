@@ -88,9 +88,10 @@ namespace kernel::gnulinux {
         return -ESPIPE;
     }
 
-    std::optional<int> Tty::fcntl(int, int) {
-        verify(false, "Tty::fcntl not implemented");
-        return -ENOTSUP;
+    std::optional<int> Tty::fcntl(int cmd, int arg) {
+        if(!hostFd_) return -EBADF;
+        int ret = ::fcntl(hostFd_.value(), cmd, arg);
+        return ret;
     }
 
     ErrnoOrBuffer Tty::ioctl(OpenFileDescription&, Ioctl request, const Buffer& inputBuffer) {
