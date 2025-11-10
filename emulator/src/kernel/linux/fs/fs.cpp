@@ -562,8 +562,8 @@ namespace kernel::gnulinux {
     }
 
     ErrnoOrBuffer FS::stat(const std::string& pathname) {
-        auto absolutePathname = toAbsolutePathname(pathname);
-        auto path = Path::tryCreate(absolutePathname);
+        if(pathname.empty()) return ErrnoOrBuffer(-ENOENT);
+        auto path = Path::tryCreate(pathname, cwd()->path());
         if(!!path) {
             File* file = tryGetFile(*path, FollowSymlink::YES);
             if(!!file) return file->stat();
