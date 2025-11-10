@@ -936,6 +936,7 @@ namespace kernel::gnulinux {
             if(testRead && file->canRead())   outputEvents.add(EpollEventType::CAN_READ);
             if(testWrite && file->canWrite()) outputEvents.add(EpollEventType::CAN_WRITE);
 
+            if(!outputEvents.any()) return;
             events->push_back(EpollEvent{
                 outputEvents,
                 data,

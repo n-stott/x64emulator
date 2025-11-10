@@ -76,12 +76,13 @@ namespace kernel::gnulinux {
     }
 
     ErrnoOr<void> Epoll::deleteEntry(i32 fd) {
-        verify(std::any_of(interestList_.begin(), interestList_.end(), [&](const Entry& entry) {
+        auto it = std::remove_if(interestList_.begin(), interestList_.end(), [&](const Entry& entry) {
             return entry.fd == fd;
-        }), "Epoll::deleteEntry: fd not present in interest list");
-        interestList_.erase(std::remove_if(interestList_.begin(), interestList_.end(), [&](const Entry& entry) {
-            return entry.fd == fd;
-        }), interestList_.end());
+        });
+        if(it == interestList_.end()) {
+            return ErrnoOr<void>(-ENOENT);
+        }
+        interestList_.erase(it, interestList_.end());
         return ErrnoOr<void>({});
     }
 
