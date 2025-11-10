@@ -455,7 +455,7 @@ namespace kernel::gnulinux {
         if(kernel_.logSyscalls()) {
             print("Sys::ioctl(fd={}, request={}, argp={:#x}) = {}",
                         fd, Host::ioctlName(request), argp.address(),
-                        errnoOrBuffer.errorOrWith<ssize_t>([](const auto& buf) { return (ssize_t)buf.size(); }));
+                        errnoOrBuffer.errorOr(0));
         }
         return errnoOrBuffer.errorOrWith<int>([&](const auto& buffer) {
             // The buffer returned by ioctl is empty when nothing needs to be written back.
