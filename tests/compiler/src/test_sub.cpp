@@ -1,5 +1,5 @@
 #include "x64/compiler/assembler.h"
-#include "x64/disassembler/capstonewrapper.h"
+#include "x64/disassembler/zydiswrapper.h"
 #include "verify.h"
 
 using namespace x64;
@@ -8,7 +8,7 @@ void testSub32(R32 dst, R32 src) {
     Assembler assembler;
     assembler.sub(dst, src);
     std::vector<u8> code = assembler.code();
-    CapstoneWrapper disassembler;
+    ZydisWrapper disassembler;
     auto disassembly = disassembler.disassembleRange(code.data(), code.size(), 0x0);
     verify(disassembly.instructions.size() == 1);
     const auto& ins = disassembly.instructions[0];
@@ -25,7 +25,7 @@ void testSub32(R32 dst, i32 imm) {
     Assembler assembler;
     assembler.sub(dst, imm);
     std::vector<u8> code = assembler.code();
-    CapstoneWrapper disassembler;
+    ZydisWrapper disassembler;
     auto disassembly = disassembler.disassembleRange(code.data(), code.size(), 0x0);
     verify(disassembly.instructions.size() == 1);
     const auto& ins = disassembly.instructions[0];
@@ -88,7 +88,7 @@ void testSub64(R64 dst, R64 src) {
     Assembler assembler;
     assembler.sub(dst, src);
     std::vector<u8> code = assembler.code();
-    CapstoneWrapper disassembler;
+    ZydisWrapper disassembler;
     auto disassembly = disassembler.disassembleRange(code.data(), code.size(), 0x0);
     verify(disassembly.instructions.size() == 1);
     const auto& ins = disassembly.instructions[0];
@@ -105,7 +105,7 @@ void testSub64(R64 dst, i32 imm) {
     Assembler assembler;
     assembler.sub(dst, imm);
     std::vector<u8> code = assembler.code();
-    CapstoneWrapper disassembler;
+    ZydisWrapper disassembler;
     auto disassembly = disassembler.disassembleRange(code.data(), code.size(), 0x0);
     verify(disassembly.instructions.size() == 1);
     const auto& ins = disassembly.instructions[0];

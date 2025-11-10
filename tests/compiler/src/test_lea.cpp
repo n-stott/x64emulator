@@ -1,5 +1,5 @@
 #include "x64/compiler/assembler.h"
-#include "x64/disassembler/capstonewrapper.h"
+#include "x64/disassembler/zydiswrapper.h"
 #include "verify.h"
 
 using namespace x64;
@@ -8,7 +8,7 @@ void testLea64(R64 dst, const M64& src) {
     Assembler assembler;
     assembler.lea(dst, src);
     std::vector<u8> code = assembler.code();
-    CapstoneWrapper disassembler;
+    ZydisWrapper disassembler;
     auto disassembly = disassembler.disassembleRange(code.data(), code.size(), 0x0);
     verify(disassembly.instructions.size() == 1);
     const auto& ins = disassembly.instructions[0];
@@ -18,7 +18,8 @@ void testLea64(R64 dst, const M64& src) {
     verify(disdst == dst);
     verify(dissrc.base == src.encoding.base);
     verify(dissrc.index == src.encoding.index);
-    verify(dissrc.scale == src.encoding.scale);
+    if(src.encoding.index != R64::ZERO)
+        verify(dissrc.scale == src.encoding.scale);
     verify(dissrc.displacement == src.encoding.displacement);
 }
 

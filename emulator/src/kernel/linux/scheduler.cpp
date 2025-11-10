@@ -40,7 +40,6 @@ namespace kernel::gnulinux {
         vm.setEnableJitChaining(worker.enableJitChaining);
         vm.setJitStatsLevel(worker.jitStatsLevel);
         vm.setOptimizationLevel(worker.optimizationLevel);
-        vm.setDisassembler(kernel_.disassembler());
         while(!emulator::signal_interrupt) {
             try {
                 JobOrCommand jobOrCommand = tryPickNext(worker);

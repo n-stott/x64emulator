@@ -98,25 +98,21 @@ add_library(x64jit ${LIB_KIND}
     src/x64/compiler/irgenerator.cpp
     src/x64/compiler/jit.cpp
     src/x64/compiler/optimizer.cpp
-    src/x64/disassembler/capstonewrapper.cpp
     src/x64/disassembler/zydiswrapper.cpp
 )
 target_compile_options(x64jit PRIVATE ${COMPILE_OPTIONS})
 target_include_directories(x64jit PUBLIC
     include
-    ${capstone_SOURCE_DIR}/include
     ${zydis_SOURCE_DIR}/include
     ${zydis_SOURCE_DIR}/dependencies/zycore/include
 )
 target_link_directories(x64jit PUBLIC
-    ${capstone_BINARY_DIR}/
     ${zydis_BINARY_DIR}/
     ${zydis_BINARY_DIR}/zycore/
 )
 target_link_libraries(x64jit PUBLIC
     x64cpu
     fmt::fmt-header-only
-    capstone
     Zydis
     Zycore
 )
@@ -174,7 +170,6 @@ target_include_directories(x64emulator PUBLIC
     include
     ${CMAKE_SOURCE_DIR}/profiling/include
 )
-target_link_directories(x64emulator PRIVATE ${capstone_BINARY_DIR})
 target_link_libraries(x64emulator PUBLIC
     x64cpu
     x64jit

@@ -17,7 +17,6 @@ void testScasb() {
     assert(counter == 0xffffffffffffffe8);
 }
 
-/*
 void testScasw() {
     const char* s = "AABBCCDDEE\0\0";
     uint64_t counter = -1;
@@ -25,7 +24,7 @@ void testScasw() {
         "xor %%eax, %%eax\n"
         "mov %1, %%rdi\n"
         "mov %0, %%rcx\n"
-        "repnz scasw\n"      // This is doing weird things. Capstone sees it as a repnz scasd
+        "repnz scasw\n"
         "mov %%rcx, %0\n"
         : "+r"(counter)
         : "r"(s)
@@ -33,7 +32,6 @@ void testScasw() {
     );
     assert(counter == 0xfffffffffffffff9);
 }
-*/
 
 void testScasd() {
     const char* s = "AABBCCDDEEFF\0\0\0\0";
@@ -53,6 +51,6 @@ void testScasd() {
 
 int main() {
     testScasb();
-    // testScasw();
+    testScasw();
     testScasd();
 }

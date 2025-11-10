@@ -145,8 +145,6 @@ namespace emulator {
         void setOptimizationLevel(int level);
         int optimizationLevel() const { return optimizationLevel_; }
 
-        void setDisassembler(int disassembler);
-
         x64::Jit* jit() { return jit_.get(); }
         CompilationQueue& compilationQueue() { return compilationQueue_; }
 

@@ -26,13 +26,6 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(argparse)
 
 FetchContent_Declare(
-    capstone
-    GIT_REPOSITORY https://github.com/capstone-engine/capstone.git
-    GIT_TAG        4.0
-)
-FetchContent_MakeAvailable(capstone)
-
-FetchContent_Declare(
     zydis
     GIT_REPOSITORY         https://github.com/zyantific/zydis.git
     GIT_TAG                v4.1.1

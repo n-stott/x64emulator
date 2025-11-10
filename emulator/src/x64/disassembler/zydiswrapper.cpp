@@ -2629,6 +2629,7 @@ namespace x64 {
         if(auto m128src = asMemory128(src)) {
             // Capstone bug #1456
             // Comiss xmm0, DWORD PTR[] is incorrectly disassembled as Comiss xmm0, XWORD PTR[]
+            assert(false);
             auto hacked_src = src;
             hacked_src.size = 4;
             m32src = asMemory32(hacked_src);
@@ -2648,6 +2649,7 @@ namespace x64 {
         if(auto m128src = asMemory128(src)) {
             // Capstone bug #1456
             // Comisd xmm0, QWORD PTR[] is incorrectly disassembled as Comisd xmm0, XWORD PTR[]
+            assert(false);
             auto hacked_src = src;
             hacked_src.size = 8;
             m64src = asMemory64(hacked_src);
@@ -3207,7 +3209,6 @@ namespace x64 {
         const auto& src = insn.operands[1];
         auto mmxdst = asMMX(dst);
         auto mmxm32src = asMMXM32(src);
-        // capstone bug
         auto mmxm64src = asMMXM64(src);
         if(mmxm64src) {
             if(mmxm64src->isReg) {
@@ -3231,7 +3232,6 @@ namespace x64 {
         auto mmxm32src = asMMXM32(src);
         auto rssedst = asRegister128(dst);
         auto rmssesrc = asRM128(src);
-        // capstone bug
         auto mmxm64src = asMMXM64(src);
         if(mmxm64src) {
             if(mmxm64src->isReg) {
@@ -3253,7 +3253,6 @@ namespace x64 {
         auto mmxm32src = asMMXM32(src);
         auto rssedst = asRegister128(dst);
         auto rmssesrc = asRM128(src);
-        // capstone bug
         auto mmxm64src = asMMXM64(src);
         if(mmxm64src) {
             if(mmxm64src->isReg) {
@@ -3285,7 +3284,6 @@ namespace x64 {
         auto rssedst = asRegister128(dst);
         auto mmxm64src = asMMXM64(src);
         auto rmssesrc = asRM128(src);
-        // capstone bug
         if(mmxdst && mmxm64src) return X64Instruction::make<Insn::PUNPCKHBW_MMX_MMXM64>(insn.runtime_address, insn.info.length, mmxdst.value(), mmxm64src.value());
         if(rssedst && rmssesrc) return X64Instruction::make<Insn::PUNPCKHBW_XMM_XMMM128>(insn.runtime_address, insn.info.length, rssedst.value(), rmssesrc.value());
         return make_failed(insn);
@@ -3299,7 +3297,6 @@ namespace x64 {
         auto rssedst = asRegister128(dst);
         auto mmxm64src = asMMXM64(src);
         auto rmssesrc = asRM128(src);
-        // capstone bug
         if(mmxdst && mmxm64src) return X64Instruction::make<Insn::PUNPCKHWD_MMX_MMXM64>(insn.runtime_address, insn.info.length, mmxdst.value(), mmxm64src.value());
         if(rssedst && rmssesrc) return X64Instruction::make<Insn::PUNPCKHWD_XMM_XMMM128>(insn.runtime_address, insn.info.length, rssedst.value(), rmssesrc.value());
         return make_failed(insn);

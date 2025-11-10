@@ -1,7 +1,7 @@
 #include "x64/cpu.h"
 #include "x64/mmu.h"
 #include "x64/compiler/compiler.h"
-#include "x64/disassembler/capstonewrapper.h"
+#include "x64/disassembler/zydiswrapper.h"
 #include <sys/mman.h>
 
 int main(int, char**) {
@@ -24,7 +24,7 @@ int main(int, char**) {
         return 1;
     }
 
-    CapstoneWrapper disassembler;
+    ZydisWrapper disassembler;
     auto disassembly = disassembler.disassembleRange(nativebb->nativecode.data(), nativebb->nativecode.size(), 0x0);
     fmt::print("{} instructions\n", disassembly.instructions.size());
 

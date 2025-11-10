@@ -1,5 +1,5 @@
 #include "x64/compiler/assembler.h"
-#include "x64/disassembler/capstonewrapper.h"
+#include "x64/disassembler/zydiswrapper.h"
 #include "verify.h"
 
 using namespace x64;
@@ -8,7 +8,7 @@ void testMov16(R16 dst, R16 src) {
     Assembler assembler;
     assembler.mov(dst, src);
     std::vector<u8> code = assembler.code();
-    CapstoneWrapper disassembler;
+    ZydisWrapper disassembler;
     auto disassembly = disassembler.disassembleRange(code.data(), code.size(), 0x0);
     verify(disassembly.instructions.size() == 1);
     const auto& ins = disassembly.instructions[0];
@@ -49,7 +49,7 @@ void testMov32(R32 dst, R32 src) {
     Assembler assembler;
     assembler.mov(dst, src);
     std::vector<u8> code = assembler.code();
-    CapstoneWrapper disassembler;
+    ZydisWrapper disassembler;
     auto disassembly = disassembler.disassembleRange(code.data(), code.size(), 0x0);
     verify(disassembly.instructions.size() == 1);
     const auto& ins = disassembly.instructions[0];
@@ -90,7 +90,7 @@ void testMov64(R64 dst, R64 src) {
     Assembler assembler;
     assembler.mov(dst, src);
     std::vector<u8> code = assembler.code();
-    CapstoneWrapper disassembler;
+    ZydisWrapper disassembler;
     auto disassembly = disassembler.disassembleRange(code.data(), code.size(), 0x0);
     verify(disassembly.instructions.size() == 1);
     const auto& ins = disassembly.instructions[0];
@@ -103,17 +103,17 @@ void testMov64(R64 dst, const M64& src) {
     Assembler assembler;
     assembler.mov(dst, src);
     std::vector<u8> code = assembler.code();
-    CapstoneWrapper disassembler;
+    ZydisWrapper disassembler;
     auto disassembly = disassembler.disassembleRange(code.data(), code.size(), 0x0);
     verify(disassembly.instructions.size() == 1);
     const auto& ins = disassembly.instructions[0];
     verify(ins.insn() == Insn::MOV_R64_M64);
     verify(ins.op0<R64>() == dst);
     M64 dissrc = ins.op1<M64>();
-    verify(dissrc.segment == src.segment);
     verify(dissrc.encoding.base == src.encoding.base);
     verify(dissrc.encoding.index == src.encoding.index);
-    verify(dissrc.encoding.scale == src.encoding.scale);
+    if(src.encoding.index != R64::ZERO)
+        verify(dissrc.encoding.scale == src.encoding.scale);
     verify(dissrc.encoding.displacement == src.encoding.displacement);
 }
 
@@ -179,7 +179,7 @@ void testMov128(XMM dst, XMM src) {
     Assembler assembler;
     assembler.mov(dst, src);
     std::vector<u8> code = assembler.code();
-    CapstoneWrapper disassembler;
+    ZydisWrapper disassembler;
     auto disassembly = disassembler.disassembleRange(code.data(), code.size(), 0x0);
     verify(disassembly.instructions.size() == 1);
     const auto& ins = disassembly.instructions[0];
@@ -218,14 +218,17 @@ void testMovM64Imm32(const M64& dst, u32 imm) {
     Assembler assembler;
     assembler.mov(dst, imm);
     std::vector<u8> code = assembler.code();
-    CapstoneWrapper disassembler;
+    ZydisWrapper disassembler;
     auto disassembly = disassembler.disassembleRange(code.data(), code.size(), 0x0);
     verify(disassembly.instructions.size() == 1);
     const auto& ins = disassembly.instructions[0];
     verify(ins.insn() == Insn::MOV_M64_IMM);
     M64 disdst = ins.op0<M64>();
     Imm disimm = ins.op1<Imm>();
-    verify(disdst == dst);
+    verify(disdst.encoding.base == dst.encoding.base);
+    verify(disdst.encoding.displacement == dst.encoding.displacement);
+    verify(disdst.encoding.index == dst.encoding.index);
+    verify(disdst.encoding.scale == dst.encoding.scale);
     verify(disimm.as<u32>() == imm);
 }
 

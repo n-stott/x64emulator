@@ -58,10 +58,6 @@ namespace kernel::gnulinux {
         nbCores_ = nbCores;
     }
 
-    void Kernel::setDisassembler(int disassembler) {
-        disassembler_ = disassembler;
-    }
-
     template<typename Func>
     void forEachSplit(const std::string& s, char delimiter, Func&& func) {
         auto left = s.begin();

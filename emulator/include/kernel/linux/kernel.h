@@ -39,7 +39,6 @@ namespace kernel::gnulinux {
         void setOptimizationLevel(int level);
         void setEnableShm(bool enableShm);
         void setNbCores(int nbCores);
-        void setDisassembler(int disassembler);
 
         bool isProfiling() const { return isProfiling_; }
         bool logSyscalls() const { return logSyscalls_; }

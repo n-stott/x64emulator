@@ -70,11 +70,6 @@ int main(int argc, char* argv[], char* envp[]) {
             .default_value<unsigned int>(4096)
             .scan<'u', unsigned int>();
 
-    parser.add_argument("-D")
-            .help("Disassembly library")
-            .default_value<int>(1)
-            .scan<'i', int>();
-
     parser.add_argument("command")
            .remaining();
 
@@ -129,7 +124,6 @@ int main(int argc, char* argv[], char* envp[]) {
             emulator.setEnableShm(true);
         }
         emulator.setNbCores(parser.get<int>("-j"));
-        emulator.setDisassembler(parser.get<int>("-D"));
         emulator.setVirtualMemoryAmount(parser.get<unsigned int>("--mem"));
         int ret = emulator.run(programPath, arguments, environmentVariables);
         return ret;

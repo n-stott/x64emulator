@@ -23,13 +23,6 @@ target_include_directories(test_ioctl_probe PRIVATE include ${CMAKE_SOURCE_DIR}/
 target_link_libraries(test_ioctl_probe PRIVATE x64emulator fmt::fmt-header-only)
 add_test(NAME ioctl_probe COMMAND test_ioctl_probe)
 
-add_executable(test_capstone_lea src/test_capstone_lea.cpp)
-target_compile_options(test_capstone_lea PRIVATE ${CC_OPTIONS})
-target_link_options(test_capstone_lea PRIVATE ${LD_OPTIONS})
-target_include_directories(test_capstone_lea PRIVATE include ${CMAKE_SOURCE_DIR}/include)
-target_link_libraries(test_capstone_lea PRIVATE x64emulator fmt::fmt-header-only)
-add_test(NAME capstone_lea COMMAND test_capstone_lea)
-
 add_executable(test_mmu src/test_mmu.cpp)
 target_compile_options(test_mmu PRIVATE ${CC_OPTIONS})
 target_link_options(test_mmu PRIVATE ${LD_OPTIONS})
