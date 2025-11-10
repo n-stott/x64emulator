@@ -1,5 +1,6 @@
 #include "emulator/emulator.h"
 #include "signalhandler.h"
+#include "verify.h"
 #include <argparse/argparse.hpp>
 #include <fmt/core.h>
 #include <string>
@@ -110,7 +111,10 @@ int main(int argc, char* argv[], char* envp[]) {
     try {
         emulator::Emulator emulator;
         emulator.setLogSyscalls(parser["--syscalls"] == true);
-        emulator.setProfiling(parser["--profile"] == true);
+        if(parser["--profile"] == true) {
+            verify(parser["--nojit"] == true, "Cannot profile when jit is active. Use --nojit");
+            emulator.setProfiling(true);
+        }
         emulator.setEnableJit(parser["--nojit"] == false);
         emulator.setEnableJitChaining(parser["--nojitchaining"] == false);
         emulator.setJitStatsLevel(parser.get<int>("--jitstats"));
@@ -127,6 +131,8 @@ int main(int argc, char* argv[], char* envp[]) {
         emulator.setVirtualMemoryAmount(parser.get<unsigned int>("--mem"));
         int ret = emulator.run(programPath, arguments, environmentVariables);
         return ret;
+    } catch(VerificationException&) {
+        
     } catch(std::exception& e) {
         std::cout << e.what() << std::endl;
     }
