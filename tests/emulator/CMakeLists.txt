@@ -176,6 +176,13 @@ if(EXISTS "/usr/bin/id")
     add_test(NAME id COMMAND ${CMAKE_BINARY_DIR}/emulator/emulator /usr/bin/id)
 endif()
 
+if(EXISTS "/usr/bin/ls")
+    add_test(NAME ls COMMAND ${CMAKE_BINARY_DIR}/emulator/emulator /usr/bin/ls)
+    add_test(NAME ls-l COMMAND ${CMAKE_BINARY_DIR}/emulator/emulator /usr/bin/ls -l)
+    add_test(NAME ls-la COMMAND ${CMAKE_BINARY_DIR}/emulator/emulator /usr/bin/ls -la)
+    add_test(NAME ls-lah COMMAND ${CMAKE_BINARY_DIR}/emulator/emulator /usr/bin/ls -lah)
+endif()
+
 if(EXISTS "/usr/bin/python2.7")
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/empty.py ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
     add_test(NAME empty_python27_script COMMAND ${CMAKE_BINARY_DIR}/emulator/emulator /usr/bin/python2.7 empty.py)
