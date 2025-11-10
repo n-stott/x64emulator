@@ -15,6 +15,7 @@ namespace kernel::gnulinux {
 
     struct ShadowFileHostData {
         struct stat st;
+        struct statx stx;
     };
 
     ShadowFile* ShadowFile::tryCreateAndAdd(FS* fs, Directory* parent, const std::string& name, bool create) {
@@ -51,6 +52,9 @@ namespace kernel::gnulinux {
                 return {};
             }
             verify(fileType != S_IFLNK, "Support for shadow symlinks needed");
+
+            struct statx stx;
+            if(::statx(fd, "", AT_EMPTY_PATH, STATX_ALL, &stx) < 0) return {};
             
             // create data vector
             std::vector<u8> data((size_t)st.st_size, 0x0);
@@ -61,6 +65,7 @@ namespace kernel::gnulinux {
 
             auto hostData = std::make_unique<ShadowFileHostData>();
             hostData->st = st;
+            hostData->stx = stx;
 
             auto shadowFile = std::unique_ptr<ShadowFile>(new ShadowFile(fs, containingDirectory, path->last(), std::move(data)));
             shadowFile->hostData_ = std::move(hostData);
@@ -143,8 +148,16 @@ namespace kernel::gnulinux {
     }
 
     ErrnoOrBuffer ShadowFile::statx(unsigned int mask) {
-        warn(fmt::format("ShadowFile::statx(path={}, mask={:#x}) not implemented", path(), mask));
-        return ErrnoOrBuffer(-ENOTSUP);
+        if(!!hostData_) {
+            struct statx stx = hostData_->stx;
+            stx.stx_size = (off_t)data_.size();
+            stx.stx_mask &= mask;
+            Buffer buf(stx);
+            return ErrnoOrBuffer(std::move(buf));
+        } else {
+            warn(fmt::format("ShadowFile::statx(path={}, mask={:#x}) with host info not implemented", path(), mask));
+            return ErrnoOrBuffer(-ENOTSUP);
+        }
     }
 
     void ShadowFile::advanceInternalOffset(off_t) {
