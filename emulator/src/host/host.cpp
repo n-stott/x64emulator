@@ -63,12 +63,16 @@ namespace kernel::gnulinux {
     }
 
 
-    bool Host::Open::isReadable(int flag) {
+    bool Host::Open::isReadOnly(int flag) {
         return (flag & O_ACCMODE) == O_RDONLY;
     }
 
-    bool Host::Open::isWritable(int flag) {
-        return (flag & O_ACCMODE) & (O_WRONLY | O_RDWR);
+    bool Host::Open::isWriteOnly(int flag) {
+        return (flag & O_ACCMODE) == O_WRONLY;
+    }
+
+    bool Host::Open::isReadWrite(int flag) {
+        return (flag & O_ACCMODE) == O_RDWR;
     }
 
     bool Host::Open::isAppending(int flag) {

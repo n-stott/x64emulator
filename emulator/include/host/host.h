@@ -51,8 +51,9 @@ namespace kernel::gnulinux {
         };
 
         struct Open {
-            static bool isReadable(int flag);
-            static bool isWritable(int flag);
+            static bool isReadOnly(int flag);
+            static bool isWriteOnly(int flag);
+            static bool isReadWrite(int flag);
             static bool isAppending(int flag);
             static bool isCloseOnExec(int flag);
             static bool isCreatable(int flag);

@@ -11,3 +11,10 @@ target_include_directories(test_procfs PUBLIC include ${CMAKE_SOURCE_DIR}/emulat
 target_link_libraries(test_procfs PUBLIC x64cpu x64emulator)
 target_link_options(test_procfs PUBLIC ${LD_OPTIONS})
 add_test(NAME procfs COMMAND test_procfs)
+
+add_executable(test_setfl src/test_setfl.cpp)
+target_compile_options(test_setfl PUBLIC ${CC_OPTIONS})
+target_include_directories(test_setfl PUBLIC include ${CMAKE_SOURCE_DIR}/emulator/include)
+target_link_libraries(test_setfl PUBLIC x64cpu x64emulator)
+target_link_options(test_setfl PUBLIC ${LD_OPTIONS})
+add_test(NAME setfl COMMAND test_setfl)

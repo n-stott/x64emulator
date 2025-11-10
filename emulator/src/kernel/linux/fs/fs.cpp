@@ -88,8 +88,8 @@ namespace kernel::gnulinux {
 
     BitFlags<FS::AccessMode> FS::toAccessMode(int flags) {
         BitFlags<AccessMode> am;
-        if(Host::Open::isReadable(flags)) am.add(AccessMode::READ);
-        if(Host::Open::isWritable(flags)) am.add(AccessMode::WRITE);
+        if(Host::Open::isReadWrite(flags) || Host::Open::isReadOnly(flags)) am.add(AccessMode::READ);
+        if(Host::Open::isReadWrite(flags) || Host::Open::isWriteOnly(flags)) am.add(AccessMode::WRITE);
         return am;
     }
 
@@ -755,6 +755,7 @@ namespace kernel::gnulinux {
                 break;
             }
             case Host::Fcntl::SETFL: {
+                // File access mode and file creation flags in arg are ignored
                 verify(!Host::Open::isAppending(arg), "changing append flag is not supported");
                 auto currentFlags = openFileDescription->statusFlags();
                 if(Host::Open::isNonBlock(arg) && !currentFlags.test(StatusFlags::NONBLOCK)) {
