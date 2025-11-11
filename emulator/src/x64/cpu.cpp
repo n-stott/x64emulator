@@ -2564,7 +2564,15 @@ namespace x64 {
     void Cpu::execMovRR(const X64Instruction& ins) {
         const auto& dst = ins.op0<R<size>>();
         const auto& src = ins.op1<R<size>>();
-        set(dst, get(src));
+        auto srcValue = get(src);
+        if constexpr(size == Size::QWORD) {
+            // This is essentially targeting longjmp, which
+            // can skip over multiple stackframes at once.
+            if(dst == R64::RSP) {
+                for(auto* callback : callbacks_) callback->onStackChange(srcValue);
+            }
+        }
+        set(dst, srcValue);
     }
 
     void Cpu::execMovMMXMMX(const X64Instruction& ins) {

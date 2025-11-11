@@ -24,6 +24,7 @@ namespace x64 {
             virtual void onSyscall() = 0;
             virtual void onCall(u64 address) = 0;
             virtual void onRet() = 0;
+            virtual void onStackChange(u64 stackptr) = 0;
         };
 
         void addCallback(Callback* callback);

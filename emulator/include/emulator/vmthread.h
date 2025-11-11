@@ -84,19 +84,35 @@ namespace emulator {
         }
 
     protected:
-        void pushCallstack(u64 from, u64 to) {
+        void pushCallstack(u64 stackptr, u64 from, u64 to) {
+            stack_.push_back(stackptr);
             callpoint_.push_back(from);
             callstack_.push_back(to);
         }
 
         u64 popCallstack() {
             u64 address = callstack_.back();
+            stack_.pop_back();
             callstack_.pop_back();
             callpoint_.pop_back();
             return address;
         }
 
+        u32 popCallstackUntil(u64 stackptr) {
+            u32 iterations = 0;
+            while(!stack_.empty()) {
+                u64 stack = stack_.back();
+                if(stack >= stackptr) break;
+                stack_.pop_back();
+                callstack_.pop_back();
+                callpoint_.pop_back();
+                ++iterations;
+            }
+            return iterations;
+        }
+
     private:
+        std::vector<u64> stack_;
         std::vector<u64> callpoint_;
         std::vector<u64> callstack_;
     };
@@ -188,14 +204,21 @@ namespace emulator {
             requestsAtomic_ = true;
         }
 
-        void pushCallstack(u64 from, u64 to) {
+        void pushCallstack(u64 stackptr, u64 from, u64 to) {
             ThreadProfileData::pushCallstack(time_.ns(), to);
-            ThreadCallstackData::pushCallstack(from, to);
+            ThreadCallstackData::pushCallstack(stackptr, from, to);
         }
 
         void popCallstack() {
             ThreadProfileData::popCallstack(time_.ns());
             ThreadCallstackData::popCallstack();
+        }
+
+        void popCallstackUntil(u64 stackptr) {
+            u32 stacksRemoved = ThreadCallstackData::popCallstackUntil(stackptr);
+            for(u32 i = 0; i < stacksRemoved; ++i) {
+                ThreadProfileData::popCallstack(time_.ns());
+            }
         }
 
         void dumpRegisters() const;

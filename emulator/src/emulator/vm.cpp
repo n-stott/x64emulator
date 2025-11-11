@@ -276,7 +276,7 @@ namespace emulator {
     void VM::notifyCall(u64 address) {
         currentThread_->stats().functionCalls++;
         if(!jit_) {
-            currentThread_->pushCallstack(cpu_.get(x64::R64::RIP), address);
+            currentThread_->pushCallstack(cpu_.get(x64::R64::RSP), cpu_.get(x64::R64::RIP), address);
         } else {
             jit_->notifyCall();
         }
@@ -288,6 +288,11 @@ namespace emulator {
         } else {
             jit_->notifyRet();
         }
+    }
+
+    void VM::notifyStackChange(u64 stackptr) {
+        if(!!jit_) return;
+        currentThread_->popCallstackUntil(stackptr);
     }
 
     VM::InstructionPosition VM::findSectionWithAddress(u64 address, const ExecutableSection* sectionHint) const {
@@ -563,6 +568,10 @@ namespace emulator {
 
     void VM::CpuCallback::onRet() {
         if(!!vm_) vm_->notifyRet();
+    }
+
+    void VM::CpuCallback::onStackChange(u64 stackptr) {
+        if(!!vm_) vm_->notifyStackChange(stackptr);
     }
 
     void VM::ExecutableSection::trim() {

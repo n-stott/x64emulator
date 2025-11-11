@@ -171,6 +171,7 @@ namespace emulator {
             void onSyscall() override;
             void onCall(u64 address) override;
             void onRet() override;
+            void onStackChange(u64 stackptr) override;
         private:
             x64::Cpu* cpu_ { nullptr };
             VM* vm_ { nullptr };
@@ -183,6 +184,7 @@ namespace emulator {
 
         void notifyCall(u64 address);
         void notifyRet();
+        void notifyStackChange(u64 stackptr);
 
         void contextSwitch(VMThread* newThread);
         void syncThread();
