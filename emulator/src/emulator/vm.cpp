@@ -442,10 +442,12 @@ namespace emulator {
 
         // If we are in the PLT instead, lets' look at the first instruction to determine the jmp location
         InstructionPosition pos = findSectionWithAddress(address);
-        verify(!!pos.section, [&]() {
-            fmt::print("Could not determine function origin section for address {:#x}\n", address);
-        });
-        verify(pos.index != (size_t)(-1), "Could not find call destination instruction");
+        if(!pos.section) {
+            return "???";
+        }
+        if(pos.index == (size_t)(-1)) {
+            return fmt::format("Somewhere in {}", pos.section->filename);
+        }
         // NOLINTBEGIN(clang-analyzer-core.CallAndMessage)
         const x64::X64Instruction& jmpInsn = pos.section->instructions[pos.index];
         if(jmpInsn.insn() == x64::Insn::JMP_RM64) {
