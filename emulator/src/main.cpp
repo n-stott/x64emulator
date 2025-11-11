@@ -112,10 +112,14 @@ int main(int argc, char* argv[], char* envp[]) {
         emulator::Emulator emulator;
         emulator.setLogSyscalls(parser["--syscalls"] == true);
         if(parser["--profile"] == true) {
-            verify(parser["--nojit"] == true, "Cannot profile when jit is active. Use --nojit");
+            if(parser["--nojit"] == false) {
+                warn("Disabling jit when profiling");
+            }
             emulator.setProfiling(true);
         }
-        emulator.setEnableJit(parser["--nojit"] == false);
+        bool jitEnabled = (parser["--nojit"] == false)
+                       && (parser["--profile"] == false);
+        emulator.setEnableJit(jitEnabled);
         emulator.setEnableJitChaining(parser["--nojitchaining"] == false);
         emulator.setJitStatsLevel(parser.get<int>("--jitstats"));
         if(parser["-O0"] == true) {
