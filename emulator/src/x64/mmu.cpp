@@ -435,6 +435,7 @@ namespace x64 {
         verify(!!region, "brk: program has no heap");
         if(region->contains(address)) return address;
         u64 oldBrk = region->end();
+        if(address > memorySize_) return oldBrk;
         if(address < oldBrk) return oldBrk;
         const Region* containingRegion = findAddress(address);
         if(!!containingRegion) return oldBrk;
