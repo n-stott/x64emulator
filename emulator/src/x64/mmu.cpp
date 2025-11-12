@@ -95,13 +95,14 @@ namespace x64 {
         addRegion(std::move(newRegion));
     }
 
-    u64 Mmu::mmap(u64 address, u64 length, BitFlags<PROT> prot, BitFlags<MAP> flags) {
+    std::optional<u64> Mmu::mmap(u64 address, u64 length, BitFlags<PROT> prot, BitFlags<MAP> flags) {
         verify(address % PAGE_SIZE == 0, [&]() {
             fmt::print("mmap with non-page_size aligned address {:#x} not supported", address);
         });
         length = pageRoundUp(length);
 
         u64 baseAddress = flags.test(MAP::FIXED) ? address : firstFitPageAligned(length);
+        if(baseAddress + length > memorySize_) return {};
         std::unique_ptr<Region> region = makeRegion(baseAddress, length, prot);
         region->setRequiresMemsetToZero();
         if(flags.test(MAP::FIXED)) {

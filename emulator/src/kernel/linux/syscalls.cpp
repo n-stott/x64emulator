@@ -335,8 +335,9 @@ namespace kernel::gnulinux {
             mmapFlags.add(x64::MAP::PRIVATE);
         }
 
-        u64 base = mmu_.mmap(addr.address(), length, protFlags, mmapFlags);
-        if(!mmapFlags.test(x64::MAP::ANONYMOUS)) {
+        auto base = mmu_.mmap(addr.address(), length, protFlags, mmapFlags);
+        if(base && !mmapFlags.test(x64::MAP::ANONYMOUS)) {
+            u64 regionBase = base.value();
             verify(fd >= 0);
             ErrnoOrBuffer data = kernel_.fs().pread(FS::FD{fd}, length, offset);
             if(data.isError()) {
@@ -345,15 +346,15 @@ namespace kernel::gnulinux {
                 base = (u64)data.errorOr(0);
             }
             data.errorOrWith<int>([&](const Buffer& buffer) {
-                BitFlags<x64::PROT> saved = mmu_.prot(base);
+                BitFlags<x64::PROT> saved = mmu_.prot(regionBase);
                 BitFlags<x64::PROT> savedAndWriteable = saved;
                 savedAndWriteable.add(x64::PROT::WRITE);
                 savedAndWriteable.remove(x64::PROT::EXEC);
-                verify(mmu_.mprotect(base, length, savedAndWriteable) >= 0, "mprotect failed");
-                mmu_.copyToMmu(x64::Ptr8{base}, buffer.data(), buffer.size());
-                verify(mmu_.mprotect(base, length, saved) >= 0, "mprotect failed");
+                verify(mmu_.mprotect(regionBase, length, savedAndWriteable) >= 0, "mprotect failed");
+                mmu_.copyToMmu(x64::Ptr8{regionBase}, buffer.data(), buffer.size());
+                verify(mmu_.mprotect(regionBase, length, saved) >= 0, "mprotect failed");
                 auto filename = kernel_.fs().filename(FS::FD{fd});
-                mmu_.setRegionName(base, filename);
+                mmu_.setRegionName(regionBase, filename);
                 return 0;
             });
         }
@@ -372,9 +373,9 @@ namespace kernel::gnulinux {
                     mmapFlags.test(x64::MAP::PRIVATE) ? "PRIVATE " : "",
                     mmapFlags.test(x64::MAP::SHARED) ? "SHARED " : "");
             print("Sys::mmap(addr={:#x}, length={}, prot={}, flags={}, fd={}, offset={}) = {:#x}",
-                    addr.address(), length, protString, flagsString, fd, offset, base);
+                    addr.address(), length, protString, flagsString, fd, offset, base.value_or(-ENOMEM));
         }
-        return x64::Ptr{base};
+        return x64::Ptr{base.value_or(-ENOMEM)};
     }
 
     int Sys::mprotect(x64::Ptr addr, size_t length, int prot) {

@@ -18,8 +18,9 @@ int main() {
     bool errorEncountered = false;
 
     VerificationScope::run([&]() {
-        u64 dataPage = mmu->mmap(0, Mmu::PAGE_SIZE, BitFlags<PROT>{PROT::READ, PROT::WRITE}, BitFlags<MAP>{MAP::PRIVATE, MAP::ANONYMOUS});
-        mmu->copyToMmu(Ptr8{dataPage}, (const u8*)string.data(), string.size());
+        auto dataPage = mmu->mmap(0, Mmu::PAGE_SIZE, BitFlags<PROT>{PROT::READ, PROT::WRITE}, BitFlags<MAP>{MAP::PRIVATE, MAP::ANONYMOUS});
+        verify(!!dataPage);
+        mmu->copyToMmu(Ptr8{dataPage.value()}, (const u8*)string.data(), string.size());
 
         std::vector<X64Instruction> instructions {
             X64Instruction::make<Insn::PXOR_XMM_XMMM128>(1, 1, XMM::XMM0, XMMM128{true, XMM::XMM0, {}}),
@@ -37,7 +38,7 @@ int main() {
         };
 
         Cpu cpu(*mmu);
-        cpu.set(R64::RDI, dataPage);
+        cpu.set(R64::RDI, dataPage.value());
         for(const auto& ins : instructions) {
             cpu.exec(ins);
         }

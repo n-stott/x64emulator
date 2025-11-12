@@ -30,10 +30,10 @@ int testXchgMemReg() {
     auto mmu = Mmu::tryCreate(0x10000);
     if(!mmu) return 1;
 
-    u64 base = mmu->mmap(0x1000, 0x1000, BitFlags<PROT>(PROT::READ, PROT::WRITE), BitFlags<MAP>(MAP::ANONYMOUS, MAP::PRIVATE, MAP::FIXED));
+    auto base = mmu->mmap(0x1000, 0x1000, BitFlags<PROT>(PROT::READ, PROT::WRITE), BitFlags<MAP>(MAP::ANONYMOUS, MAP::PRIVATE, MAP::FIXED));
     if(base != 0x1000) return 1;
 
-    Ptr64 ptr { base };
+    Ptr64 ptr { base.value() };
     mmu->write64(ptr, 0x1234);
     
     Cpu cpu(*mmu);
@@ -43,7 +43,7 @@ int testXchgMemReg() {
     state.regs.set(R64::RAX, 0x5678);
     cpu.load(state);
 
-    M64 mem { Segment::DS, Encoding64{R64::ZERO, R64::ZERO, 1, (i32)base} };
+    M64 mem { Segment::DS, Encoding64{R64::ZERO, R64::ZERO, 1, (i32)base.value()} };
     X64Instruction xchgMemRax = X64Instruction::make(0x0, Insn::XCHG_RM64_R64, 1, RM64{false, R64::ZERO, mem}, R64::RAX);
     cpu.exec(xchgMemRax);
 

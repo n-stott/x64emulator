@@ -30,7 +30,9 @@ int main() {
     if(!mmu) return 1;
     auto rw = BitFlags<PROT>(PROT::READ, PROT::WRITE);
     auto flags = BitFlags<MAP>(MAP::ANONYMOUS, MAP::PRIVATE);
-    u64 fsbase = mmu->mmap(0x0, 0x1000, rw, flags);
+    auto maybe_fsbase = mmu->mmap(0x0, 0x1000, rw, flags);
+    if(!maybe_fsbase) return 1;
+    auto fsbase = maybe_fsbase.value();
     Cpu cpu(*mmu);
 
     static constexpr u64 MAGIC = 0x12345678;

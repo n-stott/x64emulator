@@ -16,18 +16,19 @@ int main() {
     try {
         u64 consa = mmu->memoryConsumptionInMB();
         u64 size = 0x1000000;
-        u64 base = mmu->mmap(0x0, size, prot, flags);
+        auto base = mmu->mmap(0x0, size, prot, flags);
+        if(!base) return 1;
 
         u64 consb = mmu->memoryConsumptionInMB();
 
         prot.add(PROT::WRITE);
-        mmu->mprotect(base + size/4, size/2, prot);
+        mmu->mprotect(base.value() + size/4, size/2, prot);
 
-        mmu->munmap(base, size/2);
+        mmu->munmap(base.value(), size/2);
 
         u64 consc = mmu->memoryConsumptionInMB();
 
-        mmu->munmap(base+size/2, size/2);
+        mmu->munmap(base.value() + size/2, size/2);
 
         u64 consd = mmu->memoryConsumptionInMB();
 

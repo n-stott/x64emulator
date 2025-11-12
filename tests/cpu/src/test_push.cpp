@@ -8,13 +8,13 @@ int emulated() {
     if(!mmu) return 1;
     Cpu cpu(*mmu);
 
-    u64 stack = mmu->mmap(0x0, 0x1000, BitFlags<PROT>(PROT::READ, PROT::WRITE), BitFlags<MAP>(MAP::ANONYMOUS, MAP::PRIVATE));
-    if(stack == (u64)-1) {
+    auto stack = mmu->mmap(0x0, 0x1000, BitFlags<PROT>(PROT::READ, PROT::WRITE), BitFlags<MAP>(MAP::ANONYMOUS, MAP::PRIVATE));
+    if(!stack) {
         puts("mmap failed");
         return 1;
     }
 
-    cpu.set(R64::RSP, stack + 0x800);
+    cpu.set(R64::RSP, stack.value() + 0x800);
 
     cpu.push8(0xFF);
     cpu.push16(0xFFFF);

@@ -41,15 +41,16 @@ namespace kernel::gnulinux {
 
         // THIS IS A MASSIVE HACK :-p
         // We reserve the range in the Mmu and in host memory and remap the shared region on top.
-        u64 addr = mmu_.mmap(0, size_, prot, flags);
-        void* ret = ::shmat(id_, (void*)(mmu_.base() + addr), SHM_REMAP);
+        auto addr = mmu_.mmap(0, size_, prot, flags);
+        verify(!!addr, "Unable to mmap region for shared memory");
+        void* ret = ::shmat(id_, (void*)(mmu_.base() + addr.value()), SHM_REMAP);
         if(ret == (void*)(-1)) {
             return ErrnoOr<u64>(-errno);
         }
 
         attachedAddress_ = addr;
         ++numAttach_;
-        return ErrnoOr<u64>(addr);
+        return ErrnoOr<u64>(addr.value());
     }
 
     int SharedMemorySegment::detach() {

@@ -26,10 +26,13 @@ int main(int argc, char**) {
 
     auto bb = cpu.createBasicBlock(instructions.data(), instructions.size());
 
-    u64 stack1Top = mmu->mmap(0, 0x1000, BitFlags<x64::PROT>{x64::PROT::READ, x64::PROT::WRITE}, BitFlags<x64::MAP>{x64::MAP::PRIVATE, x64::MAP::ANONYMOUS})
-                    + 0x1000;
-    u64 stack2Top = mmu->mmap(0, 0x1000, BitFlags<x64::PROT>{x64::PROT::READ, x64::PROT::WRITE}, BitFlags<x64::MAP>{x64::MAP::PRIVATE, x64::MAP::ANONYMOUS})
-                    + 0x1000;
+    auto stack1base = mmu->mmap(0, 0x1000, BitFlags<x64::PROT>{x64::PROT::READ, x64::PROT::WRITE}, BitFlags<x64::MAP>{x64::MAP::PRIVATE, x64::MAP::ANONYMOUS});
+    auto stack2base = mmu->mmap(0, 0x1000, BitFlags<x64::PROT>{x64::PROT::READ, x64::PROT::WRITE}, BitFlags<x64::MAP>{x64::MAP::PRIVATE, x64::MAP::ANONYMOUS});
+
+    if(!stack1base) return 1;
+    if(!stack2base) return 1;
+    u64 stack1Top = stack1base.value() + 0x1000;
+    u64 stack2Top = stack2base.value() + 0x1000;
 
     cpu.set(R64::RBX, 0xb);
     cpu.set(R64::R10, 0x10);

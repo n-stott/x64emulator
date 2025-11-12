@@ -83,7 +83,7 @@ namespace x64 {
         static std::unique_ptr<Mmu> tryCreate(u32 virtualMemoryInMB);
         ~Mmu();
 
-        u64 mmap(u64 address, u64 length, BitFlags<PROT> prot, BitFlags<MAP> flags);
+        std::optional<u64> mmap(u64 address, u64 length, BitFlags<PROT> prot, BitFlags<MAP> flags);
         int munmap(u64 address, u64 length);
         int mprotect(u64 address, u64 length, BitFlags<PROT> prot);
         u64 brk(u64 address);

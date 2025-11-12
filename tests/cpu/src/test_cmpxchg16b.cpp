@@ -52,7 +52,9 @@ bool test(u128 initial, u128 expected, u128 replacement) {
         using namespace x64;
         auto mmu = Mmu::tryCreate(1);
         if(!mmu) return false;
-        u64 base = mmu->mmap(0, 0x1000, BitFlags<PROT>(PROT::READ, PROT::WRITE), BitFlags<MAP>(MAP::ANONYMOUS, MAP::PRIVATE));
+        auto maybe_base = mmu->mmap(0, 0x1000, BitFlags<PROT>(PROT::READ, PROT::WRITE), BitFlags<MAP>(MAP::ANONYMOUS, MAP::PRIVATE));
+        if(!maybe_base) return false;
+        u64 base = maybe_base.value();
         Ptr128 ptr { base };
         mmu->write128(ptr, initial);
 

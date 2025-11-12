@@ -60,9 +60,10 @@ namespace kernel::gnulinux {
             u64 totalLoadSize = (minStart > maxEnd) ? 0 : (maxEnd - minStart);
 
             // Then, reserve enough space and return the base address of that memory region as the elf offset.
-            u64 address = mmu->mmap(0, totalLoadSize, BitFlags<x64::PROT>{x64::PROT::NONE}, BitFlags<x64::MAP>{x64::MAP::PRIVATE, x64::MAP::ANONYMOUS});
-            mmu->munmap(address, totalLoadSize);
-            return address;
+            auto address = mmu->mmap(0, totalLoadSize, BitFlags<x64::PROT>{x64::PROT::NONE}, BitFlags<x64::MAP>{x64::MAP::PRIVATE, x64::MAP::ANONYMOUS});
+            verify(!!address, "Unable to make virtual memory reservation for loading elf file");
+            mmu->munmap(address.value(), totalLoadSize);
+            return address.value();
         }();
 
         if(mainProgram) {
@@ -85,17 +86,18 @@ namespace kernel::gnulinux {
             u64 start = x64::Mmu::pageRoundDown(elfOffset + header.virtualAddress());
             u64 end = x64::Mmu::pageRoundUp(elfOffset + header.virtualAddress() + header.sizeInMemory());
             u64 nonExecSectionSize = end-start;
-            u64 nonExecSectionBase = mmu->mmap(start, nonExecSectionSize, BitFlags<x64::PROT>{x64::PROT::WRITE}, BitFlags<x64::MAP>{x64::MAP::PRIVATE, x64::MAP::ANONYMOUS, x64::MAP::FIXED});
+            auto nonExecSectionBase = mmu->mmap(start, nonExecSectionSize, BitFlags<x64::PROT>{x64::PROT::WRITE}, BitFlags<x64::MAP>{x64::MAP::PRIVATE, x64::MAP::ANONYMOUS, x64::MAP::FIXED});
+            verify(!!nonExecSectionBase, "Unable to mmap but reservation succeeded");
 
             const u8* data = elf64->dataAtOffset(header.offset(), header.sizeInFile());
-            mmu->copyToMmu(x64::Ptr8{nonExecSectionBase + header.virtualAddress() % x64::Mmu::PAGE_SIZE}, data, header.sizeInFile()); // Mmu regions are 0 initialized
+            mmu->copyToMmu(x64::Ptr8{nonExecSectionBase.value() + header.virtualAddress() % x64::Mmu::PAGE_SIZE}, data, header.sizeInFile()); // Mmu regions are 0 initialized
 
             BitFlags<x64::PROT> prot;
             if(header.isReadable()) prot.add(x64::PROT::READ);
             if(header.isWritable()) prot.add(x64::PROT::WRITE);
             if(header.isExecutable()) prot.add(x64::PROT::EXEC);
-            mmu->mprotect(nonExecSectionBase, nonExecSectionSize, prot);
-            mmu->setRegionName(nonExecSectionBase, filepath);
+            mmu->mprotect(nonExecSectionBase.value(), nonExecSectionSize, prot);
+            mmu->setRegionName(nonExecSectionBase.value(), filepath);
         };
 
         elf64->forAllProgramHeaders([&](const elf::ProgramHeader64& header) {
@@ -126,40 +128,44 @@ namespace kernel::gnulinux {
         {
             // page with random 16-bit value for AT_RANDOM
             verify(!!auxiliary, "no auxiliary...");
-            u64 random = mmu->mmap(0x0, x64::Mmu::PAGE_SIZE, BitFlags<x64::PROT>{x64::PROT::READ, x64::PROT::WRITE}, BitFlags<x64::MAP>{x64::MAP::PRIVATE, x64::MAP::ANONYMOUS});
-            mmu->setRegionName(random, "random");
-            mmu->write16(x64::Ptr16{random}, 0xabcd);
-            mmu->mprotect(random, x64::Mmu::PAGE_SIZE, BitFlags<x64::PROT>{x64::PROT::READ});
-            auxiliary->randomDataAddress = random;
+            auto random = mmu->mmap(0x0, x64::Mmu::PAGE_SIZE, BitFlags<x64::PROT>{x64::PROT::READ, x64::PROT::WRITE}, BitFlags<x64::MAP>{x64::MAP::PRIVATE, x64::MAP::ANONYMOUS});
+            verify(!!random, "Unable to mmap the random page");
+            mmu->setRegionName(random.value(), "random");
+            mmu->write16(x64::Ptr16{random.value()}, 0xabcd);
+            mmu->mprotect(random.value(), x64::Mmu::PAGE_SIZE, BitFlags<x64::PROT>{x64::PROT::READ});
+            auxiliary->randomDataAddress = random.value();
         }
 
         {
             // page with platform string
             verify(!!auxiliary, "no auxiliary...");
-            u64 platformstring = mmu->mmap(0x0, x64::Mmu::PAGE_SIZE, BitFlags<x64::PROT>{x64::PROT::READ, x64::PROT::WRITE}, BitFlags<x64::MAP>{x64::MAP::PRIVATE, x64::MAP::ANONYMOUS});
-            mmu->setRegionName(platformstring, "platform string");
+            auto platformstring = mmu->mmap(0x0, x64::Mmu::PAGE_SIZE, BitFlags<x64::PROT>{x64::PROT::READ, x64::PROT::WRITE}, BitFlags<x64::MAP>{x64::MAP::PRIVATE, x64::MAP::ANONYMOUS});
+            verify(!!platformstring, "Unable to mmap the platform string page");
+            mmu->setRegionName(platformstring.value(), "platform string");
             std::string platform = "x86_64";
             std::vector<u8> buffer;
             buffer.resize(platform.size()+1, 0x0);
             std::memcpy(buffer.data(), platform.data(), platform.size());
-            mmu->copyToMmu(x64::Ptr8{platformstring}, buffer.data(), buffer.size());
-            mmu->mprotect(platformstring, x64::Mmu::PAGE_SIZE, BitFlags<x64::PROT>{x64::PROT::READ});
-            auxiliary->platformStringAddress = platformstring;
+            mmu->copyToMmu(x64::Ptr8{platformstring.value()}, buffer.data(), buffer.size());
+            mmu->mprotect(platformstring.value(), x64::Mmu::PAGE_SIZE, BitFlags<x64::PROT>{x64::PROT::READ});
+            auxiliary->platformStringAddress = platformstring.value();
         }
         
         // stack
         const u64 desiredStackBase = 0x10000000;
         const u64 stackSize = 256*x64::Mmu::PAGE_SIZE;
-        u64 stackBase = mmu->mmap(desiredStackBase, stackSize, BitFlags<x64::PROT>{x64::PROT::READ, x64::PROT::WRITE}, BitFlags<x64::MAP>{x64::MAP::PRIVATE, x64::MAP::ANONYMOUS, x64::MAP::FIXED});
-        mmu->setRegionName(stackBase, "stack");
+        auto stackBase = mmu->mmap(desiredStackBase, stackSize, BitFlags<x64::PROT>{x64::PROT::READ, x64::PROT::WRITE}, BitFlags<x64::MAP>{x64::MAP::PRIVATE, x64::MAP::ANONYMOUS, x64::MAP::FIXED});
+        verify(!!stackBase, "Unable to map the stack");
+        mmu->setRegionName(stackBase.value(), "stack");
 
         // heap
-        const u64 desiredHeapBase = stackBase + stackSize + x64::Mmu::PAGE_SIZE;
+        const u64 desiredHeapBase = stackBase.value() + stackSize + x64::Mmu::PAGE_SIZE;
         const u64 heapSize = 64*x64::Mmu::PAGE_SIZE;
-        u64 heapBase = mmu->mmap(desiredHeapBase, heapSize, BitFlags<x64::PROT>{x64::PROT::READ, x64::PROT::WRITE}, BitFlags<x64::MAP>{x64::MAP::PRIVATE, x64::MAP::ANONYMOUS, x64::MAP::FIXED});
-        mmu->setRegionName(heapBase, "heap");
+        auto heapBase = mmu->mmap(desiredHeapBase, heapSize, BitFlags<x64::PROT>{x64::PROT::READ, x64::PROT::WRITE}, BitFlags<x64::MAP>{x64::MAP::PRIVATE, x64::MAP::ANONYMOUS, x64::MAP::FIXED});
+        verify(!!heapBase, "Unable to map the heap");
+        mmu->setRegionName(heapBase.value(), "heap");
 
-        return stackBase + stackSize;
+        return stackBase.value() + stackSize;
     }
 
     static void pushProgramArguments(x64::Mmu* mmu, x64::Registers* regs, const std::string& programFilePath, const std::vector<std::string>& arguments, const std::vector<std::string>& environmentVariables, const Auxiliary& auxiliary) {
@@ -174,9 +180,10 @@ namespace kernel::gnulinux {
         requiredSize = x64::Mmu::pageRoundUp(requiredSize);
 
         mmu->mmap(0, x64::Mmu::PAGE_SIZE, BitFlags<x64::PROT>{x64::PROT::NONE}, BitFlags<x64::MAP>{x64::MAP::PRIVATE, x64::MAP::ANONYMOUS}); // throwaway page
-        u64 argumentPage = mmu->mmap(0, requiredSize, BitFlags<x64::PROT>{x64::PROT::READ, x64::PROT::WRITE}, BitFlags<x64::MAP>{x64::MAP::PRIVATE, x64::MAP::ANONYMOUS});
-        mmu->setRegionName(argumentPage, "program arguments");
-        x64::Ptr8 argumentPtr { argumentPage };
+        auto argumentPage = mmu->mmap(0, requiredSize, BitFlags<x64::PROT>{x64::PROT::READ, x64::PROT::WRITE}, BitFlags<x64::MAP>{x64::MAP::PRIVATE, x64::MAP::ANONYMOUS});
+        verify(!!argumentPage, "Unable to map the program arguments page");
+        mmu->setRegionName(argumentPage.value(), "program arguments");
+        x64::Ptr8 argumentPtr { argumentPage.value() };
 
         std::vector<u64> argumentPositions;
 
