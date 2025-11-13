@@ -164,18 +164,31 @@ namespace kernel::gnulinux {
             mmu->mprotect(platformstring.value(), x64::Mmu::PAGE_SIZE, BitFlags<x64::PROT>{x64::PROT::READ});
             auxiliary->platformStringAddress = platformstring.value();
         }
-        
-        // stack
-        const u64 desiredStackBase = 0x10000000;
+
         const u64 stackSize = 256*x64::Mmu::PAGE_SIZE;
-        auto stackBase = mmu->mmap(desiredStackBase, stackSize, BitFlags<x64::PROT>{x64::PROT::READ, x64::PROT::WRITE}, BitFlags<x64::MAP>{x64::MAP::PRIVATE, x64::MAP::ANONYMOUS, x64::MAP::FIXED});
+        const u64 heapSize = 32*x64::Mmu::PAGE_SIZE;
+
+        // glibc likes to allocate some memory at the start by relying on brk,
+        // so let's keep some spare size initially.
+        const u64 heapSpareSize = 32*x64::Mmu::PAGE_SIZE;
+
+        const u64 stackAndHeapReservation = stackSize
+                + x64::Mmu::PAGE_SIZE
+                + heapSize
+                + heapSpareSize;
+        verify(mmu->memorySize() > stackAndHeapReservation, "Available virtual memory is insufficient for stack and heap");
+        const u64 desiredStackBase = std::min(mmu->memorySize() - stackAndHeapReservation, (u64)0x10000000);
+
+        BitFlags<x64::MAP> mapPrivAnonFixedNorepl {x64::MAP::PRIVATE, x64::MAP::ANONYMOUS, x64::MAP::FIXED, x64::MAP::NO_REPLACE};
+
+        // stack
+        auto stackBase = mmu->mmap(desiredStackBase, stackSize, BitFlags<x64::PROT>{x64::PROT::READ, x64::PROT::WRITE}, mapPrivAnonFixedNorepl);
         verify(!!stackBase, "Unable to map the stack");
         mmu->setRegionName(stackBase.value(), "stack");
 
         // heap
         const u64 desiredHeapBase = stackBase.value() + stackSize + x64::Mmu::PAGE_SIZE;
-        const u64 heapSize = 64*x64::Mmu::PAGE_SIZE;
-        auto heapBase = mmu->mmap(desiredHeapBase, heapSize, BitFlags<x64::PROT>{x64::PROT::READ, x64::PROT::WRITE}, BitFlags<x64::MAP>{x64::MAP::PRIVATE, x64::MAP::ANONYMOUS, x64::MAP::FIXED});
+        auto heapBase = mmu->mmap(desiredHeapBase, heapSize, BitFlags<x64::PROT>{x64::PROT::READ, x64::PROT::WRITE}, mapPrivAnonFixedNorepl);
         verify(!!heapBase, "Unable to map the heap");
         mmu->setRegionName(heapBase.value(), "heap");
 
