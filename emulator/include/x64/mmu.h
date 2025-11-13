@@ -92,6 +92,7 @@ namespace x64 {
         void setRegionName(u64 address, std::string name);
 
         u8* base() { return memoryBase_; }
+        u64 memorySize() const { return memorySize_; }
 
         void copyBytes(Ptr8 dst, Ptr8 src, size_t count);
 
