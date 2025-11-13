@@ -82,12 +82,26 @@ namespace kernel::gnulinux {
             auxiliary->programHeaderEntrySize = sizeof(elf::ProgramHeader64);
         }
 
+        BitFlags<x64::MAP> mapPrivAnonFixedNorepl{x64::MAP::PRIVATE, x64::MAP::ANONYMOUS, x64::MAP::FIXED, x64::MAP::NO_REPLACE};
+
         auto loadProgramHeader = [&](const elf::ProgramHeader64& header) {
             u64 start = x64::Mmu::pageRoundDown(elfOffset + header.virtualAddress());
             u64 end = x64::Mmu::pageRoundUp(elfOffset + header.virtualAddress() + header.sizeInMemory());
             u64 nonExecSectionSize = end-start;
-            auto nonExecSectionBase = mmu->mmap(start, nonExecSectionSize, BitFlags<x64::PROT>{x64::PROT::WRITE}, BitFlags<x64::MAP>{x64::MAP::PRIVATE, x64::MAP::ANONYMOUS, x64::MAP::FIXED});
-            verify(!!nonExecSectionBase, "Unable to mmap but reservation succeeded");
+            auto nonExecSectionBase = mmu->mmap(start, nonExecSectionSize, BitFlags<x64::PROT>{x64::PROT::WRITE}, mapPrivAnonFixedNorepl);
+            if(elf64->type() == elf::Type::ET_DYN) {
+                verify(!!nonExecSectionBase, [&]() {
+                    fmt::println("Unable to mmap but reservation succeeded for shared library {}", filepath);
+                });
+            }
+            if(elf64->type() == elf::Type::ET_EXEC) {
+                verify(!!nonExecSectionBase, [&]() {
+                    fmt::println("Executable {} requested mapping at range {:#x}:{:#x}, but that address is not available.", filepath, start, start+nonExecSectionSize);
+                    if(start+nonExecSectionSize >= mmu->memorySize()) {
+                        fmt::println("  Only addresses {:#x}:{:#x} are mappable.", 0, mmu->memorySize());
+                    }
+                });
+            }
 
             const u8* data = elf64->dataAtOffset(header.offset(), header.sizeInFile());
             mmu->copyToMmu(x64::Ptr8{nonExecSectionBase.value() + header.virtualAddress() % x64::Mmu::PAGE_SIZE}, data, header.sizeInFile()); // Mmu regions are 0 initialized
