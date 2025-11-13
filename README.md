@@ -1,6 +1,6 @@
 # x64emulator
 
-A toy x86-64 userspace emulator, for educational purposes.
+A toy x86-64 userspace emulator, for educational purposes. Everything is very experimental.
 
 ## Features
 
@@ -18,23 +18,23 @@ Clone this repository and build the emulator, profileviewer and tests with
     $ cmake --build build
 
 Here are the options that can be given to cmake:
-* `-DMULTIPROCESSING=ON` to enable multi-core support
 * `-DSSE3=ON`, `-DSSSE3=ON`, `-DSSE41=ON` to enable SSE3, SSSE3 and SSE4.1 support respectively
+* `-DMULTIPROCESSING=ON` to enable multi-core support (extremely experimental)
 
 ## How to use
 To run a program `program`, you just need to use `emulator program`. More generally, running `emulator program arg0 arg1` runs `program` invoked with arguments `arg0`, `arg1` in the emulator.
 
 The emulator executable provides several runtime options:
-* `emulator --syscalls command` to display all syscalls that are performed
-* `emulator --nojit command` to disable the JIT compiler
-* `emulator --nojitchaining command` to disable jumping between basic blocks within jitted code
-* `emulator -O0 command` to disable JIT optimizations
-* `emulator -O1 command` to enable all JIT optimizations (default)
-* `emulator --jitstats level command` to retrieve some statistics from the jit (higher level means more information)
-* `emulator --shm command` to enable shared memory syscalls (may be required by some programs)
-* `emulator --mem X command` to provide X MB of virtual memory to the emulator (minimum of 256MB require)
-* `emulator --profile command` to save a profile of the command (for short running programs only). This disables the JIT automatically
-* `emulator -j N command` to provide N cores to the emulator when compiled in MULTIPROCESSING mode.
+* `emulator --syscalls ...` to display all syscalls that are performed
+* `emulator --nojit ...` to disable the JIT compiler
+* `emulator --nojitchaining ...` to disable jumping between basic blocks within jitted code
+* `emulator -O0 ...` to disable JIT optimizations
+* `emulator -O1 ...` to enable all JIT optimizations (default)
+* `emulator --jitstats X ...` to retrieve some statistics from the jit (higher X means more information)
+* `emulator --shm ...` to enable shared memory syscalls (may be required by some programs)
+* `emulator --mem X ...` to provide X MB of virtual memory to the emulator (minimum of 256MB require)
+* `emulator --profile ...` to save a profile of the command (for short running programs only). This disables the JIT automatically
+* `emulator -j N ...` to provide N cores to the emulator when compiled in MULTIPROCESSING mode.
 
 ## Profile viewer
 After running the emulator with `--profile`, a json file `output.json` which stores profiling events is created. This file can be opened with `profileviewer` (or `profileviewer newname.json` if the file has been renamed) to show the timeline.
