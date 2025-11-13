@@ -32,7 +32,7 @@ The emulator executable provides several runtime options:
 * `emulator -O1 ...` to enable all JIT optimizations (default)
 * `emulator --jitstats X ...` to retrieve some statistics from the jit (higher X means more information)
 * `emulator --shm ...` to enable shared memory syscalls (may be required by some programs)
-* `emulator --mem X ...` to provide X MB of virtual memory to the emulator (minimum of 256MB require)
+* `emulator --mem X ...` to provide X MB of virtual memory to the emulator
 * `emulator --profile ...` to save a profile of the command (for short running programs only). This disables the JIT automatically
 * `emulator -j N ...` to provide N cores to the emulator when compiled in MULTIPROCESSING mode.
 
