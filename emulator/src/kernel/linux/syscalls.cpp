@@ -324,6 +324,10 @@ namespace kernel::gnulinux {
         BitFlags<x64::MAP> mmapFlags;
         if(Host::Mmap::isAnonymous(flags)) mmapFlags.add(x64::MAP::ANONYMOUS);
         if(Host::Mmap::isFixed(flags)) mmapFlags.add(x64::MAP::FIXED);
+        if(Host::Mmap::isFixedNoReplace(flags)) {
+            mmapFlags.add(x64::MAP::FIXED);
+            mmapFlags.add(x64::MAP::NO_REPLACE);
+        }
         if(Host::Mmap::isPrivate(flags)) mmapFlags.add(x64::MAP::PRIVATE);
         if(Host::Mmap::isShared(flags)) mmapFlags.add(x64::MAP::SHARED);
 

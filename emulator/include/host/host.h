@@ -21,6 +21,7 @@ namespace kernel::gnulinux {
         struct Mmap {
             static bool isAnonymous(int flags);
             static bool isFixed(int flags);
+            static bool isFixedNoReplace(int flags);
             static bool isPrivate(int flags);
             static bool isShared(int flags);
         };

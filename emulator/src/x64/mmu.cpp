@@ -105,7 +105,7 @@ namespace x64 {
         if(baseAddress + length > memorySize_) return {};
         std::unique_ptr<Region> region = makeRegion(baseAddress, length, prot);
         region->setRequiresMemsetToZero();
-        if(flags.test(MAP::FIXED)) {
+        if(flags.test(MAP::FIXED) && !flags.test(MAP::NO_REPLACE)) {
             addRegionAndEraseExisting(std::move(region));
         } else {
             addRegion(std::move(region));

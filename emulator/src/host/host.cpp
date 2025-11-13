@@ -42,6 +42,10 @@ namespace kernel::gnulinux {
         return flags & MAP_FIXED;
     }
 
+    bool Host::Mmap::isFixedNoReplace(int flags) {
+        return flags & MAP_FIXED_NOREPLACE;
+    }
+
     bool Host::Mmap::isPrivate(int flags) {
         return flags & MAP_PRIVATE;
     }
