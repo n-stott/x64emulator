@@ -1236,11 +1236,16 @@ namespace x64 {
                     break;
                 }
                 case ir::Op::MOVLPS: {
+                    auto m64dst = ins.out().as<M64>();
+                    assert(m64dst == ins.in1().as<M64>());
                     auto r128dst = ins.out().as<XMM>();
                     assert(r128dst == ins.in1().as<XMM>());
+                    auto r128src = ins.in2().as<XMM>();
                     auto m64src = ins.in2().as<M64>();
                     if(r128dst && m64src) {
                         assembler_->movlps(r128dst.value(), m64src.value());
+                    } else if(m64dst && r128src) {
+                        assembler_->movlps(m64dst.value(), r128src.value());
                     } else {
                         return fail();
                     }
