@@ -86,6 +86,7 @@ namespace x64::ir {
             case Op::XCHG: return "xchg";
             case Op::CMPXCHG: return "cmpxchg";
             case Op::LOCKCMPXCHG: return "lockcmpxchg";
+            case Op::LOCKXADD: return "lockxadd";
             case Op::CWDE: return "cwde";
             case Op::CDQE: return "cdqe";
             case Op::CDQ: return "cdq";
@@ -296,6 +297,7 @@ namespace x64::ir {
             case Op::DEC:
             case Op::CMPXCHG:
             case Op::LOCKCMPXCHG:
+            case Op::LOCKXADD:
             case Op::PUSHF:
             case Op::POPF:
             case Op::BSF:

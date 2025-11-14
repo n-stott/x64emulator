@@ -206,6 +206,7 @@ namespace x64::ir {
 
     void IrGenerator::lockcmpxchg(const M32& dst, R32 src) { emit(Op::LOCKCMPXCHG, dst, dst, src); }
     void IrGenerator::lockcmpxchg(const M64& dst, R64 src) { emit(Op::LOCKCMPXCHG, dst, dst, src); }
+    void IrGenerator::lockxadd(const M32& dst, R32 src) { emit(Op::LOCKXADD, dst, dst, src); }
 
     void IrGenerator::cwde() { emit(Op::CWDE, R32::EAX, R16::AX); }
     void IrGenerator::cdqe() { emit(Op::CDQE, R64::RAX, R32::EAX); }

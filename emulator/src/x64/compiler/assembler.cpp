@@ -1969,6 +1969,61 @@ namespace x64 {
         }
     }
 
+    void Assembler::lockxadd(const M32& dst, R32 src) {
+        if(dst.encoding.index == R64::ZERO) {
+            if(dst.encoding.displacement == 0) {
+                verify(dst.encoding.base != R64::RBP, "rbp as base without displacement requires an SIB byte");
+                write8(0xf0);
+                write8((u8)(0x40 | (((u8)src >= 8) ? 4 : 0) | (((u8)dst.encoding.base >= 8) ? 1 : 0)));
+                write8((u8)(0x0f));
+                write8((u8)(0xc1));
+                write8((u8)(0b00000000 | (encodeRegister(src) << 3) | (encodeRegister(dst.encoding.base))));
+            } else if((i8)dst.encoding.displacement == dst.encoding.displacement) {
+                write8(0xf0);
+                write8((u8)(0x40 | (((u8)src >= 8) ? 4 : 0) | (((u8)dst.encoding.base >= 8) ? 1 : 0)));
+                write8((u8)(0x0f));
+                write8((u8)(0xc1));
+                write8((u8)(0b01000000 | (encodeRegister(src) << 3) | (encodeRegister(dst.encoding.base))));
+                write8((u8)dst.encoding.displacement);
+            } else {
+                write8(0xf0);
+                write8((u8)(0x40 | (((u8)src >= 8) ? 4 : 0) | (((u8)dst.encoding.base >= 8) ? 1 : 0)));
+                write8((u8)(0x0f));
+                write8((u8)(0xc1));
+                write8((u8)(0b10000000 | (encodeRegister(src) << 3) | (encodeRegister(dst.encoding.base))));
+                write32((u32)dst.encoding.displacement);
+            }
+        } else {
+            if((i8)dst.encoding.displacement == dst.encoding.displacement) {
+                write8(0xf0);
+                write8((u8)(0x40
+                         | (((u8)src >= 8) ? 4 : 0)
+                         | (((u8)dst.encoding.index >= 8) ? 2 : 0)
+                         | (((u8)dst.encoding.base >= 8) ? 1 : 0)));
+                write8((u8)(0x0f));
+                write8((u8)(0xc1));
+                write8((u8)(0b01000000 | (encodeRegister(src) << 3) | 0b100));
+                write8((u8)(encodeScale(dst.encoding.scale) << 6
+                         | (encodeRegister(dst.encoding.index) << 3)
+                         | (encodeRegister(dst.encoding.base))));
+                write8((u8)dst.encoding.displacement);
+            } else {
+                write8(0xf0);
+                write8((u8)(0x40
+                         | (((u8)src >= 8) ? 4 : 0)
+                         | (((u8)dst.encoding.index >= 8) ? 2 : 0)
+                         | (((u8)dst.encoding.base >= 8) ? 1 : 0)));
+                write8((u8)(0x0f));
+                write8((u8)(0xc1));
+                write8((u8)(0b10000000 | (encodeRegister(src) << 3) | 0b100));
+                write8((u8)(encodeScale(dst.encoding.scale) << 6
+                         | (encodeRegister(dst.encoding.index) << 3)
+                         | (encodeRegister(dst.encoding.base))));
+                write32((u32)dst.encoding.displacement);
+            }
+        }
+    }
+
     void Assembler::cwde() {
         write8(0x98);
     }

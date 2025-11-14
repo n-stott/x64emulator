@@ -183,6 +183,7 @@ namespace x64 {
 
         void lockcmpxchg(const M32& dst, R32 src);
         void lockcmpxchg(const M64& dst, R64 src);
+        void lockxadd(const M32& dst, R32 src);
 
         void cwde();
         void cdqe();

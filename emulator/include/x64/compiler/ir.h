@@ -179,6 +179,7 @@ namespace x64::ir {
         XCHG,
         CMPXCHG,
         LOCKCMPXCHG,
+        LOCKXADD,
         CWDE,
         CDQE,
         CDQ,

@@ -866,6 +866,18 @@ namespace x64 {
                     }
                     break;
                 }
+                case ir::Op::LOCKXADD: {
+                    auto m32dst = ins.out().as<M32>();
+                    assert(m32dst == ins.in1().as<M32>());
+                    auto r32src = ins.in2().as<R32>();
+
+                    if(m32dst && r32src) {
+                        assembler_->lockxadd(m32dst.value(), r32src.value());
+                    } else {
+                        return fail();
+                    }
+                    break;
+                }
                 case ir::Op::CWDE: {
                     assembler_->cwde();
                     break;

@@ -400,6 +400,7 @@ namespace x64 {
             case Insn::CMPXCHG_RM64_R64: return tryCompileCmpxchgRM64R64(ins.op0<RM64>(), ins.op1<R64>());
             case Insn::LOCK_CMPXCHG_M32_R32: return tryCompileLockCmpxchgM32R32(ins.op0<M32>(), ins.op1<R32>());
             case Insn::LOCK_CMPXCHG_M64_R64: return tryCompileLockCmpxchgM64R64(ins.op0<M64>(), ins.op1<R64>());
+            case Insn::LOCK_XADD_M32_R32: return tryCompileLockXaddM32R32(ins.op0<M32>(), ins.op1<R32>());
 #endif
             case Insn::CWDE: return tryCompileCwde();
             case Insn::CDQE: return tryCompileCdqe();
@@ -2814,6 +2815,20 @@ namespace x64 {
         generator_->mov(get(Reg::GPR0), R64::RAX);
         writeReg64(R64::RAX, Reg::GPR0);
         generator_->pop64(R64::RAX);
+        return true;
+    }
+
+    bool Compiler::tryCompileLockXaddM32R32(const M32& dst, R32 src) {
+        // fetch dst address
+        if(dst.encoding.index == R64::RIP) return false;
+        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, dst);
+        M32 d = make32(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset);
+        // read the src register
+        readReg32(Reg::GPR1, src);
+        // perform the lock xadd
+        generator_->lockxadd(d, get32(Reg::GPR1));
+        // write back to the register
+        writeReg32(src, Reg::GPR1);
         return true;
     }
 

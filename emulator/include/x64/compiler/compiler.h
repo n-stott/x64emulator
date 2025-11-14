@@ -200,6 +200,7 @@ namespace x64 {
         bool tryCompileCmpxchgRM64R64(const RM64&, R64);
         bool tryCompileLockCmpxchgM32R32(const M32&, R32);
         bool tryCompileLockCmpxchgM64R64(const M64&, R64);
+        bool tryCompileLockXaddM32R32(const M32&, R32);
         bool tryCompileCwde();
         bool tryCompileCdqe();
         bool tryCompileCdq();
