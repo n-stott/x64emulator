@@ -219,6 +219,7 @@ namespace x64::ir {
         void movd(const M32&, MMX);
         void movq(MMX, const M64&);
         void movq(const M64&, MMX);
+        void pmovmskb(R32, MMX);
 
         void pand(MMX, MMX);
         void por(MMX, MMX);

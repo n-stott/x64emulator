@@ -241,6 +241,7 @@ namespace x64 {
         bool tryCompileMovdRM32Mmx(const RM32&, MMX);
         bool tryCompileMovqMmxRM64(MMX, const RM64&);
         bool tryCompileMovqRM64Mmx(const RM64&, MMX);
+        bool tryCompilePmovmskbR32Mmx(R32, MMX);
 
         bool tryCompilePandMmxMmxM64(MMX, const MMXM64&);
         bool tryCompilePorMmxMmxM64(MMX, const MMXM64&);

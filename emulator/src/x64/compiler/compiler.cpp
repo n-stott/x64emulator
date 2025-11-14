@@ -442,6 +442,7 @@ namespace x64 {
             case Insn::MOVD_RM32_MMX: return tryCompileMovdRM32Mmx(ins.op0<RM32>(), ins.op1<MMX>());
             case Insn::MOVQ_MMX_RM64: return tryCompileMovqMmxRM64(ins.op0<MMX>(), ins.op1<RM64>());
             case Insn::MOVQ_RM64_MMX: return tryCompileMovqRM64Mmx(ins.op0<RM64>(), ins.op1<MMX>());
+            case Insn::PMOVMSKB_R32_MMX: return tryCompilePmovmskbR32Mmx(ins.op0<R32>(), ins.op1<MMX>());
 
             case Insn::PAND_MMX_MMXM64: return tryCompilePandMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
             case Insn::POR_MMX_MMXM64: return tryCompilePorMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
@@ -3344,6 +3345,13 @@ namespace x64 {
             generator_->movq(d, get(RegMM::GPR0));
             return true;
         }
+    }
+
+    bool Compiler::tryCompilePmovmskbR32Mmx(R32 dst, MMX src) {
+        readRegMM(RegMM::GPR0, src);
+        generator_->pmovmskb(get32(Reg::GPR0), get(RegMM::GPR0));
+        writeReg32(dst, Reg::GPR0);
+        return true;
     }
 
     bool Compiler::tryCompilePandMmxMmxM64(MMX dst, const MMXM64& src) {

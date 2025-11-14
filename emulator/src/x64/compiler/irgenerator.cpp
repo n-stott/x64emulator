@@ -280,6 +280,7 @@ namespace x64::ir {
     void IrGenerator::movd(const M32& dst, MMX src) { emit(Op::MOV, dst, src); }
     void IrGenerator::movq(MMX dst, const M64& src) { emit(Op::MOV, dst, src); }
     void IrGenerator::movq(const M64& dst, MMX src) { emit(Op::MOV, dst, src); }
+    void IrGenerator::pmovmskb(R32 dst, MMX src) { emit(Op::PMOVMSKB, dst, src); }
 
     void IrGenerator::pand(MMX dst, MMX src) { emit(Op::PAND, dst, dst, src); }
     void IrGenerator::por(MMX dst, MMX src) { emit(Op::POR, dst, dst, src); }

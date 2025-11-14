@@ -270,3 +270,10 @@ target_include_directories(test_compiler_repmovs PUBLIC include ${CMAKE_SOURCE_D
 target_link_libraries(test_compiler_repmovs PUBLIC x64cpu x64jit)
 target_link_options(test_compiler_repmovs PUBLIC ${LD_OPTIONS})
 add_test(NAME compiler_repmovs COMMAND test_compiler_repmovs)
+
+add_executable(test_compiler_pmovmskb src/test_pmovmskb.cpp)
+target_compile_options(test_compiler_pmovmskb PUBLIC ${CC_OPTIONS})
+target_include_directories(test_compiler_pmovmskb PUBLIC include ${CMAKE_SOURCE_DIR}/emulator/include)
+target_link_libraries(test_compiler_pmovmskb PUBLIC x64cpu x64jit)
+target_link_options(test_compiler_pmovmskb PUBLIC ${LD_OPTIONS})
+add_test(NAME compiler_pmovmskb COMMAND test_compiler_pmovmskb)

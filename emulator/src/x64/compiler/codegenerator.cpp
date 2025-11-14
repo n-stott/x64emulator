@@ -1282,9 +1282,12 @@ namespace x64 {
                 }
                 case ir::Op::PMOVMSKB: {
                     auto r32dst = ins.out().as<R32>();
+                    auto rmmxsrc1 = ins.in1().as<MMX>();
                     auto r128src1 = ins.in1().as<XMM>();
 
-                    if(r32dst && r128src1) {
+                    if(r32dst && rmmxsrc1) {
+                        assembler_->pmovmskb(r32dst.value(), rmmxsrc1.value());
+                    } else if(r32dst && r128src1) {
                         assembler_->pmovmskb(r32dst.value(), r128src1.value());
                     } else {
                         return fail();
