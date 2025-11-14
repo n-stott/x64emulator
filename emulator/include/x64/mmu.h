@@ -13,6 +13,7 @@
 #include <cassert>
 #include <deque>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
