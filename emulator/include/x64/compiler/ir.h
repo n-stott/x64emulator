@@ -441,6 +441,12 @@ namespace x64::ir {
 
         IR& add(const IR& other);
 
+        size_t nbLabels() const { return labels.size(); }
+        size_t nbInstructions() const { return instructions.size(); }
+
+        void reserveLabels(size_t nbLabels) { labels.reserve(nbLabels); }
+        void reserveInstructions(size_t nbInstructions) { instructions.reserve(nbInstructions); }
+
         void removeInstructions(std::vector<size_t>& positions);
     };
 }

@@ -62,6 +62,8 @@ namespace x64 {
             if(!basicBlockExit) return {};
             
             ir::IR wholeIr;
+            wholeIr.reserveInstructions(body->nbInstructions() + exitPreparation->nbInstructions() + basicBlockExit->nbInstructions());
+            wholeIr.reserveLabels(body->nbLabels() + exitPreparation->nbLabels() + basicBlockExit->nbLabels());
             wholeIr.add(body.value())
                 .add(exitPreparation.value())
                 .add(basicBlockExit.value());
