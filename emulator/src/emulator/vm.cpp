@@ -180,12 +180,14 @@ namespace emulator {
                 ++jitExits_;
                 updateJitStats(*currentBasicBlock);
             } else {
+#ifdef MULTIPROCESSING
                 if(currentBasicBlock->basicBlock().hasAtomicInstruction()) {
                     if(!thread->requestsAtomic()) {
                         thread->enterAtomic();
                         break;
                     }
                 }
+#endif
                 currentBasicBlock->onCpuCall();
                 cpu_.exec(currentBasicBlock->basicBlock());
                 time.tick(currentBasicBlock->basicBlock().instructions().size());
