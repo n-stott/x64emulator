@@ -239,8 +239,15 @@ namespace x64 {
         generator_->pop64(R64::R13);
     }
 
-    std::vector<u8> Compiler::compileJumpTo(u64 address) {
-        return jmpCode(address, TmpReg{Reg::GPR0});
+    void Compiler::writeJumpTo(u64 address, u8* ptr, size_t size) {
+        TmpReg tmp {Reg::GPR0};
+        assembler_->clear();
+        assembler_->mov(get(tmp.reg), address);
+        assembler_->jump(get(tmp.reg));
+        const auto& code = assembler_->code();
+        (void)size;
+        assert(code.size() <= size);
+        memcpy(ptr, code.data(), code.size());
     }
 
     bool Compiler::tryCompile(const X64Instruction& ins) {
@@ -1876,8 +1883,8 @@ namespace x64 {
 
         // INSERT NOPs HERE TO BE REPLACED WITH THE JMP
         generator_->reportJump(ir::IrGenerator::JumpKind::OTHER_BLOCk);
-        auto dummyJmpCode = jmpCode(0x0, TmpReg{Reg::GPR0});
-        generator_->nops(dummyJmpCode.size());
+        size_t jumpCodeSize = jmpCodeSize(0x0, TmpReg{Reg::GPR0});
+        generator_->nops(jumpCodeSize);
 
         return true;
     }
@@ -1945,8 +1952,8 @@ namespace x64 {
 
         // INSERT NOPs HERE TO BE REPLACED WITH THE JMP
         generator_->reportJump(ir::IrGenerator::JumpKind::OTHER_BLOCk);
-        auto dummyCode = jmpCode(0x0, TmpReg{Reg::GPR0});
-        generator_->nops(dummyCode.size());
+        size_t jumpCodeSize = jmpCodeSize(0x0, TmpReg{Reg::GPR0});
+        generator_->nops(jumpCodeSize);
 
         auto& skipToExit = generator_->label();
         generator_->jump(&skipToExit);
@@ -1956,7 +1963,7 @@ namespace x64 {
 
         // INSERT NOPs HERE TO BE REPLACED WITH THE JMP
         generator_->reportJump(ir::IrGenerator::JumpKind::NEXT_BLOCK);
-        generator_->nops(dummyCode.size());
+        generator_->nops(jumpCodeSize);
 
         generator_->putLabel(skipToExit);
 
@@ -1971,8 +1978,8 @@ namespace x64 {
 
         // INSERT NOPs HERE TO BE REPLACED WITH THE JMP
         generator_->reportJump(ir::IrGenerator::JumpKind::OTHER_BLOCk);
-        auto dummyCode = jmpCode(0x0, TmpReg{Reg::GPR0});
-        generator_->nops(dummyCode.size());
+        size_t jumpCodeSize = jmpCodeSize(0x0, TmpReg{Reg::GPR0});
+        generator_->nops(jumpCodeSize);
 
         return true;
     }
@@ -5731,11 +5738,11 @@ namespace x64 {
         generator_->mov(bbPtr, get(Reg::GPR0));
     }
 
-    std::vector<u8> Compiler::jmpCode(u64 dst, TmpReg tmp) {
+    size_t Compiler::jmpCodeSize(u64 dst, TmpReg tmp) {
         assembler_->clear();
         assembler_->mov(get(tmp.reg), dst);
         assembler_->jump(get(tmp.reg));
-        return assembler_->code();
+        return assembler_->code().size();
     }
 
     std::vector<u8> Compiler::pushCallstackCode(u64 dst, TmpReg tmp1, TmpReg tmp2) {

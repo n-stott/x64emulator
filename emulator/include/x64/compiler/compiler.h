@@ -29,7 +29,7 @@ namespace x64 {
 
         std::optional<NativeBasicBlock> tryCompileJitTrampoline();
 
-        std::vector<u8> compileJumpTo(u64 address);
+        void writeJumpTo(u64 address, u8* ptr, size_t size);
 
         std::optional<ir::IR> tryCompileIR(const BasicBlock&, int optimizationLevel = 0, const void* basicBlockPtr = nullptr, const void* jitBasicBlockPtr = nullptr, bool diagnose = false);
     private:
@@ -622,7 +622,7 @@ namespace x64 {
         void writeBasicBlockPtr(u64 basicBlockPtr);
         void writeJitBasicBlockPtr(u64 jitBasicBlockPtr);
 
-        std::vector<u8> jmpCode(u64 dst, TmpReg tmp);
+        size_t jmpCodeSize(u64 dst, TmpReg tmp);
         std::vector<u8> pushCallstackCode(u64 dst, TmpReg tmp1, TmpReg tmp2);
         std::vector<u8> popCallstackCode(TmpReg tmp1, TmpReg tmp2);
 

@@ -141,9 +141,10 @@ namespace x64 {
         assert(!!compiler);
         size_t offset = pendingPatch->value();
         u8* replacementLocation = mutableExecutableMemory() + offset;
+        assert(offset <= executableMemory_.size);
+        size_t replacementSize = executableMemory_.size - offset;
         const u8* jumpLocation = next->executableMemory();
-        auto replacementCode = compiler->compileJumpTo((u64)jumpLocation);
-        memcpy(replacementLocation, replacementCode.data(), replacementCode.size());
+        compiler->writeJumpTo((u64)jumpLocation, replacementLocation, replacementSize);
         pendingPatch->reset();
     }
 }
