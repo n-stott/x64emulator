@@ -292,6 +292,7 @@ namespace x64::ir {
         void movd(const M32&, XMM);
         void movss(XMM, const M32&);
         void movss(const M32&, XMM);
+        void movss(XMM, XMM);
         void movsd(XMM, const M64&);
         void movsd(const M64&, XMM);
         void movq(XMM, R64);

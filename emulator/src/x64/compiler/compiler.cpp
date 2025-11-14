@@ -512,6 +512,7 @@ namespace x64 {
             case Insn::MOVD_RM32_XMM: return tryCompileMovdRM32Xmm(ins.op0<RM32>(), ins.op1<XMM>());
             case Insn::MOVSS_XMM_M32: return tryCompileMovssXmmM32(ins.op0<XMM>(), ins.op1<M32>());
             case Insn::MOVSS_M32_XMM: return tryCompileMovssM32Xmm(ins.op0<M32>(), ins.op1<XMM>());
+            case Insn::MOVSS_XMM_XMM: return tryCompileMovssXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
             case Insn::MOVSD_XMM_M64: return tryCompileMovsdXmmM64(ins.op0<XMM>(), ins.op1<M64>());
             case Insn::MOVSD_M64_XMM: return tryCompileMovsdM64Xmm(ins.op0<M64>(), ins.op1<XMM>());
             case Insn::MOVLPS_XMM_M64: return tryCompileMovlpsXmmM64(ins.op0<XMM>(), ins.op1<M64>());
@@ -3862,6 +3863,14 @@ namespace x64 {
         readReg128(Reg128::GPR0, src);
         // write the value to the register
         generator_->movss(make32(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset), get(Reg128::GPR0));
+        return true;
+    }
+
+    bool Compiler::tryCompileMovssXmmXmm(XMM dst, XMM src) {
+        readReg128(Reg128::GPR0, dst);
+        readReg128(Reg128::GPR1, src);
+        generator_->movss(get(Reg128::GPR0), get(Reg128::GPR1));
+        writeReg128(dst, Reg128::GPR0);
         return true;
     }
 

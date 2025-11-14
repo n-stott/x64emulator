@@ -1194,7 +1194,11 @@ namespace x64 {
                     auto m32dst = ins.out().as<M32>();
                     auto r128src = ins.in1().as<XMM>();
                     auto m32src = ins.in1().as<M32>();
-                    if(r128dst && m32src) {
+                    auto r128src2 = ins.in2().as<XMM>();
+                    if(r128dst && r128src && r128src2) {
+                        assert(r128dst == r128src);
+                        assembler_->movss(r128dst.value(), r128src2.value());
+                    } else if(r128dst && m32src) {
                         assembler_->movss(r128dst.value(), m32src.value());
                     } else if(m32dst && r128src) {
                         assembler_->movss(m32dst.value(), r128src.value());
