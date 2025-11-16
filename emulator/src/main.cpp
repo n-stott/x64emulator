@@ -63,7 +63,11 @@ int main(int argc, char* argv[], char* envp[]) {
 
     parser.add_argument("-j")
             .help("Number of cores")
+#ifndef MULTIPROCESSING
             .default_value<int>(1)
+#else
+            .default_value<int>(2)
+#endif
             .scan<'i', int>();
 
     parser.add_argument("--mem")
