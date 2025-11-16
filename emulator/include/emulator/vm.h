@@ -128,7 +128,7 @@ namespace emulator {
         std::vector<emulator::BasicBlock*> queue_;
     };
 
-    class VM {
+    class VM : public x64::Mmu::Callback {
     public:
         explicit VM(x64::Cpu& cpu, x64::Mmu& mmu);
         ~VM();
@@ -151,18 +151,6 @@ namespace emulator {
         void execute(VMThread* thread);
 
         void tryRetrieveSymbols(const std::vector<u64>& addresses, std::unordered_map<u64, std::string>* addressesToSymbols) const;
-
-        class MmuCallback : public x64::Mmu::Callback {
-        public:
-            MmuCallback(x64::Mmu* mmu, VM* vm);
-            ~MmuCallback();
-            void onRegionCreation(u64 base, u64 length, BitFlags<x64::PROT> prot) override;
-            void onRegionProtectionChange(u64 base, u64 length, BitFlags<x64::PROT> protBefore, BitFlags<x64::PROT> protAfter) override;
-            void onRegionDestruction(u64 base, u64 length, BitFlags<x64::PROT> prot) override;
-        private:
-            x64::Mmu* mmu_ { nullptr };
-            VM* vm_ { nullptr };
-        };
 
         class CpuCallback : public x64::Cpu::Callback {
         public:
@@ -208,9 +196,9 @@ namespace emulator {
         std::string callName(const x64::X64Instruction& instruction) const;
         std::string calledFunctionName(u64 address) const;
 
-        void handleRegionCreation(u64 base, u64 length, BitFlags<x64::PROT> prot);
-        void handleRegionProtectionChange(u64 base, u64 length, BitFlags<x64::PROT> protBefore, BitFlags<x64::PROT> protAfter);
-        void handleRegionDestruction(u64 base, u64 length, BitFlags<x64::PROT> prot);
+        void onRegionCreation(u64 base, u64 length, BitFlags<x64::PROT> prot) override;
+        void onRegionProtectionChange(u64 base, u64 length, BitFlags<x64::PROT> protBefore, BitFlags<x64::PROT> protAfter) override;
+        void onRegionDestruction(u64 base, u64 length, BitFlags<x64::PROT> prot) override;
 
         void updateJitStats(const BasicBlock&);
         void dumpJitTelemetry(const std::vector<const BasicBlock*>& blocks) const;

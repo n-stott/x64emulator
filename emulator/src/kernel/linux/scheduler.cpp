@@ -17,6 +17,19 @@ namespace emulator {
 
 namespace kernel::gnulinux {
 
+    struct TaggedVM {
+        explicit TaggedVM(x64::Mmu& mmu);
+        ~TaggedVM();
+
+        x64::Cpu cpu;
+        emulator::VM vm;
+        bool canRunSyscalls { false };
+        bool canRunAtomics { false };
+    };
+
+    TaggedVM::TaggedVM(x64::Mmu& mmu) : cpu(mmu), vm(cpu, mmu) { }
+    TaggedVM::~TaggedVM() = default;
+
     Scheduler::Scheduler(x64::Mmu& mmu, Kernel& kernel) : mmu_(mmu), kernel_(kernel) { }
     Scheduler::~Scheduler() = default;
 
@@ -32,17 +45,22 @@ namespace kernel::gnulinux {
         }
     }
 
-    void Scheduler::runOnWorkerThread(Worker worker) {
+    std::unique_ptr<TaggedVM> Scheduler::createVM(const Worker& worker) {
+        std::unique_ptr<TaggedVM> vm = std::make_unique<TaggedVM>(mmu_);
+        vm->canRunAtomics = worker.canRunAtomic();
+        vm->canRunSyscalls = worker.canRunSyscalls();
+        vm->vm.setEnableJit(worker.enableJit);
+        vm->vm.setEnableJitChaining(worker.enableJitChaining);
+        vm->vm.setJitStatsLevel(worker.jitStatsLevel);
+        vm->vm.setOptimizationLevel(worker.optimizationLevel);
+        return vm;
+    }
+
+    void Scheduler::runOnWorkerThread(TaggedVM* vm) {
         bool didShowCrashMessage = false;
-        x64::Cpu cpu(mmu_);
-        emulator::VM vm(cpu, mmu_);
-        vm.setEnableJit(worker.enableJit);
-        vm.setEnableJitChaining(worker.enableJitChaining);
-        vm.setJitStatsLevel(worker.jitStatsLevel);
-        vm.setOptimizationLevel(worker.optimizationLevel);
         while(!emulator::signal_interrupt) {
             try {
-                JobOrCommand jobOrCommand = tryPickNext(worker);
+                JobOrCommand jobOrCommand = tryPickNext(vm);
                 if(jobOrCommand.command == JobOrCommand::ABORT
                 || jobOrCommand.command == JobOrCommand::EXIT) break;
 
@@ -58,12 +76,12 @@ namespace kernel::gnulinux {
 
                 if(job.ring == RING::KERNEL) {
                     assert(job.atomic == ATOMIC::NO);
-                    runKernel(worker, vm, job.thread);
+                    runKernel(job.thread);
                 } else {
                     if(job.atomic == ATOMIC::NO) {
-                        runUserspace(worker, vm, job.thread);
+                        runUserspace(vm->vm, job.thread);
                     } else {
-                        runUserspaceAtomic(worker, vm, job.thread);
+                        runUserspaceAtomic(vm->vm, job.thread);
                     }
                 }
 
@@ -89,7 +107,7 @@ namespace kernel::gnulinux {
                     addresses.push_back(event.address);
                 });
             });
-            vm.tryRetrieveSymbols(addresses, &addressToSymbol_);
+            vm->vm.tryRetrieveSymbols(addresses, &addressToSymbol_);
         }
         // If we have panicked, we retrieve the callstacks
         if(kernel_.hasPanicked()) {
@@ -101,14 +119,14 @@ namespace kernel::gnulinux {
                     addresses.push_back(address);
                 }
             });
-            vm.tryRetrieveSymbols(addresses, &addressToSymbol_);
+            vm->vm.tryRetrieveSymbols(addresses, &addressToSymbol_);
         }
     }
 
-    void Scheduler::runUserspace(const Worker& worker, emulator::VM& vm, Thread* thread) {
+    void Scheduler::runUserspace(emulator::VM& vm, Thread* thread) {
         ScopeGuard guard([&]() {
             std::unique_lock lock(schedulerMutex_);
-            stopRunningThread(thread, worker, lock);
+            stopRunningThread(thread, lock);
             syncThreadTimeSlice(thread, &lock);
             --numRunningJobs_;
             lock.unlock();
@@ -125,10 +143,10 @@ namespace kernel::gnulinux {
         // fmt::print(stderr, "{}: stop thread {}\n", worker.id, thread->description().tid);
     }
 
-    void Scheduler::runUserspaceAtomic(const Worker& worker, emulator::VM& vm, Thread* thread) {
+    void Scheduler::runUserspaceAtomic(emulator::VM& vm, Thread* thread) {
         std::unique_lock lock(schedulerMutex_);
         ScopeGuard guard([&]() {
-            stopRunningThread(thread, worker, lock);
+            stopRunningThread(thread, lock);
             syncThreadTimeSlice(thread, &lock);
             --numRunningJobs_;
             lock.unlock();
@@ -147,10 +165,30 @@ namespace kernel::gnulinux {
         // fmt::print(stderr, "{}: stop thread {}\n", worker.id, thread->description().tid);
     }
 
-    void Scheduler::runKernel(const Worker& worker, emulator::VM& vm, Thread* thread) {
+    template<typename Target, typename CallbackType>
+    class CallbackGroup {
+    public:
+        CallbackGroup(Target* target) : target_(target) { }
+        ~CallbackGroup() {
+            for(auto* cb : callbacks_) {
+                target_->removeCallback(cb);
+            }
+        }
+
+        void add(CallbackType* callback) {
+            target_->addCallback(callback);
+            callbacks_.push_back(callback);
+        }
+
+    private:
+        Target* target_ { nullptr };
+        std::vector<CallbackType*> callbacks_;
+    };
+
+    void Scheduler::runKernel(Thread* thread) {
         std::unique_lock lock(schedulerMutex_);
         ScopeGuard guard([&]() {
-            stopRunningThread(thread, worker, lock);
+            stopRunningThread(thread, lock);
             inKernel_ = false;
             --numRunningJobs_;
             lock.unlock();
@@ -159,7 +197,10 @@ namespace kernel::gnulinux {
         verify(numRunningJobs_ == 0, "jobs running while in kernel");
         ++numRunningJobs_;
         inKernel_ = true;
-        emulator::VM::MmuCallback callback(&mmu_, &vm);
+        CallbackGroup<x64::Mmu, x64::Mmu::Callback> callbackGroup(&mmu_);
+        for(auto& vm : vms_) {
+            callbackGroup.add(&vm->vm);
+        }
         kernel_.timers().updateAll(currentTime_);
         kernel_.sys().syscall(thread);
         thread->resetSyscallRequest();
@@ -172,16 +213,38 @@ namespace kernel::gnulinux {
 
     void Scheduler::run() {
 #ifdef MULTIPROCESSING
+        vms_.clear();
+        for(int i = 0; i < kernel_.nbCores(); ++i) {
+            Worker worker{
+                i,
+                kernel_.isJitEnabled(),
+                kernel_.isJitChainingEnabled(),
+                kernel_.jitStatsLevel(),
+                kernel_.optimizationLevel()
+            };
+            vms_.push_back(createVM(worker));
+        }
         std::vector<std::thread> workerThreads;
         workerThreads.reserve(kernel_.nbCores());
         for(int i = 0; i < kernel_.nbCores(); ++i) {
-            workerThreads.emplace_back(std::bind(&Scheduler::runOnWorkerThread, this, Worker{i, kernel_.isJitEnabled(), kernel_.isJitChainingEnabled(), kernel_.jitStatsLevel(), kernel_.optimizationLevel()}));
+            workerThreads.emplace_back(std::bind(&Scheduler::runOnWorkerThread, this, vms_[i].get()));
         }
         for(std::thread& workerThread : workerThreads) {
             workerThread.join();
         }
+        vms_.clear();
 #else
-        runOnWorkerThread(Worker{0, kernel_.isJitEnabled(), kernel_.isJitChainingEnabled(), kernel_.jitStatsLevel(), kernel_.optimizationLevel()});
+        Worker worker{
+            0,
+            kernel_.isJitEnabled(),
+            kernel_.isJitChainingEnabled(),
+            kernel_.jitStatsLevel(),
+            kernel_.optimizationLevel()
+        };
+        vms_.clear();
+        vms_.push_back(createVM(worker));
+        runOnWorkerThread(vms_[0].get());
+        vms_.clear();
 #endif
     }
 
@@ -258,17 +321,17 @@ namespace kernel::gnulinux {
         }
     }
 
-    Scheduler::JobOrCommand Scheduler::tryPickNext(const Worker& worker) {
+    Scheduler::JobOrCommand Scheduler::tryPickNext(const TaggedVM* vm) {
         std::unique_lock lock(schedulerMutex_);
         schedulerHasRunnableThread_.wait(lock, [&]{
             return kernel_.hasPanicked()     // something bad happened
-                || this->hasRunnableThread(worker.canRunSyscalls(), worker.canRunAtomic())  // we want to run an available thread
+                || this->hasRunnableThread(vm->canRunSyscalls, vm->canRunAtomics)  // we want to run an available thread
                 || this->allThreadsDead()     // we need to exit because all threads are dead
                 || this->allThreadsBlocked(); // we need to check unblocking conditions
         });
 
         assert(kernel_.hasPanicked()
-            || hasRunnableThread(worker.canRunSyscalls(), worker.canRunAtomic())
+            || hasRunnableThread(vm->canRunSyscalls, vm->canRunAtomics)
             || allThreadsDead()
             || allThreadsBlocked());
 
@@ -316,7 +379,7 @@ namespace kernel::gnulinux {
         }
         
         auto findKernelThread = [&]() -> Thread* {
-            if(!worker.canRunSyscalls()) return nullptr;
+            if(!vm->canRunSyscalls) return nullptr;
             for(Thread* thread : runnableThreads_) {
                 if(thread->requestsSyscall()) return thread;
             }
@@ -388,8 +451,7 @@ namespace kernel::gnulinux {
         };
     }
 
-    void Scheduler::stopRunningThread(Thread* thread, const Worker& worker, std::unique_lock<std::mutex>&) {
-        (void)worker;
+    void Scheduler::stopRunningThread(Thread* thread, std::unique_lock<std::mutex>&) {
         auto it = std::find_if(runningJobs_.begin(), runningJobs_.end(), [=](const Job& job) {
             return job.thread == thread;
         });

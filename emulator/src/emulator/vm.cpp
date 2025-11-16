@@ -477,32 +477,12 @@ namespace emulator {
         }
     }
 
-    VM::MmuCallback::MmuCallback(x64::Mmu* mmu, VM* vm) : mmu_(mmu), vm_(vm) {
-        if(!!mmu_) mmu_->addCallback(this);
-    }
-
-    VM::MmuCallback::~MmuCallback() {
-        if(!!mmu_) mmu_->removeCallback(this);
-    }
-
-    void VM::MmuCallback::onRegionCreation(u64 base, u64 length, BitFlags<x64::PROT> prot) {
-        vm_->handleRegionCreation(base, length, prot);
-    }
-
-    void VM::MmuCallback::onRegionProtectionChange(u64 base, u64 length, BitFlags<x64::PROT> protBefore, BitFlags<x64::PROT> protAfter) {
-        vm_->handleRegionProtectionChange(base, length, protBefore, protAfter);
-    }
-
-    void VM::MmuCallback::onRegionDestruction(u64 base, u64 length, BitFlags<x64::PROT> prot) {
-        vm_->handleRegionDestruction(base, length, prot);
-    }
-
-    void VM::handleRegionCreation(u64 base, u64 length, BitFlags<x64::PROT> prot) {
+    void VM::onRegionCreation(u64 base, u64 length, BitFlags<x64::PROT> prot) {
         if(!prot.test(x64::PROT::EXEC)) return;
         basicBlocks_.reserve(base, base+length);
     }
 
-    void VM::handleRegionProtectionChange(u64 base, u64 length, BitFlags<x64::PROT> protBefore, BitFlags<x64::PROT> protAfter) {
+    void VM::onRegionProtectionChange(u64 base, u64 length, BitFlags<x64::PROT> protBefore, BitFlags<x64::PROT> protAfter) {
         // if executable flag didn't change, we don't need to to anything
         if(protBefore.test(x64::PROT::EXEC) == protAfter.test(x64::PROT::EXEC)) return;
 
@@ -531,7 +511,7 @@ namespace emulator {
         }
     }
 
-    void VM::handleRegionDestruction(u64 base, u64 length, BitFlags<x64::PROT> prot) {
+    void VM::onRegionDestruction(u64 base, u64 length, BitFlags<x64::PROT> prot) {
         if(!prot.test(x64::PROT::EXEC)) return;
 
         if(jitStatsLevel() >= 2) {

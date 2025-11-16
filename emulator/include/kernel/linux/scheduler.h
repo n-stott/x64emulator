@@ -15,6 +15,7 @@
 
 namespace x64 {
     class Mmu;
+    class Cpu;
 }
 
 namespace emulator {
@@ -29,6 +30,7 @@ namespace kernel::gnulinux {
 
     class Kernel;
     class Thread;
+    struct TaggedVM;
 
     class Scheduler {
     public:
@@ -93,10 +95,12 @@ namespace kernel::gnulinux {
             ATOMIC atomic { ATOMIC::NO };
         };
 
-        void runOnWorkerThread(Worker worker);
-        void runUserspace(const Worker& worker, emulator::VM& vm, Thread* thread);
-        void runUserspaceAtomic(const Worker& worker, emulator::VM& vm, Thread* thread);
-        void runKernel(const Worker& worker, emulator::VM& vm, Thread* thread);
+        std::unique_ptr<TaggedVM> createVM(const Worker& worker);
+
+        void runOnWorkerThread(TaggedVM*);
+        void runUserspace(emulator::VM& vm, Thread* thread);
+        void runUserspaceAtomic(emulator::VM& vm, Thread* thread);
+        void runKernel(Thread* thread);
 
         struct JobOrCommand {
             enum COMMAND {
@@ -109,8 +113,8 @@ namespace kernel::gnulinux {
             Job job;
         };
 
-        JobOrCommand tryPickNext(const Worker&);
-        void stopRunningThread(Thread* thread, const Worker&, std::unique_lock<std::mutex>&);
+        JobOrCommand tryPickNext(const TaggedVM*);
+        void stopRunningThread(Thread* thread, std::unique_lock<std::mutex>&);
         
         bool tryUnblockThreads(std::unique_lock<std::mutex>&);
         void block(Thread*);
@@ -131,6 +135,8 @@ namespace kernel::gnulinux {
 
         x64::Mmu& mmu_;
         Kernel& kernel_;
+
+        std::vector<std::unique_ptr<TaggedVM>> vms_;
 
         // Any operation of the member variables below MUST be protected
         // by taking a lock on this mutex.
