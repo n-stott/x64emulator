@@ -333,9 +333,8 @@ namespace emulator {
             fmt::print(stderr, "Attempting to execute non-executable region [{:#x}-{:#x}]\n", mmuRegion->base(), mmuRegion->end());
         });
 
-        // limit the size of disassembly range
-        // limit to a single page
-        u64 end = std::min(mmuRegion->end(), address + x64::Mmu::PAGE_SIZE);
+        // limit the size of disassembly range to 256 bytes
+        u64 end = std::min(mmuRegion->end(), address + 0x100);
         // try to avoid re-disassembling
         for(const auto& execSection : executableSections_) {
             if(address < execSection->begin && execSection->begin <= end) end = execSection->begin;
