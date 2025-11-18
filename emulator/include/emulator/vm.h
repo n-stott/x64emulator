@@ -25,6 +25,7 @@ namespace emulator {
 
     class VM;
     class CompilationQueue;
+    class DisassemblyCache;
 
     class BasicBlock {
     public:
@@ -130,7 +131,7 @@ namespace emulator {
 
     class VM : public x64::Mmu::Callback {
     public:
-        explicit VM(x64::Cpu& cpu, x64::Mmu& mmu);
+        explicit VM(x64::Cpu& cpu, x64::Mmu& mmu, DisassemblyCache& disassemblyCache);
         ~VM();
 
         void setEnableJit(bool enable);
@@ -166,8 +167,6 @@ namespace emulator {
         };
 
     private:
-        void log(size_t ticks, const x64::X64Instruction& instruction) const;
-
         BasicBlock* fetchBasicBlock();
 
         void notifyCall(u64 address);
@@ -178,24 +177,6 @@ namespace emulator {
         void syncThread();
         void enterSyscall();
 
-        struct ExecutableSection {
-            u64 begin;
-            u64 end;
-            std::vector<x64::X64Instruction> instructions;
-            std::string filename;
-
-            void trim();
-        };
-
-        struct InstructionPosition {
-            const ExecutableSection* section;
-            size_t index;
-        };
-
-        InstructionPosition findSectionWithAddress(u64 address, const ExecutableSection* sectionHint = nullptr) const;
-        std::string callName(const x64::X64Instruction& instruction) const;
-        std::string calledFunctionName(u64 address) const;
-
         void onRegionCreation(u64 base, u64 length, BitFlags<x64::PROT> prot) override;
         void onRegionProtectionChange(u64 base, u64 length, BitFlags<x64::PROT> protBefore, BitFlags<x64::PROT> protAfter) override;
         void onRegionDestruction(u64 base, u64 length, BitFlags<x64::PROT> prot) override;
@@ -205,8 +186,7 @@ namespace emulator {
 
         x64::Cpu& cpu_;
         x64::Mmu& mmu_;
-
-        mutable std::vector<std::unique_ptr<ExecutableSection>> executableSections_;
+        DisassemblyCache& disassemblyCache_;
 
         VMThread* currentThread_ { nullptr };
 
@@ -236,14 +216,10 @@ namespace emulator {
 
         std::vector<x64::X64Instruction> blockInstructions_;
 
-        mutable SymbolProvider symbolProvider_;
-        mutable std::unordered_map<u64, std::string> functionNameCache_;
-
         bool jitEnabled_ { false };
         int jitStatsLevel_ { 0 };
         int optimizationLevel_ { 0 };
 
-        std::unique_ptr<x64::Disassembler> disassembler_;
         std::unique_ptr<x64::Jit> jit_;
         CompilationQueue compilationQueue_;
     };

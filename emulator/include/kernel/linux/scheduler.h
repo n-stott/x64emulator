@@ -20,6 +20,7 @@ namespace x64 {
 
 namespace emulator {
     class VM;
+    class DisassemblyCache;
 }
 
 namespace profiling {
@@ -137,6 +138,7 @@ namespace kernel::gnulinux {
         Kernel& kernel_;
 
         std::vector<std::unique_ptr<TaggedVM>> vms_;
+        std::unique_ptr<emulator::DisassemblyCache> disassemblyCache_; // MOVE THIS ELSEWHERE
 
         // Any operation of the member variables below MUST be protected
         // by taking a lock on this mutex.

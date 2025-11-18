@@ -1,8 +1,8 @@
 #include "emulator/vm.h"
 #include "emulator/vmthread.h"
+#include "emulator/disassemblycache.h"
 #include "verify.h"
 #include "x64/compiler/compiler.h"
-#include "x64/disassembler/zydiswrapper.h"
 #include "x64/mmu.h"
 #include "x64/registers.h"
 #include "host/hostmemory.h"
@@ -15,10 +15,50 @@
 
 namespace emulator {
 
-    VM::VM(x64::Cpu& cpu, x64::Mmu& mmu) :
+    class MmuBytecodeRetriever : public BytecodeRetriever {
+    public:
+        explicit MmuBytecodeRetriever(x64::Mmu& mmu, DisassemblyCache& disassemblyCache) :
+                mmu_(mmu), disassemblyCache_(disassemblyCache) {
+
+        }
+
+        bool retrieveBytecode(std::vector<u8>* data, std::string* name, u64* regionBase, u64 address, u64 size) override {
+            if(!data) return false;
+            const x64::Mmu::Region* mmuRegion = ((const x64::Mmu&)mmu_).findAddress(address);
+            if(!mmuRegion) return false;
+            verify(mmuRegion->prot().test(x64::PROT::EXEC), [&]() {
+                fmt::print(stderr, "Attempting to execute non-executable region [{:#x}-{:#x}]\n", mmuRegion->base(), mmuRegion->end());
+            });
+
+            // limit the size of disassembly range to 256 bytes
+            u64 end = std::min(mmuRegion->end(), address + size);
+            if(address >= end) {
+                // This may happen if disassembly produces nonsense.
+                // Juste re-disassemble the whole region in this case.
+                end = mmuRegion->end();
+            }
+            verify(address < end, [&]() {
+                fmt::print(stderr, "Disassembly region [{:#x}-{:#x}] is empty\n", address, end);
+            });
+
+            // Now, do the disassembly
+            data->resize(end-address, 0x0);
+            mmu_.copyFromMmu(data->data(), x64::Ptr8{address}, end-address);
+
+            if(name) *name = mmuRegion->name();
+            if(regionBase) *regionBase = mmuRegion->base();
+            return true;
+        }
+    
+    private:
+        x64::Mmu& mmu_;
+        DisassemblyCache& disassemblyCache_;
+    };
+
+    VM::VM(x64::Cpu& cpu, x64::Mmu& mmu, DisassemblyCache& disassemblyCache) :
             cpu_(cpu),
-            mmu_(mmu) {
-        disassembler_ = std::make_unique<x64::ZydisWrapper>();
+            mmu_(mmu),
+            disassemblyCache_(disassemblyCache) {
         mmu.forAllRegions([&](const x64::Mmu::Region& region) {
             basicBlocks_.reserve(region.base(), region.end());
         });
@@ -219,25 +259,8 @@ namespace emulator {
 #ifdef VM_BASICBLOCK_TELEMETRY
             ++mapMiss_;
 #endif
-            blockInstructions_.clear();
-            u64 address = startAddress;
-            while(true) {
-                auto pos = findSectionWithAddress(address, nullptr);
-                const x64::X64Instruction* it = pos.section->instructions.data() + pos.index;
-                const x64::X64Instruction* end = pos.section->instructions.data() + pos.section->instructions.size();
-                bool foundBranch = false;
-                while(it != end) {
-                    blockInstructions_.push_back(*it);
-                    address = it->nextAddress();
-                    if(it->isBranch()) {
-                        foundBranch = true;
-                        break;
-                    } else {
-                        ++it;
-                    }
-                }
-                if(foundBranch) break;
-            }
+            MmuBytecodeRetriever bytecodeRetriever(mmu_, disassemblyCache_);
+            disassemblyCache_.getBasicBlock(startAddress, &bytecodeRetriever, &blockInstructions_);
             verify(!blockInstructions_.empty() && blockInstructions_.back().isBranch(), [&]() {
                 fmt::print("did not find bb exit branch for bb starting at {:#x}\n", startAddress);
             });
@@ -249,29 +272,6 @@ namespace emulator {
             basicBlocks_.add(bbstart, std::move(bblock));
             basicBlocksByAddress_[startAddress] = bblockPtr;
             return bblockPtr;
-        }
-    }
-
-    void VM::log(size_t ticks, const x64::X64Instruction& instruction) const {
-        x64::Cpu::State state;
-        cpu_.save(&state);
-        std::string eflags = state.flags.toString();
-        std::string registerDump = state.regs.toString(true, false, false);
-        std::string indent = fmt::format("{:{}}", "", 2*currentThread_->callstack().size());
-        std::string mnemonic = fmt::format("{}|{}", indent, instruction.toString());
-        fmt::print(stderr, "{:10} {:55} flags = {:20} {}\n", ticks, mnemonic, eflags, registerDump);
-        if(instruction.isCall()) {
-            fmt::print(stderr, "{:10} {}[call {}({:#x}, {:#x}, {:#x}, {:#x}, {:#x}, {:#x})]\n", ticks, indent, callName(instruction),
-                cpu_.get(x64::R64::RDI),
-                cpu_.get(x64::R64::RSI),
-                cpu_.get(x64::R64::RDX),
-                cpu_.get(x64::R64::RCX),
-                cpu_.get(x64::R64::R8),
-                cpu_.get(x64::R64::R9));
-        }
-        if(instruction.isX87()) {
-            std::string x87dump = state.x87fpu.toString();
-            fmt::print(stderr, "{:86} {}\n", "", x87dump);
         }
     }
 
@@ -297,182 +297,10 @@ namespace emulator {
         currentThread_->popCallstackUntil(stackptr);
     }
 
-    VM::InstructionPosition VM::findSectionWithAddress(u64 address, const ExecutableSection* sectionHint) const {
-        auto findInstructionPosition = [](const ExecutableSection* section, u64 address) -> std::optional<InstructionPosition> {
-            assert(!!section);
-
-            // find instruction following address
-            auto it = std::lower_bound(section->instructions.begin(), section->instructions.end(), address, [&](const auto& a, u64 b) {
-                return a.address() < b;
-            });
-            if(it == section->instructions.end()) return {};
-            if(address != it->address()) return {};
-
-            size_t index = (size_t)std::distance(section->instructions.begin(), it);
-            return InstructionPosition { section, index };
-        };
-
-        if(!!sectionHint) {
-            if(auto ip = findInstructionPosition(sectionHint, address)) return ip.value();
-        }
-
-        auto candidateSectionIt = std::upper_bound(executableSections_.begin(), executableSections_.end(), address, [&](u64 a, const auto& b) {
-            return a < b->end;
-        });
-        if(candidateSectionIt != executableSections_.end()) {
-            const auto* candidateSection = candidateSectionIt->get();
-            if(candidateSection->begin <= address && address < candidateSection->end) {
-                if(auto ip = findInstructionPosition(candidateSection, address)) return ip.value();
-            }
-        }
-        
-        // If we land here, we probably have not disassembled the section yet...
-        const x64::Mmu::Region* mmuRegion = ((const x64::Mmu&)mmu_).findAddress(address);
-        if(!mmuRegion) return InstructionPosition { nullptr, (size_t)(-1) };
-        verify(mmuRegion->prot().test(x64::PROT::EXEC), [&]() {
-            fmt::print(stderr, "Attempting to execute non-executable region [{:#x}-{:#x}]\n", mmuRegion->base(), mmuRegion->end());
-        });
-
-        // limit the size of disassembly range to 256 bytes
-        u64 end = std::min(mmuRegion->end(), address + 0x100);
-        // try to avoid re-disassembling
-        for(const auto& execSection : executableSections_) {
-            if(address < execSection->begin && execSection->begin <= end) end = execSection->begin;
-        }
-
-        if(address >= end) {
-            // This may happen if disassembly produces nonsense.
-            // Juste re-disassemble the whole region in this case.
-            end = mmuRegion->end();
-        }
-        verify(address < end, [&]() {
-            fmt::print(stderr, "Disassembly region [{:#x}-{:#x}] is empty\n", address, end);
-        });
-
-        // Now, do the disassembly
-        // fmt::print(stderr, "Requesting disassembly for [{:#x}-{:#x}] (size={:#x}) {}\n", address, end, end-address, mmuRegion->file());
-        std::vector<u8> disassemblyData;
-        disassemblyData.resize(end-address, 0x0);
-        mmu_.copyFromMmu(disassemblyData.data(), x64::Ptr8{address}, end-address);
-        x64::Disassembler::DisassemblyResult result = disassembler_->disassembleRange(disassemblyData.data(), disassemblyData.size(), address);
-
-        // Finally, create the new executable region
-        ExecutableSection section;
-        section.begin = address;
-        section.end = result.nextAddress;
-        section.filename = mmuRegion->name();
-        section.instructions = std::move(result.instructions);
-        verify(!section.instructions.empty(), [&]() {
-            fmt::print("Disassembly of {:#x}:{:#x} provided no instructions", address, end);
-        });
-        verify(section.end == section.instructions.back().nextAddress());
-        section.trim();
-        
-        auto newSection = std::make_unique<ExecutableSection>(std::move(section));
-        const auto* sectionPtr = newSection.get();
-
-        // We may have some section overlap : because we only get the program header bounds, we actually get the
-        // .init, .plt, .text, .fini and other section headers within a single block of memory. The transitions 
-        // between the sections do not make sense (nor should they), but we are actually disassembling them in one go.
-        // It would be nice to have the bounds of each section so we know where to stop.
-        // In the meantime, we can just replace the old content to ensure that we have no overlap !
-
-        for(auto& oldSection : executableSections_) {
-            if(newSection->end <= oldSection->begin) continue;
-            if(newSection->begin >= oldSection->end) continue;
-
-            // trim the old section
-            auto& instructions = oldSection->instructions;
-            auto it = std::lower_bound(instructions.begin(), instructions.end(), address, [](const auto& a, u64 b) {
-                return a.nextAddress() < b;
-            });
-            instructions.erase(it, instructions.end());
-            verify(!instructions.empty());
-            oldSection->end = instructions.back().nextAddress();
-        }
-
-        auto position = std::lower_bound(executableSections_.begin(), executableSections_.end(), address, [](const auto& a, u64 b) {
-            return a->begin < b;
-        });
-        executableSections_.insert(position, std::move(newSection));
-
-        assert(std::is_sorted(executableSections_.begin(), executableSections_.end(), [](const auto& a, const auto& b) {
-            return a->begin < b->begin;
-        }));
-
-
-        for(size_t i = 1; i < executableSections_.size(); ++i) {
-            const auto& a = *executableSections_[i-1];
-            const auto& b = *executableSections_[i];
-            verify(a.end <= b.begin, [&]() {
-                fmt::print("Overlapping executable regions {:#x}:{:#x} and {:#x}:{:#x}", a.begin, a.end, b.begin, b.end);
-            });
-        }
-
-        // Retrieve symbols from that section
-        symbolProvider_.tryRetrieveSymbolsFromExecutable(mmuRegion->name(), mmuRegion->base());
-
-        return InstructionPosition { sectionPtr, 0 };
-    }
-
-    std::string VM::callName(const x64::X64Instruction& instruction) const {
-        if(instruction.insn() == x64::Insn::CALLDIRECT) {
-            return calledFunctionName(instruction.op0<x64::Imm>().immediate);
-        }
-        if(instruction.insn() == x64::Insn::CALLINDIRECT_RM32) {
-            return calledFunctionName(cpu_.get(instruction.op0<x64::RM32>()));
-        }
-        if(instruction.insn() == x64::Insn::CALLINDIRECT_RM64) {
-            return calledFunctionName(cpu_.get(instruction.op0<x64::RM64>()));
-        }
-        return "";
-    }
-
-    std::string VM::calledFunctionName(u64 address) const {
-        // if we already have something cached, just return the cached value
-        if(auto it = functionNameCache_.find(address); it != functionNameCache_.end()) {
-            return it->second;
-        }
-
-        // If we are in the text section, we can try to lookup the symbol for that address
-        auto symbolsAtAddress = symbolProvider_.lookupSymbol(address);
-        if(!symbolsAtAddress.empty()) {
-            functionNameCache_[address] = symbolsAtAddress[0]->demangledSymbol;
-            return symbolsAtAddress[0]->demangledSymbol;
-        }
-
-        // If we are in the PLT instead, lets' look at the first instruction to determine the jmp location
-        InstructionPosition pos = findSectionWithAddress(address);
-        if(!pos.section) {
-            return "???";
-        }
-        if(pos.index == (size_t)(-1)) {
-            return fmt::format("Somewhere in {}", pos.section->filename);
-        }
-        // NOLINTBEGIN(clang-analyzer-core.CallAndMessage)
-        const x64::X64Instruction& jmpInsn = pos.section->instructions[pos.index];
-        if(jmpInsn.insn() == x64::Insn::JMP_RM64) {
-            x64::Cpu cpu(mmu_);
-            cpu.set(x64::R64::RIP, jmpInsn.nextAddress()); // add instruction size offset
-            x64::RM64 rm64 = jmpInsn.op0<x64::RM64>();
-            auto dst = cpu.get(rm64);
-            auto symbolsAtAddress = symbolProvider_.lookupSymbol(dst);
-            if(!symbolsAtAddress.empty()) {
-                functionNameCache_[address] = symbolsAtAddress[0]->demangledSymbol;
-                return symbolsAtAddress[0]->demangledSymbol;
-            }
-        }
-        // NOLINTEND(clang-analyzer-core.CallAndMessage)
-        
-        // We are not in the PLT either :'(
-        // Let's just fail
-        return fmt::format("Somewhere in {}", pos.section->filename);
-    }
-
     void VM::tryRetrieveSymbols(const std::vector<u64>& addresses, std::unordered_map<u64, std::string>* addressesToSymbols) const {
         if(!addressesToSymbols) return;
         for(u64 address : addresses) {
-            auto symbol = calledFunctionName(address);
+            auto symbol = disassemblyCache_.calledFunctionName(address);
             addressesToSymbols->emplace(address, std::move(symbol));
         }
     }
@@ -500,11 +328,6 @@ namespace emulator {
                 bb.removeFromCaches();
             });
             basicBlocks_.remove(base, base+length);
-            
-            executableSections_.erase(std::remove_if(executableSections_.begin(), executableSections_.end(), [&](const auto& section) {
-                return (base <= section->begin && section->begin < base + length)
-                    || (base < section->end && section->end <= base + length);
-            }), executableSections_.end());
         } else {
             // if we become executable, reserve basic blocks
             basicBlocks_.reserve(base, base+length);
@@ -526,11 +349,6 @@ namespace emulator {
             bb.removeFromCaches();
         });
         basicBlocks_.remove(base, base+length);
-        
-        executableSections_.erase(std::remove_if(executableSections_.begin(), executableSections_.end(), [&](const auto& section) {
-            return (base <= section->begin && section->begin < base + length)
-                || (base < section->end && section->end <= base + length);
-        }), executableSections_.end());
     }
 
     VM::CpuCallback::CpuCallback(x64::Cpu* cpu, VM* vm) : cpu_(cpu), vm_(vm) {
@@ -555,41 +373,6 @@ namespace emulator {
 
     void VM::CpuCallback::onStackChange(u64 stackptr) {
         if(!!vm_) vm_->notifyStackChange(stackptr);
-    }
-
-    void VM::ExecutableSection::trim() {
-        // Assume that the first instruction is a basic block entry instruction
-        // This is probably wrong, because we may not have disassembled the last bit of the previous section.
-        struct BasicBlock {
-            const x64::X64Instruction* instructions;
-            u32 size;
-        };
-
-        std::optional<BasicBlock> lastBasicBlock;
-
-        // Build up the basic block until we reach a branch
-        const auto* begin = instructions.data();
-        const auto* end = instructions.data() + instructions.size();
-        const auto* it = begin;
-        for(; it != end; ++it) {
-            if(!it->isBranch()) continue;
-            if(it+1 != end) {
-                ++it;
-                lastBasicBlock = BasicBlock { begin, (u32)(it-begin) };
-                begin = it;
-            } else {
-                break;
-            }
-        }
-
-        // Try and trim excess instructions from the end
-        // We will probably disassemble them again, but they will be put in the
-        // correct basic block then.
-        if(!!lastBasicBlock) {
-            auto packedInstructions = std::distance((const x64::X64Instruction*)instructions.data(), begin);
-            instructions.erase(instructions.begin() + packedInstructions, instructions.end());
-            this->end = lastBasicBlock->instructions[lastBasicBlock->size-1].nextAddress();
-        }
     }
 
     BasicBlock::BasicBlock(x64::BasicBlock cpuBasicBlock) : cpuBasicBlock_(std::move(cpuBasicBlock)) {

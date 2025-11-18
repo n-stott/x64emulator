@@ -2,6 +2,7 @@
 #include "kernel/linux/kernel.h"
 #include "kernel/linux/syscalls.h"
 #include "kernel/linux/thread.h"
+#include "emulator/disassemblycache.h"
 #include "emulator/symbolprovider.h"
 #include "emulator/vm.h"
 #include "scopeguard.h"
@@ -13,12 +14,13 @@
 
 namespace emulator {
     extern bool signal_interrupt;
+    class DisassemblyCache;
 }
 
 namespace kernel::gnulinux {
 
     struct TaggedVM {
-        explicit TaggedVM(x64::Mmu& mmu);
+        TaggedVM(x64::Mmu& mmu, emulator::DisassemblyCache&);
         ~TaggedVM();
 
         x64::Cpu cpu;
@@ -27,10 +29,13 @@ namespace kernel::gnulinux {
         bool canRunAtomics { false };
     };
 
-    TaggedVM::TaggedVM(x64::Mmu& mmu) : cpu(mmu), vm(cpu, mmu) { }
+    TaggedVM::TaggedVM(x64::Mmu& mmu, emulator::DisassemblyCache& disassemblyCache) : cpu(mmu), vm(cpu, mmu, disassemblyCache) { }
     TaggedVM::~TaggedVM() = default;
 
-    Scheduler::Scheduler(x64::Mmu& mmu, Kernel& kernel) : mmu_(mmu), kernel_(kernel) { }
+    Scheduler::Scheduler(x64::Mmu& mmu, Kernel& kernel) : mmu_(mmu), kernel_(kernel) {
+        disassemblyCache_ = std::make_unique<emulator::DisassemblyCache>();
+    }
+
     Scheduler::~Scheduler() = default;
 
     void Scheduler::syncThreadTimeSlice(Thread* thread, std::unique_lock<std::mutex>* lockPtr) {
@@ -46,7 +51,7 @@ namespace kernel::gnulinux {
     }
 
     std::unique_ptr<TaggedVM> Scheduler::createVM(const Worker& worker) {
-        std::unique_ptr<TaggedVM> vm = std::make_unique<TaggedVM>(mmu_);
+        std::unique_ptr<TaggedVM> vm = std::make_unique<TaggedVM>(mmu_, *disassemblyCache_);
         vm->canRunAtomics = worker.canRunAtomic();
         vm->canRunSyscalls = worker.canRunSyscalls();
         vm->vm.setEnableJit(worker.enableJit);
@@ -201,6 +206,7 @@ namespace kernel::gnulinux {
         for(auto& vm : vms_) {
             callbackGroup.add(&vm->vm);
         }
+        callbackGroup.add(disassemblyCache_.get());
         kernel_.timers().updateAll(currentTime_);
         kernel_.sys().syscall(thread);
         thread->resetSyscallRequest();

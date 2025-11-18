@@ -127,6 +127,7 @@ target_compile_definitions(x64jit PRIVATE ${COMPILE_DEFINITIONS})
 
 
 add_library(x64emulator ${LIB_KIND}
+    src/emulator/disassemblycache.cpp
     src/emulator/emulator.cpp
     src/emulator/symbolprovider.cpp
     src/emulator/vm.cpp
