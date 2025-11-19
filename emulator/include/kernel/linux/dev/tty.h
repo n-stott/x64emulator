@@ -14,7 +14,7 @@ namespace kernel::gnulinux {
 
     class Tty : public ShadowDevice {
     public:
-        static Tty* tryCreateAndAdd(FS* fs, Directory* parent, const std::string& pathname);
+        static Tty* tryCreateAndAdd(FS* fs, Directory* parent, const std::string& pathname, bool closeOnExec);
 
         bool isReadable() const override { return true; }
         bool isWritable() const override { return true; }

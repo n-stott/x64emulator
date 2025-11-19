@@ -98,6 +98,7 @@ create_simple_test(longjmp)
 create_simple_test(many_pipes)
 create_simple_test(many_events)
 create_simple_test(memfd)
+create_simple_test(getfd)
 
 add_executable(test_abort src/test_abort.cpp)
 target_compile_options(test_abort PUBLIC ${CC_OPTIONS})

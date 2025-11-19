@@ -14,9 +14,9 @@ namespace kernel::gnulinux {
 
     class ShadowDevice : public Device {
     public:
-        static File* tryCreateAndAdd(FS* fs, Directory* parent, const std::string& pathname);
+        static File* tryCreateAndAdd(FS* fs, Directory* parent, const std::string& pathname, bool closeOnExec);
 
-        static std::optional<int> tryGetDeviceHostFd(const std::string& pathname);
+        static std::optional<int> tryGetDeviceHostFd(const std::string& pathname, bool closeOnExec);
 
         bool isShadow() const override { return true; }
 

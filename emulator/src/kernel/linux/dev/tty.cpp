@@ -11,7 +11,7 @@
 
 namespace kernel::gnulinux {
 
-    Tty* Tty::tryCreateAndAdd(FS* fs, Directory* parent, const std::string& name) {
+    Tty* Tty::tryCreateAndAdd(FS* fs, Directory* parent, const std::string& name, bool closeOnExec) {
         std::string pathname;
         if(!parent || parent == fs->root()) {
             pathname = name;
@@ -19,7 +19,7 @@ namespace kernel::gnulinux {
             pathname = (parent->path() + "/" + name);
         }
 
-        auto hostFd = ShadowDevice::tryGetDeviceHostFd(pathname);
+        auto hostFd = ShadowDevice::tryGetDeviceHostFd(pathname, closeOnExec);
         if(!hostFd) return nullptr;
 
         std::string absolutePathname = fs->toAbsolutePathname(pathname);

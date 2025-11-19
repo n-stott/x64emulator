@@ -29,7 +29,7 @@ namespace kernel::gnulinux {
         root_ = HostDirectory::tryCreateRoot(this);
         verify(!!root_, "Unable to create root directory");
         findCurrentWorkDirectory();
-        tty_ = Tty::tryCreateAndAdd(this, root_.get(), "/dev/tty");
+        tty_ = Tty::tryCreateAndAdd(this, root_.get(), "/dev/tty", false);
         createStandardStreams();
     }
 
@@ -355,7 +355,7 @@ namespace kernel::gnulinux {
             }
 
             // try open device
-            auto* shadowDevice = ShadowDevice::tryCreateAndAdd(this, root_.get(), absolutePathname);
+            auto* shadowDevice = ShadowDevice::tryCreateAndAdd(this, root_.get(), absolutePathname, closeOnExec);
             if(!!shadowDevice) {
                 // create and add the node to the filesystem
                 shadowDevice->open();

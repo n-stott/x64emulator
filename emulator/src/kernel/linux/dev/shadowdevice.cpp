@@ -18,7 +18,7 @@ namespace kernel::gnulinux {
         "/dev/tty",
     };
 
-    File* ShadowDevice::tryCreateAndAdd(FS* fs, Directory* parent, const std::string& name) {
+    File* ShadowDevice::tryCreateAndAdd(FS* fs, Directory* parent, const std::string& name, bool closeOnExec) {
         std::string pathname;
         if(!parent || parent == fs->root()) {
             pathname = name;
@@ -30,15 +30,16 @@ namespace kernel::gnulinux {
             return NullDevice::tryCreateAndAdd(fs, parent, name);
         }
         if(pathname == "/dev/tty") {
-            return Tty::tryCreateAndAdd(fs, parent, name);
+            return Tty::tryCreateAndAdd(fs, parent, name, closeOnExec);
         }
 
         warn(fmt::format("Device {} is not a supported shadow device", pathname));
         return nullptr;
     }
 
-    std::optional<int> ShadowDevice::tryGetDeviceHostFd(const std::string& pathname) {
-        int flags = O_RDWR | O_CLOEXEC;
+    std::optional<int> ShadowDevice::tryGetDeviceHostFd(const std::string& pathname, bool closeOnExec) {
+        int flags = O_RDWR;
+        if(closeOnExec) flags |= O_CLOEXEC;
         int fd = ::openat(AT_FDCWD, pathname.c_str(), flags);
         if(fd < 0) {
             verify(false, "ShadowDevice without host backer is not implemented");
