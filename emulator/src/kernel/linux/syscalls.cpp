@@ -1124,14 +1124,18 @@ namespace kernel::gnulinux {
 
     int Sys::gettimeofday(x64::Ptr tv, x64::Ptr tz) {
         PreciseTime time = kernel_.scheduler().kernelTime();
-        auto timevalBuffer = Host::gettimeofday(time);
-        auto timezoneBuffer = Host::gettimezone();
         if(kernel_.logSyscalls()) {
             print("Sys::gettimeofday(tv={:#x}, tz={:#x}) = {:#x}",
                         tv.address(), tz.address(), 0);
         }
-        if(!!tv) mmu_.copyToMmu(tv, timevalBuffer.data(), timevalBuffer.size());
-        if(!!tz) mmu_.copyToMmu(tv, timezoneBuffer.data(), timezoneBuffer.size());
+        if(!!tv) {
+            auto timevalBuffer = Host::gettimeofday(time);
+            mmu_.copyToMmu(tv, timevalBuffer.data(), timevalBuffer.size());
+        }
+        if(!!tz) {
+            auto timezoneBuffer = Host::gettimezone();
+            mmu_.copyToMmu(tv, timezoneBuffer.data(), timezoneBuffer.size());
+        }
         return 0;
     }
 
