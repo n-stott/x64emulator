@@ -703,6 +703,12 @@ namespace kernel::gnulinux {
         return ErrnoOrBuffer(Buffer{std::move(buffer)});
     }
 
+    std::optional<std::string> Host::ttyname() {
+        const char* name = ::ttyname(STDIN_FILENO);
+        if(!name) return {};
+        return name;
+    }
+
     Host::UserCredentials Host::getUserCredentials() {
         uid_t ruid { 0 };
         uid_t euid { 0 };

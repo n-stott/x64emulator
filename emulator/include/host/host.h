@@ -289,6 +289,8 @@ namespace kernel::gnulinux {
         static ErrnoOrBuffer readlink(const std::string& path, size_t count);
         static ErrnoOrBuffer uname();
 
+        static std::optional<std::string> ttyname();
+
         static std::string ioctlName(unsigned long request);
         static std::optional<size_t> ioctlRequiredBufferSize(unsigned long request);
         static std::optional<ssize_t> tryGuessIoctlBufferSize(FD fd, unsigned long request, const u8* data, size_t size);

@@ -29,20 +29,26 @@ namespace kernel::gnulinux {
         root_ = HostDirectory::tryCreateRoot(this);
         verify(!!root_, "Unable to create root directory");
         findCurrentWorkDirectory();
-        tty_ = Tty::tryCreateAndAdd(this, root_.get(), "/dev/tty", false);
-        createStandardStreams();
+        auto ttyname = Host::ttyname();
+        if(ttyname) {
+            tty_ = Tty::tryCreateAndAdd(this, root_.get(), ttyname.value(), false);
+            createStandardStreams(ttyname.value());
+        } else {
+            tty_ = Tty::tryCreateAndAdd(this, root_.get(), "/dev/tty", false);
+            createStandardStreams("/dev/tty");
+        }
     }
 
-    void FS::createStandardStreams() {
+    void FS::createStandardStreams(const std::string& ttyname) {
         BitFlags<AccessMode> accessMode { AccessMode::READ, AccessMode::WRITE };
         BitFlags<CreationFlags> creationFlags {};
         BitFlags<StatusFlags> statusFlags {};
         Permissions permissions;
         permissions.userReadable = true;
         permissions.userWriteable = true;
-        FD stdinFd = open(FD{-100}, "/dev/tty", accessMode, creationFlags, statusFlags, permissions);
-        FD stdoutFd = open(FD{-100}, "/dev/tty", accessMode, creationFlags, statusFlags, permissions);
-        FD stderrFd = open(FD{-100}, "/dev/tty", accessMode, creationFlags, statusFlags, permissions);
+        FD stdinFd = open(FD{-100}, ttyname, accessMode, creationFlags, statusFlags, permissions);
+        FD stdoutFd = open(FD{-100}, ttyname, accessMode, creationFlags, statusFlags, permissions);
+        FD stderrFd = open(FD{-100}, ttyname, accessMode, creationFlags, statusFlags, permissions);
         verify(stdinFd.fd == 0, "stdin must have fd 0");
         verify(stdoutFd.fd == 1, "stdout must have fd 1");
         verify(stderrFd.fd == 2, "stderr must have fd 2");

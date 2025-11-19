@@ -240,7 +240,7 @@ namespace kernel::gnulinux {
         };
 
         void findCurrentWorkDirectory();
-        void createStandardStreams();
+        void createStandardStreams(const std::string& ttyname);
         FD insertNode(std::unique_ptr<File> file, BitFlags<AccessMode>, BitFlags<StatusFlags>, bool closeOnExec);
         FD allocateFd();
 
