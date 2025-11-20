@@ -54,6 +54,9 @@ public:
     }
 
     BitMask(BitMask&& other) {
+        if(size_ > 8*InlineBytes) {
+            free(data_.heapBuffer);
+        }
         data_ = other.data_;
         size_ = other.size_;
         std::memset(&other.data_.stackBuffer, 0, sizeof(other.data_.stackBuffer));
@@ -62,6 +65,9 @@ public:
 
     BitMask& operator=(BitMask&& other) {
         if(this != &other) {
+            if(size_ > 8*InlineBytes) {
+                free(data_.heapBuffer);
+            }
             data_ = other.data_;
             size_ = other.size_;
             std::memset(&other.data_.stackBuffer, 0, sizeof(other.data_.stackBuffer));
