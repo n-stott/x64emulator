@@ -130,6 +130,7 @@ create_test_with_library(time pthread)
 create_test_with_library(hammer_atomic pthread)
 create_test_with_library(hammer_lock pthread)
 create_test_with_library(mutex pthread)
+create_test_with_library(dlopen dl)
 
 find_library(LIB_SDL2 SDL2)
 if(LIB_SDL2)
