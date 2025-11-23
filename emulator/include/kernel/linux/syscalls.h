@@ -298,6 +298,8 @@ namespace kernel::gnulinux {
         int statfs(x64::Ptr path, x64::Ptr buf);
         // 0x8a
         int fstatfs(int fd, x64::Ptr buf);
+        // 0x8c
+        int getpriority(int which, id_t who);
         // 0x8d
         int setpriority(int which, id_t who, int prio);
         // 0x8f

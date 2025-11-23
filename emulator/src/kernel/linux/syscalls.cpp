@@ -147,6 +147,7 @@ namespace kernel::gnulinux {
             case 0x84: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::utime, regs));
             case 0x89: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::statfs, regs));
             case 0x8a: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::fstatfs, regs));
+            case 0x8c: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::getpriority, regs));
             case 0x8d: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::setpriority, regs));
             case 0x8f: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::sched_getparam, regs));
             case 0x90: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::sched_setscheduler, regs));
@@ -1269,6 +1270,14 @@ namespace kernel::gnulinux {
             mmu_.copyToMmu(buf, buffer.data(), buffer.size());
             return 0;
         });
+    }
+
+    int Sys::getpriority(int which, id_t who) {
+        if(kernel_.logSyscalls()) {
+            print("Sys::getpriority(which={}, who={}) = {}", which, who, -ENOTSUP);
+        }
+        warn("getpriority not implemented");
+        return -ENOTSUP;
     }
 
     int Sys::setpriority(int which, id_t who, int prio) {
