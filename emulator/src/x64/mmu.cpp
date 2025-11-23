@@ -186,6 +186,8 @@ namespace x64 {
         verify(base + size <= memorySize_, [&]() {
             fmt::println("Unable to create region at {:#x} size {:#x}, memlimit is {:#x}", base, size, memorySize_);
         });
+        verify(isPageAligned(base), "region is not page aligned");
+        verify(isPageAligned(size), "region is not page aligned");
         return std::unique_ptr<Region>(new Region(base, size, prot));
     }
 
@@ -404,7 +406,7 @@ namespace x64 {
         verifyNotActivated();
         verify(region->base() == end());
         verify(region->prot() == prot());
-        verify(region->name() == name());
+        verify(region->name() == name() || region->name().empty());
         size_ += region->size();
     }
 
@@ -432,24 +434,56 @@ namespace x64 {
 #ifdef MULTIPROCESSING
         SyscallGuard guard(*this);
 #endif
-        Region* region = findRegion("heap");
-        verify(!!region, "brk: program has no heap");
-        if(region->contains(address)) return address;
-        u64 oldBrk = region->end();
-        if(address > memorySize_) return oldBrk;
-        if(address < oldBrk) return oldBrk;
-        const Region* containingRegion = findAddress(address);
-        if(!!containingRegion) return oldBrk;
-        for(const auto& ptr : regions_) {
-            if(oldBrk <= ptr->base() && ptr->end() <= address && ptr.get() != region) return oldBrk;
+        const Region* heapRegion = findRegion("heap");
+        verify(!!heapRegion, "brk: program has no heap");
+        auto currentBrk = heapRegion->end();
+        if(address == currentBrk) {
+            // fast success if no change is required
+            return currentBrk;
         }
-        // we should be fine now
-        auto heap = takeRegion("heap");
-        verify(!!heap, "brk: no heap to take");
-        heap->setEnd(address);
-        u64 newBrk = heap->end();
-        addRegion(std::move(heap));
-        return newBrk;
+        if(address > memorySize_) {
+            // If we hit the memory limit, fail to grow
+            return currentBrk;
+        }
+        const Region* containingRegion = findAddress(address);
+        if(containingRegion && containingRegion != heapRegion) {
+            // If another region already contains the desired address, fail to grow
+            // Note: we could still try to grow a little ?
+            return currentBrk;
+        }
+        for(const auto& region : regions_) {
+            if(region.get() == heapRegion) continue;
+            // If a region (other than the heap) is located between the current break
+            // and the desired address, fail to grow
+            if(currentBrk <= region->base() && region->end() <= address && region.get() != heapRegion) {
+                return currentBrk;
+            }
+        }
+        if (address > currentBrk) {
+            auto heap = takeRegion("heap");
+            // We need the extension to be zeroed, so we create a new region...
+            u64 extensionBase = heap->end();
+            u64 extensionSize = pageRoundUp(address - heap->end());
+            auto extension = makeRegion(extensionBase, extensionSize, BitFlags<PROT>(PROT::READ, PROT::WRITE));
+            extension->setRequiresMemsetToZero();
+            // Add it, so it gets zeroed
+            addRegion(std::move(extension));
+            // Take it back
+            extension = takeRegion(extensionBase, extensionSize);
+            // Append it to the heap
+            heap->append(std::move(extension));
+            u64 newBrk = heap->end();
+            addRegion(std::move(heap));
+            return newBrk;
+        } else {
+            // We can simply discard the excess
+            auto heap = takeRegion("heap");
+            verify(!!heap, "brk: no heap to take");
+            heap->setEnd(address);
+            u64 newBrk = heap->end();
+            addRegion(std::move(heap));
+            return newBrk;
+        }
     }
 
     u8* Mmu::getPointerToRegion(Region* region) {
@@ -480,8 +514,8 @@ namespace x64 {
     void Mmu::fillRegionLookup(Region* region) {
         u64 base = region->base();
         u64 end = region->end();
-        verify(isPageAligned(base));
-        verify(isPageAligned(end));
+        verify(isPageAligned(base), "region is not page aligned");
+        verify(isPageAligned(end), "region is not page aligned");
         u64 startPage = base / PAGE_SIZE;
         u64 endPage = end / PAGE_SIZE;
         verify(startPage < endPage);
