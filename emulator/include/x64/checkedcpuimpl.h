@@ -478,6 +478,8 @@ namespace x64 {
         [[nodiscard]] static u128 pinsrq(u128 dst, u64 src, u8 order);
         [[nodiscard]] static u32 extractps(u128 src, u8 order);
         [[nodiscard]] static u128 insertpsReg(u128 dst, u128 src, u8 order);
+        [[nodiscard]] static u128 blendps(u128 dst, u128 src, u8 mask);
+        [[nodiscard]] static u128 blendpd(u128 dst, u128 src, u8 mask);
         [[nodiscard]] static u128 blendvps(u128 dst, u128 src, u128 mask);
         [[nodiscard]] static u128 blendvpd(u128 dst, u128 src, u128 mask);
         [[nodiscard]] static u128 pblendvb(u128 dst, u128 src, u128 mask);

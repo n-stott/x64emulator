@@ -4643,6 +4643,30 @@ namespace x64 {
         return make_failed(insn);
     }
 
+    static X64Instruction makeBlendps(const ZydisDisassembledInstruction& insn) {
+        assert(insn.info.operand_count_visible == 3);
+        const auto& dst = insn.operands[0];
+        const auto& src = insn.operands[1];
+        const auto& mask = insn.operands[2];
+        auto rssedst = asRegister128(dst);
+        auto rm128src = asRM128(src);
+        auto imm = asImmediate(mask);
+        if(rssedst && rm128src && imm) return X64Instruction::make<Insn::BLENDPS_XMM_XMMM128_IMM>(insn.runtime_address, insn.info.length, rssedst.value(), rm128src.value(), imm.value());
+        return make_failed(insn);
+    }
+
+    static X64Instruction makeBlendpd(const ZydisDisassembledInstruction& insn) {
+        assert(insn.info.operand_count_visible == 3);
+        const auto& dst = insn.operands[0];
+        const auto& src = insn.operands[1];
+        const auto& mask = insn.operands[2];
+        auto rssedst = asRegister128(dst);
+        auto rm128src = asRM128(src);
+        auto imm = asImmediate(mask);
+        if(rssedst && rm128src && imm) return X64Instruction::make<Insn::BLENDPD_XMM_XMMM128_IMM>(insn.runtime_address, insn.info.length, rssedst.value(), rm128src.value(), imm.value());
+        return make_failed(insn);
+    }
+
     static X64Instruction makeBlendvps(const ZydisDisassembledInstruction& insn) {
         assert(insn.info.operand_count_visible == 2);
         const auto& dst = insn.operands[0];
@@ -5136,6 +5160,8 @@ namespace x64 {
             case ZYDIS_MNEMONIC_PINSRQ: return makePinsrq(insn);
             case ZYDIS_MNEMONIC_EXTRACTPS: return makeExtractps(insn);
             case ZYDIS_MNEMONIC_INSERTPS: return makeInsertps(insn);
+            case ZYDIS_MNEMONIC_BLENDPS: return makeBlendps(insn);
+            case ZYDIS_MNEMONIC_BLENDPD: return makeBlendpd(insn);
             case ZYDIS_MNEMONIC_BLENDVPS: return makeBlendvps(insn);
             case ZYDIS_MNEMONIC_BLENDVPD: return makeBlendvpd(insn);
             case ZYDIS_MNEMONIC_PBLENDVB: return makePblendvb(insn);

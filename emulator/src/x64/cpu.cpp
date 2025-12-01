@@ -965,6 +965,8 @@ namespace x64 {
     DEFINE_STANDALONE(PINSRQ_XMM_RM64_IMM, execPinsrqXMMRM64Imm)
     DEFINE_STANDALONE(EXTRACTPS_M32_XMM_IMM, execExtractpsM32XMMImm)
     DEFINE_STANDALONE(INSERTPS_XMM_XMM_IMM, execInsertpsXMMXMMImm)
+    DEFINE_STANDALONE(BLENDPS_XMM_XMMM128_IMM, execBlendpsXMMXMMM128Imm)
+    DEFINE_STANDALONE(BLENDPD_XMM_XMMM128_IMM, execBlendpdXMMXMMM128Imm)
     DEFINE_STANDALONE(BLENDVPS_XMM_XMMM128, execBlendvpsXMMXMMM128)
     DEFINE_STANDALONE(BLENDVPD_XMM_XMMM128, execBlendvpdXMMXMMM128)
     DEFINE_STANDALONE(PBLENDVB_XMM_XMMM128, execPblendvbXMMXMMM128)
@@ -1747,6 +1749,8 @@ namespace x64 {
         STANDALONE_NAME(PINSRQ_XMM_RM64_IMM),
         STANDALONE_NAME(EXTRACTPS_M32_XMM_IMM),
         STANDALONE_NAME(INSERTPS_XMM_XMM_IMM),
+        STANDALONE_NAME(BLENDPS_XMM_XMMM128_IMM),
+        STANDALONE_NAME(BLENDPD_XMM_XMMM128_IMM),
         STANDALONE_NAME(BLENDVPS_XMM_XMMM128),
         STANDALONE_NAME(BLENDVPD_XMM_XMMM128),
         STANDALONE_NAME(PBLENDVB_XMM_XMMM128),
@@ -6831,6 +6835,20 @@ namespace x64 {
         const auto& src = ins.op1<XMM>();
         const auto& imm = ins.op2<Imm>();
         set(dst, Impl::insertpsReg(get(dst), get(src), get<u8>(imm)));
+    }
+
+    void Cpu::execBlendpsXMMXMMM128Imm(const X64Instruction& ins) {
+        const auto& dst = ins.op0<XMM>();
+        const auto& src = ins.op1<XMMM128>();
+        const auto& imm = ins.op2<Imm>();
+        set(dst, Impl::blendps(get(dst), get(src), get<u8>(imm)));
+    }
+
+    void Cpu::execBlendpdXMMXMMM128Imm(const X64Instruction& ins) {
+        const auto& dst = ins.op0<XMM>();
+        const auto& src = ins.op1<XMMM128>();
+        const auto& imm = ins.op2<Imm>();
+        set(dst, Impl::blendpd(get(dst), get(src), get<u8>(imm)));
     }
 
     void Cpu::execBlendvpsXMMXMMM128(const X64Instruction& ins) {

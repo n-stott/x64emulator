@@ -1608,6 +1608,14 @@ namespace x64 {
         return checkCall<u128>(&CpuImpl::insertpsReg, &NativeCpuImpl::insertpsReg, dst, src, order);
     }
 
+    u128 CheckedCpuImpl::blendps(u128 dst, u128 src, u8 mask) {
+        return checkCall<u128>(&CpuImpl::blendps, &NativeCpuImpl::blendps, dst, src, mask);
+    }
+
+    u128 CheckedCpuImpl::blendpd(u128 dst, u128 src, u8 mask) {
+        return checkCall<u128>(&CpuImpl::blendpd, &NativeCpuImpl::blendpd, dst, src, mask);
+    }
+
     u128 CheckedCpuImpl::blendvps(u128 dst, u128 src, u128 mask) {
         return checkCall<u128>(&CpuImpl::blendvps, &NativeCpuImpl::blendvps, dst, src, mask);
     }

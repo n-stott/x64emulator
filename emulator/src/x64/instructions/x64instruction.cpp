@@ -796,6 +796,8 @@ namespace x64 {
             case Insn::PINSRQ_XMM_RM64_IMM: return toString<XMM, RM64, Imm>("pinsrq");
             case Insn::EXTRACTPS_M32_XMM_IMM: return toString<M32, XMM, Imm>("extractps");
             case Insn::INSERTPS_XMM_XMM_IMM: return toString<XMM, XMM, Imm>("insertps");
+            case Insn::BLENDPS_XMM_XMMM128_IMM: return toString<XMM, XMMM128, Imm>("blendps");
+            case Insn::BLENDPD_XMM_XMMM128_IMM: return toString<XMM, XMMM128, Imm>("blendpd");
             case Insn::BLENDVPS_XMM_XMMM128: return toString<XMM, XMMM128>("blendvps");
             case Insn::BLENDVPD_XMM_XMMM128: return toString<XMM, XMMM128>("blendvpd");
             case Insn::PBLENDVB_XMM_XMMM128: return toString<XMM, XMMM128>("pblendvb");
