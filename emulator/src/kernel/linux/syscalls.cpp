@@ -107,6 +107,8 @@ namespace kernel::gnulinux {
             case 0x36: return threadRegs.set(x64::R64::RAX, invoke_syscall_5(&Sys::setsockopt, regs));
             case 0x37: return threadRegs.set(x64::R64::RAX, invoke_syscall_5(&Sys::getsockopt, regs));
             case 0x38: return threadRegs.set(x64::R64::RAX, invoke_syscall_5(&Sys::clone, regs));
+            case 0x39: return threadRegs.set(x64::R64::RAX, invoke_syscall_0(&Sys::fork, regs));
+            case 0x3a: return threadRegs.set(x64::R64::RAX, invoke_syscall_0(&Sys::vfork, regs));
             case 0x3b: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::execve, regs));
             case 0x3c: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::exit, regs));
             case 0x3e: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::kill, regs));
@@ -923,6 +925,22 @@ namespace kernel::gnulinux {
         }
         kernel_.scheduler().addThread(std::move(newThread));
         return ret;
+    }
+
+    int Sys::fork() {
+        if(kernel_.logSyscalls()) {
+            print("Sys::fork() = {}", -ENOTSUP);
+        }
+        warn("fork not implemented");
+        return -ENOTSUP;
+    }
+
+    int Sys::vfork() {
+        if(kernel_.logSyscalls()) {
+            print("Sys::vfork() = {}", -ENOTSUP);
+        }
+        warn("vfork not implemented");
+        return -ENOTSUP;
     }
 
     int Sys::execve(x64::Ptr pathname, x64::Ptr argv, x64::Ptr envp) {

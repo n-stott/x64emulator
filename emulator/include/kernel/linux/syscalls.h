@@ -218,6 +218,10 @@ namespace kernel::gnulinux {
         int getsockopt(int sockfd, int level, int optname, x64::Ptr optval, x64::Ptr32 optlen);
         // 0x38
         long clone(unsigned long flags, x64::Ptr stack, x64::Ptr32 parent_tid, x64::Ptr32 child_tid, unsigned long tls);
+        // 0x39
+        int fork();
+        // 0x3a
+        int vfork();
         // 0x3b
         int execve(x64::Ptr pathname, x64::Ptr argv, x64::Ptr envp);
         // 0x3c
