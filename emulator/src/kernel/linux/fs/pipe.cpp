@@ -97,7 +97,7 @@ namespace kernel::gnulinux {
     }
 
     ErrnoOrBuffer PipeEndpoint::stat() {
-        verify(false, "stat not implemented on PipeEndpoint");
+        warn("stat not implemented on PipeEndpoint");
         return ErrnoOrBuffer(-ENOTSUP);
     }
 

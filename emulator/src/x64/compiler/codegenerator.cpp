@@ -127,12 +127,15 @@ namespace x64 {
                     break;
                 }
                 case ir::Op::MOVZX: {
+                    auto r16dst = ins.out().as<R16>();
                     auto r32dst = ins.out().as<R32>();
                     auto r64dst = ins.out().as<R64>();
                     auto r8src = ins.in1().as<R8>();
                     auto r16src = ins.in1().as<R16>();
 
-                    if(r32dst && r8src) {
+                    if(r16dst && r8src) {
+                        assembler_->movzx(r16dst.value(), r8src.value());
+                    } else if(r32dst && r8src) {
                         assembler_->movzx(r32dst.value(), r8src.value());
                     } else if(r32dst && r16src) {
                         assembler_->movzx(r32dst.value(), r16src.value());
@@ -146,13 +149,16 @@ namespace x64 {
                     break;
                 }
                 case ir::Op::MOVSX: {
+                    auto r16dst = ins.out().as<R16>();
                     auto r32dst = ins.out().as<R32>();
                     auto r64dst = ins.out().as<R64>();
                     auto r8src = ins.in1().as<R8>();
                     auto r16src = ins.in1().as<R16>();
                     auto r32src = ins.in1().as<R32>();
 
-                    if(r32dst && r8src) {
+                    if(r16dst && r8src) {
+                        assembler_->movsx(r16dst.value(), r8src.value());
+                    } else if(r32dst && r8src) {
                         assembler_->movsx(r32dst.value(), r8src.value());
                     } else if(r32dst && r16src) {
                         assembler_->movsx(r32dst.value(), r16src.value());

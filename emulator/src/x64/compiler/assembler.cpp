@@ -544,6 +544,17 @@ namespace x64 {
         write32(imm);
     }
 
+    void Assembler::movzx(R16 dst, R8 src) {
+        verify(src == R8::R8B || src == R8::R9B);
+        write8(0x66);
+        if((u8)src >= 8 || (u8)dst >= 8) {
+            write8((u8)(0x40 | (((u8)src >= 8) ? 4 : 0) | (((u8)dst >= 8) ? 1 : 0)));
+        }
+        write8(0x0f);
+        write8(0xb6);
+        write8((u8)(0b11000000 | (encodeRegister(src) << 3) | (encodeRegister(dst))));
+    }
+
     void Assembler::movzx(R32 dst, R8 src) {
         verify(src == R8::R8B || src == R8::R9B);
         if((u8)src >= 8 || (u8)dst >= 8) {
@@ -577,6 +588,15 @@ namespace x64 {
         write8((u8)(0x48 | (((u8)src >= 8) ? 4 : 0) | (((u8)dst >= 8) ? 1 : 0)));
         write8(0x0f);
         write8(0xb7);
+        write8((u8)(0b11000000 | (encodeRegister(src) << 3) | (encodeRegister(dst))));
+    }
+
+    void Assembler::movsx(R16 dst, R8 src) {
+        verify(src == R8::R8B || src == R8::R9B);
+        write8(0x66);
+        write8((u8)(0x40 | (((u8)src >= 8) ? 4 : 0) | (((u8)dst >= 8) ? 1 : 0)));
+        write8(0x0f);
+        write8(0xbe);
         write8((u8)(0b11000000 | (encodeRegister(src) << 3) | (encodeRegister(dst))));
     }
 

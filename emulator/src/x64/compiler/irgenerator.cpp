@@ -58,11 +58,13 @@ namespace x64::ir {
     void IrGenerator::mov(const M64& dst, R64 src) { emit(Op::MOV, dst, src); }
     void IrGenerator::mov(const M64& dst, u32 imm) { emit(Op::MOV, dst, imm); }
 
+    void IrGenerator::movzx(R16 dst, R8 src) { emit(Op::MOVZX, dst, src); }
     void IrGenerator::movzx(R32 dst, R8 src) { emit(Op::MOVZX, dst, src); }
     void IrGenerator::movzx(R32 dst, R16 src) { emit(Op::MOVZX, dst, src); }
     void IrGenerator::movzx(R64 dst, R8 src) { emit(Op::MOVZX, dst, src); }
     void IrGenerator::movzx(R64 dst, R16 src) { emit(Op::MOVZX, dst, src); }
     
+    void IrGenerator::movsx(R16 dst, R8 src) { emit(Op::MOVSX, dst, src); }
     void IrGenerator::movsx(R32 dst, R8 src) { emit(Op::MOVSX, dst, src); }
     void IrGenerator::movsx(R32 dst, R16 src) { emit(Op::MOVSX, dst, src); }
     void IrGenerator::movsx(R64 dst, R8 src) { emit(Op::MOVSX, dst, src); }
