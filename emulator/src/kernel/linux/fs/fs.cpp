@@ -1035,8 +1035,10 @@ namespace kernel::gnulinux {
             if(testWrite && file->canWrite()) rfd.revents = rfd.revents | PollEvent::CAN_WRITE;
         }
         int ret = 0;
+        Buffer buffer(rfds.size()*sizeof(PollData), 0);
+        ::memcpy(buffer.data(), rfds.data(), buffer.size());
         BufferAndReturnValue<int> bufferAndRetVal {
-            Buffer{std::move(rfds)},
+            std::move(buffer),
             ret,
         };
         return ErrnoOr<BufferAndReturnValue<int>>(std::move(bufferAndRetVal));

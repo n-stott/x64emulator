@@ -442,8 +442,7 @@ namespace kernel::gnulinux {
             warn("Unknown ioctl {:#x}. Returning -EINVAL", request);
             return -EINVAL;
         };
-        std::vector<u8> buf(bufferSize.value(), 0x0);
-        Buffer buffer(std::move(buf));
+        Buffer buffer(bufferSize.value(), 0x0);
         mmu_.copyFromMmu(buffer.data(), argp, buffer.size());
 
         auto fsrequest = [](unsigned long hostRequest) -> std::optional<Ioctl> {
@@ -496,14 +495,14 @@ namespace kernel::gnulinux {
     }
 
     ssize_t Sys::readv(int fd, x64::Ptr iov, int iovcnt) {
-        std::vector<u8> iovecs = mmu_.readFromMmu<u8>(iov, ((size_t)iovcnt) * Host::iovecRequiredBufferSize());
-        Buffer iovecBuffer(std::move(iovecs));
+        Buffer iovecBuffer(((size_t)iovcnt) * Host::iovecRequiredBufferSize(), 0x0);
+        mmu_.copyFromMmu(iovecBuffer.data(), iov, iovecBuffer.size());
         std::vector<Buffer> buffers;
         buffers.reserve((size_t)iovcnt);
         for(size_t i = 0; i < (size_t)iovcnt; ++i) {
             x64::Ptr base{Host::iovecBase(iovecBuffer, i)};
             size_t len = Host::iovecLen(iovecBuffer, i);
-            std::vector<u8> data(len);
+            Buffer data(len, 0x0);
             mmu_.copyFromMmu(data.data(), base, len);
             buffers.push_back(Buffer(std::move(data)));
         }
@@ -519,14 +518,14 @@ namespace kernel::gnulinux {
     }
 
     ssize_t Sys::writev(int fd, x64::Ptr iov, int iovcnt) {
-        std::vector<u8> iovecs = mmu_.readFromMmu<u8>(iov, ((size_t)iovcnt) * Host::iovecRequiredBufferSize());
+        Buffer iovecs(((size_t)iovcnt) * Host::iovecRequiredBufferSize(), 0x0);
+        mmu_.copyFromMmu(iovecs.data(), iov, iovecs.size());
         Buffer iovecBuffer(std::move(iovecs));
         std::vector<Buffer> buffers;
         for(size_t i = 0; i < (size_t)iovcnt; ++i) {
             x64::Ptr base{Host::iovecBase(iovecBuffer, i)};
             size_t len = Host::iovecLen(iovecBuffer, i);
-            std::vector<u8> data;
-            data.resize(len);
+            Buffer data(len, 0x0);
             mmu_.copyFromMmu(data.data(), base, len);
             buffers.push_back(Buffer(std::move(data)));
         }
@@ -757,9 +756,9 @@ namespace kernel::gnulinux {
     }
 
     int Sys::connect(int sockfd, x64::Ptr addr, size_t addrlen) {
-        std::vector<u8> addrBuffer = mmu_.readFromMmu<u8>(addr, addrlen);
-        Buffer buf(std::move(addrBuffer));
-        int ret = kernel_.fs().connect(FS::FD{sockfd}, buf);
+        Buffer buffer(addrlen, 0x0);
+        mmu_.copyFromMmu(buffer.data(), addr, buffer.size());
+        int ret = kernel_.fs().connect(FS::FD{sockfd}, buffer);
         if(kernel_.logSyscalls()) {
             print("Sys::connect(sockfd={}, addr={:#x}, addrlen={}) = {}",
                         sockfd, addr.address(), addrlen, ret);
@@ -770,8 +769,8 @@ namespace kernel::gnulinux {
     ssize_t Sys::sendto(int sockfd, x64::Ptr buf, size_t len, int flags, x64::Ptr dest_addr, socklen_t addrlen) {
         verify(dest_addr.address() == 0);
         verify(addrlen == 0);
-        std::vector<u8> bufData = mmu_.readFromMmu<u8>(buf, len);
-        Buffer buffer(std::move(bufData));
+        Buffer buffer(len, 0x0);
+        mmu_.copyFromMmu(buffer.data(), buf, buffer.size());
         ssize_t ret = kernel_.fs().send(FS::FD{sockfd}, buffer, flags);
         if(kernel_.logSyscalls()) {
             print("Sys::sendto(sockfd={}, buf={:#x}, len={}, flags={}, dest_addr={:#x}, addrlen={}) = {}",
@@ -829,7 +828,8 @@ namespace kernel::gnulinux {
     int Sys::setsockopt(int sockfd, int level, int optname, x64::Ptr optval, socklen_t optlen) {
         static_assert(sizeof(socklen_t) == sizeof(u32));
         verify(!!optval, "getsockopt with null optval not implemented");
-        Buffer buf(mmu_.readFromMmu<u8>(optval, (size_t)optlen));
+        Buffer buf((size_t)optlen, 0x0);
+        mmu_.copyFromMmu(buf.data(), optval, buf.size());
         int ret = kernel_.fs().setsockopt(FS::FD{sockfd}, level, optname, buf);
         if(kernel_.logSyscalls()) {
             print("Sys::setsockopt(sockfd={}, level={}, optname={}, optval={:#x}, optlen={}) = {}",
@@ -843,7 +843,8 @@ namespace kernel::gnulinux {
         verify(!!optval, "getsockopt with null optval not implemented");
         verify(!!optlen, "getsockopt with null optlen not implemented");
         u32 len = mmu_.read32(optlen);
-        Buffer buf(mmu_.readFromMmu<u8>(optval, len));
+        Buffer buf(len, 0x0);
+        mmu_.copyFromMmu(buf.data(), optval, buf.size());
         ErrnoOrBuffer errnoOrBuffer = kernel_.fs().getsockopt(FS::FD{sockfd}, level, optname, buf);
         int ret = errnoOrBuffer.errorOrWith<int>([&](const Buffer& buffer) {
             mmu_.copyToMmu(optval, buffer.data(), buffer.size());
@@ -1252,7 +1253,7 @@ namespace kernel::gnulinux {
 
     int Sys::sigaltstack(x64::Ptr ss, x64::Ptr old_ss) {
         if(kernel_.logSyscalls()) {
-            print("Sys::sigaltstack(ss={:#x}, old_ss={:#x} = {})", ss.address(), old_ss.address(), -ENOTSUP);
+            print("Sys::sigaltstack(ss={:#x}, old_ss={:#x}) = {}", ss.address(), old_ss.address(), -ENOTSUP);
         }
         warn("sigaltstack not implemented");
         return -ENOTSUP;
@@ -1605,21 +1606,24 @@ namespace kernel::gnulinux {
 
         // read Message::msg_name
         if(!!header.msg_name && header.msg_namelen > 0) {
-            std::vector<u8> msg_name_buffer = mmu_.readFromMmu<u8>(x64::Ptr8{(u64)header.msg_name}, header.msg_namelen);
-            message.msg_name = Buffer(std::move(msg_name_buffer));
+            Buffer msg_name_buffer(header.msg_namelen, 0x0);
+            mmu_.copyFromMmu(msg_name_buffer.data(), x64::Ptr8{(u64)header.msg_name}, msg_name_buffer.size());
+            message.msg_name = std::move(msg_name_buffer);
         }
 
         // read Message::msg_iov
         std::vector<iovec> msg_iovecs = mmu_.readFromMmu<iovec>(x64::Ptr8{(u64)header.msg_iov}, header.msg_iovlen);
         for(size_t i = 0; i < header.msg_iovlen; ++i) {
-            std::vector<u8> msg_iovec_buffer = mmu_.readFromMmu<u8>(x64::Ptr8{(u64)msg_iovecs[i].iov_base}, msg_iovecs[i].iov_len);
-            message.msg_iov.push_back(Buffer(std::move(msg_iovec_buffer)));
+            Buffer msg_iovec_buffer(msg_iovecs[i].iov_len, 0x0);
+            mmu_.copyFromMmu(msg_iovec_buffer.data(), x64::Ptr8{(u64)msg_iovecs[i].iov_base}, msg_iovec_buffer.size());
+            message.msg_iov.push_back(std::move(msg_iovec_buffer));
         }
 
         // read Message::control
         if(!!header.msg_control && header.msg_controllen > 0) {
-            std::vector<u8> msg_control_buffer = mmu_.readFromMmu<u8>(x64::Ptr8{(u64)header.msg_control}, header.msg_controllen);
-            message.msg_control = Buffer(std::move(msg_control_buffer));
+            Buffer msg_control_buffer(header.msg_controllen, 0x0);
+             mmu_.copyFromMmu(msg_control_buffer.data(), x64::Ptr8{(u64)header.msg_control}, msg_control_buffer.size());
+            message.msg_control = std::move(msg_control_buffer);
         }
 
         // read Message::msg_flags
@@ -1649,21 +1653,24 @@ namespace kernel::gnulinux {
 
         // read Message::msg_name
         if(!!header.msg_name && header.msg_namelen > 0) {
-            std::vector<u8> msg_name_buffer = mmu_.readFromMmu<u8>(x64::Ptr8{(u64)header.msg_name}, header.msg_namelen);
-            message.msg_name = Buffer(std::move(msg_name_buffer));
+            Buffer msg_name_buffer(header.msg_namelen, 0x0);
+            mmu_.copyFromMmu(msg_name_buffer.data(), x64::Ptr8{(u64)header.msg_name}, msg_name_buffer.size());
+            message.msg_name = std::move(msg_name_buffer);
         }
 
         // read Message::msg_iov
         std::vector<iovec> msg_iovecs = mmu_.readFromMmu<iovec>(x64::Ptr8{(u64)header.msg_iov}, header.msg_iovlen);
         for(size_t i = 0; i < header.msg_iovlen; ++i) {
-            std::vector<u8> msg_iovec_buffer = mmu_.readFromMmu<u8>(x64::Ptr8{(u64)msg_iovecs[i].iov_base}, msg_iovecs[i].iov_len);
+            Buffer msg_iovec_buffer(msg_iovecs[i].iov_len, 0x0);
+            mmu_.copyFromMmu(msg_iovec_buffer.data(), x64::Ptr8{(u64)msg_iovecs[i].iov_base}, msg_iovec_buffer.size());
             message.msg_iov.push_back(Buffer(std::move(msg_iovec_buffer)));
         }
 
         // read Message::control
         if(!!header.msg_control && header.msg_controllen > 0) {
-            std::vector<u8> msg_control_buffer = mmu_.readFromMmu<u8>(x64::Ptr8{(u64)header.msg_control}, header.msg_controllen);
-            message.msg_control = Buffer(std::move(msg_control_buffer));
+            Buffer msg_control_buffer(header.msg_controllen, 0x0);
+            mmu_.copyFromMmu(msg_control_buffer.data(), x64::Ptr8{(u64)header.msg_control}, msg_control_buffer.size());
+            message.msg_control = std::move(msg_control_buffer);
         }
 
         // read Message::msg_flags
@@ -1721,7 +1728,8 @@ namespace kernel::gnulinux {
     }
 
     int Sys::bind(int sockfd, x64::Ptr addr, socklen_t addrlen) {
-        Buffer saddr(mmu_.readFromMmu<u8>(addr, addrlen));
+        Buffer saddr(addrlen, 0x0);
+        mmu_.copyFromMmu(saddr.data(), addr, saddr.size());
         int rc = kernel_.fs().bind(FS::FD{sockfd}, saddr);
         if(kernel_.logSyscalls()) {
             print("Sys::bind(sockfd={}, addr={:#x}, addrlen={}) = {}",

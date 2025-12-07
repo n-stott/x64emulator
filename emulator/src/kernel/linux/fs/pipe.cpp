@@ -66,10 +66,10 @@ namespace kernel::gnulinux {
             fmt::print("Pipe is non-blocking: {}\n", openFileDescription.statusFlags().test(FS::StatusFlags::NONBLOCK));
         });
         size_t readSize = std::min(size, data_.size());
-        std::vector<u8> buf(readSize, 0x0);
-        std::copy(data_.begin(), data_.begin() + (off64_t)readSize, buf.begin());
+        Buffer buf(readSize, 0x0);
+        std::copy(data_.begin(), data_.begin() + (off64_t)readSize, buf.data());
         data_.erase(data_.begin(), data_.begin() + (off64_t)readSize);
-        return ErrnoOrBuffer(Buffer(std::move(buf)));
+        return ErrnoOrBuffer(std::move(buf));
     }
 
     bool PipeEndpoint::canRead() const { return pipe_->canRead(); }

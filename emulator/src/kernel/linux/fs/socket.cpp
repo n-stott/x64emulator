@@ -97,32 +97,30 @@ namespace kernel::gnulinux {
 
     ErrnoOrBuffer Socket::getpeername(u32 buffersize) const {
         static_assert(sizeof(socklen_t) == sizeof(u32));
-        std::vector<u8> buffer;
-        buffer.resize(buffersize, 0x0);
+        Buffer buffer(buffersize, 0x0);
         int ret = ::getpeername(hostFd_, (sockaddr*)buffer.data(), &buffersize);
         if(ret < 0) return ErrnoOrBuffer(-errno);
-        buffer.resize((size_t)buffersize);
-        return ErrnoOrBuffer(Buffer{std::move(buffer)});
+        buffer.shrink((size_t)buffersize);
+        return ErrnoOrBuffer(std::move(buffer));
     }
 
     ErrnoOrBuffer Socket::getsockname(u32 buffersize) const {
         static_assert(sizeof(socklen_t) == sizeof(u32));
-        std::vector<u8> buffer;
-        buffer.resize(buffersize, 0x0);
+        Buffer buffer(buffersize, 0x0);
         int ret = ::getsockname(hostFd_, (sockaddr*)buffer.data(), &buffersize);
         if(ret < 0) return ErrnoOrBuffer(-errno);
-        buffer.resize((size_t)buffersize);
-        return ErrnoOrBuffer(Buffer{std::move(buffer)});
+        buffer.shrink((size_t)buffersize);
+        return ErrnoOrBuffer(std::move(buffer));
     }
 
     ErrnoOrBuffer Socket::getsockopt(int level, int optname, const Buffer& buffer) const {
         static_assert(sizeof(socklen_t) == sizeof(u32));
-        std::vector<u8> buf(buffer.data(), buffer.data() + buffer.size());
+        Buffer buf = buffer;
         socklen_t bufsize = (socklen_t)buf.size();
         int ret = ::getsockopt(hostFd_, level, optname, buf.data(), &bufsize);
         if(ret < 0) return ErrnoOrBuffer(-errno);
-        buf.resize((size_t)bufsize);
-        return ErrnoOrBuffer(Buffer{std::move(buf)});
+        buf.shrink((size_t)bufsize);
+        return ErrnoOrBuffer(std::move(buf));
     }
 
     int Socket::setsockopt(int level, int optname, const Buffer& buffer) const {
@@ -132,12 +130,11 @@ namespace kernel::gnulinux {
 
     ErrnoOrBuffer Socket::read(OpenFileDescription&, size_t count) {
         if(!isReadable()) return ErrnoOrBuffer{-EINVAL};
-        std::vector<u8> buffer;
-        buffer.resize(count, 0x0);
+        Buffer buffer(count, 0x0);
         ssize_t nbytes = ::read(hostFd_, buffer.data(), count);
         if(nbytes < 0) return ErrnoOrBuffer(-errno);
-        buffer.resize((size_t)nbytes);
-        return ErrnoOrBuffer(Buffer{std::move(buffer)});
+        buffer.shrink((size_t)nbytes);
+        return ErrnoOrBuffer(std::move(buffer));
     }
 
     ssize_t Socket::write(OpenFileDescription&, const u8* buf, size_t count) {
@@ -160,12 +157,11 @@ namespace kernel::gnulinux {
         if(requireSrcAddress) {
             return ErrnoOr<std::pair<Buffer, Buffer>>(-ENOTSUP);
         }
-        std::vector<u8> buffer;
-        buffer.resize(len, 0);
+        Buffer buffer(len, 0);
         ssize_t ret = ::recvfrom(hostFd_, buffer.data(), len, flags, nullptr, nullptr);
         if(ret < 0) return ErrnoOr<std::pair<Buffer, Buffer>>(-errno);
-        buffer.resize((size_t)ret);
-        return ErrnoOr<std::pair<Buffer, Buffer>>(std::make_pair(Buffer{std::move(buffer)}, Buffer{}));
+        buffer.shrink((size_t)ret);
+        return ErrnoOr<std::pair<Buffer, Buffer>>(std::make_pair(std::move(buffer), Buffer{}));
     }
 
     ssize_t Socket::recvmsg(int flags, Socket::Message* message) const {
@@ -195,8 +191,9 @@ namespace kernel::gnulinux {
         header.msg_flags = 0;
         ssize_t ret = ::recvmsg(hostFd_, &header, flags);
         if(header.msg_controllen != 0) {
-            std::vector<u8> new_control((const u8*)header.msg_control, (const u8*)header.msg_control + header.msg_controllen);
-            message->msg_control = Buffer(std::move(new_control));
+            Buffer buffer(header.msg_controllen, 0x0);
+            ::memcpy(buffer.data(), (const u8*)header.msg_control, header.msg_controllen);
+            message->msg_control = std::move(buffer);
         } else {
             message->msg_control = {};
         }
@@ -245,9 +242,9 @@ namespace kernel::gnulinux {
         struct stat st;
         int rc = ::fstat(hostFd_, &st);
         if(rc < 0) return ErrnoOrBuffer(-errno);
-        std::vector<u8> buf(sizeof(st), 0x0);
+        Buffer buf(sizeof(st), 0x0);
         std::memcpy(buf.data(), &st, sizeof(st));
-        return ErrnoOrBuffer(Buffer{std::move(buf)});
+        return ErrnoOrBuffer(std::move(buf));
     }
 
     ErrnoOrBuffer Socket::statfs() {

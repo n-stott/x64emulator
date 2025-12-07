@@ -97,9 +97,9 @@ namespace kernel::gnulinux {
         if(offset < 0) return ErrnoOrBuffer{-EINVAL};
         size_t bytesRead = (size_t)offset < data_.size() ? std::min(data_.size() - (size_t)offset, count) : 0;
         const u8* beginRead = data_.data() + offset;
-        const u8* endRead = beginRead + bytesRead;
-        std::vector<u8> buffer(beginRead, endRead);
-        return ErrnoOrBuffer(Buffer{std::move(buffer)});
+        Buffer buffer(bytesRead, 0x0);
+        ::memcpy(buffer.data(), beginRead, bytesRead);
+        return ErrnoOrBuffer(std::move(buffer));
     }
 
     ssize_t ShadowFile::write(OpenFileDescription& openFileDescription, const u8* buf, size_t count) {

@@ -67,12 +67,11 @@ namespace kernel::gnulinux {
 
     ErrnoOrBuffer HostDevice::read(OpenFileDescription&, size_t count) {
         if(!isReadable()) return ErrnoOrBuffer{-EINVAL};
-        std::vector<u8> buffer;
-        buffer.resize(count, 0x0);
+        Buffer buffer(count, 0x0);
         ssize_t nbytes = ::read(hostFd_, buffer.data(), count);
         if(nbytes < 0) return ErrnoOrBuffer(-errno);
-        buffer.resize((size_t)nbytes);
-        return ErrnoOrBuffer(Buffer{std::move(buffer)});
+        buffer.shrink((size_t)nbytes);
+        return ErrnoOrBuffer(std::move(buffer));
     }
 
     ssize_t HostDevice::write(OpenFileDescription&, const u8*, size_t) {

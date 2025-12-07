@@ -129,10 +129,9 @@ namespace kernel::gnulinux {
                 struct termios ts;
                 int ret = ::ioctl(hostFd_.value(), TCGETS, &ts);
                 if(ret < 0) return ErrnoOrBuffer(-errno);
-                std::vector<u8> buffer;
-                buffer.resize(sizeof(ts), 0x0);
+                Buffer buffer(sizeof(ts), 0x0);
                 std::memcpy(buffer.data(), &ts, sizeof(ts));
-                return ErrnoOrBuffer(Buffer{std::move(buffer)});
+                return ErrnoOrBuffer(std::move(buffer));
             }
             case Ioctl::tiocgpgrp: {
                 assert(inputBuffer.size() == sizeof(pid_t));

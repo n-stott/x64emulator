@@ -83,12 +83,11 @@ namespace kernel::gnulinux {
         if(!isReadable()) return ErrnoOrBuffer{-EINVAL};
         off_t offset = openFileDescription.offset();
         if(offset < 0) return ErrnoOrBuffer{-EINVAL};
-        std::vector<u8> buffer;
-        buffer.resize(count, 0x0);
+        Buffer buffer(count, 0x0);
         ssize_t nbytes = ::pread(hostFd_, buffer.data(), count, offset);
         if(nbytes < 0) return ErrnoOrBuffer(-errno);
-        buffer.resize((size_t)nbytes);
-        return ErrnoOrBuffer(Buffer{std::move(buffer)});
+        buffer.shrink((size_t)nbytes);
+        return ErrnoOrBuffer(std::move(buffer));
     }
 
     ssize_t HostFile::write(OpenFileDescription&, const u8*, size_t) {
@@ -101,18 +100,18 @@ namespace kernel::gnulinux {
         std::string path = this->path();
         int rc = ::stat(path.c_str(), &st);
         if(rc < 0) return ErrnoOrBuffer(-errno);
-        std::vector<u8> buf(sizeof(st), 0x0);
+        Buffer buf(sizeof(st), 0x0);
         std::memcpy(buf.data(), &st, sizeof(st));
-        return ErrnoOrBuffer(Buffer{std::move(buf)});
+        return ErrnoOrBuffer(std::move(buf));
     }
 
     ErrnoOrBuffer HostFile::statfs() {
         struct statfs stfs;
         int rc = ::fstatfs(hostFd_, &stfs);
         if(rc < 0) return ErrnoOrBuffer(-errno);
-        std::vector<u8> buf(sizeof(stfs), 0x0);
+        Buffer buf(sizeof(stfs), 0x0);
         std::memcpy(buf.data(), &stfs, sizeof(stfs));
-        return ErrnoOrBuffer(Buffer{std::move(buf)});
+        return ErrnoOrBuffer(std::move(buf));
     }
 
     ErrnoOrBuffer HostFile::statx(unsigned int mask) {
@@ -133,12 +132,11 @@ namespace kernel::gnulinux {
     }
 
     ErrnoOrBuffer HostFile::getdents64(size_t count) {
-        std::vector<u8> buf;
-        buf.resize(count, 0x0);
+        Buffer buf(count, 0x0);
         ssize_t nbytes = ::getdents64(hostFd_, buf.data(), buf.size());
         if(nbytes < 0) return ErrnoOrBuffer(-errno);
-        buf.resize((size_t)nbytes);
-        return ErrnoOrBuffer(Buffer{std::move(buf)});
+        buf.shrink((size_t)nbytes);
+        return ErrnoOrBuffer(std::move(buf));
     }
 
     std::optional<int> HostFile::fcntl(int cmd, int arg) {
@@ -151,10 +149,9 @@ namespace kernel::gnulinux {
                 struct termios ts;
                 int ret = ::ioctl(hostFd_, TCGETS, &ts);
                 if(ret < 0) return ErrnoOrBuffer(-errno);
-                std::vector<u8> buffer;
-                buffer.resize(sizeof(ts), 0x0);
+                Buffer buffer(sizeof(ts), 0x0);
                 std::memcpy(buffer.data(), &ts, sizeof(ts));
-                return ErrnoOrBuffer(Buffer{std::move(buffer)});
+                return ErrnoOrBuffer(std::move(buffer));
             }
             case Ioctl::fioclex: {
                 int ret = ::ioctl(hostFd_, FIOCLEX, nullptr);
@@ -170,10 +167,9 @@ namespace kernel::gnulinux {
                 struct winsize ws;
                 int ret = ::ioctl(hostFd_, TIOCGWINSZ, &ws);
                 if(ret < 0) return ErrnoOrBuffer(-errno);
-                std::vector<u8> buffer;
-                buffer.resize(sizeof(ws), 0x0);
+                Buffer buffer(sizeof(ws), 0x0);
                 std::memcpy(buffer.data(), &ws, sizeof(ws));
-                return ErrnoOrBuffer(Buffer{std::move(buffer)});
+                return ErrnoOrBuffer(std::move(buffer));
             }
             case Ioctl::tiocswinsz: {
                 struct winsize ws;

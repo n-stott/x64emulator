@@ -55,11 +55,10 @@ namespace kernel::gnulinux {
     ErrnoOrBuffer Tty::read(OpenFileDescription&, size_t count) {
         if(!isReadable()) return ErrnoOrBuffer{-EBADF};
         if(!hostFd_) return ErrnoOrBuffer{-EBADF};
-        std::vector<u8> buffer;
-        buffer.resize(count, 0x0);
+        Buffer buffer(count, 0x0);
         ssize_t nbytes = ::read(hostFd_.value(), buffer.data(), count);
         if(nbytes < 0) return ErrnoOrBuffer(-errno);
-        buffer.resize((size_t)nbytes);
+        buffer.shrink((size_t)nbytes);
         return ErrnoOrBuffer(Buffer{std::move(buffer)});
     }
 
@@ -75,9 +74,9 @@ namespace kernel::gnulinux {
         struct stat st;
         int rc = ::fstat(hostFd_.value(), &st);
         if(rc < 0) return ErrnoOrBuffer(-errno);
-        std::vector<u8> buf(sizeof(st), 0x0);
+        Buffer buf(sizeof(st), 0x0);
         std::memcpy(buf.data(), &st, sizeof(st));
-        return ErrnoOrBuffer(Buffer{std::move(buf)});
+        return ErrnoOrBuffer(std::move(buf));
     }
 
     void Tty::advanceInternalOffset(off_t) {

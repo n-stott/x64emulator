@@ -2,6 +2,8 @@
 #define BUFFER_H
 
 #include "utils.h"
+#include <array>
+#include <cassert>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -97,6 +99,29 @@ namespace kernel {
             }
         }
 
+        void shrink(size_t newSize) {
+            assert(newSize <= size_);
+            if(newSize == size_) return;
+            if(size_ <= InlineBytes) {
+                // Just update the size
+                size_ = (u32)newSize;
+                return;
+            }
+            if(newSize > InlineBytes) {
+                // We could resize the heapBuffer, but we don't have to :)
+                size_ = (u32)newSize;
+                return;
+            } else {
+                // We need to move the data from the heap to the stack
+                std::array<u8, InlineBytes> tmp;
+                ::memcpy(tmp.data(), data_.heapBuffer, InlineBytes);
+                free(data_.heapBuffer);
+                ::memcpy(data_.stackBuffer, tmp.data(), InlineBytes);
+                size_ = (u32)newSize;
+                return;
+            }
+        }
+
     private:
         union {
             u8 stackBuffer[InlineBytes];
@@ -108,14 +133,9 @@ namespace kernel {
     class Buffer : public SVOBuffer<> {
     public:
         Buffer() = default;
-        explicit Buffer(const std::vector<u8>& buf) : SVOBuffer(buf.size()) {
-            if(!buf.empty()) std::memcpy(data(), buf.data(), size());
-        }
 
-        template<typename T>
-        explicit Buffer(const std::vector<T>& buf) : SVOBuffer(buf.size()*sizeof(T)) {
-            static_assert(std::is_trivial_v<T>);
-            if(!buf.empty()) std::memcpy(data(), buf.data(), size());
+        Buffer(size_t size, u8 value) : SVOBuffer(size) {
+            ::memset(data(), value, size);
         }
 
         template<typename T>
@@ -124,6 +144,8 @@ namespace kernel {
             std::memcpy(data(), &val, size());
         }
 
+        template<typename T>
+        explicit Buffer(const std::vector<T>& buf) = delete;
     };
 
     template<typename T>

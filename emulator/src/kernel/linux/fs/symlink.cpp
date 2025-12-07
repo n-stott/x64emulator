@@ -6,8 +6,12 @@ namespace kernel::gnulinux {
     ErrnoOrBuffer Symlink::readlink(size_t bufferSize) {
         if(bufferSize == 0) return ErrnoOrBuffer(-EINVAL);
         std::vector<char> linkpath(link_.begin(), link_.end());
-        if(linkpath.size() > bufferSize) linkpath.resize(bufferSize);
-        return ErrnoOrBuffer(Buffer(linkpath));
+        Buffer buffer(linkpath.size(), 0x0);
+        ::memcpy(buffer.data(), linkpath.data(), buffer.size());
+        if(bufferSize < buffer.size()) {
+            buffer.shrink(bufferSize);
+        }
+        return ErrnoOrBuffer(std::move(buffer));
     }
 
     bool Symlink::isReadable() const {

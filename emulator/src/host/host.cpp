@@ -423,36 +423,36 @@ namespace kernel::gnulinux {
         struct stat st;
         int rc = ::stat(path.c_str(), &st);
         if(rc < 0) return ErrnoOrBuffer(-errno);
-        std::vector<u8> buf(sizeof(st), 0x0);
+        Buffer buf(sizeof(st), 0x0);
         std::memcpy(buf.data(), &st, sizeof(st));
-        return ErrnoOrBuffer(Buffer{std::move(buf)});
+        return ErrnoOrBuffer(std::move(buf));
     }
 
     ErrnoOrBuffer Host::fstat(FD fd) {
         struct stat st;
         int rc = ::fstat(fd.fd, &st);
         if(rc < 0) return ErrnoOrBuffer(-errno);
-        std::vector<u8> buf(sizeof(st), 0x0);
+        Buffer buf(sizeof(st), 0x0);
         std::memcpy(buf.data(), &st, sizeof(st));
-        return ErrnoOrBuffer(Buffer{std::move(buf)});
+        return ErrnoOrBuffer(std::move(buf));
     }
 
     ErrnoOrBuffer Host::lstat(const std::string& path) {
         struct stat st;
         int rc = ::lstat(path.c_str(), &st);
         if(rc < 0) return ErrnoOrBuffer(-errno);
-        std::vector<u8> buf(sizeof(st), 0x0);
+        Buffer buf(sizeof(st), 0x0);
         std::memcpy(buf.data(), &st, sizeof(st));
-        return ErrnoOrBuffer(Buffer{std::move(buf)});
+        return ErrnoOrBuffer(std::move(buf));
     }
 
     ErrnoOrBuffer Host::fstatat64(FD dirfd, const std::string& path, int flags) {
         struct stat st;
         int rc = ::fstatat(dirfd.fd, path.c_str(), &st, flags);
         if(rc < 0) return ErrnoOrBuffer(-errno);
-        std::vector<u8> buf(sizeof(st), 0x0);
+        Buffer buf(sizeof(st), 0x0);
         std::memcpy(buf.data(), &st, sizeof(st));
-        return ErrnoOrBuffer(Buffer{std::move(buf)});
+        return ErrnoOrBuffer(std::move(buf));
     }
 
     int Host::access(const std::string& path, int mode) {
@@ -465,34 +465,34 @@ namespace kernel::gnulinux {
         struct statfs stfs;
         int rc = ::statfs(path.c_str(), &stfs);
         if(rc < 0) return ErrnoOrBuffer(-errno);
-        std::vector<u8> buf(sizeof(stfs), 0x0);
+        Buffer buf(sizeof(stfs), 0x0);
         std::memcpy(buf.data(), &stfs, sizeof(stfs));
-        return ErrnoOrBuffer(Buffer{std::move(buf)});
+        return ErrnoOrBuffer(std::move(buf));
     }
 
     ErrnoOrBuffer Host::statx(FD dirfd, const std::string& path, int flags, unsigned int mask) {
         struct statx sx;
         int rc = ::statx(dirfd.fd, path.c_str(), flags, mask, &sx);
         if(rc < 0) return ErrnoOrBuffer(-errno);
-        std::vector<u8> buf(sizeof(sx), 0x0);
+        Buffer buf(sizeof(sx), 0x0);
         std::memcpy(buf.data(), &sx, sizeof(sx));
-        return ErrnoOrBuffer(Buffer{std::move(buf)});
+        return ErrnoOrBuffer(std::move(buf));
     }
 
     ErrnoOrBuffer Host::getxattr(const std::string& path, const std::string& name, size_t size) {
-        std::vector<u8> buf(size, 0x0);
+        Buffer buf(size, 0x0);
         ssize_t ret = ::getxattr(path.c_str(), name.c_str(), buf.data(), size);
         if(ret < 0) return ErrnoOrBuffer(-errno);
-        buf.resize((size_t)ret);
-        return ErrnoOrBuffer(Buffer{std::move(buf)});
+        buf.shrink((size_t)ret);
+        return ErrnoOrBuffer(std::move(buf));
     }
 
     ErrnoOrBuffer Host::lgetxattr(const std::string& path, const std::string& name, size_t size) {
-        std::vector<u8> buf(size, 0x0);
+        Buffer buf(size, 0x0);
         ssize_t ret = ::lgetxattr(path.c_str(), name.c_str(), buf.data(), size);
         if(ret < 0) return ErrnoOrBuffer(-errno);
-        buf.resize((size_t)ret);
-        return ErrnoOrBuffer(Buffer{std::move(buf)});
+        buf.shrink((size_t)ret);
+        return ErrnoOrBuffer(std::move(buf));
     }
 
     std::string Host::fcntlName(int cmd) {
@@ -643,10 +643,9 @@ namespace kernel::gnulinux {
         struct sysinfo buf;
         int ret = ::sysinfo(&buf);
         if(ret < 0) return ErrnoOrBuffer(-errno);
-        std::vector<u8> buffer;
-        buffer.resize(sizeof(struct sysinfo), 0x0);
+        Buffer buffer(sizeof(struct sysinfo), 0x0);
         std::memcpy(buffer.data(), &buf, sizeof(buf));
-        return ErrnoOrBuffer(Buffer{std::move(buffer)});
+        return ErrnoOrBuffer(std::move(buffer));
     }
 
     int Host::getuid() {
@@ -681,26 +680,26 @@ namespace kernel::gnulinux {
         std::vector<gid_t> groups((size_t)size, 0);
         int ret = ::getgroups(size, groups.data());
         if(ret < 0) return ErrnoOrBuffer(-errno);
-        return ErrnoOrBuffer(Buffer{std::move(groups)});
+        Buffer buffer(groups.size()*sizeof(gid_t), 0);
+        ::memcpy(buffer.data(), groups.data(), buffer.size());
+        return ErrnoOrBuffer(std::move(buffer));
     }
 
     ErrnoOrBuffer Host::readlink(const std::string& path, size_t count) {
-        std::vector<u8> buffer;
-        buffer.resize(count, 0x0);
+        Buffer buffer(count, 0x0);
         ssize_t ret = ::readlink(path.c_str(), (char*)buffer.data(), buffer.size());
         if(ret < 0) return ErrnoOrBuffer(-errno);
-        buffer.resize((size_t)ret);
-        return ErrnoOrBuffer(Buffer{std::move(buffer)});
+        buffer.shrink((size_t)ret);
+        return ErrnoOrBuffer(std::move(buffer));
     }
 
     ErrnoOrBuffer Host::uname() {
         struct utsname buf;
         int ret = ::uname(&buf);
         if(ret < 0) return ErrnoOrBuffer(-errno);
-        std::vector<u8> buffer;
-        buffer.resize(sizeof(buf), 0x0);
+        Buffer buffer(sizeof(buf), 0x0);
         std::memcpy(buffer.data(), &buf, sizeof(buf));
-        return ErrnoOrBuffer(Buffer{std::move(buffer)});
+        return ErrnoOrBuffer(std::move(buffer));
     }
 
     std::optional<std::string> Host::ttyname() {
@@ -733,23 +732,21 @@ namespace kernel::gnulinux {
     }
 
     ErrnoOrBuffer Host::getcwd(size_t size) {
-        std::vector<u8> path;
-        path.resize(size, 0x0);
+        Buffer path(size, 0x0);
         char* cwd = ::getcwd((char*)path.data(), path.size());
         if(!cwd) return ErrnoOrBuffer(-errno);
         size_t actualSize = 0;
-        for(auto it = path.begin(); it != path.end() && *it != '\0'; ++it) ++actualSize;
-        path.resize(actualSize+1);
+        for(auto it = path.data(); it != path.data()+path.size() && *it != '\0'; ++it) ++actualSize;
+        path.shrink(actualSize+1);
         return ErrnoOrBuffer(Buffer{std::move(path)});
     }
 
     ErrnoOrBuffer Host::getdents64(FD fd, size_t count) {
-        std::vector<u8> buf;
-        buf.resize(count, 0x0);
+        Buffer buf(count, 0x0);
         ssize_t nbytes = ::getdents64(fd.fd, buf.data(), buf.size());
         if(nbytes < 0) return ErrnoOrBuffer(-errno);
-        buf.resize((size_t)nbytes);
-        return ErrnoOrBuffer(Buffer{std::move(buf)});
+        buf.shrink((size_t)nbytes);
+        return ErrnoOrBuffer(std::move(buf));
     }
 
     int Host::chdir(const std::string& path) {
