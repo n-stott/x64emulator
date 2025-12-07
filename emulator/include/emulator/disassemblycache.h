@@ -9,6 +9,7 @@
 #include "intervalvector.h"
 #include "utils.h"
 #include <algorithm>
+#include <map>
 #include <memory>
 #include <string>
 #include <vector>
@@ -60,6 +61,8 @@ namespace emulator {
         std::mutex guard_;
 #endif
         std::vector<std::unique_ptr<ExecutableSection>> executableSections_;
+        std::map<u64, ExecutableSection*> executableSectionsByBegin_;
+        std::map<u64, ExecutableSection*> executableSectionsByEnd_;
 
         std::unique_ptr<x64::Disassembler> disassembler_;
         std::vector<u8> disassemblyData_;

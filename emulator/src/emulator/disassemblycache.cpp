@@ -33,35 +33,36 @@ namespace emulator {
     }
 
     DisassemblyCache::InstructionPosition DisassemblyCache::findSectionWithAddress(u64 address, BytecodeRetriever* retriever) {
-        auto findInstructionPosition = [](const ExecutableSection* section, u64 address) -> std::optional<InstructionPosition> {
-            assert(!!section);
-
+        auto findInstructionPosition = [](const ExecutableSection& section, u64 address) -> std::optional<InstructionPosition> {
             // find instruction following address
-            auto it = std::lower_bound(section->instructions.begin(), section->instructions.end(), address, [&](const auto& a, u64 b) {
+            auto it = std::lower_bound(section.instructions.begin(), section.instructions.end(), address, [&](const auto& a, u64 b) {
                 return a.address() < b;
             });
-            if(it == section->instructions.end()) return {};
+            if(it == section.instructions.end()) return {};
             if(address != it->address()) return {};
 
-            size_t index = (size_t)std::distance(section->instructions.begin(), it);
-            return InstructionPosition { section, index };
+            size_t index = (size_t)std::distance(section.instructions.begin(), it);
+            return InstructionPosition { &section, index };
         };
 
-        auto candidateSectionIt = std::upper_bound(executableSections_.begin(), executableSections_.end(), address, [&](u64 a, const auto& b) {
-            return a < b->end;
-        });
-        if(candidateSectionIt != executableSections_.end()) {
-            const auto* candidateSection = candidateSectionIt->get();
+        auto candidateSectionIt = executableSectionsByEnd_.upper_bound(address);
+        if(candidateSectionIt != executableSectionsByEnd_.end()) {
+            const auto* candidateSection = candidateSectionIt->second;
             if(candidateSection->begin <= address && address < candidateSection->end) {
-                if(auto ip = findInstructionPosition(candidateSection, address)) return ip.value();
+                if(auto ip = findInstructionPosition(*candidateSection, address)) return ip.value();
             }
         }
 
         // limit the size of disassembly range to 256 bytes
         u64 size = 0x100;
         // try to avoid re-disassembling
-        for(const auto& execSection : executableSections_) {
-            if(address < execSection->begin && execSection->begin <= address+size) size = execSection->begin - address;
+        {
+            auto it = executableSectionsByBegin_.lower_bound(address);
+            if(it != executableSectionsByBegin_.end()) {
+                if(it->second->begin <= address+size) {
+                    size = it->second->begin - address;
+                }
+            }
         }
         
         // If we land here, we probably have not disassembled the section yet...
@@ -83,47 +84,12 @@ namespace emulator {
         });
         verify(section.end == section.instructions.back().nextAddress());
         section.trim();
-        
+
         auto newSection = std::make_unique<ExecutableSection>(std::move(section));
-        const auto* sectionPtr = newSection.get();
-
-        // We may have some section overlap : because we only get the program header bounds, we actually get the
-        // .init, .plt, .text, .fini and other section headers within a single block of memory. The transitions 
-        // between the sections do not make sense (nor should they), but we are actually disassembling them in one go.
-        // It would be nice to have the bounds of each section so we know where to stop.
-        // In the meantime, we can just replace the old content to ensure that we have no overlap !
-
-        for(auto& oldSection : executableSections_) {
-            if(newSection->end <= oldSection->begin) continue;
-            if(newSection->begin >= oldSection->end) continue;
-
-            // trim the old section
-            auto& instructions = oldSection->instructions;
-            auto it = std::lower_bound(instructions.begin(), instructions.end(), address, [](const auto& a, u64 b) {
-                return a.nextAddress() < b;
-            });
-            instructions.erase(it, instructions.end());
-            verify(!instructions.empty());
-            oldSection->end = instructions.back().nextAddress();
-        }
-
-        auto position = std::lower_bound(executableSections_.begin(), executableSections_.end(), address, [](const auto& a, u64 b) {
-            return a->begin < b;
-        });
-        executableSections_.insert(position, std::move(newSection));
-
-        assert(std::is_sorted(executableSections_.begin(), executableSections_.end(), [](const auto& a, const auto& b) {
-            return a->begin < b->begin;
-        }));
-
-
-        for(size_t i = 1; i < executableSections_.size(); ++i) {
-            const auto& a = *executableSections_[i-1];
-            const auto& b = *executableSections_[i];
-            verify(a.end <= b.begin, [&]() {
-                fmt::print("Overlapping executable regions {:#x}:{:#x} and {:#x}:{:#x}", a.begin, a.end, b.begin, b.end);
-            });
-        }
+        auto* sectionPtr = newSection.get();
+        executableSections_.push_back(std::move(newSection));
+        executableSectionsByBegin_.emplace(sectionPtr->begin, sectionPtr);
+        executableSectionsByEnd_.emplace(sectionPtr->end, sectionPtr);
 
         // Retrieve symbols from that section
         symbolProvider_.tryRetrieveSymbolsFromExecutable(name_, regionBase);
@@ -159,9 +125,18 @@ namespace emulator {
         if(protBefore.test(x64::PROT::EXEC) == protAfter.test(x64::PROT::EXEC)) return;
 
         if(!protAfter.test(x64::PROT::EXEC)) {
-            executableSections_.erase(std::remove_if(executableSections_.begin(), executableSections_.end(), [&](const auto& section) {
-                return (base <= section->begin && section->begin < base + length)
-                    || (base < section->end && section->end <= base + length);
+            {
+                auto left = executableSectionsByBegin_.lower_bound(base);
+                auto right = executableSectionsByBegin_.upper_bound(base+length);
+                executableSectionsByBegin_.erase(left, right);
+            }
+            {
+                auto left = executableSectionsByEnd_.lower_bound(base);
+                auto right = executableSectionsByEnd_.upper_bound(base+length);
+                executableSectionsByEnd_.erase(left, right);
+            }
+            executableSections_.erase(std::remove_if(executableSections_.begin(), executableSections_.end(), [=](const auto& section) {
+                return base <= section->begin && section->end <= base+length;
             }), executableSections_.end());
         }
     }
@@ -169,9 +144,18 @@ namespace emulator {
     void DisassemblyCache::onRegionDestruction(u64 base, u64 length, BitFlags<x64::PROT> prot) {
         if(!prot.test(x64::PROT::EXEC)) return;
 
-        executableSections_.erase(std::remove_if(executableSections_.begin(), executableSections_.end(), [&](const auto& section) {
-            return (base <= section->begin && section->begin < base + length)
-                || (base < section->end && section->end <= base + length);
+        {
+            auto left = executableSectionsByBegin_.lower_bound(base);
+            auto right = executableSectionsByBegin_.upper_bound(base+length);
+            executableSectionsByBegin_.erase(left, right);
+        }
+        {
+            auto left = executableSectionsByEnd_.lower_bound(base);
+            auto right = executableSectionsByEnd_.upper_bound(base+length);
+            executableSectionsByEnd_.erase(left, right);
+        }
+        executableSections_.erase(std::remove_if(executableSections_.begin(), executableSections_.end(), [=](const auto& section) {
+            return base <= section->begin && section->end <= base+length;
         }), executableSections_.end());
     }
 
