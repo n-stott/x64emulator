@@ -70,7 +70,8 @@ namespace x64 {
             &callstackSize_,
             currentlyExecutingBasicBlockPtr,
             currentlyExecutingJitBasicBlock,
-            (const void*)nativeBasicBlock
+            (const void*)nativeBasicBlock,
+            FlaglessCompareBuffer{}
         };
         NativeExecPtr jitEntrypoint = (x64::NativeExecPtr)jitTrampoline_->ptr;
         jitEntrypoint(&arguments);

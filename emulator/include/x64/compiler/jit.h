@@ -37,6 +37,19 @@ namespace x64 {
     // OF emulator::BasicBlock CHANGES AS WELL
     static constexpr size_t CALLS_OFFSET = 0x38;
 
+    static constexpr u64 TICK_LIMIT_MASK = (u64)(~(u64)0xFFFFF);
+
+    struct alignas(16) FlaglessCompareBuffer {
+        u64 zeroes { 0 };
+        u64 ones { (u64)(-1) };
+        u64 maskl { TICK_LIMIT_MASK };
+        u64 masku { TICK_LIMIT_MASK };
+        u64 scratch_val0 { 0 };
+        u64 scratch_val1 { 0 };
+        u64 scratch_val2 { 0 };
+        u64 padding { 0 };
+    };
+
     // DO NOT MODIFY THIS STRUCT
     // WITHOUT CHANGING THE JIT AS WELL !!
     struct NativeArguments {
@@ -53,6 +66,7 @@ namespace x64 {
         void** currentlyExecutingBasicBlockPtr;
         const void* currentlyExecutingJitBasicBlock;
         const void* executableCode;
+        FlaglessCompareBuffer flaglessCompareBuffer;
     };
 
     using NativeExecPtr = void(*)(NativeArguments*);
