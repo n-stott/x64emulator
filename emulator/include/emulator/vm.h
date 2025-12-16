@@ -9,6 +9,7 @@
 #include "intervalvector.h"
 #include "utils.h"
 #include <deque>
+#include <sstream>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -59,6 +60,8 @@ namespace emulator {
         void tryPatch(x64::Jit&);
 
         u64 calls() const { return calls_ + (!!jitBasicBlock_ ? jitBasicBlock_->calls() : 0); }
+
+        void dumpGraphviz(std::ostream&, std::unordered_map<void*, u32>& counter) const;
 
     private:
         void removePredecessor(BasicBlock* other);
@@ -183,6 +186,7 @@ namespace emulator {
 
         void updateJitStats(const BasicBlock&);
         void dumpJitTelemetry(const std::vector<const BasicBlock*>& blocks) const;
+        void dumpGraphviz(std::ostream&) const;
 
         x64::Cpu& cpu_;
         x64::Mmu& mmu_;

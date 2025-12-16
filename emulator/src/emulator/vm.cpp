@@ -662,4 +662,43 @@ namespace emulator {
 #endif
         }
     }
+
+    void BasicBlock::dumpGraphviz(std::ostream& stream, std::unordered_map<void*, u32>& counter) const {
+        auto get_id = [&](const BasicBlock* bb) -> u32 {
+            auto it = counter.find((void*)bb);
+            if(it != counter.end()) {
+                return it->second;
+            } else {
+                u32 id = (u32)counter.size();
+                counter[(void*)bb] = id;
+                return id;
+            }
+        };
+
+        auto write_edge = [&](const BasicBlock* u, const BasicBlock* v) {
+            stream << fmt::format("{}", get_id(u));
+            stream << " -> ";
+            stream << fmt::format("{}", get_id(v));
+            stream << ';' << '\n';
+        };
+
+        for(const BasicBlock* succ : fixedDestinationInfo_.next) {
+            if(!succ) continue;
+            write_edge(this, succ);
+        }
+
+        for(const BasicBlock* succ : variableDestinationInfo_.next) {
+            if(!succ) continue;
+            write_edge(this, succ);
+        }
+    }
+
+    void VM::dumpGraphviz(std::ostream& stream) const {
+        stream << "digraph G {\n";
+        std::unordered_map<void*, u32> counter;
+        for(auto p : basicBlocksByAddress_) {
+            p.second->dumpGraphviz(stream, counter);
+        }
+        stream << '}';
+    }
 }
