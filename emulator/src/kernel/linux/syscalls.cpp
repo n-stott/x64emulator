@@ -858,7 +858,7 @@ namespace kernel::gnulinux {
         return ret;
     }
 
-    void checkCloneFlags(const Host::CloneFlags& flags) {
+    [[nodiscard]] static bool checkCloneFlags(const Host::CloneFlags& flags) {
         bool expected = flags.childClearTid
                 && !flags.childSetTid
                 && !flags.clearSignalHandlers
@@ -888,8 +888,9 @@ namespace kernel::gnulinux {
             if(!flags.cloneThread) puts("Expected cloneFlags.cloneThread == true");
             if(!flags.cloneVm) puts("Expected cloneFlags.cloneVm == true");
             if(!!flags.cloneVfork) puts("Expected cloneFlags.cloneVfork == false");
-            verify(false);
+            return false;
         }
+        return true;
     }
 
     long Sys::clone(unsigned long flags, x64::Ptr stack, x64::Ptr32 parent_tid, x64::Ptr32 child_tid, unsigned long tls) {
@@ -907,7 +908,14 @@ namespace kernel::gnulinux {
         long ret = newThread->description().tid;
 
         Host::CloneFlags cloneFlags = Host::fromCloneFlags(flags);
-        checkCloneFlags(cloneFlags);
+        bool flagsOk = checkCloneFlags(cloneFlags);
+        if(!flagsOk) {
+            if(kernel_.logSyscalls()) {
+                print("Sys::clone(flags={}, stack={:#x}, parent_tid={:#x}, child_tid={:#x}, tls={}) = {}",
+                            flags, stack.address(), parent_tid.address(), child_tid.address(), tls, -ENOTSUP);
+            }
+            return -ENOTSUP;
+        }
 
         if(cloneFlags.childClearTid) {
             newThread->setClearChildTid(child_tid);
@@ -2151,7 +2159,14 @@ namespace kernel::gnulinux {
         u64 tls = args[7];
 
         Host::CloneFlags cloneFlags = Host::fromCloneFlags(flags);
-        checkCloneFlags(cloneFlags);
+        bool flagsOk = checkCloneFlags(cloneFlags);
+        if(!flagsOk) {
+            if(kernel_.logSyscalls()) {
+                print("Sys::clone3(uargs={:#x}, size={}) = {}",
+                        uargs.address(), size, -ENOTSUP);
+            }
+            return -ENOTSUP;
+        }
 
         Thread* currentThread = currentThread_;
         std::unique_ptr<Thread> newThread = kernel_.scheduler().allocateThread(currentThread->description().pid);
