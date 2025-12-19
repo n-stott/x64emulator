@@ -129,7 +129,7 @@ namespace kernel::gnulinux {
         ssize_t pwrite(FD fd, const u8* buf, size_t count, off_t offset);
         ssize_t writev(FD fd, const std::vector<Buffer>& buffers);
 
-        ErrnoOrBuffer stat(const std::string& pathname);
+        ErrnoOrBuffer stat(const Path& path);
         ErrnoOrBuffer fstat(FD fd);
         ErrnoOrBuffer statx(FD dirfd, const std::string& pathname, int flags, unsigned int mask);
         ErrnoOrBuffer fstatat64(FD dirfd, const std::string& pathname, int flags);

@@ -249,11 +249,15 @@ namespace kernel::gnulinux {
     }
 
     int Sys::stat(x64::Ptr pathname, x64::Ptr statbuf) {
-        std::string path = mmu_.readString(pathname);
-        auto errnoOrBuffer = kernel_.fs().stat(path);
+        std::string pathname_ = mmu_.readString(pathname);
+        auto path = kernel_.fs().resolvePath(kernel_.fs().cwd(), pathname_);
+        auto errnoOrBuffer = [&]() {
+            if(!path) return ErrnoOrBuffer(-ENOENT);
+            return kernel_.fs().stat(*path);
+        }();
         if(kernel_.logSyscalls()) {
             print("Sys::stat(path={}, statbuf={:#x}) = {}",
-                        path, statbuf.address(), errnoOrBuffer.errorOr(0));
+                        pathname_, statbuf.address(), errnoOrBuffer.errorOr(0));
         }
         return errnoOrBuffer.errorOrWith<int>([&](const auto& buffer) {
             mmu_.copyToMmu(statbuf, buffer.data(), buffer.size());

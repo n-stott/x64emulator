@@ -570,14 +570,10 @@ namespace kernel::gnulinux {
         return nbytes;
     }
 
-    ErrnoOrBuffer FS::stat(const std::string& pathname) {
-        if(pathname.empty()) return ErrnoOrBuffer(-ENOENT);
-        auto path = Path::tryCreate(pathname, cwd()->path().absolute());
-        if(!!path) {
-            File* file = tryGetFile(*path, FollowSymlink::YES);
-            if(!!file) return file->stat();
-        }
-        return Host::stat(pathname);
+    ErrnoOrBuffer FS::stat(const Path& path) {
+        File* file = tryGetFile(path, FollowSymlink::YES);
+        if(!!file) return file->stat();
+        return Host::stat(path.absolute());
     }
 
     ErrnoOrBuffer FS::fstat(FD fd) {
