@@ -152,7 +152,7 @@ namespace kernel::gnulinux {
         int flock(FD fd, int operation);
 
         int fallocate(FD fd, int mode, off_t offset, off_t len);
-        int truncate(const std::string& pathname, off_t length);
+        int truncate(const Path& path, off_t length);
         int ftruncate(FD fd, off_t length);
 
         enum class EpollEventType : u32 {

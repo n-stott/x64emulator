@@ -802,10 +802,8 @@ namespace kernel::gnulinux {
         return shadowFile->fallocate(mode, offset, len);
     }
 
-    int FS::truncate(const std::string& pathname, off_t length) {
-        auto path = Path::tryCreate(pathname);
-        verify(!!path, "Unable to build path");
-        File* file = tryGetFile(*path, FollowSymlink::YES);
+    int FS::truncate(const Path& path, off_t length) {
+        File* file = tryGetFile(path, FollowSymlink::YES);
         if(!file) return -ENOENT;
         verify(file->isRegularFile(), "truncate not implemented on non-regular files");
         verify(file->isShadow(), "truncate not implemented on non-shadow files");

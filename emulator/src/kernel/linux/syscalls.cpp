@@ -1031,9 +1031,13 @@ namespace kernel::gnulinux {
         return -ENOTSUP;
     }
 
-    int Sys::truncate(x64::Ptr8 path, off_t length) {
-        auto pathname = mmu_.readString(path);
-        int ret = kernel_.fs().truncate(pathname, length);
+    int Sys::truncate(x64::Ptr8 path_, off_t length) {
+        auto pathname = mmu_.readString(path_);
+        auto path = kernel_.fs().resolvePath(kernel_.fs().cwd(), pathname);
+        int ret = [&]() {
+            if(!path) return -ENOENT;
+            return kernel_.fs().truncate(*path, length);
+        }();
         if(kernel_.logSyscalls()) print("Sys::truncate(path={}, length={}) = {}", pathname, length, ret);
         return ret;
     }
