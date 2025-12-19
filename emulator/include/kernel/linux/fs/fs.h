@@ -96,6 +96,12 @@ namespace kernel::gnulinux {
         std::optional<Path> resolvePath(const Directory* base, const std::string& pathname) const;
         std::optional<Path> resolvePath(FD dirfd, const Directory* base, const std::string& pathname) const;
 
+        enum AllowEmptyPathname {
+            NO,
+            YES,
+        };
+        std::optional<Path> resolvePath(FD dirfd, const Directory* base, const std::string& pathname, AllowEmptyPathname tag) const;
+
         std::string toAbsolutePathname(const std::string& pathname) const;
         std::string toAbsolutePathname(const std::string& pathname, FD dirfd) const;
         Directory* ensurePathExceptLast(const Path& path);
@@ -131,7 +137,7 @@ namespace kernel::gnulinux {
 
         ErrnoOrBuffer stat(const Path& path);
         ErrnoOrBuffer fstat(FD fd);
-        ErrnoOrBuffer statx(FD dirfd, const std::string& pathname, int flags, unsigned int mask);
+        ErrnoOrBuffer statx(const Path& path, int flags, unsigned int mask);
         ErrnoOrBuffer fstatat64(FD dirfd, const std::string& pathname, int flags);
 
         ErrnoOrBuffer fstatfs(FD fd);

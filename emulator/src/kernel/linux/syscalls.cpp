@@ -2151,14 +2151,19 @@ namespace kernel::gnulinux {
     }
 
     int Sys::statx(int dirfd, x64::Ptr pathname, int flags, unsigned int mask, x64::Ptr statxbuf) {
-        std::string path = mmu_.readString(pathname);
-        auto errnoOrBuffer = kernel_.fs().statx(FS::FD{dirfd}, path, flags, mask);
+        std::string pathname_ = mmu_.readString(pathname);
+        auto allowEmptyPath = Host::Fstatat::isEmptyPath(flags) ? FS::AllowEmptyPathname::YES : FS::AllowEmptyPathname::NO;
+        auto path = kernel_.fs().resolvePath(FS::FD{dirfd}, kernel_.fs().cwd(), pathname_, allowEmptyPath);
+        auto errnoOrBuffer = [&]() {
+            if(!path) return ErrnoOrBuffer(-ENOENT);
+            return kernel_.fs().statx(*path, flags, mask);
+        }();
         if(kernel_.logSyscalls()) {
             print("Sys::statx(dirfd={}, path={}, flags={}, mask={}, statxbuf={:#x}) = {}",
-                        dirfd, path, flags, mask, statxbuf.address(), errnoOrBuffer.errorOr(0));
+                        dirfd, pathname_, flags, mask, statxbuf.address(), errnoOrBuffer.errorOr(0));
         }
         if(errnoOrBuffer.errorOr(0) == -ENOTSUP) {
-            warn("statx not supported on {}", path);
+            warn("statx not supported on {}", pathname_);
         }
         return errnoOrBuffer.errorOrWith<int>([&](const auto& buffer) {
             mmu_.copyToMmu(statxbuf, buffer.data(), buffer.size());
