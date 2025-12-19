@@ -1105,7 +1105,11 @@ namespace kernel::gnulinux {
 
     ssize_t Sys::readlink(x64::Ptr pathname, x64::Ptr buf, size_t bufsiz) {
         std::string path = mmu_.readString(pathname);
-        auto errnoOrBuffer = kernel_.fs().readlink(path, bufsiz);
+        auto linkpath = kernel_.fs().resolvePath(kernel_.fs().cwd(), path);
+        auto errnoOrBuffer = [&]() {
+            if(!linkpath) return ErrnoOrBuffer(-ENOENT);
+            return kernel_.fs().readlink(*linkpath, bufsiz);
+        }();
         if(kernel_.logSyscalls()) {
             print("Sys::readlink(path={}, buf={:#x}, size={}) = {:#x}",
                         path, buf.address(), bufsiz, errnoOrBuffer.errorOrWith<ssize_t>([](const auto& buffer) {

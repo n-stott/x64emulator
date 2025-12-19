@@ -115,7 +115,7 @@ namespace kernel::gnulinux {
         int rename(const Path& oldpath, const Path& newpath);
         int unlink(const Path& path);
 
-        ErrnoOrBuffer readlink(const std::string& pathname, size_t bufferSize);
+        ErrnoOrBuffer readlink(const Path& path, size_t bufferSize);
 
         int access(const std::string& pathname, int mode) const;
         int faccessat(FD dirfd, const std::string& pathname, int mode) const;

@@ -12,7 +12,8 @@ int main() {
     Path programPath("home", "user", "my_program");
     fs.resetProcFS(pid, programPath);
 
-    auto errnoOfBuffer = fs.readlink("/proc/self/exe", 256);
+    Path linkPath("proc", "self", "exe");
+    auto errnoOfBuffer = fs.readlink(linkPath, 256);
     if(errnoOfBuffer.isError()) {
         return 1;
     } else {

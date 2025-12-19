@@ -463,18 +463,14 @@ namespace kernel::gnulinux {
         return 0;
     }
 
-    ErrnoOrBuffer FS::readlink(const std::string& pathname, size_t bufferSize) {
-        if(pathname.empty()) return ErrnoOrBuffer(-ENOENT);
-        auto absolutePathname = toAbsolutePathname(pathname);
-        auto path = Path::tryCreate(absolutePathname);
-        verify(!!path, "Unable to create path");
-        File* file = tryGetFile(*path, FollowSymlink::NO);
+    ErrnoOrBuffer FS::readlink(const Path& path, size_t bufferSize) {
+        File* file = tryGetFile(path, FollowSymlink::NO);
         if(!!file) {
             if(!file->isSymlink()) return ErrnoOrBuffer(-EINVAL);
             Symlink* symlink = static_cast<Symlink*>(file);
             return symlink->readlink(bufferSize);
         } else {
-            auto* symlink = HostSymlink::tryCreateAndAdd(this, root_.get(), absolutePathname);
+            auto* symlink = HostSymlink::tryCreateAndAdd(this, root_.get(), path.absolute());
             if(!symlink) return ErrnoOrBuffer(-EINVAL);
             verify(symlink->isSymlink());
             return static_cast<Symlink*>(symlink)->readlink(bufferSize);
