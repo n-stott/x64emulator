@@ -1,5 +1,6 @@
 #include "kernel/linux/fs/procfs.h"
 #include "kernel/linux/fs/fs.h"
+#include "kernel/linux/fs/path.h"
 
 using namespace kernel;
 using namespace kernel::gnulinux;
@@ -8,7 +9,7 @@ int main() {
     FS fs;
 
     int pid = 916;
-    std::string programPath = "/home/user/my_program";
+    Path programPath("home", "user", "my_program");
     fs.resetProcFS(pid, programPath);
 
     auto errnoOfBuffer = fs.readlink("/proc/self/exe", 256);
@@ -21,7 +22,7 @@ int main() {
             return 0;
         });
         if(ret != 0) return 1;
-        if(link != programPath) {
+        if(link != programPath.absolute()) {
             return 1;
         }
     }

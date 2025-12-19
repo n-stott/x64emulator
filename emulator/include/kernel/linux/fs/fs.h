@@ -28,7 +28,7 @@ namespace kernel::gnulinux {
         FS();
         ~FS();
 
-        void resetProcFS(int pid, const std::string& programFilePath);
+        void resetProcFS(int pid, const Path& programFilePath);
 
         // Careful with this !
         // O_RDWR in linux is 2, not 3
@@ -93,6 +93,7 @@ namespace kernel::gnulinux {
         Directory* root() { return root_.get(); }
         Directory* cwd() { return currentWorkDirectory_; }
 
+        std::optional<Path> resolvePath(const Directory* base, const std::string& pathname) const;
         std::string toAbsolutePathname(const std::string& pathname) const;
         std::string toAbsolutePathname(const std::string& pathname, FD dirfd) const;
         Directory* ensurePathExceptLast(const Path& path);
@@ -109,9 +110,9 @@ namespace kernel::gnulinux {
         FD dup3(FD oldfd, FD newfd, int flags);
         int close(FD fd);
 
-        int mkdir(const std::string& pathname);
-        int rename(const std::string& oldname, const std::string& newname);
-        int unlink(const std::string& pathname);
+        int mkdir(const Path& path);
+        int rename(const Path& oldpath, const Path& newpath);
+        int unlink(const Path& path);
 
         ErrnoOrBuffer readlink(const std::string& pathname, size_t bufferSize);
 

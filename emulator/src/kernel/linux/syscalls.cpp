@@ -1,4 +1,5 @@
 #include "kernel/linux/fs/fs.h"
+#include "kernel/linux/fs/path.h"
 #include "kernel/linux/shm/sharedmemory.h"
 #include "kernel/linux/sys/execve.h"
 #include "kernel/linux/kernel.h"
@@ -1059,10 +1060,17 @@ namespace kernel::gnulinux {
         return ret;
     }
 
-    int Sys::rename(x64::Ptr oldpath, x64::Ptr newpath) {
-        auto oldname = mmu_.readString(oldpath);
-        auto newname = mmu_.readString(newpath);
-        int ret = kernel_.fs().rename(oldname, newname);
+    int Sys::rename(x64::Ptr oldpathname, x64::Ptr newpathname) {
+        auto oldname = mmu_.readString(oldpathname);
+        auto newname = mmu_.readString(newpathname);
+        auto oldpath = kernel_.fs().resolvePath(kernel_.fs().cwd(), oldname);
+        auto newpath = kernel_.fs().resolvePath(kernel_.fs().cwd(), newname);
+        
+        int ret = [&]() {
+            if(!oldpath) return -ENOENT;
+            if(!newpath) return -ENOENT;
+            return kernel_.fs().rename(*oldpath, *newpath);
+        }();
         if(kernel_.logSyscalls()) {
             print("Sys::rename(oldpath={}, newpath={}) = {}", oldname, newname, ret);
         }
@@ -1070,19 +1078,27 @@ namespace kernel::gnulinux {
     }
 
     int Sys::mkdir(x64::Ptr pathname, mode_t mode) {
-        auto path = mmu_.readString(pathname);
-        auto ret = kernel_.fs().mkdir(path);
+        auto pathname_ = mmu_.readString(pathname);
+        auto path = kernel_.fs().resolvePath(kernel_.fs().cwd(), pathname_);
+        auto ret = [&]() {
+            if(!path) return -ENOENT;
+            return kernel_.fs().mkdir(*path);
+        }();
         if(kernel_.logSyscalls()) {
-            print("Sys::mkdir(path={}, mode={:o}) = {}", path, mode, ret);
+            print("Sys::mkdir(path={}, mode={:o}) = {}", pathname_, mode, ret);
         }
         return ret;
     }
 
     int Sys::unlink([[maybe_unused]] x64::Ptr pathname) {
-        auto path = mmu_.readString(pathname);
-        int ret = kernel_.fs().unlink(path);
+        auto pathname_ = mmu_.readString(pathname);
+        auto path = kernel_.fs().resolvePath(kernel_.fs().cwd(), pathname_);
+        int ret = [&]() {
+            if(!path) return -ENOENT;
+            return kernel_.fs().unlink(*path);
+        }();
         if(kernel_.logSyscalls()) {
-            print("Sys::unlink(path={}) = {}", path, ret);
+            print("Sys::unlink(path={}) = {}", pathname_, ret);
         }
         return ret;
     }

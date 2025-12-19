@@ -67,7 +67,7 @@ namespace kernel::gnulinux {
         currentWorkDirectory_ = ensureCompletePath(*cwdPath); // NOLINT(clang-analyzer-core.CallAndMessage)
     }
 
-    void FS::resetProcFS(int pid, const std::string& programFilePath) {
+    void FS::resetProcFS(int pid, const Path& programFilePath) {
         // only open files are stdin, stdout and stderr
         verify(openFiles_.size() == 3);
 
@@ -80,13 +80,12 @@ namespace kernel::gnulinux {
         verify(!!piddir, fmt::format("Unable to create /proc/{}", pid));
 
         // create symlink to that directory
-        auto* selfsymlink = ShadowSymlink::tryCreateAndAdd(this, procfs_, "self", fmt::format("/proc/{}", pid));
+        Path selfPath("proc", fmt::format("{}", pid));
+        auto* selfsymlink = ShadowSymlink::tryCreateAndAdd(this, procfs_, "self", selfPath.absolute());
         verify(!!selfsymlink, "Unable to create /proc/self");
 
-        std::string absoluteProgramPath = toAbsolutePathname(programFilePath);
-
         // add symlink /proc/{pid}/exe to the executable path
-        auto* exesymlink = ShadowSymlink::tryCreateAndAdd(this, piddir, "exe", absoluteProgramPath);
+        auto* exesymlink = ShadowSymlink::tryCreateAndAdd(this, piddir, "exe", programFilePath.absolute());
         verify(!!exesymlink, "Unable to create /proc/{pid}/exe");
     }
 
@@ -152,6 +151,20 @@ namespace kernel::gnulinux {
         });
         int fd = (it == openFiles_.end()) ? 0 : it->fd.fd+1;
         return FD{fd};
+    }
+
+    std::optional<Path> FS::resolvePath(const Directory* base, const std::string& pathname) const {
+        if(pathname.empty()) return {};
+        if(pathname[0] == '/') {
+            auto path = Path::tryCreate(pathname);
+            if(!path) return {};
+            return *path;
+        } else {
+            verify(!!base, "Null base directory");
+            auto path = Path::tryCreate(pathname, base->path());
+            if(!path) return {};
+            return *path;
+        }
     }
 
     std::string FS::toAbsolutePathname(const std::string& pathname) const {
@@ -412,36 +425,28 @@ namespace kernel::gnulinux {
         return newfd;
     }
 
-    int FS::mkdir(const std::string& pathname) {
-        auto path = Path::tryCreate(pathname, cwd()->path());
-        if(!path) return -ENOENT;
-        ensureCompletePath(*path);
+    int FS::mkdir(const Path& path) {
+        ensureCompletePath(path);
         return 0;
     }
 
-    int FS::rename(const std::string& oldname, const std::string& newname) {
-        auto oldpath = Path::tryCreate(oldname);
-        auto newpath = Path::tryCreate(newname);
-        if(!oldpath) return -ENOENT;
-        if(!newpath) return -ENOENT;
-        auto file = tryTakeFile(*oldpath);
+    int FS::rename(const Path& oldpath, const Path& newpath) {
+        auto file = tryTakeFile(oldpath);
         if(!file) return -ENOENT;
-        auto* newdir = ensurePathExceptLast(*newpath);
+        auto* newdir = ensurePathExceptLast(newpath);
         verify(!!newdir, "Unable to create new directory");
         newdir->addFile(std::move(file));
         return 0;
     }
     
-    int FS::unlink(const std::string& pathname) {
-        auto path = Path::tryCreate(toAbsolutePathname(pathname));
-        if(!path) return -ENOENT;
-        File* filePtr = tryGetFile(*path, FollowSymlink::YES);
+    int FS::unlink(const Path& path) {
+        File* filePtr = tryGetFile(path, FollowSymlink::YES);
         if(!filePtr) return -ENOENT;
         if(filePtr->refCount() > 0) {
             filePtr->setDeleteAfterClose();
         } else {
-            auto file = tryTakeFile(*path);
-            // let the file die  here
+            auto file = tryTakeFile(path);
+            // let the file die here
         }
         return 0;
     }
@@ -691,7 +696,9 @@ namespace kernel::gnulinux {
                 removeClosedPipes();
             }
             if(!file->keepAfterClose() || file->deleteAfterClose()) {
-                unlink(file->path());
+                auto path = Path::tryCreate(file->path());
+                verify(!!path);
+                unlink(*path);
                 removeFromOrphans(file);
             }
         }

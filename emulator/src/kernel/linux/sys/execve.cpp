@@ -1,6 +1,7 @@
 #include "kernel/linux/sys/execve.h"
 #include "kernel/linux/auxiliaryvector.h"
 #include "kernel/linux/fs/fs.h"
+#include "kernel/linux/fs/path.h"
 #include "kernel/linux/kernel.h"
 #include "kernel/linux/scheduler.h"
 #include "kernel/linux/thread.h"
@@ -304,7 +305,9 @@ namespace kernel::gnulinux {
         scheduler_.addThread(std::move(mainThread));
 
         // Setup procFS for this process
-        fs_.resetProcFS(Host::getpid(), programFilePath);
+        auto absolutePath = fs_.resolvePath(fs_.cwd(), programFilePath);
+        verify(!!absolutePath, "Unable to resolve program path");
+        fs_.resetProcFS(Host::getpid(), *absolutePath);
 
         return mainThreadPtr;
     }

@@ -11,6 +11,10 @@ namespace kernel::gnulinux {
 
     class Path {
     public:
+        explicit Path(std::string file);
+        Path(std::string dir, std::string file);
+        Path(std::string dir0, std::string dir1, std::string file);
+
         static std::unique_ptr<Path> tryCreate(std::string pathname, std::string cwd = "");
 
         static std::unique_ptr<Path> tryJoin(const std::string& prefix, const std::string& suffix);
@@ -40,9 +44,14 @@ namespace kernel::gnulinux {
             return components_.empty();
         }
 
-    private:
+        const std::string& absolute() const { return absolutePath_; }
+    
+    protected:
         explicit Path(std::vector<std::string> components);
+
+    private:
         std::vector<std::string> components_;
+        std::string absolutePath_;
     };
 
 }
