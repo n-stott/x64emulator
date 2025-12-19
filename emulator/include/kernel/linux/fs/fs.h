@@ -102,8 +102,6 @@ namespace kernel::gnulinux {
         };
         std::optional<Path> resolvePath(FD dirfd, const Directory* base, const std::string& pathname, AllowEmptyPathname tag) const;
 
-        std::string toAbsolutePathname(const std::string& pathname) const;
-        std::string toAbsolutePathname(const std::string& pathname, FD dirfd) const;
         Directory* ensurePathExceptLast(const Path& path);
         Directory* ensureCompletePath(const Path& path);
 

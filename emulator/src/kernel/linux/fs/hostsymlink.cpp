@@ -30,13 +30,12 @@ namespace kernel::gnulinux {
             return {};
         }
 
-        std::string absolutePathname = fs->toAbsolutePathname(pathname);
-        auto path = Path::tryCreate(absolutePathname);
+        auto path = Path::tryCreate(pathname);
         verify(!!path, "Unable to create path");
         Directory* containingDirectory = fs->ensurePathExceptLast(*path);
 
         char linkbuf[256];
-        ssize_t len = ::readlink(absolutePathname.c_str(), linkbuf, sizeof(linkbuf));
+        ssize_t len = ::readlink(pathname.c_str(), linkbuf, sizeof(linkbuf));
         if(len < 0) {
             warn("Unable to read link");
             return {};

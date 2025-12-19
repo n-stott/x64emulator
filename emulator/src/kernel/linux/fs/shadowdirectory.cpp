@@ -14,8 +14,7 @@ namespace kernel::gnulinux {
             pathname = (parent->path().absolute() + "/" + name);
         }
 
-        std::string absolutePathname = fs->toAbsolutePathname(pathname);
-        auto path = Path::tryCreate(absolutePathname);
+        auto path = Path::tryCreate(pathname);
         verify(!!path, "Unable to create path");
         Directory* containingDirectory = fs->ensurePathExceptLast(*path);
 

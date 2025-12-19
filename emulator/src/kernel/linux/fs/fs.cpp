@@ -178,8 +178,8 @@ namespace kernel::gnulinux {
             return resolvePath(base, pathname);
         } else {
             OpenFileDescription* openFileDescription = const_cast<FS&>(*this).findOpenFileDescription(dirfd);
-            verify(!!openFileDescription, "Trying to call toAbsolutePathname with unopened directory");
-            verify(openFileDescription->file()->isDirectory(), "Trying to call toAbsolutePathname with non-directory");
+            verify(!!openFileDescription, "Trying to resolve path for unopened directory");
+            verify(openFileDescription->file()->isDirectory(), "Trying to resolve path for non-directory");
             const Directory* dir = static_cast<const Directory*>(openFileDescription->file());
             return resolvePath(dir, pathname);
         }
@@ -189,7 +189,7 @@ namespace kernel::gnulinux {
         if(pathname.empty()) {
             if(tag == AllowEmptyPathname::YES) {
                 OpenFileDescription* openFileDescription = const_cast<FS&>(*this).findOpenFileDescription(dirfd);
-                verify(!!openFileDescription, "Trying to call toAbsolutePathname with unopened directory");
+                verify(!!openFileDescription, "Trying to resolve path for unopened directory");
                 return openFileDescription->file()->path();
             } else {
                 return {};
@@ -202,34 +202,10 @@ namespace kernel::gnulinux {
             return resolvePath(base, pathname);
         } else {
             OpenFileDescription* openFileDescription = const_cast<FS&>(*this).findOpenFileDescription(dirfd);
-            verify(!!openFileDescription, "Trying to call toAbsolutePathname with unopened directory");
-            verify(openFileDescription->file()->isDirectory(), "Trying to call toAbsolutePathname with non-directory");
+            verify(!!openFileDescription, "Trying to resolve path for unopened directory");
+            verify(openFileDescription->file()->isDirectory(), "Trying to resolve path for non-directory");
             const Directory* dir = static_cast<const Directory*>(openFileDescription->file());
             return resolvePath(dir, pathname);
-        }
-    }
-
-    std::string FS::toAbsolutePathname(const std::string& pathname) const {
-        verify(!pathname.empty(), "Empty pathname");
-        if(pathname[0] == '/') {
-            return pathname;
-        } else {
-            verify(!!currentWorkDirectory_, "No current work directory");
-            return currentWorkDirectory_->path().absolute() + "/" + pathname;
-        }
-    }
-
-    std::string FS::toAbsolutePathname(const std::string& pathname, FD dirfd) const {
-        verify(!pathname.empty(), "Empty pathname");
-        if(pathname[0] == '/') {
-            return pathname;
-        } else if(dirfd.fd == Host::cwdfd().fd) {
-            return currentWorkDirectory_->path().absolute() + "/" + pathname;
-        } else {
-            OpenFileDescription* openFileDescription = const_cast<FS&>(*this).findOpenFileDescription(dirfd);
-            verify(!!openFileDescription, "Trying to call toAbsolutePathname with unopened directory");
-            verify(openFileDescription->file()->isDirectory(), "Trying to call toAbsolutePathname with non-directory");
-            return openFileDescription->file()->path().absolute() + "/" + pathname;
         }
     }
 
