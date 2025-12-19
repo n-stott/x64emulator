@@ -21,7 +21,7 @@ namespace kernel::gnulinux {
         if(!parent || parent == fs->root()) {
             pathname = name;
         } else {
-            pathname = (parent->path() + "/" + name);
+            pathname = (parent->path().absolute() + "/" + name);
         }
 
         verify(!accessMode.test(FS::AccessMode::WRITE), "HostFile should not have write access");
@@ -97,7 +97,7 @@ namespace kernel::gnulinux {
 
     ErrnoOrBuffer HostFile::stat() {
         struct stat st;
-        std::string path = this->path();
+        std::string path = this->path().absolute();
         int rc = ::stat(path.c_str(), &st);
         if(rc < 0) return ErrnoOrBuffer(-errno);
         Buffer buf(sizeof(st), 0x0);

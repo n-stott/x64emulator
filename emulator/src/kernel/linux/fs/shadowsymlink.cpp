@@ -13,7 +13,7 @@ namespace kernel::gnulinux {
         if(!parent || parent == fs->root()) {
             pathname = name;
         } else {
-            pathname = (parent->path() + "/" + name);
+            pathname = (parent->path().absolute() + "/" + name);
         }
 
         std::string absolutePathname = fs->toAbsolutePathname(pathname);

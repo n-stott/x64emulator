@@ -15,7 +15,7 @@ namespace kernel::gnulinux {
         if(!parent || parent == fs->root()) {
             pathname = name;
         } else {
-            pathname = (parent->path() + "/" + name);
+            pathname = (parent->path().absolute() + "/" + name);
         }
 
         int flags = O_RDONLY | O_CLOEXEC;
@@ -80,7 +80,7 @@ namespace kernel::gnulinux {
     }
 
     ErrnoOrBuffer HostDevice::stat() {
-        return Host::stat(path());
+        return Host::stat(path().absolute());
     }
 
     ErrnoOrBuffer HostDevice::statfs() {

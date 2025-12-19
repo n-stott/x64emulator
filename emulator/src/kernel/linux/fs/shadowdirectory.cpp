@@ -11,7 +11,7 @@ namespace kernel::gnulinux {
         if(!parent) {
             pathname = name;
         } else {
-            pathname = (parent->path() + "/" + name);
+            pathname = (parent->path().absolute() + "/" + name);
         }
 
         std::string absolutePathname = fs->toAbsolutePathname(pathname);
@@ -28,12 +28,12 @@ namespace kernel::gnulinux {
     }
 
     ErrnoOrBuffer ShadowDirectory::stat() {
-        std::string path = this->path();
+        std::string path = this->path().absolute();
         return Host::stat(path);
     }
 
     ErrnoOrBuffer ShadowDirectory::statfs() {
-        std::string path = this->path();
+        std::string path = this->path().absolute();
         auto errnoOrBuffer = Host::statfs(path);
         verify(!errnoOrBuffer.isError(), "ShadowDirectory::statfs returned error");
         return errnoOrBuffer;

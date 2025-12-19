@@ -3,6 +3,7 @@
 
 #include "kernel/linux/fs/fsobject.h"
 #include "kernel/linux/fs/ioctl.h"
+#include "kernel/linux/fs/path.h"
 #include "kernel/utils/buffer.h"
 #include "kernel/utils/erroror.h"
 #include <sys/types.h>
@@ -20,7 +21,7 @@ namespace kernel::gnulinux {
 
         virtual bool isShadow() const { return false; }
 
-        virtual std::string path() const;
+        Path path() const;
         virtual std::string name() const { return name_; }
 
         virtual void open() { }

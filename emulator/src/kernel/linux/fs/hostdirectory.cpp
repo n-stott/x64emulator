@@ -20,7 +20,7 @@ namespace kernel::gnulinux {
         if(!parent) {
             pathname = name;
         } else {
-            pathname = (parent->path() + "/" + name);
+            pathname = (parent->path().absolute() + "/" + name);
         }
 
         int flags = O_RDONLY | O_CLOEXEC;
@@ -55,10 +55,10 @@ namespace kernel::gnulinux {
 
     void HostDirectory::open() {
         if(!hostFd_) {
-            std::string pathname = path();
+            std::string pathname = path().absolute();
             int flags = O_RDONLY | O_CLOEXEC;
             int fd = ::openat(AT_FDCWD, pathname.c_str(), flags);
-            verify(fd >= 0, "Unable to open directory");
+            verify(fd >= 0, "Unable to open directory \"" + pathname + "\"");
             hostFd_ = fd;
         }
     }
@@ -78,12 +78,12 @@ namespace kernel::gnulinux {
     }
 
     ErrnoOrBuffer HostDirectory::stat() {
-        std::string path = this->path();
+        std::string path = this->path().absolute();
         return Host::stat(path);
     }
 
     ErrnoOrBuffer HostDirectory::statfs() {
-        std::string path = this->path();
+        std::string path = this->path().absolute();
         return Host::statfs(path);
     }
 

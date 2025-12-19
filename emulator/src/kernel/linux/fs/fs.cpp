@@ -32,23 +32,25 @@ namespace kernel::gnulinux {
         auto ttyname = Host::ttyname();
         if(ttyname) {
             tty_ = Tty::tryCreateAndAdd(this, root_.get(), ttyname.value(), false);
-            createStandardStreams(ttyname.value());
+            verify(!!tty_, "Unable to create tty");
+            createStandardStreams(tty_->path());
         } else {
             tty_ = Tty::tryCreateAndAdd(this, root_.get(), "/dev/tty", false);
-            createStandardStreams("/dev/tty");
+            verify(!!tty_, "Unable to create tty");
+            createStandardStreams(tty_->path());
         }
     }
 
-    void FS::createStandardStreams(const std::string& ttyname) {
+    void FS::createStandardStreams(const Path& ttypath) {
         BitFlags<AccessMode> accessMode { AccessMode::READ, AccessMode::WRITE };
         BitFlags<CreationFlags> creationFlags {};
         BitFlags<StatusFlags> statusFlags {};
         Permissions permissions;
         permissions.userReadable = true;
         permissions.userWriteable = true;
-        FD stdinFd = open(FD{-100}, ttyname, accessMode, creationFlags, statusFlags, permissions);
-        FD stdoutFd = open(FD{-100}, ttyname, accessMode, creationFlags, statusFlags, permissions);
-        FD stderrFd = open(FD{-100}, ttyname, accessMode, creationFlags, statusFlags, permissions);
+        FD stdinFd = open(ttypath, accessMode, creationFlags, statusFlags, permissions);
+        FD stdoutFd = open(ttypath, accessMode, creationFlags, statusFlags, permissions);
+        FD stderrFd = open(ttypath, accessMode, creationFlags, statusFlags, permissions);
         verify(stdinFd.fd == 0, "stdin must have fd 0");
         verify(stdoutFd.fd == 1, "stdout must have fd 1");
         verify(stderrFd.fd == 2, "stderr must have fd 2");
@@ -161,10 +163,27 @@ namespace kernel::gnulinux {
             return *path;
         } else {
             verify(!!base, "Null base directory");
-            auto path = Path::tryCreate(pathname, base->path());
+            auto path = Path::tryCreate(pathname, base->path().absolute());
             if(!path) return {};
             return *path;
         }
+    }
+
+    std::optional<Path> FS::resolvePath(FD dirfd, const Directory* base, const std::string& pathname) const {
+        if(!pathname.empty() && pathname[0] == '/') {
+            auto path = Path::tryCreate(pathname);
+            if(!path) return {};
+            return *path;
+        } else if(dirfd.fd == Host::cwdfd().fd) {
+            return resolvePath(base, pathname);
+        } else {
+            OpenFileDescription* openFileDescription = const_cast<FS&>(*this).findOpenFileDescription(dirfd);
+            verify(!!openFileDescription, "Trying to call toAbsolutePathname with unopened directory");
+            verify(openFileDescription->file()->isDirectory(), "Trying to call toAbsolutePathname with non-directory");
+            const Directory* dir = static_cast<const Directory*>(openFileDescription->file());
+            return resolvePath(dir, pathname);
+        }
+        return {};
     }
 
     std::string FS::toAbsolutePathname(const std::string& pathname) const {
@@ -173,7 +192,7 @@ namespace kernel::gnulinux {
             return pathname;
         } else {
             verify(!!currentWorkDirectory_, "No current work directory");
-            return currentWorkDirectory_->path() + "/" + pathname;
+            return currentWorkDirectory_->path().absolute() + "/" + pathname;
         }
     }
 
@@ -182,12 +201,12 @@ namespace kernel::gnulinux {
         if(pathname[0] == '/') {
             return pathname;
         } else if(dirfd.fd == Host::cwdfd().fd) {
-            return currentWorkDirectory_->path() + "/" + pathname;
+            return currentWorkDirectory_->path().absolute() + "/" + pathname;
         } else {
             OpenFileDescription* openFileDescription = const_cast<FS&>(*this).findOpenFileDescription(dirfd);
             verify(!!openFileDescription, "Trying to call toAbsolutePathname with unopened directory");
             verify(openFileDescription->file()->isDirectory(), "Trying to call toAbsolutePathname with non-directory");
-            return openFileDescription->file()->path() + "/" + pathname;
+            return openFileDescription->file()->path().absolute() + "/" + pathname;
         }
     }
 
@@ -279,15 +298,12 @@ namespace kernel::gnulinux {
         return file;
     }
 
-    FS::FD FS::open(FD dirfd,
-            const std::string& pathname,
+    FS::FD FS::open(const Path& path,
             BitFlags<FS::AccessMode> accessMode,
             BitFlags<FS::CreationFlags> creationFlags,
             BitFlags<FS::StatusFlags> statusFlags,
             Permissions permissions) {
         (void)permissions;
-        if(pathname.empty()) return FD{-ENOENT};
-
         // For some reason, 64-bit linux adds this flag without notification
         statusFlags.add(StatusFlags::LARGEFILE);
 
@@ -298,10 +314,6 @@ namespace kernel::gnulinux {
         if(statusFlags.test(StatusFlags::APPEND))    canUseHostFile = false;
 
         // Look if the file is already present in FS, open or closed.
-        auto absolutePathname = toAbsolutePathname(pathname, dirfd);
-        auto path = Path::tryCreate(absolutePathname);
-        verify(!!path, "Unable to create path");
-
         bool closeOnExec = creationFlags.test(CreationFlags::CLOEXEC);
 
         auto openNode = [&](File* filePtr) -> FD {
@@ -312,7 +324,7 @@ namespace kernel::gnulinux {
             return fd;
         };
         
-        File* file = tryGetFile(*path, FollowSymlink::YES);
+        File* file = tryGetFile(path, FollowSymlink::YES);
         if(!!file) {
             FD fd = openNode(file);
             file->open();
@@ -323,7 +335,7 @@ namespace kernel::gnulinux {
         if(canUseHostFile) {
             if(creationFlags.test(CreationFlags::DIRECTORY)) {
                 // open the directory
-                auto* hostBackedDirectory = HostDirectory::tryCreateAndAdd(this, root_.get(), absolutePathname);
+                auto* hostBackedDirectory = HostDirectory::tryCreateAndAdd(this, root_.get(), path.absolute());
                 if(!hostBackedDirectory) {
                     // TODO: return the actual value of errno
                     return FS::FD{-ENOENT};
@@ -334,7 +346,7 @@ namespace kernel::gnulinux {
                 return openNode(hostBackedDirectory);
             } else {
                 // try open the directory
-                auto* hostBackedDirectory = HostDirectory::tryCreateAndAdd(this, root_.get(), absolutePathname);
+                auto* hostBackedDirectory = HostDirectory::tryCreateAndAdd(this, root_.get(), path.absolute());
                 if(!!hostBackedDirectory) {
                     // create and add the node to the filesystem
                     hostBackedDirectory->open();
@@ -342,7 +354,7 @@ namespace kernel::gnulinux {
                 }
 
                 // try open the file
-                auto* hostBackedFile = HostFile::tryCreateAndAdd(this, root_.get(), absolutePathname, accessMode, closeOnExec);
+                auto* hostBackedFile = HostFile::tryCreateAndAdd(this, root_.get(), path.absolute(), accessMode, closeOnExec);
                 if(!!hostBackedFile) {
                     // create and add the node to the filesystem
                     hostBackedFile->open();
@@ -350,7 +362,7 @@ namespace kernel::gnulinux {
                 }
 
                 // try open device
-                auto* hostDevice = HostDevice::tryCreateAndAdd(this, root_.get(), absolutePathname);
+                auto* hostDevice = HostDevice::tryCreateAndAdd(this, root_.get(), path.absolute());
                 if(!!hostDevice) {
                     // create and add the node to the filesystem
                     hostDevice->open();
@@ -363,7 +375,7 @@ namespace kernel::gnulinux {
         } else {
             // open the file
             bool createIfNotFound = creationFlags.test(CreationFlags::CREAT);
-            auto* shadowFile = ShadowFile::tryCreateAndAdd(this, root_.get(), absolutePathname, createIfNotFound);
+            auto* shadowFile = ShadowFile::tryCreateAndAdd(this, root_.get(), path.absolute(), createIfNotFound);
             if(!!shadowFile) {
                 if(creationFlags.test(CreationFlags::TRUNC)) shadowFile->truncate(0);
                 shadowFile->setWritable(accessMode.test(AccessMode::WRITE));
@@ -374,7 +386,7 @@ namespace kernel::gnulinux {
             }
 
             // try open device
-            auto* shadowDevice = ShadowDevice::tryCreateAndAdd(this, root_.get(), absolutePathname, closeOnExec);
+            auto* shadowDevice = ShadowDevice::tryCreateAndAdd(this, root_.get(), path.absolute(), closeOnExec);
             if(!!shadowDevice) {
                 // create and add the node to the filesystem
                 shadowDevice->open();
@@ -574,7 +586,7 @@ namespace kernel::gnulinux {
 
     ErrnoOrBuffer FS::stat(const std::string& pathname) {
         if(pathname.empty()) return ErrnoOrBuffer(-ENOENT);
-        auto path = Path::tryCreate(pathname, cwd()->path());
+        auto path = Path::tryCreate(pathname, cwd()->path().absolute());
         if(!!path) {
             File* file = tryGetFile(*path, FollowSymlink::YES);
             if(!!file) return file->stat();
@@ -620,7 +632,7 @@ namespace kernel::gnulinux {
                 // If pathname is a string that begins with a character other than a slash and dirfd is AT_FDCWD, then pathname is a relative pathname
                 // that is interpreted relative to the process's current working directory.
                 verify(!!cwd());
-                auto path = Path::tryJoin(cwd()->path(), pathname);
+                auto path = Path::tryJoin(cwd()->path().absolute(), pathname);
                 verify(!!path, "Unable to create path");
                 FollowSymlink followSymlink = Host::Fstatat::isSymlinkNofollow(flags) ? FollowSymlink::YES : FollowSymlink::NO;
                 File* file = tryGetFile(*path, followSymlink);
@@ -658,7 +670,7 @@ namespace kernel::gnulinux {
             if(!file->isDirectory()) return ErrnoOrBuffer(-ENOTDIR);
             dir = static_cast<Directory*>(file);
         }
-        auto path = Path::tryJoin(dir->path(), pathname);
+        auto path = Path::tryJoin(dir->path().absolute(), pathname);
         if(!!path) {
             verify(!Host::Fstatat::isNoAutomount(flags), "no automount not supported");
             FollowSymlink followSymlink = Host::Fstatat::isSymlinkNofollow(flags) ? FollowSymlink::YES : FollowSymlink::NO;
@@ -696,9 +708,8 @@ namespace kernel::gnulinux {
                 removeClosedPipes();
             }
             if(!file->keepAfterClose() || file->deleteAfterClose()) {
-                auto path = Path::tryCreate(file->path());
-                verify(!!path);
-                unlink(*path);
+                auto path = file->path();
+                unlink(path);
                 removeFromOrphans(file);
             }
         }
@@ -1165,13 +1176,13 @@ namespace kernel::gnulinux {
         OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
         if(!openFileDescription) return "Unknown";
         File* file = openFileDescription->file();
-        return file->path();
+        return file->path().absolute();
     }
 
     void FS::dumpSummary() const {
         fmt::print("Open files:\n");
         for(const auto& openFile : openFiles_) {
-            fmt::print("  fd={} : type={:20} path={}\n", openFile.fd.fd, openFile.openFiledescription->toString(), openFile.openFiledescription->file()->path());
+            fmt::print("  fd={} : type={:20} path={}\n", openFile.fd.fd, openFile.openFiledescription->toString(), openFile.openFiledescription->file()->path().absolute());
         }
         root_->printSubtree();
     }

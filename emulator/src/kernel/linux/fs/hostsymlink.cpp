@@ -15,7 +15,7 @@ namespace kernel::gnulinux {
         if(!parent || parent == fs->root()) {
             pathname = name;
         } else {
-            pathname = (parent->path() + "/" + name);
+            pathname = (parent->path().absolute() + "/" + name);
         }
 
         // check that the file is a regular file

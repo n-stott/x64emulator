@@ -23,7 +23,7 @@ namespace kernel::gnulinux {
         if(!parent || parent == fs->root()) {
             pathname = name;
         } else {
-            pathname = (parent->path() + "/" + name);
+            pathname = (parent->path().absolute() + "/" + name);
         }
         int fd = ::openat(AT_FDCWD, pathname.c_str(), O_RDONLY | O_CLOEXEC);
         
@@ -155,7 +155,7 @@ namespace kernel::gnulinux {
             Buffer buf(stx);
             return ErrnoOrBuffer(std::move(buf));
         } else {
-            warn(fmt::format("ShadowFile::statx(path={}, mask={:#x}) with host info not implemented", path(), mask));
+            warn(fmt::format("ShadowFile::statx(path={}, mask={:#x}) with host info not implemented", path().absolute(), mask));
             return ErrnoOrBuffer(-ENOTSUP);
         }
     }

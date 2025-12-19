@@ -1881,7 +1881,11 @@ namespace kernel::gnulinux {
         BitFlags<FS::CreationFlags> creationFlags = FS::toCreationFlags(flags);
         BitFlags<FS::StatusFlags> statusFlags = FS::toStatusFlags(flags);
         FS::Permissions permissions = FS::fromMode(mode);
-        FS::FD fd = kernel_.fs().open(FS::FD{dirfd}, path, accessMode, creationFlags, statusFlags, permissions);
+        auto filepath = kernel_.fs().resolvePath(FS::FD{dirfd}, kernel_.fs().cwd(), path);
+        FS::FD fd = [&]() {
+            if(!filepath) return FS::FD{-ENOENT};
+            return kernel_.fs().open(*filepath, accessMode, creationFlags, statusFlags, permissions);
+        }();
         if(kernel_.logSyscalls()) {
             std::string flagsString = fmt::format("[{}{}{}{}{}{}{}]",
                 accessMode.test(FS::AccessMode::READ)  ? "Read " : "",

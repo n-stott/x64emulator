@@ -23,7 +23,7 @@ namespace kernel::gnulinux {
         if(!parent || parent == fs->root()) {
             pathname = name;
         } else {
-            pathname = (parent->path() + "/" + name);
+            pathname = (parent->path().absolute() + "/" + name);
         }
 
         if(pathname == "/dev/null") {
@@ -96,7 +96,7 @@ namespace kernel::gnulinux {
     }
 
     ErrnoOrBuffer ShadowDevice::stat() {
-        return Host::stat(path());
+        return Host::stat(path().absolute());
     }
 
     ErrnoOrBuffer ShadowDevice::statfs() {

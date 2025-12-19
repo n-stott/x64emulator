@@ -32,8 +32,12 @@ namespace kernel::gnulinux {
     }
 
     Path::Path(std::vector<std::string> components) : components_(std::move(components)) {
-        for(const auto& component : components_) {
-            absolutePath_ += "/" + component;
+        if(components_.empty()) {
+            absolutePath_ = "/";
+        } else {
+            for(const auto& component : components_) {
+                absolutePath_ += "/" + component;
+            }
         }
     }
 

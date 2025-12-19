@@ -94,13 +94,14 @@ namespace kernel::gnulinux {
         Directory* cwd() { return currentWorkDirectory_; }
 
         std::optional<Path> resolvePath(const Directory* base, const std::string& pathname) const;
+        std::optional<Path> resolvePath(FD dirfd, const Directory* base, const std::string& pathname) const;
+
         std::string toAbsolutePathname(const std::string& pathname) const;
         std::string toAbsolutePathname(const std::string& pathname, FD dirfd) const;
         Directory* ensurePathExceptLast(const Path& path);
         Directory* ensureCompletePath(const Path& path);
 
-        FD open(FD dirfd,
-                const std::string& pathname,
+        FD open(const Path& path,
                 BitFlags<AccessMode> accessMode,
                 BitFlags<CreationFlags> creationFlags,
                 BitFlags<StatusFlags> statusFlags,
@@ -241,7 +242,7 @@ namespace kernel::gnulinux {
         };
 
         void findCurrentWorkDirectory();
-        void createStandardStreams(const std::string& ttyname);
+        void createStandardStreams(const Path& ttypath);
         FD insertNode(std::unique_ptr<File> file, BitFlags<AccessMode>, BitFlags<StatusFlags>, bool closeOnExec);
         FD allocateFd();
 

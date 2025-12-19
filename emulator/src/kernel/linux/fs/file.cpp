@@ -7,7 +7,7 @@
 
 namespace kernel::gnulinux {
 
-    std::string File::path() const {
+    Path File::path() const {
         std::vector<const Directory*> rdir;
         const Directory* dir = parent_;
         while(dir != nullptr) {
@@ -21,7 +21,9 @@ namespace kernel::gnulinux {
             ss << '/' << name;
         }
         ss << '/' << name_;
-        return ss.str();
+        auto path = Path::tryCreate(ss.str());
+        verify(!!path, "Unable to create path");
+        return *path;
     }
 
     void File::advanceInternalOffset(off_t offset) {
