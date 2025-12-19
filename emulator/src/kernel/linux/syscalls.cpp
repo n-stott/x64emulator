@@ -1913,11 +1913,16 @@ namespace kernel::gnulinux {
     }
 
     int Sys::fstatat64(int dirfd, x64::Ptr pathname, x64::Ptr statbuf, int flags) {
-        std::string path = mmu_.readString(pathname);
-        auto errnoOrBuffer = kernel_.fs().fstatat64(FS::FD{dirfd}, path, flags);
+        std::string pathname_ = mmu_.readString(pathname);
+        auto allowEmptyPath = Host::Fstatat::isEmptyPath(flags) ? FS::AllowEmptyPathname::YES : FS::AllowEmptyPathname::NO;
+        auto path = kernel_.fs().resolvePath(FS::FD{dirfd}, kernel_.fs().cwd(), pathname_, allowEmptyPath);
+        auto errnoOrBuffer = [&]() {
+            if(!path) return ErrnoOrBuffer(-ENOENT);
+            return kernel_.fs().fstatat64(*path, flags);
+        }();
         if(kernel_.logSyscalls()) {
             print("Sys::fstatat64(dirfd={}, path={}, statbuf={:#x}, flags={}) = {}",
-                        dirfd, path, statbuf.address(), flags, errnoOrBuffer.errorOr(0));
+                        dirfd, pathname_, statbuf.address(), flags, errnoOrBuffer.errorOr(0));
         }
         return errnoOrBuffer.errorOrWith<int>([&](const auto& buffer) {
             mmu_.copyToMmu(statbuf, buffer.data(), buffer.size());

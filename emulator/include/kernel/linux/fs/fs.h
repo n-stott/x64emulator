@@ -138,7 +138,7 @@ namespace kernel::gnulinux {
         ErrnoOrBuffer stat(const Path& path);
         ErrnoOrBuffer fstat(FD fd);
         ErrnoOrBuffer statx(const Path& path, int flags, unsigned int mask);
-        ErrnoOrBuffer fstatat64(FD dirfd, const std::string& pathname, int flags);
+        ErrnoOrBuffer fstatat64(const Path& path, int flags);
 
         ErrnoOrBuffer fstatfs(FD fd);
 

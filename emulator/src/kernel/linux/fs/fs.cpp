@@ -616,28 +616,14 @@ namespace kernel::gnulinux {
         }
     }
 
-    ErrnoOrBuffer FS::fstatat64(FD dirfd, const std::string& pathname, int flags) {
-        if(Host::Fstatat::isEmptyPath(flags)) {
-            return fstat(dirfd);
-        }
-        Directory* dir = cwd();
-        if(dirfd.fd != Host::cwdfd().fd) {
-            OpenFileDescription* ofd = findOpenFileDescription(dirfd);
-            if(!ofd) return ErrnoOrBuffer(-EBADF);
-            File* file = ofd->file();
-            if(!file) return ErrnoOrBuffer(-EBADF);
-            if(!file->isDirectory()) return ErrnoOrBuffer(-ENOTDIR);
-            dir = static_cast<Directory*>(file);
-        }
-        auto path = Path::tryJoin(dir->path().absolute(), pathname);
-        if(!!path) {
-            verify(!Host::Fstatat::isNoAutomount(flags), "no automount not supported");
-            FollowSymlink followSymlink = Host::Fstatat::isSymlinkNofollow(flags) ? FollowSymlink::YES : FollowSymlink::NO;
-            File* file = tryGetFile(*path, followSymlink);
-            if(!file) return ErrnoOrBuffer(-ENOENT);
-            return file->stat();
+    ErrnoOrBuffer FS::fstatat64(const Path& path, int flags) {
+        verify(!Host::Fstatat::isNoAutomount(flags), "no automount not supported");
+        FollowSymlink followSymlink = Host::Fstatat::isSymlinkNofollow(flags) ? FollowSymlink::YES : FollowSymlink::NO;
+        File* file = tryGetFile(path, followSymlink);
+        if(!file) {
+            return ErrnoOrBuffer(-ENOENT);
         } else {
-            return Host::fstatat64(Host::cwdfd(), pathname, flags);
+            return file->stat();
         }
     }
 
