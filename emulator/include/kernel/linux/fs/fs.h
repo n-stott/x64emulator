@@ -117,8 +117,7 @@ namespace kernel::gnulinux {
 
         ErrnoOrBuffer readlink(const Path& path, size_t bufferSize);
 
-        int access(const std::string& pathname, int mode) const;
-        int faccessat(FD dirfd, const std::string& pathname, int mode) const;
+        int access(const Path& path, int mode) const;
 
         FD memfd_create(const std::string& name, unsigned int flags);
 

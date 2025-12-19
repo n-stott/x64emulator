@@ -477,18 +477,8 @@ namespace kernel::gnulinux {
         }
     }
 
-    int FS::access(const std::string& pathname, int mode) const {
-        auto absolutePathname = toAbsolutePathname(pathname);
-        auto path = Path::tryCreate(absolutePathname);
-        verify(!!path, "Unable to create path");
-        return Host::access(absolutePathname, mode);
-    }
-
-    int FS::faccessat(FS::FD dirfd, const std::string& pathname, int mode) const {
-        auto absolutePathname = toAbsolutePathname(pathname, dirfd);
-        auto path = Path::tryCreate(absolutePathname);
-        verify(!!path, "Unable to create path");
-        return Host::access(absolutePathname, mode);
+    int FS::access(const Path& path, int mode) const {
+        return Host::access(path.absolute(), mode);
     }
 
     FS::FD FS::memfd_create(const std::string& name, unsigned int flags) {

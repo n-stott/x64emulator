@@ -536,10 +536,14 @@ namespace kernel::gnulinux {
     }
 
     int Sys::access(x64::Ptr pathname, int mode) {
-        std::string path = mmu_.readString(pathname);
-        int ret = kernel_.fs().access(path, mode);
+        std::string pathname_ = mmu_.readString(pathname);
+        auto path = kernel_.fs().resolvePath(kernel_.fs().cwd(), pathname_);
+        int ret = [&]() {
+            if(!path) return -ENOENT;
+            return kernel_.fs().access(*path, mode);
+        }();
         if(kernel_.logSyscalls()) {
-            print("Sys::access(path={}, mode={}) = {}", path, mode, ret);
+            print("Sys::access(path={}, mode={}) = {}", pathname_, mode, ret);
         }
         return ret;
     }
@@ -1951,10 +1955,14 @@ namespace kernel::gnulinux {
     }
 
     int Sys::faccessat(int dirfd, x64::Ptr pathname, int mode) {
-        std::string path = mmu_.readString(pathname);
-        int ret = kernel_.fs().faccessat(FS::FD{dirfd}, path, mode);
+        std::string pathname_ = mmu_.readString(pathname);
+        auto path = kernel_.fs().resolvePath(FS::FD{dirfd}, kernel_.fs().cwd(), pathname_);
+        int ret = [&]() {
+            if(!path) return -ENOENT;
+            return kernel_.fs().access(*path, mode);
+        }();
         if(kernel_.logSyscalls()) {
-            print("Sys::faccessat(dirfd={}, path={}, mode={}) = {}", dirfd, path, mode, ret);
+            print("Sys::faccessat(dirfd={}, path={}, mode={}) = {}", dirfd, pathname_, mode, ret);
         }
         return ret;
     }
