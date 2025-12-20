@@ -12,6 +12,34 @@
 
 namespace host {
 
+    std::optional<VirtualMemoryRange> VirtualMemoryRange::tryCreate(u64 size) {
+        u8* base = HostMemory::tryGetVirtualMemoryRange(size);
+        if(!base) return {};
+        return VirtualMemoryRange(base, size);
+    }
+
+    VirtualMemoryRange::~VirtualMemoryRange() {
+        if(!base_) return;
+        if(!HostMemory::tryReleaseVirtualMemoryRange(base_, size_)) {
+            verify(false, "Unable to release virtual memory range");
+        }
+    }
+
+    VirtualMemoryRange::VirtualMemoryRange(VirtualMemoryRange&& other) {
+        base_ = other.base_;
+        size_ = other.size_;
+        other.base_ = nullptr;
+        other.size_ = 0;
+    }
+
+    VirtualMemoryRange& VirtualMemoryRange::operator=(VirtualMemoryRange&& other) {
+        base_ = other.base_;
+        size_ = other.size_;
+        other.base_ = nullptr;
+        other.size_ = 0;
+        return *this;
+    }
+
     u8* HostMemory::tryGetVirtualMemoryRange(u64 size) {
 #ifdef MSVC_COMPILER
         u8* ptr = (u8*)VirtualAlloc(nullptr, size, MEM_COMMIT, PAGE_NOACCESS);

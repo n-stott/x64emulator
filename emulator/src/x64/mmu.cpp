@@ -35,9 +35,9 @@ namespace x64 {
         auto emptyIntersection = [&](const std::unique_ptr<MmuRegion>& ptr) {
             return !ptr->contains(region->base()) && !ptr->contains(region->end() - 1);
         };
-        verify(std::all_of(regions_.begin(), regions_.end(), emptyIntersection), [&]() {
-            auto r = std::find_if_not(regions_.begin(), regions_.end(), emptyIntersection);
-            assert(r != regions_.end());
+        verify(std::all_of(addressSpace_.regions.begin(), addressSpace_.regions.end(), emptyIntersection), [&]() {
+            auto r = std::find_if_not(addressSpace_.regions.begin(), addressSpace_.regions.end(), emptyIntersection);
+            assert(r != addressSpace_.regions.end());
             fmt::print("Unable to add region : memory range [{:#x}, {:#x}] already occupied by region [{:#x}, {:#x}]\n",
                     region->base(), region->end(), (*r)->base(), (*r)->end());
             dumpRegions();
@@ -45,11 +45,11 @@ namespace x64 {
         MmuRegion* regionPtr = region.get();
 
         checkRegionsAreSorted();
-        auto insertionPosition = std::lower_bound(regions_.begin(), regions_.end(), region, Mmu::compareRegions);
+        auto insertionPosition = std::lower_bound(addressSpace_.regions.begin(), addressSpace_.regions.end(), region, Mmu::compareRegions);
 #ifdef CANNOT_REUSE_PAST_REGIONS
         allSlicesEverMmaped_.push_back(std::make_pair(regionPtr->base(), regionPtr->end()));
 #endif
-        regions_.insert(insertionPosition, std::move(region));
+        addressSpace_.regions.insert(insertionPosition, std::move(region));
         for(auto* callback : callbacks_) callback->onRegionCreation(regionPtr->base(), regionPtr->size(), regionPtr->prot());
         checkRegionsAreSorted();
 
@@ -66,7 +66,7 @@ namespace x64 {
         split(region->end());
         // remove intersecting regions (guaranteed to be included)
         std::vector<const MmuRegion*> regionsToRemove;
-        for(const auto& regionPtr : regions_) {
+        for(const auto& regionPtr : addressSpace_.regions) {
             if(regionPtr->contains(region->base()) || regionPtr->contains(region->end() - 1)) regionsToRemove.push_back(regionPtr.get());
         }
         for(const MmuRegion* regionPtr : regionsToRemove) {
@@ -102,7 +102,7 @@ namespace x64 {
         length = pageRoundUp(length);
 
         u64 baseAddress = flags.test(MAP::FIXED) ? address : firstFitPageAligned(length);
-        if(baseAddress + length > memorySize_) return {};
+        if(baseAddress + length > addressSpace_.memoryRange_.size()) return {};
         std::unique_ptr<MmuRegion> region = makeRegion(baseAddress, length, prot);
         region->setRequiresMemsetToZero();
         if(flags.test(MAP::FIXED) && !flags.test(MAP::NO_REPLACE)) {
@@ -119,7 +119,7 @@ namespace x64 {
         split(address);
         split(address+length);
         std::vector<MmuRegion*> regionsToRemove;
-        for(auto& regionPtr : regions_) {
+        for(auto& regionPtr : addressSpace_.regions) {
             if(!regionPtr->intersectsRange(address, address+length)) continue;
             regionsToRemove.push_back(regionPtr.get());
         }
@@ -136,7 +136,7 @@ namespace x64 {
         {
             // Check that all impacted regions are contiguous, i.e. we don't mprotect a hole
             std::optional<u64> lastEnd;
-            for(auto& regionPtr : regions_) {
+            for(auto& regionPtr : addressSpace_.regions) {
                 if(!regionPtr->intersectsRange(address, address+length)) continue;
                 if(!!lastEnd && lastEnd != regionPtr->base()) return -ENOMEM;
                 lastEnd = regionPtr->end();
@@ -145,7 +145,7 @@ namespace x64 {
         }
         split(address);
         split(address+length);
-        for(auto& regionPtr : regions_) {
+        for(auto& regionPtr : addressSpace_.regions) {
             if(!regionPtr->intersectsRange(address, address+length)) continue;
             auto previousProt = regionPtr->prot();
             regionPtr->setProtection(prot);
@@ -173,6 +173,21 @@ namespace x64 {
         prot_ = prot;
     }
 
+    std::unique_ptr<AddressSpace> AddressSpace::tryCreate(u32 virtualMemoryInMB) {
+        u64 size = (u64)virtualMemoryInMB * 1024ull * 1024ull;
+        auto range = host::VirtualMemoryRange::tryCreate(size);
+        if(!range) return {};
+        return std::unique_ptr<AddressSpace>(new AddressSpace(std::move(*range)));
+    }
+
+    AddressSpace::AddressSpace(host::VirtualMemoryRange range) : memoryRange_(std::move(range)) {
+
+    }
+
+    AddressSpace::~AddressSpace() {
+        for(auto& region : regions) region->deactivate();
+    }
+
     std::string Mmu::readString(Ptr8 src) const {
         Ptr8 end = src;
         while(read8(end++) != 0) {}
@@ -183,8 +198,8 @@ namespace x64 {
     }
 
     std::unique_ptr<MmuRegion> Mmu::makeRegion(u64 base, u64 size, BitFlags<PROT> prot) {
-        verify(base + size <= memorySize_, [&]() {
-            fmt::println("Unable to create region at {:#x} size {:#x}, memlimit is {:#x}", base, size, memorySize_);
+        verify(base + size <= addressSpace_.memoryRange_.size(), [&]() {
+            fmt::println("Unable to create region at {:#x} size {:#x}, memlimit is {:#x}", base, size, addressSpace_.memoryRange_.size());
         });
         verify(isPageAligned(base), "region is not page aligned");
         verify(isPageAligned(size), "region is not page aligned");
@@ -192,25 +207,20 @@ namespace x64 {
     }
 
     std::unique_ptr<Mmu> Mmu::tryCreate(u32 virtualMemoryInMB) {
-        u64 size = (u64)virtualMemoryInMB * 1024ull * 1024ull;
-        u8* base = host::HostMemory::tryGetVirtualMemoryRange(size);
-        if(!base) return {};
-        return std::unique_ptr<Mmu>(new Mmu(base, size));
+        auto addressSpace = AddressSpace::tryCreate(virtualMemoryInMB);
+        if(!addressSpace) return {};
+        return std::unique_ptr<Mmu>(new Mmu(std::move(addressSpace)));
     }
 
-    Mmu::Mmu(u8* memoryBase, u64 memorySize) : memoryBase_(memoryBase), memorySize_(memorySize) {
+    Mmu::Mmu(std::unique_ptr<AddressSpace> addressSpace) {
+        std::swap(addressSpace_, *addressSpace);
         // Make first pages non-readable and non-writable
         std::unique_ptr<MmuRegion> nullpage = makeRegion(0, (u64)16*PAGE_SIZE, BitFlags<PROT>{PROT::NONE});
         nullpage->setName("nullpage");
         addRegion(std::move(nullpage));
     }
 
-    Mmu::~Mmu() {
-        for(auto& region : regions_) region->deactivate();
-        if(!host::HostMemory::tryReleaseVirtualMemoryRange(memoryBase_, memorySize_)) {
-            verify(false, "Unable to release mmu's virtual memory range");
-        }
-    }
+    Mmu::~Mmu() = default;
 
     BitFlags<PROT> Mmu::prot(u64 address) const {
         const auto* region = findAddress(address);
@@ -219,13 +229,13 @@ namespace x64 {
     }
 
     MmuRegion* Mmu::findAddress(u64 address) {
-        if(address >= firstUnlookupdableAddress_) return nullptr;
-        return regionLookup_[address / PAGE_SIZE];
+        if(address >= addressSpace_.firstUnlookupdableAddress) return nullptr;
+        return addressSpace_.regionLookup[address / PAGE_SIZE];
     }
 
     const MmuRegion* Mmu::findAddress(u64 address) const {
-        if(address >= firstUnlookupdableAddress_) return nullptr;
-        return regionLookup_[address / PAGE_SIZE];
+        if(address >= addressSpace_.firstUnlookupdableAddress) return nullptr;
+        return addressSpace_.regionLookup[address / PAGE_SIZE];
     }
 
     std::vector<u8> Mmu::mincore(u64 address, u64 length) const {
@@ -242,7 +252,7 @@ namespace x64 {
     }
 
     MmuRegion* Mmu::findRegion(const char* name) {
-        for(const auto& ptr : regions_) {
+        for(const auto& ptr : addressSpace_.regions) {
             if(ptr->name() == name) return ptr.get();
         }
         return nullptr;
@@ -250,15 +260,15 @@ namespace x64 {
 
     std::unique_ptr<MmuRegion> Mmu::takeRegion(u64 base, u64 size) {
         std::unique_ptr<MmuRegion> region;
-        for(auto& ptr : regions_) {
+        for(auto& ptr : addressSpace_.regions) {
             if(ptr->base() != base) continue;
             if(ptr->size() != size) continue;
             std::swap(region, ptr);
             applyRegionProtection(region.get(), BitFlags<PROT>{});
             // invalidate all the lookups
             invalidateRegionLookup(region.get());
-            // then keep regions_ clean
-            regions_.erase(std::remove(regions_.begin(), regions_.end(), nullptr), regions_.end());
+            // then keep addressSpace_.regions clean
+            addressSpace_.regions.erase(std::remove(addressSpace_.regions.begin(), addressSpace_.regions.end(), nullptr), addressSpace_.regions.end());
             region->deactivate();
             break;
         }
@@ -268,14 +278,14 @@ namespace x64 {
 
     std::unique_ptr<MmuRegion> Mmu::takeRegion(const char* name) {
         std::unique_ptr<MmuRegion> region;
-        for(auto& ptr : regions_) {
+        for(auto& ptr : addressSpace_.regions) {
             if(ptr->name() != name) continue;
             std::swap(region, ptr);
             applyRegionProtection(region.get(), BitFlags<PROT>{});
             // invalidate all the lookups
             invalidateRegionLookup(region.get());
-            // then keep regions_ clean
-            regions_.erase(std::remove(regions_.begin(), regions_.end(), nullptr), regions_.end());
+            // then keep addressSpace_.regions clean
+            addressSpace_.regions.erase(std::remove(addressSpace_.regions.begin(), addressSpace_.regions.end(), nullptr), addressSpace_.regions.end());
             region->deactivate();
             break;
         }
@@ -298,8 +308,8 @@ namespace x64 {
             std::string prot;
         };
         std::vector<DumpInfo> dumpInfos;
-        dumpInfos.reserve(regions_.size());
-        for(const auto& ptr : regions_) {
+        dumpInfos.reserve(addressSpace_.regions.size());
+        for(const auto& ptr : addressSpace_.regions) {
             dumpInfos.push_back(DumpInfo{
                 ptr->name(),
                 ptr->base(),
@@ -320,15 +330,15 @@ namespace x64 {
         }
 
         size_t memoryConsumptionInBytes = 0;
-        for(const auto& ptr : regions_) {
+        for(const auto& ptr : addressSpace_.regions) {
             memoryConsumptionInBytes += ptr->size();
         }
         fmt::print("Memory consumption : {}MB\n", memoryConsumptionInBytes/1024/1024);
     }
 
     u64 Mmu::topOfMemoryPageAligned() const {
-        u64 top = topOfReserved_;
-        for(const auto& ptr : regions_) top = std::max(top, ptr->end());
+        u64 top = addressSpace_.topOfReserved;
+        for(const auto& ptr : addressSpace_.regions) top = std::max(top, ptr->end());
         top = pageRoundUp(top);
         return top;
     }
@@ -348,10 +358,10 @@ namespace x64 {
             return it->second;
         }
 #else
-        auto it = std::adjacent_find(regions_.begin(), regions_.end(), [&](const auto& a, const auto& b) {
+        auto it = std::adjacent_find(addressSpace_.regions.begin(), addressSpace_.regions.end(), [&](const auto& a, const auto& b) {
             return a->end() + length <= b->base();
         });
-        if(it == regions_.end()) {
+        if(it == addressSpace_.regions.end()) {
             return topOfMemoryPageAligned();
         } else {
             return (*it)->end();
@@ -441,7 +451,7 @@ namespace x64 {
             // fast success if no change is required
             return currentBrk;
         }
-        if(address > memorySize_) {
+        if(address > addressSpace_.memoryRange_.size()) {
             // If we hit the memory limit, fail to grow
             return currentBrk;
         }
@@ -451,7 +461,7 @@ namespace x64 {
             // Note: we could still try to grow a little ?
             return currentBrk;
         }
-        for(const auto& region : regions_) {
+        for(const auto& region : addressSpace_.regions) {
             if(region.get() == heapRegion) continue;
             // If a region (other than the heap) is located between the current break
             // and the desired address, fail to grow
@@ -487,15 +497,15 @@ namespace x64 {
     }
 
     u8* Mmu::getPointerToRegion(MmuRegion* region) {
-        return memoryBase_ + region->base();
+        return addressSpace_.memoryRange_.base() + region->base();
     }
 
     const u8* Mmu::getPointerToRegion(const MmuRegion* region) const {
-        return memoryBase_ + region->base();
+        return addressSpace_.memoryRange_.base() + region->base();
     }
 
     void Mmu::checkRegionsAreSorted() const {
-        assert(std::is_sorted(regions_.begin(), regions_.end(), Mmu::compareRegions));
+        assert(std::is_sorted(addressSpace_.regions.begin(), addressSpace_.regions.end(), Mmu::compareRegions));
     }
 
     void Mmu::applyRegionProtection(MmuRegion* region, BitFlags<PROT> prot) {
@@ -519,14 +529,14 @@ namespace x64 {
         u64 startPage = base / PAGE_SIZE;
         u64 endPage = end / PAGE_SIZE;
         verify(startPage < endPage);
-        if(endPage > regionLookup_.size()) {
-            regionLookup_.resize(endPage, nullptr);
-            firstUnlookupdableAddress_ = regionLookup_.size()*PAGE_SIZE;
+        if(endPage > addressSpace_.regionLookup.size()) {
+            addressSpace_.regionLookup.resize(endPage, nullptr);
+            addressSpace_.firstUnlookupdableAddress = addressSpace_.regionLookup.size()*PAGE_SIZE;
         }
         for(u64 pageIndex = startPage; pageIndex < endPage; ++pageIndex) {
-            verify(pageIndex < regionLookup_.size());
-            verify(regionLookup_[pageIndex] == nullptr);
-            regionLookup_[pageIndex] = region;
+            verify(pageIndex < addressSpace_.regionLookup.size());
+            verify(addressSpace_.regionLookup[pageIndex] == nullptr);
+            addressSpace_.regionLookup[pageIndex] = region;
         }
     }
 
@@ -538,10 +548,10 @@ namespace x64 {
         u64 startPage = base / PAGE_SIZE;
         u64 endPage = end / PAGE_SIZE;
         verify(startPage < endPage);
-        verify(endPage <= regionLookup_.size());
+        verify(endPage <= addressSpace_.regionLookup.size());
         for(u64 pageIndex = startPage; pageIndex < endPage; ++pageIndex) {
-            verify(pageIndex < regionLookup_.size());
-            regionLookup_[pageIndex] = nullptr;
+            verify(pageIndex < addressSpace_.regionLookup.size());
+            addressSpace_.regionLookup[pageIndex] = nullptr;
         }
     }
 

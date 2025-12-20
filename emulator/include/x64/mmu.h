@@ -1,11 +1,12 @@
 #ifndef MMU_H
 #define MMU_H
 
-#include "verify.h"
-#include "bitflags.h"
+#include "host/hostmemory.h"
 #include "x64/spinlock.h"
-#include "utils.h"
+#include "bitflags.h"
 #include "types.h"
+#include "utils.h"
+#include "verify.h"
 #include <fmt/core.h>
 #include <algorithm>
 #include <array>
@@ -79,6 +80,26 @@ namespace x64 {
         bool activated_ { false };
     };
 
+    class AddressSpace {
+    public:
+        static std::unique_ptr<AddressSpace> tryCreate(u32 virtualMemoryInMB);
+        AddressSpace() = default;
+        AddressSpace(AddressSpace&& other) = default;
+        AddressSpace& operator=(AddressSpace&&) = default;
+        ~AddressSpace();
+        
+        std::vector<std::unique_ptr<MmuRegion>> regions;
+        std::vector<MmuRegion*> regionLookup;
+        host::VirtualMemoryRange memoryRange_;
+        u64 firstUnlookupdableAddress { 0 };
+        u64 topOfReserved { 0 };
+        
+    private:
+        explicit AddressSpace(host::VirtualMemoryRange range);
+        AddressSpace(const AddressSpace&) = delete;
+        AddressSpace& operator=(const AddressSpace&) = delete;
+    };
+
     class Mmu {
     public:
         static std::unique_ptr<Mmu> tryCreate(u32 virtualMemoryInMB);
@@ -91,8 +112,8 @@ namespace x64 {
 
         void setRegionName(u64 address, std::string name);
 
-        u8* base() { return memoryBase_; }
-        u64 memorySize() const { return memorySize_; }
+        u8* base() { return addressSpace_.memoryRange_.base(); }
+        u64 memorySize() const { return addressSpace_.memoryRange_.size(); }
 
         void copyBytes(Ptr8 dst, Ptr8 src, size_t count);
 
@@ -233,7 +254,7 @@ namespace x64 {
 
         u64 memoryConsumptionInMB() const {
             u64 cons = 0;
-            for(const auto& ptr : regions_) {
+            for(const auto& ptr : addressSpace_.regions) {
                 cons += ptr->size();
             }
             return cons / 1024 / 1024;
@@ -241,7 +262,7 @@ namespace x64 {
 
         template<typename Func>
         void forAllRegions(Func&& func) const {
-            for(const auto& region : regions_) func(*region);
+            for(const auto& region : addressSpace_.regions) func(*region);
         }
 
         static constexpr u64 PAGE_SIZE = 0x1000;
@@ -263,7 +284,7 @@ namespace x64 {
         }
 
     private:
-        explicit Mmu(u8* memoryBase, u64 memorySize);
+        explicit Mmu(std::unique_ptr<AddressSpace>);
 
         template<typename T, Size s>
         T read(SPtr<s> ptr) const {
@@ -337,7 +358,7 @@ namespace x64 {
             });
             verify(regionPtr->prot().test(PROT::READ), "Region is not readable");
 #endif
-            return memoryBase_ + address;
+            return addressSpace_.memoryRange_.base() + address;
         }
 
         u8* getWritePtr(u64 address) {
@@ -348,7 +369,7 @@ namespace x64 {
             });
             verify(regionPtr->prot().test(PROT::WRITE), "Region is not writable");
 #endif
-            return memoryBase_ +address;
+            return addressSpace_.memoryRange_.base() + address;
         }
         std::unique_ptr<MmuRegion> makeRegion(u64 base, u64 size, BitFlags<PROT> prot);
         
@@ -368,10 +389,7 @@ namespace x64 {
         u64 topOfMemoryPageAligned() const;
         u64 firstFitPageAligned(u64 length) const;
 
-
-        std::vector<std::unique_ptr<MmuRegion>> regions_;
-        std::vector<MmuRegion*> regionLookup_;
-        u64 firstUnlookupdableAddress_ { 0 };
+        AddressSpace addressSpace_;
         std::vector<Callback*> callbacks_;
 
 #ifdef MULTIPROCESSING
@@ -390,10 +408,6 @@ namespace x64 {
             Mmu* mmu_;
         };
 #endif
-
-        u8* memoryBase_ { nullptr };
-        u64 memorySize_ { 0 };
-        u64 topOfReserved_ = 0;
 
         void applyRegionProtection(MmuRegion*, BitFlags<PROT>);
 
