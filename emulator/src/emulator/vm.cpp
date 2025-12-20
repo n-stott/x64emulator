@@ -24,7 +24,7 @@ namespace emulator {
 
         bool retrieveBytecode(std::vector<u8>* data, std::string* name, u64* regionBase, u64 address, u64 size) override {
             if(!data) return false;
-            const x64::Mmu::Region* mmuRegion = ((const x64::Mmu&)mmu_).findAddress(address);
+            const x64::MmuRegion* mmuRegion = ((const x64::Mmu&)mmu_).findAddress(address);
             if(!mmuRegion) return false;
             verify(mmuRegion->prot().test(x64::PROT::EXEC), [&]() {
                 fmt::print(stderr, "Attempting to execute non-executable region [{:#x}-{:#x}]\n", mmuRegion->base(), mmuRegion->end());
@@ -59,7 +59,7 @@ namespace emulator {
             cpu_(cpu),
             mmu_(mmu),
             disassemblyCache_(disassemblyCache) {
-        mmu.forAllRegions([&](const x64::Mmu::Region& region) {
+        mmu.forAllRegions([&](const x64::MmuRegion& region) {
             basicBlocks_.reserve(region.base(), region.end());
         });
     }
