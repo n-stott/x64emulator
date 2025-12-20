@@ -26,7 +26,7 @@ static BasicBlock create(Cpu* cpu, R64 dst, R64 base, R64 index) {
 }
 
 int main() {
-    auto mmu = Mmu::tryCreate(0x1000);
+    auto mmu = Mmu::tryCreateWithAddressSpace(0x1000);
     if(!mmu) return 1;
     auto rw = BitFlags<PROT>(PROT::READ, PROT::WRITE);
     auto flags = BitFlags<MAP>(MAP::ANONYMOUS, MAP::PRIVATE);

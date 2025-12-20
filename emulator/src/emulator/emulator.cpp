@@ -56,7 +56,7 @@ namespace emulator {
     }
 
     int Emulator::run(const std::string& programFilePath, const std::vector<std::string>& arguments, const std::vector<std::string>& environmentVariables) const {
-        auto mmu = x64::Mmu::tryCreate(virtualMemoryInMB_);
+        auto mmu = x64::Mmu::tryCreateWithAddressSpace(virtualMemoryInMB_);
         verify(!!mmu, "unable to create mmu");
         kernel::gnulinux::Kernel kernel(*mmu);
         

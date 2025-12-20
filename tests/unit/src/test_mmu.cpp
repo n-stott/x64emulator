@@ -3,7 +3,7 @@
 using namespace x64;
 
 int main() {
-    auto mmu = Mmu::tryCreate(0x100);
+    auto mmu = Mmu::tryCreateWithAddressSpace(0x100);
     if(!mmu) return 1;
 
     BitFlags<PROT> prot;

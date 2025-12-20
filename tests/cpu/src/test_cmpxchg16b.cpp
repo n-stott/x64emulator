@@ -50,7 +50,7 @@ bool test(u128 initial, u128 expected, u128 replacement) {
     bool emulatedZeroFlag { false };
     {
         using namespace x64;
-        auto mmu = Mmu::tryCreate(1);
+        auto mmu = Mmu::tryCreateWithAddressSpace(1);
         if(!mmu) return false;
         auto maybe_base = mmu->mmap(0, 0x1000, BitFlags<PROT>(PROT::READ, PROT::WRITE), BitFlags<MAP>(MAP::ANONYMOUS, MAP::PRIVATE));
         if(!maybe_base) return false;

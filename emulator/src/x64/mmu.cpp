@@ -206,7 +206,7 @@ namespace x64 {
         return std::unique_ptr<MmuRegion>(new MmuRegion(base, size, prot));
     }
 
-    std::unique_ptr<Mmu> Mmu::tryCreate(u32 virtualMemoryInMB) {
+    std::unique_ptr<Mmu> Mmu::tryCreateWithAddressSpace(u32 virtualMemoryInMB) {
         auto addressSpace = AddressSpace::tryCreate(virtualMemoryInMB);
         if(!addressSpace) return {};
         return std::unique_ptr<Mmu>(new Mmu(std::move(addressSpace)));

@@ -7,7 +7,7 @@
 
 std::optional<u64> test_choice(u64 value, u64 value_if_zero, u64 value_if_nonzero) {
     using namespace x64;
-    auto mmu = Mmu::tryCreate(1);
+    auto mmu = Mmu::tryCreateWithAddressSpace(1);
     if(!mmu) return {};
 
     struct alignas(16) Buffer {

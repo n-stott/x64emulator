@@ -10,7 +10,7 @@ std::vector<char> string {{
 
 int main() {
     using namespace x64;
-    auto mmu = Mmu::tryCreate(1);
+    auto mmu = Mmu::tryCreateWithAddressSpace(1);
     if(!mmu) return 1;
 
     u64 length = 0;

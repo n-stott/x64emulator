@@ -102,7 +102,8 @@ namespace x64 {
 
     class Mmu {
     public:
-        static std::unique_ptr<Mmu> tryCreate(u32 virtualMemoryInMB);
+        static std::unique_ptr<Mmu> tryCreateWithAddressSpace(u32 virtualMemoryInMB);
+
         ~Mmu();
 
         std::optional<u64> mmap(u64 address, u64 length, BitFlags<PROT> prot, BitFlags<MAP> flags);

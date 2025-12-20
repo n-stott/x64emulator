@@ -3,7 +3,7 @@
 
 int testXchgRegReg() {
     using namespace x64;
-    auto mmu = Mmu::tryCreate(0x10000);
+    auto mmu = Mmu::tryCreateWithAddressSpace(0x10000);
     if(!mmu) return 1;
 
     Cpu cpu(*mmu);
@@ -27,7 +27,7 @@ int testXchgRegReg() {
 
 int testXchgMemReg() {
     using namespace x64;
-    auto mmu = Mmu::tryCreate(0x10000);
+    auto mmu = Mmu::tryCreateWithAddressSpace(0x10000);
     if(!mmu) return 1;
 
     auto base = mmu->mmap(0x1000, 0x1000, BitFlags<PROT>(PROT::READ, PROT::WRITE), BitFlags<MAP>(MAP::ANONYMOUS, MAP::PRIVATE, MAP::FIXED));
