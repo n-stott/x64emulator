@@ -104,7 +104,19 @@ namespace x64 {
     public:
         static std::unique_ptr<Mmu> tryCreateWithAddressSpace(u32 virtualMemoryInMB);
 
+        Mmu() = default;
         ~Mmu();
+
+        void save(AddressSpace* space) {
+            if(!space) return;
+            verify(base() != nullptr, "Trying to save empty address space");
+            *space = std::move(addressSpace_);
+        }
+
+        void load(AddressSpace space) {
+            verify(base() == nullptr, "Trying to load empty address space");
+            addressSpace_ = std::move(space);
+        }
 
         std::optional<u64> mmap(u64 address, u64 length, BitFlags<PROT> prot, BitFlags<MAP> flags);
         int munmap(u64 address, u64 length);
