@@ -8,6 +8,7 @@
 #include "span.h"
 #include <bitset>
 #include <deque>
+#include <list>
 #include <memory>
 #include <string>
 #include <vector>
@@ -263,7 +264,7 @@ namespace kernel::gnulinux {
         std::vector<std::unique_ptr<File>> orphanFiles_;
         std::vector<std::unique_ptr<Pipe>> pipes_;
         Directory* currentWorkDirectory_ { nullptr };
-        std::deque<OpenFileDescription> openFileDescriptions_;
+        std::list<OpenFileDescription> openFileDescriptions_;
         std::vector<OpenNode> openFiles_;
     };
 

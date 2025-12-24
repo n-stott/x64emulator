@@ -618,11 +618,26 @@ namespace kernel::gnulinux {
     int FS::close(FD fd) {
         OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
         if(!openFileDescription) return -EBADF;
+#ifndef NDEBUG
+        for(OpenFileDescription& ofd : openFileDescriptions_) {
+            assert(std::any_of(openFiles_.begin(), openFiles_.end(), [&](const OpenNode& node) {
+                return node.openFiledescription == &ofd;
+            }));
+        }
+#endif
         File* file = openFileDescription->file();
+        assert(file->refCount() == std::count_if(openFiles_.begin(), openFiles_.end(), [&](OpenNode& node) {
+            return node.openFiledescription->file() == file;
+        }));
         openFiles_.erase(std::remove_if(openFiles_.begin(), openFiles_.end(), [&](const auto& openNode) {
             return openNode.fd == fd;
         }), openFiles_.end());
         file->unref();
+        openFileDescriptions_.remove_if([&](auto& ofd) {
+            return std::none_of(openFiles_.begin(), openFiles_.end(), [&](const OpenNode& node) {
+                return node.openFiledescription == &ofd;
+            });
+        });
         if(file->refCount() == 0) {
             file->close();
             if(file->isPipe()) {
@@ -634,6 +649,16 @@ namespace kernel::gnulinux {
                 removeFromOrphans(file);
             }
         }
+#ifndef NDEBUG
+        assert(file->refCount() == std::count_if(openFiles_.begin(), openFiles_.end(), [&](OpenNode& node) {
+            return node.openFiledescription->file() == file;
+        }));
+        for(OpenFileDescription& ofd : openFileDescriptions_) {
+            assert(std::any_of(openFiles_.begin(), openFiles_.end(), [&](const OpenNode& node) {
+                return node.openFiledescription == &ofd;
+            }));
+        }
+#endif
         return 0;
     }
 
