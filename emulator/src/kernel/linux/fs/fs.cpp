@@ -71,7 +71,7 @@ namespace kernel::gnulinux {
 
     void FS::resetProcFS(int pid, const Path& programFilePath) {
         // only open files are stdin, stdout and stderr
-        verify(openFiles_.size() == 3);
+        verify(fileDescriptors_.size() == 3);
 
         // create a proc fs
         procfs_ = ProcFS::tryCreateAndAdd(this, root_.get(), "/proc");
@@ -141,18 +141,18 @@ namespace kernel::gnulinux {
         orphanFiles_.push_back(std::move(file));
         FD fd = allocateFd();
         openFileDescriptions_.push_back(OpenFileDescription(filePtr, accessMode, statusFlags));
-        openFiles_.push_back(OpenNode{fd, &openFileDescriptions_.back(), closeOnExec});
+        fileDescriptors_[fd.fd] = std::make_unique<FileDescriptor>(&openFileDescriptions_.back(), closeOnExec);
         filePtr->ref();
         return fd;
     }
 
     FS::FD FS::allocateFd() {
-        // assign the file descriptor
-        auto it = std::max_element(openFiles_.begin(), openFiles_.end(), [](const auto& a, const auto& b) {
-            return a.fd.fd < b.fd.fd;
-        });
-        int fd = (it == openFiles_.end()) ? 0 : it->fd.fd+1;
-        return FD{fd};
+        for(int i = 0; i < (int)fileDescriptors_.size(); ++i) {
+            if(fileDescriptors_[i] == nullptr) return FD{i};
+        }
+        FD fd{(int)fileDescriptors_.size()};
+        fileDescriptors_.emplace_back(nullptr);
+        return fd;
     }
 
     std::optional<Path> FS::resolvePath(const Directory* base, const std::string& pathname) const {
@@ -318,7 +318,7 @@ namespace kernel::gnulinux {
         auto openNode = [&](File* filePtr) -> FD {
             FD fd = allocateFd();
             openFileDescriptions_.push_back(OpenFileDescription(filePtr, accessMode, statusFlags));
-            openFiles_.push_back(OpenNode{fd, &openFileDescriptions_.back(), closeOnExec});
+            fileDescriptors_[fd.fd] = std::make_unique<FileDescriptor>(&openFileDescriptions_.back(), closeOnExec);
             filePtr->ref();
             return fd;
         };
@@ -403,7 +403,7 @@ namespace kernel::gnulinux {
         if(!openFileDescription) return FD{-EBADF};
         FD newFd = allocateFd();
         openFileDescription->file()->ref();
-        openFiles_.push_back(OpenNode{newFd, openFileDescription, false});
+        fileDescriptors_[newFd.fd] = std::make_unique<FileDescriptor>(openFileDescription, false);
         return newFd;
     }
 
@@ -417,7 +417,8 @@ namespace kernel::gnulinux {
             verify(ret == 0, "close in dup2 failed");
         }
         oldOfd->file()->ref();
-        openFiles_.push_back(OpenNode{newfd, oldOfd, false});
+        verify(newfd.fd < (int)fileDescriptors_.size(), "newfd in dup2 is too large");
+        fileDescriptors_[newfd.fd] = std::make_unique<FileDescriptor>(oldOfd, false);
         return newfd;
     }
 
@@ -432,7 +433,7 @@ namespace kernel::gnulinux {
         }
         oldOfd->file()->ref();
         bool closeOnExec = Host::Open::isCloseOnExec(flags);
-        openFiles_.push_back(OpenNode{newfd, oldOfd, closeOnExec});
+        fileDescriptors_[newfd.fd] = std::make_unique<FileDescriptor>(oldOfd, closeOnExec);
         return newfd;
     }
 
@@ -490,20 +491,17 @@ namespace kernel::gnulinux {
         return insertNode(std::move(shadowFile), accessMode, statusFlags, Host::MemfdFlags::isCloseOnExec(flags));
     }
 
-    FS::OpenNode* FS::findOpenNode(FD fd) {
-        for(OpenNode& node : openFiles_) {
-            if(node.fd != fd) continue;
-            return &node;
-        }
-        return nullptr;
+    FS::FileDescriptor* FS::findFileDescriptor(FD fd) {
+        if(fd.fd < 0) return nullptr;
+        if(fd.fd >= (int)fileDescriptors_.size()) return nullptr;
+        return fileDescriptors_[fd.fd].get();
     }
 
     OpenFileDescription* FS::findOpenFileDescription(FD fd) {
-        for(OpenNode& node : openFiles_) {
-            if(node.fd != fd) continue;
-            return node.openFiledescription;
-        }
-        return nullptr;
+        if(fd.fd < 0) return nullptr;
+        if(fd.fd >= (int)fileDescriptors_.size()) return nullptr;
+        if(!fileDescriptors_[fd.fd]) return nullptr;
+        return fileDescriptors_[fd.fd]->openFiledescription;
     }
 
     ErrnoOrBuffer FS::read(FD fd, size_t count) {
@@ -615,27 +613,37 @@ namespace kernel::gnulinux {
         return openFileDescription->lseek(offset, whence);
     }
 
-    int FS::close(FD fd) {
-        OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
-        if(!openFileDescription) return -EBADF;
+    void FS::checkFileRefCount(File* file) const {
+        (void)file;
+        assert(file->refCount() == std::count_if(fileDescriptors_.begin(), fileDescriptors_.end(), [&](auto& desc) {
+            if(!desc) return false;
+            return desc->openFiledescription->file() == file;
+        }));
+    }
+
+    void FS::checkFileDescriptions() const {
 #ifndef NDEBUG
-        for(OpenFileDescription& ofd : openFileDescriptions_) {
-            assert(std::any_of(openFiles_.begin(), openFiles_.end(), [&](const OpenNode& node) {
-                return node.openFiledescription == &ofd;
+        for(const OpenFileDescription& ofd : openFileDescriptions_) {
+            assert(std::any_of(fileDescriptors_.begin(), fileDescriptors_.end(), [&](const auto& desc) {
+                if(!desc) return false;
+                return desc->openFiledescription == &ofd;
             }));
         }
 #endif
+    }
+
+    int FS::close(FD fd) {
+        OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
+        if(!openFileDescription) return -EBADF;
         File* file = openFileDescription->file();
-        assert(file->refCount() == std::count_if(openFiles_.begin(), openFiles_.end(), [&](OpenNode& node) {
-            return node.openFiledescription->file() == file;
-        }));
-        openFiles_.erase(std::remove_if(openFiles_.begin(), openFiles_.end(), [&](const auto& openNode) {
-            return openNode.fd == fd;
-        }), openFiles_.end());
+        checkFileDescriptions();
+        checkFileRefCount(file);
+        fileDescriptors_[fd.fd] = nullptr;
         file->unref();
         openFileDescriptions_.remove_if([&](auto& ofd) {
-            return std::none_of(openFiles_.begin(), openFiles_.end(), [&](const OpenNode& node) {
-                return node.openFiledescription == &ofd;
+            return std::none_of(fileDescriptors_.begin(), fileDescriptors_.end(), [&](const auto& desc) {
+                if(!desc) return false;
+                return desc->openFiledescription == &ofd;
             });
         });
         if(file->refCount() == 0) {
@@ -650,14 +658,8 @@ namespace kernel::gnulinux {
             }
         }
 #ifndef NDEBUG
-        assert(file->refCount() == std::count_if(openFiles_.begin(), openFiles_.end(), [&](OpenNode& node) {
-            return node.openFiledescription->file() == file;
-        }));
-        for(OpenFileDescription& ofd : openFileDescriptions_) {
-            assert(std::any_of(openFiles_.begin(), openFiles_.end(), [&](const OpenNode& node) {
-                return node.openFiledescription == &ofd;
-            }));
-        }
+        checkFileRefCount(file);
+        checkFileDescriptions();
 #endif
         return 0;
     }
@@ -696,25 +698,25 @@ namespace kernel::gnulinux {
             }
             case Host::Fcntl::DUPFD_CLOEXEC: {
                 FD newfd = dup(fd);
-                OpenNode* newNode = findOpenNode(newfd);
-                verify(!!newNode);
-                newNode->closeOnExec = true;
+                FileDescriptor* desc = findFileDescriptor(newfd);
+                verify(!!desc);
+                desc->closeOnExec = true;
                 emulatedRet = newfd.fd;
                 callFcntlOnFile = false;
                 break;
             }
             case Host::Fcntl::GETFD: {
-                OpenNode* node = findOpenNode(fd);
-                verify(!!node);
-                emulatedRet = node->closeOnExec ? Host::Fcntl::fdCloExec() : 0;
+                FileDescriptor* desc = findFileDescriptor(fd);
+                verify(!!desc);
+                emulatedRet = desc->closeOnExec ? Host::Fcntl::fdCloExec() : 0;
                 break;
             }
             case Host::Fcntl::SETFD: {
-                OpenNode* node = findOpenNode(fd);
-                verify(!!node);
-                bool currentFlag = node->closeOnExec;
-                if(Host::Open::isCloseOnExec(arg) && !currentFlag) node->closeOnExec = true;
-                if(!Host::Open::isCloseOnExec(arg) && currentFlag) node->closeOnExec = false;
+                FileDescriptor* desc = findFileDescriptor(fd);
+                verify(!!desc);
+                bool currentFlag = desc->closeOnExec;
+                if(Host::Open::isCloseOnExec(arg) && !currentFlag) desc->closeOnExec = true;
+                if(!Host::Open::isCloseOnExec(arg) && currentFlag) desc->closeOnExec = false;
                 emulatedRet = 0;
                 break;
             }
@@ -1124,9 +1126,12 @@ namespace kernel::gnulinux {
     }
 
     void FS::dumpSummary() const {
-        fmt::print("Open files:\n");
-        for(const auto& openFile : openFiles_) {
-            fmt::print("  fd={} : type={:20} path={}\n", openFile.fd.fd, openFile.openFiledescription->toString(), openFile.openFiledescription->file()->path().absolute());
+        fmt::println("File descriptors:");
+        for(size_t fd = 0; fd < fileDescriptors_.size(); ++fd) {
+            auto* desc = fileDescriptors_[fd].get();
+            if(!desc) continue;
+            auto* ofd = desc->openFiledescription;
+            fmt::print("  fd={} : type={:20} path={}\n", fd, ofd->toString(), ofd->file()->path().absolute());
         }
         root_->printSubtree();
     }

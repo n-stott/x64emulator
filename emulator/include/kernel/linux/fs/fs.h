@@ -239,8 +239,10 @@ namespace kernel::gnulinux {
 
         File* resolveSymlink(const Symlink&, u32 maxLinks = 0);
 
-        struct OpenNode {
-            FD fd { -1 };
+        struct FileDescriptor {
+            FileDescriptor(OpenFileDescription* ofd, bool closeOnExec) :
+                    openFiledescription(ofd), closeOnExec(closeOnExec) { }
+
             OpenFileDescription* openFiledescription;
             bool closeOnExec { false };
         };
@@ -253,8 +255,11 @@ namespace kernel::gnulinux {
         void removeFromOrphans(File*);
         void removeClosedPipes();
 
-        OpenNode* findOpenNode(FD fd);
+        FileDescriptor* findFileDescriptor(FD fd);
         OpenFileDescription* findOpenFileDescription(FD fd);
+
+        void checkFileRefCount(File* file) const;
+        void checkFileDescriptions() const;
 
         static int assembleAccessModeAndFileStatusFlags(BitFlags<AccessMode>, BitFlags<StatusFlags>);
 
@@ -264,8 +269,8 @@ namespace kernel::gnulinux {
         std::vector<std::unique_ptr<File>> orphanFiles_;
         std::vector<std::unique_ptr<Pipe>> pipes_;
         Directory* currentWorkDirectory_ { nullptr };
+        std::vector<std::unique_ptr<FileDescriptor>> fileDescriptors_;
         std::list<OpenFileDescription> openFileDescriptions_;
-        std::vector<OpenNode> openFiles_;
     };
 
 }
