@@ -447,6 +447,7 @@ namespace kernel::gnulinux {
         if(!file) return -ENOENT;
         auto* newdir = ensurePathExceptLast(newpath);
         verify(!!newdir, "Unable to create new directory");
+        file->rename(newdir, newpath.last());
         newdir->addFile(std::move(file));
         return 0;
     }

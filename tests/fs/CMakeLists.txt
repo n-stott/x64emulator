@@ -18,3 +18,10 @@ target_include_directories(test_setfl PUBLIC include ${CMAKE_SOURCE_DIR}/emulato
 target_link_libraries(test_setfl PUBLIC x64cpu x64emulator)
 target_link_options(test_setfl PUBLIC ${LD_OPTIONS})
 add_test(NAME setfl COMMAND test_setfl)
+
+add_executable(test_rename src/test_rename.cpp)
+target_compile_options(test_rename PUBLIC ${CC_OPTIONS})
+target_include_directories(test_rename PUBLIC include ${CMAKE_SOURCE_DIR}/emulator/include)
+target_link_libraries(test_rename PUBLIC x64cpu x64emulator)
+target_link_options(test_rename PUBLIC ${LD_OPTIONS})
+add_test(NAME rename COMMAND test_rename)

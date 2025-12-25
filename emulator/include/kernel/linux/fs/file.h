@@ -84,6 +84,10 @@ namespace kernel::gnulinux {
 
         virtual std::string className() const = 0;
 
+        void rename(Directory* parent, const std::string& name) {
+            parent_ = parent;
+            name_ = name;
+        }
     private:
         Directory* parent_ { nullptr };
         std::string name_;
