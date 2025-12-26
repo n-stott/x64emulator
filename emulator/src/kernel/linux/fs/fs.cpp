@@ -671,6 +671,10 @@ namespace kernel::gnulinux {
                 return desc->openFiledescription == &ofd;
             });
         });
+#ifndef NDEBUG
+        checkFileRefCount(file);
+        checkFileDescriptions();
+#endif
         if(file->refCount() == 0) {
             file->close();
             if(file->isPipe()) {
@@ -682,10 +686,6 @@ namespace kernel::gnulinux {
                 removeFromOrphans(file);
             }
         }
-#ifndef NDEBUG
-        checkFileRefCount(file);
-        checkFileDescriptions();
-#endif
         return 0;
     }
 
