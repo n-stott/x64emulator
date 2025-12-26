@@ -2,7 +2,6 @@
 #define NULLDEVICE_H
 
 #include "kernel/linux/dev/device.h"
-#include "kernel/linux/fs/fs.h"
 #include <memory>
 #include <optional>
 #include <string>
@@ -10,10 +9,11 @@
 namespace kernel::gnulinux {
 
     class Directory;
+    class Path;
 
     class NullDevice : public Device {
     public:
-        static File* tryCreateAndAdd(FS* fs, Directory* parent, const std::string& pathname);
+        static std::unique_ptr<NullDevice> tryCreate(const Path& path);
 
         bool isReadable() const override { return false; }
         bool isWritable() const override { return false; }
@@ -44,7 +44,7 @@ namespace kernel::gnulinux {
         }
 
     protected:
-        NullDevice(FS* fs, Directory* dir, std::string name) : Device(fs, dir, std::move(name)) { }
+        NullDevice(std::string name) : Device(std::move(name)) { }
     };
 
 }

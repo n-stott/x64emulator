@@ -11,23 +11,11 @@
 
 namespace kernel::gnulinux {
 
-    Tty* Tty::tryCreateAndAdd(FS* fs, Directory* parent, const std::string& name, bool closeOnExec) {
-        std::string pathname;
-        if(!parent || parent == fs->root()) {
-            pathname = name;
-        } else {
-            pathname = (parent->path().absolute() + "/" + name);
-        }
-
+    std::unique_ptr<Tty> Tty::tryCreate(const Path& path, bool closeOnExec) {
+        std::string pathname = path.absolute();
         auto hostFd = ShadowDevice::tryGetDeviceHostFd(pathname, closeOnExec);
         if(!hostFd) return nullptr;
-
-        auto path = Path::tryCreate(pathname);
-        verify(!!path, "Unable to create path");
-        Directory* containingDirectory = fs->ensurePathExceptLast(*path);
-
-        auto tty = std::unique_ptr<Tty>(new Tty(fs, containingDirectory, path->last(), hostFd));
-        return containingDirectory->addFile(std::move(tty));
+        return std::unique_ptr<Tty>(new Tty(path.last(), hostFd));
     }
 
     void Tty::close() {

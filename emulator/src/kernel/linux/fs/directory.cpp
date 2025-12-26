@@ -39,7 +39,11 @@ namespace kernel::gnulinux {
         for(auto& entry : entries_) {
             if(entry->name() == name) return nullptr;
         }
-        auto* dir = HostDirectory::tryCreateAndAdd(fs_, this, name);
+        auto path = this->path().tryAppend(name);
+        verify(!!path);
+        auto hostDirectory = HostDirectory::tryCreate(*path);
+        if(!hostDirectory) return nullptr;
+        HostDirectory* dir = addFile<HostDirectory>(std::move(hostDirectory));
         return dir;
     }
 
@@ -47,12 +51,13 @@ namespace kernel::gnulinux {
         for(auto& entry : entries_) {
             if(entry->name() == name) return nullptr;
         }
-        auto dir = ShadowDirectory::tryCreate(fs_, this, name);
-        if(!dir) return nullptr;
+        auto path = this->path().tryAppend(name);
+        verify(!!path);
+        auto shadowDirectory = ShadowDirectory::tryCreate(*path);
+        if(!shadowDirectory) return nullptr;
         this->setTaintedByShadow();
-        Directory* dirPtr = dir.get();
-        entries_.push_back(std::move(dir));
-        return dirPtr;
+        ShadowDirectory* dir = addFile<ShadowDirectory>(std::move(shadowDirectory));
+        return dir;
     }
 
     void Directory::printSubtree() const {

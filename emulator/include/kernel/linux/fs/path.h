@@ -4,6 +4,7 @@
 #include "span.h"
 #include "verify.h"
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -45,6 +46,8 @@ namespace kernel::gnulinux {
         }
 
         const std::string& absolute() const { return absolutePath_; }
+
+        std::optional<Path> tryAppend(const std::string& element) const;
     
     protected:
         explicit Path(std::vector<std::string> components);

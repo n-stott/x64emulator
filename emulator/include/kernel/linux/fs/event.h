@@ -8,7 +8,7 @@ namespace kernel::gnulinux {
 
     class Event : public File {
     public:
-        static std::unique_ptr<Event> tryCreate(FS* fs, unsigned int initval, int flags);
+        static std::unique_ptr<Event> tryCreate(unsigned int initval, int flags);
 
         bool isEpoll() const override { return true; }
 
@@ -44,7 +44,7 @@ namespace kernel::gnulinux {
         }
 
     private:
-        explicit Event(FS* fs, unsigned int initval, int flags);
+        explicit Event(unsigned int initval, int flags);
 
         u64 counter_;
         int flags_;

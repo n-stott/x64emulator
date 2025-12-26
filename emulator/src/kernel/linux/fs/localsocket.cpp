@@ -5,13 +5,13 @@
 
 namespace kernel::gnulinux {
 
-    LocalSocket::LocalSocket(FS* fs, int fd, int domain, int type, int protocol) : Socket(fs, fd, domain, type, protocol) { }
+    LocalSocket::LocalSocket(int fd, int domain, int type, int protocol) : Socket(fd, domain, type, protocol) { }
 
-    std::unique_ptr<LocalSocket> LocalSocket::tryCreate(FS* fs, int domain, int type, int protocol) {
+    std::unique_ptr<LocalSocket> LocalSocket::tryCreate(int domain, int type, int protocol) {
         verify(domain == AF_LOCAL);
         int fd = ::socket(domain, type, protocol);
         if(fd < 0) return {};
-        return std::unique_ptr<LocalSocket>(new LocalSocket(fs, fd, domain, type, protocol));
+        return std::unique_ptr<LocalSocket>(new LocalSocket(fd, domain, type, protocol));
     }
 
     ssize_t LocalSocket::recvmsg(int flags, Message* message) const {

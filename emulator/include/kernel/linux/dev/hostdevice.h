@@ -2,7 +2,6 @@
 #define HOSTDEVICE_H
 
 #include "kernel/linux/dev/device.h"
-#include "kernel/linux/fs/fs.h"
 #include <fmt/core.h>
 #include <memory>
 #include <string>
@@ -10,10 +9,11 @@
 namespace kernel::gnulinux {
 
     class Directory;
+    class Path;
 
     class HostDevice : public Device {
     public:
-        static File* tryCreateAndAdd(FS* fs, Directory* parent, const std::string& pathname);
+        static std::unique_ptr<HostDevice> tryCreate(const Path& path);
 
         bool isReadable() const override { return true; }
         bool isWritable() const override { return false; }
@@ -45,7 +45,7 @@ namespace kernel::gnulinux {
         }
 
     private:
-        HostDevice(FS* fs, Directory* dir, std::string name, int hostFd) : Device(fs, dir, std::move(name)), hostFd_(hostFd) { }
+        HostDevice(std::string name, int hostFd) : Device(std::move(name)), hostFd_(hostFd) { }
         int hostFd_ { -1 };
     };
 

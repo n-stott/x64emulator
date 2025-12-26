@@ -1,6 +1,5 @@
 #include "kernel/linux/fs/hostsymlink.h"
 #include "kernel/linux/fs/directory.h"
-#include "kernel/linux/fs/fs.h"
 #include "kernel/linux/fs/path.h"
 #include "scopeguard.h"
 #include "verify.h"
@@ -10,13 +9,8 @@
 
 namespace kernel::gnulinux {
 
-    File* HostSymlink::tryCreateAndAdd(FS* fs, Directory* parent, const std::string& name) {
-        std::string pathname;
-        if(!parent || parent == fs->root()) {
-            pathname = name;
-        } else {
-            pathname = (parent->path().absolute() + "/" + name);
-        }
+    std::unique_ptr<HostSymlink> HostSymlink::tryCreate(const Path& path) {
+        std::string pathname = path.absolute();
 
         // check that the file is a regular file
         struct stat s;
@@ -30,10 +24,6 @@ namespace kernel::gnulinux {
             return {};
         }
 
-        auto path = Path::tryCreate(pathname);
-        verify(!!path, "Unable to create path");
-        Directory* containingDirectory = fs->ensurePathExceptLast(*path);
-
         char linkbuf[256];
         ssize_t len = ::readlink(pathname.c_str(), linkbuf, sizeof(linkbuf));
         if(len < 0) {
@@ -42,8 +32,7 @@ namespace kernel::gnulinux {
         }
         std::string link(linkbuf, linkbuf+len);
 
-        auto hostSymlink = std::unique_ptr<HostSymlink>(new HostSymlink(fs, containingDirectory, path->last(), link));
-        return containingDirectory->addFile(std::move(hostSymlink));
+        return std::unique_ptr<HostSymlink>(new HostSymlink(path.last(), link));
     }
 
     void HostSymlink::close() {

@@ -2,7 +2,6 @@
 #define TTYDEVICE_H
 
 #include "kernel/linux/dev/shadowdevice.h"
-#include "kernel/linux/fs/fs.h"
 #include <fmt/core.h>
 #include <memory>
 #include <optional>
@@ -11,10 +10,11 @@
 namespace kernel::gnulinux {
 
     class Directory;
+    class Path;
 
     class Tty : public ShadowDevice {
     public:
-        static Tty* tryCreateAndAdd(FS* fs, Directory* parent, const std::string& pathname, bool closeOnExec);
+        static std::unique_ptr<Tty> tryCreate(const Path& path, bool closeOnExec);
 
         bool isReadable() const override { return true; }
         bool isWritable() const override { return true; }
@@ -44,7 +44,7 @@ namespace kernel::gnulinux {
         }
 
     private:
-        Tty(FS* fs, Directory* dir, std::string name, std::optional<int> hostFd) : ShadowDevice(fs, dir, std::move(name), hostFd) { }
+        Tty(std::string name, std::optional<int> hostFd) : ShadowDevice(std::move(name), hostFd) { }
     };
 
 }

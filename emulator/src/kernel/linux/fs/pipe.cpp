@@ -7,18 +7,18 @@
 
 namespace kernel::gnulinux {
 
-    std::unique_ptr<Pipe> Pipe::tryCreate(FS* fs, int flags) {
-        return std::unique_ptr<Pipe>(new Pipe(fs, flags));
+    std::unique_ptr<Pipe> Pipe::tryCreate(int flags) {
+        return std::unique_ptr<Pipe>(new Pipe(flags));
     }
 
     std::unique_ptr<PipeEndpoint> Pipe::tryCreateReader() {
-        auto ptr = PipeEndpoint::tryCreate(fs_, this, PipeSide::READ, flags_);
+        auto ptr = PipeEndpoint::tryCreate(this, PipeSide::READ, flags_);
         if(!!ptr) readEndpoints_.push_back(ptr.get());
         return ptr;
     }
 
     std::unique_ptr<PipeEndpoint> Pipe::tryCreateWriter() {
-        auto ptr = PipeEndpoint::tryCreate(fs_, this, PipeSide::WRITE, flags_);
+        auto ptr = PipeEndpoint::tryCreate(this, PipeSide::WRITE, flags_);
         if(!!ptr) writeEndpoints_.push_back(ptr.get());
         return ptr;
     }
@@ -35,8 +35,8 @@ namespace kernel::gnulinux {
         isClosed_ = true;
     }
 
-    std::unique_ptr<PipeEndpoint> PipeEndpoint::tryCreate(FS* fs, Pipe* pipe, PipeSide side, int flags) {
-        return std::unique_ptr<PipeEndpoint>(new PipeEndpoint(fs, pipe, side, flags));
+    std::unique_ptr<PipeEndpoint> PipeEndpoint::tryCreate(Pipe* pipe, PipeSide side, int flags) {
+        return std::unique_ptr<PipeEndpoint>(new PipeEndpoint(pipe, side, flags));
     }
 
     void PipeEndpoint::close() {

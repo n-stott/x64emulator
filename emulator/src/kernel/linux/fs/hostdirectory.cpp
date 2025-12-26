@@ -1,5 +1,4 @@
 #include "kernel/linux/fs/hostdirectory.h"
-#include "kernel/linux/fs/fs.h"
 #include "kernel/linux/fs/path.h"
 #include "host/host.h"
 #include "scopeguard.h"
@@ -11,17 +10,12 @@
 
 namespace kernel::gnulinux {
 
-    std::unique_ptr<HostDirectory> HostDirectory::tryCreateRoot(FS* fs) {
-        return std::unique_ptr<HostDirectory>(new HostDirectory(fs, nullptr, ""));
+    std::unique_ptr<HostDirectory> HostDirectory::tryCreateRoot() {
+        return std::unique_ptr<HostDirectory>(new HostDirectory(""));
     }
 
-    HostDirectory* HostDirectory::tryCreateAndAdd(FS* fs, Directory* parent, const std::string& name) {
-        std::string pathname;
-        if(!parent) {
-            pathname = name;
-        } else {
-            pathname = (parent->path().absolute() + "/" + name);
-        }
+    std::unique_ptr<HostDirectory> HostDirectory::tryCreate(const Path& path) {
+        std::string pathname = path.absolute();
 
         int flags = O_RDONLY | O_CLOEXEC;
         int fd = ::openat(AT_FDCWD, pathname.c_str(), flags);
@@ -43,13 +37,7 @@ namespace kernel::gnulinux {
             return {};
         }
 
-        auto path = Path::tryCreate(pathname);
-        verify(!!path, "Unable to create path");
-        Directory* containingDirectory = fs->ensurePathExceptLast(*path);
-        auto dir = std::unique_ptr<HostDirectory>(new HostDirectory(fs, containingDirectory, path->last()));
-        auto dirPtr = dir.get();
-        containingDirectory->addFile(std::move(dir));
-        return dirPtr;
+        return std::unique_ptr<HostDirectory>(new HostDirectory(path.last()));
     }
 
     void HostDirectory::open() {

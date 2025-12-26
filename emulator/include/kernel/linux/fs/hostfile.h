@@ -10,10 +10,11 @@
 namespace kernel::gnulinux {
 
     class Directory;
+    class Path;
 
     class HostFile : public RegularFile {
     public:
-        static File* tryCreateAndAdd(FS* fs, Directory* parent, const std::string& pathname, BitFlags<FS::AccessMode> accessMode, bool closeOnExec);
+        static std::unique_ptr<HostFile> tryCreate(const Path& path, BitFlags<FS::AccessMode> accessMode, bool closeOnExec);
 
         bool isReadable() const override { return true; }
         bool isWritable() const override { return false; }
@@ -46,7 +47,7 @@ namespace kernel::gnulinux {
         }
 
     private:
-        HostFile(FS* fs, Directory* dir, std::string name, int hostFd) : RegularFile(fs, dir, std::move(name)), hostFd_(hostFd) { }
+        HostFile(std::string name, int hostFd) : RegularFile(std::move(name)), hostFd_(hostFd) { }
         int hostFd_ { -1 };
     };
 

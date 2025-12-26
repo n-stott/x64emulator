@@ -17,7 +17,7 @@ namespace kernel::gnulinux {
 
     class Pipe : public FsObject {
     public:
-        static std::unique_ptr<Pipe> tryCreate(FS* fs, int flags);
+        static std::unique_ptr<Pipe> tryCreate(int flags);
 
         std::unique_ptr<PipeEndpoint> tryCreateReader();
         std::unique_ptr<PipeEndpoint> tryCreateWriter();
@@ -36,7 +36,7 @@ namespace kernel::gnulinux {
         ssize_t write(OpenFileDescription&, const u8* buf, size_t size);
 
     private:
-        Pipe(FS* fs, int flags) : FsObject(fs), flags_(flags) { }
+        explicit Pipe(int flags) : flags_(flags) { }
         std::deque<u8> data_;
         int flags_;
         std::vector<PipeEndpoint*> readEndpoints_;
@@ -46,7 +46,7 @@ namespace kernel::gnulinux {
 
     class PipeEndpoint : public File {
     public:
-        static std::unique_ptr<PipeEndpoint> tryCreate(FS* fs, Pipe* pipe, PipeSide side, int flags);
+        static std::unique_ptr<PipeEndpoint> tryCreate(Pipe* pipe, PipeSide side, int flags);
 
         bool isPipe() const override { return true; }
 
@@ -81,8 +81,8 @@ namespace kernel::gnulinux {
         std::string className() const override;
     
     private:
-        explicit PipeEndpoint(FS* fs, Pipe* pipe, PipeSide side, int flags) :
-                File(fs), pipe_(pipe), side_(side), flags_(flags) {
+        explicit PipeEndpoint(Pipe* pipe, PipeSide side, int flags) :
+                pipe_(pipe), side_(side), flags_(flags) {
             (void)side_;
             (void)flags_;
         }

@@ -10,11 +10,12 @@ namespace kernel::gnulinux {
 
     class Directory;
     class FS;
+    class Path;
 
     class HostDirectory : public Directory {
     public:
-        static std::unique_ptr<HostDirectory> tryCreateRoot(FS* fs);
-        static HostDirectory* tryCreateAndAdd(FS* fs, Directory* parent, const std::string& pathname);
+        static std::unique_ptr<HostDirectory> tryCreateRoot();
+        static std::unique_ptr<HostDirectory> tryCreate(const Path& path);
 
         void open() override;
         void close() override;
@@ -31,7 +32,7 @@ namespace kernel::gnulinux {
 
         std::string className() const override { return "HostDirectory"; }
     private:
-        HostDirectory(FS* fs, Directory* parent, std::string name) : Directory(fs, parent, std::move(name)) { }
+        HostDirectory(std::string name) : Directory(std::move(name)) { }
         std::optional<int> hostFd_; // the host fd when the folder is opened
     };
 

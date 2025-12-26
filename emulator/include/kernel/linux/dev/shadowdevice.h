@@ -2,7 +2,6 @@
 #define SHADOWDEVICE_H
 
 #include "kernel/linux/dev/device.h"
-#include "kernel/linux/fs/fs.h"
 #include <fmt/core.h>
 #include <memory>
 #include <optional>
@@ -11,10 +10,11 @@
 namespace kernel::gnulinux {
 
     class Directory;
+    class Path;
 
     class ShadowDevice : public Device {
     public:
-        static File* tryCreateAndAdd(FS* fs, Directory* parent, const std::string& pathname, bool closeOnExec);
+        static std::unique_ptr<Device> tryCreate(const Path& path, bool closeOnExec);
 
         static std::optional<int> tryGetDeviceHostFd(const std::string& pathname, bool closeOnExec);
 
@@ -49,7 +49,7 @@ namespace kernel::gnulinux {
         }
 
     protected:
-        ShadowDevice(FS* fs, Directory* dir, std::string name, std::optional<int> hostFd) : Device(fs, dir, std::move(name)), hostFd_(hostFd) { }
+        ShadowDevice(std::string name, std::optional<int> hostFd) : Device(std::move(name)), hostFd_(hostFd) { }
         std::optional<int> hostFd_ { -1 };
 
         static std::vector<std::string> allAllowedDevices_;

@@ -6,20 +6,8 @@
 
 namespace kernel::gnulinux {
 
-    File* NullDevice::tryCreateAndAdd(FS* fs, Directory* parent, const std::string& name) {
-        std::string pathname;
-        if(!parent || parent == fs->root()) {
-            pathname = name;
-        } else {
-            pathname = (parent->path().absolute() + "/" + name);
-        }
-
-        auto path = Path::tryCreate(pathname);
-        verify(!!path, "Unable to create path");
-        Directory* containingDirectory = fs->ensurePathExceptLast(*path);
-
-        auto shadowFile = std::unique_ptr<NullDevice>(new NullDevice(fs, containingDirectory, path->last()));
-        return containingDirectory->addFile(std::move(shadowFile));
+    std::unique_ptr<NullDevice> NullDevice::tryCreate(const Path& path) {
+        return std::unique_ptr<NullDevice>(new NullDevice(path.last()));
     }
 
     void NullDevice::close() { }

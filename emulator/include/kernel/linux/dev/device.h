@@ -12,7 +12,7 @@ namespace kernel::gnulinux {
 
     class Device : public File {
     public:
-        explicit Device(FS* fs, Directory* dir, std::string name) : File(fs, dir, std::move(name)) { }
+        explicit Device(std::string name) : File(std::move(name)) { }
 
         bool isDevice() const override final { return true; }
 

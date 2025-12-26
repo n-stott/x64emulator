@@ -6,9 +6,11 @@
 
 namespace kernel::gnulinux {
 
+    class Path;
+
     class ShadowSymlink : public Symlink {
     public:
-        static File* tryCreateAndAdd(FS* fs, Directory* parent, const std::string& pathname, const std::string& link);
+        static std::unique_ptr<ShadowSymlink> tryCreate(const Path& path, const std::string& link);
 
         bool isShadow() const override { return true; }
 
@@ -23,7 +25,7 @@ namespace kernel::gnulinux {
         }
 
     private:
-        ShadowSymlink(FS* fs, Directory* dir, std::string name, std::string link) : Symlink(fs, dir, std::move(name), std::move(link)) { }
+        ShadowSymlink(std::string name, std::string link) : Symlink(std::move(name), std::move(link)) { }
     };
 
 }

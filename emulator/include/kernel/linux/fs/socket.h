@@ -11,7 +11,7 @@ namespace kernel::gnulinux {
 
     class Socket : public File {
     public:
-        static std::unique_ptr<Socket> tryCreate(FS* fs, int domain, int type, int protocol);
+        static std::unique_ptr<Socket> tryCreate(int domain, int type, int protocol);
 
         void close() override;
         bool keepAfterClose() const override { return false; }
@@ -70,7 +70,7 @@ namespace kernel::gnulinux {
         }
 
     protected:
-        Socket(FS* fs, int fd, int domain, int type, int protocol);
+        Socket(int fd, int domain, int type, int protocol);
 
         int hostFd_ { -1 };
         int domain_ { 0 };

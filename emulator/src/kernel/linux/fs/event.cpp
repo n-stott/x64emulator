@@ -6,12 +6,11 @@
 
 namespace kernel::gnulinux {
 
-    std::unique_ptr<Event> Event::tryCreate(FS* fs, unsigned int initval, int flags) {
-        return std::unique_ptr<Event>(new Event(fs, initval, flags));
+    std::unique_ptr<Event> Event::tryCreate(unsigned int initval, int flags) {
+        return std::unique_ptr<Event>(new Event(initval, flags));
     }
 
-    Event::Event(FS* fs, unsigned int initval, int flags) :
-            File(fs),
+    Event::Event(unsigned int initval, int flags) :
             counter_(initval),
             flags_(flags) {
         (void)flags_;

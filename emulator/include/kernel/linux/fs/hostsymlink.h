@@ -8,7 +8,7 @@ namespace kernel::gnulinux {
 
     class HostSymlink : public Symlink {
     public:
-        static File* tryCreateAndAdd(FS* fs, Directory* parent, const std::string& pathname);
+        static std::unique_ptr<HostSymlink> tryCreate(const Path& path);
 
         void close() override;
         bool keepAfterClose() const override;
@@ -19,7 +19,7 @@ namespace kernel::gnulinux {
         }
 
     private:
-        HostSymlink(FS* fs, Directory* dir, std::string name, std::string link) : Symlink(fs, dir, std::move(name), std::move(link)) { }
+        HostSymlink(std::string name, std::string link) : Symlink(std::move(name), std::move(link)) { }
     };
 
 }

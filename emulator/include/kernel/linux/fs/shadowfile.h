@@ -2,7 +2,6 @@
 #define SHADOWFILE_H
 
 #include "kernel/linux/fs/regularfile.h"
-#include "kernel/linux/fs/fs.h"
 #include <memory>
 #include <string>
 #include <vector>
@@ -14,8 +13,8 @@ namespace kernel::gnulinux {
 
     class ShadowFile : public RegularFile {
     public:
-        static ShadowFile* tryCreateAndAdd(FS* fs, Directory* parent, const std::string& name, bool create);
-        static std::unique_ptr<ShadowFile> tryCreate(FS* fs, const std::string& name);
+        static std::unique_ptr<ShadowFile> tryCreate(const Path& path, bool create);
+        static std::unique_ptr<ShadowFile> tryCreate(const std::string& name);
         ~ShadowFile();
 
         bool isShadow() const override { return true; }
@@ -56,7 +55,7 @@ namespace kernel::gnulinux {
         }
 
     private:
-        ShadowFile(FS* fs, Directory* parent, std::string name, std::vector<u8> data);
+        ShadowFile(std::string name, std::vector<u8> data);
 
         std::unique_ptr<ShadowFileHostData> hostData_;
         std::vector<u8> data_;

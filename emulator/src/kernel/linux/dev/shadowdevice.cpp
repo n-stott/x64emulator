@@ -18,19 +18,14 @@ namespace kernel::gnulinux {
         "/dev/tty",
     };
 
-    File* ShadowDevice::tryCreateAndAdd(FS* fs, Directory* parent, const std::string& name, bool closeOnExec) {
-        std::string pathname;
-        if(!parent || parent == fs->root()) {
-            pathname = name;
-        } else {
-            pathname = (parent->path().absolute() + "/" + name);
-        }
+    std::unique_ptr<Device> ShadowDevice::tryCreate(const Path& path, bool closeOnExec) {
+        std::string pathname = path.absolute();
 
         if(pathname == "/dev/null") {
-            return NullDevice::tryCreateAndAdd(fs, parent, name);
+            return NullDevice::tryCreate(path);
         }
         if(pathname == "/dev/tty") {
-            return Tty::tryCreateAndAdd(fs, parent, name, closeOnExec);
+            return Tty::tryCreate(path, closeOnExec);
         }
 
         warn(fmt::format("Device {} is not a supported shadow device", pathname));

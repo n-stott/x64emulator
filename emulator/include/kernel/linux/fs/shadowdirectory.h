@@ -10,10 +10,11 @@ namespace kernel::gnulinux {
 
     class Directory;
     class FS;
+    class Path;
 
     class ShadowDirectory : public Directory {
     public:
-        static std::unique_ptr<ShadowDirectory> tryCreate(FS* fs, Directory* parent, const std::string& pathname);
+        static std::unique_ptr<ShadowDirectory> tryCreate(const Path& path);
         
         bool isShadow() const override { return true; }
 
@@ -26,7 +27,7 @@ namespace kernel::gnulinux {
         std::string className() const override { return "ShadowDirectory"; }
 
     private:
-        ShadowDirectory(FS* fs, Directory* parent, std::string name) : Directory(fs, parent, std::move(name)) { }
+        ShadowDirectory(std::string name) : Directory(std::move(name)) { }
 
     };
 

@@ -28,7 +28,7 @@ namespace kernel::gnulinux {
         std::string className() const override;
 
     protected:
-        Symlink(FS* fs, Directory* dir, std::string name, std::string link) : File(fs, dir, std::move(name)), link_(std::move(link)) { }
+        Symlink(std::string name, std::string link) : File(std::move(name)), link_(std::move(link)) { }
 
     private:
         std::string link_;

@@ -16,13 +16,8 @@
 
 namespace kernel::gnulinux {
 
-    File* HostFile::tryCreateAndAdd(FS* fs, Directory* parent, const std::string& name, BitFlags<FS::AccessMode> accessMode, bool closeOnExec) {
-        std::string pathname;
-        if(!parent || parent == fs->root()) {
-            pathname = name;
-        } else {
-            pathname = (parent->path().absolute() + "/" + name);
-        }
+    std::unique_ptr<HostFile> HostFile::tryCreate(const Path& path, BitFlags<FS::AccessMode> accessMode, bool closeOnExec) {
+        std::string pathname = path.absolute();
 
         verify(!accessMode.test(FS::AccessMode::WRITE), "HostFile should not have write access");
         int flags = O_RDONLY;
@@ -45,15 +40,9 @@ namespace kernel::gnulinux {
             // not a regular file
             return {};
         }
-
-        auto path = Path::tryCreate(pathname);
-        verify(!!path, "Unable to create path");
-        Directory* containingDirectory = fs->ensurePathExceptLast(*path);
-
         guard.disable();
 
-        auto hostFile = std::unique_ptr<HostFile>(new HostFile(fs, containingDirectory, path->last(), fd));
-        return containingDirectory->addFile(std::move(hostFile));
+        return std::unique_ptr<HostFile>(new HostFile(path.last(), fd));
     }
 
     void HostFile::close() {

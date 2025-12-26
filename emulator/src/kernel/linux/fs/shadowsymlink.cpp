@@ -1,6 +1,5 @@
 #include "kernel/linux/fs/shadowsymlink.h"
 #include "kernel/linux/fs/directory.h"
-#include "kernel/linux/fs/fs.h"
 #include "kernel/linux/fs/path.h"
 #include "host/host.h"
 #include "scopeguard.h"
@@ -8,20 +7,8 @@
 
 namespace kernel::gnulinux {
 
-    File* ShadowSymlink::tryCreateAndAdd(FS* fs, Directory* parent, const std::string& name, const std::string& link) {
-        std::string pathname;
-        if(!parent || parent == fs->root()) {
-            pathname = name;
-        } else {
-            pathname = (parent->path().absolute() + "/" + name);
-        }
-
-        auto path = Path::tryCreate(pathname);
-        verify(!!path, "Unable to create path");
-        Directory* containingDirectory = fs->ensurePathExceptLast(*path);
-
-        auto shadowSymlink = std::unique_ptr<ShadowSymlink>(new ShadowSymlink(fs, containingDirectory, path->last(), link));
-        return containingDirectory->addFile(std::move(shadowSymlink));
+    std::unique_ptr<ShadowSymlink> ShadowSymlink::tryCreate(const Path& path, const std::string& link) {
+        return std::unique_ptr<ShadowSymlink>(new ShadowSymlink(path.last(), link));
     }
 
     void ShadowSymlink::close() {

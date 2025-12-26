@@ -10,8 +10,7 @@
 
 namespace kernel::gnulinux {
 
-    Socket::Socket(FS* fs, int fd, int domain, int type, int protocol) :
-            File(fs),
+    Socket::Socket(int fd, int domain, int type, int protocol) :
             hostFd_(fd),
             domain_(domain),
             type_(type),
@@ -21,9 +20,9 @@ namespace kernel::gnulinux {
         (void)protocol_;
     }
 
-    std::unique_ptr<Socket> Socket::tryCreate(FS* fs, int domain, int type, int protocol) {
+    std::unique_ptr<Socket> Socket::tryCreate(int domain, int type, int protocol) {
         if(domain == AF_LOCAL) {
-            return LocalSocket::tryCreate(fs, domain, type, protocol);
+            return LocalSocket::tryCreate(domain, type, protocol);
         }
         auto validateDomain = [](int domain) -> bool {
             return domain == AF_NETLINK; // add other valid domains here
@@ -42,7 +41,7 @@ namespace kernel::gnulinux {
         }
         int fd = ::socket(domain, type, protocol);
         if(fd < 0) return {};
-        return std::unique_ptr<Socket>(new Socket(fs, fd, domain, type, protocol));
+        return std::unique_ptr<Socket>(new Socket(fd, domain, type, protocol));
     }
 
     void Socket::close() {

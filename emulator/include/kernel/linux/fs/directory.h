@@ -11,7 +11,7 @@ namespace kernel::gnulinux {
 
     class Directory : public File {
     public:
-        explicit Directory(FS* fs, Directory* parent, std::string name) : File(fs, parent, std::move(name)) { }
+        explicit Directory(std::string name) : File(std::move(name)) { }
 
         bool isDirectory() const override final { return true; }
         void printSubtree() const;
@@ -31,6 +31,7 @@ namespace kernel::gnulinux {
             FileType* ptr = file.get();
             entries_.push_back(std::move(file));
             if(ptr->isShadow()) setTaintedByShadow();
+            ptr->setParent(this);
             return ptr;
         }
 

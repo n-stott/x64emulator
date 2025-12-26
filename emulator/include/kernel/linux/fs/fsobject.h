@@ -14,7 +14,7 @@ namespace kernel::gnulinux {
 
     class FsObject {
     public:
-        explicit FsObject(FS* fs) : fs_(fs) { }
+        FsObject() = default;
         virtual ~FsObject() = default;
 
         virtual void close() = 0;
@@ -40,7 +40,6 @@ namespace kernel::gnulinux {
         virtual std::optional<int> hostFileDescriptor() const = 0;
 
     protected:
-        FS* fs_;
         u32 refCount_ { 0 };
         bool deleteAfterClose_ { false };
 

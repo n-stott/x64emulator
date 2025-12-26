@@ -10,13 +10,8 @@
 
 namespace kernel::gnulinux {
 
-    File* HostDevice::tryCreateAndAdd(FS* fs, Directory* parent, const std::string& name) {
-        std::string pathname;
-        if(!parent || parent == fs->root()) {
-            pathname = name;
-        } else {
-            pathname = (parent->path().absolute() + "/" + name);
-        }
+    std::unique_ptr<HostDevice> HostDevice::tryCreate(const Path& path) {
+        std::string pathname = path.absolute();
 
         int flags = O_RDONLY | O_CLOEXEC;
         int fd = ::openat(AT_FDCWD, pathname.c_str(), flags);
@@ -37,15 +32,9 @@ namespace kernel::gnulinux {
             // not a character device or block device
             return {};
         }
-
-        auto path = Path::tryCreate(pathname);
-        verify(!!path, "Unable to create path");
-        Directory* containingDirectory = fs->ensurePathExceptLast(*path);
-
         guard.disable();
 
-        auto hostDevice = std::unique_ptr<HostDevice>(new HostDevice(fs, containingDirectory, path->last(), fd));
-        return containingDirectory->addFile(std::move(hostDevice));
+        return std::unique_ptr<HostDevice>(new HostDevice(path.last(), fd));
     }
 
     void HostDevice::close() {

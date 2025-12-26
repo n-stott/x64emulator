@@ -26,19 +26,19 @@
 namespace kernel::gnulinux {
 
     FS::FS() {
-        root_ = HostDirectory::tryCreateRoot(this);
+        root_ = HostDirectory::tryCreateRoot();
         verify(!!root_, "Unable to create root directory");
         findCurrentWorkDirectory();
-        auto ttyname = Host::ttyname();
-        if(ttyname) {
-            tty_ = Tty::tryCreateAndAdd(this, root_.get(), ttyname.value(), false);
-            verify(!!tty_, "Unable to create tty");
-            createStandardStreams(tty_->path());
-        } else {
-            tty_ = Tty::tryCreateAndAdd(this, root_.get(), "/dev/tty", false);
-            verify(!!tty_, "Unable to create tty");
-            createStandardStreams(tty_->path());
+        {
+            auto ttyname = Host::ttyname().value_or("/dev/tty");
+            auto ttypath = Path::tryCreate(ttyname);
+            verify(!!ttypath, "Unable to create tty path");
+            auto tty = Tty::tryCreate(*ttypath, false);
+            verify(!!tty, "Unable to create tty");
+            auto* dir = ensurePathExceptLast(*ttypath);
+            tty_ = dir->addFile(std::move(tty));
         }
+        createStandardStreams(tty_->path());
     }
 
     void FS::createStandardStreams(const Path& ttypath) {
@@ -74,7 +74,10 @@ namespace kernel::gnulinux {
         verify(fileDescriptors_.size() == 3);
 
         // create a proc fs
-        procfs_ = ProcFS::tryCreateAndAdd(this, root_.get(), "/proc");
+        Path proc("proc");
+        auto procfs = ProcFS::tryCreate(proc);
+        Directory* procParent = ensurePathExceptLast(proc);
+        procfs_ = procParent->addFile(std::move(procfs));
         verify(!!procfs_, "Unable to create procFS");
 
         // create directory for that pid
@@ -82,13 +85,19 @@ namespace kernel::gnulinux {
         verify(!!piddir, fmt::format("Unable to create /proc/{}", pid));
 
         // create symlink to that directory
-        Path selfPath("proc", fmt::format("{}", pid));
-        auto* selfsymlink = ShadowSymlink::tryCreateAndAdd(this, procfs_, "self", selfPath.absolute());
+        Path self("proc", "self");
+        Path selfLink("proc", fmt::format("{}", pid));
+        auto selfsymlink = ShadowSymlink::tryCreate(self, selfLink.absolute());
         verify(!!selfsymlink, "Unable to create /proc/self");
+        Directory* selfParent = ensurePathExceptLast(self);
+        selfParent->addFile(std::move(selfsymlink));
 
         // add symlink /proc/{pid}/exe to the executable path
-        auto* exesymlink = ShadowSymlink::tryCreateAndAdd(this, piddir, "exe", programFilePath.absolute());
+        Path exe("proc", fmt::format("{}", pid), "exe");
+        auto exesymlink = ShadowSymlink::tryCreate(exe, programFilePath.absolute());
         verify(!!exesymlink, "Unable to create /proc/{pid}/exe");
+        Directory* exeParent = ensurePathExceptLast(exe);
+        exeParent->addFile(std::move(exesymlink));
     }
 
     FS::~FS() = default;
@@ -334,38 +343,46 @@ namespace kernel::gnulinux {
         if(canUseHostFile) {
             if(creationFlags.test(CreationFlags::DIRECTORY)) {
                 // open the directory
-                auto* hostBackedDirectory = HostDirectory::tryCreateAndAdd(this, root_.get(), path.absolute());
-                if(!hostBackedDirectory) {
-                    // TODO: return the actual value of errno
-                    return FS::FD{-ENOENT};
-                }
-                
-                // create and add the node to the filesystem
-                hostBackedDirectory->open();
-                return openNode(hostBackedDirectory);
-            } else {
-                // try open the directory
-                auto* hostBackedDirectory = HostDirectory::tryCreateAndAdd(this, root_.get(), path.absolute());
+                auto hostBackedDirectory = HostDirectory::tryCreate(path);
                 if(!!hostBackedDirectory) {
                     // create and add the node to the filesystem
-                    hostBackedDirectory->open();
-                    return openNode(hostBackedDirectory);
+                    Directory* parent = ensurePathExceptLast(path);
+                    HostDirectory* dir = parent->addFile<HostDirectory>(std::move(hostBackedDirectory));
+                    dir->open();
+                    return openNode(dir);
+                }
+                
+                // TODO: return the actual value of errno
+                return FS::FD{-ENOENT};
+            } else {
+                // try open the directory
+                auto hostBackedDirectory = HostDirectory::tryCreate(path);
+                if(!!hostBackedDirectory) {
+                    // create and add the node to the filesystem
+                    Directory* parent = ensurePathExceptLast(path);
+                    HostDirectory* dir = parent->addFile<HostDirectory>(std::move(hostBackedDirectory));
+                    dir->open();
+                    return openNode(dir);
                 }
 
                 // try open the file
-                auto* hostBackedFile = HostFile::tryCreateAndAdd(this, root_.get(), path.absolute(), accessMode, closeOnExec);
+                auto hostBackedFile = HostFile::tryCreate(path, accessMode, closeOnExec);
                 if(!!hostBackedFile) {
+                    Directory* parent = ensurePathExceptLast(path);
+                    HostFile* file = parent->addFile<HostFile>(std::move(hostBackedFile));
                     // create and add the node to the filesystem
-                    hostBackedFile->open();
-                    return openNode(hostBackedFile);
+                    file->open();
+                    return openNode(file);
                 }
 
                 // try open device
-                auto* hostDevice = HostDevice::tryCreateAndAdd(this, root_.get(), path.absolute());
+                auto hostDevice = HostDevice::tryCreate(path);
                 if(!!hostDevice) {
                     // create and add the node to the filesystem
-                    hostDevice->open();
-                    return openNode(hostDevice);
+                    Directory* parent = ensurePathExceptLast(path);
+                    HostDevice* device = parent->addFile<HostDevice>(std::move(hostDevice));
+                    device->open();
+                    return openNode(device);
                 }
 
                 // TODO: return the actual value of errno
@@ -374,22 +391,26 @@ namespace kernel::gnulinux {
         } else {
             // open the file
             bool createIfNotFound = creationFlags.test(CreationFlags::CREAT);
-            auto* shadowFile = ShadowFile::tryCreateAndAdd(this, root_.get(), path.absolute(), createIfNotFound);
+            auto shadowFile = ShadowFile::tryCreate(path, createIfNotFound);
             if(!!shadowFile) {
                 if(creationFlags.test(CreationFlags::TRUNC)) shadowFile->truncate(0);
                 shadowFile->setWritable(accessMode.test(AccessMode::WRITE));
                 
                 // create and add the node to the filesystem
-                shadowFile->open();
-                return openNode(shadowFile);
+                Directory* parent = ensurePathExceptLast(path);
+                ShadowFile* file = parent->addFile<ShadowFile>(std::move(shadowFile));
+                file->open();
+                return openNode(file);
             }
 
             // try open device
-            auto* shadowDevice = ShadowDevice::tryCreateAndAdd(this, root_.get(), path.absolute(), closeOnExec);
+            auto shadowDevice = ShadowDevice::tryCreate(path, closeOnExec);
             if(!!shadowDevice) {
                 // create and add the node to the filesystem
-                shadowDevice->open();
-                return openNode(shadowDevice);
+                Directory* parent = ensurePathExceptLast(path);
+                Device* device = parent->addFile(std::move(shadowDevice));
+                device->open();
+                return openNode(device);
             }
 
             // TODO: return the actual value of errno
@@ -471,10 +492,13 @@ namespace kernel::gnulinux {
             Symlink* symlink = static_cast<Symlink*>(file);
             return symlink->readlink(bufferSize);
         } else {
-            auto* symlink = HostSymlink::tryCreateAndAdd(this, root_.get(), path.absolute());
-            if(!symlink) return ErrnoOrBuffer(-EINVAL);
+            // create and add the node to the filesystem
+            auto hostSymlink = HostSymlink::tryCreate(path);
+            if(!hostSymlink) return ErrnoOrBuffer(-EINVAL);
+            Directory* parent = ensurePathExceptLast(path);
+            Symlink* symlink = parent->addFile(std::move(hostSymlink));
             verify(symlink->isSymlink());
-            return static_cast<Symlink*>(symlink)->readlink(bufferSize);
+            return symlink->readlink(bufferSize);
         }
     }
 
@@ -484,7 +508,7 @@ namespace kernel::gnulinux {
 
     FS::FD FS::memfd_create(const std::string& name, unsigned int flags) {
         verify(!Host::MemfdFlags::isOther(flags), "Allow (and ignore) cloexec and allow_sealing");
-        auto shadowFile = ShadowFile::tryCreate(this, name);
+        auto shadowFile = ShadowFile::tryCreate(name);
         if(!shadowFile) return FS::FD{-ENOMEM};
         shadowFile->setDeleteAfterClose();
         BitFlags<AccessMode> accessMode { AccessMode::READ, AccessMode::WRITE };
@@ -829,7 +853,7 @@ namespace kernel::gnulinux {
 
     FS::FD FS::eventfd2(unsigned int initval, int flags) {
         verify(!Host::Eventfd2Flags::isSemaphore(flags), "only closeOnExec and nonBlock are allowed on eventfd2");
-        std::unique_ptr<Event> event = Event::tryCreate(this, initval, flags);
+        std::unique_ptr<Event> event = Event::tryCreate(initval, flags);
         verify(!!event, "Unable to create event");
         BitFlags<AccessMode> accessMode { AccessMode::READ, AccessMode::WRITE };
         BitFlags<StatusFlags> statusFlags { };
@@ -840,7 +864,7 @@ namespace kernel::gnulinux {
     }
 
     FS::FD FS::epoll_create1(int flags) {
-        std::unique_ptr<Epoll> epoll = std::make_unique<Epoll>(this, flags);
+        std::unique_ptr<Epoll> epoll = std::make_unique<Epoll>(flags);
         verify(!!epoll, "Unable to create epoll");
         BitFlags<AccessMode> accessMode { AccessMode::READ, AccessMode::WRITE };
         BitFlags<StatusFlags> statusFlags { };
@@ -916,7 +940,7 @@ namespace kernel::gnulinux {
     }
 
     FS::FD FS::socket(int domain, int type, int protocol) {
-        auto socket = Socket::tryCreate(this, domain, type, protocol);
+        auto socket = Socket::tryCreate(domain, type, protocol);
         // TODO: return the actual value of errno
         if(!socket) return FS::FD{-EINVAL};
         BitFlags<AccessMode> accessMode { AccessMode::READ, AccessMode::WRITE };
@@ -1052,7 +1076,7 @@ namespace kernel::gnulinux {
 
     ErrnoOr<std::pair<FS::FD, FS::FD>> FS::pipe2(int flags) {
         using ReturnType = ErrnoOr<std::pair<FS::FD, FS::FD>>;
-        auto pipe = Pipe::tryCreate(this, flags);
+        auto pipe = Pipe::tryCreate(flags);
         if(!pipe) return ReturnType(-EMFILE);
 
         auto readingSide = pipe->tryCreateReader();

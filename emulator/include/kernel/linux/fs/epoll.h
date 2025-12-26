@@ -7,7 +7,7 @@ namespace kernel::gnulinux {
 
     class Epoll : public File {
     public:
-        explicit Epoll(FS* fs, int flags) : File(fs), flags_(flags) { }
+        explicit Epoll(int flags) : flags_(flags) { }
 
         bool isEpoll() const override { return true; }
 

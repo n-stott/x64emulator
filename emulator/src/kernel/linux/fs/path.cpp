@@ -53,5 +53,11 @@ namespace kernel::gnulinux {
 
     }
 
+    std::optional<Path> Path::tryAppend(const std::string& element) const {
+        auto attempt = tryJoin(absolute(), element);
+        if(!attempt) return {};
+        return *attempt;
+    }
+
 
 }

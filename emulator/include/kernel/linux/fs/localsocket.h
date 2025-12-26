@@ -11,7 +11,7 @@ namespace kernel::gnulinux {
 
     class LocalSocket : public Socket {
     public:
-        static std::unique_ptr<LocalSocket> tryCreate(FS* fs, int domain, int type, int protocol);
+        static std::unique_ptr<LocalSocket> tryCreate(int domain, int type, int protocol);
 
         ssize_t recvmsg(int flags, Message* message) const override;
         ssize_t sendmsg(int flags, const Message& message) const override;
@@ -21,7 +21,7 @@ namespace kernel::gnulinux {
         }
 
     private:
-        LocalSocket(FS* fs, int fd, int domain, int type, int protocol);
+        LocalSocket(int fd, int domain, int type, int protocol);
     };
 
 }

@@ -10,7 +10,7 @@ namespace kernel::gnulinux {
 
     class RegularFile : public File {
     public:
-        explicit RegularFile(FS* fs, Directory* dir, std::string name) : File(fs, dir, std::move(name)) { }
+        explicit RegularFile(std::string name) : File(std::move(name)) { }
 
         bool isRegularFile() const override final { return true; }
     };

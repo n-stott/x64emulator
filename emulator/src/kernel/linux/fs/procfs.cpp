@@ -1,23 +1,10 @@
 #include "kernel/linux/fs/procfs.h"
-#include "kernel/linux/fs/fs.h"
 #include "kernel/linux/fs/path.h"
 
 namespace kernel::gnulinux {
 
-    ProcFS* ProcFS::tryCreateAndAdd(FS* fs, Directory* parent, const std::string& name) {
-        std::string pathname;
-        if(!parent || parent == fs->root()) {
-            pathname = name;
-        } else {
-            pathname = (parent->path().absolute() + "/" + name);
-        }
-
-        auto path = Path::tryCreate(pathname);
-        verify(!!path, "Unable to create path");
-        Directory* containingDirectory = fs->ensurePathExceptLast(*path);
-
-        auto procfs = std::unique_ptr<ProcFS>(new ProcFS(fs, containingDirectory, path->last()));
-        return containingDirectory->addFile(std::move(procfs));
+    std::unique_ptr<ProcFS> ProcFS::tryCreate(const Path& path) {
+        return std::unique_ptr<ProcFS>(new ProcFS(path.last()));
     }
 
     ErrnoOrBuffer ProcFS::stat() {

@@ -16,8 +16,8 @@ namespace kernel::gnulinux {
 
     class File : public FsObject {
     public:
-        explicit File(FS* fs) : FsObject(fs), parent_(nullptr), name_("_anonymous_file_") { }
-        explicit File(FS* fs, Directory* parent, std::string name) : FsObject(fs), parent_(parent), name_(std::move(name)) { }
+        File() : parent_(nullptr), name_("_anonymous_file_") { }
+        explicit File(std::string name) : name_(std::move(name)) { }
 
         virtual bool isShadow() const { return false; }
 
@@ -83,6 +83,10 @@ namespace kernel::gnulinux {
         virtual ErrnoOrBuffer ioctl(OpenFileDescription&, Ioctl request, const Buffer& buffer) = 0;
 
         virtual std::string className() const = 0;
+
+        void setParent(Directory* parent) {
+            parent_ = parent;
+        }
 
         void rename(Directory* parent, const std::string& name) {
             parent_ = parent;
