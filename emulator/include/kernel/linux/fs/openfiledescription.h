@@ -2,7 +2,7 @@
 #define OPENFILEDESCRIPTION_H
 
 #include "kernel/linux/fs/file.h"
-#include "kernel/linux/fs/fs.h"
+#include "kernel/linux/fs/fsflags.h"
 #include "bitflags.h"
 #include "verify.h"
 
@@ -23,12 +23,12 @@ namespace kernel::gnulinux {
             YES,
         };
 
-        explicit OpenFileDescription(File* file, BitFlags<FS::AccessMode> accessMode, BitFlags<FS::StatusFlags> statusFlags) :
+        explicit OpenFileDescription(File* file, BitFlags<AccessMode> accessMode, BitFlags<StatusFlags> statusFlags) :
                 file_(file), accessMode_(accessMode), statusFlags_(statusFlags) { }
 
         File* file() { return file_; }
-        BitFlags<FS::AccessMode>& accessMode() { return accessMode_; }
-        BitFlags<FS::StatusFlags>& statusFlags() { return statusFlags_; }
+        BitFlags<AccessMode>& accessMode() { return accessMode_; }
+        BitFlags<StatusFlags>& statusFlags() { return statusFlags_; }
         off_t offset() const { return offset_; }
         
         bool isLockedExclusively() const { return lock_ == Lock::EXCLUSIVE; }
@@ -95,8 +95,8 @@ namespace kernel::gnulinux {
     private:
         File* file_ { nullptr };
         off_t offset_ { 0 };
-        BitFlags<FS::AccessMode> accessMode_;
-        BitFlags<FS::StatusFlags> statusFlags_;
+        BitFlags<AccessMode> accessMode_;
+        BitFlags<StatusFlags> statusFlags_;
         Lock lock_ { Lock::NONE };
     };
 

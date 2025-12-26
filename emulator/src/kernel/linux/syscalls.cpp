@@ -1432,7 +1432,7 @@ namespace kernel::gnulinux {
     int Sys::epoll_ctl(int epfd, int op, int fd, x64::Ptr event) {
         verify(!!event, "Null event in epoll_ctl not supported");
         EpollEvent ee = mmu_.readFromMmu<EpollEvent>(event);
-        int ret = kernel_.fs().epoll_ctl(FS::FD{epfd}, op, FS::FD{fd}, BitFlags<FS::EpollEventType>::fromIntegerType(ee.event), ee.data);
+        int ret = kernel_.fs().epoll_ctl(FS::FD{epfd}, op, FS::FD{fd}, BitFlags<EpollEventType>::fromIntegerType(ee.event), ee.data);
         if(kernel_.logSyscalls()) {
             print("Sys::epoll_ctl(epfd={}, op={}, fd={}, event=[event={:#x}, data={}]) = {}", epfd, op, fd, ee.event, ee.data, ret);
         }
@@ -1893,10 +1893,10 @@ namespace kernel::gnulinux {
 
     int Sys::openat(int dirfd, x64::Ptr pathname, int flags, mode_t mode) {
         std::string path = mmu_.readString(pathname);
-        BitFlags<FS::AccessMode> accessMode = FS::toAccessMode(flags);
-        BitFlags<FS::CreationFlags> creationFlags = FS::toCreationFlags(flags);
-        BitFlags<FS::StatusFlags> statusFlags = FS::toStatusFlags(flags);
-        FS::Permissions permissions = FS::fromMode(mode);
+        BitFlags<AccessMode> accessMode = FS::toAccessMode(flags);
+        BitFlags<CreationFlags> creationFlags = FS::toCreationFlags(flags);
+        BitFlags<StatusFlags> statusFlags = FS::toStatusFlags(flags);
+        Permissions permissions = FS::fromMode(mode);
         auto filepath = kernel_.fs().resolvePath(FS::FD{dirfd}, kernel_.fs().cwd(), path);
         FS::FD fd = [&]() {
             if(!filepath) return FS::FD{-ENOENT};
@@ -1904,13 +1904,13 @@ namespace kernel::gnulinux {
         }();
         if(kernel_.logSyscalls()) {
             std::string flagsString = fmt::format("[{}{}{}{}{}{}{}]",
-                accessMode.test(FS::AccessMode::READ)  ? "Read " : "",
-                accessMode.test(FS::AccessMode::WRITE) ? "Write " : "",
-                statusFlags.test(FS::StatusFlags::APPEND) ? "Append " : "",
-                creationFlags.test(FS::CreationFlags::TRUNC) ? "Truncate " : "",
-                creationFlags.test(FS::CreationFlags::CREAT) ? "Create " : "",
-                creationFlags.test(FS::CreationFlags::CLOEXEC) ? "CloseOnExec " : "",
-                creationFlags.test(FS::CreationFlags::DIRECTORY) ? "Directory " : "");
+                accessMode.test(AccessMode::READ)  ? "Read " : "",
+                accessMode.test(AccessMode::WRITE) ? "Write " : "",
+                statusFlags.test(StatusFlags::APPEND) ? "Append " : "",
+                creationFlags.test(CreationFlags::TRUNC) ? "Truncate " : "",
+                creationFlags.test(CreationFlags::CREAT) ? "Create " : "",
+                creationFlags.test(CreationFlags::CLOEXEC) ? "CloseOnExec " : "",
+                creationFlags.test(CreationFlags::DIRECTORY) ? "Directory " : "");
             print("Sys::openat(dirfd={}, path={}, flags={}, mode={:o}) = {}", dirfd, path, flagsString, mode, fd.fd);
         }
         return fd.fd;

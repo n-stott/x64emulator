@@ -94,7 +94,7 @@ namespace kernel::gnulinux {
 
     ssize_t ShadowFile::write(OpenFileDescription& openFileDescription, const u8* buf, size_t count) {
         if(!isWritable()) return -EINVAL;
-        if(openFileDescription.statusFlags().test(FS::StatusFlags::APPEND)) openFileDescription.lseek(0, SEEK_END);
+        if(openFileDescription.statusFlags().test(StatusFlags::APPEND)) openFileDescription.lseek(0, SEEK_END);
         off_t offset = openFileDescription.offset();
         if(offset < 0) return -EINVAL;
         if((size_t)offset + count > data_.size()) {

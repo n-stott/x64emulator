@@ -10,10 +10,10 @@ int main() {
     
     {
         Path path("tmp", "testfile");
-        BitFlags<FS::AccessMode> accessMode(FS::AccessMode::READ, FS::AccessMode::WRITE);
-        BitFlags<FS::CreationFlags> createFlags(FS::CreationFlags::CREAT);
-        BitFlags<FS::StatusFlags> statusFlags(FS::StatusFlags::RDWR);
-        FS::Permissions permissions { true, true, true };
+        BitFlags<AccessMode> accessMode(AccessMode::READ, AccessMode::WRITE);
+        BitFlags<CreationFlags> createFlags(CreationFlags::CREAT);
+        BitFlags<StatusFlags> statusFlags(StatusFlags::RDWR);
+        Permissions permissions { true, true, true };
         FS::FD fd = fs.open(path, accessMode, createFlags, statusFlags, permissions);
         if(fd.fd < 0) return 1;
         
@@ -32,10 +32,10 @@ int main() {
 
     {
         Path path("home", "myfile");
-        BitFlags<FS::AccessMode> accessMode(FS::AccessMode::READ, FS::AccessMode::WRITE);
-        BitFlags<FS::CreationFlags> createFlags;
-        BitFlags<FS::StatusFlags> statusFlags(FS::StatusFlags::RDWR);
-        FS::Permissions permissions { true, true, true };
+        BitFlags<AccessMode> accessMode(AccessMode::READ, AccessMode::WRITE);
+        BitFlags<CreationFlags> createFlags;
+        BitFlags<StatusFlags> statusFlags(StatusFlags::RDWR);
+        Permissions permissions { true, true, true };
         FS::FD fd = fs.open(path, accessMode, createFlags, statusFlags, permissions);
         if(fd.fd < 0) return 1;
         

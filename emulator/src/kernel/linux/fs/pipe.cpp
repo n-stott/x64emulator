@@ -53,7 +53,7 @@ namespace kernel::gnulinux {
     }
 
     ErrnoOrBuffer Pipe::read(OpenFileDescription& openFileDescription, size_t size) {
-        bool nonBlocking = openFileDescription.statusFlags().test(FS::StatusFlags::NONBLOCK);
+        bool nonBlocking = openFileDescription.statusFlags().test(StatusFlags::NONBLOCK);
         if(data_.empty() && nonBlocking) {
             if(writeEndpoints_.empty()) {
                 return ErrnoOrBuffer(Buffer{});
@@ -63,7 +63,7 @@ namespace kernel::gnulinux {
         }
         verify(!data_.empty(), [&]() {
             fmt::print("Reading from blocking empty pipe not implemented\n");
-            fmt::print("Pipe is non-blocking: {}\n", openFileDescription.statusFlags().test(FS::StatusFlags::NONBLOCK));
+            fmt::print("Pipe is non-blocking: {}\n", openFileDescription.statusFlags().test(StatusFlags::NONBLOCK));
         });
         size_t readSize = std::min(size, data_.size());
         Buffer buf(readSize, 0x0);

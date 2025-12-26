@@ -16,10 +16,10 @@
 
 namespace kernel::gnulinux {
 
-    std::unique_ptr<HostFile> HostFile::tryCreate(const Path& path, BitFlags<FS::AccessMode> accessMode, bool closeOnExec) {
+    std::unique_ptr<HostFile> HostFile::tryCreate(const Path& path, BitFlags<AccessMode> accessMode, bool closeOnExec) {
         std::string pathname = path.absolute();
 
-        verify(!accessMode.test(FS::AccessMode::WRITE), "HostFile should not have write access");
+        verify(!accessMode.test(AccessMode::WRITE), "HostFile should not have write access");
         int flags = O_RDONLY;
         if(closeOnExec) flags |= O_CLOEXEC;
         int fd = ::openat(AT_FDCWD, pathname.c_str(), flags);

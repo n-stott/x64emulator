@@ -31,7 +31,7 @@ namespace kernel::gnulinux {
     ErrnoOrBuffer Event::read(OpenFileDescription& openFileDescription, size_t size) {
         if(size < 8) return ErrnoOrBuffer(-EINVAL);
         if(counter_ == 0) {
-            if(openFileDescription.statusFlags().test(FS::StatusFlags::NONBLOCK)) {
+            if(openFileDescription.statusFlags().test(StatusFlags::NONBLOCK)) {
                 return ErrnoOrBuffer(-EAGAIN);
             } else {
                 verify(false, "Blocking is Event::read not supported");

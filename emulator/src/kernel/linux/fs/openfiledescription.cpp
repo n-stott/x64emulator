@@ -8,9 +8,9 @@ namespace kernel::gnulinux {
             verify(buffer.size() == sizeof(int));
             memcpy(&setNonBlocking, buffer.data(), buffer.size());
             if(setNonBlocking) {
-                statusFlags_.add(FS::StatusFlags::NONBLOCK);
+                statusFlags_.add(StatusFlags::NONBLOCK);
             } else {
-                statusFlags_.remove(FS::StatusFlags::NONBLOCK);
+                statusFlags_.remove(StatusFlags::NONBLOCK);
             }
             return ErrnoOrBuffer(0);
         }

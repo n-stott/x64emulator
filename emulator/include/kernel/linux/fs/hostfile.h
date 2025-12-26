@@ -1,8 +1,9 @@
 #ifndef HOSTFILE_H
 #define HOSTFILE_H
 
+#include "kernel/linux/fs/fsflags.h"
 #include "kernel/linux/fs/regularfile.h"
-#include "kernel/linux/fs/fs.h"
+#include "bitflags.h"
 #include <fmt/core.h>
 #include <memory>
 #include <string>
@@ -14,7 +15,7 @@ namespace kernel::gnulinux {
 
     class HostFile : public RegularFile {
     public:
-        static std::unique_ptr<HostFile> tryCreate(const Path& path, BitFlags<FS::AccessMode> accessMode, bool closeOnExec);
+        static std::unique_ptr<HostFile> tryCreate(const Path& path, BitFlags<AccessMode> accessMode, bool closeOnExec);
 
         bool isReadable() const override { return true; }
         bool isWritable() const override { return false; }

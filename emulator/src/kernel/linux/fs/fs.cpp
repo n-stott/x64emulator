@@ -102,14 +102,14 @@ namespace kernel::gnulinux {
 
     FS::~FS() = default;
 
-    BitFlags<FS::AccessMode> FS::toAccessMode(int flags) {
+    BitFlags<AccessMode> FS::toAccessMode(int flags) {
         BitFlags<AccessMode> am;
         if(Host::Open::isReadWrite(flags) || Host::Open::isReadOnly(flags)) am.add(AccessMode::READ);
         if(Host::Open::isReadWrite(flags) || Host::Open::isWriteOnly(flags)) am.add(AccessMode::WRITE);
         return am;
     }
 
-    BitFlags<FS::CreationFlags> FS::toCreationFlags(int flags) {
+    BitFlags<CreationFlags> FS::toCreationFlags(int flags) {
         BitFlags<CreationFlags> cf;
         if(Host::Open::isCloseOnExec(flags)) cf.add(CreationFlags::CLOEXEC);
         if(Host::Open::isCreatable(flags))   cf.add(CreationFlags::CREAT);
@@ -122,7 +122,7 @@ namespace kernel::gnulinux {
         return cf;
     }
 
-    BitFlags<FS::StatusFlags> FS::toStatusFlags(int flags) {
+    BitFlags<StatusFlags> FS::toStatusFlags(int flags) {
         BitFlags<StatusFlags> sf;
         // Also update assembleAccessModeAndFileStatusFlags if more flags are supported
         if(Host::Open::isAppending(flags)) sf.add(StatusFlags::APPEND);
@@ -137,7 +137,7 @@ namespace kernel::gnulinux {
         return sf;
     }
 
-    FS::Permissions FS::fromMode(unsigned int mode) {
+    Permissions FS::fromMode(unsigned int mode) {
         return Permissions {
             Host::Mode::isUserReadable(mode),
             Host::Mode::isUserWritable(mode),
@@ -307,9 +307,9 @@ namespace kernel::gnulinux {
     }
 
     FS::FD FS::open(const Path& path,
-            BitFlags<FS::AccessMode> accessMode,
-            BitFlags<FS::CreationFlags> creationFlags,
-            BitFlags<FS::StatusFlags> statusFlags,
+            BitFlags<AccessMode> accessMode,
+            BitFlags<CreationFlags> creationFlags,
+            BitFlags<StatusFlags> statusFlags,
             Permissions permissions) {
         (void)permissions;
         // For some reason, 64-bit linux adds this flag without notification
