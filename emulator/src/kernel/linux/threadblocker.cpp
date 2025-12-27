@@ -198,7 +198,7 @@ namespace kernel::gnulinux {
 
     bool EpollWaitBlocker::tryUnblock(FS& fs) {
         std::vector<FS::EpollEvent> epollEvents;
-        fs.doEpollWait(FS::FD{epfd_}, &epollEvents);
+        fs.doEpollWait(FD{epfd_}, &epollEvents);
         epollEvents.resize(std::min(maxevents_, epollEvents.size()));
         bool timeout = false;
         if(!!timeLimit_) {

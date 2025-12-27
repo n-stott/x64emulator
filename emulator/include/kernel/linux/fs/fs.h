@@ -25,6 +25,13 @@ namespace kernel::gnulinux {
     class ProcFS;
     class Symlink;
 
+    struct FD {
+        int fd;
+
+        bool operator==(FD other) const { return fd == other.fd; }
+        bool operator!=(FD other) const { return fd != other.fd; }
+    };
+
     class FS {
     public:
         FS();
@@ -36,13 +43,6 @@ namespace kernel::gnulinux {
         static BitFlags<CreationFlags> toCreationFlags(int flags);
         static BitFlags<StatusFlags> toStatusFlags(int flags);
         static Permissions fromMode(unsigned int mode);
-
-        struct FD {
-            int fd;
-
-            bool operator==(FD other) const { return fd == other.fd; }
-            bool operator!=(FD other) const { return fd != other.fd; }
-        };
 
         Directory* root() { return root_.get(); }
         Directory* cwd() { return currentWorkDirectory_; }
@@ -216,7 +216,7 @@ namespace kernel::gnulinux {
         std::vector<std::unique_ptr<Pipe>> pipes_;
         Directory* currentWorkDirectory_ { nullptr };
         std::vector<std::unique_ptr<FileDescriptor>> fileDescriptors_;
-        std::list<OpenFileDescription> openFileDescriptions_;
+        std::vector<std::unique_ptr<OpenFileDescription>> openFileDescriptions_;
     };
 
 }

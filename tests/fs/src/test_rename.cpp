@@ -14,7 +14,7 @@ int main() {
         BitFlags<CreationFlags> createFlags(CreationFlags::CREAT);
         BitFlags<StatusFlags> statusFlags(StatusFlags::RDWR);
         Permissions permissions { true, true, true };
-        FS::FD fd = fs.open(path, accessMode, createFlags, statusFlags, permissions);
+        FD fd = fs.open(path, accessMode, createFlags, statusFlags, permissions);
         if(fd.fd < 0) return 1;
         
         if(fs.close(fd) < 0) {
@@ -36,7 +36,7 @@ int main() {
         BitFlags<CreationFlags> createFlags;
         BitFlags<StatusFlags> statusFlags(StatusFlags::RDWR);
         Permissions permissions { true, true, true };
-        FS::FD fd = fs.open(path, accessMode, createFlags, statusFlags, permissions);
+        FD fd = fs.open(path, accessMode, createFlags, statusFlags, permissions);
         if(fd.fd < 0) return 1;
         
         if(fs.close(fd) < 0) {

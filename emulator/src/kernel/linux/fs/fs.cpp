@@ -145,17 +145,17 @@ namespace kernel::gnulinux {
         };
     }
 
-    FS::FD FS::insertNode(std::unique_ptr<File> file, BitFlags<AccessMode> accessMode, BitFlags<StatusFlags> statusFlags, bool closeOnExec) {
+    FD FS::insertNode(std::unique_ptr<File> file, BitFlags<AccessMode> accessMode, BitFlags<StatusFlags> statusFlags, bool closeOnExec) {
         File* filePtr = file.get();
         orphanFiles_.push_back(std::move(file));
         FD fd = allocateFd();
-        openFileDescriptions_.push_back(OpenFileDescription(filePtr, accessMode, statusFlags));
-        fileDescriptors_[fd.fd] = std::make_unique<FileDescriptor>(&openFileDescriptions_.back(), closeOnExec);
+        openFileDescriptions_.push_back(std::make_unique<OpenFileDescription>(filePtr, accessMode, statusFlags));
+        fileDescriptors_[fd.fd] = std::make_unique<FileDescriptor>(openFileDescriptions_.back().get(), closeOnExec);
         filePtr->ref();
         return fd;
     }
 
-    FS::FD FS::allocateFd() {
+    FD FS::allocateFd() {
         for(int i = 0; i < (int)fileDescriptors_.size(); ++i) {
             if(fileDescriptors_[i] == nullptr) return FD{i};
         }
@@ -306,7 +306,7 @@ namespace kernel::gnulinux {
         return file;
     }
 
-    FS::FD FS::open(const Path& path,
+    FD FS::open(const Path& path,
             BitFlags<AccessMode> accessMode,
             BitFlags<CreationFlags> creationFlags,
             BitFlags<StatusFlags> statusFlags,
@@ -326,8 +326,8 @@ namespace kernel::gnulinux {
 
         auto openNode = [&](File* filePtr) -> FD {
             FD fd = allocateFd();
-            openFileDescriptions_.push_back(OpenFileDescription(filePtr, accessMode, statusFlags));
-            fileDescriptors_[fd.fd] = std::make_unique<FileDescriptor>(&openFileDescriptions_.back(), closeOnExec);
+            openFileDescriptions_.push_back(std::make_unique<OpenFileDescription>(filePtr, accessMode, statusFlags));
+            fileDescriptors_[fd.fd] = std::make_unique<FileDescriptor>(openFileDescriptions_.back().get(), closeOnExec);
             filePtr->ref();
             return fd;
         };
@@ -353,7 +353,7 @@ namespace kernel::gnulinux {
                 }
                 
                 // TODO: return the actual value of errno
-                return FS::FD{-ENOENT};
+                return FD{-ENOENT};
             } else {
                 // try open the directory
                 auto hostBackedDirectory = HostDirectory::tryCreate(path);
@@ -386,7 +386,7 @@ namespace kernel::gnulinux {
                 }
 
                 // TODO: return the actual value of errno
-                return FS::FD{-ENOENT};
+                return FD{-ENOENT};
             }
         } else {
             // open the file
@@ -414,12 +414,12 @@ namespace kernel::gnulinux {
             }
 
             // TODO: return the actual value of errno
-            return FS::FD{-ENOENT};
+            return FD{-ENOENT};
         }
         return FD{-EINVAL};
     }
 
-    FS::FD FS::dup(FD fd) {
+    FD FS::dup(FD fd) {
         OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
         if(!openFileDescription) return FD{-EBADF};
         FD newFd = allocateFd();
@@ -428,7 +428,7 @@ namespace kernel::gnulinux {
         return newFd;
     }
 
-    FS::FD FS::dup2(FD oldfd, FD newfd) {
+    FD FS::dup2(FD oldfd, FD newfd) {
         OpenFileDescription* oldOfd = findOpenFileDescription(oldfd);
         if(!oldOfd) return FD{-EBADF};
         if(oldfd == newfd) return newfd;
@@ -443,7 +443,7 @@ namespace kernel::gnulinux {
         return newfd;
     }
 
-    FS::FD FS::dup3(FS::FD oldfd, FS::FD newfd, int flags) {
+    FD FS::dup3(FD oldfd, FD newfd, int flags) {
         if(oldfd == newfd) return FD{-EINVAL};
         OpenFileDescription* oldOfd = findOpenFileDescription(oldfd);
         if(!oldOfd) return FD{-EBADF};
@@ -506,10 +506,10 @@ namespace kernel::gnulinux {
         return Host::access(path.absolute(), mode);
     }
 
-    FS::FD FS::memfd_create(const std::string& name, unsigned int flags) {
+    FD FS::memfd_create(const std::string& name, unsigned int flags) {
         verify(!Host::MemfdFlags::isOther(flags), "Allow (and ignore) cloexec and allow_sealing");
         auto shadowFile = ShadowFile::tryCreate(name);
-        if(!shadowFile) return FS::FD{-ENOMEM};
+        if(!shadowFile) return FD{-ENOMEM};
         shadowFile->setDeleteAfterClose();
         BitFlags<AccessMode> accessMode { AccessMode::READ, AccessMode::WRITE };
         BitFlags<StatusFlags> statusFlags { };
@@ -648,10 +648,10 @@ namespace kernel::gnulinux {
 
     void FS::checkFileDescriptions() const {
 #ifndef NDEBUG
-        for(const OpenFileDescription& ofd : openFileDescriptions_) {
+        for(const auto& ofd : openFileDescriptions_) {
             assert(std::any_of(fileDescriptors_.begin(), fileDescriptors_.end(), [&](const auto& desc) {
                 if(!desc) return false;
-                return desc->openFiledescription == &ofd;
+                return desc->openFiledescription == ofd.get();
             }));
         }
 #endif
@@ -665,12 +665,12 @@ namespace kernel::gnulinux {
         checkFileRefCount(file);
         fileDescriptors_[fd.fd] = nullptr;
         file->unref();
-        openFileDescriptions_.remove_if([&](auto& ofd) {
+        openFileDescriptions_.erase(std::remove_if(openFileDescriptions_.begin(), openFileDescriptions_.end(), [&](auto& ofd) {
             return std::none_of(fileDescriptors_.begin(), fileDescriptors_.end(), [&](const auto& desc) {
                 if(!desc) return false;
-                return desc->openFiledescription == &ofd;
+                return desc->openFiledescription == ofd.get();
             });
-        });
+        }), openFileDescriptions_.end());
 #ifndef NDEBUG
         checkFileRefCount(file);
         checkFileDescriptions();
@@ -851,7 +851,7 @@ namespace kernel::gnulinux {
         return 0;
     }
 
-    FS::FD FS::eventfd2(unsigned int initval, int flags) {
+    FD FS::eventfd2(unsigned int initval, int flags) {
         verify(!Host::Eventfd2Flags::isSemaphore(flags), "only closeOnExec and nonBlock are allowed on eventfd2");
         std::unique_ptr<Event> event = Event::tryCreate(initval, flags);
         verify(!!event, "Unable to create event");
@@ -863,7 +863,7 @@ namespace kernel::gnulinux {
         return fd;
     }
 
-    FS::FD FS::epoll_create1(int flags) {
+    FD FS::epoll_create1(int flags) {
         std::unique_ptr<Epoll> epoll = std::make_unique<Epoll>(flags);
         verify(!!epoll, "Unable to create epoll");
         BitFlags<AccessMode> accessMode { AccessMode::READ, AccessMode::WRITE };
@@ -939,10 +939,10 @@ namespace kernel::gnulinux {
         });
     }
 
-    FS::FD FS::socket(int domain, int type, int protocol) {
+    FD FS::socket(int domain, int type, int protocol) {
         auto socket = Socket::tryCreate(domain, type, protocol);
         // TODO: return the actual value of errno
-        if(!socket) return FS::FD{-EINVAL};
+        if(!socket) return FD{-EINVAL};
         BitFlags<AccessMode> accessMode { AccessMode::READ, AccessMode::WRITE };
         BitFlags<StatusFlags> statusFlags { };
         if(Host::SocketType::isNonBlock(type)) statusFlags.add(StatusFlags::NONBLOCK);
@@ -1074,8 +1074,8 @@ namespace kernel::gnulinux {
         return 0;
     }
 
-    ErrnoOr<std::pair<FS::FD, FS::FD>> FS::pipe2(int flags) {
-        using ReturnType = ErrnoOr<std::pair<FS::FD, FS::FD>>;
+    ErrnoOr<std::pair<FD, FD>> FS::pipe2(int flags) {
+        using ReturnType = ErrnoOr<std::pair<FD, FD>>;
         auto pipe = Pipe::tryCreate(flags);
         if(!pipe) return ReturnType(-EMFILE);
 

@@ -220,7 +220,7 @@ namespace kernel::gnulinux {
     }
 
     ssize_t Sys::read(int fd, x64::Ptr8 buf, size_t count) {
-        auto errnoOrBuffer = kernel_.fs().read(FS::FD{fd}, count);
+        auto errnoOrBuffer = kernel_.fs().read(FD{fd}, count);
         if(kernel_.logSyscalls()) {
             print("Sys::read(fd={}, buf={:#x}, count={}) = {}",
                         fd, buf.address(), count,
@@ -234,7 +234,7 @@ namespace kernel::gnulinux {
 
     ssize_t Sys::write(int fd, x64::Ptr8 buf, size_t count) {
         std::vector<u8> buffer = mmu_.readFromMmu<u8>(buf, count);
-        ssize_t ret = kernel_.fs().write(FS::FD{fd}, buffer.data(), buffer.size());
+        ssize_t ret = kernel_.fs().write(FD{fd}, buffer.data(), buffer.size());
         if(kernel_.logSyscalls()) {
             print("Sys::write(fd={}, buf={:#x}, count={}) = {}",
                         fd, buf.address(), count, ret);
@@ -243,7 +243,7 @@ namespace kernel::gnulinux {
     }
 
     int Sys::close(int fd) {
-        int ret = kernel_.fs().close(FS::FD{fd});
+        int ret = kernel_.fs().close(FD{fd});
         if(kernel_.logSyscalls()) print("Sys::close(fd={}) = {}", fd, ret);
         return ret;
     }
@@ -266,7 +266,7 @@ namespace kernel::gnulinux {
     }
 
     int Sys::fstat(int fd, x64::Ptr8 statbuf) {
-        ErrnoOrBuffer errnoOrBuffer = kernel_.fs().fstat(FS::FD{fd});
+        ErrnoOrBuffer errnoOrBuffer = kernel_.fs().fstat(FD{fd});
         if(kernel_.logSyscalls()) {
             print("Sys::fstat(fd={}, statbuf={:#x}) = {}",
                         fd, statbuf.address(), errnoOrBuffer.errorOr(0));
@@ -323,7 +323,7 @@ namespace kernel::gnulinux {
     }
 
     off_t Sys::lseek(int fd, off_t offset, int whence) {
-        off_t ret = kernel_.fs().lseek(FS::FD{fd}, offset, whence);
+        off_t ret = kernel_.fs().lseek(FD{fd}, offset, whence);
         if(kernel_.logSyscalls()) print("Sys::lseek(fd={}, offset={:#x}, whence={}) = {}", fd, offset, whence, ret);
         return ret;
     }
@@ -351,9 +351,9 @@ namespace kernel::gnulinux {
         if(base && !mmapFlags.test(x64::MAP::ANONYMOUS)) {
             u64 regionBase = base.value();
             verify(fd >= 0);
-            ErrnoOrBuffer data = kernel_.fs().pread(FS::FD{fd}, length, offset);
+            ErrnoOrBuffer data = kernel_.fs().pread(FD{fd}, length, offset);
             if(data.isError()) {
-                auto filename = kernel_.fs().filename(FS::FD{fd});
+                auto filename = kernel_.fs().filename(FD{fd});
                 warn("mmap: could not mmap file \"{}\" with fd={}", filename, fd);
                 base = (u64)data.errorOr(0);
             }
@@ -365,7 +365,7 @@ namespace kernel::gnulinux {
                 verify(mmu_.mprotect(regionBase, length, savedAndWriteable) >= 0, "mprotect failed");
                 mmu_.copyToMmu(x64::Ptr8{regionBase}, buffer.data(), buffer.size());
                 verify(mmu_.mprotect(regionBase, length, saved) >= 0, "mprotect failed");
-                auto filename = kernel_.fs().filename(FS::FD{fd});
+                auto filename = kernel_.fs().filename(FD{fd});
                 mmu_.setRegionName(regionBase, filename);
                 return 0;
             });
@@ -463,7 +463,7 @@ namespace kernel::gnulinux {
             return {};
         }(request);
         verify(!!fsrequest, "Unknown request");
-        auto errnoOrBuffer = kernel_.fs().ioctl(FS::FD{fd}, fsrequest.value(), buffer);
+        auto errnoOrBuffer = kernel_.fs().ioctl(FD{fd}, fsrequest.value(), buffer);
         if(kernel_.logSyscalls()) {
             print("Sys::ioctl(fd={}, request={}, argp={:#x}) = {}",
                         fd, Host::ioctlName(request), argp.address(),
@@ -477,7 +477,7 @@ namespace kernel::gnulinux {
     }
 
     ssize_t Sys::pread64(int fd, x64::Ptr buf, size_t count, off_t offset) {
-        auto errnoOrBuffer = kernel_.fs().pread(FS::FD{fd}, count, offset);
+        auto errnoOrBuffer = kernel_.fs().pread(FD{fd}, count, offset);
         if(kernel_.logSyscalls()) {
             print("Sys::pread64(fd={}, buf={:#x}, count={}, offset={}) = {}",
                         fd, buf.address(), count, offset,
@@ -491,7 +491,7 @@ namespace kernel::gnulinux {
 
     ssize_t Sys::pwrite64(int fd, x64::Ptr buf, size_t count, off_t offset) {
         std::vector<u8> buffer = mmu_.readFromMmu<u8>(buf, count);
-        auto errnoOrNbytes = kernel_.fs().pwrite(FS::FD{fd}, buffer.data(), buffer.size(), offset);
+        auto errnoOrNbytes = kernel_.fs().pwrite(FD{fd}, buffer.data(), buffer.size(), offset);
         if(kernel_.logSyscalls()) {
             print("Sys::pwrite64(fd={}, buf={:#x}, count={}, offset={}) = {}",
                         fd, buf.address(), count, offset, errnoOrNbytes);
@@ -511,7 +511,7 @@ namespace kernel::gnulinux {
             mmu_.copyFromMmu(data.data(), base, len);
             buffers.push_back(Buffer(std::move(data)));
         }
-        ssize_t nbytes = kernel_.fs().readv(FS::FD{fd}, &buffers);
+        ssize_t nbytes = kernel_.fs().readv(FD{fd}, &buffers);
         if(nbytes >= 0) {
             for(size_t i = 0; i < (size_t)iovcnt; ++i) {
                 x64::Ptr base{Host::iovecBase(iovecBuffer, i)};
@@ -534,7 +534,7 @@ namespace kernel::gnulinux {
             mmu_.copyFromMmu(data.data(), base, len);
             buffers.push_back(Buffer(std::move(data)));
         }
-        ssize_t nbytes = kernel_.fs().writev(FS::FD{fd}, buffers);
+        ssize_t nbytes = kernel_.fs().writev(FD{fd}, buffers);
         if(kernel_.logSyscalls()) print("Sys::writev(fd={}, iov={:#x}, iovcnt={}) = {}", fd, iov.address(), iovcnt, nbytes);
         return nbytes;
     }
@@ -554,7 +554,7 @@ namespace kernel::gnulinux {
     
     int Sys::pipe(x64::Ptr32 pipefd) {
         auto errnoOrFds = kernel_.fs().pipe2(0);
-        int ret = errnoOrFds.errorOrWith<int>([&](std::pair<FS::FD, FS::FD> fds) {
+        int ret = errnoOrFds.errorOrWith<int>([&](std::pair<FD, FD> fds) {
             std::vector<u32> fdsbuf {{ (u32)fds.first.fd, (u32)fds.second.fd }};
             x64::Ptr ptr { pipefd.address() };
             mmu_.writeToMmu(ptr, fdsbuf);
@@ -567,13 +567,13 @@ namespace kernel::gnulinux {
     }
 
     int Sys::dup(int oldfd) {
-        FS::FD newfd = kernel_.fs().dup(FS::FD{oldfd});
+        FD newfd = kernel_.fs().dup(FD{oldfd});
         if(kernel_.logSyscalls()) print("Sys::dup(oldfd={}) = {}", oldfd, newfd.fd);
         return newfd.fd;
     }
 
     int Sys::dup2(int oldfd, int newfd) {
-        FS::FD fd = kernel_.fs().dup2(FS::FD{oldfd}, FS::FD{newfd});
+        FD fd = kernel_.fs().dup2(FD{oldfd}, FD{newfd});
         if(kernel_.logSyscalls()) print("Sys::dup2(oldfd={}, newfd={}) = {}", oldfd, newfd, fd.fd);
         return fd.fd;
     }
@@ -756,7 +756,7 @@ namespace kernel::gnulinux {
     }
 
     int Sys::socket(int domain, int type, int protocol) {
-        FS::FD fd = kernel_.fs().socket(domain, type, protocol);
+        FD fd = kernel_.fs().socket(domain, type, protocol);
         if(kernel_.logSyscalls()) {
             print("Sys::socket(domain={}, type={}, protocol={}) = {}",
                                     domain, type, protocol, fd.fd);
@@ -767,7 +767,7 @@ namespace kernel::gnulinux {
     int Sys::connect(int sockfd, x64::Ptr addr, size_t addrlen) {
         Buffer buffer(addrlen, 0x0);
         mmu_.copyFromMmu(buffer.data(), addr, buffer.size());
-        int ret = kernel_.fs().connect(FS::FD{sockfd}, buffer);
+        int ret = kernel_.fs().connect(FD{sockfd}, buffer);
         if(kernel_.logSyscalls()) {
             print("Sys::connect(sockfd={}, addr={:#x}, addrlen={}) = {}",
                         sockfd, addr.address(), addrlen, ret);
@@ -780,7 +780,7 @@ namespace kernel::gnulinux {
         verify(addrlen == 0);
         Buffer buffer(len, 0x0);
         mmu_.copyFromMmu(buffer.data(), buf, buffer.size());
-        ssize_t ret = kernel_.fs().send(FS::FD{sockfd}, buffer, flags);
+        ssize_t ret = kernel_.fs().send(FD{sockfd}, buffer, flags);
         if(kernel_.logSyscalls()) {
             print("Sys::sendto(sockfd={}, buf={:#x}, len={}, flags={}, dest_addr={:#x}, addrlen={}) = {}",
                         sockfd, buf.address(), len, flags, dest_addr.address(), addrlen, ret);
@@ -790,7 +790,7 @@ namespace kernel::gnulinux {
 
     int Sys::getsockname(int sockfd, x64::Ptr addr, x64::Ptr32 addrlen) {
         u32 buffersize = mmu_.read32(addrlen);
-        ErrnoOrBuffer sockname = kernel_.fs().getsockname(FS::FD{sockfd}, buffersize);
+        ErrnoOrBuffer sockname = kernel_.fs().getsockname(FD{sockfd}, buffersize);
         if(kernel_.logSyscalls()) {
             print("Sys::getsockname(sockfd={}, addr={:#x}, addrlen={:#x}) = {}",
                         sockfd, addr.address(), addrlen.address(), sockname.errorOr(0));
@@ -808,7 +808,7 @@ namespace kernel::gnulinux {
 
     int Sys::getpeername(int sockfd, x64::Ptr addr, x64::Ptr32 addrlen) {
         u32 buffersize = mmu_.read32(addrlen);
-        ErrnoOrBuffer peername = kernel_.fs().getpeername(FS::FD{sockfd}, buffersize);
+        ErrnoOrBuffer peername = kernel_.fs().getpeername(FD{sockfd}, buffersize);
         if(kernel_.logSyscalls()) {
             print("Sys::getpeername(sockfd={}, addr={:#x}, addrlen={:#x}) = {}",
                         sockfd, addr.address(), addrlen.address(), peername.errorOr(0));
@@ -839,7 +839,7 @@ namespace kernel::gnulinux {
         verify(!!optval, "getsockopt with null optval not implemented");
         Buffer buf((size_t)optlen, 0x0);
         mmu_.copyFromMmu(buf.data(), optval, buf.size());
-        int ret = kernel_.fs().setsockopt(FS::FD{sockfd}, level, optname, buf);
+        int ret = kernel_.fs().setsockopt(FD{sockfd}, level, optname, buf);
         if(kernel_.logSyscalls()) {
             print("Sys::setsockopt(sockfd={}, level={}, optname={}, optval={:#x}, optlen={}) = {}",
                         sockfd, level, optname, optval.address(), optlen, ret);
@@ -854,7 +854,7 @@ namespace kernel::gnulinux {
         u32 len = mmu_.read32(optlen);
         Buffer buf(len, 0x0);
         mmu_.copyFromMmu(buf.data(), optval, buf.size());
-        ErrnoOrBuffer errnoOrBuffer = kernel_.fs().getsockopt(FS::FD{sockfd}, level, optname, buf);
+        ErrnoOrBuffer errnoOrBuffer = kernel_.fs().getsockopt(FD{sockfd}, level, optname, buf);
         int ret = errnoOrBuffer.errorOrWith<int>([&](const Buffer& buffer) {
             mmu_.copyToMmu(optval, buffer.data(), buffer.size());
             mmu_.write32(optlen, (u32)buffer.size());
@@ -1008,13 +1008,13 @@ namespace kernel::gnulinux {
     }
 
     int Sys::fcntl(int fd, int cmd, int arg) {
-        int ret = kernel_.fs().fcntl(FS::FD{fd}, cmd, arg);
+        int ret = kernel_.fs().fcntl(FD{fd}, cmd, arg);
         if(kernel_.logSyscalls()) print("Sys::fcntl(fd={}, cmd={}, arg={}) = {}", fd, Host::fcntlName(cmd), arg, ret);
         return ret;
     }
 
     int Sys::flock(int fd, int operation) {
-        int ret = kernel_.fs().flock(FS::FD{fd}, operation);
+        int ret = kernel_.fs().flock(FD{fd}, operation);
         if(kernel_.logSyscalls()) print("Sys::flock(fd={}, operation={}) = {}", fd, operation, ret);
         return ret;
     }
@@ -1043,7 +1043,7 @@ namespace kernel::gnulinux {
     }
 
     int Sys::ftruncate(int fd, off_t length) {
-        int ret = kernel_.fs().ftruncate(FS::FD{fd}, length);
+        int ret = kernel_.fs().ftruncate(FD{fd}, length);
         if(kernel_.logSyscalls()) print("Sys::ftruncate(fd={}, length={}) = {}", fd, length, ret);
         return ret;
     }
@@ -1321,7 +1321,7 @@ namespace kernel::gnulinux {
     }
 
     int Sys::fstatfs(int fd, x64::Ptr buf) {
-        auto errnoOrBuffer = kernel_.fs().fstatfs(FS::FD{fd});
+        auto errnoOrBuffer = kernel_.fs().fstatfs(FD{fd});
         if(kernel_.logSyscalls()) {
             print("Sys::fstatfs(fd={}, buf={:#x} = {})", fd, buf.address(), errnoOrBuffer.errorOr(0));
         }
@@ -1401,7 +1401,7 @@ namespace kernel::gnulinux {
         if(maxevents <= 0) return -EINVAL;
         if(timeout == 0) {
             std::vector<FS::EpollEvent> epollEvents;
-            int ret = kernel_.fs().epollWaitImmediate(FS::FD{epfd}, &epollEvents);
+            int ret = kernel_.fs().epollWaitImmediate(FD{epfd}, &epollEvents);
             if(ret >= 0) {
                 epollEvents.resize(std::min((size_t)maxevents, epollEvents.size()));
                 ret = (int)epollEvents.size();
@@ -1420,7 +1420,7 @@ namespace kernel::gnulinux {
             }
             return ret;
         } else {
-            // int ret = kernel_.fs().epoll_wait(FS::FD{epfd}, events, maxevents, timeout);
+            // int ret = kernel_.fs().epoll_wait(FD{epfd}, events, maxevents, timeout);
             kernel_.scheduler().epoll_wait(currentThread_, epfd, events, (size_t)maxevents, timeout);
             if(kernel_.logSyscalls()) {
                 print("Sys::epoll_wait(epfd={}, events={:#x}, maxevents={}, timeout={}) = pending", epfd, events.address(), maxevents, timeout);
@@ -1432,7 +1432,7 @@ namespace kernel::gnulinux {
     int Sys::epoll_ctl(int epfd, int op, int fd, x64::Ptr event) {
         verify(!!event, "Null event in epoll_ctl not supported");
         EpollEvent ee = mmu_.readFromMmu<EpollEvent>(event);
-        int ret = kernel_.fs().epoll_ctl(FS::FD{epfd}, op, FS::FD{fd}, BitFlags<EpollEventType>::fromIntegerType(ee.event), ee.data);
+        int ret = kernel_.fs().epoll_ctl(FD{epfd}, op, FD{fd}, BitFlags<EpollEventType>::fromIntegerType(ee.event), ee.data);
         if(kernel_.logSyscalls()) {
             print("Sys::epoll_ctl(epfd={}, op={}, fd={}, event=[event={:#x}, data={}]) = {}", epfd, op, fd, ee.event, ee.data, ret);
         }
@@ -1612,7 +1612,7 @@ namespace kernel::gnulinux {
 
     ssize_t Sys::recvfrom(int sockfd, x64::Ptr buf, size_t len, int flags, x64::Ptr src_addr, x64::Ptr32 addrlen) {
         bool requireSrcAddress = !!src_addr && !!addrlen;
-        ErrnoOr<std::pair<Buffer, Buffer>> ret = kernel_.fs().recvfrom(FS::FD{sockfd}, len, flags, requireSrcAddress);
+        ErrnoOr<std::pair<Buffer, Buffer>> ret = kernel_.fs().recvfrom(FD{sockfd}, len, flags, requireSrcAddress);
         if(kernel_.logSyscalls()) {
             print("Sys::recvfrom(sockfd={}, buf={:#x}, len={}, flags={}, src_addr={:#x}, addrlen={:#x}) = {}",
                                       sockfd, buf.address(), len, flags, src_addr.address(), addrlen.address(),
@@ -1669,7 +1669,7 @@ namespace kernel::gnulinux {
         // read Message::msg_flags
         message.msg_flags = header.msg_flags;
 
-        ssize_t nbytes = kernel_.fs().sendmsg(FS::FD{sockfd}, flags, message);
+        ssize_t nbytes = kernel_.fs().sendmsg(FD{sockfd}, flags, message);
         if(kernel_.logSyscalls()) {
             print("Sys::sendmsg(sockfd={}, msg={:#x}, flags={}) = {}",
                         sockfd, msg.address(), flags, nbytes);
@@ -1717,7 +1717,7 @@ namespace kernel::gnulinux {
         message.msg_flags = header.msg_flags;
 
         // do the syscall
-        ssize_t nbytes = kernel_.fs().recvmsg(FS::FD{sockfd}, flags, &message);
+        ssize_t nbytes = kernel_.fs().recvmsg(FD{sockfd}, flags, &message);
 
         // write back to header
         header.msg_namelen = (socklen_t)message.msg_name.size();
@@ -1759,7 +1759,7 @@ namespace kernel::gnulinux {
     }
 
     int Sys::shutdown(int sockfd, int how) {
-        int rc = kernel_.fs().shutdown(FS::FD{sockfd}, how);
+        int rc = kernel_.fs().shutdown(FD{sockfd}, how);
         if(kernel_.logSyscalls()) {
             print("Sys::shutdown(sockfd={}, how={}) = {}",
                         sockfd, how, rc);
@@ -1770,7 +1770,7 @@ namespace kernel::gnulinux {
     int Sys::bind(int sockfd, x64::Ptr addr, socklen_t addrlen) {
         Buffer saddr(addrlen, 0x0);
         mmu_.copyFromMmu(saddr.data(), addr, saddr.size());
-        int rc = kernel_.fs().bind(FS::FD{sockfd}, saddr);
+        int rc = kernel_.fs().bind(FD{sockfd}, saddr);
         if(kernel_.logSyscalls()) {
             print("Sys::bind(sockfd={}, addr={:#x}, addrlen={}) = {}",
                         sockfd, addr.address(), addrlen, rc);
@@ -1787,7 +1787,7 @@ namespace kernel::gnulinux {
     }
 
     ssize_t Sys::getdents64(int fd, x64::Ptr dirp, size_t count) {
-        auto errnoOrBuffer = kernel_.fs().getdents64(FS::FD{fd}, count);
+        auto errnoOrBuffer = kernel_.fs().getdents64(FD{fd}, count);
         if(kernel_.logSyscalls()) {
             print("Sys::getdents64(fd={}, dirp={:#x}, count={}) = {}",
                         fd, dirp.address(), count, errnoOrBuffer.errorOrWith<ssize_t>([&](const auto& buffer) { return (ssize_t)buffer.size(); }));
@@ -1897,9 +1897,9 @@ namespace kernel::gnulinux {
         BitFlags<CreationFlags> creationFlags = FS::toCreationFlags(flags);
         BitFlags<StatusFlags> statusFlags = FS::toStatusFlags(flags);
         Permissions permissions = FS::fromMode(mode);
-        auto filepath = kernel_.fs().resolvePath(FS::FD{dirfd}, kernel_.fs().cwd(), path);
-        FS::FD fd = [&]() {
-            if(!filepath) return FS::FD{-ENOENT};
+        auto filepath = kernel_.fs().resolvePath(FD{dirfd}, kernel_.fs().cwd(), path);
+        FD fd = [&]() {
+            if(!filepath) return FD{-ENOENT};
             return kernel_.fs().open(*filepath, accessMode, creationFlags, statusFlags, permissions);
         }();
         if(kernel_.logSyscalls()) {
@@ -1919,7 +1919,7 @@ namespace kernel::gnulinux {
     int Sys::fstatat64(int dirfd, x64::Ptr pathname, x64::Ptr statbuf, int flags) {
         std::string pathname_ = mmu_.readString(pathname);
         auto allowEmptyPath = Host::Fstatat::isEmptyPath(flags) ? FS::AllowEmptyPathname::YES : FS::AllowEmptyPathname::NO;
-        auto path = kernel_.fs().resolvePath(FS::FD{dirfd}, kernel_.fs().cwd(), pathname_, allowEmptyPath);
+        auto path = kernel_.fs().resolvePath(FD{dirfd}, kernel_.fs().cwd(), pathname_, allowEmptyPath);
         auto errnoOrBuffer = [&]() {
             if(!path) return ErrnoOrBuffer(-ENOENT);
             return kernel_.fs().fstatat64(*path, flags);
@@ -1969,7 +1969,7 @@ namespace kernel::gnulinux {
 
     int Sys::faccessat(int dirfd, x64::Ptr pathname, int mode) {
         std::string pathname_ = mmu_.readString(pathname);
-        auto path = kernel_.fs().resolvePath(FS::FD{dirfd}, kernel_.fs().cwd(), pathname_);
+        auto path = kernel_.fs().resolvePath(FD{dirfd}, kernel_.fs().cwd(), pathname_);
         int ret = [&]() {
             if(!path) return -ENOENT;
             return kernel_.fs().access(*path, mode);
@@ -2050,7 +2050,7 @@ namespace kernel::gnulinux {
     }
 
     int Sys::fallocate(int fd, int mode, off_t offset, off_t len) {
-        int ret = kernel_.fs().fallocate(FS::FD{fd}, mode, offset, len);
+        int ret = kernel_.fs().fallocate(FD{fd}, mode, offset, len);
         if(kernel_.logSyscalls()) {
             print("Sys::fallocate(fd={}, mode={}, offset={:#x}, len={}) = {}",
                                                           fd, mode, offset, len, ret);
@@ -2059,7 +2059,7 @@ namespace kernel::gnulinux {
     }
 
     int Sys::eventfd2(unsigned int initval, int flags) {
-        FS::FD fd = kernel_.fs().eventfd2(initval, flags);
+        FD fd = kernel_.fs().eventfd2(initval, flags);
         if(kernel_.logSyscalls()) {
             print("Sys::eventfd2(initval={}, flags={}) = {}", initval, flags, fd.fd);
         }
@@ -2067,7 +2067,7 @@ namespace kernel::gnulinux {
     }
 
     int Sys::epoll_create1(int flags) {
-        FS::FD fd = kernel_.fs().epoll_create1(flags);
+        FD fd = kernel_.fs().epoll_create1(flags);
         if(kernel_.logSyscalls()) {
             print("Sys::epoll_create1(flags={}) = {}", flags, fd.fd);
         }
@@ -2075,7 +2075,7 @@ namespace kernel::gnulinux {
     }
 
     int Sys::dup3(int oldfd, int newfd, int flags) {
-        FS::FD fd = kernel_.fs().dup3(FS::FD{oldfd}, FS::FD{newfd}, flags);
+        FD fd = kernel_.fs().dup3(FD{oldfd}, FD{newfd}, flags);
         if(kernel_.logSyscalls()) {
             print("Sys::dup3(oldfd={}, newfd={}, flags={}) = {}", oldfd, newfd, flags, fd.fd);
         }
@@ -2084,7 +2084,7 @@ namespace kernel::gnulinux {
     
     int Sys::pipe2(x64::Ptr32 pipefd, int flags) {
         auto errnoOrFds = kernel_.fs().pipe2(flags);
-        int ret = errnoOrFds.errorOrWith<int>([&](std::pair<FS::FD, FS::FD> fds) {
+        int ret = errnoOrFds.errorOrWith<int>([&](std::pair<FD, FD> fds) {
             std::vector<u32> fdsbuf {{ (u32)fds.first.fd, (u32)fds.second.fd }};
             x64::Ptr ptr { pipefd.address() };
             mmu_.writeToMmu(ptr, fdsbuf);
@@ -2151,7 +2151,7 @@ namespace kernel::gnulinux {
 
     int Sys::memfd_create(x64::Ptr name, unsigned int flags) {
         auto filename = mmu_.readString(name);
-        FS::FD fd = kernel_.fs().memfd_create(filename, flags);
+        FD fd = kernel_.fs().memfd_create(filename, flags);
         if(kernel_.logSyscalls()) {
             std::string pathname = mmu_.readString(name);
             print("Sys::memfd_create(name={}, flags={:#x}) = {}", pathname, flags, fd.fd);
@@ -2162,7 +2162,7 @@ namespace kernel::gnulinux {
     int Sys::statx(int dirfd, x64::Ptr pathname, int flags, unsigned int mask, x64::Ptr statxbuf) {
         std::string pathname_ = mmu_.readString(pathname);
         auto allowEmptyPath = Host::Fstatat::isEmptyPath(flags) ? FS::AllowEmptyPathname::YES : FS::AllowEmptyPathname::NO;
-        auto path = kernel_.fs().resolvePath(FS::FD{dirfd}, kernel_.fs().cwd(), pathname_, allowEmptyPath);
+        auto path = kernel_.fs().resolvePath(FD{dirfd}, kernel_.fs().cwd(), pathname_, allowEmptyPath);
         auto errnoOrBuffer = [&]() {
             if(!path) return ErrnoOrBuffer(-ENOENT);
             return kernel_.fs().statx(*path, flags, mask);
