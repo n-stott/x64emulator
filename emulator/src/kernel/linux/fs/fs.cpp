@@ -438,7 +438,9 @@ namespace kernel::gnulinux {
             verify(ret == 0, "close in dup2 failed");
         }
         oldOfd->file()->ref();
-        verify(newfd.fd < (int)fileDescriptors_.size(), "newfd in dup2 is too large");
+        if(newfd.fd >= (int)fileDescriptors_.size()) {
+            fileDescriptors_.resize(newfd.fd+1);
+        }
         fileDescriptors_[newfd.fd] = std::make_unique<FileDescriptor>(oldOfd, false);
         return newfd;
     }
@@ -454,6 +456,9 @@ namespace kernel::gnulinux {
         }
         oldOfd->file()->ref();
         bool closeOnExec = Host::Open::isCloseOnExec(flags);
+        if(newfd.fd >= (int)fileDescriptors_.size()) {
+            fileDescriptors_.resize(newfd.fd+1);
+        }
         fileDescriptors_[newfd.fd] = std::make_unique<FileDescriptor>(oldOfd, closeOnExec);
         return newfd;
     }
