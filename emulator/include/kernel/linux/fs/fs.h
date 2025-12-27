@@ -32,6 +32,14 @@ namespace kernel::gnulinux {
         bool operator!=(FD other) const { return fd != other.fd; }
     };
 
+    struct FileDescriptor {
+        FileDescriptor(OpenFileDescription* ofd, bool closeOnExec) :
+                openFiledescription(ofd), closeOnExec(closeOnExec) { }
+
+        OpenFileDescription* openFiledescription { nullptr };
+        bool closeOnExec { false };
+    };
+
     class FS {
     public:
         FS();
@@ -56,18 +64,16 @@ namespace kernel::gnulinux {
         };
         std::optional<Path> resolvePath(FD dirfd, const Directory* base, const std::string& pathname, AllowEmptyPathname tag) const;
 
-        Directory* ensurePathExceptLast(const Path& path);
-        Directory* ensureCompletePath(const Path& path);
-
         FD open(const Path& path,
                 BitFlags<AccessMode> accessMode,
                 BitFlags<CreationFlags> creationFlags,
                 BitFlags<StatusFlags> statusFlags,
                 Permissions permissions);
+        int close(FD fd);
+
         FD dup(FD fd);
         FD dup2(FD oldfd, FD newfd);
         FD dup3(FD oldfd, FD newfd, int flags);
-        int close(FD fd);
 
         int mkdir(const Path& path);
         int rename(const Path& oldpath, const Path& newpath);
@@ -179,19 +185,14 @@ namespace kernel::gnulinux {
             YES,
         };
 
+        Directory* ensurePathExceptLast(const Path& path);
+        Directory* ensureCompletePath(const Path& path);
+
         File* tryGetFile(const Path& path, FollowSymlink);
         std::unique_ptr<File> tryTakeFile(const Path& path);
         Directory* ensurePathImpl(Span<const std::string> components);
 
         File* resolveSymlink(const Symlink&, u32 maxLinks = 0);
-
-        struct FileDescriptor {
-            FileDescriptor(OpenFileDescription* ofd, bool closeOnExec) :
-                    openFiledescription(ofd), closeOnExec(closeOnExec) { }
-
-            OpenFileDescription* openFiledescription;
-            bool closeOnExec { false };
-        };
 
         void findCurrentWorkDirectory();
         void createStandardStreams(const Path& ttypath);

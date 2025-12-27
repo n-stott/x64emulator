@@ -516,7 +516,7 @@ namespace kernel::gnulinux {
         return insertNode(std::move(shadowFile), accessMode, statusFlags, Host::MemfdFlags::isCloseOnExec(flags));
     }
 
-    FS::FileDescriptor* FS::findFileDescriptor(FD fd) {
+    FileDescriptor* FS::findFileDescriptor(FD fd) {
         if(fd.fd < 0) return nullptr;
         if(fd.fd >= (int)fileDescriptors_.size()) return nullptr;
         return fileDescriptors_[fd.fd].get();
