@@ -60,6 +60,17 @@ namespace kernel::gnulinux {
         HANGUP = 0x4,
     };
 
+    enum class PollEvent : i16 {
+        NONE = 0x0,
+        CAN_READ = 0x1,
+        CAN_WRITE = 0x4,
+        INVALID_REQUEST = 0x20,
+    };
+
+    inline PollEvent operator&(PollEvent a, PollEvent b) { return (PollEvent)((i16)a & (i16)b); }
+    inline PollEvent operator|(PollEvent a, PollEvent b) { return (PollEvent)((i16)a | (i16)b); }
+    inline PollEvent operator~(PollEvent a) { return (PollEvent)(~(i16)a); }
+
 }
 
 #endif

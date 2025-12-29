@@ -13,6 +13,7 @@ int main() {
 
     int readFd = fd[0];
     int writeFd = fd[1];
+    printf("readfd=%d writefd=%d\n", readFd, writeFd);
 
     const char* message = "Hello there !\n";
 

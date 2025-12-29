@@ -25,16 +25,16 @@ int real() {
 int emulated() {
     FS fs;
     
-    int flags = fs.fcntl(FD{0}, F_GETFL, 0);
+    int flags = fs.fds().fcntl(FD{0}, F_GETFL, 0);
     if(flags < 0) return 1;
     int access = flags & O_ACCMODE;
     if(access != 2) return 1;
 
     flags = (flags & ~O_ACCMODE) | (0 & O_ACCMODE);
-    int ret = fs.fcntl(FD{0}, F_SETFL, flags);
+    int ret = fs.fds().fcntl(FD{0}, F_SETFL, flags);
     if(ret != 0) return 1;
 
-    flags = fs.fcntl(FD{0}, F_GETFL, 0);
+    flags = fs.fds().fcntl(FD{0}, F_GETFL, 0);
     if(flags < 0) return 1;
     access = flags & O_ACCMODE;
     if(access != 2) return 1;

@@ -33,17 +33,74 @@ namespace kernel::gnulinux {
     };
 
     struct FileDescriptor {
-        FileDescriptor(OpenFileDescription* ofd, bool closeOnExec) :
-                openFiledescription(ofd), closeOnExec(closeOnExec) { }
-
-        OpenFileDescription* openFiledescription { nullptr };
+        std::shared_ptr<OpenFileDescription> openFiledescription;
         bool closeOnExec { false };
+    };
+
+    class FS;
+
+    struct CurrentDirectoryOrDirectoryDescriptor {
+        bool isCurrentDirectory { true };
+        FileDescriptor directoryDescriptor;
+    };
+
+    class FileDescriptors {
+    public:
+        explicit FileDescriptors(FS& fs) : fs_(fs) { }
+        void createStandardStreams(const Path& ttypath);
+
+        FileDescriptor operator[](FD fd) {
+            auto* descriptor = findFileDescriptor(fd);
+            if(!descriptor) return {};
+            return *descriptor;
+        }
+
+        FileDescriptor operator[](int fd) {
+            auto* descriptor = findFileDescriptor(FD{fd});
+            if(!descriptor) return {};
+            return *descriptor;
+        }
+
+        CurrentDirectoryOrDirectoryDescriptor dirfd(FD dirfd);
+
+        FD open(const Path& path,
+                BitFlags<AccessMode> accessMode,
+                BitFlags<CreationFlags> creationFlags,
+                BitFlags<StatusFlags> statusFlags,
+                Permissions permissions);
+
+        int close(FD);
+
+        int fcntl(FD fd, int cmd, int arg);
+
+        FD dup(FD fd);
+        FD dup2(FD oldfd, FD newfd);
+        FD dup3(FD oldfd, FD newfd, int flags);
+
+        FD memfd_create(const std::string& name, unsigned int flags);
+
+        FD eventfd2(unsigned int initval, int flags);
+        FD epoll_create1(int flags);
+        FD socket(int domain, int type, int protocol);
+        ErrnoOr<std::pair<FD, FD>> pipe2(int flags);
+
+        void dumpSummary() const;
+
+    private:
+        FD allocateFd();
+        FileDescriptor* findFileDescriptor(FD fd);
+        std::shared_ptr<OpenFileDescription> findOpenFileDescription(FD fd);
+
+        FS& fs_;
+        std::vector<std::unique_ptr<FileDescriptor>> fileDescriptors_;
     };
 
     class FS {
     public:
         FS();
         ~FS();
+
+        FileDescriptors& fds() { return fds_; }
 
         void resetProcFS(int pid, const Path& programFilePath);
 
@@ -56,24 +113,20 @@ namespace kernel::gnulinux {
         Directory* cwd() { return currentWorkDirectory_; }
 
         std::optional<Path> resolvePath(const Directory* base, const std::string& pathname) const;
-        std::optional<Path> resolvePath(FD dirfd, const Directory* base, const std::string& pathname) const;
+        std::optional<Path> resolvePath(CurrentDirectoryOrDirectoryDescriptor dirfd, const Directory* base, const std::string& pathname) const;
 
         enum AllowEmptyPathname {
             NO,
             YES,
         };
-        std::optional<Path> resolvePath(FD dirfd, const Directory* base, const std::string& pathname, AllowEmptyPathname tag) const;
+        std::optional<Path> resolvePath(CurrentDirectoryOrDirectoryDescriptor dirfd, const Directory* base, const std::string& pathname, AllowEmptyPathname tag) const;
 
-        FD open(const Path& path,
+        ErrnoOr<FileDescriptor> open(const Path& path,
                 BitFlags<AccessMode> accessMode,
                 BitFlags<CreationFlags> creationFlags,
                 BitFlags<StatusFlags> statusFlags,
                 Permissions permissions);
-        int close(FD fd);
-
-        FD dup(FD fd);
-        FD dup2(FD oldfd, FD newfd);
-        FD dup3(FD oldfd, FD newfd, int flags);
+        int close(FileDescriptor fd);
 
         int mkdir(const Path& path);
         int rename(const Path& oldpath, const Path& newpath);
@@ -83,55 +136,55 @@ namespace kernel::gnulinux {
 
         int access(const Path& path, int mode) const;
 
-        FD memfd_create(const std::string& name, unsigned int flags);
+        ErrnoOr<FileDescriptor> memfd_create(const std::string& name, unsigned int flags);
 
-        ErrnoOrBuffer read(FD fd, size_t count);
-        ErrnoOrBuffer pread(FD fd, size_t count, off_t offset);
-        ssize_t readv(FD fd, std::vector<Buffer>* buffers);
+        ErrnoOrBuffer read(FileDescriptor fd, size_t count);
+        ErrnoOrBuffer pread(FileDescriptor fd, size_t count, off_t offset);
+        ssize_t readv(FileDescriptor fd, std::vector<Buffer>* buffers);
 
-        ssize_t write(FD fd, const u8* buf, size_t count);
-        ssize_t pwrite(FD fd, const u8* buf, size_t count, off_t offset);
-        ssize_t writev(FD fd, const std::vector<Buffer>& buffers);
+        ssize_t write(FileDescriptor fd, const u8* buf, size_t count);
+        ssize_t pwrite(FileDescriptor fd, const u8* buf, size_t count, off_t offset);
+        ssize_t writev(FileDescriptor fd, const std::vector<Buffer>& buffers);
 
         ErrnoOrBuffer stat(const Path& path);
-        ErrnoOrBuffer fstat(FD fd);
+        ErrnoOrBuffer fstat(FileDescriptor fd);
         ErrnoOrBuffer statx(const Path& path, int flags, unsigned int mask);
         ErrnoOrBuffer fstatat64(const Path& path, int flags);
 
-        ErrnoOrBuffer fstatfs(FD fd);
+        ErrnoOrBuffer fstatfs(FileDescriptor fd);
 
-        off_t lseek(FD fd, off_t offset, int whence);
+        off_t lseek(FileDescriptor fd, off_t offset, int whence);
 
-        ErrnoOrBuffer getdents64(FD fd, size_t count);
-        int fcntl(FD fd, int cmd, int arg);
+        ErrnoOrBuffer getdents64(FileDescriptor fd, size_t count);
+        int fcntl(FileDescriptor& fd, int cmd, int arg);
 
-        ErrnoOrBuffer ioctl(FD fd, Ioctl request, const Buffer& buffer);
+        ErrnoOrBuffer ioctl(FileDescriptor fd, Ioctl request, const Buffer& buffer);
 
-        int flock(FD fd, int operation);
+        int flock(FileDescriptor fd, int operation);
 
-        int fallocate(FD fd, int mode, off_t offset, off_t len);
+        int fallocate(FileDescriptor fd, int mode, off_t offset, off_t len);
         int truncate(const Path& path, off_t length);
-        int ftruncate(FD fd, off_t length);
+        int ftruncate(FileDescriptor fd, off_t length);
 
         struct EpollEvent {
             BitFlags<EpollEventType> events;
             u64 data;
         };
 
-        FD eventfd2(unsigned int initval, int flags);
-        FD epoll_create1(int flags);
-        int epoll_ctl(FD epfd, int op, FD fd, BitFlags<EpollEventType> events, u64 data);
-        int epollWaitImmediate(FD epfd, std::vector<EpollEvent>* events);
-        void doEpollWait(FD epfd, std::vector<EpollEvent>* events);
+        ErrnoOr<FileDescriptor> eventfd2(unsigned int initval, int flags);
+        ErrnoOr<FileDescriptor> epoll_create1(int flags);
+        int epoll_ctl(FileDescriptor epfd, int op, FileDescriptor fd, BitFlags<EpollEventType> events, u64 data);
+        int epollWaitImmediate(FileDescriptor epfd, std::vector<EpollEvent>* events);
+        void doEpollWait(FileDescriptor epfd, std::vector<EpollEvent>* events);
 
-        FD socket(int domain, int type, int protocol);
-        int connect(FD sockfd, const Buffer& buffer);
-        int bind(FD sockfd, const Buffer& name);
-        int shutdown(FD sockfd, int how);
-        ErrnoOrBuffer getpeername(FD sockfd, u32 buffersize);
-        ErrnoOrBuffer getsockname(FD sockfd, u32 buffersize);
-        ErrnoOrBuffer getsockopt(FD sockfd, int level, int optname, const Buffer& buffer);
-        int setsockopt(FD sockfd, int level, int optname, const Buffer& buffer);
+        ErrnoOr<FileDescriptor> socket(int domain, int type, int protocol);
+        int connect(FileDescriptor sockfd, const Buffer& buffer);
+        int bind(FileDescriptor sockfd, const Buffer& name);
+        int shutdown(FileDescriptor sockfd, int how);
+        ErrnoOrBuffer getpeername(FileDescriptor sockfd, u32 buffersize);
+        ErrnoOrBuffer getsockname(FileDescriptor sockfd, u32 buffersize);
+        ErrnoOrBuffer getsockopt(FileDescriptor sockfd, int level, int optname, const Buffer& buffer);
+        int setsockopt(FileDescriptor sockfd, int level, int optname, const Buffer& buffer);
 
         struct Message {
             Buffer msg_name;
@@ -140,24 +193,20 @@ namespace kernel::gnulinux {
             int msg_flags;
         };
 
-        ErrnoOr<std::pair<Buffer, Buffer>> recvfrom(FD sockfd, size_t len, int flags, bool requireSrcAddress);
-        ssize_t send(FD sockfd, const Buffer& buffer, int flags);
-        ssize_t recvmsg(FD sockfd, int flags, Message* message);
-        ssize_t sendmsg(FD sockfd, int flags, const Message& message);
+        ErrnoOr<std::pair<Buffer, Buffer>> recvfrom(FileDescriptor sockfd, size_t len, int flags, bool requireSrcAddress);
+        ssize_t send(FileDescriptor sockfd, const Buffer& buffer, int flags);
+        ssize_t recvmsg(FileDescriptor sockfd, int flags, Message* message);
+        ssize_t sendmsg(FileDescriptor sockfd, int flags, const Message& message);
 
-        enum class PollEvent : i16 {
-            NONE = 0x0,
-            CAN_READ = 0x1,
-            CAN_WRITE = 0x4,
-            INVALID_REQUEST = 0x20,
+        struct PollFd {
+            i32 fd;
+            PollEvent events;
+            PollEvent revents;
         };
-
-        friend PollEvent operator&(PollEvent a, PollEvent b) { return (PollEvent)((i16)a & (i16)b); }
-        friend PollEvent operator|(PollEvent a, PollEvent b) { return (PollEvent)((i16)a | (i16)b); }
-        friend PollEvent operator~(PollEvent a) { return (PollEvent)(~(i16)a); }
 
         struct PollData {
             i32 fd;
+            FileDescriptor descriptor;
             PollEvent events;
             PollEvent revents;
         };
@@ -166,7 +215,7 @@ namespace kernel::gnulinux {
         void doPoll(std::vector<PollData>* data);
 
         struct SelectData {
-            i32 nfds;
+            std::vector<FileDescriptor> fds;
             std::bitset<FD_SETSIZE> readfds;
             std::bitset<FD_SETSIZE> writefds;
             std::bitset<FD_SETSIZE> exceptfds;
@@ -174,9 +223,9 @@ namespace kernel::gnulinux {
 
         int selectImmediate(SelectData* selectData);
 
-        ErrnoOr<std::pair<FD, FD>> pipe2(int flags);
+        ErrnoOr<std::pair<FileDescriptor, FileDescriptor>> pipe2(int flags);
 
-        std::string filename(FD fd);
+        std::string filename(FileDescriptor fd);
         void dumpSummary() const;
 
     private:
@@ -195,18 +244,12 @@ namespace kernel::gnulinux {
         File* resolveSymlink(const Symlink&, u32 maxLinks = 0);
 
         void findCurrentWorkDirectory();
-        void createStandardStreams(const Path& ttypath);
-        FD insertNode(std::unique_ptr<File> file, BitFlags<AccessMode>, BitFlags<StatusFlags>, bool closeOnExec);
-        FD allocateFd();
+        FileDescriptor insertNode(std::unique_ptr<File> file, BitFlags<AccessMode>, BitFlags<StatusFlags>, bool closeOnExec);
 
         void removeFromOrphans(File*);
         void removeClosedPipes();
 
-        FileDescriptor* findFileDescriptor(FD fd);
-        OpenFileDescription* findOpenFileDescription(FD fd);
-
         void checkFileRefCount(File* file) const;
-        void checkFileDescriptions() const;
 
         static int assembleAccessModeAndFileStatusFlags(BitFlags<AccessMode>, BitFlags<StatusFlags>);
 
@@ -216,8 +259,8 @@ namespace kernel::gnulinux {
         std::vector<std::unique_ptr<File>> orphanFiles_;
         std::vector<std::unique_ptr<Pipe>> pipes_;
         Directory* currentWorkDirectory_ { nullptr };
-        std::vector<std::unique_ptr<FileDescriptor>> fileDescriptors_;
-        std::vector<std::unique_ptr<OpenFileDescription>> openFileDescriptions_;
+
+        FileDescriptors fds_;
     };
 
 }

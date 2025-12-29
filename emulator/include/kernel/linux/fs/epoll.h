@@ -41,20 +41,20 @@ namespace kernel::gnulinux {
             return "Epoll";
         }
 
-        ErrnoOr<void> addEntry(i32 fd, u32 event, u64 data);
-        ErrnoOr<void> changeEntry(i32 fd, u32 event, u64 data);
-        ErrnoOr<void> deleteEntry(i32 fd);
+        ErrnoOr<void> addEntry(void* ofd, u32 event, u64 data);
+        ErrnoOr<void> changeEntry(void* ofd, u32 event, u64 data);
+        ErrnoOr<void> deleteEntry(void* ofd);
 
         template<typename Func>
         void forEachEntryInInterestList(Func&& func) {
             for(const auto& entry : interestList_) {
-                func(entry.fd, entry.event, entry.data);
+                func(entry.ofd, entry.event, entry.data);
             }
         }
 
     private:
         struct Entry {
-            i32 fd;
+            void* ofd;
             u32 event;
             u64 data;
         };

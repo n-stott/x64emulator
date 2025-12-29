@@ -1,6 +1,7 @@
 #include "kernel/linux/threadblocker.h"
 #include "kernel/linux/thread.h"
 #include "kernel/linux/fs/fs.h"
+#include "kernel/linux/fs/fsflags.h"
 #include "x64/mmu.h"
 #include <fmt/core.h>
 #include <algorithm>
@@ -83,10 +84,19 @@ namespace kernel::gnulinux {
     }
 
     bool PollBlocker::tryUnblock(FS& fs) {
-        mmu_->readFromMmu<FS::PollData>(pollfds_, nfds_, &allpollfds_);
-        fs.doPoll(&allpollfds_);
-        u64 nzrevents = (u64)std::count_if(allpollfds_.begin(), allpollfds_.end(), [](const FS::PollData& data) {
-            return data.revents != FS::PollEvent::NONE;
+        mmu_->readFromMmu<FS::PollFd>(pollfds_, nfds_, &allpollfds_);
+        allpolldatas_.resize(allpollfds_.size());
+        std::transform(allpollfds_.begin(), allpollfds_.end(), allpolldatas_.begin(), [&](FS::PollFd pollfd) -> FS::PollData {
+            return FS::PollData {
+                pollfd.fd,
+                fs.fds()[pollfd.fd],
+                pollfd.events,
+                pollfd.revents,
+            };
+        });
+        fs.doPoll(&allpolldatas_);
+        u64 nzrevents = (u64)std::count_if(allpolldatas_.begin(), allpolldatas_.end(), [](const FS::PollData& data) {
+            return data.revents != PollEvent::NONE;
         });
         bool timeout = false;
         if(!!timeLimit_) {
@@ -96,6 +106,10 @@ namespace kernel::gnulinux {
             timeout |= (now > timeLimit_);
         }
         if(nzrevents > 0) {
+            for(size_t i = 0; i < allpolldatas_.size(); ++i) {
+                allpollfds_[i].events = allpolldatas_[i].events;
+                allpollfds_[i].revents = allpolldatas_[i].revents;
+            }
             mmu_->writeToMmu(pollfds_, allpollfds_);
             thread_->savedCpuState().regs.set(x64::R64::RAX, nzrevents);
             return true;
@@ -112,11 +126,11 @@ namespace kernel::gnulinux {
         int tid = thread_->description().tid;
         std::stringstream ss;
         ss << '{';
-        std::vector<FS::PollData> pollfds(mmu_->readFromMmu<FS::PollData>(pollfds_, nfds_));
+        std::vector<FS::PollFd> pollfds(mmu_->readFromMmu<FS::PollFd>(pollfds_, nfds_));
         for(const auto& pfd : pollfds) {
             ss << pfd.fd << " [";
-            if((pfd.events & FS::PollEvent::CAN_READ) == FS::PollEvent::CAN_READ) ss << "CAN_READ, ";
-            if((pfd.events & FS::PollEvent::CAN_WRITE) == FS::PollEvent::CAN_WRITE) ss << "CAN_WRITE, ";
+            if((pfd.events & PollEvent::CAN_READ) == PollEvent::CAN_READ) ss << "CAN_READ, ";
+            if((pfd.events & PollEvent::CAN_WRITE) == PollEvent::CAN_WRITE) ss << "CAN_WRITE, ";
             ss << "], ";
         }
         ss << '}';
@@ -143,7 +157,10 @@ namespace kernel::gnulinux {
 
     bool SelectBlocker::tryUnblock(FS& fs) {
         FS::SelectData selectData;
-        selectData.nfds = (i32)nfds_;
+        selectData.fds.reserve(nfds_);
+        for(int fd = 0; fd < nfds_; ++fd) {
+            selectData.fds.push_back(fs.fds()[fd]);
+        }
         if(!!readfds_) mmu_->copyFromMmu((u8*)&selectData.readfds, readfds_, sizeof(selectData.readfds));
         if(!!writefds_) mmu_->copyFromMmu((u8*)&selectData.writefds, writefds_, sizeof(selectData.writefds));
         if(!!exceptfds_) mmu_->copyFromMmu((u8*)&selectData.exceptfds, exceptfds_, sizeof(selectData.exceptfds));
@@ -198,7 +215,7 @@ namespace kernel::gnulinux {
 
     bool EpollWaitBlocker::tryUnblock(FS& fs) {
         std::vector<FS::EpollEvent> epollEvents;
-        fs.doEpollWait(FD{epfd_}, &epollEvents);
+        fs.doEpollWait(fs.fds()[epfd_], &epollEvents);
         epollEvents.resize(std::min(maxevents_, epollEvents.size()));
         bool timeout = false;
         if(!!timeLimit_) {

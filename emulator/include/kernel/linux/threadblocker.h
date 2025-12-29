@@ -59,7 +59,8 @@ namespace kernel::gnulinux {
         x64::Ptr pollfds_;
         size_t nfds_;
         std::optional<PreciseTime> timeLimit_;
-        std::vector<FS::PollData> allpollfds_; // cached vector
+        std::vector<FS::PollFd> allpollfds_; // cached vector
+        std::vector<FS::PollData> allpolldatas_; // cached vector
     };
 
     class SelectBlocker {

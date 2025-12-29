@@ -30,6 +30,16 @@ namespace kernel {
             return func(value);
         }
 
+        template<typename T, typename Func>
+        ErrnoOr<T> transform(Func&& func) {
+            if(isError()) {
+                return ErrnoOr<T>(std::get<0>(data_));
+            } else {
+                const Value& value = std::get<Value>(data_);
+                return ErrnoOr<T>(func(value));
+            }
+        }
+
     private:
         std::variant<int, Value> data_;
     };

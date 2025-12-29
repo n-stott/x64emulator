@@ -53,31 +53,31 @@ namespace kernel::gnulinux {
     }
 
 
-    ErrnoOr<void> Epoll::addEntry(i32 fd, u32 event, u64 data) {
+    ErrnoOr<void> Epoll::addEntry(void* ofd, u32 event, u64 data) {
         verify(std::none_of(interestList_.begin(), interestList_.end(), [&](const Entry& entry) {
-            return entry.fd == fd;
-        }), "Epoll::addEntry: fd already exists in interest list");
+            return entry.ofd == ofd;
+        }), "Epoll::addEntry: ofd already exists in interest list");
         interestList_.push_back(Entry{
-            fd,
+            ofd,
             event,
             data,
         });
         return ErrnoOr<void>({});
     }
 
-    ErrnoOr<void> Epoll::changeEntry(i32 fd, u32 event, u64 data) {
+    ErrnoOr<void> Epoll::changeEntry(void* ofd, u32 event, u64 data) {
         auto it = std::find_if(interestList_.begin(), interestList_.end(), [&](const Entry& entry) {
-            return entry.fd == fd;
+            return entry.ofd == ofd;
         });
-        verify(it != interestList_.end(), "Epoll:;changeEntry: fd not present in interest list");
+        verify(it != interestList_.end(), "Epoll:;changeEntry: ofd not present in interest list");
         it->event = event;
         it->data = data;
         return ErrnoOr<void>({});
     }
 
-    ErrnoOr<void> Epoll::deleteEntry(i32 fd) {
+    ErrnoOr<void> Epoll::deleteEntry(void* ofd) {
         auto it = std::remove_if(interestList_.begin(), interestList_.end(), [&](const Entry& entry) {
-            return entry.fd == fd;
+            return entry.ofd == ofd;
         });
         if(it == interestList_.end()) {
             return ErrnoOr<void>(-ENOENT);

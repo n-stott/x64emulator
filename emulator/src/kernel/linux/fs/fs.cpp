@@ -25,7 +25,214 @@
 
 namespace kernel::gnulinux {
 
-    FS::FS() {
+    CurrentDirectoryOrDirectoryDescriptor FileDescriptors::dirfd(FD dirfd) {
+        bool isCwd = dirfd.fd == Host::cwdfd().fd;
+        auto* descriptor = findFileDescriptor(dirfd);
+        return CurrentDirectoryOrDirectoryDescriptor {
+            isCwd,
+            (!isCwd && !!descriptor) ? *descriptor : FileDescriptor{},
+        };
+    }
+
+    FD FileDescriptors::open(const Path& path,
+            BitFlags<AccessMode> accessMode,
+            BitFlags<CreationFlags> creationFlags,
+            BitFlags<StatusFlags> statusFlags,
+            Permissions permissions) {
+        auto descriptor = fs_.open(path, accessMode, creationFlags, statusFlags, permissions);
+        int ret = descriptor.errorOrWith<int>([&](auto& descr) {
+            FD fd = allocateFd();
+            fileDescriptors_[fd.fd] = std::make_unique<FileDescriptor>(descr);
+            return fd.fd;
+        });
+        return FD{ret};
+    }
+
+    int FileDescriptors::close(FD fd) {
+        auto* descriptor = findFileDescriptor(fd);
+        if(!descriptor) return -EBADF;
+        int ret = fs_.close(*descriptor);
+        if(ret < 0) return ret;
+        fileDescriptors_[fd.fd] = nullptr;
+        return ret;
+    }
+
+    int FileDescriptors::fcntl(FD fd, int cmd, int arg) {
+        auto descriptor = findFileDescriptor(fd);
+        if(!descriptor) return -EBADF;
+        OpenFileDescription* openFileDescription = descriptor->openFiledescription.get();
+        if(!openFileDescription) return -EBADF;
+        switch(Host::Fcntl::toCommand(cmd)) {
+            case Host::Fcntl::DUPFD: {
+                verify("cannot do dupfd in FS::fcntl");
+                FD newfd = dup(fd);
+                return newfd.fd;
+            }
+            case Host::Fcntl::DUPFD_CLOEXEC: {
+                verify("cannot do dupfd_cloexec in FS::fcntl");
+                FD newfd = dup(fd);
+                FileDescriptor* desc = findFileDescriptor(newfd);
+                verify(!!desc);
+                desc->closeOnExec = true;
+                return newfd.fd;
+            }
+            default: {
+                return fs_.fcntl(*descriptor, cmd, arg);
+            }
+        }
+    }
+
+    FD FileDescriptors::dup(FD fd) {
+        auto openFileDescription = findOpenFileDescription(fd);
+        if(!openFileDescription) return FD{-EBADF};
+        FD newFd = allocateFd();
+        openFileDescription->file()->ref();
+        FileDescriptor descriptor { openFileDescription, false };
+        fileDescriptors_[newFd.fd] = std::make_unique<FileDescriptor>(descriptor);
+        return newFd;
+    }
+
+    FD FileDescriptors::dup2(FD oldfd, FD newfd) {
+        auto oldOfd = findOpenFileDescription(oldfd);
+        if(!oldOfd) return FD{-EBADF};
+        if(oldfd == newfd) return newfd;
+        auto newOfd = findOpenFileDescription(newfd);
+        if(!!newOfd) {
+            int ret = close(newfd);
+            verify(ret == 0, "close in dup2 failed");
+        }
+        oldOfd->file()->ref();
+        if(newfd.fd >= (int)fileDescriptors_.size()) {
+            fileDescriptors_.resize(newfd.fd+1);
+        }
+        FileDescriptor descriptor { oldOfd, false };
+        fileDescriptors_[newfd.fd] = std::make_unique<FileDescriptor>(descriptor);
+        return newfd;
+    }
+
+    FD FileDescriptors::dup3(FD oldfd, FD newfd, int flags) {
+        if(oldfd == newfd) return FD{-EINVAL};
+        auto oldOfd = findOpenFileDescription(oldfd);
+        if(!oldOfd) return FD{-EBADF};
+        auto newOfd = findOpenFileDescription(newfd);
+        if(!!newOfd) {
+            int ret = close(newfd);
+            verify(ret == 0, "close in dup3 failed");
+        }
+        oldOfd->file()->ref();
+        bool closeOnExec = Host::Open::isCloseOnExec(flags);
+        if(newfd.fd >= (int)fileDescriptors_.size()) {
+            fileDescriptors_.resize(newfd.fd+1);
+        }
+        FileDescriptor descriptor { oldOfd, closeOnExec };
+        fileDescriptors_[newfd.fd] = std::make_unique<FileDescriptor>(descriptor);
+        return newfd;
+    }
+
+    FD FileDescriptors::memfd_create(const std::string& name, unsigned int flags) {
+        auto descriptor = fs_.memfd_create(name, flags);
+        int ret = descriptor.errorOrWith<int>([&](auto& descr) {
+            FD fd = allocateFd();
+            fileDescriptors_[fd.fd] = std::make_unique<FileDescriptor>(descr);
+            return fd.fd;
+        });
+        return FD{ret};
+    }
+
+    FD FileDescriptors::eventfd2(unsigned int initval, int flags) {
+        auto descriptor = fs_.eventfd2(initval, flags);
+        int ret = descriptor.errorOrWith<int>([&](auto& descr) {
+            FD fd = allocateFd();
+            fileDescriptors_[fd.fd] = std::make_unique<FileDescriptor>(descr);
+            return fd.fd;
+        });
+        return FD{ret};
+    }
+
+    FD FileDescriptors::epoll_create1(int flags) {
+        auto descriptor = fs_.epoll_create1(flags);
+        int ret = descriptor.errorOrWith<int>([&](auto& descr) {
+            FD fd = allocateFd();
+            fileDescriptors_[fd.fd] = std::make_unique<FileDescriptor>(descr);
+            return fd.fd;
+        });
+        return FD{ret};
+    }
+
+    FD FileDescriptors::socket(int domain, int type, int protocol) {
+        auto descriptor = fs_.socket(domain, type, protocol);
+        int ret = descriptor.errorOrWith<int>([&](auto& descr) {
+            FD fd = allocateFd();
+            fileDescriptors_[fd.fd] = std::make_unique<FileDescriptor>(descr);
+            return fd.fd;
+        });
+        return FD{ret};
+    }
+
+    ErrnoOr<std::pair<FD, FD>> FileDescriptors::pipe2(int flags) {
+        auto descriptors = fs_.pipe2(flags);
+        auto ret = descriptors.transform<std::pair<FD, FD>>([&](const std::pair<FileDescriptor, FileDescriptor>& fds) -> std::pair<FD, FD> {
+            FileDescriptor reader = fds.first;
+            FileDescriptor writer = fds.second;
+            FD readerFd = allocateFd();
+            fileDescriptors_[readerFd.fd] = std::make_unique<FileDescriptor>(reader);
+            FD writerFd = allocateFd();
+            fileDescriptors_[writerFd.fd] = std::make_unique<FileDescriptor>(writer);
+            return std::make_pair(readerFd, writerFd);
+        });
+        return ret;
+    }
+
+
+    void FileDescriptors::createStandardStreams(const Path& ttypath) {
+        BitFlags<AccessMode> accessMode { AccessMode::READ, AccessMode::WRITE };
+        BitFlags<CreationFlags> creationFlags {};
+        BitFlags<StatusFlags> statusFlags {};
+        Permissions permissions;
+        permissions.userReadable = true;
+        permissions.userWriteable = true;
+        auto stdinFd = open(ttypath, accessMode, creationFlags, statusFlags, permissions);
+        auto stdoutFd = open(ttypath, accessMode, creationFlags, statusFlags, permissions);
+        auto stderrFd = open(ttypath, accessMode, creationFlags, statusFlags, permissions);
+        verify(stdinFd.fd == 0, "stdin must have fd 0");
+        verify(stdoutFd.fd == 1, "stdout must have fd 1");
+        verify(stderrFd.fd == 2, "stderr must have fd 2");
+    }
+
+    FD FileDescriptors::allocateFd() {
+        for(int i = 0; i < (int)fileDescriptors_.size(); ++i) {
+            if(!fileDescriptors_[i]) return FD{i};
+        }
+        FD fd{(int)fileDescriptors_.size()};
+        fileDescriptors_.emplace_back(nullptr);
+        return fd;
+    }
+
+    FileDescriptor* FileDescriptors::findFileDescriptor(FD fd) {
+        if(fd.fd < 0) return nullptr;
+        if(fd.fd >= (int)fileDescriptors_.size()) return nullptr;
+        return fileDescriptors_[fd.fd].get();
+    }
+
+    std::shared_ptr<OpenFileDescription> FileDescriptors::findOpenFileDescription(FD fd) {
+        if(fd.fd < 0) return nullptr;
+        if(fd.fd >= (int)fileDescriptors_.size()) return nullptr;
+        if(!fileDescriptors_[fd.fd]) return nullptr;
+        return fileDescriptors_[fd.fd]->openFiledescription;
+    }
+
+    void FileDescriptors::dumpSummary() const {
+        fmt::println("File descriptors:");
+        for(size_t fd = 0; fd < fileDescriptors_.size(); ++fd) {
+            auto* desc = fileDescriptors_[fd].get();
+            if(!desc) continue;
+            auto* ofd = desc->openFiledescription.get();
+            fmt::print("  fd={} : type={:20} path={}\n", fd, ofd->toString(), ofd->file()->path().absolute());
+        }
+    }
+
+
+    FS::FS() : fds_(*this) {
         root_ = HostDirectory::tryCreateRoot();
         verify(!!root_, "Unable to create root directory");
         findCurrentWorkDirectory();
@@ -38,22 +245,7 @@ namespace kernel::gnulinux {
             auto* dir = ensurePathExceptLast(*ttypath);
             tty_ = dir->addFile(std::move(tty));
         }
-        createStandardStreams(tty_->path());
-    }
-
-    void FS::createStandardStreams(const Path& ttypath) {
-        BitFlags<AccessMode> accessMode { AccessMode::READ, AccessMode::WRITE };
-        BitFlags<CreationFlags> creationFlags {};
-        BitFlags<StatusFlags> statusFlags {};
-        Permissions permissions;
-        permissions.userReadable = true;
-        permissions.userWriteable = true;
-        FD stdinFd = open(ttypath, accessMode, creationFlags, statusFlags, permissions);
-        FD stdoutFd = open(ttypath, accessMode, creationFlags, statusFlags, permissions);
-        FD stderrFd = open(ttypath, accessMode, creationFlags, statusFlags, permissions);
-        verify(stdinFd.fd == 0, "stdin must have fd 0");
-        verify(stdoutFd.fd == 1, "stdout must have fd 1");
-        verify(stderrFd.fd == 2, "stderr must have fd 2");
+        fds_.createStandardStreams(tty_->path());
     }
 
     void FS::findCurrentWorkDirectory() {
@@ -70,9 +262,6 @@ namespace kernel::gnulinux {
     }
 
     void FS::resetProcFS(int pid, const Path& programFilePath) {
-        // only open files are stdin, stdout and stderr
-        verify(fileDescriptors_.size() == 3);
-
         // create a proc fs
         Path proc("proc");
         auto procfs = ProcFS::tryCreate(proc);
@@ -145,22 +334,12 @@ namespace kernel::gnulinux {
         };
     }
 
-    FD FS::insertNode(std::unique_ptr<File> file, BitFlags<AccessMode> accessMode, BitFlags<StatusFlags> statusFlags, bool closeOnExec) {
+    FileDescriptor FS::insertNode(std::unique_ptr<File> file, BitFlags<AccessMode> accessMode, BitFlags<StatusFlags> statusFlags, bool closeOnExec) {
         File* filePtr = file.get();
         orphanFiles_.push_back(std::move(file));
-        FD fd = allocateFd();
-        openFileDescriptions_.push_back(std::make_unique<OpenFileDescription>(filePtr, accessMode, statusFlags));
-        fileDescriptors_[fd.fd] = std::make_unique<FileDescriptor>(openFileDescriptions_.back().get(), closeOnExec);
+        auto ofd = std::make_unique<OpenFileDescription>(filePtr, accessMode, statusFlags);
+        FileDescriptor fd{std::move(ofd), closeOnExec};
         filePtr->ref();
-        return fd;
-    }
-
-    FD FS::allocateFd() {
-        for(int i = 0; i < (int)fileDescriptors_.size(); ++i) {
-            if(fileDescriptors_[i] == nullptr) return FD{i};
-        }
-        FD fd{(int)fileDescriptors_.size()};
-        fileDescriptors_.emplace_back(nullptr);
         return fd;
     }
 
@@ -178,15 +357,15 @@ namespace kernel::gnulinux {
         }
     }
 
-    std::optional<Path> FS::resolvePath(FD dirfd, const Directory* base, const std::string& pathname) const {
+    std::optional<Path> FS::resolvePath(CurrentDirectoryOrDirectoryDescriptor dirfd, const Directory* base, const std::string& pathname) const {
         if(!pathname.empty() && pathname[0] == '/') {
             auto path = Path::tryCreate(pathname);
             if(!path) return {};
             return *path;
-        } else if(dirfd.fd == Host::cwdfd().fd) {
+        } else if(dirfd.isCurrentDirectory) {
             return resolvePath(base, pathname);
         } else {
-            OpenFileDescription* openFileDescription = const_cast<FS&>(*this).findOpenFileDescription(dirfd);
+            OpenFileDescription* openFileDescription = dirfd.directoryDescriptor.openFiledescription.get();
             verify(!!openFileDescription, "Trying to resolve path for unopened directory");
             verify(openFileDescription->file()->isDirectory(), "Trying to resolve path for non-directory");
             const Directory* dir = static_cast<const Directory*>(openFileDescription->file());
@@ -194,10 +373,10 @@ namespace kernel::gnulinux {
         }
     }
 
-    std::optional<Path> FS::resolvePath(FD dirfd, const Directory* base, const std::string& pathname, AllowEmptyPathname tag) const {
+    std::optional<Path> FS::resolvePath(CurrentDirectoryOrDirectoryDescriptor dirfd, const Directory* base, const std::string& pathname, AllowEmptyPathname tag) const {
         if(pathname.empty()) {
             if(tag == AllowEmptyPathname::YES) {
-                OpenFileDescription* openFileDescription = const_cast<FS&>(*this).findOpenFileDescription(dirfd);
+                OpenFileDescription* openFileDescription = dirfd.directoryDescriptor.openFiledescription.get();
                 verify(!!openFileDescription, "Trying to resolve path for unopened directory");
                 return openFileDescription->file()->path();
             } else {
@@ -207,10 +386,10 @@ namespace kernel::gnulinux {
             auto path = Path::tryCreate(pathname);
             if(!path) return {};
             return *path;
-        } else if(dirfd.fd == Host::cwdfd().fd) {
+        } else if(dirfd.isCurrentDirectory) {
             return resolvePath(base, pathname);
         } else {
-            OpenFileDescription* openFileDescription = const_cast<FS&>(*this).findOpenFileDescription(dirfd);
+            OpenFileDescription* openFileDescription = dirfd.directoryDescriptor.openFiledescription.get();
             verify(!!openFileDescription, "Trying to resolve path for unopened directory");
             verify(openFileDescription->file()->isDirectory(), "Trying to resolve path for non-directory");
             const Directory* dir = static_cast<const Directory*>(openFileDescription->file());
@@ -306,7 +485,7 @@ namespace kernel::gnulinux {
         return file;
     }
 
-    FD FS::open(const Path& path,
+    ErrnoOr<FileDescriptor> FS::open(const Path& path,
             BitFlags<AccessMode> accessMode,
             BitFlags<CreationFlags> creationFlags,
             BitFlags<StatusFlags> statusFlags,
@@ -324,19 +503,18 @@ namespace kernel::gnulinux {
         // Look if the file is already present in FS, open or closed.
         bool closeOnExec = creationFlags.test(CreationFlags::CLOEXEC);
 
-        auto openNode = [&](File* filePtr) -> FD {
-            FD fd = allocateFd();
-            openFileDescriptions_.push_back(std::make_unique<OpenFileDescription>(filePtr, accessMode, statusFlags));
-            fileDescriptors_[fd.fd] = std::make_unique<FileDescriptor>(openFileDescriptions_.back().get(), closeOnExec);
+        auto openNode = [&](File* filePtr) -> FileDescriptor {
+            auto ofd = std::make_unique<OpenFileDescription>(filePtr, accessMode, statusFlags);
+            auto descriptor = FileDescriptor{std::move(ofd), closeOnExec};
             filePtr->ref();
-            return fd;
+            return descriptor;
         };
         
         File* file = tryGetFile(path, FollowSymlink::YES);
         if(!!file) {
-            FD fd = openNode(file);
+            auto descriptor = openNode(file);
             file->open();
-            return fd;
+            return ErrnoOr<FileDescriptor>(descriptor);
         }
 
         // Otherwise, try to create it
@@ -349,11 +527,11 @@ namespace kernel::gnulinux {
                     Directory* parent = ensurePathExceptLast(path);
                     HostDirectory* dir = parent->addFile<HostDirectory>(std::move(hostBackedDirectory));
                     dir->open();
-                    return openNode(dir);
+                    return ErrnoOr<FileDescriptor>(openNode(dir));
                 }
                 
                 // TODO: return the actual value of errno
-                return FD{-ENOENT};
+                return ErrnoOr<FileDescriptor>(-ENOENT);
             } else {
                 // try open the directory
                 auto hostBackedDirectory = HostDirectory::tryCreate(path);
@@ -362,7 +540,7 @@ namespace kernel::gnulinux {
                     Directory* parent = ensurePathExceptLast(path);
                     HostDirectory* dir = parent->addFile<HostDirectory>(std::move(hostBackedDirectory));
                     dir->open();
-                    return openNode(dir);
+                    return ErrnoOr<FileDescriptor>(openNode(dir));
                 }
 
                 // try open the file
@@ -372,7 +550,7 @@ namespace kernel::gnulinux {
                     HostFile* file = parent->addFile<HostFile>(std::move(hostBackedFile));
                     // create and add the node to the filesystem
                     file->open();
-                    return openNode(file);
+                    return ErrnoOr<FileDescriptor>(openNode(file));
                 }
 
                 // try open device
@@ -382,11 +560,11 @@ namespace kernel::gnulinux {
                     Directory* parent = ensurePathExceptLast(path);
                     HostDevice* device = parent->addFile<HostDevice>(std::move(hostDevice));
                     device->open();
-                    return openNode(device);
+                    return ErrnoOr<FileDescriptor>(openNode(device));
                 }
 
                 // TODO: return the actual value of errno
-                return FD{-ENOENT};
+                return ErrnoOr<FileDescriptor>(-ENOENT);
             }
         } else {
             // open the file
@@ -400,7 +578,7 @@ namespace kernel::gnulinux {
                 Directory* parent = ensurePathExceptLast(path);
                 ShadowFile* file = parent->addFile<ShadowFile>(std::move(shadowFile));
                 file->open();
-                return openNode(file);
+                return ErrnoOr<FileDescriptor>(openNode(file));
             }
 
             // try open device
@@ -410,57 +588,13 @@ namespace kernel::gnulinux {
                 Directory* parent = ensurePathExceptLast(path);
                 Device* device = parent->addFile(std::move(shadowDevice));
                 device->open();
-                return openNode(device);
+                return ErrnoOr<FileDescriptor>(openNode(device));
             }
 
             // TODO: return the actual value of errno
-            return FD{-ENOENT};
+            return ErrnoOr<FileDescriptor>(-ENOENT);
         }
-        return FD{-EINVAL};
-    }
-
-    FD FS::dup(FD fd) {
-        OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
-        if(!openFileDescription) return FD{-EBADF};
-        FD newFd = allocateFd();
-        openFileDescription->file()->ref();
-        fileDescriptors_[newFd.fd] = std::make_unique<FileDescriptor>(openFileDescription, false);
-        return newFd;
-    }
-
-    FD FS::dup2(FD oldfd, FD newfd) {
-        OpenFileDescription* oldOfd = findOpenFileDescription(oldfd);
-        if(!oldOfd) return FD{-EBADF};
-        if(oldfd == newfd) return newfd;
-        OpenFileDescription* newOfd = findOpenFileDescription(newfd);
-        if(!!newOfd) {
-            int ret = close(newfd);
-            verify(ret == 0, "close in dup2 failed");
-        }
-        oldOfd->file()->ref();
-        if(newfd.fd >= (int)fileDescriptors_.size()) {
-            fileDescriptors_.resize(newfd.fd+1);
-        }
-        fileDescriptors_[newfd.fd] = std::make_unique<FileDescriptor>(oldOfd, false);
-        return newfd;
-    }
-
-    FD FS::dup3(FD oldfd, FD newfd, int flags) {
-        if(oldfd == newfd) return FD{-EINVAL};
-        OpenFileDescription* oldOfd = findOpenFileDescription(oldfd);
-        if(!oldOfd) return FD{-EBADF};
-        OpenFileDescription* newOfd = findOpenFileDescription(newfd);
-        if(!!newOfd) {
-            int ret = close(newfd);
-            verify(ret == 0, "close in dup3 failed");
-        }
-        oldOfd->file()->ref();
-        bool closeOnExec = Host::Open::isCloseOnExec(flags);
-        if(newfd.fd >= (int)fileDescriptors_.size()) {
-            fileDescriptors_.resize(newfd.fd+1);
-        }
-        fileDescriptors_[newfd.fd] = std::make_unique<FileDescriptor>(oldOfd, closeOnExec);
-        return newfd;
+        return ErrnoOr<FileDescriptor>(-EINVAL);
     }
 
     int FS::mkdir(const Path& path) {
@@ -511,47 +645,34 @@ namespace kernel::gnulinux {
         return Host::access(path.absolute(), mode);
     }
 
-    FD FS::memfd_create(const std::string& name, unsigned int flags) {
+    ErrnoOr<FileDescriptor> FS::memfd_create(const std::string& name, unsigned int flags) {
         verify(!Host::MemfdFlags::isOther(flags), "Allow (and ignore) cloexec and allow_sealing");
         auto shadowFile = ShadowFile::tryCreate(name);
-        if(!shadowFile) return FD{-ENOMEM};
+        if(!shadowFile) return ErrnoOr<FileDescriptor>{-ENOMEM};
         shadowFile->setDeleteAfterClose();
         BitFlags<AccessMode> accessMode { AccessMode::READ, AccessMode::WRITE };
         BitFlags<StatusFlags> statusFlags { };
-        return insertNode(std::move(shadowFile), accessMode, statusFlags, Host::MemfdFlags::isCloseOnExec(flags));
+        return ErrnoOr<FileDescriptor>(insertNode(std::move(shadowFile), accessMode, statusFlags, Host::MemfdFlags::isCloseOnExec(flags)));
     }
 
-    FileDescriptor* FS::findFileDescriptor(FD fd) {
-        if(fd.fd < 0) return nullptr;
-        if(fd.fd >= (int)fileDescriptors_.size()) return nullptr;
-        return fileDescriptors_[fd.fd].get();
-    }
-
-    OpenFileDescription* FS::findOpenFileDescription(FD fd) {
-        if(fd.fd < 0) return nullptr;
-        if(fd.fd >= (int)fileDescriptors_.size()) return nullptr;
-        if(!fileDescriptors_[fd.fd]) return nullptr;
-        return fileDescriptors_[fd.fd]->openFiledescription;
-    }
-
-    ErrnoOrBuffer FS::read(FD fd, size_t count) {
-        OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
+    ErrnoOrBuffer FS::read(FileDescriptor fd, size_t count) {
+        OpenFileDescription* openFileDescription = fd.openFiledescription.get();
         if(!openFileDescription) return ErrnoOrBuffer{-EBADF};
         File* file = openFileDescription->file();
         if(!file->isReadable()) ErrnoOrBuffer{-EBADF};
         return openFileDescription->read(count);
     }
 
-    ErrnoOrBuffer FS::pread(FD fd, size_t count, off_t offset) {
-        OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
+    ErrnoOrBuffer FS::pread(FileDescriptor fd, size_t count, off_t offset) {
+        OpenFileDescription* openFileDescription = fd.openFiledescription.get();
         if(!openFileDescription) return ErrnoOrBuffer{-EBADF};
         File* file = openFileDescription->file();
         if(!file->isReadable()) ErrnoOrBuffer{-EBADF};
         return openFileDescription->pread(count, offset);
     }
 
-    ssize_t FS::readv(FD fd, std::vector<Buffer>* buffers) {
-        OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
+    ssize_t FS::readv(FileDescriptor fd, std::vector<Buffer>* buffers) {
+        OpenFileDescription* openFileDescription = fd.openFiledescription.get();
         if(!openFileDescription) return -EBADF;
         if(!openFileDescription->file()->isReadable()) return -EBADF;
         ssize_t nbytes = 0;
@@ -568,24 +689,24 @@ namespace kernel::gnulinux {
         return nbytes;
     }
 
-    ssize_t FS::write(FD fd, const u8* buf, size_t count) {
-        OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
+    ssize_t FS::write(FileDescriptor fd, const u8* buf, size_t count) {
+        OpenFileDescription* openFileDescription = fd.openFiledescription.get();
         if(!openFileDescription) return -EBADF;
         File* file = openFileDescription->file();
         if(!file->isWritable()) return -EBADF;
         return openFileDescription->write(buf, count);
     }
 
-    ssize_t FS::pwrite(FD fd, const u8* buf, size_t count, off_t offset) {
-        OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
+    ssize_t FS::pwrite(FileDescriptor fd, const u8* buf, size_t count, off_t offset) {
+        OpenFileDescription* openFileDescription = fd.openFiledescription.get();
         if(!openFileDescription) return -EBADF;
         File* file = openFileDescription->file();
         if(!file->isWritable()) return -EBADF;
         return openFileDescription->pwrite(buf, count, offset);
     }
 
-    ssize_t FS::writev(FD fd, const std::vector<Buffer>& buffers) {
-        OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
+    ssize_t FS::writev(FileDescriptor fd, const std::vector<Buffer>& buffers) {
+        OpenFileDescription* openFileDescription = fd.openFiledescription.get();
         if(!openFileDescription) return -EBADF;
         if(!openFileDescription->file()->isWritable()) return -EBADF;
         ssize_t nbytes = 0;
@@ -603,8 +724,8 @@ namespace kernel::gnulinux {
         return Host::stat(path.absolute());
     }
 
-    ErrnoOrBuffer FS::fstat(FD fd) {
-        OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
+    ErrnoOrBuffer FS::fstat(FileDescriptor fd) {
+        OpenFileDescription* openFileDescription = fd.openFiledescription.get();
         if(!openFileDescription) return ErrnoOrBuffer(-EBADF);
         return openFileDescription->file()->stat();
     }
@@ -631,54 +752,34 @@ namespace kernel::gnulinux {
         }
     }
 
-    ErrnoOrBuffer FS::fstatfs(FD fd) {
-        OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
+    ErrnoOrBuffer FS::fstatfs(FileDescriptor fd) {
+        OpenFileDescription* openFileDescription = fd.openFiledescription.get();
         if(!openFileDescription) return ErrnoOrBuffer(-EBADF);
         return openFileDescription->file()->statfs();
     }
 
-    off_t FS::lseek(FD fd, off_t offset, int whence) {
-        OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
+    off_t FS::lseek(FileDescriptor fd, off_t offset, int whence) {
+        OpenFileDescription* openFileDescription = fd.openFiledescription.get();
         if(!openFileDescription) return -EBADF;
         return openFileDescription->lseek(offset, whence);
     }
 
     void FS::checkFileRefCount(File* file) const {
         (void)file;
-        assert(file->refCount() == std::count_if(fileDescriptors_.begin(), fileDescriptors_.end(), [&](auto& desc) {
-            if(!desc) return false;
-            return desc->openFiledescription->file() == file;
-        }));
+        // assert(file->refCount() == std::count_if(fileDescriptors_.begin(), fileDescriptors_.end(), [&](auto& desc) {
+        //     if(!desc) return false;
+        //     return desc->openFiledescription->file() == file;
+        // }));
     }
 
-    void FS::checkFileDescriptions() const {
-#ifndef NDEBUG
-        for(const auto& ofd : openFileDescriptions_) {
-            assert(std::any_of(fileDescriptors_.begin(), fileDescriptors_.end(), [&](const auto& desc) {
-                if(!desc) return false;
-                return desc->openFiledescription == ofd.get();
-            }));
-        }
-#endif
-    }
-
-    int FS::close(FD fd) {
-        OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
+    int FS::close(FileDescriptor fd) {
+        OpenFileDescription* openFileDescription = fd.openFiledescription.get();
         if(!openFileDescription) return -EBADF;
         File* file = openFileDescription->file();
-        checkFileDescriptions();
         checkFileRefCount(file);
-        fileDescriptors_[fd.fd] = nullptr;
         file->unref();
-        openFileDescriptions_.erase(std::remove_if(openFileDescriptions_.begin(), openFileDescriptions_.end(), [&](auto& ofd) {
-            return std::none_of(fileDescriptors_.begin(), fileDescriptors_.end(), [&](const auto& desc) {
-                if(!desc) return false;
-                return desc->openFiledescription == ofd.get();
-            });
-        }), openFileDescriptions_.end());
 #ifndef NDEBUG
         checkFileRefCount(file);
-        checkFileDescriptions();
 #endif
         if(file->refCount() == 0) {
             file->close();
@@ -705,15 +806,15 @@ namespace kernel::gnulinux {
             [](const auto& pipe) { return pipe->isClosed(); }), pipes_.end());
     }
 
-    ErrnoOrBuffer FS::getdents64(FD fd, size_t count) {
-        OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
+    ErrnoOrBuffer FS::getdents64(FileDescriptor fd, size_t count) {
+        OpenFileDescription* openFileDescription = fd.openFiledescription.get();
         if(!openFileDescription) return ErrnoOrBuffer(-EBADF);
         File* file = openFileDescription->file();
         return file->getdents64(count);
     }
 
-    int FS::fcntl(FD fd, int cmd, int arg) {
-        OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
+    int FS::fcntl(FileDescriptor& descriptor, int cmd, int arg) {
+        OpenFileDescription* openFileDescription = descriptor.openFiledescription.get();
         if(!openFileDescription) return -EBADF;
         std::optional<int> emulatedRet;
         // If we can do it in FS alone, do it here
@@ -721,36 +822,25 @@ namespace kernel::gnulinux {
         bool callFcntlOnFile = true;
         switch(Host::Fcntl::toCommand(cmd)) {
             case Host::Fcntl::DUPFD: {
-                FD newfd = dup(fd);
-                emulatedRet = newfd.fd;
-                callFcntlOnFile = false;
+                verify(false, "cannot do dupfd in FS::fcntl");
                 break;
             }
             case Host::Fcntl::DUPFD_CLOEXEC: {
-                FD newfd = dup(fd);
-                FileDescriptor* desc = findFileDescriptor(newfd);
-                verify(!!desc);
-                desc->closeOnExec = true;
-                emulatedRet = newfd.fd;
-                callFcntlOnFile = false;
+                verify(false, "cannot do dupfd_cloexec in FS::fcntl");
                 break;
             }
             case Host::Fcntl::GETFD: {
-                FileDescriptor* desc = findFileDescriptor(fd);
-                verify(!!desc);
-                emulatedRet = desc->closeOnExec ? Host::Fcntl::fdCloExec() : 0;
+                emulatedRet = descriptor.closeOnExec ? Host::Fcntl::fdCloExec() : 0;
                 break;
             }
             case Host::Fcntl::SETFD: {
-                FileDescriptor* desc = findFileDescriptor(fd);
-                verify(!!desc);
-                bool currentFlag = desc->closeOnExec;
-                if(Host::Open::isCloseOnExec(arg) && !currentFlag) desc->closeOnExec = true;
-                if(!Host::Open::isCloseOnExec(arg) && currentFlag) desc->closeOnExec = false;
+                bool currentFlag = descriptor.closeOnExec;
+                if(Host::Open::isCloseOnExec(arg) && !currentFlag) descriptor.closeOnExec = true;
+                if(!Host::Open::isCloseOnExec(arg) && currentFlag) descriptor.closeOnExec = false;
                 emulatedRet = 0;
                 break;
             }
-        // If the open file description is sufficient, do it there
+            // If the open file description is sufficient, do it there
             case Host::Fcntl::GETFL: {
                 emulatedRet = assembleAccessModeAndFileStatusFlags(openFileDescription->accessMode(), openFileDescription->statusFlags());
                 callFcntlOnFile = false;
@@ -792,14 +882,14 @@ namespace kernel::gnulinux {
         }
     }
 
-    ErrnoOrBuffer FS::ioctl(FD fd, Ioctl request, const Buffer& buffer) {
-        OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
+    ErrnoOrBuffer FS::ioctl(FileDescriptor fd, Ioctl request, const Buffer& buffer) {
+        OpenFileDescription* openFileDescription = fd.openFiledescription.get();
         if(!openFileDescription) return ErrnoOrBuffer(-EBADF);
         return openFileDescription->ioctl(request, buffer);
     }
 
-    int FS::flock(FD fd, int operation) {
-        OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
+    int FS::flock(FileDescriptor fd, int operation) {
+        OpenFileDescription* openFileDescription = fd.openFiledescription.get();
         if(!openFileDescription) return -EBADF;
         bool lockShared = Host::Lock::isShared(operation);
         bool lockExclusively = Host::Lock::isExclusive(operation);
@@ -825,8 +915,8 @@ namespace kernel::gnulinux {
         return -EINVAL;
     }
 
-    int FS::fallocate(FD fd, int mode, off_t offset, off_t len) {
-        OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
+    int FS::fallocate(FileDescriptor fd, int mode, off_t offset, off_t len) {
+        OpenFileDescription* openFileDescription = fd.openFiledescription.get();
         if(!openFileDescription) return -EBADF;
         File* file = openFileDescription->file();
         verify(file->isRegularFile(), "fallocate not implemented on non-regular files");
@@ -845,8 +935,8 @@ namespace kernel::gnulinux {
         return 0;
     }
 
-    int FS::ftruncate(FD fd, off_t length) {
-        OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
+    int FS::ftruncate(FileDescriptor fd, off_t length) {
+        OpenFileDescription* openFileDescription = fd.openFiledescription.get();
         if(!openFileDescription) return -EBADF;
         File* file = openFileDescription->file();
         verify(file->isRegularFile(), "fallocate not implemented on non-regular files");
@@ -856,7 +946,7 @@ namespace kernel::gnulinux {
         return 0;
     }
 
-    FD FS::eventfd2(unsigned int initval, int flags) {
+    ErrnoOr<FileDescriptor> FS::eventfd2(unsigned int initval, int flags) {
         verify(!Host::Eventfd2Flags::isSemaphore(flags), "only closeOnExec and nonBlock are allowed on eventfd2");
         std::unique_ptr<Event> event = Event::tryCreate(initval, flags);
         verify(!!event, "Unable to create event");
@@ -864,54 +954,55 @@ namespace kernel::gnulinux {
         BitFlags<StatusFlags> statusFlags { };
         if(Host::Eventfd2Flags::isNonBlock(flags)) statusFlags.add(StatusFlags::NONBLOCK);
         bool closeOnExec = Host::Eventfd2Flags::isCloseOnExec(flags);
-        FD fd = insertNode(std::move(event), accessMode, statusFlags, closeOnExec);
-        return fd;
+        auto fd = insertNode(std::move(event), accessMode, statusFlags, closeOnExec);
+        return ErrnoOr<FileDescriptor>(fd);
     }
 
-    FD FS::epoll_create1(int flags) {
+    ErrnoOr<FileDescriptor> FS::epoll_create1(int flags) {
         std::unique_ptr<Epoll> epoll = std::make_unique<Epoll>(flags);
         verify(!!epoll, "Unable to create epoll");
         BitFlags<AccessMode> accessMode { AccessMode::READ, AccessMode::WRITE };
         BitFlags<StatusFlags> statusFlags { };
         bool closeOnExec = Host::EpollFlags::isCloseOnExec(flags);
-        return insertNode(std::move(epoll), accessMode, statusFlags, closeOnExec);
+        auto descriptor = insertNode(std::move(epoll), accessMode, statusFlags, closeOnExec);
+        return ErrnoOr<FileDescriptor>(descriptor);
     }
 
-    int FS::epoll_ctl(FD epfd, int op, FD fd, BitFlags<EpollEventType> events, u64 data) {
-        OpenFileDescription* openFileDescription = findOpenFileDescription(epfd);
+    int FS::epoll_ctl(FileDescriptor epfd, int op, FileDescriptor fd, BitFlags<EpollEventType> events, u64 data) {
+        OpenFileDescription* openFileDescription = epfd.openFiledescription.get();
         if(!openFileDescription) return -EBADF;
         if(!openFileDescription->file()->isEpoll()) return -EBADF;
         Epoll* epoll = static_cast<Epoll*>(openFileDescription->file());
         if(Host::EpollCtlOp::isAdd(op)) {
             events.add(EpollEventType::HANGUP);
-            auto ret = epoll->addEntry(fd.fd, events.toUnderlying(), data);
+            auto ret = epoll->addEntry(fd.openFiledescription.get(), events.toUnderlying(), data);
             return ret.errorOr(0);
         } else if(Host::EpollCtlOp::isMod(op)) {
-            auto ret = epoll->changeEntry(fd.fd, events.toUnderlying(), data);
+            auto ret = epoll->changeEntry(fd.openFiledescription.get(), events.toUnderlying(), data);
             return ret.errorOr(0);
         } else {
             verify(Host::EpollCtlOp::isDel(op), "Unknown epoll_ctl op");
-            auto ret = epoll->deleteEntry(fd.fd);
+            auto ret = epoll->deleteEntry(fd.openFiledescription.get());
             return ret.errorOr(0);
         }
     }
 
-    int FS::epollWaitImmediate(FD epfd, std::vector<EpollEvent>* events) {
-        OpenFileDescription* openFileDescription = findOpenFileDescription(epfd);
+    int FS::epollWaitImmediate(FileDescriptor epfd, std::vector<EpollEvent>* events) {
+        OpenFileDescription* openFileDescription = epfd.openFiledescription.get();
         if(!openFileDescription) return -EBADF;
         if(!openFileDescription->file()->isEpoll()) return -EBADF;
         doEpollWait(epfd, events);
         return (int)events->size();
     }
 
-    void FS::doEpollWait(FD epfd, std::vector<EpollEvent>* events) {
+    void FS::doEpollWait(FileDescriptor epfd, std::vector<EpollEvent>* events) {
         verify(!!events);
-        OpenFileDescription* openFileDescription = findOpenFileDescription(epfd);
+        OpenFileDescription* openFileDescription = epfd.openFiledescription.get();
         verify(!!openFileDescription, "No open file description for epoll wait");
         verify(openFileDescription->file()->isEpoll(), "Cannot perform epoll wait on non-epoll instance");
         Epoll* instance = static_cast<Epoll*>(openFileDescription->file());
-        instance->forEachEntryInInterestList([&](i32 fd, u32 ev, u64 data) {
-            OpenFileDescription* openFileDescription = findOpenFileDescription(FD{fd});
+        instance->forEachEntryInInterestList([&](void* ofd, u32 ev, u64 data) {
+            OpenFileDescription* openFileDescription = (OpenFileDescription*)ofd;
             if(!openFileDescription) {
                 events->push_back(EpollEvent{
                     BitFlags<EpollEventType>{EpollEventType::HANGUP},
@@ -920,7 +1011,7 @@ namespace kernel::gnulinux {
                 return;
             }
             File* file = openFileDescription->file();
-            verify(file->isPollable(), [&]() { fmt::print("fd={} is not pollable\n", fd); });
+            verify(file->isPollable(), [&]() { fmt::print("ofd={:p} is not pollable\n", ofd); });
 
             BitFlags<EpollEventType> eventTypes = BitFlags<EpollEventType>::fromIntegerType(ev);
             bool testRead = eventTypes.test(EpollEventType::CAN_READ);
@@ -944,67 +1035,68 @@ namespace kernel::gnulinux {
         });
     }
 
-    FD FS::socket(int domain, int type, int protocol) {
+    ErrnoOr<FileDescriptor> FS::socket(int domain, int type, int protocol) {
         auto socket = Socket::tryCreate(domain, type, protocol);
         // TODO: return the actual value of errno
-        if(!socket) return FD{-EINVAL};
+        if(!socket) return ErrnoOr<FileDescriptor>{-EINVAL};
         BitFlags<AccessMode> accessMode { AccessMode::READ, AccessMode::WRITE };
         BitFlags<StatusFlags> statusFlags { };
         if(Host::SocketType::isNonBlock(type)) statusFlags.add(StatusFlags::NONBLOCK);
         bool closeOnExec = Host::SocketType::isCloseOnExec(type);
-        return insertNode(std::move(socket), accessMode, statusFlags, closeOnExec);
+        auto descriptor = insertNode(std::move(socket), accessMode, statusFlags, closeOnExec);
+        return ErrnoOr<FileDescriptor>(descriptor);
     }
 
-    int FS::connect(FD sockfd, const Buffer& buffer) {
-        OpenFileDescription* openFileDescription = findOpenFileDescription(sockfd);
+    int FS::connect(FileDescriptor sockfd, const Buffer& buffer) {
+        OpenFileDescription* openFileDescription = sockfd.openFiledescription.get();
         if(!openFileDescription) return -EBADF;
         if(!openFileDescription->file()->isSocket()) return -EBADF;
         Socket* socket = static_cast<Socket*>(openFileDescription->file());
         return socket->connect(buffer);
     }
 
-    int FS::bind(FD sockfd, const Buffer& name) {
-        OpenFileDescription* openFileDescription = findOpenFileDescription(sockfd);
+    int FS::bind(FileDescriptor sockfd, const Buffer& name) {
+        OpenFileDescription* openFileDescription = sockfd.openFiledescription.get();
         if(!openFileDescription) return -EBADF;
         if(!openFileDescription->file()->isSocket()) return -EBADF;
         Socket* socket = static_cast<Socket*>(openFileDescription->file());
         return socket->bind(name);
     }
 
-    int FS::shutdown(FD sockfd, int how) {
-        OpenFileDescription* openFileDescription = findOpenFileDescription(sockfd);
+    int FS::shutdown(FileDescriptor sockfd, int how) {
+        OpenFileDescription* openFileDescription = sockfd.openFiledescription.get();
         if(!openFileDescription) return -EBADF;
         if(!openFileDescription->file()->isSocket()) return -EBADF;
         Socket* socket = static_cast<Socket*>(openFileDescription->file());
         return socket->shutdown(how);
     }
 
-    ErrnoOrBuffer FS::getpeername(FD sockfd, u32 buffersize) {
-        OpenFileDescription* openFileDescription = findOpenFileDescription(sockfd);
+    ErrnoOrBuffer FS::getpeername(FileDescriptor sockfd, u32 buffersize) {
+        OpenFileDescription* openFileDescription = sockfd.openFiledescription.get();
         if(!openFileDescription) return ErrnoOrBuffer(-EBADF);
         if(!openFileDescription->file()->isSocket()) return ErrnoOrBuffer(-EBADF);
         Socket* socket = static_cast<Socket*>(openFileDescription->file());
         return socket->getpeername(buffersize);
     }
 
-    ErrnoOrBuffer FS::getsockname(FD sockfd, u32 buffersize) {
-        OpenFileDescription* openFileDescription = findOpenFileDescription(sockfd);
+    ErrnoOrBuffer FS::getsockname(FileDescriptor sockfd, u32 buffersize) {
+        OpenFileDescription* openFileDescription = sockfd.openFiledescription.get();
         if(!openFileDescription) return ErrnoOrBuffer(-EBADF);
         if(!openFileDescription->file()->isSocket()) return ErrnoOrBuffer(-EBADF);
         Socket* socket = static_cast<Socket*>(openFileDescription->file());
         return socket->getsockname(buffersize);
     }
 
-    ErrnoOrBuffer FS::getsockopt(FD sockfd, int level, int optname, const Buffer& buffer) {
-        OpenFileDescription* openFileDescription = findOpenFileDescription(sockfd);
+    ErrnoOrBuffer FS::getsockopt(FileDescriptor sockfd, int level, int optname, const Buffer& buffer) {
+        OpenFileDescription* openFileDescription = sockfd.openFiledescription.get();
         if(!openFileDescription) return ErrnoOrBuffer(-EBADF);
         if(!openFileDescription->file()->isSocket()) return ErrnoOrBuffer(-EBADF);
         Socket* socket = static_cast<Socket*>(openFileDescription->file());
         return socket->getsockopt(level, optname, buffer);
     }
 
-    int FS::setsockopt(FD sockfd, int level, int optname, const Buffer& buffer) {
-        OpenFileDescription* openFileDescription = findOpenFileDescription(sockfd);
+    int FS::setsockopt(FileDescriptor sockfd, int level, int optname, const Buffer& buffer) {
+        OpenFileDescription* openFileDescription = sockfd.openFiledescription.get();
         if(!openFileDescription) return -EBADF;
         if(!openFileDescription->file()->isSocket()) return -EBADF;
         Socket* socket = static_cast<Socket*>(openFileDescription->file());
@@ -1012,16 +1104,21 @@ namespace kernel::gnulinux {
     }
 
     ErrnoOr<BufferAndReturnValue<int>> FS::pollImmediate(const std::vector<PollData>& pfds) {
-        std::vector<PollData> rfds = pfds;
-        for(auto& rfd : rfds) {
+        std::vector<PollFd> rfds;
+        rfds.resize(pfds.size());
+        for(size_t i = 0; i < pfds.size(); ++i) {
+            auto& rfd = rfds[i];
+            rfd.fd = pfds[i].fd;
+            rfd.events = pfds[i].events;
+            rfd.revents = pfds[i].revents;
             // check that all fds are pollable and have a host-side fd
-            OpenFileDescription* openFileDescription = findOpenFileDescription(FD{rfd.fd});
-            if(!openFileDescription) {
-                rfd.revents = rfd.revents | PollEvent::INVALID_REQUEST;
+            FileDescriptor descriptor = pfds[i].descriptor;
+            if(!descriptor.openFiledescription) {
+                rfd.revents = pfds[i].revents | PollEvent::INVALID_REQUEST;
                 continue;
             }
-            File* file = openFileDescription->file();
-            verify(file->isPollable(), [&]() { fmt::print("fd={} is not pollable\n", rfd.fd); });
+            File* file = descriptor.openFiledescription->file();
+            verify(file->isPollable(), [&]() { fmt::print("file is not pollable\n"); });
 
             bool testRead = ((rfd.events & PollEvent::CAN_READ) == PollEvent::CAN_READ);
             bool testWrite = ((rfd.events & PollEvent::CAN_WRITE) == PollEvent::CAN_WRITE);
@@ -1029,7 +1126,7 @@ namespace kernel::gnulinux {
             if(testWrite && file->canWrite()) rfd.revents = rfd.revents | PollEvent::CAN_WRITE;
         }
         int ret = 0;
-        Buffer buffer(rfds.size()*sizeof(PollData), 0);
+        Buffer buffer(rfds.size()*sizeof(PollFd), 0);
         ::memcpy(buffer.data(), rfds.data(), buffer.size());
         BufferAndReturnValue<int> bufferAndRetVal {
             std::move(buffer),
@@ -1041,13 +1138,12 @@ namespace kernel::gnulinux {
     void FS::doPoll(std::vector<PollData>* data) {
         if(!data) return;
         for(PollData& pollfd : *data) {
-            FD fd { pollfd.fd };
-            OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
-            verify(!!openFileDescription, [&]() {
-                fmt::print("Polling on non-existing open file description for fd={}\n", pollfd.fd);
+            FileDescriptor descriptor = pollfd.descriptor;
+            verify(!!descriptor.openFiledescription, [&]() {
+                fmt::print("Polling on non-existing open file description\n");
             });
-            File* file = openFileDescription->file();
-            verify(file->isPollable(), [&]() { fmt::print("Attempting to poll non-pollable file with fd={}\n", fd.fd); });
+            File* file = descriptor.openFiledescription->file();
+            verify(file->isPollable(), [&]() { fmt::print("Attempting to poll non-pollable file\n"); });
             bool testRead = (pollfd.events & PollEvent::CAN_READ) == PollEvent::CAN_READ;
             bool testWrite = (pollfd.events & PollEvent::CAN_WRITE) == PollEvent::CAN_WRITE;
             pollfd.revents = PollEvent::NONE;
@@ -1058,29 +1154,29 @@ namespace kernel::gnulinux {
 
     int FS::selectImmediate(SelectData* selectData) {
         if(!selectData) return 0;
-        for(size_t fd = 0; fd < (size_t)selectData->nfds; ++fd) {
-            bool testRead = selectData->readfds.test(fd);
-            bool testWrite = selectData->writefds.test(fd);
+        for(size_t i = 0; i < selectData->fds.size(); ++i) {
+            bool testRead = selectData->readfds.test(i);
+            bool testWrite = selectData->writefds.test(i);
             if(!testRead && !testWrite) continue;
 
-            selectData->readfds.reset(fd);
-            selectData->writefds.reset(fd);
+            selectData->readfds.reset(i);
+            selectData->writefds.reset(i);
 
             // check that all fds are pollable and have a host-side fd
-            OpenFileDescription* openFileDescription = findOpenFileDescription(FD{(i32)fd});
+            OpenFileDescription* openFileDescription = selectData->fds[i].openFiledescription.get();
             if(!openFileDescription) return -EBADF;
 
             File* file = openFileDescription->file();
-            verify(file->isPollable(), [&]() { fmt::print("fd={} is not pollable\n", fd); });
+            verify(file->isPollable(), [&]() { fmt::print("file is not pollable\n"); });
 
-            if(testRead && file->canRead())   selectData->readfds.set(fd);
-            if(testWrite && file->canWrite()) selectData->writefds.set(fd);
+            if(testRead && file->canRead())   selectData->readfds.set(i);
+            if(testWrite && file->canWrite()) selectData->writefds.set(i);
         }
         return 0;
     }
 
-    ErrnoOr<std::pair<FD, FD>> FS::pipe2(int flags) {
-        using ReturnType = ErrnoOr<std::pair<FD, FD>>;
+    ErrnoOr<std::pair<FileDescriptor, FileDescriptor>> FS::pipe2(int flags) {
+        using ReturnType = ErrnoOr<std::pair<FileDescriptor, FileDescriptor>>;
         auto pipe = Pipe::tryCreate(flags);
         if(!pipe) return ReturnType(-EMFILE);
 
@@ -1096,21 +1192,21 @@ namespace kernel::gnulinux {
         pipes_.push_back(std::move(pipe));
         BitFlags<StatusFlags> statusFlags = FS::toStatusFlags(flags);
         verify(!statusFlags.test(StatusFlags::DIRECT), "O_DIRECT not supported on pipes");
-        FD reader = insertNode(std::move(readingSide), BitFlags<AccessMode>{AccessMode::READ}, statusFlags, closeOnExec);
-        FD writer = insertNode(std::move(writingSide), BitFlags<AccessMode>{AccessMode::WRITE}, statusFlags, closeOnExec);
+        FileDescriptor reader = insertNode(std::move(readingSide), BitFlags<AccessMode>{AccessMode::READ}, statusFlags, closeOnExec);
+        FileDescriptor writer = insertNode(std::move(writingSide), BitFlags<AccessMode>{AccessMode::WRITE}, statusFlags, closeOnExec);
         return ReturnType(std::make_pair(reader, writer));
     }
 
-    ErrnoOr<std::pair<Buffer, Buffer>> FS::recvfrom(FD sockfd, size_t len, int flags, bool requireSrcAddress) {
-        OpenFileDescription* openFileDescription = findOpenFileDescription(sockfd);
+    ErrnoOr<std::pair<Buffer, Buffer>> FS::recvfrom(FileDescriptor sockfd, size_t len, int flags, bool requireSrcAddress) {
+        OpenFileDescription* openFileDescription = sockfd.openFiledescription.get();
         if(!openFileDescription) return ErrnoOr<std::pair<Buffer, Buffer>>(-EBADF);
         if(!openFileDescription->file()->isSocket()) return ErrnoOr<std::pair<Buffer, Buffer>>(-EBADF);
         Socket* socket = static_cast<Socket*>(openFileDescription->file());
         return socket->recvfrom(len, flags, requireSrcAddress);
 
     }
-    ssize_t FS::recvmsg(FD sockfd, int flags, Message* message) {
-        OpenFileDescription* openFileDescription = findOpenFileDescription(sockfd);
+    ssize_t FS::recvmsg(FileDescriptor sockfd, int flags, Message* message) {
+        OpenFileDescription* openFileDescription = sockfd.openFiledescription.get();
         if(!openFileDescription) return -EBADF;
         if(!openFileDescription->file()->isSocket()) return -EBADF;
         Socket* socket = static_cast<Socket*>(openFileDescription->file());
@@ -1127,16 +1223,16 @@ namespace kernel::gnulinux {
         return ret;
     }
 
-    ssize_t FS::send(FD sockfd, const Buffer& buffer, int flags) {
-        OpenFileDescription* openFileDescription = findOpenFileDescription(sockfd);
+    ssize_t FS::send(FileDescriptor sockfd, const Buffer& buffer, int flags) {
+        OpenFileDescription* openFileDescription = sockfd.openFiledescription.get();
         if(!openFileDescription) return -EBADF;
         if(!openFileDescription->file()->isSocket()) return -ENOTSOCK;
         Socket* socket = static_cast<Socket*>(openFileDescription->file());
         return socket->send(buffer, flags);
     }
 
-    ssize_t FS::sendmsg(FD sockfd, int flags, const Message& message) {
-        OpenFileDescription* openFileDescription = findOpenFileDescription(sockfd);
+    ssize_t FS::sendmsg(FileDescriptor sockfd, int flags, const Message& message) {
+        OpenFileDescription* openFileDescription = sockfd.openFiledescription.get();
         if(!openFileDescription) return -EBADF;
         if(!openFileDescription->file()->isSocket()) return -EBADF;
         Socket* socket = static_cast<Socket*>(openFileDescription->file());
@@ -1148,21 +1244,15 @@ namespace kernel::gnulinux {
         return socket->sendmsg(flags, socketMessage);
     }
 
-    std::string FS::filename(FD fd) {
-        OpenFileDescription* openFileDescription = findOpenFileDescription(fd);
+    std::string FS::filename(FileDescriptor fd) {
+        OpenFileDescription* openFileDescription = fd.openFiledescription.get();
         if(!openFileDescription) return "Unknown";
         File* file = openFileDescription->file();
         return file->path().absolute();
     }
 
     void FS::dumpSummary() const {
-        fmt::println("File descriptors:");
-        for(size_t fd = 0; fd < fileDescriptors_.size(); ++fd) {
-            auto* desc = fileDescriptors_[fd].get();
-            if(!desc) continue;
-            auto* ofd = desc->openFiledescription;
-            fmt::print("  fd={} : type={:20} path={}\n", fd, ofd->toString(), ofd->file()->path().absolute());
-        }
+        fds_.dumpSummary();
         root_->printSubtree();
     }
 
