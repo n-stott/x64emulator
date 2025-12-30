@@ -24,17 +24,19 @@ int real() {
 
 int emulated() {
     FS fs;
+
+    FileDescriptors fds(fs);
     
-    int flags = fs.fds().fcntl(FD{0}, F_GETFL, 0);
+    int flags = fds.fcntl(FD{0}, F_GETFL, 0);
     if(flags < 0) return 1;
     int access = flags & O_ACCMODE;
     if(access != 2) return 1;
 
     flags = (flags & ~O_ACCMODE) | (0 & O_ACCMODE);
-    int ret = fs.fds().fcntl(FD{0}, F_SETFL, flags);
+    int ret = fds.fcntl(FD{0}, F_SETFL, flags);
     if(ret != 0) return 1;
 
-    flags = fs.fds().fcntl(FD{0}, F_GETFL, 0);
+    flags = fds.fcntl(FD{0}, F_GETFL, 0);
     if(flags < 0) return 1;
     access = flags & O_ACCMODE;
     if(access != 2) return 1;

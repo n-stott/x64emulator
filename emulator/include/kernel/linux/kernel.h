@@ -17,6 +17,7 @@ namespace kernel {
 namespace kernel::gnulinux {
 
     class FS;
+    class Process;
     class Scheduler;
     class SharedMemory;
     class Sys;
@@ -39,6 +40,7 @@ namespace kernel::gnulinux {
         void setOptimizationLevel(int level);
         void setEnableShm(bool enableShm);
         void setNbCores(int nbCores);
+        void setProcessVirtualMemory(unsigned int virtualMemoryInMB);
 
         bool isProfiling() const { return isProfiling_; }
         bool logSyscalls() const { return logSyscalls_; }
@@ -48,7 +50,6 @@ namespace kernel::gnulinux {
         int optimizationLevel() const { return optimizationLevel_; }
         bool isShmEnabled() const { return enableShm_; }
         int nbCores() const { return nbCores_; }
-        int disassembler() const { return disassembler_; }
 
         FS& fs() {
             assert(!!fs_);
@@ -70,18 +71,25 @@ namespace kernel::gnulinux {
             assert(!!timers_);
             return *timers_;
         }
+        Process& process() {
+            assert(!!process_);
+            return *process_;
+        }
 
         void panic();
         bool hasPanicked() const { return hasPanicked_; }
         void dumpPanicInfo() const;
     
     private:
+        void createProcess();
+
         x64::Mmu& mmu_;
         std::unique_ptr<FS> fs_;
         std::unique_ptr<SharedMemory> shm_;
         std::unique_ptr<Scheduler> scheduler_;
         std::unique_ptr<Sys> sys_;
         std::unique_ptr<Timers> timers_;
+        std::unique_ptr<Process> process_;
         bool hasPanicked_ { false };
 
         bool logSyscalls_ { false };
@@ -92,7 +100,7 @@ namespace kernel::gnulinux {
         int optimizationLevel_ { 0 };
         bool enableShm_ { false };
         int nbCores_ { 1 };
-        int disassembler_ { 0 };
+        unsigned int virtualMemoryInMB_ { 4096 };
 
     };
 

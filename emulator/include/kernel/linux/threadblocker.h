@@ -17,6 +17,7 @@ namespace kernel::gnulinux {
 
     class FS;
     class Thread;
+    class Process;
 
     class FutexBlocker {
     public:
@@ -43,7 +44,7 @@ namespace kernel::gnulinux {
 
     class PollBlocker {
     public:
-        PollBlocker(Thread* thread, x64::Mmu& mmu, Timers& timers, x64::Ptr pollfds, size_t nfds, int timeoutInMs);
+        PollBlocker(Process* process, Thread* thread, x64::Mmu& mmu, Timers& timers, x64::Ptr pollfds, size_t nfds, int timeoutInMs);
         
         [[nodiscard]] bool tryUnblock(FS& fs);
         [[nodiscard]] bool hasTimeout() const { return !!timeLimit_; }
@@ -53,6 +54,7 @@ namespace kernel::gnulinux {
         std::string toString() const;
 
     private:
+        Process* process_;
         Thread* thread_;
         x64::Mmu* mmu_;
         Timers* timers_;
@@ -65,7 +67,7 @@ namespace kernel::gnulinux {
 
     class SelectBlocker {
     public:
-        SelectBlocker(Thread* thread, x64::Mmu& mmu, Timers& timers, int nfds, x64::Ptr readfds, x64::Ptr writefds, x64::Ptr exceptfds, x64::Ptr timeout);
+        SelectBlocker(Process* process, Thread* thread, x64::Mmu& mmu, Timers& timers, int nfds, x64::Ptr readfds, x64::Ptr writefds, x64::Ptr exceptfds, x64::Ptr timeout);
         
         [[nodiscard]] bool tryUnblock(FS& fs);
         [[nodiscard]] bool hasTimeout() const { return !!timeLimit_; }
@@ -75,6 +77,7 @@ namespace kernel::gnulinux {
         std::string toString() const;
 
     private:
+        Process* process_;
         Thread* thread_;
         x64::Mmu* mmu_;
         Timers* timers_;
@@ -88,7 +91,7 @@ namespace kernel::gnulinux {
 
     class EpollWaitBlocker {
     public:
-        EpollWaitBlocker(Thread* thread, x64::Mmu& mmu, Timers& timers, int epfd, x64::Ptr events, size_t maxevents, int timeoutInMs);
+        EpollWaitBlocker(Process* process, Thread* thread, x64::Mmu& mmu, Timers& timers, int epfd, x64::Ptr events, size_t maxevents, int timeoutInMs);
         
         [[nodiscard]] bool tryUnblock(FS& fs);
         [[nodiscard]] bool hasTimeout() const { return !!timeLimit_; }
@@ -98,6 +101,7 @@ namespace kernel::gnulinux {
         std::string toString() const;
 
     private:
+        Process* process_;
         Thread* thread_;
         x64::Mmu* mmu_;
         Timers* timers_;

@@ -1,5 +1,6 @@
 #include "kernel/linux/threadblocker.h"
 #include "kernel/linux/thread.h"
+#include "kernel/linux/process.h"
 #include "kernel/linux/fs/fs.h"
 #include "kernel/linux/fs/fsflags.h"
 #include "x64/mmu.h"
@@ -71,8 +72,8 @@ namespace kernel::gnulinux {
                     pid, tid, expected_, wordPtr_.address(), contained, timeoutString);
     }
 
-    PollBlocker::PollBlocker(Thread* thread, x64::Mmu& mmu, Timers& timers, x64::Ptr pollfds, size_t nfds, int timeoutInMs)
-        : thread_(thread), mmu_(&mmu), timers_(&timers), pollfds_(pollfds), nfds_(nfds) {
+    PollBlocker::PollBlocker(Process* process, Thread* thread, x64::Mmu& mmu, Timers& timers, x64::Ptr pollfds, size_t nfds, int timeoutInMs)
+        : process_(process), thread_(thread), mmu_(&mmu), timers_(&timers), pollfds_(pollfds), nfds_(nfds) {
         if(timeoutInMs > 0) {
             Timer* timer = timers_->getOrTryCreate(0); // get any timer
             verify(!!timer);
@@ -89,7 +90,7 @@ namespace kernel::gnulinux {
         std::transform(allpollfds_.begin(), allpollfds_.end(), allpolldatas_.begin(), [&](FS::PollFd pollfd) -> FS::PollData {
             return FS::PollData {
                 pollfd.fd,
-                fs.fds()[pollfd.fd],
+                process_->fds()[pollfd.fd],
                 pollfd.events,
                 pollfd.revents,
             };
@@ -144,8 +145,8 @@ namespace kernel::gnulinux {
         return fmt::format("thread {}:{} polling on {} fds {} {}", pid, tid, nfds_, pollfdsString, timeoutString);
     }
 
-    SelectBlocker::SelectBlocker(Thread* thread, x64::Mmu& mmu, Timers& timers, int nfds, x64::Ptr readfds, x64::Ptr writefds, x64::Ptr exceptfds, x64::Ptr timeout)
-            : thread_(thread), mmu_(&mmu), timers_(&timers), nfds_(nfds), readfds_(readfds), writefds_(writefds), exceptfds_(exceptfds), timeout_(timeout) {
+    SelectBlocker::SelectBlocker(Process* process, Thread* thread, x64::Mmu& mmu, Timers& timers, int nfds, x64::Ptr readfds, x64::Ptr writefds, x64::Ptr exceptfds, x64::Ptr timeout)
+            : process_(process), thread_(thread), mmu_(&mmu), timers_(&timers), nfds_(nfds), readfds_(readfds), writefds_(writefds), exceptfds_(exceptfds), timeout_(timeout) {
         Timer* timer = timers_->getOrTryCreate(0); // get any timer
         verify(!!timer);
         auto duration = timer->readRelativeTimeval(mmu, timeout);
@@ -159,7 +160,7 @@ namespace kernel::gnulinux {
         FS::SelectData selectData;
         selectData.fds.reserve(nfds_);
         for(int fd = 0; fd < nfds_; ++fd) {
-            selectData.fds.push_back(fs.fds()[fd]);
+            selectData.fds.push_back(process_->fds()[fd]);
         }
         if(!!readfds_) mmu_->copyFromMmu((u8*)&selectData.readfds, readfds_, sizeof(selectData.readfds));
         if(!!writefds_) mmu_->copyFromMmu((u8*)&selectData.writefds, writefds_, sizeof(selectData.writefds));
@@ -196,8 +197,8 @@ namespace kernel::gnulinux {
         return fmt::format("thread {}:{} selecting on {} fds {}", pid, tid, nfds_, timeoutString);
     }
 
-    EpollWaitBlocker::EpollWaitBlocker(Thread* thread, x64::Mmu& mmu, Timers& timers, int epfd, x64::Ptr events, size_t maxevents, int timeoutInMs)
-        : thread_(thread), mmu_(&mmu), timers_(&timers), epfd_(epfd), events_(events), maxevents_(maxevents) {
+    EpollWaitBlocker::EpollWaitBlocker(Process* process, Thread* thread, x64::Mmu& mmu, Timers& timers, int epfd, x64::Ptr events, size_t maxevents, int timeoutInMs)
+        : process_(process), thread_(thread), mmu_(&mmu), timers_(&timers), epfd_(epfd), events_(events), maxevents_(maxevents) {
         if(timeoutInMs > 0) {
             Timer* timer = timers_->getOrTryCreate(0); // get any timer
             verify(!!timer);
@@ -215,7 +216,7 @@ namespace kernel::gnulinux {
 
     bool EpollWaitBlocker::tryUnblock(FS& fs) {
         std::vector<FS::EpollEvent> epollEvents;
-        fs.doEpollWait(fs.fds()[epfd_], &epollEvents);
+        fs.doEpollWait(process_->fds()[epfd_], &epollEvents);
         epollEvents.resize(std::min(maxevents_, epollEvents.size()));
         bool timeout = false;
         if(!!timeLimit_) {

@@ -25,13 +25,22 @@
 
 namespace kernel::gnulinux {
 
-    CurrentDirectoryOrDirectoryDescriptor FileDescriptors::dirfd(FD dirfd) {
+    CurrentDirectoryOrDirectoryDescriptor FileDescriptors::dirfd(FD dirfd, Directory* cwd) {
         bool isCwd = dirfd.fd == Host::cwdfd().fd;
-        auto* descriptor = findFileDescriptor(dirfd);
-        return CurrentDirectoryOrDirectoryDescriptor {
-            isCwd,
-            (!isCwd && !!descriptor) ? *descriptor : FileDescriptor{},
-        };
+        if(isCwd) {
+            return CurrentDirectoryOrDirectoryDescriptor {
+                true,
+                cwd,
+                FileDescriptor{},
+            };
+        } else {
+            auto* descriptor = findFileDescriptor(dirfd);
+            return CurrentDirectoryOrDirectoryDescriptor {
+                false,
+                nullptr,
+                (!!descriptor) ? *descriptor : FileDescriptor{},
+            };   
+        }
     }
 
     FD FileDescriptors::open(const Path& path,
@@ -232,10 +241,9 @@ namespace kernel::gnulinux {
     }
 
 
-    FS::FS() : fds_(*this) {
+    FS::FS() {
         root_ = HostDirectory::tryCreateRoot();
         verify(!!root_, "Unable to create root directory");
-        findCurrentWorkDirectory();
         {
             auto ttyname = Host::ttyname().value_or("/dev/tty");
             auto ttypath = Path::tryCreate(ttyname);
@@ -245,21 +253,13 @@ namespace kernel::gnulinux {
             auto* dir = ensurePathExceptLast(*ttypath);
             tty_ = dir->addFile(std::move(tty));
         }
-        fds_.createStandardStreams(tty_->path());
     }
 
-    void FS::findCurrentWorkDirectory() {
-        auto bufferOrError = Host::getcwd(1024);
-        verify(!bufferOrError.isError());
-        std::string cwdpathname;
-        bufferOrError.errorOrWith<int>([&](const Buffer& buf) {
-            cwdpathname = (char*)buf.data();
-            return 0;
-        });
-        auto cwdPath = Path::tryCreate(cwdpathname);
-        verify(!!cwdPath);
-        currentWorkDirectory_ = ensureCompletePath(*cwdPath); // NOLINT(clang-analyzer-core.CallAndMessage)
+    Directory* FS::findCurrentWorkDirectory(const Path& cwd) {
+        return ensureCompletePath(cwd);
     }
+
+    Path FS::ttyPath() const { return tty_->path(); }
 
     void FS::resetProcFS(int pid, const Path& programFilePath) {
         // create a proc fs
@@ -343,27 +343,27 @@ namespace kernel::gnulinux {
         return fd;
     }
 
-    std::optional<Path> FS::resolvePath(const Directory* base, const std::string& pathname) const {
+    std::optional<Path> FS::resolvePath(const Directory* cwd, const std::string& pathname) const {
         if(pathname.empty()) return {};
         if(pathname[0] == '/') {
             auto path = Path::tryCreate(pathname);
             if(!path) return {};
             return *path;
         } else {
-            verify(!!base, "Null base directory");
-            auto path = Path::tryCreate(pathname, base->path().absolute());
+            verify(!!cwd, "Null cwd directory");
+            auto path = Path::tryCreate(pathname, cwd->path().absolute());
             if(!path) return {};
             return *path;
         }
     }
 
-    std::optional<Path> FS::resolvePath(CurrentDirectoryOrDirectoryDescriptor dirfd, const Directory* base, const std::string& pathname) const {
+    std::optional<Path> FS::resolvePath(CurrentDirectoryOrDirectoryDescriptor dirfd, const std::string& pathname) const {
         if(!pathname.empty() && pathname[0] == '/') {
             auto path = Path::tryCreate(pathname);
             if(!path) return {};
             return *path;
         } else if(dirfd.isCurrentDirectory) {
-            return resolvePath(base, pathname);
+            return resolvePath(dirfd.cwd, pathname);
         } else {
             OpenFileDescription* openFileDescription = dirfd.directoryDescriptor.openFiledescription.get();
             verify(!!openFileDescription, "Trying to resolve path for unopened directory");
@@ -373,7 +373,7 @@ namespace kernel::gnulinux {
         }
     }
 
-    std::optional<Path> FS::resolvePath(CurrentDirectoryOrDirectoryDescriptor dirfd, const Directory* base, const std::string& pathname, AllowEmptyPathname tag) const {
+    std::optional<Path> FS::resolvePath(CurrentDirectoryOrDirectoryDescriptor dirfd, const std::string& pathname, AllowEmptyPathname tag) const {
         if(pathname.empty()) {
             if(tag == AllowEmptyPathname::YES) {
                 OpenFileDescription* openFileDescription = dirfd.directoryDescriptor.openFiledescription.get();
@@ -387,7 +387,7 @@ namespace kernel::gnulinux {
             if(!path) return {};
             return *path;
         } else if(dirfd.isCurrentDirectory) {
-            return resolvePath(base, pathname);
+            return resolvePath(dirfd.cwd, pathname);
         } else {
             OpenFileDescription* openFileDescription = dirfd.directoryDescriptor.openFiledescription.get();
             verify(!!openFileDescription, "Trying to resolve path for unopened directory");
@@ -1252,7 +1252,6 @@ namespace kernel::gnulinux {
     }
 
     void FS::dumpSummary() const {
-        fds_.dumpSummary();
         root_->printSubtree();
     }
 

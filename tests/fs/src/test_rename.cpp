@@ -7,6 +7,8 @@ using namespace kernel::gnulinux;
 
 int main() {
     FS fs;
+
+    FileDescriptors fds(fs);
     
     {
         Path path("tmp", "testfile");
@@ -14,10 +16,10 @@ int main() {
         BitFlags<CreationFlags> createFlags(CreationFlags::CREAT);
         BitFlags<StatusFlags> statusFlags(StatusFlags::RDWR);
         Permissions permissions { true, true, true };
-        FD fd = fs.fds().open(path, accessMode, createFlags, statusFlags, permissions);
+        FD fd = fds.open(path, accessMode, createFlags, statusFlags, permissions);
         if(fd.fd < 0) return 1;
         
-        if(fs.fds().close(fd) < 0) {
+        if(fds.close(fd) < 0) {
             return 1;
         }
     }
@@ -36,10 +38,10 @@ int main() {
         BitFlags<CreationFlags> createFlags;
         BitFlags<StatusFlags> statusFlags(StatusFlags::RDWR);
         Permissions permissions { true, true, true };
-        FD fd = fs.fds().open(path, accessMode, createFlags, statusFlags, permissions);
+        FD fd = fds.open(path, accessMode, createFlags, statusFlags, permissions);
         if(fd.fd < 0) return 1;
         
-        if(fs.fds().close(fd) < 0) {
+        if(fds.close(fd) < 0) {
             return 1;
         }
     }

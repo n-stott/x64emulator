@@ -208,7 +208,7 @@ namespace kernel::gnulinux {
         }
         callbackGroup.add(disassemblyCache_.get());
         kernel_.timers().updateAll(currentTime_);
-        kernel_.sys().syscall(thread);
+        kernel_.sys().syscall(&kernel_.process(), thread);
         thread->resetSyscallRequest();
     }
 
@@ -254,23 +254,12 @@ namespace kernel::gnulinux {
 #endif
     }
 
-    std::unique_ptr<Thread> Scheduler::allocateThread(int pid) {
-        int tid = 1;
-        for(const auto& t : threads_) {
-            tid = std::max(tid, t->description().tid+1);
-        }
-        auto thread = std::make_unique<Thread>(pid, tid);
-        thread->setProfiling(kernel_.isProfiling());
-        return thread;
-    }
-
-    void Scheduler::addThread(std::unique_ptr<Thread> thread) {
+    void Scheduler::addThread(Thread* thread) {
         // TODO: support this verification.
         // This is not possible right now because exec exists outside of the scheduling loop
         // verifyInKernel();
-        Thread* ptr = thread.get();
-        threads_.push_back(std::move(thread));
-        runnableThreads_.push_back(ptr);
+        threads_.push_back(thread);
+        runnableThreads_.push_back(thread);
     }
 
     bool Scheduler::allThreadsDead() const {
@@ -733,7 +722,7 @@ namespace kernel::gnulinux {
     void Scheduler::poll(Thread* thread, x64::Ptr fds, size_t nfds, int timeout) {
         verifyInKernel();
         verify(timeout != 0, "poll with zero timeout should not reach the scheduler");
-        pollBlockers_.push_back(PollBlocker(thread, mmu_, kernel_.timers(), fds, nfds, timeout));
+        pollBlockers_.push_back(PollBlocker(&kernel_.process(), thread, mmu_, kernel_.timers(), fds, nfds, timeout));
         block(thread);
         thread->yield();
     }
@@ -741,14 +730,14 @@ namespace kernel::gnulinux {
     void Scheduler::select(Thread* thread, int nfds, x64::Ptr readfds, x64::Ptr writefds, x64::Ptr exceptfds, x64::Ptr timeout) {
         verifyInKernel();
         // verify(!timeout || (timeout->seconds + timeout->nanoseconds > 0), "select with zero timeout should not reach the scheduler");
-        selectBlockers_.push_back(SelectBlocker(thread, mmu_, kernel_.timers(), nfds, readfds, writefds, exceptfds, timeout));
+        selectBlockers_.push_back(SelectBlocker(&kernel_.process(), thread, mmu_, kernel_.timers(), nfds, readfds, writefds, exceptfds, timeout));
         block(thread);
         thread->yield();
     }
 
     void Scheduler::epoll_wait(Thread* thread, int epfd, x64::Ptr events, size_t maxevents, int timeout) {
         verifyInKernel();
-        epollWaitBlockers_.push_back(EpollWaitBlocker(thread, mmu_, kernel_.timers(), epfd, events, maxevents, timeout));
+        epollWaitBlockers_.push_back(EpollWaitBlocker(&kernel_.process(), thread, mmu_, kernel_.timers(), epfd, events, maxevents, timeout));
         block(thread);
         thread->yield();
     }

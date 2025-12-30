@@ -3,6 +3,7 @@
 
 #include "kernel/linux/fs/fsflags.h"
 #include "kernel/linux/fs/ioctl.h"
+#include "kernel/linux/fs/path.h"
 #include "kernel/utils/buffer.h"
 #include "kernel/utils/erroror.h"
 #include "bitflags.h"
@@ -19,7 +20,6 @@ namespace kernel::gnulinux {
     class Directory;
     class File;
     class OpenFileDescription;
-    class Path;
     class Pipe;
     class Tty;
     class ProcFS;
@@ -41,6 +41,7 @@ namespace kernel::gnulinux {
 
     struct CurrentDirectoryOrDirectoryDescriptor {
         bool isCurrentDirectory { true };
+        Directory* cwd { nullptr };
         FileDescriptor directoryDescriptor;
     };
 
@@ -61,7 +62,7 @@ namespace kernel::gnulinux {
             return *descriptor;
         }
 
-        CurrentDirectoryOrDirectoryDescriptor dirfd(FD dirfd);
+        CurrentDirectoryOrDirectoryDescriptor dirfd(FD dirfd, Directory* cwd);
 
         FD open(const Path& path,
                 BitFlags<AccessMode> accessMode,
@@ -100,7 +101,8 @@ namespace kernel::gnulinux {
         FS();
         ~FS();
 
-        FileDescriptors& fds() { return fds_; }
+        Directory* findCurrentWorkDirectory(const Path& path);
+        Path ttyPath() const;
 
         void resetProcFS(int pid, const Path& programFilePath);
 
@@ -110,16 +112,15 @@ namespace kernel::gnulinux {
         static Permissions fromMode(unsigned int mode);
 
         Directory* root() { return root_.get(); }
-        Directory* cwd() { return currentWorkDirectory_; }
 
-        std::optional<Path> resolvePath(const Directory* base, const std::string& pathname) const;
-        std::optional<Path> resolvePath(CurrentDirectoryOrDirectoryDescriptor dirfd, const Directory* base, const std::string& pathname) const;
+        std::optional<Path> resolvePath(const Directory* cwd, const std::string& pathname) const;
+        std::optional<Path> resolvePath(CurrentDirectoryOrDirectoryDescriptor dirfd, const std::string& pathname) const;
 
         enum AllowEmptyPathname {
             NO,
             YES,
         };
-        std::optional<Path> resolvePath(CurrentDirectoryOrDirectoryDescriptor dirfd, const Directory* base, const std::string& pathname, AllowEmptyPathname tag) const;
+        std::optional<Path> resolvePath(CurrentDirectoryOrDirectoryDescriptor dirfd, const std::string& pathname, AllowEmptyPathname tag) const;
 
         ErrnoOr<FileDescriptor> open(const Path& path,
                 BitFlags<AccessMode> accessMode,
@@ -243,7 +244,6 @@ namespace kernel::gnulinux {
 
         File* resolveSymlink(const Symlink&, u32 maxLinks = 0);
 
-        void findCurrentWorkDirectory();
         FileDescriptor insertNode(std::unique_ptr<File> file, BitFlags<AccessMode>, BitFlags<StatusFlags>, bool closeOnExec);
 
         void removeFromOrphans(File*);
@@ -258,9 +258,6 @@ namespace kernel::gnulinux {
         ProcFS* procfs_ { nullptr };
         std::vector<std::unique_ptr<File>> orphanFiles_;
         std::vector<std::unique_ptr<Pipe>> pipes_;
-        Directory* currentWorkDirectory_ { nullptr };
-
-        FileDescriptors fds_;
     };
 
 }

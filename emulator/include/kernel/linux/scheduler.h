@@ -40,8 +40,7 @@ namespace kernel::gnulinux {
 
         void run();
 
-        std::unique_ptr<Thread> allocateThread(int pid);
-        void addThread(std::unique_ptr<Thread> thread);
+        void addThread(Thread* thread);
 
         void terminateAll(int status);
         void terminate(Thread* thread, int status);
@@ -150,7 +149,7 @@ namespace kernel::gnulinux {
 
         std::atomic<size_t> numRunningJobs_ { 0 };
 
-        std::vector<std::unique_ptr<Thread>> threads_;
+        std::vector<Thread*> threads_;
 
         std::deque<Job> runningJobs_;
         std::deque<Thread*> runnableThreads_;

@@ -4,6 +4,7 @@
 #include "kernel/linux/auxiliaryvector.h"
 #include "kernel/linux/fs/fs.h"
 #include "kernel/linux/shm/sharedmemory.h"
+#include "kernel/linux/process.h"
 #include "kernel/linux/scheduler.h"
 #include "kernel/linux/thread.h"
 #include "kernel/timers.h"
@@ -58,6 +59,10 @@ namespace kernel::gnulinux {
         nbCores_ = nbCores;
     }
 
+    void Kernel::setProcessVirtualMemory(unsigned int virtualMemoryInMB) {
+        virtualMemoryInMB_ = virtualMemoryInMB;
+    }
+
     template<typename Func>
     void forEachSplit(const std::string& s, char delimiter, Func&& func) {
         auto left = s.begin();
@@ -103,7 +108,10 @@ namespace kernel::gnulinux {
         auto programPath = resolveProgramPath(programFilePath, environmentVariables);
         if(!programPath) return 1;
         VerificationScope::run([&]() {
-            ExecVE execve(mmu_, scheduler(), fs());
+            createProcess();
+            x64::ScopedAdressSpace scopeAddressSpace(mmu_, process_->addressSpace());
+            mmu_.ensureNullPage();
+            ExecVE execve(mmu_, process(), scheduler(), fs());
             Thread* mainThread = execve.exec(programPath.value(), arguments, environmentVariables);
             scheduler().run();
             exitCode = mainThread->exitStatus();
@@ -124,5 +132,12 @@ namespace kernel::gnulinux {
         scheduler_->dumpBlockerSummary();
         mmu_.dumpRegions();
         fs_->dumpSummary();
+        process_->fds().dumpSummary();
+    }
+
+    void Kernel::createProcess() {
+        process_ = Process::tryCreate(Host::getpid(), virtualMemoryInMB_, fs());
+        verify(!!process_);
+        process_->setProfiling(isProfiling());
     }
 }

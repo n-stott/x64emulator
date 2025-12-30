@@ -3,6 +3,7 @@
 #include "kernel/linux/fs/fs.h"
 #include "kernel/linux/fs/path.h"
 #include "kernel/linux/kernel.h"
+#include "kernel/linux/process.h"
 #include "kernel/linux/scheduler.h"
 #include "kernel/linux/thread.h"
 #include "host/host.h"
@@ -15,8 +16,9 @@
 
 namespace kernel::gnulinux {
 
-    ExecVE::ExecVE(x64::Mmu& mmu, Scheduler& scheduler, FS& fs) :
+    ExecVE::ExecVE(x64::Mmu& mmu, Process& process, Scheduler& scheduler, FS& fs) :
             mmu_(mmu),
+            process_(process),
             scheduler_(scheduler),
             fs_(fs) {
         
@@ -294,22 +296,21 @@ namespace kernel::gnulinux {
 
         u64 stackTop = setupMemory(&mmu_, &aux);
 
-        std::unique_ptr<Thread> mainThread = scheduler_.allocateThread(Host::getpid());
+        Thread* mainThread = process_.addThread();
         Thread::SavedCpuState& cpuState = mainThread->savedCpuState();
         cpuState.regs.rip() = entrypoint;
         cpuState.regs.rsp() = (stackTop & 0xFFFFFFFFFFFFFF00); // stack needs to be 16-byte aligned
         
         pushProgramArguments(&mmu_, &cpuState.regs, programFilePath, arguments, environmentVariables, aux);
 
-        Thread* mainThreadPtr = mainThread.get();
-        scheduler_.addThread(std::move(mainThread));
+        scheduler_.addThread(mainThread);
 
         // Setup procFS for this process
-        auto absolutePath = fs_.resolvePath(fs_.cwd(), programFilePath);
+        auto absolutePath = fs_.resolvePath(process_.cwd(), programFilePath);
         verify(!!absolutePath, "Unable to resolve program path");
         fs_.resetProcFS(Host::getpid(), *absolutePath);
 
-        return mainThreadPtr;
+        return mainThread;
     }
 
 }

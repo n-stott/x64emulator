@@ -214,13 +214,22 @@ namespace x64 {
 
     Mmu::Mmu(std::unique_ptr<AddressSpace> addressSpace) {
         std::swap(addressSpace_, *addressSpace);
-        // Make first pages non-readable and non-writable
-        std::unique_ptr<MmuRegion> nullpage = makeRegion(0, (u64)16*PAGE_SIZE, BitFlags<PROT>{PROT::NONE});
-        nullpage->setName("nullpage");
-        addRegion(std::move(nullpage));
+        ensureNullPage();
     }
 
     Mmu::~Mmu() = default;
+
+    void Mmu::ensureNullPage() {
+        // Make first pages non-readable and non-writable
+        const MmuRegion* maybeNullpage = findAddress(0);
+        if(!maybeNullpage) {
+            std::unique_ptr<MmuRegion> nullpage = makeRegion(0, (u64)16*PAGE_SIZE, BitFlags<PROT>{PROT::NONE});
+            nullpage->setName("nullpage");
+            addRegion(std::move(nullpage));
+        } else {
+            verify(maybeNullpage->prot().none());
+        }
+    }
 
     BitFlags<PROT> Mmu::prot(u64 address) const {
         const auto* region = findAddress(address);
@@ -553,6 +562,16 @@ namespace x64 {
             verify(pageIndex < addressSpace_.regionLookup.size());
             addressSpace_.regionLookup[pageIndex] = nullptr;
         }
+    }
+
+    ScopedAdressSpace::ScopedAdressSpace(Mmu& mmu, AddressSpace& addressSpace) :
+            mmu_(mmu),
+            addressSpace_(addressSpace) {
+        mmu_.load(std::move(addressSpace_));
+    }
+
+    ScopedAdressSpace::~ScopedAdressSpace() {
+        mmu_.save(&addressSpace_);
     }
 
 }

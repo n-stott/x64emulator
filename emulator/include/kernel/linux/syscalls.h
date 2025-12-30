@@ -16,6 +16,7 @@ namespace x64 {
 }
 
 namespace kernel {
+    class Process;
     class Scheduler;
     class Thread;
 }
@@ -28,7 +29,7 @@ namespace kernel::gnulinux {
     public:
         Sys(Kernel& kernel, x64::Mmu& mmu);
 
-        void syscall(Thread* thread);
+        void syscall(Process* process, Thread* thread);
 
     private:
         struct RegisterDump {
@@ -424,6 +425,7 @@ namespace kernel::gnulinux {
         Kernel& kernel_;
         x64::Mmu& mmu_;
         std::mutex mutex_;
+        Process* currentProcess_ { nullptr };
         Thread* currentThread_ { nullptr };
     };
 

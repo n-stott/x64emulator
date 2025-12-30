@@ -107,6 +107,8 @@ namespace x64 {
         Mmu() = default;
         ~Mmu();
 
+        void ensureNullPage();
+
         void save(AddressSpace* space) {
             if(!space) return;
             verify(base() != nullptr, "Trying to save empty address space");
@@ -114,7 +116,7 @@ namespace x64 {
         }
 
         void load(AddressSpace space) {
-            verify(base() == nullptr, "Trying to load empty address space");
+            verify(base() == nullptr, "An adressSpace is already loaded");
             addressSpace_ = std::move(space);
         }
 
@@ -440,6 +442,16 @@ namespace x64 {
         };
 
         void checkRegionsAreSorted() const;
+    };
+
+    class ScopedAdressSpace {
+    public:
+        ScopedAdressSpace(Mmu& mmu, AddressSpace& addressSpace);
+        ~ScopedAdressSpace();
+
+    private:
+        Mmu& mmu_;
+        AddressSpace& addressSpace_;
     };
 
 }
