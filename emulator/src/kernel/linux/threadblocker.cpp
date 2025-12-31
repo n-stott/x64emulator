@@ -157,16 +157,16 @@ namespace kernel::gnulinux {
     }
 
     bool SelectBlocker::tryUnblock(FS& fs) {
-        FS::SelectData selectData;
-        selectData.fds.reserve(nfds_);
+        selectData_.fds.clear();
+        selectData_.fds.reserve(nfds_);
         for(int fd = 0; fd < nfds_; ++fd) {
-            selectData.fds.push_back(process_->fds()[fd]);
+            selectData_.fds.push_back(process_->fds()[fd]);
         }
-        if(!!readfds_) mmu_->copyFromMmu((u8*)&selectData.readfds, readfds_, sizeof(selectData.readfds));
-        if(!!writefds_) mmu_->copyFromMmu((u8*)&selectData.writefds, writefds_, sizeof(selectData.writefds));
-        if(!!exceptfds_) mmu_->copyFromMmu((u8*)&selectData.exceptfds, exceptfds_, sizeof(selectData.exceptfds));
-        int ret = fs.selectImmediate(&selectData);
-        u64 nzevents = selectData.readfds.count() + selectData.writefds.count() + selectData.exceptfds.count();
+        if(!!readfds_) mmu_->copyFromMmu((u8*)&selectData_.readfds, readfds_, sizeof(selectData_.readfds));
+        if(!!writefds_) mmu_->copyFromMmu((u8*)&selectData_.writefds, writefds_, sizeof(selectData_.writefds));
+        if(!!exceptfds_) mmu_->copyFromMmu((u8*)&selectData_.exceptfds, exceptfds_, sizeof(selectData_.exceptfds));
+        int ret = fs.selectImmediate(&selectData_);
+        u64 nzevents = selectData_.readfds.count() + selectData_.writefds.count() + selectData_.exceptfds.count();
         bool timeout = false;
         if(!!timeLimit_) {
             Timer* timer = timers_->get(0); // get the same timer as in the ctor
@@ -177,9 +177,9 @@ namespace kernel::gnulinux {
         bool canUnblock = (ret < 0) || (nzevents > 0) || timeout;
         if(!canUnblock) return false;
 
-        if(!!readfds_) mmu_->copyToMmu(readfds_, (const u8*)&selectData.readfds, sizeof(selectData.readfds));
-        if(!!writefds_) mmu_->copyToMmu(writefds_, (const u8*)&selectData.writefds, sizeof(selectData.writefds));
-        if(!!exceptfds_) mmu_->copyToMmu(exceptfds_, (const u8*)&selectData.exceptfds, sizeof(selectData.exceptfds));
+        if(!!readfds_) mmu_->copyToMmu(readfds_, (const u8*)&selectData_.readfds, sizeof(selectData_.readfds));
+        if(!!writefds_) mmu_->copyToMmu(writefds_, (const u8*)&selectData_.writefds, sizeof(selectData_.writefds));
+        if(!!exceptfds_) mmu_->copyToMmu(exceptfds_, (const u8*)&selectData_.exceptfds, sizeof(selectData_.exceptfds));
         if(ret >= 0) ret = (int)nzevents;
         thread_->savedCpuState().regs.set(x64::R64::RAX, (u64)ret);
         return true;

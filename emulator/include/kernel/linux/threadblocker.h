@@ -87,6 +87,7 @@ namespace kernel::gnulinux {
         x64::Ptr exceptfds_;
         x64::Ptr timeout_;
         std::optional<PreciseTime> timeLimit_;
+        FS::SelectData selectData_; // cached vector
     };
 
     class EpollWaitBlocker {
