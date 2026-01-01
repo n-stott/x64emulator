@@ -115,6 +115,9 @@ namespace kernel::gnulinux {
             Thread* mainThread = execve.exec(programPath.value(), arguments, environmentVariables);
             scheduler().run();
             exitCode = mainThread->exitStatus();
+            if(hasPanicked()) {
+                dumpPanicInfo();
+            }
         },  [&]() {
             panic();
             exitCode = -1;

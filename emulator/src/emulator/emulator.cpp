@@ -73,10 +73,6 @@ namespace emulator {
 
         if(force_graceful_exit) return true;
 
-        if(kernel.hasPanicked()) {
-            kernel.dumpPanicInfo();
-        }
-
         if(isProfiling_) {
             using namespace profiling;
             ProfilingData profilingData;
