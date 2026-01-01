@@ -605,6 +605,7 @@ namespace kernel::gnulinux {
     int FS::rename(const Path& oldpath, const Path& newpath) {
         auto file = tryTakeFile(oldpath);
         if(!file) return -ENOENT;
+        if(!file->isShadow()) warn("renaming non-shadow files is broken");
         auto* newdir = ensurePathExceptLast(newpath);
         verify(!!newdir, "Unable to create new directory");
         file->rename(newdir, newpath.last());
