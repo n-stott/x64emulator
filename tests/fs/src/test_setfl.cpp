@@ -26,6 +26,8 @@ int emulated() {
     FS fs;
 
     FileDescriptors fds(fs);
+    Path devtty("dev", "tty");
+    fds.createStandardStreams(devtty);
     
     int flags = fds.fcntl(FD{0}, F_GETFL, 0);
     if(flags < 0) return 1;
