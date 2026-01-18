@@ -5,18 +5,28 @@
 #include "kernel/linux/fs/fs.h"
 #include "kernel/linux/thread.h"
 #include "x64/mmu.h"
+#include "verify.h"
 #include <memory>
+#include <optional>
 
 namespace kernel::gnulinux {
 
+    class ProcessTable;
+
     class Process {
     public:
-        static std::unique_ptr<Process> tryCreate(int pid, u32 addressSpaceSizeInMB, FS& fs);
+        static std::unique_ptr<Process> tryCreate(ProcessTable&, u32 addressSpaceSizeInMB, FS& fs);
+        static std::unique_ptr<Process> tryCreate(ProcessTable&, x64::AddressSpace addressSpace, FS& fs, Directory* cwd);
         ~Process();
     
         x64::AddressSpace& addressSpace() { return addressSpace_; }
 
-        Thread* addThread();
+        int pid() const {
+            return pid_;
+        }
+
+        std::unique_ptr<Process> clone(ProcessTable&) const;
+        Thread* addThread(ProcessTable& processTable);
 
         FileDescriptors& fds() { return fds_;}
         Directory* cwd() { return currentWorkDirectory_; }
@@ -27,7 +37,8 @@ namespace kernel::gnulinux {
     private:
         Process(int pid, x64::AddressSpace addressSpace, FS& fs, Directory* cwd);
 
-        int pid_ { 0 };
+        // Information
+        int pid_;
 
         // Memory
         x64::AddressSpace addressSpace_;

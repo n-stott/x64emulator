@@ -5,6 +5,7 @@
 #include "kernel/linux/fs/fs.h"
 #include "kernel/linux/shm/sharedmemory.h"
 #include "kernel/linux/process.h"
+#include "kernel/linux/processtable.h"
 #include "kernel/linux/scheduler.h"
 #include "kernel/linux/thread.h"
 #include "kernel/timers.h"
@@ -23,6 +24,7 @@ namespace kernel::gnulinux {
         scheduler_ = std::make_unique<Scheduler>(mmu_, *this);
         sys_ = std::make_unique<Sys>(*this, mmu_);
         timers_ = std::make_unique<kernel::Timers>();
+        processTable_ = std::make_unique<ProcessTable>(Host::getpid(), *this);
     }
 
     Kernel::~Kernel() = default;
@@ -60,7 +62,7 @@ namespace kernel::gnulinux {
     }
 
     void Kernel::setProcessVirtualMemory(unsigned int virtualMemoryInMB) {
-        virtualMemoryInMB_ = virtualMemoryInMB;
+        processTable_->setProcessVirtualMemory(virtualMemoryInMB);
     }
 
     template<typename Func>
@@ -108,10 +110,11 @@ namespace kernel::gnulinux {
         auto programPath = resolveProgramPath(programFilePath, environmentVariables);
         if(!programPath) return 1;
         VerificationScope::run([&]() {
-            createProcess();
-            x64::ScopedAdressSpace scopeAddressSpace(mmu_, process_->addressSpace());
+            Process* mainProcess = processTable_->createMainProcess();
+            verify(!!mainProcess, "Unable to create main process");
+            x64::ScopedAdressSpace scopeAddressSpace(mmu_, mainProcess->addressSpace());
             mmu_.ensureNullPage();
-            ExecVE execve(mmu_, process(), scheduler(), fs());
+            ExecVE execve(mmu_, processTable(), *mainProcess, scheduler(), fs());
             Thread* mainThread = execve.exec(programPath.value(), arguments, environmentVariables);
             scheduler().run();
             exitCode = mainThread->exitStatus();
@@ -135,12 +138,6 @@ namespace kernel::gnulinux {
         scheduler_->dumpBlockerSummary();
         mmu_.dumpRegions();
         fs_->dumpSummary();
-        process_->fds().dumpSummary();
-    }
-
-    void Kernel::createProcess() {
-        process_ = Process::tryCreate(Host::getpid(), virtualMemoryInMB_, fs());
-        verify(!!process_);
-        process_->setProfiling(isProfiling());
+        processTable_->dumpSummary();
     }
 }

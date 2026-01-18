@@ -18,6 +18,7 @@ namespace kernel::gnulinux {
 
     class FS;
     class Process;
+    class ProcessTable;
     class Scheduler;
     class SharedMemory;
     class Sys;
@@ -71,9 +72,9 @@ namespace kernel::gnulinux {
             assert(!!timers_);
             return *timers_;
         }
-        Process& process() {
-            assert(!!process_);
-            return *process_;
+        ProcessTable& processTable() {
+            assert(!!processTable_);
+            return *processTable_;
         }
 
         void panic();
@@ -81,15 +82,13 @@ namespace kernel::gnulinux {
         void dumpPanicInfo() const;
     
     private:
-        void createProcess();
-
         x64::Mmu& mmu_;
         std::unique_ptr<FS> fs_;
         std::unique_ptr<SharedMemory> shm_;
         std::unique_ptr<Scheduler> scheduler_;
         std::unique_ptr<Sys> sys_;
         std::unique_ptr<Timers> timers_;
-        std::unique_ptr<Process> process_;
+        std::unique_ptr<ProcessTable> processTable_;
         bool hasPanicked_ { false };
 
         bool logSyscalls_ { false };

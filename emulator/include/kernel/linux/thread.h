@@ -10,9 +10,11 @@
 
 namespace kernel::gnulinux {
 
+    class Process;
+
     class Thread : public emulator::VMThread {
     public:
-        Thread(int pid, int tid) : description_{pid, tid} { }
+        Thread(Process* process, int tid);
 
         std::string id() const override {
             return fmt::format("{}:{}", description().pid, description().tid);
@@ -24,6 +26,8 @@ namespace kernel::gnulinux {
         };
 
         const Description& description() const { return description_; }
+
+        Process* process() { return process_; }
 
         int exitStatus() const { return exitStatus_; }
         void setExitStatus(int status) { exitStatus_ = status; }
@@ -44,6 +48,7 @@ namespace kernel::gnulinux {
         std::string toString() const;
 
     private:
+        Process* process_ { nullptr };
         Description description_;
 
         x64::Ptr32 setChildTid_ { 0 };

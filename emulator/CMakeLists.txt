@@ -161,6 +161,7 @@ add_library(x64emulator ${LIB_KIND}
     src/kernel/linux/auxiliaryvector.cpp
     src/kernel/linux/kernel.cpp
     src/kernel/linux/process.cpp
+    src/kernel/linux/processtable.cpp
     src/kernel/linux/syscalls.cpp
     src/kernel/linux/scheduler.cpp
     src/kernel/linux/thread.cpp

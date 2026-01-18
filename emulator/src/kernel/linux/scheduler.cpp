@@ -208,7 +208,7 @@ namespace kernel::gnulinux {
         }
         callbackGroup.add(disassemblyCache_.get());
         kernel_.timers().updateAll(currentTime_);
-        kernel_.sys().syscall(&kernel_.process(), thread);
+        kernel_.sys().syscall(thread->process(), thread);
         thread->resetSyscallRequest();
     }
 
@@ -722,7 +722,7 @@ namespace kernel::gnulinux {
     void Scheduler::poll(Thread* thread, x64::Ptr fds, size_t nfds, int timeout) {
         verifyInKernel();
         verify(timeout != 0, "poll with zero timeout should not reach the scheduler");
-        pollBlockers_.push_back(PollBlocker(&kernel_.process(), thread, mmu_, kernel_.timers(), fds, nfds, timeout));
+        pollBlockers_.push_back(PollBlocker(thread->process(), thread, mmu_, kernel_.timers(), fds, nfds, timeout));
         block(thread);
         thread->yield();
     }
@@ -730,14 +730,14 @@ namespace kernel::gnulinux {
     void Scheduler::select(Thread* thread, int nfds, x64::Ptr readfds, x64::Ptr writefds, x64::Ptr exceptfds, x64::Ptr timeout) {
         verifyInKernel();
         // verify(!timeout || (timeout->seconds + timeout->nanoseconds > 0), "select with zero timeout should not reach the scheduler");
-        selectBlockers_.push_back(SelectBlocker(&kernel_.process(), thread, mmu_, kernel_.timers(), nfds, readfds, writefds, exceptfds, timeout));
+        selectBlockers_.push_back(SelectBlocker(thread->process(), thread, mmu_, kernel_.timers(), nfds, readfds, writefds, exceptfds, timeout));
         block(thread);
         thread->yield();
     }
 
     void Scheduler::epoll_wait(Thread* thread, int epfd, x64::Ptr events, size_t maxevents, int timeout) {
         verifyInKernel();
-        epollWaitBlockers_.push_back(EpollWaitBlocker(&kernel_.process(), thread, mmu_, kernel_.timers(), epfd, events, maxevents, timeout));
+        epollWaitBlockers_.push_back(EpollWaitBlocker(thread->process(), thread, mmu_, kernel_.timers(), epfd, events, maxevents, timeout));
         block(thread);
         thread->yield();
     }

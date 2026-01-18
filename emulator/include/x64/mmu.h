@@ -87,6 +87,8 @@ namespace x64 {
         AddressSpace(AddressSpace&& other) = default;
         AddressSpace& operator=(AddressSpace&&) = default;
         ~AddressSpace();
+
+        std::unique_ptr<AddressSpace> tryClone() const { return {}; }
         
         std::vector<std::unique_ptr<MmuRegion>> regions;
         std::vector<MmuRegion*> regionLookup;

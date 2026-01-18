@@ -4,6 +4,7 @@
 #include "kernel/linux/fs/path.h"
 #include "kernel/linux/kernel.h"
 #include "kernel/linux/process.h"
+#include "kernel/linux/processtable.h"
 #include "kernel/linux/scheduler.h"
 #include "kernel/linux/thread.h"
 #include "host/host.h"
@@ -16,8 +17,9 @@
 
 namespace kernel::gnulinux {
 
-    ExecVE::ExecVE(x64::Mmu& mmu, Process& process, Scheduler& scheduler, FS& fs) :
+    ExecVE::ExecVE(x64::Mmu& mmu, ProcessTable& processTable, Process& process, Scheduler& scheduler, FS& fs) :
             mmu_(mmu),
+            processTable_(processTable),
             process_(process),
             scheduler_(scheduler),
             fs_(fs) {
@@ -296,7 +298,7 @@ namespace kernel::gnulinux {
 
         u64 stackTop = setupMemory(&mmu_, &aux);
 
-        Thread* mainThread = process_.addThread();
+        Thread* mainThread = process_.addThread(processTable_);
         Thread::SavedCpuState& cpuState = mainThread->savedCpuState();
         cpuState.regs.rip() = entrypoint;
         cpuState.regs.rsp() = (stackTop & 0xFFFFFFFFFFFFFF00); // stack needs to be 16-byte aligned
