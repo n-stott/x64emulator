@@ -99,6 +99,7 @@ add_library(x64jit ${LIB_KIND}
     src/x64/compiler/jit.cpp
     src/x64/compiler/optimizer.cpp
     src/x64/disassembler/zydiswrapper.cpp
+    src/x64/disassembler/disassemblycache.cpp
 )
 target_compile_options(x64jit PRIVATE ${COMPILE_OPTIONS})
 target_include_directories(x64jit PUBLIC
@@ -127,9 +128,7 @@ target_compile_definitions(x64jit PRIVATE ${COMPILE_DEFINITIONS})
 
 
 add_library(x64emulator ${LIB_KIND}
-    src/emulator/disassemblycache.cpp
     src/emulator/emulator.cpp
-    src/emulator/symbolprovider.cpp
     src/emulator/vm.cpp
     src/emulator/vmthread.cpp
     src/host/host.cpp
@@ -162,6 +161,7 @@ add_library(x64emulator ${LIB_KIND}
     src/kernel/linux/kernel.cpp
     src/kernel/linux/process.cpp
     src/kernel/linux/processtable.cpp
+    src/kernel/linux/symbolprovider.cpp
     src/kernel/linux/syscalls.cpp
     src/kernel/linux/scheduler.cpp
     src/kernel/linux/thread.cpp

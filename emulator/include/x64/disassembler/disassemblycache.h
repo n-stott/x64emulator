@@ -5,8 +5,6 @@
 #include "x64/instructions/basicblock.h"
 #include "x64/instructions/x64instruction.h"
 #include "x64/mmu.h"
-#include "emulator/symbolprovider.h"
-#include "intervalvector.h"
 #include "utils.h"
 #include <algorithm>
 #include <map>
@@ -21,12 +19,12 @@
 #define LOCK_CACHE() 
 #endif
 
-namespace emulator {
+namespace x64 {
 
     struct ExecutableSection {
         u64 begin;
         u64 end;
-        std::vector<x64::X64Instruction> instructions;
+        std::vector<X64Instruction> instructions;
         std::string filename;
 
         void trim();
@@ -38,16 +36,22 @@ namespace emulator {
         virtual bool retrieveBytecode(std::vector<u8>* data, std::string* name, u64* regionBase, u64 address, u64 size) = 0;
     };
 
-    class DisassemblyCache : public x64::Mmu::Callback {
+    class DisassemblyCacheCallack {
+    public:
+        virtual ~DisassemblyCacheCallack() = default;
+        virtual void onNewDisassembly(const std::string& filename, u64 base) = 0;
+    };
+
+    class DisassemblyCache : public Mmu::Callback {
     public:
         DisassemblyCache();
-        void getBasicBlock(u64 address, BytecodeRetriever* retriever, std::vector<x64::X64Instruction>* instructions);
+        void getBasicBlock(u64 address, BytecodeRetriever* retriever, std::vector<X64Instruction>* instructions);
 
-        std::string calledFunctionName(u64 address);
+        void onRegionCreation(u64, u64, BitFlags<PROT>) override { }
+        void onRegionProtectionChange(u64 base, u64 length, BitFlags<PROT> protBefore, BitFlags<PROT> protAfter) override;
+        void onRegionDestruction(u64 base, u64 length, BitFlags<PROT> prot) override;
 
-        void onRegionCreation(u64, u64, BitFlags<x64::PROT>) override { }
-        void onRegionProtectionChange(u64 base, u64 length, BitFlags<x64::PROT> protBefore, BitFlags<x64::PROT> protAfter) override;
-        void onRegionDestruction(u64 base, u64 length, BitFlags<x64::PROT> prot) override;
+        std::optional<std::string> tryFindContainingFile(u64 address);
 
     private:
         struct InstructionPosition {
@@ -64,12 +68,24 @@ namespace emulator {
         std::map<u64, ExecutableSection*> executableSectionsByBegin_;
         std::map<u64, ExecutableSection*> executableSectionsByEnd_;
 
-        std::unique_ptr<x64::Disassembler> disassembler_;
+        std::unique_ptr<Disassembler> disassembler_;
         std::vector<u8> disassemblyData_;
         std::string name_;
 
-        SymbolProvider symbolProvider_;
-        std::unordered_map<u64, std::string> functionNameCache_;
+        std::vector<DisassemblyCacheCallack*> callbacks_;
+    };
+
+
+    class MmuBytecodeRetriever : public x64::BytecodeRetriever {
+    public:
+        explicit MmuBytecodeRetriever(x64::Mmu& mmu, DisassemblyCache& disassemblyCache) :
+                mmu_(mmu), disassemblyCache_(disassemblyCache) { }
+
+        bool retrieveBytecode(std::vector<u8>* data, std::string* name, u64* regionBase, u64 address, u64 size) override;
+    
+    private:
+        x64::Mmu& mmu_;
+        DisassemblyCache& disassemblyCache_;
     };
 
 }

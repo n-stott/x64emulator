@@ -4,6 +4,8 @@
 #include "kernel/linux/fs/directory.h"
 #include "kernel/linux/fs/fs.h"
 #include "kernel/linux/thread.h"
+#include "kernel/linux/symbolprovider.h"
+#include "x64/disassembler/disassemblycache.h"
 #include "x64/mmu.h"
 #include "verify.h"
 #include <memory>
@@ -18,14 +20,15 @@ namespace kernel::gnulinux {
         static std::unique_ptr<Process> tryCreate(ProcessTable&, u32 addressSpaceSizeInMB, FS& fs);
         static std::unique_ptr<Process> tryCreate(ProcessTable&, x64::AddressSpace addressSpace, FS& fs, Directory* cwd);
         ~Process();
-    
-        x64::AddressSpace& addressSpace() { return addressSpace_; }
+
+        std::unique_ptr<Process> clone(ProcessTable&) const;
 
         int pid() const {
             return pid_;
         }
+    
+        x64::AddressSpace& addressSpace() { return addressSpace_; }
 
-        std::unique_ptr<Process> clone(ProcessTable&) const;
         Thread* addThread(ProcessTable& processTable);
 
         FileDescriptors& fds() { return fds_;}
@@ -33,6 +36,9 @@ namespace kernel::gnulinux {
 
         void setProfiling(bool profiling) { profiling_ = profiling; }
         bool isProfiling() const { return profiling_; }
+
+        x64::DisassemblyCache* disassemblyCache() { return &disassemblyCache_; }
+        std::string functionName(u64 address);
     
     private:
         Process(int pid, x64::AddressSpace addressSpace, FS& fs, Directory* cwd);
@@ -53,6 +59,12 @@ namespace kernel::gnulinux {
 
         // Flags;
         bool profiling_ { false };
+
+        // Cpu
+        x64::DisassemblyCache disassemblyCache_;
+        SymbolProvider symbolProvider_;
+        std::unordered_map<u64, std::string> functionNameCache_;
+        
     };
 
 }

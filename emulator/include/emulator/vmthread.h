@@ -12,6 +12,10 @@
 #include <string>
 #include <unordered_map>
 
+namespace kernel::gnulinux {
+    class Process;
+}
+
 namespace emulator {
 
     class ThreadProfileData {
@@ -154,6 +158,7 @@ namespace emulator {
         virtual ~VMThread() = default;
 
         virtual std::string id() const = 0;
+        virtual kernel::gnulinux::Process* process() = 0;
 
         struct SavedCpuState {
             x64::Flags flags;

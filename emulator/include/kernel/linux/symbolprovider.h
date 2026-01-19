@@ -7,7 +7,7 @@
 #include <unordered_map>
 #include <vector>
 
-namespace emulator {
+namespace kernel::gnulinux {
 
     class SymbolProvider {
     public:

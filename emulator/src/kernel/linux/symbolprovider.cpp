@@ -1,4 +1,4 @@
-#include "emulator/symbolprovider.h"
+#include "kernel/linux/symbolprovider.h"
 #include "verify.h"
 #include "elf-reader/elf-reader.h"
 #include <fmt/core.h>
@@ -6,7 +6,7 @@
 #include <cassert>
 #include <boost/core/demangle.hpp>
 
-namespace emulator {
+namespace kernel::gnulinux {
 
     void SymbolProvider::registerSymbol(std::string symbol, u64 address) {
         symbolTable_.registerSymbol(std::move(symbol), address);

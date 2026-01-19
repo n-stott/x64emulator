@@ -66,4 +66,26 @@ namespace kernel::gnulinux {
         return process;
     }
 
+    std::string Process::functionName(u64 address) {
+        // if we already have something cached, just return the cached value
+        if(auto it = functionNameCache_.find(address); it != functionNameCache_.end()) {
+            return it->second;
+        }
+
+        // If we are in the text section, we can try to lookup the symbol for that address
+        auto symbolsAtAddress = symbolProvider_.lookupSymbol(address);
+        if(!symbolsAtAddress.empty()) {
+            functionNameCache_[address] = symbolsAtAddress[0]->demangledSymbol;
+            return symbolsAtAddress[0]->demangledSymbol;
+        }
+
+        // Let's just fail
+        auto maybeName = disassemblyCache_.tryFindContainingFile(address);
+        if(maybeName) {
+            return fmt::format("Somewhere in {}", maybeName.value());
+        } else {
+            return "???";
+        }
+    }
+
 }

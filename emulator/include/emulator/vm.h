@@ -1,7 +1,6 @@
 #ifndef VM_H
 #define VM_H
 
-#include "emulator/symbolprovider.h"
 #include "emulator/vmthread.h"
 #include "x64/compiler/jit.h"
 #include "x64/cpu.h"
@@ -26,7 +25,6 @@ namespace emulator {
 
     class VM;
     class CompilationQueue;
-    class DisassemblyCache;
 
     class BasicBlock {
     public:
@@ -134,7 +132,7 @@ namespace emulator {
 
     class VM : public x64::Mmu::Callback {
     public:
-        explicit VM(x64::Cpu& cpu, x64::Mmu& mmu, DisassemblyCache& disassemblyCache);
+        explicit VM(x64::Cpu& cpu, x64::Mmu& mmu);
         ~VM();
 
         void setEnableJit(bool enable);
@@ -190,7 +188,6 @@ namespace emulator {
 
         x64::Cpu& cpu_;
         x64::Mmu& mmu_;
-        DisassemblyCache& disassemblyCache_;
 
         VMThread* currentThread_ { nullptr };
 

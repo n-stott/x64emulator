@@ -1,8 +1,8 @@
-#include "emulator/disassemblycache.h"
+#include "x64/disassembler/disassemblycache.h"
 #include "x64/disassembler/zydiswrapper.h"
 #include "x64/mmu.h"
 
-namespace emulator {
+namespace x64 {
 
     DisassemblyCache::DisassemblyCache() {
         disassembler_ = std::make_unique<x64::ZydisWrapper>();
@@ -92,26 +92,13 @@ namespace emulator {
         executableSectionsByEnd_.emplace(sectionPtr->end, sectionPtr);
 
         // Retrieve symbols from that section
-        symbolProvider_.tryRetrieveSymbolsFromExecutable(name_, regionBase);
+        for(auto* callback : callbacks_) callback->onNewDisassembly(name_, regionBase);
 
         return InstructionPosition { sectionPtr, 0 };
     }
 
-    std::string DisassemblyCache::calledFunctionName(u64 address) {
+    std::optional<std::string> DisassemblyCache::tryFindContainingFile(u64 address) {
         LOCK_CACHE();
-        // if we already have something cached, just return the cached value
-        if(auto it = functionNameCache_.find(address); it != functionNameCache_.end()) {
-            return it->second;
-        }
-
-        // If we are in the text section, we can try to lookup the symbol for that address
-        auto symbolsAtAddress = symbolProvider_.lookupSymbol(address);
-        if(!symbolsAtAddress.empty()) {
-            functionNameCache_[address] = symbolsAtAddress[0]->demangledSymbol;
-            return symbolsAtAddress[0]->demangledSymbol;
-        }
-
-        // Let's just fail
         InstructionPosition pos = findSectionWithAddress(address, nullptr);
         if(pos.section) {
             return fmt::format("Somewhere in {}", pos.section->filename);
@@ -192,6 +179,34 @@ namespace emulator {
             instructions.erase(instructions.begin() + packedInstructions, instructions.end());
             this->end = lastBasicBlock->instructions[lastBasicBlock->size-1].nextAddress();
         }
+    }
+
+    bool MmuBytecodeRetriever::retrieveBytecode(std::vector<u8>* data, std::string* name, u64* regionBase, u64 address, u64 size) {
+        if(!data) return false;
+        const x64::MmuRegion* mmuRegion = ((const x64::Mmu&)mmu_).findAddress(address);
+        if(!mmuRegion) return false;
+        verify(mmuRegion->prot().test(x64::PROT::EXEC), [&]() {
+            fmt::print(stderr, "Attempting to execute non-executable region [{:#x}-{:#x}]\n", mmuRegion->base(), mmuRegion->end());
+        });
+
+        // limit the size of disassembly range to 256 bytes
+        u64 end = std::min(mmuRegion->end(), address + size);
+        if(address >= end) {
+            // This may happen if disassembly produces nonsense.
+            // Juste re-disassemble the whole region in this case.
+            end = mmuRegion->end();
+        }
+        verify(address < end, [&]() {
+            fmt::print(stderr, "Disassembly region [{:#x}-{:#x}] is empty\n", address, end);
+        });
+
+        // Now, do the disassembly
+        data->resize(end-address, 0x0);
+        mmu_.copyFromMmu(data->data(), x64::Ptr8{address}, end-address);
+
+        if(name) *name = mmuRegion->name();
+        if(regionBase) *regionBase = mmuRegion->base();
+        return true;
     }
 
 }

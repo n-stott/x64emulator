@@ -1,12 +1,14 @@
 #include "emulator/vm.h"
 #include "emulator/vmthread.h"
-#include "emulator/disassemblycache.h"
-#include "verify.h"
+#include "kernel/linux/process.h"
+#include "kernel/linux/thread.h"
 #include "x64/compiler/compiler.h"
+#include "x64/disassembler/disassemblycache.h"
 #include "x64/mmu.h"
 #include "x64/registers.h"
 #include "host/hostmemory.h"
 #include "scopeguard.h"
+#include "verify.h"
 #include <algorithm>
 #include <numeric>
 #include <optional>
@@ -15,50 +17,9 @@
 
 namespace emulator {
 
-    class MmuBytecodeRetriever : public BytecodeRetriever {
-    public:
-        explicit MmuBytecodeRetriever(x64::Mmu& mmu, DisassemblyCache& disassemblyCache) :
-                mmu_(mmu), disassemblyCache_(disassemblyCache) {
-
-        }
-
-        bool retrieveBytecode(std::vector<u8>* data, std::string* name, u64* regionBase, u64 address, u64 size) override {
-            if(!data) return false;
-            const x64::MmuRegion* mmuRegion = ((const x64::Mmu&)mmu_).findAddress(address);
-            if(!mmuRegion) return false;
-            verify(mmuRegion->prot().test(x64::PROT::EXEC), [&]() {
-                fmt::print(stderr, "Attempting to execute non-executable region [{:#x}-{:#x}]\n", mmuRegion->base(), mmuRegion->end());
-            });
-
-            // limit the size of disassembly range to 256 bytes
-            u64 end = std::min(mmuRegion->end(), address + size);
-            if(address >= end) {
-                // This may happen if disassembly produces nonsense.
-                // Juste re-disassemble the whole region in this case.
-                end = mmuRegion->end();
-            }
-            verify(address < end, [&]() {
-                fmt::print(stderr, "Disassembly region [{:#x}-{:#x}] is empty\n", address, end);
-            });
-
-            // Now, do the disassembly
-            data->resize(end-address, 0x0);
-            mmu_.copyFromMmu(data->data(), x64::Ptr8{address}, end-address);
-
-            if(name) *name = mmuRegion->name();
-            if(regionBase) *regionBase = mmuRegion->base();
-            return true;
-        }
-    
-    private:
-        x64::Mmu& mmu_;
-        DisassemblyCache& disassemblyCache_;
-    };
-
-    VM::VM(x64::Cpu& cpu, x64::Mmu& mmu, DisassemblyCache& disassemblyCache) :
+    VM::VM(x64::Cpu& cpu, x64::Mmu& mmu) :
             cpu_(cpu),
-            mmu_(mmu),
-            disassemblyCache_(disassemblyCache) {
+            mmu_(mmu) {
         mmu.forAllRegions([&](const x64::MmuRegion& region) {
             basicBlocks_.reserve(region.base(), region.end());
         });
@@ -259,8 +220,9 @@ namespace emulator {
 #ifdef VM_BASICBLOCK_TELEMETRY
             ++mapMiss_;
 #endif
-            MmuBytecodeRetriever bytecodeRetriever(mmu_, disassemblyCache_);
-            disassemblyCache_.getBasicBlock(startAddress, &bytecodeRetriever, &blockInstructions_);
+            x64::DisassemblyCache* disassemblyCache = currentThread_->process()->disassemblyCache();
+            x64::MmuBytecodeRetriever bytecodeRetriever(mmu_, *disassemblyCache);
+            disassemblyCache->getBasicBlock(startAddress, &bytecodeRetriever, &blockInstructions_);
             verify(!blockInstructions_.empty() && blockInstructions_.back().isBranch(), [&]() {
                 fmt::print("did not find bb exit branch for bb starting at {:#x}\n", startAddress);
             });
@@ -300,7 +262,7 @@ namespace emulator {
     void VM::tryRetrieveSymbols(const std::vector<u64>& addresses, std::unordered_map<u64, std::string>* addressesToSymbols) const {
         if(!addressesToSymbols) return;
         for(u64 address : addresses) {
-            auto symbol = disassemblyCache_.calledFunctionName(address);
+            auto symbol = currentThread_->process()->functionName(address);
             addressesToSymbols->emplace(address, std::move(symbol));
         }
     }
