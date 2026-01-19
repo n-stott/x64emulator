@@ -107,25 +107,25 @@ namespace kernel::gnulinux {
         if(kernel_.isProfiling()) {
             std::unique_lock lock(schedulerMutex_);
             // we get the relevant addresses
-            std::vector<u64> addresses;
             forEachThread([&](const Thread& thread) {
+                std::vector<u64> addresses;
                 thread.forEachCallEvent([&](const Thread::CallEvent& event) {
                     addresses.push_back(event.address);
                 });
+                thread.process()->tryRetrieveSymbols(addresses, &addressToSymbol_);
             });
-            vm->vm.tryRetrieveSymbols(addresses, &addressToSymbol_);
         }
         // If we have panicked, we retrieve the callstacks
         if(kernel_.hasPanicked()) {
             std::unique_lock lock(schedulerMutex_);
             // we get the relevant addresses
-            std::vector<u64> addresses;
             forEachThread([&](const Thread& thread) {
+                std::vector<u64> addresses;
                 for(u64 address : thread.callstack()) {
                     addresses.push_back(address);
                 }
+                thread.process()->tryRetrieveSymbols(addresses, &addressToSymbol_);
             });
-            vm->vm.tryRetrieveSymbols(addresses, &addressToSymbol_);
         }
     }
 

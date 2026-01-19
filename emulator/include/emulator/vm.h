@@ -152,8 +152,6 @@ namespace emulator {
 
         void execute(VMThread* thread);
 
-        void tryRetrieveSymbols(const std::vector<u64>& addresses, std::unordered_map<u64, std::string>* addressesToSymbols) const;
-
         class CpuCallback : public x64::Cpu::Callback {
         public:
             CpuCallback(x64::Cpu* cpu, VM* vm);

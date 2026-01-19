@@ -259,14 +259,6 @@ namespace emulator {
         currentThread_->popCallstackUntil(stackptr);
     }
 
-    void VM::tryRetrieveSymbols(const std::vector<u64>& addresses, std::unordered_map<u64, std::string>* addressesToSymbols) const {
-        if(!addressesToSymbols) return;
-        for(u64 address : addresses) {
-            auto symbol = currentThread_->process()->functionName(address);
-            addressesToSymbols->emplace(address, std::move(symbol));
-        }
-    }
-
     void VM::onRegionCreation(u64 base, u64 length, BitFlags<x64::PROT> prot) {
         if(!prot.test(x64::PROT::EXEC)) return;
         basicBlocks_.reserve(base, base+length);

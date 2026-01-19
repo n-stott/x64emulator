@@ -88,4 +88,12 @@ namespace kernel::gnulinux {
         }
     }
 
+    void Process::tryRetrieveSymbols(const std::vector<u64>& addresses, std::unordered_map<u64, std::string>* addressesToSymbols) {
+        if(!addressesToSymbols) return;
+        for(u64 address : addresses) {
+            auto symbol = functionName(address);
+            addressesToSymbols->emplace(address, std::move(symbol));
+        }
+    }
+
 }

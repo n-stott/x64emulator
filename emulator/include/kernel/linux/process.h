@@ -10,6 +10,8 @@
 #include "verify.h"
 #include <memory>
 #include <optional>
+#include <unordered_map>
+#include <vector>
 
 namespace kernel::gnulinux {
 
@@ -39,6 +41,7 @@ namespace kernel::gnulinux {
 
         x64::DisassemblyCache* disassemblyCache() { return &disassemblyCache_; }
         std::string functionName(u64 address);
+        void tryRetrieveSymbols(const std::vector<u64>& addresses, std::unordered_map<u64, std::string>* addressesToSymbols);
     
     private:
         Process(int pid, x64::AddressSpace addressSpace, FS& fs, Directory* cwd);

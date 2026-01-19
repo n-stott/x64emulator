@@ -28,6 +28,7 @@ namespace kernel::gnulinux {
         const Description& description() const { return description_; }
 
         Process* process() override { return process_; }
+        Process* process() const { return process_; }
 
         int exitStatus() const { return exitStatus_; }
         void setExitStatus(int status) { exitStatus_ = status; }
