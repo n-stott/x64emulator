@@ -65,7 +65,7 @@ int main() {
         auto bb = create(&cpu, R64::RAX, R64::RBX, R64::RCX);
         auto jit = Jit::tryCreate();
         if(!jit) return 1;
-        auto* jbb = jit->tryCompile(bb, nullptr, 0);
+        auto* jbb = jit->tryCompile(bb, nullptr);
         if(!jbb) return 1;
 
         u64 ticks { 0 };

@@ -70,7 +70,7 @@ int main() {
         auto bb = create(&cpu);
         auto jit = Jit::tryCreate();
         if(!jit) return 1;
-        auto* jbb = jit->tryCompile(bb, nullptr, 0);
+        auto* jbb = jit->tryCompile(bb, nullptr);
         if(!jbb) return 1;
 
         u64 ticks { 0 };

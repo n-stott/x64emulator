@@ -35,9 +35,9 @@ namespace x64 {
         jitTrampoline_ = memoryBlock;
     }
 
-    JitBasicBlock* Jit::tryCompile(const x64::BasicBlock& bb, void* currentBb, int optimizationLevel) {
+    JitBasicBlock* Jit::tryCompile(const x64::BasicBlock& bb, void* currentBb) {
         ++compilationAttempts_;
-        auto jbb = JitBasicBlock::tryCreate(bb, currentBb, compiler_.get(), optimizationLevel, &allocator_);
+        auto jbb = JitBasicBlock::tryCreate(bb, currentBb, compiler_.get(), optimizationLevel_, &allocator_);
         if(!jbb) {
             ++failedCompilationAttempts_;
             return nullptr;

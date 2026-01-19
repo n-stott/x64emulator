@@ -155,7 +155,10 @@ namespace x64 {
         void setEnableJitChaining(bool enable) { jitChainingEnabled_ = enable; }
         bool jitChainingEnabled() const { return jitChainingEnabled_; }
 
-        JitBasicBlock* tryCompile(const x64::BasicBlock& bb, void* currentBb, int optimizationLevel);
+        void setOptimizationLevel(int level) { optimizationLevel_ = level; }
+        int optimizationLevel() const { return optimizationLevel_; }
+
+        JitBasicBlock* tryCompile(const x64::BasicBlock& bb, void* currentBb);
 
         void exec(Cpu* cpu, Mmu* mmu, NativeExecPtr nativeBasicBlock, u64* ticks,
             void** currentlyExecutingBasicBlockPtr, const void* currentlyExecutingJitBasicBlock);
@@ -182,6 +185,8 @@ namespace x64 {
 
         size_t compilationAttempts_ { 0 };
         size_t failedCompilationAttempts_ { 0 };
+
+        int optimizationLevel_ { 0 };
     };
 
 }

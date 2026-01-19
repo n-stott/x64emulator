@@ -54,7 +54,7 @@ namespace emulator {
         void onCall(VM&);
         void onCpuCall();
         void onJitCall();
-        void tryCompile(x64::Jit&, CompilationQueue&, int optimizationLevel);
+        void tryCompile(x64::Jit&, CompilationQueue&);
         void tryPatch(x64::Jit&);
 
         u64 calls() const { return calls_ + (!!jitBasicBlock_ ? jitBasicBlock_->calls() : 0); }
@@ -112,13 +112,13 @@ namespace emulator {
 
     class CompilationQueue {
     public:
-        void process(x64::Jit& jit, emulator::BasicBlock* bb, int optimizationLevel) {
+        void process(x64::Jit& jit, emulator::BasicBlock* bb) {
             queue_.clear();
             queue_.push_back(bb);
             while(!queue_.empty()) {
                 bb = queue_.back();
                 queue_.pop_back();
-                bb->tryCompile(jit, *this, optimizationLevel);
+                bb->tryCompile(jit, *this);
             }
         }
 
@@ -145,7 +145,6 @@ namespace emulator {
         int jitStatsLevel() const { return jitStatsLevel_; }
 
         void setOptimizationLevel(int level);
-        int optimizationLevel() const { return optimizationLevel_; }
 
         x64::Jit* jit() { return jit_.get(); }
         CompilationQueue& compilationQueue() { return compilationQueue_; }
@@ -217,7 +216,6 @@ namespace emulator {
 
         bool jitEnabled_ { false };
         int jitStatsLevel_ { 0 };
-        int optimizationLevel_ { 0 };
 
         std::unique_ptr<x64::Jit> jit_;
         CompilationQueue compilationQueue_;

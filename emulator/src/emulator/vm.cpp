@@ -23,6 +23,7 @@ namespace emulator {
         mmu.forAllRegions([&](const x64::MmuRegion& region) {
             basicBlocks_.reserve(region.base(), region.end());
         });
+        jit_ = x64::Jit::tryCreate();
     }
 
     VM::~VM() {
@@ -65,8 +66,6 @@ namespace emulator {
         jitEnabled_ = enable;
         if(!jitEnabled_) {
             jit_.reset();
-        } else {
-            if(!jit_) jit_ = x64::Jit::tryCreate();
         }
     }
 
@@ -84,7 +83,7 @@ namespace emulator {
     }
 
     void VM::setOptimizationLevel(int level) {
-        optimizationLevel_ = std::max(level, 0);
+        jit_->setOptimizationLevel(level);
     }
 
     void VM::syncThread() {
@@ -464,7 +463,7 @@ namespace emulator {
 
     void BasicBlock::onCall(VM& vm) {
         if(!vm.jit()) return;
-        vm.compilationQueue().process(*vm.jit(), this, vm.optimizationLevel());
+        vm.compilationQueue().process(*vm.jit(), this);
     }
 
     void BasicBlock::onCpuCall() {
@@ -475,13 +474,13 @@ namespace emulator {
         // Nothing yet
     }
 
-    void BasicBlock::tryCompile(x64::Jit& jit, CompilationQueue& queue, int optimizationLevel) {
+    void BasicBlock::tryCompile(x64::Jit& jit, CompilationQueue& queue) {
         if(calls_ < callsForCompilation_) {
             callsForCompilation_ /= 2;
             return;
         }
         if(!compilationAttempted_) {
-            jitBasicBlock_ = jit.tryCompile(cpuBasicBlock_, this, optimizationLevel);
+            jitBasicBlock_ = jit.tryCompile(cpuBasicBlock_, this);
 
             if(!!jitBasicBlock_) {
                 if(jit.jitChainingEnabled()) {
