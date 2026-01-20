@@ -21,7 +21,7 @@ namespace emulator {
             cpu_(cpu),
             mmu_(mmu) {
         mmu.forAllRegions([&](const x64::MmuRegion& region) {
-            basicBlocks_.reserve(region.base(), region.end());
+            codeSegments_.reserve(region.base(), region.end());
         });
         jit_ = x64::Jit::tryCreate();
     }
@@ -53,12 +53,12 @@ namespace emulator {
             fmt::print("  jmp  exits: {} ({} distinct)\n", jitExitJmpRM64_, distinctJitExitCallRM64_.size());
             fmt::print("  call exits: {} ({} distinct)\n", jitExitCallRM64_, distinctJitExitJmpRM64_.size());
 #endif
-            std::vector<const BasicBlock*> blocks;
-            blocks.reserve(basicBlocks_.size());
-            basicBlocks_.forEach([&](const BasicBlock& bb) {
-                blocks.push_back(&bb);
+            std::vector<const x64::CodeSegment*> segments;
+            segments.reserve(codeSegments_.size());
+            codeSegments_.forEach([&](const x64::CodeSegment& seg) {
+                segments.push_back(&seg);
             });
-            dumpJitTelemetry(blocks);
+            dumpJitTelemetry(segments);
         }
     }
 
@@ -136,18 +136,18 @@ namespace emulator {
             contextSwitch(nullptr);
         });
         ThreadTime& time = thread->time();
-        BasicBlock* currentBasicBlock = nullptr;
-        BasicBlock* nextBasicBlock = fetchBasicBlock();
+        x64::CodeSegment* currentSegment = nullptr;
+        x64::CodeSegment* nextSegment = fetchSegment();
 
-        auto findNextBasicBlock = [&]() -> BasicBlock* {
+        auto findNextSegment = [&]() -> x64::CodeSegment* {
             u64 rip = cpu_.get(x64::R64::RIP);
-            BasicBlock* next = nullptr;
-            if(!!currentBasicBlock) next = currentBasicBlock->findNext(rip);
+            x64::CodeSegment* next = nullptr;
+            if(!!currentSegment) next = currentSegment->findNext(rip);
             if(!next) {
-                next = fetchBasicBlock();
+                next = fetchSegment();
                 verify(!!next);
-                if(!!currentBasicBlock) {
-                    currentBasicBlock->addSuccessor(next);
+                if(!!currentSegment) {
+                    currentSegment->addSuccessor(next);
                 }
 #ifdef VM_BASICBLOCK_TELEMETRY
                 ++blockCacheMisses_;
@@ -164,53 +164,53 @@ namespace emulator {
         CpuCallback callback(&cpu_, this);
         while(!time.isStopAsked()) {
             verify(!signal_interrupt);
-            std::swap(currentBasicBlock, nextBasicBlock);
+            std::swap(currentSegment, nextSegment);
 #ifdef VM_BASICBLOCK_TELEMETRY
             ++basicBlockCount_[currentBasicBlock->start()];
 #endif
-            verify(currentBasicBlock->start() == cpu_.get(x64::R64::RIP));
-            currentBasicBlock->onCall(*this);
-            if(currentBasicBlock->jitBasicBlock()) {
-                currentBasicBlock->onJitCall();
+            verify(currentSegment->start() == cpu_.get(x64::R64::RIP));
+            currentSegment->onCall(jit(), compilationQueue());
+            if(currentSegment->jitBasicBlock()) {
+                currentSegment->onJitCall();
                 jit_->exec(&cpu_, &mmu_,
-                          (x64::NativeExecPtr)currentBasicBlock->jitBasicBlock()->executableMemory(),
+                          (x64::NativeExecPtr)currentSegment->jitBasicBlock()->executableMemory(),
                           time.ticks(),
-                          (void**)&currentBasicBlock,
-                          currentBasicBlock->jitBasicBlock());
+                          (void**)&currentSegment,
+                          currentSegment->jitBasicBlock());
                 ++jitExits_;
-                updateJitStats(*currentBasicBlock);
+                updateJitStats(*currentSegment);
             } else {
 #ifdef MULTIPROCESSING
-                if(currentBasicBlock->basicBlock().hasAtomicInstruction()) {
+                if(currentSegment->basicBlock().hasAtomicInstruction()) {
                     if(!thread->requestsAtomic()) {
                         thread->enterAtomic();
                         break;
                     }
                 }
 #endif
-                currentBasicBlock->onCpuCall();
-                cpu_.exec(currentBasicBlock->basicBlock());
-                time.tick(currentBasicBlock->basicBlock().instructions().size());
+                currentSegment->onCpuCall();
+                cpu_.exec(currentSegment->basicBlock());
+                time.tick(currentSegment->basicBlock().instructions().size());
             }
-            nextBasicBlock = findNextBasicBlock();
+            nextSegment = findNextSegment();
             if(!!jit_
-            && !!currentBasicBlock->jitBasicBlock()
-            && currentBasicBlock->basicBlock().endsWithFixedDestinationJump()
-            && !!nextBasicBlock->jitBasicBlock()) {
-                if(jitChainingEnabled()) currentBasicBlock->tryPatch(*jit_);
+            && !!currentSegment->jitBasicBlock()
+            && currentSegment->basicBlock().endsWithFixedDestinationJump()
+            && !!nextSegment->jitBasicBlock()) {
+                if(jitChainingEnabled()) currentSegment->tryPatch(*jit_);
                 ++avoidableExits_;
             }
         }
         assert(!!currentThread_);
     }
 
-    BasicBlock* VM::fetchBasicBlock() {
+    x64::CodeSegment* VM::fetchSegment() {
         u64 startAddress = cpu_.get(x64::R64::RIP);
 #ifdef VM_BASICBLOCK_TELEMETRY
         ++mapAccesses_;
 #endif
-        auto it = basicBlocksByAddress_.find(startAddress);
-        if(it != basicBlocksByAddress_.end()) {
+        auto it = codeSegmentsByAddress_.find(startAddress);
+        if(it != codeSegmentsByAddress_.end()) {
 #ifdef VM_BASICBLOCK_TELEMETRY
             ++mapHit_;
 #endif
@@ -227,12 +227,12 @@ namespace emulator {
             });
             x64::BasicBlock cpuBb = cpu_.createBasicBlock(blockInstructions_.data(), blockInstructions_.size());
             verify(!cpuBb.instructions().empty(), "Cannot create empty basic block");
-            std::unique_ptr<BasicBlock> bblock = std::make_unique<BasicBlock>(std::move(cpuBb));
-            BasicBlock* bblockPtr = bblock.get();
-            u64 bbstart = bblock->start();
-            basicBlocks_.add(bbstart, std::move(bblock));
-            basicBlocksByAddress_[startAddress] = bblockPtr;
-            return bblockPtr;
+            std::unique_ptr<x64::CodeSegment> seg = std::make_unique<x64::CodeSegment>(std::move(cpuBb));
+            x64::CodeSegment* segptr = seg.get();
+            u64 segstart = seg->start();
+            codeSegments_.add(segstart, std::move(seg));
+            codeSegmentsByAddress_[startAddress] = segptr;
+            return segptr;
         }
     }
 
@@ -260,7 +260,7 @@ namespace emulator {
 
     void VM::onRegionCreation(u64 base, u64 length, BitFlags<x64::PROT> prot) {
         if(!prot.test(x64::PROT::EXEC)) return;
-        basicBlocks_.reserve(base, base+length);
+        codeSegments_.reserve(base, base+length);
     }
 
     void VM::onRegionProtectionChange(u64 base, u64 length, BitFlags<x64::PROT> protBefore, BitFlags<x64::PROT> protAfter) {
@@ -270,20 +270,20 @@ namespace emulator {
         if(!protAfter.test(x64::PROT::EXEC)) {
             // if we become non-executable, purge the basic blocks
             if(jitStatsLevel() >= 2) {
-                std::vector<const BasicBlock*> blocks;
-                basicBlocks_.forEach(base, base+length, [&](const BasicBlock& bb) {
-                    blocks.push_back(&bb);
+                std::vector<const x64::CodeSegment*> segments;
+                codeSegments_.forEach(base, base+length, [&](const x64::CodeSegment& seg) {
+                    segments.push_back(&seg);
                 });
-                dumpJitTelemetry(blocks);
+                dumpJitTelemetry(segments);
             }
-            basicBlocks_.forEachMutable(base, base+length, [&](BasicBlock& bb) {
-                basicBlocksByAddress_.erase(bb.start());
-                bb.removeFromCaches();
+            codeSegments_.forEachMutable(base, base+length, [&](x64::CodeSegment& seg) {
+                codeSegmentsByAddress_.erase(seg.start());
+                seg.removeFromCaches();
             });
-            basicBlocks_.remove(base, base+length);
+            codeSegments_.remove(base, base+length);
         } else {
             // if we become executable, reserve basic blocks
-            basicBlocks_.reserve(base, base+length);
+            codeSegments_.reserve(base, base+length);
         }
     }
 
@@ -291,17 +291,17 @@ namespace emulator {
         if(!prot.test(x64::PROT::EXEC)) return;
 
         if(jitStatsLevel() >= 2) {
-            std::vector<const BasicBlock*> blocks;
-            basicBlocks_.forEach(base, base+length, [&](const BasicBlock& bb) {
-                blocks.push_back(&bb);
+            std::vector<const x64::CodeSegment*> segments;
+            codeSegments_.forEach(base, base+length, [&](const x64::CodeSegment& seg) {
+                segments.push_back(&seg);
             });
-            dumpJitTelemetry(blocks);
+            dumpJitTelemetry(segments);
         }
-        basicBlocks_.forEachMutable(base, base+length, [&](BasicBlock& bb) {
-            basicBlocksByAddress_.erase(bb.start());
-            bb.removeFromCaches();
+        codeSegments_.forEachMutable(base, base+length, [&](x64::CodeSegment& seg) {
+            codeSegmentsByAddress_.erase(seg.start());
+            seg.removeFromCaches();
         });
-        basicBlocks_.remove(base, base+length);
+        codeSegments_.remove(base, base+length);
     }
 
     VM::CpuCallback::CpuCallback(x64::Cpu* cpu, VM* vm) : cpu_(cpu), vm_(vm) {
@@ -328,204 +328,15 @@ namespace emulator {
         if(!!vm_) vm_->notifyStackChange(stackptr);
     }
 
-    BasicBlock::BasicBlock(x64::BasicBlock cpuBasicBlock) : cpuBasicBlock_(std::move(cpuBasicBlock)) {
-        verify(!cpuBasicBlock_.instructions().empty(), "Basic block is empty");
-        endsWithFixedDestinationJump_ = cpuBasicBlock_.endsWithFixedDestinationJump();
-        std::fill(fixedDestinationInfo_.next.begin(), fixedDestinationInfo_.next.end(), nullptr);
-        std::fill(fixedDestinationInfo_.nextCount.begin(), fixedDestinationInfo_.nextCount.end(), 0);
-        callsForCompilation_ = JIT_THRESHOLD;
-    }
-
-    u64 BasicBlock::start() const {
-        return cpuBasicBlock_.instructions()[0].first.address();
-    }
-
-    u64 BasicBlock::end() const {
-        return cpuBasicBlock_.instructions().back().first.nextAddress();
-    }
-
-    BasicBlock* BasicBlock::findNext(u64 address) {
-        if(endsWithFixedDestinationJump_) {
-            return fixedDestinationInfo_.findNext(address);
-        } else {
-            auto it = successors_.find(address);
-            if(it != successors_.end()) {
-                return it->second;
-            } else {
-                return nullptr;
-            }
-        }
-    }
-
-    BasicBlock* BasicBlock::FixedDestinationInfo::findNext(u64 address) {
-        for(size_t i = 0; i < next.size(); ++i) {
-            if(!next[i]) return nullptr;
-            if(next[i]->start() != address) continue;
-            BasicBlock* result = next[i];
-            ++nextCount[i];
-            if(i > 0 && nextCount[i] > nextCount[i-1]) {
-                std::swap(next[i], next[i-1]);
-                std::swap(nextCount[i], nextCount[i-1]);
-            }
-            return result;
-        }
-        return nullptr;
-    }
-
-    void BasicBlock::FixedDestinationInfo::addSuccessor(BasicBlock* other) {
-        size_t firstAvailableSlot = next.size()-1;
-        bool foundSlot = false;
-        for(size_t i = 0; i < next.size(); ++i) {
-            if(!next[i]) {
-                firstAvailableSlot = i;
-                foundSlot = true;
-                break;
-            }
-        }
-        verify(foundSlot);
-        next[firstAvailableSlot] = other;
-        nextCount[firstAvailableSlot] = 1;
-    }
-
-    void BasicBlock::VariableDestinationInfo::addSuccessor(BasicBlock* other) {
-        next.push_back(other);
-        nextJit.push_back(other->jitBasicBlock());
-        nextStart.push_back(other->start());
-        nextCount.push_back(1);
-    }
-
-    void BasicBlock::syncBlockLookupTable() {
-        if(!jitBasicBlock_) return;
-        for(size_t i = 0; i < variableDestinationInfo_.next.size(); ++i) {
-            variableDestinationInfo_.nextJit[i] = variableDestinationInfo_.next[i]->jitBasicBlock();
-        }
-        jitBasicBlock_->syncBlockLookupTable(
-                variableDestinationInfo_.nextJit.size(),
-                variableDestinationInfo_.nextStart.data(),
-                (const x64::JitBasicBlock**)variableDestinationInfo_.nextJit.data(),
-                variableDestinationInfo_.nextCount.data());
-    }
-
-    void BasicBlock::addSuccessor(BasicBlock* other) {
-        if(endsWithFixedDestinationJump_) {
-            fixedDestinationInfo_.addSuccessor(other);
-        }
-        auto res = successors_.insert(std::make_pair(other->start(), other));
-        if(res.second && !endsWithFixedDestinationJump_) {
-            variableDestinationInfo_.addSuccessor(other);
-            syncBlockLookupTable();
-        }
-        other->predecessors_.insert(std::make_pair(start(), this));
-    }
-
-    void BasicBlock::removePredecessor(BasicBlock* other) {
-        predecessors_.erase(other->start());
-    }
-
-    void BasicBlock::FixedDestinationInfo::removeSuccessor(BasicBlock* other) {
-        for(size_t i = 0; i < next.size(); ++i) {
-            const auto* bb1 = next[i];
-            if(bb1 == other) {
-                next[i] = nullptr;
-                nextCount[i] = 0;
-            }
-        }
-    }
-
-    void BasicBlock::VariableDestinationInfo::removeSuccessor(BasicBlock*) {
-        next.clear();
-        nextJit.clear();
-        nextStart.clear();
-        nextCount.clear();
-    }
-
-    void BasicBlock::removeSucessor(BasicBlock* other) {
-        if(endsWithFixedDestinationJump_) {
-            fixedDestinationInfo_.removeSuccessor(other);
-        } else {
-            variableDestinationInfo_.removeSuccessor(other);
-            syncBlockLookupTable();
-        }
-        successors_.erase(other->start());
-    }
-
-    void BasicBlock::removeFromCaches() {
-        for(auto prev : predecessors_) prev.second->removeSucessor(this);
-        predecessors_.clear();
-        for(auto succ : successors_) succ.second->removePredecessor(this);
-        successors_.clear();
-        jitBasicBlock_ = nullptr;
-    }
-
-    size_t BasicBlock::size() const {
-        return successors_.size() + predecessors_.size();
-    }
-
-    void BasicBlock::onCall(VM& vm) {
-        if(!vm.jit()) return;
-        vm.compilationQueue().process(*vm.jit(), this);
-    }
-
-    void BasicBlock::onCpuCall() {
-        ++calls_;
-    }
-
-    void BasicBlock::onJitCall() {
-        // Nothing yet
-    }
-
-    void BasicBlock::tryCompile(x64::Jit& jit, CompilationQueue& queue) {
-        if(calls_ < callsForCompilation_) {
-            callsForCompilation_ /= 2;
-            return;
-        }
-        if(!compilationAttempted_) {
-            jitBasicBlock_ = jit.tryCompile(cpuBasicBlock_, this);
-
-            if(!!jitBasicBlock_) {
-                if(jit.jitChainingEnabled()) {
-                    tryPatch(jit);
-                    for(auto prev : predecessors_) {
-                        prev.second->tryPatch(jit);
-                    }
-                }
-            }
-            compilationAttempted_ = true;
-            if(!!fixedDestinationInfo_.next[0]) queue.push(fixedDestinationInfo_.next[0]);
-            if(!!fixedDestinationInfo_.next[1]) queue.push(fixedDestinationInfo_.next[1]);
-            for(BasicBlock* next : variableDestinationInfo_.next) {
-                queue.push(next);
-            }
-        }
-    }
-
-    void BasicBlock::tryPatch(x64::Jit& jit) {
-        if(!jitBasicBlock_) return;
-        if(jitBasicBlock_->needsPatching()) {
-            u64 continuingBlockAddress = end();
-
-            auto tryPatch = [&](BasicBlock* next) {
-                if(!next) return;
-                if(!next->jitBasicBlock()) return;
-                jitBasicBlock_->forAllPendingPatches(next->start() == continuingBlockAddress, [&](std::optional<size_t>* pendingPatch) {
-                    jitBasicBlock_->tryPatch(pendingPatch, next->jitBasicBlock(), jit.compiler());
-                });
-            };
-            tryPatch(fixedDestinationInfo_.next[0]);
-            tryPatch(fixedDestinationInfo_.next[1]);
-        }
-        syncBlockLookupTable();
-    }
-
-    void VM::dumpJitTelemetry(const std::vector<const BasicBlock*>& blocks) const {
+    void VM::dumpJitTelemetry(const std::vector<const x64::CodeSegment*>& blocks) const {
         if(blocks.empty()) return;
-        std::vector<const BasicBlock*> jittedBlocks;
-        std::vector<const BasicBlock*> nonjittedBlocks;
+        std::vector<const x64::CodeSegment*> jittedBlocks;
+        std::vector<const x64::CodeSegment*> nonjittedBlocks;
         size_t jitted = 0;
         u64 emulatedInstructions = 0;
         u64 jittedInstructions = 0;
         u64 jitCandidateInstructions = 0;
-        for(const BasicBlock* bb : blocks) {
+        for(const x64::CodeSegment* bb : blocks) {
             if(bb->jitBasicBlock() != nullptr) {
                 jitted += 1;
                 jittedBlocks.push_back(bb);
@@ -594,8 +405,8 @@ namespace emulator {
         }
     }
 
-    void VM::updateJitStats(const BasicBlock& bb) {
-        auto lastInsn = bb.basicBlock().instructions().back().first.insn();
+    void VM::updateJitStats(const x64::CodeSegment& seg) {
+        auto lastInsn = seg.basicBlock().instructions().back().first.insn();
         if(lastInsn == x64::Insn::RET) {
             jitExitRet_ += 1;
 #ifdef VM_JIT_TELEMETRY
@@ -616,40 +427,10 @@ namespace emulator {
         }
     }
 
-    void BasicBlock::dumpGraphviz(std::ostream& stream, std::unordered_map<void*, u32>& counter) const {
-        auto get_id = [&](const BasicBlock* bb) -> u32 {
-            auto it = counter.find((void*)bb);
-            if(it != counter.end()) {
-                return it->second;
-            } else {
-                u32 id = (u32)counter.size();
-                counter[(void*)bb] = id;
-                return id;
-            }
-        };
-
-        auto write_edge = [&](const BasicBlock* u, const BasicBlock* v) {
-            stream << fmt::format("{}", get_id(u));
-            stream << " -> ";
-            stream << fmt::format("{}", get_id(v));
-            stream << ';' << '\n';
-        };
-
-        for(const BasicBlock* succ : fixedDestinationInfo_.next) {
-            if(!succ) continue;
-            write_edge(this, succ);
-        }
-
-        for(const BasicBlock* succ : variableDestinationInfo_.next) {
-            if(!succ) continue;
-            write_edge(this, succ);
-        }
-    }
-
     void VM::dumpGraphviz(std::ostream& stream) const {
         stream << "digraph G {\n";
         std::unordered_map<void*, u32> counter;
-        for(auto p : basicBlocksByAddress_) {
+        for(auto p : codeSegmentsByAddress_) {
             p.second->dumpGraphviz(stream, counter);
         }
         stream << '}';
