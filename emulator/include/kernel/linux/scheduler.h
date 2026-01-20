@@ -70,10 +70,7 @@ namespace kernel::gnulinux {
 
         struct Worker {
             int id { 0 };
-            bool enableJit { false };
-            bool enableJitChaining { false };
             int jitStatsLevel { 0 };
-            int optimizationLevel { 0 };
             bool canRunSyscalls() const { return id == 0; };
             bool canRunAtomic() const { return id == 0; };
         };

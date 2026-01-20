@@ -19,9 +19,7 @@ namespace emulator {
 
     VM::VM(x64::Cpu& cpu, x64::Mmu& mmu) :
             cpu_(cpu),
-            mmu_(mmu) {
-        jit_ = x64::Jit::tryCreate();
-    }
+            mmu_(mmu) { }
 
     VM::~VM() {
 #ifdef VM_ATOMIC_TELEMETRY
@@ -59,28 +57,8 @@ namespace emulator {
         }
     }
 
-    void VM::setEnableJit(bool enable) {
-        jitEnabled_ = enable;
-        if(!jitEnabled_) {
-            jit_.reset();
-        }
-    }
-
-    void VM::setEnableJitChaining(bool enable) {
-        if(!!jit_) jit_->setEnableJitChaining(enable);
-    }
-
     void VM::setJitStatsLevel(int level) {
         jitStatsLevel_ = level;
-    }
-
-    bool VM::jitChainingEnabled() const {
-        if(!!jit_) return jit_->jitChainingEnabled();
-        return false;
-    }
-
-    void VM::setOptimizationLevel(int level) {
-        jit_->setOptimizationLevel(level);
     }
 
     void VM::syncThread() {
@@ -134,6 +112,9 @@ namespace emulator {
         });
         ThreadTime& time = thread->time();
         kernel::gnulinux::Process* process = thread->process();
+        x64::Jit* jit = process->jit();
+        x64::CompilationQueue& compilationQueue = process->compilationQueue();
+
         x64::CodeSegment* currentSegment = nullptr;
         x64::CodeSegment* nextSegment = process->fetchSegment(mmu_, cpu_.get(x64::R64::RIP));
 
@@ -167,10 +148,10 @@ namespace emulator {
             ++basicBlockCount_[currentBasicBlock->start()];
 #endif
             verify(currentSegment->start() == cpu_.get(x64::R64::RIP));
-            currentSegment->onCall(jit(), compilationQueue());
+            currentSegment->onCall(jit, compilationQueue);
             if(currentSegment->jitBasicBlock()) {
                 currentSegment->onJitCall();
-                jit_->exec(&cpu_, &mmu_,
+                jit->exec(&cpu_, &mmu_,
                           (x64::NativeExecPtr)currentSegment->jitBasicBlock()->executableMemory(),
                           time.ticks(),
                           (void**)&currentSegment,
@@ -191,11 +172,11 @@ namespace emulator {
                 time.tick(currentSegment->basicBlock().instructions().size());
             }
             nextSegment = findNextSegment();
-            if(!!jit_
+            if(!!jit
             && !!currentSegment->jitBasicBlock()
             && currentSegment->basicBlock().endsWithFixedDestinationJump()
             && !!nextSegment->jitBasicBlock()) {
-                if(jitChainingEnabled()) currentSegment->tryPatch(*jit_);
+                if(jit->jitChainingEnabled()) currentSegment->tryPatch(*jit);
                 ++avoidableExits_;
             }
         }
@@ -204,24 +185,27 @@ namespace emulator {
 
     void VM::notifyCall(u64 address) {
         currentThread_->stats().functionCalls++;
-        if(!jit_) {
-            currentThread_->pushCallstack(cpu_.get(x64::R64::RSP), cpu_.get(x64::R64::RIP), address);
+        if(auto* jit = currentThread_->process()->jit()) {
+            jit->notifyCall();
         } else {
-            jit_->notifyCall();
+            currentThread_->pushCallstack(cpu_.get(x64::R64::RSP), cpu_.get(x64::R64::RIP), address);
         }
     }
 
     void VM::notifyRet() {
-        if(!jit_) {
-            currentThread_->popCallstack();
+        if(auto* jit = currentThread_->process()->jit()) {
+            jit->notifyRet();
         } else {
-            jit_->notifyRet();
+            currentThread_->popCallstack();
         }
     }
 
     void VM::notifyStackChange(u64 stackptr) {
-        if(!!jit_) return;
-        currentThread_->popCallstackUntil(stackptr);
+        if([[maybe_unused]] auto* jit = currentThread_->process()->jit()) {
+            // TODO
+        } else {
+            currentThread_->popCallstackUntil(stackptr);
+        }
     }
 
     VM::CpuCallback::CpuCallback(x64::Cpu* cpu, VM* vm) : cpu_(cpu), vm_(vm) {

@@ -113,6 +113,9 @@ namespace kernel::gnulinux {
         VerificationScope::run([&]() {
             Process* mainProcess = processTable_->createMainProcess();
             verify(!!mainProcess, "Unable to create main process");
+            mainProcess->setEnableJit(isJitEnabled());
+            mainProcess->setEnableJitChaining(isJitChainingEnabled());
+            mainProcess->setOptimizationLevel(optimizationLevel());
             x64::ScopedAdressSpace scopeAddressSpace(mmu_, mainProcess->addressSpace());
             mmu_.addCallback(mainProcess);
             ScopeGuard guard([&]() {

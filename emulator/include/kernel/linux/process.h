@@ -5,6 +5,7 @@
 #include "kernel/linux/fs/fs.h"
 #include "kernel/linux/thread.h"
 #include "kernel/linux/symbolprovider.h"
+#include "x64/compiler/jit.h"
 #include "x64/disassembler/disassemblycache.h"
 #include "x64/codesegment.h"
 #include "x64/mmu.h"
@@ -50,7 +51,30 @@ namespace kernel::gnulinux {
         x64::CodeSegment* fetchSegment(x64::Mmu& mmu, u64 address);
 
         void dumpGraphviz(std::ostream&) const;
+
+        x64::Jit* jit() { return jit_.get(); }
+        x64::CompilationQueue& compilationQueue() { return compilationQueue_; }
     
+        bool jitEnabled() const { return !!jit_; }
+        void setEnableJit(bool enable) {
+            if(!enable) {
+                jit_.reset();
+            }
+        }
+
+        void setEnableJitChaining(bool enable) {
+            if(!!jit_) jit_->setEnableJitChaining(enable);
+        }
+
+        bool jitChainingEnabled() const {
+            if(!!jit_) return jit_->jitChainingEnabled();
+            return false;
+        }
+
+        void setOptimizationLevel(int level) {
+            jit_->setOptimizationLevel(level);
+        }
+
     protected:
         void onRegionCreation(u64 base, u64 length, BitFlags<x64::PROT> prot) override;
         void onRegionProtectionChange(u64 base, u64 length, BitFlags<x64::PROT> protBefore, BitFlags<x64::PROT> protAfter) override;
@@ -86,7 +110,9 @@ namespace kernel::gnulinux {
 
         SymbolProvider symbolProvider_;
         std::unordered_map<u64, std::string> functionNameCache_;
-        
+
+        std::unique_ptr<x64::Jit> jit_;
+        x64::CompilationQueue compilationQueue_;
     };
 
 }

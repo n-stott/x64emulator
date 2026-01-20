@@ -47,6 +47,7 @@ namespace kernel::gnulinux {
             fds_(fs),
             currentWorkDirectory_(cwd) {
         fds_.createStandardStreams(fs_.ttyPath());
+        jit_ = x64::Jit::tryCreate();
     }
 
     Process::~Process() = default;

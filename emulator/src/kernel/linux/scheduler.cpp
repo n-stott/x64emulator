@@ -55,10 +55,7 @@ namespace kernel::gnulinux {
         std::unique_ptr<TaggedVM> vm = std::make_unique<TaggedVM>(mmu_);
         vm->canRunAtomics = worker.canRunAtomic();
         vm->canRunSyscalls = worker.canRunSyscalls();
-        vm->vm.setEnableJit(worker.enableJit);
-        vm->vm.setEnableJitChaining(worker.enableJitChaining);
         vm->vm.setJitStatsLevel(worker.jitStatsLevel);
-        vm->vm.setOptimizationLevel(worker.optimizationLevel);
         return vm;
     }
 
@@ -221,10 +218,7 @@ namespace kernel::gnulinux {
         for(int i = 0; i < kernel_.nbCores(); ++i) {
             Worker worker{
                 i,
-                kernel_.isJitEnabled(),
-                kernel_.isJitChainingEnabled(),
                 kernel_.jitStatsLevel(),
-                kernel_.optimizationLevel()
             };
             vms_.push_back(createVM(worker));
         }
@@ -240,10 +234,7 @@ namespace kernel::gnulinux {
 #else
         Worker worker{
             0,
-            kernel_.isJitEnabled(),
-            kernel_.isJitChainingEnabled(),
             kernel_.jitStatsLevel(),
-            kernel_.optimizationLevel()
         };
         vms_.clear();
         vms_.push_back(createVM(worker));

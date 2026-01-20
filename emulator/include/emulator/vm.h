@@ -32,19 +32,8 @@ namespace emulator {
         explicit VM(x64::Cpu& cpu, x64::Mmu& mmu);
         ~VM();
 
-        void setEnableJit(bool enable);
-        bool jitEnabled() const { return jitEnabled_; }
-
-        void setEnableJitChaining(bool enable);
-        bool jitChainingEnabled() const;
-
         void setJitStatsLevel(int level);
         int jitStatsLevel() const { return jitStatsLevel_; }
-
-        void setOptimizationLevel(int level);
-
-        x64::Jit* jit() { return jit_.get(); }
-        x64::CompilationQueue& compilationQueue() { return compilationQueue_; }
 
         void execute(VMThread* thread);
 
@@ -101,9 +90,6 @@ namespace emulator {
 
         bool jitEnabled_ { false };
         int jitStatsLevel_ { 0 };
-
-        std::unique_ptr<x64::Jit> jit_;
-        x64::CompilationQueue compilationQueue_;
     };
 
 }
