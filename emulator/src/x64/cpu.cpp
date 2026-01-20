@@ -1772,7 +1772,7 @@ namespace x64 {
         return execFunctions_[(size_t)insn.insn()](*this, insn);
     }
 
-    BasicBlock Cpu::createBasicBlock(const X64Instruction* instructions, size_t count) const {
+    BasicBlock Cpu::createBasicBlock(const X64Instruction* instructions, size_t count) {
         std::vector<std::pair<X64Instruction, CpuExecPtr>> vec;
         vec.reserve(count);
         for(size_t i = 0; i < count; ++i) {

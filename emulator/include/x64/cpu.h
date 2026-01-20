@@ -32,7 +32,7 @@ namespace x64 {
 
         void exec(const X64Instruction&);
 
-        BasicBlock createBasicBlock(const X64Instruction*, size_t) const;
+        static BasicBlock createBasicBlock(const X64Instruction*, size_t);
 
         void exec(const BasicBlock&);
         

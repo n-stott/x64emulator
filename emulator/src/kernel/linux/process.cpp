@@ -1,6 +1,7 @@
 #include "kernel/linux/process.h"
 #include "kernel/linux/processtable.h"
 #include "kernel/linux/fs/fs.h"
+#include "x64/cpu.h"
 #include "host/host.h"
 #include "fmt/format.h"
 
@@ -94,6 +95,85 @@ namespace kernel::gnulinux {
             auto symbol = functionName(address);
             addressesToSymbols->emplace(address, std::move(symbol));
         }
+    }
+
+    void Process::onRegionCreation(u64 base, u64 length, BitFlags<x64::PROT> prot) {
+        if(!prot.test(x64::PROT::EXEC)) return;
+        codeSegments_.reserve(base, base+length);
+    }
+
+    void Process::onRegionProtectionChange(u64 base, u64 length, BitFlags<x64::PROT> protBefore, BitFlags<x64::PROT> protAfter) {
+        // if executable flag didn't change, we don't need to to anything
+        if(protBefore.test(x64::PROT::EXEC) == protAfter.test(x64::PROT::EXEC)) return;
+
+        if(!protAfter.test(x64::PROT::EXEC)) {
+            // if we become non-executable, purge the basic blocks
+            // if(jitStatsLevel() >= 2) {
+            //     std::vector<const x64::CodeSegment*> segments;
+            //     codeSegments_.forEach(base, base+length, [&](const x64::CodeSegment& seg) {
+            //         segments.push_back(&seg);
+            //     });
+            //     dumpJitTelemetry(segments);
+            // }
+            codeSegments_.forEachMutable(base, base+length, [&](x64::CodeSegment& seg) {
+                codeSegmentsByAddress_.erase(seg.start());
+                seg.removeFromCaches();
+            });
+            codeSegments_.remove(base, base+length);
+        } else {
+            // if we become executable, reserve basic blocks
+            codeSegments_.reserve(base, base+length);
+        }
+    }
+
+    void Process::onRegionDestruction(u64 base, u64 length, BitFlags<x64::PROT> prot) {
+        if(!prot.test(x64::PROT::EXEC)) return;
+
+        // if(jitStatsLevel() >= 2) {
+        //     std::vector<const x64::CodeSegment*> segments;
+        //     codeSegments_.forEach(base, base+length, [&](const x64::CodeSegment& seg) {
+        //         segments.push_back(&seg);
+        //     });
+        //     dumpJitTelemetry(segments);
+        // }
+        codeSegments_.forEachMutable(base, base+length, [&](x64::CodeSegment& seg) {
+            codeSegmentsByAddress_.erase(seg.start());
+            seg.removeFromCaches();
+        });
+        codeSegments_.remove(base, base+length);
+    }
+
+    x64::CodeSegment* Process::fetchSegment(x64::Mmu& mmu, u64 address) {
+#ifdef MULTIPROCESSING
+        std::unique_lock lock(segmentGuard_);
+#endif
+        auto it = codeSegmentsByAddress_.find(address);
+        if(it != codeSegmentsByAddress_.end()) {
+            return it->second;
+        } else {
+            x64::MmuBytecodeRetriever bytecodeRetriever(mmu, disassemblyCache_);
+            disassemblyCache_.getBasicBlock(address, &bytecodeRetriever, &blockInstructions_);
+            verify(!blockInstructions_.empty() && blockInstructions_.back().isBranch(), [&]() {
+                fmt::print("did not find bb exit branch for bb starting at {:#x}\n", address);
+            });
+            x64::BasicBlock cpuBb = x64::Cpu::createBasicBlock(blockInstructions_.data(), blockInstructions_.size());
+            verify(!cpuBb.instructions().empty(), "Cannot create empty basic block");
+            std::unique_ptr<x64::CodeSegment> seg = std::make_unique<x64::CodeSegment>(std::move(cpuBb));
+            x64::CodeSegment* segptr = seg.get();
+            u64 segstart = seg->start();
+            codeSegments_.add(segstart, std::move(seg));
+            codeSegmentsByAddress_[address] = segptr;
+            return segptr;
+        }
+    }
+
+    void Process::dumpGraphviz(std::ostream& stream) const {
+        stream << "digraph G {\n";
+        std::unordered_map<void*, u32> counter;
+        for(auto p : codeSegmentsByAddress_) {
+            p.second->dumpGraphviz(stream, counter);
+        }
+        stream << '}';
     }
 
 }

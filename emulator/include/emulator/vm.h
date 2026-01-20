@@ -27,7 +27,7 @@ namespace emulator {
 
     class VM;
 
-    class VM : public x64::Mmu::Callback {
+    class VM {
     public:
         explicit VM(x64::Cpu& cpu, x64::Mmu& mmu);
         ~VM();
@@ -62,8 +62,6 @@ namespace emulator {
         };
 
     private:
-        x64::CodeSegment* fetchSegment();
-
         void notifyCall(u64 address);
         void notifyRet();
         void notifyStackChange(u64 stackptr);
@@ -72,21 +70,13 @@ namespace emulator {
         void syncThread();
         void enterSyscall();
 
-        void onRegionCreation(u64 base, u64 length, BitFlags<x64::PROT> prot) override;
-        void onRegionProtectionChange(u64 base, u64 length, BitFlags<x64::PROT> protBefore, BitFlags<x64::PROT> protAfter) override;
-        void onRegionDestruction(u64 base, u64 length, BitFlags<x64::PROT> prot) override;
-
         void updateJitStats(const x64::CodeSegment&);
         void dumpJitTelemetry(const std::vector<const x64::CodeSegment*>& blocks) const;
-        void dumpGraphviz(std::ostream&) const;
 
         x64::Cpu& cpu_;
         x64::Mmu& mmu_;
 
         VMThread* currentThread_ { nullptr };
-
-        IntervalVector<x64::CodeSegment> codeSegments_;
-        std::unordered_map<u64, x64::CodeSegment*> codeSegmentsByAddress_;
 
         u64 jitExits_ { 0 };
         u64 avoidableExits_ { 0 };
@@ -108,8 +98,6 @@ namespace emulator {
         std::unordered_map<u64, u64> basicBlockCount_;
         std::unordered_map<u64, u64> basicBlockCacheMissCount_;
 #endif
-
-        std::vector<x64::X64Instruction> blockInstructions_;
 
         bool jitEnabled_ { false };
         int jitStatsLevel_ { 0 };

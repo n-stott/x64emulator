@@ -20,9 +20,6 @@ namespace emulator {
     VM::VM(x64::Cpu& cpu, x64::Mmu& mmu) :
             cpu_(cpu),
             mmu_(mmu) {
-        mmu.forAllRegions([&](const x64::MmuRegion& region) {
-            codeSegments_.reserve(region.base(), region.end());
-        });
         jit_ = x64::Jit::tryCreate();
     }
 
@@ -53,12 +50,12 @@ namespace emulator {
             fmt::print("  jmp  exits: {} ({} distinct)\n", jitExitJmpRM64_, distinctJitExitCallRM64_.size());
             fmt::print("  call exits: {} ({} distinct)\n", jitExitCallRM64_, distinctJitExitJmpRM64_.size());
 #endif
-            std::vector<const x64::CodeSegment*> segments;
-            segments.reserve(codeSegments_.size());
-            codeSegments_.forEach([&](const x64::CodeSegment& seg) {
-                segments.push_back(&seg);
-            });
-            dumpJitTelemetry(segments);
+            // std::vector<const x64::CodeSegment*> segments;
+            // segments.reserve(codeSegments_.size());
+            // codeSegments_.forEach([&](const x64::CodeSegment& seg) {
+            //     segments.push_back(&seg);
+            // });
+            // dumpJitTelemetry(segments);
         }
     }
 
@@ -136,15 +133,16 @@ namespace emulator {
             contextSwitch(nullptr);
         });
         ThreadTime& time = thread->time();
+        kernel::gnulinux::Process* process = thread->process();
         x64::CodeSegment* currentSegment = nullptr;
-        x64::CodeSegment* nextSegment = fetchSegment();
+        x64::CodeSegment* nextSegment = process->fetchSegment(mmu_, cpu_.get(x64::R64::RIP));
 
         auto findNextSegment = [&]() -> x64::CodeSegment* {
             u64 rip = cpu_.get(x64::R64::RIP);
             x64::CodeSegment* next = nullptr;
             if(!!currentSegment) next = currentSegment->findNext(rip);
             if(!next) {
-                next = fetchSegment();
+                next = process->fetchSegment(mmu_, rip);
                 verify(!!next);
                 if(!!currentSegment) {
                     currentSegment->addSuccessor(next);
@@ -204,38 +202,6 @@ namespace emulator {
         assert(!!currentThread_);
     }
 
-    x64::CodeSegment* VM::fetchSegment() {
-        u64 startAddress = cpu_.get(x64::R64::RIP);
-#ifdef VM_BASICBLOCK_TELEMETRY
-        ++mapAccesses_;
-#endif
-        auto it = codeSegmentsByAddress_.find(startAddress);
-        if(it != codeSegmentsByAddress_.end()) {
-#ifdef VM_BASICBLOCK_TELEMETRY
-            ++mapHit_;
-#endif
-            return it->second;
-        } else {
-#ifdef VM_BASICBLOCK_TELEMETRY
-            ++mapMiss_;
-#endif
-            x64::DisassemblyCache* disassemblyCache = currentThread_->process()->disassemblyCache();
-            x64::MmuBytecodeRetriever bytecodeRetriever(mmu_, *disassemblyCache);
-            disassemblyCache->getBasicBlock(startAddress, &bytecodeRetriever, &blockInstructions_);
-            verify(!blockInstructions_.empty() && blockInstructions_.back().isBranch(), [&]() {
-                fmt::print("did not find bb exit branch for bb starting at {:#x}\n", startAddress);
-            });
-            x64::BasicBlock cpuBb = cpu_.createBasicBlock(blockInstructions_.data(), blockInstructions_.size());
-            verify(!cpuBb.instructions().empty(), "Cannot create empty basic block");
-            std::unique_ptr<x64::CodeSegment> seg = std::make_unique<x64::CodeSegment>(std::move(cpuBb));
-            x64::CodeSegment* segptr = seg.get();
-            u64 segstart = seg->start();
-            codeSegments_.add(segstart, std::move(seg));
-            codeSegmentsByAddress_[startAddress] = segptr;
-            return segptr;
-        }
-    }
-
     void VM::notifyCall(u64 address) {
         currentThread_->stats().functionCalls++;
         if(!jit_) {
@@ -256,52 +222,6 @@ namespace emulator {
     void VM::notifyStackChange(u64 stackptr) {
         if(!!jit_) return;
         currentThread_->popCallstackUntil(stackptr);
-    }
-
-    void VM::onRegionCreation(u64 base, u64 length, BitFlags<x64::PROT> prot) {
-        if(!prot.test(x64::PROT::EXEC)) return;
-        codeSegments_.reserve(base, base+length);
-    }
-
-    void VM::onRegionProtectionChange(u64 base, u64 length, BitFlags<x64::PROT> protBefore, BitFlags<x64::PROT> protAfter) {
-        // if executable flag didn't change, we don't need to to anything
-        if(protBefore.test(x64::PROT::EXEC) == protAfter.test(x64::PROT::EXEC)) return;
-
-        if(!protAfter.test(x64::PROT::EXEC)) {
-            // if we become non-executable, purge the basic blocks
-            if(jitStatsLevel() >= 2) {
-                std::vector<const x64::CodeSegment*> segments;
-                codeSegments_.forEach(base, base+length, [&](const x64::CodeSegment& seg) {
-                    segments.push_back(&seg);
-                });
-                dumpJitTelemetry(segments);
-            }
-            codeSegments_.forEachMutable(base, base+length, [&](x64::CodeSegment& seg) {
-                codeSegmentsByAddress_.erase(seg.start());
-                seg.removeFromCaches();
-            });
-            codeSegments_.remove(base, base+length);
-        } else {
-            // if we become executable, reserve basic blocks
-            codeSegments_.reserve(base, base+length);
-        }
-    }
-
-    void VM::onRegionDestruction(u64 base, u64 length, BitFlags<x64::PROT> prot) {
-        if(!prot.test(x64::PROT::EXEC)) return;
-
-        if(jitStatsLevel() >= 2) {
-            std::vector<const x64::CodeSegment*> segments;
-            codeSegments_.forEach(base, base+length, [&](const x64::CodeSegment& seg) {
-                segments.push_back(&seg);
-            });
-            dumpJitTelemetry(segments);
-        }
-        codeSegments_.forEachMutable(base, base+length, [&](x64::CodeSegment& seg) {
-            codeSegmentsByAddress_.erase(seg.start());
-            seg.removeFromCaches();
-        });
-        codeSegments_.remove(base, base+length);
     }
 
     VM::CpuCallback::CpuCallback(x64::Cpu* cpu, VM* vm) : cpu_(cpu), vm_(vm) {
@@ -425,14 +345,5 @@ namespace emulator {
             distinctJitExitJmpRM64_.insert(cpu_.get(x64::R64::RIP));
 #endif
         }
-    }
-
-    void VM::dumpGraphviz(std::ostream& stream) const {
-        stream << "digraph G {\n";
-        std::unordered_map<void*, u32> counter;
-        for(auto p : codeSegmentsByAddress_) {
-            p.second->dumpGraphviz(stream, counter);
-        }
-        stream << '}';
     }
 }

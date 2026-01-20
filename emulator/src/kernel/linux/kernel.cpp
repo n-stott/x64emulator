@@ -11,6 +11,7 @@
 #include "kernel/timers.h"
 #include "host/host.h"
 #include "x64/mmu.h"
+#include "scopeguard.h"
 #include "verify.h"
 #include "elf-reader/elf-reader.h"
 #include <numeric>
@@ -113,6 +114,10 @@ namespace kernel::gnulinux {
             Process* mainProcess = processTable_->createMainProcess();
             verify(!!mainProcess, "Unable to create main process");
             x64::ScopedAdressSpace scopeAddressSpace(mmu_, mainProcess->addressSpace());
+            mmu_.addCallback(mainProcess);
+            ScopeGuard guard([&]() {
+                mmu_.removeCallback(mainProcess);
+            });
             mmu_.ensureNullPage();
             ExecVE execve(mmu_, processTable(), *mainProcess, scheduler(), fs());
             Thread* mainThread = execve.exec(programPath.value(), arguments, environmentVariables);

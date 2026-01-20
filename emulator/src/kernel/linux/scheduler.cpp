@@ -204,9 +204,6 @@ namespace kernel::gnulinux {
         ++numRunningJobs_;
         inKernel_ = true;
         CallbackGroup<x64::Mmu, x64::Mmu::Callback> callbackGroup(&mmu_);
-        for(auto& vm : vms_) {
-            callbackGroup.add(&vm->vm);
-        }
         callbackGroup.add(thread->process()->disassemblyCache());
         kernel_.timers().updateAll(currentTime_);
         kernel_.sys().syscall(thread->process(), thread);
