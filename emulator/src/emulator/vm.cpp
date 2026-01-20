@@ -17,9 +17,7 @@
 
 namespace emulator {
 
-    VM::VM(x64::Cpu& cpu, x64::Mmu& mmu) :
-            cpu_(cpu),
-            mmu_(mmu) { }
+    VM::VM(x64::Mmu& mmu) : cpu_(mmu), mmu_(mmu) { }
 
     VM::~VM() {
 #ifdef VM_ATOMIC_TELEMETRY

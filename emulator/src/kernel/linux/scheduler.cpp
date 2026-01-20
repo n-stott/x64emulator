@@ -24,13 +24,12 @@ namespace kernel::gnulinux {
         explicit TaggedVM(x64::Mmu& mmu);
         ~TaggedVM();
 
-        x64::Cpu cpu;
         emulator::VM vm;
         bool canRunSyscalls { false };
         bool canRunAtomics { false };
     };
 
-    TaggedVM::TaggedVM(x64::Mmu& mmu) : cpu(mmu), vm(cpu, mmu) { }
+    TaggedVM::TaggedVM(x64::Mmu& mmu) : vm(mmu) { }
     TaggedVM::~TaggedVM() = default;
 
     Scheduler::Scheduler(x64::Mmu& mmu, Kernel& kernel) : mmu_(mmu), kernel_(kernel) {

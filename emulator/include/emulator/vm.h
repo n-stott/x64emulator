@@ -29,7 +29,7 @@ namespace emulator {
 
     class VM {
     public:
-        explicit VM(x64::Cpu& cpu, x64::Mmu& mmu);
+        explicit VM(x64::Mmu& mmu);
         ~VM();
 
         void setJitStatsLevel(int level);
@@ -62,7 +62,7 @@ namespace emulator {
         void updateJitStats(const x64::CodeSegment&);
         void dumpJitTelemetry(const std::vector<const x64::CodeSegment*>& blocks) const;
 
-        x64::Cpu& cpu_;
+        x64::Cpu cpu_;
         x64::Mmu& mmu_;
 
         VMThread* currentThread_ { nullptr };
