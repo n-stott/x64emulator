@@ -77,7 +77,7 @@ namespace kernel::gnulinux {
         x64::JitStats* jitStats() { return &jitStats_; }
 
         void setOptimizationLevel(int level) {
-            jit_->setOptimizationLevel(level);
+            if(!!jit_) jit_->setOptimizationLevel(level);
         }
 
     protected:
