@@ -6,6 +6,7 @@
 #include "kernel/linux/thread.h"
 #include "kernel/linux/symbolprovider.h"
 #include "x64/compiler/jit.h"
+#include "x64/compiler/jitstats.h"
 #include "x64/disassembler/disassemblycache.h"
 #include "x64/codesegment.h"
 #include "x64/mmu.h"
@@ -71,6 +72,10 @@ namespace kernel::gnulinux {
             return false;
         }
 
+        void setJitStatsLevel(int level) { jitStatsLevel_ = level; }
+        int jitStatsLevel() const { return jitStatsLevel_; }
+        x64::JitStats* jitStats() { return &jitStats_; }
+
         void setOptimizationLevel(int level) {
             jit_->setOptimizationLevel(level);
         }
@@ -113,6 +118,8 @@ namespace kernel::gnulinux {
 
         std::unique_ptr<x64::Jit> jit_;
         x64::CompilationQueue compilationQueue_;
+        x64::JitStats jitStats_;
+        int jitStatsLevel_ { 0 };
     };
 
 }

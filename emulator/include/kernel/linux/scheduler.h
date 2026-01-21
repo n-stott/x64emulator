@@ -70,7 +70,6 @@ namespace kernel::gnulinux {
 
         struct Worker {
             int id { 0 };
-            int jitStatsLevel { 0 };
             bool canRunSyscalls() const { return id == 0; };
             bool canRunAtomic() const { return id == 0; };
         };
@@ -94,8 +93,8 @@ namespace kernel::gnulinux {
         std::unique_ptr<TaggedVM> createVM(const Worker& worker);
 
         void runOnWorkerThread(TaggedVM*);
-        void runUserspace(emulator::VM& vm, Thread* thread);
-        void runUserspaceAtomic(emulator::VM& vm, Thread* thread);
+        void runUserspace(Thread* thread);
+        void runUserspaceAtomic(Thread* thread);
         void runKernel(Thread* thread);
 
         struct JobOrCommand {

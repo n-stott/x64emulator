@@ -21,16 +21,9 @@ namespace emulator {
 namespace kernel::gnulinux {
 
     struct TaggedVM {
-        explicit TaggedVM(x64::Mmu& mmu);
-        ~TaggedVM();
-
-        emulator::VM vm;
         bool canRunSyscalls { false };
         bool canRunAtomics { false };
     };
-
-    TaggedVM::TaggedVM(x64::Mmu& mmu) : vm(mmu) { }
-    TaggedVM::~TaggedVM() = default;
 
     Scheduler::Scheduler(x64::Mmu& mmu, Kernel& kernel) : mmu_(mmu), kernel_(kernel) {
 
@@ -51,10 +44,9 @@ namespace kernel::gnulinux {
     }
 
     std::unique_ptr<TaggedVM> Scheduler::createVM(const Worker& worker) {
-        std::unique_ptr<TaggedVM> vm = std::make_unique<TaggedVM>(mmu_);
+        std::unique_ptr<TaggedVM> vm = std::make_unique<TaggedVM>();
         vm->canRunAtomics = worker.canRunAtomic();
         vm->canRunSyscalls = worker.canRunSyscalls();
-        vm->vm.setJitStatsLevel(worker.jitStatsLevel);
         return vm;
     }
 
@@ -81,9 +73,9 @@ namespace kernel::gnulinux {
                     runKernel(job.thread);
                 } else {
                     if(job.atomic == ATOMIC::NO) {
-                        runUserspace(vm->vm, job.thread);
+                        runUserspace(job.thread);
                     } else {
-                        runUserspaceAtomic(vm->vm, job.thread);
+                        runUserspaceAtomic(job.thread);
                     }
                 }
 
@@ -125,7 +117,7 @@ namespace kernel::gnulinux {
         }
     }
 
-    void Scheduler::runUserspace(emulator::VM& vm, Thread* thread) {
+    void Scheduler::runUserspace(Thread* thread) {
         ScopeGuard guard([&]() {
             std::unique_lock lock(schedulerMutex_);
             stopRunningThread(thread, lock);
@@ -138,6 +130,7 @@ namespace kernel::gnulinux {
         // fmt::print(stderr, "{}: run thread {}\n", worker.id, thread->description().tid);
         thread->time().setSlice(currentTime_.count(), DEFAULT_TIME_SLICE);
 
+        emulator::VM vm(mmu_, thread->process()->jitStats());
         while(!thread->time().isStopAsked()) {
             syncThreadTimeSlice(thread, nullptr);
             vm.execute(thread);
@@ -145,7 +138,7 @@ namespace kernel::gnulinux {
         // fmt::print(stderr, "{}: stop thread {}\n", worker.id, thread->description().tid);
     }
 
-    void Scheduler::runUserspaceAtomic(emulator::VM& vm, Thread* thread) {
+    void Scheduler::runUserspaceAtomic(Thread* thread) {
         std::unique_lock lock(schedulerMutex_);
         ScopeGuard guard([&]() {
             stopRunningThread(thread, lock);
@@ -159,6 +152,7 @@ namespace kernel::gnulinux {
         // fmt::print(stderr, "{}: run thread {}\n", worker.id, thread->description().tid);
         thread->time().setSlice(currentTime_.count(), ATOMIC_TIME_SLICE);
 
+        emulator::VM vm(mmu_, thread->process()->jitStats());
         while(!thread->time().isStopAsked()) {
             syncThreadTimeSlice(thread, &lock);
             vm.execute(thread);
@@ -215,10 +209,7 @@ namespace kernel::gnulinux {
 #ifdef MULTIPROCESSING
         vms_.clear();
         for(int i = 0; i < kernel_.nbCores(); ++i) {
-            Worker worker{
-                i,
-                kernel_.jitStatsLevel(),
-            };
+            Worker worker { i };
             vms_.push_back(createVM(worker));
         }
         std::vector<std::thread> workerThreads;
@@ -231,10 +222,7 @@ namespace kernel::gnulinux {
         }
         vms_.clear();
 #else
-        Worker worker{
-            0,
-            kernel_.jitStatsLevel(),
-        };
+        Worker worker { 0 };
         vms_.clear();
         vms_.push_back(createVM(worker));
         runOnWorkerThread(vms_[0].get());

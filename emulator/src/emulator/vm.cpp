@@ -3,6 +3,7 @@
 #include "kernel/linux/process.h"
 #include "kernel/linux/thread.h"
 #include "x64/compiler/compiler.h"
+#include "x64/compiler/jitstats.h"
 #include "x64/disassembler/disassemblycache.h"
 #include "x64/mmu.h"
 #include "x64/registers.h"
@@ -17,7 +18,7 @@
 
 namespace emulator {
 
-    VM::VM(x64::Mmu& mmu) : cpu_(mmu), mmu_(mmu) { }
+    VM::VM(x64::Mmu& mmu, x64::JitStats* stats) : cpu_(mmu), mmu_(mmu), stats_(stats) { }
 
     VM::~VM() {
 #ifdef VM_ATOMIC_TELEMETRY
@@ -33,30 +34,12 @@ namespace emulator {
 
         fmt::print("Executed {} different basic blocks\n", basicBlockCount_.size());
 #endif
-        if(jitStatsLevel() >= 1) {
-            fmt::print("Jitted code was exited {} times ({} of which are avoidable)\n", jitExits_, avoidableExits_);
-            fmt::print("  ret  exits: {}\n", jitExitRet_);
-            fmt::print("  jmp  exits: {}\n", jitExitJmpRM64_);
-            fmt::print("  call exits: {}\n", jitExitCallRM64_);
-        }
-        if(jitStatsLevel() >= 2) {
-#ifdef VM_JIT_TELEMETRY
-            fmt::print("Jitted code was exited {} times ({} of which are avoidable)\n", jitExits_, avoidableExits_);
-            fmt::print("  ret  exits: {} ({} distinct)\n", jitExitRet_, distinctJitExitRet_.size());
-            fmt::print("  jmp  exits: {} ({} distinct)\n", jitExitJmpRM64_, distinctJitExitCallRM64_.size());
-            fmt::print("  call exits: {} ({} distinct)\n", jitExitCallRM64_, distinctJitExitJmpRM64_.size());
-#endif
-            // std::vector<const x64::CodeSegment*> segments;
-            // segments.reserve(codeSegments_.size());
-            // codeSegments_.forEach([&](const x64::CodeSegment& seg) {
-            //     segments.push_back(&seg);
-            // });
-            // dumpJitTelemetry(segments);
-        }
-    }
-
-    void VM::setJitStatsLevel(int level) {
-        jitStatsLevel_ = level;
+        // std::vector<const x64::CodeSegment*> segments;
+        // segments.reserve(codeSegments_.size());
+        // codeSegments_.forEach([&](const x64::CodeSegment& seg) {
+        //     segments.push_back(&seg);
+        // });
+        // dumpJitTelemetry(segments, 5);
     }
 
     void VM::syncThread() {
@@ -154,7 +137,7 @@ namespace emulator {
                           time.ticks(),
                           (void**)&currentSegment,
                           currentSegment->jitBasicBlock());
-                ++jitExits_;
+                if(stats_) ++stats_->jitExits_;
                 updateJitStats(*currentSegment);
             } else {
 #ifdef MULTIPROCESSING
@@ -175,7 +158,7 @@ namespace emulator {
             && currentSegment->basicBlock().endsWithFixedDestinationJump()
             && !!nextSegment->jitBasicBlock()) {
                 if(jit->jitChainingEnabled()) currentSegment->tryPatch(*jit);
-                ++avoidableExits_;
+                if(stats_) ++stats_->avoidableExits_;
             }
         }
         assert(!!currentThread_);
@@ -230,7 +213,7 @@ namespace emulator {
         if(!!vm_) vm_->notifyStackChange(stackptr);
     }
 
-    void VM::dumpJitTelemetry(const std::vector<const x64::CodeSegment*>& blocks) const {
+    void VM::dumpJitTelemetry(const std::vector<const x64::CodeSegment*>& blocks, int statsLevel) const {
         if(blocks.empty()) return;
         std::vector<const x64::CodeSegment*> jittedBlocks;
         std::vector<const x64::CodeSegment*> nonjittedBlocks;
@@ -258,7 +241,7 @@ namespace emulator {
                 100.0*(double)jittedInstructions/(1.0+(double)emulatedInstructions+(double)jittedInstructions),
                 100.0*(double)jittedInstructions/(1.0+(double)jitCandidateInstructions+(double)jittedInstructions));
         const size_t topCount = 50;
-        if(jitStatsLevel() >= 5) {
+        if(statsLevel >= 5) {
             std::sort(jittedBlocks.begin(), jittedBlocks.end(), [](const auto* a, const auto* b) {
                 return a->calls() * a->basicBlock().instructions().size() > b->calls() * b->basicBlock().instructions().size();
             });
@@ -289,7 +272,7 @@ namespace emulator {
                 }
             }
         }
-        if(jitStatsLevel() >= 4) {
+        if(statsLevel >= 4) {
             std::sort(nonjittedBlocks.begin(), nonjittedBlocks.end(), [](const auto* a, const auto* b) {
                 return a->calls() * a->basicBlock().instructions().size() > b->calls() * b->basicBlock().instructions().size();
             });
@@ -310,19 +293,19 @@ namespace emulator {
     void VM::updateJitStats(const x64::CodeSegment& seg) {
         auto lastInsn = seg.basicBlock().instructions().back().first.insn();
         if(lastInsn == x64::Insn::RET) {
-            jitExitRet_ += 1;
+            if(stats_) stats_->jitExitRet_ += 1;
 #ifdef VM_JIT_TELEMETRY
             distinctJitExitRet_.insert(cpu_.get(x64::R64::RIP));
 #endif
         }
         if(lastInsn == x64::Insn::CALLINDIRECT_RM64) {
-            jitExitCallRM64_ += 1;
+            if(stats_) stats_->jitExitCallRM64_ += 1;
 #ifdef VM_JIT_TELEMETRY
             distinctJitExitCallRM64_.insert(cpu_.get(x64::R64::RIP));
 #endif
         }
         if(lastInsn == x64::Insn::JMP_RM64) {
-            jitExitJmpRM64_ += 1;
+            if(stats_) stats_->jitExitJmpRM64_ += 1;
 #ifdef VM_JIT_TELEMETRY
             distinctJitExitJmpRM64_.insert(cpu_.get(x64::R64::RIP));
 #endif

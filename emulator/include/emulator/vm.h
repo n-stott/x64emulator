@@ -21,6 +21,7 @@ namespace x64 {
     class Disassembler;
     class JitBasicBlock;
     class Jit;
+    class JitStats;
 }
 
 namespace emulator {
@@ -29,11 +30,8 @@ namespace emulator {
 
     class VM {
     public:
-        explicit VM(x64::Mmu& mmu);
+        explicit VM(x64::Mmu& mmu, x64::JitStats* stats);
         ~VM();
-
-        void setJitStatsLevel(int level);
-        int jitStatsLevel() const { return jitStatsLevel_; }
 
         void execute(VMThread* thread);
 
@@ -60,23 +58,13 @@ namespace emulator {
         void enterSyscall();
 
         void updateJitStats(const x64::CodeSegment&);
-        void dumpJitTelemetry(const std::vector<const x64::CodeSegment*>& blocks) const;
+        void dumpJitTelemetry(const std::vector<const x64::CodeSegment*>& blocks, int statsLevel) const;
 
         x64::Cpu cpu_;
         x64::Mmu& mmu_;
 
         VMThread* currentThread_ { nullptr };
-
-        u64 jitExits_ { 0 };
-        u64 avoidableExits_ { 0 };
-        u64 jitExitRet_ { 0 };
-        u64 jitExitCallRM64_ { 0 };
-        u64 jitExitJmpRM64_ { 0 };
-#ifdef VM_JIT_TELEMETRY
-        std::unordered_set<u64> distinctJitExitRet_;
-        std::unordered_set<u64> distinctJitExitCallRM64_;
-        std::unordered_set<u64> distinctJitExitJmpRM64_;
-#endif
+        x64::JitStats* stats_ { nullptr };
 
 #ifdef VM_BASICBLOCK_TELEMETRY
         u64 blockCacheHits_ { 0 };
@@ -88,8 +76,6 @@ namespace emulator {
         std::unordered_map<u64, u64> basicBlockCacheMissCount_;
 #endif
 
-        bool jitEnabled_ { false };
-        int jitStatsLevel_ { 0 };
     };
 
 }

@@ -116,6 +116,7 @@ namespace kernel::gnulinux {
             mainProcess->setEnableJit(isJitEnabled());
             mainProcess->setEnableJitChaining(isJitChainingEnabled());
             mainProcess->setOptimizationLevel(optimizationLevel());
+            mainProcess->setJitStatsLevel(jitStatsLevel());
             x64::ScopedAdressSpace scopeAddressSpace(mmu_, mainProcess->addressSpace());
             mmu_.addCallback(mainProcess);
             ScopeGuard guard([&]() {
