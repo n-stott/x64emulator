@@ -83,11 +83,7 @@ namespace kernel::gnulinux {
 
         // Let's just fail
         auto maybeName = disassemblyCache_.tryFindContainingFile(address);
-        if(maybeName) {
-            return fmt::format("Somewhere in {}", maybeName.value());
-        } else {
-            return "???";
-        }
+        return maybeName.value_or("???");
     }
 
     void Process::tryRetrieveSymbols(const std::vector<u64>& addresses, std::unordered_map<u64, std::string>* addressesToSymbols) {
