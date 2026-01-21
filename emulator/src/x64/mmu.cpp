@@ -7,6 +7,11 @@
 #include <optional>
 
 namespace x64 {
+    static std::string protectionToString(BitFlags<PROT> prot) {
+        return fmt::format("{}{}{}", prot.test(PROT::READ)  ? "R" : " ",
+                                        prot.test(PROT::WRITE) ? "W" : " ",
+                                        prot.test(PROT::EXEC)  ? "X" : " ");
+    }
 
     [[maybe_unused]] static BitFlags<host::HostMemory::Protection> toHostProtection(BitFlags<PROT> prot) {
         BitFlags<host::HostMemory::Protection> p;
@@ -29,6 +34,11 @@ namespace x64 {
 
     MmuRegion::~MmuRegion() {
         verifyNotActivated();
+    }
+
+    std::string MmuRegion::toString() const {
+        return fmt::format("{:#x}-{:#x} {} {}\n",
+                base(), end(), protectionToString(prot()), name());
     }
 
     MmuRegion* Mmu::addRegion(std::unique_ptr<MmuRegion> region) {
@@ -303,11 +313,6 @@ namespace x64 {
     }
 
     void Mmu::dumpRegions() const {
-        auto protectionToString = [](BitFlags<PROT> prot) -> std::string {
-            return fmt::format("{}{}{}", prot.test(PROT::READ)  ? "R" : " ",
-                                         prot.test(PROT::WRITE) ? "W" : " ",
-                                         prot.test(PROT::EXEC)  ? "X" : " ");
-        };
         struct DumpInfo {
             std::string file;
             u64 base;

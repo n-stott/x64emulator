@@ -56,6 +56,8 @@ namespace x64 {
         void setName(std::string name) { name_ = std::move(name); }
         void setProtection(BitFlags<PROT> prot);
 
+        std::string toString() const;
+
         bool requiresMemsetToZero() const { return requiresMemsetToZero_; }
         void setRequiresMemsetToZero() { requiresMemsetToZero_ = true; }
         void didMemsetToZero() { requiresMemsetToZero_ = false; }
@@ -373,7 +375,9 @@ namespace x64 {
             verify(!!regionPtr, [&]() {
                 fmt::print("No region containing {:#x}\n", address);
             });
-            verify(regionPtr->prot().test(PROT::READ), "Region is not readable");
+            verify(regionPtr->prot().test(PROT::READ), [&]() {
+                fmt::println("Attempt to read from address {:#x} in non-readable region {}", address, regionPtr->toString());
+            });
 #endif
             return addressSpace_.memoryRange_.base() + address;
         }
@@ -384,7 +388,9 @@ namespace x64 {
             verify(!!regionPtr, [&]() {
                 fmt::print("No region containing {:#x}\n", address);
             });
-            verify(regionPtr->prot().test(PROT::WRITE), "Region is not writable");
+            verify(regionPtr->prot().test(PROT::WRITE), [&]() {
+                fmt::println("Attempt to write to address {:#x} in non-readable region {}", address, regionPtr->toString());
+            });
 #endif
             return addressSpace_.memoryRange_.base() + address;
         }
