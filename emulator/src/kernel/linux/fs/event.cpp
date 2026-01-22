@@ -2,7 +2,6 @@
 #include "kernel/linux/fs/openfiledescription.h"
 #include "verify.h"
 #include <sys/errno.h>
-#include <sys/poll.h>
 
 namespace kernel::gnulinux {
 

@@ -44,8 +44,7 @@ namespace kernel::gnulinux {
     }
 
     bool HostDevice::canRead() const {
-        verify(false, "HostDevice::canRead not implemented");
-        return false;
+        return Host::pollCanRead(Host::FD{hostFd_});
     }
 
     bool HostDevice::canWrite() const {

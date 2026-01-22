@@ -328,6 +328,8 @@ namespace kernel::gnulinux {
         static ErrnoOrBuffer getrlimit(pid_t pid, int resource);
 
         static size_t pollRequiredBufferSize(size_t nfds);
+        static bool pollCanRead(FD fd);
+        static bool pollCanWrite(FD fd);
         static size_t selectFdSetSize();
 
         static int select(int nfds, fd_set* readfds, fd_set* writefds, fd_set* exceptfds, timeval* timeout);

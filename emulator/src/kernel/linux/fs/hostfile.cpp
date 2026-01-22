@@ -9,7 +9,6 @@
 #include <dirent.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
-#include <sys/poll.h>
 #include <sys/stat.h>
 #include <sys/vfs.h>
 #include <unistd.h>
@@ -52,14 +51,7 @@ namespace kernel::gnulinux {
     }
 
     bool HostFile::canRead() const {
-        struct pollfd pfd;
-        pfd.fd = hostFd_;
-        pfd.events = POLLIN;
-        pfd.revents = 0;
-        int timeout = 0; // return immediately
-        int ret = ::poll(&pfd, 1, timeout);
-        if(ret < 0) return false;
-        return !!(pfd.revents & POLLIN);
+        return Host::pollCanRead(Host::FD{hostFd_});
     }
 
     bool HostFile::canWrite() const {

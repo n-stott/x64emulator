@@ -4,7 +4,6 @@
 #include "verify.h"
 #include <fcntl.h>
 #include <unistd.h>
-#include <sys/poll.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 
@@ -51,25 +50,11 @@ namespace kernel::gnulinux {
     }
 
     bool Socket::canRead() const {
-        struct pollfd pfd;
-        pfd.fd = hostFd_;
-        pfd.events = POLLIN;
-        pfd.revents = 0;
-        int timeout = 0; // return immediately
-        int ret = ::poll(&pfd, 1, timeout);
-        if(ret < 0) return false;
-        return !!(pfd.revents & POLLIN);
+        return Host::pollCanRead(Host::FD{hostFd_});
     }
 
     bool Socket::canWrite() const {
-        struct pollfd pfd;
-        pfd.fd = hostFd_;
-        pfd.events = POLLOUT;
-        pfd.revents = 0;
-        int timeout = 0; // return immediately
-        int ret = ::poll(&pfd, 1, timeout);
-        if(ret < 0) return false;
-        return !!(pfd.revents & POLLOUT);
+        return Host::pollCanWrite(Host::FD{hostFd_});
     }
 
     int Socket::connect(const Buffer& buffer) const {

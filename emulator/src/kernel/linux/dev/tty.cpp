@@ -1,11 +1,11 @@
 #include "kernel/linux/dev/tty.h"
 #include "kernel/linux/fs/path.h"
+#include "host/host.h"
 #include "scopeguard.h"
 #include "verify.h"
 #include <asm/termbits.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
-#include <sys/poll.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
@@ -29,14 +29,7 @@ namespace kernel::gnulinux {
     bool Tty::canRead() const {
         if(!isPollable()) return false;
         if(!hostFd_) return false;
-        struct pollfd pfd;
-        pfd.fd = hostFd_.value();
-        pfd.events = POLLIN;
-        pfd.revents = 0;
-        int timeout = 0; // return immediately
-        int ret = ::poll(&pfd, 1, timeout);
-        if(ret < 0) return false;
-        return !!(pfd.revents & POLLIN);
+        return Host::pollCanRead(Host::FD{hostFd_.value()});
     }
 
     ErrnoOrBuffer Tty::read(OpenFileDescription&, size_t count) {

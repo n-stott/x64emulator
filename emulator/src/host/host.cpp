@@ -809,6 +809,28 @@ namespace kernel::gnulinux {
         return FD_SETSIZE;
     }
 
+    bool Host::pollCanRead(FD fd) {
+        struct pollfd pfd;
+        pfd.fd = fd.fd;
+        pfd.events = POLLIN;
+        pfd.revents = 0;
+        int timeout = 0; // return immediately
+        int ret = ::poll(&pfd, 1, timeout);
+        if(ret < 0) return false;
+        return !!(pfd.revents & POLLIN);
+    }
+
+    bool Host::pollCanWrite(FD fd) {
+        struct pollfd pfd;
+        pfd.fd = fd.fd;
+        pfd.events = POLLOUT;
+        pfd.revents = 0;
+        int timeout = 0; // return immediately
+        int ret = ::poll(&pfd, 1, timeout);
+        if(ret < 0) return false;
+        return !!(pfd.revents & POLLOUT);
+    }
+
     int Host::select(int nfds, fd_set* readfds, fd_set* writefds, fd_set* exceptfds, timeval* timeout) {
         int ret = ::select(nfds, readfds, writefds, exceptfds, timeout);
         if(ret < 0) return -errno;
