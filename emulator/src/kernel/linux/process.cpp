@@ -45,7 +45,8 @@ namespace kernel::gnulinux {
             addressSpace_(std::move(addressSpace)),
             fs_(fs),
             fds_(fs),
-            currentWorkDirectory_(cwd) {
+            currentWorkDirectory_(cwd),
+            symbolRetriever_(&disassemblyCache_, &symbolProvider_) {
         fds_.createStandardStreams(fs_.ttyPath());
         jit_ = x64::Jit::tryCreate();
     }
@@ -171,6 +172,20 @@ namespace kernel::gnulinux {
             p.second->dumpGraphviz(stream, counter);
         }
         stream << '}';
+    }
+
+    Process::SymbolRetriever::SymbolRetriever(x64::DisassemblyCache* disassemblyCache, SymbolProvider* symbolProvider) :
+            disassemblyCache_(disassemblyCache),
+            symbolProvider_(symbolProvider) {
+        disassemblyCache_->addCallback(this);
+    }
+
+    Process::SymbolRetriever::~SymbolRetriever() {
+        disassemblyCache_->removeCallback(this);
+    }
+
+    void Process::SymbolRetriever::onNewDisassembly(const std::string& filename, u64 base) {
+        symbolProvider_->tryRetrieveSymbolsFromExecutable(filename, base);
     }
 
 }

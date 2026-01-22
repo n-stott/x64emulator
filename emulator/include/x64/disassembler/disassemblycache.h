@@ -36,9 +36,9 @@ namespace x64 {
         virtual bool retrieveBytecode(std::vector<u8>* data, std::string* name, u64* regionBase, u64 address, u64 size) = 0;
     };
 
-    class DisassemblyCacheCallack {
+    class DisassemblyCacheCallback {
     public:
-        virtual ~DisassemblyCacheCallack() = default;
+        virtual ~DisassemblyCacheCallback() = default;
         virtual void onNewDisassembly(const std::string& filename, u64 base) = 0;
     };
 
@@ -52,6 +52,14 @@ namespace x64 {
         void onRegionDestruction(u64 base, u64 length, BitFlags<PROT> prot) override;
 
         std::optional<std::string> tryFindContainingFile(u64 address);
+
+        void addCallback(DisassemblyCacheCallback* callback) {
+            callbacks_.push_back(callback);
+        }
+
+        void removeCallback(DisassemblyCacheCallback* callback) {
+            callbacks_.erase(std::remove(callbacks_.begin(), callbacks_.end(), callback), callbacks_.end());
+        }
 
     private:
         struct InstructionPosition {
@@ -72,7 +80,7 @@ namespace x64 {
         std::vector<u8> disassemblyData_;
         std::string name_;
 
-        std::vector<DisassemblyCacheCallack*> callbacks_;
+        std::vector<DisassemblyCacheCallback*> callbacks_;
     };
 
 

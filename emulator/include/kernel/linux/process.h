@@ -116,6 +116,17 @@ namespace kernel::gnulinux {
         SymbolProvider symbolProvider_;
         std::unordered_map<u64, std::string> functionNameCache_;
 
+        class SymbolRetriever : public x64::DisassemblyCacheCallback {
+        public:
+            SymbolRetriever(x64::DisassemblyCache* disassemblyCache, SymbolProvider* symbolProvider);
+            ~SymbolRetriever();
+            void onNewDisassembly(const std::string& filename, u64 base) override;
+
+        private:
+            x64::DisassemblyCache* disassemblyCache_ { nullptr };
+            SymbolProvider* symbolProvider_ { nullptr };
+        } symbolRetriever_;
+
         std::unique_ptr<x64::Jit> jit_;
         x64::CompilationQueue compilationQueue_;
         x64::JitStats jitStats_;
