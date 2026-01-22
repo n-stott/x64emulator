@@ -29,7 +29,7 @@ namespace kernel::gnulinux {
     }
 
     Process* ProcessTable::createMainProcess() {
-        auto process = Process::tryCreate(*this, 4096, kernel_.fs());
+        auto process = Process::tryCreate(*this, virtualMemoryInMB_, kernel_.fs());
         process->setProfiling(kernel_.isProfiling());
         return addProcess(std::move(process));
     }
