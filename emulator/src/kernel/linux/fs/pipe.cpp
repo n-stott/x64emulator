@@ -121,6 +121,10 @@ namespace kernel::gnulinux {
     }
 
     ErrnoOrBuffer PipeEndpoint::ioctl(OpenFileDescription&, Ioctl request, const Buffer&) {
+        switch(request) {
+            case Ioctl::tcgets: return ErrnoOrBuffer(-ENOTTY);
+            default: break;
+        }
         verify(false, fmt::format("ioctl(request={}) not implemented on PipeEndpoint", (int)request));
         return ErrnoOrBuffer(-ENOTSUP);
     }
