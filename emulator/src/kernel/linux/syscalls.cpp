@@ -122,6 +122,7 @@ namespace kernel::gnulinux {
             case 0x3a: return threadRegs.set(x64::R64::RAX, invoke_syscall_0(&Sys::vfork, regs));
             case 0x3b: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::execve, regs));
             case 0x3c: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::exit, regs));
+            case 0x3d: return threadRegs.set(x64::R64::RAX, invoke_syscall_4(&Sys::wait4, regs));
             case 0x3e: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::kill, regs));
             case 0x3f: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::uname, regs));
             case 0x43: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::shmdt, regs));
@@ -1082,6 +1083,17 @@ namespace kernel::gnulinux {
         return status;
     }
 
+    int Sys::wait4(pid_t pid, x64::Ptr32 wstatus, int options, x64::Ptr rusage) {
+        verify(!wstatus, "non-null wstatus unsupported in wait4");
+        verify(options == 0, "non-zero options unsupported in wait4");
+        verify(!rusage, "non-null rusage unsupported in wait4");
+        kernel_.scheduler().wait4(currentThread_, (int)pid);
+        if(kernel_.logSyscalls()) {
+            print("Sys::wait4(pid={}, wstatus={:#x}, options={}, rusage={:#x}) = {}", pid, wstatus.address(), options, rusage.address(), 0);
+        }
+        return 0;
+    }
+
     int Sys::kill(pid_t pid, int sig) {
         if(kernel_.logSyscalls()) {
             print("Sys::kill(pid={}, sig={}) = {}", pid, sig, -ENOTSUP);
@@ -1495,6 +1507,7 @@ namespace kernel::gnulinux {
     u64 Sys::exit_group(int status) {
         if(kernel_.logSyscalls()) print("Sys::exit_group(status={})", status);
         kernel_.scheduler().terminateGroup(currentThread_, status);
+        currentProcess_->notifyExit();
         return (u64)status;
     }
 

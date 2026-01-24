@@ -490,6 +490,21 @@ namespace kernel::gnulinux {
                 return &blocker == compareBlocker;
             });
         }), futexBlockers_.end());
+
+        std::vector<WaitBlocker*> waitBlockers;
+        for(WaitBlocker& blocker : waitBlockers_) {
+            bool canUnblock = blocker.tryUnblock();
+            if(canUnblock) {
+                unblock(blocker.thread(), &lock);
+                waitBlockers.push_back(&blocker);
+                didUnblock = true;
+            }
+        }
+        waitBlockers_.erase(std::remove_if(waitBlockers_.begin(), waitBlockers_.end(), [&](const WaitBlocker& blocker) {
+            return std::any_of(waitBlockers.begin(), waitBlockers.end(), [&](WaitBlocker* compareBlocker) {
+                return &blocker == compareBlocker;
+            });
+        }), waitBlockers_.end());
         return didUnblock;
     }
 
@@ -540,6 +555,9 @@ namespace kernel::gnulinux {
         sleepBlockers_.erase(std::remove_if(sleepBlockers_.begin(), sleepBlockers_.end(), [=](const SleepBlocker& blocker) {
             return blocker.thread() == thread;
         }), sleepBlockers_.end());
+        waitBlockers_.erase(std::remove_if(waitBlockers_.begin(), waitBlockers_.end(), [=](const WaitBlocker& blocker) {
+            return blocker.thread() == thread;
+        }), waitBlockers_.end());
 
         if(!!thread->clearChildTid()) {
             x64::Mmu mmu(thread->process()->addressSpace());
@@ -706,6 +724,13 @@ namespace kernel::gnulinux {
         thread->yield();
     }
 
+    void Scheduler::wait4(Thread* thread, int pid) {
+        verifyInKernel();
+        waitBlockers_.push_back(WaitBlocker(thread, pid));
+        block(thread);
+        thread->yield();
+    }
+
     void Scheduler::dumpThreadSummary() const {
         forEachThread([&](const Thread& thread) {
             fmt::print("Thread #{} : {}\n", thread.description().tid, thread.toString());
@@ -755,6 +780,10 @@ namespace kernel::gnulinux {
         }
         fmt::print("Sleep blockers :\n");
         for(const SleepBlocker& blocker : sleepBlockers_) {
+            fmt::print("  {}\n", blocker.toString());
+        }
+        fmt::print("Wait blockers :\n");
+        for(const WaitBlocker& blocker : waitBlockers_) {
             fmt::print("  {}\n", blocker.toString());
         }
     }

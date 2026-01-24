@@ -29,7 +29,7 @@ namespace kernel::gnulinux {
         static std::unique_ptr<Process> tryCreate(ProcessTable&, x64::AddressSpace addressSpace, FS& fs, Directory* cwd);
         ~Process();
 
-        std::unique_ptr<Process> clone(ProcessTable&) const;
+        std::unique_ptr<Process> clone(ProcessTable&);
 
         int pid() const {
             return pid_;
@@ -80,6 +80,9 @@ namespace kernel::gnulinux {
             if(!!jit_) jit_->setOptimizationLevel(level);
         }
 
+        void notifyExit();
+        bool childExited(int pid) const;
+
     protected:
         void onRegionCreation(u64 base, u64 length, BitFlags<x64::PROT> prot) override;
         void onRegionProtectionChange(u64 base, u64 length, BitFlags<x64::PROT> protBefore, BitFlags<x64::PROT> protAfter) override;
@@ -88,6 +91,9 @@ namespace kernel::gnulinux {
     private:
         Process(int pid, x64::AddressSpace addressSpace, FS& fs, Directory* cwd);
 
+        void notifyChildCreated(Process* process);
+        void notifyChildExited(Process* process);
+        
         // Information
         int pid_;
 
@@ -127,10 +133,19 @@ namespace kernel::gnulinux {
             SymbolProvider* symbolProvider_ { nullptr };
         } symbolRetriever_;
 
+        // Jit
         std::unique_ptr<x64::Jit> jit_;
         x64::CompilationQueue compilationQueue_;
         x64::JitStats jitStats_;
         int jitStatsLevel_ { 0 };
+
+        // Hierarchy
+        Process* parent_ { nullptr };
+        enum class ChildState {
+            CREATED,
+            EXITED,
+        };
+        std::unordered_map<int, ChildState> childrenState_;
     };
 
 }

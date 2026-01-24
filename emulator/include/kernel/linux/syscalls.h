@@ -227,6 +227,8 @@ namespace kernel::gnulinux {
         int execve(x64::Ptr pathname, x64::Ptr argv, x64::Ptr envp);
         // 0x3c
         int exit(int status);
+        // 0x3d
+        int wait4(pid_t pid, x64::Ptr32 wstatus, int options, x64::Ptr rusage);
         // 0x3e
         int kill(pid_t pid, int sig);
         // 0x3f

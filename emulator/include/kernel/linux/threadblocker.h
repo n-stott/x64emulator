@@ -125,6 +125,22 @@ namespace kernel::gnulinux {
         PreciseTime targetTime_;
     };
 
+    class WaitBlocker {
+    public:
+        WaitBlocker(Thread* thread, int pid)
+            : thread_(thread), pid_(pid) { }
+
+        [[nodiscard]] bool tryUnblock();
+
+        Thread* thread() const { return thread_; }
+
+        std::string toString() const;
+
+    private:
+        Thread* thread_;
+        int pid_;
+    };
+
 }
 
 #endif

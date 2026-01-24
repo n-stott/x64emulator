@@ -283,4 +283,20 @@ namespace kernel::gnulinux {
         return fmt::format("thread {}:{} sleeping until {}s{}ns", pid, tid, targetTime_.seconds, targetTime_.nanoseconds);
     }
 
+    bool WaitBlocker::tryUnblock() {
+        verify(pid_ > 0, "only wait4(pid>0) is supported");
+        if(thread_->process()->childExited(pid_)) {
+            thread_->savedCpuState().regs.set(x64::R64::RAX, pid_);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    std::string WaitBlocker::toString() const {
+        int pid = thread_->description().pid;
+        int tid = thread_->description().tid;
+        return fmt::format("thread {}:{} waiting on pid {}", pid, tid, pid_);
+    }
+
 }

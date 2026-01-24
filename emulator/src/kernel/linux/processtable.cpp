@@ -8,6 +8,7 @@ namespace kernel::gnulinux {
     ProcessTable::ProcessTable(int hostPid, Kernel& kernel) :
             hostPid_(hostPid),
             lastUsedPid_(hostPid_-1),
+            lastUsedTid_(lastUsedPid_),
             kernel_(kernel) {
 
     }

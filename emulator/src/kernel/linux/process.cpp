@@ -61,7 +61,7 @@ namespace kernel::gnulinux {
         return threadPtr;
     }
 
-    std::unique_ptr<Process> Process::clone(ProcessTable& processTable) const {
+    std::unique_ptr<Process> Process::clone(ProcessTable& processTable) {
         auto addressSpace = addressSpace_.tryCreate(processTable.availableVirtualMemoryInMB());
         if(!addressSpace) return {};
         int newpid = processTable.allocatedPid();
@@ -72,6 +72,8 @@ namespace kernel::gnulinux {
             mmu.addCallback(process->disassemblyCache());
             process->addressSpace().clone(mmu, addressSpace_);
         }
+        process->parent_ = this;
+        notifyChildCreated(process.get());
         return process;
     }
 
@@ -192,6 +194,24 @@ namespace kernel::gnulinux {
 
     void Process::SymbolRetriever::onNewDisassembly(const std::string& filename, u64 base) {
         symbolProvider_->tryRetrieveSymbolsFromExecutable(filename, base);
+    }
+
+    void Process::notifyExit() {
+        if(!!parent_) parent_->notifyChildExited(this);
+    }
+
+    void Process::notifyChildCreated(Process* process) {
+        childrenState_[process->pid()] = ChildState::CREATED;
+    }
+
+    void Process::notifyChildExited(Process* process) {
+        verify(childrenState_.find(process->pid()) != childrenState_.end(), "Cannot find child process");
+        childrenState_[process->pid()] = ChildState::EXITED;
+    }
+
+    bool Process::childExited(int pid) const {
+        verify(childrenState_.find(pid) != childrenState_.end(), "Cannot find child process");
+        return childrenState_.at(pid) == ChildState::EXITED;
     }
 
 }
