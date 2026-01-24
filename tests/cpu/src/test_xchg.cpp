@@ -3,10 +3,11 @@
 
 int testXchgRegReg() {
     using namespace x64;
-    auto mmu = Mmu::tryCreateWithAddressSpace(0x10000);
-    if(!mmu) return 1;
+    auto addressSpace = AddressSpace::tryCreate(16);
+    if(!addressSpace) return 1;
+    Mmu mmu(*addressSpace);
 
-    Cpu cpu(*mmu);
+    Cpu cpu(mmu);
 
     Cpu::State state;
     cpu.save(&state);
@@ -27,16 +28,17 @@ int testXchgRegReg() {
 
 int testXchgMemReg() {
     using namespace x64;
-    auto mmu = Mmu::tryCreateWithAddressSpace(0x10000);
-    if(!mmu) return 1;
+    auto addressSpace = AddressSpace::tryCreate(16);
+    if(!addressSpace) return 1;
+    Mmu mmu(*addressSpace);
 
-    auto base = mmu->mmap(0x1000, 0x1000, BitFlags<PROT>(PROT::READ, PROT::WRITE), BitFlags<MAP>(MAP::ANONYMOUS, MAP::PRIVATE, MAP::FIXED));
+    auto base = mmu.mmap(0x1000, 0x1000, BitFlags<PROT>(PROT::READ, PROT::WRITE), BitFlags<MAP>(MAP::ANONYMOUS, MAP::PRIVATE, MAP::FIXED));
     if(base != 0x1000) return 1;
 
     Ptr64 ptr { base.value() };
-    mmu->write64(ptr, 0x1234);
+    mmu.write64(ptr, 0x1234);
     
-    Cpu cpu(*mmu);
+    Cpu cpu(mmu);
 
     Cpu::State state;
     cpu.save(&state);
@@ -52,7 +54,7 @@ int testXchgMemReg() {
     if(state2.regs.get(R64::RAX) != 0x1234) {
         return 1;
     }
-    if(mmu->read64(ptr) != 0x5678) {
+    if(mmu.read64(ptr) != 0x5678) {
         return 1;
     }
 

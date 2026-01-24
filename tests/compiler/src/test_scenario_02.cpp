@@ -6,9 +6,10 @@
 
 int main(int argc, char**) {
     using namespace x64;
-    auto mmu = Mmu::tryCreateWithAddressSpace(1);
-    if(!mmu) return 1;
-    Cpu cpu(*mmu);
+    auto addressSpace = AddressSpace::tryCreate(1);
+    if(!addressSpace) return 1;
+    Mmu mmu(*addressSpace);
+    Cpu cpu(mmu);
 
     std::array<X64Instruction, 2> instructions {{
         X64Instruction::make(0x0, Insn::MOV_R32_IMM, 1, R32::EAX, Imm{0xffffffff}),
@@ -39,7 +40,7 @@ int main(int argc, char**) {
         ::memcpy(bbptr, nativebb->nativecode.data(), nativebb->nativecode.size());
 
         auto jit = Jit::tryCreate();
-        jit->exec(&cpu, mmu.get(), (NativeExecPtr)bbptr, &ticks, &basicBlockPtr, &jitBasicBlockData);
+        jit->exec(&cpu, &mmu, (NativeExecPtr)bbptr, &ticks, &basicBlockPtr, &jitBasicBlockData);
     }
 
     fmt::print("{:#x}\n", cpu.get(R64::RAX));

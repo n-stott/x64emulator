@@ -10,28 +10,29 @@
 
 namespace kernel::gnulinux {
 
-    FutexBlocker FutexBlocker::withAbsoluteTimeout(Thread* thread, x64::Mmu& mmu, Timers& timers, x64::Ptr32 wordPtr, u32 expected, x64::Ptr timeout) {
-        return FutexBlocker(thread, mmu, timers, wordPtr, expected, timeout, true);
+    FutexBlocker FutexBlocker::withAbsoluteTimeout(Thread* thread, Timers& timers, x64::Ptr32 wordPtr, u32 expected, x64::Ptr timeout) {
+        return FutexBlocker(thread, timers, wordPtr, expected, timeout, true);
     }
 
-    FutexBlocker FutexBlocker::withRelativeTimeout(Thread* thread, x64::Mmu& mmu, Timers& timers, x64::Ptr32 wordPtr, u32 expected, x64::Ptr timeout) {
-        return FutexBlocker(thread, mmu, timers, wordPtr, expected, timeout, false);
+    FutexBlocker FutexBlocker::withRelativeTimeout(Thread* thread, Timers& timers, x64::Ptr32 wordPtr, u32 expected, x64::Ptr timeout) {
+        return FutexBlocker(thread, timers, wordPtr, expected, timeout, false);
     }
 
-    FutexBlocker::FutexBlocker(Thread* thread, x64::Mmu& mmu, Timers& timers, x64::Ptr32 wordPtr, u32 expected, x64::Ptr timeout, bool absoluteTimeout)
-        : thread_(thread), mmu_(&mmu), timers_(&timers), wordPtr_(wordPtr), expected_(expected) {
+    FutexBlocker::FutexBlocker(Thread* thread, Timers& timers, x64::Ptr32 wordPtr, u32 expected, x64::Ptr timeout, bool absoluteTimeout)
+        : thread_(thread), timers_(&timers), wordPtr_(wordPtr), expected_(expected) {
         if(!!timeout) {
             Timer* timer = timers.get(0); // get the same timer as in the setup
             verify(!!timer);
+            x64::Mmu mmu(thread_->process()->addressSpace());
             if(absoluteTimeout) {
-                auto absolute = timer->readTimespec(*mmu_, timeout);
+                auto absolute = timer->readTimespec(mmu, timeout);
                 verify(!!absolute, "Could not read timeout value");
                 if(!!absolute) {
                     timeLimit_ = *absolute;
                 }
             } else {
                 PreciseTime now = timer->now();
-                auto relative = timer->readRelativeTimespec(*mmu_, timeout);
+                auto relative = timer->readRelativeTimespec(mmu, timeout);
                 verify(!!relative, "Could not read timeout value");
                 if(!!relative) {
                     timeLimit_ = now + *relative;
@@ -58,7 +59,8 @@ namespace kernel::gnulinux {
     std::string FutexBlocker::toString() const {
         int pid = thread_->description().pid;
         int tid = thread_->description().tid;
-        u32 contained = mmu_->read32(wordPtr_);
+        x64::Mmu mmu(thread_->process()->addressSpace());
+        u32 contained = mmu.read32(wordPtr_);
         std::string timeoutString;
         if(!!timeLimit_) {
             Timer* timer = timers_->get(0); // get the same timer as in the setup
@@ -72,8 +74,8 @@ namespace kernel::gnulinux {
                     pid, tid, expected_, wordPtr_.address(), contained, timeoutString);
     }
 
-    PollBlocker::PollBlocker(Process* process, Thread* thread, x64::Mmu& mmu, Timers& timers, x64::Ptr pollfds, size_t nfds, int timeoutInMs)
-        : process_(process), thread_(thread), mmu_(&mmu), timers_(&timers), pollfds_(pollfds), nfds_(nfds) {
+    PollBlocker::PollBlocker(Process* process, Thread* thread, Timers& timers, x64::Ptr pollfds, size_t nfds, int timeoutInMs)
+        : process_(process), thread_(thread), timers_(&timers), pollfds_(pollfds), nfds_(nfds) {
         if(timeoutInMs > 0) {
             Timer* timer = timers_->getOrTryCreate(0); // get any timer
             verify(!!timer);
@@ -85,7 +87,8 @@ namespace kernel::gnulinux {
     }
 
     bool PollBlocker::tryUnblock(FS& fs) {
-        mmu_->readFromMmu<FS::PollFd>(pollfds_, nfds_, &allpollfds_);
+        x64::Mmu mmu(thread_->process()->addressSpace());
+        mmu.readFromMmu<FS::PollFd>(pollfds_, nfds_, &allpollfds_);
         allpolldatas_.resize(allpollfds_.size());
         std::transform(allpollfds_.begin(), allpollfds_.end(), allpolldatas_.begin(), [&](FS::PollFd pollfd) -> FS::PollData {
             return FS::PollData {
@@ -111,7 +114,7 @@ namespace kernel::gnulinux {
                 allpollfds_[i].events = allpolldatas_[i].events;
                 allpollfds_[i].revents = allpolldatas_[i].revents;
             }
-            mmu_->writeToMmu(pollfds_, allpollfds_);
+            mmu.writeToMmu(pollfds_, allpollfds_);
             thread_->savedCpuState().regs.set(x64::R64::RAX, nzrevents);
             return true;
         } else if (timeout) {
@@ -127,7 +130,8 @@ namespace kernel::gnulinux {
         int tid = thread_->description().tid;
         std::stringstream ss;
         ss << '{';
-        std::vector<FS::PollFd> pollfds(mmu_->readFromMmu<FS::PollFd>(pollfds_, nfds_));
+        x64::Mmu mmu(thread_->process()->addressSpace());
+        std::vector<FS::PollFd> pollfds(mmu.readFromMmu<FS::PollFd>(pollfds_, nfds_));
         for(const auto& pfd : pollfds) {
             ss << pfd.fd << " [";
             if((pfd.events & PollEvent::CAN_READ) == PollEvent::CAN_READ) ss << "CAN_READ, ";
@@ -145,10 +149,11 @@ namespace kernel::gnulinux {
         return fmt::format("thread {}:{} polling on {} fds {} {}", pid, tid, nfds_, pollfdsString, timeoutString);
     }
 
-    SelectBlocker::SelectBlocker(Process* process, Thread* thread, x64::Mmu& mmu, Timers& timers, int nfds, x64::Ptr readfds, x64::Ptr writefds, x64::Ptr exceptfds, x64::Ptr timeout)
-            : process_(process), thread_(thread), mmu_(&mmu), timers_(&timers), nfds_(nfds), readfds_(readfds), writefds_(writefds), exceptfds_(exceptfds), timeout_(timeout) {
+    SelectBlocker::SelectBlocker(Process* process, Thread* thread, Timers& timers, int nfds, x64::Ptr readfds, x64::Ptr writefds, x64::Ptr exceptfds, x64::Ptr timeout)
+            : process_(process), thread_(thread), timers_(&timers), nfds_(nfds), readfds_(readfds), writefds_(writefds), exceptfds_(exceptfds), timeout_(timeout) {
         Timer* timer = timers_->getOrTryCreate(0); // get any timer
         verify(!!timer);
+        x64::Mmu mmu(thread_->process()->addressSpace());
         auto duration = timer->readRelativeTimeval(mmu, timeout);
         if(!!duration) {
             PreciseTime now = timer->now();
@@ -162,9 +167,10 @@ namespace kernel::gnulinux {
         for(int fd = 0; fd < nfds_; ++fd) {
             selectData_.fds.push_back(process_->fds()[fd]);
         }
-        if(!!readfds_) mmu_->copyFromMmu((u8*)&selectData_.readfds, readfds_, sizeof(selectData_.readfds));
-        if(!!writefds_) mmu_->copyFromMmu((u8*)&selectData_.writefds, writefds_, sizeof(selectData_.writefds));
-        if(!!exceptfds_) mmu_->copyFromMmu((u8*)&selectData_.exceptfds, exceptfds_, sizeof(selectData_.exceptfds));
+        x64::Mmu mmu(thread_->process()->addressSpace());
+        if(!!readfds_) mmu.copyFromMmu((u8*)&selectData_.readfds, readfds_, sizeof(selectData_.readfds));
+        if(!!writefds_) mmu.copyFromMmu((u8*)&selectData_.writefds, writefds_, sizeof(selectData_.writefds));
+        if(!!exceptfds_) mmu.copyFromMmu((u8*)&selectData_.exceptfds, exceptfds_, sizeof(selectData_.exceptfds));
         int ret = fs.selectImmediate(&selectData_);
         u64 nzevents = selectData_.readfds.count() + selectData_.writefds.count() + selectData_.exceptfds.count();
         bool timeout = false;
@@ -177,9 +183,9 @@ namespace kernel::gnulinux {
         bool canUnblock = (ret < 0) || (nzevents > 0) || timeout;
         if(!canUnblock) return false;
 
-        if(!!readfds_) mmu_->copyToMmu(readfds_, (const u8*)&selectData_.readfds, sizeof(selectData_.readfds));
-        if(!!writefds_) mmu_->copyToMmu(writefds_, (const u8*)&selectData_.writefds, sizeof(selectData_.writefds));
-        if(!!exceptfds_) mmu_->copyToMmu(exceptfds_, (const u8*)&selectData_.exceptfds, sizeof(selectData_.exceptfds));
+        if(!!readfds_) mmu.copyToMmu(readfds_, (const u8*)&selectData_.readfds, sizeof(selectData_.readfds));
+        if(!!writefds_) mmu.copyToMmu(writefds_, (const u8*)&selectData_.writefds, sizeof(selectData_.writefds));
+        if(!!exceptfds_) mmu.copyToMmu(exceptfds_, (const u8*)&selectData_.exceptfds, sizeof(selectData_.exceptfds));
         if(ret >= 0) ret = (int)nzevents;
         thread_->savedCpuState().regs.set(x64::R64::RAX, (u64)ret);
         return true;
@@ -197,8 +203,8 @@ namespace kernel::gnulinux {
         return fmt::format("thread {}:{} selecting on {} fds {}", pid, tid, nfds_, timeoutString);
     }
 
-    EpollWaitBlocker::EpollWaitBlocker(Process* process, Thread* thread, x64::Mmu& mmu, Timers& timers, int epfd, x64::Ptr events, size_t maxevents, int timeoutInMs)
-        : process_(process), thread_(thread), mmu_(&mmu), timers_(&timers), epfd_(epfd), events_(events), maxevents_(maxevents) {
+    EpollWaitBlocker::EpollWaitBlocker(Process* process, Thread* thread, Timers& timers, int epfd, x64::Ptr events, size_t maxevents, int timeoutInMs)
+        : process_(process), thread_(thread), timers_(&timers), epfd_(epfd), events_(events), maxevents_(maxevents) {
         if(timeoutInMs > 0) {
             Timer* timer = timers_->getOrTryCreate(0); // get any timer
             verify(!!timer);
@@ -234,7 +240,8 @@ namespace kernel::gnulinux {
                     e.data,
                 });
             }
-            mmu_->writeToMmu(events_, eventsForMemory);
+            x64::Mmu mmu(thread_->process()->addressSpace());
+            mmu.writeToMmu(events_, eventsForMemory);
             thread_->savedCpuState().regs.set(x64::R64::RAX, epollEvents.size());
             return true;
         } else if (timeout) {

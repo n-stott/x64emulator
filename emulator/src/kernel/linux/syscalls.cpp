@@ -20,9 +20,8 @@
 
 namespace kernel::gnulinux {
 
-    Sys::Sys(Kernel& kernel, x64::Mmu& mmu) :
-        kernel_(kernel),
-        mmu_(mmu) {
+    Sys::Sys(Kernel& kernel) :
+        kernel_(kernel) {
     }
 
     template<typename... Args>
@@ -43,11 +42,18 @@ namespace kernel::gnulinux {
 
     void Sys::syscall(Process* process, Thread* thread) {
         std::scoped_lock<std::mutex> lock(mutex_);
+        x64::Mmu mmu(process->addressSpace());
         currentProcess_ = process;
         currentThread_ = thread;
+        mmu_ = &mmu;
+        mmu.addCallback(process);
+        mmu.addCallback(thread->process()->disassemblyCache());
         ScopeGuard scopeGuard([&]() {
             currentProcess_ = nullptr;
             currentThread_ = nullptr;
+            mmu_ = nullptr;
+            mmu.removeCallback(thread->process()->disassemblyCache());
+            mmu.removeCallback(process);
         });
         x64::Registers& threadRegs = currentThread_->savedCpuState().regs;
         u64 sysNumber = threadRegs.get(x64::R64::RAX);
@@ -232,13 +238,13 @@ namespace kernel::gnulinux {
                         errnoOrBuffer.errorOrWith<ssize_t>([](const auto& buf) { return (ssize_t)buf.size(); }));
         }
         return errnoOrBuffer.errorOrWith<ssize_t>([&](const auto& buffer) {
-            mmu_.copyToMmu(buf, buffer.data(), buffer.size());
+            mmu_->copyToMmu(buf, buffer.data(), buffer.size());
             return (ssize_t)buffer.size();
         });
     }
 
     ssize_t Sys::write(int fd, x64::Ptr8 buf, size_t count) {
-        std::vector<u8> buffer = mmu_.readFromMmu<u8>(buf, count);
+        std::vector<u8> buffer = mmu_->readFromMmu<u8>(buf, count);
         auto descriptor = currentProcess_->fds()[fd];
         ssize_t ret = kernel_.fs().write(descriptor, buffer.data(), buffer.size());
         if(kernel_.logSyscalls()) {
@@ -255,7 +261,7 @@ namespace kernel::gnulinux {
     }
 
     int Sys::stat(x64::Ptr pathname, x64::Ptr statbuf) {
-        std::string pathname_ = mmu_.readString(pathname);
+        std::string pathname_ = mmu_->readString(pathname);
         auto path = kernel_.fs().resolvePath(currentProcess_->cwd(), pathname_);
         auto errnoOrBuffer = [&]() {
             if(!path) return ErrnoOrBuffer(-ENOENT);
@@ -266,7 +272,7 @@ namespace kernel::gnulinux {
                         pathname_, statbuf.address(), errnoOrBuffer.errorOr(0));
         }
         return errnoOrBuffer.errorOrWith<int>([&](const auto& buffer) {
-            mmu_.copyToMmu(statbuf, buffer.data(), buffer.size());
+            mmu_->copyToMmu(statbuf, buffer.data(), buffer.size());
             return 0;
         });
     }
@@ -279,27 +285,27 @@ namespace kernel::gnulinux {
                         fd, statbuf.address(), errnoOrBuffer.errorOr(0));
         }
         return errnoOrBuffer.errorOrWith<int>([&](const auto& buffer) {
-            mmu_.copyToMmu(statbuf, buffer.data(), buffer.size());
+            mmu_->copyToMmu(statbuf, buffer.data(), buffer.size());
             return 0;
         });
     }
 
     int Sys::lstat(x64::Ptr pathname, x64::Ptr statbuf) {
-        std::string path = mmu_.readString(pathname);
+        std::string path = mmu_->readString(pathname);
         ErrnoOrBuffer errnoOrBuffer = Host::lstat(path);
         if(kernel_.logSyscalls()) {
             print("Sys::lstat(path={}, statbuf={:#x}) = {}",
                         path, statbuf.address(), errnoOrBuffer.errorOr(0));
         }
         return errnoOrBuffer.errorOrWith<int>([&](const auto& buffer) {
-            mmu_.copyToMmu(statbuf, buffer.data(), buffer.size());
+            mmu_->copyToMmu(statbuf, buffer.data(), buffer.size());
             return 0;
         });
     }
 
     int Sys::poll(x64::Ptr fds, size_t nfds, int timeout) {
         assert(sizeof(FS::PollFd) == Host::pollRequiredBufferSize(1));
-        std::vector<FS::PollFd> pollfds = mmu_.readFromMmu<FS::PollFd>(fds, nfds);
+        std::vector<FS::PollFd> pollfds = mmu_->readFromMmu<FS::PollFd>(fds, nfds);
         if(timeout == 0) {
             std::vector<FS::PollData> polldata;
             polldata.reserve(pollfds.size());
@@ -323,7 +329,7 @@ namespace kernel::gnulinux {
                 }
             }
             return errnoOrBufferAndReturnValue.errorOrWith<int>([&](const auto& bufferAndRetVal) {
-                mmu_.copyToMmu(fds, bufferAndRetVal.buffer.data(), bufferAndRetVal.buffer.size());
+                mmu_->copyToMmu(fds, bufferAndRetVal.buffer.data(), bufferAndRetVal.buffer.size());
                 return bufferAndRetVal.returnValue;
             });
         } else {
@@ -365,7 +371,7 @@ namespace kernel::gnulinux {
             mmapFlags.add(x64::MAP::PRIVATE);
         }
 
-        auto base = mmu_.mmap(addr.address(), length, protFlags, mmapFlags);
+        auto base = mmu_->mmap(addr.address(), length, protFlags, mmapFlags);
         if(base && !mmapFlags.test(x64::MAP::ANONYMOUS)) {
             u64 regionBase = base.value();
             verify(fd >= 0);
@@ -377,15 +383,15 @@ namespace kernel::gnulinux {
                 base = (u64)data.errorOr(0);
             }
             data.errorOrWith<int>([&](const Buffer& buffer) {
-                BitFlags<x64::PROT> saved = mmu_.prot(regionBase);
+                BitFlags<x64::PROT> saved = mmu_->prot(regionBase);
                 BitFlags<x64::PROT> savedAndWriteable = saved;
                 savedAndWriteable.add(x64::PROT::WRITE);
                 savedAndWriteable.remove(x64::PROT::EXEC);
-                verify(mmu_.mprotect(regionBase, length, savedAndWriteable) >= 0, "mprotect failed");
-                mmu_.copyToMmu(x64::Ptr8{regionBase}, buffer.data(), buffer.size());
-                verify(mmu_.mprotect(regionBase, length, saved) >= 0, "mprotect failed");
+                verify(mmu_->mprotect(regionBase, length, savedAndWriteable) >= 0, "mprotect failed");
+                mmu_->copyToMmu(x64::Ptr8{regionBase}, buffer.data(), buffer.size());
+                verify(mmu_->mprotect(regionBase, length, saved) >= 0, "mprotect failed");
                 auto filename = kernel_.fs().filename(descriptor);
-                mmu_.setRegionName(regionBase, filename);
+                mmu_->setRegionName(regionBase, filename);
                 return 0;
             });
         }
@@ -411,7 +417,7 @@ namespace kernel::gnulinux {
 
     int Sys::mprotect(x64::Ptr addr, size_t length, int prot) {
         BitFlags<x64::PROT> protFlags = BitFlags<x64::PROT>::fromIntegerType(prot);
-        int ret = mmu_.mprotect(addr.address(), length, protFlags);
+        int ret = mmu_->mprotect(addr.address(), length, protFlags);
         if(kernel_.logSyscalls()) {
             bool protRead = protFlags.test(x64::PROT::READ);
             bool protWrite = protFlags.test(x64::PROT::WRITE);
@@ -426,13 +432,13 @@ namespace kernel::gnulinux {
     }
 
     int Sys::munmap(x64::Ptr addr, size_t length) {
-        int ret = mmu_.munmap(addr.address(), length);
+        int ret = mmu_->munmap(addr.address(), length);
         if(kernel_.logSyscalls()) print("Sys::munmap(addr={:#x}, length={}) = {}", addr.address(), length, ret);
         return ret;
     }
 
     x64::Ptr Sys::brk(x64::Ptr addr) {
-        u64 newBrk = mmu_.brk(addr.address());
+        u64 newBrk = mmu_->brk(addr.address());
         if(kernel_.logSyscalls()) print("Sys::brk(addr={:#x}) = {:#x}", addr.address(), newBrk);
         return x64::Ptr{newBrk};
     }
@@ -467,7 +473,7 @@ namespace kernel::gnulinux {
             return -EINVAL;
         };
         Buffer buffer(bufferSize.value(), 0x0);
-        mmu_.copyFromMmu(buffer.data(), argp, buffer.size());
+        mmu_->copyFromMmu(buffer.data(), argp, buffer.size());
 
         auto fsrequest = [](unsigned long hostRequest) -> std::optional<Ioctl> {
             if(Host::Ioctl::isFIOCLEX(hostRequest)) return Ioctl::fioclex;
@@ -491,7 +497,7 @@ namespace kernel::gnulinux {
         }
         return errnoOrBuffer.errorOrWith<int>([&](const auto& buffer) {
             // The buffer returned by ioctl is empty when nothing needs to be written back.
-            mmu_.copyToMmu(argp, buffer.data(), buffer.size());
+            mmu_->copyToMmu(argp, buffer.data(), buffer.size());
             return 0;
         });
     }
@@ -505,13 +511,13 @@ namespace kernel::gnulinux {
                         errnoOrBuffer.errorOrWith<ssize_t>([](const auto& buf) { return (ssize_t)buf.size(); }));
         }
         return errnoOrBuffer.errorOrWith<ssize_t>([&](const auto& buffer) {
-            mmu_.copyToMmu(buf, buffer.data(), buffer.size());
+            mmu_->copyToMmu(buf, buffer.data(), buffer.size());
             return (ssize_t)buffer.size();
         });
     }
 
     ssize_t Sys::pwrite64(int fd, x64::Ptr buf, size_t count, off_t offset) {
-        std::vector<u8> buffer = mmu_.readFromMmu<u8>(buf, count);
+        std::vector<u8> buffer = mmu_->readFromMmu<u8>(buf, count);
         auto descriptor = currentProcess_->fds()[fd];
         auto errnoOrNbytes = kernel_.fs().pwrite(descriptor, buffer.data(), buffer.size(), offset);
         if(kernel_.logSyscalls()) {
@@ -523,14 +529,14 @@ namespace kernel::gnulinux {
 
     ssize_t Sys::readv(int fd, x64::Ptr iov, int iovcnt) {
         Buffer iovecBuffer(((size_t)iovcnt) * Host::iovecRequiredBufferSize(), 0x0);
-        mmu_.copyFromMmu(iovecBuffer.data(), iov, iovecBuffer.size());
+        mmu_->copyFromMmu(iovecBuffer.data(), iov, iovecBuffer.size());
         std::vector<Buffer> buffers;
         buffers.reserve((size_t)iovcnt);
         for(size_t i = 0; i < (size_t)iovcnt; ++i) {
             x64::Ptr base{Host::iovecBase(iovecBuffer, i)};
             size_t len = Host::iovecLen(iovecBuffer, i);
             Buffer data(len, 0x0);
-            mmu_.copyFromMmu(data.data(), base, len);
+            mmu_->copyFromMmu(data.data(), base, len);
             buffers.push_back(Buffer(std::move(data)));
         }
         auto descriptor = currentProcess_->fds()[fd];
@@ -538,7 +544,7 @@ namespace kernel::gnulinux {
         if(nbytes >= 0) {
             for(size_t i = 0; i < (size_t)iovcnt; ++i) {
                 x64::Ptr base{Host::iovecBase(iovecBuffer, i)};
-                mmu_.copyToMmu(base, buffers[i].data(), buffers[i].size());
+                mmu_->copyToMmu(base, buffers[i].data(), buffers[i].size());
             }
         }
         if(kernel_.logSyscalls()) print("Sys::readv(fd={}, iov={:#x}, iovcnt={}) = {}", fd, iov.address(), iovcnt, nbytes);
@@ -547,14 +553,14 @@ namespace kernel::gnulinux {
 
     ssize_t Sys::writev(int fd, x64::Ptr iov, int iovcnt) {
         Buffer iovecs(((size_t)iovcnt) * Host::iovecRequiredBufferSize(), 0x0);
-        mmu_.copyFromMmu(iovecs.data(), iov, iovecs.size());
+        mmu_->copyFromMmu(iovecs.data(), iov, iovecs.size());
         Buffer iovecBuffer(std::move(iovecs));
         std::vector<Buffer> buffers;
         for(size_t i = 0; i < (size_t)iovcnt; ++i) {
             x64::Ptr base{Host::iovecBase(iovecBuffer, i)};
             size_t len = Host::iovecLen(iovecBuffer, i);
             Buffer data(len, 0x0);
-            mmu_.copyFromMmu(data.data(), base, len);
+            mmu_->copyFromMmu(data.data(), base, len);
             buffers.push_back(Buffer(std::move(data)));
         }
         auto descriptor = currentProcess_->fds()[fd];
@@ -564,7 +570,7 @@ namespace kernel::gnulinux {
     }
 
     int Sys::access(x64::Ptr pathname, int mode) {
-        std::string pathname_ = mmu_.readString(pathname);
+        std::string pathname_ = mmu_->readString(pathname);
         auto path = kernel_.fs().resolvePath(currentProcess_->cwd(), pathname_);
         int ret = [&]() {
             if(!path) return -ENOENT;
@@ -581,7 +587,7 @@ namespace kernel::gnulinux {
         int ret = errnoOrFds.errorOrWith<int>([&](std::pair<FD, FD> fds) {
             std::vector<u32> fdsbuf {{ (u32)fds.first.fd, (u32)fds.second.fd }};
             x64::Ptr ptr { pipefd.address() };
-            mmu_.writeToMmu(ptr, fdsbuf);
+            mmu_->writeToMmu(ptr, fdsbuf);
             return 0;
         });
         if(kernel_.logSyscalls()) {
@@ -620,7 +626,7 @@ namespace kernel::gnulinux {
 
     int Sys::select(int nfds, x64::Ptr readfds, x64::Ptr writefds, x64::Ptr exceptfds, x64::Ptr timeout) {
         // assert(sizeof(FS::PollData) == Host::pollRequiredBufferSize(1));
-        // std::vector<FS::PollData> pollfds = mmu_.readFromMmu<FS::PollData>(fds, nfds);
+        // std::vector<FS::PollData> pollfds = mmu_->readFromMmu<FS::PollData>(fds, nfds);
         // if(timeout == 0) {
         //     auto errnoOrBufferAndReturnValue = kernel_.fs().pollImmediate(pollfds);
         //     if(kernel_.logSyscalls()) {
@@ -628,7 +634,7 @@ namespace kernel::gnulinux {
         //                     fds.address(), nfds, timeout, errnoOrBufferAndReturnValue.errorOrWith<int>([](const auto&){ return 0; }));
         //     }
         //     return errnoOrBufferAndReturnValue.errorOrWith<int>([&](const auto& bufferAndRetVal) {
-        //         mmu_.copyToMmu(fds, bufferAndRetVal.buffer.data(), bufferAndRetVal.buffer.size());
+        //         mmu_->copyToMmu(fds, bufferAndRetVal.buffer.data(), bufferAndRetVal.buffer.size());
         //         return bufferAndRetVal.returnValue;
         //     });
         // } else {
@@ -642,11 +648,11 @@ namespace kernel::gnulinux {
         for(int fd = 0; fd < nfds; ++fd) {
             selectData.fds.push_back(currentProcess_->fds()[fd]);
         }
-        if(!!readfds) mmu_.copyFromMmu((u8*)&selectData.readfds, readfds, sizeof(selectData.readfds));
-        if(!!writefds) mmu_.copyFromMmu((u8*)&selectData.writefds, writefds, sizeof(selectData.writefds));
-        if(!!exceptfds) mmu_.copyFromMmu((u8*)&selectData.exceptfds, exceptfds, sizeof(selectData.exceptfds));
+        if(!!readfds) mmu_->copyFromMmu((u8*)&selectData.readfds, readfds, sizeof(selectData.readfds));
+        if(!!writefds) mmu_->copyFromMmu((u8*)&selectData.writefds, writefds, sizeof(selectData.writefds));
+        if(!!exceptfds) mmu_->copyFromMmu((u8*)&selectData.exceptfds, exceptfds, sizeof(selectData.exceptfds));
         Timer* timer = kernel_.timers().getOrTryCreate(0);
-        auto timeoutDuration = timer->readTimeval(mmu_, timeout);
+        auto timeoutDuration = timer->readTimeval(*mmu_, timeout);
         if(!!timeoutDuration && timeoutDuration->seconds == 0 && timeoutDuration->nanoseconds == 0) {
             int ret = kernel_.fs().selectImmediate(&selectData);
             if(kernel_.logSyscalls()) {
@@ -654,9 +660,9 @@ namespace kernel::gnulinux {
                             nfds, readfds.address(), writefds.address(), exceptfds.address(), timeout.address(), ret);
             }
             if(ret < 0) return ret;
-            if(!!readfds) mmu_.copyToMmu(readfds, (const u8*)&selectData.readfds, sizeof(selectData.readfds));
-            if(!!writefds) mmu_.copyToMmu(writefds, (const u8*)&selectData.writefds, sizeof(selectData.writefds));
-            if(!!exceptfds) mmu_.copyToMmu(exceptfds, (const u8*)&selectData.exceptfds, sizeof(selectData.exceptfds));
+            if(!!readfds) mmu_->copyToMmu(readfds, (const u8*)&selectData.readfds, sizeof(selectData.readfds));
+            if(!!writefds) mmu_->copyToMmu(writefds, (const u8*)&selectData.writefds, sizeof(selectData.writefds));
+            if(!!exceptfds) mmu_->copyToMmu(exceptfds, (const u8*)&selectData.exceptfds, sizeof(selectData.exceptfds));
             return ret;
         } else {
             kernel_.scheduler().select(currentThread_, nfds, readfds, writefds, exceptfds, timeout);
@@ -690,8 +696,8 @@ namespace kernel::gnulinux {
     }
 
     int Sys::mincore(x64::Ptr addr, size_t length, x64::Ptr8 vec) {
-        auto res = mmu_.mincore(addr.address(), length);
-        mmu_.copyToMmu(vec, res.data(), res.size());
+        auto res = mmu_->mincore(addr.address(), length);
+        mmu_->copyToMmu(vec, res.data(), res.size());
         if(kernel_.logSyscalls()) {
             print("Sys::mincore(addr={:#x}, length={:#x}, vec={:#x}) = {}",
                                     addr.address(), length, vec.address(), 0);
@@ -758,7 +764,7 @@ namespace kernel::gnulinux {
             if(Host::ShmAt::isReadOnly(shmflg)) flags.add(SharedMemory::AtFlags::READ_ONLY);
             if(Host::ShmAt::isExecute(shmflg)) flags.add(SharedMemory::AtFlags::EXEC);
             if(Host::ShmAt::isRemap(shmflg)) flags.add(SharedMemory::AtFlags::REMAP);
-            auto errnoOrAddr = kernel_.shm().attach(SharedMemory::Id{shmid}, shmaddr.address(), flags);
+            auto errnoOrAddr = kernel_.shm().attach(mmu_, SharedMemory::Id{shmid}, shmaddr.address(), flags);
             ret = errnoOrAddr.errorOrWith<u64>([&](u64 addr) {
                 return addr;
             });
@@ -793,7 +799,7 @@ namespace kernel::gnulinux {
 
     int Sys::connect(int sockfd, x64::Ptr addr, size_t addrlen) {
         Buffer buffer(addrlen, 0x0);
-        mmu_.copyFromMmu(buffer.data(), addr, buffer.size());
+        mmu_->copyFromMmu(buffer.data(), addr, buffer.size());
         auto descriptor = currentProcess_->fds()[sockfd];
         int ret = kernel_.fs().connect(descriptor, buffer);
         if(kernel_.logSyscalls()) {
@@ -807,7 +813,7 @@ namespace kernel::gnulinux {
         verify(dest_addr.address() == 0);
         verify(addrlen == 0);
         Buffer buffer(len, 0x0);
-        mmu_.copyFromMmu(buffer.data(), buf, buffer.size());
+        mmu_->copyFromMmu(buffer.data(), buf, buffer.size());
         auto descriptor = currentProcess_->fds()[sockfd];
         ssize_t ret = kernel_.fs().send(descriptor, buffer, flags);
         if(kernel_.logSyscalls()) {
@@ -818,7 +824,7 @@ namespace kernel::gnulinux {
     }
 
     int Sys::getsockname(int sockfd, x64::Ptr addr, x64::Ptr32 addrlen) {
-        u32 buffersize = mmu_.read32(addrlen);
+        u32 buffersize = mmu_->read32(addrlen);
         auto descriptor = currentProcess_->fds()[sockfd];
         ErrnoOrBuffer sockname = kernel_.fs().getsockname(descriptor, buffersize);
         if(kernel_.logSyscalls()) {
@@ -830,14 +836,14 @@ namespace kernel::gnulinux {
             // });
         }
         return sockname.errorOrWith<int>([&](const auto& buffer) {
-            mmu_.copyToMmu(addr, buffer.data(), buffer.size());
-            mmu_.write32(addrlen, (u32)buffer.size());
+            mmu_->copyToMmu(addr, buffer.data(), buffer.size());
+            mmu_->write32(addrlen, (u32)buffer.size());
             return 0;
         });
     }
 
     int Sys::getpeername(int sockfd, x64::Ptr addr, x64::Ptr32 addrlen) {
-        u32 buffersize = mmu_.read32(addrlen);
+        u32 buffersize = mmu_->read32(addrlen);
         auto descriptor = currentProcess_->fds()[sockfd];
         ErrnoOrBuffer peername = kernel_.fs().getpeername(descriptor, buffersize);
         if(kernel_.logSyscalls()) {
@@ -849,15 +855,15 @@ namespace kernel::gnulinux {
             // });
         }
         return peername.errorOrWith<int>([&](const auto& buffer) {
-            mmu_.copyToMmu(addr, buffer.data(), buffer.size());
-            mmu_.write32(addrlen, (u32)buffer.size());
+            mmu_->copyToMmu(addr, buffer.data(), buffer.size());
+            mmu_->write32(addrlen, (u32)buffer.size());
             return 0;
         });
     }
 
     int Sys::socketpair(int domain, int type, int protocol, x64::Ptr32 sv) {
         if(kernel_.logSyscalls()) {
-            std::vector<int> svs = mmu_.readFromMmu<int>(x64::Ptr8{sv.address()}, 2);
+            std::vector<int> svs = mmu_->readFromMmu<int>(x64::Ptr8{sv.address()}, 2);
             print("Sys::socketpair(domain={}, type={}, protocol={}, sv=[{},{}]) = {}",
                 domain, type, protocol, svs[0], svs[1], -ENOTSUP);
         }
@@ -869,7 +875,7 @@ namespace kernel::gnulinux {
         static_assert(sizeof(socklen_t) == sizeof(u32));
         verify(!!optval, "getsockopt with null optval not implemented");
         Buffer buf((size_t)optlen, 0x0);
-        mmu_.copyFromMmu(buf.data(), optval, buf.size());
+        mmu_->copyFromMmu(buf.data(), optval, buf.size());
         auto descriptor = currentProcess_->fds()[sockfd];
         int ret = kernel_.fs().setsockopt(descriptor, level, optname, buf);
         if(kernel_.logSyscalls()) {
@@ -883,14 +889,14 @@ namespace kernel::gnulinux {
         static_assert(sizeof(socklen_t) == sizeof(u32));
         verify(!!optval, "getsockopt with null optval not implemented");
         verify(!!optlen, "getsockopt with null optlen not implemented");
-        u32 len = mmu_.read32(optlen);
+        u32 len = mmu_->read32(optlen);
         Buffer buf(len, 0x0);
-        mmu_.copyFromMmu(buf.data(), optval, buf.size());
+        mmu_->copyFromMmu(buf.data(), optval, buf.size());
         auto descriptor = currentProcess_->fds()[sockfd];
         ErrnoOrBuffer errnoOrBuffer = kernel_.fs().getsockopt(descriptor, level, optname, buf);
         int ret = errnoOrBuffer.errorOrWith<int>([&](const Buffer& buffer) {
-            mmu_.copyToMmu(optval, buffer.data(), buffer.size());
-            mmu_.write32(optlen, (u32)buffer.size());
+            mmu_->copyToMmu(optval, buffer.data(), buffer.size());
+            mmu_->write32(optlen, (u32)buffer.size());
             return 0;
         });
         if(kernel_.logSyscalls()) {
@@ -1018,7 +1024,7 @@ namespace kernel::gnulinux {
         } else {
             verify(!cloneFlags.cloneVm, "Danger, copying stack in child in same addresspace");
         }
-        mmu_.setRegionName(stack.address(), fmt::format("Stack of thread {}", newThread->description().tid));
+        mmu_->setRegionName(stack.address(), fmt::format("Stack of thread {}", newThread->description().tid));
         if(cloneFlags.setTls) {
             newCpuState.fsBase = tls;
         }
@@ -1027,11 +1033,11 @@ namespace kernel::gnulinux {
         }
         if(!!child_tid && cloneFlags.childSetTid) {
             static_assert(sizeof(pid_t) == sizeof(u32));
-            mmu_.write32(child_tid, (u32)newThread->description().tid);
+            mmu_->write32(child_tid, (u32)newThread->description().tid);
         }
         if(!!parent_tid && cloneFlags.parentSetTid) {
             static_assert(sizeof(pid_t) == sizeof(u32));
-            mmu_.write32(parent_tid, (u32)newThread->description().tid);
+            mmu_->write32(parent_tid, (u32)newThread->description().tid);
         }
         kernel_.scheduler().addThread(newThread);
         long ret = newThread->description().tid;
@@ -1090,14 +1096,14 @@ namespace kernel::gnulinux {
                         buf.address(), errnoOrBuffer.errorOr(0));
         }
         return errnoOrBuffer.errorOrWith<int>([&](const auto& buffer) {
-            mmu_.copyToMmu(buf, buffer.data(), buffer.size());
+            mmu_->copyToMmu(buf, buffer.data(), buffer.size());
             return 0;
         });
     }
 
     int Sys::shmdt(x64::Ptr shmaddr) {
         if(!kernel_.isShmEnabled()) return -ENOTSUP;
-        int ret = kernel_.shm().detach(shmaddr.address());
+        int ret = kernel_.shm().detach(mmu_, shmaddr.address());
         if(kernel_.logSyscalls()) {
             print("Sys::shmdt({:#x}) = {}", shmaddr.address(), ret);
         }
@@ -1130,7 +1136,7 @@ namespace kernel::gnulinux {
     }
 
     int Sys::truncate(x64::Ptr8 path_, off_t length) {
-        auto pathname = mmu_.readString(path_);
+        auto pathname = mmu_->readString(path_);
         auto path = kernel_.fs().resolvePath(currentProcess_->cwd(), pathname);
         int ret = [&]() {
             if(!path) return -ENOENT;
@@ -1156,13 +1162,13 @@ namespace kernel::gnulinux {
                         }));
         }
         return errnoOrBuffer.errorOrWith<int>([&](const auto& buffer) {
-            mmu_.copyToMmu(buf, buffer.data(), buffer.size());
+            mmu_->copyToMmu(buf, buffer.data(), buffer.size());
             return (int)buffer.size();
         });
     }
 
     int Sys::chdir(x64::Ptr pathname) {
-        auto path = mmu_.readString(pathname);
+        auto path = mmu_->readString(pathname);
         int ret = Host::chdir(path);
         if(kernel_.logSyscalls()) {
             print("Sys::chdir(path={}) = {}", path, ret);
@@ -1172,8 +1178,8 @@ namespace kernel::gnulinux {
     }
 
     int Sys::rename(x64::Ptr oldpathname, x64::Ptr newpathname) {
-        auto oldname = mmu_.readString(oldpathname);
-        auto newname = mmu_.readString(newpathname);
+        auto oldname = mmu_->readString(oldpathname);
+        auto newname = mmu_->readString(newpathname);
         auto oldpath = kernel_.fs().resolvePath(currentProcess_->cwd(), oldname);
         auto newpath = kernel_.fs().resolvePath(currentProcess_->cwd(), newname);
         
@@ -1189,7 +1195,7 @@ namespace kernel::gnulinux {
     }
 
     int Sys::mkdir(x64::Ptr pathname, mode_t mode) {
-        auto pathname_ = mmu_.readString(pathname);
+        auto pathname_ = mmu_->readString(pathname);
         auto path = kernel_.fs().resolvePath(currentProcess_->cwd(), pathname_);
         auto ret = [&]() {
             if(!path) return -ENOENT;
@@ -1202,7 +1208,7 @@ namespace kernel::gnulinux {
     }
 
     int Sys::unlink([[maybe_unused]] x64::Ptr pathname) {
-        auto pathname_ = mmu_.readString(pathname);
+        auto pathname_ = mmu_->readString(pathname);
         auto path = kernel_.fs().resolvePath(currentProcess_->cwd(), pathname_);
         int ret = [&]() {
             if(!path) return -ENOENT;
@@ -1215,7 +1221,7 @@ namespace kernel::gnulinux {
     }
 
     ssize_t Sys::readlink(x64::Ptr pathname, x64::Ptr buf, size_t bufsiz) {
-        std::string path = mmu_.readString(pathname);
+        std::string path = mmu_->readString(pathname);
         auto linkpath = kernel_.fs().resolvePath(currentProcess_->cwd(), path);
         auto errnoOrBuffer = [&]() {
             if(!linkpath) return ErrnoOrBuffer(-ENOENT);
@@ -1230,14 +1236,14 @@ namespace kernel::gnulinux {
                         }));
         }
         return errnoOrBuffer.errorOrWith<ssize_t>([&](const auto& buffer) {
-            mmu_.copyToMmu(buf, buffer.data(), buffer.size());
+            mmu_->copyToMmu(buf, buffer.data(), buffer.size());
             return (ssize_t)buffer.size();
         });
     }
 
     int Sys::chmod(x64::Ptr pathname, mode_t mode) {
         if(kernel_.logSyscalls()) {
-            std::string path = mmu_.readString(pathname);
+            std::string path = mmu_->readString(pathname);
             print("Sys::chmod(path={}, mode={}) = {}",
                         path, mode, -ENOTSUP);
         }
@@ -1255,7 +1261,7 @@ namespace kernel::gnulinux {
 
     int Sys::chown(x64::Ptr pathname, uid_t owner, gid_t group) {
         if(kernel_.logSyscalls()) {
-            std::string path = mmu_.readString(pathname);
+            std::string path = mmu_->readString(pathname);
             print("Sys::chown(path={}, owner={}, group={}) = {}",
                         path, owner, group, -ENOTSUP);
         }
@@ -1289,11 +1295,11 @@ namespace kernel::gnulinux {
         }
         if(!!tv) {
             auto timevalBuffer = Host::gettimeofday(time);
-            mmu_.copyToMmu(tv, timevalBuffer.data(), timevalBuffer.size());
+            mmu_->copyToMmu(tv, timevalBuffer.data(), timevalBuffer.size());
         }
         if(!!tz) {
             auto timezoneBuffer = Host::gettimezone();
-            mmu_.copyToMmu(tv, timezoneBuffer.data(), timezoneBuffer.size());
+            mmu_->copyToMmu(tv, timezoneBuffer.data(), timezoneBuffer.size());
         }
         return 0;
     }
@@ -1314,7 +1320,7 @@ namespace kernel::gnulinux {
                         info.address(), errnoOrBuffer.errorOr(0));
         }
         return errnoOrBuffer.errorOrWith<int>([&](const auto& buffer) {
-            mmu_.copyToMmu(info, buffer.data(), buffer.size());
+            mmu_->copyToMmu(info, buffer.data(), buffer.size());
             return 0;
         });
     }
@@ -1356,7 +1362,7 @@ namespace kernel::gnulinux {
         ErrnoOrBuffer groups = Host::getgroups(size);
         int ret = groups.errorOrWith<int>([&](const Buffer& buf) {
             if(size > 0) {
-                mmu_.copyToMmu(list, buf.data(), buf.size());
+                mmu_->copyToMmu(list, buf.data(), buf.size());
             }
             return (int)(buf.size() / sizeof(gid_t));
         });
@@ -1368,17 +1374,17 @@ namespace kernel::gnulinux {
 
     int Sys::getresuid(x64::Ptr32 ruid, x64::Ptr32 euid, x64::Ptr32 suid) {
         Host::UserCredentials creds = Host::getUserCredentials();
-        mmu_.write32(ruid, (u32)creds.ruid);
-        mmu_.write32(euid, (u32)creds.euid);
-        mmu_.write32(suid, (u32)creds.suid);
+        mmu_->write32(ruid, (u32)creds.ruid);
+        mmu_->write32(euid, (u32)creds.euid);
+        mmu_->write32(suid, (u32)creds.suid);
         return 0;
     }
 
     int Sys::getresgid(x64::Ptr32 rgid, x64::Ptr32 egid, x64::Ptr32 sgid) {
         Host::UserCredentials creds = Host::getUserCredentials();
-        mmu_.write32(rgid, (u32)creds.rgid);
-        mmu_.write32(egid, (u32)creds.egid);
-        mmu_.write32(sgid, (u32)creds.sgid);
+        mmu_->write32(rgid, (u32)creds.rgid);
+        mmu_->write32(egid, (u32)creds.egid);
+        mmu_->write32(sgid, (u32)creds.sgid);
         return 0;
     }
 
@@ -1400,7 +1406,7 @@ namespace kernel::gnulinux {
 
     int Sys::utime(x64::Ptr filename, x64::Ptr times) {
         if(kernel_.logSyscalls()) {
-            std::string path = mmu_.readString(filename);
+            std::string path = mmu_->readString(filename);
             print("Sys::utime(filename={}, times={:#x} = {})", path, times.address(), -ENOTSUP);
         }
         warn("utime not implemented");
@@ -1408,13 +1414,13 @@ namespace kernel::gnulinux {
     }
 
     int Sys::statfs(x64::Ptr pathname, x64::Ptr buf) {
-        std::string path = mmu_.readString(pathname);
+        std::string path = mmu_->readString(pathname);
         auto errnoOrBuffer = Host::statfs(path);
         if(kernel_.logSyscalls()) {
             print("Sys::statfs(pathname={}, buf={:#x} = {})", path, buf.address(), errnoOrBuffer.errorOr(0));
         }
         return errnoOrBuffer.errorOrWith<int>([&](const auto& buffer) {
-            mmu_.copyToMmu(buf, buffer.data(), buffer.size());
+            mmu_->copyToMmu(buf, buffer.data(), buffer.size());
             return 0;
         });
     }
@@ -1426,7 +1432,7 @@ namespace kernel::gnulinux {
             print("Sys::fstatfs(fd={}, buf={:#x} = {})", fd, buf.address(), errnoOrBuffer.errorOr(0));
         }
         return errnoOrBuffer.errorOrWith<int>([&](const auto& buffer) {
-            mmu_.copyToMmu(buf, buffer.data(), buffer.size());
+            mmu_->copyToMmu(buf, buffer.data(), buffer.size());
             return 0;
         });
     }
@@ -1514,7 +1520,7 @@ namespace kernel::gnulinux {
                         e.data,
                     });
                 }
-                mmu_.writeToMmu<EpollEvent>(events, eventsForMemory);
+                mmu_->writeToMmu<EpollEvent>(events, eventsForMemory);
             }
             if(kernel_.logSyscalls()) {
                 print("Sys::epoll_wait(epfd={}, events={:#x}, maxevents={}, timeout={})", epfd, events.address(), maxevents, timeout, ret);
@@ -1532,7 +1538,7 @@ namespace kernel::gnulinux {
 
     int Sys::epoll_ctl(int epfd, int op, int fd, x64::Ptr event) {
         verify(!!event, "Null event in epoll_ctl not supported");
-        EpollEvent ee = mmu_.readFromMmu<EpollEvent>(event);
+        EpollEvent ee = mmu_->readFromMmu<EpollEvent>(event);
         auto epDescriptor = currentProcess_->fds()[epfd];
         auto descriptor = currentProcess_->fds()[fd];
         int ret = kernel_.fs().epoll_ctl(epDescriptor, op, descriptor, BitFlags<EpollEventType>::fromIntegerType(ee.event), ee.data);
@@ -1572,14 +1578,14 @@ namespace kernel::gnulinux {
     }
 
     int Sys::inotify_add_watch(int fd, x64::Ptr pathname, uint32_t mask) {
-        if(kernel_.logSyscalls()) print("Sys::inotify_add_watch(fd={}, pathname={}, mask={}) = {}", fd, mmu_.readString(pathname), mask, -ENOTSUP);
+        if(kernel_.logSyscalls()) print("Sys::inotify_add_watch(fd={}, pathname={}, mask={}) = {}", fd, mmu_->readString(pathname), mask, -ENOTSUP);
         warn("inotify_add_watch not implemented");
         return -ENOTSUP;
     }
 
     ssize_t Sys::getxattr(x64::Ptr path, x64::Ptr name, x64::Ptr value, size_t size) {
-        auto spath = mmu_.readString(path);
-        auto sname = mmu_.readString(name);
+        auto spath = mmu_->readString(path);
+        auto sname = mmu_->readString(name);
         auto errnoOrBuffer = Host::getxattr(spath, sname, size);
         if(kernel_.logSyscalls()) {
             print("Sys::getxaddr(path={}, name={}, value={:#x}, size={}) = {}",
@@ -1588,14 +1594,14 @@ namespace kernel::gnulinux {
                                       }));
         }
         return errnoOrBuffer.errorOrWith<ssize_t>([&](const auto& buffer) {
-            mmu_.copyToMmu(value, buffer.data(), buffer.size());
+            mmu_->copyToMmu(value, buffer.data(), buffer.size());
             return (ssize_t)buffer.size();
         });
     }
 
     ssize_t Sys::lgetxattr(x64::Ptr path, x64::Ptr name, x64::Ptr value, size_t size) {
-        auto spath = mmu_.readString(path);
-        auto sname = mmu_.readString(name);
+        auto spath = mmu_->readString(path);
+        auto sname = mmu_->readString(name);
         auto errnoOrBuffer = Host::lgetxattr(spath, sname, size);
         if(kernel_.logSyscalls()) {
             print("Sys::getxaddr(path={}, name={}, value={:#x}, size={}) = {}",
@@ -1604,14 +1610,14 @@ namespace kernel::gnulinux {
                                       }));
         }
         return errnoOrBuffer.errorOrWith<ssize_t>([&](const auto& buffer) {
-            mmu_.copyToMmu(value, buffer.data(), buffer.size());
+            mmu_->copyToMmu(value, buffer.data(), buffer.size());
             return (ssize_t)buffer.size();
         });
     }
 
     ssize_t Sys::listxattr(x64::Ptr path, x64::Ptr list, size_t size) {
-        // auto spath = mmu_.readString(path);
-        // auto slist = mmu_.readString(list);
+        // auto spath = mmu_->readString(path);
+        // auto slist = mmu_->readString(list);
         if(kernel_.logSyscalls()) {
             print("Sys::listxattr(path={:#x}, list={:#x}, size={}) = {}",
                                       path.address(), list.address(), size, -ENOTSUP);
@@ -1622,7 +1628,7 @@ namespace kernel::gnulinux {
     time_t Sys::time(x64::Ptr tloc) {
         time_t t = (time_t)kernel_.scheduler().kernelTime().seconds;
         if(kernel_.logSyscalls()) print("Sys::time({:#x}) = {}", tloc.address(), t);
-        if(tloc.address()) mmu_.copyToMmu(tloc, (const u8*)&t, sizeof(t));
+        if(tloc.address()) mmu_->copyToMmu(tloc, (const u8*)&t, sizeof(t));
         return t;
     }
 
@@ -1644,7 +1650,7 @@ namespace kernel::gnulinux {
         int unmaskedOp = futex_op & 0x7f;
         if(unmaskedOp == 0) {
             // wait
-            u32 loaded = mmu_.read32(uaddr);
+            u32 loaded = mmu_->read32(uaddr);
             if(loaded != val) return -EAGAIN;
             // create timer 0
             Timer* timer = kernel_.timers().getOrTryCreate(0);
@@ -1661,7 +1667,7 @@ namespace kernel::gnulinux {
         if(unmaskedOp == 5) {
             // wake_op
             u32 val2 = (u32)timeout.address();
-            u32 nbWoken = kernel_.scheduler().wakeOp(uaddr, val, uaddr2, val2, val3);
+            u32 nbWoken = kernel_.scheduler().wakeOp(currentThread_, uaddr, val, uaddr2, val2, val3);
             return onExit(nbWoken);
         }
         if(unmaskedOp == 7) {
@@ -1670,7 +1676,7 @@ namespace kernel::gnulinux {
         }
         if(unmaskedOp == 9 && val3 == std::numeric_limits<uint32_t>::max()) {
             // wait_bitset
-            u32 loaded = mmu_.read32(uaddr);
+            u32 loaded = mmu_->read32(uaddr);
             if(loaded != val) return -EAGAIN;
             // create timer 0
             Timer* timer = kernel_.timers().getOrTryCreate(0);
@@ -1702,7 +1708,7 @@ namespace kernel::gnulinux {
             if(!buffer.empty()) {
                 buffer[0] |= 0x1;
             }
-            mmu_.copyToMmu(mask, buffer.data(), buffer.size());
+            mmu_->copyToMmu(mask, buffer.data(), buffer.size());
             ret = 1;
         } else {
             // don't allow looking at other processes
@@ -1725,10 +1731,10 @@ namespace kernel::gnulinux {
             }));
         }
         return ret.errorOrWith<ssize_t>([&](const auto& buffers) {
-            mmu_.copyToMmu(buf, buffers.first.data(), buffers.first.size());
+            mmu_->copyToMmu(buf, buffers.first.data(), buffers.first.size());
             if(requireSrcAddress) {
-                mmu_.copyToMmu(src_addr, buffers.second.data(), buffers.second.size());
-                mmu_.write32(addrlen, (u32)buffers.second.size());
+                mmu_->copyToMmu(src_addr, buffers.second.data(), buffers.second.size());
+                mmu_->write32(addrlen, (u32)buffers.second.size());
             }
             return (ssize_t)buffers.first.size();
         });
@@ -1744,29 +1750,29 @@ namespace kernel::gnulinux {
         //     size_t        msg_controllen; /* Ancillary data buffer len */
         //     int           msg_flags;      /* Flags on received message */
         // };
-        msghdr header = mmu_.readFromMmu<msghdr>(msg);
+        msghdr header = mmu_->readFromMmu<msghdr>(msg);
 
         FS::Message message;
 
         // read Message::msg_name
         if(!!header.msg_name && header.msg_namelen > 0) {
             Buffer msg_name_buffer(header.msg_namelen, 0x0);
-            mmu_.copyFromMmu(msg_name_buffer.data(), x64::Ptr8{(u64)header.msg_name}, msg_name_buffer.size());
+            mmu_->copyFromMmu(msg_name_buffer.data(), x64::Ptr8{(u64)header.msg_name}, msg_name_buffer.size());
             message.msg_name = std::move(msg_name_buffer);
         }
 
         // read Message::msg_iov
-        std::vector<iovec> msg_iovecs = mmu_.readFromMmu<iovec>(x64::Ptr8{(u64)header.msg_iov}, header.msg_iovlen);
+        std::vector<iovec> msg_iovecs = mmu_->readFromMmu<iovec>(x64::Ptr8{(u64)header.msg_iov}, header.msg_iovlen);
         for(size_t i = 0; i < header.msg_iovlen; ++i) {
             Buffer msg_iovec_buffer(msg_iovecs[i].iov_len, 0x0);
-            mmu_.copyFromMmu(msg_iovec_buffer.data(), x64::Ptr8{(u64)msg_iovecs[i].iov_base}, msg_iovec_buffer.size());
+            mmu_->copyFromMmu(msg_iovec_buffer.data(), x64::Ptr8{(u64)msg_iovecs[i].iov_base}, msg_iovec_buffer.size());
             message.msg_iov.push_back(std::move(msg_iovec_buffer));
         }
 
         // read Message::control
         if(!!header.msg_control && header.msg_controllen > 0) {
             Buffer msg_control_buffer(header.msg_controllen, 0x0);
-             mmu_.copyFromMmu(msg_control_buffer.data(), x64::Ptr8{(u64)header.msg_control}, msg_control_buffer.size());
+             mmu_->copyFromMmu(msg_control_buffer.data(), x64::Ptr8{(u64)header.msg_control}, msg_control_buffer.size());
             message.msg_control = std::move(msg_control_buffer);
         }
 
@@ -1792,29 +1798,29 @@ namespace kernel::gnulinux {
         //     size_t        msg_controllen; /* Ancillary data buffer len */
         //     int           msg_flags;      /* Flags on received message */
         // };
-        msghdr header = mmu_.readFromMmu<msghdr>(msg);
+        msghdr header = mmu_->readFromMmu<msghdr>(msg);
 
         FS::Message message;
 
         // read Message::msg_name
         if(!!header.msg_name && header.msg_namelen > 0) {
             Buffer msg_name_buffer(header.msg_namelen, 0x0);
-            mmu_.copyFromMmu(msg_name_buffer.data(), x64::Ptr8{(u64)header.msg_name}, msg_name_buffer.size());
+            mmu_->copyFromMmu(msg_name_buffer.data(), x64::Ptr8{(u64)header.msg_name}, msg_name_buffer.size());
             message.msg_name = std::move(msg_name_buffer);
         }
 
         // read Message::msg_iov
-        std::vector<iovec> msg_iovecs = mmu_.readFromMmu<iovec>(x64::Ptr8{(u64)header.msg_iov}, header.msg_iovlen);
+        std::vector<iovec> msg_iovecs = mmu_->readFromMmu<iovec>(x64::Ptr8{(u64)header.msg_iov}, header.msg_iovlen);
         for(size_t i = 0; i < header.msg_iovlen; ++i) {
             Buffer msg_iovec_buffer(msg_iovecs[i].iov_len, 0x0);
-            mmu_.copyFromMmu(msg_iovec_buffer.data(), x64::Ptr8{(u64)msg_iovecs[i].iov_base}, msg_iovec_buffer.size());
+            mmu_->copyFromMmu(msg_iovec_buffer.data(), x64::Ptr8{(u64)msg_iovecs[i].iov_base}, msg_iovec_buffer.size());
             message.msg_iov.push_back(Buffer(std::move(msg_iovec_buffer)));
         }
 
         // read Message::control
         if(!!header.msg_control && header.msg_controllen > 0) {
             Buffer msg_control_buffer(header.msg_controllen, 0x0);
-            mmu_.copyFromMmu(msg_control_buffer.data(), x64::Ptr8{(u64)header.msg_control}, msg_control_buffer.size());
+            mmu_->copyFromMmu(msg_control_buffer.data(), x64::Ptr8{(u64)header.msg_control}, msg_control_buffer.size());
             message.msg_control = std::move(msg_control_buffer);
         }
 
@@ -1828,20 +1834,20 @@ namespace kernel::gnulinux {
         // write back to header
         header.msg_namelen = (socklen_t)message.msg_name.size();
         if(!!header.msg_name) {
-            mmu_.copyToMmu(x64::Ptr8{(u64)header.msg_name}, message.msg_name.data(), message.msg_name.size());
+            mmu_->copyToMmu(x64::Ptr8{(u64)header.msg_name}, message.msg_name.data(), message.msg_name.size());
         }
         header.msg_iovlen = message.msg_iov.size();
         verify(header.msg_iovlen == message.msg_iov.size(), "message iov changed length...");
         for(size_t i = 0; i < header.msg_iovlen; ++i) {
-            mmu_.copyToMmu(x64::Ptr8{(u64)msg_iovecs[i].iov_base}, message.msg_iov[i].data(), message.msg_iov[i].size());
+            mmu_->copyToMmu(x64::Ptr8{(u64)msg_iovecs[i].iov_base}, message.msg_iov[i].data(), message.msg_iov[i].size());
         }
         header.msg_controllen = message.msg_control.size();
         if(!!header.msg_control) {
-            mmu_.copyToMmu(x64::Ptr8{(u64)header.msg_control}, message.msg_control.data(), message.msg_control.size());
+            mmu_->copyToMmu(x64::Ptr8{(u64)header.msg_control}, message.msg_control.data(), message.msg_control.size());
         }
         header.msg_flags = message.msg_flags;
 
-        mmu_.writeToMmu<msghdr>(msg, header);
+        mmu_->writeToMmu<msghdr>(msg, header);
         
         if(kernel_.logSyscalls()) {
             std::vector<std::string> iovStringElements;
@@ -1876,7 +1882,7 @@ namespace kernel::gnulinux {
 
     int Sys::bind(int sockfd, x64::Ptr addr, socklen_t addrlen) {
         Buffer saddr(addrlen, 0x0);
-        mmu_.copyFromMmu(saddr.data(), addr, saddr.size());
+        mmu_->copyFromMmu(saddr.data(), addr, saddr.size());
         auto descriptor = currentProcess_->fds()[sockfd];
         int rc = kernel_.fs().bind(descriptor, saddr);
         if(kernel_.logSyscalls()) {
@@ -1902,7 +1908,7 @@ namespace kernel::gnulinux {
                         fd, dirp.address(), count, errnoOrBuffer.errorOrWith<ssize_t>([&](const auto& buffer) { return (ssize_t)buffer.size(); }));
         }
         return errnoOrBuffer.errorOrWith<ssize_t>([&](const auto& buffer) {
-            mmu_.copyToMmu(dirp, buffer.data(), buffer.size());
+            mmu_->copyToMmu(dirp, buffer.data(), buffer.size());
             return (ssize_t)buffer.size();
         });
     }
@@ -1929,7 +1935,7 @@ namespace kernel::gnulinux {
         PreciseTime time = kernel_.scheduler().kernelTime();
         timer->update(time); // just in case
         Buffer buffer = Host::clock_gettime(time);
-        mmu_.copyToMmu(tp, buffer.data(), buffer.size());
+        mmu_->copyToMmu(tp, buffer.data(), buffer.size());
         if(kernel_.logSyscalls()) {
             print("Sys::clock_gettime({}, {:#x}) = {}",
                         clockid, tp.address(), 0);
@@ -1943,7 +1949,7 @@ namespace kernel::gnulinux {
             print("Sys::clock_getres({}, {:#x}) = {}",
                         clockid, res.address(), 0);
         }
-        mmu_.copyToMmu(res, buffer.data(), buffer.size());
+        mmu_->copyToMmu(res, buffer.data(), buffer.size());
         return 0;
     }
 
@@ -1951,7 +1957,7 @@ namespace kernel::gnulinux {
         verify(flags == 0, "clock_nanosleep with nonzero flags not supported (relative only)");
         Timer* timer = kernel_.timers().getOrTryCreate(clockid);
         if(!timer) { return -EINVAL; }
-        auto timediff = timer->readRelativeTimespec(mmu_, request);
+        auto timediff = timer->readRelativeTimespec(*mmu_, request);
         if(!timediff) { return -EFAULT; }
         timer->update(kernel_.scheduler().kernelTime());
         kernel_.scheduler().sleep(currentThread_, timer, timer->now() + timediff.value());
@@ -1966,7 +1972,7 @@ namespace kernel::gnulinux {
         int ret = -ENOTSUP;
         if(Host::Prctl::isSetName(option)) {
             x64::Ptr8 ptr { arg2 };
-            std::string threadName = mmu_.readString(ptr);
+            std::string threadName = mmu_->readString(ptr);
             if(threadName.size() >= 15) threadName.resize(15);
             currentThread_->setName(threadName);
             ret = 0;
@@ -2001,7 +2007,7 @@ namespace kernel::gnulinux {
     }
 
     int Sys::openat(int dirfd, x64::Ptr pathname, int flags, mode_t mode) {
-        std::string path = mmu_.readString(pathname);
+        std::string path = mmu_->readString(pathname);
         BitFlags<AccessMode> accessMode = FS::toAccessMode(flags);
         BitFlags<CreationFlags> creationFlags = FS::toCreationFlags(flags);
         BitFlags<StatusFlags> statusFlags = FS::toStatusFlags(flags);
@@ -2027,7 +2033,7 @@ namespace kernel::gnulinux {
     }
 
     int Sys::fstatat64(int dirfd, x64::Ptr pathname, x64::Ptr statbuf, int flags) {
-        std::string pathname_ = mmu_.readString(pathname);
+        std::string pathname_ = mmu_->readString(pathname);
         auto allowEmptyPath = Host::Fstatat::isEmptyPath(flags) ? FS::AllowEmptyPathname::YES : FS::AllowEmptyPathname::NO;
         auto dirFd = currentProcess_->fds().dirfd(FD{dirfd}, currentProcess_->cwd());
         auto path = kernel_.fs().resolvePath(dirFd, pathname_, allowEmptyPath);
@@ -2040,14 +2046,14 @@ namespace kernel::gnulinux {
                         dirfd, pathname_, statbuf.address(), flags, errnoOrBuffer.errorOr(0));
         }
         return errnoOrBuffer.errorOrWith<int>([&](const auto& buffer) {
-            mmu_.copyToMmu(statbuf, buffer.data(), buffer.size());
+            mmu_->copyToMmu(statbuf, buffer.data(), buffer.size());
             return 0;
         });
     }
 
     int Sys::unlinkat(int dirfd, x64::Ptr pathname, int flags) {
         if(kernel_.logSyscalls()) {
-            std::string path = mmu_.readString(pathname);
+            std::string path = mmu_->readString(pathname);
             print("Sys::unlinkat(dirfd={}, path={}, flags={}) = {}",
                         dirfd, path, flags, -ENOTSUP);
         }
@@ -2066,20 +2072,20 @@ namespace kernel::gnulinux {
 
     ssize_t Sys::readlinkat(int dirfd, x64::Ptr pathname, x64::Ptr buf, size_t bufsiz) {
         verify(dirfd == Host::cwdfd().fd, "dirfd is not cwd");
-        std::string path = mmu_.readString(pathname);
+        std::string path = mmu_->readString(pathname);
         auto errnoOrBuffer = Host::readlink(path, bufsiz);
         if(kernel_.logSyscalls()) {
             print("Sys::readlinkat(dirfd={}, path={}, buf={:#x}, size={}) = {:#x}",
                         dirfd, path, buf.address(), bufsiz, errnoOrBuffer.errorOrWith<ssize_t>([](const auto& buffer) { return (ssize_t)buffer.size(); }));
         }
         return errnoOrBuffer.errorOrWith<ssize_t>([&](const auto& buffer) {
-            mmu_.copyToMmu(buf, buffer.data(), buffer.size());
+            mmu_->copyToMmu(buf, buffer.data(), buffer.size());
             return (ssize_t)buffer.size();
         });
     }
 
     int Sys::faccessat(int dirfd, x64::Ptr pathname, int mode) {
-        std::string pathname_ = mmu_.readString(pathname);
+        std::string pathname_ = mmu_->readString(pathname);
         auto dirFd = currentProcess_->fds().dirfd(FD{dirfd}, currentProcess_->cwd());
         auto path = kernel_.fs().resolvePath(dirFd, pathname_);
         int ret = [&]() {
@@ -2094,15 +2100,15 @@ namespace kernel::gnulinux {
 
     int Sys::pselect6(int nfds, x64::Ptr readfds, x64::Ptr writefds, x64::Ptr exceptfds, x64::Ptr timeout, x64::Ptr sigmask) {
         fd_set rfds;
-        if(readfds.address() != 0) mmu_.copyFromMmu((u8*)&rfds, readfds, sizeof(fd_set));
+        if(readfds.address() != 0) mmu_->copyFromMmu((u8*)&rfds, readfds, sizeof(fd_set));
         fd_set wfds;
-        if(writefds.address() != 0) mmu_.copyFromMmu((u8*)&wfds, writefds, sizeof(fd_set));
+        if(writefds.address() != 0) mmu_->copyFromMmu((u8*)&wfds, writefds, sizeof(fd_set));
         fd_set efds;
-        if(exceptfds.address() != 0) mmu_.copyFromMmu((u8*)&efds, exceptfds, sizeof(fd_set));
+        if(exceptfds.address() != 0) mmu_->copyFromMmu((u8*)&efds, exceptfds, sizeof(fd_set));
         timespec ts;
-        if(timeout.address() != 0) mmu_.copyFromMmu((u8*)&ts, timeout, sizeof(timespec));
+        if(timeout.address() != 0) mmu_->copyFromMmu((u8*)&ts, timeout, sizeof(timespec));
         sigset_t smask;
-        if(sigmask.address() != 0) mmu_.copyFromMmu((u8*)&smask, sigmask, sizeof(sigset_t));
+        if(sigmask.address() != 0) mmu_->copyFromMmu((u8*)&smask, sigmask, sizeof(sigset_t));
         int ret = Host::pselect6(nfds,
                                readfds.address() != 0 ?   &rfds : nullptr,
                                writefds.address() != 0 ?  &wfds : nullptr,
@@ -2113,20 +2119,20 @@ namespace kernel::gnulinux {
             print("Sys::pselect6(nfds={}, readfds={:#x}, writefds={:#x}, exceptfds={:#x}, timeout={:#x},sigmask={:#x}) = {}",
                         nfds, readfds.address(), writefds.address(), exceptfds.address(), timeout.address(), sigmask.address(), ret);
         }
-        if(readfds.address() != 0) mmu_.copyToMmu(readfds, (const u8*)&rfds, sizeof(fd_set));
-        if(writefds.address() != 0) mmu_.copyToMmu(writefds, (const u8*)&wfds, sizeof(fd_set));
-        if(exceptfds.address() != 0) mmu_.copyToMmu(exceptfds, (const u8*)&efds, sizeof(fd_set));
-        if(timeout.address() != 0) mmu_.copyToMmu(timeout, (const u8*)&ts, sizeof(timespec));
+        if(readfds.address() != 0) mmu_->copyToMmu(readfds, (const u8*)&rfds, sizeof(fd_set));
+        if(writefds.address() != 0) mmu_->copyToMmu(writefds, (const u8*)&wfds, sizeof(fd_set));
+        if(exceptfds.address() != 0) mmu_->copyToMmu(exceptfds, (const u8*)&efds, sizeof(fd_set));
+        if(timeout.address() != 0) mmu_->copyToMmu(timeout, (const u8*)&ts, sizeof(timespec));
         return ret;
     }
 
     int Sys::ppoll(x64::Ptr fds, int nfds, x64::Ptr tmo_p, x64::Ptr sigmask, size_t sigsetsize) {
         verify(!sigmask, "Sys::ppoll does not support non-null sigmask");
         assert(sizeof(FS::PollFd) == Host::pollRequiredBufferSize(1));
-        std::vector<FS::PollFd> pollfds = mmu_.readFromMmu<FS::PollFd>(fds, (size_t)nfds);
+        std::vector<FS::PollFd> pollfds = mmu_->readFromMmu<FS::PollFd>(fds, (size_t)nfds);
         Timer* timer = kernel_.timers().getOrTryCreate(0);
         verify(!!timer);
-        auto timeoutDuration = timer->readRelativeTimespec(mmu_, tmo_p);
+        auto timeoutDuration = timer->readRelativeTimespec(*mmu_, tmo_p);
         int timeoutInMs = -1;
         if(!!timeoutDuration) {
             timeoutInMs = (int)(timeoutDuration->seconds*1'000 + timeoutDuration->nanoseconds / 1'000'000);
@@ -2156,7 +2162,7 @@ namespace kernel::gnulinux {
 
     int Sys::utimensat(int dirfd, x64::Ptr pathname, x64::Ptr times, int flags) {
         if(kernel_.logSyscalls()) print("Sys::utimensat(dirfd={}, pathname={}, times={:#x}, flags={}) = -ENOTSUP",
-                                                          dirfd, mmu_.readString(pathname), times.address(), flags);
+                                                          dirfd, mmu_->readString(pathname), times.address(), flags);
         warn("utimensat not implemented");
         return -ENOTSUP;
     }
@@ -2200,7 +2206,7 @@ namespace kernel::gnulinux {
         int ret = errnoOrFds.errorOrWith<int>([&](std::pair<FD, FD> fds) {
             std::vector<u32> fdsbuf {{ (u32)fds.first.fd, (u32)fds.second.fd }};
             x64::Ptr ptr { pipefd.address() };
-            mmu_.writeToMmu(ptr, fdsbuf);
+            mmu_->writeToMmu(ptr, fdsbuf);
             return 0;
         });
         if(kernel_.logSyscalls()) {
@@ -2226,14 +2232,14 @@ namespace kernel::gnulinux {
         auto errnoOrBuffer = Host::getrlimit(pid, resource);
         if(kernel_.logSyscalls()) print(" = {}", errnoOrBuffer.errorOr(0));
         return errnoOrBuffer.errorOrWith<int>([&](const auto& buffer) {
-            mmu_.copyToMmu(old_limit, buffer.data(), buffer.size());
+            mmu_->copyToMmu(old_limit, buffer.data(), buffer.size());
             return 0;
         });
     }
 
     int Sys::sched_setattr(pid_t pid, x64::Ptr attr, unsigned int flags) {
         if(kernel_.logSyscalls()) {
-            Host::SchedAttr attributes = mmu_.readFromMmu<Host::SchedAttr>(attr);
+            Host::SchedAttr attributes = mmu_->readFromMmu<Host::SchedAttr>(attr);
             std::string attributeString = fmt::format("policy={} flags={} nice={} priority={}", attributes.schedPolicy, attributes.schedFlags, attributes.schedNice, attributes.schedPriority);
             print("Sys::sched_setattr(pid={}, attr={:#x} ({}), flags={:#x}) = 0", pid, attr.address(), attributeString, flags);
         }
@@ -2247,7 +2253,7 @@ namespace kernel::gnulinux {
                 print("Sys::sched_getattr(pid={}, attr={:#x}, size={:#x}, flags={:#x}) = {}", pid, attr.address(), size, flags, -EINVAL);
             return -EINVAL;
         }
-        mmu_.writeToMmu<Host::SchedAttr>(attr, attributes);
+        mmu_->writeToMmu<Host::SchedAttr>(attr, attributes);
         if(kernel_.logSyscalls()) 
             print("Sys::sched_getattr(pid={}, attr={:#x}, size={:#x}, flags={:#x}) = 0", pid, attr.address(), size, flags);
         return 0;
@@ -2258,22 +2264,22 @@ namespace kernel::gnulinux {
             print("Sys::getrandom(buf={:#x}, len={}, flags={})", buf.address(), len, flags);
         std::vector<u8> buffer(len);
         std::iota(buffer.begin(), buffer.end(), 0);
-        mmu_.copyToMmu(buf, buffer.data(), buffer.size());
+        mmu_->copyToMmu(buf, buffer.data(), buffer.size());
         return (ssize_t)len;
     }
 
     int Sys::memfd_create(x64::Ptr name, unsigned int flags) {
-        auto filename = mmu_.readString(name);
+        auto filename = mmu_->readString(name);
         FD fd = currentProcess_->fds().memfd_create(filename, flags);
         if(kernel_.logSyscalls()) {
-            std::string pathname = mmu_.readString(name);
+            std::string pathname = mmu_->readString(name);
             print("Sys::memfd_create(name={}, flags={:#x}) = {}", pathname, flags, fd.fd);
         }
         return fd.fd;
     }
 
     int Sys::statx(int dirfd, x64::Ptr pathname, int flags, unsigned int mask, x64::Ptr statxbuf) {
-        std::string pathname_ = mmu_.readString(pathname);
+        std::string pathname_ = mmu_->readString(pathname);
         auto allowEmptyPath = Host::Fstatat::isEmptyPath(flags) ? FS::AllowEmptyPathname::YES : FS::AllowEmptyPathname::NO;
         auto dirFd = currentProcess_->fds().dirfd(FD{dirfd}, currentProcess_->cwd());
         auto path = kernel_.fs().resolvePath(dirFd, pathname_, allowEmptyPath);
@@ -2289,7 +2295,7 @@ namespace kernel::gnulinux {
             warn("statx not supported on {}", pathname_);
         }
         return errnoOrBuffer.errorOrWith<int>([&](const auto& buffer) {
-            mmu_.copyToMmu(statxbuf, buffer.data(), buffer.size());
+            mmu_->copyToMmu(statxbuf, buffer.data(), buffer.size());
             return 0;
         });
     }
@@ -2315,7 +2321,7 @@ namespace kernel::gnulinux {
         //     u64 cgroup;       /* File descriptor for target cgroup
         //                         of child (since Linux 5.7) */
         // };
-        std::vector<u64> args = mmu_.readFromMmu<u64>(uargs, size / sizeof(u64));
+        std::vector<u64> args = mmu_->readFromMmu<u64>(uargs, size / sizeof(u64));
         verify(args.size() >= 8);
         u64 flags { args[0] };
         x64::Ptr32 child_tid { args[2] };
@@ -2340,13 +2346,13 @@ namespace kernel::gnulinux {
         newCpuState.regs.set(x64::R64::RAX, 0);
         newCpuState.regs.rip() = oldCpuState.regs.rip();
         newCpuState.regs.rsp() = stackAddress;
-        mmu_.setRegionName(stackAddress, fmt::format("Stack of thread {}", newThread->description().tid));
+        mmu_->setRegionName(stackAddress, fmt::format("Stack of thread {}", newThread->description().tid));
         newCpuState.fsBase = tls;
         newThread->setClearChildTid(child_tid);
         long ret = newThread->description().tid;
         if(!!child_tid) {
             static_assert(sizeof(pid_t) == sizeof(u32));
-            mmu_.write32(child_tid, (u32)ret);
+            mmu_->write32(child_tid, (u32)ret);
         }
         if(kernel_.logSyscalls()) {
             print("Sys::clone3(uargs={:#x}, size={}) = {}",

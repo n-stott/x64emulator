@@ -20,21 +20,20 @@ namespace kernel::gnulinux {
         };
         static constexpr Key IPC_PRIVATE { 0 };
 
-        static std::unique_ptr<SharedMemorySegment> tryCreate(x64::Mmu& mmu, int mode, size_t size);
+        static std::unique_ptr<SharedMemorySegment> tryCreate(int mode, size_t size);
         ~SharedMemorySegment();
         
         int id() const { return id_; }
         std::optional<u64> attachedAddress() const { return attachedAddress_; }
         
-        ErrnoOr<u64> attach(bool readonly, bool executable);
-        int detach();
+        ErrnoOr<u64> attach(x64::Mmu* mmu, bool readonly, bool executable);
+        int detach(x64::Mmu* mmu);
 
         void rm();
         
     private:
-        SharedMemorySegment(x64::Mmu& mmu, int id, int mode, size_t size);
+        SharedMemorySegment(int id, int mode, size_t size);
 
-        x64::Mmu& mmu_;
         int id_ { -1 };
         int mode_ { 0 };
         size_t size_ { 0 };

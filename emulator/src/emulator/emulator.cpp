@@ -56,8 +56,7 @@ namespace emulator {
     }
 
     int Emulator::run(const std::string& programFilePath, const std::vector<std::string>& arguments, const std::vector<std::string>& environmentVariables) const {
-        x64::Mmu mmu;
-        kernel::gnulinux::Kernel kernel(mmu);
+        kernel::gnulinux::Kernel kernel;
         
         kernel.setLogSyscalls(logSyscalls_);
         kernel.setProfiling(isProfiling_);

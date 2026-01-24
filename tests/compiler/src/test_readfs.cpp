@@ -26,14 +26,15 @@ static BasicBlock create(Cpu* cpu, R64 dst, R64 base, R64 index) {
 }
 
 int main() {
-    auto mmu = Mmu::tryCreateWithAddressSpace(0x1000);
-    if(!mmu) return 1;
+    auto addressSpace = AddressSpace::tryCreate(1);
+    if(!addressSpace) return 1;
+    Mmu mmu(*addressSpace);
     auto rw = BitFlags<PROT>(PROT::READ, PROT::WRITE);
     auto flags = BitFlags<MAP>(MAP::ANONYMOUS, MAP::PRIVATE);
-    auto maybe_fsbase = mmu->mmap(0x0, 0x1000, rw, flags);
+    auto maybe_fsbase = mmu.mmap(0x0, 0x1000, rw, flags);
     if(!maybe_fsbase) return 1;
     auto fsbase = maybe_fsbase.value();
-    Cpu cpu(*mmu);
+    Cpu cpu(mmu);
 
     static constexpr u64 MAGIC = 0x12345678;
 
@@ -44,7 +45,7 @@ int main() {
         state.regs.set(R64::RCX, 0);
         state.segmentBase[(int)Segment::FS] = fsbase;
         cpu.load(state);
-        mmu->write64(Ptr64{fsbase}, MAGIC);
+        mmu.write64(Ptr64{fsbase}, MAGIC);
 
         auto bb = create(&cpu, R64::RAX, R64::RBX, R64::RCX);
         cpu.exec(bb);
@@ -60,7 +61,7 @@ int main() {
         state.regs.set(R64::RCX, 0);
         state.segmentBase[(int)Segment::FS] = fsbase;
         cpu.load(state);
-        mmu->write64(Ptr64{fsbase}, MAGIC);
+        mmu.write64(Ptr64{fsbase}, MAGIC);
 
         auto bb = create(&cpu, R64::RAX, R64::RBX, R64::RCX);
         auto jit = Jit::tryCreate();
@@ -74,7 +75,7 @@ int main() {
         void* basicBlockPtr = &basicBlockData;
         std::array<u64, 0x100> jitBasicBlockData;
         std::fill(jitBasicBlockData.begin(), jitBasicBlockData.end(), 0);
-        jit->exec(&cpu, mmu.get(), (NativeExecPtr)jbb->executableMemory(), &ticks, &basicBlockPtr, &jitBasicBlockData);
+        jit->exec(&cpu, &mmu, (NativeExecPtr)jbb->executableMemory(), &ticks, &basicBlockPtr, &jitBasicBlockData);
         cpu.exec(bb);
         cpu.save(&state);
 

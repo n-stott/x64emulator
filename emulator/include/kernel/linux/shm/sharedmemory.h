@@ -19,7 +19,7 @@ namespace kernel::gnulinux {
 
     class SharedMemory {
     public:
-        explicit SharedMemory(x64::Mmu& mmu);
+        SharedMemory();
         ~SharedMemory();
 
         struct Key {
@@ -43,12 +43,11 @@ namespace kernel::gnulinux {
         };
 
         ErrnoOr<Id> get(Key key, size_t size, int mode, BitFlags<GetFlags> flags);
-        ErrnoOr<u64> attach(Id id, u64 preferredAddress, BitFlags<AtFlags> flags);
-        int detach(u64 address);
+        ErrnoOr<u64> attach(x64::Mmu* mmu, Id id, u64 preferredAddress, BitFlags<AtFlags> flags);
+        int detach(x64::Mmu* mmu, u64 address);
         int rmid(Id id);
 
     private:
-        x64::Mmu& mmu_;
         std::vector<std::pair<Id, std::unique_ptr<SharedMemorySegment>>> segments_;
     };
 

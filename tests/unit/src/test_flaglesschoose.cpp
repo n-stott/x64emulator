@@ -7,8 +7,9 @@
 
 std::optional<u64> test_choice(u64 value, u64 value_if_zero, u64 value_if_nonzero) {
     using namespace x64;
-    auto mmu = Mmu::tryCreateWithAddressSpace(1);
-    if(!mmu) return {};
+    auto addressSpace = AddressSpace::tryCreate(1);
+    if(!addressSpace) return 1;
+    Mmu mmu(*addressSpace);
 
     struct alignas(16) Buffer {
         u64 zeroes { 0 };
@@ -27,13 +28,13 @@ std::optional<u64> test_choice(u64 value, u64 value_if_zero, u64 value_if_nonzer
     std::optional<u64> choice;
 
     VerificationScope::run([&]() {
-        auto dataPage = mmu->mmap(0, Mmu::PAGE_SIZE, BitFlags<PROT>{PROT::READ, PROT::WRITE}, BitFlags<MAP>{MAP::PRIVATE, MAP::ANONYMOUS});
+        auto dataPage = mmu.mmap(0, Mmu::PAGE_SIZE, BitFlags<PROT>{PROT::READ, PROT::WRITE}, BitFlags<MAP>{MAP::PRIVATE, MAP::ANONYMOUS});
         verify(!!dataPage);
 
         static_assert(sizeof(Buffer) >= 56);
         static_assert(alignof(Buffer) == 16);
 
-        mmu->copyToMmu(Ptr8{dataPage.value()}, (const u8*)&buffer, sizeof(buffer));
+        mmu.copyToMmu(Ptr8{dataPage.value()}, (const u8*)&buffer, sizeof(buffer));
 
         // RDI holds the buffer address
         // RSI holds value
@@ -64,7 +65,7 @@ std::optional<u64> test_choice(u64 value, u64 value_if_zero, u64 value_if_nonzer
             X64Instruction::make<Insn::MOV_R64_M64>(13, 1, R64::RAX, value_addr),
         };
 
-        Cpu cpu(*mmu);
+        Cpu cpu(mmu);
         cpu.set(R64::RDI, dataPage.value());
         cpu.set(R64::RSI, value);
         cpu.set(R64::RDX, value_if_zero);

@@ -106,23 +106,8 @@ namespace x64 {
 
     class Mmu {
     public:
-        static std::unique_ptr<Mmu> tryCreateWithAddressSpace(u32 virtualMemoryInMB);
-
-        Mmu() = default;
+        explicit Mmu(AddressSpace& addressSpace);
         ~Mmu();
-
-        void ensureNullPage();
-
-        void save(AddressSpace* space) {
-            if(!space) return;
-            verify(base() != nullptr, "Trying to save empty address space");
-            *space = std::move(addressSpace_);
-        }
-
-        void load(AddressSpace space) {
-            verify(base() == nullptr, "An adressSpace is already loaded");
-            addressSpace_ = std::move(space);
-        }
 
         std::optional<u64> mmap(u64 address, u64 length, BitFlags<PROT> prot, BitFlags<MAP> flags);
         int munmap(u64 address, u64 length);
@@ -131,8 +116,8 @@ namespace x64 {
 
         void setRegionName(u64 address, std::string name);
 
-        u8* base() { return addressSpace_.memoryRange_.base(); }
-        u64 memorySize() const { return addressSpace_.memoryRange_.size(); }
+        u8* base() { return base_; }
+        u64 memorySize() const { return size_; }
 
         void copyBytes(Ptr8 dst, Ptr8 src, size_t count);
 
@@ -303,7 +288,7 @@ namespace x64 {
         }
 
     private:
-        explicit Mmu(std::unique_ptr<AddressSpace>);
+        void ensureNullPage();
 
         template<typename T, Size s>
         T read(SPtr<s> ptr) const {
@@ -379,7 +364,7 @@ namespace x64 {
                 fmt::println("Attempt to read from address {:#x} in non-readable region {}", address, regionPtr->toString());
             });
 #endif
-            return addressSpace_.memoryRange_.base() + address;
+            return base_ + address;
         }
 
         u8* getWritePtr(u64 address) {
@@ -392,7 +377,7 @@ namespace x64 {
                 fmt::println("Attempt to write to address {:#x} in non-readable region {}", address, regionPtr->toString());
             });
 #endif
-            return addressSpace_.memoryRange_.base() + address;
+            return base_ + address;
         }
         std::unique_ptr<MmuRegion> makeRegion(u64 base, u64 size, BitFlags<PROT> prot);
         
@@ -412,7 +397,9 @@ namespace x64 {
         u64 topOfMemoryPageAligned() const;
         u64 firstFitPageAligned(u64 length) const;
 
-        AddressSpace addressSpace_;
+        u8* base_ { nullptr };
+        u64 size_ { 0 };
+        AddressSpace& addressSpace_;
         std::vector<Callback*> callbacks_;
 
 #ifdef MULTIPROCESSING
@@ -450,16 +437,6 @@ namespace x64 {
         };
 
         void checkRegionsAreSorted() const;
-    };
-
-    class ScopedAdressSpace {
-    public:
-        ScopedAdressSpace(Mmu& mmu, AddressSpace& addressSpace);
-        ~ScopedAdressSpace();
-
-    private:
-        Mmu& mmu_;
-        AddressSpace& addressSpace_;
     };
 
 }

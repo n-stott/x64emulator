@@ -19,11 +19,11 @@
 
 namespace kernel::gnulinux {
 
-    Kernel::Kernel(x64::Mmu& mmu) : mmu_(mmu) {
+    Kernel::Kernel() {
         fs_ = std::make_unique<FS>();
-        shm_ = std::make_unique<SharedMemory>(mmu_);
-        scheduler_ = std::make_unique<Scheduler>(mmu_, *this);
-        sys_ = std::make_unique<Sys>(*this, mmu_);
+        shm_ = std::make_unique<SharedMemory>();
+        scheduler_ = std::make_unique<Scheduler>(*this);
+        sys_ = std::make_unique<Sys>(*this);
         timers_ = std::make_unique<kernel::Timers>();
         processTable_ = std::make_unique<ProcessTable>(Host::getpid(), *this);
     }
@@ -117,14 +117,15 @@ namespace kernel::gnulinux {
             mainProcess->setEnableJitChaining(isJitChainingEnabled());
             mainProcess->setOptimizationLevel(optimizationLevel());
             mainProcess->setJitStatsLevel(jitStatsLevel());
-            x64::ScopedAdressSpace scopeAddressSpace(mmu_, mainProcess->addressSpace());
-            mmu_.addCallback(mainProcess);
-            ScopeGuard guard([&]() {
-                mmu_.removeCallback(mainProcess);
-            });
-            mmu_.ensureNullPage();
-            ExecVE execve(mmu_, processTable(), *mainProcess, scheduler(), fs());
-            Thread* mainThread = execve.exec(programPath.value(), arguments, environmentVariables);
+            Thread* mainThread = [&]() -> Thread* {
+                x64::Mmu mmu(mainProcess->addressSpace());
+                mmu.addCallback(mainProcess);
+                ScopeGuard guard([&]() {
+                    mmu.removeCallback(mainProcess);
+                });
+                ExecVE execve(mmu, processTable(), *mainProcess, scheduler(), fs());
+                return execve.exec(programPath.value(), arguments, environmentVariables);
+            }();
             scheduler().run();
             exitCode = mainThread->exitStatus();
             if(hasPanicked()) {
@@ -145,7 +146,7 @@ namespace kernel::gnulinux {
     void Kernel::dumpPanicInfo() const {
         scheduler_->dumpThreadSummary();
         scheduler_->dumpBlockerSummary();
-        mmu_.dumpRegions();
+        verify(false, "implement mmu_.dumpRegions()");
         fs_->dumpSummary();
         processTable_->dumpSummary();
     }

@@ -6,9 +6,10 @@
 
 int main(int argc, char**) {
     using namespace x64;
-    auto mmu = Mmu::tryCreateWithAddressSpace(1);
-    if(!mmu) return 1;
-    Cpu cpu(*mmu);
+    auto addressSpace = AddressSpace::tryCreate(1);
+    if(!addressSpace) return 1;
+    Mmu mmu(*addressSpace);
+    Cpu cpu(mmu);
 
     std::array<X64Instruction, 11> instructions {{
         X64Instruction::make(0x0, Insn::NOP, 1),
@@ -26,8 +27,8 @@ int main(int argc, char**) {
 
     auto bb = cpu.createBasicBlock(instructions.data(), instructions.size());
 
-    auto stack1base = mmu->mmap(0, 0x1000, BitFlags<x64::PROT>{x64::PROT::READ, x64::PROT::WRITE}, BitFlags<x64::MAP>{x64::MAP::PRIVATE, x64::MAP::ANONYMOUS});
-    auto stack2base = mmu->mmap(0, 0x1000, BitFlags<x64::PROT>{x64::PROT::READ, x64::PROT::WRITE}, BitFlags<x64::MAP>{x64::MAP::PRIVATE, x64::MAP::ANONYMOUS});
+    auto stack1base = mmu.mmap(0, 0x1000, BitFlags<x64::PROT>{x64::PROT::READ, x64::PROT::WRITE}, BitFlags<x64::MAP>{x64::MAP::PRIVATE, x64::MAP::ANONYMOUS});
+    auto stack2base = mmu.mmap(0, 0x1000, BitFlags<x64::PROT>{x64::PROT::READ, x64::PROT::WRITE}, BitFlags<x64::MAP>{x64::MAP::PRIVATE, x64::MAP::ANONYMOUS});
 
     if(!stack1base) return 1;
     if(!stack2base) return 1;
@@ -76,7 +77,7 @@ int main(int argc, char**) {
         ::memcpy(bbptr, nativebb->nativecode.data(), nativebb->nativecode.size());
 
         auto jit = Jit::tryCreate();
-        jit->exec(&cpu, mmu.get(), (NativeExecPtr)bbptr, &ticks, &basicBlockPtr, &jitBasicBlockData);
+        jit->exec(&cpu, &mmu, (NativeExecPtr)bbptr, &ticks, &basicBlockPtr, &jitBasicBlockData);
     }
 
     fmt::print("R10={:#x}\n", cpu.get(R64::R10));

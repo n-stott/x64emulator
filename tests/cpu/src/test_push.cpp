@@ -4,11 +4,12 @@
 
 int emulated() {
     using namespace x64;
-    auto mmu = Mmu::tryCreateWithAddressSpace(1);
-    if(!mmu) return 1;
-    Cpu cpu(*mmu);
+    auto addressSpace = AddressSpace::tryCreate(1);
+    if(!addressSpace) return 1;
+    Mmu mmu(*addressSpace);
+    Cpu cpu(mmu);
 
-    auto stack = mmu->mmap(0x0, 0x1000, BitFlags<PROT>(PROT::READ, PROT::WRITE), BitFlags<MAP>(MAP::ANONYMOUS, MAP::PRIVATE));
+    auto stack = mmu.mmap(0x0, 0x1000, BitFlags<PROT>(PROT::READ, PROT::WRITE), BitFlags<MAP>(MAP::ANONYMOUS, MAP::PRIVATE));
     if(!stack) {
         puts("mmap failed");
         return 1;

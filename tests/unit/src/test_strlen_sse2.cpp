@@ -10,17 +10,18 @@ std::vector<char> string {{
 
 int main() {
     using namespace x64;
-    auto mmu = Mmu::tryCreateWithAddressSpace(1);
-    if(!mmu) return 1;
+    auto addressSpace = AddressSpace::tryCreate(1);
+    if(!addressSpace) return 1;
+    Mmu mmu(*addressSpace);
 
     u64 length = 0;
 
     bool errorEncountered = false;
 
     VerificationScope::run([&]() {
-        auto dataPage = mmu->mmap(0, Mmu::PAGE_SIZE, BitFlags<PROT>{PROT::READ, PROT::WRITE}, BitFlags<MAP>{MAP::PRIVATE, MAP::ANONYMOUS});
+        auto dataPage = mmu.mmap(0, Mmu::PAGE_SIZE, BitFlags<PROT>{PROT::READ, PROT::WRITE}, BitFlags<MAP>{MAP::PRIVATE, MAP::ANONYMOUS});
         verify(!!dataPage);
-        mmu->copyToMmu(Ptr8{dataPage.value()}, (const u8*)string.data(), string.size());
+        mmu.copyToMmu(Ptr8{dataPage.value()}, (const u8*)string.data(), string.size());
 
         std::vector<X64Instruction> instructions {
             X64Instruction::make<Insn::PXOR_XMM_XMMM128>(1, 1, XMM::XMM0, XMMM128{true, XMM::XMM0, {}}),
@@ -37,7 +38,7 @@ int main() {
             X64Instruction::make<Insn::BSF_R32_R32>(12, 1, R32::EAX, R32::EDX)
         };
 
-        Cpu cpu(*mmu);
+        Cpu cpu(mmu);
         cpu.set(R64::RDI, dataPage.value());
         for(const auto& ins : instructions) {
             cpu.exec(ins);

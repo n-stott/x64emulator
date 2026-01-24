@@ -216,14 +216,10 @@ namespace x64 {
         return std::unique_ptr<MmuRegion>(new MmuRegion(base, size, prot));
     }
 
-    std::unique_ptr<Mmu> Mmu::tryCreateWithAddressSpace(u32 virtualMemoryInMB) {
-        auto addressSpace = AddressSpace::tryCreate(virtualMemoryInMB);
-        if(!addressSpace) return {};
-        return std::unique_ptr<Mmu>(new Mmu(std::move(addressSpace)));
-    }
-
-    Mmu::Mmu(std::unique_ptr<AddressSpace> addressSpace) {
-        std::swap(addressSpace_, *addressSpace);
+    Mmu::Mmu(AddressSpace& addressSpace) :
+            base_(addressSpace.memoryRange_.base()),
+            size_(addressSpace.memoryRange_.size()),
+            addressSpace_(addressSpace) {
         ensureNullPage();
     }
 
@@ -511,11 +507,11 @@ namespace x64 {
     }
 
     u8* Mmu::getPointerToRegion(MmuRegion* region) {
-        return addressSpace_.memoryRange_.base() + region->base();
+        return base_ + region->base();
     }
 
     const u8* Mmu::getPointerToRegion(const MmuRegion* region) const {
-        return addressSpace_.memoryRange_.base() + region->base();
+        return base_ + region->base();
     }
 
     void Mmu::checkRegionsAreSorted() const {
@@ -567,16 +563,6 @@ namespace x64 {
             verify(pageIndex < addressSpace_.regionLookup.size());
             addressSpace_.regionLookup[pageIndex] = nullptr;
         }
-    }
-
-    ScopedAdressSpace::ScopedAdressSpace(Mmu& mmu, AddressSpace& addressSpace) :
-            mmu_(mmu),
-            addressSpace_(addressSpace) {
-        mmu_.load(std::move(addressSpace_));
-    }
-
-    ScopedAdressSpace::~ScopedAdressSpace() {
-        mmu_.save(&addressSpace_);
     }
 
 }

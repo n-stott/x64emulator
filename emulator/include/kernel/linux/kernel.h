@@ -26,7 +26,7 @@ namespace kernel::gnulinux {
 
     class Kernel {
     public:
-        explicit Kernel(x64::Mmu& mmu);
+        explicit Kernel();
         ~Kernel();
 
         int run(const std::string& programFilePath,
@@ -82,7 +82,6 @@ namespace kernel::gnulinux {
         void dumpPanicInfo() const;
     
     private:
-        x64::Mmu& mmu_;
         std::unique_ptr<FS> fs_;
         std::unique_ptr<SharedMemory> shm_;
         std::unique_ptr<Scheduler> scheduler_;

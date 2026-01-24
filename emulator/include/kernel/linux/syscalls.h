@@ -27,7 +27,7 @@ namespace kernel::gnulinux {
 
     class Sys {
     public:
-        Sys(Kernel& kernel, x64::Mmu& mmu);
+        explicit Sys(Kernel& kernel);
 
         void syscall(Process* process, Thread* thread);
 
@@ -423,10 +423,10 @@ namespace kernel::gnulinux {
         void warn(const char* format, Args... args) const;
 
         Kernel& kernel_;
-        x64::Mmu& mmu_;
         std::mutex mutex_;
         Process* currentProcess_ { nullptr };
         Thread* currentThread_ { nullptr };
+        x64::Mmu* mmu_ { nullptr };
     };
 
 }
