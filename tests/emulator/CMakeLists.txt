@@ -101,6 +101,7 @@ create_simple_test(memfd)
 create_simple_test(getfd)
 create_simple_test(brk)
 create_simple_test(polldevrandom)
+create_simple_test(fork)
 
 add_executable(test_abort src/test_abort.cpp)
 target_compile_options(test_abort PUBLIC ${CC_OPTIONS})

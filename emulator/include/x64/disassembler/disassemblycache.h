@@ -63,8 +63,8 @@ namespace x64 {
 
     private:
         struct InstructionPosition {
-            const ExecutableSection* section;
-            size_t index;
+            const ExecutableSection* section { nullptr };
+            size_t index { (size_t)(-1) };
         };
 
         InstructionPosition findSectionWithAddress(u64 address, BytecodeRetriever* retriever);

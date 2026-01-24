@@ -62,10 +62,16 @@ namespace kernel::gnulinux {
     }
 
     std::unique_ptr<Process> Process::clone(ProcessTable& processTable) const {
-        auto addressSpace = addressSpace_.tryClone();
+        auto addressSpace = addressSpace_.tryCreate(processTable.availableVirtualMemoryInMB());
         if(!addressSpace) return {};
         int newpid = processTable.allocatedPid();
         auto process = std::unique_ptr<Process>(new Process(newpid, std::move(*addressSpace), fs_, currentWorkDirectory_));
+        {
+            x64::Mmu mmu(process->addressSpace(), x64::Mmu::WITHOUT_SIDE_EFFECTS::YES);
+            mmu.addCallback(process.get());
+            mmu.addCallback(process->disassemblyCache());
+            process->addressSpace().clone(mmu, addressSpace_);
+        }
         return process;
     }
 

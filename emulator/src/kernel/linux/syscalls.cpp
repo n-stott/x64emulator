@@ -995,10 +995,8 @@ namespace kernel::gnulinux {
             verify(!!currentProcess_);
             verify(!!currentThread_);
             verify(!cloneFlags.cloneVm, "cloneVm without cloneThread not supported");
-            auto addressSpace = currentProcess_->addressSpace().tryClone();
-            verify(!!addressSpace, "Unable to clone address space");
             Process* newProcess = [&]() -> Process* {
-                auto process = Process::tryCreate(kernel_.processTable(), std::move(*addressSpace), kernel_.fs(), currentProcess_->cwd());
+                auto process = currentProcess_->clone(kernel_.processTable());
                 verify(!!process, "Unable to create new process");
                 return kernel_.processTable().addProcess(std::move(process));
             }();
@@ -1014,6 +1012,7 @@ namespace kernel::gnulinux {
         }
 
         verify(!!newThread);
+        x64::Mmu childMmu(newThread->process()->addressSpace());
         const Thread::SavedCpuState& oldCpuState = currentThread_->savedCpuState();
         Thread::SavedCpuState& newCpuState = newThread->savedCpuState();
         newCpuState.regs = oldCpuState.regs;
@@ -1024,16 +1023,18 @@ namespace kernel::gnulinux {
         } else {
             verify(!cloneFlags.cloneVm, "Danger, copying stack in child in same addresspace");
         }
-        mmu_->setRegionName(stack.address(), fmt::format("Stack of thread {}", newThread->description().tid));
+        childMmu.setRegionName(stack.address(), fmt::format("Stack of thread {}", newThread->description().tid));
         if(cloneFlags.setTls) {
             newCpuState.fsBase = tls;
+        } else {
+            newCpuState.fsBase = oldCpuState.fsBase;
         }
         if(cloneFlags.childClearTid) {
             newThread->setClearChildTid(child_tid);
         }
         if(!!child_tid && cloneFlags.childSetTid) {
             static_assert(sizeof(pid_t) == sizeof(u32));
-            mmu_->write32(child_tid, (u32)newThread->description().tid);
+            childMmu.write32(child_tid, (u32)newThread->description().tid);
         }
         if(!!parent_tid && cloneFlags.parentSetTid) {
             static_assert(sizeof(pid_t) == sizeof(u32));

@@ -14,6 +14,7 @@ namespace kernel::gnulinux {
         ProcessTable(int hostPid, Kernel& kernel);
 
         void setProcessVirtualMemory(unsigned int virtualMemoryInMB) { virtualMemoryInMB_ = virtualMemoryInMB; }
+        unsigned int availableVirtualMemoryInMB() const { return virtualMemoryInMB_; }
 
         Process* createMainProcess();
         Process* addProcess(std::unique_ptr<Process>);

@@ -50,7 +50,7 @@ namespace x64 {
             assert(r != addressSpace_.regions.end());
             fmt::print("Unable to add region : memory range [{:#x}, {:#x}] already occupied by region [{:#x}, {:#x}]\n",
                     region->base(), region->end(), (*r)->base(), (*r)->end());
-            dumpRegions();
+            addressSpace_.dumpRegions();
         });
         MmuRegion* regionPtr = region.get();
 
@@ -198,6 +198,24 @@ namespace x64 {
         for(auto& region : regions) region->deactivate();
     }
 
+    void AddressSpace::clone(Mmu& mmu, const AddressSpace& source) {
+        verify(regions.empty(), "Cannot clone into non-empty address space");
+        BitFlags<MAP> flags(MAP::ANONYMOUS, MAP::PRIVATE, MAP::FIXED, MAP::NO_REPLACE); // TODO: should get the flags from the regions
+        BitFlags<PROT> rw(PROT::READ, PROT::WRITE);
+        for(const auto& region : source.regions) {
+            auto base = mmu.mmap(region->base(), region->size(), rw, flags);
+            verify(!!base, "Unable to mmap region in clone()");
+            mmu.setRegionName(base.value(), region->name());
+            if(region->prot().test(PROT::READ)) {
+                const u8* sourceBase = source.memoryRange_.base();
+                mmu.copyToMmu(Ptr8{base.value()}, sourceBase + region->base(), region->size());
+            } else {
+                warn(fmt::format("Region {:#x}:{:#x} is not readable", region->base(), region->end()));
+            }
+            mmu.mprotect(base.value(), region->size(), region->prot());
+        }
+    }
+
     std::string Mmu::readString(Ptr8 src) const {
         Ptr8 end = src;
         while(read8(end++) != 0) {}
@@ -216,11 +234,11 @@ namespace x64 {
         return std::unique_ptr<MmuRegion>(new MmuRegion(base, size, prot));
     }
 
-    Mmu::Mmu(AddressSpace& addressSpace) :
+    Mmu::Mmu(AddressSpace& addressSpace, WITHOUT_SIDE_EFFECTS effects) :
             base_(addressSpace.memoryRange_.base()),
             size_(addressSpace.memoryRange_.size()),
             addressSpace_(addressSpace) {
-        ensureNullPage();
+        if(effects == WITHOUT_SIDE_EFFECTS::NO) ensureNullPage();
     }
 
     Mmu::~Mmu() = default;
@@ -308,24 +326,20 @@ namespace x64 {
         return region;
     }
 
-    void Mmu::dumpRegions() const {
+    void AddressSpace::dumpRegions() const {
         struct DumpInfo {
             std::string file;
             u64 base;
             u64 end;
-            u64 dataStart;
-            u64 dataEnd;
             std::string prot;
         };
         std::vector<DumpInfo> dumpInfos;
-        dumpInfos.reserve(addressSpace_.regions.size());
-        for(const auto& ptr : addressSpace_.regions) {
+        dumpInfos.reserve(regions.size());
+        for(const auto& ptr : regions) {
             dumpInfos.push_back(DumpInfo{
                 ptr->name(),
                 ptr->base(),
                 ptr->end(),
-                (u64)getPointerToRegion(ptr.get()),
-                (u64)(getPointerToRegion(ptr.get())+ptr->size()),
                 protectionToString(ptr->prot())
             });
         }
@@ -335,12 +349,12 @@ namespace x64 {
 
         fmt::print("Memory regions:\n");
         for(const auto& info : dumpInfos) {
-            fmt::print("    {:>#10x} - {:<#10x} {:#20x}-{:#20x} {} {:>20}\n",
-                info.base, info.end, info.dataStart, info.dataEnd, info.prot, info.file);
+            fmt::print("    {:>#10x} - {:<#10x} {} {:>20}\n",
+                info.base, info.end, info.prot, info.file);
         }
 
         size_t memoryConsumptionInBytes = 0;
-        for(const auto& ptr : addressSpace_.regions) {
+        for(const auto& ptr : regions) {
             memoryConsumptionInBytes += ptr->size();
         }
         fmt::print("Memory consumption : {}MB\n", memoryConsumptionInBytes/1024/1024);

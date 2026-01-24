@@ -36,6 +36,7 @@ namespace kernel::gnulinux {
 
     void ProcessTable::dumpSummary() const {
         for(auto& process : processes_) {
+            process->addressSpace().dumpRegions();
             process->fds().dumpSummary();
         }
     }

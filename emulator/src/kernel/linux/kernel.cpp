@@ -146,7 +146,6 @@ namespace kernel::gnulinux {
     void Kernel::dumpPanicInfo() const {
         scheduler_->dumpThreadSummary();
         scheduler_->dumpBlockerSummary();
-        verify(false, "implement mmu_.dumpRegions()");
         fs_->dumpSummary();
         processTable_->dumpSummary();
     }

@@ -21,6 +21,7 @@
 namespace x64 {
 
     class Host;
+    class Mmu;
 
     enum class PROT {
         NONE = 0,
@@ -90,7 +91,9 @@ namespace x64 {
         AddressSpace& operator=(AddressSpace&&) = default;
         ~AddressSpace();
 
-        std::unique_ptr<AddressSpace> tryClone() const { return {}; }
+        void clone(Mmu& mmu, const AddressSpace&);
+
+        void dumpRegions() const;
         
         std::vector<std::unique_ptr<MmuRegion>> regions;
         std::vector<MmuRegion*> regionLookup;
@@ -106,7 +109,8 @@ namespace x64 {
 
     class Mmu {
     public:
-        explicit Mmu(AddressSpace& addressSpace);
+        enum class WITHOUT_SIDE_EFFECTS { NO, YES };
+        explicit Mmu(AddressSpace& addressSpace, WITHOUT_SIDE_EFFECTS effects = WITHOUT_SIDE_EFFECTS::NO);
         ~Mmu();
 
         std::optional<u64> mmap(u64 address, u64 length, BitFlags<PROT> prot, BitFlags<MAP> flags);
@@ -244,8 +248,6 @@ namespace x64 {
         u64 xchg64(Ptr64 ptr, u64 value) {
             return xchg(ptr, value);
         }
-
-        void dumpRegions() const;
     
         static u64 pageRoundDown(u64 address);
         static u64 pageRoundUp(u64 address);
