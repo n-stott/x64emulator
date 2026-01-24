@@ -3999,13 +3999,13 @@ namespace x64 {
 
     u128 NativeCpuImpl::pblendw(u128 dst, u128 src, u8 mask) {
 #ifdef SSE41
-        auto native = [=](__m128 d, __m128 s) -> __m128 {
+        auto native = [=](__m128i d, __m128i s) -> __m128i {
             u8 order = mask;
-            CALL_2_WITH_IMM8(_mm_insert_ps, d, s);
+            CALL_2_WITH_IMM8(_mm_blend_epi16, d, s);
         };
 
-        __m128 d;
-        __m128 s;
+        __m128i d;
+        __m128i s;
         static_assert(sizeof(d) == sizeof(dst));
         static_assert(sizeof(s) == sizeof(src));
         memcpy(&d, &dst, sizeof(dst));
