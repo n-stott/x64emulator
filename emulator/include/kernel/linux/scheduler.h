@@ -41,10 +41,10 @@ namespace kernel::gnulinux {
 
         void addThread(Thread* thread);
 
-        void terminateAll(int status);
+        void terminateGroup(Thread* thread, int status);
         void terminate(Thread* thread, int status);
 
-        void kill(int signal);
+        void kill(int pid, int tid, int signal);
 
         void sleep(Thread* thread, Timer* timer, PreciseTime targetTime);
 
@@ -124,6 +124,13 @@ namespace kernel::gnulinux {
         template<typename Func>
         void forEachThread(Func&& func) const {
             for(const auto& threadPtr : threads_) {
+                func(*threadPtr);
+            }
+        }
+
+        template<typename Func>
+        void forEachThread(Func&& func) {
+            for(auto& threadPtr : threads_) {
                 func(*threadPtr);
             }
         }

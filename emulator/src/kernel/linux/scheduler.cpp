@@ -510,13 +510,13 @@ namespace kernel::gnulinux {
         runnableThreads_.push_back(thread);
     }
 
-    void Scheduler::terminateAll(int status) {
+    void Scheduler::terminateGroup(Thread* thread, int status) {
         verifyInKernel();
         std::vector<Thread*> allThreads;
-        allThreads.reserve(runningJobs_.size());
-        for(Job job : runningJobs_) allThreads.push_back(job.thread);
-        allThreads.insert(allThreads.end(), runnableThreads_.begin(), runnableThreads_.end());
-        allThreads.insert(allThreads.end(), blockedThreads_.begin(), blockedThreads_.end());
+        forEachThread([&](Thread& t) {
+            if(t.process() != thread->process()) return;
+            allThreads.push_back(&t);
+        });
         for(Thread* t : allThreads) terminate(t, status);
     }
 
@@ -553,8 +553,14 @@ namespace kernel::gnulinux {
         blockedThreads_.erase(std::remove(blockedThreads_.begin(), blockedThreads_.end(), thread), blockedThreads_.end());
     }
 
-    void Scheduler::kill([[maybe_unused]] int signal) {
-        terminateAll(516);
+    void Scheduler::kill(int pid, int tid, [[maybe_unused]] int signal) {
+        std::vector<Thread*> threads;
+        forEachThread([&](Thread& t) {
+            if(t.description().pid != pid) return;
+            if(t.description().tid != tid) return;
+            threads.push_back(&t);
+        });
+        for(Thread* t : threads) terminate(t, 516);
     }
 
     void Scheduler::sleep(Thread* thread, Timer* timer, PreciseTime targetTime) {

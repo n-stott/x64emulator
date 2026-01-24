@@ -1494,7 +1494,7 @@ namespace kernel::gnulinux {
 
     u64 Sys::exit_group(int status) {
         if(kernel_.logSyscalls()) print("Sys::exit_group(status={})", status);
-        kernel_.scheduler().terminateAll(status);
+        kernel_.scheduler().terminateGroup(currentThread_, status);
         return (u64)status;
     }
 
@@ -1551,7 +1551,7 @@ namespace kernel::gnulinux {
 
     int Sys::tgkill(int tgid, int tid, int sig) {
         if(kernel_.logSyscalls()) print("Sys::tgkill(tgid={}, tid={}, sig={})", tgid, tid, sig);
-        kernel_.scheduler().kill(sig);
+        kernel_.scheduler().kill(tgid, tid, sig);
         return 0;
     }
 
