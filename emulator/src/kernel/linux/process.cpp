@@ -54,7 +54,8 @@ namespace kernel::gnulinux {
     Process::~Process() = default;
 
     Thread* Process::addThread(ProcessTable& processTable) {
-        auto thread = std::make_unique<Thread>(this, processTable.allocatedTid());
+        int tid = threads_.empty() ? pid_ : processTable.allocatedTid();
+        auto thread = std::make_unique<Thread>(this, tid);
         thread->setProfiling(isProfiling());
         Thread* threadPtr = thread.get();
         threads_.push_back(std::move(thread));

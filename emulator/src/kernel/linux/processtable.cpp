@@ -21,10 +21,12 @@ namespace kernel::gnulinux {
 
     int ProcessTable::allocatedPid() {
         ++lastUsedPid_;
+        ++lastUsedTid_;
         return lastUsedPid_;
     }
 
     int ProcessTable::allocatedTid() {
+        ++lastUsedPid_;
         ++lastUsedTid_;
         return lastUsedTid_;
     }
