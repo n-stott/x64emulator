@@ -50,6 +50,8 @@ namespace kernel::gnulinux {
         explicit FileDescriptors(FS& fs) : fs_(fs) { }
         void createStandardStreams(const Path& ttypath);
 
+        std::unique_ptr<FileDescriptors> clone();
+
         FileDescriptor operator[](FD fd) {
             auto* descriptor = findFileDescriptor(fd);
             if(!descriptor) return {};

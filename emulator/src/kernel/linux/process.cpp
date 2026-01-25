@@ -33,21 +33,19 @@ namespace kernel::gnulinux {
             return {};
         }
         int pid = processTable.allocatedPid();
-        return std::unique_ptr<Process>(new Process(pid, std::move(*addressSpace), fs, currentWorkDirectory));
+
+        auto fds = std::make_unique<FileDescriptors>(fs);
+        fds->createStandardStreams(fs.ttyPath());
+        return std::unique_ptr<Process>(new Process(pid, std::move(*addressSpace), fs, std::move(fds), currentWorkDirectory));
     }
 
-    std::unique_ptr<Process> Process::tryCreate(ProcessTable& processTable, x64::AddressSpace addressSpace, FS& fs, Directory* cwd) {
-        return std::unique_ptr<Process>(new Process(processTable.allocatedPid(), std::move(addressSpace), fs, cwd));
-    }
-
-    Process::Process(int pid, x64::AddressSpace addressSpace, FS& fs, Directory* cwd) :
+    Process::Process(int pid, x64::AddressSpace addressSpace, FS& fs, std::shared_ptr<FileDescriptors> fds, Directory* cwd) :
             pid_(pid),
             addressSpace_(std::move(addressSpace)),
             fs_(fs),
-            fds_(fs),
+            fds_(fds),
             currentWorkDirectory_(cwd),
             symbolRetriever_(&disassemblyCache_, &symbolProvider_) {
-        fds_.createStandardStreams(fs_.ttyPath());
         jit_ = x64::Jit::tryCreate();
     }
 
@@ -66,7 +64,8 @@ namespace kernel::gnulinux {
         auto addressSpace = addressSpace_.tryCreate(processTable.availableVirtualMemoryInMB());
         if(!addressSpace) return {};
         int newpid = processTable.allocatedPid();
-        auto process = std::unique_ptr<Process>(new Process(newpid, std::move(*addressSpace), fs_, currentWorkDirectory_));
+        auto fds = fds_->clone();
+        auto process = std::unique_ptr<Process>(new Process(newpid, std::move(*addressSpace), fs_, std::move(fds), currentWorkDirectory_));
         {
             x64::Mmu mmu(process->addressSpace(), x64::Mmu::WITHOUT_SIDE_EFFECTS::YES);
             mmu.addCallback(process.get());

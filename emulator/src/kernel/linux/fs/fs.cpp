@@ -208,6 +208,18 @@ namespace kernel::gnulinux {
         verify(stderrFd.fd == 2, "stderr must have fd 2");
     }
 
+    std::unique_ptr<FileDescriptors> FileDescriptors::clone() {
+        auto fds = std::make_unique<FileDescriptors>(fs_);
+        fds->fileDescriptors_.resize(fileDescriptors_.size());
+        for(int i = 0; i < (int)fileDescriptors_.size(); ++i) {
+            if(!fileDescriptors_[i]) continue;
+            FileDescriptor descriptor = *fileDescriptors_[i];
+            descriptor.openFiledescription->file()->ref();
+            fds->fileDescriptors_[i] = std::make_unique<FileDescriptor>(descriptor);
+        }
+        return fds;
+    }
+
     FD FileDescriptors::allocateFd() {
         for(int i = 0; i < (int)fileDescriptors_.size(); ++i) {
             if(!fileDescriptors_[i]) return FD{i};

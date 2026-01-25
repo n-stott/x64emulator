@@ -27,7 +27,6 @@ namespace kernel::gnulinux {
     class Process : public x64::Mmu::Callback {
     public:
         static std::unique_ptr<Process> tryCreate(ProcessTable&, u32 addressSpaceSizeInMB, FS& fs);
-        static std::unique_ptr<Process> tryCreate(ProcessTable&, x64::AddressSpace addressSpace, FS& fs, Directory* cwd);
         ~Process();
 
         std::unique_ptr<Process> clone(ProcessTable&);
@@ -40,7 +39,7 @@ namespace kernel::gnulinux {
 
         Thread* addThread(ProcessTable& processTable);
 
-        FileDescriptors& fds() { return fds_;}
+        FileDescriptors& fds() { return *fds_; }
         Directory* cwd() { return currentWorkDirectory_; }
 
         void setProfiling(bool profiling) { profiling_ = profiling; }
@@ -92,7 +91,7 @@ namespace kernel::gnulinux {
         void onRegionDestruction(u64 base, u64 length, BitFlags<x64::PROT> prot) override;
 
     private:
-        Process(int pid, x64::AddressSpace addressSpace, FS& fs, Directory* cwd);
+        Process(int pid, x64::AddressSpace addressSpace, FS& fs, std::shared_ptr<FileDescriptors> fds, Directory* cwd);
 
         void notifyChildCreated(Process* process);
         void notifyChildExited(Process* process);
@@ -108,7 +107,7 @@ namespace kernel::gnulinux {
 
         // Filesystem
         FS& fs_;
-        FileDescriptors fds_;
+        std::shared_ptr<FileDescriptors> fds_;
         Directory* currentWorkDirectory_ { nullptr };
 
         // Flags;
