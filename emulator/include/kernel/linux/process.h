@@ -16,6 +16,7 @@
 #include <mutex>
 #include <optional>
 #include <ostream>
+#include <set>
 #include <unordered_map>
 #include <vector>
 
@@ -81,7 +82,9 @@ namespace kernel::gnulinux {
         }
 
         void notifyExit();
-        bool childExited(int pid) const;
+        size_t nbChildren() const { return children_.size(); }
+        std::optional<int> tryRetrieveExitedChild(int pid);
+        std::optional<int> tryRetrieveExitedChild();
 
     protected:
         void onRegionCreation(u64 base, u64 length, BitFlags<x64::PROT> prot) override;
@@ -141,11 +144,8 @@ namespace kernel::gnulinux {
 
         // Hierarchy
         Process* parent_ { nullptr };
-        enum class ChildState {
-            CREATED,
-            EXITED,
-        };
-        std::unordered_map<int, ChildState> childrenState_;
+        std::set<int> children_;
+        std::set<int> exitedChildren_;
     };
 
 }

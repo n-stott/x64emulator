@@ -1087,11 +1087,15 @@ namespace kernel::gnulinux {
         verify(!wstatus, "non-null wstatus unsupported in wait4");
         verify(options == 0, "non-zero options unsupported in wait4");
         verify(!rusage, "non-null rusage unsupported in wait4");
-        kernel_.scheduler().wait4(currentThread_, (int)pid);
         if(kernel_.logSyscalls()) {
             print("Sys::wait4(pid={}, wstatus={:#x}, options={}, rusage={:#x}) = {}", pid, wstatus.address(), options, rusage.address(), 0);
         }
-        return 0;
+        if(currentProcess_->nbChildren() == 0) {
+            return -ECHILD;
+        } else {
+            kernel_.scheduler().wait4(currentThread_, (int)pid);
+            return 0;
+        }
     }
 
     int Sys::kill(pid_t pid, int sig) {

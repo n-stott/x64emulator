@@ -201,17 +201,34 @@ namespace kernel::gnulinux {
     }
 
     void Process::notifyChildCreated(Process* process) {
-        childrenState_[process->pid()] = ChildState::CREATED;
+        children_.insert(process->pid());
     }
 
     void Process::notifyChildExited(Process* process) {
-        verify(childrenState_.find(process->pid()) != childrenState_.end(), "Cannot find child process");
-        childrenState_[process->pid()] = ChildState::EXITED;
+        verify(children_.find(process->pid()) != children_.end(), "Cannot find child process");
+        exitedChildren_.insert(process->pid());
     }
 
-    bool Process::childExited(int pid) const {
-        verify(childrenState_.find(pid) != childrenState_.end(), "Cannot find child process");
-        return childrenState_.at(pid) == ChildState::EXITED;
+    std::optional<int> Process::tryRetrieveExitedChild(int pid) {
+        verify(children_.find(pid) != children_.end(), "Cannot find child process");
+        if(exitedChildren_.count(pid) > 0) {
+            children_.erase(pid);
+            exitedChildren_.erase(pid);
+            return pid;
+        } else {
+            return {};
+        }
+    }
+
+    std::optional<int> Process::tryRetrieveExitedChild() {
+        if(!exitedChildren_.empty()) {
+            int pid = *exitedChildren_.begin();
+            children_.erase(pid);
+            exitedChildren_.erase(pid);
+            return pid;
+        } else {
+            return {};
+        }
     }
 
 }
