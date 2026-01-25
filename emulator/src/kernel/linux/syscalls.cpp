@@ -996,6 +996,7 @@ namespace kernel::gnulinux {
             verify(!!currentProcess_);
             verify(!!currentThread_);
             verify(!cloneFlags.cloneVm, "cloneVm without cloneThread not supported");
+            verify(!cloneFlags.cloneFiles, "cloneFiles without cloneThread not supported");
             Process* newProcess = [&]() -> Process* {
                 auto process = currentProcess_->clone(kernel_.processTable());
                 verify(!!process, "Unable to create new process");
