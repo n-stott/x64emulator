@@ -209,8 +209,10 @@ namespace x64 {
             if(region->prot().test(PROT::READ)) {
                 const u8* sourceBase = source.memoryRange_.base();
                 mmu.copyToMmu(Ptr8{base.value()}, sourceBase + region->base(), region->size());
+#ifndef NDEBUG
             } else {
-                warn(fmt::format("Region {:#x}:{:#x} is not readable", region->base(), region->end()));
+                warn(fmt::format("Non-readable region {:#x}:{:#x} is not cloned", region->base(), region->end()));
+#endif
             }
             mmu.mprotect(base.value(), region->size(), region->prot());
         }
