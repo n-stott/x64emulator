@@ -32,7 +32,7 @@ namespace kernel::gnulinux {
         return Host::pollCanRead(Host::FD{hostFd_.value()});
     }
 
-    ErrnoOrBuffer Tty::read(OpenFileDescription&, size_t count) {
+    ReadResult Tty::read(OpenFileDescription&, size_t count) {
         if(!isReadable()) return ErrnoOrBuffer{-EBADF};
         if(!hostFd_) return ErrnoOrBuffer{-EBADF};
         Buffer buffer(count, 0x0);

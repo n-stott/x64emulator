@@ -112,7 +112,7 @@ namespace kernel::gnulinux {
         return ::setsockopt(hostFd_, level, optname, buffer.data(), (socklen_t)buffer.size());
     }
 
-    ErrnoOrBuffer Socket::read(OpenFileDescription&, size_t count) {
+    ReadResult Socket::read(OpenFileDescription&, size_t count) {
         if(!isReadable()) return ErrnoOrBuffer{-EINVAL};
         Buffer buffer(count, 0x0);
         ssize_t nbytes = ::read(hostFd_, buffer.data(), count);

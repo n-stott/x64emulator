@@ -233,16 +233,25 @@ namespace kernel::gnulinux {
 
     ssize_t Sys::read(int fd, x64::Ptr8 buf, size_t count) {
         auto descriptor = currentProcess_->fds()[fd];
-        auto errnoOrBuffer = kernel_.fs().read(descriptor, count);
-        if(kernel_.logSyscalls()) {
-            print("Sys::read(fd={}, buf={:#x}, count={}) = {}",
-                        fd, buf.address(), count,
-                        errnoOrBuffer.errorOrWith<ssize_t>([](const auto& buf) { return (ssize_t)buf.size(); }));
+        auto readResult = kernel_.fs().read(descriptor, count);
+
+        if(readResult.isBlocking()) {
+            kernel_.scheduler().blockingRead(currentThread_, fd, buf, count);
+            return 0;
         }
-        return errnoOrBuffer.errorOrWith<ssize_t>([&](const auto& buffer) {
+
+        verify(!readResult.isBlocking(), "blocking read not handled in Sys::read");
+        
+        ssize_t ret = readResult.value().errorOrWith<ssize_t>([&](const auto& buffer) {
             mmu_->copyToMmu(buf, buffer.data(), buffer.size());
             return (ssize_t)buffer.size();
         });
+
+        if(kernel_.logSyscalls()) {
+            print("Sys::read(fd={}, buf={:#x}, count={}) = {}",
+                    fd, buf.address(), count, ret);
+        }
+        return ret;
     }
 
     ssize_t Sys::write(int fd, x64::Ptr8 buf, size_t count) {

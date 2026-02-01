@@ -12,7 +12,7 @@ namespace kernel::gnulinux {
 
     void NullDevice::close() { }
 
-    ErrnoOrBuffer NullDevice::read(OpenFileDescription&, size_t) {
+    ReadResult NullDevice::read(OpenFileDescription&, size_t) {
         return ErrnoOrBuffer(Buffer{});
     }
 

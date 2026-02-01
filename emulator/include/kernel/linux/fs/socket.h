@@ -49,7 +49,7 @@ namespace kernel::gnulinux {
         bool isReadable() const override { return true; }
         bool isWritable() const override { return true; }
 
-        ErrnoOrBuffer read(OpenFileDescription&, size_t) override;
+        ReadResult read(OpenFileDescription&, size_t) override;
         ssize_t write(OpenFileDescription&, const u8* buf, size_t) override;
 
         void advanceInternalOffset(off_t) override;

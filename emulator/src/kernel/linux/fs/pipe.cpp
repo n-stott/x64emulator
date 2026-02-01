@@ -52,19 +52,23 @@ namespace kernel::gnulinux {
         return true;
     }
 
-    ErrnoOrBuffer Pipe::read(OpenFileDescription& openFileDescription, size_t size) {
+    ReadResult Pipe::read(OpenFileDescription& openFileDescription, size_t size) {
         bool nonBlocking = openFileDescription.statusFlags().test(StatusFlags::NONBLOCK);
-        if(data_.empty() && nonBlocking) {
-            if(writeEndpoints_.empty()) {
-                return ErrnoOrBuffer(Buffer{});
+        if(data_.empty()) {
+            if(nonBlocking) {
+                if(writeEndpoints_.empty()) {
+                    return ErrnoOrBuffer(Buffer{});
+                } else {
+                    return ErrnoOrBuffer(-EAGAIN);
+                }
             } else {
-                return ErrnoOrBuffer(-EAGAIN);
+                if(writeEndpoints_.empty()) {
+                    return ErrnoOrBuffer(Buffer{});
+                } else {
+                    return ReadResult::block();
+                }
             }
         }
-        verify(!data_.empty(), [&]() {
-            fmt::print("Reading from blocking empty pipe not implemented\n");
-            fmt::print("Pipe is non-blocking: {}\n", openFileDescription.statusFlags().test(StatusFlags::NONBLOCK));
-        });
         size_t readSize = std::min(size, data_.size());
         Buffer buf(readSize, 0x0);
         std::copy(data_.begin(), data_.begin() + (off64_t)readSize, buf.data());
@@ -75,7 +79,7 @@ namespace kernel::gnulinux {
     bool PipeEndpoint::canRead() const { return pipe_->canRead(); }
     bool PipeEndpoint::canWrite() const { return pipe_->canWrite(); }
     
-    ErrnoOrBuffer PipeEndpoint::read(OpenFileDescription& openFileDescription, size_t size) {
+    ReadResult PipeEndpoint::read(OpenFileDescription& openFileDescription, size_t size) {
         return pipe_->read(openFileDescription, size);
     }
 

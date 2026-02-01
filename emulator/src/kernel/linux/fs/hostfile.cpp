@@ -59,7 +59,7 @@ namespace kernel::gnulinux {
         return false;
     }
 
-    ErrnoOrBuffer HostFile::read(OpenFileDescription& openFileDescription, size_t count) {
+    ReadResult HostFile::read(OpenFileDescription& openFileDescription, size_t count) {
         if(!isReadable()) return ErrnoOrBuffer{-EINVAL};
         off_t offset = openFileDescription.offset();
         if(offset < 0) return ErrnoOrBuffer{-EINVAL};

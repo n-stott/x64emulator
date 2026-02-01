@@ -141,6 +141,24 @@ namespace kernel::gnulinux {
         int pid_;
     };
 
+    class ReadBlocker {
+    public:
+        ReadBlocker(Thread* thread, int fd, x64::Ptr buf, size_t count)
+            : thread_(thread), fd_(fd), buf_(buf), count_(count) { }
+
+        [[nodiscard]] bool tryUnblock(FS& fs);
+
+        Thread* thread() const { return thread_; }
+
+        std::string toString() const;
+
+    private:
+        Thread* thread_;
+        int fd_;
+        x64::Ptr buf_;
+        size_t count_;
+    };
+
 }
 
 #endif

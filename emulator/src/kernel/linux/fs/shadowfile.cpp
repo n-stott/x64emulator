@@ -81,7 +81,7 @@ namespace kernel::gnulinux {
         data_.resize(length, 0x0);
     }
 
-    ErrnoOrBuffer ShadowFile::read(OpenFileDescription& openFileDescription, size_t count) {
+    ReadResult ShadowFile::read(OpenFileDescription& openFileDescription, size_t count) {
         if(!isReadable()) return ErrnoOrBuffer{-EINVAL};
         off_t offset = openFileDescription.offset();
         if(offset < 0) return ErrnoOrBuffer{-EINVAL};

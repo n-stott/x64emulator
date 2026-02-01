@@ -9,7 +9,7 @@ namespace kernel::gnulinux {
         (void)flags_;
     }
     
-    ErrnoOrBuffer Epoll::read(OpenFileDescription&, size_t) {
+    ReadResult Epoll::read(OpenFileDescription&, size_t) {
         verify(false, "Epoll::read not implemented");
         return ErrnoOrBuffer(-ENOTSUP);
     }

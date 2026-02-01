@@ -45,14 +45,16 @@ namespace kernel::gnulinux {
             lock_ = Lock::NONE;
         }
 
-        ErrnoOrBuffer read(size_t count) {
-            ErrnoOrBuffer errnoOrBuffer = file_->read(*this, count);
-            errnoOrBuffer.errorOrWith<int>([&](const Buffer& buf) {
+        ReadResult read(size_t count) {
+            ReadResult readResult = file_->read(*this, count);
+            if(readResult.isBlocking()) {
+                return readResult;
+            }
+            readResult.value().with([&](const Buffer& buf) {
                 offset_ += buf.size();
                 file_->advanceInternalOffset((off_t)buf.size());
-                return 0;
             });
-            return errnoOrBuffer;
+            return readResult;
         }
 
         ssize_t write(const u8* buf, size_t count) {
@@ -68,7 +70,7 @@ namespace kernel::gnulinux {
             offset_ = offset;
             auto result = file_->read(*this, count);
             offset_ = savedOffset;
-            return result;
+            return result.value();
         }
 
         ssize_t pwrite(const u8* buf, size_t count, off_t offset) {

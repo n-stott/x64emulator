@@ -668,7 +668,7 @@ namespace kernel::gnulinux {
         return ErrnoOr<FileDescriptor>(insertNode(std::move(shadowFile), accessMode, statusFlags, Host::MemfdFlags::isCloseOnExec(flags)));
     }
 
-    ErrnoOrBuffer FS::read(FileDescriptor fd, size_t count) {
+    BlockOr<ErrnoOrBuffer> FS::read(FileDescriptor fd, size_t count) {
         OpenFileDescription* openFileDescription = fd.openFiledescription.get();
         if(!openFileDescription) return ErrnoOrBuffer{-EBADF};
         File* file = openFileDescription->file();
@@ -690,8 +690,9 @@ namespace kernel::gnulinux {
         if(!openFileDescription->file()->isReadable()) return -EBADF;
         ssize_t nbytes = 0;
         for(Buffer& buf : *buffers) {
-            ErrnoOrBuffer errnoOrReadBuffer = openFileDescription->read(buf.size());
-            ssize_t ret = errnoOrReadBuffer.errorOrWith<ssize_t>([&](const Buffer& readBuffer) {
+            auto readResult = openFileDescription->read(buf.size());
+            verify(!readResult.isBlocking(), "blocking read not handled in readv");
+            ssize_t ret = readResult.value().errorOrWith<ssize_t>([&](const Buffer& readBuffer) {
                 verify(readBuffer.size() <= buf.size());
                 ::memcpy(buf.data(), readBuffer.data(), readBuffer.size());
                 return (ssize_t)readBuffer.size();

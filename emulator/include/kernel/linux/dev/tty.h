@@ -28,7 +28,7 @@ namespace kernel::gnulinux {
 
         std::optional<int> hostFileDescriptor() const override { return hostFd_; }
 
-        ErrnoOrBuffer read(OpenFileDescription&, size_t count) override;
+        ReadResult read(OpenFileDescription&, size_t count) override;
         ssize_t write(OpenFileDescription&, const u8* buf, size_t count) override;
 
         ErrnoOrBuffer stat() override;

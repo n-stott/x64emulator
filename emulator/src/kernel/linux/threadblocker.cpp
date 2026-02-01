@@ -311,4 +311,22 @@ namespace kernel::gnulinux {
         return fmt::format("thread {}:{} waiting on pid {}", pid, tid, pid_);
     }
 
+    bool ReadBlocker::tryUnblock(FS& fs) {
+        auto readResult = fs.read(thread_->process()->fds()[fd_], count_);
+        if(readResult.isBlocking()) return false;
+        ssize_t ret = readResult.value().errorOrWith<ssize_t>([&](const auto& buffer) {
+            x64::Mmu mmu(thread_->process()->addressSpace());
+            mmu.copyToMmu(buf_, buffer.data(), buffer.size());
+            return (ssize_t)buffer.size();
+        });
+        thread_->savedCpuState().regs.set(x64::R64::RAX, ret);
+        return true;
+    }
+
+    std::string ReadBlocker::toString() const {
+        int pid = thread_->description().pid;
+        int tid = thread_->description().tid;
+        return fmt::format("thread {}:{} waiting on blocking read on {}", pid, tid, fd_);
+    }
+
 }

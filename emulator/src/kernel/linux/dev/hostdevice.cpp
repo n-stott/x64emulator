@@ -52,7 +52,7 @@ namespace kernel::gnulinux {
         return false;
     }
 
-    ErrnoOrBuffer HostDevice::read(OpenFileDescription&, size_t count) {
+    ReadResult HostDevice::read(OpenFileDescription&, size_t count) {
         if(!isReadable()) return ErrnoOrBuffer{-EINVAL};
         Buffer buffer(count, 0x0);
         ssize_t nbytes = ::read(hostFd_, buffer.data(), count);

@@ -59,6 +59,8 @@ namespace kernel::gnulinux {
 
         void wait4(Thread* thread, int pid);
 
+        void blockingRead(Thread* thread, int fd, x64::Ptr buf, size_t count);
+
         void dumpThreadSummary() const;
         void dumpBlockerSummary() const;
 
@@ -163,6 +165,7 @@ namespace kernel::gnulinux {
         std::vector<EpollWaitBlocker> epollWaitBlockers_;
         std::vector<SleepBlocker> sleepBlockers_;
         std::vector<WaitBlocker> waitBlockers_;
+        std::vector<ReadBlocker> readBlockers_;
         
         std::condition_variable schedulerHasRunnableThread_;
 

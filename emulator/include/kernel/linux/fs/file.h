@@ -4,6 +4,7 @@
 #include "kernel/linux/fs/fsobject.h"
 #include "kernel/linux/fs/ioctl.h"
 #include "kernel/linux/fs/path.h"
+#include "kernel/utils/blockor.h"
 #include "kernel/utils/buffer.h"
 #include "kernel/utils/erroror.h"
 #include <sys/types.h>
@@ -13,6 +14,8 @@ namespace kernel::gnulinux {
 
     class Directory;
     class OpenFileDescription;
+
+    using ReadResult = BlockOr<ErrnoOrBuffer>;
 
     class File : public FsObject {
     public:
@@ -32,7 +35,7 @@ namespace kernel::gnulinux {
         virtual bool canRead() const = 0;
         virtual bool canWrite() const = 0;
 
-        virtual ErrnoOrBuffer read(OpenFileDescription&, size_t count) = 0;
+        virtual ReadResult read(OpenFileDescription&, size_t count) = 0;
         virtual ssize_t write(OpenFileDescription&, const u8* buf, size_t count) = 0;
 
         virtual void advanceInternalOffset(off_t offset);

@@ -16,7 +16,7 @@ namespace kernel::gnulinux {
         bool isWritable() const override;
         bool canRead() const override;
         bool canWrite() const override;
-        ErrnoOrBuffer read(OpenFileDescription&, size_t count) override;
+        ReadResult read(OpenFileDescription&, size_t count) override;
         ssize_t write(OpenFileDescription&, const u8* buf, size_t count) override;
         off_t lseek(OpenFileDescription&, off_t offset, int whence) override;
         ErrnoOrBuffer stat() override;

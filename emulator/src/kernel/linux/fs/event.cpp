@@ -27,7 +27,7 @@ namespace kernel::gnulinux {
         return counter_ < (u64)(-2);
     }
     
-    ErrnoOrBuffer Event::read(OpenFileDescription& openFileDescription, size_t size) {
+    ReadResult Event::read(OpenFileDescription& openFileDescription, size_t size) {
         if(size < 8) return ErrnoOrBuffer(-EINVAL);
         if(counter_ == 0) {
             if(openFileDescription.statusFlags().test(StatusFlags::NONBLOCK)) {

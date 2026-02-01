@@ -80,7 +80,7 @@ namespace kernel::gnulinux {
         return false;
     }
 
-    ErrnoOrBuffer ShadowDevice::read(OpenFileDescription&, size_t) {
+    ReadResult ShadowDevice::read(OpenFileDescription&, size_t) {
         verify(false, "ShadowDevice::read not implemented");
         return ErrnoOrBuffer(-ENOTSUP);
     }

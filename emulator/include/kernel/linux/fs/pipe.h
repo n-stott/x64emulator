@@ -32,7 +32,7 @@ namespace kernel::gnulinux {
         bool canRead() const;
         bool canWrite() const;
 
-        ErrnoOrBuffer read(OpenFileDescription&, size_t size);
+        ReadResult read(OpenFileDescription&, size_t size);
         ssize_t write(OpenFileDescription&, const u8* buf, size_t size);
 
     private:
@@ -61,7 +61,7 @@ namespace kernel::gnulinux {
         bool canRead() const override;
         bool canWrite() const override;
 
-        ErrnoOrBuffer read(OpenFileDescription&, size_t) override;
+        ReadResult read(OpenFileDescription&, size_t) override;
         ssize_t write(OpenFileDescription&, const u8*, size_t) override;
 
         void advanceInternalOffset(off_t) override;

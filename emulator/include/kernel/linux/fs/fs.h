@@ -4,6 +4,7 @@
 #include "kernel/linux/fs/fsflags.h"
 #include "kernel/linux/fs/ioctl.h"
 #include "kernel/linux/fs/path.h"
+#include "kernel/utils/blockor.h"
 #include "kernel/utils/buffer.h"
 #include "kernel/utils/erroror.h"
 #include "bitflags.h"
@@ -141,7 +142,7 @@ namespace kernel::gnulinux {
 
         ErrnoOr<FileDescriptor> memfd_create(const std::string& name, unsigned int flags);
 
-        ErrnoOrBuffer read(FileDescriptor fd, size_t count);
+        BlockOr<ErrnoOrBuffer> read(FileDescriptor fd, size_t count);
         ErrnoOrBuffer pread(FileDescriptor fd, size_t count, off_t offset);
         ssize_t readv(FileDescriptor fd, std::vector<Buffer>* buffers);
 

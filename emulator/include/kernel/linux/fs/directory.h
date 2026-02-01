@@ -46,7 +46,7 @@ namespace kernel::gnulinux {
         bool canRead() const override { return false; }
         bool canWrite() const override { return false; }
 
-        ErrnoOrBuffer read(OpenFileDescription&, size_t count) override;
+        ReadResult read(OpenFileDescription&, size_t count) override;
         ssize_t write(OpenFileDescription&, const u8* buf, size_t count) override;
 
         off_t lseek(OpenFileDescription&, off_t offset, int whence) override;

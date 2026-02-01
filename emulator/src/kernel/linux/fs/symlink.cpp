@@ -34,7 +34,7 @@ namespace kernel::gnulinux {
         return true;
     }
 
-    ErrnoOrBuffer Symlink::read(OpenFileDescription&, size_t) {
+    ReadResult Symlink::read(OpenFileDescription&, size_t) {
         verify(false, "Symlink::read not implemented");
         return ErrnoOrBuffer(-ENOTSUP);
     }

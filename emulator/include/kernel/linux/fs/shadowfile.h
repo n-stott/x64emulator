@@ -31,7 +31,7 @@ namespace kernel::gnulinux {
 
         std::optional<int> hostFileDescriptor() const override { return {}; }
         
-        ErrnoOrBuffer read(OpenFileDescription&, size_t count) override;
+        ReadResult read(OpenFileDescription&, size_t count) override;
         ssize_t write(OpenFileDescription&, const u8* buf, size_t count) override;
 
         void advanceInternalOffset(off_t offset) override;

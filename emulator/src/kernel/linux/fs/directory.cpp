@@ -91,7 +91,7 @@ namespace kernel::gnulinux {
         // nothing to do ?
     }
 
-    ErrnoOrBuffer Directory::read(OpenFileDescription&, size_t) {
+    ReadResult Directory::read(OpenFileDescription&, size_t) {
         return ErrnoOrBuffer(-EISDIR);
     }
 

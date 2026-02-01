@@ -505,6 +505,21 @@ namespace kernel::gnulinux {
                 return &blocker == compareBlocker;
             });
         }), waitBlockers_.end());
+
+        std::vector<ReadBlocker*> readBlockers;
+        for(ReadBlocker& blocker : readBlockers_) {
+            bool canUnblock = blocker.tryUnblock(kernel_.fs());
+            if(canUnblock) {
+                unblock(blocker.thread(), &lock);
+                readBlockers.push_back(&blocker);
+                didUnblock = true;
+            }
+        }
+        readBlockers_.erase(std::remove_if(readBlockers_.begin(), readBlockers_.end(), [&](const ReadBlocker& blocker) {
+            return std::any_of(readBlockers.begin(), readBlockers.end(), [&](ReadBlocker* compareBlocker) {
+                return &blocker == compareBlocker;
+            });
+        }), readBlockers_.end());
         return didUnblock;
     }
 
@@ -558,6 +573,9 @@ namespace kernel::gnulinux {
         waitBlockers_.erase(std::remove_if(waitBlockers_.begin(), waitBlockers_.end(), [=](const WaitBlocker& blocker) {
             return blocker.thread() == thread;
         }), waitBlockers_.end());
+        readBlockers_.erase(std::remove_if(readBlockers_.begin(), readBlockers_.end(), [=](const ReadBlocker& blocker) {
+            return blocker.thread() == thread;
+        }), readBlockers_.end());
 
         if(!!thread->clearChildTid()) {
             x64::Mmu mmu(thread->process()->addressSpace());
@@ -732,6 +750,13 @@ namespace kernel::gnulinux {
         thread->yield();
     }
 
+    void Scheduler::blockingRead(Thread* thread, int fd, x64::Ptr buf, size_t count) {
+        verifyInKernel();
+        readBlockers_.push_back(ReadBlocker(thread, fd, buf, count));
+        block(thread);
+        thread->yield();
+    }
+
     void Scheduler::dumpThreadSummary() const {
         forEachThread([&](const Thread& thread) {
             fmt::print("Thread #{} : {}\n", thread.description().tid, thread.toString());
@@ -785,6 +810,10 @@ namespace kernel::gnulinux {
         }
         fmt::print("Wait blockers :\n");
         for(const WaitBlocker& blocker : waitBlockers_) {
+            fmt::print("  {}\n", blocker.toString());
+        }
+        fmt::print("Read blockers :\n");
+        for(const ReadBlocker& blocker : readBlockers_) {
             fmt::print("  {}\n", blocker.toString());
         }
     }
